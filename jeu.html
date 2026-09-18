@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-2139';
+  var MA_VERSION='2026-09-18-2149';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -677,6 +677,20 @@ body{overflow:hidden}
 #annonce .sousA{font:400 13px Georgia,serif;color:#c9c2ae;margin:0 0 18px;line-height:1.5}
 #annonce button{border:0;border-radius:12px;padding:12px 28px;background:#e8c06a;color:#2a1d0c;
   font:700 14px Georgia,serif;box-shadow:0 3px 0 #8a6a2a}
+#petanque{position:fixed;inset:0;z-index:29;display:none;background:rgba(10,14,8,.72);
+  align-items:center;justify-content:center;padding:calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom))}
+#petanque.on{display:flex}
+#petanque .pqCarte{position:relative;width:100%;max-width:380px;background:#2a2016;border-radius:18px;
+  padding:14px 14px 16px;color:#f2efe4;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.6);border:2px solid #6b4a2c}
+#petanque .pqTitre{font:700 10px ui-monospace,monospace;letter-spacing:1.5px;color:#e8c06a;margin:2px 34px 10px}
+#pqToile{display:block;width:min(100%,calc((100vh - 230px) * 160 / 280));margin:0 auto;image-rendering:pixelated;
+  border-radius:6px;touch-action:none}
+#pqTexte{font:400 14px Georgia,serif;margin:12px 4px 12px;min-height:40px;line-height:1.45}
+#pqTexte i{color:#c9c2ae}
+#pqBouton{width:100%;border:0;border-radius:12px;padding:14px;background:#e8c06a;color:#2a1d0c;
+  font:700 15px Georgia,serif;box-shadow:0 3px 0 #8a6a2a}
+#pqFermer{position:absolute;right:10px;top:8px;border:0;width:32px;height:32px;border-radius:50%;
+  background:#4a3a28;color:#f2efe4;font:700 15px ui-monospace,monospace}
 #enLigne .titL{font:700 10px ui-monospace,monospace;letter-spacing:1.5px;color:#9fd67a;margin:4px 0 10px}
 #enLigne .ligneJ{display:flex;align-items:center;gap:10px;width:100%;border:0;background:rgba(255,255,255,.06);
   border-radius:12px;padding:8px 10px;margin-bottom:6px;color:inherit;font:inherit;text-align:left}
@@ -1458,6 +1472,13 @@ body.clavier #bandeau{padding-bottom:9px}
   <h2>Le métro est ouvert !</h2>
   <p class="sousA">Ligne 1 · Village ⇄ Extramar, le vieux port.<br>Ticket 5 € à la station, près du comptoir.</p>
   <button id="annonceOk">Fermer</button></div></div>
+<div id="petanque"><div class="pqCarte">
+  <button id="pqFermer" aria-label="Fermer">✕</button>
+  <div class="pqTitre">LE BOULODROME · UNE MÈNE CONTRE MARIUS</div>
+  <canvas id="pqToile" width="160" height="280"></canvas>
+  <div id="pqTexte"></div>
+  <button id="pqBouton">Viser</button>
+</div></div>
 <div id="enLigne"><div class="carte" id="carteL"></div></div>
 <div id="haut">
   <span class="col">
@@ -9514,6 +9535,7 @@ const XP={
   bassinO:170, bassinE:1210,
   pontons:[360,620,880], pontonL:13, pontonFin:470,
   metro:[250,268],
+  boulo:[30,392,120,172],   /* le boulodrome : x, y, largeur, hauteur */
 };
 const surPonton=(x,y)=>XP.pontons.some(px=>Math.abs(x-px)<XP.pontonL&&y<XP.pontonFin);
 const dansLeBassin=(x,y)=>x>XP.bassinO&&x<XP.bassinE&&y>XP.quaiY;
@@ -9589,6 +9611,26 @@ function construireSolExtramar(){
       R(x0-2,y-2,3,6,'#5b3f21');R(x0+w-1,y-2,3,6,'#5b3f21');
     }
   });
+  /* LE BOULODROME, sous les platanes : sable stabilisé, bordure de bois,
+     deux pistes, et des boules qui attendent le prochain point */
+  {
+    const B=XP.boulo, x0=B[0],y0=B[1],w=B[2],h=B[3];
+    R(x0-3,y0-3,w+6,h+6,'#6b4a2c');R(x0-3,y0-3,w+6,1,'#a97f52');R(x0-3,y0+h+2,w+6,1,'#4f3520');
+    R(x0,y0,w,h,'#d8bf8c');
+    for(let i=0;i<900;i++)R(x0+A(i+5000)*w,y0+A(i+6000)*h,1,1,
+      ['#c9ad78','#e6d0a0','#bca06a','#d0b682'][i%4]);
+    for(let y=y0+2;y<y0+h;y+=3)R(x0+w/2,y,1,2,'#f2efe4');                      /* la ficelle entre les pistes */
+    /* les ronds de lancer, tracés du pied */
+    const rond=(x,y)=>{g.strokeStyle='rgba(120,90,50,.55)';g.lineWidth=1;g.beginPath();g.ellipse(x,y,6,3,0,0,7);g.stroke();};
+    rond(x0+w*0.27,y0+h-16);rond(x0+w*0.73,y0+16);
+    /* les boules d'acier et le cochonnet */
+    const boule=(x,y)=>{R(x-1,y-1,3,3,'#7d858c');R(x-1,y-1,2,1,'#e1e6ea');R(x+1,y+1,1,1,'#50575c');};
+    [[0,0],[5,3],[-4,4],[2,-5],[8,-2]].forEach(([dx,dy])=>boule(x0+w*0.27+dx,y0+46+dy));
+    [[0,0],[-6,2],[4,5]].forEach(([dx,dy])=>boule(x0+w*0.73+dx,y0+h-60+dy));
+    R(x0+w*0.27+2,y0+44,2,2,'#d0402f');R(x0+w*0.73-2,y0+h-63,2,2,'#e8c06a');
+    /* les traces de pas */
+    for(let i=0;i<40;i++)R(x0+6+A(i+7000)*(w-12),y0+6+A(i+7100)*(h-12),2,1,'rgba(120,90,50,.18)');
+  }
   /* quelques flaques d'ombre au pied des façades */
   R(0,XP.maisonsY-2,MONDE_L,8,'rgba(60,40,20,.12)');
   return c;
@@ -9599,7 +9641,7 @@ const XCAL={};
 function graverX(t,v){
   const cle=t+(v||0);
   if(XCAL[cle])return XCAL[cle];
-  const T={x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
+  const T={x_kiosque:[44,68],x_fontaine:[54,46],x_metroM:[96,100],x_platane:[84,108],x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
            x_filets:[34,16],x_bitte:[12,14],x_barque:[62,34],x_cargo:[250,128],x_grue:[80,120],
            x_phare:[30,96]}[t]||[40,40];
   const W=T[0],H=T[1],cx=W/2,sol=H-6;
@@ -9823,6 +9865,100 @@ function graverX(t,v){
     if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
     return XCAL[cle];
   }
+  /* LA BOUCHE DU MÉTRO, À LA MARSEILLAISE : un escalier ouvert, ses rampes
+     d'inox, et le grand totem bleu au « M » blanc. */
+  else if(t==='x_metroM'){
+    ombre(34,5);
+    /* la trémie : l'escalier qui plonge */
+    R(cx-26,sol-26,52,26,'#8f8a80');
+    for(let k=0;k<7;k++){const y=sol-24+k*3;R(cx-22,y,44,3,k%2?'#5c5a55':'#6d6b65');R(cx-22,y,44,1,'#7f7c75');}
+    R(cx-22,sol-24,44,22,'rgba(10,12,20,.0)');
+    const fond=g.createLinearGradient(0,sol-4,0,sol-26);fond.addColorStop(0,'rgba(12,14,22,.55)');fond.addColorStop(1,'rgba(12,14,22,0)');
+    g.fillStyle=fond;g.fillRect(cx-22,sol-24,44,22);
+    R(cx-26,sol-26,52,2,'#c9c3b4');R(cx-26,sol-26,2,26,'#c9c3b4');R(cx+24,sol-26,2,26,'#c9c3b4');   /* le muret */
+    /* les rampes d'inox */
+    const rampe=(x,y,w,h)=>{R(x,y,w,1,'#e9edf0');R(x,y+1,w,1,'#9aa3aa');for(let k=0;k<w;k+=6)R(x+k,y,1,h,'#b9c1c7');};
+    rampe(cx-26,sol-34,52,8);R(cx-27,sol-34,1,34,'#b9c1c7');R(cx+26,sol-34,1,34,'#b9c1c7');
+    R(cx-27,sol-34,1,1,'#ffffff');R(cx+26,sol-34,1,1,'#ffffff');
+    /* le totem, à droite */
+    const tx=cx+34;
+    R(tx-1,sol-70,3,70,'#5d6770');R(tx-1,sol-70,1,70,'#8a949c');
+    R(tx-8,sol-86,17,17,'#1d4f9a');R(tx-8,sol-86,17,1,'#4d7fc8');R(tx-8,sol-70,17,1,'#12356a');
+    /* le M */
+    R(tx-5,sol-83,2,11,'#ffffff');R(tx+4,sol-83,2,11,'#ffffff');
+    R(tx-3,sol-82,2,2,'#ffffff');R(tx-2,sol-80,2,2,'#ffffff');R(tx+1,sol-80,2,2,'#ffffff');R(tx+2,sol-82,2,2,'#ffffff');
+    R(tx-10,sol-66,21,7,'#12356a');                                                  /* la plaque du nom */
+    R(tx-4,sol-57,9,4,'#1d4f9a');R(tx-3,sol-56,3,2,'#ffffff');R(tx+1,sol-56,3,2,'#e8c06a');   /* la pastille M1 */
+    const n2=document.createElement('canvas');n2.width=W*D;n2.height=H*D;
+    const h2=n2.getContext('2d');h2.setTransform(D,0,0,D,0,0);
+    const l=h2.createRadialGradient(tx,sol-78,2,tx,sol-78,22);
+    l.addColorStop(0,'rgba(120,170,255,.55)');l.addColorStop(1,'rgba(120,170,255,0)');
+    h2.fillStyle=l;h2.fillRect(tx-22,sol-100,44,44);
+    h2.fillStyle='#3d7fe0';h2.fillRect(tx-8,sol-86,17,17);
+    h2.fillStyle='#ffffff';h2.fillRect(tx-5,sol-83,2,11);h2.fillRect(tx+4,sol-83,2,11);
+    h2.fillRect(tx-3,sol-82,2,2);h2.fillRect(tx-2,sol-80,2,2);h2.fillRect(tx+1,sol-80,2,2);h2.fillRect(tx+2,sol-82,2,2);
+    h2.fillStyle='rgba(255,236,190,.35)';h2.fillRect(cx-22,sol-24,44,22);             /* la lumière qui remonte */
+    XCAL[cle]={toile:c,W,H,sol,nuit:n2};
+    if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
+    return XCAL[cle];
+  }
+  /* LE PLATANE : écorce en plaques, grand houppier clair */
+  else if(t==='x_platane'){
+    ombre(30,6);
+    const tr=cx;
+    for(let y=0;y<44;y++){const w=10+(y<4?3:0)-(y>36?1:0);
+      R(tr-w/2,sol-y,w,1,'#b8b39a');}
+    const ALE=(i)=>alea(i*2.3+v*11);
+    for(let i=0;i<40;i++)R(tr-5+ALE(i)*9,sol-44+ALE(i+50)*42,2+ALE(i+9)*2,2+ALE(i+19)*2,
+      ['#8f8a6a','#d9d4bc','#7d7a5c','#c9c4a4'][i%4]);
+    R(tr-10,sol-46,6,3,'#9a947a');R(tr+4,sol-48,7,3,'#9a947a');                        /* les maîtresses branches */
+    const blocs=[[0,-64,34,20,'#6f9a4a'],[-22,-58,20,14,'#5f8a40'],[22,-58,20,14,'#5f8a40'],
+      [-12,-74,20,14,'#7fae58'],[12,-76,20,14,'#7fae58'],[0,-82,18,10,'#8fbf66'],[-28,-66,12,8,'#4f7a36'],[28,-66,12,8,'#4f7a36']];
+    blocs.forEach(([dx,dy,rx,ry,col])=>{g.fillStyle=col;g.beginPath();g.ellipse(cx+dx,sol+dy,rx,ry,0,0,7);g.fill();});
+    for(let i=0;i<60;i++){g.fillStyle=i%3?'rgba(160,210,110,.55)':'rgba(40,70,30,.35)';
+      g.fillRect(cx-36+ALE(i+200)*72,sol-92+ALE(i+300)*44,2,2);}
+  }
+  /* LE KIOSQUE À JOURNAUX : tôle verte, dôme, et les journaux du matin */
+  else if(t==='x_kiosque'){
+    ombre(20,4);
+    R(cx-16,sol-34,32,34,'#2f5b4a');R(cx-16,sol-34,2,34,'#4a7d66');R(cx+14,sol-34,2,34,'#23463a');
+    for(let k=0;k<32;k+=8)R(cx-16+k,sol-34,1,34,'#23463a');
+    R(cx-18,sol-6,36,6,'#23463a');R(cx-18,sol-6,36,1,'#4a7d66');                    /* le socle */
+    /* le comptoir ouvert et ses piles de journaux */
+    R(cx-11,sol-26,22,14,'#1b2a22');R(cx-12,sol-13,24,3,'#8a6238');
+    for(let k=0;k<5;k++){const x=cx-11+k*5;R(x,sol-17,4,4,'#efeae0');R(x,sol-17,4,1,k%2?'#1d4f9a':'#c0392b');}
+    R(cx-9,sol-25,18,7,'#e8c06a');R(cx-8,sol-24,16,5,'#f4d98a');                    /* la lampe du vendeur */
+    /* les magazines accrochés sur les flancs */
+    [['#d9576b',-15],['#3a6ea5',-15],['#e8c06a',11],['#6fbf5a',11]].forEach(([col,dx],i)=>{
+      R(cx+dx,sol-30+(i%2)*9,4,7,col);R(cx+dx,sol-30+(i%2)*9,4,1,'#ffffff');});
+    /* le bandeau et le dôme */
+    R(cx-18,sol-42,36,8,'#1f3f33');R(cx-18,sol-42,36,1,'#6f9e82');
+    for(let r=0;r<8;r++){const w=36-r*4;R(cx-w/2,sol-43-r*2,w,2,r%2?'#2f5b4a':'#3a6b56');}
+    R(cx-1,sol-62,2,4,'#e8c06a');R(cx-2,sol-63,4,2,'#f4d98a');                      /* l'épi doré */
+    const n2=document.createElement('canvas');n2.width=W*D;n2.height=H*D;
+    const h2=n2.getContext('2d');h2.setTransform(D,0,0,D,0,0);
+    const l=h2.createRadialGradient(cx,sol-20,2,cx,sol-20,26);
+    l.addColorStop(0,'rgba(255,214,130,.6)');l.addColorStop(1,'rgba(255,214,130,0)');
+    h2.fillStyle=l;h2.fillRect(cx-26,sol-46,52,52);
+    h2.fillStyle='#ffd98a';h2.fillRect(cx-11,sol-26,22,13);
+    XCAL[cle]={toile:c,W,H,sol,nuit:n2};
+    if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
+    return XCAL[cle];
+  }
+  /* LA FONTAINE : une vasque de pierre blonde et sa colonne ; l'eau vive
+     est dessinée à chaque image */
+  else if(t==='x_fontaine'){
+    ombre(24,5);
+    g.fillStyle='#bfae88';g.beginPath();g.ellipse(cx,sol-6,23,8,0,0,7);g.fill();
+    g.fillStyle='#d9c7a0';g.beginPath();g.ellipse(cx,sol-8,22,7,0,0,7);g.fill();
+    g.fillStyle='#e8d9b6';g.beginPath();g.ellipse(cx,sol-9,21,6,0,0,7);g.fill();
+    g.fillStyle='#3a8fb0';g.beginPath();g.ellipse(cx,sol-9,18,4.5,0,0,7);g.fill();
+    g.fillStyle='#5fb2cf';g.beginPath();g.ellipse(cx-3,sol-10,11,2.5,0,0,7);g.fill();
+    R(cx-3,sol-26,6,17,'#d9c7a0');R(cx-3,sol-26,2,17,'#efe3c4');R(cx+2,sol-26,1,17,'#bfae88');
+    g.fillStyle='#d9c7a0';g.beginPath();g.ellipse(cx,sol-27,8,3,0,0,7);g.fill();
+    g.fillStyle='#3a8fb0';g.beginPath();g.ellipse(cx,sol-28,6,1.8,0,0,7);g.fill();
+    R(cx-1,sol-32,2,4,'#bfae88');
+  }
   else if(t==='x_pin'){
     ombre(26,5);
     g.strokeStyle='#6b4a2c';g.lineWidth=4;g.beginPath();g.moveTo(cx,sol);g.quadraticCurveTo(cx-10,sol-30,cx+4,sol-56);g.stroke();
@@ -9919,6 +10055,16 @@ function graverX(t,v){
   return XCAL[cle];
 }
 function dessinerX(g,o,x,y){
+  if(o.t==='x_bouliste'){
+    /* un bouliste : le vrai personnage, immobile, qui se balance à peine */
+    const sv=GESTE;GESTE={t:0};
+    personne(g,Math.round(x),Math.round(y),Object.assign({},DEF_AP,o.ap||{}),o.dir||'bas',0,false,false);
+    GESTE=sv;
+    if(o.v===0){const b=Math.sin(Date.now()/700)>0?1:0;                  /* la boule dans la main */
+      g.fillStyle='#7d858c';g.fillRect(Math.round(x)+5,Math.round(y)-15-b,3,3);
+      g.fillStyle='#e1e6ea';g.fillRect(Math.round(x)+5,Math.round(y)-15-b,2,1);}
+    return;
+  }
   const C=graverX(o.t,o.v);
   let dy=0;
   /* ce qui flotte se balance doucement */
@@ -9931,6 +10077,25 @@ function dessinerX(g,o,x,y){
   const CN=C.nuit?cielDuMoment():null;
   if(CN&&CN.lampes>0.05){g.globalAlpha=Math.min(1,CN.lampes);g.drawImage(C.nuit,X0,Y0,C.W,C.H);g.globalAlpha=1;}
   if(o.flip)g.restore();
+  if(o.t==='x_fontaine'){                                      /* l'eau vive */
+    const T=Date.now()/1000, bx=Math.round(x), by=Y0+C.sol-32;
+    for(let i=0;i<14;i++){
+      const k=((T*0.9+i/14)%1), cote=i%2?1:-1, sp=4+(i%4)*1.5;
+      const px=bx+cote*k*sp*2.2, py=by+(-10*k+16*k*k)*1.6;
+      g.fillStyle=k<.8?'rgba(210,240,250,.85)':'rgba(170,220,240,.6)';g.fillRect(Math.round(px),Math.round(py),1,1);
+    }
+    g.fillStyle='rgba(230,248,255,.9)';g.fillRect(bx,by-4-Math.round(Math.sin(T*6)),1,4);
+    const r=(T*0.8)%1;g.strokeStyle='rgba(230,248,255,'+(0.5*(1-r))+')';g.lineWidth=.6;
+    g.beginPath();g.ellipse(bx,Y0+C.sol-9,4+r*12,1+r*3,0,0,7);g.stroke();
+  }
+  if(o.t==='x_kiosque'){
+    g.font='700 5px ui-monospace,monospace';g.textAlign='center';g.fillStyle='#f4d98a';
+    g.fillText('PRESSE',Math.round(x),Y0+C.sol-36.5,30);
+  }
+  if(o.t==='x_metroM'){                                        /* le nom de la station */
+    g.font='700 5px ui-monospace,monospace';g.textAlign='center';g.fillStyle='#ffffff';
+    g.fillText('VIEUX-PORT',Math.round(x)+34,Y0+C.sol-61,19);
+  }
   if(o.t==='x_voilier'&&C.haut){                               /* le feu de tête de mât */
     const CL=cielDuMoment();
     if(CL&&CL.lampes>0.2){g.fillStyle='rgba(255,250,235,'+Math.min(1,CL.lampes)+')';
@@ -9986,18 +10151,27 @@ function semerDecorExtramar(){
   P('x_etal',640,236,{col:[36,10]});P('x_etal',730,236,{col:[36,10]});
   P('x_caisses',588,242,{col:[13,6]});P('x_caisses',784,240,{col:[13,6]});
   /* les bancs, face à la mer : un joueur en ligne par banc */
-  [[300,316],[450,316],[530,316],[700,300],[790,316],[970,316],[1060,316],[1140,316],[80,430],[1300,420]]
+  [[300,316],[450,316],[530,316],[700,300],[790,316],[970,316],[1060,316],[1140,316],[1300,420]]
     .forEach(([x,y])=>P('bancP',x,y));
   /* les lanternes le long du quai */
   [210,490,760,1010,1190].forEach((x,i)=>P('lanterneP',x,322,{gr:i}));
-  P('lanterneP',90,520,{gr:6});P('lanterneP',1310,500,{gr:7});
+  P('lanterneP',1310,500,{gr:7});
   /* les bittes d'amarrage, sur la margelle */
   for(let x=200;x<1200;x+=74){
     if(XP.pontons.some(p=>Math.abs(p-x)<26))continue;
     P('x_bitte',x,XP.quaiY-3,{col:[4,3]});
   }
   /* les filets et les caisses, près des pontons */
-  P('x_filets',395,326);P('x_filets',840,328);P('x_filets',60,360,{col:[14,4]});
+  P('x_filets',395,326);P('x_filets',840,328);
+  /* LE BOULODROME : les platanes, les bancs des anciens, les boulistes */
+  [[22,410,0],[90,376,1],[18,512,2],[160,592,3]].forEach(([x,y,v])=>P('x_platane',x,y,{v,col:[7,4]}));
+  [[56,382],[124,382]].forEach(([x,y])=>P('bancP',x,y));
+  /* le coin du kiosque et de la fontaine, entre la terrasse et les boules */
+  P('x_kiosque',42,300,{col:[16,8]});
+  P('x_fontaine',122,262,{col:[20,8]});
+  [[58,552,'haut',{veste:1,chapeau:1}],[76,560,'haut',{veste:2,cheveux:1}],
+   [122,468,'bas',{veste:0,barbe:1,cheveux:0}],[134,424,'bas',{veste:2,chapeau:2}]]
+    .forEach(([x,y,dir,ap],i)=>P('x_bouliste',x,y,{v:i,dir,ap,col:[5,3]}));
   P('x_caisses',655,328,{col:[13,6]});
   /* les barques, à couple des pontons */
   [[250,410,0],[240,480,1],[300,552,2],[470,520,3],[560,572,1],[720,520,0],[800,576,2],[1000,588,3]]
@@ -11576,7 +11750,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     else if(o.t==='gare')dessinerLaGare(g,x,y);
     else if(o.t==='echoppe')dessinerLaBoutique(g,x,y);
     else if(o.t==='boite')dessinerLaBoite2(g,x,y);
-    else if(o.t==='metro')dessinerLeMetro(g,x,y);
+    else if(o.t==='metro'){if(CARTE==='extramar')dessinerX(g,{t:'x_metroM',v:0,x:o.x,y:o.y},x,y);else dessinerLeMetro(g,x,y);}
     else if(o.t==='fontaine')dessinerLaFontaine(g,x,y);
     else if(o.t==='panneauV')dessinerLeTableau(g,x,y);
     else if(o.t==='arbrePot'||o.t==='bancP')dessinerDeco(g,o.t,x,y);
@@ -12232,7 +12406,8 @@ function lacher(){J.actif=false;J.id=null;joyX=joyY=0;}
 /* on n'accepte le doigt que dans la moitié gauche : la droite reste libre */
 const pageOuverte=()=>$('pan').classList.contains('on')||$('sacPage').classList.contains('on')
                     ||$('page2').classList.contains('on')||!$('porte').classList.contains('parti')
-                    ||$('enLigne').classList.contains('on')||$('annonce').classList.contains('on');   /* la liste en ligne bloquait le tap de fermeture */
+                    ||$('enLigne').classList.contains('on')||$('annonce').classList.contains('on')
+                    ||$('petanque').classList.contains('on');   /* la liste en ligne bloquait le tap de fermeture */
 /* le joystick se prend n'importe où sur la carte, des deux côtés.
    On ne l'ignore que si le doigt touche un bouton de l'interface. */
 addEventListener('pointerdown',reveillerLeSon,{once:false});
@@ -14285,6 +14460,211 @@ function actionDePeche(b){
   return false;
 }
 
+/* ================= LA PÉTANQUE, AU BOULODROME D'EXTRAMAR =================
+   Une mène contre Marius : trois boules chacun. On fixe la DIRECTION d'une
+   touche, puis la FORCE d'une autre ; la boule vole, retombe, roule, pousse
+   ce qu'elle touche. À la fin, on compte les points comme au vrai jeu. Pas
+   d'argent en jeu : juste l'honneur, et le compte des mènes gagnées. */
+const PQ={W:160,H:280,S:[80,262]};
+let PET=null;
+function dansLeBoulodrome(){
+  if(CARTE!=='extramar'||!XP.boulo)return false;
+  const [x0,y0,w,h]=XP.boulo;
+  return joueur.x>x0-4&&joueur.x<x0+w+4&&joueur.y>y0-8&&joueur.y<y0+h+4;
+}
+function menesGagnees(){try{return +(localStorage.getItem('bdl.petanque.gagnees')||0);}catch(x){return 0;}}
+function ouvrirLaPetanque(){
+  const cy=40+Math.random()*60, cxx=46+Math.random()*68;
+  PET={etape:'viser',t0:performance.now(),angle:0,force:0,tour:'moi',
+    boules:[],coch:{x:cxx,y:cy,vx:0,vy:0},lancees:{moi:0,lui:0},vol:null,fin:null,msg:''};
+  $('petanque').classList.add('on');
+  majTextePetanque();
+  requestAnimationFrame(bouclePetanque);
+}
+function fermerLaPetanque(){$('petanque').classList.remove('on');PET=null;}
+function majTextePetanque(){
+  if(!PET)return;
+  const t=$('pqTexte'),b=$('pqBouton');
+  if(PET.fin){t.innerHTML=PET.fin;b.textContent='Rejouer une mène';return;}
+  if(PET.tour==='lui'){t.innerHTML='<b>Marius</b> joue sa boule '+(PET.lancees.lui+1)+'/3…';b.textContent='…';return;}
+  const n=PET.lancees.moi+1;
+  if(PET.etape==='viser'){t.innerHTML='<b>Boule '+n+'/3</b> · touche pour fixer la <b>direction</b>';b.textContent='Viser';}
+  else if(PET.etape==='force'){t.innerHTML='<b>Boule '+n+'/3</b> · touche pour fixer la <b>force</b>';b.textContent='Lancer !';}
+  else{t.innerHTML='<b>Boule '+n+'/3</b> · elle roule…';b.textContent='…';}
+}
+function toucherPetanque(){
+  if(!PET)return;
+  if(PET.fin){ouvrirLaPetanque();return;}
+  if(PET.tour!=='moi')return;
+  const t=performance.now();
+  if(PET.etape==='viser'){PET.angle=Math.sin((t-PET.t0)/520)*0.5;PET.etape='force';PET.t0=t;vibrer(8);}
+  else if(PET.etape==='force'){
+    PET.force=(1-Math.cos((t-PET.t0)/480))/2;
+    lancerUneBoule('moi',PET.angle,PET.force);vibrer(14);
+  }
+  majTextePetanque();
+}
+function lancerUneBoule(qui,angle,force){
+  const d=40+force*210;
+  const [sx,sy]=PQ.S;
+  const tx=sx+Math.sin(angle)*d, ty=sy-Math.cos(angle)*d;
+  const b={x:sx,y:sy,vx:0,vy:0,qui,morte:false,h:0};
+  PET.boules.push(b);
+  PET.vol={b,sx,sy,tx,ty,t0:performance.now(),dur:650+force*450,dx:Math.sin(angle),dy:-Math.cos(angle),
+    roule:30+force*26};
+  PET.etape='vol';
+}
+function tourSuivant(){
+  if(PET.tour==='moi')PET.lancees.moi++;else PET.lancees.lui++;
+  if(PET.lancees.moi>=3&&PET.lancees.lui>=3){compterLesPoints();return;}
+  /* on alterne : moi, Marius, moi, Marius… */
+  PET.tour=(PET.tour==='moi'&&PET.lancees.lui<3)||PET.lancees.moi>=3?'lui':'moi';
+  if(PET.tour==='moi'){PET.etape='viser';PET.t0=performance.now();}
+  else{PET.etape='attend';setTimeout(jouerMarius,700);}
+  majTextePetanque();
+}
+function jouerMarius(){
+  if(!PET||PET.fin)return;
+  const [sx,sy]=PQ.S, C=PET.coch;
+  /* Marius vise le cochonnet, en tenant compte de la roulette… à peu près */
+  const ex=C.x+(Math.random()-.5)*26, ey=C.y+14+(Math.random()-.5)*26;
+  const d=Math.hypot(ex-sx,ey-sy);
+  const angle=Math.atan2(ex-sx,sy-ey);
+  const force=Math.max(0,Math.min(1,(d-40)/210));
+  lancerUneBoule('lui',angle,force);
+  majTextePetanque();
+}
+function compterLesPoints(){
+  const C=PET.coch;
+  const dist=b=>Math.hypot(b.x-C.x,b.y-C.y);
+  const moi=PET.boules.filter(b=>b.qui==='moi'&&!b.morte).map(dist).sort((a,b)=>a-b);
+  const lui=PET.boules.filter(b=>b.qui==='lui'&&!b.morte).map(dist).sort((a,b)=>a-b);
+  const bm=moi[0]??Infinity, bl=lui[0]??Infinity;
+  const cm=(v)=>Math.max(1,Math.round(v*1.6))+' cm';
+  if(bm===Infinity&&bl===Infinity){PET.fin='Toutes les boules sont sorties. <b>Mène nulle.</b>';}
+  else if(bm<bl){
+    const pts=moi.filter(v=>v<bl).length;
+    let n=menesGagnees()+1;try{localStorage.setItem('bdl.petanque.gagnees',n);}catch(x){}
+    PET.fin='<b>Tu marques '+pts+' point'+(pts>1?'s':'')+' !</b> Ta meilleure boule est à '+cm(bm)+
+      '.<br><i>« Pas mal, petit… » · mènes gagnées : '+n+'</i>';
+    jouer('vente','moment');vibrer([20,40,20]);
+  }else{
+    const pts=lui.filter(v=>v<bm).length;
+    PET.fin='<b>Marius marque '+pts+' point'+(pts>1?'s':'')+'.</b> Sa boule est à '+cm(bl)+
+      '.<br><i>« Tu tires comme un Parisien ! »</i>';
+  }
+  PET.etape='fin';majTextePetanque();
+}
+function physiquePetanque(dt){
+  const objets=PET.boules.filter(b=>!b.morte&&!(PET.vol&&PET.vol.b===b)).concat([PET.coch]);
+  let bouge=false;
+  for(const o of objets){
+    const v=Math.hypot(o.vx,o.vy);
+    if(v<0.5){o.vx=o.vy=0;continue;}
+    bouge=true;
+    const dec=Math.max(0,v-70*dt)/v;                        /* le sable freine */
+    o.vx*=dec;o.vy*=dec;
+    o.x+=o.vx*dt;o.y+=o.vy*dt;
+  }
+  /* les chocs : la boule qui arrive donne son élan à celle qu'elle frappe */
+  for(let i=0;i<objets.length;i++)for(let j=i+1;j<objets.length;j++){
+    const a=objets[i],b=objets[j];
+    const ra=a===PET.coch?1.5:3, rb=b===PET.coch?1.5:3;
+    const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
+    if(d>0&&d<ra+rb){
+      const nx=dx/d,ny=dy/d, rel=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;
+      const recul=(ra+rb-d)/2;a.x-=nx*recul;a.y-=ny*recul;b.x+=nx*recul;b.y+=ny*recul;
+      if(rel>0){
+        const ma=a===PET.coch?.25:1, mb=b===PET.coch?.25:1;
+        const k=2*rel/(ma+mb)*0.9;
+        a.vx-=k*mb*nx;a.vy-=k*mb*ny;b.vx+=k*ma*nx;b.vy+=k*ma*ny;
+        if(rel>12){jouer('pioche');vibrer(10);}
+      }
+    }
+  }
+  /* hors du terrain : la boule est morte */
+  for(const o of PET.boules)if(!o.morte&&(o.x<4||o.x>PQ.W-4||o.y<4||o.y>PQ.H-4))o.morte=true;
+  const C=PET.coch;
+  if(C.x<4||C.x>PQ.W-4||C.y<4||C.y>PQ.H-4){C.x=Math.max(6,Math.min(PQ.W-6,C.x));C.y=Math.max(6,Math.min(PQ.H-6,C.y));C.vx=C.vy=0;}
+  return bouge;
+}
+let SABLE_PQ=null;
+function graverLeSablePetanque(){
+  const c=document.createElement('canvas');c.width=PQ.W;c.height=PQ.H;
+  const g=c.getContext('2d');
+  g.fillStyle='#d8bf8c';g.fillRect(0,0,PQ.W,PQ.H);
+  for(let i=0;i<2600;i++){g.fillStyle=['#c9ad78','#e6d0a0','#bca06a','#d0b682','#efdcae'][i%5];
+    g.fillRect(alea(i*1.3)*PQ.W,alea(i*2.1+9)*PQ.H,1,1);}
+  g.strokeStyle='rgba(120,90,50,.5)';g.lineWidth=1;g.beginPath();g.ellipse(PQ.S[0],PQ.S[1],9,5,0,0,7);g.stroke();
+  /* l'ombre des platanes, en taches */
+  for(let i=0;i<14;i++){g.fillStyle='rgba(60,80,30,.10)';g.beginPath();
+    g.ellipse(alea(i+40)*PQ.W,alea(i+80)*PQ.H*0.8,10+alea(i)*16,5+alea(i+3)*8,0,0,7);g.fill();}
+  g.fillStyle='#6b4a2c';g.fillRect(0,0,PQ.W,3);g.fillRect(0,PQ.H-3,PQ.W,3);g.fillRect(0,0,3,PQ.H);g.fillRect(PQ.W-3,0,3,PQ.H);
+  g.fillStyle='#a97f52';g.fillRect(0,0,PQ.W,1);
+  SABLE_PQ=c;
+}
+function dessinerUneBoule(g,x,y,qui,h){
+  const r=3+h/12;
+  g.fillStyle='rgba(60,40,20,.28)';g.beginPath();g.ellipse(x+1,y+1,3,1.6,0,0,7);g.fill();   /* l'ombre au sol */
+  const yy=y-h;
+  g.fillStyle=qui==='moi'?'#8f989f':'#6f5840';g.beginPath();g.arc(x,yy,r,0,7);g.fill();
+  g.fillStyle=qui==='moi'?'#d7dde2':'#a48a64';g.beginPath();g.arc(x-r*.35,yy-r*.35,r*.45,0,7);g.fill();
+  if(qui==='lui'){g.strokeStyle='rgba(40,30,20,.6)';g.lineWidth=.5;g.beginPath();g.arc(x,yy,r*.7,0.3,2.8);g.stroke();}
+}
+function bouclePetanque(t){
+  if(!PET)return;
+  const c=$('pqToile');if(!c)return;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  if(!SABLE_PQ)graverLeSablePetanque();
+  const dt=Math.min(0.05,(t-(PET.tp||t))/1000);PET.tp=t;
+  g.drawImage(SABLE_PQ,0,0);
+  /* la boule en l'air */
+  if(PET.vol){
+    const V=PET.vol,k=Math.min(1,(t-V.t0)/V.dur);
+    V.b.x=V.sx+(V.tx-V.sx)*k;V.b.y=V.sy+(V.ty-V.sy)*k;V.b.h=Math.sin(Math.PI*k)*(26+V.roule*0.4);
+    if(k>=1){V.b.h=0;V.b.vx=V.dx*V.roule;V.b.vy=V.dy*V.roule;PET.vol=null;PET.etape='roule';
+      jouer('pioche');vibrer(12);
+      /* un peu de sable qui gicle */
+      majTextePetanque();}
+  }
+  const bouge=physiquePetanque(dt);
+  if(PET.etape==='roule'&&!bouge&&!PET.vol){PET.etape='pose';setTimeout(()=>{if(PET&&!PET.fin)tourSuivant();},350);}
+  /* le cochonnet */
+  const C=PET.coch;
+  g.fillStyle='rgba(60,40,20,.28)';g.fillRect(Math.round(C.x),Math.round(C.y)+1,2,1);
+  g.fillStyle='#e8a030';g.fillRect(Math.round(C.x)-1,Math.round(C.y)-1,3,3);
+  g.fillStyle='#ffd070';g.fillRect(Math.round(C.x)-1,Math.round(C.y)-1,1,1);
+  /* les boules */
+  const tri=PET.boules.slice().sort((a,b)=>a.y-b.y);
+  for(const b of tri){
+    if(b.morte){g.fillStyle='rgba(120,40,30,.6)';g.fillRect(Math.round(b.x)-2,Math.round(b.y),5,1);continue;}
+    dessinerUneBoule(g,b.x,b.y,b.qui,b.h||0);
+  }
+  /* la visée : l'aiguille qui balaie, puis la jauge de force */
+  if(PET.tour==='moi'&&!PET.fin){
+    const [sx,sy]=PQ.S;
+    const a=PET.etape==='viser'?Math.sin((t-PET.t0)/520)*0.5:PET.angle;
+    if(PET.etape==='viser'||PET.etape==='force'){
+      g.strokeStyle='rgba(255,255,255,.85)';g.lineWidth=1;g.setLineDash([3,3]);
+      g.beginPath();g.moveTo(sx,sy);g.lineTo(sx+Math.sin(a)*70,sy-Math.cos(a)*70);g.stroke();g.setLineDash([]);
+      dessinerUneBoule(g,sx,sy,'moi',0);
+    }
+    if(PET.etape==='force'){
+      const f=(1-Math.cos((t-PET.t0)/480))/2;
+      g.fillStyle='rgba(20,20,20,.55)';g.fillRect(PQ.W-14,PQ.H-110,8,100);
+      const col=f<.5?'#6fbf5a':(f<.8?'#e8c06a':'#d0402f');
+      g.fillStyle=col;g.fillRect(PQ.W-13,PQ.H-11-Math.round(f*98),6,Math.round(f*98));
+      /* où elle retomberait */
+      const d=40+f*210;g.strokeStyle='rgba(255,255,255,.55)';g.beginPath();
+      g.ellipse(sx+Math.sin(a)*d,sy-Math.cos(a)*d,4,2,0,0,7);g.stroke();
+    }
+  }
+  requestAnimationFrame(bouclePetanque);
+}
+if($('pqBouton'))$('pqBouton').onclick=toucherPetanque;
+if($('pqToile'))$('pqToile').onclick=toucherPetanque;
+if($('pqFermer'))$('pqFermer').onclick=fermerLaPetanque;
+
 function majAction(){
   plaqueVrai=$('action');
   const b=plaqueFeinte;
@@ -14321,6 +14701,10 @@ function majAction(){
   }
   /* À EXTRAMAR, la ligne de pêche passe avant le reste */
   if(actionDePeche(b))return;
+  if(dansLeBoulodrome()&&GESTE.t<=0){
+    b.innerHTML='Jouer aux boules<small>UNE MÈNE CONTRE MARIUS · '+menesGagnees()+' GAGNÉE'+(menesGagnees()>1?'S':'')+'</small>';
+    b.classList.add('on');b.onclick=ouvrirLaPetanque;return;
+  }
   const pres=(typeof presentProche==='function')?presentProche():null;
   if(pres&&GESTE.t<=0){
     b.innerHTML=echapperT(pres.pseudo)+'<small>EN LIGNE · LUI PARLER</small>';
