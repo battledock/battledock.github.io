@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-0421';
+  var MA_VERSION='2026-09-18-0433';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -1225,6 +1226,12 @@ body.clavier #bandeau{padding-bottom:9px}
 .fourF b{display:block;font:400 19px Georgia,serif;color:#3f3627;margin:10px 0 5px}
 .fourF span{display:block;font:400 11px Georgia,serif;color:#6f6552}
 .fourF .pretF{color:#6f8f3a;font-size:14px;margin-top:3px}
+.resteF{font:400 30px Georgia,serif!important;color:#3f3627!important;
+  margin-top:4px;letter-spacing:.5px;font-variant-numeric:tabular-nums}
+.resteF.bientot{color:#b4472f!important;animation:batF .9s ease-in-out infinite}
+@keyframes batF{0%,100%{opacity:1}50%{opacity:.45}}
+.souF{font:400 9px Georgia,serif!important;font-style:italic;color:#8a7c5e!important;
+  letter-spacing:.6px;margin-top:1px}
 .barF{display:block;height:5px;border-radius:3px;background:rgba(120,104,74,.18);
   margin:11px 24px 0;overflow:hidden}
 .barF i{display:block;height:100%;border-radius:3px;
@@ -5473,9 +5480,71 @@ async function lireLaFournee(){
   FOURNEE_VUE=(d&&!d.vide)?d:null;
   return FOURNEE_VUE;
 }
+/* LE DÉCOMPTE VIVANT.
+   La page était dessinée une fois et ne bougeait plus : il fallait sortir et
+   revenir pour savoir où en était la fournée. Maintenant, tant que la page
+   est ouverte, le temps restant descend chaque seconde sous les yeux — et
+   quand il touche zéro, la page se refait toute seule pour montrer le bouton
+   « Retirer du feu ». On se recale sur le serveur toutes les vingt secondes,
+   pour que l'horloge du téléphone ne dérive pas. */
+let battementForge=null, recalageForge=0;
+function arreterLeBattement(){
+  if(battementForge){clearInterval(battementForge);battementForge=null;}
+}
+/* un seul battement, isolé de la boucle : c'est lui que le banc d'essai
+   déclenche, faute d'horloge. */
+function battreUneFois(){
+  {
+    /* la page a été fermée : on s'arrête */
+    if(!$('page2').classList.contains('on')||!$('f-reste')&&!FOURNEE_VUE){
+      if(!$('page2').classList.contains('on')){arreterLeBattement();return;}
+    }
+    const fo=FOURNEE_VUE;
+    if(!fo){arreterLeBattement();return;}
+    if(fo.reste>0){
+      fo.reste=Math.max(0,fo.reste-1);
+      const t=$('f-reste');
+      if(t){
+        t.textContent=enTemps(fo.reste);
+        /* les dix dernières secondes battent, pour qu'on les voie venir */
+        t.classList.toggle('bientot',fo.reste<=10);
+      }
+      const b=$('f-bar');
+      if(b){
+        const R2=RECETTES.find(x=>x.id===fo.recette);
+        const total=(R2?R2.sec:180)*fo.nombre;
+        b.style.width=Math.round(Math.max(0,Math.min(1,1-fo.reste/Math.max(1,total)))*100)+'%';
+      }
+      if(fo.reste<=0){
+        /* c'est prêt : on redessine pour faire apparaître le bouton */
+        jouer('pepite');vibrer([12,60,18]);
+        dessinerLaForge();
+      }
+    }
+    /* on se recale sur le serveur de temps en temps */
+    if(Date.now()-recalageForge>20000){
+      recalageForge=Date.now();
+      lireLaFournee().then(()=>{
+        if(!$('page2').classList.contains('on'))return;
+        const t=$('f-reste');
+        if(FOURNEE_VUE&&FOURNEE_VUE.reste>0&&t)t.textContent=enTemps(FOURNEE_VUE.reste);
+        else dessinerLaForge();
+      });
+    }
+  }
+}
+function battreLaForge(){
+  arreterLeBattement();
+  battementForge=setInterval(battreUneFois,1000);
+}
 function ouvrirLaForge(){
   dessinerLaForge();
-  lireLaFournee().then(()=>{if($('page2').classList.contains('on'))dessinerLaForge();});
+  recalageForge=Date.now();
+  lireLaFournee().then(()=>{
+    if(!$('page2').classList.contains('on'))return;
+    dessinerLaForge();
+    if(FOURNEE_VUE&&FOURNEE_VUE.reste>0)battreLaForge();
+  });
   $('page2').classList.add('on');
 }
 function dessinerLaForge(){
@@ -5503,8 +5572,9 @@ function dessinerLaForge(){
         '<div class="flamF"><i></i><i></i><i></i></div>'+
         '<b>'+rf.nom+(fo.nombre>1?' ×'+fo.nombre:'')+'</b>'+
         (fo.reste>0
-          ?'<span>Encore '+enTemps(fo.reste)+' au feu.</span>'+
-           '<span class="barF"><i style="width:'+Math.round(part*100)+'%"></i></span>'
+          ?'<span id="f-reste" class="resteF">'+enTemps(fo.reste)+'</span>'+
+           '<span class="souF">avant que ce soit prêt</span>'+
+           '<span class="barF"><i id="f-bar" style="width:'+Math.round(part*100)+'%"></i></span>'
           :'<span class="pretF">C’est prêt.</span>')+
         (fo.reste>0?'':'<button class="gros" id="f-retirer">Retirer du feu</button>')+
       '</div>';
@@ -5536,7 +5606,8 @@ function dessinerLaForge(){
      '<i>'+(fo?'UNE FOURNÉE EST AU FEU':'DÉPOSE TON MINERAI')+'</i></span></div>'+
    '<div class="corpsC">'+corps+'</div>'+
    '<button class="bandeC" id="f-fermer"><u></u><span>REFERMER</span><u></u></button>';
-  $('f-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+  $('f-fermer').onclick=()=>{arreterLeBattement();fermeA=Date.now();
+    $('page2').classList.remove('on');};
   $('page2Fond').querySelectorAll('[data-rec]').forEach(b=>b.onclick=()=>{
     forgeChoix=b.dataset.rec;forgeNb=1;dessinerLaForge();
   });
@@ -5553,6 +5624,7 @@ function dessinerLaForge(){
       FOURNEE_VUE={recette:d.recette,nombre:d.nombre,reste:d.reste};
       jouer('achat');vibrer(24);
       dessinerLaForge();
+      battreLaForge();
     }else{
       fg.disabled=false;
       fg.textContent=(d&&d.erreur)?d.erreur:'La forge n’a pas répondu';
@@ -5564,6 +5636,7 @@ function dessinerLaForge(){
     const d=await appelRPC('retirer_fournee',{p_joueur:e.id});
     if(d&&d.sac){
       adopterSac(d);FOURNEE_VUE=null;
+      arreterLeBattement();
       jouer('pepite');vibrer(30);
       dessinerLaForge();
     }else{
