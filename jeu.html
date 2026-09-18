@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1752';
+  var MA_VERSION='2026-09-18-2011';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -655,6 +655,18 @@ body{overflow:hidden}
   color:#f2efe4;font:400 14px Georgia,serif;box-shadow:0 -6px 24px rgba(0,0,0,.5)}
 #enLigne #fermerL{float:right;border:0;width:34px;height:34px;border-radius:50%;
   background:#3a4a36;color:#f2efe4;font:700 16px ui-monospace,monospace;margin:-4px -4px 0 8px}
+#annonce{position:fixed;inset:0;z-index:28;display:none;background:rgba(6,8,14,.62);
+  align-items:center;justify-content:center;padding:24px}
+#annonce.on{display:flex}
+#annonce .carteA{max-width:340px;width:100%;text-align:center;border-radius:18px;padding:22px 20px 18px;
+  background:linear-gradient(180deg,#1b2233,#10141f);color:#f2efe4;border:2px solid #e8c06a;
+  box-shadow:0 0 0 4px rgba(232,192,106,.18),0 12px 30px rgba(0,0,0,.6);animation:annonceA .35s ease-out}
+@keyframes annonceA{from{transform:translateY(14px) scale(.96);opacity:0}to{transform:none;opacity:1}}
+#annonce .icoA{font-size:34px;line-height:1;margin-bottom:10px}
+#annonce .surA{font:700 10px ui-monospace,monospace;letter-spacing:2px;color:#e8c06a;margin-bottom:8px}
+#annonce h2{font:400 21px Georgia,serif;margin:0 0 18px;line-height:1.3}
+#annonce button{border:0;border-radius:12px;padding:12px 28px;background:#e8c06a;color:#2a1d0c;
+  font:700 14px Georgia,serif;box-shadow:0 3px 0 #8a6a2a}
 #enLigne .titL{font:700 10px ui-monospace,monospace;letter-spacing:1.5px;color:#9fd67a;margin:4px 0 10px}
 #enLigne .ligneJ{display:flex;align-items:center;gap:10px;width:100%;border:0;background:rgba(255,255,255,.06);
   border-radius:12px;padding:8px 10px;margin-bottom:6px;color:inherit;font:inherit;text-align:left}
@@ -1429,6 +1441,10 @@ body.clavier #bandeau{padding-bottom:9px}
 </div>
 <div id="bordSac"></div>
 <button id="pastilleL"><i></i><span id="nbL">0</span> en ligne</button>
+<div id="annonce"><div class="carteA">
+  <div class="icoA">🚇</div><div class="surA">NOUVELLE</div>
+  <h2>La nouvelle ligne de métro s’ouvre dans la nuit !</h2>
+  <button id="annonceOk">Fermer</button></div></div>
 <div id="enLigne"><div class="carte" id="carteL"></div></div>
 <div id="haut">
   <span class="col">
@@ -11642,7 +11658,7 @@ function lacher(){J.actif=false;J.id=null;joyX=joyY=0;}
 /* on n'accepte le doigt que dans la moitié gauche : la droite reste libre */
 const pageOuverte=()=>$('pan').classList.contains('on')||$('sacPage').classList.contains('on')
                     ||$('page2').classList.contains('on')||!$('porte').classList.contains('parti')
-                    ||$('enLigne').classList.contains('on');   /* la liste en ligne bloquait le tap de fermeture */
+                    ||$('enLigne').classList.contains('on')||$('annonce').classList.contains('on');   /* la liste en ligne bloquait le tap de fermeture */
 /* le joystick se prend n'importe où sur la carte, des deux côtés.
    On ne l'ignore que si le doigt touche un bouton de l'interface. */
 addEventListener('pointerdown',reveillerLeSon,{once:false});
@@ -15599,7 +15615,25 @@ async function ouvrirPorte(){
   await monterEnLigne(true);
   entrer();
 }
+/* LE MOT D'ACCUEIL : une fois fermé, il ne revient plus jamais.
+   Pour une prochaine annonce, il suffit de changer la clé. */
+const CLE_ANNONCE='bdl.annonce.metro1';
+function montrerLAnnonce(essai){
+  let vu=false;try{vu=localStorage.getItem(CLE_ANNONCE)==='vu';}catch(x){}
+  if(vu)return;
+  /* on ne passe pas par-dessus le tutoriel ou une autre page : on attend */
+  if(pageOuverte()&&!$('annonce').classList.contains('on')){
+    if((essai||0)<40)setTimeout(()=>montrerLAnnonce((essai||0)+1),1500);
+    return;
+  }
+  $('annonce').classList.add('on');
+}
+$('annonceOk').onclick=()=>{
+  try{localStorage.setItem(CLE_ANNONCE,'vu');}catch(x){}
+  $('annonce').classList.remove('on');
+};
 function entrer(){
+  setTimeout(montrerLAnnonce,1200);
   majPastille();
   $('porte').classList.add('parti');
   preparerMonde();
