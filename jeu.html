@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-2200';
+  var MA_VERSION='2026-09-18-2209';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -9642,7 +9642,7 @@ const XCAL={};
 function graverX(t,v){
   const cle=t+(v||0);
   if(XCAL[cle])return XCAL[cle];
-  const T={x_caboteur:[250,120],x_docks:[150,96],x_pile:[44,34],x_roue:[180,210],x_kiosque:[44,68],x_fontaine:[54,46],x_metroM:[96,100],x_platane:[84,108],x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
+  const T={x_ferry:[96,56],x_caboteur:[250,120],x_docks:[150,96],x_pile:[44,34],x_roue:[180,210],x_kiosque:[44,68],x_fontaine:[54,46],x_metroM:[96,100],x_platane:[84,108],x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
            x_filets:[34,16],x_bitte:[12,14],x_barque:[62,34],x_cargo:[250,128],x_grue:[80,120],
            x_phare:[30,96]}[t]||[40,40];
   const W=T[0],H=T[1],cx=W/2,sol=H-6;
@@ -10061,6 +10061,31 @@ function graverX(t,v){
     if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
     return XCAL[cle];
   }
+  /* LE FERRY BOAT : la petite navette du Vieux-Port, coque blanche, cabine
+     vitrée sous son toit plat, et son enseigne */
+  else if(t==='x_ferry'){
+    g.fillStyle='rgba(10,40,60,.3)';g.beginPath();g.ellipse(cx,sol+2,40,4,0,0,7);g.fill();
+    g.fillStyle='#f4f2ea';g.beginPath();
+    g.moveTo(cx-40,sol-12);g.lineTo(cx+42,sol-12);g.quadraticCurveTo(cx+38,sol-2,cx+30,sol);
+    g.lineTo(cx-34,sol);g.quadraticCurveTo(cx-40,sol-4,cx-40,sol-12);g.closePath();g.fill();
+    R(cx-39,sol-9,80,2,'#2d6fb0');R(cx-36,sol-3,66,2,'#b5382c');R(cx-40,sol-13,82,1,'#c9c1a6');
+    /* la cabine vitrée et ses passagers */
+    R(cx-30,sol-30,58,18,'#8a6238');R(cx-30,sol-30,58,1,'#a97f52');
+    for(let k=0;k<6;k++){const x=cx-27+k*9;R(x,sol-27,7,8,'#3b5a70');R(x,sol-27,7,1,'#8fa3ab');
+      if(k%2===0){R(x+2,sol-24,3,3,['#e0b48a','#c98a5a','#f0c8a0'][k%3]);R(x+2,sol-25,3,1,'#4a3220');}}
+    R(cx-30,sol-17,58,2,'#6b4a2c');
+    /* le toit plat, blanc, et son enseigne */
+    R(cx-36,sol-35,70,5,'#f4f2ea');R(cx-36,sol-35,70,1,'#ffffff');R(cx-36,sol-31,70,1,'#c9c1a6');
+    R(cx-22,sol-44,44,9,'#1d4f9a');R(cx-21,sol-43,42,7,'#2d6fb0');
+    R(cx+30,sol-50,1,15,'#6b6b66');R(cx+31,sol-50,5,2,'#1f3f8f');R(cx+31,sol-48,5,2,'#f2efe4');R(cx+31,sol-46,5,2,'#c0392b');
+    const n2=document.createElement('canvas');n2.width=W*D;n2.height=H*D;
+    const h2=n2.getContext('2d');h2.setTransform(D,0,0,D,0,0);
+    h2.fillStyle='#ffd98a';for(let k=0;k<6;k++)h2.fillRect(cx-27+k*9,sol-26,7,7);
+    h2.fillStyle='#fff6dc';h2.fillRect(cx+40,sol-12,2,2);
+    XCAL[cle]={toile:c,W,H,sol,nuit:n2};
+    if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
+    return XCAL[cle];
+  }
   else if(t==='x_pin'){
     ombre(26,5);
     g.strokeStyle='#6b4a2c';g.lineWidth=4;g.beginPath();g.moveTo(cx,sol);g.quadraticCurveTo(cx-10,sol-30,cx+4,sol-56);g.stroke();
@@ -10216,6 +10241,10 @@ function dessinerX(g,o,x,y){
       g.fillStyle='rgba(0,0,0,.2)';g.fillRect(cxN-6,cyN+12,13,1);
     }
   }
+  if(o.t==='x_ferry'){
+    g.font='700 5px ui-monospace,monospace';g.textAlign='center';g.fillStyle='#ffffff';
+    g.fillText('FERRY BOAT',Math.round(x)-(o.flip?-0:0),Y0+C.sol-37.5,40);
+  }
   if(o.t==='x_docks'){
     g.font='700 6px ui-monospace,monospace';g.textAlign='center';g.fillStyle='#f4d98a';
     g.fillText('DOCKS',Math.round(x),Y0+C.sol-45.5,46);
@@ -10255,6 +10284,76 @@ function scintillerLaMer(g,camX,camY){
     const on=Math.sin(T*2.2+i*1.7);
     if(on<.2)continue;
     g.fillStyle='rgba(235,250,255,'+(on*.7)+')';g.fillRect(Math.round(x),Math.round(y),on>.8?3:2,1);
+  }
+}
+
+/* ================= LE BASSIN VIVANT =================
+   Tout ce qui bouge sur l'eau est calculé ici, à chaque image : le Ferry
+   Boat qui fait la navette, les reflets des bateaux, les bancs de poissons
+   sous la surface. Les mouettes, elles, passent par-dessus tout. */
+const FERRY={y:584,xo:228,xe:900,trajet:22,pause:4};     /* secondes */
+function positionDuFerry(){
+  const T=Date.now()/1000, cycle=2*(FERRY.trajet+FERRY.pause), t=T%cycle;
+  const lisse=(k)=>k*k*(3-2*k);
+  if(t<FERRY.pause)return {x:FERRY.xo,sens:1,v:0};
+  if(t<FERRY.pause+FERRY.trajet){const k=(t-FERRY.pause)/FERRY.trajet;
+    return {x:FERRY.xo+(FERRY.xe-FERRY.xo)*lisse(k),sens:1,v:Math.sin(Math.PI*k)};}
+  if(t<2*FERRY.pause+FERRY.trajet)return {x:FERRY.xe,sens:-1,v:0};
+  const k=(t-2*FERRY.pause-FERRY.trajet)/FERRY.trajet;
+  return {x:FERRY.xe-(FERRY.xe-FERRY.xo)*lisse(k),sens:-1,v:Math.sin(Math.PI*k)};
+}
+/* les bancs de poissons : là où la pêche est bonne */
+const BANCS=[[360,506],[620,508],[880,506],[250,378],[760,376],[1000,378],[500,380]];
+function eauVivante(g,camX,camY){
+  const T=Date.now()/1000;
+  /* 1 · LE FERRY avance : on déplace l'objet avant que le décor ne soit trié */
+  const F=positionDuFerry();
+  for(const o of DECOR)if(o.t==='x_ferry'){o.x=F.x;o.flip=F.sens<0;o.vit=F.v;}
+  /* son sillage : deux traînées blanches qui s'ouvrent derrière lui */
+  if(F.v>0.05){
+    const arr=F.x-F.sens*42, fy=FERRY.y-camY;
+    for(let k=1;k<18;k++){
+      const x=arr-F.sens*k*5-camX, ecart=k*1.3, a=(1-k/18)*0.55*F.v;
+      g.fillStyle='rgba(235,250,255,'+a.toFixed(3)+')';
+      g.fillRect(Math.round(x),Math.round(fy-2-ecart),3,1);g.fillRect(Math.round(x),Math.round(fy+1+ecart*0.6),3,1);
+    }
+  }
+  /* 2 · LES REFLETS : chaque coque se mire dans l'eau, un peu tremblée */
+  g.save();
+  for(const o of DECOR){
+    if(o.t!=='x_voilier'&&o.t!=='x_barque'&&o.t!=='x_caboteur'&&o.t!=='x_ferry')continue;
+    const C=XCAL[o.t+(o.v||0)];if(!C)continue;
+    const sx=o.x-camX, sy=o.y-camY;
+    if(sx<-C.W||sx>VW+C.W||sy<-10||sy>VH+C.H)continue;
+    g.globalAlpha=o.t==='x_voilier'?0.13:0.18;
+    const vague=Math.sin(T*1.8+o.x*0.07)*1;
+    g.save();
+    g.translate(Math.round(sx+vague),Math.round(sy+2));
+    g.scale(o.flip?-1:1,-0.55);
+    g.drawImage(C.toile,-C.W/2,-C.sol,C.W,C.H);
+    g.restore();
+  }
+  g.restore();
+  /* 3 · LES BANCS DE POISSONS, sous la surface */
+  BANCS.forEach(([bx,by],j)=>{
+    if(bx-camX<-40||bx-camX>VW+40||by-camY<-30||by-camY>VH+30)return;
+    for(let i=0;i<9;i++){
+      const a=T*(0.5+j*0.07)+i*0.7, r=6+(i%3)*3;
+      const x=bx+Math.cos(a)*r*1.6-camX, y=by+Math.sin(a)*r*0.7-camY;
+      const dir=Math.cos(a+Math.PI/2)>0?1:-1;
+      g.fillStyle='rgba(10,50,75,.38)';g.fillRect(Math.round(x),Math.round(y),4,1);
+      g.fillRect(Math.round(x)+(dir>0?-1:4),Math.round(y),1,1);
+    }
+  });
+  /* 4 · LES VAGUELETTES qui accrochent la lumière */
+  for(let i=0;i<60;i++){
+    const bx=XP.bassinO+10+alea(i*9.7+3)*(XP.bassinE-XP.bassinO-20);
+    const by=XP.quaiY+20+alea(i*5.9+1)*(MONDE_H-XP.quaiY-22);
+    const x=bx+Math.sin(T*.4+i)*4-camX, y=by+Math.sin(T*.9+i*1.3)*1.5-camY;
+    if(x<-6||y<-4||x>VW+6||y>VH+4)continue;
+    const k=(Math.sin(T*1.1+i*2.3)+1)/2;
+    g.fillStyle='rgba(200,240,250,'+(0.12+k*0.22).toFixed(3)+')';
+    g.fillRect(Math.round(x),Math.round(y),4+Math.round(k*3),1);
   }
 }
 
@@ -10316,6 +10415,7 @@ function semerDecorExtramar(){
   /* L'EST : le caboteur à quai, la grue qui le décharge, la pile de caisses,
      les Docks où on les porte ; la Grande Roue sur le quai ; le phare au bout */
   P('x_caboteur',1072,548,{v:0});
+  P('x_ferry',FERRY.xo,FERRY.y,{v:0});
   P('x_grue',1244,508,{col:[22,8]});
   P('x_pile',CARGO_X.pile[0],CARGO_X.pile[1],{col:[18,6]});
   P('x_docks',CARGO_X.docks[0],CARGO_X.docks[1],{col:[70,26]});
@@ -12165,7 +12265,7 @@ function dessiner(){
   ctx.fillStyle='#2b3a26';ctx.fillRect(0,0,VW+2,VH+2);
   const lw=Math.min(VW+2,MONDE_L-camX), lh=Math.min(VH+2,MONDE_H-camY);
   ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
-  if(CARTE==='extramar')scintillerLaMer(ctx,camX,camY);
+  if(CARTE==='extramar'){scintillerLaMer(ctx,camX,camY);eauVivante(ctx,camX,camY);}
 
   const px=Math.round((joueur.x-camX)*ECH)/ECH;
   const py=Math.round((joueur.y-camY)*ECH)/ECH;
