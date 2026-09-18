@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1421';
+  var MA_VERSION='2026-09-18-1426';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -6259,6 +6260,14 @@ function graverLaBoutiqueNeuve(){
   R(cx-BL/2-2,sol-64,3,12,B_F.boisS);
   R(cx-BL/2-20,sol-64,20,3,B_F.boisS);
   R(cx-BL/2-20,sol-64,20,1.2,B_F.boisO);
+  /* LA TERRASSE DE BOIS, devant la devanture.
+     C'est elle qui fait le joli écart du comptoir : une bande de planches
+     entre le bâtiment et la place, qui détache l'un de l'autre. La boutique
+     n'en avait pas, et sa façade tombait droit dans le dallage. */
+  R(cx-BL/2-6,sol-8,BL+12,7,B_F.bois);
+  for(let x=0;x<BL+12;x+=7)R(cx-BL/2-6+x,sol-8,1,7,B_F.boisO);
+  R(cx-BL/2-6,sol-8,BL+12,2,B_F.boisH);
+  R(cx-BL/2-6,sol-1,BL+12,3,B_F.boisS);
   /* LES CAISSES, LE TONNEAU et l'étal dehors */
   caisse(cx-BL/2+4,sol-19);
   caisse(cx-BL/2+4,sol-30);
@@ -10449,10 +10458,14 @@ function semerDecor(){
   DECOR=DECOR.filter(o=>BATI(o.t)||o.t==='fleurs'||
     !(Math.abs(o.x-e.comptoir[0])<150&&Math.abs(o.y-e.comptoir[1])<90));invaliderGrille();
   DECOR.push({t:'comptoir',x:e.comptoir[0],y:e.comptoir[1],gr:0});
+  /* on dégage ses abords : un rocher posé dessus donnerait l'illusion
+     qu'on peut le casser à la pioche */
   /* L'ENTRÉE DU MÉTRO, contre le comptoir, côté place */
-  /* À GAUCHE DU COMPTOIR : entre lui et la boutique il ne reste que 2 de
-     large, mais son flanc ouest donne sur l'angle de la place. */
-  DECOR.push({t:'metro',x:COMPTOIR_FIXE[0]-178,y:COMPTOIR_FIXE[1]+30,gr:0});
+  /* ENTRE LA RIVIÈRE ET LE COMPTOIR, à mi-distance, et remonté :
+     la bande fait 151 de large à cette hauteur, le métro 86. */
+  DECOR.push({t:'metro',x:672,y:COMPTOIR_FIXE[1]-2,gr:0});
+  DECOR=DECOR.filter(o=>o.t==='metro'||
+    !(Math.abs(o.x-672)<56&&Math.abs(o.y-(COMPTOIR_FIXE[1]-2))<48));
   /* rien ne pousse devant le front nord */
   DECOR=DECOR.filter(o=>BATI(o.t)||
     !(o.x>COMPTOIR2_FIXE[0]-120&&o.x<BOUTIQUE_FIXE[0]+100&&
@@ -10692,6 +10705,15 @@ function bloque(x,y){
   /* La colline est un RELIEF : on la contourne au-dessus de la voie, mais le
      quai et le bas de la carte restent libres. Ma première emprise couvrait
      tout ce qui était au sud de y=530, donc le quai de la gare lui-même. */
+  /* L'ENTRÉE DU MÉTRO : la trémie et ses deux mâts sont durs. On ne la
+     traverse plus — et on ne peut pas tomber dans l'escalier. */
+  {
+    const M=DECOR.find(o=>o.t==='metro');
+    if(M){
+      const dx=x-M.x, dy=y-M.y;
+      if(Math.abs(dx)<32&&dy>-34&&dy<4)return true;
+    }
+  }
   /* LA FORGE : le corps de pierre et la cheminée sont pleins. Le devant du
      foyer et l'enclume restent libres — c'est là qu'on se tient pour
      travailler. */
