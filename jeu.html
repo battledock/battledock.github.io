@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1428';
+  var MA_VERSION='2026-09-18-1430';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -984,6 +985,10 @@ body.clavier #bandeau{padding-bottom:9px}
   font:400 17px Georgia,serif;color:#33291b;letter-spacing:.8px;
   opacity:0;transform:translateY(6px);transition:opacity .18s,transform .18s}
 #action.on{opacity:1;transform:none}
+/* une plaque INERTE : elle informe, elle ne se clique pas */
+#action.inerte{pointer-events:none;
+  background:linear-gradient(180deg,rgba(236,222,206,.94),rgba(216,200,182,.94))}
+#action.inerte:active{transform:none}
 #action:active{transform:translateY(2px)}
 #action small{display:block;font:600 7px system-ui;letter-spacing:1.6px;
   color:rgba(51,41,27,.55);margin-top:2px;text-transform:uppercase}
@@ -13230,19 +13235,16 @@ function actionDeSecours(){
      le joueur y vise des arbres et des rochers, et une grande cible « Le sac »
      qui apparaît entre deux gestes lui vole son geste suivant. On ne garde
      que l'avertissement du sac plein, qui lui, est utile. */
-  const enRecolte=joueur.x<rivX(joueur.y);
-  if(enRecolte){
-    if(charge>=max*0.92)
-      return {mot:'Le sac est plein',sous:'traverse le gué et va vendre',f:()=>ouvrirSac()};
-    return null;
-  }
+  /* LA GRANDE PLAQUE N'OUVRE PLUS LE SAC.
+     En récolte, elle apparaissait entre deux gestes et le doigt l'attrapait :
+     le sac s'ouvrait en plein travail. Le sac s'ouvre désormais UNIQUEMENT
+     par son bouton, dans le menu. Ce qui reste ici n'est qu'un avertissement,
+     et il ne réagit pas au doigt. */
+  if(charge>=max)
+    return {mot:'Sac plein',sous:'vide-le au comptoir',f:null};
   if(nonLus>0)
     return {mot:'Répondre',sous:nonLus+' message'+(nonLus>1?'s':'')+' non lu'+(nonLus>1?'s':''),
             f:()=>{if(bandeauOuvert())fermerBandeau();else ouvrirBandeau();}};
-  if(charge>=max*0.85)
-    return {mot:'Vendre',sous:'le sac est plein · au comptoir',f:()=>ouvrirSac()};
-  if(charge>0)
-    return {mot:'Le sac',sous:charge+' sur '+max,f:()=>ouvrirSac()};
   return null;
 }
 
@@ -13299,7 +13301,11 @@ function majAction(){
     const S=(typeof actionDeSecours==='function')?actionDeSecours():null;
     if(!S){b.classList.remove('on');b.onclick=null;return;}
     b.innerHTML=S.mot+'<small>'+S.sous+'</small>';
-    b.classList.add('on');b.onclick=S.f;
+    b.classList.add('on');
+    /* un avertissement n'est pas un bouton : sans action, le doigt ne
+       déclenche rien du tout. */
+    b.classList.toggle('inerte',!S.f);
+    b.onclick=S.f||null;
   };
   /* LE DÉCHARGEMENT passe avant tout : il n'est possible que huit minutes
      par quart d'heure, on ne veut pas le manquer. */
@@ -13956,9 +13962,11 @@ const charge=()=>Object.values(e.sac).reduce((a,n)=>a+n,0);
 const nbObjets=()=>Object.values(e.sac).filter(n=>n>0).length;
 const sacPlein=()=>charge()>=chargeMax();
 function prevenirSacPlein(o){
+  /* UN SEUL MOT. La seconde ligne — « change-le au casino » — envoyait le
+     joueur au mauvais endroit et encombrait l'écran au moment précis où il
+     tapait vite. */
   jouer('plein','moment');
   texteVolant(o?o.x:joueur.x,(o?o.y:joueur.y)-28,'Sac plein','#e08a8a');
-  texteVolant(o?o.x:joueur.x,(o?o.y:joueur.y)-40,'change-le au casino','#d8c9a8');
   vibrer([8,50,8]);
 }
 function ajouter(k,n){
