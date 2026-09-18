@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1148';
+  var MA_VERSION='2026-09-18-1308';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -1001,9 +1002,13 @@ body.clavier #bandeau{padding-bottom:9px}
   display:none;align-items:center;justify-content:center;padding:0 4px;font-style:normal}
 #rencontre .pastille.on{display:flex}
 /* LA ROUE D'ÉMOTES */
-#roue{position:fixed;inset:0;z-index:40;display:none;
+/* LA ROUE VIT DANS LE BANDEAU DU BAS, qui est en « pointer-events:none »
+   pour laisser passer les doigts sur la carte. Elle héritait donc de ça :
+   les boutons s'affichaient, et aucun clic ne les atteignait. */
+#roue{position:fixed;inset:0;z-index:40;display:none;pointer-events:none;
   background:rgba(10,14,8,.5);backdrop-filter:blur(3px)}
-#roue.on{display:block}
+#roue.on{display:block;pointer-events:auto}
+.roueF,.roueF button{pointer-events:auto}
 .roueF{position:absolute;left:10px;right:10px;
   bottom:calc(84px + env(safe-area-inset-bottom));
   display:grid;grid-template-columns:repeat(5,1fr);gap:7px;
@@ -1418,12 +1423,15 @@ body.clavier #bandeau{padding-bottom:9px}
   </div>
   <div id="rencontre">
     <span class="quiR" id="quiR">—</span>
-    <button id="r-parler"><svg viewBox="0 0 20 20" width="17">
+    <button id="r-ecrire"><svg viewBox="0 0 20 20" width="16">
+      <path d="M3 4 h14 v9 h-8 l-4 3 v-3 h-2z" fill="none" stroke="currentColor"
+        stroke-width="1.6" stroke-linejoin="round"/></svg>Écrire
+      <em class="pastille" id="rencontre-nb">0</em></button>
+    <button id="r-parler" aria-label="Vocal"><svg viewBox="0 0 20 20" width="16">
       <path d="M10 2 a3 3 0 0 1 3 3 v4 a3 3 0 0 1 -6 0 v-4 a3 3 0 0 1 3 -3z" fill="currentColor"/>
       <path d="M4 9 a6 6 0 0 0 12 0" fill="none" stroke="currentColor" stroke-width="1.8"/>
-      <rect x="9" y="15" width="2" height="3" fill="currentColor"/></svg>Parler
-      <em class="pastille" id="rencontre-nb">0</em></button>
-    <button id="r-emote">☺ Émote</button>
+      <rect x="9" y="15" width="2" height="3" fill="currentColor"/></svg></button>
+    <button id="r-emote">☺</button>
   </div>
   <div id="roue"><div class="roueF" id="roueF"></div></div>
   <button id="action"></button>
@@ -3166,7 +3174,7 @@ const PANNEAU_FIXE=[836,300];
    Le panneau se faisait effacer par la clairière du camp : il tombait
    pile dans son rayon. */
 const BATI=(t)=>['casino','mine','forge','coffre','pont','comptoir','camp','panneau','fete',
-                 'maison','taverne','atelier','puits','fontaine','arbrePot','bancP','panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','halte','passage','tilleul','lanterneP',
+                 'maison','taverne','atelier','puits','fontaine','arbrePot','bancP','panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','halte','passage','tilleul','lanterneP','boutique',
                  'souche','gravats'].includes(t);
 /* on passe par createElement plutôt que new Image() : le navigateur s'en
    moque, mais mon banc d'essai peut alors charger la page et la tester */
@@ -3236,7 +3244,9 @@ const HAMEAU=[];
    (1760), à mi-hauteur. Tout le reste s'organise autour d'elle. */
 /* LA GRAND-PLACE : un rectangle au centre de la moitié est, dallé, avec sa
    fontaine au milieu. « r » reste pour le code qui s'en sert encore. */
-const PLACE={x:960, y:230, w:560, h:240, r:92};
+/* LA PLACE DESCEND ET SE RESSERRE de 40 : le comptoir et la boutique
+   bordent son côté nord, et il leur faut de la hauteur. */
+const PLACE={x:960, y:270, w:560, h:200, r:92};
 const PL_N=()=>PLACE.y-PLACE.h/2, PL_S=()=>PLACE.y+PLACE.h/2;
 const PL_O=()=>PLACE.x-PLACE.w/2, PL_E=()=>PLACE.x+PLACE.w/2;
 /* LA GARNITURE DE LA PLACE est posée plus bas, avec la fontaine, les
@@ -5399,6 +5409,8 @@ const TAILLERIE_FIXE=[1032,SUD];
    nord — la voie file dans la lisière, ne croise plus aucun chemin, et on ne
    la rencontre que si on y va. */
 const HALTE_FIXE=[1252,SUD];
+/* LE FRONT NORD : le comptoir et la boutique, face à la fontaine */
+const COMPTOIR2_FIXE=[880,152], BOUTIQUE_FIXE=[1110,152];
 const HALTE_L=168;                /* sa largeur, à l'échelle de la forge */
 /* « VOIE_Y » existait déjà — c'est l'axe des rails de la page du voyage.
    Celle-ci est la voie posée SUR LA CARTE, d'où le nom distinct. */
@@ -5863,6 +5875,475 @@ function conesDeLaPlace(g,camX,camY,VW2){
     g.beginPath();g.ellipse(x+1,y+2,52,23,0,0,7);g.fill();
     g.restore();
   });
+}
+
+
+/* ================= LE FRONT NORD DE LA PLACE =================
+   Le comptoir et la boutique, repris de l'aperçu sans retouche. Le comptoir
+   a de vrais guichets à tablette de pierre ; la boutique une devanture de
+   bois à vitrines. Les deux dans la brique, les tuiles et la pierre du jeu. */
+/* LES PALETTES, reprises de graverLeComptoir : elles vivaient dans la
+   fonction, il faut les sortir pour que le front nord y accède. */
+const PI_F={o:'#4f565c',s:'#5f666c',p:'#7b8288',c:'#8b939a',h:'#a2a9b0',e:'#b7bec4'};
+const BR_F={o:'#7d3a28',s:'#8f4630',p:'#a3543a',c:'#b56448',h:'#c47a5c'};
+const B_F={bois:'#7d5934',boisC:'#96703f',boisH:'#a5764a',boisO:'#5b3f21',boisS:'#3d2a17'};
+const TU_F={o:'#6b3320',s:'#7d3d26',p:'#8f4a2e',c:'#a35a38',h:'#b56b46',faite:'#c98a5e'};
+let CALQUE_COMPTOIR2=null, CALQUE_BOUTIQUE=null;
+function outilsFront(g){
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  return {
+    R,
+    /* LA BRIQUE du jeu : 8 × 3, un demi-rang de décalage, liseré clair */
+    briques:(x0,y0,larg,haut)=>{
+      for(let y=0;y<haut;y+=4){
+        const dec=(y/4)%2?4:0;
+        for(let x=0;x<larg;x+=9){
+          const t=((x+y*3)*7)%4;
+          R(x0+x+dec,y0+y,8,3,[BR_F.p,BR_F.c,BR_F.s,BR_F.p][t]);
+          R(x0+x+dec,y0+y,8,1,BR_F.h);
+        }
+      }
+    },
+    /* LE TOIT du jeu : les rangs se retirent, le faîtage couronne */
+    toit:(cx,bas,larg,haut)=>{
+      const rangs=Math.round(haut/4);
+      for(let rg=rangs-1;rg>=0;rg--){
+        const t=rg/rangs, y=bas-rg*4, retrait=Math.round(t*14);
+        const x0=cx-larg/2-12+retrait, l2=larg+24-retrait*2;
+        for(let x=x0;x<x0+l2;x+=6){
+          const q=(x*7+rg*13)%4;
+          R(x,y,6,5,q===0?TU_F.p:(q===1?TU_F.c:(q===2?TU_F.s:TU_F.p)));
+          R(x,y,6,1,rg>rangs*0.6?TU_F.h:TU_F.c);
+          R(x+5,y,1,5,TU_F.o);
+        }
+        R(x0,y+4,l2,1,TU_F.o);
+        if(rg===rangs-1){R(x0-2,y-4,l2+4,5,TU_F.o);R(x0-2,y-4,l2+4,2,TU_F.faite);}
+      }
+    },
+    /* L'ENSEIGNE du jeu : plaque de bois, montants, lettres dorées */
+    enseigne:(cx,hy,larg,mot,taille)=>{
+      R(cx-larg/2,hy-9,larg,18,B_F.boisS);
+      R(cx-larg/2,hy-9,larg,2,B_F.boisC);
+      R(cx-larg/2,hy+7,larg,2,'#2a1c12');
+      R(cx-larg/2+2,hy-7,larg-4,1,'rgba(240,207,125,.25)');
+      R(cx-larg/2-4,hy-11,4,22,B_F.boisO);
+      R(cx+larg/2,hy-11,4,22,B_F.boisO);
+      g.font='700 '+(taille||13)+'px Georgia,serif';
+      g.fillStyle='#f0cf7d';g.textAlign='center';
+      g.fillText(mot,cx,hy+5,larg-20);
+      g.textAlign='left';
+    },
+    /* LA PORTE du jeu : encadrement de pierre, linteau, battants à pentures */
+    porte:(cx,sol,PL,PH)=>{
+      R(cx-PL/2-5,sol-PH-8,PL+10,PH+4,PI_F.p);
+      R(cx-PL/2-5,sol-PH-8,PL+10,2,PI_F.h);
+      R(cx-PL/2-5,sol-PH-8,2,PH+4,PI_F.h);
+      R(cx+PL/2+3,sol-PH-8,2,PH+4,PI_F.o);
+      R(cx-PL/2-8,sol-PH-12,PL+16,6,B_F.boisO);
+      R(cx-PL/2-8,sol-PH-12,PL+16,2,B_F.boisC);
+      R(cx-PL/2-8,sol-PH-6,PL+16,1,B_F.boisS);
+      R(cx-PL/2,sol-PH-4,PL,PH,'#241a12');
+      [[-PL/2,1],[0,-1]].forEach(([a,sens])=>{
+        R(cx+a,sol-PH-4,PL/2,PH,B_F.bois);
+        for(let y=0;y<PH;y+=5)R(cx+a,sol-PH-4+y,PL/2,1,B_F.boisO);
+        R(cx+a,sol-PH+4,PL/2,3,'#4a4a52');
+        R(cx+a,sol-14,PL/2,3,'#4a4a52');
+        R(cx+a+(sens>0?PL/2-4:2),sol-PH/2-4,3,3,'#b7bec4');
+        R(cx+a+(sens>0?PL/2-1:0),sol-PH-4,1,PH,B_F.boisS);
+      });
+      R(cx-PL/2-4,sol-8,PL+8,3,PI_F.h);
+      R(cx-PL/2-7,sol-5,PL+14,3,PI_F.c);
+      R(cx-PL/2-10,sol-2,PL+20,2,PI_F.p);
+    },
+    caisse:(x,y)=>{R(x,y,14,11,B_F.bois);R(x,y,14,2,B_F.boisH);
+      R(x,y+5,14,2,B_F.boisO);R(x+6,y,2,11,B_F.boisO);},
+    tonneau:(x,y)=>{
+      for(let k=0;k<5;k++)R(x+k*3,y-16,3,16,k===0||k===4?B_F.boisO:B_F.bois);
+      R(x,y-16,15,2,B_F.boisH);
+      R(x-1,y-13,17,2.6,'#4a4a52');R(x-1,y-5,17,2.6,'#4a4a52');
+    }
+  };
+}
+function graverLeComptoirNeuf(){
+  /* LE CALQUE DOIT ÊTRE PLUS LARGE QUE LE CORPS : l'ombre portée et la
+     passerelle débordent de 145 de part et d'autre, alors que le corps n'en
+     fait que 186. À 230, la marge d'affichage tombait sous le débord et le
+     comptoir disparaissait au bord de l'écran. */
+  const W=266, Ht=176, cx=W/2, sol=Ht-16;
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=Ht*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const {R,briques,toit,enseigne,porte,caisse,tonneau}=outilsFront(g);
+  const CL=186;                       /* la largeur du corps */
+  const basToit=sol-78;
+  g.fillStyle='rgba(30,50,24,.26)';
+  g.beginPath();g.ellipse(cx+4,sol+4,CL*0.54,13,0,0,7);g.fill();
+  /* LE TOIT d'abord, comme dans le jeu */
+  toit(cx,basToit,CL,26);
+  R(cx-CL/2-14,basToit+3,CL+28,4,PI_F.o);
+  /* LE MUR DE BRIQUE */
+  briques(cx-CL/2,basToit+6,CL,sol-basToit-14);
+  R(cx-CL/2,basToit+6,CL,3,BR_F.h);
+  /* le soubassement de pierre */
+  R(cx-CL/2,sol-8,CL,8,PI_F.s);
+  R(cx-CL/2,sol-8,CL,2,PI_F.h);
+  /* LES PILASTRES, comme le comptoir : six travées */
+  for(let i=0;i<=5;i++){
+    const x=Math.round(cx-CL/2+i*(CL/5));
+    R(x-4,basToit+6,8,sol-basToit-14,PI_F.p);
+    R(x-4,basToit+6,2,sol-basToit-14,PI_F.h);
+    R(x-5,basToit+4,10,4,PI_F.c);           /* le chapiteau */
+    R(x-5,basToit+4,10,1.4,PI_F.e);
+    R(x-5,sol-11,10,4,PI_F.c);              /* la base */
+    R(x-5,sol-11,10,1.4,PI_F.e);
+  }
+  /* LES DEUX GRANDES BAIES DE VENTE, à droite et à gauche de la porte.
+     C'est ça qui manquait : un comptoir, ça a un GUICHET. */
+  [-56,56].forEach(dx=>{
+    /* l'embrasure de pierre */
+    R(cx+dx-24,sol-52,48,44,PI_F.p);
+    R(cx+dx-24,sol-52,48,2,PI_F.h);
+    R(cx+dx-24,sol-52,2,44,PI_F.h);
+    R(cx+dx+22,sol-52,2,44,PI_F.o);
+    /* le linteau de bois */
+    R(cx+dx-27,sol-56,54,5,B_F.boisO);
+    R(cx+dx-27,sol-56,54,2,B_F.boisC);
+    /* le dedans, sombre */
+    R(cx+dx-20,sol-48,40,36,'#241a12');
+    /* LA TABLETTE de pierre où l'on pose les marchandises */
+    R(cx+dx-24,sol-18,48,5,PI_F.c);
+    R(cx+dx-24,sol-18,48,1.6,PI_F.e);
+    R(cx+dx-22,sol-13,44,2,PI_F.o);
+    /* les barreaux de bois du guichet */
+    for(let k=-18;k<19;k+=9){
+      R(cx+dx+k,sol-48,3,30,B_F.boisO);
+      R(cx+dx+k,sol-48,1,30,B_F.bois);
+    }
+    /* ce qu'on voit derrière : des sacs, des caisses */
+    R(cx+dx-16,sol-30,10,12,'#6f6248');
+    R(cx+dx-4,sol-26,9,8,'#7a6c50');
+    R(cx+dx+8,sol-32,8,14,B_F.boisO);
+  });
+  /* LA PORTE, au centre */
+  porte(cx,sol,34,52);
+  /* LA PASSERELLE de bois, tout le long */
+  R(cx-CL/2-6,sol-8,CL+12,7,B_F.bois);
+  for(let x=0;x<CL+12;x+=7)R(cx-CL/2-6+x,sol-8,1,7,B_F.boisO);
+  R(cx-CL/2-6,sol-8,CL+12,2,B_F.boisH);
+  R(cx-CL/2-6,sol-1,CL+12,3,B_F.boisS);
+  /* LA GRANDE BALANCE, sous son auvent, à gauche */
+  R(cx-CL/2+8,sol-70,5,54,B_F.boisO);
+  R(cx-CL/2+8,sol-70,2,54,B_F.bois);
+  R(cx-CL/2+8,sol-72,34,5,B_F.boisO);
+  R(cx-CL/2+8,sol-72,34,2,B_F.boisC);
+  /* L'AUVENT DE TUILES au-dessus des guichets */
+  for(let k=-CL/2+2;k<CL/2-2;k+=6){
+    const q=(k*7)%4;
+    R(cx+k,sol-62,6,5,q===0?TU_F.p:(q===1?TU_F.c:(q===2?TU_F.s:TU_F.p)));
+    R(cx+k,sol-62,6,1,TU_F.h);
+    R(cx+k+5,sol-62,1,5,TU_F.o);
+  }
+  R(cx-CL/2,sol-58,CL,2,TU_F.o);
+  /* la dentelle de bois sous l'auvent */
+  for(let k=-CL/2+2;k<CL/2-2;k+=7)R(cx+k,sol-56,4,3,B_F.boisO);
+  /* les consoles qui portent l'auvent */
+  [-CL/2+14,-CL/6,CL/6,CL/2-18].forEach(dx=>{
+    g.save();g.translate(cx+dx,sol-58);g.rotate(0.72);
+    R(0,0,3,14,B_F.boisO);g.restore();
+  });
+  /* LES CAISSES, LE TONNEAU et les sacs, sur la passerelle */
+  caisse(cx-CL/2+14,sol-22);caisse(cx-CL/2+30,sol-22);
+  caisse(cx-CL/2+22,sol-33);
+  tonneau(cx+CL/2-30,sol-9);
+  tonneau(cx+CL/2-48,sol-9);
+  /* des sacs de grain, affaissés */
+  [[-24,0],[-12,1],[10,0]].forEach(([dx,i])=>{
+    g.fillStyle=i?'#7a6c50':'#6f6248';
+    g.beginPath();g.ellipse(cx+CL/2-62+dx,sol-13,7,9,0,0,7);g.fill();
+    g.fillStyle='rgba(255,250,230,.12)';
+    g.beginPath();g.ellipse(cx+CL/2-64+dx,sol-16,3,4,0,0,7);g.fill();
+    R(cx+CL/2-64+dx,sol-22,4,3,'#5b4f3a');
+  });
+  /* LA CHEMINÉE de brique */
+  briques(cx+CL/4,basToit-26,13,24);
+  R(cx+CL/4-2,basToit-30,17,5,PI_F.c);
+  R(cx+CL/4-2,basToit-30,17,1.6,PI_F.e);
+  /* L'ENSEIGNE écrite */
+  enseigne(cx,basToit-26,132,'COMPTOIR',13);
+  CALQUE_COMPTOIR2={toile:c,W,H:Ht,sol};
+}
+function graverLaBoutiqueNeuve(){
+  const W=190, Ht=186, cx=W/2, sol=Ht-16;
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=Ht*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const {R,briques,toit,enseigne,porte,caisse,tonneau}=outilsFront(g);
+  const BL=150;
+  const basToit=sol-116;
+  g.fillStyle='rgba(30,50,24,.26)';
+  g.beginPath();g.ellipse(cx+4,sol+4,BL*0.54,12,0,0,7);g.fill();
+  toit(cx,basToit,BL,22);
+  R(cx-BL/2-12,basToit+3,BL+24,4,PI_F.o);
+  /* L'ÉTAGE, en brique */
+  briques(cx-BL/2,basToit+6,BL,40);
+  R(cx-BL/2,basToit+6,BL,3,BR_F.h);
+  /* les pilastres de l'étage */
+  [-BL/2,-BL/6,BL/6,BL/2-8].forEach(dx=>{
+    R(cx+dx,basToit+6,8,40,PI_F.p);
+    R(cx+dx,basToit+6,2,40,PI_F.h);
+  });
+  /* LES TROIS FENÊTRES de l'étage, à croisée, avec appui et volets */
+  [-44,0,44].forEach((dx,i)=>{
+    const fy=basToit+16;
+    /* l'encadrement de pierre */
+    R(cx+dx-14,fy-2,28,26,PI_F.p);
+    R(cx+dx-14,fy-2,28,2,PI_F.h);
+    R(cx+dx+12,fy-2,2,26,PI_F.o);
+    /* le linteau */
+    R(cx+dx-16,fy-6,32,5,B_F.boisO);
+    R(cx+dx-16,fy-6,32,2,B_F.boisC);
+    /* la vitre, à croisée */
+    R(cx+dx-11,fy+1,22,20,'#2b2f36');
+    R(cx+dx-11,fy+1,22,7,'#5c7185');
+    R(cx+dx-1,fy+1,2,20,B_F.boisO);
+    R(cx+dx-11,fy+10,22,2,B_F.boisO);
+    R(cx+dx+7,fy+1,2,20,'rgba(230,226,214,.3)');
+    /* l'appui de pierre */
+    R(cx+dx-16,fy+21,32,4,PI_F.c);
+    R(cx+dx-16,fy+21,32,1.4,PI_F.e);
+    /* les volets, ouverts contre le mur */
+    [-1,1].forEach(s=>{
+      if(i===1&&s<0)return;                 /* un volet fermé, pour la vie */
+      R(cx+dx+s*17-2,fy-1,5,24,'#6f8a48');
+      R(cx+dx+s*17-2,fy-1,5,2,'#86a45e');
+      for(let k=2;k<22;k+=4)R(cx+dx+s*17-2,fy-1+k,5,1.4,'#55703a');
+    });
+    if(i===1){
+      /* le volet fermé, sur la moitié gauche */
+      R(cx+dx-11,fy+1,11,20,'#6f8a48');
+      for(let k=0;k<20;k+=4)R(cx+dx-11,fy+1+k,11,1.4,'#55703a');
+      R(cx+dx-11,fy+1,11,2,'#86a45e');
+    }
+  });
+  /* LE BANDEAU de pierre entre l'étage et le rez */
+  R(cx-BL/2-3,basToit+46,BL+6,6,PI_F.c);
+  R(cx-BL/2-3,basToit+46,BL+6,2,PI_F.e);
+  R(cx-BL/2-3,basToit+52,BL+6,1.4,PI_F.o);
+  /* LE REZ : une devanture de bois, pas de la brique — c'est ce qui fait
+     la boutique. Des pilastres de bois portent l'entablement. */
+  R(cx-BL/2,basToit+52,BL,sol-basToit-60,'#2e241c');
+  /* le lambris du bas */
+  R(cx-BL/2,sol-24,BL,16,B_F.boisO);
+  for(let k=0;k<BL;k+=8)R(cx-BL/2+k,sol-24,1.4,16,B_F.boisS);
+  R(cx-BL/2,sol-24,BL,2,B_F.bois);
+  /* LES DEUX VITRINES, à petits carreaux, en saillie */
+  [-44,44].forEach(dx=>{
+    /* le cadre de bois, mouluré */
+    R(cx+dx-26,basToit+56,52,44,B_F.boisO);
+    R(cx+dx-26,basToit+56,52,3,B_F.boisH);
+    R(cx+dx-24,basToit+59,48,38,'#3a4750');
+    /* les petits carreaux : trois par quatre */
+    for(let i2=1;i2<4;i2++)R(cx+dx-24+i2*12,basToit+59,2,38,B_F.boisO);
+    for(let j=1;j<4;j++)R(cx+dx-24,basToit+59+j*10,48,2,B_F.boisO);
+    /* le reflet, en biais */
+    g.fillStyle='rgba(230,240,246,.16)';
+    g.beginPath();
+    g.moveTo(cx+dx-22,basToit+95);g.lineTo(cx+dx-6,basToit+61);
+    g.lineTo(cx+dx+4,basToit+61);g.lineTo(cx+dx-12,basToit+95);
+    g.closePath();g.fill();
+    /* CE QU'ON VOIT DEDANS : des étagères chargées */
+    R(cx+dx-22,basToit+74,44,2,B_F.boisO);
+    R(cx+dx-22,basToit+88,44,2,B_F.boisO);
+    /* rangée du haut : des pots */
+    for(let k=0;k<4;k++){
+      const px=cx+dx-18+k*11;
+      R(px,basToit+66,7,8,['#a3543a','#7d9455','#8b939a','#c9a24a'][k]);
+      R(px,basToit+66,7,2,'#d8c49a');
+      R(px-1,basToit+64,9,2,B_F.boisO);
+    }
+    /* rangée du bas : des rouleaux de tissu et des paniers */
+    for(let k=0;k<3;k++){
+      const px=cx+dx-18+k*14;
+      R(px,basToit+78,10,10,['#8fa9c4','#d8a8a0','#c9a24a'][k]);
+      R(px,basToit+78,10,2,'rgba(255,255,255,.2)');
+      R(px+3,basToit+78,2,10,'rgba(0,0,0,.14)');
+    }
+    /* l'appui de pierre, en saillie */
+    R(cx+dx-28,basToit+100,56,5,PI_F.c);
+    R(cx+dx-28,basToit+100,56,1.6,PI_F.e);
+    R(cx+dx-26,basToit+105,52,3,PI_F.o);
+    /* les consoles sous l'appui */
+    [-22,16].forEach(px=>{
+      g.save();g.translate(cx+dx+px,basToit+105);g.rotate(0.5);
+      R(0,0,3,10,B_F.boisO);g.restore();
+    });
+  });
+  /* LES PILASTRES DE BOIS entre les vitrines et aux angles */
+  [-BL/2+2,-16,10,BL/2-10].forEach(dx=>{
+    R(cx+dx,basToit+52,8,sol-basToit-60,B_F.bois);
+    R(cx+dx,basToit+52,2.4,sol-basToit-60,B_F.boisH);
+    R(cx+dx+6,basToit+52,2,sol-basToit-60,B_F.boisS);
+    /* le chapiteau et la base */
+    R(cx+dx-2,basToit+52,12,5,B_F.boisO);
+    R(cx+dx-2,basToit+52,12,1.6,B_F.boisC);
+    R(cx+dx-2,sol-13,12,5,B_F.boisO);
+  });
+  /* LA PORTE de la boutique, vitrée en haut */
+  const PL2=30, PH2=54;
+  R(cx-PL2/2-4,sol-PH2-6,PL2+8,PH2+2,B_F.boisO);
+  R(cx-PL2/2-4,sol-PH2-6,PL2+8,2,B_F.boisC);
+  R(cx-PL2/2,sol-PH2-4,PL2,PH2,B_F.bois);
+  /* le carreau du haut */
+  R(cx-PL2/2+4,sol-PH2,PL2-8,20,'#3a4750');
+  R(cx-1,sol-PH2,2,20,B_F.boisO);
+  R(cx-PL2/2+4,sol-PH2+9,PL2-8,2,B_F.boisO);
+  /* les panneaux du bas */
+  R(cx-PL2/2+4,sol-PH2+26,PL2-8,22,B_F.boisO);
+  R(cx-PL2/2+6,sol-PH2+28,PL2-12,18,B_F.bois);
+  /* les pentures et la poignée */
+  R(cx-PL2/2,sol-PH2+2,PL2,3,'#4a4a52');
+  R(cx-PL2/2,sol-12,PL2,3,'#4a4a52');
+  R(cx+PL2/2-6,sol-PH2/2-2,3,3,'#b7bec4');
+  /* la clochette au-dessus */
+  R(cx-2,sol-PH2-11,4,5,'#c9a24a');
+  R(cx-3,sol-PH2-13,6,2,B_F.boisS);
+  /* le seuil, deux marches */
+  R(cx-PL2/2-5,sol-8,PL2+10,3,PI_F.h);
+  R(cx-PL2/2-8,sol-5,PL2+16,3,PI_F.c);
+  R(cx-PL2/2-11,sol-2,PL2+22,2,PI_F.p);
+  /* L'AUVENT DE TUILES sur toute la devanture, avec sa dentelle */
+  for(let k=-BL/2-4;k<BL/2+4;k+=6){
+    const q=(k*7)%4;
+    R(cx+k,basToit+44,6,5,q===0?TU_F.p:(q===1?TU_F.c:(q===2?TU_F.s:TU_F.p)));
+    R(cx+k,basToit+44,6,1,TU_F.h);
+    R(cx+k+5,basToit+44,1,5,TU_F.o);
+  }
+  R(cx-BL/2-6,basToit+48,BL+12,2,TU_F.o);
+  for(let k=-BL/2-4;k<BL/2+4;k+=7)R(cx+k,basToit+50,4,3,B_F.boisO);
+  /* LA CHEMINÉE */
+  briques(cx+BL/4,basToit-22,12,20);
+  R(cx+BL/4-2,basToit-26,16,5,PI_F.c);
+  R(cx+BL/4-2,basToit-26,16,1.6,PI_F.e);
+  /* L'ENSEIGNE écrite, sur le bandeau */
+  enseigne(cx,basToit-22,116,'BOUTIQUE',12);
+  /* L'ENSEIGNE EN POTENCE, sur le côté : un panier peint */
+  R(cx-BL/2-2,sol-64,3,12,B_F.boisS);
+  R(cx-BL/2-20,sol-64,20,3,B_F.boisS);
+  R(cx-BL/2-20,sol-64,20,1.2,B_F.boisO);
+  /* LES CAISSES, LE TONNEAU et l'étal dehors */
+  caisse(cx-BL/2+4,sol-19);
+  caisse(cx-BL/2+4,sol-30);
+  tonneau(cx+BL/2-20,sol-6);
+  /* un petit étal de fruits devant la vitrine droite */
+  R(cx+BL/2-56,sol-20,34,5,B_F.bois);
+  R(cx+BL/2-56,sol-20,34,1.6,B_F.boisH);
+  [-52,-34].forEach(dx=>R(cx+BL/2+dx,sol-15,4,9,B_F.boisO));
+  for(let k=0;k<6;k++){
+    const px=cx+BL/2-53+k*6;
+    g.fillStyle=['#c9503c','#d8703c','#c9a24a','#5d8a42','#b06a3a','#c9503c'][k];
+    g.beginPath();g.arc(px,sol-23,2.6,0,7);g.fill();
+    g.fillStyle='rgba(255,255,255,.2)';
+    g.beginPath();g.arc(px-1,sol-24,1,0,7);g.fill();
+  }
+  CALQUE_BOUTIQUE={toile:c,W,H:Ht,sol};
+}
+function nuitComptoir(g,x,y){
+  const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x+a),Math.round(y+b),w,h);};
+  /* la raie de lumière au joint de la porte, comme dans le jeu */
+  R(-1,-52,2,44,'#ffc65a');
+  R(-17,-56,34,4,'#8a6a2a');
+  R(-21,-4,42,3,'rgba(255,190,110,.42)');
+  R(-14,-1,28,2,'rgba(255,205,130,.30)');
+  /* les guichets éclairés */
+  [-56,56].forEach(dx=>{
+    R(dx-20,-48,40,30,'#8a6a2a');
+    for(let k=-18;k<19;k+=9)R(dx+k,-48,3,30,'#3d2a17');
+    R(dx-16,-30,10,12,'#5b4f34');
+    R(dx-4,-26,9,8,'#665836');
+    const d=g.createRadialGradient(x+dx,y-32,6,x+dx,y-32,54);
+    d.addColorStop(0,'rgba(255,200,110,.3)');d.addColorStop(1,'rgba(255,200,110,0)');
+    g.fillStyle=d;g.fillRect(x+dx-54,y-86,108,108);
+  });
+  /* les deux lanternes au-dessus de la porte */
+  [-32,32].forEach(dx=>{
+    R(dx-3,-64,6,8,'#ffd27a');
+    R(dx-4,-67,8,3,'#3d2a17');
+    const d=g.createRadialGradient(x+dx,y-60,3,x+dx,y-60,44);
+    d.addColorStop(0,'rgba(255,210,122,.3)');d.addColorStop(1,'rgba(255,210,122,0)');
+    g.fillStyle=d;g.fillRect(x+dx-44,y-104,88,88);
+  });
+}
+function nuitBoutique(g,x,y){
+  const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x+a),Math.round(y+b),w,h);};
+  const basRel=-116;
+  /* LES VITRINES ALLUMÉES : c'est le luxe de la boutique la nuit */
+  [-44,44].forEach(dx=>{
+    R(dx-24,basRel+59,48,38,'#f0c268');
+    for(let i2=1;i2<4;i2++)R(dx-24+i2*12,basRel+59,2,38,'#6b4a28');
+    for(let j=1;j<4;j++)R(dx-24,basRel+59+j*10,48,2,'#6b4a28');
+    /* les marchandises se découpent en silhouettes */
+    R(dx-22,basRel+74,44,2,'#6b4a28');
+    R(dx-22,basRel+88,44,2,'#6b4a28');
+    for(let k=0;k<4;k++)R(dx-18+k*11,basRel+66,7,8,'#8a5530');
+    for(let k=0;k<3;k++)R(dx-18+k*14,basRel+78,10,10,'#7a5a34');
+    const d=g.createRadialGradient(x+dx,y+basRel+78,8,x+dx,y+basRel+78,66);
+    d.addColorStop(0,'rgba(255,200,110,.34)');d.addColorStop(1,'rgba(255,200,110,0)');
+    g.fillStyle=d;g.fillRect(x+dx-66,y+basRel+12,132,132);
+  });
+  /* le carreau de la porte */
+  R(-11,-58,22,20,'#f0c268');
+  R(-1,-58,2,20,'#6b4a28');
+  /* les fenêtres de l'étage : deux allumées, une éteinte */
+  [-44,44].forEach(dx=>{
+    R(dx-11,basRel+17,22,20,'#f0c268');
+    R(dx-1,basRel+17,2,20,'#6b4a28');
+    R(dx-11,basRel+26,22,2,'#6b4a28');
+    const d=g.createRadialGradient(x+dx,y+basRel+27,4,x+dx,y+basRel+27,44);
+    d.addColorStop(0,'rgba(255,200,110,.26)');d.addColorStop(1,'rgba(255,200,110,0)');
+    g.fillStyle=d;g.fillRect(x+dx-44,y+basRel-17,88,88);
+  });
+  /* la lumière couchée sur le pavé */
+  R(-70,-4,140,4,'rgba(255,190,110,.28)');
+  R(-52,0,104,3,'rgba(255,205,130,.18)');
+}
+function dessinerLeComptoirNeuf(g,x,y){
+  if(!CALQUE_COMPTOIR2)graverLeComptoirNeuf();
+  const C=CALQUE_COMPTOIR2;
+  g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
+  fumeeFront(g,x+40,y-124,0.1);
+  if(lampesAllumees())nuitComptoir(g,Math.round(x),Math.round(y));
+}
+function dessinerLaBoutique(g,x,y){
+  if(!CALQUE_BOUTIQUE)graverLaBoutiqueNeuve();
+  const C=CALQUE_BOUTIQUE;
+  g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
+  fumeeFront(g,x+42,y-146,0.4);
+  if(lampesAllumees())nuitBoutique(g,Math.round(x),Math.round(y));
+  /* l'enseigne en potence se balance : elle est dessinée vivante */
+  const T2=Date.now()/1000;
+  g.save();g.translate(Math.round(x)-85,Math.round(y)-58);
+  g.rotate(Math.sin(T2*1.1)*0.06);
+  g.fillStyle='#7d5934';g.fillRect(-10,0,20,15);
+  g.fillStyle='#a5764a';g.fillRect(-10,0,20,2);
+  g.fillStyle='#5b3f21';g.fillRect(-9,2,18,12);
+  g.fillStyle='#c9a24a';
+  g.beginPath();g.moveTo(-5,11);g.lineTo(5,11);g.lineTo(4,5);g.lineTo(-4,5);
+  g.closePath();g.fill();
+  g.strokeStyle='#c9a24a';g.lineWidth=1.2;
+  g.beginPath();g.arc(0,5,4,3.14159,0);g.stroke();
+  g.restore();
+}
+function fumeeFront(g,x,y,d){
+  const T2=Date.now()/1000;
+  for(let i=0;i<4;i++){
+    const p=((T2*0.22+i/4+d)%1);
+    g.fillStyle='rgba(192,186,176,'+((1-p)*0.2).toFixed(2)+')';
+    g.beginPath();g.arc(x-p*11,y-p*26,2+p*8,0,7);g.fill();
+  }
 }
 
 /* ================= LA HALTE =================
@@ -7141,7 +7622,10 @@ async function prendreLeBillet(){
    serrer. Il a fallu élargir encore la rive de 60 points — à 1200, elle
    n'aurait eu que 13 points de marge avec les pavés, soit le « collé » qu'on
    venait de corriger. */
-const ECHOPPE_FIXE=[748,SUD];   /* la boutique, au sud-ouest de la place */
+/* L'ÉCHOPPE EST DÉSORMAIS LA BOUTIQUE du front nord : même page, même
+   marchandise, mais un bâtiment à devanture face à la place. L'ancienne
+   bâtisse du sud disparaît. */
+const ECHOPPE_FIXE=[1110,152];   /* la boutique, au sud-ouest de la place */
 /* LA VOIE NE TRAVERSE PLUS TOUT LE MONDE.
    Elle allait d'un bord à l'autre, donc elle franchissait la rivière sans
    pont, et son heurtoir se perdait dans la forêt à x=6 — invisible.
@@ -9226,6 +9710,10 @@ function semerDecor(){
   DECOR=DECOR.filter(o=>BATI(o.t)||o.t==='fleurs'||
     !(Math.abs(o.x-e.comptoir[0])<150&&Math.abs(o.y-e.comptoir[1])<90));invaliderGrille();
   DECOR.push({t:'comptoir',x:e.comptoir[0],y:e.comptoir[1],gr:0});
+  /* rien ne pousse devant le front nord */
+  DECOR=DECOR.filter(o=>BATI(o.t)||
+    !(o.x>COMPTOIR2_FIXE[0]-120&&o.x<BOUTIQUE_FIXE[0]+100&&
+      o.y>COMPTOIR2_FIXE[1]-130&&o.y<COMPTOIR2_FIXE[1]+40));
 
   /* LA PLACETTE : la fontaine au centre, les décors autour */
   DECOR=DECOR.filter(o=>BATI(o.t)||
@@ -9583,10 +10071,11 @@ function margesDe(t){
   let C=null;
   try{
     if(t==='taillerie'){if(!CALQUE_TAILLERIE)graverLaTaillerie();C=CALQUE_TAILLERIE;}
-    else if(t==='echoppe'){if(!CALQUE_ECHOPPE)graverLEchoppe();C=CALQUE_ECHOPPE;}
+    /* l'échoppe se dessine maintenant avec le calque de la boutique */
     else if(t==='mine2'){if(!CALQUE_MINE)graverLaMine();C=CALQUE_MINE;}
     else if(t==='halte'){if(!CALQUE_HALTE)graverLaHalte();C=CALQUE_HALTE;}
-    else if(t==='comptoir'){if(!CALQUE_COMPTOIR)graverLeComptoir();C=CALQUE_COMPTOIR;}
+    else if(t==='comptoir'){if(!CALQUE_COMPTOIR2)graverLeComptoirNeuf();C=CALQUE_COMPTOIR2;}
+    else if(t==='echoppe'){if(!CALQUE_BOUTIQUE)graverLaBoutiqueNeuve();C=CALQUE_BOUTIQUE;}
     else if(CALQUES_DECO[t])C=CALQUES_DECO[t];
   }catch(x){}
   /* une marge de sécurité de 20 : le dessin anime parfois hors du calque
@@ -9752,12 +10241,13 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     else if(o.t==='taillerie')dessinerLaTaillerie(g,x,y);
     else if(o.t==='mine2')dessinerLaMine(g,x,y);
     else if(o.t==='halte')dessinerLaHalte(g,x,y);
+
     else if(o.t==='tilleul')dessinerLeTilleul(g,x,y,o.gr||0);
     else if(o.t==='lanterneP')dessinerLaLanterneP(g,x,y,o.gr||0);
     else if(o.t==='passage')dessinerLePassage(g,x,y);
     else if(o.t==='entrepot')dessinerLEntrepot(g,x,y);
     else if(o.t==='gare')dessinerLaGare(g,x,y);
-    else if(o.t==='echoppe')dessinerLEchoppe(g,x,y);
+    else if(o.t==='echoppe')dessinerLaBoutique(g,x,y);
     else if(o.t==='fontaine')dessinerLaFontaine(g,x,y);
     else if(o.t==='panneauV')dessinerLeTableau(g,x,y);
     else if(o.t==='arbrePot'||o.t==='bancP')dessinerDeco(g,o.t,x,y);
@@ -9767,7 +10257,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
       else if(o.t!=='puits'&&lampesAllumees())
         lueurNuit(g,x,y-22,o.t==='taverne'?38:28,'rgba(255,190,90,§)');
     }
-    else if(o.t==='comptoir'){dessinerComptoir(g,x,y);
+    else if(o.t==='comptoir'){dessinerLeComptoirNeuf(g,x,y);
       if(lampesAllumees()){
         lueurNuit(g,x,y-26,38,'rgba(255,200,110,§)');          /* la porte */
         [-78,78].forEach(dx=>lueurNuit(g,x+dx,y-30,24,'rgba(255,190,90,§)'));  /* les fenêtres */
@@ -9915,7 +10405,10 @@ async function descendreDeLigne(){
 const CAMP_FIXE  =[886,SUD];                     /* le campement, sur la ligne du sud */
 const COFFRE_FIXE=[890,392];                    /* au sud-est de la place */
 const FORGE_FIXE =[662,318];                    /* à l'ouest, vers la rivière */
-const COMPTOIR_FIXE=[420,SUD];                  /* le long entrepôt, en haut à gauche */
+/* L'ANCIEN COMPTOIR EST REMPLACÉ par celui du front nord : sa constante
+   pointe désormais sur le nouveau, pour que tout le code qui s'en sert
+   (les chemins, la vente, le tutoriel) continue de marcher. */
+const COMPTOIR_FIXE=[880,152];                  /* le long entrepôt, en haut à gauche */
 const CASINO_FIXE  =[912,246];                  /* au nord-est, dégagé de l'entrepôt */
 /* La carte a rétréci : un joueur enregistré au-delà des nouvelles limites
    serait coincé hors du monde. On le ramène au camp. */
@@ -10615,6 +11108,7 @@ $('b-reglages').onclick=ouvrirReglages;
 $('b-sac').onclick=()=>ouvrirSac();
 /* le tiroir a disparu : les cinq entrées tiennent dans la barre. */
 $('vocal').onclick=()=>{fermerBandeau();ouvrirLeVocal();};
+$('r-ecrire').onclick=()=>{fermerLaRoue();if(bandeauOuvert())fermerBandeau();else ouvrirBandeau();};
 $('r-parler').onclick=()=>{fermerLaRoue();ouvrirLeVocal();};
 $('r-emote').onclick=()=>{
   if($('roue').classList.contains('on'))fermerLaRoue();else ouvrirLaRoue();
@@ -11372,7 +11866,7 @@ async function chargerLaCarte(){
        en attendant, sinon il y en aurait deux. */
     const garder=['pont','casino','mine','forge','coffre','comptoir','panneau','fete',
                   'maison','taverne','atelier','puits','fontaine','arbrePot','bancP',
-                  'panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','souche','gravats','halte','passage','tilleul','lanterneP'];
+                  'panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','souche','gravats','halte','passage','tilleul','lanterneP','boutique'];
     DECOR=DECOR.filter(o=>garder.includes(o.t));invaliderGrille();
     d.forEach(m=>{
       if(m.genre==='panneau'||m.genre==='comptoir')return;   /* retirés du jeu */
@@ -11872,8 +12366,8 @@ function cible(){
     if(o.tombe)continue;
     /* pour un bâtiment large, on mesure la distance au MUR, pas au centre :
        sinon les portes des extrémités restent hors de portée */
-    const demi=o.t==='comptoir'?118:(o.t==='echoppe'?72:
-                (o.t==='gare'?120:(o.t==='entrepot'?54:(o.t==='mine2'?80:(o.t==='taillerie'?70:0)))));
+    const demi=o.t==='comptoir'?96:(o.t==='boutique'?78:(o.t==='echoppe'?78:
+                (o.t==='gare'?120:(o.t==='entrepot'?54:(o.t==='mine2'?80:(o.t==='taillerie'?70:0))))));
     const ecart=Math.max(0,Math.abs(o.x-joueur.x)-demi);
     const d=Math.hypot(ecart,joueur.y-o.y+6);
     const portee=(LARGES.includes(o.t)||o.t==='mine')?66:48;  /* on les voit de plus loin */
