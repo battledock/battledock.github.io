@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-0831';
+  var MA_VERSION='2026-09-18-0836';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -989,6 +990,11 @@ body.clavier #bandeau{padding-bottom:9px}
   background:rgba(159,214,122,.16);color:#eaf6dc;font:400 13px Georgia,serif;
   display:flex;align-items:center;gap:6px}
 #rencontre button:active{transform:scale(.95)}
+#rencontre button{position:relative}
+#rencontre .pastille{position:absolute;top:-5px;right:-4px;min-width:16px;height:16px;
+  border-radius:8px;background:#c0503c;color:#fff;font:700 9px system-ui;
+  display:none;align-items:center;justify-content:center;padding:0 4px;font-style:normal}
+#rencontre .pastille.on{display:flex}
 /* LA ROUE D'ÉMOTES */
 #roue{position:fixed;inset:0;z-index:40;display:none;
   background:rgba(10,14,8,.5);backdrop-filter:blur(3px)}
@@ -1378,18 +1384,10 @@ body.clavier #bandeau{padding-bottom:9px}
       <rect x="1" y="12" width="2" height="5" fill="#4a6341"/><rect x="17" y="12" width="2" height="5" fill="#4a6341"/>
     </svg><span class="b">ALLURE</span>
     <i class="clou g"></i><i class="clou d"></i></button>
-<button class="latte vert" id="b-parler">
-    <span class="clou g"></span><span class="clou d"></span>
-    <svg viewBox="0 0 22 18" width="28">
-      <rect x="1" y="1" width="20" height="12" rx="4" fill="#f4f1e8"/>
-      <rect x="5" y="5" width="3" height="3" fill="#3f5432"/>
-      <rect x="10" y="5" width="3" height="3" fill="#3f5432"/>
-      <rect x="15" y="5" width="3" height="3" fill="#3f5432"/>
-      <path d="M6 13 L6 17 L10 13z" fill="#f4f1e8"/>
-    </svg>
-    <span class="b">PARLER</span>
-    <span class="pastille" id="parler-nb">0</span>
-  </button>
+<!-- LE BOUTON « PARLER » A QUITTÉ LE MENU.
+     Il ne servait que lorsqu'on croisait quelqu'un, et il fallait aller le
+     chercher. Le bandeau de rencontre le propose maintenant au moment où
+     c'est utile, avec les émotes à côté. -->
 <button class="latte" id="b-reglages">
     <svg viewBox="0 0 20 18" width="30">
       <circle cx="10" cy="9" r="4.2" fill="none" stroke="#c9c2ae" stroke-width="2"/>
@@ -1418,7 +1416,8 @@ body.clavier #bandeau{padding-bottom:9px}
     <button id="r-parler"><svg viewBox="0 0 20 20" width="17">
       <path d="M10 2 a3 3 0 0 1 3 3 v4 a3 3 0 0 1 -6 0 v-4 a3 3 0 0 1 3 -3z" fill="currentColor"/>
       <path d="M4 9 a6 6 0 0 0 12 0" fill="none" stroke="currentColor" stroke-width="1.8"/>
-      <rect x="9" y="15" width="2" height="3" fill="currentColor"/></svg>Parler</button>
+      <rect x="9" y="15" width="2" height="3" fill="currentColor"/></svg>Parler
+      <em class="pastille" id="rencontre-nb">0</em></button>
     <button id="r-emote">☺ Émote</button>
   </div>
   <div id="roue"><div class="roueF" id="roueF"></div></div>
@@ -6080,7 +6079,7 @@ async function regarderMesVocaux(force){
 function majPastilleVocaux(){
   const b=$('vocal');
   if(b)b.classList.toggle('recu',mesVocaux.length>0);
-  const nb=$('parler-nb');
+  const nb=$('rencontre-nb');
   if(nb){
     const total=nonLus+mesVocaux.length;
     if(String(total)!==nb.textContent){
@@ -10184,7 +10183,6 @@ $('b-look').onclick=ouvrirLook;
 $('b-reglages').onclick=ouvrirReglages;
 $('b-sac').onclick=()=>ouvrirSac();
 /* le tiroir a disparu : les cinq entrées tiennent dans la barre. */
-$('b-parler').onclick=()=>{if(bandeauOuvert())fermerBandeau();else ouvrirBandeau();};
 $('vocal').onclick=()=>{fermerBandeau();ouvrirLeVocal();};
 $('r-parler').onclick=()=>{fermerLaRoue();ouvrirLeVocal();};
 $('r-emote').onclick=()=>{
@@ -11459,7 +11457,7 @@ function cible(){
 /* ---- LE TIROIR : le sac, l'allure, le chat et le registre ---- */
 const fermerTiroir=()=>$('tiroir').classList.remove('on');
 $('b-plus').onclick=(ev)=>{ev.stopPropagation();$('tiroir').classList.toggle('on');};
-['b-sac','b-look','b-parler','b-class'].forEach(id=>{
+['b-sac','b-look','b-class'].forEach(id=>{
   const b=$(id);if(b)b.addEventListener('click',fermerTiroir);
 });
 addEventListener('pointerdown',(ev)=>{
@@ -13529,17 +13527,14 @@ let t0=performance.now();
      seconde suffisent, et on n'écrit que si ça change. */
   if(t-dernierParler>200){
     dernierParler=t;
-    const bp=$('b-parler');
-    if(bp){
-      let proche=false;
-      AUTRES.forEach(a=>{
-        if(!proche&&Math.hypot(a.x-joueur.x,a.y-joueur.y)<120)proche=true;
-      });
-      if(proche!==parlerVu.proche){parlerVu.proche=proche;bp.classList.toggle('qqn',proche);}
-      const nb=$('parler-nb');
-      if(nb&&nonLus!==parlerVu.nb){
-        parlerVu.nb=nonLus;
-        nb.textContent=nonLus;nb.classList.toggle('on',nonLus>0);
+    /* la pastille des messages non lus vit maintenant sur le bandeau de
+       rencontre : le bouton du menu n'existe plus. */
+    const nb=$('rencontre-nb');
+    if(nb){
+      const total=nonLus+mesVocaux.length;
+      if(total!==parlerVu.nb){
+        parlerVu.nb=total;
+        nb.textContent=total;nb.classList.toggle('on',total>0);
       }
     }
   }
