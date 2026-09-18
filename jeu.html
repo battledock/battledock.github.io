@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1438';
+  var MA_VERSION='2026-09-18-1445';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -7513,7 +7514,7 @@ function lancerEmote(id){
   const E=EMOTE_DE(id);if(!E)return;
   /* on emprunte le geste : « t » descend de 1 à 0, « tt » compte les
      secondes pour les émotes qui battent la mesure. */
-  GESTE={t:1,cible:null,impact:false,type:'em:'+id,tt:0,duree:E.duree};
+  GESTE={t:1,pourMoi:true,cible:null,impact:false,type:'em:'+id,tt:0,duree:E.duree};
 }
 function majEmote(dt){
   if(!GESTE||GESTE.t<=0)return;
@@ -7914,13 +7915,13 @@ const prèsDeLEntrepot=()=>
 function prendreUneCaisse(){
   if(caissePortee||!prèsDuWagon())return;
   caissePortee=true;
-  GESTE={t:1,cible:null,impact:false,type:'cueille'};
+  GESTE={t:1,pourMoi:true,cible:null,impact:false,type:'cueille'};
   jouer('cueille');vibrer(18);majAction();
 }
 async function deposerLaCaisse(){
   if(!caissePortee||!prèsDeLEntrepot())return;
   caissePortee=false;
-  GESTE={t:1,cible:null,impact:false,type:'cueille'};
+  GESTE={t:1,pourMoi:true,cible:null,impact:false,type:'cueille'};
   /* LE SERVEUR PAIE : le salaire ne se décide pas dans le navigateur */
   const d=await appelRPC('decharger',{p_joueur:e.id});
   if(d&&typeof d.euros==='number'){
@@ -11364,6 +11365,56 @@ function poseDe(ap,dir,i){
   L[i]=c;
   return c;
 }
+
+/* ================= LES GESTES AUSSI SE GRAVENT =================
+   Un joueur qui MARCHE coûte un seul trait : sa pose est en cache. Un joueur
+   EN PLEIN GESTE en coûtait 202, parce que son corps était redessiné à
+   chaque image. À vingt mineurs, cela faisait quatre mille traits par image
+   rien que pour eux.
+   On grave donc aussi les gestes, en les découpant en étapes : la pioche en
+   huit, une émote en douze. L'œil ne voit pas la différence — un geste dure
+   moins d'une seconde — et le coût retombe à un trait par joueur. */
+const ETAPES_GESTE=8, ETAPES_EMOTE=12;
+/* 120 poses au plus, toutes apparences confondues : environ 2,4 Mo à taille
+   un, 21 Mo sur un écran fin. C'est ce qu'un téléphone accepte sans broncher,
+   et cela couvre largement ce qu'on voit à l'écran en même temps. */
+const PLAFOND_GESTES=120;
+const GESTES_GRAVES=[];
+function poseDuGeste(ap,dir,pas,marche,type,part){
+  const P=planche(ap);
+  if(!P.gestes)P.gestes={};
+  const emote=String(type||'').slice(0,3)==='em:';
+  const n=emote?ETAPES_EMOTE:ETAPES_GESTE;
+  const etape=Math.max(0,Math.min(n-1,Math.round(part*(n-1))));
+  const pied=marche?(1+(Math.floor(pas*2)%PASM)):0;
+  const cle=dir+'|'+type+'|'+etape+'|'+pied;
+  if(P.gestes[cle])return P.gestes[cle];
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=CASE_L*D;c.height=CASE_H*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const sauve=GESTE;
+  /* on rejoue le geste à l'étape voulue, exactement comme à l'écran */
+  const duree=emote?((EMOTE_DE(type.slice(3))||{duree:2}).duree):1;
+  GESTE={t:1-etape/(n-1), type:type,
+         tt:(etape/(n-1))*duree, duree:duree, impact:false, cible:null};
+  try{sprite(g,CASE_L/2,CASE_H-10,ap,dir,pied?(pied-1)/2:0,!!pied);}catch(x){}
+  GESTE=sauve;
+  /* LE CACHE EST BORNÉ, ET GLOBALEMENT.
+     Une pose pèse 20 ko à taille un, et neuf fois plus sur un écran fin.
+     Un plafond par apparence — 160 — donnait 563 Mo à vingt joueurs : de
+     quoi faire tomber le téléphone. On plafonne donc le TOTAL, et on jette
+     la plus ancienne quand on déborde. */
+  P.gestes[cle]=c;
+  GESTES_GRAVES.push({P,cle});
+  while(GESTES_GRAVES.length>PLAFOND_GESTES){
+    const v=GESTES_GRAVES.shift();
+    if(v.P.gestes)delete v.P.gestes[v.cle];
+  }
+  return c;
+}
+
 /* le personnage à l'écran : une recopie si aucun geste, sinon l'ancien dessin */
 /* LA PIÈCE PORTÉE, dessinée autour du personnage.
    Elle vient de ap.cos, qui voyage déjà avec l'apparence : les autres
@@ -11423,7 +11474,19 @@ function personne(g,x,y,ap,dir,pas,marche,enCourse){
   if(enCourse)ap=Object.assign({},ap,{court:1});
   const tc=Date.now()/1000;
   if(C&&C.id==='cape'){try{C.dessin(g,x,y,tc);}catch(err){}}
-  if(GESTE&&GESTE.t>0)sprite(g,x,y,ap,dir,pas,marche);
+  if(GESTE&&GESTE.t>0){
+    /* LE JOUEUR LOCAL garde le dessin vivant : son geste doit répondre au
+       doigt sans la moindre saccade. Les AUTRES passent par le cache. */
+    if(GESTE.pourMoi)sprite(g,x,y,ap,dir,pas,marche);
+    else{
+      const emote=String(GESTE.type||'').slice(0,3)==='em:';
+      const part=emote
+        ? Math.max(0,Math.min(1,(GESTE.tt||0)/(GESTE.duree||2)))
+        : Math.max(0,Math.min(1,1-GESTE.t));
+      const c=poseDuGeste(ap,dir||'bas',pas,marche,GESTE.type||'pioche',part);
+      g.drawImage(c,Math.round(x-CASE_L/2),Math.round(y-CASE_H+10),CASE_L,CASE_H);
+    }
+  }
   else{
     const i=marche?1+(Math.floor(pas*2)%PASM):0;   /* la même horloge que le dessin */
     const c=poseDe(ap,dir||'bas',i);
@@ -13509,13 +13572,13 @@ function agir(){
     prevenirSacPlein(o);return;                  /* inutile de taper : rien ne rentrerait */
   }
   if(o.t==='souche'&&ambrePret(o)){
-    GESTE={t:1,cible:o,impact:false,type:'gouge'};
+    GESTE={t:1,cible:o,impact:false,type:'gouge',pourMoi:true};
     joueur.dir=Math.abs(o.x-joueur.x)>Math.abs(o.y-joueur.y)?(o.x>joueur.x?'droite':'gauche')
               :(o.y>joueur.y?'bas':'haut');
     vibrer(20);return;
   }
   const aLaMain=['buisson','argile','roseaux','champignons','herbes','plumes'].includes(o.t);
-  GESTE={t:1,cible:o,impact:false,
+  GESTE={t:1,pourMoi:true,cible:o,impact:false,
          type:aLaMain?'cueille':(o.t==='arbre'?'hache':'pioche')};
   joueur.dir=Math.abs(o.x-joueur.x)>Math.abs(o.y-joueur.y)?(o.x>joueur.x?'droite':'gauche')
             :(o.y>joueur.y?'bas':'haut');
@@ -13668,7 +13731,7 @@ function saignerLAmbre(o){
 function laverLArgile(){
   if(pageOuverte()||Date.now()-fermeA<500)return;
   if(!peutLaver())return;
-  GESTE={t:1,cible:null,impact:false,type:'tamis'};
+  GESTE={t:1,pourMoi:true,cible:null,impact:false,type:'tamis'};
   /* on se tourne vers l'eau */
   joueur.dir=(joueur.x>rivX(joueur.y))?'gauche':'droite';
   vibrer(18);
