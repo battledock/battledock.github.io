@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-0453';
+  var MA_VERSION='2026-09-18-0815';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -1245,6 +1246,40 @@ body.clavier #bandeau{padding-bottom:9px}
 .flamF i:nth-child(3){width:11px;height:19px;background:#ffe08c;animation-delay:.36s}
 @keyframes flF{from{transform:translateX(-50%) scaleY(.88)}
                to{transform:translateX(-50%) scaleY(1.07)}}
+
+/* ===== LES VOCAUX ===== */
+#vocal{width:42px;height:42px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
+  background:rgba(32,40,28,.7);color:#cfe0c2;flex-shrink:0;position:relative}
+#vocal.recu{background:#3a4a26;border-color:#9fd67a;color:#eaf6dc;
+  animation:vocBat 1.4s ease-in-out infinite}
+@keyframes vocBat{0%,100%{box-shadow:0 0 0 0 rgba(159,214,122,.5)}
+                  70%{box-shadow:0 0 0 9px rgba(159,214,122,0)}}
+.titV{font:700 7.5px system-ui;letter-spacing:1.6px;color:#8a7c5e;margin:2px 0 8px}
+.vocL{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;
+  background:#f2ead6;border:1px solid #d6cbb0;margin-bottom:7px}
+.jouerV{width:38px;height:38px;border-radius:19px;border:0;flex-shrink:0;
+  background:linear-gradient(180deg,#6f8f3a,#54702a);color:#f0f6e2;
+  font:400 14px Georgia,serif}
+.txV{flex:1}
+.txV b{display:block;font:400 13px Georgia,serif;color:#3f3627}
+.txV span{display:block;font:400 8.5px Georgia,serif;font-style:italic;color:#8a7c5e}
+.quiV{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.persV{flex:1;min-width:88px;padding:9px 6px;border-radius:11px;border:1px solid #d6cbb0;
+  background:#fbf6e8}
+.persV.on{border-color:#6f8f3a;background:#eef3e0;box-shadow:0 2px 0 #cfdcb4 inset}
+.persV b{display:block;font:400 12px Georgia,serif;color:#3f3627}
+.persV span{display:block;font:400 8px Georgia,serif;font-style:italic;color:#8a7c5e}
+#ondeV{width:100%;height:44px;display:block;border-radius:10px;background:#f2ead6;
+  border:1px solid #d6cbb0;margin-bottom:9px}
+.parlerV{width:100%;padding:16px;border-radius:14px;border:0;
+  background:linear-gradient(180deg,#7d5934,#5b3f21);color:#f4e6c0;
+  font:400 15px Georgia,serif;box-shadow:0 3px 0 rgba(60,40,20,.4);
+  display:flex;align-items:center;justify-content:center;gap:9px}
+.parlerV.rouge{background:linear-gradient(180deg,#b4472f,#8a3422)}
+.parlerV i{width:10px;height:10px;border-radius:5px;background:#f4e6c0;display:block}
+.parlerV.rouge i{animation:vBat .9s ease-in-out infinite}
+@keyframes vBat{0%,100%{opacity:1}50%{opacity:.3}}
+.videV{font:400 11px/1.6 Georgia,serif;color:#8a7c5e;text-align:center;padding:18px 10px}
 </style>
 </head>
 <body>
@@ -1281,6 +1316,11 @@ body.clavier #bandeau{padding-bottom:9px}
       <path d="M4.5 9.5 a5.5 5.5 0 0 0 11 0" fill="none" stroke="currentColor" stroke-width="1.8"/>
       <rect x="9" y="15" width="2" height="3" fill="currentColor"/>
       <rect x="6.5" y="17.4" width="7" height="1.8" rx=".9" fill="currentColor"/></svg></button>
+    <button id="vocal" aria-label="Parler à quelqu’un"><svg viewBox="0 0 20 20" width="20">
+      <path d="M10 2 a3 3 0 0 1 3 3 v4 a3 3 0 0 1 -6 0 v-4 a3 3 0 0 1 3 -3z" fill="currentColor"/>
+      <path d="M4 9 a6 6 0 0 0 12 0" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      <rect x="9" y="15" width="2" height="3" fill="currentColor"/>
+      <circle cx="16" cy="4.5" r="3" fill="#9fd67a"/></svg></button>
     <span class="champ">
       <input id="saisie" maxlength="48" placeholder="Appuie pour écrire…" autocomplete="off">
       <i class="compteB" id="resteC">48</i>
@@ -5653,6 +5693,255 @@ setInterval(()=>{
   else if(!FOURNEE_VUE)return;
 },5000);
 
+/* ================= LES VOCAUX DE PROXIMITÉ =================
+   On parle à QUELQU'UN qui est là, maintenant. Le vocal ne dort jamais dans
+   une boîte aux lettres : écouté il disparaît, non écouté il s'efface au
+   bout de dix minutes. Rien ne s'accumule. */
+const PORTEE_VOIX=130, VOCAL_MAX=30;
+let micro=null, analyseVoix=null, graveur=null, morceauxVoix=[];
+let enTrainDeParler=null, vocalPour=null, mesVocaux=[], lecteurVocal=null;
+let dernierRegardVocaux=0;
+function gensAPortee(){
+  const l=[];
+  AUTRES.forEach(a=>{
+    const d=Math.hypot(a.x-joueur.x,a.y-joueur.y);
+    if(d<PORTEE_VOIX)l.push({id:a.id,nom:a.pseudo||'sans nom',d});
+  });
+  return l.sort((a,b)=>a.d-b.d);
+}
+async function regarderMesVocaux(force){
+  if(!e.id)return;
+  if(!force&&Date.now()-dernierRegardVocaux<8000)return;
+  dernierRegardVocaux=Date.now();
+  const d=await appelRPC('mes_vocaux',{p_joueur:e.id});
+  if(Array.isArray(d)){
+    const avant=mesVocaux.length;
+    mesVocaux=d;
+    if(mesVocaux.length>avant){
+      jouer('cloche');vibrer([12,50,12]);
+      texteVolant(joueur.x,joueur.y-52,'un vocal pour toi','#9fd67a');
+    }
+    majPastilleVocaux();
+  }
+}
+function majPastilleVocaux(){
+  const b=$('vocal');
+  if(b)b.classList.toggle('recu',mesVocaux.length>0);
+  const nb=$('parler-nb');
+  if(nb){
+    const total=nonLus+mesVocaux.length;
+    if(String(total)!==nb.textContent){
+      nb.textContent=total;nb.classList.toggle('on',total>0);
+    }
+  }
+}
+function ouvrirLeVocal(){
+  dessinerLeVocal();
+  $('page2').classList.add('on');
+  regarderMesVocaux(true).then(dessinerLeVocal);
+}
+function dessinerLeVocal(){
+  const gens=gensAPortee();
+  if(!vocalPour||!gens.some(x=>x.id===vocalPour))vocalPour=gens[0]?gens[0].id:null;
+  const lui=gens.find(x=>x.id===vocalPour);
+  let corps='';
+  /* CE QUI M'ATTEND */
+  if(mesVocaux.length){
+    corps+='<div class="titV">POUR TOI</div>'+
+      mesVocaux.map(v=>
+        '<div class="vocL" id="vl'+v.id+'">'+
+          '<button class="jouerV" data-ec="'+v.id+'">▶</button>'+
+          '<span class="txV"><b>'+(v.de_nom||'quelqu’un')+'</b>'+
+          '<span>'+(+v.duree).toFixed(1)+' s · s’efface dans '+
+            Math.ceil((v.reste||0)/60)+' min</span></span>'+
+          '<span class="ondV" id="ov'+v.id+'"></span>'+
+        '</div>').join('');
+  }
+  /* À QUI PARLER */
+  if(!gens.length){
+    corps+='<div class="videV">Personne à portée de voix.<br>'+
+      'Approche-toi de quelqu’un pour lui parler.</div>';
+  }else{
+    corps+='<div class="titV">À QUI</div><div class="quiV">'+
+      gens.map(x=>'<button class="persV'+(x.id===vocalPour?' on':'')+'" '+
+        'data-qui="'+x.id+'"><b>'+x.nom+'</b><span>'+Math.round(x.d)+' pas</span></button>').join('')+
+      '</div>'+
+      '<canvas id="ondeV"></canvas>'+
+      '<button class="parlerV" id="b-enreg"><i></i><span id="motV">'+
+        'Maintiens pour parler'+(lui?' à '+lui.nom:'')+'</span></button>';
+  }
+  $('page2Fond').className='sacFond clairS';
+  $('page2Fond').innerHTML=
+   '<div class="rabatC"><span class="tC"><b>Parler</b>'+
+     '<i>'+(gens.length?'À PORTÉE DE VOIX':'PERSONNE AUTOUR')+'</i></span></div>'+
+   '<div class="corpsC">'+corps+'</div>'+
+   '<button class="bandeC" id="v-fermer"><u></u><span>REFERMER</span><u></u></button>';
+  $('v-fermer').onclick=()=>{
+    if(enTrainDeParler)terminerLeVocal(true);
+    fermeA=Date.now();$('page2').classList.remove('on');
+  };
+  $('page2Fond').querySelectorAll('[data-qui]').forEach(b=>b.onclick=()=>{
+    vocalPour=b.dataset.qui;dessinerLeVocal();
+  });
+  $('page2Fond').querySelectorAll('[data-ec]').forEach(b=>b.onclick=()=>
+    ecouterLeVocal(b.dataset.ec));
+  const be=$('b-enreg');
+  if(be){
+    ['touchstart','mousedown'].forEach(ev=>be.addEventListener(ev,(x)=>{
+      x.preventDefault();commencerLeVocal();}));
+    ['touchend','mouseup','touchcancel'].forEach(ev=>be.addEventListener(ev,()=>
+      terminerLeVocal(false)));
+  }
+  dessinerLOndeVocale();
+}
+async function commencerLeVocal(){
+  if(enTrainDeParler||!vocalPour)return;
+  try{
+    const flux=await navigator.mediaDevices.getUserMedia({audio:true});
+    const ctxA=new (window.AudioContext||window.webkitAudioContext)();
+    if(ctxA.state==='suspended')await ctxA.resume();
+    const src=ctxA.createMediaStreamSource(flux);
+    analyseVoix=ctxA.createAnalyser();analyseVoix.fftSize=256;
+    src.connect(analyseVoix);
+    micro=flux;morceauxVoix=[];
+    let type='';
+    ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus']
+      .forEach(t=>{if(!type&&window.MediaRecorder&&MediaRecorder.isTypeSupported(t))type=t;});
+    graveur=type?new MediaRecorder(flux,{mimeType:type}):new MediaRecorder(flux);
+    graveur.ondataavailable=(ev)=>{if(ev.data&&ev.data.size)morceauxVoix.push(ev.data);};
+    graveur.start();
+    enTrainDeParler={debut:Date.now(),niveaux:[],pour:vocalPour};
+    vibrer(18);
+    battreLOnde();
+  }catch(x){
+    const m=$('motV');if(m)m.textContent='Le micro est refusé';
+  }
+}
+let battementOnde=null;
+function battreLOnde(){
+  if(battementOnde)clearInterval(battementOnde);
+  battementOnde=setInterval(()=>{
+    if(!enTrainDeParler){clearInterval(battementOnde);battementOnde=null;return;}
+    let niv=0.25;
+    if(analyseVoix){
+      const buf=new Uint8Array(analyseVoix.frequencyBinCount);
+      analyseVoix.getByteTimeDomainData(buf);
+      let s2=0;for(let i=0;i<buf.length;i++)s2+=Math.abs(buf[i]-128);
+      niv=Math.min(1,(s2/buf.length)/40);
+    }
+    enTrainDeParler.niveaux.push(niv);
+    if(enTrainDeParler.niveaux.length>240)enTrainDeParler.niveaux.shift();
+    const d=(Date.now()-enTrainDeParler.debut)/1000;
+    const m=$('motV');
+    if(m)m.textContent='Relâche pour envoyer · '+d.toFixed(1)+' s';
+    const b=$('b-enreg');if(b)b.classList.add('rouge');
+    /* on ne parle pas à quelqu'un qui s'éloigne */
+    if(!gensAPortee().some(x=>x.id===enTrainDeParler.pour)){
+      terminerLeVocal(true);
+      const m2=$('motV');if(m2)m2.textContent='Il s’est éloigné';
+      return;
+    }
+    if(d>=VOCAL_MAX)terminerLeVocal(false);
+    dessinerLOndeVocale();
+  },80);
+}
+function terminerLeVocal(annule){
+  if(!enTrainDeParler)return;
+  const duree=Math.min(VOCAL_MAX,(Date.now()-enTrainDeParler.debut)/1000);
+  const niveaux=enTrainDeParler.niveaux.slice();
+  const pour=enTrainDeParler.pour;
+  enTrainDeParler=null;
+  if(battementOnde){clearInterval(battementOnde);battementOnde=null;}
+  const b=$('b-enreg');if(b)b.classList.remove('rouge');
+  const finir=async(fichier)=>{
+    if(micro){micro.getTracks().forEach(t=>t.stop());micro=null;analyseVoix=null;}
+    if(annule||duree<0.6||!fichier){dessinerLeVocal();return;}
+    const m=$('motV');if(m)m.textContent='On l’envoie…';
+    /* 1 · le fichier part dans le stockage */
+    const nom=e.id+'/'+Date.now()+'.webm';
+    let monte=false;
+    try{
+      const r=await fetch(URL_SB+'/storage/v1/object/vocaux/'+nom,{
+        method:'POST',
+        headers:{'apikey':CLE_SB,'Authorization':'Bearer '+CLE_SB,
+                 'Content-Type':fichier.type||'audio/webm'},
+        body:fichier});
+      monte=r.ok;
+    }catch(x){}
+    if(!monte){const m2=$('motV');if(m2)m2.textContent='L’envoi a échoué';return;}
+    /* 2 · le serveur vérifie qu'il est encore là */
+    const d=await appelRPC('poser_vocal',{p_joueur:e.id,p_de:e.id,
+      p_de_nom:e.pseudo||'sans nom',p_pour:pour,p_fichier:nom,
+      p_duree:duree,p_ondes:niveaux.map(v=>Math.round(v*99)).join(',')});
+    const m3=$('motV');
+    if(d&&d.id){
+      if(m3)m3.textContent='Envoyé · il a dix minutes pour l’écouter';
+      jouer('achat');vibrer(22);
+    }else if(m3)m3.textContent=(d&&d.erreur)?d.erreur:'Ça n’est pas parti';
+    setTimeout(dessinerLeVocal,1600);
+  };
+  if(graveur&&graveur.state!=='inactive'){
+    graveur.onstop=()=>{
+      const bl=new Blob(morceauxVoix,{type:graveur.mimeType||'audio/webm'});
+      graveur=null;morceauxVoix=[];
+      finir(bl.size?bl:null);
+    };
+    try{graveur.stop();}catch(x){graveur=null;finir(null);}
+  }else finir(null);
+}
+async function ecouterLeVocal(id){
+  const v=mesVocaux.find(x=>String(x.id)===String(id));
+  if(!v)return;
+  const url=URL_SB+'/storage/v1/object/public/vocaux/'+v.fichier;
+  if(lecteurVocal){try{lecteurVocal.pause();}catch(x){}}
+  lecteurVocal=new Audio(url);
+  const fini=async()=>{
+    lecteurVocal=null;
+    /* ÉCOUTÉ : il disparaît, des deux côtés */
+    await appelRPC('vocal_ecoute',{p_joueur:e.id,p_id:v.id});
+    try{
+      await fetch(URL_SB+'/storage/v1/object/vocaux/'+v.fichier,
+        {method:'DELETE',headers:sbEntetes});
+    }catch(x){}
+    mesVocaux=mesVocaux.filter(x=>String(x.id)!==String(id));
+    majPastilleVocaux();dessinerLeVocal();
+  };
+  lecteurVocal.onended=fini;
+  lecteurVocal.onerror=fini;
+  try{await lecteurVocal.play();}catch(x){
+    const el=$('vl'+id);
+    if(el)el.querySelector('.jouerV').textContent='▶';
+  }
+}
+function dessinerLOndeVocale(){
+  const c=$('ondeV');if(!c)return;
+  const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+  const larg=c.clientWidth||240;
+  if(c.width!==larg*D){c.width=larg*D;c.height=44*D;}
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);
+  g.clearRect(0,0,larg,44);
+  const niv=enTrainDeParler?enTrainDeParler.niveaux:null;
+  if(!niv||!niv.length){
+    g.fillStyle='rgba(138,124,94,.5)';
+    g.font='italic 9px Georgia,serif';g.textAlign='center';
+    g.fillText('ta voix s’affichera ici',larg/2,26);
+    g.textAlign='left';return;
+  }
+  const n=Math.min(niv.length,Math.floor(larg/3));
+  for(let i=0;i<n;i++){
+    const v=niv[niv.length-n+i]||0;
+    const h=Math.max(2,v*34);
+    g.fillStyle='#c98a3a';
+    g.fillRect(i*3+2,(44-h)/2,2,h);
+  }
+}
+/* on regarde de temps en temps si quelqu'un nous a parlé */
+setInterval(()=>{
+  if(!e.id)return;
+  regarderMesVocaux(false);
+},9000);
+
 /* ---- LE DÉCHARGEMENT ----
    Le seul travail salarié du jeu : pas de hasard, pas de récolte, un tarif
    fixe à la caisse — et seulement quand le fret est là. */
@@ -9543,6 +9832,7 @@ $('b-reglages').onclick=ouvrirReglages;
 $('b-sac').onclick=()=>ouvrirSac();
 /* le tiroir a disparu : les cinq entrées tiennent dans la barre. */
 $('b-parler').onclick=()=>{if(bandeauOuvert())fermerBandeau();else ouvrirBandeau();};
+$('vocal').onclick=()=>{fermerBandeau();ouvrirLeVocal();};
 if($('saisie')){
   $('saisie').addEventListener('input',()=>{
     const r=$('resteC');
