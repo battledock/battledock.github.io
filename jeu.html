@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-0411';
+  var MA_VERSION='2026-09-18-0418';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -7881,65 +7882,75 @@ function graverChemins(g){
   const PAVES=['#9d9583','#a79f8d','#948c7a','#b0a896','#8b8371','#a49c8a'];
   const surUnPont=(x,y)=>PONTS.some(py=>Math.abs(y-py)<PONT_DEMI+6&&Math.abs(x-rivX(py))<40);
   ROUTES.forEach((route,nr)=>{
-    /* LE SABLE BORDÉ.
-       Deux choses changent par rapport à l'ancien pavage.
-
-       1. LA LARGEUR EST POSÉE PERPENDICULAIREMENT au chemin. Avant, elle
-          était posée sur l'axe vertical (« py = y + k ») quelle que soit la
-          direction : une route horizontale sortait juste, mais une diagonale
-          se retrouvait étirée en losange et deux fois trop large. C'est ce
-          qui rendait les chemins difformes.
-
-       2. LA MATIÈRE : du sable clair damé, tenu par une bordure de petites
-          pierres dressées des deux côtés. Deux ornières marquent l'endroit
-          où l'on marche le plus, et le chemin se resserre à ses deux bouts
-          au lieu de s'arrêter net. */
+    /* LE SABLE BORDÉ — et surtout : UNE SURFACE CONTINUE.
+       Le défaut n'était pas la couleur, c'était la couverture. Les points de
+       route sont espacés de 5, et je posais des grains de 2 de haut à chacun
+       d'eux : il restait 3 points de vide entre chaque rangée, et le chemin
+       ressortait peigné en bandes régulières. On PARCOURT donc maintenant
+       chaque segment pas à pas, et on couvre tout.
+       La largeur reste posée perpendiculairement au tracé. */
     const largMax=nr<2?PONT_DEMI:10;
     const n=route.length;
-    route.forEach(([x,y],i)=>{
-      if(surUnPont(x,y))return;
-      /* LA PERPENDICULAIRE, prise sur les points voisins */
-      const a=route[Math.max(0,i-1)], b=route[Math.min(n-1,i+1)];
-      let dx=b[0]-a[0], dy=b[1]-a[1];
-      const d2=Math.hypot(dx,dy)||1;
-      const nx=-dy/d2, ny=dx/d2;
-      /* le resserrement aux deux bouts : le chemin naît et meurt en pointe */
-      const le=i/Math.max(1,n-1);
-      const larg=largMax*Math.min(1,Math.min(le,1-le)*7+0.52);
-      /* LE SABLE */
-      for(let k=-larg;k<=larg;k+=1.8){
-        const bord=Math.abs(k)/larg;
-        if(bord>0.88)continue;                 /* la bordure prend le relais */
-        if(alea(x*1.1+y*0.6+k*2.3)>0.96)continue;
-        const px=x+nx*k, py=y+ny*k;
-        const t=alea(px*0.5+py*0.8);
-        g.fillStyle=t<0.36?'#c4b494':(t<0.72?'#cec0a2':'#bcab8a');
-        g.fillRect(px|0,py|0,2,2);
-        /* LES DEUX ORNIÈRES, là où passent les pieds */
-        if(Math.abs(Math.abs(k)-larg*0.34)<2.4){
-          g.fillStyle='rgba(150,134,106,.45)';
+    for(let i=0;i<n-1;i++){
+      const A2=route[i], B2=route[i+1];
+      if(surUnPont(A2[0],A2[1]))continue;
+      const sx=B2[0]-A2[0], sy=B2[1]-A2[1];
+      const sd=Math.hypot(sx,sy)||1;
+      const nx=-sy/sd, ny=sx/sd;
+      /* on avance de 1,4 le long du segment : les rangées se touchent */
+      for(let t=0;t<sd;t+=1.4){
+        const q=t/sd;
+        const x=A2[0]+sx*q, y=A2[1]+sy*q;
+        const le=(i+q)/Math.max(1,n-1);
+        const larg=largMax*Math.min(1,Math.min(le,1-le)*7+0.52);
+        /* et de 1,4 en travers : les grains se touchent aussi */
+        for(let k=-larg;k<=larg;k+=1.4){
+          const bord=Math.abs(k)/larg;
+          if(bord>0.9)continue;
+          const px=x+nx*k, py=y+ny*k;
+          /* LA COULEUR vient d'un bruit DOUX, à grande échelle : c'est ce qui
+             fait une plage de sable plutôt qu'un bruit de télévision. */
+          const doux=alea(Math.floor(px/7)*1.7+Math.floor(py/7)*2.9);
+          const fin2=alea(Math.floor(px/2)*0.41+Math.floor(py/2)*1.07);
+          const ton=doux*0.66+fin2*0.34;
+          let c2=ton<0.34?'#bfae8c':(ton<0.68?'#c9b998':'#d2c4a6');
+          /* LES ORNIÈRES : deux bandes plus sombres et tassées */
+          const orn=Math.min(Math.abs(Math.abs(k)-larg*0.36)/3.4,1);
+          if(orn<1&&fin2>orn*0.5)c2=ton<0.5?'#ab9b7c':'#b6a68a';
+          /* le bord s'éclaircit et se délave dans l'herbe */
+          if(bord>0.74&&fin2<(bord-0.74)*3.6)continue;
+          g.fillStyle=c2;
           g.fillRect(px|0,py|0,2,2);
         }
       }
-      /* LA BORDURE : des pierres dressées, une sur deux points */
-      if(i%2)return;
-      [-1,1].forEach(sg=>{
-        const bx=x+nx*sg*larg, by=y+ny*sg*larg;
-        pierreDuSol(g,bx-2,by-2,5,5,MOSA_BORD,x*1.7+sg*13,false);
-        /* l'herbe rase qui la longe, du côté extérieur */
-        for(let k2=0;k2<3;k2++){
-          if(alea((x+k2)*1.9+sg)<0.5)continue;
-          g.fillStyle='#6f8a48';
-          g.fillRect((bx+nx*sg*2.5+k2-1)|0,(by+ny*sg*2.5)|0,1,3);
-        }
-      });
-      /* quelques grains échappés, pour que le bord ne soit pas une ligne */
-      if(alea(x*2.3)<0.26){
-        const sg=alea(x)<0.5?-1:1;
-        const ex=x+nx*sg*(larg+3+alea(x*5)*4), ey=y+ny*sg*(larg+3+alea(x*5)*4);
-        g.fillStyle='#c4b494';g.fillRect(ex|0,ey|0,2,2);
+    }
+    /* LA BORDURE : des pierres dressées, posées à intervalle régulier le
+       long du tracé — et non plus une sur deux points de route. */
+    let reste=0;
+    for(let i=0;i<n-1;i++){
+      const A2=route[i], B2=route[i+1];
+      if(surUnPont(A2[0],A2[1]))continue;
+      const sx=B2[0]-A2[0], sy=B2[1]-A2[1];
+      const sd=Math.hypot(sx,sy)||1;
+      const nx=-sy/sd, ny=sx/sd;
+      for(let t=reste;t<sd;t+=7){
+        const q=t/sd;
+        const x=A2[0]+sx*q, y=A2[1]+sy*q;
+        const le=(i+q)/Math.max(1,n-1);
+        const larg=largMax*Math.min(1,Math.min(le,1-le)*7+0.52);
+        [-1,1].forEach(sg=>{
+          const bx=x+nx*sg*larg, by=y+ny*sg*larg;
+          pierreDuSol(g,bx-2.5,by-2.5,5,5,MOSA_BORD,x*1.7+sg*13,false);
+          /* l'herbe rase, à l'extérieur de la bordure */
+          for(let k2=0;k2<3;k2++){
+            if(alea((x+k2)*1.9+sg)<0.55)continue;
+            g.fillStyle='#6f8a48';
+            g.fillRect((bx+nx*sg*3+k2-1)|0,(by+ny*sg*3)|0,1,3);
+          }
+        });
+        reste=t+7-sd;
       }
-    });
+    }
   });
   /* LE SEUIL DES PONTS : deux dalles qui raccordent le chemin au tablier */
   PONTS.forEach(py=>{
