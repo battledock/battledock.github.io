@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-0836';
+  var MA_VERSION='2026-09-18-0946';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3161,7 +3162,7 @@ const PANNEAU_FIXE=[836,300];
    Le panneau se faisait effacer par la clairière du camp : il tombait
    pile dans son rayon. */
 const BATI=(t)=>['casino','mine','forge','coffre','pont','comptoir','camp','panneau','fete',
-                 'maison','taverne','atelier','puits','fontaine','arbrePot','bancP','panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie',
+                 'maison','taverne','atelier','puits','fontaine','arbrePot','bancP','panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','halte','passage',
                  'souche','gravats'].includes(t);
 /* on passe par createElement plutôt que new Image() : le navigateur s'en
    moque, mais mon banc d'essai peut alors charger la page et la tester */
@@ -5373,7 +5374,18 @@ const CARREAU_FIXE=[1196,152];    /* le carreau de mine, à l'est */
 /* LA MINE EST OUVERTE : on descend dans la galerie. */
 const MINE_OUVERTE=true;
 const PANNEAU_MINE=[1268,166];    /* l'écriteau planté devant le puits */
-const TAILLERIE_FIXE=[1210,498];  /* la forge, en bas à droite */  /* le forgeron, sous la mine */
+const TAILLERIE_FIXE=[1210,498];  /* la forge, en bas à droite */
+/* LA HALTE, tout à l'est : c'est de là qu'on prend le train.
+   Une halte, pas une gare — 168 de large, moins que la forge. La VOIE passe
+   derrière elle et sort de la carte ; elle coupe le chemin de la mine, d'où
+   le passage à niveau. */
+const HALTE_FIXE=[1250,330];
+const HALTE_L=168;                /* sa largeur, à l'échelle de la forge */
+/* « VOIE_Y » existait déjà — c'est l'axe des rails de la page du voyage.
+   Celle-ci est la voie posée SUR LA CARTE, d'où le nom distinct. */
+const RAIL_Y=250;                 /* la hauteur de la voie sur la carte */
+const RAIL_X0=1000;               /* elle commence là et file vers l'est */
+const PASSAGE_X=1095;             /* le passage à niveau, sur le chemin de la mine */  /* le forgeron, sous la mine */
 const TAILLERIE_OUVERTE=true;     /* la forge fond le minerai */
 const POTEAU_FIXE=[792,398];      /* le poteau indicateur, au sud de la place */
 /* chaque bras pointe vers un lieu : le jeu calcule l'angle et la distance */
@@ -5683,6 +5695,155 @@ function seLever(){
   if(!ASSIS)return;
   joueur.y=ASSIS.y+16;              /* on se relève devant le banc */
   ASSIS=null;vibrer(12);majAction();
+}
+
+
+/* ================= LA HALTE =================
+   Le bâtiment est gravé une fois ; seules l'horloge et la lanterne bougent.
+   Ce qui dit « on part d'ici », c'est la VOIE derrière, pas la façade. */
+let CALQUE_HALTE=null;
+function poserLaHalte(g,x,y){
+  /* R vient de l'aperçu, où il était global : on le redéclare ici pour que
+     la gravure reste autonome. */
+  const R=(gg,a,b,w,h,c)=>{gg.fillStyle=c;
+    gg.fillRect(a|0,b|0,Math.max(1,w),Math.max(1,h));};
+  const sol=y;
+  const PIERRE_H=['#9a9182','#a49b8c','#8f8778','#b0a795'];
+  const pierre=(px,py,w,h,gr)=>{
+    const t=Math.floor(alea(gr*0.41)*PIERRE_H.length);
+    R(g,px+1,py+1,w,h,'rgba(48,44,38,.34)');
+    R(g,px,py,w,h,PIERRE_H[t]);
+    R(g,px+1,py+1,w-2,h-2,'rgba(255,250,238,.13)');
+    R(g,px,py,w-1,1,'rgba(252,246,232,.48)');
+  };
+  /* l'ombre */
+  g.fillStyle='rgba(40,38,30,.22)';
+  g.beginPath();g.ellipse(x+4,sol+3,HALTE_L/2,11,0,0,7);g.fill();
+  /* LE CORPS : bas et long, deux fois plus large que haut */
+  for(let yy=0;yy<34;yy+=7){
+    const dec=(yy/7)%2?9:0;
+    for(let xx=-46;xx<46;xx+=19)pierre(x+xx+dec,sol-34+yy,18,6,xx*0.7+yy*1.3);
+  }
+  /* le toit, à faible pente : une halte n'a pas de grande nef */
+  for(let r=0;r<3;r++){
+    const w=54-r*8;
+    for(let xx=-w;xx<w;xx+=6){
+      R(g,x+xx,sol-40-r*5,6,5,((xx/6+r)%2)?'#5f6b72':'#6d7a82');
+      R(g,x+xx,sol-40-r*5,6,1,'#8894a0');
+    }
+  }
+  R(g,x-30,sol-55,60,3,'#8894a0');
+  /* L'AUVENT DE QUAI, en tôle, sur ses poteaux — c'est lui qui dit « gare » */
+  [-72,-40,40,72].forEach(dx=>{
+    R(g,x+dx,sol-44,4,44,'#4d545c');
+    R(g,x+dx,sol-44,1.4,44,'#7a848c');
+    R(g,x+dx-2,sol-2,8,3,'#3d4248');
+  });
+  for(let xx=-80;xx<80;xx+=8){
+    R(g,x+xx,sol-50,8,6,((xx/8)%2)?'#5f6b72':'#6d7a82');
+    R(g,x+xx,sol-50,8,1.4,'#8894a0');
+  }
+  R(g,x-84,sol-52,168,3,'#3d4248');
+  /* la dentelle de tôle, au bord de l'auvent */
+  for(let xx=-80;xx<80;xx+=6)R(g,x+xx,sol-46,3,3,'#4d545c');
+  /* LA PORTE et les deux fenêtres */
+  R(g,x-9,sol-24,18,24,'#241a12');
+  R(g,x-7,sol-22,7,22,'#4a3728');
+  R(g,x-9,sol-26,18,3,'#5b4a38');
+  [-30,30].forEach(dx=>{
+    R(g,x+dx-8,sol-28,16,13,'#2b2f36');
+    R(g,x+dx-8,sol-28,16,3,'#5c7185');
+    R(g,x+dx-1,sol-28,1,13,'rgba(230,226,214,.4)');
+  });
+  /* L'HORLOGE : le détail qui fait la gare */
+  g.fillStyle='#3d4248';
+  g.beginPath();g.arc(x,sol-44,7,0,7);g.fill();
+  g.fillStyle='#f2efe4';
+  g.beginPath();g.arc(x,sol-44,5.4,0,7);g.fill();
+  const T2=Date.now()/1000;
+  g.strokeStyle='#2b2f36';g.lineWidth=1;
+  g.beginPath();g.moveTo(x,sol-44);
+  g.lineTo(x+Math.cos(T2*0.1-1.57)*3.4,sol-44+Math.sin(T2*0.1-1.57)*3.4);g.stroke();
+  g.beginPath();g.moveTo(x,sol-44);
+  g.lineTo(x+Math.cos(T2*1.2-1.57)*4.4,sol-44+Math.sin(T2*1.2-1.57)*4.4);g.stroke();
+  /* LE NOM, sur une plaque émaillée */
+  R(g,x-34,sol-38,68,9,'#2f5a7a');
+  R(g,x-34,sol-38,68,1.4,'#4a7a9a');
+  g.font='700 6px Georgia,serif';g.fillStyle='#f2efe4';g.textAlign='center';
+  g.fillText('LA HALTE',x,sol-31);g.textAlign='left';
+  /* un banc et une lanterne sous l'auvent */
+  R(g,x+46,sol-10,22,3,'#7d5934');
+  R(g,x+46,sol-7,3,7,'#5b3f21');R(g,x+65,sol-7,3,7,'#5b3f21');
+  R(g,x-62,sol-40,4,30,'#4d545c');
+  R(g,x-66,sol-46,12,8,'#3d4248');
+  /* la lanterne est gravée éteinte : c'est le dessin vivant qui l'allume */
+  R(g,x-64,sol-44,8,5,'#c8c2ae');
+}
+function graverLaHalte(){
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=220*D;c.height=120*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  poserLaHalte(g,110,104);
+  CALQUE_HALTE={toile:c,W:220,H:120,sol:104};
+}
+function dessinerLaHalte(g,x,y){
+  if(!CALQUE_HALTE)graverLaHalte();
+  const C=CALQUE_HALTE;
+  g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
+  const T=Date.now()/1000;
+  const cx=Math.round(x), sol=Math.round(y);
+  /* l'horloge : seules les aiguilles tournent, sur l'heure du jeu */
+  const h=(typeof minutesDuMonde==='function')?minutesDuMonde():0;
+  g.fillStyle='#f2efe4';
+  g.beginPath();g.arc(cx,sol-44,5.4,0,7);g.fill();
+  g.strokeStyle='#2b2f36';g.lineWidth=1;
+  const aH=(h/720)*6.283-1.5708, aM=((h%60)/60)*6.283-1.5708;
+  g.beginPath();g.moveTo(cx,sol-44);
+  g.lineTo(cx+Math.cos(aH)*3.2,sol-44+Math.sin(aH)*3.2);g.stroke();
+  g.beginPath();g.moveTo(cx,sol-44);
+  g.lineTo(cx+Math.cos(aM)*4.4,sol-44+Math.sin(aM)*4.4);g.stroke();
+  /* la lanterne du quai */
+  const nuit=(typeof lampesAllumees==='function')&&lampesAllumees();
+  g.fillStyle=nuit?'#ffd27a':'#c8c2ae';
+  g.fillRect(cx-64,sol-44,8,5);
+  if(nuit)lueurNuit(g,cx-60,sol-40,34,'rgba(255,210,130,§)');
+}
+/* LE PASSAGE À NIVEAU : deux barrières qui s'abaissent quand un train
+   approche. Elles ne bloquent rien — c'est du décor qui vit. */
+function dessinerLePassage(g,x,y){
+  const T=Date.now()/1000;
+  /* un train toutes les trois minutes : les barrières descendent 12 s avant */
+  const cycle=(T%180);
+  const baisse=cycle>168?Math.min(1,(cycle-168)/2):(cycle<6?Math.max(0,1-cycle/2):0);
+  const R2=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(a),Math.round(b),w,h);};
+  [-1,1].forEach(sg=>{
+    const px=x+sg*26;
+    /* le poteau */
+    R2(px-2,y-26,5,26,'#c9c2ae');
+    R2(px-2,y-26,5,2,'#e8e2ce');
+    for(let k=0;k<3;k++)R2(px-2,y-22+k*8,5,3,'#b4472f');
+    /* la lisse, qui pivote */
+    g.save();
+    g.translate(px,y-24);
+    g.rotate(sg*(1.5708-baisse*1.5708));
+    for(let k=0;k<22;k+=4)
+      R2(0,-2+ (sg<0?0:0),4,4,((k/4)%2)?'#b4472f':'#f2efe4');
+    g.restore();
+    /* les deux feux */
+    const feu=baisse>0.05&&Math.sin(T*6)>0;
+    R2(px-6,y-32,5,5,feu&&sg<0?'#e8504a':'#4a3a36');
+    R2(px+2,y-32,5,5,feu&&sg>0?'#e8504a':'#4a3a36');
+  });
+  /* la croix de Saint-André */
+  g.save();
+  g.translate(x-26,y-40);
+  g.strokeStyle='#f2efe4';g.lineWidth=2.4;
+  g.beginPath();g.moveTo(-7,-7);g.lineTo(7,7);g.moveTo(7,-7);g.lineTo(-7,7);g.stroke();
+  g.strokeStyle='#b4472f';g.lineWidth=1.2;
+  g.beginPath();g.moveTo(-7,-7);g.lineTo(7,7);g.moveTo(7,-7);g.lineTo(-7,7);g.stroke();
+  g.restore();
 }
 
 /* ================= LA FORGE =================
@@ -6650,7 +6811,7 @@ function dessinerLaGare(g,x,y){
   /* LES ROUES SE POSENT SUR LE RAIL. Le train se dessinait à partir du sol de
      la halle (y=668) alors que les rails sont à 680 : il roulait huit points
      au-dessus du vide. On part donc de la voie, pas du bâtiment. */
-  const RAIL=VOIE_Y+4;
+  const RAIL=RAIL_Y+4;
   /* À QUAI : les voitures doivent se trouver DEVANT la halle, pas le nez
      dessus. La motrice s'arrête donc bien à gauche, et ce sont les portes
      qui tombent en face du quai. */
@@ -8601,6 +8762,38 @@ function graverChemins(g){
      L'herbe va d'un bâtiment à l'autre. Les ROUTES restent calculées — elles
      servent au dégagement du passage et à la carte — mais rien n'est posé au
      sol : ni sable, ni galets, ni bordure. */
+  /* ================= LA VOIE ET LE QUAI =================
+     Gravés dans le sol, aux coordonnées du MONDE : le grain ne bouge pas
+     quand on marche. La voie part de l'est du village et sort de la carte. */
+  for(let x=RAIL_X0;x<MONDE_L;x+=6)for(let k=-9;k<9;k+=3){
+    const t=alea(x*1.7+k*3.1);
+    g.fillStyle=t<0.4?'#6f675a':(t<0.75?'#7a7264':'#645c50');
+    g.fillRect(x,RAIL_Y+k,6,3);
+  }
+  for(let x=RAIL_X0;x<MONDE_L;x+=11){
+    g.fillStyle='#5b4a38';g.fillRect(x,RAIL_Y-7,8,15);
+    g.fillStyle='#7d6a52';g.fillRect(x,RAIL_Y-7,8,2);
+  }
+  [-4,4].forEach(dy=>{
+    g.fillStyle='#8f979e';g.fillRect(RAIL_X0,RAIL_Y+dy,MONDE_L-RAIL_X0,2);
+    g.fillStyle='#c2cad0';g.fillRect(RAIL_X0,RAIL_Y+dy,MONDE_L-RAIL_X0,1);
+  });
+  /* LE PASSAGE À NIVEAU : le chemin traverse, planches entre les rails */
+  for(let x=PASSAGE_X-22;x<PASSAGE_X+22;x+=5)for(let k=-10;k<10;k+=5){
+    g.fillStyle=((x/5+k)%2)?'#8a7660':'#7d6a52';
+    g.fillRect(x,RAIL_Y+k,5,5);
+  }
+  [-4,4].forEach(dy=>{
+    g.fillStyle='#c2cad0';g.fillRect(PASSAGE_X-22,RAIL_Y+dy,44,1);
+  });
+  /* LE QUAI, devant la halte */
+  for(let x=HALTE_FIXE[0]-96;x<HALTE_FIXE[0]+96;x+=4)
+    for(let y=HALTE_FIXE[1];y<HALTE_FIXE[1]+16;y+=4){
+      const t2=alea(x*0.7+y*1.3);
+      g.fillStyle=t2<0.4?'#b4ab9a':(t2<0.75?'#bfb6a4':'#a89f8e');
+      g.fillRect(x,y,4,4);
+    }
+  g.fillStyle='#8f8778';g.fillRect(HALTE_FIXE[0]-96,HALTE_FIXE[1]-2,192,2);
   /* LE SEUIL DES PONTS : deux dalles qui raccordent le chemin au tablier */
   PONTS.forEach(py=>{
     const px=rivX(py);
@@ -8857,6 +9050,16 @@ function semerDecor(){
   DECOR=DECOR.filter(o=>BATI(o.t)||
     !(Math.abs(o.x-CARREAU_FIXE[0])<130&&o.y>CARREAU_FIXE[1]-130&&o.y<CARREAU_FIXE[1]+40));
   DECOR.push({t:'mine2',x:CARREAU_FIXE[0],y:CARREAU_FIXE[1],gr:0});
+  /* LA HALTE, tout à l'est, et son passage à niveau sur le chemin de la mine */
+  DECOR.push({t:'halte',x:HALTE_FIXE[0],y:HALTE_FIXE[1],gr:0});
+  DECOR.push({t:'passage',x:PASSAGE_X,y:RAIL_Y,gr:0});
+  /* rien ne pousse sur la voie ni sur le quai */
+  DECOR=DECOR.filter(o=>{
+    if(o.t==='halte'||o.t==='passage')return true;
+    if(Math.abs(o.y-RAIL_Y)<16&&o.x>RAIL_X0-20)return false;
+    if(Math.abs(o.x-HALTE_FIXE[0])<104&&o.y>HALTE_FIXE[1]-72&&o.y<HALTE_FIXE[1]+24)return false;
+    return true;
+  });
   /* LA TAILLERIE, entre la mine et la rivière */
   DECOR=DECOR.filter(o=>BATI(o.t)||
     !(Math.abs(o.x-TAILLERIE_FIXE[0])<140&&o.y>TAILLERIE_FIXE[1]-150&&o.y<TAILLERIE_FIXE[1]+40));
@@ -9053,6 +9256,12 @@ function bloque(x,y){
   /* La colline est un RELIEF : on la contourne au-dessus de la voie, mais le
      quai et le bas de la carte restent libres. Ma première emprise couvrait
      tout ce qui était au sud de y=530, donc le quai de la gare lui-même. */
+  /* LA HALTE : le bâtiment est plein, le quai devant reste libre — c'est là
+     qu'on attend le train. */
+  {
+    const dx=x-HALTE_FIXE[0], dy=y-HALTE_FIXE[1];
+    if(Math.abs(dx)<48&&dy>-56&&dy<-2)return true;
+  }
   /* LA FORGE : le corps de pierre et la cheminée sont pleins. Le devant du
      foyer et l'enclume restent libres — c'est là qu'on se tient pour
      travailler. */
@@ -9166,6 +9375,7 @@ function margesDe(t){
     if(t==='taillerie'){if(!CALQUE_TAILLERIE)graverLaTaillerie();C=CALQUE_TAILLERIE;}
     else if(t==='echoppe'){if(!CALQUE_ECHOPPE)graverLEchoppe();C=CALQUE_ECHOPPE;}
     else if(t==='mine2'){if(!CALQUE_MINE)graverLaMine();C=CALQUE_MINE;}
+    else if(t==='halte'){if(!CALQUE_HALTE)graverLaHalte();C=CALQUE_HALTE;}
     else if(t==='comptoir'){if(!CALQUE_COMPTOIR)graverLeComptoir();C=CALQUE_COMPTOIR;}
     else if(CALQUES_DECO[t])C=CALQUES_DECO[t];
   }catch(x){}
@@ -9324,6 +9534,8 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     else if(o.t==='ecriteau')dessinerLEcriteau(g,x,y);
     else if(o.t==='taillerie')dessinerLaTaillerie(g,x,y);
     else if(o.t==='mine2')dessinerLaMine(g,x,y);
+    else if(o.t==='halte')dessinerLaHalte(g,x,y);
+    else if(o.t==='passage')dessinerLePassage(g,x,y);
     else if(o.t==='entrepot')dessinerLEntrepot(g,x,y);
     else if(o.t==='gare')dessinerLaGare(g,x,y);
     else if(o.t==='echoppe')dessinerLEchoppe(g,x,y);
@@ -10941,7 +11153,7 @@ async function chargerLaCarte(){
        en attendant, sinon il y en aurait deux. */
     const garder=['pont','casino','mine','forge','coffre','comptoir','panneau','fete',
                   'maison','taverne','atelier','puits','fontaine','arbrePot','bancP',
-                  'panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','souche','gravats'];
+                  'panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','souche','gravats','halte','passage'];
     DECOR=DECOR.filter(o=>garder.includes(o.t));invaliderGrille();
     d.forEach(m=>{
       if(m.genre==='panneau'||m.genre==='comptoir')return;   /* retirés du jeu */
@@ -11433,7 +11645,7 @@ function cible(){
   for(const o of autour){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
-    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie'].includes(o.t);
+    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie','halte'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'
        &&!batiment&&!o.bati&&!cueillable&&!minerai)continue;
     if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
@@ -11572,6 +11784,12 @@ function majAction(){
     if(!TAILLERIE_OUVERTE)b.onclick=null;
     return;
   }
+  if(o.t==='halte'){
+    /* LA HALTE : on y prend le train pour la ville. */
+    b.innerHTML='Prendre le train<small>DÉPART TOUTES LES DIX MINUTES</small>';
+    b.classList.add('on');
+    return;
+  }
   if(o.t==='mine2'||o.t==='ecriteau'){
     b.innerHTML=(MINE_OUVERTE?'Descendre dans la mine':'La mine est fermée')+
       '<small>'+(MINE_OUVERTE?'ROCHERS, MINERAIS ET DIAMANTS'
@@ -11678,6 +11896,12 @@ function agir(){
   if(o.t==='entrepot')return;          /* on n'y ramasse rien : c'est un bâtiment */
   if(o.t==='taillerie'){ouvrirLaForge();return;}
   if(o.t==='ecriteau')return;
+  if(o.t==='halte'){
+    /* LE VOYAGE : on réutilise le chargement du TGV, déjà en place. */
+    try{sauver();}catch(x){}
+    partirEnVoyage({nom:'LA VILLE'});
+    return;
+  }
   if(o.t==='mine2'){
     /* LA MINE EST UNE PAGE À PART : on sauvegarde avant de partir, pour que
        le sac emporté soit bien celui qu'on avait sous les yeux. */
