@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1821';
+  var MA_VERSION='2026-09-19-1823';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -14204,15 +14204,32 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     else if(cote&&!devant){R(-8,yEp+4,5,15,sacC);R(-8,yEp+4,5,2,T(sacC,20));}
   };
   /* ============ LA TÊTE ============ */
+  /* L'OREILLE, vue de face ou de dos : l'ourlet éclairé, le creux sombre, le lobe */
+  const oreille=(cx,hy,cote2,dosV)=>{
+    const x=cote2<0?cx-3:cx;
+    R(x,hy+9,3,7,peau);R(cote2<0?x:x+2,hy+9,1,7,peauO);                       /* l'ourlet et son ombre */
+    if(!dosV){R(cote2<0?x+1:x+1,hy+10,1,4,peauO);R(cote2<0?x+1:x+1,hy+11,1,2,peauT);}   /* le creux */
+    else R(cote2<0?x+1:x+1,hy+10,1,4,T(peau,-12));
+    R(cote2<0?x+2:x,hy+9,1,1,peauC);                                             /* le haut éclairé */
+    R(x+(cote2<0?1:0),hy+16,2,1,peauO);                                           /* le lobe */
+  };
   const tete=()=>{
     const hy=yTete;
     R(-3,yCou-1,6,5,peauO);                                   /* le cou */
     if(cote){
       for(let r=0;r<24;r++){const w=r<2?16:(r>20?15:21), xx=-10+(r>20?2:0);R(xx,hy+r,w,1,peau);}
-      R(-10,hy+4,2,16,peauO);R(10,hy+10,3,5,peau);R(12,hy+12,1,2,peauO);             /* la nuque, le nez */
-      if(nez==='large')R(9,hy+11,4,4,peau);if(nez==='retrousse')R(11,hy+10,1,1,peau);
-      R(-2,hy+9,4,6,peauO);R(-1,hy+10,2,4,peauT);                                   /* l'oreille */
-      if(boucle!=='aucune')R(-1,hy+15,2,2,boucle==='perle'?'#f2efe4':(boucle==='plume'?'#c0392b':'#e8c06a'));
+      R(-10,hy+4,2,16,peauO);                                                         /* la nuque */
+      /* LE NEZ DE PROFIL : l'arête qui descend, la pointe, l'aile et la narine */
+      const NZ={petit:[[10,11,1],[10,12,2],[10,13,2]],droit:[[10,10,1],[10,11,2],[10,12,2],[10,13,3],[10,14,2]],
+                large:[[10,10,2],[10,11,3],[10,12,3],[10,13,4],[10,14,3]],retrousse:[[10,11,1],[10,12,2],[10,13,3],[11,12,2]]}[nez]||[];
+      NZ.forEach(([a,b,l])=>R(a,hy+b,l,1,peau));
+      const bout=NZ.reduce((m,[a,b,l])=>Math.max(m,a+l),10);
+      R(bout-1,hy+(nez==='retrousse'?12:13),1,1,peauC);                               /* la pointe éclairée */
+      R(10,hy+14,2,1,peauO);R(11,hy+14,1,1,peauT);                                   /* l'aile, la narine */
+      /* L'OREILLE DE PROFIL : un C, avec l'ourlet, le creux et le lobe */
+      R(-3,hy+9,5,7,peau);R(-3,hy+9,1,7,peauO);R(-2,hy+9,3,1,peauC);
+      R(-1,hy+10,2,4,peauO);R(0,hy+11,1,2,peauT);R(1,hy+11,1,3,peau);R(-2,hy+15,3,1,peauO);
+      if(boucle!=='aucune')R(-2,hy+16,2,2,boucle==='perle'?'#f2efe4':(boucle==='plume'?'#c0392b':'#e8c06a'));
       oeilDe(4,hy+10,true);sourcilDe(3,hy+7,true);
       R(6,hy+17,4,1,bouche==='sourire'?T(peau,-70):T(peau,-50));
       if(bouche==='sourire')R(9,hy+16,1,1,T(peau,-70));
@@ -14221,21 +14238,23 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       if(marque==='peinture')R(2,hy+11,8,2,'#c0392b');
     }else if(dos){
       for(let r=0;r<24;r++){const w=r<2?18:(r>21?16:24);R(-Math.round(w/2),hy+r,w,1,peau);}
-      R(-14,hy+10,2,5,peauO);R(12,hy+10,2,5,peauO);
+      oreille(-12,hy,-1,true);oreille(12,hy,1,true);
     }else{
       for(let r=0;r<24;r++){const w=r<2?18:(r>19?22-(r-20)*2:24);R(-Math.round(w/2),hy+r,w,1,r>19?peauO:peau);}
       R(-12,hy+2,1,18,peauO);R(11,hy+2,1,18,peauC);
       if(diag){R(vis>0?-12:10,hy+2,2,18,peauO);}                                  /* la joue qui tourne */
-      if(!diag||vis<0)R(12,hy+10,2,5,peauO);if(!diag||vis>0)R(-14,hy+10,2,5,peauO);   /* les oreilles */
-      if(boucle!=='aucune'){const bc=boucle==='perle'?'#f2efe4':(boucle==='plume'?'#c0392b':'#e8c06a');R(-14,hy+15,2,2,bc);R(12,hy+15,2,2,bc);}
+      if(!diag||vis<0)oreille(12,hy,1,false);if(!diag||vis>0)oreille(-12,hy,-1,false);   /* les oreilles */
+      if(boucle!=='aucune'){const bc=boucle==='perle'?'#f2efe4':(boucle==='plume'?'#c0392b':'#e8c06a');
+        if(!diag||vis>0)R(-14,hy+16,2,2,bc);if(!diag||vis<0)R(12,hy+16,2,2,bc);}
       const f3=diag?vis*3:0;
       oeilDe(-7+f3+(diag&&vis>0?1:0),hy+11,false);oeilDe(3+f3-(diag&&vis<0?1:0),hy+11,false);sourcilDe(-7+f3,hy+8,false);sourcilDe(3+f3,hy+8,false);
       g.save();g.translate(f3*u*(1),0);
       /* le nez */
-      if(nez==='petit')R(-1,hy+14,2,1,peauO);
-      else if(nez==='large'){R(-2,hy+13,4,3,peauO);R(-1,hy+13,2,1,peauC);}
-      else if(nez==='retrousse'){R(-1,hy+13,2,2,peauO);R(0,hy+14,1,1,peauC);}
-      else{R(0,hy+12,1,4,peauO);R(-1,hy+15,3,1,peauO);}
+      /* LE NEZ DE FACE : l'arête dans l'ombre d'un côté, la pointe éclairée, les narines */
+      if(nez==='petit'){R(0,hy+14,1,1,peauC);R(-1,hy+15,3,1,peauO);R(-1,hy+15,1,1,peauT);R(1,hy+15,1,1,peauT);}
+      else if(nez==='large'){R(-1,hy+12,1,2,peauO);R(-3,hy+14,6,2,peauO);R(-1,hy+14,2,1,peauC);R(-3,hy+15,1,1,peauT);R(2,hy+15,1,1,peauT);R(-2,hy+16,4,1,T(peau,-12));}
+      else if(nez==='retrousse'){R(-1,hy+12,1,2,peauO);R(0,hy+13,1,1,peauC);R(-2,hy+14,4,1,peauO);R(-1,hy+14,1,1,peauT);R(1,hy+14,1,1,peauT);}
+      else{R(-1,hy+11,1,4,peauO);R(0,hy+14,1,1,peauC);R(-2,hy+15,4,1,peauO);R(-2,hy+15,1,1,peauT);R(1,hy+15,1,1,peauT);}
       /* la bouche */
       const bc=T(peau,-62);
       if(bouche==='sourire'){R(-3,hy+17,6,1,bc);R(-4,hy+16,1,1,bc);R(3,hy+16,1,1,bc);}
@@ -14364,7 +14383,7 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       else if(cf.fr==='crete'){R(-12,hy,15,8,T(peau,-10));for(let k=0;k<6;k++){R(-9+k*3,top-5+(k%2),2,6,k%2?H5.b:H5.c);}}
       else if(cf.fr==='rase'||cf.fr==='degrade'){for(let r=top;r<hy+8;r++)for(let x2=-12;x2<9;x2+=2)if((r+x2)%3===0)R(x2,r,1,1,H5.o);if(cf.fr==='degrade')R(-12,hy+9,5,5,T(peau,-14));}
       else if(cf.fr==='hirsute'){for(let k=0;k<7;k++)R(-12+k*3,top-2-(k%3),2,3,H5.b);}
-      R(-1,hy+8,2,5,H5.b);R(-1,hy+8,1,5,H5.o);                                      /* la patte, devant l'oreille */
+      R(2,hy+8,2,5,H5.b);R(2,hy+8,1,5,H5.o);                                        /* la patte, devant l'oreille */
       /* les particularités vues de côté */
       if(cf.sp==='queue'){R(-16,hy+6,4,3,'#c0392b');for(let r=0;r<16;r++)R(-17-Math.round(r*0.25)+bal(r*1.5)-(bouge?Math.round(r*0.12):0),hy+9+r,4,1,r>12?H5.o:(r<2?H5.c:H5.b));}
       if(cf.sp==='chignon'||cf.sp==='chignonHaut'){const cy=cf.sp==='chignon'?hy+7:hy-2;calotte(-15,cy-4,cy+4,4,4);R(-16,cy-2,2,1,H5.cc);}
