@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-2025';
+  var MA_VERSION='2026-09-19-2041';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -7524,9 +7524,72 @@ function dessinerLeMetroDedans(g,x,y,vivant){
    }
  
 }
+/* =====================================================================
+   LE MÉTRO EN PIXEL FIN — les deux bouches (le Guimard du village, la station
+   d'Extramar) : mêmes places, mêmes dimensions, détails au demi-pixel.
+   ===================================================================== */
+let CALQUE_METRO_FIN=null;
+function graverLeMetroFin(){
+  const W=86,H=104,cx=W/2,sol=H-10;
+  const c=document.createElement('canvas');c.width=W*2;c.height=H*2;
+  const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
+  dessinerLeMetroDedans(g,cx,sol,false);                        /* la composition d'origine, au double */
+  const F=Ffin(g);
+  /* L'ESCALIER : le nez de chaque marche accroche la lumière, l'usure au milieu */
+  for(let k=0;k<7;k++){const w=34-k/7*6, ty=sol-4-k*4;F(cx-w/2,ty,w,0.5,'rgba(255,255,255,.28)');F(cx-4,ty+0.5,8,0.5,'rgba(255,255,255,.12)');F(cx-w/2,ty+2.5,w,0.5,'rgba(0,0,0,.35)');}
+  /* les joues de pierre : joints et grain */
+  [-1,1].forEach(s=>{for(let k=0;k<7;k++){const x0=cx+s*18-(s>0?0:3), y0=sol-6-k*4;F(x0,y0+4.5,4,0.5,'rgba(0,0,0,.3)');F(x0+hasardF(k+s)*3,y0+2,0.5,0.5,'rgba(255,255,255,.3)');}});
+  /* LES MÂTS DE FONTE : cannelures claires et sombres, bagues, rivets */
+  [-1,1].forEach(s=>{const bx=cx+s*26;
+    for(let k=0;k<44;k+=1){const w=6+Math.sin(k/44*3.14159)*2.4;F(bx-w/2+1.5,sol-6-k,0.5,1,'rgba(200,255,210,.28)');F(bx+w/2-1.5,sol-6-k,0.5,1,'rgba(0,20,10,.35)');}
+    for(let k=8;k<44;k+=12){F(bx-4,sol-6-k,8,1,'#1f3a2a');F(bx-4,sol-6-k,8,0.5,'#6a9a78');}
+    F(bx-5,sol-6,11,0.5,'#d8dee2');
+    /* la lanterne : cage de fonte, vitre et reflet */
+    for(let a=-1;a<=1;a++)F(bx+a*3-0.25,sol-68,0.5,14,'rgba(20,40,28,.3)');
+    F(bx-3.5,sol-66,1,6,'rgba(255,255,255,.55)');F(bx-1,sol-71,2,1,'#3a5a44');});
+  /* L'ARCHE : une rangée de rivets */
+  for(let k=0;k<=10;k++){const t=k/10, ax=(1-t)*(1-t)*(cx-26)+2*(1-t)*t*cx+t*t*(cx+26), ay=(1-t)*(1-t)*(sol-44)+2*(1-t)*t*(sol-66)+t*t*(sol-44);
+    F(ax-0.5,ay-0.5,1,1,'#1f3a2a');F(ax-0.5,ay-0.5,0.5,0.5,'#8ab896');}
+  /* L'ÉCUSSON ÉMAILLÉ : double liseré, rivets aux coins, reflet */
+  F(cx-16.5,sol-55.5,33,0.5,'#2f5b3e');F(cx-16.5,sol-45.5,33,0.5,'#2f5b3e');F(cx-16.5,sol-55.5,0.5,10,'#2f5b3e');F(cx+16,sol-55.5,0.5,10,'#2f5b3e');
+  [[-18,-57],[17.5,-57],[-18,-44.5],[17.5,-44.5]].forEach(([a,b])=>{F(cx+a,sol+b,1,1,'#b88a3a');F(cx+a,sol+b,0.5,0.5,'#f0cf7d');});
+  F(cx-15,sol-55,8,0.5,'rgba(255,255,255,.7)');
+  CALQUE_METRO_FIN={toile:c,W,H,sol};
+}
+/* LA STATION D'EXTRAMAR : trémie, marches, muret, rampes d'inox, totem au grand M */
+function graverMetroMFin(W,H,sol,cx){
+  const c=document.createElement('canvas');c.width=W*2;c.height=H*2;
+  const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;const F=Ffin(g);
+  g.fillStyle='rgba(30,40,40,.28)';g.beginPath();g.ellipse(cx+2,sol+1,34,5,0,0,7);g.fill();
+  /* la trémie et ses marches, qui s'enfoncent dans l'ombre */
+  F(cx-26,sol-26,52,26,'#8f8a80');
+  for(let k=0;k<7;k++){const y=sol-24+k*3, t=k/7;F(cx-22,y,44,3,k%2?'#5c5a55':'#6d6b65');F(cx-22,y,44,0.5,'#9a968c');F(cx-22,y+2.5,44,0.5,'#3f3d39');
+    F(cx-3,y+0.5,6,0.5,'rgba(255,255,255,.12)');void t;}
+  const fond=g.createLinearGradient(0,sol-4,0,sol-26);fond.addColorStop(0,'rgba(12,14,22,.6)');fond.addColorStop(1,'rgba(12,14,22,0)');g.fillStyle=fond;g.fillRect(cx-22,sol-24,44,22);
+  /* le muret de pierre claire, ses joints */
+  F(cx-26,sol-26,52,2,'#c9c3b4');F(cx-26,sol-26,2,26,'#c9c3b4');F(cx+24,sol-26,2,26,'#c9c3b4');
+  F(cx-26,sol-26,52,0.5,'#ece6d6');for(let k=0;k<26;k+=4){F(cx-26,sol-26+k,2,0.5,'#a8a294');F(cx+24,sol-26+k,2,0.5,'#a8a294');}
+  for(let k=-24;k<24;k+=6)F(cx+k,sol-26,0.5,2,'#a8a294');
+  /* les rampes d'inox, brillantes, et leurs montants */
+  const rampe=(x,y,w,h)=>{F(x,y,w,1,'#e9edf0');F(x,y,w,0.5,'#ffffff');F(x,y+1,w,0.5,'#8a939a');for(let k=0;k<w;k+=6){F(x+k,y,0.5,h,'#b9c1c7');F(x+k+0.5,y,0.5,h,'#7a8288');}};
+  rampe(cx-26,sol-34,52,8);F(cx-27,sol-34,1,34,'#b9c1c7');F(cx+26,sol-34,1,34,'#b9c1c7');F(cx-27,sol-34,0.5,34,'#e9edf0');F(cx+26,sol-34,0.5,34,'#e9edf0');
+  /* LE TOTEM : mât d'acier, cube bleu au grand M, plaque du nom, pastille M1 */
+  const tx=cx+34;
+  F(tx-1,sol-70,3,70,'#5d6770');F(tx-1,sol-70,1,70,'#8a949c');F(tx+1.5,sol-70,0.5,70,'#3f474e');
+  F(tx-8,sol-86,17,17,'#1d4f9a');F(tx-8,sol-86,17,1,'#4d7fc8');F(tx-8,sol-70,17,1,'#12356a');F(tx-8,sol-86,0.5,17,'#4d7fc8');F(tx+8.5,sol-86,0.5,17,'#12356a');
+  F(tx-5,sol-83,2,11,'#ffffff');F(tx+4,sol-83,2,11,'#ffffff');
+  for(let k=0;k<5;k++){F(tx-3+k*0.5,sol-82+k,1.5,1.5,'#ffffff');F(tx+2.5-k*0.5,sol-82+k,1.5,1.5,'#ffffff');}      /* le M, en diagonales douces */
+  F(tx-7,sol-85,4,0.5,'rgba(255,255,255,.35)');
+  F(tx-10,sol-66,21,7,'#12356a');F(tx-10,sol-66,21,0.5,'#2d5fa8');for(let k=0;k<6;k++)F(tx-8+k*3,sol-63.5,2,1.5,'#e9edf0');   /* le nom, en lettres fines */
+  F(tx-4,sol-57,9,4,'#1d4f9a');F(tx-3,sol-56,3,2,'#ffffff');F(tx+1,sol-56,3,2,'#e8c06a');
+  return c;
+}
+
 function dessinerLeMetro(g,x,y){
-  if(!CALQUE_METRO)graverLeMetro();
-  const C=CALQUE_METRO;
+  const fin=FIN_OK();
+  if(fin&&!CALQUE_METRO_FIN)graverLeMetroFin();
+  if(!fin&&!CALQUE_METRO)graverLeMetro();
+  const C=fin?CALQUE_METRO_FIN:CALQUE_METRO;
   g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
   /* LES LANTERNES, vivantes : elles s'allument avec le soir */
   if(lampesAllumees()){
@@ -12212,7 +12275,7 @@ function graverX(t,v){
     h2.fillStyle='#ffffff';h2.fillRect(tx-5,sol-83,2,11);h2.fillRect(tx+4,sol-83,2,11);
     h2.fillRect(tx-3,sol-82,2,2);h2.fillRect(tx-2,sol-80,2,2);h2.fillRect(tx+1,sol-80,2,2);h2.fillRect(tx+2,sol-82,2,2);
     h2.fillStyle='rgba(255,236,190,.35)';h2.fillRect(cx-22,sol-24,44,22);             /* la lumière qui remonte */
-    XCAL[cle]={toile:c,W,H,sol,nuit:n2};
+    XCAL[cle]={toile:(FIN_OK()?graverMetroMFin(W,H,sol,cx):c),W,H,sol,nuit:n2};          /* en pixel fin, la station redessinée */
     if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
     return XCAL[cle];
   }
