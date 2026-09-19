@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-0833';
+  var MA_VERSION='2026-09-19-0854';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -749,6 +749,10 @@ body{overflow:hidden}
 #page2Fond .bDevPied{display:flex;gap:8px;justify-content:flex-end}
 #page2Fond .bDevPied button{border:0;border-radius:10px;padding:9px 12px;font:700 13px Georgia,serif;background:#e8dcc0;color:#3a2a18}
 #page2Fond .bDevPied #bRepPublier{background:#3a2a18;color:#f2efe4}
+#petanque .pqChoix{display:flex;gap:8px;margin:2px 0 8px}
+#petanque .pqChoix button{flex:1;border:0;border-radius:12px;padding:12px 6px;background:#3a4a36;color:#f2efe4;font:700 15px Georgia,serif;box-shadow:0 3px 0 #1f2a1c}
+#petanque .pqChoix button.or{background:#e8c06a;color:#2a1d0c;box-shadow:0 3px 0 #8a6a2a}
+#petanque .pqChoix small{display:block;font:700 10px ui-monospace,monospace;letter-spacing:1px;opacity:.8;margin-top:3px}
 #petanque{position:fixed;inset:0;z-index:29;display:none;background:rgba(10,14,8,.72);
   align-items:center;justify-content:center;padding:calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom))}
 #petanque.on{display:flex}
@@ -10656,31 +10660,62 @@ function graverLaStationVelo(){
   R(9,sol-34,8,4,'#f2efe4');R(11,sol-33,4,2,'#1d4f9a');
   /* la barre et les vélos accrochés */
   R(20,sol-8,66,2,'#8f959b');
-  for(let k=0;k<4;k++)dessinerUnVelo(g,32+k*17,sol-1,'droite',0,k);
+  for(let k=0;k<4;k++)dessinerUnVelo(g,32+k*17,sol-1,'droite',0,k,false);
   return {toile:c,W,H:Ht,sol};
 }
-/* un vélo : de profil (gauche/droite) ou de face (haut/bas) */
-function dessinerUnVelo(g,x,y,dir,pas,v){
+/* un vélo : de profil (gauche/droite) ou de face (haut/bas). « pas » avance quand on
+   roule : les rayons tournent, le pédalier tourne, les pieds pédalent. */
+function dessinerUnVelo(g,x,y,dir,pas,v,roule){
   const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(a),Math.round(b),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
   const cadre=['#2d6fb0','#2d6fb0','#1d8fa0','#2d6fb0','#1d8fa0'][(v||0)%5];
+  const rot=(pas||0)*4.2;
+  /* l'ombre au sol */
+  g.fillStyle='rgba(30,25,15,.28)';g.beginPath();g.ellipse(x,y+1,dir==='gauche'||dir==='droite'?13:4,2,0,0,Math.PI*2);g.fill();
   if(dir==='gauche'||dir==='droite'){
-    const s=dir==='droite'?1:-1, rot=pas*2;
-    g.strokeStyle='#2a2c2e';g.lineWidth=1.2;
-    [[-8,0],[8,0]].forEach(([dx])=>{g.beginPath();g.arc(x+dx*s,y-5,5,0,Math.PI*2);g.stroke();
-      g.strokeStyle='rgba(180,185,190,.7)';g.lineWidth=.5;g.beginPath();g.moveTo(x+dx*s+Math.cos(rot)*4,y-5+Math.sin(rot)*4);g.lineTo(x+dx*s-Math.cos(rot)*4,y-5-Math.sin(rot)*4);g.stroke();
-      g.strokeStyle='#2a2c2e';g.lineWidth=1.2;});
-    g.strokeStyle=cadre;g.lineWidth=1.6;g.beginPath();
-    g.moveTo(x-8*s,y-5);g.lineTo(x-1*s,y-5);g.lineTo(x+4*s,y-12);g.lineTo(x-4*s,y-12);g.lineTo(x-8*s,y-5);
-    g.moveTo(x-1*s,y-5);g.lineTo(x-4*s,y-13);g.moveTo(x+4*s,y-12);g.lineTo(x+8*s,y-5);g.stroke();
-    R(x-6*s-2,y-14,5,1,'#1b1b1b');                                 /* la selle */
-    R(x+4*s-1,y-15,1,3,'#2a2c2e');R(x+4*s-2,y-15,3,1,'#2a2c2e');   /* le guidon */
-    R(x+6*s-2,y-13,5,3,'#6b6b66');                                 /* le panier */
+    const s=dir==='droite'?1:-1;
+    /* les roues : pneu, jante, moyeu, rayons qui tournent */
+    [[-8],[8]].forEach(([dx])=>{
+      const cx=x+dx*s, cy=y-5;
+      g.strokeStyle='#1f2124';g.lineWidth=1.6;g.beginPath();g.arc(cx,cy,5,0,Math.PI*2);g.stroke();
+      g.strokeStyle='#8f959b';g.lineWidth=.6;g.beginPath();g.arc(cx,cy,3.9,0,Math.PI*2);g.stroke();
+      g.strokeStyle='rgba(200,205,210,.8)';g.lineWidth=.45;
+      for(let k=0;k<3;k++){const a=rot*s+k*Math.PI/3;g.beginPath();g.moveTo(cx+Math.cos(a)*3.8,cy+Math.sin(a)*3.8);g.lineTo(cx-Math.cos(a)*3.8,cy-Math.sin(a)*3.8);g.stroke();}
+      R(cx-.5,cy-.5,1,1,'#d8dde2');
+    });
+    /* le cadre : diamant classique, un peu épais, avec son reflet */
+    const px=x-1*s, py=y-5;                                        /* le pédalier */
+    g.strokeStyle=cadre;g.lineWidth=1.8;g.lineCap='round';g.beginPath();
+    g.moveTo(x-8*s,y-5);g.lineTo(px,py);g.lineTo(x+4*s,y-12);g.lineTo(x-4*s,y-12);g.lineTo(x-8*s,y-5);
+    g.moveTo(px,py);g.lineTo(x-4.5*s,y-13.5);g.moveTo(x+4*s,y-12);g.lineTo(x+8*s,y-5);g.stroke();
+    g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=.5;g.beginPath();g.moveTo(x-4*s,y-12.4);g.lineTo(x+3.6*s,y-12.4);g.stroke();
+    g.lineCap='butt';
+    /* le garde-boue arrière, la selle, le guidon, le panier */
+    g.strokeStyle='#6b6b66';g.lineWidth=.8;g.beginPath();g.arc(x-8*s,y-5,6.2,s>0?Math.PI*1.05:Math.PI*1.45,s>0?Math.PI*1.55:Math.PI*1.95);g.stroke();
+    R(x-7*s-2,y-15,6,1.5,'#1b1b1b');R(x-6*s-1,y-14,3,1,'#3a3a36');
+    R(x+4*s-.5,y-16,1,4,'#2a2c2e');R(x+4*s-(s>0?0:3),y-16.5,4,1,'#2a2c2e');R(x+4*s+(s>0?3:-4),y-16.5,1,1,'#1b1b1b');
+    R(x+6*s-(s>0?1:4),y-14,6,4,'#8a8f94');R(x+6*s-(s>0?1:4),y-14,6,1,'#b9c1c7');
+    for(let k=0;k<3;k++)R(x+6*s-(s>0?0:3)+k*2,y-13,1,3,'#6b6b66');
+    /* le pédalier : plateau, manivelles opposées, pédales, et les pieds dessus */
+    g.strokeStyle='#3a3a36';g.lineWidth=.8;g.beginPath();g.arc(px,py,1.8,0,Math.PI*2);g.stroke();
+    g.strokeStyle='rgba(60,60,56,.8)';g.lineWidth=.5;g.beginPath();g.moveTo(px,py-1.8);g.lineTo(x-8*s,y-4.2);g.moveTo(px,py+1.8);g.lineTo(x-8*s,y-5.8);g.stroke();
+    [0,Math.PI].forEach((o,k)=>{const a=rot*s+o, pdx=px+Math.cos(a)*3, pdy=py+Math.sin(a)*3;
+      g.strokeStyle='#5a5a54';g.lineWidth=.9;g.beginPath();g.moveTo(px,py);g.lineTo(pdx,pdy);g.stroke();
+      R(pdx-1.5,pdy-.5,3,1,'#2a2c2e');
+      if(roule!==false)R(pdx-1.5+(s>0?.5:-.5),pdy-1.8,3,1.6,k?'#3a2616':'#4a3220');});
+    /* quand on file : deux traits de vitesse derrière */
+    if(roule){g.fillStyle='rgba(255,255,255,.35)';g.fillRect(Math.round(x-15*s-(s>0?5:0)),Math.round(y-9),5,1);g.fillRect(Math.round(x-14*s-(s>0?3:0)),Math.round(y-6),3,1);}
   }else{
-    /* de face ou de dos : une roue fine, le guidon en travers */
-    const b=Math.round(Math.sin(pas*6)*0.5);
-    R(x-1,y-11,2,11,'#2a2c2e');R(x-1,y-10+b,2,3,'#6b6b66');
-    R(x-1,y-13,2,4,cadre);R(x-5,y-14,10,1,'#2a2c2e');R(x-6,y-15,2,2,'#1b1b1b');R(x+4,y-15,2,2,'#1b1b1b');
-    if(dir!=='bas-face'){R(x-2,y-17,4,2,'#6b6b66');}
+    /* de face (bas) ou de dos (haut) : la roue en fine ellipse, le guidon en travers */
+    const face=dir==='bas', flick=Math.floor((pas||0)*6)%2;
+    g.fillStyle='#1f2124';g.fillRect(Math.round(x-1),Math.round(y-10),2,10);
+    g.fillStyle=flick?'#8f959b':'#6b7076';g.fillRect(Math.round(x),Math.round(y-9),1,8);
+    R(x-1,y-13,2,4,cadre);R(x-.5,y-13,1,4,'rgba(255,255,255,.35)');
+    R(x-6,y-15,12,1.2,'#2a2c2e');R(x-7,y-15.5,2,2,'#1b1b1b');R(x+5,y-15.5,2,2,'#1b1b1b');
+    if(face){R(x-3,y-13,6,4,'#8a8f94');R(x-3,y-13,6,1,'#b9c1c7');R(x-1,y-12,2,1,'#fff6c8');}      /* le panier, le phare */
+    else{R(x-1,y-11,2,1.5,'#e0402f');R(x-2,y-17,4,1.5,'#1b1b1b');}                                /* le feu rouge, la selle */
+    /* les pieds qui pédalent, de part et d'autre de la roue */
+    const up=Math.sin((pas||0)*4.2)*1.6;
+    R(x-4,y-6+up,2.5,2,'#3a2616');R(x+1.5,y-6-up,2.5,2,'#3a2616');
   }
 }
 /* LA CUISINE : on choisit ses poissons, Fonfon fait la bouillabaisse et l'achète */
@@ -13834,7 +13869,9 @@ function assis(g,x,y,ap){
 }
 function personne(g,x,y,ap,dir,pas,marche,enCourse){
   /* à vélo : le vélo d'abord, le cycliste un peu plus haut, en selle */
-  const aVelo=VELO&&CARTE==='extramar'&&ap===e.ap;if(aVelo)y-=6;
+  const aVelo=VELO&&CARTE==='extramar'&&ap===e.ap;
+  /* en selle : un peu plus haut, et le buste qui balance au rythme des pédales */
+  if(aVelo)y-=6+(marche?Math.abs(Math.sin((pas||0)*4.2))*0.8:0);
   /* assis sur un banc */
   const C=cosmetiqueDe(ap);
   /* la course a ses propres poses : on les range sous une autre clé, sinon
@@ -13865,7 +13902,7 @@ function personne(g,x,y,ap,dir,pas,marche,enCourse){
   /* la caisse, par-dessus tout : c'est elle qu'on voit d'abord */
   if(ap===e.ap&&caissePortee)dessinerLaCaisse(g,x,y,marche,pas);
   /* le vélo passe DEVANT les jambes : on voit le cycliste en selle */
-  if(aVelo)dessinerUnVelo(g,x,y+7,dir||'bas',pas||0,0);
+  if(aVelo)dessinerUnVelo(g,x,y+7+(marche?Math.abs(Math.sin((pas||0)*4.2))*0.8:0),dir||'bas',pas||0,0,!!marche);
 }
 
 /* ================= déplacement ================= */
@@ -16444,11 +16481,77 @@ function actionDePeche(b){
 }
 
 /* ================= LA PÉTANQUE, AU BOULODROME D'EXTRAMAR =================
-   Une mène contre Marius : trois boules chacun. On fixe la DIRECTION d'une
-   touche, puis la FORCE d'une autre ; la boule vole, retombe, roule, pousse
-   ce qu'elle touche. À la fin, on compte les points comme au vrai jeu. Pas
-   d'argent en jeu : juste l'honneur, et le compte des mènes gagnées. */
-const PQ={W:160,H:280,S:[80,262]};
+   Une mène contre Marius, trois boules chacun. Deux façons de jouer :
+   — l'ENTRAÎNEMENT, gratuit ;
+   — la MÈNE À 2 €, qui en rapporte 6 si on la gagne. Le serveur tire le cochonnet
+     et le hasard de Marius, puis REJOUE la mène avec nos lancers : c'est lui qui
+     dit qui a gagné, et lui qui paie. Dix mènes payantes par jour, pas plus. */
+/* ===== LE CŒUR DE LA PÉTANQUE — le même code tourne dans le jeu et sur le serveur =====
+   Tout est déterministe : pas de temps fixe (1/60 s), hasard tiré d'une graine. Le
+   serveur rejoue la mène avec les lancers du joueur : c'est SON résultat qui compte. */
+const PQC={W:160,H:280,S:[80,262],DT:1/60,FROT:70};
+function pqHasard(graine){let a=graine>>>0;return function(){a=(a+0x6D2B79F5)>>>0;let t=a;
+  t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
+function pqNouvelle(cx,cy){return {boules:[],coch:{x:cx,y:cy,vx:0,vy:0}};}
+function pqRoulette(force){return 30+force*26;}
+function pqCible(angle,force){const d=40+force*210;return [PQC.S[0]+Math.sin(angle)*d,PQC.S[1]-Math.cos(angle)*d];}
+/* poser une boule : elle retombe à sa cible, puis roule */
+function pqPoser(E,qui,angle,force){
+  const [tx,ty]=pqCible(angle,force), v=pqRoulette(force);
+  const b={x:tx,y:ty,vx:Math.sin(angle)*v,vy:-Math.cos(angle)*v,qui,morte:false};
+  E.boules.push(b);return b;
+}
+/* un pas de physique : le sable freine, les boules se poussent */
+function pqPas(E){
+  const dt=PQC.DT, objs=E.boules.filter(b=>!b.morte).concat([E.coch]);
+  let bouge=false;
+  for(const o of objs){const v=Math.hypot(o.vx,o.vy);
+    if(v<0.5){o.vx=0;o.vy=0;continue;}
+    bouge=true;const k=Math.max(0,v-PQC.FROT*dt)/v;o.vx*=k;o.vy*=k;o.x+=o.vx*dt;o.y+=o.vy*dt;}
+  for(let i=0;i<objs.length;i++)for(let j=i+1;j<objs.length;j++){
+    const a=objs[i],b=objs[j], ra=a===E.coch?1.5:3, rb=b===E.coch?1.5:3;
+    const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
+    if(d>0&&d<ra+rb){const nx=dx/d,ny=dy/d,rel=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny, rec=(ra+rb-d)/2;
+      a.x-=nx*rec;a.y-=ny*rec;b.x+=nx*rec;b.y+=ny*rec;
+      if(rel>0){const ma=a===E.coch?.25:1, mb=b===E.coch?.25:1, k2=2*rel/(ma+mb)*0.9;
+        a.vx-=k2*mb*nx;a.vy-=k2*mb*ny;b.vx+=k2*ma*nx;b.vy+=k2*ma*ny;}}
+  }
+  for(const o of E.boules)if(!o.morte&&(o.x<4||o.x>PQC.W-4||o.y<4||o.y>PQC.H-4))o.morte=true;
+  const C=E.coch;if(C.x<4||C.x>PQC.W-4||C.y<4||C.y>PQC.H-4){C.x=Math.max(6,Math.min(PQC.W-6,C.x));C.y=Math.max(6,Math.min(PQC.H-6,C.y));C.vx=0;C.vy=0;}
+  return bouge;
+}
+function pqArret(E){let n=0;while(pqPas(E)&&n<3000)n++;}
+/* MARIUS : il vise le cochonnet, compense la roulette, et se trompe un peu */
+function pqMarius(graine,n,E){
+  const r=pqHasard((graine^(n*7919+13))>>>0);
+  const gauss=()=>{let s=0;for(let i=0;i<4;i++)s+=r();return (s-2)*1.7;};
+  const tx=E.coch.x+gauss()*5, ty=E.coch.y+gauss()*5;
+  const [sx,sy]=PQC.S, d0=Math.hypot(tx-sx,ty-sy), angle=Math.atan2(tx-sx,sy-ty);
+  let f=Math.max(0,Math.min(1,(d0-40)/210));
+  for(let k=0;k<4;k++){const v=pqRoulette(f), roule=v*v/(2*PQC.FROT);f=Math.max(0,Math.min(1,(d0-roule-40)/210));}
+  return [angle,f];
+}
+/* LA MÈNE ENTIÈRE, rejouée : moi, Marius, moi, Marius, moi, Marius */
+function pqRejouer(graine,cx,cy,lancers){
+  const E=pqNouvelle(cx,cy);
+  for(let n=0;n<3;n++){
+    const l=lancers[n]||[0,0];
+    pqPoser(E,'moi',Math.max(-0.6,Math.min(0.6,+l[0]||0)),Math.max(0,Math.min(1,+l[1]||0)));pqArret(E);
+    const m=pqMarius(graine,n,E);pqPoser(E,'lui',m[0],m[1]);pqArret(E);
+  }
+  return pqCompter(E);
+}
+function pqCompter(E){
+  const C=E.coch, dist=b=>Math.hypot(b.x-C.x,b.y-C.y);
+  const moi=E.boules.filter(b=>b.qui==='moi'&&!b.morte).map(dist).sort((a,b)=>a-b);
+  const lui=E.boules.filter(b=>b.qui==='lui'&&!b.morte).map(dist).sort((a,b)=>a-b);
+  const bm=moi.length?moi[0]:Infinity, bl=lui.length?lui[0]:Infinity;
+  if(bm===Infinity&&bl===Infinity)return {gagne:false,nulle:true,pts:0,bm,bl};
+  if(bm<bl)return {gagne:true,pts:moi.filter(v=>v<bl).length,bm,bl};
+  return {gagne:false,pts:lui.filter(v=>v<bm).length,bm,bl};
+}
+
+const PQ=PQC;
 let PET=null;
 function dansLeBoulodrome(){
   if(CARTE!=='extramar'||!XP.boulo)return false;
@@ -16457,119 +16560,97 @@ function dansLeBoulodrome(){
 }
 function menesGagnees(){try{return +(localStorage.getItem('bdl.petanque.gagnees')||0);}catch(x){return 0;}}
 function ouvrirLaPetanque(){
-  const cy=40+Math.random()*60, cxx=46+Math.random()*68;
-  PET={etape:'viser',t0:performance.now(),angle:0,force:0,tour:'moi',
-    boules:[],coch:{x:cxx,y:cy,vx:0,vy:0},lancees:{moi:0,lui:0},vol:null,fin:null,msg:''};
+  PET={etape:'choix'};
   $('petanque').classList.add('on');
   majTextePetanque();
   requestAnimationFrame(bouclePetanque);
 }
 function fermerLaPetanque(){$('petanque').classList.remove('on');PET=null;}
+async function commencerLaMene(mode){
+  let graine,cx,cy,id=null;
+  if(mode==='payant'){
+    $('pqTexte').innerHTML='Marius sort les boules…';
+    const {data,error}=await sb.rpc('petanque_debut',{p_mode:'payant'});
+    if(error||!data||data.erreur){
+      $('pqTexte').innerHTML=(data&&data.erreur)||'Le boulodrome est fermé, réessaie.';
+      setTimeout(()=>{if(PET&&PET.etape==='choix')majTextePetanque();},1800);return;
+    }
+    graine=data.graine;cx=data.cx;cy=data.cy;id=data.id;
+    e.euros=data.euros;sauver();majHaut();
+  }else{
+    graine=Math.floor(Math.random()*4294967295);cx=46+Math.random()*68;cy=40+Math.random()*60;
+  }
+  PET={mode,id,graine,cx0:cx,cy0:cy,E:pqNouvelle(cx,cy),n:0,tour:'moi',etape:'viser',t0:performance.now(),lancers:[],acc:0,vol:null,fin:null};
+  majTextePetanque();
+}
 function majTextePetanque(){
   if(!PET)return;
   const t=$('pqTexte'),b=$('pqBouton');
-  if(PET.fin){t.innerHTML=PET.fin;b.textContent='Rejouer une mène';return;}
-  if(PET.tour==='lui'){t.innerHTML='<b>Marius</b> joue sa boule '+(PET.lancees.lui+1)+'/3…';b.textContent='…';return;}
-  const n=PET.lancees.moi+1;
-  if(PET.etape==='viser'){t.innerHTML='<b>Boule '+n+'/3</b> · touche pour fixer la <b>direction</b>';b.textContent='Viser';}
-  else if(PET.etape==='force'){t.innerHTML='<b>Boule '+n+'/3</b> · touche pour fixer la <b>force</b>';b.textContent='Lancer !';}
-  else{t.innerHTML='<b>Boule '+n+'/3</b> · elle roule…';b.textContent='…';}
+  if(PET.etape==='choix'){
+    t.innerHTML='<div class="pqChoix"><button id="pqEntr">Entraînement<small>gratuit</small></button>'+
+      '<button id="pqPaye" class="or">Mène à 2 €<small>gagne-la : +6 €</small></button></div>'+
+      '<i>Ton argent : '+enEuros(e.euros||0)+'</i>';
+    b.style.display='none';
+    $('pqEntr').onclick=()=>commencerLaMene('entrainement');
+    $('pqPaye').onclick=()=>commencerLaMene('payant');
+    return;
+  }
+  b.style.display='';
+  if(PET.fin){t.innerHTML=PET.fin;b.textContent='Rejouer';return;}
+  const en=(PET.mode==='payant'?'<b>Mène à 2 €</b> · ':'<b>Entraînement</b> · ');
+  if(PET.tour==='lui'){t.innerHTML=en+'Marius joue sa boule '+(PET.n+1)+'/3…';b.textContent='…';return;}
+  const n=PET.n+1;
+  if(PET.etape==='viser'){t.innerHTML=en+'boule '+n+'/3 · touche pour fixer la <b>direction</b>';b.textContent='Viser';}
+  else if(PET.etape==='force'){t.innerHTML=en+'boule '+n+'/3 · touche pour fixer la <b>force</b>';b.textContent='Lancer !';}
+  else{t.innerHTML=en+'boule '+n+'/3 · elle roule…';b.textContent='…';}
 }
 function toucherPetanque(){
   if(!PET)return;
-  if(PET.fin){ouvrirLaPetanque();return;}
-  if(PET.tour!=='moi')return;
+  if(PET.fin){PET={etape:'choix'};majTextePetanque();return;}
+  if(PET.etape==='choix'||PET.tour!=='moi')return;
   const t=performance.now();
   if(PET.etape==='viser'){PET.angle=Math.sin((t-PET.t0)/520)*0.5;PET.etape='force';PET.t0=t;vibrer(8);}
   else if(PET.etape==='force'){
-    PET.force=(1-Math.cos((t-PET.t0)/480))/2;
-    lancerUneBoule('moi',PET.angle,PET.force);vibrer(14);
+    const force=(1-Math.cos((t-PET.t0)/480))/2;
+    PET.lancers.push([PET.angle,force]);
+    lancer('moi',PET.angle,force);vibrer(14);
   }
   majTextePetanque();
 }
-function lancerUneBoule(qui,angle,force){
-  const d=40+force*210;
-  const [sx,sy]=PQ.S;
-  const tx=sx+Math.sin(angle)*d, ty=sy-Math.cos(angle)*d;
-  const b={x:sx,y:sy,vx:0,vy:0,qui,morte:false,h:0};
-  PET.boules.push(b);
-  PET.vol={b,sx,sy,tx,ty,t0:performance.now(),dur:650+force*450,dx:Math.sin(angle),dy:-Math.cos(angle),
-    roule:30+force*26};
-  PET.etape='vol';
+/* LANCER : la boule vole jusqu'à sa cible, puis la physique déterministe prend la main */
+function lancer(qui,angle,force){
+  const b=pqPoser(PET.E,qui,angle,force);
+  PET.vol={b,tx:b.x,ty:b.y,t0:performance.now(),dur:650+force*450,roule:pqRoulette(force)};
+  b.enVol=true;PET.etape='vol';
 }
-function tourSuivant(){
-  if(PET.tour==='moi')PET.lancees.moi++;else PET.lancees.lui++;
-  if(PET.lancees.moi>=3&&PET.lancees.lui>=3){compterLesPoints();return;}
-  /* on alterne : moi, Marius, moi, Marius… */
-  PET.tour=(PET.tour==='moi'&&PET.lancees.lui<3)||PET.lancees.moi>=3?'lui':'moi';
-  if(PET.tour==='moi'){PET.etape='viser';PET.t0=performance.now();}
-  else{PET.etape='attend';setTimeout(jouerMarius,700);}
+function apresLArret(){
+  if(PET.tour==='moi'){PET.tour='lui';PET.etape='attend';majTextePetanque();
+    setTimeout(()=>{if(!PET||PET.fin)return;const m=pqMarius(PET.graine,PET.n,PET.E);lancer('lui',m[0],m[1]);majTextePetanque();},700);}
+  else{PET.n++;
+    if(PET.n>=3){finirLaMene();return;}
+    PET.tour='moi';PET.etape='viser';PET.t0=performance.now();majTextePetanque();}
+}
+async function finirLaMene(){
+  const R=pqCompter(PET.E), cm=v=>Math.max(1,Math.round(v*1.6))+' cm';
+  PET.etape='fin';
+  if(PET.mode!=='payant'){PET.fin=verdict(R,cm,null);majTextePetanque();return;}
+  PET.fin='Marius mesure… <i>l’arbitre vérifie</i>';majTextePetanque();
+  /* LE SERVEUR REJOUE LA MÈNE : c'est son verdict qui compte */
+  const {data,error}=await sb.functions.invoke('petanque',{body:{id:PET.id,lancers:PET.lancers}});
+  if(error||!data||data.erreur){PET.fin='L’arbitre n’a pas pu trancher : '+((data&&data.erreur)||'réessaie plus tard')+'.';majTextePetanque();return;}
+  if(typeof data.euros==='number'){e.euros=data.euros;sauver();majHaut();}
+  PET.fin=verdict(data,cm,data.gagne?6:0)+(typeof data.restant==='number'?'<br><i>'+data.restant+' mène'+(data.restant>1?'s':'')+' payante'+(data.restant>1?'s':'')+' restante'+(data.restant>1?'s':'')+' aujourd’hui</i>':'');
   majTextePetanque();
 }
-function jouerMarius(){
-  if(!PET||PET.fin)return;
-  const [sx,sy]=PQ.S, C=PET.coch;
-  /* Marius vise le cochonnet, en tenant compte de la roulette… à peu près */
-  const ex=C.x+(Math.random()-.5)*26, ey=C.y+14+(Math.random()-.5)*26;
-  const d=Math.hypot(ex-sx,ey-sy);
-  const angle=Math.atan2(ex-sx,sy-ey);
-  const force=Math.max(0,Math.min(1,(d-40)/210));
-  lancerUneBoule('lui',angle,force);
-  majTextePetanque();
-}
-function compterLesPoints(){
-  const C=PET.coch;
-  const dist=b=>Math.hypot(b.x-C.x,b.y-C.y);
-  const moi=PET.boules.filter(b=>b.qui==='moi'&&!b.morte).map(dist).sort((a,b)=>a-b);
-  const lui=PET.boules.filter(b=>b.qui==='lui'&&!b.morte).map(dist).sort((a,b)=>a-b);
-  const bm=moi[0]??Infinity, bl=lui[0]??Infinity;
-  const cm=(v)=>Math.max(1,Math.round(v*1.6))+' cm';
-  if(bm===Infinity&&bl===Infinity){PET.fin='Toutes les boules sont sorties. <b>Mène nulle.</b>';}
-  else if(bm<bl){
-    const pts=moi.filter(v=>v<bl).length;
+function verdict(R,cm,gain){
+  if(R.nulle)return 'Toutes les boules sont sorties. <b>Mène nulle.</b>';
+  if(R.gagne){
     let n=menesGagnees()+1;try{localStorage.setItem('bdl.petanque.gagnees',n);}catch(x){}
-    PET.fin='<b>Tu marques '+pts+' point'+(pts>1?'s':'')+' !</b> Ta meilleure boule est à '+cm(bm)+
-      '.<br><i>« Pas mal, petit… » · mènes gagnées : '+n+'</i>';
     jouer('vente','moment');vibrer([20,40,20]);
-  }else{
-    const pts=lui.filter(v=>v<bm).length;
-    PET.fin='<b>Marius marque '+pts+' point'+(pts>1?'s':'')+'.</b> Sa boule est à '+cm(bl)+
-      '.<br><i>« Tu tires comme un Parisien ! »</i>';
+    return '<b>Tu marques '+R.pts+' point'+(R.pts>1?'s':'')+' !</b> Ta meilleure boule est à '+cm(R.bm)+'.'+
+      (gain?'<br><b style="color:#e8c06a">+'+gain+',00 €</b> · « Pas mal, petit… »':'<br><i>« Pas mal, petit… »</i>');
   }
-  PET.etape='fin';majTextePetanque();
-}
-function physiquePetanque(dt){
-  const objets=PET.boules.filter(b=>!b.morte&&!(PET.vol&&PET.vol.b===b)).concat([PET.coch]);
-  let bouge=false;
-  for(const o of objets){
-    const v=Math.hypot(o.vx,o.vy);
-    if(v<0.5){o.vx=o.vy=0;continue;}
-    bouge=true;
-    const dec=Math.max(0,v-70*dt)/v;                        /* le sable freine */
-    o.vx*=dec;o.vy*=dec;
-    o.x+=o.vx*dt;o.y+=o.vy*dt;
-  }
-  /* les chocs : la boule qui arrive donne son élan à celle qu'elle frappe */
-  for(let i=0;i<objets.length;i++)for(let j=i+1;j<objets.length;j++){
-    const a=objets[i],b=objets[j];
-    const ra=a===PET.coch?1.5:3, rb=b===PET.coch?1.5:3;
-    const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
-    if(d>0&&d<ra+rb){
-      const nx=dx/d,ny=dy/d, rel=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;
-      const recul=(ra+rb-d)/2;a.x-=nx*recul;a.y-=ny*recul;b.x+=nx*recul;b.y+=ny*recul;
-      if(rel>0){
-        const ma=a===PET.coch?.25:1, mb=b===PET.coch?.25:1;
-        const k=2*rel/(ma+mb)*0.9;
-        a.vx-=k*mb*nx;a.vy-=k*mb*ny;b.vx+=k*ma*nx;b.vy+=k*ma*ny;
-        if(rel>12){jouer('pioche');vibrer(10);}
-      }
-    }
-  }
-  /* hors du terrain : la boule est morte */
-  for(const o of PET.boules)if(!o.morte&&(o.x<4||o.x>PQ.W-4||o.y<4||o.y>PQ.H-4))o.morte=true;
-  const C=PET.coch;
-  if(C.x<4||C.x>PQ.W-4||C.y<4||C.y>PQ.H-4){C.x=Math.max(6,Math.min(PQ.W-6,C.x));C.y=Math.max(6,Math.min(PQ.H-6,C.y));C.vx=C.vy=0;}
-  return bouge;
+  return '<b>Marius marque '+R.pts+' point'+(R.pts>1?'s':'')+'.</b> Sa boule est à '+cm(R.bl)+'.<br><i>« Tu tires comme un Parisien ! »</i>';
 }
 let SABLE_PQ=null;
 function graverLeSablePetanque(){
@@ -16579,7 +16660,6 @@ function graverLeSablePetanque(){
   for(let i=0;i<2600;i++){g.fillStyle=['#c9ad78','#e6d0a0','#bca06a','#d0b682','#efdcae'][i%5];
     g.fillRect(alea(i*1.3)*PQ.W,alea(i*2.1+9)*PQ.H,1,1);}
   g.strokeStyle='rgba(120,90,50,.5)';g.lineWidth=1;g.beginPath();g.ellipse(PQ.S[0],PQ.S[1],9,5,0,0,7);g.stroke();
-  /* l'ombre des platanes, en taches */
   for(let i=0;i<14;i++){g.fillStyle='rgba(60,80,30,.10)';g.beginPath();
     g.ellipse(alea(i+40)*PQ.W,alea(i+80)*PQ.H*0.8,10+alea(i)*16,5+alea(i+3)*8,0,0,7);g.fill();}
   g.fillStyle='#6b4a2c';g.fillRect(0,0,PQ.W,3);g.fillRect(0,PQ.H-3,PQ.W,3);g.fillRect(0,0,3,PQ.H);g.fillRect(PQ.W-3,0,3,PQ.H);
@@ -16588,7 +16668,7 @@ function graverLeSablePetanque(){
 }
 function dessinerUneBoule(g,x,y,qui,h){
   const r=3+h/12;
-  g.fillStyle='rgba(60,40,20,.28)';g.beginPath();g.ellipse(x+1,y+1,3,1.6,0,0,7);g.fill();   /* l'ombre au sol */
+  g.fillStyle='rgba(60,40,20,.28)';g.beginPath();g.ellipse(x+1,y+1,3,1.6,0,0,7);g.fill();
   const yy=y-h;
   g.fillStyle=qui==='moi'?'#8f989f':'#6f5840';g.beginPath();g.arc(x,yy,r,0,7);g.fill();
   g.fillStyle=qui==='moi'?'#d7dde2':'#a48a64';g.beginPath();g.arc(x-r*.35,yy-r*.35,r*.45,0,7);g.fill();
@@ -16599,31 +16679,32 @@ function bouclePetanque(t){
   const c=$('pqToile');if(!c)return;
   const g=c.getContext('2d');g.imageSmoothingEnabled=false;
   if(!SABLE_PQ)graverLeSablePetanque();
-  const dt=Math.min(0.05,(t-(PET.tp||t))/1000);PET.tp=t;
+  const dt=Math.min(0.1,(t-(PET.tp||t))/1000);PET.tp=t;
   g.drawImage(SABLE_PQ,0,0);
-  /* la boule en l'air */
+  if(PET.etape==='choix'){requestAnimationFrame(bouclePetanque);return;}
+  const E=PET.E;
+  /* le vol : purement visuel ; la physique commence à la retombée */
   if(PET.vol){
-    const V=PET.vol,k=Math.min(1,(t-V.t0)/V.dur);
-    V.b.x=V.sx+(V.tx-V.sx)*k;V.b.y=V.sy+(V.ty-V.sy)*k;V.b.h=Math.sin(Math.PI*k)*(26+V.roule*0.4);
-    if(k>=1){V.b.h=0;V.b.vx=V.dx*V.roule;V.b.vy=V.dy*V.roule;PET.vol=null;PET.etape='roule';
-      jouer('pioche');vibrer(12);
-      /* un peu de sable qui gicle */
-      majTextePetanque();}
+    const V=PET.vol,k=Math.min(1,(t-V.t0)/V.dur), [sx,sy]=PQ.S;
+    V.x=sx+(V.tx-sx)*k;V.y=sy+(V.ty-sy)*k;V.h=Math.sin(Math.PI*k)*(26+V.roule*0.4);
+    if(k>=1){V.b.enVol=false;PET.vol=null;PET.etape='roule';PET.acc=0;jouer('pioche');vibrer(12);majTextePetanque();}
   }
-  const bouge=physiquePetanque(dt);
-  if(PET.etape==='roule'&&!bouge&&!PET.vol){PET.etape='pose';setTimeout(()=>{if(PET&&!PET.fin)tourSuivant();},350);}
-  /* le cochonnet */
-  const C=PET.coch;
+  /* la roulette : pas fixes, exactement comme le serveur */
+  if(PET.etape==='roule'){
+    PET.acc+=dt;let bouge=true;
+    while(PET.acc>=PQ.DT&&bouge){bouge=pqPas(E);PET.acc-=PQ.DT;}
+    if(!bouge){PET.etape='pose';setTimeout(()=>{if(PET&&PET.etape==='pose')apresLArret();},300);}
+  }
+  const C=E.coch;
   g.fillStyle='rgba(60,40,20,.28)';g.fillRect(Math.round(C.x),Math.round(C.y)+1,2,1);
   g.fillStyle='#e8a030';g.fillRect(Math.round(C.x)-1,Math.round(C.y)-1,3,3);
   g.fillStyle='#ffd070';g.fillRect(Math.round(C.x)-1,Math.round(C.y)-1,1,1);
-  /* les boules */
-  const tri=PET.boules.slice().sort((a,b)=>a.y-b.y);
-  for(const b of tri){
-    if(b.morte){g.fillStyle='rgba(120,40,30,.6)';g.fillRect(Math.round(b.x)-2,Math.round(b.y),5,1);continue;}
-    dessinerUneBoule(g,b.x,b.y,b.qui,b.h||0);
+  for(const b of E.boules.slice().sort((a,b)=>a.y-b.y)){
+    if(b.enVol)continue;
+    if(b.morte){continue;}
+    dessinerUneBoule(g,b.x,b.y,b.qui,0);
   }
-  /* la visée : l'aiguille qui balaie, puis la jauge de force */
+  if(PET.vol)dessinerUneBoule(g,PET.vol.x,PET.vol.y,PET.vol.b.qui,PET.vol.h);
   if(PET.tour==='moi'&&!PET.fin){
     const [sx,sy]=PQ.S;
     const a=PET.etape==='viser'?Math.sin((t-PET.t0)/520)*0.5:PET.angle;
@@ -16635,15 +16716,13 @@ function bouclePetanque(t){
     if(PET.etape==='force'){
       const f=(1-Math.cos((t-PET.t0)/480))/2;
       g.fillStyle='rgba(20,20,20,.55)';g.fillRect(PQ.W-14,PQ.H-110,8,100);
-      const col=f<.5?'#6fbf5a':(f<.8?'#e8c06a':'#d0402f');
-      g.fillStyle=col;g.fillRect(PQ.W-13,PQ.H-11-Math.round(f*98),6,Math.round(f*98));
-      /* où elle retomberait */
-      const d=40+f*210;g.strokeStyle='rgba(255,255,255,.55)';g.beginPath();
-      g.ellipse(sx+Math.sin(a)*d,sy-Math.cos(a)*d,4,2,0,0,7);g.stroke();
+      g.fillStyle=f<.5?'#6fbf5a':(f<.8?'#e8c06a':'#d0402f');g.fillRect(PQ.W-13,PQ.H-11-Math.round(f*98),6,Math.round(f*98));
+      const [cx2,cy2]=pqCible(a,f);g.strokeStyle='rgba(255,255,255,.55)';g.beginPath();g.ellipse(cx2,cy2,4,2,0,0,7);g.stroke();
     }
   }
   requestAnimationFrame(bouclePetanque);
 }
+
 /* LE CARNET DE PÊCHE : ce qu'on a pris, ses records, et ce qui reste à découvrir */
 const CARNET_ORDRE=[
   ['sardine','COMMUNE','partout, à toute heure'],['bogue','COMMUNE','partout, le jour et à l’aube'],
