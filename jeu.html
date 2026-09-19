@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1803';
+  var MA_VERSION='2026-09-19-1807';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -13841,7 +13841,7 @@ function dessiner(){
   nettoyerBulles();
   /* les acteurs : moi et les autres, chacun à sa profondeur */
   const acteurs=[{y:joueur.y,
-    f:()=>personne(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!joueur.marche,court)}];
+    f:()=>personne(ctx,px,py,e.ap,(STYLE_FIN()&&!(GESTE&&GESTE.t>0)&&joueur.dir8)||joueur.dir,joueur.pas,!!joueur.marche,court)}];
   for(const [,a] of AUTRES){
     const ax=a.x-camX, ay=a.y-camY;
     if(ax<-40||ay<-70||ax>VW+40||ay>VH+40)continue;
@@ -14028,6 +14028,7 @@ function assis(g,x,y,ap){
   if(C&&C.id!=='cape'){try{C.dessin(g,x,hanche+8,tc);}catch(err){}}
 }
 function personne(g,x,y,ap,dir,pas,marche,enCourse){
+  if(dir&&String(dir).indexOf('-')>0&&(!STYLE_FIN()||(GESTE&&GESTE.t>0)))dir=String(dir).endsWith('droite')?'droite':'gauche';
   /* à vélo : le vélo d'abord, le cycliste un peu plus haut, en selle */
   const aVelo=VELO&&CARTE==='extramar'&&ap===e.ap;
   /* en selle : un peu plus haut, et le buste qui balance au rythme des pédales */
@@ -14075,7 +14076,10 @@ function personne(g,x,y,ap,dir,pas,marche,enCourse){
    ===================================================================== */
 function spriteFin(g,x,y,ap0,dir,pas,bouge){
   const p=Object.assign({},DEF_AP,ap0||{}), P=PALETTES;
+  const diag=String(dir).indexOf('-')>0, tourne=diag?(String(dir).endsWith('droite')?1:-1):0;
+  if(diag)dir=String(dir).startsWith('bas')?'bas':'haut';
   const u=0.5, cote=dir==='gauche'||dir==='droite', dos=dir==='haut', s=dir==='gauche'?-1:1;
+  const vis=dos?-tourne:tourne;                  /* le visage glisse vers le côté où l'on regarde */
   /* un « pixel fin » : coordonnées en demi-pixels, retournées pour la gauche */
   const R=(a,b,w,h,c)=>{if(w<=0||h<=0)return;g.fillStyle=c;
     const ax=cote&&s<0?-(a+w):a;g.fillRect(x+ax*u,y+b*u,w*u,h*u);};
@@ -14141,7 +14145,8 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     const bas=yHan+2+long;
     for(let r=yEp;r<bas;r++){
       const k=(r-yEp)/(yHan-yEp), demi=Math.round(r<yHan?EP+(TA-EP)*Math.min(1,k*1.4):HA+(r>yHan?1:0));
-      const w=cote?Math.round(demi*1.5):demi*2, xx=cote?-Math.round(w/2):-demi;
+      const dd=diag?Math.round(demi*0.86):demi;
+      const w=cote?Math.round(demi*1.5):dd*2, xx=cote?-Math.round(w/2):-dd+(diag?vis:0);
       R(xx,r,w,1,r<yEp+3?vestC:vest);R(xx,r,1,1,vestT);R(xx+w-1,r,1,1,cote?vestC:vestT);
       if(!cote&&!dos){R(xx+1,r,2,1,vestO);R(xx+w-3,r,2,1,vestC);}
     }
@@ -14207,9 +14212,12 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     }else{
       for(let r=0;r<24;r++){const w=r<2?18:(r>19?22-(r-20)*2:24);R(-Math.round(w/2),hy+r,w,1,r>19?peauO:peau);}
       R(-12,hy+2,1,18,peauO);R(11,hy+2,1,18,peauC);
-      R(-14,hy+10,2,5,peauO);R(12,hy+10,2,5,peauO);                                 /* les oreilles */
+      if(diag){R(vis>0?-12:10,hy+2,2,18,peauO);}                                  /* la joue qui tourne */
+      if(!diag||vis<0)R(12,hy+10,2,5,peauO);if(!diag||vis>0)R(-14,hy+10,2,5,peauO);   /* les oreilles */
       if(boucle!=='aucune'){const bc=boucle==='perle'?'#f2efe4':(boucle==='plume'?'#c0392b':'#e8c06a');R(-14,hy+15,2,2,bc);R(12,hy+15,2,2,bc);}
-      oeilDe(-7,hy+10,false);oeilDe(3,hy+10,false);sourcilDe(-7,hy+8,false);sourcilDe(3,hy+8,false);
+      const f3=diag?vis*3:0;
+      oeilDe(-7+f3+(diag&&vis>0?1:0),hy+10,false);oeilDe(3+f3-(diag&&vis<0?1:0),hy+10,false);sourcilDe(-7+f3,hy+8,false);sourcilDe(3+f3,hy+8,false);
+      g.save();g.translate(f3*u*(1),0);
       /* le nez */
       if(nez==='petit')R(-1,hy+14,2,1,peauO);
       else if(nez==='large'){R(-2,hy+13,4,3,peauO);R(-1,hy+13,2,1,peauC);}
@@ -14229,6 +14237,8 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       else if(marque==='grain')R(4,hy+16,1,1,peauT);
       else if(marque==='fard'){R(-8,hy+14,3,2,'#e0907a');R(5,hy+14,3,2,'#e0907a');}
       else if(marque==='peinture'){R(-8,hy+12,4,1,'#c0392b');R(4,hy+12,4,1,'#2d6fb0');}
+      g.restore();
+      if(diag)R(vis>0?9+1:-11,hy+12,2,3,peau);                                  /* le nez qui dépasse le profil */
     }
   };
   function oeilDe(ex,ey,profil){
@@ -14337,15 +14347,22 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     bras(0,hanche,false);
   }else{
     if(!dos)cheveuxDerriere();
-    jambe(-Math.round(HA/2)-1,0,dos?leveD:leveG,false);
-    jambe(Math.round(HA/2)+1,0,dos?leveG:leveD,false);
+    const dx=diag?Math.round(hanche*3*tourne):0;
+    jambe(-Math.round(HA/2)-1+dx,0,dos?leveD:leveG,diag&&tourne>0&&!dos);
+    jambe(Math.round(HA/2)+1-dx,0,dos?leveG:leveD,diag&&tourne<0&&!dos);
     if(!dos)sac(false);
+    if(diag){const loin=vis;bras(loin,loin>0?(dos?hanche:-hanche):(dos?-hanche:hanche),true);}
     torse();
-    bras(-1,dos?-hanche:hanche,false);bras(1,dos?hanche:-hanche,false);
+    if(diag){const loin=vis, pres=-vis;
+      bras(pres,loin>0?(dos?-hanche:hanche):(dos?hanche:-hanche),false);}
+    else{bras(-1,dos?-hanche:hanche,false);bras(1,dos?hanche:-hanche,false);}
     if(dos)sac(false);else sac(true);
     tete();
     if(!dos)barbeDe();
-    cheveuxDessus();chapeauDe();
+    cheveuxDessus();
+    /* de dos et de trois-quarts : on devine la joue et l'oreille du côté où l'on regarde */
+    if(diag&&dos){const cx2=tourne>0?9:-12;R(cx2,yTete+9,3,9,peau);R(cx2+(tourne>0?1:0),yTete+11,2,4,peauO);R(tourne>0?11:-13,yTete+14,2,3,peau);}
+    chapeauDe();
   }
 }
 /* LE CONTOUR : un liseré sombre d'un pixel fin tout autour de la silhouette,
@@ -14454,6 +14471,15 @@ function majJoueur(dt){
     const versY=Math.abs(vy)>Math.abs(vx)*1.35;
     if(versX)joueur.dir=vx>0?'droite':'gauche';
     else if(versY)joueur.dir=vy>0?'bas':'haut';
+    /* HUIT DIRECTIONS pour le dessin : entre deux axes, on se montre de trois-quarts.
+       La logique du jeu (pêche, gestes…) garde les quatre directions. */
+    const ang=Math.atan2(vy,vx), sect=Math.round(ang/(Math.PI/4));
+    const D8={0:'droite',1:'bas-droite',2:'bas',3:'bas-gauche',4:'gauche','-4':'gauche','-3':'haut-gauche','-2':'haut','-1':'haut-droite'}[sect];
+    if(D8&&(D8!==joueur.dir8)){
+      /* un peu d'inertie : on ne change que si l'angle est bien dans le nouveau secteur */
+      const centre=sect*(Math.PI/4), ecart=Math.abs(((ang-centre+Math.PI*3)%(Math.PI*2))-Math.PI);
+      if(ecart<Math.PI/8*0.8||!joueur.dir8)joueur.dir8=D8;
+    }
   }else{
     vx=vy=0;bloqueBord=false;
     /* 4. il revient à la pose debout, pieds joints */
