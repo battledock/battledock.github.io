@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-0657';
+  var MA_VERSION='2026-09-19-0702';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -18884,7 +18884,17 @@ $('annonceOk').onclick=()=>{
   try{localStorage.setItem(CLE_ANNONCE,'vu');}catch(x){}
   $('annonce').classList.remove('on');
 };
+/* LA CARTE EST TENUE PAR LE SERVEUR : si l'adresse ne correspond pas à l'endroit où
+   l'on est vraiment (seul le métro fait changer de carte), on y est renvoyé. */
+async function verifierLaCarte(){
+  const d=await appelRPC('ma_carte',{p_joueur:e.id,p_locale:e.carte||'village'});
+  if(!d||!d.carte)return;
+  const vraie=d.carte==='extramar'?'extramar':'village';
+  if(vraie!==CARTE){e.carte=vraie;e.ext=null;try{sauver();}catch(x){}
+    location.replace(vraie==='extramar'?'jeu.html?carte=extramar':'jeu.html');}
+}
 function entrer(){
+  verifierLaCarte();
   setTimeout(montrerLAnnonce,1200);
   majPastille();
   $('porte').classList.add('parti');

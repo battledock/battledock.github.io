@@ -397,6 +397,7 @@ $('partir').onclick=async()=>{
     if(d&&typeof d.euros==='number'){e.euros=d.euros;garder();majSolde();}
     $('mot').textContent=!d?'Le guichet ne répond pas. Réessaie.'
       :d.erreur==='pas_assez'?'Il te manque '+enEuros((d.prix||dest.prix)-(d.euros||0))+' pour le ticket.'
+      :d.erreur==='pas ici'?'Tu n’es pas à cette station.'
       :d.erreur==='compte'?'Entre dans le jeu une fois, puis redescends.'
       :'Cette ligne n’est pas ouverte.';
     $('partir').disabled=false;$('frauder').disabled=false;$('partir').textContent='Ticket · '+enEuros(dest.prix);
@@ -421,6 +422,7 @@ $('frauder').onclick=async()=>{
     if(d&&typeof d.euros==='number'){e.euros=d.euros;garder();majSolde();}
     $('mot').textContent=!d?'Le tourniquet est coincé. Réessaie.'
       :d.erreur==='pas_assez'?'Pour frauder, il faut quand même avoir '+enEuros(dest.prix)+' sur toi.'
+      :d.erreur==='pas ici'?'Tu n’es pas à cette station.'
       :d.erreur==='compte'?'Entre dans le jeu une fois, puis redescends.':'Cette ligne n’est pas ouverte.';
     $('partir').disabled=false;$('frauder').disabled=false;$('partir').textContent='Ticket · '+enEuros(dest.prix);
     return;
@@ -440,6 +442,19 @@ function sortirA(st){
   setTimeout(()=>{location.href=st.sortie;},450);
 }
 $('remonter').onclick=()=>sortirA(ICI);
+/* on ne descend qu'à la station de la carte où l'on est vraiment (le serveur le sait) */
+(async function(){
+  if(DEMO||!e.id)return;
+  try{
+    const r=await fetch(URL_SB+'/rest/v1/rpc/ma_carte',{method:'POST',
+      headers:{'apikey':CLE_SB,'Authorization':'Bearer '+CLE_SB,'Content-Type':'application/json'},
+      body:JSON.stringify({p_joueur:e.id,p_locale:e.carte||'village'})});
+    const d=await r.json();
+    if(!d||!d.carte)return;
+    const bonne=d.carte==='extramar'?'port':'village';
+    if(bonne!==ICI.id){e.carte=d.carte;garder();location.replace(bonne==='port'?'metro.html?station=port':'metro.html');}
+  }catch(x){}
+})();
 
 /* =====================================================================
    LA RAME : elle sort du tunnel à gauche, freine, s'arrête porte face à
