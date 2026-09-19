@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1811';
+  var MA_VERSION='2026-09-19-1815';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -14268,49 +14268,147 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     else if(sourcil==='fronces'){R(ex,ey-1,2,1,c);R(ex+1,ey,w-1,1,c);}
     else R(ex,ey,w,1,c);
   }
-  /* ============ LES CHEVEUX ============ */
-  const longueur={'mi-longs':10,'longs':18,'très longs':28,'carré':6,'ondulés':12,'bouclés':8,'hirsute':6,'tresse':24,'dreads':20,'couettes':14,'queue':16}[coiffe]||0;
+  /* ============ LES CHEVEUX, REFAITS : volume, reflets, mèches ============
+     Chaque coiffure a une silhouette propre (calotte arrondie, frange, longueur,
+     volume) et une matière : un dégradé du sommet éclairé vers les pointes
+     sombres, des mèches plus sombres qui suivent le sens des cheveux, et un
+     reflet en arc sur le dessus. */
+  const H5={b:chev, c:T(chev,24), cc:T(chev,46), o:T(chev,-24), oo:T(chev,-48)};
+  const CF={
+    'courts':      {vol:2,fr:'meche',lg:0},  'très courts':{vol:0,fr:'rase',lg:0},   'dégradé':{vol:1,fr:'degrade',lg:0},
+    'bol':         {vol:2,fr:'frange',lg:0},  'carré':      {vol:2,fr:'raie',lg:9},   'mi-longs':{vol:2,fr:'raie',lg:14},
+    'longs':       {vol:2,fr:'raie',lg:24},   'très longs': {vol:2,fr:'raie',lg:34},  'queue':{vol:1,fr:'tire',lg:0,sp:'queue'},
+    'couettes':    {vol:1,fr:'raie',lg:0,sp:'couettes'}, 'chignon':{vol:1,fr:'tire',lg:0,sp:'chignon'},
+    'chignon haut':{vol:1,fr:'tire',lg:0,sp:'chignonHaut'}, 'tresse':{vol:1,fr:'tire',lg:0,sp:'tresse'},
+    'tresses':     {vol:1,fr:'raie',lg:0,sp:'tresses'}, 'ondulés':{vol:3,fr:'raie',lg:16,ond:1},
+    'bouclés':     {vol:4,fr:'boucle',lg:8,ond:2}, 'afro':{vol:9,fr:'afro',lg:0},
+    'dreads':      {vol:2,fr:'dreads',lg:22},  'banane':{vol:2,fr:'banane',lg:0}, 'crête':{vol:0,fr:'crete',lg:0},
+    'crâne':       {vol:0,fr:'crane',lg:0},    'hirsute':{vol:4,fr:'hirsute',lg:4}};
+  const cf=CF[coiffe]||CF['courts'];
+  const mat=(r,r0,r1)=>{const k=(r-r0)/Math.max(1,r1-r0);return k<0.12?H5.c:(k>0.86?H5.o:H5.b);};
+  /* une calotte arrondie : demi-largeur hw, du sommet (yTop) à la base (yBas) */
+  const calotte=(cx,yTop,yBas,hw,ry)=>{
+    for(let r=yTop;r<yBas;r++){const dy=Math.max(0,(yTop+ry)-r), w=Math.round(hw*Math.sqrt(Math.max(0,1-(dy/ry)*(dy/ry))));
+      if(w<=0)continue;R(cx-w,r,w*2,1,mat(r,yTop,yBas));
+      R(cx-w,r,1,1,H5.o);R(cx+w-1,r,1,1,H5.o);}
+  };
+  const meches=(x0,x1,y0,y1,pas2,c)=>{for(let x2=x0+1;x2<x1-1;x2+=pas2)for(let r=y0+1;r<y1;r++)if((r+x2)%5!==0)R(x2+Math.round(Math.sin((r-y0)*0.25)*0.6),r,1,1,c||H5.o);};
+  const reflet=(cx,y0,w)=>{R(cx-Math.round(w/2),y0,w,1,H5.cc);R(cx-Math.round(w/2)+1,y0+1,w-3,1,H5.c);};
+  const pointes=(x0,w,y2,n)=>{for(let k=0;k<n;k++){const xx=x0+Math.round(k*w/n);R(xx,y2,Math.max(1,Math.round(w/n)-1),2+(k%2),H5.o);}};
+
   const cheveuxDerriere=()=>{
-    if(!longueur)return;
-    if(cote){for(let r=0;r<longueur+10;r++)R(-9-Math.round(r*0.05),yTete+8+r,6,1,r%3?chev:chevO);return;}
-    if(dos)return;
-    const w=coiffe==='carré'?22:21;
-    for(let r=0;r<longueur+8;r++){const ondule=coiffe==='ondulés'||coiffe==='bouclés'?Math.round(Math.sin(r*0.8)):0;
-      R(-Math.round(w/2)-1+ondule,yTete+8+r,4,1,r%4?chev:chevO);R(Math.round(w/2)-3-ondule,yTete+8+r,4,1,r%4?chev:chevO);}
-  };
-  const cheveuxDessus=()=>{
-    if(coiffe==='crâne'){R(-9,yTete,18,2,peauC);return;}
-    const hy=yTete, vol=coiffe==='afro'?6:(coiffe==='bouclés'||coiffe==='hirsute'?3:(coiffe==='banane'?3:1));
-    const W=24+(coiffe==='afro'?8:0);
+    if(coiffe==='crâne')return;
+    const hy=yTete;
     if(cote){
-      for(let r=-vol;r<9;r++){const w=r<0?16+r*2:(r<5?22:12);R(-12,hy+r,w,1,r<2?chevC:chev);}
-      R(-12,hy+3,5,longueur?12:10,chev);R(-12,hy+3,1,longueur?12:10,chevO);R(6,hy+1,5,3,chevC);
-      if(coiffe==='banane')R(6,hy-3,6,4,chev);
-      if(coiffe==='crête')for(let r=0;r<6;r++)R(-2+r,hy-4-r%2,3,4,chevC);
-      if(coiffe==='queue'||coiffe==='chignon'||coiffe==='chignon haut'){R(-14,hy+(coiffe==='chignon haut'?0:6),5,6,chev);R(-14,hy+(coiffe==='chignon haut'?0:6),5,1,chevC);}
-      if(coiffe==='dreads')for(let k=0;k<3;k++)R(-11+k*2,hy+8,2,18,k%2?chevO:chev);
-    }else if(dos){
-      for(let r=-vol;r<22+longueur;r++){const w=r<0?W-6+r*2:W;R(-Math.round(w/2),hy+r,w,1,r<2?chevC:(r>18+longueur?chevO:chev));R(-Math.round(w/2),hy+r,1,1,chevO);R(Math.round(w/2)-1,hy+r,1,1,chevO);}
-      R(-3,hy-vol+1,8,2,chevC);
-      if(coiffe==='chignon'||coiffe==='chignon haut'){R(-4,hy+(coiffe==='chignon haut'?-4:8),8,7,chevC);R(-4,hy+(coiffe==='chignon haut'?-4:8),8,1,chevO);}
-      if(coiffe==='tresse')for(let r=0;r<24;r+=3)R(-2,hy+22+r,4,3,r%6?chev:chevO);
-      if(coiffe==='couettes'){R(-13,hy+10,4,16,chev);R(9,hy+10,4,16,chev);}
-    }else{
-      for(let r=-vol;r<6;r++){const w=r<0?W-6+r*2:W;R(-Math.round(w/2),hy+r,w,1,r%3?chev:chevC);}
-      /* la frange, selon la coiffe */
-      if(coiffe==='bol'||coiffe==='carré')R(-12,hy+5,24,3,chev);
-      else if(coiffe==='très courts'||coiffe==='dégradé'){R(-12,hy+5,2,3,chev);R(10,hy+5,2,3,chev);}
-      else if(coiffe==='banane'){R(-6,hy-4,14,5,chev);R(-4,hy-4,10,1,chevC);}
-      else if(coiffe==='crête'){R(-3,hy-5,6,6,chevC);R(-10,hy+2,20,3,peauO);}
-      else if(coiffe==='afro'){R(-14,hy+4,4,10,chev);R(10,hy+4,4,10,chev);}
-      else{R(-12,hy+5,6,3,chev);R(-7,hy+5,5,2,chev);R(6,hy+5,6,3,chev);}
-      R(-12,hy+5,2,10,chev);R(10,hy+5,2,10,chev);                                   /* les tempes */
-      if(coiffe==='couettes'){R(-15,hy+8,5,14,chev);R(10,hy+8,5,14,chev);R(-15,hy+8,5,1,'#c0392b');R(10,hy+8,5,1,'#c0392b');}
-      if(coiffe==='chignon haut')R(-4,hy-6,8,6,chevC);
-      if(coiffe==='dreads')for(let k=0;k<5;k++)R(-11+k*5,hy+6,2,14,k%2?chevO:chev);
-      R(-4,hy-vol,6,1,chevC);                                                       /* le reflet */
+      /* la masse arrière de la tête et la longueur qui tombe dans le dos */
+      if(cf.lg){const L=cf.lg;
+        for(let r=0;r<L+12;r++){const w=Math.max(3,8-Math.round(r/(L+12)*4)), ond=cf.ond?Math.round(Math.sin(r*0.5)*cf.ond):0;
+          R(-13+ond-(r>L?1:0),hy+8+r,w,1,r>L+8?H5.o:(r<3?H5.c:H5.b));R(-13+ond,hy+8+r,1,1,H5.oo);}
+        meches(-13,-6,hy+8,hy+8+L+10,2);}
+      if(coiffe==='dreads')for(let k=0;k<4;k++)for(let r=0;r<24;r++)R(-14+k*2,hy+8+r,2,1,(r+k)%4===0?H5.oo:(k%2?H5.o:H5.b));
+      return;
     }
+    if(dos)return;
+    /* de face : la longueur derrière les épaules, qui dépasse de chaque côté */
+    if(cf.lg){const L=cf.lg;
+      for(let r=0;r<L+6;r++){const ond=cf.ond?Math.round(Math.sin(r*0.55)*cf.ond):0, hw=14+Math.min(3,Math.round(r*0.12));
+        R(-hw-ond,hy+8+r,5,1,r>L+2?H5.o:H5.b);R(hw-5+ond,hy+8+r,5,1,r>L+2?H5.o:H5.b);
+        R(-hw-ond,hy+8+r,1,1,H5.oo);R(hw-1+ond,hy+8+r,1,1,H5.oo);}
+      pointes(-17,5,hy+8+L+5,2);pointes(12,5,hy+8+L+5,2);}
+    if(coiffe==='dreads')for(let k=0;k<3;k++)for(let r=0;r<22;r++){R(-16+k*2,hy+8+r,2,1,(r+k)%4===0?H5.oo:H5.b);R(11+k*2,hy+8+r,2,1,(r+k)%4===0?H5.oo:H5.b);}
   };
+
+  const cheveuxDessus=()=>{
+    const hy=yTete;
+    if(coiffe==='crâne'){calotteCrane();return;}
+    if(cote){
+      /* ---- DE PROFIL (visage vers la droite) ---- */
+      const vol=cf.vol, top=hy-vol;
+      calotte(-1,top,hy+8,13+(cf.fr==='afro'?5:0),6+vol);
+      for(let r=hy+8;r<hy+15;r++)R(-12,r,6,1,r>hy+13?H5.o:H5.b);          /* la nuque */
+      R(-12,hy+8,1,7,H5.oo);
+      meches(-12,10,top,hy+8,3);
+      reflet(-1,top+1,10);
+      /* le front : frange, mèche ou front dégagé */
+      if(cf.fr==='frange'||cf.fr==='boucle')R(5,hy+4,6,4,H5.b);
+      else if(cf.fr==='meche'){R(6,hy+3,5,3,H5.b);R(9,hy+5,2,2,H5.o);}
+      else if(cf.fr==='banane'){for(let r=0;r<7;r++)R(2+Math.round(r*0.4),hy-6+r,9,1,r<2?H5.c:H5.b);R(10,hy-3,2,3,H5.o);}
+      else if(cf.fr==='crete'){R(-12,hy,15,8,T(peau,-10));for(let k=0;k<6;k++){R(-9+k*3,top-5+(k%2),2,6,k%2?H5.b:H5.c);}}
+      else if(cf.fr==='rase'||cf.fr==='degrade'){for(let r=top;r<hy+8;r++)for(let x2=-12;x2<9;x2+=2)if((r+x2)%3===0)R(x2,r,1,1,H5.o);if(cf.fr==='degrade')R(-12,hy+9,5,5,T(peau,-14));}
+      else if(cf.fr==='hirsute'){for(let k=0;k<7;k++)R(-12+k*3,top-2-(k%3),2,3,H5.b);}
+      R(-1,hy+8,2,5,H5.b);R(-1,hy+8,1,5,H5.o);                                      /* la patte, devant l'oreille */
+      /* les particularités vues de côté */
+      if(cf.sp==='queue'){R(-16,hy+6,4,3,'#c0392b');for(let r=0;r<16;r++)R(-17-Math.round(r*0.25),hy+9+r,4,1,r>12?H5.o:H5.b);}
+      if(cf.sp==='chignon'||cf.sp==='chignonHaut'){const cy=cf.sp==='chignon'?hy+7:hy-2;calotte(-15,cy-4,cy+4,4,4);R(-16,cy-2,2,1,H5.cc);}
+      if(cf.sp==='tresse')for(let r=0;r<22;r+=3){R(-15,hy+10+r,4,2,H5.b);R(-14,hy+12+r,3,1,H5.o);}
+      if(cf.sp==='couettes'){for(let r=0;r<12;r++)R(-15,hy+8+r,4,1,H5.b);R(-15,hy+8,4,1,'#c0392b');}
+      if(cf.sp==='tresses')for(let r=0;r<16;r+=2)R(-14+(r%4?1:0),hy+10+r,3,2,r%4?H5.o:H5.b);
+      if(cf.fr==='afro')for(let k=0;k<30;k++){const a=k*0.9, rr=12+(k%3), ax=-1+Math.round(Math.cos(a)*rr), ay=hy+2+Math.round(Math.sin(a)*rr*0.8);if(ax>0&&ay>hy+3)continue;R(ax,ay,1,1,k%2?H5.c:H5.o);}
+      return;
+    }
+    if(dos){
+      /* ---- DE DOS : toute la chevelure, la raie, et ce qui descend ---- */
+      const vol=cf.vol, top=hy-vol, L=cf.lg;
+      const W=cf.fr==='afro'?19:14;
+      calotte(0,top,hy+18+Math.min(L,6),W,7+vol);
+      if(L>6){for(let r=hy+24;r<hy+18+L;r++){const k=(r-hy-24)/Math.max(1,L-6), w=Math.round(W-k*3), ond=cf.ond?Math.round(Math.sin(r*0.5)*cf.ond):0;
+        R(-w+ond,r,w*2,1,k>0.85?H5.o:H5.b);R(-w+ond,r,1,1,H5.oo);R(w-1+ond,r,1,1,H5.oo);}
+        pointes(-W+1,W*2-2,hy+17+L,6);}
+      meches(-W+1,W-1,top+2,hy+18+Math.max(0,L-2),3);
+      reflet(0,top+1,12);
+      if(cf.fr==='raie')R(0,top,1,7,H5.oo);
+      if(cf.fr==='rase'||cf.fr==='degrade'){for(let r=top;r<hy+18;r++)for(let x2=-13;x2<13;x2+=2)if((r+x2)%3===0)R(x2,r,1,1,H5.o);if(cf.fr==='degrade')R(-12,hy+13,24,5,T(peau,-12));}
+      if(cf.fr==='crete'){R(-13,top+2,26,16,peauO);R(-13,top+2,26,16,T(peau,-10));for(let r=top-6;r<hy+18;r++)R(-2,r,4,1,r%3?H5.b:H5.c);}
+      if(cf.sp==='queue'){R(-3,hy+10,6,3,'#c0392b');for(let r=0;r<18;r++){const w=4-Math.round(r/9);R(-w,hy+13+r,w*2,1,r>14?H5.o:H5.b);}}
+      if(cf.sp==='chignon')calotte(0,hy+4,hy+13,6,5);
+      if(cf.sp==='chignonHaut')calotte(0,top-7,top+2,6,5);
+      if(cf.sp==='tresse'){R(-2,hy+17,4,2,'#c0392b');for(let r=0;r<24;r+=4){R(-3,hy+19+r,4,2,H5.b);R(-1,hy+21+r,4,2,H5.o);}}
+      if(cf.sp==='couettes'){for(let k of [-1,1]){R(k*12-2,hy+8,4,2,'#c0392b');for(let r=0;r<14;r++)R(k*12-2+(k*Math.round(r*0.2)),hy+10+r,4,1,r>11?H5.o:H5.b);}}
+      if(cf.sp==='tresses')for(let k of [-1,1])for(let r=0;r<18;r+=3){R(k*8-2,hy+16+r,4,2,H5.b);R(k*8-1,hy+18+r,3,1,H5.o);}
+      if(coiffe==='dreads')for(let k=0;k<7;k++)for(let r=0;r<L;r++)R(-13+k*4,hy+16+r,3,1,(r+k)%4===0?H5.oo:(k%2?H5.o:H5.b));
+      if(cf.fr==='afro')for(let k=0;k<40;k++){const a=k*0.7, rr=16+(k%3);R(Math.round(Math.cos(a)*rr),hy+6+Math.round(Math.sin(a)*rr*0.75),1,1,k%2?H5.c:H5.o);}
+      if(cf.fr==='hirsute')for(let k=0;k<8;k++)R(-13+k*4,top-2-(k%3),2,3,H5.b);
+      return;
+    }
+    /* ---- DE FACE (et de trois-quarts : tout glisse un peu vers le regard) ---- */
+    const vol=cf.vol, top=hy-vol, dx=diag?vis*2:0;
+    const HW=cf.fr==='afro'?19:13;
+    calotte(dx,top,hy+6,HW,6+vol);
+    meches(-HW+dx,HW+dx,top+1,hy+5,3);
+    reflet(dx-3,top+1,9);
+    /* les tempes et les pattes, qui encadrent le visage */
+    const patte=cf.lg?Math.min(cf.lg+2,18):7;
+    if(cf.fr!=='rase'&&cf.fr!=='crete'&&cf.fr!=='crane'){
+      if(!diag||vis<0){for(let r=0;r<patte;r++)R(-13+(r>patte-3?1:0),hy+5+r,3,1,r>patte-3?H5.o:H5.b);R(-13,hy+5,1,patte,H5.oo);}
+      if(!diag||vis>0){for(let r=0;r<patte;r++)R(10-(r>patte-3?1:0),hy+5+r,3,1,r>patte-3?H5.o:H5.b);R(12,hy+5,1,patte,H5.oo);}
+    }
+    /* la frange : c'est elle qui fait la coiffure */
+    const f=cf.fr;
+    if(f==='frange'||f==='boucle'){for(let x2=-11;x2<11;x2++){const h=4+((x2+13)%3===0?1:0);R(x2+dx,hy+4,1,h,x2%3?H5.b:H5.o);}R(-11+dx,hy+4,22,1,H5.c);}
+    else if(f==='meche'){for(let r=0;r<5;r++)R(-10+r+dx,hy+4+r,9-r,1,H5.b);R(3+dx,hy+4,7,2,H5.b);R(-10+dx,hy+4,5,1,H5.c);}
+    else if(f==='raie'){R(-1+dx,top,2,7,H5.oo);for(let r=0;r<4;r++){R(-11+dx,hy+4+r,9-r*2,1,H5.b);R(2+r*2+dx,hy+4+r,9-r*2,1,H5.b);}}
+    else if(f==='tire'){R(-11+dx,hy+4,22,1,H5.o);for(let x2=-9;x2<10;x2+=3)R(x2+dx,top+2,1,5,H5.c);}
+    else if(f==='banane'){for(let r=0;r<8;r++){const w=18-Math.abs(r-3)*2;R(-Math.round(w/2)+2+dx,hy-8+r,w,1,r<2?H5.cc:(r<4?H5.c:H5.b));}R(-4+dx,hy+2,12,2,H5.o);}
+    else if(f==='crete'){R(-12,top+2,24,6,T(peau,-10));for(let r=top-7;r<hy+5;r++){const w=r<top-3?2:4;R(-Math.round(w/2)+dx,r,w,1,r%3?H5.b:H5.c);}}
+    else if(f==='rase'||f==='degrade'){for(let r=top;r<hy+6;r++)for(let x2=-12;x2<12;x2+=2)if((r+x2)%3===0)R(x2+dx,r,1,1,H5.o);
+      if(f==='degrade'){R(-13,hy+3,3,5,T(peau,-12));R(10,hy+3,3,5,T(peau,-12));}R(-11+dx,hy+5,22,1,H5.o);}
+    else if(f==='afro'){for(let k=0;k<44;k++){const a=k*0.62, rr=17+(k%3), ax=Math.round(Math.cos(a)*rr)+dx, ay=hy+3+Math.round(Math.sin(a)*rr*0.7);
+      if(Math.abs(ax-dx)<12&&ay>hy+3)continue;                                    /* jamais sur le visage */
+      R(ax,ay,1,1,k%2?H5.c:H5.o);}
+      R(-19,hy+4,6,12,H5.b);R(13,hy+4,6,12,H5.b);R(-11+dx,hy+4,22,2,H5.b);}
+    else if(f==='dreads'){for(let k=0;k<6;k++)for(let r=0;r<6;r++)R(-11+k*4+dx,hy+3+r,3,1,(r+k)%3===0?H5.oo:H5.b);}
+    else if(f==='hirsute'){for(let k=0;k<9;k++){R(-13+k*3+dx,top-2-(k%3),2,4,H5.b);R(-13+k*3+dx,hy+4,2,3+(k%2),H5.o);}}
+    /* les particularités de face */
+    if(cf.sp==='couettes'){for(const k of [-1,1]){R(k*15-2,hy+7,4,2,'#c0392b');for(let r=0;r<14;r++)R(k*15-2+k*Math.round(r*0.2),hy+9+r,4,1,r>11?H5.o:H5.b);}}
+    if(cf.sp==='tresses'){for(const k of [-1,1])for(let r=0;r<16;r+=3){R(k*13-2,hy+12+r,4,2,H5.b);R(k*13-1,hy+14+r,3,1,H5.o);}}
+    if(cf.sp==='chignonHaut')calotte(dx,top-7,top+2,6,5);
+    if(cf.sp==='chignon'){R(-14,hy+8,3,4,H5.b);R(11,hy+8,3,4,H5.b);}
+  };
+  function calotteCrane(){
+    const hy=yTete;
+    if(cote){R(-8,hy,12,1,peauC);R(-6,hy+1,6,1,T(peau,30));return;}
+    R(-6+(diag?vis*2:0),hy+1,10,1,T(peau,30));R(-4+(diag?vis*2:0),hy+2,5,1,peauC);
+  }
   /* ============ LA BARBE ============ */
   const barbeDe=()=>{
     if(barbe==='aucune'||dos)return;
