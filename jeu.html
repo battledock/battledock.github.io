@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1833';
+  var MA_VERSION='2026-09-19-1835';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -14157,7 +14157,9 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
   const torse=()=>{
     const bas=yHan+2+long;
     for(let r=yEp;r<bas;r++){
-      const k=(r-yEp)/(yHan-yEp), demi=Math.round(r<yHan?EP+(TA-EP)*Math.min(1,k*1.4):HA+(r>yHan?1:0));
+      const k=(r-yEp)/(yHan-yEp);
+      let demi=Math.round(r<yHan?EP+(TA-EP)*Math.min(1,k*1.4):HA+(r>yHan?1:0));
+      if(!cote&&r<yEp+4)demi=Math.round(5+(EP-5)*(r-yEp+1)/4);            /* les trapèzes, en pente depuis le cou */
       const dd=diag?Math.round(demi*0.86):demi;
       const w=cote?Math.round(demi*1.5):dd*2, xx=cote?-Math.round(w/2):-dd+(diag?vis:0);
       R(xx,r,w,1,r<yEp+3?vestC:vest);R(xx,r,1,1,vestT);R(xx+w-1,r,1,1,cote?vestC:vestT);
@@ -14179,22 +14181,52 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       for(let r=0;r<L;r++){const ww=w+Math.round(r*0.4)*2;R(-Math.round(ww/2),yHan+1+r,ww,1,r%4===0?pantO:pant);}}
   };
   /* ============ LES BRAS ============ */
+  /* ============ LES BRAS, REFAITS : épaule arrondie, bras, coude, avant-bras,
+     poignet, main avec son pouce et ses doigts ============ */
+  const main=(mx,my,cote2,profil,fonce,deDos)=>{
+    /* une main de 5 × 5 : la paume, le pouce du côté du corps, les doigts séparés */
+    const p0=fonce?peauO:peau, p1=fonce?peauT:peauO, pc=fonce?peau:peauC;
+    if(profil){R(mx-2,my,4,4,p0);R(mx-2,my+3,4,1,p1);R(mx+1,my+1,1,2,p1);R(mx-2,my,1,1,pc);R(mx+2,my+1,1,2,p0);return;}
+    R(mx-2,my,5,4,p0);
+    R(mx-2,my+4,1,1,p0);R(mx,my+4,1,1,p0);R(mx+2,my+4,1,1,p0);           /* le bout des doigts */
+    R(mx-1,my+3,1,2,p1);R(mx+1,my+3,1,2,p1);                                /* les séparations */
+    const pouce=cote2<0?mx+2:mx-2;                                          /* le pouce, vers le corps */
+    if(!deDos){R(pouce+(cote2<0?1:-1),my+1,1,2,p0);R(pouce,my+1,1,1,p1);}
+    R(mx-2,my,5,1,pc);R(cote2<0?mx-2:mx+2,my,1,4,p1);                      /* le dos éclairé, le bord dans l'ombre */
+  };
   const bras=(cote2,balance,fonce)=>{
-    const c=fonce?vestO:vest;
+    const c=fonce?vestO:vest, cC=fonce?vest:vestC, cT=vestT;
+    const sk=fonce?peauO:peau, skO=fonce?peauT:peauO;
     if(cote){
-      const ex=2+balance*5, ey=yEp+12, hx=2+balance*8, hy=yEp+21;
-      const cm=manches>=1?c:(manches>0?c:peau);
-      seg(1,yEp+3,ex,ey,6,cm);seg(ex,ey,hx,hy,5,manches>=1?c:peau);
-      if(manches>0&&manches<1)seg(ex,ey,hx,hy,4,peau);
-      R(Math.round(hx)-2,Math.round(hy),4,4,fonce?peauO:peau);
-    }else{
-      const bx=cote2*(EP+3), dy=Math.round(balance*3);
-      const lg=22+dy;
-      if(manches>=1){R(bx-2,yEp+1,5,lg-4,c);R(bx-2,yEp+1,1,lg-4,vestT);}
-      else if(manches>0){R(bx-2,yEp+1,5,Math.round(lg*manches),c);R(bx-2,yEp+1+Math.round(lg*manches),5,lg-4-Math.round(lg*manches),peau);}
-      else{R(bx-2,yEp+1,5,lg-4,peau);R(bx-2,yEp+1,1,lg-4,peauO);}
-      R(bx-2,yEp+lg-3,5,4,peau);R(bx-2,yEp+lg,5,1,peauO);
+      /* DE PROFIL : l'épaule ronde, le bras qui balance, le coude qui plie un peu */
+      const ex=2+balance*5, ey=yEp+11, hx=2+balance*8+(balance>0?1:0), hy=yEp+20;
+      const hautC=manches>0?c:sk, basC=manches>=1?c:sk;
+      R(-3,yEp,7,4,manches>0?cC:sk);R(-3,yEp+3,7,1,manches>0?c:skO);          /* l'épaule, arrondie */
+      seg(1,yEp+3,ex,ey,6,hautC);seg(1,yEp+3,ex,ey,2,manches>0?cC:peauC);
+      seg(ex,ey,hx,hy,5,basC);
+      if(manches>0&&manches<1){seg(ex,ey,hx,hy,4,sk);R(Math.round(ex)-2,Math.round(ey)-1,5,1,cT);}
+      if(manches>=1)R(Math.round(hx)-2,Math.round(hy)-1,5,1,cT);             /* le poignet de la manche */
+      R(Math.round(ex)+2,Math.round(ey),1,1,manches>=1?cT:skO);               /* le pli du coude */
+      main(Math.round(hx),Math.round(hy),cote2,true,fonce,false);
+      return;
     }
+    /* DE FACE OU DE DOS : épaule, bras, coude, avant-bras qui se resserre, poignet, main */
+    const bx=cote2*(EP+3), dy=Math.round(balance*3), yC=yEp+11+Math.round(dy/2), yM=yEp+19+dy;
+    const out=cote2<0?bx-2:bx+2, inn=cote2<0?bx+2:bx-2;
+    /* l'épaule : un arrondi qui déborde du torse, éclairé dessus */
+    R(bx-3,yEp,6,3,manches>0?c:sk);R(bx-2,yEp-1,4,1,manches>0?cC:sk);R(bx-2,yEp,3,1,manches>0?cC:peauC);
+    const bande=(y0,y1,w,col,colO,colC)=>{for(let r=y0;r<y1;r++){const x0=bx-Math.floor(w/2);R(x0,r,w,1,col);R(cote2<0?x0:x0+w-1,r,1,1,colO);R(cote2<0?x0+w-1:x0,r,1,1,colC);}};
+    const mancheBas=manches>=1?yM:(manches>0?Math.round(yEp+2+(yM-yEp)*manches):yEp+2);
+    bande(yEp+2,Math.min(yC,mancheBas),5,manches>0?c:sk,manches>0?cT:skO,manches>0?cC:peauC);           /* le bras */
+    if(mancheBas<yC)bande(mancheBas,yC,5,sk,skO,peauC);
+    bande(yC,yM,4,mancheBas>yC?c:sk,mancheBas>yC?cT:skO,mancheBas>yC?cC:peauC);                         /* l'avant-bras */
+    if(mancheBas>yC&&mancheBas<yM)bande(mancheBas,yM,4,sk,skO,peauC);
+    if(manches>0&&manches<1)R(bx-2,mancheBas-1,5,1,cT);                    /* l'ourlet de la manche courte */
+    if(manches>=1){R(bx-2,yM-1,5,1,cT);R(bx-2,yM-2,5,1,c);}                 /* le poignet de la manche */
+    R(out,yC,1,1,manches>=1?cT:skO);                                         /* le coude */
+    R(bx-1,yM,3,1,skO);                                                      /* le poignet */
+    main(bx,yM+1,cote2,false,fonce,dos);
+    void inn;
   };
   /* ============ LE SAC ============ */
   const sac=(devant)=>{
@@ -14219,7 +14251,9 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
   };
   const tete=()=>{
     const hy=yTete;
-    R(-3,yCou-1,6,5,peauO);                                   /* le cou */
+    /* LE COU : un peu plus large, l'ombre de la mâchoire en haut, un côté éclairé */
+    R(-3,yCou-1,7,6,peau);R(-3,yCou-1,7,2,peauO);R(-3,yCou-1,1,6,peauO);R(3,yCou+1,1,4,peauC);
+    if(!cote&&!dos){R(-1,yCou+2,1,2,peauO);R(1,yCou+2,1,2,peauO);}          /* les tendons */
     if(cote){
       for(let r=0;r<24;r++){const w=r<2?16:(r>20?15:21), xx=-10+(r>20?2:0);R(xx,hy+r,w,1,peau);}
       R(-10,hy+4,2,16,peauO);                                                         /* la nuque */
