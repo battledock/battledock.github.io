@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1931';
+  var MA_VERSION='2026-09-19-1935';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -14460,7 +14460,9 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     const out=cote2<0?bx-2:bx+2, inn=cote2<0?bx+2:bx-2;
     /* l'épaule : un arrondi qui déborde du torse, éclairé dessus */
     const lb=SX.bras[0]+1;R(bx-Math.floor(lb/2),yEp,lb,3,manches>0?c:sk);R(bx-2,yEp-1,4,1,manches>0?cC:sk);R(bx-2,yEp,3,1,manches>0?cC:peauC);
-    const bande=(y0,y1,w,col,colO,colC)=>{for(let r=y0;r<y1;r++){const x0=bx-Math.floor(w/2);R(x0,r,w,1,col);R(cote2<0?x0:x0+w-1,r,1,1,colO);R(cote2<0?x0+w-1:x0,r,1,1,colC);}};
+    /* de trois-quarts, le bras part en biais : la main avance vers le côté où l'on marche */
+    const dxS=diag?Math.round(balance*4*tourne*(dos?-1:1)):0;
+    const bande=(y0,y1,w,col,colO,colC)=>{for(let r=y0;r<y1;r++){const x0=bx+Math.round(dxS*Math.max(0,r-yEp-2)/Math.max(1,yM-yEp-2))-Math.floor(w/2);R(x0,r,w,1,col);R(cote2<0?x0:x0+w-1,r,1,1,colO);R(cote2<0?x0+w-1:x0,r,1,1,colC);}};
     const mancheBas=manches>=1?yM:(manches>0?Math.round(yEp+2+(yM-yEp)*manches):yEp+2);
     bande(yEp+2,Math.min(yC,mancheBas),SX.bras[0],manches>0?c:sk,manches>0?cT:skO,manches>0?cC:peauC);   /* le bras */
     if(mancheBas<yC)bande(mancheBas,yC,SX.bras[0],sk,skO,peauC);
@@ -14470,7 +14472,7 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     if(manches>=1){R(bx-2,yM-1,5,1,cT);R(bx-2,yM-2,5,1,c);}                 /* le poignet de la manche */
     R(out,yC,1,1,manches>=1?cT:skO);                                         /* le coude */
     R(bx-1,yM,3,1,skO);                                                      /* le poignet */
-    main(bx,yM+1,cote2,false,fonce,dos||Math.abs(balance)>0.7);                 /* au bout du balancement, on voit le dos de la main */
+    main(bx+dxS,yM+1,cote2,false,fonce,dos||Math.abs(balance)>0.7);                 /* au bout du balancement, on voit le dos de la main */
     void inn;
   };
   /* ============ LE SAC ============ */
@@ -15143,11 +15145,31 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     }else{outilEtBras();sac(true);tete();barbeDe();cheveuxDessus();chapeauDe();}
   }else{
     if(!dos)cheveuxDerriere();
-    const dx=diag?Math.round(hanche*3*tourne):0;
-    jambe(-Math.round(HA/2)-1+dx,0,dos?leveD:leveG,diag&&tourne>0&&!dos);
-    jambe(Math.round(HA/2)+1-dx,0,dos?leveG:leveD,diag&&tourne<0&&!dos);
+    if(diag){
+      /* DE TROIS-QUARTS : chaque pied avance en diagonale (vers le côté du regard et,
+         de face, un peu vers nous ; de dos, un peu vers le fond). La jambe du fond est
+         plus sombre et passe derrière. */
+      const jd=(hx,pp,fonce)=>{
+        const fx=hx+pp.x*6*AMPL*tourne, fy=-3-pp.lift*6+(dos?-1:1)*pp.x*1.6;
+        const L2=((-3)-(-26))/2+0.3, dxk=fx-hx, dyk=fy-yHan, d=Math.min(L2*2-0.2,Math.hypot(dxk,dyk));
+        const hk=Math.sqrt(Math.max(0,L2*L2-(d/2)*(d/2))), nl=Math.hypot(dxk,dyk)||1;
+        let nx=-dyk/nl, ny=dxk/nl;if(nx*tourne<0){nx=-nx;ny=-ny;}                    /* le genou plie vers l'avant */
+        const kx=hx+dxk/2+nx*hk, ky=yHan+dyk/2+ny*hk;
+        const c=fonce?pantO:pant, bas2=court?(fonce?peauO:peau):c;
+        seg(hx,yHan,kx,ky,SX.jambe,c);seg(kx,ky,fx,fy,SX.jambe-1,bas2);
+        R(Math.round(kx)-1,Math.round(ky),2,1,fonce?pant:pantC);                  /* le genou */
+        soulierDe(Math.round(fx),Math.round(fy)+3,fonce);};
+      const loinG=(tourne>0)!==dos;                                          /* quelle jambe est au fond */
+      const hG=-Math.round(HA/2)-1+vis, hD=Math.round(HA/2)+1+vis;
+      if(loinG){jd(hG,dos?pD:pG,true);jd(hD,dos?pG:pD,false);}else{jd(hD,dos?pG:pD,true);jd(hG,dos?pD:pG,false);}
+    }else{
+      jambe(-Math.round(HA/2)-1,0,dos?leveD:leveG,false);
+      jambe(Math.round(HA/2)+1,0,dos?leveG:leveD,false);
+    }
     if(!dos)sac(false);
-    if(balance){g.save();g.translate(balance*u,0);}                 /* le poids passe d'un pied sur l'autre */
+    const avanceD=diag&&bouge?tourne*(COURSE?2:1):0;              /* de trois-quarts, le buste se porte vers l'avant */
+    const swayX=balance+avanceD, swayY=diag&&COURSE?1:0;
+    if(swayX||swayY){g.save();g.translate(swayX*u,swayY*u);}           /* le poids passe d'un pied sur l'autre */
     if(diag){const loin=vis;bras(loin,loin>0?(dos?hanche:-hanche):(dos?-hanche:hanche),true);}
     torse();
     if(diag){const loin=vis, pres=-vis;
@@ -15160,7 +15182,7 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     /* de dos et de trois-quarts : on devine la joue et l'oreille du côté où l'on regarde */
     if(diag&&dos){const cx2=tourne>0?9:-12;R(cx2,yTete+9,3,9,peau);R(cx2+(tourne>0?1:0),yTete+11,2,4,peauO);R(tourne>0?11:-13,yTete+14,2,3,peau);}
     chapeauDe();
-    if(balance)g.restore();
+    if(swayX||swayY)g.restore();
   }
 }
 /* LE CONTOUR : un liseré sombre d'un pixel fin tout autour de la silhouette,
