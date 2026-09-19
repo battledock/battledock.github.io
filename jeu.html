@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1846';
+  var MA_VERSION='2026-09-19-1848';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -14123,7 +14123,11 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
   const F=bouge?(Math.floor(pas*2)%16):-1, ph=bouge?F/16*Math.PI*2:0;
   const hanche=bouge?-Math.cos(ph):0;                          /* la jambe gauche balaie de -1 à 1 */
   const leveG=bouge?Math.max(0,Math.sin(ph)):0, leveD=bouge?Math.max(0,-Math.sin(ph)):0;
-  const bob=bouge?-Math.round(Math.abs(Math.sin(ph))*2):((Date.now()/1400|0)%3===0?-1:0);
+  /* LA RESPIRATION : au repos, les quatre images de brise sont aussi un souffle —
+     les épaules montent d'un pixel fin et la poitrine s'élargit, puis tout redescend */
+  const iBrise=Math.round((typeof BRISE_PH==='number'?BRISE_PH:0)/(Math.PI/2))%4;
+  const souffle=bouge?0:[0,1,1,0][iBrise];
+  const bob=bouge?-Math.round(Math.abs(Math.sin(ph))*2):-souffle;
   /* ---- les hauteurs, en demi-pixels : pieds 0, hanches -26, épaules -56, tête -82 ---- */
   const yHan=-26+bob, yEp=-54+bob, yCou=-58+bob, yTete=-81+bob;
   const court=basT==='short'||basT==='bermuda', jupe=basT==='jupe'||basT==='longue jupe';
@@ -14204,11 +14208,16 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       const k=(r-yEp)/(yHan-yEp);
       let demi=Math.round(r<yHan?EP+(TA-EP)*Math.min(1,k*1.4):HA+(r>yHan?1:0));
       if(!cote&&r<yEp+4)demi=Math.round(5+(EP-5)*(r-yEp+1)/4);            /* les trapèzes, en pente depuis le cou */
+      if(souffle&&r>=yEp+4&&r<yEp+11)demi+=1;                              /* la poitrine, au souffle */
       const dd=diag?Math.round(demi*0.86):demi;
       let w=cote?Math.round(demi*1.5):dd*2, xx=cote?-Math.round(w/2):-dd+(diag?vis:0);
       /* LE VENTRE : un arrondi entre la poitrine et la ceinture (de profil, il avance) */
       const yV0=yEp+12, bV=SX.ventre&&r>yV0&&r<yHan+1?Math.round(SX.ventre*Math.sin(Math.PI*(r-yV0)/(yHan+1-yV0))):0;
       if(bV){if(cote)w+=bV;else{w+=bV*2;xx-=bV;}}
+      /* LES PANS : sous la ceinture, le manteau et la tunique battent au rythme des pas */
+      if(long&&r>yHan&&bouge){const k2=(r-yHan)/long;
+        if(cote){w+=Math.round(k2*2);xx-=Math.round(k2*(2+Math.sin(ph*2)));}
+        else{xx+=Math.round(Math.sin(ph+r*0.15)*1.6*k2);w+=Math.round(Math.abs(Math.sin(ph))*k2*2);}}
       /* de profil : la poitrine bombe un peu devant, les fesses derrière */
       if(cote){if(r>yEp+3&&r<yEp+12){w+=1;}if(r>=yHan-3){w+=1;xx-=1;}}
       R(xx,r,w,1,r<yEp+3?vestC:vest);R(xx,r,1,1,vestT);R(xx+w-1,r,1,1,cote?vestC:vestT);
@@ -14252,8 +14261,11 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       if(court&&!cote)R(-HA,yHan+1,HA*2,3,pant);
     }
     if(jupe){const L=basT==='jupe'?12:22, w=cote?Math.round(HA*1.2):HA*2+2;
-      for(let r=0;r<L;r++){const ww=w+Math.round(r*0.4)*2;R(-Math.round(ww/2),yHan+1+r,ww,1,r%4===0?pantO:pant);}
-      for(let x2=-Math.round(w/2)+2;x2<Math.round(w/2);x2+=3)R(x2,yHan+3,1,L-3,T(pant,-12));}    /* les plis */
+      /* LA JUPE ONDULE : le bas s'évase et se balance au rythme des pas, les plis suivent */
+      const ondJ=(r)=>bouge?Math.round(Math.sin(ph+r*0.22)*1.5*(r/L)):Math.round(Math.sin((typeof BRISE_PH==='number'?BRISE_PH:0)+r*0.3)*0.5*(r/L));
+      for(let r=0;r<L;r++){const ww=w+Math.round(r*0.4)*2+(bouge?Math.round(Math.abs(Math.sin(ph))*(r/L)*2):0);
+        R(-Math.round(ww/2)+ondJ(r),yHan+1+r,ww,1,r%4===0?pantO:(r===L-1?T(pant,-18):pant));}
+      for(let x2=-Math.round(w/2)+2;x2<Math.round(w/2);x2+=3)for(let r=2;r<L-1;r++)R(x2+ondJ(r),yHan+1+r,1,1,T(pant,-12));}    /* les plis */
   };
   function demiDos(){return HA*0.75;}
   /* ============ LES BRAS, REFAITS : épaule arrondie, bras, coude, avant-bras,
@@ -14300,15 +14312,17 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     if(manches>=1){R(bx-2,yM-1,5,1,cT);R(bx-2,yM-2,5,1,c);}                 /* le poignet de la manche */
     R(out,yC,1,1,manches>=1?cT:skO);                                         /* le coude */
     R(bx-1,yM,3,1,skO);                                                      /* le poignet */
-    main(bx,yM+1,cote2,false,fonce,dos);
+    main(bx,yM+1,cote2,false,fonce,dos||Math.abs(balance)>0.7);                 /* au bout du balancement, on voit le dos de la main */
     void inn;
   };
   /* ============ LE SAC ============ */
   const sac=(devant)=>{
     if(sacC==='aucun')return;
-    if(dos&&!devant){R(-8,yEp+4,16,16,sacC);R(-8,yEp+4,16,2,T(sacC,20));R(-6,yEp+10,12,1,T(sacC,-30));R(-2,yEp+12,4,3,'#c9a24a');}
+    /* LE SAC REBONDIT : il décolle d'un pixel fin à chaque pas, un temps après le corps */
+    const sb=bouge?Math.round(Math.max(0,Math.sin(ph*2-0.8))*1.4):0;
+    if(dos&&!devant){const y4=yEp+4+sb;R(-8,y4,16,16,sacC);R(-8,y4,16,2,T(sacC,20));R(-6,y4+6,12,1,T(sacC,-30));R(-2,y4+8,4,3,'#c9a24a');}
     else if(!dos&&devant&&!cote){R(-EP+2,yEp,2,18,T(sacC,-20));R(EP-4,yEp,2,18,T(sacC,-20));}
-    else if(cote&&!devant){R(-8,yEp+4,5,15,sacC);R(-8,yEp+4,5,2,T(sacC,20));}
+    else if(cote&&!devant){R(-8-sb,yEp+4+sb,5,15,sacC);R(-8-sb,yEp+4+sb,5,2,T(sacC,20));}
   };
   /* ============ LA TÊTE ============ */
   /* L'OREILLE, vue de face ou de dos : l'ourlet éclairé, le creux sombre, le lobe */
