@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1828';
+  var MA_VERSION='2026-09-19-1830';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -14205,6 +14205,10 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
   };
   /* ============ LA TÊTE ============ */
   /* L'OREILLE, vue de face ou de dos : l'ourlet éclairé, le creux sombre, le lobe */
+  /* les teintes de la bouche, tirées de la peau : un rose plus ou moins marqué */
+  const melangeF=(a,b,k)=>{const A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),16);
+    const c=(sh)=>Math.round(((A>>sh)&255)*(1-k)+((B>>sh)&255)*k);return '#'+((1<<24)+(c(16)<<16)+(c(8)<<8)+c(0)).toString(16).slice(1);};
+  const levre=melangeF(peau,'#a8404c',0.38), levreC=melangeF(peau,'#d07884',0.30), fente=T(peau,-78), creux=T(peau,-16);
   const oreille=(cx,hy,cote2,dosV)=>{
     const x=cote2<0?cx-3:cx;
     R(x,hy+9,3,7,peau);R(cote2<0?x:x+2,hy+9,1,7,peauO);                       /* l'ourlet et son ombre */
@@ -14231,8 +14235,14 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       R(-1,hy+10,2,4,peauO);R(0,hy+11,1,2,peauT);R(1,hy+11,1,3,peau);R(-2,hy+15,3,1,peauO);
       if(boucle!=='aucune')R(-2,hy+16,2,2,boucle==='perle'?'#f2efe4':(boucle==='plume'?'#c0392b':'#e8c06a'));
       oeilDe(4,hy+10,true);sourcilDe(3,hy+7,true);
-      R(6,hy+17,4,1,bouche==='sourire'?T(peau,-70):T(peau,-50));
-      if(bouche==='sourire')R(9,hy+16,1,1,T(peau,-70));
+      /* LA BOUCHE DE PROFIL : les lèvres avancent un peu, la fente rentre */
+      R(10,hy+17,1,3,peau);R(9,hy+17,1,1,levre);R(9,hy+19,1,1,levreC);
+      if(bouche==='entrouverte'){R(7,hy+18,3,1,T(peau,-90));R(9,hy+18,1,1,'#f2efe4');}
+      else R(6,hy+18,4,1,fente);
+      if(bouche==='sourire'){R(6,hy+17,1,1,fente);R(5,hy+16,1,1,creux);}
+      if(bouche==='severe')R(6,hy+19,1,1,fente);
+      if(bouche==='lèvres'){R(9,hy+17,2,1,levre);R(9,hy+19,2,1,levreC);}
+      R(8,hy+21,2,1,creux);
       if(marque==='fard')R(4,hy+13,3,2,T(peau,-12));if(marque==='taches')[[5,13],[7,14],[3,14]].forEach(([a,b])=>R(a,hy+b,1,1,peauT));
       if(marque==='cicatrice')R(2,hy+6,1,7,T(peau,-40));if(marque==='grain')R(7,hy+15,1,1,peauT);
       if(marque==='peinture')R(2,hy+11,8,2,'#c0392b');
@@ -14257,12 +14267,28 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       else{R(-1,hy+11,1,4,peauO);R(0,hy+14,1,1,peauC);R(-2,hy+15,4,1,peauO);R(-2,hy+15,1,1,peauT);R(1,hy+15,1,1,peauT);}
       /* la bouche */
       const bc=T(peau,-62);
-      if(bouche==='sourire'){R(-3,hy+17,6,1,bc);R(-4,hy+16,1,1,bc);R(3,hy+16,1,1,bc);}
-      else if(bouche==='severe'){R(-3,hy+18,6,1,bc);}
-      else if(bouche==='entrouverte'){R(-2,hy+17,4,2,T(peau,-80));R(-1,hy+17,2,1,'#f2efe4');}
-      else if(bouche==='lèvres'){R(-3,hy+17,6,2,'#b0505a');R(-2,hy+17,4,1,'#c86a74');}
-      else if(bouche==='pincée'){R(-2,hy+17,4,1,bc);}
-      else R(-3,hy+17,6,1,bc);
+      /* LA BOUCHE : la fente, les commissures, la lèvre du bas éclairée, et le petit
+         creux du menton dessous. Chaque forme a son dessin. */
+      void bc;
+      if(bouche==='sourire'){
+        R(-3,hy+18,6,1,fente);R(-4,hy+17,1,1,fente);R(3,hy+17,1,1,fente);          /* la fente qui remonte */
+        R(-2,hy+19,4,1,levreC);R(-5,hy+16,1,1,creux);R(4,hy+16,1,1,creux);        /* la lèvre, les fossettes */
+      }else if(bouche==='severe'){
+        R(-3,hy+18,6,1,fente);R(-4,hy+19,1,1,fente);R(3,hy+19,1,1,fente);          /* les coins qui tombent */
+        R(-2,hy+19,4,1,creux);
+      }else if(bouche==='entrouverte'){
+        R(-2,hy+17,4,1,levre);R(-2,hy+18,4,2,T(peau,-90));R(-1,hy+18,2,1,'#f2efe4');  /* les dents du haut */
+        R(-3,hy+18,1,1,fente);R(2,hy+18,1,1,fente);R(-2,hy+20,4,1,levreC);
+      }else if(bouche==='lèvres'){
+        R(-3,hy+17,6,1,levre);R(-1,hy+17,1,1,T(levre,-18));                         /* l'arc de la lèvre du haut */
+        R(-3,hy+18,6,1,T(levre,-40));R(-2,hy+19,4,2,levreC);R(-1,hy+19,1,1,T(levreC,28));
+      }else if(bouche==='pincée'){
+        R(-2,hy+18,4,1,fente);R(-3,hy+18,1,1,creux);R(2,hy+18,1,1,creux);R(-1,hy+19,2,1,creux);
+      }else{
+        R(-3,hy+18,6,1,fente);R(-4,hy+18,1,1,T(peau,-40));R(3,hy+18,1,1,T(peau,-40));
+        R(-2,hy+19,4,1,levreC);
+      }
+      R(-1,hy+21,2,1,creux);                                                           /* le creux sous la lèvre */
       /* les marques */
       if(marque==='taches')[[-6,14],[-4,15],[4,14],[6,15],[-5,16],[5,16]].forEach(([a,b])=>R(a,hy+b,1,1,peauT));
       else if(marque==='cicatrice'){R(4,hy+7,1,8,T(peau,-40));R(3,hy+9,3,1,T(peau,-40));}
@@ -14488,7 +14514,7 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     const h={naissante:5,fine:3,courte:6,pleine:8,longue:14,collier:4,fourchue:14}[barbe]||5;
     for(let r=0;r<h;r++){const w=r<4?18-r:14-Math.round(r*0.6);R(-Math.round(w/2),yTete+16+r,w,1,r%3?c:T(c,14));}
     if(barbe==='fourchue'){R(-1,yTete+24,2,6,peau);}
-    R(-3,yTete+17,6,1,T(peau,-62));
+    R(-3,yTete+18,6,1,fente);
   };
   /* ============ LE CHAPEAU ============ */
   const chapeauDe=()=>{
