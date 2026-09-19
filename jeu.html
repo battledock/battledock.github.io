@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-2206';
+  var MA_VERSION='2026-09-19-2234';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -2091,7 +2091,7 @@ window.addEventListener('error',ev=>{
 </script>
 <script type="module">
 /* LA CARTE : le village, ou Extramar (le vieux port, au bout de la ligne 1) */
-const CARTE=(()=>{const c=new URLSearchParams(location.search).get('carte');return c==='extramar'||c==='garde'?'extramar':'village';})();   /* la place du haut n'existe plus */
+const CARTE=(()=>{const c=new URLSearchParams(location.search).get('carte');return c==='montagne'?'montagne':(c==='extramar'||c==='garde'?'extramar':'village');})();   /* la place du haut n'existe plus */
 const ANNEXE=CARTE!=='village';     /* Extramar et Notre-Dame : des cartes à part, sans le monde partagé */
 /* Le jeu ne doit jamais dépendre d'un fichier distant pour s'afficher :
    on charge Supabase en arrière-plan, et le décor s'affiche même s'il manque. */
@@ -10622,14 +10622,14 @@ function dessinerSouche(g,x,y,gr,neuf){
 /* LA RIVE EST RÉTRÉCIT : 806 de large au lieu de 1166. Cinq bâtiments dans
    1166 de large donnaient un pré avec des maisons dedans ; resserrés, ils
    font un village. Le grand vide, ce sera le DEHORS, plus tard. */
-const MONDE_L=CARTE==='garde'?640:1400;               // largeur, en pixels de jeu
+const MONDE_L=CARTE==='garde'?640:(CARTE==='montagne'?640:1400);               // largeur, en pixels de jeu
 /* La carte gagne 160 points au sud pour accueillir la VOIE FERRÉE : elle
    traverse tout l'écran et sort des deux côtés, avec son remblai, et elle
    ferme le monde par le bas — qui s'arrêtait jusqu'ici sur une lisière sans
    raison. Rien d'autre ne bouge. */
 /* La carte retrouve sa hauteur d'avant — 600 — et s'allonge vers l'EST : le
    village a de la place sans que le monde devienne un carré. */
-const MONDE_H=600;                // hauteur
+const MONDE_H=CARTE==='montagne'?420:600;                // hauteur
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 /* ================= LA MÊME VUE POUR TOUT LE MONDE =================
    Avant, l'échelle était fixe (×2) : un petit écran de 2020 voyait 160 points
@@ -10640,6 +10640,366 @@ const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la haute
 const VUE_L=196, VUE_H=400;       /* la vue de référence, en points de jeu */
 const ZOOM=2;                     /* ne sert plus que de repli */
 let SOL=null, SOL_FIN=null;
+/* =====================================================================
+   SAUMASKI — la station de ski, au bout de la ligne 1. Une carte à part,
+   plate, comme le port. Tout y est fermé pour l'instant : on s'y promène.
+   ===================================================================== */
+const SAUMASKI=(()=>{
+const WW=640, WH=420, SOLSTYLE='lames';
+const hs=(i)=>{const s=Math.sin(i*127.1+311.7)*43758.5453;return s-Math.floor(s);};
+const mk=(w,h)=>{const c=document.createElement('canvas');c.width=w*2;c.height=h*2;const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
+  const F=(x,y,ww,hh,col)=>{if(ww<=0||hh<=0)return;g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,Math.round(ww*2)/2),Math.max(0.5,Math.round(hh*2)/2));};return {c,g,F};};
+const ombre=(g,x,y,rx,ry)=>{g.fillStyle='rgba(80,100,135,.32)';g.beginPath();g.ellipse(x+2,y+1,rx,ry||rx*0.2,0,0,7);g.fill();};
+/* ---------- LES PALETTES ---------- */
+const BOIS={s:'#3d2a17',o:'#5b3f21',p:'#7d5934',c:'#96703f',h:'#b08858'};
+const PIERRE={o:'#5f666c',s:'#6f767c',p:'#7e868d',c:'#8f979e',h:'#a4acb3',t:'#bcc4ca'};
+const NEIGE={o:'#c8d6e2',s:'#dae4ec',p:'#eaf1f6',c:'#f4f8fa',h:'#ffffff'};
+/* ---------- LES OUTILS DE DESSIN ---------- */
+function toitNeige(F,g,cx,bas,larg,haut,tuile){             /* un toit à deux pans vu de face, chargé de neige, avec ses glaçons */
+  const rangs=Math.round(haut/1.6);
+  for(let k=0;k<rangs;k++){const t=k/rangs, w=larg-t*larg*0.72, y=bas-k*1.6;
+    const neige=t>0.25||hs(k*3.1+larg)<0.15;
+    F(cx-w/2,y-1.6,w,1.6,neige?(k%2?NEIGE.c:NEIGE.p):(k%2?tuile[0]:tuile[1]));
+    if(!neige)for(let x=cx-w/2;x<cx+w/2;x+=4)F(x,y-1.6,0.5,1.6,tuile[2]);}
+  F(cx-larg*0.14,bas-rangs*1.6-1.5,larg*0.28,2,NEIGE.h);                                        /* le faîtage, bourrelet de neige */
+  for(let x=cx-larg/2;x<cx+larg/2;x+=0.5){const dy=Math.sin(x*1.3)*0.5;F(x,bas+dy,0.5,1.8,NEIGE.h);}   /* la corniche de neige qui déborde */
+  for(let x=cx-larg/2+1;x<cx+larg/2-1;x+=2.5){const l=1+hs(x*3+larg)*4;F(x,bas+1.5,0.5,l,'rgba(220,244,255,.9)');F(x,bas+1.5+l-0.5,0.5,0.5,'#ffffff');}   /* les glaçons */
+  g.fillStyle='rgba(60,80,110,.25)';g.fillRect(cx-larg/2,bas+1.8,larg,1.2);
+}
+function madriers(F,x,y,w,h,base){                           /* un mur de rondins, bout à bout, avec leurs têtes aux angles */
+  for(let r=0;r<h;r+=2.5){F(x,y+r,w,2.5,r%5?base:BOIS.p);F(x,y+r,w,0.5,BOIS.h);F(x,y+r+2,w,0.5,BOIS.s);
+    for(let k=0;k<w;k+=7)if(hs(k+r*3+x)<0.35)F(x+k,y+r+1,2,0.5,BOIS.o);}
+  for(let r=0;r<h;r+=2.5){[x-1.5,x+w-0.5].forEach(xx=>{F(xx,y+r,2,2.5,BOIS.c);F(xx+0.5,y+r+0.5,1,1.5,BOIS.o);});}   /* les têtes de rondins */
+}
+function soubassement(F,x,y,w,h){for(let r=0;r<h;r+=3.5){const dec=(r/3.5)%2?3:0;for(let k=-dec;k<w;k+=6){const kk=Math.max(0,k), ww=Math.min(5.5,w-kk,k+6-kk);if(ww<=0)continue;
+  const t=hs(x+k*1.7+r*3);F(x+kk,y+r,ww,3,t<0.3?PIERRE.s:(t<0.7?PIERRE.p:PIERRE.c));F(x+kk,y+r,ww,0.5,PIERRE.t);F(x+kk,y+r+3,ww,0.5,PIERRE.o);}}}
+function fenetre(F,x,y,w,h,nuit,volets){
+  if(volets){F(x-3,y-0.5,2.5,h+1,'#2d6fb0');F(x+w+0.5,y-0.5,2.5,h+1,'#2d6fb0');for(let k=0;k<h;k+=1.5){F(x-3,y+k,2.5,0.5,'#1f4f80');F(x+w+0.5,y+k,2.5,0.5,'#1f4f80');}
+    F(x-2,y+h/2-1,0.5,2,'#f0cf7d');}                                                             /* les volets, et leur cœur découpé */
+  F(x-0.5,y-0.5,w+1,h+1,BOIS.s);F(x,y,w,h,nuit?'#f0c060':'#3a5a7a');F(x,y,w/2-0.25,h,nuit?'#f8d888':'#5a8aaa');F(x+w/2-0.25,y,0.5,h,BOIS.o);F(x,y+h/2-0.25,w,0.5,BOIS.o);
+  if(!nuit)F(x+0.5,y+0.5,w*0.25,0.5,'rgba(255,255,255,.6)');
+  F(x-1,y+h+0.5,w+2,1.5,BOIS.c);F(x-1,y+h,w+2,1,NEIGE.h);                                         /* l'appui, et sa neige */
+  F(x-0.5,y+h+2,w+1,2.5,'#8a5a3a');for(let k=0;k<w;k+=1.5)F(x+k,y+h+1.5,1,1,['#d8342a','#f0c040','#e86a8a'][Math.floor(hs(k+x)*3)]);   /* la jardinière d'hiver */
+}
+function enseigne(g,F,cx,y,w,txt,taille,fond){F(cx-w/2,y,w,taille+4,fond||BOIS.s);F(cx-w/2,y,w,0.5,BOIS.c);F(cx-w/2,y+taille+3.5,w,0.5,'#1a120a');
+  g.font='700 '+taille+'px Georgia,serif';g.textAlign='center';g.fillStyle='#1a120a';g.fillText(txt,cx+0.4,y+taille+1.4,w-4);g.fillStyle='#f0cf7d';g.fillText(txt,cx,y+taille+1,w-4);g.textAlign='left';}
+/* ================== LE SOL ================== */
+function graverSol(){
+  const {c,g,F}=mk(WW,WH);
+  for(let y=0;y<WH;y++)for(let x=0;x<WW;x++){const n=hs(Math.floor(x/6)*1.3+Math.floor(y/5)*2.1)*0.6+hs(Math.floor(x/13)*3.7+Math.floor(y/11)*1.9)*0.4;F(x,y,1,1,n<0.3?NEIGE.p:(n<0.8?NEIGE.c:NEIGE.h));}
+  for(let y=0;y<WH;y+=2){g.fillStyle='rgba(120,150,190,'+(0.035+0.03*Math.sin(y/50+1)).toFixed(3)+')';g.fillRect(0,y,WW,2);}
+  /* LA PLACE : un grand rectangle aux coins arrondis, pavé, déneigé par allées */
+  const PX0=150,PX1=490,PY0=140,PY1=340,RC=26;
+  const dans=(x,y)=>{if(x<PX0||x>PX1||y<PY0||y>PY1)return false;const cx=Math.max(PX0+RC,Math.min(PX1-RC,x)),cy=Math.max(PY0+RC,Math.min(PY1-RC,y));return Math.hypot(x-cx,y-cy)<=RC;};
+  /* LE PLANCHER DE LA PLACE, en mélèze : les lames ou les chevrons, chacune avec sa teinte, son veinage,
+     ses joints sombres et ses clous ; la neige balayée dans les allées, restée en poudre sur les bords */
+  const LAME=['#b88a5a','#a87a4c','#c49868','#9a6e42','#b08050'];
+  if(SOLSTYLE==='lames'){
+    for(let y=PY0;y<PY1;y+=4)for(let x=PX0-20;x<PX1;){const long=16+Math.floor(hs(x*0.7+y)*3)*6, dec=((y-PY0)/4)%3*7;const px=x+dec;
+      const t=hs(px*0.37+y*1.3), col=LAME[Math.floor(t*5)];
+      for(let xx=px;xx<px+long;xx+=1){if(!dans(xx,y+2))continue;F(xx,y,1,3.5,col);
+        if(hs(xx*1.7+y)<0.25)F(xx,y+1+hs(xx)*2,1,0.5,'rgba(90,55,25,.35)');}
+      for(let xx=px;xx<px+long;xx+=1)if(dans(xx,y+2)){F(xx,y,1,0.5,'rgba(255,230,190,.35)');F(xx,y+3.5,1,0.5,'#5a3a1e');}
+      if(dans(px,y+2))F(px,y,0.5,4,'#5a3a1e');[px+1.5,px+long-2].forEach(cx=>{if(dans(cx,y+2)){F(cx,y+1,0.5,0.5,'#3a2a1e');F(cx,y+2.5,0.5,0.5,'#3a2a1e');}});
+      x+=long;}
+  }else{
+    /* les chevrons (point de Hongrie) : des lames courtes, en V, qui dessinent des flèches */
+    for(let y=PY0;y<PY1;y+=0.5)for(let x=PX0;x<PX1;x+=0.5)if(dans(x,y))F(x,y,0.5,0.5,'#5a3a1e');       /* le fond, sous les lames */
+    for(let y=PY0-16;y<PY1+16;y+=5)for(let k=0;k<(PX1-PX0)/16+2;k++){const bx=PX0-16+k*16;
+      [[0,1],[8,-1]].forEach(([dx,sens],q)=>{const t=hs(bx*0.37+y*1.3+q), col=LAME[Math.floor(t*5)];
+        for(let u=0;u<12;u+=0.5){const x=bx+dx+u*0.7, yy=y+u*0.42*sens+(sens<0?5:0);if(!dans(x,yy))continue;F(x,yy,0.5,2.5,col);
+          if(u<0.5||u>=11.5)F(x,yy,0.5,2.5,'#5a3a1e');if(hs(x*3+yy)<0.2)F(x,yy+1,0.5,0.5,'rgba(90,55,25,.35)');}
+        for(let u=0;u<12;u+=0.5){const x=bx+dx+u*0.7, yy=y+u*0.42*sens+(sens<0?5:0);if(dans(x,yy)){F(x,yy,0.5,0.5,'rgba(255,230,190,.3)');F(x,yy+2.5,0.5,0.5,'#5a3a1e');}}});}
+  }
+  /* la neige : balayée dans les allées, en poudre ailleurs, en congère le long des bords */
+  const allee=(x,y)=>Math.abs(x-320)<18||Math.abs(y-250)<14||Math.abs(Math.hypot(x-320,y-250)-46)<12;
+  for(let y=PY0;y<PY1;y+=0.5)for(let x=PX0;x<PX1;x+=0.5){if(!dans(x,y)||allee(x,y))continue;
+    /* des congères douces : le long des bords, et quelques plaques restées au soleil, aux contours ronds */
+    let d=99;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]])for(let k=1;k<14;k++){if(!dans(x+a*k,y+b*k)){d=Math.min(d,k);break;}}
+    const plaque=Math.sin(x/17)+Math.sin(y/13+x/29)+Math.sin((x+y)/23+1.3);
+    const bruit=hs(Math.round(x*2)*0.71+Math.round(y*2)*1.37)*0.6;
+    const neige=(d<14?(14-d)/14*1.6:0)+(plaque>1.4?(plaque-1.4)*2.2:0)-bruit;
+    if(neige>0.55)F(x,y,0.5,0.5,neige>1.2?NEIGE.h:(neige>0.8?NEIGE.c:NEIGE.p));
+    else if(neige>0.35)F(x,y,0.5,0.5,'rgba(244,248,250,.55)');}
+  /* la bordure : des rondins couchés, coiffés de neige */
+  for(let x=PX0;x<PX1;x+=0.5)for(let y=PY0-4;y<PY1+4;y+=0.5){if(dans(x,y))continue;const bord=dans(x+3,y)||dans(x-3,y)||dans(x,y+3)||dans(x,y-3);if(!bord)continue;
+    if(Math.abs(x-320)<18||Math.abs(y-250)<14)continue;const t=hs(x*3+y*7);F(x,y,0.5,0.5,t<0.3?'#6b4a28':(t<0.7?'#7d5934':'#8a6238'));}
+  for(let x=PX0;x<PX1;x+=0.5)for(let y=PY0-5;y<PY1+5;y+=0.5){if(dans(x,y))continue;const b=dans(x,y+4)&&!dans(x,y+1);if(b&&!(Math.abs(x-320)<18))F(x,y,0.5,0.5,NEIGE.h);}
+  /* LA PATINOIRE, dans le quart sud-est : la glace bleutée, les traces de patins, sa bande de bois */
+  const RX=412,RY=298,RW=46,RH=22;
+  for(let y=RY-RH;y<RY+RH;y+=0.5)for(let x=RX-RW;x<RX+RW;x+=0.5){const q=((x-RX)/RW)**2+((y-RY)/RH)**2;if(q>1)continue;
+    const n=hs(Math.floor(x*2)*0.7+Math.floor(y*2)*1.3);F(x,y,0.5,0.5,q>0.9?'#a8cce0':(n<0.4?'#cfe6f2':(n<0.8?'#dcedf6':'#e8f4fa')));}
+  g.strokeStyle='rgba(255,255,255,.7)';g.lineWidth=0.4;for(let k=0;k<7;k++){g.beginPath();g.ellipse(RX+Math.sin(k)*6,RY+Math.cos(k*2)*3,RW*(0.35+k*0.08),RH*(0.3+k*0.08),k*0.3,0,Math.PI*1.4);g.stroke();}
+  g.fillStyle='rgba(255,255,255,.35)';g.beginPath();g.ellipse(RX-14,RY-8,14,3,-0.2,0,7);g.fill();
+  /* les chemins qui partent de la place : vers les pistes (nord), vers la luge (ouest), vers la forêt (est) */
+  const chemin=(pts,l)=>{for(let k=0;k<pts.length-1;k++){const [ax,ay]=pts[k],[bx,by]=pts[k+1],n=Math.hypot(bx-ax,by-ay);
+    for(let s2=0;s2<=n;s2+=1){const x=ax+(bx-ax)*s2/n,y=ay+(by-ay)*s2/n;for(let d=-l/2;d<l/2;d+=1){const t=hs(Math.round(x+d)*1.7+Math.round(y)*0.9);
+      const px=Math.abs(bx-ax)>Math.abs(by-ay)?x:x+d, py=Math.abs(bx-ax)>Math.abs(by-ay)?y+d:y;if(dans(px,py))continue;F(px,py,1,1,t<0.5?'#dde6ee':'#d2dde8');}}}};
+  chemin([[320,140],[320,70],[330,0]],22);chemin([[150,250],[80,250],[20,280]],16);chemin([[490,250],[560,236],[640,240]],16);chemin([[320,340],[320,420]],20);
+  /* LE RUISSEAU GELÉ, à l'ouest, et ses berges */
+  for(let y=0;y<WH;y++){const x=58+Math.sin(y/37)*10+Math.sin(y/13)*3;F(x-7,y,14,1,'#b8d8ec');F(x-5,y,10,1,'#cfe6f4');if(hs(y)<0.3)F(x-3+hs(y*3)*6,y,2,0.5,'#ffffff');F(x-8,y,1.5,1,NEIGE.h);F(x+6.5,y,1.5,1,NEIGE.h);}
+  /* la piste de luge, à l'ouest : une pente damée et ses traces */
+  g.strokeStyle='rgba(150,170,195,.5)';g.lineWidth=0.6;for(let k=0;k<4;k++){g.beginPath();g.moveTo(8+k*6,130);g.quadraticCurveTo(30+k*6,200,20+k*6,270);g.stroke();}
+  /* des traces de pas partout dans la neige */
+  for(let k=0;k<400;k++){const x=hs(k*3.3)*WW, y=hs(k*7.1)*WH;if(dans(x,y))continue;F(x,y,1.5,1,'#d6e0ea');F(x+0.5,y+1,0.5,0.5,'#c4d0dc');}
+  return c;
+}
+/* ================== LES BÂTIMENTS ================== */
+/* LA STATION DE MÉTRO : un pavillon de pierre et de bois, une verrière en marquise sur l'escalier, l'horloge, le grand M */
+/* LE SAPIN ENNEIGÉ, REFAIT : un épicéa aux étages de branches tombantes, chaque étage
+   chargé d'un coussin de neige, un cœur sombre, une silhouette irrégulière, le puits de
+   neige à son pied ; variante « nu » (mélèze d'hiver) pour varier la forêt */
+function sapin(h,variante){
+  const W=Math.round(h*0.95)+4,H=h+8,{c,g,F}=mk(W,H);const cx=W/2,sol=H-4;
+  const rnd=(k)=>hs(h*13.7+k*3.1+(variante||0)*7.7);
+  /* l'ombre bleue, et le creux de neige autour du pied */
+  g.fillStyle='rgba(80,105,145,.30)';g.beginPath();g.ellipse(cx+3,sol+0.5,W*0.36,2.8,0,0,7);g.fill();
+  g.fillStyle='rgba(120,150,190,.35)';g.beginPath();g.ellipse(cx,sol-0.5,3.5,1.2,0,0,7);g.fill();
+  F(cx-1,sol-h*0.16,2,h*0.16,'#4a321c');F(cx-1,sol-h*0.16,0.5,h*0.16,'#6b4a28');
+  if(variante===9){                                                 /* le mélèze d'hiver : des branches nues, une neige légère */
+    F(cx-0.75,sol-h,1.5,h*0.9,'#5a3e24');
+    for(let k=0;k<11;k++){const y=sol-h*0.2-k*h*0.07, l=h*(0.32-k*0.025);[[-1],[1]].forEach(([s])=>{
+      g.strokeStyle='#6b4a2e';g.lineWidth=0.6;g.beginPath();g.moveTo(cx,y);g.quadraticCurveTo(cx+s*l*0.5,y-1,cx+s*l,y+1.5);g.stroke();
+      F(cx+s*l*0.6-0.5,y-0.8,1.5,0.5,NEIGE.h);});}
+    return {c,W,H,sol};}
+  const etages=6;
+  for(let e=0;e<etages;e++){
+    const t=e/etages, yb=sol-h*0.12-t*h*0.78, w=h*(0.46-t*0.37)*(0.9+rnd(e)*0.2), hh=h*0.2;
+    /* l'étage : une jupe de branches qui retombent, dentelée */
+    g.fillStyle=e%2?'#1f4a36':'#244f3a';g.beginPath();g.moveTo(cx,yb-hh);
+    for(let k=0;k<=8;k++){const u=k/8, x=cx-w+u*w*2, y=yb+Math.sin(u*Math.PI)*1.2+(k%2?1.2:0);g.lineTo(x,y);}g.closePath();g.fill();
+    g.fillStyle='#16382a';g.beginPath();g.moveTo(cx,yb-hh*0.7);g.lineTo(cx-w*0.25,yb);g.lineTo(cx+w*0.25,yb);g.closePath();g.fill();   /* le cœur sombre */
+    /* la lumière à droite, les aiguilles */
+    g.fillStyle='rgba(90,140,100,.45)';g.beginPath();g.moveTo(cx+1,yb-hh+1);g.lineTo(cx+w*0.8,yb-0.5);g.lineTo(cx+w*0.2,yb-0.5);g.closePath();g.fill();
+    for(let k=0;k<Math.round(w);k++){const x=cx-w+rnd(e*31+k)*w*2, y=yb-rnd(e*17+k)*hh*0.8;F(x,y,0.5,0.5,rnd(k+e*5)<0.5?'#2f6a4a':'#12301f');}
+    /* le coussin de neige posé sur l'étage : épais au centre, qui s'amincit, qui coule un peu */
+    g.fillStyle=NEIGE.h;g.beginPath();g.moveTo(cx-w*0.82,yb-hh*0.18);
+    g.quadraticCurveTo(cx-w*0.35,yb-hh*0.55,cx,yb-hh*0.98);g.quadraticCurveTo(cx+w*0.4,yb-hh*0.5,cx+w*0.78,yb-hh*0.12);
+    g.quadraticCurveTo(cx+w*0.4,yb-hh*0.3,cx,yb-hh*0.62);g.quadraticCurveTo(cx-w*0.4,yb-hh*0.36,cx-w*0.82,yb-hh*0.18);g.fill();
+    g.fillStyle='rgba(170,195,225,.6)';g.beginPath();g.moveTo(cx-w*0.8,yb-hh*0.16);g.quadraticCurveTo(cx-w*0.4,yb-hh*0.34,cx,yb-hh*0.6);g.lineTo(cx,yb-hh*0.52);
+    g.quadraticCurveTo(cx-w*0.4,yb-hh*0.26,cx-w*0.8,yb-hh*0.16);g.fill();                                              /* l'ombre bleue sous la neige */
+    for(let k=0;k<3;k++){const x=cx-w*0.6+rnd(e*9+k)*w*1.2;F(x,yb-hh*0.2,0.5,1+rnd(k)*1.5,NEIGE.h);}                  /* des paquets qui pendent */
+  }
+  /* la pointe, sa neige */
+  F(cx-0.5,sol-h*0.98,1,3,'#1f4a36');F(cx-0.75,sol-h,1.5,1.5,NEIGE.h);
+  return {c,W,H,sol};
+}
+/* LA GARE DE SAUMASKI : une vraie gare de montagne. Rez-de-chaussée de pierre en arcades,
+   étage de bois à balcon, grand toit débordant, clocheton à horloge, verrière d'entrée,
+   escalier qui descend aux quais, le grand M lumineux. */
+function graverMetro(nuit){
+  const W=150,H=150,{c,g,F}=mk(W,H);const cx=W/2,sol=H-6;ombre(g,cx,sol,68,7);
+  const pierre=(x,y,w,h)=>{for(let r=0;r<h;r+=4){const dec=(r/4)%2?4:0;for(let k=-dec;k<w;k+=8){const kk=Math.max(0,k),ww=Math.min(7.5,w-kk,k+8-kk);if(ww<=0)continue;
+    const t=hs(x+k*2.3+r*1.7);F(x+kk,y+r,ww,3.5,t<0.35?'#cfc6b0':(t<0.75?'#ddd4be':'#c2b8a0'));F(x+kk,y+r,ww,0.5,'#efe8d6');F(x+kk+ww-0.5,y+r,0.5,3.5,'#a0967e');F(x+kk,y+r+3.5,ww,0.5,'#8a806a');}}};
+  /* LES DEUX AILES : pierre en bas, bois en haut, petits toits */
+  [[-1],[1]].forEach(([s])=>{const x0=cx+s*44-(s<0?24:0);
+    pierre(x0,sol-26,24,26);madriers(F,x0,sol-44,24,18,'#8a5a3a');
+    toitNeige(F,g,x0+12,sol-44,32,14,['#5a4a3e','#6a5a4c','#3e3228']);
+    fenetre(F,x0+8,sol-40,8,8,nuit,true);
+    /* l'arcade : une porte en plein cintre, vitrée */
+    g.fillStyle=nuit?'#f0c060':'#3a5a7a';g.beginPath();g.moveTo(x0+6,sol);g.lineTo(x0+6,sol-14);g.quadraticCurveTo(x0+12,sol-21,x0+18,sol-14);g.lineTo(x0+18,sol);g.closePath();g.fill();
+    g.strokeStyle='#8a806a';g.lineWidth=1.2;g.beginPath();g.moveTo(x0+5.5,sol);g.lineTo(x0+5.5,sol-14);g.quadraticCurveTo(x0+12,sol-22,x0+18.5,sol-14);g.lineTo(x0+18.5,sol);g.stroke();
+    F(x0+11.75,sol-20,0.5,20,'#5a4a3a');F(x0+6,sol-10,12,0.5,'#5a4a3a');if(!nuit)F(x0+7,sol-15,3,0.5,'rgba(255,255,255,.5)');});
+  /* LE CORPS CENTRAL : plus haut, arcades de pierre, étage à balcon */
+  pierre(cx-30,sol-34,60,34);
+  madriers(F,cx-30,sol-62,60,28,'#9a6a44');
+  /* le balcon de bois découpé, qui court sur toute la façade */
+  F(cx-33,sol-37,66,2,BOIS.o);for(let k=-33;k<33;k+=3){F(cx+k,sol-43,2.5,6,BOIS.c);F(cx+k+1,sol-41,0.5,2,BOIS.s);}F(cx-33,sol-44,66,1.5,BOIS.p);F(cx-33,sol-44.5,66,1,NEIGE.h);
+  [[-22],[-8],[6],[20]].forEach(([k])=>fenetre(F,cx+k-3,sol-57,7,9,nuit,true));
+  /* le grand toit, et son pignon à la date */
+  toitNeige(F,g,cx,sol-62,82,34,['#5a4a3e','#6a5a4c','#3e3228']);
+  g.fillStyle=BOIS.c;g.beginPath();g.moveTo(cx-18,sol-64);g.lineTo(cx,sol-82);g.lineTo(cx+18,sol-64);g.closePath();g.fill();
+  for(let k=-16;k<17;k+=2.5)F(cx+k,sol-64-Math.max(0,16-Math.abs(k))*1.05,0.5,Math.max(0,16-Math.abs(k))*1.05,BOIS.o);
+  g.font='700 3.4px Georgia';g.textAlign='center';g.fillStyle='#f0e0b0';g.fillText('1926',cx,sol-67);g.textAlign='left';
+  /* LE CLOCHETON : une petite tour de bois, son horloge, son bulbe de zinc, sa girouette */
+  F(cx-7,sol-104,14,20,BOIS.p);F(cx-7,sol-104,14,0.5,BOIS.h);for(let k=0;k<14;k+=2.5)F(cx-7+k,sol-104,0.5,20,BOIS.o);
+  g.fillStyle='#f4efe0';g.beginPath();g.arc(cx,sol-94,5,0,7);g.fill();g.strokeStyle=BOIS.s;g.lineWidth=0.8;g.beginPath();g.arc(cx,sol-94,5,0,7);g.stroke();
+  for(let k=0;k<12;k++){const a=k/12*6.283;F(cx+Math.cos(a)*4-0.25,sol-94+Math.sin(a)*4-0.25,0.5,0.5,'#3a2a1a');}
+  g.strokeStyle='#1a120a';g.lineWidth=0.6;g.beginPath();g.moveTo(cx,sol-94);g.lineTo(cx,sol-97.3);g.moveTo(cx,sol-94);g.lineTo(cx+2.5,sol-93);g.stroke();
+  g.fillStyle='#6f7a84';g.beginPath();g.moveTo(cx-9,sol-104);g.quadraticCurveTo(cx-8,sol-113,cx,sol-118);g.quadraticCurveTo(cx+8,sol-113,cx+9,sol-104);g.closePath();g.fill();
+  g.fillStyle='rgba(255,255,255,.35)';g.beginPath();g.moveTo(cx+1,sol-116);g.quadraticCurveTo(cx+6,sol-112,cx+7,sol-105);g.lineTo(cx+4,sol-105);g.quadraticCurveTo(cx+4,sol-111,cx+1,sol-116);g.fill();
+  g.fillStyle=NEIGE.h;g.beginPath();g.moveTo(cx-8,sol-108);g.quadraticCurveTo(cx-4,sol-114,cx,sol-117);g.quadraticCurveTo(cx+3,sol-113,cx+6,sol-108);g.quadraticCurveTo(cx,sol-111,cx-8,sol-108);g.fill();
+  F(cx-0.25,sol-126,0.5,8,'#3a3a40');F(cx-3,sol-124,6,1,'#3a3a40');F(cx+1,sol-125.5,3,1.5,'#c9a24a');                   /* la girouette */
+  /* LA VERRIÈRE D'ENTRÉE : une grande baie en plein cintre, l'escalier qui descend aux quais */
+  g.fillStyle='#1a1c24';g.beginPath();g.moveTo(cx-17,sol);g.lineTo(cx-17,sol-22);g.quadraticCurveTo(cx,sol-38,cx+17,sol-22);g.lineTo(cx+17,sol);g.closePath();g.fill();
+  const lum=g.createLinearGradient(0,sol,0,sol-30);lum.addColorStop(0,nuit?'rgba(255,210,140,.6)':'rgba(255,230,180,.3)');lum.addColorStop(1,'rgba(255,230,180,0)');g.fillStyle=lum;g.fillRect(cx-17,sol-34,34,34);
+  for(let k=0;k<7;k++){const y=sol-3-k*2.8, w=28-k*2.6;F(cx-w/2,y,w,2.3,k%2?'#5c5a55':'#6d6b65');F(cx-w/2,y,w,0.5,'#9a968c');}
+  F(cx-0.25,sol-35,0.5,35,'#2a2e36');for(let k=-12;k<13;k+=6)F(cx+k,sol-30+Math.abs(k)*0.4,0.5,10,'#2a2e36');F(cx-17,sol-20,34,0.5,'#2a2e36');
+  g.strokeStyle='#8a806a';g.lineWidth=1.6;g.beginPath();g.moveTo(cx-17.5,sol);g.lineTo(cx-17.5,sol-22);g.quadraticCurveTo(cx,sol-39,cx+17.5,sol-22);g.lineTo(cx+17.5,sol);g.stroke();
+  /* la marquise de fer forgé, en éventail, enneigée */
+  g.fillStyle='rgba(180,210,230,.55)';g.beginPath();g.moveTo(cx-26,sol-24);g.lineTo(cx+26,sol-24);g.lineTo(cx+21,sol-30);g.lineTo(cx-21,sol-30);g.closePath();g.fill();
+  for(let k=-24;k<25;k+=4)F(cx+k,sol-30,0.5,6,'#2a2e36');F(cx-26,sol-24.5,52,1,'#2a2e36');F(cx-21,sol-30.5,42,0.8,'#2a2e36');F(cx-21,sol-31.5,42,1.2,NEIGE.h);
+  for(let k=-25;k<26;k+=3)F(cx+k,sol-23.5,0.5,1+hs(k)*2,'rgba(220,244,255,.9)');
+  [[-26],[25]].forEach(([k])=>{F(cx+k,sol-24,1,24,'#2a2e36');F(cx+k+0.25,sol-24,0.5,24,'#5a5e66');});
+  /* la plaque émaillée, sous le balcon */
+  F(cx-20,sol-36,40,6,'#1d3f8f');F(cx-20,sol-36,40,0.5,'#4d6fc8');F(cx-19,sol-35.5,38,0.5,'#e9e6db');F(cx-19,sol-30.5,38,0.5,'#e9e6db');
+  g.font='700 4.4px Georgia,serif';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('SAUMASKI',cx,sol-31.6,36);g.textAlign='left';
+  /* le grand M lumineux, sur son mât, et les lanternes */
+  const tx=cx-62;F(tx-1,sol-58,2.5,58,'#4d5760');F(tx-1,sol-58,1,58,'#7a848c');
+  F(tx-7,sol-72,15,15,'#1d4f9a');F(tx-7,sol-72,15,1,'#4d7fc8');F(tx-7,sol-58,15,1,'#12356a');F(tx-7,sol-73.5,15,1.5,NEIGE.h);
+  F(tx-4.5,sol-69,2,10,'#ffffff');F(tx+3,sol-69,2,10,'#ffffff');for(let k=0;k<5;k++){F(tx-2.5+k*0.5,sol-68+k,1.5,1.5,'#ffffff');F(tx+1.5-k*0.5,sol-68+k,1.5,1.5,'#ffffff');}
+  [[-30],[30]].forEach(([k])=>{F(cx+k,sol-36,0.5,3,'#2a2e36');F(cx+k-2,sol-33.5,4.5,5,'#2a2e36');F(cx+k-1.5,sol-33,3.5,4,nuit?'#ffd27a':'#e8dcb0');});
+  /* les marches du parvis, et la neige tassée devant */
+  F(cx-34,sol-1,68,2,PIERRE.c);F(cx-34,sol-1,68,0.5,PIERRE.t);
+  return {c,W,H,sol};
+}
+
+/* L'HÔTEL DES CIMES : trois niveaux, balcons de bois découpé, volets bleus */
+function graverHotel(nuit){
+  const W=96,H=118,{c,g,F}=mk(W,H);const cx=W/2,sol=H-5;ombre(g,cx,sol,44,6);
+  soubassement(F,cx-40,sol-12,80,12);madriers(F,cx-40,sol-62,80,50,'#8a5a3a');
+  toitNeige(F,g,cx,sol-62,94,30,['#5a4a3e','#6a5a4c','#3e3228']);
+  [[-30],[-12],[6],[24]].forEach(([k])=>{fenetre(F,cx+k,sol-56,7,8,nuit,true);fenetre(F,cx+k,sol-35,7,8,nuit,true);});
+  /* le balcon de l'étage : planches découpées en cœur, neige sur la main courante */
+  F(cx-40,sol-26,80,1.5,BOIS.o);for(let k=-40;k<40;k+=3){F(cx+k,sol-26,2.5,6,BOIS.c);F(cx+k+1,sol-24,0.5,1.5,BOIS.s);}F(cx-40,sol-27,80,1,BOIS.p);F(cx-40,sol-27.5,80,0.8,NEIGE.h);
+  /* la porte, l'auvent, le paillasson */
+  F(cx-7,sol-15,14,15,BOIS.s);F(cx-6,sol-14,5.5,14,BOIS.c);F(cx+0.5,sol-14,5.5,14,BOIS.c);F(cx-2,sol-7,1,1,'#f0cf7d');F(cx+1,sol-7,1,1,'#f0cf7d');
+  F(cx-10,sol-18,20,2,BOIS.o);F(cx-10,sol-18.5,20,1,NEIGE.h);F(cx-8,sol+0.5,16,2,'#8a3a2a');
+  enseigne(g,F,cx,sol-78,52,'HÔTEL DES CIMES',5);
+  return {c,W,H,sol};
+}
+/* LA LOCATION DE SKIS : vitrine, skis alignés dehors, enseigne suspendue */
+function graverLocation(nuit){
+  const W=84,H=84,{c,g,F}=mk(W,H);const cx=W/2,sol=H-5;ombre(g,cx,sol,38,5);
+  soubassement(F,cx-34,sol-8,68,8);madriers(F,cx-34,sol-36,68,28,'#9a6a44');
+  toitNeige(F,g,cx,sol-36,80,22,['#8a3a2a','#9a4a34','#5a2418']);
+  /* la vitrine : skis et casques en devanture */
+  F(cx-26,sol-28,30,18,BOIS.s);F(cx-25,sol-27,28,16,nuit?'#f8d888':'#3a5a7a');
+  for(let k=0;k<7;k++){F(cx-23+k*3.8,sol-26,1.5,14,['#c0392b','#2d6fb0','#f0c040','#3f9e7a','#e86a8a','#1a1a2a','#c0392b'][k]);F(cx-23+k*3.8,sol-26,1.5,0.5,'#ffffff');}
+  if(!nuit)F(cx-24,sol-26,6,0.5,'rgba(255,255,255,.6)');
+  F(cx+8,sol-24,10,24,BOIS.s);F(cx+9,sol-23,8,23,BOIS.c);F(cx+15,sol-12,1,1,'#f0cf7d');F(cx+9,sol-22,8,6,nuit?'#f0c060':'#5a8aaa');
+  /* le râtelier de skis dehors, sous la neige */
+  F(cx-34,sol-3,20,1.5,BOIS.o);for(let k=0;k<6;k++){F(cx-33+k*3.4,sol-22,1.5,20,['#2d6fb0','#c0392b','#f0c040','#1a1a2a','#3f9e7a','#e86a8a'][k]);F(cx-33+k*3.4,sol-22.5,1.5,1,NEIGE.h);}
+  F(cx-34,sol-15,20,1.5,BOIS.o);
+  enseigne(g,F,cx,sol-50,44,'LOCATION · SKIS',4.5);
+  return {c,W,H,sol};
+}
+/* LE REFUGE : le café, sa terrasse, ses transats et parasols, le poêle qui fume */
+function graverCafe(nuit){
+  const W=90,H=80,{c,g,F}=mk(W,H);const cx=W/2-6,sol=H-14;ombre(g,cx,sol,36,5);
+  soubassement(F,cx-30,sol-8,60,8);madriers(F,cx-30,sol-32,60,24,'#7a4a2a');
+  toitNeige(F,g,cx,sol-32,72,20,['#5a4a3e','#6a5a4c','#3e3228']);
+  fenetre(F,cx-24,sol-27,10,9,nuit,false);fenetre(F,cx+13,sol-27,10,9,nuit,false);
+  F(cx-5,sol-20,10,20,BOIS.s);F(cx-4,sol-19,8,19,BOIS.c);F(cx-4,sol-18,8,8,nuit?'#f0c060':'#5a8aaa');F(cx+2,sol-9,1,1,'#f0cf7d');
+  F(cx+18,sol-48,6,14,'#6a6258');F(cx+18,sol-48,6,1,NEIGE.h);                                     /* la cheminée */
+  enseigne(g,F,cx,sol-44,40,'LE REFUGE',5);
+  /* la terrasse de planches, devant : tables, transats, parasols repliés */
+  F(cx-34,sol+1,78,11,BOIS.p);for(let k=-34;k<44;k+=4){F(cx+k,sol+1,3.5,11,k%8?BOIS.p:BOIS.c);F(cx+k+3.5,sol+1,0.5,11,BOIS.s);}F(cx-34,sol+1,78,0.5,BOIS.h);
+  [[-20],[6],[30]].forEach(([k],i)=>{F(cx+k-4,sol+3,8,3,BOIS.c);F(cx+k-4,sol+3,8,0.5,BOIS.h);F(cx+k-0.5,sol+6,1,4,BOIS.o);
+    F(cx+k-0.25,sol-14,0.5,17,'#3a3a40');g.fillStyle=i%2?'#c0392b':'#2d6fb0';g.beginPath();g.moveTo(cx+k-3,sol-4);g.lineTo(cx+k,sol-15);g.lineTo(cx+k+3,sol-4);g.closePath();g.fill();
+    F(cx+k-2,sol+3.5,1.5,1.5,'#f4efe0');F(cx+k+1,sol+3.5,1.5,1.5,'#8a4a2a');});                    /* chocolat chaud, vin chaud */
+  return {c,W,H,sol};
+}
+/* LA CAISSE DES FORFAITS : un kiosque de bois, son guichet, les cordons de la file */
+function graverForfaits(nuit){
+  const W=44,H=54,{c,g,F}=mk(W,H);const cx=W/2,sol=H-5;ombre(g,cx,sol,18,4);
+  madriers(F,cx-14,sol-26,28,26,'#9a6a44');toitNeige(F,g,cx,sol-26,36,16,['#8a3a2a','#9a4a34','#5a2418']);
+  F(cx-9,sol-21,18,9,BOIS.s);F(cx-8,sol-20,16,7,nuit?'#f0c060':'#5a8aaa');F(cx-10,sol-12,20,1.5,BOIS.c);F(cx-10,sol-12.5,20,0.8,NEIGE.h);
+  F(cx-5,sol-19,3,3,'#e8bd92');F(cx-5,sol-20,3,1,'#6a3a1a');                                      /* la caissière, derrière la vitre */
+  enseigne(g,F,cx,sol-36,30,'FORFAITS',4.5,'#1d3f6a');
+  [[-18],[18]].forEach(([k])=>{F(cx+k,sol-8,1,8,'#b88a3a');F(cx+k-0.5,sol-8.5,2,1,'#f0cf7d');});g.strokeStyle='#8a2418';g.lineWidth=0.8;g.beginPath();g.moveTo(cx-18,sol-7);g.quadraticCurveTo(cx-9,sol-4,cx,sol-7);g.stroke();
+  return {c,W,H,sol};
+}
+/* LE PLAN DES PISTES, sur son panneau de bois */
+function graverPlan(){
+  const W=40,H=40,{c,g,F}=mk(W,H);const cx=W/2,sol=H-3;ombre(g,cx,sol,14,2.5);
+  F(cx-12,sol-16,1.5,16,BOIS.o);F(cx+10.5,sol-16,1.5,16,BOIS.o);F(cx-15,sol-34,30,20,BOIS.s);F(cx-14,sol-33,28,18,'#f4efe0');
+  g.fillStyle='#dfe8ee';g.beginPath();g.moveTo(cx-13,sol-16);g.lineTo(cx-2,sol-32);g.lineTo(cx+4,sol-26);g.lineTo(cx+9,sol-31);g.lineTo(cx+13,sol-16);g.closePath();g.fill();
+  [['#3f9e7a',-8],['#2d6fb0',-2],['#c0392b',4],['#1a1a2a',9]].forEach(([col,x])=>{g.strokeStyle=col;g.lineWidth=0.7;g.beginPath();g.moveTo(cx+x*0.4,sol-29);g.quadraticCurveTo(cx+x,sol-22,cx+x*1.1,sol-17);g.stroke();});
+  F(cx-15,sol-35,30,1.5,NEIGE.h);g.font='700 3px Georgia';g.fillStyle='#3a2616';g.textAlign='center';g.fillText('LES PISTES',cx,sol-14.2,26);g.textAlign='left';
+  return {c,W,H,sol};
+}
+function graverLampadaire(){const W=12,H=44,{c,g,F}=mk(W,H);const cx=W/2,sol=H-3;ombre(g,cx,sol,4,1.5);
+  F(cx-2,sol-3,4,3,'#2a2e36');F(cx-0.75,sol-30,1.5,28,'#2a2e36');F(cx-0.25,sol-30,0.5,28,'#5a5e66');F(cx-3,sol-38,6,8,'#2a2e36');F(cx-2.5,sol-37.5,5,6.5,'#e8dcb0');
+  F(cx-3.5,sol-40,7,2,'#2a2e36');F(cx-3.5,sol-41,7,1.2,NEIGE.h);return {c,W,H,sol,lampe:[cx,sol-34]};}
+function graverBanc(){const W=30,H=16,{c,g,F}=mk(W,H);const cx=W/2,sol=H-3;ombre(g,cx,sol,12,2);
+  for(let r=0;r<3;r++){F(cx-12,sol-8+r*2,24,1.8,r?BOIS.p:BOIS.c);}F(cx-12,sol-8.5,24,1,NEIGE.h);F(cx-10,sol-3,1.5,3,'#2a2e36');F(cx+8.5,sol-3,1.5,3,'#2a2e36');return {c,W,H,sol};}
+function graverLuge(){const W=18,H=10,{c,g,F}=mk(W,H);const cx=W/2,sol=H-2;ombre(g,cx,sol,7,1.5);
+  F(cx-7,sol-4,14,2.5,'#c0392b');F(cx-7,sol-4,14,0.5,'#e86a5a');g.strokeStyle='#3a3a40';g.lineWidth=0.7;g.beginPath();g.moveTo(cx-7,sol-1);g.lineTo(cx+6,sol-1);g.quadraticCurveTo(cx+9,sol-1,cx+8,sol-4);g.stroke();return {c,W,H,sol};}
+function graverBonhomme(){const W=18,H=26,{c,g,F}=mk(W,H);const cx=W/2,sol=H-3;ombre(g,cx,sol,6,1.8);
+  [[0,-4,5.5],[0,-12,4],[0,-18,3]].forEach(([a,b,r])=>{g.fillStyle='#f4f8fa';g.beginPath();g.arc(cx+a,sol+b,r,0,7);g.fill();g.fillStyle='rgba(120,150,190,.3)';g.beginPath();g.arc(cx+a+1,sol+b+1,r*0.8,0,Math.PI);g.fill();});
+  F(cx-1.2,sol-19,0.8,0.8,'#1a1a1a');F(cx+0.8,sol-19,0.8,0.8,'#1a1a1a');F(cx,sol-18,3,0.8,'#e8782a');F(cx-4,sol-15,8,1.5,'#c0392b');F(cx+2,sol-15,1.5,4,'#c0392b');
+  F(cx-2.5,sol-24,5,3,'#2a2a30');F(cx-3.5,sol-21.5,7,1,'#2a2a30');return {c,W,H,sol};}
+/* LE GRAND SAPIN DE LA PLACE, son banc circulaire */
+function graverGrandSapin(){const s=sapin(66,7);return s;}
+/* LA GARE DE DÉPART DU TÉLÉSIÈGE */
+const CABLE_H=44, ECART=9, LIFT_X=320, GARE_Y=66;
+function graverGare(){
+  const W=86,H=CABLE_H+36,{c,g,F}=mk(W,H);const cx=W/2,sol=H-4;ombre(g,cx,sol,38,5);
+  F(cx-34,sol-6,68,6,BOIS.p);for(let k=-34;k<34;k+=5){F(cx+k,sol-6,4.5,6,k%10?BOIS.p:BOIS.c);F(cx+k+4.5,sol-6,0.5,6,BOIS.s);}F(cx-34,sol-6,68,0.5,BOIS.h);
+  [[-26],[22]].forEach(([k])=>{F(cx+k,sol-CABLE_H-6,4,CABLE_H,'#5a6a7a');F(cx+k,sol-CABLE_H-6,1,CABLE_H,'#8aa0b4');});
+  F(cx-30,sol-CABLE_H-8,60,3,'#4a5664');toitNeige(F,g,cx,sol-CABLE_H-9,72,16,['#8a3a2a','#9a4a34','#5a2418']);
+  F(cx-40,sol-26,14,20,'#c8b890');F(cx-38,sol-22,10,7,'#5a8ab0');toitNeige(F,g,cx-33,sol-27,18,6,['#6a6e74','#7a7e84','#4a4e54']);
+  F(cx-16,sol-CABLE_H-4,32,6,'#1d3f6a');F(cx-16,sol-CABLE_H-4,32,0.5,'#4d7fc8');g.font='700 4px Georgia';g.textAlign='center';g.fillStyle='#fff';g.fillText('TÉLÉSIÈGE',cx,sol-CABLE_H+0.8,30);g.textAlign='left';
+  return {c,W,H,sol};
+}
+function graverPylone(){const W=40,H=CABLE_H+16,{c,g,F}=mk(W,H);const cx=W/2,sol=H-3;ombre(g,cx,sol,8,2.5);
+  F(cx-5,sol-3,10,3,'#8a8e94');F(cx-1.5,sol-CABLE_H-2,3,CABLE_H,'#5a6a7a');F(cx-1.5,sol-CABLE_H-2,1,CABLE_H,'#8aa0b4');
+  F(cx-ECART-4,sol-CABLE_H-3,2*ECART+8,2,'#4a5664');F(cx-ECART-4,sol-CABLE_H-4,2*ECART+8,1,NEIGE.h);return {c,W,H,sol};}
+function siege(g,x,yC){const F=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(a,b,w,h);};
+  F(x-0.5,yC,1,20,'#3a4654');F(x-2,yC-1,4,2,'#2e3640');F(x-12,yC+19,24,1.2,'#3a4654');
+  F(x-11,yC+22,22,5,'#1d3f6a');F(x-11,yC+22,22,1,'#3d6fa8');F(x-12,yC+27,24,2.5,'#2a4f86');F(x-12,yC+27,24,0.5,'#5a8fd0');F(x-12,yC+26.5,24,0.6,NEIGE.h);
+  g.fillStyle='rgba(90,110,140,.22)';g.beginPath();g.ellipse(x+2,yC+CABLE_H+1,9,1.8,0,0,7);g.fill();}
+function volant(g,x,y,ang){g.save();g.translate(x,y);g.scale(1,0.42);g.fillStyle='#3a4654';g.beginPath();g.arc(0,0,ECART+2,0,7);g.fill();
+  g.strokeStyle='#5a6a7a';g.lineWidth=0.8;for(let k=0;k<6;k++){const a=ang+k*Math.PI/3;g.beginPath();g.moveTo(0,0);g.lineTo(Math.cos(a)*ECART,Math.sin(a)*ECART);g.stroke();}
+  g.fillStyle='#c4ccd2';g.beginPath();g.arc(0,0,2,0,7);g.fill();g.restore();}
+function graverChaletNom(nom,teinte){const W=70,H=70,{c,g,F}=mk(W,H);const cx=W/2,sol=H-5;ombre(g,cx,sol,30,5);
+  soubassement(F,cx-26,sol-7,52,7);madriers(F,cx-26,sol-30,52,23,teinte);toitNeige(F,g,cx,sol-30,64,18,['#5a4a3e','#6a5a4c','#3e3228']);
+  fenetre(F,cx-20,sol-24,9,8,false,true);F(cx+2,sol-20,10,20,BOIS.s);F(cx+3,sol-19,8,19,BOIS.c);F(cx+3,sol-18,8,6,'#5a8aaa');F(cx+9.5,sol-9,1,1,'#f0cf7d');
+  for(let k=0;k<4;k++){F(cx-22+k*4,sol-6,3,5,['#c0392b','#2d6fb0','#f0c040','#3f9e7a'][k]);F(cx-22+k*4,sol-6.5,3,1,NEIGE.h);}   /* les bonnets et les cartes postales en devanture */
+  enseigne(g,F,cx,sol-44,40,nom,4.5);return {c,W,H,sol};}
+function graverBande(rw,rh){const W=rw*2+8,H=rh*2+14,{c,g,F}=mk(W,H);const cx=W/2,cy=H/2+2;
+  /* seulement l'arc de devant : la bande qui passe devant la glace (celle de derrière est dans le sol) */
+  for(let a=0;a<Math.PI;a+=0.01){const x=cx+Math.cos(a)*(rw+1), y=cy+Math.sin(a)*(rh+1);F(x-0.5,y-3,1.2,3,a%0.2<0.1?BOIS.c:BOIS.p);F(x-0.5,y-3.5,1.2,0.8,NEIGE.h);}
+  for(let a=Math.PI;a<Math.PI*2;a+=0.01){const x=cx+Math.cos(a)*(rw+1), y=cy+Math.sin(a)*(rh+1);F(x-0.5,y-2,1.2,2,BOIS.o);F(x-0.5,y-2.5,1.2,0.8,NEIGE.h);}
+  return {c,W,H,sol:cy+rh+2};}
+function graverBrasero(){const W=20,H=20,{c,g,F}=mk(W,H);const cx=W/2,sol=H-3;ombre(g,cx,sol,7,2);
+  F(cx-6,sol-6,12,4,'#3a3a40');F(cx-6,sol-6,12,0.8,'#6a6f74');F(cx-4,sol-2,1,2,'#2a2a30');F(cx+3,sol-2,1,2,'#2a2a30');
+  for(let k=0;k<5;k++)F(cx-5+k*2.2,sol-7,2,1.5,'#5b3f21');return {c,W,H,sol};}
+function graverSkis(){const W=26,H=24,{c,g,F}=mk(W,H);const cx=W/2,sol=H-2;ombre(g,cx,sol,11,2);
+  F(cx-11,sol-12,22,2,BOIS.o);F(cx-11,sol-2,22,2,BOIS.o);F(cx-11,sol-12,1.5,12,BOIS.o);F(cx+9.5,sol-12,1.5,12,BOIS.o);
+  const cols=['#c0392b','#2d6fb0','#f0c040','#3f9e7a','#e86a8a'];for(let k=0;k<5;k++){F(cx-9+k*4,sol-21,1.5,20,cols[k]);F(cx-9+k*4,sol-21.5,1.5,1,NEIGE.h);}
+  F(cx-11,sol-12.5,22,0.8,NEIGE.h);return {c,W,H,sol};}
+function graverPont(){const W=40,H=18,{c,g,F}=mk(W,H);const cx=W/2,sol=H-3;ombre(g,cx,sol,17,2.5);
+  F(cx-16,sol-9,32,9,BOIS.p);for(let k=-16;k<16;k+=3){F(cx+k,sol-9,2.5,9,k%6?BOIS.p:BOIS.c);F(cx+k+2.5,sol-9,0.5,9,BOIS.s);}F(cx-16,sol-9.5,32,1,NEIGE.h);
+  [[-16],[15]].forEach(([k])=>{F(cx+k,sol-14,1.5,14,BOIS.o);F(cx+k,sol-14.5,1.5,1,NEIGE.h);});F(cx-16,sol-12,32,1,BOIS.o);F(cx-16,sol-12.5,32,0.8,NEIGE.h);return {c,W,H,sol};}
+function graverPoteau(txt){const W=34,H=26,{c,g,F}=mk(W,H);const cx=W/2,sol=H-3;ombre(g,cx,sol,5,1.5);
+  F(cx-0.75,sol-18,1.5,18,BOIS.o);F(cx-14,sol-20,28,6,BOIS.c);F(cx-14,sol-20,28,0.5,BOIS.h);F(cx-14,sol-21,28,1,NEIGE.h);
+  g.font='700 4px Georgia';g.fillStyle='#2a1a0e';g.textAlign='center';g.fillText(txt,cx,sol-15.6,26);g.textAlign='left';return {c,W,H,sol};}
+
+/* les objets de la carte : chaque calque est gravé une fois, puis posé */
+function objets(){
+  const L=[];const cal={};
+  const reg=(nom,C,N)=>{cal[nom]={toile:C.c,W:C.W,H:C.H,sol:C.sol,nuit:N?N.c:null};return nom;};
+  const P=(nom,x,y,x2)=>L.push(Object.assign({t:'x_mo_'+nom,x,y,v:0},x2||{}));
+  reg('hotel',graverHotel(false),graverHotel(true));reg('location',graverLocation(false),graverLocation(true));
+  reg('cafe',graverCafe(false),graverCafe(true));reg('forfaits',graverForfaits(false),graverForfaits(true));
+  reg('gare',graverMetro(false),graverMetro(true));
+  P('hotel',196,150,{col:[40,14],bati:true,ferme:'L’Hôtel des Cimes',demi:34});P('location',446,146,{col:[34,12],bati:true,ferme:'La location de skis',demi:28});
+  P('cafe',540,318,{col:[30,12],bati:true,ferme:'Le Refuge',demi:26});P('forfaits',256,128,{col:[14,8],bati:true,ferme:'La caisse des forfaits',demi:10});
+  const T=[sapin(26,1),sapin(32,2),sapin(22,3),sapin(38,4),sapin(44,5),sapin(30,9)];T.forEach((c,i)=>reg('sapin'+i,c));
+  reg('grandsapin',sapin(66,7));reg('plan',graverPlan());reg('lampe',graverLampadaire());reg('banc',graverBanc());reg('luge',graverLuge());reg('bonhomme',graverBonhomme());
+  reg('souvenirs',graverChaletNom('SOUVENIRS','#8a5a3a'));reg('pont',graverPont());reg('bande',graverBande(46,22));reg('brasero',graverBrasero());reg('skis',graverSkis());
+  reg('pisteN',graverPoteau('PISTES ↑'));reg('pisteO',graverPoteau('← LUGE'));reg('pisteE',graverPoteau('FORÊT →'));reg('telesiege',graverGare());
+  P('grandsapin',320,252,{col:[8,5],grand:true});
+  [[300,266],[340,266],[300,236],[340,236],[210,292],[246,292],[228,318]].forEach(([x,y])=>P('banc',x,y,{col:[12,3]}));
+  [[176,180],[464,180],[176,318],[464,318],[290,150],[350,150],[290,338],[350,338]].forEach(([x,y])=>P('lampe',x,y,{col:[2,2],lampe:true}));
+  P('bande',412,298+22+2,{});P('brasero',228,300,{col:[6,3],feu:true});P('skis',486,176,{col:[11,3]});P('skis',150,190,{col:[11,3]});
+  P('plan',386,128,{col:[13,3]});P('bonhomme',472,338,{col:[5,3]});P('luge',486,330,{});P('luge',30,280,{});P('luge',40,262,{});P('bonhomme',210,300,{col:[5,3]});
+  P('souvenirs',112,332,{col:[28,12],bati:true,ferme:'Les souvenirs',demi:24});
+  P('pont',58+Math.sin(250/37)*10+Math.sin(250/13)*3,258,{});
+  P('pisteN',344,110,{col:[2,2]});P('pisteO',120,236,{col:[2,2]});P('pisteE',512,236,{col:[2,2]});
+  P('telesiege',LIFT_X,GARE_Y,{col:[36,8],bati:true,ferme:'Le télésiège',demi:30});
+  for(let k=0;k<420;k++){const x=hs(k*2.3)*WW, y=8+hs(k*5.1)*(WH-10);
+    if(x>130&&x<510&&y>100&&y<380)continue;if(Math.abs(x-320)<24&&y<150)continue;if(Math.abs(y-250)<20&&(x<150||x>490))continue;if(Math.abs(x-320)<22&&y>330)continue;
+    if(Math.abs(x-(58+Math.sin(y/37)*10))<12)continue;if(x<50&&y>120&&y<290)continue;if(Math.hypot(x-112,y-320)<50)continue;if(Math.hypot(x-560,y-310)<78)continue;if(Math.hypot(x-320,y-398)<78)continue;if(Math.hypot(x-196,y-150)<70)continue;
+    P('sapin'+Math.floor(hs(k*7)*6),x,y,{col:[4,3]});}
+  return {L,cal};
+}
+function solFin(){return graverSol();}
+return {WW,WH,objets,solFin,LIFT_X,GARE_Y,CABLE_H,ECART,ARRIVEE:[320,356]};
+})();
+
 /* =====================================================================
    LE SOL EN PIXEL FIN : on repart du sol actuel, et chaque pixel du jeu devient
    quatre pixels fins. Chaque matière reçoit son détail : brins d'herbe et
@@ -10698,7 +11058,10 @@ function construireSolFin(solBase){
 }
 
 /* le sol, et sa version fine quand le pixel fin est actif */
-function refaireLeSol(){SOL=construireSol();SOL_FIN=null;try{if(FIN_OK())SOL_FIN=construireSolFin(SOL);}catch(x){SOL_FIN=null;}return SOL;}
+function refaireLeSol(){
+  if(CARTE==='montagne'){SOL_FIN=SAUMASKI.solFin();SOL=document.createElement('canvas');SOL.width=MONDE_L;SOL.height=MONDE_H;
+    const g=SOL.getContext('2d');g.drawImage(SOL_FIN,0,0,MONDE_L,MONDE_H);return SOL;}   /* à Saumaski, le sol fin est dessiné tel quel */
+  SOL=construireSol();SOL_FIN=null;try{if(FIN_OK())SOL_FIN=construireSolFin(SOL);}catch(x){SOL_FIN=null;}return SOL;}
 
 const alea=s=>{const v=Math.sin(s*127.1)*43758.5453;return v-Math.floor(v);};
 /* --- les ponts, gravés une fois ---
@@ -12593,6 +12956,11 @@ function dessinerX(g,o,x,y){
   const X0=Math.round(x-C.W/2), Y0=Math.round(y-C.sol+dy);
   if(o.flip){g.save();g.translate(Math.round(x)*2,0);g.scale(-1,1);}
   g.drawImage(C.toile,X0,Y0,C.W,C.H);
+  if(o.feu||o.grand){const t=Date.now()/1000;
+    if(o.feu){for(let k=0;k<7;k++){const q=((t*1.8+k/7)%1);g.globalAlpha=1-q;g.fillStyle=q<0.3?'#fff0a0':(q<0.6?'#ffb040':'#e8602a');g.fillRect(x-3+Math.sin(t*7+k*2)*2.5,y-8-q*9,1.2,1.5);}g.globalAlpha=1;
+      const gl=g.createRadialGradient(x,y-9,1,x,y-9,16);gl.addColorStop(0,'rgba(255,170,70,.35)');gl.addColorStop(1,'rgba(255,170,70,0)');g.fillStyle=gl;g.fillRect(x-16,y-25,32,32);}
+    if(o.grand){for(let k=0;k<26;k++){const a=k*2.4, r=4+(k/26)*20, yy=y-58+k*2.1;const on=Math.sin(t*2.2+k*1.7)>-0.2;
+      g.fillStyle=on?['#ffd27a','#ff8a7a','#8ad0ff','#b8ff9a'][k%4]:'rgba(80,80,90,.6)';g.fillRect(x+Math.cos(a)*r*0.55,yy,1,1);}}}
   /* LA NUIT : les fenêtres, la basilique éclairée */
   const CN=C.nuit?cielDuMoment():null;
   if(CN&&CN.lampes>0.05){g.globalAlpha=Math.min(1,CN.lampes);g.drawImage(C.nuit,X0,Y0,C.W,C.H);g.globalAlpha=1;}
@@ -13713,6 +14081,8 @@ function verifierAcces(){
 
 function semerDecor(){
   if(CARTE==='extramar')return semerDecorExtramar();
+  if(CARTE==='montagne'){const M=SAUMASKI.objets();Object.entries(M.cal).forEach(([k,C])=>{XCAL['x_mo_'+k+'0']=C;});
+    DECOR=M.L.concat([{t:'metro',x:320,y:398,gr:0,col:[46,10]}]);DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}
   if(CARTE==='garde')return semerDecorGarde();
   DECOR=[];
   const A=alea;
@@ -14106,6 +14476,8 @@ function autourDe(x,y){
 }
 function bloque(x,y){
   if(CARTE==='extramar')return bloqueExtramar(x,y);
+  if(CARTE==='montagne'){if(x<8||x>MONDE_L-8||y<12||y>MONDE_H-8)return true;
+    for(const o of DECOR){if(!o.col)continue;if(Math.abs(x-o.x)<o.col[0]&&y>o.y-o.col[1]&&y<o.y+3)return true;}return false;}
   if(CARTE==='garde')return bloqueGarde(x,y);
   if(dansLisiere(x,y))return true;                     /* la forêt du pourtour */
   if(contreRambarde(x,y))return true;                  /* la rambarde du pont */
@@ -14419,7 +14791,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     else if(o.t==='gare')dessinerLaGare(g,x,y);
     else if(o.t==='echoppe')dessinerLaBoutique(g,x,y);
     else if(o.t==='boite')dessinerLaBoite2(g,x,y);
-    else if(o.t==='metro'){if(CARTE==='extramar')dessinerX(g,{t:'x_metroM',v:0,x:o.x,y:o.y},x,y);else dessinerLeMetro(g,x,y);}
+    else if(o.t==='metro'){if(CARTE==='extramar')dessinerX(g,{t:'x_metroM',v:0,x:o.x,y:o.y},x,y);else if(CARTE==='montagne')dessinerX(g,{t:'x_mo_gare',v:0,x:o.x,y:o.y},x,y);else dessinerLeMetro(g,x,y);}
     else if(o.t==='fontaine')dessinerLaFontaine(g,x,y);
     else if(o.t==='panneauV')dessinerLeTableau(g,x,y);
     else if(o.t==='arbrePot'||o.t==='bancP')dessinerDeco(g,o.t,x,y);
@@ -14497,6 +14869,7 @@ try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(e,JSON.parse(b));}cat
 const EXT_AU_DEPART=e.ext?{x:e.ext.x,y:e.ext.y}:null;
 /* on avait quitté le jeu à Extramar : on y revient (seul le métro fait changer de carte) */
 if(CARTE==='village'&&(e.carte==='extramar'||e.carte==='garde')){location.replace('jeu.html?carte=extramar');}
+if(CARTE==='village'&&e.carte==='montagne'){location.replace('jeu.html?carte=montagne');}
 /* Les bâtiments étaient autrefois placés autour de chaque joueur : on
    efface ces vieilles coordonnées pour que tout le monde partage la même carte. */
 e.casino=null;e.camp=null;e.coffre=null;e.comptoir=null;
@@ -14675,6 +15048,12 @@ function preparerMonde(){
     const [dx,dy]=degager(p0[0],p0[1]);
     joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.carte='garde';
     try{sauver();}catch(x){}
+    return;
+  }
+  if(CARTE==='montagne'){
+    /* À SAUMASKI : on sort de la gare, sur la place */
+    const [dx,dy]=degager(SAUMASKI.ARRIVEE[0],SAUMASKI.ARRIVEE[1]);
+    joueur.x=dx;joueur.y=dy;e.ext=null;e.carte='montagne';try{sauver();}catch(x){}
     return;
   }
   if(CARTE==='extramar'){
@@ -17642,6 +18021,7 @@ function placesDesBancs(){
 }
 function coinDuJoueur(){
   if(CARTE==='extramar')return 'à Extramar';
+  if(CARTE==='montagne')return 'à Saumaski';
   if(CARTE==='garde')return 'à Notre-Dame';
   try{return joueur.x<rivX(joueur.y)?'en forêt':'au village';}catch(x){return 'au village';}
 }
@@ -17681,8 +18061,9 @@ function asseoirLesPresents(){
   /* sur les bancs, seulement ceux qui sont sur la même carte que nous */
   /* ceux qui sont dans le métro restent dans la liste, mais sans banc */
   const ici=(p)=>CARTE==='extramar'?p.lieu==='à Extramar'
+    :CARTE==='montagne'?p.lieu==='à Saumaski'
     :CARTE==='garde'?p.lieu==='à Notre-Dame'
-    :(p.lieu!=='à Extramar'&&p.lieu!=='dans le métro'&&p.lieu!=='à Notre-Dame');
+    :(p.lieu!=='à Extramar'&&p.lieu!=='dans le métro'&&p.lieu!=='à Notre-Dame'&&p.lieu!=='à Saumaski');
   const places=placesDesBancs();
   for(const id of [...PLACES_ASSISES.keys()])
     if(!gens.some(g2=>g2.id===id&&ici(g2)))PLACES_ASSISES.delete(id);
@@ -18097,7 +18478,7 @@ function cible(){
     if(o.tombe)continue;
     /* pour un bâtiment large, on mesure la distance au MUR, pas au centre :
        sinon les portes des extrémités restent hors de portée */
-    const demi=o.t==='comptoir'?96:(o.t==='boutique'?78:(o.t==='echoppe'?78:
+    const demi=o.demi?o.demi:o.t==='comptoir'?96:(o.t==='boutique'?78:(o.t==='echoppe'?78:
                 (o.t==='gare'?120:(o.t==='entrepot'?54:(o.t==='mine2'?80:(o.t==='taillerie'?70:0))))));
     const ecart=Math.max(0,Math.abs(o.x-joueur.x)-demi);
     const d=Math.hypot(ecart,joueur.y-o.y+6);
@@ -19096,6 +19477,7 @@ function majAction(){
     return;
   }
   if(o.t==='x_chantier'){b.innerHTML='Lire le panneau<small>CHANTIER · TRAVAUX EN COURS</small>';b.classList.add('on');return;}
+  if(o.ferme){b.innerHTML=o.ferme+'<small>FERMÉ · OUVERTURE PROCHAINE</small>';b.classList.add('on','inerte');b.onclick=null;return;}   /* Saumaski : tout est fermé pour l'instant */
   if(o.t==='x_pavPoisson'){b.innerHTML='Vendre ta pêche<small>LA POISSONNERIE</small>';b.classList.add('on');return;}
   if(o.t==='x_cabanon'){b.innerHTML='La bouillabaisse<small>CHEZ FONFON · CUISINE TA PÊCHE</small>';b.classList.add('on');return;}
   if(o.t==='x_stationVelo'){b.innerHTML=VELO?'Rendre le vélo<small>À LA STATION</small>':'Prendre un vélo<small>EN LIBRE-SERVICE · TU IRAS PLUS VITE</small>';b.classList.add('on');return;}
@@ -19232,7 +19614,7 @@ function agir(){
     if(CARTE==='extramar')e.ext={x:joueur.x,y:joueur.y};else{e.x=joueur.x;e.y=joueur.y;}
     try{sauver();envoyerSauvegarde(true);monterEnLigne(true);}catch(x){}
     vibrer([8,30,8]);
-    setTimeout(()=>{location.href=CARTE==='extramar'?'metro.html?station=port':'metro.html';},120);
+    setTimeout(()=>{location.href=CARTE==='extramar'?'metro.html?station=port':(CARTE==='montagne'?'metro.html?station=montagne':'metro.html');},120);
     return;
   }
   if(o.t==='x_etal'||o.t==='x_pavPoisson'){ouvrirLeComptoir(MODE_POISSON);return;}
@@ -21332,9 +21714,9 @@ function animerAnnonce(){
 async function verifierLaCarte(){
   const d=await appelRPC('ma_carte',{p_joueur:e.id,p_locale:e.carte||'village'});
   if(!d||!d.carte)return;
-  const vraie=d.carte==='extramar'?'extramar':'village';
+  const vraie=d.carte==='extramar'?'extramar':(d.carte==='montagne'?'montagne':'village');
   if(vraie!==CARTE){e.carte=vraie;e.ext=null;try{sauver();}catch(x){}
-    location.replace(vraie==='extramar'?'jeu.html?carte=extramar':'jeu.html');}
+    location.replace(vraie==='extramar'?'jeu.html?carte=extramar':(vraie==='montagne'?'jeu.html?carte=montagne':'jeu.html'));}
 }
 function entrer(){
   verifierLaCarte();

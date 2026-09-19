@@ -134,15 +134,18 @@ h1{font:400 24px Georgia,serif;margin:4px 0 6px}
 const $=id=>document.getElementById(id);
 
 /* LES STATIONS. Ajouter une station = ajouter une ligne ici, et son quai. */
+/* LES TESTEURS : Saumaski leur est ouvert avant tout le monde */
+const TESTEUR=(()=>{try{const x=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}');return x.id==='e029d1fb-7baa-4225-91fd-5cdbef6f8711';}catch(e){return false;}})();
 const STATIONS=[
   /* SAUMASKI, la montagne : au bout de la ligne 1, après le Village. Tracée, pas encore ouverte. */
-  {id:'montagne',nom:'Saumaski',sous:'la montagne · ouverture prochaine',ouvert:false,sortie:'jeu.html?carte=montagne',prix:800},
+  {id:'montagne',nom:'Saumaski',sous:TESTEUR?'la montagne · accès testeur':'la montagne · ouverture prochaine',ouvert:TESTEUR,sortie:'jeu.html?carte=montagne&arrivee=1',prix:800},
   {id:'village',nom:'Village',sous:'la place, la fontaine',ouvert:true,sortie:'jeu.html',prix:500},
   {id:'port',nom:'Le port',sous:'les docks, les grues, le Vieux-Port',ouvert:true,sortie:'jeu.html?carte=extramar&arrivee=1',prix:500},
 ];
 /* LA STATION OÙ L'ON EST : metro.html (Village) ou metro.html?station=port */
 const ICI=STATIONS.find(s=>s.id===new URLSearchParams(location.search).get('station'))||STATIONS.find(s=>s.id==='village');
-const LAS=STATIONS.find(s=>s.id!==ICI.id&&s.ouvert);   /* la prochaine rame va vers la station ouverte d'en face */
+if(ICI.id==='montagne')STATIONS.find(s=>s.id==='village').prix=800;   /* Saumaski ⇄ Village : 8 € */
+const LAS=STATIONS.find(s=>s.id===(ICI.id==='village'?'port':'village'));   /* la prochaine rame : le port depuis le Village, le Village sinon */
 const AU_PORT=ICI.id==='port';
 /* L'ARGENT : le même joueur que dans le jeu. Le serveur seul débite, et
    fixe le prix : le navigateur ne fait que l'afficher. */
@@ -151,7 +154,7 @@ const CLE_SB='sb_publishable__dfR2lEOwKjhhtavvJEvGw_KVACZnHP';
 const CLE='bdl.pix.v2';
 const DEMO=!/battledock\.fr$|github\.io$/.test(location.hostname);   /* l'aperçu ne débite rien */
 let e={};
-try{e=JSON.parse(localStorage.getItem(CLE)||'{}')||{};}catch(x){}
+try{e=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}')||{};}catch(x){}
 if(DEMO&&typeof e.euros!=='number')e.euros=1240;
 const enEuros=c=>((c||0)/100).toFixed(2).replace('.',',')+' €';
 function majSolde(){$('solde').textContent=typeof e.euros==='number'?enEuros(e.euros):'—';}
@@ -369,15 +372,16 @@ function dessiner(t){
 
 /* ---------- le plan de ligne ---------- */
 function dessinerLePlan(){
+  const joignable=(s)=>s.ouvert&&!(ICI.id==='montagne'&&s.id==='port')&&!(ICI.id==='port'&&s.id==='montagne');
   $('trace').innerHTML=STATIONS.map(s=>{
     const ici=s.id===ICI.id;
-    return '<button class="arret'+(ici?' ici':'')+(choix===s.id?' choisi':'')+(s.ouvert?'':' ferme')+
+    return '<button class="arret'+(ici?' ici':'')+(choix===s.id?' choisi':'')+(joignable(s)||ici?'':' ferme')+
       '" data-s="'+s.id+'"'+(ici?' disabled':'')+'><span style="flex:1"><b>'+s.nom+'</b><br>'+
       '<span>'+(ici?'VOUS ÊTES ICI':(s.ouvert?s.sous:'🔒 '+s.sous))+'</span></span>'+(ici?'':(s.ouvert?'<span class="prixT">'+enEuros(s.prix)+'</span>':'<span class="prixT">fermée</span>'))+'</button>';
   }).join('');
   $('trace').querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{
     const s=STATIONS.find(x=>x.id===b.dataset.s);
-    if(!s||!s.ouvert)return;
+    if(!s||!joignable(s))return;
     choix=s.id;dessinerLePlan();
     $('partir').disabled=false;$('partir').textContent='Ticket · '+enEuros(s.prix);
     $('frauder').disabled=false;
@@ -433,7 +437,7 @@ $('frauder').onclick=async()=>{
 };
 function sortirA(st){
   /* le jeu relit e.carte : c'est ce qui le fait ressortir sur la bonne carte */
-  e.carte=st.id==='port'?'extramar':'village';garder();
+  e.carte=st.id==='port'?'extramar':(st.id==='montagne'?'montagne':'village');garder();
   if(DEMO){$('mot').textContent='Dans le jeu, tu remonterais à '+st.nom+'.';
     $('trajConseil')&&($('trajConseil').textContent='Dans le jeu, tu remonterais à '+st.nom+'.');return;}
   $('voile').classList.remove('parti');
@@ -449,8 +453,8 @@ $('remonter').onclick=()=>sortirA(ICI);
       body:JSON.stringify({p_joueur:e.id,p_locale:e.carte||'village'})});
     const d=await r.json();
     if(!d||!d.carte)return;
-    const bonne=d.carte==='extramar'?'port':'village';
-    if(bonne!==ICI.id){e.carte=d.carte;garder();location.replace(bonne==='port'?'metro.html?station=port':'metro.html');}
+    const bonne=d.carte==='extramar'?'port':(d.carte==='montagne'?'montagne':'village');
+    if(bonne!==ICI.id){e.carte=d.carte;garder();location.replace(bonne==='port'?'metro.html?station=port':(bonne==='montagne'?'metro.html?station=montagne':'metro.html'));}
   }catch(x){}
 })();
 
@@ -772,6 +776,7 @@ function revenirAuQuai(){
 }
 
 $('nomStation').textContent=ICI.id==='port'?'Station du port':'Station '+ICI.nom;
+/* depuis Saumaski, le prix affiché de chaque arrêt */
 /* EN LIGNE : dans le métro, on reste dans la liste des connectés, sans banc.
    Un seul message à l'arrivée, un au départ ; aucune position. */
 (async function signalerLaPresence(){
