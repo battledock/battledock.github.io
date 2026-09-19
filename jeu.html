@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-0304';
+  var MA_VERSION='2026-09-19-0344';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -677,6 +677,19 @@ body{overflow:hidden}
 #annonce .sousA{font:400 13px Georgia,serif;color:#c9c2ae;margin:0 0 18px;line-height:1.5}
 #annonce button{border:0;border-radius:12px;padding:12px 28px;background:#e8c06a;color:#2a1d0c;
   font:700 14px Georgia,serif;box-shadow:0 3px 0 #8a6a2a}
+#carnetP{position:fixed;inset:0;z-index:30;display:none;background:rgba(6,10,12,.7);align-items:flex-end;justify-content:center}
+#carnetP.on{display:flex}
+#carnetP .feuilleC{width:100%;max-width:460px;max-height:82vh;overflow:auto;background:#efe6cc;color:#2a2016;border-radius:18px 18px 0 0;
+  padding:16px 16px calc(18px + env(safe-area-inset-bottom));background-image:repeating-linear-gradient(0deg,transparent 0 23px,rgba(120,90,50,.12) 23px 24px)}
+#carnetP h2{font:400 22px Georgia,serif;margin:0 0 4px}
+#carnetP .sousC{font:italic 13px Georgia,serif;color:#6a5a40;margin-bottom:12px}
+#carnetP .esp{display:flex;align-items:center;gap:12px;padding:8px 4px;border-bottom:1px dashed rgba(90,70,40,.3)}
+#carnetP .esp canvas{width:60px;height:24px;image-rendering:pixelated;flex:0 0 60px}
+#carnetP .esp b{display:block;font:700 15px Georgia,serif}
+#carnetP .esp span{font:12px ui-monospace,monospace;color:#6a5a40}
+#carnetP .esp.inconnu b{color:#9a8a6a}
+#carnetP .rareC{font:700 9px ui-monospace,monospace;letter-spacing:1px;padding:2px 6px;border-radius:6px;background:#2a2016;color:#e8c06a;margin-left:auto;white-space:nowrap}
+#carnetP .fermerC{width:100%;margin-top:14px;border:0;border-radius:12px;padding:13px;background:#2a2016;color:#efe6cc;font:700 14px Georgia,serif}
 #panorama{position:fixed;inset:0;z-index:29;display:none;background:rgba(6,8,12,.8);align-items:center;justify-content:center;padding:12px}
 #panorama.on{display:flex}
 #panorama .pqCarte{position:relative;width:100%;max-width:380px;background:#1b1f28;border-radius:18px;padding:14px;color:#f2efe4;text-align:center;border:2px solid #4a5260}
@@ -1492,6 +1505,7 @@ body.clavier #bandeau{padding-bottom:9px}
   <canvas id="panoToile" width="192" height="220"></canvas>
   <div id="panoTexte">Le Vieux-Port, les îles du Frioul, le château d’If.</div>
 </div></div>
+<div id="carnetP"><div class="feuilleC" id="feuilleC"></div></div>
 <div id="enLigne"><div class="carte" id="carteL"></div></div>
 <div id="haut">
   <span class="col">
@@ -1531,6 +1545,11 @@ body.clavier #bandeau{padding-bottom:9px}
 </div>
 <div id="barre">
   <div id="tiroir">
+<button class="latte" id="b-carnet">
+    <svg viewBox="0 0 20 18" width="30"><rect x="3" y="1" width="14" height="16" fill="#6b4a2c"/><rect x="4" y="2" width="12" height="14" fill="#efe6cc"/>
+      <rect x="6" y="5" width="7" height="3" fill="#7d8b96"/><rect x="13" y="5" width="2" height="3" fill="#5f6b74"/>
+      <rect x="6" y="11" width="8" height="1" fill="#b9a57c"/><rect x="6" y="13" width="6" height="1" fill="#b9a57c"/></svg>
+    <span class="b">CARNET</span><i class="clou g"></i><i class="clou d"></i></button>
 <button class="latte" id="b-sac">
     <svg viewBox="0 0 20 18" width="30">
       <rect x="6" y="0" width="8" height="2" fill="#4a3220"/>
@@ -13245,7 +13264,7 @@ function lacher(){J.actif=false;J.id=null;joyX=joyY=0;}
 const pageOuverte=()=>$('pan').classList.contains('on')||$('sacPage').classList.contains('on')
                     ||$('page2').classList.contains('on')||!$('porte').classList.contains('parti')
                     ||$('enLigne').classList.contains('on')||$('annonce').classList.contains('on')
-                    ||$('petanque').classList.contains('on')||$('panorama').classList.contains('on');   /* la liste en ligne bloquait le tap de fermeture */
+                    ||$('petanque').classList.contains('on')||$('panorama').classList.contains('on')||$('carnetP').classList.contains('on');   /* la liste en ligne bloquait le tap de fermeture */
 /* le joystick se prend n'importe où sur la carte, des deux côtés.
    On ne l'ignore que si le doigt touche un bouton de l'interface. */
 addEventListener('pointerdown',reveillerLeSon,{once:false});
@@ -15160,8 +15179,6 @@ const plaqueFeinte={
    bouchon flotte, et quand ça mord il faut FERRER à temps. Le poisson est
    tiré par le serveur (pecher), qui tient aussi le rythme : une prise
    toutes les quatre secondes, pas plus. */
-const NOMS_POISSON={sardine:'sardine',rouget:'rouget',dorade:'dorade',loup:'loup',poulpe:'poulpe'};
-let PECHE=null;           /* {etat:'lance'|'attend'|'mord'|'ferre', t0, mordA, bx, by, px, py, cote} */
 /* ================= LE DÉCHARGEMENT DU CABOTEUR =================
    On prend une caisse sur la pile, au pied de la grue, et on la porte aux
    Docks. Le serveur paie (30 centimes) et tient le rythme : une caisse
@@ -15210,134 +15227,249 @@ function actionDuCaboteur(b){
   }
   return false;
 }
+/* ================= LA PÊCHE, À EXTRAMAR — le cercle =================
+   Simple : on lance, ça mord, on ferre. Puis, au-dessus du poisson, un CERCLE
+   se resserre : on TAPE quand il touche le poisson. Parfait ou bien, le poisson
+   se rapproche ; raté, on perd un cœur. Quelques bonnes touches et il saute
+   dans nos mains ; trois cœurs perdus et il file. Les gros poissons demandent
+   plus de touches, et leur cercle va plus vite.
+   L'espèce et la taille viennent du SERVEUR (pecher_touche), la prise aussi. */
+const ESP_PECHE={
+  sardine:{nom:'sardine',  col:['#9fb3c4','#c9d6e0'],L:9, touches:3,vit:1.5},
+  rouget: {nom:'rouget',   col:['#d0553f','#e8806a'],L:10,touches:3,vit:1.35},
+  dorade: {nom:'dorade',   col:['#a9b4ba','#e0b43a'],L:12,touches:4,vit:1.2},
+  seiche: {nom:'seiche',   col:['#c8b89a','#8a7a5c'],L:11,touches:4,vit:1.15},
+  loup:   {nom:'loup',     col:['#7d8b96','#4f5b64'],L:15,touches:5,vit:1.0},
+  poulpe: {nom:'poulpe',   col:['#c0607a','#e08aa0'],L:11,touches:5,vit:.95},
+  congre: {nom:'congre',   col:['#5a5040','#8a7a5c'],L:20,touches:6,vit:.9},
+  botte:  {nom:'vieille chaussure',col:['#3a2a1c','#5a3f21'],L:9,touches:2,vit:1.7},
+  legende:{nom:'Vieux Loup du Vieux-Port',col:['#c9a24a','#f4d98a'],L:22,touches:7,vit:.75},
+};
+let PECHE=null, TIENT_PECHE=false, CARNET_PECHE=null;
 function lieuDePeche(){
   if(CARTE!=='extramar')return null;
   const x=joueur.x,y=joueur.y;
-  /* au bout d'un ponton : le bouchon tombe devant, dans l'axe */
   for(const px of XP.pontons){
     if(Math.abs(x-px)<XP.pontonL&&y>XP.pontonFin-46&&y<XP.pontonFin)
-      return {bx:px+(joueur.dir==='gauche'?-30:(joueur.dir==='droite'?30:0)),by:XP.pontonFin+22};
+      return {bx:px+(joueur.dir==='gauche'?-30:(joueur.dir==='droite'?30:0)),by:XP.pontonFin+22,lieu:'ponton'};
   }
-  /* au bord du quai, au-dessus du bassin, loin des pontons */
   if(y>XP.quaiY-26&&y<XP.quaiY+2&&x>XP.bassinO+14&&x<XP.bassinE-14&&
      !XP.pontons.some(px=>Math.abs(x-px)<24))
-    return {bx:x,by:XP.quaiY+30};
+    return {bx:x,by:XP.quaiY+30,lieu:'quai'};
   return null;
 }
-function lancerLaLigne(){
+async function lancerLaLigne(){
   const L=lieuDePeche();
   if(!L||PECHE)return;
   PECHE={etat:'lance',t0:performance.now(),bx:L.bx,by:L.by,px:joueur.x,py:joueur.y,
-    cote:joueur.dir==='gauche'?-1:1};
-  /* on attend entre deux et six secondes que ça morde */
+    cote:joueur.dir==='gauche'?-1:1,esp:null,cm:0};
   PECHE.mordA=PECHE.t0+600+2000+Math.random()*4000;
-  jouer('cueille');vibrer(8);
-  majAction();
+  jouer('cueille');vibrer(8);majAction();
+  const P=PECHE;
+  const d=await appelRPC('pecher_touche',{p_joueur:e.id,p_lieu:L.lieu});
+  if(PECHE!==P)return;
+  if(!d||d.erreur){annulerLaPeche(!d?'la ligne s’emmêle':(d.erreur==='trop tot'?'patience…':'rien ne mord ici'));return;}
+  P.esp=d.espece;P.cm=d.cm;
 }
 function annulerLaPeche(mot){
   if(!PECHE)return;
   if(mot)texteVolant(joueur.x,joueur.y-34,mot,'#b9c7d0');
-  PECHE=null;majAction();
+  PECHE=null;TIENT_PECHE=false;majAction();
 }
-async function ferrer(){
+function ferrer(){
   if(!PECHE)return;
   if(PECHE.etat!=='mord'){annulerLaPeche('trop tôt : il a filé');return;}
-  PECHE.etat='ferre';majAction();
-  vibrer([10,30,14]);
-  const num=++numAppelSac;
-  const d=await appelRPC('pecher',{p_joueur:e.id});
-  const bx=PECHE?PECHE.bx:joueur.x, by=PECHE?PECHE.by:joueur.y;
-  PECHE=null;
-  if(!d||d.erreur){
-    const m=!d?'la ligne a cassé':(d.erreur==='sac plein'?'ton sac est plein':
-      (d.erreur==='trop tot'?'patience…':'rien au bout'));
-    texteVolant(joueur.x,joueur.y-34,m,'#e8a06a');
-    majAction();return;
-  }
-  adopterSac(d,num);
-  e.sac=d.sac;sauver();
-  eclaboussure(bx,by);
-  texteVolant(joueur.x,joueur.y-40,'+1 '+(NOMS_POISSON[d.poisson]||d.poisson),
-    d.poisson==='poulpe'?'#e8a7ff':(d.poisson==='loup'?'#9fdfb8':'#cfe0f2'));
-  jouer('achat','moment');
-  if(typeof majHaut==='function')majHaut();
-  majAction();
+  /* LE COMBAT COMMENCE */
+  const P=PECHE;
+  const S=ESP_PECHE[P.esp]||ESP_PECHE.sardine;
+  P.etat='combat';P.touches=0;P.besoin=S.touches;P.coeurs=3;P.dist=1;
+  nouveauCercle(P);vibrer([12,20,12]);majAction();
 }
-function eclaboussure(x,y){
-  for(let i=0;i<10;i++){
+async function gagnerLeCombat(){
+  const P=PECHE;if(P.fx){P.bx=P.fx;P.by=P.fy;}P.etat='remonte';P.t0=performance.now();TIENT_PECHE=false;majAction();
+  const num=++numAppelSac;
+  const d=await appelRPC('pecher_prise',{p_joueur:e.id});
+  if(!d||d.erreur){
+    const m=!d?'la ligne a cassé':(d.erreur==='sac plein'?'ton sac est plein':(d.erreur==='deja pris'?'quelqu’un l’a déjà pris aujourd’hui':'il s’est échappé'));
+    texteVolant(joueur.x,joueur.y-34,m,'#e8a06a');PECHE=null;majAction();return;
+  }
+  if(d.sac){adopterSac(d,num);e.sac=d.sac;sauver();if(typeof majHaut==='function')majHaut();}
+  if(CARNET_PECHE){const c=CARNET_PECHE[d.espece]||{n:0,record:0};c.n++;c.record=Math.max(c.record,d.cm);CARNET_PECHE[d.espece]=c;}
+  P.etat='saute';P.t0=performance.now();P.fin=d;                     /* le poisson jaillit vers nous */
+  const S=ESP_PECHE[d.espece]||ESP_PECHE.sardine;
+  setTimeout(()=>{
+    if(PECHE!==P)return;
+    texteVolant(joueur.x,joueur.y-44,(d.espece==='legende'?'🏆 ':'')+S.nom+' · '+d.cm+' cm',
+      d.espece==='legende'?'#f4d98a':(d.neuf?'#9fdfb8':'#cfe0f2'));
+    if(d.neuf)setTimeout(()=>texteVolant(joueur.x,joueur.y-54,'nouvelle espèce au carnet !','#9fdfb8'),500);
+    else if(d.record)setTimeout(()=>texteVolant(joueur.x,joueur.y-54,'nouveau record !','#e8c06a'),500);
+    jouer('achat','moment');vibrer(d.espece==='legende'?[40,60,40,60,120]:[18,30,18]);
+    PECHE=null;majAction();
+  },650);
+}
+function perdreLeCombat(){
+  texteVolant(joueur.x,joueur.y-34,'la ligne a cassé…','#e8a06a');
+  vibrer(80);PECHE=null;TIENT_PECHE=false;majAction();
+}
+function eclaboussure(x,y,n){
+  for(let i=0;i<(n||10);i++){
     const a=-Math.PI/2+(Math.random()-.5)*2.2;
     PARTS.push({x,y,vx:Math.cos(a)*38,vy:Math.sin(a)*46,vie:.45+Math.random()*.3,
       taille:2,rot:0,vrot:0,c:'rgba(220,240,250,.85)',rebondi:true});
   }
 }
-function tempsDeLaPeche(t){
-  if(!PECHE)return;
-  /* on bouge : la ligne se relève */
-  if(Math.hypot(joueur.x-PECHE.px,joueur.y-PECHE.py)>5){annulerLaPeche('ligne relevée');return;}
-  if(PECHE.etat==='lance'&&t-PECHE.t0>600){PECHE.etat='attend';majAction();}
-  if(PECHE.etat==='attend'&&t>=PECHE.mordA){
-    PECHE.etat='mord';PECHE.mordT=t;vibrer([30,40,30]);eclaboussure(PECHE.bx,PECHE.by);majAction();
+function tempsDeLaPeche(t,dt){
+  const P=PECHE;if(!P)return;
+  /* on bouge : la ligne se relève (sauf pendant le combat : on ne peut pas bouger) */
+  if(P.etat!=='combat'&&P.etat!=='remonte'&&P.etat!=='saute'&&Math.hypot(joueur.x-P.px,joueur.y-P.py)>5){annulerLaPeche('ligne relevée');return;}
+  if(P.etat==='combat'||P.etat==='remonte'||P.etat==='saute'){joueur.x=P.px;joueur.y=P.py;}
+  if(P.etat==='lance'&&t-P.t0>600){P.etat='attend';majAction();}
+  if(P.etat==='attend'&&t>=P.mordA&&P.esp){
+    P.etat='mord';P.mordT=t;vibrer([30,40,30]);eclaboussure(P.bx,P.by);majAction();
   }
-  /* il ne reste accroché qu'une seconde */
-  if(PECHE.etat==='mord'&&t-PECHE.mordT>1000)annulerLaPeche('il s’est décroché');
+  if(P.etat==='mord'&&t-P.mordT>1100)annulerLaPeche('il s’est décroché');
+  if(P.etat==='combat'&&P.cercle){
+    const C=P.cercle;
+    C.k=(t-C.t0)/C.duree;                            /* 0 : grand · 1 : sur le poisson */
+    if(C.k>1.18&&!C.juge)jugerLaTouche(P,false);     /* trop tard : raté */
+    if(C.juge&&t-C.juge.t>420){
+      if(P.touches>=P.besoin){gagnerLeCombat();return;}
+      if(P.coeurs<=0){perdreLeCombat('il a filé…');return;}
+      nouveauCercle(P);
+    }
+  }
+}
+/* un nouveau cercle : le poisson se montre un peu plus près, ailleurs */
+function nouveauCercle(P){
+  const S=ESP_PECHE[P.esp]||ESP_PECHE.sardine;
+  P.dist=1-P.touches/P.besoin;
+  const vers=Math.min(1,1-P.dist)*0.75;
+  P.fx=P.bx+(P.px-P.bx)*vers+(Math.random()-.5)*34*(P.dist+.3);
+  P.fy=P.by+((P.py+12)-P.by)*vers+(Math.random()-.5)*8;
+  P.cercle={t0:performance.now(),duree:1000/S.vit*(1.05-P.touches*.03),k:0,juge:null};
+  eclaboussure(P.fx,P.fy,5);
+}
+/* LA TOUCHE : on tape — trop tôt, pile, ou trop tard */
+function taperPeche(){
+  const P=PECHE;if(!P||P.etat!=='combat'||!P.cercle||P.cercle.juge)return;
+  jugerLaTouche(P,true);
+}
+function jugerLaTouche(P,tape){
+  const C=P.cercle, ecart=Math.abs(1-C.k);
+  const note=!tape?'rate':(ecart<.09?'parfait':(ecart<.22?'bien':'rate'));
+  C.juge={note,t:performance.now()};
+  if(note==='rate'){P.coeurs--;vibrer(60);texteVolant(P.fx,P.fy-10,tape?(C.k<1?'trop tôt !':'trop tard !'):'trop tard !','#ff7a5a');}
+  else{
+    P.touches+=note==='parfait'&&P.touches<P.besoin-1?2:1;P.touches=Math.min(P.touches,P.besoin);
+    texteVolant(P.fx,P.fy-10,note==='parfait'?'PARFAIT !':'bien !',note==='parfait'?'#ffd76a':'#9fdfb8');
+    vibrer(note==='parfait'?[14,20,24]:14);eclaboussure(P.fx,P.fy,note==='parfait'?12:7);
+    if(note==='parfait')jouer('cueille');
+  }
+}
+window.addEventListener('pointerdown',ev=>{
+  if(PECHE&&PECHE.etat==='combat'){taperPeche();}
+},true);
+function poissonPixel(g,x,y,S,dir,bat){
+  g.save();g.translate(Math.round(x),Math.round(y));g.scale(dir,1);
+  const L=S.L,h=Math.max(3,Math.round(L/3));
+  g.fillStyle=S.col[0];g.fillRect(-L/2,-h/2,L,h);g.fillRect(-L/2+1,-h/2-1,L-3,1);g.fillRect(-L/2+1,h/2,L-3,1);
+  g.fillStyle=S.col[1];g.fillRect(-L/2+1,-h/2,L-4,1);
+  g.fillStyle=S.col[0];g.fillRect(-L/2-3,-2+bat,3,4);
+  g.fillStyle='#10161a';g.fillRect(L/2-3,-1,1,1);
+  g.restore();
 }
 function dessinerLaPeche(g,camX,camY){
   if(!PECHE)return;
-  const t=performance.now();
-  tempsDeLaPeche(t);
-  if(!PECHE)return;
-  const c=PECHE.cote;
-  /* la canne : du poing au scion */
+  const t=performance.now(), dt=Math.min(.05,(t-(PECHE.tp||t))/1000);PECHE.tp=t;
+  tempsDeLaPeche(t,dt);
+  const P=PECHE;if(!P)return;
+  const c=P.cote;
+  const combat=P.etat==='combat';
+  /* où est le poisson / le bouchon */
+  let bx=P.bx-camX, by=P.by-camY;
+  if(combat){bx=P.fx-camX;by=P.fy-camY;}
+  /* la canne : elle plie vers le poisson quand on tire */
+  const tire=combat?.6+(P.cercle&&P.cercle.juge&&P.cercle.juge.note!=='rate'?.4:0):(P.etat==='mord'?.4:0);
   const hx=joueur.x+c*5-camX, hy=joueur.y-14-camY;
-  const sx=joueur.x+c*17-camX, sy=joueur.y-34-camY;
+  const sx=joueur.x+c*(17-tire*3)-camX+(bx-(joueur.x-camX))*0.08*tire, sy=joueur.y-34-camY+tire*9;
   g.strokeStyle='#6b4a28';g.lineWidth=1.4;
-  g.beginPath();g.moveTo(hx,hy);g.lineTo(sx,sy);g.stroke();
-  g.strokeStyle='#a5764a';g.lineWidth=.7;
-  g.beginPath();g.moveTo(hx+c*6,hy-10);g.lineTo(sx,sy);g.stroke();
-  /* le bouchon : il vole, il flotte, il plonge */
-  let bx=PECHE.bx-camX, by=PECHE.by-camY;
-  if(PECHE.etat==='lance'){
-    const k=Math.min(1,(t-PECHE.t0)/600);
-    bx=sx+(bx-sx)*k;by=sy+(by-sy)*k-Math.sin(k*Math.PI)*22;
-  }else if(PECHE.etat==='attend'){
-    by+=Math.sin(t/260)*.8;
-    /* de petites touches, pour faire monter la tension */
-    if(PECHE.mordA-t<900&&Math.sin(t/60)>.6)by+=1;
-  }else if(PECHE.etat==='mord'){
-    by+=2+Math.sin(t/40)*1.5;
+  g.beginPath();g.moveTo(hx,hy);g.quadraticCurveTo(hx+c*8,hy-14-tire*2,sx,sy);g.stroke();
+  g.strokeStyle='#a5764a';g.lineWidth=.7;g.beginPath();g.moveTo(hx+c*4,hy-6);g.quadraticCurveTo(hx+c*9,hy-15,sx,sy);g.stroke();
+  /* le vol du bouchon */
+  if(P.etat==='lance'){const k=Math.min(1,(t-P.t0)/600);bx=sx+(bx-sx)*k;by=sy+(by-sy)*k-Math.sin(k*Math.PI)*22;}
+  else if(P.etat==='attend'){by+=Math.sin(t/260)*.8;if(P.mordA-t<900&&Math.sin(t/60)>.6)by+=1;}
+  else if(P.etat==='mord'){by+=2+Math.sin(t/40)*1.5;}
+  /* LE POISSON QUI JAILLIT vers le perso, à la fin */
+  if(P.etat==='saute'){
+    const k=Math.min(1,(t-P.t0)/600), S=ESP_PECHE[P.fin.espece]||ESP_PECHE.sardine;
+    const x=bx+((joueur.x-camX)-bx)*k, y=by+((joueur.y-26-camY)-by)*k-Math.sin(k*Math.PI)*34;
+    g.strokeStyle='rgba(240,240,240,.8)';g.lineWidth=.5;g.beginPath();g.moveTo(sx,sy);g.lineTo(x,y);g.stroke();
+    if(P.fin.espece==='legende'){const r=g.createRadialGradient(x,y,1,x,y,18);r.addColorStop(0,'rgba(255,220,120,.7)');r.addColorStop(1,'rgba(255,220,120,0)');g.fillStyle=r;g.fillRect(x-18,y-18,36,36);}
+    poissonPixel(g,x,y,S,c,Math.sin(t/40)>0?1:-1);
+    return;
   }
-  /* la ligne, qui pend un peu */
-  g.strokeStyle='rgba(240,240,240,.75)';g.lineWidth=.5;
+  /* la ligne : molle quand on attend, tendue pendant le combat */
+  g.strokeStyle=combat?'rgba(255,255,255,.95)':'rgba(240,240,240,.75)';g.lineWidth=combat?.7:.5;
   g.beginPath();g.moveTo(sx,sy);
-  g.quadraticCurveTo((sx+bx)/2,Math.max(sy,by)+(PECHE.etat==='lance'?0:6),bx,by);g.stroke();
-  /* les ronds dans l'eau */
-  if(PECHE.etat!=='lance'){
+  if(combat)g.lineTo(bx,by);else g.quadraticCurveTo((sx+bx)/2,Math.max(sy,by)+(P.etat==='lance'?0:6),bx,by);
+  g.stroke();
+  if(combat){
+    const S=ESP_PECHE[P.esp]||ESP_PECHE.sardine, C=P.cercle;
+    /* le poisson, juste sous la surface */
+    const dir=bx<joueur.x-camX?1:-1;
+    g.globalAlpha=.7;poissonPixel(g,bx,by+2,{L:S.L,col:['#1d3a4a','#2a4a5a']},dir,Math.sin(t/60)>0?1:-1);g.globalAlpha=1;
+    const r0=(t/300)%1;g.strokeStyle='rgba(235,248,255,'+(0.5*(1-r0))+')';g.lineWidth=.7;
+    g.beginPath();g.ellipse(bx,by+2,3+r0*9,1+r0*3,0,0,Math.PI*2);g.stroke();
+    /* LA CIBLE : un petit rond fixe sur le poisson, et LE CERCLE qui se resserre */
+    const cible=6;
+    g.strokeStyle='rgba(255,255,255,.85)';g.lineWidth=1;g.beginPath();g.arc(bx,by,cible,0,Math.PI*2);g.stroke();
+    if(C&&!C.juge){
+      const r=cible+Math.max(0,1-C.k)*30, pret=Math.abs(1-C.k)<.22;
+      g.strokeStyle=pret?'#ffd76a':'rgba(255,255,255,.9)';g.lineWidth=pret?2:1.5;
+      g.beginPath();g.arc(bx,by,Math.max(1,r),0,Math.PI*2);g.stroke();
+    }else if(C&&C.juge){
+      const k=(t-C.juge.t)/420, col=C.juge.note==='parfait'?'255,215,106':(C.juge.note==='bien'?'159,223,184':'255,122,90');
+      g.strokeStyle='rgba('+col+','+(1-k)+')';g.lineWidth=2;g.beginPath();g.arc(bx,by,cible+k*14,0,Math.PI*2);g.stroke();
+    }
+    /* AU-DESSUS DU PERSO : les cœurs, et les touches qui restent */
+    const hx=Math.round(joueur.x-camX), hy=Math.round(joueur.y-camY-58);
+    for(let k=0;k<3;k++){
+      const x=hx-10+k*8, plein=k<P.coeurs;
+      g.fillStyle=plein?'#e0402f':'#3a2a2a';
+      g.fillRect(x,hy,2,2);g.fillRect(x+3,hy,2,2);g.fillRect(x-1,hy+1,7,2);g.fillRect(x,hy+3,5,1);g.fillRect(x+1,hy+4,3,1);g.fillRect(x+2,hy+5,1,1);
+    }
+    for(let k=0;k<P.besoin;k++){
+      const x=hx-P.besoin*3+k*6+1, y=hy+9;
+      g.fillStyle=k<P.touches?S.col[0]:'#2a3238';g.fillRect(x,y,4,3);g.fillRect(x-1,y+1,1,1);
+    }
+    return;
+  }
+  /* les ronds dans l'eau, le bouchon */
+  if(P.etat!=='lance'){
     const r=(t/500)%1;
     g.strokeStyle='rgba(230,245,250,'+(.5*(1-r))+')';g.lineWidth=.6;
-    g.beginPath();g.ellipse(bx,by+2,3+r*(PECHE.etat==='mord'?10:6),1.2+r*2,0,0,Math.PI*2);g.stroke();
+    g.beginPath();g.ellipse(bx,by+2,3+r*(P.etat==='mord'?10:6),1.2+r*2,0,0,Math.PI*2);g.stroke();
   }
-  /* le bouchon rouge et blanc */
-  if(PECHE.etat!=='mord'||Math.sin(t/50)>-.2){
+  if(P.etat!=='mord'||Math.sin(t/50)>-.2){
     g.fillStyle='#f2efe4';g.fillRect(Math.round(bx)-1,Math.round(by)-3,3,2);
     g.fillStyle='#d0402f';g.fillRect(Math.round(bx)-1,Math.round(by)-1,3,2);
   }
-  /* ÇA MORD ! */
-  if(PECHE.etat==='mord'){
+  if(P.etat==='mord'){
     g.font='700 8px ui-monospace,monospace';g.textAlign='center';
     g.fillStyle='rgba(10,16,10,.6)';g.fillText('ÇA MORD !',bx+1,by-9);
     g.fillStyle='#ffd76a';g.fillText('ÇA MORD !',bx,by-10);
   }
 }
-/* le bouton d'action, selon l'état de la ligne */
 function actionDePeche(b){
   if(CARTE!=='extramar')return false;
   if(PECHE){
     const E=PECHE.etat;
     b.innerHTML=E==='mord'?'FERRER !<small>VITE, ÇA MORD</small>'
-      :E==='ferre'?'…<small>ON REMONTE LA LIGNE</small>'
+      :E==='combat'?'TAPE !<small>QUAND LE CERCLE TOUCHE LE POISSON</small>'
+      :(E==='remonte'||E==='saute')?'…<small>ON LE SORT DE L’EAU</small>'
       :'Attendre…<small>LE BOUCHON FLOTTE · BOUGER RELÈVE LA LIGNE</small>';
     b.classList.add('on');b.classList.toggle('mord',E==='mord');
-    b.onclick=E==='ferre'?null:ferrer;
+    b.onclick=E==='mord'?ferrer:(E==='lance'||E==='attend'?ferrer:null);
     return true;
   }
   b.classList.remove('mord');
@@ -15549,6 +15681,37 @@ function bouclePetanque(t){
   }
   requestAnimationFrame(bouclePetanque);
 }
+/* LE CARNET DE PÊCHE : ce qu'on a pris, ses records, et ce qui reste à découvrir */
+const CARNET_ORDRE=[
+  ['sardine','COMMUNE','partout, à toute heure'],['rouget','COMMUNE','partout'],['dorade','PEU COMMUNE','le jour et à l’aube'],
+  ['seiche','PEU COMMUNE','la nuit et à l’aube, au bout des pontons'],['loup','RARE','la nuit et à l’aube, au bout des pontons'],
+  ['poulpe','RARE','le long du quai'],['congre','TRÈS RARE','seulement la nuit, au bout des pontons'],
+  ['botte','…','un peu partout, hélas'],['legende','LÉGENDAIRE','à l’aube, au bout des pontons · un seul par jour']];
+async function ouvrirLeCarnet(){
+  try{fermerTiroir();}catch(x){}
+  const f=$('feuilleC');f.innerHTML='<h2>Carnet de pêche</h2><div class="sousC">On feuillette…</div>';
+  $('carnetP').classList.add('on');
+  const d=await appelRPC('mon_carnet',{p_joueur:e.id});
+  CARNET_PECHE=(d&&typeof d==='object'&&!d.erreur)?d:(CARNET_PECHE||{});
+  const n=Object.keys(CARNET_PECHE).length;
+  f.innerHTML='<h2>Carnet de pêche</h2><div class="sousC">'+n+' espèce'+(n>1?'s':'')+' sur '+CARNET_ORDRE.length+' · Extramar</div>';
+  CARNET_ORDRE.forEach(([id,rare,indice])=>{
+    const c=CARNET_PECHE[id], S=ESP_PECHE[id];
+    const ligne=document.createElement('div');ligne.className='esp'+(c?'':' inconnu');
+    const cv=document.createElement('canvas');cv.width=30;cv.height=12;const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+    poissonPixel(g,16,6,c?S:{L:S.L,col:['#2a2016','#2a2016']},1,0);ligne.appendChild(cv);
+    const t=document.createElement('div');
+    t.innerHTML=c?'<b>'+S.nom.charAt(0).toUpperCase()+S.nom.slice(1)+'</b><span>'+c.n+' prise'+(c.n>1?'s':'')+' · record '+c.record+' cm</span>'
+      :'<b>???</b><span>'+indice+'</span>';
+    ligne.appendChild(t);
+    const r=document.createElement('div');r.className='rareC';r.textContent=rare;ligne.appendChild(r);
+    f.appendChild(ligne);
+  });
+  const b=document.createElement('button');b.className='fermerC';b.textContent='Refermer le carnet';
+  b.onclick=()=>$('carnetP').classList.remove('on');f.appendChild(b);
+}
+if($('b-carnet'))$('b-carnet').onclick=ouvrirLeCarnet;
+if($('carnetP'))$('carnetP').onclick=(ev)=>{if(ev.target===$('carnetP'))$('carnetP').classList.remove('on');};
 let PANO=false;
 function ouvrirLePanorama(){PANO=true;$('panorama').classList.add('on');requestAnimationFrame(bouclePano);}
 function bouclePano(t){if(!PANO)return;const c=$('panoToile'),g=c.getContext('2d');g.imageSmoothingEnabled=false;
@@ -16210,10 +16373,21 @@ const OBJETS={
  dorade: {nom:'Dorade', d:'Pêchée à Extramar. Un bandeau d’or entre les yeux.',     poids:1},
  loup:   {nom:'Loup',   d:'Pêché à Extramar. Rare, et le marché le paie bien.',     poids:1},
  poulpe: {nom:'Poulpe', d:'Pêché à Extramar. Il n’en sort presque jamais.',         poids:1},
+ seiche: {nom:'Seiche', d:'Pêchée la nuit au bout des pontons. Elle crache son encre.', poids:1},
+ congre: {nom:'Congre', d:'Pêché la nuit au bout des pontons. Long, et mauvais caractère.',poids:2},
+ legende:{nom:'Le Vieux Loup',d:'Le Vieux Loup du Vieux-Port. Un seul par jour, pour tout Marseille.',poids:3},
  pioche: {nom:'Pioche', d:'Pour les rochers. Trois coups et la pierre cède.',        poids:0,outil:1},
  hache:  {nom:'Hache',  d:'Pour les arbres. Cinq coups, et il tombe.',               poids:0,outil:1}
 };
 const ICONES={
+ seiche:'<rect x="4" y="5" width="9" height="6" fill="#c8b89a"/><rect x="4" y="5" width="9" height="1" fill="#e6dab8"/>'+
+      '<rect x="2" y="6" width="2" height="4" fill="#8a7a5c"/><rect x="11" y="7" width="1" height="1" fill="#1b1b1b"/>'+
+      '<rect x="13" y="6" width="2" height="1" fill="#8a7a5c"/><rect x="13" y="9" width="2" height="1" fill="#8a7a5c"/>',
+ congre:'<rect x="1" y="7" width="14" height="3" fill="#5a5040"/><rect x="1" y="7" width="14" height="1" fill="#8a7a5c"/>'+
+      '<rect x="12" y="6" width="3" height="5" fill="#5a5040"/><rect x="13" y="7" width="1" height="1" fill="#e8c06a"/>',
+ legende:'<rect x="1" y="5" width="12" height="6" fill="#c9a24a"/><rect x="1" y="5" width="12" height="1" fill="#f4d98a"/>'+
+      '<rect x="13" y="4" width="2" height="8" fill="#b88226"/><rect x="3" y="7" width="1" height="1" fill="#1b1b1b"/>'+
+      '<rect x="6" y="3" width="2" height="2" fill="#fff0b8"/>',
  sardine:'<rect x="2" y="7" width="10" height="3" fill="#9fb3c4"/><rect x="2" y="7" width="10" height="1" fill="#c9d6e0"/>'+
       '<rect x="12" y="6" width="2" height="5" fill="#8499aa"/><rect x="4" y="8" width="1" height="1" fill="#1b1b1b"/>',
  rouget:'<rect x="2" y="6" width="10" height="4" fill="#d0553f"/><rect x="2" y="6" width="10" height="1" fill="#e8806a"/>'+
@@ -16855,7 +17029,7 @@ let VENTE={};                 /* combien de chaque objet on met sur le comptoir 
 const MODE_COMPTOIR={nom:'Le comptoir',mot:'« Fais voir ce que tu as ramené. »',
   prix:PRIX_COMPTOIR,rpc:'vendre_au_comptoir',ap:{veste:2,cheveux:1,chapeau:0},
   vide:'<div class="cptVide">Ton sac est vide.<br>Traverse le gué : tout pousse sur l’autre rive.</div>'};
-const PRIX_POISSON={sardine:5,rouget:10,dorade:18,loup:40,poulpe:120};   /* le serveur a les mêmes */
+const PRIX_POISSON={sardine:5,rouget:10,dorade:18,seiche:14,loup:40,poulpe:120,congre:90,legende:500};   /* le serveur a les mêmes */
 const MODE_POISSON={nom:'La poissonnerie',mot:'« Montre-moi ta pêche, petit. »',
   prix:PRIX_POISSON,rpc:'vendre_poisson',ap:{veste:0,cheveux:3,chapeau:1},
   vide:'<div class="cptVide">Pas un poisson dans ton sac.<br>Va lancer ta ligne au bout des pontons.</div>'};
