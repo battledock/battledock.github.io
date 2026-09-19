@@ -16,7 +16,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1519';
+  var MA_VERSION='2026-09-19-1524';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -18062,6 +18062,9 @@ async function lireMesNiveaux(){
   e.nivSac=d.sac||0;e.nivPioche=d.pioche||0;
   e.nivHache=d.hache||0;e.nivPied=d.pied||0;
   e.sacMax=e.nivSac>0?SAC_PALIERS[Math.min(e.nivSac,SAC_PALIERS.length-1)]:60;
+  /* les outils de métier, eux aussi, viennent du serveur */
+  const m=await appelRPC('mes_metiers',{p_joueur:e.id});
+  if(m&&typeof m==='object'&&!m.erreur&&!m.code)e.metiers=m;
   sauver();majHaut();
 }
 async function lireMesCosmetiques(){
@@ -18183,7 +18186,10 @@ function echMetier(c){
     const M=METIERS.find(x=>x.id===b.dataset.met);
     if(e.metiers[M.id])return;
     b.textContent='…';
-    if(!await echPayer(M.prix))return;
+    /* L'OUTIL DE MÉTIER S'ACHÈTE AU SERVEUR, qui s'en souvient (plus la sauvegarde) */
+    const d=await appelRPC('acheter_metier',{p_joueur:e.id,p_metier:M.id});
+    if(!d||d.erreur){echBulle(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':'Le marchand n’a pas pu');echMaj();return;}
+    if(typeof d.euros==='number')e.euros=d.euros;
     e.metiers[M.id]=true;
     sauver();envoyerSauvegarde(true);majHaut();majAction();
     echBulle(M.nom+' · à toi de t’en servir');
