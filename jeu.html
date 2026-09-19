@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1835';
+  var MA_VERSION='2026-09-19-1838';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -14125,62 +14125,124 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
   /* l'ombre au sol */
   g.fillStyle='rgba(20,28,16,.28)';g.beginPath();g.ellipse(x,y+0.5,cote?6.5:6,1.8,0,0,Math.PI*2);g.fill();
 
-  /* ============ LES JAMBES ============ */
+  /* ============ LES JAMBES, REFAITES : cuisse, genou, mollet, cheville ============ */
   const jambe=(cx,avance,leve,fonce)=>{
-    const c=fonce?pantO:pant, cc=fonce?pantO:pantC;
+    const c=fonce?pantO:pant, cc=fonce?pant:pantC, cO=fonce?T(pant,-34):pantO;
+    const sk=fonce?peauO:peau, skO=fonce?peauT:peauO, skC=fonce?peau:peauC;
     if(cote){
+      /* DE PROFIL : la cuisse épaisse, le genou, le mollet qui bombe derrière, la cheville fine */
       const kx=cx+avance*7, ky=yHan+13-leve*4, fx=cx+avance*11, fyy=-3-leve*5;
-      if(court){seg(cx,yHan,kx,ky,8,c);seg(kx,ky,fx,fyy,6,peau);}
-      else{seg(cx,yHan,kx,ky,8,c);seg(kx,ky,fx,fyy,7,c);if(!fonce)seg(cx+1,yHan,kx+1,ky,1,cc);}
+      const bas=court?sk:c, basO=court?skO:cO;
+      seg(cx,yHan,kx,ky,8,c);seg(cx+1,yHan+1,kx+1,ky,1,cc);                          /* la cuisse, éclairée devant */
+      seg(kx,ky,fx,fyy,6,bas);
+      /* le mollet : un renflement à l'arrière, au tiers haut du tibia */
+      const mx=kx+(fx-kx)*0.35-2, my=ky+(fyy-ky)*0.35;
+      R(Math.round(mx)-1,Math.round(my)-2,2,5,bas);R(Math.round(mx)-2,Math.round(my)-1,1,3,basO);
+      R(Math.round(kx)+2,Math.round(ky)-1,1,2,court?skC:cc);                            /* le genou */
+      if(court)R(Math.round(cx+(kx-cx)*0.6)-3,Math.round(yHan+(ky-yHan)*0.6),7,1,cO);  /* le bas du short */
       soulierDe(fx,fyy+3,fonce);
-    }else{
-      const lev=Math.round(leve*4), h=26-lev;
-      R(cx-4,-26+bob,8,h-3,c);
-      if(court){R(cx-4,-12,8,9-lev,peau);R(cx-4,-12,1,9-lev,peauO);}
-      else{R(cx-4,-26+bob,1,h-3,T(c,-18));R(cx+3,-26+bob,1,h-3,cc);if(basT==='treillis'){R(cx-2,-16,2,3,T(c,-26));R(cx+1,-10,2,2,T(c,-26));}}
-      soulierDe(cx,-lev,fonce);
+      return;
     }
+    /* DE FACE ET DE DOS : la cuisse, le genou éclairé, le mollet, la cheville qui s'affine */
+    const lev=Math.round(leve*4), y0=-26+bob, yGen=-14-Math.round(lev*0.6), yChev=-5-lev;
+    const col=(r)=>r<yGen?c:(court?sk:c), colO=(r)=>r<yGen?cO:(court?skO:cO), colC=(r)=>r<yGen?cc:(court?skC:cc);
+    for(let r=y0;r<yChev;r++){
+      let w=8;
+      if(r>yGen+1)w=r<yGen+6?8:7;                                                     /* le mollet, puis la cheville */
+      if(r>yChev-3)w=6;
+      const x0=cx-4+(8-w>1?1:0);
+      R(x0,r,w,1,court&&r>=yGen-2?sk:col(r));
+      R(x0,r,1,1,court&&r>=yGen-2?skO:colO(r));R(x0+w-1,r,1,1,court&&r>=yGen-2?skC:colC(r));
+    }
+    if(!dos){R(cx-1,yGen,2,1,court?skC:cc);R(cx-2,yGen+1,1,1,court?skO:cO);}           /* le genou */
+    else R(cx-2,yGen,4,1,court?skO:cO);                                               /* le creux derrière le genou */
+    if(court)R(cx-4,yGen-3,8,1,cO);                                                   /* le bas du short */
+    if(!court&&basT==='treillis'){R(cx-3,-18,3,4,cO);R(cx-3,-18,3,1,cc);}             /* la poche du treillis */
+    if(!court&&!jupe)R(cx+(cx<0?2:-3),yChev-2,2,1,cO);                                /* le pli du bas de pantalon */
+    soulierDe(cx,-lev,fonce);
   };
+  /* ============ LES PIEDS : bout, cambrure, talon, semelle ; lacets ou lanières ============ */
   function soulierDe(cx,by,fonce){
-    const c=fonce?chauO:chau;
+    const c=fonce?chauO:chau, cC=fonce?chau:chauC, cO=fonce?T(chau,-40):chauO;
+    const semelle=soulier==='baskets'?'#f2efe4':T(chau,-50);
     if(cote){
-      if(soulier==='sandales'){R(cx-3,by-2,9,2,peau);R(cx-3,by,9,1,chauO);R(cx-1,by-3,6,1,c);return;}
-      const h=soulier==='bottes'?7:(soulier==='bottillons'?5:3);
-      R(cx-3,by-h,7,h,c);R(cx-3,by-3,9,3,c);R(cx-3,by-1,10,1,soulier==='baskets'?'#f2efe4':chauO);R(cx-2,by-h,2,h-2,chauC);
-    }else{
-      if(soulier==='sandales'){R(cx-3,by-3,7,3,peau);R(cx-3,by-1,7,1,chauO);R(cx-3,by-3,7,1,c);return;}
-      const h=soulier==='bottes'?7:(soulier==='bottillons'?5:3);
-      R(cx-4,by-h,8,h,c);R(cx-4,by-1,8,1,soulier==='baskets'?'#f2efe4':chauO);R(cx-3,by-h,2,h-2,chauC);
+      if(soulier==='sandales'){
+        R(cx-3,by-2,9,2,peau);R(cx+4,by-2,2,1,peauC);                                  /* le pied nu */
+        R(cx-2,by-3,2,2,c);R(cx+2,by-2,2,1,c);R(cx-3,by,10,1,cO);return;}             /* les lanières, la semelle */
+      const h=soulier==='bottes'?8:(soulier==='bottillons'?5:3);
+      R(cx-3,by-h,7,h,c);R(cx-3,by-3,10,3,c);                                          /* la tige, le pied */
+      R(cx+4,by-3,3,2,cC);R(cx+5,by-3,2,1,soulier==='baskets'?'#f2efe4':cC);           /* le bout, éclairé */
+      R(cx-3,by-3,1,3,cO);R(cx-3,by,11,1,semelle);R(cx-3,by,3,1,cO);                   /* le talon, la semelle */
+      if(soulier==='baskets'){R(cx,by-3,1,1,'#f2efe4');R(cx+2,by-3,1,1,'#f2efe4');R(cx-2,by-2,5,1,T(c,-20));}
+      if(soulier==='bottes'){R(cx-3,by-h,7,1,cC);R(cx-3,by-h+2,7,1,cO);}
+      R(cx-2,by-h,2,h-3,cC);
+      return;
     }
+    if(soulier==='sandales'){
+      R(cx-3,by-3,7,3,peau);for(let k=0;k<4;k++)R(cx-3+k*2,by-1,1,1,peauO);            /* les orteils */
+      R(cx-3,by-3,7,1,c);R(cx-1,by-2,3,1,c);R(cx-3,by,7,1,cO);return;}
+    const h=soulier==='bottes'?8:(soulier==='bottillons'?5:3);
+    R(cx-4,by-h,8,h,c);R(cx-4,by-2,9,2,c);                                              /* la tige, le bout qui dépasse */
+    R(cx-3,by-h,2,h-2,cC);R(cx-2,by-2,4,1,cC);                                          /* les reflets */
+    R(cx-4,by,9,1,semelle);R(cx+3,by-h,1,h,cO);
+    if(soulier==='baskets'){R(cx-2,by-3,1,1,'#f2efe4');R(cx,by-3,1,1,'#f2efe4');R(cx-1,by-2,1,1,'#f2efe4');}
+    if(soulier==='bottes'){R(cx-4,by-h,8,1,cC);R(cx-4,by-h+2,8,1,cO);}
+    if(soulier==='bottillons'){R(cx-3,by-h+1,1,1,'#c9a24a');R(cx+1,by-h+1,1,1,'#c9a24a');}
   }
-  /* ============ LE TORSE, LE HAUT ============ */
+  /* ============ LE TORSE : poitrine, taille, dos, hanches, fesses ============ */
   const torse=()=>{
-    const bas=yHan+2+long;
+    const bas=yHan+2+long, peauH=hautT==='débardeur';
     for(let r=yEp;r<bas;r++){
       const k=(r-yEp)/(yHan-yEp);
       let demi=Math.round(r<yHan?EP+(TA-EP)*Math.min(1,k*1.4):HA+(r>yHan?1:0));
       if(!cote&&r<yEp+4)demi=Math.round(5+(EP-5)*(r-yEp+1)/4);            /* les trapèzes, en pente depuis le cou */
       const dd=diag?Math.round(demi*0.86):demi;
-      const w=cote?Math.round(demi*1.5):dd*2, xx=cote?-Math.round(w/2):-dd+(diag?vis:0);
+      let w=cote?Math.round(demi*1.5):dd*2, xx=cote?-Math.round(w/2):-dd+(diag?vis:0);
+      /* de profil : la poitrine bombe un peu devant, les fesses derrière */
+      if(cote){if(r>yEp+3&&r<yEp+12){w+=1;}if(r>=yHan-3){w+=1;xx-=1;}}
       R(xx,r,w,1,r<yEp+3?vestC:vest);R(xx,r,1,1,vestT);R(xx+w-1,r,1,1,cote?vestC:vestT);
       if(!cote&&!dos){R(xx+1,r,2,1,vestO);R(xx+w-3,r,2,1,vestC);}
+    }
+    if(!cote){
+      const cx0=diag?vis:0;
+      if(!dos){
+        /* LA POITRINE ET LA TAILLE : deux ombres douces sous la poitrine, les plis à la taille */
+        R(cx0-EP+3,yEp+10,EP-4,1,vestO);R(cx0+2,yEp+10,EP-4,1,vestO);
+        R(cx0-TA+2,yHan-5,3,1,vestO);R(cx0+TA-5,yHan-5,3,1,vestO);
+      }else{
+        /* LE DOS : les omoplates, la colonne, les plis au creux des reins */
+        R(-EP+3,yEp+5,4,1,vestC);R(EP-7,yEp+5,4,1,vestC);R(-EP+3,yEp+9,4,1,vestO);R(EP-7,yEp+9,4,1,vestO);
+        R(0,yEp+4,1,yHan-yEp-6,vestO);R(-3,yHan-4,6,1,vestO);
+      }
+    }else{
+      R(3,yEp+10,2,1,vestO);R(-Math.round(demiDos())-1,yHan-2,2,2,T(pant,-10));      /* sous la poitrine ; le haut des fesses */
     }
     if(!cote&&!dos){
       if(hautT==='veste'||hautT==='manteau'||hautT==='gilet'){R(-1,yEp,2,bas-yEp,vestO);R(-4,yEp,3,4,vestC);R(1,yEp,3,4,vestO);
         for(let k=0;k<3;k++)R(2,yEp+8+k*7,2,2,'#c9a24a');}
       else if(hautT==='chemise'){R(-4,yEp,8,3,'#f2efe4');R(-1,yEp+2,2,bas-yEp-2,vestO);for(let k=0;k<3;k++)R(-1,yEp+7+k*6,2,1,'#f2efe4');}
       else if(hautT==='pull'){for(let r=yEp+4;r<bas;r+=4)R(-EP+2,r,EP*2-4,1,vestO);R(-4,yEp,8,2,vestO);}
-      else if(hautT==='t-shirt'||hautT==='débardeur'){R(-3,yEp,6,3,peau);R(-3,yEp+2,6,1,peauO);}
+      else if(hautT==='t-shirt'||peauH){R(-3,yEp,6,3,peau);R(-3,yEp+2,6,1,peauO);R(-4,yEp,1,2,vestC);R(3,yEp,1,2,vestC);}
       else if(hautT==='tunique'){R(-2,yEp,4,6,peauO);R(-EP,yHan-1,EP*2,2,vestO);}
       if(hautT==='gilet'){R(-EP,yEp,EP-3,6,peau);R(3,yEp,EP-3,6,peau);}
     }
     if(dos&&hautT==='manteau')R(-1,yHan-6,2,long+8,vestO);
-    /* la ceinture et sa boucle, et le bas : jupe ou haut du pantalon */
-    if(!long){R(cote?-Math.round(HA*1.5/2):-HA,yHan-1,cote?Math.round(HA*1.5):HA*2,2,'#6b4a2c');if(!cote&&!dos)R(-2,yHan-1,4,2,'#c9a24a');}
+    /* LES HANCHES : la ceinture qui suit le bassin, sa boucle, et le haut du pantalon */
+    if(!long){
+      const hw=cote?Math.round(HA*1.5/2):HA;
+      R(-hw,yHan-1,hw*2,2,'#6b4a2c');R(-hw,yHan-1,hw*2,1,'#8a6238');
+      if(!cote&&!dos){R(-2,yHan-1,4,2,'#c9a24a');R(-1,yHan-1,2,1,'#f0cf7d');}
+      if(!jupe&&!court){
+        if(!cote){R(-HA,yHan+1,HA*2,3,pant);R(-1,yHan+1,1,4,pantO);                     /* la fourche */
+          if(dos){R(-HA+2,yHan+2,HA-3,1,pantO);R(2,yHan+2,HA-3,1,pantO);R(-HA+2,yHan+4,HA-2,1,T(pant,-10));R(1,yHan+4,HA-3,1,T(pant,-10));}}
+      }
+      if(court&&!cote)R(-HA,yHan+1,HA*2,3,pant);
+    }
     if(jupe){const L=basT==='jupe'?12:22, w=cote?Math.round(HA*1.2):HA*2+2;
-      for(let r=0;r<L;r++){const ww=w+Math.round(r*0.4)*2;R(-Math.round(ww/2),yHan+1+r,ww,1,r%4===0?pantO:pant);}}
+      for(let r=0;r<L;r++){const ww=w+Math.round(r*0.4)*2;R(-Math.round(ww/2),yHan+1+r,ww,1,r%4===0?pantO:pant);}
+      for(let x2=-Math.round(w/2)+2;x2<Math.round(w/2);x2+=3)R(x2,yHan+3,1,L-3,T(pant,-12));}    /* les plis */
   };
-  /* ============ LES BRAS ============ */
+  function demiDos(){return HA*0.75;}
   /* ============ LES BRAS, REFAITS : épaule arrondie, bras, coude, avant-bras,
      poignet, main avec son pouce et ses doigts ============ */
   const main=(mx,my,cote2,profil,fonce,deDos)=>{
