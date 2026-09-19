@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1907';
+  var MA_VERSION='2026-09-19-1914';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -2094,7 +2094,25 @@ const teint=(c,k)=>{
   return '#'+((1<<24)+(f((n>>16)&255)<<16)+(f((n>>8)&255)<<8)+f(n&255)).toString(16).slice(1);
 };
 
+/* UN SEUL PERSONNAGE POUR TOUT LE JEU : quand le pixel fin est actif, TOUS les
+   dessins de personnage (joueurs, marchands, vignettes du vestiaire, gestes des
+   autres…) passent par lui. Chaque pose gravée est gardée, puis recopiée. */
+const CACHE_FIN=new Map();
 function sprite(g,x,y,ap0,dir,pas,bouge){
+  let fin=false;try{fin=STYLE_FIN();}catch(x){fin=false;}          /* (au tout début du chargement, on reste classique) */
+  if(fin){
+    const ges=(typeof GESTE!=='undefined'&&GESTE&&GESTE.t>0)?(GESTE.type||'pioche')+':'+Math.round((1-GESTE.t)*11):'';
+    const cle=clePose(ap0||{})+'|'+dir+'|'+(bouge?Math.floor((pas||0)*2)%16:'r')+'|'+ges;
+    let c=CACHE_FIN.get(cle);
+    if(!c){if(CACHE_FIN.size>220)CACHE_FIN.clear();
+      const sauve=GESTE;if(ges)GESTE={t:1-Math.round((1-sauve.t)*11)/11,type:sauve.type||'pioche'};
+      c=graverFin(Object.assign({},DEF_AP,ap0||{}),dir||'bas',pas||0,!!bouge);GESTE=sauve;CACHE_FIN.set(cle,c);}
+    g.drawImage(c,Math.round(x-CASE_L/2),Math.round(y-CASE_H+10),CASE_L,CASE_H);
+    return;
+  }
+  return spriteClassique(g,x,y,ap0,dir,pas,bouge);
+}
+function spriteClassique(g,x,y,ap0,dir,pas,bouge){
   const p=Object.assign({},DEF_AP,ap0||{});
   const P=PALETTES;
   const peau=P.peau[p.peau]||P.peau[2], peauO=teint(peau,-24), peauC=teint(peau,14), peauT=teint(peau,-52);
@@ -13896,7 +13914,7 @@ const clePose=(ap)=>{
   return c;
 };
 /* LE PIXEL FIN, À L'ESSAI : pour l'instant, seulement pour le développeur, par un réglage */
-const STYLE_FIN=()=>typeof REG!=='undefined'&&REG.styleFin===true;
+const STYLE_FIN=()=>!(typeof REG!=='undefined'&&REG.styleFin===false);   /* le pixel fin, pour tous (le classique reste au choix) */
 function planche(ap){
   const cle=clePose(ap);
   let P=POSES.get(cle);
@@ -13920,7 +13938,7 @@ function poseDe(ap,dir,i){
   const sauve=GESTE;GESTE={t:0};
   if(STYLE_FIN()){g.setTransform(1,0,0,1,0,0);const cl=i>=300, j=cl?i-300:i, repos=j>=100;
     g.drawImage(graverFin(ap,dir,repos?0:(j?(j-1)/2:0),!repos&&j>0,repos?j-100:0,cl),0,0,c.width,c.height);CLIGNE_FIN=false;}
-  else sprite(g,CASE_L/2,CASE_H-10,ap,dir,i?(i-1)/2:0,i>0);
+  else spriteClassique(g,CASE_L/2,CASE_H-10,ap,dir,i?(i-1)/2:0,i>0);
   GESTE=sauve;
   L[i]=c;
   return c;
@@ -14016,6 +14034,24 @@ function assis(g,x,y,ap){
   const chauC=teint(chau,18);
   const R=(px,py,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(px),Math.round(py),
     Math.max(1,w),Math.max(1,h));};
+  if(STYLE_FIN()){
+    /* EN PIXEL FIN : la cuisse vue de face (raccourcie), le genou éclairé, le mollet
+       qui tombe, la cheville, et le soulier posé au sol avec sa semelle */
+    const chauO=teint(chau,-26), sem=(SOULIERS[p.souliers]==='baskets')?'#f2efe4':teint(chau,-50);
+    const Q=(px,py,w,h,col)=>{g.fillStyle=col;g.fillRect(px,py,w,h);};
+    const court=['short','bermuda'].includes(BAS[p.bas]||'');
+    const peau=P.peau[p.peau]||P.peau[2], peauO=teint(peau,-26);
+    [-4.5,0.5].forEach((dx,k)=>{
+      const X=x+dx, Y=hanche;
+      Q(X,Y-1,4,3.5,k?pantO:pant);Q(X,Y-1,4,0.5,pantC);Q(X+1,Y+2,2,0.5,pantC);          /* la cuisse, le genou */
+      const jb=court?peau:(k?pantO:pant), jo=court?peauO:teint(pant,-30);
+      Q(X+0.5,Y+2.5,3,5,jb);Q(X+0.5,Y+2.5,0.5,5,jo);Q(X+3,Y+3,0.5,3,court?teint(peau,14):pantC);  /* le mollet */
+      Q(X+1,Y+7.5,2,1,jb);                                                            /* la cheville */
+      Q(X,Y+8.5,4.5,2,chau);Q(X,Y+8.5,4.5,0.5,teint(chau,20));Q(X,Y+10.5,4.5,0.5,sem);Q(X+3.5,Y+9,0.5,1.5,chauO);
+    });
+    if(C&&C.id!=='cape'){try{C.dessin(g,x,hanche+8,tc);}catch(err){}}
+    return;
+  }
   [-5,1].forEach((dx,k)=>{
     /* la cuisse, à plat sur l'assise */
     R(x+dx,hanche-1,6,5,k?pantO:pant);
@@ -19624,9 +19660,9 @@ function ouvrirReglages(){
        '<i id="reg-quoi" style="display:block;font-style:normal;margin-top:3px"></i></span>'+
        '<div class="regR"><button class="regB on" id="reg-maj">Chercher et recharger</button></div>'+
      '</div>'+
-     (e.id==='e029d1fb-7baa-4225-91fd-5cdbef6f8711'?ligne('Le personnage · essai',
-       'Le nouveau personnage en pixel fin, deux fois plus détaillé. Visible seulement par toi pour l’instant : les autres joueurs te voient toujours en pixel classique.',
-       bouton('styleFin',true,'Pixel fin')+bouton('styleFin',false,'Classique')):'')+
+     ligne('Le personnage',
+       'Le pixel fin : deux fois plus de détail, huit directions, des gestes et des vêtements vivants. Le classique : l’ancien dessin, plus léger pour les vieux téléphones.',
+       '<button class="regB'+(STYLE_FIN()?' on':'')+'" data-reg="styleFin" data-val="true">Pixel fin</button>'+bouton('styleFin',false,'Classique'))+
      ligne('Les sons',
        'Tout est fabriqué par le téléphone, rien n’est téléchargé.',
        bouton('sons',true,'Écouter')+bouton('sons',false,'Silence'))+
@@ -19732,6 +19768,7 @@ function ouvrirReglages(){
     const val=b.dataset.val;
     REG[b.dataset.reg]=(val==='true')?true:(val==='false'?false:
       (/^\d+$/.test(val)?+val:val));
+    if(b.dataset.reg==='styleFin'){POSES.clear();CACHE_FIN.clear();}
     appliquerReglages();vibrer(20);ouvrirReglages();
     /* on FAIT ENTENDRE ce qu'on règle : sinon on choisit à l'aveugle */
     const q=b.dataset.reg;
