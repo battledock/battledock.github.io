@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-2022';
+  var MA_VERSION='2026-09-19-2025';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -16244,27 +16244,42 @@ function dessinerJoy(dt){
   joySale=true;
   jg.save();
   jg.globalAlpha=J.vie;
-  /* la couronne */
+  /* LE JOYSTICK EN PARCHEMIN FIN : un disque ivoire translucide cerclé d'un double
+     filet, huit repères en losange (les huit directions du personnage), le cercle
+     de la course, et un pommeau d'ivoire dont la flèche montre le sens. */
+  const d=Math.hypot(J.x-J.ox,J.y-J.oy), a=Math.atan2(J.y-J.oy,J.x-J.ox);
+  const pousse=Math.min(1,d/RAYON), course=pousse>0.88;
+  const OR='#c9a24a', BRUN='rgba(185,162,122,.85)';
   jg.beginPath();jg.arc(J.ox,J.oy,RAYON,0,7);
-  const f=jg.createRadialGradient(J.ox,J.oy-14,6,J.ox,J.oy,RAYON);
-  f.addColorStop(0,'rgba(240,246,238,.26)');f.addColorStop(1,'rgba(200,212,198,.12)');
+  const f=jg.createRadialGradient(J.ox,J.oy-12,6,J.ox,J.oy,RAYON);
+  f.addColorStop(0,'rgba(250,244,228,.46)');f.addColorStop(1,'rgba(236,226,200,.3)');
   jg.fillStyle=f;jg.fill();
-  jg.lineWidth=2.5;jg.strokeStyle='rgba(240,246,238,.38)';jg.stroke();
-  /* le sens, en léger */
-  const d=Math.hypot(J.x-J.ox,J.y-J.oy);
-  if(d>6){
-    const a=Math.atan2(J.y-J.oy,J.x-J.ox);
-    jg.beginPath();
-    jg.arc(J.ox,J.oy,RAYON-2,a-0.5,a+0.5);
-    jg.lineWidth=4;jg.strokeStyle='rgba(169,232,138,.5)';jg.stroke();
-  }
-  /* le manche */
-  jg.beginPath();jg.arc(J.x,J.y+3,POUCE,0,7);jg.fillStyle='rgba(10,18,12,.22)';jg.fill();
-  const k=jg.createRadialGradient(J.x-5,J.y-8,3,J.x,J.y,POUCE+1);
-  if(d>6){k.addColorStop(0,'#a9e88a');k.addColorStop(1,'#3f7d4a');}
-  else{k.addColorStop(0,'#f4f7f0');k.addColorStop(1,'#c9d2c2');}
-  jg.beginPath();jg.arc(J.x,J.y,POUCE,0,7);jg.fillStyle=k;jg.fill();
-  jg.lineWidth=2.5;jg.strokeStyle=d>6?'#2c6b32':'rgba(40,50,40,.4)';jg.stroke();
+  jg.lineWidth=4;jg.strokeStyle='rgba(40,28,14,.28)';jg.stroke();                 /* un liseré sombre : il se détache sur tous les décors */
+  jg.lineWidth=course?2.4:1.4;jg.strokeStyle=course?OR:BRUN;jg.stroke();          /* le filet extérieur (doré en course) */
+  jg.beginPath();jg.arc(J.ox,J.oy,RAYON-5,0,7);jg.lineWidth=1;jg.strokeStyle='rgba(185,162,122,.45)';jg.stroke();
+  /* le cercle de la course, en pointillés */
+  jg.setLineDash([2,4]);jg.beginPath();jg.arc(J.ox,J.oy,RAYON*0.88,0,7);jg.lineWidth=1;jg.strokeStyle='rgba(250,244,228,.4)';jg.stroke();jg.setLineDash([]);
+  /* les huit repères ; celui de la direction prise s'allume */
+  const secteur=d>6?Math.round(a/(Math.PI/4)):null;
+  for(let k=-3;k<=4;k++){const aa=k*Math.PI/4, rx=J.ox+Math.cos(aa)*(RAYON-5), ry=J.oy+Math.sin(aa)*(RAYON-5);
+    const actif=secteur!==null&&(((k-secteur)%8)+8)%8===0, t=k%2===0?3.2:2.2;
+    jg.save();jg.translate(rx,ry);jg.rotate(Math.PI/4);
+    jg.fillStyle=actif?OR:'rgba(250,244,228,.75)';jg.fillRect(-t/2,-t/2,t,t);
+    jg.lineWidth=0.8;jg.strokeStyle=actif?'#6a4a1a':'rgba(122,90,42,.6)';jg.strokeRect(-t/2,-t/2,t,t);jg.restore();}
+  /* l'arc doré du sens */
+  if(d>6){jg.beginPath();jg.arc(J.ox,J.oy,RAYON-1.5,a-0.42,a+0.42);jg.lineWidth=4;jg.strokeStyle='rgba(201,162,74,'+(0.45+pousse*0.45).toFixed(2)+')';jg.stroke();}
+  /* LE POMMEAU : ombre, ivoire bombé, double filet, flèche qui pointe le sens */
+  jg.beginPath();jg.arc(J.x+1,J.y+3,POUCE,0,7);jg.fillStyle='rgba(20,14,8,.25)';jg.fill();
+  const k2=jg.createRadialGradient(J.x-5,J.y-7,2,J.x,J.y,POUCE+1);
+  k2.addColorStop(0,'#fffaf0');k2.addColorStop(0.7,'#f1e6c8');k2.addColorStop(1,'#dcc99a');
+  jg.beginPath();jg.arc(J.x,J.y,POUCE,0,7);jg.fillStyle=k2;jg.fill();
+  jg.lineWidth=1.2;jg.strokeStyle='#b9a27a';jg.stroke();
+  jg.beginPath();jg.arc(J.x,J.y,POUCE-4,0,7);jg.lineWidth=0.8;jg.strokeStyle='rgba(185,162,122,.55)';jg.stroke();
+  jg.save();jg.translate(J.x,J.y);
+  if(d>6){jg.rotate(a);jg.fillStyle=course?'#a8791f':'#7a5a2a';
+    jg.beginPath();jg.moveTo(8,0);jg.lineTo(-3,-5.5);jg.lineTo(-0.5,0);jg.lineTo(-3,5.5);jg.closePath();jg.fill();}
+  else{jg.rotate(Math.PI/4);jg.fillStyle='#7a5a2a';jg.fillRect(-2.5,-2.5,5,5);}
+  jg.restore();
   jg.restore();
 }
 
