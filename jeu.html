@@ -16,7 +16,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1348';
+  var MA_VERSION='2026-09-19-1510';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -17026,8 +17026,8 @@ function majAction(){
     if(!MINE_OUVERTE)b.onclick=null;
     return;
   }
-  if(o.t==='souche'&&ambrePret(o)){
-    b.innerHTML='Saigner<small>LA SOUCHE · AMBRE</small>';
+  if((o.t==='souche'||o.t==='arbre')&&ambrePret(o)){
+    b.innerHTML='Saigner<small>'+(o.t==='arbre'?'LE PIN':'LA SOUCHE')+' · AMBRE</small>';
     b.classList.add('on');return;
   }
   if(o.t==='coffre'){
@@ -17171,14 +17171,14 @@ function agir(){
   }
   if(o.t==='metro')return;                       /* jamais de geste dessus */
   if((o.t==='rocher'||['fer','cuivre','charbon'].includes(o.t))&&!e.outils.pioche)return;
-  if(o.t==='arbre'&&!e.outils.hache)return;
+  if(o.t==='arbre'&&!e.outils.hache&&!ambrePret(o))return;   /* sans hache, on peut quand même saigner un pin à la gouge */
   /* un arbre dont la résine a coulé : on la recueille, et il reste debout */
   if(o.t==='arbre'&&resinePrete(o))return recolterResine(o);
   /* le geste dépend de ce qu'on vise */
   if(sacPlein()&&o.t!=='coffre'&&o.t!=='casino'&&o.t!=='forge'){
     prevenirSacPlein(o);return;                  /* inutile de taper : rien ne rentrerait */
   }
-  if(o.t==='souche'&&ambrePret(o)){
+  if((o.t==='souche'||o.t==='arbre')&&ambrePret(o)){
     GESTE={t:1,cible:o,impact:false,type:'gouge',pourMoi:true};
     joueur.dir=Math.abs(o.x-joueur.x)>Math.abs(o.y-joueur.y)?(o.x>joueur.x?'droite':'gauche')
               :(o.y>joueur.y?'bas':'haut');
@@ -17296,7 +17296,8 @@ function miner(o){
    LES PÉPITES se lavent AU BORD DE L'EAU, avec le tamis : dix argiles du sac
    deviennent une pépite, parfois deux. */
 const AMBRE_ATTENTE=240000;                 /* quatre minutes avant de resaigner */
-const ambrePret=(o)=>o.t==='souche'&&e.metiers&&e.metiers.gouge&&
+const estUnPin=(o)=>o.t==='arbre'&&((o.gr||0)%3===0);        /* un arbre sur trois est un pin résineux */
+const ambrePret=(o)=>(o.t==='souche'||estUnPin(o))&&e.metiers&&e.metiers.gouge&&
   (!o.ambre||Date.now()-o.ambre>AMBRE_ATTENTE);
 const ARGILE_PAR_LAVAGE=10;
 const auBordDeLEau=(x,y)=>{
@@ -17601,7 +17602,9 @@ const OBJETS={
  calamar:{nom:'Calamar géant',d:'Une légende des profondeurs. Un seul par nuit.',poids:6},
  coelacanthe:{nom:'Cœlacanthe',d:'Un poisson d’avant les dinosaures. Un seul par semaine, pour tout Marseille.',poids:4},
  pioche: {nom:'Pioche', d:'Pour les rochers. Trois coups et la pierre cède.',        poids:0,outil:1},
- hache:  {nom:'Hache',  d:'Pour les arbres. Cinq coups, et il tombe.',               poids:0,outil:1}
+ hache:  {nom:'Hache',  d:'Pour les arbres. Cinq coups, et il tombe.',               poids:0,outil:1},
+ gouge:  {nom:'Gouge',  d:'Pour saigner l’ambre des pins et des souches. Approche-toi d’un pin (ou d’une souche) et appuie sur « Saigner ». Chaque arbre doit ensuite reposer 4 minutes.',poids:0,outil:1},
+ tamis:  {nom:'Tamis',  d:'Au bord de l’eau, avec 10 argiles dans le sac : appuie sur « Laver » pour en tirer des pépites.',poids:0,outil:1}
 };
 const ICONES={
  bogue:'<rect x="2" y="7" width="11" height="3" fill="#b8c8b0"/><rect x="2" y="7" width="11" height="1" fill="#dfe8d8"/><rect x="13" y="6" width="2" height="5" fill="#9aaa92"/><rect x="4" y="8" width="1" height="1" fill="#1b1b1b"/>',
@@ -17691,6 +17694,8 @@ lingotFer:'<rect x="1" y="7" width="14" height="6" fill="#8a8f96"/><rect x="1" y
    '<path d="M3 7 L8 7 L8 14z" fill="#3fa8b8"/>',
  torche:'<rect x="7" y="5" width="2" height="9" fill="#8a6238"/><rect x="5" y="2" width="6" height="4" fill="#e8802c"/>'+
       '<rect x="6" y="0" width="4" height="3" fill="#ffc65a"/>',
+ gouge:'<rect x="7" y="7" width="2" height="8" fill="#8a6238"/><rect x="6" y="6" width="4" height="2" fill="#5a3f21"/><rect x="7" y="1" width="2" height="6" fill="#c7cdd2"/><rect x="7" y="1" width="1" height="6" fill="#eef2f5"/>',
+ tamis:'<rect x="2" y="5" width="12" height="7" fill="#8a6238"/><rect x="3" y="6" width="10" height="5" fill="#c7b88a"/><rect x="3" y="6" width="10" height="1" fill="#6b4a28"/><rect x="5" y="8" width="1" height="1" fill="#e8c06a"/><rect x="9" y="9" width="1" height="1" fill="#e8c06a"/>',
  piocheFer:'<rect x="7" y="4" width="2" height="10" fill="#8a6238"/><rect x="3" y="2" width="10" height="2" fill="#b7bec4"/>'+
       '<rect x="2" y="3" width="2" height="2" fill="#8a8f96"/><rect x="12" y="3" width="2" height="2" fill="#8a8f96"/>',
  hacheFer:'<rect x="7" y="3" width="2" height="11" fill="#8a6238"/><rect x="8" y="2" width="5" height="6" fill="#b7bec4"/>'+
@@ -17752,8 +17757,9 @@ function ouvrirSac(){
       '<span class="nomC">'+OBJETS[k].nom+'</span></button>';
   };
   const pleines=cles.map(kase).filter(Boolean);
-  const outils=['pioche','hache','piocheFer','hacheFer'].filter(k=>e.outils[k]);
-  const o=choisi&&(combien(choisi)||e.outils[choisi])?OBJETS[choisi]:null;
+  const outils=['pioche','hache','piocheFer','hacheFer'].filter(k=>e.outils[k])
+    .concat(['gouge','tamis'].filter(k=>e.metiers&&e.metiers[k]));   /* les outils de métier, achetés à l'échoppe */
+  const o=choisi&&(combien(choisi)||e.outils[choisi]||(e.metiers&&e.metiers[choisi]))?OBJETS[choisi]:null;
 
   const LAMES=[['Épée de bois',4,'#a5764a','#7d5934'],['Épée de fer',8,'#c0c7cd','#8b939a'],
     ['Épée de cuivre',14,'#5fc79c','#3f9e7a'],['Épée d’argent',22,'#eef3f7','#c3ccd4'],
