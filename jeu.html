@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-0623';
+  var MA_VERSION='2026-09-19-0632';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -684,7 +684,7 @@ body{overflow:hidden}
 #carnetP h2{font:400 22px Georgia,serif;margin:0 0 4px}
 #carnetP .sousC{font:italic 13px Georgia,serif;color:#6a5a40;margin-bottom:12px}
 #carnetP .esp{display:flex;align-items:center;gap:12px;padding:8px 4px;border-bottom:1px dashed rgba(90,70,40,.3)}
-#carnetP .esp canvas{width:60px;height:24px;image-rendering:pixelated;flex:0 0 60px}
+#carnetP .esp canvas{image-rendering:pixelated;flex:0 0 60px}
 #carnetP .esp b{display:block;font:700 15px Georgia,serif}
 #carnetP .esp span{font:12px ui-monospace,monospace;color:#6a5a40}
 #carnetP .esp.inconnu b{color:#9a8a6a}
@@ -10460,7 +10460,8 @@ function dessinerUnVelo(g,x,y,dir,pas,v){
   }
 }
 /* LA CUISINE : on choisit ses poissons, Fonfon fait la bouillabaisse et l'achète */
-const POISSONS_MARMITE=['sardine','bogue','girelle','rouget','mulet','saupe','seiche','maquereau','dorade','rascasse','loup','denti','murene','congre','poulpe','saintpierre','thon'];
+const POISSONS_MARMITE=['sardine','bogue','girelle','rouget','mulet','saupe','seiche','maquereau','dorade','rascasse','loup','denti','murene','congre','poulpe','saintpierre','thon',
+  'sar','vieille','grondin','pagre','barracuda','liche','chapon','baliste','raie','coryphene'];
 let RECETTE={};
 function ouvrirLeCabanon(){
   PANNEAU_PERSO=true;
@@ -10605,7 +10606,9 @@ function graverArbuste(v){
 let EQUIP_PECHE=null;
 const CANNES=[{id:null,nom:'Ligne à main'},{id:'bambou',nom:'Canne en bambou',prix:1500,effet:'Le cercle 15 % plus lent.'},
   {id:'fibre',nom:'Canne en fibre',prix:6000,effet:'Le cercle 25 % plus lent, « bien » plus facile.'},
-  {id:'carbone',nom:'Canne en carbone',prix:18000,effet:'Le cercle 35 % plus lent, « parfait » plus facile.'}];
+  {id:'carbone',nom:'Canne en carbone',prix:18000,effet:'Le cercle 35 % plus lent, « parfait » plus facile.'},
+  {id:'maitre',nom:'Canne de maître',prix:50000,effet:'Le cercle 45 % plus lent, « bien » très large. Espadon, poisson-lune, requin.'},
+  {id:'roi',nom:'Canne du Roi René',prix:150000,effet:'Le cercle 52 % plus lent, « parfait » très large. Hippocampe, calamar géant, cœlacanthe.'}];
 const ACCESSOIRES=[{id:'moulinet',nom:'Moulinet',prix:4000,effet:'Une bonne touche compte double, dès la deuxième.'},
   {id:'bouchon',nom:'Bouchon plombé',prix:2500,effet:'Ça mord deux fois plus vite.'}];
 const APPATS=[{id:'vers',nom:'Vers de mer',prix:100,effet:'Espèces rares ×2.'},
@@ -10640,6 +10643,8 @@ function illustrerArticle(cv,id){
   if(id==='bambou')canne('#c9a86a','#b89456','#6b4a2c','#8a8a82','#8a6a3a');
   else if(id==='fibre')canne('#e8e8e2','#d8d8d0','#2e3a44','#b9c1c7');
   else if(id==='carbone')canne('#2a2c2e','#3e4246','#1b1b1b','#e8c06a',null,true);
+  else if(id==='maitre')canne('#5a2a1a','#8a3a22','#2a1a10','#e8c06a','#e8c06a',true);
+  else if(id==='roi'){canne('#e8c06a','#fff0b8','#3a1a4a','#ffffff','#c9a24a',true);for(let k=0;k<7;k++){g.fillStyle='rgba(255,240,180,.9)';g.fillRect(12+k*14,H-14-k*7,2,2);}}
   else if(id==='moulinet'){
     const cx=W/2,cy=H/2;
     g.fillStyle='#2a2c2e';g.beginPath();g.arc(cx,cy,16,0,7);g.fill();
@@ -10683,6 +10688,11 @@ async function ouvrirLaBoutiqueDePeche(){
   afficherPecheMarine();
 }
 function fermerLeCatalogue(){$('catalogue').classList.remove('on');}
+let iconesPoissonsFaites=false;
+function refaireLesIconesDePoissons(){
+  if(iconesPoissonsFaites)return;iconesPoissonsFaites=true;
+  Object.keys(FORMES_POISSON).forEach(k=>{if(k!=='botte'&&OBJETS[k])ICONES[k]=iconeDePoisson(k);});
+}
 function afficherPecheMarine(mot){
   const q=EQUIP_PECHE||{canne:0,appats:{},finitions:[]};
   $('catArgent').textContent=enEuros(e.euros||0);
@@ -10700,10 +10710,12 @@ function afficherPecheMarine(mot){
   h+='<h2 class="catRubrique"><span>Les cannes</span><i>tu pêches avec : '+CANNES[q.canne||0].nom.toLowerCase()+'</i></h2>';
   const accr={bambou:'La canne de nos grands-pères. Souple, légère, increvable.',
     fibre:'Le bon compromis : nerveuse, sensible, elle sent la touche avant toi.',
-    carbone:'La reine des pontons. Pour ceux qui veulent le Vieux Loup.'};
+    carbone:'La reine des pontons. Pour ceux qui veulent le Vieux Loup.',
+    maitre:'Montée à la main par Fanny, sur commande. Pour ceux qui ne craignent rien.',
+    roi:'Une seule au monde. On dit qu’elle a sorti un poisson d’avant les dinosaures.'};
   CANNES.slice(1).forEach((k,i)=>{const niv=i+1, a=(q.canne||0)>=niv, libre=(q.canne||0)===niv-1;
     h+=fiche(k.id,k.nom,accr[k.id],k.effet,a?null:k.prix,a?possede:(libre?acheter(k.id):'<span class="catBloque">D’abord la canne d’avant</span>'),
-      k.id==='carbone'?'HAUT DE GAMME':(k.id==='bambou'?'POUR DÉBUTER':null));});
+      k.id==='roi'?'PIÈCE UNIQUE':(k.id==='maitre'?'SUR COMMANDE':(k.id==='carbone'?'HAUT DE GAMME':(k.id==='bambou'?'POUR DÉBUTER':null))));});
   /* LES ACCESSOIRES */
   h+='<h2 class="catRubrique"><span>Les accessoires</span></h2>';
   const accrA={moulinet:'Un moulinet à tambour fixe, graissé à l’huile d’olive.',bouchon:'Un bouchon rouge et blanc, lesté juste ce qu’il faut.'};
@@ -15760,6 +15772,165 @@ function actionDuCaboteur(b){
    dans nos mains ; trois cœurs perdus et il file. Les gros poissons demandent
    plus de touches, et leur cercle va plus vite.
    L'espèce et la taille viennent du SERVEUR (pecher_touche), la prise aussi. */
+/* ================= LES POISSONS, DESSINÉS UN PAR UN =================
+   Chaque espèce a sa forme (fuseau, corps haut, anguille, raie, espadon,
+   poisson-lune, hippocampe, calamar…), son dos, son ventre, ses nageoires et
+   son motif. Le dessin se fait colonne par colonne : le dos sombre, le ventre
+   clair, un liseré d'ombre, puis les nageoires, l'œil et le motif. */
+const FORMES_POISSON={
+  sardine:{f:'fuseau',L:12,H:4,dos:'#4f6f8a',ventre:'#dfe8ee',nag:'#8499aa',motif:'points',acc:'#2a4050'},
+  bogue:{f:'fuseau',L:12,H:4,dos:'#8a9a7a',ventre:'#e8ecd8',nag:'#a8b098',motif:'bande',acc:'#c8b060'},
+  girelle:{f:'fuseau',L:11,H:4,dos:'#2f8a8a',ventre:'#8ad0c0',nag:'#2a7070',motif:'bande',acc:'#e8803a'},
+  rouget:{f:'fuseau',L:12,H:5,dos:'#c0402f',ventre:'#f0b8a0',nag:'#e8806a',motif:'bande',acc:'#f0d060',barbe:true},
+  mulet:{f:'fuseau',L:15,H:5,dos:'#5f6f78',ventre:'#dde4e8',nag:'#8a9aa2',motif:'lignes',acc:'#8a9aa2'},
+  saupe:{f:'fuseau',L:14,H:5,dos:'#8a929a',ventre:'#e8ecee',nag:'#a8b0b8',motif:'lignes',acc:'#e0c050'},
+  maquereau:{f:'fuseau',L:15,H:5,dos:'#2a5a7a',ventre:'#e8f0f4',nag:'#3a6a8a',motif:'tigre',acc:'#1a3a52'},
+  dorade:{f:'haut',L:14,H:7,dos:'#8a969c',ventre:'#e6ecee',nag:'#a8b4ba',motif:'bandeau',acc:'#e0b43a'},
+  seiche:{f:'seiche',L:13,H:7,dos:'#b8a888',ventre:'#e8dcc0',nag:'#d8c8a8',motif:'zebre',acc:'#7a6a4a'},
+  rascasse:{f:'haut',L:12,H:7,dos:'#b0402a',ventre:'#e8a080',nag:'#c85a3a',motif:'marbre',acc:'#7a2a1a',epines:true},
+  loup:{f:'fuseau',L:18,H:6,dos:'#5a6a74',ventre:'#e4eaee',nag:'#7d8b96',motif:'aucun',acc:'#5a6a74'},
+  poulpe:{f:'poulpe',L:13,H:8,dos:'#b8506a',ventre:'#e89ab0',nag:'#c0607a',motif:'points',acc:'#f0c0d0'},
+  denti:{f:'haut',L:18,H:8,dos:'#b87890',ventre:'#f0d8e0',nag:'#c08aa0',motif:'taches',acc:'#4a7ab8'},
+  murene:{f:'anguille',L:24,H:4,dos:'#4a3a1a',ventre:'#8a7a4a',nag:'#5a4a2a',motif:'taches',acc:'#e0c060'},
+  congre:{f:'anguille',L:24,H:4,dos:'#4a4438',ventre:'#8a8270',nag:'#5a5040',motif:'aucun',acc:'#5a5040'},
+  saintpierre:{f:'haut',L:14,H:10,dos:'#8a8272',ventre:'#d8d0bc',nag:'#a8a090',motif:'pouce',acc:'#1b1b1b',voile:true},
+  thon:{f:'fuseau',L:26,H:9,dos:'#1a2a4a',ventre:'#c8d4de',nag:'#e8c040',motif:'pinnules',acc:'#e8c040'},
+  legende:{f:'fuseau',L:24,H:8,dos:'#a8822a',ventre:'#fff0b8',nag:'#e8c060',motif:'or',acc:'#fff6d0'},
+  rascassedor:{f:'haut',L:14,H:8,dos:'#d8a02a',ventre:'#fff0a0',nag:'#f0c040',motif:'or',acc:'#fff6d0',epines:true},
+  botte:{f:'botte',L:10,H:8,dos:'#3a2a1c',ventre:'#5a3f21',nag:'#5a3f21',motif:'aucun',acc:'#8a6238'},
+  /* à partir de la canne en bambou */
+  sar:{f:'haut',L:14,H:7,dos:'#9aa2a8',ventre:'#eef2f4',nag:'#b0b8be',motif:'rayures',acc:'#2a2c2e'},
+  vieille:{f:'fuseau',L:15,H:6,dos:'#3f7a4a',ventre:'#c8e0b0',nag:'#e07a3a',motif:'marbre',acc:'#e8c060'},
+  grondin:{f:'fuseau',L:15,H:5,dos:'#c04a3a',ventre:'#f0c0a8',nag:'#3a8ad0',motif:'aucun',acc:'#c04a3a',ailes:true},
+  /* à partir de la canne en fibre */
+  pagre:{f:'haut',L:17,H:8,dos:'#c87a7a',ventre:'#f4dcd8',nag:'#d89090',motif:'points',acc:'#6aa0d8'},
+  barracuda:{f:'anguille',L:24,H:5,dos:'#5a6a74',ventre:'#e8eef2',nag:'#8a9aa2',motif:'chevrons',acc:'#2a3a44',machoire:true},
+  liche:{f:'fuseau',L:22,H:7,dos:'#6a7a5a',ventre:'#eef0e4',nag:'#c8b060',motif:'bande',acc:'#e0c050'},
+  chapon:{f:'haut',L:16,H:9,dos:'#c02a1a',ventre:'#f09070',nag:'#d8402a',motif:'marbre',acc:'#7a1a0a',epines:true},
+  /* à partir de la canne en carbone */
+  baliste:{f:'haut',L:14,H:9,dos:'#6a6a5a',ventre:'#c8c4a8',nag:'#3a8ab0',motif:'lignes',acc:'#3a8ab0',corne:true},
+  coryphene:{f:'fuseau',L:22,H:8,dos:'#2a9a6a',ventre:'#f0e050',nag:'#3aa0d8',motif:'points',acc:'#3aa0d8',front:true},
+  raie:{f:'raie',L:18,H:14,dos:'#8a7a5a',ventre:'#d8ccb0',nag:'#6a5a3a',motif:'taches',acc:'#5a4a2a'},
+  /* à partir de la canne de maître */
+  espadon:{f:'epee',L:28,H:8,dos:'#2a3a5a',ventre:'#c8d0dc',nag:'#1a2a44',motif:'aucun',acc:'#b9c1c7'},
+  mola:{f:'lune',L:18,H:18,dos:'#8a9aa6',ventre:'#dde4ea',nag:'#6a7a86',motif:'marbre',acc:'#b8c4cc'},
+  requin:{f:'requin',L:30,H:8,dos:'#2a5a9a',ventre:'#eef2f6',nag:'#1f4a80',motif:'aucun',acc:'#1f4a80'},
+  /* avec la canne du Roi René */
+  hippocampe:{f:'hippo',L:8,H:14,dos:'#e8a02a',ventre:'#f8d070',nag:'#c87a1a',motif:'anneaux',acc:'#fff0b0'},
+  calamar:{f:'calamar',L:30,H:10,dos:'#b83a3a',ventre:'#f0a8a0',nag:'#d85a5a',motif:'points',acc:'#ffd0c8'},
+  coelacanthe:{f:'coela',L:26,H:10,dos:'#1f3a6a',ventre:'#6a8ab8',nag:'#2a4a80',motif:'taches',acc:'#e8f0ff'},
+};
+function dessinerPoisson(g,x,y,esp,dir,bat,ombre){
+  const F=FORMES_POISSON[esp]||FORMES_POISSON.sardine;
+  const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(a),Math.round(b),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const O=ombre?'#1d3a4a':null, col=(c)=>O||c;
+  g.save();g.translate(Math.round(x),Math.round(y));g.scale(dir<0?-1:1,1);
+  const L=F.L,H=F.H,b=bat||0;
+  if(F.f==='botte'){R(-5,-5,5,8,col(F.dos));R(-5,1,10,3,col(F.dos));R(-5,-5,5,1,col(F.ventre));R(-5,4,10,1,col('#1b1510'));g.restore();return;}
+  if(F.f==='poulpe'||F.f==='calamar'){
+    const long=F.f==='calamar';
+    /* le manteau, puis les bras qui ondulent */
+    for(let i=0;i<(long?L*0.55:L*0.5);i++){const k=i/(long?L*0.55:L*0.5), hh=Math.round(H/2*Math.sin(Math.PI*(0.15+k*0.85)));
+      R(i-(long?2:L*0.25),-hh,1,hh*2,col(k<.5?F.dos:F.nag));R(i-(long?2:L*0.25),-hh,1,1,col(F.acc));}
+    for(let a=0;a<(long?8:6);a++){const yy=-H/2+2+a*(H-3)/((long?8:6)-1);
+      for(let i=0;i<(long?L*0.45:L*0.5);i++)R(-(long?2:L*0.25)-i,yy+Math.round(Math.sin(i*0.5+a+b)*1.2),1,1,col(i%3?F.dos:F.ventre));}
+    if(long){R(L*0.55-3,-1,4,2,col(F.nag));R(L*0.55-6,-H/2-1,4,2,col(F.nag));R(L*0.55-6,H/2-1,4,2,col(F.nag));}
+    if(!O){R(long?4:0,-2,2,2,'#fff');R(long?5:1,-2,1,1,'#10161a');}
+    g.restore();return;
+  }
+  if(F.f==='hippo'){
+    /* l'hippocampe : tête de cheval, ventre bombé, queue enroulée */
+    for(let j=0;j<H;j++){const w=Math.round(2+Math.sin(j/H*Math.PI)*3);R(-w/2,-H/2+j,w,1,col(j%3?F.dos:F.ventre));}
+    R(-1,-H/2-3,4,3,col(F.dos));R(3,-H/2-2,3,1,col(F.dos));R(0,-H/2-4,1,1,col(F.acc));
+    for(let k=0;k<6;k++)R(-1+Math.round(Math.sin(k)*2),H/2+k*0.8,2,1,col(F.nag));
+    R(-3,-2,2,4,col(F.nag));if(!O)R(1,-H/2-2,1,1,'#10161a');
+    g.restore();return;
+  }
+  if(F.f==='raie'){
+    /* la raie, vue de dessus : un losange, une longue queue */
+    for(let j=-H/2;j<=H/2;j++){const w=Math.round(L/2*(1-Math.abs(j)/(H/2)));R(-w,j,w*2,1,col(Math.abs(j)<2?F.ventre:F.dos));}
+    for(let i=0;i<L*0.6;i++)R(-L/2-i,Math.round(Math.sin(i*0.4+b)),1,1,col(F.nag));
+    if(!O){for(let k=0;k<6;k++)R(-L/3+k*3,-3+(k%3)*2,1,1,F.acc);R(L/2-4,-2,1,1,'#10161a');R(L/2-4,1,1,1,'#10161a');}
+    g.restore();return;
+  }
+  if(F.f==='lune'){
+    /* le poisson-lune : un disque, deux hautes nageoires, pas de queue */
+    for(let j=-H/2;j<=H/2;j++){const w=Math.round(L/2*Math.sqrt(1-(j/(H/2))**2));R(-w,j,w*2,1,col(j<0?F.dos:F.ventre));}
+    R(-2,-H/2-6,4,7,col(F.nag));R(-2,H/2-1,4,7,col(F.nag));R(-L/2-2,-3,3,6,col(F.nag));
+    if(!O){R(L/2-5,-3,2,2,'#fff');R(L/2-4,-3,1,1,'#10161a');for(let k=0;k<8;k++)R(-L/3+(k*5)%(L*0.6),-H/3+(k*7)%(H*0.6),2,1,F.acc);}
+    g.restore();return;
+  }
+  /* LES POISSONS « NORMAUX » : le corps, colonne par colonne */
+  const effile=F.f==='anguille'?0.25:(F.f==='haut'?0.9:0.6);
+  const profil=(i)=>{const u=i/L;                          /* 0 à la queue, 1 au museau */
+    if(F.f==='anguille')return H/2*(u<0.1?u/0.1:(u>0.9?(1-u)/0.1*0.8+0.2:1));
+    if(F.f==='haut'||F.f==='coela')return H/2*Math.pow(Math.sin(Math.PI*Math.min(1,u*1.05+0.05)),effile);
+    if(F.f==='requin')return H/2*Math.pow(Math.sin(Math.PI*(0.1+u*0.9)),0.8);
+    return H/2*Math.pow(Math.sin(Math.PI*(0.08+u*0.92)),0.7);};
+  const x0=-L/2;
+  for(let i=0;i<L;i++){
+    const hh=Math.max(1,Math.round(profil(i))), xx=x0+i;
+    for(let j=-hh;j<hh;j++){
+      const v=(j+hh)/(2*hh);
+      R(xx,j,1,1,col(v<0.45?F.dos:(v<0.6?(ombre?F.dos:mix(F.dos,F.ventre)):F.ventre)));
+    }
+    if(!O){R(xx,-hh,1,1,'rgba(20,20,20,.35)');R(xx,hh-1,1,1,'rgba(20,20,20,.22)');}
+  }
+  /* la queue, qui bat */
+  const qx=x0-1, qt=F.f==='requin'||F.f==='epee'||F.f==='fuseau'&&L>18?'lune':'fourche';
+  for(let k=0;k<(F.f==='anguille'?0:4);k++){R(qx-k,-1-k-(qt==='lune'?k*0.5:0)+b,1,2,col(F.nag));R(qx-k,k+(qt==='lune'?k*0.5:0)+b-1,1,2,col(F.nag));}
+  /* les nageoires : dorsale, ventrale, et les spéciales */
+  const mid=Math.round(L*0.55), hm=Math.round(profil(mid));
+  if(F.f==='requin'){for(let k=0;k<5;k++)R(x0+mid-2+k,-hm-5+k,6-k,1,col(F.nag));R(x0+mid-4,hm-1,5,2,col(F.nag));}
+  else if(F.voile){for(let k=0;k<L*0.6;k++)R(x0+L*0.2+k,-hm-1-Math.round(Math.sin(k/(L*0.6)*Math.PI)*4),1,1,col(F.nag));}
+  else if(F.f!=='anguille'){for(let k=0;k<L*0.35;k++)R(x0+L*0.35+k,-hm-1-(k%3===0?1:0),1,1,col(F.nag));R(x0+L*0.45,hm-1,3,2,col(F.nag));}
+  else{for(let k=0;k<L*0.8;k++)R(x0+L*0.1+k,-hm-1,1,1,col(F.nag));}
+  if(F.epines)for(let k=0;k<5;k++)R(x0+L*0.4+k*2,-hm-3,1,3,col(F.acc));
+  if(F.ailes){for(let k=0;k<6;k++)R(x0+L*0.55-k,1+k,4,1,col(k%2?F.nag:'#6ab0f0'));}
+  if(F.corne)R(x0+L*0.65,-hm-3,1,4,col(F.acc));
+  if(F.front)R(x0+L-3,-hm,3,hm,col(F.dos));
+  if(F.f==='epee'){R(L/2,-1,11,2,col(F.acc));R(L/2,0,11,1,col('#8a9298'));for(let k=0;k<6;k++)R(x0+mid-2+k,-hm-4+k,5-k,1,col(F.nag));}
+  if(F.f==='coela'){[[0.3,1],[0.55,-1],[0.7,1]].forEach(([u,s])=>R(x0+L*u,s>0?hm-1:-hm-3,3,4,col(F.nag)));}
+  if(F.machoire&&!O)R(L/2-4,1,4,1,'#f2efe4');
+  if(F.barbe&&!O){R(L/2-1,2,1,2,'#f0d060');R(L/2-3,2,1,2,'#f0d060');}
+  /* le motif */
+  if(!O){
+    const m=F.motif, a=F.acc;
+    if(m==='bande'){for(let i=Math.round(L*0.15);i<L*0.85;i++)R(x0+i,-1,1,1,a);}
+    if(m==='lignes'){for(let i=Math.round(L*0.15);i<L*0.85;i++){R(x0+i,-2,1,1,a);R(x0+i,0,1,1,a);}}
+    if(m==='rayures'){for(let i=Math.round(L*0.25);i<L*0.8;i+=3){const hh=Math.round(profil(i));R(x0+i,-hh+1,1,hh*2-2,a);}}
+    if(m==='tigre'){for(let i=Math.round(L*0.2);i<L*0.85;i+=2){const hh=Math.round(profil(i));R(x0+i,-hh+1,1,Math.max(1,hh-1),a);}}
+    if(m==='taches'||m==='points'){for(let k=0;k<Math.round(L/2.5);k++){const i=Math.round(L*0.15+((k*7)%Math.round(L*0.7))), hh=Math.round(profil(i));R(x0+i,-hh+1+((k*5)%Math.max(1,hh*2-2)),1,1,a);}}
+    if(m==='marbre'){for(let k=0;k<L;k++){const i=(k*5)%L, hh=Math.round(profil(i));R(x0+i,-hh+1+(k*3)%Math.max(1,hh*2-2),2,1,a);}}
+    if(m==='bandeau'){R(x0+L-5,-2,2,3,a);}
+    if(m==='pouce'){R(x0+L*0.45,-1,3,3,a);R(x0+L*0.45+1,-2,1,1,'#f2efe4');}
+    if(m==='zebre'){for(let i=2;i<L-2;i+=2)R(x0+i,-Math.round(profil(i))+1,1,2,a);}
+    if(m==='chevrons'){for(let i=Math.round(L*0.2);i<L*0.8;i+=3){R(x0+i,-2,1,1,a);R(x0+i+1,-1,1,1,a);}}
+    if(m==='pinnules'){for(let i=Math.round(L*0.1);i<L*0.4;i+=2){const hh=Math.round(profil(i));R(x0+i,-hh-1,1,1,a);R(x0+i,hh,1,1,a);}}
+    if(m==='anneaux'){}
+    if(m==='or'){for(let k=0;k<5;k++){const i=Math.round(L*0.2+k*L*0.13), hh=Math.round(profil(i));R(x0+i,-hh+1,1,1,'#ffffff');}}
+    /* l'œil, avec son reflet */
+    const ex=L/2-Math.max(3,Math.round(L*0.18)), ey=-Math.max(1,Math.round(profil(L-3)*0.4));
+    R(ex,ey,2,2,'#f4f0e4');R(ex+1,ey+1,1,1,'#10161a');
+    /* le reflet de lumière sur le dos */
+    for(let i=Math.round(L*0.3);i<L*0.7;i+=2){const hh=Math.round(profil(i));R(x0+i,-hh+1,1,1,'rgba(255,255,255,.35)');}
+  }
+  g.restore();
+}
+function mix(a,b){
+  const p=(c)=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];
+  const x=p(a),y=p(b);return 'rgb('+Math.round((x[0]+y[0])/2)+','+Math.round((x[1]+y[1])/2)+','+Math.round((x[2]+y[2])/2)+')';
+}
+/* une icône de sac, dessinée par le même pinceau, pour chaque espèce */
+function iconeDePoisson(esp){
+  const c=document.createElement('canvas');c.width=32;c.height=32;const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const F=FORMES_POISSON[esp];if(!F)return '';
+  const echelle=Math.min(1.6,26/Math.max(F.L+6,F.H+6));
+  g.save();g.translate(16,16);g.scale(echelle,echelle);dessinerPoisson(g,0,0,esp,1,0,false);g.restore();
+  return '<image href="'+c.toDataURL()+'" x="0" y="0" width="16" height="16" style="image-rendering:pixelated"/>';
+}
+
+const LEGENDES=['legende','rascassedor','calamar','coelacanthe'];
 const ESP_PECHE={
   sardine:{nom:'sardine',  col:['#9fb3c4','#c9d6e0'],L:9, touches:3,vit:1.5},
   rouget: {nom:'rouget',   col:['#d0553f','#e8806a'],L:10,touches:3,vit:1.35},
@@ -15781,6 +15952,22 @@ const ESP_PECHE={
   saintpierre:{nom:'saint-pierre',col:['#a8a090','#3a3a36'],L:12,touches:6,vit:.85},
   thon:   {nom:'thon rouge',col:['#2a3a5a','#a8b8c8'],L:26,touches:8,vit:.75},
   rascassedor:{nom:'Rascasse d’or',col:['#e8b83a','#fff0a0'],L:13,touches:7,vit:.72},
+  sar:{nom:'sar',col:['#9aa2a8','#eef2f4'],L:14,touches:4,vit:1.15},
+  vieille:{nom:'vieille',col:['#3f7a4a','#c8e0b0'],L:15,touches:4,vit:1.1},
+  grondin:{nom:'grondin',col:['#c04a3a','#f0c0a8'],L:15,touches:5,vit:1.05},
+  pagre:{nom:'pagre',col:['#c87a7a','#f4dcd8'],L:17,touches:5,vit:.95},
+  barracuda:{nom:'barracuda',col:['#5a6a74','#e8eef2'],L:24,touches:6,vit:.9},
+  liche:{nom:'liche',col:['#6a7a5a','#eef0e4'],L:22,touches:6,vit:.88},
+  chapon:{nom:'chapon',col:['#c02a1a','#f09070'],L:16,touches:6,vit:.86},
+  baliste:{nom:'baliste',col:['#6a6a5a','#c8c4a8'],L:14,touches:6,vit:.82},
+  coryphene:{nom:'coryphène',col:['#2a9a6a','#f0e050'],L:22,touches:7,vit:.78},
+  raie:{nom:'raie',col:['#8a7a5a','#d8ccb0'],L:18,touches:7,vit:.8},
+  espadon:{nom:'espadon',col:['#2a3a5a','#c8d0dc'],L:28,touches:8,vit:.68},
+  mola:{nom:'poisson-lune',col:['#8a9aa6','#dde4ea'],L:18,touches:8,vit:.7},
+  requin:{nom:'requin peau-bleue',col:['#2a5a9a','#eef2f6'],L:30,touches:9,vit:.64},
+  hippocampe:{nom:'hippocampe',col:['#e8a02a','#f8d070'],L:8,touches:9,vit:.6},
+  calamar:{nom:'Calamar géant',col:['#b83a3a','#f0a8a0'],L:30,touches:10,vit:.56},
+  coelacanthe:{nom:'Cœlacanthe',col:['#1f3a6a','#6a8ab8'],L:26,touches:10,vit:.52},
 };
 let PECHE=null, TIENT_PECHE=false, CARNET_PECHE=null;
 function lieuDePeche(){
@@ -15841,11 +16028,11 @@ async function gagnerLeCombat(){
   const S=ESP_PECHE[d.espece]||ESP_PECHE.sardine;
   setTimeout(()=>{
     if(PECHE!==P)return;
-    texteVolant(joueur.x,joueur.y-44,((d.espece==='legende'||d.espece==='rascassedor')?'🏆 ':'')+S.nom+' · '+d.cm+' cm',
-      (d.espece==='legende'||d.espece==='rascassedor')?'#f4d98a':(d.neuf?'#9fdfb8':'#cfe0f2'));
+    texteVolant(joueur.x,joueur.y-44,(LEGENDES.includes(d.espece)?'🏆 ':'')+S.nom+' · '+d.cm+' cm',
+      LEGENDES.includes(d.espece)?'#f4d98a':(d.neuf?'#9fdfb8':'#cfe0f2'));
     if(d.neuf)setTimeout(()=>texteVolant(joueur.x,joueur.y-54,'nouvelle espèce au carnet !','#9fdfb8'),500);
     else if(d.record)setTimeout(()=>texteVolant(joueur.x,joueur.y-54,'nouveau record !','#e8c06a'),500);
-    jouer('achat','moment');vibrer((d.espece==='legende'||d.espece==='rascassedor')?[40,60,40,60,120]:[18,30,18]);
+    jouer('achat','moment');vibrer(LEGENDES.includes(d.espece)?[40,60,40,60,120]:[18,30,18]);
     PECHE=null;majAction();
   },650);
 }
@@ -15888,7 +16075,7 @@ function nouveauCercle(P){
   const vers=Math.min(1,1-P.dist)*0.75;
   P.fx=P.bx+(P.px-P.bx)*vers+(Math.random()-.5)*34*(P.dist+.3);
   P.fy=P.by+((P.py+12)-P.by)*vers+(Math.random()-.5)*8;
-  const lent=[1,1/0.85,1/0.75,1/0.65][(P.eq&&P.eq.canne)||0];
+  const lent=[1,1/0.85,1/0.75,1/0.65,1/0.55,1/0.48][(P.eq&&P.eq.canne)||0];
   P.cercle={t0:performance.now(),duree:1000/S.vit*(1.05-P.touches*.03)*lent,k:0,juge:null};
   eclaboussure(P.fx,P.fy,5);
 }
@@ -15900,7 +16087,7 @@ function taperPeche(){
 function jugerLaTouche(P,tape){
   const C=P.cercle, ecart=Math.abs(1-C.k);
   const cn=(P.eq&&P.eq.canne)||0;
-  const note=!tape?'rate':(ecart<(cn>=3?.13:.09)?'parfait':(ecart<(cn>=2?.28:.22)?'bien':'rate'));
+  const note=!tape?'rate':(ecart<(cn>=5?.17:(cn>=3?.13:.09))?'parfait':(ecart<(cn>=4?.33:(cn>=2?.28:.22))?'bien':'rate'));
   C.juge={note,t:performance.now()};
   if(note==='rate'){P.coeurs--;vibrer(60);texteVolant(P.fx,P.fy-10,tape?(C.k<1?'trop tôt !':'trop tard !'):'trop tard !','#ff7a5a');}
   else{
@@ -15954,8 +16141,8 @@ function dessinerLaPeche(g,camX,camY){
     const k=Math.min(1,(t-P.t0)/600), S=ESP_PECHE[P.fin.espece]||ESP_PECHE.sardine;
     const x=bx+((joueur.x-camX)-bx)*k, y=by+((joueur.y-26-camY)-by)*k-Math.sin(k*Math.PI)*34;
     g.strokeStyle='rgba(240,240,240,.8)';g.lineWidth=.5;g.beginPath();g.moveTo(sx,sy);g.lineTo(x,y);g.stroke();
-    if(P.fin.espece==='legende'||P.fin.espece==='rascassedor'){const r=g.createRadialGradient(x,y,1,x,y,18);r.addColorStop(0,'rgba(255,220,120,.7)');r.addColorStop(1,'rgba(255,220,120,0)');g.fillStyle=r;g.fillRect(x-18,y-18,36,36);}
-    poissonPixel(g,x,y,S,c,Math.sin(t/40)>0?1:-1);
+    if(LEGENDES.includes(P.fin.espece)){const r=g.createRadialGradient(x,y,1,x,y,18);r.addColorStop(0,'rgba(255,220,120,.7)');r.addColorStop(1,'rgba(255,220,120,0)');g.fillStyle=r;g.fillRect(x-18,y-18,36,36);}
+    dessinerPoisson(g,x,y,P.fin.espece,c,Math.sin(t/40)>0?1:-1,false);
     return;
   }
   /* la ligne : molle quand on attend, tendue pendant le combat */
@@ -15967,7 +16154,7 @@ function dessinerLaPeche(g,camX,camY){
     const S=ESP_PECHE[P.esp]||ESP_PECHE.sardine, C=P.cercle;
     /* le poisson, juste sous la surface */
     const dir=bx<joueur.x-camX?1:-1;
-    g.globalAlpha=.7;poissonPixel(g,bx,by+2,{L:S.L,col:['#1d3a4a','#2a4a5a']},dir,Math.sin(t/60)>0?1:-1);g.globalAlpha=1;
+    g.globalAlpha=.6;dessinerPoisson(g,bx,by+2,P.esp,dir,Math.sin(t/60)>0?1:-1,true);g.globalAlpha=1;
     const r0=(t/300)%1;g.strokeStyle='rgba(235,248,255,'+(0.5*(1-r0))+')';g.lineWidth=.7;
     g.beginPath();g.ellipse(bx,by+2,3+r0*9,1+r0*3,0,0,Math.PI*2);g.stroke();
     /* LA CIBLE : un petit rond fixe sur le poisson, et LE CERCLE qui se resserre */
@@ -16243,7 +16430,18 @@ const CARNET_ORDRE=[
   ['congre','TRÈS RARE','seulement la nuit, au bout des pontons'],['saintpierre','TRÈS RARE','seulement la nuit, au bout des pontons'],
   ['thon','TRÈS RARE','seulement à l’aube, au bout des pontons'],['botte','…','un peu partout, hélas'],
   ['legende','LÉGENDAIRE','à l’aube, au bout des pontons · un seul par jour'],
-  ['rascassedor','LÉGENDAIRE','la nuit, le long du quai · une seule par nuit']];
+  ['rascassedor','LÉGENDAIRE','la nuit, le long du quai · une seule par nuit'],
+  ['sar','PEU COMMUNE','canne en bambou · le jour et à l’aube'],['vieille','PEU COMMUNE','canne en bambou · le long du quai, le jour'],
+  ['grondin','RARE','canne en bambou · au bout des pontons, nuit et aube'],
+  ['pagre','RARE','canne en fibre · au bout des pontons, à l’aube'],['barracuda','TRÈS RARE','canne en fibre · au bout des pontons, le jour'],
+  ['liche','TRÈS RARE','canne en fibre · au bout des pontons, jour et aube'],['chapon','TRÈS RARE','canne en fibre · le long du quai, la nuit'],
+  ['baliste','TRÈS RARE','canne en carbone · le long du quai, le jour'],['coryphene','EXTRÊMEMENT RARE','canne en carbone · pontons, à l’aube'],
+  ['raie','EXTRÊMEMENT RARE','canne en carbone · le long du quai, la nuit'],
+  ['espadon','EXTRÊMEMENT RARE','canne de maître · pontons, à l’aube'],['mola','EXTRÊMEMENT RARE','canne de maître · pontons, le jour'],
+  ['requin','EXTRÊMEMENT RARE','canne de maître · pontons, la nuit'],
+  ['hippocampe','EXTRÊMEMENT RARE','canne du Roi René · le long du quai, à l’aube'],
+  ['calamar','LÉGENDAIRE','canne du Roi René · pontons, la nuit · un seul par nuit'],
+  ['coelacanthe','MYTHIQUE','canne du Roi René · pontons, la nuit · un seul par semaine']];
 async function ouvrirLeCarnet(){
   try{fermerTiroir();}catch(x){}
   const f=$('feuilleC');f.innerHTML='<h2>Carnet de pêche</h2><div class="sousC">On feuillette…</div>';
@@ -16255,10 +16453,14 @@ async function ouvrirLeCarnet(){
   CARNET_ORDRE.forEach(([id,rare,indice])=>{
     const c=CARNET_PECHE[id], S=ESP_PECHE[id];
     const ligne=document.createElement('div');ligne.className='esp'+(c?'':' inconnu');
-    const cv=document.createElement('canvas');cv.width=30;cv.height=12;const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
-    poissonPixel(g,16,6,c?S:{L:S.L,col:['#2a2016','#2a2016']},1,0);ligne.appendChild(cv);
+    const cv=document.createElement('canvas');cv.width=48;cv.height=26;cv.style.width='60px';cv.style.height='32px';
+    const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+    const FF=FORMES_POISSON[id]||{L:12,H:6}, ech=Math.min(1,40/(FF.L+(FF.f==='epee'?14:6)),20/(FF.H+8));
+    g.save();g.translate(24,13);g.scale(ech,ech);
+    if(c)dessinerPoisson(g,0,0,id,1,0,false);else{g.globalAlpha=.85;dessinerPoisson(g,0,0,id,1,0,true);}
+    g.restore();ligne.appendChild(cv);
     const t=document.createElement('div');
-    t.innerHTML=c?'<b>'+S.nom.charAt(0).toUpperCase()+S.nom.slice(1)+'</b><span>'+c.n+' prise'+(c.n>1?'s':'')+' · record '+c.record+' cm</span>'
+    t.innerHTML=c?'<b>'+(OBJETS[id]?OBJETS[id].nom:S.nom)+'</b><span>'+c.n+' prise'+(c.n>1?'s':'')+' · record '+c.record+' cm</span>'
       :'<b>???</b><span>'+indice+'</span>';
     ligne.appendChild(t);
     const r=document.createElement('div');r.className='rareC';r.textContent=rare;ligne.appendChild(r);
@@ -16945,6 +17147,22 @@ const OBJETS={
  saintpierre:{nom:'Saint-Pierre', d:'La tache noire sur son flanc, c’est le pouce du saint.', poids:1},
  thon:   {nom:'Thon rouge', d:'Un monstre venu du large, à l’aube. Il faut des bras.', poids:4},
  rascassedor:{nom:'Rascasse d’or', d:'Une seule par nuit, sous le quai. On dit qu’elle porte chance.', poids:2},
+ sar:{nom:'Sar',d:'Rayé de noir, méfiant. Il faut une vraie canne.',poids:1},
+ vieille:{nom:'Vieille',d:'Verte et marbrée, elle vit dans les herbes du quai.',poids:1},
+ grondin:{nom:'Grondin',d:'Des nageoires comme des ailes bleues. Il grogne quand on le sort.',poids:1},
+ pagre:{nom:'Pagre',d:'Rose, tacheté de bleu ; il ne sort qu’à l’aube.',poids:2},
+ barracuda:{nom:'Barracuda',d:'Long, rapide, et des dents comme des aiguilles.',poids:2},
+ liche:{nom:'Liche',d:'Un chasseur du large, qui file comme une flèche.',poids:2},
+ chapon:{nom:'Chapon',d:'La grande rascasse rouge : la bouillabaisse des grands jours.',poids:2},
+ baliste:{nom:'Baliste',d:'Une corne sur le dos, des lèvres de lapin. Rare au quai.',poids:1},
+ coryphene:{nom:'Coryphène',d:'Vert et or, il change de couleur quand on le sort.',poids:2},
+ raie:{nom:'Raie',d:'Elle glisse sur le fond comme un tapis, la nuit.',poids:3},
+ espadon:{nom:'Espadon',d:'Une épée au bout du nez. La bataille d’une vie.',poids:5},
+ mola:{nom:'Poisson-lune',d:'Un disque immense qui prend le soleil en surface.',poids:5},
+ requin:{nom:'Requin peau-bleue',d:'Il rôde la nuit, au bout des pontons. Tiens bon.',poids:5},
+ hippocampe:{nom:'Hippocampe',d:'Minuscule, tout doré. Presque personne n’en a vu.',poids:1},
+ calamar:{nom:'Calamar géant',d:'Une légende des profondeurs. Un seul par nuit.',poids:6},
+ coelacanthe:{nom:'Cœlacanthe',d:'Un poisson d’avant les dinosaures. Un seul par semaine, pour tout Marseille.',poids:4},
  pioche: {nom:'Pioche', d:'Pour les rochers. Trois coups et la pierre cède.',        poids:0,outil:1},
  hache:  {nom:'Hache',  d:'Pour les arbres. Cinq coups, et il tombe.',               poids:0,outil:1}
 };
@@ -17082,6 +17300,7 @@ function majPastille(){
 }
 let choisi=null;
 function ouvrirSac(){
+  refaireLesIconesDePoissons();
   const cles=Object.keys(OBJETS);
   if(!choisi)choisi=cles.find(k=>combien(k)>0)||null;
   const part=Math.min(100,Math.round(charge()/chargeMax()*100));
@@ -17610,7 +17829,9 @@ const MODE_COMPTOIR={nom:'Le comptoir',mot:'« Fais voir ce que tu as ramené. �
   prix:PRIX_COMPTOIR,rpc:'vendre_au_comptoir',ap:{veste:2,cheveux:1,chapeau:0},
   vide:'<div class="cptVide">Ton sac est vide.<br>Traverse le gué : tout pousse sur l’autre rive.</div>'};
 const PRIX_POISSON={sardine:5,bogue:4,girelle:6,rouget:10,mulet:10,saupe:12,seiche:14,maquereau:15,dorade:18,rascasse:30,
-  loup:40,denti:55,murene:70,congre:90,poulpe:120,saintpierre:150,thon:300,legende:500,rascassedor:500};   /* le serveur a les mêmes */   /* le serveur a les mêmes */
+  loup:40,denti:55,murene:70,congre:90,poulpe:120,saintpierre:150,thon:300,legende:500,rascassedor:500,
+  sar:20,vieille:25,grondin:35,pagre:80,barracuda:110,liche:120,chapon:150,baliste:220,raie:300,coryphene:350,
+  mola:1000,espadon:1200,requin:1500,hippocampe:2500,calamar:5000,coelacanthe:8000};   /* le serveur a les mêmes */   /* le serveur a les mêmes */
 const MODE_POISSON={nom:'La poissonnerie',mot:'« Montre-moi ta pêche, petit. »',
   prix:PRIX_POISSON,rpc:'vendre_poisson',ap:{veste:0,cheveux:3,chapeau:1},
   vide:'<div class="cptVide">Pas un poisson dans ton sac.<br>Va lancer ta ligne au bout des pontons.</div>'};
