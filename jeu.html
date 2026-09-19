@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-0854';
+  var MA_VERSION='2026-09-19-0859';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -9860,7 +9860,7 @@ const surPonton=(x,y)=>XP.pontons.some(px=>Math.abs(x-px)<XP.pontonL&&y<XP.ponto
 const dansLeBassin=(x,y)=>x>XP.bassinO&&x<XP.bassinE&&y>XP.quaiY;
 function bloqueExtramar(x,y){
   /* la ruelle : seul endroit où l'on passe entre les immeubles, vers le haut */
-  const dansRuelle=false;   /* plus de ruelle */
+  const dansRuelle=Math.abs(x-XP.ruelle.x)<XP.ruelle.l&&y>=XP.ruelle.haut;   /* la montée du casino */
   if(x<BORD-12||x>MONDE_L-BORD+12||(y<XP.maisonsY+6&&!dansRuelle)||y>MONDE_H-8)return true;
   if(dansLeBassin(x-3,y)||dansLeBassin(x+3,y)||dansLeBassin(x,y+2)){
     if(!surPonton(x,y))return true;              /* l'eau : on ne nage pas */
@@ -10134,6 +10134,48 @@ function construireSolExtramar(){
     }
   }
   graverLesToitsDuFond(g,MONDE_L,160);
+  /* LA MONTÉE : une ruelle en escaliers entre deux immeubles, bordée de
+     petites maisons, qui grimpe vers le CASINO */
+  {
+    const cx=XP.ruelle.x, xg=cx-71, xd=cx+71, ym=XP.maisonsY+6;
+    /* les maisons basses de part et d'autre : toits vus d'en haut, un mur sur la ruelle */
+    [[xg,cx-30,1],[cx+30,xd,-1]].forEach(([a,b,sens],j)=>{
+      for(let y=0;y<ym;y+=4)for(let x=a;x<b;x+=5){R(x,y,5,4,((x+y*3)>>2)%3?'#b85e32':'#c9743e');R(x+4,y,1,4,'#8f3f20');R(x,y,5,1,'#e0925a');}
+      /* le faîtage, qui court le long de la ruelle, et l'ombre du versant */
+      const fx=Math.round((a+b)/2);R(fx-1,0,3,ym,'#e59a62');R(fx+(sens>0?2:-3),0,1,ym,'#8f3f20');
+      R(sens>0?a:fx+2,0,sens>0?fx-a-1:b-fx-2,ym,'rgba(60,25,10,.16)');
+      for(let y=24;y<ym-20;y+=46){R(fx-4,y,8,9,'#d6c6a0');R(fx-4,y,8,2,'#efe6cc');R(fx-5,y-2,10,3,'#9e8a64');}
+      const mur=sens>0?b-6:a;
+      R(mur,0,6,ym,['#dfb672','#dca088'][j]);R(mur,0,6,ym,'rgba(0,0,0,.0)');
+      R(sens>0?mur:mur+5,0,1,ym,'rgba(60,35,15,.35)');
+      for(let y=18;y<ym-10;y+=34){R(mur+1,y,4,10,'#3a2616');R(mur+1,y,4,1,'#7a5230');           /* une porte */
+        R(mur+1,y+14,4,5,'#2e3a44');                                                            /* une fenêtre */
+        R(sens>0?mur-2:mur+6,y-4,2,3,'#3b3a36');R(sens>0?mur-2:mur+6,y-1,2,2,'#ffd98a');}      /* une lanterne */
+    });
+    /* les marches, avec leurs paliers */
+    const x0=cx-30, w=60;
+    for(let y=ym,k=0;y>XP.ruelle.haut-14;k++){
+      const palier=k%6===5, h=palier?10:6;
+      R(x0,y-h,w,h,palier?'#e2d2ab':'#dccba5');
+      R(x0,y-h,w,1,'#efe3c4');R(x0,y-2,w,2,'#b9a57c');
+      for(let i=0;i<4;i++)R(x0+alea(k*7+i)*w,y-h+1+alea(k*3+i)*(h-3),2,1,'rgba(120,90,50,.18)');
+      if(palier){R(x0+2,y-h+2,5,5,'#a55a3a');R(x0+2,y-h,5,3,'#6fbf5a');R(x0+w-7,y-h+2,5,5,'#a55a3a');R(x0+w-7,y-h,5,3,'#d9576b');}
+      y-=h;
+    }
+    R(x0-2,0,2,ym,'#b9a57c');R(x0+w,0,2,ym,'#b9a57c');                                          /* les bordures */
+    /* le passage voûté, en haut : on devine la suite de la montée */
+    const hy=XP.ruelle.haut-14;
+    R(x0,0,w,hy,'#2a2420');
+    g.fillStyle='#d9c7a0';g.beginPath();g.moveTo(x0-4,hy+2);g.lineTo(x0-4,hy-8);g.arc(cx,hy-8,w/2+4,Math.PI,0);g.lineTo(x0+w+4,hy+2);g.lineTo(x0+w,hy+2);
+    g.lineTo(x0+w,hy-8);g.arc(cx,hy-8,w/2,0,Math.PI,true);g.lineTo(x0,hy+2);g.closePath();g.fill();
+    for(let a=0;a<9;a++){const t=Math.PI+a*Math.PI/8;R(cx+Math.cos(t)*(w/2+2)-1,hy-8+Math.sin(t)*(w/2+2)-1,2,2,'#b9a57c');}
+    const fond=g.createLinearGradient(0,hy,0,hy+24);fond.addColorStop(0,'rgba(20,16,12,.55)');fond.addColorStop(1,'rgba(20,16,12,0)');
+    g.fillStyle=fond;g.fillRect(x0,hy,w,24);
+    /* l'enseigne du casino, sur la voûte : lettres d'or sur fond rouge */
+    R(cx-24,Math.max(0,hy-30),48,10,'#5a1a1a');R(cx-23,Math.max(0,hy-29),46,8,'#8a2a22');
+    g.font='700 7px Georgia,serif';g.textAlign='center';g.fillStyle='#f0cf7d';g.fillText('CASINO',cx,Math.max(0,hy-30)+8);g.textAlign='left';
+    for(let k=0;k<7;k++){R(cx-22+k*7,Math.max(0,hy-32),2,2,'#ffe07a');}
+  }
   /* LE BASSIN : turquoise sur les bords, bleu profond au large */
   for(let y=XP.quaiY;y<MONDE_H;y++){
     const k=(y-XP.quaiY)/(MONDE_H-XP.quaiY);
@@ -11647,7 +11689,7 @@ function dessinerX(g,o,x,y){
   }
   if(o.t==='x_panneauG'){
     g.font='700 5px Georgia,serif';g.textAlign='center';g.fillStyle='#f4e2b0';
-    g.fillText('N.-D. DE LA GARDE',Math.round(x),Y0+C.sol-27,32);
+    g.fillText('CASINO ↑',Math.round(x),Y0+C.sol-27,32);
   }
   if(o.t==='x_ferry'){
     g.font='700 5px ui-monospace,monospace';g.textAlign='center';g.fillStyle='#ffffff';
@@ -11760,6 +11802,7 @@ function semerDecorExtramar(){
   /* LES IMMEUBLES DU QUAI, MITOYENS : une façade continue d'un bout à
      l'autre, comme sur le vrai quai ; au milieu, la Bonne Mère */
   for(let k=0;k<10;k++){
+    if(k===4){P('x_panneauG',XP.ruelle.x-38,XP.maisonsY+22,{col:[4,3]});continue;}   /* la ruelle du casino, et son panneau */
     P('x_maison',70+k*140,XP.maisonsY,{v:k,col:[70,24]});
   }
   /* DE GRANDS PLATANES, en alignement le long des façades, chacun avec son banc à l'ombre */
@@ -16823,6 +16866,14 @@ function majAction(){
   /* À EXTRAMAR, la ligne de pêche passe avant le reste */
   if(actionDePeche(b))return;
   if(actionDuCaboteur(b))return;
+  /* EN HAUT DE LA RUELLE : la porte du casino */
+  if(CARTE==='extramar'&&Math.abs(joueur.x-XP.ruelle.x)<XP.ruelle.l&&joueur.y<XP.ruelle.haut+22&&GESTE.t<=0){
+    b.innerHTML='Entrer au casino<small>EN HAUT DE LA MONTÉE</small>';
+    b.classList.add('on');
+    b.onclick=()=>{e.ext={x:joueur.x,y:XP.ruelle.haut+30};e.carte='extramar';try{sauver();envoyerSauvegarde(true);}catch(x){}
+      setTimeout(()=>{location.href='casino.html';},120);};
+    return;
+  }
   if(CARTE==='garde'&&GESTE.t<=0){
     if(Math.abs(joueur.x-GX.descente.x)<GX.descente.l&&joueur.y>GX.plS-16){
       b.innerHTML='Redescendre<small>PAR LA RUELLE, VERS LE VIEUX-PORT</small>';b.classList.add('on');
