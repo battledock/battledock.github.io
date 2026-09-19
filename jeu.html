@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1852';
+  var MA_VERSION='2026-09-19-1857';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -14760,26 +14760,37 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       if(!cote&&!dos)ombreFront(-11+dx,22,hy+6);
     }
     else if(chapeau==='capuche'){
-      /* LA CAPUCHE, relevée, dans le tissu du haut : elle encadre le visage */
+      /* LA CAPUCHE, relevée : elle épouse le crâne avec un peu d'ampleur, finit en
+         pointe douce derrière, s'ouvre largement sur le visage et retombe sur les
+         épaules. Taillée dans le tissu du haut. */
       const c=vest, cC=vestC, cO=vestO, cT=vestT;
+      const ample=(r)=>{const k=r-(hy-4);                     /* demi-largeur de la capuche, rangée par rangée */
+        if(k<0)return 0;if(k<5)return [7,10,12,13,14][k];if(r<hy+18)return 15;if(r<hy+24)return 15-Math.round((r-hy-18)*0.6);return 12;};
       if(cote){
-        /* de profil : la capuche couvre le crâne et la nuque, et s'arrête au bord du visage */
-        for(let r=hy-4;r<hy+20;r++){const d=Math.max(0,(hy+6)-r), w=Math.round(15*Math.sqrt(Math.max(0,1-(d/10)*(d/10))));if(w<=0)continue;
-          const x0=-4-w, x1=r<hy+6?11:5;
-          R(x0,r,x1-x0,1,r<hy-1?cC:c);R(x0,r,1,1,cT);R(x1-2,r,2,1,cO);}
-        R(4,hy+2,2,16,cT);                                                         /* l'ombre du rebord sur la joue */
-        R(-18,hy+8,4,9,cO);                                                        /* la pointe, derrière */
-      }else if(dos){
-        dome(0,hy-4,hy+22,15,10,c,cC,cO,cT);R(0,hy-2,1,22,cO);R(-8,hy+4,16,1,cO);R(-6,hy+20,12,2,cT);
+        /* de profil : du front à la nuque, la pointe derrière, le rebord devant le visage */
+        for(let r=hy-4;r<hy+26;r++){const hw=ample(r);if(!hw)continue;
+          const avant=r<hy+2?9:(r<hy+20?5:7), arr=-hw-2+(r>hy+14?Math.round((r-hy-14)*0.4):0);
+          R(arr,r,avant-arr,1,r<hy?cC:c);R(arr,r,1,1,cT);R(avant-2,r,2,1,cO);
+          if(r>hy+2&&r<hy+20)R(arr+3,r,1,1,cO);}                                   /* le pli qui suit le crâne */
+        R(-18,hy+3,3,5,cO);R(-17,hy+2,2,1,c);                                       /* la pointe douce, derrière */
+        R(6,hy+2,5,6,T(peau,-6));R(6,hy+2,5,1,T(peau,-30));                        /* le front, les cheveux rentrés */
+        R(5,hy+2,2,17,cT);R(4,hy+3,1,15,T(peau,-24));                               /* l'ombre du rebord sur la joue */
       }else{
-        /* la capuche encadre le visage : pleine au-dessus, ouverte au milieu */
-        for(let r=hy-4;r<hy+23;r++){const d=Math.max(0,(hy+6)-r), w=Math.round(16*Math.sqrt(Math.max(0,1-(d/10)*(d/10))));
-          if(w<=0)continue;
-          const ouv=r>hy+4&&r<hy+21?Math.round(11*Math.sin(Math.PI*(0.12+(r-hy-5)/16*0.8))):0;
-          if(!ouv){R(-w+dx,r,w*2,1,r<hy-2?cC:c);R(-w+dx,r,1,1,cT);R(w-1+dx,r,1,1,cT);}
-          else{R(-w+dx,r,w-ouv,1,cO);R(ouv+dx,r,w-ouv,1,c);R(w-2+dx,r,1,1,cC);R(-w+dx,r,1,1,cT);R(w-1+dx,r,1,1,cT);}}
-        R(-12+dx,hy+4,2,16,cT);R(10+dx,hy+4,2,16,cO);R(-10+dx,hy+3,20,4,cT);R(-9+dx,hy+6,18,1,T(peau,-30));   /* l'intérieur du rebord, dans l'ombre */
-        R(-3+dx,hy+21,1,6,'#e8e0c8');R(2+dx,hy+21,1,6,'#e8e0c8');R(-3+dx,hy+26,1,1,'#c9c9c4');R(2+dx,hy+26,1,1,'#c9c9c4');   /* les cordons */
+        const d0=dos?0:dx;
+        for(let r=hy-4;r<hy+27;r++){const hw=ample(r);if(!hw)continue;
+          /* l'ouverture sur le visage : un grand ovale, du haut du front au menton */
+          const ov=!dos&&r>hy+1&&r<hy+23?Math.round(11.5*Math.sin(Math.PI*(0.08+(r-hy-2)/21*0.86))):0;
+          if(!ov){R(-hw+d0,r,hw*2,1,r<hy-1?cC:(r>hy+23?cO:c));R(-hw+d0,r,1,1,cT);R(hw-1+d0,r,1,1,cT);R(hw-3+d0,r,2,1,cC);}
+          else{R(-hw+d0,r,hw-ov,1,c);R(ov+d0,r,hw-ov,1,c);
+            R(-ov-1+d0,r,1,1,cT);R(ov+d0,r,1,1,cT);                                 /* le rebord, dans l'ombre */
+            R(-hw+d0,r,1,1,cT);R(hw-1+d0,r,1,1,cT);R(hw-3+d0,r,1,1,cC);R(-hw+2+d0,r,1,1,cO);}}
+        if(!dos){
+          R(-9+d0,hy+4,18,4,T(peau,-6));                                           /* le front, sous la capuche (les cheveux sont rentrés) */
+          R(-11+d0,hy+5,3,10,T(peau,-14));R(8+d0,hy+5,3,10,T(peau,-14));             /* les tempes, dans l'ombre du rebord */
+          R(-9+d0,hy+2,18,2,cT);R(-8+d0,hy+4,16,1,T(peau,-30));                      /* l'ombre sur le front */
+          R(-4+d0,hy+23,1,6,'#e8e0c8');R(3+d0,hy+23,1,6,'#e8e0c8');                  /* les cordons */
+          R(-4+d0,hy+29,1,1,'#b9b0a0');R(3+d0,hy+29,1,1,'#b9b0a0');
+        }else{R(d0,hy-3,1,26,cO);R(-6+d0,hy+2,1,18,cO);R(5+d0,hy+2,1,18,cC);}          /* la couture, les plis */
       }
     }
     else if(chapeau==='chapeau'){
@@ -14806,15 +14817,33 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       if(!cote&&!dos)ombreFront(-11+dx,22,hy+2);
     }
     else if(chapeau==='cagoule'){
-      /* LA CAGOULE : du tricot sur toute la tête, une fente pour les yeux */
-      const c='#2a2c2e', cC='#44484c', cO='#18191a';
-      const hw=13, x0=cote?-11:dx;
-      dome(x0,hy-2,hy+26,hw,10,c,cC,cO,'#0e0f10');
-      for(let y=hy;y<hy+25;y+=2)for(let x=x0-12;x<x0+12;x+=3)if((x+y)%2===0)R(x,y,1,1,cO);   /* le tricot */
-      if(cote){R(3,hy+9,9,5,peau);R(3,hy+9,9,1,cO);R(3,hy+13,9,1,cO);oeilDe(4,hy+10,true);}
-      else if(!dos){R(-9+dx,hy+9,18,6,peau);R(-9+dx,hy+9,18,1,cO);R(-9+dx,hy+14,18,1,cO);
-        oeilDe(-7+dx+(diag&&vis>0?1:0),hy+11,false);oeilDe(3+dx-(diag&&vis<0?1:0),hy+11,false);
-        R(-2+dx,hy+18,4,1,cO);}                                                              /* la bouche sous le tricot */
+      /* LA CAGOULE : un tricot fin qui colle à la tête et au cou, des côtes verticales,
+         une seule fente pour les yeux, bordée d'une maille plus serrée */
+      const c='#2e3134', cC='#4a4f54', cO='#1c1e20', cB='#3c4044';
+      const colle=(r)=>{const k=r-(hy-1);if(k<0)return 0;if(k<3)return [9,11,12][k];if(r>=hy+8&&r<hy+18)return diag?16:15;if(r<hy+20)return 13;if(r<hy+24)return 13-(r-hy-19);return 7;};   /* elle couvre les oreilles */
+      if(cote){
+        for(let r=hy-1;r<hy+30;r++){const hw=colle(r);if(!hw)continue;
+          const avant=r>hy+20?(r>hy+23?3:8):(r>=hy+11&&r<=hy+16?13:11), arr=-hw+(r>hy+23?2:0);   /* le nez se devine sous le tricot */
+          R(arr,r,avant-arr,1,c);R(arr,r,1,1,cO);R(avant-1,r,1,1,cC);
+          for(let x=arr+2;x<avant-1;x+=2)R(x,r,1,1,cB);}                          /* les côtes du tricot */
+        R(3,hy+9,8,5,peau);R(3,hy+8,8,1,cC);R(3,hy+14,8,1,cC);R(3,hy+9,1,5,cO);       /* la fente, bordée */
+        oeilDe(4,hy+10,true);
+        R(-9,hy+1,7,1,cC);                                                          /* le reflet sur le crâne */
+      }else{
+        const d0=dos?0:dx;
+        for(let r=hy-1;r<hy+30;r++){const hw=colle(r);if(!hw)continue;
+          R(-hw+d0,r,hw*2,1,c);R(-hw+d0,r,1,1,cO);R(hw-1+d0,r,1,1,cO);
+          for(let x=-hw+2;x<hw-1;x+=2)R(x+d0,r,1,1,cB);                             /* les côtes du tricot */
+          R(hw-3+d0,r,1,1,cC);}
+        R(-5+d0,hy,9,1,cC);R(-3+d0,hy+1,5,1,cC);                                      /* le reflet sur le crâne */
+        if(!dos){
+          R(-10+d0,hy+9,20,6,peau);R(-10+d0,hy+8,20,1,cC);R(-10+d0,hy+15,20,1,cC);    /* la fente des yeux, bordée */
+          R(-10+d0,hy+9,20,1,T(peau,-26));
+          oeilDe(-7+d0+(diag&&vis>0?1:0),hy+11,false);oeilDe(3+d0-(diag&&vis<0?1:0),hy+11,false);
+          R(-1+d0,hy+16,2,3,cO);                                                     /* le nez, sous le tricot */
+          R(-3+d0,hy+19,6,1,cO);                                                     /* la bouche devinée */
+        }
+      }
     }
   };
 
