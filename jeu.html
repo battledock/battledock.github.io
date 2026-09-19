@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1956';
+  var MA_VERSION='2026-09-19-2004';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -4012,9 +4012,245 @@ function graverLaFontaine(){
   CALQUE_FONTAINE={toile:c,W,H,sol};
 }
 /* l'eau, redessinée à chaque image */
+/* =====================================================================
+   LA GRAND-PLACE EN PIXEL FIN — mêmes emplacements, mêmes tailles, tout au
+   demi-pixel : dalles taillées avec joints et usure, tilleuls au feuillage
+   feuille à feuille dans leur grille de fonte ouvragée, lanternes à vitres,
+   bancs à lattes et pieds de fonte, boîte aux billets.
+   ===================================================================== */
+const hasardF=(i)=>{const s=Math.sin(i*127.1+311.7)*43758.5453;return s-Math.floor(s);};
+const Ffin=(g)=>(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,Math.round(w*2)/2),Math.max(0.5,Math.round(h*2)/2));};
+/* ---- LES DALLES : gravées une fois, au double, par-dessus le sol ---- */
+let CALQUE_PLACE_FIN=null;
+function graverLaPlaceFin(){
+  const X0=PL_O()-4, Y0=PL_N()-4, W=PLACE.w+8, H=PLACE.h+8;
+  const c=document.createElement('canvas');c.width=W*2;c.height=H*2;
+  const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.translate(-X0,-Y0);g.imageSmoothingEnabled=false;
+  const F=Ffin(g);
+  const PI={o:'#5f666c',s:'#6f767c',p:'#7e868d',c:'#8f979e',h:'#a4acb3',t:'#bcc4ca'};
+  /* le lit de mortier entre les dalles */
+  F(PL_O(),PL_N(),PLACE.w,PLACE.h,'#5a6064');
+  for(let y=PL_N()+6;y<PL_S();y+=12){
+    const dec=(Math.floor((y-PL_N())/12)%2)?9:0;
+    for(let x=PL_O()+dec-18;x<PL_E();x+=18){
+      const x1=Math.max(PL_O(),x), w=Math.min(18,PL_E()-x1,x+18-x1)-0.5, h=Math.min(11.5,PL_S()-(y-6));
+      if(w<3||h<3)continue;
+      const gr=hasardF(Math.round(x*0.41+y*1.07)), yy=y-6;
+      const base=gr<0.3?PI.s:(gr<0.6?PI.p:(gr<0.9?PI.c:PI.t));
+      F(x1,yy,w,h,base);
+      /* le bombé : clair en haut à droite, sombre en bas à gauche */
+      F(x1,yy,w,0.5,PI.h);F(x1+w-0.5,yy,0.5,h,PI.h);F(x1,yy+h-0.5,w,0.5,PI.o);F(x1,yy,0.5,h,'rgba(0,0,0,.18)');
+      F(x1+1,yy+1,w-2,1,'rgba(255,255,255,.08)');
+      /* le grain de la pierre et son usure */
+      for(let k=0;k<7;k++){const t=hasardF(x*3+y*7+k*13);F(x1+1+t*(w-3),yy+1+hasardF(t*97)*(h-3),0.5,0.5,t>0.5?'rgba(255,255,255,.12)':'rgba(0,0,0,.14)');}
+      if(gr>0.72){F(x1+w*0.3,yy+h*0.4,w*0.35,0.5,'rgba(0,0,0,.16)');F(x1+w*0.3+w*0.35,yy+h*0.4,0.5,1.5,'rgba(0,0,0,.16)');}   /* une fêlure */
+      if(gr<0.06)F(x1+2,yy+h-1.5,3,1,'#6f8a4a');                                  /* un peu de mousse dans le joint */
+    }
+  }
+  /* LA BORDURE : pierres claires, chanfreinées */
+  const bord=(px,py)=>{F(px-3,py-2,6,4,PI.t);F(px-3,py-2,6,0.5,'#d8dee2');F(px+2.5,py-2,0.5,4,PI.p);F(px-3,py+1.5,6,0.5,PI.p);};
+  for(let x=PL_O();x<PL_E();x+=6){bord(x,PL_N());bord(x,PL_S());}
+  for(let y=PL_N();y<PL_S();y+=4){bord(PL_O(),y);bord(PL_E(),y);}
+  CALQUE_PLACE_FIN={toile:c,X0,Y0,W,H};
+}
+function dessinerLaPlaceFin(g,camX,camY){
+  if(!CALQUE_PLACE_FIN)graverLaPlaceFin();
+  const C=CALQUE_PLACE_FIN;
+  g.drawImage(C.toile,C.X0-camX,C.Y0-camY,C.W,C.H);
+}
+/* ---- LE TILLEUL ---- */
+let CALQUE_TILLEUL_FIN=null;
+function graverLeTilleulFin(){
+  const W=60,H=96,cx=W/2,sol=H-10;
+  const c=document.createElement('canvas');c.width=W*2;c.height=H*2;
+  const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;const F=Ffin(g);
+  g.fillStyle='rgba(20,34,18,.26)';g.beginPath();g.ellipse(cx+3,sol+2,20,7,0,0,7);g.fill();
+  /* LA GRILLE DE FONTE : cadre mouluré, barreaux à volutes, rosace autour du tronc */
+  F(cx-18,sol-6,36,12,'#2a2e33');
+  for(let k=-16;k<16;k+=3){F(cx+k,sol-5,1.5,10,'#4d545c');F(cx+k,sol-5,0.5,10,'#7a848c');}
+  g.strokeStyle='#5f666c';g.lineWidth=0.8;g.beginPath();g.ellipse(cx,sol,9,3.5,0,0,7);g.stroke();
+  g.strokeStyle='#8a939a';g.lineWidth=0.4;g.beginPath();g.ellipse(cx,sol-0.5,9,3.5,0,Math.PI,0);g.stroke();
+  [[-13],[10]].forEach(([k])=>{g.strokeStyle='#6a737a';g.lineWidth=0.6;g.beginPath();g.arc(cx+k+1.5,sol,2,0,Math.PI*1.5);g.stroke();});
+  F(cx-18,sol-6,36,1.5,'#6a737a');F(cx-18,sol-6,36,0.5,'#9aa2a8');F(cx-18,sol+4.5,36,1.5,'#4d545c');
+  F(cx-18,sol-6,1.5,12,'#6a737a');F(cx+16.5,sol-6,1.5,12,'#4d545c');
+  /* la terre au pied, et quelques herbes */
+  F(cx-7,sol-1.5,14,3,'#4a3a26');[[-5],[4],[-2]].forEach(([k])=>F(cx+k,sol-3,0.5,2,'#6f9a4a'));
+  /* LE TRONC : écorce en sillons, racines qui s'étalent, lumière à droite */
+  for(let r=0;r<36;r++){const y=sol-40+r, w=r<30?9:9+(r-30)*0.8, x0=cx-4-(r>=30?(r-30)*0.4:0);
+    F(x0,y,w,1,'#6b4a28');F(x0,y,1.5,1,'#4a321a');F(x0+w-2.5,y,2,1,'#8a6238');F(x0+w-1,y,1,1,'#a5764a');}
+  for(let k=0;k<14;k++){const x=cx-3+hasardF(k)*6, y=sol-38+hasardF(k+50)*32;F(x,y,0.5,2+hasardF(k+9)*3,'#4a321a');}   /* les sillons */
+  F(cx-8,sol-6,5,2,'#5b3f21');F(cx+4,sol-6,5,2,'#5b3f21');F(cx-9,sol-5,2,1,'#4a321a');F(cx+7,sol-5,2,1,'#4a321a');      /* les racines */
+  F(cx-1,sol-30,2,2,'#3d2a17');F(cx-0.5,sol-29.5,1,1,'#2a1c10');                                                     /* un nœud */
+  CALQUE_TILLEUL_FIN={toile:c,W,H,sol};
+}
+function dessinerLeTilleulFin(g,x,y,gr){
+  if(!CALQUE_TILLEUL_FIN)graverLeTilleulFin();
+  const C=CALQUE_TILLEUL_FIN;
+  g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
+  const T=Date.now()/1000, bal=Math.sin(T*0.9+gr*7)*1.4, F=Ffin(g);
+  /* LA COURONNE : des grappes de feuilles, sombres dessous, claires au soleil */
+  const masses=[[0,-56,22,'#2f6b34'],[-11,-50,16,'#3d7d3f'],[11,-52,15,'#356f38'],[-4,-64,14,'#4f9147']];
+  masses.forEach(([dx,dy,r,c])=>{g.fillStyle=c;g.beginPath();g.ellipse(x+dx+bal,y+dy,r,r*0.82,0,0,7);g.fill();});
+  /* feuille à feuille : de petits ovales, plus clairs sur le haut et à droite */
+  for(let k=0;k<150;k++){const a=hasardF(k*7.3+gr*11)*6.283, rr=Math.sqrt(hasardF(k*3.1+1))*21;
+    const lx=x+Math.cos(a)*rr+bal, ly=y-56+Math.sin(a)*rr*0.82, haut=Math.sin(a)<-0.2, droite=Math.cos(a)>0.3;
+    const col=haut&&droite?'#8ec46a':(haut?'#6fae57':(droite?'#4f9147':(Math.sin(a)>0.4?'#24582a':'#3d7d3f')));
+    F(lx,ly,1.5,1,col);if(hasardF(k+400)>0.7)F(lx+0.5,ly-0.5,0.5,0.5,'#b4d88a');}
+  g.fillStyle='rgba(20,40,16,.28)';g.beginPath();g.ellipse(x+bal,y-42,16,5,0,0,7);g.fill();   /* l'ombre sous la couronne */
+  g.fillStyle='rgba(200,230,150,.22)';g.beginPath();g.ellipse(x+5+bal,y-68,9,5,0,0,7);g.fill();
+  for(let k=0;k<3;k++){const p=((T*0.3+k/3+gr)%1);g.globalAlpha=(1-p)*0.55;
+    F(x+Math.sin(p*7+k)*14,y-48+p*44,1.5,1,'#6f9a4a');g.globalAlpha=1;}
+}
+/* ---- LA LANTERNE : socle, fût cannelé, crosse, cage à quatre vitres, chapeau ---- */
+let CALQUE_LANTERNE_FIN=null;
+function graverLaLanterneFin(){
+  const W=26,H=56,cx=W/2,sol=H-6;
+  const c=document.createElement('canvas');c.width=W*2;c.height=H*2;
+  const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;const F=Ffin(g);
+  g.fillStyle='rgba(20,34,18,.26)';g.beginPath();g.ellipse(cx+2,sol+2,8,3,0,0,7);g.fill();
+  F(cx-4.5,sol-4,10,4,'#4d545c');F(cx-4.5,sol-4,10,0.5,'#8a939a');F(cx-3.5,sol-6,8,2,'#5f666c');F(cx+3,sol-4,1.5,4,'#3a3f44');   /* le socle */
+  F(cx-2,sol-34,5,28,'#3f454b');F(cx-2,sol-34,1,28,'#262a2e');F(cx+1,sol-34,1,28,'#7a848c');F(cx+2,sol-34,1,28,'#5f666c');       /* le fût */
+  for(let y=sol-32;y<sol-8;y+=6)F(cx-2.5,y,6,1,'#5f666c');                                                                  /* les bagues */
+  F(cx-3,sol-35.5,7,2,'#5f666c');F(cx-3,sol-35.5,7,0.5,'#9aa2a8');
+  /* LA CAGE : montants de fonte, quatre vitres (ici laiteuses le jour) */
+  F(cx-7,sol-44,15,11,'#2e3237');
+  F(cx-6,sol-43,6,9,'#c8c2ae');F(cx+1,sol-43,6,9,'#b8b29e');F(cx-6,sol-43,6,1,'#e8e2cc');F(cx-5,sol-42,1,4,'rgba(255,255,255,.4)');
+  F(cx-0.5,sol-44,1.5,11,'#3d4248');F(cx-7,sol-44,1,11,'#4d545c');F(cx+7,sol-44,1,11,'#262a2e');
+  F(cx-7,sol-38.5,15,0.5,'#3d4248');
+  /* LE CHAPEAU : un toit de fonte à pans, et sa pointe */
+  F(cx-9,sol-47,19,3,'#3d4248');F(cx-9,sol-47,19,0.5,'#7a848c');F(cx-7,sol-49,15,2,'#4d545c');F(cx-4,sol-51,9,2,'#4d545c');
+  F(cx-1,sol-53,3,2,'#5f666c');F(cx,sol-54.5,1,1.5,'#9aa2a8');
+  F(cx+8,sol-47,1,3,'#262a2e');
+  CALQUE_LANTERNE_FIN={toile:c,W,H,sol};
+}
+/* ---- LE BANC : lattes de bois veinées, pieds de fonte à volutes, accoudoirs ---- */
+let CALQUE_BANC_FIN=null;
+function graverLeBancFin(){
+  const W=42,H=26,cx=W/2,sol=18;                        /* mêmes mesures que le banc actuel */
+  const c=document.createElement('canvas');c.width=W*2;c.height=H*2;
+  const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;const F=Ffin(g);
+  g.fillStyle='rgba(20,30,18,.24)';g.beginPath();g.ellipse(cx+1,sol+1,15,3,0,0,7);g.fill();
+  /* les pieds de fonte, en volute */
+  [[-16],[13]].forEach(([k])=>{F(cx+k,sol-6,3,7,'#3d4248');F(cx+k,sol-6,0.5,7,'#7a848c');F(cx+k-1,sol,5,1,'#2e3237');
+    g.strokeStyle='#4d545c';g.lineWidth=0.7;g.beginPath();g.arc(cx+k+1,sol-4,1.6,0,Math.PI*1.4);g.stroke();});
+  /* l'assise : trois lattes */
+  for(let i=0;i<3;i++){const y=sol-11+i*2;F(cx-19,y,38,2,i===0?'#a5764a':(i===1?'#8a6238':'#7d5934'));F(cx-19,y+1.5,38,0.5,'#5b3f21');F(cx-19,y,38,0.5,i===0?'#c09a6a':'#a5764a');}
+  for(let k=0;k<8;k++)F(cx-17+hasardF(k)*32,sol-9.5+hasardF(k+5)*3,2,0.5,'#6b4a28');       /* le veinage */
+  F(cx-19,sol-5.5,38,1,'#5b3f21');F(cx-19,sol-5,38,0.5,'rgba(0,0,0,.25)');
+  /* les accoudoirs */
+  [[-20],[18]].forEach(([k])=>{F(cx+k,sol-12,2,3,'#3d4248');F(cx+k-0.5,sol-12.5,3,1,'#4d545c');});
+  [[-15],[-5],[5],[15]].forEach(([k])=>{F(cx+k,sol-9.5,0.5,0.5,'#b7bec4');});                  /* les vis */
+  CALQUE_BANC_FIN={toile:c,W,H,sol};
+}
+
+/* ---- LA FONTAINE : margelle en blocs, eau profonde et ses reflets, fût mouluré,
+   becs de bronze patiné, vasque haute festonnée ---- */
+let CALQUE_FONTAINE_FIN=null;
+function graverLaFontaineFin(){
+  const W=90, H=104, cx=W/2, sol=H-16;
+  const c=document.createElement('canvas');c.width=W*2;c.height=H*2;
+  const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;const F=Ffin(g);
+  const PI={o:'#5f666c',s:'#6f767c',p:'#7e868d',c:'#8f979e',h:'#a4acb3',t:'#bcc4ca'};
+  const EAU={oo:'#1f4a62',o:'#2e5f7a',s:'#3a7794',p:'#4a8fae',c:'#63a8c4',h:'#8fc9dd'};
+  const ell=(dy,rx,ry,col)=>{g.fillStyle=col;g.beginPath();g.ellipse(cx,sol+dy,Math.max(0,rx),Math.max(0,ry),0,0,7);g.fill();};
+  g.fillStyle='rgba(20,34,18,.30)';g.beginPath();g.ellipse(cx+3,sol+4,36,14,0,0,7);g.fill();
+  /* le bassin : la paroi extérieure en blocs, puis l'eau */
+  ell(0,34,19,PI.s);ell(-2,34,19,PI.c);ell(-3,33,18,PI.h);
+  ell(-3,27.5,15.5,EAU.oo);ell(-3.5,27,15,EAU.o);ell(-4,26,14,EAU.s);ell(-5,22,11,EAU.p);
+  /* la paroi vue de face : blocs taillés et joints */
+  for(let i=0;i<14;i++){const a=Math.PI*(0.05+i/14*0.9), x=cx+Math.cos(a)*33, y=sol+Math.sin(a)*18;
+    F(x-2.5,y-1,5,3,i%2?PI.p:PI.c);F(x-2.5,y-1,5,0.5,PI.h);F(x+2,y-1,0.5,3,PI.o);}
+  /* la margelle : pierres une à une, arête claire */
+  for(let i=0;i<24;i++){const a=i/24*Math.PI*2, x=cx+Math.cos(a)*30.5, y=sol-3+Math.sin(a)*16.5;
+    F(x-2.5,y-1.5,5,3,i%3?PI.c:PI.p);F(x-2.5,y-1.5,5,0.5,PI.t);F(x+2,y-1.5,0.5,3,PI.s);}
+  /* les reflets du ciel sur l'eau, et le fond qu'on devine */
+  g.fillStyle='rgba(200,235,248,.35)';g.beginPath();g.ellipse(cx+9,sol-8,8,2.5,-0.2,0,7);g.fill();
+  g.fillStyle='rgba(200,235,248,.2)';g.beginPath();g.ellipse(cx-12,sol-1,5,1.5,0.2,0,7);g.fill();
+  for(let k=0;k<5;k++)F(cx-14+k*6,sol+2+hasardF(k)*3,1,0.5,'#c9a24a');                   /* quelques pièces au fond */
+  /* le socle, le fût cannelé, le chapiteau */
+  F(cx-9,sol-6,18,5,PI.c);F(cx-9,sol-6,18,1,PI.t);F(cx-9,sol-1.5,18,0.5,PI.o);
+  F(cx-7,sol-26,14,20,PI.p);F(cx-7,sol-26,4,20,PI.h);F(cx+5,sol-26,2,20,PI.s);
+  for(let k=-4;k<6;k+=3)F(cx+k,sol-24,1,16,k<0?PI.c:PI.o);                                 /* les cannelures */
+  F(cx-11,sol-30,22,6,PI.c);F(cx-11,sol-30,22,1.5,PI.t);F(cx-11,sol-25,22,0.5,PI.o);F(cx-10,sol-27.5,20,0.5,PI.p);
+  /* deux becs de bronze en tête de lion, patine verte */
+  [-1,1].forEach(s2=>{const bx=cx+s2*7;
+    F(s2>0?bx:bx-8,sol-28,8,5,'#a5763a');F(s2>0?bx:bx-8,sol-28,8,1.5,'#c9a24a');F(s2>0?bx+1:bx-7,sol-25,5,1,'#5f8a6a');
+    F(s2>0?bx+8:bx-12,sol-27,4,4,'#8a5c28');F(s2>0?bx+10:bx-12,sol-26,2,2,'#3d2a17');F(s2>0?bx+9:bx-11,sol-27,1,1,'#e8c070');});
+  /* la vasque haute, festonnée, et son eau */
+  ell(-38,15,6,PI.c);ell(-40,14,5,PI.h);ell(-41,11,4,EAU.s);ell(-41.5,9,3,EAU.p);
+  for(let k=-14;k<15;k+=3)F(cx+k,sol-34+Math.abs(k)*0.05,2,1.5,PI.p);                     /* les festons */
+  F(cx-3,sol-54,6,14,PI.p);F(cx-3,sol-54,2,14,PI.h);F(cx+2,sol-54,1,14,PI.s);
+  F(cx-5,sol-57,10,4,PI.t);F(cx-5,sol-57,10,0.5,'#d8dee2');F(cx-4,sol-59,8,2,PI.c);F(cx-1,sol-61,2,2,PI.h);
+  g.fillStyle='rgba(200,235,248,.35)';g.beginPath();g.ellipse(cx+3,sol-42,4,1,0,0,7);g.fill();
+  CALQUE_FONTAINE_FIN={toile:c,W,H,sol};
+}
+/* ---- LA BOÎTE AUX BILLETS : dé de pierre, poteau veiné, coffre à planches cerclé,
+   fente à lèvre de laiton, petit toit de tuiles rondes, plaque gravée ---- */
+let CALQUE_BOITE_FIN=null;
+function graverLaBoiteFin(){
+  const W=56,H=76,cx=W/2,sol=H-8;
+  const c=document.createElement('canvas');c.width=W*2;c.height=H*2;
+  const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;const F=Ffin(g);
+  g.fillStyle='rgba(20,34,18,.28)';g.beginPath();g.ellipse(cx+2,sol+2,13,5,0,0,7);g.fill();
+  F(cx-9,sol-6,19,6,'#7e868d');F(cx-9,sol-6,19,1,'#a4acb3');F(cx+9,sol-6,1,6,'#5f666c');F(cx-9,sol-0.5,19,0.5,'#5f666c');
+  F(cx-4,sol-28,9,22,'#5b3f21');F(cx-4,sol-28,2.5,22,'#7d5934');F(cx+4,sol-28,1,22,'#3d2a17');
+  for(let k=0;k<5;k++)F(cx-2+hasardF(k)*5,sol-26+k*4,0.5,2.5,'#3d2a17');
+  /* le coffre */
+  for(let k=0;k<26;k+=5.2){const t=hasardF(k*3);F(cx-13+k,sol-54,5,26,t<0.33?'#7d5934':(t<0.66?'#8a6238':'#6b4a28'));
+    F(cx-13+k,sol-54,5,1,'#a5764a');F(cx-13+k+4.5,sol-54,0.5,26,'#3d2a17');F(cx-13+k+1.5,sol-50+t*14,0.5,4,'#5b3f21');}
+  [sol-52,sol-33].forEach(yy=>{F(cx-14,yy,28,2.5,'#3f3f47');F(cx-14,yy,28,0.5,'#8f959b');
+    for(let k=-12;k<13;k+=6){F(cx+k,yy+0.8,1,1,'#2a2a30');F(cx+k,yy+0.8,0.5,0.5,'#b7bec4');}});
+  /* la fente et sa lèvre de laiton */
+  F(cx-9,sol-46,19,4,'#1a120c');F(cx-8,sol-44,17,1,'#0e0906');
+  F(cx-10,sol-48,21,2.5,'#b88a3a');F(cx-10,sol-48,21,0.5,'#f0cf7d');F(cx-10,sol-45.5,21,0.5,'#6a4a1a');
+  /* le toit de tuiles rondes, en bâtière */
+  for(let r=0;r<4;r++){const w=16-r*4;for(let k=-w;k<w;k+=3){const q=hasardF(r*17+k);
+    F(cx+k,sol-58-r*3,3,3.5,q<0.4?'#a4553a':(q<0.8?'#b56448':'#8f4630'));F(cx+k+0.5,sol-58-r*3,2,0.5,'#d8866a');F(cx+k+2.5,sol-58-r*3,0.5,3.5,'#6b3320');}}
+  F(cx-6,sol-71,12,2,'#c9765a');F(cx-6,sol-71,12,0.5,'#e0a080');F(cx-17,sol-55,34,1,'rgba(0,0,0,.3)');
+  /* la plaque gravée « BILLETS », clouée */
+  F(cx-15,sol-30,30,10,'#3d2a17');F(cx-15,sol-30,30,1,'#96703f');F(cx-15,sol-20.5,30,0.5,'#1a120c');
+  [[-14],[13.5]].forEach(([k])=>{F(cx+k,sol-29,1,1,'#2a2a30');F(cx+k,sol-29,0.5,0.5,'#b7bec4');});
+  g.font='700 6px Georgia,serif';g.textAlign='center';
+  g.fillStyle='#1a120c';g.fillText('BILLETS',cx+0.4,sol-22.6,27);g.fillStyle='#f0cf7d';g.fillText('BILLETS',cx,sol-23,27);g.textAlign='left';
+  CALQUE_BOITE_FIN={toile:c,W,H,sol};
+}
+/* ---- LE TABLEAU D'AFFICHAGE : montants veinés, auvent à dentelle, liège granuleux,
+   affiches écrites et punaisées de travers, lanterne de laiton ---- */
+let CALQUE_TABLEAU_FIN=null;
+function graverLeTableauFin(){
+  const W=64,H=88,x=W/2,sol=H-10;
+  const c=document.createElement('canvas');c.width=W*2;c.height=H*2;
+  const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;const F0=Ffin(g);
+  const R=(dx,dy,w,h,col)=>F0(x+dx,sol+dy,w,h,col);
+  const BO={s:'#3d2a17',o:'#5b3f21',p:'#7d5934',c:'#8a6238',h:'#a5764a',t:'#c09a6a'};
+  g.fillStyle='rgba(30,50,24,.26)';g.beginPath();g.ellipse(x+1,sol+2,20,4,0,0,7);g.fill();
+  R(-18,-12,5,12,BO.o);R(13,-12,5,12,BO.o);R(-18,-12,5,0.5,BO.c);R(13,-12,5,0.5,BO.c);
+  [[-20],[15]].forEach(([k])=>{R(k,-52,5,42,BO.p);R(k,-52,1.5,42,BO.h);R(k+4,-52,1,42,BO.s);
+    for(let j=0;j<5;j++)R(k+2,-50+j*8+hasardF(k+j)*4,0.5,3,BO.o);});
+  R(-22,-56,44,5,BO.o);R(-22,-56,44,0.5,BO.c);
+  R(-24,-60,48,5,BO.c);R(-24,-60,48,1.5,BO.t);R(-24,-55.5,48,0.5,BO.s);
+  for(let i=0;i<48;i+=4){R(-24+i,-55,2.5,1.5,'#6b4a28');R(-23.5+i,-53.5,1.5,1,'#5b3f21');}      /* la dentelle */
+  /* le liège, en grains */
+  R(-17,-50,34,38,'#8a6a44');R(-17,-50,34,1,'#a3835a');R(-17,-12.5,34,0.5,'#5f4428');
+  for(let i=0;i<150;i++){const px=-16.5+hasardF(i*1.7)*33, py=-49+hasardF(i*2.9)*36;R(px,py,0.5+(i%3?0:0.5),0.5,hasardF(i)<0.5?'#7d5f3c':'#a3835a');}
+  /* les affiches, écrites et punaisées */
+  const affiche=(dx,dy,w,h,col,ang,titre)=>{g.save();g.translate(x+dx,sol+dy);g.rotate(ang);const A=Ffin(g);
+    A(-w/2+1,-h/2+1,w,h,'rgba(20,14,8,.25)');A(-w/2,-h/2,w,h,col);A(-w/2,-h/2,w,0.5,'rgba(255,255,255,.5)');
+    A(-w/2+1.5,-h/2+1.5,w-3,1.5,titre);for(let k=0;k<4;k++)A(-w/2+1.5,-h/2+4.5+k*1.8,(w-3)*(k===3?0.6:1),0.5,'rgba(60,45,25,.5)');
+    A(-w/2+w-1.5,-h/2+h-1.5,1,1,'rgba(0,0,0,.1)');A(-1,-h/2-1,2,2,'#b93327');A(-0.5,-h/2-1,0.5,0.5,'#f08070');g.restore();};
+  affiche(-7,-38,15,12,'#f2e6c8',-0.08,'#8a3a22');affiche(7,-33,13,11,'#e8dcc0',0.1,'#2d5f8a');affiche(-4,-22,17,10,'#f6efdc',0.03,'#3f6b3a');
+  /* la lanterne de laiton, accrochée au coin */
+  R(17,-58,0.5,5,'#3d4248');R(14,-53,7,7,'#8a6a2a');R(14.5,-52.5,6,6,'#c9a24a');R(14.5,-52.5,6,1,'#f0cf7d');
+  R(15.5,-51,4,4,'#fff0c4');R(17,-51,0.5,4,'#8a6a2a');R(13.5,-54,8,1,'#5b3f21');
+  CALQUE_TABLEAU_FIN={toile:c,W,H,sol};
+}
+
+const FIN_OK=()=>{try{return STYLE_FIN();}catch(x){return false;}};
 function dessinerLaFontaine(g,x,y){
-  if(!CALQUE_FONTAINE)graverLaFontaine();
-  const C=CALQUE_FONTAINE;
+  const fin=FIN_OK();
+  if(fin&&!CALQUE_FONTAINE_FIN)graverLaFontaineFin();
+  if(!fin&&!CALQUE_FONTAINE)graverLaFontaine();
+  const C=fin?CALQUE_FONTAINE_FIN:CALQUE_FONTAINE;
   const ox=Math.round(x-C.W/2), oy=Math.round(y-C.sol);
   g.drawImage(C.toile,ox,oy,C.W,C.H);
   const t=Date.now()/1000;
@@ -4079,6 +4315,7 @@ function graverDeco(t){
   CALQUES_DECO[t]={toile:c,W,H,sol};
 }
 function dessinerDeco(g,t,x,y){
+  if(t==='bancP'&&FIN_OK()){if(!CALQUE_BANC_FIN)graverLeBancFin();const B=CALQUE_BANC_FIN;g.drawImage(B.toile,Math.round(x-B.W/2),Math.round(y-B.sol),B.W,B.H);return;}
   if(!CALQUES_DECO[t])graverDeco(t);
   const C=CALQUES_DECO[t];
   g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
@@ -4642,8 +4879,10 @@ function graverLeTableau(){
   CALQUE_TABLEAU={toile:c,W,H,sol};
 }
 function dessinerLeTableau(g,x,y){
-  if(!CALQUE_TABLEAU)graverLeTableau();
-  const C=CALQUE_TABLEAU;
+  const fin=FIN_OK();
+  if(fin&&!CALQUE_TABLEAU_FIN)graverLeTableauFin();
+  if(!fin&&!CALQUE_TABLEAU)graverLeTableau();
+  const C=fin?CALQUE_TABLEAU_FIN:CALQUE_TABLEAU;
   g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
   if(typeof lampesAllumees==='function'&&lampesAllumees())
     lueurNuit(g,x+8,y-50,22,'rgba(255,200,110,§)');
@@ -6278,6 +6517,7 @@ function graverLeTilleul(){
   CALQUE_TILLEUL={toile:c,W,H,sol};
 }
 function dessinerLeTilleul(g,x,y,gr){
+  if(FIN_OK())return dessinerLeTilleulFin(g,x,y,gr);
   if(!CALQUE_TILLEUL)graverLeTilleul();
   const C=CALQUE_TILLEUL;
   g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
@@ -6336,8 +6576,10 @@ function graverLaLanterne(){
   CALQUE_LANTERNE={toile:c,W,H,sol};
 }
 function dessinerLaLanterneP(g,x,y,i){
-  if(!CALQUE_LANTERNE)graverLaLanterne();
-  const C=CALQUE_LANTERNE;
+  const fin=FIN_OK();
+  if(fin&&!CALQUE_LANTERNE_FIN)graverLaLanterneFin();
+  if(!fin&&!CALQUE_LANTERNE)graverLaLanterne();
+  const C=fin?CALQUE_LANTERNE_FIN:CALQUE_LANTERNE;
   g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
   const T=Date.now()/1000;
   const C2=cielDuMoment();
@@ -7428,8 +7670,10 @@ function graverLaBoite(){
   CALQUE_BOITE={toile:c,W,H,sol};
 }
 function dessinerLaBoite2(g,x,y){
-  if(!CALQUE_BOITE)graverLaBoite();
-  const C=CALQUE_BOITE;
+  const fin=FIN_OK();
+  if(fin&&!CALQUE_BOITE_FIN)graverLaBoiteFin();
+  if(!fin&&!CALQUE_BOITE)graverLaBoite();
+  const C=fin?CALQUE_BOITE_FIN:CALQUE_BOITE;
   g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
   /* UNE RÉPONSE NON LUE fait battre un petit fanion */
   const attend=BILLETS.some(b=>b.sien&&b.reponse);
@@ -14136,6 +14380,7 @@ function dessiner(){
   ctx.fillStyle='#2b3a26';ctx.fillRect(0,0,VW+2,VH+2);
   const lw=Math.min(VW+2,MONDE_L-camX), lh=Math.min(VH+2,MONDE_H-camY);
   ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
+  if(CARTE==='village'&&FIN_OK())dessinerLaPlaceFin(ctx,camX,camY);    /* la grand-place en dalles fines */
   if(CARTE==='extramar'){scintillerLaMer(ctx,camX,camY);eauVivante(ctx,camX,camY);}
 
   const px=Math.round((joueur.x-camX)*ECH)/ECH;
