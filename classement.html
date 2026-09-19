@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1154';
+  var MA_VERSION='2026-09-19-1231';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -365,6 +365,14 @@ document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&['+',
     font:600 13.5px system-ui;color:#f6ecd2;letter-spacing:.4px;text-align:center}
   .retourJeu:active{transform:translateY(3px);box-shadow:inset 0 1px 0 rgba(255,232,190,.3)}
   .pied{text-align:center;margin-top:14px;font:italic 400 9px Georgia,serif;color:#c0b393}
+  .ongletsM{display:flex;gap:6px;margin:0 0 12px}
+  .ongletsM button{flex:1;border:1px solid #d8c69a;background:transparent;border-radius:10px;padding:9px;font:700 14px Georgia,serif;color:#6a5a3a}
+  .ongletsM button.on{background:#2b2418;color:#f0d79a;border-color:#2b2418}
+  .rubP{margin:16px 2px 6px;border-bottom:1px solid #d8c69a;padding-bottom:4px}
+  .rubP b{display:block;font:400 18px Georgia,serif;color:#2b2418}
+  .rubP i{font:700 9px ui-monospace,monospace;letter-spacing:1.5px;color:#a8791f;font-style:normal}
+  .rangP{width:30px;text-align:center;font:700 16px Georgia,serif;color:#a8791f;flex:0 0 30px}
+  .attenteM.petit{font-size:13px;padding:10px 0}
 </style>
 </head>
 <body>
@@ -1193,11 +1201,11 @@ async function dresserLeRegistre(){
     liste=(Array.isArray(d)?d:[]).filter(j=>
       j.pseudo&&j.pseudo!=='sans nom'&&/^[0-9a-f]{8}-/.test(j.id));
   }catch(x){
-    return $('corps').innerHTML='<div class="attenteM">Le registre est illisible pour l’instant.<br>'+
+    return $('corps').innerHTML=onglets('recolte')+'<div class="attenteM">Le registre est illisible pour l’instant.<br>'+
       'Réessaie dans un moment.</div>'+bouton();
   }
   if(!liste.length)
-    return $('corps').innerHTML='<div class="attenteM">Personne n’est encore au registre.<br>'+
+    return $('corps').innerHTML=onglets('recolte')+'<div class="attenteM">Personne n’est encore au registre.<br>'+
       'Reviens quand d’autres auront joué.</div>'+bouton();
 
   const tete=liste[0].score||0;
@@ -1244,7 +1252,7 @@ async function dresserLeRegistre(){
       '<span class="scr"><b class="ptsM">'+(j.score||0)+'</b></span></div>';
   }).join('');
 
-  $('corps').innerHTML=corps+bouton()+
+  $('corps').innerHTML=onglets('recolte')+corps+bouton()+
     '<div class="pied">tenu à jour par le camp</div>';
   $('corps').querySelectorAll('[data-ap]').forEach(sp=>{
     const j=liste[+sp.dataset.ap];
@@ -1253,6 +1261,34 @@ async function dresserLeRegistre(){
   brancherLeBouton();
 }
 const bouton=()=>'<button class="retourJeu" id="retour">Retour au jeu</button>';
+/* LES DEUX REGISTRES : la récolte, et la pêche */
+const onglets=(ici)=>'<div class="ongletsM"><button data-o="recolte"'+(ici==='recolte'?' class="on"':'')+'>Récolte</button>'+
+  '<button data-o="peche"'+(ici==='peche'?' class="on"':'')+'>Pêche</button></div>';
+document.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('.ongletsM [data-o]');if(!b)return;
+  $('corps').innerHTML='<div class="attenteM">On ouvre le registre…</div>';
+  if(b.dataset.o==='peche')dresserLaPeche();else dresserLeRegistre();});
+const NOMS_P={sardine:'sardine',bogue:'bogue',girelle:'girelle',rouget:'rouget',mulet:'mulet',dorade:'dorade',saupe:'saupe',maquereau:'maquereau',
+  seiche:'seiche',rascasse:'rascasse',loup:'loup',poulpe:'poulpe',denti:'denti',murene:'murène',congre:'congre',saintpierre:'saint-pierre',
+  thon:'thon rouge',legende:'Vieux Loup du Vieux-Port',rascassedor:'Rascasse d’or',sar:'sar',vieille:'vieille',grondin:'grondin',pagre:'pagre',
+  barracuda:'barracuda',liche:'liche',chapon:'chapon',baliste:'baliste',coryphene:'coryphène',raie:'raie',espadon:'espadon',mola:'poisson-lune',
+  requin:'requin peau-bleue',hippocampe:'hippocampe',calamar:'Calamar géant',coelacanthe:'Cœlacanthe'};
+async function dresserLaPeche(){
+  let d=null;
+  try{const r=await fetch(URL_SB+'/rest/v1/rpc/records_peche',{method:'POST',headers:sbEntetes,body:'{}'});d=await r.json();}catch(x){}
+  if(!d||d.code){$('corps').innerHTML=onglets('peche')+'<div class="attenteM">Le registre des pêcheurs est illisible pour l’instant.</div>'+bouton();brancherLeBouton();return;}
+  const ligne=(i,nom,dit,val,unite,or)=>'<div class="lgn'+(i===0?' premier':'')+'" style="animation-delay:'+(0.04+i*0.06).toFixed(2)+'s">'+
+    '<span class="rangP">'+(i===0?'★':(i+1))+'</span><span class="txt"><b class="nomM'+(i===0?' gros':'')+'">'+echapper(nom)+'</b>'+
+    (dit?'<span class="ditM">'+dit+'</span>':'')+'</span><span class="scr"><b class="ptsM'+(or||i===0?' or':'')+'">'+val+'</b>'+(unite?'<i class="ptsL">'+unite+'</i>':'')+'</span></div>';
+  const section=(titre,sous,lignes,vide)=>'<div class="rubP"><b>'+titre+'</b><i>'+sous+'</i></div>'+(lignes.length?lignes.join(''):'<div class="attenteM petit">'+vide+'</div>');
+  const quand=(t)=>{const j=Math.round((Date.now()-new Date(t).getTime())/86400000);return j<=0?'aujourd’hui':(j===1?'hier':'il y a '+j+' j');};
+  let h=onglets('peche');
+  h+=section('Les meilleurs pêcheurs','LES POINTS, SELON LA RARETÉ DES PRISES',(d.points||[]).map((x,i)=>ligne(i,x.pseudo,x.total+' poisson'+(x.total>1?'s':''),x.points,'pts')),'Personne n’a encore rien pêché.');
+  h+=section('Le carnet le plus complet','ESPÈCES DÉCOUVERTES, SUR 36',(d.especes||[]).map((x,i)=>ligne(i,x.pseudo,'',x.n+'/36','espèces')),'Aucun carnet ouvert pour l’instant.');
+  h+=section('Les plus grosses prises','CETTE SEMAINE',(d.gros||[]).map((x,i)=>ligne(i,x.pseudo,(NOMS_P[x.espece]||x.espece)+' · '+quand(x.quand),x.cm,'cm')),'Rien de sorti de l’eau cette semaine.');
+  h+=section('Les légendes','CEUX QUI LES ONT SORTIES',(d.legendes||[]).map((x,i)=>ligne(i,x.pseudo,'🏆 '+(NOMS_P[x.espece]||x.espece)+' · '+quand(x.jour),x.cm,'cm',true)),'Le Vieux Loup, la Rascasse d’or, le Calamar géant et le Cœlacanthe attendent encore.');
+  $('corps').innerHTML=h+bouton()+'<div class="pied">tenu à jour par le port</div>';
+  brancherLeBouton();
+}
 function brancherLeBouton(){
   const b=$('retour');
   if(b)b.onclick=()=>{location.href='jeu.html';};
