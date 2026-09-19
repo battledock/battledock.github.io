@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1818';
+  var MA_VERSION='2026-09-19-1821';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -13918,8 +13918,8 @@ function poseDe(ap,dir,i){
   const g=c.getContext('2d');
   g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
   const sauve=GESTE;GESTE={t:0};
-  if(STYLE_FIN()){g.setTransform(1,0,0,1,0,0);const repos=i>=100;
-    g.drawImage(graverFin(ap,dir,repos?0:(i?(i-1)/2:0),!repos&&i>0,repos?i-100:0),0,0,c.width,c.height);}
+  if(STYLE_FIN()){g.setTransform(1,0,0,1,0,0);const cl=i>=300, j=cl?i-300:i, repos=j>=100;
+    g.drawImage(graverFin(ap,dir,repos?0:(j?(j-1)/2:0),!repos&&j>0,repos?j-100:0,cl),0,0,c.width,c.height);CLIGNE_FIN=false;}
   else sprite(g,CASE_L/2,CASE_H-10,ap,dir,i?(i-1)/2:0,i>0);
   GESTE=sauve;
   L[i]=c;
@@ -14056,7 +14056,9 @@ function personne(g,x,y,ap,dir,pas,marche,enCourse){
   }
   else{
     /* immobile en pixel fin : quatre images de brise, qui passent doucement */
-    const i=marche?1+(Math.floor(pas*2)%PASM):(STYLE_FIN()?100+(Math.floor(Date.now()/420)%4):0);
+    let i=marche?1+(Math.floor(pas*2)%PASM):(STYLE_FIN()?100+(Math.floor(Date.now()/420)%4):0);
+    /* un clignement toutes les trois secondes et demie, décalé d'un joueur à l'autre */
+    if(STYLE_FIN()&&((Date.now()+((ap.peau|0)*431+(ap.cheveux|0)*97))%3600)<130)i+=300;
     const c=poseDe(ap,dir||'bas',i);
     const px0=Math.round(x-CASE_L/2), py0=Math.round(y-CASE_H+10);
     const lean=(ap===e.ap&&!aVelo)?Math.round(PENCHE.x*2)/2:0;
@@ -14211,7 +14213,7 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       if(nez==='large')R(9,hy+11,4,4,peau);if(nez==='retrousse')R(11,hy+10,1,1,peau);
       R(-2,hy+9,4,6,peauO);R(-1,hy+10,2,4,peauT);                                   /* l'oreille */
       if(boucle!=='aucune')R(-1,hy+15,2,2,boucle==='perle'?'#f2efe4':(boucle==='plume'?'#c0392b':'#e8c06a'));
-      oeilDe(4,hy+9,true);sourcilDe(3,hy+7,true);
+      oeilDe(4,hy+10,true);sourcilDe(3,hy+7,true);
       R(6,hy+17,4,1,bouche==='sourire'?T(peau,-70):T(peau,-50));
       if(bouche==='sourire')R(9,hy+16,1,1,T(peau,-70));
       if(marque==='fard')R(4,hy+13,3,2,T(peau,-12));if(marque==='taches')[[5,13],[7,14],[3,14]].forEach(([a,b])=>R(a,hy+b,1,1,peauT));
@@ -14227,7 +14229,7 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       if(!diag||vis<0)R(12,hy+10,2,5,peauO);if(!diag||vis>0)R(-14,hy+10,2,5,peauO);   /* les oreilles */
       if(boucle!=='aucune'){const bc=boucle==='perle'?'#f2efe4':(boucle==='plume'?'#c0392b':'#e8c06a');R(-14,hy+15,2,2,bc);R(12,hy+15,2,2,bc);}
       const f3=diag?vis*3:0;
-      oeilDe(-7+f3+(diag&&vis>0?1:0),hy+10,false);oeilDe(3+f3-(diag&&vis<0?1:0),hy+10,false);sourcilDe(-7+f3,hy+8,false);sourcilDe(3+f3,hy+8,false);
+      oeilDe(-7+f3+(diag&&vis>0?1:0),hy+11,false);oeilDe(3+f3-(diag&&vis<0?1:0),hy+11,false);sourcilDe(-7+f3,hy+8,false);sourcilDe(3+f3,hy+8,false);
       g.save();g.translate(f3*u*(1),0);
       /* le nez */
       if(nez==='petit')R(-1,hy+14,2,1,peauO);
@@ -14252,23 +14254,38 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       if(diag)R(vis>0?9+1:-11,hy+12,2,3,peau);                                  /* le nez qui dépasse le profil */
     }
   };
+  /* LES YEUX, REFAITS : blanc, iris à deux tons avec son anneau, pupille, reflet,
+     paupière et cils au coin extérieur ; chaque forme a sa paupière. Les yeux
+     suivent le regard de trois-quarts, et clignent de temps en temps. */
   function oeilDe(ex,ey,profil){
-    const w=profil?3:4;   /* (4 pixels fins de large, sur un visage de 24) */
-    if(fy==='plisses'){R(ex,ey+1,w,1,N);return;}
-    if(fy==='fatigues'){R(ex,ey,w,1,T(peau,-30));}
-    R(ex,ey,w,3,'#f4f0e6');
-    const ix=profil?ex+1:ex+1;
-    R(ix,ey,2,3,oeil);R(ix+ (profil?1:1),ey+1,1,1,N);R(ix,ey,1,1,'#ffffff');
-    if(fy==='ronds')R(ex,ey+3,w,1,'#f4f0e6');
-    if(fy==='doux')R(ex,ey+3,w,1,T(peau,-20));
-    if(fy==='severes'){R(ex,ey,w,1,T(peau,-30));}
+    const gauche=!profil&&ex<0, w=profil?3:5, x0=gauche?ex-1:ex;
+    const blanc='#f6f2e8', lid=T(peau,-60), coinExt=gauche?x0-1:x0+w;
+    if(CLIGNE_FIN){R(x0,ey+1,w,1,lid);R(profil?x0+w-1:coinExt,ey+1,1,1,N);return;}
+    if(fy==='plisses'){R(x0,ey+1,w,1,N);R(x0+Math.floor(w/2),ey+1,1,1,T(oeil,-10));R(coinExt,ey,1,1,N);return;}
+    const h=fy==='ronds'?4:3;
+    R(x0,ey,w,h,blanc);
+    const regard=diag?vis:(profil?1:0);
+    const iw=profil?2:3, ix=Math.max(x0,Math.min(x0+w-iw,x0+(profil?1:1)+regard));
+    R(ix,ey,iw,h,oeil);R(ix,ey,iw,1,T(oeil,-34));                      /* l'iris et son anneau sombre */
+    R(ix+(iw>2?1:0),ey+1,1,Math.min(2,h-1),N);                           /* la pupille */
+    R(ix,ey,1,1,'#ffffff');if(h>3)R(ix+iw-1,ey+h-1,1,1,T(oeil,40));    /* les reflets */
+    R(x0,ey-1,w,1,lid);                                                  /* la paupière */
+    if(!profil)R(coinExt,ey-1,1,1,N);else R(x0+w,ey-1,1,1,N);            /* les cils, au coin extérieur */
+    if(fy==='fatigues'){R(x0,ey,w,1,T(peau,-22));R(x0+1,ey+h,w-2,1,T(peau,-16));}
+    else if(fy==='doux'){R(x0,ey+h,w,1,T(peau,-14));R(gauche?x0:x0+w-1,ey,1,1,T(peau,-8));}
+    else if(fy==='severes'){R(gauche?x0+w-2:x0,ey,2,1,lid);}
+    else if(fy==='ronds'){R(x0,ey+h,w,1,T(peau,-10));}
   }
   function sourcilDe(ex,ey,profil){
-    const w=profil?4:5, c=chevO;
-    if(sourcil==='epais'){R(ex-1,ey-1,w+1,2,c);}
-    else if(sourcil==='arques'){R(ex,ey,w,1,c);R(ex+1,ey-1,w-2,1,c);}
-    else if(sourcil==='fronces'){R(ex,ey-1,2,1,c);R(ex+1,ey,w-1,1,c);}
-    else R(ex,ey,w,1,c);
+    const gauche=!profil&&ex<0, w=profil?4:6, x0=gauche?ex-1:ex, c=chevO, c2=chev;
+    const px=(k,yy,cc)=>R(x0+k,yy,1,1,cc||c);
+    if(sourcil==='epais'){R(x0,ey-1,w,2,c);R(x0+1,ey-2,w-2,1,c2);}
+    else if(sourcil==='arques'){px(0,ey);px(1,ey-1);R(x0+2,ey-2,w-4,1,c);px(w-2,ey-1);px(w-1,ey);}
+    else if(sourcil==='fronces'){
+      /* le bout intérieur plonge vers le nez */
+      for(let k=0;k<w;k++){const versInt=gauche?k/(w-1):1-k/(w-1);px(k,ey-1+Math.round(versInt*2),k%2?c:c);}
+      R(gauche?x0+w-1:x0,ey+1,1,1,c);}
+    else{R(x0+1,ey-1,w-2,1,c);px(0,ey);px(w-1,ey);}
   }
   /* ============ LES CHEVEUX, REFAITS : volume, reflets, mèches ============
      Chaque coiffure a une silhouette propre (calotte arrondie, frange, longueur,
@@ -14486,9 +14503,9 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
 /* LE CONTOUR : un liseré sombre d'un pixel fin tout autour de la silhouette,
    calculé une fois, quand la pose est gravée. C'est lui qui donne au personnage
    la même présence que l'ancien, sans alourdir les détails de l'intérieur. */
-let BRISE_PH=0;
-function graverFin(ap,dir,pas,bouge,brise){
-  BRISE_PH=(brise||0)*Math.PI/2;
+let BRISE_PH=0, CLIGNE_FIN=false;
+function graverFin(ap,dir,pas,bouge,brise,cligne){
+  BRISE_PH=(brise||0)*Math.PI/2;CLIGNE_FIN=!!cligne;
   const L=CASE_L*2, H=CASE_H*2;
   const c=document.createElement('canvas');c.width=L;c.height=H;
   const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(2,0,0,2,0,0);
