@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1838';
+  var MA_VERSION='2026-09-19-1841';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -14110,7 +14110,14 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
   const fy=YEUX_F[p.formeYeux]||'normaux', sourcil=SOURCILS[p.sourcils]||'fins', nez=NEZ[p.nez]||'droit';
   const bouche=BOUCHES[p.bouche]||'neutre', marque=MARQUES[p.marque]||'aucune', boucle=BOUCLES[p.boucle]||'aucune';
   const hautT=HAUTS[p.haut]||'veste', basT=BAS[p.bas]||'pantalon', soulier=SOULIERS[p.souliers]||'bottes';
-  const SIL={'fine':[12,10,12],'svelte':[14,11,13],'moyenne':[16,13,14],'athlétique':[18,13,14],'forte':[18,16,17]}[SILHOUETTES[p.corps]||'moyenne']||[16,13,14];
+  /* LES CINQ SILHOUETTES : épaules, taille, hanches, et désormais bras, jambes, cou,
+     ventre et poitrine. Fine et élancée ; svelte ; moyenne ; athlétique en V, bras et
+     cuisses musclés ; forte, avec un ventre rond et des membres plus épais. */
+  const SILN=SILHOUETTES[p.corps]||'moyenne';
+  const SIL={'fine':[11,9,11],'svelte':[13,10,12],'moyenne':[16,13,14],'athlétique':[19,12,14],'forte':[18,17,18]}[SILN]||[16,13,14];
+  const SX={'fine':{bras:[4,3],jambe:7,cou:6,ventre:0,pec:0},'svelte':{bras:[4,4],jambe:7,cou:6,ventre:0,pec:0},
+            'moyenne':{bras:[5,4],jambe:8,cou:7,ventre:0,pec:0},'athlétique':{bras:[6,5],jambe:9,cou:8,ventre:0,pec:1},
+            'forte':{bras:[6,5],jambe:9,cou:8,ventre:3,pec:0}}[SILN]||{bras:[5,4],jambe:8,cou:7,ventre:0,pec:0};
   const EP=SIL[0], TA=SIL[1], HA=SIL[2], N='#1b1712';
   /* ---- la marche : même formule que l'ancien, en seize temps ---- */
   const F=bouge?(Math.floor(pas*2)%16):-1, ph=bouge?F/16*Math.PI*2:0;
@@ -14133,8 +14140,8 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       /* DE PROFIL : la cuisse épaisse, le genou, le mollet qui bombe derrière, la cheville fine */
       const kx=cx+avance*7, ky=yHan+13-leve*4, fx=cx+avance*11, fyy=-3-leve*5;
       const bas=court?sk:c, basO=court?skO:cO;
-      seg(cx,yHan,kx,ky,8,c);seg(cx+1,yHan+1,kx+1,ky,1,cc);                          /* la cuisse, éclairée devant */
-      seg(kx,ky,fx,fyy,6,bas);
+      seg(cx,yHan,kx,ky,SX.jambe,c);seg(cx+1,yHan+1,kx+1,ky,1,cc);                    /* la cuisse, éclairée devant */
+      seg(kx,ky,fx,fyy,SX.jambe-2,bas);
       /* le mollet : un renflement à l'arrière, au tiers haut du tibia */
       const mx=kx+(fx-kx)*0.35-2, my=ky+(fyy-ky)*0.35;
       R(Math.round(mx)-1,Math.round(my)-2,2,5,bas);R(Math.round(mx)-2,Math.round(my)-1,1,3,basO);
@@ -14146,11 +14153,12 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     /* DE FACE ET DE DOS : la cuisse, le genou éclairé, le mollet, la cheville qui s'affine */
     const lev=Math.round(leve*4), y0=-26+bob, yGen=-14-Math.round(lev*0.6), yChev=-5-lev;
     const col=(r)=>r<yGen?c:(court?sk:c), colO=(r)=>r<yGen?cO:(court?skO:cO), colC=(r)=>r<yGen?cc:(court?skC:cc);
+    const J=SX.jambe;
     for(let r=y0;r<yChev;r++){
-      let w=8;
-      if(r>yGen+1)w=r<yGen+6?8:7;                                                     /* le mollet, puis la cheville */
-      if(r>yChev-3)w=6;
-      const x0=cx-4+(8-w>1?1:0);
+      let w=r<y0+6?J+(SX.ventre?1:0):J;                                               /* le haut de la cuisse */
+      if(r>yGen+1)w=r<yGen+6?J:J-1;                                                   /* le mollet, puis la cheville */
+      if(r>yChev-3)w=J-2;
+      const x0=cx-Math.floor(J/2)+Math.floor((J-w)/2);
       R(x0,r,w,1,court&&r>=yGen-2?sk:col(r));
       R(x0,r,1,1,court&&r>=yGen-2?skO:colO(r));R(x0+w-1,r,1,1,court&&r>=yGen-2?skC:colC(r));
     }
@@ -14198,6 +14206,9 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       if(!cote&&r<yEp+4)demi=Math.round(5+(EP-5)*(r-yEp+1)/4);            /* les trapèzes, en pente depuis le cou */
       const dd=diag?Math.round(demi*0.86):demi;
       let w=cote?Math.round(demi*1.5):dd*2, xx=cote?-Math.round(w/2):-dd+(diag?vis:0);
+      /* LE VENTRE : un arrondi entre la poitrine et la ceinture (de profil, il avance) */
+      const yV0=yEp+12, bV=SX.ventre&&r>yV0&&r<yHan+1?Math.round(SX.ventre*Math.sin(Math.PI*(r-yV0)/(yHan+1-yV0))):0;
+      if(bV){if(cote)w+=bV;else{w+=bV*2;xx-=bV;}}
       /* de profil : la poitrine bombe un peu devant, les fesses derrière */
       if(cote){if(r>yEp+3&&r<yEp+12){w+=1;}if(r>=yHan-3){w+=1;xx-=1;}}
       R(xx,r,w,1,r<yEp+3?vestC:vest);R(xx,r,1,1,vestT);R(xx+w-1,r,1,1,cote?vestC:vestT);
@@ -14208,6 +14219,8 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       if(!dos){
         /* LA POITRINE ET LA TAILLE : deux ombres douces sous la poitrine, les plis à la taille */
         R(cx0-EP+3,yEp+10,EP-4,1,vestO);R(cx0+2,yEp+10,EP-4,1,vestO);
+        if(SX.pec){R(cx0,yEp+4,1,6,vestO);R(cx0-EP+4,yEp+9,EP-5,1,vestT);R(cx0+2,yEp+9,EP-5,1,vestT);R(cx0-5,yEp+14,1,5,vestO);R(cx0+4,yEp+14,1,5,vestO);}
+        if(SX.ventre){R(cx0-TA,yHan-3,TA*2,1,vestO);R(cx0-TA+2,yHan-4,TA*2-4,1,vestC);}
         R(cx0-TA+2,yHan-5,3,1,vestO);R(cx0+TA-5,yHan-5,3,1,vestO);
       }else{
         /* LE DOS : les omoplates, la colonne, les plis au creux des reins */
@@ -14264,8 +14277,8 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       const ex=2+balance*5, ey=yEp+11, hx=2+balance*8+(balance>0?1:0), hy=yEp+20;
       const hautC=manches>0?c:sk, basC=manches>=1?c:sk;
       R(-3,yEp,7,4,manches>0?cC:sk);R(-3,yEp+3,7,1,manches>0?c:skO);          /* l'épaule, arrondie */
-      seg(1,yEp+3,ex,ey,6,hautC);seg(1,yEp+3,ex,ey,2,manches>0?cC:peauC);
-      seg(ex,ey,hx,hy,5,basC);
+      seg(1,yEp+3,ex,ey,SX.bras[0]+1,hautC);seg(1,yEp+3,ex,ey,2,manches>0?cC:peauC);
+      seg(ex,ey,hx,hy,SX.bras[1]+1,basC);
       if(manches>0&&manches<1){seg(ex,ey,hx,hy,4,sk);R(Math.round(ex)-2,Math.round(ey)-1,5,1,cT);}
       if(manches>=1)R(Math.round(hx)-2,Math.round(hy)-1,5,1,cT);             /* le poignet de la manche */
       R(Math.round(ex)+2,Math.round(ey),1,1,manches>=1?cT:skO);               /* le pli du coude */
@@ -14273,16 +14286,16 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       return;
     }
     /* DE FACE OU DE DOS : épaule, bras, coude, avant-bras qui se resserre, poignet, main */
-    const bx=cote2*(EP+3), dy=Math.round(balance*3), yC=yEp+11+Math.round(dy/2), yM=yEp+19+dy;
+    const bx=cote2*(EP+Math.ceil(SX.bras[0]/2)+1), dy=Math.round(balance*3), yC=yEp+11+Math.round(dy/2), yM=yEp+19+dy;
     const out=cote2<0?bx-2:bx+2, inn=cote2<0?bx+2:bx-2;
     /* l'épaule : un arrondi qui déborde du torse, éclairé dessus */
-    R(bx-3,yEp,6,3,manches>0?c:sk);R(bx-2,yEp-1,4,1,manches>0?cC:sk);R(bx-2,yEp,3,1,manches>0?cC:peauC);
+    const lb=SX.bras[0]+1;R(bx-Math.floor(lb/2),yEp,lb,3,manches>0?c:sk);R(bx-2,yEp-1,4,1,manches>0?cC:sk);R(bx-2,yEp,3,1,manches>0?cC:peauC);
     const bande=(y0,y1,w,col,colO,colC)=>{for(let r=y0;r<y1;r++){const x0=bx-Math.floor(w/2);R(x0,r,w,1,col);R(cote2<0?x0:x0+w-1,r,1,1,colO);R(cote2<0?x0+w-1:x0,r,1,1,colC);}};
     const mancheBas=manches>=1?yM:(manches>0?Math.round(yEp+2+(yM-yEp)*manches):yEp+2);
-    bande(yEp+2,Math.min(yC,mancheBas),5,manches>0?c:sk,manches>0?cT:skO,manches>0?cC:peauC);           /* le bras */
-    if(mancheBas<yC)bande(mancheBas,yC,5,sk,skO,peauC);
-    bande(yC,yM,4,mancheBas>yC?c:sk,mancheBas>yC?cT:skO,mancheBas>yC?cC:peauC);                         /* l'avant-bras */
-    if(mancheBas>yC&&mancheBas<yM)bande(mancheBas,yM,4,sk,skO,peauC);
+    bande(yEp+2,Math.min(yC,mancheBas),SX.bras[0],manches>0?c:sk,manches>0?cT:skO,manches>0?cC:peauC);   /* le bras */
+    if(mancheBas<yC)bande(mancheBas,yC,SX.bras[0],sk,skO,peauC);
+    bande(yC,yM,SX.bras[1],mancheBas>yC?c:sk,mancheBas>yC?cT:skO,mancheBas>yC?cC:peauC);                         /* l'avant-bras */
+    if(mancheBas>yC&&mancheBas<yM)bande(mancheBas,yM,SX.bras[1],sk,skO,peauC);
     if(manches>0&&manches<1)R(bx-2,mancheBas-1,5,1,cT);                    /* l'ourlet de la manche courte */
     if(manches>=1){R(bx-2,yM-1,5,1,cT);R(bx-2,yM-2,5,1,c);}                 /* le poignet de la manche */
     R(out,yC,1,1,manches>=1?cT:skO);                                         /* le coude */
@@ -14314,7 +14327,8 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
   const tete=()=>{
     const hy=yTete;
     /* LE COU : un peu plus large, l'ombre de la mâchoire en haut, un côté éclairé */
-    R(-3,yCou-1,7,6,peau);R(-3,yCou-1,7,2,peauO);R(-3,yCou-1,1,6,peauO);R(3,yCou+1,1,4,peauC);
+    const cx1=-Math.floor(SX.cou/2);
+    R(cx1,yCou-1,SX.cou,6,peau);R(cx1,yCou-1,SX.cou,2,peauO);R(cx1,yCou-1,1,6,peauO);R(cx1+SX.cou-1,yCou+1,1,4,peauC);
     if(!cote&&!dos){R(-1,yCou+2,1,2,peauO);R(1,yCou+2,1,2,peauO);}          /* les tendons */
     if(cote){
       for(let r=0;r<24;r++){const w=r<2?16:(r>20?15:21), xx=-10+(r>20?2:0);R(xx,hy+r,w,1,peau);}
