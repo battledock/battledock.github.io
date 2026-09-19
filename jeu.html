@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-0607';
+  var MA_VERSION='2026-09-19-0610';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -10411,6 +10411,7 @@ function dessinerUnVelo(g,x,y,dir,pas,v){
 const POISSONS_MARMITE=['sardine','rouget','dorade','seiche','loup','poulpe','congre'];
 let RECETTE={};
 function ouvrirLeCabanon(){
+  PANNEAU_PERSO=true;
   RECETTE={};
   dessinerLeCabanon();
   $('enLigne').classList.add('on');
@@ -10568,6 +10569,7 @@ async function chargerLEquipement(){
 }
 let ongletBoutique='materiel';
 async function ouvrirLaBoutiqueDePeche(){
+  PANNEAU_PERSO=true;
   const c=$('carteL');
   c.innerHTML='<div class="titL">PÊCHE & MARINE · CHEZ FANNY</div><div class="videL">Fanny cherche ses clés…</div>';
   $('enLigne').classList.add('on');
@@ -15103,7 +15105,9 @@ function asseoirLesPresents(){
   for(const id of [...AUTRES.keys()])if(!vus.has(id))AUTRES.delete(id);
   if(aChercher.length)chercherLesApparences(aChercher);
   majPastilleL();
-  if($('enLigne').classList.contains('on')){
+  /* on ne redessine la liste que si c'est ELLE qui est ouverte : la même carte
+     sert aussi à la boutique et au cabanon */
+  if($('enLigne').classList.contains('on')&&!PANNEAU_PERSO){
     if(!ficheOuverte)dessinerListeL();else ouvrirFicheJoueur(ficheOuverte);
   }
 }
@@ -15137,14 +15141,17 @@ function dessinerListeL(){
   c.querySelectorAll('[data-j]').forEach(x=>x.onclick=()=>ouvrirFicheJoueur(x.dataset.j));
 }
 function ouvrirListeL(){
+  PANNEAU_PERSO=false;
   /* un message privé en attente : on ouvre directement sa conversation */
   const attente=[...FILS_PRIVES.entries()].find(([id,f])=>f.some(m=>m.nonLu)&&EN_LIGNE.some(p=>p.id===id));
   if(attente)ouvrirFicheJoueur(attente[0]);else dessinerListeL();
   $('enLigne').classList.add('on');
 }
 const BOUTON_FERMER_L='<button id="fermerL" aria-label="Fermer">✕</button>';
-function fermerL(){$('enLigne').classList.remove('on');ficheOuverte=null;}
+let PANNEAU_PERSO=false;   /* la carte affiche la boutique ou le cabanon, pas la liste */
+function fermerL(){$('enLigne').classList.remove('on');ficheOuverte=null;PANNEAU_PERSO=false;}
 function ouvrirFicheJoueur(id){
+  PANNEAU_PERSO=false;
   const p=EN_LIGNE.find(x=>x.id===id);
   const c=$('carteL');
   $('enLigne').classList.add('on');
