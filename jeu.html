@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-0702';
+  var MA_VERSION='2026-09-19-0831';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -740,6 +740,15 @@ body{overflow:hidden}
 #panoToile{display:block;width:100%;image-rendering:pixelated;border-radius:8px}
 #panoTexte{font:italic 400 14px Georgia,serif;color:#c9c2ae;margin-top:10px}
 #panoFermer{position:absolute;right:10px;top:8px;border:0;width:32px;height:32px;border-radius:50%;background:#3a4250;color:#f2efe4;font:700 15px ui-monospace,monospace}
+#page2Fond .bRepondre{margin-top:8px;border:1px dashed #8a7c5e;background:none;border-radius:8px;padding:6px 10px;color:#5a4a2e;font:700 12px Georgia,serif}
+#page2Fond .bDev{margin-top:10px;padding:10px;border-radius:10px;background:rgba(58,40,24,.08);border:1px solid #c8b890}
+#page2Fond .bDev textarea{width:100%;box-sizing:border-box;border:1px solid #c8b890;border-radius:8px;padding:8px;font:15px Georgia,serif;background:#fffaf0}
+#page2Fond .bDevEtats{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+#page2Fond .bDevEtats button{border:1px solid #8a7c5e;background:none;border-radius:14px;padding:5px 10px;font:700 11px ui-monospace,monospace;color:#5a4a2e}
+#page2Fond .bDevEtats button.on{background:#3a2a18;color:#f2efe4;border-color:#3a2a18}
+#page2Fond .bDevPied{display:flex;gap:8px;justify-content:flex-end}
+#page2Fond .bDevPied button{border:0;border-radius:10px;padding:9px 12px;font:700 13px Georgia,serif;background:#e8dcc0;color:#3a2a18}
+#page2Fond .bDevPied #bRepPublier{background:#3a2a18;color:#f2efe4}
 #petanque{position:fixed;inset:0;z-index:29;display:none;background:rgba(10,14,8,.72);
   align-items:center;justify-content:center;padding:calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom))}
 #petanque.on{display:flex}
@@ -6934,7 +6943,10 @@ function ouvrirLaBoite(){
   $('page2').classList.add('on');
   dessinerLaBoite();
   chargerLesBillets().then(dessinerLaBoite);
+  /* le développeur : reconnu par le serveur, grâce à sa vraie session */
+  if(DEV_BILLETS===null&&sb)sb.rpc('suis_je_developpeur').then(({data})=>{DEV_BILLETS=!!data;if(DEV_BILLETS)dessinerLaBoite();}).catch(()=>{DEV_BILLETS=false;});
 }
+let DEV_BILLETS=null, billetOuvert=null, billetStatut='vu';
 function dessinerLaBoite(){
   const p=$('page2Fond');
   if(!p)return;
@@ -6953,6 +6965,11 @@ function dessinerLaBoite(){
       '<span class="bEtat" style="color:'+et[1]+'">'+et[0]+'</span>'+
       (b.reponse?('<div class="bRep"><u>RÉPONSE DU DÉVELOPPEUR</u><p>'+
         b.reponse.replace(/[<>]/g,'')+'</p></div>'):'')+
+      (DEV_BILLETS?(billetOuvert===b.id
+        ?'<div class="bDev"><textarea id="bRepTexte" rows="3" maxlength="800" placeholder="Ta réponse de développeur…">'+(b.reponse||'').replace(/[<>&]/g,'')+'</textarea>'+
+          '<div class="bDevEtats">'+Object.keys(ETIQ).map(k=>'<button data-st="'+k+'"'+(b.statut===k?' class="on"':'')+'>'+ETIQ[k][0]+'</button>').join('')+'</div>'+
+          '<div class="bDevPied"><button id="bRepAnnuler">Annuler</button><button id="bRepPublier" data-id="'+b.id+'">Publier la réponse</button></div></div>'
+        :'<button class="bRepondre" data-rep="'+b.id+'">✎ Répondre</button>'):'')+
     '</div>';
   }).join('');
   p.innerHTML=
@@ -6979,6 +6996,18 @@ function dessinerLaBoite(){
     '</div>';
   p.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{
     billetGenre=b.dataset.g;dessinerLaBoite();});
+  /* L'OUTIL DU DÉVELOPPEUR : répondre, et changer l'état du billet */
+  p.querySelectorAll('[data-rep]').forEach(b=>b.onclick=()=>{
+    billetOuvert=+b.dataset.rep;const bi=BILLETS.find(x=>x.id===billetOuvert);billetStatut=bi?(bi.statut||'ouvert'):'vu';dessinerLaBoite();});
+  p.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{billetStatut=b.dataset.st;
+    p.querySelectorAll('[data-st]').forEach(x=>x.classList.toggle('on',x===b));});
+  if($('bRepAnnuler'))$('bRepAnnuler').onclick=()=>{billetOuvert=null;dessinerLaBoite();};
+  if($('bRepPublier'))$('bRepPublier').onclick=async()=>{
+    const bt=$('bRepPublier');bt.disabled=true;bt.textContent='…';
+    const {data,error}=await sb.rpc('repondre_billet',{p_id:+bt.dataset.id,p_reponse:$('bRepTexte').value,p_statut:billetStatut||'vu'});
+    if(error||!data||data.erreur){bt.disabled=false;bt.textContent=(data&&data.erreur)||'Échec, réessaie';return;}
+    billetOuvert=null;await chargerLesBillets();dessinerLaBoite();vibrer(16);
+  };
   const env=$('bEnvoyer');
   if(env)env.onclick=async()=>{
     const t=($('bTexte').value||'').trim();
