@@ -16,7 +16,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1711';
+  var MA_VERSION='2026-09-19-1729';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -13719,6 +13719,7 @@ const cv=$('cv'), ctx=cv.getContext('2d');
 let VW=0,VH=0;
 let ECH=ZOOM;
 let ECH_CSS=ZOOM;                 /* combien de points d'écran pour un point de jeu */
+let QUALITE_TOILE=1;           /* 1 : toile en 2×, sinon 1,5× (réglé une fois, si ça rame) */
 function taille(){
   const w=window.innerWidth, h=window.innerHeight;
   /* L'échelle est celle qui cadre la vue de référence. On prend la plus
@@ -13729,7 +13730,11 @@ function taille(){
      et l'écart de cadrage entre deux téléphones reste sous 2 % */
   e=Math.max(1.2,Math.round(e*8)/8);
   ECH_CSS=e;
-  const dpr=Math.max(1,Math.min(3,window.devicePixelRatio||1));
+  /* LA FINESSE DE L'IMAGE : c'est du pixel art, inutile de peindre en 3× l'écran.
+     On plafonne à 2× (moitié moins de pixels à peindre à chaque image sur les
+     téléphones récents), et à 1,5× si le téléphone peine. */
+  const plafond=QUALITE_TOILE<1?1.5:2;
+  const dpr=Math.max(1,Math.min(plafond,window.devicePixelRatio||1));
   ECH=e*dpr;
   VW=Math.ceil(w/e)+1;VH=Math.ceil(h/e)+1;
   cv.width=Math.round(VW*ECH);cv.height=Math.round(VH*ECH);
@@ -14920,6 +14925,8 @@ function mesurer(ms){
   if(msMoyen>26){
     imagesLentes++;imagesRapides=0;
     if(imagesLentes>40&&QUALITE>0){QUALITE=QUALITE===1?0.5:0;imagesLentes=0;}
+    /* toujours lent en qualité réduite : on peint la toile un peu moins fin, une fois pour toutes */
+    if(imagesLentes>40&&QUALITE===0&&QUALITE_TOILE===1){QUALITE_TOILE=0.5;imagesLentes=0;try{taille();}catch(x){}}
   }else if(msMoyen<15){
     imagesRapides++;imagesLentes=0;
     if(imagesRapides>240&&QUALITE<1){QUALITE=QUALITE===0?0.5:1;imagesRapides=0;}
@@ -19242,7 +19249,7 @@ let t0=performance.now();
   envoyerSauvegarde();                            /* la partie, sur le serveur */
   ouvrirCanal();
   bipPosition();                                  /* le direct, 10 fois par seconde */
-  if(maintenant-envoiRapide>6000){                /* la base, juste pour la mémoire */
+  if(maintenant-envoiRapide>20000){               /* la base, juste pour la mémoire (la présence dit déjà qui est là) */
     envoiRapide=maintenant;monterEnLigne(true);
   }
   if(SECOUSSE>0.01)SECOUSSE*=Math.pow(0.0009,dt);else SECOUSSE=0;
@@ -19257,7 +19264,7 @@ let t0=performance.now();
   }
   dessinerJoy(dt);
 })(t0);
-setInterval(()=>{sauver();monterEnLigne(true);},4000);   /* on signale sa présence même immobile */
+setInterval(()=>{sauver();},4000);   /* la présence en ligne passe par le canal : plus besoin d'écrire la table toutes les 4 s */
 
 /* les réglages se lisent en dernier : tout le jeu est déclaré à ce moment,
    donc plus rien ne peut être touché avant sa création. */
