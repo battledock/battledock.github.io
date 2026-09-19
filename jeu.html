@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-0650';
+  var MA_VERSION='2026-09-19-0654';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -1770,78 +1770,100 @@ body.clavier #bandeau{padding-bottom:9px}
   }
   var MOTS_MARSEILLE=['On hisse les voiles…','Le mistral se lève…','Fonfon allume le feu…','On amarre au ponton…','La Bonne Mère veille…','On prépare les lignes…'];
   function graverMarseille(sorte){
-    var j,k,t,x,y,i;
     var cv=document.getElementById('vPre');if(!cv)return;
-    var ZO=3, W=Math.ceil(window.innerWidth/ZO), H=Math.ceil(window.innerHeight/ZO);
+    var ZO=2, W=Math.ceil(window.innerWidth/ZO), H=Math.ceil(window.innerHeight/ZO);
     cv.width=W;cv.height=H;
     var g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+    var x,y,i,j,k,t,n;
     function R(x,y,w,h,c){g.fillStyle=c;g.fillRect(x|0,y|0,w<1?1:w|0,h<1?1:h|0);}
+    function melange(a,b,u){return 'rgb('+Math.round(a[0]+(b[0]-a[0])*u)+','+Math.round(a[1]+(b[1]-a[1])*u)+','+Math.round(a[2]+(b[2]-a[2])*u)+')';}
     if(sorte===0){
-      /* 1 · LE BASSIN VU DU CIEL : l'eau turquoise, les pontons, la forêt de mâts */
-      for(var y=0;y<H;y++){var k=y/H;R(0,y,W,1,'rgb('+(40-k*14|0)+','+(150-k*40|0)+','+(170-k*30|0)+')');}
-      for(var i=0;i<900;i++)R(alea2(i*1.3)*W,alea2(i*2.1)*H,2+alea2(i)*3,1,'rgba(220,245,250,'+(0.12+alea2(i*5)*0.2)+')');
-      /* le quai en haut, dallé */
-      R(0,0,W,Math.round(H*0.13),'#d9c7a0');
-      for(y=0;y<H*0.13;y+=5)for(var x=((y/5)%2?5:0);x<W;x+=10)R(x,y,1,5,'#c2ae84');
-      R(0,Math.round(H*0.13),W,2,'#8a7a5c');
-      /* les pontons et leurs bateaux, vus d'en haut : coques en amande, ponts de teck */
-      var np=Math.max(2,Math.round(W/70));
+      /* LE BASSIN VU DU CIEL — textures soignées */
+      var qh=Math.round(H*0.12);
+      /* 1 · L'EAU : trois couches de bruit, plus claire au pied du quai, plus sombre au large */
+      for(y=qh;y<H;y++){var u=(y-qh)/(H-qh);
+        for(x=0;x<W;x++){
+          var v=lisse2(x/48,y/30)*0.55+lisse2(x/14,y/9)*0.3+lisse2(x/5,y/3)*0.15;
+          var r0=Math.round(52-u*30+v*16), g0=Math.round(170-u*72+v*26), b0=Math.round(188-u*58+v*20);
+          R(x,y,1,1,'rgb('+r0+','+g0+','+b0+')');
+        }}
+      /* les caustiques, dans l'eau claire du bord */
+      for(i=0;i<500;i++){var cx0=alea2(i*1.9)*W, cy0=qh+6+Math.pow(alea2(i*2.7),2)*H*0.25;
+        R(cx0,cy0,2+alea2(i)*3,1,'rgba(230,252,255,'+(0.18+alea2(i*4)*0.2).toFixed(2)+')');R(cx0+1,cy0+1,1,1,'rgba(230,252,255,.15)');}
+      /* les vaguelettes : des traits courts, clairs dessus, sombres dessous */
+      for(i=0;i<1600;i++){var wx=alea2(i*1.37)*W, wy=qh+alea2(i*2.11)*(H-qh), wl=3+alea2(i*3.3)*7;
+        R(wx,wy,wl,1,'rgba(225,248,252,'+(0.12+alea2(i*7)*0.22).toFixed(2)+')');R(wx+1,wy+1,wl-1,1,'rgba(10,50,70,.18)');}
+      /* 2 · LE QUAI : des dalles de tons différents, biseautées, patinées */
+      var tons=['#dccba0','#d4c294','#e2d2ab','#cfbd90','#d8c69a'];
+      R(0,0,W,qh,'#b9a57c');
+      for(y=0;y<qh;y+=8){var dec=((y/8)%2)?11:0;
+        for(x=-dec;x<W;x+=22){
+          var tn=tons[Math.floor(alea2(x*0.37+y*1.3)*tons.length)];
+          R(x+1,y+1,20,6,tn);
+          R(x+1,y+1,20,1,'rgba(255,250,230,.55)');R(x+1,y+1,1,6,'rgba(255,250,230,.35)');     /* le biseau éclairé */
+          R(x+1,y+6,20,1,'rgba(90,70,40,.28)');R(x+20,y+1,1,6,'rgba(90,70,40,.2)');         /* l'ombre */
+          for(k=0;k<4;k++)R(x+2+alea2(x+y+k)*17,y+2+alea2(x*2+y+k)*4,1,1,'rgba(110,85,50,.22)');  /* le grain */
+          if(alea2(x*1.7+y*0.9)<0.08){R(x+4,y+3,8,1,'rgba(90,70,40,.3)');R(x+11,y+2,3,1,'rgba(90,70,40,.3)');}  /* une fissure */
+        }}
+      /* la margelle : de gros blocs de pierre, arrondis, qui surplombent l'eau */
+      R(0,qh,W,6,'#c4b088');
+      for(x=0;x<W;x+=26){R(x,qh,25,6,'#cdb990');R(x,qh,25,2,'#e8d8b0');R(x+25,qh,1,6,'#9a8664');R(x,qh+5,25,1,'#8a7654');}
+      /* l'ombre du quai sur l'eau, et une frange d'algues */
+      for(x=0;x<W;x++){R(x,qh+6,1,4,'rgba(8,40,56,.38)');if(alea2(x*3.1)<0.35)R(x,qh+6+alea2(x)*3,1,2,'#3f6a4a');}
+      /* les bittes d'amarrage en fonte, avec leur reflet */
+      for(x=16;x<W;x+=42){R(x-1,qh-8,8,3,'rgba(40,30,18,.3)');R(x,qh-9,6,6,'#2e2e2a');R(x+1,qh-9,4,1,'#6a6a62');R(x+1,qh-8,1,3,'#8a8a82');R(x-1,qh-4,8,2,'#3b3a36');}
+      /* 3 · LES PONTONS : planches de deux tons, clous, longerons, taquets */
+      var np=Math.max(2,Math.round(W/95));
       for(var p=0;p<np;p++){
-        var px=Math.round((p+0.5)*W/np), y0=Math.round(H*0.13), y1=Math.round(H*0.78);
-        R(px-3,y0,6,y1-y0,'#8a6238');for(y=y0;y<y1;y+=3)R(px-3,y,6,1,'#6b4a2c');
-        for(y=y0+10;y<y1-4;y+=11){
+        var px=Math.round((p+0.5)*W/np), y0=qh+6, y1=Math.round(H*0.86);
+        R(px-7,y0+2,14,y1-y0,'rgba(8,40,56,.35)');                                    /* l'ombre portée */
+        for(y=y0;y<y1;y+=4){var pl=alea2(px+y)<0.5?'#a67a4c':'#9a7048';
+          R(px-6,y,12,3,pl);R(px-6,y,12,1,'#be9464');R(px-6,y+3,12,1,'#5e3e22');
+          R(px-4,y+1,1,1,'#3a2616');R(px+3,y+1,1,1,'#3a2616');}
+        R(px-7,y0,1,y1-y0,'#4a2e18');R(px+6,y0,1,y1-y0,'#4a2e18');
+        for(y=y0+8;y<y1;y+=34){R(px-8,y,2,4,'#b9c1c7');R(px+6,y,2,4,'#b9c1c7');}   /* les taquets d'inox */
+        /* 4 · LES VOILIERS, à couple de chaque côté */
+        for(y=y0+14;y<y1-6;y+=18){
           [-1,1].forEach(function(s2){
-            if(alea2(px*0.3+y*1.7+s2)<0.2)return;
-            var bx=px+s2*20, L=26, h2=5;
-            for(var j=-L/2;j<L/2;j++){var hh=Math.round(h2*Math.sqrt(1-Math.pow(j/(L/2),2)));
-              R(bx+j,y-hh,1,hh*2,alea2(bx+j)<0.08?'#1f3f6f':'#f4f2ea');}
-            R(bx-8,y-2,12,4,'#a97f52');R(bx-2,y-1,5,2,'#f4f2ea');R(bx+s2*-2,y-1,2,2,'#c9c9c4');
-            R(bx-12,y+h2+1,24,1,'rgba(10,40,60,.25)');
+            if(alea2(px*0.3+y*1.7+s2)<0.18)return;
+            var L=40, h2=8, bx=px+s2*(8+L/2);
+            var bleu=alea2(px+y+s2)<0.14, coque=bleu?'#23406a':'#f7f5ee', coqueO=bleu?'#152a48':'#c9c4b6';
+            var housse=['#2d5f8f','#1f3f6f','#8a2a22','#2f5a44'][Math.floor(alea2(px*1.1+y+s2)*4)];
+            var prof=function(j){var q=(j*-s2+L/2)/L;return Math.max(1,Math.round(h2*Math.sqrt(Math.max(0,1-Math.pow(q*1.06-0.06,2)))));};
+            /* l'ombre dans l'eau, décalée */
+            for(j=-L/2;j<L/2;j++){var hs=prof(j);R(bx+j+3,y-hs+4,1,hs*2,'rgba(6,36,52,.32)');}
+            /* la coque : liston sombre, bouchain, reflet */
+            for(j=-L/2;j<L/2;j++){var hh=prof(j);
+              R(bx+j,y-hh,1,hh*2,coque);
+              R(bx+j,y-hh,1,1,coqueO);R(bx+j,y+hh-1,1,1,coqueO);
+              R(bx+j,y-hh+1,1,1,'rgba(255,255,255,.5)');}
+            /* le pont en teck, lame par lame */
+            for(j=Math.round(-L*0.33);j<L*0.3;j++){var hd=prof(j)-3;if(hd<1)continue;R(bx+j,y-hd,1,hd*2,(j%2)?'#b58a5c':'#a67c50');}
+            /* le rouf, ses hublots, le cockpit, l'écoutille */
+            R(bx-L*0.14,y-4,L*0.26,8,'#f4f2ea');R(bx-L*0.14,y-4,L*0.26,1,'#ffffff');R(bx-L*0.14,y+3,L*0.26,1,'#c9c4b6');
+            R(bx-L*0.1,y-3,2,1,'#3b4a52');R(bx-L*0.02,y-3,2,1,'#3b4a52');R(bx-L*0.1,y+2,2,1,'#3b4a52');R(bx-L*0.02,y+2,2,1,'#3b4a52');
+            R(bx+s2*L*0.24-3,y-3,6,6,'#6a5440');R(bx+s2*L*0.24-2,y-2,4,4,'#4a3a2c');
+            R(bx+s2*-L*0.28,y-1,3,2,'#9aa0a6');
+            /* le mât, la bôme et sa housse de couleur */
+            R(bx-2,y-2,4,4,'#9a9a94');R(bx-1,y-1,2,2,'#e8e8e2');
+            var hb=s2*-L*0.3;R(bx+(s2>0?hb:2),y-2,Math.abs(hb),4,housse);R(bx+(s2>0?hb:2),y-2,Math.abs(hb),1,'rgba(255,255,255,.3)');
+            /* les pare-battages contre le ponton, et l'amarre */
+            R(px+s2*7-1,y-5,3,3,'#f4f2ea');R(px+s2*7-1,y+2,3,3,'#2d5f8f');
+            for(k=0;k<6;k++)R(px+s2*(7+k),y-7+k*0.3,1,1,'#d8d0c0');
           });
         }
       }
-      /* le soleil couchant qui dore l'eau */
-      var grd=g.createRadialGradient(W*0.2,H*0.9,10,W*0.2,H*0.9,H*0.8);
-      grd.addColorStop(0,'rgba(255,190,110,.35)');grd.addColorStop(1,'rgba(255,190,110,0)');
+      /* 5 · LA LUMIÈRE DU SOIR : elle dore le bas et fait briller l'eau */
+      var grd=g.createRadialGradient(W*0.15,H*1.05,10,W*0.15,H*1.05,H*0.95);
+      grd.addColorStop(0,'rgba(255,196,120,.4)');grd.addColorStop(1,'rgba(255,196,120,0)');
       g.fillStyle=grd;g.fillRect(0,0,W,H);
-    }else if(sorte===1){
-      /* 2 · LE PORT AU COUCHANT : le ciel, la Bonne Mère sur sa colline, le château d'If */
-      for(y=0;y<H*0.55;y++){k=y/(H*0.55);
-        R(0,y,W,1,'rgb('+(60+k*190|0)+','+(70+k*110|0)+','+(120+k*20|0)+')');}
-      var sx=W*0.62, sy=H*0.5;
-      g.fillStyle='rgba(255,230,160,.9)';g.beginPath();g.arc(sx,sy,W*0.08,0,7);g.fill();
-      /* la colline de la Garde et la basilique en silhouette */
-      for(x=0;x<W;x++){var t=Math.round(H*0.5-Math.max(0,H*0.18*Math.cos((x-W*0.3)/(W*0.22))));R(x,t,1,H*0.55-t,'#3a2a3a');}
-      var bx2=Math.round(W*0.3), by2=Math.round(H*0.32);
-      R(bx2-14,by2,28,10,'#2a1e2a');R(bx2-4,by2-22,8,22,'#2a1e2a');R(bx2-2,by2-30,4,8,'#e8b84a');R(bx2-1,by2-33,2,3,'#fff0b0');
-      /* la mer, et le reflet du soleil */
-      for(y=Math.round(H*0.55);y<H;y++){k=(y-H*0.55)/(H*0.45);R(0,y,W,1,'rgb('+(70-k*40|0)+','+(80-k*40|0)+','+(120-k*30|0)+')');}
-      for(i=0;i<260;i++){var ry=H*0.56+alea2(i*1.7)*H*0.44, rw=(1-(ry-H*0.55)/(H*0.45))*18+4;
-        R(sx-rw/2+alea2(i*3.3)*rw-rw/2,ry,3+alea2(i)*6,1,'rgba(255,210,140,'+(0.25+alea2(i*9)*0.4)+')');}
-      /* le château d'If, au large */
-      var ix=Math.round(W*0.82), iy=Math.round(H*0.56);
-      R(ix-16,iy-3,32,4,'#2a2030');R(ix-6,iy-10,12,7,'#2a2030');R(ix-4,iy-13,3,3,'#2a2030');R(ix+2,iy-13,3,3,'#2a2030');
-      /* un pointu qui rentre au port */
-      var px2=Math.round(W*0.45), py2=Math.round(H*0.72);
-      R(px2-12,py2,24,4,'#1f1820');R(px2-9,py2-1,18,1,'#1f1820');R(px2,py2-16,1,15,'#1f1820');
-      g.fillStyle='#2a2030';g.beginPath();g.moveTo(px2+1,py2-15);g.lineTo(px2+10,py2-2);g.lineTo(px2+1,py2-2);g.fill();
-    }else{
-      /* 3 · SOUS L'EAU : les rais de lumière, les posidonies, un banc de sardines */
-      for(y=0;y<H;y++){k=y/H;R(0,y,W,1,'rgb('+(30-k*20|0)+','+(120-k*70|0)+','+(150-k*80|0)+')');}
-      g.fillStyle='rgba(255,255,255,.07)';
-      for(i=0;i<6;i++){var lx=W*(0.1+i*0.17);g.beginPath();g.moveTo(lx,0);g.lineTo(lx+W*0.08,0);g.lineTo(lx-W*0.1,H);g.lineTo(lx-W*0.18,H);g.fill();}
-      for(x=0;x<W;x++){t=Math.round(H*0.9+Math.sin(x/9)*3+Math.sin(x/4));R(x,t,1,H-t,'#b8a478');}
-      for(i=0;i<Math.round(W/8);i++){var hx=alea2(i*5.1)*W, hh2=20+alea2(i*7.7)*H*0.2;
-        for(j=0;j<hh2;j++)R(hx+Math.sin(j/6+i)*3,H*0.92-j,2,1,i%2?'#2f5a34':'#3f7a44');}
-      /* le banc de sardines, en tourbillon */
-      for(i=0;i<140;i++){var a=alea2(i*1.3)*6.28, r=alea2(i*2.9)*W*0.28;
-        var fx=W*0.55+Math.cos(a)*r, fy=H*0.45+Math.sin(a)*r*0.5;
-        R(fx,fy,5,2,'#c9d6e0');R(fx,fy,5,1,'#e8f0f4');R(fx-2,fy,2,2,'#8499aa');}
-      for(i=0;i<60;i++)R(alea2(i*9.1)*W,alea2(i*4.4)*H*0.85,1,1,'rgba(230,248,255,.6)');
+      for(i=0;i<260;i++){var gx=alea2(i*9.1)*W*0.65, gy=H*0.62+alea2(i*4.7)*H*0.38;R(gx,gy,2+alea2(i)*6,1,'rgba(255,224,168,'+(0.22+alea2(i*2)*0.38).toFixed(2)+')');}
+      var vg=g.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.8);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(10,20,30,.28)');
+      g.fillStyle=vg;g.fillRect(0,0,W,H);                                               /* un léger vignettage */
     }
   }
   if(aMarseille()){
-    var sorteM=Math.floor(Math.random()*3);
+    var sorteM=0;                                   /* un seul tableau à Marseille : le bassin */
     graver=function(){graverMarseille(sorteM);};
     try{graver();}catch(x){}
     try{var m=document.getElementById('vMot');if(m)m.textContent=MOTS_MARSEILLE[Math.floor(Math.random()*MOTS_MARSEILLE.length)];}catch(x){}
