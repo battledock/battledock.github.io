@@ -39,7 +39,12 @@ h1{font:400 24px Georgia,serif;margin:4px 0 6px}
 #plan .ligneT{display:flex;align-items:center;gap:8px;font:700 12px ui-monospace,monospace;margin-bottom:12px}
 #plan .num{width:24px;height:24px;border-radius:50%;background:var(--or);color:#1b1b1b;border:2px solid #1b1b1b;
   display:flex;align-items:center;justify-content:center;font:700 13px ui-monospace,monospace}
-#trace{position:relative;padding-left:22px}
+#trace,#trace2{position:relative;padding-left:22px}
+#ligne2{margin-top:14px;padding-top:12px;border-top:2px dashed rgba(27,27,27,.25)}
+#plan .l2 .n2{background:#6fb3e0}
+#plan .bientot{margin-left:auto;font:700 9px ui-monospace,monospace;letter-spacing:1.5px;background:#1b1b1b;color:#f4f1e6;border-radius:4px;padding:3px 6px;font-style:normal}
+#trace2::before{content:'';position:absolute;left:8px;top:10px;bottom:10px;width:6px;border:2px solid #1b1b1b;border-radius:3px;
+  background:repeating-linear-gradient(180deg,#6fb3e0 0 6px,#f4f1e6 6px 10px)}
 #trace::before{content:'';position:absolute;left:8px;top:10px;bottom:10px;width:6px;background:var(--or);
   border:2px solid #1b1b1b;border-radius:3px}
 .arret{position:relative;display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;
@@ -98,6 +103,8 @@ h1{font:400 24px Georgia,serif;margin:4px 0 6px}
   <div id="plan">
     <div class="ligneT"><span class="num">1</span>VILLAGE ⇄ EXTRAMAR</div>
     <div id="trace"></div>
+    <div id="ligne2"><div class="ligneT l2"><span class="num n2">2</span>VILLAGE ⇄ LA MONTAGNE<em class="bientot">BIENTÔT</em></div>
+      <div id="trace2"></div></div>
   </div>
   <div class="boutons">
     <button id="remonter">↑ Remonter</button>
@@ -132,10 +139,12 @@ const $=id=>document.getElementById(id);
 const STATIONS=[
   {id:'village',nom:'Village',sous:'la place, la fontaine',ouvert:true,sortie:'jeu.html',prix:500},
   {id:'port',nom:'Extramar',sous:'le port, les docks, les grues',ouvert:true,sortie:'jeu.html?carte=extramar&arrivee=1',prix:500},
+  /* LIGNE 2 : vers la montagne. Tracée, annoncée, mais pas encore ouverte. */
+  {id:'montagne',nom:'La Montagne',sous:'ouverture prochaine',ouvert:false,ligne:2,sortie:'jeu.html?carte=montagne',prix:800},
 ];
 /* LA STATION OÙ L'ON EST : metro.html (Village) ou metro.html?station=port */
 const ICI=STATIONS.find(s=>s.id===new URLSearchParams(location.search).get('station'))||STATIONS[0];
-const LAS=STATIONS.find(s=>s.id!==ICI.id);          /* l'autre bout de la ligne */
+const LAS=STATIONS.find(s=>s.id!==ICI.id&&s.ligne!==2);   /* l'autre bout de la ligne 1 */
 const AU_PORT=ICI.id==='port';
 /* L'ARGENT : le même joueur que dans le jeu. Le serveur seul débite, et
    fixe le prix : le navigateur ne fait que l'afficher. */
@@ -362,7 +371,14 @@ function dessiner(t){
 
 /* ---------- le plan de ligne ---------- */
 function dessinerLePlan(){
-  $('trace').innerHTML=STATIONS.map(s=>{
+  /* LA LIGNE 2, vers la montagne : on la voit depuis le Village, fermée pour l'instant */
+  const l2=ICI.id==='village';
+  $('ligne2').style.display=l2?'block':'none';
+  if(l2){const m=STATIONS.find(s=>s.id==='montagne');
+    $('trace2').innerHTML='<div class="arret ici"><span style="flex:1"><b>Village</b><br><span>VOUS ÊTES ICI</span></span></div>'+
+      '<div class="arret ferme"><span style="flex:1"><b>'+m.nom+'</b><br><span>🔒 '+m.sous+'</span></span><span class="prixT">fermée</span></div>';}
+  document.querySelector('.surT').textContent=l2?'MÉTRO · LIGNES 1 ET 2':'MÉTRO · LIGNE 1';
+  $('trace').innerHTML=STATIONS.filter(s=>s.ligne!==2).map(s=>{
     const ici=s.id===ICI.id;
     return '<button class="arret'+(ici?' ici':'')+(choix===s.id?' choisi':'')+(s.ouvert?'':' ferme')+
       '" data-s="'+s.id+'"'+(ici?' disabled':'')+'><span style="flex:1"><b>'+s.nom+'</b><br>'+
