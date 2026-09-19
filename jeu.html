@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-0654';
+  var MA_VERSION='2026-09-19-0657';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -16187,7 +16187,8 @@ async function lancerLaLigne(){
   const P=PECHE;
   const d=await appelRPC('pecher_touche',{p_joueur:e.id,p_lieu:L.lieu});
   if(PECHE!==P)return;
-  if(!d||d.erreur){annulerLaPeche(!d?'la ligne s’emmêle':(d.erreur==='trop tot'?'patience…':'rien ne mord ici'));return;}
+  /* une réponse sans espèce (le serveur a buté) : on ne laisse jamais attendre pour rien */
+  if(!d||d.erreur||!d.espece){annulerLaPeche(!d||!d.espece&&!d.erreur?'la ligne s’emmêle, relance':(d.erreur==='trop tot'?'patience…':'rien ne mord ici'));return;}
   P.esp=d.espece;P.cm=d.cm;
   P.eq={canne:d.canne||0,moulinet:!!d.moulinet,bouchon:!!d.bouchon,finition:d.finition||null};
   if(EQUIP_PECHE){EQUIP_PECHE.canne=P.eq.canne;EQUIP_PECHE.finition=P.eq.finition;if(d.appat)EQUIP_PECHE.appats[d.appat]=d.reste;}
@@ -16248,6 +16249,7 @@ function tempsDeLaPeche(t,dt){
   if(P.etat!=='combat'&&P.etat!=='remonte'&&P.etat!=='saute'&&Math.hypot(joueur.x-P.px,joueur.y-P.py)>5){annulerLaPeche('ligne relevée');return;}
   if(P.etat==='combat'||P.etat==='remonte'||P.etat==='saute'){joueur.x=P.px;joueur.y=P.py;}
   if(P.etat==='lance'&&t-P.t0>600){P.etat='attend';majAction();}
+  if(P.etat==='attend'&&!P.esp&&t>P.mordA+4000){annulerLaPeche('la ligne s’emmêle, relance');return;}
   if(P.etat==='attend'&&t>=P.mordA&&P.esp){
     P.etat='mord';P.mordT=t;vibrer([30,40,30]);eclaboussure(P.bx,P.by);majAction();
   }
