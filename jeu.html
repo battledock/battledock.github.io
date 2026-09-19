@@ -16,7 +16,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1513';
+  var MA_VERSION='2026-09-19-1519';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -17326,14 +17326,17 @@ function saignerLAmbre(o){
       c:i%3?'#e8a94a':'#ffd27a',rebondi:false});
   }
   secouer(0.25);vibrer([14,26,18]);
-  const q=1+(Math.random()<0.35?1:0);
-  const pris=ajouter('ambre',q);
-  if(pris>0){
-    e.recolte=(e.recolte||0)+pris;marquer('ambre',pris);
-    texteVolant(o.x,o.y-30,'+'+pris+' ambre','#ffd27a');
-    sauver();majHaut();majPastille();
-  }else texteVolant(o.x,o.y-30,'le sac est plein','#e8a06a');
-  majAction();
+  /* c'est le SERVEUR qui met l'ambre dans le sac : sinon le comptoir ne la voit pas */
+  const cle=o.cle||('t@'+Math.round(o.x)+','+Math.round(o.y));
+  const num=++numAppelSac;
+  appelRPC('saigner_ambre',{p_joueur:e.id,p_cle:cle}).then(d=>{
+    if(d&&d.sac)adopterSac(d,num);
+    if(d&&d.pris>0){
+      e.recolte=(e.recolte||0)+d.pris;marquer('ambre',d.pris);
+      texteVolant(o.x,o.y-30,'+'+d.pris+' ambre','#ffd27a');
+    }else texteVolant(o.x,o.y-30,(d&&d.erreur)||'la coulée s’est figée','#e8a06a');
+    sauver();majHaut();majPastille();majAction();
+  });
 }
 /* ---- LAVER L'ARGILE ---- */
 function laverLArgile(){
@@ -17346,8 +17349,6 @@ function laverLArgile(){
 }
 function finirLeLavage(){
   if((e.sac.argile||0)<ARGILE_PAR_LAVAGE)return;
-  e.sac.argile-=ARGILE_PAR_LAVAGE;
-  if(!e.sac.argile)delete e.sac.argile;
   /* l'eau qui gicle du tamis */
   for(let i=0;i<16;i++){
     const a=-0.9-Math.random()*1.2;
@@ -17357,18 +17358,20 @@ function finirLeLavage(){
       vie:.8,taille:2,rot:0,vrot:0,
       c:i%2?'#8fc9dd':'#cfeaf4',rebondi:false});
   }
-  const deux=Math.random()<0.2;                 /* une fois sur cinq, deux */
-  const q=deux?2:1;
-  const pris=ajouter('pepite',q);
   secouer(0.3);
-  if(pris>0){
-    e.recolte=(e.recolte||0)+pris;marquer('pepite',pris);
-    jouer('pepite','moment');
-    texteVolant(joueur.x,joueur.y-34,(deux?'+2 pépites !':'+1 pépite'),
-      deux?'#ffd27a':'#c4ccd2');
-    vibrer(deux?[12,30,26]:24);
-  }else texteVolant(joueur.x,joueur.y-34,'le sac est plein','#e8a06a');
-  sauver();majHaut();majPastille();majAction();
+  /* le SERVEUR retire les dix argiles et met la pépite au sac */
+  const num=++numAppelSac;
+  appelRPC('laver_argile',{p_joueur:e.id}).then(d=>{
+    if(d&&d.sac)adopterSac(d,num);
+    if(d&&d.pris>0){
+      const deux=d.pris>1;
+      e.recolte=(e.recolte||0)+d.pris;marquer('pepite',d.pris);
+      jouer('pepite','moment');
+      texteVolant(joueur.x,joueur.y-34,(deux?'+2 pépites !':'+1 pépite'),deux?'#ffd27a':'#c4ccd2');
+      vibrer(deux?[12,30,26]:24);
+    }else texteVolant(joueur.x,joueur.y-34,(d&&d.erreur)||'l’eau a tout emporté','#e8a06a');
+    sauver();majHaut();majPastille();majAction();
+  });
 }
 
 function recolterResine(o){
