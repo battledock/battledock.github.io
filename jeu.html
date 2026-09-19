@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1830';
+  var MA_VERSION='2026-09-19-1833';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -14499,22 +14499,70 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     R(-6+(diag?vis*2:0),hy+1,10,1,T(peau,30));R(-4+(diag?vis*2:0),hy+2,5,1,peauC);
   }
   /* ============ LA BARBE ============ */
+  /* ============ LES BARBES, REFAITES ============
+     La barbe suit la mâchoire (plus étroite au menton), elle a une matière (poils
+     plus sombres et plus clairs, une ombre sous la moustache), et chaque barbe a sa
+     forme propre : barbe de trois jours en pointillés, moustache tombante, bouc,
+     collier le long de la mâchoire, favoris, impériale, barbe longue ou fourchue. */
   const barbeDe=()=>{
     if(barbe==='aucune'||dos)return;
-    const c=barbe==='naissante'?T(peau,-28):chevO, hy=yTete;
+    const hy=yTete, bB=chev, bO=T(chev,-26), bOO=T(chev,-46), bC=T(chev,24);
+    const piquant=melangeF(peau,chev,0.42);
+    const poil=(x,r,prob)=>{const k=((x*7+r*13)%11+11)%11;return k<prob;};
     if(cote){
-      const h={naissante:6,fine:4,courte:7,pleine:9,longue:14,bouc:6,moustache:0,collier:5,favoris:8,'impériale':6,fourchue:14}[barbe]||6;
-      if(barbe==='moustache'){R(6,hy+15,5,2,c);return;}
-      R(0,hy+14,11,Math.min(h,9),c);if(h>9)R(3,hy+23,7,h-9,c);R(6,hy+17,4,1,T(peau,-50));
+      /* ---- DE PROFIL : la joue, la mâchoire, le menton qui avance ---- */
+      const joue=(r0,r1,x0,x1)=>{for(let r=r0;r<r1;r++)for(let x=x0;x<x1;x++){
+        if(x>=6&&r>=hy+17&&r<=hy+19&&barbe!=='naissante')continue;                     /* on laisse la bouche */
+        R(x,r,1,1,poil(x,r,3)?bO:(poil(x,r,5)?bC:bB));}};
+      if(barbe==='naissante'){for(let r=hy+14;r<hy+23;r++)for(let x=1;x<10;x++)if((x+r)%2===0)R(x,r,1,1,piquant);return;}
+      if(barbe==='moustache'||barbe==='impériale'||barbe==='bouc'){R(6,hy+16,5,1,bB);R(9,hy+17,2,1,bO);R(7,hy+16,2,1,bC);}
+      if(barbe==='bouc'){for(let r=hy+19;r<hy+25;r++)R(7,r,4-(r>hy+23?1:0),1,r%2?bB:bO);}
+      if(barbe==='impériale'){R(8,hy+20,2,4,bB);R(8,hy+23,1,1,bO);}
+      if(barbe==='favoris'){for(let r=hy+8;r<hy+18;r++)R(2,r,3,1,r%3?bB:bO);}
+      if(barbe==='collier'){for(let r=hy+12;r<hy+24;r++){const x=2+Math.round((r-hy-12)*0.6);R(x,r,2,1,r%2?bB:bO);}R(6,hy+23,5,1,bB);}
+      if(barbe==='fine'){for(let r=hy+14;r<hy+23;r++)R(2+Math.round((r-hy-14)*0.7),r,1,1,bO);R(7,hy+22,4,1,bO);}
+      if(barbe==='courte'||barbe==='pleine'||barbe==='longue'||barbe==='fourchue'){
+        joue(hy+(barbe==='courte'?15:13),hy+(barbe==='courte'?23:25),2,11);R(6,hy+16,5,1,bB);R(7,hy+16,2,1,bC);
+        R(6,hy+18,4,1,fente);R(9,hy+19,1,1,levreC);
+        if(barbe==='longue'||barbe==='fourchue'){for(let r=hy+25;r<hy+34;r++){const w=Math.max(2,8-Math.round((r-hy-25)*0.7));
+          R(3+Math.round((r-hy-25)*0.3),r,w,1,poil(3,r,4)?bO:bB);}
+          if(barbe==='fourchue')R(5,hy+31,1,3,peau);}
+      }
       return;
     }
-    if(barbe==='moustache'){R(-4,hy+15,8,2,c);return;}
-    if(barbe==='bouc'||barbe==='impériale'){R(-2,hy+18,4,barbe==='bouc'?5:4,c);if(barbe==='bouc')R(-4,hy+15,8,1,c);return;}
-    if(barbe==='favoris'){R(-10,hy+10,3,9,c);R(7,hy+10,3,9,c);return;}
-    const h={naissante:5,fine:3,courte:6,pleine:8,longue:14,collier:4,fourchue:14}[barbe]||5;
-    for(let r=0;r<h;r++){const w=r<4?18-r:14-Math.round(r*0.6);R(-Math.round(w/2),yTete+16+r,w,1,r%3?c:T(c,14));}
-    if(barbe==='fourchue'){R(-1,yTete+24,2,6,peau);}
-    R(-3,yTete+18,6,1,fente);
+    /* ---- DE FACE (et de trois-quarts : la barbe suit un peu le regard) ---- */
+    const dx=diag?vis*2:0;
+    const largeur=(r)=>{const k=r-hy;return k<20?12:(k===20?11:(k===21?10:(k===22?9:8)));};   /* la mâchoire */
+    const bouche0=(x,r)=>Math.abs(x-dx)<=3&&r>=hy+17&&r<=hy+19;
+    const zone=(r0,r1,bords)=>{for(let r=r0;r<r1;r++){const hw=largeur(r);
+      for(let x=-hw;x<hw;x++){if(bouche0(x,r))continue;if(bords&&r<hy+16&&Math.abs(x)<hw-bords)continue;
+        R(x+dx,r,1,1,poil(x,r,3)?bO:(poil(x,r,5)?bC:bB));}
+      R(-hw+dx,r,1,1,bOO);R(hw-1+dx,r,1,1,bOO);}};
+    const moustache=(tombe)=>{R(-4+dx,hy+16,8,1,bB);R(-5+dx,hy+17,2,1,bB);R(3+dx,hy+17,2,1,bB);
+      R(-2+dx,hy+16,2,1,bC);R(-4+dx,hy+17,8,1,bOO);
+      if(tombe){R(-5+dx,hy+18,1,2,bO);R(4+dx,hy+18,1,2,bO);}};
+    if(barbe==='naissante'){for(let r=hy+14;r<hy+24;r++){const hw=largeur(r);for(let x=-hw+1;x<hw-1;x++){if(bouche0(x,r))continue;
+        if(r<hy+16&&Math.abs(x)<hw-3)continue;if((x+r)%2===0)R(x+dx,r,1,1,piquant);}}
+      R(-3+dx,hy+16,6,1,piquant);return;}
+    if(barbe==='moustache'){moustache(true);return;}
+    if(barbe==='bouc'){moustache(false);for(let r=hy+19;r<hy+25;r++){const w=r>hy+23?2:4;R(-Math.round(w/2)+dx,r,w,1,poil(0,r,4)?bO:bB);}return;}
+    if(barbe==='impériale'){R(-4+dx,hy+16,8,1,bO);R(-1+dx,hy+20,2,4,bB);R(dx,hy+23,1,2,bO);return;}
+    if(barbe==='favoris'){for(let r=hy+8;r<hy+18;r++){const w=r<hy+15?3:2;R(-12+dx,r,w,1,r%3?bB:bO);R(12-w+dx,r,w,1,r%3?bB:bO);}return;}
+    if(barbe==='collier'){for(let r=hy+13;r<hy+24;r++){const hw=largeur(r);R(-hw+dx,r,2,1,r%2?bB:bO);R(hw-2+dx,r,2,1,r%2?bB:bO);}
+      R(-7+dx,hy+23,14,1,bB);R(-5+dx,hy+22,10,1,bO);return;}
+    if(barbe==='fine'){for(let r=hy+15;r<hy+24;r++){const hw=largeur(r);R(-hw+dx,r,1,1,bO);R(hw-1+dx,r,1,1,bO);}R(-6+dx,hy+23,12,1,bO);R(-1+dx,hy+20,2,2,bO);return;}
+    /* courte, pleine, longue, fourchue : toute la mâchoire */
+    const haut=barbe==='courte'?hy+15:hy+13;
+    zone(haut,hy+24,barbe==='courte'?4:3);
+    moustache(barbe!=='courte');
+    R(-3+dx,hy+18,6,1,fente);R(-2+dx,hy+19,4,1,levreC);                               /* la bouche reste visible */
+    if(barbe==='pleine'||barbe==='longue'||barbe==='fourchue'){for(let r=hy+24;r<hy+26;r++){const hw=8-(r-hy-24)*2;R(-hw+dx,r,hw*2,1,poil(r,r,4)?bO:bB);}}
+    if(barbe==='longue'||barbe==='fourchue'){
+      for(let r=hy+26;r<hy+36;r++){const k=(r-hy-26)/10, hw=Math.max(2,Math.round(7-k*5));
+        R(-hw+dx,r,hw*2,1,k>0.8?bO:(poil(r,r*3,4)?bO:bB));R(-hw+dx,r,1,1,bOO);R(hw-1+dx,r,1,1,bOO);
+        for(let x=-hw+2;x<hw-1;x+=3)R(x+dx,r,1,1,bO);}
+      if(barbe==='fourchue'){R(-1+dx,hy+31,2,5,vest);R(-1+dx,hy+30,2,1,bOO);}
+    }
   };
   /* ============ LE CHAPEAU ============ */
   const chapeauDe=()=>{
