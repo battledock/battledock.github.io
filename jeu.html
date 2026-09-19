@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-0618';
+  var MA_VERSION='2026-09-19-0623';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -10460,7 +10460,7 @@ function dessinerUnVelo(g,x,y,dir,pas,v){
   }
 }
 /* LA CUISINE : on choisit ses poissons, Fonfon fait la bouillabaisse et l'achète */
-const POISSONS_MARMITE=['sardine','rouget','dorade','seiche','loup','poulpe','congre'];
+const POISSONS_MARMITE=['sardine','bogue','girelle','rouget','mulet','saupe','seiche','maquereau','dorade','rascasse','loup','denti','murene','congre','poulpe','saintpierre','thon'];
 let RECETTE={};
 function ouvrirLeCabanon(){
   PANNEAU_PERSO=true;
@@ -15770,6 +15770,17 @@ const ESP_PECHE={
   congre: {nom:'congre',   col:['#5a5040','#8a7a5c'],L:20,touches:6,vit:.9},
   botte:  {nom:'vieille chaussure',col:['#3a2a1c','#5a3f21'],L:9,touches:2,vit:1.7},
   legende:{nom:'Vieux Loup du Vieux-Port',col:['#c9a24a','#f4d98a'],L:22,touches:7,vit:.75},
+  bogue:  {nom:'bogue',    col:['#b8c8b0','#dfe8d8'],L:9, touches:3,vit:1.5},
+  girelle:{nom:'girelle',  col:['#3aa0a0','#e8803a'],L:8, touches:3,vit:1.45},
+  mulet:  {nom:'mulet',    col:['#8a9aa2','#b8c4ca'],L:13,touches:4,vit:1.15},
+  saupe:  {nom:'saupe',    col:['#b0b8c0','#e0c050'],L:12,touches:4,vit:1.2},
+  maquereau:{nom:'maquereau',col:['#3a6a8a','#6ab0c8'],L:12,touches:4,vit:1.25},
+  rascasse:{nom:'rascasse',col:['#c0503a','#e08050'],L:10,touches:4,vit:1.1},
+  denti:  {nom:'denti',    col:['#c08aa0','#6a8ab0'],L:17,touches:5,vit:1.0},
+  murene: {nom:'murène',   col:['#5a4a2a','#c8b060'],L:21,touches:6,vit:.9},
+  saintpierre:{nom:'saint-pierre',col:['#a8a090','#3a3a36'],L:12,touches:6,vit:.85},
+  thon:   {nom:'thon rouge',col:['#2a3a5a','#a8b8c8'],L:26,touches:8,vit:.75},
+  rascassedor:{nom:'Rascasse d’or',col:['#e8b83a','#fff0a0'],L:13,touches:7,vit:.72},
 };
 let PECHE=null, TIENT_PECHE=false, CARNET_PECHE=null;
 function lieuDePeche(){
@@ -15830,11 +15841,11 @@ async function gagnerLeCombat(){
   const S=ESP_PECHE[d.espece]||ESP_PECHE.sardine;
   setTimeout(()=>{
     if(PECHE!==P)return;
-    texteVolant(joueur.x,joueur.y-44,(d.espece==='legende'?'🏆 ':'')+S.nom+' · '+d.cm+' cm',
-      d.espece==='legende'?'#f4d98a':(d.neuf?'#9fdfb8':'#cfe0f2'));
+    texteVolant(joueur.x,joueur.y-44,((d.espece==='legende'||d.espece==='rascassedor')?'🏆 ':'')+S.nom+' · '+d.cm+' cm',
+      (d.espece==='legende'||d.espece==='rascassedor')?'#f4d98a':(d.neuf?'#9fdfb8':'#cfe0f2'));
     if(d.neuf)setTimeout(()=>texteVolant(joueur.x,joueur.y-54,'nouvelle espèce au carnet !','#9fdfb8'),500);
     else if(d.record)setTimeout(()=>texteVolant(joueur.x,joueur.y-54,'nouveau record !','#e8c06a'),500);
-    jouer('achat','moment');vibrer(d.espece==='legende'?[40,60,40,60,120]:[18,30,18]);
+    jouer('achat','moment');vibrer((d.espece==='legende'||d.espece==='rascassedor')?[40,60,40,60,120]:[18,30,18]);
     PECHE=null;majAction();
   },650);
 }
@@ -15943,7 +15954,7 @@ function dessinerLaPeche(g,camX,camY){
     const k=Math.min(1,(t-P.t0)/600), S=ESP_PECHE[P.fin.espece]||ESP_PECHE.sardine;
     const x=bx+((joueur.x-camX)-bx)*k, y=by+((joueur.y-26-camY)-by)*k-Math.sin(k*Math.PI)*34;
     g.strokeStyle='rgba(240,240,240,.8)';g.lineWidth=.5;g.beginPath();g.moveTo(sx,sy);g.lineTo(x,y);g.stroke();
-    if(P.fin.espece==='legende'){const r=g.createRadialGradient(x,y,1,x,y,18);r.addColorStop(0,'rgba(255,220,120,.7)');r.addColorStop(1,'rgba(255,220,120,0)');g.fillStyle=r;g.fillRect(x-18,y-18,36,36);}
+    if(P.fin.espece==='legende'||P.fin.espece==='rascassedor'){const r=g.createRadialGradient(x,y,1,x,y,18);r.addColorStop(0,'rgba(255,220,120,.7)');r.addColorStop(1,'rgba(255,220,120,0)');g.fillStyle=r;g.fillRect(x-18,y-18,36,36);}
     poissonPixel(g,x,y,S,c,Math.sin(t/40)>0?1:-1);
     return;
   }
@@ -16222,10 +16233,17 @@ function bouclePetanque(t){
 }
 /* LE CARNET DE PÊCHE : ce qu'on a pris, ses records, et ce qui reste à découvrir */
 const CARNET_ORDRE=[
-  ['sardine','COMMUNE','partout, à toute heure'],['rouget','COMMUNE','partout'],['dorade','PEU COMMUNE','le jour et à l’aube'],
-  ['seiche','PEU COMMUNE','la nuit et à l’aube, au bout des pontons'],['loup','RARE','la nuit et à l’aube, au bout des pontons'],
-  ['poulpe','RARE','le long du quai'],['congre','TRÈS RARE','seulement la nuit, au bout des pontons'],
-  ['botte','…','un peu partout, hélas'],['legende','LÉGENDAIRE','à l’aube, au bout des pontons · un seul par jour']];
+  ['sardine','COMMUNE','partout, à toute heure'],['bogue','COMMUNE','partout, le jour et à l’aube'],
+  ['girelle','COMMUNE','le long du quai, en plein jour'],['rouget','COMMUNE','partout'],['mulet','COMMUNE','partout, à toute heure'],
+  ['dorade','PEU COMMUNE','le jour et à l’aube'],['saupe','PEU COMMUNE','le long du quai, le jour et à l’aube'],
+  ['maquereau','PEU COMMUNE','au bout des pontons, le jour et à l’aube'],['seiche','PEU COMMUNE','la nuit et à l’aube, au bout des pontons'],
+  ['rascasse','PEU COMMUNE','la nuit et à l’aube, au bout des pontons'],
+  ['loup','RARE','la nuit et à l’aube, au bout des pontons'],['poulpe','RARE','le long du quai'],
+  ['denti','RARE','seulement à l’aube, au bout des pontons'],['murene','RARE','seulement la nuit, le long du quai'],
+  ['congre','TRÈS RARE','seulement la nuit, au bout des pontons'],['saintpierre','TRÈS RARE','seulement la nuit, au bout des pontons'],
+  ['thon','TRÈS RARE','seulement à l’aube, au bout des pontons'],['botte','…','un peu partout, hélas'],
+  ['legende','LÉGENDAIRE','à l’aube, au bout des pontons · un seul par jour'],
+  ['rascassedor','LÉGENDAIRE','la nuit, le long du quai · une seule par nuit']];
 async function ouvrirLeCarnet(){
   try{fermerTiroir();}catch(x){}
   const f=$('feuilleC');f.innerHTML='<h2>Carnet de pêche</h2><div class="sousC">On feuillette…</div>';
@@ -16916,10 +16934,32 @@ const OBJETS={
  seiche: {nom:'Seiche', d:'Pêchée la nuit au bout des pontons. Elle crache son encre.', poids:1},
  congre: {nom:'Congre', d:'Pêché la nuit au bout des pontons. Long, et mauvais caractère.',poids:2},
  legende:{nom:'Le Vieux Loup',d:'Le Vieux Loup du Vieux-Port. Un seul par jour, pour tout Marseille.',poids:3},
+ bogue:  {nom:'Bogue', d:'Petite, argentée, elle vient par bancs le jour.', poids:1},
+ girelle:{nom:'Girelle', d:'Rayée d’orange, elle vit le long du quai, en plein jour.', poids:1},
+ mulet:  {nom:'Mulet', d:'Il traîne partout, à toute heure. Pas bien malin.', poids:1},
+ saupe:  {nom:'Saupe', d:'Des rayures dorées ; elle broute le long du quai.', poids:1},
+ maquereau:{nom:'Maquereau', d:'Rayé comme un tigre, au bout des pontons le jour.', poids:1},
+ rascasse:{nom:'Rascasse', d:'Pleine d’épines, et la reine de la bouillabaisse.', poids:1},
+ denti:  {nom:'Denti', d:'Rose et tacheté de bleu. Il ne mord qu’à l’aube.', poids:2},
+ murene: {nom:'Murène', d:'Tachetée d’or, elle sort de son trou la nuit, sous le quai.', poids:2},
+ saintpierre:{nom:'Saint-Pierre', d:'La tache noire sur son flanc, c’est le pouce du saint.', poids:1},
+ thon:   {nom:'Thon rouge', d:'Un monstre venu du large, à l’aube. Il faut des bras.', poids:4},
+ rascassedor:{nom:'Rascasse d’or', d:'Une seule par nuit, sous le quai. On dit qu’elle porte chance.', poids:2},
  pioche: {nom:'Pioche', d:'Pour les rochers. Trois coups et la pierre cède.',        poids:0,outil:1},
  hache:  {nom:'Hache',  d:'Pour les arbres. Cinq coups, et il tombe.',               poids:0,outil:1}
 };
 const ICONES={
+ bogue:'<rect x="2" y="7" width="11" height="3" fill="#b8c8b0"/><rect x="2" y="7" width="11" height="1" fill="#dfe8d8"/><rect x="13" y="6" width="2" height="5" fill="#9aaa92"/><rect x="4" y="8" width="1" height="1" fill="#1b1b1b"/>',
+ girelle:'<rect x="3" y="7" width="10" height="3" fill="#3aa0a0"/><rect x="3" y="8" width="10" height="1" fill="#e8803a"/><rect x="13" y="6" width="2" height="5" fill="#2a8080"/><rect x="5" y="7" width="1" height="1" fill="#1b1b1b"/>',
+ mulet:'<rect x="1" y="6" width="12" height="4" fill="#8a9aa2"/><rect x="1" y="6" width="12" height="1" fill="#b8c4ca"/><rect x="13" y="5" width="2" height="6" fill="#6a7a82"/><rect x="3" y="7" width="1" height="1" fill="#1b1b1b"/>',
+ saupe:'<rect x="2" y="6" width="11" height="4" fill="#b0b8c0"/><rect x="2" y="7" width="11" height="1" fill="#e0c050"/><rect x="2" y="9" width="11" height="1" fill="#e0c050"/><rect x="13" y="5" width="2" height="6" fill="#8a929a"/><rect x="4" y="7" width="1" height="1" fill="#1b1b1b"/>',
+ maquereau:'<rect x="2" y="6" width="11" height="4" fill="#6ab0c8"/><rect x="3" y="6" width="1" height="2" fill="#3a6a8a"/><rect x="6" y="6" width="1" height="2" fill="#3a6a8a"/><rect x="9" y="6" width="1" height="2" fill="#3a6a8a"/><rect x="13" y="5" width="2" height="6" fill="#3a6a8a"/><rect x="4" y="8" width="1" height="1" fill="#1b1b1b"/>',
+ rascasse:'<rect x="3" y="6" width="9" height="5" fill="#c0503a"/><rect x="4" y="4" width="1" height="2" fill="#e08050"/><rect x="6" y="4" width="1" height="2" fill="#e08050"/><rect x="8" y="4" width="1" height="2" fill="#e08050"/><rect x="12" y="6" width="2" height="5" fill="#a03a2a"/><rect x="4" y="7" width="1" height="1" fill="#1b1b1b"/>',
+ denti:'<rect x="1" y="5" width="12" height="6" fill="#c08aa0"/><rect x="4" y="6" width="1" height="1" fill="#6a8ab0"/><rect x="7" y="8" width="1" height="1" fill="#6a8ab0"/><rect x="10" y="6" width="1" height="1" fill="#6a8ab0"/><rect x="13" y="4" width="2" height="8" fill="#a06a80"/><rect x="2" y="7" width="1" height="1" fill="#1b1b1b"/>',
+ murene:'<rect x="1" y="7" width="14" height="3" fill="#5a4a2a"/><rect x="3" y="8" width="1" height="1" fill="#c8b060"/><rect x="7" y="7" width="1" height="1" fill="#c8b060"/><rect x="11" y="8" width="1" height="1" fill="#c8b060"/><rect x="1" y="7" width="2" height="1" fill="#e8d080"/>',
+ saintpierre:'<rect x="3" y="4" width="10" height="8" fill="#a8a090"/><rect x="7" y="7" width="2" height="2" fill="#3a3a36"/><rect x="13" y="6" width="2" height="4" fill="#8a8272"/><rect x="4" y="6" width="1" height="1" fill="#1b1b1b"/>',
+ thon:'<rect x="1" y="5" width="12" height="6" fill="#2a3a5a"/><rect x="1" y="9" width="12" height="2" fill="#a8b8c8"/><rect x="13" y="3" width="2" height="10" fill="#1a2a4a"/><rect x="3" y="6" width="1" height="1" fill="#e8e8e8"/>',
+ rascassedor:'<rect x="3" y="6" width="9" height="5" fill="#e8b83a"/><rect x="4" y="4" width="1" height="2" fill="#fff0a0"/><rect x="6" y="4" width="1" height="2" fill="#fff0a0"/><rect x="8" y="4" width="1" height="2" fill="#fff0a0"/><rect x="12" y="6" width="2" height="5" fill="#c8982a"/><rect x="4" y="7" width="1" height="1" fill="#1b1b1b"/>',
  seiche:'<rect x="4" y="5" width="9" height="6" fill="#c8b89a"/><rect x="4" y="5" width="9" height="1" fill="#e6dab8"/>'+
       '<rect x="2" y="6" width="2" height="4" fill="#8a7a5c"/><rect x="11" y="7" width="1" height="1" fill="#1b1b1b"/>'+
       '<rect x="13" y="6" width="2" height="1" fill="#8a7a5c"/><rect x="13" y="9" width="2" height="1" fill="#8a7a5c"/>',
@@ -17569,7 +17609,8 @@ let VENTE={};                 /* combien de chaque objet on met sur le comptoir 
 const MODE_COMPTOIR={nom:'Le comptoir',mot:'« Fais voir ce que tu as ramené. »',
   prix:PRIX_COMPTOIR,rpc:'vendre_au_comptoir',ap:{veste:2,cheveux:1,chapeau:0},
   vide:'<div class="cptVide">Ton sac est vide.<br>Traverse le gué : tout pousse sur l’autre rive.</div>'};
-const PRIX_POISSON={sardine:5,rouget:10,dorade:18,seiche:14,loup:40,poulpe:120,congre:90,legende:500};   /* le serveur a les mêmes */
+const PRIX_POISSON={sardine:5,bogue:4,girelle:6,rouget:10,mulet:10,saupe:12,seiche:14,maquereau:15,dorade:18,rascasse:30,
+  loup:40,denti:55,murene:70,congre:90,poulpe:120,saintpierre:150,thon:300,legende:500,rascassedor:500};   /* le serveur a les mêmes */   /* le serveur a les mêmes */
 const MODE_POISSON={nom:'La poissonnerie',mot:'« Montre-moi ta pêche, petit. »',
   prix:PRIX_POISSON,rpc:'vendre_poisson',ap:{veste:0,cheveux:3,chapeau:1},
   vide:'<div class="cptVide">Pas un poisson dans ton sac.<br>Va lancer ta ligne au bout des pontons.</div>'};
