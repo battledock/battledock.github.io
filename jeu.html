@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1940';
+  var MA_VERSION='2026-09-19-1947';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -6786,9 +6786,160 @@ function nuitBoutique(g,x,y){
   R(-70,-4,140,4,'rgba(255,190,110,.28)');
   R(-52,0,104,3,'rgba(255,205,130,.18)');
 }
+/* =====================================================================
+   LE COMPTOIR EN PIXEL FIN — même place, mêmes dimensions, même composition
+   que le comptoir actuel, mais tout dessiné au demi-pixel : briques avec leur
+   joint et leur usure, tuiles rondes, pierre taillée en blocs, bois veiné,
+   ferrures cloutées, balance avec ses plateaux, marchandises détaillées.
+   ===================================================================== */
+let CALQUE_COMPTOIR_FIN=null;
+function graverLeComptoirFin(){
+  const W=266, Ht=176, cx=W/2, sol=Ht-16, CL=186, basToit=sol-78;
+  const c=document.createElement('canvas');c.width=W*2;c.height=Ht*2;
+  const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
+  /* un « pixel fin » vaut un demi-pixel du jeu : les coordonnées acceptent les .5 */
+  const F=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,Math.round(w*2)/2),Math.max(0.5,Math.round(h*2)/2));};
+  const hasard=(i)=>{const s=Math.sin(i*127.1+311.7)*43758.5453;return s-Math.floor(s);};
+  /* ---- LA BRIQUE FINE : 4,5 × 2, joint clair d'un demi-pixel, chaque brique
+     a sa teinte, son dessus éclairé, son dessous dans l'ombre, parfois usée ---- */
+  const briques=(x0,y0,larg,haut,suie)=>{
+    F(x0,y0,larg,haut,'#c9b89a');                                        /* le mortier */
+    for(let r=0;r*2.5<haut;r++){const y=y0+r*2.5, dec=r%2?2.25:0;
+      for(let x=-dec;x<larg;x+=5){const i=r*31+Math.round(x*3);const t=hasard(i);
+        const base=t<0.18?BR_F.o:(t<0.4?BR_F.s:(t<0.75?BR_F.p:BR_F.c));
+        const bx=Math.max(x0,x0+x), bw=Math.min(4.5,x0+x+4.5-bx, x0+larg-bx);if(bw<=0)continue;
+        const bh=Math.min(2,y0+haut-y);F(bx,y,bw,bh,base);
+        F(bx,y,bw,0.5,t>0.5?BR_F.h:BR_F.c);if(bh>1.5)F(bx,y+1.5,bw,0.5,BR_F.o);
+        if(hasard(i+7)<0.08)F(bx+1,y+0.5,1,1,'#6e3222');                  /* une brique éclatée */
+        if(suie&&y<y0+suie)F(bx,y,bw,bh,'rgba(40,30,25,'+(0.35*(1-(y-y0)/suie)).toFixed(2)+')');}}
+  };
+  /* ---- LA PIERRE TAILLÉE : des blocs chanfreinés ---- */
+  const pierre=(x0,y0,larg,haut,bloc)=>{
+    F(x0,y0,larg,haut,PI_F.s);
+    for(let r=0;r*bloc<haut;r++){const y=y0+r*bloc, dec=r%2?bloc:0;
+      for(let x=-dec;x<larg;x+=bloc*2){const bx=Math.max(x0,x0+x), bw=Math.min(bloc*2-0.5,x0+x+bloc*2-0.5-bx,x0+larg-bx), bh=Math.min(bloc-0.5,y0+haut-y);if(bw<=0||bh<=0)continue;
+        const t=hasard(r*17+x);F(bx,y,bw,bh,t<0.3?PI_F.p:(t<0.7?PI_F.c:PI_F.p));
+        F(bx,y,bw,0.5,PI_F.e);F(bx,y,0.5,bh,PI_F.h);F(bx+bw-0.5,y,0.5,bh,PI_F.o);F(bx,y+bh-0.5,bw,0.5,PI_F.o);
+        if(t>0.8)F(bx+bw*0.4,y+bh*0.4,1,0.5,PI_F.s);}}
+  };
+  /* ---- LE BOIS VEINÉ ---- */
+  const bois=(x,y,w,h,col,sens)=>{F(x,y,w,h,col||B_F.bois);
+    for(let k=0;k<(sens?w:h);k+=1.5){const t=hasard(x*3+y*7+k*11);if(t<0.45)continue;
+      if(sens)F(x+k,y+t*2,0.5,h-t*3,B_F.boisO);else F(x+t*3,y+k,w-t*5,0.5,t>0.8?B_F.boisH:B_F.boisO);}};
+  /* ---- LE TOIT DE TUILES RONDES : chaque tuile bombée, éclairée dessus ---- */
+  const toit=(cx0,bas,larg,haut)=>{
+    const rangs=Math.round(haut/2.5);
+    for(let rg=rangs-1;rg>=0;rg--){const t=rg/rangs, y=bas-rg*2.5, retrait=Math.round(t*14*2)/2;
+      const x0=cx0-larg/2-12+retrait, l2=larg+24-retrait*2;
+      for(let x=x0+(rg%2?1.5:0);x<x0+l2;x+=3){const q=hasard(rg*53+Math.round(x*2));
+        const col=q<0.25?TU_F.s:(q<0.7?TU_F.p:TU_F.c);
+        F(x,y,3,3,col);F(x+0.5,y,2,0.5,TU_F.h);F(x+0.5,y+0.5,1,1,rg>rangs*0.5?TU_F.faite:TU_F.h);
+        F(x+2.5,y,0.5,3,TU_F.o);F(x,y+2.5,3,0.5,TU_F.o);
+        if(q>0.93)F(x+1,y+1,1,1,'#5f7a3e');}                                   /* un peu de mousse */
+      if(rg===rangs-1){for(let x=x0-2;x<x0+l2+2;x+=4){F(x,y-3,4,3.5,TU_F.p);F(x,y-3,4,1,TU_F.faite);F(x+3.5,y-3,0.5,3.5,TU_F.o);}}}
+    F(cx0-larg/2-12,bas+3,larg+24,1,'rgba(40,20,10,.35)');                     /* l'ombre sous l'égout */
+  };
+  const clou=(x,y)=>{F(x,y,1,1,'#3a3a40');F(x,y,0.5,0.5,'#b7bec4');};
+
+  /* L'OMBRE AU SOL */
+  g.fillStyle='rgba(30,50,24,.26)';g.beginPath();g.ellipse(cx+4,sol+4,CL*0.54,13,0,0,7);g.fill();
+  /* LE TOIT */
+  toit(cx,basToit,CL,26);
+  F(cx-CL/2-14,basToit+3,CL+28,4,PI_F.o);F(cx-CL/2-14,basToit+3,CL+28,1,PI_F.p);
+  /* LE MUR DE BRIQUE, noirci sous la corniche */
+  briques(cx-CL/2,basToit+6,CL,sol-basToit-14,10);
+  F(cx-CL/2,basToit+6,CL,1.5,'rgba(0,0,0,.25)');
+  /* LE SOUBASSEMENT DE PIERRE, avec les salissures du sol */
+  pierre(cx-CL/2,sol-8,CL,8,4);
+  for(let x=0;x<CL;x+=3)if(hasard(x)>0.5)F(cx-CL/2+x,sol-2-hasard(x+1)*2,1.5,1,'rgba(70,60,40,.35)');
+  /* LES PILASTRES : des blocs de pierre, un chapiteau mouluré, une base */
+  for(let i=0;i<=5;i++){const x=Math.round(cx-CL/2+i*(CL/5));
+    pierre(x-4,basToit+6,8,sol-basToit-14,3.5);
+    F(x-4,basToit+6,1,sol-basToit-14,'rgba(255,255,255,.12)');F(x+3,basToit+6,1,sol-basToit-14,'rgba(0,0,0,.18)');
+    F(x-5.5,basToit+3.5,11,4.5,PI_F.c);F(x-5.5,basToit+3.5,11,1,PI_F.e);F(x-5,basToit+6,10,0.5,PI_F.o);F(x-5.5,basToit+7.5,11,0.5,PI_F.s);
+    F(x-5.5,sol-11.5,11,4.5,PI_F.c);F(x-5.5,sol-11.5,11,1,PI_F.e);F(x-5.5,sol-7.5,11,0.5,PI_F.o);}
+  /* LES DEUX GUICHETS DE VENTE */
+  [-56,56].forEach(dx=>{
+    const X=cx+dx;
+    pierre(X-24,sol-52,48,44,4);                                              /* l'embrasure */
+    bois(X-27,sol-56,54,5,B_F.boisO);F(X-27,sol-56,54,1,B_F.boisC);F(X-27,sol-51.5,54,0.5,B_F.boisS);   /* le linteau */
+    clou(X-24,sol-54.5);clou(X+23,sol-54.5);
+    /* le dedans, qui s'enfonce dans l'ombre */
+    for(let r=0;r<36;r++)F(X-20,sol-48+r,40,1,r<6?'#1a120c':(r<20?'#241a12':'#2c2016'));
+    /* ce qu'on voit derrière : sacs avec leurs plis, caisses clouées, une lampe */
+    g.fillStyle='#6f6248';g.beginPath();g.ellipse(X-11,sol-24,5.5,6,0,0,7);g.fill();F(X-13,sol-30,4,1.5,'#5b4f3a');F(X-12,sol-26,1,4,'rgba(0,0,0,.2)');F(X-14,sol-27,2,2,'rgba(255,250,230,.12)');
+    g.fillStyle='#7a6c50';g.beginPath();g.ellipse(X,sol-22,5,4.5,0,0,7);g.fill();F(X-1,sol-26,2,1,'#5b4f3a');
+    bois(X+8,sol-32,8,14,B_F.boisO);F(X+8,sol-26,8,0.5,B_F.boisS);F(X+8,sol-32,8,0.5,B_F.boisC);clou(X+9,sol-31);clou(X+14.5,sol-31);
+    F(X-18,sol-44,1,6,'#3d2a17');F(X-19,sol-38,3,3,'#8a6a2a');F(X-18.5,sol-37.5,2,2,'#c9a24a');       /* la lampe éteinte */
+    /* LA TABLETTE de pierre polie, usée au milieu */
+    F(X-24,sol-18,48,5,PI_F.c);F(X-24,sol-18,48,1,PI_F.e);F(X-10,sol-17,20,0.5,'rgba(255,255,255,.18)');F(X-22,sol-13,44,2,PI_F.o);F(X-22,sol-13,44,0.5,PI_F.s);
+    /* les barreaux de bois tournés : ronds, éclairés au milieu */
+    for(let k=-18;k<19;k+=9){F(X+k,sol-48,3,30,B_F.boisO);F(X+k+0.5,sol-48,1,30,B_F.bois);F(X+k+1,sol-48,0.5,30,B_F.boisH);
+      F(X+k-0.5,sol-49,4,1,B_F.boisS);F(X+k-0.5,sol-19,4,1,B_F.boisS);}
+  });
+  /* LA PORTE : planches veinées, pentures cloutées, anneau de fer, seuil usé */
+  const PL=34, PH=52;
+  pierre(cx-PL/2-5,sol-PH-8,PL+10,PH+4,4);
+  bois(cx-PL/2-8,sol-PH-12,PL+16,6,B_F.boisO);F(cx-PL/2-8,sol-PH-12,PL+16,1.5,B_F.boisC);F(cx-PL/2-8,sol-PH-6.5,PL+16,0.5,B_F.boisS);
+  F(cx-PL/2,sol-PH-4,PL,PH,'#241a12');
+  [[-PL/2,1],[0,-1]].forEach(([a,sens])=>{
+    for(let k=0;k<PL/2;k+=4.25){bois(cx+a+k,sol-PH-4,4,PH,k%8.5?B_F.bois:B_F.boisC,true);F(cx+a+k+3.75,sol-PH-4,0.5,PH,B_F.boisS);}
+    [sol-PH+4,sol-14].forEach(yy=>{F(cx+a,yy,PL/2,3,'#3f3f47');F(cx+a,yy,PL/2,0.5,'#7a7a84');
+      for(let k=1.5;k<PL/2;k+=4)clou(cx+a+k,yy+1);});
+    const hx=cx+a+(sens>0?PL/2-5:2);g.strokeStyle='#8f959b';g.lineWidth=0.7;g.beginPath();g.arc(hx+1.5,sol-PH/2-1,2,0,7);g.stroke();F(hx+1,sol-PH/2-4,1,1.5,'#3f3f47');
+  });
+  F(cx-0.5,sol-PH-4,1,PH,B_F.boisS);
+  F(cx-PL/2-4,sol-8,PL+8,3,PI_F.h);F(cx-PL/2-4,sol-8,PL+8,0.5,PI_F.e);F(cx-6,sol-7,12,1,'rgba(0,0,0,.12)');   /* le seuil usé */
+  F(cx-PL/2-7,sol-5,PL+14,3,PI_F.c);F(cx-PL/2-10,sol-2,PL+20,2,PI_F.p);
+  /* LA PASSERELLE de planches clouées */
+  F(cx-CL/2-6,sol-8,CL+12,7,B_F.bois);
+  for(let x=0;x<CL+12;x+=7){const t=hasard(x);F(cx-CL/2-6+x,sol-8,6.5,7,t<0.3?B_F.boisC:(t<0.7?B_F.bois:B_F.boisO));
+    F(cx-CL/2-6+x+6.5,sol-8,0.5,7,B_F.boisS);clou(cx-CL/2-6+x+1,sol-6.5);clou(cx-CL/2-6+x+1,sol-3);
+    if(t>0.6)F(cx-CL/2-6+x+2,sol-5,3,0.5,B_F.boisO);}
+  F(cx-CL/2-6,sol-8,CL+12,1.5,B_F.boisH);F(cx-CL/2-6,sol-1,CL+12,3,B_F.boisS);
+  /* LA GRANDE BALANCE : le poteau, le fléau, les chaînes et les deux plateaux de cuivre */
+  bois(cx-CL/2+8,sol-70,5,54,B_F.boisO,true);F(cx-CL/2+8,sol-70,1.5,54,B_F.bois);
+  bois(cx-CL/2+8,sol-72,34,5,B_F.boisO);F(cx-CL/2+8,sol-72,34,1,B_F.boisC);
+  F(cx-CL/2+10,sol-67,2,2,'#3f3f47');
+  [[cx-CL/2+22],[cx-CL/2+38]].forEach(([px],i)=>{
+    for(let k=0;k<(i?10:12);k+=1.5)F(px-2.5+k*0.25,sol-67+k,0.5,1,'#8f959b'),F(px+2.5-k*0.25,sol-67+k,0.5,1,'#8f959b');
+    const py=sol-67+(i?10:12);F(px-4,py,8,1.5,'#b87333');F(px-4,py,8,0.5,'#e0a060');F(px-3,py+1.5,6,0.5,'#8a4f22');});
+  /* L'AUVENT DE TUILES au-dessus des guichets, sa dentelle et ses consoles */
+  for(let k=-CL/2+2;k<CL/2-2;k+=3){const q=hasard(k*9);
+    F(cx+k,sol-62,3,5,q<0.3?TU_F.s:(q<0.7?TU_F.p:TU_F.c));F(cx+k+0.5,sol-62,2,0.5,TU_F.h);F(cx+k+0.5,sol-61.5,1,1.5,TU_F.faite);F(cx+k+2.5,sol-62,0.5,5,TU_F.o);}
+  F(cx-CL/2,sol-58,CL,2,TU_F.o);F(cx-CL/2,sol-56,CL,1,'rgba(0,0,0,.25)');
+  for(let k=-CL/2+2;k<CL/2-2;k+=7){F(cx+k,sol-56,4,2,B_F.boisO);F(cx+k+1,sol-54,2,1.5,B_F.boisO);F(cx+k+1.5,sol-53,1,1,B_F.boisS);}   /* la dentelle */
+  [-CL/2+14,-CL/6,CL/6,CL/2-18].forEach(dx=>{g.save();g.translate(cx+dx,sol-58);g.rotate(0.72);
+    F(0,0,3,14,B_F.boisO);F(0,0,1,14,B_F.bois);F(-0.5,12,4,2,B_F.boisS);g.restore();});
+  /* LES CAISSES : planches, écharpes en diagonale, clous */
+  const caisse=(x,y)=>{bois(x,y,14,11,B_F.bois);F(x,y,14,1.5,B_F.boisH);F(x,y+5,14,1,B_F.boisO);F(x,y+10.5,14,0.5,B_F.boisS);
+    g.save();g.strokeStyle=B_F.boisO;g.lineWidth=1.2;g.beginPath();g.moveTo(x+1,y+10);g.lineTo(x+13,y+1.5);g.stroke();g.restore();
+    [[0.5,0.5],[12.5,0.5],[0.5,9.5],[12.5,9.5]].forEach(([a,b])=>clou(x+a,y+b));F(x+13.5,y,0.5,11,B_F.boisS);};
+  /* (plus de caisses, de tonneaux ni de sacs devant : la façade respire) */
+  void caisse;
+  /* LA CHEMINÉE, sa suie et son chapeau de pierre */
+  briques(cx+CL/4,basToit-26,13,24,6);F(cx+CL/4,basToit-26,13,1,'rgba(0,0,0,.35)');
+  F(cx+CL/4-2,basToit-30,17,5,PI_F.c);F(cx+CL/4-2,basToit-30,17,1,PI_F.e);F(cx+CL/4-2,basToit-25.5,17,0.5,PI_F.o);
+  /* L'ENSEIGNE : planche veinée, montants, lettres dorées avec leur ombre */
+  const larg=132, hy=basToit-26;
+  bois(cx-larg/2,hy-9,larg,18,B_F.boisS);F(cx-larg/2,hy-9,larg,1.5,B_F.boisC);F(cx-larg/2,hy+7,larg,2,'#2a1c12');
+  F(cx-larg/2+2,hy-7,larg-4,0.5,'rgba(240,207,125,.25)');
+  bois(cx-larg/2-4,hy-11,4,22,B_F.boisO,true);bois(cx+larg/2,hy-11,4,22,B_F.boisO,true);
+  clou(cx-larg/2-2.5,hy-9);clou(cx-larg/2-2.5,hy+8);clou(cx+larg/2+1.5,hy-9);clou(cx+larg/2+1.5,hy+8);
+  g.font='700 13px Georgia,serif';g.textAlign='center';
+  g.fillStyle='#2a1a0e';g.fillText('COMPTOIR',cx+0.5,hy+5.5,larg-20);
+  g.fillStyle='#f0cf7d';g.fillText('COMPTOIR',cx,hy+5,larg-20);
+  g.fillStyle='rgba(255,250,220,.35)';g.fillText('COMPTOIR',cx-0.3,hy+4.4,larg-20);g.fillStyle='#f0cf7d';g.fillText('COMPTOIR',cx,hy+5,larg-20);
+  g.textAlign='left';
+  CALQUE_COMPTOIR_FIN={toile:c,W,H:Ht,sol};
+}
+
 function dessinerLeComptoirNeuf(g,x,y){
-  if(!CALQUE_COMPTOIR2)graverLeComptoirNeuf();
-  const C=CALQUE_COMPTOIR2;
+  /* en pixel fin, le comptoir fin ; sinon l'ancien */
+  let fin=false;try{fin=STYLE_FIN();}catch(x){}
+  if(fin&&!CALQUE_COMPTOIR_FIN)graverLeComptoirFin();
+  if(!fin&&!CALQUE_COMPTOIR2)graverLeComptoirNeuf();
+  const C=fin?CALQUE_COMPTOIR_FIN:CALQUE_COMPTOIR2;
   g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
   fumeeFront(g,x+40,y-124,0.1);
   if(lampesAllumees())nuitComptoir(g,Math.round(x),Math.round(y));
