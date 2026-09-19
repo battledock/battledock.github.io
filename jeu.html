@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1807';
+  var MA_VERSION='2026-09-19-1811';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -13841,7 +13841,7 @@ function dessiner(){
   nettoyerBulles();
   /* les acteurs : moi et les autres, chacun à sa profondeur */
   const acteurs=[{y:joueur.y,
-    f:()=>personne(ctx,px,py,e.ap,(STYLE_FIN()&&!(GESTE&&GESTE.t>0)&&joueur.dir8)||joueur.dir,joueur.pas,!!joueur.marche,court)}];
+    f:()=>personne(ctx,px,py,e.ap,(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche,court)}];
   for(const [,a] of AUTRES){
     const ax=a.x-camX, ay=a.y-camY;
     if(ax<-40||ay<-70||ax>VW+40||ay>VH+40)continue;
@@ -14056,7 +14056,16 @@ function personne(g,x,y,ap,dir,pas,marche,enCourse){
   else{
     const i=marche?1+(Math.floor(pas*2)%PASM):0;   /* la même horloge que le dessin */
     const c=poseDe(ap,dir||'bas',i);
-    g.drawImage(c,Math.round(x-CASE_L/2),Math.round(y-CASE_H+10),CASE_L,CASE_H);
+    const px0=Math.round(x-CASE_L/2), py0=Math.round(y-CASE_H+10);
+    const lean=(ap===e.ap&&!aVelo)?Math.round(PENCHE.x*2)/2:0;
+    if(lean===0)g.drawImage(c,px0,py0,CASE_L,CASE_H);
+    else{
+      /* le bas du corps reste planté, le haut suit le penché : les pieds ne glissent pas */
+      const k=c.width/CASE_L, H1=CASE_H-24, H2=CASE_H-40;   /* pieds · hanches · épaules */
+      g.drawImage(c,0,H1*k,c.width,(CASE_H-H1)*k,px0,py0+H1,CASE_L,CASE_H-H1);
+      g.drawImage(c,0,H2*k,c.width,(H1-H2)*k,px0+lean*0.5,py0+H2,CASE_L,H1-H2);
+      g.drawImage(c,0,0,c.width,H2*k,px0+lean,py0,CASE_L,H2);
+    }
   }
   /* la pièce portée, par-dessus la pose gravée */
   if(C&&C.id!=='cape'){try{C.dessin(g,x,y,tc);}catch(err){}}
@@ -14401,7 +14410,25 @@ let bloqueBord=false;
 let dernierAppui=-1;
 let dernierAmbiance=0;
 
+const PENCHE={x:0,v:0};
+const ORDRE8=['droite','bas-droite','bas','bas-gauche','gauche','haut-gauche','haut','haut-droite'];
+/* LES VIRAGES EN DOUCEUR : l'angle affiché rejoint l'angle voulu un cran à la fois,
+   par le plus court chemin — de droite à gauche, on passe par la face. */
+function tournerEnDouceur(dt){
+  if(joueur._dirPrec!==joueur.dir){if(!joueur.marche)joueur.dir8=joueur.dir;joueur._dirPrec=joueur.dir;}
+  const cible=joueur.dir8||joueur.dir;
+  if(!joueur.dirVue){joueur.dirVue=cible;return;}
+  if(joueur.dirVue===cible){joueur.tVue=0;return;}
+  joueur.tVue=(joueur.tVue||0)+dt;
+  if(joueur.tVue<0.042)return;
+  joueur.tVue=0;
+  const a=ORDRE8.indexOf(joueur.dirVue), b=ORDRE8.indexOf(cible);
+  if(a<0||b<0){joueur.dirVue=cible;return;}
+  const d=(b-a+8)%8;
+  joueur.dirVue=ORDRE8[(a+(d<=4?1:-1)+8)%8];
+}
 function majJoueur(dt){
+  tournerEnDouceur(dt);
   const n=Math.hypot(joyX,joyY);
   const pousse=Math.min(1,n);
   /* 1. on accélère et on freine au lieu de sauter d'un état à l'autre */
@@ -14428,6 +14455,13 @@ function majJoueur(dt){
   vx+=(cibleX-vx)*k;
   vy+=(cibleY-vy)*k;
   const vxMoy=(vx0+vx)/2, vyMoy=(vy0+vy)/2;
+  /* LE POIDS DU CORPS : le buste se penche un peu dans le sens de la marche ; au
+     démarrage il reste en arrière une fraction de seconde, et quand on s'arrête
+     net il part en avant puis revient, comme un vrai corps. Un ressort amorti. */
+  {const ax=(vx-vx0)/Math.max(dt,1e-3);
+   const cibleP=Math.max(-1.6,Math.min(1.6,vx/Math.max(60,allure)*0.9-ax*0.0009));
+   PENCHE.v+=(cibleP-PENCHE.x)*70*dt;PENCHE.v*=Math.exp(-8*dt);PENCHE.x+=PENCHE.v*dt;
+   if(Math.abs(PENCHE.x)<0.02&&Math.abs(PENCHE.v)<0.05){PENCHE.x=0;PENCHE.v=0;}}
 
   if(SOL&&bloque(joueur.x,joueur.y)){          /* jamais coincé pour de bon */
     const [dx,dy]=degager(joueur.x,joueur.y);
