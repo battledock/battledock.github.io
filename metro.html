@@ -101,10 +101,8 @@ h1{font:400 24px Georgia,serif;margin:4px 0 6px}
   <h1 id="nomStation">Station</h1>
   <div id="bourse">TON ARGENT · <b id="solde">—</b></div>
   <div id="plan">
-    <div class="ligneT"><span class="num">1</span>VILLAGE ⇄ EXTRAMAR</div>
+    <div class="ligneT"><span class="num">1</span>SAUMASKI ⇄ EXTRAMAR</div>
     <div id="trace"></div>
-    <div id="ligne2"><div class="ligneT l2"><span class="num n2">2</span>VILLAGE ⇄ SAUMASKI<em class="bientot">BIENTÔT</em></div>
-      <div id="trace2"></div></div>
   </div>
   <div class="boutons">
     <button id="remonter">↑ Remonter</button>
@@ -137,14 +135,14 @@ const $=id=>document.getElementById(id);
 
 /* LES STATIONS. Ajouter une station = ajouter une ligne ici, et son quai. */
 const STATIONS=[
+  /* SAUMASKI, la montagne : au bout de la ligne 1, après le Village. Tracée, pas encore ouverte. */
+  {id:'montagne',nom:'Saumaski',sous:'la montagne · ouverture prochaine',ouvert:false,sortie:'jeu.html?carte=montagne',prix:800},
   {id:'village',nom:'Village',sous:'la place, la fontaine',ouvert:true,sortie:'jeu.html',prix:500},
   {id:'port',nom:'Extramar',sous:'le port, les docks, les grues',ouvert:true,sortie:'jeu.html?carte=extramar&arrivee=1',prix:500},
-  /* LIGNE 2 : vers la montagne. Tracée, annoncée, mais pas encore ouverte. */
-  {id:'montagne',nom:'Saumaski',sous:'la montagne · ouverture prochaine',ouvert:false,ligne:2,sortie:'jeu.html?carte=montagne',prix:800},
 ];
 /* LA STATION OÙ L'ON EST : metro.html (Village) ou metro.html?station=port */
-const ICI=STATIONS.find(s=>s.id===new URLSearchParams(location.search).get('station'))||STATIONS[0];
-const LAS=STATIONS.find(s=>s.id!==ICI.id&&s.ligne!==2);   /* l'autre bout de la ligne 1 */
+const ICI=STATIONS.find(s=>s.id===new URLSearchParams(location.search).get('station'))||STATIONS.find(s=>s.id==='village');
+const LAS=STATIONS.find(s=>s.id!==ICI.id&&s.ouvert);   /* la prochaine rame va vers la station ouverte d'en face */
 const AU_PORT=ICI.id==='port';
 /* L'ARGENT : le même joueur que dans le jeu. Le serveur seul débite, et
    fixe le prix : le navigateur ne fait que l'afficher. */
@@ -371,18 +369,11 @@ function dessiner(t){
 
 /* ---------- le plan de ligne ---------- */
 function dessinerLePlan(){
-  /* LA LIGNE 2, vers Saumaski (la montagne) : affichée au Village et à Extramar, fermée pour l'instant */
-  const l2=true, auVillage=ICI.id==='village';
-  $('ligne2').style.display='block';
-  if(l2){const m=STATIONS.find(s=>s.id==='montagne');
-    $('trace2').innerHTML='<div class="arret'+(auVillage?' ici':'')+'"><span style="flex:1"><b>Village</b><br><span>'+(auVillage?'VOUS ÊTES ICI':'CORRESPONDANCE · LIGNE 1')+'</span></span></div>'+
-      '<div class="arret ferme"><span style="flex:1"><b>'+m.nom+'</b><br><span>🔒 '+m.sous+'</span></span><span class="prixT">fermée</span></div>';}
-  document.querySelector('.surT').textContent='MÉTRO · LIGNES 1 ET 2';
-  $('trace').innerHTML=STATIONS.filter(s=>s.ligne!==2).map(s=>{
+  $('trace').innerHTML=STATIONS.map(s=>{
     const ici=s.id===ICI.id;
     return '<button class="arret'+(ici?' ici':'')+(choix===s.id?' choisi':'')+(s.ouvert?'':' ferme')+
       '" data-s="'+s.id+'"'+(ici?' disabled':'')+'><span style="flex:1"><b>'+s.nom+'</b><br>'+
-      '<span>'+(ici?'VOUS ÊTES ICI':s.sous)+'</span></span>'+(ici?'':'<span class="prixT">'+enEuros(s.prix)+'</span>')+'</button>';
+      '<span>'+(ici?'VOUS ÊTES ICI':(s.ouvert?s.sous:'🔒 '+s.sous))+'</span></span>'+(ici?'':(s.ouvert?'<span class="prixT">'+enEuros(s.prix)+'</span>':'<span class="prixT">fermée</span>'))+'</button>';
   }).join('');
   $('trace').querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{
     const s=STATIONS.find(x=>x.id===b.dataset.s);
@@ -597,7 +588,7 @@ const CONSEILS=['Tiens-toi à la barre.','Prochain arrêt : '+LAS.nom+'.','Atten
   'Les docks ne dorment jamais.','Ne laisse pas ton sac sans surveillance.'];
 let TRAJET=null;
 function lancerLeTrajet(){
-  const dest=STATIONS.find(s=>s.id===choix)||STATIONS[1];
+  const dest=STATIONS.find(s=>s.id===choix)||LAS;
   $('trajDe').textContent=ICI.nom.toUpperCase();
   $('trajA').textContent=dest.nom.toUpperCase();
   $('trajTitre').textContent='Prochain arrêt : '+dest.nom;
