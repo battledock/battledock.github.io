@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-2004';
+  var MA_VERSION='2026-09-19-2009';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -8041,7 +8041,8 @@ function graverLeCarreau(){
 }
 function dessinerLeCarreau(g,x,y){
   if(!CALQUE_CARREAU)graverLeCarreau();
-  g.drawImage(CALQUE_CARREAU.toile,Math.round(x-CALQUE_CARREAU.W/2),Math.round(y-CALQUE_CARREAU.sol),CALQUE_CARREAU.W,CALQUE_CARREAU.H);
+  {const fin=FIN_OK();if(fin&&!CALQUE_CARREAU_FIN)graverLeCarreauFin();const C0=fin?CALQUE_CARREAU_FIN:CALQUE_CARREAU;
+   g.drawImage(C0.toile,Math.round(x-C0.W/2),Math.round(y-C0.sol),C0.W,C0.H);}
   const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x+a),Math.round(y+b),w,h);};
   const hy=-(CALQUE_CARREAU.sol-CALQUE_CARREAU.H2)-16;
   /* LA MOLETTE : c'est elle qui fait vivre le carreau */
@@ -8204,9 +8205,166 @@ function graverLeForgeron(){
   enseigne(cx-16,basToit-22,110,'LE FORGERON',11);
   CALQUE_FORGERON={toile:c,W,H:Ht,sol};
 }
+/* =====================================================================
+   LE FORGERON ET LE CARREAU DE LA MINE, EN PIXEL FIN — mêmes places, mêmes
+   dimensions, même composition ; tout dessiné au demi-pixel.
+   ===================================================================== */
+/* une pierre de roche, irrégulière : facettes, arête éclairée, ombre, fissure */
+function rocheFin(F,x,y,w,h,seed){
+  const t=hasardF(seed), cols=['#8f8778','#9a9182','#847c6e','#a49b8c'];
+  const base=cols[Math.floor(t*4)];
+  F(x+0.5,y+0.5,w,h,'rgba(40,36,30,.35)');
+  F(x,y+0.5,w,h-1,base);F(x+0.5,y,w-1,h,base);
+  F(x+0.5,y,w-1.5,0.5,'#b8ae9c');F(x,y+0.5,0.5,h-1.5,'#aca390');
+  F(x+w-0.5,y+1,0.5,h-1.5,'#6a6356');F(x+1,y+h-0.5,w-1.5,0.5,'#5f5a50');
+  F(x+w*0.3,y+h*0.25,w*0.4,0.5,'rgba(255,250,238,.16)');
+  if(t>0.55)F(x+w*(0.2+t*0.4),y+h*0.4,0.5,h*0.45,'rgba(48,44,38,.45)');
+  if(t<0.2)F(x+1,y+h-1.5,1.5,1,'#6f8a48');
+}
+/* l'enseigne fine, commune aux deux bâtiments */
+function enseigneFin(g,F,cx,hy,larg,mot,taille){
+  const {bois,clou}=outilsFin(g);
+  bois(cx-larg/2,hy-9,larg,18,B_F.boisS);F(cx-larg/2,hy-9,larg,1.5,B_F.boisC);F(cx-larg/2,hy+7,larg,2,'#2a1c12');
+  bois(cx-larg/2-4,hy-11,4,22,B_F.boisO,true);bois(cx+larg/2,hy-11,4,22,B_F.boisO,true);
+  clou(cx-larg/2-2.5,hy-9);clou(cx-larg/2-2.5,hy+8);clou(cx+larg/2+1.5,hy-9);clou(cx+larg/2+1.5,hy+8);
+  g.font='700 '+(taille||12)+'px Georgia,serif';g.textAlign='center';
+  g.fillStyle='#1a120c';g.fillText(mot,cx+0.5,hy+5.5,larg-20);g.fillStyle='#f0cf7d';g.fillText(mot,cx,hy+5,larg-20);g.textAlign='left';
+}
+let CALQUE_FORGERON_FIN=null;
+function graverLeForgeronFin(){
+  const W=220, Ht=190, cx=W/2, sol=Ht-16, FL=150, basToit=sol-86;
+  const c=document.createElement('canvas');c.width=W*2;c.height=Ht*2;
+  const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
+  const {F,briques,bois,toit,clou}=outilsFin(g);
+  g.fillStyle='rgba(30,50,24,.26)';g.beginPath();g.ellipse(cx+4,sol+4,92,13,0,0,7);g.fill();
+  /* LE TOIT de tuiles rondes */
+  toit(cx-16,basToit,FL,24);
+  F(cx-16-FL/2-14,basToit+3,FL+28,4,PI_F.o);F(cx-16-FL/2-14,basToit+3,FL+28,1,PI_F.p);
+  /* LE MUR : pierre de roche en bas, brique noircie en haut */
+  briques(cx-16-FL/2,basToit+6,FL,sol-basToit-30,14);
+  F(cx-16-FL/2,basToit+6,FL,1.5,'rgba(0,0,0,.3)');
+  for(let r=0;r<4;r++)for(let k=-FL/2+(r%2?5:0);k<FL/2;k+=10){const w=Math.min(9.5,FL/2-k);if(w<2)continue;rocheFin(F,cx-16+k,sol-24+r*5.5,w,5,k*0.7+r*13);}
+  /* LA GRANDE OUVERTURE en plein cintre, claveaux de pierre, suie au-dessus */
+  g.fillStyle='#120d08';g.beginPath();g.moveTo(cx-48,sol-2);g.lineTo(cx-48,sol-40);g.quadraticCurveTo(cx-24,sol-64,cx,sol-40);g.lineTo(cx,sol-2);g.closePath();g.fill();
+  g.fillStyle='rgba(30,22,16,.45)';g.beginPath();g.ellipse(cx-24,sol-66,20,8,0,0,7);g.fill();
+  for(let k=0;k<=11;k++){const a=Math.PI*(0.04+0.92*k/11);rocheFin(F,cx-24-Math.cos(a)*26-4.5,sol-40-Math.sin(a)*26-4.5,9,9,k*3.7);}
+  rocheFin(F,cx-28.5,sol-71,9,7,99);                                               /* la clef de voûte */
+  /* LE FOYER : la sole de pierre, les charbons, la hotte de tôle rivetée */
+  F(cx-42,sol-22,36,20,'#2a2018');F(cx-40,sol-14,32,12,'#3a2c20');
+  for(let k=0;k<22;k++){const x=cx-40+hasardF(k)*30, y=sol-13+hasardF(k+40)*9;F(x,y,1.5+hasardF(k+7),1,hasardF(k+3)<0.5?'#2e2c30':'#4a464e');}
+  F(cx-44,sol-26,40,5,PI_F.s);F(cx-44,sol-26,40,1,PI_F.h);F(cx-44,sol-21.5,40,0.5,PI_F.o);
+  g.fillStyle='#343a40';g.beginPath();g.moveTo(cx-48,sol-42);g.lineTo(cx-38,sol-58);g.lineTo(cx-10,sol-58);g.lineTo(cx,sol-42);g.closePath();g.fill();
+  g.fillStyle='#4d545c';g.beginPath();g.moveTo(cx-46,sol-44);g.lineTo(cx-37,sol-56);g.lineTo(cx-11,sol-56);g.lineTo(cx-2,sol-44);g.closePath();g.fill();
+  g.fillStyle='rgba(255,255,255,.12)';g.beginPath();g.moveTo(cx-20,sol-56);g.lineTo(cx-11,sol-56);g.lineTo(cx-4,sol-45);g.lineTo(cx-10,sol-45);g.closePath();g.fill();
+  for(let k=0;k<6;k++){F(cx-44+k*8,sol-43.5,1,1,'#262a2e');F(cx-44+k*8,sol-43.5,0.5,0.5,'#9aa2a8');}         /* les rivets */
+  /* LE SOUFFLET de cuir, ses plis, son embout et son bras */
+  g.fillStyle='#5a3a24';g.beginPath();g.moveTo(cx-62,sol-30);g.lineTo(cx-44,sol-24);g.lineTo(cx-44,sol-12);g.lineTo(cx-62,sol-18);g.closePath();g.fill();
+  for(let k=0;k<4;k++){const x=cx-60+k*4;F(x,sol-28.5+k*1.2,0.5,10,'#3d2716');F(x+0.5,sol-28+k*1.2,0.5,9,'#7a5234');}
+  bois(cx-63,sol-31,18,2,B_F.bois);bois(cx-63,sol-19,18,2,B_F.bois);
+  F(cx-67,sol-26,6,4,'#3f3f47');F(cx-67,sol-26,6,0.5,'#8f959b');bois(cx-70,sol-38,4,16,B_F.boisO,true);
+  /* L'AUVENT sur poteaux, et sa toiture */
+  [[cx+22],[cx+78]].forEach(([px])=>{bois(px-3,sol-54,7,52,B_F.boisO,true);F(px-3,sol-54,2,52,B_F.bois);F(px+3.5,sol-54,0.5,52,B_F.boisS);
+    F(px-6,sol-5,13,4,PI_F.s);F(px-6,sol-5,13,0.5,PI_F.h);
+    g.save();g.translate(px+2,sol-52);g.rotate(0.7);F(0,0,3,16,B_F.boisS);F(0,0,1,16,B_F.boisO);g.restore();clou(px,sol-50);});
+  bois(cx+14,sol-56,74,6,B_F.boisO);F(cx+14,sol-56,74,1.5,B_F.boisH);
+  for(let k=cx+12;k<cx+92;k+=3){const q=hasardF(k*9);F(k,sol-62,3,5,q<0.3?TU_F.s:(q<0.7?TU_F.p:TU_F.c));F(k+0.5,sol-62,2,0.5,TU_F.h);F(k+0.5,sol-61.5,1,1.5,TU_F.faite);F(k+2.5,sol-62,0.5,5,TU_F.o);}
+  /* L'ENCLUME sur son billot cerclé */
+  const ex=cx+52, ey=sol-4;
+  for(let k=0;k<10;k++)F(ex-11+k*2.5,ey-16,2.5,16,k%2?B_F.boisO:B_F.bois);
+  F(ex-12,ey-18,26,3,B_F.boisH);for(let k=0;k<5;k++)F(ex-10+k*5,ey-17.5,2,0.5,B_F.boisO);          /* les cernes */
+  F(ex-12,ey-12,24,1.5,'#3f3f47');F(ex-12,ey-5,24,1.5,'#3f3f47');
+  g.fillStyle='#2e3237';g.beginPath();g.moveTo(ex-13,ey-24);g.lineTo(ex+13,ey-24);g.lineTo(ex+9,ey-20);g.lineTo(ex-9,ey-20);g.closePath();g.fill();
+  F(ex-5,ey-20,10,4,'#3f444a');
+  g.fillStyle='#2e3237';g.beginPath();g.moveTo(ex+11,ey-27);g.lineTo(ex+24,ey-24);g.lineTo(ex+11,ey-21);g.closePath();g.fill();
+  F(ex-13,ey-27,26,4,'#454b51');F(ex-13,ey-27,26,1,'#9aa2a8');F(ex-6,ey-26.5,10,0.5,'#d8dee2');       /* la table polie */
+  F(ex-10,ey-25,1,1,'#1a1d20');F(ex-7,ey-25,1,1,'#1a1d20');                                          /* les trous */
+  /* LE BAQUET DE TREMPE, cerclé, l'eau sombre et sa vapeur */
+  for(let k=0;k<5;k++)F(cx+88+k*3,sol-16,3,16,k===0||k===4?B_F.boisO:B_F.bois);
+  [sol-13,sol-6].forEach(yy=>{F(cx+87,yy,17,2,'#3f3f47');F(cx+87,yy,17,0.5,'#8f959b');});
+  F(cx+89,sol-16,13,3,'#1f4a5a');F(cx+90,sol-16,5,0.5,'#6fa8bc');
+  /* LE RÂTELIER : marteaux, tenailles, pinces */
+  bois(cx-16-FL/2+6,sol-46,4,30,B_F.boisO,true);bois(cx-16-FL/2+26,sol-46,4,30,B_F.boisO,true);bois(cx-16-FL/2+4,sol-46,28,4,B_F.bois);
+  [0,1,2].forEach(k=>{const px=cx-16-FL/2+10+k*7;F(px,sol-42,2,18,'#4a4f54');F(px,sol-42,0.5,18,'#9aa2a8');
+    if(k===1){F(px-2,sol-24,6,4,'#3a3f44');F(px-2,sol-24,6,0.5,'#8f959b');}else{F(px-1.5,sol-25,1.5,5,'#3a3f44');F(px+2,sol-25,1.5,5,'#3a3f44');}});
+  /* LA CHEMINÉE de brique, noircie en haut */
+  briques(cx-38,basToit-34,16,32,12);F(cx-40,basToit-38,20,5,PI_F.c);F(cx-40,basToit-38,20,1,PI_F.e);F(cx-40,basToit-33.5,20,0.5,PI_F.o);
+  /* L'ENSEIGNE, avec son fer à cheval */
+  enseigneFin(g,F,cx-16,basToit-22,110,'LE FORGERON',11);
+  g.strokeStyle='#8f959b';g.lineWidth=1.2;g.beginPath();g.arc(cx-16+46,basToit-7,3,Math.PI*0.15,Math.PI*0.85,true);g.stroke();   /* le fer à cheval, pendu sous l'enseigne */
+  F(cx-16+46,basToit-13,0.5,3,'#3d4248');
+  CALQUE_FORGERON_FIN={toile:c,W,H:Ht,sol};
+}
+let CALQUE_CARREAU_FIN=null;
+function graverLeCarreauFin(){
+  const W=230, Ht=200, cx=W/2, sol=Ht-16;
+  const c=document.createElement('canvas');c.width=W*2;c.height=Ht*2;
+  const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
+  const {F,bois,clou}=outilsFin(g);
+  g.fillStyle='rgba(30,50,24,.26)';g.beginPath();g.ellipse(cx+4,sol+4,96,14,0,0,7);g.fill();
+  /* LE TERRIL : un cône de déblais, caillou par caillou */
+  g.fillStyle='#6f675a';g.beginPath();g.moveTo(cx+38,sol-2);g.lineTo(cx+72,sol-46);g.lineTo(cx+104,sol-2);g.closePath();g.fill();
+  g.fillStyle='#7a7264';g.beginPath();g.moveTo(cx+46,sol-2);g.lineTo(cx+72,sol-42);g.lineTo(cx+90,sol-2);g.closePath();g.fill();
+  for(let i=0;i<260;i++){const t=hasardF(i*3.1), u=hasardF(i*1.7);const x=cx+42+u*60, y=sol-3-t*(42-Math.abs(u-0.5)*80);
+    if(y>sol-2||y<sol-46)continue;F(x,y,1+hasardF(i)*1.5,1,t<0.35?'#5f5a50':(t<0.7?'#6f675a':(t<0.93?'#8e8676':'#b06a3a')));}
+  /* LE MUR DE ROCHE entaillé : assises irrégulières, plus hautes au centre */
+  /* des pierres de toutes tailles, posées de travers : c'est de la roche, pas un mur */
+  for(let yy=0;yy<74;yy+=5.5){const dec=hasardF(yy*7)*8;
+    for(let k=-98;k<54;){const w=8+hasardF(k*3+yy)*9, hh=4+hasardF(k+yy*5)*3, j=(hasardF(k*11+yy)-0.5)*1.5;
+      const h=74-Math.abs(k+22)*0.34;if(yy<=h)rocheFin(F,cx+k+dec,sol-78+yy+j,w,hh,k*0.7+yy*1.3);k+=w+0.5;}}
+  for(let k=0;k<40;k++){const t=hasardF(k*3.7), u=hasardF(k*1.9);F(cx-92+u*140,sol-76+t*66,0.5,2+t*3,'rgba(48,44,38,.45)');}   /* les fissures */
+  for(let k=0;k<26;k++){const t=hasardF(k*5.1), u=hasardF(k*2.3);rocheFin(F,cx-88+u*140,sol-6-t*8,3+t*4,2.5+t*3,k*7.1);}          /* les éboulis */
+  for(let k=0;k<18;k++){const u=hasardF(k*4.3), t=hasardF(k*2.7);const px=cx-90+u*140, py=sol-70+t*54;
+    for(let j=0;j<4;j++)F(px+j*1.2,py-3-hasardF(k+j)*3,0.5,3+hasardF(j+k*2)*2,j%2?'#6f8a48':'#8aa860');}                          /* l'herbe dans les fissures */
+  /* LES ÉTAIS DE BOIS */
+  [-76,-64,44].forEach((dx,i)=>{g.save();g.translate(cx+dx,sol-2);g.rotate(i===2?-0.14:0.12);
+    bois(0,-46,6,46,B_F.boisO,true);F(0,-46,1.5,46,B_F.bois);F(5.5,-46,0.5,46,B_F.boisS);F(-2,-48,10,4,B_F.boisS);F(-2,-48,10,0.5,B_F.boisO);clou(1,-45);g.restore();});
+  /* L'ÉCHELLE */
+  g.save();g.translate(cx-86,sol-2);g.rotate(0.16);
+  bois(0,-56,3,56,B_F.bois,true);bois(9,-56,3,56,B_F.bois,true);
+  for(let k=0;k<8;k++){F(0,-52+k*7,12,2,B_F.boisO);F(0,-52+k*7,12,0.5,B_F.boisC);}g.restore();
+  /* LE MINERAI TRIÉ : cuivre, fer et pierre, avec leurs éclats */
+  for(let k=0;k<26;k++){const t=hasardF(k*6.1), u=hasardF(k*3.3);const px=cx-104+u*26, py=sol-4-t*10;
+    g.fillStyle=t<0.3?'#b06a3a':(t<0.6?'#8f8778':'#7a7264');g.beginPath();g.arc(px,py,2+t*1.4,0,7);g.fill();
+    F(px-1,py-1,1,0.5,'rgba(255,250,238,.35)');if(t<0.3)F(px+0.5,py,0.5,0.5,'#f0b070');}
+  /* LES OUTILS appuyés : deux pioches au fer luisant */
+  [[-40,-0.3],[-33,0.22]].forEach(([dx,a])=>{g.save();g.translate(cx+dx,sol-2);g.rotate(a);
+    bois(0,-40,3,40,B_F.bois,true);F(0,-40,1,40,B_F.boisH);
+    g.fillStyle='#3f454b';g.beginPath();g.moveTo(-9,-42);g.quadraticCurveTo(1.5,-48,12,-42);g.lineTo(12,-40);g.quadraticCurveTo(1.5,-45,-9,-40);g.closePath();g.fill();
+    g.strokeStyle='#9aa2a8';g.lineWidth=0.5;g.beginPath();g.moveTo(-8,-42);g.quadraticCurveTo(1.5,-47.5,11,-42);g.stroke();g.restore();});
+  /* LA GALERIE : bouche boisée qui s'enfonce dans le noir */
+  g.fillStyle='#0e0a06';g.beginPath();g.moveTo(cx-30,sol-2);g.lineTo(cx-30,sol-34);g.quadraticCurveTo(cx-8,sol-56,cx+14,sol-34);g.lineTo(cx+14,sol-2);g.closePath();g.fill();
+  [[-24,-30,0.55],[-18,-26,0.35],[-13,-22,0.2]].forEach(([dx,dy,a])=>{g.globalAlpha=a;
+    F(cx+dx,sol-2+dy+4,4,-dy-6,B_F.boisO);F(cx-dx-14,sol-2+dy+4,4,-dy-6,B_F.boisO);F(cx+dx,sol+dy+2,-2*dx-10,3,B_F.boisO);g.globalAlpha=1;});
+  F(cx-12,sol-10,1,1,'#c9a24a');F(cx-11.5,sol-9.5,0.5,0.5,'#fff0c4');                                   /* une lampe au loin */
+  /* LE CADRE DE L'ENTRÉE : montants, chapeau, bois veiné, clous */
+  bois(cx-36,sol-38,7,36,B_F.boisO,true);F(cx-36,sol-38,2,36,B_F.bois);F(cx-29.5,sol-38,0.5,36,B_F.boisS);
+  bois(cx+13,sol-38,7,36,B_F.boisO,true);F(cx+13,sol-38,2,36,B_F.bois);F(cx+19.5,sol-38,0.5,36,B_F.boisS);
+  bois(cx-39,sol-44,62,7,B_F.bois);F(cx-39,sol-44,62,1.5,B_F.boisH);F(cx-39,sol-37,62,2,B_F.boisS);
+  [[cx-37],[cx-32],[cx+15],[cx+20]].forEach(([x])=>clou(x,sol-42));
+  /* LES RAILS : traverses clouées, rails d'acier luisants */
+  for(let x=cx-14;x<cx+70;x+=6){F(x,sol-4,5,3,B_F.boisO);F(x,sol-4,5,0.5,B_F.bois);F(x+4.5,sol-4,0.5,3,B_F.boisS);}
+  [-2,4].forEach(dy=>{F(cx-16,sol-6+dy,88,1.5,PI_F.c);F(cx-16,sol-6+dy,88,0.5,PI_F.e);F(cx-16,sol-4.5+dy,88,0.5,PI_F.o);
+    for(let x=cx-14;x<cx+70;x+=6)F(x+1,sol-5.5+dy,0.5,0.5,'#2a2a30');});
+  /* LE CHEVALEMENT : quatre jambes, traverses, croisillons, boulons */
+  const H2=sol-92;
+  [[-34,-14],[34,14]].forEach(([bx,tx])=>{g.save();g.translate(cx+bx,sol-2);
+    g.rotate(Math.atan2(-(tx-bx),(H2-(sol-2))));const L=Math.hypot((cx+tx)-(cx+bx),sol-2-H2);   /* la jambe monte du pied vers la molette */
+    bois(0,0,7,L,B_F.boisO,true);F(0,0,2,L,B_F.bois);F(6.5,0,0.5,L,B_F.boisS);g.restore();});
+  [0.28,0.55,0.8].forEach(q=>{const y=sol-2-(sol-2-H2)*q, dx=34-(34-14)*q;
+    bois(cx-dx,y,dx*2,5,B_F.boisO);F(cx-dx,y,dx*2,1.5,B_F.bois);
+    g.strokeStyle=B_F.boisS;g.lineWidth=2.4;g.beginPath();g.moveTo(cx-dx,y);g.lineTo(cx+dx,y-24);g.moveTo(cx+dx,y);g.lineTo(cx-dx,y-24);g.stroke();
+    g.strokeStyle=B_F.boisO;g.lineWidth=0.6;g.beginPath();g.moveTo(cx-dx,y-0.8);g.lineTo(cx+dx,y-24.8);g.stroke();
+    clou(cx-dx+1,y+1.5);clou(cx+dx-2,y+1.5);clou(cx-0.5,y-12.5);});
+  bois(cx-20,H2-4,40,6,B_F.bois);F(cx-20,H2-4,40,1.5,B_F.boisH);F(cx-20,H2+1.5,40,0.5,B_F.boisS);
+  for(let k=-18;k<19;k+=6)F(cx+k,H2-5,0.5,2,'#3d2a17');                                         /* le garde-corps */
+  F(cx-20,H2-6,40,0.5,B_F.boisO);
+  CALQUE_CARREAU_FIN={toile:c,W,H:Ht,sol,H2};
+}
+
 function dessinerLeForgeron(g,x,y){
   if(!CALQUE_FORGERON)graverLeForgeron();
-  g.drawImage(CALQUE_FORGERON.toile,Math.round(x-CALQUE_FORGERON.W/2),Math.round(y-CALQUE_FORGERON.sol),CALQUE_FORGERON.W,CALQUE_FORGERON.H);
+  {const fin=FIN_OK();if(fin&&!CALQUE_FORGERON_FIN)graverLeForgeronFin();const C0=fin?CALQUE_FORGERON_FIN:CALQUE_FORGERON;
+   g.drawImage(C0.toile,Math.round(x-C0.W/2),Math.round(y-C0.sol),C0.W,C0.H);}
   const cx=x-110+CALQUE_FORGERON.W/2;
   const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x+a),Math.round(y+b),w,h);};
   /* LE FEU QUI RESPIRE, dans le foyer */
