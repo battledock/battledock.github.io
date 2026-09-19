@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1914';
+  var MA_VERSION='2026-09-19-1919';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -13424,7 +13424,8 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
       break;
     }
     if(PERF.on)PERF.objets++;
-    poserGens(o.y);
+    /* les gravats sont un tas au ras du sol : un joueur juste à côté passe DEVANT */
+    poserGens(o.t==='gravats'?o.y-9:o.y);
     const x=o.x-camX, y=o.y-camY;
     /* Les bâtiments sont hauts : leur toit se voit bien après que leur
        pied soit sorti de l'écran. On leur laisse donc large. */
@@ -13602,10 +13603,14 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
       let k=1;
       if(o.neuf){const t=Math.min(1,(Date.now()-o.neuf)/420);k=rebond(t);}
       g.save();g.translate(x,y);g.scale(1,k);
-      g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(1,-1,9,3,0,0,7);g.fill();
-      g.fillStyle='#7b8288';g.fillRect(-7,-4,6,4);g.fillRect(1,-5,6,5);
-      g.fillStyle='#8b939a';g.fillRect(-7,-4,6,1);g.fillRect(1,-5,6,1);
-      g.fillStyle='#5f666c';g.fillRect(-7,-1,14,1);
+      /* LES GRAVATS : un vrai tas de pierres éclatées, avec leurs arêtes et la poussière */
+      g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(0,0,13,4,0,0,7);g.fill();
+      const pierre=(px,py,w,h,cl)=>{g.fillStyle=cl?'#8e969c':'#737b81';g.fillRect(px,py,w,h);
+        g.fillStyle=cl?'#b3bac0':'#959da3';g.fillRect(px,py,w,1);g.fillRect(px+w-1,py,1,h-1);
+        g.fillStyle='#50575c';g.fillRect(px,py+h-1,w,1);g.fillRect(px,py,1,h);};
+      pierre(-11,-4,6,4,0);pierre(5,-4,7,4,0);pierre(-6,-8,7,7,1);pierre(1,-9,6,8,0);pierre(-2,-3,5,3,1);pierre(9,-2,3,2,1);pierre(-13,-2,3,2,1);
+      g.fillStyle='#5f666c';g.fillRect(-1,-7,1,4);g.fillRect(3,-6,2,1);                    /* les cassures */
+      g.fillStyle='rgba(200,190,170,.55)';g.fillRect(-9,-1,2,1);g.fillRect(6,0,3,1);g.fillRect(-3,0,2,1);   /* la poussière */
       g.restore();
     }
   }
@@ -14998,9 +15003,7 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
      Les mêmes courbes que l'ancien personnage (élan, frappe, reprise), mais le
      corps entier s'engage : il se tasse, se penche, et les deux mains tiennent
      l'outil, dessiné en entier (manche, fer, tranchant). */
-  const brasGeste=(fonce,derriere)=>{
-    const c=fonce?vestO:vest, sk=fonce?peauO:peau;
-    const epX=cote?1:(derriere?-EP+2:EP-2), epY=yEp+3;
+  const angleBras=()=>{
     let a, L=15;
     const REPOS=1.25;                                       /* le bras qui pend, un peu en avant */
     if(typeG==='cueille')a=REPOS-arcG*0.45;
@@ -15014,9 +15017,19 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       else if(phaseG===2)a=HAUT+((arcG-bas2)/(fin2-bas2))*(IMPACT-HAUT);
       else a=IMPACT+(1-arcG/fin2)*(REPOS-IMPACT);
     }
+    return {a,L};
+  };
+  /* de dos, trois moments : l'outil pend (repos), il est levé au-dessus de la tête
+     (élan), ou il part loin devant nous, au-dessus des épaules (frappe) */
+  const momentDos=(a)=>a>1.0?'pend':(a>0.2?'frappe':'leve');
+  const brasGeste=(fonce,derriere)=>{
+    const c=fonce?vestO:vest, sk=fonce?peauO:peau;
+    const epX=cote?1:(derriere?-EP+2:EP-2), epY=yEp+3;
+    const {a,L}=angleBras();
     if(!cote){
       /* de face ou de dos : le bras monte et descend devant le corps */
-      const hx=Math.round((derriere?-2:2)+(typeG==='tamis'?(derriere?-5:5):0)), hy=Math.round(epY+Math.sin(a)*L*0.9);
+      const hx=Math.round((derriere?-2:2)+(typeG==='tamis'?(derriere?-5:5):0));
+      const hy=Math.round(dos&&momentDos(a)==='frappe'?epY-3:epY+Math.sin(a)*L*0.9);
       const ex=Math.round((epX+hx)/2+(derriere?-2:2)), ey=Math.round((epY+hy)/2);
       seg(epX,epY,ex,ey,SX.bras[0],manches>0?c:sk);seg(ex,ey,hx,hy,SX.bras[1],manches>=1?c:sk);
       R(hx-2,hy-1,4,4,sk);R(hx-2,hy-1,4,1,fonce?peau:peauC);
@@ -15034,13 +15047,17 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     if(typeG==='cueille')return;
     if(!cote){
       /* de face : l'outil monte au-dessus de la tête ou retombe, vu de bout */
-      const haut=h.a<0, L2=Math.round(4+Math.abs(Math.sin(h.a))*11), dy2=haut?-1:1;
+      const haut=h.a<0, L2=Math.round(6+Math.abs(Math.sin(h.a))*16);
+      /* de face, la frappe vient vers nous (l'outil descend) ; de dos, elle s'éloigne
+         (l'outil monte au-dessus de la tête) et l'élan passe derrière la nuque */
+      const dy2=dos?(momentDos(h.a)==='frappe'?-1:1):(haut?-1:1);
+      const L3=dos&&momentDos(h.a)==='frappe'?30:L2;                 /* de dos, la frappe part loin devant : l'outil dépasse au-dessus de la tête */
       if(typeG==='tamis'){R(h.x-12,h.y+1,24,4,bois);R(h.x-11,h.y+2,22,2,'#c7b88a');for(let x=-10;x<11;x+=3)R(h.x+x,h.y+2,1,2,T('#c7b88a',-30));return;}
       if(typeG==='gouge'){R(h.x-1,h.y-5,2,5,acier);R(h.x-1,h.y-5,1,5,acierC);return;}
-      for(let k=0;k<L2;k++)R(h.x-1,h.y+dy2*k,2,1,k%3?bois:boisC);
-      const ty=h.y+dy2*L2;
-      if(typeG==='hache'){R(h.x-6,ty-2,6,5,acier);R(h.x-6,ty-2,1,5,acierC);R(h.x-1,ty-1,2,3,acierO);}
-      else{R(h.x-8,ty-1,16,3,acier);R(h.x-8,ty-1,16,1,acierC);R(h.x-9,ty,1,1,acierO);R(h.x+8,ty,1,1,acierO);}
+      for(let k=0;k<L3;k++)R(h.x-1,h.y+dy2*k,2,1,k%3?bois:boisC);
+      const ty=h.y+dy2*L3;
+      if(typeG==='hache'){R(h.x-9,ty-3,9,8,acier);R(h.x-9,ty-3,1,8,acierC);R(h.x-8,ty-3,7,1,acierC);R(h.x-1,ty-2,3,5,acierO);}
+      else{R(h.x-12,ty-1,24,3,acier);R(h.x-12,ty-1,24,1,acierC);R(h.x-13,ty,1,2,acierC);R(h.x+12,ty,1,2,acierC);R(h.x-1,ty-2,3,5,acierO);}
       return;
     }
     const dx2=Math.cos(h.a), dy3=Math.sin(h.a), px=-dy3, py=dx2;                   /* le long du manche, et en travers */
@@ -15052,16 +15069,17 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       for(let k=5;k<9;k++)R(Math.round(h.x+dx2*k)-1,Math.round(h.y+dy3*k)-1,2,2,k===8?acierC:acier);
       return;}
     /* la hache et la pioche : le manche traverse les mains, le fer au bout */
-    const Lm=16;
+    const Lm=24;                                             /* un vrai manche : presque la longueur du bras */
     for(let k=-3;k<Lm;k++){const x=h.x+dx2*k, y=h.y+dy3*k;R(Math.round(x)-1,Math.round(y)-1,2,2,bois);if(k%3===0)R(Math.round(x),Math.round(y)-1,1,1,boisC);}
     const tx=h.x+dx2*Lm, ty=h.y+dy3*Lm;
     if(typeG==='hache'){
       /* le fer de hache : du côté qui frappe, en éventail, avec son tranchant brillant */
-      for(let k=0;k<6;k++)for(let j=-2;j<3+Math.round(k*0.4);j++){const x=tx+px*k*(-1)+dx2*j*0.6, y=ty+py*k*(-1)+dy3*j*0.6;
-        R(Math.round(x),Math.round(y),1,1,k===5?acierC:(j<-1?acierO:acier));}
+      for(let k=0;k<9;k++)for(let j=-3;j<4+Math.round(k*0.5);j++){const x=tx+px*k*(-1)+dx2*j*0.6, y=ty+py*k*(-1)+dy3*j*0.6;
+        R(Math.round(x),Math.round(y),1,1,k>=8?acierC:(j<-2?acierO:(k<2?acierO:acier)));}
+      R(Math.round(tx)-1,Math.round(ty)-1,3,3,acierO);                               /* la douille, où passe le manche */
     }else{
       /* le fer de pioche : deux pointes, de part et d'autre du manche */
-      for(let k=-8;k<9;k++){const x=tx+px*k, y=ty+py*k+Math.abs(k)*0.25*dy3;R(Math.round(x)-1,Math.round(y)-1,2,2,Math.abs(k)>6?acierC:acier);}
+      for(let k=-12;k<13;k++){const x=tx+px*k, y=ty+py*k+Math.abs(k)*0.28*dy3;R(Math.round(x)-1,Math.round(y)-1,3,2,Math.abs(k)>10?acierC:(Math.abs(k)<3?acierO:acier));}
       R(Math.round(tx)-1,Math.round(ty)-1,3,3,acierO);
     }
   };
@@ -15083,10 +15101,15 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     jambe(-Math.round(HA/2)-1,0,0,false);jambe(Math.round(HA/2)+1,0,0,false);
     if(!dos)sac(false);
     torse();
-    if(dos){sac(false);tete();cheveuxDessus();chapeauDe();}
-    const h1=brasGeste(false,true), h2=brasGeste(false,false);
-    outil({x:Math.round((h1.x+h2.x)/2),y:Math.round((h1.y+h2.y)/2),a:h2.a});
-    if(!dos){sac(true);tete();barbeDe();cheveuxDessus();chapeauDe();}
+    const outilEtBras=()=>{const h1=brasGeste(false,true), h2=brasGeste(false,false);
+      outil({x:Math.round((h1.x+h2.x)/2),y:Math.round((h1.y+h2.y)/2),a:h2.a});};
+    if(dos){
+      /* de dos : pendant l'élan, l'outil est au-dessus de nous (devant le corps pour
+         l'œil) ; à la frappe, il part loin devant, donc derrière le corps */
+      const leve=momentDos(angleBras().a)==='leve';
+      if(!leve){outilEtBras();torse();sac(false);tete();cheveuxDessus();chapeauDe();}
+      else{sac(false);tete();cheveuxDessus();chapeauDe();outilEtBras();}
+    }else{outilEtBras();sac(true);tete();barbeDe();cheveuxDessus();chapeauDe();}
   }else{
     if(!dos)cheveuxDerriere();
     const dx=diag?Math.round(hanche*3*tourne):0;
