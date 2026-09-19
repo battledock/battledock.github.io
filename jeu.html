@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-2009';
+  var MA_VERSION='2026-09-19-2015';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -10522,7 +10522,66 @@ const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la haute
    donc un écran très allongé ne voit pas la carte entière. */
 const VUE_L=196, VUE_H=400;       /* la vue de référence, en points de jeu */
 const ZOOM=2;                     /* ne sert plus que de repli */
-let SOL=null;
+let SOL=null, SOL_FIN=null;
+/* =====================================================================
+   LE SOL EN PIXEL FIN : on repart du sol actuel, et chaque pixel du jeu devient
+   quatre pixels fins. Chaque matière reçoit son détail : brins d'herbe et
+   trèfles sur l'herbe, gravillons et cailloux sur la terre, grain sur la pierre,
+   joints sur le sable. Rien ne bouge de place : c'est le même sol, affiné.
+   ===================================================================== */
+function construireSolFin(solBase){
+  const W=solBase.width, H=solBase.height;
+  const src=solBase.getContext('2d').getImageData(0,0,W,H).data;
+  const c=document.createElement('canvas');c.width=W*2;c.height=H*2;
+  const g=c.getContext('2d');const img=g.createImageData(W*2,H*2), d=img.data;
+  const h=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177;return ((n^(n>>>16))>>>0)/4294967296;};
+  const genre=(r,gg,b)=>{
+    if(b>gg+12&&b>r+20)return 'eau';
+    if(gg>r+8&&gg>b+14)return 'herbe';
+    if(Math.abs(r-gg)<12&&Math.abs(gg-b)<14&&r>70)return 'pierre';
+    if(r>gg&&gg>b&&r>150&&r-b>40)return 'terre';                /* la terre des chemins, claire (le bois reste à part) */
+    return 'autre';};
+  const pose=(x,y,r,gg,b)=>{if(x<0||y<0||x>=W*2||y>=H*2)return;const i=(y*W*2+x)*4;d[i]=r;d[i+1]=gg;d[i+2]=b;d[i+3]=255;};
+  const clamp=(v)=>v<0?0:(v>255?255:v);
+  /* 1 · chaque pixel devient quatre, avec un léger grain propre à sa matière */
+  const G=new Uint8Array(W*H);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const i=(y*W+x)*4, r=src[i], gg=src[i+1], b=src[i+2];
+    const t=genre(r,gg,b);G[y*W+x]={eau:1,herbe:2,pierre:3,terre:4,autre:0}[t];
+    const amp=t==='herbe'?7:(t==='terre'?7:(t==='pierre'?3:(t==='eau'?2:2)));
+    for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){const k=(h(x*2+dx,y*2+dy,1)-0.5)*amp;
+      pose(x*2+dx,y*2+dy,clamp(r+k),clamp(gg+k),clamp(b+k*0.7));}
+  }
+  /* 2 · les détails de chaque matière, au demi-pixel */
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
+    const m=G[y*W+x], i=(y*W+x)*4, r=src[i], gg=src[i+1], b=src[i+2], t=h(x,y,7);
+    const X=x*2+(h(x,y,3)<0.5?0:1), Y=y*2+(h(x,y,4)<0.5?0:1);
+    if(m===2){
+      if(t<0.035){                                         /* une touffe : trois brins en éventail, pointes claires */
+        const f=(dx,hh,cl)=>{for(let k=0;k<hh;k++)pose(X+dx+(k>1&&dx?(dx>0?1:-1):0),Y-k,clamp(r+(k===hh-1?cl+14:(k?cl-6:-24))),clamp(gg+(k===hh-1?cl+22:(k?cl:-20))),clamp(b+(k===hh-1?cl:-18)));};
+        f(0,4,4);f(-1,3,-2);f(1,3,0);}
+      else if(t<0.06){pose(X,Y,clamp(r-14),clamp(gg-10),clamp(b-12));pose(X,Y-1,clamp(r+10),clamp(gg+18),clamp(b+4));}      /* un brin seul */
+      else if(t<0.075){pose(X,Y,clamp(r+16),clamp(gg+24),clamp(b+8));pose(X+1,Y,clamp(r+8),clamp(gg+14),clamp(b+4));}      /* un reflet de soleil */
+      else if(t<0.08){pose(X,Y,clamp(r-26),clamp(gg-20),clamp(b-22));pose(X+1,Y,clamp(r-26),clamp(gg-20),clamp(b-22));pose(X,Y+1,clamp(r-18),clamp(gg-14),clamp(b-16));}  /* un creux d'ombre */
+      else if(t<0.082){const f=[[240,236,220],[236,214,90],[220,120,130],[170,160,220]][Math.floor(h(x,y,9)*4)];pose(X,Y,f[0],f[1],f[2]);pose(X,Y+1,60,110,50);}  /* une fleurette sur sa tige */
+    }else if(m===4){
+      if(t<0.05){pose(X,Y,clamp(r+26),clamp(gg+24),clamp(b+20));pose(X+1,Y,clamp(r+14),clamp(gg+12),clamp(b+10));pose(X,Y+1,clamp(r-28),clamp(gg-26),clamp(b-22));}  /* un gravillon */
+      else if(t<0.075){pose(X,Y,clamp(r-18),clamp(gg-16),clamp(b-14));}
+      else if(t<0.08){pose(X,Y,clamp(r+36),clamp(gg+34),clamp(b+30));pose(X+1,Y,clamp(r+30),clamp(gg+28),clamp(b+24));pose(X,Y+1,clamp(r+10),clamp(gg+8),clamp(b+6));pose(X+1,Y+1,clamp(r-24),clamp(gg-24),clamp(b-20));}  /* un caillou */
+    }else if(m===3){
+      if(t<0.02)pose(X,Y,clamp(r-14),clamp(gg-14),clamp(b-12));
+      else if(t<0.03)pose(X,Y,clamp(r+12),clamp(gg+12),clamp(b+12));
+    }
+    /* la lisière entre deux matières : quelques pixels fins mordent sur la voisine */
+    if(m&&G[y*W+x+1]&&G[y*W+x+1]!==m&&h(x,y,11)<0.5){const j=(y*W+x+1)*4;pose(x*2+1,y*2+(h(x,y,12)<0.5?0:1),src[j],src[j+1],src[j+2]);}
+    if(m&&G[(y+1)*W+x]&&G[(y+1)*W+x]!==m&&h(x,y,13)<0.5){const j=((y+1)*W+x)*4;pose(x*2+(h(x,y,14)<0.5?0:1),y*2+1,src[j],src[j+1],src[j+2]);}
+  }
+  g.putImageData(img,0,0);
+  return c;
+}
+
+/* le sol, et sa version fine quand le pixel fin est actif */
+function refaireLeSol(){SOL=construireSol();SOL_FIN=null;try{if(FIN_OK())SOL_FIN=construireSolFin(SOL);}catch(x){SOL_FIN=null;}return SOL;}
 
 const alea=s=>{const v=Math.sin(s*127.1)*43758.5453;return v-Math.floor(v);};
 /* --- les ponts, gravés une fois ---
@@ -14491,7 +14550,7 @@ function preparerMonde(){
      (retour d'arrière-plan) avant que le décor ait été semé */
   if(MONDE_PRET&&SOL)return;
   MONDE_PRET=true;
-  LISIERE=construireLisiere();SOL=construireSol();semerDecor();
+  LISIERE=construireLisiere();refaireLeSol();semerDecor();
   if(CARTE==='garde'){
     /* À NOTRE-DAME : on arrive en haut de l'escalier du sud, ou là où l'on était */
     const arrive=new URLSearchParams(location.search).has('arrivee')||!EXT_AU_DEPART;
@@ -14537,7 +14596,8 @@ function dessiner(){
 
   ctx.fillStyle='#2b3a26';ctx.fillRect(0,0,VW+2,VH+2);
   const lw=Math.min(VW+2,MONDE_L-camX), lh=Math.min(VH+2,MONDE_H-camY);
-  ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
+  if(SOL_FIN)ctx.drawImage(SOL_FIN,camX*2,camY*2,lw*2,lh*2,0,0,lw,lh);   /* le sol affiné */
+  else ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
   if(CARTE==='village'&&FIN_OK())dessinerLaPlaceFin(ctx,camX,camY);    /* la grand-place en dalles fines */
   if(CARTE==='extramar'){scintillerLaMer(ctx,camX,camY);eauVivante(ctx,camX,camY);}
 
@@ -20535,7 +20595,7 @@ function ouvrirReglages(){
     const val=b.dataset.val;
     REG[b.dataset.reg]=(val==='true')?true:(val==='false'?false:
       (/^\d+$/.test(val)?+val:val));
-    if(b.dataset.reg==='styleFin'){POSES.clear();CACHE_FIN.clear();}
+    if(b.dataset.reg==='styleFin'){POSES.clear();CACHE_FIN.clear();setTimeout(()=>{try{refaireLeSol();}catch(x){}},50);}
     appliquerReglages();vibrer(20);ouvrirReglages();
     /* on FAIT ENTENDRE ce qu'on règle : sinon on choisit à l'aveugle */
     const q=b.dataset.reg;
@@ -21053,14 +21113,14 @@ document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'){
     garderAllume();
     /* le navigateur vide parfois les toiles en arrière-plan : on les refait */
-    SOL=construireSol();LISIERE=construireLisiere();mctx=null;MINI=null;taille();
+    refaireLeSol();LISIERE=construireLisiere();mctx=null;MINI=null;taille();
   }
   else{sauver();monterEnLigne(true);}       /* on enregistre en quittant */
 });
 addEventListener('pagehide',()=>{
   envoyerSauvegarde(true);
   try{CANAL&&CANAL.send({type:'broadcast',event:'sortie',payload:{id:e.id}});}catch(x){}sauver();monterEnLigne(true);});
-addEventListener('pageshow',()=>{SOL=construireSol();LISIERE=construireLisiere();mctx=null;taille();});
+addEventListener('pageshow',()=>{refaireLeSol();LISIERE=construireLisiere();mctx=null;taille();});
 addEventListener('beforeunload',()=>{sauver();});
 
 /* ================= boucle ================= */
