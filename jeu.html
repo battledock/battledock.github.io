@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1900';
+  var MA_VERSION='2026-09-19-1907';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -14044,7 +14044,18 @@ function personne(g,x,y,ap,dir,pas,marche,enCourse){
   if(GESTE&&GESTE.t>0){
     /* LE JOUEUR LOCAL garde le dessin vivant : son geste doit répondre au
        doigt sans la moindre saccade. Les AUTRES passent par le cache. */
-    if(GESTE.pourMoi)sprite(g,x,y,ap,dir,pas,marche);
+    if(STYLE_FIN()){
+      /* le geste en pixel fin : douze étapes gravées, puis recopiées */
+      const part=Math.max(0,Math.min(1,1-GESTE.t)), et=Math.round(part*11), d4=dir||'bas';
+      const P=planche(ap);if(!P.fin)P.fin={};
+      const cle=d4+'|'+(GESTE.type||'pioche')+'|'+et;
+      let c=P.fin[cle];
+      if(!c){const sauve=GESTE;GESTE={t:1-et/11,type:sauve.type||'pioche'};
+        try{c=graverFin(ap,d4,0,false);}catch(x){c=null;}GESTE=sauve;if(c)P.fin[cle]=c;}
+      if(c)g.drawImage(c,Math.round(x-CASE_L/2),Math.round(y-CASE_H+10),CASE_L,CASE_H);
+      else sprite(g,x,y,ap,dir,pas,marche);
+    }
+    else if(GESTE.pourMoi)sprite(g,x,y,ap,dir,pas,marche);
     else{
       const emote=String(GESTE.type||'').slice(0,3)==='em:';
       const part=emote
@@ -14125,9 +14136,28 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
   const leveG=bouge?Math.max(0,Math.sin(ph)):0, leveD=bouge?Math.max(0,-Math.sin(ph)):0;
   /* LA RESPIRATION : au repos, les quatre images de brise sont aussi un souffle —
      les épaules montent d'un pixel fin et la poitrine s'élargit, puis tout redescend */
+  /* LE GESTE EN COURS : mêmes courbes que l'ancien personnage (élan, frappe, reprise) */
+  const frG=(typeof GESTE!=='undefined'&&GESTE&&GESTE.t>0)?GESTE.t:0, typeG=(typeof GESTE!=='undefined'&&GESTE&&GESTE.type)||'pioche';
+  let arcG=0, pencheG=0, tasseG=0, phaseG=0;
+  if(frG>0){const fr=frG;
+    if(typeG==='cueille'){if(fr>0.55){const t=(1-fr)/0.45;pencheG=doux(t)*2.6;tasseG=doux(t)*1.6;arcG=1.1*doux(t);}
+      else if(fr>0.3){const t=(0.55-fr)/0.25;pencheG=2.6;tasseG=1.6;arcG=1.1+t*0.5;}
+      else{const t=1-fr/0.3;pencheG=2.6*(1-sortRap(t));tasseG=1.6*(1-sortRap(t));arcG=1.6*(1-sortRap(t));}}
+    else if(typeG==='hache'){if(fr>0.62){const t=(1-fr)/0.38;arcG=-1.9*doux(t);pencheG=-doux(t)*2;tasseG=doux(t)*1.4;phaseG=1;}
+      else if(fr>0.42){const t=(0.62-fr)/0.2;arcG=-1.9+entreRap(t)*3.3;pencheG=-2+t*5.2;tasseG=1.4-t*2.8;phaseG=2;}
+      else{const t=1-fr/0.42;arcG=1.4*(1-sortRap(t));pencheG=3.2*(1-sortRap(t));tasseG=-1.4*(1-sortRap(t));phaseG=3;}}
+    else if(typeG==='gouge'){if(fr>0.62){const t=(1-fr)/0.38;arcG=-0.5*doux(t);pencheG=doux(t)*1.2;tasseG=doux(t)*0.6;}
+      else if(fr>0.42){const t=(0.62-fr)/0.2;arcG=-0.5+entreRap(t)*1.1;pencheG=1.2+t*0.8;tasseG=0.6;}
+      else{const t=1-fr/0.42;arcG=0.6*(1-sortRap(t));pencheG=2*(1-sortRap(t));tasseG=0.6*(1-sortRap(t));}}
+    else if(typeG==='tamis'){arcG=Math.sin((1-fr)*Math.PI*6)*0.3;pencheG=3.2;tasseG=2.6;}
+    else{if(fr>0.58){const t=(1-fr)/0.42;arcG=-1.45*doux(t);pencheG=-doux(t)*1.6;tasseG=doux(t)*1.2;phaseG=1;}
+      else if(fr>0.42){const t=(0.58-fr)/0.16;arcG=-1.45+entreRap(t)*2.75;pencheG=-1.6+t*4.4;tasseG=1.2-t*2.4;phaseG=2;}
+      else{const t=1-fr/0.42;arcG=1.3*(1-sortRap(t));pencheG=2.8*(1-sortRap(t));tasseG=-1.2*(1-sortRap(t));phaseG=3;}}
+  }
   const iBrise=Math.round((typeof BRISE_PH==='number'?BRISE_PH:0)/(Math.PI/2))%4;
   const souffle=bouge?0:[0,1,1,0][iBrise];
-  const bob=bouge?-Math.round(Math.abs(Math.sin(ph))*2):-souffle;
+  /* pendant un geste, le corps se tasse (les genoux plient) et, de face, s'incline */
+  const bob=(bouge?-Math.round(Math.abs(Math.sin(ph))*2):-souffle)+Math.round(tasseG*1.5)+(frG>0&&!(dir==='gauche'||dir==='droite')?Math.round(Math.max(0,pencheG)*0.5):0);
   /* ---- les hauteurs, en demi-pixels : pieds 0, hanches -26, épaules -56, tête -82 ---- */
   const yHan=-26+bob, yEp=-54+bob, yCou=-58+bob, yTete=-81+bob;
   const court=basT==='short'||basT==='bermuda', jupe=basT==='jupe'||basT==='longue jupe';
@@ -14928,15 +14958,99 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     }
   };
 
+  /* ============ LES GESTES : hache, pioche, cueillette, gouge, tamis ============
+     Les mêmes courbes que l'ancien personnage (élan, frappe, reprise), mais le
+     corps entier s'engage : il se tasse, se penche, et les deux mains tiennent
+     l'outil, dessiné en entier (manche, fer, tranchant). */
+  const brasGeste=(fonce,derriere)=>{
+    const c=fonce?vestO:vest, sk=fonce?peauO:peau;
+    const epX=cote?1:(derriere?-EP+2:EP-2), epY=yEp+3;
+    let a, L=15;
+    const REPOS=1.25;                                       /* le bras qui pend, un peu en avant */
+    if(typeG==='cueille')a=REPOS-arcG*0.45;
+    else if(typeG==='gouge'){a=0.55+arcG*0.8;L=13;}
+    else if(typeG==='tamis'){a=0.95+arcG*0.4;L=13;}
+    else{
+      /* la hache et la pioche : du repos on lève l'outil au-dessus de la tête (élan),
+         on l'abat devant soi (frappe), puis on revient (reprise) */
+      const HAUT=-1.95, IMPACT=0.7, bas2=typeG==='hache'?-1.9:-1.45, fin2=typeG==='hache'?1.4:1.3;
+      if(phaseG===1)a=REPOS+(arcG/bas2)*(HAUT-REPOS);
+      else if(phaseG===2)a=HAUT+((arcG-bas2)/(fin2-bas2))*(IMPACT-HAUT);
+      else a=IMPACT+(1-arcG/fin2)*(REPOS-IMPACT);
+    }
+    if(!cote){
+      /* de face ou de dos : le bras monte et descend devant le corps */
+      const hx=Math.round((derriere?-2:2)+(typeG==='tamis'?(derriere?-5:5):0)), hy=Math.round(epY+Math.sin(a)*L*0.9);
+      const ex=Math.round((epX+hx)/2+(derriere?-2:2)), ey=Math.round((epY+hy)/2);
+      seg(epX,epY,ex,ey,SX.bras[0],manches>0?c:sk);seg(ex,ey,hx,hy,SX.bras[1],manches>=1?c:sk);
+      R(hx-2,hy-1,4,4,sk);R(hx-2,hy-1,4,1,fonce?peau:peauC);
+      return {x:hx,y:hy,a};
+    }
+    const cA=Math.cos(a), sA=Math.sin(a);
+    const ex=epX+Math.cos(a-0.35)*L*0.5, ey=epY+Math.sin(a-0.35)*L*0.5;
+    const hx=epX+cA*L+(derriere?-1:0), hy=epY+sA*L;
+    seg(epX,epY,ex,ey,SX.bras[0]+1,manches>0?c:sk);seg(ex,ey,hx,hy,SX.bras[1]+1,manches>=1?c:sk);
+    R(Math.round(hx)-2,Math.round(hy)-2,4,4,sk);R(Math.round(hx)-2,Math.round(hy)-2,4,1,fonce?peau:peauC);
+    return {x:hx,y:hy,a};
+  };
+  const outil=(h)=>{
+    const bois='#8a6238', boisC='#b08858', acier='#9aa2a8', acierC='#e6ecf0', acierO='#5a6268';
+    if(typeG==='cueille')return;
+    if(!cote){
+      /* de face : l'outil monte au-dessus de la tête ou retombe, vu de bout */
+      const haut=h.a<0, L2=Math.round(4+Math.abs(Math.sin(h.a))*11), dy2=haut?-1:1;
+      if(typeG==='tamis'){R(h.x-12,h.y+1,24,4,bois);R(h.x-11,h.y+2,22,2,'#c7b88a');for(let x=-10;x<11;x+=3)R(h.x+x,h.y+2,1,2,T('#c7b88a',-30));return;}
+      if(typeG==='gouge'){R(h.x-1,h.y-5,2,5,acier);R(h.x-1,h.y-5,1,5,acierC);return;}
+      for(let k=0;k<L2;k++)R(h.x-1,h.y+dy2*k,2,1,k%3?bois:boisC);
+      const ty=h.y+dy2*L2;
+      if(typeG==='hache'){R(h.x-6,ty-2,6,5,acier);R(h.x-6,ty-2,1,5,acierC);R(h.x-1,ty-1,2,3,acierO);}
+      else{R(h.x-8,ty-1,16,3,acier);R(h.x-8,ty-1,16,1,acierC);R(h.x-9,ty,1,1,acierO);R(h.x+8,ty,1,1,acierO);}
+      return;
+    }
+    const dx2=Math.cos(h.a), dy3=Math.sin(h.a), px=-dy3, py=dx2;                   /* le long du manche, et en travers */
+    if(typeG==='tamis'){
+      for(let k=-7;k<8;k++){R(Math.round(h.x+2+k),Math.round(h.y+1),1,3,Math.abs(k)>5?bois:'#c7b88a');}
+      R(Math.round(h.x-5),Math.round(h.y+1),15,1,bois);return;}
+    if(typeG==='gouge'){
+      for(let k=0;k<5;k++)R(Math.round(h.x+dx2*k)-1,Math.round(h.y+dy3*k)-1,2,2,bois);
+      for(let k=5;k<9;k++)R(Math.round(h.x+dx2*k)-1,Math.round(h.y+dy3*k)-1,2,2,k===8?acierC:acier);
+      return;}
+    /* la hache et la pioche : le manche traverse les mains, le fer au bout */
+    const Lm=16;
+    for(let k=-3;k<Lm;k++){const x=h.x+dx2*k, y=h.y+dy3*k;R(Math.round(x)-1,Math.round(y)-1,2,2,bois);if(k%3===0)R(Math.round(x),Math.round(y)-1,1,1,boisC);}
+    const tx=h.x+dx2*Lm, ty=h.y+dy3*Lm;
+    if(typeG==='hache'){
+      /* le fer de hache : du côté qui frappe, en éventail, avec son tranchant brillant */
+      for(let k=0;k<6;k++)for(let j=-2;j<3+Math.round(k*0.4);j++){const x=tx+px*k*(-1)+dx2*j*0.6, y=ty+py*k*(-1)+dy3*j*0.6;
+        R(Math.round(x),Math.round(y),1,1,k===5?acierC:(j<-1?acierO:acier));}
+    }else{
+      /* le fer de pioche : deux pointes, de part et d'autre du manche */
+      for(let k=-8;k<9;k++){const x=tx+px*k, y=ty+py*k+Math.abs(k)*0.25*dy3;R(Math.round(x)-1,Math.round(y)-1,2,2,Math.abs(k)>6?acierC:acier);}
+      R(Math.round(tx)-1,Math.round(ty)-1,3,3,acierO);
+    }
+  };
   /* ============ L'ORDRE DU DESSIN ============ */
+  const lean=frG>0?Math.round(pencheG*1.3):0;                 /* le buste se penche vers ce qu'on frappe */
+  const penche=(f)=>{if(!lean)return f();g.save();g.translate(s*lean*u,0);f();g.restore();};
   if(cote){
-    bras(0,-hanche,true);
-    sac(false);
+    if(frG>0)penche(()=>brasGeste(true,true));else bras(0,-hanche,true);
+    penche(()=>sac(false));
     jambe(0,-hanche,leveD,true);
-    torse();
+    penche(()=>torse());
     jambe(0,hanche,leveG,false);
-    cheveuxDerriere();tete();barbeDe();cheveuxDessus();chapeauDe();
-    bras(0,hanche,false);
+    penche(()=>{cheveuxDerriere();tete();barbeDe();cheveuxDessus();chapeauDe();});
+    if(frG>0)penche(()=>{const h=brasGeste(false,false);outil(h);R(Math.round(h.x)-2,Math.round(h.y)-2,4,4,peau);});
+    else bras(0,hanche,false);
+  }else if(frG>0){
+    /* DE FACE OU DE DOS, PENDANT UN GESTE : les deux mains sur l'outil, devant le corps */
+    if(!dos)cheveuxDerriere();
+    jambe(-Math.round(HA/2)-1,0,0,false);jambe(Math.round(HA/2)+1,0,0,false);
+    if(!dos)sac(false);
+    torse();
+    if(dos){sac(false);tete();cheveuxDessus();chapeauDe();}
+    const h1=brasGeste(false,true), h2=brasGeste(false,false);
+    outil({x:Math.round((h1.x+h2.x)/2),y:Math.round((h1.y+h2.y)/2),a:h2.a});
+    if(!dos){sac(true);tete();barbeDe();cheveuxDessus();chapeauDe();}
   }else{
     if(!dos)cheveuxDerriere();
     const dx=diag?Math.round(hanche*3*tourne):0;
