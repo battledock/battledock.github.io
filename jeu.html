@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-0248';
+  var MA_VERSION='2026-09-19-0304';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -677,6 +677,13 @@ body{overflow:hidden}
 #annonce .sousA{font:400 13px Georgia,serif;color:#c9c2ae;margin:0 0 18px;line-height:1.5}
 #annonce button{border:0;border-radius:12px;padding:12px 28px;background:#e8c06a;color:#2a1d0c;
   font:700 14px Georgia,serif;box-shadow:0 3px 0 #8a6a2a}
+#panorama{position:fixed;inset:0;z-index:29;display:none;background:rgba(6,8,12,.8);align-items:center;justify-content:center;padding:12px}
+#panorama.on{display:flex}
+#panorama .pqCarte{position:relative;width:100%;max-width:380px;background:#1b1f28;border-radius:18px;padding:14px;color:#f2efe4;text-align:center;border:2px solid #4a5260}
+#panorama .pqTitre{font:700 10px ui-monospace,monospace;letter-spacing:1.5px;color:#e8c06a;margin:2px 34px 10px}
+#panoToile{display:block;width:100%;image-rendering:pixelated;border-radius:8px}
+#panoTexte{font:italic 400 14px Georgia,serif;color:#c9c2ae;margin-top:10px}
+#panoFermer{position:absolute;right:10px;top:8px;border:0;width:32px;height:32px;border-radius:50%;background:#3a4250;color:#f2efe4;font:700 15px ui-monospace,monospace}
 #petanque{position:fixed;inset:0;z-index:29;display:none;background:rgba(10,14,8,.72);
   align-items:center;justify-content:center;padding:calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom))}
 #petanque.on{display:flex}
@@ -1479,6 +1486,12 @@ body.clavier #bandeau{padding-bottom:9px}
   <div id="pqTexte"></div>
   <button id="pqBouton">Viser</button>
 </div></div>
+<div id="panorama"><div class="pqCarte">
+  <button id="panoFermer" aria-label="Fermer">✕</button>
+  <div class="pqTitre">LA LONGUE-VUE · MARSEILLE À TES PIEDS</div>
+  <canvas id="panoToile" width="192" height="220"></canvas>
+  <div id="panoTexte">Le Vieux-Port, les îles du Frioul, le château d’If.</div>
+</div></div>
 <div id="enLigne"><div class="carte" id="carteL"></div></div>
 <div id="haut">
   <span class="col">
@@ -1703,7 +1716,8 @@ window.addEventListener('error',ev=>{
 </script>
 <script type="module">
 /* LA CARTE : le village, ou Extramar (le vieux port, au bout de la ligne 1) */
-const CARTE=(new URLSearchParams(location.search).get('carte')==='extramar')?'extramar':'village';
+const CARTE=(()=>{const c=new URLSearchParams(location.search).get('carte');return c==='extramar'||c==='garde'?c:'village';})();
+const ANNEXE=CARTE!=='village';     /* Extramar et Notre-Dame : des cartes à part, sans le monde partagé */
 /* Le jeu ne doit jamais dépendre d'un fichier distant pour s'afficher :
    on charge Supabase en arrière-plan, et le décor s'affiche même s'il manque. */
 let createClient=null, sb=null, SB_PRET=false;
@@ -9444,7 +9458,7 @@ function dessinerSouche(g,x,y,gr,neuf){
 /* LA RIVE EST RÉTRÉCIT : 806 de large au lieu de 1166. Cinq bâtiments dans
    1166 de large donnaient un pré avec des maisons dedans ; resserrés, ils
    font un village. Le grand vide, ce sera le DEHORS, plus tard. */
-const MONDE_L=1400;               // largeur, en pixels de jeu
+const MONDE_L=CARTE==='garde'?640:1400;               // largeur, en pixels de jeu
 /* La carte gagne 160 points au sud pour accueillir la VOIE FERRÉE : elle
    traverse tout l'écran et sort des deux côtés, avec son remblai, et elle
    ferme le monde par le bas — qui s'arrêtait jusqu'ici sur une lisière sans
@@ -9535,13 +9549,16 @@ const XP={
   bassinO:170, bassinE:1210,
   pontons:[360,620,880], pontonL:13, pontonFin:470,
   metro:[250,268],
+  ruelle:{x:630,l:22,haut:30},   /* la montée vers Notre-Dame : axe, demi-largeur, sommet */
   boulo:[30,392,120,172],   /* le boulodrome : x, y, largeur, hauteur */
 };
 const CARGO_X={pile:[1266,566],docks:[1318,446]};   /* où l'on prend, où l'on dépose */
 const surPonton=(x,y)=>XP.pontons.some(px=>Math.abs(x-px)<XP.pontonL&&y<XP.pontonFin);
 const dansLeBassin=(x,y)=>x>XP.bassinO&&x<XP.bassinE&&y>XP.quaiY;
 function bloqueExtramar(x,y){
-  if(x<BORD-12||x>MONDE_L-BORD+12||y<XP.maisonsY+6||y>MONDE_H-8)return true;
+  /* la ruelle : seul endroit où l'on passe entre les immeubles, vers le haut */
+  const dansRuelle=Math.abs(x-XP.ruelle.x)<XP.ruelle.l&&y>=XP.ruelle.haut;
+  if(x<BORD-12||x>MONDE_L-BORD+12||(y<XP.maisonsY+6&&!dansRuelle)||y>MONDE_H-8)return true;
   if(dansLeBassin(x-3,y)||dansLeBassin(x+3,y)||dansLeBassin(x,y+2)){
     if(!surPonton(x,y))return true;              /* l'eau : on ne nage pas */
   }
@@ -9550,6 +9567,245 @@ function bloqueExtramar(x,y){
     if(Math.abs(x-o.x)<o.col[0]&&y>o.y-o.col[1]&&y<o.y+3)return true;
   }
   return false;
+}
+
+/* =====================================================================
+   NOTRE-DAME DE LA GARDE — la troisième carte du même moteur :
+   jeu.html?carte=garde. On y arrive par la ruelle d'Extramar. Le plateau
+   tout en haut de la colline : le fort et la basilique au nord, le grand
+   parvis au milieu, la balustrade tout autour — et, par-dessus, la ville
+   entière, loin en bas, jusqu'à la mer.
+   ===================================================================== */
+const GX={
+  plO:52, plE:588, plN:150, plS:560,          /* le plateau */
+  basil:[320,330],                             /* le pied du fort, au centre */
+  descente:{x:320,l:18},                       /* l'escalier qui redescend, au sud */
+  longues:[[150,548],[490,548]],               /* les longues-vues */
+};
+function bloqueGarde(x,y){
+  /* l'escalier du sud : on peut s'y engager pour redescendre */
+  if(Math.abs(x-GX.descente.x)<GX.descente.l&&y>=GX.plS-8&&y<MONDE_H-6)return false;
+  if(x<GX.plO+10||x>GX.plE-10||y<GX.basil[1]+4||y>GX.plS-6)return true;
+  for(const o of DECOR){
+    if(!o.col)continue;
+    if(Math.abs(x-o.x)<o.col[0]&&y>o.y-o.col[1]&&y<o.y+3)return true;
+  }
+  return false;
+}
+function construireSolGarde(){
+  const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
+  const g=c.getContext('2d');
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const A=(i)=>alea(i*1.91+0.3);
+  /* 1 · TOUT EN BAS, LA VILLE : des toits minuscules, voilés par l'altitude,
+     et la mer qui prend tout l'ouest */
+  R(0,0,MONDE_L,MONDE_H,'#b9a888');
+  for(let y=0;y<MONDE_H;y+=5){
+    let x=-((y*7)%11);
+    while(x<MONDE_L){const w=5+Math.floor(A(x*0.7+y)*7);
+      R(x,y,w,3,['#c9825a','#d49468','#bf7650','#e0c49a','#d8b48a'][Math.floor(A(x+y*3)*5)]);R(x,y+3,w,1,'#8f6a4a');
+      x+=w+1;}
+  }
+  /* la mer, et la côte découpée */
+  for(let y=0;y<MONDE_H;y++){
+    const cote=Math.round(130+Math.sin(y/37)*26+Math.sin(y/11)*6+(y>380?(y-380)*0.9:0));
+    const k=y/MONDE_H;
+    R(0,y,cote,1,'rgb('+(50+k*10|0)+','+(110+k*20|0)+','+(160+k*10|0)+')');
+    R(cote,y,2,1,'#e8dcc0');
+  }
+  for(let i=0;i<140;i++)R(A(i)*150,A(i+300)*MONDE_H,3,1,'rgba(230,245,255,.35)');
+  /* le voile de l'altitude sur tout le bas */
+  g.fillStyle='rgba(200,215,230,.42)';g.fillRect(0,0,MONDE_L,MONDE_H);
+  /* 2 · LE PLATEAU : la falaise de calcaire au sud, le dallage du parvis */
+  const P=GX;
+  /* la falaise, vue de face, sous la balustrade du sud */
+  for(let x=P.plO;x<P.plE;x++){
+    for(let y=P.plS;y<MONDE_H;y++){
+      const st=Math.floor((y-P.plS)/5);
+      R(x,y,1,1,((x+st*7)%13<2)?'#8a7a5c':(((y-P.plS)%5===0)?'#aa9a78':((x*3+y)%11<3?'#d6c8a2':'#c4b48e')));
+    }
+  }
+  /* les flancs est et ouest, vus d'en haut : un rebord de rocher */
+  R(P.plO-8,P.plN,8,P.plS-P.plN,'#aa9a78');R(P.plE,P.plN,8,P.plS-P.plN,'#aa9a78');
+  R(P.plO-8,P.plN,1,P.plS-P.plN,'#8a7a5c');R(P.plE+7,P.plN,1,P.plS-P.plN,'#8a7a5c');
+  /* le dallage : grandes dalles blondes */
+  R(P.plO,P.plN,P.plE-P.plO,P.plS-P.plN,'#dccfae');
+  for(let y=P.plN;y<P.plS;y+=12){const d=(y/12)%2?10:0;
+    R(P.plO,y,P.plE-P.plO,1,'#c2b490');
+    for(let x=P.plO+d;x<P.plE;x+=20){R(x,y,1,12,'#c2b490');R(x+1,y+1,18,1,'#e8ddc0');
+      if(A(x*3+y)<.18)R(x+4,y+4,6,3,'rgba(120,100,70,.10)');}}
+  /* LA ROSE DES VENTS en mosaïque, au milieu du parvis */
+  const mx=320,my=456;
+  g.fillStyle='#c9b68a';g.beginPath();g.arc(mx,my,46,0,7);g.fill();
+  g.fillStyle='#e8ddc0';g.beginPath();g.arc(mx,my,42,0,7);g.fill();
+  g.strokeStyle='#8a7a5c';g.lineWidth=1;g.beginPath();g.arc(mx,my,38,0,7);g.stroke();
+  for(let k=0;k<16;k++){const a=k*Math.PI/8, r=k%4===0?36:(k%2?18:26);
+    g.fillStyle=k%4===0?'#2d4a6a':(k%2?'#c9a24a':'#8a2a2a');
+    g.beginPath();g.moveTo(mx+Math.cos(a)*r,my+Math.sin(a)*r*0.8);
+    g.lineTo(mx+Math.cos(a+0.22)*6,my+Math.sin(a+0.22)*5);g.lineTo(mx+Math.cos(a-0.22)*6,my+Math.sin(a-0.22)*5);g.fill();}
+  g.fillStyle='#e8c06a';g.beginPath();g.arc(mx,my,4,0,7);g.fill();
+  /* LA BALUSTRADE : tout le tour du plateau, ouverte au sud sur l'escalier */
+  const balustre=(x,y)=>{R(x,y-7,3,7,'#e3d8bc');R(x,y-7,3,1,'#f4ecd4');R(x+1,y-5,1,3,'#cfc2a4');};
+  for(let x=P.plO;x<P.plE;x+=5){
+    if(Math.abs(x-P.descente.x)<P.descente.l+4)continue;
+    balustre(x,P.plS);}
+  R(P.plO,P.plS-9,P.descente.x-P.descente.l-4-P.plO,3,'#efe4c2');
+  R(P.descente.x+P.descente.l+4,P.plS-9,P.plE-P.descente.x-P.descente.l-4,3,'#efe4c2');
+  R(P.plO-2,P.plN,4,P.plS-P.plN,'#e3d8bc');R(P.plE-2,P.plN,4,P.plS-P.plN,'#e3d8bc');
+  for(let y=P.plN;y<P.plS;y+=6){R(P.plO-2,y,4,1,'#b9ac8c');R(P.plE-2,y,4,1,'#b9ac8c');}
+  /* L'ESCALIER qui redescend vers la ruelle */
+  const ex=P.descente.x-P.descente.l, ew=P.descente.l*2;
+  for(let y=P.plS-8,k=0;y<MONDE_H;y+=5,k++){R(ex,y,ew,5,k%2?'#d9c7a0':'#e2d2ab');R(ex,y,ew,1,'#efe3c4');R(ex,y+4,ew,1,'#b9a57c');}
+  R(ex-3,P.plS-8,3,MONDE_H-P.plS+8,'#aa9a78');R(ex+ew,P.plS-8,3,MONDE_H-P.plS+8,'#aa9a78');
+  return c;
+}
+
+/* LA BASILIQUE SUR SON FORT, de trois quarts : le soubassement crénelé et
+   son grand escalier, la nef rayée et son toit, la coupole, le clocher, et
+   tout en haut, la Vierge dorée. */
+function graverLaBasilique(){
+  const W=320,Ht=320,cx=W/2,sol=Ht-6;
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=Ht*D;
+  const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const PI={o:'#8a7a5c',s:'#aa9a78',p:'#c4b48e',c:'#d6c8a2',h:'#e6dab8',e:'#f2ead0'};
+  const blanc='#f4efe2', vert='#6f8676', vertS='#56695c';
+  const raye=(x,y,w,h,pas)=>{for(let j=0;j<h;j++)R(x,y+j,w,1,(Math.floor(j/(pas||4))%2)?vert:blanc);
+    R(x,y,1,h,'rgba(255,255,255,.45)');R(x+w-1,y,1,h,'rgba(0,0,0,.18)');};
+  g.fillStyle='rgba(40,30,18,.25)';g.beginPath();g.ellipse(cx+6,sol+3,W*0.46,10,0,0,7);g.fill();
+  /* 1 · LE FORT : la terrasse vue d'en haut, puis le mur de face */
+  const murH=58, terrH=44, yT=sol-murH-terrH;
+  R(14,yT,W-28,terrH,'#d8cba8');
+  for(let y=yT;y<yT+terrH;y+=8){R(14,y,W-28,1,'#c2b490');for(let x=14+((y/8)%2?8:0);x<W-14;x+=16)R(x,y,1,8,'#c2b490');}
+  R(10,sol-murH,W-20,murH,PI.p);
+  for(let y=sol-murH;y<sol;y+=6){const d=((y/6)%2)?9:0;R(10,y,W-20,1,PI.s);
+    for(let x=10+d;x<W-10;x+=18)R(x,y,1,6,PI.s);R(10,y+1,W-20,1,'rgba(255,255,255,.12)');}
+  for(let x=10;x<W-10;x+=12){R(x,sol-murH-8,8,8,PI.c);R(x,sol-murH-8,8,1,PI.e);R(x+7,sol-murH-8,1,8,PI.s);}   /* les merlons */
+  R(10,sol-murH,W-20,2,'rgba(40,30,15,.25)');
+  /* les meurtrières */
+  [40,76,W-84,W-48].forEach(x=>{R(x,sol-38,3,12,'#3a3226');R(x-2,sol-32,7,2,'#3a3226');});
+  /* 2 · LE GRAND ESCALIER, taillé dans le fort, jusqu'au porche */
+  const eL=64, ex=cx-eL/2;
+  for(let k=0;k<14;k++){const y=sol-4-k*4, w=eL-k*1;R(cx-w/2,y,w,4,k%2?'#e2d2ab':'#ebdcb8');R(cx-w/2,y,w,1,'#f6ecd2');R(cx-w/2,y+3,w,1,PI.s);}
+  R(ex-6,sol-58,6,58,PI.c);R(ex+eL,sol-58,6,58,PI.c);R(ex-6,sol-58,6,1,PI.e);R(ex+eL,sol-58,6,1,PI.e);
+  g.strokeStyle='#3b3a36';g.lineWidth=.8;g.beginPath();g.moveTo(ex-3,sol-6);g.lineTo(ex+4,sol-60);g.moveTo(ex+eL+3,sol-6);g.lineTo(ex+eL-4,sol-60);g.stroke();
+  /* 3 · LA NEF : son toit vu d'en haut, qui file vers le fond */
+  const nx=cx-78, nL=156, fy=yT+14;                       /* pied de la façade, sur la terrasse */
+  R(nx+6,fy-126,nL-12,60,'#9aa296');
+  for(let x=nx+6;x<nx+nL-6;x+=6){R(x,fy-126,1,60,'#7e867a');R(x+1,fy-126,1,60,'#b4bbae');}
+  R(nx+6,fy-126,nL-12,2,'#c4cabe');
+  /* LA GRANDE COUPOLE, à la croisée, avec ses côtes et sa croix */
+  const kx=cx, ky=fy-116;
+  g.fillStyle='#b8b4a2';g.beginPath();g.ellipse(kx,ky,30,22,0,Math.PI,0);g.fill();
+  R(kx-32,ky,64,8,'#c4c0ae');raye(kx-32,ky,64,8,2);
+  for(let a=0;a<7;a++){const t=Math.PI+a*Math.PI/6;g.strokeStyle='#8e8a7a';g.lineWidth=1;g.beginPath();
+    g.moveTo(kx+Math.cos(t)*30,ky+Math.sin(t)*22);g.lineTo(kx,ky-22);g.stroke();}
+  g.fillStyle='rgba(255,255,255,.35)';g.beginPath();g.ellipse(kx-10,ky-10,9,7,0,0,7);g.fill();
+  R(kx-2,ky-30,4,8,'#d8cfae');R(kx-1,ky-38,2,8,'#e8c06a');R(kx-3,ky-35,6,2,'#e8c06a');
+  /* LES PETITES COUPOLES des chapelles */
+  [[nx+22,fy-66],[nx+nL-22,fy-66]].forEach(([x,y])=>{g.fillStyle='#b8b4a2';g.beginPath();g.ellipse(x,y,13,10,0,Math.PI,0);g.fill();
+    g.fillStyle='#e6e2d2';g.beginPath();g.ellipse(x-3,y-3,6,4,0,0,7);g.fill();R(x-1,y-16,2,6,'#e8c06a');R(x-3,y-14,6,1,'#e8c06a');});
+  /* LA FAÇADE de la nef, rayée, et ses baies en plein cintre */
+  raye(nx,fy-66,nL,66,4);
+  R(nx-2,fy-68,nL+4,3,vertS);R(nx-2,fy-68,nL+4,1,'#8fa096');
+  [nx+14,nx+36,nx+nL-46,nx+nL-24].forEach(x=>{R(x,fy-50,10,26,'#2e3a44');g.fillStyle='#2e3a44';g.beginPath();g.arc(x+5,fy-50,5,Math.PI,0);g.fill();
+    R(x+4,fy-50,1,26,'#56695c');R(x-2,fy-24,14,2,PI.e);});
+  /* 4 · LE CLOCHER, devant la nef : tour rayée, beffroi, horloge, porche */
+  const tx=cx, tl=40, tb=fy+2;
+  raye(tx-tl/2,tb-110,tl,110,5);
+  R(tx-tl/2-2,tb-112,tl+4,3,vertS);R(tx-tl/2-2,tb-76,tl+4,3,vertS);R(tx-tl/2-2,tb-44,tl+4,3,vertS);
+  /* le porche d'entrée, au pied */
+  R(tx-12,tb-34,24,34,'#3a2a1c');g.fillStyle='#3a2a1c';g.beginPath();g.arc(tx,tb-34,12,Math.PI,0);g.fill();
+  R(tx-14,tb-48,28,2,PI.e);R(tx-1,tb-34,2,34,'#2a1c10');
+  for(let y=tb-30;y<tb;y+=5)for(let x=tx-10;x<tx+11;x+=5)R(x,y,1,1,'#c9a24a');
+  /* l'horloge */
+  R(tx-9,tb-68,18,18,'#e8e2d0');R(tx-8,tb-67,16,16,'#1f2a3a');R(tx-1,tb-66,2,7,'#e8c06a');R(tx,tb-60,6,1,'#e8c06a');
+  /* le beffroi : deux baies géminées */
+  [[-11],[3]].forEach(([dx])=>{R(tx+dx,tb-104,8,22,'#2e3a44');g.fillStyle='#2e3a44';g.beginPath();g.arc(tx+dx+4,tb-104,4,Math.PI,0);g.fill();
+    R(tx+dx+3,tb-104,1,22,vertS);});
+  R(tx-3,tb-94,6,6,'#c9a24a');                                                          /* le bourdon */
+  /* le lanternon et le socle */
+  R(tx-16,tb-120,32,8,blanc);R(tx-16,tb-120,32,1,'#ffffff');R(tx-16,tb-113,32,1,vertS);
+  R(tx-10,tb-130,20,10,'#d8d2c0');R(tx-10,tb-130,20,1,'#f2ecdc');
+  R(tx-6,tb-136,12,6,'#bdb7a5');
+  /* 5 · LA VIERGE À L'ENFANT, toute d'or */
+  const vy=tb-136;
+  R(tx-5,vy-30,10,30,'#c8902a');R(tx-3,vy-30,5,30,'#e8b84a');R(tx-1,vy-30,1,28,'#fff0b8');
+  R(tx-4,vy-37,8,7,'#e8b84a');R(tx-2,vy-36,3,3,'#fff4c8');                                 /* la tête et la couronne */
+  R(tx-4,vy-39,8,2,'#f4d98a');for(let k=-3;k<4;k+=2)R(tx+k,vy-41,1,2,'#f4d98a');
+  R(tx-11,vy-24,6,8,'#d8a03a');R(tx-12,vy-28,5,5,'#e8b84a');R(tx-11,vy-27,2,2,'#fff4c8');     /* l'Enfant */
+  R(tx-5,vy-8,10,8,'#b88226');
+  /* LA NUIT */
+  const n2=document.createElement('canvas');n2.width=W*D;n2.height=Ht*D;
+  const h2=n2.getContext('2d');h2.setTransform(D,0,0,D,0,0);
+  h2.fillStyle='rgba(14,18,42,.38)';h2.fillRect(10,sol-murH-8,W-20,murH+8);h2.fillRect(14,yT,W-28,terrH);
+  const l=h2.createRadialGradient(tx,tb-90,6,tx,tb-90,110);l.addColorStop(0,'rgba(255,238,196,.35)');l.addColorStop(1,'rgba(255,238,196,0)');
+  h2.fillStyle=l;h2.fillRect(tx-110,tb-200,220,220);
+  h2.fillStyle='#ffd98a';[nx+14,nx+36,nx+nL-46,nx+nL-24].forEach(x=>h2.fillRect(x+1,fy-49,8,24));
+  h2.fillRect(tx-10,tb-102,4,20);h2.fillRect(tx+4,tb-102,4,20);
+  h2.fillStyle='#ffe07a';h2.fillRect(tx-5,vy-30,10,30);h2.fillRect(tx-4,vy-37,8,7);h2.fillRect(tx-12,vy-28,7,12);
+  const hv=h2.createRadialGradient(tx,vy-20,2,tx,vy-20,26);hv.addColorStop(0,'rgba(255,220,120,.8)');hv.addColorStop(1,'rgba(255,220,120,0)');
+  h2.fillStyle=hv;h2.fillRect(tx-26,vy-46,52,52);
+  return {toile:c,W,H:Ht,sol,nuit:n2};
+}
+/* LA LONGUE-VUE à pièces, au bord de la balustrade */
+function graverLaLongueVue(){
+  const W=24,Ht=30,cx=12,sol=26;
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  g.fillStyle='rgba(40,30,18,.25)';g.beginPath();g.ellipse(cx,sol+1,7,2,0,0,7);g.fill();
+  R(cx-1,sol-14,3,14,'#3b4a52');R(cx-4,sol-1,9,2,'#2e3a44');
+  R(cx-7,sol-20,15,6,'#4f6a78');R(cx-7,sol-20,15,1,'#8fa3ab');R(cx-9,sol-19,3,4,'#2e3a44');R(cx+7,sol-19,3,4,'#2e3a44');
+  R(cx-2,sol-14,5,3,'#c9a24a');
+  return {toile:c,W,H:Ht,sol};
+}
+function semerDecorGarde(){
+  DECOR=[];
+  const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
+  P('x_basilique',GX.basil[0],GX.basil[1],{col:[150,24]});
+  /* les bancs du parvis, tournés vers la vue */
+  [[130,392],[510,392],[130,480],[510,480],[220,530],[420,530],[92,436],[548,436]].forEach(([x,y])=>P('bancP',x,y));
+  /* les lanternes */
+  [[196,356],[444,356],[100,524],[540,524],[250,420],[390,420]].forEach(([x,y],i)=>P('lanterneP',x,y,{gr:i}));
+  GX.longues.forEach(([x,y])=>P('x_longuevue',x,y,{col:[5,3]}));
+  /* des pèlerins et des promeneurs, immobiles */
+  [[296,388,'haut',{veste:1,chapeau:1}],[350,396,'haut',{veste:2,cheveux:1}],
+   [206,470,'gauche',{veste:0,barbe:1}],[456,476,'droite',{veste:2,chapeau:2}]]
+    .forEach(([x,y,dir,ap],i)=>P('x_bouliste',x,y,{v:i+1,dir,ap,col:[5,3]}));
+}
+/* LE PANORAMA : ce qu'on voit dans la longue-vue */
+function panoramaGarde(g,W,H,T){
+  const d=new Date(), m=d.getHours()*60+d.getMinutes();
+  const nuit=m<400||m>1230;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  for(let y=0;y<96;y++){const k=y/96;
+    R(0,y,W,1,nuit?'rgb('+(12+k*18|0)+','+(18+k*22|0)+','+(46+k*30|0)+')':'rgb('+(110+k*80|0)+','+(170+k*50|0)+','+(225+k*15|0)+')');}
+  if(nuit){for(let i=0;i<46;i++){R(alea(i)*W,alea(i+50)*80,1,1,i%6?'rgba(200,210,240,.7)':'#fff6d8');}}
+  for(let y=96;y<150;y++){const k=(y-96)/54;
+    R(0,y,W,1,nuit?'rgb('+(10+k*10|0)+','+(24+k*20|0)+','+(48+k*20|0)+')':'rgb('+(60+k*10|0)+','+(120+k*20|0)+','+(170+k*10|0)+')');}
+  for(let i=0;i<40;i++){const x=(alea(i)*W+T/120*(i%3+1))%W,y=100+alea(i+9)*46;R(x,y,3,1,nuit?'rgba(200,210,240,.25)':'rgba(255,255,255,.45)');}
+  [[22,94,40,6],[58,96,24,4],[120,95,30,5]].forEach(([x,y,w,h])=>{R(x,y,w,h,nuit?'#1c2430':'#8a8a7a');});
+  R(124,88,12,7,nuit?'#2a3040':'#c9bd9e');R(126,85,3,3,nuit?'#2a3040':'#c9bd9e');R(131,85,3,3,nuit?'#2a3040':'#c9bd9e');
+  if(nuit&&Math.floor(T/700)%2)R(60,93,2,2,'#fff4c8');
+  for(let x=0;x<W;x++){const t=Math.round(150+Math.sin(x/11)*3);R(x,t,1,H-t,nuit?'#231e2a':'#b89a74');}
+  const toits=['#c2663a','#d0764a','#b5552f','#c96a3f'], murs=['#e3b77a','#ecdcbc','#e2a88e','#d8aa62'];
+  for(let rg=0;rg<9;rg++){const y=150+rg*7+rg*rg*0.35, s2=1+rg*0.45;let x=-(rg*13%9);
+    while(x<W){const w=Math.round((6+alea(x*0.3+rg)*6)*s2),hm=Math.round(3*s2),ht=Math.round(2*s2);
+      const bg=96-(rg-2)*5, bd=96+(rg-2)*5;
+      if(rg>=2&&rg<=6&&x+w>bg-12&&x<bd+12){x+=w+1;continue;}
+      const k=Math.floor(alea(x+rg*7)*4);
+      R(x,y,w,hm,nuit?'#2e2836':murs[k]);R(x,y-ht,w,ht,nuit?'#3a2e3a':toits[k]);
+      if(nuit&&alea(x*3+rg)<.5)R(x+1,y,1,1,'#ffd98a');x+=w+1;}}
+  const pt=[[86,162],[106,162],[124,196],[68,196]];
+  g.fillStyle=nuit?'#12223a':'#2c7fa6';g.beginPath();g.moveTo(...pt[0]);pt.slice(1).forEach(p=>g.lineTo(...p));g.closePath();g.fill();
+  for(let i=0;i<34;i++){const k=alea(i*2.1),y=165+k*28,dx=(y-162)/34*18,x=86-dx+4+alea(i*5.3)*(20+dx*2-8);
+    R(x,y,2+k*2|0,1,'#f2efe4');R(x+1,y-3-k*3,1,3+k*3|0,'rgba(240,240,240,.55)');}
+  /* le cercle de la lunette */
+  g.fillStyle='#000';g.beginPath();g.rect(0,0,W,H);g.arc(W/2,H/2,Math.min(W,H)*0.48,0,7,true);g.fill('evenodd');
 }
 
 /* ---------------- LE SOL : dalles, eau, pontons ---------------- */
@@ -9575,6 +9831,44 @@ function construireSolExtramar(){
     }
   }
   graverLesToitsDuFond(g,MONDE_L,160);
+  /* LA MONTÉE : une ruelle en escaliers entre deux immeubles, bordée de
+     petites maisons, qui grimpe vers Notre-Dame de la Garde */
+  {
+    const cx=XP.ruelle.x, xg=cx-71, xd=cx+71, ym=XP.maisonsY+6;
+    /* les maisons basses de part et d'autre : toits vus d'en haut, un mur sur la ruelle */
+    [[xg,cx-30,1],[cx+30,xd,-1]].forEach(([a,b,sens],j)=>{
+      for(let y=0;y<ym;y+=4)for(let x=a;x<b;x+=5){R(x,y,5,4,((x+y*3)>>2)%3?'#b85e32':'#c9743e');R(x+4,y,1,4,'#8f3f20');R(x,y,5,1,'#e0925a');}
+      /* le faîtage, qui court le long de la ruelle, et l'ombre du versant */
+      const fx=Math.round((a+b)/2);R(fx-1,0,3,ym,'#e59a62');R(fx+(sens>0?2:-3),0,1,ym,'#8f3f20');
+      R(sens>0?a:fx+2,0,sens>0?fx-a-1:b-fx-2,ym,'rgba(60,25,10,.16)');
+      for(let y=24;y<ym-20;y+=46){R(fx-4,y,8,9,'#d6c6a0');R(fx-4,y,8,2,'#efe6cc');R(fx-5,y-2,10,3,'#9e8a64');}
+      const mur=sens>0?b-6:a;
+      R(mur,0,6,ym,['#dfb672','#dca088'][j]);R(mur,0,6,ym,'rgba(0,0,0,.0)');
+      R(sens>0?mur:mur+5,0,1,ym,'rgba(60,35,15,.35)');
+      for(let y=18;y<ym-10;y+=34){R(mur+1,y,4,10,'#3a2616');R(mur+1,y,4,1,'#7a5230');           /* une porte */
+        R(mur+1,y+14,4,5,'#2e3a44');                                                            /* une fenêtre */
+        R(sens>0?mur-2:mur+6,y-4,2,3,'#3b3a36');R(sens>0?mur-2:mur+6,y-1,2,2,'#ffd98a');}      /* une lanterne */
+    });
+    /* les marches, avec leurs paliers */
+    const x0=cx-30, w=60;
+    for(let y=ym,k=0;y>XP.ruelle.haut-14;k++){
+      const palier=k%6===5, h=palier?10:6;
+      R(x0,y-h,w,h,palier?'#e2d2ab':'#dccba5');
+      R(x0,y-h,w,1,'#efe3c4');R(x0,y-2,w,2,'#b9a57c');
+      for(let i=0;i<4;i++)R(x0+alea(k*7+i)*w,y-h+1+alea(k*3+i)*(h-3),2,1,'rgba(120,90,50,.18)');
+      if(palier){R(x0+2,y-h+2,5,5,'#a55a3a');R(x0+2,y-h,5,3,'#6fbf5a');R(x0+w-7,y-h+2,5,5,'#a55a3a');R(x0+w-7,y-h,5,3,'#d9576b');}
+      y-=h;
+    }
+    R(x0-2,0,2,ym,'#b9a57c');R(x0+w,0,2,ym,'#b9a57c');                                          /* les bordures */
+    /* le passage voûté, en haut : on devine la suite de la montée */
+    const hy=XP.ruelle.haut-14;
+    R(x0,0,w,hy,'#2a2420');
+    g.fillStyle='#d9c7a0';g.beginPath();g.moveTo(x0-4,hy+2);g.lineTo(x0-4,hy-8);g.arc(cx,hy-8,w/2+4,Math.PI,0);g.lineTo(x0+w+4,hy+2);g.lineTo(x0+w,hy+2);
+    g.lineTo(x0+w,hy-8);g.arc(cx,hy-8,w/2,0,Math.PI,true);g.lineTo(x0,hy+2);g.closePath();g.fill();
+    for(let a=0;a<9;a++){const t=Math.PI+a*Math.PI/8;R(cx+Math.cos(t)*(w/2+2)-1,hy-8+Math.sin(t)*(w/2+2)-1,2,2,'#b9a57c');}
+    const fond=g.createLinearGradient(0,hy,0,hy+24);fond.addColorStop(0,'rgba(20,16,12,.55)');fond.addColorStop(1,'rgba(20,16,12,0)');
+    g.fillStyle=fond;g.fillRect(x0,hy,w,24);
+  }
   /* LE BASSIN : turquoise sur les bords, bleu profond au large */
   for(let y=XP.quaiY;y<MONDE_H;y++){
     const k=(y-XP.quaiY)/(MONDE_H-XP.quaiY);
@@ -9918,12 +10212,12 @@ const XCAL={};
 function graverX(t,v){
   const cle=t+(v||0);
   if(XCAL[cle])return XCAL[cle];
-  if(t==='x_maison'||t==='x_ndg'){
-    XCAL[cle]=t==='x_maison'?graverImmeuble(v||0):graverLaGarde();
+  if(t==='x_maison'||t==='x_ndg'||t==='x_basilique'||t==='x_longuevue'){
+    XCAL[cle]=t==='x_maison'?graverImmeuble(v||0):t==='x_ndg'?graverLaGarde():t==='x_basilique'?graverLaBasilique():graverLaLongueVue();
     if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
     return XCAL[cle];
   }
-  const T={x_ferry:[96,56],x_caboteur:[250,120],x_docks:[150,96],x_pile:[44,34],x_roue:[180,210],x_kiosque:[44,68],x_fontaine:[54,46],x_metroM:[96,100],x_platane:[84,108],x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
+  const T={x_panneauG:[40,44],x_ferry:[96,56],x_caboteur:[250,120],x_docks:[150,96],x_pile:[44,34],x_roue:[180,210],x_kiosque:[44,68],x_fontaine:[54,46],x_metroM:[96,100],x_platane:[84,108],x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
            x_filets:[34,16],x_bitte:[12,14],x_barque:[62,34],x_cargo:[250,128],x_grue:[80,120],
            x_phare:[30,96]}[t]||[40,40];
   const W=T[0],H=T[1],cx=W/2,sol=H-6;
@@ -10367,6 +10661,13 @@ function graverX(t,v){
     if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
     return XCAL[cle];
   }
+  /* LE PANNEAU : un poteau et une plaque de bois, au pied de la montée */
+  else if(t==='x_panneauG'){
+    ombre(8,2);
+    R(cx-1,sol-30,3,30,'#5b3f21');R(cx-1,sol-30,1,30,'#7d5934');
+    R(cx-18,sol-34,36,11,'#3a2616');R(cx-17,sol-33,34,9,'#8a6238');R(cx-17,sol-33,34,1,'#a97f52');
+    g.fillStyle='#3a2616';g.beginPath();g.moveTo(cx+18,sol-34);g.lineTo(cx+23,sol-28.5);g.lineTo(cx+18,sol-23);g.fill();
+  }
   else if(t==='x_pin'){
     ombre(26,5);
     g.strokeStyle='#6b4a2c';g.lineWidth=4;g.beginPath();g.moveTo(cx,sol);g.quadraticCurveTo(cx-10,sol-30,cx+4,sol-56);g.stroke();
@@ -10522,6 +10823,10 @@ function dessinerX(g,o,x,y){
       g.fillStyle='rgba(0,0,0,.2)';g.fillRect(cxN-6,cyN+12,13,1);
     }
   }
+  if(o.t==='x_panneauG'){
+    g.font='700 5px Georgia,serif';g.textAlign='center';g.fillStyle='#f4e2b0';
+    g.fillText('N.-D. DE LA GARDE',Math.round(x),Y0+C.sol-27,32);
+  }
   if(o.t==='x_ferry'){
     g.font='700 5px ui-monospace,monospace';g.textAlign='center';g.fillStyle='#ffffff';
     g.fillText('FERRY BOAT',Math.round(x)-(o.flip?-0:0),Y0+C.sol-37.5,40);
@@ -10645,7 +10950,7 @@ function semerDecorExtramar(){
   /* LES IMMEUBLES DU QUAI, MITOYENS : une façade continue d'un bout à
      l'autre, comme sur le vrai quai ; au milieu, la Bonne Mère */
   for(let k=0;k<10;k++){
-    if(k===4){P('x_ndg',70+k*140,XP.maisonsY+8,{col:[70,14]});continue;}
+    if(k===4){P('x_panneauG',XP.ruelle.x-38,XP.maisonsY+22,{col:[4,3]});continue;}   /* la ruelle, et son panneau */
     P('x_maison',70+k*140,XP.maisonsY,{v:k,col:[70,24]});
   }
   /* les terrasses, devant les cafés */
@@ -10664,8 +10969,9 @@ function semerDecorExtramar(){
   /* la bouche du métro, sur le quai ouest */
   P('metro',XP.metro[0],XP.metro[1],{col:[38,14]});
   /* le marché aux poissons, au centre du quai */
-  P('x_etal',640,236,{col:[36,10]});P('x_etal',730,236,{col:[36,10]});
-  P('x_caisses',588,242,{col:[13,6]});P('x_caisses',784,240,{col:[13,6]});
+  /* le marché s'écarte : le pied de la montée reste libre */
+  P('x_etal',520,236,{col:[36,10]});P('x_etal',740,236,{col:[36,10]});
+  P('x_caisses',468,242,{col:[13,6]});P('x_caisses',794,240,{col:[13,6]});
   /* les bancs, face à la mer : un joueur en ligne par banc */
   [[300,316],[450,316],[530,316],[700,300],[790,316],[970,316],[1060,316],[1140,316],[1376,522]]
     .forEach(([x,y])=>P('bancP',x,y));
@@ -10707,6 +11013,7 @@ function semerDecorExtramar(){
 
 function construireSol(){
   if(CARTE==='extramar')return construireSolExtramar();
+  if(CARTE==='garde')return construireSolGarde();
   /* ================= LE SOL =================
      Tout est gravé UNE FOIS sur un calque de la taille du monde, puis
      recopié tel quel à chaque image. On peut donc y mettre autant de
@@ -10867,7 +11174,7 @@ const BORD=34;
 const RIV_LARGE=13;                              /* demi-largeur de l'eau */
 /* elle traverse en diagonale du nord-ouest au sud-est : elle coupe
    vraiment la carte en deux moitiés qu'on utilise toutes les deux */
-const rivX=(y)=>CARTE==='extramar'?-99999:(550+y*0.16+Math.sin(y/90)*22);   /* +400 : la rive ouest respire */
+const rivX=(y)=>ANNEXE?-99999:(550+y*0.16+Math.sin(y/90)*22);   /* +400 : la rive ouest respire */
 /* Un pont se pose là où la rivière coule droit : sinon le tablier
    se déforme pour suivre l'eau, et c'est laid. */
 /* UN SEUL PONT, au milieu de la rivière, et large : c'est le passage entre
@@ -11563,6 +11870,7 @@ function verifierAcces(){
 
 function semerDecor(){
   if(CARTE==='extramar')return semerDecorExtramar();
+  if(CARTE==='garde')return semerDecorGarde();
   DECOR=[];
   const A=alea;
   const libre=(x,y,r)=>DECOR.every(o=>Math.hypot(o.x-x,o.y-y)>r);
@@ -11861,7 +12169,7 @@ function segmentProfil(){
   return c;
 }
 function construireLisiere(){
-  if(CARTE==='extramar'){LISIERE_SUD=null;return null;}
+  if(ANNEXE){LISIERE_SUD=null;return null;}
   const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
   const g=c.getContext('2d');
   const sud=document.createElement('canvas');sud.width=MONDE_L;sud.height=MONDE_H;
@@ -11958,6 +12266,7 @@ function autourDe(x,y){
 }
 function bloque(x,y){
   if(CARTE==='extramar')return bloqueExtramar(x,y);
+  if(CARTE==='garde')return bloqueGarde(x,y);
   if(dansLisiere(x,y))return true;                     /* la forêt du pourtour */
   if(contreRambarde(x,y))return true;                  /* la rambarde du pont */
   if(dansRiviere(x,y)&&!surTablier(x,y))return true;   /* l'eau est trop profonde, sauf sur les ponts */
@@ -12342,7 +12651,7 @@ try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(e,JSON.parse(b));}cat
 /* la position au port telle qu'on l'a laissée — lue AVANT que la boucle ne la réécrive */
 const EXT_AU_DEPART=e.ext?{x:e.ext.x,y:e.ext.y}:null;
 /* on avait quitté le jeu à Extramar : on y revient (seul le métro fait changer de carte) */
-if(CARTE==='village'&&e.carte==='extramar'){location.replace('jeu.html?carte=extramar');}
+if(CARTE==='village'&&(e.carte==='extramar'||e.carte==='garde')){location.replace('jeu.html?carte='+e.carte);}
 /* Les bâtiments étaient autrefois placés autour de chaque joueur : on
    efface ces vieilles coordonnées pour que tout le monde partage la même carte. */
 e.casino=null;e.camp=null;e.coffre=null;e.comptoir=null;
@@ -12399,7 +12708,7 @@ async function monterEnLigne(force){
     await fetch(URL_SB+'/rest/v1/joueurs',{method:'POST',headers:sbEntetes,
       body:JSON.stringify({id:e.id,pseudo:e.pseudo||'sans nom',apparence:e.ap,
         ap_v:empreinteAp(e.ap),
-        x:Math.round(CARTE==='extramar'?(e.x||0):joueur.x),y:Math.round(CARTE==='extramar'?(e.y||0):joueur.y),dir:joueur.dir,
+        x:Math.round(ANNEXE?(e.x||0):joueur.x),y:Math.round(ANNEXE?(e.y||0):joueur.y),dir:joueur.dir,
         geste:(GESTE.t>0?(GESTE.type||'pioche'):null),lieu:'terrain',
         score:e.score||0,recolte:e.recolte||0,
         maj:new Date().toISOString()})});
@@ -12509,11 +12818,21 @@ function preparerMonde(){
   if(MONDE_PRET&&SOL)return;
   MONDE_PRET=true;
   LISIERE=construireLisiere();SOL=construireSol();semerDecor();
+  if(CARTE==='garde'){
+    /* À NOTRE-DAME : on arrive en haut de l'escalier du sud, ou là où l'on était */
+    const arrive=new URLSearchParams(location.search).has('arrivee')||!EXT_AU_DEPART;
+    const p0=arrive?[GX.descente.x,GX.plS-14]:[EXT_AU_DEPART.x,EXT_AU_DEPART.y];
+    const [dx,dy]=degager(p0[0],p0[1]);
+    joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.carte='garde';
+    try{sauver();}catch(x){}
+    return;
+  }
   if(CARTE==='extramar'){
     /* À EXTRAMAR, e.x/e.y restent ceux du village : on remonte au bon endroit.
        On sort du métro devant sa bouche, ou là où on s'était arrêté. */
     const arrive=new URLSearchParams(location.search).has('arrivee')||!EXT_AU_DEPART;
-    const p0=arrive?[XP.metro[0],XP.metro[1]+22]:[EXT_AU_DEPART.x,EXT_AU_DEPART.y];
+    const garde=new URLSearchParams(location.search).has('garde');
+    const p0=garde?[XP.ruelle.x,XP.ruelle.haut+26]:(arrive?[XP.metro[0],XP.metro[1]+22]:[EXT_AU_DEPART.x,EXT_AU_DEPART.y]);
     const [dx,dy]=degager(p0[0],p0[1]);
     joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.carte='extramar';
     try{sauver();}catch(x){}
@@ -12532,7 +12851,7 @@ function dessiner(){
      ce qui donne un défilement continu au lieu de sauts d'un pixel entier. */
   const camXf=Math.max(0,Math.min(MONDE_L-VW,joueur.x-VW/2));
   /* à Extramar, la vue regarde un peu plus vers le nord : la Bonne Mère */
-  const camYf=Math.max(0,Math.min(MONDE_H-VH,joueur.y-VH*(CARTE==='extramar'?0.62:0.5)));
+  const camYf=Math.max(0,Math.min(MONDE_H-VH,joueur.y-VH*(CARTE==='garde'?0.74:(ANNEXE?0.62:0.5))));
   const camX=Math.floor(camXf), camY=Math.floor(camYf);
   const fx=Math.round((camXf-camX)*ECH)/ECH;      /* la part fractionnaire, calée sur l'écran */
   const fy=Math.round((camYf-camY)*ECH)/ECH;
@@ -12880,7 +13199,7 @@ function majJoueur(dt){
       }
     }
   }
-  if(CARTE==='extramar')e.ext={x:Math.round(joueur.x),y:Math.round(joueur.y)};
+  if(ANNEXE)e.ext={x:Math.round(joueur.x),y:Math.round(joueur.y)};
   else{e.x=Math.round(joueur.x);e.y=Math.round(joueur.y);}
 }
 
@@ -12926,7 +13245,7 @@ function lacher(){J.actif=false;J.id=null;joyX=joyY=0;}
 const pageOuverte=()=>$('pan').classList.contains('on')||$('sacPage').classList.contains('on')
                     ||$('page2').classList.contains('on')||!$('porte').classList.contains('parti')
                     ||$('enLigne').classList.contains('on')||$('annonce').classList.contains('on')
-                    ||$('petanque').classList.contains('on');   /* la liste en ligne bloquait le tap de fermeture */
+                    ||$('petanque').classList.contains('on')||$('panorama').classList.contains('on');   /* la liste en ligne bloquait le tap de fermeture */
 /* le joystick se prend n'importe où sur la carte, des deux côtés.
    On ne l'ignore que si le doigt touche un bouton de l'interface. */
 addEventListener('pointerdown',reveillerLeSon,{once:false});
@@ -13340,8 +13659,8 @@ function graverMini(T){
   g.imageSmoothingEnabled=false;
   const px=(x)=>Math.round(x*k), py=(y)=>Math.round(y*k);
   /* l'herbe, avec ses nuances */
-  if(CARTE==='extramar'){                     /* le vieux port : le sol lui-même, en petit */
-    g.drawImage(SOL||construireSolExtramar(),0,0,D,DH);MINI=c;miniSale=false;return;
+  if(ANNEXE){                     /* le vieux port, Notre-Dame : le sol lui-même, en petit */
+    g.drawImage(SOL||construireSol(),0,0,D,DH);MINI=c;miniSale=false;return;
   }
   g.fillStyle='#7db35d';g.fillRect(0,0,D,DH);
   for(let i=0;i<90;i++){
@@ -13970,7 +14289,7 @@ function cleDe(o){
    sur le téléphone : c'est la base qui dit ce qu'il y a, et où. */
 let CARTE_RECUE=false;
 async function chargerLaCarte(){
-  if(CARTE==='extramar')return;          /* le monde partagé est celui du village */
+  if(ANNEXE)return;          /* le monde partagé est celui du village */
   try{
     const r=await fetch(URL_SB+'/rest/v1/carte?select=cle,genre,x,y,gr&limit=500',
       {headers:sbEntetes});
@@ -13997,7 +14316,7 @@ async function chargerLaCarte(){
 }
 /* une ligne de la table monde, appliquée tout de suite */
 function appliquerLigneMonde(m){
-  if(CARTE==='extramar')return;
+  if(ANNEXE)return;
   if(!m||!m.cle)return;
   if(m.par===e.id)return;                        /* c'est nous, c'est déjà fait */
   const t=m.quand?new Date(m.quand).getTime():Date.now();
@@ -14028,7 +14347,7 @@ async function chargerLeMonde(){
 }
 /* on enlève de la carte ce qui n'y est plus */
 function appliquerLeMonde(){
-  if(CARTE==='extramar')return;
+  if(ANNEXE)return;
   const casses=new Set(e.casses||[]);
   let change=false;
   for(let i=DECOR.length-1;i>=0;i--){
@@ -14296,6 +14615,7 @@ function placesDesBancs(){
 }
 function coinDuJoueur(){
   if(CARTE==='extramar')return 'à Extramar';
+  if(CARTE==='garde')return 'à Notre-Dame';
   try{return joueur.x<rivX(joueur.y)?'en forêt':'au village';}catch(x){return 'au village';}
 }
 function maPresence(){
@@ -14334,7 +14654,8 @@ function asseoirLesPresents(){
   /* sur les bancs, seulement ceux qui sont sur la même carte que nous */
   /* ceux qui sont dans le métro restent dans la liste, mais sans banc */
   const ici=(p)=>CARTE==='extramar'?p.lieu==='à Extramar'
-    :(p.lieu!=='à Extramar'&&p.lieu!=='dans le métro');
+    :CARTE==='garde'?p.lieu==='à Notre-Dame'
+    :(p.lieu!=='à Extramar'&&p.lieu!=='dans le métro'&&p.lieu!=='à Notre-Dame');
   const places=placesDesBancs();
   for(const id of [...PLACES_ASSISES.keys()])
     if(!gens.some(g2=>g2.id===id&&ici(g2)))PLACES_ASSISES.delete(id);
@@ -15228,6 +15549,11 @@ function bouclePetanque(t){
   }
   requestAnimationFrame(bouclePetanque);
 }
+let PANO=false;
+function ouvrirLePanorama(){PANO=true;$('panorama').classList.add('on');requestAnimationFrame(bouclePano);}
+function bouclePano(t){if(!PANO)return;const c=$('panoToile'),g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  panoramaGarde(g,c.width,c.height,t);requestAnimationFrame(bouclePano);}
+if($('panoFermer'))$('panoFermer').onclick=()=>{PANO=false;$('panorama').classList.remove('on');};
 if($('pqBouton'))$('pqBouton').onclick=toucherPetanque;
 if($('pqToile'))$('pqToile').onclick=toucherPetanque;
 if($('pqFermer'))$('pqFermer').onclick=fermerLaPetanque;
@@ -15269,6 +15595,24 @@ function majAction(){
   /* À EXTRAMAR, la ligne de pêche passe avant le reste */
   if(actionDePeche(b))return;
   if(actionDuCaboteur(b))return;
+  if(CARTE==='garde'&&GESTE.t<=0){
+    if(Math.abs(joueur.x-GX.descente.x)<GX.descente.l&&joueur.y>GX.plS-16){
+      b.innerHTML='Redescendre<small>PAR LA RUELLE, VERS LE VIEUX-PORT</small>';b.classList.add('on');
+      b.onclick=()=>{e.carte='extramar';e.ext=null;try{sauver();envoyerSauvegarde(true);}catch(x){}
+        setTimeout(()=>{location.href='jeu.html?carte=extramar&garde=1';},120);};
+      return;
+    }
+    const lv=GX.longues.find(([x,y])=>Math.hypot(joueur.x-x,(joueur.y-y)*1.4)<22);
+    if(lv){b.innerHTML='Regarder la ville<small>LA LONGUE-VUE</small>';b.classList.add('on');b.onclick=ouvrirLePanorama;return;}
+  }
+  if(CARTE==='extramar'&&Math.abs(joueur.x-XP.ruelle.x)<XP.ruelle.l&&joueur.y<XP.ruelle.haut+22&&GESTE.t<=0){
+    b.innerHTML='Monter à Notre-Dame<small>LA BONNE MÈRE, TOUT EN HAUT</small>';
+    b.classList.add('on');
+    b.onclick=()=>{e.ext={x:joueur.x,y:joueur.y};try{sauver();envoyerSauvegarde(true);}catch(x){}
+      e.carte='garde';e.ext=null;try{sauver();}catch(x){}
+      setTimeout(()=>{location.href='jeu.html?carte=garde&arrivee=1';},120);};
+    return;
+  }
   if(dansLeBoulodrome()&&GESTE.t<=0){
     b.innerHTML='Jouer aux boules<small>UNE MÈNE CONTRE MARIUS · '+menesGagnees()+' GAGNÉE'+(menesGagnees()>1?'S':'')+'</small>';
     b.classList.add('on');b.onclick=ouvrirLaPetanque;return;
@@ -17366,7 +17710,7 @@ function entrer(){
   $('porte').classList.add('parti');
   preparerMonde();
   /* À Extramar, la porte a remis la position du VILLAGE : on reprend celle du port */
-  if(CARTE==='extramar'&&e.ext){joueur.x=e.ext.x;joueur.y=e.ext.y;}
+  if(ANNEXE&&e.ext){joueur.x=e.ext.x;joueur.y=e.ext.y;}
   taille();garderAllume();
   fondu=1;                                   /* le jeu apparaît en fondu */
   /* le voile ne se lève qu'une fois la première image vraiment peinte */
