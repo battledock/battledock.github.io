@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-0420';
+  var MA_VERSION='2026-09-19-0607';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -10546,22 +10546,85 @@ function graverArbuste(v){
   return {toile:c,W,H:Ht,sol};
 }
 
-const ARTICLES_PECHE=[
-  {nom:'Canne en bambou',prix:500,effet:'Le cercle se resserre un peu moins vite.'},
-  {nom:'Épuisette',prix:800,effet:'Un cœur de plus : quatre essais au lieu de trois.'},
-  {nom:'Moulinet',prix:1200,effet:'Une touche de moins pour ramener chaque poisson.'},
-  {nom:'Canne en carbone',prix:3000,effet:'Le cercle ralentit encore, et « parfait » est plus large.'},
-  {nom:'Appâts (10 lancers)',prix:50,effet:'Les espèces rares mordent deux fois plus.'},
-];
-function ouvrirLaBoutiqueDePeche(){
+/* ================= PÊCHE & MARINE : LA BOUTIQUE =================
+   Les prix et les effets sont tenus par le serveur (acheter_peche) ; ici,
+   on affiche, on achète, on monte un appât, on applique une finition. */
+let EQUIP_PECHE=null;
+const CANNES=[{id:null,nom:'Ligne à main'},{id:'bambou',nom:'Canne en bambou',prix:1500,effet:'Le cercle 15 % plus lent.'},
+  {id:'fibre',nom:'Canne en fibre',prix:6000,effet:'Le cercle 25 % plus lent, « bien » plus facile.'},
+  {id:'carbone',nom:'Canne en carbone',prix:18000,effet:'Le cercle 35 % plus lent, « parfait » plus facile.'}];
+const ACCESSOIRES=[{id:'moulinet',nom:'Moulinet',prix:4000,effet:'Une bonne touche compte double, dès la deuxième.'},
+  {id:'bouchon',nom:'Bouchon plombé',prix:2500,effet:'Ça mord deux fois plus vite.'}];
+const APPATS=[{id:'vers',nom:'Vers de mer',prix:100,effet:'Espèces rares ×2.'},
+  {id:'crevettes',nom:'Crevettes',prix:150,effet:'Loup et dorade ×3.'},
+  {id:'sardine',nom:'Sardine fraîche',prix:200,effet:'Congre ×3 la nuit, Vieux Loup ×2.'}];
+const FINITIONS=[{id:'bleu',nom:'Bleu marine',prix:500,col:['#1f3f6f','#4f7fb8']},{id:'rouge',nom:'Rouge Estaque',prix:500,col:['#8a2a22','#c8503f']},
+  {id:'olive',nom:'Vert olive',prix:500,col:['#5a6a2e','#8a9a4e']},{id:'dore',nom:'Vernis doré',prix:3000,col:['#a8822a','#f0cf7d']},
+  {id:'nacre',nom:'Nacre',prix:6000,col:['#c8c8d8','#ffffff'],nacre:true}];
+async function chargerLEquipement(){
+  const d=await appelRPC('mon_equipement',{p_joueur:e.id});
+  if(d&&!d.erreur)EQUIP_PECHE=d;
+  return EQUIP_PECHE;
+}
+let ongletBoutique='materiel';
+async function ouvrirLaBoutiqueDePeche(){
   const c=$('carteL');
-  let h='<button id="fermerL" aria-label="Fermer">✕</button><div class="titL">PÊCHE & MARINE · CHEZ FANNY</div>'+
-    '<div class="videL" style="padding:0 0 10px">« Tout pour le pêcheur, petit. Reviens un peu plus tard : je finis l’inventaire. »</div>';
-  h+=ARTICLES_PECHE.map(a=>'<div class="ligneJ" style="cursor:default"><span style="flex:1"><b>'+a.nom+'</b>'+
-    '<span>'+a.effet+'</span></span><span style="font:700 13px Georgia,serif;color:#e8c06a;white-space:nowrap">'+enEuros(a.prix)+'</span></div>').join('');
-  h+='<div class="actionsF"><button class="gris" id="fermerB">Bientôt en vente</button></div>';
-  c.innerHTML=h;$('enLigne').classList.add('on');
-  $('fermerL').onclick=fermerL;$('fermerB').onclick=fermerL;
+  c.innerHTML='<div class="titL">PÊCHE & MARINE · CHEZ FANNY</div><div class="videL">Fanny cherche ses clés…</div>';
+  $('enLigne').classList.add('on');
+  await chargerLEquipement();
+  afficherPecheMarine();
+}
+function afficherPecheMarine(mot){
+  const c=$('carteL'), q=EQUIP_PECHE||{canne:0,appats:{},finitions:[]};
+  const bouton=(id,prix,etat)=>etat==='a'?'<span style="font:700 11px ui-monospace,monospace;color:#9fdfb8">✓ À TOI</span>'
+    :etat==='bloque'?'<span style="font:700 11px ui-monospace,monospace;color:#8a8a7a">'+enEuros(prix)+'</span>'
+    :'<button data-a="'+id+'" style="border:0;border-radius:10px;padding:9px 10px;background:#e8c06a;color:#2a1d0c;font:700 13px Georgia,serif;white-space:nowrap">'+enEuros(prix)+'</button>';
+  const ligne=(nom,effet,droite)=>'<div class="ligneJ" style="cursor:default"><span style="flex:1"><b>'+nom+'</b><span>'+effet+'</span></span>'+droite+'</div>';
+  let h='<button id="fermerL" aria-label="Fermer">✕</button><div class="titL">PÊCHE & MARINE · CHEZ FANNY · TON ARGENT '+enEuros(e.euros||0)+'</div>';
+  h+='<div class="actionsF" style="margin:4px 0 10px">'+[['materiel','Matériel'],['appats','Appâts'],['finitions','Finitions']].map(([k,t])=>
+    '<button data-o="'+k+'" class="'+(ongletBoutique===k?'':'gris')+'" style="padding:9px 4px">'+t+'</button>').join('')+'</div>';
+  if(mot)h+='<div class="videL" style="padding:0 0 8px;color:#e8c06a">'+mot+'</div>';
+  if(ongletBoutique==='materiel'){
+    h+='<div class="titL">LES CANNES · TU PÊCHES AVEC : '+CANNES[q.canne||0].nom.toUpperCase()+'</div>';
+    CANNES.slice(1).forEach((k,i)=>{const niv=i+1, etat=(q.canne||0)>=niv?'a':((q.canne||0)===niv-1?'libre':'bloque');
+      h+=ligne(k.nom,k.effet+(etat==='bloque'?' <i>(d’abord la canne d’avant)</i>':''),bouton(k.id,k.prix,etat));});
+    h+='<div class="titL" style="margin-top:10px">LES ACCESSOIRES</div>';
+    ACCESSOIRES.forEach(a=>{h+=ligne(a.nom,a.effet,bouton(a.id,a.prix,q[a.id]?'a':'libre'));});
+  }else if(ongletBoutique==='appats'){
+    h+='<div class="titL">LES APPÂTS · PAR 10 LANCERS · MONTÉ : '+(q.appat?APPATS.find(a=>a.id===q.appat).nom.toUpperCase():'AUCUN')+'</div>';
+    APPATS.forEach(a=>{const n=(q.appats||{})[a.id]||0;
+      h+=ligne(a.nom+(n?' · '+n+' restant'+(n>1?'s':''):''),a.effet,
+        (n?'<button data-m="'+a.id+'" style="border:0;border-radius:10px;padding:9px 8px;margin-right:6px;background:'+(q.appat===a.id?'#6fbf5a':'#3a4a36')+';color:#f2efe4;font:700 12px Georgia,serif">'+(q.appat===a.id?'Monté':'Monter')+'</button>':'')+
+        bouton(a.id,a.prix,'libre'));});
+    h+='<div class="actionsF"><button class="gris" data-m="aucun">Pêcher sans appât</button></div>';
+  }else{
+    h+='<div class="titL">LES FINITIONS · ELLES SE VOIENT QUAND TU PÊCHES</div>';
+    FINITIONS.forEach(f=>{const a=(q.finitions||[]).includes(f.id);
+      h+=ligne('<span style="display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;background:linear-gradient(90deg,'+f.col[0]+','+f.col[1]+')"></span>'+f.nom,
+        f.nacre?'Elle scintille au soleil.':'Une peinture pour ta canne.',
+        a?'<button data-f="'+f.id+'" style="border:0;border-radius:10px;padding:9px 10px;background:'+(q.finition===f.id?'#6fbf5a':'#3a4a36')+';color:#f2efe4;font:700 12px Georgia,serif">'+(q.finition===f.id?'Appliquée':'Appliquer')+'</button>'
+         :bouton(f.id,f.prix,'libre'));});
+    h+='<div class="actionsF"><button class="gris" data-f="aucune">Bois naturel</button></div>';
+  }
+  c.innerHTML=h;
+  $('fermerL').onclick=fermerL;
+  c.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{ongletBoutique=b.dataset.o;afficherPecheMarine();});
+  c.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>acheterALaBoutique(b.dataset.a,b));
+  c.querySelectorAll('[data-m]').forEach(b=>b.onclick=async()=>{const d=await appelRPC('choisir_peche',{p_joueur:e.id,p_appat:b.dataset.m,p_finition:null});
+    if(d&&!d.erreur)EQUIP_PECHE=d;afficherPecheMarine();});
+  c.querySelectorAll('[data-f]').forEach(b=>b.onclick=async()=>{const d=await appelRPC('choisir_peche',{p_joueur:e.id,p_appat:null,p_finition:b.dataset.f});
+    if(d&&!d.erreur)EQUIP_PECHE=d;afficherPecheMarine();});
+}
+async function acheterALaBoutique(id,b){
+  b.disabled=true;b.textContent='…';
+  const d=await appelRPC('acheter_peche',{p_joueur:e.id,p_article:id});
+  if(!d||d.erreur){
+    afficherPecheMarine(!d?'La caisse est bloquée, réessaie.':(d.erreur==='pas assez'?'Il te manque '+enEuros((d.prix||0)-(d.euros||0))+'.':d.erreur));return;
+  }
+  e.euros=d.euros;sauver();majHaut();
+  EQUIP_PECHE=d.equip;
+  jouer('vente','moment');vibrer([12,30,12]);
+  afficherPecheMarine('« Et voilà, petit ! »');
 }
 /* ---------------- LES OBJETS : gravés une fois, par variante ---------------- */
 const XCAL={};
@@ -15608,6 +15671,11 @@ async function lancerLaLigne(){
   if(PECHE!==P)return;
   if(!d||d.erreur){annulerLaPeche(!d?'la ligne s’emmêle':(d.erreur==='trop tot'?'patience…':'rien ne mord ici'));return;}
   P.esp=d.espece;P.cm=d.cm;
+  P.eq={canne:d.canne||0,moulinet:!!d.moulinet,bouchon:!!d.bouchon,finition:d.finition||null};
+  if(EQUIP_PECHE){EQUIP_PECHE.canne=P.eq.canne;EQUIP_PECHE.finition=P.eq.finition;if(d.appat)EQUIP_PECHE.appats[d.appat]=d.reste;}
+  /* le bouchon plombé : ça mord deux fois plus vite */
+  if(P.eq.bouchon)P.mordA=Math.max(performance.now()+300,P.t0+600+1000+Math.random()*2000);
+  if(d.appat)texteVolant(joueur.x,joueur.y-40,({vers:'vers de mer',crevettes:'crevettes',sardine:'sardine fraîche'})[d.appat]+' · '+d.reste,'#e8c06a');
 }
 function annulerLaPeche(mot){
   if(!PECHE)return;
@@ -15684,7 +15752,8 @@ function nouveauCercle(P){
   const vers=Math.min(1,1-P.dist)*0.75;
   P.fx=P.bx+(P.px-P.bx)*vers+(Math.random()-.5)*34*(P.dist+.3);
   P.fy=P.by+((P.py+12)-P.by)*vers+(Math.random()-.5)*8;
-  P.cercle={t0:performance.now(),duree:1000/S.vit*(1.05-P.touches*.03),k:0,juge:null};
+  const lent=[1,1/0.85,1/0.75,1/0.65][(P.eq&&P.eq.canne)||0];
+  P.cercle={t0:performance.now(),duree:1000/S.vit*(1.05-P.touches*.03)*lent,k:0,juge:null};
   eclaboussure(P.fx,P.fy,5);
 }
 /* LA TOUCHE : on tape — trop tôt, pile, ou trop tard */
@@ -15694,11 +15763,13 @@ function taperPeche(){
 }
 function jugerLaTouche(P,tape){
   const C=P.cercle, ecart=Math.abs(1-C.k);
-  const note=!tape?'rate':(ecart<.09?'parfait':(ecart<.22?'bien':'rate'));
+  const cn=(P.eq&&P.eq.canne)||0;
+  const note=!tape?'rate':(ecart<(cn>=3?.13:.09)?'parfait':(ecart<(cn>=2?.28:.22)?'bien':'rate'));
   C.juge={note,t:performance.now()};
   if(note==='rate'){P.coeurs--;vibrer(60);texteVolant(P.fx,P.fy-10,tape?(C.k<1?'trop tôt !':'trop tard !'):'trop tard !','#ff7a5a');}
   else{
-    P.touches+=note==='parfait'&&P.touches<P.besoin-1?2:1;P.touches=Math.min(P.touches,P.besoin);
+    /* parfait compte double ; avec le moulinet, toute bonne touche aussi, dès la deuxième */
+    P.touches+=(note==='parfait'||(P.eq&&P.eq.moulinet&&P.touches>=1))&&P.touches<P.besoin-1?2:1;P.touches=Math.min(P.touches,P.besoin);
     texteVolant(P.fx,P.fy-10,note==='parfait'?'PARFAIT !':'bien !',note==='parfait'?'#ffd76a':'#9fdfb8');
     vibrer(note==='parfait'?[14,20,24]:14);eclaboussure(P.fx,P.fy,note==='parfait'?12:7);
     if(note==='parfait')jouer('cueille');
@@ -15730,9 +15801,14 @@ function dessinerLaPeche(g,camX,camY){
   const tire=combat?.6+(P.cercle&&P.cercle.juge&&P.cercle.juge.note!=='rate'?.4:0):(P.etat==='mord'?.4:0);
   const hx=joueur.x+c*5-camX, hy=joueur.y-14-camY;
   const sx=joueur.x+c*(17-tire*3)-camX+(bx-(joueur.x-camX))*0.08*tire, sy=joueur.y-34-camY+tire*9;
-  g.strokeStyle='#6b4a28';g.lineWidth=1.4;
+  const fin=FINITIONS.find(f=>f.id===((P.eq&&P.eq.finition)||(EQUIP_PECHE&&EQUIP_PECHE.finition)));
+  const colC=fin?fin.col:['#6b4a28','#a5764a'];
+  g.strokeStyle=colC[0];g.lineWidth=1.4;
   g.beginPath();g.moveTo(hx,hy);g.quadraticCurveTo(hx+c*8,hy-14-tire*2,sx,sy);g.stroke();
-  g.strokeStyle='#a5764a';g.lineWidth=.7;g.beginPath();g.moveTo(hx+c*4,hy-6);g.quadraticCurveTo(hx+c*9,hy-15,sx,sy);g.stroke();
+  g.strokeStyle=colC[1];g.lineWidth=.7;g.beginPath();g.moveTo(hx+c*4,hy-6);g.quadraticCurveTo(hx+c*9,hy-15,sx,sy);g.stroke();
+  if(fin&&fin.nacre){const k=(t/700)%1, px=hx+(sx-hx)*k, py=hy+(sy-hy)*k-4*Math.sin(k*Math.PI);
+    g.fillStyle='rgba(255,255,255,.95)';g.fillRect(Math.round(px),Math.round(py),1,1);
+    g.fillStyle=['rgba(255,200,230,.8)','rgba(200,230,255,.8)','rgba(220,255,220,.8)'][Math.floor(t/300)%3];g.fillRect(Math.round(px)+1,Math.round(py),1,1);}
   /* le vol du bouchon */
   if(P.etat==='lance'){const k=Math.min(1,(t-P.t0)/600);bx=sx+(bx-sx)*k;by=sy+(by-sy)*k-Math.sin(k*Math.PI)*22;}
   else if(P.etat==='attend'){by+=Math.sin(t/260)*.8;if(P.mordA-t<900&&Math.sin(t/60)>.6)by+=1;}
