@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1735';
+  var MA_VERSION='2026-09-19-1742';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -15361,15 +15361,19 @@ let RATTRAPAGE_SAC=false;
 /* quand le serveur et le jeu divergent, c'est le SAC DU JEU qui gagne : le
    joueur a vu les objets entrer, on ne les lui reprend pas. */
 let dernierRattrapage=0;
+/* LE SERVEUR TIENT LE SAC. Quand le jeu et lui divergent, on ne pousse plus le
+   sac du jeu vers le serveur (il le refusait, à raison : c'était une porte ouverte
+   à la triche, et des centaines de requêtes refusées par heure). On RELIT le
+   sac du serveur et on l'adopte : ce qui s'affiche est ce qui se vend. */
 async function rattraperLeSac(){
   if(Date.now()-dernierRattrapage<1500)return;
   dernierRattrapage=Date.now();
-  try{
-    await fetch(URL_SB+'/rest/v1/sacs',{method:'POST',
-      headers:Object.assign({},sbEntetes,{Prefer:'resolution=merge-duplicates'}),
-      body:JSON.stringify([{joueur:e.id,contenu:e.sac||{},
-        charge_max:chargeMax(),maj:new Date().toISOString()}])});
-  }catch(x){}
+  const num=++numAppelSac;
+  const d=await appelRPC('lire_sac',{p_joueur:e.id});
+  if(d&&d.sac&&typeof d.sac==='object'){
+    if(num<numSacApplique)return;
+    numSacApplique=num;e.sac=d.sac;sauver();majPastille();try{majHaut();}catch(x){}
+  }
 }
 /* ================= LE SAC NE DOIT JAMAIS SE VIDER =================
    LE DÉFAUT : chaque réponse du serveur écrasait le sac, quel que soit son
@@ -15405,25 +15409,8 @@ function adopterSac(d,num){
   }
   const avant=e.sac||{};
   const arrive=d.sac||{};
-  /* 2 · un sac vide face à un sac plein : on ne l'adopte pas */
-  if(totalDuSac(arrive)===0&&totalDuSac(avant)>0&&!laDepenseEstLegitime()){
-    rattraperLeSac();
-    return false;
-  }
-  /* 3 · hors dépense, on garde le plus grand compte de chaque objet */
-  if(!laDepenseEstLegitime()){
-    let manque=false;
-    const garde=Object.assign({},arrive);
-    Object.keys(avant).forEach(k=>{
-      if((avant[k]||0)>(arrive[k]||0)){garde[k]=avant[k];manque=true;}
-    });
-    if(manque){
-      e.sac=garde;
-      rattraperLeSac();       /* on remet le serveur d'accord avec le jeu */
-      sauver();
-      return true;
-    }
-  }
+  /* 2 · le serveur fait foi : c'est son sac qui se vend au comptoir */
+  void avant;
   e.sac=arrive;
   /* on prend la plus grande des deux : le serveur ne doit jamais rétrécir
      un sac qu'on a payé */
