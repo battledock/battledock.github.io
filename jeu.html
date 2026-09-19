@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1135';
+  var MA_VERSION='2026-09-19-1154';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -11093,6 +11093,7 @@ const XCAL={};
 function graverX(t,v){
   const cle=t+(v||0);
   if(XCAL[cle])return XCAL[cle];
+  if(t==='x_chantier'){XCAL[cle]=graverLeChantier();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
   if(t==='x_maison'||t==='x_ndg'||t==='x_pavPoisson'||t==='x_pavPeche'||t==='x_arbuste'||t==='x_belArbre'||t==='x_criee'||t==='x_cabanon'||t==='x_stationVelo'){
     XCAL[cle]=t==='x_cabanon'?graverLeCabanon():t==='x_stationVelo'?graverLaStationVelo():t==='x_criee'?graverLaCriee():t==='x_maison'?graverImmeuble(v||0):t==='x_ndg'?graverLaGarde():t==='x_pavPoisson'?graverPavillon('poisson'):t==='x_pavPeche'?graverPavillon('peche'):t==='x_belArbre'?graverBelArbre(v||0):graverArbuste(v||0);
     if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
@@ -11727,6 +11728,8 @@ function dessinerX(g,o,x,y){
     for(let k=0;k<26;k++){const b=((k+Math.floor(T*8))%6);g.fillStyle=b<2?'#c0392b':(b<4?'#f4f0e4':'#2d6fb0');g.fillRect(bx+1+((k+Math.floor(T*8))%2),by+k,3,1);}
     if(Math.floor(T*2)%5===0){g.fillStyle='rgba(255,255,255,.9)';g.fillRect(Math.round(x)-69+12+16-2,Y0+C.sol-40+18+1,2,1);}   /* un éclat sur le crâne */
   }
+  if(o.t==='x_chantier'&&Math.floor(Date.now()/450)%2){g.fillStyle='rgba(255,150,40,.9)';g.fillRect(Math.round(x)-38-17,Y0+C.sol-20,3,3);g.fillRect(Math.round(x)+38+14,Y0+C.sol-20,3,3);
+    g.fillStyle='rgba(255,150,40,.25)';g.beginPath();g.arc(Math.round(x)-38-16,Y0+C.sol-19,6,0,7);g.arc(Math.round(x)+38+15,Y0+C.sol-19,6,0,7);g.fill();}
   if(o.t==='x_panneauG'){
     g.font='700 5px Georgia,serif';g.textAlign='center';g.fillStyle='#f4e2b0';
     g.fillText('CASINO ↑',Math.round(x),Y0+C.sol-27,32);
@@ -11900,6 +11903,33 @@ function semerDecorExtramar(){
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
 
+/* LE PANNEAU DE CHANTIER, à l'est de la place : la campagne arrive bientôt */
+function graverLeChantier(){
+  const W=110,Ht=80,cx=55,sol=74;
+  const c=document.createElement('canvas');const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  g.fillStyle='rgba(40,30,18,.25)';g.beginPath();g.ellipse(cx+2,sol+2,48,6,0,0,7);g.fill();
+  /* les deux barrières rayées rouge et blanc, sur leurs pieds */
+  [[cx-38],[cx+38]].forEach(([bx])=>{
+    R(bx-16,sol-14,2,14,'#6b6b66');R(bx+14,sol-14,2,14,'#6b6b66');R(bx-18,sol-1,6,2,'#3b3a36');R(bx+12,sol-1,6,2,'#3b3a36');
+    for(let x=0;x<32;x+=4)R(bx-16+x,sol-16,4,6,((x/4)%2)?'#f4f0e4':'#d0302a');R(bx-16,sol-16,32,1,'rgba(255,255,255,.4)');});
+  /* le panneau : jaune, bordé de noir, sur deux poteaux */
+  R(cx-2,sol-30,2,30,'#6b6b66');R(cx+8,sol-30,2,30,'#6b6b66');
+  R(cx-30,sol-66,64,38,'#1b1b1b');R(cx-28,sol-64,60,34,'#f4c020');
+  for(let x=0;x<60;x+=6){R(cx-28+x,sol-64,3,4,'#1b1b1b');R(cx-28+x+3,sol-34,3,4,'#1b1b1b');}
+  /* le pictogramme de l'ouvrier à la pelle */
+  R(cx-22,sol-58,14,14,'#f4c020');g.fillStyle='#1b1b1b';g.beginPath();g.moveTo(cx-22,sol-44);g.lineTo(cx-15,sol-58);g.lineTo(cx-8,sol-44);g.closePath();g.fill();
+  g.fillStyle='#f4c020';g.beginPath();g.moveTo(cx-19,sol-46);g.lineTo(cx-15,sol-54);g.lineTo(cx-11,sol-46);g.closePath();g.fill();
+  R(cx-16,sol-52,2,2,'#1b1b1b');R(cx-17,sol-50,3,2,'#1b1b1b');R(cx-14,sol-48,3,1,'#1b1b1b');
+  g.font='700 7px ui-monospace,monospace';g.textAlign='left';g.fillStyle='#1b1b1b';
+  g.fillText('TRAVAUX',cx-5,sol-52);g.font='700 5px ui-monospace,monospace';g.fillText('EN COURS',cx-5,sol-45);
+  /* deux plots orange, un tas de sable, une brouette */
+  [[cx-54],[cx+52]].forEach(([px])=>{g.fillStyle='#f07a20';g.beginPath();g.moveTo(px-4,sol);g.lineTo(px,sol-10);g.lineTo(px+4,sol);g.fill();R(px-2,sol-6,4,2,'#f4f0e4');});
+  g.fillStyle='#d8c08a';g.beginPath();g.ellipse(cx+20,sol-2,10,5,0,Math.PI,0);g.fill();
+  R(cx-30,sol-8,14,5,'#8f959b');R(cx-32,sol-3,4,3,'#2a2c2e');R(cx-16,sol-9,6,1,'#6b4a2c');
+  return {toile:c,W,H:Ht,sol};
+}
 function construireSol(){
   if(CARTE==='extramar')return construireSolExtramar();
   if(CARTE==='garde')return construireSolGarde();
@@ -13000,6 +13030,9 @@ function semerDecor(){
   if(acces.enfermees)
     console.warn('carte : '+acces.enfermees+' cases enfermées, '+acces.retires+' objets retirés');
 
+  /* le panneau de chantier, à l'est de la place : la campagne arrive */
+  DECOR=DECOR.filter(o=>o.t==='fleurs'||BATI(o.t)||Math.hypot(o.x-1320,o.y-300)>60);
+  DECOR.push({t:'x_chantier',x:1320,y:300,gr:0});
   /* on garde la liste triée : ce qui est en bas se dessine par-dessus */
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
@@ -15952,7 +15985,7 @@ function cible(){
   for(const o of autour){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
-    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro','x_etal','x_pavPoisson','x_pavPeche','x_cabanon','x_stationVelo','x_paillasson'].includes(o.t);
+    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro','x_etal','x_pavPoisson','x_pavPeche','x_cabanon','x_stationVelo','x_paillasson','x_chantier'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'
        &&!batiment&&!o.bati&&!cueillable&&!minerai)continue;
     if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
@@ -16950,6 +16983,7 @@ function majAction(){
     if(!TAILLERIE_OUVERTE)b.onclick=null;
     return;
   }
+  if(o.t==='x_chantier'){b.innerHTML='Lire le panneau<small>CHANTIER · TRAVAUX EN COURS</small>';b.classList.add('on');return;}
   if(o.t==='x_pavPoisson'){b.innerHTML='Vendre ta pêche<small>LA POISSONNERIE</small>';b.classList.add('on');return;}
   if(o.t==='x_cabanon'){b.innerHTML='La bouillabaisse<small>CHEZ FONFON · CUISINE TA PÊCHE</small>';b.classList.add('on');return;}
   if(o.t==='x_stationVelo'){b.innerHTML=VELO?'Rendre le vélo<small>À LA STATION</small>':'Prendre un vélo<small>EN LIBRE-SERVICE · TU IRAS PLUS VITE</small>';b.classList.add('on');return;}
@@ -17091,6 +17125,9 @@ function agir(){
   }
   if(o.t==='x_etal'||o.t==='x_pavPoisson'){ouvrirLeComptoir(MODE_POISSON);return;}
   if(o.t==='x_pavPeche'){ouvrirLaBoutiqueDePeche();return;}
+  if(o.t==='x_chantier'){texteVolant(o.x,o.y-78,'Construction en cours…','#ffd040');
+    setTimeout(()=>texteVolant(o.x,o.y-66,'Vous allez bientôt pouvoir découvrir','#fff3d0'),350);
+    setTimeout(()=>texteVolant(o.x,o.y-56,'une nouvelle partie du village !','#fff3d0'),700);vibrer(12);return;}
   if(o.t==='x_cabanon'){ouvrirLeCabanon();return;}
   if(o.t==='x_stationVelo'){VELO=!VELO;jouer('cueille');vibrer(VELO?[10,30,10]:12);
     texteVolant(joueur.x,joueur.y-40,VELO?'en selle !':'vélo rendu','#9fdfb8');majAction();return;}
