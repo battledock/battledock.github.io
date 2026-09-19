@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1006';
+  var MA_VERSION='2026-09-19-1011';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -11098,7 +11098,7 @@ function graverX(t,v){
     if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
     return XCAL[cle];
   }
-  const T={x_panneauG:[40,44],x_ferry:[96,56],x_caboteur:[250,120],x_docks:[150,96],x_pile:[44,34],x_roue:[180,210],x_kiosque:[44,68],x_fontaine:[54,46],x_metroM:[96,100],x_platane:[84,108],x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
+  const T={x_paillasson:[30,10],x_panneauG:[40,44],x_ferry:[96,56],x_caboteur:[250,120],x_docks:[150,96],x_pile:[44,34],x_roue:[180,210],x_kiosque:[44,68],x_fontaine:[54,46],x_metroM:[96,100],x_platane:[84,108],x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
            x_filets:[34,16],x_bitte:[12,14],x_barque:[62,34],x_cargo:[250,128],x_grue:[80,120],
            x_phare:[30,96]}[t]||[40,40];
   const W=T[0],H=T[1],cx=W/2,sol=H-6;
@@ -11542,6 +11542,11 @@ function graverX(t,v){
     if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
     return XCAL[cle];
   }
+  /* LE PAILLASSON du salon MY design AIR, devant sa porte */
+  else if(t==='x_paillasson'){
+    R(cx-12,sol-6,24,6,'#1b1b1b');R(cx-11,sol-5,22,4,'#2a2a2e');R(cx-12,sol-6,24,1,'#c9a24a');
+    for(let k=0;k<5;k++)R(cx-9+k*4,sol-4,2,2,'#c9a24a');
+  }
   /* LE PANNEAU : un poteau et une plaque de bois, au pied de la montée */
   else if(t==='x_panneauG'){
     ombre(8,2);
@@ -11839,6 +11844,7 @@ function semerDecorExtramar(){
   for(let k=0;k<10;k++){
     if(k===4){P('x_panneauG',XP.ruelle.x-38,XP.maisonsY+22,{col:[4,3]});continue;}   /* la ruelle du casino, et son panneau */
     P('x_maison',70+k*140,XP.maisonsY,{v:k===7?102:k,col:[70,24]});   /* au n°7 : le salon MY design AIR, rien devant sa vitrine */
+    if(k===7)P('x_paillasson',70+k*140+44,XP.maisonsY+8,{});        /* devant sa porte : on entre là */
   }
   /* DE GRANDS PLATANES, en alignement le long des façades, chacun avec son banc à l'ombre */
   [140,350,910,1190].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+30,XP.maisonsY+72);});
@@ -15947,7 +15953,7 @@ function cible(){
   for(const o of autour){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
-    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro','x_etal','x_pavPoisson','x_pavPeche','x_cabanon','x_stationVelo'].includes(o.t);
+    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro','x_etal','x_pavPoisson','x_pavPeche','x_cabanon','x_stationVelo','x_paillasson'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'
        &&!batiment&&!o.bati&&!cueillable&&!minerai)continue;
     if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
@@ -16947,6 +16953,7 @@ function majAction(){
   }
   if(o.t==='x_pavPoisson'){b.innerHTML='Vendre ta pêche<small>LA POISSONNERIE</small>';b.classList.add('on');return;}
   if(o.t==='x_cabanon'){b.innerHTML='La bouillabaisse<small>CHEZ FONFON · CUISINE TA PÊCHE</small>';b.classList.add('on');return;}
+  if(o.t==='x_paillasson'){b.innerHTML='Entrer chez MY design AIR<small>LE SALON DE COIFFURE</small>';b.classList.add('on');return;}
   if(o.t==='x_stationVelo'){b.innerHTML=VELO?'Rendre le vélo<small>À LA STATION</small>':'Prendre un vélo<small>EN LIBRE-SERVICE · TU IRAS PLUS VITE</small>';b.classList.add('on');return;}
   if(o.t==='x_pavPeche'){b.innerHTML='Pêche & Marine<small>CANNES, MOULINETS, APPÂTS</small>';b.classList.add('on');return;}
   if(o.t==='x_etal'){
@@ -17087,6 +17094,8 @@ function agir(){
   if(o.t==='x_etal'||o.t==='x_pavPoisson'){ouvrirLeComptoir(MODE_POISSON);return;}
   if(o.t==='x_pavPeche'){ouvrirLaBoutiqueDePeche();return;}
   if(o.t==='x_cabanon'){ouvrirLeCabanon();return;}
+  if(o.t==='x_paillasson'){e.ext={x:o.x,y:o.y+16};e.carte='extramar';try{sauver();envoyerSauvegarde(true);}catch(x){}
+    setTimeout(()=>{location.href='salon.html';},120);return;}
   if(o.t==='x_stationVelo'){VELO=!VELO;jouer('cueille');vibrer(VELO?[10,30,10]:12);
     texteVolant(joueur.x,joueur.y-40,VELO?'en selle !':'vélo rendu','#9fdfb8');majAction();return;}
   if(o.t==='entrepot')return;          /* on n'y ramasse rien : c'est un bâtiment */
