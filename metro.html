@@ -174,7 +174,10 @@ async function tenterLaFraude(dest){
     const r=await fetch(URL_SB+'/rest/v1/rpc/frauder_metro',{method:'POST',
       headers:{'apikey':CLE_SB,'Authorization':'Bearer '+CLE_SB,'Content-Type':'application/json'},
       body:JSON.stringify({p_joueur:e.id,p_de:ICI.id,p_vers:dest.id})});
-    return await r.json();
+    /* une erreur du serveur n'est JAMAIS un succès : sans ça, on partait sans avoir payé */
+    const d=await r.json();
+    if(!r.ok||!d||typeof d!=='object')return {erreur:'serveur'};
+    return d;
   }catch(x){return null;}
 }
 async function payerLeTicket(dest){
@@ -187,7 +190,10 @@ async function payerLeTicket(dest){
     const r=await fetch(URL_SB+'/rest/v1/rpc/ticket_metro',{method:'POST',
       headers:{'apikey':CLE_SB,'Authorization':'Bearer '+CLE_SB,'Content-Type':'application/json'},
       body:JSON.stringify({p_joueur:e.id,p_de:ICI.id,p_vers:dest.id})});
-    return await r.json();
+    /* une erreur du serveur n'est JAMAIS un succès : sans ça, on partait sans avoir payé */
+    const d=await r.json();
+    if(!r.ok||!d||typeof d!=='object')return {erreur:'serveur'};
+    return d;
   }catch(x){return null;}
 }
 let choix=null;
@@ -407,7 +413,7 @@ $('partir').onclick=async()=>{
     $('partir').disabled=false;$('frauder').disabled=false;$('partir').textContent='Ticket · '+enEuros(dest.prix);
     return;
   }
-  e.euros=d.euros;garder();majSolde();
+  if(typeof d.euros==='number'){e.euros=d.euros;garder();majSolde();}
   if(navigator.vibrate)try{navigator.vibrate([10,30,10]);}catch(x){}
   $('partir').textContent='Ticket composté ✓';
   $('mot').textContent='−'+enEuros(d.prix)+' · Écartez-vous de la bordure du quai.';
