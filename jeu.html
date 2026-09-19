@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-19-1947';
+  var MA_VERSION='2026-09-19-1949';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -6944,9 +6944,147 @@ function dessinerLeComptoirNeuf(g,x,y){
   fumeeFront(g,x+40,y-124,0.1);
   if(lampesAllumees())nuitComptoir(g,Math.round(x),Math.round(y));
 }
+/* LES OUTILS DU DESSIN FIN DES FAÇADES (briques, pierre, bois, tuiles, clous) */
+function outilsFin(g){
+  /* un « pixel fin » vaut un demi-pixel du jeu : les coordonnées acceptent les .5 */
+  const F=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,Math.round(w*2)/2),Math.max(0.5,Math.round(h*2)/2));};
+  const hasard=(i)=>{const s=Math.sin(i*127.1+311.7)*43758.5453;return s-Math.floor(s);};
+  /* ---- LA BRIQUE FINE : 4,5 × 2, joint clair d'un demi-pixel, chaque brique
+     a sa teinte, son dessus éclairé, son dessous dans l'ombre, parfois usée ---- */
+  const briques=(x0,y0,larg,haut,suie)=>{
+    F(x0,y0,larg,haut,'#c9b89a');                                        /* le mortier */
+    for(let r=0;r*2.5<haut;r++){const y=y0+r*2.5, dec=r%2?2.25:0;
+      for(let x=-dec;x<larg;x+=5){const i=r*31+Math.round(x*3);const t=hasard(i);
+        const base=t<0.18?BR_F.o:(t<0.4?BR_F.s:(t<0.75?BR_F.p:BR_F.c));
+        const bx=Math.max(x0,x0+x), bw=Math.min(4.5,x0+x+4.5-bx, x0+larg-bx);if(bw<=0)continue;
+        const bh=Math.min(2,y0+haut-y);F(bx,y,bw,bh,base);
+        F(bx,y,bw,0.5,t>0.5?BR_F.h:BR_F.c);if(bh>1.5)F(bx,y+1.5,bw,0.5,BR_F.o);
+        if(hasard(i+7)<0.08)F(bx+1,y+0.5,1,1,'#6e3222');                  /* une brique éclatée */
+        if(suie&&y<y0+suie)F(bx,y,bw,bh,'rgba(40,30,25,'+(0.35*(1-(y-y0)/suie)).toFixed(2)+')');}}
+  };
+  /* ---- LA PIERRE TAILLÉE : des blocs chanfreinés ---- */
+  const pierre=(x0,y0,larg,haut,bloc)=>{
+    F(x0,y0,larg,haut,PI_F.s);
+    for(let r=0;r*bloc<haut;r++){const y=y0+r*bloc, dec=r%2?bloc:0;
+      for(let x=-dec;x<larg;x+=bloc*2){const bx=Math.max(x0,x0+x), bw=Math.min(bloc*2-0.5,x0+x+bloc*2-0.5-bx,x0+larg-bx), bh=Math.min(bloc-0.5,y0+haut-y);if(bw<=0||bh<=0)continue;
+        const t=hasard(r*17+x);F(bx,y,bw,bh,t<0.3?PI_F.p:(t<0.7?PI_F.c:PI_F.p));
+        F(bx,y,bw,0.5,PI_F.e);F(bx,y,0.5,bh,PI_F.h);F(bx+bw-0.5,y,0.5,bh,PI_F.o);F(bx,y+bh-0.5,bw,0.5,PI_F.o);
+        if(t>0.8)F(bx+bw*0.4,y+bh*0.4,1,0.5,PI_F.s);}}
+  };
+  /* ---- LE BOIS VEINÉ ---- */
+  const bois=(x,y,w,h,col,sens)=>{F(x,y,w,h,col||B_F.bois);
+    for(let k=0;k<(sens?w:h);k+=1.5){const t=hasard(x*3+y*7+k*11);if(t<0.45)continue;
+      if(sens)F(x+k,y+t*2,0.5,h-t*3,B_F.boisO);else F(x+t*3,y+k,w-t*5,0.5,t>0.8?B_F.boisH:B_F.boisO);}};
+  /* ---- LE TOIT DE TUILES RONDES : chaque tuile bombée, éclairée dessus ---- */
+  const toit=(cx0,bas,larg,haut)=>{
+    const rangs=Math.round(haut/2.5);
+    for(let rg=rangs-1;rg>=0;rg--){const t=rg/rangs, y=bas-rg*2.5, retrait=Math.round(t*14*2)/2;
+      const x0=cx0-larg/2-12+retrait, l2=larg+24-retrait*2;
+      for(let x=x0+(rg%2?1.5:0);x<x0+l2;x+=3){const q=hasard(rg*53+Math.round(x*2));
+        const col=q<0.25?TU_F.s:(q<0.7?TU_F.p:TU_F.c);
+        F(x,y,3,3,col);F(x+0.5,y,2,0.5,TU_F.h);F(x+0.5,y+0.5,1,1,rg>rangs*0.5?TU_F.faite:TU_F.h);
+        F(x+2.5,y,0.5,3,TU_F.o);F(x,y+2.5,3,0.5,TU_F.o);
+        if(q>0.93)F(x+1,y+1,1,1,'#5f7a3e');}                                   /* un peu de mousse */
+      if(rg===rangs-1){for(let x=x0-2;x<x0+l2+2;x+=4){F(x,y-3,4,3.5,TU_F.p);F(x,y-3,4,1,TU_F.faite);F(x+3.5,y-3,0.5,3.5,TU_F.o);}}}
+    F(cx0-larg/2-12,bas+3,larg+24,1,'rgba(40,20,10,.35)');                     /* l'ombre sous l'égout */
+  };
+  const clou=(x,y)=>{F(x,y,1,1,'#3a3a40');F(x,y,0.5,0.5,'#b7bec4');};
+
+  return {F,hasard,briques,pierre,bois,toit,clou};
+}
+let CALQUE_BOUTIQUE_FIN=null;
+function graverLaBoutiqueFin(){
+  const W=190, Ht=140, cx=W/2, sol=Ht-16, BL=150, basToit=sol-70;
+  const c=document.createElement('canvas');c.width=W*2;c.height=Ht*2;
+  const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
+  const {F,hasard,briques,pierre,bois,toit,clou}=outilsFin(g);
+  g.fillStyle='rgba(30,50,24,.26)';g.beginPath();g.ellipse(cx+4,sol+4,BL*0.54,12,0,0,7);g.fill();
+  /* LE TOIT de tuiles rondes */
+  toit(cx,basToit,BL,22);
+  F(cx-BL/2-12,basToit+3,BL+24,4,PI_F.o);F(cx-BL/2-12,basToit+3,BL+24,1,PI_F.p);
+  /* LE BANDEAU DE BRIQUE qui porte l'enseigne */
+  briques(cx-BL/2,basToit+6,BL,14,6);F(cx-BL/2,basToit+6,BL,1.5,'rgba(0,0,0,.25)');
+  /* LE BANDEAU de pierre moulurée */
+  pierre(cx-BL/2-3,basToit+20,BL+6,6,3);F(cx-BL/2-3,basToit+20,BL+6,1,PI_F.e);F(cx-BL/2-3,basToit+26,BL+6,1.5,PI_F.o);
+  /* LE REZ : la devanture de bois sombre */
+  F(cx-BL/2,basToit+26,BL,sol-basToit-60,'#2e241c');
+  /* le lambris du bas, à panneaux moulurés */
+  bois(cx-BL/2,sol-24,BL,16,B_F.boisO);
+  for(let k=0;k<BL;k+=8){F(cx-BL/2+k,sol-24,1,16,B_F.boisS);F(cx-BL/2+k+2,sol-21,4,10,B_F.bois);F(cx-BL/2+k+2,sol-21,4,0.5,B_F.boisH);F(cx-BL/2+k+5.5,sol-21,0.5,10,B_F.boisS);}
+  F(cx-BL/2,sol-24,BL,1.5,B_F.boisC);
+  /* LES DEUX VITRINES à petits carreaux */
+  [-44,44].forEach(dx=>{const X=cx+dx, y0=basToit+30;
+    bois(X-26,y0,52,44,B_F.boisO);F(X-26,y0,52,1.5,B_F.boisH);F(X-26,y0+1.5,52,1,B_F.boisC);F(X+25.5,y0,0.5,44,B_F.boisS);
+    /* le verre, un peu bleuté, plus sombre vers le haut */
+    for(let r=0;r<38;r++)F(X-24,y0+3+r,48,1,r<8?'#2f3c45':'#3a4750');
+    /* CE QU'ON VOIT DEDANS : étagères, pots de toutes les couleurs, rouleaux de tissu, paniers */
+    F(X-22,y0+10,44,1.5,B_F.boisO);F(X-22,y0+10,44,0.5,B_F.boisC);
+    ['#a3543a','#7d9455','#8b939a','#c9a24a','#6b7fa8'].forEach((col,k)=>{const px=X-20+k*9;
+      F(px,y0+4,6,6,col);F(px,y0+4,6,1,'#d8c49a');F(px+4.5,y0+5,1,5,'rgba(0,0,0,.2)');F(px+1,y0+5,1,3,'rgba(255,255,255,.25)');F(px+1,y0+3,4,1,'#3d2a17');});
+    F(X-22,y0+24,44,1.5,B_F.boisO);F(X-22,y0+24,44,0.5,B_F.boisC);
+    ['#8fa9c4','#d8a8a0','#c9a24a'].forEach((col,k)=>{const px=X-19+k*14;
+      F(px,y0+14,10,10,col);F(px,y0+14,10,1,'rgba(255,255,255,.28)');for(let r=2;r<10;r+=2)F(px,y0+14+r,10,0.5,'rgba(0,0,0,.12)');F(px+8.5,y0+14,1.5,10,'rgba(0,0,0,.18)');});
+    for(let k=0;k<3;k++){const px=X-19+k*14;F(px,y0+27,11,8,'#b08a4a');for(let r=0;r<8;r+=2)F(px,y0+27+r,11,1,r%4?'#c9a24a':'#8a6a2a');F(px+2,y0+25,7,2,'#8a6a2a');}
+    /* les petits bois : trois carreaux par quatre, moulurés */
+    for(let i2=1;i2<4;i2++){F(X-24+i2*12,y0+3,2,38,B_F.boisO);F(X-24+i2*12,y0+3,0.5,38,B_F.boisC);}
+    for(let j2=1;j2<4;j2++){F(X-24,y0+3+j2*9.5,48,1.5,B_F.boisO);F(X-24,y0+3+j2*9.5,48,0.5,B_F.boisC);}
+    /* les reflets : une large bande en biais, et un éclat par carreau */
+    g.fillStyle='rgba(230,240,246,.16)';g.beginPath();g.moveTo(X-22,y0+39);g.lineTo(X-6,y0+5);g.lineTo(X+4,y0+5);g.lineTo(X-12,y0+39);g.closePath();g.fill();
+    for(let i2=0;i2<4;i2++)for(let j2=0;j2<4;j2++)F(X-23+i2*12,y0+4+j2*9.5,1.5,0.5,'rgba(255,255,255,.35)');
+    /* l'appui de pierre, en saillie, et ses consoles */
+    F(X-28,y0+44,56,5,PI_F.c);F(X-28,y0+44,56,1,PI_F.e);F(X-26,y0+49,52,3,PI_F.o);F(X-26,y0+49,52,0.5,PI_F.s);
+    [-22,16].forEach(px=>{g.save();g.translate(X+px,y0+49);g.rotate(0.5);F(0,0,3,10,B_F.boisO);F(0,0,1,10,B_F.bois);g.restore();});
+  });
+  /* LES PILASTRES DE BOIS, cannelés, chapiteau et base */
+  [-BL/2+2,-16,10,BL/2-10].forEach(dx=>{const X=cx+dx, h=sol-basToit-60;
+    F(X,basToit+26,8,h,B_F.bois);F(X,basToit+26,2,h,B_F.boisH);F(X+6.5,basToit+26,1.5,h,B_F.boisS);
+    F(X+3,basToit+31,1,h-12,B_F.boisO);F(X+5,basToit+31,0.5,h-12,B_F.boisO);          /* les cannelures */
+    F(X-2,basToit+26,12,5,B_F.boisO);F(X-2,basToit+26,12,1.5,B_F.boisC);F(X-2,basToit+30.5,12,0.5,B_F.boisS);
+    F(X-2,sol-13,12,5,B_F.boisO);F(X-2,sol-13,12,1,B_F.boisC);});
+  /* LA PORTE : vitrée en haut, à panneaux en bas, pentures, poignée, clochette */
+  const PL2=30, PH2=54;
+  bois(cx-PL2/2-4,sol-PH2-6,PL2+8,PH2+2,B_F.boisO);F(cx-PL2/2-4,sol-PH2-6,PL2+8,1.5,B_F.boisC);
+  bois(cx-PL2/2,sol-PH2-4,PL2,PH2,B_F.bois,true);
+  for(let r=0;r<20;r++)F(cx-PL2/2+4,sol-PH2+r,PL2-8,1,r<5?'#2f3c45':'#3a4750');
+  F(cx-1,sol-PH2,2,20,B_F.boisO);F(cx-PL2/2+4,sol-PH2+9,PL2-8,2,B_F.boisO);F(cx-PL2/2+5,sol-PH2+1,3,0.5,'rgba(255,255,255,.4)');F(cx+2,sol-PH2+12,3,0.5,'rgba(255,255,255,.3)');
+  [[cx-PL2/2+4],[cx+1]].forEach(([px])=>{F(px,sol-PH2+26,PL2/2-5,22,B_F.boisO);F(px+1.5,sol-PH2+27.5,PL2/2-8,19,B_F.bois);F(px+1.5,sol-PH2+27.5,PL2/2-8,0.5,B_F.boisH);});
+  [sol-PH2+2,sol-12].forEach(yy=>{F(cx-PL2/2,yy,PL2,3,'#3f3f47');F(cx-PL2/2,yy,PL2,0.5,'#7a7a84');for(let k=1.5;k<PL2;k+=5)clou(cx-PL2/2+k,yy+1);});
+  F(cx+PL2/2-6,sol-PH2/2-2,3,3,'#b7bec4');F(cx+PL2/2-6,sol-PH2/2-2,1,1,'#ffffff');
+  F(cx-2,sol-PH2-11,4,5,'#c9a24a');F(cx-1.5,sol-PH2-10.5,1,3,'#f0cf7d');F(cx-0.5,sol-PH2-6,1,1,'#8a6a2a');F(cx-3,sol-PH2-13,6,2,B_F.boisS);
+  /* le seuil de pierre, deux marches usées */
+  F(cx-PL2/2-5,sol-8,PL2+10,3,PI_F.h);F(cx-PL2/2-5,sol-8,PL2+10,0.5,PI_F.e);F(cx-5,sol-7,10,1,'rgba(0,0,0,.12)');
+  F(cx-PL2/2-8,sol-5,PL2+16,3,PI_F.c);F(cx-PL2/2-8,sol-5,PL2+16,0.5,PI_F.e);F(cx-PL2/2-11,sol-2,PL2+22,2,PI_F.p);
+  /* L'AUVENT DE TUILES sur toute la devanture, sa dentelle */
+  for(let k=-BL/2-4;k<BL/2+4;k+=3){const q=hasard(k*9+3);
+    F(cx+k,basToit+18,3,5,q<0.3?TU_F.s:(q<0.7?TU_F.p:TU_F.c));F(cx+k+0.5,basToit+18,2,0.5,TU_F.h);F(cx+k+0.5,basToit+18.5,1,1.5,TU_F.faite);F(cx+k+2.5,basToit+18,0.5,5,TU_F.o);}
+  F(cx-BL/2-6,basToit+22,BL+12,2,TU_F.o);F(cx-BL/2-6,basToit+24,BL+12,1,'rgba(0,0,0,.25)');
+  for(let k=-BL/2-4;k<BL/2+4;k+=7){F(cx+k,basToit+24,4,2,B_F.boisO);F(cx+k+1,basToit+26,2,1.5,B_F.boisO);F(cx+k+1.5,basToit+27,1,1,B_F.boisS);}
+  /* LA CHEMINÉE */
+  briques(cx+BL/4,basToit-22,12,20,6);F(cx+BL/4,basToit-22,12,1,'rgba(0,0,0,.35)');
+  F(cx+BL/4-2,basToit-26,16,5,PI_F.c);F(cx+BL/4-2,basToit-26,16,1,PI_F.e);F(cx+BL/4-2,basToit-21.5,16,0.5,PI_F.o);
+  /* L'ENSEIGNE */
+  const larg=116, hy=basToit-22;
+  bois(cx-larg/2,hy-9,larg,18,B_F.boisS);F(cx-larg/2,hy-9,larg,1.5,B_F.boisC);F(cx-larg/2,hy+7,larg,2,'#2a1c12');
+  bois(cx-larg/2-4,hy-11,4,22,B_F.boisO,true);bois(cx+larg/2,hy-11,4,22,B_F.boisO,true);
+  clou(cx-larg/2-2.5,hy-9);clou(cx-larg/2-2.5,hy+8);clou(cx+larg/2+1.5,hy-9);clou(cx+larg/2+1.5,hy+8);
+  g.font='700 12px Georgia,serif';g.textAlign='center';
+  g.fillStyle='#2a1a0e';g.fillText('BOUTIQUE',cx+0.5,hy+5.5,larg-20);g.fillStyle='#f0cf7d';g.fillText('BOUTIQUE',cx,hy+5,larg-20);g.textAlign='left';
+  /* LA POTENCE de l'enseigne suspendue (l'enseigne elle-même se balance, dessinée à part) */
+  bois(cx-BL/2-2,sol-64,3,12,B_F.boisS,true);bois(cx-BL/2-20,sol-64,20,3,B_F.boisS);F(cx-BL/2-20,sol-64,20,1,B_F.boisO);F(cx-BL/2-18,sol-63,1,1,'#8f959b');
+  /* LA TERRASSE de planches clouées */
+  F(cx-BL/2-6,sol-8,BL+12,7,B_F.bois);
+  for(let x=0;x<BL+12;x+=7){const t=hasard(x+5);F(cx-BL/2-6+x,sol-8,6.5,7,t<0.3?B_F.boisC:(t<0.7?B_F.bois:B_F.boisO));
+    F(cx-BL/2-6+x+6.5,sol-8,0.5,7,B_F.boisS);clou(cx-BL/2-6+x+1,sol-6.5);clou(cx-BL/2-6+x+1,sol-3);}
+  F(cx-BL/2-6,sol-8,BL+12,1.5,B_F.boisH);F(cx-BL/2-6,sol-1,BL+12,3,B_F.boisS);
+  /* (plus de caisses ni de tonneau devant : la devanture respire) */
+  CALQUE_BOUTIQUE_FIN={toile:c,W,H:Ht,sol};
+}
+
 function dessinerLaBoutique(g,x,y){
-  if(!CALQUE_BOUTIQUE)graverLaBoutiqueNeuve();
-  const C=CALQUE_BOUTIQUE;
+  let fin=false;try{fin=STYLE_FIN();}catch(x){}
+  if(fin&&!CALQUE_BOUTIQUE_FIN)graverLaBoutiqueFin();
+  if(!fin&&!CALQUE_BOUTIQUE)graverLaBoutiqueNeuve();
+  const C=fin?CALQUE_BOUTIQUE_FIN:CALQUE_BOUTIQUE;
   g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
   fumeeFront(g,x+42,y-146,0.4);
   if(lampesAllumees())nuitBoutique(g,Math.round(x),Math.round(y));
