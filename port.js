@@ -1362,6 +1362,29 @@ function graverLaBanque(){return devanture(2,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
   g.font='700 6.2px Georgia';g.textAlign='center';g.fillStyle='#f0d890';g.fillText('CAISSE D’ÉPARGNE DU VIEUX-PORT',cx,ey+7,BL-26);g.textAlign='left';
   g.fillStyle='#f4ecd8';g.beginPath();g.arc(cx,ey-8,7,0,7);g.fill();g.strokeStyle='#d8b050';g.lineWidth=1.2;g.stroke();g.strokeStyle='#1a1a1a';g.lineWidth=0.7;g.beginPath();g.moveTo(cx,ey-8);g.lineTo(cx,ey-12.5);g.moveTo(cx,ey-8);g.lineTo(cx+3,ey-7);g.stroke();   /* l'horloge */
   if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,210,140,.4)');l.addColorStop(1,'rgba(255,210,140,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}});}
+/* LA PISCINE MUNICIPALE : l'entrée des années 30. Faïence bleue et blanche, le fronton en lettres
+   de mosaïque, les deux portes « DAMES » et « MESSIEURS », le guichet, la bouée, les frises de vagues ;
+   la nuit, le hall bleuté s'allume, comme l'eau. */
+function graverLaPiscine(){return devanture(0,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+  /* la façade carrelée, jusqu'au premier étage */
+  R(x0,yR-18,BL,rez+18,'#f4f8fa');for(let y=yR-18;y<sol;y+=4)for(let x=x0;x<x0+BL;x+=4){if(((x-x0)/4+(y-yR)/4)%2<1)R(x,y,4,4,'#e2eef4');}
+  R(x0,yR-18,BL,1.5,'#2d6fb0');R(x0,sol-8,BL,8,'#2d6fb0');for(let x=x0;x<x0+BL;x+=4)R(x,sol-8,2,1.5,'#6aa8e8');         /* le soubassement bleu */
+  /* la frise de vagues, sous le fronton */
+  g.strokeStyle='#2d8fb0';g.lineWidth=1.2;g.beginPath();for(let x=x0+2;x<x0+BL-2;x+=0.5){const y=yR-3+Math.sin((x-x0)/3)*1.4;if(x===x0+2)g.moveTo(x,y);else g.lineTo(x,y);}g.stroke();
+  /* le fronton : lettres en mosaïque bleue */
+  R(x0+10,yR-16,BL-20,10,'#ffffff');R(x0+10,yR-16,BL-20,1,'#2d6fb0');R(x0+10,yR-7,BL-20,1,'#2d6fb0');
+  g.font='900 7px Georgia';g.textAlign='center';g.fillStyle='#1d4f8a';g.fillText('PISCINE MUNICIPALE',cx,yR-9,BL-26);g.textAlign='left';
+  /* les deux portes, leurs hublots, leurs plaques */
+  [[-44,'DAMES'],[24,'MESSIEURS']].forEach(([k,t])=>{R(cx+k,yR+4,20,rez-12,'#1d4f8a');R(cx+k+1,yR+5,18,rez-14,nuit?'#9ad8f4':'#2d6fb0');
+    g.fillStyle=nuit?'#dff4ff':'#a8d8f0';g.beginPath();g.arc(cx+k+10,yR+12,4,0,7);g.fill();g.strokeStyle='#e8ecef';g.lineWidth=1;g.stroke();
+    R(cx+k+2,yR-1,16,4,'#1d4f8a');g.font='700 2.8px Georgia';g.textAlign='center';g.fillStyle='#fff';g.fillText(t,cx+k+10,yR+2,15);g.textAlign='left';R(cx+k+15,yR+18,1.2,3,'#c8ccd2');});
+  /* le guichet au milieu, les horaires, la bouée */
+  R(cx-14,yR+6,28,14,'#1d4f8a');R(cx-13,yR+7,26,10,nuit?'#bfe8fa':'#8ac8e4');R(cx-13,yR+15,26,2,'#e8e2d4');R(cx-2,yR+10,4,2,'#3a3a40');
+  R(cx-9,yR+21,18,9,'#ffffff');R(cx-9,yR+21,18,1,'#2d6fb0');g.font='700 2.4px Georgia';g.fillStyle='#1d4f8a';g.fillText('OUVERT',cx-8,yR+24.5);g.fillText('10 h – 20 h',cx-8,yR+27.8);
+  g.strokeStyle='#e8402a';g.lineWidth=2.2;g.beginPath();g.arc(x0+BL-8,yR+14,4.2,0,7);g.stroke();g.strokeStyle='#ffffff';g.lineWidth=2.2;
+  for(let q=0;q<4;q++){g.beginPath();g.arc(x0+BL-8,yR+14,4.2,q*Math.PI/2+0.25,q*Math.PI/2+0.75);g.stroke();}
+  if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(140,210,255,.45)');l.addColorStop(1,'rgba(140,210,255,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}
+});}
 /* LE GLAÇON D'ART : une charrette, un parasol rayé, des blocs de glace qui brillent, l'ardoise des prix */
 function graverLesGlacons(){const W=70,H=64,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);const sol=H-4, cx=W/2;
   const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
@@ -1514,6 +1537,7 @@ function semerDecorExtramar(){
      l'autre, comme sur le vrai quai ; au milieu, la Bonne Mère */
   for(let k=0;k<10;k++){
     if(k===4){P('x_panneauG',XP.ruelle.x-38,XP.maisonsY+22,{col:[4,3]});continue;}   /* la ruelle du casino, et son panneau */
+    if(k===1){XCAL['x_piscine0']=graverLaPiscine();CALQUES_DECO['x_piscine']=XCAL['x_piscine0'];P('x_piscine',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ferme:'La piscine municipale'});continue;}   /* la piscine */
     if(k===9){XCAL['x_banque0']=graverLaBanque();CALQUES_DECO['x_banque']=XCAL['x_banque0'];P('x_banque',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'banque'});continue;}   /* la banque */
     if(k===3){XCAL['x_bar0']=graverLeBar();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ferme:'Le Bar des Docks'});
       XCAL['x_gueridon0']=graverGueridon();CALQUES_DECO['x_gueridon']=XCAL['x_gueridon0'];[[70+k*140-44,XP.maisonsY+34],[70+k*140+46,XP.maisonsY+36]].forEach(([x,y])=>P('x_gueridon',x,y,{col:[8,3]}));continue;}   /* le bar-tabac */
@@ -1522,7 +1546,7 @@ function semerDecorExtramar(){
     P('x_maison',70+k*140,XP.maisonsY,{v:k,col:[70,24]});
   }
   /* DE GRANDS PLATANES, en alignement le long des façades, chacun avec son banc à l'ombre */
-  [140,350,910,1190].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+30,XP.maisonsY+72);});
+  [96,350,910,1190].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+(k===0?-30:30),XP.maisonsY+72);});   /* le premier platane s'écarte pour laisser voir la piscine */
   /* LA FORÊT DE MÂTS : des voiliers serrés de part et d'autre des pontons,
      l'étrave tournée vers les planches */
   let nv=0;
