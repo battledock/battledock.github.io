@@ -410,6 +410,15 @@ const FQ={x0:TPH.x-60,x1:TPH.x+60,y0:TPH.y+4,y1:TPH.y+78,entree:[TPH.x+38,TPH.x+
 const FILE=(()=>{const {x0,x1,y0,y1,entree}=FQ, r1=y0+26, r2=y0+50;
   return [[x0,y0,x0,y1],[x0,y1,entree[0],y1],[x1,y0,x1,y1],      /* le cadre : gauche, bas (jusqu'à l'entrée), droite */
           [x0+22,r2,x1,r2],[x0,r1,x1-22,r1]];})();                   /* les deux cordes du serpentin */
+/* LE TAMPON DE PIXELS : écrire directement dans l'image est cent fois plus rapide qu'un fillRect par pixel */
+const RGB_CACHE={};
+function rgbDe(hex){let c=RGB_CACHE[hex];if(!c){const n=parseInt(hex.slice(1),16);c=RGB_CACHE[hex]=[(n>>16)&255,(n>>8)&255,n&255];}return c;}
+function tampon(g,y0,y1){const W2=g.canvas.width, a=Math.max(0,Math.floor(y0*2)), b=Math.min(g.canvas.height,Math.ceil(y1*2));
+  const im=g.getImageData(0,a,W2,Math.max(1,b-a)), d=im.data;
+  return {pose:(x,y,hex)=>{const X=Math.round(x*2), Y=Math.round(y*2)-a;if(X<0||X>=W2||Y<0||Y>=b-a)return;const o=(Y*W2+X)*4, c=rgbDe(hex);d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255;},
+    voile:(x,yA,yB,r,gg,bb,al)=>{const X=Math.round(x*2);if(X<0||X>=W2)return;for(let Y=Math.max(0,Math.round(yA*2)-a);Y<Math.min(b-a,Math.round(yB*2)-a);Y++){const o=(Y*W2+X)*4;
+      d[o]=d[o]*(1-al)+r*al;d[o+1]=d[o+1]*(1-al)+gg*al;d[o+2]=d[o+2]*(1-al)+bb*al;}},
+    fin:()=>g.putImageData(im,0,a)};}
 /* LE FOND DE MONTAGNES, trois styles possibles */
 let FOND='alpin';
 function fondMontagnes(g,F){
@@ -434,6 +443,7 @@ function fondMontagnes(g,F){
       {pics:[[0,58],[40,38],[82,52],[128,22],[170,44],[214,30],[262,48],[300,26],[360,46]],g:11,r:0.5,base:88,loin:1},
       {pics:[[0,70],[34,52],[70,64],[118,34],[150,56],[196,40],[236,62],[284,38],[330,58],[360,50]],g:37,r:0.6,base:98,loin:0.55},
       {pics:[[0,86],[46,70],[92,84],[140,62],[186,80],[230,66],[276,82],[322,68],[360,80]],g:71,r:0.55,base:110,loin:0}];
+    const T=tampon(g,0,MONT+1);
     chaines.forEach((ch,ci)=>{const y=arete(ch.pics,ch.g,ch.r);
       /* les sommets de l'arête : chaque point de la montagne appartient au versant d'un sommet */
       const pics=[];for(let X=4;X<WW*2-4;X++){if(y[X]<=y[X-4]&&y[X]<=y[X+4]&&y[X]<y[X-1]+0.01&&y[X]<=y[X+1])pics.push(X);}
@@ -451,9 +461,10 @@ function fondMontagnes(g,F){
             if(!eclaire&&prof<2)col=soir?'#c8a8cc':'#d6e2ee';}
           else{const strate=Math.floor((yy*0.9+x*0.25*(eclaire?1:-1))/2.5)%2;
             col=soir?(eclaire?(strate?'#8e6c8c':'#82627f'):(strate?'#4c3c60':'#46375a')):(eclaire?(strate?'#8c97a6':'#828d9c'):(strate?'#5c687a':'#546072'));}
-          F(x,yy,0.5,0.5,col);}
-        if(ch.loin>0){g.fillStyle=soir?`rgba(206,150,176,${0.5*ch.loin})`:`rgba(196,214,236,${0.6*ch.loin})`;g.fillRect(x,top,0.5,ch.base-top);}
-        F(x,top,0.5,0.5,soir?'#fff0e0':'#ffffff');}});
+          T.pose(x,yy,col);}
+        if(ch.loin>0){if(soir)T.voile(x,top,ch.base,206,150,176,0.5*ch.loin);else T.voile(x,top,ch.base,196,214,236,0.6*ch.loin);}
+        T.pose(x,top,soir?'#fff0e0':'#ffffff');}});
+    T.fin();
     /* la forêt de sapins, au pied, et la brume */
     for(let x=0;x<WW;x+=1.5){const h=6+hs(x*2.1)*6;g.fillStyle=soir?'#2a2438':'#1f3a2e';g.beginPath();g.moveTo(x-1.8,MONT);g.lineTo(x,MONT-h);g.lineTo(x+1.8,MONT);g.fill();
       F(x-0.5,MONT-h+1,1,0.5,soir?'#d8b0c0':'#e8f0f4');}
@@ -474,9 +485,16 @@ function fondMontagnes(g,F){
 }
 function solVide(){
   const {c,g,F}=mk(WW,WH);
-  const neige=(y0,y1)=>{for(let y=y0;y<y1;y+=0.5)for(let x=0;x<WW;x+=0.5){const r=Math.sin(x/47+y/61)*0.6+Math.sin(x/19-y/27)*0.25+Math.sin((x-y)/83)*0.5;
-      const t=hs(Math.round(x*2)*0.71+Math.round(y*2)*1.37);
-      let col=r<-0.55?(t<0.5?'#e4ecf4':'#dde7f0'):(r>0.55?(t<0.5?'#ffffff':'#fbfdfe'):(t<0.33?'#f3f7fa':(t<0.66?'#f6f9fb':'#f9fbfd')));if(t>0.992)col='#ffffff';F(x,y,0.5,0.5,col);}
+  const neige=(y0,y1)=>{
+    /* écrite directement dans l'image : le relief (lent) calculé un point sur deux, le grain par un hachage entier (rapide) */
+    const W2=WW*2, a0=Math.floor(y0*2), a1=Math.min(WH*2,Math.ceil(y1*2)), im=g.getImageData(0,a0,W2,a1-a0), d=im.data;
+    const P=['#e4ecf4','#dde7f0','#ffffff','#fbfdfe','#f3f7fa','#f6f9fb','#f9fbfd'].map(rgbDe);
+    for(let Y=a0;Y<a1;Y++){const y=Y/2;let r=0;
+      for(let X=0;X<W2;X++){if((X&1)===0){const x=X/2;r=Math.sin(x/47+y/61)*0.6+Math.sin(x/19-y/27)*0.25+Math.sin((x-y)/83)*0.5;}
+        let h=(X*374761393+Y*668265263)|0;h=Math.imul(h^(h>>>13),1274126177);const t=((h^(h>>>16))>>>0)/4294967296;
+        const c=t>0.992?P[2]:(r<-0.55?(t<0.5?P[0]:P[1]):(r>0.55?(t<0.5?P[2]:P[3]):(t<0.33?P[4]:(t<0.66?P[5]:P[6]))));
+        const o=((Y-a0)*W2+X)*4;d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255;}}
+    g.putImageData(im,0,a0);
     for(let k=0;k<(y1-y0)*1.4;k++){const x=hs(k*3.7+y0)*WW, y=y0+hs(k*5.3+y0)*(y1-y0);F(x,y,0.5,0.5,'#ffffff');if(k%11===0){F(x-1,y,2.5,0.5,'#ffffff');F(x,y-1,0.5,2.5,'#ffffff');}}};
   /* 1 · LE FOND DE MONTAGNES */
   fondMontagnes(g,F);
@@ -561,7 +579,8 @@ function solVide(){
   ganivelle(TPH.x-60,TPH.y-70,TPH.cx-22,TPH.y-70);ganivelle(TPH.cx+22,TPH.y-70,TPH.x+58,TPH.y-70);
   return c;
 }
-function solFin(){return solVide();}
+let SOL_MEMO=null;
+function solFin(){if(!SOL_MEMO)SOL_MEMO=solVide();return SOL_MEMO;}        /* fabriqué une seule fois : le revenir de l'arrière-plan ne le refait plus */
 function graverTelepherique(nuit){
   const W=112,H=118,{c,g,F}=mk(W,H);const cx=W/2,sol=H-6;ombre(g,cx,sol,50,6);
   F(cx-44,sol-12,88,12,'#9a9690');F(cx-44,sol-12,88,1,'#c4c0b8');for(let k=-44;k<44;k+=11)F(cx+k,sol-12,0.5,12,'#7a766e');
@@ -647,14 +666,22 @@ function oeuf(g,x,y,col,bal,nuit){
   g.fillStyle='#ffffff';g.beginPath();g.ellipse(0,5.9,4.5,1.3,0,Math.PI,0);g.fill();F(-4,5.8,8,0.6,'#ffffff');
   g.restore();
 }
+/* chaque cabine est gravée une fois (par couleur, de jour et de nuit), puis simplement posée */
+const CABINES={};
+function spriteCabine(col,nuit){const cle=col+(nuit?'n':'j');let C=CABINES[cle];if(C)return C;
+  const S=4, W=22, H=34, c=document.createElement('canvas');c.width=W*S;c.height=H*S;const g=c.getContext('2d');g.setTransform(S,0,0,S,0,0);
+  oeuf(g,W/2,4,col,0,nuit);return CABINES[cle]={c,W,H,ox:W/2,oy:4};}
 function dessinerTelepherique(g,camX,camY,t,nuit){
+  const sc=g.getTransform().a||1, Hv=g.canvas.height/sc, Wv=g.canvas.width/sc;
   const x0=TPH.cx-camX, y0=TPH.y-TPH.h+4-camY, yHaut=34-camY;
-  g.fillStyle='#2e3640';[-TPH.ecart,TPH.ecart].forEach(d=>g.fillRect(x0+d-0.25,yHaut,0.5,y0-yHaut));
+  if(x0<-40||x0>Wv+40||y0<-40||yHaut>Hv+40)return;                                        /* la ligne n'est pas à l'écran */
+  g.fillStyle='#2e3640';[-TPH.ecart,TPH.ecart].forEach(d=>g.fillRect(x0+d-0.25,Math.max(yHaut,-4),0.5,y0-Math.max(yHaut,-4)));
   const cols=['#c0392b','#f0c040','#2d6fb0','#3f9e7a','#e86a8a','#8a4ac0'];
-  const n=4, v=0.03, bal=Math.sin(t*1.3)*0.035;                                                   /* quatre cabines par brin, bien espacées */
+  const n=4, v=0.03, bal=Math.sin(t*1.3)*0.035;
+  const poser=(x,y,col,b)=>{if(y<-40||y>Hv+8)return;const C=spriteCabine(col,nuit);g.save();g.translate(x,y);g.rotate(b);g.drawImage(C.c,-C.ox,-C.oy,C.W,C.H);g.restore();};
   for(let k=0;k<n;k++){const u=((t*v+k/n)%1);
-    const yU=y0+(yHaut+18-y0)*u, yD=yHaut+18+(y0-(yHaut+18))*u;                                            /* à droite, elles montent ; à gauche, elles redescendent */
-    oeuf(g,x0+TPH.ecart,yU,cols[k%6],bal,nuit);oeuf(g,x0-TPH.ecart,yD,cols[(k+3)%6],-bal,nuit);}
+    const yU=y0+(yHaut+18-y0)*u, yD=yHaut+18+(y0-(yHaut+18))*u;
+    poser(x0+TPH.ecart,yU,cols[k%6],bal);poser(x0-TPH.ecart,yD,cols[(k+3)%6],-bal);}
 }
 function graverPyloneT(){const W=40,H=TPH.h+30,{c,g,F}=mk(W,H);const cx=W/2,sol=H-4;ombre(g,cx,sol,12,3);
   /* un pylône en treillis d'acier, qui s'effile vers le haut, et sa tête à galets */
@@ -755,7 +782,12 @@ function graverLampadaireFin(){
   F(cx-4,sol-44,8,1,'#ffffff');F(cx-1,sol-46.5,2,0.5,'#ffffff');
   return {c,W,H,sol,lampe:[cx,sol-37]};}
 /* LES GUIRLANDES entre les lampadaires, et le feu du foyer : vivants */
+let LUEUR=null;
+function lueurDuFeu(){if(LUEUR)return LUEUR;const c=document.createElement('canvas');c.width=c.height=136;const q=c.getContext('2d');
+  const gl=q.createRadialGradient(68,68,2,68,68,68);gl.addColorStop(0,'rgba(255,170,70,.35)');gl.addColorStop(1,'rgba(255,170,70,0)');q.fillStyle=gl;q.fillRect(0,0,136,136);return LUEUR=c;}
 function dessinerPlace(g,camX,camY,t,nuit){
+  {const sc=g.getTransform().a||1, Hv=g.canvas.height/sc, Wv=g.canvas.width/sc;
+   if(PLACE.x-camX>Wv+20||PLACE.x+PLACE.w-camX<-20||PLACE.y-50-camY>Hv||PLACE.y+PLACE.h-camY<-20)return;}   /* la place n'est pas à l'écran */
   const P=PLACE, coins=[[P.x+12,P.y+14],[P.x+P.w-12,P.y+14],[P.x+P.w-12,P.y+P.h-4],[P.x+12,P.y+P.h-4]];
   const tete=(a)=>[a[0]-camX,a[1]-34-camY];
   const guirlande=(a,b,k0)=>{const [x1,y1]=tete(a),[x2,y2]=tete(b);g.strokeStyle='rgba(40,30,20,.7)';g.lineWidth=0.4;g.beginPath();g.moveTo(x1,y1);
@@ -768,7 +800,7 @@ function dessinerPlace(g,camX,camY,t,nuit){
   const fx=P.x+P.w/2-camX, fy=P.y+P.h/2+6-camY;
   for(let k=0;k<26;k++){const q=((t*1.8+k/26)%1);g.globalAlpha=(1-q)*0.95;g.fillStyle=q<0.25?'#fff4b0':(q<0.5?'#ffc050':(q<0.75?'#ff8030':'#d84a20'));const w=Math.max(0.5,(1-q)*1.5);g.fillRect(fx-6+Math.sin(t*7+k*2)*3.5+(k%6)*2,fy-8-q*15,w,w*1.4);}
   for(let k=0;k<5;k++){const q=((t*1.2+k/5)%1);g.globalAlpha=1-q;g.fillStyle='#ffd070';g.fillRect(fx-4+Math.sin(k*3+t*2)*5,fy-12-q*24,0.5,0.5);}   /* les étincelles */
-  g.globalAlpha=1;const gl=g.createRadialGradient(fx,fy-10,1,fx,fy-10,nuit?34:20);gl.addColorStop(0,'rgba(255,170,70,.35)');gl.addColorStop(1,'rgba(255,170,70,0)');g.fillStyle=gl;g.fillRect(fx-34,fy-44,68,68);
+  g.globalAlpha=1;{const R=nuit?34:20;g.drawImage(lueurDuFeu(),fx-R,fy-10-R,R*2,R*2);}
   for(let k=0;k<3;k++){const q=((t*0.4+k/3)%1);g.globalAlpha=(1-q)*0.35;g.fillStyle='#d8dce2';g.beginPath();g.ellipse(fx+Math.sin(q*5+k)*3,fy-22-q*26,2+q*4,1.5+q*3,0,0,7);g.fill();}
   g.globalAlpha=1;
 }
