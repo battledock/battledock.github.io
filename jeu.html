@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1458';
+  var MA_VERSION='2026-09-20-1504';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -815,12 +815,12 @@ body{overflow:hidden}
 #petanque{position:fixed;inset:0;z-index:29;display:none;background:rgba(10,14,8,.72);
   align-items:center;justify-content:center;padding:calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom))}
 #petanque.on{display:flex}
-#petanque .pqCarte{position:relative;width:100%;max-width:380px;background:#2a2016;border-radius:18px;
-  padding:14px 14px 16px;color:#f2efe4;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.6);border:2px solid #6b4a2c}
-#petanque .pqTitre{font:700 10px ui-monospace,monospace;letter-spacing:1.5px;color:#e8c06a;margin:2px 34px 10px}
-#pqToile{display:block;width:min(100%,calc((100vh - 230px) * 160 / 280));margin:0 auto;image-rendering:pixelated;
+#petanque .pqCarte{position:relative;width:100%;max-width:380px;background:#2a2016;border-radius:18px;max-height:100%;overflow-y:auto;
+  padding:10px 12px 12px;color:#f2efe4;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.6);border:2px solid #6b4a2c}
+#petanque .pqTitre{font:700 10px ui-monospace,monospace;letter-spacing:1.5px;color:#e8c06a;margin:2px 34px 6px}
+#pqToile{display:block;width:min(100%,calc((100vh - 330px) * 160 / 280));min-width:120px;margin:0 auto;image-rendering:pixelated;
   border-radius:6px;touch-action:none}
-#pqTexte{font:400 14px Georgia,serif;margin:12px 4px 12px;min-height:40px;line-height:1.45}
+#pqTexte{font:400 14px Georgia,serif;margin:8px 2px 8px;min-height:36px;line-height:1.4}
 #pqTexte i{color:#c9c2ae}
 #petanque .pqAmis{display:flex;flex-direction:column;gap:6px;margin:4px 0}#petanque .pqAmis button{border:0;border-radius:10px;padding:10px;background:#f4ecd8;color:#2a1d0c;font:700 14px Georgia;display:flex;justify-content:space-between;align-items:center}
 #petanque .pqAmis button small{font:italic 12px Georgia;color:#6b4a28}#petanque .pqLien{border:0;background:none;color:#e8c06a;font:italic 13px Georgia;margin-top:4px}
@@ -17729,6 +17729,11 @@ function pqRejouer(graine,cx,cy,lancers){
   }
   return pqCompter(E);
 }
+/* LES BOULES QUI MARQUENT : celles du gagnant plus près du cochonnet que la meilleure boule adverse */
+function pqQuiMarque(E){const C=E.coch;if(!C||C.mort)return null;const d=b=>Math.hypot(b.x-C.x,b.y-C.y);
+  const vivantes=E.boules.filter(b=>!b.morte);const moi=vivantes.filter(b=>b.qui==='moi').sort((a,b)=>d(a)-d(b)), lui=vivantes.filter(b=>b.qui==='lui').sort((a,b)=>d(a)-d(b));
+  if(!moi.length&&!lui.length)return null;const bm=moi.length?d(moi[0]):Infinity, bl=lui.length?d(lui[0]):Infinity;if(bm===bl)return null;
+  const gagne=bm<bl, G=gagne?moi:lui, adv=gagne?lui[0]:moi[0], seuil=gagne?bl:bm;return {gagnant:gagne?'moi':'lui',boules:G.filter(b=>d(b)<seuil),adv};}
 function pqCompter(E){
   const C=E.coch, dist=b=>Math.hypot(b.x-C.x,b.y-C.y);
   const moi=E.boules.filter(b=>b.qui==='moi'&&!b.morte).map(dist).sort((a,b)=>a-b);
@@ -17772,8 +17777,17 @@ async function commencerLaMene(mode){
   PET={mode,id,graine,cx0:cx,cy0:cy,E:pqNouvelle(cx,cy),n:0,tour:'moi',etape:'viser',t0:performance.now(),lancers:[],acc:0,vol:null,fin:null};
   majTextePetanque();
 }
+/* LA TOILE PREND LA PLACE QUI RESTE : on mesure tout le reste de la carte (titre, score, texte,
+   boutons) et on donne au terrain la hauteur restante de l'écran. Aucun bouton ne passe sous le bord. */
+function ajusterToilePQ(){const c=$('pqToile'), carte=document.querySelector('#petanque .pqCarte');if(!c||!carte)return;
+  const H=(window.visualViewport?visualViewport.height:innerHeight)-24;
+  const autre=carte.scrollHeight-c.offsetHeight;                                  /* tout ce qui n'est pas le terrain */
+  const largeur=carte.clientWidth-24, dispo=Math.max(150,H-autre-8);
+  c.style.width=Math.round(Math.max(110,Math.min(largeur,dispo*160/280)))+'px';}
+addEventListener('resize',()=>{if(PET)ajusterToilePQ();});
 function majTextePetanque(){
   if(!PET)return;
+  requestAnimationFrame(ajusterToilePQ);
   const t=$('pqTexte'),b=$('pqBouton');
   if(PET.etape==='choix'){
     {const T=document.querySelector('#petanque .pqTitre');if(T)T.textContent='LE BOULODROME · UNE MÈNE CONTRE MARIUS';}
@@ -17979,8 +17993,8 @@ function finirMeneAmi(){
     else txt='Le cochonnet est sorti : <b>mène nulle</b>.';
   }else{const R=pqCompter(PET.E);
     if(R.nulle||R.bm===R.bl)txt='Égalité parfaite : <b>mène nulle</b>.';
-    else if(R.gagne){gagnant='moi';pts=R.pts;txt='<b>Tu marques '+pts+' point'+(pts>1?'s':'')+'</b> · ta meilleure boule à '+cm(R.bm)+'.';}
-    else{gagnant='lui';pts=R.pts;txt='<b>'+n+' marque '+pts+' point'+(pts>1?'s':'')+'</b> · sa meilleure boule à '+cm(R.bl)+'.';}}
+    else if(R.gagne){gagnant='moi';pts=R.pts;txt='<b>Tu marques '+pts+' point'+(pts>1?'s':'')+'</b> : '+(pts>1?pts+' de tes boules sont':'ta boule est')+' plus près du cochonnet que la meilleure de '+n+' <i>(numérotées sur le terrain)</i>.';}
+    else{gagnant='lui';pts=R.pts;txt='<b>'+n+' marque '+pts+' point'+(pts>1?'s':'')+'</b> : '+(pts>1?pts+' de ses boules sont':'sa boule est')+' plus près du cochonnet que ta meilleure <i>(numérotées sur le terrain)</i>.';}}
   if(gagnant){PET.score[gagnant]+=pts;PET.lanceurCoch=gagnant;}                              /* le gagnant de la mène lance le prochain cochonnet */
   PET.etape='fin';
   if(PET.score.moi>=13||PET.score.lui>=13){PET.partieFinie=true;const moi=PET.score.moi>=13;
@@ -18063,6 +18077,14 @@ function bouclePetanque(t){
     if(b.morte){continue;}
     dessinerUneBoule(g,b.x,b.y,b.qui,0);
   }
+  /* à la fin d'une mène : on mesure. Traits vers le cochonnet, numéros sur les boules qui marquent,
+     la meilleure boule adverse cerclée : on voit d'un coup d'œil pourquoi on marque tant de points */
+  if(PET.fin&&E.coch&&!E.coch.mort){const M=pqQuiMarque(E);if(M){const col=M.gagnant==='moi'?'#9fdfb8':'#ffb0a0';
+    g.setLineDash([2,2]);g.lineWidth=1;g.strokeStyle='rgba(255,255,255,.7)';
+    M.boules.forEach(b=>{g.beginPath();g.moveTo(C.x,C.y);g.lineTo(b.x,b.y);g.stroke();});
+    if(M.adv){g.strokeStyle='rgba(255,90,70,.9)';g.beginPath();g.moveTo(C.x,C.y);g.lineTo(M.adv.x,M.adv.y);g.stroke();g.setLineDash([]);g.beginPath();g.arc(M.adv.x,M.adv.y,5,0,7);g.stroke();}
+    g.setLineDash([]);g.font='700 7px Georgia';g.textAlign='center';
+    M.boules.forEach((b,i)=>{g.fillStyle='rgba(20,20,20,.75)';g.fillRect(b.x-4,b.y-13,8,8);g.fillStyle=col;g.fillText(String(i+1),b.x,b.y-6.5);});g.textAlign='left';}}
   if(PET.vol){if(PET.vol.coch){const V=PET.vol;g.fillStyle='rgba(60,40,20,.25)';g.fillRect(Math.round(V.x),Math.round(V.y)+1,2,1);
       g.fillStyle='#e8a030';g.fillRect(Math.round(V.x)-1,Math.round(V.y-V.h*0.6)-1,3,3);}
     else dessinerUneBoule(g,PET.vol.x,PET.vol.y,PET.vol.b.qui,PET.vol.h);}
