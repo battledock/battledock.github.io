@@ -1334,6 +1334,38 @@ function graverLePeigne(){
   const toile=copie(base.toile), nuit=copie(base.nuit||base.toile);peindre(toile,false);peindre(nuit,true);
   return {toile,W,H,sol,nuit};
 }
+/* LA MANIFESTATION DES DOCKERS : un cortège sur le quai, banderoles, drapeaux, fumigènes */
+function graverBanderole(l1,l2,W0,haut){const W=W0||86,H=haut||40,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);
+  const sol=H-2;[[3],[W-5]].forEach(([x])=>{g.fillStyle='#6b4a28';g.fillRect(x,6,2,sol-6);g.fillStyle='#8a6238';g.fillRect(x,6,0.7,sol-6);});   /* des perches plus longues quand on la tient bien haut */
+  g.fillStyle='#f4f0e6';g.beginPath();g.moveTo(5,9);g.quadraticCurveTo(W/2,11,W-5,9);g.lineTo(W-5,27);g.quadraticCurveTo(W/2,29.5,5,27);g.closePath();g.fill();
+  g.fillStyle='rgba(0,0,0,.08)';for(let x=12;x<W-8;x+=14)g.fillRect(x,10,1,17);
+  g.textAlign='center';g.fillStyle='#c8281e';g.font='900 7px Georgia,serif';g.fillText(l1,W/2,18.5,W-14);g.fillStyle='#1d3f6a';g.font='700 5px Georgia,serif';g.fillText(l2,W/2,25,W-14);
+  return {toile:c,W,H,sol,nuit:null};}
+function graverDrapeauM(v){const W=26,H=46,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);const sol=H-2;
+  g.fillStyle='#6b4a28';g.fillRect(5,2,1.5,sol-2);const col=v%2?'#c8281e':'#1d3f6a';
+  g.fillStyle=col;g.beginPath();g.moveTo(6.5,3);g.quadraticCurveTo(14,1,22,4);g.quadraticCurveTo(20,10,22,16);g.quadraticCurveTo(14,13,6.5,15);g.closePath();g.fill();
+  g.strokeStyle='#ffffff';g.lineWidth=1.1;g.beginPath();g.moveTo(14,5);g.lineTo(14,12);g.moveTo(11,7);g.lineTo(17,7);g.stroke();g.beginPath();g.arc(14,10.5,3,0.2,Math.PI-0.2);g.stroke();   /* l'ancre des dockers */
+  return {toile:c,W,H,sol,nuit:null};}
+function graverFumigene(){const W=60,H=70,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);const sol=H-3;
+  for(let k=0;k<26;k++){const t=k/26, x=W/2+Math.sin(k*1.7)*8*t+t*10, y=sol-6-t*56, r=4+t*11;g.fillStyle='rgba('+(230-k*2)+','+(70+k)+','+(60+k)+','+(0.55-t*0.4).toFixed(2)+')';g.beginPath();g.arc(x,y,r,0,7);g.fill();}
+  g.fillStyle='#ff5a2a';g.beginPath();g.arc(W/2,sol-4,3,0,7);g.fill();g.fillStyle='#fff0a0';g.beginPath();g.arc(W/2,sol-4,1.4,0,7);g.fill();g.fillStyle='#3a3a40';g.fillRect(W/2-1,sol-3,2,4);
+  return {toile:c,W,H,sol,nuit:null};}
+function poserLaManif(P){
+  const reg=(k,C)=>{XCAL[k+'0']=C;CALQUES_DECO[k]=C;};
+  reg('x_banderole',graverBanderole('DOCKERS DE MARSEILLE','LE PORT, C’EST NOUS !'));reg('x_banderole2',graverBanderole('ON NE LÂCHE RIEN','LES DOCKERS DU VIEUX-PORT',80,64));
+  reg('x_drapeauM',graverDrapeauM(0));XCAL['x_drapeauM1']=graverDrapeauM(1);reg('x_fumigene',graverFumigene());
+  const docker=(x,y,v,dir,plus)=>P('x_docker',x,y,Object.assign({v:0,col:[4,3],dir:dir||'bas',pnj:{peau:1+(v%4),cheveux:v%6,coiffe:[0,1,2,15,17,3][v%6],barbe:[3,0,4,7,0,1][v%6],
+    veste:'#f07a1a',haut:0,pantalon:'#2a3a5a',chaussures:'#2a2a30',souliers:0,sac:0,chapeau:v%3===0?1:0,corps:[2,3,1,2,3][v%5],gilet:true}},plus||{}));
+  /* le cortège, qui descend le quai : la banderole de tête, puis les rangs, les drapeaux, les fumigènes */
+  const X=1046, Y=292;
+  docker(X-40,Y-6,0);docker(X+40,Y-6,1);P('x_banderole',X,Y,{v:0});
+  [[-30,-26,2],[-10,-28,3],[10,-27,4],[30,-26,5],[-38,-44,6],[-18,-46,7],[2,-45,8],[22,-46,9],[42,-44,10],[-26,-62,11],[-6,-64,12],[14,-63,13],[34,-62,14]]
+    .forEach(([dx,dy,v])=>docker(X+dx,Y+dy,v));
+  P('x_drapeauM',X-24,Y-24,{v:0});P('x_drapeauM',X+18,Y-42,{v:1});P('x_drapeauM',X-2,Y-60,{v:0});
+  P('x_banderole2',X+2,Y-56,{v:0});                                              /* la seconde banderole, tenue bien haut au milieu du cortège */
+  P('x_fumigene',X+62,Y-14,{v:0});P('x_fumigene',X-64,Y-30,{v:0});
+  docker(X+70,Y+10,15,'gauche',{});                                                   /* celui au mégaphone, sur le côté */
+}
 function semerDecorExtramar(){
   DECOR=[];
   const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
@@ -1372,6 +1404,8 @@ function semerDecorExtramar(){
   /* LES BANCS, entre deux lanternes, tournés vers la mer ; deux autres contre les façades */
   [[210,316],[490,316],[770,316],[1050,316],[1190,316],[1270,560],[1340,560]]
     .forEach(([x,y])=>P('bancP',x,y));
+  /* LA MANIFESTATION DES DOCKERS, sur le quai est */
+  poserLaManif(P);
   /* les bittes d'amarrage, sur la margelle */
   for(let x=200;x<1200;x+=74){
     if(XP.pontons.some(p=>Math.abs(p-x)<26))continue;
