@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-0858';
+  var MA_VERSION='2026-09-20-0901';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -10689,13 +10689,18 @@ function graverSol(){
   for(let y=0;y<WH;y++)for(let x=0;x<WW;x++){const n=hs(Math.floor(x/6)*1.3+Math.floor(y/5)*2.1)*0.6+hs(Math.floor(x/13)*3.7+Math.floor(y/11)*1.9)*0.4;F(x,y,1,1,n<0.3?NEIGE.p:(n<0.8?NEIGE.c:NEIGE.h));}
   for(let y=0;y<WH;y+=2){g.fillStyle='rgba(120,150,190,'+(0.035+0.03*Math.sin(y/50+1)).toFixed(3)+')';g.fillRect(0,y,WW,2);}
   /* LA PLACE : un grand rectangle aux coins arrondis, pavé, déneigé par allées */
-  const PX0=150,PX1=490,PY0=140,PY1=340,RC=26;
-  const dans=(x,y)=>{if(x<PX0||x>PX1||y<PY0||y>PY1)return false;const cx=Math.max(PX0+RC,Math.min(PX1-RC,x)),cy=Math.max(PY0+RC,Math.min(PY1-RC,y));return Math.hypot(x-cx,y-cy)<=RC;};
+  const PX0=150,PX1=490,PY0=140,PY1=340,RC=26;   /* la place */
+  const dansPlace=(x,y)=>{if(x<PX0||x>PX1||y<PY0||y>PY1)return false;const cx=Math.max(PX0+RC,Math.min(PX1-RC,x)),cy=Math.max(PY0+RC,Math.min(PY1-RC,y));return Math.hypot(x-cx,y-cy)<=RC;};
+  /* LE BAS DE LA CARTE : un grand plancher, d'un bord à l'autre, autour de la gare ; il rejoint la place par un large raccord arrondi */
+  const HAUT_BAS=318;
+  const dansBas=(x,y)=>{if(y<HAUT_BAS-10||x<0||x>WW)return false;const bord=HAUT_BAS+Math.sin(x/37)*3;if(y>=bord)return true;
+    return x>PX0-18&&x<PX1+18&&y>=bord-10;};
+  const dans=(x,y)=>dansPlace(x,y)||dansBas(x,y);
   /* LE PLANCHER DE LA PLACE, en mélèze : les lames ou les chevrons, chacune avec sa teinte, son veinage,
      ses joints sombres et ses clous ; la neige balayée dans les allées, restée en poudre sur les bords */
   const LAME=['#b88a5a','#a87a4c','#c49868','#9a6e42','#b08050'];
   if(SOLSTYLE==='lames'){
-    for(let y=PY0;y<PY1;y+=4)for(let x=PX0-20;x<PX1;){const long=16+Math.floor(hs(x*0.7+y)*3)*6, dec=((y-PY0)/4)%3*7;const px=x+dec;
+    for(let y=PY0;y<WH;y+=4)for(let x=-20;x<WW;){const long=16+Math.floor(hs(x*0.7+y)*3)*6, dec=((y-PY0)/4)%3*7;const px=x+dec;
       const t=hs(px*0.37+y*1.3), col=LAME[Math.floor(t*5)];
       for(let xx=px;xx<px+long;xx+=1){if(!dans(xx,y+2))continue;F(xx,y,1,3.5,col);
         if(hs(xx*1.7+y)<0.25)F(xx,y+1+hs(xx)*2,1,0.5,'rgba(90,55,25,.35)');}
@@ -10713,18 +10718,11 @@ function graverSol(){
   }
   /* la neige : balayée dans les allées, en poudre ailleurs, en congère le long des bords */
   const allee=(x,y)=>Math.abs(x-320)<18||Math.abs(y-250)<14||Math.abs(Math.hypot(x-320,y-250)-46)<12;
-  for(let y=PY0;y<PY1;y+=0.5)for(let x=PX0;x<PX1;x+=0.5){if(!dans(x,y)||allee(x,y))continue;
-    /* des congères douces : le long des bords, et quelques plaques restées au soleil, aux contours ronds */
-    let d=99;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]])for(let k=1;k<14;k++){if(!dans(x+a*k,y+b*k)){d=Math.min(d,k);break;}}
-    const plaque=Math.sin(x/17)+Math.sin(y/13+x/29)+Math.sin((x+y)/23+1.3);
-    const bruit=hs(Math.round(x*2)*0.71+Math.round(y*2)*1.37)*0.6;
-    const neige=(d<14?(14-d)/14*1.6:0)+(plaque>1.4?(plaque-1.4)*2.2:0)-bruit;
-    if(neige>0.55)F(x,y,0.5,0.5,neige>1.2?NEIGE.h:(neige>0.8?NEIGE.c:NEIGE.p));
-    else if(neige>0.35)F(x,y,0.5,0.5,'rgba(244,248,250,.55)');}
+  /* (plus de taches de neige sur le plancher : il est balayé, net) */
   /* la bordure : des rondins couchés, coiffés de neige */
-  for(let x=PX0;x<PX1;x+=0.5)for(let y=PY0-4;y<PY1+4;y+=0.5){if(dans(x,y))continue;const bord=dans(x+3,y)||dans(x-3,y)||dans(x,y+3)||dans(x,y-3);if(!bord)continue;
+  for(let x=0;x<WW;x+=0.5)for(let y=PY0-4;y<WH;y+=0.5){if(dans(x,y))continue;const bord=dans(x+3,y)||dans(x-3,y)||dans(x,y+3)||dans(x,y-3);if(!bord)continue;
     if(Math.abs(x-320)<18||Math.abs(y-250)<14)continue;const t=hs(x*3+y*7);F(x,y,0.5,0.5,t<0.3?'#6b4a28':(t<0.7?'#7d5934':'#8a6238'));}
-  for(let x=PX0;x<PX1;x+=0.5)for(let y=PY0-5;y<PY1+5;y+=0.5){if(dans(x,y))continue;const b=dans(x,y+4)&&!dans(x,y+1);if(b&&!(Math.abs(x-320)<18))F(x,y,0.5,0.5,NEIGE.h);}
+  for(let x=0;x<WW;x+=0.5)for(let y=PY0-5;y<WH;y+=0.5){if(dans(x,y))continue;const b=dans(x,y+4)&&!dans(x,y+1);if(b&&!(Math.abs(x-320)<18))F(x,y,0.5,0.5,NEIGE.h);}
   /* LA PATINOIRE, dans le quart sud-est : la glace bleutée, les traces de patins, sa bande de bois */
   const RX=412,RY=298,RW=46,RH=22;
   for(let y=RY-RH;y<RY+RH;y+=0.5)for(let x=RX-RW;x<RX+RW;x+=0.5){const q=((x-RX)/RW)**2+((y-RY)/RH)**2;if(q>1)continue;
@@ -10737,7 +10735,7 @@ function graverSol(){
       const px=Math.abs(bx-ax)>Math.abs(by-ay)?x:x+d, py=Math.abs(bx-ax)>Math.abs(by-ay)?y+d:y;if(dans(px,py))continue;F(px,py,1,1,t<0.5?'#dde6ee':'#d2dde8');}}}};
   chemin([[320,140],[320,70],[330,0]],22);chemin([[150,250],[80,250],[20,280]],16);chemin([[490,250],[560,236],[640,240]],16);chemin([[320,340],[320,420]],20);
   /* LE RUISSEAU GELÉ, à l'ouest, et ses berges */
-  for(let y=0;y<WH;y++){const x=58+Math.sin(y/37)*10+Math.sin(y/13)*3;F(x-7,y,14,1,'#b8d8ec');F(x-5,y,10,1,'#cfe6f4');if(hs(y)<0.3)F(x-3+hs(y*3)*6,y,2,0.5,'#ffffff');F(x-8,y,1.5,1,NEIGE.h);F(x+6.5,y,1.5,1,NEIGE.h);}
+  for(let y=0;y<HAUT_BAS-4;y++){const x=58+Math.sin(y/37)*10+Math.sin(y/13)*3;             /* il passe sous le plancher du bas */F(x-7,y,14,1,'#b8d8ec');F(x-5,y,10,1,'#cfe6f4');if(hs(y)<0.3)F(x-3+hs(y*3)*6,y,2,0.5,'#ffffff');F(x-8,y,1.5,1,NEIGE.h);F(x+6.5,y,1.5,1,NEIGE.h);}
   /* la piste de luge, à l'ouest : une pente damée et ses traces */
   g.strokeStyle='rgba(150,170,195,.5)';g.lineWidth=0.6;for(let k=0;k<4;k++){g.beginPath();g.moveTo(8+k*6,130);g.quadraticCurveTo(30+k*6,200,20+k*6,270);g.stroke();}
   /* des traces de pas partout dans la neige */
@@ -11004,7 +11002,7 @@ function objets(){
   P('pisteN',344,110,{col:[2,2]});P('pisteO',120,236,{col:[2,2]});P('pisteE',512,236,{col:[2,2]});
   P('telesiege',LIFT_X,GARE_Y,{col:[36,8],bati:true,ferme:'Le télésiège',demi:30});
   for(let k=0;k<150;k++){const x=hs(k*2.3)*WW, y=8+hs(k*5.1)*(WH-10);            /* quelques arbres, pas une forêt */
-    if(x>130&&x<510&&y>100&&y<380)continue;if(Math.abs(x-320)<24&&y<150)continue;if(Math.abs(y-250)<20&&(x<150||x>490))continue;if(Math.abs(x-320)<22&&y>330)continue;
+    if(x>130&&x<510&&y>100&&y<380)continue;if(y>306)continue;               /* le bas est planché */if(Math.abs(x-320)<24&&y<150)continue;if(Math.abs(y-250)<20&&(x<150||x>490))continue;if(Math.abs(x-320)<22&&y>330)continue;
     if(Math.abs(x-(58+Math.sin(y/37)*10))<12)continue;if(x<50&&y>120&&y<290)continue;if(Math.hypot(x-112,y-320)<50)continue;if(Math.hypot(x-560,y-310)<78)continue;if(Math.hypot(x-320,y-398)<78)continue;if(Math.hypot(x-196,y-150)<70)continue;
     P('tilleul'+Math.floor(hs(k*7)*4),x,y,{col:[4,3]});}
   return {L,cal};
