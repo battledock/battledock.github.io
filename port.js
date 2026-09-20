@@ -1377,8 +1377,9 @@ function tissuDocker(v){if(TISSUS[v])return TISSUS[v];const W=34,H=22,D=3,c=docu
 ANIM_DECOR.drapeau=(g,o,x,y)=>{const t=performance.now()/1000, h=46, bob=Math.abs(Math.sin(t*2.4+o.ph))*1.2, T=tissuDocker(o.v), W=34, H=22, k=T.width/W;
   g.fillStyle='#6b4a28';g.fillRect(x-1,y-h-bob,1.5,h);g.fillStyle='#d8b050';g.fillRect(x-1.5,y-h-bob-2,2.5,2);
   /* le tissu claque : chaque colonne est décalée par une vague qui court vers le bout du drapeau */
-  for(let cx=0;cx<W;cx++){const v=Math.sin(t*6-cx*0.35+o.ph)*(cx/W)*3, ombre=Math.cos(t*6-cx*0.35+o.ph)*(cx/W);
-    g.drawImage(T,cx*k,0,k,T.height,x+0.5+cx,y-h-bob+1+v,1,H);if(ombre<-0.3){g.fillStyle='rgba(0,0,0,'+(-ombre*0.18).toFixed(2)+')';g.fillRect(x+0.5+cx,y-h-bob+1+v,1,H);}}};
+  for(let cx=0;cx<W;cx+=2){const v=Math.sin(t*6-cx*0.35+o.ph)*(cx/W)*3;                 /* par bandes de deux points : léger, et ça ondule pareil */
+    g.drawImage(T,cx*k,0,2*k,T.height,x+0.5+cx,y-h-bob+1+v,2,H);}
+  g.fillStyle='rgba(0,0,0,.12)';for(let cx=6;cx<W;cx+=10){const v=Math.sin(t*6-cx*0.35+o.ph)*(cx/W)*3;g.fillRect(x+0.5+cx,y-h-bob+1+v,2,H);}};
 ANIM_DECOR.fumigene=(g,o,x,y)=>{const t=performance.now()/1000;
   for(let k=0;k<22;k++){const age=(t*0.45+k/22+o.ph)%1, dx=Math.sin(k*1.7+t*0.8)*5*age+age*16*(o.vent||1), r=3+age*13;
     g.fillStyle='rgba('+Math.round(235-age*40)+','+Math.round(70+age*80)+','+Math.round(70+age*80)+','+((1-age)*0.45).toFixed(2)+')';g.beginPath();g.arc(x+dx,y-6-age*62,r,0,7);g.fill();}
