@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1230';
+  var MA_VERSION='2026-09-20-1234';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -13478,6 +13478,7 @@ function dessiner(){
   if(SOL_FIN)ctx.drawImage(SOL_FIN,camX*2,camY*2,lw*2,lh*2,0,0,lw,lh);   /* le sol affiné */
   else ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
   if(CARTE==='village'&&FIN_OK())dessinerLaPlaceFin(ctx,camX,camY);    /* la grand-place en dalles fines */
+  if(CARTE==='montagne'){const nG=performance.now();dessinerGlisse(ctx,camX,camY,Math.min(0.05,(nG-(GLISSE.tD||nG))/1000));GLISSE.tD=nG;}   /* les gerbes de glace */
 
   if(CARTE==='extramar'){scintillerLaMer(ctx,camX,camY);eauVivante(ctx,camX,camY);}
 
@@ -13493,7 +13494,7 @@ function dessiner(){
   nettoyerBulles();
   /* les acteurs : moi et les autres, chacun à sa profondeur */
   const acteurs=[{y:joueur.y,
-    f:()=>personne(ctx,px,py,e.ap,(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche,court)}];
+    f:()=>personne(ctx,px,py,apPatins(e.ap,joueur.x,joueur.y,GLISSE.v,GLISSE.ph),(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche,court)}];
   for(const [,a] of AUTRES){
     const ax=a.x-camX, ay=a.y-camY;
     if(ax<-40||ay<-70||ax>VW+40||ay>VH+40)continue;
@@ -13700,6 +13701,16 @@ function assis(g,x,y,ap){
   if(C&&C.id!=='cape'){try{C.dessin(g,x,hanche+8,tc);}catch(err){}}
 }
 function personne(g,x,y,ap,dir,pas,marche,enCourse){
+  if(ap&&ap.patin&&!(GESTE&&GESTE.t>0)){
+    const v=ap._v||0, ph=ap._ph||0, apC=Object.assign({},ap);delete apC._v;delete apC._ph;
+    const pousse=Math.sin(ph*Math.PI);                                        /* -1 : pied gauche, +1 : pied droit */
+    const i=100+(Math.floor(Date.now()/420)%4);                              /* le buste respire, les jambes restent tendues */
+    const c=poseDe(apC,dir||'bas',i);
+    g.save();g.translate(Math.round(x),Math.round(y));
+    g.rotate(pousse*0.11*v);g.translate(pousse*2*v,-Math.abs(pousse)*0.8*v);   /* le poids passe d'une lame sur l'autre */
+    g.fillStyle='rgba(60,90,130,.18)';g.beginPath();g.ellipse(-pousse*3*v,1,6+v*3,1.4,0,0,7);g.fill();   /* le reflet sur la glace */
+    g.drawImage(c,Math.round(-CASE_L/2),Math.round(-CASE_H+10),CASE_L,CASE_H);g.restore();
+    return;}
   if(dir&&String(dir).indexOf('-')>0&&(!STYLE_FIN()||(GESTE&&GESTE.t>0)))dir=String(dir).endsWith('droite')?'droite':'gauche';
   /* à vélo : le vélo d'abord, le cycliste un peu plus haut, en selle */
   const aVelo=VELO&&CARTE==='extramar'&&ap===e.ap;
@@ -13905,6 +13916,11 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
   };
   /* ============ LES PIEDS : bout, cambrure, talon, semelle ; lacets ou lanières ============ */
   function soulierDe(cx,by,fonce,pp){
+    if(p.patin){const b='#f4f1ea', bO='#c8c2b4', lame='#c4ccd2';                /* LE PATIN : bottine blanche lacée, lame d'acier */
+      if(cote){R(cx-3,by-9,7,7,b);R(cx+3,by-5,3,3,b);R(cx-3,by-9,7,1,'#ffffff');R(cx-3,by-3,9,1,bO);for(let k=0;k<3;k++)R(cx,by-8+k*2,2,1,'#8a7a64');
+        R(cx-4,by-1,12,1,lame);R(cx-4,by-2,1,1,lame);R(cx+7,by-2,1,1,lame);R(cx+8,by-1,1,1,'#8a9196');return;}
+      R(cx-3,by-9,6,8,b);R(cx-3,by-9,6,1,'#ffffff');R(cx+2,by-8,1,7,bO);for(let k=0;k<3;k++)R(cx-1,by-8+k*2,2,1,'#8a7a64');
+      R(cx-1,by-1,2,2,lame);R(cx-1,by+1,2,1,'#8a9196');return;}
     const PI2=p._pieds;
     if(PI2&&PI2.st==='moon'){const c=fonce?chauO:chau, cC=T(chau,26), cO=T(chau,-34);      /* LA MOON BOOT : un gros chausson matelassé */
       R(cx-5,by-8,11,8,c);R(cx-5,by-8,11,1,cC);R(cx-5,by-8,1,8,cO);R(cx+5,by-7,1,7,cO);
@@ -14966,6 +14982,13 @@ function majJoueur(dt){
   /* SUR LA GLACE : on patine. On met du temps à prendre de l'élan, et, une fois lancé, on glisse
      longtemps quand on lâche (et on va un peu plus vite) */
   let glace=false;try{glace=CARTE==='montagne'&&!!SAUMASKI&&SAUMASKI.surGlace(joueur.x,joueur.y);}catch(x){}
+  GLISSE.sur=glace;
+  if(glace){const v=Math.min(1,Math.hypot(vx,vy)/Math.max(60,VITESSE));GLISSE.v=v;
+    /* le rythme des poussées : on pousse quand on tient le joystick, on se laisse glisser sinon */
+    const avant=GLISSE.ph;GLISSE.ph+=dt*(n>0.16?(1.6+v*1.4):0.25);
+    if(n>0.16&&v>0.25&&Math.floor(avant)!==Math.floor(GLISSE.ph)){const cote=Math.floor(GLISSE.ph)%2?1:-1;   /* une gerbe de glace à chaque poussée */
+      for(let q=0;q<7;q++)GLISSE.p.push({x:joueur.x+cote*3,y:joueur.y,vx:cote*(10+Math.random()*25)-vx*0.2,vy:-Math.random()*14,t:0.5+Math.random()*0.3});}}
+  else GLISSE.v=0;
   const k=1-Math.exp(-(glace?(n>0.16?2.2:0.55):(n>0.16?11:16))*dt);
   /* On avance avec la vitesse MOYENNE du pas, pas avec celle d'arrivée :
      sinon une image longue fait parcourir toute sa durée à la vitesse de
@@ -16821,7 +16844,7 @@ function dessinerUnAutre(g,a,camX,camY){
     const h=Math.round(a.hanche-camY);
     assis(g,x,h,Object.assign({},DEF_AP,a.ap));
     yNom=h-36;
-  }else personne(g,x,y,Object.assign({},DEF_AP,a.ap),a.dir||'bas',a.pas,!!a.marche,!!a.court);
+  }else personne(g,x,y,apPatins(Object.assign({},DEF_AP,a.ap),a.x,a.y,a.marche?0.8:0,Date.now()/1000*2.4+(a.x%7)),a.dir||'bas',a.pas,!!a.marche,!!a.court);
   GESTE=sauve;
   g.font='700 7px ui-monospace,monospace';g.textAlign='center';
   g.fillStyle='rgba(10,16,10,.55)';g.fillText(a.pseudo,x+1,yNom+1);
@@ -18888,6 +18911,14 @@ const SKI_PAR_ID=Object.fromEntries(SKI.map(x=>[x.id,x]));
 /* LES SKIS SERVENT VRAIMENT : dans la neige de Saumaski, on glisse, d'autant plus vite que les skis
    sont bons (+8 % par cran de vitesse : de +8 % en bois à +40 % en course). La descente utilisera
    aussi le virage et la stabilité. */
+/* LA GLISSE SUR LA PATINOIRE : des patins aux pieds dès qu'on est sur la glace, gratuitement, et une
+   allure de patineur : le corps se balance d'une poussée à l'autre, et on file quand on lâche */
+const GLISSE={sur:false,v:0,ph:0,p:[]};
+function apPatins(ap,x,y,v,ph){try{if(CARTE!=='montagne'||!SAUMASKI||!SAUMASKI.surGlace(x,y))return ap;}catch(err){return ap;}
+  return Object.assign({},ap,{patin:1,_v:v,_ph:ph});}
+function dessinerGlisse(g,camX,camY,dt){if(!GLISSE.p.length)return;
+  GLISSE.p.forEach(q=>{q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=40*dt;q.t-=dt;g.globalAlpha=Math.max(0,Math.min(1,q.t*2));g.fillStyle='#8fbfdc';g.fillRect(q.x-camX,q.y-camY,1.2,1.2);g.fillStyle='#ffffff';g.fillRect(q.x-camX,q.y-camY,0.6,0.6);});
+  g.globalAlpha=1;GLISSE.p=GLISSE.p.filter(q=>q.t>0);if(GLISSE.p.length>120)GLISSE.p.splice(0,GLISSE.p.length-120);}
 function glisseSki(){
   if(CARTE!=='montagne'||!e.ap||!e.ap.ski||!e.ap.ski.skis||!(e.cos&&e.cos[e.ap.ski.skis]))return 1;
   const K=SKI_PAR_ID[e.ap.ski.skis];if(!K||!K.q)return 1;
