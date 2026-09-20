@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-2051';
+  var MA_VERSION='2026-09-20-2100';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -10772,7 +10772,9 @@ function construireSolFin(solBase){
 function refaireLeSol(){
   if(CARTE_MOD){SOL_FIN=SAUMASKI.solFin();SOL=document.createElement('canvas');SOL.width=MONDE_L;SOL.height=MONDE_H;
     const g=SOL.getContext('2d');g.drawImage(SOL_FIN,0,0,MONDE_L,MONDE_H);return SOL;}   /* à Saumaski, le sol fin est dessiné tel quel */
-  SOL=construireSol();SOL_FIN=null;try{if(FIN_OK())SOL_FIN=construireSolFin(SOL);}catch(x){SOL_FIN=null;}return SOL;}
+  SOL=construireSol();SOL_FIN=null;try{if(FIN_OK())SOL_FIN=construireSolFin(SOL);}catch(x){SOL_FIN=null;}
+  if(SOL_FIN&&CARTE==='village')try{peindreLaFermeFin(SOL_FIN.getContext('2d'));}catch(x){}    /* la campagne, repassée au demi-pixel */
+  return SOL;}
 
 const alea=s=>{const v=Math.sin(s*127.1)*43758.5453;return v-Math.floor(v);};
 /* --- les ponts, gravés une fois ---
@@ -11639,66 +11641,118 @@ const dansLaFerme=(x,y)=>x>FERME.x0-30;
 /* LE CHEMIN serpente doucement : une route de campagne ne va jamais droit */
 const cheminY=(x)=>FERME.cheminY+Math.sin((x-FERME.x0)/150)*15+Math.sin((x-FERME.x0)/61)*4;
 const cheminDemi=(x)=>{const k=Math.max(0,Math.min(1,(x-(FERME.x0-56))/300));return 30-k*11;};
+/* LE SOL DE LA CAMPAGNE, en deux temps :
+   — d'abord ici, en gros, dans les mêmes tons d'olive que le village (aucune couleur étrangère
+     ne débarque d'un coup : la prairie EST l'herbe du village, à peine plus sèche) ;
+   — ensuite peindreLaFermeFin() repasse tout au demi-pixel, comme le quai du port.
+   Les passages d'une matière à l'autre sont TRAMÉS : l'herbe se clairsème, la terre apparaît par
+   taches, puis gagne. Aucun bord net, nulle part. */
+const OLIVE_F={base:'#8fa464',moyen:'#889d5e',fonce:'#819658',ombre:'#70844b',clair:'#9cb072',sec:'#a3ab6a'};
+const TERRE_F={o:'#8d7550',s:'#9c8159',p:'#ab9166',c:'#b9a074',h:'#c7b184'};
+const BLE_F={o:'#a9974e',s:'#bda75c',c:'#cdb96e',h:'#dcc981'};
+const LAV_F={o:'#6f6a86',s:'#807a97',c:'#938da9',h:'#a79fbb',fl:'#b5a9c9'};
 function peindreLaFerme(g){
   const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
-  const T={o:'#8a6a44',s:'#9c7a4e',p:'#ab875a',c:'#bb9768',h:'#c9a87c'};
-  const PI={o:'#6f767c',s:'#7e868d',p:'#8f979e',c:'#a4acb3',h:'#bcc4ca'};
   const B=FERME.ble, L=FERME.lavande, C=FERME.cour, P=FERME.potager;
-  /* 1 · LES PRÉS : avant les cultures, de l'herbe haute et des touffes — le village ne touche pas le blé */
-  for(let k=0;k<2600;k++){const x=FERME.x0-60+alea(k*1.7)*(MONDE_L-FERME.x0+60), y=alea(k*3.3)*MONDE_H;
-    const n=alea(k*5.1);R(x,y,1,2+Math.round(n*2),n<0.5?'#7d9450':'#87a057');if(n<0.12)R(x,y-2,1,2,'#9cb26a');}
-  /* 2 · LE CHEMIN : il sort de la place, serpente, et se perd dans la cour. Pavés au début, terre ensuite */
-  for(let x=FERME.x0-60;x<C.x0+52;x+=2){
-    const cy=cheminY(x), demi=cheminDemi(x), k=Math.max(0,Math.min(1,(x-(FERME.x0-60))/260));
-    for(let y=cy-demi;y<cy+demi;y+=2){
-      const n=alea(x*0.31+y*0.77), bord=Math.abs(y-cy)/demi;
-      if(k<0.55&&n<0.62-k*1.05)R(x,y,2,2,n<0.2?PI.s:(n<0.42?PI.p:PI.c));                 /* les derniers pavés, de plus en plus rares */
-      else R(x,y,2,2,bord>0.82?T.o:(n<0.28?T.s:(n<0.62?T.p:T.c)));
-    }
-    /* les ornières, l'herbe qui pousse au milieu, les cailloux */
-    const cy2=cheminY(x);
-    if(alea(x*1.7)<0.5){R(x,cy2-demi*0.55,2,1,T.o);R(x,cy2+demi*0.5,2,1,T.o);}
-    if(k>0.35&&alea(x*2.3)<0.3)R(x,cy2+(alea(x)-0.5)*6,2,2,'#7d9450');
-    if(alea(x*3.1)<0.12)R(x+alea(x*4)*4-2,cy2+(alea(x*5)-0.5)*demi*1.4,2,1,PI.h);
-  }
-  /* 3 · LES MURETS DE PIERRE SÈCHE, de part et d'autre du chemin : c'est eux qui « font » la campagne */
-  for(let x=FERME.x0-30;x<C.x0+10;x+=4){const cy=cheminY(x), demi=cheminDemi(x)+7;
-    [cy-demi,cy+demi].forEach((yy,s)=>{const h=7+Math.round(alea(x*0.7+s)*3);
-      for(let q=0;q<4;q++){const px=x+q, n=alea(px*1.3+yy);
-        R(px,yy-h+(s?0:0),1,h,n<0.3?PI.o:(n<0.6?PI.s:PI.p));}
-      R(x,yy-h,4,1.5,PI.h);
-      if(alea(x*0.9+s*3)<0.18){R(x,yy-h-2,3,2,'#6b8a4a');R(x+1,yy-h-4,2,2,'#7d9c58');}});}   /* la mousse et l'herbe dessus */
-  /* 4 · LES CHAMPS, seulement après le portail, avec des bords irréguliers */
-  const ondule=(x,base,amp,seed)=>base+Math.sin(x/70+seed)*amp+alea(x*0.5+seed)*4;
-  for(let x=B.x0;x<B.x1;x+=3){const y0=ondule(x,B.y0,6,1.7), y1=ondule(x,B.y1,8,3.1);
-    for(let y=y0;y<y1;y+=4){const n=alea(x*0.13+y*0.37);
-      R(x,y,3,4,n<0.5?'#c9a84e':'#d8b85e');if(n<0.28)R(x+1,y,1,4,'#b8973e');if(n>0.93)R(x,y,2,2,'#c8402a');}
-    R(x,y1-1,3,2,'#a88c3e');}
-  for(let x=L.x0;x<L.x1;x+=7){const y0=ondule(x,L.y0,7,2.3), y1=ondule(x,L.y1,6,5.7);
-    for(let y=y0;y<y1;y+=12){const n=alea(x*0.21+y*0.53);
-      R(x,y,5,8,n<0.5?'#7a6aa8':'#8a78b8');R(x,y,5,2,n<0.5?'#9c8ad0':'#ab99dd');R(x+1,y-2,3,2,'#b8a8e8');
-      R(x,y+9,5,3,'#9c8a5e');}}
-  /* 5 · LES HAIES qui ferment les champs côté chemin */
-  const haie=(x0,x1,fy,sens)=>{for(let x=x0;x<x1;x+=3){const y=fy(x), h=6+Math.round(alea(x*0.9)*6);
-    for(let q=0;q<3;q++){const c=['#3f6a38','#4f7a42','#5d8a4c','#6b9a58'][Math.floor(alea(x+q*7)*4)];R(x+q,sens>0?y:y-h,1.5,h,c);}
-    if(alea(x*1.3)<0.14)R(x,(sens>0?y+h-2:y-h),2,2,'#c8d86a');}};
-  haie(B.x0,B.x1,(x)=>ondule(x,B.y1,8,3.1),1);
-  haie(L.x0,L.x1,(x)=>ondule(x,L.y0,7,2.3),-1);
-  /* 6 · LA COUR : terre battue tassée, ses pierres, et la trace des roues qui tournent */
-  for(let y=C.y0;y<C.y1;y+=2)for(let x=C.x0;x<C.x1;x+=2){const n=alea(x*0.19+y*0.61);
-    R(x,y,2,2,n<0.25?T.o:(n<0.55?T.s:(n<0.85?T.p:T.c)));}
-  for(let a=0;a<6.283;a+=0.02){const rx=64+Math.sin(a*3)*4;R(C.x0+120+Math.cos(a)*rx,C.y0+96+Math.sin(a)*rx*0.55,2,1,T.o);}
-  for(let k=0;k<200;k++){const x=C.x0+alea(k*3.1)*(C.x1-C.x0), y=C.y0+alea(k*5.7)*(C.y1-C.y0);R(x,y,2,1,'#7a5a38');if(alea(k)<0.1)R(x,y-1,1,1,PI.h);}
-  /* 7 · LE POTAGER : planches de terre retournée, sentiers de paille, un plessis autour */
+  /* 1 · la prairie : l'herbe du village, qui sèche un peu en s'éloignant */
+  for(let y=0;y<MONDE_H;y+=2)for(let x=FERME.x0-70;x<MONDE_L;x+=2){
+    const k=Math.min(1,(x-(FERME.x0-70))/520), n=alea(x*0.17+y*0.43);
+    R(x,y,2,2,n<0.5-k*0.16?OLIVE_F.base:(n<0.86?OLIVE_F.moyen:OLIVE_F.sec));}
+  /* 2 · le chemin : la terre apparaît par taches au milieu de l'herbe, puis prend toute la place */
+  for(let x=FERME.x0-70;x<C.x0+60;x+=2){
+    const cy=cheminY(x), demi=cheminDemi(x), avance=Math.max(0,Math.min(1,(x-(FERME.x0-70))/210));
+    for(let y=cy-demi-6;y<cy+demi+6;y+=2){
+      const bord=Math.abs(y-cy)/(demi+6), n=alea(x*0.31+y*0.77);
+      const force=(1-bord*bord)*(0.35+avance*0.75);                     /* fort au milieu, faible sur les bords */
+      if(n>force)continue;                                              /* ici, l'herbe reste : c'est ça, le fondu */
+      R(x,y,2,2,n<force*0.3?TERRE_F.o:(n<force*0.62?TERRE_F.s:(n<force*0.86?TERRE_F.p:TERRE_F.c)));}}
+  /* 3 · les champs : leur couleur reste dans la famille du village (ocre sec, mauve grisé) */
+  const ond=(x,base,amp,seed)=>base+Math.sin(x/70+seed)*amp+alea(x*0.5+seed)*5;
+  for(let x=B.x0-40;x<B.x1;x+=2){const fondu=Math.min(1,Math.max(0,(x-(B.x0-40))/60));
+    const y0=ond(x,B.y0,6,1.7), y1=ond(x,B.y1,8,3.1);
+    for(let y=y0;y<y1;y+=2){const n=alea(x*0.13+y*0.37), bord=Math.min(1,Math.min(y-y0,y1-y)/14);
+      if(n>fondu*(0.4+bord*0.6))continue;
+      R(x,y,2,2,n<0.3?BLE_F.o:(n<0.62?BLE_F.s:(n<0.86?BLE_F.c:BLE_F.h)));}}
+  for(let x=L.x0-40;x<L.x1;x+=2){const fondu=Math.min(1,Math.max(0,(x-(L.x0-40))/60));
+    const y0=ond(x,L.y0,7,2.3), y1=ond(x,L.y1,6,5.7);
+    for(let y=y0;y<y1;y+=2){const n=alea(x*0.21+y*0.53), bord=Math.min(1,Math.min(y-y0,y1-y)/14);
+      if(n>fondu*(0.4+bord*0.6))continue;
+      R(x,y,2,2,n<0.32?LAV_F.o:(n<0.64?LAV_F.s:(n<0.88?LAV_F.c:LAV_F.h)));}}
+  /* 4 · la cour : la terre du chemin, tassée, dont les bords se fondent dans l'herbe */
+  for(let y=C.y0-10;y<C.y1+10;y+=2)for(let x=C.x0-10;x<C.x1+10;x+=2){
+    const dx=Math.max(0,Math.max(C.x0-x,x-C.x1))/12, dy=Math.max(0,Math.max(C.y0-y,y-C.y1))/12;
+    const d=Math.min(1,Math.hypot(dx,dy)), n=alea(x*0.19+y*0.61);
+    if(n>1-d*d)continue;
+    R(x,y,2,2,n<0.24?TERRE_F.o:(n<0.54?TERRE_F.s:(n<0.84?TERRE_F.p:TERRE_F.c)));}
+  /* 5 · le potager : des planches de terre retournée et leurs sentiers */
+  for(let y=P.y0;y<P.y1;y+=18){R(P.x0,y,P.x1-P.x0,13,'#7a6040');R(P.x0,y+13,P.x1-P.x0,5,'#c0ad84');}
+}
+/* ---- LE DEMI-PIXEL : on repasse sur la campagne à l'échelle 2×, comme le quai du port ---- */
+function peindreLaFermeFin(g){
+  const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
+  g.save();g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
+  const B=FERME.ble, L=FERME.lavande, C=FERME.cour, P=FERME.potager;
+  /* la prairie : des brins, comme au village, plus secs vers l'est */
+  for(let k=0;k<7000;k++){const x=FERME.x0-70+alea(k*1.9)*(MONDE_L-FERME.x0+70), y=alea(k*3.7)*MONDE_H, n=alea(k*5.3);
+    const cy=cheminY(x);if(Math.abs(y-cy)<cheminDemi(x)-3)continue;
+    if(x>C.x0-14&&x<C.x1+14&&y>C.y0-14&&y<C.y1+14)continue;
+    R(x,y,0.5,n<0.5?1.5:2,OLIVE_F.ombre);R(x,y-0.5,0.5,0.5,OLIVE_F.clair);
+    if(n>0.93){R(x-0.5,y,0.5,1.5,OLIVE_F.ombre);R(x+0.5,y,0.5,1.5,OLIVE_F.ombre);}}
+  /* le chemin : la terre grenue, les ornières creusées, les cailloux, l'herbe du milieu */
+  for(let x=FERME.x0-70;x<C.x0+60;x+=0.75){
+    const cy=cheminY(x), demi=cheminDemi(x), avance=Math.max(0,Math.min(1,(x-(FERME.x0-70))/210));
+    for(let y=cy-demi;y<cy+demi;y+=0.75){
+      const bord=Math.abs(y-cy)/demi, n=alea(x*3.1+y*7.7);
+      if(n>(1-bord*bord*0.85)*(0.3+avance*0.7))continue;
+      R(x,y,0.5,0.5,n<0.3?TERRE_F.o:(n<0.6?TERRE_F.s:(n<0.85?TERRE_F.p:TERRE_F.h)));}
+    /* les deux ornières */
+    [-0.52,0.48].forEach((f,i)=>{const y=cy+demi*f;if(alea(x*1.7+i)<0.85){R(x,y,0.5,1,'#7d6845');R(x,y+1,0.5,0.5,TERRE_F.h);}});
+    if(avance>0.3&&alea(x*2.9)<0.22){const y=cy+(alea(x*4.1)-0.5)*6;R(y?x:x,y,0.5,1.5,OLIVE_F.ombre);R(x,y-0.5,0.5,0.5,OLIVE_F.clair);}
+    if(alea(x*5.3)<0.05){const y=cy+(alea(x*6.1)-0.5)*demi*1.6;R(x,y,1,0.5,'#b0b6ba');R(x,y-0.5,0.5,0.5,'#c8ced2');}}
+  /* les murets de pierre sèche : ils bordent le chemin et font lire la route d'un coup d'œil */
+  for(let x=FERME.x0+10;x<C.x0-4;x+=1){const cy=cheminY(x), demi=cheminDemi(x)+6.5;
+    [-1,1].forEach(sens=>{const yy=cy+sens*demi, h=6+alea(x*0.7+sens)*3;
+      for(let q=0;q<2;q++){const px=x+q*0.5, n=alea(px*1.9+yy);
+        R(px,yy-h,0.5,h,n<0.28?'#7c8188':(n<0.58?'#8b9198':'#9aa0a6'));}
+      R(x,yy-h,1,0.5,'#b4babf');R(x,yy-0.5,1,0.5,'#6c7278');
+      if(alea(x*0.9+sens*3)<0.2){R(x,yy-h-1.5,1,1.5,'#6b8a4a');R(x+0.5,yy-h-2.5,0.5,1,'#84a35c');}});}
+  /* le blé : des épis, un par un, avec leur tige et leurs barbes */
+  const ond=(x,base,amp,seed)=>base+Math.sin(x/70+seed)*amp+alea(x*0.5+seed)*5;
+  for(let x=B.x0-40;x<B.x1;x+=1.5){const fondu=Math.min(1,Math.max(0,(x-(B.x0-40))/60));
+    const y0=ond(x,B.y0,6,1.7), y1=ond(x,B.y1,8,3.1);
+    for(let y=y0;y<y1;y+=2){const n=alea(x*1.7+y*2.3), bord=Math.min(1,Math.min(y-y0,y1-y)/14);
+      if(n>fondu*(0.45+bord*0.55))continue;
+      R(x,y,0.5,3,BLE_F.o);R(x,y-2.5,0.5,2.5,n<0.5?BLE_F.c:BLE_F.h);R(x-0.5,y-2,0.5,1,BLE_F.s);R(x+0.5,y-2.5,0.5,1,BLE_F.s);
+      if(n>0.97){R(x,y-4,0.5,1.5,'#c8402a');R(x-0.5,y-4,1.5,0.5,'#d8543a');}}}
+  /* la lavande : des touffes en boule, leurs tiges, leurs épis fleuris */
+  for(let x=L.x0-40;x<L.x1;x+=3){const fondu=Math.min(1,Math.max(0,(x-(L.x0-40))/60));
+    const y0=ond(x,L.y0,7,2.3), y1=ond(x,L.y1,6,5.7);
+    for(let y=y0;y<y1;y+=6){const n=alea(x*0.9+y*1.7), bord=Math.min(1,Math.min(y-y0,y1-y)/12);
+      if(n>fondu*(0.5+bord*0.5))continue;
+      for(let q=-2;q<=2;q++){const h=2.5+alea(x+q*3+y)*2;R(x+q*0.5,y-h,0.5,h,'#6b7a5e');}
+      R(x-1.5,y-4.5,3,2,n<0.5?LAV_F.s:LAV_F.c);R(x-1,y-6,2,1.5,LAV_F.h);R(x-0.5,y-7,1,1,LAV_F.fl);
+      R(x-1.5,y-1,3,1,'#7a8a66');}}
+  /* la cour : terre tassée, gravillons, la trace des roues */
+  for(let y=C.y0-8;y<C.y1+8;y+=1)for(let x=C.x0-8;x<C.x1+8;x+=1){
+    const dx=Math.max(0,Math.max(C.x0-x,x-C.x1))/10, dy=Math.max(0,Math.max(C.y0-y,y-C.y1))/10;
+    const d=Math.min(1,Math.hypot(dx,dy)), n=alea(x*4.3+y*9.1);
+    if(n>(1-d*d)*0.72)continue;
+    R(x,y,0.5,0.5,n<0.26?TERRE_F.o:(n<0.56?TERRE_F.s:(n<0.84?TERRE_F.p:TERRE_F.h)));}
+  for(let a=0;a<6.283;a+=0.004){const rx=64+Math.sin(a*3)*4, x=C.x0+120+Math.cos(a)*rx, y=C.y0+96+Math.sin(a)*rx*0.55;R(x,y,1,0.5,'#7d6845');}
+  for(let k=0;k<700;k++){const x=C.x0+alea(k*2.1)*(C.x1-C.x0), y=C.y0+alea(k*3.9)*(C.y1-C.y0);R(x,y,0.5,0.5,alea(k)<0.5?'#b0b6ba':'#8f7a58');}
+  /* le potager : les sillons de terre retournée, les légumes, la paille des sentiers */
   for(let y=P.y0;y<P.y1;y+=18){
-    R(P.x0,y,P.x1-P.x0,13,'#6a4a2c');for(let x=P.x0;x<P.x1;x+=3)R(x,y+alea(x)*10,2,1,'#7d5a36');
-    R(P.x0,y+13,P.x1-P.x0,5,'#c9b285');
+    for(let x=P.x0;x<P.x1;x+=1)for(let yy=y;yy<y+13;yy+=1){const n=alea(x*3.7+yy*5.1);
+      R(x,yy,0.5,0.5,n<0.3?'#6a5236':(n<0.62?'#7a6040':'#89704c'));}
+    for(let x=P.x0;x<P.x1;x+=1.5){const n=alea(x*2.3+y);R(x,y+1+n*10,1,0.5,'#93794f');}
+    for(let x=P.x0;x<P.x1;x+=1)for(let yy=y+13;yy<y+18;yy+=1){const n=alea(x*1.9+yy*3.3);
+      R(x,yy,0.5,0.5,n<0.4?'#c0ad84':(n<0.75?'#cdba92':'#d8c7a2'));if(n>0.95)R(x,yy,1.5,0.5,'#b09a70');}
     for(let x=P.x0+4;x<P.x1-4;x+=9){const n=alea(x*0.7+y);
-      if(n<0.3){R(x,y+3,5,7,'#4f9147');R(x+1,y+2,3,3,'#6bb05a');}
-      else if(n<0.6){R(x+2,y+1,1,11,'#5f7a3c');for(let q=0;q<3;q++)R(x+(q%2?3:0),y+3+q*3,2,2,'#d8483a');}
-      else if(n<0.8){for(let q=0;q<3;q++)R(x+q*2,y+4,1,7,'#5f7a3c');R(x,y+3,5,1,'#6bb05a');}
-      else {R(x,y+5,6,5,'#e8a030');R(x,y+4,6,1,'#f0b850');}}}
-  for(let x=P.x0-4;x<P.x1+4;x+=4){R(x,P.y0-6,3,6,'#8a6a40');R(x,P.y0-6,3,1,'#a8845a');R(x,P.y1+2,3,6,'#8a6a40');}
+      if(n<0.3){for(let q=0;q<5;q++){const a=q/5*6.283;R(x+2+Math.cos(a)*2,y+6+Math.sin(a)*2,1.5,1.5,'#4f9147');}R(x+1.5,y+5.5,2,2,'#6bb05a');}
+      else if(n<0.6){R(x+2,y+1,0.5,11,'#5f7a3c');for(let q=0;q<4;q++){const dx=(q%2?2:-1);R(x+2+dx,y+3+q*2.5,1.5,1.5,'#d8483a');R(x+2+dx,y+3+q*2.5,1.5,0.5,'#e8604a');}}
+      else if(n<0.8){for(let q=0;q<4;q++){R(x+q*1.5,y+4,0.5,7,'#5f7a3c');R(x+q*1.5,y+3.5,0.5,1,'#7dae5a');}}
+      else {R(x,y+5,5,4,'#e8a030');R(x,y+4.5,5,1,'#f0b850');R(x+2,y+3.5,0.5,1.5,'#5f7a3c');}}}
+  g.restore();
 }
 /* les calques de la ferme */
 function graverFerme(t){
