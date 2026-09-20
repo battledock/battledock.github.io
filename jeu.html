@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-0926';
+  var MA_VERSION='2026-09-20-0932';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -11066,6 +11066,15 @@ function solVide(){
     for(let s2=0;s2<n;s2+=0.5){const x=x0+(x1-x0)*s2/n, y=y0+(y1-y0)*s2/n;F(x-1,y,3,1.5,'#ffffff');F(x-1,y+1.5,3,0.5,'#c8d8e8');}};  /* la neige amassée au pied */
   ganivelle(4,14,WW-4,14);ganivelle(6,14,6,NEIGE_Y-4);ganivelle(WW-6,14,WW-6,NEIGE_Y-4);
   for(let x=0;x<WW;x+=0.5){const h=8+Math.sin(x/5)*2+hs(Math.round(x))*3;F(x,0,0.5,h,x%3<1.5?'#2c4a3a':'#243f32');F(x,h-1,0.5,1,'#ffffff');}   /* la haie de sapins bas, au fond */
+  /* LA ZONE DU TÉLÉPHÉRIQUE, fermée : une ganivelle le long du couloir des câbles, et devant la gare */
+  {const X=TPH.x, L=34, Lg=54, yF=TPH.y+8;
+   ganivelle(X-L,18,X-L,TPH.y-60);ganivelle(X+L,18,X+L,TPH.y-60);               /* le couloir sous les câbles */
+   ganivelle(X-L,TPH.y-60,X-Lg,TPH.y-60);ganivelle(X+L,TPH.y-60,X+Lg,TPH.y-60);   /* l'élargissement autour de la gare */
+   ganivelle(X-Lg,TPH.y-60,X-Lg,yF);ganivelle(X+Lg,TPH.y-60,X+Lg,yF);
+   ganivelle(X-Lg,yF,X-8,yF);ganivelle(X+8,yF,X+Lg,yF);
+   /* le portillon, fermé, avec son panneau */
+   F(X-8,yF-9,16,1.5,'#7a5a3a');F(X-8,yF-4,16,1.5,'#7a5a3a');for(let k=-8;k<8;k+=3)F(X+k,yF-10,1.5,10,'#8a6a48');F(X-8,yF-10.5,16,1,'#ffffff');
+   F(X-7,yF-17,14,6,'#c0392b');F(X-7,yF-17,14,0.5,'#e05a4a');g.font='700 3px Georgia';g.textAlign='center';g.fillStyle='#fff';g.fillText('FERMÉ',X,yF-13);g.textAlign='left';F(X-0.5,yF-11,1,2,'#5b3f21');}
   /* 5 · LES BORDS DU PLANCHER : des rondins */
   const rondin=(x,y,w,h)=>{F(x,y,w,h,'#6b4a28');F(x,y,w,Math.min(1,h/3),'#8a6238');F(x,y+h-0.5,w,0.5,'#3d2a17');for(let k=0;k<w;k+=3)if(hs(k+x+y)<0.3)F(x+k,y+h*0.4,1.5,0.5,'#4a321a');};
   rondin(0,WH-5,WW,5);rondin(0,PLANCHER_Y,5,WH-PLANCHER_Y);rondin(WW-5,PLANCHER_Y,5,WH-PLANCHER_Y);
@@ -11101,6 +11110,65 @@ function graverBouche(nuit){
 }
 /* LES BOUTIQUES : alignées au fond du plancher, face à la neige, comme une rue de station.
    Toutes fermées pour l'instant : on lit leur enseigne, on ne peut pas entrer. */
+/* LE TÉLÉPHÉRIQUE : une gare de béton et de bois, un grand volant, deux câbles qui filent vers le
+   sommet (hors de la carte), et deux cabines rouges qui vont et viennent en se croisant */
+const TPH={x:470,y:176,h:64,ecart:11,pylone:58};          /* la gare (pied), la hauteur des câbles, l'écart */
+function graverTelepherique(nuit){
+  const W=112,H=118,{c,g,F}=mk(W,H);const cx=W/2,sol=H-6;ombre(g,cx,sol,50,6);
+  /* le socle de béton, l'escalier d'accès, le quai */
+  F(cx-44,sol-12,88,12,'#9a9690');F(cx-44,sol-12,88,1,'#c4c0b8');for(let k=-44;k<44;k+=11)F(cx+k,sol-12,0.5,12,'#7a766e');
+  for(let k=0;k<3;k++){F(cx-10,sol-3-k*3,20,3,k%2?'#8a8680':'#a8a49c');F(cx-10,sol-3-k*3,20,0.5,'#d0ccc4');}
+  /* la halle : piliers d'acier, bardage de bois, grande baie vitrée où l'on voit la cabine */
+  [[-42],[38]].forEach(([k])=>{F(cx+k,sol-58,4,46,'#4a5664');F(cx+k,sol-58,1,46,'#8aa0b4');});
+  for(let k=-38;k<38;k+=4){F(cx+k,sol-58,4,20,k%8?'#8a5a3a':'#7a4a2a');F(cx+k+3.5,sol-58,0.5,20,'#4a2a18');}
+  F(cx-38,sol-38,76,26,nuit?'#f0c870':'#2e3a48');for(let k=-38;k<38;k+=12)F(cx+k,sol-38,1,26,'#3a4450');F(cx-38,sol-26,76,1,'#3a4450');
+  if(!nuit){g.fillStyle='rgba(255,255,255,.18)';g.beginPath();g.moveTo(cx-34,sol-13);g.lineTo(cx-20,sol-37);g.lineTo(cx-12,sol-37);g.lineTo(cx-26,sol-13);g.closePath();g.fill();}
+  /* le toit, plat et débordant, lourd de neige ; le grand volant dessus, sous son capot */
+  F(cx-50,sol-64,100,6,'#3a3a40');F(cx-50,sol-64,100,1,'#6a6a70');F(cx-51,sol-67,102,3.5,'#ffffff');
+  for(let k=-50;k<51;k+=3)F(cx+k,sol-58,0.5,1+hs(k)*3,'rgba(220,244,255,.9)');
+  F(cx-18,sol-78,36,11,'#c0392b');F(cx-18,sol-78,36,1.5,'#e05a4a');F(cx-18,sol-68,36,1,'#8a2418');F(cx-19,sol-80,38,2.5,'#ffffff');   /* le capot du volant */
+  /* l'enseigne */
+  F(cx-26,sol-56,52,8,'#1d3f6a');F(cx-26,sol-56,52,0.5,'#4d7fc8');
+  g.font='700 5px Georgia';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('TÉLÉPHÉRIQUE',cx,sol-50.3,48);g.textAlign='left';
+  return {c,W,H,sol};
+}
+function graverPyloneT(){const W=40,H=TPH.h+30,{c,g,F}=mk(W,H);const cx=W/2,sol=H-4;ombre(g,cx,sol,12,3);
+  /* un pylône en treillis d'acier, qui s'effile vers le haut, et sa tête à galets */
+  for(let y=0;y<TPH.h+6;y+=0.5){const k=y/(TPH.h+6), w=9-k*5;F(cx-w,sol-y,1,0.5,'#6a7684');F(cx+w-1,sol-y,1,0.5,'#4a5664');}
+  for(let y=4;y<TPH.h;y+=7){const k=y/(TPH.h+6), w=9-k*5;g.strokeStyle='#5a6674';g.lineWidth=0.5;g.beginPath();g.moveTo(cx-w,sol-y);g.lineTo(cx+w,sol-y-7);g.moveTo(cx+w,sol-y);g.lineTo(cx-w,sol-y-7);g.stroke();}
+  F(cx-TPH.ecart-4,sol-TPH.h-8,2*TPH.ecart+8,3,'#3a4654');F(cx-TPH.ecart-4,sol-TPH.h-9,2*TPH.ecart+8,1,'#ffffff');
+  F(cx-8,sol-2,16,3,'#9a9690');F(cx-8,sol-2,16,0.5,'#c4c0b8');
+  return {c,W,H,sol};}
+/* une cabine : le chariot sur les câbles, la suspente, la caisse rouge vitrée, un peu de balancement */
+function cabine(g,x,yCable,bal,nuit){
+  const F=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(a,b,w,h);};
+  F(x-6,yCable-2,12,3,'#3a3a40');F(x-5,yCable-3,3,1.5,'#6a6a70');F(x+2,yCable-3,3,1.5,'#6a6a70');           /* le chariot et ses galets */
+  g.save();g.translate(x,yCable+1);g.rotate(bal);
+  F(-0.5,0,1.5,12,'#3a3a40');F(-5,11,10,1.5,'#3a3a40');                                                    /* la suspente */
+  F(-13,12,26,22,'#c0392b');F(-13,12,26,1.5,'#e05a4a');F(-13,32.5,26,1.5,'#8a2418');F(12.5,12,0.5,22,'#8a2418');
+  F(-11,15,22,9,nuit?'#f8d888':'#2e3a48');for(let k=-11;k<11;k+=5.5)F(k,15,0.5,9,'#8a2418');
+  if(!nuit)F(-10,16,4,0.5,'rgba(255,255,255,.6)');
+  F(-14,11,28,1.5,'#ffffff');                                                                               /* la neige sur le toit */
+  F(-3,26,6,6,'#a8302a');F(-1,28,0.5,1,'#f0cf7d');                                                         /* la porte */
+  g.restore();
+}
+/* LE TÉLÉPHÉRIQUE VIVANT : les câbles, et les deux cabines en va-et-vient */
+function dessinerTelepherique(g,camX,camY,t,nuit){
+  const x0=TPH.x-camX, yG=TPH.y-TPH.h-4-camY;                          /* le départ des câbles, au-dessus de la gare */
+  const yHaut=-260-camY;                                                 /* ils filent vers le sommet, hors de la carte */
+  const px=TPH.x-camX, pyl=TPH.pylone-TPH.h-6-camY;
+  g.fillStyle='#2e3640';[-TPH.ecart,TPH.ecart].forEach(d=>{g.fillRect(x0+d-0.25,yHaut,0.5,yG-yHaut);});
+  g.fillStyle='rgba(46,54,64,.5)';[-TPH.ecart+2,TPH.ecart+2].forEach(d=>{g.fillRect(x0+d-0.25,yHaut,0.3,yG-yHaut);});   /* le câble tracteur */
+  /* le va-et-vient : 26 secondes pour monter, 8 à quai */
+  const cyc=34, p=(t%cyc)/cyc, mont=p<0.765?Math.min(1,p/0.765):1;
+  const q=mont<0.5?2*mont*mont:1-Math.pow(-2*mont+2,2)/2;
+  const allerA=Math.floor(t/cyc)%2===0;
+  const posA=allerA?q:1-q, posB=1-posA;
+  const yA=yG+(yHaut-yG)*posA, yB=yG+(yHaut-yG)*posB;
+  const bal=Math.sin(t*1.7)*0.04*(mont>0&&mont<1?1:0.3);
+  if(yA>-60&&yA<innerHeight)cabine(g,x0+TPH.ecart,yA,bal,nuit);
+  if(yB>-60&&yB<innerHeight)cabine(g,x0-TPH.ecart,yB,-bal,nuit);
+}
 function objetsVides(){
   const cal={}, L=[];
   const reg=(nom,J,N)=>{cal[nom]={toile:J.c,W:J.W,H:J.H,sol:J.sol,nuit:N?N.c:null};};
@@ -11111,6 +11179,9 @@ function objetsVides(){
   reg('souvenirs',graverChaletNom('SOUVENIRS','#8a5a3a'));
   reg('hotel',graverHotel(false),graverHotel(true));
   const P=(nom,x,y,x2)=>L.push(Object.assign({t:'x_mo_'+nom,x,y,v:0,bati:true},x2||{}));
+  reg('telepherique',graverTelepherique(false),graverTelepherique(true));reg('pyloneT',graverPyloneT());
+  P('telepherique',TPH.x,TPH.y,{col:[44,12],ferme:'Le téléphérique',demi:40});
+  L.push({t:'x_mo_pyloneT',x:TPH.x,y:TPH.pylone,v:0,col:[8,4]});
   /* posées sur la neige, juste au-dessus de l'escalier : leurs façades regardent le plancher */
   const Y=NEIGE_Y-4;
   P('forfaits',84,Y,{col:[14,10],ferme:'La caisse des forfaits',demi:12});
@@ -11121,7 +11192,8 @@ function objetsVides(){
   return {L,cal};
 }
 
-return {WW,WH,objets:objetsVides,solFin,LIFT_X,GARE_Y,CABLE_H,ECART,ARRIVEE:[96,368],METRO:[58,410],NEIGE_Y,texture:(t)=>{TEXTURE_NEIGE=t;}};
+const zoneInterdite=(x,y)=>{const X=TPH.x;if(y<16||y>TPH.y+10)return false;if(y<TPH.y-58)return Math.abs(x-X)<36;return Math.abs(x-X)<56;};
+return {WW,WH,zoneInterdite,dessinerTelepherique,objets:objetsVides,solFin,LIFT_X,GARE_Y,CABLE_H,ECART,ARRIVEE:[96,368],METRO:[58,410],NEIGE_Y,texture:(t)=>{TEXTURE_NEIGE=t;}};
 })();
 
 /* LES EMPREINTES DANS LA NEIGE : à chaque pas dans la neige, une empreinte de semelle, gauche puis
@@ -14624,6 +14696,7 @@ function autourDe(x,y){
 function bloque(x,y){
   if(CARTE==='extramar')return bloqueExtramar(x,y);
   if(CARTE==='montagne'){if(x<11||x>MONDE_L-11||y<22||y>MONDE_H-8)return true;          /* les ganivelles et les rondins */
+    if(SAUMASKI.zoneInterdite(x,y))return true;                                            /* la zone du téléphérique, clôturée */
     for(const o of DECOR){if(!o.col)continue;if(Math.abs(x-o.x)<o.col[0]&&y>o.y-o.col[1]&&y<o.y+3)return true;}return false;}
   if(CARTE==='garde')return bloqueGarde(x,y);
   if(dansLisiere(x,y))return true;                     /* la forêt du pourtour */
@@ -15267,6 +15340,7 @@ function dessiner(){
      il marche devant elles, sa tête ne disparaît plus dedans */
   if(LISIERE)ctx.drawImage(LISIERE,camX,camY,lw,lh,0,0,lw,lh);
   dessinerDecor(ctx,camX,camY,VW,VH,acteurs);
+  if(CARTE==='montagne'){try{SAUMASKI.dessinerTelepherique(ctx,camX,camY,performance.now()/1000,lampesAllumees());}catch(x){}}   /* les cabines, dans les airs */
   if(CARTE==='extramar')dessinerLaPeche(ctx,camX,camY);
   /* les bulles par-dessus tout : un mot ne doit jamais passer sous un caillou */
   dessinerBulles(ctx,camX,camY,px,py);
