@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-2240';
+  var MA_VERSION='2026-09-20-2243';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -11645,8 +11645,8 @@ function peindreLaFerme(g){
     for(let y=F.cheminY-24;y<F.cheminY+24;y+=2){const bord=Math.abs(y-F.cheminY)/24, n=alea(x*0.31+y*0.77);
       if(n>(1-bord*bord)*(0.4+avance*0.6))continue;
       R(x,y,2,2,n<0.25?TERRE_F.o:(n<0.58?TERRE_F.s:(n<0.85?TERRE_F.p:TERRE_F.c)));}}
-  for(let y=CH.y0;y<CH.y1;y+=2)for(let x=CH.x0;x<CH.x1;x+=2){const n=alea(x*0.23+y*0.51);
-    R(x,y,2,2,n<0.4?'#8d7550':(n<0.75?'#9c8159':'#ab9166'));}
+  [CH,F.champ2].forEach(Z=>{for(let y=Z.y0;y<Z.y1;y+=2)for(let x=Z.x0;x<Z.x1;x+=2){const n=alea(x*0.23+y*0.51);
+    R(x,y,2,2,n<0.4?'#8d7550':(n<0.75?'#9c8159':'#ab9166'));}});
 }
 function peindreLaFermeFin(g){
   const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
@@ -11656,6 +11656,7 @@ function peindreLaFermeFin(g){
   /* LA PRAIRIE : les touffes du village, ombre, corps, pointe claire */
   for(let k=0;k<2400;k++){const x=F.cheminX0-40+alea(k*1.9)*(MONDE_L-F.cheminX0+40), y=alea(k*3.7)*MONDE_H, n=alea(k*5.3);
     if(surChemin(x,y))continue;if(x>CH.x0-6&&x<CH.x1+6&&y>CH.y0-6&&y<CH.y1+6)continue;
+    if(x>F.champ2.x0-6&&x<F.champ2.x1+6&&y>F.champ2.y0-6&&y<F.champ2.y1+6)continue;
     R(x-0.5,y+0.5,2,0.5,'rgba(70,90,50,.22)');
     const h=2+Math.round(n*3)/2;R(x,y-h,0.5,h,OLIVE_F.fonce);R(x-0.5,y-h+0.5,0.5,h-0.5,OLIVE_F.ombre);R(x+0.5,y-h+1,0.5,h-1,OLIVE_F.ombre);
     R(x,y-h-0.5,0.5,0.5,OLIVE_F.clair);if(n>0.96)R(x+1,y-h,0.5,0.5,'#e8e2c0');}
@@ -11669,6 +11670,7 @@ function peindreLaFermeFin(g){
   /* LE CHAMP LABOURÉ, VIDE : des sillons qui ondulent, la crête éclairée, le creux dans l'ombre,
      de la terre grumeleuse, quelques cailloux, et une marge d'herbe folle tout autour. */
   const ondu=(x)=>Math.sin(x/90)*5+Math.sin(x/37)*2;
+  const laboure=(CH)=>{
   for(let y=CH.y0;y<CH.y1;y+=5){
     for(let x=CH.x0;x<CH.x1;x+=0.5){
       const yy=y+ondu(x)+alea(x*0.7+y)*0.5;
@@ -11684,11 +11686,13 @@ function peindreLaFermeFin(g){
       if(n>0.985){R(x,yy-1,1,0.5,'rgba(60,50,30,.35)');R(x,yy-2,1,1,'#9aa0a6');R(x,yy-2,1,0.5,'#bcc4ca');}}  /* un caillou */
   }
   /* la marge d'herbe folle qui borde le champ */
-  for(let k=0;k<900;k++){const cote=k%4, t=alea(k*2.7);
+  for(let k=0;k<900;k++){const cote=k%4, t=alea(k*2.7+CH.x0);
     let x,y;if(cote<2){x=CH.x0+t*(CH.x1-CH.x0);y=(cote?CH.y1:CH.y0)+(alea(k*3.1)-0.5)*14;}
     else{y=CH.y0+t*(CH.y1-CH.y0);x=(cote===2?CH.x0:CH.x1)+(alea(k*4.3)-0.5)*14;}
     const h=2+alea(k*5.1)*3;R(x-0.5,y+0.5,1.5,0.5,'rgba(70,90,50,.2)');R(x,y-h,0.5,h,'#6f8449');R(x,y-h-0.5,0.5,0.5,'#8aa05c');
     if(alea(k*7.7)>0.93){R(x,y-h-1,0.5,0.5,'#e8e2c0');}}
+  };
+  laboure(CH);laboure(FERME.champ2);                                   /* les deux champs : à l'est, et sous la place */
   g.restore();
 }
 /* le moulin tourne : ses quatre ailes, entoilées, prennent le vent */
@@ -11711,8 +11715,9 @@ ANIM_DECOR.moulin=(g,o,x,y)=>{const C=XCAL['x_fe_moulin0'];if(!C)return;
    CHAMPS au nord, l'ENCLOS DES ANIMAUX au sud, et à l'est le MOULIN et le VERGER. */
 const FERME={
   cheminY:300, cheminX0:1246, cloture:1392,
-  champ:{x0:1436,x1:1876,y0:72,y1:530}};        /* un grand champ labouré, vide, prêt à recevoir la ferme */
-const dansLaFerme=(x)=>x>FERME.cheminX0-26;
+  champ:{x0:1436,x1:1876,y0:72,y1:530},         /* le grand champ, à l'est */
+  champ2:{x0:742,x1:1238,y0:400,y1:548}};       /* le second champ, juste sous la place du village */
+const dansLaFerme=(x,y)=>x>FERME.cheminX0-26||(y!==undefined&&x>FERME.champ2.x0-12&&x<FERME.champ2.x1+12&&y>FERME.champ2.y0-12&&y<FERME.champ2.y1+12);
 const PORTE_H=30;                                            /* la hauteur du passage dans la clôture */
 /* les calques de la ferme */
 function graverFerme(t){
@@ -12767,7 +12772,7 @@ function semerDecor(){
   DECOR=[];
   const A=alea;
   const libre=(x,y,r)=>DECOR.every(o=>Math.hypot(o.x-x,o.y-y)>r);
-  const dedans=(x,y)=>!dansLisiere(x,y)&&!dansLisiere(x,y-16)&&!dansLaFerme(x)
+  const dedans=(x,y)=>!dansLisiere(x,y)&&!dansLisiere(x,y-16)&&!dansLaFerme(x,y)
                      &&x>BORD+10&&x<MONDE_L-BORD-10&&y>BORD+16&&y<MONDE_H-BORD-10;
   const depart=(x,y)=>Math.hypot(x-CAMP_FIXE[0],y-CAMP_FIXE[1])<60;  /* la clairière du camp */
   /* NOUVEAU : rien ne se pose sur un lieu ni devant sa porte. La zone est
