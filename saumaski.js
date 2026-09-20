@@ -471,8 +471,14 @@ function solVide(){
   ganivelle(5,MONT+8,5,WH-5);ganivelle(WW-5,MONT+8,WW-5,WH-5);ganivelle(5,WH-5,WW-5,WH-5);
   /* 6 · LE TÉLÉPHÉRIQUE : la file en serpentin, son entrée, le couloir sous les câbles, l'enclos */
   const corde=(x0,y0,x1,y1)=>{const n=Math.hypot(x1-x0,y1-y0);
-    for(let s2=0;s2<=n;s2+=12){const x=x0+(x1-x0)*s2/n, y=y0+(y1-y0)*s2/n;F(x-0.75,y-8,1.5,8,'#3a3a40');F(x-0.75,y-8,0.5,8,'#8a8f96');F(x-1.25,y-9,2.5,1.2,'#c9a24a');}
-    for(let s2=0;s2<n;s2+=0.5){const x=x0+(x1-x0)*s2/n, y=y0+(y1-y0)*s2/n, u=(s2%12)/12;F(x,y-7+Math.sin(u*Math.PI)*1.2,0.5,0.8,'#c0392b');F(x-0.5,y,1.5,1,'#ffffff');}};
+    /* la corde tressée qui pend entre deux poteaux, son ombre sur le plancher */
+    for(let s2=0;s2<n;s2+=0.5){const x=x0+(x1-x0)*s2/n, y=y0+(y1-y0)*s2/n, u=(s2%12)/12, p=Math.sin(u*Math.PI)*1.3;
+      F(x,y-7+p,0.5,0.9,(Math.floor(s2*2)%3)?'#c0392b':'#9a2a20');F(x,y-7+p,0.5,0.3,'#e86a5a');F(x,y+0.5,0.5,0.4,'rgba(40,20,10,.25)');}
+    /* les poteaux d'inox : socle rond, fût, tête dorée, crochets */
+    for(let s2=0;s2<=n;s2+=12){const x=x0+(x1-x0)*s2/n, y=y0+(y1-y0)*s2/n;
+      g.fillStyle='#3a3a40';g.beginPath();g.ellipse(x,y,1.8,0.8,0,0,7);g.fill();g.fillStyle='#8a8f96';g.fillRect(x-1.2,y-0.5,1,0.4);
+      F(x-0.5,y-8,1.2,8,'#9aa2a8');F(x-0.5,y-8,0.4,8,'#e8eef2');F(x+0.4,y-8,0.3,8,'#5a6068');
+      F(x-1,y-9,2.2,1.2,'#c9a24a');F(x-0.8,y-9,0.8,0.5,'#f0cf7d');F(x-1.3,y-7.3,2.8,0.6,'#6a6e76');}};
   /* le plancher de la file, balayé, pour qu'on voie tout de suite où l'on attend */
   {const {x0,x1,y0,y1}=FQ;F(x0,y0,x1-x0,y1-y0,'#4e3218');
    for(let y=y0;y<y1;y+=3)for(let x=x0-20;x<x1;){const l=18+Math.floor(hs(x*0.7+y)*3)*7, px=Math.max(x0,x+((y-y0)/3)%3*6), l2=Math.min(l,x1-px);
@@ -522,34 +528,57 @@ function cabine(g,x,yCable,bal,nuit){
    cabines ovales de couleur qui montent et descendent en boucle, sans jamais s'arrêter */
 function graverTelecabine(nuit){
   const W=112,H=100,{c,g,F}=mk(W,H);const cx=W/2,sol=H-6;ombre(g,cx,sol,50,6);
-  F(cx-44,sol-10,88,10,'#9a9690');F(cx-44,sol-10,88,0.5,'#c4c0b8');for(let k=-44;k<44;k+=11)F(cx+k,sol-10,0.5,10,'#7a766e');
-  for(let k=0;k<3;k++){F(cx-9,sol-2.5-k*2.5,18,2.5,k%2?'#8a8680':'#a8a49c');F(cx-9,sol-2.5-k*2.5,18,0.5,'#d0ccc4');}
-  F(cx-40,sol-46,80,36,nuit?'#f0c870':'#2e3a48');for(let k=-40;k<40;k+=8)F(cx+k,sol-46,0.5,36,'#8a98a8');F(cx-40,sol-29,80,0.5,'#8a98a8');
-  if(!nuit){g.fillStyle='rgba(255,255,255,.16)';g.beginPath();g.moveTo(cx-36,sol-12);g.lineTo(cx-22,sol-44);g.lineTo(cx-14,sol-44);g.lineTo(cx-28,sol-12);g.closePath();g.fill();}
-  /* une cabine à quai, vue à travers la vitre */
-  g.fillStyle='rgba(63,158,122,.8)';g.beginPath();g.ellipse(cx+18,sol-24,7,7,0,0,7);g.fill();g.fillStyle='rgba(20,30,40,.6)';g.beginPath();g.ellipse(cx+18,sol-26,5,3.5,0,0,7);g.fill();
-  F(cx-6,sol-26,12,16,'#1a1c24');F(cx-6,sol-26,12,0.5,'#8a8f96');F(cx-0.25,sol-26,0.5,16,'#8a8f96');                         /* la porte d'embarquement */
-  /* le toit courbe, vert, sous la neige */
-  g.fillStyle='#3f9e7a';g.beginPath();g.moveTo(cx-48,sol-46);g.quadraticCurveTo(cx,sol-72,cx+48,sol-46);g.lineTo(cx+48,sol-42);g.quadraticCurveTo(cx,sol-67,cx-48,sol-42);g.closePath();g.fill();
-  g.fillStyle='#2f7a5e';g.beginPath();g.moveTo(cx-48,sol-43);g.quadraticCurveTo(cx,sol-68,cx+48,sol-43);g.lineTo(cx+48,sol-42);g.quadraticCurveTo(cx,sol-67,cx-48,sol-42);g.closePath();g.fill();
-  g.fillStyle='#ffffff';g.beginPath();g.moveTo(cx-46,sol-47);g.quadraticCurveTo(cx,sol-74,cx+46,sol-47);g.quadraticCurveTo(cx,sol-69,cx-46,sol-47);g.fill();
-  for(let k=-44;k<46;k+=3)F(cx+k,sol-45+Math.abs(k)*0.02,0.5,1+hs(k)*3,'rgba(220,244,255,.9)');
-  F(cx-24,sol-58,48,7,'#1d3f6a');F(cx-24,sol-58,48,0.5,'#4d7fc8');
-  g.font='700 5px Georgia';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('TÉLÉCABINE',cx,sol-52.8,44);g.textAlign='left';
-  return {c,W,H,sol};
-}
+  /* LE SOCLE de béton banché : planches de coffrage, trous de banche, une arête éclairée */
+  F(cx-44,sol-10,88,10,'#9a9690');for(let y=sol-10;y<sol;y+=2.5)F(cx-44,y,88,0.5,'rgba(0,0,0,.08)');
+  for(let k=-40;k<44;k+=11){F(cx+k,sol-7,1,1,'#6f6b64');F(cx+k,sol-3,1,1,'#6f6b64');}F(cx-44,sol-10,88,0.5,'#d0ccc4');F(cx-44,sol-0.5,88,0.5,'#5f5b54');
+  for(let k=0;k<3;k++){F(cx-9,sol-2.5-k*2.5,18,2.5,k%2?'#8a8680':'#a8a49c');F(cx-9,sol-2.5-k*2.5,18,0.5,'#d8d4cc');F(cx-9,sol-0.5-k*2.5,18,0.5,'#6f6b64');}
+  /* LA HALLE VITRÉE : poteaux d'acier, traverses, verres légèrement teintés, reflets en biais, montants */
+  F(cx-41,sol-47,82,37,'#4a5664');
+  for(let k=-40;k<40;k+=8){const j=k+40;F(cx+k+0.5,sol-46,7,17,nuit?'#f0c870':(j%16?'#2e3a48':'#34414f'));F(cx+k+0.5,sol-28.5,7,18,nuit?'#e8b860':(j%16?'#2a3644':'#303d4b'));}
+  for(let k=-40;k<=40;k+=8){F(cx+k,sol-47,0.5,37,'#8a98a8');F(cx+k+0.5,sol-47,0.5,37,'#5a6674');}
+  F(cx-41,sol-29,82,1,'#8a98a8');F(cx-41,sol-28,82,0.5,'#5a6674');F(cx-41,sol-47,82,0.8,'#aab6c4');
+  if(!nuit){g.fillStyle='rgba(255,255,255,.14)';g.beginPath();g.moveTo(cx-37,sol-11);g.lineTo(cx-24,sol-46);g.lineTo(cx-18,sol-46);g.lineTo(cx-31,sol-11);g.closePath();g.fill();
+    g.fillStyle='rgba(255,255,255,.08)';g.beginPath();g.moveTo(cx+10,sol-11);g.lineTo(cx+22,sol-46);g.lineTo(cx+25,sol-46);g.lineTo(cx+13,sol-11);g.closePath();g.fill();}
+  /* à l'intérieur : le volant qui tourne, et une cabine à quai */
+  F(cx+4,sol-41,26,2,'rgba(90,100,110,.6)');g.fillStyle='rgba(63,158,122,.85)';g.beginPath();g.ellipse(cx+18,sol-22,7,7,0,0,7);g.fill();
+  g.fillStyle='rgba(20,30,40,.7)';g.beginPath();g.ellipse(cx+18,sol-24,5,3.5,0,0,7);g.fill();F(cx+15,sol-26,1.5,2,'rgba(255,255,255,.4)');
+  /* la porte d'embarquement : deux battants de verre sombre, poignées d'inox, bandeau vert */
+  F(cx-7,sol-27,14,17,'#1a1c24');F(cx-6.5,sol-26.5,6.2,16,'#232834');F(cx+0.3,sol-26.5,6.2,16,'#232834');F(cx-0.25,sol-27,0.5,17,'#8a8f96');
+  F(cx-2,sol-19,0.8,4,'#d8dee4');F(cx+1.2,sol-19,0.8,4,'#d8dee4');F(cx-7,sol-28,14,1,'#3f9e7a');F(cx-7,sol-27.5,14,0.4,'#6fce9a');
+  /* LE TOIT COURBE : tôle verte à joints debout, rive sombre, neige épaisse, glaçons */
+  g.fillStyle='#3f9e7a';g.beginPath();g.moveTo(cx-48,sol-47);g.quadraticCurveTo(cx,sol-73,cx+48,sol-47);g.lineTo(cx+48,sol-43);g.quadraticCurveTo(cx,sol-68,cx-48,sol-43);g.closePath();g.fill();
+  for(let k=-46;k<48;k+=4){const u=(k+48)/96, y=sol-47-Math.sin(u*Math.PI)*12.5;F(cx+k,y,0.5,4,'#2f7a5e');F(cx+k+0.5,y,0.5,4,'#5fbe96');}
+  g.fillStyle='#246248';g.beginPath();g.moveTo(cx-48,sol-43.5);g.quadraticCurveTo(cx,sol-68.5,cx+48,sol-43.5);g.lineTo(cx+48,sol-42.5);g.quadraticCurveTo(cx,sol-67.5,cx-48,sol-42.5);g.closePath();g.fill();
+  g.fillStyle='#ffffff';g.beginPath();g.moveTo(cx-46,sol-48);g.quadraticCurveTo(cx,sol-76,cx+46,sol-48);g.quadraticCurveTo(cx,sol-70,cx-46,sol-48);g.fill();
+  g.fillStyle='rgba(170,195,225,.6)';g.beginPath();g.moveTo(cx-44,sol-48);g.quadraticCurveTo(cx,sol-71,cx+44,sol-48);g.quadraticCurveTo(cx,sol-69.5,cx-44,sol-48);g.fill();
+  for(let k=-45;k<46;k+=2.5){const u=(k+48)/96, y=sol-43-Math.sin(u*Math.PI)*12.5;F(cx+k,y,0.5,0.8+hs(k)*3,'rgba(220,244,255,.95)');F(cx+k,y+0.8+hs(k)*3,0.5,0.5,'#ffffff');}
+  /* l'enseigne : lettres blanches sur bandeau bleu, deux spots */
+  F(cx-25,sol-60,50,8,'#12356a');F(cx-24.5,sol-59.5,49,7,'#1d3f6a');F(cx-24.5,sol-59.5,49,0.5,'#4d7fc8');
+  g.font='700 5px Georgia';g.textAlign='center';g.fillStyle='rgba(0,0,0,.35)';g.fillText('TÉLÉCABINE',cx+0.4,sol-54.1,44);g.fillStyle='#ffffff';g.fillText('TÉLÉCABINE',cx,sol-54.5,44);g.textAlign='left';
+  [[-26],[23]].forEach(([k])=>{F(cx+k,sol-62,3,1.5,'#3a3e46');F(cx+k+1,sol-61,1,1,nuit?'#ffe8a0':'#c8ccd0');});
+  return {c,W,H,sol};}
 /* une petite cabine ovale : sa pince, sa suspente, sa coque de couleur, sa vitre, son reflet */
 function oeuf(g,x,y,col,bal,nuit){
   const F=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(a,b,w,h);};
-  F(x-2.5,y-2,5,2.5,'#3a3a40');F(x-2,y-2.5,1.5,1,'#8a8f96');F(x+0.5,y-2.5,1.5,1,'#8a8f96');
+  /* la pince et ses galets, sur le câble */
+  F(x-3,y-2,6,2.5,'#3a3a40');F(x-3,y-2,6,0.5,'#6a6e76');F(x-2.5,y-3,1.5,1.2,'#9aa2a8');F(x+1,y-3,1.5,1.2,'#9aa2a8');F(x-0.25,y-2.5,0.5,0.5,'#d8dee4');
   g.save();g.translate(x,y);g.rotate(bal);
-  F(-0.5,0,1,6,'#3a3a40');F(-3,5.5,6,1,'#3a3a40');
-  g.fillStyle=col;g.beginPath();g.ellipse(0,13,8,8,0,0,7);g.fill();
-  g.fillStyle='rgba(0,0,0,.15)';g.beginPath();g.ellipse(1.5,15,6.5,5,0,0,Math.PI);g.fill();
-  g.fillStyle=nuit?'#f8d888':'#2e3a48';g.beginPath();g.ellipse(0,11,6,4,0,0,7);g.fill();
-  g.fillStyle='rgba(255,255,255,.45)';g.fillRect(-4.5,9,2,3);g.fillRect(-3,8.5,3,0.5);
-  g.fillStyle='rgba(255,255,255,.25)';g.fillRect(-6,13,1,3);
-  g.fillStyle='#ffffff';g.fillRect(-4,5.5,8,1);                                                              /* un peu de neige sur le dessus */
+  F(-0.5,0.5,1,5.5,'#3a3a40');F(-0.25,0.5,0.5,5.5,'#6a6e76');F(-3.5,5.5,7,1,'#3a3a40');                      /* la suspente, le bras */
+  /* la coque : un œuf de couleur, ombré par couches, un liseré clair sur le haut */
+  const clair=col+'', R=8;
+  g.fillStyle=col;g.beginPath();g.ellipse(0,13,R,R,0,0,7);g.fill();
+  g.fillStyle='rgba(0,0,0,.12)';g.beginPath();g.ellipse(1.8,14.5,6.8,6,0,0,7);g.fill();
+  g.fillStyle='rgba(0,0,0,.14)';g.beginPath();g.ellipse(2.8,16.5,4.8,3.4,0,0,Math.PI);g.fill();
+  g.fillStyle='rgba(255,255,255,.28)';g.beginPath();g.ellipse(-3,9,3,2,-0.5,0,7);g.fill();
+  g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=0.5;g.beginPath();g.arc(0,13,R-0.4,Math.PI*1.1,Math.PI*1.75);g.stroke();
+  /* la vitre panoramique, son joint, son reflet, la silhouette d'un passager */
+  g.fillStyle='#1a2230';g.beginPath();g.ellipse(0,11.2,6.2,4.2,0,0,7);g.fill();
+  g.fillStyle=nuit?'#f8d888':'#2e3a48';g.beginPath();g.ellipse(0,11,5.6,3.7,0,0,7);g.fill();
+  if(!nuit){g.fillStyle='rgba(20,26,34,.9)';g.fillRect(1.5,10,2,3);g.fillRect(1.8,9,1.4,1);}
+  g.fillStyle='rgba(255,255,255,.55)';g.fillRect(-4.2,9,1.6,2.6);g.fillRect(-3,8.3,2.6,0.5);
+  /* la jointure de la porte, la bande de couleur, le numéro, la neige sur le toit */
+  F(-0.25,15.5,0.5,5,'rgba(0,0,0,.25)');F(-7,16,14,0.8,'rgba(255,255,255,.35)');F(-2,17.5,1,1,'#ffffff');F(-0.5,17.5,1,1,'#ffffff');
+  g.fillStyle='#ffffff';g.beginPath();g.ellipse(0,5.9,4.5,1.3,0,Math.PI,0);g.fill();F(-4,5.8,8,0.6,'#ffffff');
   g.restore();
 }
 function dessinerTelepherique(g,camX,camY,t,nuit){
@@ -680,13 +709,23 @@ function dessinerPlace(g,camX,camY,t,nuit){
 /* LE PORTIQUE D'ENTRÉE DE LA FILE : deux poteaux de bois, une traverse, l'enseigne TÉLÉCABINE,
    un fanion, et le petit panneau du temps d'attente */
 function graverPortique(){
-  const W=34,H=44,{c,g,F}=mk(W,H);const cx=W/2,sol=H-3;
-  [[-11],[10]].forEach(([k])=>{F(cx+k,sol-34,2.5,34,'#6b4a28');F(cx+k,sol-34,0.8,34,'#8a6238');F(cx+k+2,sol-34,0.5,34,'#3a2614');F(cx+k-0.5,sol-1,3.5,1.5,'#ffffff');});
-  F(cx-14,sol-38,28,4,'#7d5934');F(cx-14,sol-38,28,0.8,'#a5764a');F(cx-14.5,sol-39.5,29,1.5,'#ffffff');for(let k=-13;k<14;k+=2.5)F(cx+k,sol-34,0.5,1+hs(k)*2,'rgba(220,244,255,.9)');
-  F(cx-11,sol-33,22,6,'#1d3f6a');F(cx-11,sol-33,22,0.5,'#4d7fc8');F(cx-3,sol-33.5,0.5,1,'#3d4248');F(cx+2.5,sol-33.5,0.5,1,'#3d4248');
-  g.font='700 3.4px Georgia';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('TÉLÉCABINE',cx,sol-28.8,20);g.textAlign='left';
-  F(cx+12.5,sol-44,0.5,8,'#3a3a40');F(cx+13,sol-44,5,3,'#3f9e7a');F(cx+13,sol-44,5,0.6,'#6fce9a');                  /* le fanion */
-  F(cx-16,sol-20,5,6,'#f4efe0');F(cx-16,sol-20,5,0.5,'#c8bca8');F(cx-15,sol-18,3,0.5,'#3a2616');F(cx-15,sol-16.5,2,0.5,'#3a2616');F(cx-14,sol-14,0.5,14,'#5b3f21');   /* « attente : 5 min » */
+  const W=34,H=46,{c,g,F}=mk(W,H);const cx=W/2,sol=H-3;
+  /* deux poteaux de mélèze, leur fibre, leurs sabots de fer, la neige à leur pied */
+  [[-11],[10]].forEach(([k])=>{F(cx+k,sol-35,2.5,35,'#6b4a28');F(cx+k,sol-35,0.8,35,'#8a6238');F(cx+k+2,sol-35,0.5,35,'#3a2614');
+    for(let y=sol-33;y<sol-3;y+=3)F(cx+k+1,y+hs(y+k)*2,0.5,1.5,'#5a3a1e');F(cx+k-0.5,sol-4,3.5,2,'#3a3a40');F(cx+k-0.5,sol-4,3.5,0.5,'#6a6e76');F(cx+k-1,sol-1,4.5,1.5,'#ffffff');});
+  /* la traverse, ses chevilles, la neige et les glaçons */
+  F(cx-14,sol-39,28,4.5,'#7d5934');F(cx-14,sol-39,28,0.8,'#a5764a');F(cx-14,sol-35,28,0.5,'#4a321a');for(let k=-13;k<14;k+=4)F(cx+k,sol-38,0.5,3,'rgba(90,55,25,.4)');
+  F(cx-12,sol-37.5,1,1,'#3a2614');F(cx+11,sol-37.5,1,1,'#3a2614');F(cx-14.5,sol-40.5,29,1.8,'#ffffff');F(cx-14,sol-40.8,20,0.5,'#f0f6fa');
+  for(let k=-13;k<14;k+=2)F(cx+k,sol-34.5,0.5,0.8+hs(k)*2.2,'rgba(220,244,255,.95)');
+  /* l'enseigne : deux chaînettes, un panneau émaillé bleu, un liseré blanc */
+  F(cx-7,sol-34.5,0.5,2,'#6a6e76');F(cx+6.5,sol-34.5,0.5,2,'#6a6e76');
+  F(cx-11,sol-33,22,6.5,'#12356a');F(cx-10.5,sol-32.5,21,5.5,'#1d3f6a');F(cx-10,sol-32,20,0.4,'#e9e6db');F(cx-10,sol-27.4,20,0.4,'#e9e6db');
+  g.font='700 3.4px Georgia';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('TÉLÉCABINE',cx,sol-28.6,19);g.textAlign='left';
+  /* le fanion vert sur son mât */
+  F(cx+12.5,sol-46,0.5,8,'#3a3a40');F(cx+13,sol-46,5,3,'#3f9e7a');F(cx+13,sol-46,5,0.6,'#6fce9a');F(cx+17,sol-45,1,1,'#2f7a5e');
+  /* le petit panneau « attente » : cadre, cadran, aiguille */
+  F(cx-14.5,sol-15,0.5,15,'#5b3f21');F(cx-17,sol-21,5.5,6.5,'#5b3f21');F(cx-16.5,sol-20.5,4.5,5.5,'#f4efe0');
+  g.strokeStyle='#3a2616';g.lineWidth=0.35;g.beginPath();g.arc(cx-14.25,sol-17.75,1.6,0,7);g.stroke();g.beginPath();g.moveTo(cx-14.25,sol-17.75);g.lineTo(cx-14.25,sol-19);g.moveTo(cx-14.25,sol-17.75);g.lineTo(cx-13.3,sol-17.2);g.stroke();
   return {c,W,H,sol};}
 function objetsVides(){
   const cal={}, L=[];
