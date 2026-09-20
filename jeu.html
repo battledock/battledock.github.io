@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-0905';
+  var MA_VERSION='2026-09-20-0909';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -11026,9 +11026,36 @@ function solVide(){
   return c;
 }
 function solFin(){return solVide();}
-function objetsVides(){return {L:[],cal:{gare:{toile:graverMetro(false).c,W:150,H:150,sol:144,nuit:graverMetro(true).c}}};}
+/* LA BOUCHE DU MÉTRO, en petit (comme au village et au port) : l'escalier qui descend entre deux
+   murets de pierre, un auvent de bois à deux pans chargé de neige, la plaque émaillée, le M sur son mât */
+function graverBouche(nuit){
+  const W=90,H=96,{c,g,F}=mk(W,H);const cx=W/2-6,sol=H-6;ombre(g,cx,sol,36,5);
+  /* la trémie et l'escalier qui s'enfonce */
+  F(cx-18,sol-24,36,24,'#3a3530');
+  for(let k=0;k<7;k++){const y=sol-22+k*3.1, w=30-k*0.8;F(cx-w/2,y,w,3,k%2?'#6d6b65':'#7e7b74');F(cx-w/2,y,w,0.5,'#a8a498');F(cx-w/2,y+2.6,w,0.5,'#4a4640');}
+  const fo=g.createLinearGradient(0,sol-24,0,sol);fo.addColorStop(0,nuit?'rgba(255,210,140,.1)':'rgba(10,12,20,.55)');fo.addColorStop(1,nuit?'rgba(255,210,140,.45)':'rgba(10,12,20,0)');g.fillStyle=fo;g.fillRect(cx-16,sol-24,32,24);
+  /* les deux murets de pierre, coiffés de neige */
+  [[-20],[16]].forEach(([k])=>{for(let r=0;r<5;r++)F(cx+k,sol-24+r*5,4,4.5,r%2?'#cfc6b0':'#ddd4be');F(cx+k,sol-24,4,24,'rgba(0,0,0,0)');
+    for(let r=0;r<5;r++){F(cx+k,sol-24+r*5,4,0.5,'#efe8d6');F(cx+k+3.5,sol-24+r*5,0.5,4.5,'#8a806a');}F(cx+k-0.5,sol-25.5,5,2,NEIGE.h);});
+  /* l'auvent : quatre poteaux, deux pans de bardeaux, la neige et les glaçons */
+  [[-19],[18]].forEach(([k])=>{F(cx+k,sol-46,2.5,22,'#6b4a28');F(cx+k,sol-46,0.8,22,'#8a6238');});
+  toitNeige(F,g,cx,sol-46,50,18,['#5a4a3e','#6a5a4c','#3e3228']);
+  /* le pignon, et la plaque émaillée */
+  g.fillStyle='#8a6238';g.beginPath();g.moveTo(cx-14,sol-48);g.lineTo(cx,sol-60);g.lineTo(cx+14,sol-48);g.closePath();g.fill();
+  for(let k=-12;k<13;k+=2.5)F(cx+k,sol-48-Math.max(0,12-Math.abs(k))*0.95,0.5,Math.max(0,12-Math.abs(k))*0.95,'#5b3f21');
+  F(cx-15,sol-47,30,6,'#1d3f8f');F(cx-15,sol-47,30,0.5,'#4d6fc8');F(cx-14,sol-46.5,28,0.5,'#e9e6db');F(cx-14,sol-41.5,28,0.5,'#e9e6db');
+  g.font='700 4.2px Georgia,serif';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('SAUMASKI',cx,sol-42.6,26);g.textAlign='left';
+  /* une lanterne sous l'auvent */
+  F(cx-0.25,sol-41,0.5,2,'#2a2e36');F(cx-2,sol-39,4,4.5,'#2a2e36');F(cx-1.5,sol-38.5,3,3.5,nuit?'#ffd27a':'#e8dcb0');
+  /* le M sur son mât, à droite */
+  const tx=cx+30;F(tx-1,sol-50,2.5,50,'#4d5760');F(tx-1,sol-50,1,50,'#7a848c');
+  F(tx-7,sol-64,15,14,'#1d4f9a');F(tx-7,sol-64,15,1,'#4d7fc8');F(tx-7,sol-51,15,1,'#12356a');F(tx-7,sol-65.5,15,1.5,NEIGE.h);
+  F(tx-4.5,sol-61,2,10,'#ffffff');F(tx+3,sol-61,2,10,'#ffffff');for(let k=0;k<5;k++){F(tx-2.5+k*0.5,sol-60+k,1.5,1.5,'#ffffff');F(tx+1.5-k*0.5,sol-60+k,1.5,1.5,'#ffffff');}
+  return {c,W,H,sol};
+}
+function objetsVides(){const J=graverBouche(false),N=graverBouche(true);return {L:[],cal:{gare:{toile:J.c,W:J.W,H:J.H,sol:J.sol,nuit:N.c}}};}
 
-return {WW,WH,objets:objetsVides,solFin,LIFT_X,GARE_Y,CABLE_H,ECART,ARRIVEE:[320,356]};
+return {WW,WH,objets:objetsVides,solFin,LIFT_X,GARE_Y,CABLE_H,ECART,ARRIVEE:[136,268],METRO:[90,232]};
 })();
 
 /* =====================================================================
@@ -14113,7 +14140,7 @@ function verifierAcces(){
 function semerDecor(){
   if(CARTE==='extramar')return semerDecorExtramar();
   if(CARTE==='montagne'){const M=SAUMASKI.objets();Object.entries(M.cal).forEach(([k,C])=>{XCAL['x_mo_'+k+'0']=C;});
-    DECOR=M.L.concat([{t:'metro',x:320,y:398,gr:0,col:[46,10]}]);DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}
+    DECOR=M.L.concat([{t:'metro',x:SAUMASKI.METRO[0],y:SAUMASKI.METRO[1],gr:0,col:[22,8]}]);   /* la bouche du métro, sur la gauche */DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}
   if(CARTE==='garde')return semerDecorGarde();
   DECOR=[];
   const A=alea;
