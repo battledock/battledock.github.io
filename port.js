@@ -1265,6 +1265,45 @@ function eauVivante(g,camX,camY){
 }
 
 /* ---------------- LE DÉCOR, posé à la main ---------------- */
+/* CROUSTI'PORT : le fast-food de poulet frit du quai. Un immeuble comme ses voisins, mais au
+   rez-de-chaussée une devanture rouge et blanche, sa grande enseigne, le coq marin à casquette,
+   la vitrine et ses menus ; la nuit, tout s'allume. */
+function graverCroustiPort(){
+  const base=graverImmeuble(7), W=base.W, H=base.H, sol=base.sol, cx=W/2, BL=138, x0=cx-BL/2, rez=40, yR=sol-rez;
+  const copie=(src)=>{const c=document.createElement('canvas');c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);return c;};
+  const peindre=(cv,nuit)=>{const D=cv.width/W, g=cv.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+    const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
+    /* la devanture : de larges bandes rouges et blanches */
+    for(let k=0;k<BL;k+=6)R(x0+k,yR,6,rez,(k/6)%2?'#f4efe6':'#c8281e');
+    R(x0,yR,BL,1,'#7a1610');R(x0,sol-1,BL,1,'#5a1008');
+    /* la grande vitrine, le comptoir derrière, les menus lumineux */
+    R(x0+10,yR+14,BL-20,rez-16,nuit?'#ffd88a':'#2e2a2a');
+    if(!nuit){g.fillStyle='rgba(255,255,255,.14)';g.beginPath();g.moveTo(x0+16,sol-2);g.lineTo(x0+30,yR+14);g.lineTo(x0+38,yR+14);g.lineTo(x0+24,sol-2);g.fill();}
+    R(x0+14,yR+26,BL-28,6,nuit?'#c8281e':'#8a1e16');R(x0+14,yR+26,BL-28,1,'#f4efe6');                               /* le comptoir */
+    [[0],[1],[2]].forEach(([k])=>{const mx=x0+22+k*34;R(mx,yR+16,26,8,nuit?'#1a1a1e':'#1a1a1e');R(mx+2,yR+17.5,6,5,'#e8a030');R(mx+10,yR+18,14,1,'#f4efe6');R(mx+10,yR+20,10,1,'#f4efe6');R(mx+10,yR+22,12,1,'#c8281e');});
+    for(let k=x0+10;k<x0+BL-10;k+=22)R(k,yR+14,1,rez-16,'#5a1008');
+    /* la porte vitrée, au milieu */
+    R(cx-9,yR+12,18,rez-12,'#5a1008');R(cx-8,yR+13,16,rez-14,nuit?'#ffe0a0':'#3a3636');R(cx-0.5,yR+13,1,rez-14,'#5a1008');R(cx-4,sol-12,2,1,'#e8c06a');R(cx+2,sol-12,2,1,'#e8c06a');
+    /* l'auvent à festons */
+    for(let k=0;k<BL;k+=8){R(x0+k,yR+5,8,6,(k/8)%2?'#f4efe6':'#c8281e');g.fillStyle=(k/8)%2?'#f4efe6':'#c8281e';g.beginPath();g.arc(x0+k+4,yR+11,4,0,Math.PI);g.fill();}
+    R(x0-2,yR+4,BL+4,1.5,'#7a1610');
+    /* LA GRANDE ENSEIGNE, au-dessus de l'auvent */
+    const ey=yR-15;R(x0+18,ey,BL-36,14,'#e8b030');R(x0+19,ey+1,BL-38,12,'#c8281e');
+    g.font='900 9px Georgia,serif';g.textAlign='center';g.fillStyle='#7a1610';g.fillText('CROUSTI’PORT',cx+8.6,ey+10.6,BL-66);g.fillStyle=nuit?'#fff6d0':'#ffffff';g.fillText('CROUSTI’PORT',cx+8,ey+10,BL-66);g.textAlign='left';
+    /* le coq marin à casquette, dans son rond */
+    const lx=x0+30, ly=ey+7;g.fillStyle='#ffffff';g.beginPath();g.arc(lx,ly,8.5,0,7);g.fill();g.fillStyle='#e8b030';g.beginPath();g.arc(lx,ly,8.5,0,7);g.lineWidth=1.2;g.strokeStyle='#e8b030';g.stroke();
+    R(lx-4,ly-1,7,6,'#f4efe6');R(lx-4,ly-1,7,1,'#d8d0c0');R(lx+2.5,ly+1,3,1.5,'#e8a030');R(lx+2,ly+2.5,2,1.5,'#c8281e');       /* la tête, le bec, la barbe */
+    R(lx,ly,1,1,'#1a1a1e');R(lx-5,ly-4,8,2.5,'#1d3f8f');R(lx-3,ly-6,5,2.5,'#1d3f8f');R(lx-5,ly-2,9,1,'#1a1a1e');R(lx-2,ly-7,1.5,1.5,'#c8281e');   /* la casquette de marin, et la crête qui dépasse */
+    /* le seau géant, accroché en drapeau au coin de la façade */
+    const sx=x0+BL-6, sy=yR-30;R(sx,sy+2,1.5,20,'#3a3a40');
+    g.fillStyle='#f4efe6';g.beginPath();g.moveTo(sx+3,sy);g.lineTo(sx+19,sy);g.lineTo(sx+17,sy+16);g.lineTo(sx+5,sy+16);g.closePath();g.fill();
+    for(let k=0;k<4;k++){g.fillStyle='#c8281e';g.beginPath();g.moveTo(sx+4+k*4,sy);g.lineTo(sx+6+k*4,sy);g.lineTo(sx+6+k*3.5,sy+16);g.lineTo(sx+5+k*3.5,sy+16);g.closePath();g.fill();}
+    [[5,-2],[9,-3],[13,-2],[16,-1]].forEach(([dx,dy])=>{g.fillStyle='#c07a30';g.beginPath();g.arc(sx+dx,sy+dy,2.6,0,7);g.fill();g.fillStyle='#e0a050';g.fillRect(sx+dx-1,sy+dy-2,1.5,1);});
+    if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,190,110,.5)');l.addColorStop(1,'rgba(255,190,110,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}
+  };
+  const toile=copie(base.toile), nuit=copie(base.nuit||base.toile);peindre(toile,false);peindre(nuit,true);
+  return {toile,W,H,sol,nuit};
+}
 function semerDecorExtramar(){
   DECOR=[];
   const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
@@ -1272,6 +1311,7 @@ function semerDecorExtramar(){
      l'autre, comme sur le vrai quai ; au milieu, la Bonne Mère */
   for(let k=0;k<10;k++){
     if(k===4){P('x_panneauG',XP.ruelle.x-38,XP.maisonsY+22,{col:[4,3]});continue;}   /* la ruelle du casino, et son panneau */
+    if(k===7){XCAL['x_crousti0']=graverCroustiPort();CALQUES_DECO['x_crousti']=XCAL['x_crousti0'];P('x_crousti',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ferme:'Crousti’Port · poulet frit'});continue;}   /* le fast-food du quai */
     P('x_maison',70+k*140,XP.maisonsY,{v:k,col:[70,24]});
   }
   /* DE GRANDS PLATANES, en alignement le long des façades, chacun avec son banc à l'ombre */
