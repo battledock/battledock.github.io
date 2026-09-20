@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1551';
+  var MA_VERSION='2026-09-20-1556';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -19884,8 +19884,9 @@ async function ouvrirLeBar(){
       $('gratRes').innerHTML=d.gain>0?'Gagné ! <span style="color:#ffe070">+'+enEuros(d.gain)+'</span>':'Perdu… <i style="font-weight:400">ce sera pour la prochaine</i>';
       if(typeof fin==='number'){e.euros=fin;sauver();majHaut();}$('gratOk').style.display='';};
     const effacer=(ev)=>{if(fini)return;const r=cv.getBoundingClientRect();const x=(ev.clientX-r.left)*D, y=(ev.clientY-r.top)*D;g.beginPath();g.arc(x,y,16*D,0,7);g.fill();
-      if(Math.random()<0.15){const px=g.getImageData(0,0,cv.width,cv.height).data;let vide=0;for(let i=3;i<px.length;i+=64)if(px[i]===0)vide++;if(vide/(px.length/64)>0.72)devoiler();}};
-    cv.onpointerdown=(ev)=>{bas=true;cv.setPointerCapture(ev.pointerId);effacer(ev);vibrer(4);};cv.onpointermove=(ev)=>{if(bas)effacer(ev);};cv.onpointerup=()=>{bas=false;};
+      /* on mesure régulièrement la part grattée : à 70 %, tout se dévoile */
+      const n0=performance.now();if(n0-(cv._mes||0)>90){cv._mes=n0;const px=g.getImageData(0,0,cv.width,cv.height).data;let vide=0,tot=0;for(let i=3;i<px.length;i+=64){tot++;if(px[i]<40)vide++;}if(vide/tot>=0.70)devoiler();}};
+    cv.onpointerdown=(ev)=>{bas=true;cv.setPointerCapture(ev.pointerId);effacer(ev);vibrer(4);};cv.onpointermove=(ev)=>{if(bas)effacer(ev);};cv.onpointerup=()=>{bas=false;cv._mes=0;const px=g.getImageData(0,0,cv.width,cv.height).data;let vide=0,tot=0;for(let i=3;i<px.length;i+=64){tot++;if(px[i]<40)vide++;}if(vide/tot>=0.70)devoiler();};
     $('gratOk').onclick=()=>{v.remove();rendre();};
     setTimeout(()=>{if(!fini&&!document.body.contains(v))return;},0);};
   rendre();
