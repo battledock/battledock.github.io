@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1620';
+  var MA_VERSION='2026-09-20-1623';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -18309,7 +18309,6 @@ function majAction(){
   }
   if(o.t==='x_chantier'){b.innerHTML='Lire le panneau<small>CHANTIER · TRAVAUX EN COURS</small>';b.classList.add('on');return;}
   if(o.ouvre==='manif'){b.innerHTML=(e.ap&&e.ap.gilet?'Ranger ton gilet':'Rejoindre la manif')+'<small>'+(e.ap&&e.ap.gilet?'TU DÉFILES AVEC LES DOCKERS':'LE DÉLÉGUÉ TE TEND UN GILET ORANGE')+'</small>';b.classList.add('on');return;}
-  if(o.ouvre==='bar'){b.innerHTML='Entrer au Bar des Docks<small>BAR · TABAC · JEUX À GRATTER</small>';b.classList.add('on');return;}
   if(o.ouvre==='salon'){b.innerHTML='Entrer au Peigne d’Or<small>COUPES ET COULEURS EXCLUSIVES</small>';b.classList.add('on');return;}
   if(o.ouvre==='crousti'){b.innerHTML='Entrer chez Crousti’Port<small>'+(REPU_FIN>Date.now()?'TU ES REPU · ENCORE '+Math.ceil((REPU_FIN-Date.now())/60000)+' MIN':'POULET FRIT · MENUS DE 1 € À 12 €')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='skishop'){b.innerHTML='Entrer au Ski shop<small>TENUES DE MONTAGNE · DE 5 € À 2 500 €</small>';b.classList.add('on');return;}
@@ -18470,7 +18469,6 @@ function agir(){
   if(o.ouvre==='skishop'){ouvrirLeSkiShop();return;}
   if(o.ouvre==='crousti'){ouvrirCrousti();return;}
   if(o.ouvre==='salon'){ouvrirLeSalon();return;}
-  if(o.ouvre==='bar'){ouvrirLeBar();return;}
   if(o.ouvre==='manif'){e.ap=Object.assign({},e.ap||DEF_AP);const avec=!e.ap.gilet;if(avec)e.ap.gilet=true;else delete e.ap.gilet;
     sauver();envoyerSauvegarde(true);monterEnLigne(true);vibrer([20,40,20]);jouer('vente','moment');
     texteVolant(joueur.x,joueur.y-56,avec?'Tous ensemble ! Tu rejoins le cortège':'Tu ranges ton gilet','#ffb060');majAction();return;}
@@ -19837,194 +19835,7 @@ function partirSkier(ep){
   try{sauver();envoyerSauvegarde(true);}catch(x){}
   location.href='ski.html?e='+ep+'&v='+encodeURIComponent(window.MA_VERSION||'');
 }
-/* ================= LE BAR DES DOCKS : les jeux à gratter « La Grattouille » =================
-   Trois tickets. Le serveur tire le ticket au moment de l'achat et paie tout de suite ; ici, on
-   gratte vraiment au doigt la pellicule argentée. Trois montants identiques : c'est gagné.
-   Vingt tickets par jour, pas plus. */
-const TICKETS=[['poisson','Le Petit Poisson',100,'#2d8fb0',[['1 €','1 sur 7'],['2 €','1 sur 8'],['5 €','1 sur 33'],['20 €','1 sur 250'],['100 €','1 sur 3 333']]],
-  ['filet','Le Filet d’Or',300,'#c8962a',[['3 €','1 sur 8'],['6 €','1 sur 12'],['15 €','1 sur 33'],['50 €','1 sur 167'],['300 €','1 sur 2 000']]],
-  ['cargo','Le Gros Cargo',1000,'#c8281e',[['10 €','1 sur 8'],['20 €','1 sur 12'],['50 €','1 sur 25'],['150 €','1 sur 100'],['500 €','1 sur 500']]]];
-const CSS_BAR=`.bar .tete{background:#3a1616}.bar .tete .logo{color:#3a1616}.bar .ep button{background:#5a1e1e}
-.bar .tk{border-radius:14px;padding:12px;color:#fff;margin-bottom:10px;position:relative;box-shadow:0 3px 10px rgba(0,0,0,.2)}
-.bar .tk b{display:block;font:900 18px Georgia;letter-spacing:1px}.bar .tk small{display:block;font:italic 12px Georgia;opacity:.9;margin:2px 0 8px}
-.bar .tk .gains{display:flex;flex-wrap:wrap;gap:4px;font:11px Georgia;opacity:.95}.bar .tk .gains span{background:rgba(0,0,0,.22);border-radius:6px;padding:2px 6px}
-.bar .tk button{position:absolute;right:12px;top:12px;border:0;border-radius:18px;padding:8px 14px;background:#fff;color:#3a1616;font:700 14px Georgia}
-.bar .grat{position:absolute;inset:0;z-index:6;background:rgba(20,10,5,.82);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px}
-.bar .grat .carteT{width:86%;max-width:340px;border-radius:16px;padding:14px;color:#fff;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.5)}
-.bar .grat .zone{position:relative;margin:10px auto 6px;width:100%;aspect-ratio:3/2;border-radius:10px;overflow:hidden;background:#f4efe6}
-.bar .grat .cases{position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr)}
-.bar .grat .cases div{display:flex;align-items:center;justify-content:center;font:900 22px Georgia;color:#2a1a10;border:1px dashed rgba(0,0,0,.12)}
-.bar .grat .cases div.gagne{color:#c8281e;background:#fff3c0}.bar .grat canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
-.bar .grat .res{font:700 17px Georgia;min-height:24px}.bar .grat button{border:0;border-radius:20px;padding:10px 20px;background:#fff;color:#3a1616;font:700 15px Georgia}`;
-async function ouvrirLaGrattouille(){
-  if(!document.getElementById('cssSki')){const st=document.createElement('style');st.id='cssSki';st.textContent=CSS_SKI;document.head.appendChild(st);}
-  injecterCssEcole();
-  if(!document.getElementById('cssBar')){const st=document.createElement('style');st.id='cssBar';st.textContent=CSS_BAR;document.head.appendChild(st);}
-  $('page2Fond').className='skiCat bar';$('page2').classList.add('on');
-  const d0=await appelRPC('mes_grattages',{p_joueur:e.id});let faits=(d0&&typeof d0.aujourdhui==='number')?d0.aujourdhui:0;
-  const rendre=()=>{
-    $('page2Fond').innerHTML='<div class="tete"><div class="logo">🎟</div><div><b>BAR DES DOCKS</b><small>Bar · tabac · jeux</small></div><div class="bourse">Ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div>'+
-      '<div class="lst"><div class="sec">LA GRATTOUILLE · TROIS MONTANTS IDENTIQUES = GAGNÉ</div>'+
-      TICKETS.map(([k,n,px,col,gains])=>'<div class="tk" style="background:linear-gradient(135deg,'+col+','+col+'cc)"><b>'+n+'</b><small>Le ticket à '+enEuros(px).replace(',00','')+'</small>'+
-        '<div class="gains">'+gains.map(([g2,c])=>'<span>'+g2+' · '+c+'</span>').join('')+'</div><button data-t="'+k+'">'+enEuros(px).replace(',00','')+'</button></div>').join('')+
-      '<div class="sec">AUJOURD’HUI</div><div class="ep"><div class="t"><b>'+faits+' / 20 tickets grattés</b><small>Vingt par jour, pas plus : le jeu doit rester un plaisir. Remise à zéro à minuit.</small></div></div>'+
-      '</div><div class="bulle" id="skiBulle"></div><button class="fermer" id="ski-fermer">Ressortir sur le quai</button>';
-    $('ski-fermer').onclick=()=>ouvrirLeBar();$('ski-fermer').textContent='← Retour aux jeux';
-    $('page2Fond').querySelectorAll('[data-t]').forEach(b=>b.onclick=async()=>{const T=TICKETS.find(x=>x[0]===b.dataset.t);
-      if(faits>=20){skiBulle('Vingt tickets aujourd’hui : reviens demain !');return;}
-      if((e.euros||0)<T[2]){skiBulle('Il te manque '+enEuros(T[2]-(e.euros||0)));return;}
-      b.disabled=true;const d=await appelRPC('gratter_ticket',{p_joueur:e.id,p_ticket:T[0]});b.disabled=false;
-      if(!d||d.erreur){skiBulle(d&&d.erreur==='limite'?'Vingt tickets aujourd’hui : reviens demain !':(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':(d&&d.erreur==='doucement'?'Un ticket à la fois !':'Le buraliste n’a pas pu')));return;}
-      faits++;gratter(T,d);});};
-  /* LE GRATTAGE : la pellicule argentée s'efface sous le doigt ; aux trois quarts, on dévoile tout */
-  const gratter=(T,d)=>{const fin=d.euros;const v=document.createElement('div');v.className='grat';
-    v.innerHTML='<div class="carteT" style="background:linear-gradient(135deg,'+T[3]+','+T[3]+'cc)"><b style="font:900 18px Georgia">'+T[1]+'</b><div style="font:italic 12px Georgia">Gratte les six cases avec ton doigt</div>'+
-      '<div class="zone"><div class="cases">'+d.grille.map(m=>'<div data-m="'+m+'">'+(m/100)+' €</div>').join('')+'</div><canvas></canvas></div><div class="res" id="gratRes"></div></div><button id="gratOk" style="display:none">Continuer</button>';
-    $('page2Fond').appendChild(v);
-    const cv=v.querySelector('canvas'), z=v.querySelector('.zone');const rr=z.getBoundingClientRect(), D=devicePixelRatio||1;cv.width=rr.width*D;cv.height=rr.height*D;
-    const g=cv.getContext('2d');const gr=g.createLinearGradient(0,0,cv.width,cv.height);gr.addColorStop(0,'#b8bcc4');gr.addColorStop(0.5,'#e8ecf0');gr.addColorStop(1,'#a8acb4');g.fillStyle=gr;g.fillRect(0,0,cv.width,cv.height);
-    g.fillStyle='rgba(90,95,105,.5)';g.font=Math.round(14*D)+'px Georgia';g.textAlign='center';for(let k=0;k<6;k++){g.fillText('GRATTE',(k%3+0.5)*cv.width/3,(Math.floor(k/3)+0.55)*cv.height/2);}
-    g.globalCompositeOperation='destination-out';let fini=false, bas=false;
-    const devoiler=()=>{if(fini)return;fini=true;g.clearRect(0,0,cv.width,cv.height);
-      const cases=[...v.querySelectorAll('.cases div')];if(d.gain>0){cases.filter(c=>+c.dataset.m===d.gain).forEach(c=>c.classList.add('gagne'));jouer('vente','moment');vibrer([30,50,30,50,90]);}
-      $('gratRes').innerHTML=d.gain>0?'Gagné ! <span style="color:#ffe070">+'+enEuros(d.gain)+'</span>':'Perdu… <i style="font-weight:400">ce sera pour la prochaine</i>';
-      if(typeof fin==='number'){e.euros=fin;sauver();majHaut();}$('gratOk').style.display='';};
-    const effacer=(ev)=>{if(fini)return;const r=cv.getBoundingClientRect();const x=(ev.clientX-r.left)*D, y=(ev.clientY-r.top)*D;g.beginPath();g.arc(x,y,16*D,0,7);g.fill();
-      /* on mesure régulièrement la part grattée : à 70 %, tout se dévoile */
-      const n0=performance.now();if(n0-(cv._mes||0)>90){cv._mes=n0;const px=g.getImageData(0,0,cv.width,cv.height).data;let vide=0,tot=0;for(let i=3;i<px.length;i+=64){tot++;if(px[i]<40)vide++;}if(vide/tot>=0.70)devoiler();}};
-    cv.onpointerdown=(ev)=>{bas=true;cv.setPointerCapture(ev.pointerId);effacer(ev);vibrer(4);};cv.onpointermove=(ev)=>{if(bas)effacer(ev);};cv.onpointerup=()=>{bas=false;cv._mes=0;const px=g.getImageData(0,0,cv.width,cv.height).data;let vide=0,tot=0;for(let i=3;i<px.length;i+=64){tot++;if(px[i]<40)vide++;}if(vide/tot>=0.70)devoiler();};
-    $('gratOk').onclick=()=>{v.remove();rendre();};
-    setTimeout(()=>{if(!fini&&!document.body.contains(v))return;},0);};
-  rendre();
-}
-/* ================= LE BAR DES DOCKS : l'ardoise des jeux, et trois nouveaux jeux =================
-   L'ARDOISE, écrite à la craie : la Grattouille, le Morpion d'Or, la Pêche Miraculeuse, le Loto du Port.
-   Les tickets (grattouille, morpion, pêche) comptent ensemble dans la limite de 20 par jour. */
-const CSS_ARDOISE=`.ardB{position:absolute;inset:0;background:#2a1a10;padding:calc(env(safe-area-inset-top,0px) + 10px) 10px 10px;display:flex;flex-direction:column}
-.ardB .a{flex:1;overflow-y:auto;border:12px solid #8a6238;border-radius:8px;background:radial-gradient(ellipse at 40% 30%,#3a4440,#232a28);box-shadow:inset 0 0 40px rgba(0,0,0,.5);padding:14px;color:#f2f0e8;font-family:'Comic Sans MS','Segoe Print','Chalkboard SE',cursive}
-.ardB h1{margin:0;text-align:center;font-size:26px}.ardB .s{text-align:center;font-size:12px;opacity:.75;margin-bottom:12px}.ardB .bs{text-align:center;font-size:14px;margin:-6px 0 10px;color:#f4d27a}
-.ardB .j{display:flex;gap:10px;align-items:center;padding:10px 8px;border-radius:10px;margin-bottom:7px;background:rgba(255,255,255,.06);border:0;width:100%;color:inherit;font:inherit;text-align:left}
-.ardB .j .i{font-size:30px;width:42px;text-align:center}.ardB .j b{display:block;font-size:17px;color:#f4d27a}.ardB .j small{font-size:12px;opacity:.85}
-.ardB .j .p{margin-left:auto;font-size:13px;color:#fff;border:1px dashed rgba(255,255,255,.4);border-radius:8px;padding:3px 7px;white-space:nowrap}
-.ardB .f{text-align:center;font-size:12px;opacity:.7;margin-top:10px}
-.ardB .sortir{margin-top:10px;border:2px solid #c8962a;border-radius:22px;padding:12px;background:#1e130b;color:#f0d890;font:700 15px Georgia}
-.jeuB{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;color:#fff;font-family:Georgia,serif;overflow-y:auto}
-.jeuB.fMo{background:#2a1a10}.jeuB.fPe{background:#0e3a5a}.jeuB.fLo{background:#1d3f6a;justify-content:flex-start}
-.jeuB .t{width:100%;max-width:340px;border-radius:18px;padding:14px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.5)}
-.jeuB .t b.ti{display:block;font:900 21px Georgia;letter-spacing:1px}.jeuB .t small{display:block;font:italic 13px Georgia;margin-bottom:10px;opacity:.9}
-.jeuB .bt{border:0;border-radius:22px;padding:12px 18px;font:700 15px Georgia;background:#fff;color:#3a1616;min-width:200px}.jeuB .bt.sec{background:transparent;border:2px solid rgba(255,255,255,.7);color:#fff}
-.jeuB .res{font:700 17px Georgia;min-height:24px;text-align:center}.jeuB .res i{color:#ffe070;font-style:normal}
-.jeuB .mo{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:#fff8e0;border-radius:12px;padding:8px;position:relative}
-.jeuB .mo span{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:38px;border-radius:8px;background:#fff;position:relative;overflow:hidden}
-.jeuB .mo span.w{background:#fff3a0}.jeuB .mo canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
-.jeuB .pe{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.jeuB .pe span{aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;background:linear-gradient(135deg,#b8bcc4,#e8ecf0,#a8acb4);box-shadow:inset 0 -3px 0 rgba(0,0,0,.15)}
-.jeuB .pe span.o{background:#bfe6f4}.jeuB .pe span.b{background:#fff3a0;box-shadow:0 0 0 3px #f0c040}
-.jeuB .lo{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;background:#fff;border-radius:12px;padding:10px;width:100%;max-width:340px}
-.jeuB .lo span{aspect-ratio:1;border-radius:50%;border:2px solid #1d3f6a;color:#1d3f6a;display:flex;align-items:center;justify-content:center;font:700 15px Georgia}.jeuB .lo span.on{background:#c8281e;border-color:#c8281e;color:#fff}
-.jeuB .cag{width:100%;max-width:340px;border-radius:14px;padding:10px;text-align:center;background:linear-gradient(135deg,#f2d21a,#e8a030);color:#3a2604}.jeuB .cag small{font:700 11px ui-monospace,monospace;letter-spacing:2px}.jeuB .cag b{display:block;font:900 32px Georgia}
-.jeuB .info{width:100%;max-width:340px;background:rgba(255,255,255,.1);border-radius:12px;padding:10px;font:13px Georgia;line-height:1.5}
-.jeuB .bb{display:inline-flex;width:28px;height:28px;border-radius:50%;background:#fff;color:#1d3f6a;align-items:center;justify-content:center;font:700 13px Georgia;margin:3px 2px}.jeuB .bb.ok{background:#f2d21a}`;
-let TICKETS_JOUR=0;
-async function ouvrirLeBar(){
-  if(!document.getElementById('cssArdoise')){const st=document.createElement('style');st.id='cssArdoise';st.textContent=CSS_ARDOISE;document.head.appendChild(st);}
-  if(!document.getElementById('cssSki')){const st=document.createElement('style');st.id='cssSki';st.textContent=CSS_SKI;document.head.appendChild(st);}
-  injecterCssEcole();if(!document.getElementById('cssBar')){const st=document.createElement('style');st.id='cssBar';st.textContent=CSS_BAR;document.head.appendChild(st);}
-  $('page2Fond').className='ardB';$('page2').classList.add('on');
-  const [d0,L]=await Promise.all([appelRPC('mes_grattages',{p_joueur:e.id}),appelRPC('loto_etat',{p_joueur:e.id})]);
-  TICKETS_JOUR=(d0&&typeof d0.aujourdhui==='number')?d0.aujourdhui:TICKETS_JOUR;
-  const cag=L&&L.cagnotte?enEuros(L.cagnotte).replace(',00',''):'—';
-  $('page2Fond').innerHTML='<div class="a"><h1>Bar des Docks</h1><div class="s">~ les jeux du comptoir ~</div><div class="bs">ta bourse : '+enEuros(e.euros||0)+'</div>'+
-    '<button class="j" data-j="gratte"><div class="i">🎟</div><div><b>La Grattouille</b><small>trois montants pareils, c’est gagné</small></div><span class="p">1 à 10 €</span></button>'+
-    '<button class="j" data-j="morpion"><div class="i">⚓</div><div><b>Le Morpion d’Or</b><small>trois ancres alignées · jusqu’à 100 €</small></div><span class="p">2 €</span></button>'+
-    '<button class="j" data-j="peche"><div class="i">🐟</div><div><b>La Pêche Miraculeuse</b><small>5 bulles sur 12, la bouée double tout</small></div><span class="p">3 €</span></button>'+
-    '<button class="j" data-j="loto"><div class="i">🎱</div><div><b>Le Loto du Port</b><small>tirage chaque soir à 20 h · cagnotte : '+cag+'</small></div><span class="p">2 €</span></button>'+
-    '<div class="f">tickets du jour : '+TICKETS_JOUR+' / 20 · le jeu doit rester un plaisir</div></div><button class="sortir" id="barSortir">Ressortir sur le quai</button>';
-  $('barSortir').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-  $('page2Fond').querySelectorAll('[data-j]').forEach(b=>b.onclick=()=>{vibrer(8);const j=b.dataset.j;
-    if(j==='gratte')ouvrirLaGrattouille();else if(j==='morpion')jeuMorpion();else if(j==='peche')jeuPeche();else jeuLoto(L);});
-}
-const messageErreurJeu=(d)=>d&&d.erreur==='limite'?'Vingt tickets aujourd’hui : reviens demain !':(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':(d&&d.erreur==='doucement'?'Un ticket à la fois !':'Le buraliste n’a pas pu'));
-/* une pellicule argentée sur un élément : on gratte au doigt ; au-delà d'un seuil, rappel(fini) */
-function pellicule(parent,texte,seuil,fini){const cv=document.createElement('canvas');parent.appendChild(cv);const r=parent.getBoundingClientRect(), D=devicePixelRatio||1;cv.width=r.width*D;cv.height=r.height*D;
-  const g=cv.getContext('2d');const gr=g.createLinearGradient(0,0,cv.width,cv.height);gr.addColorStop(0,'#b8bcc4');gr.addColorStop(0.5,'#e8ecf0');gr.addColorStop(1,'#a8acb4');g.fillStyle=gr;g.fillRect(0,0,cv.width,cv.height);
-  if(texte){g.fillStyle='rgba(90,95,105,.55)';g.font=Math.round(10*D)+'px Georgia';g.textAlign='center';g.fillText(texte,cv.width/2,cv.height/2+4*D);}
-  g.globalCompositeOperation='destination-out';let bas=false, fait=false;
-  const mesure=()=>{const px=g.getImageData(0,0,cv.width,cv.height).data;let v=0,t=0;for(let i=3;i<px.length;i+=32){t++;if(px[i]<40)v++;}if(v/t>=seuil&&!fait){fait=true;cv.remove();fini();}};
-  const eff=(ev)=>{if(fait)return;const rr=cv.getBoundingClientRect();g.beginPath();g.arc((ev.clientX-rr.left)*D,(ev.clientY-rr.top)*D,12*D,0,7);g.fill();const n=performance.now();if(n-(cv._m||0)>90){cv._m=n;mesure();}};
-  cv.onpointerdown=(ev)=>{bas=true;try{cv.setPointerCapture(ev.pointerId);}catch(x){}eff(ev);};cv.onpointermove=(ev)=>{if(bas)eff(ev);};cv.onpointerup=()=>{bas=false;mesure();};
-  return {devoiler:()=>{if(!fait){fait=true;cv.remove();fini();}}};}
-/* LE MORPION D'OR : on gratte les neuf cases une à une ; trois ancres alignées = gagné */
-async function jeuMorpion(){
-  $('page2Fond').className='jeuB fMo';
-  const achat=async()=>{const d=await appelRPC('jouer_morpion',{p_joueur:e.id});if(!d||d.erreur){$('page2Fond').innerHTML='<div class="res">'+messageErreurJeu(d)+'</div><button class="bt" id="jr">← Retour aux jeux</button>';$('jr').onclick=ouvrirLeBar;return;}
-    TICKETS_JOUR++;
-    $('page2Fond').innerHTML='<div class="t" style="background:linear-gradient(135deg,#d8a830,#f0d890 45%,#c8962a);color:#3a2604"><b class="ti">LE MORPION D’OR</b><small>gratte les cases · trois ancres alignées</small>'+
-      '<div class="mo">'+d.grille.map((x,i)=>'<span data-i="'+i+'">'+x+'</span>').join('')+'</div>'+
-      '<div style="font:12px Georgia;margin-top:8px">⚓⚓⚓ en ligne : de 2 € à 100 €</div></div><div class="res" id="moRes"></div>'+
-      '<button class="bt" id="moTout">Tout gratter</button><button class="bt sec" id="moRet" style="display:none">← Retour aux jeux</button><button class="bt" id="moEncore" style="display:none">Un autre · 2 €</button>';
-    let reste=9;const cases=[...$('page2Fond').querySelectorAll('.mo span')];const P=[];
-    const fin=()=>{if(reste>0)return;$('moTout').style.display='none';
-      if(d.gain>0){const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]].find(l=>l.every(k=>d.grille[k]==='⚓'));if(L)L.forEach(k=>cases[k].classList.add('w'));jouer('vente','moment');vibrer([30,50,30,50,90]);}
-      $('moRes').innerHTML=d.gain>0?'Trois ancres ! <i>+'+enEuros(d.gain)+'</i>':'Pas de ligne… <span style="font-weight:400;font-style:italic">la prochaine sera la bonne</span>';
-      if(typeof d.euros==='number'){e.euros=d.euros;sauver();majHaut();}$('moRet').style.display='';$('moEncore').style.display='';};
-    requestAnimationFrame(()=>cases.forEach(c=>P.push(pellicule(c,'',0.55,()=>{reste--;fin();}))));
-    $('moTout').onclick=()=>P.forEach(x=>x.devoiler());$('moRet').onclick=ouvrirLeBar;$('moEncore').onclick=achat;};
-  $('page2Fond').innerHTML='<div class="t" style="background:linear-gradient(135deg,#d8a830,#f0d890 45%,#c8962a);color:#3a2604"><b class="ti">LE MORPION D’OR</b><small>une grille de 3 × 3 cases à gratter</small>'+
-    '<div style="font:14px Georgia;line-height:1.6">Trois <b>⚓ ancres</b> alignées, en ligne, en colonne ou en diagonale : c’est gagné.<br>2 € (1 sur 5) · 5 € (1 sur 17) · 20 € (1 sur 67) · <b>100 €</b> (1 sur 500)</div></div>'+
-    '<button class="bt" id="moGo">Acheter un ticket · 2 €</button><button class="bt sec" id="moRet0">← Retour aux jeux</button>';
-  $('moGo').onclick=achat;$('moRet0').onclick=ouvrirLeBar;
-}
-/* LA PÊCHE MIRACULEUSE : 12 bulles, on n'en ouvre que 5 ; le contenu reste au serveur jusqu'au bout */
-async function jeuPeche(){
-  $('page2Fond').className='jeuB fPe';
-  const partie=async()=>{const d=await appelRPC('peche_acheter',{p_joueur:e.id});if(!d||d.erreur){$('page2Fond').innerHTML='<div class="res">'+messageErreurJeu(d)+'</div><button class="bt" id="jr">← Retour aux jeux</button>';$('jr').onclick=ouvrirLeBar;return;}
-    if(typeof d.euros==='number'){e.euros=d.euros;majHaut();}if(!d.vus||!d.vus.length)TICKETS_JOUR++;
-    const vus={};(d.vus||[]).forEach(x=>vus[x.c]=x.v);let reste=5-Object.keys(vus).length, somme=0, bouee=false;
-    const val={'🐟':0.5,'🐡':1,'🦈':10,'🥾':0,'🛟':0};Object.values(vus).forEach(v=>{somme+=val[v]||0;if(v==='🛟')bouee=true;});
-    $('page2Fond').innerHTML='<div class="t" style="background:linear-gradient(160deg,#2d8fb0,#1d5f80)"><b class="ti">LA PÊCHE MIRACULEUSE</b><small>touche 5 bulles sur 12</small>'+
-      '<div class="pe">'+Array.from({length:12},(_,i)=>'<span data-c="'+(i+1)+'" class="'+(vus[i+1]?(vus[i+1]==='🛟'?'b':'o'):'')+'">'+(vus[i+1]||'')+'</span>').join('')+'</div>'+
-      '<div style="font:700 14px Georgia;margin-top:10px" id="peCpt"></div></div>'+
-      '<div class="info" style="text-align:center">🐟 0,50 € · 🐡 1 € · 🦈 10 € · 🛟 la bouée d’or double tout · 🥾 la vieille botte, rien</div><div class="res" id="peRes"></div>'+
-      '<button class="bt sec" id="peRet" style="display:none">← Retour aux jeux</button><button class="bt" id="peEncore" style="display:none">Une autre · 3 €</button>';
-    const cpt=()=>{$('peCpt').innerHTML=reste>0?'Encore '+reste+' bulle'+(reste>1?'s':'')+' · ta pêche : '+enEuros(Math.round(somme*100))+(bouee?' · <span style="color:#ffe070">bouée d’or : × 2</span>':''):'';};cpt();
-    let occupe=false;
-    $('page2Fond').querySelectorAll('.pe span').forEach(sp=>sp.onclick=async()=>{if(occupe||reste<=0||sp.classList.contains('o')||sp.classList.contains('b'))return;occupe=true;vibrer(10);
-      const r=await appelRPC('peche_ouvrir',{p_joueur:e.id,p_id:d.id,p_case:+sp.dataset.c});occupe=false;if(!r||r.erreur)return;
-      sp.textContent=r.v;sp.classList.add(r.v==='🛟'?'b':'o');somme+=val[r.v]||0;if(r.v==='🛟'){bouee=true;vibrer([20,40,20]);}reste=r.reste;cpt();
-      if(reste===0){/* on montre ce qu'il y avait sous les autres bulles */
-        (r.contenu||[]).forEach((v,k)=>{const s2=$('page2Fond').querySelector('[data-c="'+(k+1)+'"]');if(s2&&!s2.classList.contains('o')&&!s2.classList.contains('b')){s2.textContent=v;s2.style.opacity=.45;}});
-        if(r.gain>0){jouer('vente','moment');vibrer([30,50,30,50,90]);}
-        $('peRes').innerHTML=r.gain>0?'Belle pêche ! <i>+'+enEuros(r.gain)+'</i>'+(r.double?' <span style="font-weight:400">(bouée : × 2)</span>':''):'Rien dans les filets… <span style="font-weight:400;font-style:italic">que des vieilles bottes</span>';
-        if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}$('peRet').style.display='';$('peEncore').style.display='';}});
-    $('peRet').onclick=ouvrirLeBar;$('peEncore').onclick=partie;};
-  $('page2Fond').innerHTML='<div class="t" style="background:linear-gradient(160deg,#2d8fb0,#1d5f80)"><b class="ti">LA PÊCHE MIRACULEUSE</b><small>12 bulles, tu n’en ouvres que 5</small>'+
-    '<div style="font:14px Georgia;line-height:1.6">Chaque poisson rapporte. La <b>🛟 bouée d’or</b> double toute ta pêche. Un <b>🦈 requin</b> vaut 10 € à lui seul… s’il y en a un.</div></div>'+
-    '<button class="bt" id="peGo">Acheter un ticket · 3 €</button><button class="bt sec" id="peRet0">← Retour aux jeux</button>';
-  $('peGo').onclick=partie;$('peRet0').onclick=ouvrirLeBar;
-}
-/* LE LOTO DU PORT : 5 numéros sur 30, tirage à 20 h, une cagnotte commune qui grossit */
-async function jeuLoto(L0){
-  $('page2Fond').className='jeuB fLo';
-  const L=L0||await appelRPC('loto_etat',{p_joueur:e.id})||{};let choix=[];
-  const rendre=(L)=>{const mes=L.mes_grilles||[], D=L.dernier;
-    const tirage=D?'<div class="info">Dernier tirage ('+new Date(D.jour+'T12:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+') : '+
-      (D.numeros||[]).map(n=>'<span class="bb">'+n+'</span>').join('')+'<br>'+(D.gagnants5?D.gagnants5+' gagnant'+(D.gagnants5>1?'s':'')+' du gros lot !':'Pas de gros lot : la cagnotte est remise en jeu.')+
-      (D.mes_resultats?'<br><b>Tes grilles :</b> '+D.mes_resultats.map(r=>r.bons+' bon'+(r.bons>1?'s':'')+(r.gain?' → <b style="color:#ffe070">+'+enEuros(r.gain)+'</b>':'')).join(' · '):'')+'</div>':'';
-    $('page2Fond').innerHTML='<div style="text-align:center;padding-top:calc(env(safe-area-inset-top,0px) + 4px)"><b style="font:900 24px Georgia;letter-spacing:2px;color:#f2d21a">LE LOTO DU PORT</b><div style="font:italic 13px Georgia">coche 5 numéros sur 30 · la grille 2 €</div></div>'+
-      '<div class="cag"><small>CAGNOTTE DE CE SOIR · TIRAGE À 20 H</small><b>'+enEuros(L.cagnotte||10000).replace(',00','')+'</b>'+(L.grilles_jour||0)+' grille'+((L.grilles_jour||0)>1?'s':'')+' jouée'+((L.grilles_jour||0)>1?'s':'')+'</div>'+
-      '<div class="lo">'+Array.from({length:30},(_,i)=>'<span data-n="'+(i+1)+'" class="'+(choix.includes(i+1)?'on':'')+'">'+(i+1)+'</span>').join('')+'</div>'+
-      '<button class="bt" id="loGo" style="background:#f2d21a;color:#1d3f6a">'+(choix.length<5?'Coche encore '+(5-choix.length)+' numéro'+(5-choix.length>1?'s':''):'Valider ma grille · 2 €')+'</button>'+
-      '<div class="res" id="loRes"></div>'+(mes.length?'<div class="info"><b>Tes grilles pour ce soir ('+mes.length+' / 5) :</b><br>'+mes.map(g=>g.map(n=>'<span class="bb">'+n+'</span>').join('')).join('<br>')+'</div>':'')+
-      '<div class="info">5 bons numéros : <b>la cagnotte</b> (partagée entre les gagnants) · 4 bons : <b>20 €</b> · 3 bons : <b>4 €</b></div>'+tirage+
-      '<button class="bt sec" id="loRet">← Retour aux jeux</button>';
-    $('page2Fond').querySelectorAll('.lo span').forEach(sp=>sp.onclick=()=>{const n=+sp.dataset.n;if(choix.includes(n))choix=choix.filter(x=>x!==n);else if(choix.length<5)choix.push(n);vibrer(6);rendre(L);});
-    $('loRet').onclick=ouvrirLeBar;
-    $('loGo').onclick=async()=>{if(choix.length<5)return;const d=await appelRPC('loto_jouer',{p_joueur:e.id,p_numeros:choix});
-      if(!d||d.erreur){$('loRes').textContent=d&&d.erreur==='limite'?'Cinq grilles par soir, pas plus !':(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':'Le buraliste n’a pas pu');return;}
-      if(typeof d.euros==='number'){e.euros=d.euros;sauver();majHaut();}choix=[];jouer('vente','moment');vibrer(20);
-      const L2=await appelRPC('loto_etat',{p_joueur:e.id});rendre(L2||L);$('loRes').innerHTML='Grille validée ! <i>Rendez-vous à 20 h.</i>';};};
-  rendre(L);
-}
+/* (les jeux du Bar des Docks ont été retirés : on les refera de zéro) */
 /* ================= LE PEIGNE D'OR : le salon de coiffure du port =================
    Même catalogue que le Ski shop, aux couleurs du salon : la cabine où ta tête tourne, deux rayons
    (les coupes, les couleurs), essayer, acheter, porter, revenir à sa coupe. */
