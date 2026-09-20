@@ -1362,19 +1362,6 @@ function graverLaBanque(){return devanture(2,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
   g.font='700 6.2px Georgia';g.textAlign='center';g.fillStyle='#f0d890';g.fillText('CAISSE D’ÉPARGNE DU VIEUX-PORT',cx,ey+7,BL-26);g.textAlign='left';
   g.fillStyle='#f4ecd8';g.beginPath();g.arc(cx,ey-8,7,0,7);g.fill();g.strokeStyle='#d8b050';g.lineWidth=1.2;g.stroke();g.strokeStyle='#1a1a1a';g.lineWidth=0.7;g.beginPath();g.moveTo(cx,ey-8);g.lineTo(cx,ey-12.5);g.moveTo(cx,ey-8);g.lineTo(cx+3,ey-7);g.stroke();   /* l'horloge */
   if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,210,140,.4)');l.addColorStop(1,'rgba(255,210,140,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}});}
-/* MADAME MIREILLE, VOYANTE : rideaux de velours violet, la boule de cristal dans la vitrine, la main aux étoiles */
-function graverLaVoyante(){return devanture(4,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
-  R(x0,yR,BL,rez,'#3a1a4a');R(x0,yR,BL,1.5,'#d8b050');
-  R(x0+8,yR+8,BL-16,rez-10,nuit?'#5a2a7a':'#1a0e24');
-  for(let k=0;k<22;k++)R(x0+12+((k*37)%(BL-24)),yR+10+((k*13)%(rez-14)),1,1,k%3?'#f0d890':'#ffffff');                       /* les étoiles peintes */
-  [[x0+8],[x0+BL-30]].forEach(([x])=>{for(let k=0;k<22;k+=3)R(x+k,yR+8,3,rez-10,k%6?'#6a2a8a':'#7a3a9a');R(x,yR+8,22,2,'#d8b050');});     /* les rideaux */
-  g.fillStyle=nuit?'rgba(170,220,255,.95)':'rgba(140,190,230,.9)';g.beginPath();g.arc(cx,yR+22,7,0,7);g.fill();g.fillStyle='rgba(255,255,255,.7)';g.beginPath();g.arc(cx-2.5,yR+19.5,2,0,7);g.fill();
-  R(cx-6,yR+29,12,3,'#d8b050');R(cx-4,yR+32,8,2,'#8a6a2a');                                                                     /* la boule, son socle */
-  if(nuit){const l=g.createRadialGradient(cx,yR+22,2,cx,yR+22,26);l.addColorStop(0,'rgba(160,220,255,.6)');l.addColorStop(1,'rgba(160,220,255,0)');g.fillStyle=l;g.fillRect(cx-26,yR-4,52,52);}
-  const ey=yR-16;R(x0+14,ey,BL-28,12,'#2a0e3a');R(x0+15,ey+1,BL-30,10,'#4a1a5a');
-  g.font='italic 700 7px Georgia';g.textAlign='center';g.fillStyle='#f0d890';g.fillText('✦ MADAME MIREILLE · VOYANCE ✦',cx,ey+8,BL-36);g.textAlign='left';
-  /* la main aux étoiles, en drapeau */
-  const hx=x0+BL-8, hy=yR-26;R(hx,hy+10,1.5,10,'#3a3a40');g.fillStyle='#f0d890';g.beginPath();g.arc(hx,hy+4,6,0,7);g.fill();g.fillStyle='#4a1a5a';g.font='700 7px Georgia';g.textAlign='center';g.fillText('✋',hx,hy+6.5);g.textAlign='left';});}
 /* LE GLAÇON D'ART : une charrette, un parasol rayé, des blocs de glace qui brillent, l'ardoise des prix */
 function graverLesGlacons(){const W=70,H=64,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);const sol=H-4, cx=W/2;
   const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
@@ -1528,7 +1515,6 @@ function semerDecorExtramar(){
   for(let k=0;k<10;k++){
     if(k===4){P('x_panneauG',XP.ruelle.x-38,XP.maisonsY+22,{col:[4,3]});continue;}   /* la ruelle du casino, et son panneau */
     if(k===9){XCAL['x_banque0']=graverLaBanque();CALQUES_DECO['x_banque']=XCAL['x_banque0'];P('x_banque',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'banque'});continue;}   /* la banque */
-    if(k===1){XCAL['x_voyante0']=graverLaVoyante();CALQUES_DECO['x_voyante']=XCAL['x_voyante0'];P('x_voyante',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'voyante'});continue;}   /* la voyante */
     if(k===3){XCAL['x_bar0']=graverLeBar();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ferme:'Le Bar des Docks'});
       XCAL['x_gueridon0']=graverGueridon();CALQUES_DECO['x_gueridon']=XCAL['x_gueridon0'];[[70+k*140-44,XP.maisonsY+34],[70+k*140+46,XP.maisonsY+36]].forEach(([x,y])=>P('x_gueridon',x,y,{col:[8,3]}));continue;}   /* le bar-tabac */
     if(k===5){XCAL['x_peigne0']=graverLePeigne();CALQUES_DECO['x_peigne']=XCAL['x_peigne0'];P('x_peigne',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'salon'});continue;}   /* le salon de coiffure */
