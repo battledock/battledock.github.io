@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1649';
+  var MA_VERSION='2026-09-20-1700';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -2121,6 +2121,18 @@ async function chargerMorceau(nom){
 /* LA CARTE : le village, ou Extramar (le vieux port, au bout de la ligne 1) */
 const CARTE=(()=>{const c=new URLSearchParams(location.search).get('carte');return c==='sommet'?'sommet':(c==='montagne'?'montagne':(c==='extramar'||c==='garde'?'extramar':'village'));})();
 const CARTE_MOD=CARTE==='montagne'||CARTE==='sommet';        /* les cartes de Saumaski (la station, le sommet) */   /* la place du haut n'existe plus */
+/* LE CADDIE : un panier en fil de fer, sa poignée rouge, ses quatre roulettes. Vu de face, de dos ou de profil. */
+function dessinerCaddie(g,x,y,dir,t){const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(a,b,w,h);};const fil='#9aa2aa', fonce='#6a727a';
+  const cote=dir==='droite'||dir==='gauche', s=dir==='gauche'?-1:1;
+  g.fillStyle='rgba(40,30,18,.25)';g.beginPath();g.ellipse(x,y+0.5,cote?9:7,1.8,0,0,7);g.fill();
+  if(cote){g.save();g.translate(x,y);g.scale(s,1);
+    R(-8,-11,15,8,'rgba(154,162,170,.25)');for(let k=-8;k<=7;k+=2.5)R(k,-11,0.6,8,fil);R(-8,-11,15,0.8,fonce);R(-8,-7,15,0.5,fil);R(-8,-3.5,15,0.8,fonce);
+    R(-9,-13,1,10,fonce);R(-11,-14,3,1.5,'#c8281e');R(-7,-3,0.8,2,fonce);R(5,-3,0.8,2,fonce);
+    [[-7],[5]].forEach(([k])=>{R(k-1,-1.5,2.5,2.5,'#2a2a30');R(k-0.4,-1,1,1,'#8a8f96');});g.restore();return;}
+  R(x-6,y-12,12,8,'rgba(154,162,170,.25)');for(let k=-6;k<=6;k+=2)R(x+k,y-12,0.6,8,fil);R(x-6,y-12,12,0.8,fonce);R(x-6,y-8,12,0.5,fil);R(x-6,y-4,12,0.8,fonce);
+  if(dir==='haut'){R(x-6,y-14,12,1.5,'#c8281e');}
+  [[-5],[4]].forEach(([k])=>{R(x+k-0.5,y-2.5,2,2.5,'#2a2a30');});
+}
 /* LES OBJETS ANIMÉS DU DÉCOR : chaque carte (port.js, saumaski.js) peut y ranger ses dessins vivants */
 const ANIM_DECOR={};
 
@@ -13742,6 +13754,17 @@ function assis(g,x,y,ap){
   if(C&&C.id!=='cape'){try{C.dessin(g,x,hanche+8,tc);}catch(err){}}
 }
 function personne(g,x,y,ap,dir,pas,marche,enCourse){
+  if(ap&&ap.caddie&&!(GESTE&&GESTE.t>0)){                    /* LE CADDIE : poussé devant soi, il tremble un peu et grince */
+    const d=String(dir||'bas'), cote=d.includes('droite')?1:(d.includes('gauche')?-1:0), haut=d.includes('haut');
+    const tr=marche?Math.sin((pas||0)*9)*0.6:0, dx=cote?cote*17:0, dy=haut?-7:(cote?1:9);
+    const dirC=cote?(cote>0?'droite':'gauche'):(haut?'haut':'bas');
+    const ap2=Object.assign({},ap);delete ap2.caddie;                             /* le personnage lui-même, dessiné comme d'habitude */
+    const caddie=()=>{g.save();g.translate(Math.round(x+dx+tr),Math.round(y+dy));g.scale(1.3,1.3);dessinerCaddie(g,0,0,dirC);g.restore();};   /* un peu plus grand : à hauteur de hanche */
+    if(haut)caddie();
+    personne(g,x,y,ap2,dir,pas,marche,enCourse);
+    if(!haut){caddie();
+      if(marche&&Math.floor(Date.now()/900)%5===0){g.font='italic 700 6px Georgia';g.fillStyle='#fff';g.fillText('couic',Math.round(x+dx+6),Math.round(y+dy-14));}}
+    return;}
   if(ap&&ap.patin&&!(GESTE&&GESTE.t>0)){
     const v=ap._v||0, ph=ap._ph||0, apC=Object.assign({},ap);delete apC._v;delete apC._ph;
     const pousse=Math.sin(ph*Math.PI);                                        /* -1 : pied gauche, +1 : pied droit */
@@ -16486,7 +16509,7 @@ function adopterSac(d,num){
      un sac qu'on a payé */
   const paye=(typeof e.nivSac==='number'&&e.nivSac>0)
     ? SAC_PALIERS[Math.min(e.nivSac,SAC_PALIERS.length-1)] : 0;
-  if(d.max)e.sacMax=Math.max(d.max,paye,e.sacMax||0);
+  if(d.max)e.sacMax=Math.max(d.max,paye);                                      /* le serveur fait foi (il peut rapetisser : fin du caddie) */
   else if(paye)e.sacMax=Math.max(paye,e.sacMax||0);
   /* SI LE SERVEUR A OUBLIÉ L'AGRANDISSEMENT, ON LE LUI RAPPELLE.
      Un seul appel raté à l'achat, et il continue de rogner chaque récolte à
@@ -18309,6 +18332,7 @@ function majAction(){
   }
   if(o.t==='x_chantier'){b.innerHTML='Lire le panneau<small>CHANTIER · TRAVAUX EN COURS</small>';b.classList.add('on');return;}
   if(o.ouvre==='manif'){b.innerHTML=(e.ap&&e.ap.gilet?'Ranger ton gilet':'Rejoindre la manif')+'<small>'+(e.ap&&e.ap.gilet?'TU DÉFILES AVEC LES DOCKERS':'LE DÉLÉGUÉ TE TEND UN GILET ORANGE')+'</small>';b.classList.add('on');return;}
+  if(o.ouvre==='caddie'){b.innerHTML=(CADDIE_FIN>Date.now()?'Ton caddie · encore '+Math.ceil((CADDIE_FIN-Date.now())/60000)+' min':'Louer un caddie · 3 €')+'<small>'+(CADDIE_FIN>Date.now()?'LE GRAND FRÈRE TE SURVEILLE':'LE SAC DEVIENT 2× PLUS GRAND · 1 HEURE')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='banque'){b.innerHTML='Entrer à la banque<small>LIVRET · VIREMENTS · PRÊT</small>';b.classList.add('on');return;}
   if(o.ouvre==='glacons'){b.innerHTML='Le Glaçon d’Art<small>GLAÇONS ARTISANAUX · TAILLÉS MAIN</small>';b.classList.add('on');return;}
   if(o.ouvre==='salon'){b.innerHTML='Entrer au Peigne d’Or<small>COUPES ET COULEURS EXCLUSIVES</small>';b.classList.add('on');return;}
@@ -18471,6 +18495,7 @@ function agir(){
   if(o.ouvre==='skishop'){ouvrirLeSkiShop();return;}
   if(o.ouvre==='crousti'){ouvrirCrousti();return;}
   if(o.ouvre==='salon'){ouvrirLeSalon();return;}
+  if(o.ouvre==='caddie'){louerUnCaddie();return;}
   if(o.ouvre==='banque'){ouvrirLaBanque();return;}
   if(o.ouvre==='glacons'){ouvrirLesGlacons();return;}
   if(o.ouvre==='manif'){e.ap=Object.assign({},e.ap||DEF_AP);const avec=!e.ap.gilet;if(avec)e.ap.gilet=true;else delete e.ap.gilet;
@@ -19840,6 +19865,24 @@ function partirSkier(ep){
   location.href='ski.html?e='+ep+'&v='+encodeURIComponent(window.MA_VERSION||'');
 }
 /* (les jeux du Bar des Docks ont été retirés : on les refera de zéro) */
+/* ================= LE CADDIE DU GRAND FRÈRE =================
+   3 € l'heure : le sac devient deux fois plus grand (le serveur le décide et le reprend à la fin).
+   On pousse son caddie devant soi, et tout le monde le voit. */
+let CADDIE_FIN=0;
+const REPLIQUES_FRERE=['Tu me le ramènes entier, hein.','Il tire un peu à gauche, c’est normal.','Si tu le perds, je te retrouve.','Une heure, pas une minute de plus, cousin.','C’est un caddie de collection, fais attention.'];
+async function lireLeCaddie(){if(!e.id)return;const d=await appelRPC('caddie_etat',{p_joueur:e.id});if(!d||d.erreur)return;
+  CADDIE_FIN=d.fin?new Date(d.fin).getTime():0;if(typeof d.max==='number'){const paye=(typeof e.nivSac==='number'&&e.nivSac>0)?SAC_PALIERS[Math.min(e.nivSac,SAC_PALIERS.length-1)]:0;e.sacMax=Math.max(d.max,paye);}
+  const avec=CADDIE_FIN>Date.now();if(!!(e.ap&&e.ap.caddie)!==avec){e.ap=Object.assign({},e.ap);if(avec)e.ap.caddie=1;else delete e.ap.caddie;monterEnLigne(true);sauver();}
+  try{majHaut();}catch(x){}}
+setTimeout(()=>lireLeCaddie().catch(()=>{}),2500);setInterval(()=>{if(CADDIE_FIN&&Date.now()>CADDIE_FIN-500)lireLeCaddie().catch(()=>{});},20000);
+async function louerUnCaddie(){
+  if(CADDIE_FIN>Date.now()){texteVolant(joueur.x,joueur.y-56,REPLIQUES_FRERE[Math.floor(Math.random()*REPLIQUES_FRERE.length)],'#ffe8a0');return;}
+  const d=await appelRPC('caddie_louer',{p_joueur:e.id});
+  if(!d||d.erreur){texteVolant(joueur.x,joueur.y-56,d&&d.erreur==='pas_assez'?'« Pas d’argent, pas de caddie. »':'« Reviens plus tard, cousin. »','#ffe8a0');return;}
+  if(typeof d.euros==='number')e.euros=d.euros;CADDIE_FIN=new Date(d.fin).getTime();if(d.max)e.sacMax=d.max;
+  e.ap=Object.assign({},e.ap,{caddie:1});sauver();envoyerSauvegarde(true);monterEnLigne(true);majHaut();jouer('vente','moment');vibrer([20,40,20]);
+  texteVolant(joueur.x,joueur.y-60,'« Tiens. Une heure. Tu me le ramènes. »','#ffe8a0');setTimeout(()=>texteVolant(joueur.x,joueur.y-48,'Ton sac : '+d.max+' places !','#9fdfb8'),900);
+}
 /* ================= LES TROIS NOUVELLES ADRESSES DU QUAI =================
    LA BANQUE (livret à 1 % par jour, virements, prêt), MADAME MIREILLE (des prédictions complètement
    folles), LE GLAÇON D'ART (des glaçons « taillés main » qui fondent dans le sac). */

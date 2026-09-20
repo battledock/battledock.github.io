@@ -1374,6 +1374,13 @@ function graverLesGlacons(){const W=70,H=64,D=2,c=document.createElement('canvas
   R(cx+18,sol-34,14,11,'#2a2a2a');R(cx+18.5,sol-33.5,13,10,'#3a4440');g.font='700 3px Georgia';g.fillStyle='#fff';g.fillText('GLAÇONS',cx+19.5,sol-29.5);g.fillText('ARTISANAUX',cx+19,sol-26);
   R(cx-22,sol-40,20,6,'#f4efe6');g.font='700 3.4px Georgia';g.fillStyle='#2d6fb0';g.fillText('Le Glaçon d’Art',cx-21,sol-36);
   return {toile:c,W,H,sol,nuit:null};}
+/* LE CADDIE DU GRAND FRÈRE : une rangée de caddies emboîtés, une pancarte écrite au feutre */
+function graverLesCaddies(){const W=64,H=40,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);const sol=H-3;
+  g.fillStyle='rgba(40,30,18,.22)';g.beginPath();g.ellipse(W/2,sol,28,3,0,0,7);g.fill();
+  for(let k=0;k<4;k++)dessinerCaddie(g,10+k*9,sol,'droite',0);
+  g.fillStyle='#6b4a28';g.fillRect(W-10,sol-26,1.5,26);g.fillStyle='#f4efe6';g.fillRect(W-22,sol-34,24,12);g.strokeStyle='#3a3a40';g.lineWidth=0.5;g.strokeRect(W-22,sol-34,24,12);
+  g.fillStyle='#1d3f6a';g.font='700 3.4px "Comic Sans MS",cursive';g.fillText('CADDIES',W-20,sol-29);g.fillStyle='#c8281e';g.fillText('3 € L’HEURE',W-20.5,sol-24.5);
+  return {toile:c,W,H,sol,nuit:null};}
 /* LE PEIGNE D'OR : le salon de coiffure du quai. Une devanture vert bouteille à filets d'or, la
    grande vitrine avec ses fauteuils et ses miroirs, l'enseigne aux ciseaux, et le poteau de barbier
    à spirale bleu-blanc-rouge ; la nuit, les miroirs s'allument. */
@@ -1548,6 +1555,10 @@ function semerDecorExtramar(){
   /* LES BANCS, entre deux lanternes, tournés vers la mer ; deux autres contre les façades */
   [[210,316],[490,316],[770,316],[1050,316],[1190,316],[1270,560],[1340,560]]
     .forEach(([x,y])=>P('bancP',x,y));
+  /* LE CADDIE DU GRAND FRÈRE, sur le quai ouest : la rangée de caddies, et le grand frère qui les loue */
+  XCAL['x_caddies0']=graverLesCaddies();CALQUES_DECO['x_caddies']=XCAL['x_caddies0'];P('x_caddies',168,300,{col:[28,4]});
+  P('x_grandFrere',126,302,{v:0,col:[5,3],dir:'bas',bati:true,demi:8,ouvre:'caddie',
+    pnj:{peau:3,cheveux:0,coiffe:1,barbe:1,veste:'#1a1a2e',haut:6,pantalon:'#1a1a2e',chaussures:'#f4f4f4',souliers:1,sac:0,chapeau:1,corps:3,sourcils:2}});
   /* LE GLAÇON D'ART, la charrette des glaçons artisanaux, sur le quai ouest */
   XCAL['x_glacons0']=graverLesGlacons();CALQUES_DECO['x_glacons']=XCAL['x_glacons0'];P('x_glacons',128,262,{col:[22,6],bati:true,demi:24,ouvre:'glacons'});
   /* LA MANIFESTATION DES DOCKERS, sur le quai est */
