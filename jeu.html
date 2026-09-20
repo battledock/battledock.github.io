@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1732';
+  var MA_VERSION='2026-09-20-1758';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -2119,7 +2119,7 @@ async function chargerMorceau(nom){
 }
 
 /* LA CARTE : le village, ou Extramar (le vieux port, au bout de la ligne 1) */
-const CARTE=(()=>{const c=new URLSearchParams(location.search).get('carte');return c==='piscine'?'piscine':(c==='sommet'?'sommet':(c==='montagne'?'montagne':(c==='extramar'||c==='garde'?'extramar':'village')));})();
+const CARTE=(()=>{const c=new URLSearchParams(location.search).get('carte');return (c==='sommet'?'sommet':(c==='montagne'?'montagne':(c==='extramar'||c==='garde'?'extramar':'village')));})();
 const CARTE_MOD=CARTE==='montagne'||CARTE==='sommet'||CARTE==='piscine'||CARTE==='stade';        /* les cartes à module (Saumaski, le sommet, la piscine) */        /* les cartes de Saumaski (la station, le sommet) */   /* la place du haut n'existe plus */
 /* LES OBJETS ANIMÉS DU DÉCOR : chaque carte (port.js, saumaski.js) peut y ranger ses dessins vivants */
 const ANIM_DECOR={};
@@ -13283,7 +13283,7 @@ try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(e,JSON.parse(b));}cat
 const EXT_AU_DEPART=e.ext?{x:e.ext.x,y:e.ext.y}:null;
 /* on avait quitté le jeu à Extramar : on y revient (seul le métro fait changer de carte) */
 if(CARTE==='village'&&(e.carte==='extramar'||e.carte==='garde')){location.replace('jeu.html?carte=extramar');}
-if(CARTE==='village'&&(e.carte==='montagne'||e.carte==='sommet'||e.carte==='piscine')){location.replace('jeu.html?carte='+e.carte);}
+if(CARTE==='village'&&(e.carte==='montagne'||e.carte==='sommet')){location.replace('jeu.html?carte='+e.carte);}
 /* Les bâtiments étaient autrefois placés autour de chaque joueur : on
    efface ces vieilles coordonnées pour que tout le monde partage la même carte. */
 e.casino=null;e.camp=null;e.coffre=null;e.comptoir=null;
@@ -18336,13 +18336,10 @@ function majAction(){
   if(o.t==='x_chantier'){b.innerHTML='Lire le panneau<small>CHANTIER · TRAVAUX EN COURS</small>';b.classList.add('on');return;}
   if(o.ouvre==='manif'){b.innerHTML=(e.ap&&e.ap.gilet?'Ranger ton gilet':'Rejoindre la manif')+'<small>'+(e.ap&&e.ap.gilet?'TU DÉFILES AVEC LES DOCKERS':'LE DÉLÉGUÉ TE TEND UN GILET ORANGE')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='sortieStade'){b.innerHTML='Ressortir sur le quai<small>LE VIEUX-PORT</small>';b.classList.add('on');return;}
-  if(o.ouvre==='bowling'){b.innerHTML='Entrer au bowling<small>UNE PARTIE EN 5 FRAMES · STRIKE !</small>';b.classList.add('on');return;}
-  if(o.ouvre==='piscine'){b.innerHTML='Entrer à la piscine<small>ENTRÉE LIBRE · VESTIAIRES · BASSIN</small>';b.classList.add('on');return;}
   if(o.ouvre==='course'){b.innerHTML='Monter sur le plot<small>LA COURSE DU 50 M · A-B-A-B POUR NAGER</small>';b.classList.add('on');return;}
   if(o.ouvre==='cabine'){b.innerHTML=(e.ap&&e.ap.maillot?'Se rhabiller':'Entrer dans la cabine')+'<small>'+(e.ap&&e.ap.maillot?'REMETTRE TES VÊTEMENTS':'SE METTRE EN MAILLOT')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='sortiePiscine'){b.innerHTML='Ressortir sur le quai<small>'+(e.ap&&e.ap.maillot?'ON TE RHABILLE EN SORTANT':'LE VIEUX-PORT')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='banque'){b.innerHTML='Entrer à la banque<small>LIVRET · VIREMENTS · PRÊT</small>';b.classList.add('on');return;}
-  if(o.ouvre==='glacons'){b.innerHTML='Le Glaçon d’Art<small>GLAÇONS ARTISANAUX · TAILLÉS MAIN</small>';b.classList.add('on');return;}
   if(o.ouvre==='salon'){b.innerHTML='Entrer au Peigne d’Or<small>COUPES ET COULEURS EXCLUSIVES</small>';b.classList.add('on');return;}
   if(o.ouvre==='crousti'){b.innerHTML='Entrer chez Crousti’Port<small>'+(REPU_FIN>Date.now()?'TU ES REPU · ENCORE '+Math.ceil((REPU_FIN-Date.now())/60000)+' MIN':'POULET FRIT · MENUS DE 1 € À 12 €')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='skishop'){b.innerHTML='Entrer au Ski shop<small>TENUES DE MONTAGNE · DE 5 € À 2 500 €</small>';b.classList.add('on');return;}
@@ -18503,15 +18500,12 @@ function agir(){
   if(o.ouvre==='skishop'){ouvrirLeSkiShop();return;}
   if(o.ouvre==='crousti'){ouvrirCrousti();return;}
   if(o.ouvre==='salon'){ouvrirLeSalon();return;}
-  if(o.ouvre==='piscine'){entrerALaPiscine();return;}
   if(o.ouvre==='sortieStade'){sortirDuStade();return;}
-  if(o.ouvre==='bowling'){ouvrirJeuPort('bowling');return;}
 
   if(o.ouvre==='cabine'){ouvrirLaCabine();return;}
   if(o.ouvre==='course'){if(!(e.ap&&e.ap.maillot)){texteVolant(joueur.x,joueur.y-56,'En maillot, pour la course !','#bfe8ff');return;}ouvrirLaCourse();return;}
   if(o.ouvre==='sortiePiscine'){sortirDeLaPiscine();return;}
   if(o.ouvre==='banque'){ouvrirLaBanque();return;}
-  if(o.ouvre==='glacons'){ouvrirLesGlacons();return;}
   if(o.ouvre==='manif'){e.ap=Object.assign({},e.ap||DEF_AP);const avec=!e.ap.gilet;if(avec)e.ap.gilet=true;else delete e.ap.gilet;
     sauver();envoyerSauvegarde(true);monterEnLigne(true);vibrer([20,40,20]);jouer('vente','moment');
     texteVolant(joueur.x,joueur.y-56,avec?'Tous ensemble ! Tu rejoins le cortège':'Tu ranges ton gilet','#ffb060');majAction();return;}
@@ -19887,7 +19881,8 @@ function partirSkier(ep){
   location.href='ski.html?e='+ep+'&v='+encodeURIComponent(window.MA_VERSION||'');
 }
 /* (les jeux du Bar des Docks ont été retirés : on les refera de zéro) */
-/* (le caddie du Grand Frère a été retiré) */
+/* (le caddie du Grand Frère a été retiré ; la piscine aussi : on ne garde pas son maillot) */
+if(e.ap&&e.ap.maillot){e.ap=Object.assign({},e.ap);delete e.ap.maillot;}
 if(e.ap&&e.ap.caddie){e.ap=Object.assign({},e.ap);delete e.ap.caddie;}
 /* ================= LA PISCINE MUNICIPALE =================
    On entre depuis le quai (le serveur note qu'on est à la piscine), on se change dans une cabine,
@@ -20057,25 +20052,6 @@ async function ouvrirLaBanque(){cssQuai();$('page2Fond').className='quai bq';$('
     if($('bqVir'))$('bqVir').onclick=()=>faire('banque_virer',{p_pour:$('bqA').value,p_montant:v('bqV'),p_mot:$('bqMot').value},'Virement envoyé !');
     if($('bqEmp'))$('bqEmp').onclick=()=>faire('banque_emprunter',{p_montant:v('bqP')},'Prêt accordé. À rendre sous 7 jours !');
     if($('bqRemb'))$('bqRemb').onclick=()=>faire('banque_rembourser',{},'Prêt remboursé. La banque te remercie.');};
-  rendre();}
-/* LE GLAÇON D'ART : des glaçons « taillés main », qui fondent au bout d'une heure (ou trois pour le diamant) */
-const GLACONS=[['glacon_classique','🧊','Le Classique','carré, honnête, froid',50],['glacon_mistral','🌬','Le Mistral','soufflé par le vent du nord, garanti 100 % frais',200],
-  ['glacon_cuvee','🍷','La Cuvée 2026','millésime exceptionnel, notes de froid et d’eau',500],['glacon_sardine','🐟','La Sardine','taillé en forme de sardine, fond en 2 h',1500],['glacon_diamant','💎','Le Diamant','facetté main, il fond quand même (3 h)',5000]];
-async function ouvrirLesGlacons(){cssQuai();$('page2Fond').className='quai gl';$('page2').classList.add('on');
-  let M=await appelRPC('mes_glacons',{p_joueur:e.id})||[];
-  const rendre=()=>{const n=Date.now();
-    $('page2Fond').innerHTML='<div class="hd"><div class="lg">🧊</div><div><b>LE GLAÇON D’ART</b><small>glaçons artisanaux, taillés main</small></div><div class="bs">ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div><div class="corps">'+
-      '<div class="pt" style="margin:0 2px 10px">« Chaque glaçon est unique. Il fond, c’est ce qui le rend précieux. » — Fernand, glacier depuis 1987</div>'+
-      GLACONS.map(([k,ic,n2,d,px])=>'<div class="bloc"><div class="ic">'+ic+'</div><div class="t"><b>'+n2+'</b><small>'+d+'</small></div><button class="act" data-g="'+k+'">'+enEuros(px).replace(',00','')+'</button></div>').join('')+
-      (M.length?'<div class="bloc" style="display:block"><h4>TES GLAÇONS</h4>'+M.map(x=>{const G=GLACONS.find(y=>y[0]===x.sorte)||['','🧊',x.sorte], a=new Date(x.achete).getTime(), f=new Date(x.fond_a).getTime(), k2=Math.max(0,Math.min(1,(f-n)/(f-a)));
-        return '<div style="margin:6px 0">'+G[1]+' <b>'+G[2]+'</b> · '+(k2>0?'fond dans '+Math.ceil((f-n)/60000)+' min':'<i>c’est une flaque</i>')+'<div class="fond"><i style="width:'+Math.round(k2*100)+'%"></i></div></div>';}).join('')+'</div>':'')+
-      '</div><div class="bulle" id="quaiBulle"></div><button class="sortir" id="quaiSortir">Ressortir sur le quai</button>';
-    $('quaiSortir').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-    $('page2Fond').querySelectorAll('[data-g]').forEach(b=>b.onclick=async()=>{const G=GLACONS.find(y=>y[0]===b.dataset.g);b.disabled=true;
-      const d=await appelRPC('payer_service',{p_joueur:e.id,p_service:G[0]});
-      if(!d||d.erreur){b.disabled=false;bulleQuai(d&&d.erreur==='pas_assez'?'Fernand ne fait pas crédit.':'Le glacier n’a pas pu.');return;}
-      if(typeof d.euros==='number'){e.euros=d.euros;sauver();majHaut();}vibrer(20);
-      M=await appelRPC('mes_glacons',{p_joueur:e.id})||M;rendre();bulleQuai(['Magnifique choix. Il est déjà en train de fondre.','Gardez-le au frais… dans votre cœur.','Un connaisseur ! Fernand est ému.'][Math.floor(Math.random()*3)]);});};
   rendre();}
 /* ================= LE PEIGNE D'OR : le salon de coiffure du port =================
    Même catalogue que le Ski shop, aux couleurs du salon : la cabine où ta tête tourne, deux rayons
