@@ -1232,13 +1232,14 @@ function eauVivante(g,camX,camY){
     const C=XCAL[o.t+(o.v||0)];if(!C)continue;
     const sx=o.x-camX, sy=o.y-camY;
     if(sx<-C.W||sx>VW+C.W||sy<-10||sy>VH+C.H)continue;
-    g.globalAlpha=o.t==='x_voilier'?0.13:0.18;
-    const vague=Math.sin(T*1.8+o.x*0.07)*1;
-    g.save();
-    g.translate(Math.round(sx+vague),Math.round(sy+2));
-    g.scale(o.flip?-1:1,-0.55);
-    g.drawImage(C.toile,-C.W/2,-C.sol,C.W,C.H);
-    g.restore();
+    /* LE REFLET EST GRAVÉ UNE FOIS : retourné, aplati, déjà transparent. À chaque image, on ne fait
+       plus que le poser (avant : un retournement et une transparence recalculés pour chaque coque). */
+    const cle=(o.flip?'r':'d');C.refl=C.refl||{};
+    if(!C.refl[cle]){const h=Math.ceil(C.H*0.55), c=document.createElement('canvas');c.width=C.W;c.height=h;const q=c.getContext('2d');
+      q.globalAlpha=o.t==='x_voilier'?0.13:0.18;q.translate(o.flip?C.W:0,0);q.scale(o.flip?-1:1,1);q.translate(C.W/2,C.sol*0.55);q.scale(1,-0.55);
+      q.drawImage(C.toile,-C.W/2,-C.sol,C.W,C.H);C.refl[cle]={c,oy:C.sol*0.55};}
+    const R2=C.refl[cle], vague=Math.round(Math.sin(T*1.8+o.x*0.07));
+    g.drawImage(R2.c,Math.round(sx+vague-C.W/2),Math.round(sy+2-R2.oy),C.W,R2.c.height);
   }
   g.restore();
   /* 3 · LES BANCS DE POISSONS, sous la surface */
@@ -1457,27 +1458,25 @@ ANIM_DECOR.chien=(g,o,x,y)=>{const t=performance.now()/1000, q=Math.sin(t*14)*2,
   R(x+6,y-14-bob,6,6,'#b07a40');R(x+11,y-12-bob,2,2,'#2a1a10');R(x+8,y-12-bob,1,1,'#1a1a1a');R(x+6,y-15-bob,2,3,'#8a5a2a');                    /* la tête, la truffe, l'oreille */
   g.save();g.translate(x-7,y-8-bob);g.rotate(-0.6+q*0.15);R(-5,-1,5,2,'#b07a40');g.restore();                                                   /* la queue qui remue */
   if((t%5)<0.8){g.font='italic 700 6px Georgia';g.fillStyle='#ffffff';g.fillText('Ouaf !',x+8,y-19);}};
+/* LE DOCKER EN COLÈRE : un seul docker manifeste, tout seul, avec sa pancarte, sur le quai.
+   Il piétine, lève sa pancarte, et lâche un slogan de temps en temps. On peut le rejoindre (il te
+   tend un gilet). Un seul personnage animé : léger. */
+ANIM_DECOR.solitaire=(g,o,x,y)=>{const t=performance.now()/1000;o._f=o._f||{};
+  const i=1+Math.floor(t*4.2)%PASM, cle=i+(STYLE_FIN()?'f':'c');
+  if(!o._f[cle]){const src=poseDe(Object.assign({},DEF_AP,o.pnj),'bas',i);const c=document.createElement('canvas');c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);o._f[cle]=c;}
+  const bob=Math.abs(Math.sin(t*Math.PI*2.1))*1.2, leve=Math.max(0,Math.sin(t*1.6))*5;
+  /* la pancarte, derrière lui, levée en rythme */
+  const px=x+11, py=y-62-leve-bob;g.fillStyle='#6b4a28';g.fillRect(px-0.75,py+10,1.5,48);            /* tenue bien haut, au-dessus de sa tête */
+  g.fillStyle='#f4efe6';g.fillRect(px-17,py-6,34,17);g.strokeStyle='#8a6238';g.lineWidth=0.8;g.strokeRect(px-17,py-6,34,17);
+  g.textAlign='center';g.fillStyle='#c8281e';g.font='900 5.6px Georgia';g.fillText('DOCKERS',px,py+1.5);g.fillStyle='#1d3f6a';g.font='700 4.6px Georgia';g.fillText('EN COLÈRE !',px,py+8);g.textAlign='left';
+  g.drawImage(o._f[cle],Math.round(x-CASE_L/2),Math.round(y-CASE_H+10-bob),CASE_L,CASE_H);
+  const c=(t%7)/7;if(c<0.4){const s=SLOGANS[Math.floor(t/7)%SLOGANS.length];g.font='italic 700 7px Georgia';const w=g.measureText(s).width+8;
+    g.fillStyle='rgba(255,255,255,.95)';g.fillRect(x-w/2,y-80,w,11);g.fillStyle='#c8281e';g.fillText(s,x-w/2+4,y-72);}
+};
 function poserLaManif(P){
-  const reg=(k,C)=>{XCAL[k+'0']=C;CALQUES_DECO[k]=C;};
-  XCAL.banT=graverBanderole('DOCKERS DE MARSEILLE','LE PORT, C’EST NOUS !');XCAL.banM=graverBanderole('ON NE LÂCHE RIEN','LES DOCKERS DU VIEUX-PORT',80,64);
-  CALQUES_DECO['x_banderole']=XCAL.banT;CALQUES_DECO['x_banderole2']=XCAL.banM;CALQUES_DECO['x_drapeauM']={W:26,H:46,sol:44};CALQUES_DECO['x_fumigene']={W:60,H:70,sol:67};
-  const docker=(x,y,v,dir,plus)=>P('x_docker',x,y,Object.assign({v:0,col:[4,3],dir:dir||'bas',anim:'docker',ph:((v*0.37)%1),pnj:{peau:1+(v%4),cheveux:v%6,coiffe:[0,1,2,15,17,3][v%6],barbe:[3,0,4,7,0,1][v%6],
-    veste:'#f2d21a',haut:0,pantalon:'#2a3a5a',chaussures:'#2a2a30',souliers:0,sac:0,chapeau:v%3===0?1:0,corps:[2,3,1,2,3][v%5],gilet:true}},plus||{}));
-  const X=1046, Y=292;
-  docker(X-40,Y-6,0);docker(X+40,Y-6,1);P('x_banderole',X,Y,{v:0,anim:'banderole',cal:'banT',ph:0});
-  [[-30,-26,2],[-10,-28,3],[10,-27,4],[30,-26,5],[-38,-44,6],[-18,-46,7],[2,-45,8],[22,-46,9],[42,-44,10],[-26,-62,11],[-6,-64,12],[14,-63,13],[34,-62,14]]
-    .forEach(([dx,dy,v])=>docker(X+dx,Y+dy,v));
-  P('x_drapeauM',X-24,Y-24,{v:0,anim:'drapeau',ph:0});P('x_drapeauM',X+18,Y-42,{v:1,anim:'drapeau',ph:1.3});P('x_drapeauM',X-2,Y-60,{v:0,anim:'drapeau',ph:2.1});
-  P('x_banderole2',X+2,Y-56,{v:0,anim:'banderole',cal:'banM',ph:1.1});
-  P('x_fumigene',X+62,Y-14,{v:0,anim:'fumigene',ph:0,vent:1});P('x_fumigene',X-64,Y-30,{v:0,anim:'fumigene',ph:0.5,vent:-0.6});
-  /* LE DÉLÉGUÉ au mégaphone, sur le côté : c'est lui qui te tend un gilet si tu veux défiler */
-  docker(X+72,Y+10,15,'gauche',{porteVoix:true,bati:true,demi:8,ouvre:'manif'});
-  /* les danseurs, devant la banderole de tête */
-  [[-44,26,16],[-20,32,17],[20,30,18]].forEach(([dx,dy,v])=>docker(X+dx,Y+dy,v,'bas',{anim:'danseur',ph:v*0.29}));
-  /* le gag du cycliste, contre le lampadaire du bord du quai, à l'ouest de la manif */
-  P('x_gag',980,318,{v:0,anim:'gag',ph:0});CALQUES_DECO['x_gag']={W:320,H:80,sol:70};
-  /* et le chien, en tête, avec son petit gilet */
-  P('x_chienM',X-8,Y+14,{v:0,anim:'chien',col:[4,2]});
+  P('x_docker',1046,286,{v:0,col:[5,3],dir:'bas',anim:'solitaire',bati:true,demi:8,ouvre:'manif',
+    pnj:{peau:2,cheveux:1,coiffe:1,barbe:4,veste:'#f2d21a',haut:0,pantalon:'#2a3a5a',chaussures:'#2a2a30',souliers:0,sac:0,chapeau:1,corps:3,gilet:true}});
+  CALQUES_DECO['x_docker']={W:60,H:100,sol:90};
 }
 function semerDecorExtramar(){
   DECOR=[];
@@ -1517,7 +1516,7 @@ function semerDecorExtramar(){
   /* deux lanternes encadrent l'entrée du ponton du milieu, sans cacher les boutiques */
   [[602,334],[638,334]].forEach(([x,y],i)=>P('lanterneP',x,y,{gr:5+i}));
   /* LES BANCS, entre deux lanternes, tournés vers la mer ; deux autres contre les façades */
-  [[210,316],[490,316],[770,316],[1190,316],[1270,560],[1340,560]]                  /* (le banc de 1050 a laissé place aux danseurs de la manif) */
+  [[210,316],[490,316],[770,316],[1050,316],[1190,316],[1270,560],[1340,560]]
     .forEach(([x,y])=>P('bancP',x,y));
   /* LA MANIFESTATION DES DOCKERS, sur le quai est */
   poserLaManif(P);

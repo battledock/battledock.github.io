@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1613';
+  var MA_VERSION='2026-09-20-1620';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -15876,7 +15876,7 @@ function poserLeCiel(g){
   const C=cielDuMoment();
   if(!C){LUMIERES.length=0;return;}
   /* les téléphones modestes gardent l'ancienne teinte, plus légère, et les lampes en simple halo */
-  if(typeof QUALITE!=='undefined'&&QUALITE<0.5){ancienPoserLeCiel(g);
+  if(typeof QUALITE!=='undefined'&&QUALITE<1){ancienPoserLeCiel(g);                    /* dès que le téléphone peine : la nuit simple, bien plus légère */
     if(LUMIERES.length&&C.lampes>0.1){g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='lighter';
       for(const l of LUMIERES){const T=tacheTeinte(l.c[0],l.c[1],l.c[2]);g.globalAlpha=0.3*l.a;g.drawImage(T,l.x-l.r*0.6,l.y-l.r*0.6,l.r*1.2,l.r*1.2);}g.restore();}
     LUMIERES.length=0;return;}
@@ -16142,7 +16142,12 @@ function refletsRiviere(g,camX,camY){
 let JOUEUR_ECRAN=null;
 function ctxJoueurEcran(){return JOUEUR_ECRAN;}
 function ambiance(g){
-  g.fillStyle=degradeAmbiance(g);g.fillRect(0,0,VW,VH);
+  /* LE VOILE DOUX DES BORDS, gravé une fois à la taille de l'écran : le poser est bien plus léger que
+     recalculer un dégradé circulaire sur chaque point de l'écran, à chaque image */
+  {const cle='ambC'+cv.width+'x'+cv.height;let V=CACHE[cle];
+   if(!V){V=document.createElement('canvas');V.width=cv.width;V.height=cv.height;const q=V.getContext('2d');q.setTransform(cv.width/VW,0,0,cv.height/VH,0,0);
+     q.fillStyle=degradeAmbiance(q);q.fillRect(0,0,VW,VH);CACHE[cle]=V;}
+   g.save();g.setTransform(1,0,0,1,0,0);g.drawImage(V,0,0);g.restore();}
   poserLeCiel(g);                  /* la lumière du moment, par-dessus tout */
 }
 
