@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1139';
+  var MA_VERSION='2026-09-20-1155';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -13545,7 +13545,7 @@ const PASM=16;                        /* seize images pour un cycle de marche */
 const CASE_L=64, CASE_H=80;           /* la boîte d'une pose */
 const POSES=new Map();                /* une planche par apparence rencontrée */
 const clePose=(ap)=>{
-  let c=STYLE_FIN()?'fin|':'';for(const k in ap)c+=ap[k]+',';
+  let c=STYLE_FIN()?'fin|':'';for(const k in ap){const v=ap[k];c+=(v&&typeof v==='object'?JSON.stringify(v):v)+',';}
   return c;
 };
 /* LE PIXEL FIN, À L'ESSAI : pour l'instant, seulement pour le développeur, par un réglage */
@@ -13771,6 +13771,7 @@ function personne(g,x,y,ap,dir,pas,marche,enCourse){
    ===================================================================== */
 function spriteFin(g,x,y,ap0,dir,pas,bouge){
   const p=Object.assign({},DEF_AP,ap0||{}), P=PALETTES;
+  appliquerTenueSki(p);
   const diag=String(dir).indexOf('-')>0, tourne=diag?(String(dir).endsWith('droite')?1:-1):0;
   if(diag)dir=String(dir).startsWith('bas')?'bas':'haut';
   const u=0.5, cote=dir==='gauche'||dir==='droite', dos=dir==='haut', s=dir==='gauche'?-1:1;
@@ -13783,9 +13784,10 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
   const T=teint;
   const peau=P.peau[p.peau]||P.peau[2], peauO=T(peau,-26), peauC=T(peau,16), peauT=T(peau,-58);
   const chev=P.cheveux[p.cheveux]||P.cheveux[2], chevC=T(chev,26), chevO=T(chev,-26);
-  const vest=P.veste[p.veste]||P.veste[0], vestC=T(vest,22), vestO=T(vest,-28), vestT=T(vest,-56);
-  const pant=P.pantalon[p.pantalon]||P.pantalon[0], pantO=T(pant,-20), pantC=T(pant,14);
-  const chau=P.chaussures[p.chaussures]||P.chaussures[0], chauC=T(chau,24), chauO=T(chau,-24);
+  const hexOu=(v,liste)=>typeof v==='string'&&v[0]==='#'?v:(liste[v]||liste[0]);
+  const vest=hexOu(p.veste,P.veste), vestC=T(vest,22), vestO=T(vest,-28), vestT=T(vest,-56);
+  const pant=hexOu(p.pantalon,P.pantalon), pantO=T(pant,-20), pantC=T(pant,14);
+  const chau=hexOu(p.chaussures,P.chaussures), chauC=T(chau,24), chauO=T(chau,-24);
   const oeil=P.yeux[p.yeux]||P.yeux[0];
   const sacC=P.sac[p.sac]||'aucun';
   const coiffe=COIFFES[p.coiffe]||'courts', barbe=BARBES[p.barbe]||'aucune', chapeau=CHAPEAUX[p.chapeau]||'aucun';
@@ -14020,6 +14022,18 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
         R(xc-TA,yHan-3,TA*2,3,vestT);R(xc-TA,yHan-3,TA*2,1,vestO);R(xc+TA-4,yHan-1,3,6,vestT);
       }
     }
+    /* LA TENUE DE SKI : les boudins de la doudoune, les motifs des combinaisons */
+    if(p._doudoune||p._motif){const xc2=cote?0:(diag?vis:0), L2=cote?Math.round(TA*0.75):TA;
+      if(p._doudoune){for(let r=yEp+5;r<bas-1;r+=4){R(xc2-L2,r,L2*2,1,vestO);R(xc2-L2,r+1,L2*2,1,vestC);}
+        if(!dos&&!cote){R(xc2-4,yEp-2,8,3,vestO);R(xc2-4,yEp-2,8,1,vestC);}}                         /* le col montant */
+      if(p._motif==='retro'){for(let x=-L2;x<L2;x+=2){const zy=yEp+9+((x/2)%2?2:0);R(xc2+x,zy,2,2,'#f0e040');R(xc2+x,zy+4,2,1,'#3ad0c0');}
+        R(xc2-L2,yHan-5,L2*2,2,'#3ad0c0');}
+      if(p._motif==='course'){R(xc2-L2,yEp+7,L2*2,3,'#f4efe0');R(xc2-L2,yEp+8,L2*2,1,'#b8392c');
+        if(!dos){R(xc2+3,yEp+12,5,3,'#f4efe0');R(xc2+4,yEp+13,3,1,'#1d3f6a');}                        /* le dossard */
+        R(xc2-L2,yEp,2,bas-yEp,'#b8392c');R(xc2+L2-2,yEp,2,bas-yEp,'#b8392c');}
+      if(p._motif==='etoile'){R(xc2-L2,yEp+1,L2*2,1,'#d8b040');R(xc2-L2,yHan-4,L2*2,2,'#d8b040');R(xc2-L2,yHan-4,L2*2,1,'#f8e080');
+        for(let k=0;k<7;k++){const sx=xc2-L2+2+((k*7)%(L2*2-3)), sy=yEp+4+((k*5)%(bas-yEp-6));R(sx,sy,1,1,'#fff8d0');}
+        if(!dos){R(xc2-2,yEp+8,4,1,'#d8b040');R(xc2-1,yEp+7,2,3,'#d8b040');}}}                         /* l'étoile brodée */
     if(dos){
       /* DE DOS : le col, la couture du milieu, la fente du manteau, les côtes du pull */
       if(hautT==='veste'||hautT==='manteau'){R(-5,yEp-1,10,3,vestO);R(-5,yEp-1,10,1,vestC);}
@@ -14059,7 +14073,9 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
      poignet, main avec son pouce et ses doigts ============ */
   const main=(mx,my,cote2,profil,fonce,deDos)=>{
     /* une main de 5 × 5 : la paume, le pouce du côté du corps, les doigts séparés */
-    const p0=fonce?peauO:peau, p1=fonce?peauT:peauO, pc=fonce?peau:peauC;
+    let p0=fonce?peauO:peau, p1=fonce?peauT:peauO, pc=fonce?peau:peauC;
+    if(p._gants){const gc=p._gants.g;p0=fonce?T(gc,-24):gc;p1=T(gc,-44);pc=T(gc,20);
+      if(p._gants.g2){R(mx-2,my-1,5,2,p._gants.g2);}}                                   /* le poignet, d'une autre couleur */
     if(profil){R(mx-2,my,4,4,p0);R(mx-2,my+3,4,1,p1);R(mx+1,my+1,1,2,p1);R(mx-2,my,1,1,pc);R(mx+2,my+1,1,2,p0);return;}
     R(mx-2,my,5,4,p0);
     R(mx-2,my+4,1,1,p0);R(mx,my+4,1,1,p0);R(mx+2,my+4,1,1,p0);           /* le bout des doigts */
@@ -14564,14 +14580,16 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       }else{band(-12+dx,24,hy-1,6);R(-12+dx,hy+4,24,1,T(peau,-24));}
     }
     else if(chapeau==='bonnet'){
-      const c='#8a3a22', cC='#b0503a', cO='#5a2414', rev='#a8482e', pompon='#f2ead8';
+      const B=p._bonnet, c=B?B.b[0]:'#8a3a22', cC=T(c,24), cO=T(c,-34), rev=B?T(c,-12):'#a8482e', pompon=B?B.b[1]:'#f2ead8';
       const pb=bouge?-Math.round(Math.max(0,Math.sin(ph*2))*1.5):-souffle;       /* le pompon rebondit */
       const cx0=cote?-1:dx;
       dome(cx0,hy-7,hy+3,13,9,c,cC,cO,T(c,-50));
       for(let x=cx0-11;x<cx0+12;x+=3)for(let y=hy-5;y<hy+2;y++)R(x,y,1,1,cO);   /* les côtes du tricot */
       R(cx0-13,hy+2,26,4,rev);R(cx0-13,hy+2,26,1,cC);R(cx0-13,hy+5,26,1,cO);     /* le revers */
       for(let x=cx0-12;x<cx0+13;x+=2)R(x,hy+3,1,2,cO);
-      R(cx0-3,hy-11+pb,6,4,pompon);R(cx0-2,hy-12+pb,4,1,pompon);R(cx0+1,hy-11+pb,2,2,'#ffffff');R(cx0-3,hy-8+pb,6,1,'#c8c0a8');
+      if(B&&B.m==='jacquard'){for(let k=-9;k<10;k+=6){R(cx0+k,hy-3,1,3,pompon);R(cx0+k-1,hy-2,3,1,pompon);}}   /* les flocons tricotés */
+      if(B&&B.m==='fourrure'){R(cx0-5,hy-14+pb,10,7,pompon);R(cx0-4,hy-15+pb,8,1,pompon);for(let k=0;k<6;k++)R(cx0-5+k*2,hy-14+pb+(k%2),1,2,T(pompon,-30));R(cx0+2,hy-13+pb,2,2,'#ffffff');}
+      else{R(cx0-3,hy-11+pb,6,4,pompon);R(cx0-2,hy-12+pb,4,1,pompon);R(cx0+1,hy-11+pb,2,2,T(pompon,30));R(cx0-3,hy-8+pb,6,1,T(pompon,-40));}
       if(!cote&&!dos)ombreFront(-11+dx,22,hy+6);
     }
     else if(chapeau==='capuche'){
@@ -14662,6 +14680,22 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     }
   };
 
+  /* LE MASQUE DE SKI : relevé sur le front (sur le bonnet s'il y en a un), sa sangle tout autour */
+  const masqueDe=()=>{const M=p._masque;if(!M)return;const hy=yTete, dx=(!cote&&diag)?vis*2:0, y0=hy+3;
+    if(dos){R(-11,y0+1,22,2,M[0]);return;}
+    if(cote){R(-10,y0+1,20,2,M[0]);R(4,y0-1,8,5,M[0]);R(5,y0,6,3,M[1]);R(6,y0,2,1,M[2]);return;}
+    R(-12+dx,y0+1,24,2,M[0]);                                                                  /* la sangle */
+    R(-9+dx,y0-1,18,6,M[0]);R(-8+dx,y0,16,4,M[1]);R(-8+dx,y0,16,1,M[2]);R(-6+dx,y0+1,3,1,M[2]);   /* le cadre, le verre, ses reflets */
+    R(-1+dx,y0+3,2,2,M[0]);};                                                                  /* le pont du nez */
+  /* L'ÉCHARPE : un tour de cou, et un pan qui tombe devant (ou derrière, de dos) */
+  const echarpeDe=()=>{const E=p._echarpe;if(!E)return;const c=E.e[0], c2=E.e[1], c3=E.e[2]||c2, cO=T(c,-30);
+    const w=SX.cou+6, x0=-Math.floor(w/2)+(cote?0:(diag?vis:0));
+    R(x0,yCou+1,w,5,c);R(x0,yCou+1,w,1,T(c,20));R(x0,yCou+5,w,1,cO);
+    if(E.m==='rayee')for(let x=x0+1;x<x0+w;x+=4)R(x,yCou+1,2,5,c2);
+    if(E.m==='nordique'){R(x0,yCou+3,w,1,c2);for(let x=x0+1;x<x0+w;x+=3)R(x,yCou+2,1,1,c3);}
+    const pan=(px,dirX)=>{for(let r=0;r<13;r++){const xx=px+Math.round(r*0.15*dirX);R(xx,yCou+5+r,4,1,(E.m==='rayee'&&Math.floor(r/3)%2)?c2:c);R(xx+3,yCou+5+r,1,1,cO);}
+      for(let k=0;k<4;k++)R(px+k+Math.round(13*0.15*dirX),yCou+18,1,2,c2);};                  /* les franges */
+    if(dos)pan(-2,0);else if(cote)pan(-6,-1);else pan(x0+w-6,1);};
   /* ============ LES GESTES : hache, pioche, cueillette, gouge, tamis ============
      Les mêmes courbes que l'ancien personnage (élan, frappe, reprise), mais le
      corps entier s'engage : il se tasse, se penche, et les deux mains tiennent
@@ -14755,7 +14789,7 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     jambe(0,pD.x,leveD,true);
     penche(()=>torse());
     jambe(0,pG.x,leveG,false);
-    penche(()=>{cheveuxDerriere();tete();barbeDe();cheveuxDessus();chapeauDe();});
+    penche(()=>{cheveuxDerriere();tete();echarpeDe();barbeDe();cheveuxDessus();chapeauDe();masqueDe();});
     if(frG>0)penche(()=>{const h=brasGeste(false,false);outil(h);R(Math.round(h.x)-2,Math.round(h.y)-2,4,4,peau);});
     else penche(()=>bras(0,-pG.x,false));                       /* le bras de devant, à l'opposé de la jambe de devant */
   }else if(frG>0){
@@ -14770,9 +14804,9 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       /* de dos : pendant l'élan, l'outil est au-dessus de nous (devant le corps pour
          l'œil) ; à la frappe, il part loin devant, donc derrière le corps */
       const leve=momentDos(angleBras().a)==='leve';
-      if(!leve){outilEtBras();torse();sac(false);tete();cheveuxDessus();chapeauDe();}
-      else{sac(false);tete();cheveuxDessus();chapeauDe();outilEtBras();}
-    }else{outilEtBras();sac(true);tete();barbeDe();cheveuxDessus();chapeauDe();}
+      if(!leve){outilEtBras();torse();sac(false);tete();echarpeDe();cheveuxDessus();chapeauDe();masqueDe();}
+      else{sac(false);tete();echarpeDe();cheveuxDessus();chapeauDe();masqueDe();outilEtBras();}
+    }else{outilEtBras();sac(true);tete();echarpeDe();barbeDe();cheveuxDessus();chapeauDe();masqueDe();}
   }else{
     if(!dos)cheveuxDerriere();
     if(diag){
@@ -14806,12 +14840,12 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       bras(pres,loin>0?(dos?-hanche:hanche):(dos?hanche:-hanche),false);}
     else{bras(-1,dos?-hanche:hanche,false);bras(1,dos?hanche:-hanche,false);}
     if(dos)sac(false);else sac(true);
-    tete();
+    tete();echarpeDe();
     if(!dos)barbeDe();
     cheveuxDessus();
     /* de dos et de trois-quarts : on devine la joue et l'oreille du côté où l'on regarde */
     if(diag&&dos){const cx2=tourne>0?9:-12;R(cx2,yTete+9,3,9,peau);R(cx2+(tourne>0?1:0),yTete+11,2,4,peauO);R(tourne>0?11:-13,yTete+14,2,3,peau);}
-    chapeauDe();
+    chapeauDe();masqueDe();
     if(swayX||swayY)g.restore();
   }
 }
@@ -17863,6 +17897,7 @@ function majAction(){
     return;
   }
   if(o.t==='x_chantier'){b.innerHTML='Lire le panneau<small>CHANTIER · TRAVAUX EN COURS</small>';b.classList.add('on');return;}
+  if(o.ouvre==='skishop'){b.innerHTML='Entrer au Ski shop<small>TENUES DE MONTAGNE · DE 5 € À 2 500 €</small>';b.classList.add('on');return;}
   if(o.ferme){b.innerHTML=o.ferme+'<small>FERMÉ · OUVERTURE PROCHAINE</small>';b.classList.add('on','inerte');b.onclick=null;return;}   /* Saumaski : tout est fermé pour l'instant */
   if(o.t==='x_pavPoisson'){b.innerHTML='Vendre ta pêche<small>LA POISSONNERIE</small>';b.classList.add('on');return;}
   if(o.t==='x_cabanon'){b.innerHTML='La bouillabaisse<small>CHEZ FONFON · CUISINE TA PÊCHE</small>';b.classList.add('on');return;}
@@ -18009,6 +18044,7 @@ function agir(){
     setTimeout(()=>texteVolant(o.x,o.y-66,'Vous allez bientôt pouvoir découvrir','#fff3d0'),350);
     setTimeout(()=>texteVolant(o.x,o.y-56,'une nouvelle partie du village !','#fff3d0'),700);vibrer(12);return;}
   if(o.t==='x_cabanon'){ouvrirLeCabanon();return;}
+  if(o.ouvre==='skishop'){ouvrirLeSkiShop();return;}
   if(o.t==='x_stationVelo'){VELO=!VELO;jouer('cueille');vibrer(VELO?[10,30,10]:12);
     texteVolant(joueur.x,joueur.y-40,VELO?'en selle !':'vélo rendu','#9fdfb8');majAction();return;}
   if(o.t==='entrepot')return;          /* on n'y ramasse rien : c'est un bâtiment */
@@ -18738,6 +18774,64 @@ const PRIX_COMPTOIR={ambre:35,pepite:60,lingotFer:52,lingotCuivre:34,gemme:120,o
    métier (la gouge et le tamis), et le vestiaire. Tout se paie par le
    SERVEUR — la fonction depenser() vérifie le solde avant de débiter, comme
    la vente au comptoir passe par echanger(). */
+/* ================= LE SKI SHOP DE SAUMASKI : la tenue de montagne =================
+   Six emplacements, qui se portent ensemble : combinaison OU doudoune (le corps), bonnet,
+   masque, écharpe, gants. Chaque pièce ne fait que changer des couleurs et ajouter des
+   détails au personnage fin : elle suit donc toutes les poses et les huit directions. */
+const SKI=[
+  /* les gants */
+  {id:'gants_laine_r',slot:'gants',nom:'Gants en laine rouges',prix:500,g:'#b8392c'},
+  {id:'gants_laine_b',slot:'gants',nom:'Gants en laine bleus',prix:500,g:'#2d5f9a'},
+  {id:'gants_laine_v',slot:'gants',nom:'Gants en laine verts',prix:500,g:'#3f7a4a'},
+  {id:'gants_tech',slot:'gants',nom:'Gants de ski techniques',prix:2500,g:'#23252a',g2:'#e8782a'},
+  {id:'moufles_cuir',slot:'gants',nom:'Moufles en cuir fourrées',prix:8000,g:'#6b4424',g2:'#efe6d6'},
+  /* les écharpes */
+  {id:'echarpe_rayee_r',slot:'echarpe',nom:'Écharpe rayée rouge',prix:800,e:['#b8392c','#f4efe0'],m:'rayee'},
+  {id:'echarpe_rayee_b',slot:'echarpe',nom:'Écharpe rayée bleue',prix:800,e:['#2d5f9a','#f4efe0'],m:'rayee'},
+  {id:'echarpe_rayee_v',slot:'echarpe',nom:'Écharpe rayée verte',prix:800,e:['#3f7a4a','#f0d890'],m:'rayee'},
+  {id:'echarpe_nordique',slot:'echarpe',nom:'Écharpe nordique',prix:4500,e:['#1d3f6a','#f4efe0','#b8392c'],m:'nordique'},
+  {id:'echarpe_cachemire',slot:'echarpe',nom:'Grande écharpe cachemire',prix:15000,e:['#c8a878','#e8d4b0'],m:'uni'},
+  /* les bonnets à pompon */
+  {id:'bonnet_rouge',slot:'bonnet',nom:'Bonnet rouge',prix:1000,b:['#b8392c','#f4efe0']},
+  {id:'bonnet_bleu',slot:'bonnet',nom:'Bonnet bleu',prix:1000,b:['#2d5f9a','#f4efe0']},
+  {id:'bonnet_vert',slot:'bonnet',nom:'Bonnet vert',prix:1000,b:['#3f7a4a','#f4efe0']},
+  {id:'bonnet_jaune',slot:'bonnet',nom:'Bonnet jaune',prix:1000,b:['#e0a82a','#2e3134']},
+  {id:'bonnet_noir',slot:'bonnet',nom:'Bonnet noir',prix:1000,b:['#2e3134','#e86a8a']},
+  {id:'bonnet_jacquard',slot:'bonnet',nom:'Bonnet jacquard à flocons',prix:3500,b:['#1d3f6a','#f4efe0'],m:'jacquard'},
+  {id:'bonnet_fourrure',slot:'bonnet',nom:'Bonnet à pompon de fourrure',prix:12000,b:['#efe6d6','#8a7058'],m:'fourrure'},
+  /* les masques */
+  {id:'masque_jaune',slot:'masque',nom:'Masque de ski, verre jaune',prix:1500,k:['#2e3134','#f0c040','#f8e080']},
+  {id:'masque_bleu',slot:'masque',nom:'Masque miroir bleu',prix:6000,k:['#f4efe0','#2d6fb0','#8ad0ff']},
+  {id:'masque_or',slot:'masque',nom:'Masque miroir or',prix:25000,k:['#1a1a1e','#c9902a','#fff0a0']},
+  /* les doudounes */
+  {id:'doudoune_rouge',slot:'corps',nom:'Doudoune rouge',prix:4000,v:'#b8392c',d:1},
+  {id:'doudoune_bleue',slot:'corps',nom:'Doudoune bleue',prix:4000,v:'#2d5f9a',d:1},
+  {id:'doudoune_noire',slot:'corps',nom:'Doudoune noire',prix:4000,v:'#2e3134',d:1},
+  {id:'doudoune_jaune',slot:'corps',nom:'Doudoune jaune',prix:4000,v:'#e0a82a',d:1},
+  {id:'doudoune_longue',slot:'corps',nom:'Doudoune longue fourrée',prix:18000,v:'#5a4a3a',d:2},
+  {id:'doudoune_glacier',slot:'corps',nom:'Doudoune « glacier »',prix:45000,v:'#9ad0e8',d:1,brille:1},
+  /* les combinaisons */
+  {id:'combi_rouge',slot:'corps',nom:'Combinaison rouge',prix:6000,v:'#b8392c',pa:'#8a2a20'},
+  {id:'combi_bleue',slot:'corps',nom:'Combinaison bleue',prix:6000,v:'#2d5f9a',pa:'#1f4570'},
+  {id:'combi_noire',slot:'corps',nom:'Combinaison noire',prix:6000,v:'#2e3134',pa:'#1e2024'},
+  {id:'combi_blanche',slot:'corps',nom:'Combinaison blanche',prix:6000,v:'#e8ecef',pa:'#c8d0d6'},
+  {id:'combi_retro',slot:'corps',nom:'Combinaison rétro années 80',prix:30000,v:'#e86a8a',pa:'#3a3a78',m:'retro'},
+  {id:'combi_course',slot:'corps',nom:'Combinaison de course Saumaski',prix:80000,v:'#1d3f6a',pa:'#1d3f6a',m:'course'},
+  {id:'combi_etoile',slot:'corps',nom:'Combinaison « Étoile des cimes »',prix:250000,v:'#f4f0e6',pa:'#e8e2d4',m:'etoile',collector:10}
+];
+const SKI_PAR_ID=Object.fromEntries(SKI.map(x=>[x.id,x]));
+/* la tenue portée devient des couleurs et des détails sur le personnage */
+function appliquerTenueSki(p){
+  const t=p.ski;if(!t||typeof t!=='object')return;
+  const pc=SKI_PAR_ID[t.corps], pb=SKI_PAR_ID[t.bonnet], pm=SKI_PAR_ID[t.masque], pe=SKI_PAR_ID[t.echarpe], pg=SKI_PAR_ID[t.gants];
+  if(pc){p.haut=pc.d===2?5:0;p.veste=pc.v;
+    if(pc.pa){p.pantalon=pc.pa;p.bas=0;}                               /* la combinaison descend jusqu'aux chevilles */
+    p.souliers=0;p.chaussures='#2a2a30';p._doudoune=pc.d||0;p._motif=pc.m||null;p._brille=pc.brille||(pc.m==='etoile'?1:0);}
+  if(pb){p.chapeau=3;p._bonnet=pb;}
+  if(pm)p._masque=pm.k;
+  if(pe)p._echarpe=pe;
+  if(pg)p._gants=pg;
+}
 const COSMETIQUES=[
   {id:'cape', nom:'La cape', mot:'elle ondule quand tu marches', prix:4000, rar:'rare',
    dessin:(g,x,y,t)=>{
@@ -18927,6 +19021,9 @@ async function lireMesCosmetiques(){
   const neuf={};
   miennes.forEach(p=>{neuf[p]=true;});
   e.cos=neuf;
+  ETOILES_VENDUES=typeof d.etoiles==='number'?d.etoiles:ETOILES_VENDUES;
+  if(e.ap&&e.ap.ski&&typeof e.ap.ski==='object'){let chg=false;              /* on ne porte que la tenue qu'on a achetée */
+    for(const k of Object.keys(e.ap.ski)){if(e.ap.ski[k]&&!neuf[e.ap.ski[k]]){delete e.ap.ski[k];chg=true;}}if(chg)monterEnLigne(true);}
   if(e.ap&&e.ap.cos&&!neuf[e.ap.cos]){
     e.ap.cos=null;                 /* on portait une pièce qu'on n'a pas */
     monterEnLigne(true);
@@ -18985,6 +19082,71 @@ function ouvrirLEchoppe(){
   $('ech-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
   $('page2').classList.add('on');
   echMarchand();echMaj();
+}
+/* ================= LE SKI SHOP : cinq rayons, on essaie sur soi, on achète, on porte =================
+   Même meuble que l'échoppe (étagères, fiche, bulle du vendeur). Chaque vignette montre TON
+   personnage avec la pièce : c'est l'essayage. Les achats passent par le serveur. */
+let ETOILES_VENDUES=0, RAYON_SKI='corps';
+const RAYONS_SKI=[['corps','Combis & doudounes'],['bonnet','Bonnets'],['masque','Masques'],['echarpe','Écharpes'],['gants','Gants']];
+const SEL_SKI={};
+function ouvrirLeSkiShop(){
+  $('page2Fond').className='sacFond echB';
+  $('page2Fond').innerHTML=
+   '<div class="echChaines"><i></i><i></i></div>'+
+   '<div class="echEnseigne"><canvas id="echMarchand"></canvas><span><b>SKI SHOP</b><small>« Essaie tout ce que tu veux, ça ne coûte rien. »</small></span></div>'+
+   '<div class="echBourse">Dans ta bourse : <b id="echArgent">—</b></div>'+
+   '<div class="echOnglets">'+RAYONS_SKI.map(([k,n])=>'<button class="echRay" data-sray="'+k+'">'+n+'</button>').join('')+'</div>'+
+   '<div id="echCorps"></div><div id="echBulle"></div>'+
+   '<button class="echFermer" id="ech-fermer">Refermer</button>';
+  $('ech-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+  $('page2').classList.add('on');
+  /* le vendeur : combinaison bleue, bonnet jacquard, masque relevé */
+  const c=$('echMarchand');if(c){const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));c.width=56*D;c.height=70*D;
+    const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;const av=GESTE;GESTE={t:0};
+    sprite(g,28,62,Object.assign({},DEF_AP,{cheveux:1,peau:3,barbe:3,ski:{corps:'combi_bleue',bonnet:'bonnet_jacquard',masque:'masque_bleu',gants:'gants_tech'}}),'bas',0,false);GESTE=av;}
+  lireMesCosmetiques().then(()=>skiMaj()).catch(()=>{});
+  skiMaj();
+}
+function apAvec(slot,id){const ap=Object.assign({},e.ap||DEF_AP);ap.ski=Object.assign({},(e.ap&&e.ap.ski)||{});if(id)ap.ski[slot]=id;else delete ap.ski[slot];return ap;}
+function skiMaj(){
+  const c=$('echCorps');if(!c)return;e.cos=e.cos||{};
+  $('echArgent').textContent=enEuros(e.euros||0);
+  document.querySelectorAll('[data-sray]').forEach(b=>{b.classList.toggle('on',b.dataset.sray===RAYON_SKI);b.onclick=()=>{RAYON_SKI=b.dataset.sray;skiMaj();};});
+  const L=SKI.filter(x=>x.slot===RAYON_SKI).sort((a,b)=>a.prix-b.prix);
+  const porte=(e.ap&&e.ap.ski&&e.ap.ski[RAYON_SKI])||null;
+  const sel=L.find(x=>x.id===SEL_SKI[RAYON_SKI])||L.find(x=>x.id===porte)||L[0];SEL_SKI[RAYON_SKI]=sel.id;
+  c.innerHTML=etagere(L.map(x=>{const a=!!e.cos[x.id], mis=porte===x.id;
+    return {id:x.id,vign:true,nom:x.nom.replace(/^(Combinaison|Doudoune|Bonnet|Masque de ski,|Masque|Écharpe|Grande écharpe|Gants|Moufles) ?/,'').replace(/[«»]/g,'').trim()||x.nom,choisi:x.id===sel.id,
+      etiq:mis?'PORTÉ':(a?'À TOI':enEuros(x.prix).replace(',00','')),etiqClasse:mis?'porte':(a?'atoi':'')};}));
+  const a=!!e.cos[sel.id], mis=porte===sel.id, peut=(e.euros||0)>=sel.prix;
+  const reste=sel.collector?Math.max(0,sel.collector-ETOILES_VENDUES):null, epuise=sel.collector&&!a&&reste<=0;
+  c.innerHTML+='<div class="echFiche">'+(sel.collector?'<span class="echRare" style="background:#b8902a">COLLECTOR · '+(epuise?'ÉPUISÉE':reste+' SUR '+sel.collector+' ENCORE EN VENTE')+'</span>':'')+
+    '<b>'+sel.nom+'</b><p>« '+(a?'Elle est à toi. Les autres te verront avec.':'Regarde : c\u2019est toi, avec. Les autres la verront sur toi.')+' »</p>'+
+    '<button id="echAcheter" class="'+(a?'':(peut&&!epuise?'':'pas'))+'">'+(a?(mis?'L’enlever':'La porter'):(epuise?'Épuisée':(peut?'Acheter · '+enEuros(sel.prix):'Il te manque '+enEuros(sel.prix-(e.euros||0)))))+'</button></div>';
+  /* l'essayage : chaque vignette, c'est toi avec la pièce */
+  c.querySelectorAll('canvas[data-vue]').forEach(cv2=>{const id=cv2.dataset.vue;vignetteSki(cv2,apAvec(RAYON_SKI,id));});
+  c.querySelectorAll('[data-sel]').forEach(b=>b.onclick=()=>{SEL_SKI[RAYON_SKI]=b.dataset.sel;skiMaj();vibrer(8);});
+  $('echAcheter').onclick=async()=>{
+    if(!a){
+      if(epuise){echBulle('Les dix sont parties. Il fallait être là.');return;}
+      if(!peut){echBulle('Il te manque '+enEuros(sel.prix-(e.euros||0)));return;}
+      const d=await appelRPC('acheter_cosmetique',{p_joueur:e.id,p_piece:sel.id});
+      if(!d||d.erreur){echBulle(d&&d.erreur==='epuisee'?'Les dix sont parties. Il fallait être là.':(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':'Le vendeur n’a pas pu'));
+        if(d&&typeof d.euros==='number')e.euros=d.euros;if(d&&d.erreur==='epuisee')ETOILES_VENDUES=sel.collector;skiMaj();return;}
+      if(typeof d.euros==='number')e.euros=d.euros;
+      e.cos[sel.id]=true;e.ap=apAvec(RAYON_SKI,sel.id);
+      if(sel.collector&&d.numero){ETOILES_VENDUES=d.numero;echBulle('Exemplaire n° '+d.numero+' sur '+sel.collector+'. Elle est à toi.');}
+      else echBulle(sel.nom+' · les autres te verront avec');
+    }else e.ap=apAvec(RAYON_SKI,mis?null:sel.id);
+    sauver();envoyerSauvegarde(true);monterEnLigne(true);vibrer(20);skiMaj();
+  };
+}
+function vignetteSki(cv2,ap){
+  const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+  const larg=cv2.clientWidth||90, L0=30, H0=60, E=(larg/L0)*D;
+  cv2.width=L0*E;cv2.height=H0*E;const g=cv2.getContext('2d');g.setTransform(E,0,0,E,0,0);g.imageSmoothingEnabled=false;
+  const av=GESTE;GESTE={t:0};g.fillStyle='rgba(60,90,130,.18)';g.beginPath();g.ellipse(L0/2,H0-5,8,3,0,0,7);g.fill();
+  sprite(g,L0/2,H0-5,ap,'bas',0,false);GESTE=av;
 }
 /* une étagère : les objets posés, leur étiquette, et la planche dessous */
 function etagere(objets){

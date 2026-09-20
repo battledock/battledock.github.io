@@ -887,7 +887,7 @@ function objetsVides(){
   /* LA COUR DES BOUTIQUES : deux chalets au fond d'une cour de planches, deux autres plus bas,
      un passage de bois qui descend vers l'escalier ; lampadaires, banc, râtelier, poteau indicateur */
   const C=COUR;
-  P('skishop',C.x0+40,C.y0-4,{col:[28,12],ferme:'Le ski shop',demi:24});
+  P('skishop',C.x0+40,C.y0-4,{col:[28,12],ouvre:'skishop',demi:24});                 /* ouvert ! */
   P('souvenirs',C.x1-40,C.y0-4,{col:[28,12],ferme:'Les souvenirs',demi:24});
   P('ecole',C.x0+62,C.y1+62,{col:[36,12],ferme:'L’École de ski',demi:32});
   P('forfaits',C.x1-28,C.y1+58,{col:[14,10],ferme:'La caisse des forfaits',demi:12});
