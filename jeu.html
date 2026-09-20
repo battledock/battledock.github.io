@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1520';
+  var MA_VERSION='2026-09-20-1525';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -13827,14 +13827,16 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     for(let i=0;i<=n;i++){const t=i/n;R(Math.round(x1+(x2-x1)*t-ep/2),Math.round(y1+(y2-y1)*t-ep/2),ep,ep,c);}};
   const T=teint;
   const peau=P.peau[p.peau]||P.peau[2], peauO=T(peau,-26), peauC=T(peau,16), peauT=T(peau,-58);
-  const chev=P.cheveux[p.cheveux]||P.cheveux[2], chevC=T(chev,26), chevO=T(chev,-26);
+  const COUPE=SALON_PAR_ID[p.coupe], TEINTE=SALON_PAR_ID[p.teinte];
+  const chev=(COUPE&&COUPE.col)||(TEINTE&&TEINTE.col)||P.cheveux[p.cheveux]||P.cheveux[2], chevC=T(chev,26), chevO=T(chev,-26);
+  const POINTES=(COUPE&&COUPE.pointes)||(TEINTE&&TEINTE.pointes)||null;
   const hexOu=(v,liste)=>typeof v==='string'&&v[0]==='#'?v:(liste[v]||liste[0]);
   const vest=hexOu(p.veste,P.veste), vestC=T(vest,22), vestO=T(vest,-28), vestT=T(vest,-56);
   const pant=hexOu(p.pantalon,P.pantalon), pantO=T(pant,-20), pantC=T(pant,14);
   const chau=hexOu(p.chaussures,P.chaussures), chauC=T(chau,24), chauO=T(chau,-24);
   const oeil=P.yeux[p.yeux]||P.yeux[0];
   const sacC=P.sac[p.sac]||'aucun';
-  const coiffe=COIFFES[p.coiffe]||'courts', barbe=BARBES[p.barbe]||'aucune', chapeau=CHAPEAUX[p.chapeau]||'aucun';
+  const coiffe=(SALON_PAR_ID[p.coupe]&&SALON_PAR_ID[p.coupe].forme)||COIFFES[p.coiffe]||'courts', barbe=BARBES[p.barbe]||'aucune', chapeau=CHAPEAUX[p.chapeau]||'aucun';
   const fy=YEUX_F[p.formeYeux]||'normaux', sourcil=SOURCILS[p.sourcils]||'fins', nez=NEZ[p.nez]||'droit';
   const bouche=BOUCHES[p.bouche]||'neutre', marque=MARQUES[p.marque]||'aucune', boucle=BOUCLES[p.boucle]||'aucune';
   const hautT=HAUTS[p.haut]||'veste', basT=BAS[p.bas]||'pantalon', soulier=SOULIERS[p.souliers]||'bottes';
@@ -14368,7 +14370,7 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
      volume) et une matière : un dégradé du sommet éclairé vers les pointes
      sombres, des mèches plus sombres qui suivent le sens des cheveux, et un
      reflet en arc sur le dessus. */
-  const H5={b:chev, c:T(chev,24), cc:T(chev,46), o:T(chev,-24), oo:T(chev,-48)};
+  const H5={b:chev, c:T(chev,24), cc:T(chev,46), o:POINTES||T(chev,-24), oo:POINTES?T(POINTES,-30):T(chev,-48)};          /* des pointes d'une autre couleur : le « dip-dye » */
   const CF={
     'courts':      {vol:2,fr:'meche',lg:0},  'très courts':{vol:0,fr:'rase',lg:0},   'dégradé':{vol:1,fr:'degrade',lg:0},
     'bol':         {vol:2,fr:'frange',lg:0},  'carré':      {vol:2,fr:'raie',lg:9},   'mi-longs':{vol:2,fr:'raie',lg:14},
@@ -14378,7 +14380,11 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     'tresses':     {vol:1,fr:'raie',lg:0,sp:'tresses'}, 'ondulés':{vol:3,fr:'raie',lg:16,ond:1},
     'bouclés':     {vol:4,fr:'boucle',lg:8,ond:2}, 'afro':{vol:9,fr:'afro',lg:0},
     'dreads':      {vol:2,fr:'dreads',lg:22},  'banane':{vol:2,fr:'banane',lg:0}, 'crête':{vol:0,fr:'crete',lg:0},
-    'crâne':       {vol:0,fr:'crane',lg:0},    'hirsute':{vol:4,fr:'hirsute',lg:4}};
+    'crâne':       {vol:0,fr:'crane',lg:0},    'hirsute':{vol:4,fr:'hirsute',lg:4},
+    /* LES COUPES DU SALON : des formes qu'on n'a pas à la création */
+    'mulet':{vol:2,fr:'degrade',lg:18}, 'afroGeante':{vol:14,fr:'afro',lg:0}, 'samourai':{vol:1,fr:'rase',lg:0,sp:'chignonHaut',x:'samourai'},
+    'pics':{vol:5,fr:'hirsute',lg:0,x:'pics'}, 'creteGeante':{vol:0,fr:'crete',lg:0,x:'crete'}, 'bananeGeante':{vol:3,fr:'banane',lg:0,x:'banane'},
+    'dreadsOr':{vol:2,fr:'dreads',lg:30,x:'perles'}, 'comete':{vol:3,fr:'raie',lg:26,ond:1,x:'comete'}};
   const cf=CF[coiffe]||CF['courts'];
   const mat=(r,r0,r1)=>{const k=(r-r0)/Math.max(1,r1-r0);return k<0.12?H5.c:(k>0.86?H5.o:H5.b);};
   /* une calotte arrondie : demi-largeur hw, du sommet (yTop) à la base (yBas) */
@@ -14422,6 +14428,14 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     if(coiffe==='dreads')for(let k=0;k<3;k++)for(let r=0;r<22;r++){R(-16+k*2,hy+8+r,2,1,(r+k)%4===0?H5.oo:H5.b);R(11+k*2,hy+8+r,2,1,(r+k)%4===0?H5.oo:H5.b);}
   };
 
+  const finitionsSalon=()=>{const X=cf.x;if(!X)return;const hy=yTete, dx=(!cote&&diag)?vis*2:0;
+    if(X==='pics'){for(let k=-3;k<=3;k++){const x=(cote?k*3:k*4)+dx, h=5+(k%2?2:4);for(let r=0;r<h;r++)R(x-Math.round((h-r)/3),hy-4-r,Math.max(1,3-Math.floor(r/2)),1,r>h-2?H5.cc:(r>h/2?H5.c:H5.b));}}
+    if(X==='crete'){for(let r=0;r<16;r++){const w=Math.max(2,6-Math.floor(r/4));R(dx-w/2+(cote?1:0),hy-2-r,w,1,r>12?H5.o:(r>8?H5.b:H5.c));}R(dx-1,hy-18,2,2,H5.o);}
+    if(X==='banane'){for(let r=0;r<8;r++){const w=16-r;R((cote?4:0)+dx-w/2+r*0.6,hy-4-r,w,1,r>5?H5.c:H5.b);}R((cote?4:0)+dx-3,hy-11,6,1,H5.cc);}
+    if(X==='samourai'){R(dx-2,hy-16,4,6,H5.b);R(dx-3,hy-10,6,2,'#c8281e');}                                 /* le chignon noué d'un ruban rouge */
+    if(X==='perles'&&!dos){for(let k=0;k<4;k++){R(-16+k*2,hy+18+k*3,2,2,'#e8c060');R(11+k*2,hy+20+k*3,2,2,'#e8c060');}}
+    if(X==='comete'){for(let k=0;k<9;k++){const x=((k*7)%24)-12+dx, y=hy-2+((k*5)%14);R(x,y,1,1,'#ffffff');}R(dx-9,hy-1,3,1,'#ffffff');}   /* la comète : des paillettes d'argent */
+  };
   const cheveuxDessus=()=>{
     const hy=yTete;
     if(coiffe==='crâne'){calotteCrane();return;}
@@ -14892,7 +14906,7 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     jambe(0,pD.x,leveD,true);
     penche(()=>torse());
     jambe(0,pG.x,leveG,false);
-    penche(()=>{cheveuxDerriere();tete();echarpeDe();barbeDe();cheveuxDessus();chapeauDe();masqueDe();});
+    penche(()=>{cheveuxDerriere();tete();echarpeDe();barbeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();chapeauDe();masqueDe();});
     if(frG>0)penche(()=>{const h=brasGeste(false,false);outil(h);R(Math.round(h.x)-2,Math.round(h.y)-2,4,4,peau);});
     else penche(()=>bras(0,-pG.x,false));                       /* le bras de devant, à l'opposé de la jambe de devant */
   }else if(frG>0){
@@ -14907,9 +14921,9 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       /* de dos : pendant l'élan, l'outil est au-dessus de nous (devant le corps pour
          l'œil) ; à la frappe, il part loin devant, donc derrière le corps */
       const leve=momentDos(angleBras().a)==='leve';
-      if(!leve){outilEtBras();torse();sac(false);tete();echarpeDe();cheveuxDessus();chapeauDe();masqueDe();}
-      else{sac(false);tete();echarpeDe();cheveuxDessus();chapeauDe();masqueDe();outilEtBras();}
-    }else{outilEtBras();sac(true);tete();echarpeDe();barbeDe();cheveuxDessus();chapeauDe();masqueDe();}
+      if(!leve){outilEtBras();torse();sac(false);tete();echarpeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();chapeauDe();masqueDe();}
+      else{sac(false);tete();echarpeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();chapeauDe();masqueDe();outilEtBras();}
+    }else{outilEtBras();sac(true);tete();echarpeDe();barbeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();chapeauDe();masqueDe();}
   }else{
     if(!dos)cheveuxDerriere();
     if(diag){
@@ -14945,7 +14959,7 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
     if(dos)sac(false);else sac(true);
     tete();echarpeDe();
     if(!dos)barbeDe();
-    cheveuxDessus();
+    cheveuxDessus();if(chapeau==='aucun')finitionsSalon();
     /* de dos et de trois-quarts : on devine la joue et l'oreille du côté où l'on regarde */
     if(diag&&dos){const cx2=tourne>0?9:-12;R(cx2,yTete+9,3,9,peau);R(cx2+(tourne>0?1:0),yTete+11,2,4,peauO);R(tourne>0?11:-13,yTete+14,2,3,peau);}
     chapeauDe();masqueDe();
@@ -18279,6 +18293,7 @@ function majAction(){
     return;
   }
   if(o.t==='x_chantier'){b.innerHTML='Lire le panneau<small>CHANTIER · TRAVAUX EN COURS</small>';b.classList.add('on');return;}
+  if(o.ouvre==='salon'){b.innerHTML='Entrer au Peigne d’Or<small>COUPES ET COULEURS EXCLUSIVES</small>';b.classList.add('on');return;}
   if(o.ouvre==='crousti'){b.innerHTML='Entrer chez Crousti’Port<small>'+(REPU_FIN>Date.now()?'TU ES REPU · ENCORE '+Math.ceil((REPU_FIN-Date.now())/60000)+' MIN':'POULET FRIT · MENUS DE 1 € À 12 €')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='skishop'){b.innerHTML='Entrer au Ski shop<small>TENUES DE MONTAGNE · DE 5 € À 2 500 €</small>';b.classList.add('on');return;}
   if(o.ouvre==='ecole'){b.innerHTML='L’École de ski<small>LEÇONS · MÉDAILLES · TABLEAU D’HONNEUR</small>';b.classList.add('on');return;}
@@ -18437,6 +18452,7 @@ function agir(){
   if(o.t==='x_cabanon'){ouvrirLeCabanon();return;}
   if(o.ouvre==='skishop'){ouvrirLeSkiShop();return;}
   if(o.ouvre==='crousti'){ouvrirCrousti();return;}
+  if(o.ouvre==='salon'){ouvrirLeSalon();return;}
   if(o.ouvre==='ecole'){ouvrirLEcole();return;}
   if(o.ouvre==='forfaits'){ouvrirLesForfaits();return;}
   if(o.ouvre==='telecabine'){passerLesTourniquets();return;}
@@ -19238,6 +19254,31 @@ const SKI=[
   {id:'skis_course',slot:'skis',nom:'Skis de course or et noir',prix:60000,sk:['#1a1a1e','#d8b040'],t:'skis',q:{vit:5,vir:3,sta:4}}
 ];
 const SKI_PAR_ID=Object.fromEntries(SKI.map(x=>[x.id,x]));
+/* ================= LE PEIGNE D'OR : les coupes et les couleurs exclusives =================
+   Une COUPE change la forme (et parfois impose sa couleur) ; une COULEUR teint la coupe qu'on a.
+   Rien de tout ça n'existe à la création du personnage : il faut passer au salon. */
+const SALON=[
+  /* les couleurs, sur ta coupe actuelle */
+  {id:'teinte_platine',sorte:'couleur',nom:'Blond platine',prix:1500,col:'#f2ecd8'},
+  {id:'teinte_rose',sorte:'couleur',nom:'Rose bonbon',prix:2000,col:'#f28ab8'},
+  {id:'teinte_bleu',sorte:'couleur',nom:'Bleu nuit',prix:2000,col:'#2a3c7a'},
+  {id:'teinte_menthe',sorte:'couleur',nom:'Vert menthe',prix:2000,col:'#7ad8b0'},
+  {id:'teinte_rouge',sorte:'couleur',nom:'Rouge feu',prix:2500,col:'#d8341e'},
+  {id:'teinte_violet',sorte:'couleur',nom:'Violet',prix:2500,col:'#7a3ab8'},
+  {id:'teinte_argent',sorte:'couleur',nom:'Argent',prix:3500,col:'#c8ccd4'},
+  {id:'teinte_dipbleu',sorte:'couleur',nom:'Pointes bleues',prix:4500,col:null,pointes:'#3a8ae0'},
+  {id:'teinte_couchant',sorte:'couleur',nom:'Coucher de soleil',prix:6000,col:'#f0a040',pointes:'#e8406a'},
+  /* les coupes */
+  {id:'coupe_mulet',sorte:'coupe',nom:'Le Mulet',prix:5000,forme:'mulet'},
+  {id:'coupe_afro',sorte:'coupe',nom:'L’Afro géante',prix:8000,forme:'afroGeante'},
+  {id:'coupe_samourai',sorte:'coupe',nom:'Le Samouraï',prix:12000,forme:'samourai'},
+  {id:'coupe_pics',sorte:'coupe',nom:'Les Pics électriques',prix:14000,forme:'pics'},
+  {id:'coupe_crete',sorte:'coupe',nom:'La Crête punk rose',prix:15000,forme:'creteGeante',col:'#f04a9a',pointes:'#ffd0e8'},
+  {id:'coupe_banane',sorte:'coupe',nom:'La Banane rock’n’roll',prix:18000,forme:'bananeGeante',col:'#1a1410'},
+  {id:'coupe_dreads',sorte:'coupe',nom:'Les Dreads dorées',prix:20000,forme:'dreadsOr',col:'#3a2616',pointes:'#e8c060'},
+  {id:'coupe_comete',sorte:'coupe',nom:'La Comète',prix:150000,forme:'comete',col:'#e8ecf4',pointes:'#7ac8ff',collector:10}
+];
+const SALON_PAR_ID=Object.fromEntries(SALON.map(x=>[x.id,x]));
 /* la tenue portée devient des couleurs et des détails sur le personnage */
 /* LES SKIS SERVENT VRAIMENT : dans la neige de Saumaski, on glisse, d'autant plus vite que les skis
    sont bons (+8 % par cran de vitesse : de +8 % en bois à +40 % en course). La descente utilisera
@@ -19469,6 +19510,9 @@ async function lireMesCosmetiques(){
   e.cos=neuf;
   ETOILES_VENDUES=typeof d.etoiles==='number'?d.etoiles:ETOILES_VENDUES;
   if(e.ap&&e.ap.deguisement&&!neuf['costume_poulet']){delete e.ap.deguisement;monterEnLigne(true);}
+  if(e.ap&&e.ap.coupe&&!neuf[e.ap.coupe]){delete e.ap.coupe;monterEnLigne(true);}
+  if(e.ap&&e.ap.teinte&&!neuf[e.ap.teinte]){delete e.ap.teinte;monterEnLigne(true);}
+  COMETES_VENDUES=typeof d.cometes==='number'?d.cometes:COMETES_VENDUES;
   if(e.ap&&e.ap.ski&&typeof e.ap.ski==='object'){let chg=false;              /* on ne porte que la tenue qu'on a achetée */
     for(const k of Object.keys(e.ap.ski)){if(e.ap.ski[k]&&!neuf[e.ap.ski[k]]){delete e.ap.ski[k];chg=true;}}if(chg)monterEnLigne(true);}
   if(e.ap&&e.ap.cos&&!neuf[e.ap.cos]){
@@ -19770,6 +19814,59 @@ function partirSkier(ep){
     const av=GESTE;GESTE={t:0};sprite(g,32,70,ap,'haut',0,false);GESTE=av;sessionStorage.setItem('bdl.skieur',c.toDataURL());}catch(x){}
   try{sauver();envoyerSauvegarde(true);}catch(x){}
   location.href='ski.html?e='+ep+'&v='+encodeURIComponent(window.MA_VERSION||'');
+}
+/* ================= LE PEIGNE D'OR : le salon de coiffure du port =================
+   Même catalogue que le Ski shop, aux couleurs du salon : la cabine où ta tête tourne, deux rayons
+   (les coupes, les couleurs), essayer, acheter, porter, revenir à sa coupe. */
+let COMETES_VENDUES=0, RAYON_SALON='coupe', SEL_SALON=null;
+const CSS_SALON=`.salon .tete{background:#1f4a3a}.salon .tete .logo{color:#1f4a3a}.salon .btn{background:#1f4a3a}.salon .btn.enl{background:#fff;color:#1f4a3a;border-color:#1f4a3a}
+.salon .puces button.on{background:#1f4a3a;border-color:#1f4a3a}.salon .carte.on{border-color:#1f4a3a}.salon .carte .p{color:#8a6a1e}.salon .cabine .inf .prix{color:#8a6a1e}`;
+function apSalon(id){const x=SALON_PAR_ID[id], ap=Object.assign({},e.ap||DEF_AP);delete ap.deguisement;ap.chapeau=0;if(ap.ski){ap.ski=Object.assign({},ap.ski);delete ap.ski.bonnet;delete ap.ski.masque;}
+  if(!x)return ap;if(x.sorte==='coupe')ap.coupe=id;else{ap.teinte=id;}return ap;}
+function vignetteTete(cv2,ap,dir){const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));const L0=30,H0=32,E=((cv2.clientWidth||140)/L0)*D;
+  cv2.width=L0*E;cv2.height=H0*E;const g=cv2.getContext('2d');g.setTransform(E,0,0,E,0,0);g.imageSmoothingEnabled=false;const av=GESTE;GESTE={t:0};sprite(g,L0/2,H0+22,ap,dir||'bas',0,false);GESTE=av;}
+async function ouvrirLeSalon(){
+  if(!document.getElementById('cssSki')){const st=document.createElement('style');st.id='cssSki';st.textContent=CSS_SKI;document.head.appendChild(st);}
+  if(!document.getElementById('cssSalon')){const st=document.createElement('style');st.id='cssSalon';st.textContent=CSS_SALON;document.head.appendChild(st);}
+  $('page2Fond').className='skiCat salon';
+  $('page2Fond').innerHTML='<div class="tete"><div class="logo">✂</div><div><b>LE PEIGNE D’OR</b><small>Coupes & couleurs exclusives</small></div><div class="bourse">Ta bourse<br><b id="salArgent">—</b></div></div>'+
+    '<div class="cabine"><canvas id="salCabine"></canvas><div class="inf" id="salFiche"></div></div>'+
+    '<div class="puces"><button data-sr="coupe">Les coupes</button><button data-sr="couleur">Les couleurs</button><button data-sr="moi">Ma coupe d’origine</button></div>'+
+    '<div class="grille" id="salGrille"></div><div class="bulle" id="skiBulle"></div><button class="fermer" id="ski-fermer">Ressortir sur le quai</button>';
+  $('ski-fermer').onclick=()=>{fermeA=Date.now();clearInterval(CAB_T);$('page2').classList.remove('on');};
+  $('page2').classList.add('on');
+  lireMesCosmetiques().then(()=>salonMaj()).catch(()=>{});salonMaj();
+  clearInterval(CAB_T);let k=0;const dirs=['bas','bas-droite','droite','haut-droite','haut','haut-gauche','gauche','bas-gauche'];
+  CAB_T=setInterval(()=>{if(!$('page2').classList.contains('on')||!$('salCabine')){clearInterval(CAB_T);return;}k=(k+1)%8;vignetteTete($('salCabine'),apSalon(SEL_SALON),dirs[k]);},650);
+}
+function salonMaj(){
+  const G=$('salGrille');if(!G)return;e.cos=e.cos||{};$('salArgent').textContent=enEuros(e.euros||0);
+  document.querySelectorAll('[data-sr]').forEach(b=>{b.classList.toggle('on',b.dataset.sr===RAYON_SALON);b.onclick=()=>{
+    if(b.dataset.sr==='moi'){e.ap=Object.assign({},e.ap);delete e.ap.coupe;delete e.ap.teinte;sauver();envoyerSauvegarde(true);monterEnLigne(true);skiBulle('Te revoilà avec ta coupe d’origine.');salonMaj();return;}
+    RAYON_SALON=b.dataset.sr;SEL_SALON=null;salonMaj();};});
+  const L=SALON.filter(x=>x.sorte===RAYON_SALON).sort((a,b)=>a.prix-b.prix);
+  const porte=RAYON_SALON==='coupe'?(e.ap&&e.ap.coupe):(e.ap&&e.ap.teinte);
+  if(!SEL_SALON||!L.some(x=>x.id===SEL_SALON))SEL_SALON=(L.find(x=>x.id===porte)||L[0]).id;
+  G.innerHTML=L.map(x=>{const a=!!e.cos[x.id], mis=porte===x.id;
+    const badge=x.collector?'<span class="badge or">COLLECTOR</span>':(mis?'<span class="badge">PORTÉE</span>':(a?'<span class="badge a">À TOI</span>':''));
+    return '<div class="carte'+(x.id===SEL_SALON?' on':'')+(x.collector?' or':'')+'" data-id="'+x.id+'">'+badge+'<canvas data-vue="'+x.id+'"></canvas><div class="n">'+x.nom+'</div><div class="p">'+enEuros(x.prix).replace(',00','')+'</div></div>';}).join('');
+  G.querySelectorAll('canvas[data-vue]').forEach(cv2=>vignetteTete(cv2,apSalon(cv2.dataset.vue),'bas'));
+  G.querySelectorAll('.carte').forEach(c=>c.onclick=()=>{SEL_SALON=c.dataset.id;vibrer(8);salonMaj();});
+  const x=SALON_PAR_ID[SEL_SALON], a=!!e.cos[x.id], mis=porte===x.id, peut=(e.euros||0)>=x.prix;
+  const reste=x.collector?Math.max(0,x.collector-COMETES_VENDUES):null, epuise=x.collector&&!a&&reste<=0;
+  $('salFiche').innerHTML=(x.collector?'<span class="coll">'+(epuise?'ÉPUISÉE':'COLLECTOR · '+reste+' / '+x.collector+' EN VENTE')+'</span>':'<div class="cat">'+(x.sorte==='coupe'?'LES COUPES':'LES COULEURS')+'</div>')+
+    '<h3>'+x.nom+'</h3><div class="prix">'+enEuros(x.prix)+'</div><div class="etat">'+(mis?'Tu la portes.':(a?'Elle est à toi.':'Regarde-toi tourner dans le miroir.'))+'</div>'+
+    '<button id="salAchat" class="btn'+(a?(mis?' enl':''):(peut&&!epuise?'':' pas'))+'">'+(a?(mis?'L’enlever':'La porter'):(epuise?'Épuisée':(peut?'Acheter':'Il te manque '+enEuros(x.prix-(e.euros||0)))))+'</button>';
+  vignetteTete($('salCabine'),apSalon(SEL_SALON),'bas');
+  $('salAchat').onclick=async()=>{
+    const champ=x.sorte==='coupe'?'coupe':'teinte';
+    if(!a){if(epuise){skiBulle('Les dix sont parties.');return;}if(!peut){skiBulle('Il te manque '+enEuros(x.prix-(e.euros||0)));return;}
+      const d=await appelRPC('acheter_cosmetique',{p_joueur:e.id,p_piece:x.id});
+      if(!d||d.erreur){skiBulle(d&&d.erreur==='epuisee'?'Les dix sont parties.':(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':'Le coiffeur n’a pas pu'));if(d&&typeof d.euros==='number')e.euros=d.euros;salonMaj();return;}
+      if(typeof d.euros==='number')e.euros=d.euros;e.cos[x.id]=true;e.ap=Object.assign({},e.ap,{[champ]:x.id});
+      skiBulle(x.collector&&d.numero?'Exemplaire n° '+d.numero+' sur '+x.collector+'. Tout le monde va te regarder.':x.nom+' · les autres te verront avec');if(x.collector&&d.numero)COMETES_VENDUES=d.numero;}
+    else{e.ap=Object.assign({},e.ap);if(mis)delete e.ap[champ];else e.ap[champ]=x.id;}
+    sauver();envoyerSauvegarde(true);monterEnLigne(true);vibrer(20);salonMaj();};
 }
 /* ================= CROUSTI'PORT : on y mange, et parfois… le ticket d'or =================
    Les menus rassasient : repu, on marche 15 % plus vite un moment. Très rarement (c'est le serveur

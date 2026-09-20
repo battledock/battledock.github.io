@@ -1304,6 +1304,36 @@ function graverCroustiPort(){
   const toile=copie(base.toile), nuit=copie(base.nuit||base.toile);peindre(toile,false);peindre(nuit,true);
   return {toile,W,H,sol,nuit};
 }
+/* LE PEIGNE D'OR : le salon de coiffure du quai. Une devanture vert bouteille à filets d'or, la
+   grande vitrine avec ses fauteuils et ses miroirs, l'enseigne aux ciseaux, et le poteau de barbier
+   à spirale bleu-blanc-rouge ; la nuit, les miroirs s'allument. */
+function graverLePeigne(){
+  const base=graverImmeuble(3), W=base.W, H=base.H, sol=base.sol, cx=W/2, BL=138, x0=cx-BL/2, rez=40, yR=sol-rez;
+  const copie=(src)=>{const c=document.createElement('canvas');c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);return c;};
+  const peindre=(cv,nuit)=>{const D=cv.width/W, g=cv.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+    const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
+    R(x0,yR,BL,rez,'#1f4a3a');R(x0,yR,BL,1.5,'#d8b050');R(x0,sol-1.5,BL,1.5,'#12302a');
+    for(let k=x0+4;k<x0+BL-2;k+=26)R(k,yR+3,0.8,rez-5,'#d8b050');                                          /* les filets d'or */
+    /* la vitrine : deux fauteuils, deux miroirs ronds, une lampe */
+    R(x0+8,yR+10,BL-16,rez-12,nuit?'#ffe0a8':'#2a3432');
+    if(!nuit){g.fillStyle='rgba(255,255,255,.14)';g.beginPath();g.moveTo(x0+14,sol-2);g.lineTo(x0+28,yR+10);g.lineTo(x0+36,yR+10);g.lineTo(x0+22,sol-2);g.fill();}
+    [[-38],[34]].forEach(([k])=>{g.fillStyle=nuit?'#fff4d8':'#9ab0b8';g.beginPath();g.ellipse(cx+k,yR+17,6,7,0,0,7);g.fill();g.strokeStyle='#d8b050';g.lineWidth=1;g.stroke();
+      R(cx+k-5,yR+26,10,6,'#8a2418');R(cx+k-5,yR+26,10,1,'#c84a3a');R(cx+k-1,yR+32,2,5,'#3a3a40');R(cx+k-3,yR+36,6,1,'#3a3a40');});
+    /* la porte */
+    R(cx-9,yR+8,18,rez-8,'#12302a');R(cx-8,yR+9,16,rez-10,nuit?'#ffe8b8':'#3a4442');R(cx-0.5,yR+9,1,rez-10,'#12302a');R(cx+4,sol-14,1.5,3,'#d8b050');
+    /* l'enseigne aux ciseaux */
+    const ey=yR-14;R(x0+16,ey,BL-32,13,'#d8b050');R(x0+17,ey+1,BL-34,11,'#1f4a3a');
+    g.font='700 8px Georgia,serif';g.textAlign='center';g.fillStyle=nuit?'#fff0c0':'#f0d890';g.fillText('LE PEIGNE D’OR',cx+6,ey+9,BL-60);g.textAlign='left';
+    const sx=x0+28, sy=ey+6.5;g.strokeStyle='#f0d890';g.lineWidth=1;[[-1],[1]].forEach(([k])=>{g.beginPath();g.moveTo(sx-5,sy+k*3);g.lineTo(sx+5,sy-k*2);g.stroke();g.beginPath();g.arc(sx-6,sy+k*3,1.6,0,7);g.stroke();});
+    /* le poteau de barbier, à droite de la porte */
+    const px=x0+BL-10, py=yR-2;R(px-2,py-3,6,3,'#d8b050');R(px-2,py+26,6,3,'#d8b050');R(px-1.5,py,5,26,'#ffffff');
+    for(let k=0;k<26;k+=2){const off=(k*1.2)%5;R(px-1.5+off,py+k,1.5,2,k%4?'#2d5fb0':'#c8281e');}
+    g.fillStyle='rgba(255,255,255,.35)';g.fillRect(px-1,py,1,26);
+    if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,210,140,.45)');l.addColorStop(1,'rgba(255,210,140,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}
+  };
+  const toile=copie(base.toile), nuit=copie(base.nuit||base.toile);peindre(toile,false);peindre(nuit,true);
+  return {toile,W,H,sol,nuit};
+}
 function semerDecorExtramar(){
   DECOR=[];
   const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
@@ -1311,6 +1341,7 @@ function semerDecorExtramar(){
      l'autre, comme sur le vrai quai ; au milieu, la Bonne Mère */
   for(let k=0;k<10;k++){
     if(k===4){P('x_panneauG',XP.ruelle.x-38,XP.maisonsY+22,{col:[4,3]});continue;}   /* la ruelle du casino, et son panneau */
+    if(k===5){XCAL['x_peigne0']=graverLePeigne();CALQUES_DECO['x_peigne']=XCAL['x_peigne0'];P('x_peigne',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'salon'});continue;}   /* le salon de coiffure */
     if(k===7){XCAL['x_crousti0']=graverCroustiPort();CALQUES_DECO['x_crousti']=XCAL['x_crousti0'];P('x_crousti',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'crousti'});continue;}   /* le fast-food du quai */
     P('x_maison',70+k*140,XP.maisonsY,{v:k,col:[70,24]});
   }
