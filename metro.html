@@ -117,7 +117,7 @@ h1{font:400 24px Georgia,serif;margin:4px 0 6px}
     <button id="remonter">↑ Remonter</button>
     <button id="partir" disabled>Choisis un arrêt</button>
   </div>
-  <button id="frauder" disabled>🤫 Frauder · risque de contrôle</button>
+  <button id="frauder" disabled style="display:none">🤫 Frauder · risque de contrôle</button>
   <div id="mot"></div>
 </div>
 <div id="trajet">
@@ -147,13 +147,13 @@ const $=id=>document.getElementById(id);
 const TESTEUR=(()=>{try{const x=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}');return x.id==='e029d1fb-7baa-4225-91fd-5cdbef6f8711';}catch(e){return false;}})();
 const STATIONS=[
   /* SAUMASKI, la montagne : au bout de la ligne 1, après le Village. Tracée, pas encore ouverte. */
-  {id:'montagne',nom:'Saumaski',sous:TESTEUR?'la montagne · accès testeur':'la montagne · ouverture prochaine',ouvert:TESTEUR,sortie:'jeu.html?carte=montagne&arrivee=1',prix:800},
-  {id:'village',nom:'Village',sous:'la place, la fontaine',ouvert:true,sortie:'jeu.html',prix:500},
-  {id:'port',nom:'Le port',sous:'les docks, les grues, le Vieux-Port',ouvert:true,sortie:'jeu.html?carte=extramar&arrivee=1',prix:500},
+  {id:'montagne',nom:'Saumaski',sous:TESTEUR?'la montagne · accès testeur':'la montagne · ouverture prochaine',ouvert:TESTEUR,sortie:'jeu.html?carte=montagne&arrivee=1',prix:0},
+  {id:'village',nom:'Village',sous:'la place, la fontaine',ouvert:true,sortie:'jeu.html',prix:0},
+  {id:'port',nom:'Le port',sous:'les docks, les grues, le Vieux-Port',ouvert:true,sortie:'jeu.html?carte=extramar&arrivee=1',prix:0},
 ];
 /* LA STATION OÙ L'ON EST : metro.html (Village) ou metro.html?station=port */
 const ICI=STATIONS.find(s=>s.id===new URLSearchParams(location.search).get('station'))||STATIONS.find(s=>s.id==='village');
-if(ICI.id==='montagne')STATIONS.find(s=>s.id==='village').prix=800;   /* Saumaski ⇄ Village : 8 € */
+/* LE MÉTRO EST GRATUIT : plus de ticket à payer, plus de fraude */
 const LAS=STATIONS.find(s=>s.id===(ICI.id==='village'?'port':'village'));   /* la prochaine rame : le port depuis le Village, le Village sinon */
 const AU_PORT=ICI.id==='port';
 /* L'ARGENT : le même joueur que dans le jeu. Le serveur seul débite, et
@@ -392,17 +392,17 @@ function dessinerLePlan(){
     const ici=s.id===ICI.id;
     return '<button class="arret'+(ici?' ici':'')+(choix===s.id?' choisi':'')+(joignable(s)||ici?'':' ferme')+
       '" data-s="'+s.id+'"'+(ici?' disabled':'')+'><span style="flex:1"><b>'+s.nom+'</b><br>'+
-      '<span>'+(ici?'VOUS ÊTES ICI':(s.ouvert?s.sous:'🔒 '+s.sous))+'</span></span>'+(ici?'':(s.ouvert?'<span class="prixT">'+enEuros(s.prix)+'</span>':'<span class="prixT">fermée</span>'))+'</button>';
+      '<span>'+(ici?'VOUS ÊTES ICI':(s.ouvert?s.sous:'🔒 '+s.sous))+'</span></span>'+(ici?'':(s.ouvert?'<span class="prixT">gratuit</span>':'<span class="prixT">fermée</span>'))+'</button>';
   }).join('');
   $('trace').querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{
     const s=STATIONS.find(x=>x.id===b.dataset.s);
     if(!s||!joignable(s))return;
     choix=s.id;dessinerLePlan();
-    $('partir').disabled=false;$('partir').textContent='Ticket · '+enEuros(s.prix);
+    $('partir').disabled=false;$('partir').textContent='Monter dans la rame';
     /* pas de fraude sur la ligne de Saumaski : elle n'est ouverte qu'aux testeurs, au vrai prix */
     const sansFraude=s.id==='montagne'||ICI.id==='montagne';
-    $('frauder').disabled=sansFraude;$('frauder').style.display=sansFraude?'none':'';
-    $('mot').textContent=(e.euros||0)<s.prix?'Il te manque '+enEuros(s.prix-(e.euros||0))+'.':'';
+    $('frauder').disabled=true;$('frauder').style.display='none';
+    $('mot').textContent='Le métro est gratuit : bon voyage !';
     if(navigator.vibrate)try{navigator.vibrate(8);}catch(x){}
   });
 }
@@ -419,13 +419,13 @@ $('partir').onclick=async()=>{
       :d.erreur==='pas ici'?'Tu n’es pas à cette station.'
       :d.erreur==='compte'?'Entre dans le jeu une fois, puis redescends.'
       :'Cette ligne n’est pas ouverte.';
-    $('partir').disabled=false;$('frauder').disabled=false;$('partir').textContent='Ticket · '+enEuros(dest.prix);
+    $('partir').disabled=false;$('partir').textContent='Monter dans la rame';
     return;
   }
   if(typeof d.euros==='number'){e.euros=d.euros;garder();majSolde();}
   if(navigator.vibrate)try{navigator.vibrate([10,30,10]);}catch(x){}
   $('partir').textContent='Ticket composté ✓';
-  $('mot').textContent='−'+enEuros(d.prix)+' · Écartez-vous de la bordure du quai.';
+  $('mot').textContent='Écartez-vous de la bordure du quai.';
   appelerLaRame();
 };
 $('trajRetour').onclick=revenirAuQuai;
@@ -443,7 +443,7 @@ $('frauder').onclick=async()=>{
       :d.erreur==='pas_assez'?'Pour frauder, il faut quand même avoir '+enEuros(dest.prix)+' sur toi.'
       :d.erreur==='pas ici'?'Tu n’es pas à cette station.'
       :d.erreur==='compte'?'Entre dans le jeu une fois, puis redescends.':'Cette ligne n’est pas ouverte.';
-    $('partir').disabled=false;$('frauder').disabled=false;$('partir').textContent='Ticket · '+enEuros(dest.prix);
+    $('partir').disabled=false;$('partir').textContent='Monter dans la rame';
     return;
   }
   FRAUDE=d;
