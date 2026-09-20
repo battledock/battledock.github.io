@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1240';
+  var MA_VERSION='2026-09-20-1242';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -17964,7 +17964,7 @@ function majAction(){
   if(o.t==='x_chantier'){b.innerHTML='Lire le panneau<small>CHANTIER · TRAVAUX EN COURS</small>';b.classList.add('on');return;}
   if(o.ouvre==='skishop'){b.innerHTML='Entrer au Ski shop<small>TENUES DE MONTAGNE · DE 5 € À 2 500 €</small>';b.classList.add('on');return;}
   if(o.ouvre==='ecole'){b.innerHTML='L’École de ski<small>LEÇONS · MÉDAILLES · TABLEAU D’HONNEUR</small>';b.classList.add('on');return;}
-  if(o.ouvre==='forfaits'){b.innerHTML='La caisse des forfaits<small>'+(forfaitValide()?'TON FORFAIT · '+resteForfait():'DE 2 € À 150 € · UN ESSAI GRATUIT')+'</small>';b.classList.add('on');return;}
+  if(o.ouvre==='forfaits'){b.innerHTML='La caisse des forfaits<small>'+(forfaitValide()?'TON FORFAIT · '+resteForfait():'FORFAIT DU JOUR · 5 € · JUSQU’À MINUIT')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='fileTC'){b.innerHTML='La file de la télécabine<small>'+(forfaitValide()?'TON FORFAIT EST VALIDE · '+resteForfait():'FORFAIT OBLIGATOIRE · CAISSE DANS LA COUR')+'</small>';b.classList.add('on','inerte');return;}
   if(o.ouvre==='telecabine'){b.innerHTML=forfaitValide()?'Passer les tourniquets<small>FORFAIT VALIDE · '+resteForfait()+'</small>':'Il te faut un forfait<small>LA CAISSE DES FORFAITS EST DANS LA COUR</small>';
     b.classList.add('on');if(!forfaitValide())b.classList.add('inerte');return;}
@@ -19345,29 +19345,28 @@ async function ouvrirLEcole(){
 /* ================= LA CAISSE DES FORFAITS : on paie pour monter =================
    Le serveur date le forfait ; les tourniquets le vérifient. Un nouveau forfait prolonge celui en cours. */
 let MON_FORFAIT=null;
-const FORFAITS=[['essai','Premier essai','1 heure · une seule fois',0],['matinee','Matinée','2 heures',200],['journee','Journée','24 heures',500],['semaine','Semaine','7 jours',2500],['saison','Saison','jusqu’à la fin de l’hiver',15000]];
+const PRIX_FORFAIT=500;                 /* un seul forfait : celui du jour, jusqu'à minuit (heure de Paris) */
 const forfaitValide=()=>!!(MON_FORFAIT&&MON_FORFAIT.fin&&new Date(MON_FORFAIT.fin)>new Date());
 function resteForfait(){if(!forfaitValide())return '';const ms=new Date(MON_FORFAIT.fin)-new Date(), h=Math.floor(ms/3600000), m=Math.floor(ms/60000)%60;
-  return h>=48?'ENCORE '+Math.floor(h/24)+' JOURS':(h>=1?'ENCORE '+h+' H '+String(m).padStart(2,'0'):'ENCORE '+m+' MIN');}
+  return 'JUSQU’À MINUIT · ENCORE '+(h>=1?h+' H '+String(m).padStart(2,'0'):m+' MIN');}
 async function lireMonForfait(){if(!e.id)return;const d=await appelRPC('mon_forfait',{p_joueur:e.id});if(d&&!d.erreur)MON_FORFAIT=d;}
 if(CARTE==='montagne')setTimeout(()=>lireMonForfait().catch(()=>{}),1500);
 async function ouvrirLesForfaits(){
   if(!document.getElementById('cssSki')){const st=document.createElement('style');st.id='cssSki';st.textContent=CSS_SKI;document.head.appendChild(st);}
   injecterCssEcole();
   $('page2Fond').className='skiCat';
-  const rendre=()=>{const v=forfaitValide(), essai=MON_FORFAIT&&MON_FORFAIT.essai_pris;
+  const rendre=()=>{const v=forfaitValide(), peut=(e.euros||0)>=PRIX_FORFAIT;
     $('page2Fond').innerHTML='<div class="tete"><div class="logo">🎫</div><div><b>FORFAITS</b><small>Saumaski · télécabine du sommet</small></div><div class="bourse">Ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div>'+
-      '<div class="lst"><div class="sec">TON FORFAIT</div><div class="ep"><div class="t"><b>'+(v?'Valide · '+(FORFAITS.find(f=>f[0]===MON_FORFAIT.type)||['','Forfait'])[1]:'Pas de forfait')+'</b><small>'+
-      (v?resteForfait().toLowerCase()+' · un nouveau forfait prolonge celui-ci':'Il en faut un pour passer les tourniquets de la télécabine.')+'</small>'+(v?'<div class="ok">✓ LES TOURNIQUETS S’OUVRIRONT</div>':'')+'</div></div>'+
-      '<div class="sec">LES FORFAITS</div>'+FORFAITS.map(([k,n,d,px])=>{const pris=k==='essai'&&essai, peut=(e.euros||0)>=px;
-        return '<div class="ep"><div class="t"><b>'+n+'</b><small>'+d+'</small></div><button data-f="'+k+'"'+(pris?' disabled style="background:#b8c4d2"':'')+'>'+(pris?'Déjà pris':(px?enEuros(px).replace(',00',''):'Gratuit'))+'</button></div>';}).join('')+
+      '<div class="lst"><div class="sec">LE FORFAIT DU JOUR</div><div class="ep"><div class="t"><b>'+(v?'Ton forfait est valide':'Forfait journée · 5 €')+'</b><small>'+
+      (v?resteForfait().charAt(0)+resteForfait().slice(1).toLowerCase():'Pour monter en télécabine autant de fois que tu veux, jusqu’à minuit.')+'</small>'+
+      (v?'<div class="ok">✓ LES TOURNIQUETS S’OUVRIRONT</div>':'')+'</div>'+(v?'':'<button id="fAchat"'+(peut?'':' style="background:#b8c4d2"')+'>'+(peut?'Payer 5 €':'Il te manque '+enEuros(PRIX_FORFAIT-(e.euros||0)))+'</button>')+'</div>'+
+      '<div class="sec">ATTENTION</div><div class="ep"><div class="t"><b>À minuit, il faut repayer</b><small>Le forfait s’arrête à 00 h 00 (heure de Paris), même s’il vient d’être acheté. Le lendemain, un nouveau forfait.</small></div></div>'+
       '</div><div class="bulle" id="skiBulle"></div><button class="fermer" id="ski-fermer">Refermer</button>';
     $('ski-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-    $('page2Fond').querySelectorAll('[data-f]').forEach(b=>b.onclick=async()=>{const k=b.dataset.f, px=(FORFAITS.find(f=>f[0]===k)||[])[3]||0;
-      if((e.euros||0)<px){skiBulle('Il te manque '+enEuros(px-(e.euros||0)));return;}
-      b.disabled=true;const d=await appelRPC('acheter_forfait',{p_joueur:e.id,p_type:k});
-      if(!d||d.erreur){b.disabled=false;skiBulle(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':(d&&d.erreur==='essai deja pris'?'L’essai gratuit, c’est une fois.':'La caisse n’a pas pu'));return;}
-      if(typeof d.euros==='number')e.euros=d.euros;await lireMonForfait();sauver();vibrer(20);rendre();skiBulle('Forfait '+(FORFAITS.find(f=>f[0]===k)||['',''])[1].toLowerCase()+' · bonne montée !');});};
+    const b=$('fAchat');if(b)b.onclick=async()=>{if((e.euros||0)<PRIX_FORFAIT){skiBulle('Il te manque '+enEuros(PRIX_FORFAIT-(e.euros||0)));return;}
+      b.disabled=true;const d=await appelRPC('acheter_forfait',{p_joueur:e.id,p_type:'journee'});
+      if(!d||d.erreur){b.disabled=false;skiBulle(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':'La caisse n’a pas pu');return;}
+      if(typeof d.euros==='number')e.euros=d.euros;await lireMonForfait();sauver();vibrer(20);rendre();skiBulle('Bonne montée ! Valable jusqu’à minuit.');};};
   $('page2').classList.add('on');await lireMonForfait();rendre();
 }
 /* LES TOURNIQUETS : le serveur vérifie le forfait ; la télécabine emmène au sommet */
