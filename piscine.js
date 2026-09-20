@@ -82,6 +82,11 @@ function graverGuichet(){const W=70,H=50,{c,g,F}=mk(W,H);const sol=H-3, cx=W/2;o
   F(cx-24,sol-44,48,20,'#dff4ff');F(cx-24,sol-44,48,1.5,'#ffffff');F(cx-1,sol-44,2,20,'#8ab0c8');
   F(cx-26,sol-48,52,6,'#1d4f8a');g.font='700 4.2px Georgia';g.textAlign='center';g.fillStyle='#fff';g.fillText('ENTRÉES · CAISSE',cx,sol-43.6);g.textAlign='left';
   g.fillStyle='#1d4f8a';g.font='700 3px Georgia';g.fillText('ENTRÉE 0 € · MUNICIPALE',cx-22,sol-26);return {c,W,H,sol};}
+/* LES PLOTS DE DÉPART : quatre plots numérotés au bout du bassin, pour la course */
+function graverPlots(){const W=200,H=22,{c,g,F}=mk(W,H);const sol=H-3;
+  for(let k=0;k<4;k++){const x=16+k*56;ombre(g,x+6,sol,8,1.6);F(x,sol-10,12,10,'#f4f4f4');F(x,sol-10,12,1.5,'#ffffff');F(x,sol-2,12,2,'#c8ccd2');
+    F(x+2,sol-8,8,5,['#e8402a','#2d6fb0','#f0a830','#3f9e7a'][k]);g.font='700 4.4px Georgia';g.textAlign='center';g.fillStyle='#fff';g.fillText(String(k+1),x+6,sol-4.2);g.textAlign='left';}
+  return {c,W,H,sol};}
 function graverBouee(){const W=16,H=16,{c,g,F}=mk(W,H);const sol=H-2;g.strokeStyle='#e8402a';g.lineWidth=2.4;g.beginPath();g.arc(8,7,4.5,0,7);g.stroke();
   g.strokeStyle='#ffffff';for(let q=0;q<4;q++){g.beginPath();g.arc(8,7,4.5,q*Math.PI/2+0.25,q*Math.PI/2+0.75);g.stroke();}return {c,W,H,sol};}
 function objets(){const cal={}, L=[];const reg=(nom,J)=>{cal[nom]={toile:J.c,W:J.W,H:J.H,sol:J.sol,nuit:null};};
@@ -95,6 +100,7 @@ function objets(){const cal={}, L=[];const reg=(nom,J)=>{cal[nom]={toile:J.c,W:J
   L.push({t:'x_mo_mn',x:BASSIN.x1+22,y:BASSIN.y1+16,v:0,col:[1,1],dir:'gauche',                                      /* le maître-nageur, perché */
     pnj:{peau:4,cheveux:6,coiffe:1,barbe:0,veste:'#e8402a',haut:1,pantalon:'#e8402a',bas:1,chaussures:'#f4f4f4',souliers:2,sac:0,chapeau:1,corps:3}});
   reg('guichet',graverGuichet());L.push({t:'x_mo_guichet',x:252,y:HALL.y0+54,v:0,col:[32,6],bati:true,demi:30,ferme:'La caisse de la piscine'});
+  reg('plots',graverPlots());L.push({t:'x_mo_plots',x:(BASSIN.x0+BASSIN.x1)/2,y:BASSIN.y1+12,v:0,col:[4,2],bati:true,demi:100,ouvre:'course'});
   reg('bouee',graverBouee());[[BASSIN.x0-10,BASSIN.y0+40],[BASSIN.x1+10,BASSIN.y0+60]].forEach(([x,y])=>L.push({t:'x_mo_bouee',x,y,v:0}));
   L.push({t:'x_mo_sortie',x:SORTIE[0],y:SORTIE[1],v:0,bati:true,demi:40,ouvre:'sortiePiscine'});cal.sortie={toile:document.createElement('canvas'),W:1,H:1,sol:0,nuit:null};
   return {L,cal};}

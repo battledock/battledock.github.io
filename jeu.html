@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1714';
+  var MA_VERSION='2026-09-20-1719';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -18329,6 +18329,7 @@ function majAction(){
   if(o.t==='x_chantier'){b.innerHTML='Lire le panneau<small>CHANTIER · TRAVAUX EN COURS</small>';b.classList.add('on');return;}
   if(o.ouvre==='manif'){b.innerHTML=(e.ap&&e.ap.gilet?'Ranger ton gilet':'Rejoindre la manif')+'<small>'+(e.ap&&e.ap.gilet?'TU DÉFILES AVEC LES DOCKERS':'LE DÉLÉGUÉ TE TEND UN GILET ORANGE')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='piscine'){b.innerHTML='Entrer à la piscine<small>ENTRÉE LIBRE · VESTIAIRES · BASSIN</small>';b.classList.add('on');return;}
+  if(o.ouvre==='course'){b.innerHTML='Monter sur le plot<small>LA COURSE DU 50 M · A-B-A-B POUR NAGER</small>';b.classList.add('on');return;}
   if(o.ouvre==='cabine'){b.innerHTML=(e.ap&&e.ap.maillot?'Se rhabiller':'Entrer dans la cabine')+'<small>'+(e.ap&&e.ap.maillot?'REMETTRE TES VÊTEMENTS':'SE METTRE EN MAILLOT')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='sortiePiscine'){b.innerHTML='Ressortir sur le quai<small>'+(e.ap&&e.ap.maillot?'ON TE RHABILLE EN SORTANT':'LE VIEUX-PORT')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='banque'){b.innerHTML='Entrer à la banque<small>LIVRET · VIREMENTS · PRÊT</small>';b.classList.add('on');return;}
@@ -18495,6 +18496,7 @@ function agir(){
   if(o.ouvre==='salon'){ouvrirLeSalon();return;}
   if(o.ouvre==='piscine'){entrerALaPiscine();return;}
   if(o.ouvre==='cabine'){ouvrirLaCabine();return;}
+  if(o.ouvre==='course'){if(!(e.ap&&e.ap.maillot)){texteVolant(joueur.x,joueur.y-56,'En maillot, pour la course !','#bfe8ff');return;}ouvrirLaCourse();return;}
   if(o.ouvre==='sortiePiscine'){sortirDeLaPiscine();return;}
   if(o.ouvre==='banque'){ouvrirLaBanque();return;}
   if(o.ouvre==='glacons'){ouvrirLesGlacons();return;}
@@ -19885,6 +19887,81 @@ async function sortirDeLaPiscine(){const d=await appelRPC('sortir_piscine',{p_jo
   if(!d||d.erreur){texteVolant(joueur.x,joueur.y-56,'La sortie est bloquée… réessaie','#bfe8ff');return;}
   if(e.ap&&e.ap.maillot){e.ap=Object.assign({},e.ap);delete e.ap.maillot;}
   e.carte='extramar';e.ext=null;try{sauver();envoyerSauvegarde(true);monterEnLigne(true);}catch(x){}location.replace('jeu.html?carte=extramar&depuis=piscine');}
+/* ================= LA COURSE DU 50 M =================
+   Quatre couloirs, deux longueurs. On tape A puis B, puis A, puis B… : chaque bon coup de bras
+   te pousse ; deux fois le même bouton, c'est un faux mouvement, tu ralentis. Au départ, on attend
+   le coup de sifflet (un départ anticipé, c'est la disqualification). Trois nageurs du club en face.
+   Le serveur garde les temps, le tableau de la semaine, et paie les deux premières places. */
+const CSS_COURSE=`.nat{position:absolute;inset:0;background:#0e3a5a;display:flex;flex-direction:column;font-family:Georgia,serif;color:#fff;user-select:none;-webkit-user-select:none}
+.nat .hd{padding:calc(env(safe-area-inset-top,0px) + 8px) 14px 6px;display:flex;justify-content:space-between;align-items:center}.nat .hd b{font:900 17px Georgia;letter-spacing:2px}
+.nat .chrono{font:700 22px ui-monospace,monospace;color:#ffe070}
+.nat canvas{flex:1;min-height:0;width:100%;display:block;touch-action:none}
+.nat .msg{position:absolute;left:0;right:0;top:40%;text-align:center;font:900 34px Georgia;text-shadow:0 3px 0 rgba(0,0,0,.35);pointer-events:none}
+.nat .bts{display:flex;gap:14px;padding:12px 14px calc(env(safe-area-inset-bottom,0px) + 14px)}
+.nat .bts button{flex:1;height:96px;border:0;border-radius:24px;font:900 40px Georgia;color:#fff;box-shadow:0 6px 0 rgba(0,0,0,.3);touch-action:manipulation}
+.nat .bts button:active,.nat .bts button.on{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.3)}
+.nat .fin{position:absolute;inset:0;background:rgba(8,30,50,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;text-align:center}
+.nat .fin h2{margin:0;font:900 28px Georgia}.nat .fin .t{font:700 30px ui-monospace,monospace;color:#ffe070}.nat .fin .tab{width:100%;max-width:320px;background:rgba(255,255,255,.08);border-radius:12px;padding:10px;font:14px Georgia;text-align:left}
+.nat .fin button{border:0;border-radius:22px;padding:12px 20px;font:700 15px Georgia;background:#ffe070;color:#0e3a5a;min-width:220px}.nat .fin button.sec{background:transparent;border:2px solid #fff;color:#fff}`;
+const RIVAUX=[['Loulou',1.62,'#e8402a'],['Nadia',1.78,'#f0a830'],['Bébert',1.48,'#3f9e7a']];
+function ouvrirLaCourse(){
+  if(!document.getElementById('cssCourse')){const st=document.createElement('style');st.id='cssCourse';st.textContent=CSS_COURSE;document.head.appendChild(st);}
+  $('page2Fond').className='nat';$('page2').classList.add('on');
+  $('page2Fond').innerHTML='<div class="hd"><b>LE 50 M NAGE LIBRE</b><span class="chrono" id="natT">0:00.00</span></div><canvas id="natC"></canvas><div class="msg" id="natM"></div>'+
+    '<div class="bts"><button id="natA" style="background:#e8402a">A</button><button id="natB" style="background:#2d6fb0">B</button></div>';
+  const cv=$('natC'), g=cv.getContext('2d');const L=50;                                   /* 50 m, soit deux longueurs de 25 m */
+  const moi={d:0,v:0,dernier:null,coups:0,fini:0,col:(e.ap&&e.ap.maillot&&e.ap.maillot.c)||'#2d6fb0'};
+  const bots=RIVAUX.map(([n,v,c],i)=>({nom:n,v0:v*(0.94+Math.random()*0.1),d:0,v:0,fini:0,col:c,ph:Math.random()*6}));
+  const nageurs=[bots[0],moi,bots[1],bots[2]];                                              /* tu es au couloir 2 */
+  let etat='marques', t0=0, tDepart=0, fin=false, raf=0;
+  const msg=(t)=>{$('natM').textContent=t;};
+  const coup=(k)=>{if(fin)return;vibrer(6);
+    if(etat!=='course'){if(etat==='prets'||etat==='marques'){etat='dq';terminer(true);}return;}
+    if(moi.dernier===k){moi.v*=0.6;moi.dernier=k;return;}                                /* deux fois le même bras : faux mouvement */
+    moi.dernier=k;moi.coups++;moi.v=Math.min(2.45,moi.v+0.36);};
+  const bA=$('natA'), bB=$('natB');
+  const appui=(b,k)=>{b.onpointerdown=(ev)=>{ev.preventDefault();b.classList.add('on');coup(k);};b.onpointerup=b.onpointerleave=()=>b.classList.remove('on');};appui(bA,'A');appui(bB,'B');
+  /* le départ : à vos marques… prêts… (un temps variable)… coup de sifflet */
+  msg('À vos marques…');setTimeout(()=>{if(etat==='marques'){etat='prets';msg('Prêts…');
+    setTimeout(()=>{if(etat==='prets'){etat='course';tDepart=performance.now();msg('PARTEZ !');jouer('vente','moment');vibrer([30,30,30]);setTimeout(()=>{if(!fin)msg('');},700);}},1100+Math.random()*1400);}},1200);
+  const couloirX=(i,W)=>W*(0.125+i*0.25);
+  const dessinerBassin=(tt)=>{const D=Math.min(2,devicePixelRatio||1), W=cv.clientWidth, H=cv.clientHeight;if(cv.width!==Math.round(W*D)){cv.width=Math.round(W*D);cv.height=Math.round(H*D);}
+    g.setTransform(D,0,0,D,0,0);const eau=g.createLinearGradient(0,0,0,H);eau.addColorStop(0,'#3aa0d0');eau.addColorStop(1,'#2a7ab8');g.fillStyle=eau;g.fillRect(0,0,W,H);
+    g.fillStyle='rgba(255,255,255,.12)';for(let k=0;k<30;k++){const x=((k*97)%W+tt*20*(k%2?1:-1)%W+W)%W, y=(k*53)%H;g.fillRect(x,y,8+(k%4)*3,1.5);}
+    for(let i=0;i<4;i++){const x=couloirX(i,W);g.fillStyle='rgba(10,40,90,.35)';g.fillRect(x-2,24,4,H-48);g.fillRect(x-10,24,20,4);g.fillRect(x-10,H-28,20,4);}
+    for(let i=1;i<4;i++){const x=W*i*0.25;for(let y=0;y<H;y+=7){g.fillStyle=Math.floor(y/7)%4<2?'#e8402a':'#ffffff';g.fillRect(x-2+Math.sin(tt*2+y*0.1)*1,y,4,4);}}
+    g.fillStyle='#e8ecef';g.fillRect(0,0,W,10);g.fillRect(0,H-10,W,10);                     /* les deux bords : le départ en bas, le mur de virage en haut */
+    g.font='700 11px Georgia';g.fillStyle='rgba(255,255,255,.7)';g.fillText('25 m · virage',6,24);
+    const Hn=H-40;
+    nageurs.forEach((n,i)=>{const x=couloirX(i,W), aller=n.d<=25, frac=aller?n.d/25:(50-n.d)/25, y=H-20-frac*Hn, sens=aller?-1:1, t=tt*(2+n.v*3)+(n.ph||0);
+      if(n.v>0.2&&!n.fini){g.strokeStyle='rgba(255,255,255,.6)';g.lineWidth=1.5;for(let k=1;k<4;k++){g.beginPath();g.moveTo(x-6-k*2,y-sens*(8+k*7));g.lineTo(x,y-sens*(4+k*7));g.lineTo(x+6+k*2,y-sens*(8+k*7));g.stroke();}}
+      g.fillStyle='rgba(0,0,0,.2)';g.beginPath();g.ellipse(x+2,y+2,7,11,0,0,7);g.fill();
+      g.fillStyle='#e8c49a';g.beginPath();g.ellipse(x,y,6,10,0,0,7);g.fill();                                           /* le dos */
+      const a=Math.sin(t);g.strokeStyle='#e8c49a';g.lineWidth=3;g.lineCap='round';
+      g.beginPath();g.moveTo(x-5,y+sens*2);g.lineTo(x-9-a*3,y+sens*(2-10*a));g.stroke();g.beginPath();g.moveTo(x+5,y+sens*2);g.lineTo(x+9+a*3,y+sens*(2+10*a));g.stroke();   /* les bras, en crawl */
+      g.fillStyle=n.col;g.beginPath();g.arc(x,y+sens*9,4.5,0,7);g.fill();g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x-1.5,y+sens*9-3,2,2);  /* la tête, et son bonnet */
+      g.font='700 10px Georgia';g.textAlign='center';g.fillStyle=n===moi?'#ffe070':'rgba(255,255,255,.85)';g.fillText(n===moi?'TOI':n.nom,x,H-2-((i%2)?0:0));g.textAlign='left';
+      if(n.fini){g.font='900 16px Georgia';g.textAlign='center';g.fillStyle='#ffe070';g.fillText(String(n.fini),x,y-sens*22);g.textAlign='left';}});};
+  let place=0, tPrec=performance.now();
+  const boucle=(now)=>{if(!$('natC')){cancelAnimationFrame(raf);return;}const dt=Math.min(0.05,(now-tPrec)/1000);tPrec=now;
+    if(etat==='course'){const tt=(now-tDepart)/1000;$('natT').textContent=Math.floor(tt/60)+':'+(tt%60).toFixed(2).padStart(5,'0');
+      moi.v=Math.max(0,moi.v-moi.v*0.9*dt);if(!moi.fini)moi.d=Math.min(L,moi.d+moi.v*dt);
+      bots.forEach(b=>{if(b.fini)return;const cible=b.v0*(1+0.08*Math.sin(tt*0.9+b.ph))*(tt<1.2?tt/1.2:1);b.v+= (cible-b.v)*Math.min(1,dt*3);b.d=Math.min(L,b.d+b.v*dt);});
+      nageurs.forEach(n=>{if(!n.fini&&n.d>=L){n.fini=++place;n.temps=tt;if(n===moi)terminer(false);}});}
+    dessinerBassin(now/1000);raf=requestAnimationFrame(boucle);};
+  raf=requestAnimationFrame(boucle);
+  async function terminer(dq){if(fin)return;fin=true;
+    if(dq){msg('');$('page2Fond').insertAdjacentHTML('beforeend','<div class="fin"><h2>Faux départ !</h2><div>Tu es parti avant le coup de sifflet : <b>disqualifié</b>.</div><button id="natRe">Recommencer</button><button class="sec" id="natSort">Descendre du plot</button></div>');}
+    else{const d=await appelRPC('natation_enregistrer',{p_joueur:e.id,p_temps_ms:Math.round(moi.temps*1000),p_place:moi.fini});const T=await appelRPC('natation_tableau',{})||[];
+      if(d&&typeof d.euros==='number'){e.euros=d.euros;sauver();majHaut();}
+      if(moi.fini===1){jouer('vente','moment');vibrer([30,60,30,60,120]);}
+      const tt=moi.temps, fmt=(s)=>Math.floor(s/60)+':'+(s%60).toFixed(2).padStart(5,'0');
+      $('page2Fond').insertAdjacentHTML('beforeend','<div class="fin"><h2>'+['','🥇 Premier !','🥈 Deuxième','🥉 Troisième','Quatrième…'][moi.fini]+'</h2><div class="t">'+fmt(tt)+'</div>'+
+        (d&&d.record?'<div style="color:#9fdfb8;font-weight:700">Nouveau record personnel !</div>':'')+(d&&d.gain?'<div style="color:#ffe070;font-weight:700">+'+enEuros(d.gain)+'</div>':(d&&d.payes>=10?'<div style="opacity:.8;font-size:13px">(10 courses payées aujourd’hui : les suivantes sont pour la gloire)</div>':''))+
+        '<div class="tab"><b>Le tableau de la semaine</b><br>'+(T.length?T.map((r,k)=>(k+1)+'. '+echapperT(r.nom)+' · '+fmt(r.t/1000)).join('<br>'):'Personne encore : sois le premier !')+'</div>'+
+        '<button id="natRe">Revanche</button><button class="sec" id="natSort">Descendre du plot</button></div>');}
+    $('natRe').onclick=()=>{cancelAnimationFrame(raf);ouvrirLaCourse();};$('natSort').onclick=()=>{cancelAnimationFrame(raf);fermeA=Date.now();$('page2').classList.remove('on');};}
+}
 const MAILLOTS=[['#2d6fb0','Bleu'],['#e8402a','Rouge'],['#1a1a1e','Noir'],['#f0a830','Jaune'],['#3f9e7a','Vert'],['#e86a8a','Rose']];
 function ouvrirLaCabine(){
   if(e.ap&&e.ap.maillot){e.ap=Object.assign({},e.ap);delete e.ap.maillot;sauver();monterEnLigne(true);vibrer(15);texteVolant(joueur.x,joueur.y-56,'Te revoilà habillé','#bfe8ff');majAction();return;}
