@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1447';
+  var MA_VERSION='2026-09-20-1451';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -822,6 +822,8 @@ body{overflow:hidden}
   border-radius:6px;touch-action:none}
 #pqTexte{font:400 14px Georgia,serif;margin:12px 4px 12px;min-height:40px;line-height:1.45}
 #pqTexte i{color:#c9c2ae}
+#petanque .pqAmis{display:flex;flex-direction:column;gap:6px;margin:4px 0}#petanque .pqAmis button{border:0;border-radius:10px;padding:10px;background:#f4ecd8;color:#2a1d0c;font:700 14px Georgia;display:flex;justify-content:space-between;align-items:center}
+#petanque .pqAmis button small{font:italic 12px Georgia;color:#6b4a28}#petanque .pqLien{border:0;background:none;color:#e8c06a;font:italic 13px Georgia;margin-top:4px}
 #pqBouton{width:100%;border:0;border-radius:12px;padding:14px;background:#e8c06a;color:#2a1d0c;
   font:700 15px Georgia,serif;box-shadow:0 3px 0 #8a6a2a}
 #pqFermer{position:absolute;right:10px;top:8px;border:0;width:32px;height:32px;border-radius:50%;
@@ -16618,6 +16620,7 @@ function ouvrirPresence(){
   PRESENCE.subscribe(st=>{if(st==='SUBSCRIBED'){try{PRESENCE.track(maPresence());}catch(x){}}});
   MA_BOITE=sb.channel('moi:'+e.id);
   MA_BOITE.on('broadcast',{event:'mp'},({payload:p})=>recevoirPrive(p));
+  MA_BOITE.on('broadcast',{event:'petanque'},({payload:p})=>{try{recevoirInvitePetanque(p);}catch(x){}});
   MA_BOITE.subscribe();
   majPastilleL();
 }
@@ -17744,7 +17747,8 @@ function ouvrirLaPetanque(){
   majTextePetanque();
   requestAnimationFrame(bouclePetanque);
 }
-function fermerLaPetanque(){$('petanque').classList.remove('on');PET=null;}
+function fermerLaPetanque(){try{if(PET&&PET.mode==='ami'&&PET.canal){PET.canal.send({type:'broadcast',event:'quitte',payload:{de:e.id}});setTimeout(()=>{try{sb.removeChannel(PET.canal);}catch(x){}},400);}}catch(x){}
+  clearInterval(PQ_RENVOI);$('petanque').classList.remove('on');PET=null;}
 async function commencerLaMene(mode){
   let graine,cx,cy,id=null;
   if(mode==='payant'){
@@ -17766,14 +17770,18 @@ function majTextePetanque(){
   if(!PET)return;
   const t=$('pqTexte'),b=$('pqBouton');
   if(PET.etape==='choix'){
+    {const T=document.querySelector('#petanque .pqTitre');if(T)T.textContent='LE BOULODROME · UNE MÈNE CONTRE MARIUS';}
     t.innerHTML='<div class="pqChoix"><button id="pqEntr">Entraînement<small>gratuit</small></button>'+
       '<button id="pqPaye" class="or">Mène à 2 €<small>gagne-la : +6 €</small></button></div>'+
+      '<div class="pqChoix"><button id="pqAmi">Avec un ami<small>une mène entre amis, en direct</small></button></div>'+
       '<i>Ton argent : '+enEuros(e.euros||0)+'</i>';
     b.style.display='none';
     $('pqEntr').onclick=()=>commencerLaMene('entrainement');
     $('pqPaye').onclick=()=>commencerLaMene('payant');
+    $('pqAmi').onclick=()=>{PET={etape:'amis'};majTextePetanque();};
     return;
   }
+  if(PET.mode==='ami'||PET.etape==='amis'||PET.etape==='attenteAmi'){if(majTexteAmi(t,b))return;}
   b.style.display='';
   if(PET.fin){t.innerHTML=PET.fin;b.textContent='Rejouer';return;}
   const en=(PET.mode==='payant'?'<b>Mène à 2 €</b> · ':'<b>Entraînement</b> · ');
@@ -17785,13 +17793,14 @@ function majTextePetanque(){
 }
 function toucherPetanque(){
   if(!PET)return;
-  if(PET.fin){PET={etape:'choix'};majTextePetanque();return;}
-  if(PET.etape==='choix'||PET.tour!=='moi')return;
+  if(PET.fin){if(PET.mode==='ami'){revancheAmi();return;}PET={etape:'choix'};majTextePetanque();return;}
+  if(PET.etape==='choix'||PET.etape==='amis'||PET.etape==='attenteAmi'||PET.tour!=='moi')return;
   const t=performance.now();
   if(PET.etape==='viser'){PET.angle=Math.sin((t-PET.t0)/520)*0.5;PET.etape='force';PET.t0=t;vibrer(8);}
   else if(PET.etape==='force'){
     const force=(1-Math.cos((t-PET.t0)/480))/2;
     PET.lancers.push([PET.angle,force]);
+    if(PET.mode==='ami'){envoyerLancerAmi(PET.angle,force);PET.reste.moi--;}
     lancer('moi',PET.angle,force);vibrer(14);
   }
   majTextePetanque();
@@ -17803,6 +17812,7 @@ function lancer(qui,angle,force){
   b.enVol=true;PET.etape='vol';
 }
 function apresLArret(){
+  if(PET.mode==='ami'){apresLArretAmi();return;}
   if(PET.tour==='moi'){PET.tour='lui';PET.etape='attend';majTextePetanque();
     setTimeout(()=>{if(!PET||PET.fin)return;const m=pqMarius(PET.graine,PET.n,PET.E);lancer('lui',m[0],m[1]);majTextePetanque();},700);}
   else{PET.n++;
@@ -17812,6 +17822,7 @@ function apresLArret(){
 async function finirLaMene(){
   const R=pqCompter(PET.E), cm=v=>Math.max(1,Math.round(v*1.6))+' cm';
   PET.etape='fin';
+  if(PET.mode==='ami'){PET.fin=verdictAmi(R,cm);majTextePetanque();return;}
   if(PET.mode!=='payant'){PET.fin=verdict(R,cm,null);majTextePetanque();return;}
   PET.fin='Marius mesure… <i>l’arbitre vérifie</i>';majTextePetanque();
   /* LE SERVEUR REJOUE LA MÈNE : c'est son verdict qui compte */
@@ -17820,6 +17831,113 @@ async function finirLaMene(){
   if(typeof data.euros==='number'){e.euros=data.euros;sauver();majHaut();}
   PET.fin=verdict(data,cm,data.gagne?6:0)+(typeof data.restant==='number'?'<br><i>'+data.restant+' mène'+(data.restant>1?'s':'')+' payante'+(data.restant>1?'s':'')+' restante'+(data.restant>1?'s':'')+' aujourd’hui</i>':'');
   majTextePetanque();
+}
+/* ================= LA PÉTANQUE ENTRE AMIS =================
+   On invite un ami présent au port ; il accepte ; la mène se joue EN DIRECT : chacun vise sur son
+   téléphone, et son lancer (une direction, une force) part chez l'autre. La physique étant
+   déterministe, les deux téléphones voient exactement la même mène. La règle est la vraie : c'est
+   l'équipe qui n'a PAS le point qui rejoue, jusqu'à le reprendre ou n'avoir plus de boules.
+   Une partie amicale : sans mise. */
+let PQ_RENVOI=null;
+const amisAuPort=()=>(EN_LIGNE||[]).filter(p=>p&&p.id&&p.lieu==='à Extramar');
+function majTexteAmi(t,b){
+  {const T=document.querySelector('#petanque .pqTitre');if(T)T.textContent=PET.mode==='ami'?'LE BOULODROME · UNE MÈNE ENTRE AMIS':'LE BOULODROME · JOUER AVEC UN AMI';}
+  if(PET.etape==='amis'){const L=amisAuPort();b.style.display='none';
+    t.innerHTML='<div class="pqAmis">'+(L.length?L.map(p=>'<button data-inv="'+p.id+'">'+echapperT(p.pseudo||'survivant')+'<small>inviter</small></button>').join(''):
+      '<i>Aucun ami au port pour l’instant. Invite-les à te rejoindre au boulodrome !</i>')+'</div><button id="pqRetourChoix" class="pqLien">← retour</button>';
+    t.querySelectorAll('[data-inv]').forEach(x=>x.onclick=()=>{const p=L.find(q=>q.id===x.dataset.inv);if(p)inviterAmi(p);});
+    $('pqRetourChoix').onclick=()=>{PET={etape:'choix'};majTextePetanque();};return true;}
+  if(PET.etape==='attenteAmi'){b.style.display='none';t.innerHTML='<b>'+echapperT(PET.ami.pseudo)+'</b> reçoit ton invitation…<br><i>La mène commence dès qu’il accepte.</i>';return true;}
+  if(PET.mode!=='ami')return false;
+  b.style.display='';
+  if(PET.fin){t.innerHTML=PET.fin;b.textContent='Revanche';return true;}
+  const en='<b>Entre amis</b> · toi '+PET.reste.moi+' boule'+(PET.reste.moi>1?'s':'')+' · '+echapperT(PET.ami.pseudo)+' '+PET.reste.lui+' · ';
+  if(PET.tour==='lui'){t.innerHTML=en+'<b>'+echapperT(PET.ami.pseudo)+'</b> vise…';b.textContent='…';return true;}
+  if(PET.etape==='viser'){t.innerHTML=en+'à toi · touche pour fixer la <b>direction</b>';b.textContent='Viser';}
+  else if(PET.etape==='force'){t.innerHTML=en+'à toi · touche pour fixer la <b>force</b>';b.textContent='Lancer !';}
+  else{t.innerHTML=en+'la boule roule…';b.textContent='…';}
+  return true;}
+/* ouvrir le canal de la partie, commun aux deux joueurs */
+function canalPartie(id){
+  if(!sb)return {send(){},on(){return this;},subscribe(){}};                      /* hors ligne : un canal muet */
+  const ch=sb.channel('pq:'+id,{config:{broadcast:{self:false,ack:false}}});
+  ch.on('broadcast',{event:'accepte'},({payload:p})=>{if(PET&&PET.etape==='attenteAmi'&&PET.partie===id)demarrerAmi(PET.inv,true);});
+  ch.on('broadcast',{event:'refuse'},()=>{if(PET&&PET.etape==='attenteAmi'){PET={etape:'choix'};majTextePetanque();$('pqTexte').innerHTML='Ton ami ne peut pas jouer pour l’instant.';}});
+  ch.on('broadcast',{event:'lancer'},({payload:p})=>recevoirLancerAmi(p));
+  ch.on('broadcast',{event:'recu'},({payload:p})=>{if(PET&&PET.mode==='ami'&&PET.aEnvoyer&&p.k>=PET.aEnvoyer.k)PET.aEnvoyer=null;});
+  ch.on('broadcast',{event:'quitte'},()=>{if(PET&&PET.mode==='ami'&&!PET.fin){PET.fin='<b>'+echapperT(PET.ami.pseudo)+'</b> a quitté le boulodrome. <i>Mène interrompue.</i>';PET.etape='fin';majTextePetanque();}});
+  ch.on('broadcast',{event:'revanche'},({payload:p})=>{if(PET&&PET.mode==='ami'&&PET.fin)demarrerAmi(Object.assign({},PET.inv,p),PET.hote);});
+  ch.subscribe();return ch;}
+function inviterAmi(p){
+  const id=(Date.now().toString(36)+Math.random().toString(36).slice(2,7));
+  const inv={partie:id,de:e.id,pseudo:e.pseudo||'survivant',graine:Math.floor(Math.random()*4294967295),cx:46+Math.random()*68,cy:40+Math.random()*60};
+  PET={etape:'attenteAmi',partie:id,ami:{id:p.id,pseudo:p.pseudo||'ton ami'},inv,hote:true};
+  PET.canal=canalPartie(id);
+  const boite=sb.channel('moi:'+p.id);
+  boite.subscribe(st=>{if(st==='SUBSCRIBED'){boite.send({type:'broadcast',event:'petanque',payload:Object.assign({type:'invite'},inv)});setTimeout(()=>{try{sb.removeChannel(boite);}catch(x){}},1500);}});
+  majTextePetanque();
+  setTimeout(()=>{if(PET&&PET.etape==='attenteAmi'&&PET.partie===id){PET={etape:'choix'};majTextePetanque();$('pqTexte').innerHTML='Pas de réponse de ton ami. Réessaie plus tard.';}},45000);
+}
+function recevoirInvitePetanque(p){
+  if(!p||p.type!=='invite'||!p.partie)return;
+  const vieux=document.getElementById('pqInvite');if(vieux)vieux.remove();
+  const d=document.createElement('div');d.id='pqInvite';
+  d.style.cssText='position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top));z-index:70;background:#f4ecd8;color:#2a1d0c;border-radius:14px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.35);font:15px Georgia,serif';
+  const auPort=CARTE==='extramar';
+  d.innerHTML='🎯 <b>'+echapperT(p.pseudo||'Un ami')+'</b> t’invite à une mène de pétanque au boulodrome.'+(auPort?'':'<br><i style="font-size:13px">Rejoins d’abord le port (métro) pour jouer.</i>')+
+    '<div style="display:flex;gap:8px;margin-top:10px"><button id="pqOui" style="flex:1;border:0;border-radius:10px;padding:10px;background:#2f6a4a;color:#fff;font:700 14px Georgia"'+(auPort?'':' disabled')+'>Accepter</button>'+
+    '<button id="pqNon" style="flex:1;border:0;border-radius:10px;padding:10px;background:#d8ccb0;color:#2a1d0c;font:700 14px Georgia">Refuser</button></div>';
+  document.body.appendChild(d);vibrer([20,40,20]);
+  const ch=canalPartie(p.partie);
+  const fermer=()=>{d.remove();clearTimeout(d._t);};d._t=setTimeout(()=>{fermer();try{sb.removeChannel(ch);}catch(x){}},40000);
+  $('pqNon').onclick=()=>{fermer();setTimeout(()=>{try{ch.send({type:'broadcast',event:'refuse',payload:{}});}catch(x){}setTimeout(()=>{try{sb.removeChannel(ch);}catch(x){}},800);},400);};
+  $('pqOui').onclick=()=>{if(!auPort)return;fermer();
+    PET={etape:'attenteAmi',partie:p.partie,ami:{id:p.de,pseudo:p.pseudo||'ton ami'},inv:p,hote:false,canal:ch};
+    $('petanque').classList.add('on');requestAnimationFrame(bouclePetanque);
+    const envoyer=()=>{try{ch.send({type:'broadcast',event:'accepte',payload:{de:e.id}});}catch(x){}};setTimeout(envoyer,500);setTimeout(envoyer,1500);
+    demarrerAmi(p,false);};
+}
+/* la mène commence : même cochonnet, même hasard ; l'hôte joue la première boule */
+function demarrerAmi(inv,hote){
+  const canal=PET&&PET.canal, ami=PET&&PET.ami;
+  PET={mode:'ami',partie:inv.partie,inv,hote,canal,ami,graine:inv.graine,E:pqNouvelle(inv.cx,inv.cy),n:0,reste:{moi:3,lui:3},
+    tour:hote?'moi':'lui',etape:hote?'viser':'attend',t0:performance.now(),lancers:[],envoyes:0,recus:0,aEnvoyer:null,acc:0,vol:null,fin:null};
+  clearInterval(PQ_RENVOI);
+  /* un lancer part jusqu'à ce que l'autre dise « reçu » : un message perdu ne bloque jamais la mène */
+  PQ_RENVOI=setInterval(()=>{if(!PET||PET.mode!=='ami'){clearInterval(PQ_RENVOI);return;}if(PET.aEnvoyer)try{PET.canal.send({type:'broadcast',event:'lancer',payload:PET.aEnvoyer});}catch(x){}},1200);
+  majTextePetanque();
+}
+function envoyerLancerAmi(angle,force){const L={k:PET.envoyes++,angle,force};PET.aEnvoyer=L;try{PET.canal.send({type:'broadcast',event:'lancer',payload:L});}catch(x){}}
+function recevoirLancerAmi(p){
+  if(!PET||PET.mode!=='ami'||!p)return;
+  try{PET.canal.send({type:'broadcast',event:'recu',payload:{k:p.k}});}catch(x){}
+  if(p.k!==PET.recus)return;                                     /* déjà joué (un renvoi), ou pas encore son tour */
+  if(PET.tour!=='lui'||PET.etape!=='attend'){PET.enAttente=p;return;}
+  PET.recus++;PET.reste.lui--;lancer('lui',p.angle,p.force);majTextePetanque();
+}
+/* qui joue ? l'équipe qui n'a pas le point, tant qu'elle a des boules */
+function apresLArretAmi(){
+  const r=PET.reste;
+  if(r.moi<=0&&r.lui<=0){finirLaMene();return;}
+  let qui;
+  if(r.moi<=0)qui='lui';else if(r.lui<=0)qui='moi';
+  else{const R=pqCompter(PET.E);qui=R.nulle?(PET.hote?'moi':'lui'):(R.gagne?'lui':'moi');}
+  PET.tour=qui;PET.etape=qui==='moi'?'viser':'attend';PET.t0=performance.now();majTextePetanque();
+  if(qui==='lui'&&PET.enAttente){const p=PET.enAttente;PET.enAttente=null;recevoirLancerAmi(p);}
+}
+function verdictAmi(R,cm){
+  const n=echapperT(PET.ami.pseudo);
+  if(R.nulle)return 'Toutes les boules sont sorties. <b>Mène nulle.</b>';
+  if(R.gagne){jouer('vente','moment');vibrer([20,40,20]);return '<b>Tu marques '+R.pts+' point'+(R.pts>1?'s':'')+' !</b> Ta meilleure boule est à '+cm(R.bm)+'.<br><i>'+n+' te doit une revanche.</i>';}
+  return '<b>'+n+' marque '+R.pts+' point'+(R.pts>1?'s':'')+'.</b> Sa meilleure boule est à '+cm(R.bl)+'.<br><i>Demande-lui une revanche !</i>';
+}
+/* la revanche : l'hôte relance une mène, avec un nouveau cochonnet ; les deux téléphones repartent ensemble */
+function revancheAmi(){
+  if(!PET||PET.mode!=='ami')return;
+  if(!PET.hote){$('pqTexte').innerHTML=PET.fin+'<br><i>'+echapperT(PET.ami.pseudo)+' lance la revanche…</i>';return;}
+  const nv={graine:Math.floor(Math.random()*4294967295),cx:46+Math.random()*68,cy:40+Math.random()*60};
+  try{PET.canal.send({type:'broadcast',event:'revanche',payload:nv});}catch(x){}
+  demarrerAmi(Object.assign({},PET.inv,nv),true);
 }
 function verdict(R,cm,gain){
   if(R.nulle)return 'Toutes les boules sont sorties. <b>Mène nulle.</b>';
@@ -17860,7 +17978,7 @@ function bouclePetanque(t){
   if(!SABLE_PQ)graverLeSablePetanque();
   const dt=Math.min(0.1,(t-(PET.tp||t))/1000);PET.tp=t;
   g.drawImage(SABLE_PQ,0,0);
-  if(PET.etape==='choix'){requestAnimationFrame(bouclePetanque);return;}
+  if(PET.etape==='choix'||PET.etape==='amis'||PET.etape==='attenteAmi'||!PET.E){requestAnimationFrame(bouclePetanque);return;}
   const E=PET.E;
   /* le vol : purement visuel ; la physique commence à la retombée */
   if(PET.vol){
