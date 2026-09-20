@@ -1304,6 +1304,46 @@ function graverCroustiPort(){
   const toile=copie(base.toile), nuit=copie(base.nuit||base.toile);peindre(toile,false);peindre(nuit,true);
   return {toile,W,H,sol,nuit};
 }
+/* LE BAR DES DOCKS : le bar-tabac du quai. Une devanture lie-de-vin, un store rayé vert et blanc,
+   l'enseigne, la carotte rouge du tabac, l'affiche « JEUX », le zinc et les bouteilles dans la vitrine,
+   deux guéridons en terrasse ; la nuit, le bar s'allume et la carotte brille. */
+function graverLeBar(){
+  const base=graverImmeuble(1), W=base.W, H=base.H, sol=base.sol, cx=W/2, BL=138, x0=cx-BL/2, rez=40, yR=sol-rez;
+  const copie=(src)=>{const c=document.createElement('canvas');c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);return c;};
+  const peindre=(cv,nuit)=>{const D=cv.width/W, g=cv.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+    const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
+    R(x0,yR,BL,rez,'#5a1e1e');R(x0,yR,BL,1.5,'#d8b050');R(x0,sol-1.5,BL,1.5,'#2a0e0e');
+    /* la vitrine : le zinc, les bouteilles sur l'étagère, la machine à café */
+    R(x0+8,yR+10,BL-16,rez-12,nuit?'#ffd898':'#2a2222');
+    for(let k=0;k<14;k++){const bx=x0+14+k*8;R(bx,yR+13,2,6,['#2a7a4a','#c8a040','#8a2a1a','#d8d0c0'][k%4]);R(bx,yR+12,2,1,'#1a1a1a');}   /* les bouteilles */
+    R(x0+12,yR+20,BL-24,1,'#8a6a3a');R(x0+10,yR+28,BL-20,4,'#c8ccd2');R(x0+10,yR+28,BL-20,1,'#ffffff');                                           /* l'étagère, le zinc */
+    R(x0+BL-34,yR+22,10,6,'#8a8f96');R(x0+BL-33,yR+23,3,3,'#3a3a40');                                                                          /* le percolateur */
+    if(!nuit){g.fillStyle='rgba(255,255,255,.14)';g.beginPath();g.moveTo(x0+14,sol-2);g.lineTo(x0+28,yR+10);g.lineTo(x0+36,yR+10);g.lineTo(x0+22,sol-2);g.fill();}
+    R(cx-9,yR+8,18,rez-8,'#2a0e0e');R(cx-8,yR+9,16,rez-10,nuit?'#ffe0a0':'#3a2e2e');R(cx-0.5,yR+9,1,rez-10,'#2a0e0e');R(cx+4,sol-14,1.5,3,'#d8b050');
+    /* l'affiche des jeux, sur la porte */
+    R(cx-6,yR+12,12,8,'#f2d21a');g.font='900 4px Georgia';g.textAlign='center';g.fillStyle='#c8281e';g.fillText('JEUX',cx,yR+17.6,11);g.textAlign='left';
+    /* le store rayé vert et blanc */
+    for(let k=0;k<BL;k+=6){R(x0+k,yR+2,6,7,(k/6)%2?'#f4efe6':'#2a6a4a');g.fillStyle=(k/6)%2?'#f4efe6':'#2a6a4a';g.beginPath();g.arc(x0+k+3,yR+9,3,0,Math.PI);g.fill();}
+    /* l'enseigne */
+    const ey=yR-14;R(x0+14,ey,BL-40,12,'#1a1410');R(x0+15,ey+1,BL-42,10,'#2a1e16');
+    g.font='700 7.5px Georgia,serif';g.textAlign='center';g.fillStyle=nuit?'#fff0c0':'#f0d890';g.fillText('BAR DES DOCKS',x0+14+(BL-40)/2,ey+8.4,BL-48);g.textAlign='left';
+    /* la carotte du tabac : le losange rouge, en drapeau sur la façade */
+    const cxT=x0+BL-12, cyT=yR-12;R(cxT-1,cyT-8,1.5,4,'#3a3a40');
+    g.fillStyle=nuit?'#ff4a3a':'#c8281e';g.beginPath();g.moveTo(cxT,cyT-5);g.lineTo(cxT+6,cyT+2);g.lineTo(cxT,cyT+9);g.lineTo(cxT-6,cyT+2);g.closePath();g.fill();
+    g.fillStyle='#ffffff';g.font='700 3px Georgia';g.textAlign='center';g.fillText('TABAC',cxT,cyT+3,10);g.textAlign='left';
+    if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,200,120,.5)');l.addColorStop(1,'rgba(255,200,120,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);
+      const l2=g.createRadialGradient(cxT,cyT+2,1,cxT,cyT+2,14);l2.addColorStop(0,'rgba(255,80,60,.6)');l2.addColorStop(1,'rgba(255,80,60,0)');g.fillStyle=l2;g.fillRect(cxT-14,cyT-12,28,28);}
+  };
+  const toile=copie(base.toile), nuit=copie(base.nuit||base.toile);peindre(toile,false);peindre(nuit,true);
+  return {toile,W,H,sol,nuit};
+}
+/* un guéridon de terrasse, ses deux chaises, un verre de pastis et un café */
+function graverGueridon(){const W=30,H=22,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);const sol=H-3, cx=W/2;
+  g.fillStyle='rgba(40,30,18,.25)';g.beginPath();g.ellipse(cx,sol,13,2.5,0,0,7);g.fill();
+  [[-10],[8]].forEach(([k])=>{g.fillStyle='#8a6a3a';g.fillRect(cx+k,sol-9,3,1.2);g.fillRect(cx+k,sol-9,0.8,9);g.fillRect(cx+k+2.2,sol-9,0.8,9);g.fillRect(cx+k+(k<0?0:2.2),sol-15,0.8,6);});
+  g.fillStyle='#3a3a40';g.fillRect(cx-0.5,sol-9,1,9);g.fillRect(cx-3,sol-0.5,6,1);g.fillStyle='#e8e2d4';g.beginPath();g.ellipse(cx,sol-10,6,2,0,0,7);g.fill();
+  g.fillStyle='#f0d890';g.fillRect(cx-3,sol-13,1.6,3);g.fillStyle='rgba(255,255,255,.6)';g.fillRect(cx-3,sol-13,0.5,3);g.fillStyle='#ffffff';g.fillRect(cx+1,sol-12,2,1.5);g.fillStyle='#3a2616';g.fillRect(cx+1.3,sol-12,1.4,0.6);
+  return {toile:c,W,H,sol,nuit:null};}
 /* LE PEIGNE D'OR : le salon de coiffure du quai. Une devanture vert bouteille à filets d'or, la
    grande vitrine avec ses fauteuils et ses miroirs, l'enseigne aux ciseaux, et le poteau de barbier
    à spirale bleu-blanc-rouge ; la nuit, les miroirs s'allument. */
@@ -1446,6 +1486,8 @@ function semerDecorExtramar(){
      l'autre, comme sur le vrai quai ; au milieu, la Bonne Mère */
   for(let k=0;k<10;k++){
     if(k===4){P('x_panneauG',XP.ruelle.x-38,XP.maisonsY+22,{col:[4,3]});continue;}   /* la ruelle du casino, et son panneau */
+    if(k===3){XCAL['x_bar0']=graverLeBar();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'bar'});
+      XCAL['x_gueridon0']=graverGueridon();CALQUES_DECO['x_gueridon']=XCAL['x_gueridon0'];[[70+k*140-44,XP.maisonsY+34],[70+k*140+46,XP.maisonsY+36]].forEach(([x,y])=>P('x_gueridon',x,y,{col:[8,3]}));continue;}   /* le bar-tabac */
     if(k===5){XCAL['x_peigne0']=graverLePeigne();CALQUES_DECO['x_peigne']=XCAL['x_peigne0'];P('x_peigne',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'salon'});continue;}   /* le salon de coiffure */
     if(k===7){XCAL['x_crousti0']=graverCroustiPort();CALQUES_DECO['x_crousti']=XCAL['x_crousti0'];P('x_crousti',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'crousti'});continue;}   /* le fast-food du quai */
     P('x_maison',70+k*140,XP.maisonsY,{v:k,col:[70,24]});

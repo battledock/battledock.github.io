@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1544';
+  var MA_VERSION='2026-09-20-1551';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -18303,6 +18303,7 @@ function majAction(){
   }
   if(o.t==='x_chantier'){b.innerHTML='Lire le panneau<small>CHANTIER · TRAVAUX EN COURS</small>';b.classList.add('on');return;}
   if(o.ouvre==='manif'){b.innerHTML=(e.ap&&e.ap.gilet?'Ranger ton gilet':'Rejoindre la manif')+'<small>'+(e.ap&&e.ap.gilet?'TU DÉFILES AVEC LES DOCKERS':'LE DÉLÉGUÉ TE TEND UN GILET ORANGE')+'</small>';b.classList.add('on');return;}
+  if(o.ouvre==='bar'){b.innerHTML='Entrer au Bar des Docks<small>BAR · TABAC · JEUX À GRATTER</small>';b.classList.add('on');return;}
   if(o.ouvre==='salon'){b.innerHTML='Entrer au Peigne d’Or<small>COUPES ET COULEURS EXCLUSIVES</small>';b.classList.add('on');return;}
   if(o.ouvre==='crousti'){b.innerHTML='Entrer chez Crousti’Port<small>'+(REPU_FIN>Date.now()?'TU ES REPU · ENCORE '+Math.ceil((REPU_FIN-Date.now())/60000)+' MIN':'POULET FRIT · MENUS DE 1 € À 12 €')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='skishop'){b.innerHTML='Entrer au Ski shop<small>TENUES DE MONTAGNE · DE 5 € À 2 500 €</small>';b.classList.add('on');return;}
@@ -18463,6 +18464,7 @@ function agir(){
   if(o.ouvre==='skishop'){ouvrirLeSkiShop();return;}
   if(o.ouvre==='crousti'){ouvrirCrousti();return;}
   if(o.ouvre==='salon'){ouvrirLeSalon();return;}
+  if(o.ouvre==='bar'){ouvrirLeBar();return;}
   if(o.ouvre==='manif'){e.ap=Object.assign({},e.ap||DEF_AP);const avec=!e.ap.gilet;if(avec)e.ap.gilet=true;else delete e.ap.gilet;
     sauver();envoyerSauvegarde(true);monterEnLigne(true);vibrer([20,40,20]);jouer('vente','moment');
     texteVolant(joueur.x,joueur.y-56,avec?'Tous ensemble ! Tu rejoins le cortège':'Tu ranges ton gilet','#ffb060');majAction();return;}
@@ -19828,6 +19830,65 @@ function partirSkier(ep){
     const av=GESTE;GESTE={t:0};sprite(g,32,70,ap,'haut',0,false);GESTE=av;sessionStorage.setItem('bdl.skieur',c.toDataURL());}catch(x){}
   try{sauver();envoyerSauvegarde(true);}catch(x){}
   location.href='ski.html?e='+ep+'&v='+encodeURIComponent(window.MA_VERSION||'');
+}
+/* ================= LE BAR DES DOCKS : les jeux à gratter « La Grattouille » =================
+   Trois tickets. Le serveur tire le ticket au moment de l'achat et paie tout de suite ; ici, on
+   gratte vraiment au doigt la pellicule argentée. Trois montants identiques : c'est gagné.
+   Vingt tickets par jour, pas plus. */
+const TICKETS=[['poisson','Le Petit Poisson',100,'#2d8fb0',[['1 €','1 sur 7'],['2 €','1 sur 8'],['5 €','1 sur 33'],['20 €','1 sur 250'],['100 €','1 sur 3 333']]],
+  ['filet','Le Filet d’Or',300,'#c8962a',[['3 €','1 sur 8'],['6 €','1 sur 12'],['15 €','1 sur 33'],['50 €','1 sur 167'],['300 €','1 sur 2 000']]],
+  ['cargo','Le Gros Cargo',1000,'#c8281e',[['10 €','1 sur 8'],['20 €','1 sur 12'],['50 €','1 sur 25'],['150 €','1 sur 100'],['500 €','1 sur 500']]]];
+const CSS_BAR=`.bar .tete{background:#3a1616}.bar .tete .logo{color:#3a1616}.bar .ep button{background:#5a1e1e}
+.bar .tk{border-radius:14px;padding:12px;color:#fff;margin-bottom:10px;position:relative;box-shadow:0 3px 10px rgba(0,0,0,.2)}
+.bar .tk b{display:block;font:900 18px Georgia;letter-spacing:1px}.bar .tk small{display:block;font:italic 12px Georgia;opacity:.9;margin:2px 0 8px}
+.bar .tk .gains{display:flex;flex-wrap:wrap;gap:4px;font:11px Georgia;opacity:.95}.bar .tk .gains span{background:rgba(0,0,0,.22);border-radius:6px;padding:2px 6px}
+.bar .tk button{position:absolute;right:12px;top:12px;border:0;border-radius:18px;padding:8px 14px;background:#fff;color:#3a1616;font:700 14px Georgia}
+.bar .grat{position:absolute;inset:0;z-index:6;background:rgba(20,10,5,.82);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.bar .grat .carteT{width:86%;max-width:340px;border-radius:16px;padding:14px;color:#fff;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.bar .grat .zone{position:relative;margin:10px auto 6px;width:100%;aspect-ratio:3/2;border-radius:10px;overflow:hidden;background:#f4efe6}
+.bar .grat .cases{position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr)}
+.bar .grat .cases div{display:flex;align-items:center;justify-content:center;font:900 22px Georgia;color:#2a1a10;border:1px dashed rgba(0,0,0,.12)}
+.bar .grat .cases div.gagne{color:#c8281e;background:#fff3c0}.bar .grat canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.bar .grat .res{font:700 17px Georgia;min-height:24px}.bar .grat button{border:0;border-radius:20px;padding:10px 20px;background:#fff;color:#3a1616;font:700 15px Georgia}`;
+async function ouvrirLeBar(){
+  if(!document.getElementById('cssSki')){const st=document.createElement('style');st.id='cssSki';st.textContent=CSS_SKI;document.head.appendChild(st);}
+  injecterCssEcole();
+  if(!document.getElementById('cssBar')){const st=document.createElement('style');st.id='cssBar';st.textContent=CSS_BAR;document.head.appendChild(st);}
+  $('page2Fond').className='skiCat bar';$('page2').classList.add('on');
+  const d0=await appelRPC('mes_grattages',{p_joueur:e.id});let faits=(d0&&typeof d0.aujourdhui==='number')?d0.aujourdhui:0;
+  const rendre=()=>{
+    $('page2Fond').innerHTML='<div class="tete"><div class="logo">🎟</div><div><b>BAR DES DOCKS</b><small>Bar · tabac · jeux</small></div><div class="bourse">Ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div>'+
+      '<div class="lst"><div class="sec">LA GRATTOUILLE · TROIS MONTANTS IDENTIQUES = GAGNÉ</div>'+
+      TICKETS.map(([k,n,px,col,gains])=>'<div class="tk" style="background:linear-gradient(135deg,'+col+','+col+'cc)"><b>'+n+'</b><small>Le ticket à '+enEuros(px).replace(',00','')+'</small>'+
+        '<div class="gains">'+gains.map(([g2,c])=>'<span>'+g2+' · '+c+'</span>').join('')+'</div><button data-t="'+k+'">'+enEuros(px).replace(',00','')+'</button></div>').join('')+
+      '<div class="sec">AUJOURD’HUI</div><div class="ep"><div class="t"><b>'+faits+' / 20 tickets grattés</b><small>Vingt par jour, pas plus : le jeu doit rester un plaisir. Remise à zéro à minuit.</small></div></div>'+
+      '</div><div class="bulle" id="skiBulle"></div><button class="fermer" id="ski-fermer">Ressortir sur le quai</button>';
+    $('ski-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+    $('page2Fond').querySelectorAll('[data-t]').forEach(b=>b.onclick=async()=>{const T=TICKETS.find(x=>x[0]===b.dataset.t);
+      if(faits>=20){skiBulle('Vingt tickets aujourd’hui : reviens demain !');return;}
+      if((e.euros||0)<T[2]){skiBulle('Il te manque '+enEuros(T[2]-(e.euros||0)));return;}
+      b.disabled=true;const d=await appelRPC('gratter_ticket',{p_joueur:e.id,p_ticket:T[0]});b.disabled=false;
+      if(!d||d.erreur){skiBulle(d&&d.erreur==='limite'?'Vingt tickets aujourd’hui : reviens demain !':(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':(d&&d.erreur==='doucement'?'Un ticket à la fois !':'Le buraliste n’a pas pu')));return;}
+      faits++;gratter(T,d);});};
+  /* LE GRATTAGE : la pellicule argentée s'efface sous le doigt ; aux trois quarts, on dévoile tout */
+  const gratter=(T,d)=>{const fin=d.euros;const v=document.createElement('div');v.className='grat';
+    v.innerHTML='<div class="carteT" style="background:linear-gradient(135deg,'+T[3]+','+T[3]+'cc)"><b style="font:900 18px Georgia">'+T[1]+'</b><div style="font:italic 12px Georgia">Gratte les six cases avec ton doigt</div>'+
+      '<div class="zone"><div class="cases">'+d.grille.map(m=>'<div data-m="'+m+'">'+(m/100)+' €</div>').join('')+'</div><canvas></canvas></div><div class="res" id="gratRes"></div></div><button id="gratOk" style="display:none">Continuer</button>';
+    $('page2Fond').appendChild(v);
+    const cv=v.querySelector('canvas'), z=v.querySelector('.zone');const rr=z.getBoundingClientRect(), D=devicePixelRatio||1;cv.width=rr.width*D;cv.height=rr.height*D;
+    const g=cv.getContext('2d');const gr=g.createLinearGradient(0,0,cv.width,cv.height);gr.addColorStop(0,'#b8bcc4');gr.addColorStop(0.5,'#e8ecf0');gr.addColorStop(1,'#a8acb4');g.fillStyle=gr;g.fillRect(0,0,cv.width,cv.height);
+    g.fillStyle='rgba(90,95,105,.5)';g.font=Math.round(14*D)+'px Georgia';g.textAlign='center';for(let k=0;k<6;k++){g.fillText('GRATTE',(k%3+0.5)*cv.width/3,(Math.floor(k/3)+0.55)*cv.height/2);}
+    g.globalCompositeOperation='destination-out';let fini=false, bas=false;
+    const devoiler=()=>{if(fini)return;fini=true;g.clearRect(0,0,cv.width,cv.height);
+      const cases=[...v.querySelectorAll('.cases div')];if(d.gain>0){cases.filter(c=>+c.dataset.m===d.gain).forEach(c=>c.classList.add('gagne'));jouer('vente','moment');vibrer([30,50,30,50,90]);}
+      $('gratRes').innerHTML=d.gain>0?'Gagné ! <span style="color:#ffe070">+'+enEuros(d.gain)+'</span>':'Perdu… <i style="font-weight:400">ce sera pour la prochaine</i>';
+      if(typeof fin==='number'){e.euros=fin;sauver();majHaut();}$('gratOk').style.display='';};
+    const effacer=(ev)=>{if(fini)return;const r=cv.getBoundingClientRect();const x=(ev.clientX-r.left)*D, y=(ev.clientY-r.top)*D;g.beginPath();g.arc(x,y,16*D,0,7);g.fill();
+      if(Math.random()<0.15){const px=g.getImageData(0,0,cv.width,cv.height).data;let vide=0;for(let i=3;i<px.length;i+=64)if(px[i]===0)vide++;if(vide/(px.length/64)>0.72)devoiler();}};
+    cv.onpointerdown=(ev)=>{bas=true;cv.setPointerCapture(ev.pointerId);effacer(ev);vibrer(4);};cv.onpointermove=(ev)=>{if(bas)effacer(ev);};cv.onpointerup=()=>{bas=false;};
+    $('gratOk').onclick=()=>{v.remove();rendre();};
+    setTimeout(()=>{if(!fini&&!document.body.contains(v))return;},0);};
+  rendre();
 }
 /* ================= LE PEIGNE D'OR : le salon de coiffure du port =================
    Même catalogue que le Ski shop, aux couleurs du salon : la cabine où ta tête tourne, deux rayons
