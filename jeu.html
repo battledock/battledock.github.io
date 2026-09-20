@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1017';
+  var MA_VERSION='2026-09-20-1020';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -11148,16 +11148,48 @@ function cabine(g,x,yCable,bal,nuit){
   F(-14,11,28,1.5,'#ffffff');F(-3,26,6,6,'#a8302a');F(-1,28,0.5,1,'#f0cf7d');
   g.restore();
 }
-/* LES CÂBLES montent tout droit, de la gare jusque dans les montagnes ; deux cabines en va-et-vient */
+/* LA TÉLÉCABINE : une gare d'acier et de verre au toit courbe vert, et une ribambelle de petites
+   cabines ovales de couleur qui montent et descendent en boucle, sans jamais s'arrêter */
+function graverTelecabine(nuit){
+  const W=112,H=100,{c,g,F}=mk(W,H);const cx=W/2,sol=H-6;ombre(g,cx,sol,50,6);
+  F(cx-44,sol-10,88,10,'#9a9690');F(cx-44,sol-10,88,0.5,'#c4c0b8');for(let k=-44;k<44;k+=11)F(cx+k,sol-10,0.5,10,'#7a766e');
+  for(let k=0;k<3;k++){F(cx-9,sol-2.5-k*2.5,18,2.5,k%2?'#8a8680':'#a8a49c');F(cx-9,sol-2.5-k*2.5,18,0.5,'#d0ccc4');}
+  F(cx-40,sol-46,80,36,nuit?'#f0c870':'#2e3a48');for(let k=-40;k<40;k+=8)F(cx+k,sol-46,0.5,36,'#8a98a8');F(cx-40,sol-29,80,0.5,'#8a98a8');
+  if(!nuit){g.fillStyle='rgba(255,255,255,.16)';g.beginPath();g.moveTo(cx-36,sol-12);g.lineTo(cx-22,sol-44);g.lineTo(cx-14,sol-44);g.lineTo(cx-28,sol-12);g.closePath();g.fill();}
+  /* une cabine à quai, vue à travers la vitre */
+  g.fillStyle='rgba(63,158,122,.8)';g.beginPath();g.ellipse(cx+18,sol-24,7,7,0,0,7);g.fill();g.fillStyle='rgba(20,30,40,.6)';g.beginPath();g.ellipse(cx+18,sol-26,5,3.5,0,0,7);g.fill();
+  F(cx-6,sol-26,12,16,'#1a1c24');F(cx-6,sol-26,12,0.5,'#8a8f96');F(cx-0.25,sol-26,0.5,16,'#8a8f96');                         /* la porte d'embarquement */
+  /* le toit courbe, vert, sous la neige */
+  g.fillStyle='#3f9e7a';g.beginPath();g.moveTo(cx-48,sol-46);g.quadraticCurveTo(cx,sol-72,cx+48,sol-46);g.lineTo(cx+48,sol-42);g.quadraticCurveTo(cx,sol-67,cx-48,sol-42);g.closePath();g.fill();
+  g.fillStyle='#2f7a5e';g.beginPath();g.moveTo(cx-48,sol-43);g.quadraticCurveTo(cx,sol-68,cx+48,sol-43);g.lineTo(cx+48,sol-42);g.quadraticCurveTo(cx,sol-67,cx-48,sol-42);g.closePath();g.fill();
+  g.fillStyle='#ffffff';g.beginPath();g.moveTo(cx-46,sol-47);g.quadraticCurveTo(cx,sol-74,cx+46,sol-47);g.quadraticCurveTo(cx,sol-69,cx-46,sol-47);g.fill();
+  for(let k=-44;k<46;k+=3)F(cx+k,sol-45+Math.abs(k)*0.02,0.5,1+hs(k)*3,'rgba(220,244,255,.9)');
+  F(cx-24,sol-58,48,7,'#1d3f6a');F(cx-24,sol-58,48,0.5,'#4d7fc8');
+  g.font='700 5px Georgia';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('TÉLÉCABINE',cx,sol-52.8,44);g.textAlign='left';
+  return {c,W,H,sol};
+}
+/* une petite cabine ovale : sa pince, sa suspente, sa coque de couleur, sa vitre, son reflet */
+function oeuf(g,x,y,col,bal,nuit){
+  const F=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(a,b,w,h);};
+  F(x-2.5,y-2,5,2.5,'#3a3a40');F(x-2,y-2.5,1.5,1,'#8a8f96');F(x+0.5,y-2.5,1.5,1,'#8a8f96');
+  g.save();g.translate(x,y);g.rotate(bal);
+  F(-0.5,0,1,6,'#3a3a40');F(-3,5.5,6,1,'#3a3a40');
+  g.fillStyle=col;g.beginPath();g.ellipse(0,13,8,8,0,0,7);g.fill();
+  g.fillStyle='rgba(0,0,0,.15)';g.beginPath();g.ellipse(1.5,15,6.5,5,0,0,Math.PI);g.fill();
+  g.fillStyle=nuit?'#f8d888':'#2e3a48';g.beginPath();g.ellipse(0,11,6,4,0,0,7);g.fill();
+  g.fillStyle='rgba(255,255,255,.45)';g.fillRect(-4.5,9,2,3);g.fillRect(-3,8.5,3,0.5);
+  g.fillStyle='rgba(255,255,255,.25)';g.fillRect(-6,13,1,3);
+  g.fillStyle='#ffffff';g.fillRect(-4,5.5,8,1);                                                              /* un peu de neige sur le dessus */
+  g.restore();
+}
 function dessinerTelepherique(g,camX,camY,t,nuit){
-  const x0=TPH.cx-camX, y0=TPH.y-TPH.h-6-camY, yHaut=34-camY;
+  const x0=TPH.cx-camX, y0=TPH.y-TPH.h+4-camY, yHaut=34-camY;
   g.fillStyle='#2e3640';[-TPH.ecart,TPH.ecart].forEach(d=>g.fillRect(x0+d-0.25,yHaut,0.5,y0-yHaut));
-  g.fillStyle='rgba(46,54,64,.45)';[-TPH.ecart+2,TPH.ecart+2].forEach(d=>g.fillRect(x0+d-0.15,yHaut,0.3,y0-yHaut));
-  const cyc=36, p=(t%cyc)/cyc, mont=p<0.78?Math.min(1,p/0.78):1;
-  const q=mont<0.5?2*mont*mont:1-Math.pow(-2*mont+2,2)/2;
-  const allerA=Math.floor(t/cyc)%2===0, posA=allerA?q:1-q, posB=1-posA;
-  const bal=Math.sin(t*1.7)*0.04*(mont>0&&mont<1?1:0.3);
-  [[posA,TPH.ecart,bal],[posB,-TPH.ecart,-bal]].forEach(([pos,d,b])=>{const y=y0+(yHaut+30-y0)*pos;cabine(g,x0+d,y,b,nuit);});
+  const cols=['#c0392b','#f0c040','#2d6fb0','#3f9e7a','#e86a8a','#8a4ac0'];
+  const n=4, v=0.03, bal=Math.sin(t*1.3)*0.035;                                                   /* quatre cabines par brin, bien espacées */
+  for(let k=0;k<n;k++){const u=((t*v+k/n)%1);
+    const yU=y0+(yHaut+18-y0)*u, yD=yHaut+18+(y0-(yHaut+18))*u;                                            /* à droite, elles montent ; à gauche, elles redescendent */
+    oeuf(g,x0+TPH.ecart,yU,cols[k%6],bal,nuit);oeuf(g,x0-TPH.ecart,yD,cols[(k+3)%6],-bal,nuit);}
 }
 function graverPyloneT(){const W=40,H=TPH.h+30,{c,g,F}=mk(W,H);const cx=W/2,sol=H-4;ombre(g,cx,sol,12,3);
   /* un pylône en treillis d'acier, qui s'effile vers le haut, et sa tête à galets */
@@ -11278,7 +11310,7 @@ function dessinerPlace(g,camX,camY,t,nuit){
 function objetsVides(){
   const cal={}, L=[];
   const reg=(nom,J,N)=>{cal[nom]={toile:J.c,W:J.W,H:J.H,sol:J.sol,nuit:N?N.c:null};};
-  reg('gare',graverBoucheLongue(false),graverBoucheLongue(true));reg('telepherique',graverTelepherique(false),graverTelepherique(true));reg('pyloneT',graverPyloneT());
+  reg('gare',graverBoucheLongue(false),graverBoucheLongue(true));reg('telepherique',graverTelecabine(false),graverTelecabine(true));reg('pyloneT',graverPyloneT());
   reg('skishop',graverChaletNom('SKI SHOP','#8a5a3a'));reg('fromagerie',graverChaletNom('FROMAGERIE','#7a4a2a'));
   reg('forfaits',graverForfaits(false),graverForfaits(true));reg('souvenirs',graverChaletNom('SOUVENIRS','#8a5a3a'));
   reg('location',graverLocation(false),graverLocation(true));
@@ -11288,7 +11320,7 @@ function objetsVides(){
   P('forfaits',226,270,{col:[14,10],ferme:'La caisse des forfaits',demi:12});
   P('souvenirs',314,270,{col:[28,12],ferme:'Les souvenirs',demi:24});
   P('location',272,364,{col:[34,12],ferme:'La location de skis',demi:30});
-  P('telepherique',TPH.x,TPH.y,{col:[44,12],ferme:'Le téléphérique',demi:10});
+  P('telepherique',TPH.x,TPH.y,{col:[44,12],ferme:'La télécabine',demi:10});
   L.push({t:'x_mo_pyloneT',x:TPH.cx,y:170,v:0,col:[10,4]});
   /* LA PLACE */
   reg('foyer',graverFoyer());reg('lampe',graverLampadaireFin());reg('bac',graverBac());reg('panneauAlt',graverPanneauAlt());
