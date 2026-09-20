@@ -1351,6 +1351,33 @@ function devanture(v,peindre){const base=graverImmeuble(v), W=base.W, H=base.H, 
   const go=(cv,nuit)=>{const D=cv.width/W, g=cv.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
     const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};peindre(g,R,{W,H,sol,cx,BL,x0,rez,yR},nuit);};
   const toile=copie(base.toile), nuit=copie(base.nuit||base.toile);go(toile,false);go(nuit,true);return {toile,W,H,sol,nuit};}
+/* LE FUMOIR DU QUAI : brique, la haute cheminée qui fume, les harengs suspendus derrière la vitre */
+function graverLeFumoir(){return devanture(5,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+  R(x0,yR,BL,rez,'#7a4a34');for(let y=yR;y<sol;y+=4)for(let x=x0+((y-yR)/4%2?4:0);x<x0+BL;x+=9)R(x,y,8,3.2,'#8a5a40');
+  R(x0,yR,BL,1.5,'#3a2216');R(x0,sol-4,BL,4,'#4a2c1e');
+  R(x0+8,yR+10,BL-16,rez-18,nuit?'#ffcf90':'#231a14');
+  for(let k=0;k<9;k++){const x=x0+16+k*13;R(x,yR+12,0.8,6,'#c8a868');g.fillStyle=k%2?'#c8813a':'#b06a2a';g.beginPath();g.ellipse(x+0.4,yR+22,3,6,0,0,7);g.fill();g.fillStyle='#8a4a1a';g.fillRect(x-2,yR+26,5,1);}   /* les poissons pendus */
+  R(cx-10,yR+6,20,rez-6,'#3a2216');R(cx-9,yR+7,18,rez-7,nuit?'#ffe0a0':'#4a3226');R(cx-0.5,yR+7,1,rez-7,'#3a2216');
+  const ey=yR-15;R(x0+16,ey,BL-32,12,'#3a2216');R(x0+17,ey+1,BL-34,10,'#5a3a26');
+  g.font='700 7.6px Georgia';g.textAlign='center';g.fillStyle='#f0d890';g.fillText('LE FUMOIR DU QUAI',cx,ey+8.4,BL-40);g.textAlign='left';
+  /* la cheminée, et sa fumée qui monte le long de la façade */
+  const chx=x0+BL-16;R(chx,yR-46,10,32,'#6a3f2a');R(chx,yR-46,10,2,'#8a5a40');
+  g.fillStyle=nuit?'rgba(220,220,230,.22)':'rgba(240,240,245,.35)';
+  for(let k=0;k<7;k++){const t=k/7;g.beginPath();g.arc(chx+5+Math.sin(k*1.7)*5,yR-50-k*9,4+k*1.8,0,7);g.fill();}
+  if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,190,110,.42)');l.addColorStop(1,'rgba(255,190,110,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}});}
+/* LA POSTE DU VIEUX-PORT : pierre claire, le fronton bleu, la boîte aux lettres jaune, le guichet */
+function graverLaPoste(){return devanture(4,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+  R(x0,yR-10,BL,rez+10,'#eee6d4');for(let y=yR-10;y<sol;y+=6)R(x0,y,BL,0.5,'#d8cdb8');
+  R(x0,sol-5,BL,5,'#1d4f8a');
+  [[-46],[22]].forEach(([k])=>{R(cx+k,yR+8,24,rez-12,nuit?'#ffe8b0':'#3a4450');for(let q=0;q<3;q++)R(cx+k+q*8,yR+8,0.8,rez-12,'#8a8f96');R(cx+k,yR+18,24,0.8,'#8a8f96');});
+  R(cx-12,yR+4,24,rez-4,'#1d4f8a');R(cx-11,yR+5,22,rez-5,nuit?'#ffe8b8':'#3a4a58');R(cx-0.5,yR+5,1,rez-5,'#1d4f8a');R(cx+4,sol-14,1.5,3,'#f0c040');
+  const ey=yR-22;R(x0+12,ey,BL-24,12,'#1d4f8a');g.font='700 7.6px Georgia';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('LA POSTE DU VIEUX-PORT',cx,ey+8.6,BL-30);g.textAlign='left';
+  /* la boîte aux lettres, sur le trottoir */
+  const bx=x0+BL-18;R(bx,sol-26,14,20,'#f0c040');R(bx,sol-26,14,2,'#ffe070');R(bx+2,sol-22,10,2,'#5a4a10');R(bx+5,sol-6,4,6,'#8a8f96');
+  g.fillStyle='#1d4f8a';g.font='700 3px Georgia';g.fillText('LETTRES',bx+1,sol-14);
+  /* le cor de poste, emblème au-dessus de la porte */
+  g.strokeStyle='#1d4f8a';g.lineWidth=1.4;g.beginPath();g.arc(cx,yR-3,4.5,0.4,Math.PI*1.6);g.stroke();g.beginPath();g.moveTo(cx+3.5,yR-6);g.lineTo(cx+8,yR-8);g.stroke();
+  if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,215,150,.42)');l.addColorStop(1,'rgba(255,215,150,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}});}
 /* LA POISSONNERIE, en façade : faïence bleue et blanche, le store rayé, l'étal de glace pilée et ses poissons */
 function graverLaPoissonnerie(){return devanture(1,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
   R(x0,yR,BL,rez,'#f4f8fa');for(let y=yR;y<sol;y+=4)for(let x=x0;x<x0+BL;x+=4)if(((x-x0)/4+(y-yR)/4)%2<1)R(x,y,4,4,'#dcecf4');
@@ -1518,6 +1545,8 @@ function semerDecorExtramar(){
      l'autre, comme sur le vrai quai ; au milieu, la Bonne Mère */
   for(let k=0;k<10;k++){
     if(k===4){P('x_panneauG',XP.ruelle.x-38,XP.maisonsY+22,{col:[4,3]});continue;}   /* la ruelle du casino, et son panneau */
+    if(k===1){XCAL['x_fumoir0']=graverLeFumoir();CALQUES_DECO['x_fumoir']=XCAL['x_fumoir0'];P('x_fumoir',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'fumoir'});continue;}   /* le fumoir */
+    if(k===9){XCAL['x_poste0']=graverLaPoste();CALQUES_DECO['x_poste']=XCAL['x_poste0'];P('x_poste',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'poste'});continue;}   /* la poste */
     if(k===2){XCAL['x_facPeche0']=graverLaBoutiquePeche();CALQUES_DECO['x_facPeche']=XCAL['x_facPeche0'];P('x_facPeche',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'peche'});continue;}   /* Pêche & Marine */
     if(k===6){XCAL['x_facPoisson0']=graverLaPoissonnerie();CALQUES_DECO['x_facPoisson']=XCAL['x_facPoisson0'];P('x_facPoisson',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'poissonnerie'});continue;}   /* la poissonnerie */
     if(k===3){XCAL['x_bar0']=graverLeBar();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ferme:'Le Bar des Docks'});
@@ -1527,7 +1556,7 @@ function semerDecorExtramar(){
     P('x_maison',70+k*140,XP.maisonsY,{v:k,col:[70,24]});
   }
   /* DE GRANDS PLATANES, en alignement le long des façades, chacun avec son banc à l'ombre */
-  [140,1190].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+30,XP.maisonsY+72);});   /* les quatre platanes du quai, chacun avec son banc */
+  [44,1190].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+30,XP.maisonsY+72);});   /* les quatre platanes du quai, chacun avec son banc */
   /* LA FORÊT DE MÂTS : des voiliers serrés de part et d'autre des pontons,
      l'étrave tournée vers les planches */
   let nv=0;

@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1806';
+  var MA_VERSION='2026-09-20-1818';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -1656,7 +1656,7 @@ body.clavier #bandeau{padding-bottom:9px}
     <div id="voyMot">—</div></div>
 </div>
 <div id="bordSac"></div>
-<button id="pastilleL"><i></i><span id="nbL">0</span> en ligne</button>
+<!-- (le bandeau « en ligne » a laissé la place à la poste) -->
 <div id="annonce"><div class="carteA" id="annCarte">
   <div class="annCadre"><canvas id="annDessin"></canvas></div>
   <div class="surA" id="annSur"></div><h2 id="annTitre"></h2><p class="sousA" id="annTxt"></p>
@@ -1709,11 +1709,7 @@ body.clavier #bandeau{padding-bottom:9px}
       <path d="M4.5 9.5 a5.5 5.5 0 0 0 11 0" fill="none" stroke="currentColor" stroke-width="1.8"/>
       <rect x="9" y="15" width="2" height="3" fill="currentColor"/>
       <rect x="6.5" y="17.4" width="7" height="1.8" rx=".9" fill="currentColor"/></svg></button>
-    <button id="vocal" aria-label="Parler à quelqu’un"><svg viewBox="0 0 20 20" width="20">
-      <path d="M10 2 a3 3 0 0 1 3 3 v4 a3 3 0 0 1 -6 0 v-4 a3 3 0 0 1 3 -3z" fill="currentColor"/>
-      <path d="M4 9 a6 6 0 0 0 12 0" fill="none" stroke="currentColor" stroke-width="1.8"/>
-      <rect x="9" y="15" width="2" height="3" fill="currentColor"/>
-      <circle cx="16" cy="4.5" r="3" fill="#9fd67a"/></svg></button>
+    <!-- (le vocal a laissé la place à la poste) -->
     <span class="champ">
       <input id="saisie" maxlength="48" placeholder="Appuie pour écrire…" autocomplete="off">
       <i class="compteB" id="resteC">48</i>
@@ -1784,10 +1780,7 @@ body.clavier #bandeau{padding-bottom:9px}
       <path d="M3 4 h14 v9 h-8 l-4 3 v-3 h-2z" fill="none" stroke="currentColor"
         stroke-width="1.6" stroke-linejoin="round"/></svg>Écrire
       <em class="pastille" id="rencontre-nb">0</em></button>
-    <button id="r-parler" aria-label="Vocal"><svg viewBox="0 0 20 20" width="16">
-      <path d="M10 2 a3 3 0 0 1 3 3 v4 a3 3 0 0 1 -6 0 v-4 a3 3 0 0 1 3 -3z" fill="currentColor"/>
-      <path d="M4 9 a6 6 0 0 0 12 0" fill="none" stroke="currentColor" stroke-width="1.8"/>
-      <rect x="9" y="15" width="2" height="3" fill="currentColor"/></svg></button>
+    <!-- (vocal retiré) -->
   </div>
   <button id="action"></button>
   <button id="b-plus" aria-label="Le reste"><span class="pts"><i></i><i></i><i></i></span>
@@ -15533,9 +15526,9 @@ $('b-look').onclick=ouvrirLook;
 $('b-reglages').onclick=ouvrirReglages;
 $('b-sac').onclick=()=>ouvrirSac();
 /* le tiroir a disparu : les cinq entrées tiennent dans la barre. */
-$('vocal').onclick=()=>{fermerBandeau();ouvrirLeVocal();};
+
 $('r-ecrire').onclick=()=>{if(bandeauOuvert())fermerBandeau();else ouvrirBandeau();};
-$('r-parler').onclick=()=>{ouvrirLeVocal();};
+
 if($('saisie')){
   $('saisie').addEventListener('input',()=>{
     const r=$('resteC');
@@ -16695,7 +16688,6 @@ function ouvrirPresence(){
   PRESENCE.on('presence',{event:'sync'},asseoirLesPresents);
   PRESENCE.subscribe(st=>{if(st==='SUBSCRIBED'){try{PRESENCE.track(maPresence());}catch(x){}}});
   MA_BOITE=sb.channel('moi:'+e.id);
-  MA_BOITE.on('broadcast',{event:'mp'},({payload:p})=>recevoirPrive(p));
   MA_BOITE.subscribe();
   majPastilleL();
 }
@@ -16885,7 +16877,7 @@ function presentProche(){
   }
   return vu;
 }
-if($('pastilleL'))$('pastilleL').onclick=ouvrirListeL;
+
 if($('enLigne'))$('enLigne').onclick=(ev)=>{if(ev.target===$('enLigne'))fermerL();};
 
 function majAutres(dt){
@@ -18339,6 +18331,8 @@ function majAction(){
   if(o.ouvre==='course'){b.innerHTML='Monter sur le plot<small>LA COURSE DU 50 M · A-B-A-B POUR NAGER</small>';b.classList.add('on');return;}
   if(o.ouvre==='cabine'){b.innerHTML=(e.ap&&e.ap.maillot?'Se rhabiller':'Entrer dans la cabine')+'<small>'+(e.ap&&e.ap.maillot?'REMETTRE TES VÊTEMENTS':'SE METTRE EN MAILLOT')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='sortiePiscine'){b.innerHTML='Ressortir sur le quai<small>'+(e.ap&&e.ap.maillot?'ON TE RHABILLE EN SORTANT':'LE VIEUX-PORT')+'</small>';b.classList.add('on');return;}
+  if(o.ouvre==='fumoir'){b.innerHTML='Entrer au fumoir<small>TON POISSON VAUT 2,5× PLUS · 30 MIN</small>';b.classList.add('on');return;}
+  if(o.ouvre==='poste'){b.innerHTML='Entrer à la poste<small>'+(COURRIER_N?COURRIER_N+' LETTRE'+(COURRIER_N>1?'S':'')+' T’ATTEND'+(COURRIER_N>1?'ENT':''):'ÉCRIRE · RELEVER SON COURRIER')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='poissonnerie'){b.innerHTML='Vendre ta pêche<small>LA POISSONNERIE</small>';b.classList.add('on');return;}
   if(o.ouvre==='peche'){b.innerHTML='Pêche & Marine<small>CANNES, MOULINETS, APPÂTS</small>';b.classList.add('on');return;}
   if(o.ouvre==='salon'){b.innerHTML='Entrer au Peigne d’Or<small>COUPES ET COULEURS EXCLUSIVES</small>';b.classList.add('on');return;}
@@ -18502,6 +18496,8 @@ function agir(){
   if(o.ouvre==='crousti'){ouvrirCrousti();return;}
   if(o.ouvre==='salon'){ouvrirLeSalon();return;}
   if(o.ouvre==='poissonnerie'){ouvrirLeComptoir(MODE_POISSON);return;}
+  if(o.ouvre==='fumoir'){ouvrirLeFumoir();return;}
+  if(o.ouvre==='poste'){ouvrirLaPoste();return;}
   if(o.ouvre==='peche'){ouvrirLaBoutiqueDePeche();return;}
   if(o.ouvre==='sortieStade'){sortirDuStade();return;}
 
@@ -20015,6 +20011,8 @@ const CSS_QUAI=`.quai{position:absolute;inset:0;display:flex;flex-direction:colu
 .quai .sortir{position:absolute;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);border-radius:22px;padding:12px;font:700 15px Georgia}
 .quai .bulle{position:absolute;left:14px;right:14px;bottom:70px;border-radius:12px;padding:10px 12px;font:italic 14px Georgia;opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none}
 .quai .bulle.on{opacity:1;transform:none}
+.fu{background:#efe6da;color:#3a2216}.fu .hd{background:#5a3a26;color:#f0d890}.fu .bloc{background:#fff;box-shadow:0 2px 8px rgba(58,34,22,.12)}.fu .rang button,.fu .act{background:#7a4a34;color:#f6ecd8}.fu .sortir{background:#5a3a26;color:#f0d890;border:0}.fu .bulle{background:#3a2216;color:#f0d890}
+.po{background:#eef3f8;color:#1d2c44}.po .hd{background:#1d4f8a;color:#fff}.po .bloc{background:#fff;box-shadow:0 2px 8px rgba(29,79,138,.12)}.po .rang button,.po .act{background:#1d4f8a;color:#fff}.po .sortir{background:#1d4f8a;color:#fff;border:0}.po .bulle{background:#1d4f8a;color:#fff}
 .bq{background:#f4efe4;color:#1d2c44}.bq .hd{background:#2a3a5a;color:#f0d890;border-bottom:3px solid #d8b050}.bq .bloc{background:#fff;box-shadow:0 2px 8px rgba(29,44,68,.1)}
 .bq .rang button,.bq .act{background:#2a3a5a;color:#f0d890}.bq .sortir{background:#2a3a5a;color:#f0d890;border:0}.bq .bulle{background:#2a3a5a;color:#f0d890}
 .vo{background:radial-gradient(ellipse at 50% 30%,#4a1a5a,#1a0a24);color:#f4e8ff}.vo .hd{color:#f0d890}
@@ -20054,6 +20052,77 @@ async function ouvrirLaBanque(){cssQuai();$('page2Fond').className='quai bq';$('
     if($('bqVir'))$('bqVir').onclick=()=>faire('banque_virer',{p_pour:$('bqA').value,p_montant:v('bqV'),p_mot:$('bqMot').value},'Virement envoyé !');
     if($('bqEmp'))$('bqEmp').onclick=()=>faire('banque_emprunter',{p_montant:v('bqP')},'Prêt accordé. À rendre sous 7 jours !');
     if($('bqRemb'))$('bqRemb').onclick=()=>faire('banque_rembourser',{},'Prêt remboursé. La banque te remercie.');};
+  rendre();}
+/* ================= LE FUMOIR DU QUAI ET LA POSTE =================
+   LE FUMOIR : on y dépose du poisson ; trente minutes plus tard, il vaut deux fois et demie son prix.
+   LA POSTE : on s'écrit, on s'envoie de l'argent et même un objet du sac. Le facteur garde tout
+   jusqu'à ce que l'ami passe, même s'il n'était pas connecté. */
+let COURRIER_N=0;
+async function lireLeCourrier(){if(!e.id)return;try{const d=await appelRPC('poste_boite',{p_joueur:e.id});if(d&&d.lettres)COURRIER_N=d.lettres.length;}catch(x){}}
+setTimeout(()=>lireLeCourrier(),3000);setInterval(()=>lireLeCourrier(),180000);
+const NOM_OBJ=(k)=>{try{const o=OBJETS&&OBJETS[k];if(o&&o.nom)return o.nom;}catch(x){}return k;};
+function ouvrirLeFumoir(){cssQuai();$('page2Fond').className='quai fu';$('page2').classList.add('on');
+  let F=null, sel=null, qte=1;
+  const rendre=async()=>{
+    if(!F)F=await appelRPC('fumoir_etat',{p_joueur:e.id})||{fournees:[]};
+    if(typeof F.euros==='number'){e.euros=F.euros;majHaut();}
+    const poissons=Object.entries(e.sac||{}).filter(([k,v])=>v>0&&PRIX_POISSON[k]).sort((a,b)=>PRIX_POISSON[b[0]]-PRIX_POISSON[a[0]]);
+    if(!sel||!poissons.some(([k])=>k===sel))sel=poissons.length?poissons[0][0]:null;
+    const max=sel?Math.min(30,e.sac[sel]||0):0;qte=Math.max(1,Math.min(qte,max||1));
+    const n=Date.now();
+    $('page2Fond').innerHTML='<div class="hd"><div class="lg">🔥</div><div><b>LE FUMOIR DU QUAI</b><small>« Le temps fait le goût. » — Riton, fumeur depuis 1974</small></div><div class="bs">ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div><div class="corps">'+
+      (F.fournees&&F.fournees.length?'<div class="bloc" style="display:block"><h4>DANS LE FUMOIR</h4>'+F.fournees.map(f=>{const reste=Math.max(0,new Date(f.pret_a).getTime()-n);
+        return '<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><b style="flex:1">'+f.qte+' × '+NOM_OBJ(f.poisson)+'</b>'+
+          (reste>0?'<span class="pt">prêt dans '+Math.ceil(reste/60000)+' min</span>':'<button class="act" data-pret="'+f.id+'">Retirer '+enEuros(f.valeur).replace(',00','')+'</button>')+'</div>';}).join('')+'</div>':'')+
+      '<div class="bloc" style="display:block"><h4>METTRE À FUMER</h4>'+
+        (poissons.length?'<select id="fuSel">'+poissons.map(([k,v])=>'<option value="'+k+'"'+(k===sel?' selected':'')+'>'+NOM_OBJ(k)+' · '+v+' dans le sac · '+enEuros(PRIX_POISSON[k]).replace(',00','')+' pièce</option>').join('')+'</select>'+
+          '<div class="rang" style="align-items:center"><button id="fuM">−</button><b style="min-width:60px;text-align:center">'+qte+'</b><button id="fuP">+</button><button id="fuMax">tout ('+max+')</button></div>'+
+          '<div class="pt">Ça vaudra <b>'+enEuros(Math.round(PRIX_POISSON[sel]*qte*2.5))+'</b> dans 30 minutes (au lieu de '+enEuros(PRIX_POISSON[sel]*qte)+' à la poissonnerie).</div>'+
+          '<button class="act" id="fuGo" style="width:100%">Mettre à fumer</button>':'<div class="pt">Tu n’as pas de poisson dans ton sac. Va pêcher, Riton t’attend !</div>')+
+      '</div><div class="pt" style="text-align:center">Quatre fournées à la fois, pas plus.</div></div><div class="bulle" id="quaiBulle"></div><button class="sortir" id="quaiSortir">Ressortir sur le quai</button>';
+    $('quaiSortir').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+    if($('fuSel'))$('fuSel').onchange=()=>{sel=$('fuSel').value;qte=1;rendre();};
+    if($('fuM'))$('fuM').onclick=()=>{qte=Math.max(1,qte-1);rendre();};
+    if($('fuP'))$('fuP').onclick=()=>{qte=Math.min(max,qte+1);rendre();};
+    if($('fuMax'))$('fuMax').onclick=()=>{qte=max;rendre();};
+    if($('fuGo'))$('fuGo').onclick=async()=>{const d=await appelRPC('fumoir_deposer',{p_joueur:e.id,p_poisson:sel,p_nb:qte});
+      if(!d||d.erreur){bulleQuai(d&&d.erreur==='plein'?'Quatre fournées, c’est le maximum !':'Riton n’a pas pu prendre ça.');return;}
+      if(d.sac)e.sac=d.sac;sauver();vibrer(18);F=null;rendre();bulleQuai('Au fumoir ! Reviens dans 30 minutes.');};
+    $('page2Fond').querySelectorAll('[data-pret]').forEach(b=>b.onclick=async()=>{const d=await appelRPC('fumoir_retirer',{p_joueur:e.id,p_id:+b.dataset.pret});
+      if(!d||d.erreur){bulleQuai('Pas encore prêt…');return;}
+      if(typeof d.euros==='number'){e.euros=d.euros;sauver();majHaut();}jouer('vente','moment');vibrer([20,40,20]);F=null;rendre();bulleQuai('Fumé à point ! +'+enEuros(d.gain));});};
+  rendre();}
+function ouvrirLaPoste(){cssQuai();$('page2Fond').className='quai po';$('page2').classList.add('on');
+  let B=null, onglet='boite', objSel=null, objQte=1;
+  const rendre=async()=>{
+    if(!B)B=await appelRPC('poste_boite',{p_joueur:e.id})||{lettres:[]};COURRIER_N=(B.lettres||[]).length;
+    const objets=Object.entries(e.sac||{}).filter(([k,v])=>v>0);
+    if(!objSel||!objets.some(([k])=>k===objSel))objSel=objets.length?objets[0][0]:null;
+    $('page2Fond').innerHTML='<div class="hd"><div class="lg">✉️</div><div><b>LA POSTE DU VIEUX-PORT</b><small>on t’écrit, même quand tu n’es pas là</small></div><div class="bs">ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div>'+
+      '<div class="corps"><div class="rang" style="margin-bottom:10px"><button class="act" data-on="boite" style="flex:1'+(onglet==='boite'?'':';opacity:.5')+'">Ma boîte ('+(B.lettres||[]).length+')</button><button class="act" data-on="ecrire" style="flex:1'+(onglet==='ecrire'?'':';opacity:.5')+'">Écrire</button></div>'+
+      (onglet==='boite'?((B.lettres||[]).length?B.lettres.map(l=>'<div class="bloc" style="display:block"><h4>DE '+echapperT(l.de).toUpperCase()+'</h4>'+
+          (l.mot?'<div style="font:italic 15px Georgia;margin-bottom:6px">« '+echapperT(l.mot)+' »</div>':'')+
+          '<div class="pt">'+(l.argent?'<b>'+enEuros(l.argent)+'</b> ':'')+(l.qte?(l.argent?' et ':'')+'<b>'+l.qte+' × '+NOM_OBJ(l.objet)+'</b>':'')+(!l.argent&&!l.qte?'Juste un mot.':'')+'</div>'+
+          '<button class="act" data-prendre="'+l.id+'" style="width:100%;margin-top:6px">Prendre</button></div>').join('')
+        :'<div class="bloc"><div class="pt">Pas de courrier aujourd’hui. Écris le premier !</div></div>')
+      :'<div class="bloc" style="display:block"><h4>À QUI ?</h4><input id="poQui" maxlength="24" placeholder="Le pseudo de ton ami">'+
+        '<h4 style="margin-top:10px">TON MOT</h4><input id="poMot" maxlength="200" placeholder="Un petit mot (200 caractères)">'+
+        '<h4 style="margin-top:10px">DE L’ARGENT ?</h4><input id="poArg" inputmode="decimal" placeholder="Montant en € (facultatif)">'+
+        '<h4 style="margin-top:10px">UN OBJET DU SAC ?</h4>'+(objets.length?'<select id="poObj"><option value="">— rien —</option>'+objets.map(([k,v])=>'<option value="'+k+'"'+(k===objSel?'':'')+'>'+NOM_OBJ(k)+' · '+v+'</option>').join('')+'</select><input id="poQte" inputmode="numeric" placeholder="Combien ?" value="'+objQte+'">':'<div class="pt">Ton sac est vide.</div>')+
+        '<button class="act" id="poGo" style="width:100%;margin-top:12px">Poster la lettre</button>'+
+        '<div class="pt" style="margin-top:6px">Dix lettres par heure · 200 € au plus par lettre · 30 objets au plus</div></div>')+
+      '</div><div class="bulle" id="quaiBulle"></div><button class="sortir" id="quaiSortir">Ressortir sur le quai</button>';
+    $('quaiSortir').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+    $('page2Fond').querySelectorAll('[data-on]').forEach(b=>b.onclick=()=>{onglet=b.dataset.on;rendre();});
+    $('page2Fond').querySelectorAll('[data-prendre]').forEach(b=>b.onclick=async()=>{const d=await appelRPC('poste_prendre',{p_joueur:e.id,p_id:+b.dataset.prendre});
+      if(!d||d.erreur){bulleQuai(d&&d.erreur==='sac plein'?'Ton sac est plein : vide-le d’abord.':'Le facteur n’a pas pu.');return;}
+      if(d.sac)e.sac=d.sac;if(typeof d.euros==='number')e.euros=d.euros;sauver();majHaut();jouer('vente','moment');vibrer(18);B=null;rendre();bulleQuai(d.partiel?'Une partie seulement : ton sac est plein.':'Reçu !');});
+    if($('poGo'))$('poGo').onclick=async()=>{const qui=($('poQui').value||'').trim();if(!qui){bulleQuai('À qui écris-tu ?');return;}
+      const arg=Math.max(0,Math.round(parseFloat(String($('poArg').value||'0').replace(',','.'))*100)||0);
+      const obj=$('poObj')?$('poObj').value:'' , q=Math.max(0,parseInt($('poQte')?$('poQte').value:'0',10)||0);
+      const d=await appelRPC('poste_envoyer',{p_joueur:e.id,p_pour:qui,p_mot:$('poMot').value||'',p_objet:obj||null,p_qte:obj?q:0,p_argent:arg});
+      if(!d||d.erreur){bulleQuai(d&&d.erreur==='inconnu'?'Ce pseudo n’existe pas.':(d&&d.erreur==='pas_assez'?'Tu n’as pas cette somme.':(d&&d.erreur==='trop'?'Dix lettres par heure, pas plus !':(d&&d.erreur==='toi meme'?'Écrire à soi-même ? Peuchère…':'La poste n’a pas pu.'))));return;}
+      if(d.sac)e.sac=d.sac;if(typeof d.euros==='number')e.euros=d.euros;sauver();majHaut();jouer('vente','moment');vibrer([15,40,15]);onglet='boite';B=null;rendre();bulleQuai('Lettre postée ! Elle l’attend à la poste.');};};
   rendre();}
 /* ================= LE PEIGNE D'OR : le salon de coiffure du port =================
    Même catalogue que le Ski shop, aux couleurs du salon : la cabine où ta tête tourne, deux rayons
