@@ -912,15 +912,15 @@ function objetsVides(){
   P('skishop',C.x0+40,C.y0-4,{col:[28,12],ouvre:'skishop',demi:24});                 /* ouvert ! */
   P('souvenirs',C.x1-40,C.y0-4,{col:[28,12],ferme:'Les souvenirs',demi:24});
   P('ecole',C.x0+62,C.y1+62,{col:[36,12],ouvre:'ecole',demi:32});
-  P('forfaits',C.x1-28,C.y1+58,{col:[14,10],ferme:'La caisse des forfaits',demi:12});
+  P('forfaits',C.x1-28,C.y1+58,{col:[14,10],ouvre:'forfaits',demi:12});
   reg('lampeC',graverLampadaireFin());reg('bancC',graverBancPlaid(1));reg('skisC',graverSkis());reg('poteauC',graverPoteau('MÉTRO ↓'));
   const Dc=(nom,x,y,x2)=>L.push(Object.assign({t:'x_mo_'+nom,x,y,v:0},x2||{}));
   Dc('lampeC',C.x0+6,C.y0+10,{col:[2,2]});Dc('lampeC',C.x1-6,C.y0+10,{col:[2,2]});Dc('lampeC',C.x0+6,C.y1-2,{col:[2,2]});Dc('lampeC',C.x1-6,C.y1-2,{col:[2,2]});
   Dc('bancC',(C.x0+C.x1)/2,C.y0+30,{col:[13,3]});
   Dc('skisC',C.x0+86,C.y0+2,{col:[11,3]});
   Dc('poteauC',C.passage[1]+10,C.y1+20,{col:[2,2]});
-  P('telepherique',TPH.x,TPH.y,{col:[44,12],ferme:'La télécabine',demi:10});
-  reg('portique',graverPortique());L.push({t:'x_mo_portique',x:(FQ.entree[0]+FQ.entree[1])/2,y:FQ.y1+1,v:0,bati:true,demi:8,ferme:'La file de la télécabine'});
+  P('telepherique',TPH.x,TPH.y,{col:[44,12],ouvre:'telecabine',demi:10});
+  reg('portique',graverPortique());L.push({t:'x_mo_portique',x:(FQ.entree[0]+FQ.entree[1])/2,y:FQ.y1+1,v:0,bati:true,demi:8,ouvre:'fileTC'});
   L.push({t:'x_mo_pyloneT',x:TPH.cx,y:170,v:0,col:[10,4]});
   /* LA PLACE */
   reg('foyer',graverFoyer());reg('lampe',graverLampadaireFin());reg('bac',graverBac());reg('panneauAlt',graverPanneauAlt());

@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1234';
+  var MA_VERSION='2026-09-20-1240';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -17964,6 +17964,10 @@ function majAction(){
   if(o.t==='x_chantier'){b.innerHTML='Lire le panneau<small>CHANTIER · TRAVAUX EN COURS</small>';b.classList.add('on');return;}
   if(o.ouvre==='skishop'){b.innerHTML='Entrer au Ski shop<small>TENUES DE MONTAGNE · DE 5 € À 2 500 €</small>';b.classList.add('on');return;}
   if(o.ouvre==='ecole'){b.innerHTML='L’École de ski<small>LEÇONS · MÉDAILLES · TABLEAU D’HONNEUR</small>';b.classList.add('on');return;}
+  if(o.ouvre==='forfaits'){b.innerHTML='La caisse des forfaits<small>'+(forfaitValide()?'TON FORFAIT · '+resteForfait():'DE 2 € À 150 € · UN ESSAI GRATUIT')+'</small>';b.classList.add('on');return;}
+  if(o.ouvre==='fileTC'){b.innerHTML='La file de la télécabine<small>'+(forfaitValide()?'TON FORFAIT EST VALIDE · '+resteForfait():'FORFAIT OBLIGATOIRE · CAISSE DANS LA COUR')+'</small>';b.classList.add('on','inerte');return;}
+  if(o.ouvre==='telecabine'){b.innerHTML=forfaitValide()?'Passer les tourniquets<small>FORFAIT VALIDE · '+resteForfait()+'</small>':'Il te faut un forfait<small>LA CAISSE DES FORFAITS EST DANS LA COUR</small>';
+    b.classList.add('on');if(!forfaitValide())b.classList.add('inerte');return;}
   if(o.ferme){b.innerHTML=o.ferme+'<small>FERMÉ · OUVERTURE PROCHAINE</small>';b.classList.add('on','inerte');b.onclick=null;return;}   /* Saumaski : tout est fermé pour l'instant */
   if(o.t==='x_pavPoisson'){b.innerHTML='Vendre ta pêche<small>LA POISSONNERIE</small>';b.classList.add('on');return;}
   if(o.t==='x_cabanon'){b.innerHTML='La bouillabaisse<small>CHEZ FONFON · CUISINE TA PÊCHE</small>';b.classList.add('on');return;}
@@ -18112,6 +18116,8 @@ function agir(){
   if(o.t==='x_cabanon'){ouvrirLeCabanon();return;}
   if(o.ouvre==='skishop'){ouvrirLeSkiShop();return;}
   if(o.ouvre==='ecole'){ouvrirLEcole();return;}
+  if(o.ouvre==='forfaits'){ouvrirLesForfaits();return;}
+  if(o.ouvre==='telecabine'){passerLesTourniquets();return;}
   if(o.t==='x_stationVelo'){VELO=!VELO;jouer('cueille');vibrer(VELO?[10,30,10]:12);
     texteVolant(joueur.x,joueur.y-40,VELO?'en selle !':'vélo rendu','#9fdfb8');majAction();return;}
   if(o.t==='entrepot')return;          /* on n'y ramasse rien : c'est un bâtiment */
@@ -19304,8 +19310,7 @@ function jaugesSki(q){const l=(n,v)=>'<div class="jg"><span>'+n+'</span><i>'+[1,
    descente (ski.html) ; ton personnage, de dos et dans ta tenue, part avec toi. */
 const LECONS=[['lecon1','Leçon 1 · Tourner','Passer entre les fanions'],['lecon2','Leçon 2 · Maîtriser sa vitesse','Freiner en travers, sauter les bosses'],['lecon3','Leçon 3 · Le slalom','Enchaîner les portes serrées']];
 const MEDAILLES=[['❄','Un flocon','la moitié des portes','5 €'],['❄❄','Deux flocons','moins de 40 s','10 €'],['❄❄❄','Trois flocons','moins de 34 s','20 €'],['⭐','L’étoile','toutes les portes, moins de 29 s','50 €']];
-async function ouvrirLEcole(){
-  if(!document.getElementById('cssSki')){const st=document.createElement('style');st.id='cssSki';st.textContent=CSS_SKI;document.head.appendChild(st);}
+function injecterCssEcole(){
   if(!document.getElementById('cssEcole')){const st=document.createElement('style');st.id='cssEcole';st.textContent=`
 .skiCat .sec{font:600 10px ui-monospace,monospace;letter-spacing:2px;color:#6a7c94;margin:12px 2px 6px}
 .skiCat .ep{background:#fff;border-radius:14px;box-shadow:0 2px 8px rgba(18,53,106,.08);padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:8px}
@@ -19315,6 +19320,10 @@ async function ouvrirLEcole(){
 .skiCat .md.on{opacity:1;box-shadow:0 0 0 2px #d8b050}.skiCat .md i{display:block;font-style:normal;font-size:20px}.skiCat .md b{display:block;font:700 12px Georgia}.skiCat .md small{font:11px Georgia;color:#6a7c94}
 .skiCat .hon{background:#fff;border-radius:14px;padding:6px 12px}.skiCat .hon div{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eef2f6;font:14px Georgia}
 .skiCat .hon div:last-child{border:0}.skiCat .hon .r{color:#6a7c94;width:22px}.skiCat .hon .n{flex:1}.skiCat .lst{flex:1;overflow-y:auto;padding:0 12px 90px}`;document.head.appendChild(st);}
+}
+async function ouvrirLEcole(){
+  if(!document.getElementById('cssSki')){const st=document.createElement('style');st.id='cssSki';st.textContent=CSS_SKI;document.head.appendChild(st);}
+  injecterCssEcole();
   $('page2Fond').className='skiCat';
   $('page2Fond').innerHTML='<div class="tete"><div class="logo">⛷</div><div><b>ÉCOLE DE SKI</b><small>Saumaski · le moniteur t’attend</small></div><div class="bourse">Ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div>'+
     '<div class="lst" id="ecoleL"><div class="sec">CHARGEMENT…</div></div><button class="fermer" id="ski-fermer">Refermer</button>';
@@ -19332,6 +19341,43 @@ async function ouvrirLEcole(){
   h+='<div class="sec">LE TABLEAU D’HONNEUR · CETTE SEMAINE</div><div class="hon">'+(L.length?L.map((r,i)=>'<div><span class="r">'+(i+1)+'</span><span class="n">'+echapperT(r.pseudo||'skieur')+' '+(['','❄','❄❄','❄❄❄','⭐'][r.medaille]||'')+'</span><span>'+chrono(r.temps_ms)+'</span></div>').join(''):'<div><span class="n">Personne encore cette semaine. À toi d’ouvrir la piste !</span></div>')+'</div>';
   $('ecoleL').innerHTML=h;
   $('ecoleL').querySelectorAll('[data-ep]').forEach(b=>b.onclick=()=>partirSkier(b.dataset.ep));
+}
+/* ================= LA CAISSE DES FORFAITS : on paie pour monter =================
+   Le serveur date le forfait ; les tourniquets le vérifient. Un nouveau forfait prolonge celui en cours. */
+let MON_FORFAIT=null;
+const FORFAITS=[['essai','Premier essai','1 heure · une seule fois',0],['matinee','Matinée','2 heures',200],['journee','Journée','24 heures',500],['semaine','Semaine','7 jours',2500],['saison','Saison','jusqu’à la fin de l’hiver',15000]];
+const forfaitValide=()=>!!(MON_FORFAIT&&MON_FORFAIT.fin&&new Date(MON_FORFAIT.fin)>new Date());
+function resteForfait(){if(!forfaitValide())return '';const ms=new Date(MON_FORFAIT.fin)-new Date(), h=Math.floor(ms/3600000), m=Math.floor(ms/60000)%60;
+  return h>=48?'ENCORE '+Math.floor(h/24)+' JOURS':(h>=1?'ENCORE '+h+' H '+String(m).padStart(2,'0'):'ENCORE '+m+' MIN');}
+async function lireMonForfait(){if(!e.id)return;const d=await appelRPC('mon_forfait',{p_joueur:e.id});if(d&&!d.erreur)MON_FORFAIT=d;}
+if(CARTE==='montagne')setTimeout(()=>lireMonForfait().catch(()=>{}),1500);
+async function ouvrirLesForfaits(){
+  if(!document.getElementById('cssSki')){const st=document.createElement('style');st.id='cssSki';st.textContent=CSS_SKI;document.head.appendChild(st);}
+  injecterCssEcole();
+  $('page2Fond').className='skiCat';
+  const rendre=()=>{const v=forfaitValide(), essai=MON_FORFAIT&&MON_FORFAIT.essai_pris;
+    $('page2Fond').innerHTML='<div class="tete"><div class="logo">🎫</div><div><b>FORFAITS</b><small>Saumaski · télécabine du sommet</small></div><div class="bourse">Ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div>'+
+      '<div class="lst"><div class="sec">TON FORFAIT</div><div class="ep"><div class="t"><b>'+(v?'Valide · '+(FORFAITS.find(f=>f[0]===MON_FORFAIT.type)||['','Forfait'])[1]:'Pas de forfait')+'</b><small>'+
+      (v?resteForfait().toLowerCase()+' · un nouveau forfait prolonge celui-ci':'Il en faut un pour passer les tourniquets de la télécabine.')+'</small>'+(v?'<div class="ok">✓ LES TOURNIQUETS S’OUVRIRONT</div>':'')+'</div></div>'+
+      '<div class="sec">LES FORFAITS</div>'+FORFAITS.map(([k,n,d,px])=>{const pris=k==='essai'&&essai, peut=(e.euros||0)>=px;
+        return '<div class="ep"><div class="t"><b>'+n+'</b><small>'+d+'</small></div><button data-f="'+k+'"'+(pris?' disabled style="background:#b8c4d2"':'')+'>'+(pris?'Déjà pris':(px?enEuros(px).replace(',00',''):'Gratuit'))+'</button></div>';}).join('')+
+      '</div><div class="bulle" id="skiBulle"></div><button class="fermer" id="ski-fermer">Refermer</button>';
+    $('ski-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+    $('page2Fond').querySelectorAll('[data-f]').forEach(b=>b.onclick=async()=>{const k=b.dataset.f, px=(FORFAITS.find(f=>f[0]===k)||[])[3]||0;
+      if((e.euros||0)<px){skiBulle('Il te manque '+enEuros(px-(e.euros||0)));return;}
+      b.disabled=true;const d=await appelRPC('acheter_forfait',{p_joueur:e.id,p_type:k});
+      if(!d||d.erreur){b.disabled=false;skiBulle(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':(d&&d.erreur==='essai deja pris'?'L’essai gratuit, c’est une fois.':'La caisse n’a pas pu'));return;}
+      if(typeof d.euros==='number')e.euros=d.euros;await lireMonForfait();sauver();vibrer(20);rendre();skiBulle('Forfait '+(FORFAITS.find(f=>f[0]===k)||['',''])[1].toLowerCase()+' · bonne montée !');});};
+  $('page2').classList.add('on');await lireMonForfait();rendre();
+}
+/* LES TOURNIQUETS : le serveur vérifie le forfait ; la télécabine emmène au sommet */
+async function passerLesTourniquets(){
+  if(!forfaitValide()){texteVolant(joueur.x,joueur.y-50,'Il te faut un forfait','#ffd87a');return;}
+  const d=await appelRPC('passer_tourniquet',{p_joueur:e.id});
+  if(!d||d.erreur){texteVolant(joueur.x,joueur.y-50,d&&d.erreur==='pas de forfait'?'Ton forfait n’est plus valide':'Le tourniquet résiste…','#ffd87a');await lireMonForfait();majAction();return;}
+  jouer('cueille');vibrer([10,30,10]);
+  texteVolant(joueur.x,joueur.y-54,'Bip ! Le tourniquet s’ouvre','#9fdfb8');
+  setTimeout(()=>texteVolant(joueur.x,joueur.y-44,'Le sommet ouvre très bientôt','#fff3d0'),700);
 }
 /* on grave ton personnage de dos, dans ta tenue (les skis passent aux pieds), puis on part skier */
 function partirSkier(ep){
