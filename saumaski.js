@@ -952,5 +952,104 @@ const surGlace=(x,y)=>{const P=PATIN, cx=Math.max(P.x0+P.r,Math.min(P.x1-P.r,x))
 const surBande=(x,y)=>{const P=PATIN, cx=Math.max(P.x0+P.r,Math.min(P.x1-P.r,x)), cy=Math.max(P.y0+P.r,Math.min(P.y1-P.r,y)), d=Math.hypot(x-cx,y-cy)-(P.r-2);
   if(Math.abs(d)>2.6)return false;if(y<P.y0+8&&x>P.porte[0]+2&&x<P.porte[1]-2)return false;return true;};
 const dansNeige=(x,y)=>{if(surGlace(x,y))return false;if(y>ESC_Y-2&&y<BAS_Y+2)return false;if(x>PLACE.x-3&&x<PLACE.x+PLACE.w+3&&y>PLACE.y-3&&y<PLACE.y+PLACE.h+3)return false;return y>MONT;};
-return {WW,WH,surGlace,fond:(f)=>{FOND=f;},dessinerPlace,barriere:(b)=>{BARRIERE=b;},zoneInterdite,dansNeige,dessinerTelepherique,objets:objetsVides,solFin,LIFT_X,GARE_Y,CABLE_H,ECART,ARRIVEE:[180,488],METRO:[180,472],NEIGE_Y,texture:(t)=>{TEXTURE_NEIGE=t;}};
+/* =====================================================================
+   LE SOMMET — 2 450 m. On y arrive par la télécabine (forfait du jour).
+   Le panorama et la mer de nuages ; la gare d'arrivée ; la terrasse
+   panoramique et sa longue-vue ; le restaurant d'altitude ; l'entrée de
+   la mine des Cimes ; le départ de la piste, pour redescendre à ski.
+   ===================================================================== */
+const SOMMET=(()=>{
+  const SW=320, SH=460, HAUT=118;
+  const GARE={x:160,y:430,cx:160}, RESTO={x:252,y:318}, MINE={x:62,y:318}, DEPART={x:246,y:196}, TERR={x0:18,x1:150,y0:132,y1:196};
+  function sol(){
+    const {c,g,F}=mk(SW,SH);
+    /* le ciel, très bleu là-haut */
+    const ciel=g.createLinearGradient(0,0,0,HAUT);ciel.addColorStop(0,'#3f78c0');ciel.addColorStop(0.7,'#8fbce4');ciel.addColorStop(1,'#d8e8f4');g.fillStyle=ciel;g.fillRect(0,0,SW,HAUT);
+    /* les sommets voisins, qui dépassent de la mer de nuages */
+    const pic=(cx,h,w,col,ombreC)=>{g.fillStyle=col;g.beginPath();g.moveTo(cx-w,HAUT-18);g.lineTo(cx-w*0.2,HAUT-18-h*0.8);g.lineTo(cx,HAUT-18-h);g.lineTo(cx+w*0.35,HAUT-18-h*0.7);g.lineTo(cx+w,HAUT-18);g.closePath();g.fill();
+      g.fillStyle=ombreC;g.beginPath();g.moveTo(cx,HAUT-18-h);g.lineTo(cx+w*0.35,HAUT-18-h*0.7);g.lineTo(cx+w,HAUT-18);g.lineTo(cx+w*0.1,HAUT-18);g.closePath();g.fill();
+      g.fillStyle='#ffffff';g.beginPath();g.moveTo(cx-w*0.32,HAUT-18-h*0.62);g.lineTo(cx-w*0.2,HAUT-18-h*0.8);g.lineTo(cx,HAUT-18-h);g.lineTo(cx+w*0.2,HAUT-18-h*0.8);g.lineTo(cx+w*0.1,HAUT-18-h*0.66);g.lineTo(cx-w*0.05,HAUT-18-h*0.74);g.closePath();g.fill();};
+    pic(40,52,46,'#7e94ae','#5f7690');pic(118,76,56,'#8aa0ba','#687e98');pic(210,64,50,'#7e94ae','#5f7690');pic(290,82,52,'#8aa0ba','#687e98');
+    /* la mer de nuages, en boules douces, à nos pieds */
+    for(let k=0;k<46;k++){const x=hs(k*3.1)*SW, y=HAUT-22+hs(k*7.7)*20, r=10+hs(k)*16;g.fillStyle=k%3?'#f4f8fb':'#e6eef6';g.beginPath();g.ellipse(x,y,r,r*0.45,0,0,7);g.fill();}
+    g.fillStyle='rgba(255,255,255,.6)';g.fillRect(0,HAUT-4,SW,4);
+    /* le plateau du sommet : neige tassée, rochers qui percent */
+    {const T=tampon(g,HAUT,SH);for(let y=HAUT;y<SH;y+=0.5)for(let x=0;x<SW;x+=0.5){const r=Math.sin(x/37+y/51)*0.6+Math.sin(x/17-y/23)*0.3;const t=hs(Math.round(x*2)*0.71+Math.round(y*2)*1.37);
+      T.pose(x,y,r<-0.5?(t<0.5?'#e2eaf2':'#dbe4ee'):(r>0.5?'#ffffff':(t<0.5?'#f2f6fa':'#f7fafc')));}T.fin();}
+    for(let k=0;k<16;k++){const x=hs(k*9.1)*SW, y=HAUT+30+hs(k*4.3)*(SH-60);if(Math.hypot(x-GARE.x,y-GARE.y)<70||Math.hypot(x-RESTO.x,y-RESTO.y)<60||Math.hypot(x-DEPART.x,y-DEPART.y)<50)continue;
+      if(x>TERR.x0-6&&x<TERR.x1+6&&y<TERR.y1+10)continue;const r=5+hs(k)*8;
+      g.fillStyle='#6f6e72';g.beginPath();g.ellipse(x,y,r,r*0.55,0,0,7);g.fill();g.fillStyle='#8a898e';g.beginPath();g.ellipse(x-r*0.3,y-r*0.2,r*0.5,r*0.3,0,0,7);g.fill();
+      g.fillStyle='#ffffff';g.beginPath();g.ellipse(x-r*0.1,y-r*0.42,r*0.7,r*0.2,0,Math.PI,0);g.fill();}
+    /* LA FALAISE DE LA MINE, à gauche : de la roche en strates, une trouée sombre */
+    for(let y=HAUT+60;y<MINE.y+4;y+=0.5)for(let x=0;x<MINE.x+38-(y-HAUT-60)*0.05;x+=0.5){const st=Math.floor((y+Math.sin(x/6)*2)/3)%2;F(x,y,0.5,0.5,st?'#6f6e72':'#7e7c80');}
+    for(let x=0;x<MINE.x+36;x+=0.5)F(x,HAUT+59,0.5,2+Math.sin(x/5)*0.8,'#ffffff');
+    /* les sentiers tassés : de la gare vers la terrasse, le restaurant, la mine, le départ */
+    const sentier=(pts)=>{for(let i=0;i<pts.length-1;i++){const [x1,y1]=pts[i],[x2,y2]=pts[i+1],n=Math.hypot(x2-x1,y2-y1);
+      for(let s=0;s<n;s+=0.5){const x=x1+(x2-x1)*s/n, y=y1+(y2-y1)*s/n;g.fillStyle='rgba(180,196,214,.22)';g.fillRect(x-5,y-1,10,2);}}};
+    sentier([[GARE.x,GARE.y-10],[GARE.x,360],[RESTO.x-10,RESTO.y+8]]);sentier([[GARE.x,360],[MINE.x+20,MINE.y+8]]);
+    sentier([[GARE.x,360],[160,240],[DEPART.x,DEPART.y+10]]);sentier([[160,240],[90,TERR.y1+6]]);
+    /* LA TERRASSE PANORAMIQUE : des planches, un garde-corps face au vide */
+    {const T0=TERR;F(T0.x0,T0.y0,T0.x1-T0.x0,T0.y1-T0.y0,'#4e3218');
+     for(let y=T0.y0;y<T0.y1;y+=3)for(let x=T0.x0-20;x<T0.x1;){const l=18+Math.floor(hs(x*0.7+y)*3)*6, px=Math.max(T0.x0,x+((y-T0.y0)/3)%3*6), l2=Math.min(l,T0.x1-px);
+       if(l2>0){F(px,y,l2,2.5,['#c09264','#b38456','#cc9f70','#a67a4e'][Math.floor(hs(px*0.37+y*1.3)*4)]);F(px,y,l2,0.5,'rgba(255,236,200,.4)');F(px,y,0.5,3,'#3a2410');}x+=l;}
+     for(let x=T0.x0;x<T0.x1;x+=0.5){F(x,T0.y0-6,0.5,1.2,'#6b4a28');F(x,T0.y0-3,0.5,1,'#6b4a28');F(x,T0.y0-6.6,0.5,0.6,'#ffffff');}
+     for(let x=T0.x0;x<=T0.x1;x+=12){F(x-0.5,T0.y0-8,1.5,8,'#5b3f21');F(x-0.5,T0.y0-8.5,1.5,1,'#ffffff');}}
+    /* la barrière du bout du monde : le vide est là-bas, derrière */
+    for(let x=0;x<SW;x+=0.5){F(x,HAUT+2,0.5,1.2,'#6b4a28');F(x,HAUT+5,0.5,1,'#6b4a28');}for(let x=0;x<SW;x+=16){F(x,HAUT,1.5,9,'#5b3f21');F(x,HAUT-0.5,1.5,1,'#ffffff');}
+    /* le panneau d'altitude, planté dans la neige */
+    F(292,HAUT+30,1.5,16,'#5b3f21');F(272,HAUT+22,42,10,'#1d3f6a');F(272,HAUT+22,42,0.5,'#4d7fc8');F(271,HAUT+21,44,1.2,'#ffffff');
+    g.font='700 4px Georgia';g.textAlign='center';g.fillStyle='#fff';g.fillText('SOMMET · 2 450 M',293,HAUT+28.6,40);g.textAlign='left';
+    return c;}
+  let SOL_M=null;
+  /* L'ENTRÉE DE LA MINE : un cadre de bois dans la roche, des rails qui sortent, un wagonnet, une lanterne */
+  function graverMine(nuit){const W=70,H=64,{c,g,F}=mk(W,H);const cx=W/2,sol=H-4;
+    g.fillStyle='#1a1510';g.beginPath();g.moveTo(cx-16,sol);g.lineTo(cx-16,sol-26);g.quadraticCurveTo(cx,sol-40,cx+16,sol-26);g.lineTo(cx+16,sol);g.closePath();g.fill();
+    const lueur=g.createRadialGradient(cx,sol-12,1,cx,sol-12,18);lueur.addColorStop(0,nuit?'rgba(255,200,120,.5)':'rgba(255,190,110,.25)');lueur.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=lueur;g.fillRect(cx-16,sol-38,32,38);
+    [[-18],[15]].forEach(([k])=>{F(cx+k,sol-30,3,30,'#6b4a28');F(cx+k,sol-30,1,30,'#8a6238');});F(cx-20,sol-33,40,4,'#7d5934');F(cx-20,sol-33,40,1,'#a5764a');F(cx-21,sol-35,42,2,'#ffffff');
+    F(cx-12,sol-32,24,6,'#2a1a0e');g.font='700 3.6px Georgia';g.textAlign='center';g.fillStyle='#f0cf7d';g.fillText('MINE DES CIMES',cx,sol-27.6,23);g.textAlign='left';
+    for(let y=sol-14;y<sol+4;y+=3){F(cx-9,y,18,1,'#5b3f21');}F(cx-6,sol-14,1,18,'#9aa2a8');F(cx+5,sol-14,1,18,'#9aa2a8');   /* les rails et leurs traverses */
+    F(cx+18,sol-9,14,7,'#5a5e66');F(cx+18,sol-9,14,1,'#8a9196');F(cx+19,sol-11,12,2,'#3a3a40');[[20],[28]].forEach(([k])=>{F(cx+k,sol-2,3,3,'#2a2a30');});   /* le wagonnet */
+    for(let k=0;k<5;k++)F(cx+20+k*2,sol-12,2,2,['#b8a040','#6a8aa8','#c05050'][k%3]);                                   /* un peu de minerai dedans */
+    F(cx-24,sol-24,1,10,'#3a3a40');F(cx-26,sol-16,5,6,'#2a2e36');F(cx-25.5,sol-15.5,4,5,nuit?'#ffd27a':'#e8c070');     /* la lanterne */
+    return {c,W,H,sol};}
+  /* LE DÉPART DE LA PISTE : un portique rouge, la banderole, deux fanions, le panneau des pistes */
+  function graverDepart(){const W=64,H=50,{c,g,F}=mk(W,H);const cx=W/2,sol=H-3;
+    [[-22],[20]].forEach(([k])=>{F(cx+k,sol-36,2.5,36,'#c0392b');F(cx+k,sol-36,0.8,36,'#e05a4a');F(cx+k-0.5,sol-1,3.5,1.5,'#ffffff');});
+    F(cx-24,sol-40,48,8,'#c0392b');F(cx-24,sol-40,48,1,'#e05a4a');F(cx-25,sol-41.5,50,1.5,'#ffffff');
+    g.font='700 4.2px Georgia';g.textAlign='center';g.fillStyle='#fff';g.fillText('DÉPART · PISTE DES CIMES',cx,sol-34.6,44);g.textAlign='left';
+    for(let x=cx-20;x<cx+20;x+=4)F(x,sol-1,2,1,'#1a1a1a');                                                               /* la ligne de départ */
+    [[-14,'#c0392b'],[12,'#2d6fb0']].forEach(([k,col])=>{F(cx+k,sol-16,0.8,16,'#3a3a40');F(cx+k+0.8,sol-16,5,3.5,col);});
+    return {c,W,H,sol};}
+  /* LA LONGUE-VUE : un pied de fonte, un tube de laiton, sa monnaie */
+  function graverLongueVue(){const W=16,H=26,{c,g,F}=mk(W,H);const cx=W/2,sol=H-2;
+    F(cx-3,sol-1,6,1.5,'#2a2e36');F(cx-0.75,sol-12,1.5,11,'#3a3e46');F(cx-2,sol-14,4,3,'#2a2e36');
+    g.save();g.translate(cx,sol-15);g.rotate(-0.25);F(-6,-2,11,4,'#c9a24a');F(-6,-2,11,1,'#f0cf7d');F(4,-2.5,2,5,'#8a6a28');F(-7,-1.5,1.5,3,'#1a1a1e');g.restore();
+    return {c,W,H,sol};}
+  function objets(){const cal={}, L=[];const reg=(nom,J,N)=>{cal[nom]={toile:J.c,W:J.W,H:J.H,sol:J.sol,nuit:N?N.c:null};};
+    reg('gareS',graverTelecabine(false),graverTelecabine(true));reg('resto',graverChaletNom('LE 2450','#6b4424'));reg('mine',graverMine(false),graverMine(true));
+    reg('depart',graverDepart());reg('vue',graverLongueVue());reg('bancS',graverBancPlaid(0));reg('lampeS',graverLampadaireFin());
+    const P=(nom,x,y,x2)=>L.push(Object.assign({t:'x_mo_'+nom,x,y,v:0},x2||{}));
+    P('gareS',GARE.x,GARE.y,{col:[44,12],bati:true,demi:10,ouvre:'descenteTC'});
+    P('resto',RESTO.x,RESTO.y,{col:[28,12],bati:true,demi:24,ferme:'Le restaurant « Le 2450 »'});
+    P('mine',MINE.x,MINE.y,{col:[20,6],bati:true,demi:16,ferme:'La mine des Cimes'});
+    P('depart',DEPART.x,DEPART.y,{bati:true,demi:18,ouvre:'pistes'});
+    P('vue',60,TERR.y0+10,{col:[3,2],bati:true,demi:4,ouvre:'longuevue'});P('vue',120,TERR.y0+10,{col:[3,2],bati:true,demi:4,ouvre:'longuevue'});
+    P('bancS',90,TERR.y1-10,{col:[13,3]});
+    [[GARE.x-60,GARE.y-40],[GARE.x+60,GARE.y-40],[160,250],[RESTO.x-40,RESTO.y+14]].forEach(([x,y])=>P('lampeS',x,y,{col:[2,2]}));
+    return {L,cal};}
+  /* les câbles descendent vers la station ; les cabines arrivent d'en bas, repartent vers le bas */
+  function cables(g,camX,camY,t,nuit){const x0=GARE.cx-camX, y0=GARE.y-60-camY, yBas=SH+260-camY;
+    const sc=g.getTransform().a||1, Hv=g.canvas.height/sc;if(y0>Hv+40)return;
+    g.fillStyle='#2e3640';[-10,10].forEach(d=>g.fillRect(x0+d-0.25,y0,0.5,yBas-y0));
+    const cols=['#c0392b','#f0c040','#2d6fb0','#3f9e7a','#e86a8a','#8a4ac0'];
+    for(let k=0;k<4;k++){const u=((t*0.03+k/4)%1);
+      [[y0+(yBas-y0)*(1-u),10,cols[k%6]],[y0+(yBas-y0)*u,-10,cols[(k+3)%6]]].forEach(([y,d,col])=>{if(y<-40||y>Hv+8)return;const C=spriteCabine(col,nuit);
+        g.save();g.translate(x0+d,y);g.rotate(Math.sin(t*1.3)*0.03);g.drawImage(C.c,-C.ox,-C.oy,C.W,C.H);g.restore();});}}
+  const zone=(x,y)=>{if(y<HAUT+10)return true;                                                     /* la barrière du bout du monde */
+    if(x<MINE.x+36&&y>HAUT+58&&y<MINE.y-2&&!(Math.abs(x-MINE.x)<14&&y>MINE.y-20))return true;          /* la falaise */
+    return false;};
+  return {WW:SW,WH:SH,objets,solFin:()=>SOL_M||(SOL_M=sol()),zoneInterdite:zone,dansNeige:(x,y)=>y>HAUT&&!(x>TERR.x0&&x<TERR.x1&&y>TERR.y0&&y<TERR.y1),
+    surGlace:()=>false,dessinerTelepherique:cables,ARRIVEE:[GARE.x+4,GARE.y+14],METRO:null};
+})();
+return {sommet:SOMMET,WW,WH,surGlace,fond:(f)=>{FOND=f;},dessinerPlace,barriere:(b)=>{BARRIERE=b;},zoneInterdite,dansNeige,dessinerTelepherique,objets:objetsVides,solFin,LIFT_X,GARE_Y,CABLE_H,ECART,ARRIVEE:[180,488],METRO:[180,472],NEIGE_Y,texture:(t)=>{TEXTURE_NEIGE=t;}};
 })()
