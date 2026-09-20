@@ -1537,7 +1537,7 @@ function semerDecorExtramar(){
      l'autre, comme sur le vrai quai ; au milieu, la Bonne Mère */
   for(let k=0;k<10;k++){
     if(k===4){P('x_panneauG',XP.ruelle.x-38,XP.maisonsY+22,{col:[4,3]});continue;}   /* la ruelle du casino, et son panneau */
-    if(k===1){XCAL['x_piscine0']=graverLaPiscine();CALQUES_DECO['x_piscine']=XCAL['x_piscine0'];P('x_piscine',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ferme:'La piscine municipale'});continue;}   /* la piscine */
+    if(k===1){XCAL['x_piscine0']=graverLaPiscine();CALQUES_DECO['x_piscine']=XCAL['x_piscine0'];P('x_piscine',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'piscine'});continue;}   /* la piscine */
     if(k===9){XCAL['x_banque0']=graverLaBanque();CALQUES_DECO['x_banque']=XCAL['x_banque0'];P('x_banque',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'banque'});continue;}   /* la banque */
     if(k===3){XCAL['x_bar0']=graverLeBar();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ferme:'Le Bar des Docks'});
       XCAL['x_gueridon0']=graverGueridon();CALQUES_DECO['x_gueridon']=XCAL['x_gueridon0'];[[70+k*140-44,XP.maisonsY+34],[70+k*140+46,XP.maisonsY+36]].forEach(([x,y])=>P('x_gueridon',x,y,{col:[8,3]}));continue;}   /* le bar-tabac */
