@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1212';
+  var MA_VERSION='2026-09-20-1221';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -17937,6 +17937,7 @@ function majAction(){
   }
   if(o.t==='x_chantier'){b.innerHTML='Lire le panneau<small>CHANTIER · TRAVAUX EN COURS</small>';b.classList.add('on');return;}
   if(o.ouvre==='skishop'){b.innerHTML='Entrer au Ski shop<small>TENUES DE MONTAGNE · DE 5 € À 2 500 €</small>';b.classList.add('on');return;}
+  if(o.ouvre==='ecole'){b.innerHTML='L’École de ski<small>LEÇONS · MÉDAILLES · TABLEAU D’HONNEUR</small>';b.classList.add('on');return;}
   if(o.ferme){b.innerHTML=o.ferme+'<small>FERMÉ · OUVERTURE PROCHAINE</small>';b.classList.add('on','inerte');b.onclick=null;return;}   /* Saumaski : tout est fermé pour l'instant */
   if(o.t==='x_pavPoisson'){b.innerHTML='Vendre ta pêche<small>LA POISSONNERIE</small>';b.classList.add('on');return;}
   if(o.t==='x_cabanon'){b.innerHTML='La bouillabaisse<small>CHEZ FONFON · CUISINE TA PÊCHE</small>';b.classList.add('on');return;}
@@ -18084,6 +18085,7 @@ function agir(){
     setTimeout(()=>texteVolant(o.x,o.y-56,'une nouvelle partie du village !','#fff3d0'),700);vibrer(12);return;}
   if(o.t==='x_cabanon'){ouvrirLeCabanon();return;}
   if(o.ouvre==='skishop'){ouvrirLeSkiShop();return;}
+  if(o.ouvre==='ecole'){ouvrirLEcole();return;}
   if(o.t==='x_stationVelo'){VELO=!VELO;jouer('cueille');vibrer(VELO?[10,30,10]:12);
     texteVolant(joueur.x,joueur.y-40,VELO?'en selle !':'vélo rendu','#9fdfb8');majAction();return;}
   if(o.t==='entrepot')return;          /* on n'y ramasse rien : c'est un bâtiment */
@@ -19263,6 +19265,48 @@ function skiMaj(){
 }
 function jaugesSki(q){const l=(n,v)=>'<div class="jg"><span>'+n+'</span><i>'+[1,2,3,4,5].map(k=>'<b class="'+(k<=v?'on':'')+'"></b>').join('')+'</i></div>';
   return '<div class="jauges">'+l('Vitesse',q.vit)+l('Virage',q.vir)+l('Stabilité',q.sta)+'<small>Dans la neige de Saumaski : +'+(q.vit*8)+' % de vitesse</small></div>';}
+/* ================= L'ÉCOLE DE SKI : leçons, test des médailles, tableau d'honneur =================
+   Même papier que le catalogue. On choisit une épreuve, et l'on part skier sur la page de la
+   descente (ski.html) ; ton personnage, de dos et dans ta tenue, part avec toi. */
+const LECONS=[['lecon1','Leçon 1 · Tourner','Passer entre les fanions'],['lecon2','Leçon 2 · Maîtriser sa vitesse','Freiner en travers, sauter les bosses'],['lecon3','Leçon 3 · Le slalom','Enchaîner les portes serrées']];
+const MEDAILLES=[['❄','Un flocon','la moitié des portes','5 €'],['❄❄','Deux flocons','moins de 40 s','10 €'],['❄❄❄','Trois flocons','moins de 34 s','20 €'],['⭐','L’étoile','toutes les portes, moins de 29 s','50 €']];
+async function ouvrirLEcole(){
+  if(!document.getElementById('cssSki')){const st=document.createElement('style');st.id='cssSki';st.textContent=CSS_SKI;document.head.appendChild(st);}
+  if(!document.getElementById('cssEcole')){const st=document.createElement('style');st.id='cssEcole';st.textContent=`
+.skiCat .sec{font:600 10px ui-monospace,monospace;letter-spacing:2px;color:#6a7c94;margin:12px 2px 6px}
+.skiCat .ep{background:#fff;border-radius:14px;box-shadow:0 2px 8px rgba(18,53,106,.08);padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.skiCat .ep .t{flex:1}.skiCat .ep b{display:block;font:700 15px Georgia}.skiCat .ep small{font:italic 12px Georgia;color:#6a7c94}
+.skiCat .ep .ok{font:700 11px ui-monospace,monospace;color:#3f9e7a}.skiCat .ep button{border:0;border-radius:18px;padding:8px 14px;background:#12356a;color:#fff;font:700 13px Georgia}
+.skiCat .meds{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}.skiCat .md{background:#fff;border-radius:12px;padding:8px;text-align:center;opacity:.5}
+.skiCat .md.on{opacity:1;box-shadow:0 0 0 2px #d8b050}.skiCat .md i{display:block;font-style:normal;font-size:20px}.skiCat .md b{display:block;font:700 12px Georgia}.skiCat .md small{font:11px Georgia;color:#6a7c94}
+.skiCat .hon{background:#fff;border-radius:14px;padding:6px 12px}.skiCat .hon div{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eef2f6;font:14px Georgia}
+.skiCat .hon div:last-child{border:0}.skiCat .hon .r{color:#6a7c94;width:22px}.skiCat .hon .n{flex:1}.skiCat .lst{flex:1;overflow-y:auto;padding:0 12px 90px}`;document.head.appendChild(st);}
+  $('page2Fond').className='skiCat';
+  $('page2Fond').innerHTML='<div class="tete"><div class="logo">⛷</div><div><b>ÉCOLE DE SKI</b><small>Saumaski · le moniteur t’attend</small></div><div class="bourse">Ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div>'+
+    '<div class="lst" id="ecoleL"><div class="sec">CHARGEMENT…</div></div><button class="fermer" id="ski-fermer">Refermer</button>';
+  $('ski-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+  $('page2').classList.add('on');
+  const [C,T]=await Promise.all([appelRPC('ski_mon_carnet',{p_joueur:e.id}),appelRPC('ski_tableau',{})]);
+  const acq=(C&&Array.isArray(C.acquis))?C.acquis:[], best=(C&&C.meilleurs)||{};
+  const sk=e.ap&&e.ap.ski&&e.ap.ski.skis&&e.cos&&e.cos[e.ap.ski.skis]?SKI_PAR_ID[e.ap.ski.skis]:null;
+  const chrono=(ms)=>(ms/1000).toFixed(1).replace('.',',')+' s';
+  let h='<div class="sec">TES SKIS</div><div class="ep"><div class="t"><b>'+(sk?sk.nom:'Les skis en bois de l’école')+'</b><small>'+(sk?'Vitesse '+sk.q.vit+' · virage '+sk.q.vir+' · stabilité '+sk.q.sta:'Prêtés pour les cours. Tes propres skis au Ski shop, dès 1 €.')+'</small></div></div>';
+  h+='<div class="sec">LES LEÇONS · 2 € LA PREMIÈRE FOIS</div>'+LECONS.map(([k,n,d])=>'<div class="ep"><div class="t"><b>'+n+'</b><small>'+d+(best[k]?' · meilleur : '+chrono(best[k]):'')+'</small>'+(acq.includes(k)?'<div class="ok">✓ RÉUSSIE</div>':'')+'</div><button data-ep="'+k+'">'+(acq.includes(k)?'Refaire':'Commencer')+'</button></div>').join('');
+  h+='<div class="sec">LE TEST DES MÉDAILLES</div><div class="meds">'+MEDAILLES.map((m,i)=>'<div class="md'+(acq.includes('medaille'+(i+1))?' on':'')+'"><i>'+m[0]+'</i><b>'+m[1]+'</b><small>'+m[2]+' · '+m[3]+'</small></div>').join('')+'</div>'+
+    '<div class="ep"><div class="t"><b>La grande piste</b><small>21 portes'+(best.test?' · ton record : '+chrono(best.test):'')+'</small></div><button data-ep="test">Passer le test</button></div>';
+  const L=Array.isArray(T)?T:[];
+  h+='<div class="sec">LE TABLEAU D’HONNEUR · CETTE SEMAINE</div><div class="hon">'+(L.length?L.map((r,i)=>'<div><span class="r">'+(i+1)+'</span><span class="n">'+echapperT(r.pseudo||'skieur')+' '+(['','❄','❄❄','❄❄❄','⭐'][r.medaille]||'')+'</span><span>'+chrono(r.temps_ms)+'</span></div>').join(''):'<div><span class="n">Personne encore cette semaine. À toi d’ouvrir la piste !</span></div>')+'</div>';
+  $('ecoleL').innerHTML=h;
+  $('ecoleL').querySelectorAll('[data-ep]').forEach(b=>b.onclick=()=>partirSkier(b.dataset.ep));
+}
+/* on grave ton personnage de dos, dans ta tenue (les skis passent aux pieds), puis on part skier */
+function partirSkier(ep){
+  try{const c=document.createElement('canvas');c.width=128;c.height=160;const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
+    const ap=Object.assign({},e.ap||DEF_AP);if(ap.ski){ap.ski=Object.assign({},ap.ski);delete ap.ski.skis;}
+    const av=GESTE;GESTE={t:0};sprite(g,32,70,ap,'haut',0,false);GESTE=av;sessionStorage.setItem('bdl.skieur',c.toDataURL());}catch(x){}
+  try{sauver();envoyerSauvegarde(true);}catch(x){}
+  location.href='ski.html?e='+ep+'&v='+encodeURIComponent(window.MA_VERSION||'');
+}
 function vignetteSki(cv2,ap){
   /* le cadrage suit le rayon : en pied pour les combis et les gants, en buste pour la tête et le cou */
   const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));

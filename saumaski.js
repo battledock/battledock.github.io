@@ -889,7 +889,7 @@ function objetsVides(){
   const C=COUR;
   P('skishop',C.x0+40,C.y0-4,{col:[28,12],ouvre:'skishop',demi:24});                 /* ouvert ! */
   P('souvenirs',C.x1-40,C.y0-4,{col:[28,12],ferme:'Les souvenirs',demi:24});
-  P('ecole',C.x0+62,C.y1+62,{col:[36,12],ferme:'L’École de ski',demi:32});
+  P('ecole',C.x0+62,C.y1+62,{col:[36,12],ouvre:'ecole',demi:32});
   P('forfaits',C.x1-28,C.y1+58,{col:[14,10],ferme:'La caisse des forfaits',demi:12});
   reg('lampeC',graverLampadaireFin());reg('bancC',graverBancPlaid(1));reg('skisC',graverSkis());reg('poteauC',graverPoteau('MÉTRO ↓'));
   const Dc=(nom,x,y,x2)=>L.push(Object.assign({t:'x_mo_'+nom,x,y,v:0},x2||{}));
@@ -914,7 +914,7 @@ function objetsVides(){
   /* LE JARDIN DES NEIGES, sous la place : des piquets de slalom, le moniteur, le panneau */
   {const J=JARDIN;for(let k=0;k<11;k++){const y=J.y0+16+k*20, x=J.x0+110+(k%2?70:0)+Math.sin(k)*8;L.push({t:'x_mo_'+(k%2?'piquetB':'piquetR'),x,y,v:0,col:[1,1]});}
    /* le moniteur : un vrai personnage, habillé comme un joueur (combinaison rouge, bonnet, moustache) */
-   L.push({t:'x_mo_moniteur',x:J.x0+50,y:J.y1-18,v:0,col:[5,3],bati:true,demi:6,ferme:'Le moniteur de l’École de ski',
+   L.push({t:'x_mo_moniteur',x:J.x0+50,y:J.y1-18,v:0,col:[5,3],bati:true,demi:6,ouvre:'ecole',
      pnj:{peau:3,cheveux:1,coiffe:1,barbe:7,veste:8,haut:5,chapeau:3,pantalon:6,souliers:3,sac:0,corps:3,sourcils:1},dir:'bas'});
    L.push({t:'x_mo_panneauJ',x:J.x0-6,y:J.y0+6,v:0,col:[2,2]});}
   return {L,cal};

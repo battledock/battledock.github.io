@@ -1,0 +1,200 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>École de ski — Saumaski</title>
+<script>var MA_VERSION='2026-09-20-0000';</script>
+<style>
+html,body{margin:0;height:100%;background:#12356a;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+body{display:flex;align-items:center;justify-content:center}
+.tel{position:relative;height:100%;width:100%;max-width:520px;overflow:hidden;background:#eef3f6}
+canvas{width:100%;height:100%;display:block;image-rendering:pixelated}
+.hud{position:absolute;left:10px;right:10px;top:calc(10px + env(safe-area-inset-top));display:flex;justify-content:space-between;gap:6px;pointer-events:none}
+.pl{background:rgba(255,255,255,.94);border-radius:14px;padding:5px 11px;font:700 15px Georgia,serif;color:#12356a;box-shadow:0 4px 12px rgba(18,53,106,.18)}
+.pl small{display:block;font:600 8px ui-monospace,monospace;letter-spacing:2px;color:#6a7c94}
+.voile{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(18,53,106,.35)}
+.carte{width:84%;background:#fff;border-radius:18px;padding:18px 18px 16px;text-align:center;color:#1d2c44;box-shadow:0 12px 30px rgba(0,0,0,.3);font:15px Georgia,serif}
+.carte h2{font:700 21px Georgia;margin:0 0 4px}.carte .s{font:600 9px ui-monospace,monospace;letter-spacing:2.2px;color:#6a7c94;margin-bottom:10px}
+.carte p{margin:6px 0;font-style:italic;color:#44566e;font-size:14px}
+.carte button{margin-top:10px;border:0;border-radius:22px;padding:11px 22px;background:#12356a;color:#fff;font:700 15px Georgia;width:100%}
+.carte button.b2{background:#fff;color:#12356a;border:2px solid #12356a}
+.lignes{display:flex;justify-content:space-between;margin:5px 0;font-size:15px}.lignes b{font-weight:400;color:#44566e}
+.med{font-size:34px;letter-spacing:2px;margin:4px 0}
+.gain{background:#eaf7f0;color:#2f7a5e;border-radius:10px;padding:7px;margin:8px 0;font:700 14px Georgia}
+.aide{position:absolute;left:14px;right:14px;bottom:calc(18px + env(safe-area-inset-bottom));text-align:center;font:italic 14px Georgia;color:#12356a;background:rgba(255,255,255,.85);border-radius:12px;padding:8px;pointer-events:none;transition:opacity .6s}
+</style></head><body>
+<div class="tel" id="tel"><canvas id="c"></canvas>
+<div class="hud"><div class="pl" id="hC"><small>CHRONO</small>0,0 s</div><div class="pl" id="hP"><small>PORTES</small>0 / 0</div><div class="pl" id="hE"><small>ÉPREUVE</small>—</div></div>
+<div class="aide" id="aide"></div>
+<div class="voile" id="v"><div class="carte" id="vc"></div></div>
+</div>
+<script>
+/* =====================================================================
+   L'ÉCOLE DE SKI DE SAUMASKI — la descente.
+   Trois leçons sur le jardin des neiges, puis le test des médailles sur la
+   grande piste. Tes skis comptent vraiment : vitesse, virage, stabilité.
+   Le chrono part au serveur, qui décide des médailles et des récompenses.
+   ===================================================================== */
+const URL_SB='https://zpfkekiavlfphialvphi.supabase.co';
+const CLE_SB='sb_publishable__dfR2lEOwKjhhtavvJEvGw_KVACZnHP';
+async function rpc(nom,args){try{const r=await fetch(URL_SB+'/rest/v1/rpc/'+nom,{method:'POST',headers:{'apikey':CLE_SB,'Authorization':'Bearer '+CLE_SB,'Content-Type':'application/json'},body:JSON.stringify(args)});
+  const d=await r.json();return r.ok?d:{erreur:'serveur'};}catch(x){return null;}}
+let E={};try{E=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}');}catch(x){}
+const EPREUVES={
+  lecon1:{nom:'Leçon 1 · Tourner',court:'LEÇON 1',long:1300,portes:5,larg:46,arbres:0,bosses:0,
+    conseil:'Glisse le doigt à gauche ou à droite pour tourner. Passe entre les deux fanions.'},
+  lecon2:{nom:'Leçon 2 · Maîtriser sa vitesse',court:'LEÇON 2',long:1700,portes:7,larg:36,arbres:3,bosses:2,
+    conseil:'Plus tu es en travers de la pente, plus tu freines. Les bosses font sauter.'},
+  lecon3:{nom:'Leçon 3 · Le slalom',court:'LEÇON 3',long:2100,portes:9,larg:30,arbres:4,bosses:3,
+    conseil:'Enchaîne les portes sans t’arrêter : anticipe le virage suivant.'},
+  test:{nom:'Le test des médailles',court:'TEST',long:3800,portes:21,larg:30,arbres:14,bosses:11,
+    conseil:'Toutes les portes, le plus vite possible. Une porte ratée : +2 s.'}};
+const EP=EPREUVES[new URLSearchParams(location.search).get('e')]||EPREUVES.lecon1;
+const CLE_EP=Object.keys(EPREUVES).find(k=>EPREUVES[k]===EP);
+/* TES SKIS : ceux que tu portes (s'ils sont à toi), sinon l'école te prête des skis en bois */
+const QUALITES={skis_bois:{vit:1,vir:1,sta:1,nom:'tes skis en bois'},skis_rouges:{vit:2,vir:2,sta:2,nom:'tes skis rouges'},skis_carving:{vit:3,vir:5,sta:2,nom:'tes skis de carving'},
+  snowboard:{vit:3,vir:3,sta:4,nom:'ton snowboard'},skis_course:{vit:5,vir:3,sta:4,nom:'tes skis de course'}};
+const COUL_SKIS={skis_bois:'#a8783c',skis_rouges:'#b8392c',skis_carving:'#2d6fb0',snowboard:'#3a3a78',skis_course:'#1a1a1e'};
+const monSki=E.ap&&E.ap.ski&&E.ap.ski.skis;
+const Q=(monSki&&QUALITES[monSki])||{vit:1,vir:1,sta:1,nom:'les skis en bois de l’école',pret:true};
+const COUL=(monSki&&COUL_SKIS[monSki])||'#a8783c', SNOW=monSki==='snowboard';
+/* ton personnage, de dos, gravé par le jeu avant de partir (avec ta tenue) */
+const SKIEUR=new Image();try{const d=sessionStorage.getItem('bdl.skieur');if(d)SKIEUR.src=d;}catch(x){}
+/* ================== LE TERRAIN ================== */
+const VW=180, VH=351, S=4, LARG=180, LONG=EP.long;
+const cv=document.getElementById('c');const ctx=cv.getContext('2d');
+function taille(){const r=tel.getBoundingClientRect();cv.width=VW*S;cv.height=Math.round(VW*S*r.height/r.width);ctx.imageSmoothingEnabled=false;}
+const hs=(i)=>{const s=Math.sin(i*127.1+311.7)*43758.5453;return s-Math.floor(s);};
+const mk=(w,h)=>{const c=document.createElement('canvas');c.width=w*2;c.height=h*2;const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
+  const F=(x,y,ww,hh,col)=>{if(ww<=0||hh<=0)return;g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,Math.round(ww*2)/2),Math.max(0.5,Math.round(hh*2)/2));};return {c,g,F};};
+const bordG=(y)=>18+Math.sin(y/260)*10+Math.sin(y/97)*4, bordD=(y)=>LARG-18-Math.sin(y/310+1)*10-Math.cos(y/83)*4;
+function tuile(y0){const c=document.createElement('canvas');c.width=LARG;c.height=180;const g=c.getContext('2d');const im=g.createImageData(LARG,180),d=im.data;
+  for(let y=0;y<180;y++)for(let x=0;x<LARG;x++){const Y=y0+y, dans=x>bordG(Y)&&x<bordD(Y);const n=hs(x*0.13+Y*0.071)*0.5+hs(Math.floor(x/7)*3.1+Math.floor(Y/7)*1.7)*0.5;
+    let c3=dans?((Y%3===0)?[226,234,240]:[240,245,248]):(n<0.35?[230,237,242]:(n<0.75?[238,243,246]:[248,251,252]));if(dans&&hs(x*3+Y)<0.015)c3=[212,222,232];
+    const o=(y*LARG+x)*4;d[o]=c3[0];d[o+1]=c3[1];d[o+2]=c3[2];d[o+3]=255;}
+  g.putImageData(im,0,0);g.fillStyle='rgba(150,175,205,.35)';for(let y=0;y<180;y+=2){const Y=y0+y;g.fillRect(bordG(Y)-1,y,2,2);g.fillRect(bordD(Y)-1,y,2,2);}return c;}
+const TUILES=[];for(let y=0;y<LONG+400;y+=180)TUILES.push(tuile(y));
+function sapin(h){const W=Math.round(h*0.9),H=h+6,{c,g,F}=mk(W,H);const cx=W/2,sol=H-3;
+  g.fillStyle='rgba(90,110,140,.28)';g.beginPath();g.ellipse(cx+2,sol+0.5,W*0.32,2.4,0,0,7);g.fill();F(cx-0.75,sol-h*0.18,1.5,h*0.18+0.5,'#5b3f21');
+  for(let e=0;e<5;e++){const yy=sol-h*0.14-e*h*0.17, w=h*(0.44-e*0.075);g.fillStyle=e%2?'#2f5a44':'#264d3a';g.beginPath();g.moveTo(cx-w,yy);g.lineTo(cx+w,yy);g.lineTo(cx,yy-h*0.26);g.closePath();g.fill();
+    g.fillStyle='#f4f8fa';g.beginPath();g.moveTo(cx-w*0.9,yy-0.5);g.quadraticCurveTo(cx,yy-h*0.12,cx+w*0.2,yy-h*0.22);g.lineTo(cx-w*0.1,yy-h*0.25);g.closePath();g.fill();}
+  return {c,W,H,sol};}
+function fanion(rouge){const {c,g,F}=mk(10,22);const x=3,sol=20;F(x,sol-18,1,18,'#3a3a40');F(x+1,sol-18,6,4.5,rouge?'#c0392b':'#2d6fb0');F(x+1,sol-18,6,0.5,rouge?'#f08070':'#6aa8e8');F(x-0.5,sol-0.5,2,1,'#2a2a30');return {c,W:10,H:22,sol};}
+const SAPINS=[sapin(24),sapin(30),sapin(36),sapin(28)], FR=fanion(true), FB=fanion(false);
+/* ================== LE PARCOURS ================== */
+let PORTES=[], ARBRES=[], BOSSES=[];
+function tracer(){PORTES=[];ARBRES=[];BOSSES=[];
+  const pas=(LONG-420)/EP.portes;
+  for(let k=0;k<EP.portes;k++){const y=260+k*pas+hs(k*3.3)*pas*0.2, ecart=EP.larg<40?(24+hs(k)*16):(14+hs(k)*10);
+    PORTES.push({y,x:LARG/2+(k%2?1:-1)*ecart,l:EP.larg,rouge:k%2===0,passe:null});}
+  for(let y=60;y<LONG+300;y+=10){[bordG(y)-6-hs(y)*16,bordD(y)+6+hs(y*3)*16].forEach((x,i)=>{if(hs(y*1.7+i)<0.45)ARBRES.push({x,y:y+hs(y*5+i)*8,t:SAPINS[Math.floor(hs(y+i*9)*4)],bord:true});});}
+  for(let k=0;k<EP.arbres;k++){const y=420+k*((LONG-600)/Math.max(1,EP.arbres))+hs(k*7)*60;if(PORTES.some(p=>Math.abs(p.y-y)<50))continue;
+    ARBRES.push({x:LARG/2+(hs(k*11)-0.5)*70,y,t:SAPINS[k%4],bord:false});}
+  for(let k=0;k<EP.bosses;k++)BOSSES.push({x:LARG/2+(hs(k*5)-0.5)*90,y:600+k*((LONG-800)/Math.max(1,EP.bosses))+hs(k)*80,r:16});
+  ARBRES.sort((a,b)=>a.y-b.y);}
+/* ================== LE SKIEUR : ses skis décident de sa vitesse, de ses virages, de son équilibre ================== */
+const VMAX=170+Q.vit*12, MAX_A=1.15+Q.vir*0.05, VIRAGE=4.5*(0.8+Q.vir*0.1), CHUTE_BOSSE=Math.max(0.03,0.45-Q.sta*0.09);
+const J={x:LARG/2,y:120,a:0,v:0,chute:0,vz:0,z:0,inv:0};
+let entree=0, clavier=0, TRACE=[], GERBE=[], ETAT='menu', t0=0, tFin=0, chutes=0, portesOk=0, portesVues=0, penal=0;
+function vite(){return J.v;}
+function maj(dt){if(ETAT!=='jeu')return;
+  const raide=0.9+0.25*Math.sin(J.y/700);
+  if(J.inv>0)J.inv-=dt;
+  if(J.chute>0){J.chute-=dt;J.v*=Math.pow(0.02,dt);if(J.chute<=0){J.a=0;J.v=40;J.inv=1.4;J.x=Math.max(bordG(J.y)+12,Math.min(bordD(J.y)-12,J.x));}return;}
+  const vise=(clavier||entree)*MAX_A;J.a+=(vise-J.a)*Math.min(1,dt*(VIRAGE+J.v*0.02));
+  const acc=150*(0.9+Q.vit*0.04)*raide*Math.cos(J.a)-0.0045*J.v*J.v-60*Math.pow(Math.abs(Math.sin(J.a)),3)*(J.v/120)-8;
+  J.v=Math.max(0,Math.min(VMAX,J.v+acc*dt));
+  J.x+=Math.sin(J.a)*J.v*dt;J.y+=Math.cos(J.a)*J.v*dt;
+  if(J.z<=0)BOSSES.forEach(b=>{if(Math.abs(J.x-b.x)<b.r&&Math.abs(J.y-b.y)<5&&J.v>70){J.vz=40+J.v*0.25;J.z=0.01;J.reception=J.v>140&&Math.random()<CHUTE_BOSSE;}});
+  if(J.z>0){J.vz-=260*dt;J.z+=J.vz*dt;if(J.z<=0){J.z=0;if(J.reception){J.reception=false;tomber();return;}
+    GERBE.push(...Array.from({length:14},(_,k)=>({x:J.x,y:J.y,vx:(hs(k+J.y)-0.5)*60,vy:-20-hs(k*3)*30,t:0.6})));}}
+  if(J.x<bordG(J.y)||J.x>bordD(J.y))J.v*=Math.pow(0.35,dt);
+  if(J.z<=2&&!(J.inv>0))for(const A of ARBRES){if(Math.abs(A.y-J.y)<5&&Math.abs(A.x-J.x)<(A.bord?6:5)){tomber();break;}}
+  PORTES.forEach(p=>{if(p.passe===null&&J.y>p.y){portesVues++;const ok=Math.abs(J.x-p.x)<p.l/2;p.passe=ok;if(ok){portesOk++;flash(p.rouge?'#c0392b':'#2d6fb0');}else{penal+=2;texte('+2 s','#c0392b');}}});
+  const carre=Math.abs(Math.sin(J.a))*J.v;if(J.z<=0&&carre>45&&Math.random()<dt*carre*0.15)GERBE.push({x:J.x-Math.sign(J.a)*3,y:J.y,vx:-Math.sign(J.a)*(20+Math.random()*40),vy:-10-Math.random()*25,t:0.5});
+  if(J.z<=0&&(!TRACE.length||Math.hypot(TRACE[TRACE.length-1][0]-J.x,TRACE[TRACE.length-1][1]-J.y)>2))TRACE.push([J.x,J.y]);if(TRACE.length>600)TRACE.shift();
+  if(J.y>=LONG){ETAT='fin';tFin=(performance.now()-t0)/1000+penal;resultat();}}
+function tomber(){J.chute=1.1;J.v*=0.2;chutes++;texte('Chute !','#c0392b');
+  GERBE.push(...Array.from({length:26},(_,k)=>({x:J.x,y:J.y,vx:(hs(k*3+J.y)-0.5)*90,vy:-30-hs(k)*40,t:0.8})));if(navigator.vibrate)navigator.vibrate(60);}
+let FLASH=null, TEXTES=[];
+function flash(col){FLASH={col,t:0.35};if(navigator.vibrate)navigator.vibrate(12);}
+function texte(s,col){TEXTES.push({s,col,x:J.x,y:J.y-40,t:1.1});}
+/* ================== LE DESSIN ================== */
+function skieurJ(g,x,y,a,z,chute){
+  const F=(u,v,w,h,c)=>{g.fillStyle=c;g.fillRect(u,v,w,h);};
+  g.fillStyle='rgba(90,110,140,'+(0.3-Math.min(0.2,z*0.01))+')';g.beginPath();g.ellipse(x+1,y+0.5,8-Math.min(4,z*0.2),2,0,0,7);g.fill();
+  const yy=y-z, img=SKIEUR.complete&&SKIEUR.naturalWidth?SKIEUR:null;
+  if(chute>0){g.save();g.translate(x,yy-8);g.rotate((1.1-chute)*9);if(img)g.drawImage(img,-32,-62,64,80);else F(-4,-30,8,24,'#2d5f9a');g.restore();
+    F(x-9,y-2,8,2,COUL);F(x+2,y+1,8,2,COUL);return;}
+  if(SNOW){g.save();g.translate(x,yy+1);g.rotate(-a*0.62+Math.PI/2);F(-12,-3,24,6,COUL);F(-12,-3,24,1,'#6a6aa8');g.restore();}
+  else[-2.6,2.6].forEach(d=>{g.save();g.translate(x+d,yy+1);g.rotate(-a*0.62);F(-1.25,-11,2.5,21,COUL);F(-1.25,-11,2.5,1,'#ffffff');F(-0.75,-12.5,1.5,1.5,COUL);F(-1.25,-2,2.5,3,'#2a2a30');g.restore();});
+  if(img){g.save();g.translate(x,yy);g.transform(1,0,a*0.2,1,0,0);g.scale(1,z>0?0.94:0.9);g.drawImage(img,-32,-70,64,80);g.restore();}
+  else{F(x-4,yy-30,8,20,'#2d5f9a');F(x-3,yy-37,6,7,'#e8bd92');F(x-3.5,yy-39,7,3,'#b8392c');}
+  if(!SNOW){const cote=a>0?1:-1;F(x+cote*8,yy-16,0.8,15,'#8a8f96');F(x-cote*7,yy-14,0.8,11,'#8a8f96');}
+}
+function dessiner(){
+  const now=performance.now()/1000, v=vite(), VHr=cv.height/S;
+  const camY=Math.max(0,J.y-VHr*(0.28+Math.min(0.1,v/2000))), camX=Math.max(0,Math.min(LARG-VW,J.x-VW/2));
+  ctx.setTransform(S,0,0,S,0,0);ctx.imageSmoothingEnabled=false;
+  for(let i=Math.floor(camY/180);i<=Math.floor((camY+VHr)/180);i++)if(TUILES[i])ctx.drawImage(TUILES[i],-camX,i*180-camY,LARG,180);
+  ctx.save();ctx.translate(-camX,-camY);
+  ctx.fillStyle='#c0392b';for(let x=bordG(100);x<bordD(100);x+=6)ctx.fillRect(x,100,3,1.5);
+  if(TRACE.length>1){ctx.strokeStyle='rgba(140,165,195,.6)';ctx.lineWidth=0.6;(SNOW?[0]:[-2.4,2.4]).forEach(d=>{ctx.beginPath();TRACE.forEach(([x,y],i)=>i?ctx.lineTo(x+d,y):ctx.moveTo(x+d,y));ctx.stroke();});}
+  BOSSES.forEach(b=>{if(b.y<camY-20||b.y>camY+VHr+20)return;const gr=ctx.createRadialGradient(b.x-3,b.y-3,1,b.x,b.y,b.r);gr.addColorStop(0,'#ffffff');gr.addColorStop(1,'rgba(160,185,210,.35)');
+    ctx.fillStyle=gr;ctx.beginPath();ctx.ellipse(b.x,b.y,b.r,b.r*0.45,0,0,7);ctx.fill();});
+  const D=[];
+  ARBRES.forEach(A=>{if(A.y<camY-10||A.y>camY+VHr+50)return;D.push({y:A.y,f:()=>ctx.drawImage(A.t.c,Math.round(A.x-A.t.W/2),Math.round(A.y-A.t.sol),A.t.W,A.t.H)});});
+  PORTES.forEach(p=>{if(p.y<camY-20||p.y>camY+VHr+30)return;const f=p.rouge?FR:FB;
+    [p.x-p.l/2,p.x+p.l/2].forEach(x=>D.push({y:p.y,f:()=>ctx.drawImage(f.c,Math.round(x-3),Math.round(p.y-f.sol),f.W,f.H)}));
+    if(p.passe===true){ctx.fillStyle='rgba(63,158,122,.25)';ctx.fillRect(p.x-p.l/2,p.y-1,p.l,2);}});
+  D.push({y:J.y,f:()=>{if(J.inv>0&&Math.floor(now*12)%2)ctx.globalAlpha=0.5;skieurJ(ctx,J.x,J.y,J.a,J.z,J.chute);ctx.globalAlpha=1;}});
+  D.sort((a,b)=>a.y-b.y).forEach(d=>d.f());
+  if(camY+VHr>LONG-40){ctx.fillStyle='#12356a';ctx.fillRect(bordG(LONG)-2,LONG-44,3,44);ctx.fillRect(bordD(LONG)-1,LONG-44,3,44);
+    ctx.fillStyle='#12356a';ctx.fillRect(bordG(LONG),LONG-44,bordD(LONG)-bordG(LONG),9);ctx.font='700 7px Georgia';ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText('ARRIVÉE',LARG/2,LONG-37.2);ctx.textAlign='left';
+    for(let x=bordG(LONG);x<bordD(LONG);x+=4){ctx.fillStyle=((x/4)|0)%2?'#1a1a1a':'#ffffff';ctx.fillRect(x,LONG,4,2);}}
+  GERBE.forEach(p=>{ctx.fillStyle='rgba(255,255,255,'+Math.min(1,p.t*2).toFixed(2)+')';ctx.fillRect(p.x,p.y,1,1);});
+  TEXTES.forEach(q=>{ctx.font='italic 700 8px Georgia';ctx.textAlign='center';ctx.fillStyle=q.col;ctx.globalAlpha=Math.min(1,q.t);ctx.fillText(q.s,q.x,q.y);ctx.globalAlpha=1;ctx.textAlign='left';});
+  ctx.restore();
+  if(v>140){ctx.fillStyle='rgba(255,255,255,'+((v-140)/400).toFixed(2)+')';for(let k=0;k<10;k++){const x=(k*37+now*20)%VW, y=(now*v*0.9+k*53)%VHr;ctx.fillRect(x<VW/2?x*0.3:VW-(VW-x)*0.3,y,0.5,8);}}
+  if(FLASH){ctx.fillStyle=FLASH.col;ctx.globalAlpha=FLASH.t;ctx.fillRect(0,0,VW,2);ctx.fillRect(0,VHr-2,VW,2);ctx.globalAlpha=1;}}
+/* ================== LA BOUCLE, LES COMMANDES ================== */
+let dern=performance.now();
+function boucle(){const n=performance.now(), dt=Math.min(0.033,(n-dern)/1000);dern=n;
+  for(let k=0;k<2;k++)maj(dt/2);
+  GERBE.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=90*dt;p.t-=dt;});GERBE=GERBE.filter(p=>p.t>0);
+  TEXTES.forEach(q=>{q.y-=14*dt;q.t-=dt;});TEXTES=TEXTES.filter(q=>q.t>0);if(FLASH){FLASH.t-=dt;if(FLASH.t<=0)FLASH=null;}
+  dessiner();
+  if(ETAT==='jeu'){hC.innerHTML='<small>CHRONO</small>'+((n-t0)/1000+penal).toFixed(1).replace('.',',')+' s';hP.innerHTML='<small>PORTES</small>'+portesOk+' / '+portesVues;}
+  requestAnimationFrame(boucle);}
+let doigt=null;
+tel.addEventListener('pointerdown',e=>{if(ETAT!=='jeu')return;const r=tel.getBoundingClientRect();doigt={x0:e.clientX,id:e.pointerId,cote:(e.clientX-r.left)<r.width/2?-1:1,bouge:false};
+  const d=doigt;setTimeout(()=>{if(doigt===d&&!d.bouge)entree=d.cote*0.85;},110);});
+tel.addEventListener('pointermove',e=>{if(!doigt||e.pointerId!==doigt.id)return;const r=tel.getBoundingClientRect();
+  if(Math.abs(e.clientX-doigt.x0)>6){doigt.bouge=true;entree=Math.max(-1,Math.min(1,(e.clientX-doigt.x0)/(r.width*0.22)));}});
+const lache=e=>{if(doigt&&(!e||e.pointerId===doigt.id)){doigt=null;entree=0;}};
+tel.addEventListener('pointerup',lache);tel.addEventListener('pointercancel',lache);
+addEventListener('keydown',e=>{if(e.key==='ArrowLeft')clavier=-1;if(e.key==='ArrowRight')clavier=1;});
+addEventListener('keyup',e=>{if((e.key==='ArrowLeft'&&clavier<0)||(e.key==='ArrowRight'&&clavier>0))clavier=0;});
+/* ================== LE DÉPART, L'ARRIVÉE ================== */
+const retour=()=>{location.href='jeu.html?carte=montagne';};
+function partir(){tracer();Object.assign(J,{x:LARG/2,y:120,a:0,v:0,chute:0,z:0,vz:0,inv:0});TRACE=[];GERBE=[];TEXTES=[];chutes=0;portesOk=0;portesVues=0;penal=0;
+  v.style.display='none';ETAT='jeu';t0=performance.now();aide.textContent=EP.conseil;aide.style.opacity=1;setTimeout(()=>aide.style.opacity=0,5500);}
+function menu(){hE.innerHTML='<small>ÉPREUVE</small>'+EP.court;v.style.display='flex';
+  vc.innerHTML='<h2>'+EP.nom+'</h2><div class="s">ÉCOLE DE SKI · SAUMASKI</div><p>'+EP.conseil+'</p>'+
+  '<p>Tu skies avec '+Q.nom+'.<br>Vitesse '+Q.vit+' · virage '+Q.vir+' · stabilité '+Q.sta+'</p>'+
+  (CLE_EP==='test'?'<p>❄ un flocon : arriver en passant la moitié des portes<br>❄❄ deux : moins de 40 s · ❄❄❄ trois : moins de 34 s<br>⭐ l’étoile : toutes les portes, moins de 29 s</p>':'')+
+  '<button id="go">Partir</button><button class="b2" id="rt">Retour à la station</button>';go.onclick=partir;rt.onclick=retour;}
+const MED=['','❄','❄❄','❄❄❄','⭐'], NOM_MED=['','Un flocon','Deux flocons','Trois flocons','L’étoile'];
+async function resultat(){aide.style.opacity=0;v.style.display='flex';
+  vc.innerHTML='<h2>Arrivée !</h2><div class="s">LE MONITEUR REGARDE TON CHRONO…</div><div class="lignes"><b>Chrono</b><span>'+tFin.toFixed(1).replace('.',',')+' s</span></div>';
+  const d=E.id?await rpc('ski_enregistrer',{p_joueur:E.id,p_epreuve:CLE_EP,p_temps_ms:Math.round(tFin*1000),p_ok:portesOk,p_total:portesVues,p_chutes:chutes}):null;
+  const reussie=portesOk>=portesVues-1;
+  let h='<h2>'+(!d||d.erreur?'Arrivée !':(CLE_EP==='test'?(d.medaille?MED[d.medaille]+' '+NOM_MED[d.medaille]:'Pas de médaille'):(reussie?'Leçon réussie !':'Presque !')))+'</h2><div class="s">'+EP.nom.toUpperCase()+'</div>'+
+    '<div class="lignes"><b>Chrono</b><span>'+tFin.toFixed(1).replace('.',',')+' s'+(d&&d.record&&d.ancien?' · record !':'')+'</span></div>'+
+    '<div class="lignes"><b>Portes passées</b><span>'+portesOk+' / '+portesVues+'</span></div>'+
+    '<div class="lignes"><b>Chutes</b><span>'+chutes+'</span></div>';
+  if(d&&d.gain>0){h+='<div class="gain">+ '+(d.gain/100).toFixed(2).replace('.',',')+' € offerts par l’école</div>';try{E.euros=d.euros;localStorage.setItem('bdl.pix.v2',JSON.stringify(E));}catch(x){}}
+  if(!d||d.erreur)h+='<p>'+(d&&d.erreur==='trop vite'?'Doucement : une descente à la fois.':'Le chrono n’a pas pu être enregistré.')+'</p>';
+  else if(CLE_EP!=='test')h+='<p>'+(reussie?'Le moniteur te fait signe : c’est dans la poche.':'Il faut passer toutes les portes (une erreur permise).')+'</p>';
+  h+='<button id="go">Recommencer</button><button class="b2" id="rt">Retour à la station</button>';
+  vc.innerHTML=h;go.onclick=partir;rt.onclick=retour;}
+addEventListener('resize',taille);taille();tracer();menu();boucle();
+</script></body></html>
