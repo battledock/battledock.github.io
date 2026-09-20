@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1204';
+  var MA_VERSION='2026-09-20-1212';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -14953,7 +14953,7 @@ function majJoueur(dt){
   const max=vitesseDuJoueur();
   const aFond=pousse>0.88;
   /* une caisse sur les bras : on va moins vite, c'est tout l'arbitrage */
-  const allure=(aFond?max:VITESSE)*(caissePortee?0.72:1)*(VELO&&CARTE==='extramar'?1.75:1);
+  const allure=(aFond?max:VITESSE)*(caissePortee?0.72:1)*(VELO&&CARTE==='extramar'?1.75:1)*glisseSki();
   /* on ne COURT, au sens de l'animation, qu'au-delà du seuil */
   court=aFond&&max>=SEUIL_COURSE;
   const cibleX=n>0.16?(joyX/n)*allure*pousse:0;
@@ -18872,14 +18872,23 @@ const SKI=[
   {id:'lunettes_glacier',slot:'masque',nom:'Lunettes de glacier',prix:2000,lu:{f:'#3a2a1a',v:'#1a1e24'}},
   {id:'lunettes_glacier_or',slot:'masque',nom:'Lunettes de glacier dorées',prix:15000,lu:{f:'#c9a24a',v:'#2a3a4a'}},
   /* les skis, sur l'épaule */
-  {id:'skis_bois',slot:'skis',nom:'Skis en bois d’autrefois',prix:4000,sk:['#a8783c','#6b4424'],t:'skis'},
-  {id:'skis_rouges',slot:'skis',nom:'Skis rouges',prix:8000,sk:['#b8392c','#f4efe0'],t:'skis'},
-  {id:'skis_carving',slot:'skis',nom:'Skis de carving',prix:15000,sk:['#2d6fb0','#f0c040'],t:'skis'},
-  {id:'snowboard',slot:'skis',nom:'Snowboard',prix:20000,sk:['#3a3a78','#3ad0c0'],t:'snow'},
-  {id:'skis_course',slot:'skis',nom:'Skis de course or et noir',prix:60000,sk:['#1a1a1e','#d8b040'],t:'skis'}
+  {id:'skis_bois',slot:'skis',nom:'Skis en bois d’autrefois',prix:100,sk:['#a8783c','#6b4424'],t:'skis',q:{vit:1,vir:1,sta:1}},
+  {id:'skis_rouges',slot:'skis',nom:'Skis rouges',prix:8000,sk:['#b8392c','#f4efe0'],t:'skis',q:{vit:2,vir:2,sta:2}},
+  {id:'skis_carving',slot:'skis',nom:'Skis de carving',prix:15000,sk:['#2d6fb0','#f0c040'],t:'skis',q:{vit:3,vir:5,sta:2}},
+  {id:'snowboard',slot:'skis',nom:'Snowboard',prix:20000,sk:['#3a3a78','#3ad0c0'],t:'snow',q:{vit:3,vir:3,sta:4}},
+  {id:'skis_course',slot:'skis',nom:'Skis de course or et noir',prix:60000,sk:['#1a1a1e','#d8b040'],t:'skis',q:{vit:5,vir:3,sta:4}}
 ];
 const SKI_PAR_ID=Object.fromEntries(SKI.map(x=>[x.id,x]));
 /* la tenue portée devient des couleurs et des détails sur le personnage */
+/* LES SKIS SERVENT VRAIMENT : dans la neige de Saumaski, on glisse, d'autant plus vite que les skis
+   sont bons (+8 % par cran de vitesse : de +8 % en bois à +40 % en course). La descente utilisera
+   aussi le virage et la stabilité. */
+function glisseSki(){
+  if(CARTE!=='montagne'||!e.ap||!e.ap.ski||!e.ap.ski.skis||!(e.cos&&e.cos[e.ap.ski.skis]))return 1;
+  const K=SKI_PAR_ID[e.ap.ski.skis];if(!K||!K.q)return 1;
+  try{if(!SAUMASKI||!SAUMASKI.dansNeige(joueur.x,joueur.y))return 1;}catch(x){return 1;}
+  return 1+0.08*K.q.vit;
+}
 function appliquerTenueSki(p){
   const t=p.ski;if(!t||typeof t!=='object')return;
   const pc=SKI_PAR_ID[t.corps], pb=SKI_PAR_ID[t.bonnet], pm=SKI_PAR_ID[t.masque], pe=SKI_PAR_ID[t.echarpe], pg=SKI_PAR_ID[t.gants];
@@ -19179,6 +19188,9 @@ const CSS_SKI=`
 .skiCat .pastilles i.on{box-shadow:0 0 0 2px #12356a}
 .skiCat .bulle{position:absolute;left:14px;right:14px;bottom:70px;background:#12356a;color:#fff;border-radius:12px;padding:10px 12px;font:italic 14px Georgia;opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none}
 .skiCat .bulle.on{opacity:1;transform:none}
+.skiCat .jauges{margin:3px 0 6px}.skiCat .jg{display:flex;align-items:center;gap:6px;font:11px Georgia;color:#44566e}.skiCat .jg span{width:56px}
+.skiCat .jg i{display:flex;gap:2px}.skiCat .jg b{width:12px;height:5px;border-radius:2px;background:#d4dde8}.skiCat .jg b.on{background:#12356a}
+.skiCat .jauges small{display:block;font:italic 11px Georgia;color:#3f9e7a;margin-top:2px}
 .skiCat .fermer{position:absolute;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);border:0;border-radius:22px;padding:12px;background:#fff;color:#12356a;font:700 15px Georgia;box-shadow:0 4px 14px rgba(18,53,106,.18)}`;
 let ETOILES_VENDUES=0, RAYON_SKI='corps', CAT_SEL=null, CAB_T=null;
 const RAYONS_SKI=[['corps','Combis & doudounes'],['bonnet','Bonnets & casques'],['masque','Masques & lunettes'],['echarpe','Écharpes'],['gants','Gants'],['pieds','Chaussures'],['skis','Skis & snowboards']];
@@ -19231,7 +19243,7 @@ function skiMaj(){
   const x=CAT_SEL, a=!!e.cos[x.id], mis=porte===x.id, peut=(e.euros||0)>=x.prix;
   const reste=x.collector?Math.max(0,x.collector-ETOILES_VENDUES):null, epuise=x.collector&&!a&&reste<=0;
   $('skiFiche').innerHTML=(x.collector?'<span class="coll">'+(epuise?'ÉPUISÉE':'COLLECTOR · '+reste+' / '+x.collector+' EN VENTE')+'</span>':'<div class="cat">'+(RAYONS_SKI.find(r=>r[0]===RAYON_SKI)[1]).toUpperCase()+'</div>')+
-    '<h3>'+x.nom+'</h3><div class="prix">'+enEuros(x.prix)+'</div><div class="etat">'+(mis?'Tu la portes.':(a?'Elle est à toi.':'Essaie-la : c’est toi, dans la cabine.'))+'</div>'+
+    '<h3>'+x.nom+'</h3><div class="prix">'+enEuros(x.prix)+'</div>'+(x.q?jaugesSki(x.q):'')+'<div class="etat">'+(mis?'Tu la portes.':(a?'Elle est à toi.':'Essaie-la : c’est toi, dans la cabine.'))+'</div>'+
     '<button id="skiAchat" class="btn'+(a?(mis?' enl':''):(peut&&!epuise?'':' pas'))+'">'+(a?(mis?'L’enlever':'La porter'):(epuise?'Épuisée':(peut?'Acheter':'Il te manque '+enEuros(x.prix-(e.euros||0)))))+'</button>';
   dessinerCabine('bas');
   $('skiAchat').onclick=async()=>{
@@ -19249,6 +19261,8 @@ function skiMaj(){
     sauver();envoyerSauvegarde(true);monterEnLigne(true);vibrer(20);skiMaj();
   };
 }
+function jaugesSki(q){const l=(n,v)=>'<div class="jg"><span>'+n+'</span><i>'+[1,2,3,4,5].map(k=>'<b class="'+(k<=v?'on':'')+'"></b>').join('')+'</i></div>';
+  return '<div class="jauges">'+l('Vitesse',q.vit)+l('Virage',q.vir)+l('Stabilité',q.sta)+'<small>Dans la neige de Saumaski : +'+(q.vit*8)+' % de vitesse</small></div>';}
 function vignetteSki(cv2,ap){
   /* le cadrage suit le rayon : en pied pour les combis et les gants, en buste pour la tête et le cou */
   const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
