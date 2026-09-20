@@ -1351,17 +1351,33 @@ function devanture(v,peindre){const base=graverImmeuble(v), W=base.W, H=base.H, 
   const go=(cv,nuit)=>{const D=cv.width/W, g=cv.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
     const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};peindre(g,R,{W,H,sol,cx,BL,x0,rez,yR},nuit);};
   const toile=copie(base.toile), nuit=copie(base.nuit||base.toile);go(toile,false);go(nuit,true);return {toile,W,H,sol,nuit};}
-/* LA CAISSE D'ÉPARGNE DU VIEUX-PORT : pierre de taille, colonnes, grilles de fer forgé, l'horloge */
-function graverLaBanque(){return devanture(2,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
-  R(x0,yR-6,BL,rez+6,'#e8dcc4');for(let y=yR-6;y<sol;y+=5)R(x0,y,BL,0.5,'#c8bca4');for(let k=0;k<BL;k+=12)R(x0+k+((Math.floor((k)/12))%2?6:0),yR-6,0.5,rez+6,'rgba(160,140,110,.35)');
-  [[-60],[-24],[20],[56]].forEach(([k])=>{R(cx+k,yR-4,6,rez+2,'#f4ecd8');R(cx+k,yR-4,1.5,rez+2,'#fffaf0');R(cx+k+5,yR-4,1,rez+2,'#b8ac94');R(cx+k-1,yR-6,8,2,'#d8ccb4');R(cx+k-1,sol-2,8,2,'#d8ccb4');});
-  [[-50],[30]].forEach(([k])=>{R(cx+k,yR+8,18,rez-10,nuit?'#ffe0a0':'#3a4450');for(let x=0;x<18;x+=3)R(cx+k+x,yR+8,0.8,rez-10,'#2a2e36');R(cx+k,yR+14,18,0.8,'#2a2e36');R(cx+k,yR+26,18,0.8,'#2a2e36');
-    for(let x=0;x<18;x+=6){g.strokeStyle='#2a2e36';g.lineWidth=0.6;g.beginPath();g.arc(cx+k+x+3,yR+8,3,Math.PI,0);g.stroke();}});
-  R(cx-10,yR+4,20,rez-4,'#3a2a1a');R(cx-9,yR+5,18,rez-5,nuit?'#ffe8b0':'#5a4430');R(cx-0.5,yR+5,1,rez-5,'#3a2a1a');R(cx-4,sol-16,1.5,3,'#d8b050');R(cx+2.5,sol-16,1.5,3,'#d8b050');
-  const ey=yR-20;R(x0+10,ey,BL-20,10,'#2a3a5a');R(x0+10,ey,BL-20,1,'#d8b050');R(x0+10,ey+9,BL-20,1,'#d8b050');
-  g.font='700 6.2px Georgia';g.textAlign='center';g.fillStyle='#f0d890';g.fillText('CAISSE D’ÉPARGNE DU VIEUX-PORT',cx,ey+7,BL-26);g.textAlign='left';
-  g.fillStyle='#f4ecd8';g.beginPath();g.arc(cx,ey-8,7,0,7);g.fill();g.strokeStyle='#d8b050';g.lineWidth=1.2;g.stroke();g.strokeStyle='#1a1a1a';g.lineWidth=0.7;g.beginPath();g.moveTo(cx,ey-8);g.lineTo(cx,ey-12.5);g.moveTo(cx,ey-8);g.lineTo(cx+3,ey-7);g.stroke();   /* l'horloge */
-  if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,210,140,.4)');l.addColorStop(1,'rgba(255,210,140,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}});}
+/* LA POISSONNERIE, en façade : faïence bleue et blanche, le store rayé, l'étal de glace pilée et ses poissons */
+function graverLaPoissonnerie(){return devanture(1,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+  R(x0,yR,BL,rez,'#f4f8fa');for(let y=yR;y<sol;y+=4)for(let x=x0;x<x0+BL;x+=4)if(((x-x0)/4+(y-yR)/4)%2<1)R(x,y,4,4,'#dcecf4');
+  R(x0,sol-6,BL,6,'#1d4f8a');
+  R(x0+8,yR+10,BL-16,rez-18,nuit?'#ffe8c0':'#2a3a44');
+  /* l'étal : la glace pilée et les poissons alignés */
+  R(x0+6,sol-14,BL-12,8,'#e8f4fa');R(x0+6,sol-14,BL-12,1,'#ffffff');
+  const P=[['#8aa0b0','#c8d4dc'],['#c86a4a','#e89a7a'],['#6a8aa0','#a8c0d0'],['#d8b060','#f0d890']];
+  for(let k=0;k<11;k++){const x=x0+10+k*11.5, c=P[k%4];g.fillStyle=c[0];g.beginPath();g.ellipse(x+4,sol-10,4.2,1.6,0,0,7);g.fill();g.fillStyle=c[1];g.fillRect(x+1,sol-11,5,0.8);
+    g.fillStyle=c[0];g.beginPath();g.moveTo(x-0.5,sol-10);g.lineTo(x-2.5,sol-12);g.lineTo(x-2.5,sol-8);g.fill();g.fillStyle='#1a1a1a';g.fillRect(x+6.5,sol-10.5,0.8,0.8);}
+  R(x0+6,sol-15,6,2,'#3f9e7a');R(x0+BL-12,sol-15,6,2,'#3f9e7a');                                                              /* le persil */
+  for(let k=0;k<BL;k+=8){R(x0+k,yR+1,8,7,(k/8)%2?'#ffffff':'#2d6fb0');g.fillStyle=(k/8)%2?'#ffffff':'#2d6fb0';g.beginPath();g.arc(x0+k+4,yR+8,4,0,Math.PI);g.fill();}
+  const ey=yR-15;R(x0+14,ey,BL-28,12,'#1d4f8a');R(x0+15,ey+1,BL-30,10,'#2d6fb0');
+  g.font='900 7.4px Georgia';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('LA POISSONNERIE',cx+6,ey+8.4,BL-50);g.textAlign='left';
+  const fx=x0+26, fy=ey+6;g.fillStyle='#f0d890';g.beginPath();g.ellipse(fx,fy,6,2.6,0,0,7);g.fill();g.beginPath();g.moveTo(fx-5,fy);g.lineTo(fx-9,fy-3);g.lineTo(fx-9,fy+3);g.fill();g.fillStyle='#1d4f8a';g.fillRect(fx+3,fy-1,1,1);
+  if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,220,160,.45)');l.addColorStop(1,'rgba(255,220,160,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}});}
+/* PÊCHE & MARINE, en façade : vert bouteille, les cannes en vitrine, la bouée, les cordages */
+function graverLaBoutiquePeche(){return devanture(0,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+  R(x0,yR,BL,rez,'#2f5a44');R(x0,yR,BL,1.5,'#d8b050');R(x0,sol-2,BL,2,'#1e3a2c');
+  [[x0+8],[x0+BL-50]].forEach(([x])=>{R(x,yR+8,42,rez-12,nuit?'#ffe0a8':'#23303a');
+    for(let k=0;k<6;k++){R(x+4+k*6.5,yR+10,0.9,rez-16,'#c8b890');R(x+3.6+k*6.5,yR+rez-10,1.6,2,'#3a3a40');R(x+4+k*6.5,yR+12+(k%3)*3,2,1,['#e8402a','#2d6fb0','#f0c040'][k%3]);}});   /* les cannes */
+  R(cx-10,yR+6,20,rez-6,'#1e3a2c');R(cx-9,yR+7,18,rez-7,nuit?'#ffe8b8':'#3a4a44');R(cx-0.5,yR+7,1,rez-7,'#1e3a2c');R(cx+4,sol-14,1.5,3,'#d8b050');
+  g.strokeStyle='#c8a868';g.lineWidth=1.2;g.beginPath();g.moveTo(x0+2,yR+3);for(let x=x0+2;x<x0+BL-2;x+=6)g.quadraticCurveTo(x+3,yR+7,x+6,yR+3);g.stroke();   /* le cordage */
+  g.strokeStyle='#e8402a';g.lineWidth=2;g.beginPath();g.arc(cx+16,yR+14,3.6,0,7);g.stroke();g.strokeStyle='#fff';for(let q=0;q<4;q++){g.beginPath();g.arc(cx+16,yR+14,3.6,q*Math.PI/2+0.25,q*Math.PI/2+0.75);g.stroke();}
+  const ey=yR-15;R(x0+14,ey,BL-28,12,'#1e3a2c');R(x0+15,ey+1,BL-30,10,'#2f5a44');
+  g.font='700 7.6px Georgia';g.textAlign='center';g.fillStyle=nuit?'#fff0c0':'#f0d890';g.fillText('PÊCHE & MARINE',cx,ey+8.4,BL-36);g.textAlign='left';
+  if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,210,140,.45)');l.addColorStop(1,'rgba(255,210,140,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}});}
 /* LE PEIGNE D'OR : le salon de coiffure du quai. Une devanture vert bouteille à filets d'or, la
    grande vitrine avec ses fauteuils et ses miroirs, l'enseigne aux ciseaux, et le poteau de barbier
    à spirale bleu-blanc-rouge ; la nuit, les miroirs s'allument. */
@@ -1502,7 +1518,8 @@ function semerDecorExtramar(){
      l'autre, comme sur le vrai quai ; au milieu, la Bonne Mère */
   for(let k=0;k<10;k++){
     if(k===4){P('x_panneauG',XP.ruelle.x-38,XP.maisonsY+22,{col:[4,3]});continue;}   /* la ruelle du casino, et son panneau */
-    if(k===9){XCAL['x_banque0']=graverLaBanque();CALQUES_DECO['x_banque']=XCAL['x_banque0'];P('x_banque',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'banque'});continue;}   /* la banque */
+    if(k===2){XCAL['x_facPeche0']=graverLaBoutiquePeche();CALQUES_DECO['x_facPeche']=XCAL['x_facPeche0'];P('x_facPeche',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'peche'});continue;}   /* Pêche & Marine */
+    if(k===6){XCAL['x_facPoisson0']=graverLaPoissonnerie();CALQUES_DECO['x_facPoisson']=XCAL['x_facPoisson0'];P('x_facPoisson',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'poissonnerie'});continue;}   /* la poissonnerie */
     if(k===3){XCAL['x_bar0']=graverLeBar();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ferme:'Le Bar des Docks'});
       XCAL['x_gueridon0']=graverGueridon();CALQUES_DECO['x_gueridon']=XCAL['x_gueridon0'];[[70+k*140-44,XP.maisonsY+34],[70+k*140+46,XP.maisonsY+36]].forEach(([x,y])=>P('x_gueridon',x,y,{col:[8,3]}));continue;}   /* le bar-tabac */
     if(k===5){XCAL['x_peigne0']=graverLePeigne();CALQUES_DECO['x_peigne']=XCAL['x_peigne0'];P('x_peigne',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'salon'});continue;}   /* le salon de coiffure */
@@ -1510,7 +1527,7 @@ function semerDecorExtramar(){
     P('x_maison',70+k*140,XP.maisonsY,{v:k,col:[70,24]});
   }
   /* DE GRANDS PLATANES, en alignement le long des façades, chacun avec son banc à l'ombre */
-  [140,350,910,1190].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+30,XP.maisonsY+72);});   /* les quatre platanes du quai, chacun avec son banc */
+  [140,1190].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+30,XP.maisonsY+72);});   /* les quatre platanes du quai, chacun avec son banc */
   /* LA FORÊT DE MÂTS : des voiliers serrés de part et d'autre des pontons,
      l'étrave tournée vers les planches */
   let nv=0;
@@ -1527,8 +1544,7 @@ function semerDecorExtramar(){
   P('metro',XP.metro[0],XP.metro[1],{col:[38,14]});
   /* AU MILIEU DU QUAI, FACE AUX PONTONS : la poissonnerie et la boutique de pêche.
      Entre les deux, le passage vers le ponton du milieu reste libre. */
-  P('x_pavPoisson',PAV.poisson[0],PAV.poisson[1],{col:[54,24]});
-  P('x_pavPeche',PAV.peche[0],PAV.peche[1],{col:[54,24]});
+  /* (la poissonnerie et la boutique de pêche ont quitté le milieu du quai : elles sont en façade) */
   /* LES LANTERNES, en rang régulier au bord de l'eau */
   [280,420,840,980,1120].forEach((x,i)=>P('lanterneP',x,324,{gr:i}));
   /* deux lanternes encadrent l'entrée du ponton du milieu, sans cacher les boutiques */
