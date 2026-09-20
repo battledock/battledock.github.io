@@ -410,6 +410,68 @@ const FQ={x0:TPH.x-60,x1:TPH.x+60,y0:TPH.y+4,y1:TPH.y+78,entree:[TPH.x+38,TPH.x+
 const FILE=(()=>{const {x0,x1,y0,y1,entree}=FQ, r1=y0+26, r2=y0+50;
   return [[x0,y0,x0,y1],[x0,y1,entree[0],y1],[x1,y0,x1,y1],      /* le cadre : gauche, bas (jusqu'à l'entrée), droite */
           [x0+22,r2,x1,r2],[x0,r1,x1-22,r1]];})();                   /* les deux cordes du serpentin */
+/* LE FOND DE MONTAGNES, trois styles possibles */
+let FOND='alpin';
+function fondMontagnes(g,F){
+  /* une arête de montagne : des sommets et des cols, puis du détail par déplacement du point milieu */
+  const arete=(pics,graine,rugo)=>{const pts=[];pics.forEach(p=>pts.push(p));
+    let seg=pts.slice();for(let niv=0;niv<6;niv++){const n=[];for(let i=0;i<seg.length-1;i++){const [x1,y1]=seg[i],[x2,y2]=seg[i+1];
+      n.push([x1,y1]);n.push([(x1+x2)/2,(y1+y2)/2+(hs(graine+niv*97+i*13)-0.5)*rugo*Math.abs(x2-x1)*0.5]);}n.push(seg[seg.length-1]);seg=n;}
+    const y=new Float32Array(WW*2+2);for(let i=0;i<seg.length-1;i++){const [x1,y1]=seg[i],[x2,y2]=seg[i+1];
+      for(let x=Math.max(0,Math.floor(x1*2));x<=Math.min(WW*2,Math.ceil(x2*2));x++){const t=(x/2-x1)/Math.max(0.001,x2-x1);y[x]=y1+(y2-y1)*Math.max(0,Math.min(1,t));}}
+    return y;};
+  if(FOND==='alpin'||FOND==='couchant'){
+    const soir=FOND==='couchant';
+    /* le ciel */
+    const ciel=g.createLinearGradient(0,0,0,MONT);
+    if(soir){ciel.addColorStop(0,'#3a3a78');ciel.addColorStop(0.45,'#b8688a');ciel.addColorStop(0.8,'#f0a070');ciel.addColorStop(1,'#f8d0a0');}
+    else{ciel.addColorStop(0,'#5f8fc4');ciel.addColorStop(0.6,'#a9c8e6');ciel.addColorStop(1,'#e2edf6');}
+    g.fillStyle=ciel;g.fillRect(0,0,WW,MONT);
+    if(!soir)for(let k=0;k<5;k++){const x=hs(k*7)*WW, y=8+hs(k*3)*22;g.fillStyle='rgba(255,255,255,.7)';g.beginPath();g.ellipse(x,y,14+hs(k)*12,2.5,0,0,7);g.fill();g.beginPath();g.ellipse(x+8,y-1.5,8,2,0,0,7);g.fill();}
+    else{g.fillStyle='rgba(255,230,180,.9)';g.beginPath();g.arc(WW*0.78,64,9,0,7);g.fill();}
+    /* trois chaînes, de la plus lointaine à la plus proche : chaque colonne est éclairée ou dans l'ombre selon la pente */
+    const chaines=[
+      {pics:[[0,58],[40,38],[82,52],[128,22],[170,44],[214,30],[262,48],[300,26],[360,46]],g:11,r:0.5,base:88,loin:1},
+      {pics:[[0,70],[34,52],[70,64],[118,34],[150,56],[196,40],[236,62],[284,38],[330,58],[360,50]],g:37,r:0.6,base:98,loin:0.55},
+      {pics:[[0,86],[46,70],[92,84],[140,62],[186,80],[230,66],[276,82],[322,68],[360,80]],g:71,r:0.55,base:110,loin:0}];
+    chaines.forEach((ch,ci)=>{const y=arete(ch.pics,ch.g,ch.r);
+      /* les sommets de l'arête : chaque point de la montagne appartient au versant d'un sommet */
+      const pics=[];for(let X=4;X<WW*2-4;X++){if(y[X]<=y[X-4]&&y[X]<=y[X+4]&&y[X]<y[X-1]+0.01&&y[X]<=y[X+1])pics.push(X);}
+      const bruit=(x,yy)=>Math.sin(x/7.3+ci)*0.5+Math.sin(yy/5.1+x/13)*0.5;
+      for(let X=0;X<=WW*2;X++){const x=X/2, top=y[X];
+        let pk=pics[0]||0;for(const q of pics)if(Math.abs(q-X)<Math.abs(pk-X))pk=q;
+        for(let yy=Math.floor(top*2)/2;yy<ch.base;yy+=0.5){const prof=yy-top;
+          /* le fil de l'arête descend du sommet en biais : à gauche, la lumière ; à droite, l'ombre */
+          const fil=pk/2+(yy-y[pk])*0.45+bruit(x,yy)*1.2;const eclaire=x<fil;
+          const ligneNeige=(ci===2?7:16)+Math.sin(x/11+ci*3)*4+Math.sin(x/4.3)*1.5;
+          const c9=Math.floor(x/13+ci*7), dansC=Math.abs((x%13)-6.5)<(1.2-(prof-ligneNeige)/(ligneNeige*1.4))*1.6;
+          const couloir=hs(c9*3.7)<0.3&&prof<ligneNeige*2.2&&dansC;           /* quelques couloirs de neige, qui s'effilent vers le bas */
+          let col;
+          if(prof<ligneNeige||couloir){col=soir?(eclaire?'#ffcdb4':'#b494bc'):(eclaire?'#ffffff':'#c4d4e6');
+            if(!eclaire&&prof<2)col=soir?'#c8a8cc':'#d6e2ee';}
+          else{const strate=Math.floor((yy*0.9+x*0.25*(eclaire?1:-1))/2.5)%2;
+            col=soir?(eclaire?(strate?'#8e6c8c':'#82627f'):(strate?'#4c3c60':'#46375a')):(eclaire?(strate?'#8c97a6':'#828d9c'):(strate?'#5c687a':'#546072'));}
+          F(x,yy,0.5,0.5,col);}
+        if(ch.loin>0){g.fillStyle=soir?`rgba(206,150,176,${0.5*ch.loin})`:`rgba(196,214,236,${0.6*ch.loin})`;g.fillRect(x,top,0.5,ch.base-top);}
+        F(x,top,0.5,0.5,soir?'#fff0e0':'#ffffff');}});
+    /* la forêt de sapins, au pied, et la brume */
+    for(let x=0;x<WW;x+=1.5){const h=6+hs(x*2.1)*6;g.fillStyle=soir?'#2a2438':'#1f3a2e';g.beginPath();g.moveTo(x-1.8,MONT);g.lineTo(x,MONT-h);g.lineTo(x+1.8,MONT);g.fill();
+      F(x-0.5,MONT-h+1,1,0.5,soir?'#d8b0c0':'#e8f0f4');}
+    const brume=g.createLinearGradient(0,MONT-14,0,MONT);brume.addColorStop(0,'rgba(255,255,255,0)');brume.addColorStop(1,soir?'rgba(250,210,200,.35)':'rgba(255,255,255,.45)');
+    g.fillStyle=brume;g.fillRect(0,MONT-14,WW,14);
+  }else{
+    /* L'AFFICHE : aplats, un grand sommet emblématique, le soleil, trois plans nets */
+    g.fillStyle='#f4e4c0';g.fillRect(0,0,WW,MONT);
+    g.fillStyle='#f0b050';g.beginPath();g.arc(WW*0.22,30,13,0,7);g.fill();g.fillStyle='#f4c870';g.beginPath();g.arc(WW*0.22,30,9,0,7);g.fill();
+    const plan=(pts,col,neige)=>{g.fillStyle=col;g.beginPath();g.moveTo(0,MONT);pts.forEach(([x,y])=>g.lineTo(x,y));g.lineTo(WW,MONT);g.closePath();g.fill();
+      if(neige)neige.forEach(([x,y,w])=>{g.fillStyle='#ffffff';g.beginPath();g.moveTo(x,y);g.lineTo(x-w,y+w*1.2);g.lineTo(x-w*0.4,y+w*0.9);g.lineTo(x,y+w*1.4);g.lineTo(x+w*0.5,y+w*0.8);g.lineTo(x+w,y+w*1.1);g.closePath();g.fill();});};
+    plan([[0,62],[50,44],[90,58],[140,36],[190,52],[230,40],[290,56],[330,42],[360,50]],'#7fa4c8',[[140,36,10],[230,40,8],[330,42,7],[50,44,7]]);
+    plan([[0,80],[40,70],[80,76],[200,12],[226,40],[250,56],[300,70],[360,66]],'#3f6a9a',[[200,12,16]]);
+    g.fillStyle='#2f5580';g.beginPath();g.moveTo(200,12);g.lineTo(226,40);g.lineTo(250,56);g.lineTo(300,70);g.lineTo(300,110);g.lineTo(210,110);g.closePath();g.fill();   /* le versant à l'ombre */
+    plan([[0,98],[60,88],[120,94],[180,86],[240,92],[300,84],[360,92]],'#244a3a');
+    for(let x=0;x<WW;x+=3){g.fillStyle='#1a3a2e';g.beginPath();g.moveTo(x-2,MONT);g.lineTo(x,MONT-5-hs(x)*4);g.lineTo(x+2,MONT);g.fill();}
+  }
+}
 function solVide(){
   const {c,g,F}=mk(WW,WH);
   const neige=(y0,y1)=>{for(let y=y0;y<y1;y+=0.5)for(let x=0;x<WW;x+=0.5){const r=Math.sin(x/47+y/61)*0.6+Math.sin(x/19-y/27)*0.25+Math.sin((x-y)/83)*0.5;
@@ -417,12 +479,7 @@ function solVide(){
       let col=r<-0.55?(t<0.5?'#e4ecf4':'#dde7f0'):(r>0.55?(t<0.5?'#ffffff':'#fbfdfe'):(t<0.33?'#f3f7fa':(t<0.66?'#f6f9fb':'#f9fbfd')));if(t>0.992)col='#ffffff';F(x,y,0.5,0.5,col);}
     for(let k=0;k<(y1-y0)*1.4;k++){const x=hs(k*3.7+y0)*WW, y=y0+hs(k*5.3+y0)*(y1-y0);F(x,y,0.5,0.5,'#ffffff');if(k%11===0){F(x-1,y,2.5,0.5,'#ffffff');F(x,y-1,0.5,2.5,'#ffffff');}}};
   /* 1 · LE FOND DE MONTAGNES */
-  const ciel=g.createLinearGradient(0,0,0,MONT);ciel.addColorStop(0,'#8fb4d8');ciel.addColorStop(1,'#d8e6f2');g.fillStyle=ciel;g.fillRect(0,0,WW,MONT);
-  const chaine=(base,amp,freq,gr,col,nh)=>{for(let x=0;x<WW;x+=0.5){const h=amp*(0.55+0.45*Math.abs(Math.sin(x/freq+gr))*Math.abs(Math.cos(x/(freq*0.37)+gr*2)));const top=base-h;
-      F(x,top,0.5,base-top+2,col);F(x,top,0.5,Math.min(nh*(h/amp),base-top),'#f4f8fb');
-      if(Math.sin(x/(freq*0.37)+gr*2)>0)F(x,top+nh*(h/amp)*0.5,0.5,nh*(h/amp)*0.5,'#d4e0ec');}};
-  chaine(78,58,29,1.3,'#9aaec4',18);chaine(98,50,19,4.1,'#6f86a0',15);
-  for(let x=0;x<WW;x+=0.5){const h=7+Math.sin(x/3)*2+hs(Math.round(x*2))*3;F(x,MONT-h,0.5,h,x%2<1?'#2c4a3a':'#243f32');F(x,MONT-h,0.5,1,'#e8f0f4');}
+  fondMontagnes(g,F);
   /* 2 · LA NEIGE, en haut et en bas */
   neige(MONT,ESC_Y+1);neige(BAS_Y-1,WH);
   /* LA COUR DES BOUTIQUES, en planches, et le passage qui descend jusqu'à l'escalier */
@@ -781,5 +838,5 @@ const zoneInterdite=(x,y)=>{
   if(x>TPH.x-62&&x<TPH.x+60&&y>TPH.y-72&&y<TPH.y-10)return true;                                   /* l'enclos de la gare */
   return false;};
 const dansNeige=(x,y)=>{if(y>ESC_Y-2&&y<BAS_Y+2)return false;if(x>PLACE.x-3&&x<PLACE.x+PLACE.w+3&&y>PLACE.y-3&&y<PLACE.y+PLACE.h+3)return false;return y>MONT;};
-return {WW,WH,dessinerPlace,barriere:(b)=>{BARRIERE=b;},zoneInterdite,dansNeige,dessinerTelepherique,objets:objetsVides,solFin,LIFT_X,GARE_Y,CABLE_H,ECART,ARRIVEE:[180,488],METRO:[180,472],NEIGE_Y,texture:(t)=>{TEXTURE_NEIGE=t;}};
+return {WW,WH,fond:(f)=>{FOND=f;},dessinerPlace,barriere:(b)=>{BARRIERE=b;},zoneInterdite,dansNeige,dessinerTelepherique,objets:objetsVides,solFin,LIFT_X,GARE_Y,CABLE_H,ECART,ARRIVEE:[180,488],METRO:[180,472],NEIGE_Y,texture:(t)=>{TEXTURE_NEIGE=t;}};
 })()
