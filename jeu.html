@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1155';
+  var MA_VERSION='2026-09-20-1200';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -19086,67 +19086,116 @@ function ouvrirLEchoppe(){
 /* ================= LE SKI SHOP : cinq rayons, on essaie sur soi, on achète, on porte =================
    Même meuble que l'échoppe (étagères, fiche, bulle du vendeur). Chaque vignette montre TON
    personnage avec la pièce : c'est l'essayage. Les achats passent par le serveur. */
-let ETOILES_VENDUES=0, RAYON_SKI='corps';
+/* LE CATALOGUE « COLLECTION HIVER » : papier blanc, bleu nuit, une cabine d'essayage où ton
+   personnage tourne sur lui-même avec la pièce, et des fiches produits par famille, avec
+   leurs pastilles de couleur. */
+const CSS_SKI=`
+.skiCat{position:absolute;inset:0;background:linear-gradient(#f7f9fb,#e9eff5);color:#1d2c44;font-family:Georgia,serif;display:flex;flex-direction:column;overflow:hidden}
+.skiCat .tete{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 8px;background:#12356a;color:#fff}
+.skiCat .tete .logo{width:34px;height:34px;border-radius:50%;background:#fff;color:#12356a;display:grid;place-items:center;font-size:20px}
+.skiCat .tete b{display:block;font:700 17px Georgia;letter-spacing:3px}.skiCat .tete small{display:block;font:italic 12px Georgia;opacity:.8}
+.skiCat .tete .bourse{margin-left:auto;text-align:right;font:12px Georgia}.skiCat .tete .bourse b{font:700 15px Georgia;letter-spacing:0;color:#ffd87a}
+.skiCat .cabine{display:flex;gap:12px;padding:10px 14px;background:#fff;border-bottom:1px solid #d8e2ec;align-items:center}
+.skiCat .cabine canvas{width:96px;height:120px;border-radius:12px;background:linear-gradient(#dfeaf5,#f7fafc 70%,#e4ecf4);flex:none}
+.skiCat .cabine .inf{flex:1;min-width:0}.skiCat .cabine .inf .cat{font:600 10px ui-monospace,monospace;letter-spacing:2px;color:#6a7c94}
+.skiCat .cabine .inf h3{margin:3px 0 2px;font:700 17px Georgia;line-height:1.15}.skiCat .cabine .inf .prix{font:700 20px Georgia;color:#b8392c}
+.skiCat .cabine .inf .etat{font:italic 12px Georgia;color:#6a7c94;margin:2px 0 6px}
+.skiCat .cabine .coll{display:inline-block;background:linear-gradient(90deg,#b8902a,#e8c870,#b8902a);color:#2a1c04;font:700 10px ui-monospace,monospace;letter-spacing:1px;padding:3px 7px;border-radius:5px;margin-bottom:3px}
+.skiCat .btn{border:0;border-radius:22px;padding:10px 16px;font:700 14px Georgia;background:#12356a;color:#fff;width:100%}
+.skiCat .btn.pas{background:#b8c4d2;color:#fff}.skiCat .btn.enl{background:#fff;color:#12356a;border:2px solid #12356a}
+.skiCat .puces{display:flex;gap:6px;overflow-x:auto;padding:9px 12px;flex:none;scrollbar-width:none}
+.skiCat .puces button{flex:none;border:1px solid #c8d4e2;background:#fff;color:#1d2c44;border-radius:18px;padding:7px 13px;font:14px Georgia}
+.skiCat .puces button.on{background:#12356a;border-color:#12356a;color:#fff}
+.skiCat .grille{flex:1;overflow-y:auto;padding:4px 12px 90px;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start}
+.skiCat .carte{background:#fff;border-radius:14px;box-shadow:0 2px 8px rgba(18,53,106,.08);padding:8px;position:relative;border:2px solid transparent}
+.skiCat .carte.on{border-color:#12356a}.skiCat .carte.or{background:linear-gradient(#fffaf0,#fff);border-color:#d8b050}
+.skiCat .carte canvas{width:100%;height:110px;border-radius:10px;background:radial-gradient(ellipse at 50% 85%,#e3ebf3,#f7fafc 70%)}
+.skiCat .carte .n{font:700 13px Georgia;margin-top:4px;line-height:1.2}.skiCat .carte .p{font:700 14px Georgia;color:#b8392c;margin-top:2px}
+.skiCat .carte .badge{position:absolute;top:10px;left:10px;font:700 9px ui-monospace,monospace;letter-spacing:1px;padding:2px 6px;border-radius:4px;background:#12356a;color:#fff}
+.skiCat .carte .badge.a{background:#3f9e7a}.skiCat .carte .badge.or{background:#b8902a}
+.skiCat .pastilles{display:flex;gap:5px;margin-top:5px}.skiCat .pastilles i{width:15px;height:15px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #c8d4e2}
+.skiCat .pastilles i.on{box-shadow:0 0 0 2px #12356a}
+.skiCat .bulle{position:absolute;left:14px;right:14px;bottom:70px;background:#12356a;color:#fff;border-radius:12px;padding:10px 12px;font:italic 14px Georgia;opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none}
+.skiCat .bulle.on{opacity:1;transform:none}
+.skiCat .fermer{position:absolute;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);border:0;border-radius:22px;padding:12px;background:#fff;color:#12356a;font:700 15px Georgia;box-shadow:0 4px 14px rgba(18,53,106,.18)}`;
+let ETOILES_VENDUES=0, RAYON_SKI='corps', CAT_SEL=null, CAB_T=null;
 const RAYONS_SKI=[['corps','Combis & doudounes'],['bonnet','Bonnets'],['masque','Masques'],['echarpe','Écharpes'],['gants','Gants']];
 const SEL_SKI={};
+const familleSki=(x)=>x.slot==='masque'?x.id:x.id.replace(/_(r|b|v|rouge|bleu|bleue|vert|jaune|noir|noire|blanche)$/,'');   /* les masques sont des modèles différents */
+const couleurSki=(x)=>x.v||x.g||(x.b&&x.b[0])||(x.e&&x.e[0])||(x.k&&x.k[1])||'#888';
+const nomFamille=(x)=>x.nom.replace(/ (rouges?|bleus?|bleues?|verts?|vertes?|jaunes?|noirs?|noires?|blanches?)$/i,'');
 function ouvrirLeSkiShop(){
-  $('page2Fond').className='sacFond echB';
+  if(!document.getElementById('cssSki')){const st=document.createElement('style');st.id='cssSki';st.textContent=CSS_SKI;document.head.appendChild(st);}
+  $('page2Fond').className='skiCat';
   $('page2Fond').innerHTML=
-   '<div class="echChaines"><i></i><i></i></div>'+
-   '<div class="echEnseigne"><canvas id="echMarchand"></canvas><span><b>SKI SHOP</b><small>« Essaie tout ce que tu veux, ça ne coûte rien. »</small></span></div>'+
-   '<div class="echBourse">Dans ta bourse : <b id="echArgent">—</b></div>'+
-   '<div class="echOnglets">'+RAYONS_SKI.map(([k,n])=>'<button class="echRay" data-sray="'+k+'">'+n+'</button>').join('')+'</div>'+
-   '<div id="echCorps"></div><div id="echBulle"></div>'+
-   '<button class="echFermer" id="ech-fermer">Refermer</button>';
-  $('ech-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+   '<div class="tete"><div class="logo">❄</div><div><b>SKI SHOP</b><small>Saumaski · Collection Hiver</small></div><div class="bourse">Ta bourse<br><b id="skiArgent">—</b></div></div>'+
+   '<div class="cabine"><canvas id="skiCabine"></canvas><div class="inf" id="skiFiche"></div></div>'+
+   '<div class="puces">'+RAYONS_SKI.map(([k,n])=>'<button data-sray="'+k+'">'+n+'</button>').join('')+'</div>'+
+   '<div class="grille" id="skiGrille"></div><div class="bulle" id="skiBulle"></div>'+
+   '<button class="fermer" id="ski-fermer">Refermer le catalogue</button>';
+  $('ski-fermer').onclick=()=>{fermeA=Date.now();clearInterval(CAB_T);$('page2').classList.remove('on');};
   $('page2').classList.add('on');
-  /* le vendeur : combinaison bleue, bonnet jacquard, masque relevé */
-  const c=$('echMarchand');if(c){const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));c.width=56*D;c.height=70*D;
-    const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;const av=GESTE;GESTE={t:0};
-    sprite(g,28,62,Object.assign({},DEF_AP,{cheveux:1,peau:3,barbe:3,ski:{corps:'combi_bleue',bonnet:'bonnet_jacquard',masque:'masque_bleu',gants:'gants_tech'}}),'bas',0,false);GESTE=av;}
   lireMesCosmetiques().then(()=>skiMaj()).catch(()=>{});
   skiMaj();
+  /* la cabine d'essayage : ton personnage tourne sur lui-même */
+  clearInterval(CAB_T);let k=0;const dirs=['bas','bas-droite','droite','haut-droite','haut','haut-gauche','gauche','bas-gauche'];
+  CAB_T=setInterval(()=>{if(!$('page2').classList.contains('on')){clearInterval(CAB_T);return;}k=(k+1)%8;dessinerCabine(dirs[k]);},700);
 }
+function skiBulle(t){const b=$('skiBulle');if(!b)return;b.textContent=t;b.classList.add('on');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),2600);}
 function apAvec(slot,id){const ap=Object.assign({},e.ap||DEF_AP);ap.ski=Object.assign({},(e.ap&&e.ap.ski)||{});if(id)ap.ski[slot]=id;else delete ap.ski[slot];return ap;}
+function dessinerCabine(dir){const cv=$('skiCabine');if(!cv||!CAT_SEL)return;const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+  const L0=40,H0=50,E=((cv.clientWidth||96)/L0)*D;cv.width=L0*E;cv.height=H0*E;const g=cv.getContext('2d');g.setTransform(E,0,0,E,0,0);g.imageSmoothingEnabled=false;
+  g.fillStyle='rgba(18,53,106,.14)';g.beginPath();g.ellipse(L0/2,H0-5,10,3,0,0,7);g.fill();
+  const av=GESTE;GESTE={t:0};sprite(g,L0/2,H0-5,apAvec(CAT_SEL.slot,CAT_SEL.id),dir||'bas',0,false);GESTE=av;}
 function skiMaj(){
-  const c=$('echCorps');if(!c)return;e.cos=e.cos||{};
-  $('echArgent').textContent=enEuros(e.euros||0);
-  document.querySelectorAll('[data-sray]').forEach(b=>{b.classList.toggle('on',b.dataset.sray===RAYON_SKI);b.onclick=()=>{RAYON_SKI=b.dataset.sray;skiMaj();};});
-  const L=SKI.filter(x=>x.slot===RAYON_SKI).sort((a,b)=>a.prix-b.prix);
+  const G=$('skiGrille');if(!G)return;e.cos=e.cos||{};
+  $('skiArgent').textContent=enEuros(e.euros||0);
+  document.querySelectorAll('[data-sray]').forEach(b=>{b.classList.toggle('on',b.dataset.sray===RAYON_SKI);b.onclick=()=>{RAYON_SKI=b.dataset.sray;CAT_SEL=null;skiMaj();};});
+  const L=SKI.filter(x=>x.slot===RAYON_SKI);
   const porte=(e.ap&&e.ap.ski&&e.ap.ski[RAYON_SKI])||null;
-  const sel=L.find(x=>x.id===SEL_SKI[RAYON_SKI])||L.find(x=>x.id===porte)||L[0];SEL_SKI[RAYON_SKI]=sel.id;
-  c.innerHTML=etagere(L.map(x=>{const a=!!e.cos[x.id], mis=porte===x.id;
-    return {id:x.id,vign:true,nom:x.nom.replace(/^(Combinaison|Doudoune|Bonnet|Masque de ski,|Masque|Écharpe|Grande écharpe|Gants|Moufles) ?/,'').replace(/[«»]/g,'').trim()||x.nom,choisi:x.id===sel.id,
-      etiq:mis?'PORTÉ':(a?'À TOI':enEuros(x.prix).replace(',00','')),etiqClasse:mis?'porte':(a?'atoi':'')};}));
-  const a=!!e.cos[sel.id], mis=porte===sel.id, peut=(e.euros||0)>=sel.prix;
-  const reste=sel.collector?Math.max(0,sel.collector-ETOILES_VENDUES):null, epuise=sel.collector&&!a&&reste<=0;
-  c.innerHTML+='<div class="echFiche">'+(sel.collector?'<span class="echRare" style="background:#b8902a">COLLECTOR · '+(epuise?'ÉPUISÉE':reste+' SUR '+sel.collector+' ENCORE EN VENTE')+'</span>':'')+
-    '<b>'+sel.nom+'</b><p>« '+(a?'Elle est à toi. Les autres te verront avec.':'Regarde : c\u2019est toi, avec. Les autres la verront sur toi.')+' »</p>'+
-    '<button id="echAcheter" class="'+(a?'':(peut&&!epuise?'':'pas'))+'">'+(a?(mis?'L’enlever':'La porter'):(epuise?'Épuisée':(peut?'Acheter · '+enEuros(sel.prix):'Il te manque '+enEuros(sel.prix-(e.euros||0)))))+'</button></div>';
-  /* l'essayage : chaque vignette, c'est toi avec la pièce */
-  c.querySelectorAll('canvas[data-vue]').forEach(cv2=>{const id=cv2.dataset.vue;vignetteSki(cv2,apAvec(RAYON_SKI,id));});
-  c.querySelectorAll('[data-sel]').forEach(b=>b.onclick=()=>{SEL_SKI[RAYON_SKI]=b.dataset.sel;skiMaj();vibrer(8);});
-  $('echAcheter').onclick=async()=>{
+  if(!CAT_SEL||CAT_SEL.slot!==RAYON_SKI)CAT_SEL=L.find(x=>x.id===SEL_SKI[RAYON_SKI])||L.find(x=>x.id===porte)||L[0];SEL_SKI[RAYON_SKI]=CAT_SEL.id;
+  /* les familles : une fiche par modèle, ses couleurs en pastilles */
+  const fam=[];L.forEach(x=>{const f=familleSki(x);let F=fam.find(y=>y.f===f);if(!F){F={f,v:[]};fam.push(F);}F.v.push(x);});
+  fam.sort((a,b)=>a.v[0].prix-b.v[0].prix);
+  G.innerHTML=fam.map((F,i)=>{const x=F.v.find(y=>y.id===CAT_SEL.id)||F.v.find(y=>y.id===porte)||F.v[0];
+    const a=!!e.cos[x.id], mis=porte===x.id;
+    const badge=x.collector?'<span class="badge or">COLLECTOR</span>':(mis?'<span class="badge">PORTÉ</span>':(a?'<span class="badge a">À TOI</span>':''));
+    return '<div class="carte'+(F.v.some(y=>y.id===CAT_SEL.id)?' on':'')+(x.collector?' or':'')+'" data-fam="'+i+'" data-id="'+x.id+'">'+badge+'<canvas data-vue="'+x.id+'"></canvas>'+
+      '<div class="n">'+(F.v.length>1?nomFamille(x):x.nom)+'</div><div class="p">'+enEuros(x.prix).replace(',00','')+'</div>'+
+      (F.v.length>1?'<div class="pastilles">'+F.v.map(y=>'<i data-var="'+y.id+'" class="'+(y.id===x.id?'on':'')+'" style="background:'+couleurSki(y)+'"></i>').join('')+'</div>':'')+'</div>';}).join('');
+  G.querySelectorAll('canvas[data-vue]').forEach(cv2=>vignetteSki(cv2,apAvec(RAYON_SKI,cv2.dataset.vue)));
+  G.querySelectorAll('.carte').forEach(c=>c.onclick=(ev)=>{const v=ev.target.dataset&&ev.target.dataset.var;CAT_SEL=SKI_PAR_ID[v||c.dataset.id];SEL_SKI[RAYON_SKI]=CAT_SEL.id;vibrer(8);skiMaj();});
+  /* la fiche de la cabine */
+  const x=CAT_SEL, a=!!e.cos[x.id], mis=porte===x.id, peut=(e.euros||0)>=x.prix;
+  const reste=x.collector?Math.max(0,x.collector-ETOILES_VENDUES):null, epuise=x.collector&&!a&&reste<=0;
+  $('skiFiche').innerHTML=(x.collector?'<span class="coll">'+(epuise?'ÉPUISÉE':'COLLECTOR · '+reste+' / '+x.collector+' EN VENTE')+'</span>':'<div class="cat">'+(RAYONS_SKI.find(r=>r[0]===RAYON_SKI)[1]).toUpperCase()+'</div>')+
+    '<h3>'+x.nom+'</h3><div class="prix">'+enEuros(x.prix)+'</div><div class="etat">'+(mis?'Tu la portes.':(a?'Elle est à toi.':'Essaie-la : c’est toi, dans la cabine.'))+'</div>'+
+    '<button id="skiAchat" class="btn'+(a?(mis?' enl':''):(peut&&!epuise?'':' pas'))+'">'+(a?(mis?'L’enlever':'La porter'):(epuise?'Épuisée':(peut?'Acheter':'Il te manque '+enEuros(x.prix-(e.euros||0)))))+'</button>';
+  dessinerCabine('bas');
+  $('skiAchat').onclick=async()=>{
     if(!a){
-      if(epuise){echBulle('Les dix sont parties. Il fallait être là.');return;}
-      if(!peut){echBulle('Il te manque '+enEuros(sel.prix-(e.euros||0)));return;}
-      const d=await appelRPC('acheter_cosmetique',{p_joueur:e.id,p_piece:sel.id});
-      if(!d||d.erreur){echBulle(d&&d.erreur==='epuisee'?'Les dix sont parties. Il fallait être là.':(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':'Le vendeur n’a pas pu'));
-        if(d&&typeof d.euros==='number')e.euros=d.euros;if(d&&d.erreur==='epuisee')ETOILES_VENDUES=sel.collector;skiMaj();return;}
+      if(epuise){skiBulle('Les dix sont parties. Il fallait être là.');return;}
+      if(!peut){skiBulle('Il te manque '+enEuros(x.prix-(e.euros||0)));return;}
+      const d=await appelRPC('acheter_cosmetique',{p_joueur:e.id,p_piece:x.id});
+      if(!d||d.erreur){skiBulle(d&&d.erreur==='epuisee'?'Les dix sont parties. Il fallait être là.':(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':'Le vendeur n’a pas pu'));
+        if(d&&typeof d.euros==='number')e.euros=d.euros;if(d&&d.erreur==='epuisee')ETOILES_VENDUES=x.collector;skiMaj();return;}
       if(typeof d.euros==='number')e.euros=d.euros;
-      e.cos[sel.id]=true;e.ap=apAvec(RAYON_SKI,sel.id);
-      if(sel.collector&&d.numero){ETOILES_VENDUES=d.numero;echBulle('Exemplaire n° '+d.numero+' sur '+sel.collector+'. Elle est à toi.');}
-      else echBulle(sel.nom+' · les autres te verront avec');
-    }else e.ap=apAvec(RAYON_SKI,mis?null:sel.id);
+      e.cos[x.id]=true;e.ap=apAvec(RAYON_SKI,x.id);
+      if(x.collector&&d.numero){ETOILES_VENDUES=d.numero;skiBulle('Exemplaire n° '+d.numero+' sur '+x.collector+'. Elle est à toi.');}
+      else skiBulle(x.nom+' · les autres te verront avec');
+    }else e.ap=apAvec(RAYON_SKI,mis?null:x.id);
     sauver();envoyerSauvegarde(true);monterEnLigne(true);vibrer(20);skiMaj();
   };
 }
 function vignetteSki(cv2,ap){
+  /* le cadrage suit le rayon : en pied pour les combis et les gants, en buste pour la tête et le cou */
   const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
-  const larg=cv2.clientWidth||90, L0=30, H0=60, E=(larg/L0)*D;
+  const buste=RAYON_SKI==='bonnet'||RAYON_SKI==='masque'||RAYON_SKI==='echarpe';
+  const L0=buste?30:52, H0=buste?27:47, E=((cv2.clientWidth||140)/L0)*D;
   cv2.width=L0*E;cv2.height=H0*E;const g=cv2.getContext('2d');g.setTransform(E,0,0,E,0,0);g.imageSmoothingEnabled=false;
-  const av=GESTE;GESTE={t:0};g.fillStyle='rgba(60,90,130,.18)';g.beginPath();g.ellipse(L0/2,H0-5,8,3,0,0,7);g.fill();
-  sprite(g,L0/2,H0-5,ap,'bas',0,false);GESTE=av;
+  const av=GESTE;GESTE={t:0};
+  if(!buste){g.fillStyle='rgba(18,53,106,.12)';g.beginPath();g.ellipse(L0/2,H0-3,9,2.5,0,0,7);g.fill();}
+  sprite(g,L0/2,buste?H0+21:H0-3,ap,'bas',0,false);GESTE=av;
 }
 /* une étagère : les objets posés, leur étiquette, et la planche dessous */
 function etagere(objets){
