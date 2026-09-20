@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1818';
+  var MA_VERSION='2026-09-20-1829';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -20061,68 +20061,166 @@ let COURRIER_N=0;
 async function lireLeCourrier(){if(!e.id)return;try{const d=await appelRPC('poste_boite',{p_joueur:e.id});if(d&&d.lettres)COURRIER_N=d.lettres.length;}catch(x){}}
 setTimeout(()=>lireLeCourrier(),3000);setInterval(()=>lireLeCourrier(),180000);
 const NOM_OBJ=(k)=>{try{const o=OBJETS&&OBJETS[k];if(o&&o.nom)return o.nom;}catch(x){}return k;};
-function ouvrirLeFumoir(){cssQuai();$('page2Fond').className='quai fu';$('page2').classList.add('on');
-  let F=null, sel=null, qte=1;
+/* ---- LE FUMOIR, refait : on est DANS le fumoir. Briques noircies, braises au sol, les fournées
+   pendues à leurs crochets, la fumée qui monte, et le poisson dessiné en vrai (celui du carnet). ---- */
+const CSS_FUMOIR=`.fum{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;color:#f6e6c8;font-family:Georgia,serif;
+  background:linear-gradient(#20150e,#3a2317 60%,#4a2c1a)}
+.fum .briques{position:absolute;inset:0;opacity:.5;background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.35) 0 1px,transparent 1px 13px),repeating-linear-gradient(90deg,rgba(0,0,0,.3) 0 1px,transparent 1px 26px);background-position:0 0,0 0}
+.fum .braises{position:absolute;left:0;right:0;bottom:0;height:120px;background:radial-gradient(ellipse at 50% 120%,rgba(255,140,40,.55),rgba(255,90,20,.12) 55%,transparent 75%);pointer-events:none;animation:brz 3.5s ease-in-out infinite}
+@keyframes brz{0%,100%{opacity:.75}50%{opacity:1}}
+.fum .hd{position:relative;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 6px;display:flex;align-items:center;gap:10px}
+.fum .hd .fl{font-size:26px;filter:drop-shadow(0 0 8px #ff8a30)}
+.fum .hd b{display:block;font:700 17px Georgia;letter-spacing:3px;color:#f0c88a}.fum .hd small{font:italic 12px Georgia;color:#c8a882}
+.fum .hd .bs{margin-left:auto;text-align:right;font:11px Georgia;color:#c8a882}.fum .hd .bs b{font-size:15px;letter-spacing:0;color:#f6e6c8}
+.fum .corps{position:relative;flex:1;overflow-y:auto;padding:4px 14px 96px}
+.fum .barre{display:flex;align-items:center;gap:8px;font:700 10px ui-monospace,monospace;letter-spacing:2px;color:#c08a4a;margin:8px 2px 6px}
+.fum .barre:before,.fum .barre:after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,#7a4a24,transparent)}
+.fum .crochets{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px}
+.fum .four{flex:none;width:118px;border-radius:0 0 12px 12px;background:linear-gradient(#5a3620,#3f2415);border:1px solid #6b431f;position:relative;padding:22px 8px 10px;text-align:center;box-shadow:0 6px 14px rgba(0,0,0,.45)}
+.fum .four:before{content:'';position:absolute;left:50%;top:-10px;width:26px;height:16px;margin-left:-13px;border:2px solid #9a8a72;border-bottom:0;border-radius:13px 13px 0 0}
+.fum .four canvas{width:96px;height:38px;display:block;margin:0 auto}
+.fum .four b{display:block;font:700 13px Georgia;color:#f6e6c8;margin-top:2px}
+.fum .four .j{height:8px;border-radius:4px;background:rgba(0,0,0,.45);overflow:hidden;margin:6px 0 4px}.fum .four .j i{display:block;height:100%;background:linear-gradient(90deg,#c0651c,#f0a830)}
+.fum .four small{font:italic 11px Georgia;color:#c8a882}
+.fum .four button{width:100%;margin-top:6px;border:0;border-radius:10px;padding:8px;background:linear-gradient(#f0a830,#c0651c);color:#2a1508;font:700 13px Georgia;box-shadow:0 3px 0 #7a3a10}
+.fum .four.pret{border-color:#f0a830;box-shadow:0 0 14px rgba(240,168,48,.45)}
+.fum .vide{font:italic 14px Georgia;color:#c8a882;text-align:center;padding:10px}
+.fum .etal{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.fum .pois{background:rgba(255,235,200,.06);border:1px solid #6b431f;border-radius:12px;padding:8px 4px 6px;text-align:center}
+.fum .pois.on{border-color:#f0a830;background:rgba(240,168,48,.14);box-shadow:0 0 12px rgba(240,168,48,.3)}
+.fum .pois canvas{width:84px;height:30px;display:block;margin:0 auto}
+.fum .pois b{display:block;font:700 12px Georgia}.fum .pois i{font:italic 11px Georgia;color:#c8a882;font-style:normal}
+.fum .doseur{display:flex;align-items:center;gap:10px;margin:10px 0 6px}
+.fum .doseur button{width:46px;height:46px;border:0;border-radius:50%;background:#6b431f;color:#f6e6c8;font:900 22px Georgia;box-shadow:0 3px 0 #3f2415}
+.fum .doseur .n{flex:1;text-align:center;font:900 28px Georgia;color:#f0c88a}
+.fum .devis{background:rgba(0,0,0,.28);border-radius:12px;padding:10px 12px;font:14px Georgia;line-height:1.5}
+.fum .devis b{color:#f0a830}.fum .devis s{color:#a88a6a}
+.fum .go{width:100%;margin-top:10px;border:0;border-radius:22px;padding:14px;background:linear-gradient(#f0a830,#c0651c);color:#2a1508;font:900 16px Georgia;letter-spacing:1px;box-shadow:0 5px 0 #7a3a10}
+.fum .go.pas{background:#5a4436;color:#9a8a72;box-shadow:0 4px 0 #3a2a20}
+.fum .sortir{position:absolute;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);border:2px solid #c0651c;border-radius:22px;padding:12px;background:rgba(32,21,14,.9);color:#f0c88a;font:700 15px Georgia}
+.fum .bulle{position:absolute;left:14px;right:14px;bottom:76px;background:#2a1508;border:1px solid #c0651c;color:#f0c88a;border-radius:12px;padding:10px 12px;font:italic 14px Georgia;opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none}
+.fum .bulle.on{opacity:1;transform:none}`;
+function vignettePoisson(cv2,esp){const D=Math.max(1,Math.min(2,devicePixelRatio||1));const L=cv2.clientWidth||84, H=cv2.clientHeight||30;
+  cv2.width=L*D;cv2.height=H*D;const g=cv2.getContext('2d');const F=FORMES_POISSON[esp]||FORMES_POISSON.sardine;
+  const E=Math.min(L/(F.L+6),H/(F.H+8))*D;g.setTransform(E,0,0,E,(L*D)/2,(H*D)/2+ (F.H||4)/2);g.imageSmoothingEnabled=false;
+  try{dessinerPoisson(g,0,0,esp,1,0,false);}catch(x){}}
+function ouvrirLeFumoir(){
+  if(!document.getElementById('cssFumoir')){const st=document.createElement('style');st.id='cssFumoir';st.textContent=CSS_FUMOIR;document.head.appendChild(st);}
+  $('page2Fond').className='fum';$('page2').classList.add('on');
+  let F=null, sel=null, qte=1, minuteur=null;
   const rendre=async()=>{
     if(!F)F=await appelRPC('fumoir_etat',{p_joueur:e.id})||{fournees:[]};
     if(typeof F.euros==='number'){e.euros=F.euros;majHaut();}
     const poissons=Object.entries(e.sac||{}).filter(([k,v])=>v>0&&PRIX_POISSON[k]).sort((a,b)=>PRIX_POISSON[b[0]]-PRIX_POISSON[a[0]]);
     if(!sel||!poissons.some(([k])=>k===sel))sel=poissons.length?poissons[0][0]:null;
     const max=sel?Math.min(30,e.sac[sel]||0):0;qte=Math.max(1,Math.min(qte,max||1));
-    const n=Date.now();
-    $('page2Fond').innerHTML='<div class="hd"><div class="lg">🔥</div><div><b>LE FUMOIR DU QUAI</b><small>« Le temps fait le goût. » — Riton, fumeur depuis 1974</small></div><div class="bs">ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div><div class="corps">'+
-      (F.fournees&&F.fournees.length?'<div class="bloc" style="display:block"><h4>DANS LE FUMOIR</h4>'+F.fournees.map(f=>{const reste=Math.max(0,new Date(f.pret_a).getTime()-n);
-        return '<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><b style="flex:1">'+f.qte+' × '+NOM_OBJ(f.poisson)+'</b>'+
-          (reste>0?'<span class="pt">prêt dans '+Math.ceil(reste/60000)+' min</span>':'<button class="act" data-pret="'+f.id+'">Retirer '+enEuros(f.valeur).replace(',00','')+'</button>')+'</div>';}).join('')+'</div>':'')+
-      '<div class="bloc" style="display:block"><h4>METTRE À FUMER</h4>'+
-        (poissons.length?'<select id="fuSel">'+poissons.map(([k,v])=>'<option value="'+k+'"'+(k===sel?' selected':'')+'>'+NOM_OBJ(k)+' · '+v+' dans le sac · '+enEuros(PRIX_POISSON[k]).replace(',00','')+' pièce</option>').join('')+'</select>'+
-          '<div class="rang" style="align-items:center"><button id="fuM">−</button><b style="min-width:60px;text-align:center">'+qte+'</b><button id="fuP">+</button><button id="fuMax">tout ('+max+')</button></div>'+
-          '<div class="pt">Ça vaudra <b>'+enEuros(Math.round(PRIX_POISSON[sel]*qte*2.5))+'</b> dans 30 minutes (au lieu de '+enEuros(PRIX_POISSON[sel]*qte)+' à la poissonnerie).</div>'+
-          '<button class="act" id="fuGo" style="width:100%">Mettre à fumer</button>':'<div class="pt">Tu n’as pas de poisson dans ton sac. Va pêcher, Riton t’attend !</div>')+
-      '</div><div class="pt" style="text-align:center">Quatre fournées à la fois, pas plus.</div></div><div class="bulle" id="quaiBulle"></div><button class="sortir" id="quaiSortir">Ressortir sur le quai</button>';
-    $('quaiSortir').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-    if($('fuSel'))$('fuSel').onchange=()=>{sel=$('fuSel').value;qte=1;rendre();};
+    const n=Date.now(), FS=F.fournees||[];
+    $('page2Fond').innerHTML='<div class="briques"></div><div class="braises"></div>'+
+      '<div class="hd"><div class="fl">🔥</div><div><b>LE FUMOIR</b><small>« Le temps fait le goût. » — Riton, depuis 1974</small></div><div class="bs">ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div><div class="corps">'+
+      '<div class="barre">AUX CROCHETS · '+FS.length+' / 4</div>'+
+      (FS.length?'<div class="crochets">'+FS.map(f=>{const reste=Math.max(0,new Date(f.pret_a).getTime()-n), k=Math.max(0,Math.min(1,1-reste/1800000));
+          return '<div class="four'+(reste<=0?' pret':'')+'"><canvas data-p="'+f.poisson+'"></canvas><b>'+f.qte+' × '+NOM_OBJ(f.poisson)+'</b>'+
+            '<div class="j"><i style="width:'+Math.round(k*100)+'%"></i></div>'+
+            (reste>0?'<small>prêt dans '+Math.ceil(reste/60000)+' min</small>':'<button data-pret="'+f.id+'">Retirer '+enEuros(f.valeur).replace(',00','')+'</button>')+'</div>';}).join('')+'</div>'
+        :'<div class="vide">Les crochets sont vides. Riton attend ton poisson.</div>')+
+      '<div class="barre">L’ÉTAL</div>'+
+      (poissons.length?'<div class="etal">'+poissons.slice(0,9).map(([k,v])=>'<div class="pois'+(k===sel?' on':'')+'" data-sel="'+k+'"><canvas data-p="'+k+'"></canvas><b>'+NOM_OBJ(k)+'</b><i>×'+v+' · '+enEuros(PRIX_POISSON[k]).replace(',00','')+'</i></div>').join('')+'</div>'+
+        '<div class="doseur"><button id="fuM">−</button><div class="n">'+qte+'</div><button id="fuP">+</button><button id="fuMax" style="width:auto;border-radius:22px;padding:0 14px;font:700 13px Georgia">tout</button></div>'+
+        '<div class="devis">'+qte+' × '+NOM_OBJ(sel)+' · <s>'+enEuros(PRIX_POISSON[sel]*qte)+'</s> à la poissonnerie<br>après 30 minutes de fumage : <b>'+enEuros(Math.round(PRIX_POISSON[sel]*qte*2.5))+'</b></div>'+
+        '<button class="go'+(FS.length>=4?' pas':'')+'" id="fuGo">'+(FS.length>=4?'Les quatre crochets sont pris':'Aux crochets !')+'</button>'
+        :'<div class="vide">Pas un poisson dans ton sac.<br>Va lancer ta ligne au bout des pontons.</div>')+
+      '</div><div class="bulle" id="quaiBulle"></div><button class="sortir" id="quaiSortir">Ressortir sur le quai</button>';
+    $('page2Fond').querySelectorAll('canvas[data-p]').forEach(cv2=>vignettePoisson(cv2,cv2.dataset.p));
+    $('quaiSortir').onclick=()=>{clearInterval(minuteur);fermeA=Date.now();$('page2').classList.remove('on');};
+    $('page2Fond').querySelectorAll('[data-sel]').forEach(b=>b.onclick=()=>{sel=b.dataset.sel;qte=1;vibrer(6);rendre();});
     if($('fuM'))$('fuM').onclick=()=>{qte=Math.max(1,qte-1);rendre();};
     if($('fuP'))$('fuP').onclick=()=>{qte=Math.min(max,qte+1);rendre();};
     if($('fuMax'))$('fuMax').onclick=()=>{qte=max;rendre();};
-    if($('fuGo'))$('fuGo').onclick=async()=>{const d=await appelRPC('fumoir_deposer',{p_joueur:e.id,p_poisson:sel,p_nb:qte});
-      if(!d||d.erreur){bulleQuai(d&&d.erreur==='plein'?'Quatre fournées, c’est le maximum !':'Riton n’a pas pu prendre ça.');return;}
-      if(d.sac)e.sac=d.sac;sauver();vibrer(18);F=null;rendre();bulleQuai('Au fumoir ! Reviens dans 30 minutes.');};
+    if($('fuGo'))$('fuGo').onclick=async()=>{if((F.fournees||[]).length>=4){bulleQuai('Quatre crochets, c’est le maximum !');return;}
+      const d=await appelRPC('fumoir_deposer',{p_joueur:e.id,p_poisson:sel,p_nb:qte});
+      if(!d||d.erreur){bulleQuai(d&&d.erreur==='plein'?'Quatre crochets, c’est le maximum !':'Riton n’a pas pu prendre ça.');return;}
+      if(d.sac)e.sac=d.sac;sauver();vibrer(18);jouer('pioche');F=null;qte=1;rendre();bulleQuai('Aux crochets ! Reviens dans 30 minutes.');};
     $('page2Fond').querySelectorAll('[data-pret]').forEach(b=>b.onclick=async()=>{const d=await appelRPC('fumoir_retirer',{p_joueur:e.id,p_id:+b.dataset.pret});
       if(!d||d.erreur){bulleQuai('Pas encore prêt…');return;}
       if(typeof d.euros==='number'){e.euros=d.euros;sauver();majHaut();}jouer('vente','moment');vibrer([20,40,20]);F=null;rendre();bulleQuai('Fumé à point ! +'+enEuros(d.gain));});};
+  clearInterval(minuteur);minuteur=setInterval(()=>{if(!$('page2').classList.contains('on')||!document.querySelector('.fum')){clearInterval(minuteur);return;}if(F)rendre();},20000);
   rendre();}
-function ouvrirLaPoste(){cssQuai();$('page2Fond').className='quai po';$('page2').classList.add('on');
-  let B=null, onglet='boite', objSel=null, objQte=1;
+/* ---- LA POSTE, refaite : le guichet en bois, les casiers à lettres, et les lettres en vraies
+   enveloppes cachetées à la cire. Pour écrire : une feuille de papier réglé, un timbre à coller. ---- */
+const CSS_POSTE=`.pst{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;color:#20304a;font-family:Georgia,serif;background:#e9e2d2}
+.pst .boiserie{position:absolute;left:0;right:0;top:0;height:170px;background:linear-gradient(#5a3f28,#7a5636);box-shadow:inset 0 -8px 16px rgba(0,0,0,.35)}
+.pst .casiers{position:absolute;left:0;right:0;top:64px;height:106px;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(3,1fr);gap:3px;padding:0 10px;opacity:.85}
+.pst .casiers div{background:linear-gradient(#6b4a2c,#4a3220);border-radius:2px;box-shadow:inset 0 2px 0 rgba(255,220,170,.18)}
+.pst .casiers div:after{content:'';display:block;width:40%;height:3px;margin:60% auto 0;background:#c8a868;border-radius:2px}
+.pst .hd{position:relative;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 8px;display:flex;align-items:center;gap:10px;color:#f6ecd8}
+.pst .hd .cor{font-size:24px}.pst .hd b{display:block;font:700 16px Georgia;letter-spacing:2px}.pst .hd small{font:italic 12px Georgia;opacity:.9}
+.pst .hd .bs{margin-left:auto;text-align:right;font:11px Georgia;opacity:.9}.pst .hd .bs b{font-size:15px;letter-spacing:0}
+.pst .onglets{position:relative;display:flex;gap:8px;padding:6px 14px 10px}
+.pst .onglets button{flex:1;border:0;border-radius:20px;padding:10px;font:700 14px Georgia;background:rgba(255,245,225,.25);color:#f6ecd8}
+.pst .onglets button.on{background:#f6ecd8;color:#5a3f28;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.pst .corps{position:relative;flex:1;overflow-y:auto;padding:6px 14px 96px}
+.pst .lettre{position:relative;background:linear-gradient(#fffdf6,#f2ead6);border-radius:6px;padding:14px 14px 12px;margin-bottom:12px;box-shadow:0 6px 14px rgba(40,30,20,.25);border:1px solid #d8cdb0}
+.pst .lettre:before{content:'';position:absolute;left:0;right:0;top:0;height:16px;background:repeating-linear-gradient(135deg,#c8281e 0 8px,#f6ecd8 8px 16px,#1d4f8a 16px 24px,#f6ecd8 24px 32px);opacity:.85;border-radius:6px 6px 0 0}
+.pst .lettre .de{margin-top:8px;font:700 11px ui-monospace,monospace;letter-spacing:2px;color:#8a6a3a}
+.pst .lettre .mot{font:italic 16px Georgia;line-height:1.5;margin:6px 0 8px;color:#2a2418}
+.pst .lettre .joint{display:flex;gap:8px;flex-wrap:wrap;font:13px Georgia;color:#3a4a5a}
+.pst .lettre .joint span{background:#eef3f8;border:1px solid #c8d4e0;border-radius:14px;padding:3px 10px}
+.pst .lettre .cire{position:absolute;right:12px;top:26px;width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#e86a5a,#a81e14);box-shadow:0 2px 6px rgba(0,0,0,.35);color:#fff3e0;font:900 13px Georgia;display:flex;align-items:center;justify-content:center}
+.pst .lettre button{width:100%;margin-top:10px;border:0;border-radius:18px;padding:11px;background:#1d4f8a;color:#fff;font:700 14px Georgia;box-shadow:0 3px 0 #123356}
+.pst .vide{text-align:center;font:italic 15px Georgia;color:#6a5f4a;padding:24px 10px}
+.pst .feuille{position:relative;background:#fffdf6;border-radius:4px;padding:16px 14px 14px;box-shadow:0 6px 16px rgba(40,30,20,.25);
+  background-image:repeating-linear-gradient(180deg,transparent 0 27px,rgba(70,110,160,.18) 27px 28px);border:1px solid #ddd2b8}
+.pst .feuille h4{margin:0 0 4px;font:700 10px ui-monospace,monospace;letter-spacing:2px;color:#8a6a3a}
+.pst .feuille input,.pst .feuille select,.pst .feuille textarea{width:100%;border:0;border-bottom:1px solid #c8bca0;background:transparent;padding:6px 2px;font:16px Georgia;color:#2a2418;margin-bottom:10px}
+.pst .feuille textarea{font:italic 16px Georgia;min-height:74px;resize:none;line-height:28px}
+.pst .timbre{position:absolute;right:14px;top:12px;width:52px;height:62px;background:linear-gradient(#f0c040,#e8902a);border-radius:3px;padding:4px;text-align:center;
+  box-shadow:0 2px 6px rgba(0,0,0,.25);filter:drop-shadow(0 0 0 #fff)}
+.pst .timbre:after{content:'';position:absolute;inset:-3px;border:3px dotted #e9e2d2;border-radius:6px}
+.pst .timbre b{display:block;font:900 9px Georgia;color:#7a3a10;line-height:1.1;margin-top:26px}
+.pst .timbre .anc{position:absolute;left:0;right:0;top:8px;font-size:18px;color:#7a3a10}
+.pst .go{width:100%;margin-top:12px;border:0;border-radius:22px;padding:14px;background:#c8281e;color:#fff;font:900 16px Georgia;letter-spacing:1px;box-shadow:0 5px 0 #8a1810}
+.pst .note{font:italic 12px Georgia;color:#6a5f4a;text-align:center;margin-top:8px}
+.pst .sortir{position:absolute;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);border:0;border-radius:22px;padding:12px;background:#1d4f8a;color:#fff;font:700 15px Georgia;box-shadow:0 4px 0 #123356}
+.pst .bulle{position:absolute;left:14px;right:14px;bottom:76px;background:#1d4f8a;color:#fff;border-radius:12px;padding:10px 12px;font:italic 14px Georgia;opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none}
+.pst .bulle.on{opacity:1;transform:none}`;
+function ouvrirLaPoste(){
+  if(!document.getElementById('cssPoste')){const st=document.createElement('style');st.id='cssPoste';st.textContent=CSS_POSTE;document.head.appendChild(st);}
+  $('page2Fond').className='pst';$('page2').classList.add('on');
+  let B=null, onglet='boite', brouillon={qui:'',mot:'',arg:'',obj:'',qte:''};
+  const lire=()=>{if($('poQui'))brouillon={qui:$('poQui').value,mot:$('poMot').value,arg:$('poArg').value,obj:$('poObj')?$('poObj').value:'',qte:$('poQte')?$('poQte').value:''};};
   const rendre=async()=>{
     if(!B)B=await appelRPC('poste_boite',{p_joueur:e.id})||{lettres:[]};COURRIER_N=(B.lettres||[]).length;
     const objets=Object.entries(e.sac||{}).filter(([k,v])=>v>0);
-    if(!objSel||!objets.some(([k])=>k===objSel))objSel=objets.length?objets[0][0]:null;
-    $('page2Fond').innerHTML='<div class="hd"><div class="lg">✉️</div><div><b>LA POSTE DU VIEUX-PORT</b><small>on t’écrit, même quand tu n’es pas là</small></div><div class="bs">ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div>'+
-      '<div class="corps"><div class="rang" style="margin-bottom:10px"><button class="act" data-on="boite" style="flex:1'+(onglet==='boite'?'':';opacity:.5')+'">Ma boîte ('+(B.lettres||[]).length+')</button><button class="act" data-on="ecrire" style="flex:1'+(onglet==='ecrire'?'':';opacity:.5')+'">Écrire</button></div>'+
-      (onglet==='boite'?((B.lettres||[]).length?B.lettres.map(l=>'<div class="bloc" style="display:block"><h4>DE '+echapperT(l.de).toUpperCase()+'</h4>'+
-          (l.mot?'<div style="font:italic 15px Georgia;margin-bottom:6px">« '+echapperT(l.mot)+' »</div>':'')+
-          '<div class="pt">'+(l.argent?'<b>'+enEuros(l.argent)+'</b> ':'')+(l.qte?(l.argent?' et ':'')+'<b>'+l.qte+' × '+NOM_OBJ(l.objet)+'</b>':'')+(!l.argent&&!l.qte?'Juste un mot.':'')+'</div>'+
-          '<button class="act" data-prendre="'+l.id+'" style="width:100%;margin-top:6px">Prendre</button></div>').join('')
-        :'<div class="bloc"><div class="pt">Pas de courrier aujourd’hui. Écris le premier !</div></div>')
-      :'<div class="bloc" style="display:block"><h4>À QUI ?</h4><input id="poQui" maxlength="24" placeholder="Le pseudo de ton ami">'+
-        '<h4 style="margin-top:10px">TON MOT</h4><input id="poMot" maxlength="200" placeholder="Un petit mot (200 caractères)">'+
-        '<h4 style="margin-top:10px">DE L’ARGENT ?</h4><input id="poArg" inputmode="decimal" placeholder="Montant en € (facultatif)">'+
-        '<h4 style="margin-top:10px">UN OBJET DU SAC ?</h4>'+(objets.length?'<select id="poObj"><option value="">— rien —</option>'+objets.map(([k,v])=>'<option value="'+k+'"'+(k===objSel?'':'')+'>'+NOM_OBJ(k)+' · '+v+'</option>').join('')+'</select><input id="poQte" inputmode="numeric" placeholder="Combien ?" value="'+objQte+'">':'<div class="pt">Ton sac est vide.</div>')+
-        '<button class="act" id="poGo" style="width:100%;margin-top:12px">Poster la lettre</button>'+
-        '<div class="pt" style="margin-top:6px">Dix lettres par heure · 200 € au plus par lettre · 30 objets au plus</div></div>')+
+    $('page2Fond').innerHTML='<div class="boiserie"></div><div class="casiers">'+Array.from({length:24},()=>'<div></div>').join('')+'</div>'+
+      '<div class="hd"><div class="cor">📯</div><div><b>LA POSTE DU VIEUX-PORT</b><small>on t’écrit, même quand tu n’es pas là</small></div><div class="bs">ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div>'+
+      '<div class="onglets"><button data-on="boite" class="'+(onglet==='boite'?'on':'')+'">Ma boîte'+((B.lettres||[]).length?' · '+B.lettres.length:'')+'</button><button data-on="ecrire" class="'+(onglet==='ecrire'?'on':'')+'">Écrire une lettre</button></div>'+
+      '<div class="corps">'+
+      (onglet==='boite'?((B.lettres||[]).length?B.lettres.map(l=>'<div class="lettre"><div class="cire">✦</div><div class="de">DE '+echapperT(l.de).toUpperCase()+'</div>'+
+          (l.mot?'<div class="mot">« '+echapperT(l.mot)+' »</div>':'<div class="mot" style="opacity:.6">« … »</div>')+
+          '<div class="joint">'+(l.argent?'<span>💰 '+enEuros(l.argent)+'</span>':'')+(l.qte?'<span>📦 '+l.qte+' × '+NOM_OBJ(l.objet)+'</span>':'')+(!l.argent&&!l.qte?'<span>Juste un mot</span>':'')+'</div>'+
+          '<button data-prendre="'+l.id+'">Prendre</button></div>').join('')
+        :'<div class="vide">Le casier est vide.<br>Écris le premier, tiens !</div>')
+      :'<div class="feuille"><div class="timbre"><span class="anc">⚓</span><b>VIEUX<br>PORT</b></div>'+
+        '<h4>À</h4><input id="poQui" maxlength="24" placeholder="le pseudo de ton ami" value="'+echapperT(brouillon.qui)+'">'+
+        '<h4>TON MOT</h4><textarea id="poMot" maxlength="200" placeholder="Écris ici…">'+echapperT(brouillon.mot)+'</textarea>'+
+        '<h4>TU JOINS DE L’ARGENT ?</h4><input id="poArg" inputmode="decimal" placeholder="en € (facultatif)" value="'+echapperT(brouillon.arg)+'">'+
+        '<h4>TU JOINS UN OBJET ?</h4>'+(objets.length?'<select id="poObj"><option value="">— rien —</option>'+objets.map(([k,v])=>'<option value="'+k+'"'+(brouillon.obj===k?' selected':'')+'>'+NOM_OBJ(k)+' · '+v+' dans le sac</option>').join('')+'</select>'+
+          '<input id="poQte" inputmode="numeric" placeholder="combien ?" value="'+echapperT(brouillon.qte)+'">':'<div class="note" style="text-align:left">Ton sac est vide.</div>')+
+        '<button class="go" id="poGo">Poster la lettre</button>'+
+        '<div class="note">dix lettres par heure · 200 € au plus · 30 objets au plus</div></div>')+
       '</div><div class="bulle" id="quaiBulle"></div><button class="sortir" id="quaiSortir">Ressortir sur le quai</button>';
     $('quaiSortir').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-    $('page2Fond').querySelectorAll('[data-on]').forEach(b=>b.onclick=()=>{onglet=b.dataset.on;rendre();});
+    $('page2Fond').querySelectorAll('[data-on]').forEach(b=>b.onclick=()=>{lire();onglet=b.dataset.on;rendre();});
     $('page2Fond').querySelectorAll('[data-prendre]').forEach(b=>b.onclick=async()=>{const d=await appelRPC('poste_prendre',{p_joueur:e.id,p_id:+b.dataset.prendre});
       if(!d||d.erreur){bulleQuai(d&&d.erreur==='sac plein'?'Ton sac est plein : vide-le d’abord.':'Le facteur n’a pas pu.');return;}
       if(d.sac)e.sac=d.sac;if(typeof d.euros==='number')e.euros=d.euros;sauver();majHaut();jouer('vente','moment');vibrer(18);B=null;rendre();bulleQuai(d.partiel?'Une partie seulement : ton sac est plein.':'Reçu !');});
-    if($('poGo'))$('poGo').onclick=async()=>{const qui=($('poQui').value||'').trim();if(!qui){bulleQuai('À qui écris-tu ?');return;}
-      const arg=Math.max(0,Math.round(parseFloat(String($('poArg').value||'0').replace(',','.'))*100)||0);
-      const obj=$('poObj')?$('poObj').value:'' , q=Math.max(0,parseInt($('poQte')?$('poQte').value:'0',10)||0);
-      const d=await appelRPC('poste_envoyer',{p_joueur:e.id,p_pour:qui,p_mot:$('poMot').value||'',p_objet:obj||null,p_qte:obj?q:0,p_argent:arg});
+    if($('poGo'))$('poGo').onclick=async()=>{lire();const qui=(brouillon.qui||'').trim();if(!qui){bulleQuai('À qui écris-tu ?');return;}
+      const arg=Math.max(0,Math.round(parseFloat(String(brouillon.arg||'0').replace(',','.'))*100)||0);
+      const obj=brouillon.obj, q=Math.max(0,parseInt(brouillon.qte||'0',10)||0);
+      const d=await appelRPC('poste_envoyer',{p_joueur:e.id,p_pour:qui,p_mot:brouillon.mot||'',p_objet:obj||null,p_qte:obj?q:0,p_argent:arg});
       if(!d||d.erreur){bulleQuai(d&&d.erreur==='inconnu'?'Ce pseudo n’existe pas.':(d&&d.erreur==='pas_assez'?'Tu n’as pas cette somme.':(d&&d.erreur==='trop'?'Dix lettres par heure, pas plus !':(d&&d.erreur==='toi meme'?'Écrire à soi-même ? Peuchère…':'La poste n’a pas pu.'))));return;}
-      if(d.sac)e.sac=d.sac;if(typeof d.euros==='number')e.euros=d.euros;sauver();majHaut();jouer('vente','moment');vibrer([15,40,15]);onglet='boite';B=null;rendre();bulleQuai('Lettre postée ! Elle l’attend à la poste.');};};
+      if(d.sac)e.sac=d.sac;if(typeof d.euros==='number')e.euros=d.euros;sauver();majHaut();jouer('vente','moment');vibrer([15,40,15]);
+      brouillon={qui:'',mot:'',arg:'',obj:'',qte:''};onglet='boite';B=null;rendre();bulleQuai('Lettre postée ! Elle l’attend à la poste.');};};
   rendre();}
 /* ================= LE PEIGNE D'OR : le salon de coiffure du port =================
    Même catalogue que le Ski shop, aux couleurs du salon : la cabine où ta tête tourne, deux rayons
