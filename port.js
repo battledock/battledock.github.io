@@ -1385,6 +1385,36 @@ function graverLaPiscine(){return devanture(0,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>
   for(let q=0;q<4;q++){g.beginPath();g.arc(x0+BL-8,yR+14,4.2,q*Math.PI/2+0.25,q*Math.PI/2+0.75);g.stroke();}
   if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(140,210,255,.45)');l.addColorStop(1,'rgba(140,210,255,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}
 });}
+/* LE BOWLING DU VIEUX-PORT : années 50, rose et turquoise, l'enseigne néon à la quille, les pistes dans la vitrine */
+function graverLeBowling(){return devanture(1,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+  R(x0,yR,BL,rez,'#2ab0a8');R(x0,yR,BL,1.5,'#f4f4f4');R(x0,sol-6,BL,6,'#e86aa0');for(let x=x0;x<x0+BL;x+=8)R(x,sol-6,4,6,'#f08ab8');
+  R(x0+8,yR+8,52,rez-16,nuit?'#3a2a5a':'#1a2a3a');for(let k=0;k<3;k++){const lx=x0+14+k*16;R(lx,yR+10,10,rez-20,nuit?'#d8b878':'#b89858');R(lx+4.5,yR+10,1,rez-20,'rgba(255,255,255,.3)');
+    for(let q=0;q<3;q++)R(lx+2+q*2.5,yR+12,1.5,3,'#ffffff');}                                                                     /* trois pistes, leurs quilles au fond */
+  R(cx+4,yR+6,20,rez-6,'#1a6a68');R(cx+5,yR+7,18,rez-7,nuit?'#ffe0b0':'#3a4a4a');R(cx+13.5,yR+7,1,rez-7,'#1a6a68');
+  R(x0+BL-40,yR+8,32,rez-16,nuit?'#ffd898':'#2a3a4a');g.font='700 3.4px Georgia';g.fillStyle=nuit?'#e86aa0':'#f08ab8';g.fillText('STRIKE !',x0+BL-36,yR+18);
+  const ey=yR-16;R(x0+12,ey,BL-24,13,'#1a1a2e');g.font='900 9px "Trebuchet MS",sans-serif';g.textAlign='center';g.fillStyle=nuit?'#ff8ac8':'#e86aa0';
+  if(nuit){g.shadowColor='#ff5fae';g.shadowBlur=6;}g.fillText('BOWLING',cx+6,ey+10);g.shadowBlur=0;g.textAlign='left';
+  const qx=x0+22, qy=ey+1;R(qx,qy+2,4,9,'#ffffff');R(qx+0.5,qy,3,2.5,'#ffffff');R(qx,qy+5,4,1,'#e8402a');g.fillStyle='#1a1a2e';g.beginPath();g.arc(qx+8,qy+8,3.5,0,7);g.fill();g.fillStyle=nuit?'#5ff2ff':'#2ab0a8';g.beginPath();g.arc(qx+8,qy+8,2.8,0,7);g.fill();
+  if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,140,200,.4)');l.addColorStop(1,'rgba(255,140,200,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}});}
+/* L'ARENA : béton noir, lettres rouges, les gants qui pendent, les affiches du combat de ce soir */
+function graverLArena(){return devanture(3,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+  R(x0,yR-22,BL,rez+22,'#1e1e24');for(let y=yR-22;y<sol;y+=6)R(x0,y,BL,0.5,'#2a2a32');R(x0,yR-22,BL,2,'#c8281e');R(x0,sol-2,BL,2,'#c8281e');
+  g.font='900 15px "Trebuchet MS",Impact,sans-serif';g.textAlign='center';g.fillStyle='#e8402a';if(nuit){g.shadowColor='#ff3a2a';g.shadowBlur=8;}g.fillText('ARENA',cx,yR-6);g.shadowBlur=0;g.textAlign='left';
+  R(cx-12,yR+2,24,rez-2,'#0e0e12');R(cx-11,yR+3,22,rez-3,nuit?'#ffd0a0':'#2a2a32');R(cx-0.5,yR+3,1,rez-3,'#0e0e12');
+  [[x0+8],[x0+BL-30]].forEach(([x],k)=>{R(x,yR+4,22,30,'#f4efe6');R(x+1,yR+5,20,6,'#c8281e');g.font='700 3px Georgia';g.fillStyle='#fff';g.fillText('CE SOIR',x+4,yR+9.4);
+    g.fillStyle='#1a1a1a';g.font='900 5px Georgia';g.fillText(k?'KO':'VS',x+7,yR+19);g.fillStyle='#c8281e';g.beginPath();g.arc(x+6,yR+26,3.2,0,7);g.fill();g.fillStyle='#2d6fb0';g.beginPath();g.arc(x+16,yR+26,3.2,0,7);g.fill();});
+  [[cx-26],[cx+24]].forEach(([x])=>{R(x,yR-2,0.8,6,'#f4f4f4');g.fillStyle='#c8281e';g.beginPath();g.ellipse(x,yR+7,3.2,4,0,0,7);g.fill();R(x-2,yR+10,4,2,'#f4f4f4');});   /* les gants suspendus */
+  if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,120,90,.4)');l.addColorStop(1,'rgba(255,120,90,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}});}
+/* L'ENTRÉE DU STADE : la grande arche, les rayures bleues et blanches, les tourniquets, les drapeaux */
+function graverLeStade(){return devanture(2,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+  R(x0-4,yR-34,BL+8,rez+34,'#e8ecef');for(let x=x0-4;x<x0+BL+4;x+=10)R(x,yR-34,5,rez+34,'#2a9ad8');R(x0-4,yR-34,BL+8,2,'#1d4f8a');
+  g.fillStyle='#1a2a3a';g.beginPath();g.moveTo(cx-40,sol);g.lineTo(cx-40,yR-4);g.quadraticCurveTo(cx,yR-26,cx+40,yR-4);g.lineTo(cx+40,sol);g.closePath();g.fill();   /* la grande arche */
+  g.fillStyle=nuit?'#a8e0ff':'#4a8ab0';g.beginPath();g.moveTo(cx-34,sol-18);g.lineTo(cx-34,yR);g.quadraticCurveTo(cx,yR-19,cx+34,yR);g.lineTo(cx+34,sol-18);g.closePath();g.fill();   /* on aperçoit la pelouse et les tribunes */
+  R(cx-34,sol-26,68,8,nuit?'#5ac85a':'#3a9a3a');for(let k=0;k<12;k++)R(cx-32+k*5.6,yR+2+(k%3),3,3,['#e8402a','#f4f4f4','#2a9ad8'][k%3]);
+  for(let k=0;k<5;k++){const tx=cx-30+k*15;R(tx,sol-18,3,18,'#8a8f96');R(tx-2,sol-12,7,1.5,'#c8ccd2');}                                           /* les tourniquets */
+  R(cx-50,yR-30,100,11,'#1d4f8a');g.font='900 6.4px "Trebuchet MS",sans-serif';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('STADE DU VIEUX-PORT',cx,yR-22.4,94);g.textAlign='left';
+  [[x0+2],[x0+BL-4]].forEach(([x],k)=>{R(x,yR-60,1.2,30,'#c8ccd2');g.fillStyle=k?'#2a9ad8':'#ffffff';g.beginPath();g.moveTo(x+1.2,yR-60);g.lineTo(x+14,yR-56);g.lineTo(x+1.2,yR-51);g.closePath();g.fill();});
+  if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,80);l.addColorStop(0,'rgba(200,240,255,.45)');l.addColorStop(1,'rgba(200,240,255,0)');g.fillStyle=l;g.fillRect(cx-80,sol-80,160,86);}});}
 /* LE GLAÇON D'ART : une charrette, un parasol rayé, des blocs de glace qui brillent, l'ardoise des prix */
 function graverLesGlacons(){const W=70,H=64,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);const sol=H-4, cx=W/2;
   const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
@@ -1537,6 +1567,9 @@ function semerDecorExtramar(){
      l'autre, comme sur le vrai quai ; au milieu, la Bonne Mère */
   for(let k=0;k<10;k++){
     if(k===4){P('x_panneauG',XP.ruelle.x-38,XP.maisonsY+22,{col:[4,3]});continue;}   /* la ruelle du casino, et son panneau */
+    if(k===0){XCAL['x_bowling0']=graverLeBowling();CALQUES_DECO['x_bowling']=XCAL['x_bowling0'];P('x_bowling',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'bowling'});continue;}   /* le bowling */
+    if(k===2){XCAL['x_arena0']=graverLArena();CALQUES_DECO['x_arena']=XCAL['x_arena0'];P('x_arena',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'arena'});continue;}   /* l'Arena */
+    if(k===6){XCAL['x_stade0']=graverLeStade();CALQUES_DECO['x_stade']=XCAL['x_stade0'];P('x_stade',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:60,ouvre:'stade'});continue;}   /* l'entrée du stade */
     if(k===1){XCAL['x_piscine0']=graverLaPiscine();CALQUES_DECO['x_piscine']=XCAL['x_piscine0'];P('x_piscine',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'piscine'});continue;}   /* la piscine */
     if(k===9){XCAL['x_banque0']=graverLaBanque();CALQUES_DECO['x_banque']=XCAL['x_banque0'];P('x_banque',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'banque'});continue;}   /* la banque */
     if(k===3){XCAL['x_bar0']=graverLeBar();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ferme:'Le Bar des Docks'});
@@ -1546,7 +1579,7 @@ function semerDecorExtramar(){
     P('x_maison',70+k*140,XP.maisonsY,{v:k,col:[70,24]});
   }
   /* DE GRANDS PLATANES, en alignement le long des façades, chacun avec son banc à l'ombre */
-  [96,350,910,1190].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+(k===0?-30:30),XP.maisonsY+72);});   /* le premier platane s'écarte pour laisser voir la piscine */
+  [[96,0],[1190,3]].forEach(([x,k])=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+(k===0?-30:30),XP.maisonsY+72);});   /* deux platanes : les autres ont laissé la place aux devantures */   /* le premier platane s'écarte pour laisser voir la piscine */
   /* LA FORÊT DE MÂTS : des voiliers serrés de part et d'autre des pontons,
      l'étrave tournée vers les planches */
   let nv=0;

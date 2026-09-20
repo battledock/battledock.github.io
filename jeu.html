@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1719';
+  var MA_VERSION='2026-09-20-1728';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -2119,8 +2119,8 @@ async function chargerMorceau(nom){
 }
 
 /* LA CARTE : le village, ou Extramar (le vieux port, au bout de la ligne 1) */
-const CARTE=(()=>{const c=new URLSearchParams(location.search).get('carte');return c==='piscine'?'piscine':(c==='sommet'?'sommet':(c==='montagne'?'montagne':(c==='extramar'||c==='garde'?'extramar':'village')));})();
-const CARTE_MOD=CARTE==='montagne'||CARTE==='sommet'||CARTE==='piscine';        /* les cartes à module (Saumaski, le sommet, la piscine) */        /* les cartes de Saumaski (la station, le sommet) */   /* la place du haut n'existe plus */
+const CARTE=(()=>{const c=new URLSearchParams(location.search).get('carte');return c==='stade'?'stade':c==='piscine'?'piscine':(c==='sommet'?'sommet':(c==='montagne'?'montagne':(c==='extramar'||c==='garde'?'extramar':'village')));})();
+const CARTE_MOD=CARTE==='montagne'||CARTE==='sommet'||CARTE==='piscine'||CARTE==='stade';        /* les cartes à module (Saumaski, le sommet, la piscine) */        /* les cartes de Saumaski (la station, le sommet) */   /* la place du haut n'existe plus */
 /* LES OBJETS ANIMÉS DU DÉCOR : chaque carte (port.js, saumaski.js) peut y ranger ses dessins vivants */
 const ANIM_DECOR={};
 
@@ -10654,14 +10654,14 @@ function dessinerSouche(g,x,y,gr,neuf){
 /* LA RIVE EST RÉTRÉCIT : 806 de large au lieu de 1166. Cinq bâtiments dans
    1166 de large donnaient un pré avec des maisons dedans ; resserrés, ils
    font un village. Le grand vide, ce sera le DEHORS, plus tard. */
-const MONDE_L=CARTE==='garde'?640:(CARTE==='montagne'?360:(CARTE==='sommet'||CARTE==='piscine'?320:1400));               // largeur, en pixels de jeu
+const MONDE_L=CARTE==='garde'?640:(CARTE==='montagne'?360:(CARTE==='sommet'||CARTE==='piscine'?320:(CARTE==='stade'?760:1400)));               // largeur, en pixels de jeu
 /* La carte gagne 160 points au sud pour accueillir la VOIE FERRÉE : elle
    traverse tout l'écran et sort des deux côtés, avec son remblai, et elle
    ferme le monde par le bas — qui s'arrêtait jusqu'ici sur une lisière sans
    raison. Rien d'autre ne bouge. */
 /* La carte retrouve sa hauteur d'avant — 600 — et s'allonge vers l'EST : le
    village a de la place sans que le monde devienne un carré. */
-const MONDE_H=CARTE==='montagne'?900:(CARTE==='sommet'?460:(CARTE==='piscine'?580:600));                // hauteur
+const MONDE_H=CARTE==='montagne'?900:(CARTE==='sommet'?460:(CARTE==='piscine'?580:(CARTE==='stade'?1080:600)));                // hauteur
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 /* ================= LA MÊME VUE POUR TOUT LE MONDE =================
    Avant, l'échelle était fixe (×2) : un petit écran de 2020 voyait 160 points
@@ -10674,7 +10674,8 @@ const ZOOM=2;                     /* ne sert plus que de repli */
 let SOL=null, SOL_FIN=null;
 /* SAUMASKI est dans saumaski.js : on ne le charge qu'à Saumaski */
 let SAUMASKI=null;
-if(CARTE==='piscine'){SAUMASKI=eval(await chargerMorceau('piscine.js'));}                      /* la piscine : son propre module */
+if(CARTE==='piscine'){SAUMASKI=eval(await chargerMorceau('piscine.js'));}
+else if(CARTE==='stade'){SAUMASKI=eval(await chargerMorceau('stade.js'));}                  /* le stade : son propre module */                      /* la piscine : son propre module */
 else if(CARTE_MOD){SAUMASKI=eval(await chargerMorceau('saumaski.js'));if(CARTE==='sommet')SAUMASKI=SAUMASKI.sommet;}   /* le sommet vit dans le même fichier */
 
 /* LES EMPREINTES DANS LA NEIGE : à chaque pas dans la neige, une empreinte de semelle, gauche puis
@@ -13282,7 +13283,7 @@ try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(e,JSON.parse(b));}cat
 const EXT_AU_DEPART=e.ext?{x:e.ext.x,y:e.ext.y}:null;
 /* on avait quitté le jeu à Extramar : on y revient (seul le métro fait changer de carte) */
 if(CARTE==='village'&&(e.carte==='extramar'||e.carte==='garde')){location.replace('jeu.html?carte=extramar');}
-if(CARTE==='village'&&(e.carte==='montagne'||e.carte==='sommet'||e.carte==='piscine')){location.replace('jeu.html?carte='+e.carte);}
+if(CARTE==='village'&&(e.carte==='montagne'||e.carte==='sommet'||e.carte==='piscine'||e.carte==='stade')){location.replace('jeu.html?carte='+e.carte);}
 /* Les bâtiments étaient autrefois placés autour de chaque joueur : on
    efface ces vieilles coordonnées pour que tout le monde partage la même carte. */
 e.casino=null;e.camp=null;e.coffre=null;e.comptoir=null;
@@ -13463,6 +13464,13 @@ function preparerMonde(){
     try{sauver();}catch(x){}
     return;
   }
+  if(CARTE==='stade'){
+    const deQuai=new URLSearchParams(location.search).get('arrivee');
+    const P0=(!deQuai&&EXT_AU_DEPART&&EXT_AU_DEPART.x>0&&e.carte==='stade')?[EXT_AU_DEPART.x,EXT_AU_DEPART.y]:SAUMASKI.ARRIVEE;
+    const [dx,dy]=degager(P0[0],P0[1]);joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.carte='stade';try{sauver();}catch(x){}
+    if(deQuai)try{history.replaceState(null,'','jeu.html?carte=stade');}catch(x){}
+    return;
+  }
   if(CARTE==='piscine'){
     /* À LA PISCINE : on arrive dans le hall ; en rechargeant la page, là où l'on était */
     const deQuai=new URLSearchParams(location.search).get('arrivee');
@@ -13494,8 +13502,8 @@ function preparerMonde(){
        On sort du métro devant sa bouche, ou là où on s'était arrêté. */
     const arrive=new URLSearchParams(location.search).has('arrivee')||!EXT_AU_DEPART;
     const garde=new URLSearchParams(location.search).has('garde');
-    const dePiscine=new URLSearchParams(location.search).get('depuis')==='piscine';
-    const p0=dePiscine?[210,200]:(garde?[XP.ruelle.x,XP.ruelle.haut+26]:(arrive?[XP.metro[0],XP.metro[1]+22]:[EXT_AU_DEPART.x,EXT_AU_DEPART.y]));
+    const depuis=new URLSearchParams(location.search).get('depuis'), dePiscine=depuis==='piscine'||depuis==='stade';
+    const p0=depuis==='stade'?[910,200]:dePiscine?[210,200]:(garde?[XP.ruelle.x,XP.ruelle.haut+26]:(arrive?[XP.metro[0],XP.metro[1]+22]:[EXT_AU_DEPART.x,EXT_AU_DEPART.y]));
     if(dePiscine)try{history.replaceState(null,'','jeu.html?carte=extramar');}catch(x){}
     const [dx,dy]=degager(p0[0],p0[1]);
     joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.carte='extramar';
@@ -16672,6 +16680,7 @@ function coinDuJoueur(){
   if(CARTE==='montagne')return 'à Saumaski';
   if(CARTE==='sommet')return 'au sommet';
   if(CARTE==='piscine')return 'à la piscine';
+  if(CARTE==='stade')return 'au stade';
   if(CARTE==='garde')return 'à Notre-Dame';
   try{return joueur.x<rivX(joueur.y)?'en forêt':'au village';}catch(x){return 'au village';}
 }
@@ -16687,7 +16696,6 @@ function ouvrirPresence(){
   PRESENCE.subscribe(st=>{if(st==='SUBSCRIBED'){try{PRESENCE.track(maPresence());}catch(x){}}});
   MA_BOITE=sb.channel('moi:'+e.id);
   MA_BOITE.on('broadcast',{event:'mp'},({payload:p})=>recevoirPrive(p));
-  MA_BOITE.on('broadcast',{event:'petanque'},({payload:p})=>{try{recevoirInvitePetanque(p);}catch(x){}});
   MA_BOITE.subscribe();
   majPastilleL();
 }
@@ -16715,6 +16723,7 @@ function asseoirLesPresents(){
     :CARTE==='montagne'?p.lieu==='à Saumaski'
     :CARTE==='sommet'?p.lieu==='au sommet'
     :CARTE==='piscine'?p.lieu==='à la piscine'
+    :CARTE==='stade'?p.lieu==='au stade'
     :CARTE==='garde'?p.lieu==='à Notre-Dame'
     :(p.lieu!=='à Extramar'&&p.lieu!=='dans le métro'&&p.lieu!=='à Notre-Dame'&&p.lieu!=='à Saumaski');
   const places=placesDesBancs();
@@ -17857,12 +17866,10 @@ function majTextePetanque(){
     {const T=document.querySelector('#petanque .pqTitre');if(T)T.textContent='LE BOULODROME · UNE MÈNE CONTRE MARIUS';}
     t.innerHTML='<div class="pqChoix"><button id="pqEntr">Entraînement<small>gratuit</small></button>'+
       '<button id="pqPaye" class="or">Mène à 2 €<small>gagne-la : +6 €</small></button></div>'+
-      '<div class="pqChoix"><button id="pqAmi">Avec un ami<small>une mène entre amis, en direct</small></button></div>'+
       '<i>Ton argent : '+enEuros(e.euros||0)+'</i>';
     b.style.display='none';
     $('pqEntr').onclick=()=>commencerLaMene('entrainement');
     $('pqPaye').onclick=()=>commencerLaMene('payant');
-    $('pqAmi').onclick=()=>{PET={etape:'amis'};majTextePetanque();};
     return;
   }
   if(PET.mode==='ami'||PET.etape==='amis'||PET.etape==='attenteAmi'){if(majTexteAmi(t,b))return;}
@@ -18328,6 +18335,10 @@ function majAction(){
   }
   if(o.t==='x_chantier'){b.innerHTML='Lire le panneau<small>CHANTIER · TRAVAUX EN COURS</small>';b.classList.add('on');return;}
   if(o.ouvre==='manif'){b.innerHTML=(e.ap&&e.ap.gilet?'Ranger ton gilet':'Rejoindre la manif')+'<small>'+(e.ap&&e.ap.gilet?'TU DÉFILES AVEC LES DOCKERS':'LE DÉLÉGUÉ TE TEND UN GILET ORANGE')+'</small>';b.classList.add('on');return;}
+  if(o.ouvre==='stade'){b.innerHTML='Entrer dans le stade<small>LE STADE DU VIEUX-PORT · ENTRÉE LIBRE</small>';b.classList.add('on');return;}
+  if(o.ouvre==='sortieStade'){b.innerHTML='Ressortir sur le quai<small>LE VIEUX-PORT</small>';b.classList.add('on');return;}
+  if(o.ouvre==='bowling'){b.innerHTML='Entrer au bowling<small>UNE PARTIE EN 5 FRAMES · STRIKE !</small>';b.classList.add('on');return;}
+  if(o.ouvre==='arena'){b.innerHTML='Entrer dans l’Arena<small>COMBAT DE BOXE · 3 ROUNDS</small>';b.classList.add('on');return;}
   if(o.ouvre==='piscine'){b.innerHTML='Entrer à la piscine<small>ENTRÉE LIBRE · VESTIAIRES · BASSIN</small>';b.classList.add('on');return;}
   if(o.ouvre==='course'){b.innerHTML='Monter sur le plot<small>LA COURSE DU 50 M · A-B-A-B POUR NAGER</small>';b.classList.add('on');return;}
   if(o.ouvre==='cabine'){b.innerHTML=(e.ap&&e.ap.maillot?'Se rhabiller':'Entrer dans la cabine')+'<small>'+(e.ap&&e.ap.maillot?'REMETTRE TES VÊTEMENTS':'SE METTRE EN MAILLOT')+'</small>';b.classList.add('on');return;}
@@ -18495,6 +18506,10 @@ function agir(){
   if(o.ouvre==='crousti'){ouvrirCrousti();return;}
   if(o.ouvre==='salon'){ouvrirLeSalon();return;}
   if(o.ouvre==='piscine'){entrerALaPiscine();return;}
+  if(o.ouvre==='stade'){entrerAuStade();return;}
+  if(o.ouvre==='sortieStade'){sortirDuStade();return;}
+  if(o.ouvre==='bowling'){ouvrirJeuPort('bowling');return;}
+  if(o.ouvre==='arena'){ouvrirJeuPort('boxe');return;}
   if(o.ouvre==='cabine'){ouvrirLaCabine();return;}
   if(o.ouvre==='course'){if(!(e.ap&&e.ap.maillot)){texteVolant(joueur.x,joueur.y-56,'En maillot, pour la course !','#bfe8ff');return;}ouvrirLaCourse();return;}
   if(o.ouvre==='sortiePiscine'){sortirDeLaPiscine();return;}
@@ -19880,6 +19895,15 @@ if(e.ap&&e.ap.caddie){e.ap=Object.assign({},e.ap);delete e.ap.caddie;}
 /* ================= LA PISCINE MUNICIPALE =================
    On entre depuis le quai (le serveur note qu'on est à la piscine), on se change dans une cabine,
    et on ressort : en sortant, on remet ses vêtements. */
+async function entrerAuStade(){const d=await appelRPC('entrer_stade',{p_joueur:e.id});
+  if(!d||d.erreur){texteVolant(joueur.x,joueur.y-56,'Les tourniquets sont bloqués… réessaie','#bfe8ff');return;}
+  e.carte='stade';e.ext=null;try{sauver();envoyerSauvegarde(true);}catch(x){}vibrer(12);location.replace('jeu.html?carte=stade&arrivee=1');}
+async function sortirDuStade(){const d=await appelRPC('sortir_stade',{p_joueur:e.id});
+  if(!d||d.erreur){texteVolant(joueur.x,joueur.y-56,'La sortie est bloquée… réessaie','#bfe8ff');return;}
+  e.carte='extramar';e.ext=null;try{sauver();envoyerSauvegarde(true);monterEnLigne(true);}catch(x){}location.replace('jeu.html?carte=extramar&depuis=stade');}
+/* LES JEUX DU PORT (bowling, boxe) : leur code n'est chargé que la première fois qu'on entre */
+let JEUX_PORT=null;
+async function ouvrirJeuPort(nom){try{if(!JEUX_PORT)JEUX_PORT=eval(await chargerMorceau('jeux_port.js'));JEUX_PORT[nom]();}catch(err){texteVolant(joueur.x,joueur.y-56,'Fermé pour l’instant…','#ffe8a0');console.error(err);}}
 async function entrerALaPiscine(){const d=await appelRPC('entrer_piscine',{p_joueur:e.id});
   if(!d||d.erreur){texteVolant(joueur.x,joueur.y-56,'La porte résiste… réessaie','#bfe8ff');return;}
   e.carte='piscine';e.ext=null;try{sauver();envoyerSauvegarde(true);}catch(x){}vibrer(12);location.replace('jeu.html?carte=piscine&arrivee=1');}
@@ -21308,9 +21332,9 @@ function animerAnnonce(){
 async function verifierLaCarte(){
   const d=await appelRPC('ma_carte',{p_joueur:e.id,p_locale:e.carte||'village'});
   if(!d||!d.carte)return;
-  const vraie=d.carte==='extramar'?'extramar':(d.carte==='montagne'?'montagne':(d.carte==='sommet'?'sommet':(d.carte==='piscine'?'piscine':'village')));
+  const vraie=d.carte==='extramar'?'extramar':(d.carte==='montagne'?'montagne':(d.carte==='sommet'?'sommet':(d.carte==='piscine'?'piscine':(d.carte==='stade'?'stade':'village'))));
   if(vraie!==CARTE){e.carte=vraie;e.ext=null;try{sauver();}catch(x){}
-    location.replace(vraie==='extramar'?'jeu.html?carte=extramar':(vraie==='montagne'?'jeu.html?carte=montagne':(vraie==='sommet'?'jeu.html?carte=sommet':(vraie==='piscine'?'jeu.html?carte=piscine':'jeu.html'))));}
+    location.replace(vraie==='extramar'?'jeu.html?carte=extramar':(vraie==='montagne'?'jeu.html?carte=montagne':(vraie==='sommet'?'jeu.html?carte=sommet':(vraie==='piscine'?'jeu.html?carte=piscine':(vraie==='stade'?'jeu.html?carte=stade':'jeu.html')))));}
 }
 function entrer(){
   /* on note la version et le navigateur de chacun : c'est ce qui permet de comprendre un souci chez un joueur */
