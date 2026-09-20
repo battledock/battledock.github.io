@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1602';
+  var MA_VERSION='2026-09-20-1613';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -19851,7 +19851,7 @@ const CSS_BAR=`.bar .tete{background:#3a1616}.bar .tete .logo{color:#3a1616}.bar
 .bar .grat .cases div{display:flex;align-items:center;justify-content:center;font:900 22px Georgia;color:#2a1a10;border:1px dashed rgba(0,0,0,.12)}
 .bar .grat .cases div.gagne{color:#c8281e;background:#fff3c0}.bar .grat canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
 .bar .grat .res{font:700 17px Georgia;min-height:24px}.bar .grat button{border:0;border-radius:20px;padding:10px 20px;background:#fff;color:#3a1616;font:700 15px Georgia}`;
-async function ouvrirLeBar(){
+async function ouvrirLaGrattouille(){
   if(!document.getElementById('cssSki')){const st=document.createElement('style');st.id='cssSki';st.textContent=CSS_SKI;document.head.appendChild(st);}
   injecterCssEcole();
   if(!document.getElementById('cssBar')){const st=document.createElement('style');st.id='cssBar';st.textContent=CSS_BAR;document.head.appendChild(st);}
@@ -19864,7 +19864,7 @@ async function ouvrirLeBar(){
         '<div class="gains">'+gains.map(([g2,c])=>'<span>'+g2+' · '+c+'</span>').join('')+'</div><button data-t="'+k+'">'+enEuros(px).replace(',00','')+'</button></div>').join('')+
       '<div class="sec">AUJOURD’HUI</div><div class="ep"><div class="t"><b>'+faits+' / 20 tickets grattés</b><small>Vingt par jour, pas plus : le jeu doit rester un plaisir. Remise à zéro à minuit.</small></div></div>'+
       '</div><div class="bulle" id="skiBulle"></div><button class="fermer" id="ski-fermer">Ressortir sur le quai</button>';
-    $('ski-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+    $('ski-fermer').onclick=()=>ouvrirLeBar();$('ski-fermer').textContent='← Retour aux jeux';
     $('page2Fond').querySelectorAll('[data-t]').forEach(b=>b.onclick=async()=>{const T=TICKETS.find(x=>x[0]===b.dataset.t);
       if(faits>=20){skiBulle('Vingt tickets aujourd’hui : reviens demain !');return;}
       if((e.euros||0)<T[2]){skiBulle('Il te manque '+enEuros(T[2]-(e.euros||0)));return;}
@@ -19892,6 +19892,134 @@ async function ouvrirLeBar(){
     setTimeout(()=>{if(!fini&&!document.body.contains(v))return;},0);};
   rendre();
 }
+/* ================= LE BAR DES DOCKS : l'ardoise des jeux, et trois nouveaux jeux =================
+   L'ARDOISE, écrite à la craie : la Grattouille, le Morpion d'Or, la Pêche Miraculeuse, le Loto du Port.
+   Les tickets (grattouille, morpion, pêche) comptent ensemble dans la limite de 20 par jour. */
+const CSS_ARDOISE=`.ardB{position:absolute;inset:0;background:#2a1a10;padding:calc(env(safe-area-inset-top,0px) + 10px) 10px 10px;display:flex;flex-direction:column}
+.ardB .a{flex:1;overflow-y:auto;border:12px solid #8a6238;border-radius:8px;background:radial-gradient(ellipse at 40% 30%,#3a4440,#232a28);box-shadow:inset 0 0 40px rgba(0,0,0,.5);padding:14px;color:#f2f0e8;font-family:'Comic Sans MS','Segoe Print','Chalkboard SE',cursive}
+.ardB h1{margin:0;text-align:center;font-size:26px}.ardB .s{text-align:center;font-size:12px;opacity:.75;margin-bottom:12px}.ardB .bs{text-align:center;font-size:14px;margin:-6px 0 10px;color:#f4d27a}
+.ardB .j{display:flex;gap:10px;align-items:center;padding:10px 8px;border-radius:10px;margin-bottom:7px;background:rgba(255,255,255,.06);border:0;width:100%;color:inherit;font:inherit;text-align:left}
+.ardB .j .i{font-size:30px;width:42px;text-align:center}.ardB .j b{display:block;font-size:17px;color:#f4d27a}.ardB .j small{font-size:12px;opacity:.85}
+.ardB .j .p{margin-left:auto;font-size:13px;color:#fff;border:1px dashed rgba(255,255,255,.4);border-radius:8px;padding:3px 7px;white-space:nowrap}
+.ardB .f{text-align:center;font-size:12px;opacity:.7;margin-top:10px}
+.ardB .sortir{margin-top:10px;border:2px solid #c8962a;border-radius:22px;padding:12px;background:#1e130b;color:#f0d890;font:700 15px Georgia}
+.jeuB{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;color:#fff;font-family:Georgia,serif;overflow-y:auto}
+.jeuB.fMo{background:#2a1a10}.jeuB.fPe{background:#0e3a5a}.jeuB.fLo{background:#1d3f6a;justify-content:flex-start}
+.jeuB .t{width:100%;max-width:340px;border-radius:18px;padding:14px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.jeuB .t b.ti{display:block;font:900 21px Georgia;letter-spacing:1px}.jeuB .t small{display:block;font:italic 13px Georgia;margin-bottom:10px;opacity:.9}
+.jeuB .bt{border:0;border-radius:22px;padding:12px 18px;font:700 15px Georgia;background:#fff;color:#3a1616;min-width:200px}.jeuB .bt.sec{background:transparent;border:2px solid rgba(255,255,255,.7);color:#fff}
+.jeuB .res{font:700 17px Georgia;min-height:24px;text-align:center}.jeuB .res i{color:#ffe070;font-style:normal}
+.jeuB .mo{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:#fff8e0;border-radius:12px;padding:8px;position:relative}
+.jeuB .mo span{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:38px;border-radius:8px;background:#fff;position:relative;overflow:hidden}
+.jeuB .mo span.w{background:#fff3a0}.jeuB .mo canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.jeuB .pe{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.jeuB .pe span{aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;background:linear-gradient(135deg,#b8bcc4,#e8ecf0,#a8acb4);box-shadow:inset 0 -3px 0 rgba(0,0,0,.15)}
+.jeuB .pe span.o{background:#bfe6f4}.jeuB .pe span.b{background:#fff3a0;box-shadow:0 0 0 3px #f0c040}
+.jeuB .lo{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;background:#fff;border-radius:12px;padding:10px;width:100%;max-width:340px}
+.jeuB .lo span{aspect-ratio:1;border-radius:50%;border:2px solid #1d3f6a;color:#1d3f6a;display:flex;align-items:center;justify-content:center;font:700 15px Georgia}.jeuB .lo span.on{background:#c8281e;border-color:#c8281e;color:#fff}
+.jeuB .cag{width:100%;max-width:340px;border-radius:14px;padding:10px;text-align:center;background:linear-gradient(135deg,#f2d21a,#e8a030);color:#3a2604}.jeuB .cag small{font:700 11px ui-monospace,monospace;letter-spacing:2px}.jeuB .cag b{display:block;font:900 32px Georgia}
+.jeuB .info{width:100%;max-width:340px;background:rgba(255,255,255,.1);border-radius:12px;padding:10px;font:13px Georgia;line-height:1.5}
+.jeuB .bb{display:inline-flex;width:28px;height:28px;border-radius:50%;background:#fff;color:#1d3f6a;align-items:center;justify-content:center;font:700 13px Georgia;margin:3px 2px}.jeuB .bb.ok{background:#f2d21a}`;
+let TICKETS_JOUR=0;
+async function ouvrirLeBar(){
+  if(!document.getElementById('cssArdoise')){const st=document.createElement('style');st.id='cssArdoise';st.textContent=CSS_ARDOISE;document.head.appendChild(st);}
+  if(!document.getElementById('cssSki')){const st=document.createElement('style');st.id='cssSki';st.textContent=CSS_SKI;document.head.appendChild(st);}
+  injecterCssEcole();if(!document.getElementById('cssBar')){const st=document.createElement('style');st.id='cssBar';st.textContent=CSS_BAR;document.head.appendChild(st);}
+  $('page2Fond').className='ardB';$('page2').classList.add('on');
+  const [d0,L]=await Promise.all([appelRPC('mes_grattages',{p_joueur:e.id}),appelRPC('loto_etat',{p_joueur:e.id})]);
+  TICKETS_JOUR=(d0&&typeof d0.aujourdhui==='number')?d0.aujourdhui:TICKETS_JOUR;
+  const cag=L&&L.cagnotte?enEuros(L.cagnotte).replace(',00',''):'—';
+  $('page2Fond').innerHTML='<div class="a"><h1>Bar des Docks</h1><div class="s">~ les jeux du comptoir ~</div><div class="bs">ta bourse : '+enEuros(e.euros||0)+'</div>'+
+    '<button class="j" data-j="gratte"><div class="i">🎟</div><div><b>La Grattouille</b><small>trois montants pareils, c’est gagné</small></div><span class="p">1 à 10 €</span></button>'+
+    '<button class="j" data-j="morpion"><div class="i">⚓</div><div><b>Le Morpion d’Or</b><small>trois ancres alignées · jusqu’à 100 €</small></div><span class="p">2 €</span></button>'+
+    '<button class="j" data-j="peche"><div class="i">🐟</div><div><b>La Pêche Miraculeuse</b><small>5 bulles sur 12, la bouée double tout</small></div><span class="p">3 €</span></button>'+
+    '<button class="j" data-j="loto"><div class="i">🎱</div><div><b>Le Loto du Port</b><small>tirage chaque soir à 20 h · cagnotte : '+cag+'</small></div><span class="p">2 €</span></button>'+
+    '<div class="f">tickets du jour : '+TICKETS_JOUR+' / 20 · le jeu doit rester un plaisir</div></div><button class="sortir" id="barSortir">Ressortir sur le quai</button>';
+  $('barSortir').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+  $('page2Fond').querySelectorAll('[data-j]').forEach(b=>b.onclick=()=>{vibrer(8);const j=b.dataset.j;
+    if(j==='gratte')ouvrirLaGrattouille();else if(j==='morpion')jeuMorpion();else if(j==='peche')jeuPeche();else jeuLoto(L);});
+}
+const messageErreurJeu=(d)=>d&&d.erreur==='limite'?'Vingt tickets aujourd’hui : reviens demain !':(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':(d&&d.erreur==='doucement'?'Un ticket à la fois !':'Le buraliste n’a pas pu'));
+/* une pellicule argentée sur un élément : on gratte au doigt ; au-delà d'un seuil, rappel(fini) */
+function pellicule(parent,texte,seuil,fini){const cv=document.createElement('canvas');parent.appendChild(cv);const r=parent.getBoundingClientRect(), D=devicePixelRatio||1;cv.width=r.width*D;cv.height=r.height*D;
+  const g=cv.getContext('2d');const gr=g.createLinearGradient(0,0,cv.width,cv.height);gr.addColorStop(0,'#b8bcc4');gr.addColorStop(0.5,'#e8ecf0');gr.addColorStop(1,'#a8acb4');g.fillStyle=gr;g.fillRect(0,0,cv.width,cv.height);
+  if(texte){g.fillStyle='rgba(90,95,105,.55)';g.font=Math.round(10*D)+'px Georgia';g.textAlign='center';g.fillText(texte,cv.width/2,cv.height/2+4*D);}
+  g.globalCompositeOperation='destination-out';let bas=false, fait=false;
+  const mesure=()=>{const px=g.getImageData(0,0,cv.width,cv.height).data;let v=0,t=0;for(let i=3;i<px.length;i+=32){t++;if(px[i]<40)v++;}if(v/t>=seuil&&!fait){fait=true;cv.remove();fini();}};
+  const eff=(ev)=>{if(fait)return;const rr=cv.getBoundingClientRect();g.beginPath();g.arc((ev.clientX-rr.left)*D,(ev.clientY-rr.top)*D,12*D,0,7);g.fill();const n=performance.now();if(n-(cv._m||0)>90){cv._m=n;mesure();}};
+  cv.onpointerdown=(ev)=>{bas=true;try{cv.setPointerCapture(ev.pointerId);}catch(x){}eff(ev);};cv.onpointermove=(ev)=>{if(bas)eff(ev);};cv.onpointerup=()=>{bas=false;mesure();};
+  return {devoiler:()=>{if(!fait){fait=true;cv.remove();fini();}}};}
+/* LE MORPION D'OR : on gratte les neuf cases une à une ; trois ancres alignées = gagné */
+async function jeuMorpion(){
+  $('page2Fond').className='jeuB fMo';
+  const achat=async()=>{const d=await appelRPC('jouer_morpion',{p_joueur:e.id});if(!d||d.erreur){$('page2Fond').innerHTML='<div class="res">'+messageErreurJeu(d)+'</div><button class="bt" id="jr">← Retour aux jeux</button>';$('jr').onclick=ouvrirLeBar;return;}
+    TICKETS_JOUR++;
+    $('page2Fond').innerHTML='<div class="t" style="background:linear-gradient(135deg,#d8a830,#f0d890 45%,#c8962a);color:#3a2604"><b class="ti">LE MORPION D’OR</b><small>gratte les cases · trois ancres alignées</small>'+
+      '<div class="mo">'+d.grille.map((x,i)=>'<span data-i="'+i+'">'+x+'</span>').join('')+'</div>'+
+      '<div style="font:12px Georgia;margin-top:8px">⚓⚓⚓ en ligne : de 2 € à 100 €</div></div><div class="res" id="moRes"></div>'+
+      '<button class="bt" id="moTout">Tout gratter</button><button class="bt sec" id="moRet" style="display:none">← Retour aux jeux</button><button class="bt" id="moEncore" style="display:none">Un autre · 2 €</button>';
+    let reste=9;const cases=[...$('page2Fond').querySelectorAll('.mo span')];const P=[];
+    const fin=()=>{if(reste>0)return;$('moTout').style.display='none';
+      if(d.gain>0){const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]].find(l=>l.every(k=>d.grille[k]==='⚓'));if(L)L.forEach(k=>cases[k].classList.add('w'));jouer('vente','moment');vibrer([30,50,30,50,90]);}
+      $('moRes').innerHTML=d.gain>0?'Trois ancres ! <i>+'+enEuros(d.gain)+'</i>':'Pas de ligne… <span style="font-weight:400;font-style:italic">la prochaine sera la bonne</span>';
+      if(typeof d.euros==='number'){e.euros=d.euros;sauver();majHaut();}$('moRet').style.display='';$('moEncore').style.display='';};
+    requestAnimationFrame(()=>cases.forEach(c=>P.push(pellicule(c,'',0.55,()=>{reste--;fin();}))));
+    $('moTout').onclick=()=>P.forEach(x=>x.devoiler());$('moRet').onclick=ouvrirLeBar;$('moEncore').onclick=achat;};
+  $('page2Fond').innerHTML='<div class="t" style="background:linear-gradient(135deg,#d8a830,#f0d890 45%,#c8962a);color:#3a2604"><b class="ti">LE MORPION D’OR</b><small>une grille de 3 × 3 cases à gratter</small>'+
+    '<div style="font:14px Georgia;line-height:1.6">Trois <b>⚓ ancres</b> alignées, en ligne, en colonne ou en diagonale : c’est gagné.<br>2 € (1 sur 5) · 5 € (1 sur 17) · 20 € (1 sur 67) · <b>100 €</b> (1 sur 500)</div></div>'+
+    '<button class="bt" id="moGo">Acheter un ticket · 2 €</button><button class="bt sec" id="moRet0">← Retour aux jeux</button>';
+  $('moGo').onclick=achat;$('moRet0').onclick=ouvrirLeBar;
+}
+/* LA PÊCHE MIRACULEUSE : 12 bulles, on n'en ouvre que 5 ; le contenu reste au serveur jusqu'au bout */
+async function jeuPeche(){
+  $('page2Fond').className='jeuB fPe';
+  const partie=async()=>{const d=await appelRPC('peche_acheter',{p_joueur:e.id});if(!d||d.erreur){$('page2Fond').innerHTML='<div class="res">'+messageErreurJeu(d)+'</div><button class="bt" id="jr">← Retour aux jeux</button>';$('jr').onclick=ouvrirLeBar;return;}
+    if(typeof d.euros==='number'){e.euros=d.euros;majHaut();}if(!d.vus||!d.vus.length)TICKETS_JOUR++;
+    const vus={};(d.vus||[]).forEach(x=>vus[x.c]=x.v);let reste=5-Object.keys(vus).length, somme=0, bouee=false;
+    const val={'🐟':0.5,'🐡':1,'🦈':10,'🥾':0,'🛟':0};Object.values(vus).forEach(v=>{somme+=val[v]||0;if(v==='🛟')bouee=true;});
+    $('page2Fond').innerHTML='<div class="t" style="background:linear-gradient(160deg,#2d8fb0,#1d5f80)"><b class="ti">LA PÊCHE MIRACULEUSE</b><small>touche 5 bulles sur 12</small>'+
+      '<div class="pe">'+Array.from({length:12},(_,i)=>'<span data-c="'+(i+1)+'" class="'+(vus[i+1]?(vus[i+1]==='🛟'?'b':'o'):'')+'">'+(vus[i+1]||'')+'</span>').join('')+'</div>'+
+      '<div style="font:700 14px Georgia;margin-top:10px" id="peCpt"></div></div>'+
+      '<div class="info" style="text-align:center">🐟 0,50 € · 🐡 1 € · 🦈 10 € · 🛟 la bouée d’or double tout · 🥾 la vieille botte, rien</div><div class="res" id="peRes"></div>'+
+      '<button class="bt sec" id="peRet" style="display:none">← Retour aux jeux</button><button class="bt" id="peEncore" style="display:none">Une autre · 3 €</button>';
+    const cpt=()=>{$('peCpt').innerHTML=reste>0?'Encore '+reste+' bulle'+(reste>1?'s':'')+' · ta pêche : '+enEuros(Math.round(somme*100))+(bouee?' · <span style="color:#ffe070">bouée d’or : × 2</span>':''):'';};cpt();
+    let occupe=false;
+    $('page2Fond').querySelectorAll('.pe span').forEach(sp=>sp.onclick=async()=>{if(occupe||reste<=0||sp.classList.contains('o')||sp.classList.contains('b'))return;occupe=true;vibrer(10);
+      const r=await appelRPC('peche_ouvrir',{p_joueur:e.id,p_id:d.id,p_case:+sp.dataset.c});occupe=false;if(!r||r.erreur)return;
+      sp.textContent=r.v;sp.classList.add(r.v==='🛟'?'b':'o');somme+=val[r.v]||0;if(r.v==='🛟'){bouee=true;vibrer([20,40,20]);}reste=r.reste;cpt();
+      if(reste===0){/* on montre ce qu'il y avait sous les autres bulles */
+        (r.contenu||[]).forEach((v,k)=>{const s2=$('page2Fond').querySelector('[data-c="'+(k+1)+'"]');if(s2&&!s2.classList.contains('o')&&!s2.classList.contains('b')){s2.textContent=v;s2.style.opacity=.45;}});
+        if(r.gain>0){jouer('vente','moment');vibrer([30,50,30,50,90]);}
+        $('peRes').innerHTML=r.gain>0?'Belle pêche ! <i>+'+enEuros(r.gain)+'</i>'+(r.double?' <span style="font-weight:400">(bouée : × 2)</span>':''):'Rien dans les filets… <span style="font-weight:400;font-style:italic">que des vieilles bottes</span>';
+        if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}$('peRet').style.display='';$('peEncore').style.display='';}});
+    $('peRet').onclick=ouvrirLeBar;$('peEncore').onclick=partie;};
+  $('page2Fond').innerHTML='<div class="t" style="background:linear-gradient(160deg,#2d8fb0,#1d5f80)"><b class="ti">LA PÊCHE MIRACULEUSE</b><small>12 bulles, tu n’en ouvres que 5</small>'+
+    '<div style="font:14px Georgia;line-height:1.6">Chaque poisson rapporte. La <b>🛟 bouée d’or</b> double toute ta pêche. Un <b>🦈 requin</b> vaut 10 € à lui seul… s’il y en a un.</div></div>'+
+    '<button class="bt" id="peGo">Acheter un ticket · 3 €</button><button class="bt sec" id="peRet0">← Retour aux jeux</button>';
+  $('peGo').onclick=partie;$('peRet0').onclick=ouvrirLeBar;
+}
+/* LE LOTO DU PORT : 5 numéros sur 30, tirage à 20 h, une cagnotte commune qui grossit */
+async function jeuLoto(L0){
+  $('page2Fond').className='jeuB fLo';
+  const L=L0||await appelRPC('loto_etat',{p_joueur:e.id})||{};let choix=[];
+  const rendre=(L)=>{const mes=L.mes_grilles||[], D=L.dernier;
+    const tirage=D?'<div class="info">Dernier tirage ('+new Date(D.jour+'T12:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+') : '+
+      (D.numeros||[]).map(n=>'<span class="bb">'+n+'</span>').join('')+'<br>'+(D.gagnants5?D.gagnants5+' gagnant'+(D.gagnants5>1?'s':'')+' du gros lot !':'Pas de gros lot : la cagnotte est remise en jeu.')+
+      (D.mes_resultats?'<br><b>Tes grilles :</b> '+D.mes_resultats.map(r=>r.bons+' bon'+(r.bons>1?'s':'')+(r.gain?' → <b style="color:#ffe070">+'+enEuros(r.gain)+'</b>':'')).join(' · '):'')+'</div>':'';
+    $('page2Fond').innerHTML='<div style="text-align:center;padding-top:calc(env(safe-area-inset-top,0px) + 4px)"><b style="font:900 24px Georgia;letter-spacing:2px;color:#f2d21a">LE LOTO DU PORT</b><div style="font:italic 13px Georgia">coche 5 numéros sur 30 · la grille 2 €</div></div>'+
+      '<div class="cag"><small>CAGNOTTE DE CE SOIR · TIRAGE À 20 H</small><b>'+enEuros(L.cagnotte||10000).replace(',00','')+'</b>'+(L.grilles_jour||0)+' grille'+((L.grilles_jour||0)>1?'s':'')+' jouée'+((L.grilles_jour||0)>1?'s':'')+'</div>'+
+      '<div class="lo">'+Array.from({length:30},(_,i)=>'<span data-n="'+(i+1)+'" class="'+(choix.includes(i+1)?'on':'')+'">'+(i+1)+'</span>').join('')+'</div>'+
+      '<button class="bt" id="loGo" style="background:#f2d21a;color:#1d3f6a">'+(choix.length<5?'Coche encore '+(5-choix.length)+' numéro'+(5-choix.length>1?'s':''):'Valider ma grille · 2 €')+'</button>'+
+      '<div class="res" id="loRes"></div>'+(mes.length?'<div class="info"><b>Tes grilles pour ce soir ('+mes.length+' / 5) :</b><br>'+mes.map(g=>g.map(n=>'<span class="bb">'+n+'</span>').join('')).join('<br>')+'</div>':'')+
+      '<div class="info">5 bons numéros : <b>la cagnotte</b> (partagée entre les gagnants) · 4 bons : <b>20 €</b> · 3 bons : <b>4 €</b></div>'+tirage+
+      '<button class="bt sec" id="loRet">← Retour aux jeux</button>';
+    $('page2Fond').querySelectorAll('.lo span').forEach(sp=>sp.onclick=()=>{const n=+sp.dataset.n;if(choix.includes(n))choix=choix.filter(x=>x!==n);else if(choix.length<5)choix.push(n);vibrer(6);rendre(L);});
+    $('loRet').onclick=ouvrirLeBar;
+    $('loGo').onclick=async()=>{if(choix.length<5)return;const d=await appelRPC('loto_jouer',{p_joueur:e.id,p_numeros:choix});
+      if(!d||d.erreur){$('loRes').textContent=d&&d.erreur==='limite'?'Cinq grilles par soir, pas plus !':(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':'Le buraliste n’a pas pu');return;}
+      if(typeof d.euros==='number'){e.euros=d.euros;sauver();majHaut();}choix=[];jouer('vente','moment');vibrer(20);
+      const L2=await appelRPC('loto_etat',{p_joueur:e.id});rendre(L2||L);$('loRes').innerHTML='Grille validée ! <i>Rendez-vous à 20 h.</i>';};};
+  rendre(L);
+}
 /* ================= LE PEIGNE D'OR : le salon de coiffure du port =================
    Même catalogue que le Ski shop, aux couleurs du salon : la cabine où ta tête tourne, deux rayons
    (les coupes, les couleurs), essayer, acheter, porter, revenir à sa coupe. */
@@ -19906,43 +20034,40 @@ function vignetteTete(cv2,ap,dir){const D=Math.max(1,Math.min(2,Math.floor(windo
    à cadre doré où ta tête tourne avec la coupe choisie ; les coupes en médaillons ovales, comme les
    vieilles planches de coiffures accrochées au mur ; les couleurs en flacons de teinture. */
 const CSS_SALON2=`
-.peigne{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;color:#f4e8c8;font-family:Georgia,serif;
-  background:repeating-linear-gradient(90deg,#1b3a2e 0 22px,#1e4033 22px 23px),#1b3a2e}
-.peigne .hd{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 8px;background:linear-gradient(#2a1a10,#1e130b);border-bottom:2px solid #c8a24a}
-.peigne .hd .poteau{width:12px;height:34px;border-radius:6px;border:2px solid #c8a24a;background:repeating-linear-gradient(135deg,#c8281e 0 5px,#fff 5px 10px,#2d5fb0 10px 15px,#fff 15px 20px);background-size:100% 28px;animation:pt 1.2s linear infinite}
-@keyframes pt{to{background-position:0 28px}}
-.peigne .hd b{display:block;font:700 18px Georgia;letter-spacing:3px;color:#f0d890}.peigne .hd small{font:italic 12px Georgia;color:#c8b890}
-.peigne .hd .bourse{margin-left:auto;text-align:right;font:12px Georgia;color:#c8b890}.peigne .hd .bourse b{font-size:15px;letter-spacing:0}
-.peigne .pgMir{display:flex;gap:12px;align-items:center;padding:12px 14px 10px}
-.peigne .pgCad{flex:none;width:112px;height:136px;border-radius:50%;padding:6px;background:radial-gradient(circle at 30% 25%,#ffe9a8,#c8962a 45%,#7a5410);box-shadow:0 6px 16px rgba(0,0,0,.45)}
-.peigne .pgCad canvas{width:100%;height:100%;border-radius:50%;background:radial-gradient(ellipse at 40% 30%,#eef4f6,#b8c8cc 70%,#8aa0a6)}
-.peigne .pgInf{flex:1;min-width:0}.peigne .pgInf .cat{font:700 10px ui-monospace,monospace;letter-spacing:2px;color:#c8a24a}
-.peigne .pgInf h3{margin:3px 0 2px;font:700 18px Georgia;color:#fff4d8;line-height:1.15}.peigne .pgInf .px{font:700 20px Georgia;color:#f0d890}
-.peigne .pgInf .et{font:italic 12px Georgia;color:#c8b890;margin:2px 0 7px}
-.peigne .pgInf .coll{display:inline-block;background:linear-gradient(90deg,#b8902a,#f0d890,#b8902a);color:#2a1c04;font:700 10px ui-monospace,monospace;padding:3px 7px;border-radius:5px;margin-bottom:2px}
-.peigne .ac{border:0;border-radius:20px;padding:10px 14px;width:100%;font:700 14px Georgia;background:linear-gradient(#f0d890,#c8962a);color:#2a1a08;box-shadow:0 3px 0 #7a5410}
-.peigne .ac.enl{background:transparent;color:#f0d890;border:2px solid #c8962a;box-shadow:none}.peigne .ac.pas{background:#5a6a60;color:#c8d0c8;box-shadow:none}
-.peigne .onglets{display:flex;gap:6px;padding:4px 12px 8px}
-.peigne .onglets button{flex:1;border:1px solid #c8a24a;border-radius:8px;padding:8px 4px;font:700 13px Georgia;color:#f0d890;background:rgba(0,0,0,.25)}
-.peigne .onglets button.on{background:linear-gradient(#f0d890,#c8962a);color:#2a1a08}
-.peigne .mur{flex:1;overflow-y:auto;padding:4px 12px 90px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px 8px;align-content:start}
-.peigne .med{text-align:center;position:relative}
-.peigne .med .ov{width:100%;aspect-ratio:4/5;border-radius:50%;padding:4px;background:linear-gradient(135deg,#f0d890,#8a6a1e);box-shadow:0 3px 8px rgba(0,0,0,.4)}
-.peigne .med.on .ov{background:linear-gradient(135deg,#fff4c0,#f0c040);box-shadow:0 0 0 2px #fff4c0,0 3px 10px rgba(240,200,80,.6)}
-.peigne .med canvas{width:100%;height:100%;border-radius:50%;background:radial-gradient(ellipse at 40% 30%,#f4efe6,#d8cfbf)}
-.peigne .med .n{font:700 12px Georgia;color:#fff4d8;margin-top:4px;line-height:1.15}.peigne .med .p{font:700 12px Georgia;color:#f0d890}
-.peigne .med .bd{position:absolute;top:-2px;left:50%;transform:translateX(-50%);font:700 8px ui-monospace,monospace;letter-spacing:1px;padding:2px 5px;border-radius:4px;background:#c8281e;color:#fff;white-space:nowrap}
-.peigne .med .bd.a{background:#2f7a5e}.peigne .med .bd.or{background:#b8902a}
-.peigne .flacon{position:absolute;right:4px;bottom:-2px;width:18px;height:24px;border-radius:4px 4px 6px 6px;border:2px solid #fff4d8;box-shadow:0 2px 4px rgba(0,0,0,.4)}
-.peigne .bulle{position:absolute;left:14px;right:14px;bottom:70px;background:#2a1a10;border:1px solid #c8a24a;color:#f0d890;border-radius:12px;padding:10px 12px;font:italic 14px Georgia;opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none}
+.peigne{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;color:#fff;font-family:'Trebuchet MS',Arial,sans-serif;background:#0e0d14}
+.peigne .hd{padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 4px;text-align:center;position:relative}
+.peigne .neon{font:700 32px 'Trebuchet MS',sans-serif;letter-spacing:5px;color:#ff5fae;text-shadow:0 0 6px #ff5fae,0 0 18px #ff2a8a;animation:nn 4s infinite}
+@keyframes nn{0%,93%,97%,100%{opacity:1}95%{opacity:.45}}
+.peigne .sub{font:12px 'Trebuchet MS';letter-spacing:5px;color:#5ff2ff;text-shadow:0 0 8px #5ff2ff}
+.peigne .bourse{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 14px);font:11px 'Trebuchet MS';color:#aaa;text-align:right}.peigne .bourse b{display:block;color:#ffe45f;font-size:14px;text-shadow:0 0 6px #ffb000}
+.peigne .big{margin:8px 14px;border:2px solid #5ff2ff;border-radius:18px;box-shadow:0 0 14px rgba(95,242,255,.45),inset 0 0 14px rgba(95,242,255,.2);display:flex;align-items:center;gap:12px;padding:10px}
+.peigne .big canvas{flex:none;width:118px;height:128px;border-radius:12px;background:#1c1a26}
+.peigne .big .t{flex:1;min-width:0}.peigne .big .k{font:700 10px 'Trebuchet MS';letter-spacing:3px;color:#5ff2ff}
+.peigne .big h3{margin:3px 0;font:700 19px 'Trebuchet MS';line-height:1.15}.peigne .big .p{color:#ffe45f;font:700 21px 'Trebuchet MS';text-shadow:0 0 8px #ffb000}
+.peigne .big .et{font:12px 'Trebuchet MS';color:#aaa;margin:2px 0 8px}
+.peigne .big .coll{display:inline-block;font:700 10px 'Trebuchet MS';letter-spacing:1px;color:#0e0d14;background:#ffe45f;border-radius:6px;padding:2px 7px;box-shadow:0 0 10px #ffb000}
+.peigne .ac{border:0;border-radius:30px;padding:10px 16px;width:100%;font:700 14px 'Trebuchet MS';background:#ff5fae;color:#0e0d14;box-shadow:0 0 14px #ff5fae}
+.peigne .ac.enl{background:transparent;color:#ff5fae;border:2px solid #ff5fae}.peigne .ac.pas{background:#2c2a3a;color:#888;box-shadow:none}
+.peigne .onglets{display:flex;gap:8px;padding:4px 14px 6px}
+.peigne .onglets button{flex:1;padding:8px 4px;border-radius:30px;border:1px solid #3a3850;background:transparent;font:700 12px 'Trebuchet MS';color:#aaa}
+.peigne .onglets button.on{border-color:#ff5fae;color:#ff5fae;box-shadow:0 0 8px #ff5fae}
+.peigne .mur{flex:1;overflow-y:auto;padding:6px 14px 90px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;align-content:start}
+.peigne .med{background:#1c1a26;border-radius:14px;padding:6px;text-align:center;border:1px solid #2c2a3a;position:relative}
+.peigne .med.on{border-color:#ff5fae;box-shadow:0 0 12px rgba(255,95,174,.6)}
+.peigne .med canvas{width:100%;aspect-ratio:1;border-radius:10px;background:#252333}
+.peigne .med .n{font:700 13px 'Trebuchet MS';margin-top:4px}.peigne .med .p{font:700 13px 'Trebuchet MS';color:#ffe45f}
+.peigne .med .bd{position:absolute;top:10px;left:10px;font:700 9px 'Trebuchet MS';letter-spacing:1px;padding:2px 6px;border-radius:5px;background:#ff5fae;color:#0e0d14}
+.peigne .med .bd.a{background:#5ff2ff}.peigne .med .bd.or{background:#ffe45f;box-shadow:0 0 8px #ffb000}
+.peigne .flacon{position:absolute;right:10px;top:10px;width:16px;height:22px;border-radius:4px 4px 6px 6px;border:2px solid #fff;box-shadow:0 0 6px rgba(255,255,255,.6)}
+.peigne .bulle{position:absolute;left:14px;right:14px;bottom:70px;background:#1c1a26;border:1px solid #5ff2ff;color:#5ff2ff;border-radius:12px;padding:10px 12px;font:14px 'Trebuchet MS';opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none;box-shadow:0 0 12px rgba(95,242,255,.4)}
 .peigne .bulle.on{opacity:1;transform:none}
-.peigne .sortir{position:absolute;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);border:2px solid #c8962a;border-radius:22px;padding:12px;background:#1e130b;color:#f0d890;font:700 15px Georgia}`;
+.peigne .sortir{position:absolute;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);border:2px solid #5ff2ff;border-radius:30px;padding:12px;background:#0e0d14;color:#5ff2ff;font:700 15px 'Trebuchet MS';box-shadow:0 0 12px rgba(95,242,255,.4)}`;
 async function ouvrirLeSalon(){
   if(!document.getElementById('cssSalon2')){const st=document.createElement('style');st.id='cssSalon2';st.textContent=CSS_SALON2;document.head.appendChild(st);}
   $('page2Fond').className='peigne';
-  $('page2Fond').innerHTML='<div class="hd"><div class="poteau"></div><div><b>LE PEIGNE D’OR</b><small>Barbier · coiffeur · depuis 1923</small></div><div class="bourse">Ta bourse<br><b id="salArgent">—</b></div></div>'+
-    '<div class="pgMir"><div class="pgCad"><canvas id="salCabine"></canvas></div><div class="pgInf" id="salFiche"></div></div>'+
-    '<div class="onglets"><button data-sr="coupe">✂ Les coupes</button><button data-sr="couleur">🧴 Les couleurs</button><button data-sr="moi">↺ Ma coupe</button></div>'+
+  $('page2Fond').innerHTML='<div class="hd"><div class="neon">BARBER</div><div class="sub">LE PEIGNE D’OR · OPEN</div><div class="bourse">ta bourse<b id="salArgent">—</b></div></div>'+
+    '<div class="big"><canvas id="salCabine"></canvas><div class="t" id="salFiche"></div></div>'+
+    '<div class="onglets"><button data-sr="coupe">COUPES</button><button data-sr="couleur">COULEURS</button><button data-sr="moi">MA COUPE</button></div>'+
     '<div class="mur" id="salGrille"></div><div class="bulle" id="skiBulle"></div><button class="sortir" id="ski-fermer">Ressortir sur le quai</button>';
   $('ski-fermer').onclick=()=>{fermeA=Date.now();clearInterval(CAB_T);$('page2').classList.remove('on');};
   $('page2').classList.add('on');
@@ -19963,13 +20088,13 @@ function salonMaj(){
   G.innerHTML=L.map(x=>{const a=!!e.cos[x.id], mis=porte===x.id;
     const bd=x.collector?'<span class="bd or">COLLECTOR</span>':(mis?'<span class="bd">PORTÉE</span>':(a?'<span class="bd a">À TOI</span>':''));
     const fl=x.sorte==='couleur'?'<span class="flacon" style="background:linear-gradient('+(x.col||'#8a6a4a')+' 55%,'+(x.pointes||x.col||'#8a6a4a')+')"></span>':'';
-    return '<div class="med'+(x.id===SEL_SALON?' on':'')+'" data-id="'+x.id+'"><div class="ov"><canvas data-vue="'+x.id+'"></canvas></div>'+fl+bd+'<div class="n">'+x.nom+'</div><div class="p">'+enEuros(x.prix).replace(',00','')+'</div></div>';}).join('');
+    return '<div class="med'+(x.id===SEL_SALON?' on':'')+'" data-id="'+x.id+'"><canvas data-vue="'+x.id+'"></canvas>'+fl+bd+'<div class="n">'+x.nom+'</div><div class="p">'+enEuros(x.prix).replace(',00','')+'</div></div>';}).join('');
   G.querySelectorAll('canvas[data-vue]').forEach(cv2=>vignetteTete(cv2,apSalonAvecAutre(cv2.dataset.vue),'bas'));
   G.querySelectorAll('.med').forEach(c=>c.onclick=()=>{SEL_SALON=c.dataset.id;vibrer(8);salonMaj();});
   const x=SALON_PAR_ID[SEL_SALON], a=!!e.cos[x.id], mis=porte===x.id, peut=(e.euros||0)>=x.prix;
   const reste=x.collector?Math.max(0,x.collector-COMETES_VENDUES):null, epuise=x.collector&&!a&&reste<=0;
-  $('salFiche').innerHTML=(x.collector?'<span class="coll">'+(epuise?'ÉPUISÉE':'COLLECTOR · '+reste+' / '+x.collector)+'</span>':'<div class="cat">'+(x.sorte==='coupe'?'LA COUPE':'LA COULEUR')+'</div>')+
-    '<h3>'+x.nom+'</h3><div class="px">'+enEuros(x.prix)+'</div><div class="et">'+(mis?'Tu la portes.':(a?'Elle est à toi.':'Regarde-toi dans le miroir.'))+'</div>'+
+  $('salFiche').innerHTML=(x.collector?'<span class="coll">'+(epuise?'ÉPUISÉE':'COLLECTOR · '+reste+' / '+x.collector)+'</span>':'<div class="k">'+(x.sorte==='coupe'?'LA COUPE':'LA COULEUR')+'</div>')+
+    '<h3>'+x.nom+'</h3><div class="p">'+enEuros(x.prix)+'</div><div class="et">'+(mis?'Tu la portes.':(a?'Elle est à toi.':'Regarde-toi dans le miroir.'))+'</div>'+
     '<button id="salAchat" class="ac'+(a?(mis?' enl':''):(peut&&!epuise?'':' pas'))+'">'+(a?(mis?'L’enlever':'La porter'):(epuise?'Épuisée':(peut?'Je la prends':'Il te manque '+enEuros(x.prix-(e.euros||0)))))+'</button>';
   vignetteTete($('salCabine'),apSalonAvecAutre(SEL_SALON),'bas');
   $('salAchat').onclick=async()=>{
