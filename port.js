@@ -1350,21 +1350,58 @@ function graverFumigene(){const W=60,H=70,D=2,c=document.createElement('canvas')
   for(let k=0;k<26;k++){const t=k/26, x=W/2+Math.sin(k*1.7)*8*t+t*10, y=sol-6-t*56, r=4+t*11;g.fillStyle='rgba('+(230-k*2)+','+(70+k)+','+(60+k)+','+(0.55-t*0.4).toFixed(2)+')';g.beginPath();g.arc(x,y,r,0,7);g.fill();}
   g.fillStyle='#ff5a2a';g.beginPath();g.arc(W/2,sol-4,3,0,7);g.fill();g.fillStyle='#fff0a0';g.beginPath();g.arc(W/2,sol-4,1.4,0,7);g.fill();g.fillStyle='#3a3a40';g.fillRect(W/2-1,sol-3,2,4);
   return {toile:c,W,H,sol,nuit:null};}
+/* LA MANIF VIVANTE : les dockers piétinent au rythme, les banderoles tanguent, les drapeaux claquent,
+   les fumigènes crachent leur fumée, le délégué scande au mégaphone, et le chien du syndic' remue la queue */
+const SLOGANS=['On lâche rien !','Tous ensemble !','Le port, c’est nous !','Des sous pour les dockers !','Solidarité !','Et un, et deux, et trois zéro !'];
+ANIM_DECOR.docker=(g,o,x,y)=>{const t=performance.now()/1000;o._f=o._f||{};
+  const i=1+Math.floor((t*2.4+o.ph)*2)%PASM, cle=i+(STYLE_FIN()?'f':'c');
+  if(!o._f[cle]){const src=poseDe(Object.assign({},DEF_AP,o.pnj),o.dir||'bas',i);const c=document.createElement('canvas');c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);o._f[cle]=c;}
+  const bob=Math.abs(Math.sin((t*2.4+o.ph)*Math.PI))*1.2;
+  g.drawImage(o._f[cle],Math.round(x-CASE_L/2),Math.round(y-CASE_H+10-bob),CASE_L,CASE_H);
+  if(o.porteVoix){const c2=poseDe(Object.assign({},DEF_AP,o.pnj),o.dir||'bas',1);
+    /* le mégaphone, et les ondes quand il crie */
+    const mx=x-10, my=y-38-bob;g.fillStyle='#e8e2d4';g.beginPath();g.moveTo(mx,my-2);g.lineTo(mx-9,my-5);g.lineTo(mx-9,my+5);g.lineTo(mx,my+2);g.closePath();g.fill();g.fillStyle='#c8281e';g.fillRect(mx-1,my-2,3,4);
+    const cycle=(t%3.2)/3.2;if(cycle<0.65){g.strokeStyle='rgba(255,255,255,.8)';g.lineWidth=0.8;for(let k=0;k<3;k++){g.beginPath();g.arc(mx-10,my,3+k*3+(t*8%3),Math.PI*0.75,Math.PI*1.25);g.stroke();}
+      const s=SLOGANS[Math.floor(t/3.2)%SLOGANS.length];g.font='italic 700 7px Georgia';const w=g.measureText(s).width+8;
+      g.fillStyle='rgba(255,255,255,.95)';g.fillRect(x-w-14,y-66,w,11);g.beginPath();g.moveTo(x-18,y-55);g.lineTo(x-14,y-51);g.lineTo(x-24,y-55);g.fill();
+      g.fillStyle='#c8281e';g.fillText(s,x-w-10,y-58);}}
+};
+ANIM_DECOR.banderole=(g,o,x,y)=>{const C=XCAL[o.cal],t=performance.now()/1000;if(!C)return;const a=Math.sin(t*1.7+o.ph)*0.035, b=Math.abs(Math.sin(t*2.4))*1.2;
+  g.save();g.translate(x,y-b);g.rotate(a);g.drawImage(C.toile,-C.W/2,-C.sol,C.W,C.H);g.restore();};
+ANIM_DECOR.drapeau=(g,o,x,y)=>{const t=performance.now()/1000, h=40, col=o.v%2?'#c8281e':'#1d3f6a', bob=Math.abs(Math.sin(t*2.4+o.ph))*1.2;
+  g.fillStyle='#6b4a28';g.fillRect(x-1,y-h-bob,1.5,h);
+  /* le drapeau claque : bande par bande, une vague qui court vers le bout */
+  for(let k=0;k<16;k++){const v=Math.sin(t*6-k*0.55+o.ph)*(k/16)*2.6;g.fillStyle=k%5===0?'rgba(0,0,0,.08)':col;g.fillRect(x+0.5+k,y-h-bob+1+v,1,12);g.fillStyle=col;g.fillRect(x+0.5+k,y-h-bob+1+v,1,12);}
+  g.strokeStyle='#ffffff';g.lineWidth=1;const cx=x+8,cy=y-h-bob+7+Math.sin(t*6-4.4+o.ph)*1;g.beginPath();g.moveTo(cx,cy-3);g.lineTo(cx,cy+3);g.moveTo(cx-2.5,cy-1.5);g.lineTo(cx+2.5,cy-1.5);g.stroke();
+  g.beginPath();g.arc(cx,cy+1,2.4,0.2,Math.PI-0.2);g.stroke();};
+ANIM_DECOR.fumigene=(g,o,x,y)=>{const t=performance.now()/1000;
+  for(let k=0;k<22;k++){const age=(t*0.45+k/22+o.ph)%1, dx=Math.sin(k*1.7+t*0.8)*5*age+age*16*(o.vent||1), r=3+age*13;
+    g.fillStyle='rgba('+Math.round(235-age*40)+','+Math.round(70+age*80)+','+Math.round(70+age*80)+','+((1-age)*0.45).toFixed(2)+')';g.beginPath();g.arc(x+dx,y-6-age*62,r,0,7);g.fill();}
+  const f=0.7+Math.random()*0.3;g.fillStyle='#3a3a40';g.fillRect(x-1,y-4,2,5);g.fillStyle='rgba(255,90,40,'+f+')';g.beginPath();g.arc(x,y-5,2.8*f,0,7);g.fill();g.fillStyle='#fff0a0';g.fillRect(x-0.8,y-6,1.6,1.6);};
+ANIM_DECOR.chien=(g,o,x,y)=>{const t=performance.now()/1000, q=Math.sin(t*14)*2, bob=Math.abs(Math.sin(t*4))*0.8, R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(a,b,w,h);};
+  g.fillStyle='rgba(40,30,18,.25)';g.beginPath();g.ellipse(x,y,9,2,0,0,7);g.fill();
+  R(x-7,y-9-bob,14,6,'#b07a40');R(x-7,y-9-bob,14,1.5,'#c8904e');R(x-6,y-4,2,4,'#8a5a2a');R(x+4,y-4,2,4,'#8a5a2a');R(x-3,y-4,2,4,'#8a5a2a');R(x+1,y-4,2,4,'#8a5a2a');   /* le corps, les pattes */
+  R(x-4,y-9-bob,8,6,'#f07a1a');R(x-4,y-7-bob,8,1,'#e8ecf0');                                                                                 /* son petit gilet */
+  R(x+6,y-14-bob,6,6,'#b07a40');R(x+11,y-12-bob,2,2,'#2a1a10');R(x+8,y-12-bob,1,1,'#1a1a1a');R(x+6,y-15-bob,2,3,'#8a5a2a');                    /* la tête, la truffe, l'oreille */
+  g.save();g.translate(x-7,y-8-bob);g.rotate(-0.6+q*0.15);R(-5,-1,5,2,'#b07a40');g.restore();                                                   /* la queue qui remue */
+  if((t%5)<0.8){g.font='italic 700 6px Georgia';g.fillStyle='#ffffff';g.fillText('Ouaf !',x+8,y-19);}};
 function poserLaManif(P){
   const reg=(k,C)=>{XCAL[k+'0']=C;CALQUES_DECO[k]=C;};
-  reg('x_banderole',graverBanderole('DOCKERS DE MARSEILLE','LE PORT, C’EST NOUS !'));reg('x_banderole2',graverBanderole('ON NE LÂCHE RIEN','LES DOCKERS DU VIEUX-PORT',80,64));
-  reg('x_drapeauM',graverDrapeauM(0));XCAL['x_drapeauM1']=graverDrapeauM(1);reg('x_fumigene',graverFumigene());
-  const docker=(x,y,v,dir,plus)=>P('x_docker',x,y,Object.assign({v:0,col:[4,3],dir:dir||'bas',pnj:{peau:1+(v%4),cheveux:v%6,coiffe:[0,1,2,15,17,3][v%6],barbe:[3,0,4,7,0,1][v%6],
+  XCAL.banT=graverBanderole('DOCKERS DE MARSEILLE','LE PORT, C’EST NOUS !');XCAL.banM=graverBanderole('ON NE LÂCHE RIEN','LES DOCKERS DU VIEUX-PORT',80,64);
+  CALQUES_DECO['x_banderole']=XCAL.banT;CALQUES_DECO['x_banderole2']=XCAL.banM;CALQUES_DECO['x_drapeauM']={W:26,H:46,sol:44};CALQUES_DECO['x_fumigene']={W:60,H:70,sol:67};
+  const docker=(x,y,v,dir,plus)=>P('x_docker',x,y,Object.assign({v:0,col:[4,3],dir:dir||'bas',anim:'docker',ph:((v*0.37)%1),pnj:{peau:1+(v%4),cheveux:v%6,coiffe:[0,1,2,15,17,3][v%6],barbe:[3,0,4,7,0,1][v%6],
     veste:'#f07a1a',haut:0,pantalon:'#2a3a5a',chaussures:'#2a2a30',souliers:0,sac:0,chapeau:v%3===0?1:0,corps:[2,3,1,2,3][v%5],gilet:true}},plus||{}));
-  /* le cortège, qui descend le quai : la banderole de tête, puis les rangs, les drapeaux, les fumigènes */
   const X=1046, Y=292;
-  docker(X-40,Y-6,0);docker(X+40,Y-6,1);P('x_banderole',X,Y,{v:0});
+  docker(X-40,Y-6,0);docker(X+40,Y-6,1);P('x_banderole',X,Y,{v:0,anim:'banderole',cal:'banT',ph:0});
   [[-30,-26,2],[-10,-28,3],[10,-27,4],[30,-26,5],[-38,-44,6],[-18,-46,7],[2,-45,8],[22,-46,9],[42,-44,10],[-26,-62,11],[-6,-64,12],[14,-63,13],[34,-62,14]]
     .forEach(([dx,dy,v])=>docker(X+dx,Y+dy,v));
-  P('x_drapeauM',X-24,Y-24,{v:0});P('x_drapeauM',X+18,Y-42,{v:1});P('x_drapeauM',X-2,Y-60,{v:0});
-  P('x_banderole2',X+2,Y-56,{v:0});                                              /* la seconde banderole, tenue bien haut au milieu du cortège */
-  P('x_fumigene',X+62,Y-14,{v:0});P('x_fumigene',X-64,Y-30,{v:0});
-  docker(X+70,Y+10,15,'gauche',{});                                                   /* celui au mégaphone, sur le côté */
+  P('x_drapeauM',X-24,Y-24,{v:0,anim:'drapeau',ph:0});P('x_drapeauM',X+18,Y-42,{v:1,anim:'drapeau',ph:1.3});P('x_drapeauM',X-2,Y-60,{v:0,anim:'drapeau',ph:2.1});
+  P('x_banderole2',X+2,Y-56,{v:0,anim:'banderole',cal:'banM',ph:1.1});
+  P('x_fumigene',X+62,Y-14,{v:0,anim:'fumigene',ph:0,vent:1});P('x_fumigene',X-64,Y-30,{v:0,anim:'fumigene',ph:0.5,vent:-0.6});
+  /* LE DÉLÉGUÉ au mégaphone, sur le côté : c'est lui qui te tend un gilet si tu veux défiler */
+  docker(X+72,Y+10,15,'gauche',{porteVoix:true,bati:true,demi:8,ouvre:'manif'});
+  /* et le chien, en tête, avec son petit gilet */
+  P('x_chienM',X-8,Y+14,{v:0,anim:'chien',col:[4,2]});
 }
 function semerDecorExtramar(){
   DECOR=[];

@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1534';
+  var MA_VERSION='2026-09-20-1538';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -2121,6 +2121,8 @@ async function chargerMorceau(nom){
 /* LA CARTE : le village, ou Extramar (le vieux port, au bout de la ligne 1) */
 const CARTE=(()=>{const c=new URLSearchParams(location.search).get('carte');return c==='sommet'?'sommet':(c==='montagne'?'montagne':(c==='extramar'||c==='garde'?'extramar':'village'));})();
 const CARTE_MOD=CARTE==='montagne'||CARTE==='sommet';        /* les cartes de Saumaski (la station, le sommet) */   /* la place du haut n'existe plus */
+/* LES OBJETS ANIMÉS DU DÉCOR : chaque carte (port.js, saumaski.js) peut y ranger ses dessins vivants */
+const ANIM_DECOR={};
 
 const ANNEXE=CARTE!=='village';     /* Extramar et Notre-Dame : des cartes à part, sans le monde partagé */
 /* Le jeu ne doit jamais dépendre d'un fichier distant pour s'afficher :
@@ -11458,6 +11460,7 @@ function graverX(t,v){
   return XCAL[cle];
 }
 function dessinerX(g,o,x,y){
+  if(o.anim&&ANIM_DECOR[o.anim]){try{ANIM_DECOR[o.anim](g,o,x,y);}catch(err){}return;}   /* un objet animé (la manif du port…) */
   if(o.pnj){                                     /* un personnage du décor (le moniteur, les dockers…) : dessiné comme un joueur */
     /* GRAVÉ UNE FOIS : on garde sa propre copie du dessin. Redemander la pose à chaque image faisait
        déborder le cache des poses dès qu'il y avait beaucoup de personnages (la manif : 16 dockers). */
@@ -18299,6 +18302,7 @@ function majAction(){
     return;
   }
   if(o.t==='x_chantier'){b.innerHTML='Lire le panneau<small>CHANTIER · TRAVAUX EN COURS</small>';b.classList.add('on');return;}
+  if(o.ouvre==='manif'){b.innerHTML=(e.ap&&e.ap.gilet?'Ranger ton gilet':'Rejoindre la manif')+'<small>'+(e.ap&&e.ap.gilet?'TU DÉFILES AVEC LES DOCKERS':'LE DÉLÉGUÉ TE TEND UN GILET ORANGE')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='salon'){b.innerHTML='Entrer au Peigne d’Or<small>COUPES ET COULEURS EXCLUSIVES</small>';b.classList.add('on');return;}
   if(o.ouvre==='crousti'){b.innerHTML='Entrer chez Crousti’Port<small>'+(REPU_FIN>Date.now()?'TU ES REPU · ENCORE '+Math.ceil((REPU_FIN-Date.now())/60000)+' MIN':'POULET FRIT · MENUS DE 1 € À 12 €')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='skishop'){b.innerHTML='Entrer au Ski shop<small>TENUES DE MONTAGNE · DE 5 € À 2 500 €</small>';b.classList.add('on');return;}
@@ -18459,6 +18463,9 @@ function agir(){
   if(o.ouvre==='skishop'){ouvrirLeSkiShop();return;}
   if(o.ouvre==='crousti'){ouvrirCrousti();return;}
   if(o.ouvre==='salon'){ouvrirLeSalon();return;}
+  if(o.ouvre==='manif'){e.ap=Object.assign({},e.ap||DEF_AP);const avec=!e.ap.gilet;if(avec)e.ap.gilet=true;else delete e.ap.gilet;
+    sauver();envoyerSauvegarde(true);monterEnLigne(true);vibrer([20,40,20]);jouer('vente','moment');
+    texteVolant(joueur.x,joueur.y-56,avec?'Tous ensemble ! Tu rejoins le cortège':'Tu ranges ton gilet','#ffb060');majAction();return;}
   if(o.ouvre==='ecole'){ouvrirLEcole();return;}
   if(o.ouvre==='forfaits'){ouvrirLesForfaits();return;}
   if(o.ouvre==='telecabine'){passerLesTourniquets();return;}
