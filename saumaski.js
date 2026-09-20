@@ -402,6 +402,7 @@ function graverBouche(nuit){
    à gauche et les boutiques à droite ; l'escalier ; en bas, le métro, la place de planches, la neige */
 const MONT=110, ESC_Y=384, MARCHES=4, MARCHE_H=6, BAS_Y=ESC_Y+MARCHES*MARCHE_H, NEIGE_Y=BAS_Y;
 const PLACE={x:80,y:508,w:200,h:108};
+const COUR={x0:150,x1:352,y0:200,y1:262,passage:[258,292]};      /* la cour des boutiques */
 const TPH={x:80,y:296,h:64,ecart:10,cx:113};
 /* LA FILE D'ATTENTE : un plancher devant la gare, fermé de cordes. On entre en bas à droite, sous un
    portique ; trois allées en serpentin ; en haut, les tourniquets, puis la porte d'embarquement. */
@@ -424,6 +425,14 @@ function solVide(){
   for(let x=0;x<WW;x+=0.5){const h=7+Math.sin(x/3)*2+hs(Math.round(x*2))*3;F(x,MONT-h,0.5,h,x%2<1?'#2c4a3a':'#243f32');F(x,MONT-h,0.5,1,'#e8f0f4');}
   /* 2 · LA NEIGE, en haut et en bas */
   neige(MONT,ESC_Y+1);neige(BAS_Y-1,WH);
+  /* LA COUR DES BOUTIQUES, en planches, et le passage qui descend jusqu'à l'escalier */
+  {const C=COUR, LAME=['#c09264','#b38456','#cc9f70','#a67a4e','#ba8c5c'];
+   const plancher=(x0,y0,x1,y1)=>{F(x0,y0,x1-x0,y1-y0,'#4e3218');
+     for(let y=y0;y<y1;y+=3)for(let x=x0-24;x<x1;){const l=20+Math.floor(hs(x*0.7+y)*4)*7, px=Math.max(x0,x+((y-y0)/3)%4*7), l2=Math.min(l,x1-px);
+       if(l2>0){F(px,y,l2,2.5,LAME[Math.floor(hs(px*0.37+y*1.3)*5)]);F(px,y,l2,0.5,'rgba(255,236,200,.4)');F(px,y+2,l2,0.5,'rgba(70,40,15,.25)');F(px,y,0.5,3,'#3a2410');
+         for(let xx=px;xx<px+l2;xx+=0.5)if(hs(xx*3.1+y*1.7)<0.12)F(xx,y+1,1.5,0.5,'rgba(95,58,28,.3)');}x+=l;}
+     [[x0-2,y0-2,x1-x0+4,2],[x0-2,y1,x1-x0+4,2]].forEach(([x,y,w,h])=>{F(x,y,w,h,'#6b4a28');F(x,y,w,0.6,'#8a6238');F(x,y-0.8,w,0.8,'#ffffff');});};
+   plancher(C.x0,C.y0,C.x1,C.y1);plancher(C.passage[0],C.y1+2,C.passage[1],ESC_Y);}
   /* 3 · L'ESCALIER */
   for(let m2=0;m2<MARCHES;m2++){const y=ESC_Y+m2*MARCHE_H;F(0,y,WW,MARCHE_H,'#8a6238');
     for(let x=0;x<WW;x+=12+hs(m2*7+x)*6)F(x,y,0.5,MARCHE_H-2,'#5b3f21');for(let x=0;x<WW;x+=1)if(hs(x*1.3+m2*9)<0.2)F(x,y+1+hs(x+m2)*2,1,0.5,'rgba(90,55,25,.4)');
@@ -731,15 +740,23 @@ function objetsVides(){
   const cal={}, L=[];
   const reg=(nom,J,N)=>{cal[nom]={toile:J.c,W:J.W,H:J.H,sol:J.sol,nuit:N?N.c:null};};
   reg('gare',graverBoucheLongue(false),graverBoucheLongue(true));reg('telepherique',graverTelecabine(false),graverTelecabine(true));reg('pyloneT',graverPyloneT());
-  reg('skishop',graverChaletNom('SKI SHOP','#8a5a3a'));reg('fromagerie',graverChaletNom('FROMAGERIE','#7a4a2a'));
+  reg('skishop',graverChaletNom('SKI SHOP','#8a5a3a'));
   reg('forfaits',graverForfaits(false),graverForfaits(true));reg('souvenirs',graverChaletNom('SOUVENIRS','#8a5a3a'));
   reg('location',graverLocation(false),graverLocation(true));
   const P=(nom,x,y,x2)=>L.push(Object.assign({t:'x_mo_'+nom,x,y,v:0,bati:true},x2||{}));
-  P('skishop',226,184,{col:[28,12],ferme:'Le ski shop',demi:24});
-  P('fromagerie',314,184,{col:[28,12],ferme:'La fromagerie',demi:24});
-  P('forfaits',226,270,{col:[14,10],ferme:'La caisse des forfaits',demi:12});
-  P('souvenirs',314,270,{col:[28,12],ferme:'Les souvenirs',demi:24});
-  P('location',272,364,{col:[34,12],ferme:'La location de skis',demi:30});
+  /* LA COUR DES BOUTIQUES : deux chalets au fond d'une cour de planches, deux autres plus bas,
+     un passage de bois qui descend vers l'escalier ; lampadaires, banc, râtelier, poteau indicateur */
+  const C=COUR;
+  P('skishop',C.x0+40,C.y0-4,{col:[28,12],ferme:'Le ski shop',demi:24});
+  P('souvenirs',C.x1-40,C.y0-4,{col:[28,12],ferme:'Les souvenirs',demi:24});
+  P('location',C.x0+62,C.y1+62,{col:[34,12],ferme:'La location de skis',demi:30});
+  P('forfaits',C.x1-28,C.y1+58,{col:[14,10],ferme:'La caisse des forfaits',demi:12});
+  reg('lampeC',graverLampadaireFin());reg('bancC',graverBancPlaid(1));reg('skisC',graverSkis());reg('poteauC',graverPoteau('MÉTRO ↓'));
+  const Dc=(nom,x,y,x2)=>L.push(Object.assign({t:'x_mo_'+nom,x,y,v:0},x2||{}));
+  Dc('lampeC',C.x0+6,C.y0+10,{col:[2,2]});Dc('lampeC',C.x1-6,C.y0+10,{col:[2,2]});Dc('lampeC',C.x0+6,C.y1-2,{col:[2,2]});Dc('lampeC',C.x1-6,C.y1-2,{col:[2,2]});
+  Dc('bancC',(C.x0+C.x1)/2,C.y0+30,{col:[13,3]});
+  Dc('skisC',C.x0+86,C.y0+2,{col:[11,3]});
+  Dc('poteauC',C.passage[1]+10,C.y1+20,{col:[2,2]});
   P('telepherique',TPH.x,TPH.y,{col:[44,12],ferme:'La télécabine',demi:10});
   reg('portique',graverPortique());L.push({t:'x_mo_portique',x:(FQ.entree[0]+FQ.entree[1])/2,y:FQ.y1+1,v:0,bati:true,demi:8,ferme:'La file de la télécabine'});
   L.push({t:'x_mo_pyloneT',x:TPH.cx,y:170,v:0,col:[10,4]});
