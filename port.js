@@ -1345,6 +1345,48 @@ function graverGueridon(){const W=30,H=22,D=2,c=document.createElement('canvas')
   g.fillStyle='#3a3a40';g.fillRect(cx-0.5,sol-9,1,9);g.fillRect(cx-3,sol-0.5,6,1);g.fillStyle='#e8e2d4';g.beginPath();g.ellipse(cx,sol-10,6,2,0,0,7);g.fill();
   g.fillStyle='#f0d890';g.fillRect(cx-3,sol-13,1.6,3);g.fillStyle='rgba(255,255,255,.6)';g.fillRect(cx-3,sol-13,0.5,3);g.fillStyle='#ffffff';g.fillRect(cx+1,sol-12,2,1.5);g.fillStyle='#3a2616';g.fillRect(cx+1.3,sol-12,1.4,0.6);
   return {toile:c,W,H,sol,nuit:null};}
+/* trois nouvelles devantures, dessinées sur un immeuble du quai comme leurs voisines */
+function devanture(v,peindre){const base=graverImmeuble(v), W=base.W, H=base.H, sol=base.sol, cx=W/2, BL=138, x0=cx-BL/2, rez=40, yR=sol-rez;
+  const copie=(src)=>{const c=document.createElement('canvas');c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);return c;};
+  const go=(cv,nuit)=>{const D=cv.width/W, g=cv.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+    const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};peindre(g,R,{W,H,sol,cx,BL,x0,rez,yR},nuit);};
+  const toile=copie(base.toile), nuit=copie(base.nuit||base.toile);go(toile,false);go(nuit,true);return {toile,W,H,sol,nuit};}
+/* LA CAISSE D'ÉPARGNE DU VIEUX-PORT : pierre de taille, colonnes, grilles de fer forgé, l'horloge */
+function graverLaBanque(){return devanture(2,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+  R(x0,yR-6,BL,rez+6,'#e8dcc4');for(let y=yR-6;y<sol;y+=5)R(x0,y,BL,0.5,'#c8bca4');for(let k=0;k<BL;k+=12)R(x0+k+((Math.floor((k)/12))%2?6:0),yR-6,0.5,rez+6,'rgba(160,140,110,.35)');
+  [[-60],[-24],[20],[56]].forEach(([k])=>{R(cx+k,yR-4,6,rez+2,'#f4ecd8');R(cx+k,yR-4,1.5,rez+2,'#fffaf0');R(cx+k+5,yR-4,1,rez+2,'#b8ac94');R(cx+k-1,yR-6,8,2,'#d8ccb4');R(cx+k-1,sol-2,8,2,'#d8ccb4');});
+  [[-50],[30]].forEach(([k])=>{R(cx+k,yR+8,18,rez-10,nuit?'#ffe0a0':'#3a4450');for(let x=0;x<18;x+=3)R(cx+k+x,yR+8,0.8,rez-10,'#2a2e36');R(cx+k,yR+14,18,0.8,'#2a2e36');R(cx+k,yR+26,18,0.8,'#2a2e36');
+    for(let x=0;x<18;x+=6){g.strokeStyle='#2a2e36';g.lineWidth=0.6;g.beginPath();g.arc(cx+k+x+3,yR+8,3,Math.PI,0);g.stroke();}});
+  R(cx-10,yR+4,20,rez-4,'#3a2a1a');R(cx-9,yR+5,18,rez-5,nuit?'#ffe8b0':'#5a4430');R(cx-0.5,yR+5,1,rez-5,'#3a2a1a');R(cx-4,sol-16,1.5,3,'#d8b050');R(cx+2.5,sol-16,1.5,3,'#d8b050');
+  const ey=yR-20;R(x0+10,ey,BL-20,10,'#2a3a5a');R(x0+10,ey,BL-20,1,'#d8b050');R(x0+10,ey+9,BL-20,1,'#d8b050');
+  g.font='700 6.2px Georgia';g.textAlign='center';g.fillStyle='#f0d890';g.fillText('CAISSE D’ÉPARGNE DU VIEUX-PORT',cx,ey+7,BL-26);g.textAlign='left';
+  g.fillStyle='#f4ecd8';g.beginPath();g.arc(cx,ey-8,7,0,7);g.fill();g.strokeStyle='#d8b050';g.lineWidth=1.2;g.stroke();g.strokeStyle='#1a1a1a';g.lineWidth=0.7;g.beginPath();g.moveTo(cx,ey-8);g.lineTo(cx,ey-12.5);g.moveTo(cx,ey-8);g.lineTo(cx+3,ey-7);g.stroke();   /* l'horloge */
+  if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,210,140,.4)');l.addColorStop(1,'rgba(255,210,140,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}});}
+/* MADAME MIREILLE, VOYANTE : rideaux de velours violet, la boule de cristal dans la vitrine, la main aux étoiles */
+function graverLaVoyante(){return devanture(4,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+  R(x0,yR,BL,rez,'#3a1a4a');R(x0,yR,BL,1.5,'#d8b050');
+  R(x0+8,yR+8,BL-16,rez-10,nuit?'#5a2a7a':'#1a0e24');
+  for(let k=0;k<22;k++)R(x0+12+((k*37)%(BL-24)),yR+10+((k*13)%(rez-14)),1,1,k%3?'#f0d890':'#ffffff');                       /* les étoiles peintes */
+  [[x0+8],[x0+BL-30]].forEach(([x])=>{for(let k=0;k<22;k+=3)R(x+k,yR+8,3,rez-10,k%6?'#6a2a8a':'#7a3a9a');R(x,yR+8,22,2,'#d8b050');});     /* les rideaux */
+  g.fillStyle=nuit?'rgba(170,220,255,.95)':'rgba(140,190,230,.9)';g.beginPath();g.arc(cx,yR+22,7,0,7);g.fill();g.fillStyle='rgba(255,255,255,.7)';g.beginPath();g.arc(cx-2.5,yR+19.5,2,0,7);g.fill();
+  R(cx-6,yR+29,12,3,'#d8b050');R(cx-4,yR+32,8,2,'#8a6a2a');                                                                     /* la boule, son socle */
+  if(nuit){const l=g.createRadialGradient(cx,yR+22,2,cx,yR+22,26);l.addColorStop(0,'rgba(160,220,255,.6)');l.addColorStop(1,'rgba(160,220,255,0)');g.fillStyle=l;g.fillRect(cx-26,yR-4,52,52);}
+  const ey=yR-16;R(x0+14,ey,BL-28,12,'#2a0e3a');R(x0+15,ey+1,BL-30,10,'#4a1a5a');
+  g.font='italic 700 7px Georgia';g.textAlign='center';g.fillStyle='#f0d890';g.fillText('✦ MADAME MIREILLE · VOYANCE ✦',cx,ey+8,BL-36);g.textAlign='left';
+  /* la main aux étoiles, en drapeau */
+  const hx=x0+BL-8, hy=yR-26;R(hx,hy+10,1.5,10,'#3a3a40');g.fillStyle='#f0d890';g.beginPath();g.arc(hx,hy+4,6,0,7);g.fill();g.fillStyle='#4a1a5a';g.font='700 7px Georgia';g.textAlign='center';g.fillText('✋',hx,hy+6.5);g.textAlign='left';});}
+/* LE GLAÇON D'ART : une charrette, un parasol rayé, des blocs de glace qui brillent, l'ardoise des prix */
+function graverLesGlacons(){const W=70,H=64,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);const sol=H-4, cx=W/2;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
+  g.fillStyle='rgba(40,30,18,.25)';g.beginPath();g.ellipse(cx,sol,26,4,0,0,7);g.fill();
+  R(cx-22,sol-18,44,14,'#2d6fb0');R(cx-22,sol-18,44,1.5,'#6aa8e8');R(cx-22,sol-5,44,1.5,'#1d4f80');for(let k=-20;k<22;k+=8)R(cx+k,sol-17,1,12,'#1d4f80');
+  [[-16],[14]].forEach(([k])=>{g.fillStyle='#3a3a40';g.beginPath();g.arc(cx+k,sol-2,4,0,7);g.fill();g.fillStyle='#8a8f96';g.beginPath();g.arc(cx+k,sol-2,1.5,0,7);g.fill();});
+  for(let k=0;k<5;k++){const x=cx-19+k*8, y=sol-25-(k%2)*3;R(x,y,7,7,'rgba(210,240,255,.95)');R(x,y,7,1.5,'#ffffff');R(x+5,y+1,1.5,5,'rgba(120,180,220,.7)');R(x+1,y+2,1,1,'#ffffff');}   /* les blocs de glace */
+  R(cx-0.75,sol-54,1.5,32,'#8a8f96');
+  for(let k=0;k<8;k++){g.fillStyle=k%2?'#ffffff':'#2d6fb0';g.beginPath();g.moveTo(cx,sol-58);g.lineTo(cx-26+k*6.5,sol-44);g.lineTo(cx-26+(k+1)*6.5,sol-44);g.closePath();g.fill();}
+  R(cx+18,sol-34,14,11,'#2a2a2a');R(cx+18.5,sol-33.5,13,10,'#3a4440');g.font='700 3px Georgia';g.fillStyle='#fff';g.fillText('GLAÇONS',cx+19.5,sol-29.5);g.fillText('ARTISANAUX',cx+19,sol-26);
+  R(cx-22,sol-40,20,6,'#f4efe6');g.font='700 3.4px Georgia';g.fillStyle='#2d6fb0';g.fillText('Le Glaçon d’Art',cx-21,sol-36);
+  return {toile:c,W,H,sol,nuit:null};}
 /* LE PEIGNE D'OR : le salon de coiffure du quai. Une devanture vert bouteille à filets d'or, la
    grande vitrine avec ses fauteuils et ses miroirs, l'enseigne aux ciseaux, et le poteau de barbier
    à spirale bleu-blanc-rouge ; la nuit, les miroirs s'allument. */
@@ -1485,6 +1527,8 @@ function semerDecorExtramar(){
      l'autre, comme sur le vrai quai ; au milieu, la Bonne Mère */
   for(let k=0;k<10;k++){
     if(k===4){P('x_panneauG',XP.ruelle.x-38,XP.maisonsY+22,{col:[4,3]});continue;}   /* la ruelle du casino, et son panneau */
+    if(k===9){XCAL['x_banque0']=graverLaBanque();CALQUES_DECO['x_banque']=XCAL['x_banque0'];P('x_banque',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'banque'});continue;}   /* la banque */
+    if(k===1){XCAL['x_voyante0']=graverLaVoyante();CALQUES_DECO['x_voyante']=XCAL['x_voyante0'];P('x_voyante',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'voyante'});continue;}   /* la voyante */
     if(k===3){XCAL['x_bar0']=graverLeBar();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ferme:'Le Bar des Docks'});
       XCAL['x_gueridon0']=graverGueridon();CALQUES_DECO['x_gueridon']=XCAL['x_gueridon0'];[[70+k*140-44,XP.maisonsY+34],[70+k*140+46,XP.maisonsY+36]].forEach(([x,y])=>P('x_gueridon',x,y,{col:[8,3]}));continue;}   /* le bar-tabac */
     if(k===5){XCAL['x_peigne0']=graverLePeigne();CALQUES_DECO['x_peigne']=XCAL['x_peigne0'];P('x_peigne',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'salon'});continue;}   /* le salon de coiffure */
@@ -1518,6 +1562,8 @@ function semerDecorExtramar(){
   /* LES BANCS, entre deux lanternes, tournés vers la mer ; deux autres contre les façades */
   [[210,316],[490,316],[770,316],[1050,316],[1190,316],[1270,560],[1340,560]]
     .forEach(([x,y])=>P('bancP',x,y));
+  /* LE GLAÇON D'ART, la charrette des glaçons artisanaux, sur le quai ouest */
+  XCAL['x_glacons0']=graverLesGlacons();CALQUES_DECO['x_glacons']=XCAL['x_glacons0'];P('x_glacons',128,262,{col:[22,6],bati:true,demi:24,ouvre:'glacons'});
   /* LA MANIFESTATION DES DOCKERS, sur le quai est */
   poserLaManif(P);
   /* les bittes d'amarrage, sur la margelle */

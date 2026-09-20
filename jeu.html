@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1623';
+  var MA_VERSION='2026-09-20-1632';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -18309,6 +18309,9 @@ function majAction(){
   }
   if(o.t==='x_chantier'){b.innerHTML='Lire le panneau<small>CHANTIER · TRAVAUX EN COURS</small>';b.classList.add('on');return;}
   if(o.ouvre==='manif'){b.innerHTML=(e.ap&&e.ap.gilet?'Ranger ton gilet':'Rejoindre la manif')+'<small>'+(e.ap&&e.ap.gilet?'TU DÉFILES AVEC LES DOCKERS':'LE DÉLÉGUÉ TE TEND UN GILET ORANGE')+'</small>';b.classList.add('on');return;}
+  if(o.ouvre==='banque'){b.innerHTML='Entrer à la banque<small>LIVRET · VIREMENTS · PRÊT</small>';b.classList.add('on');return;}
+  if(o.ouvre==='voyante'){b.innerHTML='Consulter Madame Mireille<small>ELLE VOIT TOUT · 1 € LA PRÉDICTION</small>';b.classList.add('on');return;}
+  if(o.ouvre==='glacons'){b.innerHTML='Le Glaçon d’Art<small>GLAÇONS ARTISANAUX · TAILLÉS MAIN</small>';b.classList.add('on');return;}
   if(o.ouvre==='salon'){b.innerHTML='Entrer au Peigne d’Or<small>COUPES ET COULEURS EXCLUSIVES</small>';b.classList.add('on');return;}
   if(o.ouvre==='crousti'){b.innerHTML='Entrer chez Crousti’Port<small>'+(REPU_FIN>Date.now()?'TU ES REPU · ENCORE '+Math.ceil((REPU_FIN-Date.now())/60000)+' MIN':'POULET FRIT · MENUS DE 1 € À 12 €')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='skishop'){b.innerHTML='Entrer au Ski shop<small>TENUES DE MONTAGNE · DE 5 € À 2 500 €</small>';b.classList.add('on');return;}
@@ -18469,6 +18472,9 @@ function agir(){
   if(o.ouvre==='skishop'){ouvrirLeSkiShop();return;}
   if(o.ouvre==='crousti'){ouvrirCrousti();return;}
   if(o.ouvre==='salon'){ouvrirLeSalon();return;}
+  if(o.ouvre==='banque'){ouvrirLaBanque();return;}
+  if(o.ouvre==='voyante'){ouvrirLaVoyante();return;}
+  if(o.ouvre==='glacons'){ouvrirLesGlacons();return;}
   if(o.ouvre==='manif'){e.ap=Object.assign({},e.ap||DEF_AP);const avec=!e.ap.gilet;if(avec)e.ap.gilet=true;else delete e.ap.gilet;
     sauver();envoyerSauvegarde(true);monterEnLigne(true);vibrer([20,40,20]);jouer('vente','moment');
     texteVolant(joueur.x,joueur.y-56,avec?'Tous ensemble ! Tu rejoins le cortège':'Tu ranges ton gilet','#ffb060');majAction();return;}
@@ -19836,6 +19842,134 @@ function partirSkier(ep){
   location.href='ski.html?e='+ep+'&v='+encodeURIComponent(window.MA_VERSION||'');
 }
 /* (les jeux du Bar des Docks ont été retirés : on les refera de zéro) */
+/* ================= LES TROIS NOUVELLES ADRESSES DU QUAI =================
+   LA BANQUE (livret à 1 % par jour, virements, prêt), MADAME MIREILLE (des prédictions complètement
+   folles), LE GLAÇON D'ART (des glaçons « taillés main » qui fondent dans le sac). */
+const CSS_QUAI=`.quai{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;font-family:Georgia,serif}
+.quai .hd{padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 10px;display:flex;align-items:center;gap:10px}.quai .hd .lg{font-size:28px}
+.quai .hd b{display:block;font:700 17px Georgia;letter-spacing:2px}.quai .hd small{font:italic 12px Georgia;opacity:.85}.quai .hd .bs{margin-left:auto;text-align:right;font:12px Georgia}.quai .hd .bs b{letter-spacing:0;font-size:15px}
+.quai .corps{flex:1;overflow-y:auto;padding:4px 14px 90px}
+.quai .bloc{border-radius:14px;padding:12px 14px;margin-bottom:10px}.quai .bloc h4{margin:0 0 4px;font:700 11px ui-monospace,monospace;letter-spacing:2px;opacity:.8}
+.quai .qGros{font:900 28px Georgia}.quai .pt{font:italic 12px Georgia;opacity:.85;margin:2px 0 8px}
+.quai .rang{display:flex;gap:8px;flex-wrap:wrap}.quai .rang button,.quai .act{border:0;border-radius:18px;padding:9px 13px;font:700 13px Georgia}
+.quai input,.quai select{width:100%;border-radius:10px;border:1px solid rgba(0,0,0,.2);padding:9px;font:15px Georgia;margin:4px 0}
+.quai .sortir{position:absolute;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);border-radius:22px;padding:12px;font:700 15px Georgia}
+.quai .bulle{position:absolute;left:14px;right:14px;bottom:70px;border-radius:12px;padding:10px 12px;font:italic 14px Georgia;opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none}
+.quai .bulle.on{opacity:1;transform:none}
+.bq{background:#f4efe4;color:#1d2c44}.bq .hd{background:#2a3a5a;color:#f0d890;border-bottom:3px solid #d8b050}.bq .bloc{background:#fff;box-shadow:0 2px 8px rgba(29,44,68,.1)}
+.bq .rang button,.bq .act{background:#2a3a5a;color:#f0d890}.bq .sortir{background:#2a3a5a;color:#f0d890;border:0}.bq .bulle{background:#2a3a5a;color:#f0d890}
+.vo{background:radial-gradient(ellipse at 50% 30%,#4a1a5a,#1a0a24);color:#f4e8ff}.vo .hd{color:#f0d890}
+.vo .boule{width:190px;height:190px;margin:10px auto;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffffff,#a8d8ff 20%,#5a7ad8 60%,#2a1a5a);box-shadow:0 0 40px rgba(160,200,255,.6),inset -10px -14px 30px rgba(0,0,40,.5);display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;font:italic 15px Georgia;color:#fff;text-shadow:0 1px 3px #000}
+.vo .boule.anim{animation:bou 1.6s ease-in-out}@keyframes bou{0%,100%{filter:none;transform:scale(1)}50%{filter:hue-rotate(90deg) brightness(1.4);transform:scale(1.06)}}
+.vo .socle{width:110px;height:18px;margin:-6px auto 10px;border-radius:0 0 40px 40px;background:linear-gradient(#d8b050,#8a6a2a)}
+.vo .pred{min-height:90px;margin:0 6px;border-radius:14px;padding:14px;background:rgba(255,255,255,.08);border:1px solid rgba(240,216,144,.4);font:italic 17px Georgia;text-align:center;line-height:1.45}
+.vo .act{display:block;margin:12px auto;background:#f0d890;color:#2a0e3a;min-width:220px}.vo .sortir{background:transparent;border:2px solid #f0d890;color:#f0d890}.vo .bulle{background:#2a0e3a;color:#f0d890;border:1px solid #f0d890}
+.gl{background:linear-gradient(#e8f6ff,#bfe2f4);color:#12384e}.gl .hd{background:#2d6fb0;color:#fff}.gl .bloc{background:rgba(255,255,255,.85);box-shadow:0 2px 8px rgba(18,56,78,.12);display:flex;gap:10px;align-items:center}
+.gl .ic{font-size:30px;width:44px;text-align:center}.gl .t{flex:1}.gl .t b{display:block;font:700 15px Georgia}.gl .t small{font:italic 12px Georgia;opacity:.85}
+.gl .act{background:#2d6fb0;color:#fff}.gl .sortir{background:#2d6fb0;color:#fff;border:0}.gl .bulle{background:#12384e;color:#e8f6ff}
+.gl .fond{height:6px;border-radius:3px;background:rgba(18,56,78,.15);margin-top:5px;overflow:hidden}.gl .fond i{display:block;height:100%;background:#2d8fb0}`;
+function cssQuai(){if(!document.getElementById('cssQuai')){const st=document.createElement('style');st.id='cssQuai';st.textContent=CSS_QUAI;document.head.appendChild(st);}}
+function bulleQuai(t){const b=$('quaiBulle');if(!b)return;b.textContent=t;b.classList.add('on');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),2800);}
+const eurosSaisis=(v)=>Math.round(parseFloat(String(v||'').replace(',','.'))*100)||0;
+/* LA BANQUE */
+async function ouvrirLaBanque(){cssQuai();$('page2Fond').className='quai bq';$('page2').classList.add('on');
+  let B=await appelRPC('banque_etat',{p_joueur:e.id})||{};
+  const rendre=(msg)=>{if(typeof B.euros==='number'){e.euros=B.euros;majHaut();}
+    const amis=(EN_LIGNE||[]).filter(p=>p&&p.id&&p.id!==e.id);
+    $('page2Fond').innerHTML='<div class="hd"><div class="lg">🏦</div><div><b>CAISSE D’ÉPARGNE</b><small>du Vieux-Port · fondée en 1867</small></div><div class="bs">ton porte-monnaie<br><b>'+enEuros(e.euros||0)+'</b></div></div><div class="corps">'+
+      ((B.recus||[]).length?'<div class="bloc" style="background:#eaf7f0"><h4>TU AS REÇU</h4>'+B.recus.map(r=>'<div><b>+'+enEuros(r.montant)+'</b> de '+echapperT(r.de)+(r.mot?' · « '+echapperT(r.mot)+' »':'')+'</div>').join('')+'</div>':'')+
+      '<div class="bloc"><h4>TON LIVRET D’ÉPARGNE</h4><div class="qGros">'+enEuros(B.livret||0)+'</div><div class="pt">Il rapporte 1 % par jour (sur 1 000 € au plus) : '+enEuros(B.interet_jour||0)+' demain. On retire quand on veut.</div>'+
+        '<input id="bqM" inputmode="decimal" placeholder="Montant en €"><div class="rang"><button id="bqDep">Déposer</button><button id="bqRet">Retirer</button></div></div>'+
+      '<div class="bloc"><h4>FAIRE UN VIREMENT</h4><div class="pt">À un ami en ligne · 500 € par jour au plus</div>'+
+        (amis.length?'<select id="bqA">'+amis.map(p=>'<option value="'+p.id+'">'+echapperT(p.pseudo||'survivant')+'</option>').join('')+'</select><input id="bqV" inputmode="decimal" placeholder="Montant en €"><input id="bqMot" maxlength="80" placeholder="Un petit mot (facultatif)"><button class="act" id="bqVir">Envoyer</button>':'<div class="pt">Personne n’est en ligne pour l’instant.</div>')+'</div>'+
+      '<div class="bloc"><h4>LE PRÊT</h4>'+((B.pret||0)>0?'<div class="qGros">'+enEuros(B.pret)+'</div><div class="pt">à rendre avant le '+new Date(B.pret_du).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+'. Après, la banque se sert dans ton porte-monnaie, puis ton livret.</div><button class="act" id="bqRemb">Rembourser '+enEuros(B.pret)+'</button>':
+        '<div class="pt">Jusqu’à 200 €, avec 10 % de frais, à rendre sous 7 jours.</div><input id="bqP" inputmode="decimal" placeholder="Montant en € (200 au plus)"><button class="act" id="bqEmp">Emprunter</button>')+'</div>'+
+      '</div><div class="bulle" id="quaiBulle"></div><button class="sortir" id="quaiSortir">Ressortir sur le quai</button>';
+    $('quaiSortir').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+    const faire=async(nom,args,ok)=>{const d=await appelRPC(nom,Object.assign({p_joueur:e.id},args));
+      if(!d||d.erreur){bulleQuai(d&&d.erreur==='pas_assez'?'Pas assez d’argent pour ça.':(d&&d.erreur==='plafond'?'500 € de virements par jour, pas plus.':(d&&d.erreur==='deja'?'Un prêt à la fois !':(d&&d.erreur==='montant'?'Ce montant ne va pas.':'La banque n’a pas pu.'))));return;}
+      B=d;sauver();vibrer(20);jouer('vente','moment');rendre();bulleQuai(ok);};
+    const v=(id)=>eurosSaisis(($(id)||{}).value);
+    if($('bqDep'))$('bqDep').onclick=()=>faire('banque_deposer',{p_montant:v('bqM')},'Déposé sur ton livret.');
+    if($('bqRet'))$('bqRet').onclick=()=>faire('banque_retirer',{p_montant:v('bqM')},'Retiré de ton livret.');
+    if($('bqVir'))$('bqVir').onclick=()=>faire('banque_virer',{p_pour:$('bqA').value,p_montant:v('bqV'),p_mot:$('bqMot').value},'Virement envoyé !');
+    if($('bqEmp'))$('bqEmp').onclick=()=>faire('banque_emprunter',{p_montant:v('bqP')},'Prêt accordé. À rendre sous 7 jours !');
+    if($('bqRemb'))$('bqRemb').onclick=()=>faire('banque_rembourser',{},'Prêt remboursé. La banque te remercie.');};
+  rendre();}
+/* MADAME MIREILLE : elle voit tout, et surtout n'importe quoi */
+const PREDICTIONS=[
+  'Je vois… une mouette. Elle te regarde. Elle sait ce que tu as fait.',
+  'Demain, tu marcheras. Beaucoup. Peut-être même vers la droite.',
+  'Un grand homme brun entrera dans ta vie. C’est le livreur de Crousti’Port.',
+  'Les cartes sont formelles : ton prochain pastis sera trop sucré.',
+  'Je vois de l’argent… beaucoup d’argent… ah non, c’est le reflet du bassin.',
+  'Tu vas croiser quelqu’un que tu connais. Ou pas. La boule hésite.',
+  'Méfie-toi des lampadaires. Un cycliste en sait quelque chose.',
+  'Ton animal totem est la sardine qui a bouché le port.',
+  'Dans une vie antérieure, tu étais un pavé du Vieux-Port. Un très beau pavé.',
+  'Le mistral va se lever. Il emportera tes soucis. Et ta casquette.',
+  'Tu vas gagner à la Grattouille… le jour où elle reviendra.',
+  'Je vois un chiffre : 13. C’est le département. Voilà, c’était ça.',
+  'Une grande nouvelle arrive : il fera beau. Ou il pleuvra. C’est l’un des deux.',
+  'Quelqu’un pense à toi en ce moment. C’est moi, tu me dois 1 €.',
+  'Ta coupe de cheveux actuelle est une erreur. Le Peigne d’Or peut t’aider.',
+  'Tu vas trouver un minerai rare. Sous tes yeux. Mais tu regarderas ton téléphone.',
+  'La boule me dit de te dire… « oh fada ». Je ne sais pas pourquoi.',
+  'Un poisson te veut du mal. Ne lui tourne pas le dos.',
+  'Tu épouseras quelqu’un qui aime la bouillabaisse. Ou une bouillabaisse.',
+  'Ton compte en banque va grossir. Surtout si tu y mets de l’argent.',
+  'Je vois un poulet… un poulet en or… c’est toi ? C’est toi.',
+  'Les astres sont alignés : ce soir, tu mangeras. Probablement.',
+  'Un docker en colère a un message pour toi : « on lâche rien ».',
+  'Tu vas faire une rencontre décisive au métro. Avec le tourniquet.',
+  'La boule est floue. Attends… je l’essuie… non, c’est toujours flou.',
+  'Tu es quelqu’un de bien. Sauf le mardi. Surtout ce mardi-là.',
+  'Méfie-toi du Minot, la mouette. Il a des dettes.',
+  'Ta prochaine chute à ski sera spectaculaire. Tout le monde en parlera.',
+  'Dans 7 jours, tu te souviendras de cette prédiction. Et tu diras : « ah ouais ».',
+  'Je vois un grand voyage… jusqu’au bout du quai. Et retour.',
+  'L’OM va gagner. Je le sens. Je le sens à chaque fois.',
+  'Tu as un talent caché. Il est très bien caché. Même moi je ne le trouve pas.',
+  'Un glaçon artisanal va changer ta vie. Puis fondre.',
+  'Si tu lis ceci, c’est que la boule marche. Merci pour le 1 €.',
+  'Je vois une porte… tu vas l’ouvrir… c’est ton frigo. Encore.',
+  'Ton destin est lié à une chaise de terrasse. Assieds-toi, tu comprendras.',
+  'Les planètes disent : « bois de l’eau ». Même les planètes s’inquiètent.',
+  'Tu vas perdre quelque chose de précieux. Tes clés. Elles sont dans ta poche.',
+  'Un inconnu va te sourire. C’est parce que tu as quelque chose entre les dents.',
+  'Ta chance du jour : 73 %. Ton malchance du jour : 73 % aussi. Bizarre.'];
+async function ouvrirLaVoyante(){cssQuai();$('page2Fond').className='quai vo';$('page2').classList.add('on');
+  $('page2Fond').innerHTML='<div class="hd"><div class="lg">🔮</div><div><b>MADAME MIREILLE</b><small>voyante extra-lucide du Vieux-Port</small></div><div class="bs">ta bourse<br><b id="voB">'+enEuros(e.euros||0)+'</b></div></div>'+
+    '<div class="corps"><div class="boule" id="voBoule">Pose ta main sur la boule, mon petit…</div><div class="socle"></div>'+
+    '<div class="pred" id="voPred">« Approche… approche… Madame Mireille voit tout. Pour 1 €, elle te dit ton avenir. Sans remboursement. »</div>'+
+    '<button class="act" id="voGo">Consulter la boule · 1 €</button></div><div class="bulle" id="quaiBulle"></div><button class="sortir" id="quaiSortir">Ressortir sur le quai</button>';
+  $('quaiSortir').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+  let derniere=-1;
+  $('voGo').onclick=async()=>{const b=$('voGo');b.disabled=true;const d=await appelRPC('payer_service',{p_joueur:e.id,p_service:'voyante'});
+    if(!d||d.erreur){b.disabled=false;bulleQuai(d&&d.erreur==='pas_assez'?'Madame Mireille ne fait pas crédit.':'La boule est en panne…');return;}
+    if(typeof d.euros==='number'){e.euros=d.euros;sauver();majHaut();$('voB').textContent=enEuros(e.euros);}
+    const boule=$('voBoule');boule.classList.remove('anim');void boule.offsetWidth;boule.classList.add('anim');boule.textContent='Hmmmm…';$('voPred').textContent='« Les esprits se concentrent… »';vibrer([10,60,10]);
+    setTimeout(()=>{let k;do{k=Math.floor(Math.random()*PREDICTIONS.length);}while(k===derniere&&PREDICTIONS.length>1);derniere=k;
+      boule.textContent='✦';$('voPred').textContent='« '+PREDICTIONS[k]+' »';b.disabled=false;b.textContent='Encore une · 1 €';jouer('vente','moment');},1600);};}
+/* LE GLAÇON D'ART : des glaçons « taillés main », qui fondent au bout d'une heure (ou trois pour le diamant) */
+const GLACONS=[['glacon_classique','🧊','Le Classique','carré, honnête, froid',50],['glacon_mistral','🌬','Le Mistral','soufflé par le vent du nord, garanti 100 % frais',200],
+  ['glacon_cuvee','🍷','La Cuvée 2026','millésime exceptionnel, notes de froid et d’eau',500],['glacon_sardine','🐟','La Sardine','taillé en forme de sardine, fond en 2 h',1500],['glacon_diamant','💎','Le Diamant','facetté main, il fond quand même (3 h)',5000]];
+async function ouvrirLesGlacons(){cssQuai();$('page2Fond').className='quai gl';$('page2').classList.add('on');
+  let M=await appelRPC('mes_glacons',{p_joueur:e.id})||[];
+  const rendre=()=>{const n=Date.now();
+    $('page2Fond').innerHTML='<div class="hd"><div class="lg">🧊</div><div><b>LE GLAÇON D’ART</b><small>glaçons artisanaux, taillés main</small></div><div class="bs">ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div><div class="corps">'+
+      '<div class="pt" style="margin:0 2px 10px">« Chaque glaçon est unique. Il fond, c’est ce qui le rend précieux. » — Fernand, glacier depuis 1987</div>'+
+      GLACONS.map(([k,ic,n2,d,px])=>'<div class="bloc"><div class="ic">'+ic+'</div><div class="t"><b>'+n2+'</b><small>'+d+'</small></div><button class="act" data-g="'+k+'">'+enEuros(px).replace(',00','')+'</button></div>').join('')+
+      (M.length?'<div class="bloc" style="display:block"><h4>TES GLAÇONS</h4>'+M.map(x=>{const G=GLACONS.find(y=>y[0]===x.sorte)||['','🧊',x.sorte], a=new Date(x.achete).getTime(), f=new Date(x.fond_a).getTime(), k2=Math.max(0,Math.min(1,(f-n)/(f-a)));
+        return '<div style="margin:6px 0">'+G[1]+' <b>'+G[2]+'</b> · '+(k2>0?'fond dans '+Math.ceil((f-n)/60000)+' min':'<i>c’est une flaque</i>')+'<div class="fond"><i style="width:'+Math.round(k2*100)+'%"></i></div></div>';}).join('')+'</div>':'')+
+      '</div><div class="bulle" id="quaiBulle"></div><button class="sortir" id="quaiSortir">Ressortir sur le quai</button>';
+    $('quaiSortir').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+    $('page2Fond').querySelectorAll('[data-g]').forEach(b=>b.onclick=async()=>{const G=GLACONS.find(y=>y[0]===b.dataset.g);b.disabled=true;
+      const d=await appelRPC('payer_service',{p_joueur:e.id,p_service:G[0]});
+      if(!d||d.erreur){b.disabled=false;bulleQuai(d&&d.erreur==='pas_assez'?'Fernand ne fait pas crédit.':'Le glacier n’a pas pu.');return;}
+      if(typeof d.euros==='number'){e.euros=d.euros;sauver();majHaut();}vibrer(20);
+      M=await appelRPC('mes_glacons',{p_joueur:e.id})||M;rendre();bulleQuai(['Magnifique choix. Il est déjà en train de fondre.','Gardez-le au frais… dans votre cœur.','Un connaisseur ! Fernand est ému.'][Math.floor(Math.random()*3)]);});};
+  rendre();}
 /* ================= LE PEIGNE D'OR : le salon de coiffure du port =================
    Même catalogue que le Ski shop, aux couleurs du salon : la cabine où ta tête tourne, deux rayons
    (les coupes, les couleurs), essayer, acheter, porter, revenir à sa coupe. */
