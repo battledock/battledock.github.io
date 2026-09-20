@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1533';
+  var MA_VERSION='2026-09-20-1534';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -11458,7 +11458,12 @@ function graverX(t,v){
   return XCAL[cle];
 }
 function dessinerX(g,o,x,y){
-  if(o.pnj){try{personne(g,x,y,Object.assign({},DEF_AP,o.pnj),o.dir||'bas',0,false,false);}catch(err){}return;}   /* un personnage du décor (le moniteur…) : dessiné comme un joueur */
+  if(o.pnj){                                     /* un personnage du décor (le moniteur, les dockers…) : dessiné comme un joueur */
+    /* GRAVÉ UNE FOIS : on garde sa propre copie du dessin. Redemander la pose à chaque image faisait
+       déborder le cache des poses dès qu'il y avait beaucoup de personnages (la manif : 16 dockers). */
+    if(!o._pose||o._poseFin!==STYLE_FIN()){try{const src=poseDe(Object.assign({},DEF_AP,o.pnj),o.dir||'bas',0);
+      const c=document.createElement('canvas');c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);o._pose=c;o._poseFin=STYLE_FIN();}catch(err){return;}}
+    g.drawImage(o._pose,Math.round(x-CASE_L/2),Math.round(y-CASE_H+10),CASE_L,CASE_H);return;}
   if(o.t==='x_bouliste'){
     /* un bouliste : le vrai personnage, immobile, qui se balance à peine */
     const sv=GESTE;GESTE={t:0};
