@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1451';
+  var MA_VERSION='2026-09-20-1456';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -824,6 +824,10 @@ body{overflow:hidden}
 #pqTexte i{color:#c9c2ae}
 #petanque .pqAmis{display:flex;flex-direction:column;gap:6px;margin:4px 0}#petanque .pqAmis button{border:0;border-radius:10px;padding:10px;background:#f4ecd8;color:#2a1d0c;font:700 14px Georgia;display:flex;justify-content:space-between;align-items:center}
 #petanque .pqAmis button small{font:italic 12px Georgia;color:#6b4a28}#petanque .pqLien{border:0;background:none;color:#e8c06a;font:italic 13px Georgia;margin-top:4px}
+#petanque .pqScore{display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.25);border-radius:10px;padding:6px 10px;margin-bottom:6px;font:14px Georgia}
+#petanque .pqScore b{font-size:18px;color:#e8c06a}#petanque .pqScore i{font-size:11px;opacity:.8}
+#petanque .pqChoixTir{display:flex;gap:6px;margin:6px 0}#petanque .pqChoixTir button{flex:1;border:1px solid #e8c06a;background:transparent;color:#f4e2b0;border-radius:10px;padding:7px;font:700 13px Georgia}
+#petanque .pqChoixTir button.on{background:#e8c06a;color:#2a1d0c}#petanque .pqChoixTir small{display:block;font:italic 11px Georgia;opacity:.8}
 #pqBouton{width:100%;border:0;border-radius:12px;padding:14px;background:#e8c06a;color:#2a1d0c;
   font:700 15px Georgia,serif;box-shadow:0 3px 0 #8a6a2a}
 #pqFermer{position:absolute;right:10px;top:8px;border:0;width:32px;height:32px;border-radius:50%;
@@ -17685,11 +17689,12 @@ function pqPoser(E,qui,angle,force){
 }
 /* un pas de physique : le sable freine, les boules se poussent */
 function pqPas(E){
-  const dt=PQC.DT, objs=E.boules.filter(b=>!b.morte).concat([E.coch]);
+  const dt=PQC.DT, objs=E.boules.filter(b=>!b.morte).concat(E.coch&&!E.coch.mort?[E.coch]:[]);
   let bouge=false;
   for(const o of objs){const v=Math.hypot(o.vx,o.vy);
     if(v<0.5){o.vx=0;o.vy=0;continue;}
-    bouge=true;const k=Math.max(0,v-PQC.FROT*dt)/v;o.vx*=k;o.vy*=k;o.x+=o.vx*dt;o.y+=o.vy*dt;}
+    bouge=true;const k=Math.max(0,v-(o.frot||PQC.FROT)*dt)/v;o.vx*=k;o.vy*=k;o.x+=o.vx*dt;o.y+=o.vy*dt;
+    if(o.frot&&v<60)o.frot=0;}                                              /* une boule tirée : elle mord le sable, puis roule normalement */
   for(let i=0;i<objs.length;i++)for(let j=i+1;j<objs.length;j++){
     const a=objs[i],b=objs[j], ra=a===E.coch?1.5:3, rb=b===E.coch?1.5:3;
     const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
@@ -17699,7 +17704,8 @@ function pqPas(E){
         a.vx-=k2*mb*nx;a.vy-=k2*mb*ny;b.vx+=k2*ma*nx;b.vy+=k2*ma*ny;}}
   }
   for(const o of E.boules)if(!o.morte&&(o.x<4||o.x>PQC.W-4||o.y<4||o.y>PQC.H-4))o.morte=true;
-  const C=E.coch;if(C.x<4||C.x>PQC.W-4||C.y<4||C.y>PQC.H-4){C.x=Math.max(6,Math.min(PQC.W-6,C.x));C.y=Math.max(6,Math.min(PQC.H-6,C.y));C.vx=0;C.vy=0;}
+  const C=E.coch;if(C&&!C.mort&&(C.x<4||C.x>PQC.W-4||C.y<4||C.y>PQC.H-4)){if(E.vraies){C.mort=true;C.vx=0;C.vy=0;}   /* vraies règles : le cochonnet est sorti, il est mort */
+    else{C.x=Math.max(6,Math.min(PQC.W-6,C.x));C.y=Math.max(6,Math.min(PQC.H-6,C.y));C.vx=0;C.vy=0;}}
   return bouge;
 }
 function pqArret(E){let n=0;while(pqPas(E)&&n<3000)n++;}
@@ -17800,15 +17806,18 @@ function toucherPetanque(){
   else if(PET.etape==='force'){
     const force=(1-Math.cos((t-PET.t0)/480))/2;
     PET.lancers.push([PET.angle,force]);
-    if(PET.mode==='ami'){envoyerLancerAmi(PET.angle,force);PET.reste.moi--;}
+    if(PET.mode==='ami'){const ty=PET.phase==='coch'?'coch':(PET.typeTir||'pointe');envoyerLancerAmi(PET.angle,force,ty);if(ty!=='coch')PET.reste.moi--;lancer('moi',PET.angle,force,ty);vibrer(ty==='tir'?[10,20,30]:14);majTextePetanque();return;}
     lancer('moi',PET.angle,force);vibrer(14);
   }
   majTextePetanque();
 }
 /* LANCER : la boule vole jusqu'à sa cible, puis la physique déterministe prend la main */
-function lancer(qui,angle,force){
-  const b=pqPoser(PET.E,qui,angle,force);
-  PET.vol={b,tx:b.x,ty:b.y,t0:performance.now(),dur:650+force*450,roule:pqRoulette(force)};
+function pqTirer(E,qui,angle,force){const [tx,ty]=pqCible(angle,force+0.08);
+  const b={x:tx,y:ty,vx:Math.sin(angle)*165,vy:-Math.cos(angle)*165,qui,morte:false,frot:520};E.boules.push(b);return b;}
+function pqLancerCoch(E,angle,force){const [tx,ty]=pqCible(angle,force);E.coch={x:tx,y:ty,vx:Math.sin(angle)*22,vy:-Math.cos(angle)*22};return E.coch;}
+function lancer(qui,angle,force,type){
+  const b=type==='coch'?pqLancerCoch(PET.E,angle,force):(type==='tir'?pqTirer(PET.E,qui,angle,force):pqPoser(PET.E,qui,angle,force));
+  PET.vol={b,tx:b.x,ty:b.y,t0:performance.now(),dur:type==='tir'?520+force*300:650+force*450,roule:type==='tir'?60:pqRoulette(force),coch:type==='coch'};
   b.enVol=true;PET.etape='vol';
 }
 function apresLArret(){
@@ -17822,7 +17831,7 @@ function apresLArret(){
 async function finirLaMene(){
   const R=pqCompter(PET.E), cm=v=>Math.max(1,Math.round(v*1.6))+' cm';
   PET.etape='fin';
-  if(PET.mode==='ami'){PET.fin=verdictAmi(R,cm);majTextePetanque();return;}
+  if(PET.mode==='ami'){finirMeneAmi();return;}
   if(PET.mode!=='payant'){PET.fin=verdict(R,cm,null);majTextePetanque();return;}
   PET.fin='Marius mesure… <i>l’arbitre vérifie</i>';majTextePetanque();
   /* LE SERVEUR REJOUE LA MÈNE : c'est son verdict qui compte */
@@ -17841,21 +17850,29 @@ async function finirLaMene(){
 let PQ_RENVOI=null;
 const amisAuPort=()=>(EN_LIGNE||[]).filter(p=>p&&p.id&&p.lieu==='à Extramar');
 function majTexteAmi(t,b){
-  {const T=document.querySelector('#petanque .pqTitre');if(T)T.textContent=PET.mode==='ami'?'LE BOULODROME · UNE MÈNE ENTRE AMIS':'LE BOULODROME · JOUER AVEC UN AMI';}
+  {const T=document.querySelector('#petanque .pqTitre');if(T)T.textContent=PET.mode==='ami'?'PARTIE EN 13 POINTS · ENTRE AMIS':'LE BOULODROME · JOUER AVEC UN AMI';}
   if(PET.etape==='amis'){const L=amisAuPort();b.style.display='none';
     t.innerHTML='<div class="pqAmis">'+(L.length?L.map(p=>'<button data-inv="'+p.id+'">'+echapperT(p.pseudo||'survivant')+'<small>inviter</small></button>').join(''):
       '<i>Aucun ami au port pour l’instant. Invite-les à te rejoindre au boulodrome !</i>')+'</div><button id="pqRetourChoix" class="pqLien">← retour</button>';
     t.querySelectorAll('[data-inv]').forEach(x=>x.onclick=()=>{const p=L.find(q=>q.id===x.dataset.inv);if(p)inviterAmi(p);});
     $('pqRetourChoix').onclick=()=>{PET={etape:'choix'};majTextePetanque();};return true;}
-  if(PET.etape==='attenteAmi'){b.style.display='none';t.innerHTML='<b>'+echapperT(PET.ami.pseudo)+'</b> reçoit ton invitation…<br><i>La mène commence dès qu’il accepte.</i>';return true;}
+  if(PET.etape==='attenteAmi'){b.style.display='none';t.innerHTML='<b>'+echapperT(PET.ami.pseudo)+'</b> reçoit ton invitation…<br><i>La partie commence dès qu’il accepte.</i>';return true;}
   if(PET.mode!=='ami')return false;
-  b.style.display='';
-  if(PET.fin){t.innerHTML=PET.fin;b.textContent='Revanche';return true;}
-  const en='<b>Entre amis</b> · toi '+PET.reste.moi+' boule'+(PET.reste.moi>1?'s':'')+' · '+echapperT(PET.ami.pseudo)+' '+PET.reste.lui+' · ';
-  if(PET.tour==='lui'){t.innerHTML=en+'<b>'+echapperT(PET.ami.pseudo)+'</b> vise…';b.textContent='…';return true;}
-  if(PET.etape==='viser'){t.innerHTML=en+'à toi · touche pour fixer la <b>direction</b>';b.textContent='Viser';}
-  else if(PET.etape==='force'){t.innerHTML=en+'à toi · touche pour fixer la <b>force</b>';b.textContent='Lancer !';}
-  else{t.innerHTML=en+'la boule roule…';b.textContent='…';}
+  b.style.display='';const n=echapperT(PET.ami.pseudo);
+  const tab='<div class="pqScore"><span>Toi <b>'+PET.score.moi+'</b></span><i>mène '+PET.mene+' · en 13</i><span><b>'+PET.score.lui+'</b> '+n+'</span></div>';
+  if(PET.fin){t.innerHTML=tab+PET.fin;b.textContent=PET.partieFinie?'Nouvelle partie':'Mène suivante';return true;}
+  if(PET.phase==='coch'){
+    if(PET.tour==='lui'){t.innerHTML=tab+'<b>'+n+'</b> lance le cochonnet…';b.textContent='…';return true;}
+    const m=PET.etape==='viser'?'la <b>direction</b>':(PET.etape==='force'?'la <b>force</b>':'…');
+    t.innerHTML=tab+'À toi de lancer le <b>cochonnet</b>, entre 6 et 10 m'+(PET.essais?' <i>(essai '+(PET.essais+1)+'/3)</i>':'')+' · touche pour fixer '+m;
+    b.textContent=PET.etape==='viser'?'Viser':(PET.etape==='force'?'Lancer !':'…');return true;}
+  const reste='toi '+PET.reste.moi+' boule'+(PET.reste.moi>1?'s':'')+' · '+n+' '+PET.reste.lui;
+  if(PET.tour==='lui'){t.innerHTML=tab+reste+' · <b>'+n+'</b> '+(PET.etape==='attend'?'se prépare…':'joue…');b.textContent='…';return true;}
+  if(PET.etape==='viser'){
+    t.innerHTML=tab+reste+'<div class="pqChoixTir"><button data-tir="pointe" class="'+(PET.typeTir!=='tir'?'on':'')+'">Pointer<small>approcher</small></button><button data-tir="tir" class="'+(PET.typeTir==='tir'?'on':'')+'">Tirer<small>chasser une boule</small></button></div>touche <b>Viser</b> pour fixer la direction';
+    t.querySelectorAll('[data-tir]').forEach(x=>x.onclick=(ev)=>{ev.stopPropagation();PET.typeTir=x.dataset.tir;majTextePetanque();});b.textContent='Viser';}
+  else if(PET.etape==='force'){t.innerHTML=tab+reste+' · '+(PET.typeTir==='tir'?'<b>tir</b>':'<b>point</b>')+' · touche pour fixer la <b>force</b>';b.textContent='Lancer !';}
+  else{t.innerHTML=tab+reste+' · la boule roule…';b.textContent='…';}
   return true;}
 /* ouvrir le canal de la partie, commun aux deux joueurs */
 function canalPartie(id){
@@ -17866,7 +17883,7 @@ function canalPartie(id){
   ch.on('broadcast',{event:'lancer'},({payload:p})=>recevoirLancerAmi(p));
   ch.on('broadcast',{event:'recu'},({payload:p})=>{if(PET&&PET.mode==='ami'&&PET.aEnvoyer&&p.k>=PET.aEnvoyer.k)PET.aEnvoyer=null;});
   ch.on('broadcast',{event:'quitte'},()=>{if(PET&&PET.mode==='ami'&&!PET.fin){PET.fin='<b>'+echapperT(PET.ami.pseudo)+'</b> a quitté le boulodrome. <i>Mène interrompue.</i>';PET.etape='fin';majTextePetanque();}});
-  ch.on('broadcast',{event:'revanche'},({payload:p})=>{if(PET&&PET.mode==='ami'&&PET.fin)demarrerAmi(Object.assign({},PET.inv,p),PET.hote);});
+  ch.on('broadcast',{event:'revanche'},({payload:p})=>{if(PET&&PET.mode==='ami'&&PET.partieFinie)demarrerAmi(Object.assign({},PET.inv,p),PET.hote);});
   ch.subscribe();return ch;}
 function inviterAmi(p){
   const id=(Date.now().toString(36)+Math.random().toString(36).slice(2,7));
@@ -17897,45 +17914,87 @@ function recevoirInvitePetanque(p){
     const envoyer=()=>{try{ch.send({type:'broadcast',event:'accepte',payload:{de:e.id}});}catch(x){}};setTimeout(envoyer,500);setTimeout(envoyer,1500);
     demarrerAmi(p,false);};
 }
-/* la mène commence : même cochonnet, même hasard ; l'hôte joue la première boule */
+/* LES VRAIES RÈGLES (tête-à-tête, 3 boules chacun, partie en 13 points) :
+   — on tire au sort qui lance le cochonnet ; ensuite, c'est le gagnant de la mène précédente ;
+   — le cochonnet doit tomber entre 6 et 10 m, sinon on le relance (3 essais, puis c'est l'autre) ;
+   — celui qui a lancé le cochonnet joue la première boule ; ensuite, joue celui qui n'a PAS le point ;
+   — on peut POINTER (approcher) ou TIRER (chasser une boule adverse ou le cochonnet) ;
+   — une boule sortie du terrain est morte ; si le cochonnet sort, la mène est nulle, sauf si un seul
+     joueur a encore des boules : il marque autant de points qu'il lui en reste ;
+   — le gagnant de la mène marque une boule par boule mieux placée que la meilleure adverse ;
+   — le premier à 13 points gagne la partie. */
+const PQ_COCH_MIN=105, PQ_COCH_MAX=205;                   /* 6 et 10 m, à l'échelle du terrain */
 function demarrerAmi(inv,hote){
   const canal=PET&&PET.canal, ami=PET&&PET.ami;
-  PET={mode:'ami',partie:inv.partie,inv,hote,canal,ami,graine:inv.graine,E:pqNouvelle(inv.cx,inv.cy),n:0,reste:{moi:3,lui:3},
-    tour:hote?'moi':'lui',etape:hote?'viser':'attend',t0:performance.now(),lancers:[],envoyes:0,recus:0,aEnvoyer:null,acc:0,vol:null,fin:null};
+  const premier=((inv.graine>>>3)&1)===0?(hote?'moi':'lui'):(hote?'lui':'moi');       /* le tirage au sort, le même chez les deux */
+  PET={mode:'ami',partie:inv.partie,inv,hote,canal,ami,graine:inv.graine,score:{moi:0,lui:0},mene:0,lanceurCoch:premier,
+    envoyes:0,recus:0,aEnvoyer:null,acc:0,vol:null,fin:null,typeTir:'pointe',lancers:[]};
+  nouvelleMene();
   clearInterval(PQ_RENVOI);
-  /* un lancer part jusqu'à ce que l'autre dise « reçu » : un message perdu ne bloque jamais la mène */
   PQ_RENVOI=setInterval(()=>{if(!PET||PET.mode!=='ami'){clearInterval(PQ_RENVOI);return;}if(PET.aEnvoyer)try{PET.canal.send({type:'broadcast',event:'lancer',payload:PET.aEnvoyer});}catch(x){}},1200);
-  majTextePetanque();
 }
-function envoyerLancerAmi(angle,force){const L={k:PET.envoyes++,angle,force};PET.aEnvoyer=L;try{PET.canal.send({type:'broadcast',event:'lancer',payload:L});}catch(x){}}
+function nouvelleMene(){
+  PET.mene++;PET.E={boules:[],coch:null,vraies:true};PET.reste={moi:3,lui:3};PET.phase='coch';PET.essais=0;PET.fin=null;PET.partieFinie=false;
+  PET.tour=PET.lanceurCoch;PET.etape=PET.tour==='moi'?'viser':'attend';PET.t0=performance.now();PET.typeTir='pointe';PET.vol=null;
+  majTextePetanque();
+  if(PET.tour==='lui'&&PET.enAttente){const p=PET.enAttente;PET.enAttente=null;recevoirLancerAmi(p);}
+}
+function envoyerLancerAmi(angle,force,type){const L={k:PET.envoyes++,angle,force,type:type||'pointe'};PET.aEnvoyer=L;try{PET.canal.send({type:'broadcast',event:'lancer',payload:L});}catch(x){}}
 function recevoirLancerAmi(p){
   if(!PET||PET.mode!=='ami'||!p)return;
   try{PET.canal.send({type:'broadcast',event:'recu',payload:{k:p.k}});}catch(x){}
-  if(p.k!==PET.recus)return;                                     /* déjà joué (un renvoi), ou pas encore son tour */
-  if(PET.tour!=='lui'||PET.etape!=='attend'){PET.enAttente=p;return;}
-  PET.recus++;PET.reste.lui--;lancer('lui',p.angle,p.force);majTextePetanque();
+  if(p.k!==PET.recus)return;
+  if(PET.tour!=='lui'||PET.etape!=='attend'||PET.fin){PET.enAttente=p;return;}
+  PET.recus++;const ty=p.type||'pointe';
+  if(ty==='coch'&&PET.phase!=='coch'){return;}
+  if(ty!=='coch')PET.reste.lui--;
+  lancer('lui',p.angle,p.force,ty);majTextePetanque();
 }
-/* qui joue ? l'équipe qui n'a pas le point, tant qu'elle a des boules */
+function cochValide(C){if(!C||C.mort)return false;const [sx,sy]=PQ.S, d=Math.hypot(C.x-sx,C.y-sy);return d>=PQ_COCH_MIN&&d<=PQ_COCH_MAX&&C.x>8&&C.x<PQ.W-8&&C.y>8;}
 function apresLArretAmi(){
   const r=PET.reste;
-  if(r.moi<=0&&r.lui<=0){finirLaMene();return;}
-  let qui;
-  if(r.moi<=0)qui='lui';else if(r.lui<=0)qui='moi';
-  else{const R=pqCompter(PET.E);qui=R.nulle?(PET.hote?'moi':'lui'):(R.gagne?'lui':'moi');}
-  PET.tour=qui;PET.etape=qui==='moi'?'viser':'attend';PET.t0=performance.now();majTextePetanque();
-  if(qui==='lui'&&PET.enAttente){const p=PET.enAttente;PET.enAttente=null;recevoirLancerAmi(p);}
+  if(PET.phase==='coch'){
+    if(cochValide(PET.E.coch)){PET.phase='boules';PET.tour=PET.lanceurCoch;}              /* celui qui a lancé le cochonnet joue la première boule */
+    else{PET.E.coch=null;PET.essais++;
+      if(PET.essais>=3){PET.lanceurCoch=PET.lanceurCoch==='moi'?'lui':'moi';PET.essais=0;}   /* trois essais ratés : à l'autre de le lancer */
+      PET.tour=PET.lanceurCoch;texteDansLeBoulodrome('Cochonnet hors zone · on relance');}
+  }else{
+    if(PET.E.coch&&PET.E.coch.mort){finirMeneAmi();return;}
+    if(r.moi<=0&&r.lui<=0){finirMeneAmi();return;}
+    let qui;
+    if(r.moi<=0)qui='lui';else if(r.lui<=0)qui='moi';
+    else{const R=pqCompter(PET.E);qui=R.nulle?PET.lanceurCoch:(R.gagne?'lui':'moi');}
+    PET.tour=qui;
+  }
+  PET.etape=PET.tour==='moi'?'viser':'attend';PET.t0=performance.now();majTextePetanque();
+  if(PET.tour==='lui'&&PET.enAttente){const p=PET.enAttente;PET.enAttente=null;recevoirLancerAmi(p);}
 }
-function verdictAmi(R,cm){
-  const n=echapperT(PET.ami.pseudo);
-  if(R.nulle)return 'Toutes les boules sont sorties. <b>Mène nulle.</b>';
-  if(R.gagne){jouer('vente','moment');vibrer([20,40,20]);return '<b>Tu marques '+R.pts+' point'+(R.pts>1?'s':'')+' !</b> Ta meilleure boule est à '+cm(R.bm)+'.<br><i>'+n+' te doit une revanche.</i>';}
-  return '<b>'+n+' marque '+R.pts+' point'+(R.pts>1?'s':'')+'.</b> Sa meilleure boule est à '+cm(R.bl)+'.<br><i>Demande-lui une revanche !</i>';
+function texteDansLeBoulodrome(m){const t=$('pqTexte');if(t){t.innerHTML='<i>'+m+'</i>';}}
+function finirMeneAmi(){
+  const n=echapperT(PET.ami.pseudo), cm=v=>Math.max(1,Math.round(v*1.6))+' cm';let gagnant=null, pts=0, txt;
+  if(PET.E.coch&&PET.E.coch.mort){
+    const r=PET.reste;
+    if(r.moi>0&&r.lui<=0){gagnant='moi';pts=r.moi;txt='Le cochonnet est sorti ! Il te restait '+pts+' boule'+(pts>1?'s':'')+' : <b>tu marques '+pts+'</b>.';}
+    else if(r.lui>0&&r.moi<=0){gagnant='lui';pts=r.lui;txt='Le cochonnet est sorti ! Il restait '+pts+' boule'+(pts>1?'s':'')+' à '+n+' : <b>'+n+' marque '+pts+'</b>.';}
+    else txt='Le cochonnet est sorti : <b>mène nulle</b>.';
+  }else{const R=pqCompter(PET.E);
+    if(R.nulle||R.bm===R.bl)txt='Égalité parfaite : <b>mène nulle</b>.';
+    else if(R.gagne){gagnant='moi';pts=R.pts;txt='<b>Tu marques '+pts+' point'+(pts>1?'s':'')+'</b> · ta meilleure boule à '+cm(R.bm)+'.';}
+    else{gagnant='lui';pts=R.pts;txt='<b>'+n+' marque '+pts+' point'+(pts>1?'s':'')+'</b> · sa meilleure boule à '+cm(R.bl)+'.';}}
+  if(gagnant){PET.score[gagnant]+=pts;PET.lanceurCoch=gagnant;}                              /* le gagnant de la mène lance le prochain cochonnet */
+  PET.etape='fin';
+  if(PET.score.moi>=13||PET.score.lui>=13){PET.partieFinie=true;const moi=PET.score.moi>=13;
+    if(moi){jouer('vente','moment');vibrer([20,40,20,40,60]);}
+    txt+='<br><b style="color:#e8c06a">'+(moi?'Tu gagnes la partie '+PET.score.moi+' à '+PET.score.lui+' !':n+' gagne la partie '+PET.score.lui+' à '+PET.score.moi+'.')+'</b>'+
+      (PET.score.moi===0||PET.score.lui===0?'<br><i>… et à zéro : Fanny !</i>':'');}
+  PET.fin=txt;majTextePetanque();
 }
-/* la revanche : l'hôte relance une mène, avec un nouveau cochonnet ; les deux téléphones repartent ensemble */
+/* après une mène : on passe à la suivante ; après la partie : une nouvelle, lancée par l'hôte */
 function revancheAmi(){
   if(!PET||PET.mode!=='ami')return;
-  if(!PET.hote){$('pqTexte').innerHTML=PET.fin+'<br><i>'+echapperT(PET.ami.pseudo)+' lance la revanche…</i>';return;}
-  const nv={graine:Math.floor(Math.random()*4294967295),cx:46+Math.random()*68,cy:40+Math.random()*60};
+  if(!PET.partieFinie){nouvelleMene();return;}                                               /* les deux téléphones passent à la mène suivante d'eux-mêmes */
+  if(!PET.hote){$('pqTexte').innerHTML=(PET.fin||'')+'<br><i>'+echapperT(PET.ami.pseudo)+' lance une nouvelle partie…</i>';return;}
+  const nv={graine:Math.floor(Math.random()*4294967295)};
   try{PET.canal.send({type:'broadcast',event:'revanche',payload:nv});}catch(x){}
   demarrerAmi(Object.assign({},PET.inv,nv),true);
 }
@@ -17993,22 +18052,27 @@ function bouclePetanque(t){
     if(!bouge){PET.etape='pose';setTimeout(()=>{if(PET&&PET.etape==='pose')apresLArret();},300);}
   }
   const C=E.coch;
-  g.fillStyle='rgba(60,40,20,.28)';g.fillRect(Math.round(C.x),Math.round(C.y)+1,2,1);
-  g.fillStyle='#e8a030';g.fillRect(Math.round(C.x)-1,Math.round(C.y)-1,3,3);
-  g.fillStyle='#ffd070';g.fillRect(Math.round(C.x)-1,Math.round(C.y)-1,1,1);
+  if(C&&!C.enVol&&!C.mort){g.fillStyle='rgba(60,40,20,.28)';g.fillRect(Math.round(C.x),Math.round(C.y)+1,2,1);
+    g.fillStyle='#e8a030';g.fillRect(Math.round(C.x)-1,Math.round(C.y)-1,3,3);
+    g.fillStyle='#ffd070';g.fillRect(Math.round(C.x)-1,Math.round(C.y)-1,1,1);}
+  if(PET.mode==='ami'&&PET.phase==='coch'&&!PET.fin){                                      /* la zone où le cochonnet doit tomber : entre 6 et 10 m */
+    const [sx,sy]=PQ.S;g.strokeStyle='rgba(255,255,255,.35)';g.setLineDash([2,3]);g.lineWidth=1;
+    [PQ_COCH_MIN,PQ_COCH_MAX].forEach(r=>{g.beginPath();g.arc(sx,sy,r,Math.PI*1.2,Math.PI*1.8);g.stroke();});g.setLineDash([]);}
   for(const b of E.boules.slice().sort((a,b)=>a.y-b.y)){
     if(b.enVol)continue;
     if(b.morte){continue;}
     dessinerUneBoule(g,b.x,b.y,b.qui,0);
   }
-  if(PET.vol)dessinerUneBoule(g,PET.vol.x,PET.vol.y,PET.vol.b.qui,PET.vol.h);
+  if(PET.vol){if(PET.vol.coch){const V=PET.vol;g.fillStyle='rgba(60,40,20,.25)';g.fillRect(Math.round(V.x),Math.round(V.y)+1,2,1);
+      g.fillStyle='#e8a030';g.fillRect(Math.round(V.x)-1,Math.round(V.y-V.h*0.6)-1,3,3);}
+    else dessinerUneBoule(g,PET.vol.x,PET.vol.y,PET.vol.b.qui,PET.vol.h);}
   if(PET.tour==='moi'&&!PET.fin){
     const [sx,sy]=PQ.S;
     const a=PET.etape==='viser'?Math.sin((t-PET.t0)/520)*0.5:PET.angle;
     if(PET.etape==='viser'||PET.etape==='force'){
       g.strokeStyle='rgba(255,255,255,.85)';g.lineWidth=1;g.setLineDash([3,3]);
       g.beginPath();g.moveTo(sx,sy);g.lineTo(sx+Math.sin(a)*70,sy-Math.cos(a)*70);g.stroke();g.setLineDash([]);
-      dessinerUneBoule(g,sx,sy,'moi',0);
+      if(!(PET.mode==='ami'&&PET.phase==='coch'))dessinerUneBoule(g,sx,sy,'moi',0);else{g.fillStyle='#e8a030';g.fillRect(sx-1,sy-1,3,3);}
     }
     if(PET.etape==='force'){
       const f=(1-Math.cos((t-PET.t0)/480))/2;
