@@ -3,7 +3,7 @@
    plate, comme le port. Tout y est fermé pour l'instant : on s'y promène.
    ===================================================================== */
 (()=>{
-const WW=360, WH=760, SOLSTYLE='lames';            /* d'après le croquis : en long, assez large, et de la neige sous la place */
+const WW=360, WH=900, SOLSTYLE='lames';            /* d'après le croquis : en long, assez large, et de la neige sous la place */
 let BARRIERE='lisses';            /* d'après le croquis : en long, et assez large */            /* en long : la largeur d'un écran de téléphone */            /* une carte en long, à la verticale */
 const hs=(i)=>{const s=Math.sin(i*127.1+311.7)*43758.5453;return s-Math.floor(s);};
 const mk=(w,h)=>{const c=document.createElement('canvas');c.width=w*2;c.height=h*2;const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
@@ -403,6 +403,7 @@ function graverBouche(nuit){
 const MONT=110, ESC_Y=384, MARCHES=4, MARCHE_H=6, BAS_Y=ESC_Y+MARCHES*MARCHE_H, NEIGE_Y=BAS_Y;
 const PLACE={x:80,y:508,w:200,h:108};
 const COUR={x0:150,x1:352,y0:200,y1:262,passage:[258,292]};      /* la cour des boutiques */
+const JARDIN={x0:40,x1:330,y0:640,y1:874};                        /* le jardin des neiges, sous la place */
 const TPH={x:80,y:296,h:64,ecart:10,cx:113};
 /* LA FILE D'ATTENTE : un plancher devant la gare, fermé de cordes. On entre en bas à droite, sous un
    portique ; trois allées en serpentin ; en haut, les tourniquets, puis la porte d'embarquement. */
@@ -527,6 +528,13 @@ function solVide(){
       F(px+1,y+0.5,0.5,0.5,'#2e2218');F(px+1,y+1.5,0.5,0.5,'#2e2218');if(l2>6){F(px+l2-1.5,y+0.5,0.5,0.5,'#2e2218');F(px+l2-1.5,y+1.5,0.5,0.5,'#2e2218');}}
     x+=long;}
   [[P.x-3,P.y-3,P.w+6,3],[P.x-3,P.y+P.h,P.w+6,3],[P.x-3,P.y,3,P.h],[P.x+P.w,P.y,3,P.h]].forEach(([x,y,w,h])=>{F(x,y,w,h,'#6b4a28');F(x,y,w,1,'#8a6238');F(x,y-1,w,1,'#ffffff');});
+  /* LE JARDIN DES NEIGES : une petite piste damée, bordée d'un filet orange, et son tapis roulant */
+  {const J=JARDIN;
+   for(let y=J.y0;y<J.y1;y+=0.5)for(let x=J.x0;x<J.x1;x+=1){if((Math.floor(y*2)%3)===0)F(x,y,1,0.5,'rgba(190,206,224,.55)');}
+   for(let x=J.x0;x<J.x1;x+=0.5){F(x,J.y0-1,0.5,1,'#f07a1a');F(x,J.y1,0.5,1,'#f07a1a');}for(let y=J.y0;y<J.y1;y+=0.5){F(J.x0-1,y,1,0.5,'#f07a1a');F(J.x1,y,1,0.5,'#f07a1a');}
+   for(let x=J.x0;x<=J.x1;x+=16){F(x-0.5,J.y0-5,1,5,'#1a1a1e');F(x-0.5,J.y1-4,1,5,'#1a1a1e');}
+   const tx=J.x0+14;F(tx-4,J.y0+4,8,J.y1-J.y0-8,'#5a5e66');for(let y=J.y0+5;y<J.y1-5;y+=3)F(tx-3.5,y,7,1,'#72767e');
+   F(tx-5,J.y0+4,1,J.y1-J.y0-8,'#c4ccd2');F(tx+4,J.y0+4,1,J.y1-J.y0-8,'#8a9196');F(tx-5,J.y0+3,10,2,'#3a3e46');F(tx-5,J.y1-5,10,2,'#3a3e46');}
   /* 5 · LES LIMITES : rondins sur les côtés, ganivelle en bas */
   /* LES BARRIÈRES, en trois styles possibles */
   const ganivelle=(x0,y0,x1,y1)=>{const n=Math.hypot(x1-x0,y1-y0), vert=Math.abs(x1-x0)<Math.abs(y1-y0);
@@ -825,20 +833,63 @@ function graverPortique(){
   F(cx-14.5,sol-15,0.5,15,'#5b3f21');F(cx-17,sol-21,5.5,6.5,'#5b3f21');F(cx-16.5,sol-20.5,4.5,5.5,'#f4efe0');
   g.strokeStyle='#3a2616';g.lineWidth=0.35;g.beginPath();g.arc(cx-14.25,sol-17.75,1.6,0,7);g.stroke();g.beginPath();g.moveTo(cx-14.25,sol-17.75);g.lineTo(cx-14.25,sol-19);g.moveTo(cx-14.25,sol-17.75);g.lineTo(cx-13.3,sol-17.2);g.stroke();
   return {c,W,H,sol};}
+/* L'ÉCOLE DE SKI : un chalet peint en rouge, volets et chaînages blancs, un flocon sur l'enseigne,
+   une guirlande de fanions sur le faîtage, le tableau des cours, un râtelier de petits skis */
+function graverEcoleSki(nuit){
+  const W=96,H=92,{c,g,F}=mk(W,H);const cx=W/2,sol=H-5;ombre(g,cx,sol,42,6);
+  soubassement(F,cx-38,sol-8,76,8);
+  for(let k=-38;k<38;k+=3){F(cx+k,sol-40,3,32,(k/3)%2?'#b8392c':'#a8322a');F(cx+k,sol-40,0.5,32,'#d8584a');F(cx+k+2.5,sol-40,0.5,32,'#7a2018');}
+  F(cx-40,sol-40,3,32,'#f4efe0');F(cx+37,sol-40,3,32,'#f4efe0');for(let y=sol-40;y<sol-8;y+=4){F(cx-40,y,3,0.5,'#c8bca8');F(cx+37,y,3,0.5,'#c8bca8');}
+  toitNeige(F,g,cx,sol-40,92,26,['#5a4a3e','#6a5a4c','#3e3228']);
+  const fan=['#c0392b','#f4efe0','#2d6fb0','#f0c040','#3f9e7a'];
+  [[-1],[1]].forEach(([sgn])=>{
+    g.strokeStyle='#3a3a40';g.lineWidth=0.3;g.beginPath();g.moveTo(cx,sol-67);g.quadraticCurveTo(cx+sgn*22,sol-51,cx+sgn*44,sol-43);g.stroke();
+    for(let k=0;k<9;k++){const u=(k+0.5)/9, x=(1-u)*(1-u)*cx+2*(1-u)*u*(cx+sgn*22)+u*u*(cx+sgn*44), y=(1-u)*(1-u)*(sol-67)+2*(1-u)*u*(sol-51)+u*u*(sol-43);
+      g.fillStyle=fan[(k+(sgn>0?2:0))%5];g.beginPath();g.moveTo(x-1.6,y);g.lineTo(x+1.6,y);g.lineTo(x,y+3.2);g.closePath();g.fill();}});
+  [[-30],[16]].forEach(([k])=>{F(cx+k,sol-33,12,11,'#3a2014');F(cx+k+0.5,sol-32.5,11,10,nuit?'#f0c060':'#3a5a7a');F(cx+k+5.75,sol-32.5,0.5,10,'#f4efe0');F(cx+k+0.5,sol-27.75,11,0.5,'#f4efe0');
+    if(!nuit)F(cx+k+1,sol-32,3,0.5,'rgba(255,255,255,.6)');F(cx+k-3,sol-33,2.5,11,'#f4efe0');F(cx+k+12.5,sol-33,2.5,11,'#f4efe0');F(cx+k-1,sol-21.5,14,1.5,'#f4efe0');F(cx+k-1,sol-22.5,14,1,'#ffffff');});
+  F(cx-7,sol-26,14,18,'#3a2014');F(cx-6.5,sol-25.5,6,17,nuit?'#e8b860':'#4a6a8a');F(cx+0.5,sol-25.5,6,17,nuit?'#e8b860':'#4a6a8a');F(cx-0.5,sol-25.5,1,17,'#3a2014');
+  F(cx-2,sol-17,1,1.5,'#f0cf7d');F(cx+1,sol-17,1,1.5,'#f0cf7d');F(cx-9,sol-28,18,2,'#f4efe0');F(cx-9,sol-28.8,18,0.8,'#ffffff');
+  F(cx-30,sol-46,60,9,'#12356a');F(cx-29.5,sol-45.5,59,8,'#1d3f6a');F(cx-29.5,sol-45.5,59,0.5,'#4d7fc8');
+  const flocon=(x,y)=>{g.strokeStyle='#ffffff';g.lineWidth=0.5;for(let a=0;a<6;a++){const an=a*Math.PI/3;g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(an)*3,y+Math.sin(an)*3);g.stroke();}};
+  flocon(cx-24,sol-41.5);flocon(cx+24,sol-41.5);
+  g.font='700 4.6px Georgia';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('ÉCOLE DE SKI',cx,sol-39.8,40);g.textAlign='left';
+  F(cx-38,sol-21,13,13,'#5b3f21');F(cx-37.5,sol-20.5,12,12,'#f4efe0');
+  ['#3f9e7a','#2d6fb0','#c0392b','#1a1a1e'].forEach((col,k)=>{F(cx-36.5,sol-19+k*2.6,2,2,col);F(cx-34,sol-18.5+k*2.6,7,0.6,'#8a7a5a');});
+  F(cx+26,sol-4,14,1.2,'#6b4a28');F(cx+26,sol-11,14,1.2,'#6b4a28');
+  for(let k=0;k<5;k++){F(cx+27+k*2.6,sol-15,1.2,14,['#c0392b','#f0c040','#2d6fb0','#e86a8a','#3f9e7a'][k]);F(cx+27+k*2.6,sol-15.5,1.2,0.8,'#ffffff');}
+  return {c,W,H,sol};}
+/* LE MONITEUR : combinaison rouge, bonnet blanc, lunettes sur le front, bâtons plantés, skis aux pieds */
+function graverMoniteur(){
+  const W=26,H=46,{c,g,F}=mk(W,H);const cx=W/2,sol=H-3;ombre(g,cx,sol,8,2);
+  F(cx-9,sol-1,18,1,'#c0392b');F(cx-9,sol+0.5,18,0.8,'#8a2418');F(cx-9.5,sol-1.5,1.5,1,'#c0392b');
+  F(cx-3,sol-15,2.6,14,'#a02a20');F(cx+0.4,sol-15,2.6,14,'#b8352a');F(cx-3.2,sol-3,3,2,'#2a2a30');F(cx+0.2,sol-3,3,2,'#2a2a30');
+  F(cx-4.5,sol-29,9,15,'#c0392b');F(cx-4.5,sol-29,9,0.8,'#e05a4a');F(cx-4.5,sol-22,9,1,'#f4efe0');F(cx-0.25,sol-28,0.5,13,'#8a2418');
+  F(cx-7,sol-28,2.6,11,'#b8352a');F(cx+4.4,sol-28,2.6,11,'#b8352a');F(cx-7,sol-18,2.6,2,'#2a2a30');F(cx+4.4,sol-18,2.6,2,'#2a2a30');
+  F(cx-2.2,sol-33,4.4,4.5,'#e8bd92');F(cx-1.2,sol-31.5,0.8,0.8,'#2a1a10');F(cx+0.6,sol-31.5,0.8,0.8,'#2a1a10');F(cx-0.8,sol-29.8,1.6,0.5,'#a8604a');
+  F(cx-2.8,sol-37,5.6,4,'#f4efe0');F(cx-2.8,sol-37,5.6,0.6,'#ffffff');F(cx-0.8,sol-38.5,1.6,1.6,'#c0392b');
+  F(cx-2.6,sol-34,5.2,1.3,'#2d6fb0');F(cx-2,sol-33.8,1.5,0.6,'#a8d8ff');
+  F(cx-8,sol-19,0.8,18,'#8a8f96');F(cx+7.2,sol-19,0.8,18,'#8a8f96');F(cx-8.6,sol-2,2,0.6,'#3a3a40');F(cx+6.6,sol-2,2,0.6,'#3a3a40');
+  return {c,W,H,sol};}
+function graverPiquet(rouge){const W=6,H=18,{c,g,F}=mk(W,H);const cx=3,sol=H-2;
+  F(cx-0.5,sol-14,1,14,rouge?'#c0392b':'#2d6fb0');for(let y=sol-14;y<sol;y+=3)F(cx-0.5,y,1,1.2,'#ffffff');F(cx-1.5,sol-0.5,3,1,'#ffffff');return {c,W,H,sol};}
+function graverPanneauEcole(){const W=34,H=30,{c,g,F}=mk(W,H);const cx=W/2,sol=H-3;
+  F(cx-0.75,sol-18,1.5,18,'#5b3f21');F(cx-15,sol-26,30,9,'#1d3f6a');F(cx-15,sol-26,30,0.5,'#4d7fc8');F(cx-15.5,sol-27,31,1.2,'#ffffff');
+  g.font='700 3.2px Georgia';g.textAlign='center';g.fillStyle='#fff';g.fillText('JARDIN DES NEIGES',cx,sol-21.3,28);g.textAlign='left';return {c,W,H,sol};}
 function objetsVides(){
   const cal={}, L=[];
   const reg=(nom,J,N)=>{cal[nom]={toile:J.c,W:J.W,H:J.H,sol:J.sol,nuit:N?N.c:null};};
   reg('gare',graverBoucheLongue(false),graverBoucheLongue(true));reg('telepherique',graverTelecabine(false),graverTelecabine(true));reg('pyloneT',graverPyloneT());
   reg('skishop',graverChaletNom('SKI SHOP','#8a5a3a'));
   reg('forfaits',graverForfaits(false),graverForfaits(true));reg('souvenirs',graverChaletNom('SOUVENIRS','#8a5a3a'));
-  reg('location',graverLocation(false),graverLocation(true));
+  reg('ecole',graverEcoleSki(false),graverEcoleSki(true));reg('moniteur',graverMoniteur());reg('piquetR',graverPiquet(true));reg('piquetB',graverPiquet(false));reg('panneauJ',graverPanneauEcole());
   const P=(nom,x,y,x2)=>L.push(Object.assign({t:'x_mo_'+nom,x,y,v:0,bati:true},x2||{}));
   /* LA COUR DES BOUTIQUES : deux chalets au fond d'une cour de planches, deux autres plus bas,
      un passage de bois qui descend vers l'escalier ; lampadaires, banc, râtelier, poteau indicateur */
   const C=COUR;
   P('skishop',C.x0+40,C.y0-4,{col:[28,12],ferme:'Le ski shop',demi:24});
   P('souvenirs',C.x1-40,C.y0-4,{col:[28,12],ferme:'Les souvenirs',demi:24});
-  P('location',C.x0+62,C.y1+62,{col:[34,12],ferme:'La location de skis',demi:30});
+  P('ecole',C.x0+62,C.y1+62,{col:[36,12],ferme:'L’École de ski',demi:32});
   P('forfaits',C.x1-28,C.y1+58,{col:[14,10],ferme:'La caisse des forfaits',demi:12});
   reg('lampeC',graverLampadaireFin());reg('bancC',graverBancPlaid(1));reg('skisC',graverSkis());reg('poteauC',graverPoteau('MÉTRO ↓'));
   const Dc=(nom,x,y,x2)=>L.push(Object.assign({t:'x_mo_'+nom,x,y,v:0},x2||{}));
@@ -860,6 +911,12 @@ function objetsVides(){
   [[Pl.x+44,Pl.y+Pl.h-6,0],[Pl.x+62,Pl.y+Pl.h-6,1],[Pl.x+Pl.w-62,Pl.y+Pl.h-6,2],[Pl.x+Pl.w-44,Pl.y+Pl.h-6,0]].forEach(([x,y,v])=>Q('transat'+v,x,y,{col:[6,3]}));
   [[Pl.x+46,Pl.y+12],[Pl.x+Pl.w-46,Pl.y+12]].forEach(([x,y])=>Q('bac',x,y,{col:[11,3]}));
   Q('panneauAlt',cxp,Pl.y+14,{col:[3,2]});
+  /* LE JARDIN DES NEIGES, sous la place : des piquets de slalom, le moniteur, le panneau */
+  {const J=JARDIN;for(let k=0;k<11;k++){const y=J.y0+16+k*20, x=J.x0+110+(k%2?70:0)+Math.sin(k)*8;L.push({t:'x_mo_'+(k%2?'piquetB':'piquetR'),x,y,v:0,col:[1,1]});}
+   /* le moniteur : un vrai personnage, habillé comme un joueur (combinaison rouge, bonnet, moustache) */
+   L.push({t:'x_mo_moniteur',x:J.x0+50,y:J.y1-18,v:0,col:[5,3],bati:true,demi:6,ferme:'Le moniteur de l’École de ski',
+     pnj:{peau:3,cheveux:1,coiffe:1,barbe:7,veste:8,haut:5,chapeau:3,pantalon:6,souliers:3,sac:0,corps:3,sourcils:1},dir:'bas'});
+   L.push({t:'x_mo_panneauJ',x:J.x0-6,y:J.y0+6,v:0,col:[2,2]});}
   return {L,cal};
 }
 const zoneInterdite=(x,y)=>{
