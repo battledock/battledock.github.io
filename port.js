@@ -1368,20 +1368,51 @@ ANIM_DECOR.docker=(g,o,x,y)=>{const t=performance.now()/1000;o._f=o._f||{};
 };
 ANIM_DECOR.banderole=(g,o,x,y)=>{const C=XCAL[o.cal],t=performance.now()/1000;if(!C)return;const a=Math.sin(t*1.7+o.ph)*0.035, b=Math.abs(Math.sin(t*2.4))*1.2;
   g.save();g.translate(x,y-b);g.rotate(a);g.drawImage(C.toile,-C.W/2,-C.sol,C.W,C.H);g.restore();};
-ANIM_DECOR.drapeau=(g,o,x,y)=>{const t=performance.now()/1000, h=40, col=o.v%2?'#c8281e':'#1d3f6a', bob=Math.abs(Math.sin(t*2.4+o.ph))*1.2;
-  g.fillStyle='#6b4a28';g.fillRect(x-1,y-h-bob,1.5,h);
-  /* le drapeau claque : bande par bande, une vague qui court vers le bout */
-  for(let k=0;k<16;k++){const v=Math.sin(t*6-k*0.55+o.ph)*(k/16)*2.6;g.fillStyle=k%5===0?'rgba(0,0,0,.08)':col;g.fillRect(x+0.5+k,y-h-bob+1+v,1,12);g.fillStyle=col;g.fillRect(x+0.5+k,y-h-bob+1+v,1,12);}
-  g.strokeStyle='#ffffff';g.lineWidth=1;const cx=x+8,cy=y-h-bob+7+Math.sin(t*6-4.4+o.ph)*1;g.beginPath();g.moveTo(cx,cy-3);g.lineTo(cx,cy+3);g.moveTo(cx-2.5,cy-1.5);g.lineTo(cx+2.5,cy-1.5);g.stroke();
-  g.beginPath();g.arc(cx,cy+1,2.4,0.2,Math.PI-0.2);g.stroke();};
+const TISSUS={};
+function tissuDocker(v){if(TISSUS[v])return TISSUS[v];const W=34,H=22,D=3,c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);
+  const fond=v%2?'#c8281e':'#1d3f6a';g.fillStyle=fond;g.fillRect(0,0,W,H);g.fillStyle='#ffffff';g.fillRect(0,0,W,1.2);g.fillRect(0,H-1.2,W,1.2);
+  g.strokeStyle='#ffffff';g.lineWidth=1;const ax=7,ay=10;g.beginPath();g.moveTo(ax,ay-5);g.lineTo(ax,ay+4);g.moveTo(ax-3,ay-3);g.lineTo(ax+3,ay-3);g.stroke();g.beginPath();g.arc(ax,ay+1.5,3.2,0.25,Math.PI-0.25);g.stroke();
+  g.fillStyle='#ffffff';g.textAlign='center';g.font='900 5.2px Georgia,serif';g.fillText('DOCKERS',22,10);g.font='700 4.4px Georgia,serif';g.fillStyle=v%2?'#ffd870':'#f2d21a';g.fillText('MARSEILLE',22,16.5);
+  return TISSUS[v]=c;}
+ANIM_DECOR.drapeau=(g,o,x,y)=>{const t=performance.now()/1000, h=46, bob=Math.abs(Math.sin(t*2.4+o.ph))*1.2, T=tissuDocker(o.v), W=34, H=22, k=T.width/W;
+  g.fillStyle='#6b4a28';g.fillRect(x-1,y-h-bob,1.5,h);g.fillStyle='#d8b050';g.fillRect(x-1.5,y-h-bob-2,2.5,2);
+  /* le tissu claque : chaque colonne est décalée par une vague qui court vers le bout du drapeau */
+  for(let cx=0;cx<W;cx++){const v=Math.sin(t*6-cx*0.35+o.ph)*(cx/W)*3, ombre=Math.cos(t*6-cx*0.35+o.ph)*(cx/W);
+    g.drawImage(T,cx*k,0,k,T.height,x+0.5+cx,y-h-bob+1+v,1,H);if(ombre<-0.3){g.fillStyle='rgba(0,0,0,'+(-ombre*0.18).toFixed(2)+')';g.fillRect(x+0.5+cx,y-h-bob+1+v,1,H);}}};
 ANIM_DECOR.fumigene=(g,o,x,y)=>{const t=performance.now()/1000;
   for(let k=0;k<22;k++){const age=(t*0.45+k/22+o.ph)%1, dx=Math.sin(k*1.7+t*0.8)*5*age+age*16*(o.vent||1), r=3+age*13;
     g.fillStyle='rgba('+Math.round(235-age*40)+','+Math.round(70+age*80)+','+Math.round(70+age*80)+','+((1-age)*0.45).toFixed(2)+')';g.beginPath();g.arc(x+dx,y-6-age*62,r,0,7);g.fill();}
   const f=0.7+Math.random()*0.3;g.fillStyle='#3a3a40';g.fillRect(x-1,y-4,2,5);g.fillStyle='rgba(255,90,40,'+f+')';g.beginPath();g.arc(x,y-5,2.8*f,0,7);g.fill();g.fillStyle='#fff0a0';g.fillRect(x-0.8,y-6,1.6,1.6);};
+/* LES DANSEURS : ils sautillent, se déhanchent, se tournent d'un côté puis de l'autre */
+ANIM_DECOR.danseur=(g,o,x,y)=>{const t=performance.now()/1000+o.ph;o._f=o._f||{};
+  const temps=Math.floor(t*2.6), dir=['bas-gauche','bas','bas-droite','bas'][temps%4], i=1+Math.floor(t*6)%PASM, cle=dir+i+(STYLE_FIN()?'f':'c');
+  if(!o._f[cle]){const src=poseDe(Object.assign({},DEF_AP,o.pnj),dir,i);const c=document.createElement('canvas');c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);o._f[cle]=c;}
+  const saut=Math.abs(Math.sin(t*Math.PI*2.6))*4, hanche=Math.sin(t*Math.PI*1.3)*0.16;
+  g.fillStyle='rgba(40,30,18,.22)';g.beginPath();g.ellipse(x,y+1,7-saut*0.4,1.8,0,0,7);g.fill();
+  g.save();g.translate(x,y-saut);g.rotate(hanche);g.drawImage(o._f[cle],Math.round(-CASE_L/2),Math.round(-CASE_H+10),CASE_L,CASE_H);g.restore();
+  if(Math.floor(t*1.3)%3===0){g.fillStyle='#ffffff';g.font='700 8px Georgia';g.fillText('♪',x+8,y-52-saut);g.fillText('♫',x-14,y-46-saut*0.5);}};
+/* LE GAG : derrière la manif, un cycliste regarde le cortège… et se prend le lampadaire en pleine tête */
+ANIM_DECOR.gag=(g,o,x,y)=>{const D=9.5, t=((performance.now()/1000)+o.ph)%D, ap=Object.assign({},DEF_AP,{peau:2,cheveux:4,coiffe:2,veste:'#3a8a5a',haut:1,pantalon:'#2a2a30',corps:2});
+  const lamp=x, depart=lamp-150, vit=62, choc=(lamp-8-depart)/vit;              /* il arrive de l'ouest, la tête tournée vers les manifestants */
+  const pose=(dir,i)=>{o._p=o._p||{};const cle=dir+i+(STYLE_FIN()?'f':'c');if(!o._p[cle]){const src=poseDe(ap,dir,i);const c=document.createElement('canvas');c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);o._p[cle]=c;}return o._p[cle];};
+  if(t<choc){const px=depart+t*vit, pas=t*3;dessinerUnVelo(g,px,y+7,'droite',pas,2,true);
+    g.drawImage(pose(t>choc-1.2?'haut-droite':'droite',1+Math.floor(t*8)%PASM),Math.round(px-CASE_L/2),Math.round(y-CASE_H+4),CASE_L,CASE_H);
+    if(t>choc-1.2){g.font='italic 700 7px Georgia';g.fillStyle='#ffffff';g.fillText('Allez les dockers !',px-30,y-58);}return;}
+  const u=t-choc, px=lamp-8;
+  if(u<0.35){const recul=u*18;g.save();g.translate(px-recul,y);g.rotate(-u*1.4);dessinerUnVelo(g,0,7,'droite',0,2,false);g.drawImage(pose('droite',0),Math.round(-CASE_L/2),Math.round(-CASE_H+4),CASE_L,CASE_H);g.restore();
+    g.font='900 12px Georgia';g.fillStyle='#ffe040';g.strokeStyle='#3a2616';g.lineWidth=2;g.strokeText('BONG !',lamp-18,y-58);g.fillText('BONG !',lamp-18,y-58);return;}
+  /* par terre : le vélo couché, le cycliste allongé, les étoiles qui tournent */
+  const sol=Math.min(1,(u-0.35)/0.25);
+  g.save();g.translate(px-4,y+5);g.rotate(0.2);g.scale(1,0.55);dessinerUnVelo(g,0,0,'droite',0,2,false);g.restore();
+  g.save();g.translate(px+2,y+2);g.rotate(-Math.PI/2*sol);g.drawImage(pose('droite',0),Math.round(-CASE_L/2),Math.round(-CASE_H+8),CASE_L,CASE_H);g.restore();
+  const hx=px+2-36*sol, hy=y-2;
+  for(let k=0;k<3;k++){const a=u*5+k*2.1, sx=hx+Math.cos(a)*9, sy=hy-8+Math.sin(a)*3;g.fillStyle='#ffe040';g.beginPath();for(let q=0;q<5;q++){const an=q*Math.PI*0.8-Math.PI/2;g.lineTo(sx+Math.cos(an)*2.6,sy+Math.sin(an)*2.6);}g.closePath();g.fill();}
+  if(u>2.2&&u<5){g.font='italic 700 7px Georgia';g.fillStyle='#ffffff';g.fillText('Aïe… le lampadaire…',hx-10,hy-18);}
+  if(u>D-choc-0.8){g.globalAlpha=1;}};
 ANIM_DECOR.chien=(g,o,x,y)=>{const t=performance.now()/1000, q=Math.sin(t*14)*2, bob=Math.abs(Math.sin(t*4))*0.8, R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(a,b,w,h);};
   g.fillStyle='rgba(40,30,18,.25)';g.beginPath();g.ellipse(x,y,9,2,0,0,7);g.fill();
   R(x-7,y-9-bob,14,6,'#b07a40');R(x-7,y-9-bob,14,1.5,'#c8904e');R(x-6,y-4,2,4,'#8a5a2a');R(x+4,y-4,2,4,'#8a5a2a');R(x-3,y-4,2,4,'#8a5a2a');R(x+1,y-4,2,4,'#8a5a2a');   /* le corps, les pattes */
-  R(x-4,y-9-bob,8,6,'#f07a1a');R(x-4,y-7-bob,8,1,'#e8ecf0');                                                                                 /* son petit gilet */
+  R(x-4,y-9-bob,8,6,'#f2d21a');R(x-4,y-7-bob,8,1,'#e8ecf0');                                                                                 /* son petit gilet */
   R(x+6,y-14-bob,6,6,'#b07a40');R(x+11,y-12-bob,2,2,'#2a1a10');R(x+8,y-12-bob,1,1,'#1a1a1a');R(x+6,y-15-bob,2,3,'#8a5a2a');                    /* la tête, la truffe, l'oreille */
   g.save();g.translate(x-7,y-8-bob);g.rotate(-0.6+q*0.15);R(-5,-1,5,2,'#b07a40');g.restore();                                                   /* la queue qui remue */
   if((t%5)<0.8){g.font='italic 700 6px Georgia';g.fillStyle='#ffffff';g.fillText('Ouaf !',x+8,y-19);}};
@@ -1390,7 +1421,7 @@ function poserLaManif(P){
   XCAL.banT=graverBanderole('DOCKERS DE MARSEILLE','LE PORT, C’EST NOUS !');XCAL.banM=graverBanderole('ON NE LÂCHE RIEN','LES DOCKERS DU VIEUX-PORT',80,64);
   CALQUES_DECO['x_banderole']=XCAL.banT;CALQUES_DECO['x_banderole2']=XCAL.banM;CALQUES_DECO['x_drapeauM']={W:26,H:46,sol:44};CALQUES_DECO['x_fumigene']={W:60,H:70,sol:67};
   const docker=(x,y,v,dir,plus)=>P('x_docker',x,y,Object.assign({v:0,col:[4,3],dir:dir||'bas',anim:'docker',ph:((v*0.37)%1),pnj:{peau:1+(v%4),cheveux:v%6,coiffe:[0,1,2,15,17,3][v%6],barbe:[3,0,4,7,0,1][v%6],
-    veste:'#f07a1a',haut:0,pantalon:'#2a3a5a',chaussures:'#2a2a30',souliers:0,sac:0,chapeau:v%3===0?1:0,corps:[2,3,1,2,3][v%5],gilet:true}},plus||{}));
+    veste:'#f2d21a',haut:0,pantalon:'#2a3a5a',chaussures:'#2a2a30',souliers:0,sac:0,chapeau:v%3===0?1:0,corps:[2,3,1,2,3][v%5],gilet:true}},plus||{}));
   const X=1046, Y=292;
   docker(X-40,Y-6,0);docker(X+40,Y-6,1);P('x_banderole',X,Y,{v:0,anim:'banderole',cal:'banT',ph:0});
   [[-30,-26,2],[-10,-28,3],[10,-27,4],[30,-26,5],[-38,-44,6],[-18,-46,7],[2,-45,8],[22,-46,9],[42,-44,10],[-26,-62,11],[-6,-64,12],[14,-63,13],[34,-62,14]]
@@ -1400,6 +1431,10 @@ function poserLaManif(P){
   P('x_fumigene',X+62,Y-14,{v:0,anim:'fumigene',ph:0,vent:1});P('x_fumigene',X-64,Y-30,{v:0,anim:'fumigene',ph:0.5,vent:-0.6});
   /* LE DÉLÉGUÉ au mégaphone, sur le côté : c'est lui qui te tend un gilet si tu veux défiler */
   docker(X+72,Y+10,15,'gauche',{porteVoix:true,bati:true,demi:8,ouvre:'manif'});
+  /* les danseurs, devant la banderole de tête */
+  [[-44,26,16],[-20,32,17],[20,30,18]].forEach(([dx,dy,v])=>docker(X+dx,Y+dy,v,'bas',{anim:'danseur',ph:v*0.29}));
+  /* le gag du cycliste, contre le lampadaire du bord du quai, à l'ouest de la manif */
+  P('x_gag',980,318,{v:0,anim:'gag',ph:0});CALQUES_DECO['x_gag']={W:320,H:80,sol:70};
   /* et le chien, en tête, avec son petit gilet */
   P('x_chienM',X-8,Y+14,{v:0,anim:'chien',col:[4,2]});
 }
@@ -1439,7 +1474,7 @@ function semerDecorExtramar(){
   /* deux lanternes encadrent l'entrée du ponton du milieu, sans cacher les boutiques */
   [[602,334],[638,334]].forEach(([x,y],i)=>P('lanterneP',x,y,{gr:5+i}));
   /* LES BANCS, entre deux lanternes, tournés vers la mer ; deux autres contre les façades */
-  [[210,316],[490,316],[770,316],[1050,316],[1190,316],[1270,560],[1340,560]]
+  [[210,316],[490,316],[770,316],[1190,316],[1270,560],[1340,560]]                  /* (le banc de 1050 a laissé place aux danseurs de la manif) */
     .forEach(([x,y])=>P('bancP',x,y));
   /* LA MANIFESTATION DES DOCKERS, sur le quai est */
   poserLaManif(P);
