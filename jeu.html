@@ -19,7 +19,8 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1310';
+  var MA_VERSION='2026-09-20-1424';
+  window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -37,6 +38,16 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       .catch(function(){});
   }
   verifier();
+  /* LE FILET DES VIEUX NAVIGATEURS : si le jeu n'a pas démarré une fois la page lue, c'est que ce
+     navigateur ne sait pas le lire. On le dit, avec la marche à suivre, au lieu d'un écran figé. */
+  /* les scripts du jeu s'exécutent toujours AVANT « DOMContentLoaded » : si, à ce moment-là, le jeu
+     n'a pas démarré, c'est qu'il n'a pas pu être lu (et non qu'il charge lentement) */
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){
+    if(window.__JEU_DEMARRE)return;
+    var d=document.createElement('div');d.style.cssText='position:fixed;inset:0;z-index:9999;background:#1d1a14;color:#f2e8d0;display:flex;align-items:center;justify-content:center;padding:24px;font:16px Georgia,serif;text-align:center;line-height:1.5';
+    d.innerHTML='<div><b style="font-size:20px">Ton navigateur est trop ancien pour Battle Dock</b><br><br>Mets à jour <b>Chrome</b> ou <b>Samsung Internet</b> depuis le Play Store, puis rouvre le jeu.<br><br><small style="opacity:.7">'+(navigator.userAgent||'').replace(/[<>]/g,'').slice(0,160)+'</small></div>';
+    document.body.appendChild(d);
+  },1500);});
   /* et quand on revient sur l'onglet après un moment */
   var vu=Date.now();
   document.addEventListener('visibilitychange',function(){
@@ -2090,6 +2101,7 @@ window.addEventListener('error',ev=>{
 });
 </script>
 <script type="module">
+window.__JEU_DEMARRE=true;               /* le jeu a bien démarré : pas de message « navigateur trop ancien » */
 /* LES MORCEAUX : le port et Saumaski vivent dans leurs propres fichiers. On les charge
    seulement sur leur carte, et on les évalue ici, dans la portée du jeu. */
 async function chargerMorceau(nom){
@@ -20657,6 +20669,8 @@ async function verifierLaCarte(){
     location.replace(vraie==='extramar'?'jeu.html?carte=extramar':(vraie==='montagne'?'jeu.html?carte=montagne':(vraie==='sommet'?'jeu.html?carte=sommet':'jeu.html')));}
 }
 function entrer(){
+  /* on note la version et le navigateur de chacun : c'est ce qui permet de comprendre un souci chez un joueur */
+  setTimeout(()=>{try{if(e&&e.id)appelRPC('signaler_version',{p_joueur:e.id,p_version:window.MA_VERSION||'?',p_nav:(navigator.userAgent||'').slice(0,240)});}catch(x){}},4000);
   verifierLaCarte();
   setTimeout(montrerLAnnonce,1200);
   majPastille();
