@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-1221';
+  var MA_VERSION='2026-09-20-1230';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -14953,7 +14953,7 @@ function majJoueur(dt){
   const max=vitesseDuJoueur();
   const aFond=pousse>0.88;
   /* une caisse sur les bras : on va moins vite, c'est tout l'arbitrage */
-  const allure=(aFond?max:VITESSE)*(caissePortee?0.72:1)*(VELO&&CARTE==='extramar'?1.75:1)*glisseSki();
+  const allure=(aFond?max:VITESSE)*(caissePortee?0.72:1)*(VELO&&CARTE==='extramar'?1.75:1)*glisseSki()*(CARTE==='montagne'&&SAUMASKI&&SAUMASKI.surGlace&&SAUMASKI.surGlace(joueur.x,joueur.y)?1.25:1);
   /* on ne COURT, au sens de l'animation, qu'au-delà du seuil */
   court=aFond&&max>=SEUIL_COURSE;
   const cibleX=n>0.16?(joyX/n)*allure*pousse:0;
@@ -14963,7 +14963,10 @@ function majJoueur(dt){
      images par seconde on atteignait la vitesse de pointe deux fois plus
      tôt qu'à 60, donc on parcourait 8 % de plus. La forme exponentielle
      donne exactement le même résultat quel que soit le découpage. */
-  const k=1-Math.exp(-(n>0.16?11:16)*dt);
+  /* SUR LA GLACE : on patine. On met du temps à prendre de l'élan, et, une fois lancé, on glisse
+     longtemps quand on lâche (et on va un peu plus vite) */
+  let glace=false;try{glace=CARTE==='montagne'&&!!SAUMASKI&&SAUMASKI.surGlace(joueur.x,joueur.y);}catch(x){}
+  const k=1-Math.exp(-(glace?(n>0.16?2.2:0.55):(n>0.16?11:16))*dt);
   /* On avance avec la vitesse MOYENNE du pas, pas avec celle d'arrivée :
      sinon une image longue fait parcourir toute sa durée à la vitesse de
      fin, et le personnage part plus vite quand le téléphone rame. */

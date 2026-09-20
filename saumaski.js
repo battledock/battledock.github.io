@@ -403,7 +403,7 @@ function graverBouche(nuit){
 const MONT=110, ESC_Y=384, MARCHES=4, MARCHE_H=6, BAS_Y=ESC_Y+MARCHES*MARCHE_H, NEIGE_Y=BAS_Y;
 const PLACE={x:80,y:508,w:200,h:108};
 const COUR={x0:150,x1:352,y0:200,y1:262,passage:[258,292]};      /* la cour des boutiques */
-const JARDIN={x0:40,x1:330,y0:640,y1:874};                        /* le jardin des neiges, sous la place */
+const PATIN={x0:44,x1:326,y0:646,y1:868,r:34,porte:[166,204]};    /* la patinoire, sous la place ; on y entre par le haut */
 const TPH={x:80,y:296,h:64,ecart:10,cx:113};
 /* LA FILE D'ATTENTE : un plancher devant la gare, fermé de cordes. On entre en bas à droite, sous un
    portique ; trois allées en serpentin ; en haut, les tourniquets, puis la porte d'embarquement. */
@@ -528,13 +528,35 @@ function solVide(){
       F(px+1,y+0.5,0.5,0.5,'#2e2218');F(px+1,y+1.5,0.5,0.5,'#2e2218');if(l2>6){F(px+l2-1.5,y+0.5,0.5,0.5,'#2e2218');F(px+l2-1.5,y+1.5,0.5,0.5,'#2e2218');}}
     x+=long;}
   [[P.x-3,P.y-3,P.w+6,3],[P.x-3,P.y+P.h,P.w+6,3],[P.x-3,P.y,3,P.h],[P.x+P.w,P.y,3,P.h]].forEach(([x,y,w,h])=>{F(x,y,w,h,'#6b4a28');F(x,y,w,1,'#8a6238');F(x,y-1,w,1,'#ffffff');});
-  /* LE JARDIN DES NEIGES : une petite piste damée, bordée d'un filet orange, et son tapis roulant */
-  {const J=JARDIN;
-   for(let y=J.y0;y<J.y1;y+=0.5)for(let x=J.x0;x<J.x1;x+=1){if((Math.floor(y*2)%3)===0)F(x,y,1,0.5,'rgba(190,206,224,.55)');}
-   for(let x=J.x0;x<J.x1;x+=0.5){F(x,J.y0-1,0.5,1,'#f07a1a');F(x,J.y1,0.5,1,'#f07a1a');}for(let y=J.y0;y<J.y1;y+=0.5){F(J.x0-1,y,1,0.5,'#f07a1a');F(J.x1,y,1,0.5,'#f07a1a');}
-   for(let x=J.x0;x<=J.x1;x+=16){F(x-0.5,J.y0-5,1,5,'#1a1a1e');F(x-0.5,J.y1-4,1,5,'#1a1a1e');}
-   const tx=J.x0+14;F(tx-4,J.y0+4,8,J.y1-J.y0-8,'#5a5e66');for(let y=J.y0+5;y<J.y1-5;y+=3)F(tx-3.5,y,7,1,'#72767e');
-   F(tx-5,J.y0+4,1,J.y1-J.y0-8,'#c4ccd2');F(tx+4,J.y0+4,1,J.y1-J.y0-8,'#8a9196');F(tx-5,J.y0+3,10,2,'#3a3e46');F(tx-5,J.y1-5,10,2,'#3a3e46');}
+  /* LA PATINOIRE : une glace bleutée, rayée par les lames, avec ses reflets ; la bande blanche à main
+     courante bleue, ses panneaux, et l'ouverture en haut pour entrer */
+  {const P=PATIN, dansP=(x,y,m)=>{const cx=Math.max(P.x0+P.r,Math.min(P.x1-P.r,x)), cy=Math.max(P.y0+P.r,Math.min(P.y1-P.r,y));return Math.hypot(x-cx,y-cy)<=P.r-m;};
+   const T=tampon(g,P.y0-2,P.y1+2);
+   for(let y=P.y0;y<P.y1;y+=0.5)for(let x=P.x0;x<P.x1;x+=0.5){if(!dansP(x,y,3))continue;
+     const n=Math.sin(x/31+y/47)*0.5+Math.sin(x/13-y/19)*0.25, t=hs(Math.round(x*2)*0.71+Math.round(y*2)*1.37);
+     T.pose(x,y,n>0.45?'#e6f4fb':(n<-0.4?'#bcdcee':(t<0.5?'#cfe7f4':'#d6ebf6')));}
+   T.fin();
+   /* les rayures des lames : de longues courbes claires */
+   g.lineWidth=0.4;for(let k=0;k<46;k++){const cx=P.x0+30+hs(k*3)*(P.x1-P.x0-60), cy=P.y0+30+hs(k*7)*(P.y1-P.y0-60), R=20+hs(k)*60, a0=hs(k*5)*6.28;
+     g.strokeStyle='rgba(255,255,255,'+(0.25+hs(k*9)*0.35).toFixed(2)+')';g.beginPath();g.arc(cx,cy,R,a0,a0+0.6+hs(k*2));g.stroke();}
+   /* les reflets de lumière, et les lignes de hockey sous la glace */
+   g.fillStyle='rgba(255,255,255,.35)';for(let k=0;k<6;k++){g.beginPath();g.ellipse(P.x0+40+k*45,P.y0+40+(k%2)*90,18,4,-0.4,0,7);g.fill();}
+   const my=(P.y0+P.y1)/2, mx=(P.x0+P.x1)/2;g.strokeStyle='rgba(192,57,43,.45)';g.lineWidth=1;g.beginPath();g.moveTo(P.x0+6,my);g.lineTo(P.x1-6,my);g.stroke();
+   g.strokeStyle='rgba(45,111,176,.4)';g.lineWidth=0.8;g.beginPath();g.arc(mx,my,22,0,7);g.stroke();
+   [P.y0+56,P.y1-56].forEach(y=>{g.strokeStyle='rgba(45,111,176,.35)';g.beginPath();g.moveTo(P.x0+6,y);g.lineTo(P.x1-6,y);g.stroke();});
+   /* la bande : un liseré blanc épais, sa main courante bleue, son ombre sur la glace, ses panneaux */
+   const bord=(x,y)=>{if(y<P.y0+3&&x>P.porte[0]&&x<P.porte[1])return;F(x-1,y-7,3,7,'#c8d4de');F(x-0.5,y-7,2,6.5,'#ffffff');F(x-1,y-8,3,1.5,'#2d6fb0');F(x-1,y-8,3,0.5,'#6aa8e8');F(x-1,y+0.5,3,1.5,'rgba(40,70,110,.3)');};
+   const per=[];const pas=1.2;
+   for(let x=P.x0+P.r;x<=P.x1-P.r;x+=pas){per.push([x,P.y0+2]);per.push([x,P.y1-1]);}
+   for(let y=P.y0+P.r;y<=P.y1-P.r;y+=pas){per.push([P.x0+2,y]);per.push([P.x1-2,y]);}
+   [[P.x1-P.r,P.y0+P.r,-Math.PI/2,0],[P.x1-P.r,P.y1-P.r,0,Math.PI/2],[P.x0+P.r,P.y1-P.r,Math.PI/2,Math.PI],[P.x0+P.r,P.y0+P.r,Math.PI,Math.PI*1.5]].forEach(([cx,cy,a0,a1])=>{
+     for(let a=a0;a<=a1;a+=pas/P.r)per.push([cx+Math.cos(a)*(P.r-2),cy+Math.sin(a)*(P.r-2)]);});
+   per.sort((a,b)=>a[1]-b[1]).forEach(([x,y])=>bord(x,y));
+   /* les panneaux sur la bande, côté sud */
+   [[P.x0+60,'SAUMASKI'],[mx,'PATINOIRE'],[P.x1-60,'1 850 M']].forEach(([x,t])=>{F(x-18,P.y1-7,36,5,'#1d3f6a');g.font='700 3.2px Georgia';g.textAlign='center';g.fillStyle='#fff';g.fillText(t,x,P.y1-3.4,34);g.textAlign='left';});
+   /* l'entrée : deux poteaux et un petit arceau */
+   [P.porte[0],P.porte[1]].forEach(x=>{F(x-1,P.y0-10,2,12,'#2d6fb0');F(x-1,P.y0-10,2,1,'#6aa8e8');});F(P.porte[0],P.y0-11,P.porte[1]-P.porte[0],2,'#2d6fb0');
+   g.font='700 3.4px Georgia';g.textAlign='center';g.fillStyle='#1d3f6a';g.fillText('PATINOIRE',(P.porte[0]+P.porte[1])/2,P.y0-12.5,40);g.textAlign='left';}
   /* 5 · LES LIMITES : rondins sur les côtés, ganivelle en bas */
   /* LES BARRIÈRES, en trois styles possibles */
   const ganivelle=(x0,y0,x1,y1)=>{const n=Math.hypot(x1-x0,y1-y0), vert=Math.abs(x1-x0)<Math.abs(y1-y0);
@@ -911,21 +933,24 @@ function objetsVides(){
   [[Pl.x+44,Pl.y+Pl.h-6,0],[Pl.x+62,Pl.y+Pl.h-6,1],[Pl.x+Pl.w-62,Pl.y+Pl.h-6,2],[Pl.x+Pl.w-44,Pl.y+Pl.h-6,0]].forEach(([x,y,v])=>Q('transat'+v,x,y,{col:[6,3]}));
   [[Pl.x+46,Pl.y+12],[Pl.x+Pl.w-46,Pl.y+12]].forEach(([x,y])=>Q('bac',x,y,{col:[11,3]}));
   Q('panneauAlt',cxp,Pl.y+14,{col:[3,2]});
-  /* LE JARDIN DES NEIGES, sous la place : des piquets de slalom, le moniteur, le panneau */
-  {const J=JARDIN;for(let k=0;k<11;k++){const y=J.y0+16+k*20, x=J.x0+110+(k%2?70:0)+Math.sin(k)*8;L.push({t:'x_mo_'+(k%2?'piquetB':'piquetR'),x,y,v:0,col:[1,1]});}
-   /* le moniteur : un vrai personnage, habillé comme un joueur (combinaison rouge, bonnet, moustache) */
-   L.push({t:'x_mo_moniteur',x:J.x0+50,y:J.y1-18,v:0,col:[5,3],bati:true,demi:6,ouvre:'ecole',
-     pnj:{peau:3,cheveux:1,coiffe:1,barbe:7,veste:8,haut:5,chapeau:3,pantalon:6,souliers:3,sac:0,corps:3,sourcils:1},dir:'bas'});
-   L.push({t:'x_mo_panneauJ',x:J.x0-6,y:J.y0+6,v:0,col:[2,2]});}
+  /* le moniteur attend devant l'École de ski */
+  L.push({t:'x_mo_moniteur',x:COUR.x0+100,y:COUR.y1+70,v:0,col:[5,3],bati:true,demi:6,ouvre:'ecole',
+    pnj:{peau:3,cheveux:1,coiffe:1,barbe:7,veste:8,haut:5,chapeau:3,pantalon:6,souliers:3,sac:0,corps:3,sourcils:1},dir:'bas'});
+  /* deux bancs au bord de la glace, pour lacer ses patins */
+  reg('bancP',graverBancPlaid(2));[[PATIN.x0+20,PATIN.y0-6],[PATIN.x1-20,PATIN.y0-6]].forEach(([x,y])=>L.push({t:'x_mo_bancP',x,y,v:0,col:[13,3]}));
   return {L,cal};
 }
 const zoneInterdite=(x,y)=>{
   if(y<MONT+8)return true;                                                                        /* les montagnes, au fond */
+  if(surBande(x,y))return true;                                                                   /* la bande de la patinoire */
   for(const [a,b,c2,d] of FILE){const dx=c2-a, dy=d-b, l=dx*dx+dy*dy;const u=Math.max(0,Math.min(1,((x-a)*dx+(y-b)*dy)/l));
     if(Math.hypot(x-(a+dx*u),y-(b+dy*u))<3)return true;}
   if(x>TPH.cx-25&&x<TPH.cx+25&&y<TPH.y-66)return true;                                             /* le couloir sous les câbles */
   if(x>TPH.x-62&&x<TPH.x+60&&y>TPH.y-72&&y<TPH.y-10)return true;                                   /* l'enclos de la gare */
   return false;};
-const dansNeige=(x,y)=>{if(y>ESC_Y-2&&y<BAS_Y+2)return false;if(x>PLACE.x-3&&x<PLACE.x+PLACE.w+3&&y>PLACE.y-3&&y<PLACE.y+PLACE.h+3)return false;return y>MONT;};
-return {WW,WH,fond:(f)=>{FOND=f;},dessinerPlace,barriere:(b)=>{BARRIERE=b;},zoneInterdite,dansNeige,dessinerTelepherique,objets:objetsVides,solFin,LIFT_X,GARE_Y,CABLE_H,ECART,ARRIVEE:[180,488],METRO:[180,472],NEIGE_Y,texture:(t)=>{TEXTURE_NEIGE=t;}};
+const surGlace=(x,y)=>{const P=PATIN, cx=Math.max(P.x0+P.r,Math.min(P.x1-P.r,x)), cy=Math.max(P.y0+P.r,Math.min(P.y1-P.r,y));return Math.hypot(x-cx,y-cy)<=P.r-4;};
+const surBande=(x,y)=>{const P=PATIN, cx=Math.max(P.x0+P.r,Math.min(P.x1-P.r,x)), cy=Math.max(P.y0+P.r,Math.min(P.y1-P.r,y)), d=Math.hypot(x-cx,y-cy)-(P.r-2);
+  if(Math.abs(d)>2.6)return false;if(y<P.y0+8&&x>P.porte[0]+2&&x<P.porte[1]-2)return false;return true;};
+const dansNeige=(x,y)=>{if(surGlace(x,y))return false;if(y>ESC_Y-2&&y<BAS_Y+2)return false;if(x>PLACE.x-3&&x<PLACE.x+PLACE.w+3&&y>PLACE.y-3&&y<PLACE.y+PLACE.h+3)return false;return y>MONT;};
+return {WW,WH,surGlace,fond:(f)=>{FOND=f;},dessinerPlace,barriere:(b)=>{BARRIERE=b;},zoneInterdite,dansNeige,dessinerTelepherique,objets:objetsVides,solFin,LIFT_X,GARE_Y,CABLE_H,ECART,ARRIVEE:[180,488],METRO:[180,472],NEIGE_Y,texture:(t)=>{TEXTURE_NEIGE=t;}};
 })()
