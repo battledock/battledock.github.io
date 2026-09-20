@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-0909';
+  var MA_VERSION='2026-09-20-0914';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -11008,21 +11008,46 @@ function objets(){
   return {L,cal};
 }
 /* LA PLACE VIDE : un grand rectangle de planches, bordé de rondins. Rien d'autre pour l'instant. */
+/* LA PLACE : en haut, un champ de neige ; au milieu, un large escalier de bois ; en bas, le plancher */
+const NEIGE_Y=132, MARCHES=4, MARCHE_H=6, PLANCHER_Y=NEIGE_Y+MARCHES*MARCHE_H;
 function solVide(){
   const {c,g,F}=mk(WW,WH);
   const LAME=['#b88a5a','#a87a4c','#c49868','#9a6e42','#b08050'];
-  F(0,0,WW,WH,'#5a3a1e');
-  for(let y=0;y<WH;y+=4)for(let x=-24;x<WW;){const long=16+Math.floor(hs(x*0.7+y)*3)*6, dec=(y/4)%3*7, px=x+dec;
+  /* 1 · LA NEIGE : une couche douce, bleutée dans les creux, qui scintille */
+  for(let y=0;y<NEIGE_Y+2;y+=0.5)for(let x=0;x<WW;x+=0.5){
+    const n=Math.sin(x/23+y/31)*0.5+Math.sin(x/9-y/13)*0.3+Math.sin((x+y)/41)*0.4;
+    const t=hs(Math.round(x*2)*0.71+Math.round(y*2)*1.37);
+    let col=n>0.7?'#ffffff':(n>-0.4?'#f7fafc':(n>-0.9?'#f0f5f9':'#e9f0f6'));
+    if(t<0.012)col='#ffffff';if(t>0.994)col='#d4e0ea';
+    F(x,y,0.5,0.5,col);}
+  for(let k=0;k<260;k++){const x=hs(k*3.7)*WW, y=hs(k*5.3)*NEIGE_Y;F(x,y,0.5,0.5,'#ffffff');if(k%9===0){F(x-1,y,2.5,0.5,'rgba(255,255,255,.8)');F(x,y-1,0.5,2.5,'rgba(255,255,255,.8)');}}   /* les paillettes */
+  g.strokeStyle='rgba(150,175,210,.16)';g.lineWidth=0.5;for(let k=0;k<22;k++){const y=6+hs(k*9)*(NEIGE_Y-12), x=hs(k*4)*WW, l=30+hs(k)*60;
+    g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+l/2,y-2-hs(k*2)*2,x+l,y);g.stroke();}                          /* les rides du vent sur la neige */
+  /* 2 · LE PLANCHER, en bas */
+  F(0,PLANCHER_Y,WW,WH-PLANCHER_Y,'#5a3a1e');
+  for(let y=PLANCHER_Y;y<WH;y+=4)for(let x=-24;x<WW;){const long=16+Math.floor(hs(x*0.7+y)*3)*6, dec=((y-PLANCHER_Y)/4)%3*7, px=x+dec;
     const t=hs(px*0.37+y*1.3), col=LAME[Math.floor(t*5)];
     F(px,y,long,3.5,col);F(px,y,long,0.5,'rgba(255,230,190,.35)');F(px,y+3.5,long,0.5,'#5a3a1e');F(px,y,0.5,4,'#5a3a1e');
     for(let xx=px;xx<px+long;xx+=1)if(hs(xx*1.7+y)<0.25)F(xx,y+1+hs(xx)*2,1,0.5,'rgba(90,55,25,.35)');
     F(px+1.5,y+1,0.5,0.5,'#3a2a1e');F(px+1.5,y+2.5,0.5,0.5,'#3a2a1e');F(px+long-2,y+1,0.5,0.5,'#3a2a1e');F(px+long-2,y+2.5,0.5,0.5,'#3a2a1e');
     x+=long;}
-  /* la bordure : des rondins couchés sur les quatre côtés, et leur ombre */
-  const rondin=(x,y,w,h)=>{F(x,y,w,h,'#6b4a28');F(x,y,w,Math.min(1,h/3),'#8a6238');F(x,y+h-0.5,w,0.5,'#3d2a17');
-    for(let k=0;k<w;k+=3)if(hs(k+x+y)<0.3)F(x+k,y+h*0.4,1.5,0.5,'#4a321a');};
-  rondin(0,0,WW,5);rondin(0,WH-5,WW,5);rondin(0,0,5,WH);rondin(WW-5,0,5,WH);
-  g.fillStyle='rgba(40,25,10,.25)';g.fillRect(5,5,WW-10,2);g.fillRect(5,5,2,WH-10);
+  /* 3 · L'ESCALIER : de larges marches de bois qui montent du plancher vers la neige, un peu de neige
+     tassée au fond de chaque marche, des nez de marche éclairés */
+  for(let m2=0;m2<MARCHES;m2++){const y=NEIGE_Y+m2*MARCHE_H;
+    F(0,y,WW,MARCHE_H,'#8a6238');                                                    /* le giron */
+    for(let x=0;x<WW;x+=12+hs(m2*7+x)*6){F(x,y,0.5,MARCHE_H-1.5,'#5b3f21');}          /* les joints des planches */
+    for(let x=0;x<WW;x+=1)if(hs(x*1.3+m2*9)<0.2)F(x,y+1+hs(x+m2)*2,1,0.5,'rgba(90,55,25,.4)');
+    F(0,y,WW,1,'#b08858');F(0,y+0.5,WW,0.5,'#c8a070');                                 /* le nez, éclairé */
+    F(0,y+MARCHE_H-2,WW,2,'#4a321a');F(0,y+MARCHE_H-2,WW,0.5,'#3a2614');                /* la contremarche, dans l'ombre */
+    for(let x=0;x<WW;x+=0.5){const n=Math.sin(x/5+m2*2)+Math.sin(x/13+m2);if(n>1.1)F(x,y+1,0.5,1,'#eef4f8');}   /* un peu de neige tassée, par endroits */
+  }
+  /* la neige qui déborde sur la première marche, en bourrelet */
+  for(let x=0;x<WW;x+=0.5){const h=1.5+Math.sin(x/7)*0.8+hs(Math.round(x*2))*0.8;F(x,NEIGE_Y-0.5,0.5,h,'#ffffff');F(x,NEIGE_Y-0.5+h,0.5,0.5,'#c8d8e8');}
+  /* 4 · LES BORDS : des rondins autour du plancher ; une congère le long du champ de neige */
+  const rondin=(x,y,w,h)=>{F(x,y,w,h,'#6b4a28');F(x,y,w,Math.min(1,h/3),'#8a6238');F(x,y+h-0.5,w,0.5,'#3d2a17');for(let k=0;k<w;k+=3)if(hs(k+x+y)<0.3)F(x+k,y+h*0.4,1.5,0.5,'#4a321a');};
+  rondin(0,WH-5,WW,5);rondin(0,PLANCHER_Y,5,WH-PLANCHER_Y);rondin(WW-5,PLANCHER_Y,5,WH-PLANCHER_Y);
+  for(let y=0;y<NEIGE_Y;y+=0.5){F(0,y,3+Math.sin(y/9)*1.2,0.5,'#ffffff');F(WW-3-Math.cos(y/11)*1.2,y,3+Math.cos(y/11)*1.2,0.5,'#ffffff');}
+  for(let x=0;x<WW;x+=0.5)F(x,0,0.5,3+Math.sin(x/13)*1.2,'#ffffff');
   return c;
 }
 function solFin(){return solVide();}
@@ -11055,8 +11080,31 @@ function graverBouche(nuit){
 }
 function objetsVides(){const J=graverBouche(false),N=graverBouche(true);return {L:[],cal:{gare:{toile:J.c,W:J.W,H:J.H,sol:J.sol,nuit:N.c}}};}
 
-return {WW,WH,objets:objetsVides,solFin,LIFT_X,GARE_Y,CABLE_H,ECART,ARRIVEE:[136,268],METRO:[90,232]};
+return {WW,WH,objets:objetsVides,solFin,LIFT_X,GARE_Y,CABLE_H,ECART,ARRIVEE:[136,268],METRO:[90,232],NEIGE_Y};
 })();
+
+/* LES EMPREINTES DANS LA NEIGE : à chaque pas dans la neige, une empreinte de semelle, gauche puis
+   droite, orientée dans le sens de la marche ; elles s'estompent doucement (environ deux minutes) */
+let EMPREINTES=[], PAS_NEIGE=-1;
+function noterEmpreinte(){
+  if(CARTE!=='montagne'||joueur.y>=SAUMASKI.NEIGE_Y-2)return;
+  const n=Math.floor(joueur.pas*2);if(n===PAS_NEIGE)return;PAS_NEIGE=n;
+  const d=joueur.dir||'bas', ax=d.includes('droite')?1:(d.includes('gauche')?-1:0), ay=d.includes('bas')?1:(d.includes('haut')?-1:0);
+  const L=Math.hypot(ax,ay)||1, px=-ay/L, py=ax/L, cote=n%2?1:-1;
+  EMPREINTES.push({x:joueur.x+px*1.6*cote,y:joueur.y+py*1.6*cote,ax:ax/L,ay:ay/L,t:Date.now()});
+  if(EMPREINTES.length>500)EMPREINTES.shift();
+}
+function dessinerEmpreintes(g,camX,camY){
+  const now=Date.now();EMPREINTES=EMPREINTES.filter(e2=>now-e2.t<120000);
+  for(const e2 of EMPREINTES){const a=Math.max(0,1-(now-e2.t)/120000);
+    const x=e2.x-camX, y=e2.y-camY;if(x<-4||y<-4||x>innerWidth||y>innerHeight)continue;
+    g.save();g.translate(x,y);g.rotate(Math.atan2(e2.ay,e2.ax)+Math.PI/2);g.globalAlpha=a;
+    g.fillStyle='#aebfd3';g.fillRect(-1.25,-2.25,2.5,3.5);g.fillRect(-1,1.75,2,1.5);                    /* la semelle, le talon */
+    g.fillStyle='#9aaec4';g.fillRect(-0.5,-1.5,1,1.2);g.fillRect(-0.5,1.8,1,0.6);                   /* le creux, plus profond */
+    g.fillStyle='rgba(255,255,255,.9)';g.fillRect(-1.25,-2.25,2.5,0.5);                                /* le bourrelet de neige devant */
+    g.restore();}
+  g.globalAlpha=1;
+}
 
 /* =====================================================================
    LE SOL EN PIXEL FIN : on repart du sol actuel, et chaque pixel du jeu devient
@@ -15153,6 +15201,7 @@ function dessiner(){
   if(SOL_FIN)ctx.drawImage(SOL_FIN,camX*2,camY*2,lw*2,lh*2,0,0,lw,lh);   /* le sol affiné */
   else ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
   if(CARTE==='village'&&FIN_OK())dessinerLaPlaceFin(ctx,camX,camY);    /* la grand-place en dalles fines */
+  if(CARTE==='montagne')dessinerEmpreintes(ctx,camX,camY);             /* les pas dans la neige */
   if(CARTE==='extramar'){scintillerLaMer(ctx,camX,camY);eauVivante(ctx,camX,camY);}
 
   const px=Math.round((joueur.x-camX)*ECH)/ECH;
@@ -16616,6 +16665,7 @@ function majJoueur(dt){
     joueur.x=ax;joueur.y=ay;
     /* 2. la cadence suit la vitesse réelle */
     if(!bloqueBord)joueur.pas+=v*dt*0.30;
+    if(CARTE==='montagne')noterEmpreinte();
     /* 3. une zone morte : il ne se retourne que si la direction change nettement */
     const versX=Math.abs(vx)>Math.abs(vy)*1.35;
     const versY=Math.abs(vy)>Math.abs(vx)*1.35;
