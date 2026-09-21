@@ -1308,36 +1308,43 @@ function graverCroustiPort(){
 /* LE BAR DES DOCKS : le bar-tabac du quai. Une devanture lie-de-vin, un store rayé vert et blanc,
    l'enseigne, la carotte rouge du tabac, l'affiche « JEUX », le zinc et les bouteilles dans la vitrine,
    deux guéridons en terrasse ; la nuit, le bar s'allume et la carotte brille. */
-function graverLeBar(){
-  const base=graverImmeuble(1), W=base.W, H=base.H, sol=base.sol, cx=W/2, BL=138, x0=cx-BL/2, rez=40, yR=sol-rez;
-  const copie=(src)=>{const c=document.createElement('canvas');c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);return c;};
-  const peindre=(cv,nuit)=>{const D=cv.width/W, g=cv.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
-    const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
-    R(x0,yR,BL,rez,'#5a1e1e');R(x0,yR,BL,1.5,'#d8b050');R(x0,sol-1.5,BL,1.5,'#2a0e0e');
-    /* la vitrine : le zinc, les bouteilles sur l'étagère, la machine à café */
-    R(x0+8,yR+10,BL-16,rez-12,nuit?'#ffd898':'#2a2222');
-    for(let k=0;k<14;k++){const bx=x0+14+k*8;R(bx,yR+13,2,6,['#2a7a4a','#c8a040','#8a2a1a','#d8d0c0'][k%4]);R(bx,yR+12,2,1,'#1a1a1a');}   /* les bouteilles */
-    R(x0+12,yR+20,BL-24,1,'#8a6a3a');R(x0+10,yR+28,BL-20,4,'#c8ccd2');R(x0+10,yR+28,BL-20,1,'#ffffff');                                           /* l'étagère, le zinc */
-    R(x0+BL-34,yR+22,10,6,'#8a8f96');R(x0+BL-33,yR+23,3,3,'#3a3a40');                                                                          /* le percolateur */
-    if(!nuit){g.fillStyle='rgba(255,255,255,.14)';g.beginPath();g.moveTo(x0+14,sol-2);g.lineTo(x0+28,yR+10);g.lineTo(x0+36,yR+10);g.lineTo(x0+22,sol-2);g.fill();}
-    R(cx-9,yR+8,18,rez-8,'#2a0e0e');R(cx-8,yR+9,16,rez-10,nuit?'#ffe0a0':'#3a2e2e');R(cx-0.5,yR+9,1,rez-10,'#2a0e0e');R(cx+4,sol-14,1.5,3,'#d8b050');
-    /* l'affiche des jeux, sur la porte */
-    R(cx-6,yR+12,12,8,'#f2d21a');g.font='900 4px Georgia';g.textAlign='center';g.fillStyle='#c8281e';g.fillText('JEUX',cx,yR+17.6,11);g.textAlign='left';
-    /* le store rayé vert et blanc */
-    for(let k=0;k<BL;k+=6){R(x0+k,yR+2,6,7,(k/6)%2?'#f4efe6':'#2a6a4a');g.fillStyle=(k/6)%2?'#f4efe6':'#2a6a4a';g.beginPath();g.arc(x0+k+3,yR+9,3,0,Math.PI);g.fill();}
-    /* l'enseigne */
-    const ey=yR-14;R(x0+14,ey,BL-40,12,'#1a1410');R(x0+15,ey+1,BL-42,10,'#2a1e16');
-    g.font='700 7.5px Georgia,serif';g.textAlign='center';g.fillStyle=nuit?'#fff0c0':'#f0d890';g.fillText('BAR DES DOCKS',x0+14+(BL-40)/2,ey+8.4,BL-48);g.textAlign='left';
-    /* la carotte du tabac : le losange rouge, en drapeau sur la façade */
-    const cxT=x0+BL-12, cyT=yR-12;R(cxT-1,cyT-8,1.5,4,'#3a3a40');
-    g.fillStyle=nuit?'#ff4a3a':'#c8281e';g.beginPath();g.moveTo(cxT,cyT-5);g.lineTo(cxT+6,cyT+2);g.lineTo(cxT,cyT+9);g.lineTo(cxT-6,cyT+2);g.closePath();g.fill();
-    g.fillStyle='#ffffff';g.font='700 3px Georgia';g.textAlign='center';g.fillText('TABAC',cxT,cyT+3,10);g.textAlign='left';
-    if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,200,120,.5)');l.addColorStop(1,'rgba(255,200,120,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);
-      const l2=g.createRadialGradient(cxT,cyT+2,1,cxT,cyT+2,14);l2.addColorStop(0,'rgba(255,80,60,.6)');l2.addColorStop(1,'rgba(255,80,60,0)');g.fillStyle=l2;g.fillRect(cxT-14,cyT-12,28,28);}
-  };
-  const toile=copie(base.toile), nuit=copie(base.nuit||base.toile);peindre(toile,false);peindre(nuit,true);
-  return {toile,W,H,sol,nuit};
-}
+function chaiseBistro(R,g,x,y,c){R(x-2.5,y-3,5,1.2,c||'#b8864a');R(x-2.5,y-8,1,5,'#4a3a2a');R(x+1.5,y-8,1,5,'#4a3a2a');R(x-2.5,y-8,5,1,'#4a3a2a');for(let k=0;k<2;k++)R(x-2+k*3,y-6,.6,3,c||'#b8864a');R(x-2.2,y-2,.8,3,'#3a3a40');R(x+1.4,y-2,.8,3,'#3a3a40');}
+function tableBistro(R,x,y){R(x-4.5,y-5,9,1.5,'#e8e4dc');R(x-4.5,y-5,9,.5,'#fff');R(x-.5,y-3.5,1,4,'#3a3a40');R(x-2.5,y,5,1,'#3a3a40');}
+function clientTerrasse(R,x,y,veste,dos){R(x-2,y-12,4,4,'#e0b088');R(x-2.3,y-13,4.6,2,dos?'#3a2a1c':'#6a4a2a');R(x-2.5,y-8,5,5,veste);R(x-2,y-3,1.5,3,'#2a2a30');R(x+.5,y-3,1.5,3,'#2a2a30');}
+function carotteTabac(R,g,x,y,nuit){R(x-.5,y-6,1,6,'#3a3a40');g.fillStyle=nuit?'#ff5a3a':'#c8281e';g.beginPath();g.moveTo(x,y);g.lineTo(x+5,y+7);g.lineTo(x,y+14);g.lineTo(x-5,y+7);g.closePath();g.fill();
+  if(nuit){g.fillStyle='rgba(255,90,58,.35)';g.beginPath();g.arc(x,y+7,10,0,7);g.fill();}g.font='900 3px Arial';g.textAlign='center';g.fillStyle='#fff';g.fillText('TABAC',x,y+8);g.textAlign='left';}
+function logoPMU(R,g,x,y){R(x,y,16,9,'#1f7a3a');R(x,y,16,1,'#3aa05a');g.font='900 6px Arial';g.textAlign='center';g.fillStyle='#fff';g.fillText('PMU',x+8,y+7);g.textAlign='left';}
+function lueurB(g,cx,sol,nuit,c){if(!nuit)return;const l=g.createRadialGradient(cx,sol,4,cx,sol,80);l.addColorStop(0,c||'rgba(255,210,140,.5)');l.addColorStop(1,'rgba(255,210,140,0)');g.fillStyle=l;g.fillRect(cx-80,sol-80,160,86);}
+/* 1 · LE BAR DES DOCKS, BAR-TABAC PMU : store bordeaux, carotte TABAC lumineuse, logo PMU, écran des courses,
+   terrasse de chaises bistrot cannées, habitués attablés, ardoise du plat du jour, présentoir FDJ */
+function graverLeBar(){return devanture(0,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+  R(x0,yR,BL,rez,'#6a1a1e');R(x0,yR,BL,1.5,'#d8b050');R(x0,sol-2,BL,2,'#3a0a0e');
+  R(x0+8,yR+12,BL-16,rez-16,nuit?'#ffe0a8':'#2a1c18');
+  R(x0+14,yR+16,40,2,'#b8b0a0');for(let k=0;k<6;k++)R(x0+16+k*6,yR+13,2,3,['#e8a040','#6ab0e8','#e84a4a'][k%3]);   /* le comptoir, les bouteilles */
+  R(x0+BL-44,yR+14,20,12,'#1a2a3a');R(x0+BL-43,yR+15,18,10,nuit?'#6ab04a':'#3a7a2a');for(let k=0;k<4;k++)R(x0+BL-41+k*4,yR+19+(k%2),2,1.5,'#f0e060');   /* l'écran des courses */
+  R(cx-8,yR+12,16,rez-12,'#3a0a0e');R(cx-7,yR+13,14,rez-14,nuit?'#ffe8b8':'#4a2a26');
+  /* le store bordeaux « BAR · TABAC · PMU » */
+  for(let k=0;k<BL;k+=8){R(x0+k,yR+1,8,9,(k/8)%2?'#8a1a22':'#6a1016');g.fillStyle=(k/8)%2?'#8a1a22':'#6a1016';g.beginPath();g.arc(x0+k+4,yR+10,4,0,Math.PI);g.fill();}
+  g.font='900 5.5px Arial,sans-serif';g.textAlign='center';g.fillStyle='#f4ecd8';g.fillText('BAR · TABAC · PMU',cx,yR+7.5,BL-20);g.textAlign='left';
+  /* l'enseigne peinte au-dessus, la carotte, le logo */
+  const ey=yR-15;R(x0+18,ey,BL-36,12,'#f4ecd8');R(x0+18,ey,BL-36,1,'#6a1a1e');R(x0+18,ey+11,BL-36,1,'#6a1a1e');
+  g.font='900 7.8px Georgia,serif';g.textAlign='center';g.fillStyle='#6a1a1e';g.fillText('LE BAR DES DOCKS',cx,ey+8.6,BL-44);g.textAlign='left';
+  carotteTabac(R,g,x0+BL+3,yR-20,nuit);logoPMU(R,g,x0+2,ey+1);
+  /* l'ardoise et le présentoir FDJ devant */
+  R(x0+2,sol-18,10,16,'#5b3f21');R(x0+3,sol-17,8,11,'#2e3a34');for(let k=0;k<3;k++)R(x0+4,sol-15+k*3,5,.6,'#f4f0e0');
+  R(x0+BL-12,sol-16,9,14,'#e8e4dc');R(x0+BL-12,sol-16,9,3,'#2d6fb0');R(x0+BL-11,sol-12,7,1,'#e8c040');R(x0+BL-11,sol-9,7,1,'#e84a4a');
+  lueurB(g,cx,sol,nuit);});}
+/* LA TERRASSE, posée sur le quai devant le bar : tables rondes, chaises bistrot, habitués, et un parasol pour le Zinc */
+function graverTerrasse(v){const W=160,H=60,sol=H-4,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(.5,w),Math.max(.5,h));};
+  const ch=[null,'#b8864a','#c89a5a','#9a2a1e'][v];
+  [[22,sol-14],[64,sol-6],[108,sol-14],[146,sol-6]].forEach(([x,y],k)=>{g.fillStyle='rgba(0,0,0,.18)';g.beginPath();g.ellipse(x,y+1,9,2,0,0,7);g.fill();
+    chaiseBistro(R,g,x-8,y,ch);chaiseBistro(R,g,x+8,y,ch);tableBistro(R,x,y);
+    if(k%2===0){clientTerrasse(R,x-8,y-2,['#2d6fb0','#e8c040','#5d9a4e','#c84a2a'][k],false);R(x-1,y-8,2,3,'#f0e0a0');R(x+1.5,y-7,1.5,2,'#e8c89a');}
+    else{clientTerrasse(R,x+8,y-2,['#8a5ad8','#3a3a40'][k%2],true);R(x-2,y-7,1.5,2,'#c8e8f0');}});
+  if(v===3){R(84,4,1.5,sol-10,'#3a3a40');g.fillStyle='#c83a3a';g.beginPath();g.moveTo(58,16);g.quadraticCurveTo(85,-2,112,16);g.closePath();g.fill();for(let k=0;k<6;k++)R(60+k*9,14,4,2,k%2?'#f4ecd8':'#c83a3a');}
+  return {toile:c,W,H,sol,nuit:null};}
+
 /* un guéridon de terrasse, ses deux chaises, un verre de pastis et un café */
 function graverGueridon(){const W=30,H=22,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);const sol=H-3, cx=W/2;
   g.fillStyle='rgba(40,30,18,.25)';g.beginPath();g.ellipse(cx,sol,13,2.5,0,0,7);g.fill();
@@ -1568,7 +1575,7 @@ function semerDecorExtramar(){
     if(k===2){XCAL['x_facPeche0']=graverLaBoutiquePeche();CALQUES_DECO['x_facPeche']=XCAL['x_facPeche0'];P('x_facPeche',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'peche'});continue;}   /* Pêche & Marine */
     if(k===6){XCAL['x_facPoisson0']=graverLaPoissonnerie();CALQUES_DECO['x_facPoisson']=XCAL['x_facPoisson0'];P('x_facPoisson',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'poissonnerie'});continue;}   /* la poissonnerie */
     if(k===3){XCAL['x_bar0']=graverLeBar();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ferme:'Le Bar des Docks'});
-      XCAL['x_gueridon0']=graverGueridon();CALQUES_DECO['x_gueridon']=XCAL['x_gueridon0'];[[70+k*140-44,XP.maisonsY+34],[70+k*140+46,XP.maisonsY+36]].forEach(([x,y])=>P('x_gueridon',x,y,{col:[8,3]}));continue;}   /* le bar-tabac */
+      XCAL['x_terr0']=graverTerrasse(1);CALQUES_DECO['x_terr']=XCAL['x_terr0'];P('x_terr',70+k*140,XP.maisonsY+46,{col:[4,2]});continue;}   /* le bar-tabac PMU et sa terrasse */   /* le bar-tabac */
     if(k===5){XCAL['x_peigne0']=graverLePeigne();CALQUES_DECO['x_peigne']=XCAL['x_peigne0'];P('x_peigne',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'salon'});continue;}   /* le salon de coiffure */
     if(k===7){XCAL['x_crousti0']=graverCroustiPort();CALQUES_DECO['x_crousti']=XCAL['x_crousti0'];P('x_crousti',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'crousti'});continue;}   /* le fast-food du quai */
     P('x_maison',70+k*140,XP.maisonsY,{v:k,col:[70,24]});
