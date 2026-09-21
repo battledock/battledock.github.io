@@ -1546,7 +1546,7 @@ function semerDecorExtramar(){
   for(let k=0;k<10;k++){
     if(k===4){P('x_panneauG',XP.ruelle.x-38,XP.maisonsY+22,{col:[4,3]});continue;}   /* la ruelle du casino, et son panneau */
     if(k===1){XCAL['x_fumoir0']=graverLeFumoir();CALQUES_DECO['x_fumoir']=XCAL['x_fumoir0'];P('x_fumoir',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'fumoir'});continue;}   /* le fumoir */
-    if(k===9){XCAL['x_poste0']=graverLaPoste();CALQUES_DECO['x_poste']=XCAL['x_poste0'];P('x_poste',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'poste'});continue;}   /* la poste */
+    /* (la poste est retirée : un immeuble du quai reprend sa place) */
     if(k===2){XCAL['x_facPeche0']=graverLaBoutiquePeche();CALQUES_DECO['x_facPeche']=XCAL['x_facPeche0'];P('x_facPeche',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'peche'});continue;}   /* Pêche & Marine */
     if(k===6){XCAL['x_facPoisson0']=graverLaPoissonnerie();CALQUES_DECO['x_facPoisson']=XCAL['x_facPoisson0'];P('x_facPoisson',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'poissonnerie'});continue;}   /* la poissonnerie */
     if(k===3){XCAL['x_bar0']=graverLeBar();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ferme:'Le Bar des Docks'});
