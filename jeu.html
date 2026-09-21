@@ -23,7 +23,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-1611';
+  var MA_VERSION='2026-09-21-1617';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -1350,7 +1350,21 @@ body.clavier #bandeau{padding-bottom:9px}
 #voile{background:#0d1410;justify-content:center}
 #vPre{display:block}
 .vVoileTexte{top:30%;height:40%;z-index:1;background:linear-gradient(180deg,rgba(14,18,12,0),rgba(14,18,12,.62) 38%,rgba(14,18,12,.62) 62%,rgba(14,18,12,0))}
-#vVie{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#vVie{display:none}
+.vAnim{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.vAnim .ray{position:absolute;top:-10%;width:22%;height:130%;background:linear-gradient(180deg,rgba(255,214,140,.16),rgba(255,214,140,0) 80%);
+  transform:rotate(28deg);transform-origin:top;animation:vRay 7s ease-in-out infinite;will-change:opacity}
+.vAnim .ray:nth-child(1){left:58%}.vAnim .ray:nth-child(2){left:76%;width:14%;animation-delay:-3s}.vAnim .ray:nth-child(3){left:92%;width:18%;animation-delay:-5s}
+@keyframes vRay{0%,100%{opacity:.35}50%{opacity:1}}
+.vAnim .nuage{position:absolute;top:10%;left:-60%;width:90%;height:40%;border-radius:50%;background:radial-gradient(closest-side,rgba(30,40,20,.14),rgba(30,40,20,0));
+  animation:vNuage 38s linear infinite;will-change:transform}
+@keyframes vNuage{from{transform:translateX(0)}to{transform:translateX(230%)}}
+.vAnim .pap{position:absolute;width:9px;height:6px;will-change:transform;animation:vPap 14s linear infinite}
+.vAnim .pap:before,.vAnim .pap:after{content:'';position:absolute;top:0;width:4px;height:4px;background:var(--c);animation:vAile .28s steps(2) infinite}
+.vAnim .pap:before{left:0}.vAnim .pap:after{right:0}
+.vAnim .pap i{position:absolute;left:4px;top:1px;width:1.5px;height:4px;background:#4a3220}
+@keyframes vAile{50%{transform:translateY(-1.5px) scaleY(.6)}}
+@keyframes vPap{0%{transform:translate(0,0)}25%{transform:translate(40px,-26px)}50%{transform:translate(90px,8px)}75%{transform:translate(40px,34px)}100%{transform:translate(0,0)}}
 .vBas{padding:0 26px}
 .vTitre{font:400 38px Georgia,serif;color:#fdfbf4;letter-spacing:2px;text-shadow:0 2px 14px rgba(0,0,0,.9);margin-bottom:0}
 .vTitre em{font-style:normal;font-size:24px;margin-left:7px;vertical-align:10px;
@@ -1819,6 +1833,10 @@ body.clavier #bandeau{padding-bottom:9px}
   <canvas id="vPre"></canvas>
   <div class="vVoileTexte"></div>
   <canvas id="vVie"></canvas>
+  <div class="vAnim"><div class="ray"></div><div class="ray"></div><div class="ray"></div><div class="nuage"></div>
+    <div class="pap" style="left:12%;top:14%;--c:#f2efe4;animation-duration:13s"><i></i></div><div class="pap" style="left:62%;top:22%;--c:#e8cf4e;animation-duration:17s;animation-delay:-4s"><i></i></div>
+    <div class="pap" style="left:30%;top:66%;--c:#e0a8c8;animation-duration:15s;animation-delay:-8s"><i></i></div><div class="pap" style="left:70%;top:74%;--c:#9fe0ec;animation-duration:19s;animation-delay:-2s"><i></i></div>
+    <div class="pap" style="left:44%;top:38%;--c:#f2efe4;animation-duration:21s;animation-delay:-11s"><i></i></div></div>
   <div class="vBas">
     <div class="vTitre">Battle Dock<em>3</em></div>
     <div class="vRail"><i id="vJauge"></i></div>
@@ -1828,7 +1846,10 @@ body.clavier #bandeau{padding-bottom:9px}
 <script>
 /* ---- LE PRÉ DE L'ACCUEIL, EN PIXEL FIN ET VIVANT, POUR LE CHARGEMENT ---- */
 (function(){
-window.__ALLEGE=true;                  /* au chargement, le jeu travaille en même temps : on allège ce qui bouge */
+window.__ALLEGE=true;
+/* AU CHARGEMENT, LE JEU CONSTRUIT SON MONDE SUR LE MÊME FIL : toute animation en JavaScript saccade forcément.
+   Le pré est donc peint une seule fois ; ce qui bouge est confié au CSS (rayons, nuage, papillons), que le
+   téléphone anime à part, sur la carte graphique : ça reste fluide même quand le jeu travaille. */
 const $=(i)=>document.getElementById(i);
 const cv=$('vPre');
 let dir=0,PIX=0;
@@ -2187,8 +2208,7 @@ function boucle(t){
 
 
 
-addEventListener('resize',()=>{graver();});
-graver();requestAnimationFrame(boucle);
+graver();                                   /* une seule fois, sans boucle ni redessin au redimensionnement */
 })();
 
 </script>
