@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-1243';
+  var MA_VERSION='2026-09-21-1259';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -11890,10 +11890,35 @@ function graverFerme(t){
     return {toile:c,W,H,sol,nuit:null};}
   return null;}
 
+/* LE BILLARD SOUS LA TONNELLE : une table de billard en plein air, sous une treille de vigne, à gauche du champ */
+function graverBillard(){const W=96,H=92,cx=W/2,sol=H-10, B={bois:'#7d5934',boisC:'#96703f',boisO:'#5b3f21',boisS:'#3d2a17'};
+  return toileH(W,H,({R,g})=>{
+    g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(cx+2,sol+2,40,10,0,0,7);g.fill();
+    /* les quatre poteaux de la tonnelle */
+    [[-40],[36]].forEach(([k])=>{R(cx+k,sol-58,4,58,B.boisO);R(cx+k+1,sol-57,2,56,B.bois);R(cx+k+1,sol-57,1,56,B.boisC);});
+    /* la table : pieds tournés, cadre en bois, tapis vert, poches */
+    [[-26],[22]].forEach(([k])=>{R(cx+k,sol-12,4,12,B.boisO);R(cx+k+1,sol-11,2,10,B.bois);});
+    R(cx-30,sol-22,60,11,B.boisO);R(cx-29,sol-21,58,9,B.bois);R(cx-29,sol-21,58,1,B.boisC);
+    R(cx-26,sol-20,52,6,'#2f7a3c');R(cx-26,sol-20,52,1,'#4a9a54');
+    [[-27,-21],[25,-21],[-27,-15],[25,-15],[-1,-21],[-1,-15]].forEach(([dx,dy])=>R(cx+dx,sol+dy,2,1.5,'#140c06'));
+    [['#f0c020',-12,-18],['#d82828',-9,-17],['#141414',-6,-18],['#2050c8',-9,-19],['#ffffff',14,-17]].forEach(([c,dx,dy])=>{R(cx+dx,sol+dy,2,2,c);R(cx+dx,sol+dy,1,1,'rgba(255,255,255,.6)');});
+    R(cx-4,sol-24,34,1.2,'#c8a868');R(cx+29,sol-24.5,2,2,'#2a5fa8');                                    /* la queue posée */
+    /* la treille : des lattes, et la vigne qui retombe, avec ses grappes */
+    for(let k=0;k<7;k++)R(cx-42+k*14,sol-62,3,5,B.boisO);R(cx-44,sol-60,88,3,B.bois);R(cx-44,sol-60,88,1,B.boisC);
+    for(let k=0;k<40;k++){const x=cx-44+((k*37)%88), y=sol-66+((k*13)%10);const c=['#3f7a3a','#4f8a42','#6aa050'][k%3];R(x,y,5,4,c);R(x+1,y,3,1,'#8cc46a');}
+    for(let k=0;k<9;k++){const x=cx-40+k*10+((k*7)%4), y=sol-58+((k*5)%7);R(x,y,1,6+(k%3)*2,'#4f8a42');if(k%2){R(x-1,y+6,3,3,'#6a3a8a');R(x-0.5,y+6,1,1,'#9a6aba');}}
+    /* une petite ardoise accrochée au poteau */
+    R(cx+38,sol-40,12,9,B.boisO);R(cx+39,sol-39,10,7,'#2a3a32');g.font='700 3px Georgia';g.fillStyle='#f4f0e0';g.fillText('BILLARD',cx+39.3,sol-34);
+  });}
+let JEU_BILLARD=null;
+async function ouvrirLeBillard(){try{if(!JEU_BILLARD)JEU_BILLARD=eval(await chargerMorceau('billard.js'));JEU_BILLARD.billard(false);}
+  catch(err){texteVolant(joueur.x,joueur.y-56,'La table est occupée… réessaie','#ffe8a0');console.error(err);}}
 function semerLaFerme(){
+  const CB=graverBillard();XCAL['x_fe_billard0']={toile:CB,W:96,H:92,sol:82,nuit:null};CALQUES_DECO['x_fe_billard']=XCAL['x_fe_billard0'];
   /* LE GRAINETIER, à droite du champ : on achète ses outils, on loue ses parcelles */
   const C=graverGrainetier();XCAL['x_fe_grain0']={toile:C,W:116,H:104,sol:92,nuit:null};CALQUES_DECO['x_fe_grain']=XCAL['x_fe_grain0'];
-  return [{t:'x_fe_grain',x:1298,y:476,v:0,bati:true,demi:46,ouvre:'grainetier'}];
+  return [{t:'x_fe_grain',x:1298,y:476,v:0,bati:true,demi:46,ouvre:'grainetier'},
+          {t:'x_fe_billard',x:694,y:478,v:0,bati:true,demi:40,ouvre:'billard'}];      /* le billard, à gauche du champ */
   const L=[];const P=(t,x,y,o)=>L.push(Object.assign({t:'x_fe_'+t,x,y,v:0},o||{}));void P;
   return L;}
 
@@ -12119,7 +12144,7 @@ const TAILLES={
  x_fe_meule:[{w:40,h:12}], x_fe_portail:null, x_fe_barriere:[{w:46,h:6}], x_fe_barriereV:[{w:8,h:26}],
  x_fe_cypres:[{w:8,h:6}], x_fe_olivier:[{w:14,h:8}], x_fe_charrette:[{w:40,h:10}], x_fe_abreuvoir:[{w:30,h:8}],
  x_fe_tournesols:null, x_fe_panneauFerme:[{w:6,h:8}], x_fe_boiteLettres:[{w:5,h:8}], x_fe_fruitier:[{w:12,h:8}],
- x_fe_moulin:[{w:44,h:20}], x_fe_grain:[{w:44,h:14}], x_fe_mouton:null, x_fe_vache:null, x_fe_poule:null, x_fe_auge:[{w:26,h:6}],
+ x_fe_moulin:[{w:44,h:20}], x_fe_grain:[{w:44,h:14}], x_fe_billard:[{w:32,h:10}], x_fe_mouton:null, x_fe_vache:null, x_fe_poule:null, x_fe_auge:[{w:26,h:6}],
  arbre:  [{w:10,h:7},{w:12,h:8},{w:12,h:8}],   /* seulement le pied du tronc */
  rocher: [{w:22,h:9},{w:26,h:10},{w:30,h:11}],
  fer:    [{w:22,h:9},{w:26,h:10},{w:30,h:11}],
@@ -18639,6 +18664,7 @@ function majAction(){
   if(o.ouvre==='course'){b.innerHTML='Monter sur le plot<small>LA COURSE DU 50 M · A-B-A-B POUR NAGER</small>';b.classList.add('on');return;}
   if(o.ouvre==='cabine'){b.innerHTML=(e.ap&&e.ap.maillot?'Se rhabiller':'Entrer dans la cabine')+'<small>'+(e.ap&&e.ap.maillot?'REMETTRE TES VÊTEMENTS':'SE METTRE EN MAILLOT')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='sortiePiscine'){b.innerHTML='Ressortir sur le quai<small>'+(e.ap&&e.ap.maillot?'ON TE RHABILLE EN SORTANT':'LE VIEUX-PORT')+'</small>';b.classList.add('on');return;}
+  if(o.ouvre==='billard'){b.innerHTML='Jouer au billard<small>CONTRE DÉDÉ · OU À DEUX</small>';b.classList.add('on');return;}
   if(o.ouvre==='grainetier'){b.innerHTML='Entrer au Grainetier<small>OUTILS · GRAINES · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
   if(o.ouvre==='fumoir'){b.innerHTML='Entrer au fumoir<small>TON POISSON VAUT 2,5× PLUS · 30 MIN</small>';b.classList.add('on');return;}
   if(o.ouvre==='poste'){b.innerHTML='Entrer à la poste<small>'+(COURRIER_N?COURRIER_N+' LETTRE'+(COURRIER_N>1?'S':'')+' T’ATTEND'+(COURRIER_N>1?'ENT':''):'ÉCRIRE · RELEVER SON COURRIER')+'</small>';b.classList.add('on');return;}
@@ -18806,6 +18832,7 @@ function agir(){
   if(o.ouvre==='salon'){ouvrirLeSalon();return;}
   if(o.ouvre==='poissonnerie'){ouvrirLeComptoir(MODE_POISSON);return;}
   if(o.ouvre==='grainetier'){ouvrirLeGrainetier('outils');return;}
+  if(o.ouvre==='billard'){ouvrirLeBillard();return;}
   if(o.ouvre==='fumoir'){ouvrirLeFumoir();return;}
   if(o.ouvre==='poste'){ouvrirLaPoste();return;}
   if(o.ouvre==='peche'){ouvrirLaBoutiqueDePeche();return;}
