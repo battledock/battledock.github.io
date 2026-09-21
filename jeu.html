@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-2218';
+  var MA_VERSION='2026-09-21-2229';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -7511,6 +7511,36 @@ async function ouvrirLeBar(){
   const bulle=(t)=>{const b=$('barBulle');if(!b)return;b.textContent=t;b.classList.add('on');clearTimeout(bulle.t);bulle.t=setTimeout(()=>b.classList.remove('on'),2600);};
   const MAX={poisson:100,filet:300,cargo:500};
   const mini=(nom)=>'<span class="bar-mini"><small>BAR DES DOCKS</small><b>'+nom+'</b><i></i></span>';
+  let ONG='gratter', SEL=[], CH=0, LOTO_T=0, ETAT=null;
+  /* ————— LE LOTO DU PORT : 5 numéros sur 25 + 1 Chance sur 5, 2 € la grille, tirage chaque soir à 21 h (tout au serveur) ————— */
+  const boule=(n,rouge,k)=>'<span class="lo-boule'+(rouge?' ch':'')+'" style="animation-delay:'+(k*0.45)+'s">'+n+'</span>';
+  const loto=async()=>{const V=$('lotoVue');if(!V)return;const d=await appelRPC('loto_etat',{p_joueur:e.id});if(!d||d.erreur){V.innerHTML='<div class="bar-jour">Le tirage n’a pas pu s’ouvrir. Réessaie dans un instant.</div>';return;}
+    ETAT=d;if(typeof d.euros==='number'){e.euros=d.euros;majHaut();}dessinerLoto();};
+  const dessinerLoto=()=>{const V=$('lotoVue'),d=ETAT;if(!V||!d)return;const mes=d.mes_grilles||[],D=d.dernier;
+    const vu=(()=>{try{return localStorage.getItem('loto_vu')}catch(x){return null}})(), animer=D&&vu!==D.jour;
+    V.innerHTML='<div class="lo-cag"><small>CAGNOTTE</small><b>'+enEuros(d.cagnotte||0)+'</b><span id="loCompte">—</span><i title="Empreinte publiée avant le tirage">Sceau du tirage · '+String(d.empreinte||'').slice(0,16)+'…</i></div>'+
+      '<div class="bar-t" style="margin-top:14px">Ta grille <small class="lo-reste">'+mes.length+' / 10 aujourd’hui</small></div>'+
+      '<div class="lo-g">'+Array.from({length:25},(_,i)=>'<button data-n="'+(i+1)+'" class="'+(SEL.includes(i+1)?'on':'')+'">'+(i+1)+'</button>').join('')+'</div>'+
+      '<div class="lo-cl">NUMÉRO CHANCE</div><div class="lo-ch">'+[1,2,3,4,5].map(n=>'<button data-c="'+n+'" class="'+(CH===n?'on':'')+'">'+n+'</button>').join('')+'</div>'+
+      '<div class="lo-act"><button class="lo-flash" id="loFlash">Flash</button><button class="lo-ok'+(SEL.length===5&&CH?'':' pas')+'" id="loOk">'+(SEL.length===5&&CH?'Valider · 2 €':'Choisis 5 numéros et 1 Chance')+'</button></div>'+
+      (mes.length?'<div class="lo-cl" style="margin-top:14px">TES GRILLES POUR CE TIRAGE</div>'+mes.map(g=>'<div class="lo-mg">'+g.numeros.map(n=>'<span>'+n+'</span>').join('')+'<span class="c">'+g.chance+'</span></div>').join(''):'')+
+      (D?'<div class="lo-der"><div class="lo-cl">DERNIER TIRAGE · '+new Date(D.jour+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+'</div><div class="lo-boules'+(animer?' anim':'')+'">'+D.numeros.map((n,k)=>boule(n,false,k)).join('')+boule(D.chance,true,5)+'</div>'+
+        ((D.mes_grilles||[]).length?(D.mes_grilles.map(g=>'<div class="lo-mg'+(g.gain>0?' gagne':'')+'">'+g.numeros.map(n=>'<span class="'+(D.numeros.includes(n)?'bon':'')+'">'+n+'</span>').join('')+'<span class="c '+(g.chance===D.chance?'bon':'')+'">'+g.chance+'</span><em>'+(g.gain>0?'+'+enEuros(g.gain):'—')+'</em></div>').join('')):'<div class="bar-jour" style="margin:6px 0 0">Tu n’avais pas joué ce soir-là.</div>')+
+        (D.gagnants_cagnotte?'<div class="bar-jour">La cagnotte de '+enEuros(D.cagnotte)+' a été gagnée !</div>':'')+
+        '<details class="lo-verif"><summary>Vérifier ce tirage</summary>Empreinte publiée avant les ventes :<code>'+D.empreinte+'</code>Graine révélée après le tirage :<code>'+D.graine+'</code>L’empreinte est le SHA-256 de la graine, et les numéros découlent de la graine seule : personne n’a pu les choisir.</details></div>':'')+
+      '<div class="bar-jour" style="margin-top:12px">5 bons numéros + Chance : la cagnotte · 5 : 500 € · 4+C : 60 € · 4 : 20 € · 3+C : 8 € · 3 : 4 € · 2+C : 3 € · Chance seule : 2 €.<br>Tirage chaque soir à 21 h · ventes jusqu’à 20 h 45 · gains versés automatiquement.</div>';
+    if(animer)try{localStorage.setItem('loto_vu',D.jour);}catch(x){}
+    V.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{const n=+b.dataset.n;if(SEL.includes(n))SEL=SEL.filter(x=>x!==n);else if(SEL.length<5)SEL.push(n);else{bulle('Cinq numéros, pas plus');return;}vibrer(6);dessinerLoto();});
+    V.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{CH=+b.dataset.c;vibrer(6);dessinerLoto();});
+    $('loFlash').onclick=()=>{const p=Array.from({length:25},(_,i)=>i+1);SEL=[];while(SEL.length<5)SEL.push(p.splice(Math.floor(Math.random()*p.length),1)[0]);CH=1+Math.floor(Math.random()*5);vibrer(10);dessinerLoto();};
+    $('loOk').onclick=async()=>{if(SEL.length!==5||!CH){bulle('Choisis 5 numéros et 1 numéro Chance');return;}if((e.euros||0)<200){bulle('Il te manque '+enEuros(200-(e.euros||0)));return;}
+      const b=$('loOk');b.disabled=true;b.textContent='…';const r=await appelRPC('loto_jouer',{p_joueur:e.id,p_numeros:SEL,p_chance:CH});b.disabled=false;
+      if(!r||r.erreur){bulle(r&&r.erreur==='limite'?'Dix grilles aujourd’hui : c’est le maximum':(r&&r.erreur==='pas_assez'?'Il te manque de quoi payer':(r&&r.erreur==='grille'?'Grille invalide':'Le buraliste n’a pas pu')));dessinerLoto();return;}
+      ETAT=r;if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}SEL=[];CH=0;jouer('vente','moment');vibrer([20,30,20]);bulle('Grille validée ! Bonne chance pour ce soir.');dessinerLoto();};
+    const maj=()=>{const el=$('loCompte');if(!el||!ETAT){clearInterval(LOTO_T);return;}const ms=new Date(ETAT.tirage_a)-Date.now();
+      if(ms<=0){el.textContent='Tirage en cours…';clearInterval(LOTO_T);setTimeout(loto,20000);return;}const h=Math.floor(ms/36e5),m=Math.floor(ms%36e5/6e4),sc=Math.floor(ms%6e4/1e3);
+      el.textContent='Tirage dans '+(h?h+' h ':'')+String(m).padStart(2,'0')+' min '+String(sc).padStart(2,'0')+' s';};
+    clearInterval(LOTO_T);maj();LOTO_T=setInterval(maj,1000);};
   /* LE MENU DE LA PLAQUE ÉMAILLÉE : l'enseigne bleue et blanche, les tickets Nacre en miniature, le prix en pavé émail */
   const rendre=()=>{
     $('page2Fond').innerHTML=`<style>
@@ -7521,6 +7551,26 @@ async function ouvrirLeBar(){
       #bar .bar-plaque small{display:block;font:700 11px Arial,sans-serif;letter-spacing:6px;opacity:.9}#bar .bar-plaque b{display:block;font:900 32px 'Arial Black',Arial,sans-serif;letter-spacing:2px;margin:2px 0;text-shadow:0 2px 0 rgba(0,0,0,.25)}
       #bar .bar-bourse{text-align:right;font:700 9px Arial,sans-serif;letter-spacing:2px;color:#6a7488;margin:0 2px 8px}#bar .bar-bourse b{font:900 15px Arial,sans-serif;letter-spacing:0;color:#16336a;margin-left:6px}
       #bar .bar-t{font:italic 400 24px Georgia,serif;margin:0 2px 10px}
+      #bar .bar-ong{display:flex;gap:6px;margin:0 0 14px;background:#e2dac8;border-radius:14px;padding:4px}
+      #bar .bar-ong button{flex:1;border:0;border-radius:11px;padding:9px;font:700 13px Georgia,serif;background:none;color:#4a5a78}#bar .bar-ong button.on{background:#16336a;color:#fff;box-shadow:0 2px 6px rgba(22,51,106,.3)}
+      #bar .lo-cag{border-radius:16px;padding:16px;text-align:center;background:linear-gradient(135deg,#f6d3e6,#d5e3fb 40%,#d8f5ea 70%,#fbf0cf);color:#1a2a4a;box-shadow:0 8px 20px rgba(22,51,106,.12);position:relative;overflow:hidden}
+      #bar .lo-cag:after{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.5) 45%,transparent 60%)}
+      #bar .lo-cag small{position:relative;font:700 10px Arial,sans-serif;letter-spacing:4px;opacity:.7}#bar .lo-cag b{position:relative;display:block;font:300 38px 'Helvetica Neue',Arial,sans-serif;margin:2px 0}
+      #bar .lo-cag span{position:relative;display:block;font:600 13px Arial,sans-serif}#bar .lo-cag i{position:relative;display:block;margin-top:6px;font:10px 'Courier New',monospace;opacity:.6;font-style:normal;overflow-wrap:anywhere}
+      #bar .lo-reste{font:12px Arial,sans-serif;color:#6a7488;font-style:normal;margin-left:6px}
+      #bar .lo-g{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;max-width:320px;margin:0 auto}#bar .lo-g button,#bar .lo-ch button{aspect-ratio:1;border:1.5px solid #c8d0e0;border-radius:50%;background:#fff;color:#16336a;font:700 16px Arial,sans-serif;padding:0}
+      #bar .lo-g button.on{background:#16336a;border-color:#16336a;color:#fff;box-shadow:0 3px 8px rgba(22,51,106,.35)}
+      #bar .lo-cl{font:700 10px Arial,sans-serif;letter-spacing:3px;color:#6a7488;margin:14px 2px 8px}
+      #bar .lo-ch{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;max-width:320px;margin:0 auto}#bar .lo-ch button{border-color:#e8c0c0;color:#b8321e}#bar .lo-ch button.on{background:#b8321e;border-color:#b8321e;color:#fff}
+      #bar .lo-act{display:flex;gap:8px;margin-top:14px}#bar .lo-flash{flex:none;border:1.5px solid #16336a;border-radius:12px;padding:12px 14px;background:none;color:#16336a;font:700 14px Arial,sans-serif}
+      #bar .lo-ok{flex:1;border:0;border-radius:12px;padding:12px;background:#16336a;color:#fff;font:700 14px Arial,sans-serif}#bar .lo-ok.pas{background:#aab4c8}
+      #bar .lo-mg{display:flex;align-items:center;gap:5px;padding:7px 8px;margin-bottom:6px;border-radius:10px;background:#fff}#bar .lo-mg span{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#eef1f6;color:#16336a;font:700 12px Arial,sans-serif}
+      #bar .lo-mg span.c{background:#fbe6e2;color:#b8321e}#bar .lo-mg span.bon{background:#16336a;color:#fff}#bar .lo-mg span.c.bon{background:#b8321e;color:#fff}#bar .lo-mg em{margin-left:auto;font:700 14px Arial,sans-serif;font-style:normal;color:#6a7488}#bar .lo-mg.gagne em{color:#1f8a4a}
+      #bar .lo-der{margin-top:6px}#bar .lo-boules{display:flex;gap:7px;justify-content:center;margin:4px 0 12px}
+      #bar .lo-boule{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:900 16px Arial,sans-serif;color:#16336a;background:radial-gradient(circle at 35% 30%,#fff,#dfe6f2 60%,#b8c4d8);box-shadow:0 4px 10px rgba(22,51,106,.25)}
+      #bar .lo-boule.ch{color:#fff;background:radial-gradient(circle at 35% 30%,#ff8a7a,#d8322a 60%,#9a1a14)}
+      #bar .lo-boules.anim .lo-boule{animation:loB .6s cubic-bezier(.2,1.4,.4,1) both}@keyframes loB{from{transform:translateY(-40px) scale(.3);opacity:0}to{transform:none;opacity:1}}
+      #bar .lo-verif{margin-top:8px;font:12px Georgia,serif;color:#4a5a78}#bar .lo-verif summary{font:700 12px Arial,sans-serif;color:#16336a;cursor:pointer}#bar .lo-verif code{display:block;margin:4px 0 8px;padding:6px;border-radius:6px;background:#fff;font:10px 'Courier New',monospace;overflow-wrap:anywhere;color:#1a2a4a}
       #bar .bar-tk{display:flex;align-items:center;gap:14px;padding:12px;margin-bottom:10px;border-radius:14px;background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.05),0 6px 16px rgba(22,51,106,.08);min-width:0}
       #bar .bar-mini{position:relative;flex:none;width:62px;height:84px;border-radius:8px;overflow:hidden;background:linear-gradient(135deg,#f6d3e6,#d5e3fb 40%,#d8f5ea 70%,#fbf0cf);box-shadow:0 6px 14px rgba(0,0,0,.25);color:#2a2a3a}
       #bar .bar-mini:after{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.55) 45%,transparent 60%)}
@@ -7550,11 +7600,14 @@ async function ouvrirLeBar(){
      <div id="bar" lang="fr"><div class="bar-page">
        <div class="bar-plaque"><small>BAR · TABAC</small><b>DES DOCKS</b><small>JEUX · PMU · PRESSE</small></div>
        <div class="bar-bourse">TA BOURSE<b>${enEuros(e.euros||0)}</b></div>
-       <div class="bar-t">Jeux à gratter</div>
+       <div class="bar-ong"><button data-o="gratter" class="${ONG==='gratter'?'on':''}">Jeux à gratter</button><button data-o="loto" class="${ONG==='loto'?'on':''}">Loto du Port</button></div>
+       ${ONG==='loto'?'<div id="lotoVue"><div class="bar-jour">On ouvre le tirage…</div></div>':`<div class="bar-t">Jeux à gratter</div>
        ${TICKETS.map(([k,n,px])=>'<div class="bar-tk">'+mini(n)+'<div class="bar-x"><b>'+n+'</b><small>Gagnez jusqu’à '+MAX[k]+' €</small></div><button class="bar-px'+((e.euros||0)<px?' cher':'')+'" data-t="'+k+'">'+enEuros(px).replace(',00','')+'<i>LE TICKET</i></button></div>').join('')}
-       <div class="bar-jour">Trois montants identiques, c'est gagné.<br><b>${faits} / 20</b> tickets aujourd'hui · remise à zéro à minuit.</div></div>
+       <div class="bar-jour">Trois montants identiques, c'est gagné.<br><b>${faits} / 20</b> tickets aujourd'hui · remise à zéro à minuit.</div>`}</div>
        <div class="bar-pied"><div class="bar-bulle" id="barBulle"></div><button class="bar-fermer" id="barFermer">Ressortir sur le quai</button></div></div>`;
-    $('barFermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+    $('barFermer').onclick=()=>{fermeA=Date.now();clearInterval(LOTO_T);$('page2').classList.remove('on');};
+    $('page2Fond').querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{ONG=b.dataset.o;vibrer(8);rendre();});
+    if(ONG==='loto')loto();
     $('page2Fond').querySelectorAll('[data-t]').forEach(b=>b.onclick=async()=>{const T=TICKETS.find(x=>x[0]===b.dataset.t);
       if(faits>=20){bulle('Vingt tickets aujourd’hui : reviens demain !');return;}
       if((e.euros||0)<T[2]){bulle('Il te manque '+enEuros(T[2]-(e.euros||0)));return;}
