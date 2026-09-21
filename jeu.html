@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-1940';
+  var MA_VERSION='2026-09-21-1952';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -2160,7 +2160,8 @@ async function chargerMorceau(nom){
 }
 
 /* LA CARTE : le village, ou Extramar (le vieux port, au bout de la ligne 1) */
-const CARTE=(()=>{const c=new URLSearchParams(location.search).get('carte');return (c==='sommet'?'sommet':(c==='montagne'?'montagne':(c==='extramar'||c==='garde'?'extramar':'village')));})();
+/* LE VILLAGE EST FERMÉ POUR L'INSTANT : le jeu commence au port, et toute adresse vers le village y mène aussi */
+const CARTE=(()=>{const c=new URLSearchParams(location.search).get('carte');return (c==='sommet'?'sommet':(c==='montagne'?'montagne':'extramar'));})();
 const CARTE_MOD=CARTE==='montagne'||CARTE==='sommet'||CARTE==='piscine'||CARTE==='stade';        /* les cartes à module (Saumaski, le sommet, la piscine) */        /* les cartes de Saumaski (la station, le sommet) */   /* la place du haut n'existe plus */
 /* LES OBJETS ANIMÉS DU DÉCOR : chaque carte (port.js, saumaski.js) peut y ranger ses dessins vivants */
 const ANIM_DECOR={};
@@ -22251,7 +22252,7 @@ function animerAnnonce(){
 async function verifierLaCarte(){
   const d=await appelRPC('ma_carte',{p_joueur:e.id,p_locale:e.carte||'village'});
   if(!d||!d.carte)return;
-  const vraie=d.carte==='extramar'?'extramar':(d.carte==='montagne'?'montagne':(d.carte==='sommet'?'sommet':(d.carte==='piscine'?'piscine':(d.carte==='stade'?'stade':'village'))));
+  const vraie=d.carte==='montagne'?'montagne':(d.carte==='sommet'?'sommet':(d.carte==='piscine'?'piscine':(d.carte==='stade'?'stade':'extramar')));   /* (le village est fermé : c'est le port) */
   if(vraie!==CARTE){e.carte=vraie;e.ext=null;try{sauver();}catch(x){}
     location.replace(vraie==='extramar'?'jeu.html?carte=extramar':(vraie==='montagne'?'jeu.html?carte=montagne':(vraie==='sommet'?'jeu.html?carte=sommet':(vraie==='piscine'?'jeu.html?carte=piscine':(vraie==='stade'?'jeu.html?carte=stade':'jeu.html')))));}
 }
