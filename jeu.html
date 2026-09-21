@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-0425';
+  var MA_VERSION='2026-09-21-0432';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -10646,7 +10646,7 @@ function dessinerSouche(g,x,y,gr,neuf){
 /* LA RIVE EST RÉTRÉCIT : 806 de large au lieu de 1166. Cinq bâtiments dans
    1166 de large donnaient un pré avec des maisons dedans ; resserrés, ils
    font un village. Le grand vide, ce sera le DEHORS, plus tard. */
-const MONDE_L=CARTE==='garde'?640:(CARTE==='montagne'?360:(CARTE==='sommet'||CARTE==='piscine'?320:(CARTE==='stade'?760:1400)));               // largeur, en pixels de jeu
+const MONDE_L=CARTE==='garde'?640:(CARTE==='montagne'?360:(CARTE==='sommet'||CARTE==='piscine'?320:(CARTE==='stade'?760:1560)));   /* à l'est, la seconde rivière et sa rive */               // largeur, en pixels de jeu
 /* La carte gagne 160 points au sud pour accueillir la VOIE FERRÉE : elle
    traverse tout l'écran et sort des deux côtés, avec son remblai, et elle
    ferme le monde par le bas — qui s'arrêtait jusqu'ici sur une lisière sans
@@ -10787,8 +10787,7 @@ const BOIS_PONT={sombre:'#3d2a17',fonce:'#5b3f21',bas:'#6b4a28',moyen:'#7d5934',
                  clair:'#96703f',haut:'#a5764a'};
 function graverPontsDansSol(g){
   const H=PONT_DEMI, L=PONT_LARGE;
-  PONTS.forEach(py=>{
-    const cx=Math.round(rivX(py)), cy=py;
+  LES_PONTS().forEach(([cx,cy])=>{
     const R=(a,b,w,h,col)=>{g.fillStyle=col;
       g.fillRect(cx+a,cy+b,Math.max(1,w|0),Math.max(1,h|0));};
     [-H+4,H-8].forEach(dy=>{                        /* les piliers dans l'eau */
@@ -10816,8 +10815,7 @@ function graverPontsDansSol(g){
 /* la rambarde sud : elle passe DEVANT le joueur */
 function graverRambardesSud(g){
   const H=PONT_DEMI, L=PONT_LARGE;
-  PONTS.forEach(py=>{
-    const cx=Math.round(rivX(py)), cy=py;
+  LES_PONTS().forEach(([cx,cy])=>{
     const R=(a,b,w,h,col)=>{g.fillStyle=col;
       g.fillRect(cx+a,cy+b,Math.max(1,w|0),Math.max(1,h|0));};
     R(-L-1,H,L*2+2,2,BOIS_PONT.fonce);
@@ -11983,6 +11981,16 @@ function construireSol(){
     }
   }
   /* --- LES PONTS, gravés dans le sol : tablier et rambarde nord --- */
+  /* LA RIVIÈRE DE L'EST : la même eau, les mêmes berges, le même chenal sombre */
+  if(CARTE==='village'){const EAU2=['#2a5f7d','#357291','#4189a8','#55a0bd'];
+    for(let y=0;y<MONDE_H;y++){const cx=rivX2(y);
+      for(let dx=-RIV_LARGE-6;dx<=RIV_LARGE+6;dx++){const a=Math.abs(dx);if(a<=RIV_LARGE)continue;
+        const x=Math.round(cx+dx);if(x<0||x>=MONDE_L)continue;const v=alea(x*0.7+y*1.3);
+        g.fillStyle=a>RIV_LARGE+4?(v<.4?'#7d8c58':'#889d5e'):(v<.14?'#96805c':(v<.5?'#b9a37a':'#a8926a'));g.fillRect(x,y,1,1);}
+      for(let dx=-RIV_LARGE;dx<=RIV_LARGE;dx++){const x=Math.round(cx+dx), a=Math.abs(dx);if(x<0||x>=MONDE_L)continue;
+        g.fillStyle=a>RIV_LARGE-2?EAU2[3]:(a>RIV_LARGE-5?EAU2[2]:(a>RIV_LARGE-9?EAU2[1]:EAU2[0]));g.fillRect(x,y,1,1);}
+      if(alea(y*0.41)<0.055){const lg=5+Math.round(alea(y*1.9)*6), x=Math.round(cx+(alea(y*3.1)-.5)*RIV_LARGE*1.3);
+        g.fillStyle='#7fc4dd';g.fillRect(x,y,lg,1);}}}
   graverPontsDansSol(g);
 
   /* 6. LES FLEURS, EN MASSIFS.
@@ -12068,7 +12076,15 @@ function contreRambarde(x,y){
   });
 }
 const surGue=surPont;                            /* on ne traverse que par les ponts */
-function dansRiviere(x,y){return Math.abs(x-rivX(y))<RIV_LARGE;}                                  /* la lisière, infranchissable */
+/* LA RIVIÈRE DE L'EST : le miroir exact de celle de l'ouest, par rapport au centre de la place —
+   même distance à la place, même serpentement, un pont en face, comme de l'autre côté. */
+const rivX2=(y)=>CARTE==='village'?(2*PLACE.x-rivX(y)):-99999;
+const PONTS2=[300];
+const riviereEst=(x,y)=>Math.abs(x-rivX2(y))<RIV_LARGE;
+const surTablierEst=(x,y)=>PONTS2.some(py=>Math.abs(y-py)<=PONT_PASSAGE&&Math.abs(x-rivX2(py))<PONT_LARGE);
+const rambardeEst=(x,y)=>PONTS2.some(py=>{if(Math.abs(x-rivX2(py))>PONT_LARGE+4)return false;const d=Math.abs(y-py);return d>PONT_PASSAGE&&d<=PONT_DEMI+8;});
+const LES_PONTS=()=>PONTS.map(py=>[Math.round(rivX(py)),py]).concat(CARTE==='village'?PONTS2.map(py=>[Math.round(rivX2(py)),py]):[]);
+function dansRiviere(x,y){return Math.abs(x-rivX(y))<RIV_LARGE||riviereEst(x,y);}                                  /* la lisière, infranchissable */
 let DECOR=[];                                   /* {t,x,y,gr,cx,cy,cw,ch} */
 
 const TAILLES={
@@ -12744,7 +12760,7 @@ function semerDecor(){
   DECOR=[];
   const A=alea;
   const libre=(x,y,r)=>DECOR.every(o=>Math.hypot(o.x-x,o.y-y)>r);
-  const dedans=(x,y)=>!dansLisiere(x,y)&&!dansLisiere(x,y-16)&&!dansLaFerme(x,y)
+  const dedans=(x,y)=>!dansLisiere(x,y)&&!dansLisiere(x,y-16)&&!dansLaFerme(x,y)&&!(Math.abs(x-rivX2(y))<RIV_LARGE+14)&&!PONTS2.some(py=>Math.hypot(x-rivX2(py),y-py)<50)
                      &&x>BORD+10&&x<MONDE_L-BORD-10&&y>BORD+16&&y<MONDE_H-BORD-10;
   const depart=(x,y)=>Math.hypot(x-CAMP_FIXE[0],y-CAMP_FIXE[1])<60;  /* la clairière du camp */
   /* NOUVEAU : rien ne se pose sur un lieu ni devant sa porte. La zone est
@@ -12756,7 +12772,7 @@ function semerDecor(){
   const DEMI={arbre:28,buisson:19,rocher:20,champignons:15,herbes:14,
               plumes:13,fleurs:7};
   /* seuls les roseaux et l'argile ont le droit de toucher l'eau */
-  const loinDeLEau=(x,y,t)=>Math.abs(x-rivX(y))-(DEMI[t]||14) > RIV_LARGE+3;
+  const loinDeLEau=(x,y,t)=>Math.abs(x-rivX(y))-(DEMI[t]||14) > RIV_LARGE+3 && Math.abs(x-rivX2(y))-(DEMI[t]||14) > RIV_LARGE+3;   /* les deux rivières */
   /* LES DEUX RIVES : tout ce qui se récolte pousse à l'ouest. La rive est
      est celle des bâtiments — on y vit, on n'y ramasse rien. C'est ce qui
      donne son sens au gué. */
@@ -12825,6 +12841,18 @@ function semerDecor(){
       DECOR.push({t:'roseaux',x,y,gr:Math.floor(A(b*11+k)*3)});
     }
   }
+  /* --- LES BERGES DE LA RIVIÈRE DE L'EST : leurs roselières et leur argile, en miroir --- */
+  if(CARTE==='village'){
+    for(let b=0;b<22;b++){const yb=Math.round(BORD+40+A(b*5.9+3)*(MONDE_H-2*BORD-80)), n=3+Math.floor(A(b*9.1)*4);
+      if(PONTS2.some(py=>Math.abs(yb-py)<PONT_DEMI+18))continue;
+      for(let k=0;k<n;k++){const y=Math.round(yb+(k-n/2)*8+A(b*3.3+k)*5);
+        const x=Math.round(rivX2(y)+(RIV_LARGE+2+A(b*7.9+k)*6));                 /* rive est */
+        if(x<BORD+20||x>MONDE_L-BORD-20||!libre(x,y,7))continue;
+        DECOR.push({t:'roseaux',x,y,gr:Math.floor(A(b*13+k)*3)});}}
+    for(let i=0;i<30;i++){const y=Math.round(BORD+60+A(i*2.9+5)*(MONDE_H-2*BORD-120));
+      if(PONTS2.some(py=>Math.abs(y-py)<PONT_DEMI+18))continue;
+      const x=Math.round(rivX2(y)+(RIV_LARGE+21+A(i*5.7)*5));
+      if(x<BORD+20||x>MONDE_L-BORD-20||!libre(x,y,16))continue;DECOR.push({t:'argile',x,y,gr:0});}}
   /* --- les champignons, à l'ombre des bosquets --- */
   for(let i=0;i<50;i++){
     const a=DECOR.filter(o=>o.t==='arbre');
@@ -13138,8 +13166,8 @@ function bloque(x,y){
     for(const o of DECOR){if(!o.col)continue;if(Math.abs(x-o.x)<o.col[0]&&y>o.y-o.col[1]&&y<o.y+3)return true;}return false;}
   if(CARTE==='garde')return bloqueGarde(x,y);
   if(dansLisiere(x,y))return true;                     /* la forêt du pourtour */
-  if(contreRambarde(x,y))return true;                  /* la rambarde du pont */
-  if(dansRiviere(x,y)&&!surTablier(x,y))return true;   /* l'eau est trop profonde, sauf sur les ponts */
+  if(contreRambarde(x,y)||rambardeEst(x,y))return true;                  /* les rambardes des ponts */
+  if(dansRiviere(x,y)&&!surTablier(x,y)&&!surTablierEst(x,y))return true;   /* l'eau est trop profonde, sauf sur les ponts */
   /* la falaise de la mine : on ne passe pas au travers, sauf par la galerie */
   /* la forge : un vrai bâtiment. On ne passe pas au travers, on entre par la porte. */
   /* le casino occupe un vrai terrain : on ne passe pas derrière */
@@ -16395,10 +16423,10 @@ function refletsRiviere(g,camX,camY){
   for(let i=0;i<26;i++){
     const yy=((i*79+t*13)%MONDE_H);
     if(yy<camY-20||yy>camY+VH+20)continue;
-    const cx=rivX(yy);
     if(surPont(yy))continue;
-    const dx=Math.sin(t*1.7+i)*RIV_LARGE*0.5;
-    g.fillRect(Math.round(cx+dx-camX),Math.round(yy-camY),Math.round(3+alea(i)*5),1);
+    const dx=Math.sin(t*1.7+i)*RIV_LARGE*0.5, lg=Math.round(3+alea(i)*5);
+    g.fillRect(Math.round(rivX(yy)+dx-camX),Math.round(yy-camY),lg,1);
+    if(CARTE==='village')g.fillRect(Math.round(rivX2(yy)-dx-camX),Math.round(((yy+37)%MONDE_H)-camY),lg,1);   /* et sur la rivière de l'est */
   }
   g.restore();
 }
