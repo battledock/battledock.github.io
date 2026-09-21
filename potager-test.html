@@ -301,7 +301,7 @@ document.addEventListener('touchmove',function(e){if(e.touches&&e.touches.length
 window.addEventListener('wheel',function(e){if(e.ctrlKey)e.preventDefault();},{passive:false});
 document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&['+','-','=','0'].indexOf(e.key)>=0)e.preventDefault();});})();</script>
 <meta name="theme-color" content="#72a154">
-<title>Battle Dock</title>
+<title>DÉMO POTAGER · Battle Dock</title>
 <style>
 :root{--carte:#fffdf8;--encre:#1f2620;--doux:#8a9083;--pale:#a8ab9e;--filet:#e4e2d6;--vert:#3f7d4a}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -2112,7 +2112,7 @@ async function chargerMorceau(nom){
 }
 
 /* LA CARTE : le village, ou Extramar (le vieux port, au bout de la ligne 1) */
-const CARTE=(()=>{const c=new URLSearchParams(location.search).get('carte');return (c==='sommet'?'sommet':(c==='montagne'?'montagne':(c==='extramar'||c==='garde'?'extramar':'village')));})();
+const CARTE='village';
 const CARTE_MOD=CARTE==='montagne'||CARTE==='sommet'||CARTE==='piscine'||CARTE==='stade';        /* les cartes à module (Saumaski, le sommet, la piscine) */        /* les cartes de Saumaski (la station, le sommet) */   /* la place du haut n'existe plus */
 /* LES OBJETS ANIMÉS DU DÉCOR : chaque carte (port.js, saumaski.js) peut y ranger ses dessins vivants */
 const ANIM_DECOR={};
@@ -21908,6 +21908,157 @@ setTimeout(()=>{
     if(typeof ouvrirLeTuto==='function')ouvrirLeTuto();
   }catch(x){}
 },1400);
+/* ====== APERÇU : LES PLANTES (4 stades) et LES GESTES DU JARDINIER — version soignée ======
+   Tout est posé au demi-pixel, avec des formes ombrées : lumière en haut à gauche, ombre en bas à
+   droite, un liseré sombre, un point de brillance sur les fruits. */
+const PX=(g,x,y,w,hh,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,hh));};
+/* un disque (ou une ellipse) ombré, en pixels fins : pal=[liseré, ombre, corps, lumière, brillance] */
+function boule(g,cx,cy,rx,ry,pal,brille){
+  for(let y=-ry;y<=ry;y+=0.5)for(let x=-rx;x<=rx;x+=0.5){const nx=x/rx, ny=y/ry, d=nx*nx+ny*ny;if(d>1)continue;
+    const l=-(nx*0.6+ny*0.8);let c=d>0.78?pal[0]:(l<-0.25?pal[1]:(l<0.35?pal[2]:pal[3]));
+    if(brille&&Math.hypot(nx+0.38,ny+0.42)<0.22)c=pal[4];PX(g,cx+x,cy+y,0.5,0.5,c);}}
+/* une feuille : ellipse allongée, orientée, avec sa nervure claire */
+function feuille(g,cx,cy,long,larg,ang,pal){const ca=Math.cos(ang), sa=Math.sin(ang);
+  for(let u=-long;u<=long;u+=0.5)for(let v=-larg;v<=larg;v+=0.5){const w=larg*(1-Math.pow(u/long,2));if(Math.abs(v)>w)continue;
+    const x=cx+u*ca-v*sa, y=cy+u*sa+v*ca, bord=Math.abs(v)>w-0.6;
+    PX(g,x,y,0.5,0.5,bord?pal[0]:(Math.abs(v)<0.4&&u>-long*0.8?pal[3]:(v*sa+u*ca*0.3<0?pal[2]:pal[1])));}}
+const VERT=['#2f5a2e','#3f7a3a','#56994a','#8cc46a'], VERTC=['#3a6a34','#4f8a42','#6aae56','#a4d880'];
+const TERRE_P=['#6a5236','#7a6040','#89704c','#a48c64'];
+/* une parcelle de terre : herbe, bêchée (claire), ou arrosée (sombre et luisante) */
+function parcelle(g,x,y,W,H,etat){
+  const R=(a,b,w,hh,c)=>PX(g,a,b,w,hh,c);
+  if(etat==='herbe'){for(let yy=0;yy<H;yy+=0.5)for(let xx=0;xx<W;xx+=0.5){const n=alea(xx*3.1+yy*7.3+x);R(x+xx,y+yy,0.5,0.5,n<0.5?'#8fa464':'#889d5e');}
+    for(let k=0;k<20;k++){const a=x+alea(k*2.1+x)*W, b=y+2+alea(k*3.7)*(H-2);R(a,b-2,0.5,2,'#70844b');R(a,b-2.5,0.5,0.5,'#9cb072');}return;}
+  const arr=etat==='arrosee';
+  R(x-0.5,y-0.5,W+1,H+1.5,arr?'#3d2e1c':'#6a5538');
+  for(let yy=0;yy<H;yy+=0.5)for(let xx=0;xx<W;xx+=0.5){const n=alea(xx*5.1+yy*9.7+x*0.3);
+    R(x+xx,y+yy,0.5,0.5,arr?(n<0.35?'#4a3824':(n<0.7?'#55412a':'#604b31')):(n<0.35?TERRE_P[1]:(n<0.7?TERRE_P[2]:'#95805b')));}
+  for(let r=0;r<2;r++){const yy=y+H*(0.3+r*0.42);for(let xx=0;xx<W;xx+=0.5){R(x+xx,yy,0.5,0.5,arr?'#35281a':TERRE_P[0]);R(x+xx,yy-0.5,0.5,0.5,arr?'#6e5638':TERRE_P[3]);}}
+  if(arr)for(let k=0;k<9;k++){const a=x+1+alea(k*4.3+x)*(W-2), b=y+1+alea(k*6.1)*(H-2);R(a,b,1,0.5,'rgba(170,215,240,.6)');R(a+0.5,b-0.5,0.5,0.5,'rgba(230,245,255,.7)');}
+}
+const semis=(g,x,y)=>{PX(g,x-1,y-0.5,2,1,'#4f3c26');PX(g,x-0.5,y-1,1,0.5,'#c8b080');};
+const pousse=(g,x,y,c)=>{PX(g,x,y-2.5,0.5,2.5,'#5f8f3c');feuille(g,x-1.2,y-2.8,1.3,0.6,-0.5,c||VERTC);feuille(g,x+1.4,y-3,1.3,0.6,0.5,c||VERTC);};
+/* LES PLANTES, stade 0 (semé) → 3 (mûr) */
+const PLANTES={
+ radis:(g,x,y,s)=>{if(s===0)return semis(g,x,y);if(s===1)return pousse(g,x,y);
+   const h=s===2?4:5;[-0.7,0,0.7].forEach((a,k)=>feuille(g,x+a*2.2,y-h,2.2,1,a-1.57,VERT));
+   if(s===3){boule(g,x,y-0.5,2.4,2,['#7a1a2a','#b8283e','#dc4058','#f07890','#ffd0dc'],true);PX(g,x-0.25,y+1.5,0.5,1.2,'#f4e8e0');}},
+ salade:(g,x,y,s)=>{if(s===0)return semis(g,x,y);if(s===1)return pousse(g,x,y);
+   const r=s===2?3:4.2;for(let k=0;k<9;k++){const a=k/9*6.283;feuille(g,x+Math.cos(a)*r*0.55,y-r*0.55+Math.sin(a)*r*0.35,r*0.6,r*0.42,a,VERT);}
+   boule(g,x,y-r*0.7,r*0.55,r*0.45,['#4f8a42','#6aae56','#8cd06a','#bdf09a','#e8ffd0'],false);},
+ carottes:(g,x,y,s)=>{if(s===0)return semis(g,x,y);if(s===1)return pousse(g,x,y);
+   const h=s===2?5:7;for(let q=-1;q<=1;q++){const bx=x+q*1.4;PX(g,bx,y-h,0.5,h,'#4f7a30');
+     for(let k=1;k<5;k++){feuille(g,bx-1,y-h+k*1.3,1,0.35,-2.6,VERTC);feuille(g,bx+1,y-h+k*1.3,1,0.35,-0.5,VERTC);}}
+   if(s===3){for(let k=0;k<3;k++){const w=2.2-k*0.5;PX(g,x-w/2,y-1+k*0.8,w,0.8,k?'#e8701a':'#f09030');}PX(g,x-1,y-1,0.5,0.5,'#ffc070');PX(g,x-0.8,y-1.2,1.6,0.3,'#c85010');}},
+ ble:(g,x,y,s)=>{if(s===0)return semis(g,x,y);if(s===1)return pousse(g,x,y,VERTC);
+   const h=s===2?7:9, mur=s===3;const tige=mur?'#b89a50':'#5f8f3c', epi=mur?['#8a7030','#c9a84e','#e0c46a','#f4dc90']:['#4f7a30','#6aa050','#8ac468','#b0e090'];
+   for(let q=-1;q<=1;q++){const bx=x+q*1.6, top=y-h-(q===0?1:0);PX(g,bx,top,0.5,y-top,tige);
+     for(let k=0;k<5;k++){PX(g,bx-0.5,top-k*0.8,0.5,0.8,epi[k%2?1:2]);PX(g,bx+0.5,top-k*0.8-0.4,0.5,0.8,epi[k%2?2:1]);}
+     PX(g,bx,top-4.5,0.5,1,epi[3]);if(mur){PX(g,bx-1,top-4.5,0.5,1.5,epi[0]);PX(g,bx+1,top-4.8,0.5,1.5,epi[0]);}
+     feuille(g,bx+0.8,y-h*0.45,1.8,0.4,-0.9,mur?['#8a7a3a','#a8984e','#c0b060','#d8c880']:VERTC);}},
+ tomates:(g,x,y,s)=>{if(s===0)return semis(g,x,y);if(s===1)return pousse(g,x,y);
+   PX(g,x+2.5,y-11,0.5,11,'#9a7a4a');PX(g,x+3,y-11,0.5,11,'#7a5a34');PX(g,x+2.3,y-11.5,1.2,0.5,'#b8986a');   /* le tuteur */
+   const h=s===2?8:10;PX(g,x,y-h,0.5,h,'#4f7a30');
+   for(let k=0;k<5;k++)feuille(g,x+(k%2?1.6:-1.6),y-2-k*1.7,1.8,0.9,k%2?0.4:2.7,VERT);
+   const fruits=[[-1.8,-3.2],[1.4,-5.2],[-1.4,-7],[1.6,-2.4]];
+   fruits.forEach(([dx,dy],k)=>{if(s===2&&k>1)return;const pal=s===3?['#7a1a14','#b8281e','#e04030','#f47a60','#fff0e0']:['#3f6a2a','#6a9a3a','#8ab85c','#b8e08a','#e8ffd0'];
+     boule(g,x+dx,y+dy,1.4,1.3,pal,true);PX(g,x+dx-0.5,y+dy-1.5,1,0.5,'#3f7a3a');PX(g,x+dx,y+dy-2,0.5,0.6,'#3f7a3a');});},
+ courgettes:(g,x,y,s)=>{if(s===0)return semis(g,x,y);if(s===1)return pousse(g,x,y);
+   const r=s===2?3.5:4.5;for(let k=0;k<5;k++){const a=k/5*6.283+0.3;feuille(g,x+Math.cos(a)*r*0.7,y-1.5+Math.sin(a)*r*0.35,r*0.7,r*0.5,a,VERT);}
+   /* la fleur jaune, en étoile */
+   for(let k=0;k<5;k++){const a=k/5*6.283;feuille(g,x+0.5+Math.cos(a)*0.9,y-r*0.9+Math.sin(a)*0.9,0.9,0.5,a,['#c88a10','#e8a820','#f8c830','#fff0a0']);}
+   PX(g,x+0.2,y-r*0.9-0.3,0.8,0.8,'#e87a10');
+   if(s===3){for(let u=0;u<6;u+=0.5)for(let v=-0.9;v<=0.9;v+=0.5){const c=Math.abs(v)>0.6?'#2a4a1a':(v<0?'#6a9a40':'#3f6a2a');PX(g,x-4+u,y+0.4+v+u*0.12,0.5,0.5,c);}
+     for(let k=0;k<5;k++)PX(g,x-3.5+k,y+0.5+k*0.12,0.5,0.5,'#a8c878');}},
+ fraises:(g,x,y,s)=>{if(s===0)return semis(g,x,y);if(s===1)return pousse(g,x,y);
+   const r=s===2?2.2:2.8;[[-1,-1.8,-2.4],[1.2,-2,-0.7],[0,-3,-1.57]].forEach(([dx,dy,a])=>feuille(g,x+dx*r*0.6,y+dy*r*0.45,r*0.55,r*0.42,a,VERT));
+   if(s===2){boule(g,x+1.5,y-3,0.9,0.9,['#c8c0b0','#e8e0d0','#f8f4ec','#ffffff','#ffffff'],false);PX(g,x+1.25,y-3.25,0.5,0.5,'#f0c830');}
+   if(s===3)[[-2,0.2],[1.8,-0.2],[0,0.8]].forEach(([dx,dy])=>{
+     for(let yy=0;yy<3;yy+=0.5){const w=1.6-yy*0.45;for(let xx=-w;xx<=w;xx+=0.5)PX(g,x+dx+xx,y+dy-1+yy,0.5,0.5,xx<-w+0.5?'#8a1020':(yy<1&&xx<0?'#f05060':'#d82838'));}
+     PX(g,x+dx-0.5,y+dy-0.5,0.5,0.5,'#f8e070');PX(g,x+dx+0.5,y+dy+0.5,0.5,0.5,'#f8e070');PX(g,x+dx-1,y+dy-1.5,2,0.5,'#3f8a3a');PX(g,x+dx-0.25,y+dy-2,0.5,0.6,'#3f8a3a');});},
+ melon:(g,x,y,s)=>{if(s===0)return semis(g,x,y);if(s===1)return pousse(g,x,y);
+   const r=s===2?3.5:4;for(let k=0;k<6;k++){const a=k/6*6.283;feuille(g,x+Math.cos(a)*r*0.8,y-1.5+Math.sin(a)*r*0.4,r*0.55,r*0.4,a,VERT);}
+   if(s>=2){PX(g,x-4,y-0.5,8,0.5,'#4f7a30');}
+   if(s===3){boule(g,x+0.5,y-1.6,3,2.4,['#6a6a28','#9a9a48','#bab868','#dcd890','#f8f4c8'],true);
+     for(let k=-2;k<=2;k++)for(let v=-2;v<=2;v+=0.5)if((k+v*1.3)%1.6<0.3)PX(g,x+0.5+k*1.1+v*0.3,y-1.6+v,0.5,0.5,'#e8e4a8');}},
+ citrouille:(g,x,y,s)=>{if(s===0)return semis(g,x,y);if(s===1)return pousse(g,x,y);
+   const r=s===2?4:4.5;for(let k=0;k<6;k++){const a=k/6*6.283+0.2;feuille(g,x+Math.cos(a)*r*0.95,y-1+Math.sin(a)*r*0.45,r*0.62,r*0.46,a,VERT);}
+   if(s===2)boule(g,x,y-1.8,1.8,1.4,['#8a5a10','#c88a20','#e8a830','#f8d060','#fff0c0'],true);
+   if(s===3){[-2.2,-0.8,0.8,2.2].forEach((dx,k)=>boule(g,x+dx*0.9,y-2.8,1.8,2.8,['#8a3a08','#c85a10','#e8801a','#f8a840','#ffe0b0'],k===1));
+     PX(g,x-0.5,y-6.2,1,1.6,'#5f6a2a');PX(g,x-0.5,y-6.4,1.5,0.5,'#7a8a3a');}},
+ lavande:(g,x,y,s)=>{if(s===0)return semis(g,x,y);if(s===1)return pousse(g,x,y,['#4a5a40','#5f7052','#7a8a66','#a0b088']);
+   const r=s===2?2.8:3.4;boule(g,x,y-r*0.6,r*1.1,r*0.7,['#3f4f38','#5f7052','#6f8460','#90a47c','#b0c49a'],false);
+   if(s>=2)for(let q=-3;q<=3;q++){const h=3+alea(q+3)*2.5, bx=x+q*1.1, top=y-r-h;PX(g,bx,top,0.5,h,'#6a7460');
+     if(s===3)for(let k=0;k<4;k++){PX(g,bx-0.25,top-k*0.8,1,0.8,k%2?'#8f7ec0':'#a898d8');PX(g,bx,top-k*0.8-0.3,0.5,0.4,'#d0c4f0');}}}
+};
+/* ===================== DÉMO JOUABLE DU POTAGER =====================
+   Page de test seulement : rien n'est envoyé au serveur, les graines sont gratuites, et le temps
+   est ACCÉLÉRÉ (1 heure de jeu = 1 minute). Six parcelles dans le champ sous la place. */
+(()=>{
+/* 1 · aucune écriture sur le serveur dans la démo */
+appelRPC=async()=>null;
+const fetchVrai=window.fetch.bind(window);
+window.fetch=(u,o)=>{const s=String(u||'');if(s.includes('supabase'))return Promise.resolve(new Response('[]',{status:200,headers:{'Content-Type':'application/json'}}));return fetchVrai(u,o);};
+const CULT={radis:[5,8,'Radis'],salade:[15,18,'Salade'],carottes:[30,32,'Carottes'],ble:[45,27,'Blé'],tomates:[60,56,'Tomates'],
+  courgettes:[120,88,'Courgettes'],fraises:[180,136,'Fraises'],melon:[360,224,'Melon'],citrouille:[720,352,'Citrouille'],lavande:[480,128,'Lavande']};
+const ACCEL=60;                                  /* 1 h de jeu = 1 min réelle */
+const Z=FERME.champ2, PW=40, PH=26;
+const PARC=[];for(let r=0;r<2;r++)for(let c=0;c<3;c++)PARC.push({x:Z.x0+110+c*(PW+30),y:Z.y0+30+r*(PH+34),etat:'herbe',cult:null,t0:0,eau:false});
+let GAIN=0, CHOIX='tomates';window.__POT={PARC,proche:()=>proche()};
+const stade=(P)=>{if(!P.cult)return -1;const d=CULT[P.cult][0]*60*1000/ACCEL*(P.eau?1:2), k=(Date.now()-P.t0)/d;return k>=1?3:(k>0.6?2:(k>0.2?1:0));};
+const proche=()=>PARC.find(P=>joueur.x>P.x-10&&joueur.x<P.x+PW+10&&joueur.y>P.y-8&&joueur.y<P.y+PH+14);
+/* 2 · on dessine les parcelles et les plantes, rangées avec les personnages (par profondeur) */
+const decorVrai=dessinerDecor;
+dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
+  PARC.forEach(P=>{
+    parcelle(g,P.x-camX,P.y-camY,PW,PH,P.etat==='herbe'?'herbe':(P.eau?'arrosee':'bechee'));
+    const s=stade(P);
+    if(P.cult)[0,1,2].forEach(q=>acteurs.push({y:P.y+PH-4,f:()=>{PLANTES[P.cult](g,P.x+7+q*13-camX,P.y+PH-4-camY,s);
+      if(s===3&&q===2){const t=Date.now()/300;PX(g,P.x+PW-5-camX,P.y+3-camY+Math.sin(t)*0.5,1,1,'#fff6c0');PX(g,P.x+PW-5.5-camX,P.y+3.25-camY,2,0.5,'#fff6c0');}}}));
+  });
+  return decorVrai(g,camX,camY,VW2,VH2,acteurs);};
+/* 3 · le bouton d'action : bêcher, semer, arroser, récolter */
+const majVrai=majAction;
+majAction=function(){const P=proche(), b=$('action');
+  if(!P)return majVrai();
+  const s=stade(P);
+  const t=P.etat==='herbe'?['Bêcher','AVEC LA HOUE']:(!P.cult?['Semer · '+CULT[CHOIX][2],'TOUCHE LONGUE : CHANGER DE GRAINE']:(s===3?['Récolter','+'+CULT[P.cult][1]+' €']:(!P.eau?['Arroser','ÇA POUSSERA DEUX FOIS PLUS VITE']:['Ça pousse…',CULT[P.cult][2].toUpperCase()+' · '+['SEMÉ','POUSSE','PLANT','MÛR'][s]])));
+  b.innerHTML=t[0]+'<small>'+t[1]+'</small>';b.classList.add('on');};
+const agirVrai=agir;
+const geste=(type,ms)=>{GESTE={t:1,pourMoi:true,cible:null,impact:false,type};const t0=Date.now();const id=setInterval(()=>{GESTE.t=Math.max(0,1-(Date.now()-t0)/ms);if(GESTE.t<=0){clearInterval(id);GESTE={t:0};}},30);};
+let ARROSE=0;
+agir=function(){const P=proche();if(!P)return agirVrai();const s=stade(P);
+  if(P.etat==='herbe'){geste('houe',650);setTimeout(()=>{P.etat='bechee';majAction();},420);vibrer(15);return;}
+  if(!P.cult){geste('cueille',600);setTimeout(()=>{P.cult=CHOIX;P.t0=Date.now();P.eau=false;majAction();},350);vibrer(10);return;}
+  if(s===3){geste('cueille',600);setTimeout(()=>{GAIN+=CULT[P.cult][1];texteVolant(joueur.x,joueur.y-56,'+'+CULT[P.cult][1]+' € · '+CULT[P.cult][2],'#ffe070');
+      e.euros=(e.euros||0)+CULT[P.cult][1]*100;majHaut();P.cult=null;P.eau=false;P.etat='bechee';majAction();},380);vibrer([20,40,20]);return;}
+  if(!P.eau){ARROSE=Date.now();setTimeout(()=>{if(P.cult){const k=(Date.now()-P.t0);P.t0=Date.now()-k/2;}P.eau=true;majAction();},600);vibrer(12);return;}
+};
+$('action').addEventListener('click',(ev)=>{if(!proche())return;ev.stopImmediatePropagation();ev.preventDefault();agir();},true);   /* près d'une parcelle, le bouton sert au potager */
+/* l'arrosoir, pendant l'arrosage */
+const bullesVrai=dessinerBulles;
+dessinerBulles=function(g,camX,camY,px,py){const d=Date.now()-ARROSE;
+  if(d<900){const f=d/900, R=(a,b,w,h,c)=>PX(g,a,b,w,h,c), x=joueur.x-camX, y=joueur.y-camY;
+    g.save();g.translate(x+7,y-18);g.rotate(Math.min(1,f*3)*0.7);R(-3,-3,7,6,'#5f8f7a');R(-3,-3,7,1,'#8fc0aa');R(-4,-5,5,1,'#4f7a66');R(4,-1,6,1.2,'#5f8f7a');R(9.5,-2,1.5,2.5,'#4f7a66');g.restore();
+    if(f>0.2)for(let q=0;q<10;q++){const t=((f*4+q*0.11)%1);R(x+17+t*2,y-17+t*14,0.5,1.5,'rgba(160,210,240,.9)');}}
+  return bullesVrai(g,camX,camY,px,py);};
+/* 4 · le choix de la graine : un appui long sur le bouton */
+let appui=0;
+$('action').addEventListener('pointerdown',()=>{appui=setTimeout(()=>{appui=0;ouvrirGraines();},550);});
+$('action').addEventListener('pointerup',()=>{clearTimeout(appui);});
+function ouvrirGraines(){const P=proche();if(!P||P.cult||P.etat==='herbe')return;
+  const box=document.createElement('div');box.style.cssText='position:fixed;inset:auto 10px calc(env(safe-area-inset-bottom,0px) + 90px);z-index:99;background:#f4ecd8;border-radius:16px;padding:10px;display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font:14px Georgia;box-shadow:0 8px 24px rgba(0,0,0,.4)';
+  Object.entries(CULT).forEach(([k,[min,px,nom]])=>{const b=document.createElement('button');b.style.cssText='border:0;border-radius:10px;padding:9px;background:'+(k===CHOIX?'#5b3f21':'#fff')+';color:'+(k===CHOIX?'#f4ecd8':'#3a2a1a')+';font:700 13px Georgia;text-align:left';
+    b.innerHTML=nom+'<br><small style="font-weight:400">'+(min<60?min+' min':(min/60)+' h')+' · +'+px+' €</small>';b.onclick=()=>{CHOIX=k;box.remove();majAction();};box.appendChild(b);});
+  document.body.appendChild(box);}
+/* 5 · on démarre directement au bord du champ */
+setTimeout(()=>{try{document.getElementById('porte').style.display='none';e.id='demo';e.euros=0;e.ap=Object.assign({},DEF_AP,e.ap||{});preparerMonde();taille();
+  joueur.x=Z.x0+90;joueur.y=Z.y0+10;majHaut();
+  const fermer=()=>{try{$('page2').classList.remove('on');}catch(x){}};fermer();[300,800,1500,2500,4000].forEach(t=>setTimeout(fermer,t));   /* pas de tutoriel dans la démo */
+  texteVolant(joueur.x,joueur.y-70,'Démo du potager · 1 h = 1 min','#ffe070');
+  setTimeout(()=>texteVolant(joueur.x,joueur.y-58,'Approche une parcelle','#fff3d0'),1500);}catch(err){console.error(err);}},1200);
+setInterval(()=>{try{if(proche())majAction();}catch(x){}},500);
+})();
 </script>
 </body>
 </html>
