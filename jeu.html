@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-2020';
+  var MA_VERSION='2026-09-21-2025';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -21174,33 +21174,92 @@ const CSS_CROUSTI=`.crou .tete{background:#c8281e}.crou .tete .logo{color:#c8281
 .crou .ticket b{display:block;font:900 26px Georgia;letter-spacing:3px}.crou .ticket p{font:italic 15px Georgia;margin:10px 0}
 .crou .ticket button{border:0;border-radius:20px;padding:10px 18px;background:#3a2604;color:#ffe08a;font:700 15px Georgia}
 @keyframes tkt{0%{transform:scale(.2) rotate(-20deg);opacity:0}60%{transform:scale(1.08) rotate(3deg);opacity:1}100%{transform:none}}`;
+/* LES ILLUSTRATIONS DU MENU, en pixel art : pilon, frites, seau rayé, gobelet, coupe glacée, et la mouette cuisinière */
+const CRX={
+  P:(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);},
+  pilon(g,x,y,s){const r=(a,b,w,h,c)=>CRX.P(g,x+a*s,y+b*s,w*s,h*s,c);r(4,0,8,7,'#b8621e');r(3,1,10,5,'#c8742a');r(5,1,5,2,'#e8a050');r(6,2,2,1,'#f8c870');r(10,5,3,2,'#8a4414');r(11,6,2,4,'#f4ecd8');r(10,9,2,2,'#f4ecd8');r(12,9,2,2,'#f4ecd8');},
+  frites(g,x,y,s){const r=(a,b,w,h,c)=>CRX.P(g,x+a*s,y+b*s,w*s,h*s,c);for(let k=0;k<6;k++)r(2+k*2,(k%2)*2,1.5,8,k%2?'#f8d060':'#f0c040');r(1,6,12,9,'#d81e1e');r(1,6,12,1.5,'#f04040');r(5,9,4,3,'#ffd23f');},
+  seau(g,x,y,s,gros){const r=(a,b,w,h,c)=>CRX.P(g,x+a*s,y+b*s,w*s,h*s,c);const L=gros?26:20;for(let k=0;k<(gros?7:5);k++)CRX.pilon(g,x+(1+k*3.4)*s,y+(gros?-1:0)*s+(k%2)*2*s,s*0.8);
+    r(0,8,L,16,'#fff');for(let k=0;k<L;k+=4)r(k,8,2,16,'#d81e1e');r(0,8,L,2,'#f4ecd8');r(L/2-4,13,8,6,'#ffd23f');r(L/2-3,14,6,4,'#d81e1e');r(1,23,L-2,2,'#c8c0b0');},
+  gobelet(g,x,y,s){const r=(a,b,w,h,c)=>CRX.P(g,x+a*s,y+b*s,w*s,h*s,c);r(8,-6,1.5,9,'#d81e1e');r(2,2,12,3,'#fff');r(3,5,10,14,'#ffd23f');r(3,5,10,2,'#fff4b0');r(5,9,6,5,'#d81e1e');r(6,10,4,3,'#fff');r(4,18,8,2,'#c8a020');for(let k=0;k<3;k++)r(4+k*3,7,1.5,1.5,'#fff');},
+  coupe(g,x,y,s){const r=(a,b,w,h,c)=>CRX.P(g,x+a*s,y+b*s,w*s,h*s,c);r(3,0,8,6,'#fff4e8');r(2,3,10,4,'#f8e8d8');r(6,-2,2,2,'#d81e1e');r(1,7,12,3,'#c8e8f8');r(5,10,4,5,'#c8e8f8');r(3,15,8,2,'#a8c8d8');},
+  mouette(g,x,y,s){const r=(a,b,w,h,c)=>CRX.P(g,x+a*s,y+b*s,w*s,h*s,c);r(6,0,10,6,'#fff');r(7,1,8,5,'#f4f4f4');r(5,5,12,2,'#e8e8e8');r(6,7,10,9,'#fafafa');r(6,7,10,1,'#fff');
+    r(9,10,2,2,'#1a1a1a');r(13,10,2,2,'#1a1a1a');r(10,13,7,2.5,'#f0a020');r(15,14,3,1.5,'#d88010');r(4,16,14,8,'#fff');r(2,18,4,6,'#c8ccd4');r(16,18,4,6,'#c8ccd4');
+    r(8,17,6,2,'#d81e1e');r(10,19,2,4,'#d81e1e');r(1,14,4,6,'#c8ccd4');CRX.pilon(g,x+18*s,y+12*s,s*0.7);},
+  scene(cv,d){const D=Math.max(1,Math.min(3,window.devicePixelRatio||1)), W=cv.clientWidth||74, H=cv.clientHeight||56;cv.width=Math.round(W*D);cv.height=Math.round(H*D);
+    const g=cv.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+    g.fillStyle='rgba(0,0,0,.12)';g.beginPath();g.ellipse(W/2,H-5,W*0.38,4,0,0,7);g.fill();const s=Math.max(1,Math.min(W/34,H/26));
+    if(d==='petit'){CRX.pilon(g,W*0.12,H*0.3,s*0.9);CRX.pilon(g,W*0.26,H*0.18,s*0.9);CRX.pilon(g,W*0.18,H*0.44,s*0.9);CRX.frites(g,W*0.56,H*0.12,s*1.1);}
+    if(d==='seau'){CRX.seau(g,W*0.18,H*0.14,s*1.05);CRX.gobelet(g,W*0.66,H*0.22,s*0.8);}
+    if(d==='mega'){CRX.seau(g,W*0.04,H*0.16,s*0.95,true);CRX.frites(g,W*0.62,H*0.18,s*0.8);CRX.coupe(g,W*0.78,H*0.36,s*0.7);}
+    if(d==='limonade'){CRX.gobelet(g,W/2-7*s,H*0.24,s*1.2);}
+    if(d==='mouette'){CRX.mouette(g,W/2-11*s,2,s);}}};
+/* CROUSTI'PORT, le menu du seau rayé : la page défile dans son propre cadre, le bouton de sortie reste en bas,
+   les messages s'affichent au-dessus du bouton, le ticket d'or s'ouvre par-dessus tout. */
 async function ouvrirCrousti(){
-  if(!document.getElementById('cssSki')){const st=document.createElement('style');st.id='cssSki';st.textContent=CSS_SKI;document.head.appendChild(st);}
-  injecterCssEcole();
-  if(!document.getElementById('cssCrou')){const st=document.createElement('style');st.id='cssCrou';st.textContent=CSS_CROUSTI;document.head.appendChild(st);}
-  $('page2Fond').className='skiCat crou';$('page2').classList.add('on');
+  $('page2Fond').className='';$('page2').classList.add('on');
   const d0=await appelRPC('mon_repas',{p_joueur:e.id});if(d0&&!d0.erreur){REPU_FIN=d0.repu_jusqua?new Date(d0.repu_jusqua).getTime():0;if(d0.costume){e.cos=e.cos||{};e.cos.costume_poulet=true;}}
-  const rendre=(bulle)=>{const repu=REPU_FIN>Date.now(), costume=e.cos&&e.cos.costume_poulet, porte=e.ap&&e.ap.deguisement==='poulet';
-    $('page2Fond').innerHTML='<div class="tete"><div class="logo">🍗</div><div><b>CROUSTI’PORT</b><small>Poulet frit · Vieux-Port</small></div><div class="bourse">Ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div>'+
-      '<div class="lst">'+(repu?'<div class="sec">TU ES REPU</div><div class="ep"><div class="t"><b>Encore '+Math.ceil((REPU_FIN-Date.now())/60000)+' min</b><small>Tu marches 15 % plus vite. Un nouveau menu prolonge.</small></div></div>':'')+
-      '<div class="sec">LES MENUS</div>'+MENUS_CROUSTI.map(([k,n,d,px,mn])=>'<div class="ep"><div class="t"><b>'+n+'</b><small>'+d+(mn?' · repu '+mn+' min':'')+'</small></div><button data-m="'+k+'">'+enEuros(px).replace(',00','')+'</button></div>').join('')+
-      '<div class="sec">LE TICKET D’OR</div><div class="ep"><div class="t"><b>'+(costume?'Tu as la tenue de poulet !':'Un ticket d’or se cache parfois dans un menu')+'</b><small>'+
-      (costume?(porte?'Tu la portes. Tout le monde te voit en poulet.':'Enfile-la quand tu veux.'):'Extrêmement rare. Il offre la tenue de poulet, que personne ne peut acheter. Plus le menu est gros, plus tu as de chances.')+'</small></div>'+
-      (costume?'<button id="crouCost">'+(porte?'Retirer':'Enfiler')+'</button>':'')+'</div>'+
-      '</div><div class="bulle" id="skiBulle"></div><button class="fermer" id="ski-fermer">Ressortir sur le quai</button>';
-    $('ski-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-    if(bulle)skiBulle(bulle);
-    const bc=$('crouCost');if(bc)bc.onclick=()=>{e.ap=Object.assign({},e.ap||DEF_AP);if(e.ap.deguisement==='poulet')delete e.ap.deguisement;else e.ap.deguisement='poulet';
+  const DESC={limonade:'grande, glacée',petit:'3 pilons, frites, sauce',seau:'8 morceaux, frites, boisson',mega:'16 morceaux, 2 frites, 2 boissons, dessert'};
+  const TAMPON={limonade:'FRAIS',petit:'SEUL.',seau:'BEST',mega:'MAXI'};
+  let bulleT=0;
+  const bulle=(t)=>{const b=$('crvBulle');if(!b)return;b.textContent=t;b.classList.add('on');clearTimeout(bulleT);bulleT=setTimeout(()=>b.classList.remove('on'),2600);};
+  const rendre=(msg)=>{const repu=REPU_FIN>Date.now(), costume=e.cos&&e.cos.costume_poulet, porte=e.ap&&e.ap.deguisement==='poulet';
+    const ordre=['petit','seau','mega','limonade'];
+    $('page2Fond').innerHTML=`<style>
+      #crv{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:repeating-linear-gradient(90deg,#d81e1e 0 26px,#fff 26px 52px);font-family:Arial,Helvetica,sans-serif;color:#2a1a10}
+      #crv .crv-page{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;padding:calc(env(safe-area-inset-top,0px) + 14px) 14px 14px}
+      #crv .crv-panneau{background:#fff9ee;border-radius:22px;box-shadow:0 6px 0 #a81414,0 12px 26px rgba(0,0,0,.25);overflow:hidden}
+      #crv .crv-tete{background:#d81e1e;color:#fff;text-align:center;padding:12px 10px 16px;position:relative}
+      #crv .crv-tete canvas{width:84px;height:84px;display:block;margin:0 auto -4px;image-rendering:pixelated}
+      #crv .crv-tete b{font:900 30px 'Arial Black',Arial,sans-serif;letter-spacing:-1px;display:block;text-shadow:0 3px 0 #a81414;line-height:1.05}
+      #crv .crv-tete small{font:900 11px Arial,sans-serif;letter-spacing:3px;color:#ffd23f}
+      #crv .crv-autocol{position:absolute;right:12px;top:16px;background:#ffd23f;color:#d81e1e;font:900 11px Arial,sans-serif;line-height:1.15;padding:7px 9px;border-radius:14px;transform:rotate(10deg);box-shadow:0 3px 0 #c8a020}
+      #crv .crv-bourse{position:absolute;left:12px;top:14px;text-align:left;font:700 10px Arial,sans-serif;opacity:.95;line-height:1.25}#crv .crv-bourse b{font:900 14px Arial,sans-serif;display:block;letter-spacing:0;text-shadow:none}
+      #crv .crv-repu{margin:10px 12px 0;border-radius:12px;background:#fff0c8;border:2px dashed #d8a830;padding:8px 10px;font:700 12.5px Arial,sans-serif;color:#6a4a10}
+      #crv .crv-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:2px dashed #f0c8b0;min-width:0}
+      #crv .crv-item canvas{width:74px;height:56px;flex:none;image-rendering:pixelated}
+      #crv .crv-t{flex:1;min-width:0}#crv .crv-t b{display:block;font:900 15px Arial,sans-serif;color:#2a1a10;line-height:1.15}#crv .crv-t small{display:block;font:11.5px Arial,sans-serif;color:#8a6a50;margin-top:2px;line-height:1.3}
+      #crv .crv-tampon{flex:none;width:60px;height:60px;border:0;border-radius:50%;background:#d81e1e;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font:900 17px 'Arial Black',Arial,sans-serif;box-shadow:0 3px 0 #a81414;transform:rotate(-8deg);padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+      #crv .crv-tampon i{font:700 8px Arial,sans-serif;font-style:normal;letter-spacing:1px;margin-top:1px}
+      #crv .crv-tampon:active{transform:rotate(-8deg) translateY(2px);box-shadow:0 1px 0 #a81414}
+      #crv .crv-tampon.cher{background:#c8b8a8;box-shadow:0 3px 0 #9a8a7a}#crv .crv-tampon:disabled{opacity:.6}
+      #crv .crv-or{margin:12px;border-radius:14px;padding:10px 12px;text-align:center;background:linear-gradient(135deg,#f8e08a,#d8a830 45%,#fff0b0 55%,#c89020);font:900 13px Arial,sans-serif;color:#3a2604;box-shadow:0 0 18px rgba(255,210,90,.6);line-height:1.35}
+      #crv .crv-or small{display:block;font:700 11.5px Arial,sans-serif;margin-top:3px}
+      #crv .crv-or button{margin-top:8px;border:0;border-radius:16px;padding:8px 16px;background:#3a2604;color:#ffe08a;font:900 13px Arial,sans-serif}
+      #crv .crv-pied{flex:none;position:relative;padding:8px 14px calc(env(safe-area-inset-bottom,0px) + 12px)}
+      #crv .crv-bulle{position:absolute;left:14px;right:14px;bottom:calc(100% + 2px);background:#2a1a10;color:#fff;border-radius:14px;padding:10px 12px;font:700 13.5px Arial,sans-serif;text-align:center;
+        opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;pointer-events:none}
+      #crv .crv-bulle.on{opacity:1;transform:none}
+      #crv .crv-fermer{display:block;width:100%;border:0;border-radius:16px;padding:14px;font:900 16px Arial,sans-serif;background:#fff9ee;color:#d81e1e;box-shadow:0 4px 0 #a81414}
+      #crv .crv-ticket{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;background:rgba(20,10,0,.75)}
+      #crv .crv-ticket>div{width:84%;max-width:340px;border-radius:16px;padding:22px 18px;text-align:center;background:linear-gradient(135deg,#f8e08a,#d8a830 45%,#fff0b0 55%,#c89020);color:#3a2604;box-shadow:0 0 40px rgba(255,210,90,.8);animation:crvT 1.2s ease-out}
+      #crv .crv-ticket b{display:block;font:900 26px Georgia,serif;letter-spacing:3px}#crv .crv-ticket p{font:italic 15px Georgia,serif;margin:10px 0}
+      #crv .crv-ticket button{border:0;border-radius:20px;padding:10px 18px;background:#3a2604;color:#ffe08a;font:700 15px Georgia,serif}
+      @keyframes crvT{0%{transform:scale(.2) rotate(-20deg);opacity:0}60%{transform:scale(1.08) rotate(3deg);opacity:1}100%{transform:none}}
+      @media (max-width:350px){#crv .crv-item canvas{width:60px;height:46px}#crv .crv-tampon{width:52px;height:52px;font-size:15px}#crv .crv-tete b{font-size:26px}}</style>
+     <div id="crv" lang="fr"><div class="crv-page"><div class="crv-panneau">
+       <div class="crv-tete"><div class="crv-bourse">TA BOURSE<b>${enEuros(e.euros||0)}</b></div><canvas data-crx="mouette"></canvas><b>CROUSTI’PORT</b><small>LE POULET DU VIEUX-PORT</small><span class="crv-autocol">CROUSTI<br>À GOGO !</span></div>
+       ${repu?'<div class="crv-repu">😋 Tu es repu encore <b>'+Math.ceil((REPU_FIN-Date.now())/60000)+' min</b> : tu marches 15 % plus vite. Un nouveau menu prolonge.</div>':''}
+       ${ordre.map(k=>{const M=MENUS_CROUSTI.find(m=>m[0]===k);if(!M)return '';const [id,nom,,px,mn]=M;const cher=(e.euros||0)<px;
+         return '<div class="crv-item"><canvas data-crx="'+id+'"></canvas><div class="crv-t"><b>'+nom+'</b><small>'+DESC[id]+(mn?' · repu '+mn+' min':'')+'</small></div>'+
+           '<button class="crv-tampon'+(cher?' cher':'')+'" data-m="'+id+'">'+enEuros(px).replace(',00','').replace(' €','€')+'<i>'+TAMPON[id]+'</i></button></div>';}).join('')}
+       <div class="crv-or">🎟️ LE TICKET D’OR<small>${costume?(porte?'Tu portes la tenue de poulet : tout le monde te voit en poulet.':'Tu as la tenue de poulet ! Enfile-la quand tu veux.'):'Il se cache parfois dans un menu. Il offre la tenue de poulet, introuvable ailleurs. Plus le menu est gros, plus tu as de chances.'}</small>
+         ${costume?'<button id="crvCost">'+(porte?'Retirer la tenue':'Enfiler la tenue')+'</button>':''}</div>
+     </div></div><div class="crv-pied"><div class="crv-bulle" id="crvBulle"></div><button class="crv-fermer" id="crvFermer">Ressortir sur le quai</button></div></div>`;
+    $('page2Fond').querySelectorAll('canvas[data-crx]').forEach(c=>CRX.scene(c,c.dataset.crx));
+    $('crvFermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+    if(msg)bulle(msg);
+    const bc=$('crvCost');if(bc)bc.onclick=()=>{e.ap=Object.assign({},e.ap||DEF_AP);if(e.ap.deguisement==='poulet')delete e.ap.deguisement;else e.ap.deguisement='poulet';
       sauver();envoyerSauvegarde(true);monterEnLigne(true);vibrer(20);rendre(e.ap.deguisement?'Cot cot codêêêt !':'Te revoilà en humain.');};
     $('page2Fond').querySelectorAll('[data-m]').forEach(b=>b.onclick=async()=>{const M=MENUS_CROUSTI.find(m=>m[0]===b.dataset.m);if(!M)return;
-      if((e.euros||0)<M[3]){skiBulle('Il te manque '+enEuros(M[3]-(e.euros||0)));return;}
+      if((e.euros||0)<M[3]){bulle('Il te manque '+enEuros(M[3]-(e.euros||0)));return;}
       b.disabled=true;const d=await appelRPC('commander_crousti',{p_joueur:e.id,p_menu:M[0]});
-      if(!d||d.erreur){b.disabled=false;skiBulle(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':(d&&d.erreur==='doucement'?'Une commande à la fois !':'La cuisine n’a pas pu'));return;}
+      if(!d||d.erreur){b.disabled=false;bulle(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':(d&&d.erreur==='doucement'?'Une commande à la fois !':'La cuisine n’a pas pu'));return;}
       if(typeof d.euros==='number')e.euros=d.euros;REPU_FIN=d.repu_jusqua?new Date(d.repu_jusqua).getTime():REPU_FIN;sauver();majHaut();jouer('vente','moment');vibrer(20);
       if(d.ticket){e.cos=e.cos||{};e.cos.costume_poulet=true;rendre();ticketDOr();}else rendre(M[4]?'Bon appétit ! Repu pour '+M[4]+' min.':'Rafraîchissant !');});};
-  const ticketDOr=()=>{vibrer([40,60,40,60,120]);const t=document.createElement('div');t.className='ticket';
-    t.innerHTML='<div><b>TICKET D’OR</b><p>Sous ton seau, un ticket brille…<br>Tu gagnes <b style="display:inline;font-size:16px;letter-spacing:0">la tenue de poulet</b> !</p><button id="tkEnfiler">L’enfiler tout de suite</button></div>';
-    $('page2Fond').appendChild(t);$('tkEnfiler').onclick=()=>{e.ap=Object.assign({},e.ap||DEF_AP,{deguisement:'poulet'});sauver();envoyerSauvegarde(true);monterEnLigne(true);t.remove();rendre('Cot cot codêêêt !');};};
+  const ticketDOr=()=>{vibrer([40,60,40,60,120]);const t=document.createElement('div');t.className='crv-ticket';
+    t.innerHTML='<div><b>TICKET D’OR</b><p>Sous ton seau, un ticket brille…<br>Tu gagnes <b style="display:inline;font-size:16px;letter-spacing:0">la tenue de poulet</b> !</p><button id="crvEnfiler">L’enfiler tout de suite</button></div>';
+    $('crv').appendChild(t);$('crvEnfiler').onclick=()=>{e.ap=Object.assign({},e.ap||DEF_AP,{deguisement:'poulet'});sauver();envoyerSauvegarde(true);monterEnLigne(true);t.remove();rendre('Cot cot codêêêt !');};};
   rendre();
 }
 function vignetteSki(cv2,ap){
