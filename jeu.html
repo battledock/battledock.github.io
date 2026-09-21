@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-2229';
+  var MA_VERSION='2026-09-21-2242';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -7505,12 +7505,45 @@ function graverMoulinVillage(){const W=200,Ht=290,cx=W/2,sol=Ht-16;
 const TICKETS=[['poisson','Le Petit Poisson',100,['#1f8ab8','#5ac0e8'],'🐟',[['1 €','1 sur 7'],['2 €','1 sur 8'],['5 €','1 sur 33'],['20 €','1 sur 250'],['100 €','1 sur 3 333']]],
   ['filet','Le Filet d’Or',300,['#b8862a','#f0cf6a'],'🎣',[['3 €','1 sur 8'],['6 €','1 sur 12'],['15 €','1 sur 33'],['50 €','1 sur 167'],['300 €','1 sur 2 000']]],
   ['cargo','Le Gros Cargo',1000,['#b81e1e','#f0604a'],'🚢',[['10 €','1 sur 8'],['20 €','1 sur 12'],['50 €','1 sur 25'],['150 €','1 sur 100'],['500 €','1 sur 500']]]];
+/* ————— LES TICKETS À GRATTER : dessins (poissons, ancres, coquillages, étoiles, sirène) et pellicule à gratter par zone ————— */
+const clair=(h)=>{const n=parseInt(h.slice(1),16);const c=[n>>16,(n>>8)&255,n&255].map(v=>Math.round(v+(255-v)*.28));return 'rgb('+c.join(',')+')';};const al=a=>a[Math.floor(Math.random()*a.length)];const melange=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+/* ——— les dessins ——— */
+const POISSONS={sardine:['Sardine','#9aa8b8','#dfe6ee'],rouget:['Rouget','#d8503a','#f4a08a'],dorade:['Dorade','#c9a24a','#f0d890'],maquereau:['Maquereau','#2a7ab0','#8ac8e8'],loup:['Loup','#6a7888','#b8c4d0']};
+const poissonSVG=(k,w)=>{const [n,c1,c2]=POISSONS[k];return '<svg viewBox="0 0 40 22" width="'+w+'"><ellipse cx="18" cy="11" rx="13" ry="7" fill="'+c1+'"/><ellipse cx="17" cy="9" rx="9" ry="3" fill="'+c2+'" opacity=".7"/><polygon points="30,11 39,4 39,18" fill="'+c1+'"/><circle cx="10" cy="9.5" r="1.6" fill="#1a1a1a"/>'+(k==='maquereau'?'<path d="M14 5 l3 5 M19 5 l3 5 M24 6 l2 4" stroke="#123" stroke-width="1"/>':'')+'</svg>';};
+const ancre='<svg viewBox="0 0 24 24" width="30"><circle cx="12" cy="4.5" r="2.3" fill="none" stroke="#3a2a0a" stroke-width="1.8"/><path d="M12 7v13 M7 10h10 M4 14c0 4 4 6 8 6s8-2 8-6" fill="none" stroke="#3a2a0a" stroke-width="1.8" stroke-linecap="round"/></svg>';
+const coquille='<svg viewBox="0 0 24 24" width="28"><path d="M12 20 L3 10 Q12 0 21 10 Z" fill="#e8a8a0"/><path d="M12 20 L7 8 M12 20 L12 5 M12 20 L17 8" stroke="#b86a60" stroke-width="1"/></svg>';
+const etoile='<svg viewBox="0 0 24 24" width="28"><path d="M12 2 l2.8 6.6 7 .6-5.3 4.6 1.7 7-6.2-3.8-6.2 3.8 1.7-7L2.2 9.2l7-.6z" fill="#f0a040"/></svg>';
+const sirene='<svg viewBox="0 0 24 24" width="30"><circle cx="12" cy="5" r="3" fill="#e0b088"/><path d="M9 4 q3 -4 7 1 q-1 6 -2 8" fill="#c84a2a"/><path d="M12 8 q-4 5 0 9 q2 3 -2 5 l6 -1 q-3 -2 -1 -4 q3 -4 -3 -9z" fill="#2aa0a0"/></svg>';
+/* ——— la pellicule d'une zone : le même grattage fluide, pour chaque zone ——— */
+function pellicule(z,style,fini){const cv=document.createElement('canvas');z.appendChild(cv);const r=z.getBoundingClientRect(),D=Math.min(3,devicePixelRatio||1);cv.width=Math.max(4,Math.round(r.width*D));cv.height=Math.max(4,Math.round(r.height*D));
+  const W=cv.width,H=cv.height,g=cv.getContext('2d');const gr=g.createLinearGradient(0,0,W,H);style.grad.forEach((c,i)=>gr.addColorStop(i/(style.grad.length-1),c));g.fillStyle=gr;g.fillRect(0,0,W,H);
+  if(style.motif)style.motif(g,W,H,D);for(let k=0;k<W*H/90;k++){g.fillStyle=Math.random()<.5?'rgba(255,255,255,.16)':'rgba(0,0,0,.05)';g.fillRect(Math.random()*W,Math.random()*H,D,D);}
+  if(style.texte){g.fillStyle=style.coulTexte||'rgba(40,40,50,.4)';g.font='700 '+Math.round((style.taille||9)*D)+'px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText(style.texte,W/2,H/2);}
+  g.globalCompositeOperation='destination-out';g.lineCap='round';g.lineJoin='round';
+  const MW=24,MH=Math.max(8,Math.round(24*H/W)),m=document.createElement('canvas');m.width=MW;m.height=MH;const mg=m.getContext('2d');mg.fillStyle='#000';mg.fillRect(0,0,MW,MH);mg.strokeStyle='#fff';mg.lineCap='round';
+  const R=12*D;let fin=false,der=null,file=[],raf=0,mes=0;
+  const devoiler=()=>{if(fin)return;fin=true;cv.classList.add('parti');fini();};
+  const mesurer=()=>{const px=mg.getImageData(0,0,MW,MH).data;let v=0;for(let i=0;i<px.length;i+=4)if(px[i]>128)v++;if(v/(MW*MH)>=.5)devoiler();};
+  const trait=(a,b)=>{for(let q=0;q<3;q++){g.lineWidth=R*2*(.84+q*.08);g.beginPath();g.moveTo(a.x+(q-1)*D,a.y+(q-1)*D*.6);g.lineTo(b.x+(q-1)*D*.6,b.y-(q-1)*D);g.stroke();}
+    mg.lineWidth=R*2*MW/W;mg.beginPath();mg.moveTo(a.x*MW/W,a.y*MH/H);mg.lineTo(b.x*MW/W,b.y*MH/H);mg.stroke();};
+  const boucle=(ts)=>{raf=0;for(const p of file){trait(der||p,der?p:{x:p.x+.1,y:p.y+.1});der=p;}file=[];if(!fin&&ts-mes>100){mes=ts;mesurer();}};
+  const pt=ev=>{const r=cv.getBoundingClientRect();return {x:(ev.clientX-r.left)*D,y:(ev.clientY-r.top)*D};};
+  const prendre=ev=>{const L=ev.getCoalescedEvents?ev.getCoalescedEvents():[];for(const x of (L.length?L:[ev]))file.push(pt(x));if(!raf)raf=requestAnimationFrame(boucle);};
+  cv.onpointerdown=ev=>{ev.preventDefault();cv.setPointerCapture(ev.pointerId);der=null;prendre(ev);};cv.onpointermove=ev=>{if(cv.hasPointerCapture(ev.pointerId))prendre(ev);};
+  cv.onpointerup=cv.onpointercancel=()=>{der=null;requestAnimationFrame(mesurer);};
+  return {devoiler};}
+const bullesMotif=(g,W,H,D)=>{for(let k=0;k<6;k++){g.fillStyle='rgba(255,255,255,.35)';g.beginPath();g.arc(Math.random()*W,Math.random()*H,(2+Math.random()*5)*D,0,7);g.fill();}g.fillStyle='rgba(255,255,255,.55)';g.beginPath();g.arc(W*.32,H*.3,W*.09,0,7);g.fill();};
+const maillesMotif=(g,W,H,D)=>{g.strokeStyle='rgba(255,246,216,.4)';g.lineWidth=D;for(let k=-H;k<W+H;k+=8*D){g.beginPath();g.moveTo(k,0);g.lineTo(k+H,H);g.stroke();g.beginPath();g.moveTo(k,H);g.lineTo(k+H,0);g.stroke();}};
+const nervures=(c)=>(g,W,H,D)=>{g.fillStyle='rgba(0,0,0,.16)';for(let x=3*D;x<W;x+=5*D)g.fillRect(x,0,1.3*D,H);g.fillStyle='rgba(255,255,255,.25)';g.fillRect(0,0,W,2*D);};
+
 async function ouvrirLeBar(){
   $('page2Fond').className='';$('page2').classList.add('on');
   const d0=await appelRPC('mes_grattages',{p_joueur:e.id});let faits=(d0&&typeof d0.aujourdhui==='number')?d0.aujourdhui:0;
   const bulle=(t)=>{const b=$('barBulle');if(!b)return;b.textContent=t;b.classList.add('on');clearTimeout(bulle.t);bulle.t=setTimeout(()=>b.classList.remove('on'),2600);};
   const MAX={poisson:100,filet:300,cargo:500};
-  const mini=(nom)=>'<span class="bar-mini"><small>BAR DES DOCKS</small><b>'+nom+'</b><i></i></span>';
+  const FOND_MINI={poisson:'radial-gradient(circle at 20% 15%,#7fd4e8,transparent 45%),linear-gradient(160deg,#4ab8d8,#1a6a98)',filet:'linear-gradient(135deg,#fbf0cf,#f0dca0 45%,#fff6dc 60%,#e8cc88)',cargo:'linear-gradient(180deg,#0e1a33,#16284a 60%,#0e1a33)'};
+  const COUL_MINI={poisson:'#fff',filet:'#4a3410',cargo:'#fff'};
+  const mini=(nom,k)=>'<span class="bar-mini" style="background:'+FOND_MINI[k]+';color:'+COUL_MINI[k]+'"><small>BAR DES DOCKS</small><b>'+nom+'</b><i></i></span>';
   let ONG='gratter', SEL=[], CH=0, LOTO_T=0, ETAT=null;
   /* ————— LE LOTO DU PORT : 5 numéros sur 25 + 1 Chance sur 5, 2 € la grille, tirage chaque soir à 21 h (tout au serveur) ————— */
   const boule=(n,rouge,k)=>'<span class="lo-boule'+(rouge?' ch':'')+'" style="animation-delay:'+(k*0.45)+'s">'+n+'</span>';
@@ -7585,25 +7618,50 @@ async function ouvrirLeBar(){
       #bar .bar-fermer{display:block;width:100%;border:0;border-radius:14px;padding:14px;font:700 15px Georgia,serif;background:#16336a;color:#fff}
       #bar .bar-bulle{position:absolute;left:16px;right:16px;bottom:calc(100% + 6px);background:#1a2a4a;color:#fff;border-radius:14px;padding:10px 12px;font:700 14px Georgia,serif;text-align:center;opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;pointer-events:none}
       #bar .bar-bulle.on{opacity:1;transform:none}
-      /* LE TICKET NACRE, en grand, à gratter */
-      #bar .gt{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(8,6,4,.9);padding:16px}
-      #bar .gt-tk{width:min(90vw,340px);aspect-ratio:3/4.3;max-height:70vh;border-radius:14px;overflow:hidden;position:relative;box-shadow:0 20px 50px rgba(0,0,0,.6);display:flex;flex-direction:column;background:linear-gradient(135deg,#f6d3e6,#d5e3fb 40%,#d8f5ea 70%,#fbf0cf);color:#2a2a3a}
-      #bar .gt-t{padding:18px 18px 4px}#bar .gt-t small{font:600 10px Arial,sans-serif;letter-spacing:3px;opacity:.6}#bar .gt-t b{display:block;font:300 28px 'Helvetica Neue',Arial,sans-serif;letter-spacing:-.5px;margin-top:4px}
-      #bar .gt-zone{position:relative;margin:10px 18px;flex:1;border-radius:14px;overflow:hidden;background:rgba(255,255,255,.85)}
-      #bar .gt-cases{position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr)}
-      #bar .gt-cases div{display:flex;align-items:center;justify-content:center;font:300 24px 'Helvetica Neue',Arial,sans-serif;color:#2a2a3a}
-      #bar .gt-cases div.g{font-weight:700;background:rgba(255,255,255,.95);color:#c8408a}
-      #bar .gt-zone canvas{position:absolute;inset:0;width:100%;height:100%}#bar .gt-zone canvas.pel{touch-action:none;transition:opacity .5s}#bar .gt-zone canvas.pel.parti{opacity:0}#bar .gt-zone canvas.pou{pointer-events:none}
-      #bar .gt-p{display:flex;justify-content:space-between;padding:6px 18px 16px;font:500 10px Arial,sans-serif;letter-spacing:2px;opacity:.6}
-      #bar .gt-res{font:400 22px Georgia,serif;color:#fff;min-height:30px;text-align:center}#bar .gt-res span{color:#f0cfe4}
-      #bar .gt-ok{border:0;border-radius:22px;padding:12px 28px;font:700 14px Arial,sans-serif;background:#fff;color:#16336a;visibility:hidden}</style>
+      /* LES TICKETS EN GRAND */
+      #bar .gt{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;background:rgba(8,6,4,.9);padding:calc(env(safe-area-inset-top,0px) + 14px) 10px 16px;overflow-y:auto;overscroll-behavior:contain}
+#bar .tk{width:min(94vw,360px);border-radius:16px;overflow:hidden;position:relative;box-shadow:0 18px 44px rgba(0,0,0,.55);flex:none}
+#bar .hd{position:relative;padding:14px 16px 6px}#bar .hd small{display:block;font:600 9px Arial;letter-spacing:3px;opacity:.75}#bar .hd b{display:block;font:300 26px 'Helvetica Neue',Arial;letter-spacing:-.3px;margin-top:3px}
+#bar .regle{position:relative;font:italic 12.5px Georgia,serif;opacity:.9;padding:0 16px 10px;line-height:1.35}
+#bar .pd{position:relative;display:flex;justify-content:space-between;padding:8px 16px 12px;font:500 9px Arial;letter-spacing:2px;opacity:.65}
+/* une zone à gratter : le contenu dessous, la pellicule (toile) dessus */
+#bar .z{position:relative;overflow:hidden}#bar .z .dessous{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+#bar .z canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;transition:opacity .45s}#bar .z canvas.parti{opacity:0;pointer-events:none}
+#bar .z.gg .dessous{animation:gg .55s ease-in-out 4 alternate}@keyframes gg{to{transform:scale(1.07)}}
+/* ——— LE PETIT POISSON : aquarelle bleu lagon ——— */
+#bar .t1{background:radial-gradient(circle at 20% 15%,#7fd4e8,transparent 45%),radial-gradient(circle at 85% 70%,#2a8ab8,transparent 55%),linear-gradient(160deg,#4ab8d8,#1a6a98);color:#fff}
+#bar .t1 .flot{position:absolute;left:0;right:0;top:0;height:6px;background:repeating-linear-gradient(90deg,#fff 0 10px,#e8402a 10px 20px);opacity:.85}
+#bar .t1 .appat{margin:4px 16px 12px;height:74px;border-radius:14px;background:rgba(255,255,255,.92);color:#12506e}
+#bar .t1 .appat .dessous small{font:700 9px Arial;letter-spacing:3px;opacity:.6}#bar .t1 .appat .dessous b{font:400 16px Georgia,serif}
+#bar .t1 .bulles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:0 18px 6px}
+#bar .t1 .bulle{aspect-ratio:1;border-radius:50%;background:rgba(255,255,255,.95);color:#12506e;box-shadow:inset 0 0 0 2px rgba(255,255,255,.6)}
+#bar .t1 .bulle .dessous b{font:700 14px Arial;margin-top:2px}#bar .t1 .bulle .dessous small{font:600 8px Arial;opacity:.7}
+#bar .t1 .z.gg .dessous{background:#ffe89a;border-radius:inherit}
+/* ——— LE FILET D'OR : nacre dorée et mailles ——— */
+#bar .t2{background:repeating-linear-gradient(45deg,rgba(150,110,30,.16) 0 1px,transparent 1px 14px),repeating-linear-gradient(-45deg,rgba(150,110,30,.16) 0 1px,transparent 1px 14px),linear-gradient(135deg,#fbf0cf,#f0dca0 45%,#fff6dc 60%,#e8cc88);color:#4a3410}
+#bar .t2 .hd b{font:italic 400 28px Georgia,serif}
+#bar .t2 .jeu{display:flex;gap:10px;padding:0 14px 6px;align-items:stretch}
+#bar .t2 .grille{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}#bar .t2 .case{aspect-ratio:1;border-radius:8px;background:#fffaf0;box-shadow:inset 0 0 0 1px rgba(150,110,30,.35)}
+#bar .t2 .tresor{flex:none;width:86px;border-radius:10px;background:#fffaf0;box-shadow:inset 0 0 0 1px rgba(150,110,30,.45)}#bar .t2 .tresor .dessous small{font:700 8px Arial;letter-spacing:2px;opacity:.7}#bar .t2 .tresor .dessous b{font:400 22px Georgia,serif}
+#bar .t2 .z.gg .dessous{background:#ffe070;border-radius:inherit}
+/* ——— LE GROS CARGO : bleu nuit, lumières du port, conteneurs ——— */
+#bar .t3{background:radial-gradient(1px 1px at 12% 20%,#ffe8a0,transparent),radial-gradient(1px 1px at 72% 12%,#ffe8a0,transparent),radial-gradient(1.5px 1.5px at 40% 8%,#fff,transparent),radial-gradient(1px 1px at 88% 30%,#9ad8ff,transparent),linear-gradient(180deg,#0e1a33,#16284a 60%,#0e1a33);color:#fff}
+#bar .t3 .hd b{font:800 26px 'Helvetica Neue',Arial;letter-spacing:.5px}
+#bar .t3 .jour{margin:0 16px 12px;height:58px;border-radius:10px;background:#f4f6fa;color:#0e1a33}#bar .t3 .jour .dessous{flex-direction:row;gap:14px}#bar .t3 .jour .dessous span{width:36px;height:36px;border-radius:50%;background:#0e1a33;color:#fff;display:flex;align-items:center;justify-content:center;font:800 15px Arial}
+#bar .t3 .jour .dessous small{position:absolute;top:4px;font:700 8px Arial;letter-spacing:2px;opacity:.6}
+#bar .t3 .conts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:0 14px 6px}#bar .t3 .cont{height:62px;border-radius:5px;background:#f4f6fa;color:#0e1a33}
+#bar .t3 .cont .dessous b{font:800 17px Arial}#bar .t3 .cont .dessous small{font:600 10px Arial;opacity:.75}
+#bar .t3 .z.gg .dessous{background:#ffe070;border-radius:inherit}
+
+      #bar .gt-res{font:400 22px Georgia,serif;color:#fff;min-height:30px;text-align:center}#bar .gt-res span{color:#e8c46a}
+      #bar .gt-ok{flex:none;border:0;border-radius:22px;padding:12px 28px;font:700 14px Arial,sans-serif;background:#fff;color:#16336a;visibility:hidden}</style>
      <div id="bar" lang="fr"><div class="bar-page">
        <div class="bar-plaque"><small>BAR · TABAC</small><b>DES DOCKS</b><small>JEUX · PMU · PRESSE</small></div>
        <div class="bar-bourse">TA BOURSE<b>${enEuros(e.euros||0)}</b></div>
        <div class="bar-ong"><button data-o="gratter" class="${ONG==='gratter'?'on':''}">Jeux à gratter</button><button data-o="loto" class="${ONG==='loto'?'on':''}">Loto du Port</button></div>
        ${ONG==='loto'?'<div id="lotoVue"><div class="bar-jour">On ouvre le tirage…</div></div>':`<div class="bar-t">Jeux à gratter</div>
-       ${TICKETS.map(([k,n,px])=>'<div class="bar-tk">'+mini(n)+'<div class="bar-x"><b>'+n+'</b><small>Gagnez jusqu’à '+MAX[k]+' €</small></div><button class="bar-px'+((e.euros||0)<px?' cher':'')+'" data-t="'+k+'">'+enEuros(px).replace(',00','')+'<i>LE TICKET</i></button></div>').join('')}
-       <div class="bar-jour">Trois montants identiques, c'est gagné.<br><b>${faits} / 20</b> tickets aujourd'hui · remise à zéro à minuit.</div>`}</div>
+       ${TICKETS.map(([k,n,px])=>'<div class="bar-tk">'+mini(n,k)+'<div class="bar-x"><b>'+n+'</b><small>Gagnez jusqu’à '+MAX[k]+' €</small></div><button class="bar-px'+((e.euros||0)<px?' cher':'')+'" data-t="'+k+'">'+enEuros(px).replace(',00','')+'<i>LE TICKET</i></button></div>').join('')}
+       <div class="bar-jour">Chaque ticket a sa règle : elle est écrite dessus.<br><b>${faits} / 20</b> tickets aujourd'hui · remise à zéro à minuit.</div>`}</div>
        <div class="bar-pied"><div class="bar-bulle" id="barBulle"></div><button class="bar-fermer" id="barFermer">Ressortir sur le quai</button></div></div>`;
     $('barFermer').onclick=()=>{fermeA=Date.now();clearInterval(LOTO_T);$('page2').classList.remove('on');};
     $('page2Fond').querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{ONG=b.dataset.o;vibrer(8);rendre();});
@@ -7614,35 +7672,30 @@ async function ouvrirLeBar(){
       b.disabled=true;const d=await appelRPC('gratter_ticket',{p_joueur:e.id,p_ticket:T[0]});b.disabled=false;
       if(!d||d.erreur){bulle(d&&d.erreur==='limite'?'Vingt tickets aujourd’hui : reviens demain !':(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':(d&&d.erreur==='doucement'?'Un ticket à la fois !':'Le buraliste n’a pas pu')));return;}
       faits++;gratter(T,d);});};
-  /* LE GRATTAGE : traits continus, points intermédiaires du doigt, bord irrégulier, poussière nacrée, mesure sur petit masque */
-  const gratter=(T,d)=>{const v=document.createElement('div');v.className='gt';const n=('000000'+Math.floor(Math.random()*999999)).slice(-6);
-    v.innerHTML='<div class="gt-tk"><div class="gt-t"><small>BAR DES DOCKS</small><b>'+T[1]+'</b></div><div class="gt-zone"><div class="gt-cases">'+d.grille.map(m=>'<div data-m="'+m+'">'+(m/100)+'&thinsp;€</div>').join('')+'</div><canvas class="pel"></canvas><canvas class="pou"></canvas></div>'+
-      '<div class="gt-p"><span>JUSQU’À '+MAX[T[0]]+' €</span><span>'+enEuros(T[2]).replace(',00','')+' · N° '+n+'</span></div></div><div class="gt-res" id="gtRes"></div><button class="gt-ok" id="gtOk">Continuer</button>';
-    $('bar').appendChild(v);
-    const z=v.querySelector('.gt-zone'),cv=v.querySelector('.pel'),pc=v.querySelector('.pou');
-    requestAnimationFrame(()=>{const rr=z.getBoundingClientRect(),D=Math.min(3,devicePixelRatio||1);cv.width=Math.round(rr.width*D);cv.height=Math.round(rr.height*D);pc.width=Math.round(rr.width);pc.height=Math.round(rr.height);
-      const W=cv.width,H=cv.height,g=cv.getContext('2d');
-      const gr=g.createLinearGradient(0,0,W,H);gr.addColorStop(0,'#e8c8f0');gr.addColorStop(.3,'#c8e0ff');gr.addColorStop(.6,'#c8f4e4');gr.addColorStop(1,'#f8e8c0');g.fillStyle=gr;g.fillRect(0,0,W,H);
-      for(let k=0;k<40;k++){g.fillStyle='rgba(255,255,255,'+(.12+Math.random()*.2)+')';g.beginPath();g.arc(Math.random()*W,Math.random()*H,(4+Math.random()*16)*D,0,7);g.fill();}
-      for(let k=0;k<W*H/90;k++){g.fillStyle=Math.random()<.5?'rgba(255,255,255,.18)':'rgba(0,0,0,.05)';g.fillRect(Math.random()*W,Math.random()*H,D,D);}
-      g.fillStyle='rgba(90,70,110,.35)';g.font='300 '+Math.round(12*D)+'px Georgia';g.textAlign='center';g.textBaseline='middle';g.fillText('grattez ici',W/2,H/2);
-      g.globalCompositeOperation='destination-out';g.lineCap='round';g.lineJoin='round';
-      const MW=60,MH=40,m=document.createElement('canvas');m.width=MW;m.height=MH;const mg=m.getContext('2d');mg.fillStyle='#000';mg.fillRect(0,0,MW,MH);mg.strokeStyle='#fff';mg.lineCap='round';
-      const R=15*D;let fini=false,der=null,file=[],pou=[],raf=0,mes=0,tp=performance.now();const pg=pc.getContext('2d');
-      const devoiler=()=>{if(fini)return;fini=true;cv.classList.add('parti');const cs=[...z.querySelectorAll('.gt-cases div')];
-        if(d.gain>0){cs.filter(c=>+c.dataset.m===d.gain).forEach(c=>c.classList.add('g'));jouer('vente','moment');vibrer([25,40,25]);$('gtRes').innerHTML='Gagné · <span>'+enEuros(d.gain)+'</span>';}
-        else $('gtRes').innerHTML='Pas cette fois';
-        if(typeof d.euros==='number'){e.euros=d.euros;sauver();majHaut();}$('gtOk').style.visibility='visible';};
-      const mesurer=()=>{const px=mg.getImageData(0,0,MW,MH).data;let vu=0;for(let i=0;i<px.length;i+=4)if(px[i]>128)vu++;if(vu/(MW*MH)>=.7)devoiler();};
-      const trait=(a,b)=>{for(let q=0;q<3;q++){g.lineWidth=R*2*(.84+q*.08);g.beginPath();g.moveTo(a.x+(q-1)*D,a.y+(q-1)*D*.6);g.lineTo(b.x+(q-1)*D*.6,b.y-(q-1)*D);g.stroke();}
-        mg.lineWidth=R*2*MW/W;mg.beginPath();mg.moveTo(a.x*MW/W,a.y*MH/H);mg.lineTo(b.x*MW/W,b.y*MH/H);mg.stroke();if(Math.random()<.45)pou.push({x:b.x/D,y:b.y/D,vx:(Math.random()-.5)*50,vy:-15-Math.random()*30,t:0});};
-      const boucle=(ts)=>{raf=0;for(const p of file){trait(der||p,der?p:{x:p.x+.1,y:p.y+.1});der=p;}file=[];if(!fini&&ts-mes>120){mes=ts;mesurer();}
-        const nw=performance.now(),dt=Math.min(.05,(nw-tp)/1000);tp=nw;pg.clearRect(0,0,pc.width,pc.height);pou=pou.filter(p=>(p.t+=dt)<.6);
-        for(const p of pou){p.vy+=240*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;pg.fillStyle='rgba(210,190,230,'+(1-p.t/.6).toFixed(2)+')';pg.fillRect(p.x,p.y,1.5,1.5);}if(pou.length)raf=requestAnimationFrame(boucle);};
-      const pt=(ev)=>{const r=cv.getBoundingClientRect();return {x:(ev.clientX-r.left)*D,y:(ev.clientY-r.top)*D};};
-      const prendre=(ev)=>{const L=ev.getCoalescedEvents?ev.getCoalescedEvents():[];for(const x of (L.length?L:[ev]))file.push(pt(x));if(!raf)raf=requestAnimationFrame(boucle);};
-      cv.onpointerdown=(ev)=>{ev.preventDefault();cv.setPointerCapture(ev.pointerId);der=null;prendre(ev);vibrer(4);};cv.onpointermove=(ev)=>{if(cv.hasPointerCapture(ev.pointerId))prendre(ev);};
-      cv.onpointerup=cv.onpointercancel=()=>{der=null;requestAnimationFrame(mesurer);};});
+  /* LES TROIS TICKETS, chacun sa règle : le serveur a décidé du gain et composé le ticket (d.compo) ; ici, on dessine et on gratte */
+  const gratter=(T,d)=>{const C=d.compo||{},n=('000000'+Math.floor(Math.random()*999999)).slice(-6),eu=(c)=>(c/100).toLocaleString('fr-FR')+' €';
+    const v=document.createElement('div');v.className='gt';let html='',zones=[];
+    if(T[0]==='poisson'){const B=C.bulles||[];
+      html='<div class="tk t1"><div class="flot"></div><div class="hd"><small>BAR DES DOCKS · 1 €</small><b>Le Petit Poisson</b></div><div class="regle">Gratte ton appât, puis les six bulles. Retrouve ton poisson : tu gagnes le montant affiché dessous.</div>'+
+        '<div class="z appat" data-z="a"><div class="dessous"><small>TON APPÂT</small>'+poissonSVG(C.appat,54)+'<b>'+POISSONS[C.appat][0]+'</b></div></div>'+
+        '<div class="bulles">'+B.map((x,i)=>'<div class="z bulle" data-z="'+i+'"><div class="dessous">'+poissonSVG(x.p,40)+'<b>'+eu(x.m)+'</b><small>'+POISSONS[x.p][0]+'</small></div></div>').join('')+'</div><div class="pd"><span>N° '+n+'</span><span>JUSQU’À 100 €</span></div></div>';
+      zones=(el)=>{const z=el.dataset.z,b=B[+z];return {gagne:d.gain>0&&(z==='a'||(b&&b.p===C.appat)),style:z==='a'?{grad:['#b8c8d4','#eef4f8','#a8b8c6'],texte:'TON APPÂT',taille:10}:{grad:['#a8d8ec','#eefaff','#8ac8e0'],motif:bullesMotif}};};}
+    else if(T[0]==='filet'){const K=C.cases||[],L=(C.ligne||[]).flat();
+      html='<div class="tk t2"><div class="hd"><small>BAR DES DOCKS · 3 €</small><b>Le Filet d’Or</b></div><div class="regle">Aligne trois ancres, en ligne, en colonne ou en diagonale, et remporte le trésor.</div>'+
+        '<div class="jeu"><div class="grille">'+K.map((x,i)=>'<div class="z case" data-z="'+i+'"><div class="dessous">'+(x==='a'?ancre:(x==='c'?coquille:etoile))+'</div></div>').join('')+'</div>'+
+        '<div class="z tresor" data-z="t"><div class="dessous"><small>TRÉSOR</small><b>'+eu(C.tresor||0)+'</b></div></div></div><div class="pd"><span>N° '+n+'</span><span>JUSQU’À 300 €</span></div></div>';
+      zones=(el)=>{const z=el.dataset.z;return {gagne:d.gain>0&&(z==='t'||L.includes(+z+1)),style:z==='t'?{grad:['#a8862a','#f0d890','#c9a24a','#8a6a1a'],texte:'TRÉSOR',taille:9,coulTexte:'rgba(60,40,10,.45)'}:{grad:['#c9a24a','#f8e4a8','#b8902a'],motif:maillesMotif}};};}
+    else{const J=C.jour||[],CT=C.conteneurs||[],coul=['#d8402a','#2a6ab0','#e8b830','#3a9a5a','#e87a2a','#8a5ad8','#c83a6a','#2aa0a0'];
+      html='<div class="tk t3"><div class="hd"><small>BAR DES DOCKS · 10 €</small><b>LE GROS CARGO</b></div><div class="regle">Chaque conteneur qui porte un numéro du jour te fait gagner son montant. La sirène double tout !</div>'+
+        '<div class="z jour" data-z="j"><div class="dessous"><small>NUMÉROS DU JOUR</small>'+J.map(x=>'<span>'+x+'</span>').join('')+'</div></div>'+
+        '<div class="conts">'+CT.map((c,i)=>'<div class="z cont" data-z="'+i+'"><div class="dessous">'+(c.sirene?sirene+'<small>× 2</small>':'<b>'+c.n+'</b><small>'+eu(c.m)+'</small>')+'</div></div>').join('')+'</div><div class="pd"><span>N° '+n+'</span><span>JUSQU’À 500 €</span></div></div>';
+      zones=(el)=>{const z=el.dataset.z,c=CT[+z];return {gagne:z==='j'?d.gain>0:!!(c&&c.g),style:z==='j'?{grad:['#9aa4b4','#eef1f6','#a8b0bc'],texte:'NUMÉROS DU JOUR',taille:9}:{grad:[coul[+z],clair(coul[+z]),coul[+z]],motif:nervures()}};};}
+    v.innerHTML=html+'<div class="gt-res" id="gtRes"></div><button class="gt-ok" id="gtOk">Continuer</button>';$('bar').appendChild(v);
+    const Z=[...v.querySelectorAll('.z')].map(el=>Object.assign({el},zones(el)));let reste=Z.length;
+    const fin=()=>{if(--reste>0)return;Z.forEach(z=>z.gagne&&z.el.classList.add('gg'));
+      if(d.gain>0){jouer('vente','moment');vibrer([25,40,25]);$('gtRes').innerHTML='Gagné · <span>'+enEuros(d.gain)+'</span>';}else $('gtRes').innerHTML='Pas cette fois';
+      if(typeof d.euros==='number'){e.euros=d.euros;sauver();majHaut();}$('gtOk').style.visibility='visible';};
+    requestAnimationFrame(()=>Z.forEach(z=>pellicule(z.el,z.style,fin)));
     $('gtOk').onclick=()=>{v.remove();rendre();};};
   rendre();
 }
