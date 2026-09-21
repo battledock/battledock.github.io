@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-2003';
+  var MA_VERSION='2026-09-21-2008';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -7501,28 +7501,51 @@ async function ouvrirLaGazette(){
   $('page2Fond').innerHTML='<div style="position:absolute;inset:0;background:#e9e1cc;display:flex;align-items:center;justify-content:center;font:italic 15px Georgia;color:#231c14">On déplie le journal…</div>';
   let G=null;try{G=await appelRPC('gazette',{});}catch(x){}
   const CL=(G&&G.classement)||[];
+  const esc=(t)=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  const num=Math.max(1,Math.floor((d-new Date(2026,8,21))/864e5)+3);
+  /* LE VIEUX-PORT, ÉDITION DU MATIN : un quotidien régional des années 50, titre rouge, photo, deux colonnes.
+     Toute la page défile dans son propre cadre (rien ne bouge derrière), le bouton reste en bas, hors du texte. */
   $('page2Fond').innerHTML=`<style>
-    .gz{position:absolute;inset:0;overflow:auto;background:#e9e1cc;background-image:radial-gradient(rgba(120,100,60,.08) 1px,transparent 1px);background-size:5px 5px;color:#231c14;font-family:Georgia,serif;padding:calc(env(safe-area-inset-top,0px) + 18px) 16px 96px}
-    .gz .tete{text-align:center;border-bottom:3px double #231c14;padding-bottom:8px}.gz .tete small{display:flex;justify-content:space-between;font:italic 11px Georgia;border-bottom:1px solid #231c14;padding-bottom:4px;margin-bottom:6px}
-    .gz h1{font:900 30px 'Times New Roman',Georgia,serif;letter-spacing:1px;line-height:1}.gz .dev{font:italic 11px Georgia;margin-top:4px}
-    .gz .une{margin:12px 0;border-bottom:1px solid #231c14;padding-bottom:10px}.gz .une h2{font:900 21px 'Times New Roman',Georgia;line-height:1.1}.gz .une p{font:14px Georgia;line-height:1.45;margin-top:6px;text-align:justify}
-    .gz .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}.gz .bloc{border-top:2px solid #231c14;padding-top:6px}.gz .bloc h3{font:900 12px Georgia;letter-spacing:2px;margin-bottom:5px}
-    .gz .bloc p,.gz .bloc li{font:13px Georgia;line-height:1.4}.gz ol{padding-left:18px}.gz .prix{display:flex;justify-content:space-between;border-bottom:1px dotted #8a7a5a;font:13px Georgia;padding:2px 0}
-    .gz .gzpa{border:1px solid #231c14;padding:6px;margin-top:6px;font:italic 12px Georgia}
-    .gz .fermer{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);border:0;border-radius:14px;padding:14px;font:700 16px Georgia;background:#231c14;color:#e9e1cc}</style>
-   <div class="gz"><div class="tete"><small><span>N° ${Math.floor((d-new Date(2026,8,21))/864e5)+3}</span><span>${jour}</span><span>gratuit</span></small>
-     <h1>LA GAZETTE<br>DU VIEUX-PORT</h1><div class="dev">« Tout ce qui se dit sur les quais, et un peu plus »</div></div>
-   <div class="une"><h2>${(G&&G.titre)||'Le quai s’éveille'}</h2><p>${(G&&G.une)||'Les pêcheurs rentrent, le Fumoir fume, les mouettes veillent.'}</p></div>
-   <div class="cols">
-     <div class="bloc"><h3>LE CLASSEMENT</h3>${CL.length?'<ol>'+CL.map((j,k)=>'<li>'+(k===0?'<b>':'')+String(j.pseudo).replace(/[<>&]/g,'')+(k===0?'</b>':'')+'</li>').join('')+'</ol>':'<p>Personne encore au registre.</p>'}</div>
-     <div class="bloc"><h3>LA MÉTÉO</h3><p>${METEO[Math.floor(graine(7)*METEO.length)]} ${temp}°C.</p></div>
-     <div class="bloc"><h3>LE COURS DU POISSON</h3>${cours.map(([n,a,f])=>'<div class="prix"><span>'+n+'</span><b>'+enEuros(Math.round(a*100)).replace(',00','')+' '+f+'</b></div>').join('')}</div>
-     <div class="bloc"><h3>SUR LES QUAIS</h3><p><b>${(G&&G.joueurs)||0}</b> habitants inscrits au registre du port.</p></div>
-   </div>
-   <div class="bloc" style="margin-top:12px"><h3>PETITES ANNONCES</h3>
-     <div class="gzpa">Le Bar des Docks rouvrira bientôt ses portes. Qu'on se le dise !</div>
-     <div class="gzpa">On recherche des volontaires pour la future forêt. S'adresser au Fumoir.</div></div>
-   <button class="fermer" id="gzFermer">Replier le journal</button></div>`;
+    #gzv{position:fixed;inset:0;z-index:5;background:#f3ecdc;color:#1d1a16;font-family:'Times New Roman',Georgia,serif;display:flex;flex-direction:column}
+    #gzv .gzv-page{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;
+      padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 24px}
+    #gzv .gzv-bandeau{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;border-bottom:4px solid #b8231a;padding-bottom:5px}
+    #gzv h1{font:italic 900 36px 'Times New Roman',Georgia,serif;color:#b8231a;letter-spacing:-1px;line-height:.9;margin:0}
+    #gzv .gzv-date{font:700 10px Arial,sans-serif;text-align:right;line-height:1.35;text-transform:uppercase;white-space:nowrap}
+    #gzv .gzv-edition{font:700 10px Arial,sans-serif;letter-spacing:3px;background:#1d1a16;color:#f3ecdc;padding:3px 7px;margin:8px 0 4px;display:inline-block}
+    #gzv h2{font:900 25px 'Times New Roman',Georgia,serif;line-height:1.02;text-transform:uppercase;margin:4px 0 0;overflow-wrap:break-word}
+    #gzv .gzv-photo{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:center 40%;image-rendering:pixelated;filter:sepia(.45) contrast(1.05);border:1px solid #1d1a16;margin:10px 0 4px;background:#d8ccb4}
+    #gzv .gzv-leg{font:italic 11.5px Georgia,serif;color:#5a5048;margin:0}
+    #gzv .gzv-texte{font:14px Georgia,serif;line-height:1.45;margin:8px 0 0;column-count:2;column-gap:14px;text-align:justify;hyphens:auto;-webkit-hyphens:auto}
+    #gzv .gzv-grille{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;margin-top:12px;border-top:2px solid #b8231a;padding-top:10px}
+    #gzv h3{font:900 11px Arial,sans-serif;color:#b8231a;letter-spacing:1px;margin:0 0 4px;text-transform:uppercase}
+    #gzv .gzv-bloc{font:13px Georgia,serif;line-height:1.4;min-width:0}
+    #gzv .gzv-bloc ol{margin:0;padding-left:18px}
+    #gzv .gzv-prix{display:flex;justify-content:space-between;gap:6px;border-bottom:1px dotted #8a7a5a;padding:2px 0}
+    #gzv .gzv-annonces{margin-top:14px;border-top:2px solid #b8231a;padding-top:10px}
+    #gzv .gzv-pa{border:1px solid #1d1a16;padding:7px 8px;margin-top:7px;font:italic 12.5px Georgia,serif;line-height:1.35}
+    #gzv .gzv-fin{text-align:center;font:italic 11px Georgia,serif;color:#5a5048;margin-top:16px}
+    #gzv .gzv-pied{flex:none;padding:10px 16px calc(env(safe-area-inset-bottom,0px) + 12px);background:linear-gradient(rgba(243,236,220,0),#f3ecdc 30%)}
+    #gzv .gzv-fermer{display:block;width:100%;border:0;border-radius:14px;padding:14px;font:700 16px Georgia,serif;background:#1d1a16;color:#f3ecdc}
+    @media (max-width:340px){#gzv .gzv-texte{column-count:1}#gzv h1{font-size:30px}}</style>
+   <div id="gzv" lang="fr"><div class="gzv-page">
+     <div class="gzv-bandeau"><h1>Le Vieux-Port</h1><div class="gzv-date">${esc(d.toLocaleDateString('fr-FR',{weekday:'long'}))}<br>${esc(d.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}))}<br>N° ${num} · gratuit</div></div>
+     <span class="gzv-edition">ÉDITION DU MATIN</span>
+     <h2>${esc((G&&G.titre)||'Le quai s’éveille')}</h2>
+     <img class="gzv-photo" src="nouveautes/marseille.jpg" alt="">
+     <p class="gzv-leg">Sur le quai, à l'heure où les lanternes s'allument.</p>
+     <p class="gzv-texte">${esc((G&&G.une)||'Les pêcheurs rentrent, le Fumoir fume, les mouettes veillent.')}</p>
+     <div class="gzv-grille">
+       <div class="gzv-bloc"><h3>Classement</h3>${CL.length?'<ol>'+CL.map((j,k)=>'<li>'+(k===0?'<b>':'')+esc(j.pseudo)+(k===0?'</b>':'')+'</li>').join('')+'</ol>':'Personne encore au registre.'}</div>
+       <div class="gzv-bloc"><h3>Météo</h3>${METEO[Math.floor(graine(7)*METEO.length)]} ${temp}°C.</div>
+       <div class="gzv-bloc"><h3>Cours du poisson</h3>${cours.map(([n,a,f])=>'<div class="gzv-prix"><span>'+n+'</span><b>'+enEuros(Math.round(a*100)).replace(',00','')+' '+f+'</b></div>').join('')}</div>
+       <div class="gzv-bloc"><h3>Sur les quais</h3><b>${(G&&G.joueurs)||0}</b> habitants inscrits au registre du port.</div>
+     </div>
+     <div class="gzv-annonces"><h3>Petites annonces</h3>
+       <div class="gzv-pa">Le Bar des Docks rouvrira bientôt ses portes. Qu'on se le dise !</div>
+       <div class="gzv-pa">On recherche des volontaires pour la future forêt. S'adresser au Fumoir.</div></div>
+     <div class="gzv-fin">— Le Vieux-Port, le journal des quais —</div>
+   </div><div class="gzv-pied"><button class="gzv-fermer" id="gzFermer">Replier le journal</button></div></div>`;
   $('gzFermer').onclick=()=>{$('page2').classList.remove('on');};
 }
 function nuitComptoir(g,x,y){
