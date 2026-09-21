@@ -1574,7 +1574,7 @@ function semerDecorExtramar(){
     if(k===9){XCAL['x_presse0']=graverLaPresse();CALQUES_DECO['x_presse']=XCAL['x_presse0'];P('x_presse',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'presse'});continue;}   /* la maison de la presse */
     if(k===2){XCAL['x_facPeche0']=graverLaBoutiquePeche();CALQUES_DECO['x_facPeche']=XCAL['x_facPeche0'];P('x_facPeche',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'peche'});continue;}   /* Pêche & Marine */
     if(k===6){XCAL['x_facPoisson0']=graverLaPoissonnerie();CALQUES_DECO['x_facPoisson']=XCAL['x_facPoisson0'];P('x_facPoisson',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'poissonnerie'});continue;}   /* la poissonnerie */
-    if(k===3){XCAL['x_bar0']=graverLeBar();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ferme:'Le Bar des Docks'});
+    if(k===3){XCAL['x_bar0']=graverLeBar();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'bar'});
       XCAL['x_terr0']=graverTerrasse(1);CALQUES_DECO['x_terr']=XCAL['x_terr0'];P('x_terr',70+k*140,XP.maisonsY+46,{col:[4,2]});continue;}   /* le bar-tabac PMU et sa terrasse */   /* le bar-tabac */
     if(k===5){XCAL['x_peigne0']=graverLePeigne();CALQUES_DECO['x_peigne']=XCAL['x_peigne0'];P('x_peigne',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'salon'});continue;}   /* le salon de coiffure */
     if(k===7){XCAL['x_crousti0']=graverCroustiPort();CALQUES_DECO['x_crousti']=XCAL['x_crousti0'];P('x_crousti',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'crousti'});continue;}   /* le fast-food du quai */

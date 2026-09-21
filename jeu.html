@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-2129';
+  var MA_VERSION='2026-09-21-2135';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -7497,6 +7497,106 @@ function graverMoulinVillage(){const W=200,Ht=290,cx=W/2,sol=Ht-16;
   [[cx+TL/2+2],[cx+TL/2+10]].forEach(([x])=>{for(let k=0;k<7;k++){R(x+k*1.2,sol-26,1,18,'#c9a84e');R(x-0.5+k*1.2,sol-29,2,4,'#e0c46a');}R(x-1,sol-16,10,2,'#8a6238');});
   return {toile:c,W,H:Ht,sol,nuit:null};}
 
+/* ================= LE BAR DES DOCKS : les jeux à gratter « La Grattouille » =================
+   Trois tickets. Le serveur tire le ticket à l'achat et paie tout de suite ; ici, on gratte vraiment au doigt.
+   Le grattage est tracé en traits continus (tous les points du doigt, même entre deux images), avec un bord irrégulier
+   et une poussière argentée qui tombe ; la part grattée est mesurée sur un petit masque, sans ralentir le doigt.
+   À 70 %, la pellicule s'efface en fondu et les cases gagnantes s'allument. Vingt tickets par jour. */
+const TICKETS=[['poisson','Le Petit Poisson',100,['#1f8ab8','#5ac0e8'],'🐟',[['1 €','1 sur 7'],['2 €','1 sur 8'],['5 €','1 sur 33'],['20 €','1 sur 250'],['100 €','1 sur 3 333']]],
+  ['filet','Le Filet d’Or',300,['#b8862a','#f0cf6a'],'🎣',[['3 €','1 sur 8'],['6 €','1 sur 12'],['15 €','1 sur 33'],['50 €','1 sur 167'],['300 €','1 sur 2 000']]],
+  ['cargo','Le Gros Cargo',1000,['#b81e1e','#f0604a'],'🚢',[['10 €','1 sur 8'],['20 €','1 sur 12'],['50 €','1 sur 25'],['150 €','1 sur 100'],['500 €','1 sur 500']]]];
+async function ouvrirLeBar(){
+  $('page2Fond').className='';$('page2').classList.add('on');
+  const d0=await appelRPC('mes_grattages',{p_joueur:e.id});let faits=(d0&&typeof d0.aujourdhui==='number')?d0.aujourdhui:0;
+  const bulle=(t)=>{const b=$('barBulle');if(!b)return;b.textContent=t;b.classList.add('on');clearTimeout(bulle.t);bulle.t=setTimeout(()=>b.classList.remove('on'),2600);};
+  const rendre=()=>{
+    $('page2Fond').innerHTML=`<style>
+      #bar{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#2a1414;background-image:radial-gradient(rgba(255,255,255,.03) 1px,transparent 1px);background-size:6px 6px;color:#f4ecd8;font-family:Georgia,serif}
+      #bar .bar-h{flex:none;padding:calc(env(safe-area-inset-top,0px) + 12px) 110px 12px 16px;background:#6a1a1e;border-bottom:3px solid #d8b050;position:relative}
+      #bar .bar-h b{display:block;font:900 22px Georgia,serif;letter-spacing:1px}#bar .bar-h small{font:700 9px Arial,sans-serif;letter-spacing:3px;color:#f0d890}
+      #bar .bar-bourse{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 12px);text-align:right;font:700 9px Arial,sans-serif;letter-spacing:2px;color:#f0d890}#bar .bar-bourse b{display:block;font:900 15px Georgia,serif;letter-spacing:0;color:#fff}
+      #bar .bar-page{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;padding:14px 14px 10px}
+      #bar .bar-sec{font:700 10px Arial,sans-serif;letter-spacing:3px;color:#f0d890;margin:4px 2px 10px}
+      #bar .bar-tk{position:relative;border-radius:14px;padding:12px 12px 12px 58px;margin-bottom:12px;color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.35),0 8px 18px rgba(0,0,0,.3);overflow:hidden}
+      #bar .bar-tk:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.07) 0 8px,transparent 8px 16px)}
+      #bar .bar-tk .ic{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:22px}
+      #bar .bar-tk b{position:relative;display:block;font:900 17px Georgia,serif;padding-right:74px}#bar .bar-tk small{position:relative;display:block;font:italic 12px Georgia,serif;opacity:.95;margin:2px 0 7px}
+      #bar .bar-tk .gains{position:relative;display:flex;flex-wrap:wrap;gap:4px}#bar .bar-tk .gains span{background:rgba(0,0,0,.25);border-radius:6px;padding:2px 6px;font:11px Arial,sans-serif}
+      #bar .bar-tk button{position:absolute;right:12px;top:12px;border:0;border-radius:18px;padding:9px 14px;background:#fff;color:#3a1616;font:900 14px Arial,sans-serif;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+      #bar .bar-jour{border-radius:12px;background:rgba(255,255,255,.06);padding:10px 12px;font:13px Georgia,serif;line-height:1.4}#bar .bar-jour b{color:#f0d890}
+      #bar .bar-pied{flex:none;position:relative;padding:10px 14px calc(env(safe-area-inset-bottom,0px) + 12px);border-top:1px solid rgba(216,176,80,.4)}
+      #bar .bar-fermer{display:block;width:100%;border:0;border-radius:14px;padding:14px;font:700 15px Georgia,serif;background:#f4ecd8;color:#6a1a1e}
+      #bar .bar-bulle{position:absolute;left:14px;right:14px;bottom:calc(100% + 8px);background:#f0d890;color:#3a1616;border-radius:14px;padding:10px 12px;font:700 14px Georgia,serif;text-align:center;opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;pointer-events:none}
+      #bar .bar-bulle.on{opacity:1;transform:none}
+      /* le ticket en grand, à gratter */
+      #bar .gt{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(15,6,4,.86);padding:16px}
+      #bar .gt-carte{width:min(92vw,360px);border-radius:18px;padding:12px 12px 10px;color:#fff;text-align:center;position:relative;box-shadow:0 14px 36px rgba(0,0,0,.6);overflow:hidden}
+      #bar .gt-carte:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.08) 0 10px,transparent 10px 20px);pointer-events:none}
+      #bar .gt-titre{position:relative;font:900 20px Georgia,serif;letter-spacing:1px;text-shadow:0 2px 0 rgba(0,0,0,.25)}#bar .gt-regle{position:relative;font:italic 12px Georgia,serif;opacity:.95;margin-top:2px}
+      #bar .gt-zone{position:relative;margin:10px 0 6px;aspect-ratio:3/2;border-radius:12px;overflow:hidden;background:#fbf6ea;box-shadow:inset 0 0 0 3px rgba(255,255,255,.7)}
+      #bar .gt-cases{position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr)}
+      #bar .gt-cases div{display:flex;flex-direction:column;align-items:center;justify-content:center;font:900 24px Georgia,serif;color:#2a1a10;border:1px dashed rgba(0,0,0,.12)}#bar .gt-cases div i{font:600 9px Arial,sans-serif;font-style:normal;letter-spacing:1px;color:#8a7a6a}
+      #bar .gt-cases div.gagne{color:#c8281e;background:#fff3c0;animation:gtG .6s ease-in-out 3 alternate}@keyframes gtG{to{transform:scale(1.08);background:#ffe070}}
+      #bar .gt-zone canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;transition:opacity .45s}#bar .gt-zone canvas.parti{opacity:0}
+      #bar .gt-bas{position:relative;display:flex;justify-content:space-between;font:10px 'Courier New',monospace;opacity:.85}
+      #bar .gt-res{font:900 19px Georgia,serif;min-height:26px;color:#fff;text-align:center}#bar .gt-res span{color:#ffe070}
+      #bar .gt-ok{border:0;border-radius:20px;padding:12px 26px;background:#f4ecd8;color:#6a1a1e;font:900 15px Georgia,serif;visibility:hidden}</style>
+     <div id="bar" lang="fr"><div class="bar-h"><b>BAR DES DOCKS</b><small>BAR · TABAC · PMU</small><div class="bar-bourse">BOURSE<b>${enEuros(e.euros||0)}</b></div></div>
+       <div class="bar-page"><div class="bar-sec">LA GRATTOUILLE · TROIS MONTANTS IDENTIQUES = GAGNÉ</div>
+       ${TICKETS.map(([k,n,px,col,ic,gains])=>'<div class="bar-tk" style="background:linear-gradient(135deg,'+col[0]+','+col[1]+')"><span class="ic">'+ic+'</span><b>'+n+'</b><small>Le ticket à '+enEuros(px).replace(',00','')+'</small><div class="gains">'+gains.map(([g2,c])=>'<span>'+g2+' · '+c+'</span>').join('')+'</div><button data-t="'+k+'">'+enEuros(px).replace(',00','')+'</button></div>').join('')}
+       <div class="bar-jour"><b>${faits} / 20</b> tickets grattés aujourd'hui. Vingt par jour, pas plus : le jeu doit rester un plaisir. Remise à zéro à minuit.</div></div>
+       <div class="bar-pied"><div class="bar-bulle" id="barBulle"></div><button class="bar-fermer" id="barFermer">Ressortir sur le quai</button></div></div>`;
+    $('barFermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+    $('page2Fond').querySelectorAll('[data-t]').forEach(b=>b.onclick=async()=>{const T=TICKETS.find(x=>x[0]===b.dataset.t);
+      if(faits>=20){bulle('Vingt tickets aujourd’hui : reviens demain !');return;}
+      if((e.euros||0)<T[2]){bulle('Il te manque '+enEuros(T[2]-(e.euros||0)));return;}
+      b.disabled=true;const d=await appelRPC('gratter_ticket',{p_joueur:e.id,p_ticket:T[0]});b.disabled=false;
+      if(!d||d.erreur){bulle(d&&d.erreur==='limite'?'Vingt tickets aujourd’hui : reviens demain !':(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':(d&&d.erreur==='doucement'?'Un ticket à la fois !':'Le buraliste n’a pas pu')));return;}
+      faits++;gratter(T,d);});};
+  const gratter=(T,d)=>{const v=document.createElement('div');v.className='gt';const serie=('000000'+Math.floor(Math.random()*999999)).slice(-6);
+    v.innerHTML='<div class="gt-carte" style="background:linear-gradient(135deg,'+T[3][0]+','+T[3][1]+')"><div class="gt-titre">'+T[4]+' '+T[1]+'</div><div class="gt-regle">Gratte les six cases · trois montants identiques = gagné</div>'+
+      '<div class="gt-zone"><div class="gt-cases">'+d.grille.map(m=>'<div data-m="'+m+'">'+(m/100)+' €<i>'+(m>=10000?'JACKPOT':'')+'</i></div>').join('')+'</div><canvas></canvas></div>'+
+      '<div class="gt-bas"><span>N° '+serie+'-'+T[0].toUpperCase()+'</span><span>||| || ||| | ||||</span></div></div><div class="gt-res" id="gtRes"></div><button class="gt-ok" id="gtOk">Continuer</button>';
+    $('bar').appendChild(v);
+    const cv=v.querySelector('canvas'), z=v.querySelector('.gt-zone');const rr=z.getBoundingClientRect(), D=Math.min(3,devicePixelRatio||1);
+    cv.width=Math.round(rr.width*D);cv.height=Math.round(rr.height*D);const W=cv.width,H=cv.height;
+    const g=cv.getContext('2d');
+    /* LA PELLICULE : argent brossé, grain métallique, reflets, le motif imprimé et « GRATTE ICI » */
+    const gr=g.createLinearGradient(0,0,W,H);gr.addColorStop(0,'#aeb3bb');gr.addColorStop(.35,'#e6eaee');gr.addColorStop(.5,'#c4c9d0');gr.addColorStop(.7,'#eef1f4');gr.addColorStop(1,'#a2a7af');g.fillStyle=gr;g.fillRect(0,0,W,H);
+    for(let k=0;k<W*H/60;k++){g.fillStyle=Math.random()<.5?'rgba(255,255,255,.35)':'rgba(80,85,95,.18)';g.fillRect(Math.random()*W,Math.random()*H,D,D);}
+    for(let y=0;y<H;y+=3*D){g.fillStyle='rgba(255,255,255,.06)';g.fillRect(0,y,W,D);}
+    g.fillStyle='rgba(90,95,105,.35)';g.font='900 '+Math.round(11*D)+'px Arial';g.textAlign='center';g.textBaseline='middle';
+    for(let k=0;k<6;k++){const cx=(k%3+.5)*W/3, cy=(Math.floor(k/3)+.5)*H/2;g.fillText('GRATTE',cx,cy-7*D);g.fillText('ICI',cx,cy+7*D);g.strokeStyle='rgba(90,95,105,.25)';g.lineWidth=D;g.strokeRect(cx-W/6+6*D,cy-H/4+6*D,W/3-12*D,H/2-12*D);}
+    g.globalCompositeOperation='destination-out';g.lineCap='round';g.lineJoin='round';
+    /* le petit masque qui sert à mesurer la part grattée (50 × 34 points), tracé en même temps */
+    const MW=60,MH=40,m=document.createElement('canvas');m.width=MW;m.height=MH;const mg=m.getContext('2d');mg.fillStyle='#000';mg.fillRect(0,0,MW,MH);mg.strokeStyle='#fff';mg.lineCap='round';mg.lineJoin='round';
+    const RAYON=15*D;let fini=false, dernier=null, aFaire=[], poussiere=[];
+    const devoiler=()=>{if(fini)return;fini=true;cv.classList.add('parti');
+      const cases=[...v.querySelectorAll('.gt-cases div')];
+      if(d.gain>0){cases.filter(c=>+c.dataset.m===d.gain).forEach(c=>c.classList.add('gagne'));jouer('vente','moment');vibrer([30,50,30,50,90]);$('gtRes').innerHTML='Gagné ! <span>+'+enEuros(d.gain)+'</span>';}
+      else $('gtRes').innerHTML='Perdu… <i style="font-weight:400;font-size:15px">ce sera pour la prochaine</i>';
+      if(typeof d.euros==='number'){e.euros=d.euros;sauver();majHaut();}$('gtOk').style.visibility='visible';};
+    const mesurer=()=>{const px=mg.getImageData(0,0,MW,MH).data;let vu=0;for(let i=0;i<px.length;i+=4)if(px[i]>128)vu++;if(vu/(MW*MH)>=0.70)devoiler();};
+    /* le trait : chaque segment du doigt, bord légèrement irrégulier (trois passes décalées) */
+    const trait=(a,b)=>{for(let q=0;q<3;q++){g.lineWidth=RAYON*2*(0.82+q*0.09);g.beginPath();g.moveTo(a.x+(q-1)*D,a.y+(q-1)*D*0.6);g.lineTo(b.x+(q-1)*D*0.6,b.y-(q-1)*D);g.stroke();}
+      mg.lineWidth=RAYON*2*MW/W;mg.beginPath();mg.moveTo(a.x*MW/W,a.y*MH/H);mg.lineTo(b.x*MW/W,b.y*MH/H);mg.stroke();
+      if(Math.random()<0.6)poussiere.push({x:b.x/D,y:b.y/D,vx:(Math.random()-.5)*60,vy:-20-Math.random()*40,t:0});};
+    const point=(ev)=>{const r=cv.getBoundingClientRect();return {x:(ev.clientX-r.left)*D,y:(ev.clientY-r.top)*D};};
+    let raf=0, derniereMesure=0;
+    const boucle=(t)=>{raf=0;if(fini)return;for(const p of aFaire){if(dernier)trait(dernier,p);else trait(p,{x:p.x+.1,y:p.y+.1});dernier=p;}aFaire=[];
+      if(t-derniereMesure>120){derniereMesure=t;mesurer();}if(poussiere.length)dessinerPoussiere();};
+    /* la poussière argentée qui tombe du ticket */
+    const pc=document.createElement('canvas');pc.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none';z.appendChild(pc);pc.width=Math.round(rr.width);pc.height=Math.round(rr.height);const pg=pc.getContext('2d');
+    let tPrec=performance.now();const dessinerPoussiere=()=>{const n=performance.now(),dt=Math.min(.05,(n-tPrec)/1000);tPrec=n;pg.clearRect(0,0,pc.width,pc.height);
+      poussiere=poussiere.filter(p=>(p.t+=dt)<0.7);for(const p of poussiere){p.vy+=260*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;pg.fillStyle='rgba(200,205,212,'+(1-p.t/0.7).toFixed(2)+')';pg.fillRect(p.x,p.y,2,2);}
+      if(poussiere.length&&!raf)raf=requestAnimationFrame(boucle);};
+    const prendre=(ev)=>{const L=ev.getCoalescedEvents?ev.getCoalescedEvents():[ev];for(const x of (L.length?L:[ev]))aFaire.push(point(x));if(!raf)raf=requestAnimationFrame(boucle);};
+    cv.onpointerdown=(ev)=>{ev.preventDefault();cv.setPointerCapture(ev.pointerId);dernier=null;prendre(ev);vibrer(5);};
+    cv.onpointermove=(ev)=>{if(!cv.hasPointerCapture(ev.pointerId))return;prendre(ev);if(Math.random()<.08)vibrer(3);};
+    cv.onpointerup=cv.onpointercancel=()=>{dernier=null;requestAnimationFrame(()=>mesurer());};
+    $('gtOk').onclick=()=>{v.remove();rendre();};};
+  rendre();
+}
 /* ================= LA GAZETTE DU VIEUX-PORT =================
    Le journal du jeu : la une (écrite par l'auteur, sur le serveur), le classement, la météo et le cours du poisson du jour
    (ils changent chaque jour, les mêmes pour tout le monde), et les petites annonces. */
@@ -19187,6 +19287,7 @@ function majAction(){
   if(o.ouvre==='peche'){b.innerHTML='Pêche & Marine<small>CANNES, MOULINETS, APPÂTS</small>';b.classList.add('on');return;}
   if(o.ouvre==='salon'){b.innerHTML='Entrer au Hair Studio<small>COUPES ET COULEURS EXCLUSIVES</small>';b.classList.add('on');return;}
   if(o.ouvre==='presse'){b.innerHTML='Acheter la Gazette<small>PRESSE · JOURNAUX</small>';b.classList.add('on');return;}
+  if(o.ouvre==='bar'){b.innerHTML='Entrer au Bar des Docks<small>BAR · TABAC · JEUX À GRATTER</small>';b.classList.add('on');return;}
   if(o.ouvre==='crousti'){b.innerHTML='Entrer chez Crousti’Port<small>'+(REPU_FIN>Date.now()?'TU ES REPU · ENCORE '+Math.ceil((REPU_FIN-Date.now())/60000)+' MIN':'POULET FRIT · MENUS 1 À 12 €')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='skishop'){b.innerHTML='Entrer au Ski shop<small>TENUES DE MONTAGNE · DE 5 € À 2 500 €</small>';b.classList.add('on');return;}
   if(o.ouvre==='ecole'){b.innerHTML='L’École de ski<small>LEÇONS · MÉDAILLES · TABLEAU D’HONNEUR</small>';b.classList.add('on');return;}
@@ -19347,6 +19448,7 @@ function agir(){
   if(o.ouvre==='crousti'){ouvrirCrousti();return;}
   if(o.ouvre==='salon'){ouvrirLeSalon();return;}
   if(o.ouvre==='presse'){ouvrirLaGazette();return;}
+  if(o.ouvre==='bar'){ouvrirLeBar();return;}
   if(o.ouvre==='poissonnerie'){ouvrirLaCriee();return;}
   if(o.ouvre==='grainetier'){ouvrirLeGrainetier('outils');return;}
   if(o.ouvre==='fumoir'){ouvrirLeFumoir();return;}
