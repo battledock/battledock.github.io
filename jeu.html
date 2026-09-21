@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-1954';
+  var MA_VERSION='2026-09-21-2003';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -7486,6 +7486,45 @@ function graverMoulinVillage(){const W=200,Ht=290,cx=W/2,sol=Ht-16;
   [[cx+TL/2+2],[cx+TL/2+10]].forEach(([x])=>{for(let k=0;k<7;k++){R(x+k*1.2,sol-26,1,18,'#c9a84e');R(x-0.5+k*1.2,sol-29,2,4,'#e0c46a');}R(x-1,sol-16,10,2,'#8a6238');});
   return {toile:c,W,H:Ht,sol,nuit:null};}
 
+/* ================= LA GAZETTE DU VIEUX-PORT =================
+   Le journal du jeu : la une (écrite par l'auteur, sur le serveur), le classement, la météo et le cours du poisson du jour
+   (ils changent chaque jour, les mêmes pour tout le monde), et les petites annonces. */
+async function ouvrirLaGazette(){
+  const d=new Date(), jour=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const graine=(n)=>{const v=Math.sin((d.getFullYear()*400+d.getMonth()*32+d.getDate())*12.9898+n*78.233)*43758.5453;return v-Math.floor(v);};
+  const hier=(n)=>{const y=new Date(d.getTime()-864e5);const v=Math.sin((y.getFullYear()*400+y.getMonth()*32+y.getDate())*12.9898+n*78.233)*43758.5453;return v-Math.floor(v);};
+  const METEO=['☀️ Grand soleil sur le Vieux-Port. Mer belle.','🌤️ Soleil voilé, petite brise de mer.','💨 Mistral soutenu : les voiliers restent au port.','⛅ Quelques nuages, mer peu agitée.','🌦️ Averses passagères, puis éclaircies sur les quais.','☀️ Chaleur sur le quai, les cigales chantent.'];
+  const temp=22+Math.round(graine(9)*9);
+  const POISSONS=[['Sardine',0.4],['Rouget',2.1],['Dorade',4.5],['Loup de mer',6.8],['Thon rouge',24]];
+  const cours=POISSONS.map(([n,b],k)=>{const a=b*(0.85+graine(k)*0.3), h=b*(0.85+hier(k)*0.3);return [n,a,a>h*1.02?'▲':(a<h*0.98?'▼':'=')];});
+  $('page2Fond').className='';$('page2').classList.add('on');
+  $('page2Fond').innerHTML='<div style="position:absolute;inset:0;background:#e9e1cc;display:flex;align-items:center;justify-content:center;font:italic 15px Georgia;color:#231c14">On déplie le journal…</div>';
+  let G=null;try{G=await appelRPC('gazette',{});}catch(x){}
+  const CL=(G&&G.classement)||[];
+  $('page2Fond').innerHTML=`<style>
+    .gz{position:absolute;inset:0;overflow:auto;background:#e9e1cc;background-image:radial-gradient(rgba(120,100,60,.08) 1px,transparent 1px);background-size:5px 5px;color:#231c14;font-family:Georgia,serif;padding:calc(env(safe-area-inset-top,0px) + 18px) 16px 96px}
+    .gz .tete{text-align:center;border-bottom:3px double #231c14;padding-bottom:8px}.gz .tete small{display:flex;justify-content:space-between;font:italic 11px Georgia;border-bottom:1px solid #231c14;padding-bottom:4px;margin-bottom:6px}
+    .gz h1{font:900 30px 'Times New Roman',Georgia,serif;letter-spacing:1px;line-height:1}.gz .dev{font:italic 11px Georgia;margin-top:4px}
+    .gz .une{margin:12px 0;border-bottom:1px solid #231c14;padding-bottom:10px}.gz .une h2{font:900 21px 'Times New Roman',Georgia;line-height:1.1}.gz .une p{font:14px Georgia;line-height:1.45;margin-top:6px;text-align:justify}
+    .gz .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}.gz .bloc{border-top:2px solid #231c14;padding-top:6px}.gz .bloc h3{font:900 12px Georgia;letter-spacing:2px;margin-bottom:5px}
+    .gz .bloc p,.gz .bloc li{font:13px Georgia;line-height:1.4}.gz ol{padding-left:18px}.gz .prix{display:flex;justify-content:space-between;border-bottom:1px dotted #8a7a5a;font:13px Georgia;padding:2px 0}
+    .gz .gzpa{border:1px solid #231c14;padding:6px;margin-top:6px;font:italic 12px Georgia}
+    .gz .fermer{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);border:0;border-radius:14px;padding:14px;font:700 16px Georgia;background:#231c14;color:#e9e1cc}</style>
+   <div class="gz"><div class="tete"><small><span>N° ${Math.floor((d-new Date(2026,8,21))/864e5)+3}</span><span>${jour}</span><span>gratuit</span></small>
+     <h1>LA GAZETTE<br>DU VIEUX-PORT</h1><div class="dev">« Tout ce qui se dit sur les quais, et un peu plus »</div></div>
+   <div class="une"><h2>${(G&&G.titre)||'Le quai s’éveille'}</h2><p>${(G&&G.une)||'Les pêcheurs rentrent, le Fumoir fume, les mouettes veillent.'}</p></div>
+   <div class="cols">
+     <div class="bloc"><h3>LE CLASSEMENT</h3>${CL.length?'<ol>'+CL.map((j,k)=>'<li>'+(k===0?'<b>':'')+String(j.pseudo).replace(/[<>&]/g,'')+(k===0?'</b>':'')+'</li>').join('')+'</ol>':'<p>Personne encore au registre.</p>'}</div>
+     <div class="bloc"><h3>LA MÉTÉO</h3><p>${METEO[Math.floor(graine(7)*METEO.length)]} ${temp}°C.</p></div>
+     <div class="bloc"><h3>LE COURS DU POISSON</h3>${cours.map(([n,a,f])=>'<div class="prix"><span>'+n+'</span><b>'+enEuros(Math.round(a*100)).replace(',00','')+' '+f+'</b></div>').join('')}</div>
+     <div class="bloc"><h3>SUR LES QUAIS</h3><p><b>${(G&&G.joueurs)||0}</b> habitants inscrits au registre du port.</p></div>
+   </div>
+   <div class="bloc" style="margin-top:12px"><h3>PETITES ANNONCES</h3>
+     <div class="gzpa">Le Bar des Docks rouvrira bientôt ses portes. Qu'on se le dise !</div>
+     <div class="gzpa">On recherche des volontaires pour la future forêt. S'adresser au Fumoir.</div></div>
+   <button class="fermer" id="gzFermer">Replier le journal</button></div>`;
+  $('gzFermer').onclick=()=>{$('page2').classList.remove('on');};
+}
 function nuitComptoir(g,x,y){
   const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x+a),Math.round(y+b),w,h);};
   /* la raie de lumière au joint de la porte, comme dans le jeu */
@@ -19113,6 +19152,7 @@ function majAction(){
   if(o.ouvre==='poissonnerie'){b.innerHTML='Vendre ta pêche<small>LA POISSONNERIE</small>';b.classList.add('on');return;}
   if(o.ouvre==='peche'){b.innerHTML='Pêche & Marine<small>CANNES, MOULINETS, APPÂTS</small>';b.classList.add('on');return;}
   if(o.ouvre==='salon'){b.innerHTML='Entrer au Peigne d’Or<small>COUPES ET COULEURS EXCLUSIVES</small>';b.classList.add('on');return;}
+  if(o.ouvre==='presse'){b.innerHTML='Acheter la Gazette<small>PRESSE · JOURNAUX</small>';b.classList.add('on');return;}
   if(o.ouvre==='crousti'){b.innerHTML='Entrer chez Crousti’Port<small>'+(REPU_FIN>Date.now()?'TU ES REPU · ENCORE '+Math.ceil((REPU_FIN-Date.now())/60000)+' MIN':'POULET FRIT · MENUS DE 1 € À 12 €')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='skishop'){b.innerHTML='Entrer au Ski shop<small>TENUES DE MONTAGNE · DE 5 € À 2 500 €</small>';b.classList.add('on');return;}
   if(o.ouvre==='ecole'){b.innerHTML='L’École de ski<small>LEÇONS · MÉDAILLES · TABLEAU D’HONNEUR</small>';b.classList.add('on');return;}
@@ -19272,6 +19312,7 @@ function agir(){
   if(o.ouvre==='skishop'){ouvrirLeSkiShop();return;}
   if(o.ouvre==='crousti'){ouvrirCrousti();return;}
   if(o.ouvre==='salon'){ouvrirLeSalon();return;}
+  if(o.ouvre==='presse'){ouvrirLaGazette();return;}
   if(o.ouvre==='poissonnerie'){ouvrirLeComptoir(MODE_POISSON);return;}
   if(o.ouvre==='grainetier'){ouvrirLeGrainetier('outils');return;}
   if(o.ouvre==='fumoir'){ouvrirLeFumoir();return;}
