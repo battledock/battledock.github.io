@@ -22,7 +22,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-1559';
+  var MA_VERSION='2026-09-21-1607';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -613,8 +613,9 @@ function graver(){
   const D=DECORS[0];                                        /* le pré au couchant */
   const ZO=3;
   const W=Math.ceil(window.innerWidth/ZO), H=Math.ceil(window.innerHeight/ZO);
-  cv.width=W*2;cv.height=H*2;                                     /* PIXEL FIN : deux fois plus de points */
-  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(2,0,0,2,0,0);
+  const K=Math.max(2,Math.min(8,ZO*(window.devicePixelRatio||1)));   /* 4K : un point du tableau = K points de l'écran, en résolution native */
+  cv.width=Math.round(W*K);cv.height=Math.round(H*K);
+  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(K,0,0,K,0,0);
   let n=0;
   const R=(x,y,w,h2,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h2|0));n++;};
   const F=(x,y,w,h2,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(.5,w),Math.max(.5,h2));n++;};   /* au demi-pixel */
@@ -686,6 +687,9 @@ function graver(){
   for(let i=0;i<W*H*0.05;i++){const x=alea(i*1.37)*W, y=alea(i*2.71)*H, v=alea(i*4.13), h=1+Math.round(v*3)/2;
     F(x,y-h,.5,h,v<0.2?B[0]:(v<0.6?B[2]:B[3]));if(v>0.78)F(x,y-h-.5,.5,.5,D.lueur);}
   for(let i=0;i<W*H*0.03;i++){const x=alea(i*3.3+7)*W, y=alea(i*5.1+3)*H;F(x,y,.5,.5,alea(i)<0.7?'rgba(255,240,190,.25)':'rgba(40,50,20,.14)');}
+  /* LE GRAIN AU QUART DE POINT (4K) : micro-reflets et micro-ombres dans l'herbe */
+  const Q=(x,y,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*4)/4,Math.round(y*4)/4,.25,.25);};
+  for(let i=0;i<W*H*0.35;i++){const x=alea(i*1.91+5)*W, y=alea(i*3.37+9)*H, v=alea(i*5.53);Q(x,y,v<0.55?'rgba(255,244,200,.22)':(v<0.85?'rgba(30,40,15,.20)':'rgba(255,255,255,.28)'));}
   /* LES FLEURS, redessinées au demi-pixel : cinq pétales ombrés, le cœur, un reflet, la tige et ses feuilles */
   for(let my=0;my<H/MA+1;my++)for(let mx=0;mx<W/MA+1;mx++){
     if(lisse(mx/2.2,my/2.2)<0.46)continue;
@@ -700,6 +704,7 @@ function graver(){
       F(fx+1.5,fy+1,.5,.5,e[2]);F(fx+1,fy+1.5,.5,.5,e[2]);
       F(fx,fy,1,1,e[1]);F(fx,fy,.5,.5,'#fffbe8');                                                            /* le cœur et son reflet */
       F(fx-1,fy-1,.5,.5,D.lueur);F(fx-.5,fy-1.5,.5,.5,'rgba(255,255,255,.55)');                            /* la lumière rasante sur le bord */
+      Q(fx-.75,fy-.75,'rgba(255,255,255,.7)');Q(fx+.25,fy+.25,'rgba(255,250,220,.8)');Q(fx+1.5,fy+.5,'rgba(0,0,0,.18)');   /* 4K : la lumière sur les pétales */
     }
   }
   /* papillons le jour, lucioles la nuit */
@@ -730,7 +735,7 @@ function graver(){
   }
   PIX=n;
   /* le calque de ce qui bouge, à la même échelle */
-  vc.width=W*2;vc.height=H*2;
+  vc.width=Math.round(W*K);vc.height=Math.round(H*K);vc.__K=K;
   const gv=vc.getContext('2d');gv.imageSmoothingEnabled=false;
   preparerVie();POLLEN.length=0;
 }
@@ -743,7 +748,7 @@ const vc=$('vie'), vg=vc.getContext('2d');
 let anim=0, ZOV=3, VW2=0, VH2=0;
 const PAPS=[],GENS=[],GOUTTES=[],FEUILLES=[];
 function preparerVie(){
-  VW2=vc.width/2;VH2=vc.height/2;
+  VW2=vc.width/(vc.__K||2);VH2=vc.height/(vc.__K||2);
   PAPS.length=0;GENS.length=0;GOUTTES.length=0;FEUILLES.length=0;
   for(let i=0;i<9;i++)PAPS.push({x:alea(i*3.1)*VW2,y:alea(i*5.7)*VH2*0.8,
     a:alea(i*7.3)*6.28,v:9+alea(i*2.2)*10,t:alea(i)*6.28,
@@ -807,7 +812,7 @@ function dessinerLumiere(g,t,dt,avant){
 }
 function dessinerVie(t,dt){
   const g=vg;
-  g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
+  const K=vc.__K||2;g.setTransform(K,0,0,K,0,0);g.imageSmoothingEnabled=false;
   g.clearRect(0,0,VW2,VH2);
   const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,w,h);};
   if(!POLLEN.length)preparerLumiere();
