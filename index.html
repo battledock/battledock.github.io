@@ -22,7 +22,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-1513';
+  var MA_VERSION='2026-09-21-1535';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -289,7 +289,7 @@ document.addEventListener('touchmove',function(e){if(e.touches&&e.touches.length
 window.addEventListener('wheel',function(e){if(e.ctrlKey)e.preventDefault();},{passive:false});
 document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&['+','-','=','0'].indexOf(e.key)>=0)e.preventDefault();});})();</script>
 <meta name="theme-color" content="#0b110d">
-<title>Battle Dock 2</title>
+<title>Battle Dock 3</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;overflow:hidden;background:#12140f;color:#e8dcc0;
@@ -304,7 +304,10 @@ document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&['+',
   /* le 2 : plus petit, doré, posé en exposant contre le nom */
   h1 em{font-style:normal;font-size:23px;color:#f0cf7d;letter-spacing:0;
     margin-left:7px;vertical-align:8px;
-    text-shadow:0 2px 10px rgba(0,0,0,.95),0 0 14px rgba(240,207,125,.35)}
+    text-shadow:0 2px 10px rgba(0,0,0,.95),0 0 14px rgba(240,207,125,.35);
+    background:linear-gradient(100deg,#f0cf7d 30%,#fff6d8 48%,#f0cf7d 66%);background-size:260% 100%;
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:reflet 5.5s ease-in-out infinite}
+  @keyframes reflet{0%,55%{background-position:100% 0}85%,100%{background-position:0 0}}   /* un reflet doré passe sur le 3 */
   .filet{width:60px;height:1px;margin-bottom:16px;
     background:linear-gradient(90deg,rgba(255,255,255,.9),rgba(255,255,255,0))}
   .onglets{display:flex;gap:18px;margin-bottom:13px}
@@ -359,7 +362,7 @@ document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&['+',
 <div class="voile"></div>
 
 <div class="bloc" id="bloc">
-  <h1>Battle Dock<em>2</em></h1>
+  <h1>Battle Dock<em>3</em></h1>
   <div class="filet"></div>
 
   <div class="onglets">
@@ -596,6 +599,10 @@ const DECORS=[
   riviere:true, halo:'rgba(255,214,122,.18)', lueur:'#fbe8b0',
   mot:'Le même pré, mais la rivière le traverse en bas avec ses roseaux et ses '+
       'galets. On voit tout de suite les deux rives du jeu.'},
+ {nom:'4 · L’aube',
+  base:['#7c8d5a','#889a63','#91a36b','#a3b47d','#6e7e50'],
+  halo:'rgba(255,190,165,.30)', lueur:'#f6ead0', soleil:[0.16,0.04], aube:true,
+  mot:'Le pré au lever du jour : lumière rose et dorée venue de l’est, brume qui traîne, rosée qui brille.'},
  {nom:'3 · La nuit',
   base:['#2f3a2a','#36422f','#3b4834','#44523c','#28321f'],
   nuit:true, halo:'rgba(120,160,255,.10)', lueur:'#9fb8e8',
@@ -603,13 +610,14 @@ const DECORS=[
       'pâlissent, et des lucioles flottent. Le titre ressort beaucoup plus.'}
 ];
 function graver(){
-  const D=DECORS[0];
+  const D=DECORS[0];                                        /* le pré au couchant */
   const ZO=3;
   const W=Math.ceil(window.innerWidth/ZO), H=Math.ceil(window.innerHeight/ZO);
-  cv.width=W;cv.height=H;
-  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+  cv.width=W*2;cv.height=H*2;                                     /* PIXEL FIN : deux fois plus de points */
+  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(2,0,0,2,0,0);
   let n=0;
   const R=(x,y,w,h2,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h2|0));n++;};
+  const F=(x,y,w,h2,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(.5,w),Math.max(.5,h2));n++;};   /* au demi-pixel */
   const B=D.base;
   R(0,0,W,H,B[1]);
   for(let y=0;y<H;y+=2)for(let x=((y/2)%2?0:2);x<W;x+=4)R(x,y,2,2,B[2]);
@@ -655,9 +663,9 @@ function graver(){
       }
     }
   }
-  /* LES FLEURS, en massifs */
+  /* LES FLEURS, en massifs (dessinées plus bas, au demi-pixel) */
   const MA=26;
-  for(let my=0;my<H/MA+1;my++)for(let mx=0;mx<W/MA+1;mx++){
+  for(let my=0;my<0;my++)for(let mx=0;mx<W/MA+1;mx++){
     if(lisse(mx/2.2,my/2.2)<0.46)continue;
     const e=FL[Math.floor(alea(mx*7.1+my*3.3)*FL.length)];
     const nb=2+Math.floor(alea(mx*5.7+my*9.1)*4);
@@ -674,6 +682,26 @@ function graver(){
       R(fx-1,fy-1,1,1,D.lueur);
     }
   }
+  /* LA PASSE FINE : l'herbe brin par brin, au demi-pixel, avec sa pointe éclairée */
+  for(let i=0;i<W*H*0.05;i++){const x=alea(i*1.37)*W, y=alea(i*2.71)*H, v=alea(i*4.13), h=1+Math.round(v*3)/2;
+    F(x,y-h,.5,h,v<0.2?B[0]:(v<0.6?B[2]:B[3]));if(v>0.78)F(x,y-h-.5,.5,.5,D.lueur);}
+  for(let i=0;i<W*H*0.03;i++){const x=alea(i*3.3+7)*W, y=alea(i*5.1+3)*H;F(x,y,.5,.5,alea(i)<0.7?'rgba(255,240,190,.25)':'rgba(40,50,20,.14)');}
+  /* LES FLEURS, redessinées au demi-pixel : cinq pétales ombrés, le cœur, un reflet, la tige et ses feuilles */
+  for(let my=0;my<H/MA+1;my++)for(let mx=0;mx<W/MA+1;mx++){
+    if(lisse(mx/2.2,my/2.2)<0.46)continue;
+    const e=FL[Math.floor(alea(mx*7.1+my*3.3)*FL.length)];
+    const nb=2+Math.floor(alea(mx*5.7+my*9.1)*4);
+    for(let k=0;k<nb;k++){
+      const fx=Math.round(mx*MA+alea(mx*11+my*13+k*3)*MA), fy=Math.round(my*MA+alea(mx*17+my*19+k*5)*MA);
+      if(fx<2||fy<4||fx>W-3||fy>H-3)continue;
+      F(fx+.25,fy+1.5,.5,3.5,'#4f6a30');F(fx-.75,fy+3,1,.5,'#6f8a48');F(fx+.75,fy+2.5,1,.5,'#7d9a50');
+      F(fx-1,fy-1,3,3,e[0]);F(fx,fy-2,1,1,e[0]);F(fx,fy+2,1,1,e[2]);F(fx-2,fy,1,1,e[0]);F(fx+2,fy,1,1,e[2]);     /* les pétales, l'ombre en bas à droite */
+      if(e[3]){F(fx-1.5,fy-1.5,.5,.5,e[0]);F(fx+2,fy+1.5,.5,.5,e[2]);}
+      F(fx+1.5,fy+1,.5,.5,e[2]);F(fx+1,fy+1.5,.5,.5,e[2]);
+      F(fx,fy,1,1,e[1]);F(fx,fy,.5,.5,'#fffbe8');                                                            /* le cœur et son reflet */
+      F(fx-1,fy-1,.5,.5,D.lueur);F(fx-.5,fy-1.5,.5,.5,'rgba(255,255,255,.55)');                            /* la lumière rasante sur le bord */
+    }
+  }
   /* papillons le jour, lucioles la nuit */
   for(let i=0;i<9;i++){
     const px=Math.round(alea(i*13.1)*W), py=Math.round(alea(i*17.7)*H*0.7);
@@ -682,16 +710,29 @@ function graver(){
       R(px,py,2,2,c);R(px+3,py,2,2,c);R(px+2,py,1,2,'#4a3220');}
   }
   /* le halo de lumière */
-  const grd=g.createRadialGradient(W*0.74,H*0.12,10,W*0.74,H*0.12,H*0.95);
-  grd.addColorStop(0,D.halo);grd.addColorStop(0.5,'rgba(255,186,96,.08)');
+  const SX=W*((D.soleil||[0.74])[0]), SY=H*((D.soleil||[0,0.12])[1]);
+  const grd=g.createRadialGradient(SX,SY,10,SX,SY,H*0.95);
+  grd.addColorStop(0,D.halo);grd.addColorStop(0.5,D.aube?'rgba(255,200,150,.10)':'rgba(255,186,96,.08)');
   grd.addColorStop(1,'rgba(0,0,0,0)');
   g.fillStyle=grd;g.fillRect(0,0,W,H);
   if(D.nuit){g.fillStyle='rgba(20,30,60,.22)';g.fillRect(0,0,W,H);}
+  if(D.aube){
+    /* la fraîcheur du petit matin : un voile bleuté loin du soleil, rose près de lui */
+    const fr=g.createLinearGradient(0,0,W,H);fr.addColorStop(0,'rgba(255,175,150,.06)');fr.addColorStop(0.6,'rgba(150,170,210,.04)');fr.addColorStop(1,'rgba(90,110,160,.08)');
+    g.fillStyle=fr;g.fillRect(0,0,W,H);
+    /* le soleil qui se lève : une lueur d'or chaud, là-haut à gauche */
+    const lv=g.createRadialGradient(SX,SY,2,SX,SY,H*0.42);lv.addColorStop(0,'rgba(255,222,160,.30)');lv.addColorStop(0.4,'rgba(255,200,150,.12)');lv.addColorStop(1,'rgba(255,200,150,0)');
+    g.fillStyle=lv;g.fillRect(0,0,W,H);
+    /* la rosée : des gouttes qui accrochent la lumière, surtout du côté du soleil */
+    for(let i=0;i<W*H*0.004;i++){const x=alea(i*6.7+1)*W, y=alea(i*8.3+2)*H, pres=1-Math.min(1,Math.hypot(x-SX,y-SY)/(H*0.9));
+      if(alea(i*9.1)>0.2+pres*0.5)continue;F(x,y,.5,.5,'rgba(255,255,255,.7)');}
+    /* les fleurs encore à demi fermées ont une goutte au bord des pétales */
+  }
   PIX=n;
   /* le calque de ce qui bouge, à la même échelle */
-  vc.width=W;vc.height=H;
+  vc.width=W*2;vc.height=H*2;
   const gv=vc.getContext('2d');gv.imageSmoothingEnabled=false;
-  preparerVie();
+  preparerVie();POLLEN.length=0;
 }
 
 /* ================= CE QUI BOUGE PAR-DESSUS =================
@@ -702,7 +743,7 @@ const vc=$('vie'), vg=vc.getContext('2d');
 let anim=0, ZOV=3, VW2=0, VH2=0;
 const PAPS=[],GENS=[],GOUTTES=[],FEUILLES=[];
 function preparerVie(){
-  VW2=vc.width;VH2=vc.height;
+  VW2=vc.width/2;VH2=vc.height/2;
   PAPS.length=0;GENS.length=0;GOUTTES.length=0;FEUILLES.length=0;
   for(let i=0;i<9;i++)PAPS.push({x:alea(i*3.1)*VW2,y:alea(i*5.7)*VH2*0.8,
     a:alea(i*7.3)*6.28,v:9+alea(i*2.2)*10,t:alea(i)*6.28,
@@ -717,11 +758,60 @@ function preparerVie(){
     a:alea(i*8.9)*6.28,v:14+alea(i*2.1)*12,t:alea(i*3)*6.28,
     c:['#4a944a','#3d7d3f','#c9dd8a'][i%3]});
 }
+/* ================= LA LUMIÈRE ET LE VENT, EN PLUS =================
+   Des ombres de nuages glissent sur le pré, des rayons de soleil passent, le pollen danse dans la lumière,
+   les hautes herbes du premier plan ondulent, des pétales s'envolent, et parfois des oiseaux traversent. */
+const POLLEN=[],HERBES=[],PETALES=[],OISEAUX=[];
+const AUBE=false;                         /* l'aube existe (brume, rosée), mais on garde la lumière du couchant */
+function preparerLumiere(){POLLEN.length=HERBES.length=PETALES.length=OISEAUX.length=0;
+  for(let i=0;i<46;i++)POLLEN.push({x:alea(i*2.3)*VW2,y:alea(i*3.9)*VH2,v:3+alea(i*1.1)*5,t:alea(i*7.7)*6.28});
+  for(let i=0;i<34;i++)HERBES.push({x:alea(i*5.3)*VW2,y:VH2*(0.56+alea(i*2.7)*0.44),h:6+alea(i*3.1)*7,n:3+Math.floor(alea(i*4.9)*3),t:alea(i)*6.28,
+    c:['#5f7a3c','#6f8a48','#4f6a34'][i%3]});
+  for(let i=0;i<10;i++)PETALES.push({x:alea(i*6.1)*VW2,y:alea(i*8.3)*VH2,v:10+alea(i*2.9)*10,t:alea(i*3.3)*6.28,c:['#f2efe4','#e0a8c8','#e8cf4e','#d9584f'][i%4]});
+  for(let i=0;i<3;i++)OISEAUX.push({x:-30-i*14,y:VH2*(0.08+i*0.035),v:16,t:i*0.7,attente:6+i*0.5});}
+function dessinerLumiere(g,t,dt,avant){
+  const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,w,h);};
+  if(!avant){
+    /* les ombres des nuages, grandes et douces, qui glissent lentement */
+    for(let k=0;k<3;k++){const cx=((t*2.2+k*VW2*0.55)%(VW2*1.8))-VW2*0.4, cy=VH2*(0.2+k*0.28), r=VW2*(0.35+k*0.08);
+      const gr=g.createRadialGradient(cx,cy,r*0.2,cx,cy,r);gr.addColorStop(0,'rgba(30,40,20,.07)');gr.addColorStop(1,'rgba(30,40,20,0)');
+      g.fillStyle=gr;g.save();g.translate(cx,cy);g.scale(1.6,0.7);g.translate(-cx,-cy);g.beginPath();g.arc(cx,cy,r,0,7);g.fill();g.restore();}
+    /* les rayons du soleil couchant, qui respirent */
+    g.save();g.globalCompositeOperation='lighter';
+    for(let k=0;k<4;k++){const a=0.025+0.02*Math.sin(t*0.35+k*1.7);if(a<=0)continue;
+      g.fillStyle='rgba(255,214,140,'+a.toFixed(3)+')';const x0=VW2*(0.52+k*0.11);                  /* les rayons du couchant, depuis le halo */
+      g.beginPath();g.moveTo(x0,0);g.lineTo(x0+VW2*0.05,0);g.lineTo(x0-VW2*0.42,VH2);g.lineTo(x0-VW2*0.52,VH2);g.closePath();g.fill();}
+    g.restore();
+    /* la brume du matin : de longues nappes pâles qui dérivent lentement au ras du pré */
+    for(let k=0;k<(AUBE?5:0);k++){const y=VH2*(0.18+k*0.14)+Math.sin(t*0.15+k)*6, x=((t*(3+k)+k*VW2*0.4)%(VW2*1.6))-VW2*0.3, w=VW2*(0.5+alea(k)*0.4);
+      const gr=g.createRadialGradient(x,y,4,x,y,w*0.5);gr.addColorStop(0,'rgba(245,236,240,.10)');gr.addColorStop(1,'rgba(245,236,240,0)');
+      g.fillStyle=gr;g.save();g.translate(x,y);g.scale(1,0.18);g.translate(-x,-y);g.beginPath();g.arc(x,y,w*0.5,0,7);g.fill();g.restore();}
+    /* les oiseaux : un petit vol, de temps en temps, tout en haut */
+    OISEAUX.forEach(o=>{if(o.attente>0){o.attente-=dt;return;}o.x+=o.v*dt;o.t+=dt*7;const b=Math.sin(o.t)>0?1:0;
+      R(o.x,o.y,1,1,'#3a3326');R(o.x-2,o.y-b,2,1,'#3a3326');R(o.x+1,o.y-b,2,1,'#3a3326');
+      if(o.x>VW2+20){o.x=-20;o.attente=14+alea(t)*16;o.y=VH2*(0.06+alea(t*3)*0.1);}});
+    return;}
+  /* la rosée qui scintille, ici et là, quand le soleil l'accroche */
+  for(let k=0;k<(AUBE?26:0);k++){const x=alea(k*3.7)*VW2, y=alea(k*5.9)*VH2, ph=(t*0.7+alea(k*2.1)*6)%6;if(ph<0.35){const a=1-Math.abs(ph-0.17)/0.17;
+    R(x,y,.5,.5,'rgba(255,255,255,'+a.toFixed(2)+')');R(x-1,y,.5,.5,'rgba(255,240,230,'+(a*0.5).toFixed(2)+')');R(x+1,y,.5,.5,'rgba(255,240,230,'+(a*0.5).toFixed(2)+')');R(x,y-1,.5,.5,'rgba(255,240,230,'+(a*0.5).toFixed(2)+')');R(x,y+1,.5,.5,'rgba(255,240,230,'+(a*0.5).toFixed(2)+')');}}
+  /* le pollen, qui monte en tournoyant dans la lumière, et scintille */
+  POLLEN.forEach(p=>{p.t+=dt;p.y-=p.v*dt;p.x+=Math.sin(p.t*1.3)*6*dt+2*dt;if(p.y<-2){p.y=VH2+2;p.x=alea(p.t)*VW2;}
+    const s=Math.sin(p.t*3+p.x)>0.85;R(p.x,p.y,.5,.5,s?'rgba(255,248,220,.95)':'rgba(255,236,170,.6)');if(s)R(p.x-.5,p.y,1.5,.5,'rgba(255,248,220,.35)');});
+  /* les pétales emportés par le vent */
+  PETALES.forEach(p=>{p.t+=dt*3;p.x+=(p.v+Math.sin(p.t)*6)*dt;p.y+=Math.sin(p.t*0.8)*10*dt+3*dt;if(p.x>VW2+6){p.x=-6;p.y=alea(p.t)*VH2;}
+    R(p.x,p.y,Math.sin(p.t)>0?2:1,1,p.c);});
+  /* les hautes herbes du premier plan, qui ondulent sous la brise */
+  HERBES.forEach(h=>{const vent=Math.sin(t*1.6+h.x*0.05)*0.6+Math.sin(t*0.7+h.t)*0.4;
+    for(let b=0;b<h.n;b++){const bx=h.x+b*1.5-h.n*0.7, hh=h.h-(b%2)*2;
+      for(let k=0;k<hh;k+=.5){const off=Math.round(vent*(k/hh)*(k/hh)*6)/2;R(bx+off,h.y-k,.5,.5,k>hh-1.5?'#a8b46e':h.c);}}});
+}
 function dessinerVie(t,dt){
   const g=vg;
-  g.setTransform(1,0,0,1,0,0);
+  g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
   g.clearRect(0,0,VW2,VH2);
-  const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,w,h);};
+  const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,w,h);};
+  if(!POLLEN.length)preparerLumiere();
+  dessinerLumiere(g,t,dt,false);
   dessinerCompagnon(g,t,dt);
   /* --- LE VENT : les feuilles volent, les papillons traversent --- */
   FEUILLES.forEach(f=>{
@@ -741,6 +831,7 @@ function dessinerVie(t,dt){
     const o=Math.sin(p.t)>0?1:0;             /* les ailes battent */
     R(p.x,p.y,2,2,p.c);R(p.x+3,p.y-o,2,2,p.c);R(p.x+2,p.y,1,2,'#4a3220');
   });
+  dessinerLumiere(g,t,dt,true);
 }
 
 /* ---- le petit compagnon : un seul, discret, qui traverse l'écran ----
