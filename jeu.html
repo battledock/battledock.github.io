@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-1621';
+  var MA_VERSION='2026-09-21-1632';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -10768,22 +10768,18 @@ function construireSolFin(solBase){
   const c=document.createElement('canvas');c.width=W*2;c.height=H*2;
   const g=c.getContext('2d');const img=g.createImageData(W*2,H*2), d=img.data;
   const h=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177;return ((n^(n>>>16))>>>0)/4294967296;};
-  const genre=(r,gg,b)=>{
-    if(b>gg+12&&b>r+20)return 'eau';
-    if(gg>r+8&&gg>b+14)return 'herbe';
-    if(Math.abs(r-gg)<12&&Math.abs(gg-b)<14&&r>70)return 'pierre';
-    if(r>gg&&gg>b&&r>150&&r-b>40)return 'terre';                /* la terre des chemins, claire (le bois reste à part) */
-    return 'autre';};
+  /* la matière de chaque pixel, en nombre (1 eau, 2 herbe, 3 pierre, 4 terre, 0 autre) : pas de texte ni d'objet par pixel */
+  const genre=(r,gg,b)=>(b>gg+12&&b>r+20)?1:((gg>r+8&&gg>b+14)?2:((Math.abs(r-gg)<12&&Math.abs(gg-b)<14&&r>70)?3:((r>gg&&gg>b&&r>150&&r-b>40)?4:0)));
+  const AMP=[2,2,7,3,7];
   const pose=(x,y,r,gg,b)=>{if(x<0||y<0||x>=W*2||y>=H*2)return;const i=(y*W*2+x)*4;d[i]=r;d[i+1]=gg;d[i+2]=b;d[i+3]=255;};
   const clamp=(v)=>v<0?0:(v>255?255:v);
   /* 1 · chaque pixel devient quatre, avec un léger grain propre à sa matière */
   const G=new Uint8Array(W*H);
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){
     const i=(y*W+x)*4, r=src[i], gg=src[i+1], b=src[i+2];
-    const t=genre(r,gg,b);G[y*W+x]={eau:1,herbe:2,pierre:3,terre:4,autre:0}[t];
-    const amp=t==='herbe'?7:(t==='terre'?7:(t==='pierre'?3:(t==='eau'?2:2)));
-    for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){const k=(h(x*2+dx,y*2+dy,1)-0.5)*amp;
-      pose(x*2+dx,y*2+dy,clamp(r+k),clamp(gg+k),clamp(b+k*0.7));}
+    const t=genre(r,gg,b);G[y*W+x]=t;const amp=AMP[t];
+    for(let dy=0;dy<2;dy++){const o=((y*2+dy)*W*2+x*2)*4;for(let dx=0;dx<2;dx++){const k=(h(x*2+dx,y*2+dy,1)-0.5)*amp, q=o+dx*4;
+      d[q]=clamp(r+k);d[q+1]=clamp(gg+k);d[q+2]=clamp(b+k*0.7);d[q+3]=255;}}
   }
   /* 2 · les détails de chaque matière, au demi-pixel */
   for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
@@ -10814,7 +10810,22 @@ function construireSolFin(solBase){
 }
 
 /* le sol, et sa version fine quand le pixel fin est actif */
+/* LE SOL EN CACHE : construire le sol d'une carte prend du temps (des centaines de milliers de points).
+   Une fois construit, on le range dans le téléphone (IndexedDB, en arrière-plan) ; aux lancements suivants, on le
+   ressort directement au lieu de tout repeindre. La clé contient la version du jeu : une mise à jour le reconstruit. */
+const SOL_CACHE={pret:false,sol:null,fin:null};
+const cleSol=()=>'sol:'+(typeof MA_VERSION!=='undefined'?MA_VERSION:'?')+':'+CARTE+':'+MONDE_L+'x'+MONDE_H;
+function baseSol(){return new Promise((ok,ko)=>{try{const r=indexedDB.open('bdl-sol',1);r.onupgradeneeded=()=>r.result.createObjectStore('s');r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error);}catch(x){ko(x);}});}
+async function chargerSolCache(){try{const db=await baseSol();const v=await new Promise(ok=>{const q=db.transaction('s').objectStore('s').get(cleSol());q.onsuccess=()=>ok(q.result);q.onerror=()=>ok(null);});
+  if(!v||!v.sol)return;const toile=async(b)=>{if(!b)return null;const im=await createImageBitmap(b);const c=document.createElement('canvas');c.width=im.width;c.height=im.height;c.getContext('2d').drawImage(im,0,0);return c;};
+  SOL_CACHE.sol=await toile(v.sol);SOL_CACHE.fin=await toile(v.fin);SOL_CACHE.pret=!!SOL_CACHE.sol;}catch(x){}}
+function rangerSolCache(){try{if(!SOL||CARTE_MOD)return;const cle=cleSol(), fin=SOL_FIN;
+  SOL.toBlob(async(b1)=>{const b2=fin?await new Promise(ok=>fin.toBlob(ok)):null;try{const db=await baseSol();const tx=db.transaction('s','readwrite');const st=tx.objectStore('s');
+    st.clear();st.put({sol:b1,fin:b2},cle);}catch(x){}});}catch(x){}}
+const SOL_CACHE_PROMESSE=(CARTE_MOD?Promise.resolve():chargerSolCache());
 function refaireLeSol(){
+  if(!CARTE_MOD&&SOL_CACHE.pret){SOL=SOL_CACHE.sol;SOL_FIN=SOL_CACHE.fin;SOL_CACHE.pret=false;return SOL;}     /* déjà construit lors d'un lancement précédent */
+  setTimeout(rangerSolCache,4000);                                                                              /* on le range, sans ralentir le jeu */
   if(CARTE_MOD){SOL_FIN=SAUMASKI.solFin();SOL=document.createElement('canvas');SOL.width=MONDE_L;SOL.height=MONDE_H;
     const g=SOL.getContext('2d');g.drawImage(SOL_FIN,0,0,MONDE_L,MONDE_H);return SOL;}   /* à Saumaski, le sol fin est dessiné tel quel */
   SOL=construireSol();SOL_FIN=null;try{if(FIN_OK())SOL_FIN=construireSolFin(SOL);}catch(x){SOL_FIN=null;}
@@ -11697,7 +11708,14 @@ function peindreLaFermeFin(g){
   g.save();g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
   const ondu=(x)=>Math.sin(x/90)*5+Math.sin(x/37)*2;
   const laboure=(CH)=>{
-    for(let y=CH.y0;y<CH.y1;y+=5){
+    TEX(g,CH.x0,CH.y0,CH.x1-CH.x0,CH.y1-CH.y0,(lx,ly)=>{const x=CH.x0+lx,y=CH.y0+ly,o=ondu(x);
+      const bordX=Math.min(1,Math.min(x-CH.x0,CH.x1-x)/18), bordY=Math.min(1,Math.min(y-CH.y0,CH.y1-y)/16), dedans=Math.min(bordX,bordY);if(dedans<=0)return 0;
+      const n=alea(x*3.3+Math.floor((y-o)/5)*5*5.9);if(n>0.25+dedans*0.75)return 0;
+      const rel=(((y-CH.y0-o+2.5)%5)+5)%5;
+      return rel<1?'#a08a62':(rel<2.5?(n<0.5?'#8d7550':'#96795a'):(rel<4?'#6f5b3d':(rel<4.5?'#7d6746':0)));});
+    for(let k=0;k<(CH.x1-CH.x0)*(CH.y1-CH.y0)*0.004;k++){const x=CH.x0+alea(k*1.7)*(CH.x1-CH.x0), y=CH.y0+alea(k*2.9)*(CH.y1-CH.y0), n=alea(k*4.3);
+      if(n<0.6)R(x,y-3,1,0.5,'#b49a70');else{R(x,y-1,1,0.5,'rgba(60,50,30,.35)');R(x,y-2,1,1,'#9aa0a6');R(x,y-2,1,0.5,'#bcc4ca');}}
+    if(false)for(let y=CH.y0;y<CH.y1;y+=5){
       for(let x=CH.x0;x<CH.x1;x+=0.5){
         const yy=y+ondu(x)+alea(x*0.7+y)*0.5;
         const bordX=Math.min(1,Math.min(x-CH.x0,CH.x1-x)/18), bordY=Math.min(1,Math.min(yy-CH.y0,CH.y1-yy)/16);
@@ -21840,7 +21858,9 @@ async function verifierLaCarte(){
   if(vraie!==CARTE){e.carte=vraie;e.ext=null;try{sauver();}catch(x){}
     location.replace(vraie==='extramar'?'jeu.html?carte=extramar':(vraie==='montagne'?'jeu.html?carte=montagne':(vraie==='sommet'?'jeu.html?carte=sommet':(vraie==='piscine'?'jeu.html?carte=piscine':(vraie==='stade'?'jeu.html?carte=stade':'jeu.html')))));}
 }
-function entrer(){
+async function entrer(){
+  /* le sol en cache : on attend qu'il soit sorti du téléphone (au plus 0,9 s) avant de construire le monde */
+  try{await Promise.race([SOL_CACHE_PROMESSE,new Promise(r=>setTimeout(r,900))]);}catch(x){}
   /* on note la version et le navigateur de chacun : c'est ce qui permet de comprendre un souci chez un joueur */
   setTimeout(()=>{try{if(e&&e.id)appelRPC('signaler_version',{p_joueur:e.id,p_version:window.MA_VERSION||'?',p_nav:(navigator.userAgent||'').slice(0,240)});}catch(x){}},4000);
   verifierLaCarte();
@@ -21981,14 +22001,21 @@ function feuille(g,cx,cy,long,larg,ang,pal){const ca=Math.cos(ang), sa=Math.sin(
 const VERT=['#2f5a2e','#3f7a3a','#56994a','#8cc46a'], VERTC=['#3a6a34','#4f8a42','#6aae56','#a4d880'];
 const TERRE_P=['#6a5236','#7a6040','#89704c','#a48c64'];
 /* une parcelle de terre : herbe, bêchée (claire), ou arrosée (sombre et luisante) */
+/* TEX : remplit une zone au demi-point en écrivant directement les pixels (ImageData), puis la pose d'un coup.
+   Des centaines de milliers de petits rectangles deviennent une seule image : le monde se construit beaucoup plus vite. */
+const TEX_COUL={};
+const texCoul=(c)=>{let v=TEX_COUL[c];if(v!==undefined)return v;const r=parseInt(c.slice(1,3),16),gg=parseInt(c.slice(3,5),16),b=parseInt(c.slice(5,7),16);v=((255<<24)|(b<<16)|(gg<<8)|r)>>>0;TEX_COUL[c]=v;return v;};
+function TEX(g,x0,y0,w,h,f){const W2=Math.max(1,Math.round(w*2)),H2=Math.max(1,Math.round(h*2));const c=document.createElement('canvas');c.width=W2;c.height=H2;
+  const q=c.getContext('2d'),im=q.createImageData(W2,H2),d=new Uint32Array(im.data.buffer);
+  for(let j=0;j<H2;j++){const yy=j/2;for(let i=0;i<W2;i++){const col=f(i/2,yy);if(col)d[j*W2+i]=texCoul(col);}}
+  q.putImageData(im,0,0);const lisse=g.imageSmoothingEnabled;g.imageSmoothingEnabled=false;g.drawImage(c,x0,y0,W2/2,H2/2);g.imageSmoothingEnabled=lisse;}
 function parcelle(g,x,y,W,H,etat){
   const R=(a,b,w,hh,c)=>PX(g,a,b,w,hh,c);
-  if(etat==='herbe'){for(let yy=0;yy<H;yy+=0.5)for(let xx=0;xx<W;xx+=0.5){const n=alea(xx*3.1+yy*7.3+x);R(x+xx,y+yy,0.5,0.5,n<0.5?'#8fa464':'#889d5e');}
+  if(etat==='herbe'){TEX(g,x,y,W,H,(xx,yy)=>alea(xx*3.1+yy*7.3+x)<0.5?'#8fa464':'#889d5e');
     for(let k=0;k<20;k++){const a=x+alea(k*2.1+x)*W, b=y+2+alea(k*3.7)*(H-2);R(a,b-2,0.5,2,'#70844b');R(a,b-2.5,0.5,0.5,'#9cb072');}return;}
   const arr=etat==='arrosee';
   R(x-0.5,y-0.5,W+1,H+1.5,arr?'#3d2e1c':'#6a5538');
-  for(let yy=0;yy<H;yy+=0.5)for(let xx=0;xx<W;xx+=0.5){const n=alea(xx*5.1+yy*9.7+x*0.3);
-    R(x+xx,y+yy,0.5,0.5,arr?(n<0.35?'#4a3824':(n<0.7?'#55412a':'#604b31')):(n<0.35?TERRE_P[1]:(n<0.7?TERRE_P[2]:'#95805b')));}
+  TEX(g,x,y,W,H,(xx,yy)=>{const n=alea(xx*5.1+yy*9.7+x*0.3);return arr?(n<0.35?'#4a3824':(n<0.7?'#55412a':'#604b31')):(n<0.35?TERRE_P[1]:(n<0.7?TERRE_P[2]:'#95805b'));});
   for(let r=0;r<2;r++){const yy=y+H*(0.3+r*0.42);for(let xx=0;xx<W;xx+=0.5){R(x+xx,yy,0.5,0.5,arr?'#35281a':TERRE_P[0]);R(x+xx,yy-0.5,0.5,0.5,arr?'#6e5638':TERRE_P[3]);}}
   if(arr)for(let k=0;k<9;k++){const a=x+1+alea(k*4.3+x)*(W-2), b=y+1+alea(k*6.1)*(H-2);R(a,b,1,0.5,'rgba(170,215,240,.6)');R(a+0.5,b-0.5,0.5,0.5,'rgba(230,245,255,.7)');}
 }
@@ -22167,7 +22194,7 @@ function potProche(){if(CARTE!=='village')return null;for(let i=0;i<24;i++){cons
 /* LE CHAMP GRAVÉ : allées de paille, chaque parcelle dans son état ; regravé seulement quand ça change */
 function potGraver(){const Z=POT_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0, D=2, c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');
   g.setTransform(D,0,0,D,-Z.x0*D,-Z.y0*D);g.imageSmoothingEnabled=false;
-  for(let y=Z.y0;y<Z.y1;y+=0.5)for(let x=Z.x0;x<Z.x1;x+=0.5){const n=alea(x*2.3+y*3.1);PX(g,x,y,0.5,0.5,n<0.3?'#b8a476':(n<0.7?'#c8b688':'#d4c498'));}
+  TEX(g,Z.x0,Z.y0,Z.x1-Z.x0,Z.y1-Z.y0,(x,y)=>{const n=alea((x+Z.x0)*2.3+(y+Z.y0)*3.1);return n<0.3?'#b8a476':(n<0.7?'#c8b688':'#d4c498');});
   for(let k=0;k<900;k++){const x=Z.x0+alea(k*1.3)*(Z.x1-Z.x0), y=Z.y0+alea(k*2.9)*(Z.y1-Z.y0);PX(g,x,y,1.5,0.5,alea(k)<0.5?'#a89060':'#e0d0a8');}
   for(let i=0;i<24;i++){const {x,y,PW,PH}=POT_XY(i), P=POT.parc[i], bechee=P&&P.etat==='bechee';
     if(!bechee){parcelle(g,x,y,PW,PH,'bechee');
@@ -22409,9 +22436,9 @@ function poulPeupler(){const Z=POUL_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0, n=POUL.p?POUL
 function poulGraverFond(){const Z=POUL_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0, E=2, c=document.createElement('canvas');c.width=W*E;c.height=H*E;const g=c.getContext('2d');
   g.imageSmoothingEnabled=false;g.setTransform(E,0,0,E,0,0);
   const ex0=6,ey0=Math.min(46,H*0.34),ex1=W-6,ey1=H-6;
-  for(let y=ey0;y<ey1;y+=0.5)for(let x=ex0;x<ex1;x+=0.5){const n=alea(x*4.1+y*5.3);
-    const bord=Math.min(x-ex0,ex1-x,y-ey0,ey1-y);if(bord<3&&n>0.5)continue;                                  /* les bords se fondent dans l'herbe */
-    PQL(g,x,y,0.5,0.5,n<0.35?'#a08a62':(n<0.7?'#b09a70':(n<0.9?'#8fa464':'#98805b')));}
+  TEX(g,ex0,ey0,ex1-ex0,ey1-ey0,(xx,yy)=>{const x=xx+ex0,y=yy+ey0,n=alea(x*4.1+y*5.3);
+    const bord=Math.min(x-ex0,ex1-x,y-ey0,ey1-y);if(bord<3&&n>0.5)return 0;                                     /* les bords se fondent dans l'herbe */
+    return n<0.35?'#a08a62':(n<0.7?'#b09a70':(n<0.9?'#8fa464':'#98805b'));});
   for(let k=0;k<90;k++){const x=ex0+alea(k*2.1)*(ex1-ex0), y=ey0+alea(k*3.7)*(ey1-ey0);PQL(g,x,y,1,0.5,'#e8d8a0');}
   g.drawImage(graverPoulailler(),ex0+2,ey0-44,70,66);
   PQL(g,W-24,ey0+18,14,4,'#7d5934');PQL(g,W-24,ey0+18,14,1,'#96703f');for(let k=0;k<5;k++)PQL(g,W-23+k*2.6,ey0+17.5,1.5,1,'#e0c46a');
@@ -22627,7 +22654,7 @@ const COUR={x0:1256,x1:1866,y0:226,y1:392};
 /* le sol de la cour : terre battue et gravier clair, bordé d'une rangée de pierres, avec l'usure des passages */
 function graverSolCour(){const W=COUR.x1-COUR.x0, H=COUR.y1-COUR.y0, E=2, c=document.createElement('canvas');c.width=W*E;c.height=H*E;const g=c.getContext('2d');
   g.imageSmoothingEnabled=false;g.setTransform(E,0,0,E,0,0);const R=(x,y,w,h,col)=>PZ(g,x,y,w,h,col);
-  for(let y=0;y<H;y+=0.5)for(let x=0;x<W;x+=0.5){const n=alea(x*3.7+y*5.3);R(x,y,0.5,0.5,n<0.3?'#c9b48a':(n<0.65?'#d4c098':(n<0.9?'#bea878':'#dccaa4')));}
+  TEX(g,0,0,W,H,(x,y)=>{const n=alea(x*3.7+y*5.3);return n<0.3?'#c9b48a':(n<0.65?'#d4c098':(n<0.9?'#bea878':'#dccaa4'));});
   for(let k=0;k<2600;k++){const x=alea(k*1.9)*W, y=alea(k*3.1)*H, n=alea(k*4.7);R(x,y,n<0.5?1:0.5,0.5,n<0.3?'#a8987a':(n<0.7?'#e8dcc0':'#b8a888'));
     if(n>0.96){R(x,y+0.5,1.5,0.5,'rgba(60,50,30,.25)');R(x,y-0.5,1.5,1,'#9aa0a6');}}
   /* les passages plus tassés : du village vers chaque bâtiment */
