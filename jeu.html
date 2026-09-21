@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-1936';
+  var MA_VERSION='2026-09-21-1940';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -22876,8 +22876,8 @@ dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
    On marche jusqu'au bout du chemin : on part pour le lieu (la forêt arrive bientôt). */
 const SORTIES=[
   {nom:'LA FORÊT',      cote:'g', y:268, col:'#4f7d42', vers:null},
-  {nom:'LE VIEUX-PORT', cote:'d', y:268, col:'#2a6ab0', vers:'jeu.html?carte=extramar', carte:'extramar'},
-  {nom:'LA MONTAGNE',   cote:'b', x:960, col:'#7a8aa8', vers:'jeu.html?carte=montagne', carte:'montagne'},
+  {nom:'LE VIEUX-PORT', cote:'d', y:268, col:'#2a6ab0', vers:'jeu.html?carte=extramar', carte:'extramar', ligne:'port'},
+  {nom:'LA MONTAGNE',   cote:'b', x:960, col:'#7a8aa8', vers:'jeu.html?carte=montagne', carte:'montagne', ligne:'montagne'},
   {nom:'LA MINE',       cote:'h', x:960, col:'#8a7050', vers:'mine.html'}];
 function poteauSortie(nom,col,sens){
   /* on mesure le texte pour que la planche soit exactement à sa taille */
@@ -22934,9 +22934,14 @@ setInterval(()=>{if(!PLACE_SEULE||CARTE!=='village'||PARTI||typeof joueur==='und
   const k=(joueur.x<x0+26&&Math.abs(joueur.y-268)<12)?0:(joueur.x>x1-26&&Math.abs(joueur.y-268)<12)?1:(joueur.y>y1-16&&Math.abs(joueur.x-960)<12)?2:(joueur.y<y0+22&&Math.abs(joueur.x-960)<12)?3:-1;
   if(k<0)return;const S=SORTIES[k];
   if(!S.vers){texteVolant(joueur.x,joueur.y-50,'La forêt arrive bientôt…','#ffe8a0');joueur.x+=(k===0?24:0);return;}
-  PARTI=true;try{if(S.carte)e.carte=S.carte;sauver();}catch(x){}
-  texteVolant(joueur.x,joueur.y-50,'En route : '+S.nom.toLowerCase().replace(/^./,m=>m.toUpperCase()),'#ffe070');
-  setTimeout(()=>{location.href=S.vers;},450);},200);
+  PARTI=true;
+  /* LE SERVEUR TIENT LA CARTE : on le prévient d'abord (comme le métro), sinon l'autre lieu nous renverrait ici, en boucle */
+  (async()=>{if(S.ligne){const d=await appelRPC('ticket_metro',{p_joueur:e.id,p_de:'village',p_vers:S.ligne});
+      if(!d||d.erreur){PARTI=false;texteVolant(joueur.x,joueur.y-50,d&&d.erreur==='ferme'?'Ce chemin ouvre bientôt…':'Réessaie dans un instant','#ffe8a0');
+        joueur.x+=(S.cote==='d'?-24:0);joueur.y+=(S.cote==='b'?-24:(S.cote==='h'?24:0));return;}}
+    try{if(S.carte){e.carte=S.carte;e.ext=null;}sauver();envoyerSauvegarde&&envoyerSauvegarde(true);}catch(x){}
+    texteVolant(joueur.x,joueur.y-50,'En route : '+S.nom.toLowerCase().replace(/^./,m=>m.toUpperCase()),'#ffe070');
+    setTimeout(()=>{location.href=S.vers;},450);})();},200);
 
 /* LA LISIÈRE DE LA PLACE : gravée une fois, posée à chaque image autour des bornes */
 let LISIERE_PLACE=null;
