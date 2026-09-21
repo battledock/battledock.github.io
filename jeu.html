@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-2025';
+  var MA_VERSION='2026-09-21-2037';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -19183,7 +19183,7 @@ function majAction(){
   if(o.ouvre==='grainetier'){b.innerHTML='Entrer au Grainetier<small>OUTILS · GRAINES · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
   if(o.ouvre==='fumoir'){b.innerHTML='Entrer au fumoir<small>TON POISSON VAUT 2,5× PLUS · 30 MIN</small>';b.classList.add('on');return;}
   if(o.ouvre==='poste'){b.innerHTML='Entrer à la poste<small>'+(COURRIER_N?COURRIER_N+' LETTRE'+(COURRIER_N>1?'S':'')+' T’ATTEND'+(COURRIER_N>1?'ENT':''):'ÉCRIRE · RELEVER SON COURRIER')+'</small>';b.classList.add('on');return;}
-  if(o.ouvre==='poissonnerie'){b.innerHTML='Vendre ta pêche<small>LA POISSONNERIE</small>';b.classList.add('on');return;}
+  if(o.ouvre==='poissonnerie'){b.innerHTML='Vendre ta pêche<small>LA CRIÉE · POISSONNERIE</small>';b.classList.add('on');return;}
   if(o.ouvre==='peche'){b.innerHTML='Pêche & Marine<small>CANNES, MOULINETS, APPÂTS</small>';b.classList.add('on');return;}
   if(o.ouvre==='salon'){b.innerHTML='Entrer au Peigne d’Or<small>COUPES ET COULEURS EXCLUSIVES</small>';b.classList.add('on');return;}
   if(o.ouvre==='presse'){b.innerHTML='Acheter la Gazette<small>PRESSE · JOURNAUX</small>';b.classList.add('on');return;}
@@ -19347,7 +19347,7 @@ function agir(){
   if(o.ouvre==='crousti'){ouvrirCrousti();return;}
   if(o.ouvre==='salon'){ouvrirLeSalon();return;}
   if(o.ouvre==='presse'){ouvrirLaGazette();return;}
-  if(o.ouvre==='poissonnerie'){ouvrirLeComptoir(MODE_POISSON);return;}
+  if(o.ouvre==='poissonnerie'){ouvrirLaCriee();return;}
   if(o.ouvre==='grainetier'){ouvrirLeGrainetier('outils');return;}
   if(o.ouvre==='fumoir'){ouvrirLeFumoir();return;}
   if(o.ouvre==='poste'){ouvrirLaPoste();return;}
@@ -21412,6 +21412,73 @@ const PRIX_POISSON={sardine:5,bogue:4,girelle:6,rouget:10,mulet:10,saupe:12,seic
 const MODE_POISSON={nom:'La poissonnerie',mot:'« Montre-moi ta pêche, petit. »',
   prix:PRIX_POISSON,rpc:'vendre_poisson',ap:{veste:0,cheveux:3,chapeau:1},
   vide:'<div class="cptVide">Pas un poisson dans ton sac.<br>Va lancer ta ligne au bout des pontons.</div>'};
+/* ================= LA CRIÉE : on vend sa pêche =================
+   Le style de la façade : bois bleu marine, or, glace pilée. Chaque poisson du sac est posé sur l'étal, avec son prix
+   à l'ardoise ; on choisit combien on en vend, le total s'affiche sur le ticket de pesée, et un seul bouton vend tout.
+   La page défile dans son propre cadre, le ticket et le bouton restent en bas, les messages au-dessus. */
+let CRI_VENTE={}, CRI_EN_COURS=false;
+function ouvrirLaCriee(){CPT=MODE_POISSON;CRI_VENTE={};$('page2Fond').className='';$('page2').classList.add('on');
+  $('page2Fond').innerHTML=`<style>
+    #cri{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#10263c;color:#f4ecd8;font-family:Georgia,serif}
+    #cri .cri-tete{flex:none;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 12px;background:repeating-linear-gradient(90deg,#1f3a5a 0 5px,#1a3350 5px 6px,#24466a 6px 11px);border-bottom:3px solid #d8b050;position:relative}
+    #cri .cri-tete h2{margin:0;font:900 26px Georgia,serif;color:#f0d890;letter-spacing:3px;text-shadow:0 2px 0 #0a1a2a}
+    #cri .cri-tete i{display:block;font:italic 13px Georgia,serif;color:#dfe8f0;margin-top:3px}
+    #cri .cri-bourse{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 12px);text-align:right;font:700 9px Arial,sans-serif;letter-spacing:2px;color:#c8d4e0}
+    #cri .cri-bourse b{display:block;font:900 16px Georgia,serif;letter-spacing:0;color:#f0d890}
+    #cri .cri-store{flex:none;height:12px;background:repeating-linear-gradient(90deg,#2d6fb0 0 16px,#fff 16px 32px);-webkit-mask:radial-gradient(circle at 8px 12px,transparent 0,transparent 0) ;position:relative}
+    #cri .cri-store:after{content:'';position:absolute;left:0;right:0;top:12px;height:6px;background:radial-gradient(circle at 8px 0,#2d6fb0 7.5px,transparent 8px) 0 0/32px 6px repeat-x,radial-gradient(circle at 24px 0,#fff 7.5px,transparent 8px) 0 0/32px 6px repeat-x}
+    #cri .cri-page{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;padding:18px 12px 12px}
+    #cri .cri-lg{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:8px 10px;border-radius:12px;background:linear-gradient(180deg,#eef6fa,#d8e8f0);color:#1a2a3a;box-shadow:0 3px 0 #8a6238;min-width:0}
+    #cri .cri-lg.off{opacity:.55}
+    #cri .cri-ic{flex:none;width:44px;height:44px;border-radius:10px;background:radial-gradient(circle at 30% 30%,#ffffff,#cfe4ee);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px #b8d0dc}
+    #cri .cri-nm{flex:1;min-width:0}#cri .cri-nm b{display:block;font:700 15px Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #cri .cri-ardoise{display:inline-block;margin-top:3px;padding:2px 6px;border-radius:4px;background:#2e3a34;color:#f4f0e0;font:700 11px 'Comic Sans MS','Segoe Print',cursive}
+    #cri .cri-dans{font:italic 11px Georgia,serif;color:#5a6a78;margin-left:4px}
+    #cri .cri-qt{flex:none;display:flex;align-items:center;gap:4px}
+    #cri .cri-qt button{width:30px;height:30px;border:0;border-radius:50%;background:#1f3a5a;color:#f0d890;font:900 17px Arial,sans-serif;line-height:1;padding:0}
+    #cri .cri-qt span{min-width:22px;text-align:center;font:900 15px Arial,sans-serif}
+    #cri .cri-vide{margin:40px 10px;text-align:center;font:italic 16px Georgia,serif;color:#c8d4e0;line-height:1.5}
+    #cri .cri-pied{flex:none;position:relative;background:#0c1e30;border-top:2px solid #d8b050;padding:10px 14px calc(env(safe-area-inset-bottom,0px) + 12px)}
+    #cri .cri-ticket{display:flex;justify-content:space-between;align-items:baseline;gap:8px;background:#f4ecd8;color:#2a1f14;border-radius:8px;padding:8px 12px;font:12px 'Courier New',monospace;margin-bottom:10px;
+      -webkit-mask:radial-gradient(circle at 0 50%,transparent 5px,#000 5.5px) left/51% 100% no-repeat,radial-gradient(circle at 100% 50%,transparent 5px,#000 5.5px) right/51% 100% no-repeat}
+    #cri .cri-ticket b{font:900 20px Georgia,serif}
+    #cri .cri-btns{display:flex;gap:10px}
+    #cri .cri-vendre{flex:1;border:0;border-radius:14px;padding:14px;font:900 16px Georgia,serif;background:linear-gradient(180deg,#f0d890,#d8b050);color:#1a2a3a;box-shadow:0 4px 0 #8a6a28}
+    #cri .cri-vendre.rien{background:#4a5a6a;color:#a8b4c0;box-shadow:0 4px 0 #2a3a4a}
+    #cri .cri-fermer{flex:none;border:0;border-radius:14px;padding:14px 16px;font:700 15px Georgia,serif;background:#1f3a5a;color:#f4ecd8}
+    #cri .cri-bulle{position:absolute;left:14px;right:14px;bottom:calc(100% + 8px);background:#f0d890;color:#1a2a3a;border-radius:14px;padding:10px 12px;font:700 14px Georgia,serif;text-align:center;opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;pointer-events:none}
+    #cri .cri-bulle.on{opacity:1;transform:none}
+    #cri .cri-vendu{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%) rotate(-12deg) scale(.4);opacity:0;font:900 44px Georgia,serif;color:#c8402a;border:5px solid #c8402a;border-radius:10px;padding:4px 18px;pointer-events:none;z-index:4}
+    #cri .cri-vendu.on{animation:criV 1.3s ease-out}@keyframes criV{0%{opacity:0;transform:translate(-50%,-50%) rotate(-12deg) scale(2)}20%{opacity:1;transform:translate(-50%,-50%) rotate(-12deg) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) rotate(-12deg) scale(1)}}</style>
+   <div id="cri" lang="fr"><div class="cri-tete"><h2>LA CRIÉE</h2><i>« Montre-moi ta pêche, petit. »</i><div class="cri-bourse">TA BOURSE<b id="criArgent">—</b></div></div><div class="cri-store"></div>
+     <div class="cri-page" id="criCorps"></div>
+     <div class="cri-pied"><div class="cri-bulle" id="criBulle"></div>
+       <div class="cri-ticket"><span id="criCombien">—</span><b id="criTotal">0 €</b></div>
+       <div class="cri-btns"><button class="cri-fermer" id="criFermer">Sortir</button><button class="cri-vendre" id="criVendre">Vendre</button></div></div>
+     <div class="cri-vendu" id="criVendu">VENDU</div></div>`;
+  $('criFermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+  $('criVendre').onclick=criVendre;criMaj();}
+function criBulle(t){const b=$('criBulle');if(!b)return;b.textContent=t;b.classList.add('on');clearTimeout(criBulle.t);criBulle.t=setTimeout(()=>b.classList.remove('on'),2600);}
+function criMaj(){if(!$('criCorps'))return;SAC_PEUT_BAISSER=Date.now();
+  const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&PRIX_POISSON[k]).sort((a,b)=>PRIX_POISSON[b]*e.sac[b]-PRIX_POISSON[a]*e.sac[a]);
+  const n=(k)=>(k in CRI_VENTE)?CRI_VENTE[k]:e.sac[k];
+  $('criCorps').innerHTML=ks.length?ks.map(k=>'<div class="cri-lg '+(n(k)>0?'':'off')+'" data-k="'+k+'"><span class="cri-ic"><svg viewBox="0 0 16 16" width="34">'+(ICONES[k]||'')+'</svg></span>'+
+    '<span class="cri-nm"><b>'+(OBJETS[k]?OBJETS[k].nom:k)+'</b><span class="cri-ardoise">'+cptSou(PRIX_POISSON[k])+' pièce</span><span class="cri-dans">· '+e.sac[k]+' dans le sac</span></span>'+
+    '<span class="cri-qt"><button data-m="-1">−</button><span>'+n(k)+'</span><button data-m="1">+</button></span></div>').join('')
+    :'<div class="cri-vide">Pas un poisson dans ton sac.<br>Va lancer ta ligne au bout des pontons.</div>';
+  $('criCorps').querySelectorAll('.cri-lg').forEach(el=>{const k=el.dataset.k;el.onclick=(ev)=>{const b=ev.target.closest('[data-m]');
+    if(b)CRI_VENTE[k]=Math.max(0,Math.min(e.sac[k],n(k)+(+b.dataset.m)));else CRI_VENTE[k]=n(k)>0?0:e.sac[k];vibrer(15);criMaj();};});
+  const total=ks.reduce((t,k)=>t+PRIX_POISSON[k]*n(k),0), nb=ks.reduce((t,k)=>t+n(k),0);
+  $('criCombien').textContent=nb+' poisson'+(nb>1?'s':'')+' sur l’étal';$('criTotal').textContent=cptSou(total);$('criArgent').textContent=enEuros(e.euros||0);
+  const v=$('criVendre');v.classList.toggle('rien',total===0);v.textContent=total?('Vendre · '+cptSou(total)):'Rien à vendre';}
+async function criVendre(){const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&PRIX_POISSON[k]);const n=(k)=>(k in CRI_VENTE)?CRI_VENTE[k]:e.sac[k];
+  if(!ks.reduce((t,k)=>t+PRIX_POISSON[k]*n(k),0)||CRI_EN_COURS)return;CRI_EN_COURS=true;const v=$('criVendre');v.textContent='…';v.classList.add('rien');let gagne=0;
+  for(const k of ks){const q=n(k);if(!q)continue;SAC_PEUT_BAISSER=Date.now();const d=await appelRPC('vendre_poisson',{p_joueur:e.id,p_type:k,p_nb:q});
+    if(d&&d.erreur==='plafond'){criBulle('Le marchand refuse : tu lui as déjà trop vendu.');break;}if(!d||d.erreur)continue;
+    gagne+=d.gain||0;if(typeof d.euros==='number')e.euros=d.euros;if(d.sac)adopterSac({sac:d.sac},++numAppelSac);}
+  CRI_EN_COURS=false;CRI_VENTE={};sauver();majHaut();majPastille();
+  if(gagne){jouer('vente','moment');vibrer([30,50,30]);const s=$('criVendu');if(s){s.classList.remove('on');void s.offsetWidth;s.classList.add('on');}criBulle('Et voilà '+cptSou(gagne)+' ! Belle pêche.');}
+  else criBulle('La vente n’a pas pu se faire. Réessaie.');criMaj();}
 let CPT=MODE_COMPTOIR;
 function ouvrirLeComptoir(mode){
   CPT=mode||MODE_COMPTOIR;

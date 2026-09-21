@@ -1379,20 +1379,27 @@ function graverLaPoste(){return devanture(4,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
   g.strokeStyle='#1d4f8a';g.lineWidth=1.4;g.beginPath();g.arc(cx,yR-3,4.5,0.4,Math.PI*1.6);g.stroke();g.beginPath();g.moveTo(cx+3.5,yR-6);g.lineTo(cx+8,yR-8);g.stroke();
   if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,215,150,.42)');l.addColorStop(1,'rgba(255,215,150,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}});}
 /* LA POISSONNERIE, en façade : faïence bleue et blanche, le store rayé, l'étal de glace pilée et ses poissons */
+function poissonPx(g,x,y,c1,c2,sens){sens=sens||1;g.fillStyle=c1;g.beginPath();g.ellipse(x,y,4.4,1.7,0,0,7);g.fill();g.fillStyle=c2;g.fillRect(x-3,y-1.2,6,0.8);
+  g.fillStyle=c1;g.beginPath();g.moveTo(x-4*sens,y);g.lineTo(x-6.5*sens,y-2.2);g.lineTo(x-6.5*sens,y+2.2);g.fill();g.fillStyle='#1a1a1a';g.fillRect(x+2.6*sens-0.4,y-0.6,0.8,0.8);}
+const PX_P=[['#8aa0b0','#c8d4dc'],['#c86a4a','#e89a7a'],['#6a8aa0','#a8c0d0'],['#d8b060','#f0d890'],['#b04a3a','#e07a5a']];
+/* A · LA CRIÉE : bois bleu marine, store rayé, étal de glace pilée dehors, ardoise des prix, filets et lanternes */
 function graverLaPoissonnerie(){return devanture(1,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
-  R(x0,yR,BL,rez,'#f4f8fa');for(let y=yR;y<sol;y+=4)for(let x=x0;x<x0+BL;x+=4)if(((x-x0)/4+(y-yR)/4)%2<1)R(x,y,4,4,'#dcecf4');
-  R(x0,sol-6,BL,6,'#1d4f8a');
-  R(x0+8,yR+10,BL-16,rez-18,nuit?'#ffe8c0':'#2a3a44');
-  /* l'étal : la glace pilée et les poissons alignés */
-  R(x0+6,sol-14,BL-12,8,'#e8f4fa');R(x0+6,sol-14,BL-12,1,'#ffffff');
-  const P=[['#8aa0b0','#c8d4dc'],['#c86a4a','#e89a7a'],['#6a8aa0','#a8c0d0'],['#d8b060','#f0d890']];
-  for(let k=0;k<11;k++){const x=x0+10+k*11.5, c=P[k%4];g.fillStyle=c[0];g.beginPath();g.ellipse(x+4,sol-10,4.2,1.6,0,0,7);g.fill();g.fillStyle=c[1];g.fillRect(x+1,sol-11,5,0.8);
-    g.fillStyle=c[0];g.beginPath();g.moveTo(x-0.5,sol-10);g.lineTo(x-2.5,sol-12);g.lineTo(x-2.5,sol-8);g.fill();g.fillStyle='#1a1a1a';g.fillRect(x+6.5,sol-10.5,0.8,0.8);}
-  R(x0+6,sol-15,6,2,'#3f9e7a');R(x0+BL-12,sol-15,6,2,'#3f9e7a');                                                              /* le persil */
-  for(let k=0;k<BL;k+=8){R(x0+k,yR+1,8,7,(k/8)%2?'#ffffff':'#2d6fb0');g.fillStyle=(k/8)%2?'#ffffff':'#2d6fb0';g.beginPath();g.arc(x0+k+4,yR+8,4,0,Math.PI);g.fill();}
-  const ey=yR-15;R(x0+14,ey,BL-28,12,'#1d4f8a');R(x0+15,ey+1,BL-30,10,'#2d6fb0');
-  g.font='900 7.4px Georgia';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('LA POISSONNERIE',cx+6,ey+8.4,BL-50);g.textAlign='left';
-  const fx=x0+26, fy=ey+6;g.fillStyle='#f0d890';g.beginPath();g.ellipse(fx,fy,6,2.6,0,0,7);g.fill();g.beginPath();g.moveTo(fx-5,fy);g.lineTo(fx-9,fy-3);g.lineTo(fx-9,fy+3);g.fill();g.fillStyle='#1d4f8a';g.fillRect(fx+3,fy-1,1,1);
+  R(x0,yR,BL,rez,'#1f3a5a');for(let x=x0;x<x0+BL;x+=6){R(x,yR,1,rez,'#16304c');R(x+1,yR,1,rez,'#28486a');}R(x0,yR,BL,1.5,'#d8b050');R(x0,sol-3,BL,3,'#12263c');
+  R(x0+8,yR+12,BL-16,rez-26,nuit?'#ffe6b0':'#223040');for(let k=0;k<6;k++)poissonPx(g,x0+22+k*19,yR+20,PX_P[k%5][0],PX_P[k%5][1]);   /* les poissons suspendus en vitrine */
+  R(cx-9,yR+8,18,rez-8,'#12263c');R(cx-8,yR+9,16,rez-10,nuit?'#ffe8b8':'#2a3a4c');R(cx+4,sol-14,1.5,3,'#d8b050');
+  /* l'étal dehors : les caisses de bois, la glace pilée, les poissons en rang, les citrons */
+  [[x0+4],[x0+BL-50]].forEach(([x])=>{R(x,sol-12,46,10,'#8a6238');R(x,sol-12,46,1.5,'#a8804a');R(x+1,sol-15,44,4,'#e8f4fa');R(x+1,sol-15,44,1,'#ffffff');
+    for(let k=0;k<5;k++)poissonPx(g,x+6+k*8.6,sol-13.5,PX_P[(k+1)%5][0],PX_P[(k+1)%5][1],k%2?1:-1);R(x+40,sol-16,3,3,'#f0d040');});
+  /* le store rayé bleu et blanc, festonné */
+  for(let k=0;k<BL;k+=8){R(x0+k,yR+1,8,8,(k/8)%2?'#ffffff':'#2d6fb0');g.fillStyle=(k/8)%2?'#ffffff':'#2d6fb0';g.beginPath();g.arc(x0+k+4,yR+9,4,0,Math.PI);g.fill();}
+  /* l'ardoise des prix, le filet et ses flotteurs */
+  R(x0+BL-18,yR+14,14,16,'#5b3f21');R(x0+BL-17,yR+15,12,14,'#2e3a34');for(let k=0;k<4;k++)R(x0+BL-15,yR+17+k*3,8,.7,'#f4f0e0');
+  g.strokeStyle='rgba(220,200,160,.8)';g.lineWidth=.5;for(let k=0;k<5;k++){g.beginPath();g.moveTo(x0+4+k*3,yR+10);g.lineTo(x0+4+k*3,yR+28);g.stroke();g.beginPath();g.moveTo(x0+2,yR+12+k*4);g.lineTo(x0+18,yR+12+k*4);g.stroke();}
+  R(x0+6,yR+26,3,3,'#e8402a');R(x0+13,yR+27,3,3,'#e8402a');
+  /* l'enseigne dorée sur bois, avec le poisson */
+  const ey=yR-16;R(x0+10,ey,BL-20,13,'#d8b050');R(x0+11,ey+1,BL-22,11,'#1f3a5a');
+  g.font='700 8px Georgia,serif';g.textAlign='center';g.fillStyle=nuit?'#fff0c0':'#f0d890';g.fillText('LA CRIÉE',cx+8,ey+9,BL-50);g.textAlign='left';poissonPx(g,x0+30,ey+6.5,'#f0d890','#fff0c0');
+  [[x0+2],[x0+BL-4]].forEach(([x])=>{R(x,ey+2,2,6,'#3a3a40');R(x-1,ey+8,4,5,'#3a3a40');R(x-.5,ey+8.5,3,4,nuit?'#ffe080':'#c8b070');});
   if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,220,160,.45)');l.addColorStop(1,'rgba(255,220,160,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}});}
 /* LA MAISON DE LA PRESSE, en façade sur le quai : vert bouteille à filets d'or, la vitrine aux journaux et aux
    magazines en éventail, le présentoir de quotidiens devant la porte, l'enseigne « PRESSE · JOURNAUX ». */
