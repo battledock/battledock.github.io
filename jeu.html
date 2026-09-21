@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-1304';
+  var MA_VERSION='2026-09-21-1320';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -10646,7 +10646,7 @@ function dessinerSouche(g,x,y,gr,neuf){
 /* LA RIVE EST RÉTRÉCIT : 806 de large au lieu de 1166. Cinq bâtiments dans
    1166 de large donnaient un pré avec des maisons dedans ; resserrés, ils
    font un village. Le grand vide, ce sera le DEHORS, plus tard. */
-const MONDE_L=CARTE==='garde'?640:(CARTE==='montagne'?360:(CARTE==='sommet'||CARTE==='piscine'?320:(CARTE==='stade'?760:1400)));               // largeur, en pixels de jeu
+const MONDE_L=CARTE==='garde'?640:(CARTE==='montagne'?360:(CARTE==='sommet'||CARTE==='piscine'?320:(CARTE==='stade'?760:(CARTE==='village'?1600:1400))));   /* au village, la ferme s'étend à droite */               // largeur, en pixels de jeu
 /* La carte gagne 160 points au sud pour accueillir la VOIE FERRÉE : elle
    traverse tout l'écran et sort des deux côtés, avec son remblai, et elle
    ferme le monde par le bas — qui s'arrêtait jusqu'ici sur une lisière sans
@@ -11713,7 +11713,8 @@ const FERME={
   cheminY:300, cheminX0:1246, cloture:1392,
   champ:null,                                    /* (le champ de l'est est retiré) */
   champ2:{x0:742,x1:1238,y0:400,y1:548}};       /* le second champ, juste sous la place du village */
-const dansLaFerme=(x,y)=>y!==undefined&&x>FERME.champ2.x0-12&&x<FERME.champ2.x1+12&&y>FERME.champ2.y0-12&&y<FERME.champ2.y1+12;   /* le champ reste net */
+const dansLaFerme=(x,y)=>y!==undefined&&((x>FERME.champ2.x0-12&&x<FERME.champ2.x1+12&&y>FERME.champ2.y0-12&&y<FERME.champ2.y1+12)
+  ||(x>FERME.champ2.x1&&x<1560&&y>372&&y<560)||(Math.abs(x-1330)<70&&Math.abs(y-310)<60));   /* le champ, le poulailler et le Grainetier restent nets */
 const PORTE_H=30;                                            /* la hauteur du passage dans la clôture */
 /* les calques de la ferme */
 function graverFerme(t){
@@ -11893,7 +11894,7 @@ function graverFerme(t){
 function semerLaFerme(){
   /* LE GRAINETIER, à droite du champ : on achète ses outils, on loue ses parcelles */
   const C=graverGrainetier();XCAL['x_fe_grain0']={toile:C,W:116,H:104,sol:92,nuit:null};CALQUES_DECO['x_fe_grain']=XCAL['x_fe_grain0'];
-  return [{t:'x_fe_grain',x:1298,y:476,v:0,bati:true,demi:46,ouvre:'grainetier'}];
+  return [{t:'x_fe_grain',x:1330,y:338,v:0,bati:true,demi:46,ouvre:'grainetier'}];      /* le Grainetier, juste à droite de la place */
   const L=[];const P=(t,x,y,o)=>L.push(Object.assign({t:'x_fe_'+t,x,y,v:0},o||{}));void P;
   return L;}
 
@@ -22186,6 +22187,180 @@ async function ouvrirLeGrainetier(onglet){onglet=onglet||'graines';
 setTimeout(()=>potCharger(),2500);
 setInterval(()=>{if(CARTE==='village'&&POT.charge){try{if(potProche()!==null)majAction();}catch(x){}}},1000);
 setInterval(()=>{if(CARTE==='village'&&document.visibilityState==='visible')potCharger();},120000);
+
+
+const PQL=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
+/* le poulailler : planches, toit de tuiles du village, trappe et petite échelle, nichoirs sur le côté */
+function graverPoulailler(){const T=TEINTES[1], W=70,H=66,cx=W/2,sol=H-8, B={bois:'#7d5934',boisC:'#96703f',boisO:'#5b3f21',boisS:'#3d2a17'};
+  return toileH(W,H,({R,g})=>{
+    g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(cx+2,sol+2,28,7,0,0,7);g.fill();
+    [[-22],[18]].forEach(([k])=>R(cx+k,sol-8,4,8,B.boisO));                                   /* sur pilotis */
+    R(cx-24,sol-34,48,26,B.bois);for(let x=cx-24;x<cx+24;x+=6){const q=(x*7)%3;R(x,sol-34,6,26,q===0?B.bois:(q===1?B.boisC:'#6b4a28'));R(x+5,sol-34,1,26,B.boisO);}
+    R(cx-24,sol-34,48,2,B.boisC);R(cx-24,sol-10,48,2,B.boisO);
+    tuilesH(R,cx-28,sol-34,56,4,8,T);
+    R(cx-6,sol-24,12,14,B.boisS);R(cx-5,sol-23,10,13,'#2a1f16');R(cx-5,sol-23,10,1,'#4a3a2a');   /* la trappe */
+    for(let k=0;k<4;k++)R(cx-3,sol-8+k*2,6,0.8,B.boisC);R(cx-4,sol-10,1,10,B.boisO);R(cx+3,sol-10,1,10,B.boisO);   /* la petite échelle */
+    R(cx+24,sol-26,10,14,B.bois);R(cx+24,sol-26,10,1.5,B.boisC);R(cx+26,sol-23,6,4,'#2a1f16');R(cx+26,sol-18,6,4,'#2a1f16');   /* les nichoirs */
+    R(cx+27,sol-21,2,1,'#e8c890');R(cx+28,sol-16,2,1,'#e8c890');
+    R(cx-20,sol-30,8,6,'#2a1f16');R(cx-19,sol-29,6,4,'#4a3a2a');R(cx-16.5,sol-29,1,4,B.bois);   /* la lucarne */
+    /* la girouette au coq */
+    R(cx-1,sol-54,1,10,'#5a5f64');g.fillStyle='#3a3a40';g.beginPath();g.moveTo(cx-5,sol-54);g.lineTo(cx+5,sol-56);g.lineTo(cx+2,sol-51);g.closePath();g.fill();
+  });}
+/* une poule, vue de profil : 3 poses (debout, picore, assise) ; blanche, rousse ou noire ; le coq en plus grand */
+const ROBES={blanche:['#f4f0e6','#ffffff','#d8d0c0'],rousse:['#b8642a','#d8843a','#8a4418'],noire:['#2a2a30','#4a4a54','#18181c'],coq:['#c8541a','#e8841a','#1f5a3a']};
+function poule(g,x,y,robe,pose,dir,coq,pas){const C=ROBES[robe];g.save();g.translate(x,y);g.scale(dir,1);const R=(a,b,w,h,c)=>PQL(g,a,b,w,h,c), s=coq?1.25:1;
+  g.fillStyle='rgba(60,50,30,.25)';g.beginPath();g.ellipse(0,0.5,4*s,1.2,0,0,7);g.fill();
+  if(pose!=='assise'){const m=pose==='marche'?Math.sin(pas*Math.PI*2)*1.2:0;                       /* les pattes : elles avancent l'une après l'autre */
+    R(-1*s+m,-2.5*s,0.6,2.5*s,'#e8a030');R(1*s-m,-2.5*s,0.6,2.5*s,'#e8a030');R(-1.5*s+m,-0.5,1.5,0.5,'#e8a030');R(0.6*s-m,-0.5,1.5,0.5,'#e8a030');}
+  const sursaut=pose==='marche'?Math.abs(Math.sin(pas*Math.PI*2))*0.5:0;
+  const by=(pose==='assise'?-3*s:-5*s)-sursaut;
+  R(-3.5*s,by-1*s,6.5*s,4*s,C[0]);R(-3*s,by-1.5*s,5*s,1,C[1]);R(-4.5*s,by-2.5*s,2*s,3*s,coq?C[2]:C[0]);
+  if(coq){R(-5.5*s,by-4.5*s,1.5,4,'#1f5a3a');R(-6*s,by-3.5*s,1.5,3,'#2f7a4a');R(-6.5*s,by-5*s,1,3,'#1f5a3a');}
+  if(pose==='ailes'){const b=Math.sin(pas*Math.PI*6);                                              /* elle bat des ailes */
+    R(-2*s,by-2*s-b*2.5,4*s,2*s,C[2]);R(-1.5*s,by-2.5*s-b*2.5,3*s,1,C[1]);R(-2*s,by+1.5*s+b*1.5,3.5*s,1.5*s,C[2]);}
+  else{R(-1.5*s,by,3.5*s,2*s,C[2]);R(-1*s,by,2.5*s,0.8,C[1]);}
+  const hx=pose==='picore'?3*s:(pose==='chante'?2.6*s:2.2*s), hy=pose==='picore'?by+2.5*s:(pose==='chante'?by-4*s:by-2.5*s);
+  R(hx-1,hy-1,2.5*s,2.5*s,C[0]);
+  if(pose==='chante'){R(hx+1.4*s,hy-0.6,1.3*s,0.6,'#e8a030');R(hx+1.4*s,hy+0.4,1.1*s,0.6,'#e8a030');}  /* le bec ouvert */
+  else R(hx+1.4*s,hy+0.2,1.2*s,0.8,'#e8a030');
+  R(hx+0.8*s,hy-0.2,0.6,0.6,'#141414');R(hx-0.5,hy-2*s,1.5*s,1.2*s,'#d8283a');R(hx+0.8*s,hy+1.3*s,0.8,1*s,'#d8283a');
+  g.restore();}
+/* un poussin : une petite boule jaune qui trottine et sautille */
+function poussin(g,x,y,dir,pas,picore){g.save();g.translate(x,y);g.scale(dir,1);const R=(a,b,w,h,c)=>PQL(g,a,b,w,h,c);
+  const saut=Math.abs(Math.sin(pas*Math.PI*2))*0.8;
+  g.fillStyle='rgba(60,50,30,.22)';g.beginPath();g.ellipse(0,0.3,1.8,0.6,0,0,7);g.fill();
+  R(-0.6,-1.2,0.4,1.2,'#e8a030');R(0.4,-1.2,0.4,1.2,'#e8a030');
+  R(-1.6,-3.2-saut,3,2.2,'#f4d850');R(-1.2,-3.6-saut,2.2,0.6,'#fff0a0');R(-1.8,-2.8-saut,0.8,1,'#e8c030');
+  const hy=picore?-2.2:-4.4;R(0.6,hy-saut,1.6,1.6,'#f4d850');R(2,hy+0.6-saut,0.7,0.5,'#e8801a');R(1.4,hy+0.3-saut,0.4,0.4,'#141414');
+  g.restore();}
+/* LES BÊTES : chacune a sa petite vie — elle choisit un coin, y marche, s'arrête, picore, bat des ailes ;
+   le coq chante de temps en temps ; les poussins suivent leur mère en file. */
+function nouvellesBetes(W,H){W=W||120;H=H||96;const ey0=Math.min(46,H*0.34), fx=(x)=>x*W/120, fy=(y)=>ey0+(y-34)*(H-6-ey0)/56;
+  const B=[];const ajout=(robe,x,y,coq)=>{x=fx(x);y=fy(y);B.push({robe,x,y,tx:x,ty:y,dir:1,pas:0,etat:'repos',t:alea(B.length*3.1)*2,coq,chant:0});};
+  ajout('blanche',30,60);ajout('rousse',55,66);ajout('noire',72,55);ajout('blanche',88,72);ajout('rousse',40,78);ajout('coq',66,80,true);
+  const P=[];for(let k=0;k<4;k++)P.push({mere:1,x:B[1].x-k*4,y:B[1].y+k,dir:1,pas:k*0.25,off:k});
+  for(let k=0;k<3;k++)P.push({mere:4,x:B[4].x-k*4,y:B[4].y,dir:1,pas:k*0.3,off:k});
+  return {B,P};}
+function vivre(M,dt,ex0,ey0,ex1,ey1){
+  M.B.forEach((b,k)=>{b.t-=dt;
+    if(b.etat==='marche'){const dx=b.tx-b.x, dy=b.ty-b.y, d=Math.hypot(dx,dy), v=b.coq?9:7;
+      if(d<1){b.etat='repos';b.t=0.6+alea(k+b.x)*1.5;}else{b.x+=dx/d*v*dt;b.y+=dy/d*v*dt;b.dir=dx>0?1:-1;b.pas+=dt*3;}}
+    else if(b.t<=0){const r=alea(b.x*1.7+b.y*2.9+k+M.tick);
+      if(r<0.45){b.etat='marche';b.tx=ex0+12+alea(r*97+k)*(ex1-ex0-24);b.ty=ey0+14+alea(r*53+k*7)*(ey1-ey0-20);}
+      else if(r<0.75){b.etat='picore';b.t=0.8+r;}
+      else if(r<0.85){b.etat='ailes';b.t=0.7;b.pas=0;}
+      else if(b.coq){b.etat='chante';b.t=1.4;b.chant=1.4;}
+      else{b.etat=b.robe==='blanche'&&k===3?'assise':'repos';b.t=1.2;}}
+    if(b.etat==='ailes')b.pas+=dt;if(b.chant>0)b.chant-=dt;});
+  /* les poussins : ils suivent leur mère, chacun à sa place dans la file, et picorent quand elle s'arrête */
+  M.P.forEach(p=>{const m=M.B[p.mere];const cx=m.x-m.dir*(5+p.off*3.5), cy=m.y+1+(p.off%2)*1.5;
+    const dx=cx-p.x, dy=cy-p.y, d=Math.hypot(dx,dy);
+    if(d>0.8){const v=Math.min(12,d*3);p.x+=dx/d*v*dt;p.y+=dy/d*v*dt;p.dir=dx>0?1:-1;p.pas+=dt*4;p.pic=false;}else p.pic=Math.sin(M.tick*3+p.off)>0.3;});
+  M.tick+=dt;}
+
+/* ===================== LE POULAILLER (version jouable, reliée au serveur) =====================
+   À droite du champ, un enclos à chaque joueur. Le fond (terre, poulailler, mangeoire, abreuvoir) et le grillage
+   sont gravés une fois ; à chaque image on ne dessine que les bêtes, qui vivent leur vie. */
+const POUL_Z=()=>({x0:FERME.champ2.x1+14,x1:1548,y0:392,y1:556});
+let POUL={p:null,places:0,decal:0,charge:false}, POUL_FOND=null, POUL_GRILLE=null, POUL_BETES=null, POUL_TPREC=0;
+const poulNow=()=>Date.now()+POUL.decal;
+function poulAdopter(d){if(!d||d.erreur||!d.p)return false;const avant=POUL.p?POUL.p.poules:-1;POUL.p=d.p;POUL.places=d.places||0;
+  if(d.now)POUL.decal=new Date(d.now).getTime()-Date.now();if(typeof d.euros==='number'){e.euros=d.euros;try{majHaut();}catch(x){}}
+  if(avant!==POUL.p.poules||!POUL_BETES)poulPeupler();POUL.charge=true;return true;}
+async function poulCharger(){if(CARTE!=='village'||!e.id)return;try{poulAdopter(await appelRPC('poul_etat',{p_joueur:e.id}));}catch(x){}}
+/* les bêtes : autant de poules que le joueur en a achetées, le coq dès qu'il y en a une, une couvée si elles sont trois */
+function poulPeupler(){const Z=POUL_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0, n=POUL.p?POUL.p.poules:0;
+  if(!n){POUL_BETES=null;return;}
+  const M=nouvellesBetes(W,H);const robes=['blanche','rousse','noire'];
+  const base=M.B.find(b=>b.coq);const poules=[];
+  for(let k=0;k<n;k++){const b=Object.assign({},M.B[k%5]);b.robe=robes[k%3];b.coq=false;b.x=12+alea(k*3.7)*(W-24);b.y=H*0.4+alea(k*5.3)*(H*0.5);b.tx=b.x;b.ty=b.y;b.t=alea(k)*2;poules.push(b);}
+  M.B=poules.concat([Object.assign(base,{x:W*0.6,y:H*0.7,tx:W*0.6,ty:H*0.7})]);
+  M.P=n>=3?M.P.filter(p=>p.mere===1).map(p=>Object.assign(p,{mere:1})):[];
+  M.tick=0;POUL_BETES=M;}
+/* le fond gravé : terre battue, grain, poulailler, mangeoire, abreuvoir ; puis le grillage, à part, par-dessus */
+function poulGraverFond(){const Z=POUL_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0, E=2, c=document.createElement('canvas');c.width=W*E;c.height=H*E;const g=c.getContext('2d');
+  g.imageSmoothingEnabled=false;g.setTransform(E,0,0,E,0,0);
+  const ex0=6,ey0=Math.min(46,H*0.34),ex1=W-6,ey1=H-6;
+  for(let y=ey0;y<ey1;y+=0.5)for(let x=ex0;x<ex1;x+=0.5){const n=alea(x*4.1+y*5.3);
+    const bord=Math.min(x-ex0,ex1-x,y-ey0,ey1-y);if(bord<3&&n>0.5)continue;                                  /* les bords se fondent dans l'herbe */
+    PQL(g,x,y,0.5,0.5,n<0.35?'#a08a62':(n<0.7?'#b09a70':(n<0.9?'#8fa464':'#98805b')));}
+  for(let k=0;k<90;k++){const x=ex0+alea(k*2.1)*(ex1-ex0), y=ey0+alea(k*3.7)*(ey1-ey0);PQL(g,x,y,1,0.5,'#e8d8a0');}
+  g.drawImage(graverPoulailler(),ex0+2,ey0-44,70,66);
+  PQL(g,W-24,ey0+18,14,4,'#7d5934');PQL(g,W-24,ey0+18,14,1,'#96703f');for(let k=0;k<5;k++)PQL(g,W-23+k*2.6,ey0+17.5,1.5,1,'#e0c46a');
+  PQL(g,W-22,ey0+34,10,3,'#8b9198');PQL(g,W-21,ey0+34.5,8,1.5,'#5aa8c8');
+  const gr=document.createElement('canvas');gr.width=W*E;gr.height=H*E;const q=gr.getContext('2d');q.imageSmoothingEnabled=false;q.setTransform(E,0,0,E,0,0);
+  const piquet=(x,y)=>{PQL(q,x-0.5,y-9,1.5,9,'#6b4a28');PQL(q,x-0.5,y-9,1.5,0.5,'#96703f');};
+  for(let x=ex0;x<=ex1;x+=12)piquet(x,ey1);for(let y=ey0;y<=ey1;y+=10){piquet(ex0,y);piquet(ex1,y);}
+  q.strokeStyle='rgba(200,205,210,.55)';q.lineWidth=0.3;
+  for(let x=ex0;x<ex1;x+=2){q.beginPath();q.moveTo(x,ey1-8);q.lineTo(x+2,ey1);q.stroke();q.beginPath();q.moveTo(x+2,ey1-8);q.lineTo(x,ey1);q.stroke();}
+  PQL(q,ex0,ey1-8.5,ex1-ex0,0.5,'#a8adb2');PQL(q,ex0,ey1-0.5,ex1-ex0,0.5,'#a8adb2');
+  for(let y=ey0;y<ey1;y+=2)[ex0,ex1].forEach(x=>{q.beginPath();q.moveTo(x,y);q.lineTo(x,y+2);q.stroke();});
+  POUL_FOND=c;POUL_GRILLE=gr;}
+/* 1 · le dessin */
+const poulDecorVrai=dessinerDecor;
+dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
+  if(CARTE==='village'){const Z=POUL_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0;
+    if(Z.x1-camX>-10&&Z.x0-camX<VW2+10&&Z.y1-camY>-10&&Z.y0-60-camY<VH2+30){
+      if(!POUL_FOND)poulGraverFond();
+      g.drawImage(POUL_FOND,Math.round(Z.x0-camX),Math.round(Z.y0-camY),W,H);
+      const now=performance.now(), dt=Math.min(0.1,(now-(POUL_TPREC||now))/1000);POUL_TPREC=now;
+      const affame=POUL.p&&POUL.p.nourri_jusqua&&new Date(POUL.p.nourri_jusqua).getTime()<poulNow();
+      if(POUL_BETES){const ey0=Math.min(46,H*0.34);for(let s=0;s<2;s++)vivre(POUL_BETES,dt/2,6,ey0,W-6,H-6);
+        const ox=Z.x0-camX, oy=Z.y0-camY;
+        POUL_BETES.B.forEach(b=>acteurs.push({y:Z.y0+b.y,f:()=>{poule(g,ox+b.x,oy+b.y,b.robe,b.etat==='repos'?'debout':(affame&&b.etat==='picore'?'debout':b.etat),b.dir,b.coq,b.pas);
+          if(b.chant>0.3){g.font='700 4px Georgia';g.fillStyle='#fff3c0';g.strokeStyle='#3a2a1a';g.lineWidth=0.8;g.strokeText('Cocorico !',ox+b.x-9,oy+b.y-14);g.fillText('Cocorico !',ox+b.x-9,oy+b.y-14);}}}));
+        POUL_BETES.P.forEach(p=>acteurs.push({y:Z.y0+p.y,f:()=>poussin(g,ox+p.x,oy+p.y,p.dir,p.pas,p.pic)}));}
+      /* les œufs qui attendent dans les nichoirs, et le grillage par-dessus les bêtes */
+      acteurs.push({y:Z.y1,f:()=>{const n=POUL.p?Math.min(8,POUL.p.oeufs||0):0, ey0=Math.min(46,H*0.34);
+        for(let k=0;k<n;k++){const x=Z.x0+50+(k%4)*3-camX, y=Z.y0+ey0+10+Math.floor(k/4)*2.5-camY;PQL(g,x-0.5,y-2,1.5,1.8,'#f4ecd8');PQL(g,x-0.5,y-2,0.8,0.8,'#ffffff');}
+        g.drawImage(POUL_GRILLE,Math.round(Z.x0-camX),Math.round(Z.y0-camY),W,H);}});}}
+  return poulDecorVrai(g,camX,camY,VW2,VH2,acteurs);};
+/* on ne rentre pas dans l'enclos : on s'occupe des poules depuis l'extérieur */
+const poulBloqueVrai=bloque;
+bloque=function(x,y){if(CARTE==='village'){const Z=POUL_Z();if(x>Z.x0+4&&x<Z.x1-4&&y>Z.y0+8&&y<Z.y1-2)return true;}return poulBloqueVrai(x,y);};
+const poulProche=()=>{if(CARTE!=='village')return false;const Z=POUL_Z();return joueur.x>Z.x0-10&&joueur.x<Z.x0+120&&joueur.y>Z.y0-26&&joueur.y<Z.y0+12;};
+/* 2 · le bouton d'action, devant le poulailler */
+const poulMajVrai=majAction;
+majAction=function(){if(!poulProche())return poulMajVrai();const b=$('action'), P=POUL.p;
+  const t=!P||!P.niveau?['Le poulailler','À VENDRE · 300 €']:(!P.poules?['Le poulailler','ACHÈTE TES PREMIÈRES POULES']:
+    ((P.oeufs||0)>0?['Ramasser les œufs','×'+P.oeufs+' · +'+enEuros((P.oeufs||0)*600).replace(',00','')]:['Le poulailler',P.poules+' POULE'+(P.poules>1?'S':'')+' · VOIR']));
+  b.innerHTML=t[0]+'<small>'+t[1]+'</small>';b.classList.add('on');};
+$('action').addEventListener('click',(ev)=>{if(!poulProche())return;ev.stopImmediatePropagation();ev.preventDefault();ouvrirLePoulailler();},true);
+/* 3 · le menu du poulailler */
+async function ouvrirLePoulailler(){
+  if(!document.getElementById('cssGr')){const st=document.createElement('style');st.id='cssGr';st.textContent=CSS_GR;document.head.appendChild(st);}
+  await poulCharger();$('page2Fond').className='gr';$('page2').classList.add('on');
+  const P=POUL.p||{niveau:0,poules:0,oeufs:0,grenier:0}, fmt=(c)=>enEuros(c).replace(',00','');
+  const nourri=P.nourri_jusqua?new Date(P.nourri_jusqua).getTime()-poulNow():-1, h=Math.floor(Math.max(0,nourri)/3600000), m=Math.floor(Math.max(0,nourri)%3600000/60000);
+  let corps='';
+  if(!P.niveau)corps='<div class="outil" style="display:block;text-align:center"><canvas data-poul="1" style="width:140px;height:132px;background:none"></canvas>'+
+    '<b style="display:block;font:700 16px Georgia;margin:6px 0">Le poulailler est à vendre</b><small style="font:italic 13px Georgia;color:#6b5a44">4 places pour commencer. Une poule nourrie pond un œuf toutes les 30 minutes, qui se vend 6 €. Un œuf sur 200 est en or : 250 €.</small>'+
+    '<button data-a="poulailler" style="display:block;width:100%;margin-top:10px">Acheter le poulailler · 300 €</button></div>';
+  else{
+    corps='<div class="outil" style="display:block"><b style="font:700 15px Georgia">'+P.poules+' poule'+(P.poules>1?'s':'')+' sur '+POUL.places+'</b><br><small style="font:italic 12px Georgia;color:#6b5a44">'+
+      (P.poules?(nourri>0?'Nourries pour encore '+(h?h+' h ':'')+String(m).padStart(2,'0')+' min':'<b style="color:#b8402a">Elles ont faim : elles ne pondent plus.</b>'):'Achète une poule pour commencer.')+'</small></div>'+
+      '<div class="outil"><div class="t"><b>Les œufs</b><small>'+(P.oeufs||0)+' dans les nichoirs'+((P.oeufs||0)>=P.poules*16&&P.poules?' · les nichoirs sont pleins !':'')+'</small></div><button data-a="ramasser" class="'+((P.oeufs||0)?'':'pris')+'">Ramasser'+((P.oeufs||0)?' · +'+fmt(P.oeufs*600):'')+'</button></div>'+
+      '<div class="outil"><div class="t"><b>Nourrir · 4 heures</b><small>'+(P.grenier||0)+' gerbe'+((P.grenier||0)>1?'s':'')+' de blé au grenier (le blé récolté au champ arrive ici)</small></div>'+
+        '<div style="display:flex;flex-direction:column;gap:5px">'+((P.grenier||0)?'<button data-a="gerbe">Une gerbe</button>':'')+'<button data-a="grain">Grain · '+fmt(100*Math.max(1,P.poules))+'</button></div></div>'+
+      '<div class="outil"><div class="t"><b>Une poule de plus</b><small>'+(P.poules<POUL.places?'blanche, rousse ou noire, au hasard':'le poulailler est plein : agrandis-le')+'</small></div><button data-a="poule" class="'+(P.poules<POUL.places?'':'pris')+'">60 €</button></div>'+
+      (P.niveau<3?'<div class="outil"><div class="t"><b>Agrandir le poulailler</b><small>'+(P.niveau===1?'8':'12')+' places au lieu de '+POUL.places+'</small></div><button data-a="agrandir">'+(P.niveau===1?'800 €':'2 500 €')+'</button></div>':'');}
+  $('page2Fond').innerHTML='<div class="haut"><b>LE POULAILLER</b><small>« Cot cot ! » — les poules</small><div class="bs">ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div><div class="corps" style="padding-top:18px">'+corps+'</div>'+
+    '<div id="poulBulle" style="position:absolute;left:14px;right:14px;bottom:76px;background:#4f7d42;color:#fff;border-radius:12px;padding:10px 12px;font:italic 14px Georgia;opacity:0;transition:.25s;pointer-events:none"></div><button class="sortir" id="poulSortir">Ressortir</button>';
+  $('poulSortir').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+  const cvP=document.querySelector('canvas[data-poul]');if(cvP){cvP.width=280;cvP.height=264;const q=cvP.getContext('2d');q.imageSmoothingEnabled=false;q.drawImage(graverPoulailler(),0,0,280,264);}
+  const bulle=(t)=>{const b=$('poulBulle');b.textContent=t;b.style.opacity=1;clearTimeout(b._t);b._t=setTimeout(()=>b.style.opacity=0,2600);};
+  $('page2Fond').querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{const a=b.dataset.a;if(b.classList.contains('pris'))return;b.disabled=true;let d;
+    if(a==='ramasser'){d=await appelRPC('poul_ramasser',{p_joueur:e.id});
+      if(d&&d.gain){poulAdopter(d.etat);jouer('vente','moment');vibrer([20,40,20]);ouvrirLePoulailler();setTimeout(()=>bulle(d.oeufs+' œuf'+(d.oeufs>1?'s':'')+' · +'+enEuros(d.gain)+(d.or?' · ✨ '+d.or+' ŒUF'+(d.or>1?'S':'')+' D’OR !':'')),60);return;}}
+    else if(a==='gerbe'||a==='grain')d=await appelRPC('poul_nourrir',{p_joueur:e.id,p_mode:a});
+    else d=await appelRPC('poul_acheter',{p_joueur:e.id,p_article:a});
+    if(!d||d.erreur){b.disabled=false;bulle(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':(d&&d.erreur==='repues'?'Elles ont déjà de quoi manger pour longtemps.':(d&&d.erreur==='plein'?'Le poulailler est plein.':'Réessaie dans un instant.')));return;}
+    poulAdopter(d);sauver();vibrer(15);ouvrirLePoulailler();
+    setTimeout(()=>bulle(a==='poulailler'?'Le poulailler est à toi ! Achète tes premières poules.':(a==='poule'?'Une nouvelle poule !':(a==='agrandir'?'Le poulailler est plus grand.':'Elles picorent, contentes.'))),60);});
+}
+setTimeout(()=>poulCharger(),2800);
+setInterval(()=>{if(CARTE==='village'&&document.visibilityState==='visible')poulCharger();},90000);
+setInterval(()=>{if(CARTE==='village'&&poulProche()){try{majAction();}catch(x){}}},1000);
 
 </script>
 </body>
