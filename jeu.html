@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-1325';
+  var MA_VERSION='2026-09-21-1337';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -22160,7 +22160,7 @@ async function ouvrirLeGrainetier(onglet){onglet=onglet||'graines';
     corps='<div class="outil" style="display:block"><b style="font:700 15px Georgia">Ton champ : '+J.nb+' parcelles sur 24</b><div class="plan">'+
       Array.from({length:24},(_,i)=>'<i class="'+(POT_ORDRE.indexOf(i)<J.nb?'':'f')+'"></i>').join('')+'</div><small style="font:italic 12px Georgia;color:#6b5a44">Les parcelles en friche se louent par six.</small></div>'+
       [[6,'6 → 12 parcelles'],[12,'12 → 18 parcelles'],[18,'18 → 24 parcelles']].map(([n,t])=>{const fait=J.nb>n, dispo=J.nb===n;
-        return '<div class="outil"><div class="t"><b>'+t+'</b><small>'+(fait?'déjà loué':(dispo?'six parcelles de plus, prêtes à bêcher':'d’abord l’étape précédente'))+'</small></div><button '+(dispo?'data-a="agrandir"':'')+' class="'+(dispo?'':'pris')+'">'+(fait?'✓':fmt(prix[n]))+'</button></div>';}).join('');}
+        return '<div class="outil"><div class="t"><b>'+t+'</b><small>'+(fait?'déjà loué':(dispo?'six parcelles de plus, prêtes à bêcher':'d’abord l’étape précédente'))+(fait?'':'<br>'+matTexte(MAT_FERME['champ:'+(n+6)]))+'</small></div><button '+(dispo?'data-a="agrandir"':'')+' class="'+(dispo?'':'pris')+'">'+(fait?'✓':fmt(prix[n]))+'</button></div>';}).join('');}
   $('page2Fond').innerHTML='<div class="haut"><b>LE GRAINETIER</b><small>« Ce qu’on sème, on le récolte. » — Madeleine</small><div class="bs">ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div>'+
     '<div class="ong"><button data-o="graines" class="'+(onglet==='graines'?'on':'')+'">Graines</button><button data-o="outils" class="'+(onglet==='outils'?'on':'')+'">Outils</button><button data-o="champ" class="'+(onglet==='champ'?'on':'')+'">Agrandir</button></div>'+
     '<div class="corps">'+corps+'</div><div class="bulle" id="quaiBulle" style="position:absolute;left:14px;right:14px;bottom:76px;background:#4f7d42;color:#fff;border-radius:12px;padding:10px 12px;font:italic 14px Georgia;opacity:0;transition:.25s;pointer-events:none"></div><button class="sortir" id="grSortir">Ressortir</button>';
@@ -22171,8 +22171,9 @@ async function ouvrirLeGrainetier(onglet){onglet=onglet||'graines';
     if(art==='arroseur'){const libres=[];for(const i of POT_ORDRE.slice(0,J.nb))if(!(J.arroseurs||[]).includes(i))libres.push(i);
       if(!libres.length){bulle('Toutes tes parcelles ont déjà leur arroseur.');return;}art='arroseur:'+libres[0];}
     b.disabled=true;const d=await appelRPC('pot_acheter',{p_joueur:e.id,p_article:art});
+    if(d&&d.erreur==='materiaux'){b.disabled=false;bulle(matManque(d.manque));return;}
     if(!d||d.erreur){b.disabled=false;bulle(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':(d&&d.erreur==='deja'?'Tu l’as déjà.':'Madeleine n’a pas pu.'));return;}
-    potAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);ouvrirLeGrainetier(onglet);
+    try{lireSacServeur();}catch(x){}potAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);ouvrirLeGrainetier(onglet);
     setTimeout(()=>bulle(art==='agrandir'?'Six parcelles de plus ! Va les bêcher.':(art.startsWith('arroseur')?'Arroseur installé.':'Merci ! Bon jardinage.')),60);});
   $('page2Fond').querySelectorAll('canvas[data-p]').forEach(cv=>{const D=2, W=cv.clientWidth||150, H=72;cv.width=W*D;cv.height=H*D;const g=cv.getContext('2d');
     g.setTransform(D*4,0,0,D*4,0,0);g.imageSmoothingEnabled=false;[0.3,0.7].forEach(f=>PLANTES[cv.dataset.p](g,W/4*f,H/4*0.83,3));});
@@ -22262,6 +22263,13 @@ function vivre(M,dt,ex0,ey0,ex1,ey1){
    À droite du champ, un enclos à chaque joueur. Le fond (terre, poulailler, mangeoire, abreuvoir) et le grillage
    sont gravés une fois ; à chaque image on ne dessine que les bêtes, qui vivent leur vie. */
 const POUL_Z=()=>({x0:FERME.champ2.x1+14,x1:1548,y0:392,y1:556});
+/* LES MATÉRIAUX DE LA FERME (le serveur a les mêmes) : le bois des arbres, la pierre des rochers */
+const MAT_FERME={poulailler:{bois:40,pierre:20},'poul:2':{bois:80,pierre:40},'poul:3':{bois:160,pierre:80},
+  'champ:12':{bois:60,pierre:30},'champ:18':{bois:120,pierre:60},'champ:24':{bois:240,pierre:120}};
+const NOM_MAT={bois:['bois','bois'],pierre:['pierre','pierres']};
+function matTexte(besoin){if(!besoin)return '';return Object.entries(besoin).map(([k,n])=>{const a=(e.sac&&e.sac[k])||0, ok=a>=n;
+  return '<span style="white-space:nowrap;color:'+(ok?'#2f6a2e':'#b8402a')+';font-weight:700">'+(ok?'✓ ':'')+n+' '+NOM_MAT[k][n>1?1:0]+'</span> <span style="opacity:.75">(tu en as '+a+')</span>';}).join(' · ');}
+function matManque(m){if(!m)return 'Il te manque des matériaux.';return 'Il te manque '+Object.entries(m).map(([k,n])=>n+' '+NOM_MAT[k][n>1?1:0]).join(' et ')+'. Va couper des arbres et casser des rochers !';}
 let POUL={p:null,places:0,decal:0,charge:false}, POUL_FOND=null, POUL_GRILLE=null, POUL_BETES=null, POUL_TPREC=0;
 const poulNow=()=>Date.now()+POUL.decal;
 function poulAdopter(d){if(!d||d.erreur||!d.p)return false;const avant=POUL.p?POUL.p.poules:-1;POUL.p=d.p;POUL.places=d.places||0;
@@ -22332,7 +22340,7 @@ const poulProche=()=>{if(CARTE!=='village')return false;const Z=POUL_Z(), H=Z.y1
 /* 2 · le bouton d'action, devant le poulailler */
 const poulMajVrai=majAction;
 majAction=function(){if(!poulProche())return poulMajVrai();const b=$('action'), P=POUL.p;
-  const t=!P||!P.niveau?['Le poulailler','À VENDRE · 300 €']:(!P.poules?['Le poulailler','ACHÈTE TES PREMIÈRES POULES']:
+  const t=!P||!P.niveau?['Le poulailler','300 € · 40 BOIS · 20 PIERRES']:(!P.poules?['Le poulailler','ACHÈTE TES PREMIÈRES POULES']:
     ((P.oeufs||0)>0?['Ramasser les œufs','×'+P.oeufs+' · +'+enEuros((P.oeufs||0)*600).replace(',00','')]:['Le poulailler',P.poules+' POULE'+(P.poules>1?'S':'')+' · VOIR']));
   b.innerHTML=t[0]+'<small>'+t[1]+'</small>';b.classList.add('on');};
 $('action').addEventListener('click',(ev)=>{if(!poulProche())return;ev.stopImmediatePropagation();ev.preventDefault();ouvrirLePoulailler();},true);
@@ -22345,7 +22353,7 @@ async function ouvrirLePoulailler(){
   let corps='';
   if(!P.niveau)corps='<div class="outil" style="display:block;text-align:center"><canvas data-poul="1" style="width:140px;height:132px;background:none"></canvas>'+
     '<b style="display:block;font:700 16px Georgia;margin:6px 0">Le poulailler est à vendre</b><small style="font:italic 13px Georgia;color:#6b5a44">4 places pour commencer. Une poule nourrie pond un œuf toutes les 30 minutes, qui se vend 6 €. Un œuf sur 200 est en or : 250 €.</small>'+
-    '<button data-a="poulailler" style="display:block;width:100%;margin-top:10px">Acheter le poulailler · 300 €</button></div>';
+    '<div style="font:13px Georgia;margin-top:8px">Il faut aussi : '+matTexte(MAT_FERME.poulailler)+'</div><button data-a="poulailler" style="display:block;width:100%;margin-top:10px">Construire le poulailler · 300 €</button></div>';
   else{
     corps='<div class="outil" style="display:block"><b style="font:700 15px Georgia">'+P.poules+' poule'+(P.poules>1?'s':'')+' sur '+POUL.places+'</b><br><small style="font:italic 12px Georgia;color:#6b5a44">'+
       (P.poules?(nourri>0?'Nourries pour encore '+(h?h+' h ':'')+String(m).padStart(2,'0')+' min':'<b style="color:#b8402a">Elles ont faim : elles ne pondent plus.</b>'):'Achète une poule pour commencer.')+'</small></div>'+
@@ -22353,7 +22361,7 @@ async function ouvrirLePoulailler(){
       '<div class="outil"><div class="t"><b>Nourrir · 4 heures</b><small>'+(P.grenier||0)+' gerbe'+((P.grenier||0)>1?'s':'')+' de blé au grenier (le blé récolté au champ arrive ici)</small></div>'+
         '<div style="display:flex;flex-direction:column;gap:5px">'+((P.grenier||0)?'<button data-a="gerbe">Une gerbe</button>':'')+'<button data-a="grain">Grain · '+fmt(100*Math.max(1,P.poules))+'</button></div></div>'+
       '<div class="outil"><div class="t"><b>Une poule de plus</b><small>'+(P.poules<POUL.places?'blanche, rousse ou noire, au hasard':'le poulailler est plein : agrandis-le')+'</small></div><button data-a="poule" class="'+(P.poules<POUL.places?'':'pris')+'">60 €</button></div>'+
-      (P.niveau<3?'<div class="outil"><div class="t"><b>Agrandir le poulailler</b><small>'+(P.niveau===1?'8':'12')+' places au lieu de '+POUL.places+'</small></div><button data-a="agrandir">'+(P.niveau===1?'800 €':'2 500 €')+'</button></div>':'');}
+      (P.niveau<3?'<div class="outil"><div class="t"><b>Agrandir le poulailler</b><small>'+(P.niveau===1?'8':'12')+' places au lieu de '+POUL.places+'<br>'+matTexte(MAT_FERME['poul:'+(P.niveau+1)])+'</small></div><button data-a="agrandir">'+(P.niveau===1?'800 €':'2 500 €')+'</button></div>':'');}
   $('page2Fond').innerHTML='<div class="haut"><b>LE POULAILLER</b><small>« Cot cot ! » — les poules</small><div class="bs">ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div><div class="corps" style="padding-top:18px">'+corps+'</div>'+
     '<div id="poulBulle" style="position:absolute;left:14px;right:14px;bottom:76px;background:#4f7d42;color:#fff;border-radius:12px;padding:10px 12px;font:italic 14px Georgia;opacity:0;transition:.25s;pointer-events:none"></div><button class="sortir" id="poulSortir">Ressortir</button>';
   $('poulSortir').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
@@ -22364,8 +22372,9 @@ async function ouvrirLePoulailler(){
       if(d&&d.gain){poulAdopter(d.etat);jouer('vente','moment');vibrer([20,40,20]);ouvrirLePoulailler();setTimeout(()=>bulle(d.oeufs+' œuf'+(d.oeufs>1?'s':'')+' · +'+enEuros(d.gain)+(d.or?' · ✨ '+d.or+' ŒUF'+(d.or>1?'S':'')+' D’OR !':'')),60);return;}}
     else if(a==='gerbe'||a==='grain')d=await appelRPC('poul_nourrir',{p_joueur:e.id,p_mode:a});
     else d=await appelRPC('poul_acheter',{p_joueur:e.id,p_article:a});
+    if(d&&d.erreur==='materiaux'){b.disabled=false;bulle(matManque(d.manque));return;}
     if(!d||d.erreur){b.disabled=false;bulle(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':(d&&d.erreur==='repues'?'Elles ont déjà de quoi manger pour longtemps.':(d&&d.erreur==='plein'?'Le poulailler est plein.':'Réessaie dans un instant.')));return;}
-    poulAdopter(d);sauver();vibrer(15);ouvrirLePoulailler();
+    poulAdopter(d);try{lireSacServeur();}catch(x){}sauver();vibrer(15);ouvrirLePoulailler();
     setTimeout(()=>bulle(a==='poulailler'?'Le poulailler est à toi ! Achète tes premières poules.':(a==='poule'?'Une nouvelle poule !':(a==='agrandir'?'Le poulailler est plus grand.':'Elles picorent, contentes.'))),60);});
 }
 setTimeout(()=>poulCharger(),2800);
