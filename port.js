@@ -1427,17 +1427,24 @@ function graverLaPresse(){return devanture(2,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
   const ey=yR-14;R(x0+12,ey,BL-24,13,'#d8b050');R(x0+13,ey+1,BL-26,11,'#24503e');
   g.font='700 7.8px Georgia,serif';g.textAlign='center';g.fillStyle=nuit?'#fff0c0':'#f0d890';g.fillText('PRESSE · JOURNAUX',cx,ey+9,BL-34);g.textAlign='left';
   if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,210,140,.45)');l.addColorStop(1,'rgba(255,210,140,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}});}
-/* PÊCHE & MARINE, en façade : vert bouteille, les cannes en vitrine, la bouée, les cordages */
-function graverLaBoutiquePeche(){return devanture(0,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
-  R(x0,yR,BL,rez,'#2f5a44');R(x0,yR,BL,1.5,'#d8b050');R(x0,sol-2,BL,2,'#1e3a2c');
-  [[x0+8],[x0+BL-50]].forEach(([x])=>{R(x,yR+8,42,rez-12,nuit?'#ffe0a8':'#23303a');
-    for(let k=0;k<6;k++){R(x+4+k*6.5,yR+10,0.9,rez-16,'#c8b890');R(x+3.6+k*6.5,yR+rez-10,1.6,2,'#3a3a40');R(x+4+k*6.5,yR+12+(k%3)*3,2,1,['#e8402a','#2d6fb0','#f0c040'][k%3]);}});   /* les cannes */
-  R(cx-10,yR+6,20,rez-6,'#1e3a2c');R(cx-9,yR+7,18,rez-7,nuit?'#ffe8b8':'#3a4a44');R(cx-0.5,yR+7,1,rez-7,'#1e3a2c');R(cx+4,sol-14,1.5,3,'#d8b050');
-  g.strokeStyle='#c8a868';g.lineWidth=1.2;g.beginPath();g.moveTo(x0+2,yR+3);for(let x=x0+2;x<x0+BL-2;x+=6)g.quadraticCurveTo(x+3,yR+7,x+6,yR+3);g.stroke();   /* le cordage */
-  g.strokeStyle='#e8402a';g.lineWidth=2;g.beginPath();g.arc(cx+16,yR+14,3.6,0,7);g.stroke();g.strokeStyle='#fff';for(let q=0;q<4;q++){g.beginPath();g.arc(cx+16,yR+14,3.6,q*Math.PI/2+0.25,q*Math.PI/2+0.75);g.stroke();}
-  const ey=yR-15;R(x0+14,ey,BL-28,12,'#1e3a2c');R(x0+15,ey+1,BL-30,10,'#2f5a44');
-  g.font='700 7.6px Georgia';g.textAlign='center';g.fillStyle=nuit?'#fff0c0':'#f0d890';g.fillText('PÊCHE & MARINE',cx,ey+8.4,BL-36);g.textAlign='left';
-  if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,210,140,.45)');l.addColorStop(1,'rgba(255,210,140,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}});}
+/* LE PÊCHEUR HEUREUX : la boutique de pêche du quai (le nom de la fonction reste, pour ne rien casser) */
+const LUP=(g,cx,sol,nuit,c)=>{if(!nuit)return;const l=g.createRadialGradient(cx,sol,4,cx,sol,75);l.addColorStop(0,c||'rgba(255,215,150,.5)');l.addColorStop(1,'rgba(255,215,150,0)');g.fillStyle=l;g.fillRect(cx-75,sol-75,150,80);};
+const bouee=(g,x,y,r,c1,c2)=>{g.strokeStyle=c1;g.lineWidth=r*.55;g.beginPath();g.arc(x,y,r,0,7);g.stroke();g.strokeStyle=c2;for(let q=0;q<4;q++){g.beginPath();g.arc(x,y,r,q*Math.PI/2+.2,q*Math.PI/2+.62);g.stroke();}};
+const canne=(R,g,x,y,h,c,lance)=>{R(x,y,1,h,'#c8b890');R(x-.4,y+h-6,1.8,6,'#3a3a40');R(x-.6,y+h-9,2.2,2,'#8a8a90');if(lance){g.strokeStyle='rgba(230,230,230,.7)';g.lineWidth=.4;g.beginPath();g.moveTo(x+.5,y);g.quadraticCurveTo(x+6,y+10,x+4,y+h*.6);g.stroke();}R(x-.5,y+h*.35,2,1.2,c);};
+/* B · LE PÊCHEUR HEUREUX : jaune soleil et bleu, un grand poisson en tôle peinte comme enseigne, les cannes en éventail,
+   le frigo « APPÂTS VIVANTS », les caisses de leurres */
+function graverLaBoutiquePeche(){return devanture(1,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+  R(x0,yR,BL,rez,'#f0c030');for(let k=0;k<300;k++)R(x0+((k*37)%BL),yR+((k*53)%rez),1,1,k%2?'#e0b020':'#f8d860');R(x0,sol-3,BL,3,'#1f5aa0');R(x0,yR,BL,2,'#1f5aa0');
+  R(x0+8,yR+8,56,rez-12,nuit?'#fff0c8':'#23405a');for(let k=0;k<9;k++){const a=-.55+k*.14;g.save();g.translate(x0+36,sol-6);g.rotate(a);canne(R,g,0,-30,30,['#e8402a','#2a6ab0','#f0c040'][k%3],false);g.restore();}   /* l'éventail de cannes */
+  R(cx+2,yR+8,18,rez-8,'#1f5aa0');R(cx+3,yR+9,16,rez-10,nuit?'#ffe8b8':'#2a4a70');R(cx+15,sol-14,1.5,3,'#f0c030');
+  R(x0+BL-40,yR+10,32,rez-14,'#e8f2f8');R(x0+BL-40,yR+10,32,5,'#2a8ad8');g.font='700 3.6px Arial';g.fillStyle='#fff';g.fillText('APPÂTS VIVANTS',x0+BL-38.5,yR+14);
+  for(let k=0;k<3;k++){R(x0+BL-38,yR+18+k*6,28,4,'#c8dce8');for(let q=0;q<6;q++)R(x0+BL-37+q*4.5,yR+19+k*6,3,2,['#c86a4a','#6a8a3a','#8a6a4a'][q%3]);}
+  [[x0+2],[x0+14]].forEach(([x],k)=>{R(x,sol-9,11,7,'#8a6238');for(let q=0;q<4;q++)R(x+1+q*2.6,sol-11,2,3,['#e8402a','#f0c040','#2ab0a0','#e86aa0'][(q+k)%4]);});
+  /* le grand poisson de tôle qui dépasse de la façade, avec son nom peint dessus */
+  const px=cx+10,py=yR-16;g.fillStyle='#2a8ad8';g.beginPath();g.ellipse(px,py,40,9,0,0,7);g.fill();g.beginPath();g.moveTo(px+36,py);g.lineTo(px+50,py-9);g.lineTo(px+50,py+9);g.closePath();g.fill();
+  g.fillStyle='#8ac8f0';g.beginPath();g.ellipse(px-4,py-3,30,3,0,0,7);g.fill();g.fillStyle='#fff';g.beginPath();g.arc(px-30,py-2,2.6,0,7);g.fill();g.fillStyle='#111';g.beginPath();g.arc(px-30,py-2,1.3,0,7);g.fill();
+  g.font='900 6.6px Arial';g.textAlign='center';g.fillStyle='#fff';g.fillText('LE PÊCHEUR HEUREUX',px+2,py+2.4,64);g.textAlign='left';R(px-2,py-11,1,3,'#3a3a40');R(px+20,py-11,1,3,'#3a3a40');
+  LUP(g,cx,sol,nuit);});}
 /* LE HAIR STUDIO : le salon de coiffure du quai (le nom de la fonction reste, pour ne rien casser) */
 const LU=(g,cx,sol,nuit,c)=>{if(!nuit)return;const l=g.createRadialGradient(cx,sol,4,cx,sol,75);l.addColorStop(0,c||'rgba(255,215,150,.5)');l.addColorStop(1,'rgba(255,215,150,0)');g.fillStyle=l;g.fillRect(cx-75,sol-75,150,80);};
 /* un client assis sous la cape, vu de dos dans le miroir ; un coiffeur debout avec ses ciseaux */
