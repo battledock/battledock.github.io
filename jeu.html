@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-1320';
+  var MA_VERSION='2026-09-21-1325';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -22305,7 +22305,7 @@ dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
       g.drawImage(POUL_FOND,Math.round(Z.x0-camX),Math.round(Z.y0-camY),W,H);
       const now=performance.now(), dt=Math.min(0.1,(now-(POUL_TPREC||now))/1000);POUL_TPREC=now;
       const affame=POUL.p&&POUL.p.nourri_jusqua&&new Date(POUL.p.nourri_jusqua).getTime()<poulNow();
-      if(POUL_BETES){const ey0=Math.min(46,H*0.34);for(let s=0;s<2;s++)vivre(POUL_BETES,dt/2,6,ey0,W-6,H-6);
+      if(POUL_BETES){const ey0=Math.min(46,H*0.34);for(let s=0;s<2;s++)vivre(POUL_BETES,dt/2,6,ey0,W-6,H-6);poulEffrayer();
         const ox=Z.x0-camX, oy=Z.y0-camY;
         POUL_BETES.B.forEach(b=>acteurs.push({y:Z.y0+b.y,f:()=>{poule(g,ox+b.x,oy+b.y,b.robe,b.etat==='repos'?'debout':(affame&&b.etat==='picore'?'debout':b.etat),b.dir,b.coq,b.pas);
           if(b.chant>0.3){g.font='700 4px Georgia';g.fillStyle='#fff3c0';g.strokeStyle='#3a2a1a';g.lineWidth=0.8;g.strokeText('Cocorico !',ox+b.x-9,oy+b.y-14);g.fillText('Cocorico !',ox+b.x-9,oy+b.y-14);}}}));
@@ -22315,10 +22315,20 @@ dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
         for(let k=0;k<n;k++){const x=Z.x0+50+(k%4)*3-camX, y=Z.y0+ey0+10+Math.floor(k/4)*2.5-camY;PQL(g,x-0.5,y-2,1.5,1.8,'#f4ecd8');PQL(g,x-0.5,y-2,0.8,0.8,'#ffffff');}
         g.drawImage(POUL_GRILLE,Math.round(Z.x0-camX),Math.round(Z.y0-camY),W,H);}});}}
   return poulDecorVrai(g,camX,camY,VW2,VH2,acteurs);};
-/* on ne rentre pas dans l'enclos : on s'occupe des poules depuis l'extérieur */
+/* ON ENTRE DANS L'ENCLOS par le haut (côté Grainetier) : seuls le grillage (côtés et bas) et le poulailler lui-même
+   sont pleins. On marche dans l'herbe et la terre, au milieu des poules. */
 const poulBloqueVrai=bloque;
-bloque=function(x,y){if(CARTE==='village'){const Z=POUL_Z();if(x>Z.x0+4&&x<Z.x1-4&&y>Z.y0+8&&y<Z.y1-2)return true;}return poulBloqueVrai(x,y);};
-const poulProche=()=>{if(CARTE!=='village')return false;const Z=POUL_Z();return joueur.x>Z.x0-10&&joueur.x<Z.x0+120&&joueur.y>Z.y0-26&&joueur.y<Z.y0+12;};
+bloque=function(x,y){if(CARTE==='village'){const Z=POUL_Z(), H=Z.y1-Z.y0, ey0=Z.y0+Math.min(46,H*0.34), ex0=Z.x0+6, ex1=Z.x1-6, ey1=Z.y1-6;
+    if(y>ey0-2&&y<ey1+3&&(Math.abs(x-ex0)<3||Math.abs(x-ex1)<3))return true;                   /* le grillage, à gauche et à droite */
+    if(x>ex0-2&&x<ex1+2&&Math.abs(y-ey1)<3)return true;                                          /* le grillage du bas */
+    if(x>Z.x0+10&&x<Z.x0+70&&y>ey0-14&&y<ey0+14)return true;}                                    /* le poulailler, sur ses pilotis */
+  return poulBloqueVrai(x,y);};
+/* les poules s'écartent quand on passe au milieu d'elles */
+function poulEffrayer(){if(!POUL_BETES)return;const Z=POUL_Z(), jx=joueur.x-Z.x0, jy=joueur.y-Z.y0, W=Z.x1-Z.x0, H=Z.y1-Z.y0;
+  const fuir=(b,r,v)=>{const dx=b.x-jx, dy=b.y-jy, d=Math.hypot(dx,dy);if(d<r&&d>0.01){b.x=Math.max(10,Math.min(W-10,b.x+dx/d*v));b.y=Math.max(H*0.36,Math.min(H-10,b.y+dy/d*v));
+    if(b.etat!==undefined){b.etat='marche';b.tx=Math.max(12,Math.min(W-12,b.x+dx/d*20));b.ty=Math.max(H*0.38,Math.min(H-12,b.y+dy/d*14));b.dir=dx>0?1:-1;}}};
+  POUL_BETES.B.forEach(b=>fuir(b,12,0.9));POUL_BETES.P.forEach(p=>fuir(p,8,1.1));}
+const poulProche=()=>{if(CARTE!=='village')return false;const Z=POUL_Z(), H=Z.y1-Z.y0, ey0=Z.y0+Math.min(46,H*0.34);return joueur.x>Z.x0+6&&joueur.x<Z.x0+90&&joueur.y>ey0-30&&joueur.y<ey0+30;};
 /* 2 · le bouton d'action, devant le poulailler */
 const poulMajVrai=majAction;
 majAction=function(){if(!poulProche())return poulMajVrai();const b=$('action'), P=POUL.p;
