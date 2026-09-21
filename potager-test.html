@@ -22002,37 +22002,60 @@ window.fetch=(u,o)=>{const s=String(u||'');if(s.includes('supabase'))return Prom
 const CULT={radis:[5,8,'Radis'],salade:[15,18,'Salade'],carottes:[30,32,'Carottes'],ble:[45,27,'Blé'],tomates:[60,56,'Tomates'],
   courgettes:[120,88,'Courgettes'],fraises:[180,136,'Fraises'],melon:[360,224,'Melon'],citrouille:[720,352,'Citrouille'],lavande:[480,128,'Lavande']};
 const ACCEL=60;                                  /* 1 h de jeu = 1 min réelle */
-const Z=FERME.champ2, PW=40, PH=26;
-const PARC=[];for(let r=0;r<2;r++)for(let c=0;c<3;c++)PARC.push({x:Z.x0+110+c*(PW+30),y:Z.y0+30+r*(PH+34),etat:'herbe',cult:null,t0:0,eau:false});
+const Z=FERME.champ2, COLS=8, ROWS=3, ALLEE=6;
+const PW=Math.floor((Z.x1-Z.x0-ALLEE*(COLS+1))/COLS), PH=Math.floor((Z.y1-Z.y0-ALLEE*(ROWS+1))/ROWS);
+const PARC=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){const i=r*COLS+c;
+  PARC.push({x:Z.x0+ALLEE+c*(PW+ALLEE),y:Z.y0+ALLEE+r*(PH+ALLEE),etat:'friche',ouverte:(r===0&&c<3)||(r===1&&c<3),cult:null,t0:0,eau:false});}
+/* LE CHAMP EST GRAVÉ UNE FOIS (allées de paille + chaque parcelle dans son état) et regravé seulement
+   quand une parcelle change : à chaque image, on ne pose qu'une seule image, plus les plantes. */
+let CHAMP_C=null, CHAMP_SALE=true;
+function graverChamp(){const W=Z.x1-Z.x0, H=Z.y1-Z.y0, D=2, c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,-Z.x0*D,-Z.y0*D);g.imageSmoothingEnabled=false;
+  /* les allées : de la paille tassée, avec ses brins */
+  for(let y=Z.y0;y<Z.y1;y+=0.5)for(let x=Z.x0;x<Z.x1;x+=0.5){const n=alea(x*2.3+y*3.1);PX(g,x,y,0.5,0.5,n<0.3?'#b8a476':(n<0.7?'#c8b688':'#d4c498'));}
+  for(let k=0;k<900;k++){const x=Z.x0+alea(k*1.3)*(Z.x1-Z.x0), y=Z.y0+alea(k*2.9)*(Z.y1-Z.y0);PX(g,x,y,1.5,0.5,alea(k)<0.5?'#a89060':'#e0d0a8');}
+  PARC.forEach(P=>{
+    if(P.etat==='friche'){ /* la friche : de la terre tassée envahie d'herbes folles */
+      parcelle(g,P.x,P.y,PW,PH,'bechee');
+      for(let k=0;k<60;k++){const x=P.x+1+alea(k*1.7+P.x)*(PW-2), y=P.y+3+alea(k*3.1+P.y)*(PH-3), h=2+alea(k*5.3)*3;
+        PX(g,x,y-h,0.5,h,k%2?'#6f8449':'#7d9450');PX(g,x,y-h-0.5,0.5,0.5,'#9cb072');}
+      if(!P.ouverte){ /* un piquet et son petit panneau : parcelle à débloquer */
+        const sx=P.x+PW-8, sy=P.y+PH-6;PX(g,sx,sy-10,1,10,'#6b4a28');PX(g,sx-4,sy-12,9,5,'#e8dcc0');PX(g,sx-4,sy-12,9,0.5,'#fff4d8');PX(g,sx-4,sy-7.5,9,0.5,'#8a6a40');
+        g.fillStyle='#6b4a28';g.font='700 2.6px Georgia';g.fillText('À LOUER',sx-3.6,sy-8.6);}
+    }else parcelle(g,P.x,P.y,PW,PH,P.eau?'arrosee':'bechee');
+  });
+  return c;}
 let GAIN=0, CHOIX='tomates';window.__POT={PARC,proche:()=>proche()};
 const stade=(P)=>{if(!P.cult)return -1;const d=CULT[P.cult][0]*60*1000/ACCEL*(P.eau?1:2), k=(Date.now()-P.t0)/d;return k>=1?3:(k>0.6?2:(k>0.2?1:0));};
-const proche=()=>PARC.find(P=>joueur.x>P.x-10&&joueur.x<P.x+PW+10&&joueur.y>P.y-8&&joueur.y<P.y+PH+14);
+const proche=()=>PARC.find(P=>joueur.x>P.x-2&&joueur.x<P.x+PW+2&&joueur.y>P.y+2&&joueur.y<P.y+PH+8);
 /* 2 · on dessine les parcelles et les plantes, rangées avec les personnages (par profondeur) */
 const decorVrai=dessinerDecor;
 dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
-  PARC.forEach(P=>{
-    parcelle(g,P.x-camX,P.y-camY,PW,PH,P.etat==='herbe'?'herbe':(P.eau?'arrosee':'bechee'));
-    const s=stade(P);
-    if(P.cult)[0,1,2].forEach(q=>acteurs.push({y:P.y+PH-4,f:()=>{PLANTES[P.cult](g,P.x+7+q*13-camX,P.y+PH-4-camY,s);
-      if(s===3&&q===2){const t=Date.now()/300;PX(g,P.x+PW-5-camX,P.y+3-camY+Math.sin(t)*0.5,1,1,'#fff6c0');PX(g,P.x+PW-5.5-camX,P.y+3.25-camY,2,0.5,'#fff6c0');}}}));
-  });
+  if(CHAMP_SALE||!CHAMP_C){CHAMP_C=graverChamp();CHAMP_SALE=false;}
+  g.drawImage(CHAMP_C,Math.round(Z.x0-camX),Math.round(Z.y0-camY),Z.x1-Z.x0,Z.y1-Z.y0);
+  PARC.forEach(P=>{if(!P.cult)return;const s=stade(P);
+    if(P.x-camX>VW2+20||P.x+PW-camX<-20||P.y-camY>VH2+30||P.y+PH-camY<-30)return;
+    for(let r=0;r<2;r++)for(let q=0;q<3;q++){const px=P.x+9+q*((PW-18)/2), py=P.y+PH*(0.45+r*0.45);
+      acteurs.push({y:py,f:()=>PLANTES[P.cult](g,px-camX,py-camY,s)});}
+    if(s===3)acteurs.push({y:P.y+PH,f:()=>{const t=Date.now()/300;PX(g,P.x+PW-4-camX,P.y+3-camY+Math.sin(t)*0.5,1,1,'#fff6c0');PX(g,P.x+PW-4.5-camX,P.y+3.25-camY,2,0.5,'#fff6c0');}});});
   return decorVrai(g,camX,camY,VW2,VH2,acteurs);};
 /* 3 · le bouton d'action : bêcher, semer, arroser, récolter */
 const majVrai=majAction;
 majAction=function(){const P=proche(), b=$('action');
   if(!P)return majVrai();
   const s=stade(P);
-  const t=P.etat==='herbe'?['Bêcher','AVEC LA HOUE']:(!P.cult?['Semer · '+CULT[CHOIX][2],'TOUCHE LONGUE : CHANGER DE GRAINE']:(s===3?['Récolter','+'+CULT[P.cult][1]+' €']:(!P.eau?['Arroser','ÇA POUSSERA DEUX FOIS PLUS VITE']:['Ça pousse…',CULT[P.cult][2].toUpperCase()+' · '+['SEMÉ','POUSSE','PLANT','MÛR'][s]])));
+  if(!P.ouverte){b.innerHTML='Parcelle à louer<small>AGRANDIS TON CHAMP AU GRAINETIER</small>';b.classList.add('on');return;}
+  const t=P.etat==='friche'?['Bêcher','AVEC LA HOUE']:(!P.cult?['Semer · '+CULT[CHOIX][2],'TOUCHE LONGUE : CHANGER DE GRAINE']:(s===3?['Récolter','+'+CULT[P.cult][1]+' €']:(!P.eau?['Arroser','ÇA POUSSERA DEUX FOIS PLUS VITE']:['Ça pousse…',CULT[P.cult][2].toUpperCase()+' · '+['SEMÉ','POUSSE','PLANT','MÛR'][s]])));
   b.innerHTML=t[0]+'<small>'+t[1]+'</small>';b.classList.add('on');};
 const agirVrai=agir;
 const geste=(type,ms)=>{GESTE={t:1,pourMoi:true,cible:null,impact:false,type};const t0=Date.now();const id=setInterval(()=>{GESTE.t=Math.max(0,1-(Date.now()-t0)/ms);if(GESTE.t<=0){clearInterval(id);GESTE={t:0};}},30);};
 let ARROSE=0;
-agir=function(){const P=proche();if(!P)return agirVrai();const s=stade(P);
-  if(P.etat==='herbe'){geste('houe',650);setTimeout(()=>{P.etat='bechee';majAction();},420);vibrer(15);return;}
+agir=function(){const P=proche();if(!P)return agirVrai();if(!P.ouverte){texteVolant(joueur.x,joueur.y-56,'Parcelle à louer','#ffe8a0');return;}const s=stade(P);
+  if(P.etat==='friche'){geste('houe',650);setTimeout(()=>{P.etat='bechee';CHAMP_SALE=true;majAction();},420);vibrer(15);return;}
   if(!P.cult){geste('cueille',600);setTimeout(()=>{P.cult=CHOIX;P.t0=Date.now();P.eau=false;majAction();},350);vibrer(10);return;}
   if(s===3){geste('cueille',600);setTimeout(()=>{GAIN+=CULT[P.cult][1];texteVolant(joueur.x,joueur.y-56,'+'+CULT[P.cult][1]+' € · '+CULT[P.cult][2],'#ffe070');
-      e.euros=(e.euros||0)+CULT[P.cult][1]*100;majHaut();P.cult=null;P.eau=false;P.etat='bechee';majAction();},380);vibrer([20,40,20]);return;}
-  if(!P.eau){ARROSE=Date.now();setTimeout(()=>{if(P.cult){const k=(Date.now()-P.t0);P.t0=Date.now()-k/2;}P.eau=true;majAction();},600);vibrer(12);return;}
+      e.euros=(e.euros||0)+CULT[P.cult][1]*100;majHaut();P.cult=null;P.eau=false;P.etat='bechee';CHAMP_SALE=true;majAction();},380);vibrer([20,40,20]);return;}
+  if(!P.eau){ARROSE=Date.now();setTimeout(()=>{if(P.cult){const k=(Date.now()-P.t0);P.t0=Date.now()-k/2;}P.eau=true;CHAMP_SALE=true;majAction();},600);vibrer(12);return;}
 };
 $('action').addEventListener('click',(ev)=>{if(!proche())return;ev.stopImmediatePropagation();ev.preventDefault();agir();},true);   /* près d'une parcelle, le bouton sert au potager */
 /* l'arrosoir, pendant l'arrosage */
@@ -22046,14 +22069,14 @@ dessinerBulles=function(g,camX,camY,px,py){const d=Date.now()-ARROSE;
 let appui=0;
 $('action').addEventListener('pointerdown',()=>{appui=setTimeout(()=>{appui=0;ouvrirGraines();},550);});
 $('action').addEventListener('pointerup',()=>{clearTimeout(appui);});
-function ouvrirGraines(){const P=proche();if(!P||P.cult||P.etat==='herbe')return;
+function ouvrirGraines(){const P=proche();if(!P||!P.ouverte||P.cult||P.etat==='friche')return;
   const box=document.createElement('div');box.style.cssText='position:fixed;inset:auto 10px calc(env(safe-area-inset-bottom,0px) + 90px);z-index:99;background:#f4ecd8;border-radius:16px;padding:10px;display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font:14px Georgia;box-shadow:0 8px 24px rgba(0,0,0,.4)';
   Object.entries(CULT).forEach(([k,[min,px,nom]])=>{const b=document.createElement('button');b.style.cssText='border:0;border-radius:10px;padding:9px;background:'+(k===CHOIX?'#5b3f21':'#fff')+';color:'+(k===CHOIX?'#f4ecd8':'#3a2a1a')+';font:700 13px Georgia;text-align:left';
     b.innerHTML=nom+'<br><small style="font-weight:400">'+(min<60?min+' min':(min/60)+' h')+' · +'+px+' €</small>';b.onclick=()=>{CHOIX=k;box.remove();majAction();};box.appendChild(b);});
   document.body.appendChild(box);}
 /* 5 · on démarre directement au bord du champ */
 setTimeout(()=>{try{document.getElementById('porte').style.display='none';e.id='demo';e.euros=0;e.ap=Object.assign({},DEF_AP,e.ap||{});preparerMonde();taille();
-  joueur.x=Z.x0+90;joueur.y=Z.y0+10;majHaut();
+  joueur.x=Z.x0+60;joueur.y=Z.y0-6;majHaut();
   const fermer=()=>{try{$('page2').classList.remove('on');}catch(x){}};fermer();[300,800,1500,2500,4000].forEach(t=>setTimeout(fermer,t));   /* pas de tutoriel dans la démo */
   texteVolant(joueur.x,joueur.y-70,'Démo du potager · 1 h = 1 min','#ffe070');
   setTimeout(()=>texteVolant(joueur.x,joueur.y-58,'Approche une parcelle','#fff3d0'),1500);}catch(err){console.error(err);}},1200);
