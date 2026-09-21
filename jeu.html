@@ -23,7 +23,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-1607';
+  var MA_VERSION='2026-09-21-1611';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -1828,6 +1828,7 @@ body.clavier #bandeau{padding-bottom:9px}
 <script>
 /* ---- LE PRÉ DE L'ACCUEIL, EN PIXEL FIN ET VIVANT, POUR LE CHARGEMENT ---- */
 (function(){
+window.__ALLEGE=true;                  /* au chargement, le jeu travaille en même temps : on allège ce qui bouge */
 const $=(i)=>document.getElementById(i);
 const cv=$('vPre');
 let dir=0,PIX=0;
@@ -1867,7 +1868,7 @@ function graver(){
   const D=DECORS[0];                                        /* le pré au couchant */
   const ZO=3;
   const W=Math.ceil(window.innerWidth/ZO), H=Math.ceil(window.innerHeight/ZO);
-  const K=Math.max(2,Math.min(8,ZO*(window.devicePixelRatio||1)));   /* 4K : un point du tableau = K points de l'écran, en résolution native */
+  const K=Math.max(2,Math.min(window.__ALLEGE?4:8,ZO*(window.devicePixelRatio||1)));   /* 4K : un point du tableau = K points de l'écran, en résolution native */
   cv.width=Math.round(W*K);cv.height=Math.round(H*K);
   const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(K,0,0,K,0,0);
   let n=0;
@@ -1989,7 +1990,8 @@ function graver(){
   }
   PIX=n;
   /* le calque de ce qui bouge, à la même échelle */
-  vc.width=Math.round(W*K);vc.height=Math.round(H*K);vc.__K=K;
+  const KV=window.__ALLEGE?2:Math.min(3,K);                     /* ce qui bouge : 2 ou 3 points par point, ça suffit (et ça ne rame plus) */
+  vc.width=Math.round(W*KV);vc.height=Math.round(H*KV);vc.__K=KV;
   const gv=vc.getContext('2d');gv.imageSmoothingEnabled=false;
   preparerVie();POLLEN.length=0;
 }
@@ -2023,8 +2025,8 @@ function preparerVie(){
 const POLLEN=[],HERBES=[],PETALES=[],OISEAUX=[];
 const AUBE=false;                         /* l'aube existe (brume, rosée), mais on garde la lumière du couchant */
 function preparerLumiere(){POLLEN.length=HERBES.length=PETALES.length=OISEAUX.length=0;
-  for(let i=0;i<46;i++)POLLEN.push({x:alea(i*2.3)*VW2,y:alea(i*3.9)*VH2,v:3+alea(i*1.1)*5,t:alea(i*7.7)*6.28});
-  for(let i=0;i<34;i++)HERBES.push({x:alea(i*5.3)*VW2,y:VH2*(0.56+alea(i*2.7)*0.44),h:6+alea(i*3.1)*7,n:3+Math.floor(alea(i*4.9)*3),t:alea(i)*6.28,
+  for(let i=0;i<(window.__ALLEGE?22:46);i++)POLLEN.push({x:alea(i*2.3)*VW2,y:alea(i*3.9)*VH2,v:3+alea(i*1.1)*5,t:alea(i*7.7)*6.28});
+  for(let i=0;i<(window.__ALLEGE?16:34);i++)HERBES.push({x:alea(i*5.3)*VW2,y:VH2*(0.56+alea(i*2.7)*0.44),h:6+alea(i*3.1)*7,n:3+Math.floor(alea(i*4.9)*3),t:alea(i)*6.28,
     c:['#5f7a3c','#6f8a48','#4f6a34'][i%3]});
   for(let i=0;i<10;i++)PETALES.push({x:alea(i*6.1)*VW2,y:alea(i*8.3)*VH2,v:10+alea(i*2.9)*10,t:alea(i*3.3)*6.28,c:['#f2efe4','#e0a8c8','#e8cf4e','#d9584f'][i%4]});
   for(let i=0;i<3;i++)OISEAUX.push({x:-30-i*14,y:VH2*(0.08+i*0.035),v:16,t:i*0.7,attente:6+i*0.5});}
@@ -2045,11 +2047,15 @@ function dessinerLumiere(g,t,dt,avant){
     for(let k=0;k<(AUBE?5:0);k++){const y=VH2*(0.18+k*0.14)+Math.sin(t*0.15+k)*6, x=((t*(3+k)+k*VW2*0.4)%(VW2*1.6))-VW2*0.3, w=VW2*(0.5+alea(k)*0.4);
       const gr=g.createRadialGradient(x,y,4,x,y,w*0.5);gr.addColorStop(0,'rgba(245,236,240,.10)');gr.addColorStop(1,'rgba(245,236,240,0)');
       g.fillStyle=gr;g.save();g.translate(x,y);g.scale(1,0.18);g.translate(-x,-y);g.beginPath();g.arc(x,y,w*0.5,0,7);g.fill();g.restore();}
-    /* les oiseaux : un petit vol, de temps en temps, tout en haut */
+    dessinerOiseaux(g,t,dt);
+    return;}
+  dessinerLumiere2(g,t,dt);}
+function dessinerOiseaux(g,t,dt){const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,w,h);};
     OISEAUX.forEach(o=>{if(o.attente>0){o.attente-=dt;return;}o.x+=o.v*dt;o.t+=dt*7;const b=Math.sin(o.t)>0?1:0;
       R(o.x,o.y,1,1,'#3a3326');R(o.x-2,o.y-b,2,1,'#3a3326');R(o.x+1,o.y-b,2,1,'#3a3326');
-      if(o.x>VW2+20){o.x=-20;o.attente=14+alea(t)*16;o.y=VH2*(0.06+alea(t*3)*0.1);}});
-    return;}
+      if(o.x>VW2+20){o.x=-20;o.attente=14+alea(t)*16;o.y=VH2*(0.06+alea(t*3)*0.1);}});}
+function dessinerLumiere2(g,t,dt){const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,w,h);};
+  {
   /* la rosée qui scintille, ici et là, quand le soleil l'accroche */
   for(let k=0;k<(AUBE?26:0);k++){const x=alea(k*3.7)*VW2, y=alea(k*5.9)*VH2, ph=(t*0.7+alea(k*2.1)*6)%6;if(ph<0.35){const a=1-Math.abs(ph-0.17)/0.17;
     R(x,y,.5,.5,'rgba(255,255,255,'+a.toFixed(2)+')');R(x-1,y,.5,.5,'rgba(255,240,230,'+(a*0.5).toFixed(2)+')');R(x+1,y,.5,.5,'rgba(255,240,230,'+(a*0.5).toFixed(2)+')');R(x,y-1,.5,.5,'rgba(255,240,230,'+(a*0.5).toFixed(2)+')');R(x,y+1,.5,.5,'rgba(255,240,230,'+(a*0.5).toFixed(2)+')');}}
@@ -2062,15 +2068,15 @@ function dessinerLumiere(g,t,dt,avant){
   /* les hautes herbes du premier plan, qui ondulent sous la brise */
   HERBES.forEach(h=>{const vent=Math.sin(t*1.6+h.x*0.05)*0.6+Math.sin(t*0.7+h.t)*0.4;
     for(let b=0;b<h.n;b++){const bx=h.x+b*1.5-h.n*0.7, hh=h.h-(b%2)*2;
-      for(let k=0;k<hh;k+=.5){const off=Math.round(vent*(k/hh)*(k/hh)*6)/2;R(bx+off,h.y-k,.5,.5,k>hh-1.5?'#a8b46e':h.c);}}});
-}
+      const pas=window.__ALLEGE?1:.5;for(let k=0;k<hh;k+=pas){const off=Math.round(vent*(k/hh)*(k/hh)*6)/2;R(bx+off,h.y-k,.5,pas,k>hh-1.5?'#a8b46e':h.c);}}});
+}}
 function dessinerVie(t,dt){
   const g=vg;
   const K=vc.__K||2;g.setTransform(K,0,0,K,0,0);g.imageSmoothingEnabled=false;
   g.clearRect(0,0,VW2,VH2);
   const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,w,h);};
   if(!POLLEN.length)preparerLumiere();
-  dessinerLumiere(g,t,dt,false);
+  if(!window.__ALLEGE)dessinerLumiere(g,t,dt,false);else dessinerOiseaux(g,t,dt);
   dessinerCompagnon(g,t,dt);
   /* --- LE VENT : les feuilles volent, les papillons traversent --- */
   FEUILLES.forEach(f=>{
@@ -2169,8 +2175,11 @@ function dessinerCompagnon(g,t,dt){
 }
 
 let t0=performance.now();
+let tDern=0;
 function boucle(t){
-  if(!document.getElementById('voile'))return;
+  if(!document.getElementById('voile'))return;                 /* le jeu est prêt : on arrête tout */
+  if(t-tDern<(window.__ALLEGE?40:30)){requestAnimationFrame(boucle);return;}   /* 25 à 33 images par seconde : l'œil ne voit pas la différence */
+  tDern=t;
   const dt=Math.min(.05,(t-t0)/1000);t0=t;
   dessinerVie(t/1000,dt);
   requestAnimationFrame(boucle);
