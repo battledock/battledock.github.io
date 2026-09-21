@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-1723';
+  var MA_VERSION='2026-09-21-1903';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -7434,6 +7434,52 @@ function ailesMoulinRoche(g,x,y,t){g.save();g.translate(x,y);g.rotate(t*0.5);
     g.fillStyle='rgba(246,236,214,.96)';g.fillRect(2.5,-94,15,70);g.fillStyle='rgba(214,200,172,.95)';g.fillRect(13,-94,4.5,70);
     g.fillStyle='#5b3f21';for(let q=0;q<10;q++)g.fillRect(1.5,-94+q*7.5,17,1.1);g.fillRect(17.3,-94,1.2,70);g.fillRect(9.5,-94,.8,70);}
   g.restore();g.fillStyle='#3a3530';g.beginPath();g.arc(x,y,6,0,7);g.fill();g.fillStyle='#7a7266';g.beginPath();g.arc(x,y,2.6,0,7);g.fill();}
+
+/* ================= LE MOULIN, VERSION VILLAGE =================
+   Bâti avec les mêmes outils que le Comptoir, la Boutique, le Grainetier et le Fournil : la brique du jeu, le toit de
+   tuiles, l'enseigne de bois aux lettres dorées, la terrasse de planches. Une haute tour de brique aux chaînes d'angle
+   de pierre, un toit en pavillon, et les grandes ailes de toile qui tournent au sommet. */
+function graverMoulinVillage(){const W=200,Ht=290,cx=W/2,sol=Ht-16;
+  const c=document.createElement('canvas');const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const {R,briques,toit,enseigne}=outilsFront(g);
+  const TL=76, bas=sol-176;                                 /* la tour : 76 de large, 176 de haut */
+  g.fillStyle='rgba(30,50,24,.26)';g.beginPath();g.ellipse(cx+4,sol+4,74,13,0,0,7);g.fill();
+  /* LE SOUBASSEMENT DE PIERRE */
+  for(let y=0;y<16;y+=4){const dec=(y/4)%2?5:0;for(let x=-TL/2-6;x<TL/2+6;x+=10)R(cx+x+dec,sol-16+y,9,3,((x+y)%3?PI_F.p:PI_F.c));}
+  R(cx-TL/2-6,sol-18,TL+12,3,PI_F.h);R(cx-TL/2-6,sol-18,TL+12,1,PI_F.e);
+  /* LA TOUR DE BRIQUE */
+  briques(cx-TL/2,bas,TL,sol-18-bas);
+  /* les chaînes d'angle, en pierre, qui montent jusqu'au toit */
+  for(let y=bas;y<sol-18;y+=8){const l=((y/8)%2)?6:9;
+    R(cx-TL/2-1,y,l,7,PI_F.c);R(cx-TL/2-1,y,l,1.4,PI_F.e);R(cx-TL/2-1,y+6,l,1,PI_F.o);
+    R(cx+TL/2+1-l,y,l,7,PI_F.p);R(cx+TL/2+1-l,y,l,1.4,PI_F.h);R(cx+TL/2+1-l,y+6,l,1,PI_F.o);}
+  /* deux bandeaux de pierre qui marquent les étages */
+  [bas+44].forEach(y=>{R(cx-TL/2-3,y,TL+6,5,PI_F.c);R(cx-TL/2-3,y,TL+6,1.6,PI_F.e);R(cx-TL/2-3,y+5,TL+6,1.2,PI_F.o);});
+  /* les fenêtres à petits carreaux, avec leurs volets de bois */
+  [[bas+14],[bas+56]].forEach(([y])=>{R(cx-9,y,18,20,B_F.boisO);R(cx-7,y+2,14,16,'#3a4750');R(cx-1,y+2,2,16,B_F.boisO);R(cx-7,y+9,14,2,B_F.boisO);
+    for(let d=0;d<5;d++)R(cx-6+d*2,y+3+d*2,2,1,'rgba(230,240,246,.18)');R(cx-15,y,6,20,B_F.bois);R(cx+9,y,6,20,B_F.bois);
+    for(let k=0;k<20;k+=4){R(cx-15,y+k,6,1,B_F.boisO);R(cx+9,y+k,6,1,B_F.boisO);}R(cx-11,y+20,22,3,PI_F.c);R(cx-11,y+20,22,1,PI_F.e);});
+  /* LE TOIT EN PAVILLON, de tuiles, et le capot de l'arbre des ailes */
+  toit(cx,bas-2,TL+8,34);
+  R(cx-TL/2-14,bas+1,TL+28,4,B_F.boisS);
+  R(cx-7,bas-42,14,12,B_F.boisO);R(cx-6,bas-41,12,10,B_F.bois);R(cx-6,bas-41,12,1.5,B_F.boisH);          /* le capot, en bois */
+  /* L'ENSEIGNE, comme toutes les boutiques du village */
+  enseigne(cx,sol-92,TL+10,'MOULIN',12);                    /* au-dessus de la porte */
+  /* LA GRANDE PORTE DE BOIS, cintrée, pour faire entrer les charrettes de blé */
+  const PL=30,PH=38;R(cx-PL/2-5,sol-18-PH-4,PL+10,PH+4,PI_F.p);R(cx-PL/2-5,sol-18-PH-4,PL+10,2,PI_F.e);
+  g.fillStyle=PI_F.p;g.beginPath();g.arc(cx,sol-18-PH,PL/2+5,Math.PI,0);g.fill();g.fillStyle='#241a12';g.beginPath();g.arc(cx,sol-18-PH,PL/2,Math.PI,0);g.fill();
+  R(cx-PL/2,sol-18-PH,PL,PH,'#241a12');
+  for(let x=0;x<PL;x+=5){R(cx-PL/2+x,sol-18-PH,5,PH,x%10?B_F.bois:B_F.boisC);R(cx-PL/2+x+4,sol-18-PH,1,PH,B_F.boisO);}
+  g.fillStyle=B_F.bois;g.beginPath();g.arc(cx,sol-18-PH,PL/2-1,Math.PI,0);g.fill();R(cx-1,sol-18-PH-PL/2,2,PH+PL/2,B_F.boisS);
+  R(cx+4,sol-18-PH/2,2.5,2.5,'#c9a24a');R(cx-6.5,sol-18-PH/2,2.5,2.5,'#c9a24a');
+  /* LA TERRASSE DE PLANCHES, devant, comme les boutiques */
+  R(cx-TL/2-18,sol-8,TL+36,7,B_F.bois);for(let x=0;x<TL+36;x+=7)R(cx-TL/2-18+x,sol-8,1,7,B_F.boisO);
+  R(cx-TL/2-18,sol-8,TL+36,2,B_F.boisH);R(cx-TL/2-18,sol-1,TL+36,3,B_F.boisS);
+  /* les sacs de farine d'un côté, les gerbes de blé de l'autre */
+  [[cx-TL/2-14],[cx-TL/2-3],[cx-TL/2-9,true]].forEach(([x,haut])=>{const y=haut?sol-26:sol-19;R(x,y,11,11,'#ece2cc');R(x,y,11,2,'#f8f2e2');R(x+1,y-2,9,3,'#d8ccb0');R(x+3,y+5,5,2,'#c8a050');});
+  [[cx+TL/2+2],[cx+TL/2+10]].forEach(([x])=>{for(let k=0;k<7;k++){R(x+k*1.2,sol-26,1,18,'#c9a84e');R(x-0.5+k*1.2,sol-29,2,4,'#e0c46a');}R(x-1,sol-16,10,2,'#8a6238');});
+  return {toile:c,W,H:Ht,sol,nuit:null};}
 
 function nuitComptoir(g,x,y){
   const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x+a),Math.round(y+b),w,h);};
@@ -22816,7 +22862,8 @@ dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
    sont pleins. On marche dans l'herbe et la terre, au milieu des poules. */
 /* LES BOUTIQUES DU HAUT (Grainetier, Fournil) : pleines sur toute leur profondeur, pas seulement au pied de la façade */
 const boutBloqueVrai=bloque;
-bloque=function(x,y){if(CARTE==='village'){for(const bx of [1340,1570])if(Math.abs(x-bx)<78&&y>156-78&&y<156+3)return true;}return boutBloqueVrai(x,y);};
+bloque=function(x,y){if(CARTE==='village'){for(const bx of [1340,1570])if(Math.abs(x-bx)<78&&y>156-78&&y<156+3)return true;
+  if(Math.abs(x-1780)<48&&y>250-70&&y<250+3)return true;}return boutBloqueVrai(x,y);};                 /* le moulin aussi, sur toute sa profondeur */
 const poulBloqueVrai=bloque;
 bloque=function(x,y){if(CARTE==='village'){const Z=POUL_Z(), H=Z.y1-Z.y0, ey0=Z.y0+Math.min(46,H*0.34), ex0=Z.x0+6, ex1=Z.x1-6, ey1=Z.y1-6;
     if(y>ey0-2&&y<ey1+3&&(Math.abs(x-ex0)<3||Math.abs(x-ex1)<3))return true;                   /* le grillage, à gauche et à droite */
@@ -23042,14 +23089,14 @@ const calque=(cv,W,H,sol)=>({toile:cv,W,H,sol,nuit:null});
 function semerLaCour(){const L=[];const D=DPRH();
   const reg=(nom,C)=>{XCAL['x_fe_'+nom+'0']=C;CALQUES_DECO['x_fe_'+nom]=C;};
   reg('fournil3',graverFournil3());
-  reg('moulin2',calque(graverMoulinRoche(),210,250,228));      /* le moulin de roche */
+  reg('moulin2',graverMoulinVillage());      /* le moulin, bâti comme les boutiques du village */
   [0,1,2,3].forEach(v=>reg('ruche'+v,calque(graverGrandeRuche(v),46,58,53)));
   reg('lanb',Object.assign(calque(graverLanterneBois(false),22,52,49),{nuit:graverLanterneBois(true)}));
   reg('bancr',calque(graverBancRustique(),40,18,15));reg('tonneau',calque(graverTonneau(),16,20,18));
   reg('caisse',calque(graverCaisse(),18,16,14));reg('jardi',calque(graverJardiniere(),24,18,16));reg('poteauf',calque(graverPoteauFerme(),40,46,43));
   const P=(t,x,y,o)=>L.push(Object.assign({t:'x_fe_'+t,x,y,v:0},o||{}));
   P('fournil3',1570,156,{bati:true,demi:80,ferme:'Le Fournil',anim:'fournil3'});      /* en haut, à côté du Grainetier */
-  P('moulin2',1770,262,{bati:true,demi:50,ferme:'Le moulin',anim:'moulin2'});
+  P('moulin2',1780,250,{bati:true,demi:50,ferme:'Le moulin',anim:'moulin2'});      /* à droite du Fournil */
   [[1600,470],[1660,462],[1720,470],[1780,464],[1840,472],[1630,540],[1750,544]].forEach(([x,y],k)=>P('ruche'+(k%4),x,y,{anim:'ruche',ferme:k===2?'Le rucher':undefined,bati:k===2,demi:k===2?60:0}));
   [[1270,240],[1850,240],[1270,386],[1850,386],[1450,300],[1670,300]].forEach(([x,y])=>P('lanb',x,y));
   [[1500,356],[1620,356],[1380,318],[1740,318]].forEach(([x,y])=>P('bancr',x,y));
@@ -23058,7 +23105,7 @@ function semerLaCour(){const L=[];const D=DPRH();
   L.push({t:'puits',x:1560,y:318,gr:0,teinte:0});                                            /* le puits du village, au centre de la cour */
   return L;}
 /* ce qui bouge : les ailes du moulin, la fumée du four, les abeilles autour des ruches */
-ANIM_DECOR.moulin2=(g,o,x,y)=>{const C=XCAL['x_fe_moulin20'];if(!C)return;g.drawImage(C.toile,Math.round(x)-C.W/2,Math.round(y)-C.sol,C.W,C.H);ailesMoulinRoche(g,Math.round(x)+40,Math.round(y)-150,performance.now()/1000);};
+ANIM_DECOR.moulin2=(g,o,x,y)=>{const C=XCAL['x_fe_moulin20'];if(!C)return;g.drawImage(C.toile,Math.round(x)-C.W/2,Math.round(y)-C.sol,C.W,C.H);ailesMoulinRoche(g,Math.round(x),Math.round(y)-212,performance.now()/1000);};
 ANIM_DECOR.fournil3=(g,o,x,y)=>{const C=XCAL['x_fe_fournil30'];if(!C)return;g.drawImage(C.toile,Math.round(x)-C.W/2,Math.round(y)-C.sol,C.W,C.H);const t=performance.now()/1000;
   for(let k=0;k<7;k++){const u=((t*0.3+k/7)%1);g.fillStyle='rgba(235,235,240,'+(0.5*(1-u))+')';g.beginPath();g.arc(x+44+Math.sin(u*6+k)*4,y-98-u*40,2.5+u*6,0,7);g.fill();}};   /* la fumée du four */
 ANIM_DECOR.fournil=(g,o,x,y)=>{const C=XCAL['x_fe_fournil0'];if(!C)return;g.drawImage(C.toile,Math.round(x)-C.W/2+10,Math.round(y)-C.sol,C.W,C.H);const t=performance.now()/1000;
