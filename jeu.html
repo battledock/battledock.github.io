@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-20-2244';
+  var MA_VERSION='2026-09-21-0316';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -10647,7 +10647,7 @@ function dessinerSouche(g,x,y,gr,neuf){
 /* LA RIVE EST RÉTRÉCIT : 806 de large au lieu de 1166. Cinq bâtiments dans
    1166 de large donnaient un pré avec des maisons dedans ; resserrés, ils
    font un village. Le grand vide, ce sera le DEHORS, plus tard. */
-const MONDE_L=CARTE==='garde'?640:(CARTE==='montagne'?360:(CARTE==='sommet'||CARTE==='piscine'?320:(CARTE==='stade'?760:1900)));   /* le village s'ouvre à l'est sur la ferme */               // largeur, en pixels de jeu
+const MONDE_L=CARTE==='garde'?640:(CARTE==='montagne'?360:(CARTE==='sommet'||CARTE==='piscine'?320:(CARTE==='stade'?760:1400)));               // largeur, en pixels de jeu
 /* La carte gagne 160 points au sud pour accueillir la VOIE FERRÉE : elle
    traverse tout l'écran et sort des deux côtés, avec son remblai, et elle
    ferme le monde par le bas — qui s'arrêtait jusqu'ici sur une lisière sans
@@ -11638,61 +11638,35 @@ const TERRE_F={o:'#8d7550',s:'#9c8159',p:'#ab9166',c:'#b9a074',h:'#c7b184'};
 const BLE_F={o:'#a9974e',s:'#bda75c',c:'#cdb96e',h:'#dcc981'};
 function peindreLaFerme(g){
   const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
-  const F=FERME, CH=F.champ;
-  for(let y=0;y<MONDE_H;y+=2)for(let x=F.cheminX0-40;x<MONDE_L;x+=2){
-    const n=alea(x*0.17+y*0.43);R(x,y,2,2,n<0.5?OLIVE_F.base:(n<0.86?OLIVE_F.moyen:OLIVE_F.sec));}
-  for(let x=F.cheminX0-40;x<CH.x0+26;x+=2){const avance=Math.min(1,Math.max(0,(x-(F.cheminX0-40))/120));
-    for(let y=F.cheminY-24;y<F.cheminY+24;y+=2){const bord=Math.abs(y-F.cheminY)/24, n=alea(x*0.31+y*0.77);
-      if(n>(1-bord*bord)*(0.4+avance*0.6))continue;
-      R(x,y,2,2,n<0.25?TERRE_F.o:(n<0.58?TERRE_F.s:(n<0.85?TERRE_F.p:TERRE_F.c)));}}
-  [CH,F.champ2].forEach(Z=>{for(let y=Z.y0;y<Z.y1;y+=2)for(let x=Z.x0;x<Z.x1;x+=2){const n=alea(x*0.23+y*0.51);
-    R(x,y,2,2,n<0.4?'#8d7550':(n<0.75?'#9c8159':'#ab9166'));}});
+  const Z=FERME.champ2;
+  for(let y=Z.y0;y<Z.y1;y+=2)for(let x=Z.x0;x<Z.x1;x+=2){const n=alea(x*0.23+y*0.51);
+    R(x,y,2,2,n<0.4?'#8d7550':(n<0.75?'#9c8159':'#ab9166'));}
 }
 function peindreLaFermeFin(g){
   const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
   g.save();g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
-  const F=FERME, CH=F.champ;
-  const surChemin=(x,y)=>x<CH.x0+26&&Math.abs(y-F.cheminY)<24;
-  /* LA PRAIRIE : les touffes du village, ombre, corps, pointe claire */
-  for(let k=0;k<2400;k++){const x=F.cheminX0-40+alea(k*1.9)*(MONDE_L-F.cheminX0+40), y=alea(k*3.7)*MONDE_H, n=alea(k*5.3);
-    if(surChemin(x,y))continue;if(x>CH.x0-6&&x<CH.x1+6&&y>CH.y0-6&&y<CH.y1+6)continue;
-    if(x>F.champ2.x0-6&&x<F.champ2.x1+6&&y>F.champ2.y0-6&&y<F.champ2.y1+6)continue;
-    R(x-0.5,y+0.5,2,0.5,'rgba(70,90,50,.22)');
-    const h=2+Math.round(n*3)/2;R(x,y-h,0.5,h,OLIVE_F.fonce);R(x-0.5,y-h+0.5,0.5,h-0.5,OLIVE_F.ombre);R(x+0.5,y-h+1,0.5,h-1,OLIVE_F.ombre);
-    R(x,y-h-0.5,0.5,0.5,OLIVE_F.clair);if(n>0.96)R(x+1,y-h,0.5,0.5,'#e8e2c0');}
-  /* LE CHEMIN : terre grenue, deux ornières, quelques pierres */
-  for(let x=F.cheminX0-40;x<CH.x0+26;x+=0.75){const avance=Math.min(1,Math.max(0,(x-(F.cheminX0-40))/120));
-    for(let y=F.cheminY-24;y<F.cheminY+24;y+=0.75){const bord=Math.abs(y-F.cheminY)/24, n=alea(x*3.1+y*7.7);
-      if(n>(1-bord*bord*0.9)*(0.35+avance*0.65))continue;
-      R(x,y,0.5,0.5,n<0.22?TERRE_F.o:(n<0.55?TERRE_F.s:(n<0.84?TERRE_F.p:TERRE_F.c)));}
-    [-11,10].forEach(d=>{const y=F.cheminY+d;R(x,y,0.5,1,'#796343');R(x,y+1,0.5,0.5,TERRE_F.h);});
-    if(alea(x*5.3)<0.05){const y=F.cheminY+(alea(x*6.1)-0.5)*40;R(x,y+0.5,2,0.5,'rgba(60,50,30,.3)');R(x,y-1,1.5,1.5,'#9aa0a6');R(x,y-1,1.5,0.5,'#bcc4ca');}}
-  /* LE CHAMP LABOURÉ, VIDE : des sillons qui ondulent, la crête éclairée, le creux dans l'ombre,
-     de la terre grumeleuse, quelques cailloux, et une marge d'herbe folle tout autour. */
   const ondu=(x)=>Math.sin(x/90)*5+Math.sin(x/37)*2;
   const laboure=(CH)=>{
-  for(let y=CH.y0;y<CH.y1;y+=5){
-    for(let x=CH.x0;x<CH.x1;x+=0.5){
-      const yy=y+ondu(x)+alea(x*0.7+y)*0.5;
-      const bordX=Math.min(1,Math.min(x-CH.x0,CH.x1-x)/18), bordY=Math.min(1,Math.min(yy-CH.y0,CH.y1-yy)/16);
-      const dedans=Math.min(bordX,bordY);if(dedans<=0)continue;
-      const n=alea(x*3.3+y*5.9);
-      if(n>0.25+dedans*0.75)continue;                                   /* les bords s'effrangent dans l'herbe */
-      R(x,yy-2.5,0.5,1,'#a08a62');                                       /* la crête du sillon, éclairée */
-      R(x,yy-1.5,0.5,1.5,n<0.5?'#8d7550':'#96795a');                     /* le flanc */
-      R(x,yy,0.5,1.5,'#6f5b3d');                                         /* le creux, dans l'ombre */
-      R(x,yy+1.5,0.5,0.5,'#7d6746');
-      if(n<0.06){R(x,yy-3,1,0.5,'#b49a70');}                             /* une motte plus claire */
-      if(n>0.985){R(x,yy-1,1,0.5,'rgba(60,50,30,.35)');R(x,yy-2,1,1,'#9aa0a6');R(x,yy-2,1,0.5,'#bcc4ca');}}  /* un caillou */
-  }
-  /* la marge d'herbe folle qui borde le champ */
-  for(let k=0;k<900;k++){const cote=k%4, t=alea(k*2.7+CH.x0);
-    let x,y;if(cote<2){x=CH.x0+t*(CH.x1-CH.x0);y=(cote?CH.y1:CH.y0)+(alea(k*3.1)-0.5)*14;}
-    else{y=CH.y0+t*(CH.y1-CH.y0);x=(cote===2?CH.x0:CH.x1)+(alea(k*4.3)-0.5)*14;}
-    const h=2+alea(k*5.1)*3;R(x-0.5,y+0.5,1.5,0.5,'rgba(70,90,50,.2)');R(x,y-h,0.5,h,'#6f8449');R(x,y-h-0.5,0.5,0.5,'#8aa05c');
-    if(alea(k*7.7)>0.93){R(x,y-h-1,0.5,0.5,'#e8e2c0');}}
+    for(let y=CH.y0;y<CH.y1;y+=5){
+      for(let x=CH.x0;x<CH.x1;x+=0.5){
+        const yy=y+ondu(x)+alea(x*0.7+y)*0.5;
+        const bordX=Math.min(1,Math.min(x-CH.x0,CH.x1-x)/18), bordY=Math.min(1,Math.min(yy-CH.y0,CH.y1-yy)/16);
+        const dedans=Math.min(bordX,bordY);if(dedans<=0)continue;
+        const n=alea(x*3.3+y*5.9);
+        if(n>0.25+dedans*0.75)continue;
+        R(x,yy-2.5,0.5,1,'#a08a62');                       /* la crête du sillon */
+        R(x,yy-1.5,0.5,1.5,n<0.5?'#8d7550':'#96795a');      /* le flanc */
+        R(x,yy,0.5,1.5,'#6f5b3d');                          /* le creux */
+        R(x,yy+1.5,0.5,0.5,'#7d6746');
+        if(n<0.06)R(x,yy-3,1,0.5,'#b49a70');                /* une motte */
+        if(n>0.985){R(x,yy-1,1,0.5,'rgba(60,50,30,.35)');R(x,yy-2,1,1,'#9aa0a6');R(x,yy-2,1,0.5,'#bcc4ca');}}}
+    for(let k=0;k<900;k++){const cote=k%4, t=alea(k*2.7+CH.x0);
+      let x,y;if(cote<2){x=CH.x0+t*(CH.x1-CH.x0);y=(cote?CH.y1:CH.y0)+(alea(k*3.1)-0.5)*14;}
+      else{y=CH.y0+t*(CH.y1-CH.y0);x=(cote===2?CH.x0:CH.x1)+(alea(k*4.3)-0.5)*14;}
+      const h=2+alea(k*5.1)*3;R(x-0.5,y+0.5,1.5,0.5,'rgba(70,90,50,.2)');R(x,y-h,0.5,h,'#6f8449');R(x,y-h-0.5,0.5,0.5,'#8aa05c');
+      if(alea(k*7.7)>0.93)R(x,y-h-1,0.5,0.5,'#e8e2c0');}
   };
-  laboure(CH);laboure(FERME.champ2);                                   /* les deux champs : à l'est, et sous la place */
+  laboure(FERME.champ2);
   g.restore();
 }
 /* le moulin tourne : ses quatre ailes, entoilées, prennent le vent */
@@ -11715,9 +11689,9 @@ ANIM_DECOR.moulin=(g,o,x,y)=>{const C=XCAL['x_fe_moulin0'];if(!C)return;
    CHAMPS au nord, l'ENCLOS DES ANIMAUX au sud, et à l'est le MOULIN et le VERGER. */
 const FERME={
   cheminY:300, cheminX0:1246, cloture:1392,
-  champ:{x0:1436,x1:1876,y0:72,y1:530},         /* le grand champ, à l'est */
+  champ:null,                                    /* (le champ de l'est est retiré) */
   champ2:{x0:742,x1:1238,y0:400,y1:548}};       /* le second champ, juste sous la place du village */
-const dansLaFerme=(x,y)=>x>FERME.cheminX0-26||(y!==undefined&&x>FERME.champ2.x0-12&&x<FERME.champ2.x1+12&&y>FERME.champ2.y0-12&&y<FERME.champ2.y1+12);
+const dansLaFerme=(x,y)=>y!==undefined&&x>FERME.champ2.x0-12&&x<FERME.champ2.x1+12&&y>FERME.champ2.y0-12&&y<FERME.champ2.y1+12;   /* le champ reste net */
 const PORTE_H=30;                                            /* la hauteur du passage dans la clôture */
 /* les calques de la ferme */
 function graverFerme(t){
@@ -16404,6 +16378,7 @@ function dessinerPapillons(g,camX,camY){
 let pasPrec=0;
 function poussiereDePas(){
   if(!joueur.marche)return;
+  if(!dansRiviere(joueur.x,joueur.y))return;     /* plus de poussière sur la terre : seules les éclaboussures restent */
   if(joueur.pas-pasPrec<1.6)return;
   pasPrec=joueur.pas;
   const dansEau=dansRiviere(joueur.x,joueur.y);
