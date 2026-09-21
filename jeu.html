@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-0432';
+  var MA_VERSION='2026-09-21-0447';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -11633,8 +11633,15 @@ function graverLeChantier(){
 const OLIVE_F={base:'#8fa464',moyen:'#889d5e',fonce:'#819658',ombre:'#70844b',clair:'#9cb072',sec:'#a3ab6a'};
 const TERRE_F={o:'#8d7550',s:'#9c8159',p:'#ab9166',c:'#b9a074',h:'#c7b184'};
 const BLE_F={o:'#a9974e',s:'#bda75c',c:'#cdb96e',h:'#dcc981'};
+/* LA CAMPAGNE, DE L'AUTRE CÔTÉ DE LA RIVIÈRE DE L'EST : on traverse le pont, et l'herbe du village
+   devient celle d'un pré — un peu plus haute, un peu plus sèche, avec des fleurs en taches. */
+const rivePre=(x,y)=>CARTE==='village'&&x>rivX2(y)+RIV_LARGE+6;
 function peindreLaFerme(g){
   const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  if(CARTE==='village')for(let y=0;y<MONDE_H;y+=2){const x0=Math.round(rivX2(y)+RIV_LARGE+6);
+    for(let x=x0;x<MONDE_L;x+=2){const n=alea(x*0.19+y*0.47), k=Math.min(1,(x-x0)/30);
+      if(n>k*1.2)continue;                                                    /* le long de la berge, on se mélange */
+      R(x,y,2,2,n<0.42?'#93a562':(n<0.8?'#8c9e5b':'#a0a868'));}}
   const Z=FERME.champ2;
   for(let y=Z.y0;y<Z.y1;y+=2)for(let x=Z.x0;x<Z.x1;x+=2){const n=alea(x*0.23+y*0.51);
     R(x,y,2,2,n<0.4?'#8d7550':(n<0.75?'#9c8159':'#ab9166'));}
@@ -11664,6 +11671,24 @@ function peindreLaFermeFin(g){
       if(alea(k*7.7)>0.93)R(x,y-h-1,0.5,0.5,'#e8e2c0');}
   };
   laboure(FERME.champ2);
+  if(CARTE==='village'){
+    /* les hautes herbes : des touffes de cinq brins, plus hautes qu'au village, qui se courbent */
+    for(let k=0;k<2200;k++){const y=alea(k*3.7+11)*MONDE_H, x=rivX2(y)+RIV_LARGE+8+alea(k*1.9+7)*(MONDE_L-rivX2(y)), n=alea(k*5.3+3);
+      if(!rivePre(x,y))continue;
+      R(x-1,y+0.5,3,0.5,'rgba(70,90,50,.22)');
+      for(let q=-2;q<=2;q++){const h=3+n*2.5+Math.abs(q)*-0.4, c=q%2?'#70844b':'#7d9450', pl=q*0.5+(n-0.5)*0.8;
+        R(x+q*0.5,y-h,0.5,h,c);R(x+q*0.5+pl,y-h-0.5,0.5,0.5,'#9cb072');}
+      if(n>0.9){R(x,y-6.5,0.5,1.5,'#b8a866');R(x-0.5,y-6,1.5,0.5,'#c9b877');}}                 /* un épi sec */
+    /* les fleurs des champs, EN TACHES (jamais semées une par une) : coquelicots, marguerites, bleuets */
+    const taches=[['#c8402a','#e0604a'],['#f0ece0','#f6d860'],['#4a6ad8','#7a9aee'],['#e8b8d8','#f4d4e8']];
+    for(let t=0;t<16;t++){const cy=40+alea(t*7.3)*(MONDE_H-80), cxb=rivX2(cy)+RIV_LARGE+30+alea(t*4.1)*(MONDE_L-rivX2(cy)-90);
+      const T=taches[t%4], r=10+alea(t*2.3)*12;
+      for(let q=0;q<42;q++){const a=alea(t*13+q)*6.283, d=Math.sqrt(alea(t*17+q*3))*r, x=cxb+Math.cos(a)*d*1.4, y=cy+Math.sin(a)*d*0.8;
+        if(!rivePre(x,y))continue;R(x,y-2.5,0.5,2.5,'#6b8a4a');R(x-0.5,y-3.5,1.5,1.5,T[0]);R(x,y-3,0.5,0.5,T[1]);}}
+    /* le trèfle, en plaques basses */
+    for(let t=0;t<10;t++){const cy=30+alea(t*9.7+2)*(MONDE_H-60), cxb=rivX2(cy)+RIV_LARGE+20+alea(t*5.3)*(MONDE_L-rivX2(cy)-70);
+      for(let q=0;q<60;q++){const a=alea(t*19+q)*6.283, d=Math.sqrt(alea(t*23+q))*14, x=cxb+Math.cos(a)*d*1.3, y=cy+Math.sin(a)*d*0.7;
+        if(!rivePre(x,y))continue;R(x,y,1,1,'#5f8f4a');R(x+0.5,y-0.5,0.5,0.5,'#7aab5c');if(q%9===0)R(x,y-1,1,0.5,'#f0e8f0');}}}
   g.restore();
 }
 /* le moulin tourne : ses quatre ailes, entoilées, prennent le vent */
