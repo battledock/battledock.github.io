@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-1903';
+  var MA_VERSION='2026-09-21-1927';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -3873,6 +3873,10 @@ const HAMEAU=[];
 /* LA PLACE DESCEND ET SE RESSERRE de 40 : le comptoir et la boutique
    bordent son côté nord, et il leur faut de la hauteur. */
 const PLACE={x:960, y:270, w:560, h:200, r:92};
+/* LE VILLAGE = LA PLACE SEULE : on ne garde que la place (sa fontaine, ses platanes, ses bancs, ses lampadaires,
+   le tableau, la boîte, la borne du métro). La carte s'arrête dans ces bornes, fermées par la lisière. */
+const PLACE_SEULE=true;
+const VIL={x0:622,x1:1298,y0:82,y1:452};
 const PL_N=()=>PLACE.y-PLACE.h/2, PL_S=()=>PLACE.y+PLACE.h/2;
 const PL_O=()=>PLACE.x-PLACE.w/2, PL_E=()=>PLACE.x+PLACE.w/2;
 /* LA GARNITURE DE LA PLACE est posée plus bas, avec la fontaine, les
@@ -12082,6 +12086,7 @@ const BLE_F={o:'#a9974e',s:'#bda75c',c:'#cdb96e',h:'#dcc981'};
    devient celle d'un pré — un peu plus haute, un peu plus sèche, avec des fleurs en taches. */
 const rivePre=(x,y)=>false;
 function peindreLaFerme(g){
+  if(PLACE_SEULE)return;
   const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
   if(false)for(let y=0;y<MONDE_H;y+=2){const x0=Math.round(rivX2(y)+RIV_LARGE+6);
     for(let x=x0;x<MONDE_L;x+=2){const n=alea(x*0.19+y*0.47), k=Math.min(1,(x-x0)/30);
@@ -12092,6 +12097,7 @@ function peindreLaFerme(g){
     R(x,y,2,2,n<0.4?'#8d7550':(n<0.75?'#9c8159':'#ab9166'));}
 }
 function peindreLaFermeFin(g){
+  if(PLACE_SEULE)return;
   const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
   g.save();g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
   const ondu=(x)=>Math.sin(x/90)*5+Math.sin(x/37)*2;
@@ -12528,7 +12534,7 @@ const BORD=34;
 const RIV_LARGE=13;                              /* demi-largeur de l'eau */
 /* elle traverse en diagonale du nord-ouest au sud-est : elle coupe
    vraiment la carte en deux moitiés qu'on utilise toutes les deux */
-const rivX=(y)=>ANNEXE?-99999:(550+y*0.16+Math.sin(y/90)*22);   /* +400 : la rive ouest respire */
+const rivX=(y)=>(ANNEXE||(PLACE_SEULE&&CARTE==='village'))?-99999:(550+y*0.16+Math.sin(y/90)*22);   /* +400 : la rive ouest respire */
 /* Un pont se pose là où la rivière coule droit : sinon le tablier
    se déforme pour suivre l'eau, et c'est laid. */
 /* UN SEUL PONT, au milieu de la rivière, et large : c'est le passage entre
@@ -13495,7 +13501,9 @@ function semerDecor(){
 
   /* le panneau de chantier, à l'est de la place : la campagne arrive */
   DECOR=DECOR.filter(o=>o.t==='fleurs'||BATI(o.t)||Math.hypot(o.x-1320,o.y-300)>60);
-  try{DECOR=DECOR.concat(semerLaFerme());}catch(x){console.error(x);}     /* la ferme, derrière la clôture */
+  if(PLACE_SEULE){const GARDE=new Set(['fontaine','bancP','lanterneP','tilleul','panneauV','boite','metro']);
+    DECOR=DECOR.filter(o=>GARDE.has(o.t));}                                   /* la place seule : ni boutiques, ni ferme, ni ressources */
+  else try{DECOR=DECOR.concat(semerLaFerme());}catch(x){console.error(x);}     /* la ferme, derrière la clôture */
   /* on garde la liste triée : ce qui est en bas se dessine par-dessus */
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
@@ -13720,7 +13728,7 @@ function bloque(x,y){
        passait derrière la façade et disparaissait. On ne laisse donc libre
        que ce qui est DEVANT la base du bâtiment. */
     const dx=x-ECHOPPE_FIXE[0], dy=y-ECHOPPE_FIXE[1];
-    if(Math.abs(dx)<=86&&dy>=-52&&dy<=1)return true;   /* toute l emprise dessinee */
+    if(!(PLACE_SEULE&&CARTE==='village')&&Math.abs(dx)<=86&&dy>=-52&&dy<=1)return true;   /* toute l emprise dessinee (pas sur la place seule) */
   }
   /* la fontaine et les décors de la place */
   {
@@ -13740,7 +13748,7 @@ function bloque(x,y){
     const h=b.t==='taverne'?56:(b.t==='atelier'?48:46);
     if(dx<l&&dy>-h&&dy<5)return true;
   }
-  if(e.comptoir){
+  if(e.comptoir&&!(PLACE_SEULE&&CARTE==='village')){
     const dx=x-e.comptoir[0], dy=y-e.comptoir[1];
     /* Aucune poche : le bâtiment est plein, portes comprises. On ne les
        franchit pas à pied — on s'en approche et le bouton ouvre la page.
@@ -14272,9 +14280,10 @@ function dessiner(){
   /* La caméra avance en sous-pixels.
      Un pixel du jeu vaut ECH pixels d'écran : on peut donc glisser par pas de 1/ECH,
      ce qui donne un défilement continu au lieu de sauts d'un pixel entier. */
-  const camXf=Math.max(0,Math.min(MONDE_L-VW,joueur.x-VW/2));
+  const BX0=(PLACE_SEULE&&CARTE==='village')?VIL.x0:0, BX1=(PLACE_SEULE&&CARTE==='village')?VIL.x1:MONDE_L, BY0=(PLACE_SEULE&&CARTE==='village')?VIL.y0:0, BY1=(PLACE_SEULE&&CARTE==='village')?VIL.y1:MONDE_H;
+  const camXf=Math.max(BX0,Math.min(BX1-VW,joueur.x-VW/2));
   /* à Extramar, la vue regarde un peu plus vers le nord : la Bonne Mère */
-  const camYf=Math.max(0,Math.min(MONDE_H-VH,joueur.y-VH*(CARTE==='garde'?0.74:(ANNEXE?0.62:0.5))));
+  const camYf=Math.max(BY0,Math.min(BY1-VH,joueur.y-VH*(CARTE==='garde'?0.74:(ANNEXE?0.62:0.5))));
   const camX=Math.floor(camXf), camY=Math.floor(camYf);
   const fx=Math.round((camXf-camX)*ECH)/ECH;      /* la part fractionnaire, calée sur l'écran */
   const fy=Math.round((camYf-camY)*ECH)/ECH;
@@ -22576,8 +22585,8 @@ const potNow=()=>Date.now()+POT.decal;
 function potStade(P){if(!P||!P.cult)return -1;const t0=new Date(P.t0).getTime(), m=new Date(P.mur_a).getTime(), k=(potNow()-t0)/Math.max(1,m-t0);return k>=1?3:(k>0.6?2:(k>0.2?1:0));}
 function potAdopter(d){if(!d||d.erreur||!d.j)return false;POT.j=d.j;POT.debloque=d.debloque||POT.debloque||[];POT.parc={};(d.parcelles||[]).forEach(p=>POT.parc[p.i]=p);
   if(d.now)POT.decal=new Date(d.now).getTime()-Date.now();if(typeof d.euros==='number'){e.euros=d.euros;try{majHaut();}catch(x){}}POT_SALE=true;POT.charge=true;return true;}
-async function potCharger(){if(CARTE!=='village'||!e.id)return;try{potAdopter(await appelRPC('pot_etat',{p_joueur:e.id}));}catch(x){}}
-function potProche(){if(CARTE!=='village')return null;for(let i=0;i<24;i++){const {x,y,PW,PH}=POT_XY(i);
+async function potCharger(){if(PLACE_SEULE||CARTE!=='village'||!e.id)return;try{potAdopter(await appelRPC('pot_etat',{p_joueur:e.id}));}catch(x){}}
+function potProche(){if(CARTE!=='village'||PLACE_SEULE)return null;for(let i=0;i<24;i++){const {x,y,PW,PH}=POT_XY(i);
   if(joueur.x>x-2&&joueur.x<x+PW+2&&joueur.y>y+2&&joueur.y<y+PH+8)return i;}return null;}
 /* LE CHAMP GRAVÉ : allées de paille, chaque parcelle dans son état ; regravé seulement quand ça change */
 function potGraver(){const Z=POT_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0, D=2, c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');
@@ -22810,7 +22819,7 @@ const poulNow=()=>Date.now()+POUL.decal;
 function poulAdopter(d){if(!d||d.erreur||!d.p)return false;const avant=POUL.p?POUL.p.poules:-1;POUL.p=d.p;POUL.places=d.places||0;
   if(d.now)POUL.decal=new Date(d.now).getTime()-Date.now();if(typeof d.euros==='number'){e.euros=d.euros;try{majHaut();}catch(x){}}
   if(avant!==POUL.p.poules||!POUL_BETES)poulPeupler();POUL.charge=true;return true;}
-async function poulCharger(){if(CARTE!=='village'||!e.id)return;try{poulAdopter(await appelRPC('poul_etat',{p_joueur:e.id}));}catch(x){}}
+async function poulCharger(){if(PLACE_SEULE||CARTE!=='village'||!e.id)return;try{poulAdopter(await appelRPC('poul_etat',{p_joueur:e.id}));}catch(x){}}
 /* les bêtes : autant de poules que le joueur en a achetées, le coq dès qu'il y en a une, une couvée si elles sont trois */
 function poulPeupler(){const Z=POUL_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0, n=POUL.p?POUL.p.poules:0;
   if(!n){POUL_BETES=null;return;}
@@ -22842,7 +22851,7 @@ function poulGraverFond(){const Z=POUL_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0, E=2, c=doc
 /* 1 · le dessin */
 const poulDecorVrai=dessinerDecor;
 dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
-  if(CARTE==='village'){const Z=POUL_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0;
+  if(CARTE==='village'&&!PLACE_SEULE){const Z=POUL_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0;
     if(Z.x1-camX>-10&&Z.x0-camX<VW2+10&&Z.y1-camY>-10&&Z.y0-60-camY<VH2+30){
       if(!POUL_FOND)poulGraverFond();
       g.drawImage(POUL_FOND,Math.round(Z.x0-camX),Math.round(Z.y0-camY),W,H);
@@ -22861,11 +22870,30 @@ dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
 /* ON ENTRE DANS L'ENCLOS par le haut (côté Grainetier) : seuls le grillage (côtés et bas) et le poulailler lui-même
    sont pleins. On marche dans l'herbe et la terre, au milieu des poules. */
 /* LES BOUTIQUES DU HAUT (Grainetier, Fournil) : pleines sur toute leur profondeur, pas seulement au pied de la façade */
+/* LA LISIÈRE DE LA PLACE : gravée une fois, posée à chaque image autour des bornes */
+let LISIERE_PLACE=null;
+function graverLisierePlace(){const {x0,x1,y0,y1}=VIL, W=x1-x0, H=y1-y0, c=document.createElement('canvas');c.width=W*2;c.height=H*2;const q=c.getContext('2d');
+  q.setTransform(2,0,0,2,0,0);q.imageSmoothingEnabled=false;const R=(x,y,w,h,col)=>{q.fillStyle=col;q.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(.5,w),Math.max(.5,h));};
+  const touffe=(x,y)=>{for(let k=0;k<4;k++){const n=alea(x*1.3+y*2.1+k);q.fillStyle=n<0.4?'#2f5a34':(n<0.8?'#3d6f42':'#4b8250');q.beginPath();q.arc(x+(alea(x+k)-.5)*8,y+(alea(y+k*2)-.5)*8,6+n*4,0,7);q.fill();}
+    if(alea(x*y+3)<0.15)R(x,y-4,1.5,1.5,['#e86a8a','#f4f0e0','#f0d040'][Math.floor(alea(x+y)*3)]);};
+  /* la forêt tout autour, dense, puis la palissade de bois au pied */
+  for(let x=0;x<W;x+=7){for(let y=0;y<30;y+=7)touffe(x,y);for(let y=H-22;y<H;y+=7)touffe(x,y);}
+  for(let y=0;y<H;y+=7){for(let x=0;x<34;x+=7)touffe(x,y);for(let x=W-34;x<W;x+=7)touffe(x,y);}
+  for(let x=30;x<W-30;x+=6){R(x,30,5,10,'#7d5934');R(x,30,5,1.5,'#96703f');R(x+4.5,30,.5,10,'#5b3f21');R(x,H-24,5,8,'#7d5934');R(x,H-24,5,1.5,'#96703f');}
+  for(let y=34;y<H-22;y+=6){R(32,y,5,6,'#7d5934');R(32,y,1.5,6,'#96703f');R(W-37,y,5,6,'#7d5934');R(W-37,y,1.5,6,'#96703f');}
+  return c;}
+const lisVrai=dessinerDecor;
+dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){const r=lisVrai(g,camX,camY,VW2,VH2,acteurs);
+  if(PLACE_SEULE&&CARTE==='village'){if(!LISIERE_PLACE)LISIERE_PLACE=graverLisierePlace();g.drawImage(LISIERE_PLACE,VIL.x0-camX,VIL.y0-camY,VIL.x1-VIL.x0,VIL.y1-VIL.y0);}
+  return r;};
+/* on ne se retrouve jamais hors de la place (arrivée, ancienne sauvegarde) */
+setInterval(()=>{if(PLACE_SEULE&&CARTE==='village'&&typeof joueur!=='undefined'&&(joueur.x<VIL.x0+40||joueur.x>VIL.x1-40||joueur.y<VIL.y0+36||joueur.y>VIL.y1-28)){joueur.x=PLACE.x;joueur.y=PLACE.y+40;}},400);
 const boutBloqueVrai=bloque;
-bloque=function(x,y){if(CARTE==='village'){for(const bx of [1340,1570])if(Math.abs(x-bx)<78&&y>156-78&&y<156+3)return true;
+bloque=function(x,y){if(CARTE==='village'&&PLACE_SEULE){if(x<VIL.x0+34||x>VIL.x1-34||y<VIL.y0+30||y>VIL.y1-22)return true;return boutBloqueVrai(x,y);}   /* les bornes de la place */
+  if(CARTE==='village'){for(const bx of [1340,1570])if(Math.abs(x-bx)<78&&y>156-78&&y<156+3)return true;
   if(Math.abs(x-1780)<48&&y>250-70&&y<250+3)return true;}return boutBloqueVrai(x,y);};                 /* le moulin aussi, sur toute sa profondeur */
 const poulBloqueVrai=bloque;
-bloque=function(x,y){if(CARTE==='village'){const Z=POUL_Z(), H=Z.y1-Z.y0, ey0=Z.y0+Math.min(46,H*0.34), ex0=Z.x0+6, ex1=Z.x1-6, ey1=Z.y1-6;
+bloque=function(x,y){if(CARTE==='village'&&!PLACE_SEULE){const Z=POUL_Z(), H=Z.y1-Z.y0, ey0=Z.y0+Math.min(46,H*0.34), ex0=Z.x0+6, ex1=Z.x1-6, ey1=Z.y1-6;
     if(y>ey0-2&&y<ey1+3&&(Math.abs(x-ex0)<3||Math.abs(x-ex1)<3))return true;                   /* le grillage, à gauche et à droite */
     if(x>ex0-2&&x<ex1+2&&Math.abs(y-ey1)<3)return true;                                          /* le grillage du bas */
     if(x>Z.x0+10&&x<Z.x0+70&&y>ey0-14&&y<ey0+14)return true;}                                    /* le poulailler, sur ses pilotis */
@@ -22875,7 +22903,7 @@ function poulEffrayer(){if(!POUL_BETES)return;const Z=POUL_Z(), jx=joueur.x-Z.x0
   const fuir=(b,r,v)=>{const dx=b.x-jx, dy=b.y-jy, d=Math.hypot(dx,dy);if(d<r&&d>0.01){b.x=Math.max(10,Math.min(W-10,b.x+dx/d*v));b.y=Math.max(H*0.36,Math.min(H-10,b.y+dy/d*v));
     if(b.etat!==undefined){b.etat='marche';b.tx=Math.max(12,Math.min(W-12,b.x+dx/d*20));b.ty=Math.max(H*0.38,Math.min(H-12,b.y+dy/d*14));b.dir=dx>0?1:-1;}}};
   POUL_BETES.B.forEach(b=>fuir(b,12,0.9));POUL_BETES.P.forEach(p=>fuir(p,8,1.1));}
-const poulProche=()=>{if(CARTE!=='village')return false;const Z=POUL_Z(), H=Z.y1-Z.y0, ey0=Z.y0+Math.min(46,H*0.34);return joueur.x>Z.x0+6&&joueur.x<Z.x0+90&&joueur.y>ey0-30&&joueur.y<ey0+30;};
+const poulProche=()=>{if(CARTE!=='village'||PLACE_SEULE)return false;const Z=POUL_Z(), H=Z.y1-Z.y0, ey0=Z.y0+Math.min(46,H*0.34);return joueur.x>Z.x0+6&&joueur.x<Z.x0+90&&joueur.y>ey0-30&&joueur.y<ey0+30;};
 /* 2 · le bouton d'action, devant le poulailler */
 const poulMajVrai=majAction;
 majAction=function(){if(!poulProche())return poulMajVrai();const b=$('action'), P=POUL.p;
