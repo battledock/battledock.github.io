@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-21-2052';
+  var MA_VERSION='2026-09-21-2101';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -21117,14 +21117,40 @@ const CSS_SALON2=`
 .peigne .bulle{position:absolute;left:14px;right:14px;bottom:70px;background:#1c1a26;border:1px solid #5ff2ff;color:#5ff2ff;border-radius:12px;padding:10px 12px;font:14px 'Trebuchet MS';opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none;box-shadow:0 0 12px rgba(95,242,255,.4)}
 .peigne .bulle.on{opacity:1;transform:none}
 .peigne .sortir{position:absolute;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);border:2px solid #5ff2ff;border-radius:30px;padding:12px;background:#0e0d14;color:#5ff2ff;font:700 15px 'Trebuchet MS';box-shadow:0 0 12px rgba(95,242,255,.4)}`;
+/* ================= LE HAIR STUDIO : le menu blanc au miroir à ampoules =================
+   En haut, le miroir entouré d'ampoules où l'on voit sa tête tourner avec la coupe choisie ; puis les onglets et la liste.
+   La liste défile dans son propre cadre ; le bouton reste en bas ; les messages s'affichent au-dessus. */
+function hsBulle(t){const b=$('hsBulle');if(!b)return;b.textContent=t;b.classList.add('on');clearTimeout(hsBulle.t);hsBulle.t=setTimeout(()=>b.classList.remove('on'),2600);}
 async function ouvrirLeSalon(){
-  if(!document.getElementById('cssSalon2')){const st=document.createElement('style');st.id='cssSalon2';st.textContent=CSS_SALON2;document.head.appendChild(st);}
-  $('page2Fond').className='peigne';
-  $('page2Fond').innerHTML='<div class="hd"><div class="neon">BARBER</div><div class="sub">LE PEIGNE D’OR · OPEN</div><div class="bourse">ta bourse<b id="salArgent">—</b></div></div>'+
-    '<div class="big"><canvas id="salCabine"></canvas><div class="t" id="salFiche"></div></div>'+
-    '<div class="onglets"><button data-sr="coupe">COUPES</button><button data-sr="couleur">COULEURS</button><button data-sr="moi">MA COUPE</button></div>'+
-    '<div class="mur" id="salGrille"></div><div class="bulle" id="skiBulle"></div><button class="sortir" id="ski-fermer">Ressortir sur le quai</button>';
-  $('ski-fermer').onclick=()=>{fermeA=Date.now();clearInterval(CAB_T);$('page2').classList.remove('on');};
+  $('page2Fond').className='';
+  const amp=[...Array(12)].map((_,k)=>{const t=k/12*4,side=Math.floor(t),u=t-side,p=[[u,0],[1,u],[1-u,1],[0,1-u]][side];return '<i style="left:calc('+(p[0]*100)+'% - 4px);top:calc('+(p[1]*100)+'% - 4px)"></i>';}).join('');
+  $('page2Fond').innerHTML=`<style>
+    #hs{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#fbfaf8;color:#141416;font-family:'Helvetica Neue',Arial,sans-serif}
+    #hs .hs-h{flex:none;padding:calc(env(safe-area-inset-top,0px) + 14px) 110px 6px 16px;text-align:left;position:relative}
+    #hs .hs-h b{font:300 18px 'Helvetica Neue',Arial,sans-serif;letter-spacing:6px;white-space:nowrap}#hs .hs-h small{display:block;font:500 9px Arial,sans-serif;letter-spacing:4px;color:#9a9aa0;margin-top:4px}
+    #hs .hs-bourse{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 12px);font:600 9px Arial,sans-serif;letter-spacing:2px;color:#9a9aa0;text-align:right}#hs .hs-bourse b{display:block;font:700 14px Arial,sans-serif;letter-spacing:0;color:#141416}
+    #hs .hs-miroir{flex:none;margin:6px auto 8px;width:min(46vw,180px);aspect-ratio:1;border-radius:14px;background:#e9eef1;position:relative;box-shadow:inset 0 0 0 3px #fff,0 8px 24px rgba(0,0,0,.10)}
+    #hs .hs-miroir i{position:absolute;width:8px;height:8px;border-radius:50%;background:#fff3b8;box-shadow:0 0 6px #f0d870,0 0 0 1px #e8d8a0}
+    #hs .hs-miroir canvas{position:absolute;inset:9%;width:82%;height:82%;image-rendering:pixelated}
+    #hs .hs-fiche{flex:none;text-align:center;padding:0 16px 8px}#hs .hs-fiche b{display:block;font:700 17px Arial,sans-serif}#hs .hs-fiche span{display:block;font:12px Arial,sans-serif;color:#8a8a90;margin-top:2px}
+    #hs .hs-tabs{flex:none;display:flex;justify-content:center;gap:20px;border-bottom:1px solid #ececef}
+    #hs .hs-tabs button{border:0;background:none;padding:6px 0 8px;font:600 11px Arial,sans-serif;letter-spacing:3px;color:#a8a8ae;border-bottom:2px solid transparent}#hs .hs-tabs button.on{color:#141416;border-bottom-color:#141416}
+    #hs .hs-liste{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;padding:6px 14px 10px}
+    #hs .hs-lg{display:flex;align-items:center;gap:12px;padding:8px;border-bottom:1px solid #efeff2;border-radius:10px;min-width:0}#hs .hs-lg.on{background:#f1f1f4}
+    #hs .hs-lg canvas{flex:none;width:46px;height:46px;border-radius:50%;background:#e9eef1;image-rendering:pixelated}
+    #hs .hs-lg b{flex:1;min-width:0;font:500 14px Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#hs .hs-lg em{flex:none;font:700 14px Arial,sans-serif;font-style:normal}
+    #hs .hs-tag{flex:none;font:700 8px Arial,sans-serif;letter-spacing:1px;padding:3px 6px;border-radius:8px;background:#141416;color:#fff}#hs .hs-tag.or{background:#d8b050;color:#141416}#hs .hs-tag.a{background:#e9eef1;color:#141416}
+    #hs .hs-flacon{flex:none;width:14px;height:24px;border-radius:4px 4px 6px 6px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
+    #hs .hs-pied{flex:none;position:relative;padding:10px 14px calc(env(safe-area-inset-bottom,0px) + 12px);display:flex;gap:10px;background:#fbfaf8;border-top:1px solid #ececef}
+    #hs .hs-pied button{border:0;border-radius:14px;padding:14px;font:700 15px Arial,sans-serif}#hs .hs-ok{flex:1;background:#141416;color:#fff}#hs .hs-ok.pas{background:#c8c8cc}#hs .hs-ok.enl{background:#efeff2;color:#141416}#hs .hs-sortir{background:#efeff2;color:#141416}
+    #hs .hs-bulle{position:absolute;left:14px;right:14px;bottom:calc(100% + 8px);background:#141416;color:#fff;border-radius:14px;padding:10px 12px;font:600 13.5px Arial,sans-serif;text-align:center;opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;pointer-events:none}
+    #hs .hs-bulle.on{opacity:1;transform:none}</style>
+   <div id="hs" lang="fr"><div class="hs-h"><b>HAIR STUDIO</b><small>VIEUX-PORT · COUPES & COULEURS</small><div class="hs-bourse">BOURSE<b id="salArgent">—</b></div></div>
+     <div class="hs-miroir">${amp}<canvas id="salCabine"></canvas></div><div class="hs-fiche" id="salFiche"></div>
+     <div class="hs-tabs"><button data-sr="coupe">COUPES</button><button data-sr="couleur">COULEURS</button><button data-sr="moi">MA COUPE</button></div>
+     <div class="hs-liste" id="salGrille"></div>
+     <div class="hs-pied"><div class="hs-bulle" id="hsBulle"></div><button class="hs-sortir" id="hsSortir">Sortir</button><button class="hs-ok" id="salAchat">—</button></div></div>`;
+  $('hsSortir').onclick=()=>{fermeA=Date.now();clearInterval(CAB_T);$('page2').classList.remove('on');};
   $('page2').classList.add('on');
   lireMesCosmetiques().then(()=>salonMaj()).catch(()=>{});salonMaj();
   clearInterval(CAB_T);let k=0;const dirs=['bas','bas-droite','droite','haut-droite','haut','haut-gauche','gauche','bas-gauche'];
@@ -21134,31 +21160,31 @@ async function ouvrirLeSalon(){
 function apSalonAvecAutre(id){const ap=apSalon(id);const x=SALON_PAR_ID[id];if(x&&x.sorte==='coupe'&&e.ap&&e.ap.teinte)ap.teinte=e.ap.teinte;if(x&&x.sorte==='couleur'&&e.ap&&e.ap.coupe)ap.coupe=e.ap.coupe;return ap;}
 function salonMaj(){
   const G=$('salGrille');if(!G)return;e.cos=e.cos||{};$('salArgent').textContent=enEuros(e.euros||0);
-  document.querySelectorAll('[data-sr]').forEach(b=>{b.classList.toggle('on',b.dataset.sr===RAYON_SALON);b.onclick=()=>{
-    if(b.dataset.sr==='moi'){e.ap=Object.assign({},e.ap);delete e.ap.coupe;delete e.ap.teinte;sauver();envoyerSauvegarde(true);monterEnLigne(true);skiBulle('Te revoilà avec ta coupe d’origine.');salonMaj();return;}
+  document.querySelectorAll('#hs [data-sr]').forEach(b=>{b.classList.toggle('on',b.dataset.sr===RAYON_SALON);b.onclick=()=>{
+    if(b.dataset.sr==='moi'){e.ap=Object.assign({},e.ap);delete e.ap.coupe;delete e.ap.teinte;sauver();envoyerSauvegarde(true);monterEnLigne(true);hsBulle('Te revoilà avec ta coupe d’origine.');salonMaj();return;}
     RAYON_SALON=b.dataset.sr;SEL_SALON=null;salonMaj();};});
   const L=SALON.filter(x=>x.sorte===RAYON_SALON).sort((a,b)=>a.prix-b.prix);
   const porte=RAYON_SALON==='coupe'?(e.ap&&e.ap.coupe):(e.ap&&e.ap.teinte);
   if(!SEL_SALON||!L.some(x=>x.id===SEL_SALON))SEL_SALON=(L.find(x=>x.id===porte)||L[0]).id;
   G.innerHTML=L.map(x=>{const a=!!e.cos[x.id], mis=porte===x.id;
-    const bd=x.collector?'<span class="bd or">COLLECTOR</span>':(mis?'<span class="bd">PORTÉE</span>':(a?'<span class="bd a">À TOI</span>':''));
-    const fl=x.sorte==='couleur'?'<span class="flacon" style="background:linear-gradient('+(x.col||'#8a6a4a')+' 55%,'+(x.pointes||x.col||'#8a6a4a')+')"></span>':'';
-    return '<div class="med'+(x.id===SEL_SALON?' on':'')+'" data-id="'+x.id+'"><canvas data-vue="'+x.id+'"></canvas>'+fl+bd+'<div class="n">'+x.nom+'</div><div class="p">'+enEuros(x.prix).replace(',00','')+'</div></div>';}).join('');
+    const tag=x.collector?'<span class="hs-tag or">COLLECTOR</span>':(mis?'<span class="hs-tag">PORTÉE</span>':(a?'<span class="hs-tag a">À TOI</span>':''));
+    const fl=x.sorte==='couleur'?'<span class="hs-flacon" style="background:linear-gradient('+(x.col||'#8a6a4a')+' 55%,'+(x.pointes||x.col||'#8a6a4a')+')"></span>':'';
+    return '<div class="hs-lg'+(x.id===SEL_SALON?' on':'')+'" data-id="'+x.id+'"><canvas data-vue="'+x.id+'"></canvas><b>'+x.nom+'</b>'+fl+tag+'<em>'+enEuros(x.prix).replace(',00','')+'</em></div>';}).join('');
   G.querySelectorAll('canvas[data-vue]').forEach(cv2=>vignetteTete(cv2,apSalonAvecAutre(cv2.dataset.vue),'bas'));
-  G.querySelectorAll('.med').forEach(c=>c.onclick=()=>{SEL_SALON=c.dataset.id;vibrer(8);salonMaj();});
+  G.querySelectorAll('.hs-lg').forEach(c=>c.onclick=()=>{SEL_SALON=c.dataset.id;vibrer(8);salonMaj();});
   const x=SALON_PAR_ID[SEL_SALON], a=!!e.cos[x.id], mis=porte===x.id, peut=(e.euros||0)>=x.prix;
   const reste=x.collector?Math.max(0,x.collector-COMETES_VENDUES):null, epuise=x.collector&&!a&&reste<=0;
-  $('salFiche').innerHTML=(x.collector?'<span class="coll">'+(epuise?'ÉPUISÉE':'COLLECTOR · '+reste+' / '+x.collector)+'</span>':'<div class="k">'+(x.sorte==='coupe'?'LA COUPE':'LA COULEUR')+'</div>')+
-    '<h3>'+x.nom+'</h3><div class="p">'+enEuros(x.prix)+'</div><div class="et">'+(mis?'Tu la portes.':(a?'Elle est à toi.':'Regarde-toi dans le miroir.'))+'</div>'+
-    '<button id="salAchat" class="ac'+(a?(mis?' enl':''):(peut&&!epuise?'':' pas'))+'">'+(a?(mis?'L’enlever':'La porter'):(epuise?'Épuisée':(peut?'Je la prends':'Il te manque '+enEuros(x.prix-(e.euros||0)))))+'</button>';
+  $('salFiche').innerHTML='<b>'+x.nom+'</b><span>'+enEuros(x.prix).replace(',00','')+(x.collector?' · série de '+x.collector+(reste!==null?' · reste '+reste:''):'')+(a?(mis?' · tu la portes':' · elle est à toi'):' · tu la vois dans le miroir')+'</span>';
+  const bt=$('salAchat');bt.className='hs-ok'+(a?(mis?' enl':''):(peut&&!epuise?'':' pas'));
+  bt.textContent=a?(mis?'L’enlever':'La porter'):(epuise?'Épuisée':(peut?'Choisir · '+enEuros(x.prix).replace(',00',''):'Il te manque '+enEuros(x.prix-(e.euros||0))));
   vignetteTete($('salCabine'),apSalonAvecAutre(SEL_SALON),'bas');
-  $('salAchat').onclick=async()=>{
+  bt.onclick=async()=>{
     const champ=x.sorte==='coupe'?'coupe':'teinte';
-    if(!a){if(epuise){skiBulle('Les dix sont parties.');return;}if(!peut){skiBulle('Il te manque '+enEuros(x.prix-(e.euros||0)));return;}
-      const d=await appelRPC('acheter_cosmetique',{p_joueur:e.id,p_piece:x.id});
-      if(!d||d.erreur){skiBulle(d&&d.erreur==='epuisee'?'Les dix sont parties.':(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':'Le coiffeur n’a pas pu'));if(d&&typeof d.euros==='number')e.euros=d.euros;salonMaj();return;}
+    if(!a){if(epuise){hsBulle('Les dix sont parties.');return;}if(!peut){hsBulle('Il te manque '+enEuros(x.prix-(e.euros||0)));return;}
+      bt.disabled=true;const d=await appelRPC('acheter_cosmetique',{p_joueur:e.id,p_piece:x.id});bt.disabled=false;
+      if(!d||d.erreur){hsBulle(d&&d.erreur==='epuisee'?'Les dix sont parties.':(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':'Le coiffeur n’a pas pu'));if(d&&typeof d.euros==='number')e.euros=d.euros;salonMaj();return;}
       if(typeof d.euros==='number')e.euros=d.euros;e.cos[x.id]=true;e.ap=Object.assign({},e.ap,{[champ]:x.id});
-      skiBulle(x.collector&&d.numero?'Exemplaire n° '+d.numero+' sur '+x.collector+'. Tout le monde va te regarder.':'Et voilà, '+x.nom.toLowerCase()+' ! Les autres te verront avec.');if(x.collector&&d.numero)COMETES_VENDUES=d.numero;}
+      hsBulle(x.collector&&d.numero?'Exemplaire n° '+d.numero+' sur '+x.collector+'. Tout le monde va te regarder.':'Et voilà, '+x.nom.toLowerCase()+' ! Les autres te verront avec.');if(x.collector&&d.numero)COMETES_VENDUES=d.numero;}
     else{e.ap=Object.assign({},e.ap);if(mis)delete e.ap[champ];else e.ap[champ]=x.id;}
     sauver();envoyerSauvegarde(true);monterEnLigne(true);vibrer(20);salonMaj();};
 }
