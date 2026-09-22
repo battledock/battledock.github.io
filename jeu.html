@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-22-0714';
+  var MA_VERSION='2026-09-22-0723';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -674,7 +674,8 @@ body{overflow:hidden}
   font:400 16px Georgia,serif;letter-spacing:1px}
 .toutVendre small{display:block;font:600 11px ui-monospace,monospace;
   color:rgba(246,236,210,.8);margin-top:3px}
-#joy{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;visibility:hidden}
+#joy{position:fixed;left:0;top:0;z-index:2;pointer-events:none;visibility:hidden;will-change:transform}
+#voileBords{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 78vh 78vh at 50% 46%,rgba(255,248,214,.07) 25%,rgba(10,24,8,.26) 100%)}
 #pastilleL{position:fixed;left:50%;transform:translateX(-50%);top:calc(12px + env(safe-area-inset-top));z-index:8;
   border:0;border-radius:14px;padding:6px 11px;background:rgba(18,26,16,.72);color:#f2efe4;
   font:700 11px ui-monospace,monospace;box-shadow:0 3px 10px rgba(0,0,0,.35);display:none}
@@ -1696,6 +1697,7 @@ body.clavier #bandeau{padding-bottom:9px}
 </head>
 <body>
 <canvas id="cv"></canvas>
+<div id="voileBords"></div>
 <canvas id="joy" width="132" height="132"></canvas>
 <div id="voyage">
   <canvas id="voyCv"></canvas>
@@ -14525,7 +14527,7 @@ let joueur={x:dansLaCarte(e.x,MONDE_L)?(e.x<400?e.x+400:e.x):CAMP_FIXE[0],
 let joyX=0,joyY=0;
 
 /* ================= rendu ================= */
-const cv=$('cv'), ctx=cv.getContext('2d');
+const cv=$('cv'), ctx=cv.getContext('2d',{alpha:false});   /* toile opaque : le téléphone n'a plus à la mélanger avec la page à chaque image */
 let VW=0,VH=0;
 let ECH=ZOOM;
 let ECH_CSS=ZOOM;                 /* combien de points d'écran pour un point de jeu */
@@ -14667,8 +14669,8 @@ function dessiner(){
   ctx.setTransform(ECH,0,0,ECH,Math.round(-fx*ECH)+sx,Math.round(-fy*ECH)+sy);
   ctx.imageSmoothingEnabled=false;
 
-  ctx.fillStyle='#2b3a26';ctx.fillRect(0,0,VW+2,VH+2);
   const lw=Math.min(VW+2,MONDE_L-camX), lh=Math.min(VH+2,MONDE_H-camY);
+  if(lw<VW+2||lh<VH+2){ctx.fillStyle='#2b3a26';ctx.fillRect(0,0,VW+2,VH+2);}   /* le fond uni, seulement si le sol ne couvre pas tout l'écran */
   if(SOL_FIN)ctx.drawImage(SOL_FIN,camX*2,camY*2,lw*2,lh*2,0,0,lw,lh);   /* le sol affiné */
   else ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
   if(CARTE==='village'&&FIN_OK())dessinerLaPlaceFin(ctx,camX,camY);    /* la grand-place en dalles fines */
@@ -16332,11 +16334,13 @@ function majJoueur(dt){
    dans toute la moitié gauche de l'écran, et s'efface quand on lâche. */
 const jc=$('joy'), jg=jc.getContext('2d');
 let JDPR=1;
+/* LA TOILE DU JOYSTICK n'est plus plein écran : un petit carré qui suit le pouce.
+   Avant, tout l'écran était effacé et renvoyé à la carte graphique à chaque image de marche. */
+const JOY_C=100;                               /* côté du carré, en points : l'anneau, le pommeau et son ombre y tiennent */
 function tailleJoy(){
-  JDPR=Math.max(1,Math.min(2,window.devicePixelRatio||1));
-  jc.width=Math.round(window.innerWidth*JDPR);
-  jc.height=Math.round(window.innerHeight*JDPR);
-  jg.setTransform(JDPR,0,0,JDPR,0,0);
+  JDPR=Math.max(1,Math.min(3,window.devicePixelRatio||1));
+  jc.width=Math.round(JOY_C*JDPR);jc.height=Math.round(JOY_C*JDPR);
+  jc.style.width=JOY_C+'px';jc.style.height=JOY_C+'px';
 }
 addEventListener('resize',tailleJoy);
 tailleJoy();
@@ -16417,11 +16421,14 @@ function dessinerJoy(dt){
   /* LA TOILE DU JOYSTICK couvre tout l'écran : même vide, le navigateur la superposait
      au jeu à chaque image. Hors usage, on la cache complètement. */
   if(J.vie<=0){
-    if(joySale){jg.clearRect(0,0,window.innerWidth,window.innerHeight);joySale=false;jc.style.visibility='hidden';}
+    if(joySale){jg.setTransform(1,0,0,1,0,0);jg.clearRect(0,0,jc.width,jc.height);joySale=false;jc.style.visibility='hidden';}
     return;
   }
   if(!joySale)jc.style.visibility='visible';
-  jg.clearRect(0,0,window.innerWidth,window.innerHeight);
+  const jox=Math.round(J.ox), joy=Math.round(J.oy);
+  if(jox!==dessinerJoy.x||joy!==dessinerJoy.y){dessinerJoy.x=jox;dessinerJoy.y=joy;jc.style.transform='translate('+(jox-JOY_C/2)+'px,'+(joy-JOY_C/2)+'px)';}
+  jg.setTransform(1,0,0,1,0,0);jg.clearRect(0,0,jc.width,jc.height);
+  jg.setTransform(JDPR,0,0,JDPR,JDPR*(JOY_C/2-jox),JDPR*(JOY_C/2-joy));   /* on garde les coordonnées de l'écran pour dessiner */
   joySale=true;
   jg.save();
   jg.globalAlpha=J.vie;
@@ -17302,10 +17309,8 @@ function ctxJoueurEcran(){return JOUEUR_ECRAN;}
 function ambiance(g){
   /* LE VOILE DOUX DES BORDS, gravé une fois à la taille de l'écran : le poser est bien plus léger que
      recalculer un dégradé circulaire sur chaque point de l'écran, à chaque image */
-  {const cle='ambC'+cv.width+'x'+cv.height;let V=CACHE[cle];
-   if(!V){V=document.createElement('canvas');V.width=cv.width;V.height=cv.height;const q=V.getContext('2d');q.setTransform(cv.width/VW,0,0,cv.height/VH,0,0);
-     q.fillStyle=degradeAmbiance(q);q.fillRect(0,0,VW,VH);CACHE[cle]=V;}
-   g.save();g.setTransform(1,0,0,1,0,0);g.drawImage(V,0,0);g.restore();}
+  /* LE VOILE DOUX DES BORDS est maintenant un calque CSS (#voileBords), posé par la carte
+     graphique : une image plein écran de moins à peindre à chaque image */
   poserLeCiel(g);                  /* la lumière du moment, par-dessus tout */
 }
 
@@ -22849,9 +22854,16 @@ addEventListener('beforeunload',()=>{sauver();});
 let fondu=0;
 taille();
 let t0=performance.now();
+/* LA CADENCE : on suit le rythme réel de l'écran. Avant, toute image arrivée moins de 15,5 ms après
+   la précédente était sautée : un écran 90 Hz tombait à 45 images/s, et le moindre décalage sur un
+   écran 60 Hz faisait sauter une image (la saccade). Maintenant : on dessine à chaque rafraîchissement,
+   sauf au-delà de 100 Hz (120 Hz…) où l'on en prend exactement une sur deux, régulièrement. */
+let tBrut=t0, rythmeEcran=16.7, imagePaire=false;
 (function boucle(t){
   requestAnimationFrame(boucle);
-  if(t-t0<15.5)return;                          /* 60 images/s au plus, même sur un écran 120 Hz */
+  const brut=t-tBrut;tBrut=t;
+  if(brut>2&&brut<40)rythmeEcran=rythmeEcran*0.92+brut*0.08;
+  if(rythmeEcran<10){imagePaire=!imagePaire;if(imagePaire)return;}
   const dt=Math.min(.05,(t-t0)/1000);mesurer(t-t0);majPerf(t-t0);
   if(PERF.on)PERF.traits=0;
   t0=t;
