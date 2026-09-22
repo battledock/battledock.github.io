@@ -101,6 +101,34 @@ h1{font:400 24px Georgia,serif;margin:4px 0 6px}
   background:#e8c06a;color:#2a1d0c;box-shadow:0 3px 0 #8a6a2a}
 #voile{position:fixed;inset:0;background:#000;pointer-events:none;opacity:1;transition:opacity .45s}
 #voile.parti{opacity:0}
+
+/* ===== LA STATION, VERSION CARRELÉE : page crème, plan de ligne horizontal, cartes illustrées ===== */
+html,body{background:#f2efe6!important;color:#1d2a44!important}
+#bas{padding-top:10px}
+.surT{color:#0f8a7a!important}
+h1{color:#1d2a44}
+#bourse{color:#6a6a5a!important}#bourse b{color:#1d2a44!important}
+#plan{background:#fff!important;border:3px solid #1d3f7a!important;border-radius:14px!important;box-shadow:0 3px 0 rgba(29,63,122,.25)!important;padding:12px 12px 10px!important}
+#plan .ligneT{font:700 12px Arial,sans-serif!important;letter-spacing:1px;color:#1d2a44}
+#plan .num{background:#0f8a7a!important;color:#fff!important;border:0!important}
+#ligneH{position:relative;height:62px;margin:4px 6px 0}
+#ligneH:before{content:'';position:absolute;left:8%;right:8%;top:12px;height:8px;border-radius:4px;background:#0f8a7a}
+#ligneH .st{position:absolute;top:4px;width:84px;margin-left:-42px;text-align:center;font:700 10px Arial,sans-serif;color:#1d2a44;letter-spacing:.5px}
+#ligneH .st i{display:block;margin:0 auto 6px;width:24px;height:24px;border-radius:50%;background:#fff;border:5px solid #0f8a7a}
+#ligneH .st.ici i{background:#e84a3a;border-color:#fff;box-shadow:0 0 0 3px #e84a3a}
+#ligneH .st.ferme{opacity:.45}#ligneH .st.choisi i{background:#ffd24a}
+#trace{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;padding-left:0!important}
+#trace::before{display:none!important}
+.carteSt{position:relative;background:#fff;border:2px solid #d8d2c2;border-radius:14px;padding:8px 8px 9px;display:flex;flex-direction:column;align-items:center;gap:4px;font:700 15px Georgia,serif;color:#1d2a44}
+.carteSt canvas{width:100%;aspect-ratio:64/36;border-radius:8px;image-rendering:pixelated}
+.carteSt small{font:700 9px Arial,sans-serif;letter-spacing:1px;color:#7a7a6a;text-transform:uppercase}
+.carteSt.choisi{border-color:#0f8a7a;box-shadow:0 0 0 3px rgba(15,138,122,.28)}
+.carteSt.ici{opacity:.55}.carteSt.ferme canvas{filter:grayscale(.75) brightness(.95)}.carteSt.ferme{color:#8a8a7a}
+.carteSt::before{display:none!important}.carteSt.arret{margin:0!important;width:auto}.carteSt.ferme{opacity:1!important}
+.carteSt .cad{position:absolute;right:6px;top:6px;font:700 8px Arial;letter-spacing:1px;background:#1d2a44;color:#fff;border-radius:4px;padding:2px 5px}
+#partir{background:#0f8a7a!important;color:#fff!important;box-shadow:0 4px 0 #075a50!important}
+#remonter{background:#1d2a44!important;color:#f2efe6!important;box-shadow:0 3px 0 #0e1628!important}
+#mot{color:#6a6a5a!important}
 </style>
 </head>
 <body>
@@ -110,7 +138,8 @@ h1{font:400 24px Georgia,serif;margin:4px 0 6px}
   <h1 id="nomStation">Station</h1>
   <div id="bourse">TON ARGENT · <b id="solde">—</b></div>
   <div id="plan">
-    <div class="ligneT"><span class="num">1</span>SAUMASKI ⇄ LE PORT</div>
+    <div class="ligneT"><span class="num">1</span>LIGNE 1 · DU PORT À LA MONTAGNE</div>
+    <div id="ligneH"></div>
     <div id="trace"></div>
   </div>
   <div class="boutons">
@@ -146,10 +175,11 @@ const $=id=>document.getElementById(id);
 /* LES TESTEURS : Saumaski leur est ouvert avant tout le monde */
 const TESTEUR=(()=>{try{const x=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}');return x.id==='e029d1fb-7baa-4225-91fd-5cdbef6f8711';}catch(e){return false;}})();
 const STATIONS=[
-  /* SAUMASKI, la montagne : au bout de la ligne 1, après le Village. Tracée, pas encore ouverte. */
-  {id:'montagne',nom:'Saumaski',sous:TESTEUR?'la montagne · accès testeur':'la montagne · ouverture prochaine',ouvert:TESTEUR,sortie:'jeu.html?carte=montagne&arrivee=1',prix:0},
-  {id:'village',nom:'Village',sous:'fermé pour l’instant',ouvert:false,sortie:'jeu.html?carte=extramar',prix:0},
-  {id:'port',nom:'Le port',sous:'les docks, les grues, le Vieux-Port',ouvert:true,sortie:'jeu.html?carte=extramar&arrivee=1',prix:0},
+  /* LA LIGNE 1, de la mer aux sommets : le port, la ferme, la forêt, la montagne */
+  {id:'port',nom:'Le port',sous:'Le Vieux-Port, les docks, le casino',ouvert:true,sortie:'jeu.html?carte=extramar&arrivee=1',prix:0},
+  {id:'ferme',nom:'La ferme',sous:'bientôt ouverte',ouvert:false,sortie:'',prix:0},
+  {id:'foret',nom:'La forêt',sous:'bientôt ouverte',ouvert:false,sortie:'',prix:0},
+  {id:'montagne',nom:'La montagne',sous:TESTEUR?'Saumaski · accès testeur':'bientôt ouverte',ouvert:TESTEUR,sortie:'jeu.html?carte=montagne&arrivee=1',prix:0},
 ];
 /* LA STATION OÙ L'ON EST : metro.html (Village) ou metro.html?station=port */
 const ICI=STATIONS.find(s=>s.id===new URLSearchParams(location.search).get('station'))||STATIONS.find(s=>s.id==='port');   /* (le village est fermé) */
@@ -281,7 +311,7 @@ function graverLeQuai(){
     const grd=g.createLinearGradient(0,haut,0,haut+26);grd.addColorStop(0,'rgba(10,12,20,.55)');grd.addColorStop(1,'rgba(10,12,20,0)');
     g.fillStyle=grd;g.fillRect(x,haut,0.5,26);g.fillStyle='#3b3a36';g.fillRect(x,haut-0.5,0.5,0.5);}
   /* les affiches, dans leurs cadres de bois veinés */
-  affiche(g,26,34,34,24,AU_PORT?'village':'port');
+  affiche(g,26,34,34,24,AU_PORT?'montagne':'port');
   affiche(g,132,34,34,24,'jeu');
   [[26,34],[132,34]].forEach(([x,y])=>{g.fillStyle='rgba(255,220,160,.25)';g.fillRect(x-2,y-2,38,0.5);g.fillStyle='rgba(0,0,0,.35)';g.fillRect(x-2,y+25.5,38,0.5);
     g.fillStyle='rgba(255,255,255,.12)';g.fillRect(x+2,y+1,10,0.5);});
@@ -321,6 +351,13 @@ function affiche(g,x,y,w,h,sorte){
     g.fillStyle='#2a1d18';g.fillRect(x+5,y+3,2,10);g.fillRect(x+5,y+3,11,2);g.fillRect(x+14,y+5,1,4);
     g.fillStyle='#8c2f2a';g.fillRect(x+16,y+10,14,3);g.fillStyle='#e9e6db';g.fillRect(x+25,y+8,3,2);
     ecrire(g,'LE PORT',x+w/2-13,y+h-6,'#ffffff');
+  }else if(sorte==='montagne'){
+    /* LA MONTAGNE : ciel clair, deux sommets enneigés, un chalet */
+    for(let j=0;j<h;j++){g.fillStyle=j<14?'#c8e4f4':'#f4f8fb';g.fillRect(x,y+j,w,1);}
+    g.fillStyle='#6a7a8a';for(let i=0;i<12;i++){g.fillRect(x+4+i,y+14-i,24-2*i,1);}
+    g.fillStyle='#ffffff';g.fillRect(x+13,y+3,4,2);g.fillRect(x+12,y+5,6,1);
+    g.fillStyle='#8a5a30';g.fillRect(x+26,y+11,5,4);g.fillStyle='#f4f8fb';g.fillRect(x+25,y+10,7,1);
+    ecrire(g,'MONTAGNE',x+w/2-15,y+h-6,'#1b1b1b');
   }else if(sorte==='village'){
     /* LE VILLAGE : ciel bleu, la fontaine, les toits */
     for(let j=0;j<h;j++){g.fillStyle=j<13?'#8fc3e0':'#d9c7a0';g.fillRect(x,y+j,w,1);}
@@ -386,19 +423,44 @@ function dessiner(t){
 }
 
 /* ---------- le plan de ligne ---------- */
+function vignetteStation(c,k){
+  /* LES VIGNETTES EN PIXEL FIN : dessinées au double, chaque détail au demi-pixel */
+  const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;const W2=64,H2=36;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
+  if(k==='port'){for(let y=0;y<18;y++)R(0,y,W2,1,y<9?'#f6c77e':'#f0a860');R(0,18,W2,18,'#2c6e9e');for(let i=0;i<W2;i+=5)R(i+(i%3),21+(i%4)*3,2.5,.5,'#7ab3d6');
+    R(0,17,W2,1.5,'#d9c7a0');R(40,5,1.5,12,'#2a1d18');R(34,5,16,1.5,'#2a1d18');R(48,6.5,.5,5,'#2a1d18');R(47,11,3,2,'#8c2f2a');
+    R(8,22,18,4,'#f4ecd8');R(8,25.5,18,1,'#c0392b');R(16,12,.8,10,'#5a3a20');g.fillStyle='#fff';g.beginPath();g.moveTo(16.8,12.5);g.lineTo(24,21);g.lineTo(16.8,21);g.fill();
+    R(36,24,20,4,'#8c2f2a');R(40,21,6,3,'#e9e6db');R(52,20,1,4,'#2a1d18');}
+  if(k==='ferme'){R(0,0,W2,16,'#bfe3f0');R(6,3,6,.5,'#fff');R(8,2.5,4,.5,'#fff');R(0,16,W2,20,'#8fb35a');
+    for(let i=0;i<6;i++){R(0,19+i*3,34,1,'#6a8a3a');for(let x=1;x<34;x+=3)R(x,18.5+i*3,.5,.5,'#c9e07a');}
+    R(38,10,20,14,'#b03a2a');g.fillStyle='#7a2a1a';g.beginPath();g.moveTo(36,11);g.lineTo(48,3);g.lineTo(60,11);g.fill();R(45,16,6,8,'#f4ecd8');R(47.5,16,1,8,'#b03a2a');R(46,17.5,4,.5,'#b03a2a');R(46,20.5,4,.5,'#b03a2a');
+    R(40,12.5,3,2.5,'#f4ecd8');R(53,12.5,3,2.5,'#f4ecd8');R(28,11,2,6,'#e0b850');R(27,10,4,1.5,'#c9a24a');}
+  if(k==='foret'){for(let y=0;y<36;y++)R(0,y,W2,1,y<20?'#a8d4c0':'#8cbfa8');R(0,28,W2,8,'#4a6a2a');
+    for(let i=0;i<9;i++){const x=i*7.5-3,h=12+(i*5)%9;[['#1f4a28',0],['#2f5b34',1],['#3d6b3a',2]].forEach(([col,o])=>{g.fillStyle=col;g.beginPath();g.moveTo(x+o*.6,30);g.lineTo(x+4.5,30-h+o*2.5);g.lineTo(x+9-o*.6,30);g.fill();});R(x+4,30,1,2,'#5a3a20');}
+    R(30,31,2.5,1.5,'#c0392b');R(30.5,31,.5,.5,'#fff');R(31,32.5,.5,1.5,'#f4ecd8');R(44,32,2,1,'#e0a040');}
+  if(k==='montagne'){for(let y=0;y<36;y++)R(0,y,W2,1,y<18?'#c8e4f4':'#b0d4ec');
+    g.fillStyle='#5a6a7a';g.beginPath();g.moveTo(-4,36);g.lineTo(20,6);g.lineTo(44,36);g.fill();g.fillStyle='#7a8a9a';g.beginPath();g.moveTo(20,36);g.lineTo(46,10);g.lineTo(70,36);g.fill();
+    g.fillStyle='#fff';g.beginPath();g.moveTo(20,6);g.lineTo(14,14);g.lineTo(17,13);g.lineTo(20,15);g.lineTo(23,13);g.lineTo(26,14);g.fill();
+    g.beginPath();g.moveTo(46,10);g.lineTo(40,17);g.lineTo(44,16);g.lineTo(47,18);g.lineTo(52,17);g.fill();R(0,31,W2,5,'#f4f8fb');
+    R(8,26,6,5,'#8a5a30');g.fillStyle='#fff';g.beginPath();g.moveTo(7,26.5);g.lineTo(11,23);g.lineTo(15,26.5);g.fill();R(10,28,1.5,1.5,'#ffd76a');}
+}
 function dessinerLePlan(){
-  const joignable=(s)=>s.ouvert&&!(ICI.id==='montagne'&&s.id==='port')&&!(ICI.id==='port'&&s.id==='montagne');
-  $('trace').innerHTML=STATIONS.map(s=>{
-    const ici=s.id===ICI.id;
-    return '<button class="arret'+(ici?' ici':'')+(choix===s.id?' choisi':'')+(joignable(s)||ici?'':' ferme')+
-      '" data-s="'+s.id+'"'+(ici?' disabled':'')+'><span style="flex:1"><b>'+s.nom+'</b><br>'+
-      '<span>'+(ici?'VOUS ÊTES ICI':(s.ouvert?s.sous:'🔒 '+s.sous))+'</span></span>'+(ici?'':(s.ouvert?'<span class="prixT">gratuit</span>':'<span class="prixT">fermée</span>'))+'</button>';
+  const joignable=(s)=>s.ouvert&&s.id!==ICI.id;
+  const iA=STATIONS.findIndex(x=>x.id===ICI.id);
+  $('ligneH').innerHTML=STATIONS.map((s,i)=>'<span class="st'+(s.id===ICI.id?' ici':'')+(s.ouvert||s.id===ICI.id?'':' ferme')+(choix===s.id?' choisi':'')+
+    '" style="left:'+(8+i*(84/(STATIONS.length-1)))+'%"><i></i>'+s.nom.toUpperCase()+'</span>').join('');
+  $('trace').innerHTML=STATIONS.map((s,i)=>{
+    const ici=s.id===ICI.id, n=Math.abs(i-iA);
+    const bas=ici?'Tu es ici':(s.ouvert?n+' arrêt'+(n>1?'s':''):s.sous);
+    return '<button class="carteSt arret'+(ici?' ici':'')+(choix===s.id?' choisi':'')+(joignable(s)||ici?'':' ferme')+'" data-s="'+s.id+'"'+(ici?' disabled':'')+'>'+
+      (!s.ouvert&&!ici?'<span class="cad">BIENTÔT</span>':'')+'<canvas width="128" height="72" data-v="'+s.id+'"></canvas>'+s.nom+'<small>'+bas+'</small></button>';
   }).join('');
+  $('trace').querySelectorAll('canvas[data-v]').forEach(c=>vignetteStation(c,c.dataset.v));
   $('trace').querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{
     const s=STATIONS.find(x=>x.id===b.dataset.s);
     if(!s||!joignable(s))return;
     choix=s.id;dessinerLePlan();
-    $('partir').disabled=false;$('partir').textContent='Monter dans la rame';
+    $('partir').disabled=false;$('partir').textContent='Monter · direction '+s.nom;
     /* pas de fraude sur la ligne de Saumaski : elle n'est ouverte qu'aux testeurs, au vrai prix */
     const sansFraude=s.id==='montagne'||ICI.id==='montagne';
     $('frauder').disabled=true;$('frauder').style.display='none';
@@ -507,9 +569,9 @@ function voiture(g,x,y,t,tete,queue){
   /* le toit */
   g.fillStyle='#4b4e56';g.fillRect(x+2,y-4,L-4,4);g.fillStyle='#6a6e78';g.fillRect(x+3,y-4,L-6,1);
   /* la caisse : jaune en haut, liseré blanc, rose en bas */
-  g.fillStyle='#f2c230';g.fillRect(x,y,L,20);
+  g.fillStyle='#0f8a7a';g.fillRect(x,y,L,20);
   g.fillStyle='#fff4d2';g.fillRect(x,y+20,L,2);
-  g.fillStyle='#e2709a';g.fillRect(x,y+22,L,16);
+  g.fillStyle='#0b6a5e';g.fillRect(x,y+22,L,16);
   g.fillStyle='#7a2d4a';g.fillRect(x,y+36,L,2);
   g.fillStyle='rgba(255,255,255,.25)';g.fillRect(x,y,L,1);
   /* les fenêtres, éclairées de l'intérieur */
@@ -528,8 +590,8 @@ function voiture(g,x,y,t,tete,queue){
     g.fillStyle='#1a1510';g.fillRect(x+o,y+2,14,34);
     g.fillStyle='rgba(243,216,140,.55)';g.fillRect(x+o+1,y+3,12,32); /* l'intérieur éclairé */
     [[o-ov,0],[o+7+ov,1]].forEach(([bx])=>{
-      g.fillStyle='#f2c230';g.fillRect(x+bx,y+2,7,18);
-      g.fillStyle='#e2709a';g.fillRect(x+bx,y+20,7,16);
+      g.fillStyle='#0f8a7a';g.fillRect(x+bx,y+2,7,18);
+      g.fillStyle='#0b6a5e';g.fillRect(x+bx,y+20,7,16);
       g.fillStyle='#3b3a36';g.fillRect(x+bx+1,y+5,5,9);
       g.fillStyle='#f3d88c';g.fillRect(x+bx+2,y+6,3,7);
     });
@@ -550,8 +612,8 @@ function voiture(g,x,y,t,tete,queue){
   g.fillStyle='#16171b';g.fillRect(x+6,y+37,L-12,2);
   /* la tête : le poste de conduite et ses phares */
   if(tete){
-    g.fillStyle='#f2c230';g.fillRect(x+L-2,y,3,20);
-    g.fillStyle='#e2709a';g.fillRect(x+L-2,y+22,3,16);
+    g.fillStyle='#0f8a7a';g.fillRect(x+L-2,y,3,20);
+    g.fillStyle='#0b6a5e';g.fillRect(x+L-2,y+22,3,16);
     g.fillStyle='#3b3a36';g.fillRect(x+L-10,y+3,8,10);
     g.fillStyle='#9fc3d6';g.fillRect(x+L-9,y+4,6,8);
     g.fillStyle='#fff4d2';g.fillRect(x+L,y+27,2,3);
@@ -782,8 +844,8 @@ function dessinerLeTrajet(t){
   g.fillStyle=halo;g.fillRect(rx-12,ry-16,34,32);
   const x0=Math.round(rx)-12,y0=Math.round(ry)-3;
   for(let v=0;v<2;v++){const vx=x0+v*7;
-    g.fillStyle='#f2c230';g.fillRect(vx,y0,6,3);
-    g.fillStyle='#e2709a';g.fillRect(vx,y0+3,6,2);
+    g.fillStyle='#0f8a7a';g.fillRect(vx,y0,6,3);
+    g.fillStyle='#0b6a5e';g.fillRect(vx,y0+3,6,2);
     g.fillStyle='#fff4d2';g.fillRect(vx+1,y0+1,1,1);g.fillRect(vx+3,y0+1,1,1);}
   g.fillStyle='#fff4d2';g.fillRect(x0+13,y0+3,1,1);                /* le phare */
   /* LE CONTRÔLE : la rame s'arrête dans le tunnel, gyrophare rouge */
