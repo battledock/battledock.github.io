@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-22-2135';
+  var MA_VERSION='2026-09-22-2146';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -23033,7 +23033,11 @@ async function entrer(){
   /* À Extramar, la porte a remis la position du VILLAGE : on reprend celle du port */
   if(ANNEXE&&e.ext){joueur.x=e.ext.x;joueur.y=e.ext.y;}
   if(CHAMPS_SEULS&&CARTE==='village'&&(joueur.x<790||joueur.x>1528||joueur.y<128||joueur.y>428)){joueur.x=1258;joueur.y=410;}
-  if(FORET_SEULE&&CARTE==='village'&&(joueur.x<FZ.x0+12||joueur.x>FZ.x1-12||joueur.y<FZ.y0+14||joueur.y>FZ.y1-10)){joueur.x=210;joueur.y=350;}   /* on arrive devant la gare de la forêt */   /* hors des champs : on arrive sous le champ */
+  if(FORET_SEULE&&CARTE==='village'){
+    const deMetro=new URLSearchParams(location.search).has('arrivee');
+    if(deMetro||joueur.x<FZ.x0+12||joueur.x>rivX(joueur.y)-30||joueur.y<FZ.y0+14||joueur.y>FZ.y1-10){joueur.x=214;joueur.y=372;}   /* on sort de la gare de la forêt */
+    e.ext={x:joueur.x,y:joueur.y};try{sauver();}catch(x){}
+  }   /* hors des champs : on arrive sous le champ */
   /* resté sur un ponton qui n'existe plus : on le remet sur le quai */
   try{if(CARTE==='extramar'&&dansLeBassin(joueur.x,joueur.y)&&!surPonton(joueur.x,joueur.y))joueur.y=XP.quaiY-14;}catch(x){}
   taille();garderAllume();
@@ -24110,9 +24114,9 @@ dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
   return bordDecorVrai(g,camX,camY,VW2,VH2,acteurs);};
 
 /* LA LIMITE OUEST DE LA FERME : la clôture de bois */
-{const bloqueFermeVrai=bloque;bloque=function(x,y){if(FERME_SEULE&&CARTE==='village'&&x<FERME_X0+16)return true;
+{const bloqueFermeVrai=bloque;bloque=function(x,y){if(CHAMPS_SEULS&&CARTE==='village'&&x<FERME_X0+16)return true;   /* (la limite ouest ne vaut que pour la ferme) */
   if(CHAMPS_SEULS&&CARTE==='village'&&(x<784||x>1534||y<124||y>432))return true;   /* les bordures du bocage : haies, clôtures, arbres, blé */
-  if(FORET_SEULE&&CARTE==='village'&&(x<FZ.x0+10||x>FZ.x1-10||y<FZ.y0+12||y>FZ.y1-8))return true;   /* les bords de la forêt */
+  if(FORET_SEULE&&CARTE==='village'&&(x<FZ.x0+10||y<FZ.y0+12||y>FZ.y1-8||x>rivX(y)-14))return true;   /* les bords de la forêt : la rivière ferme l'est */
   return bloqueFermeVrai(x,y);};}
 /* les poules s'écartent quand on passe au milieu d'elles */
 function poulEffrayer(){if(!POUL_BETES)return;const Z=POUL_Z(), jx=joueur.x-Z.x0, jy=joueur.y-Z.y0, W=Z.x1-Z.x0, H=Z.y1-Z.y0;
