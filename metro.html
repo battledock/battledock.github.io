@@ -177,14 +177,14 @@ const TESTEUR=(()=>{try{const x=JSON.parse(localStorage.getItem('bdl.pix.v2')||'
 const STATIONS=[
   /* LA LIGNE 1, de la mer aux sommets : le port, la ferme, la forêt, la montagne */
   {id:'port',nom:'Le port',sous:'Le Vieux-Port, les docks, le casino',ouvert:true,sortie:'jeu.html?carte=extramar&arrivee=1',prix:0},
-  {id:'ferme',nom:'La ferme',sous:'bientôt ouverte',ouvert:false,sortie:'',prix:0},
+  {id:'ferme',nom:'La ferme',sous:'Le champ, l’étal des graines, le poulailler',ouvert:true,sortie:'jeu.html?carte=ferme&arrivee=1',prix:0},
   {id:'foret',nom:'La forêt',sous:'bientôt ouverte',ouvert:false,sortie:'',prix:0},
   {id:'montagne',nom:'La montagne',sous:TESTEUR?'Saumaski · accès testeur':'bientôt ouverte',ouvert:TESTEUR,sortie:'jeu.html?carte=montagne&arrivee=1',prix:0},
 ];
 /* LA STATION OÙ L'ON EST : metro.html (Village) ou metro.html?station=port */
 const ICI=STATIONS.find(s=>s.id===new URLSearchParams(location.search).get('station'))||STATIONS.find(s=>s.id==='port');   /* (le village est fermé) */
 /* LE MÉTRO EST GRATUIT : plus de ticket à payer, plus de fraude */
-const LAS=STATIONS.find(s=>s.id===(ICI.id==='port'?'montagne':'port'));   /* la prochaine rame : la montagne depuis le port, le port sinon */   /* la prochaine rame : le port depuis le Village, le Village sinon */
+const LAS=STATIONS.find(s=>s.id===(ICI.id==='port'?'ferme':'port'));   /* la prochaine rame : la montagne depuis le port, le port sinon */   /* la prochaine rame : le port depuis le Village, le Village sinon */
 const AU_PORT=ICI.id==='port';
 /* L'ARGENT : le même joueur que dans le jeu. Le serveur seul débite, et
    fixe le prix : le navigateur ne fait que l'afficher. */
@@ -516,7 +516,7 @@ $('frauder').onclick=async()=>{
 };
 function sortirA(st){
   /* le jeu relit e.carte : c'est ce qui le fait ressortir sur la bonne carte */
-  e.carte=st.id==='port'?'extramar':(st.id==='montagne'?'montagne':'village');garder();
+  e.carte=st.id==='port'?'extramar':(st.id==='montagne'?'montagne':(st.id==='ferme'?'ferme':'village'));garder();
   if(DEMO){$('mot').textContent='Dans le jeu, tu remonterais à '+st.nom+'.';
     $('trajConseil')&&($('trajConseil').textContent='Dans le jeu, tu remonterais à '+st.nom+'.');return;}
   $('voile').classList.remove('parti');
@@ -532,8 +532,8 @@ $('remonter').onclick=()=>sortirA(ICI);
       body:JSON.stringify({p_joueur:e.id,p_locale:e.carte||'village'})});
     const d=await r.json();
     if(!d||!d.carte)return;
-    const bonne=d.carte==='montagne'?'montagne':'port';
-    if(bonne!==ICI.id){e.carte=d.carte;garder();location.replace(bonne==='port'?'metro.html?station=port':(bonne==='montagne'?'metro.html?station=montagne':'metro.html'));}
+    const bonne=d.carte==='montagne'?'montagne':(d.carte==='ferme'?'ferme':'port');
+    if(bonne!==ICI.id){e.carte=d.carte;garder();location.replace('metro.html?station='+bonne);}
   }catch(x){}
 })();
 

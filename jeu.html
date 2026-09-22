@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-22-1126';
+  var MA_VERSION='2026-09-22-1134';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -3895,7 +3895,7 @@ const FERME_SEULE=true;
 const FERME_X0=612;                          /* la ferme commence ici : plus de rivière ni de bois à l'ouest */
 /* LA FERME = LES CHAMPS SEULS : on ne garde que le champ et ses parcelles, et la carte se resserre autour */
 const CHAMPS_SEULS=true;
-const FB={x0:952,x1:1852,y0:96,y1:444};       /* (en haut : l'étal des graines) */       /* les bornes de la carte des champs */
+const FB={x0:760,x1:1852,y0:96,y1:444};       /* (à gauche : la gare du métro) */       /* (en haut : l'étal des graines) */       /* les bornes de la carte des champs */
 const VIL={x0:580,x1:1340,y0:82,y1:452};
 const PL_N=()=>PLACE.y-PLACE.h/2, PL_S=()=>PLACE.y+PLACE.h/2;
 const PL_O=()=>PLACE.x-PLACE.w/2, PL_E=()=>PLACE.x+PLACE.w/2;
@@ -12860,6 +12860,31 @@ function graverEtalGraines(){
   return {toile:c,W,H,sol,nuit:null};
 }
 
+/* LA PETITE GARE DE LA FERME : murs de pierre, toit de tuiles, horloge, entrée voûtée et escalier, plaque émaillée */
+function graverGareFerme(){
+  const W=84,H=88,cx=42,sol=84,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;
+  const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(.5,w),Math.max(.5,h));};
+  const al=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+  const B={o:'#5b3f21',c:'#8a6238',h:'#a5764a'},PI={c:'#a89d86',h:'#c2b79e',t:'#d8cfb6',p:'#8f8672'},TU=['#a8502e','#b85c36','#c66a3e','#8e4226'];
+  g.fillStyle='rgba(50,44,24,.3)';g.beginPath();g.ellipse(cx+2,sol+1,38,9,0,0,7);g.fill();
+  for(let y=sol-40;y<sol;y+=4)for(let x=cx-32;x<cx+32;x+=7)R(x+((y/4|0)%2?3.5:0),y,6.5,3.5,al(x*1.3+y)<.5?PI.c:PI.h);
+  R(cx-33,sol-41,66,1.5,PI.t);
+  for(let r=0;r<8;r++){const w=76-r*7,y=sol-43-r*3.4;for(let x=cx-w/2;x<cx+w/2;x+=3){R(x,y-3,3,3.6,TU[(x*7+r|0)%4]);R(x+2.5,y-3,.5,3.6,'#6a2e1a');}}
+  R(cx-38,sol-43,76,1.5,'#f4ecd8');R(cx-38,sol-41.5,76,.8,'#d8cfb6');
+  g.fillStyle='#f4ecd8';g.beginPath();g.arc(cx,sol-60,5,0,7);g.fill();g.strokeStyle='#2a2a2a';g.lineWidth=.8;g.stroke();R(cx-.3,sol-63.5,.6,3.5,'#2a2a2a');R(cx,sol-60.3,3,.6,'#2a2a2a');
+  R(cx-11,sol-30,22,30,'#2a2e2a');g.fillStyle='#2a2e2a';g.beginPath();g.arc(cx,sol-30,11,Math.PI,0);g.fill();
+  g.strokeStyle=PI.t;g.lineWidth=1.5;g.beginPath();g.arc(cx,sol-30,12,Math.PI,0);g.stroke();
+  R(cx-10,sol-22,20,22,'#1a1c20');for(let k=0;k<6;k++){R(cx-9,sol-20+k*3.4,18,1.2,k<2?'#2a2c30':PI.p);R(cx-9,sol-19+k*3.4,18,.5,PI.c);}
+  R(cx-22,sol-40,44,7,'#1d3f7a');R(cx-21.5,sol-39.5,43,6,'#2a5aa8');R(cx-21,sol-39,42,.5,'#fff');
+  g.font='700 4px Arial';g.textAlign='center';g.fillStyle='#fff';g.fillText('LA FERME · LIGNE 1',cx,sol-35.2);
+  [cx-25,cx+17].forEach(x=>{R(x,sol-28,8,10,'#2e3a44');R(x-2,sol-28,2,10,'#4a7ab0');R(x+8,sol-28,2,10,'#4a7ab0');R(x-1,sol-18,10,1.5,PI.t);R(x,sol-19.5,8,1.5,'#e84a5f');});
+  R(cx+22,sol-6,12,2,B.c);R(cx+23,sol-4,1,4,B.o);R(cx+32,sol-4,1,4,B.o);R(cx+22,sol-10,12,1,B.h);
+  g.fillStyle='#f4ecd8';g.beginPath();g.arc(cx-30,sol-50,5,0,7);g.fill();g.fillStyle='#0f8a7a';g.beginPath();g.arc(cx-30,sol-50,4,0,7);g.fill();
+  g.font='700 5.2px Arial';g.fillStyle='#fff';g.fillText('M',cx-30,sol-48.2);R(cx-30.5,sol-46,1,4,'#2a2a2a');
+  return {toile:c,W,H,sol,nuit:null};
+}
+
 function semerLaFerme(){
   /* LE GRAINETIER, à droite du champ : on achète ses outils, on loue ses parcelles */
   const C=graverGrainetier3();XCAL['x_fe_grain0']=C;CALQUES_DECO['x_fe_grain']=C;      /* bâti comme la Boutique du village */
@@ -13085,7 +13110,7 @@ let DECOR=[];                                   /* {t,x,y,gr,cx,cy,cw,ch} */
 
 const TAILLES={
  /* LA FERME : les bâtiments et la clôture sont pleins ; l'herbe, les bêtes et les cultures se traversent */
- x_fe_etal:[{w:112,h:12}], x_fe_mas:[{w:118,h:26}], x_fe_grange:[{w:102,h:22}], x_fe_poulailler:[{w:42,h:14}], x_fe_puits:[{w:30,h:12}],
+ x_fe_etal:[{w:112,h:12}], x_fe_gare:[{w:66,h:14}], x_fe_mas:[{w:118,h:26}], x_fe_grange:[{w:102,h:22}], x_fe_poulailler:[{w:42,h:14}], x_fe_puits:[{w:30,h:12}],
  x_fe_meule:[{w:40,h:12}], x_fe_portail:null, x_fe_barriere:[{w:46,h:6}], x_fe_barriereV:[{w:8,h:26}],
  x_fe_cypres:[{w:8,h:6}], x_fe_olivier:[{w:14,h:8}], x_fe_charrette:[{w:40,h:10}], x_fe_abreuvoir:[{w:30,h:8}],
  x_fe_tournesols:null, x_fe_panneauFerme:[{w:6,h:8}], x_fe_boiteLettres:[{w:5,h:8}], x_fe_fruitier:[{w:12,h:8}],
@@ -14020,7 +14045,9 @@ function semerDecor(){
     try{DECOR=DECOR.concat(semerLeDomaine());}catch(x){console.error(x);}
     if(CHAMPS_SEULS){DECOR=[];                                                 /* les champs seuls : aucun décor… */
       const C=graverEtalGraines();XCAL['x_fe_etal0']=C;CALQUES_DECO['x_fe_etal']=C;
-      DECOR.push({t:'x_fe_etal',x:1258,y:220,v:0,bati:true,demi:50,ouvre:'etalGraines'});}   /* …sauf l'étal des graines, en haut du champ */
+      DECOR.push({t:'x_fe_etal',x:1258,y:220,v:0,bati:true,demi:50,ouvre:'etalGraines'});
+      const G=graverGareFerme();XCAL['x_fe_gare0']=G;CALQUES_DECO['x_fe_gare']=G;
+      DECOR.push({t:'x_fe_gare',x:900,y:300,v:0,bati:true,demi:34,ouvre:'metroFerme'});}   /* la petite gare du métro, à gauche du champ */   /* …sauf l'étal des graines, en haut du champ */
   }
   /* on garde la liste triée : ce qui est en bas se dessine par-dessus */
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
@@ -19618,6 +19645,7 @@ function majAction(){
   if(o.ouvre==='course'){b.innerHTML='Monter sur le plot<small>LA COURSE DU 50 M · A-B-A-B POUR NAGER</small>';b.classList.add('on');return;}
   if(o.ouvre==='cabine'){b.innerHTML=(e.ap&&e.ap.maillot?'Se rhabiller':'Entrer dans la cabine')+'<small>'+(e.ap&&e.ap.maillot?'REMETTRE TES VÊTEMENTS':'SE METTRE EN MAILLOT')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='sortiePiscine'){b.innerHTML='Ressortir sur le quai<small>'+(e.ap&&e.ap.maillot?'ON TE RHABILLE EN SORTANT':'LE VIEUX-PORT')+'</small>';b.classList.add('on');return;}
+  if(o.ouvre==='metroFerme'){b.innerHTML='Descendre dans le métro<small>LIGNE 1 · LA FERME ⇄ LE PORT</small>';b.classList.add('on');return;}
   if(o.ouvre==='etalGraines'){b.innerHTML='Les graines<small>SEMENCES · OUTILS · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
   if(o.ouvre==='grainetier'){b.innerHTML='Entrer au Grainetier<small>OUTILS · GRAINES · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
   if(o.ouvre==='fumoir'){b.innerHTML='Entrer au fumoir<small>TON POISSON VAUT 2,5× PLUS · 30 MIN</small>';b.classList.add('on');return;}
@@ -19792,6 +19820,7 @@ function agir(){
   if(o.ouvre==='presse'){ouvrirLaGazette();return;}
   if(o.ouvre==='bar'){ouvrirLeBar();return;}
   if(o.ouvre==='poissonnerie'){ouvrirLaCriee();return;}
+  if(o.ouvre==='metroFerme'){try{sauver();envoyerSauvegarde(true);}catch(x){}setTimeout(()=>{location.href='metro.html?station=ferme&v='+Date.now();},120);return;}
   if(o.ouvre==='etalGraines'){ouvrirLeGrainetier('graines');return;}
   if(o.ouvre==='grainetier'){ouvrirLeGrainetier('outils');return;}
   if(o.ouvre==='fumoir'){ouvrirLeFumoir();return;}
@@ -22920,9 +22949,10 @@ function animerAnnonce(){
 /* LA CARTE EST TENUE PAR LE SERVEUR : si l'adresse ne correspond pas à l'endroit où
    l'on est vraiment (seul le métro fait changer de carte), on y est renvoyé. */
 async function verifierLaCarte(){
-  if(CARTE==='village'&&FERME_SEULE)return;          /* la ferme s'ouvre par laferme.html : pas de renvoi vers le port */
+  if(CARTE==='village'&&FERME_SEULE){try{if(e.id)appelRPC('arriver_a_la_ferme',{p_joueur:e.id});}catch(x){}return;}   /* à la ferme : le serveur note qu'on y est (le métro repartira d'ici) */
   const d=await appelRPC('ma_carte',{p_joueur:e.id,p_locale:e.carte||'village'});
   if(!d||!d.carte)return;
+  if(d.carte==='ferme'){e.carte='ferme';try{sauver();}catch(x){}location.replace('jeu.html?carte=ferme&v='+Date.now());return;}   /* on était resté à la ferme */
   const vraie=d.carte==='montagne'?'montagne':(d.carte==='sommet'?'sommet':(d.carte==='piscine'?'piscine':(d.carte==='stade'?'stade':'extramar')));   /* (le village est fermé : c'est le port) */
   if(vraie!==CARTE){e.carte=vraie;e.ext=null;try{sauver();}catch(x){}
     location.replace(vraie==='extramar'?'jeu.html?carte=extramar':(vraie==='montagne'?'jeu.html?carte=montagne':(vraie==='sommet'?'jeu.html?carte=sommet':(vraie==='piscine'?'jeu.html?carte=piscine':(vraie==='stade'?'jeu.html?carte=stade':'jeu.html')))));}
