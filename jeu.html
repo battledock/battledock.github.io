@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-22-0659';
+  var MA_VERSION='2026-09-22-0714';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -674,7 +674,7 @@ body{overflow:hidden}
   font:400 16px Georgia,serif;letter-spacing:1px}
 .toutVendre small{display:block;font:600 11px ui-monospace,monospace;
   color:rgba(246,236,210,.8);margin-top:3px}
-#joy{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+#joy{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;visibility:hidden}
 #pastilleL{position:fixed;left:50%;transform:translateX(-50%);top:calc(12px + env(safe-area-inset-top));z-index:8;
   border:0;border-radius:14px;padding:6px 11px;background:rgba(18,26,16,.72);color:#f2efe4;
   font:700 11px ui-monospace,monospace;box-shadow:0 3px 10px rgba(0,0,0,.35);display:none}
@@ -1225,7 +1225,7 @@ body.clavier #bandeau{padding-bottom:9px}
   padding:7px 9px;border-radius:14px;
   background:linear-gradient(180deg,rgba(38,48,32,.93),rgba(26,34,22,.95));
   border:1px solid rgba(159,214,122,.34);
-  box-shadow:0 7px 22px rgba(0,0,0,.5);backdrop-filter:blur(8px);
+  box-shadow:0 7px 22px rgba(0,0,0,.5);   /* plus de flou d'arrière-plan : il recalculait tout l'écran sous le bandeau, à chaque image */
   opacity:0;transform:translateY(10px);pointer-events:none;
   transition:opacity .2s,transform .2s}
 #rencontre.on{opacity:1;transform:none;pointer-events:auto}
@@ -14745,13 +14745,17 @@ const clePose=(ap)=>{
 };
 /* LE PIXEL FIN, À L'ESSAI : pour l'instant, seulement pour le développeur, par un réglage */
 const STYLE_FIN=()=>!(typeof REG!=='undefined'&&REG.styleFin===false);   /* le pixel fin, pour tous (le classique reste au choix) */
+/* LES PLANCHES, DE LA PLUS ANCIENNE À LA PLUS RÉCENTE.
+   Avant : au-delà de dix apparences à l'écran, on jetait TOUT, y compris le joueur,
+   et chaque personnage était regravé pose par pose — des à-coups dès qu'il y avait
+   du monde. Maintenant on ne jette que la planche vue il y a le plus longtemps. */
+const PLAFOND_PLANCHES=24;
 function planche(ap){
   const cle=clePose(ap);
   let P=POSES.get(cle);
-  if(!P){
-    if(POSES.size>9)POSES.clear();     /* on ne garde pas les partis */
-    P={cle,dirs:{}};POSES.set(cle,P);
-  }
+  if(P){if(POSES.size>1){POSES.delete(cle);POSES.set(cle,P);}return P;}
+  if(POSES.size>=PLAFOND_PLANCHES)POSES.delete(POSES.keys().next().value);
+  P={cle,dirs:{}};POSES.set(cle,P);
   return P;
 }
 function poseDe(ap,dir,i){
@@ -14951,7 +14955,7 @@ function personne(g,x,y,ap,dir,pas,marche,enCourse){
     /* immobile en pixel fin : quatre images de brise, qui passent doucement */
     let i=marche?1+(Math.floor(pas*2)%PASM):(STYLE_FIN()?100+(Math.floor(Date.now()/420)%4):0);
     /* un clignement toutes les trois secondes et demie, décalé d'un joueur à l'autre */
-    if(STYLE_FIN()&&((Date.now()+((ap.peau|0)*431+(ap.cheveux|0)*97))%3600)<130)i+=300;
+    if(STYLE_FIN()&&!marche&&((Date.now()+((ap.peau|0)*431+(ap.cheveux|0)*97))%3600)<130)i+=300;   /* on ne cligne qu'à l'arrêt : 160 poses de moins à graver */
     const c=poseDe(ap,dir||'bas',i);
     const px0=Math.round(x-CASE_L/2), py0=Math.round(y-CASE_H+10);
     const lean=(ap===e.ap&&!aVelo)?Math.round(PENCHE.x*2)/2:0;
@@ -16150,8 +16154,11 @@ let BRISE_PH=0, CLIGNE_FIN=false;
 function graverFin(ap,dir,pas,bouge,brise,cligne){
   BRISE_PH=(brise||0)*Math.PI/2;CLIGNE_FIN=!!cligne;
   const L=CASE_L*2, H=CASE_H*2;
+  /* LES TOILES DE TRAVAIL restent en mémoire vive (willReadFrequently) : lire leurs
+     pixels pour le contour ne force plus la carte graphique à tout renvoyer — c'était
+     un arrêt net de plusieurs millisecondes à chaque pose neuve, sur téléphone. */
   const c=document.createElement('canvas');c.width=L;c.height=H;
-  const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(2,0,0,2,0,0);
+  const g=c.getContext('2d',{willReadFrequently:true});g.imageSmoothingEnabled=false;g.setTransform(2,0,0,2,0,0);
   spriteFin(g,CASE_L/2,CASE_H-10,ap,dir,pas,bouge);
   g.setTransform(1,0,0,1,0,0);
   const im=g.getImageData(0,0,L,H), d=im.data, plein=new Uint8Array(L*H);
@@ -16160,7 +16167,7 @@ function graverFin(ap,dir,pas,bouge,brise,cligne){
   for(let yy=0;yy<H;yy++)for(let xx=0;xx<L;xx++){const i=yy*L+xx;
     if(plein[i])continue;
     if((xx>0&&plein[i-1])||(xx<L-1&&plein[i+1])||(yy>0&&plein[i-L])||(yy<H-1&&plein[i+L])){o[i*4]=27;o[i*4+1]=23;o[i*4+2]=18;o[i*4+3]=235;}}
-  const tmp=document.createElement('canvas');tmp.width=L;tmp.height=H;tmp.getContext('2d').putImageData(sortie,0,0);
+  const tmp=document.createElement('canvas');tmp.width=L;tmp.height=H;tmp.getContext('2d',{willReadFrequently:true}).putImageData(sortie,0,0);
   g.drawImage(tmp,0,0);
   return c;
 }
@@ -16407,10 +16414,13 @@ let joySale=false;
 function dessinerJoy(dt){
   /* il s'efface doucement quand on lâche */
   if(!J.actif&&J.vie>0)J.vie=Math.max(0,J.vie-dt*5);
+  /* LA TOILE DU JOYSTICK couvre tout l'écran : même vide, le navigateur la superposait
+     au jeu à chaque image. Hors usage, on la cache complètement. */
   if(J.vie<=0){
-    if(joySale){jg.clearRect(0,0,window.innerWidth,window.innerHeight);joySale=false;}
+    if(joySale){jg.clearRect(0,0,window.innerWidth,window.innerHeight);joySale=false;jc.style.visibility='hidden';}
     return;
   }
+  if(!joySale)jc.style.visibility='visible';
   jg.clearRect(0,0,window.innerWidth,window.innerHeight);
   joySale=true;
   jg.save();
@@ -22764,7 +22774,35 @@ async function verifierLaCarte(){
   if(vraie!==CARTE){e.carte=vraie;e.ext=null;try{sauver();}catch(x){}
     location.replace(vraie==='extramar'?'jeu.html?carte=extramar':(vraie==='montagne'?'jeu.html?carte=montagne':(vraie==='sommet'?'jeu.html?carte=sommet':(vraie==='piscine'?'jeu.html?carte=piscine':(vraie==='stade'?'jeu.html?carte=stade':'jeu.html')))));}
 }
+/* LES POSES DU JOUEUR SE GRAVENT D'AVANCE, pendant les temps morts.
+   Chaque pose neuve (une direction, une image de marche) coûtait un gravage au moment
+   même où on la montrait : c'étaient les petits à-coups en marchant, en tournant.
+   Dès l'entrée, on les grave une par une quand le téléphone n'a rien à faire :
+   d'abord la marche dans la direction du moment, puis les sept autres, puis la brise. */
+let PRECUIT={cle:null,file:[]};
+function precuireLeJoueur(){
+  const temps=(f)=>window.requestIdleCallback?requestIdleCallback(f,{timeout:400}):setTimeout(()=>f({timeRemaining:()=>8}),60);
+  const tour=(dl)=>{
+    try{
+      const ap=e.ap, cle=clePose(ap);
+      if(cle!==PRECUIT.cle){                               /* nouvelle tenue : on repart de zéro */
+        PRECUIT.cle=cle;
+        const d0=joueur.dir||'bas', dirs=[d0].concat(ORDRE8.filter(d=>d!==d0)), f=[];
+        dirs.forEach(d=>{for(let i=1;i<=PASM;i++)f.push([d,i]);});
+        if(STYLE_FIN())dirs.forEach(d=>{for(let i=100;i<104;i++)f.push([d,i]);});
+        PRECUIT.file=f;
+      }
+      let n=0;
+      while(PRECUIT.file.length&&n<3&&(!dl||dl.timeRemaining()>5)){
+        const [d,i]=PRECUIT.file.shift();poseDe(ap,d,i);n++;
+      }
+    }catch(x){}
+    setTimeout(()=>temps(tour),PRECUIT.file.length?16:2000);   /* file vide : on revérifie la tenue de temps en temps */
+  };
+  temps(tour);
+}
 async function entrer(){
+  setTimeout(precuireLeJoueur,1500);
   /* le sol en cache : on attend qu'il soit sorti du téléphone (au plus 0,9 s) avant de construire le monde */
   try{await Promise.race([SOL_CACHE_PROMESSE,new Promise(r=>setTimeout(r,900))]);}catch(x){}
   /* on note la version et le navigateur de chacun : c'est ce qui permet de comprendre un souci chez un joueur */
