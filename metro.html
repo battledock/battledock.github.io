@@ -19,6 +19,51 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 document.addEventListener('touchmove',function(e){if(e.touches&&e.touches.length>1)e.preventDefault();},{passive:false});
 window.addEventListener('wheel',function(e){if(e.ctrlKey)e.preventDefault();},{passive:false});
 document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&['+','-','=','0'].indexOf(e.key)>=0)e.preventDefault();});})();</script>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<script>
+/* Ajouté au signet, un navigateur garde la page en mémoire et ne va plus
+   jamais la rechercher. On lui demande donc, à chaque ouverture, quelle est
+   la version publiée : si elle a changé, on recharge une seule fois avec une
+   adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
+(function(){
+  var MA_VERSION='2026-09-22-1151';
+            /* visible par tout le jeu (les réglages l'affichent) */
+  var cle='bdl.version.vue';
+  function verifier(){
+    fetch('version.json?t='+Date.now(),{cache:'no-store'})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(!d||!d.v||d.v===MA_VERSION)return;
+        /* on ne recharge qu'une fois par version, sinon on bouclerait */
+        var deja=null;
+        try{deja=sessionStorage.getItem(cle);}catch(e){}
+        if(deja===d.v)return;
+        try{sessionStorage.setItem(cle,d.v);}catch(e){}
+        var q=new URLSearchParams(location.search);q.set('v',d.v);var u=location.pathname.split('?')[0]+'?'+q.toString();   /* on garde la station */
+        location.replace(u);
+      })
+      .catch(function(){});
+  }
+  verifier();
+  /* LE FILET DES VIEUX NAVIGATEURS : si le jeu n'a pas démarré une fois la page lue, c'est que ce
+     navigateur ne sait pas le lire. On le dit, avec la marche à suivre, au lieu d'un écran figé. */
+  /* les scripts du jeu s'exécutent toujours AVANT « DOMContentLoaded » : si, à ce moment-là, le jeu
+     n'a pas démarré, c'est qu'il n'a pas pu être lu (et non qu'il charge lentement) */
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){
+    if(window.__JEU_DEMARRE)return;
+    var d=document.createElement('div');d.style.cssText='position:fixed;inset:0;z-index:9999;background:#1d1a14;color:#f2e8d0;display:flex;align-items:center;justify-content:center;padding:24px;font:16px Georgia,serif;text-align:center;line-height:1.5';
+    d.innerHTML='<div><b style="font-size:20px">Ton navigateur est trop ancien pour Battle Dock</b><br><br>Mets à jour <b>Chrome</b> ou <b>Samsung Internet</b> depuis le Play Store, puis rouvre le jeu.<br><br><small style="opacity:.7">'+(navigator.userAgent||'').replace(/[<>]/g,'').slice(0,160)+'</small></div>';
+    document.body.appendChild(d);
+  },1500);});
+  /* et quand on revient sur l'onglet après un moment */
+  var vu=Date.now();
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState!=='visible')return;
+    if(Date.now()-vu<60000)return;
+    vu=Date.now();verifier();
+  });
+})();
+</script>
 <title>Battle Dock — Le métro</title>
 <style>
 :root{--or:#e8c06a;--nuit:#0c0e14;--creme:#f2efe4;--bleu:#1d3f8f}
