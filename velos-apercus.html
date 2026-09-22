@@ -1,0 +1,173 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Vélos du port · aperçus</title>
+<style>
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}html,body{height:100%;background:#15110e}body{font-family:'Helvetica Neue',Arial,sans-serif;color:#f2efe4;overflow-x:hidden}
+#sel{position:sticky;top:0;z-index:5;display:flex;gap:6px;overflow-x:auto;padding:calc(env(safe-area-inset-top,0px) + 8px) 8px 8px;background:rgba(0,0,0,.7)}
+#sel button{flex:none;border:0;border-radius:14px;padding:7px 12px;font:600 12px Arial;background:#333;color:#ddd}#sel button.on{background:#e8c06a;color:#111}
+#zoom{display:block;width:100%;aspect-ratio:60/26;background:radial-gradient(ellipse at 50% 85%,#d8c49c,#8f7a58 80%)}
+#scene{display:block;width:100%;aspect-ratio:200/84;image-rendering:auto;touch-action:manipulation}
+.info{padding:14px 16px calc(env(safe-area-inset-bottom,0px) + 18px);max-width:520px;margin:0 auto}
+.info small{font:700 9px Arial;letter-spacing:3px;color:#e8c06a}.info h1{font:400 26px Georgia,serif;margin:4px 0 6px}.info p{font:italic 14px Georgia,serif;line-height:1.4;opacity:.9}
+.reel{display:flex;align-items:center;gap:12px;margin-top:14px;padding:10px 12px;border-radius:12px;background:#2a221b}
+.reel span{font:600 10px Arial;letter-spacing:2px;opacity:.7}.reel canvas{background:#c9b48c;border-radius:6px;image-rendering:pixelated}
+.aide{margin-top:10px;font:500 11px Arial;opacity:.55}
+</style></head><body>
+<div id="sel"></div>
+<canvas id="scene"></canvas>
+<canvas id="zoom"></canvas>
+<div class="info"><small id="num"></small><h1 id="nom"></h1><p id="desc"></p>
+<div class="reel"><span>TAILLE RÉELLE</span><canvas id="reel"></canvas></div>
+<div class="aide">Touche la scène : en route / à quai</div></div>
+<script>
+/* ——— les modèles ——— */
+const VELOS=[
+ {id:'bleu',emo:'🔵',nom:'Le Bleu',desc:'Le vélo actuel du port, pour comparer : cadre diamant bleu, panier grillagé.',borne:'#1d4f9a',ecart:17},
+ {id:'hollandaise',emo:'🍷',nom:'La Hollandaise',desc:'Cadre ouvert bordeaux, garde-boue crème, pneus à flanc clair, panier en osier. Le vélo pour flâner sur le quai.',borne:'#7a1f2b',ecart:17},
+ {id:'biporteur',emo:'🐟',nom:'Le Biporteur de la Criée',desc:'Long vélo cargo orange, caisse en bois à l’avant pleine de poissons. Plus lent, mais il transporte.',borne:'#c8561e',ecart:27},
+ {id:'course',emo:'🏁',nom:'La Course',desc:'Vélo de course rétro vert olive, cintre de course, selle en cuir, porte-bidon. Le plus rapide du port.',borne:'#4c6a2e',ecart:18},
+ {id:'docker',emo:'⚓',nom:'Le Docker',desc:'Noir mat, gros pneus, bandes jaunes de sécurité, caisse ficelée sur le porte-bagages, phare allumé.',borne:'#26282b',ecart:19},
+ {id:'menthe',emo:'🌼',nom:'La Menthe',desc:'Mixte vintage vert menthe, pneus crème, panier blanc débordant de fleurs.',borne:'#5fae98',ecart:17},
+];
+/* ——— outils de dessin, en miroir selon le sens ——— */
+function outils(g,x,y,s){
+  const P=(dx,dy)=>[x+dx*s,y+dy];
+  const B=(dx,dy,w,h,col)=>{g.fillStyle=col;g.fillRect(s>0?x+dx:x-dx-w,y+dy,w,h);};           /* un bloc, retourné si on va à gauche */
+  const L=(pts,col,lw,cap)=>{g.strokeStyle=col;g.lineWidth=lw;g.lineCap=cap||'round';g.lineJoin='round';g.beginPath();pts.forEach((p,i)=>{const[a,b]=P(p[0],p[1]);i?g.lineTo(a,b):g.moveTo(a,b);});g.stroke();g.lineCap='butt';};
+  const Q=(p0,c,p1,col,lw)=>{g.strokeStyle=col;g.lineWidth=lw;g.lineCap='round';g.beginPath();g.moveTo(...P(...p0));g.quadraticCurveTo(...P(...c),...P(...p1));g.stroke();g.lineCap='butt';};
+  const roue=(dx,dy,r,rot,o={})=>{const[cx,cy]=P(dx,dy);
+    g.strokeStyle=o.pneu||'#1f2124';g.lineWidth=o.lw||1.6;g.beginPath();g.arc(cx,cy,r,0,7);g.stroke();
+    if(o.bord){g.strokeStyle=o.bord;g.lineWidth=.3;g.beginPath();g.arc(cx,cy,r+(o.lw||1.6)/2,0,7);g.stroke();}
+    if(o.flanc){g.strokeStyle=o.flanc;g.lineWidth=.5;g.beginPath();g.arc(cx,cy,r-.55,0,7);g.stroke();}
+    g.strokeStyle=o.jante||'#8f959b';g.lineWidth=.6;g.beginPath();g.arc(cx,cy,r-1.1,0,7);g.stroke();
+    g.strokeStyle='rgba(200,205,210,.8)';g.lineWidth=.45;const n=o.rayons||3,rr=r-1.2;
+    for(let k=0;k<n;k++){const a=rot*s+k*Math.PI/n;g.beginPath();g.moveTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);g.lineTo(cx-Math.cos(a)*rr,cy-Math.sin(a)*rr);g.stroke();}
+    g.fillStyle='#d8dde2';g.fillRect(cx-.5,cy-.5,1,1);};
+  const gb=(dx,dy,r,col,lw)=>{const[cx,cy]=P(dx,dy);g.strokeStyle=col;g.lineWidth=lw||.8;g.beginPath();g.arc(cx,cy,r,Math.PI*1.12,Math.PI*1.88);g.stroke();};  /* garde-boue */
+  const pedalier=(dx,dy,rot,pieds,axe,plat)=>{const[px,py]=P(dx,dy);
+    g.strokeStyle='#3a3a36';g.lineWidth=.8;g.beginPath();g.arc(px,py,plat||1.8,0,7);g.stroke();
+    L([[dx,dy-(plat||1.8)],[axe,-5.8]],'rgba(60,60,56,.8)',.5);L([[dx,dy+(plat||1.8)],[axe,-4.2]],'rgba(60,60,56,.8)',.5);
+    [0,Math.PI].forEach((o,k)=>{const a=rot*s+o,qx=px+Math.cos(a)*3,qy=py+Math.sin(a)*3;
+      g.strokeStyle='#5a5a54';g.lineWidth=.9;g.beginPath();g.moveTo(px,py);g.lineTo(qx,qy);g.stroke();
+      g.fillStyle='#2a2c2e';g.fillRect(qx-1.5,qy-.5,3,1);
+      if(pieds){g.fillStyle=k?'#3a2616':'#4a3220';g.fillRect(qx-1.5+.5*s,qy-1.8,3,1.6);}});};
+  return {P,B,L,Q,roue,gb,pedalier};
+}
+function ombre(g,x,y,l){g.fillStyle='rgba(30,25,15,.28)';g.beginPath();g.ellipse(x,y+1,l,2,0,0,7);g.fill();}
+function vitesse(g,x,y,s,l){g.fillStyle='rgba(255,255,255,.4)';g.fillRect(Math.round(x-l*s-(s>0?5:0)),Math.round(y-9),5,1);g.fillRect(Math.round(x-(l-1)*s-(s>0?3:0)),Math.round(y-6),3,1);}
+
+/* ——— chaque vélo, de profil. Même signature que dessinerUnVelo : (g,x,y,dir,pas,v,roule) ——— */
+const DESSINS={
+bleu(g,x,y,s,rot,roule){const{B,L,roue,gb,pedalier}=outils(g,x,y,s);const c='#2d6fb0';
+  ombre(g,x,y,13);roue(-8,-5,5,rot);roue(8,-5,5,rot);
+  L([[-8,-5],[-1,-5],[4,-12],[-4,-12],[-8,-5]],c,1.8);L([[-1,-5],[-4.5,-13.5]],c,1.8);L([[4,-12],[8,-5]],c,1.8);
+  L([[-4,-12.4],[3.6,-12.4]],'rgba(255,255,255,.35)',.5);gb(-8,-5,6.2,'#6b6b66');
+  B(-9,-15,6,1.5,'#1b1b1b');B(4-.5,-16,1,4,'#2a2c2e');B(4,-16.5,4,1,'#2a2c2e');
+  B(5,-14,6,4,'#8a8f94');B(5,-14,6,1,'#b9c1c7');for(let k=0;k<3;k++)B(6+k*2,-13,1,3,'#6b6b66');
+  pedalier(-1,-5,rot,roule,-8);},
+hollandaise(g,x,y,s,rot,roule){const{B,L,Q,roue,gb,pedalier}=outils(g,x,y,s);const c='#7a1f2b',cr='#efe4c8';
+  ombre(g,x,y,13);const o={pneu:'#2a2420',flanc:cr};roue(-8,-5,5,rot,o);roue(8,-5,5,rot,o);
+  gb(-8,-5,6.1,cr,1.1);gb(8,-5,6.1,cr,1.1);
+  L([[-8,-5],[-1,-5]],c,1.6);L([[-8,-5],[-4,-12]],c,1.4);L([[-1,-5],[-4.5,-13.5]],c,1.8);
+  Q([4.2,-11.5],[1.5,-4.5],[-1,-5],c,1.9);Q([4.2,-11.5],[1.8,-5.4],[-1,-5.6],'rgba(255,255,255,.3)',.45);
+  L([[4.5,-13],[4.2,-10.5],[8,-5]],c,1.6);
+  B(-8,-7,7.5,2.2,'#5a1620');B(-8,-7,7.5,.6,'#9a3a44');                                    /* le carter de chaîne */
+  B(-8,-15.5,5,2,'#5a3418');B(-7.6,-15.5,4.2,.6,'#8a5a30');B(-7,-13.5,1,1,'#2a2c2e');B(-5,-13.5,1,1,'#2a2c2e');
+  L([[4.5,-13],[4.6,-16.3],[2.4,-16.8]],'#b9c1c7',.9);B(1.4,-17.3,2,1,'#5a3418');B(4.8,-16.9,1,1,'#e8c06a');
+  B(5.6,-15.2,6.4,5,'#b8853e');for(let r=0;r<3;r++)B(5.6,-14+r*1.4,6.4,.5,'#8a5e28');for(let k=0;k<4;k++)B(6.2+k*1.6,-15.2,.5,5,'#9a6a30');
+  B(5.4,-15.6,6.8,.8,'#d8a860');B(7.6,-10,1.4,1.4,cr);
+  pedalier(-1,-5,rot,roule,-8,2);},
+biporteur(g,x,y,s,rot,roule){const{B,L,roue,gb,pedalier}=outils(g,x,y,s);const c='#d8662a';
+  ombre(g,x,y,17);roue(-10,-5,5,rot);roue(14,-3.5,3.4,rot*1.4,{lw:1.4});gb(-10,-5,6.2,'#6b6b66');
+  L([[-10,-5],[-3,-5],[-6.5,-13.5]],c,1.8);L([[-10,-5],[-6,-12]],c,1.5);L([[-6,-12],[9,-12.5]],c,1.6);
+  L([[-3,-5],[11,-4.2]],c,2);L([[-3,-5.6],[10.6,-4.8]],'rgba(255,255,255,.3)',.45);                 /* la longue poutre basse */
+  L([[10,-13],[11,-4.5],[14,-3.5]],c,1.6);
+  /* la caisse de la criée */
+  B(0.5,-12.5,9,7.5,'#a8743a');B(0.5,-12.5,9,1,'#c89458');B(0.5,-9.3,9,.6,'#7e5226');B(0.5,-7,9,.6,'#7e5226');
+  B(0.5,-12.5,.8,7.5,'#6e4620');B(8.7,-12.5,.8,7.5,'#6e4620');
+  B(1.5,-14,3.4,1.5,'#a9bcc8');B(1.5,-14,3.4,.5,'#dbe6ec');B(4.9,-14.4,1,.9,'#8aa0ae');B(4.9,-13.2,1,.9,'#8aa0ae');
+  B(5.2,-13.8,3.2,1.3,'#d4786a');B(5.2,-13.8,3.2,.4,'#eca090');B(4.4,-13.6,.8,1,'#b85a4c');
+  B(2.4,-13.9,.6,.6,'#1b1b1b');
+  B(-8.5,-15,6,1.5,'#1b1b1b');L([[10,-13],[10,-16.5],[7.5,-17]],'#2a2c2e',1);B(6.5,-17.4,1.6,1,'#1b1b1b');
+  pedalier(-3,-5,rot,roule,-10);},
+course(g,x,y,s,rot,roule){const{B,L,Q,roue,pedalier}=outils(g,x,y,s);const c='#5c7a3c',lug='#efe4c8';
+  ombre(g,x,y,13);const o={lw:1.1,flanc:'#c8a870',rayons:4};roue(-8.5,-5.2,5.2,rot,o);roue(8.5,-5.2,5.2,rot,o);
+  L([[-8.5,-5.2],[-1,-5],[4.6,-12.6],[-4.2,-12.6],[-8.5,-5.2]],c,1.4);L([[-1,-5],[-4.6,-14]],c,1.4);
+  Q([4.6,-12.8],[7.4,-9.5],[8.5,-5.2],c,1.2);L([[-4.2,-12.9],[4.2,-12.9]],'rgba(255,255,255,.35)',.45);
+  B(4,-13.4,1.3,1.3,lug);B(-4.8,-13.3,1.2,1.2,lug);B(-1.6,-5.6,1.2,1.2,lug);
+  B(0.8,-10.4,1.5,3.2,'#d8dde2');B(1,-10,1.1,2.4,'#8fb0c8');                                    /* le bidon */
+  B(-7.6,-15.3,4.4,1.3,'#9a5a28');B(-7.6,-15.3,4.4,.45,'#c07a3e');B(-7.2,-14.1,2.4,1.8,'#6a4a24');
+  L([[4.6,-13],[5.6,-14.6],[7.2,-14.6]],'#b9c1c7',.9);Q([7.2,-14.6],[9.4,-13.4],[6.8,-11.6],'#6a3a1c',1.1);
+  pedalier(-1,-5,rot,roule,-8.5,2.2);if(!roule){L([[1.6,-5.6],[3,-5.6]],'#b9c1c7',.5);}},
+docker(g,x,y,s,rot,roule){const{B,L,roue,gb,pedalier}=outils(g,x,y,s);const c='#26282b';
+  ombre(g,x,y,14);const o={lw:2.5,jante:'#55595e'};roue(-8.5,-5.3,5.1,rot,o);roue(8.5,-5.3,5.1,rot,o);
+  if(!roule)L([[-2,-5],[-4.5,0]],'#55595e',.8);                                                    /* la béquille */
+  L([[-8.5,-5.3],[-1,-5],[4.4,-12],[-4,-12],[-8.5,-5.3]],c,2.3);L([[-1,-5],[-4.4,-13.6]],c,2.2);L([[4.4,-12],[8.5,-5.3]],c,2);
+  for(let k=0;k<4;k++){const t=.12+k*.22;const[a,b]=[-1+5.4*t,-5-7*t];L([[a,b],[a+5.4*.09,b-7*.09]],'#f2c230',2.3,'butt');}   /* bandes de sécurité */
+  gb(-8.5,-5.3,6.9,'#3a3d42',1);gb(8.5,-5.3,6.9,'#3a3d42',1);
+  L([[-4.3,-12.8],[-12.5,-11.5],[-8.5,-5.3]],'#55595e',.8);B(-13,-12,9,1,'#6b7076');                  /* le porte-bagages */
+  B(-12.6,-16.4,7.4,4.4,'#a8743a');B(-12.6,-16.4,7.4,.8,'#c89458');B(-12.6,-14.4,7.4,.5,'#7e5226');B(-9.4,-16.4,.8,4.4,'#d8c090');
+  B(-8,-15.2,5,1.6,'#1b1b1b');L([[4.4,-12.4],[4.4,-16],[2.2,-16.2]],'#2a2c2e',1.1);B(1.4,-16.6,1.6,1.1,'#1b1b1b');
+  B(5.4,-13.4,2.2,2,'#f2c230');B(6.6,-13,1,1.2,'#fff4b0');
+  if(roule){const[lx,ly]=[x+7.6*s,y-12.4];const gr=g.createRadialGradient(lx,ly,0,lx,ly,9);gr.addColorStop(0,'rgba(255,230,140,.55)');gr.addColorStop(1,'rgba(255,230,140,0)');g.fillStyle=gr;g.fillRect(lx-9,ly-9,18,18);}
+  pedalier(-1,-5,rot,roule,-8.5);},
+menthe(g,x,y,s,rot,roule){const{B,L,Q,roue,gb,pedalier}=outils(g,x,y,s);const c='#8fd0b8',bl='#f4f0e4';
+  ombre(g,x,y,13);const o={pneu:'#ddd4bd',bord:'#6b6558',jante:'#a9b0b6'};roue(-8,-5,5,rot,o);roue(8,-5,5,rot,o);
+  gb(-8,-5,6.2,bl,1);gb(8,-5,6.2,bl,1);
+  L([[-8,-5],[-1,-5],[-4.5,-13.5]],c,1.7);L([[-8,-5],[-4,-12]],c,1.4);
+  L([[4.5,-12.2],[-1,-5]],c,1.7);L([[4.5,-12.2],[-3.4,-10.6],[-8,-5]],c,1.3);                      /* les deux tubes du mixte */
+  L([[4.6,-13],[8,-5]],c,1.6);L([[4.1,-12.4],[-.6,-6]],'rgba(255,255,255,.4)',.45);
+  B(-8.6,-15.2,5.2,1.8,bl);B(-8.6,-13.6,5.2,.5,'#c8bca0');
+  Q([4.6,-13],[4.8,-17],[2,-16.4],'#c8ced4',.9);B(1,-16.9,1.8,1,bl);
+  B(5.6,-14.4,6.2,4.4,bl);for(let k=0;k<4;k++)B(6.2+k*1.5,-14.4,.4,4.4,'#c8c2b0');B(5.6,-12.4,6.2,.4,'#c8c2b0');
+  [[6.2,-16,'#e84a5f'],[8,-16.8,'#f2c230'],[9.8,-16,'#f28ab0'],[7.2,-15.2,'#fff'],[10.8,-15,'#e84a5f']].forEach(([a,b,col])=>{B(a-.4,b+1.2,1.4,1,'#5a9a4a');B(a,b,1.3,1.3,col);B(a+.35,b+.35,.6,.6,'#f2c230');});
+  pedalier(-1,-5,rot,roule,-8);},
+};
+function dessinerUnVelo(g,x,y,dir,pas,v,roule){const s=dir==='gauche'?-1:1,rot=(pas||0)*4.2;DESSINS[VELOS[v].id](g,x,y,s,rot,roule);if(roule)vitesse(g,x,y,s,VELOS[v].id==='biporteur'?19:15);}
+
+/* ——— la station : borne à la couleur du modèle, vélos à quai ——— */
+function station(g,x0,sol,v){const m=VELOS[v],n=m.ecart>20?3:4,long=26+n*m.ecart;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x0+x,y,w,h);};
+  g.fillStyle='rgba(40,30,18,.22)';g.beginPath();g.ellipse(x0+long/2+6,sol+1,long/2+6,4,0,0,7);g.fill();
+  R(8,sol-30,10,30,m.borne);R(8,sol-30,10,2,'rgba(255,255,255,.3)');R(10,sol-26,6,5,'#9fd0e8');R(10,sol-18,6,2,'#e8c06a');
+  if(m.id==='docker')for(let k=0;k<4;k++)R(8,sol-12+k*3,10,1.5,k%2?'#1b1b1b':'#f2c230');
+  R(9,sol-34,8,4,'#f2efe4');R(11,sol-33,4,2,m.borne);
+  R(20,sol-8,long-14,2,'#8f959b');
+  for(let k=0;k<n;k++)dessinerUnVelo(g,x0+(m.ecart>20?36:32)+k*m.ecart,sol-1,'droite',0,v,false);
+  return long;}
+
+/* ——— le décor du quai ——— */
+function decor(g){
+  const ciel=g.createLinearGradient(0,0,0,26);ciel.addColorStop(0,'#e9c79a');ciel.addColorStop(1,'#d9ab78');g.fillStyle=ciel;g.fillRect(0,0,200,26);
+  const fac=['#e3c08e','#d6a877','#e8cfa2','#cf9c6c','#dfb888'];for(let i=0;i<9;i++){g.fillStyle=fac[i%5];g.fillRect(i*23-4,6+(i*7)%6,23,22);
+    g.fillStyle='rgba(60,40,25,.35)';for(let r=0;r<2;r++)for(let k=0;k<3;k++)g.fillRect(i*23+k*7,11+(i*7)%6+r*7,3,4);g.fillStyle='#b8573a';g.fillRect(i*23-4,5+(i*7)%6,23,1.5);}
+  g.fillStyle='#bfa77f';g.fillRect(0,26,200,46);
+  g.fillStyle='rgba(0,0,0,.06)';for(let r=0;r<6;r++)for(let k=0;k<26;k++)g.fillRect(k*8+(r%2)*4,28+r*7,7,.6);
+  g.fillStyle='#8a7a5e';g.fillRect(0,71,200,2);g.fillStyle='#e8dcc0';g.fillRect(0,70,200,1);
+  const mer=g.createLinearGradient(0,73,0,84);mer.addColorStop(0,'#2f7fa0');mer.addColorStop(1,'#1c5a7a');g.fillStyle=mer;g.fillRect(0,73,200,11);
+  g.fillStyle='rgba(255,255,255,.28)';const t=performance.now()/900;for(let k=0;k<14;k++)g.fillRect((k*17+Math.sin(t+k)*3+200)%200,76+(k%3)*2.5,5,.6);
+}
+
+/* ——— la scène ——— */
+const sc=document.getElementById('scene'),g=sc.getContext('2d');let V=+(location.hash.slice(1))||0,enRoute=true,bx=120,dir=1,pas=0,t0=performance.now();
+function taille(){const d=window.devicePixelRatio||1;sc.width=Math.round(sc.clientWidth*d);sc.height=Math.round(sc.clientWidth*d*84/200);}
+addEventListener('resize',taille);taille();
+function boucle(t){const dt=Math.min(.05,(t-t0)/1000);t0=t;
+  const k=sc.width/200;g.setTransform(k,0,0,k,0,0);g.clearRect(0,0,200,84);decor(g);
+  const long=station(g,4,46,V);
+  if(enRoute){const vit=VELOS[V].id==='course'?46:VELOS[V].id==='biporteur'?26:34;bx+=dir*vit*dt;pas+=vit*dt/20;
+    const mi=16,ma=184;if(bx>ma){bx=ma;dir=-1;}if(bx<mi){bx=mi;dir=1;}}
+  dessinerUnVelo(g,bx,63,dir>0?'droite':'gauche',pas,V,enRoute);
+  const z=document.getElementById('zoom'),d=window.devicePixelRatio||1;if(z.width!==Math.round(z.clientWidth*d)){z.width=Math.round(z.clientWidth*d);z.height=Math.round(z.clientWidth*d*26/60);}
+  const zg=z.getContext('2d'),kz=z.width/60;zg.setTransform(kz,0,0,kz,0,0);zg.clearRect(0,0,60,26);dessinerUnVelo(zg,VELOS[V].id==='biporteur'?31:30,23,'droite',enRoute?pas:0,V,enRoute);
+  requestAnimationFrame(boucle);}
+requestAnimationFrame(boucle);
+sc.onclick=()=>{enRoute=!enRoute;};
+/* taille réelle, comme dans le jeu */
+function reel(){const c=document.getElementById('reel'),m=VELOS[V],W=26+(m.ecart>20?3:4)*m.ecart+16,H=46,D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=H*D;c.style.width=W+'px';c.style.height=H+'px';const r=c.getContext('2d');r.setTransform(D,0,0,D,0,0);station(r,0,40,V);}
+/* le sélecteur */
+const sel=document.getElementById('sel');
+function choisir(v){V=v;history.replaceState(null,'','#'+v);[...sel.children].forEach((b,i)=>b.classList.toggle('on',i===v));
+  document.getElementById('num').textContent='APERÇU '+(v+1)+' / '+VELOS.length+(v===0?' · ACTUEL':'');document.getElementById('nom').textContent=VELOS[v].nom;document.getElementById('desc').textContent=VELOS[v].desc;reel();}
+VELOS.forEach((m,i)=>{const b=document.createElement('button');b.textContent=m.emo+' '+m.nom.replace('Le Biporteur de la Criée','Biporteur');b.onclick=()=>choisir(i);sel.appendChild(b);});
+choisir(Math.min(V,VELOS.length-1));
+</script></body></html>
