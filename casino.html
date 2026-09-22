@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-22-0858';
+  var MA_VERSION='2026-09-22-0937';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -2702,11 +2702,21 @@ const COULEURS=[{s:'♠',r:false},{s:'♥',r:true},{s:'♦',r:true},{s:'♣',r:f
 const FIGURES=['A','2','3','4','5','6','7','8','9','10','V','D','R'];
 let BJ=null;
 
+/* LE CASINO RECONNAÎT LE JOUEUR PAR SA SESSION : chaque appel part avec le jeton de connexion,
+   le serveur ignore l'identifiant envoyé par le téléphone. */
+async function entetesJeu(){
+  for(let k=0;k<20&&!sb;k++)await new Promise(r=>setTimeout(r,150));
+  try{if(sb&&sb.auth){const {data}=await sb.auth.getSession();const t=data&&data.session&&data.session.access_token;
+    if(t)return Object.assign({},sbEntetes,{Authorization:'Bearer '+t});}}catch(x){}
+  return sbEntetes;
+}
 async function appelRPC(nom,corps){
   try{
     const r=await fetch(URL_SB+'/rest/v1/rpc/'+nom,
-      {method:'POST',headers:sbEntetes,body:JSON.stringify(corps)});
-    return await r.json();
+      {method:'POST',headers:await entetesJeu(),body:JSON.stringify(corps)});
+    const d=await r.json();
+    if(d&&(d.erreur==='connexion'||d.code==='42501'))return {erreur:'Connecte-toi depuis l’accueil du jeu pour jouer.'};
+    return d;
   }catch(x){return {erreur:'le croupier ne répond pas'};}
 }
 /* une carte du serveur : un nombre de 0 à 311 */
@@ -3770,11 +3780,11 @@ function dessinerJoy(dt){
 /* ================= la boucle ================= */
 /* ================= L'ACCUEIL : on entre directement dans le casino ================= */
 const enEurosC=(c)=>((c||0)/100).toFixed(2).replace('.',',')+' €';
-let dernierAccueil=0, COTE=null;
+let dernierAccueil=0, COTE=null, ACHAT=null, VENTE=null;
 async function majAccueil(serveur){
   if(serveur&&e.id){
     const d=await appelRPC('change_infos',{p_joueur:e.id});
-    if(d&&!d.erreur){if(typeof d.euros==='number')e.euros=d.euros;if(typeof d.jetons==='number')e.jetons=d.jetons;if(typeof d.cote==='number')COTE=d.cote;sauver();}
+    if(d&&!d.erreur){if(typeof d.euros==='number')e.euros=d.euros;if(typeof d.jetons==='number')e.jetons=d.jetons;if(typeof d.cote==='number')COTE=d.cote;if(typeof d.achat==='number')ACHAT=d.achat;if(typeof d.vente==='number')VENTE=d.vente;sauver();}
     const p=await appelRPC('slot_pot',{});if(typeof p==='number')POT_SLOT=p;else if(p&&typeof p.pot==='number')POT_SLOT=p.pot;
   }
   $('aJet').textContent=(e.jetons||0).toLocaleString('fr-FR');
@@ -3784,18 +3794,18 @@ async function majAccueil(serveur){
 /* LA CAISSE : les jetons s'achètent et se revendent en euros, au cours du jour */
 let CX_N=10, CX_MSG='';
 function ouvrirCaisse(){
-  const prixAchat=COTE?Math.ceil(COTE*1.10):null;
+  const prixAchat=ACHAT||(COTE?Math.ceil(COTE*1.10):null), prixVente=VENTE||COTE;
   ouvrirPage('La caisse','ACHETER · REVENDRE DES JETONS',
-    '<div class="cxCote">'+(COTE?('Un jeton : <b>'+enEurosC(prixAchat)+'</b> à l’achat · <b>'+enEurosC(COTE)+'</b> à la revente'):'Le caissier compte ses jetons…')+'</div>'+
+    '<div class="cxCote">'+(COTE?('Un jeton : <b>'+enEurosC(prixAchat)+'</b> à l’achat · <b>'+enEurosC(prixVente)+'</b> à la revente<br><small>Revente au plus bas cours de la semaine · 1 000 jetons par jour au plus</small>'):'Le caissier compte ses jetons…')+'</div>'+
     '<div class="cxQte">'+[10,50,100,500].map(n=>'<button data-n="'+n+'"'+(n===CX_N?' class="on"':'')+'>'+n+'</button>').join('')+'</div>'+
     '<div class="cxLigne"><button class="ach" id="cxAch"'+(COTE&&(e.euros||0)>=prixAchat*CX_N?'':' disabled')+'>Acheter '+CX_N+'<br><small>'+(COTE?enEurosC(prixAchat*CX_N):'')+'</small></button>'+
-      '<button class="ven" id="cxVen"'+(COTE&&(e.jetons||0)>=CX_N?'':' disabled')+'>Revendre '+CX_N+'<br><small>'+(COTE?enEurosC(COTE*CX_N):'')+'</small></button></div>'+
+      '<button class="ven" id="cxVen"'+(COTE&&(e.jetons||0)>=CX_N?'':' disabled')+'>Revendre '+CX_N+'<br><small>'+(COTE?enEurosC(prixVente*CX_N):'')+'</small></button></div>'+
     '<div class="cxMsg">'+CX_MSG+'</div>'+
     '<div class="cxCote" style="margin-top:14px">Tu as '+enEurosC(e.euros)+'</div>');
   $('pageFond').querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{CX_N=+b.dataset.n;CX_MSG='';ouvrirCaisse();});
   const faire=async(nom,bt)=>{bt.disabled=true;const d=await appelRPC(nom,{p_joueur:e.id,p_nb:CX_N});
-    if(!d||d.erreur){CX_MSG=d&&d.erreur==='pas assez d euros'?'Pas assez d’euros':(d&&d.erreur==='pas assez de jetons'?'Pas assez de jetons':'Le caissier ne répond pas');}
-    else{if(typeof d.jetons==='number')e.jetons=d.jetons;if(typeof d.euros==='number')e.euros=d.euros;if(typeof d.cote==='number')COTE=d.cote;sauver();
+    if(!d||d.erreur){const er=d&&d.erreur;CX_MSG=er==='pas assez d euros'?'Pas assez d’euros':er==='pas assez de jetons'?'Pas assez de jetons':er==='vente plafonnee'?('Revente limitée à 1 000 jetons par jour'+(typeof d.reste==='number'?' · encore '+d.reste+' aujourd’hui':'')):er==='plafond'?'Revente refusée : plafond de gains en euros atteint':(er||'Le caissier ne répond pas');}
+    else{if(typeof d.jetons==='number')e.jetons=d.jetons;if(typeof d.euros==='number')e.euros=d.euros;sauver();
       CX_MSG=nom==='acheter_jetons'?('+'+CX_N+' jetons'):('+'+enEurosC(d.touche));}
     majAccueil(false);ouvrirCaisse();};
   if($('cxAch'))$('cxAch').onclick=function(){faire('acheter_jetons',this);};
