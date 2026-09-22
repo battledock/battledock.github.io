@@ -894,10 +894,10 @@ function graverLeCabanon(){
 }
 /* LA STATION DE VÉLOS : une borne bordeaux et des vélos à quai */
 function graverLaStationVelo(){
-  const W=90,Ht=46,cx=45,sol=40;
+  const W=106,Ht=46,cx=45,sol=40;                    /* 8 px de marge de chaque côté : le 4e vélo n'est plus coupé */
   const c=document.createElement('canvas');
   const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
-  c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,8*D,0);g.imageSmoothingEnabled=false;
   const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
   g.fillStyle='rgba(40,30,18,.22)';g.beginPath();g.ellipse(cx,sol+1,40,4,0,0,7);g.fill();
   /* la borne */
