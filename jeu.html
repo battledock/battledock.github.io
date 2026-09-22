@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-22-1947';
+  var MA_VERSION='2026-09-22-2101';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -19671,7 +19671,7 @@ function majAction(){
   if(o.ouvre==='cabine'){b.innerHTML=(e.ap&&e.ap.maillot?'Se rhabiller':'Entrer dans la cabine')+'<small>'+(e.ap&&e.ap.maillot?'REMETTRE TES VÊTEMENTS':'SE METTRE EN MAILLOT')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='sortiePiscine'){b.innerHTML='Ressortir sur le quai<small>'+(e.ap&&e.ap.maillot?'ON TE RHABILLE EN SORTANT':'LE VIEUX-PORT')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='etable'){b.innerHTML='Entrer à l’étable<small>LAIT · FOIN · FROMAGE</small>';b.classList.add('on');return;}
-  if(o.ouvre==='metroFerme'){b.innerHTML='Descendre dans le métro<small>LIGNE 1 · LA FERME ⇄ LE PORT</small>';b.classList.add('on');return;}
+  if(o.ouvre==='metroFerme'){b.innerHTML='Prendre le métro<small>LIGNE 1 · DIRECTION LE PORT</small>';b.classList.add('on');return;}
   if(o.ouvre==='etalGraines'){b.innerHTML='Les graines<small>SEMENCES · OUTILS · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
   if(o.ouvre==='grainetier'){b.innerHTML='Entrer au Grainetier<small>OUTILS · GRAINES · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
   if(o.ouvre==='fumoir'){b.innerHTML='Entrer au fumoir<small>TON POISSON VAUT 2,5× PLUS · 30 MIN</small>';b.classList.add('on');return;}
@@ -19704,8 +19704,7 @@ function majAction(){
     return;
   }
   if(o.t==='metro'){
-    /* LA LIGNE 1 EST OUVERTE : on descend sur le quai */
-    b.innerHTML='Descendre dans le métro<small>LIGNE 1 · SAUMASKI ⇄ LE PORT</small>';
+    b.innerHTML='Prendre le métro<small>LIGNE 1 · DIRECTION LA FERME</small>';
     b.classList.add('on');
     return;
   }
@@ -19824,15 +19823,7 @@ function agir(){
   /* L'ENTRÉE DU MÉTRO ne se touche pas : ni geste, ni pioche, ni rien.
      La plaque le disait déjà, mais un clic venu d'ailleurs — un doigt qui
      traîne, une plaque pas encore recalculée — passait au travers. */
-  if(o.t==='metro'){
-    /* LE MÉTRO EST UNE PAGE À PART : on sauvegarde avant de descendre, et on
-       remonte au même endroit, devant la bouche. */
-    if(CARTE==='extramar')e.ext={x:joueur.x,y:joueur.y};else{e.x=joueur.x;e.y=joueur.y;}
-    try{sauver();envoyerSauvegarde(true);monterEnLigne(true);}catch(x){}
-    vibrer([8,30,8]);
-    setTimeout(()=>{location.href=(CARTE==='extramar'?'metro.html?station=port':(CARTE==='montagne'?'metro.html?station=montagne':'metro.html?station=port'))+'&v='+Date.now();},120);   /* le ?v : jamais une vieille station en cache */
-    return;
-  }
+  if(o.t==='metro'){voyagerVers('ferme','Direction La ferme');return;}
   if(o.t==='x_etal'||o.t==='x_pavPoisson'){ouvrirLeComptoir(MODE_POISSON);return;}
   if(o.t==='x_pavPeche'){ouvrirLaBoutiqueDePeche();return;}
   if(o.t==='x_chantier'){texteVolant(o.x,o.y-78,'Construction en cours…','#ffd040');
@@ -19847,7 +19838,7 @@ function agir(){
   if(o.ouvre==='bar'){ouvrirLeBar();return;}
   if(o.ouvre==='poissonnerie'){ouvrirLaCriee();return;}
   if(o.ouvre==='etable'){ETB=null;ouvrirLEtable();return;}
-  if(o.ouvre==='metroFerme'){try{sauver();envoyerSauvegarde(true);}catch(x){}setTimeout(()=>{location.href='metro.html?station=ferme&v='+Date.now();},120);return;}
+  if(o.ouvre==='metroFerme'){voyagerVers('extramar','Direction Le port');return;}
   if(o.ouvre==='etalGraines'){ouvrirLeGrainetier('graines');return;}
   if(o.ouvre==='grainetier'){ouvrirLeGrainetier('outils');return;}
   if(o.ouvre==='fumoir'){ouvrirLeFumoir();return;}
@@ -22976,15 +22967,11 @@ function animerAnnonce(){
 /* LA CARTE EST TENUE PAR LE SERVEUR : si l'adresse ne correspond pas à l'endroit où
    l'on est vraiment (seul le métro fait changer de carte), on y est renvoyé. */
 async function verifierLaCarte(){
-  if(CARTE==='village'&&FERME_SEULE){try{if(e.id)appelRPC('arriver_a_la_ferme',{p_joueur:e.id});}catch(x){}return;}   /* à la ferme : le serveur note qu'on y est (le métro repartira d'ici) */
-  const d=await appelRPC('ma_carte',{p_joueur:e.id,p_locale:e.carte||'village'});
-  if(!d||!d.carte)return;
-  if(d.carte==='ferme'){e.carte='ferme';try{sauver();}catch(x){}location.replace('jeu.html?carte=ferme&v='+Date.now());return;}
-  if(d.carte==='montagne'||d.carte==='sommet'){try{appelRPC('ticket_metro',{p_joueur:e.id,p_de:d.carte,p_vers:'port'});}catch(x){}return;}   /* la montagne est fermée : on reste où l'on est */   /* on était resté à la ferme */
-  const vraie=d.carte==='montagne'?'montagne':(d.carte==='sommet'?'sommet':(d.carte==='piscine'?'piscine':(d.carte==='stade'?'stade':'extramar')));   /* (le village est fermé : c'est le port) */
-  if(vraie!==CARTE){e.carte=vraie;e.ext=null;try{sauver();}catch(x){}
-    location.replace(vraie==='extramar'?'jeu.html?carte=extramar':(vraie==='montagne'?'jeu.html?carte=montagne':(vraie==='sommet'?'jeu.html?carte=sommet':(vraie==='piscine'?'jeu.html?carte=piscine':(vraie==='stade'?'jeu.html?carte=stade':'jeu.html')))));}
+  /* LE LIEU N'EST PLUS SUIVI PAR LE SERVEUR : il ne protégeait rien (voyager ne rapporte rien)
+     et c'est lui qui renvoyait les joueurs au port ou refusait les trajets. */
+  return;
 }
+
 /* LES POSES DU JOUEUR SE GRAVENT D'AVANCE, pendant les temps morts.
    Chaque pose neuve (une direction, une image de marche) coûtait un gravage au moment
    même où on la montrait : c'étaient les petits à-coups en marchant, en tournant.
@@ -23827,6 +23814,23 @@ function ouvrirLaBoutiqueFerme(mot){
     ouvrirLaBoutiqueFerme(gain?('Vendu ! '+enEuros(gain)+' dans ta poche.'):'Le primeur n’a rien pris.');};
   $('page2Fond').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{b.disabled=true;vendre([b.dataset.v]);});
   $('bqTout').onclick=()=>{$('bqTout').disabled=true;vendre(L.map(([k])=>k));};
+}
+
+/* ================= LE VOYAGE EN MÉTRO : un tap, un fondu, on y est =================
+   Plus de page de station : la rame nous dépose directement. */
+function voyagerVers(carte,nom){
+  if(voyagerVers.enCours)return;voyagerVers.enCours=true;
+  if(CARTE==='extramar')e.ext={x:joueur.x,y:joueur.y};else{e.x=joueur.x;e.y=joueur.y;}
+  try{sauver();envoyerSauvegarde(true);}catch(x){}
+  vibrer([8,30,8]);try{jouer('porte','moment');}catch(x){}
+  const v=document.createElement('div');
+  v.style.cssText='position:fixed;inset:0;z-index:999;background:#0b0d12;opacity:0;transition:opacity .45s ease;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#f4ecd8;font-family:Georgia,serif';
+  v.innerHTML='<div style="font:700 10px Arial;letter-spacing:4px;color:#3fc8b0">MÉTRO · LIGNE 1</div>'+
+    '<div style="font:400 26px Georgia">'+nom+'</div>'+
+    '<div style="width:120px;height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden"><i style="display:block;height:100%;width:0;background:#3fc8b0;animation:voy 1s linear forwards"></i></div>'+
+    '<style>@keyframes voy{to{width:100%}}</style>';
+  document.body.appendChild(v);requestAnimationFrame(()=>{v.style.opacity='1';});
+  setTimeout(()=>{location.href='jeu.html?carte='+carte+'&arrivee=1&v='+Date.now();},1000);
 }
 
 /* ================= L'ÉTABLE : le foin, le lait, le fromage =================
