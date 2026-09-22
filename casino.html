@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-22-0825';
+  var MA_VERSION='2026-09-22-0839';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -404,6 +404,39 @@ html,body{height:100%;overflow:hidden;background:#0d0a0e;font-family:system-ui,s
 #bj .go2{background:linear-gradient(#f0cf7d,#c9a24a);color:#4a0a10;box-shadow:0 4px 0 #8a6a28}
 #bj button:disabled{opacity:.5}
 
+/* ===== LA ROULETTE EN PIXEL : la croupière, la roue en grand, 12 secondes pour miser ===== */
+#rou{position:fixed;inset:0;z-index:25;display:none;flex-direction:column;background:#1a0608;color:#f6e6c0;font-family:Georgia,serif;overflow-y:auto}
+#rou.on{display:flex}
+#rou .bjTete{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 10px;background:#2a0a0e;border-bottom:2px solid #c9a24a;flex:none}
+#rou .bjTete button{width:36px;height:36px;border-radius:50%;border:0;background:#f4ecd8;color:#2a1a0e;font:700 15px Arial}
+#rou .bjTete b{flex:1;font:400 22px Georgia;color:#f6d98a}
+#rou .bjTete .s{text-align:right}#rou .bjTete .s strong{display:block;font:400 20px Georgia}#rou .bjTete .s small{font:700 9px Arial;letter-spacing:2px;color:#c9a24a}
+#rou .rScene{position:relative;flex:none;height:250px;overflow:hidden}
+#rou .rScene canvas#rouSalle{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+#rou #roueCv{position:absolute;left:50%;top:52px;width:184px;height:184px;margin-left:-92px}
+#rou .bulle{position:absolute;left:14px;top:12px;padding:7px 14px;border-radius:18px;background:#fffdf7;color:#2a1a0e;font:italic 13px Georgia;white-space:nowrap;box-shadow:0 3px 0 rgba(0,0,0,.35)}
+#rou .annonce{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);padding:7px 16px;border-radius:18px;font:700 14px Georgia;white-space:nowrap;animation:bjPop .45s ease-out}
+#rou .annonce.bon{background:#e0b850;color:#2a1a0e}#rou .annonce.mauvais{background:rgba(0,0,0,.7);color:#f6e6c0}
+#rou .compte{display:flex;align-items:center;gap:10px;padding:8px 16px;background:#2a0a0e;flex:none}
+#rou .compte span{font:700 12px Arial;letter-spacing:1px;white-space:nowrap;min-width:150px}
+#rou .compte .barre{flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}
+#rou .compte .barre i{display:block;height:100%;background:linear-gradient(90deg,#f0cf7d,#c9a24a);transition:width .25s linear}
+#rou .compte.ferme .barre i{background:#9e1822}
+#rou .hist{display:flex;gap:5px;justify-content:center;padding:6px;flex:none;min-height:36px}
+#rou .hist i{width:24px;height:24px;border-radius:50%;font:700 11px Arial;font-style:normal;display:flex;align-items:center;justify-content:center;color:#fff}
+#rou .hist i:first-child{outline:2px solid #f0cf7d;outline-offset:1px}
+#rou .r{background:#b93327}#rou .n{background:#22222a;border:1px solid #555}#rou .v{background:#1f7a45}
+#rou .tapis{margin:6px 14px;background:#1f6a3a;border:3px solid #8a5a30;border-radius:14px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px;box-shadow:inset 0 0 0 1px rgba(224,184,80,.5);flex:none}
+#rou .case{border:1px solid rgba(224,184,80,.75);border-radius:8px;padding:10px 4px;text-align:center;font:700 15px Georgia;color:#f6ecd2;position:relative;background:transparent}
+#rou .case:disabled{opacity:.55}
+#rou .case small{display:block;font:700 9px Arial;letter-spacing:1px;color:#e0b850;margin-top:2px}
+#rou .case .jm{position:absolute;right:-6px;top:-8px;min-width:28px;height:28px;padding:0 3px;border-radius:14px;border:3px dashed #fff;background:#1d3f9a;font:700 9px Arial;color:#fff;display:flex;align-items:center;justify-content:center;animation:bjPop .3s ease-out}
+#rou .case.gagne{opacity:1!important;box-shadow:0 0 0 3px #f0cf7d,0 0 18px rgba(240,207,125,.7)}
+#rou .jetons{display:flex;gap:10px;justify-content:center;padding:8px 0 calc(env(safe-area-inset-bottom,0px) + 18px);flex:none}
+#rou .jt{width:48px;height:48px;border-radius:50%;border:5px dashed rgba(255,255,255,.9);font:700 13px Arial;color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.45),inset 0 0 0 3px rgba(0,0,0,.15)}
+#rou .jt.on{outline:3px solid #f0cf7d;outline-offset:2px}#rou .jt:disabled{opacity:.35}
+#rou .pluie{position:absolute;inset:0;pointer-events:none;z-index:3}
+
 .cxCote{text-align:center;font:italic 14px Georgia;color:#6a5a3a;margin:4px 0 12px}
 .cxQte{display:flex;gap:8px;justify-content:center;margin:10px 0}
 .cxQte button{border:1px solid #c9a24a;border-radius:10px;background:#fbf6e8;padding:9px 12px;font:700 14px Georgia;color:#4a0a10}
@@ -593,6 +626,12 @@ html,body{height:100%;overflow:hidden;background:#0d0a0e;font-family:system-ui,s
 <div id="bj"><div class="bjTete"><button id="bjX">✕</button><b>Blackjack</b><div class="s"><strong id="bjJet">0</strong><small>JETONS</small></div></div>
  <div class="scene" id="bjScene"><canvas id="bjSalle"></canvas><div id="bjCorps"></div></div>
  <div class="bas" id="bjBas"></div></div>
+<div id="rou"><div class="bjTete"><button id="rouX">✕</button><b>Roulette</b><div class="s"><strong id="rouJet">0</strong><small>JETONS</small></div></div>
+ <div class="rScene" id="rouScene"><canvas id="rouSalle"></canvas><canvas id="roueCv"></canvas><div class="bulle" id="rouBulle">« Faites vos jeux ! »</div><div id="rouAnn"></div></div>
+ <div class="compte" id="rouCompte"><span id="compteRoul">…</span><div class="barre"><i id="barreRoul"></i></div></div>
+ <div class="hist" id="rouHist"></div>
+ <div class="tapis" id="rouTapis"></div>
+ <div class="jetons" id="rouJetons"></div></div>
 <div id="accueil"><div class="in">
  <div class="marq"><b>CASINO</b><i>du Vieux-Port</i></div>
  <div class="solde"><div><small>TES JETONS</small><strong id="aJet">…</strong></div><div><small>TON ARGENT</small><strong id="aEur">…</strong></div></div>
@@ -2730,6 +2769,7 @@ function rendreBJ(){
   if($('bjT'))$('bjT').onclick=carteBJ;
   if($('bjR'))$('bjR').onclick=resterBJ;
 }
+$('rouX').onclick=()=>{$('rou').classList.remove('on');ROU=null;majAccueil(true);};
 $('bjX').onclick=()=>{$('bj').classList.remove('on');majAccueil(true);};
 addEventListener('resize',()=>{if($('bj').classList.contains('on'))dessinerSalleBJ();});
 
@@ -2752,7 +2792,7 @@ function couleurDe(n){return n===0?'vert':(ROUGES.has(n)?'rouge':'noir');}
 function dessinerRoue(){
   const cv=$('roueCv');if(!cv||!cv.getContext)return;
   const g=cv.getContext('2d'), T=cv.width, R=T/2;
-  const dpr=Math.max(1,Math.floor(window.devicePixelRatio||1));
+  const dpr=cv.width/(cv.clientWidth||cv.width);
   g.setTransform(dpr,0,0,dpr,0,0);
   const r=T/dpr/2;
   g.clearRect(0,0,T,T);
@@ -2835,10 +2875,70 @@ async function misesDuTour(id){
     return Array.isArray(d)?d:[];
   }catch(x){return [];}
 }
+const DUREE_MISES=12;                             /* le serveur laisse 12 secondes pour miser */
+let ROU_HIST=[];
+async function lireHistorique(){
+  try{const r=await fetch(URL_SB+'/rest/v1/tours?select=numero&tire=eq.true&order=id.desc&limit=8',{headers:sbEntetes});
+    const d=await r.json();if(Array.isArray(d))ROU_HIST=d.map(x=>x.numero).filter(n=>n!==null);}catch(x){}
+}
+function dessinerSalleRou(){
+  const c=$('rouSalle'),sc=$('rouScene');if(!c||!sc)return;
+  const Wc=sc.clientWidth,Hc=sc.clientHeight;if(!Wc||!Hc)return;
+  const D=Math.min(2,window.devicePixelRatio||1);c.width=Math.round(Wc*D);c.height=Math.round(Hc*D);
+  const g=c.getContext('2d'),K=c.width/130,H=c.height/K;g.setTransform(K,0,0,K,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
+  const mur=Math.round(H*0.4);
+  R(0,0,130,H,'#3a0a10');for(let x=0;x<130;x+=8)R(x,0,4,mur,'#420c12');R(0,mur-2,130,3,'#c9a24a');
+  R(26,0,1,6,'#c9a24a');R(16,6,22,3,'#e0b850');for(let k=0;k<5;k++)R(17+k*4.5,9,2,3,'#fff4b0');
+  g.fillStyle='rgba(255,220,140,.13)';g.beginPath();g.arc(27,12,24,0,7);g.fill();
+  try{g.save();g.translate(110,mur+18);g.scale(1.05,1.05);sprite(g,0,0,HOTESSE.ap,'bas',0,false);g.restore();}catch(x){g.restore();}
+  g.fillStyle='#5a3418';g.beginPath();g.ellipse(65,mur,74,H-mur+18,0,0,Math.PI);g.fill();
+  g.fillStyle='#8a5a30';g.beginPath();g.ellipse(65,mur,71,H-mur+15,0,0,Math.PI);g.fill();
+  g.fillStyle='#1f6a3a';g.beginPath();g.ellipse(65,mur,68,H-mur+12,0,0,Math.PI);g.fill();
+  [[8,'#c8281e'],[14,'#1d3f9a']].forEach(([x,col])=>{for(let k=0;k<4;k++){R(x,mur+14-k*2,5,2,col);R(x,mur+14-k*2,5,1,'rgba(255,255,255,.5)');}});
+  const rc=$('roueCv');if(rc){const d2=Math.min(3,window.devicePixelRatio||1);rc.width=rc.height=Math.round(184*d2);}
+}
 async function ouvrirRoulette(){
   ROU={tour:null,mises:[],mesMises:{},vue:0,dernier:null,annonce:''};
-  rendreRoulette();
+  $('rou').classList.add('on');
+  requestAnimationFrame(()=>{dessinerSalleRou();rendreRoulette();});
+  lireHistorique().then(()=>{if(ROU)rendreRoulette();});
   await rafraichirRoulette();
+}
+function secondesRou(){return (ROU&&ROU.resteVu!==undefined)?Math.max(0,ROU.resteVu-(Date.now()-ROU.vuA)/1000):0;}
+function rendreRoulette(){
+  if(!ROU)return;
+  const t=ROU.tour, secs=Math.ceil(secondesRou()), ouvert=!!(t&&!t.tire&&secs>0);
+  $('rouJet').textContent=(e.jetons||0).toLocaleString('fr-FR');
+  const parType={};
+  ROU.mises.forEach(m=>{parType[m.type]=parType[m.type]||{total:0,gens:new Set()};parType[m.type].total+=m.montant;parType[m.type].gens.add(m.joueur_id||m.pseudo||'?');});
+  const n=ROU.numeroVu, sorti=t&&t.tire&&n!==undefined;
+  const gagnant=(p)=>sorti&&(p==='zero'?n===0:p==='rouge'?ROUGES.has(n):p==='noir'?(n!==0&&!ROUGES.has(n)):p==='pair'?(n!==0&&n%2===0):p==='impair'?n%2===1:p==='manque'?(n>=1&&n<=18):p==='passe'?(n>=19):false);
+  const CASES=[['rouge','Rouge','× 2','#b93327'],['noir','Noir','× 2','#22222a'],['pair','Pair','× 2'],['impair','Impair','× 2'],['manque','1 à 18','× 2'],['passe','19 à 36','× 2'],['zero','Le zéro','× 36','#1f7a45']];
+  $('rouTapis').innerHTML=CASES.map(([p,nom,paie,fond])=>{const mien=ROU.mesMises[p]||0,tous=parType[p];const autres=tous?tous.gens.size-(mien?1:0):0;
+    return '<button class="case'+(gagnant(p)?' gagne':'')+'" data-pari="'+p+'"'+(p==='zero'?' style="grid-column:span 2;background:'+fond+'"':(fond?' style="background:'+fond+'"':''))+(ouvert?'':' disabled')+'>'+nom+
+      '<small>'+paie+(autres>0?' · '+autres+' JOUEUR'+(autres>1?'S':''):'')+'</small>'+(mien?'<span class="jm">'+mien+'</span>':'')+'</button>';}).join('');
+  $('rouTapis').querySelectorAll('[data-pari]').forEach(b=>b.onclick=()=>miser(b.dataset.pari));
+  const COULJ={10:['#c8281e','#fff'],25:['#1d3f9a','#fff'],50:['#1c1c1c','#fff'],100:['#e0b850','#2a1a0e']};
+  $('rouJetons').innerHTML=MISES.map(m=>'<button class="jt'+(m===MISE?' on':'')+'" data-mise="'+m+'" style="background:'+COULJ[m][0]+';color:'+COULJ[m][1]+'"'+((e.jetons||0)<m?' disabled':'')+'>'+m+'</button>').join('');
+  $('rouJetons').querySelectorAll('[data-mise]').forEach(b=>b.onclick=()=>{MISE=+b.dataset.mise;rendreRoulette();});
+  $('rouHist').innerHTML=ROU_HIST.slice(0,8).map(k=>'<i class="'+(k===0?'v':(ROUGES.has(k)?'r':'n'))+'">'+k+'</i>').join('');
+  $('rouAnn').innerHTML=ROU.annonce?'<div class="annonce '+(/gagnes/.test(ROU.annonce)?'bon':'mauvais')+'">'+ROU.annonce+'</div>':'';
+  majCompteur(true);
+}
+/* on ne réécrit que le compte à rebours et la bulle, pour ne pas casser l'animation */
+function majCompteur(depuisRendu){
+  if(!ROU)return;
+  const t=ROU.tour, s2=secondesRou(), secs=Math.ceil(s2), n=ROU.numeroVu;
+  const c=$('compteRoul'),b=$('barreRoul'),bu=$('rouBulle'),cp=$('rouCompte');if(!c)return;
+  const tire=t&&t.tire;
+  c.textContent=tire?'Nouveau tour dans un instant…':(secs>0?'Mises ouvertes · '+secs+' s':'Rien ne va plus');
+  cp.classList.toggle('ferme',!!tire||secs<=0);
+  if(b)b.style.width=(tire?0:Math.max(0,Math.min(100,s2/DUREE_MISES*100)))+'%';
+  const coul=n===0?'vert':(ROUGES.has(n)?'rouge':'noir');
+  const mot=tire&&n!==undefined?'« Le '+n+', '+coul+' ! »':(secs>4?'« Faites vos jeux ! »':(secs>0?'« Dernières mises… »':'« Rien ne va plus ! »'));
+  if(bu.textContent!==mot)bu.textContent=mot;
+  if(!depuisRendu){const ouvert=!!(t&&!t.tire&&secs>0);const d=$('rouTapis').querySelector('.case');if(d&&d.disabled===ouvert)rendreRoulette();}
 }
 async function rafraichirRoulette(){
   const t=await tourCourant();
@@ -2855,6 +2955,7 @@ async function rafraichirRoulette(){
       try{navigator.vibrate&&navigator.vibrate(gain?[12,34,20]:[8,40]);}catch(x){}
     }
     ROU.mesMises={};
+    lireHistorique().then(()=>{if(ROU)rendreRoulette();});
   }
   if(t.tire&&t.numero!==null)ROU.numeroVu=t.numero;
   ROU.tour=t;
@@ -2877,71 +2978,8 @@ async function miser(type){
   ROU.mises=await misesDuTour(ROU.tour.id);
   if(ROU)rendreRoulette();
 }
-function rendreRoulette(){
-  if(!ROU)return;
-  const t=ROU.tour;
-  const secs=(ROU.resteVu!==undefined)
-    ?Math.max(0,Math.ceil(ROU.resteVu-(Date.now()-ROU.vuA)/1000)):0;
-  const n=ROU.numeroVu;
-  const coul=n===0?'vert':(ROUGES.has(n)?'rouge':'noir');
-  /* les mises de tout le monde, regroupées */
-  const parType={};
-  ROU.mises.forEach(m=>{
-    parType[m.type]=parType[m.type]||{total:0,gens:new Set()};
-    parType[m.type].total+=m.montant;
-    parType[m.type].gens.add(m.pseudo||'joueur');
-  });
-  const joueurs=new Set(ROU.mises.map(m=>m.pseudo||'joueur'));
-
-  let corps='<div class="roue">'+
-    '<canvas id="roueCv" width="'+(190*Math.max(1,Math.floor(window.devicePixelRatio||1)))+
-      '" height="'+(190*Math.max(1,Math.floor(window.devicePixelRatio||1)))+
-      '" style="width:190px;height:190px"></canvas>'+
-    '<div class="numero '+(n===undefined?'vide':coul)+'">'+
-      (n===undefined?'—':n)+'</div>'+
-    '<div class="compte" id="compteRoul">'+(t&&t.tire?'Nouveau tour dans un instant…'
-      :(secs>0?'Mises ouvertes · '+secs+' s':'Ça tourne…'))+'</div>'+
-    '<div class="barreT"><i id="barreRoul" style="width:'+
-      Math.max(0,Math.min(100,Math.round(secs/30*100)))+'%"></i></div>'+
-    (joueurs.size?'<div class="gens">'+joueurs.size+' joueur'+(joueurs.size>1?'s':'')+
-      ' à la table · '+ROU.mises.reduce((a,m)=>a+(+m.montant||0),0)+' jetons en jeu</div>':
-      '<div class="gens">Personne n’a encore misé.</div>')+
-  '</div>';
-
-  if(ROU.annonce)corps+='<div class="issue '+(/gagne/.test(ROU.annonce)?'bon':'mauvais')+'">'+
-    ROU.annonce+'</div>';
-
-  corps+=barreMise();
-  corps+='<div class="paris">'+PARIS.concat([{t:'zero',nom:'Le zéro',paie:36}]).map(p=>{
-    const mien=ROU.mesMises[p.t]||0;
-    const tous=parType[p.t];
-    return '<button class="pari '+p.t+(mien?' pose':'')+'" data-pari="'+p.t+'"'+
-      ((t&&!t.tire&&secs>0)?'':' disabled')+'>'+
-      '<b>'+p.nom+'</b>'+
-      (mien?'<span class="mien">toi : '+mien+'</span>':'')+
-      (tous?'<span class="tous">'+tous.total+' jetons · '+tous.gens.size+'</span>':'')+
-      '</button>';
-  }).join('')+'</div>';
-  corps+='<div class="vide2">Tout le monde mise sur le même tirage.<br>'+
-    'Le numéro est tiré par la table, pas par ton téléphone.</div>';
-  ouvrirPage('La roulette','TOUS SUR LE MÊME TIRAGE',corps,true);
-  brancherMise(rendreRoulette);
-  $('pageFond').querySelectorAll('[data-pari]').forEach(b=>b.onclick=()=>miser(b.dataset.pari));
-}
-/* on ne réécrit que le compte à rebours, pour ne pas casser l'animation */
-function majCompteur(){
-  const c=$('compteRoul');if(!c||!ROU)return;
-  const t=ROU.tour;
-  const secs=(ROU.resteVu!==undefined)
-    ?Math.max(0,Math.ceil(ROU.resteVu-(Date.now()-ROU.vuA)/1000)):0;
-  c.textContent=(t&&t.tire)?'Nouveau tour dans un instant…'
-    :(secs>0?'Mises ouvertes · '+secs+' s':'Ça tourne…');
-  const b=$('barreRoul');
-  if(b)b.style.width=Math.max(0,Math.min(100,Math.round(secs/30*100)))+'%';
-}
-
 function pluieJetons(gain){
-  const z=$('pageFond');if(!z)return;
+  const z=$('rouScene');if(!z)return;
   const d=document.createElement('div');
   d.className='pluie';
   d.innerHTML=Array.from({length:12},(_,i)=>
@@ -3604,11 +3642,11 @@ let t0=performance.now();
     bp.classList.toggle('qqn',proche);
   }                    /* le direct */
   if(maintenant-derniereEcoute>8000){derniereEcoute=maintenant;ecouterLesAutres();}
-  if(ROU&&pageOuverte()){
+  if(ROU&&$('rou').classList.contains('on')){
     majRoue(dt);dessinerRoue();                    /* la roue tourne en continu */
     if(maintenant-rouTic>1000){rouTic=maintenant;rafraichirRoulette();}
     else majCompteur();
-  }else if(ROU&&!pageOuverte())ROU=null;
+  }else if(ROU&&!$('rou').classList.contains('on'))ROU=null;
   if(maintenant-dernierEnvoi>6000){dernierEnvoi=maintenant;direOuJeSuis('casino');}
   if(fondu>0)fondu=Math.max(0,fondu-dt*2);
   else if(fondu<0)fondu=Math.max(-1.2,fondu-dt*3);
