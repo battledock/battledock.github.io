@@ -325,29 +325,37 @@ function construireSolExtramar(){
         R(mur+1,y+14,4,5,'#2e3a44');                                                            /* une fenêtre */
         R(sens>0?mur-2:mur+6,y-4,2,3,'#3b3a36');R(sens>0?mur-2:mur+6,y-1,2,2,'#ffd98a');}      /* une lanterne */
     });
-    /* les marches, avec leurs paliers */
-    const x0=cx-30, w=60;
-    for(let y=ym,k=0;y>XP.ruelle.haut-14;k++){
-      const palier=k%6===5, h=palier?10:6;
-      R(x0,y-h,w,h,palier?'#e2d2ab':'#dccba5');
-      R(x0,y-h,w,1,'#efe3c4');R(x0,y-2,w,2,'#b9a57c');
-      for(let i=0;i<4;i++)R(x0+alea(k*7+i)*w,y-h+1+alea(k*3+i)*(h-3),2,1,'rgba(120,90,50,.18)');
-      if(palier){R(x0+2,y-h+2,5,5,'#a55a3a');R(x0+2,y-h,5,3,'#6fbf5a');R(x0+w-7,y-h+2,5,5,'#a55a3a');R(x0+w-7,y-h,5,3,'#d9576b');}
+    /* LE TAPIS ROUGE : marches de marbre blanc veiné, un tapis rouge bordé d'or tenu par des
+       tringles dorées, et sur chaque palier deux potelets de laiton avec leur cordon de velours */
+    const x0=cx-30, w=60, tx=x0+15, tw=30;
+    for(let y=XP.maisonsY+6,k=0;y>XP.ruelle.haut-14;k++){
+      const palier=k%6===5, h=palier?10:6, yh=y-h;
+      R(x0,yh,w,h,palier?'#f3eee4':'#e9e3d6');R(x0,yh,w,1,'#ffffff');R(x0,y-2,w,2,'#bdb4a2');
+      for(let i=0;i<3;i++){const vx=x0+alea(k*5+i)*w;R(vx,yh+1,1,h-3,'rgba(140,130,120,.35)');R(vx+1,yh+2+alea(i+k)*2,2,1,'rgba(140,130,120,.35)');}   /* les veines du marbre */
+      R(tx,yh,tw,h,'#9e1822');R(tx,y-2,tw,2,'#6a0e14');R(tx,yh,1,h,'#d8b050');R(tx+tw-1,yh,1,h,'#d8b050');
+      if(!palier){R(tx-2,y-3,tw+4,1,'#f0cf7d');R(tx-3,y-4,2,2,'#c9a24a');R(tx+tw+1,y-4,2,2,'#c9a24a');}     /* la tringle */
+      else{
+        [x0+4,x0+w-7].forEach(px=>{R(px,yh-4,3,10,'#b8902e');R(px+1,yh-4,1,10,'#f0cf7d');R(px-1,yh-6,5,3,'#f0cf7d');R(px-1,yh+5,5,2,'#8a6a20');});
+        g.strokeStyle='#8a1420';g.lineWidth=1.4;
+        [x0+5.5,x0+w-5.5].forEach(px=>{g.beginPath();g.moveTo(px,yh-3);g.quadraticCurveTo(px+(px<cx?2.5:-2.5),yh-14,px,yh-26);g.stroke();});
+      }
       y-=h;
     }
-    R(x0-2,0,2,ym,'#b9a57c');R(x0+w,0,2,ym,'#b9a57c');                                          /* les bordures */
-    /* le passage voûté, en haut : on devine la suite de la montée */
+    R(x0-3,0,3,XP.maisonsY+6,'#c9a24a');R(x0-3,0,1,XP.maisonsY+6,'#f0cf7d');                        /* les bordures dorées */
+    R(x0+w,0,3,XP.maisonsY+6,'#c9a24a');R(x0+w+2,0,1,XP.maisonsY+6,'#8a6a20');
+    /* le passage voûté, en haut, en marbre filé d'or */
     const hy=XP.ruelle.haut-14;
     R(x0,0,w,hy,'#2a2420');
-    g.fillStyle='#d9c7a0';g.beginPath();g.moveTo(x0-4,hy+2);g.lineTo(x0-4,hy-8);g.arc(cx,hy-8,w/2+4,Math.PI,0);g.lineTo(x0+w+4,hy+2);g.lineTo(x0+w,hy+2);
+    g.fillStyle='#e9e3d6';g.beginPath();g.moveTo(x0-4,hy+2);g.lineTo(x0-4,hy-8);g.arc(cx,hy-8,w/2+4,Math.PI,0);g.lineTo(x0+w+4,hy+2);g.lineTo(x0+w,hy+2);
     g.lineTo(x0+w,hy-8);g.arc(cx,hy-8,w/2,0,Math.PI,true);g.lineTo(x0,hy+2);g.closePath();g.fill();
-    for(let a=0;a<9;a++){const t=Math.PI+a*Math.PI/8;R(cx+Math.cos(t)*(w/2+2)-1,hy-8+Math.sin(t)*(w/2+2)-1,2,2,'#b9a57c');}
+    g.strokeStyle='#d8b050';g.lineWidth=1;g.beginPath();g.arc(cx,hy-8,w/2+2,Math.PI,0);g.stroke();
     const fond=g.createLinearGradient(0,hy,0,hy+24);fond.addColorStop(0,'rgba(20,16,12,.55)');fond.addColorStop(1,'rgba(20,16,12,0)');
     g.fillStyle=fond;g.fillRect(x0,hy,w,24);
-    /* l'enseigne du casino, sur la voûte : lettres d'or sur fond rouge */
-    R(cx-24,Math.max(0,hy-30),48,10,'#5a1a1a');R(cx-23,Math.max(0,hy-29),46,8,'#8a2a22');
-    g.font='700 7px Georgia,serif';g.textAlign='center';g.fillStyle='#f0cf7d';g.fillText('CASINO',cx,Math.max(0,hy-30)+8);g.textAlign='left';
-    for(let k=0;k<7;k++){R(cx-22+k*7,Math.max(0,hy-32),2,2,'#ffe07a');}
+    /* l'enseigne à ampoules : rouge velours, lettres d'or */
+    const ey=Math.max(0,hy-30);
+    R(cx-30,ey,60,13,'#5a0e14');R(cx-29,ey+1,58,11,'#9e1822');R(cx-29,ey+1,58,1,'#c83a44');
+    for(let k=0;k<15;k++){R(cx-29+k*4,ey,2,2,k%2?'#fff4b0':'#ffd24a');R(cx-29+k*4,ey+11,2,2,k%2?'#ffd24a':'#fff4b0');}
+    g.font='700 9px Georgia,serif';g.textAlign='center';g.shadowColor='#ffcf50';g.shadowBlur=4;g.fillStyle='#f6d98a';g.fillText('CASINO',cx,ey+10);g.shadowBlur=0;g.textAlign='left';
   }
   /* LE BASSIN : turquoise sur les bords, bleu profond au large */
   for(let y=XP.quaiY;y<MONDE_H;y++){
