@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-22-0452';
+  var MA_VERSION='2026-09-22-0827';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -7782,6 +7782,20 @@ async function ouvrirLaGazette(){
   let G=null;try{G=await appelRPC('gazette',{});}catch(x){}
   const CL=(G&&G.classement)||[];
   const esc=(t)=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  const jourN=Math.floor((d-new Date(2026,0,1))/864e5);
+  /* ce qui s'est passé hier sur le port, raconté par le serveur */
+  const H=(G&&G.hier)||{}, nomT={poisson:'Petit Poisson',filet:'Filet d’Or',cargo:'Gros Cargo'};
+  const faits=[];
+  if(H.loto)faits.push('<b>Loto :</b> '+H.loto.numeros.join(' · ')+' · Chance '+H.loto.chance+' — '+(H.loto.gagnants?H.loto.gagnants+' grille'+(H.loto.gagnants>1?'s':'')+' gagnante'+(H.loto.gagnants>1?'s':''):'aucune grille gagnante')+'.');
+  if(H.tickets)faits.push('<b>'+H.tickets+' ticket'+(H.tickets>1?'s':'')+'</b> grattés au Bar des Docks'+(H.gros_ticket?' ; le plus gros gain : <b>'+enEuros(H.gros_ticket.gain)+'</b> pour '+esc(H.gros_ticket.pseudo):'')+'.');
+  if(H.poisson)faits.push('<b>La plus belle prise :</b> '+esc(H.poisson.espece)+' de '+H.poisson.cm+' cm, par '+esc(H.poisson.pseudo)+' ('+H.prises+' poisson'+(H.prises>1?'s':'')+' pêchés en tout).');
+  else if(H.prises)faits.push('<b>'+H.prises+' poisson'+(H.prises>1?'s':'')+'</b> sortis de l’eau.');
+  if(H.repas)faits.push('Crousti’Port a servi <b>'+H.repas+' menu'+(H.repas>1?'s':'')+'</b>.');
+  if(H.nouveaux&&H.nouveaux.length)faits.push('Bienvenue à <b>'+H.nouveaux.map(esc).join('</b>, <b>')+'</b>, arrivé'+(H.nouveaux.length>1?'s':'')+' sur le port.');
+  const hierHTML='<div class="gzv-hier"><h3>Hier sur le port</h3>'+(faits.length?'<ul>'+faits.map(f=>'<li>'+f+'</li>').join('')+'</ul>':'<p>Une journée tranquille : les quais se reposaient.</p>')+'</div>';
+  const DEDE=['Un pastis, ça ne se boit pas, ça se mérite.','Le poisson, c’est comme la chance : il faut savoir attendre au bon endroit.','Ici, le mistral, on l’appelle le balai du Bon Dieu.','Celui qui gratte vite gagne rarement. Celui qui gratte bien… gagne aussi rarement, mais avec style.','Une sardine a bouché le port, une fois. Depuis, on se méfie.','Le secret de Fonfon ? Trois poissons au moins, et beaucoup d’amour.','Qui paie sa tournée a toujours des amis. Qui ne la paie pas en a moins.','Le Loto, c’est comme la pêche : on rêve du gros, on se contente du petit.','Au Bar des Docks, on n’a jamais perdu : on a juste pas encore gagné.','La mer, ça se respecte. Les clients aussi, surtout quand ils paient.'];
+  const HORO=['Bélier : une rencontre au bout du ponton pourrait changer ta journée.','Taureau : ta patience sera récompensée, surtout avec une canne en fibre.','Gémeaux : gratte ton ticket de la main gauche, on ne sait jamais.','Cancer : les crabes te portent chance aujourd’hui. Ou pas.','Lion : tu brilles ! Même ta coupe du Hair Studio le dit.','Vierge : range ton sac, la chance aime l’ordre.','Balance : ni trop de sardines, ni trop peu. Tout est question d’équilibre.','Scorpion : une rascasse t’attend. Méfie-toi de ses épines.','Sagittaire : vise loin, lance plus loin encore.','Capricorne : le travail paie. La Criée aussi, d’ailleurs.','Verseau : une journée idéale pour un Seau du Port.','Poissons : c’est ta journée. Évidemment.'];
+  const ANNONCES=['Loto du Port : tirage chaque soir à 21 h au Bar des Docks. La cagnotte n’attend que vous !','Chez Fonfon rachète vos bouillabaisses : plus c’est varié, mieux c’est payé.','Le Pêcheur Heureux : la canne en carbone est arrivée. Demandez Fanny.','Crousti’Port : un ticket d’or se cache peut-être dans votre seau. Tenue de poulet garantie.','Hair Studio : envie de changement ? La Comète, série limitée, il en reste encore.','Perdu : une casquette rouge près du ponton 3. Récompense : une sardine.','La Criée achète toutes vos prises, même les petites. Surtout les petites, dit le poissonnier.','Cherche équipier sérieux pour la pêche du matin. Pas de ronfleurs.','Vends canne en bambou, peu servie, cause passage au carbone.','Le Bar des Docks rappelle : vingt tickets par jour, pas un de plus. Même pour Marius.']
   const num=Math.max(1,Math.floor((d-new Date(2026,8,21))/864e5)+3);
   /* LE VIEUX-PORT, ÉDITION DU MATIN : un quotidien régional des années 50, titre rouge, photo, deux colonnes.
      Toute la page défile dans son propre cadre (rien ne bouge derrière), le bouton reste en bas, hors du texte. */
@@ -7805,6 +7819,8 @@ async function ouvrirLaGazette(){
     #gzv .gzv-annonces{margin-top:14px;border-top:2px solid #b8231a;padding-top:10px}
     #gzv .gzv-pa{border:1px solid #1d1a16;padding:7px 8px;margin-top:7px;font:italic 12.5px Georgia,serif;line-height:1.35}
     #gzv .gzv-fin{text-align:center;font:italic 11px Georgia,serif;color:#5a5048;margin-top:16px}
+    #gzv .gzv-hier{margin-top:12px;border-top:2px solid #b8231a;padding-top:10px}#gzv .gzv-hier ul{margin:0;padding-left:18px}#gzv .gzv-hier li,#gzv .gzv-hier p{font:13px Georgia,serif;line-height:1.45;margin:0 0 4px}
+    #gzv .gzv-dede{margin-top:14px;padding:10px 12px;border:1px solid #1d1a16;border-left:4px solid #b8231a;background:rgba(184,35,26,.04)}#gzv .gzv-dede p{font:italic 15px Georgia,serif;line-height:1.4;margin:0}#gzv .gzv-dede small{display:block;font:11px Georgia,serif;color:#5a5048;margin-top:4px}
     #gzv .gzv-pied{flex:none;padding:10px 16px calc(env(safe-area-inset-bottom,0px) + 12px);background:linear-gradient(rgba(243,236,220,0),#f3ecdc 30%)}
     #gzv .gzv-fermer{display:block;width:100%;border:0;border-radius:14px;padding:14px;font:700 16px Georgia,serif;background:#1d1a16;color:#f3ecdc}
     @media (max-width:340px){#gzv .gzv-texte{column-count:1}#gzv h1{font-size:30px}}</style>
@@ -7815,15 +7831,17 @@ async function ouvrirLaGazette(){
      <img class="gzv-photo" src="nouveautes/quai.jpg" alt="">
      <p class="gzv-leg">Sur le quai, à l'heure où les lanternes s'allument.</p>
      <p class="gzv-texte">${esc((G&&G.une)||'Les pêcheurs rentrent, le Fumoir fume, les mouettes veillent.')}</p>
+     ${hierHTML}
      <div class="gzv-grille">
        <div class="gzv-bloc"><h3>Classement</h3>${CL.length?'<ol>'+CL.map((j,k)=>'<li>'+(k===0?'<b>':'')+esc(j.pseudo)+(k===0?'</b>':'')+'</li>').join('')+'</ol>':'Personne encore au registre.'}</div>
        <div class="gzv-bloc"><h3>Météo</h3>${METEO[Math.floor(graine(7)*METEO.length)]} ${temp}°C.</div>
        <div class="gzv-bloc"><h3>Cours du poisson</h3>${cours.map(([n,a,f])=>'<div class="gzv-prix"><span>'+n+'</span><b>'+enEuros(Math.round(a*100)).replace(',00','')+' '+f+'</b></div>').join('')}</div>
        <div class="gzv-bloc"><h3>Sur les quais</h3><b>${(G&&G.joueurs)||0}</b> habitants inscrits au registre du port.</div>
      </div>
-     <div class="gzv-annonces"><h3>Petites annonces</h3>
-       <div class="gzv-pa">Loto du Port : tirage chaque soir à 21 h au Bar des Docks. La cagnotte n'attend que vous !</div>
-       <div class="gzv-pa">Chez Fonfon rachète vos bouillabaisses : plus c'est varié, mieux c'est payé.</div></div>
+     <div class="gzv-dede"><h3>Le mot de Dédé</h3><p>« ${esc(DEDE[jourN%DEDE.length])} »</p><small>— Dédé, patron du Bar des Docks</small></div>
+     <div class="gzv-grille"><div class="gzv-bloc"><h3>Horoscope du pêcheur</h3><p>${esc(HORO[(jourN*7)%HORO.length])}</p></div>
+       <div class="gzv-bloc"><h3>Ce soir au Loto</h3><p>Cagnotte : <b>${enEuros((G&&G.cagnotte)||0)}</b>.<br>Tirage à 21 h au Bar des Docks.</p></div></div>
+     <div class="gzv-annonces"><h3>Petites annonces</h3>${[0,1].map(k=>'<div class="gzv-pa">'+esc(ANNONCES[(jourN*2+k)%ANNONCES.length])+'</div>').join('')}</div>
      <div class="gzv-fin">— Le Vieux-Port, le journal des quais —</div>
    </div><div class="gzv-pied"><button class="gzv-fermer" id="gzFermer">Replier le journal</button></div></div>`;
   $('gzFermer').onclick=()=>{$('page2').classList.remove('on');};
