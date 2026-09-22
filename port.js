@@ -1630,7 +1630,7 @@ function semerDecorExtramar(){
      Entre les deux, le passage vers le ponton du milieu reste libre. */
   /* (la poissonnerie et la boutique de pêche ont quitté le milieu du quai : elles sont en façade) */
   /* LE PANNEAU DU TUTORIEL, au milieu du quai, au pied du tapis rouge du casino */
-  P('x_tuto',XP.ruelle.x,XP.maisonsY+58,{col:[22,3],bati:true,ouvre:'tuto'});
+  P('x_tuto',XP.ruelle.x,XP.maisonsY+80,{col:[22,3],bati:true,ouvre:'tuto'});
   /* LES LANTERNES, en rang régulier au bord de l'eau */
   [280,420,840,980,1120].forEach((x,i)=>P('lanterneP',x,324,{gr:i}));
   /* LES BANCS, entre deux lanternes, tournés vers la mer ; deux autres contre les façades */
