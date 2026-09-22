@@ -1,0 +1,95 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Théâtre du port · aperçu</title>
+<style>
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}html,body{height:100%;overflow:hidden;background:#1a0608}body{font-family:Georgia,serif;color:#f4e6c8}
+.ecran{position:fixed;inset:0;display:none;flex-direction:column}.ecran.on{display:flex}
+/* ——— LE PROGRAMME : velours rouge et or ——— */
+#prog{background:radial-gradient(ellipse at 50% 0,#7a1420,#3a0810 70%);padding:calc(env(safe-area-inset-top,0px) + 18px) 18px 18px;overflow-y:auto}
+#prog .fr{position:relative;border:2px solid #d8b050;border-radius:4px;padding:18px 16px;outline:1px solid rgba(216,176,80,.5);outline-offset:4px}
+#prog .fr small{display:block;text-align:center;font:700 10px Arial;letter-spacing:6px;color:#d8b050}#prog .fr h1{text-align:center;font:italic 400 34px Georgia;color:#f8e8c0;margin:6px 0 2px}
+#prog .fr .s{text-align:center;font:italic 13px Georgia;color:#e8c8a0;margin-bottom:16px}#prog .orn{text-align:center;color:#d8b050;letter-spacing:8px;margin:4px 0 12px}
+#prog .sp{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid rgba(216,176,80,.35)}
+#prog .sp .h{flex:none;width:52px;text-align:center;font:700 18px Georgia;color:#f0cf7d}#prog .sp .h i{display:block;font:600 9px Arial;letter-spacing:2px;font-style:normal;color:#c8a878}
+#prog .sp .x{flex:1}#prog .sp b{display:block;font:400 18px Georgia;color:#fff}#prog .sp em{display:block;font:italic 12px Georgia;color:#e0c0a0;margin-top:2px}
+#prog .sp button{flex:none;border:1px solid #d8b050;border-radius:18px;padding:8px 12px;background:rgba(216,176,80,.12);color:#f8e8c0;font:700 12px Arial}
+#prog .sp button.bientot{opacity:.45}
+#prog .pied{text-align:center;font:italic 12px Georgia;color:#c8a080;margin-top:14px}
+/* ——— LA SALLE ——— */
+#salle{background:#140406}#salle canvas{flex:1;width:100%;image-rendering:pixelated}
+#salle .bas{position:absolute;left:0;right:0;bottom:0;padding:10px 16px calc(env(safe-area-inset-bottom,0px) + 14px);display:flex;gap:10px;justify-content:center}
+#salle .bas button{border:0;border-radius:22px;padding:12px 20px;font:700 14px Georgia;background:#d8b050;color:#3a0810;box-shadow:0 4px 0 #8a6a28}#salle .bas button.sec{background:rgba(255,255,255,.12);color:#f4e6c8;box-shadow:none}
+#salle .bas button[hidden]{display:none}
+</style></head><body>
+<div class="ecran on" id="prog"><div class="fr"><small>THÉÂTRE DU PORT</small><h1>Programme</h1><div class="s">Saison d'automne · Vieux-Port, Marseille</div><div class="orn">✦ ✦ ✦</div>
+ <div class="sp"><div class="h">19 h<i>COMÉDIE</i></div><div class="x"><b>La Sardine qui boucha le port</b><em>Marius, Olive et le gendarme · 2 min</em></div><button data-s="sardine">Place · 5 €</button></div>
+ <div class="sp"><div class="h">21 h<i>REVUE</i></div><div class="x"><b>La Revue du Vieux-Port</b><em>Danseuses, plumes et paillettes · 1 min</em></div><button data-s="revue">Place · 8 €</button></div>
+ <div class="sp"><div class="h">16 h<i>GUIGNOL</i></div><div class="x"><b>Guignol et le voleur de filets</b><em>Pour petits et grands</em></div><button class="bientot">Bientôt</button></div>
+ <div class="pied">Les spectacles se jouent pour tous les joueurs dans la salle au même moment.</div></div></div>
+<div class="ecran" id="salle"><canvas id="cv"></canvas><div class="bas"><button class="sec" id="sortir">Quitter la salle</button><button id="bravo" hidden>👏 Bravo !</button></div></div>
+<script>
+const cv=document.getElementById('cv');let g,W,H,E,SHOW=null,T0=0,raf=0,roses=[],bravos=0;
+function taille(){const r=cv.getBoundingClientRect();E=Math.max(2,Math.floor(Math.min(r.width/200,r.height/300)));W=Math.floor(r.width/E);H=Math.floor(r.height/E);cv.width=W*2;cv.height=H*2;g=cv.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;}
+const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(.5,w),Math.max(.5,h));};
+/* un personnage en pixel : tête, cheveux, corps, jambes ; il peut marcher et parler */
+function perso(x,y,o){const b=o.bouge?Math.sin(o.t*10)*1:0;R(x-5,y-2,10,3,'rgba(0,0,0,.25)');R(x-3,y-8+b,2.5,8,o.jambes||'#2a2a3a');R(x+.5,y-8-b,2.5,8,o.jambes||'#2a2a3a');
+  R(x-5,y-20,10,12,o.corps);R(x-6,y-19,2,9,o.corps);R(x+4,y-19,2,9,o.corps);if(o.bras)R(x+5,y-24,2,6,o.corps);
+  R(x-4,y-29,8,9,'#e8b890');R(x-4.5,y-31,9,4,o.cheveux);if(o.chapeau)o.chapeau(x,y);R(x-2,y-26,1.2,1.2,'#1a1a1a');R(x+1,y-26,1.2,1.2,'#1a1a1a');
+  if(o.parle&&Math.floor(o.t*8)%2)R(x-1,y-23,2,1.2,'#8a2a2a');else R(x-1.5,y-23,3,.8,'#8a3a3a');if(o.moustache)R(x-2.5,y-24,5,1.2,o.cheveux);}
+let BULLES=[];function bulle(x,y,txt){BULLES.push([x,y,txt]);}
+function bulleVraie(x,y,txt){g.font='700 6px Georgia';const w=Math.min(W-10,g.measureText(txt).width+10);let bx=Math.max(4,Math.min(W-w-4,x-w/2));
+  R(bx,y-12,w,11,'#fffaf0');R(bx,y-12,w,1,'#fff');g.fillStyle='#fffaf0';g.beginPath();g.moveTo(x-3,y-1);g.lineTo(x+3,y-1);g.lineTo(x,y+4);g.fill();g.fillStyle='#2a1a10';g.textAlign='center';g.fillText(txt,bx+w/2,y-4.5);g.textAlign='left';}
+/* la salle : balcons dorés, lustre, cadre de scène, rideaux, public */
+function salle(t,ouv){g.fillStyle='#240608';g.fillRect(0,0,W,H);
+  const sx=W*.08,sy=H*.14,sw=W*.84,sh=H*.5;
+  for(let k=0;k<2;k++){const bx=k?W*.92:0,bw=W*.08;for(let r=0;r<3;r++){R(bx,sy+r*sh*.3,bw,sh*.22,'#3a0a10');R(bx,sy+r*sh*.3+sh*.22-3,bw,3,'#d8b050');for(let q=0;q<3;q++)R(bx+2+q*(bw/3),sy+r*sh*.3+sh*.22-10,3,7,'#1a0406');}}
+  /* le lustre, qui scintille */
+  R(W/2-.5,0,1,H*.05,'#a8883a');for(let k=0;k<7;k++){const a=k/7*Math.PI;R(W/2+Math.cos(a)*14-1,H*.06+Math.sin(a)*3,2,3,(Math.floor(t*6)+k)%5?'#fff4c0':'#fff');}R(W/2-16,H*.055,32,1.5,'#d8b050');
+  /* la scène */
+  R(sx-6,sy-10,sw+12,sh+14,'#d8b050');R(sx-4,sy-8,sw+8,sh+10,'#8a6a28');R(sx,sy,sw,sh,'#2a1e30');
+  const fond=g.createLinearGradient(0,sy,0,sy+sh);fond.addColorStop(0,'#4a6a9a');fond.addColorStop(.65,'#e8b890');fond.addColorStop(.66,'#2a5a8a');fond.addColorStop(1,'#1a3a6a');g.fillStyle=fond;g.fillRect(sx,sy,sw,sh);   /* le décor : le Vieux-Port au couchant */
+  R(sx+sw*.12,sy+sh*.3,10,sh*.36,'#6a5a6a');R(sx+sw*.18,sy+sh*.22,12,sh*.44,'#7a6a78');R(sx+sw*.72,sy+sh*.26,14,sh*.4,'#6a5a6a');R(sx+sw*.5-1,sy+sh*.08,2,sh*.3,'#8a7a88');R(sx+sw*.5-4,sy+sh*.08,8,6,'#e8c870');
+  R(sx,sy+sh*.86,sw,sh*.14,'#6a4a2a');for(let x=sx;x<sx+sw;x+=12)R(x,sy+sh*.86,1,sh*.14,'#4a321a');                                     /* les planches */
+  if(SHOW)SHOW.dessiner(t,sx,sy,sw,sh);
+  /* les rideaux de velours, qui s'ouvrent et se ferment */
+  const o=Math.max(0,Math.min(1,ouv)),cw=sw/2*(1-o*.85);
+  for(let k=0;k<2;k++){const x0=k?sx+sw-cw:sx;for(let x=0;x<cw;x+=4){const c=(Math.floor(x/4)%2)?'#9a1424':'#b81e30';R(x0+x,sy,4,sh,c);R(x0+x+3,sy,1,sh,'#6a0a14');}}
+  R(sx,sy,sw,10,'#b81e30');for(let x=sx;x<sx+sw;x+=10){g.fillStyle='#9a1424';g.beginPath();g.arc(x+5,sy+10,5,0,Math.PI);g.fill();}R(sx,sy+14,sw,1.5,'#d8b050');
+  BULLES.forEach(b=>bulleVraie(...b));BULLES=[];
+  /* la rampe de lumière, puis le public de dos */
+  for(let x=sx;x<sx+sw;x+=8){R(x,sy+sh+1,4,2,'#fff0b0');}
+  for(let r=0;r<4;r++)for(let k=0;k<12;k++){const x=W*.04+k*W*.08+(r%2)*W*.04,y=H*.72+r*H*.07,c=['#3a2a1a','#6a4a2a','#1a1a1a','#8a6a3a','#c8a878'][(k+r)%5];
+    const saute=SHOW&&SHOW.fini&&Math.sin(t*14+k+r)>.3?-2:0;R(x-6,y-2,12,H*.08,'#7a1420');R(x-6,y-2,12,2,'#9a2430');g.fillStyle=c;g.beginPath();g.arc(x,y-6+saute,5,0,7);g.fill();}
+  /* les roses lancées sur scène */
+  roses=roses.filter(p=>(p.t+=1/60)<1.4);for(const p of roses){const u=Math.min(1,p.t);const x=p.x0+(p.x1-p.x0)*u,y=p.y0+(p.y1-p.y0)*u-Math.sin(u*Math.PI)*40;R(x-1.5,y-1.5,3,3,'#e8283a');R(x-.5,y+1,1,3,'#3a8a3a');}}
+/* ——— LA COMÉDIE : La Sardine qui boucha le port ——— */
+const SARDINE={duree:52,script:[[2,'marius','Olive ! Tu as vu ce que j’ai pêché ?'],[6,'olive','Encore une sardine, Marius ?'],[10,'marius','Une sardine ? Une BALEINE, oui !'],[14,'olive','Montre-la, pour voir…'],
+  [20,'marius','Attends… elle arrive…'],[26,'olive','Boudiou ! Elle bouche tout le port !'],[31,'gendarme','Qui a garé cette sardine ici ?!'],[36,'marius','C’est pas une sardine, c’est un cargo !'],[41,'gendarme','Amende : trois pastis. Chacun !'],[46,'tous','Et c’est comme ça que la sardine boucha le port !']],
+  dessiner(t,sx,sy,sw,sh){const sol=sy+sh*.9;const dit=this.script.filter(s=>s[0]<=t).pop();
+    const gx=t<29?sx+sw+30:Math.max(sx+sw*.78,sx+sw+30-(t-29)*40);
+    const sardX=t<20?sx-120:Math.min(sx+sw*.2,sx-120+(t-20)*40);                                                 /* la sardine géante qui glisse dans le port */
+    if(t>=20){g.fillStyle='#b8c8d8';g.beginPath();g.ellipse(sardX+sw*.25,sy+sh*.72,sw*.28,sh*.09,0,0,7);g.fill();g.fillStyle='#dfe8f0';g.beginPath();g.ellipse(sardX+sw*.24,sy+sh*.69,sw*.2,sh*.035,0,0,7);g.fill();
+      g.fillStyle='#b8c8d8';g.beginPath();g.moveTo(sardX+sw*.5,sy+sh*.72);g.lineTo(sardX+sw*.58,sy+sh*.62);g.lineTo(sardX+sw*.58,sy+sh*.82);g.fill();R(sardX+sw*.06,sy+sh*.69,4,4,'#1a1a1a');}
+    const parle=(q)=>dit&&(dit[1]===q||dit[1]==='tous')&&t-dit[0]<3.6;
+    perso(sx+sw*.3,sol,{t,corps:'#2a5aa0',cheveux:'#3a2a1a',moustache:true,parle:parle('marius'),bras:t>9&&t<13,chapeau:(x,y)=>{R(x-5,y-33,10,2,'#e8e0c8');R(x-3.5,y-36,7,3,'#e8e0c8');}});
+    perso(sx+sw*.5,sol,{t,corps:'#c84a6a',cheveux:'#8a4a2a',parle:parle('olive')});
+    perso(gx,sol,{t,corps:'#1a2a4a',cheveux:'#1a1a1a',moustache:true,bouge:t>29&&t<34,parle:parle('gendarme'),chapeau:(x,y)=>{R(x-5,y-34,10,4,'#1a2a4a');R(x-6,y-31,12,1.5,'#111');R(x-1,y-33,2,2,'#d8b050');}});
+    if(dit&&t-dit[0]<3.8){const X=dit[1]==='marius'?sx+sw*.3:(dit[1]==='olive'?sx+sw*.5:(dit[1]==='gendarme'?gx:sx+sw*.5));bulle(X,sol-40,dit[2]);}}};
+/* ——— LA REVUE : une ligne de danseuses, plumes et paillettes, qui lèvent la jambe en cadence ——— */
+const REVUE={duree:34,dessiner(t,sx,sy,sw,sh){const sol=sy+sh*.9;
+    for(let k=0;k<40;k++){const x=sx+((k*37+t*20)%sw),y=sy+((k*53)%(sh*.7));R(x,y,1,1,Math.sin(t*8+k)>0?'#fff4b0':'#e8c870');}           /* les paillettes */
+    const n=5;for(let k=0;k<n;k++){const x=sx+sw*(.18+k*.16),ph=t*3+k*.6,kick=Math.max(0,Math.sin(ph))*10;
+      R(x-4,sol-24,8,10,['#e8283a','#f0c040','#e86aa0','#2aa0a0','#8a5ad8'][k]);R(x-5,sol-15,10,3,'#fff');R(x-3,sol-8,2,8,'#f0c8a8');
+      g.save();g.translate(x+1,sol-8);g.rotate(-kick/12);R(0,0,2,8,'#f0c8a8');g.restore();R(x-3,sol-32,6,8,'#f0c8a8');R(x-3.5,sol-34,7,3,'#3a1a0a');
+      for(let q=0;q<5;q++)R(x-6+q*3,sol-42-Math.abs(q-2)*-2+Math.sin(t*6+q)*1,2,8,['#fff','#e8c870','#e86aa0'][q%3]);}
+    if(t>2&&t<9)bulle(sx+sw*.5,sy+sh*.2,'Mesdames et messieurs, la Revue du Vieux-Port !');}};
+function jouer(sh){SHOW=Object.assign({fini:false},sh==='sardine'?SARDINE:REVUE);document.getElementById('prog').classList.remove('on');document.getElementById('salle').classList.add('on');document.getElementById('bravo').hidden=true;roses=[];taille();T0=performance.now();
+  cancelAnimationFrame(raf);const boucle=()=>{const t=(performance.now()-T0)/1000;const D=SHOW.duree;let ouv;
+    if(t<3)ouv=t/3;else if(t<D-2)ouv=1;else ouv=Math.max(0,1-(t-(D-2))/2.5);
+    const ts=Math.max(0,t-2.5);SHOW.fini=t>D-4;salle(t,ouv);if(t<3)bulleCentre('Le spectacle commence…');
+    if(SHOW.fini)document.getElementById('bravo').hidden=false;raf=requestAnimationFrame(boucle);};
+  const vrai=SHOW.dessiner.bind(SHOW);SHOW.dessiner=(t,a,b,c,d)=>vrai(Math.max(0,t-2.5),a,b,c,d);boucle();}
+function bulleCentre(t){g.font='italic 8px Georgia';g.fillStyle='#f4e6c8';g.textAlign='center';g.fillText(t,W/2,H*.1);g.textAlign='left';}
+document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>jouer(b.dataset.s));
+document.getElementById('sortir').onclick=()=>{cancelAnimationFrame(raf);document.getElementById('salle').classList.remove('on');document.getElementById('prog').classList.add('on');};
+document.getElementById('bravo').onclick=()=>{for(let k=0;k<4;k++)roses.push({x0:W*.2+Math.random()*W*.6,y0:H*.95,x1:W*.25+Math.random()*W*.5,y1:H*.58,t:-k*.08});if(navigator.vibrate)navigator.vibrate(15);};
+addEventListener('resize',()=>{if(document.getElementById('salle').classList.contains('on'))taille();});
+</script></body></html>
