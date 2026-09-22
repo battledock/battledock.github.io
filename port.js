@@ -27,7 +27,7 @@ const XP={
 const CARGO_X={pile:[1266,566],docks:[1318,446]};
 const PAV={poisson:[552,250],peche:[708,250]};
 const CABANON=[1320,440];                              /* le cabanon de la bouillabaisse */
-const STATIONS_VELO=[[236,212],[1190,238]];            /* les stations de vélos */
+const STATIONS_VELO=[[284,214],[1190,238]];            /* les stations de vélos */
 /* (gardé dans jeu.html) */                                         /* sur un vélo : on va plus vite */    /* les deux pavillons du milieu */   /* où l'on prend, où l'on dépose */
 const surPonton=(x,y)=>XP.pontons.some(px=>Math.abs(x-px)<XP.pontonL&&y<XP.pontonFin);
 const dansLeBassin=(x,y)=>x>XP.bassinO&&x<XP.bassinE&&y>XP.quaiY;
@@ -1427,6 +1427,40 @@ function graverLaPresse(){return devanture(2,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
   const ey=yR-14;R(x0+12,ey,BL-24,13,'#d8b050');R(x0+13,ey+1,BL-26,11,'#24503e');
   g.font='700 7.8px Georgia,serif';g.textAlign='center';g.fillStyle=nuit?'#fff0c0':'#f0d890';g.fillText('PRESSE · JOURNAUX',cx,ey+9,BL-34);g.textAlign='left';
   if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,210,140,.45)');l.addColorStop(1,'rgba(255,210,140,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}});}
+/* CHEZ FONFON : le restaurant de bouillabaisse du quai, bordeaux et or */
+function restoFonfon(teinte){const T=teinte==='marine'?{b:'#1f3452',bh:'#2c4a72',bs:'#122238',store:['#1f3a6a','#2a4a80'],or:'#e2c070'}:{b:'#5a1a1e',bh:'#7a2a2e',bs:'#3a0c10',store:['#8a1a22','#a8262e'],or:'#e8c46a'};
+  return devanture(1,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+  /* la devanture en bois peint : pilastres moulurés, soubassement, corniche dorée */
+  R(x0-2,yR-4,BL+4,rez+4,T.b);R(x0-2,yR-4,BL+4,1.5,T.or);R(x0-2,sol-6,BL+4,6,T.bs);R(x0-2,sol-6,BL+4,1,T.bh);
+  [x0,x0+44,x0+BL-50,x0+BL-6].forEach(x=>{R(x,yR,6,rez-6,T.bh);R(x+1,yR,1,rez-6,'rgba(255,255,255,.18)');R(x+5,yR,1,rez-6,T.bs);R(x-1,yR,8,2,T.or);R(x-1,sol-8,8,2,T.or);});
+  /* les deux grandes baies : la salle éclairée, nappes blanches, verres, bougies, les convives, un serveur */
+  [[x0+6,38],[x0+BL-44,38]].forEach(([x,w],k)=>{const fond=nuit?'#ffe2b0':'#e8d2a8';R(x,yR+2,w,rez-10,fond);
+    R(x,yR+2,w,10,nuit?'#f0c890':'#d8bc90');for(let q=0;q<3;q++){R(x+4+q*12,yR+4,1,6,'#6a4a2a');R(x+2+q*12,yR+10,5,2,'#fff4d0');}   /* les appliques */
+    R(x,yR+12,w,1,'#b89a6a');
+    for(let q=0;q<2;q++){const tx=x+9+q*20,ty=sol-16;R(tx-7,ty,14,4,'#fbfaf6');R(tx-7,ty+4,14,5,'#eeeae2');R(tx-1,ty+9,2,3,'#6a4a2a');
+      R(tx-4,ty-2,3,2,'#e8703a');R(tx+2,ty-2,3,2,'#e8703a');R(tx-5.5,ty-1,1,1,'#fff');R(tx+.5,ty-5,1,4,'#d8e8f0');R(tx,ty-6,2,1.5,nuit?'#ffd060':'#e8c46a');   /* bouillabaisse, verre, bougie */
+      R(tx-11,ty-6,4,4,'#e0b088');R(tx-11.5,ty-7,5,2,['#3a2a1a','#8a5a2a'][q]);R(tx-12,ty-2,5,6,['#2a4a7a','#8a2a3a'][q]);
+      R(tx+7,ty-6,4,4,'#e0b088');R(tx+6.5,ty-7,5,2,['#c8a060','#1a1a1a'][q]);R(tx+7,ty-2,5,6,['#3a6a4a','#c86a8a'][q]);}
+    if(k===1){R(x+w-8,sol-26,4,4,'#e0b088');R(x+w-9,sol-22,6,10,'#1a1a1a');R(x+w-8,sol-22,4,3,'#fff');R(x+w-12,sol-19,5,1,'#c8ccd4');}                    /* le serveur et son plateau */
+    R(x,yR+2,w,rez-10,'rgba(255,255,255,.06)');g.fillStyle='rgba(255,255,255,.14)';g.beginPath();g.moveTo(x+4,sol-8);g.lineTo(x+14,yR+2);g.lineTo(x+19,yR+2);g.lineTo(x+9,sol-8);g.fill();
+    R(x+w/2-.5,yR+2,1,rez-10,T.b);R(x,yR+2,w,1.5,T.b);R(x,sol-9,w,1.5,T.b);
+    /* les lettres dorées peintes sur la vitre */
+    g.font='italic 700 4.6px Georgia,serif';g.textAlign='center';g.fillStyle=T.or;g.fillText(k?'Poissons du jour':'Bouillabaisse',x+w/2,yR+17.5,w-6);g.textAlign='left';});
+  /* la porte vitrée à deux battants, sa poignée de laiton, le menu encadré */
+  R(cx-10,yR+2,20,rez-8,T.bs);R(cx-9,yR+3,18,rez-10,nuit?'#ffe8b8':'#d8c4a0');R(cx-.5,yR+3,1,rez-10,T.b);R(cx-9,yR+14,18,1,T.b);R(cx+3,sol-18,1.5,4,'#e8c46a');R(cx-4.5,sol-18,1.5,4,'#e8c46a');
+  R(x0+BL/2-24,yR+8,10,13,T.or);R(x0+BL/2-23,yR+9,8,11,'#f8f2e2');for(let q=0;q<4;q++)R(x0+BL/2-22,yR+11+q*2.4,6,.6,'#6a4a2a');
+  /* le store banne, rouge profond, festonné, et son lettrage */
+  const sy=yR-10;for(let k=0;k<BL+8;k+=1){const c=k%12<6?T.store[0]:T.store[1];R(x0-4+k,sy,1,9,c);}R(x0-4,sy,BL+8,1.5,'rgba(255,255,255,.2)');
+  for(let k=0;k<BL+8;k+=12){g.fillStyle=T.store[0];g.beginPath();g.arc(x0-4+k+6,sy+9,6,0,Math.PI);g.fill();}R(x0-4,sy+8.5,BL+8,1,'rgba(0,0,0,.2)');
+  g.font='700 5px Arial,sans-serif';g.textAlign='center';g.fillStyle='#fff6e0';g.fillText('R E S T A U R A N T   ·   B O U I L L A B A I S S E',cx,sy+6,BL-10);g.textAlign='left';
+  /* l'enseigne en lettres de laiton, sur le bandeau, avec deux lanternes */
+  const ey=yR-26;R(x0+14,ey,BL-28,14,T.b);R(x0+14,ey,BL-28,1.2,T.or);R(x0+14,ey+12.8,BL-28,1.2,T.or);
+  g.font='italic 900 10.5px Georgia,serif';g.textAlign='center';g.fillStyle='rgba(0,0,0,.4)';g.fillText('Chez Fonfon',cx+.6,ey+10.6,BL-40);g.fillStyle=nuit?'#fff0c0':T.or;g.fillText('Chez Fonfon',cx,ey+10,BL-40);g.textAlign='left';
+  [[x0+8],[x0+BL-10]].forEach(([x])=>{R(x,ey-2,2,6,'#3a3a40');R(x-2,ey+4,6,8,'#2a2a30');R(x-1,ey+5,4,6,nuit?'#ffe080':'#d8c890');if(nuit){g.fillStyle='rgba(255,220,130,.3)';g.beginPath();g.arc(x+1,ey+8,9,0,7);g.fill();}});
+  /* deux oliviers en pot, de part et d'autre */
+  [[x0-2],[x0+BL-6]].forEach(([x])=>{R(x,sol-9,8,9,'#b8643a');R(x,sol-9,8,1.5,'#d8845a');for(let q=0;q<14;q++){g.fillStyle=q%2?'#7a8a5a':'#8a9a6a';g.beginPath();g.ellipse(x+4+Math.cos(q)*5,sol-18+Math.sin(q*1.7)*5,2.5,1.5,q,0,7);g.fill();}R(x+3.5,sol-16,1,7,'#6a5a3a');});
+  if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,85);l.addColorStop(0,'rgba(255,215,150,.55)');l.addColorStop(1,'rgba(255,215,150,0)');g.fillStyle=l;g.fillRect(cx-85,sol-85,170,92);}});}
+
 /* LE PÊCHEUR HEUREUX : la boutique de pêche du quai (le nom de la fonction reste, pour ne rien casser) */
 const LUP=(g,cx,sol,nuit,c)=>{if(!nuit)return;const l=g.createRadialGradient(cx,sol,4,cx,sol,75);l.addColorStop(0,c||'rgba(255,215,150,.5)');l.addColorStop(1,'rgba(255,215,150,0)');g.fillStyle=l;g.fillRect(cx-75,sol-75,150,80);};
 const bouee=(g,x,y,r,c1,c2)=>{g.strokeStyle=c1;g.lineWidth=r*.55;g.beginPath();g.arc(x,y,r,0,7);g.stroke();g.strokeStyle=c2;for(let q=0;q<4;q++){g.beginPath();g.arc(x,y,r,q*Math.PI/2+.2,q*Math.PI/2+.62);g.stroke();}};
@@ -1576,13 +1610,13 @@ function semerDecorExtramar(){
      l'autre, comme sur le vrai quai ; au milieu, la Bonne Mère */
   for(let k=0;k<10;k++){
     if(k===4){P('x_panneauG',XP.ruelle.x-38,XP.maisonsY+22,{col:[4,3]});continue;}   /* la ruelle du casino, et son panneau */
-    if(k===1){XCAL['x_fumoir0']=graverLeFumoir();CALQUES_DECO['x_fumoir']=XCAL['x_fumoir0'];P('x_fumoir',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'fumoir'});continue;}   /* le fumoir */
+    if(k===1){XCAL['x_fonfon0']=restoFonfon('bordeaux');CALQUES_DECO['x_fonfon']=XCAL['x_fonfon0'];P('x_fonfon',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'bouillabaisse'});continue;}   /* Chez Fonfon, le restaurant de bouillabaisse (à la place du Fumoir) */
     /* (la poste est retirée : un immeuble du quai reprend sa place) */
     if(k===9){XCAL['x_presse0']=graverLaPresse();CALQUES_DECO['x_presse']=XCAL['x_presse0'];P('x_presse',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'presse'});continue;}   /* la maison de la presse */
     if(k===2){XCAL['x_facPeche0']=graverLaBoutiquePeche();CALQUES_DECO['x_facPeche']=XCAL['x_facPeche0'];P('x_facPeche',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'peche'});continue;}   /* Pêche & Marine */
     if(k===6){XCAL['x_facPoisson0']=graverLaPoissonnerie();CALQUES_DECO['x_facPoisson']=XCAL['x_facPoisson0'];P('x_facPoisson',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'poissonnerie'});continue;}   /* la poissonnerie */
     if(k===3){XCAL['x_bar0']=graverLeBar();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'bar'});
-      XCAL['x_terr0']=graverTerrasse(1);CALQUES_DECO['x_terr']=XCAL['x_terr0'];P('x_terr',70+k*140,XP.maisonsY+46,{col:[4,2]});continue;}   /* le bar-tabac PMU et sa terrasse */   /* le bar-tabac */
+      continue;}   /* le bar-tabac PMU (sans terrasse) */
     if(k===5){XCAL['x_peigne0']=graverLePeigne();CALQUES_DECO['x_peigne']=XCAL['x_peigne0'];P('x_peigne',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'salon'});continue;}   /* le salon de coiffure */
     if(k===7){XCAL['x_crousti0']=graverCroustiPort();CALQUES_DECO['x_crousti']=XCAL['x_crousti0'];P('x_crousti',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'crousti'});continue;}   /* le fast-food du quai */
     P('x_maison',70+k*140,XP.maisonsY,{v:k,col:[70,24]});
@@ -1635,7 +1669,7 @@ function semerDecorExtramar(){
      les Docks où on les porte ; la Grande Roue sur le quai ; le phare au bout */
   /* L'EST : LE CABANON DE LA BOUILLABAISSE, au bord de l'eau, sur la jetée ;
      il laisse toute la jetée libre autour de lui */
-  P('x_cabanon',CABANON[0],CABANON[1],{col:[40,24]});
+  /* (le cabanon de la bouillabaisse est retiré : la bouillabaisse se cuisine Chez Fonfon, sur le quai) */
   [[1236,476],[1392,476]].forEach(([x,y],i)=>P('lanterneP',x,y,{gr:8+i}));
   /* LES VÉLOS EN LIBRE-SERVICE : une station près du métro, une près du cabanon */
   STATIONS_VELO.forEach(([x,y])=>P('x_stationVelo',x,y,{col:[40,5]}));
