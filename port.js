@@ -19,7 +19,7 @@ const XP={
   maisonsY:152,            /* le pied des façades */
   quaiY:340,               /* le bord du quai, au-dessus du bassin */
   bassinO:170, bassinE:1210,
-  pontons:[360,620,880], pontonL:13, pontonFin:470,
+  pontons:[360,880], pontonL:13,           /* le ponton du milieu (620) est retiré, avec ses voiliers */ pontonFin:470,
   metro:[250,268],
   ruelle:{x:630,l:22,haut:30},   /* la montée vers Notre-Dame : axe, demi-largeur, sommet */
   boulo:[30,392,120,172],   /* le boulodrome : x, y, largeur, hauteur */
@@ -1614,12 +1614,13 @@ function semerDecorExtramar(){
   /* LA FORÊT DE MÂTS : des voiliers serrés de part et d'autre des pontons,
      l'étrave tournée vers les planches */
   let nv=0;
-  XP.pontons.forEach(px=>{
+  [360,620,880].forEach(px=>{                     /* on compte aussi l'ancien ponton du milieu : les autres voiliers gardent leur allure */
+    const la=XP.pontons.includes(px);
     for(let y=XP.quaiY+24;y<=XP.pontonFin-6;y+=16){
       /* quelques anneaux vides : des bateaux sont sortis en mer */
-      if(alea(px*0.37+y*1.13)>0.27)P('x_voilier',px-XP.pontonL-27,y,{v:(nv)*7%11});
+      if(la&&alea(px*0.37+y*1.13)>0.27)P('x_voilier',px-XP.pontonL-27,y,{v:(nv)*7%11});
       nv++;
-      if(alea(px*0.71+y*0.53+9)>0.27)P('x_voilier',px+XP.pontonL+27,y+8,{v:(nv)*7%11,flip:true});
+      if(la&&alea(px*0.71+y*0.53+9)>0.27)P('x_voilier',px+XP.pontonL+27,y+8,{v:(nv)*7%11,flip:true});
       nv++;
     }
   });
@@ -1630,8 +1631,6 @@ function semerDecorExtramar(){
   /* (la poissonnerie et la boutique de pêche ont quitté le milieu du quai : elles sont en façade) */
   /* LES LANTERNES, en rang régulier au bord de l'eau */
   [280,420,840,980,1120].forEach((x,i)=>P('lanterneP',x,324,{gr:i}));
-  /* deux lanternes encadrent l'entrée du ponton du milieu, sans cacher les boutiques */
-  [[602,334],[638,334]].forEach(([x,y],i)=>P('lanterneP',x,y,{gr:5+i}));
   /* LES BANCS, entre deux lanternes, tournés vers la mer ; deux autres contre les façades */
   [[210,316],[490,316],[770,316],[1050,316],[1190,316],[1270,560],[1340,560]]
     .forEach(([x,y])=>P('bancP',x,y));
