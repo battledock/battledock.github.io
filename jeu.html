@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-22-1354';
+  var MA_VERSION='2026-09-22-1407';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -14047,6 +14047,11 @@ function semerDecor(){
       const C=graverEtalGraines();XCAL['x_fe_etal0']=C;CALQUES_DECO['x_fe_etal']=C;
       DECOR.push({t:'x_fe_etal',x:1258,y:220,v:0,bati:true,demi:50,ouvre:'etalGraines'});
       const G=graverGareFerme();XCAL['x_fe_gare0']=G;CALQUES_DECO['x_fe_gare']=G;
+      /* LES BORDURES DU BOCAGE : pommiers au nord, cerisiers et pommiers à l'est */
+      ['#d8402f','#c0304a','#e0b840'].forEach((f,k)=>{const A=graverArbreFruitier(f,k);XCAL['x_fe_arbreB'+k]=A;});
+      CALQUES_DECO['x_fe_arbreB']=XCAL['x_fe_arbreB0'];TAILLES['x_fe_arbreB']=[{w:6,h:5},{w:6,h:5},{w:6,h:5}];
+      for(let x=800;x<1560;x+=84)DECOR.push({t:'x_fe_arbreB',x,y:122,v:0,gr:0});
+      for(let y=150,k=0;y<450;y+=46,k++)DECOR.push({t:'x_fe_arbreB',x:1552,y,v:k%2?1:2,gr:k%2?1:2});
       DECOR.push({t:'x_fe_gare',x:900,y:300,v:0,bati:true,demi:34,ouvre:'metroFerme'});}   /* la petite gare du métro, à gauche du champ */   /* …sauf l'étal des graines, en haut du champ */
   }
   /* on garde la liste triée : ce qui est en bas se dessine par-dessus */
@@ -23005,7 +23010,7 @@ async function entrer(){
   preparerMonde();
   /* À Extramar, la porte a remis la position du VILLAGE : on reprend celle du port */
   if(ANNEXE&&e.ext){joueur.x=e.ext.x;joueur.y=e.ext.y;}
-  if(CHAMPS_SEULS&&CARTE==='village'&&(joueur.x<FB.x0+10||joueur.x>FB.x1-10||joueur.y<FB.y0+14||joueur.y>FB.y1-6)){joueur.x=1258;joueur.y=410;}   /* hors des champs : on arrive sous le champ */
+  if(CHAMPS_SEULS&&CARTE==='village'&&(joueur.x<790||joueur.x>1528||joueur.y<128||joueur.y>428)){joueur.x=1258;joueur.y=410;}   /* hors des champs : on arrive sous le champ */
   /* resté sur un ponton qui n'existe plus : on le remet sur le quai */
   try{if(CARTE==='extramar'&&dansLeBassin(joueur.x,joueur.y)&&!surPonton(joueur.x,joueur.y))joueur.y=XP.quaiY-14;}catch(x){}
   taille();garderAllume();
@@ -23725,9 +23730,48 @@ bloque=function(x,y){if(CARTE==='village'&&!PLACE_SEULE){const Z=POUL_Z(), H=Z.y
     if(x>ex0-2&&x<ex1+2&&Math.abs(y-ey1)<3)return true;                                          /* le grillage du bas */
     if(x>Z.x0+10&&x<Z.x0+70&&y>ey0-14&&y<ey0+14)return true;}                                    /* le poulailler, sur ses pilotis */
   return poulBloqueVrai(x,y);};
+
+/* ================= LES BORDURES DU BOCAGE (ferme des champs) =================
+   Au nord une haie dense (et ses pommiers, en décor), à l'ouest une haie et une clôture de bois,
+   à l'est une rangée d'arbres fruitiers (en décor), au sud une clôture puis le blé qui ondule.
+   Le sol de bordure est gravé une fois, au double ; on ne le traverse pas (voir bloque). */
+const BORD_Z={x0:752,x1:1572,y0:88,y1:462};
+function bordAlea(n){const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);}
+function bordBuisson(g,x,y,r,k){const cs=['#2f5b34','#3d6b3a','#4a7a3e'];for(let i=0;i<7;i++){const a=bordAlea(k*7+i)*6.28,d=bordAlea(k*3+i)*r*0.6;g.fillStyle=cs[i%3];g.beginPath();g.arc(x+Math.cos(a)*d,y+Math.sin(a)*d*0.6,r*(0.55+bordAlea(k+i)*0.3),0,7);g.fill();}
+  g.fillStyle='#6a9a4e';g.beginPath();g.arc(x-r*0.3,y-r*0.4,r*0.3,0,7);g.fill();}
+function graverArbreFruitier(fruit,k){
+  const W=30,H=38,cx=15,sol=34,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,w,h);};
+  g.fillStyle='rgba(40,34,18,.28)';g.beginPath();g.ellipse(cx+2,sol+1,11,3,0,0,7);g.fill();
+  R(cx-1.5,sol-12,3,12,'#6a4a2a');R(cx-1.5,sol-12,1,12,'#8a6a3a');bordBuisson(g,cx,sol-20,11,k*31+7);
+  for(let i=0;i<7;i++)R(cx-8+bordAlea(k*9+i)*16,sol-28+bordAlea(k*5+i)*14,1.5,1.5,fruit);
+  return {toile:c,W,H,sol,nuit:null};}
+function graverBordureFerme(){
+  const Z=BORD_Z,D=2,c=document.createElement('canvas');c.width=(Z.x1-Z.x0)*D;c.height=(Z.y1-Z.y0)*D;const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,-Z.x0*D,-Z.y0*D);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,w,h);};
+  const cloture=(x0,y0,x1,y1)=>{const n=Math.max(1,Math.round(Math.hypot(x1-x0,y1-y0)/14));for(let i=0;i<=n;i++){const x=x0+(x1-x0)*i/n,y=y0+(y1-y0)*i/n;R(x-1,y-9,2,10,'#6a4a2a');R(x-1,y-9,2,1,'#9a7a4a');}
+    if(y0===y1){R(x0,y0-7,x1-x0,1.5,'#8a6238');R(x0,y0-3.5,x1-x0,1.5,'#8a6238');R(x0,y0-7,x1-x0,.5,'#b08858');}else R(x0-.5,y0,1.5,y1-y0,'#8a6238');};
+  /* au sud : le blé qui ondule jusqu'au bord, puis la clôture */
+  for(let y=436;y<Z.y1;y++)for(let x=Z.x0;x<Z.x1;x+=2){const n=bordAlea(x*.7+y*1.3);R(x,y,2,1,n<.5?'#d8b860':(n<.8?'#c9a84e':'#e8cc78'));}
+  for(let x=Z.x0;x<Z.x1;x+=3)R(x,436+Math.sin(x/9)*1.5,1,2,'#b89838');
+  cloture(780,436,1540,436);
+  /* au nord : la haie dense */
+  for(let x=Z.x0;x<Z.x1+8;x+=9)bordBuisson(g,x,104+bordAlea(x)*3,8,x);
+  for(let k=0;k<60;k++)R(790+bordAlea(k)*760,118+bordAlea(k*2)*5,1,1,'#e8403a');   /* des coquelicots au pied */
+  /* à l'ouest : la haie et la clôture de bois */
+  for(let y=110;y<452;y+=9)bordBuisson(g,764,y,7,y*3);
+  cloture(776,118,776,440);
+  return c;}
+let BORD_F=null;
+const bordDecorVrai=dessinerDecor;
+dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
+  if(CHAMPS_SEULS&&CARTE==='village'){if(!BORD_F)BORD_F=graverBordureFerme();const Z=BORD_Z;g.drawImage(BORD_F,Math.round(Z.x0-camX),Math.round(Z.y0-camY),Z.x1-Z.x0,Z.y1-Z.y0);}
+  return bordDecorVrai(g,camX,camY,VW2,VH2,acteurs);};
+
 /* LA LIMITE OUEST DE LA FERME : la clôture de bois */
 {const bloqueFermeVrai=bloque;bloque=function(x,y){if(FERME_SEULE&&CARTE==='village'&&x<FERME_X0+16)return true;
-  if(CHAMPS_SEULS&&CARTE==='village'&&(x<FB.x0+8||x>FB.x1-8||y<FB.y0+12||y>FB.y1-4))return true;   /* les bords de la carte des champs */
+  if(CHAMPS_SEULS&&CARTE==='village'&&(x<784||x>1534||y<124||y>432))return true;   /* les bordures du bocage : haies, clôtures, arbres, blé */
   return bloqueFermeVrai(x,y);};}
 /* les poules s'écartent quand on passe au milieu d'elles */
 function poulEffrayer(){if(!POUL_BETES)return;const Z=POUL_Z(), jx=joueur.x-Z.x0, jy=joueur.y-Z.y0, W=Z.x1-Z.x0, H=Z.y1-Z.y0;
