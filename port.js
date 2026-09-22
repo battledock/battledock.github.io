@@ -1583,26 +1583,6 @@ ANIM_DECOR.chien=(g,o,x,y)=>{const t=performance.now()/1000, q=Math.sin(t*14)*2,
   R(x+6,y-14-bob,6,6,'#b07a40');R(x+11,y-12-bob,2,2,'#2a1a10');R(x+8,y-12-bob,1,1,'#1a1a1a');R(x+6,y-15-bob,2,3,'#8a5a2a');                    /* la tête, la truffe, l'oreille */
   g.save();g.translate(x-7,y-8-bob);g.rotate(-0.6+q*0.15);R(-5,-1,5,2,'#b07a40');g.restore();                                                   /* la queue qui remue */
   if((t%5)<0.8){g.font='italic 700 6px Georgia';g.fillStyle='#ffffff';g.fillText('Ouaf !',x+8,y-19);}};
-/* LE DOCKER EN COLÈRE : un seul docker manifeste, tout seul, avec sa pancarte, sur le quai.
-   Il piétine, lève sa pancarte, et lâche un slogan de temps en temps. On peut le rejoindre (il te
-   tend un gilet). Un seul personnage animé : léger. */
-ANIM_DECOR.solitaire=(g,o,x,y)=>{const t=performance.now()/1000;o._f=o._f||{};
-  const i=1+Math.floor(t*4.2)%PASM, cle=i+(STYLE_FIN()?'f':'c');
-  if(!o._f[cle]){const src=poseDe(Object.assign({},DEF_AP,o.pnj),'bas',i);const c=document.createElement('canvas');c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);o._f[cle]=c;}
-  const bob=Math.abs(Math.sin(t*Math.PI*2.1))*1.2, leve=Math.max(0,Math.sin(t*1.6))*5;
-  /* la pancarte, derrière lui, levée en rythme */
-  const px=x+11, py=y-62-leve-bob;g.fillStyle='#6b4a28';g.fillRect(px-0.75,py+10,1.5,48);            /* tenue bien haut, au-dessus de sa tête */
-  g.fillStyle='#f4efe6';g.fillRect(px-17,py-6,34,17);g.strokeStyle='#8a6238';g.lineWidth=0.8;g.strokeRect(px-17,py-6,34,17);
-  g.textAlign='center';g.fillStyle='#c8281e';g.font='900 5.6px Georgia';g.fillText('DOCKERS',px,py+1.5);g.fillStyle='#1d3f6a';g.font='700 4.6px Georgia';g.fillText('EN COLÈRE !',px,py+8);g.textAlign='left';
-  g.drawImage(o._f[cle],Math.round(x-CASE_L/2),Math.round(y-CASE_H+10-bob),CASE_L,CASE_H);
-  const c=(t%7)/7;if(c<0.4){const s=SLOGANS[Math.floor(t/7)%SLOGANS.length];g.font='italic 700 7px Georgia';const w=g.measureText(s).width+8;
-    g.fillStyle='rgba(255,255,255,.95)';g.fillRect(x-w/2,y-80,w,11);g.fillStyle='#c8281e';g.fillText(s,x-w/2+4,y-72);}
-};
-function poserLaManif(P){
-  P('x_docker',1046,286,{v:0,col:[5,3],dir:'bas',anim:'solitaire',bati:true,demi:8,ouvre:'manif',
-    pnj:{peau:2,cheveux:1,coiffe:1,barbe:4,veste:'#f2d21a',haut:0,pantalon:'#2a3a5a',chaussures:'#2a2a30',souliers:0,sac:0,chapeau:1,corps:3,gilet:true}});
-  CALQUES_DECO['x_docker']={W:60,H:100,sol:90};
-}
 function semerDecorExtramar(){
   DECOR=[];
   const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
@@ -1648,8 +1628,6 @@ function semerDecorExtramar(){
   [[210,316],[490,316],[770,316],[1050,316],[1190,316],[1270,560],[1340,560]]
     .forEach(([x,y])=>P('bancP',x,y));
   /* LE GLAÇON D'ART, la charrette des glaçons artisanaux, sur le quai ouest */
-  /* LA MANIFESTATION DES DOCKERS, sur le quai est */
-  poserLaManif(P);
   /* les bittes d'amarrage, sur la margelle */
   for(let x=200;x<1200;x+=74){
     if(XP.pontons.some(p=>Math.abs(p-x)<26))continue;
