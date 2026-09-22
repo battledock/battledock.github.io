@@ -16334,7 +16334,7 @@ function tailleJoy(){
 addEventListener('resize',tailleJoy);
 tailleJoy();
 
-const RAYON=52, POUCE=22;
+const RAYON=34, POUCE=13;                    /* le joystick DISCRET : plus petit, plus léger */
 let J={actif:false,id:null,ox:0,oy:0,x:0,y:0,vie:0};
 
 const pointDe=t=>[t.clientX,t.clientY];
@@ -16415,41 +16415,22 @@ function dessinerJoy(dt){
   joySale=true;
   jg.save();
   jg.globalAlpha=J.vie;
-  /* LE JOYSTICK EN PARCHEMIN FIN : un disque ivoire translucide cerclé d'un double
-     filet, huit repères en losange (les huit directions du personnage), le cercle
-     de la course, et un pommeau d'ivoire dont la flèche montre le sens. */
+  /* LE JOYSTICK DISCRET : un fin anneau crème sur un voile sombre léger, un arc qui montre le sens
+     (doré quand on court), et un petit pommeau crème dont la flèche bordeaux pointe la direction. */
   const d=Math.hypot(J.x-J.ox,J.y-J.oy), a=Math.atan2(J.y-J.oy,J.x-J.ox);
   const pousse=Math.min(1,d/RAYON), course=pousse>0.88;
-  const OR='#c9a24a', BRUN='rgba(185,162,122,.85)';
   jg.beginPath();jg.arc(J.ox,J.oy,RAYON,0,7);
-  const f=jg.createRadialGradient(J.ox,J.oy-12,6,J.ox,J.oy,RAYON);
-  f.addColorStop(0,'rgba(250,244,228,.46)');f.addColorStop(1,'rgba(236,226,200,.3)');
-  jg.fillStyle=f;jg.fill();
-  jg.lineWidth=4;jg.strokeStyle='rgba(40,28,14,.28)';jg.stroke();                 /* un liseré sombre : il se détache sur tous les décors */
-  jg.lineWidth=course?2.4:1.4;jg.strokeStyle=course?OR:BRUN;jg.stroke();          /* le filet extérieur (doré en course) */
-  jg.beginPath();jg.arc(J.ox,J.oy,RAYON-5,0,7);jg.lineWidth=1;jg.strokeStyle='rgba(185,162,122,.45)';jg.stroke();
-  /* le cercle de la course, en pointillés */
-  jg.setLineDash([2,4]);jg.beginPath();jg.arc(J.ox,J.oy,RAYON*0.88,0,7);jg.lineWidth=1;jg.strokeStyle='rgba(250,244,228,.4)';jg.stroke();jg.setLineDash([]);
-  /* les huit repères ; celui de la direction prise s'allume */
-  const secteur=d>6?Math.round(a/(Math.PI/4)):null;
-  for(let k=-3;k<=4;k++){const aa=k*Math.PI/4, rx=J.ox+Math.cos(aa)*(RAYON-5), ry=J.oy+Math.sin(aa)*(RAYON-5);
-    const actif=secteur!==null&&(((k-secteur)%8)+8)%8===0, t=k%2===0?3.2:2.2;
-    jg.save();jg.translate(rx,ry);jg.rotate(Math.PI/4);
-    jg.fillStyle=actif?OR:'rgba(250,244,228,.75)';jg.fillRect(-t/2,-t/2,t,t);
-    jg.lineWidth=0.8;jg.strokeStyle=actif?'#6a4a1a':'rgba(122,90,42,.6)';jg.strokeRect(-t/2,-t/2,t,t);jg.restore();}
-  /* l'arc doré du sens */
-  if(d>6){jg.beginPath();jg.arc(J.ox,J.oy,RAYON-1.5,a-0.42,a+0.42);jg.lineWidth=4;jg.strokeStyle='rgba(201,162,74,'+(0.45+pousse*0.45).toFixed(2)+')';jg.stroke();}
-  /* LE POMMEAU : ombre, ivoire bombé, double filet, flèche qui pointe le sens */
-  jg.beginPath();jg.arc(J.x+1,J.y+3,POUCE,0,7);jg.fillStyle='rgba(20,14,8,.25)';jg.fill();
-  const k2=jg.createRadialGradient(J.x-5,J.y-7,2,J.x,J.y,POUCE+1);
-  k2.addColorStop(0,'#fffaf0');k2.addColorStop(0.7,'#f1e6c8');k2.addColorStop(1,'#dcc99a');
-  jg.beginPath();jg.arc(J.x,J.y,POUCE,0,7);jg.fillStyle=k2;jg.fill();
-  jg.lineWidth=1.2;jg.strokeStyle='#b9a27a';jg.stroke();
-  jg.beginPath();jg.arc(J.x,J.y,POUCE-4,0,7);jg.lineWidth=0.8;jg.strokeStyle='rgba(185,162,122,.55)';jg.stroke();
+  jg.fillStyle='rgba(20,14,8,.12)';jg.fill();
+  jg.lineWidth=3;jg.strokeStyle='rgba(20,14,8,.25)';jg.stroke();                  /* un liseré sombre : il se détache sur tous les décors */
+  jg.lineWidth=1.5;jg.strokeStyle='rgba(250,244,228,.75)';jg.stroke();
+  if(d>6){jg.beginPath();jg.arc(J.ox,J.oy,RAYON,a-0.4,a+0.4);jg.lineWidth=3;jg.strokeStyle=course?'#e8c06a':'#f4ecd8';jg.stroke();}
+  /* le pommeau */
+  jg.beginPath();jg.arc(J.x,J.y+2.5,POUCE,0,7);jg.fillStyle='rgba(20,14,8,.3)';jg.fill();
+  jg.beginPath();jg.arc(J.x,J.y,POUCE,0,7);jg.fillStyle='#f4ecd8';jg.fill();
   jg.save();jg.translate(J.x,J.y);
-  if(d>6){jg.rotate(a);jg.fillStyle=course?'#a8791f':'#7a5a2a';
-    jg.beginPath();jg.moveTo(8,0);jg.lineTo(-3,-5.5);jg.lineTo(-0.5,0);jg.lineTo(-3,5.5);jg.closePath();jg.fill();}
-  else{jg.rotate(Math.PI/4);jg.fillStyle='#7a5a2a';jg.fillRect(-2.5,-2.5,5,5);}
+  if(d>6){jg.rotate(a);jg.fillStyle=course?'#a8791f':'#7a1f2b';
+    jg.beginPath();jg.moveTo(5.5,0);jg.lineTo(-2.5,-4.5);jg.lineTo(-0.5,0);jg.lineTo(-2.5,4.5);jg.closePath();jg.fill();}
+  else{jg.fillStyle='#7a1f2b';jg.beginPath();jg.arc(0,0,2,0,7);jg.fill();}
   jg.restore();
   jg.restore();
 }
