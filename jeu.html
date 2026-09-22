@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-22-1337';
+  var MA_VERSION='2026-09-22-1354';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -3895,7 +3895,7 @@ const FERME_SEULE=true;
 const FERME_X0=612;                          /* la ferme commence ici : plus de rivière ni de bois à l'ouest */
 /* LA FERME = LES CHAMPS SEULS : on ne garde que le champ et ses parcelles, et la carte se resserre autour */
 const CHAMPS_SEULS=true;
-const FB={x0:760,x1:1852,y0:96,y1:444};       /* (à gauche : la gare du métro) */       /* (en haut : l'étal des graines) */       /* les bornes de la carte des champs */
+const FB={x0:760,x1:1564,y0:96,y1:444};       /* (à gauche : la gare du métro) */       /* (en haut : l'étal des graines) */       /* les bornes de la carte des champs */
 const VIL={x0:580,x1:1340,y0:82,y1:452};
 const PL_N=()=>PLACE.y-PLACE.h/2, PL_S=()=>PLACE.y+PLACE.h/2;
 const PL_O=()=>PLACE.x-PLACE.w/2, PL_E=()=>PLACE.x+PLACE.w/2;
@@ -14198,6 +14198,14 @@ function autourDe(x,y){
 }
 function bloque(x,y){
   if(CARTE==='extramar')return bloqueExtramar(x,y);
+  /* LA FERME DES CHAMPS : on repart de zéro. Les anciens bâtiments du village (comptoir, échoppe, hameau,
+     place, rivière, ponts…) bloquaient encore leur place alors qu'ils ne sont plus dessinés. Ici, seuls
+     l'étal, la gare et le poulailler sont pleins (le poulailler et les bords sont gérés plus bas). */
+  if(CHAMPS_SEULS&&CARTE==='village'){
+    for(const o of autourDe(x,y)){const t=TAILLES[o.t];if(!t)continue;const d=t[o.gr||0];
+      if(Math.abs(o.x-x)<d.w/2+3&&Math.abs(o.y-y)<d.h/2+2)return true;}
+    return false;
+  }
   if(CARTE_MOD){if(x<11||x>MONDE_L-11||y<20||y>MONDE_H-10)return true;          /* le garde-corps, les rondins, les ganivelles */
     if(SAUMASKI.zoneInterdite(x,y))return true;                                            /* la zone du téléphérique, clôturée */
     for(const o of DECOR){if(!o.col)continue;if(Math.abs(x-o.x)<o.col[0]&&y>o.y-o.col[1]&&y<o.y+3)return true;}return false;}
@@ -23528,7 +23536,7 @@ function vivre(M,dt,ex0,ey0,ex1,ey1){
 /* ===================== LE POULAILLER (version jouable, reliée au serveur) =====================
    À droite du champ, un enclos à chaque joueur. Le fond (terre, poulailler, mangeoire, abreuvoir) et le grillage
    sont gravés une fois ; à chaque image on ne dessine que les bêtes, qui vivent leur vie. */
-const POUL_Z=()=>(FERME_SEULE?{x0:1536,x1:1832,y0:222,y1:386}:{x0:FERME.champ2.x1+14,x1:1548,y0:392,y1:556});   /* le poulailler, sous le champ */
+const POUL_Z=()=>(FERME_SEULE?{x0:1350,x1:1506,y0:110,y1:222}:{x0:FERME.champ2.x1+14,x1:1548,y0:392,y1:556});   /* le poulailler, sous le champ */
 /* LES MATÉRIAUX DE LA FERME (le serveur a les mêmes) : le bois des arbres, la pierre des rochers */
 const MAT_FERME={poulailler:{bois:120,pierre:60,roseaux:40,argile:20},'poul:2':{bois:250,pierre:120,roseaux:80,argile:50},'poul:3':{bois:500,pierre:250,roseaux:150,argile:100},
   'champ:12':{bois:150,pierre:80,fibre:40},'champ:18':{bois:350,pierre:180,fibre:90,argile:60},'champ:24':{bois:700,pierre:360,fibre:180,argile:120}};
@@ -23709,7 +23717,7 @@ setInterval(()=>{if(PLACE_SEULE&&CARTE==='village'&&typeof joueur!=='undefined'&
 const boutBloqueVrai=bloque;
 bloque=function(x,y){if(CARTE==='village'&&PLACE_SEULE){if(dansSortie(x,y)>=0&&x>VIL.x0+6&&x<VIL.x1-6&&y>VIL.y0+6&&y<VIL.y1-4)return false;   /* les chemins sont libres jusqu'au bout */
     if(x<VIL.x0+34||x>VIL.x1-34||y<VIL.y0+30||y>VIL.y1-22)return true;return boutBloqueVrai(x,y);}   /* les bornes de la place */
-  if(CARTE==='village'){for(const bx of [1340,1570])if(Math.abs(x-bx)<78&&y>156-78&&y<156+3)return true;
+  if(CARTE==='village'&&!CHAMPS_SEULS){for(const bx of [1340,1570])if(Math.abs(x-bx)<78&&y>156-78&&y<156+3)return true;   /* (le Grainetier et le Fournil n'existent plus à la ferme des champs) */
   if(Math.abs(x-1780)<48&&y>250-70&&y<250+3)return true;}return boutBloqueVrai(x,y);};                 /* le moulin aussi, sur toute sa profondeur */
 const poulBloqueVrai=bloque;
 bloque=function(x,y){if(CARTE==='village'&&!PLACE_SEULE){const Z=POUL_Z(), H=Z.y1-Z.y0, ey0=Z.y0+Math.min(46,H*0.34), ex0=Z.x0+6, ex1=Z.x1-6, ey1=Z.y1-6;
