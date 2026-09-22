@@ -892,7 +892,7 @@ function graverLeCabanon(){
   for(let i=0;i<4;i++){h2.fillStyle='#fff0b0';h2.fillRect(tx+4+i*9,basToit+4,2,2);}         /* une guirlande dans la treille */
   return {toile:c,W,H:Ht,sol,nuit:n2};
 }
-/* LA STATION DE VÉLOS : une borne bleue et des vélos à quai */
+/* LA STATION DE VÉLOS : une borne bordeaux et des vélos à quai */
 function graverLaStationVelo(){
   const W=90,Ht=46,cx=45,sol=40;
   const c=document.createElement('canvas');
@@ -901,8 +901,8 @@ function graverLaStationVelo(){
   const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
   g.fillStyle='rgba(40,30,18,.22)';g.beginPath();g.ellipse(cx,sol+1,40,4,0,0,7);g.fill();
   /* la borne */
-  R(8,sol-30,10,30,'#1d4f9a');R(8,sol-30,10,2,'#4d7fc8');R(10,sol-26,6,5,'#9fd0e8');R(10,sol-18,6,2,'#e8c06a');
-  R(9,sol-34,8,4,'#f2efe4');R(11,sol-33,4,2,'#1d4f9a');
+  R(8,sol-30,10,30,'#7a1f2b');R(8,sol-30,10,2,'#a8424e');R(10,sol-26,6,5,'#9fd0e8');R(10,sol-18,6,2,'#e8c06a');
+  R(9,sol-34,8,4,'#f2efe4');R(11,sol-33,4,2,'#7a1f2b');
   /* la barre et les vélos accrochés */
   R(20,sol-8,66,2,'#8f959b');
   for(let k=0;k<4;k++)dessinerUnVelo(g,32+k*17,sol-1,'droite',0,k,false);

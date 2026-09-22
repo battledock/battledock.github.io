@@ -11651,54 +11651,55 @@ function graverRambardesSud(g){
 /* LE PORT est dans port.js : on ne le charge qu'au port (le village n'en a pas besoin) */
 let VELO=false;
 function dessinerUnVelo(g,x,y,dir,pas,v,roule){
+  /* LA HOLLANDAISE : cadre ouvert bordeaux, garde-boue crème, pneus à flanc clair, panier en osier */
   const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(a),Math.round(b),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
-  const cadre=['#2d6fb0','#2d6fb0','#1d8fa0','#2d6fb0','#1d8fa0'][(v||0)%5];
-  const rot=(pas||0)*4.2;
-  /* l'ombre au sol */
+  const c='#7a1f2b', cr='#efe4c8', rot=(pas||0)*4.2;
   g.fillStyle='rgba(30,25,15,.28)';g.beginPath();g.ellipse(x,y+1,dir==='gauche'||dir==='droite'?13:4,2,0,0,Math.PI*2);g.fill();
   if(dir==='gauche'||dir==='droite'){
     const s=dir==='droite'?1:-1;
-    /* les roues : pneu, jante, moyeu, rayons qui tournent */
-    [[-8],[8]].forEach(([dx])=>{
-      const cx=x+dx*s, cy=y-5;
-      g.strokeStyle='#1f2124';g.lineWidth=1.6;g.beginPath();g.arc(cx,cy,5,0,Math.PI*2);g.stroke();
+    const P=(dx,dy)=>[x+dx*s,y+dy];
+    const B=(dx,dy,w,h,col)=>{g.fillStyle=col;g.fillRect(s>0?x+dx:x-dx-w,y+dy,w,h);};       /* un bloc, retourné si l'on va à gauche */
+    const L=(pts,col,lw)=>{g.strokeStyle=col;g.lineWidth=lw;g.lineCap='round';g.lineJoin='round';g.beginPath();pts.forEach((p,i)=>{const[a,b]=P(p[0],p[1]);i?g.lineTo(a,b):g.moveTo(a,b);});g.stroke();g.lineCap='butt';};
+    const Q=(p0,k,p1,col,lw)=>{g.strokeStyle=col;g.lineWidth=lw;g.lineCap='round';g.beginPath();g.moveTo(...P(...p0));g.quadraticCurveTo(...P(...k),...P(...p1));g.stroke();g.lineCap='butt';};
+    /* les roues : pneu, flanc crème, jante, rayons qui tournent ; puis les garde-boue */
+    [-8,8].forEach(dx=>{const[cx,cy]=P(dx,-5);
+      g.strokeStyle='#2a2420';g.lineWidth=1.6;g.beginPath();g.arc(cx,cy,5,0,Math.PI*2);g.stroke();
+      g.strokeStyle=cr;g.lineWidth=.5;g.beginPath();g.arc(cx,cy,4.45,0,Math.PI*2);g.stroke();
       g.strokeStyle='#8f959b';g.lineWidth=.6;g.beginPath();g.arc(cx,cy,3.9,0,Math.PI*2);g.stroke();
       g.strokeStyle='rgba(200,205,210,.8)';g.lineWidth=.45;
       for(let k=0;k<3;k++){const a=rot*s+k*Math.PI/3;g.beginPath();g.moveTo(cx+Math.cos(a)*3.8,cy+Math.sin(a)*3.8);g.lineTo(cx-Math.cos(a)*3.8,cy-Math.sin(a)*3.8);g.stroke();}
       R(cx-.5,cy-.5,1,1,'#d8dde2');
-    });
-    /* le cadre : diamant classique, un peu épais, avec son reflet */
-    const px=x-1*s, py=y-5;                                        /* le pédalier */
-    g.strokeStyle=cadre;g.lineWidth=1.8;g.lineCap='round';g.beginPath();
-    g.moveTo(x-8*s,y-5);g.lineTo(px,py);g.lineTo(x+4*s,y-12);g.lineTo(x-4*s,y-12);g.lineTo(x-8*s,y-5);
-    g.moveTo(px,py);g.lineTo(x-4.5*s,y-13.5);g.moveTo(x+4*s,y-12);g.lineTo(x+8*s,y-5);g.stroke();
-    g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=.5;g.beginPath();g.moveTo(x-4*s,y-12.4);g.lineTo(x+3.6*s,y-12.4);g.stroke();
-    g.lineCap='butt';
-    /* le garde-boue arrière, la selle, le guidon, le panier */
-    g.strokeStyle='#6b6b66';g.lineWidth=.8;g.beginPath();g.arc(x-8*s,y-5,6.2,s>0?Math.PI*1.05:Math.PI*1.45,s>0?Math.PI*1.55:Math.PI*1.95);g.stroke();
-    R(x-7*s-2,y-15,6,1.5,'#1b1b1b');R(x-6*s-1,y-14,3,1,'#3a3a36');
-    R(x+4*s-.5,y-16,1,4,'#2a2c2e');R(x+4*s-(s>0?0:3),y-16.5,4,1,'#2a2c2e');R(x+4*s+(s>0?3:-4),y-16.5,1,1,'#1b1b1b');
-    R(x+6*s-(s>0?1:4),y-14,6,4,'#8a8f94');R(x+6*s-(s>0?1:4),y-14,6,1,'#b9c1c7');
-    for(let k=0;k<3;k++)R(x+6*s-(s>0?0:3)+k*2,y-13,1,3,'#6b6b66');
-    /* le pédalier : plateau, manivelles opposées, pédales, et les pieds dessus */
-    g.strokeStyle='#3a3a36';g.lineWidth=.8;g.beginPath();g.arc(px,py,1.8,0,Math.PI*2);g.stroke();
-    g.strokeStyle='rgba(60,60,56,.8)';g.lineWidth=.5;g.beginPath();g.moveTo(px,py-1.8);g.lineTo(x-8*s,y-4.2);g.moveTo(px,py+1.8);g.lineTo(x-8*s,y-5.8);g.stroke();
-    [0,Math.PI].forEach((o,k)=>{const a=rot*s+o, pdx=px+Math.cos(a)*3, pdy=py+Math.sin(a)*3;
-      g.strokeStyle='#5a5a54';g.lineWidth=.9;g.beginPath();g.moveTo(px,py);g.lineTo(pdx,pdy);g.stroke();
-      R(pdx-1.5,pdy-.5,3,1,'#2a2c2e');
-      if(roule!==false)R(pdx-1.5+(s>0?.5:-.5),pdy-1.8,3,1.6,k?'#3a2616':'#4a3220');});
+      g.strokeStyle=cr;g.lineWidth=1.1;g.beginPath();g.arc(cx,cy,6.1,Math.PI*1.12,Math.PI*1.88);g.stroke();});
+    /* le cadre ouvert, col de cygne, avec son reflet */
+    L([[-8,-5],[-1,-5]],c,1.6);L([[-8,-5],[-4,-12]],c,1.4);L([[-1,-5],[-4.5,-13.5]],c,1.8);
+    Q([4.2,-11.5],[1.5,-4.5],[-1,-5],c,1.9);Q([4.2,-11.5],[1.8,-5.4],[-1,-5.6],'rgba(255,255,255,.3)',.45);
+    L([[4.5,-13],[4.2,-10.5],[8,-5]],c,1.6);
+    B(-8,-7,7.5,2.2,'#5a1620');B(-8,-7,7.5,.6,'#9a3a44');                                     /* le carter de chaîne */
+    /* la selle à ressorts, le guidon relevé, la sonnette, le panier, le phare */
+    B(-8,-15.5,5,2,'#5a3418');B(-7.6,-15.5,4.2,.6,'#8a5a30');B(-7,-13.5,1,1,'#2a2c2e');B(-5,-13.5,1,1,'#2a2c2e');
+    L([[4.5,-13],[4.6,-16.3],[2.4,-16.8]],'#b9c1c7',.9);B(1.4,-17.3,2,1,'#5a3418');B(4.8,-16.9,1,1,'#e8c06a');
+    B(5.6,-15.2,6.4,5,'#b8853e');for(let r=0;r<3;r++)B(5.6,-14+r*1.4,6.4,.5,'#8a5e28');for(let k=0;k<4;k++)B(6.2+k*1.6,-15.2,.5,5,'#9a6a30');
+    B(5.4,-15.6,6.8,.8,'#d8a860');B(7.6,-10,1.4,1.4,cr);
+    /* le pédalier : plateau, chaîne, manivelles opposées, pédales, et les pieds dessus */
+    const[px,py]=P(-1,-5);
+    g.strokeStyle='#3a3a36';g.lineWidth=.8;g.beginPath();g.arc(px,py,2,0,Math.PI*2);g.stroke();
+    [0,Math.PI].forEach((o,k)=>{const a=rot*s+o, qx=px+Math.cos(a)*3, qy=py+Math.sin(a)*3;
+      g.strokeStyle='#5a5a54';g.lineWidth=.9;g.beginPath();g.moveTo(px,py);g.lineTo(qx,qy);g.stroke();
+      R(qx-1.5,qy-.5,3,1,'#2a2c2e');
+      if(roule!==false)R(qx-1.5+.5*s,qy-1.8,3,1.6,k?'#3a2616':'#4a3220');});
     /* quand on file : deux traits de vitesse derrière */
     if(roule){g.fillStyle='rgba(255,255,255,.35)';g.fillRect(Math.round(x-15*s-(s>0?5:0)),Math.round(y-9),5,1);g.fillRect(Math.round(x-14*s-(s>0?3:0)),Math.round(y-6),3,1);}
   }else{
-    /* de face (bas) ou de dos (haut) : la roue en fine ellipse, le guidon en travers */
+    /* de face (bas) ou de dos (haut) : la roue en fine ellipse sous son garde-boue, le guidon relevé en travers */
     const face=dir==='bas', flick=Math.floor((pas||0)*6)%2;
-    g.fillStyle='#1f2124';g.fillRect(Math.round(x-1),Math.round(y-10),2,10);
-    g.fillStyle=flick?'#8f959b':'#6b7076';g.fillRect(Math.round(x),Math.round(y-9),1,8);
-    R(x-1,y-13,2,4,cadre);R(x-.5,y-13,1,4,'rgba(255,255,255,.35)');
-    R(x-6,y-15,12,1.2,'#2a2c2e');R(x-7,y-15.5,2,2,'#1b1b1b');R(x+5,y-15.5,2,2,'#1b1b1b');
-    if(face){R(x-3,y-13,6,4,'#8a8f94');R(x-3,y-13,6,1,'#b9c1c7');R(x-1,y-12,2,1,'#fff6c8');}      /* le panier, le phare */
-    else{R(x-1,y-11,2,1.5,'#e0402f');R(x-2,y-17,4,1.5,'#1b1b1b');}                                /* le feu rouge, la selle */
-    /* les pieds qui pédalent, de part et d'autre de la roue */
+    R(x-1,y-10,2,10,'#2a2420');R(x-1,y-10,.6,10,cr);R(x+.4,y-10,.6,10,cr);
+    R(x-.5,y-9,1,8,flick?'#8f959b':'#6b7076');
+    R(x-1.5,y-11.5,3,2,cr);                                                                      /* le garde-boue */
+    R(x-1,y-14,2,3,c);R(x-.5,y-14,1,3,'rgba(255,255,255,.3)');
+    R(x-5,y-16,10,1.2,'#b9c1c7');R(x-6.5,y-17,2,1.6,'#5a3418');R(x+4.5,y-17,2,1.6,'#5a3418');R(x+3,y-16.8,1,1,'#e8c06a');
+    if(face){R(x-3.5,y-15,7,4.5,'#b8853e');R(x-3.5,y-15.4,7,.8,'#d8a860');R(x-3.5,y-13.2,7,.5,'#8a5e28');R(x-3.5,y-11.8,7,.5,'#8a5e28');
+      R(x-.7,y-10.6,1.4,1.2,'#fff6c8');}                                                          /* le panier en osier, le phare */
+    else{R(x-1,y-11,2,1.5,'#e0402f');R(x-2.5,y-17.6,5,2,'#5a3418');R(x-2.2,y-17.6,4.4,.6,'#8a5a30');R(x-4,y-8,8,1.6,'#5a1620');}  /* le feu, la selle, le carter */
     const up=Math.sin((pas||0)*4.2)*1.6;
     R(x-4,y-6+up,2.5,2,'#3a2616');R(x+1.5,y-6-up,2.5,2,'#3a2616');
   }
