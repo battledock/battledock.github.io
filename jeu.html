@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-22-2130';
+  var MA_VERSION='2026-09-22-2135';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -11670,6 +11670,7 @@ const alea=s=>{const v=Math.sin(s*127.1)*43758.5453;return v-Math.floor(v);};
 const BOIS_PONT={sombre:'#3d2a17',fonce:'#5b3f21',bas:'#6b4a28',moyen:'#7d5934',
                  clair:'#96703f',haut:'#a5764a'};
 function graverPontsDansSol(g){
+  if(FORET_SEULE&&CARTE==='village')return;                 /* la forêt n'a pas de pont */
   const H=PONT_DEMI, L=PONT_LARGE;
   LES_PONTS().forEach(([cx,cy])=>{
     const R=(a,b,w,h,col)=>{g.fillStyle=col;
@@ -11698,6 +11699,7 @@ function graverPontsDansSol(g){
 }
 /* la rambarde sud : elle passe DEVANT le joueur */
 function graverRambardesSud(g){
+  if(FORET_SEULE&&CARTE==='village')return;                 /* pas de pont à la forêt */
   const H=PONT_DEMI, L=PONT_LARGE;
   LES_PONTS().forEach(([cx,cy])=>{
     const R=(a,b,w,h,col)=>{g.fillStyle=col;
@@ -13090,6 +13092,7 @@ const PONT_LARGE=RIV_LARGE+11;                 /* demi-longueur du tablier, d'un
 const PONT_PASSAGE=PONT_DEMI-5;                 /* tout le tablier se traverse : seules les rambardes, au nord et au sud, arrêtent */
 const PONT_CENTRE=0;                           /* on marche au milieu : les rambardes encadrent */
 function surTablier(x,y){
+  if(FORET_SEULE&&CARTE==='village')return false;             /* plus de pont : on ne traverse pas la rivière */
   return PONTS.some(py=>Math.abs(y-(py+PONT_CENTRE))<=PONT_PASSAGE&&
     Math.abs(x-rivX(py))<PONT_LARGE);
 }
@@ -13692,7 +13695,7 @@ function graverChemins(g){
   /* PLUS DE VOIE NI DE HALTE : le train quitte le village. La place et les
      bâtiments reprennent tout le terrain. */
   /* LE SEUIL DES PONTS : deux dalles qui raccordent le chemin au tablier */
-  PONTS.forEach(py=>{
+  if(!(FORET_SEULE&&CARTE==='village'))PONTS.forEach(py=>{
     const px=rivX(py);
     [-1,1].forEach(s2=>{
       g.fillStyle='#a4acb3';g.fillRect((px+s2*30-2)|0,(py-13)|0,5,26);
@@ -14027,7 +14030,7 @@ function semerDecor(){
   });
 
   /* les deux ponts, posés en travers de la rivière */
-  PONTS.forEach(py=>DECOR.push({t:'pont',x:Math.round(rivX(py)),y:py,gr:0}));
+  if(!(FORET_SEULE&&CARTE==='village'))PONTS.forEach(py=>DECOR.push({t:'pont',x:Math.round(rivX(py)),y:py,gr:0}));
 
   /* on dégage les sentiers, puis on vérifie qu'on peut aller partout */
   const deblayes=deblayerChemins();
