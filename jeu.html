@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-22-1929';
+  var MA_VERSION='2026-09-22-1942';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -14057,7 +14057,7 @@ function semerDecor(){
       DECOR.push({t:'comptoir',x:1062,y:226,v:0,gr:0,demi:96});
       /* L'ÉTABLE ET SES VACHES, dans le pré en bas à gauche */
       const ET=graverEtableFerme();XCAL['x_fe_etable0']=ET;CALQUES_DECO['x_fe_etable']=ET;TAILLES['x_fe_etable']=[{w:120,h:14}];
-      DECOR.push({t:'x_fe_etable',x:872,y:348,v:0,gr:0});
+      DECOR.push({t:'x_fe_etable',x:872,y:348,v:0,gr:0,bati:true,demi:52,ouvre:'etable'});
       const VACHES=[[824,396,'#a8442a','broute',1],[900,422,'#8a3a22','debout',-1],[966,388,'#b85a32','debout',-1],[846,368,'#9a4026','broute',1]];
       VACHES.forEach(([x,y,robe,pose,dir],k)=>{const C=graverVacheFerme(robe,pose,dir);XCAL['x_fe_vacheB'+k]=C;if(!CALQUES_DECO['x_fe_vacheB'])CALQUES_DECO['x_fe_vacheB']=C;
         DECOR.push({t:'x_fe_vacheB',x,y,v:k,gr:0});});
@@ -19670,6 +19670,7 @@ function majAction(){
   if(o.ouvre==='course'){b.innerHTML='Monter sur le plot<small>LA COURSE DU 50 M · A-B-A-B POUR NAGER</small>';b.classList.add('on');return;}
   if(o.ouvre==='cabine'){b.innerHTML=(e.ap&&e.ap.maillot?'Se rhabiller':'Entrer dans la cabine')+'<small>'+(e.ap&&e.ap.maillot?'REMETTRE TES VÊTEMENTS':'SE METTRE EN MAILLOT')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='sortiePiscine'){b.innerHTML='Ressortir sur le quai<small>'+(e.ap&&e.ap.maillot?'ON TE RHABILLE EN SORTANT':'LE VIEUX-PORT')+'</small>';b.classList.add('on');return;}
+  if(o.ouvre==='etable'){b.innerHTML='Entrer à l’étable<small>LAIT · FOIN · FROMAGE</small>';b.classList.add('on');return;}
   if(o.ouvre==='metroFerme'){b.innerHTML='Descendre dans le métro<small>LIGNE 1 · LA FERME ⇄ LE PORT</small>';b.classList.add('on');return;}
   if(o.ouvre==='etalGraines'){b.innerHTML='Les graines<small>SEMENCES · OUTILS · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
   if(o.ouvre==='grainetier'){b.innerHTML='Entrer au Grainetier<small>OUTILS · GRAINES · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
@@ -19845,6 +19846,7 @@ function agir(){
   if(o.ouvre==='presse'){ouvrirLaGazette();return;}
   if(o.ouvre==='bar'){ouvrirLeBar();return;}
   if(o.ouvre==='poissonnerie'){ouvrirLaCriee();return;}
+  if(o.ouvre==='etable'){ETB=null;ouvrirLEtable();return;}
   if(o.ouvre==='metroFerme'){try{sauver();envoyerSauvegarde(true);}catch(x){}setTimeout(()=>{location.href='metro.html?station=ferme&v='+Date.now();},120);return;}
   if(o.ouvre==='etalGraines'){ouvrirLeGrainetier('graines');return;}
   if(o.ouvre==='grainetier'){ouvrirLeGrainetier('outils');return;}
@@ -23344,7 +23346,12 @@ const POT_CULT={radis:['Radis',120,5,800],salade:['Salade',250,15,1800],carottes
   if(!OBJETS[k])OBJETS[k]={nom:POT_CULT[k][0],d:'Récolté à la ferme. Se vend à la boutique des fruits et légumes.',poids:1};
   if(!ICONES[k])ICONES[k]='<rect x="4" y="6" width="8" height="7" fill="'+c1+'"/><rect x="5" y="5" width="6" height="1" fill="'+c1+'"/><rect x="5" y="13" width="6" height="1" fill="'+c1+'"/>'+
     '<rect x="6" y="2" width="1" height="3" fill="'+c2+'"/><rect x="8" y="1" width="1" height="4" fill="'+c2+'"/><rect x="10" y="3" width="1" height="2" fill="'+c2+'"/><rect x="5" y="7" width="2" height="1" fill="rgba(255,255,255,.45)"/>';
-  PRIX_COMPTOIR[k]=Math.round(POT_CULT[k][3]/6);});}
+  PRIX_COMPTOIR[k]=Math.round(POT_CULT[k][3]/6);});
+ OBJETS.lait={nom:'Bidon de lait',d:'Trait à l’étable. Se vend à la boutique, ou s’affine en fromage.',poids:1};
+ OBJETS.fromage={nom:'Fromage fermier',d:'Affiné deux heures en cave. Ce qui se vend le mieux de la ferme.',poids:1};
+ ICONES.lait='<rect x="5" y="4" width="6" height="9" fill="#e8eef2"/><rect x="5" y="4" width="6" height="1" fill="#fff"/><rect x="6" y="2" width="4" height="2" fill="#b9c1c7"/><rect x="5" y="8" width="6" height="1" fill="#c8ced4"/><rect x="6" y="5" width="1" height="6" fill="rgba(255,255,255,.6)"/>';
+ ICONES.fromage='<rect x="3" y="7" width="10" height="5" fill="#e8c25a"/><rect x="3" y="6" width="10" height="1" fill="#f6dd8c"/><rect x="5" y="8" width="2" height="2" fill="#d8a83a"/><rect x="9" y="9" width="2" height="2" fill="#d8a83a"/><rect x="3" y="12" width="10" height="1" fill="#c9a040"/>';
+ PRIX_COMPTOIR.lait=120;PRIX_COMPTOIR.fromage=650;}
 
 /* les graines à débloquer une fois pour toutes (le serveur a les mêmes prix) */
 const POT_VERROU={pommes_terre:10000,oignons:15000,poivrons:30000,mais:40000,aubergines:50000,tournesol:80000,pasteque:150000,safran:500000};
@@ -23410,6 +23417,7 @@ dessinerBulles=function(g,camX,camY,px,py){const d=Date.now()-POT_ARROSE;
 /* 2 · le bouton d'action, près d'une parcelle */
 const potMajVrai=majAction;
 majAction=function(){const i=potProche();if(i===null||!POT.charge)return potMajVrai();
+  try{const b2=cible();if(b2&&(b2.ouvre||b2.t==='comptoir'))return potMajVrai();}catch(x){}   /* une porte à portée passe avant la parcelle */
   const b=$('action'), P=POT.parc[i], s=potStade(P), J=POT.j;let t;
   if(!potOuverte(i))t=['Parcelle à louer','AGRANDIS TON CHAMP AU GRAINETIER'];
   else if(!P||P.etat!=='bechee')t=J.houe?['Bêcher','AVEC LA HOUE']:['Il te faut une houe','EN VENTE AU GRAINETIER'];
@@ -23793,7 +23801,7 @@ const CSS_BQ=`#page2Fond.bq{background:#2e2a26;color:#f4ecd8;font-family:Georgia
 #page2Fond.bq .go{margin:12px 14px calc(env(safe-area-inset-bottom,0px) + 16px);border:0;border-radius:16px;padding:16px;font:700 17px Georgia;background:#4f8a42;color:#fff;box-shadow:0 4px 0 #2f5a2a;flex:none}
 #page2Fond.bq .go:disabled{background:#4a4a44;color:#9a9a90;box-shadow:none}
 #page2Fond.bq .mot{margin:8px 16px 0;font:italic 13px Georgia;color:#d8cfb6;min-height:18px;flex:none}`;
-function bqLignes(){const L=[];for(const k of Object.keys(POT_CULT)){const n=(e.sac&&e.sac[k])||0;if(n>0)L.push([k,n,PRIX_COMPTOIR[k]||0]);}return L;}
+function bqLignes(){const L=[];for(const k of Object.keys(POT_CULT).concat(['lait','fromage'])){const n=(e.sac&&e.sac[k])||0;if(n>0)L.push([k,n,PRIX_COMPTOIR[k]||0]);}return L;}
 function ouvrirLaBoutiqueFerme(mot){
   if(!document.getElementById('cssBq')){const st=document.createElement('style');st.id='cssBq';st.textContent=CSS_BQ;document.head.appendChild(st);}
   const L=bqLignes(), total=L.reduce((t,[,n,p])=>t+n*p,0);
@@ -23805,7 +23813,7 @@ function ouvrirLaBoutiqueFerme(mot){
     '<div class="mot" id="bqMot">'+(mot||'')+'</div>'+
     '<div class="ard"><h3>Les cours du jour</h3>'+
       (L.length?L.map(([k,n,p])=>'<button class="lg" data-v="'+k+'">'+(ICONES[k]?'<svg viewBox="0 0 16 16">'+ICONES[k]+'</svg>':'')+
-        '<span><b>'+POT_CULT[k][0]+'</b><em>'+enEuros(p)+' pièce</em></span><span class="q">×'+n+'</span><span class="p">'+enEuros(n*p)+'</span></button>').join('')
+        '<span><b>'+(POT_CULT[k]?POT_CULT[k][0]:(OBJETS[k]?OBJETS[k].nom:k))+'</b><em>'+enEuros(p)+' pièce</em></span><span class="q">×'+n+'</span><span class="p">'+enEuros(n*p)+'</span></button>').join('')
         :'<div class="vide">Ton sac est vide.<br>Va récolter ton champ, et reviens me voir.</div>')+
     '</div>'+
     '<div class="tot"><span>Total du panier</span><b>'+enEuros(total)+'</b></div>'+
@@ -23819,6 +23827,64 @@ function ouvrirLaBoutiqueFerme(mot){
     ouvrirLaBoutiqueFerme(gain?('Vendu ! '+enEuros(gain)+' dans ta poche.'):'Le primeur n’a rien pris.');};
   $('page2Fond').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{b.disabled=true;vendre([b.dataset.v]);});
   $('bqTout').onclick=()=>{$('bqTout').disabled=true;vendre(L.map(([k])=>k));};
+}
+
+/* ================= L'ÉTABLE : le foin, le lait, le fromage =================
+   Les vaches donnent un bidon toutes les 45 minutes tant qu'il reste du foin (même quand tu n'es pas là).
+   Le serveur tient tout : le temps, le sac, l'argent. */
+let ETB=null;
+const CSS_ETB=`#page2Fond.etb{background:#f4ecd8;color:#2a1a0e;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%}
+#page2Fond.etb .tete{background:#7a2e1c;color:#f4ecd8;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:3px solid #c9a24a;flex:none}
+#page2Fond.etb .tete b{flex:1;font:400 23px Georgia}#page2Fond.etb .tete small{display:block;font:700 9px Arial;letter-spacing:2px;color:#e8c8a8}
+#page2Fond.etb .tete button{width:34px;height:34px;border-radius:50%;border:0;background:#f4ecd8;color:#2a1a0e;font:700 14px Arial}
+#page2Fond.etb .corps{padding:12px 14px;overflow-y:auto;flex:1}
+#page2Fond.etb h4{font:700 10px Arial;letter-spacing:2px;color:#8a6a2a;margin:6px 2px 8px}
+#page2Fond.etb .lg{display:flex;align-items:center;gap:10px;background:#fbf6e8;border:1px solid #e2d6b8;border-radius:12px;padding:10px 12px;margin-bottom:8px}
+#page2Fond.etb .lg .ic{width:34px;height:34px;flex:none;border-radius:8px;background:#efe2c4;display:flex;align-items:center;justify-content:center}
+#page2Fond.etb .lg b{font:400 16px Georgia;display:block}#page2Fond.etb .lg em{font:italic 12px Georgia;color:#7a5a3a}
+#page2Fond.etb .lg button{margin-left:auto;border:0;border-radius:10px;padding:9px 12px;font:700 13px Georgia;background:#7a2e1c;color:#f4ecd8;white-space:nowrap}
+#page2Fond.etb .lg button.or{background:#e0b850;color:#2a1a0e}#page2Fond.etb .lg button:disabled{opacity:.45}
+#page2Fond.etb .barre{height:6px;border-radius:3px;background:#e2d6b8;margin-top:5px;overflow:hidden}#page2Fond.etb .barre i{display:block;height:100%;background:#7aa04a}
+#page2Fond.etb .mot{margin:2px 2px 10px;font:italic 13px Georgia;color:#6a5a3a;min-height:18px}`;
+const etbDuree=(s)=>{s=Math.max(0,Math.round(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?h+' h '+(m<10?'0':'')+m:(m?m+' min':Math.max(1,s)+' s');};
+async function ouvrirLEtable(mot){
+  if(!document.getElementById('cssEtb')){const st=document.createElement('style');st.id='cssEtb';st.textContent=CSS_ETB;document.head.appendChild(st);}
+  $('page2Fond').className='etb';$('page2').classList.add('on');
+  if(!ETB)$('page2Fond').innerHTML='<div class="corps"><div class="mot">On ouvre la porte…</div></div>';
+  const d=await appelRPC('etable_etat',{p_joueur:e.id});
+  if(d&&!d.erreur)ETB=d;
+  const E=ETB||{vaches:2,lait:0,lait_max:8,foin:0,ble:0,lait_sac:0};
+  const laitSac=(e.sac&&e.sac.lait)||E.lait_sac||0, ble=(e.sac&&e.sac.ble)||E.ble||0;
+  $('page2Fond').innerHTML=
+    '<div class="tete"><div style="flex:1"><small>LA FERME</small><b>L’étable</b></div><button id="etbX">✕</button></div>'+
+    '<div class="corps"><div class="mot">'+(mot||'« Elles ont bien travaillé, ce matin. »')+'</div>'+
+    '<h4>TES VACHES · '+E.vaches+' / 4</h4>'+
+    '<div class="lg"><span class="ic">🥛</span><div style="flex:1"><b>'+(E.lait?E.lait+' bidon'+(E.lait>1?'s':'')+' de lait':'Pas de lait pour l’instant')+'</b>'+
+      '<em>'+(E.foin>0?(E.prochain!=null?'prochain bidon dans '+etbDuree(E.prochain):'le seau est plein'):'elles n’ont plus de foin')+'</em>'+
+      '<div class="barre"><i style="width:'+Math.round(100*E.lait/Math.max(1,E.lait_max))+'%"></i></div></div>'+
+      '<button class="or" id="etbTraire"'+(E.lait?'':' disabled')+'>Traire</button></div>'+
+    '<div class="lg"><span class="ic">🌾</span><div style="flex:1"><b>Le foin</b><em>'+(E.foin>0?'encore '+etbDuree(E.foin):'mangeoire vide')+' · 2 gerbes de blé ou 3,00 €'+(ble>=2?' (tu as '+ble+' blé)':'')+'</em>'+
+      '<div class="barre"><i style="width:'+Math.round(100*Math.min(1,E.foin/43200))+'%"></i></div></div>'+
+      '<button id="etbFoin">'+(ble>=2?'Donner du blé':'3,00 €')+'</button></div>'+
+    '<h4>LA CAVE</h4>'+
+    '<div class="lg"><span class="ic">🧀</span><div style="flex:1"><b>'+(E.fromage==null?'Affiner un fromage':(E.fromage>0?'Fromage en cave':'Fromage prêt !'))+'</b>'+
+      '<em>'+(E.fromage==null?'4 bidons de lait → 1 fromage (2 h) · tu as '+laitSac+' bidon'+(laitSac>1?'s':'')+' dans le sac'
+        :(E.fromage>0?'prêt dans '+etbDuree(E.fromage):'il t’attend, bien affiné'))+'</em>'+
+      (E.fromage!=null?'<div class="barre"><i style="width:'+Math.round(100*(1-Math.min(1,E.fromage/7200)))+'%;background:#e0b850"></i></div>':'')+'</div>'+
+      '<button class="'+(E.fromage===0?'or':'')+'" id="etbCave"'+((E.fromage==null&&laitSac<4)||(E.fromage>0)?' disabled':'')+'>'+(E.fromage==null?'Mettre en cave':(E.fromage>0?'Ça affine…':'Récupérer'))+'</button></div>'+
+    '<h4>AGRANDIR LE TROUPEAU</h4>'+
+    '<div class="lg"><span class="ic">🐄</span><div style="flex:1"><b>Une vache de plus</b><em>elle donne un bidon toutes les 45 min · 60,00 €</em></div>'+
+      '<button id="etbVache"'+(E.vaches>=4?' disabled':'')+'>'+(E.vaches>=4?'✓ complet':'60,00 €')+'</button></div></div>';
+  $('etbX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+  const faire=async(nom,bt,ok)=>{bt.disabled=true;const d2=await appelRPC(nom,{p_joueur:e.id});
+    if(!d2||d2.erreur){const m={pas_assez:'Pas assez d’argent.',sac_plein:'Ton sac est plein.',rien:'Rien à traire pour l’instant.',plein:'La mangeoire est déjà pleine.',pas_assez_lait:'Il faut 4 bidons de lait dans ton sac.',max:'Tu as déjà quatre vaches.'}[d2&&d2.erreur]||'Ça n’a pas marché.';
+      ouvrirLEtable(m);return;}
+    ETB=d2.etat||d2;try{lireSacServeur();lireLeSolde();}catch(x){}jouer('vente','moment');vibrer([15,40,15]);
+    ouvrirLEtable(typeof ok==='function'?ok(d2):ok);};
+  $('etbTraire').onclick=function(){faire('etable_traire',this,(d2)=>'+'+d2.pris+' bidon'+(d2.pris>1?'s':'')+' de lait dans ton sac.');};
+  $('etbFoin').onclick=function(){faire('etable_nourrir',this,'Le foin est dans la mangeoire.');};
+  $('etbCave').onclick=function(){faire('etable_cave',this,(d2)=>d2.fromage?'Un beau fromage pour ton sac !':'En cave : reviens dans deux heures.');};
+  $('etbVache').onclick=function(){faire('etable_vache',this,'Une vache de plus au pré !');};
 }
 
 /* ================= L'ÉTABLE ET SON PRÉ =================
