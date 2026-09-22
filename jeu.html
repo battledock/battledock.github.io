@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-22-0350';
+  var MA_VERSION='2026-09-22-0429';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -7653,7 +7653,8 @@ async function ouvrirLeBar(){
 #bar .t3 .cont .dessous b{font:800 17px Arial}#bar .t3 .cont .dessous small{font:600 10px Arial;opacity:.75}
 #bar .t3 .z.gg .dessous{background:#ffe070;border-radius:inherit}
 
-      #bar .gt-res{font:400 22px Georgia,serif;color:#fff;min-height:30px;text-align:center}#bar .gt-res span{color:#e8c46a}
+      #bar .gt-res{font:400 22px Georgia,serif;color:#fff;min-height:30px;text-align:center}#bar .gt-res span{color:#e8c46a}#bar .gt-res small{display:block;font:italic 13px Georgia,serif;color:#e8dcc8;margin-top:4px}
+      #bar .t2 .tresor.rate .dessous{opacity:.45}#bar .t2 .tresor.rate .dessous b{text-decoration:line-through}
       #bar .gt-ok{flex:none;border:0;border-radius:22px;padding:12px 28px;font:700 14px Arial,sans-serif;background:#fff;color:#16336a;visibility:hidden}</style>
      <div id="bar" lang="fr"><div class="bar-page">
        <div class="bar-plaque"><small>BAR · TABAC</small><b>DES DOCKS</b><small>JEUX · PMU · PRESSE</small></div>
@@ -7683,7 +7684,7 @@ async function ouvrirLeBar(){
     else if(T[0]==='filet'){const K=C.cases||[],L=(C.ligne||[]).flat();
       html='<div class="tk t2"><div class="hd"><small>BAR DES DOCKS · 3 €</small><b>Le Filet d’Or</b></div><div class="regle">Aligne trois ancres, en ligne, en colonne ou en diagonale, et remporte le trésor.</div>'+
         '<div class="jeu"><div class="grille">'+K.map((x,i)=>'<div class="z case" data-z="'+i+'"><div class="dessous">'+(x==='a'?ancre:(x==='c'?coquille:etoile))+'</div></div>').join('')+'</div>'+
-        '<div class="z tresor" data-z="t"><div class="dessous"><small>TRÉSOR</small><b>'+eu(C.tresor||0)+'</b></div></div></div><div class="pd"><span>N° '+n+'</span><span>JUSQU’À 300 €</span></div></div>';
+        '<div class="z tresor" data-z="t"><div class="dessous"><small>TRÉSOR<br>À GAGNER</small><b>'+eu(C.tresor||0)+'</b></div></div></div><div class="pd"><span>N° '+n+'</span><span>JUSQU’À 300 €</span></div></div>';
       zones=(el)=>{const z=el.dataset.z;return {gagne:d.gain>0&&(z==='t'||L.includes(+z+1)),style:z==='t'?{grad:['#a8862a','#f0d890','#c9a24a','#8a6a1a'],texte:'TRÉSOR',taille:9,coulTexte:'rgba(60,40,10,.45)'}:{grad:['#c9a24a','#f8e4a8','#b8902a'],motif:maillesMotif}};};}
     else{const J=C.jour||[],CT=C.conteneurs||[],coul=['#d8402a','#2a6ab0','#e8b830','#3a9a5a','#e87a2a','#8a5ad8','#c83a6a','#2aa0a0'];
       html='<div class="tk t3"><div class="hd"><small>BAR DES DOCKS · 10 €</small><b>LE GROS CARGO</b></div><div class="regle">Chaque conteneur qui porte un numéro du jour te fait gagner son montant. La sirène double tout !</div>'+
@@ -7693,7 +7694,9 @@ async function ouvrirLeBar(){
     v.innerHTML=html+'<div class="gt-res" id="gtRes"></div><button class="gt-ok" id="gtOk">Continuer</button>';$('bar').appendChild(v);
     const Z=[...v.querySelectorAll('.z')].map(el=>Object.assign({el},zones(el)));let reste=Z.length;
     const fin=()=>{if(--reste>0)return;Z.forEach(z=>z.gagne&&z.el.classList.add('gg'));
-      if(d.gain>0){jouer('vente','moment');vibrer([25,40,25]);$('gtRes').innerHTML='Gagné · <span>'+enEuros(d.gain)+'</span>';}else $('gtRes').innerHTML='Pas cette fois';
+      const POURQUOI={poisson:['Ton poisson était dans une bulle !','Ton poisson n’était dans aucune bulle.'],filet:['Trois ancres alignées !','Pas trois ancres alignées : le trésor t’échappe.'],cargo:['Des conteneurs portent un numéro du jour !','Aucun conteneur ne porte un numéro du jour.']}[T[0]];
+      if(d.gain>0){jouer('vente','moment');vibrer([25,40,25]);$('gtRes').innerHTML='Gagné · <span>'+enEuros(d.gain)+'</span><small>'+POURQUOI[0]+'</small>';}
+      else{$('gtRes').innerHTML='Pas cette fois<small>'+POURQUOI[1]+'</small>';const t=v.querySelector('.tresor');if(t)t.classList.add('rate');}
       if(typeof d.euros==='number'){e.euros=d.euros;sauver();majHaut();}$('gtOk').style.visibility='visible';};
     requestAnimationFrame(()=>Z.forEach(z=>pellicule(z.el,z.style,fin)));
     $('gtOk').onclick=()=>{v.remove();rendre();};};
