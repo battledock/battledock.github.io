@@ -27,7 +27,7 @@ document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&['+',
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-22-1200';
+  var MA_VERSION='2026-09-22-1337';
             /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -175,6 +175,17 @@ h1{color:#1d2a44}
 #partir{background:#0f8a7a!important;color:#fff!important;box-shadow:0 4px 0 #075a50!important}
 #remonter{background:#1d2a44!important;color:#f2efe6!important;box-shadow:0 3px 0 #0e1628!important}
 #mot{color:#6a6a5a!important}
+
+/* ===== LE TRAJET, DANS LA RAME : on est assis, le tunnel file derrière les vitres ===== */
+#trajet{background:#1d2230!important}
+#rameInt{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+#trajLed{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 7.5%);transform:translateX(-50%);max-width:92%;overflow:hidden;white-space:nowrap;
+  background:#0c0e14;border:2px solid #3a3f4c;border-radius:6px;padding:8px 14px;box-shadow:0 4px 0 rgba(0,0,0,.35)}
+#trajLed span{display:inline-block;font:700 13px ui-monospace,Menlo,monospace;color:#ffb03a;letter-spacing:2px;text-shadow:0 0 6px #ff9a1a}
+#trajLed.clig span{animation:ledClig .6s steps(2) infinite}@keyframes ledClig{50%{opacity:.25}}
+#trajFin2{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 28px);display:none;justify-content:center;padding:0 18px}
+#trajFin2.on{display:flex;animation:entreeT .4s ease-out}
+#trajSortir{width:100%;max-width:420px;border:0;border-radius:16px;padding:16px;font:700 17px Georgia,serif;background:#0f8a7a;color:#fff;box-shadow:0 4px 0 #075a50}
 </style>
 </head>
 <body>
@@ -196,8 +207,11 @@ h1{color:#1d2a44}
   <div id="mot"></div>
 </div>
 <div id="trajet">
-  <canvas id="tunnel" width="192" height="120"></canvas>
-  <div id="trajBas">
+  <canvas id="rameInt"></canvas>
+  <div id="trajLed"><span id="trajLedT">PROCHAINE STATION</span></div>
+  <div id="trajFin2"><button id="trajSortir">Sortir ↑</button></div>
+  <canvas id="tunnel" width="192" height="120" style="display:none"></canvas>
+  <div id="trajBas" style="display:none">
     <div class="surT">LIGNE 1 · SOUS LA VILLE</div>
     <div id="trajTitre">Prochain arrêt : Le port</div>
     <div id="trajLigne"><div id="trajPastille">1</div></div>
@@ -723,6 +737,8 @@ function lancerLeTrajet(){
   $('trajTitre').textContent='Prochain arrêt : '+dest.nom;
   $('trajFin').style.display='none';
   $('trajet').classList.add('on');
+  $('trajFin2').classList.remove('on');$('trajLed').classList.remove('clig');
+  $('trajLedT').textContent='PROCHAINE STATION · '+dest.nom.toUpperCase();
   TRAJET={t0:performance.now(),dest};
   requestAnimationFrame(dessinerLeTrajet);
 }
@@ -862,64 +878,62 @@ function pointSurLaTrace(q){
   }
 }
 const ETOILES=Array.from({length:26},(_,i)=>[(i*67)%190,(i*23)%34,i]);
+/* L'INTÉRIEUR DE LA RAME, en pixel fin (dessiné au double) : plafond et plan lumineux, deux vitres où
+   file le tunnel, banquettes vertes, barres, deux passagers assis, le sol qui tangue avec la rame. */
 function dessinerLeTrajet(t){
   if(!TRAJET)return;
   let p=Math.min(1,(t-TRAJET.t0)/DUREE_TRAJET);
-  const controle=FRAUDE&&FRAUDE.controle;
-  if(controle&&p>=.45){p=.45;if(!TRAJET.pris)controler();}
-  const q=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;            /* on accélère, on file, on freine */
-  const vit=Math.sin(Math.PI*p);
-  const c=$('tunnel'),g=c.getContext('2d');g.imageSmoothingEnabled=false;
-  const Wt=c.width,Ht=c.height, sec=(t-TRAJET.t0)/1000;
-  const mont=VERS_MONT();
-  if(mont){if(!COUPE_M)COUPE_M=graverLaCoupeMontagne(Wt,Ht);g.drawImage(COUPE_M,0,0);}
-  else{if(!COUPE)COUPE=graverLaCoupe(Wt,Ht);g.drawImage(COUPE,0,0);}
-  /* les étoiles scintillent, l'eau bouge, le cargo cligne */
-  ETOILES.forEach(([x,y,i])=>{if(Math.sin(sec*2+i)>-.3){g.fillStyle=i%4?'#8a93b8':'#f4eed8';g.fillRect(x,y,1,1);}});
-  if(!mont){g.fillStyle='rgba(200,230,245,.55)';
-  for(let x=152;x<Wt;x+=7)g.fillRect(x+Math.round(Math.sin(sec*2+x)*1.5),SOL+4,3,1);
-  if(Math.floor(sec*2)%2){g.fillStyle='#ff5a4a';g.fillRect(181,SOL-11,1,1);}}
-  else{for(let k=0;k<18;k++){const x=(k*37+sec*6)%Wt, y=(k*23+sec*14)%(SOL+10);if(x>62&&y<MONT(x))continue;if(x>62){g.fillStyle='#ffffff';g.fillRect(x,y,1,1);}}}   /* la neige qui tombe sur la montagne */
-  /* la fumée des cheminées */
-  for(let k=0;k<3;k++){const a=(sec*0.6+k/3)%1;g.fillStyle='rgba(200,200,210,'+(.4*(1-a))+')';
-    g.fillRect(22+Math.round(Math.sin(a*6)*2),SOL-16-Math.round(a*12),2,2);}
-  /* LA RAME : jaune et rose, sa lumière éclaire le tunnel devant elle */
-  const [rx,ry]=pointSurLaTrace((mont?ICI.id==='montagne':AU_PORT)?1-q:q);
-  const halo=g.createRadialGradient(rx+6,ry,1,rx+6,ry,16);
-  halo.addColorStop(0,'rgba(255,236,170,.55)');halo.addColorStop(1,'rgba(255,236,170,0)');
-  g.fillStyle=halo;g.fillRect(rx-12,ry-16,34,32);
-  const x0=Math.round(rx)-12,y0=Math.round(ry)-3;
-  for(let v=0;v<2;v++){const vx=x0+v*7;
-    g.fillStyle='#0f8a7a';g.fillRect(vx,y0,6,3);
-    g.fillStyle='#0b6a5e';g.fillRect(vx,y0+3,6,2);
-    g.fillStyle='#fff4d2';g.fillRect(vx+1,y0+1,1,1);g.fillRect(vx+3,y0+1,1,1);}
-  g.fillStyle='#fff4d2';g.fillRect(x0+13,y0+3,1,1);                /* le phare */
-  /* LE CONTRÔLE : la rame s'arrête dans le tunnel, gyrophare rouge */
-  if(TRAJET.pris){
-    const bat=Math.floor(sec*4)%2;
-    const rouge=g.createRadialGradient(rx,ry,1,rx,ry,22);
-    rouge.addColorStop(0,'rgba(255,60,50,'+(bat?.55:.2)+')');rouge.addColorStop(1,'rgba(255,60,50,0)');
-    g.fillStyle=rouge;g.fillRect(rx-24,ry-24,48,48);
-    /* le contrôleur, casquette et veste bleu marine */
-    const cx=x0+15,cy=y0-1;
-    g.fillStyle='#1b2a4a';g.fillRect(cx,cy+2,3,4);
-    g.fillStyle='#e0b48a';g.fillRect(cx,cy,3,2);
-    g.fillStyle='#10182c';g.fillRect(cx-1,cy-1,5,1);
-    g.fillStyle='#e8c06a';g.fillRect(cx+1,cy-1,1,1);
-  }
-  /* les étincelles quand ça file */
-  if(vit>.6&&Math.random()<.6){g.fillStyle='#ffd76a';g.fillRect(x0+Math.round(Math.random()*12),y0+5,1,1);}
-  /* toute la ville tremble un peu au passage */
-  $('tunnel').style.transform=(vit>.5&&Math.random()<.15)?'translateY(1px)':'none';
-  /* la pastille avance sur la ligne */
-  $('trajPastille').style.left=(q*100)+'%';
-  if(!TRAJET.pris){
-    $('trajPc').textContent=Math.round(q*100)+' %';
-    $('trajConseil').textContent=CONSEILS[Math.floor(sec/2.2)%CONSEILS.length];
-  }
-  if(TRAJET.pris){requestAnimationFrame(dessinerLeTrajet);return;}
-  if(p<1)requestAnimationFrame(dessinerLeTrajet);
-  else arriver();
+  const q=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2, vit=Math.sin(Math.PI*p), sec=(t-TRAJET.t0)/1000;
+  const c=$('rameInt');const D=Math.min(2,window.devicePixelRatio||1);
+  if(c.width!==Math.round(c.clientWidth*D)){c.width=Math.round(c.clientWidth*D);c.height=Math.round(c.clientHeight*D);}
+  const g=c.getContext('2d'),K=c.width/130,H=c.height/K;g.setTransform(K,0,0,K,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,w,h);};
+  const tangue=Math.sin(sec*3.1)*.6*vit+(vit>.6&&Math.sin(sec*17)>.97?.8:0);
+  g.save();g.translate(0,tangue);
+  const hautV=H*0.24, basV=H*0.46, siege=H*0.49, sol=H*0.60;
+  /* le plafond et ses néons (qui vacillent une fois, au milieu du trajet) */
+  const neon=(p>.48&&p<.52&&Math.sin(sec*40)>0)?'#8a9094':'#f4f6f0';
+  R(0,-2,130,hautV-10,'#c3cbcf');for(let x=6;x<130;x+=22)R(x,5,16,2.5,neon);R(0,hautV-12,130,1,'#8f9aa0');
+  /* le plan lumineux de la ligne, au-dessus des portes */
+  const IDS=STATIONS.map(s=>s.id),i0=IDS.indexOf(ICI.id),i1=IDS.indexOf(TRAJET.dest.id);
+  R(18,hautV-24,94,10,'#1d2a44');R(22,hautV-20,86,2,'#0f8a7a');
+  IDS.forEach((id,i)=>{const x=24+i*27.3;let col='#6a7a8a';if(i===i0)col='#e84a3a';
+    if(i===i1)col=(Math.floor(sec*2.5)%2||p>=1)?'#ffd24a':'#3a4a5a';if(i!==i0&&i!==i1&&((i>i0&&i<i1)||(i<i0&&i>i1)))col='#8fd0b8';
+    R(x-2,hautV-22,4,4,'#1d2a44');R(x-1.5,hautV-21.5,3,3,col);});
+  /* la paroi */
+  R(0,hautV-11,130,basV-hautV+16,'#d3d9db');
+  /* les deux vitres : le tunnel qui file (ou le quai, au départ et à l'arrivée) */
+  [[6,hautV],[68,hautV]].forEach(([x,y],w)=>{const L=56,Hv=basV-hautV;
+    R(x-2,y-2,L+4,Hv+4,'#8f9aa0');R(x,y,L,Hv,'#11151d');
+    const aQuai=p<.07||p>.95;
+    if(aQuai){const dec=(p<.5?p:1-p)*600;R(x,y,L,Hv,'#e9e6dc');for(let yy=0;yy<Hv;yy+=5)for(let xx=-8;xx<L;xx+=8)R(x+((xx+dec+(yy/5%2)*4)%64+64)%64-4,y+yy,7,4,'#f8f6ee');
+      R(x,y+Hv*0.62,L,Hv*0.12,'#2a5aa8');R(x,y+Hv-4,L,4,'#b9b3a2');}
+    else{const v=18+vit*140;
+      for(let k=0;k<5;k++){const yy=y+5+k*(Hv-10)/4, lg=10+vit*28;let xx=((k*37+w*19-sec*v)%(L+lg)+(L+lg))%(L+lg)-lg;
+        R(x+Math.max(0,xx),yy,Math.min(L,xx+lg)-Math.max(0,xx),.8,k%2?'#ffcf7a':'#ffe0a0');R(x+Math.max(0,xx),yy-.5,Math.min(L,xx+lg)-Math.max(0,xx),.5,'rgba(255,207,122,.35)');}
+      for(let k=0;k<7;k++){let xx=((k*9-sec*v*0.6)%63+63)%63-4;R(x+Math.max(0,xx),y+Hv-5,Math.min(3,L-xx),2,'#2a2e38');}}
+    R(x,y,L,1,'rgba(255,255,255,.1)');g.fillStyle='rgba(255,255,255,.1)';g.beginPath();g.moveTo(x+4,y+3);g.lineTo(x+14,y+3);g.lineTo(x+4,y+Hv*0.6);g.lineTo(x-4+4,y+Hv*0.6);g.fill();});
+  /* les banquettes vertes */
+  R(0,siege-3,130,3,'#8f9aa0');
+  for(let x=0;x<130;x+=32){R(x+2,siege,28,sol-siege-4,'#0f8a7a');R(x+2,siege,28,2,'#3fc8b0');for(let k=0;k<5;k++)R(x+5+k*5,siege+4,2,sol-siege-10,'#0b6a5e');R(x+4,sol-4,24,4,'#0b6a5e');}
+  /* les barres */
+  [30,96].forEach(x=>{R(x,hautV-11,2,sol-hautV+11,'#b9c1c7');R(x+.5,hautV-11,.5,sol-hautV+11,'#fff');});
+  /* le sol carrelé */
+  R(0,sol,130,H-sol+4,'#5a6068');for(let y=sol;y<H+4;y+=6)for(let x=((y-sol)/6%2)*6;x<130;x+=12)R(x,y,6,6,'#50565e');
+  /* deux passagers assis : toi (à gauche) et une passagère avec son panier */
+  const perso=(x,y,cheveux,haut)=>{R(x,y-17,8,7,'#e8b890');R(x-1,y-19,10,3.5,cheveux);R(x+2,y-14,1,1,'#1c1c1c');R(x+5,y-14,1,1,'#1c1c1c');
+    R(x-1,y-10,10,10,haut);R(x-1,y-10,10,1,'rgba(255,255,255,.2)');R(x,y,8,3,'#2a3a5a');R(x,y+3,3,7,'#2a3a5a');R(x+5,y+3,3,7,'#2a3a5a');R(x-.5,y+10,4,1.5,'#3a2616');R(x+4.5,y+10,4,1.5,'#3a2616');};
+  const sy=siege+8+Math.sin(sec*3.1+1)*.4*vit;
+  perso(44,sy,'#4a2a14','#2d6fb0');perso(104,sy,'#c9a24a','#b93327');
+  R(98,sy-2,7,5,'#b8853e');R(98,sy-2,7,.8,'#d8a860');R(99,sy-5,1,3,'#8a5e28');R(103,sy-5,1,3,'#8a5e28');R(99,sy-5,5,.8,'#8a5e28');
+  /* la lumière qui glisse sur le sol quand on passe sous les lampes du tunnel */
+  const lx=((-sec*(20+vit*120))%160+160)%160-30;g.fillStyle='rgba(255,207,122,'+(0.05+vit*.08)+')';g.beginPath();g.moveTo(lx,sol);g.lineTo(lx+30,sol);g.lineTo(lx+50,H+4);g.lineTo(lx+10,H+4);g.fill();
+  R(0,H*0.86,130,H*0.2,'rgba(0,0,0,.18)');
+  g.restore();
+  if(!TRAJET.fini&&p>.9){$('trajLedT').textContent=(p<1?'ON ARRIVE · ':'TERMINUS · ')+TRAJET.dest.nom.toUpperCase();}
+  if(p<1){requestAnimationFrame(dessinerLeTrajet);return;}
+  if(!TRAJET.fini){TRAJET.fini=true;arriver();}
+  requestAnimationFrame(dessinerLeTrajet);                  /* la rame reste à quai, le plan clignote */
 }
 function controler(){
   TRAJET.pris=true;
@@ -938,6 +952,8 @@ function controler(){
   if(navigator.vibrate)try{navigator.vibrate([60,40,60,40,120]);}catch(x){}
 }
 function arriver(){
+  $('trajLedT').textContent='TERMINUS · '+TRAJET.dest.nom.toUpperCase()+' · TOUT LE MONDE DESCEND';$('trajLed').classList.add('clig');
+  $('trajSortir').textContent='Sortir à '+TRAJET.dest.nom+' ↑';$('trajSortir').onclick=()=>sortirA(TRAJET.dest);$('trajFin2').classList.add('on');
   $('trajTitre').textContent='Terminus : '+TRAJET.dest.nom;
   $('trajConseil').textContent=(FRAUDE?'Pas vu, pas pris. ':'')+'Tout le monde descend.';
   $('trajRetour').textContent='Sortir à '+TRAJET.dest.nom+' ↑';
@@ -946,7 +962,7 @@ function arriver(){
   if(navigator.vibrate)try{navigator.vibrate([10,40,10]);}catch(x){}
 }
 function revenirAuQuai(){
-  $('trajet').classList.remove('on','controle');
+  $('trajet').classList.remove('on','controle');$('trajFin2').classList.remove('on');
   $('trajRetour').onclick=revenirAuQuai;
   FRAUDE=null;$('frauder').disabled=true;
   TRAJET=null;RAME.etat='absente';RAME.x0=-260;RAME.ouverture=0;
