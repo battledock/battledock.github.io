@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-22-0445';
+  var MA_VERSION='2026-09-22-0452';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -1727,7 +1727,7 @@ body.clavier #bandeau{padding-bottom:9px}
   <header class="catTete">
     <button id="catFermer" aria-label="Fermer">✕</button>
     <div class="catSurTitre">LE CATALOGUE · SAISON 2026 · N°12</div>
-    <div class="catTitre">Pêche <em>&amp;</em> Marine</div>
+    <div class="catTitre">Le Pêcheur <em>Heureux</em></div>
     <div class="catSousTitre">Chez Fanny, quai du Vieux-Port <span>Ton argent : <b id="catArgent">—</b></span></div>
   </header>
   <div id="catPages"></div>
@@ -7704,6 +7704,62 @@ async function ouvrirLeBar(){
     $('gtOk').onclick=()=>{v.remove();rendre();};};
   rendre();
 }
+/* ================= CHEZ FONFON : la bouillabaisse, au restaurant =================
+   Bordeaux et or, comme la façade. On choisit dans son sac de 4 à 6 poissons (3 sortes au moins), Fonfon cuisine
+   et rachète la bouillabaisse : plus c'est varié, mieux c'est payé. Le serveur calcule et paie (cuisiner_bouillabaisse). */
+let FONFON={};
+function ouvrirChezFonfon(){FONFON={};$('page2Fond').className='';$('page2').classList.add('on');
+  $('page2Fond').innerHTML=`<style>
+    #ff{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#f6efe2;color:#2a1418;font-family:Georgia,serif}
+    #ff .ff-h{flex:none;padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 14px;background:#5a1a1e;color:#f8e8c8;border-bottom:3px solid #e8c46a;position:relative}
+    #ff .ff-h small{font:700 9px Arial,sans-serif;letter-spacing:4px;color:#e8c46a}#ff .ff-h b{display:block;font:italic 900 30px Georgia,serif;color:#e8c46a;line-height:1.05;margin:2px 0}
+    #ff .ff-h i{display:block;font:italic 13px Georgia,serif;color:#f0dcc0;line-height:1.35;padding-right:4px}
+    #ff .ff-bourse{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 12px);text-align:right;font:700 9px Arial,sans-serif;letter-spacing:2px;color:#e8c46a}#ff .ff-bourse b{display:block;font:900 15px Georgia,serif;letter-spacing:0;color:#fff;font-style:normal}
+    #ff .ff-page{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;padding:14px 14px 10px}
+    #ff .ff-t{font:700 10px Arial,sans-serif;letter-spacing:3px;color:#8a5a3a;margin:2px 2px 8px}
+    #ff .ff-lg{display:flex;align-items:center;gap:10px;padding:9px 10px;margin-bottom:8px;border-radius:12px;background:#fff;box-shadow:0 1px 0 rgba(90,26,30,.08),0 4px 12px rgba(90,26,30,.06);min-width:0}
+    #ff .ff-ic{flex:none;width:40px;height:40px;border-radius:10px;background:#f8f0e0;display:flex;align-items:center;justify-content:center}
+    #ff .ff-nm{flex:1;min-width:0}#ff .ff-nm b{display:block;font:700 15px Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#ff .ff-nm span{font:italic 12px Georgia,serif;color:#8a6a5a}
+    #ff .ff-qt{flex:none;display:flex;align-items:center;gap:6px}#ff .ff-qt button{width:32px;height:32px;border:0;border-radius:50%;background:#5a1a1e;color:#e8c46a;font:900 17px Arial,sans-serif;padding:0}
+    #ff .ff-qt button:disabled{opacity:.3}#ff .ff-qt b{min-width:20px;text-align:center;font:900 15px Arial,sans-serif}
+    #ff .ff-vide{margin:30px 10px;text-align:center;font:italic 15px Georgia,serif;color:#8a6a5a;line-height:1.5}
+    #ff .ff-regle{margin-top:6px;padding:10px 12px;border-radius:12px;background:#f0e4d0;font:italic 12.5px Georgia,serif;color:#6a4a3a;line-height:1.45}
+    #ff .ff-pied{flex:none;position:relative;background:#fbf6ec;border-top:2px solid #e8c46a;padding:10px 14px calc(env(safe-area-inset-bottom,0px) + 12px)}
+    #ff .ff-marmite{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+    #ff .ff-pot{flex:none;width:52px;height:40px;position:relative}#ff .ff-pot:before{content:'';position:absolute;left:2px;right:2px;bottom:0;height:28px;border-radius:0 0 26px 26px;background:linear-gradient(#d8843a,#9a4a1a)}
+    #ff .ff-pot:after{content:'';position:absolute;left:0;right:0;top:8px;height:6px;border-radius:3px;background:#e8603a;box-shadow:0 0 0 2px #b8622a}
+    #ff .ff-pot i{position:absolute;left:50%;top:-6px;width:8px;height:8px;border-radius:50%;background:rgba(180,160,150,.5);animation:ffV 2s ease-out infinite}@keyframes ffV{from{transform:translate(-50%,6px);opacity:.8}to{transform:translate(-50%,-14px) scale(2);opacity:0}}
+    #ff .ff-etat b{display:block;font:700 14px Georgia,serif}#ff .ff-etat span{font:12px Arial,sans-serif;color:#8a6a5a}
+    #ff .ff-btns{display:flex;gap:10px}#ff .ff-btns button{border:0;border-radius:14px;padding:14px;font:700 15px Georgia,serif}
+    #ff .ff-cuire{flex:1;background:linear-gradient(180deg,#e8c46a,#c9a24a);color:#3a0c10;box-shadow:0 4px 0 #8a6a28}#ff .ff-cuire.pas{background:#d8ccb8;color:#8a7a6a;box-shadow:none}#ff .ff-sortir{background:#5a1a1e;color:#f8e8c8}
+    #ff .ff-bulle{position:absolute;left:14px;right:14px;bottom:calc(100% + 8px);background:#5a1a1e;color:#f8e8c8;border-radius:14px;padding:10px 12px;font:700 14px Georgia,serif;text-align:center;opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;pointer-events:none}
+    #ff .ff-bulle.on{opacity:1;transform:none}</style>
+   <div id="ff" lang="fr"><div class="ff-h"><small>RESTAURANT · BOUILLABAISSE</small><b>Chez Fonfon</b><i>« Donne-moi de 4 à 6 poissons, au moins 3 sortes : je te fais la bouillabaisse et je te l’achète. »</i><div class="ff-bourse">BOURSE<b id="ffArgent">—</b></div></div>
+     <div class="ff-page" id="ffCorps"></div>
+     <div class="ff-pied"><div class="ff-bulle" id="ffBulle"></div><div class="ff-marmite"><span class="ff-pot"><i></i></span><div class="ff-etat" id="ffEtat"></div></div>
+       <div class="ff-btns"><button class="ff-sortir" id="ffSortir">Sortir</button><button class="ff-cuire pas" id="ffCuire">—</button></div></div></div>`;
+  $('ffSortir').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+  $('ffCuire').onclick=ffCuisiner;ffMaj();}
+function ffBulle(t){const b=$('ffBulle');if(!b)return;b.textContent=t;b.classList.add('on');clearTimeout(ffBulle.t);ffBulle.t=setTimeout(()=>b.classList.remove('on'),2800);}
+function ffCalcul(){const tot=Object.values(FONFON).reduce((t,n)=>t+n,0), esp=Object.values(FONFON).filter(n=>n>0).length;
+  const valeur=Object.entries(FONFON).reduce((t,[k,n])=>t+(PRIX_POISSON[k]||0)*n,0), coef=esp>=3?2+(esp-3)*0.25:0;return {tot,esp,prix:Math.round(valeur*coef),pret:tot>=4&&tot<=6&&esp>=3};}
+function ffMaj(){if(!$('ffCorps'))return;$('ffArgent').textContent=enEuros(e.euros||0);const {tot,esp,prix,pret}=ffCalcul();
+  const dispo=POISSONS_MARMITE.filter(k=>(e.sac||{})[k]>0);
+  $('ffCorps').innerHTML=(dispo.length?'<div class="ff-t">TA PÊCHE</div>'+dispo.map(k=>{const n=FONFON[k]||0,max=e.sac[k];
+      return '<div class="ff-lg"><span class="ff-ic"><svg viewBox="0 0 16 16" width="30">'+(ICONES[k]||'')+'</svg></span><span class="ff-nm"><b>'+(OBJETS[k]?OBJETS[k].nom:k)+'</b><span>'+max+' dans le sac</span></span>'+
+        '<span class="ff-qt"><button data-m="'+k+'"'+(n<=0?' disabled':'')+'>−</button><b>'+n+'</b><button data-p="'+k+'"'+(n>=max||tot>=6?' disabled':'')+'>+</button></span></div>';}).join('')
+    :'<div class="ff-vide">Tu n’as pas de poisson pour la marmite.<br>Va pêcher au bout des pontons, et reviens me voir !</div>')+
+    '<div class="ff-regle">Plus ta bouillabaisse est variée, mieux Fonfon la paie : trois sortes, c’est deux fois la valeur des poissons ; chaque sorte en plus ajoute encore un quart.</div>';
+  $('ffCorps').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{FONFON[b.dataset.p]=(FONFON[b.dataset.p]||0)+1;vibrer(6);ffMaj();});
+  $('ffCorps').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{FONFON[b.dataset.m]=Math.max(0,(FONFON[b.dataset.m]||0)-1);vibrer(6);ffMaj();});
+  $('ffEtat').innerHTML='<b>La marmite · '+tot+' poisson'+(tot>1?'s':'')+'</b><span>'+esp+' sorte'+(esp>1?'s':'')+(pret?' · prête à mijoter':'')+'</span>';
+  const c=$('ffCuire');c.classList.toggle('pas',!pret);c.textContent=pret?'Cuisiner · '+enEuros(prix):(tot>6?'6 poissons au plus':(esp<3?'Encore '+(3-esp)+' sorte'+(3-esp>1?'s':''):'Encore '+(4-tot)+' poisson'+(4-tot>1?'s':'')));}
+async function ffCuisiner(){const {pret}=ffCalcul();if(!pret){ffBulle('Il me faut 4 à 6 poissons, et au moins 3 sortes.');return;}
+  const c=$('ffCuire');c.disabled=true;c.textContent='Ça mijote…';const num=++numAppelSac;
+  const d=await appelRPC('cuisiner_bouillabaisse',{p_joueur:e.id,p_recette:FONFON});c.disabled=false;
+  if(!d||d.erreur){ffBulle(!d?'Le feu s’est éteint, réessaie.':String(d.erreur));ffMaj();return;}
+  if(d.sac){adopterSac(d,num);e.sac=d.sac;}if(typeof d.euros==='number')e.euros=d.euros;sauver();majHaut();FONFON={};
+  jouer('vente','moment');vibrer([20,40,20]);ffBulle('Une bouillabaisse du tonnerre ! Fonfon te la rachète '+enEuros(d.gain||0)+'.');ffMaj();}
 /* LA PAGE DES BOUTIQUES SE VIDE QUAND ON LA FERME : sinon, en ouvrant une autre boutique, l'ancienne s'affichait
    un instant pendant que la nouvelle se préparait (par exemple la Criée avant Crousti'Port). */
 (()=>{const P=document.getElementById('page2'),F=document.getElementById('page2Fond');if(!P||!F)return;let avant=P.classList.contains('on');
@@ -7738,7 +7794,7 @@ async function ouvrirLaGazette(){
     #gzv .gzv-date{font:700 10px Arial,sans-serif;text-align:right;line-height:1.35;text-transform:uppercase;white-space:nowrap}
     #gzv .gzv-edition{font:700 10px Arial,sans-serif;letter-spacing:3px;background:#1d1a16;color:#f3ecdc;padding:3px 7px;margin:8px 0 4px;display:inline-block}
     #gzv h2{font:900 25px 'Times New Roman',Georgia,serif;line-height:1.02;text-transform:uppercase;margin:4px 0 0;overflow-wrap:break-word}
-    #gzv .gzv-photo{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:center 40%;image-rendering:pixelated;filter:sepia(.45) contrast(1.05);border:1px solid #1d1a16;margin:10px 0 4px;background:#d8ccb4}
+    #gzv .gzv-photo{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:center 20%;image-rendering:pixelated;filter:sepia(.45) contrast(1.05);border:1px solid #1d1a16;margin:10px 0 4px;background:#d8ccb4}
     #gzv .gzv-leg{font:italic 11.5px Georgia,serif;color:#5a5048;margin:0}
     #gzv .gzv-texte{font:14px Georgia,serif;line-height:1.45;margin:8px 0 0;column-count:2;column-gap:14px;text-align:justify;hyphens:auto;-webkit-hyphens:auto}
     #gzv .gzv-grille{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;margin-top:12px;border-top:2px solid #b8231a;padding-top:10px}
@@ -7756,7 +7812,7 @@ async function ouvrirLaGazette(){
      <div class="gzv-bandeau"><h1>Le Vieux-Port</h1><div class="gzv-date">${esc(d.toLocaleDateString('fr-FR',{weekday:'long'}))}<br>${esc(d.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}))}<br>N° ${num} · gratuit</div></div>
      <span class="gzv-edition">ÉDITION DU MATIN</span>
      <h2>${esc((G&&G.titre)||'Le quai s’éveille')}</h2>
-     <img class="gzv-photo" src="nouveautes/marseille.jpg" alt="">
+     <img class="gzv-photo" src="nouveautes/quai.jpg" alt="">
      <p class="gzv-leg">Sur le quai, à l'heure où les lanternes s'allument.</p>
      <p class="gzv-texte">${esc((G&&G.une)||'Les pêcheurs rentrent, le Fumoir fume, les mouettes veillent.')}</p>
      <div class="gzv-grille">
@@ -7766,8 +7822,8 @@ async function ouvrirLaGazette(){
        <div class="gzv-bloc"><h3>Sur les quais</h3><b>${(G&&G.joueurs)||0}</b> habitants inscrits au registre du port.</div>
      </div>
      <div class="gzv-annonces"><h3>Petites annonces</h3>
-       <div class="gzv-pa">Le Bar des Docks rouvrira bientôt ses portes. Qu'on se le dise !</div>
-       <div class="gzv-pa">On recherche des volontaires pour la future forêt. S'adresser au Fumoir.</div></div>
+       <div class="gzv-pa">Loto du Port : tirage chaque soir à 21 h au Bar des Docks. La cagnotte n'attend que vous !</div>
+       <div class="gzv-pa">Chez Fonfon rachète vos bouillabaisses : plus c'est varié, mieux c'est payé.</div></div>
      <div class="gzv-fin">— Le Vieux-Port, le journal des quais —</div>
    </div><div class="gzv-pied"><button class="gzv-fermer" id="gzFermer">Replier le journal</button></div></div>`;
   $('gzFermer').onclick=()=>{$('page2').classList.remove('on');};
@@ -19566,7 +19622,7 @@ function agir(){
   if(o.ouvre==='poissonnerie'){ouvrirLaCriee();return;}
   if(o.ouvre==='grainetier'){ouvrirLeGrainetier('outils');return;}
   if(o.ouvre==='fumoir'){ouvrirLeFumoir();return;}
-  if(o.ouvre==='bouillabaisse'){ouvrirLeCabanon();return;}
+  if(o.ouvre==='bouillabaisse'){ouvrirChezFonfon();return;}
   if(o.ouvre==='poste'){ouvrirLaPoste();return;}
   if(o.ouvre==='peche'){ouvrirLaBoutiqueDePeche();return;}
   if(o.ouvre==='sortieStade'){sortirDuStade();return;}
