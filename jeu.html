@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-22-1407';
+  var MA_VERSION='2026-09-22-1417';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -14052,7 +14052,8 @@ function semerDecor(){
       CALQUES_DECO['x_fe_arbreB']=XCAL['x_fe_arbreB0'];TAILLES['x_fe_arbreB']=[{w:6,h:5},{w:6,h:5},{w:6,h:5}];
       for(let x=800;x<1560;x+=84)DECOR.push({t:'x_fe_arbreB',x,y:122,v:0,gr:0});
       for(let y=150,k=0;y<450;y+=46,k++)DECOR.push({t:'x_fe_arbreB',x:1552,y,v:k%2?1:2,gr:k%2?1:2});
-      DECOR.push({t:'x_fe_gare',x:900,y:300,v:0,bati:true,demi:34,ouvre:'metroFerme'});}   /* la petite gare du métro, à gauche du champ */   /* …sauf l'étal des graines, en haut du champ */
+      DECOR.push({t:'x_fe_gare',x:846,y:214,v:0,bati:true,demi:34,ouvre:'metroFerme'});   /* la petite gare du métro, en haut à gauche */
+      DECOR.push({t:'comptoir',x:1062,y:226,v:0,gr:0,bati:true,demi:96});}   /* le comptoir, juste à gauche de l'étal, au-dessus du champ */   /* …sauf l'étal des graines, en haut du champ */
   }
   /* on garde la liste triée : ce qui est en bas se dessine par-dessus */
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
@@ -14209,6 +14210,7 @@ function bloque(x,y){
   if(CHAMPS_SEULS&&CARTE==='village'){
     for(const o of autourDe(x,y)){const t=TAILLES[o.t];if(!t)continue;const d=t[o.gr||0];
       if(Math.abs(o.x-x)<d.w/2+3&&Math.abs(o.y-y)<d.h/2+2)return true;}
+    for(const o of DECOR)if(o.t==='comptoir'&&Math.abs(x-o.x)<128&&y>o.y-100&&y<o.y+4)return true;   /* le comptoir : un vrai bâtiment */
     return false;
   }
   if(CARTE_MOD){if(x<11||x>MONDE_L-11||y<20||y>MONDE_H-10)return true;          /* le garde-corps, les rondins, les ganivelles */
@@ -23595,11 +23597,11 @@ function poulGraverFond(){const Z=POUL_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0, E=2, c=doc
   PQL(g,W-22,ey0+34,10,3,'#8b9198');PQL(g,W-21,ey0+34.5,8,1.5,'#5aa8c8');
   const gr=document.createElement('canvas');gr.width=W*E;gr.height=H*E;const q=gr.getContext('2d');q.imageSmoothingEnabled=false;q.setTransform(E,0,0,E,0,0);
   const piquet=(x,y)=>{PQL(q,x-0.5,y-9,1.5,9,'#6b4a28');PQL(q,x-0.5,y-9,1.5,0.5,'#96703f');};
-  for(let x=ex0;x<=ex1;x+=12)piquet(x,ey1);for(let y=ey0;y<=ey1;y+=10){piquet(ex0,y);piquet(ex1,y);}
+  for(let x=ex0;x<=ex1;x+=12)piquet(x,ey1);for(let y=ey0;y<=ey1;y+=10){piquet(ex0,y);if(!CHAMPS_SEULS)piquet(ex1,y);}   /* (à la ferme des champs : ouvert à droite) */
   q.strokeStyle='rgba(200,205,210,.55)';q.lineWidth=0.3;
   for(let x=ex0;x<ex1;x+=2){q.beginPath();q.moveTo(x,ey1-8);q.lineTo(x+2,ey1);q.stroke();q.beginPath();q.moveTo(x+2,ey1-8);q.lineTo(x,ey1);q.stroke();}
   PQL(q,ex0,ey1-8.5,ex1-ex0,0.5,'#a8adb2');PQL(q,ex0,ey1-0.5,ex1-ex0,0.5,'#a8adb2');
-  for(let y=ey0;y<ey1;y+=2)[ex0,ex1].forEach(x=>{q.beginPath();q.moveTo(x,y);q.lineTo(x,y+2);q.stroke();});
+  for(let y=ey0;y<ey1;y+=2)(CHAMPS_SEULS?[ex0]:[ex0,ex1]).forEach(x=>{q.beginPath();q.moveTo(x,y);q.lineTo(x,y+2);q.stroke();});
   POUL_FOND=c;POUL_GRILLE=gr;}
 /* 1 · le dessin */
 const poulDecorVrai=dessinerDecor;
@@ -23726,7 +23728,7 @@ bloque=function(x,y){if(CARTE==='village'&&PLACE_SEULE){if(dansSortie(x,y)>=0&&x
   if(Math.abs(x-1780)<48&&y>250-70&&y<250+3)return true;}return boutBloqueVrai(x,y);};                 /* le moulin aussi, sur toute sa profondeur */
 const poulBloqueVrai=bloque;
 bloque=function(x,y){if(CARTE==='village'&&!PLACE_SEULE){const Z=POUL_Z(), H=Z.y1-Z.y0, ey0=Z.y0+Math.min(46,H*0.34), ex0=Z.x0+6, ex1=Z.x1-6, ey1=Z.y1-6;
-    if(y>ey0-2&&y<ey1+3&&(Math.abs(x-ex0)<3||Math.abs(x-ex1)<3))return true;                   /* le grillage, à gauche et à droite */
+    if(y>ey0-2&&y<ey1+3&&(Math.abs(x-ex0)<3||(!CHAMPS_SEULS&&Math.abs(x-ex1)<3)))return true;                   /* le grillage, à gauche et à droite */
     if(x>ex0-2&&x<ex1+2&&Math.abs(y-ey1)<3)return true;                                          /* le grillage du bas */
     if(x>Z.x0+10&&x<Z.x0+70&&y>ey0-14&&y<ey0+14)return true;}                                    /* le poulailler, sur ses pilotis */
   return poulBloqueVrai(x,y);};
