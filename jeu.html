@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-22-0750';
+  var MA_VERSION='2026-09-22-0756';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -8504,7 +8504,7 @@ function dessinerLeMetro(g,x,y){
    Une boîte plantée sur la place : chacun y laisse ce qu'il voudrait voir,
    les bugs qu'il trouve, ce qui le gêne. Le développeur répond, et sa réponse
    s'affiche sous le billet. Trois billets par jour et par joueur. */
-let BILLETS=[], BILLETS_RESTANT=3, billetGenre='idee', billetsCharges=0;
+let BILLETS=[], BILLETS_RESTANT=3, billetGenre='autre', billetsCharges=0;
 async function chargerLesBillets(){
   try{
     const r=await fetch(URL_SB+'/rest/v1/rpc/lire_les_billets',
@@ -8546,12 +8546,12 @@ let DEV_BILLETS=null, billetOuvert=null, billetStatut='vu';
 function dessinerLaBoite(){
   const p=$('page2Fond');
   if(!p)return;
-  const GENRES=[['idee','Une idée'],['bug','Un bug'],['autre','Autre']];
+  const GENRES=[['autre','Un avis'],['bug','Un bug'],['idee','Une idée']];
   const ETIQ={ouvert:['en attente','#8a7c5e'],vu:['lu','#4a7a8c'],
               fait:['fait','#4f7a38'],refuse:['non retenu','#a06048']};
   const liste=BILLETS.map(b=>{
     const et=ETIQ[b.statut]||ETIQ.ouvert;
-    const g2=b.genre==='bug'?'BUG':(b.genre==='autre'?'MOT':'IDÉE');
+    const g2=b.genre==='bug'?'BUG':(b.genre==='autre'?'AVIS':'IDÉE');
     return '<div class="billet'+(b.sien?' sien':'')+'">'+
       '<div class="bHaut"><b>'+g2+'</b>'+
         '<span class="bQui">'+(b.joueur_nom||'quelqu’un')+
@@ -8559,7 +8559,7 @@ function dessinerLaBoite(){
         '<i class="bQuand">'+ilYA(b.quand)+'</i></div>'+
       '<p class="bTexte">'+(b.texte||'').replace(/[<>]/g,'')+'</p>'+
       '<span class="bEtat" style="color:'+et[1]+'">'+et[0]+'</span>'+
-      (b.reponse?('<div class="bRep"><u>RÉPONSE DU DÉVELOPPEUR</u><p>'+
+      (b.reponse?('<div class="bRep"><u>RÉPONSE D’ELIASSE · DÉVELOPPEUR</u><p>'+
         b.reponse.replace(/[<>]/g,'')+'</p></div>'):'')+
       (DEV_BILLETS?(billetOuvert===b.id
         ?'<div class="bDev"><textarea id="bRepTexte" rows="3" maxlength="800" placeholder="Ta réponse de développeur…">'+(b.reponse||'').replace(/[<>&]/g,'')+'</textarea>'+
@@ -8570,15 +8570,15 @@ function dessinerLaBoite(){
   }).join('');
   p.innerHTML=
     '<div class="pFeuille">'+
-      '<div class="pRabat"><b>La boîte aux billets</b>'+
-        '<i>CE QUE TU VOUDRAIS VOIR · LES BUGS · CE QUI TE GÊNE</i></div>'+
+      '<div class="pRabat"><b>Ton avis compte</b>'+
+        '<i>UN AVIS · UN BUG · UNE IDÉE — ELIASSE, LE DÉVELOPPEUR, TE RÉPOND</i></div>'+
       '<div class="pCorps">'+
         '<div class="bForm">'+
           '<div class="bGenres">'+GENRES.map(([g2,n])=>
             '<button data-g="'+g2+'"'+(billetGenre===g2?' class="on"':'')+'>'+n+'</button>').join('')+
           '</div>'+
           '<textarea id="bTexte" rows="3" maxlength="600" '+
-            'placeholder="Écris ton billet ici…"></textarea>'+
+            'placeholder="Ton avis, un bug rencontré, une idée pour le jeu…"></textarea>'+
           '<div class="bPied">'+
             '<span>'+(BILLETS_RESTANT>0
               ?(BILLETS_RESTANT+' billet'+(BILLETS_RESTANT>1?'s':'')+' aujourd’hui')
@@ -8588,10 +8588,12 @@ function dessinerLaBoite(){
         '</div>'+
         (liste||'<p class="bVide">La boîte est vide. Dépose le premier billet.</p>')+
       '</div>'+
+      '<button class="pFermer" id="bTuto" style="margin-bottom:6px;opacity:.8">REVOIR LE TUTORIEL</button>'+
       '<button class="pFermer" id="bFermer">REFERMER</button>'+
     '</div>';
   p.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{
     billetGenre=b.dataset.g;dessinerLaBoite();});
+  if($('bTuto'))$('bTuto').onclick=()=>ouvrirLeTuto();
   /* L'OUTIL DU DÉVELOPPEUR : répondre, et changer l'état du billet */
   p.querySelectorAll('[data-rep]').forEach(b=>b.onclick=()=>{
     billetOuvert=+b.dataset.rep;const bi=BILLETS.find(x=>x.id===billetOuvert);billetStatut=bi?(bi.statut||'ouvert'):'vu';dessinerLaBoite();});
@@ -12233,7 +12235,7 @@ function graverX(t,v){
     R(cx-18,sol-34,36,11,'#3a2616');R(cx-17,sol-33,34,9,'#8a6238');R(cx-17,sol-33,34,1,'#a97f52');
     g.fillStyle='#3a2616';g.beginPath();g.moveTo(cx+18,sol-34);g.lineTo(cx+23,sol-28.5);g.lineTo(cx+18,sol-23);g.fill();
   }
-  /* LE PANNEAU DU TUTORIEL : un tableau d'affichage sous un petit toit bordeaux, des feuilles punaisées */
+  /* LE PANNEAU DES AVIS (ancien tutoriel) : un tableau d'affichage sous un petit toit bordeaux, des feuilles punaisées */
   else if(t==='x_tuto'){
     ombre(24,3);
     [cx-21,cx+18].forEach(px=>{R(px,sol-34,3,34,'#5b3f21');R(px,sol-34,1,34,'#7d5934');});
@@ -12439,8 +12441,8 @@ function dessinerX(g,o,x,y){
     g.fillStyle='rgba(255,150,40,.25)';g.beginPath();g.arc(Math.round(x)-38-16,Y0+C.sol-19,6,0,7);g.arc(Math.round(x)+38+15,Y0+C.sol-19,6,0,7);g.fill();}
   if(o.t==='x_tuto'){
     g.font='700 5.5px Georgia,serif';g.textAlign='center';g.fillStyle='#f0cf7d';
-    g.fillText('TUTORIEL',Math.round(x),Y0+C.sol-36.5,40);
-    g.font='700 7px Georgia,serif';g.fillStyle='#7a1f2b';g.fillText('?',Math.round(x)+14,Y0+C.sol-23);g.textAlign='left';
+    g.fillText('TON AVIS',Math.round(x),Y0+C.sol-36.5,40);
+    g.font='700 7px Georgia,serif';g.fillStyle='#7a1f2b';g.fillText('!',Math.round(x)+14,Y0+C.sol-23);g.textAlign='left';
   }
   if(o.t==='x_panneauG'){
     g.font='700 5px Georgia,serif';g.textAlign='center';g.fillStyle='#f4e2b0';
@@ -19548,7 +19550,7 @@ function majAction(){
   if(o.ouvre==='poste'){b.innerHTML='Entrer à la poste<small>'+(COURRIER_N?COURRIER_N+' LETTRE'+(COURRIER_N>1?'S':'')+' T’ATTEND'+(COURRIER_N>1?'ENT':''):'ÉCRIRE · RELEVER SON COURRIER')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='poissonnerie'){b.innerHTML='Vendre ta pêche<small>LA CRIÉE · POISSONNERIE</small>';b.classList.add('on');return;}
   if(o.ouvre==='peche'){b.innerHTML='Le Pêcheur Heureux<small>CANNES, MOULINETS, APPÂTS</small>';b.classList.add('on');return;}
-  if(o.ouvre==='tuto'){b.innerHTML='Lire le panneau<small>TUTORIEL · COMMENT JOUER</small>';b.classList.add('on');return;}
+  if(o.ouvre==='avis'){b.innerHTML='Donner ton avis<small>UN AVIS · UN BUG · UNE IDÉE</small>';b.classList.add('on');return;}
   if(o.ouvre==='salon'){b.innerHTML='Entrer au Hair Studio<small>COUPES ET COULEURS EXCLUSIVES</small>';b.classList.add('on');return;}
   if(o.ouvre==='presse'){b.innerHTML='Acheter la Gazette<small>PRESSE · JOURNAUX</small>';b.classList.add('on');return;}
   if(o.ouvre==='bar'){b.innerHTML='Entrer au Bar des Docks<small>BAR · TABAC · JEUX À GRATTER</small>';b.classList.add('on');return;}
@@ -19710,7 +19712,7 @@ function agir(){
   if(o.t==='x_cabanon'){ouvrirLeCabanon();return;}
   if(o.ouvre==='skishop'){ouvrirLeSkiShop();return;}
   if(o.ouvre==='crousti'){ouvrirCrousti();return;}
-  if(o.ouvre==='tuto'){ouvrirLeTuto();return;}
+  if(o.ouvre==='avis'){ouvrirLaBoite();return;}
   if(o.ouvre==='salon'){ouvrirLeSalon();return;}
   if(o.ouvre==='presse'){ouvrirLaGazette();return;}
   if(o.ouvre==='bar'){ouvrirLeBar();return;}
