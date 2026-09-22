@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-22-0827';
+  var MA_VERSION='2026-09-22-0833';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -4457,7 +4457,19 @@ function graverDeco(t){
   }
   CALQUES_DECO[t]={toile:c,W,H,sol};
 }
+/* LE BANC DE PIERRE DU PORT : un long bloc de pierre claire de Cassis, sans dossier, l'assise patinée */
+let CALQUE_BANC_PIERRE=null;
+function toileBanc(W,H,f){const D=3,c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(.5,w),Math.max(.5,h));};f(g,R);return c;}
+const ombreB=(g,cx,sol,rx)=>{g.fillStyle='rgba(30,30,20,.28)';g.beginPath();g.ellipse(cx+1,sol,rx,3,0,0,7);g.fill();};
+/* 3 · LE BANC DE PIERRE : un long bloc de pierre de Cassis, taillé, sans dossier, assise polie par les années */
+function graverBancPierre(){const W=52,H=22,cx=26,sol=19;return {W,H,sol,toile:toileBanc(W,H,(g,R)=>{ombreB(g,cx,sol,23);
+  R(3,6,46,6,'#e8e0cc');R(3,6,46,1.5,'#f8f2e2');R(3,12,46,5,'#cfc5ae');R(3,16.5,46,1,'#a89e88');
+  for(let k=0;k<40;k++){R(4+((k*37)%44),7+((k*13)%9),1,1,k%3?'rgba(160,150,130,.35)':'rgba(255,255,255,.4)');}
+  [[6],[42]].forEach(([x])=>{R(x,12,5,sol-12,'#bfb59e');R(x,12,1,sol-12,'#d8cfb8');});R(24,12,4,.8,'#a89e88');})};}
+
 function dessinerDeco(g,t,x,y){
+  if(t==='bancP'&&CARTE==='extramar'){if(!CALQUE_BANC_PIERRE)CALQUE_BANC_PIERRE=graverBancPierre();const B=CALQUE_BANC_PIERRE;g.drawImage(B.toile,Math.round(x-B.W/2),Math.round(y-B.sol),B.W,B.H);return;}   /* au port : le banc de pierre */
   if(t==='bancP'&&FIN_OK()){if(!CALQUE_BANC_FIN)graverLeBancFin();const B=CALQUE_BANC_FIN;g.drawImage(B.toile,Math.round(x-B.W/2),Math.round(y-B.sol),B.W,B.H);return;}
   if(!CALQUES_DECO[t])graverDeco(t);
   const C=CALQUES_DECO[t];
