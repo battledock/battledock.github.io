@@ -349,14 +349,14 @@ function objets(){
   /* des tilleuls enneigés, comme sur la place du village (plus de sapins, sauf le grand sapin décoré) */
   const T=[tilleul(34,1),tilleul(40,2),tilleul(30,3),tilleul(44,4)];T.forEach((c,i)=>reg('tilleul'+i,c));
   reg('grandsapin',sapin(66,7));reg('plan',graverPlan());reg('lampe',graverLampadaire());reg('banc',graverBanc());reg('luge',graverLuge());reg('bonhomme',graverBonhomme());
-  reg('souvenirs',graverChaletNom('SOUVENIRS','#8a5a3a'));reg('pont',graverPont());reg('bande',graverBande(46,22));reg('brasero',graverBrasero());reg('skis',graverSkis());
+  reg('souvenirs',graverChaletNom('BUVETTE','#8a3a2a'));reg('pont',graverPont());reg('bande',graverBande(46,22));reg('brasero',graverBrasero());reg('skis',graverSkis());
   reg('pisteN',graverPoteau('PISTES ↑'));reg('pisteO',graverPoteau('← LUGE'));reg('pisteE',graverPoteau('FORÊT →'));reg('telesiege',graverGare());
   P('grandsapin',320,252,{col:[8,5],grand:true});
   [[300,266],[340,266],[300,236],[340,236],[210,292],[246,292],[228,318]].forEach(([x,y])=>P('banc',x,y,{col:[12,3]}));
   [[176,180],[464,180],[176,318],[464,318],[290,150],[350,150],[290,338],[350,338]].forEach(([x,y])=>P('lampe',x,y,{col:[2,2],lampe:true}));
   P('bande',412,298+22+2,{});P('brasero',228,300,{col:[6,3],feu:true});P('skis',486,176,{col:[11,3]});P('skis',150,190,{col:[11,3]});
   P('plan',386,128,{col:[13,3]});P('bonhomme',472,338,{col:[5,3]});P('luge',486,330,{});P('luge',30,280,{});P('luge',40,262,{});P('bonhomme',210,300,{col:[5,3]});
-  P('souvenirs',112,332,{col:[28,12],bati:true,ferme:'Les souvenirs',demi:24});
+  P('souvenirs',112,332,{col:[28,12],bati:true,ouvre:'buvette',demi:26});
   P('pont',58+Math.sin(250/37)*10+Math.sin(250/13)*3,258,{});
   P('pisteN',344,110,{col:[2,2]});P('pisteO',120,236,{col:[2,2]});P('pisteE',512,236,{col:[2,2]});
   P('telesiege',LIFT_X,GARE_Y,{col:[36,8],bati:true,ferme:'Le télésiège',demi:30});
@@ -903,14 +903,14 @@ function objetsVides(){
   const reg=(nom,J,N)=>{cal[nom]={toile:J.c,W:J.W,H:J.H,sol:J.sol,nuit:N?N.c:null};};
   reg('gare',graverBoucheLongue(false),graverBoucheLongue(true));reg('telepherique',graverTelecabine(false),graverTelecabine(true));reg('pyloneT',graverPyloneT());
   reg('skishop',graverChaletNom('SKI SHOP','#8a5a3a'));
-  reg('forfaits',graverForfaits(false),graverForfaits(true));reg('souvenirs',graverChaletNom('SOUVENIRS','#8a5a3a'));
+  reg('forfaits',graverForfaits(false),graverForfaits(true));reg('souvenirs',graverChaletNom('BUVETTE','#8a3a2a'));
   reg('ecole',graverEcoleSki(false),graverEcoleSki(true));reg('moniteur',graverMoniteur());reg('piquetR',graverPiquet(true));reg('piquetB',graverPiquet(false));reg('panneauJ',graverPanneauEcole());
   const P=(nom,x,y,x2)=>L.push(Object.assign({t:'x_mo_'+nom,x,y,v:0,bati:true},x2||{}));
   /* LA COUR DES BOUTIQUES : deux chalets au fond d'une cour de planches, deux autres plus bas,
      un passage de bois qui descend vers l'escalier ; lampadaires, banc, râtelier, poteau indicateur */
   const C=COUR;
   P('skishop',C.x0+40,C.y0-4,{col:[28,12],ouvre:'skishop',demi:24});                 /* ouvert ! */
-  P('souvenirs',C.x1-40,C.y0-4,{col:[28,12],ferme:'Les souvenirs',demi:24});
+  P('souvenirs',C.x1-40,C.y0-4,{col:[28,12],bati:true,ouvre:'buvette',demi:26});
   P('ecole',C.x0+62,C.y1+62,{col:[36,12],ouvre:'ecole',demi:32});
   P('forfaits',C.x1-28,C.y1+58,{col:[14,10],ouvre:'forfaits',demi:12});
   reg('lampeC',graverLampadaireFin());reg('bancC',graverBancPlaid(1));reg('skisC',graverSkis());reg('poteauC',graverPoteau('MÉTRO ↓'));
