@@ -190,7 +190,7 @@ function graverMetro(nuit){
   [[-26],[25]].forEach(([k])=>{F(cx+k,sol-24,1,24,'#2a2e36');F(cx+k+0.25,sol-24,0.5,24,'#5a5e66');});
   /* la plaque émaillée, sous le balcon */
   F(cx-20,sol-36,40,6,'#1d3f8f');F(cx-20,sol-36,40,0.5,'#4d6fc8');F(cx-19,sol-35.5,38,0.5,'#e9e6db');F(cx-19,sol-30.5,38,0.5,'#e9e6db');
-  g.font='700 4.4px Georgia,serif';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('SAUMASKI',cx,sol-31.6,36);g.textAlign='left';
+  g.font='700 4.4px Georgia,serif';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('LA MONTAGNE',cx,sol-31.6,36);g.textAlign='left';
   /* le grand M lumineux, sur son mât, et les lanternes */
   const tx=cx-62;F(tx-1,sol-58,2.5,58,'#4d5760');F(tx-1,sol-58,1,58,'#7a848c');
   F(tx-7,sol-72,15,15,'#1d4f9a');F(tx-7,sol-72,15,1,'#4d7fc8');F(tx-7,sol-58,15,1,'#12356a');F(tx-7,sol-73.5,15,1.5,NEIGE.h);
@@ -385,7 +385,7 @@ function graverBouche(nuit){
   g.fillStyle='#8a6238';g.beginPath();g.moveTo(cx-14,sol-48);g.lineTo(cx,sol-60);g.lineTo(cx+14,sol-48);g.closePath();g.fill();
   for(let k=-12;k<13;k+=2.5)F(cx+k,sol-48-Math.max(0,12-Math.abs(k))*0.95,0.5,Math.max(0,12-Math.abs(k))*0.95,'#5b3f21');
   F(cx-15,sol-47,30,6,'#1d3f8f');F(cx-15,sol-47,30,0.5,'#4d6fc8');F(cx-14,sol-46.5,28,0.5,'#e9e6db');F(cx-14,sol-41.5,28,0.5,'#e9e6db');
-  g.font='700 4.2px Georgia,serif';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('SAUMASKI',cx,sol-42.6,26);g.textAlign='left';
+  g.font='700 4.2px Georgia,serif';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('LA MONTAGNE',cx,sol-42.6,26);g.textAlign='left';
   /* une lanterne sous l'auvent */
   F(cx-0.25,sol-41,0.5,2,'#2a2e36');F(cx-2,sol-39,4,4.5,'#2a2e36');F(cx-1.5,sol-38.5,3,3.5,nuit?'#ffd27a':'#e8dcb0');
   /* le M sur son mât, à droite */
@@ -553,7 +553,7 @@ function solVide(){
      for(let a=a0;a<=a1;a+=pas/P.r)per.push([cx+Math.cos(a)*(P.r-2),cy+Math.sin(a)*(P.r-2)]);});
    per.sort((a,b)=>a[1]-b[1]).forEach(([x,y])=>bord(x,y));
    /* les panneaux sur la bande, côté sud */
-   [[P.x0+60,'SAUMASKI'],[mx,'PATINOIRE'],[P.x1-60,'1 850 M']].forEach(([x,t])=>{F(x-18,P.y1-7,36,5,'#1d3f6a');g.font='700 3.2px Georgia';g.textAlign='center';g.fillStyle='#fff';g.fillText(t,x,P.y1-3.4,34);g.textAlign='left';});
+   [[P.x0+60,'LA MONTAGNE'],[mx,'PATINOIRE'],[P.x1-60,'1 850 M']].forEach(([x,t])=>{F(x-18,P.y1-7,36,5,'#1d3f6a');g.font='700 3.2px Georgia';g.textAlign='center';g.fillStyle='#fff';g.fillText(t,x,P.y1-3.4,34);g.textAlign='left';});
    /* l'entrée : deux poteaux et un petit arceau */
    [P.porte[0],P.porte[1]].forEach(x=>{F(x-1,P.y0-10,2,12,'#2d6fb0');F(x-1,P.y0-10,2,1,'#6aa8e8');});F(P.porte[0],P.y0-11,P.porte[1]-P.porte[0],2,'#2d6fb0');
    g.font='700 3.4px Georgia';g.textAlign='center';g.fillStyle='#1d3f6a';g.fillText('PATINOIRE',(P.porte[0]+P.porte[1])/2,P.y0-12.5,40);g.textAlign='left';}
@@ -740,7 +740,7 @@ function graverBoucheLongue(nuit){
   for(let k=-L-9;k<L+10;k+=2.5)F(cx+k,sol-45,0.5,1+hs(k)*3.5,'rgba(220,244,255,.9)');
   /* la plaque émaillée, au milieu de la poutre */
   F(cx-24,sol-47,48,7,'#1d3f8f');F(cx-24,sol-47,48,0.5,'#4d6fc8');F(cx-23,sol-46.5,46,0.5,'#e9e6db');F(cx-23,sol-40.5,46,0.5,'#e9e6db');
-  g.font='700 4.8px Georgia,serif';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('SAUMASKI',cx,sol-41.8,42);g.textAlign='left';
+  g.font='700 4.8px Georgia,serif';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('LA MONTAGNE',cx,sol-41.8,42);g.textAlign='left';
   /* les lanternes sous l'auvent */
   [[-L/2],[L/2]].forEach(([k])=>{F(cx+k-0.25,sol-45,0.5,2,'#2a2e36');F(cx+k-2,sol-43,4,4.5,'#2a2e36');F(cx+k-1.5,sol-42.5,3,3.5,nuit?'#ffd27a':'#e8dcb0');});
   /* un M à chaque bout, sur son mât */
@@ -800,7 +800,7 @@ function graverPanneauAlt(){
   F(cx-1.5,sol-23,3,23,'#5b3f21');F(cx-1.5,sol-23,1,23,'#7d5934');F(cx+1,sol-23,0.5,23,'#3a2614');
   F(cx-18,sol-32,36,12,'#6b4a28');F(cx-17,sol-31,34,10,'#8a6238');for(let k=0;k<10;k+=2.5)F(cx-17,sol-31+k,34,0.4,'rgba(60,35,15,.3)');
   F(cx-18,sol-32,36,0.5,'#a5764a');F(cx-18.5,sol-33,37,1.5,'#ffffff');[[-16],[15.5]].forEach(([k])=>{F(cx+k,sol-30,0.5,0.5,'#2e2218');F(cx+k,sol-22.5,0.5,0.5,'#2e2218');});
-  g.font='700 5px Georgia';g.textAlign='center';g.fillStyle='#e8d0a0';g.fillText('SAUMASKI',cx+0.4,sol-25.1,30);g.fillStyle='#2a1a0e';g.fillText('SAUMASKI',cx,sol-25.5,30);
+  g.font='700 5px Georgia';g.textAlign='center';g.fillStyle='#e8d0a0';g.fillText('LA MONTAGNE',cx+0.4,sol-25.1,30);g.fillStyle='#2a1a0e';g.fillText('LA MONTAGNE',cx,sol-25.5,30);
   g.font='italic 700 3.6px Georgia';g.fillStyle='#2a1a0e';g.fillText('— 1 850 m —',cx,sol-21.6,30);g.textAlign='left';
   return {c,W,H,sol};}
 function graverLampadaireFin(){
