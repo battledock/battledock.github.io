@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-23-0945';
+  var MA_VERSION='2026-09-23-0958';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -24145,53 +24145,115 @@ function ticketDOrTenue(k){
     try{sauver();envoyerSauvegarde(true);monterEnLigne(true);}catch(x){}d.remove();};
 }
 /* ---- LA BUVETTE DU REFUGE ---- */
-let BUV=null;
-const CSS_BUV=`#page2Fond.buv{background:#2a1a12;color:#f6e8d2;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%}
-#page2Fond.buv .hd{padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 12px;display:flex;align-items:flex-start;gap:10px;border-bottom:3px solid #c9a24a;flex:none;background:#3a2418}
-#page2Fond.buv .hd b{flex:1;font:400 25px Georgia}#page2Fond.buv .hd small{display:block;font:700 9px Arial;letter-spacing:3px;color:#e8c06a}
-#page2Fond.buv .hd button{width:34px;height:34px;border-radius:50%;border:0;background:#f6e8d2;color:#2a1a12;font:700 14px Arial}
-#page2Fond.buv .corps{padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 18px);overflow-y:auto;flex:1}
-#page2Fond.buv .mot{font:italic 13px Georgia;color:#d8c0a0;margin-bottom:10px}
-#page2Fond.buv .chaud{display:flex;align-items:center;gap:10px;background:rgba(232,112,26,.14);border:1px solid rgba(232,160,60,.5);border-radius:12px;padding:8px 12px;margin-bottom:10px}
-#page2Fond.buv .chaud b{font:700 12px Arial;letter-spacing:1px;color:#f2c230;display:block}
-#page2Fond.buv .chaud em{font:italic 12px Georgia;color:#e0c8a0}
-#page2Fond.buv h4{font:700 10px Arial;letter-spacing:2px;color:#c9a878;margin:14px 2px 8px}
-#page2Fond.buv .c{border-radius:14px;padding:11px;display:flex;align-items:center;gap:12px;margin-bottom:9px;background:linear-gradient(180deg,#43301f,#352517);box-shadow:0 4px 0 #1c120a}
-#page2Fond.buv .c b{font:400 17px Georgia;display:block}#page2Fond.buv .c em{font:italic 12px Georgia;color:#c9b08c}
-#page2Fond.buv .c svg{width:34px;height:34px;flex:none}
-#page2Fond.buv .c button{margin-left:auto;border:0;border-radius:11px;padding:10px 13px;font:700 14px Georgia;background:linear-gradient(#f0cf7d,#c9a24a);color:#2a1a12;box-shadow:0 3px 0 #8a6a28;white-space:nowrap}
-#page2Fond.buv .c button:disabled{background:#3a2b1c;color:#8a7a62;box-shadow:none}`;
-const BUV_ITEMS=[['vin','Vin chaud','cannelle et orange · réchauffé 15 min',250],
-  ['choco','Chocolat viennois','chantilly · réchauffé 10 min',200],
-  ['raclette','Assiette de raclette','réchauffé 30 min',700]];
+let BUV=null, BUV_ANIM=0;
+const CSS_BUV=`#page2Fond.buv{background:#17120e;color:#f6ead4;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%;overflow:hidden}
+#page2Fond.buv .hdr{position:relative;height:160px;flex:none;overflow:hidden;border-bottom:3px solid #c9a24a}
+#page2Fond.buv .hdr canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+#page2Fond.buv .hdr .v{position:absolute;inset:0;background:linear-gradient(180deg,rgba(18,10,6,.5),rgba(18,10,6,0) 45%,rgba(18,10,6,.85))}
+#page2Fond.buv .hdr .t{position:absolute;left:16px;bottom:10px}
+#page2Fond.buv .hdr b{font:400 25px Georgia;text-shadow:0 2px 4px #000}
+#page2Fond.buv .hdr small{display:block;font:700 9px Arial;letter-spacing:3px;color:#e8c06a}
+#page2Fond.buv .hdr button{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 12px);width:34px;height:34px;border-radius:50%;border:0;background:#f6ead4;color:#17120e;font:700 14px Arial}
+#page2Fond.buv .corps{padding:0 0 calc(env(safe-area-inset-bottom,0px) + 18px);overflow-y:auto;flex:1}
+#page2Fond.buv .mot{margin:12px 16px 0;font:italic 13px Georgia;color:#d8c0a0}
+#page2Fond.buv .chaud{margin:10px 16px 0;display:flex;align-items:center;gap:10px;background:rgba(232,112,26,.14);border:1px solid rgba(232,160,60,.5);border-radius:12px;padding:8px 12px}
+#page2Fond.buv .chaud canvas{width:26px;height:26px;image-rendering:pixelated}
+#page2Fond.buv .chaud b{font:700 11px Arial;letter-spacing:1px;color:#f2c230;display:block}
+#page2Fond.buv .chaud em{font:italic 11px Georgia;color:#e0c8a0}
+#page2Fond.buv .row{display:flex;gap:10px;padding:12px 14px 0}
+#page2Fond.buv .m{flex:1;border-radius:16px;padding:10px 8px 12px;text-align:center;background:linear-gradient(180deg,#3b2a1c,#2a1e14);box-shadow:0 4px 0 #120c08}
+#page2Fond.buv .m canvas{width:54px;height:54px;image-rendering:pixelated}
+#page2Fond.buv .m b{display:block;font:400 14px Georgia;margin-top:4px}
+#page2Fond.buv .m em{display:block;font:italic 10px Georgia;color:#c0a888;min-height:26px}
+#page2Fond.buv .m button{margin-top:6px;width:100%;border:0;border-radius:10px;padding:10px 0;font:700 13px Georgia;background:linear-gradient(#f0cf7d,#c9a24a);color:#2a1a12;box-shadow:0 3px 0 #8a6a28}
+#page2Fond.buv h4{font:700 10px Arial;letter-spacing:2px;color:#c9a878;margin:18px 16px 8px}
+#page2Fond.buv .ln{display:flex;align-items:center;gap:12px;margin:0 16px 9px;background:#241a12;border:1px solid #3b2a1c;border-radius:14px;padding:10px 12px}
+#page2Fond.buv .ln canvas{width:34px;height:34px;image-rendering:pixelated}
+#page2Fond.buv .ln b{font:400 16px Georgia;display:block}
+#page2Fond.buv .ln em{font:italic 11px Georgia;color:#c0a888}
+#page2Fond.buv .ln button{margin-left:auto;border:0;border-radius:10px;padding:10px 12px;font:700 13px Georgia;background:linear-gradient(#f0cf7d,#c9a24a);color:#2a1a12;box-shadow:0 3px 0 #8a6a28;white-space:nowrap}
+#page2Fond.buv .ln button:disabled{background:#3a2b1c;color:#8a7a62;box-shadow:none}`;
+const BUV_ITEMS=[['vin','Vin chaud','réchauffé 15 min',250],['choco','Chocolat','réchauffé 10 min',200],['raclette','Raclette','réchauffé 30 min',700]];
+/* LES DESSINS DE LA BUVETTE : les boissons fument, le feu danse, le sous-bock attend */
+function buvIcone(c,k){
+  const D=Math.min(2,window.devicePixelRatio||1),W=c.clientWidth||34;
+  if(c.width!==Math.round(W*D)){c.width=Math.round(W*D);c.height=Math.round(W*D);}
+  const g=c.getContext('2d'),S=c.width/16;g.setTransform(S,0,0,S,0,0);g.imageSmoothingEnabled=false;g.clearRect(0,0,16,16);
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
+  const al=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);},t=Date.now()/600;
+  if(k==='vin'){R(4,7,8,7,'#d8dee4');R(4,7,8,1,'#eef2f6');R(5,8,6,5,'#8a1a2a');R(5,8,6,1,'#b02a3a');
+    R(12,8,2,4,'#d8dee4');R(12.6,9,.8,2,'#17120e');R(4,14,8,1.2,'#aab2ba');
+    R(6,6,3,1.4,'#e8a030');R(6.6,6.2,1.6,1,'#f6c25a');R(9.4,6.4,2,1,'#8a5a30');
+    for(let i=0;i<3;i++)R(5.4+i*2,3.4-((t*2+i)%3)*0.6,1,1.6,'rgba(255,255,255,.55)');}
+  if(k==='choco'){R(3,8,9,6,'#f4efe4');R(3,8,9,1,'#fff');R(12,9,2,3,'#f4efe4');R(4,9,7,1.6,'#5a3a22');
+    R(4.6,7.4,6,1.8,'#fffdf6');R(5.6,6.2,4,1.6,'#fffdf6');R(7,5.4,1.6,1,'#c8281e');R(3,14,9,1.2,'#d8d2c4');
+    for(let i=0;i<3;i++)R(5+i*2,4-((t*2+i)%3)*0.5,1,1.4,'rgba(255,255,255,.5)');}
+  if(k==='raclette'){R(1,9,14,4,'#d8dee4');R(1,9,14,1,'#f0f4f8');R(1,13,14,1,'#aab2ba');
+    R(3,5,7,4,'#f0d878');R(3,5,7,1.2,'#f8e8a0');R(4,6.4,2,1,'#e8c25a');
+    R(10,6,3,3,'#e8b060');R(10,6,3,1,'#f6cc88');R(2,6,2,2,'#8a9a5a');R(13,7,2,2,'#d87a5a');
+    for(let i=0;i<2;i++)R(5+i*3,3.4-((t*2+i)%3)*0.5,1,1.4,'rgba(255,255,255,.45)');}
+  if(k==='fromage'){R(3,7,10,5,'#e8c25a');R(3,6,10,1,'#f6dd8c');R(5,8,2,2,'#d8a83a');R(9,9,2,2,'#d8a83a');R(3,12,10,1,'#c9a040');}
+  if(k==='lait'){R(5,4,6,9,'#e8eef2');R(5,4,6,1,'#fff');R(6,2,4,2,'#b9c1c7');R(5,8,6,1,'#c8ced4');R(6,5,1,6,'rgba(255,255,255,.7)');}
+  if(k==='feu'){for(let j=0;j<7;j++){const f=al(j+Math.floor(t*6))*5;R(3+j*1.6,13-f,1.5,f+3,f>2.5?'#f2c230':'#e8701a');}R(2,13,12,1.5,'#6a4a2a');}
+  if(k==='sousbock'){R(2,5,12,7,'#c9a878');R(2,5,12,1,'#e0c69a');R(2,11,12,1,'#a5824a');
+    g.fillStyle='#8a5a30';g.beginPath();g.arc(8,8.5,3.2,0,7);g.fill();g.fillStyle='#f0cf7d';g.beginPath();g.arc(8,8.5,1.8,0,7);g.fill();}
+}
+function dessinerLeRefuge(){
+  const c=document.getElementById('buvToile');if(!c||!c.clientWidth)return;
+  const D=Math.min(2,window.devicePixelRatio||1);
+  if(c.width!==Math.round(c.clientWidth*D)){c.width=Math.round(c.clientWidth*D);c.height=Math.round(c.clientHeight*D);}
+  const g=c.getContext('2d'),K=c.width/195,H=c.height/K;g.setTransform(K,0,0,K,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,w,h);};
+  const al=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);},t=Date.now()/1000, S=H/75;
+  const Ry=(x,y,w,h,col)=>R(x,y*S,w,Math.max(1,h*S),col);
+  for(let y=0;y<75;y+=6){for(let x=0;x<195;x+=1){const k=al(x*.5+y);Ry(x,y,1,6,k<.35?'#5b3f21':(k<.7?'#6a4a2a':'#7d5934'));}Ry(0,y,195,1,'#8a6238');}
+  Ry(4,16,44,42,'#7a6a58');
+  for(let y=16;y<58;y+=5)for(let x=4;x<48;x+=8)Ry(x+((y/5|0)%2?4:0),y,7.5,4.5,al(x+y)<.5?'#8f8672':'#a89d86');
+  Ry(12,36,28,22,'#1a120b');
+  for(let k=0;k<15;k++){const f=al(k+Math.floor(t*8))*8;Ry(14+k*1.8,57-f,1.6,f+3,f>3.5?'#f2c230':'#e8701a');}
+  g.fillStyle='rgba(255,180,80,.15)';g.beginPath();g.arc(26,50*S,30,0,7);g.fill();
+  Ry(128,8,54,22,'#2e3a44');Ry(130,10,50,18,'#bfe3f0');Ry(130,10,50,6,'#e8f6fb');Ry(154,10,2,18,'#2e3a44');
+  for(let k=0;k<20;k++)Ry(130+al(k)*50,10+((al(k*3)*18+t*7)%18),1,1,'#fff');
+  Ry(54,52,124,10,'#8a6238');Ry(54,52,124,2,'#a5764a');Ry(54,62,124,6,'#6a4a2a');
+  for(let i=0;i<6;i++){const x=62+i*18;Ry(x,44,7,8,'#d8dee4');Ry(x,44,7,2,'#8a1a2a');Ry(x+1,45,5,1,'rgba(255,255,255,.55)');
+    for(let j=0;j<2;j++)Ry(x+2+j*2,40-((t*2+i+j)%3),1,1.4,'rgba(255,255,255,.4)');}
+  Ry(146,30,14,14,'#3f7a4a');Ry(148,22,10,9,'#e8b890');Ry(147,20,12,4,'#8a5a30');
+  Ry(150,26,1.5,1.5,'#1b1b1b');Ry(154,26,1.5,1.5,'#1b1b1b');Ry(142,32,4,10,'#e8b890');Ry(160,32,4,10,'#e8b890');
+  Ry(96,6,3,24,'#c8281e');Ry(102,8,3,22,'#3f6ab0');Ry(112,10,10,10,'#a5764a');Ry(114,12,6,6,'#d8c8a0');
+  for(let i=0;i<14;i++){const x=4+i*14,y=(2+Math.sin(i*0.8)*2)*S;g.fillStyle=['#b93327','#e0b850','#3f8a5a','#3f6ab0'][i%4];
+    g.beginPath();g.moveTo(x,y);g.lineTo(x+8,y);g.lineTo(x+4,y+7*S);g.fill();}
+}
 async function ouvrirLaBuvette(mot){
   if(!document.getElementById('cssBuv')){const st=document.createElement('style');st.id='cssBuv';st.textContent=CSS_BUV;document.head.appendChild(st);}
   $('page2Fond').className='buv';$('page2').classList.add('on');
   const d=await appelRPC('buvette_etat',{p_joueur:e.id});if(d&&!d.erreur)BUV=d;
   const B=BUV||{fromage:0,lait:0};
   const reste=B.chaud_jusqua?Math.max(0,Math.round((new Date(B.chaud_jusqua).getTime()-Date.now())/60000)):0;
-  const ic=(k)=>ICONES[k]?'<svg viewBox="0 0 16 16">'+ICONES[k]+'</svg>':'';
   $('page2Fond').innerHTML=
-   '<div class="hd"><div style="flex:1"><small>LA MONTAGNE · 1 850 M</small><b>La buvette du refuge</b></div><button id="bvX">✕</button></div>'+
+   '<div class="hdr"><canvas id="buvToile"></canvas><span class="v"></span>'+
+     '<div class="t"><small>LA MONTAGNE · 1 850 M</small><b>Au comptoir</b></div><button id="bvX">✕</button></div>'+
    '<div class="corps"><div class="mot">'+(mot||'« Entre donc, il gèle dehors. Un vin chaud ? »')+'</div>'+
-   (reste>0?'<div class="chaud"><span style="font-size:20px">🔥</span><div><b>RÉCHAUFFÉ · '+reste+' MIN</b><em>tu glisses plus vite et tu ne grelottes plus</em></div></div>':'')+
-   '<h4>À BOIRE, À MANGER</h4>'+
-   BUV_ITEMS.map(([k,n,s2,p])=>'<div class="c"><span style="font-size:26px">'+({vin:'🍷',choco:'☕',raclette:'🧀'})[k]+'</span>'+
-     '<div style="flex:1"><b>'+n+'</b><em>'+s2+'</em></div><button data-b="'+k+'">'+enEuros(p)+'</button></div>').join('')+
-   '<h4>LE REFUGE ACHÈTE</h4>'+
-   '<div class="c">'+ic('fromage')+'<div style="flex:1"><b>Fromage de la ferme</b><em>9,50 € pièce ici, 6,50 € au port · tu en as '+(B.fromage||0)+'</em></div>'+
+   (reste>0?'<div class="chaud"><canvas data-i="feu"></canvas><div><b>RÉCHAUFFÉ · '+reste+' MIN</b><em>tu glisses plus vite et tu ne grelottes plus</em></div></div>':'')+
+   '<div class="row">'+BUV_ITEMS.map(([k,n,s2,p])=>'<div class="m"><canvas data-i="'+k+'"></canvas><b>'+n+'</b><em>'+s2+'</em>'+
+     '<button data-b="'+k+'">'+enEuros(p)+'</button></div>').join('')+'</div>'+
+   '<h4>LE REFUGE ACHÈTE TA FERME</h4>'+
+   '<div class="ln"><canvas data-i="fromage"></canvas><div style="flex:1"><b>Fromage</b><em>9,50 € ici · 6,50 € au port · tu en as '+(B.fromage||0)+'</em></div>'+
      '<button data-r="fromage"'+((B.fromage||0)>0?'':' disabled')+'>'+enEuros(950*(B.fromage||0))+'</button></div>'+
-   '<div class="c">'+ic('lait')+'<div style="flex:1"><b>Bidons de lait</b><em>1,80 € pièce ici, 1,20 € au port · tu en as '+(B.lait||0)+'</em></div>'+
+   '<div class="ln"><canvas data-i="lait"></canvas><div style="flex:1"><b>Lait</b><em>1,80 € ici · 1,20 € au port · tu en as '+(B.lait||0)+'</em></div>'+
      '<button data-r="lait"'+((B.lait||0)>0?'':' disabled')+'>'+enEuros(180*(B.lait||0))+'</button></div>'+
-   '<div class="mot" style="margin-top:12px">« Et regarde toujours sous ton sous-bock… »</div></div>';
-  $('bvX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+   '<h4>SOUS LE SOUS-BOCK</h4>'+
+   '<div class="ln"><canvas data-i="sousbock"></canvas><div style="flex:1"><b>Le ticket d’or</b><em>la tenue d’homme des neiges s’y cache, très rarement</em></div></div></div>';
+  const peindre=()=>{dessinerLeRefuge();$('page2Fond').querySelectorAll('canvas[data-i]').forEach(c=>buvIcone(c,c.dataset.i));};
+  requestAnimationFrame(peindre);
+  clearInterval(BUV_ANIM);BUV_ANIM=setInterval(()=>{if($('page2').classList.contains('on')&&document.getElementById('buvToile'))peindre();else clearInterval(BUV_ANIM);},140);
+  $('bvX').onclick=()=>{fermeA=Date.now();clearInterval(BUV_ANIM);$('page2').classList.remove('on');};
   $('page2Fond').querySelectorAll('[data-b]').forEach(b=>b.onclick=async()=>{b.disabled=true;
     const d2=await appelRPC('buvette_commander',{p_joueur:e.id,p_item:b.dataset.b});
     if(!d2||d2.erreur){ouvrirLaBuvette(d2&&d2.erreur==='pas_assez'?'« Il te manque de quoi payer. »':'« Doucement… »');return;}
     if(typeof d2.euros==='number')e.euros=d2.euros;BUV=null;
     if(d2.chaud_jusqua)REPU_FIN=new Date(d2.chaud_jusqua).getTime();
     try{sauver();majHaut();}catch(x){}jouer('vente','moment');vibrer([12,30,12]);
-    if(d2.ticket){e.cos=e.cos||{};e.cos.costume_yeti=true;$('page2').classList.remove('on');ticketDOrTenue('yeti');return;}
+    if(d2.ticket){e.cos=e.cos||{};e.cos.costume_yeti=true;clearInterval(BUV_ANIM);$('page2').classList.remove('on');ticketDOrTenue('yeti');return;}
     ouvrirLaBuvette('« Ça réchauffe, hein ? Encore '+d2.minutes+' minutes au chaud. »');});
   $('page2Fond').querySelectorAll('[data-r]').forEach(b=>b.onclick=async()=>{b.disabled=true;
     const d2=await appelRPC('vendre_au_refuge',{p_joueur:e.id,p_type:b.dataset.r});
