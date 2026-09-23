@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-23-0958';
+  var MA_VERSION='2026-09-23-1339';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -18520,6 +18520,7 @@ function cible(){
   /* les bâtiments sont larges : on élargit la fouille pour eux */
   const autour=autourDe(joueur.x,joueur.y);
   const LARGES=['casino','forge','comptoir','fete','echoppe','mine2','taillerie'];
+  const AVEC_PORTE=(o)=>!!o.ouvre||LARGES.includes(o.t)||o.t==='mine';   /* les lieux où l'on entre : plus faciles à viser */
   for(const o of DECOR)if(LARGES.includes(o.t)&&autour.indexOf(o)<0)autour.push(o);
   for(const o of autour){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
@@ -18535,10 +18536,11 @@ function cible(){
     const demi=o.demi?o.demi:o.t==='comptoir'?96:(o.t==='boutique'?78:(o.t==='echoppe'?78:
                 (o.t==='gare'?120:(o.t==='entrepot'?54:(o.t==='mine2'?80:(o.t==='taillerie'?70:0))))));
     const ecart=Math.max(0,Math.abs(o.x-joueur.x)-demi);
-    const d=Math.hypot(ecart,joueur.y-o.y+6);
-    const portee=(LARGES.includes(o.t)||o.t==='mine')?66:48;  /* on les voit de plus loin */
+    const dy=joueur.y-o.y+6;
+    const d=Math.hypot(ecart,AVEC_PORTE(o)?dy*0.72:dy);   /* devant une porte, on tolère d'être plus bas */
+    const portee=AVEC_PORTE(o)?76:48;  /* on les voit de plus loin */
     /* un bâtiment passe avant un brin d'herbe : on ne rate pas sa porte */
-    const prio=(LARGES.includes(o.t)||o.t==='mine')?0.45:1;
+    const prio=AVEC_PORTE(o)?0.4:1;
     const dd=d*prio;
     if(d<portee&&dd<d0){d0=dd;res=o;continue;}
   }
@@ -24492,7 +24494,8 @@ function poulEffrayer(){if(!POUL_BETES)return;const Z=POUL_Z(), jx=joueur.x-Z.x0
   const fuir=(b,r,v)=>{const dx=b.x-jx, dy=b.y-jy, d=Math.hypot(dx,dy);if(d<r&&d>0.01){b.x=Math.max(10,Math.min(W-10,b.x+dx/d*v));b.y=Math.max(H*0.36,Math.min(H-10,b.y+dy/d*v));
     if(b.etat!==undefined){b.etat='marche';b.tx=Math.max(12,Math.min(W-12,b.x+dx/d*20));b.ty=Math.max(H*0.38,Math.min(H-12,b.y+dy/d*14));b.dir=dx>0?1:-1;}}};
   POUL_BETES.B.forEach(b=>fuir(b,12,0.9));POUL_BETES.P.forEach(p=>fuir(p,8,1.1));}
-const poulProche=()=>{if(CARTE!=='village'||PLACE_SEULE)return false;const Z=POUL_Z(), H=Z.y1-Z.y0, ey0=Z.y0+Math.min(46,H*0.34);return joueur.x>Z.x0+6&&joueur.x<Z.x0+90&&joueur.y>ey0-30&&joueur.y<ey0+30;};
+const poulProche=()=>{if(CARTE!=='village'||PLACE_SEULE)return false;const Z=POUL_Z(), H=Z.y1-Z.y0, ey0=Z.y0+Math.min(46,H*0.34);
+  return joueur.x>Z.x0-14&&joueur.x<Z.x0+110&&joueur.y>ey0-46&&joueur.y<ey0+52;};   /* plus facile à viser : la cabane s'annonce de plus loin */
 /* 2 · le bouton d'action, devant le poulailler */
 const poulMajVrai=majAction;
 majAction=function(){if(!poulProche())return poulMajVrai();const b=$('action'), P=POUL.p;
