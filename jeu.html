@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-23-0737';
+  var MA_VERSION='2026-09-23-0800';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -23911,19 +23911,102 @@ function graverSoucheHache(){
 }
 
 /* ================= LA CABANE DU BÛCHERON : débiter, vendre, la hache de fer ================= */
-let FOR=null;
-const CSS_BUC=`#page2Fond.buc{background:#2a1f14;color:#f0e6d2;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%}
-#page2Fond.buc .tete{background:#5b3f21;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:3px solid #9a7a4a;flex:none}
-#page2Fond.buc .tete b{flex:1;font:400 23px Georgia}#page2Fond.buc .tete small{display:block;font:700 9px Arial;letter-spacing:2px;color:#d8c49a}
-#page2Fond.buc .tete button{width:34px;height:34px;border-radius:50%;border:0;background:#f0e6d2;color:#2a1f14;font:700 14px Arial}
-#page2Fond.buc .corps{padding:12px 14px;overflow-y:auto;flex:1}
-#page2Fond.buc h4{font:700 10px Arial;letter-spacing:2px;color:#c9a878;margin:8px 2px 8px}
-#page2Fond.buc .lg{display:flex;align-items:center;gap:10px;background:#3a2c1c;border:1px solid #543d26;border-radius:12px;padding:10px 12px;margin-bottom:8px}
-#page2Fond.buc .lg svg{width:30px;height:30px;flex:none}
-#page2Fond.buc .lg b{font:400 16px Georgia;display:block}#page2Fond.buc .lg em{font:italic 12px Georgia;color:#c0ab8c}
-#page2Fond.buc .lg button{margin-left:auto;border:0;border-radius:10px;padding:9px 12px;font:700 13px Georgia;background:#9a7a4a;color:#2a1f14;white-space:nowrap}
-#page2Fond.buc .lg button.or{background:#e0b850}#page2Fond.buc .lg button:disabled{opacity:.4}
-#page2Fond.buc .mot{margin:2px 2px 10px;font:italic 13px Georgia;color:#d8c49a;min-height:18px}`;
+let FOR=null, BUC_N=1;
+const CSS_BUC=`
+#page2Fond.buc{background:#1d150e;color:#f0e6d2;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%;overflow:hidden}
+#page2Fond.buc .tete{position:relative;flex:none;height:174px;overflow:hidden;border-bottom:3px solid #9a7a4a}
+#page2Fond.buc .tete canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+#page2Fond.buc .tete .voile{position:absolute;inset:0;background:linear-gradient(180deg,rgba(15,10,6,.55),rgba(15,10,6,0) 45%,rgba(15,10,6,.75))}
+#page2Fond.buc .tete .txt{position:absolute;left:16px;right:60px;top:calc(env(safe-area-inset-top,0px) + 12px)}
+#page2Fond.buc .tete small{display:block;font:700 9px Arial;letter-spacing:3px;color:#e8c06a;text-shadow:0 2px 3px #000}
+#page2Fond.buc .tete b{font:400 25px Georgia;text-shadow:0 2px 4px #000}
+#page2Fond.buc .tete button{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 12px);width:36px;height:36px;border-radius:50%;border:0;background:#f0e6d2;color:#2a1f14;font:700 15px Arial;box-shadow:0 3px 0 rgba(0,0,0,.4)}
+#page2Fond.buc .bulle{margin:0 0 12px;background:rgba(244,236,216,.95);color:#2a1f14;border-radius:14px;padding:9px 13px;font:italic 13px Georgia;box-shadow:0 3px 0 rgba(0,0,0,.35);position:relative}
+#page2Fond.buc .bulle:after{content:'';position:absolute;left:34px;top:-7px;border:7px solid transparent;border-top:0;border-bottom-color:rgba(244,236,216,.95)}
+#page2Fond.buc .corps{padding:14px 14px calc(env(safe-area-inset-bottom,0px) + 18px);overflow-y:auto;flex:1;
+  background:repeating-linear-gradient(180deg,#241a11 0 26px,#22190f 26px 52px)}
+#page2Fond.buc h4{display:flex;align-items:center;gap:8px;font:700 10px Arial;letter-spacing:3px;color:#c9a878;margin:14px 2px 10px}
+#page2Fond.buc h4:before,#page2Fond.buc h4:after{content:'';height:1px;background:linear-gradient(90deg,transparent,#5a432a,transparent);flex:1}
+#page2Fond.buc .carte{border-radius:16px;padding:12px;margin-bottom:10px;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#4a3826,#3a2b1c);box-shadow:0 4px 0 #1a120b,inset 0 1px 0 rgba(255,255,255,.08)}
+#page2Fond.buc .carte:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(0,0,0,.09) 0 3px,transparent 3px 9px);pointer-events:none}
+#page2Fond.buc .etab{display:flex;align-items:center;gap:8px;position:relative}
+#page2Fond.buc .tas{display:flex;flex-wrap:wrap;gap:2px;width:78px}
+#page2Fond.buc .tas svg{width:17px;height:17px}
+#page2Fond.buc .fleche{font:700 22px Georgia;color:#e0b850;text-shadow:0 2px 0 rgba(0,0,0,.4)}
+#page2Fond.buc .etab .t{flex:1}
+#page2Fond.buc .etab b{font:400 18px Georgia;display:block}
+#page2Fond.buc .etab em{font:italic 12px Georgia;color:#c0ab8c}
+#page2Fond.buc .qte{display:flex;gap:6px;margin-top:10px;position:relative}
+#page2Fond.buc .qte button{flex:1;border:1px solid #6a4f31;border-radius:10px;padding:10px 0;font:700 14px Georgia;background:#2f2315;color:#f0e6d2}
+#page2Fond.buc .qte button.on{background:linear-gradient(#f0cf7d,#c9a24a);color:#2a1f14;border-color:#c9a24a;box-shadow:0 3px 0 #8a6a28}
+#page2Fond.buc .go{width:100%;margin-top:10px;border:0;border-radius:14px;padding:15px;font:700 17px Georgia;position:relative;
+  background:linear-gradient(#f0cf7d,#c9a24a);color:#2a1f14;box-shadow:0 4px 0 #8a6a28}
+#page2Fond.buc .go:disabled{background:#3a2b1c;color:#8a7a62;box-shadow:none}
+#page2Fond.buc .go.scie{animation:scier .5s ease-in-out}
+@keyframes scier{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+#page2Fond.buc .ligne{display:flex;align-items:center;gap:12px;position:relative}
+#page2Fond.buc .ligne .ico{width:46px;height:46px;border-radius:12px;background:#2a1f14;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:inset 0 0 0 1px #5a432a}
+#page2Fond.buc .ligne .ico svg{width:30px;height:30px}
+#page2Fond.buc .ligne b{font:400 18px Georgia;display:block}
+#page2Fond.buc .ligne em{font:italic 12px Georgia;color:#c0ab8c}
+#page2Fond.buc .etiq{position:absolute;right:10px;top:6px;background:#e8c06a;color:#2a1f14;border-radius:4px;padding:1px 7px;font:700 10px Arial;transform:rotate(3deg);box-shadow:0 2px 0 rgba(0,0,0,.35)}
+#page2Fond.buc .vend{margin-left:auto;border:0;border-radius:12px;padding:11px 14px;font:700 14px Georgia;background:linear-gradient(#f0cf7d,#c9a24a);color:#2a1f14;box-shadow:0 3px 0 #8a6a28;white-space:nowrap}
+#page2Fond.buc .vend:disabled{background:#3a2b1c;color:#8a7a62;box-shadow:none}
+#page2Fond.buc .tout{width:100%;margin-top:4px;border:1px dashed #9a7a4a;border-radius:12px;padding:12px;font:700 14px Georgia;background:transparent;color:#e8c06a}
+#page2Fond.buc .outil{display:flex;align-items:center;gap:12px;position:relative}
+#page2Fond.buc .outil .lame{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,#6a7076,#b9c1c7 45%,#6a7076);display:flex;align-items:center;justify-content:center;flex:none}
+#page2Fond.buc .outil .lame svg{width:34px;height:34px}
+#page2Fond.buc .sac{display:flex;justify-content:space-between;font:700 10px Arial;letter-spacing:2px;color:#9a8a6a;margin:2px 2px 0}
+`;
+let BUC_ANIM=0;
+function dessinerCabaneDedans(){
+  const c=document.getElementById('bucToile');if(!c)return;
+  const D=Math.min(2,window.devicePixelRatio||1),Wc=c.clientWidth,Hc=c.clientHeight;if(!Wc)return;
+  if(c.width!==Math.round(Wc*D)){c.width=Math.round(Wc*D);c.height=Math.round(Hc*D);}
+  const g=c.getContext('2d'),K=c.width/150,H=c.height/K;g.setTransform(K,0,0,K,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,w,h);};
+  const al=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+  const t=Date.now()/1000;
+  /* le mur de rondins */
+  for(let y=0;y<H;y+=7){for(let x=0;x<150;x+=1){const k=al(x*.6+y);R(x,y,1,7,k<.35?'#6a4a2a':(k<.7?'#7d5934':'#8a6238'));}
+    R(0,y,150,1,'#a5764a');R(0,y+6,150,1,'#4a3520');}
+  /* tout est placé par rapport à la hauteur réelle du bandeau */
+  const S=H/96;
+  const Ry=(x,y,w,h,col)=>R(x,y*S,w,h*S<1?1:h*S,col);
+  /* la fenêtre, le jour dehors */
+  Ry(10,10,34,28,'#3a2b1c');Ry(12,12,30,24,'#7aa8c0');Ry(12,12,30,8,'#a8d0e0');
+  for(let i=0;i<6;i++)Ry(14+i*5,12+al(i)*10,3,3,'#5f8f3c');Ry(26,12,2,24,'#3a2b1c');Ry(12,23,30,2,'#3a2b1c');
+  /* les outils au mur */
+  Ry(58,8,2,22,'#8a6238');Ry(54,4,10,6,'#b9c1c7');Ry(54,4,10,2,'#e0e6ea');
+  Ry(74,10,2,18,'#8a6238');Ry(70,6,10,5,'#9aa2a8');Ry(70,6,10,1.5,'#d2d8dd');
+  for(let i=0;i<3;i++)Ry(92+i*12,8,8,3,'#a5764a');
+  /* la cheminée et son feu */
+  Ry(114,18,34,34,'#6a5a4a');
+  for(let y=18;y<52;y+=4)for(let x=114;x<148;x+=7)Ry(x+((y/4|0)%2?3.5:0),y,6.5,3.5,al(x+y)<.5?'#7a6a58':'#8f8672');
+  Ry(118,36,26,16,'#1a120b');
+  for(let k=0;k<14;k++){const f=al(k+Math.floor(t*8))*7;Ry(120+k*1.8,51-f,1.6,f+2,f>3.5?'#f2c230':'#e8701a');}
+  g.fillStyle='rgba(255,180,80,'+(0.10+Math.sin(t*6)*0.03)+')';g.beginPath();g.arc(131,46*S,30,0,7);g.fill();
+  /* l'établi, la scie, les planches */
+  Ry(84,62,58,8,'#8a6238');Ry(84,62,58,2,'#a5764a');Ry(88,70,4,16,'#6a4a2a');Ry(134,70,4,16,'#6a4a2a');
+  Ry(94,54,28,8,'#a5764a');Ry(94,54,28,2,'#c9a878');Ry(96,56,24,1,'#8a6238');
+  Ry(122,52,2,12,'#8a8f94');for(let i=0;i<10;i++)Ry(124+i*1.6,52,1,3,'#c7cdd2');
+  for(let i=0;i<3;i++){Ry(56,78-i*4,30,4,'#a5764a');Ry(56,78-i*4,30,1,'#c9a878');}
+  /* les bûches empilées */
+  for(let r=0;r<3;r++)for(let i=0;i<4;i++){const x=6+i*9+(r%2?4:0),y=86-r*8;
+    Ry(x,y,8,8,'#7d5934');Ry(x,y,8,1.5,'#a5764a');Ry(x+1.5,y+2,5,4,'#c9a878');Ry(x+2.5,y+3,3,2,'#a5764a');}
+  /* le bûcheron, chemise à carreaux */
+  const bx=108,by=88,resp=Math.sin(t*1.6)*0.6;
+  Ry(bx-7,by-22+resp,14,14,'#b93327');
+  for(let y=0;y<14;y+=3)Ry(bx-7,by-22+resp+y,14,1,'#8a2018');
+  for(let x=0;x<14;x+=3)Ry(bx-7+x,by-22+resp,1,14,'#8a2018');
+  Ry(bx-4,by-30+resp,8,8,'#e8b890');Ry(bx-5,by-32+resp,10,3,'#4a2a14');
+  Ry(bx-2.5,by-27+resp,1,1.5,'#1b1b1b');Ry(bx+1.5,by-27+resp,1,1.5,'#1b1b1b');
+  Ry(bx-3,by-24+resp,6,1,'#8a5a30');Ry(bx-9,by-20+resp,3,9,'#e8b890');Ry(bx+6,by-20+resp,3,9,'#e8b890');
+  Ry(bx-6,by-8,5,8,'#3a4a6a');Ry(bx+1,by-8,5,8,'#3a4a6a');
+  /* le sol, la sciure */
+  R(0,H-10,150,10,'#5b3f21');for(let k=0;k<120;k++)R(al(k)*150,H-10+al(k*3)*10,1,1,al(k*7)<.5?'#8a6238':'#c9a878');
+}
 async function ouvrirLaCabane(mot){
   if(!document.getElementById('cssBuc')){const st=document.createElement('style');st.id='cssBuc';st.textContent=CSS_BUC;document.head.appendChild(st);}
   $('page2Fond').className='buc';$('page2').classList.add('on');
@@ -23931,32 +24014,51 @@ async function ouvrirLaCabane(mot){
   const F=FOR||{bois:0,planche:0,resine:0,hache_fer:false};
   if(F.hache_fer&&e.outils)e.outils.hacheFer=true;
   const ic=(k)=>ICONES[k]?'<svg viewBox="0 0 16 16">'+ICONES[k]+'</svg>':'';
+  const tas=(k,n,max)=>'<div class="tas">'+Array.from({length:Math.min(max,n)},()=>ic(k)).join('')+(n>max?'<em style="font:700 11px Arial;color:#c9a878;align-self:center">+'+(n-max)+'</em>':'')+'</div>';
+  const charge=Object.values(e.sac||{}).reduce((t,n)=>t+(n||0),0);
+  const N=Math.max(1,Math.min(BUC_N||1,Math.floor(F.bois/2)||1));
+  const VENTES=[['bois','Bûches',60,'la corde du bûcheron'],['planche','Planches',220,'sciées net'],['resine','Résine',150,'récoltée sur les pins']];
+  const totalVente=VENTES.reduce((t,[k,,p])=>t+p*(F[k]||0),0);
   $('page2Fond').innerHTML=
-    '<div class="tete"><div style="flex:1"><small>LA FORÊT</small><b>La cabane du bûcheron</b></div><button id="bucX">✕</button></div>'+
-    '<div class="corps"><div class="mot">'+(mot||'« Coupe ce qui est marqué, le reste repousse. »')+'</div>'+
+   '<div class="tete"><canvas id="bucToile"></canvas><span class="voile"></span>'+
+     '<div class="txt"><small>LA FORÊT · CLAIRIÈRE</small><b>La cabane du bûcheron</b></div>'+
+     '<button id="bucX">✕</button></div>'+
+   '<div class="corps">'+
+    '<div class="bulle" id="bucMot">'+(mot||'« Coupe ce qui est marqué, le reste repousse. Le bois, je te le rachète. »')+'</div>'+
+    '<div class="sac"><span>TON SAC · '+charge+' / '+(e.sacMax||60)+'</span><span>'+enEuros(e.euros)+'</span></div>'+
     '<h4>L’ÉTABLI</h4>'+
-    '<div class="lg">'+ic('planche')+'<div style="flex:1"><b>Débiter du bois</b><em>2 bûches → 1 planche · tu as '+F.bois+' bûche'+(F.bois>1?'s':'')+'</em></div>'+
-      '<button class="or" id="bucDeb1"'+(F.bois>=2?'':' disabled')+'>× 1</button>'+
-      '<button id="bucDebT"'+(F.bois>=4?'':' disabled')+'>tout</button></div>'+
-    '<h4>LE DÉPÔT · LE BÛCHERON RACHÈTE</h4>'+
-    [['bois','Bûches',60],['planche','Planches',220],['resine','Résine',150]].map(([k,n,p])=>
-      '<div class="lg">'+ic(k)+'<div style="flex:1"><b>'+n+'</b><em>'+enEuros(p)+' pièce · tu en as '+(F[k]||0)+'</em></div>'+
-      '<button class="or" data-v="'+k+'"'+((F[k]||0)>0?'':' disabled')+'>Vendre '+enEuros(p*(F[k]||0))+'</button></div>').join('')+
+    '<div class="carte"><div class="etab">'+tas('bois',F.bois,8)+'<span class="fleche">➜</span>'+tas('planche',Math.floor(F.bois/2),4)+
+      '<div class="t"><b>Débiter</b><em>2 bûches → 1 planche</em></div></div>'+
+      '<div class="qte">'+[1,5,'tout'].map(q=>'<button data-q="'+q+'"'+((q===N||(q==='tout'&&BUC_N===99))?' class="on"':'')+'>'+(q==='tout'?'Tout':'× '+q)+'</button>').join('')+'</div>'+
+      '<button class="go" id="bucDeb"'+(F.bois>=2?'':' disabled')+'>'+(F.bois>=2?'Scier · '+(BUC_N===99?Math.floor(F.bois/2):Math.min(N,Math.floor(F.bois/2)))+' planche'+((BUC_N===99?Math.floor(F.bois/2):N)>1?'s':''):'Il te faut deux bûches')+'</button></div>'+
+    '<h4>LE DÉPÔT</h4>'+
+    VENTES.map(([k,n,p,sous])=>'<div class="carte"><div class="ligne">'+
+      '<span class="ico">'+ic(k)+'</span><div style="flex:1"><b>'+n+' <span style="font:700 11px Arial;color:#e8c06a">'+enEuros(p)+' pièce</span></b><em>'+sous+' · tu en as '+(F[k]||0)+'</em></div>'+
+      '<button class="vend" data-v="'+k+'"'+((F[k]||0)>0?'':' disabled')+'>'+((F[k]||0)>0?enEuros(p*(F[k]||0)):'—')+'</button></div></div>').join('')+
+    (totalVente>0?'<button class="tout" id="bucTout">Tout vendre · '+enEuros(totalVente)+'</button>':'')+
     '<h4>L’OUTIL</h4>'+
-    '<div class="lg">'+ic('hache')+'<div style="flex:1"><b>La hache de fer</b><em>'+(F.hache_fer?'elle est à toi : trois coups par arbre':'trois coups au lieu de cinq · 80,00 €')+'</em></div>'+
-      '<button id="bucHache"'+(F.hache_fer?' disabled':'')+'>'+(F.hache_fer?'✓ à toi':'80,00 €')+'</button></div></div>';
-  $('bucX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+    '<div class="carte"><div class="outil"><span class="lame">'+ic('hache')+'</span>'+
+      '<div style="flex:1"><b>La hache de fer</b><em>'+(F.hache_fer?'elle est à toi : trois coups par arbre':'trois coups au lieu de cinq')+'</em></div>'+
+      '<button class="vend" id="bucHache"'+(F.hache_fer?' disabled':'')+'>'+(F.hache_fer?'✓ à toi':'80,00 €')+'</button></div></div>'+
+   '</div>';
+  requestAnimationFrame(dessinerCabaneDedans);
+  clearInterval(BUC_ANIM);BUC_ANIM=setInterval(()=>{if($('page2').classList.contains('on')&&document.getElementById('bucToile'))dessinerCabaneDedans();else clearInterval(BUC_ANIM);},120);
+  $('bucX').onclick=()=>{fermeA=Date.now();clearInterval(BUC_ANIM);$('page2').classList.remove('on');};
+  $('page2Fond').querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{BUC_N=b.dataset.q==='tout'?99:+b.dataset.q;ouvrirLaCabane();});
   const apres=(d2,ok)=>{if(d2&&!d2.erreur){FOR=d2.etat||d2;try{lireSacServeur();lireLeSolde();sauver();majHaut();}catch(x){}jouer('vente','moment');vibrer([12,30,12]);ouvrirLaCabane(ok);}
-    else{const m={pas_assez:'Pas assez d’argent.',pas_assez_bois:'Il faut au moins deux bûches.',sac_plein:'Ton sac est plein.',deja:'Tu l’as déjà.'}[d2&&d2.erreur]||'Ça n’a pas marché.';ouvrirLaCabane(m);}};
-  const debiter=async(n)=>{const d2=await appelRPC('foret_debiter',{p_joueur:e.id,p_nb:n});apres(d2,d2&&d2.planches?('+'+d2.planches+' planche'+(d2.planches>1?'s':'')+' sur l’établi.'):null);};
-  $('bucDeb1').onclick=()=>debiter(1);$('bucDebT').onclick=()=>debiter(99);
-  $('bucHache').onclick=async()=>{const d2=await appelRPC('foret_hache',{p_joueur:e.id});apres(d2,'Une belle hache de fer : trois coups suffiront.');};
-  $('page2Fond').querySelectorAll('[data-v]').forEach(b=>b.onclick=async()=>{b.disabled=true;
-    const d2=await appelRPC('vendre_au_comptoir',{p_joueur:e.id,p_type:b.dataset.v});
-    if(d2&&!d2.erreur){if(typeof d2.euros==='number')e.euros=d2.euros;if(d2.sac)e.sac=d2.sac;
-      const d3=await appelRPC('foret_etat',{p_joueur:e.id});if(d3&&!d3.erreur)FOR=d3;
-      try{sauver();majHaut();lireSacServeur();}catch(x){}jouer('vente','moment');ouvrirLaCabane('Vendu ! '+enEuros(d2.gain)+' dans ta poche.');}
-    else ouvrirLaCabane('Il n’a rien voulu.');});
+    else{const m={pas_assez:'« Reviens quand tu auras de quoi. »',pas_assez_bois:'« Deux bûches au moins, sinon je scie du vent. »',sac_plein:'« Ton sac déborde : va le vider. »',deja:'« Tu l’as déjà, cette hache. »'}[d2&&d2.erreur]||'« Ça n’a pas marché. »';ouvrirLaCabane(m);}};
+  $('bucDeb').onclick=async function(){this.classList.add('scie');this.disabled=true;
+    const d2=await appelRPC('foret_debiter',{p_joueur:e.id,p_nb:BUC_N||1});
+    apres(d2,d2&&d2.planches?('« Et voilà '+d2.planches+' planche'+(d2.planches>1?'s':'')+', bien droites. »'):null);};
+  $('bucHache').onclick=async()=>{const d2=await appelRPC('foret_hache',{p_joueur:e.id});apres(d2,'« Une belle hache de fer. Trois coups, et il tombe. »');};
+  const vendre=async(liste)=>{let gain=0;
+    for(const k of liste){const d2=await appelRPC('vendre_au_comptoir',{p_joueur:e.id,p_type:k});
+      if(d2&&!d2.erreur){gain+=d2.gain||0;if(typeof d2.euros==='number')e.euros=d2.euros;if(d2.sac)e.sac=d2.sac;}}
+    const d3=await appelRPC('foret_etat',{p_joueur:e.id});if(d3&&!d3.erreur)FOR=d3;
+    try{sauver();majHaut();lireSacServeur();}catch(x){}if(gain){jouer('vente','moment');vibrer([12,30,12]);}
+    ouvrirLaCabane(gain?('« Marché conclu : '+enEuros(gain)+'. »'):'« Tu n’as rien à me vendre. »');};
+  $('page2Fond').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{b.disabled=true;vendre([b.dataset.v]);});
+  if($('bucTout'))$('bucTout').onclick=()=>vendre(VENTES.map(([k])=>k).filter(k=>(F[k]||0)>0));
 }
 
 /* ================= LE VOYAGE EN MÉTRO : un tap, un fondu, on y est =================
