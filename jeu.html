@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-23-0403';
+  var MA_VERSION='2026-09-23-0724';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -2175,7 +2175,13 @@ async function chargerMorceau(nom){
 
 /* LA CARTE : le village, ou Extramar (le vieux port, au bout de la ligne 1) */
 /* LE VILLAGE EST FERMÉ POUR L'INSTANT : le jeu commence au port, et toute adresse vers le village y mène aussi */
-const CARTE=(()=>{const c=new URLSearchParams(location.search).get('carte');return (c==='sommet'?'sommet':(c==='montagne'?'montagne':((c==='ferme'||c==='foret'||c==='village')?'village':'extramar')));   /* la ferme vit à la place de l'ancien village */})();
+const CARTE_DEMANDEE=(()=>{const c=new URLSearchParams(location.search).get('carte');
+  if(c)return c;
+  /* PAS DE CARTE DANS L'ADRESSE : on reprend là où l'on était (un simple rechargement ne ramène plus au port) */
+  try{const sv=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}');
+    if(sv&&(sv.carte==='ferme'||sv.carte==='foret'||sv.carte==='montagne'||sv.carte==='sommet'))return sv.carte;}catch(x){}
+  return null;})();
+const CARTE=(()=>{const c=CARTE_DEMANDEE;return (c==='sommet'?'sommet':(c==='montagne'?'montagne':((c==='ferme'||c==='foret'||c==='village')?'village':'extramar')));   /* la ferme vit à la place de l'ancien village */})();
 const CARTE_MOD=CARTE==='montagne'||CARTE==='sommet'||CARTE==='piscine'||CARTE==='stade';        /* les cartes à module (Saumaski, le sommet, la piscine) */        /* les cartes de Saumaski (la station, le sommet) */   /* la place du haut n'existe plus */
 /* LES OBJETS ANIMÉS DU DÉCOR : chaque carte (port.js, saumaski.js) peut y ranger ses dessins vivants */
 const ANIM_DECOR={};
@@ -3895,8 +3901,8 @@ const PLACE_SEULE=false;
 const FERME_SEULE=true;
 const FERME_X0=612;                          /* la ferme commence ici : plus de rivière ni de bois à l'ouest */
 /* LA FERME = LES CHAMPS SEULS : on ne garde que le champ et ses parcelles, et la carte se resserre autour */
-const PARAM_CARTE=new URLSearchParams(location.search).get('carte');
-const MODE_VIL=(PARAM_CARTE==='foret')?'foret':'ferme';
+const PARAM_CARTE=CARTE_DEMANDEE;
+const MODE_VIL=(CARTE_DEMANDEE==='foret')?'foret':'ferme';
 const CHAMPS_SEULS=MODE_VIL==='ferme';      /* la ferme : les champs seuls */
 const FORET_SEULE=MODE_VIL==='foret';       /* la forêt : le bois de l'ancien village, sa rivière et sa clairière */
 const FZ={x0:56,x1:668,y0:40,y1:560};       /* les bornes de la forêt */
