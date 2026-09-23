@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-23-0354';
+  var MA_VERSION='2026-09-23-0403';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -3895,7 +3895,8 @@ const PLACE_SEULE=false;
 const FERME_SEULE=true;
 const FERME_X0=612;                          /* la ferme commence ici : plus de rivière ni de bois à l'ouest */
 /* LA FERME = LES CHAMPS SEULS : on ne garde que le champ et ses parcelles, et la carte se resserre autour */
-const MODE_VIL=(new URLSearchParams(location.search).get('carte')==='foret')?'foret':'ferme';
+const PARAM_CARTE=new URLSearchParams(location.search).get('carte');
+const MODE_VIL=(PARAM_CARTE==='foret')?'foret':'ferme';
 const CHAMPS_SEULS=MODE_VIL==='ferme';      /* la ferme : les champs seuls */
 const FORET_SEULE=MODE_VIL==='foret';       /* la forêt : le bois de l'ancien village, sa rivière et sa clairière */
 const FZ={x0:56,x1:668,y0:40,y1:560};       /* les bornes de la forêt */
@@ -14628,8 +14629,8 @@ try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(e,JSON.parse(b));}cat
 /* la position au port telle qu'on l'a laissée — lue AVANT que la boucle ne la réécrive */
 const EXT_AU_DEPART=e.ext?{x:e.ext.x,y:e.ext.y}:null;
 /* on avait quitté le jeu à Extramar : on y revient (seul le métro fait changer de carte) */
-if(CARTE==='village'&&(e.carte==='extramar'||e.carte==='garde')){location.replace('jeu.html?carte=extramar');}
-if(CARTE==='village'&&(e.carte==='montagne'||e.carte==='sommet')){location.replace('jeu.html?carte='+e.carte);}
+if(CARTE==='village'&&!PARAM_CARTE&&(e.carte==='extramar'||e.carte==='garde')){location.replace('jeu.html?carte=extramar');}   /* (pas quand on demande la ferme ou la forêt dans l'adresse) */
+if(CARTE==='village'&&!PARAM_CARTE&&(e.carte==='montagne'||e.carte==='sommet')){location.replace('jeu.html?carte='+e.carte);}
 /* Les bâtiments étaient autrefois placés autour de chaque joueur : on
    efface ces vieilles coordonnées pour que tout le monde partage la même carte. */
 e.casino=null;e.camp=null;e.coffre=null;e.comptoir=null;
@@ -23926,6 +23927,7 @@ function choisirLaDestination(){
 function voyagerVers(carte,nom){
   if(voyagerVers.enCours)return;voyagerVers.enCours=true;
   if(CARTE==='extramar')e.ext={x:joueur.x,y:joueur.y};else{e.x=joueur.x;e.y=joueur.y;}
+  e.carte=(carte==='extramar')?'extramar':carte;      /* on note où l'on va : sinon la page revenait au port */
   try{sauver();envoyerSauvegarde(true);}catch(x){}
   vibrer([8,30,8]);try{jouer('porte','moment');}catch(x){}
   const v=document.createElement('div');
