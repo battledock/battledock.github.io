@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-23-0724';
+  var MA_VERSION='2026-09-23-0737';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -19695,7 +19695,7 @@ function majAction(){
   if(o.ouvre==='cabine'){b.innerHTML=(e.ap&&e.ap.maillot?'Se rhabiller':'Entrer dans la cabine')+'<small>'+(e.ap&&e.ap.maillot?'REMETTRE TES VÊTEMENTS':'SE METTRE EN MAILLOT')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='sortiePiscine'){b.innerHTML='Ressortir sur le quai<small>'+(e.ap&&e.ap.maillot?'ON TE RHABILLE EN SORTANT':'LE VIEUX-PORT')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='metroForet'){b.innerHTML='Prendre le métro<small>LIGNE 1 · LE PORT ⇄ LA FERME ⇄ LA FORÊT</small>';b.classList.add('on');return;}
-  if(o.ouvre==='bucheron'){b.innerHTML='La cabane du bûcheron<small>BIENTÔT : DÉBITER ET VENDRE LE BOIS</small>';b.classList.add('on');return;}
+  if(o.ouvre==='bucheron'){b.innerHTML='La cabane du bûcheron<small>DÉBITER · VENDRE · LA HACHE</small>';b.classList.add('on');return;}
   if(o.ouvre==='etable'){b.innerHTML='Entrer à l’étable<small>LAIT · FOIN · FROMAGE</small>';b.classList.add('on');return;}
   if(o.ouvre==='metroFerme'){b.innerHTML='Prendre le métro<small>LIGNE 1 · LE PORT · LA FORÊT</small>';b.classList.add('on');return;}
   if(o.ouvre==='etalGraines'){b.innerHTML='Les graines<small>SEMENCES · OUTILS · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
@@ -19864,7 +19864,7 @@ function agir(){
   if(o.ouvre==='bar'){ouvrirLeBar();return;}
   if(o.ouvre==='poissonnerie'){ouvrirLaCriee();return;}
   if(o.ouvre==='metroForet'){choisirLaDestination();return;}
-  if(o.ouvre==='bucheron'){texteVolant(joueur.x,joueur.y-58,'La cabane ouvrira bientôt…','#e8dcc0');return;}
+  if(o.ouvre==='bucheron'){FOR=null;ouvrirLaCabane();return;}
   if(o.ouvre==='etable'){ETB=null;ouvrirLEtable();return;}
   if(o.ouvre==='metroFerme'){choisirLaDestination();return;}
   if(o.ouvre==='etalGraines'){ouvrirLeGrainetier('graines');return;}
@@ -23372,7 +23372,9 @@ const POT_CULT={radis:['Radis',120,5,800],salade:['Salade',250,15,1800],carottes
  OBJETS.fromage={nom:'Fromage fermier',d:'Affiné deux heures en cave. Ce qui se vend le mieux de la ferme.',poids:1};
  ICONES.lait='<rect x="5" y="4" width="6" height="9" fill="#e8eef2"/><rect x="5" y="4" width="6" height="1" fill="#fff"/><rect x="6" y="2" width="4" height="2" fill="#b9c1c7"/><rect x="5" y="8" width="6" height="1" fill="#c8ced4"/><rect x="6" y="5" width="1" height="6" fill="rgba(255,255,255,.6)"/>';
  ICONES.fromage='<rect x="3" y="7" width="10" height="5" fill="#e8c25a"/><rect x="3" y="6" width="10" height="1" fill="#f6dd8c"/><rect x="5" y="8" width="2" height="2" fill="#d8a83a"/><rect x="9" y="9" width="2" height="2" fill="#d8a83a"/><rect x="3" y="12" width="10" height="1" fill="#c9a040"/>';
- PRIX_COMPTOIR.lait=120;PRIX_COMPTOIR.fromage=650;}
+ PRIX_COMPTOIR.lait=120;PRIX_COMPTOIR.fromage=650;PRIX_COMPTOIR.bois=60;PRIX_COMPTOIR.planche=220;PRIX_COMPTOIR.resine=150;
+ if(!OBJETS.planche)OBJETS.planche={nom:'Planche',d:'Débitée à la cabane du bûcheron. Se vend bien, et sert à bâtir.',poids:1};
+ if(!ICONES.planche)ICONES.planche='<rect x="2" y="5" width="12" height="3" fill="#a5764a"/><rect x="2" y="5" width="12" height="1" fill="#c9a878"/><rect x="2" y="9" width="12" height="3" fill="#8a6238"/><rect x="2" y="9" width="12" height="1" fill="#a5764a"/><rect x="5" y="5" width="1" height="7" fill="#6a4a2a"/><rect x="10" y="5" width="1" height="7" fill="#6a4a2a"/>';}
 
 /* les graines à débloquer une fois pour toutes (le serveur a les mêmes prix) */
 const POT_VERROU={pommes_terre:10000,oignons:15000,poivrons:30000,mais:40000,aubergines:50000,tournesol:80000,pasteque:150000,safran:500000};
@@ -23906,6 +23908,55 @@ function graverSoucheHache(){
   R(cx-6,sol-6,12,6,'#6a4a2a');R(cx-6,sol-7.5,12,2,'#9a7a4a');R(cx-4,sol-7,8,1.2,'#c9a878');R(cx-2.5,sol-6.8,5,.8,'#8a6238');
   R(cx+1,sol-18,1.6,11,'#8a6238');R(cx-2,sol-21,6,4,'#b9c1c7');R(cx-2,sol-21,6,1.2,'#e0e6ea');R(cx-2,sol-17.5,6,.8,'#8a9096');
   return {toile:c,W,H,sol,nuit:null};
+}
+
+/* ================= LA CABANE DU BÛCHERON : débiter, vendre, la hache de fer ================= */
+let FOR=null;
+const CSS_BUC=`#page2Fond.buc{background:#2a1f14;color:#f0e6d2;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%}
+#page2Fond.buc .tete{background:#5b3f21;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:3px solid #9a7a4a;flex:none}
+#page2Fond.buc .tete b{flex:1;font:400 23px Georgia}#page2Fond.buc .tete small{display:block;font:700 9px Arial;letter-spacing:2px;color:#d8c49a}
+#page2Fond.buc .tete button{width:34px;height:34px;border-radius:50%;border:0;background:#f0e6d2;color:#2a1f14;font:700 14px Arial}
+#page2Fond.buc .corps{padding:12px 14px;overflow-y:auto;flex:1}
+#page2Fond.buc h4{font:700 10px Arial;letter-spacing:2px;color:#c9a878;margin:8px 2px 8px}
+#page2Fond.buc .lg{display:flex;align-items:center;gap:10px;background:#3a2c1c;border:1px solid #543d26;border-radius:12px;padding:10px 12px;margin-bottom:8px}
+#page2Fond.buc .lg svg{width:30px;height:30px;flex:none}
+#page2Fond.buc .lg b{font:400 16px Georgia;display:block}#page2Fond.buc .lg em{font:italic 12px Georgia;color:#c0ab8c}
+#page2Fond.buc .lg button{margin-left:auto;border:0;border-radius:10px;padding:9px 12px;font:700 13px Georgia;background:#9a7a4a;color:#2a1f14;white-space:nowrap}
+#page2Fond.buc .lg button.or{background:#e0b850}#page2Fond.buc .lg button:disabled{opacity:.4}
+#page2Fond.buc .mot{margin:2px 2px 10px;font:italic 13px Georgia;color:#d8c49a;min-height:18px}`;
+async function ouvrirLaCabane(mot){
+  if(!document.getElementById('cssBuc')){const st=document.createElement('style');st.id='cssBuc';st.textContent=CSS_BUC;document.head.appendChild(st);}
+  $('page2Fond').className='buc';$('page2').classList.add('on');
+  const d=await appelRPC('foret_etat',{p_joueur:e.id});if(d&&!d.erreur)FOR=d;
+  const F=FOR||{bois:0,planche:0,resine:0,hache_fer:false};
+  if(F.hache_fer&&e.outils)e.outils.hacheFer=true;
+  const ic=(k)=>ICONES[k]?'<svg viewBox="0 0 16 16">'+ICONES[k]+'</svg>':'';
+  $('page2Fond').innerHTML=
+    '<div class="tete"><div style="flex:1"><small>LA FORÊT</small><b>La cabane du bûcheron</b></div><button id="bucX">✕</button></div>'+
+    '<div class="corps"><div class="mot">'+(mot||'« Coupe ce qui est marqué, le reste repousse. »')+'</div>'+
+    '<h4>L’ÉTABLI</h4>'+
+    '<div class="lg">'+ic('planche')+'<div style="flex:1"><b>Débiter du bois</b><em>2 bûches → 1 planche · tu as '+F.bois+' bûche'+(F.bois>1?'s':'')+'</em></div>'+
+      '<button class="or" id="bucDeb1"'+(F.bois>=2?'':' disabled')+'>× 1</button>'+
+      '<button id="bucDebT"'+(F.bois>=4?'':' disabled')+'>tout</button></div>'+
+    '<h4>LE DÉPÔT · LE BÛCHERON RACHÈTE</h4>'+
+    [['bois','Bûches',60],['planche','Planches',220],['resine','Résine',150]].map(([k,n,p])=>
+      '<div class="lg">'+ic(k)+'<div style="flex:1"><b>'+n+'</b><em>'+enEuros(p)+' pièce · tu en as '+(F[k]||0)+'</em></div>'+
+      '<button class="or" data-v="'+k+'"'+((F[k]||0)>0?'':' disabled')+'>Vendre '+enEuros(p*(F[k]||0))+'</button></div>').join('')+
+    '<h4>L’OUTIL</h4>'+
+    '<div class="lg">'+ic('hache')+'<div style="flex:1"><b>La hache de fer</b><em>'+(F.hache_fer?'elle est à toi : trois coups par arbre':'trois coups au lieu de cinq · 80,00 €')+'</em></div>'+
+      '<button id="bucHache"'+(F.hache_fer?' disabled':'')+'>'+(F.hache_fer?'✓ à toi':'80,00 €')+'</button></div></div>';
+  $('bucX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+  const apres=(d2,ok)=>{if(d2&&!d2.erreur){FOR=d2.etat||d2;try{lireSacServeur();lireLeSolde();sauver();majHaut();}catch(x){}jouer('vente','moment');vibrer([12,30,12]);ouvrirLaCabane(ok);}
+    else{const m={pas_assez:'Pas assez d’argent.',pas_assez_bois:'Il faut au moins deux bûches.',sac_plein:'Ton sac est plein.',deja:'Tu l’as déjà.'}[d2&&d2.erreur]||'Ça n’a pas marché.';ouvrirLaCabane(m);}};
+  const debiter=async(n)=>{const d2=await appelRPC('foret_debiter',{p_joueur:e.id,p_nb:n});apres(d2,d2&&d2.planches?('+'+d2.planches+' planche'+(d2.planches>1?'s':'')+' sur l’établi.'):null);};
+  $('bucDeb1').onclick=()=>debiter(1);$('bucDebT').onclick=()=>debiter(99);
+  $('bucHache').onclick=async()=>{const d2=await appelRPC('foret_hache',{p_joueur:e.id});apres(d2,'Une belle hache de fer : trois coups suffiront.');};
+  $('page2Fond').querySelectorAll('[data-v]').forEach(b=>b.onclick=async()=>{b.disabled=true;
+    const d2=await appelRPC('vendre_au_comptoir',{p_joueur:e.id,p_type:b.dataset.v});
+    if(d2&&!d2.erreur){if(typeof d2.euros==='number')e.euros=d2.euros;if(d2.sac)e.sac=d2.sac;
+      const d3=await appelRPC('foret_etat',{p_joueur:e.id});if(d3&&!d3.erreur)FOR=d3;
+      try{sauver();majHaut();lireSacServeur();}catch(x){}jouer('vente','moment');ouvrirLaCabane('Vendu ! '+enEuros(d2.gain)+' dans ta poche.');}
+    else ouvrirLaCabane('Il n’a rien voulu.');});
 }
 
 /* ================= LE VOYAGE EN MÉTRO : un tap, un fondu, on y est =================
