@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-23-1339';
+  var MA_VERSION='2026-09-23-1954';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -16434,7 +16434,7 @@ function graverFin(ap,dir,pas,bouge,brise,cligne){
    l'échoppe rapproche de la vraie course : 112 → 130 → 152 → 172 → 190.
    L'ANIMATION de course n'apparaît qu'à partir de 150 — en dessous, des
    jambes de coureur sur une vitesse de marcheur donneraient du patinage. */
-const PAS_VITESSE=[112,130,152,172,190];
+const PAS_VITESSE=[112,122,132,142,152];   /* les souliers accélèrent, mais on garde le contrôle */
 const VITESSE=PAS_VITESSE[0];
 const SEUIL_COURSE=150;            /* la foulée ne s'ouvre qu'au-delà */
 const vitesseDuJoueur=()=>PAS_VITESSE[Math.min(e.nivPied||0,PAS_VITESSE.length-1)];
@@ -23498,12 +23498,16 @@ dessinerBulles=function(g,camX,camY,px,py){const d=Date.now()-POT_ARROSE;
 /* 2 · le bouton d'action, près d'une parcelle */
 const potMajVrai=majAction;
 majAction=function(){const i=potProche();if(i===null||!POT.charge)return potMajVrai();
-  try{const b2=cible();if(b2&&(b2.ouvre||b2.t==='comptoir'))return potMajVrai();}catch(x){}   /* une porte à portée passe avant la parcelle */
+  try{const b2=cible();                                   /* une porte ne passe devant la parcelle que si on est vraiment collé à elle */
+    if(b2&&(b2.ouvre||b2.t==='comptoir')){const demi=b2.demi||40;
+      const ec=Math.max(0,Math.abs(b2.x-joueur.x)-demi), dd=Math.hypot(ec,(joueur.y-b2.y)*0.8);
+      if(dd<26)return potMajVrai();}}catch(x){}
   const b=$('action'), P=POT.parc[i], s=potStade(P), J=POT.j;let t;
   if(!potOuverte(i))t=['Parcelle à louer','AGRANDIS TON CHAMP AU GRAINETIER'];
   else if(!P||P.etat!=='bechee')t=J.houe?['Bêcher','AVEC LA HOUE']:['Il te faut une houe','EN VENTE AU GRAINETIER'];
   else if(!P.cult)t=['Semer','CHOISIR UNE GRAINE'];
-  else if(s===3)t=['Récolter','+'+enEuros(POT_CULT[P.cult][3]).replace(',00','')];
+  else if(s===3){const chargeS=Object.values(e.sac||{}).reduce((t2,n)=>t2+(n||0),0);
+    t=(chargeS+6>(e.sacMax||60))?['Sac plein','VA VENDRE À LA BOUTIQUE']:['Récolter','6 '+POT_CULT[P.cult][0].toUpperCase()+' DANS TON SAC'];}
   else if(!P.eau)t=J.arrosoir?['Arroser','ÇA POUSSERA DEUX FOIS PLUS VITE']:[POT_CULT[P.cult][0]+' · ça pousse','UN ARROSOIR IRAIT PLUS VITE'];
   else{const reste=Math.max(0,new Date(P.mur_a).getTime()-potNow()), m=Math.ceil(reste/60000);t=[POT_CULT[P.cult][0]+' · ça pousse','PRÊT DANS '+(m>=60?Math.floor(m/60)+' H '+String(m%60).padStart(2,'0'):m+' MIN')];}
   b.innerHTML=t[0]+'<small>'+t[1]+'</small>';b.classList.add('on');};
@@ -23520,7 +23524,7 @@ async function potAgir(i){if(POT_OCCUPE)return;const P=POT.parc[i], s=potStade(P
       const nom=POT_CULT[d.cult]?POT_CULT[d.cult][0]:d.cult;
       texteVolant(joueur.x,joueur.y-58,d.nb?('+'+d.nb+' '+nom+' dans ton sac'):(nom+' → au grenier'),'#ffe070');
       if(d.oiseaux)setTimeout(()=>texteVolant(joueur.x,joueur.y-70,'Les oiseaux sont passés pendant ton absence… −50 %','#ffb8a8'),1000);}   /* sans épouvantail */
-    else if(d&&d.erreur==='sac_plein')texteVolant(joueur.x,joueur.y-58,'Ton sac est plein : va vendre à la boutique','#ffd0a0');
+    else if(d&&d.erreur==='sac_plein'){texteVolant(joueur.x,joueur.y-58,'Sac plein : va vendre à la boutique','#ffd0a0');try{bulle&&bulle('Ton sac est plein.');}catch(x){}}
     else potRefus(d);}
   else if(!P.eau&&J.arrosoir){POT_ARROSE=Date.now();vibrer(12);const d=await appelRPC('pot_arroser',{p_joueur:e.id,p_i:i});if(!potAdopter(d))potRefus(d);}
   else texteVolant(joueur.x,joueur.y-56,J.arrosoir||P.eau?'Ça pousse… patience':'Un arrosoir irait deux fois plus vite','#fff3d0');
