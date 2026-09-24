@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-24-0055';
+  var MA_VERSION='2026-09-24-0100';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -24045,6 +24045,10 @@ async function ouvrirLaCabane(mot){
       VENTES.map(([k,n1,nP,p])=>'<div class="ln">'+ic(k)+(((F[k]||0)>1)?nP:n1)+'<span class="pt"></span><span class="px">'+enEuros(p)+'</span>'+
         '<button class="btn" data-v="'+k+'"'+((F[k]||0)>0?'':' disabled')+'>× '+(F[k]||0)+'</button></div>').join('')+
       '<button class="gros" id="bucTout"'+(total>0?'':' disabled')+'>'+(total>0?'Tout vendre · '+enEuros(total):'Rien à vendre')+'</button></div>'+
+    ((F.cueillette&&F.cueillette.length)?('<h4>LA CUEILLETTE · IL PREND AUSSI</h4><div class="bloc">'+
+      F.cueillette.map(o=>'<div class="ln">'+ic(o.k)+(OBJETS[o.k]?OBJETS[o.k].nom:o.k)+'<span class="pt"></span><span class="px">'+enEuros(o.p)+'</span>'+
+        '<button class="btn" data-c="'+o.k+'">× '+o.n+'</button></div>').join('')+
+      '<button class="gros" id="bucCueil">Tout vendre · '+enEuros(F.cueillette.reduce((t,o)=>t+o.p*o.n,0))+'</button></div>'):'')+
     '<h4>LES OUTILS · LA FORGE D’À CÔTÉ</h4><div class="bloc">'+
       O.map(o=>{const m=o.niv>=o.prix.length;
         return '<div class="ln"><button class="btn'+(o.k===sel.k?' plein':'')+'" data-o="'+o.k+'" style="flex:1;text-align:left">'+o.titre+
@@ -24071,6 +24075,15 @@ async function ouvrirLaCabane(mot){
     ouvrirLaCabane(gain?('« Marché conclu : '+enEuros(gain)+'. »'):'« Tu n’as rien à me vendre. »');};
   $('page2Fond').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{b.disabled=true;vendre([b.dataset.v]);});
   $('bucTout').onclick=()=>vendre(VENTES.map(([k])=>k).filter(k=>(F[k]||0)>0));
+  /* la cueillette : le bûcheron la rachète aussi, à son prix */
+  const vendreCueil=async(liste)=>{let gain=0;
+    for(const k of liste){const d2=await appelRPC('vendre_au_bucheron',{p_joueur:e.id,p_type:k});
+      if(d2&&!d2.erreur){gain+=d2.gain||0;if(typeof d2.euros==='number')e.euros=d2.euros;if(d2.sac)e.sac=d2.sac;}}
+    const d3=await appelRPC('foret_etat',{p_joueur:e.id});if(d3&&!d3.erreur)FOR=d3;
+    try{sauver();majHaut();lireSacServeur();}catch(x){}if(gain){jouer('vente','moment');vibrer([12,30,12]);}
+    ouvrirLaCabane(gain?('« Marché conclu : '+enEuros(gain)+'. »'):'« Tu n’as rien à me vendre. »');};
+  $('page2Fond').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{b.disabled=true;vendreCueil([b.dataset.c]);});
+  if($('bucCueil'))$('bucCueil').onclick=()=>vendreCueil((F.cueillette||[]).map(o=>o.k));
   $('bucOut').onclick=async function(){this.disabled=true;
     const d2=await appelRPC('acheter_amelioration',{p_joueur:e.id,p_clef:sel.k});
     if(!d2||d2.erreur){ouvrirLaCabane(d2&&d2.erreur==='pas_assez'?'« Il te manque de quoi payer. »':(d2&&d2.erreur==='au maximum'?'« C’est déjà au maximum. »':'« Ça n’a pas marché. »'));return;}
