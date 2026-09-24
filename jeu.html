@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-24-1925';
+  var MA_VERSION='2026-09-24-1932';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -20539,9 +20539,11 @@ function ajouter(k,n){
   if(q>0){e.sac[k]=combien(k)+q;sauver();majPastille();
     /* LE SERVEUR TIENT LE SAC : sans cette ligne, la pierre et le bois ramassés
        disparaissaient à la première synchronisation. */
-    if(e.id)appelRPC('ramasser',{p_joueur:e.id,p_type:k,p_nb:q}).then(d=>{
-      if(d&&!d.erreur&&d.sac){e.sac=d.sac;if(typeof d.max==='number')e.sacMax=d.max;
-        try{sauver();majPastille();majHaut();}catch(x){}}}).catch(()=>{});}
+    if(e.id){const num=++numAppelSac;                 /* on prend un numéro : une lecture en retard ne doit pas défaire ce ramassage */
+      appelRPC('ramasser',{p_joueur:e.id,p_type:k,p_nb:q}).then(d=>{
+        if(d&&!d.erreur&&d.sac)adopterSac(d,num);
+        else if(d&&d.erreur==='sac_plein')texteVolant(joueur.x,joueur.y-58,'Sac plein','#ffd0a0');
+      }).catch(()=>{});}}
   return q;
 }
 function majPastille(){
