@@ -360,7 +360,7 @@ function objets(){
   P('pont',58+Math.sin(250/37)*10+Math.sin(250/13)*3,258,{});
 
   /* PLUS DE REMONTÉES : la montagne devient un site minier. L'entrée de la galerie prend la place du télésiège. */
-  /* (la galerie : le calque ne s'affiche pas encore, je la pose à la prochaine tranche) */
+  /* (ancienne carte : plus utilisée) */
   for(let k=0;k<150;k++){const x=hs(k*2.3)*WW, y=8+hs(k*5.1)*(WH-10);            /* quelques arbres, pas une forêt */
     if(x>130&&x<510&&y>100&&y<380)continue;if(y>306)continue;               /* le bas est planché */if(Math.abs(x-320)<24&&y<150)continue;if(Math.abs(y-250)<20&&(x<150||x>490))continue;if(Math.abs(x-320)<22&&y>330)continue;
     if(Math.abs(x-(58+Math.sin(y/37)*10))<12)continue;if(x<50&&y>120&&y<290)continue;if(Math.hypot(x-112,y-320)<50)continue;if(Math.hypot(x-560,y-310)<78)continue;if(Math.hypot(x-320,y-398)<78)continue;if(Math.hypot(x-196,y-150)<70)continue;
@@ -989,6 +989,8 @@ function objetsVides(){
   const C=COUR;
   
   P('souvenirs',C.x1-40,C.y0-4,{col:[28,12],bati:true,ouvre:'buvette',demi:26});
+  reg('galerie',graverMine(false),graverMine(true));
+  P('galerie',180,MONT+44,{col:[24,8],bati:true,demi:24,ferme:'La galerie du Puits n°1'});
   
   
   reg('lampeC',graverLampadaireFin());reg('bancC',graverBancPlaid(1));reg('skisC',graverSkis());reg('poteauC',graverPoteau('MÉTRO ↓'));
@@ -1020,10 +1022,8 @@ function objetsVides(){
 const zoneInterdite=(x,y)=>{
   if(y<MONT+8)return true;                                                                        /* les montagnes, au fond */
   if(surBande(x,y))return true;                                                                   /* la bande de la patinoire */
-  for(const [a,b,c2,d] of FILE){const dx=c2-a, dy=d-b, l=dx*dx+dy*dy;const u=Math.max(0,Math.min(1,((x-a)*dx+(y-b)*dy)/l));
-    if(Math.hypot(x-(a+dx*u),y-(b+dy*u))<3)return true;}
-  if(x>TPH.cx-25&&x<TPH.cx+25&&y<TPH.y-66)return true;                                             /* le couloir sous les câbles */
-  if(x>TPH.x-62&&x<TPH.x+60&&y>TPH.y-72&&y<TPH.y-10)return true;                                   /* l'enclos de la gare */
+  /* PLUS DE REMONTÉES : la file, le couloir sous les câbles et l'enclos de la gare ne bloquent plus.
+     On marche partout sur le carreau. */
   return false;};
 const surGlace=(x,y)=>{const P=PATIN, cx=Math.max(P.x0+P.r,Math.min(P.x1-P.r,x)), cy=Math.max(P.y0+P.r,Math.min(P.y1-P.r,y));return Math.hypot(x-cx,y-cy)<=P.r-4;};
 const surBande=(x,y)=>{const P=PATIN, cx=Math.max(P.x0+P.r,Math.min(P.x1-P.r,x)), cy=Math.max(P.y0+P.r,Math.min(P.y1-P.r,y)), d=Math.hypot(x-cx,y-cy)-(P.r-2);
