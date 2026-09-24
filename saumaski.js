@@ -360,7 +360,7 @@ function objets(){
   P('pont',58+Math.sin(250/37)*10+Math.sin(250/13)*3,258,{});
 
   /* PLUS DE REMONTÉES : la montagne devient un site minier. L'entrée de la galerie prend la place du télésiège. */
-  /* la galerie arrive à la prochaine tranche : pas d'objet invisible qui bloque en attendant */
+  /* (la galerie : le calque ne s'affiche pas encore, je la pose à la prochaine tranche) */
   for(let k=0;k<150;k++){const x=hs(k*2.3)*WW, y=8+hs(k*5.1)*(WH-10);            /* quelques arbres, pas une forêt */
     if(x>130&&x<510&&y>100&&y<380)continue;if(y>306)continue;               /* le bas est planché */if(Math.abs(x-320)<24&&y<150)continue;if(Math.abs(y-250)<20&&(x<150||x>490))continue;if(Math.abs(x-320)<22&&y>330)continue;
     if(Math.abs(x-(58+Math.sin(y/37)*10))<12)continue;if(x<50&&y>120&&y<290)continue;if(Math.hypot(x-112,y-320)<50)continue;if(Math.hypot(x-560,y-310)<78)continue;if(Math.hypot(x-320,y-398)<78)continue;if(Math.hypot(x-196,y-150)<70)continue;
@@ -644,6 +644,25 @@ function solVide(){
     }
     for(let s2=0;s2<n;s2+=0.5){const [x,y]=pt(s2);F(x-1,y,3,1.2,'#ffffff');F(x-1,y+1.2,3,0.4,'#c8d8e8');}   /* la neige amassée au pied */
   };
+  /* ===== LE CARREAU DE MINE : la plateforme de travail, à la place des remontées ===== */
+  {const x0=24,x1=WW-24,y0=MONT+18,y1=MONT+150;
+   for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
+     const d=Math.max(Math.abs(x-(x0+x1)/2)/((x1-x0)/2),Math.abs(y-(y0+y1)/2)/((y1-y0)/2));
+     if(d>1-hs(x*0.09+y*0.11)*0.10)continue;
+     const n=hs(x*0.9+y*1.7);
+     F(x,y,1,1,n<.34?'#6f6960':(n<.7?'#7c766c':'#878178'));}
+   for(let i=0;i<900;i++){const x=x0+hs(i*1.7)*(x1-x0),y=y0+hs(i*2.3)*(y1-y0);F(x,y,1+hs(i)*2,1,hs(i*5)<.5?'#928b7f':'#615b52');}
+   for(let i=0;i<40;i++){const x=x0+hs(i*5)*(x1-x0),y=y0+hs(i*9)*(y1-y0);F(x,y,3+hs(i)*4,2,'#514c44');}      /* flaques de charbon */
+   for(let i=0;i<60;i++){const x=x0+hs(i*11)*(x1-x0),y=y0+hs(i*13)*(y1-y0);F(x,y,2,2,'#d3dde6');}            /* neige qui résiste */
+   /* la congère qui borde la plateforme */
+   for(let x=x0-3;x<x1+3;x++){F(x,y0-3,1,4,'#e7f0f8');F(x,y1-1,1,4,'#e7f0f8');}
+   for(let y=y0-2;y<y1+2;y++){F(x0-3,y,4,1,'#e7f0f8');F(x1-1,y,4,1,'#e7f0f8');}
+   /* LES RAILS, gravés : de la galerie vers le bas du carreau */
+   for(let i=0;i<130;i++){const y=y0+8+i, x=WW/2+Math.sin(i/28)*10;
+     if(i%4===0){F(x-8,y,16,1.2,'#5b3f21');F(x-8,y,16,0.5,'#7d5934');}
+     F(x-6,y,1.4,1,'#98a0aa');F(x+4.6,y,1.4,1,'#98a0aa');F(x-6,y,0.6,1,'#c6ced8');F(x+4.6,y,0.6,1,'#c6ced8');}
+   /* les ornières et les traces de wagonnet */
+   for(let i=0;i<70;i++){const x=x0+hs(i*3)*(x1-x0),y=y0+hs(i*7)*(y1-y0);F(x,y,5+hs(i)*7,1,'rgba(70,64,56,.35)');}}
   ganivelle(5,MONT+8,5,WH-5);ganivelle(WW-5,MONT+8,WW-5,WH-5);ganivelle(5,WH-5,WW-5,WH-5);
   /* 6 · LE TÉLÉPHÉRIQUE : la file en serpentin, son entrée, le couloir sous les câbles, l'enclos */
   const corde=(x0,y0,x1,y1)=>{const n=Math.hypot(x1-x0,y1-y0);
