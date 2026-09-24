@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-24-1932';
+  var MA_VERSION='2026-09-24-1947';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -17686,7 +17686,23 @@ const BUTIN={
   plumes:{plumes:2}, resine:{resine:2}
 };
 /* on ajoute au sac exactement ce que le serveur ajoutera */
+let DERNIER_BUTIN={};
+/* POUSSER LE BUTIN : quand le serveur ne connaît pas l'objet cassé (rocher posé
+   par le jeu, buisson hors carte), c'est lui qui doit quand même enregistrer ce
+   qu'on a ramassé — sinon le sac remonte puis retombe à la synchro suivante. */
+async function pousserLeButin(butin){
+  const cles=Object.keys(butin||{});if(!cles.length||!e.id)return;
+  let dernier=null;
+  for(const k of cles){
+    const num=++numAppelSac;
+    const d=await appelRPC('ramasser',{p_joueur:e.id,p_type:k,p_nb:butin[k]});
+    if(d&&!d.erreur&&d.sac){dernier={d,num};}
+    else if(d&&d.erreur==='sac_plein'){texteVolant(joueur.x,joueur.y-58,'Sac plein','#ffd0a0');break;}
+  }
+  if(dernier)adopterSac(dernier.d,dernier.num);
+}
 function encaisser(genre,x,y,nom,col){
+  DERNIER_BUTIN={};
   const b=BUTIN[genre]||{};
   let total=0, detail=[];
   for(const k in b){
@@ -17940,7 +17956,7 @@ async function lireSacServeur(){
 /* Quand on récolte, c'est le serveur qui tranche : il vérifie que la
    chose n'a pas déjà été prise, applique le poids, et renvoie le sac. */
 function signalerLeMonde(o,genre,quoi){
-  const cle=cleDe(o);
+  const cle=cleDe(o), butin=Object.assign({},DERNIER_BUTIN);   /* ce que le jeu vient de compter */
   try{CANAL&&CANAL.send({type:'broadcast',event:'monde',
     payload:{cle,genre,quand:Date.now()}});}catch(x){}
   (async()=>{
@@ -17951,8 +17967,11 @@ function signalerLeMonde(o,genre,quoi){
        ferait BAISSER le compteur sous les yeux du joueur. On ne l'adopte
        donc que s'il a bien pris la récolte en compte. */
     if(d&&d.erreur&&d.erreur!=='sac plein'){
-      /* on garde ce que le jeu a compté, et on le dit au serveur */
-      rattraperLeSac();
+      /* LE SERVEUR NE CONNAÎT PAS CETTE CHOSE (rocher posé par le jeu, buisson hors carte) :
+         il n'a donc rien mis dans le sac. On lui pousse le butin, objet par objet.
+         S'il l'a déjà récolté, au contraire, on se réaligne sur lui. */
+      if(d.erreur==='il n\'y a rien ici'||d.erreur==='ca ne se recolte pas')pousserLeButin(butin);
+      else rattraperLeSac();
     }else if(d&&d.sac)adopterSac(d,num);
     else{
       /* le serveur n'a rien à dire pour ce genre : on garde la trace du monde */
@@ -20539,11 +20558,7 @@ function ajouter(k,n){
   if(q>0){e.sac[k]=combien(k)+q;sauver();majPastille();
     /* LE SERVEUR TIENT LE SAC : sans cette ligne, la pierre et le bois ramassés
        disparaissaient à la première synchronisation. */
-    if(e.id){const num=++numAppelSac;                 /* on prend un numéro : une lecture en retard ne doit pas défaire ce ramassage */
-      appelRPC('ramasser',{p_joueur:e.id,p_type:k,p_nb:q}).then(d=>{
-        if(d&&!d.erreur&&d.sac)adopterSac(d,num);
-        else if(d&&d.erreur==='sac_plein')texteVolant(joueur.x,joueur.y-58,'Sac plein','#ffd0a0');
-      }).catch(()=>{});}}
+    DERNIER_BUTIN[k]=(DERNIER_BUTIN[k]||0)+q;}   /* on retient ce qu'on vient de prendre : le serveur en aura besoin */
   return q;
 }
 function majPastille(){
