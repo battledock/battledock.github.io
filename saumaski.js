@@ -360,7 +360,7 @@ function objets(){
   P('pont',58+Math.sin(250/37)*10+Math.sin(250/13)*3,258,{});
 
   /* PLUS DE REMONTÉES : la montagne devient un site minier. L'entrée de la galerie prend la place du télésiège. */
-  P('mine',LIFT_X,GARE_Y+10,{col:[20,6],bati:true,demi:20,ferme:'La galerie du Puits n°1'});
+  /* la galerie arrive à la prochaine tranche : pas d'objet invisible qui bloque en attendant */
   for(let k=0;k<150;k++){const x=hs(k*2.3)*WW, y=8+hs(k*5.1)*(WH-10);            /* quelques arbres, pas une forêt */
     if(x>130&&x<510&&y>100&&y<380)continue;if(y>306)continue;               /* le bas est planché */if(Math.abs(x-320)<24&&y<150)continue;if(Math.abs(y-250)<20&&(x<150||x>490))continue;if(Math.abs(x-320)<22&&y>330)continue;
     if(Math.abs(x-(58+Math.sin(y/37)*10))<12)continue;if(x<50&&y>120&&y<290)continue;if(Math.hypot(x-112,y-320)<50)continue;if(Math.hypot(x-560,y-310)<78)continue;if(Math.hypot(x-320,y-398)<78)continue;if(Math.hypot(x-196,y-150)<70)continue;
@@ -408,6 +408,67 @@ const PATIN={x0:44,x1:326,y0:646,y1:868,r:34,porte:[166,204]};    /* la patinoir
 const TPH={x:80,y:296,h:64,ecart:10,cx:113};
 /* LA FILE D'ATTENTE : un plancher devant la gare, fermé de cordes. On entre en bas à droite, sous un
    portique ; trois allées en serpentin ; en haut, les tourniquets, puis la porte d'embarquement. */
+function graverMine(nuit){const W=104,H=96,{c,g,F}=mk(W,H);
+    /* LA MINE DES CIMES : falaise en strates, entrée voûtée boisée, rails, wagonnet, lanterne.
+       Même recette que la forêt : texture par demi-pixel, bruit, ombres portées, neige posée. */
+    const sol=H-22, mx=W*0.46, al=hs;
+    const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,w,h);};
+    const bord=(y)=>W*0.80-y*0.22+Math.sin(y/11)*5+Math.sin(y/29)*7;
+    const roche=['#4a515c','#545b67','#5e6672','#69717d','#747c88'];
+    for(let y=0;y<sol+6;y++){const larg=bord(y);
+      for(let x=0;x<larg;x++){const bande=Math.floor((y*0.9+Math.sin(x/9)*3+Math.sin(x/23)*5)/4);
+        let i2=((bande%3)+3)%3+1;
+        if(al(x*2.1+y*1.7)<0.18)i2=Math.max(0,i2-1);
+        if(al(x*3.3+y*0.9)>0.92)i2=Math.min(4,i2+1);
+        R(x,y,1,1,roche[i2]);
+        if(al(x*5.1+y*2.7)>0.988)R(x,y,1,1,'#98a0ac');}
+      if(y%4===0)R(0,y,larg,0.5,'rgba(26,32,40,.35)');
+      R(larg-2,y,2,1,'#838b97');
+      if(Math.abs(bord(y-1)-larg)>1.2)R(larg-4,y,5,1.5,'#eef6fb');}
+    g.strokeStyle='rgba(24,30,38,.5)';g.lineWidth=0.5;
+    [[14,4],[44,0],[74,8]].forEach(([x0,y0],k2)=>{g.beginPath();g.moveTo(x0,y0);
+      for(let y=y0;y<sol-6;y+=6)g.lineTo(x0+Math.sin((y+k2*9)/7)*4,y);g.stroke();});
+    for(let x=0;x<bord(0);x++){const e2=3+Math.sin(x/7)*1.5+al(x)*2;R(x,0,1,e2,'#f4fafd');R(x,e2,1,1,'#d8e6f2');}
+    const base=sol, lE=15, hE=34;
+    g.fillStyle='#0d1216';g.beginPath();g.moveTo(mx-lE,base);g.lineTo(mx-lE,base-hE+lE);
+    g.arc(mx,base-hE+lE,lE,Math.PI,0);g.lineTo(mx+lE,base);g.closePath();g.fill();
+    for(let i2=0;i2<3;i2++){g.fillStyle='rgba(18,24,30,'+(0.25+i2*0.22)+')';
+      g.beginPath();g.ellipse(mx,base-hE*0.5,lE-4-i2*3.5,hE*0.36-i2*3,0,0,7);g.fill();}
+    for(let i2=0;i2<8;i2++){const w=lE*0.7-i2*1.5,y=base-3-i2*2.6;R(mx-w,y,w*2,0.6,'rgba(126,136,148,'+(0.45-i2*0.05)+')');}
+    const bois=(x,y,w,h)=>{for(let j=0;j<h;j++){const k2=al((x+j)*1.9);R(x,y+j,w,1,k2<0.3?'#6a4a2a':(k2<0.7?'#7d5934':'#8a6238'));}
+      R(x,y,w,1,'#a5764a');R(x,y+h-1,w,1,'#4a3218');};
+    bois(mx-lE-4.5,base-hE+lE,4.5,hE-lE);bois(mx+lE,base-hE+lE,4.5,hE-lE);
+    g.save();g.beginPath();g.rect(mx-lE-6,base-hE-2,2*lE+12,lE+4);g.clip();
+    g.strokeStyle='#7d5934';g.lineWidth=4.5;g.beginPath();g.arc(mx,base-hE+lE,lE+2.2,Math.PI,0);g.stroke();
+    g.strokeStyle='#a5764a';g.lineWidth=1;g.beginPath();g.arc(mx,base-hE+lE,lE+4.2,Math.PI,0);g.stroke();g.restore();
+    [[-lE-2.5,base-6],[lE+1,base-6],[-lE-2.5,base-hE+lE+3],[lE+1,base-hE+lE+3]].forEach(([dx,y])=>{R(mx+dx,y,2,2,'#39454f');R(mx+dx,y,1,1,'#7a828c');});
+    for(let x=mx-lE-8;x<mx+lE+8;x++){const d2=Math.abs(x-mx)/(lE+8);R(x,base-hE+lE-Math.sqrt(Math.max(0,1-d2*d2))*lE-3,1,1.5+al(x),'#f2f9fd');}
+    R(mx-16,base-hE-6,32,7,'#2a1a0e');R(mx-15,base-hE-5,30,5,'#3a2616');
+    g.font='700 3.8px Georgia';g.textAlign='center';g.fillStyle='#f0cf7d';g.fillText('MINE DES CIMES',mx,base-hE-0.8,28);g.textAlign='left';
+    R(mx+lE+5,base-hE+lE-2,1.5,5,'#39454f');R(mx+lE+3,base-hE+lE+3,6,7,'#c9a24a');R(mx+lE+4,base-hE+lE+4,4,5,nuit?'#fff0c0':'#ffe9a8');
+    if(nuit){const gr=g.createRadialGradient(mx+lE+6,base-hE+lE+6,2,mx+lE+6,base-hE+lE+6,26);
+      gr.addColorStop(0,'rgba(255,214,130,.35)');gr.addColorStop(1,'rgba(255,214,130,0)');g.fillStyle=gr;g.fillRect(mx-12,base-hE,62,48);}
+    for(let i2=0;i2<13;i2++){const y=base+1+i2*2.4, e2=i2*0.85;
+      R(mx-9-e2,y,18+e2*2,1.4,'#5b3f21');R(mx-9-e2,y,18+e2*2,0.5,'#7d5934');}
+    for(let i2=0;i2<34;i2++){const y=base+i2*0.95, e2=i2*0.33;
+      R(mx-7.5-e2,y,1.6,1,'#98a0aa');R(mx+5.9+e2,y,1.6,1,'#98a0aa');
+      R(mx-7.5-e2,y,0.6,1,'#c6ced8');R(mx+5.9+e2,y,0.6,1,'#c6ced8');}
+    (function(){const x=mx+2,y=H-8;
+      g.fillStyle='rgba(120,140,160,.3)';g.beginPath();g.ellipse(x+1,y+3,13,3,0,0,7);g.fill();
+      for(let j=0;j<12;j++){const k2=al((x+j)*2.3);R(x-11,y-12+j,22,1,k2<0.35?'#6a4a2a':(k2<0.7?'#7d5934':'#8a6238'));}
+      R(x-11,y-12,22,1.5,'#a5764a');R(x-11,y-1,22,1.5,'#4a3218');R(x-11,y-12,1.5,12,'#5b3f21');R(x+9.5,y-12,1.5,12,'#5b3f21');
+      R(x-12,y-9,24,1,'#39454f');R(x-12,y-4,24,1,'#39454f');
+      for(let k2=0;k2<10;k2++)R(x-8+al(k2*3)*15,y-14+al(k2*5)*2.5,2.5,2,al(k2)<0.5?'#8c94a0':'#6d7581');
+      [[-7,2],[6,2]].forEach(([dx,dy])=>{g.fillStyle='#39454f';g.beginPath();g.arc(x+dx,y+dy,2.6,0,7);g.fill();
+        g.fillStyle='#727c88';g.beginPath();g.arc(x+dx,y+dy,1.2,0,7);g.fill();});})();
+    (function(){const x=mx-30,y=base+9;
+      g.fillStyle='rgba(120,140,160,.3)';g.beginPath();g.ellipse(x+1,y+2,9,2.5,0,0,7);g.fill();
+      for(let j=0;j<9;j++){const k2=al((x+j)*1.7);R(x-8,y-9+j,16,1,k2<0.4?'#7d5934':'#8a6238');}
+      R(x-8,y-9,16,1.5,'#a5764a');R(x-8,y-1,16,1,'#4a3218');R(x-8,y-5,16,0.8,'#6a4a2a');
+      R(x+11,y-15,1.6,15,'#8a6238');R(x+8,y-18,8,3,'#9aa2ac');R(x+8,y-18,8,1,'#c6ced8');
+      for(let k2=0;k2<12;k2++)R(x-20+al(k2*3)*13,y-2+al(k2*5)*4,2.5,2,al(k2*7)<0.5?'#7d8590':'#5e6672');})();
+    return {c,W,H,sol:H-2};
+  }
 const FQ={x0:TPH.x-60,x1:TPH.x+60,y0:TPH.y+4,y1:TPH.y+78,entree:[TPH.x+38,TPH.x+60]};
 const FILE=(()=>{const {x0,x1,y0,y1,entree}=FQ, r1=y0+26, r2=y0+50;
   return [[x0,y0,x0,y1],[x0,y1,entree[0],y1],[x1,y0,x1,y1],      /* le cadre : gauche, bas (jusqu'à l'entrée), droite */
@@ -999,67 +1060,8 @@ const SOMMET=(()=>{
     return c;}
   let SOL_M=null;
   /* L'ENTRÉE DE LA MINE : un cadre de bois dans la roche, des rails qui sortent, un wagonnet, une lanterne */
-  function graverMine(nuit){const W=104,H=96,{c,g,F}=mk(W,H);
-    /* LA MINE DES CIMES : falaise en strates, entrée voûtée boisée, rails, wagonnet, lanterne.
-       Même recette que la forêt : texture par demi-pixel, bruit, ombres portées, neige posée. */
-    const sol=H-22, mx=W*0.46, al=hs;
-    const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,w,h);};
-    const bord=(y)=>W*0.80-y*0.22+Math.sin(y/11)*5+Math.sin(y/29)*7;
-    const roche=['#4a515c','#545b67','#5e6672','#69717d','#747c88'];
-    for(let y=0;y<sol+6;y++){const larg=bord(y);
-      for(let x=0;x<larg;x++){const bande=Math.floor((y*0.9+Math.sin(x/9)*3+Math.sin(x/23)*5)/4);
-        let i2=((bande%3)+3)%3+1;
-        if(al(x*2.1+y*1.7)<0.18)i2=Math.max(0,i2-1);
-        if(al(x*3.3+y*0.9)>0.92)i2=Math.min(4,i2+1);
-        R(x,y,1,1,roche[i2]);
-        if(al(x*5.1+y*2.7)>0.988)R(x,y,1,1,'#98a0ac');}
-      if(y%4===0)R(0,y,larg,0.5,'rgba(26,32,40,.35)');
-      R(larg-2,y,2,1,'#838b97');
-      if(Math.abs(bord(y-1)-larg)>1.2)R(larg-4,y,5,1.5,'#eef6fb');}
-    g.strokeStyle='rgba(24,30,38,.5)';g.lineWidth=0.5;
-    [[14,4],[44,0],[74,8]].forEach(([x0,y0],k2)=>{g.beginPath();g.moveTo(x0,y0);
-      for(let y=y0;y<sol-6;y+=6)g.lineTo(x0+Math.sin((y+k2*9)/7)*4,y);g.stroke();});
-    for(let x=0;x<bord(0);x++){const e2=3+Math.sin(x/7)*1.5+al(x)*2;R(x,0,1,e2,'#f4fafd');R(x,e2,1,1,'#d8e6f2');}
-    const base=sol, lE=15, hE=34;
-    g.fillStyle='#0d1216';g.beginPath();g.moveTo(mx-lE,base);g.lineTo(mx-lE,base-hE+lE);
-    g.arc(mx,base-hE+lE,lE,Math.PI,0);g.lineTo(mx+lE,base);g.closePath();g.fill();
-    for(let i2=0;i2<3;i2++){g.fillStyle='rgba(18,24,30,'+(0.25+i2*0.22)+')';
-      g.beginPath();g.ellipse(mx,base-hE*0.5,lE-4-i2*3.5,hE*0.36-i2*3,0,0,7);g.fill();}
-    for(let i2=0;i2<8;i2++){const w=lE*0.7-i2*1.5,y=base-3-i2*2.6;R(mx-w,y,w*2,0.6,'rgba(126,136,148,'+(0.45-i2*0.05)+')');}
-    const bois=(x,y,w,h)=>{for(let j=0;j<h;j++){const k2=al((x+j)*1.9);R(x,y+j,w,1,k2<0.3?'#6a4a2a':(k2<0.7?'#7d5934':'#8a6238'));}
-      R(x,y,w,1,'#a5764a');R(x,y+h-1,w,1,'#4a3218');};
-    bois(mx-lE-4.5,base-hE+lE,4.5,hE-lE);bois(mx+lE,base-hE+lE,4.5,hE-lE);
-    g.save();g.beginPath();g.rect(mx-lE-6,base-hE-2,2*lE+12,lE+4);g.clip();
-    g.strokeStyle='#7d5934';g.lineWidth=4.5;g.beginPath();g.arc(mx,base-hE+lE,lE+2.2,Math.PI,0);g.stroke();
-    g.strokeStyle='#a5764a';g.lineWidth=1;g.beginPath();g.arc(mx,base-hE+lE,lE+4.2,Math.PI,0);g.stroke();g.restore();
-    [[-lE-2.5,base-6],[lE+1,base-6],[-lE-2.5,base-hE+lE+3],[lE+1,base-hE+lE+3]].forEach(([dx,y])=>{R(mx+dx,y,2,2,'#39454f');R(mx+dx,y,1,1,'#7a828c');});
-    for(let x=mx-lE-8;x<mx+lE+8;x++){const d2=Math.abs(x-mx)/(lE+8);R(x,base-hE+lE-Math.sqrt(Math.max(0,1-d2*d2))*lE-3,1,1.5+al(x),'#f2f9fd');}
-    R(mx-16,base-hE-6,32,7,'#2a1a0e');R(mx-15,base-hE-5,30,5,'#3a2616');
-    g.font='700 3.8px Georgia';g.textAlign='center';g.fillStyle='#f0cf7d';g.fillText('MINE DES CIMES',mx,base-hE-0.8,28);g.textAlign='left';
-    R(mx+lE+5,base-hE+lE-2,1.5,5,'#39454f');R(mx+lE+3,base-hE+lE+3,6,7,'#c9a24a');R(mx+lE+4,base-hE+lE+4,4,5,nuit?'#fff0c0':'#ffe9a8');
-    if(nuit){const gr=g.createRadialGradient(mx+lE+6,base-hE+lE+6,2,mx+lE+6,base-hE+lE+6,26);
-      gr.addColorStop(0,'rgba(255,214,130,.35)');gr.addColorStop(1,'rgba(255,214,130,0)');g.fillStyle=gr;g.fillRect(mx-12,base-hE,62,48);}
-    for(let i2=0;i2<13;i2++){const y=base+1+i2*2.4, e2=i2*0.85;
-      R(mx-9-e2,y,18+e2*2,1.4,'#5b3f21');R(mx-9-e2,y,18+e2*2,0.5,'#7d5934');}
-    for(let i2=0;i2<34;i2++){const y=base+i2*0.95, e2=i2*0.33;
-      R(mx-7.5-e2,y,1.6,1,'#98a0aa');R(mx+5.9+e2,y,1.6,1,'#98a0aa');
-      R(mx-7.5-e2,y,0.6,1,'#c6ced8');R(mx+5.9+e2,y,0.6,1,'#c6ced8');}
-    (function(){const x=mx+2,y=H-8;
-      g.fillStyle='rgba(120,140,160,.3)';g.beginPath();g.ellipse(x+1,y+3,13,3,0,0,7);g.fill();
-      for(let j=0;j<12;j++){const k2=al((x+j)*2.3);R(x-11,y-12+j,22,1,k2<0.35?'#6a4a2a':(k2<0.7?'#7d5934':'#8a6238'));}
-      R(x-11,y-12,22,1.5,'#a5764a');R(x-11,y-1,22,1.5,'#4a3218');R(x-11,y-12,1.5,12,'#5b3f21');R(x+9.5,y-12,1.5,12,'#5b3f21');
-      R(x-12,y-9,24,1,'#39454f');R(x-12,y-4,24,1,'#39454f');
-      for(let k2=0;k2<10;k2++)R(x-8+al(k2*3)*15,y-14+al(k2*5)*2.5,2.5,2,al(k2)<0.5?'#8c94a0':'#6d7581');
-      [[-7,2],[6,2]].forEach(([dx,dy])=>{g.fillStyle='#39454f';g.beginPath();g.arc(x+dx,y+dy,2.6,0,7);g.fill();
-        g.fillStyle='#727c88';g.beginPath();g.arc(x+dx,y+dy,1.2,0,7);g.fill();});})();
-    (function(){const x=mx-30,y=base+9;
-      g.fillStyle='rgba(120,140,160,.3)';g.beginPath();g.ellipse(x+1,y+2,9,2.5,0,0,7);g.fill();
-      for(let j=0;j<9;j++){const k2=al((x+j)*1.7);R(x-8,y-9+j,16,1,k2<0.4?'#7d5934':'#8a6238');}
-      R(x-8,y-9,16,1.5,'#a5764a');R(x-8,y-1,16,1,'#4a3218');R(x-8,y-5,16,0.8,'#6a4a2a');
-      R(x+11,y-15,1.6,15,'#8a6238');R(x+8,y-18,8,3,'#9aa2ac');R(x+8,y-18,8,1,'#c6ced8');
-      for(let k2=0;k2<12;k2++)R(x-20+al(k2*3)*13,y-2+al(k2*5)*4,2.5,2,al(k2*7)<0.5?'#7d8590':'#5e6672');})();
-    return {c,W,H,sol:H-2};
-  }
+  /* (graverMine est défini plus haut, pour la station et le sommet) */
+
   /* LE DÉPART DE LA PISTE : un portique rouge, la banderole, deux fanions, le panneau des pistes */
   function graverDepart(){const W=64,H=50,{c,g,F}=mk(W,H);const cx=W/2,sol=H-3;
     [[-22],[20]].forEach(([k])=>{F(cx+k,sol-36,2.5,36,'#c0392b');F(cx+k,sol-36,0.8,36,'#e05a4a');F(cx+k-0.5,sol-1,3.5,1.5,'#ffffff');});
