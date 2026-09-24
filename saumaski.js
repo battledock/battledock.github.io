@@ -545,6 +545,68 @@ function fondMontagnes(g,F){
     plan([[0,98],[60,88],[120,94],[180,86],[240,92],[300,84],[360,92]],'#244a3a');
     for(let x=0;x<WW;x+=3){g.fillStyle='#1a3a2e';g.beginPath();g.moveTo(x-2,MONT);g.lineTo(x,MONT-5-hs(x)*4);g.lineTo(x+2,MONT);g.fill();}
   }
+  /* ===== LA MINE : un massif de premier plan, modelé, et sa tête de galerie en bois =====
+     Le fond reste en aplats (c'est loin) ; ici on est tout près, donc pixel fin et relief. */
+  {const mx=180, base=MONT+4, haut=64, larg=52;
+   const T=['#3a6288','#325774','#2a4a66','#213d56','#1a3247'];
+   const profil=(y)=>{const t=(y-(base-haut))/haut;return larg*(0.30+0.70*Math.pow(t,0.62));};
+   for(let y=base-haut;y<base+2;y+=0.5){
+     const l=profil(y);
+     for(let x=mx-l;x<mx+l;x+=0.5){
+       const u=(x-(mx-l))/(2*l);
+       let i2=u<0.30?0:(u<0.52?1:(u<0.72?2:3));
+       const st=Math.sin((y*0.9+Math.sin(x/14)*4)/7);
+       if(st>0.75)i2=Math.max(0,i2-1);
+       if(st<-0.78)i2=Math.min(4,i2+1);
+       if(hs(x*2.7+y*1.9)>0.972)i2=Math.max(0,i2-1);      /* le grain fin de la roche */
+       F(x,y,0.5,0.5,T[i2]);}
+     F(mx-l,y,1.2,0.5,'#5b86ad');F(mx+l-1.2,y,1.2,0.5,'#16293c');
+     if(Math.abs(y%9)<0.5)F(mx-l+2,y,l*1.2,0.5,'rgba(20,32,46,.26)');}
+   /* la calotte de neige et ses langues, en pixel fin */
+   g.fillStyle='#ffffff';g.beginPath();g.moveTo(mx-profil(base-haut)-1,base-haut+2);
+   [[-26,4],[-17,-2],[-8,2],[1,-5],[11,-1],[22,4]].forEach(([dx,dy])=>g.lineTo(mx+dx,base-haut+dy));
+   g.lineTo(mx+profil(base-haut)+1,base-haut+2);g.closePath();g.fill();
+   g.fillStyle='#dfeaf4';g.beginPath();g.moveTo(mx+2,base-haut+3);g.lineTo(mx+profil(base-haut)+1,base-haut+2);
+   g.lineTo(mx+profil(base-haut)+1,base-haut+6);g.lineTo(mx+2,base-haut+7);g.closePath();g.fill();
+   for(let k=0;k<5;k++){const x=mx-larg*0.42+k*larg*0.2, y=base-haut+8+hs(k)*4, lg=5+hs(k*3)*7;
+     g.fillStyle=k%2?'#e7f0f8':'#f0f7fc';g.beginPath();g.moveTo(x,y);
+     g.quadraticCurveTo(x+1.4,y+lg*0.6,x+0.4,y+lg);g.quadraticCurveTo(x-1.1,y+lg*0.5,x-1.4,y);g.closePath();g.fill();}
+   /* l'éboulis, en grains fins */
+   for(let i2=0;i2<420;i2++){const a=(hs(i2*3)-0.5)*larg*2.1, d=hs(i2*7);
+     F(mx+a*(0.6+d*0.6),base+d*9,0.5+hs(i2*5)*1.5,0.5,hs(i2)<.5?'#7c8794':'#5d6773');}
+   /* l'embrasure : quatre profondeurs jusqu'au noir */
+   const arche=(l,h,col)=>{g.fillStyle=col;g.beginPath();g.moveTo(mx-l,base);g.lineTo(mx-l,base-h+l);
+     g.arc(mx,base-h+l,l,Math.PI,0);g.lineTo(mx+l,base);g.closePath();g.fill();};
+   g.fillStyle='rgba(28,36,48,.25)';g.beginPath();g.ellipse(mx,base+7,32,6,0,0,7);g.fill();
+   arche(19,28,'#16304a');arche(15,24,'#0b1a2a');arche(11,19,'#050d16');
+   /* LA TÊTE DE GALERIE EN BOIS : montants à chanfrein, poutre épaisse, jambes de force */
+   const poteau=(x)=>{F(x,base-27,6,27,'#6a4a2a');F(x+0.8,base-27,3.6,27,'#8a6238');
+     F(x+0.8,base-27,1.2,27,'#a5764a');F(x+4.8,base-27,1.2,27,'#4a3218');
+     for(let k=0;k<5;k++)F(x+1,base-25+k*5.5,3.6,0.5,'rgba(60,40,20,.35)');};
+   poteau(mx-24);poteau(mx+18);
+   F(mx-28,base-32,56,5.6,'#6a4a2a');F(mx-28,base-32,56,3.2,'#8a6238');
+   F(mx-28,base-32,56,1.2,'#a5764a');F(mx-28,base-27,56,1.2,'#4a3218');
+   g.fillStyle='#fff';g.beginPath();g.moveTo(mx-29,base-32);g.lineTo(mx-17,base-36);g.lineTo(mx-5,base-33.4);
+   g.lineTo(mx+7,base-37);g.lineTo(mx+18,base-34);g.lineTo(mx+29,base-32);g.closePath();g.fill();
+   [[-1],[1]].forEach(([s2])=>{g.save();g.translate(mx+s2*23,base-25);g.rotate(s2*0.5);
+     F(-1.6,0,3.2,12,'#7d5934');F(-1.6,0,1,12,'#a5764a');g.restore();});
+   /* l'écriteau : juste MINE */
+   F(mx-13,base-25,26,8,'#6a4a2a');F(mx-12,base-24,24,6,'#8a6238');F(mx-12,base-24,24,1.2,'#a5764a');
+   g.font='700 5px Georgia';g.textAlign='center';g.fillStyle='#2a1a0e';g.fillText('MINE',mx+0.4,base-19.2,22);
+   g.fillStyle='#f4e2ae';g.fillText('MINE',mx,base-19.6,22);g.textAlign='left';
+   /* la lanterne et sa lueur */
+   F(mx+28,base-16,1.8,9,'#2f3a46');F(mx+25.4,base-10.5,6.4,7.5,'#8a6a28');F(mx+26.2,base-9.8,4.8,6,'#c9a24a');
+   F(mx+26.8,base-9.2,3.6,4.8,'#ffe9a8');
+   {const gr=g.createRadialGradient(mx+28.6,base-7,1,mx+28.6,base-7,22);
+    gr.addColorStop(0,'rgba(255,214,130,.34)');gr.addColorStop(1,'rgba(255,214,130,0)');g.fillStyle=gr;g.fillRect(mx+6,base-29,46,42);}
+   /* le stock de madriers et la congère du seuil */
+   for(let i2=0;i2<3;i2++){const y=base-3-i2*3.4;F(mx-46,y+2.8,17,1.4,'rgba(28,36,48,.2)');
+     F(mx-46,y,17,3.2,'#7d5934');F(mx-46,y,17,1,'#a5764a');}
+   g.fillStyle='#dfeaf4';g.beginPath();g.moveTo(mx-29,base+4);g.quadraticCurveTo(mx-13,base-1.5,mx,base+0.5);
+   g.quadraticCurveTo(mx+13,base-1.5,mx+29,base+4);g.lineTo(mx+29,base+6);g.lineTo(mx-29,base+6);g.closePath();g.fill();
+   g.fillStyle='#ffffff';g.beginPath();g.moveTo(mx-24,base+3.2);g.quadraticCurveTo(mx,base+0.6,mx+24,base+3.2);
+   g.lineTo(mx+24,base+4.2);g.lineTo(mx-24,base+4.2);g.closePath();g.fill();
+  }
 }
 function solVide(){
   const {c,g,F}=mk(WW,WH);
@@ -976,6 +1038,7 @@ function graverPiquet(rouge){const W=6,H=18,{c,g,F}=mk(W,H);const cx=3,sol=H-2;
 function graverPanneauEcole(){const W=34,H=30,{c,g,F}=mk(W,H);const cx=W/2,sol=H-3;
   F(cx-0.75,sol-18,1.5,18,'#5b3f21');F(cx-15,sol-26,30,9,'#1d3f6a');F(cx-15,sol-26,30,0.5,'#4d7fc8');F(cx-15.5,sol-27,31,1.2,'#ffffff');
   g.font='700 3.2px Georgia';g.textAlign='center';g.fillStyle='#fff';g.fillText('JARDIN DES NEIGES',cx,sol-21.3,28);g.textAlign='left';return {c,W,H,sol};}
+function graverPorteMine(){const W=56,H=10,{c,g,F}=mk(W,H);F(0,H-3,W,3,'rgba(40,30,20,.18)');return {c,W,H,sol:H};}
 function objetsVides(){
   const cal={}, L=[];
   const reg=(nom,J,N)=>{cal[nom]={toile:J.c,W:J.W,H:J.H,sol:J.sol,nuit:N?N.c:null};};
@@ -989,8 +1052,8 @@ function objetsVides(){
   const C=COUR;
   
   P('souvenirs',C.x1-40,C.y0-4,{col:[28,12],bati:true,ouvre:'buvette',demi:26});
-  reg('galerie',graverMine(false),graverMine(true));
-  P('galerie',180,MONT+44,{col:[24,8],bati:true,demi:24,ferme:'La galerie du Puits n°1'});
+  reg('galerie',graverPorteMine());
+  P('galerie',180,MONT+16,{col:[26,4],bati:true,demi:26,ferme:'La galerie du Puits n°1'});
   
   
   reg('lampeC',graverLampadaireFin());reg('bancC',graverBancPlaid(1));reg('skisC',graverSkis());reg('poteauC',graverPoteau('MÉTRO ↓'));
