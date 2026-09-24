@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-23-1954';
+  var MA_VERSION='2026-09-24-0055';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -20587,10 +20587,19 @@ function ouvrirSac(){
   $('sac-fermer').onclick=()=>{fermeA=Date.now();$('sacPage').classList.remove('on');};
   $('sacFond').querySelectorAll('[data-obj]').forEach(b=>b.onclick=()=>{choisi=b.dataset.obj;ouvrirSac();});
   const j=$('sac-jeter');
-  if(j)j.onclick=()=>{
-    e.sac[choisi]=Math.max(0,combien(choisi)-1);
-    if(!combien(choisi))choisi=null;
-    sauver();majPastille();ouvrirSac();
+  if(j)j.onclick=async()=>{
+    /* JETER POUR DE BON : c'est le serveur qui tient le sac. Sans lui, l'objet
+       revenait à la première synchronisation (bug signalé dans la forêt). */
+    const quoi=choisi, avant=combien(quoi);
+    j.disabled=true;
+    e.sac[quoi]=Math.max(0,avant-1);
+    if(!combien(quoi))choisi=null;
+    majPastille();ouvrirSac();
+    const d=await appelRPC('jeter_du_sac',{p_joueur:e.id,p_type:quoi,p_nb:1});
+    if(d&&!d.erreur&&d.sac){e.sac=d.sac;if(typeof d.max==='number')e.sacMax=d.max;}
+    else{e.sac[quoi]=avant;}                       /* le serveur a refusé : on remet l'objet */
+    try{sauver();majHaut();majPastille();}catch(x){}
+    if($('sacPage')&&$('sacPage').classList.contains('on'))ouvrirSac();
   };
   $('sacPage').classList.add('on');
 }
