@@ -548,32 +548,21 @@ function fondMontagnes(g,F){
   /* ===== LA MINE : un massif de premier plan, modelé, et sa tête de galerie en bois =====
      Le fond reste en aplats (c'est loin) ; ici on est tout près, donc pixel fin et relief. */
   {const mx=180, base=MONT+4, haut=64, larg=52;
-   const T=['#3a6288','#325774','#2a4a66','#213d56','#1a3247'];
-   const profil=(y)=>{const t=(y-(base-haut))/haut;return larg*(0.30+0.70*Math.pow(t,0.62));};
-   for(let y=base-haut;y<base+2;y+=0.5){
-     const l=profil(y);
-     for(let x=mx-l;x<mx+l;x+=0.5){
-       const u=(x-(mx-l))/(2*l);
-       let i2=u<0.30?0:(u<0.52?1:(u<0.72?2:3));
-       const st=Math.sin((y*0.9+Math.sin(x/14)*4)/7);
-       if(st>0.75)i2=Math.max(0,i2-1);
-       if(st<-0.78)i2=Math.min(4,i2+1);
-       if(hs(x*2.7+y*1.9)>0.972)i2=Math.max(0,i2-1);      /* le grain fin de la roche */
-       F(x,y,0.5,0.5,T[i2]);}
-     F(mx-l,y,1.2,0.5,'#5b86ad');F(mx+l-1.2,y,1.2,0.5,'#16293c');
-     if(Math.abs(y%9)<0.5)F(mx-l+2,y,l*1.2,0.5,'rgba(20,32,46,.26)');}
-   /* la calotte de neige et ses langues, en pixel fin */
-   g.fillStyle='#ffffff';g.beginPath();g.moveTo(mx-profil(base-haut)-1,base-haut+2);
-   [[-26,4],[-17,-2],[-8,2],[1,-5],[11,-1],[22,4]].forEach(([dx,dy])=>g.lineTo(mx+dx,base-haut+dy));
-   g.lineTo(mx+profil(base-haut)+1,base-haut+2);g.closePath();g.fill();
-   g.fillStyle='#dfeaf4';g.beginPath();g.moveTo(mx+2,base-haut+3);g.lineTo(mx+profil(base-haut)+1,base-haut+2);
-   g.lineTo(mx+profil(base-haut)+1,base-haut+6);g.lineTo(mx+2,base-haut+7);g.closePath();g.fill();
-   for(let k=0;k<5;k++){const x=mx-larg*0.42+k*larg*0.2, y=base-haut+8+hs(k)*4, lg=5+hs(k*3)*7;
-     g.fillStyle=k%2?'#e7f0f8':'#f0f7fc';g.beginPath();g.moveTo(x,y);
-     g.quadraticCurveTo(x+1.4,y+lg*0.6,x+0.4,y+lg);g.quadraticCurveTo(x-1.1,y+lg*0.5,x-1.4,y);g.closePath();g.fill();}
-   /* l'éboulis, en grains fins */
-   for(let i2=0;i2<420;i2++){const a=(hs(i2*3)-0.5)*larg*2.1, d=hs(i2*7);
-     F(mx+a*(0.6+d*0.6),base+d*9,0.5+hs(i2*5)*1.5,0.5,hs(i2)<.5?'#7c8794':'#5d6773');}
+   /* PLUS DE MASSIF : la galerie s'ouvre à même la montagne du fond.
+      Il ne reste qu'un collet de roche autour de l'ouverture, pour qu'elle s'y creuse. */
+   {const T=['#33587a','#2b4c69','#234058','#1b3348'];
+    for(let y=base-34;y<base+2;y+=0.5){
+      const l=26+ (base-y)*0.12 - Math.abs(Math.sin((base-y)/9))*3;
+      for(let x=mx-l;x<mx+l;x+=0.5){
+        const u=(x-(mx-l))/(2*l);let i2=u<0.34?0:(u<0.6?1:(u<0.8?2:3));
+        if(hs(x*2.7+y*1.9)>0.972)i2=Math.max(0,i2-1);
+        F(x,y,0.5,0.5,T[i2]);}
+      F(mx-l,y,1,0.5,'#5b86ad');F(mx+l-1,y,1,0.5,'#16293c');
+      if(Math.abs(y%8)<0.5)F(mx-l+2,y,l*1.1,0.5,'rgba(20,32,46,.22)');}
+    /* un peu de neige sur le rebord du collet et des gravats au pied */
+    for(let x=mx-28;x<mx+28;x+=0.5){const e=1.5+Math.sin(x/6)*0.8+hs(x)*1.2;F(x,base-34,0.5,e,'#eef6fb');}
+    for(let i2=0;i2<160;i2++){const a=(hs(i2*3)-0.5)*62, d=hs(i2*7);
+      F(mx+a*(0.6+d*0.5),base+d*7,0.5+hs(i2*5)*1.5,0.5,hs(i2)<.5?'#7c8794':'#5d6773');}}
    /* l'embrasure : quatre profondeurs jusqu'au noir */
    const arche=(l,h,col)=>{g.fillStyle=col;g.beginPath();g.moveTo(mx-l,base);g.lineTo(mx-l,base-h+l);
      g.arc(mx,base-h+l,l,Math.PI,0);g.lineTo(mx+l,base);g.closePath();g.fill();};
