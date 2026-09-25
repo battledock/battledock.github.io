@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-25-1604';
+  var MA_VERSION='2026-09-25-1617';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -17791,7 +17791,7 @@ function encaisser(genre,x,y,nom,col){
 }
 
 const CUEILLI=new Map();                        /* clé → heure de la cueillette */
-const REPOUSSE={cueillette:210000, buisson:240000, resine:180000};
+const REPOUSSE={cueillette:210000, buisson:240000, resine:180000, champignons:150000};   /* les champignons repoussent en deux minutes et demie */
 
 /* On note ce qui a été cassé — une seule fois chacun.
    Sans ça, la liste grossissait à chaque récolte et partait
@@ -18974,12 +18974,26 @@ const ESP_PECHE={
   espadon:{nom:'espadon',col:['#2a3a5a','#c8d0dc'],L:28,touches:8,vit:.68},
   mola:{nom:'poisson-lune',col:['#8a9aa6','#dde4ea'],L:18,touches:8,vit:.7},
   requin:{nom:'requin peau-bleue',col:['#2a5a9a','#eef2f6'],L:30,touches:9,vit:.64},
+  gardon:{nom:'Gardon',col:['#c8d2da','#eef3f7'],L:14,touches:3,vit:1.25},
+  perche:{nom:'Perche',col:['#6a8a3a','#c8d878'],L:20,touches:4,vit:1.15},
+  truite:{nom:'Truite',col:['#8a7a5a','#e8c8a0'],L:26,touches:5,vit:1.2},
+  carpe:{nom:'Carpe',col:['#a08a4a','#d8c078'],L:34,touches:6,vit:.9},
+  brochet:{nom:'Brochet',col:['#4a6a3a','#9ab86a'],L:40,touches:7,vit:1.05},
+  anguilledouce:{nom:'Anguille',col:['#3a4a3a','#6a7a5a'],L:36,touches:6,vit:1.1},
+  ecrevisse:{nom:'Écrevisse',col:['#b04030','#e08a6a'],L:10,touches:3,vit:.95},
+  silure:{nom:'Silure',col:['#4a4238','#8a7a6a'],L:52,touches:9,vit:.75},
   hippocampe:{nom:'hippocampe',col:['#e8a02a','#f8d070'],L:8,touches:9,vit:.6},
   calamar:{nom:'Calamar géant',col:['#b83a3a','#f0a8a0'],L:30,touches:10,vit:.56},
   coelacanthe:{nom:'Cœlacanthe',col:['#1f3a6a','#6a8ab8'],L:26,touches:10,vit:.52},
 };
 let PECHE=null, TIENT_PECHE=false, CARNET_PECHE=null;
 function lieuDePeche(){
+  if(FORET_SEULE&&CARTE==='village'){          /* LE BORD DE LA RIVIÈRE, EN FORÊT */
+    const x=joueur.x,y=joueur.y,cx=rivX(y);
+    if(y>110&&y<520&&x>cx-46&&x<cx-8)
+      return {bx:cx+6,by:y+6,lieu:'riviere'};
+    return null;
+  }
   if(CARTE!=='extramar')return null;
   const x=joueur.x,y=joueur.y;
   for(const px of XP.pontons){
@@ -20318,7 +20332,7 @@ const RECOLTES={
 function ramasser(o){
   const R=RECOLTES[o.t];
   o.cueilli=Date.now();o.frappe=Date.now();
-  signalerLeMonde(o,'cueillette',o.t);
+  signalerLeMonde(o,o.t==='champignons'?'champignons':'cueillette',o.t);   /* les champignons ont leur propre rythme */
   for(let i=0;i<8;i++){
     const a=-1.2-Math.random()*0.7;
     PARTS.push({x:o.x+(Math.random()-.5)*16,y:o.y-10,
@@ -20499,6 +20513,14 @@ const OBJETS={
  thon:   {nom:'Thon rouge', d:'Un monstre venu du large, à l’aube. Il faut des bras.', poids:4},
  rascassedor:{nom:'Rascasse d’or', d:'Une seule par nuit, sous le quai. On dit qu’elle porte chance.', poids:2},
  sar:{nom:'Sar',d:'Rayé de noir, méfiant. Il faut une vraie canne.',poids:1},
+ gardon:{nom:'Gardon',d:'Le poisson des débutants, argenté et vif.',poids:1},
+ perche:{nom:'Perche',d:'Rayée de vert, la hargne des rivières.',poids:1},
+ truite:{nom:'Truite',d:'Mouchetée de rouge, elle remonte le courant.',poids:1},
+ carpe:{nom:'Carpe',d:'Lourde et paisible, elle dort dans la vase.',poids:1},
+ brochet:{nom:'Brochet',d:'Le loup des rivières : long, vert, et dents partout.',poids:1},
+ anguilledouce:{nom:'Anguille de rivière',d:'Elle file entre les doigts.',poids:1},
+ ecrevisse:{nom:'Écrevisse',d:'Deux pinces et un caractère.',poids:1},
+ silure:{nom:'Silure',d:'Le géant des fonds, moustachu comme un vieux marin.',poids:1},
  vieille:{nom:'Vieille',d:'Verte et marbrée, elle vit dans les herbes du quai.',poids:1},
  grondin:{nom:'Grondin',d:'Des nageoires comme des ailes bleues. Il grogne quand on le sort.',poids:1},
  pagre:{nom:'Pagre',d:'Rose, tacheté de bleu ; il ne sort qu’à l’aube.',poids:2},
@@ -20520,6 +20542,28 @@ const OBJETS={
  tamis:  {nom:'Tamis',  d:'Au bord de l’eau, avec 10 argiles dans le sac : appuie sur « Laver » pour en tirer des pépites.',poids:0,outil:1}
 };
 const ICONES={
+ gardon:'<rect x="2" y="7" width="9" height="3" fill="#c8d2da"/><rect x="2" y="7" width="9" height="1" fill="#eef3f7"/>'+
+      '<rect x="11" y="6" width="3" height="5" fill="#aab6c0"/><rect x="4" y="8" width="1" height="1" fill="#1b1b1b"/>',
+ perche:'<rect x="2" y="6" width="10" height="4" fill="#6a8a3a"/><rect x="2" y="6" width="10" height="1" fill="#8aaa5a"/>'+
+      '<rect x="4" y="6" width="1" height="4" fill="#3a4a20"/><rect x="7" y="6" width="1" height="4" fill="#3a4a20"/>'+
+      '<rect x="12" y="5" width="2" height="6" fill="#c8d878"/><rect x="3" y="7" width="1" height="1" fill="#1b1b1b"/>',
+ truite:'<rect x="2" y="6" width="10" height="4" fill="#8a7a5a"/><rect x="2" y="6" width="10" height="1" fill="#a89a78"/>'+
+      '<rect x="4" y="7" width="1" height="1" fill="#c8506a"/><rect x="7" y="8" width="1" height="1" fill="#c8506a"/><rect x="9" y="7" width="1" height="1" fill="#c8506a"/>'+
+      '<rect x="12" y="5" width="2" height="6" fill="#e8c8a0"/><rect x="3" y="7" width="1" height="1" fill="#1b1b1b"/>',
+ carpe:'<rect x="2" y="5" width="10" height="6" fill="#a08a4a"/><rect x="2" y="5" width="10" height="1" fill="#c0a868"/>'+
+      '<rect x="12" y="4" width="2" height="8" fill="#d8c078"/><rect x="3" y="7" width="1" height="1" fill="#1b1b1b"/>'+
+      '<rect x="2" y="8" width="2" height="1" fill="#7a6630"/>',
+ brochet:'<rect x="1" y="6" width="12" height="4" fill="#4a6a3a"/><rect x="1" y="6" width="12" height="1" fill="#6a8a4a"/>'+
+      '<rect x="3" y="8" width="2" height="1" fill="#9ab86a"/><rect x="7" y="7" width="2" height="1" fill="#9ab86a"/>'+
+      '<rect x="13" y="5" width="2" height="6" fill="#3a5a2a"/><rect x="2" y="7" width="1" height="1" fill="#1b1b1b"/>',
+ anguilledouce:'<rect x="1" y="7" width="12" height="3" fill="#3a4a3a"/><rect x="1" y="7" width="12" height="1" fill="#5a6a4a"/>'+
+      '<rect x="13" y="6" width="2" height="5" fill="#2a3a2a"/><rect x="2" y="8" width="1" height="1" fill="#1b1b1b"/>',
+ ecrevisse:'<rect x="4" y="6" width="8" height="5" fill="#b04030"/><rect x="4" y="6" width="8" height="1" fill="#d06a4a"/>'+
+      '<rect x="1" y="5" width="3" height="2" fill="#b04030"/><rect x="1" y="9" width="3" height="2" fill="#b04030"/>'+
+      '<rect x="12" y="7" width="3" height="3" fill="#8a2a20"/><rect x="6" y="7" width="1" height="1" fill="#1b1b1b"/>',
+ silure:'<rect x="2" y="6" width="11" height="5" fill="#4a4238"/><rect x="2" y="6" width="11" height="1" fill="#6a6254"/>'+
+      '<rect x="1" y="5" width="3" height="1" fill="#8a7a6a"/><rect x="1" y="9" width="3" height="1" fill="#8a7a6a"/>'+
+      '<rect x="13" y="5" width="2" height="7" fill="#3a332c"/><rect x="4" y="7" width="1" height="1" fill="#1b1b1b"/>',
  oursin:'<rect x="5" y="5" width="6" height="6" fill="#4a2a4a"/><rect x="5" y="5" width="6" height="1" fill="#6a4a6a"/>'+
       '<rect x="3" y="7" width="2" height="1" fill="#2a1a2a"/><rect x="11" y="7" width="2" height="1" fill="#2a1a2a"/>'+
       '<rect x="7" y="2" width="1" height="3" fill="#2a1a2a"/><rect x="7" y="11" width="1" height="3" fill="#2a1a2a"/>'+
@@ -22187,7 +22231,8 @@ let VENTE={};                 /* combien de chaque objet on met sur le comptoir 
 const MODE_COMPTOIR={nom:'Le comptoir',mot:'« Fais voir ce que tu as ramené. »',
   prix:PRIX_COMPTOIR,rpc:'vendre_au_comptoir',ap:{veste:2,cheveux:1,chapeau:0},
   vide:'<div class="cptVide">Ton sac est vide.<br>Traverse le gué : tout pousse sur l’autre rive.</div>'};
-const PRIX_POISSON={sardine:5,bogue:4,girelle:6,rouget:10,mulet:10,saupe:12,seiche:14,maquereau:15,dorade:18,rascasse:30,
+const PRIX_POISSON={gardon:6,perche:14,truite:28,anguilledouce:40,carpe:60,brochet:110,silure:260,ecrevisse:22,
+  sardine:5,bogue:4,girelle:6,rouget:10,mulet:10,saupe:12,seiche:14,maquereau:15,dorade:18,rascasse:30,
   loup:40,denti:55,murene:70,congre:90,poulpe:120,saintpierre:150,thon:300,legende:500,rascassedor:500,
   sar:20,vieille:25,grondin:35,pagre:80,barracuda:110,liche:120,chapon:150,baliste:220,raie:300,coryphene:350,
   mola:1000,espadon:1200,requin:1500,hippocampe:2500,calamar:5000,coelacanthe:8000};   /* le serveur a les mêmes */   /* le serveur a les mêmes */
