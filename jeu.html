@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-25-1617';
+  var MA_VERSION='2026-09-25-1639';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -23745,7 +23745,8 @@ majAction=function(){const i=potProche();if(i===null||!POT.charge)return potMajV
   else if(!P||P.etat!=='bechee')t=J.houe?['Bêcher','AVEC LA HOUE']:['Il te faut une houe','EN VENTE AU GRAINETIER'];
   else if(!P.cult)t=['Semer','CHOISIR UNE GRAINE'];
   else if(s===3){const chargeS=Object.values(e.sac||{}).reduce((t2,n)=>t2+(n||0),0);
-    t=(chargeS+6>(e.sacMax||60))?['Sac plein','VA VENDRE À LA BOUTIQUE']:['Récolter','6 '+POT_CULT[P.cult][0].toUpperCase()+' DANS TON SAC'];}
+    t=(chargeS+6>(e.sacMax||60))?['Sac plein','VA VENDRE À LA BOUTIQUE']
+      :['Récolter',(P.cult==='lavande'?'6 BRINS · APPUI LONG POUR ARRACHER':'6 '+POT_CULT[P.cult][0].toUpperCase()+' DANS TON SAC')];}
   else if(!P.eau)t=J.arrosoir?['Arroser','ÇA POUSSERA DEUX FOIS PLUS VITE']:[POT_CULT[P.cult][0]+' · ça pousse','UN ARROSOIR IRAIT PLUS VITE'];
   else{const reste=Math.max(0,new Date(P.mur_a).getTime()-potNow()), m=Math.ceil(reste/60000);t=[POT_CULT[P.cult][0]+' · ça pousse','PRÊT DANS '+(m>=60?Math.floor(m/60)+' H '+String(m%60).padStart(2,'0'):m+' MIN')];}
   b.innerHTML=t[0]+'<small>'+t[1]+'</small>';b.classList.add('on');};
@@ -23769,6 +23770,22 @@ async function potAgir(i){if(POT_OCCUPE)return;const P=POT.parc[i], s=potStade(P
   else texteVolant(joueur.x,joueur.y-56,J.arrosoir||P.eau?'Ça pousse… patience':'Un arrosoir irait deux fois plus vite','#fff3d0');
   }finally{POT_OCCUPE=false;try{majAction();}catch(x){}}}
 $('action').addEventListener('click',(ev)=>{const i=potProche();if(i===null||!POT.charge)return;ev.stopImmediatePropagation();ev.preventDefault();potAgir(i);},true);
+/* ARRACHER : appui long sur la plaque, devant une parcelle plantée.
+   Sans ça, une vivace comme la lavande squattait la parcelle pour toujours. */
+let POT_LONG=0;
+const potArracher=async(i)=>{
+  const P=POT.parc[i];if(!P||!P.cult)return;
+  const nom=POT_CULT[P.cult]?POT_CULT[P.cult][0]:P.cult;
+  if(!confirm('Arracher '+nom.toLowerCase()+' ? Le pied est perdu, la parcelle repart bêchée.'))return;
+  const d=await appelRPC('pot_arracher',{p_joueur:e.id,p_i:i});
+  if(d&&!d.erreur){potAdopter(d.etat||d);texteVolant(joueur.x,joueur.y-56,nom+' arraché','#ffd0a0');vibrer([14,40,14]);}
+  else potRefus(d);
+  try{majAction();}catch(x){}};
+['touchstart','mousedown'].forEach(ev=>$('action').addEventListener(ev,()=>{
+  const i=potProche();if(i===null||!POT.charge)return;
+  const P=POT.parc[i];if(!P||!P.cult)return;
+  clearTimeout(POT_LONG);POT_LONG=setTimeout(()=>potArracher(i),650);},true));
+['touchend','touchmove','mouseup','mouseleave'].forEach(ev=>$('action').addEventListener(ev,()=>clearTimeout(POT_LONG),true));
 /* le choix de la graine : les sachets, avec leur prix */
 function potGraines(i){const old=document.getElementById('potGr');if(old)old.remove();
   const box=document.createElement('div');box.id='potGr';
