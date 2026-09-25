@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-25-1639';
+  var MA_VERSION='2026-09-25-1644';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -17791,7 +17791,13 @@ function encaisser(genre,x,y,nom,col){
 }
 
 const CUEILLI=new Map();                        /* clé → heure de la cueillette */
-const REPOUSSE={cueillette:210000, buisson:240000, resine:180000, champignons:150000};   /* les champignons repoussent en deux minutes et demie */
+/* LA REPOUSSE, EXACTEMENT COMME LE SERVEUR LA COMPTE.
+   Avant, les arbres et les rochers étaient notés « cassés » sans horloge côté jeu :
+   en quittant la carte, ils réapparaissaient tout de suite alors que le serveur
+   les comptait encore coupés — on tapait dans le vide. */
+const REPOUSSE={cueillette:210000, buisson:240000, resine:240000, champignons:150000,
+  arbre:900000, rocher:3600000, fer:3600000, cuivre:3600000, charbon:3600000,
+  argile:210000, roseaux:210000, herbes:210000, plumes:210000};
 
 /* On note ce qui a été cassé — une seule fois chacun.
    Sans ça, la liste grossissait à chaque récolte et partait
@@ -18048,7 +18054,16 @@ function signalerLeMonde(o,genre,quoi){
          il n'a donc rien mis dans le sac. On lui pousse le butin, objet par objet.
          S'il l'a déjà récolté, au contraire, on se réaligne sur lui. */
       if(d.erreur==='il n\'y a rien ici'||d.erreur==='ca ne se recolte pas')pousserLeButin(butin);
-      else rattraperLeSac();
+      else{
+        /* LE SERVEUR DIT QUE C'EST DÉJÀ PRIS : on le croit, on efface ce que le jeu
+           avait compté et on remet l'objet à l'état coupé jusqu'à sa vraie repousse. */
+        if(d.erreur==='pas encore repousse'||d.erreur==='deja recolte'){
+          if(REPOUSSE[genre])CUEILLI.set(cle,Date.now());else noterCasse(cle);
+          try{appliquerLeMonde();}catch(x){}
+          texteVolant(joueur.x,joueur.y-56,'Déjà coupé — ça repousse','#ffe8a0');
+        }
+        rattraperLeSac();
+      }
     }else if(d&&d.sac)adopterSac(d,num);
     else{
       /* le serveur n'a rien à dire pour ce genre : on garde la trace du monde */
@@ -23735,21 +23750,38 @@ dessinerBulles=function(g,camX,camY,px,py){const d=Date.now()-POT_ARROSE;
   return potBullesVrai(g,camX,camY,px,py);};
 /* 2 · le bouton d'action, près d'une parcelle */
 const potMajVrai=majAction;
-majAction=function(){const i=potProche();if(i===null||!POT.charge)return potMajVrai();
+majAction=function(){const i=potProche();if(i===null||!POT.charge){try{majBoutonArracher(null);}catch(x){}return potMajVrai();}
   try{const b2=cible();                                   /* une porte ne passe devant la parcelle que si on est vraiment collé à elle */
     if(b2&&(b2.ouvre||b2.t==='comptoir')){const demi=b2.demi||40;
       const ec=Math.max(0,Math.abs(b2.x-joueur.x)-demi), dd=Math.hypot(ec,(joueur.y-b2.y)*0.8);
-      if(dd<26)return potMajVrai();}}catch(x){}
+      if(dd<26){try{majBoutonArracher(null);}catch(x){}return potMajVrai();}}}catch(x){}
   const b=$('action'), P=POT.parc[i], s=potStade(P), J=POT.j;let t;
   if(!potOuverte(i))t=['Parcelle à louer','AGRANDIS TON CHAMP AU GRAINETIER'];
   else if(!P||P.etat!=='bechee')t=J.houe?['Bêcher','AVEC LA HOUE']:['Il te faut une houe','EN VENTE AU GRAINETIER'];
   else if(!P.cult)t=['Semer','CHOISIR UNE GRAINE'];
   else if(s===3){const chargeS=Object.values(e.sac||{}).reduce((t2,n)=>t2+(n||0),0);
-    t=(chargeS+6>(e.sacMax||60))?['Sac plein','VA VENDRE À LA BOUTIQUE']
-      :['Récolter',(P.cult==='lavande'?'6 BRINS · APPUI LONG POUR ARRACHER':'6 '+POT_CULT[P.cult][0].toUpperCase()+' DANS TON SAC')];}
+    t=(chargeS+6>(e.sacMax||60))?['Sac plein','VA VENDRE À LA BOUTIQUE']:['Récolter','6 '+POT_CULT[P.cult][0].toUpperCase()+' DANS TON SAC'];}
   else if(!P.eau)t=J.arrosoir?['Arroser','ÇA POUSSERA DEUX FOIS PLUS VITE']:[POT_CULT[P.cult][0]+' · ça pousse','UN ARROSOIR IRAIT PLUS VITE'];
   else{const reste=Math.max(0,new Date(P.mur_a).getTime()-potNow()), m=Math.ceil(reste/60000);t=[POT_CULT[P.cult][0]+' · ça pousse','PRÊT DANS '+(m>=60?Math.floor(m/60)+' H '+String(m%60).padStart(2,'0'):m+' MIN')];}
-  b.innerHTML=t[0]+'<small>'+t[1]+'</small>';b.classList.add('on');};
+  b.innerHTML=t[0]+'<small>'+t[1]+'</small>';b.classList.add('on');
+  majBoutonArracher(P&&P.cult?i:null);};
+/* LE BOUTON ARRACHER : visible dès qu'une parcelle est plantée, pour que personne
+   n'ait à deviner qu'un appui long existe. */
+function majBoutonArracher(i){
+  let b=document.getElementById('potArr');
+  if(i===null||i===undefined){if(b)b.classList.remove('on');return;}
+  if(!b){
+    b=document.createElement('button');b.id='potArr';
+    b.style.cssText='position:fixed;right:96px;bottom:calc(env(safe-area-inset-bottom,0px) + 26px);z-index:26;'+
+      'border:0;border-radius:14px;padding:11px 13px;font:400 13px Georgia,serif;color:#5a3a24;'+
+      'background:linear-gradient(180deg,rgba(248,240,224,.95),rgba(228,214,188,.95));'+
+      'box-shadow:0 5px 16px rgba(0,0,0,.4);opacity:0;transition:opacity .18s;pointer-events:none';
+    b.innerHTML='Arracher<small style="display:block;font:600 7px system-ui;letter-spacing:1.4px;color:#8a6a48">LE PIED, POUR RESEMER</small>';
+    document.body.appendChild(b);
+    b.onclick=(ev)=>{ev.stopPropagation();const j=potProche();if(j!==null)potArracher(j);};
+  }
+  b.classList.add('on');b.style.opacity='1';b.style.pointerEvents='auto';
+}
 const potGeste=(type,ms)=>{GESTE={t:1,pourMoi:true,cible:null,impact:false,type};const t0=Date.now();const id=setInterval(()=>{GESTE.t=Math.max(0,1-(Date.now()-t0)/ms);if(GESTE.t<=0){clearInterval(id);GESTE={t:0};}},30);};
 const potRefus=(d)=>texteVolant(joueur.x,joueur.y-56,d&&d.erreur==='pas_assez'?'Pas assez d’argent':(d&&d.erreur==='pas_mur'?'Pas encore mûr':'Réessaie dans un instant'),'#ffe8a0');
 async function potAgir(i){if(POT_OCCUPE)return;const P=POT.parc[i], s=potStade(P), J=POT.j;
