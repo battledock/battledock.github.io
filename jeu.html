@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-24-1947';
+  var MA_VERSION='2026-09-25-0049';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -17701,8 +17701,15 @@ async function pousserLeButin(butin){
   }
   if(dernier)adopterSac(dernier.d,dernier.num);
 }
+let BUTIN_SERVEUR=false;
 function encaisser(genre,x,y,nom,col){
-  DERNIER_BUTIN={};
+  DERNIER_BUTIN={};BUTIN_SERVEUR=false;
+  /* TOUT CE QU'ON RAMASSE FINIT SUR LE SERVEUR.
+     Si l'action prévient le serveur elle-même (rocher, minerai, arbre), elle lève
+     le drapeau et on ne double pas. Sinon — cueillette, buissons, filons de la
+     galerie — c'est ici qu'on pousse le butin, sans quoi il disparaît à la
+     synchronisation suivante. */
+  setTimeout(()=>{if(!BUTIN_SERVEUR&&Object.keys(DERNIER_BUTIN).length)pousserLeButin(Object.assign({},DERNIER_BUTIN));},0);
   const b=BUTIN[genre]||{};
   let total=0, detail=[];
   for(const k in b){
@@ -17956,6 +17963,7 @@ async function lireSacServeur(){
 /* Quand on récolte, c'est le serveur qui tranche : il vérifie que la
    chose n'a pas déjà été prise, applique le poids, et renvoie le sac. */
 function signalerLeMonde(o,genre,quoi){
+  BUTIN_SERVEUR=true;                                          /* c'est cette action qui parle au serveur */
   const cle=cleDe(o), butin=Object.assign({},DERNIER_BUTIN);   /* ce que le jeu vient de compter */
   try{CANAL&&CANAL.send({type:'broadcast',event:'monde',
     payload:{cle,genre,quand:Date.now()}});}catch(x){}
