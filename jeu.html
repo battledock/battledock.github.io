@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-25-0656';
+  var MA_VERSION='2026-09-25-0703';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -19041,8 +19041,10 @@ function nouveauCercle(P){
   const vers=Math.min(1,1-P.dist)*0.75;
   P.fx=P.bx+(P.px-P.bx)*vers+(Math.random()-.5)*34*(P.dist+.3);
   P.fy=P.by+((P.py+12)-P.by)*vers+(Math.random()-.5)*8;
-  const lent=[1,1/0.85,1/0.75,1/0.65,1/0.55,1/0.48][(P.eq&&P.eq.canne)||0];
-  P.cercle={t0:performance.now(),duree:1000/S.vit*(1.05-P.touches*.03)*lent,k:0,juge:null};
+  /* LES CANNES NE RALENTISSENT PLUS RIEN : le cercle garde son allure, et même
+     s'accélère à chaque touche. Ce qu'apporte une bonne canne, c'est une ZONE
+     PARFAITE plus large (voir fenetreParfaite) et une ligne qui casse moins. */
+  P.cercle={t0:performance.now(),duree:1000/S.vit*(1.04-P.touches*.05),k:0,juge:null};
   eclaboussure(P.fx,P.fy,5);
 }
 /* LA TOUCHE : on tape — trop tôt, pile, ou trop tard */
@@ -19050,10 +19052,12 @@ function taperPeche(){
   const P=PECHE;if(!P||P.etat!=='combat'||!P.cercle||P.cercle.juge)return;
   jugerLaTouche(P,true);
 }
+const fenetreParfaite=(cn)=>[.09,.12,.15,.19,.23,.28][cn||0];    /* la canne élargit le liseré doré */
+const fenetreBonne=(cn)=>[.22,.26,.30,.34,.38,.42][cn||0];
 function jugerLaTouche(P,tape){
   const C=P.cercle, ecart=Math.abs(1-C.k);
   const cn=(P.eq&&P.eq.canne)||0;
-  const note=!tape?'rate':(ecart<(cn>=5?.17:(cn>=3?.13:.09))?'parfait':(ecart<(cn>=4?.33:(cn>=2?.28:.22))?'bien':'rate'));
+  const note=!tape?'rate':(ecart<fenetreParfaite(cn)?'parfait':(ecart<fenetreBonne(cn)?'bien':'rate'));
   C.juge={note,t:performance.now()};
   if(note==='rate'){P.coeurs--;vibrer(60);texteVolant(P.fx,P.fy-10,tape?(C.k<1?'trop tôt !':'trop tard !'):'trop tard !','#ff7a5a');}
   else{
@@ -19127,8 +19131,18 @@ function dessinerLaPeche(g,camX,camY){
     const cible=6;
     g.strokeStyle='rgba(255,255,255,.85)';g.lineWidth=1;g.beginPath();g.arc(bx,by,cible,0,Math.PI*2);g.stroke();
     if(C&&!C.juge){
-      const r=cible+Math.max(0,1-C.k)*30, pret=Math.abs(1-C.k)<.22;
-      g.strokeStyle=pret?'#ffd76a':'rgba(255,255,255,.9)';g.lineWidth=pret?2:1.5;
+      /* LA ZONE PARFAITE : un anneau doré autour de la cible, large comme la canne le permet.
+         Le cercle qui se resserre doit s'arrêter dedans. */
+      const cn=(P.eq&&P.eq.canne)||0, fp=fenetreParfaite(cn), fb=fenetreBonne(cn);
+      g.strokeStyle='rgba(159,223,184,.30)';g.lineWidth=Math.max(2,fb*60);
+      g.beginPath();g.arc(bx,by,cible,0,Math.PI*2);g.stroke();          /* la zone « bien » */
+      g.strokeStyle='rgba(255,215,106,.75)';g.lineWidth=Math.max(2,fp*60);
+      g.beginPath();g.arc(bx,by,cible,0,Math.PI*2);g.stroke();          /* la zone parfaite, au centre */
+      g.strokeStyle='rgba(255,255,255,.55)';g.lineWidth=1;
+      g.beginPath();g.arc(bx,by,cible+fp*30,0,Math.PI*2);g.stroke();
+      g.beginPath();g.arc(bx,by,Math.max(1.5,cible-fp*30),0,Math.PI*2);g.stroke();
+      const r=cible+Math.max(0,1-C.k)*30, pret=Math.abs(1-C.k)<fp;
+      g.strokeStyle=pret?'#fff3c0':'rgba(255,255,255,.95)';g.lineWidth=pret?2.5:1.5;
       g.beginPath();g.arc(bx,by,Math.max(1,r),0,Math.PI*2);g.stroke();
     }else if(C&&C.juge){
       const k=(t-C.juge.t)/420, col=C.juge.note==='parfait'?'255,215,106':(C.juge.note==='bien'?'159,223,184':'255,122,90');
