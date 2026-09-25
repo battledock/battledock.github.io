@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-25-1537';
+  var MA_VERSION='2026-09-25-1604';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -7760,7 +7760,8 @@ async function ouvrirLeBar(){
       if((e.euros||0)<T[2]){bulle('Il te manque '+enEuros(T[2]-(e.euros||0)));return;}
       b.disabled=true;const d=await appelRPC('gratter_ticket',{p_joueur:e.id,p_ticket:T[0]});b.disabled=false;
       if(!d||d.erreur){bulle(d&&d.erreur==='limite'?'Vingt tickets aujourd’hui : reviens demain !':(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':(d&&d.erreur==='doucement'?'Un ticket à la fois !':'Le buraliste n’a pas pu')));return;}
-      faits++;gratter(T,d);});};
+      faits++;gratter(T,d);
+      if(d.ticket){e.cos=e.cos||{};e.cos.costume_pirate=true;setTimeout(()=>{const v=document.querySelector('.gt');if(v)v.remove();ticketDOrTenue('pirate');},2600);}});};
   /* LES TROIS TICKETS, chacun sa règle : le serveur a décidé du gain et composé le ticket (d.compo) ; ici, on dessine et on gratte */
   const gratter=(T,d)=>{const C=d.compo||{},n=('000000'+Math.floor(Math.random()*999999)).slice(-6),eu=(c)=>(c/100).toLocaleString('fr-FR')+' €';
     const v=document.createElement('div');v.className='gt';let html='',zones=[];
@@ -16083,6 +16084,26 @@ function spriteFin(g,x,y,ap0,dir,pas,bouge){
       }else{band(-12+dx,24,hy-1,6);R(-12+dx,hy+4,24,1,T(peau,-24));}
     }
     else if(chapeau==='bonnet'){
+      if(p._bandeau){const cx0=cote?-1:dx;                                 /* LE BANDEAU ET LE TRICORNE DU PIRATE */
+        R(cx0-9,hy-11,18,4,'#1b1b22');R(cx0-11,hy-8,22,2.5,'#1b1b22');R(cx0-9,hy-11,18,1,'#33333d');
+        R(cx0-3,hy-14,6,3,'#1b1b22');R(cx0-1.5,hy-13.5,3,2,'#e8e0d0');
+        if(!dos){R(cx0-5,hy-2,4,3,'#1b1b22');R(cx0-5,hy-3,4,1,'#33333d');   /* le cache-œil */
+          R(cx0-9,hy-2.5,4,1,'#1b1b22');R(cx0+2,hy-2,2,2,'#1a1a1e');
+          R(cx0-3,hy+3,6,1,'#9a5a4a');}
+        return;}
+      if(p._paille){const cx0=cote?-1:dx;                                  /* LE CHAPEAU DE PAILLE DE L'ÉPOUVANTAIL */
+        for(let x=cx0-13;x<cx0+13;x+=1)R(x,hy-7+Math.abs(x-cx0)*0.12,1,2.5,alea(x)<0.5?'#e0c060':'#c9a24a');
+        for(let x=cx0-7;x<cx0+7;x+=1)R(x,hy-13,1,6,alea(x*3)<0.5?'#d8b850':'#c09a3a');
+        R(cx0-7,hy-9,14,1.5,'#8a6238');
+        for(let k=0;k<6;k++){const a=-1.2+k*0.5;R(cx0+Math.cos(a)*9,hy-4+Math.abs(Math.sin(a))*3,2,1,'#e0c060');}
+        if(!dos){R(cx0-4,hy-2,2,2,'#1a1a1e');R(cx0+2,hy-2,2,2,'#1a1a1e');
+          R(cx0-4,hy+3,8,1,'#5a3a24');R(cx0-3,hy+4,1,1,'#5a3a24');R(cx0+2,hy+4,1,1,'#5a3a24');}
+        return;}
+      if(p._noeudOr&&!dos){const cx0=cote?-1:dx;                           /* LE NŒUD PAPILLON DORÉ */
+        R(cx0-4,hy-2,2,2,'#1a1a1e');R(cx0+2,hy-2,2,2,'#1a1a1e');
+        R(cx0-3,hy+3,6,1,'#9a5a4a');
+        R(cx0-2,hy+7,4,2.5,'#c9a24a');R(cx0-4.5,hy+7,2.5,2.5,'#e0bc5a');R(cx0+2,hy+7,2.5,2.5,'#e0bc5a');
+        R(cx0-1,hy+7.5,2,1,'#f6dd8c');}
       if(p._fete){const F2=p._fete, cx0=cote?-1:dx, tt=Date.now()/240;     /* LE GÂTEAU SUR LA TÊTE */
         R(cx0-9,hy-9,18,5,'#c98f5a');R(cx0-9,hy-9,18,1,'#e0aa74');
         R(cx0-9,hy-9,18,2,'#f6e6d8');for(let k=-8;k<9;k+=3)R(cx0+k,hy-8,2,2+((k+9)%4),'#f6e6d8');
@@ -20939,6 +20960,26 @@ function appliquerDeguisement(p){
     p._doudoune=0;p._motif='pois';p._poulet=false;p._casque=null;p._masque=null;p._lunettes=null;p._echarpe=null;p._skis=null;p._gants=null;
     return;
   }
+  if(p.deguisement==='pirate'){                                          /* LE PIRATE DU BAR DES DOCKS */
+    p.haut=1;p.veste='#8a2f2f';p.bas=1;p.pantalon='#2a2a33';p.souliers=1;p.chaussures='#3a2a18';p.sac=0;p.chapeau=3;
+    p._bonnet={b:['#1b1b22','#2a2a33']};p._cape={c:'#2a2a33',c2:'#17171d',clair:'#3d3d48'};
+    p._motif='rayures';p._bandeau='#1b1b22';
+    p._doudoune=0;p._poulet=false;p._casque=null;p._masque=null;p._lunettes=null;p._echarpe=null;p._skis=null;p._gants=null;p._fete=null;p._fourrure=null;
+    return;
+  }
+  if(p.deguisement==='smoking'){                                         /* LE SMOKING DORÉ DU CASINO */
+    p.haut=1;p.veste='#1b1b22';p.bas=1;p.pantalon='#1b1b22';p.souliers=1;p.chaussures='#0f0f14';p.sac=0;p.chapeau=3;
+    p._bonnet=null;p._cape={c:'#2a2018',c2:'#1a140e',clair:'#c9a24a'};
+    p._noeudOr=true;p._motif=null;
+    p._doudoune=0;p._poulet=false;p._casque=null;p._masque=null;p._lunettes=null;p._echarpe=null;p._skis=null;p._gants=null;p._fete=null;p._fourrure=null;
+    return;
+  }
+  if(p.deguisement==='epouvantail'){                                     /* L'ÉPOUVANTAIL DE LA FERME */
+    p.haut=1;p.veste='#8a6238';p.bas=1;p.pantalon='#6a4a2a';p.souliers=1;p.chaussures='#4a3218';p.sac=0;p.chapeau=3;
+    p._bonnet=null;p._cape=null;p._paille=true;p._motif='carreaux';
+    p._doudoune=0;p._poulet=false;p._casque=null;p._masque=null;p._lunettes=null;p._echarpe=null;p._skis=null;p._gants=null;p._fete=null;p._fourrure=null;
+    return;
+  }
   if(p.deguisement==='marcel'){                                          /* le super-marcel du boulodrome */
     p.haut=4;p.veste='#f4f4ee';p.bas=1;p.pantalon='#2f3a4a';p.souliers=1;p.chaussures='#2a1f16';p.sac=0;p.chapeau=3;
     p._bonnet={b:['#1d3f6a','#2a5488']};p._cape={c:'#b93327',c2:'#a02a1e',clair:'#d8483a'};
@@ -23675,7 +23716,8 @@ async function potAgir(i){if(POT_OCCUPE)return;const P=POT.parc[i], s=potStade(P
     if(d&&!d.erreur&&d.etat){potAdopter(d.etat);try{lireSacServeur();}catch(x){}jouer('vente','moment');vibrer([20,40,20]);
       const nom=POT_CULT[d.cult]?POT_CULT[d.cult][0]:d.cult;
       texteVolant(joueur.x,joueur.y-58,d.nb?('+'+d.nb+' '+nom+' dans ton sac'):(nom+' → au grenier'),'#ffe070');
-      if(d.oiseaux)setTimeout(()=>texteVolant(joueur.x,joueur.y-70,'Les oiseaux sont passés pendant ton absence… −50 %','#ffb8a8'),1000);}   /* sans épouvantail */
+      if(d.oiseaux)setTimeout(()=>texteVolant(joueur.x,joueur.y-70,'Les oiseaux sont passés pendant ton absence… −50 %','#ffb8a8'),1000);
+      if(d.ticket){e.cos=e.cos||{};e.cos.costume_epouvantail=true;setTimeout(()=>ticketDOrTenue('epouvantail'),700);}}   /* sans épouvantail */
     else if(d&&d.erreur==='sac_plein'){texteVolant(joueur.x,joueur.y-58,'Sac plein : va vendre à la boutique','#ffd0a0');try{bulle&&bulle('Ton sac est plein.');}catch(x){}}
     else potRefus(d);}
   else if(!P.eau&&J.arrosoir){POT_ARROSE=Date.now();vibrer(12);const d=await appelRPC('pot_arroser',{p_joueur:e.id,p_i:i});if(!potAdopter(d))potRefus(d);}
@@ -24253,6 +24295,9 @@ const TENUES=[{k:'',nom:'Tes habits',lieu:'toujours à toi',rare:''},
   {k:'marcel',nom:'Le super-marcel',lieu:'Boulodrome · ticket d’or',rare:'1 MÈNE SUR 100'},
   {k:'ours',nom:'L’ours',lieu:'Cabane du bûcheron · ticket d’or',rare:'1 BÛCHE SUR 150'},
   {k:'yeti',nom:'L’homme des neiges',lieu:'Buvette du refuge · ticket d’or',rare:'1 VERRE SUR 120'},
+  {k:'pirate',nom:'Le pirate',lieu:'Bar des Docks · ticket d’or',rare:'1 TICKET SUR 90'},
+  {k:'smoking',nom:'Le smoking doré',lieu:'Casino · ticket d’or',rare:'1 JACKPOT SUR 3'},
+  {k:'epouvantail',nom:'L’épouvantail',lieu:'La ferme · ticket d’or',rare:'1 RÉCOLTE SUR 200'},
   {k:'anniv',nom:'La tenue d’anniversaire',lieu:'Offerte pour ton anniversaire',rare:'AUJOURD’HUI SEULEMENT',fete:true}];
 let VEST_SEL=null;
 const CSS_VEST=`#page2Fond.vest{background:#171a20;color:#eef1f6;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%}
