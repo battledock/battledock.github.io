@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-25-0703';
+  var MA_VERSION='2026-09-25-0709';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -18936,8 +18936,13 @@ function lieuDePeche(){
   if(CARTE!=='extramar')return null;
   const x=joueur.x,y=joueur.y;
   for(const px of XP.pontons){
-    if(Math.abs(x-px)<XP.pontonL&&y>XP.pontonFin-46&&y<XP.pontonFin)
-      return {bx:px+(joueur.dir==='gauche'?-30:(joueur.dir==='droite'?30:0)),by:XP.pontonFin+22,lieu:'ponton'};
+    if(Math.abs(x-px)<XP.pontonL&&y>XP.pontonFin-46&&y<XP.pontonFin){
+      /* AU TOUT BOUT DU PONTON, ON LANCE AU LARGE : réservé aux cannes qui portent loin */
+      const bout=y>XP.pontonFin-16, longue=((EQUIP_PECHE&&EQUIP_PECHE.canne)||0)>=3;
+      if(bout&&longue)
+        return {bx:px+(joueur.dir==='gauche'?-52:(joueur.dir==='droite'?52:0)),by:XP.pontonFin+58,lieu:'large'};
+      return {bx:px+(joueur.dir==='gauche'?-30:(joueur.dir==='droite'?30:0)),by:XP.pontonFin+22,lieu:'ponton',bout};
+    }
   }
   if(y>XP.quaiY-26&&y<XP.quaiY+2&&x>XP.bassinO+14&&x<XP.bassinE-14&&
      !XP.pontons.some(px=>Math.abs(x-px)<24))
@@ -18947,7 +18952,7 @@ function lieuDePeche(){
 async function lancerLaLigne(){
   const L=lieuDePeche();
   if(!L||PECHE)return;
-  PECHE={etat:'lance',t0:performance.now(),bx:L.bx,by:L.by,px:joueur.x,py:joueur.y,
+  PECHE={etat:'lance',lieu:L.lieu,t0:performance.now(),bx:L.bx,by:L.by,px:joueur.x,py:joueur.y,
     cote:joueur.dir==='gauche'?-1:1,esp:null,cm:0};
   PECHE.mordA=PECHE.t0+600+2000+Math.random()*4000;
   jouer('cueille');vibrer(8);majAction();
@@ -18955,7 +18960,7 @@ async function lancerLaLigne(){
   const d=await appelRPC('pecher_touche',{p_joueur:e.id,p_lieu:L.lieu});
   if(PECHE!==P)return;
   /* une réponse sans espèce (le serveur a buté) : on ne laisse jamais attendre pour rien */
-  if(!d||d.erreur||!d.espece){annulerLaPeche(!d||!d.espece&&!d.erreur?'la ligne s’emmêle, relance':(d.erreur==='trop tot'?'patience…':'rien ne mord ici'));return;}
+  if(!d||d.erreur||!d.espece){annulerLaPeche(!d||!d.espece&&!d.erreur?'la ligne s’emmêle, relance':(d.erreur==='trop tot'?'patience…':(d.erreur==='canne courte'?'ta canne ne porte pas si loin':'rien ne mord ici')));return;}
   P.esp=d.espece;P.cm=d.cm;
   P.eq={canne:d.canne||0,moulinet:!!d.moulinet,bouchon:!!d.bouchon,finition:d.finition||null};
   if(EQUIP_PECHE){EQUIP_PECHE.canne=P.eq.canne;EQUIP_PECHE.finition=P.eq.finition;if(d.appat)EQUIP_PECHE.appats[d.appat]=d.reste;}
@@ -18974,7 +18979,7 @@ function ferrer(){
   /* LE COMBAT COMMENCE */
   const P=PECHE;
   const S=ESP_PECHE[P.esp]||ESP_PECHE.sardine;
-  P.etat='combat';P.touches=0;P.besoin=S.touches;P.coeurs=3;P.dist=1;
+  P.etat='combat';P.touches=0;P.besoin=S.touches;P.coeurs=[2,3,3,4,4,5][(P.eq&&P.eq.canne)||0];P.dist=1;   /* une bonne canne pardonne plus de casse */
   nouveauCercle(P);vibrer([12,20,12]);majAction();
 }
 async function gagnerLeCombat(){
@@ -19150,8 +19155,9 @@ function dessinerLaPeche(g,camX,camY){
     }
     /* AU-DESSUS DU PERSO : les cœurs, et les touches qui restent */
     const hx=Math.round(joueur.x-camX), hy=Math.round(joueur.y-camY-58);
-    for(let k=0;k<3;k++){
-      const x=hx-10+k*8, plein=k<P.coeurs;
+    const nbc=P.coeursMax||(P.coeursMax=P.coeurs);
+    for(let k=0;k<nbc;k++){
+      const x=hx-nbc*4+k*8, plein=k<P.coeurs;
       g.fillStyle=plein?'#e0402f':'#3a2a2a';
       g.fillRect(x,hy,2,2);g.fillRect(x+3,hy,2,2);g.fillRect(x-1,hy+1,7,2);g.fillRect(x,hy+3,5,1);g.fillRect(x+1,hy+4,3,1);g.fillRect(x+2,hy+5,1,1);
     }
@@ -19190,10 +19196,14 @@ function actionDePeche(b){
     return true;
   }
   b.classList.remove('mord');
-  if(lieuDePeche()&&GESTE.t<=0&&!caissePortee){
-    b.innerHTML='Pêcher<small>LANCER LA LIGNE</small>';
+  {const LP=lieuDePeche();
+   if(LP&&GESTE.t<=0&&!caissePortee){
+    const longue=((EQUIP_PECHE&&EQUIP_PECHE.canne)||0)>=3;
+    b.innerHTML=LP.lieu==='large'?'Lancer au large<small>LE GROS POISSON · CANNE LONGUE</small>'
+      :(LP.bout&&!longue?'Pêcher<small>LE LARGE DEMANDE UNE CANNE EN CARBONE</small>'
+      :'Pêcher<small>LANCER LA LIGNE</small>');
     b.classList.add('on');b.onclick=lancerLaLigne;return true;
-  }
+   }}
   return false;
 }
 
