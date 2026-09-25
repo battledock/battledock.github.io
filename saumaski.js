@@ -942,12 +942,7 @@ function objetsVides(){
   L.push({t:'x_mo_gare',x:180,y:WH-30,v:0,bati:true,demi:42,ouvre:'metro',col:[42,10]});
   reg('galerie',graverPorteMine());
   L.push({t:'x_mo_galerie',x:180,y:MONT+16,v:0,bati:true,demi:26,ouvre:'galerie',col:[26,4]});
-  /* LES FILONS À CIEL OUVERT, autour de l'entrée : on s'en approche et on tape à la pioche,
-     comme les rochers du port. Fer, cuivre et charbon affleurent dans la roche gelée. */
-  [['charbon',86,MONT+52],['cuivre',248,MONT+46],['fer',132,MONT+104],['charbon',286,MONT+112],
-   ['cuivre',64,MONT+150],['fer',224,MONT+168],['charbon',150,MONT+206],['fer',296,MONT+214],
-   ['cuivre',92,MONT+238],['charbon',244,MONT+266]].forEach(([t,x,y],i)=>{
-     L.push({t,x,y,v:0,gr:i%3,col:[12,6]});});
+  /* (plus de filons à ciel ouvert : le minerai se gagne dans la mine) */
   return {L,cal};
 }
 const zoneInterdite=(x,y)=>{
