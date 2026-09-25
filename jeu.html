@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-25-0628';
+  var MA_VERSION='2026-09-25-0642';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -7868,6 +7868,7 @@ async function ouvrirLaGazette(){
   $('page2Fond').className='';$('page2').classList.add('on');
   $('page2Fond').innerHTML='<div style="position:absolute;inset:0;background:#e9e1cc;display:flex;align-items:center;justify-content:center;font:italic 15px Georgia;color:#231c14">On déplie le journal…</div>';
   let G=null;try{G=await appelRPC('gazette',{});}catch(x){}
+  let NEUF=[];try{const r=await appelRPC('gazette_nouveautes',{});if(Array.isArray(r))NEUF=r;}catch(x){}   /* LA UNE : ce qui vient d'ouvrir dans le jeu */
   const CL=(G&&G.classement)||[];
   const esc=(t)=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
   const jourN=Math.floor((d-new Date(2026,0,1))/864e5);
@@ -7907,6 +7908,10 @@ async function ouvrirLaGazette(){
     #gzv .gzv-annonces{margin-top:14px;border-top:2px solid #b8231a;padding-top:10px}
     #gzv .gzv-pa{border:1px solid #1d1a16;padding:7px 8px;margin-top:7px;font:italic 12.5px Georgia,serif;line-height:1.35}
     #gzv .gzv-fin{text-align:center;font:italic 11px Georgia,serif;color:#5a5048;margin-top:16px}
+    #gzv .gzv-neuf{margin-top:12px;border-top:2px solid #b8231a;padding-top:10px}
+    #gzv .gzv-neuf h3{font:900 13px 'Times New Roman',Georgia,serif;text-transform:uppercase;letter-spacing:1px;margin:0 0 6px}
+    #gzv .gzv-neuf ul{margin:0;padding-left:18px}#gzv .gzv-neuf li{margin-bottom:7px;font:15px 'Times New Roman',Georgia,serif;line-height:1.35}
+    #gzv .gzv-neuf i{color:#5a5048}
     #gzv .gzv-hier{margin-top:12px;border-top:2px solid #b8231a;padding-top:10px}#gzv .gzv-hier ul{margin:0;padding-left:18px}#gzv .gzv-hier li,#gzv .gzv-hier p{font:13px Georgia,serif;line-height:1.45;margin:0 0 4px}
     #gzv .gzv-dede{margin-top:14px;padding:10px 12px;border:1px solid #1d1a16;border-left:4px solid #b8231a;background:rgba(184,35,26,.04)}#gzv .gzv-dede p{font:italic 15px Georgia,serif;line-height:1.4;margin:0}#gzv .gzv-dede small{display:block;font:11px Georgia,serif;color:#5a5048;margin-top:4px}
     #gzv .gzv-pied{flex:none;padding:10px 16px calc(env(safe-area-inset-bottom,0px) + 12px);background:linear-gradient(rgba(243,236,220,0),#f3ecdc 30%)}
@@ -7915,10 +7920,16 @@ async function ouvrirLaGazette(){
    <div id="gzv" lang="fr"><div class="gzv-page">
      <div class="gzv-bandeau"><h1>Le Vieux-Port</h1><div class="gzv-date">${esc(d.toLocaleDateString('fr-FR',{weekday:'long'}))}<br>${esc(d.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}))}<br>N° ${num} · gratuit</div></div>
      <span class="gzv-edition">ÉDITION DU MATIN</span>
-     <h2>${esc((G&&G.titre)||'Le quai s’éveille')}</h2>
+     ${NEUF.length?`
+     <h2>${esc(NEUF[0].titre)}</h2>
+     <p class="gzv-leg">${esc(NEUF[0].lieu||'Le port')} · ${esc(new Date(NEUF[0].quand).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}))}</p>
+     <p class="gzv-texte">${esc(NEUF[0].texte)}</p>
+     <div class="gzv-neuf"><h3>Ce qui vient d’ouvrir</h3><ul>${NEUF.slice(1).map(n=>
+       '<li><b>'+esc(n.titre)+'</b> — '+esc(n.texte)+' <i>('+esc(n.lieu||'le port')+')</i></li>').join('')}</ul></div>`
+     :`<h2>${esc((G&&G.titre)||'Le quai s’éveille')}</h2>
      <img class="gzv-photo" src="nouveautes/quai.jpg" alt="">
      <p class="gzv-leg">Sur le quai, à l'heure où les lanternes s'allument.</p>
-     <p class="gzv-texte">${esc((G&&G.une)||'Les pêcheurs rentrent, le Fumoir fume, les mouettes veillent.')}</p>
+     <p class="gzv-texte">${esc((G&&G.une)||'Les pêcheurs rentrent, le Fumoir fume, les mouettes veillent.')}</p>`}
      ${hierHTML}
      <div class="gzv-grille">
        <div class="gzv-bloc"><h3>Classement</h3>${CL.length?'<ol>'+CL.map((j,k)=>'<li>'+(k===0?'<b>':'')+esc(j.pseudo)+(k===0?'</b>':'')+'</li>').join('')+'</ol>':'Personne encore au registre.'}</div>
