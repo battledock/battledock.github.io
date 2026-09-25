@@ -604,20 +604,18 @@ function solVide(){
     const W2=WW*2, a0=Math.floor(y0*2), a1=Math.min(WH*2,Math.ceil(y1*2)), im=g.getImageData(0,a0,W2,a1-a0), d=im.data;
     const P=['#e4ecf4','#dde7f0','#ffffff','#fbfdfe','#f3f7fa','#f6f9fb','#f9fbfd'].map(rgbDe);
     for(let Y=a0;Y<a1;Y++){const y=Y/2;let r=0;
-      for(let X=0;X<W2;X++){if((X&1)===0){const x=X/2;r=Math.sin(x/47+y/61)*0.6+Math.sin(x/19-y/27)*0.25+Math.sin((x-y)/83)*0.5;}
+      for(let X=0;X<W2;X++){if((X&1)===0){const x=X/2;r=Math.sin(x/230+y/310)*0.18;}   /* juste un souffle de nuance, plus de taches */
         let h=(X*374761393+Y*668265263)|0;h=Math.imul(h^(h>>>13),1274126177);const t=((h^(h>>>16))>>>0)/4294967296;
-        const c=t>0.992?P[2]:(r<-0.55?(t<0.5?P[0]:P[1]):(r>0.55?(t<0.5?P[2]:P[3]):(t<0.33?P[4]:(t<0.66?P[5]:P[6]))));
+        const c=t>0.994?P[2]:(r<-0.10?(t<0.5?P[5]:P[6]):(t<0.45?P[4]:(t<0.85?P[5]:P[6])));
         const o=((Y-a0)*W2+X)*4;d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255;}}
     g.putImageData(im,0,a0);
     /* LA NEIGE DAMÉE : de longues rides de vent à crête claire, des creux bleutés très doux,
        des cristaux qui accrochent la lumière. */
     for(let i=0;i<Math.round((y1-y0)*0.16);i++){
-      const y=y0+4+hs(i*3+y0)*(y1-y0-8), amp=1.1+hs(i+y0)*1.7, lg=40+hs(i*5+y0)*130, x0=hs(i*7+y0)*WW-24;
-      for(let x=x0;x<x0+lg;x+=0.5){const yy=y+Math.sin((x-x0)/17)*amp;
-        F(x,yy,0.5,1.2,'rgba(205,220,235,.5)');F(x,yy-1,0.5,0.6,'rgba(255,255,255,.75)');}}
-    for(let i=0;i<Math.round((y1-y0)*0.06);i++){
-      const x=hs(i*9+y0)*WW, y=y0+8+hs(i*11+y0)*(y1-y0-16);
-      g.fillStyle='rgba(196,214,232,.30)';g.beginPath();g.ellipse(x,y,9+hs(i+y0)*15,3+hs(i*2+y0)*3,0,0,7);g.fill();}
+      const y=y0+4+hs(i*3+y0)*(y1-y0-8), amp=0.8+hs(i+y0)*1.2, lg=50+hs(i*5+y0)*120, x0=hs(i*7+y0)*WW-24;
+      for(let x=x0;x<x0+lg;x+=0.5){const yy=y+Math.sin((x-x0)/21)*amp;
+        F(x,yy,0.5,0.8,'rgba(214,226,238,.38)');F(x,yy-0.6,0.5,0.5,'rgba(255,255,255,.6)');}}
+    /* (plus de creux bleutés : ils faisaient des taches) */
     for(let k=0;k<(y1-y0)*1.4;k++){const x=hs(k*3.7+y0)*WW, y=y0+hs(k*5.3+y0)*(y1-y0);F(x,y,0.5,0.5,'#ffffff');if(k%11===0){F(x-1,y,2.5,0.5,'#ffffff');F(x,y-1,0.5,2.5,'#ffffff');}}
     for(let k=0;k<(y1-y0)*0.35;k++){const x=hs(k*2.9+y0)*WW, y=y0+hs(k*6.1+y0)*(y1-y0);
       F(x,y,1,1,'#ffffff');F(x-0.5,y+0.5,2,0.5,'rgba(255,255,255,.75)');}};
