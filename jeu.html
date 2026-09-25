@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-25-1504';
+  var MA_VERSION='2026-09-25-1530';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -23829,8 +23829,14 @@ function vivre(M,dt,ex0,ey0,ex1,ey1){
    sont gravés une fois ; à chaque image on ne dessine que les bêtes, qui vivent leur vie. */
 const POUL_Z=()=>(FERME_SEULE?{x0:1350,x1:1506,y0:110,y1:222}:{x0:FERME.champ2.x1+14,x1:1548,y0:392,y1:556});   /* le poulailler, sous le champ */
 /* LES MATÉRIAUX DE LA FERME (le serveur a les mêmes) : le bois des arbres, la pierre des rochers */
-const MAT_FERME={poulailler:{bois:120,pierre:60,roseaux:40,argile:20},'poul:2':{bois:250,pierre:120,roseaux:80,argile:50},'poul:3':{bois:500,pierre:250,roseaux:150,argile:100},
-  'champ:12':{bois:150,pierre:80,fibre:40},'champ:18':{bois:350,pierre:180,fibre:90,argile:60},'champ:24':{bois:700,pierre:360,fibre:180,argile:120}};
+/* Quantités revues à la baisse (le serveur a les mêmes) : la forêt fournit tout,
+   mais il fallait six allers-retours pour un simple poulailler. */
+const MAT_FERME={poulailler:{bois:80,pierre:40,roseaux:25,argile:12},'poul:2':{bois:160,pierre:80,roseaux:50,argile:30},'poul:3':{bois:320,pierre:160,roseaux:100,argile:60},
+  'champ:12':{bois:90,pierre:50,fibre:25},'champ:18':{bois:200,pierre:110,fibre:55,argile:35},'champ:24':{bois:420,pierre:220,fibre:110,argile:70}};
+/* OÙ ÇA SE TROUVE : sans ça, on cherche des roseaux au port pendant dix minutes */
+const OU_MAT={bois:'les arbres de la forêt',pierre:'les rochers de la forêt, ou la mine',
+  roseaux:'les roseaux au bord de la rivière, en forêt',argile:'les berges de la rivière, en forêt',
+  fibre:'les buissons et les herbes de la forêt'};
 const NOM_MAT={bois:['bois','bois'],pierre:['pierre','pierres'],roseaux:['roseau','roseaux'],argile:['argile','argile'],fibre:['fibre','fibres']};
 const ICO_MAT={bois:'🪵',pierre:'🪨',roseaux:'🌾',argile:'🟤',fibre:'🧵'};
 /* LES CHANTIERS : on livre petit à petit, le serveur garde ce qui est déposé */
@@ -23842,8 +23848,12 @@ function chantierHTML(cle){const B=MAT_FERME[cle];if(!B)return '';const D=CHANTI
     return '<div style="display:flex;align-items:center;gap:6px;margin:4px 0;font:12px Georgia"><span style="width:22px;display:inline-flex" title="'+NOM_MAT[k][1]+'"><svg viewBox="0 0 16 16" width="20">'+(ICONES[k]||'')+'</svg></span>'+   /* les vraies icônes du sac */
       '<div style="flex:1;height:9px;border-radius:5px;background:#e2d4b4;overflow:hidden"><i style="display:block;height:100%;width:'+pc+'%;background:'+(d>=n?'#4f7d42':'#c8a050')+'"></i></div>'+
       '<b style="min-width:74px;text-align:right">'+d+' / '+n+'</b><span style="opacity:.7;min-width:58px">sac : '+a+'</span></div>';}).join('');
+  const manque=Object.entries(B).filter(([k,n])=>((D[k]||0)<n)).map(([k])=>k);
+  const ou=manque.length?'<div style="margin-top:5px;font:italic 11px Georgia;color:#6a5a3a">Il te manque '+
+    manque.map(k=>NOM_MAT[k][1]).join(', ')+' — on en trouve dans '+
+    [...new Set(manque.map(k=>OU_MAT[k]))].join(', et ')+'.</div>':'';
   const peut=Object.entries(B).some(([k,n])=>((D[k]||0)<n)&&((e.sac&&e.sac[k])||0)>0);
-  return '<div style="margin-top:6px">'+lignes+(chantierComplet(cle)?'<div style="font:700 12px Georgia;color:#2f6a2e;margin-top:4px">✓ Tous les matériaux sont livrés</div>':
+  return '<div style="margin-top:6px">'+lignes+ou+(chantierComplet(cle)?'<div style="font:700 12px Georgia;color:#2f6a2e;margin-top:4px">✓ Tous les matériaux sont livrés</div>':
     '<button data-dep="'+cle+'" style="width:100%;margin-top:6px;border:0;border-radius:14px;padding:8px;font:700 13px Georgia;background:'+(peut?'#8a6238':'#c8bca0')+';color:#fff">'+(peut?'Déposer ce que j’ai dans le sac':'Rien d’utile dans ton sac')+'</button>')+'</div>';}
 function brancherDepots(recharger,bulle){document.querySelectorAll('[data-dep]').forEach(b=>b.onclick=async()=>{b.disabled=true;
   const d=await appelRPC('chantier_deposer',{p_joueur:e.id,p_cle:b.dataset.dep});
