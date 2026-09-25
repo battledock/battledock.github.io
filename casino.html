@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-25-0945';
+  var MA_VERSION='2026-09-25-0952';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -1719,7 +1719,49 @@ recupererSauvegarde();
   if(typeof j==='number'){e.jetons=j;sauver();majJetons();}
   const sc=await appelRPC('lire_sac',{p_joueur:e.id});
   if(sc&&sc.sac){e.sac=sc.sac;if(sc.max)e.sacMax=sc.max;sauver();}
+  /* LE CASINO SOUHAITE L'ANNIVERSAIRE — le jour J seulement, et seulement à l'intéressé */
+  try{const f=await appelRPC('ma_fete',{p_joueur:e.id});if(f&&f.fete)banniereAnniversaire();}catch(x){}
 })();
+function banniereAnniversaire(){
+  if(document.getElementById('anniv'))return;
+  const st=document.createElement('style');st.textContent=`
+    #anniv{position:fixed;left:0;right:0;top:0;z-index:9999;display:flex;flex-direction:column;align-items:center;
+      padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 16px;font-family:Georgia,serif;color:#2a1a0e;
+      background:linear-gradient(180deg,#f6dd8c,#d8a830 60%,#c9982a);box-shadow:0 6px 24px rgba(0,0,0,.5);
+      animation:annivE .6s cubic-bezier(.2,1.4,.4,1)}
+    #anniv b{font:400 24px Georgia;text-align:center;text-shadow:0 1px 0 rgba(255,255,255,.5)}
+    #anniv small{display:block;font:700 9px Arial;letter-spacing:3px;color:#7a5a10;margin-bottom:2px}
+    #anniv p{font:italic 14px Georgia;text-align:center;margin:6px 0 0;max-width:340px}
+    #anniv .jet{display:inline-block;margin:9px auto 0;background:#2a1a0e;color:#f6dd8c;border-radius:20px;padding:6px 14px;font:700 13px Georgia}
+    #anniv button{margin-top:12px;border:0;border-radius:14px;padding:11px 20px;font:700 15px Georgia;background:#2a1a0e;color:#f6dd8c}
+    #annivC{position:fixed;inset:0;z-index:9998;pointer-events:none}
+    @keyframes annivE{from{transform:translateY(-100%)}}`;
+  document.head.appendChild(st);
+  const cv=document.createElement('canvas');cv.id='annivC';document.body.appendChild(cv);
+  const d=document.createElement('div');d.id='anniv';
+  d.innerHTML='<small>LE GRAND CASINO · LA MAISON OFFRE</small>'+
+    '<b>Joyeux anniversaire, '+((e.pseudo||'patron').replace(/[<>]/g,''))+' !</b>'+
+    '<p>« Ce soir, la maison te doit bien un verre. Que les jetons te sourient. »</p>'+
+    '<span class="jet">+ 200 jetons offerts</span>'+
+    '<button id="annivOk">Merci, la maison</button>';
+  document.body.appendChild(d);
+  /* LES CONFETTIS qui tombent, un petit moment */
+  const g2=cv.getContext('2d');let W2=0,H2=0,D=Math.min(2,devicePixelRatio||1);
+  const taille=()=>{W2=innerWidth;H2=innerHeight;cv.width=W2*D;cv.height=H2*D;g2.setTransform(D,0,0,D,0,0);};
+  taille();addEventListener('resize',taille);
+  const COUL=['#f2c230','#e8402a','#3fa3c8','#4f8a42','#e8a0c0','#7a3fd8','#ffffff'];
+  const C=Array.from({length:110},(_,i)=>({x:Math.random()*W2,y:-Math.random()*H2,w:3+Math.random()*4,
+    h:5+Math.random()*7,v:40+Math.random()*90,a:Math.random()*6.28,r:(Math.random()-.5)*4,c:COUL[i%COUL.length]}));
+  let t0=performance.now(),fin=t0+9000;
+  (function boucle(t){const dt=Math.min(.05,(t-t0)/1000);t0=t;
+    g2.clearRect(0,0,W2,H2);
+    C.forEach(p=>{p.y+=p.v*dt;p.a+=p.r*dt;p.x+=Math.sin(p.a)*22*dt;
+      if(p.y>H2+10){p.y=-10;p.x=Math.random()*W2;}
+      g2.save();g2.translate(p.x,p.y);g2.rotate(p.a);g2.fillStyle=p.c;g2.fillRect(-p.w/2,-p.h/2,p.w,p.h);g2.restore();});
+    if(performance.now()<fin)requestAnimationFrame(boucle);else cv.remove();})(performance.now());
+  document.getElementById('annivOk').onclick=()=>{d.remove();};
+  try{vibrer([20,60,20,60,40]);}catch(x){}
+}
 
 /* ================= le hall, vu de dessus =================
    Sol plat, murs en bordure, meubles vus d'au-dessus.
