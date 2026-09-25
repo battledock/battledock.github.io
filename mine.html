@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-25-1353';
+  var MA_VERSION='2026-09-25-1403';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -1308,9 +1308,10 @@ const bloque=(x,y)=>{
 
 /* les cinq teintes de chaque palier : de la plus claire à la plus sombre */
 const NUANCES=[
- {roche:['#a89274','#8a7660','#6b5a47','#4e4134','#332a22'],
-  sol:  ['#7a6650','#65543f','#524433','#3f3427','#2b241b'],
-  fond:'#1b1610',accent:'#8fbf64'},
+ /* LA GALERIE EST EN ROCHE GRISE : on n'est plus dans la terre rouge. */
+ {roche:['#9aa0a8','#7e848d','#626871','#484d55','#2f3339'],
+  sol:  ['#6e747c','#5b6068','#4a4f56','#3a3e44','#282b30'],
+  fond:'#14171b',accent:'#8fbf64'},
  {roche:['#9c917f','#7e7466','#5f584d','#454038','#2d2a24'],
   sol:  ['#6f6554','#5b5243','#484135','#383228',"#26221a"],
   fond:'#17140f',accent:'#c9a24a'},
@@ -1356,46 +1357,33 @@ function graver(){
 
   /* ---------- le sol ---------- */
   const dalle=(v)=>toile(CASE,CASE,({P,R,trame})=>{
-    /* le fond de la case, tramé entre deux tons pour éviter l'aplat */
-    trame(0,0,CASE,CASE,s2,s3,0.34);
-    /* l'appareillage : deux ou trois pierres, décalées selon la variante */
-    const lignes=v%2?[[0,0,10,7],[10,0,6,7],[0,7,6,9],[6,7,10,9]]
-                    :[[0,0,7,9],[7,0,9,9],[0,9,11,7],[11,9,5,7]];
-    lignes.forEach(([x,y,w,h],i)=>{
-      /* le corps de la pierre */
-      R(x+1,y+1,w-2,h-2,i%2?s2:s1);
-      /* la lumière en haut à gauche, l'ombre en bas à droite */
-      for(let k=0;k<w-2;k++)P(x+1+k,y+1,s0);
-      for(let k=0;k<h-2;k++)P(x+1,y+1+k,s1);
-      for(let k=0;k<w-2;k++)P(x+1+k,y+h-2,s3);
-      for(let k=0;k<h-2;k++)P(x+w-2,y+1+k,s3);
-      /* le joint */
-      for(let k=0;k<w;k++)P(x+k,y,s4);
-      for(let k=0;k<h;k++)P(x,y+k,s4);
-      /* le grain : trois pixels par pierre, toujours au même endroit */
-      for(let k=0;k<3;k++){
-        const u=A(v*13+i*7+k)*(w-4)|0, t=A(v*5+i*3+k)*(h-4)|0;
-        P(x+2+u,y+2+t,A(v+i+k)<.5?s0:s3);
-      }
-    });
-    /* de temps en temps, une fissure qui court */
-    if(v===2){
-      let x=3,y=2;
-      for(let k=0;k<9;k++){P(x,y,s4);P(x,y+1,s3);
-        x+=A(k*3)<.5?1:0;y+=A(k*7)<.4?1:(A(k*11)<.2?-1:0);
-        x=Math.max(0,Math.min(15,x));y=Math.max(0,Math.min(14,y));}
+    /* LE SOL DE LA GALERIE : de la roche, pas un pavage. Un fond tramé,
+       des gravillons, quelques fissures, un peu de poussière claire. */
+    trame(0,0,CASE,CASE,s2,s3,0.42);
+    for(let k=0;k<26;k++){
+      const x=(alea(v*9.1+k*3.7)*CASE)|0, y=(alea(v*5.3+k*7.1)*CASE)|0;
+      const t=alea(v*2.3+k*1.9);
+      P(x,y,t<0.42?s1:(t<0.78?s3:s0));
+      if(t>0.9){P(x+1,y,s3);P(x,y+1,s3);}
     }
-    /* ou du gravier, sur la variante 3 */
-    if(v===3){
-      for(let k=0;k<14;k++){
-        const u=A(k*3.1+v)*15|0, t=A(k*7.7+v)*15|0;
-        const c=A(k*5)<.4?s0:(A(k*9)<.6?s1:s3);
-        P(u,t,c);if(A(k*11)<.4)P(u+1,t,c);
+    /* deux ou trois fissures fines, toujours au même endroit pour chaque variante */
+    for(let f=0;f<2+(v%2);f++){
+      let x=(alea(v*11+f*13)*CASE)|0, y=(alea(v*17+f*7)*CASE)|0;
+      const n=4+((alea(v+f)*5)|0);
+      for(let k=0;k<n;k++){
+        P(x,y,s4);
+        x+=alea(v*3+f*2+k)<0.5?1:0;
+        y+=alea(v*5+f*3+k)<0.6?1:0;
+        if(x>=CASE||y>=CASE)break;
       }
+    }
+    /* la poussière claire, en traînées basses */
+    for(let k=0;k<5;k++){
+      const x=(alea(v*23+k*5)*CASE)|0, y=(alea(v*29+k*3)*CASE)|0, l=2+((alea(v+k)*3)|0);
+      for(let q=0;q<l&&x+q<CASE;q++)P(x+q,y,s0);
     }
   });
 
-  /* ---------- le dessus de la roche ---------- */
   const dessus=(v)=>toile(CASE,CASE,({P,R,trame})=>{
     trame(0,0,CASE,CASE,c2,c3,0.4);
     /* quatre blocs de pierre, appareillés en quinconce */
