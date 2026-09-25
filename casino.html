@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-25-1530';
+  var MA_VERSION='2026-09-25-1537';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -402,6 +402,9 @@ html,body{height:100%;overflow:hidden;background:#0d0a0e;font-family:system-ui,s
 #bj .act button,#bj .go2{flex:1;border:0;border-radius:16px;padding:16px 6px;font:700 17px Georgia}
 #bj .b1{background:#f0cf7d;color:#2a1a0e;box-shadow:0 4px 0 #8a6a28}#bj .b2{background:#3a0a10;color:#f6e6c0;border:1px solid #c9a24a!important}
 #bj .go2{background:linear-gradient(#f0cf7d,#c9a24a);color:#4a0a10;box-shadow:0 4px 0 #8a6a28}
+#bj .b3{width:100%;margin-top:10px;border:1px solid #c9a24a;border-radius:16px;padding:13px 6px;
+  font:700 15px Georgia;background:rgba(201,162,74,.16);color:#f6e6c0}
+#bj .b3:active{transform:translateY(2px)}
 #bj button:disabled{opacity:.5}
 
 /* ===== LA ROULETTE EN PIXEL : la croupière, la roue en grand, 12 secondes pour miser ===== */
@@ -2779,6 +2782,7 @@ async function ouvrirBJ(){
 function lireReponse(d){
   if(!d||d.erreur){BJ.msg=d&&d.erreur?d.erreur:'le croupier ne répond pas';BJ.attend=false;return rendreBJ();}
   BJ.joueur=(d.main||[]).map(carteDe);
+  if(typeof d.mise==='number')BJ.mise=d.mise;   /* la mise du coup, pour savoir ce que coûte un doublement */
   BJ.croupier=(d.croupier||[]).map(carteDe);
   BJ.cache=!!d.cache;
   BJ.gain=d.gain||0;
@@ -2811,6 +2815,16 @@ async function resterBJ(){
   if(BJ.attend||BJ.phase!=='jeu')return;
   BJ.attend=true;rendreBJ();
   lireReponse(await appelRPC('bj_rester',{p_joueur:e.id}));
+}
+/* DOUBLER : on double la mise, on reçoit UNE carte, et le coup s'arrête là.
+   Possible seulement sur les deux premières cartes, et si la bourse suit. */
+function peutDoubler(){
+  return BJ.phase==='jeu' && !BJ.attend && (BJ.joueur||[]).length===2 && (e.jetons||0)>=(BJ.mise||MISE);
+}
+async function doublerBJ(){
+  if(!peutDoubler())return;
+  BJ.attend=true;rendreBJ();
+  lireReponse(await appelRPC('bj_doubler',{p_joueur:e.id}));
 }
 
 function carteSVG(k,cachee){
@@ -2878,13 +2892,15 @@ function rendreBJ(){
     b+='<div class="jetons">'+MISES.map(m=>'<button class="jt'+(m===MISE?' on':'')+'" data-mise="'+m+'" style="background:'+COULJ[m][0]+';color:'+COULJ[m][1]+'"'+((e.jetons||0)<m?' disabled':'')+'>'+m+'</button>').join('')+'</div>';
     b+='<button class="go2" id="bjGo"'+(BJ.attend||(e.jetons||0)<MISE?' disabled':'')+'>'+(BJ.attend?'Lucien distribue…':((e.jetons||0)<MISE?'Pas assez de jetons':(fini?'Rejouer':'Jouer')+' · '+MISE+' jetons'))+'</button>';
   }else{
-    b+='<div class="act"><button class="b1" id="bjT"'+(BJ.attend?' disabled':'')+'>Une carte</button><button class="b2" id="bjR"'+(BJ.attend?' disabled':'')+'>Je reste</button></div>';
+    b+='<div class="act"><button class="b1" id="bjT"'+(BJ.attend?' disabled':'')+'>Une carte</button><button class="b2" id="bjR"'+(BJ.attend?' disabled':'')+'>Je reste</button></div>'
+      +(peutDoubler()?'<button class="b3" id="bjD">Doubler · '+(BJ.mise||MISE)+' jetons de plus</button>':'');
   }
   $('bjBas').innerHTML=b;
   $('bjBas').querySelectorAll('[data-mise]').forEach(x=>x.onclick=()=>{MISE=+x.dataset.mise;rendreBJ();});
   if($('bjGo'))$('bjGo').onclick=donnerBJ;
   if($('bjT'))$('bjT').onclick=carteBJ;
   if($('bjR'))$('bjR').onclick=resterBJ;
+  if($('bjD'))$('bjD').onclick=doublerBJ;
 }
 $('rouX').onclick=()=>{$('rou').classList.remove('on');ROU=null;majAccueil(true);};
 $('masX').onclick=()=>{$('mas').classList.remove('on');majAccueil(true);};
