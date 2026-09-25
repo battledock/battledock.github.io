@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-25-1407';
+  var MA_VERSION='2026-09-25-1415';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -209,13 +209,20 @@
     border:1px solid rgba(255,255,255,.12);font:700 10.5px system-ui;text-align:right;max-width:146px}
   #prof small{display:block;font:400 7.5px system-ui;color:#9b8a70;margin-top:2px;
     text-transform:uppercase;letter-spacing:.5px}
-  #action{position:fixed;right:16px;bottom:calc(30px + env(safe-area-inset-bottom));z-index:5;
-    display:none;flex-direction:column;align-items:center;gap:2px;width:96px;padding:14px 8px;
-    border-radius:18px;border:1px solid #4f3520;
-    background:linear-gradient(180deg,#a5764a,#7d5934);
-    box-shadow:inset 0 1px 0 rgba(255,232,190,.32),0 4px 0 #3d2a17;
-    font:700 14px system-ui;color:#2b1d12}
-  #action.on{display:flex}
+  /* LA PLAQUE D'ACTION, comme dehors : en bas à gauche, en ivoire, avec son médaillon */
+  #action{position:fixed;left:12px;bottom:calc(22px + env(safe-area-inset-bottom));z-index:5;
+    right:auto;width:auto;max-width:calc(100% - 96px);display:block;text-align:left;
+    border:0;border-radius:14px;padding:13px 16px 12px 44px;
+    background:linear-gradient(180deg,rgba(253,251,244,.96),rgba(236,229,209,.96));
+    box-shadow:0 6px 20px rgba(0,0,0,.45);
+    font:400 17px Georgia,serif;color:#33291b;letter-spacing:.8px;
+    opacity:0;transform:translateY(6px);transition:opacity .18s,transform .18s;pointer-events:none}
+  #action.on{opacity:1;transform:none;pointer-events:auto}
+  #action:active{transform:translateY(2px)}
+  #action small{display:block;font:600 7px system-ui;letter-spacing:1.6px;color:#6a5a3a;margin-top:2px}
+  #action::before{content:'';position:absolute;left:10px;top:50%;transform:translateY(-50%);
+    width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#f6e6c2,#c9a878);
+    box-shadow:inset 0 0 0 1px rgba(90,72,44,.35)}
   #action small{font:700 7px system-ui;letter-spacing:1.3px;color:#5b3f21}
   #action:active{transform:translateY(3px);box-shadow:inset 0 1px 0 rgba(255,232,190,.32)}
   #page{position:fixed;inset:0;z-index:20;display:none;background:#f7f1df;overflow-y:auto}
@@ -2372,14 +2379,14 @@ function dessinerJoy(dt){
 
 /* ================= la boucle ================= */
 function taille(){
-  DPR=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  DPR=Math.max(1,Math.min(3,window.devicePixelRatio||1));   /* on ne tronque plus : l'image est nette sur les écrans 2x et 3x */
   cv.width=innerWidth*DPR;cv.height=innerHeight*DPR;
   /* La même vue pour tous : l'échelle s'adapte à l'écran pour cadrer
      toujours la même portion de décor, au huitième de point près.
      On borne les deux côtés, donc un écran allongé ne voit pas plus loin. */
   const VUE_L=196, VUE_H=400;
   let e=Math.max(innerWidth/VUE_L,innerHeight/VUE_H);
-  ZOOM=Math.max(1.2,Math.round(e*8)/8);
+  ZOOM=Math.max(1.2,Math.round(e*16)/16);   /* échelle plus fine : moins de pixels étirés */
   ECH=ZOOM*DPR;VW=cv.width/ECH;VH=cv.height/ECH;
   ctx.setTransform(ECH,0,0,ECH,0,0);
   ctx.imageSmoothingEnabled=false;
@@ -2391,7 +2398,7 @@ function boucle(t){
   const dt=Math.min(.05,(t-t0)/1000);t0=t;
   const d=Math.hypot(joyX,joyY);
   if(d>0.08&&GESTE.t<=0&&MUR.length){
-    const v=78*dt*Math.min(1,d);
+    const v=124*dt*Math.min(1,d);      /* le même pas que dehors, au lieu de traîner */
     const nx=joueur.x+joyX/d*v, ny=joueur.y+joyY/d*v;
     if(!bloque(nx,joueur.y))joueur.x=nx;
     if(!bloque(joueur.x,ny))joueur.y=ny;
@@ -2415,9 +2422,7 @@ function boucle(t){
   if(fondu>0)fondu=Math.max(0,fondu-dt*2);
   /* la torche ne s'éteint plus */
   else if(!mortJoueur){
-    /* dans le noir complet, on se blesse à tâtons */
-    noirDepuis+=dt;
-    if(noirDepuis>6){noirDepuis=0;blesser(2,null);}
+    /* (plus de dégâts dans le noir : la torche ne s'éteint plus) */
   }
   $('torcheB').style.width=(torche/120*100)+'%';
   $('torcheT').textContent=allumee?(Math.floor(torche/60)+':'+String(Math.floor(torche%60)).padStart(2,'0')):'éteinte';
