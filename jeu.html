@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-25-1701';
+  var MA_VERSION='2026-09-25-1707';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -16991,7 +16991,7 @@ function ouvrirLook(){
 }
 $('b-look').onclick=ouvrirLook;
 $('b-reglages').onclick=ouvrirReglages;
-setTimeout(()=>{try{verifierLaFete();}catch(x){}},3000);
+setTimeout(()=>{try{verifierLaFete();}catch(x){}},200);
 setInterval(()=>{try{verifierLaFete();}catch(x){}},600000);
 $('b-vestiaire').onclick=()=>{VEST_SEL=null;try{$('tiroir').classList.remove('on');$('barre').classList.remove('on');}catch(x){}ouvrirLeVestiaire();};
 $('b-sac').onclick=()=>ouvrirSac();
@@ -17268,8 +17268,11 @@ let msMoyen=16, imagesLentes=0, imagesRapides=0;
    l'heure de son téléphone. On la demande une fois au chargement, puis on
    la fait avancer toute seule — inutile de redemander.
    Le coût : un rectangle teinté par-dessus l'image. Deux traits par image. */
-let MINUTE=null;            /* minutes depuis minuit, heure de Paris */
-let MINUTE_QUAND=0;
+/* L'HEURE : on démarre avec l'horloge du téléphone (Paris), pour que la nuit
+   soit là DÈS la première image. Le serveur corrige ensuite, s'il diffère. */
+let MINUTE=(()=>{try{const p=new Date().toLocaleString('en-US',{timeZone:'Europe/Paris'});
+  const d=new Date(p);return d.getHours()*60+d.getMinutes();}catch(x){const d=new Date();return d.getHours()*60+d.getMinutes();}})();
+let MINUTE_QUAND=Date.now();
 async function lireLHeure(){
   const d=await appelRPC('heure_du_monde',{});
   if(d&&typeof d.minutes==='number'){
@@ -23419,7 +23422,7 @@ requestAnimationFrame(function boucle(t){      /* la première image attend la f
   poussiereDePas();bornerParts();
   majParts(dt);majTextes(dt);majVols(dt);majAction();majAutres(dt);
   brancherPerf();
-  if(MINUTE===null&&e.id&&!lireLHeure.lance){lireLHeure.lance=true;lireLHeure();}
+  if(e.id&&!lireLHeure.lance){lireLHeure.lance=true;lireLHeure();}   /* le serveur affine l'heure, une fois */
   if(t-dernierSolde>20000)lireLHeure();          /* on recale l'heure de temps en temps */
   if(t-dernierMini>200){dernierMini=t;majHaut();}   /* le bandeau du haut */
   if(t-dernierSolde>20000){dernierSolde=t;lireLeSolde();}   /* le solde, toutes les 20 s */
