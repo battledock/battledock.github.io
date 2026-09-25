@@ -3,7 +3,7 @@
    plate, comme le port. Tout y est fermé pour l'instant : on s'y promène.
    ===================================================================== */
 (()=>{
-const WW=360, WH=900, SOLSTYLE='lames';            /* d'après le croquis : en long, assez large, et de la neige sous la place */
+const WW=360, WH=470, SOLSTYLE='lames';            /* d'après le croquis : en long, assez large, et de la neige sous la place */
 let BARRIERE='lisses';            /* d'après le croquis : en long, et assez large */            /* en long : la largeur d'un écran de téléphone */            /* une carte en long, à la verticale */
 const hs=(i)=>{const s=Math.sin(i*127.1+311.7)*43758.5453;return s-Math.floor(s);};
 const mk=(w,h)=>{const c=document.createElement('canvas');c.width=w*2;c.height=h*2;const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
@@ -610,102 +610,10 @@ function solVide(){
         const o=((Y-a0)*W2+X)*4;d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255;}}
     g.putImageData(im,0,a0);
     for(let k=0;k<(y1-y0)*1.4;k++){const x=hs(k*3.7+y0)*WW, y=y0+hs(k*5.3+y0)*(y1-y0);F(x,y,0.5,0.5,'#ffffff');if(k%11===0){F(x-1,y,2.5,0.5,'#ffffff');F(x,y-1,0.5,2.5,'#ffffff');}}};
-  /* 1 · LE FOND DE MONTAGNES */
+  /* 1 · LE FOND DE MONTAGNES, avec la mine */
   fondMontagnes(g,F);
-  /* 2 · LA NEIGE, en haut et en bas */
-  neige(MONT,ESC_Y+1);neige(BAS_Y-1,WH);
-  /* LA COUR DES BOUTIQUES, en planches, et le passage qui descend jusqu'à l'escalier */
-  {const C=COUR, LAME=['#c09264','#b38456','#cc9f70','#a67a4e','#ba8c5c'];
-   const plancher=(x0,y0,x1,y1)=>{F(x0,y0,x1-x0,y1-y0,'#4e3218');
-     for(let y=y0;y<y1;y+=3)for(let x=x0-24;x<x1;){const l=20+Math.floor(hs(x*0.7+y)*4)*7, px=Math.max(x0,x+((y-y0)/3)%4*7), l2=Math.min(l,x1-px);
-       if(l2>0){F(px,y,l2,2.5,LAME[Math.floor(hs(px*0.37+y*1.3)*5)]);F(px,y,l2,0.5,'rgba(255,236,200,.4)');F(px,y+2,l2,0.5,'rgba(70,40,15,.25)');F(px,y,0.5,3,'#3a2410');
-         for(let xx=px;xx<px+l2;xx+=0.5)if(hs(xx*3.1+y*1.7)<0.12)F(xx,y+1,1.5,0.5,'rgba(95,58,28,.3)');}x+=l;}
-     [[x0-2,y0-2,x1-x0+4,2],[x0-2,y1,x1-x0+4,2]].forEach(([x,y,w,h])=>{F(x,y,w,h,'#6b4a28');F(x,y,w,0.6,'#8a6238');F(x,y-0.8,w,0.8,'#ffffff');});};
-   plancher(C.x0,C.y0,C.x1,C.y1);plancher(C.passage[0],C.y1+2,C.passage[1],ESC_Y);}
-  /* 3 · L'ESCALIER */
-  for(let m2=0;m2<MARCHES;m2++){const y=ESC_Y+m2*MARCHE_H;F(0,y,WW,MARCHE_H,'#8a6238');
-    for(let x=0;x<WW;x+=12+hs(m2*7+x)*6)F(x,y,0.5,MARCHE_H-2,'#5b3f21');for(let x=0;x<WW;x+=1)if(hs(x*1.3+m2*9)<0.2)F(x,y+1+hs(x+m2)*2,1,0.5,'rgba(90,55,25,.4)');
-    F(0,y,WW,1,'#b08858');F(0,y+0.5,WW,0.5,'#c8a070');F(0,y+MARCHE_H-2,WW,2,'#4a321a');}
-  for(let x=0;x<WW;x+=0.5){F(x,ESC_Y-1,0.5,1.5,'#ffffff');const h=1.2+Math.sin(x/7)*0.6;F(x,BAS_Y-0.5,0.5,h,'#ffffff');}
-  /* 4 · LA PLACE DE PLANCHES, au milieu de la neige du bas */
-  /* LE PLANCHER EN PIXEL FIN : des lames étroites (2,5 points), chacune avec son ton, ses fibres,
-     un reflet sur l'arête, un joint sombre, des nœuds, deux clous à chaque bout */
-  const LAME=['#c09264','#b38456','#cc9f70','#a67a4e','#ba8c5c','#b58858'], P=PLACE;
-  F(P.x,P.y,P.w,P.h,'#4e3218');
-  for(let y=P.y;y<P.y+P.h;y+=3)for(let x=P.x-30;x<P.x+P.w;){const long=22+Math.floor(hs(x*0.7+y)*4)*8, dec=((y-P.y)/3)%4*9, px=Math.max(P.x,x+dec), l2=Math.min(long,P.x+P.w-px);
-    if(l2>0){const t=hs(px*0.37+y*1.3), col=LAME[Math.floor(t*6)];
-      F(px,y,l2,2.5,col);F(px,y,l2,0.5,'rgba(255,236,200,.4)');F(px,y+2,l2,0.5,'rgba(70,40,15,.28)');   /* l'arête éclairée, le bas dans l'ombre */
-      for(let xx=px;xx<px+l2;xx+=0.5){const f=hs(xx*3.1+y*1.7);if(f<0.16)F(xx,y+0.5+Math.floor(f*12)*0.5,1.5,0.5,'rgba(95,58,28,.32)');}   /* les fibres */
-      if(hs(px+y*7)<0.18){const nx=px+4+hs(px*3)*(l2-8);F(nx,y+0.5,1.5,1.5,'rgba(90,55,25,.5)');F(nx+0.5,y+1,0.5,0.5,'rgba(60,35,15,.7)');}   /* un nœud */
-      F(px,y,0.5,3,'#3a2410');                                                                     /* le joint de bout */
-      F(px+1,y+0.5,0.5,0.5,'#2e2218');F(px+1,y+1.5,0.5,0.5,'#2e2218');if(l2>6){F(px+l2-1.5,y+0.5,0.5,0.5,'#2e2218');F(px+l2-1.5,y+1.5,0.5,0.5,'#2e2218');}}
-    x+=long;}
-  [[P.x-3,P.y-3,P.w+6,3],[P.x-3,P.y+P.h,P.w+6,3],[P.x-3,P.y,3,P.h],[P.x+P.w,P.y,3,P.h]].forEach(([x,y,w,h])=>{F(x,y,w,h,'#6b4a28');F(x,y,w,1,'#8a6238');F(x,y-1,w,1,'#ffffff');});
-  /* LA PATINOIRE EST DÉPOSÉE : la montagne est devenue un site minier. */
-
-  /* 5 · LES LIMITES : rondins sur les côtés, ganivelle en bas */
-  /* LES BARRIÈRES, en trois styles possibles */
-  const ganivelle=(x0,y0,x1,y1)=>{const n=Math.hypot(x1-x0,y1-y0), vert=Math.abs(x1-x0)<Math.abs(y1-y0);
-    const pt=(s2)=>[x0+(x1-x0)*s2/n, y0+(y1-y0)*s2/n];
-    if(BARRIERE==='croix'){
-      /* la barrière de chalet : poteaux carrés, deux lisses, et une croix de Saint-André entre chaque poteau */
-      const pas=14;
-      for(let s2=0;s2<n;s2+=pas){const [xa,ya]=pt(s2),[xb,yb]=pt(Math.min(n,s2+pas));
-        g.strokeStyle='#7a5234';g.lineWidth=1.1;g.beginPath();g.moveTo(xa,ya-1);g.lineTo(xb,yb-9);g.moveTo(xa,ya-9);g.lineTo(xb,yb-1);g.stroke();}
-      for(let s2=0;s2<n;s2+=0.5){const [x,y]=pt(s2);F(x,y-10,0.5,1.4,'#8a6238');F(x,y-10.5,0.5,0.5,'#ffffff');F(x,y-2,0.5,1.2,'#6b4a28');}
-      for(let s2=0;s2<=n;s2+=pas){const [x,y]=pt(s2);F(x-1,y-12,2.5,12,'#5b3f21');F(x-1,y-12,1,12,'#7d5934');F(x-1.25,y-13,3,1.2,'#ffffff');}
-    }else if(BARRIERE==='filet'){
-      /* le filet de piste : piquets noirs et jaunes, filet orange tendu, ses mailles */
-      for(let s2=0;s2<n;s2+=0.5){const [x,y]=pt(s2);for(let h=1;h<9;h+=0.5){const maille=((Math.round(s2*2)+Math.round(h*2))%4===0)||((Math.round(s2*2)-Math.round(h*2)+400)%4===0);
-          if(maille)F(x,y-h,0.5,0.5,'#f07a1a');}
-        F(x,y-9,0.5,0.6,'#e8641a');F(x,y-1,0.5,0.6,'#e8641a');}
-      for(let s2=0;s2<=n;s2+=18){const [x,y]=pt(s2);for(let h=0;h<12;h+=2)F(x-0.5,y-h-2,1.5,2,(h/2)%2?'#f0c020':'#1a1a1e');F(x-0.75,y-12.5,2,1,'#ffffff');}
-    }else{
-      /* la clôture à lisses : de gros rondins horizontaux posés sur des piquets fourchus */
-      if(vert){for(let s2=0;s2<n;s2+=0.5){const [x,y]=pt(s2);F(x-2.5,y-9,1.6,1,'#8a6238');F(x-2.5,y-9,0.6,1,'#b08858');F(x+1,y-4,1.6,1,'#7d5934');F(x+1,y-4,0.6,1,'#a07848');F(x-2.5,y-9.6,1.6,0.6,'#ffffff');}}   /* vue en long : les deux rondins, bien épais */
-      else for(let s2=0;s2<n;s2+=0.5){const [x,y]=pt(s2);[3,8].forEach(h=>{F(x,y-h-1,0.5,2,'#8a6238');F(x,y-h-1,0.5,0.6,'#b08858');F(x,y-h+0.6,0.5,0.4,'#4a321a');});F(x,y-9.8,0.5,0.8,'#ffffff');}
-      for(let s2=0;s2<=n;s2+=20){const [x,y]=pt(s2);F(x-1,y-11,2.5,11,'#5b3f21');F(x-1,y-11,1,11,'#7d5934');F(x-1.5,y-11.5,1,1.5,'#5b3f21');F(x+1,y-11.5,1,1.5,'#5b3f21');F(x-1,y-12,2.5,0.8,'#ffffff');}
-    }
-    for(let s2=0;s2<n;s2+=0.5){const [x,y]=pt(s2);F(x-1,y,3,1.2,'#ffffff');F(x-1,y+1.2,3,0.4,'#c8d8e8');}   /* la neige amassée au pied */
-  };
-  /* ===== LE CARREAU DE MINE : la plateforme de travail, à la place des remontées ===== */
-  {const x0=24,x1=WW-24,y0=MONT+18,y1=MONT+150;
-   for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
-     const d=Math.max(Math.abs(x-(x0+x1)/2)/((x1-x0)/2),Math.abs(y-(y0+y1)/2)/((y1-y0)/2));
-     if(d>1-hs(x*0.09+y*0.11)*0.10)continue;
-     const n=hs(x*0.9+y*1.7);
-     F(x,y,1,1,n<.34?'#6f6960':(n<.7?'#7c766c':'#878178'));}
-   for(let i=0;i<900;i++){const x=x0+hs(i*1.7)*(x1-x0),y=y0+hs(i*2.3)*(y1-y0);F(x,y,1+hs(i)*2,1,hs(i*5)<.5?'#928b7f':'#615b52');}
-   for(let i=0;i<40;i++){const x=x0+hs(i*5)*(x1-x0),y=y0+hs(i*9)*(y1-y0);F(x,y,3+hs(i)*4,2,'#514c44');}      /* flaques de charbon */
-   for(let i=0;i<60;i++){const x=x0+hs(i*11)*(x1-x0),y=y0+hs(i*13)*(y1-y0);F(x,y,2,2,'#d3dde6');}            /* neige qui résiste */
-   /* la congère qui borde la plateforme */
-   for(let x=x0-3;x<x1+3;x++){F(x,y0-3,1,4,'#e7f0f8');F(x,y1-1,1,4,'#e7f0f8');}
-   for(let y=y0-2;y<y1+2;y++){F(x0-3,y,4,1,'#e7f0f8');F(x1-1,y,4,1,'#e7f0f8');}
-   /* (plus de rails sur le carreau) */
-   /* les ornières et les traces de wagonnet */
-   for(let i=0;i<70;i++){const x=x0+hs(i*3)*(x1-x0),y=y0+hs(i*7)*(y1-y0);F(x,y,5+hs(i)*7,1,'rgba(70,64,56,.35)');}}
-  ganivelle(5,MONT+8,5,WH-5);ganivelle(WW-5,MONT+8,WW-5,WH-5);ganivelle(5,WH-5,WW-5,WH-5);
-  /* 6 · LE TÉLÉPHÉRIQUE : la file en serpentin, son entrée, le couloir sous les câbles, l'enclos */
-  const corde=(x0,y0,x1,y1)=>{const n=Math.hypot(x1-x0,y1-y0);
-    /* la corde tressée qui pend entre deux poteaux, son ombre sur le plancher */
-    for(let s2=0;s2<n;s2+=0.5){const x=x0+(x1-x0)*s2/n, y=y0+(y1-y0)*s2/n, u=(s2%12)/12, p=Math.sin(u*Math.PI)*1.3;
-      F(x,y-7+p,0.5,0.9,(Math.floor(s2*2)%3)?'#c0392b':'#9a2a20');F(x,y-7+p,0.5,0.3,'#e86a5a');F(x,y+0.5,0.5,0.4,'rgba(40,20,10,.25)');}
-    /* les poteaux d'inox : socle rond, fût, tête dorée, crochets */
-    for(let s2=0;s2<=n;s2+=12){const x=x0+(x1-x0)*s2/n, y=y0+(y1-y0)*s2/n;
-      g.fillStyle='#3a3a40';g.beginPath();g.ellipse(x,y,1.8,0.8,0,0,7);g.fill();g.fillStyle='#8a8f96';g.fillRect(x-1.2,y-0.5,1,0.4);
-      F(x-0.5,y-8,1.2,8,'#9aa2a8');F(x-0.5,y-8,0.4,8,'#e8eef2');F(x+0.4,y-8,0.3,8,'#5a6068');
-      F(x-1,y-9,2.2,1.2,'#c9a24a');F(x-0.8,y-9,0.8,0.5,'#f0cf7d');F(x-1.3,y-7.3,2.8,0.6,'#6a6e76');}};
-  /* PLUS DE REMONTÉES : la file, ses tourniquets et ses ganivelles ne sont plus gravés. */
-  if(false){const {x0,x1,y0,y1}=FQ;F(x0,y0,x1-x0,y1-y0,'#4e3218');
-   for(let y=y0;y<y1;y+=3)for(let x=x0-20;x<x1;){const l=18+Math.floor(hs(x*0.7+y)*3)*7, px=Math.max(x0,x+((y-y0)/3)%3*6), l2=Math.min(l,x1-px);
-     if(l2>0){F(px,y,l2,2.5,['#b88a5a','#a87a4c','#c49868','#ae8254'][Math.floor(hs(px*0.37+y*1.3)*4)]);F(px,y,l2,0.5,'rgba(255,236,200,.35)');F(px,y,0.5,3,'#3a2410');}x+=l;}
-   /* les flèches peintes au sol, qui montrent le sens de la file */
-   const fleche=(x,y,dx,dy)=>{g.save();g.translate(x,y);g.rotate(Math.atan2(dy,dx));g.fillStyle='rgba(255,255,255,.8)';
-     g.fillRect(-4,-0.6,6,1.2);g.beginPath();g.moveTo(4,0);g.lineTo(1,-2.5);g.lineTo(1,2.5);g.closePath();g.fill();g.restore();};
-   fleche(x1-10,y1-8,0,-1);fleche(x0+40,y1-12,-1,0);fleche(x0+10,y0+58,0,-1);fleche(x0+60,y0+38,1,0);fleche(x1-10,y0+34,0,-1);fleche(x0+70,y0+13,-1,0);
-   /* les tourniquets, avant la porte : deux bornes d'inox et leurs bras */
-   [[TPH.x-14],[TPH.x+6]].forEach(([tx])=>{F(tx,y0+2,8,6,'#8a9196');F(tx,y0+2,8,0.8,'#d8dee4');F(tx+1,y0+3,2,1,'#3f9e7a');F(tx+8,y0+4,5,0.8,'#c4ccd2');F(tx+8,y0+6,4,0.8,'#aab2b8');});}
-  /* (les cordes de file et les ganivelles du téléphérique sont déposées) */
+  /* 2 · LA NEIGE, du pied de la montagne jusqu'en bas : plus de cour, plus d'escalier, plus de place */
+  neige(MONT,WH);
   return c;
 }
 let SOL_MEMO=null;
@@ -822,30 +730,40 @@ function graverPyloneT(){const W=40,H=TPH.h+30,{c,g,F}=mk(W,H);const cx=W/2,sol=
 /* LA BOUCHE DU MÉTRO, EN LONG (comme sur le croquis) : un large escalier qui descend sous un long auvent
    de bois, chargé de neige ; la plaque au milieu, un M à chaque bout, des lanternes sous l'auvent */
 function graverBoucheLongue(nuit){
-  const W=214,H=86,{c,g,F}=mk(W,H);const cx=W/2,sol=H-6;ombre(g,cx,sol,100,6);
-  const L=78;                                                                  /* la demi-largeur de l'escalier */
-  /* la trémie et le grand escalier */
-  F(cx-L,sol-24,2*L,24,'#3a3530');
-  for(let k=0;k<7;k++){const y=sol-22+k*3.1;F(cx-L+2,y,2*L-4,3,k%2?'#6d6b65':'#7e7b74');F(cx-L+2,y,2*L-4,0.5,'#a8a498');F(cx-L+2,y+2.6,2*L-4,0.5,'#4a4640');}
-  for(let k=-L+20;k<L;k+=40){F(cx+k-0.5,sol-24,1,24,'#9a968c');F(cx+k-1,sol-14,2,1,'#c4c0b8');}   /* les rampes, qui partagent l'escalier en couloirs */
-  const fo=g.createLinearGradient(0,sol-24,0,sol);fo.addColorStop(0,nuit?'rgba(255,210,140,.12)':'rgba(10,12,20,.55)');fo.addColorStop(1,nuit?'rgba(255,210,140,.5)':'rgba(10,12,20,0)');g.fillStyle=fo;g.fillRect(cx-L,sol-24,2*L,24);
-  /* les murets de pierre aux deux bouts, coiffés de neige */
-  [[-L-6],[L]].forEach(([k])=>{for(let r=0;r<5;r++){F(cx+k,sol-24+r*5,6,4.5,r%2?'#cfc6b0':'#ddd4be');F(cx+k,sol-24+r*5,6,0.5,'#efe8d6');F(cx+k+5.5,sol-24+r*5,0.5,4.5,'#8a806a');}F(cx+k-0.5,sol-25.5,7,2,'#ffffff');});
-  /* le long auvent : six poteaux, une poutre, un toit à un pan, lourd de neige, ses glaçons */
-  for(let k=-L;k<=L;k+=2*L/5){F(cx+k-1,sol-46,2.5,22,'#6b4a28');F(cx+k-1,sol-46,0.8,22,'#8a6238');}
-  F(cx-L-8,sol-48,2*L+16,3,'#5b3f21');F(cx-L-8,sol-48,2*L+16,0.5,'#8a6238');
-  for(let r=0;r<6;r++){const y=sol-49-r*1.8;F(cx-L-10+r*0.5,y,2*L+20-r,1.8,r<3?'#ffffff':(r%2?'#5a4a3e':'#6a5a4c'));}
-  F(cx-L-10,sol-50.5,2*L+20,1.6,'#ffffff');
-  for(let k=-L-9;k<L+10;k+=2.5)F(cx+k,sol-45,0.5,1+hs(k)*3.5,'rgba(220,244,255,.9)');
-  /* la plaque émaillée, au milieu de la poutre */
-  F(cx-24,sol-47,48,7,'#1d3f8f');F(cx-24,sol-47,48,0.5,'#4d6fc8');F(cx-23,sol-46.5,46,0.5,'#e9e6db');F(cx-23,sol-40.5,46,0.5,'#e9e6db');
-  g.font='700 4.8px Georgia,serif';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('LA MONTAGNE',cx,sol-41.8,42);g.textAlign='left';
-  /* les lanternes sous l'auvent */
-  [[-L/2],[L/2]].forEach(([k])=>{F(cx+k-0.25,sol-45,0.5,2,'#2a2e36');F(cx+k-2,sol-43,4,4.5,'#2a2e36');F(cx+k-1.5,sol-42.5,3,3.5,nuit?'#ffd27a':'#e8dcb0');});
-  /* un M à chaque bout, sur son mât */
-  [[-L-18],[L+18]].forEach(([k])=>{const tx=cx+k;F(tx-1,sol-52,2.5,52,'#4d5760');F(tx-1,sol-52,1,52,'#7a848c');
-    F(tx-7,sol-66,15,14,'#1d4f9a');F(tx-7,sol-66,15,1,'#4d7fc8');F(tx-7,sol-53,15,1,'#12356a');F(tx-7,sol-67.5,15,1.5,'#ffffff');
-    F(tx-4.5,sol-63,2,10,'#ffffff');F(tx+3,sol-63,2,10,'#ffffff');for(let q=0;q<5;q++){F(tx-2.5+q*0.5,sol-62+q,1.5,1.5,'#ffffff');F(tx+1.5-q*0.5,sol-62+q,1.5,1.5,'#ffffff');}});
+  /* LA TRÉMIE DU MÉTRO, À LA MONTAGNE : une margelle de pierre, une rambarde de fer,
+     la plaque émaillée en hauteur, l'escalier qui descend dans le noir. */
+  const W=90,H=64,{c,g,F}=mk(W,H);const cx=W/2,sol=H-6;
+  ombre(g,cx,sol,26,4);
+  /* l'escalier */
+  F(cx-15,sol-16,30,16,'#141a20');
+  for(let i=0;i<5;i++){const y=sol-15+i*3, w=26-i*1.2;
+    F(cx-w/2,y,w,1.6,nuit?'#46515c':'#3d4650');F(cx-w/2,y,w,0.5,nuit?'#6c7784':'#5c6772');}
+  F(cx-15,sol-17,30,1.5,'#98a0aa');
+  /* la margelle de pierre, de chaque côté */
+  [[-17],[17]].forEach(([d])=>{for(let y=sol-18;y<sol;y+=4)
+    for(let x=cx+d-3;x<cx+d+3;x+=3)F(x,y,3,3.6,hs(x+y)<.5?'#9ba3ad':'#aab2bc');
+    F(cx+d-3,sol-19,6,1.2,'#c2cad4');F(cx+d-3,sol-1,6,1,'#6e7680');});
+  F(cx-20,sol-19,40,2,'#b8c0ca');F(cx-20,sol-19,40,0.6,'#d6dee6');F(cx-20,sol-1,40,1.5,'#6e7680');
+  /* la rambarde : deux montants, deux lisses, des barreaux */
+  [[-17],[17]].forEach(([d])=>{F(cx+d-0.8,sol-31,1.6,13,'#39454f');F(cx+d-0.4,sol-31,0.6,13,'#66727e');
+    F(cx+d-2.4,sol-32.4,4.8,1.6,'#5c6772');});
+  F(cx-18,sol-29,36,1.3,'#39454f');F(cx-18,sol-29,36,0.4,'#66727e');F(cx-18,sol-24.5,36,1,'#39454f');
+  for(let x=cx-16;x<cx+16;x+=4)F(x,sol-29,0.8,9,'#39454f');
+  /* la plaque émaillée, au-dessus */
+  F(cx-15,sol-40,30,7,'#12406e');F(cx-14,sol-39,28,5,'#1d5b96');F(cx-14,sol-39,28,1,'#4d87c8');
+  g.font='700 4px Georgia';g.textAlign='center';g.fillStyle='#eaf4fb';g.fillText('LA MONTAGNE',cx,sol-34.4,26);g.textAlign='left';
+  /* le totem M, planté à gauche */
+  F(cx-25,sol-22,1.8,22,'#39454f');F(cx-29,sol-31,10,9,'#1d5b96');F(cx-29,sol-31,10,1,'#4d87c8');
+  g.font='700 7px Arial';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('M',cx-24,sol-24);g.textAlign='left';
+  /* la neige : sur la margelle, sur la lisse, et la congère au pied */
+  for(let x=cx-21;x<cx+21;x++){const e=1.2+Math.abs(Math.sin(x/5))*1.1+hs(x)*0.8;F(x,sol-20.5,1,e,'#f2f9fd');}
+  for(let x=cx-18;x<cx+18;x+=1)if(hs(x)<0.6)F(x,sol-30,1,0.8,'#eef6fb');
+  g.fillStyle='#e7f0f8';g.beginPath();g.moveTo(cx-26,sol+2);g.quadraticCurveTo(cx-12,sol-2.5,cx,sol-0.5);
+  g.quadraticCurveTo(cx+12,sol-2.5,cx+26,sol+2);g.lineTo(cx+26,sol+4);g.lineTo(cx-26,sol+4);g.closePath();g.fill();
+  g.fillStyle='#ffffff';g.beginPath();g.moveTo(cx-21,sol+1.2);g.quadraticCurveTo(cx,sol-1.4,cx+21,sol+1.2);
+  g.lineTo(cx+21,sol+2.2);g.lineTo(cx-21,sol+2.2);g.closePath();g.fill();
+  if(nuit){const gl=g.createRadialGradient(cx,sol-18,2,cx,sol-18,26);
+    gl.addColorStop(0,'rgba(255,224,150,.22)');gl.addColorStop(1,'rgba(255,224,150,0)');g.fillStyle=gl;g.fillRect(cx-28,sol-44,56,48);}
   return {c,W,H,sol};
 }
 /* LA PLACE, HABILLÉE : un grand foyer de pierre au centre, ses bancs à plaids en rond, quatre
@@ -1006,48 +924,15 @@ function graverPanneauEcole(){const W=34,H=30,{c,g,F}=mk(W,H);const cx=W/2,sol=H
   g.font='700 3.2px Georgia';g.textAlign='center';g.fillStyle='#fff';g.fillText('JARDIN DES NEIGES',cx,sol-21.3,28);g.textAlign='left';return {c,W,H,sol};}
 function graverPorteMine(){const W=56,H=10,{c,g,F}=mk(W,H);F(0,H-3,W,3,'rgba(40,30,20,.18)');return {c,W,H,sol:H};}
 function objetsVides(){
+  /* LA MONTAGNE, DÉPOUILLÉE : il ne reste que le fond avec la mine, la neige,
+     et la bouche du métro. Tout le reste (chalets, cour, école, boutiques,
+     lampadaires, bancs) est déposé. */
   const cal={}, L=[];
   const reg=(nom,J,N)=>{cal[nom]={toile:J.c,W:J.W,H:J.H,sol:J.sol,nuit:N?N.c:null};};
-  reg('gare',graverBoucheLongue(false),graverBoucheLongue(true));reg('telepherique',graverTelecabine(false),graverTelecabine(true));reg('pyloneT',graverPyloneT());
-  reg('skishop',graverChaletNom('SKI SHOP','#8a5a3a'));
-  reg('forfaits',graverForfaits(false),graverForfaits(true));reg('souvenirs',graverChaletNom('BUVETTE','#8a3a2a'));
-  reg('ecole',graverEcoleSki(false),graverEcoleSki(true));reg('moniteur',graverMoniteur());reg('piquetR',graverPiquet(true));reg('piquetB',graverPiquet(false));reg('panneauJ',graverPanneauEcole());
-  const P=(nom,x,y,x2)=>L.push(Object.assign({t:'x_mo_'+nom,x,y,v:0,bati:true},x2||{}));
-  /* LA COUR DES BOUTIQUES : deux chalets au fond d'une cour de planches, deux autres plus bas,
-     un passage de bois qui descend vers l'escalier ; lampadaires, banc, râtelier, poteau indicateur */
-  const C=COUR;
-  
-  P('souvenirs',C.x1-40,C.y0-4,{col:[28,12],bati:true,ouvre:'buvette',demi:26});
+  reg('gare',graverBoucheLongue(false),graverBoucheLongue(true));
+  L.push({t:'x_mo_gare',x:180,y:WH-30,v:0,bati:true,demi:42,ouvre:'metro',col:[42,10]});
   reg('galerie',graverPorteMine());
-  P('galerie',180,MONT+16,{col:[26,4],bati:true,demi:26,ferme:'La galerie du Puits n°1'});
-  
-  
-  reg('lampeC',graverLampadaireFin());reg('bancC',graverBancPlaid(1));reg('skisC',graverSkis());reg('poteauC',graverPoteau('MÉTRO ↓'));
-  const Dc=(nom,x,y,x2)=>L.push(Object.assign({t:'x_mo_'+nom,x,y,v:0},x2||{}));
-  Dc('lampeC',C.x0+6,C.y0+10,{col:[2,2]});Dc('lampeC',C.x1-6,C.y0+10,{col:[2,2]});Dc('lampeC',C.x0+6,C.y1-2,{col:[2,2]});Dc('lampeC',C.x1-6,C.y1-2,{col:[2,2]});
-  Dc('bancC',(C.x0+C.x1)/2,C.y0+30,{col:[13,3]});
-  Dc('skisC',C.x0+86,C.y0+2,{col:[11,3]});
-  Dc('poteauC',C.passage[1]+10,C.y1+20,{col:[2,2]});
-  
-  /* le portique et le pylône du téléphérique sont déposés : la montagne n'a plus de remontées */
-  /* LA PLACE */
-  reg('foyer',graverFoyer());reg('lampe',graverLampadaireFin());reg('bac',graverBac());reg('panneauAlt',graverPanneauAlt());
-  [0,1,2].forEach(v=>{reg('banc'+v,graverBancPlaid(v));reg('transat'+v,graverTransat(v));});
-  /* LA PLACE D'EN BAS EST DÉPOSÉE : son feu, ses bancs, ses transats et ses lampadaires
-     remontent sur la cour, en haut, là où passent les mineurs. */
-  const Pl={x:COUR.x0+6,y:COUR.y0+4,w:COUR.x1-COUR.x0-12,h:COUR.y1-COUR.y0-6}, cxp=Pl.x+Pl.w/2, cyp=Pl.y+Pl.h/2+4;
-  const Q=(nom,x,y,x2)=>L.push(Object.assign({t:'x_mo_'+nom,x,y,v:0},x2||{}));
-  Q('foyer',cxp,cyp,{col:[16,6]});
-  [[cxp-42,cyp+4,1],[cxp+42,cyp+4,2]].forEach(([x,y,v])=>Q('banc'+v,x,y,{col:[13,3]}));
-  [[Pl.x+14,Pl.y+Pl.h-4],[Pl.x+Pl.w-14,Pl.y+Pl.h-4]].forEach(([x,y])=>Q('lampe',x,y,{col:[2,2],lampe:true}));
-  /* (pas de transats sur la cour : on n'y bronze pas, on y travaille) */
-  /* (pas de bacs de bruyère non plus) */
-  /* (le panneau d'altitude reste sur le quai du métro) */
-  /* le moniteur attend devant l'École de ski */
-  L.push({t:'x_mo_moniteur',x:COUR.x0+100,y:COUR.y1+70,v:0,col:[5,3],bati:true,demi:6,ouvre:'ecole',
-    pnj:{peau:3,cheveux:1,coiffe:1,barbe:7,veste:8,haut:5,chapeau:3,pantalon:6,souliers:3,sac:0,corps:3,sourcils:1},dir:'bas'});
-  /* deux bancs au bord de la glace, pour lacer ses patins */
-  /* (les bancs de la patinoire sont déposés) */
+  L.push({t:'x_mo_galerie',x:180,y:MONT+16,v:0,bati:true,demi:26,ferme:'La galerie du Puits n°1',col:[26,4]});
   return {L,cal};
 }
 const zoneInterdite=(x,y)=>{
@@ -1151,5 +1036,5 @@ const SOMMET=(()=>{
   return {WW:SW,WH:SH,objets,solFin:()=>SOL_M||(SOL_M=sol()),zoneInterdite:zone,dansNeige:(x,y)=>y>HAUT&&!(x>TERR.x0&&x<TERR.x1&&y>TERR.y0&&y<TERR.y1),
     surGlace:()=>false,dessinerTelepherique:()=>{},ARRIVEE:[GARE.x+4,GARE.y+14],METRO:null};
 })();
-return {sommet:SOMMET,WW,WH,surGlace,fond:(f)=>{FOND=f;},dessinerPlace,barriere:(b)=>{BARRIERE=b;},zoneInterdite,dansNeige,dessinerTelepherique:()=>{},objets:objetsVides,solFin,LIFT_X,GARE_Y,CABLE_H,ECART,ARRIVEE:[180,488],METRO:[180,472],NEIGE_Y,texture:(t)=>{TEXTURE_NEIGE=t;}};
+return {sommet:SOMMET,WW,WH,surGlace,fond:(f)=>{FOND=f;},dessinerPlace:()=>{},barriere:(b)=>{BARRIERE=b;},zoneInterdite,dansNeige,dessinerTelepherique:()=>{},objets:objetsVides,solFin,LIFT_X,GARE_Y,CABLE_H,ECART,ARRIVEE:[180,WH-64],METRO:null,NEIGE_Y,texture:(t)=>{TEXTURE_NEIGE=t;}};
 })()
