@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-25-1716';
+  var MA_VERSION='2026-09-25-1722';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -11680,7 +11680,11 @@ function construireSolFin(solBase){
    Une fois construit, on le range dans le téléphone (IndexedDB, en arrière-plan) ; aux lancements suivants, on le
    ressort directement au lieu de tout repeindre. La clé contient la version du jeu : une mise à jour le reconstruit. */
 const SOL_CACHE={pret:false,sol:null,fin:null};
-const cleSol=()=>'sol:'+(typeof MA_VERSION!=='undefined'?MA_VERSION:'?')+':'+CARTE+':'+MONDE_L+'x'+MONDE_H;
+/* LA CLÉ DU SOL EN CACHE doit distinguer la ferme, la forêt et la place :
+   elles partagent la carte « village », donc le sol de l'une se retrouvait
+   affiché au chargement de l'autre. */
+const cleSol=()=>'sol:'+(typeof MA_VERSION!=='undefined'?MA_VERSION:'?')+':'+CARTE+':'+
+  (typeof MODE_VIL!=='undefined'?MODE_VIL:'-')+':'+MONDE_L+'x'+MONDE_H;
 function baseSol(){return new Promise((ok,ko)=>{try{const r=indexedDB.open('bdl-sol',1);r.onupgradeneeded=()=>r.result.createObjectStore('s');r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error);}catch(x){ko(x);}});}
 async function chargerSolCache(){try{const db=await baseSol();const v=await new Promise(ok=>{const q=db.transaction('s').objectStore('s').get(cleSol());q.onsuccess=()=>ok(q.result);q.onerror=()=>ok(null);});
   if(!v||!v.sol)return;const toile=async(b)=>{if(!b)return null;const im=await createImageBitmap(b);const c=document.createElement('canvas');c.width=im.width;c.height=im.height;c.getContext('2d').drawImage(im,0,0);return c;};
