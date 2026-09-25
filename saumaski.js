@@ -938,8 +938,7 @@ function objetsVides(){
      lampadaires, bancs) est déposé. */
   const cal={}, L=[];
   const reg=(nom,J,N)=>{cal[nom]={toile:J.c,W:J.W,H:J.H,sol:J.sol,nuit:N?N.c:null};};
-  reg('gare',graverBoucheLongue(false),graverBoucheLongue(true));
-  L.push({t:'x_mo_gare',x:180,y:WH-30,v:0,bati:true,demi:42,ouvre:'metro',col:[42,10]});
+  reg('gare',graverBoucheLongue(false),graverBoucheLongue(true));   /* la trémie : c'est le jeu qui la pose, via METRO */
   reg('galerie',graverPorteMine());
   L.push({t:'x_mo_galerie',x:180,y:MONT+16,v:0,bati:true,demi:26,ouvre:'galerie',col:[26,4]});
   /* (plus de filons à ciel ouvert : le minerai se gagne dans la mine) */
@@ -1046,5 +1045,5 @@ const SOMMET=(()=>{
   return {WW:SW,WH:SH,objets,solFin:()=>SOL_M||(SOL_M=sol()),zoneInterdite:zone,dansNeige:(x,y)=>y>HAUT&&!(x>TERR.x0&&x<TERR.x1&&y>TERR.y0&&y<TERR.y1),
     surGlace:()=>false,dessinerTelepherique:()=>{},ARRIVEE:[GARE.x+4,GARE.y+14],METRO:null};
 })();
-return {sommet:SOMMET,WW,WH,surGlace,fond:(f)=>{FOND=f;},dessinerPlace:()=>{},barriere:(b)=>{BARRIERE=b;},zoneInterdite,dansNeige,dessinerTelepherique:()=>{},objets:objetsVides,solFin,LIFT_X,GARE_Y,CABLE_H,ECART,ARRIVEE:[180,WH-64],METRO:null,NEIGE_Y,texture:(t)=>{TEXTURE_NEIGE=t;}};
+return {sommet:SOMMET,WW,WH,surGlace,fond:(f)=>{FOND=f;},dessinerPlace:()=>{},barriere:(b)=>{BARRIERE=b;},zoneInterdite,dansNeige,dessinerTelepherique:()=>{},objets:objetsVides,solFin,LIFT_X,GARE_Y,CABLE_H,ECART,ARRIVEE:[96,MONT+66],METRO:[72,MONT+42],NEIGE_Y,texture:(t)=>{TEXTURE_NEIGE=t;}};
 })()
