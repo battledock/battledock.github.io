@@ -1038,11 +1038,11 @@ function objetsVides(){
   const Pl={x:COUR.x0+6,y:COUR.y0+4,w:COUR.x1-COUR.x0-12,h:COUR.y1-COUR.y0-6}, cxp=Pl.x+Pl.w/2, cyp=Pl.y+Pl.h/2+4;
   const Q=(nom,x,y,x2)=>L.push(Object.assign({t:'x_mo_'+nom,x,y,v:0},x2||{}));
   Q('foyer',cxp,cyp,{col:[16,6]});
-  [[cxp-40,cyp-6,1],[cxp+40,cyp-6,2],[cxp,cyp+20,0]].forEach(([x,y,v])=>Q('banc'+v,x,y,{col:[13,3]}));
-  [[Pl.x+12,Pl.y+14],[Pl.x+Pl.w-12,Pl.y+14],[Pl.x+Pl.w-12,Pl.y+Pl.h-4],[Pl.x+12,Pl.y+Pl.h-4]].forEach(([x,y])=>Q('lampe',x,y,{col:[2,2],lampe:true}));
-  [[Pl.x+30,Pl.y+Pl.h-2,0],[Pl.x+Pl.w-30,Pl.y+Pl.h-2,2]].forEach(([x,y,v])=>Q('transat'+v,x,y,{col:[6,3]}));
-  [[Pl.x+18,Pl.y+10],[Pl.x+Pl.w-18,Pl.y+10]].forEach(([x,y])=>Q('bac',x,y,{col:[11,3]}));
-  Q('panneauAlt',cxp,Pl.y+8,{col:[3,2]});
+  [[cxp-42,cyp+4,1],[cxp+42,cyp+4,2]].forEach(([x,y,v])=>Q('banc'+v,x,y,{col:[13,3]}));
+  [[Pl.x+14,Pl.y+Pl.h-4],[Pl.x+Pl.w-14,Pl.y+Pl.h-4]].forEach(([x,y])=>Q('lampe',x,y,{col:[2,2],lampe:true}));
+  /* (pas de transats sur la cour : on n'y bronze pas, on y travaille) */
+  /* (pas de bacs de bruyère non plus) */
+  /* (le panneau d'altitude reste sur le quai du métro) */
   /* le moniteur attend devant l'École de ski */
   L.push({t:'x_mo_moniteur',x:COUR.x0+100,y:COUR.y1+70,v:0,col:[5,3],bati:true,demi:6,ouvre:'ecole',
     pnj:{peau:3,cheveux:1,coiffe:1,barbe:7,veste:8,haut:5,chapeau:3,pantalon:6,souliers:3,sac:0,corps:3,sourcils:1},dir:'bas'});
