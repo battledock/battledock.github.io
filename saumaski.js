@@ -609,7 +609,18 @@ function solVide(){
         const c=t>0.992?P[2]:(r<-0.55?(t<0.5?P[0]:P[1]):(r>0.55?(t<0.5?P[2]:P[3]):(t<0.33?P[4]:(t<0.66?P[5]:P[6]))));
         const o=((Y-a0)*W2+X)*4;d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255;}}
     g.putImageData(im,0,a0);
-    for(let k=0;k<(y1-y0)*1.4;k++){const x=hs(k*3.7+y0)*WW, y=y0+hs(k*5.3+y0)*(y1-y0);F(x,y,0.5,0.5,'#ffffff');if(k%11===0){F(x-1,y,2.5,0.5,'#ffffff');F(x,y-1,0.5,2.5,'#ffffff');}}};
+    /* LA NEIGE DAMÉE : de longues rides de vent à crête claire, des creux bleutés très doux,
+       des cristaux qui accrochent la lumière. */
+    for(let i=0;i<Math.round((y1-y0)*0.16);i++){
+      const y=y0+4+hs(i*3+y0)*(y1-y0-8), amp=1.1+hs(i+y0)*1.7, lg=40+hs(i*5+y0)*130, x0=hs(i*7+y0)*WW-24;
+      for(let x=x0;x<x0+lg;x+=0.5){const yy=y+Math.sin((x-x0)/17)*amp;
+        F(x,yy,0.5,1.2,'rgba(205,220,235,.5)');F(x,yy-1,0.5,0.6,'rgba(255,255,255,.75)');}}
+    for(let i=0;i<Math.round((y1-y0)*0.06);i++){
+      const x=hs(i*9+y0)*WW, y=y0+8+hs(i*11+y0)*(y1-y0-16);
+      g.fillStyle='rgba(196,214,232,.30)';g.beginPath();g.ellipse(x,y,9+hs(i+y0)*15,3+hs(i*2+y0)*3,0,0,7);g.fill();}
+    for(let k=0;k<(y1-y0)*1.4;k++){const x=hs(k*3.7+y0)*WW, y=y0+hs(k*5.3+y0)*(y1-y0);F(x,y,0.5,0.5,'#ffffff');if(k%11===0){F(x-1,y,2.5,0.5,'#ffffff');F(x,y-1,0.5,2.5,'#ffffff');}}
+    for(let k=0;k<(y1-y0)*0.35;k++){const x=hs(k*2.9+y0)*WW, y=y0+hs(k*6.1+y0)*(y1-y0);
+      F(x,y,1,1,'#ffffff');F(x-0.5,y+0.5,2,0.5,'rgba(255,255,255,.75)');}};
   /* 1 · LE FOND DE MONTAGNES, avec la mine */
   fondMontagnes(g,F);
   /* 2 · LA NEIGE, du pied de la montagne jusqu'en bas : plus de cour, plus d'escalier, plus de place */
