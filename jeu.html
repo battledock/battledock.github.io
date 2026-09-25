@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-25-0642';
+  var MA_VERSION='2026-09-25-0656';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -7707,7 +7707,7 @@ async function ouvrirLeBar(){
       #bar .bar-bulle{position:absolute;left:16px;right:16px;bottom:calc(100% + 6px);background:#1a2a4a;color:#fff;border-radius:14px;padding:10px 12px;font:700 14px Georgia,serif;text-align:center;opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;pointer-events:none}
       #bar .bar-bulle.on{opacity:1;transform:none}
       /* LES TICKETS EN GRAND */
-      #bar .gt{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;background:rgba(8,6,4,.9);padding:calc(env(safe-area-inset-top,0px) + 14px) 10px 16px;overflow-y:auto;overscroll-behavior:contain}
+      #bar .gt{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;overflow:hidden;background:rgba(8,6,4,.9);padding:calc(env(safe-area-inset-top,0px) + 14px) 10px 16px;overflow-y:auto;overscroll-behavior:contain}
 #bar .tk{width:min(99vw,440px);border-radius:16px;overflow:hidden;position:relative;box-shadow:0 18px 44px rgba(0,0,0,.55);flex:none}
 #bar .hd{position:relative;padding:14px 16px 6px}#bar .hd small{display:block;font:600 9px Arial;letter-spacing:3px;opacity:.75}#bar .hd b{display:block;font:300 26px 'Helvetica Neue',Arial;letter-spacing:-.3px;margin-top:3px}
 #bar .regle{position:relative;font:italic 12.5px Georgia,serif;opacity:.9;padding:0 16px 10px;line-height:1.35}
@@ -7780,6 +7780,17 @@ async function ouvrirLeBar(){
         '<div class="conts">'+CT.map((c,i)=>'<div class="z cont" data-z="'+i+'"><div class="dessous">'+(c.sirene?sirene+'<small>× 2</small>':'<b>'+c.n+'</b><small>'+eu(c.m)+'</small>')+'</div></div>').join('')+'</div><div class="pd"><span>N° '+n+'</span><span>JUSQU’À 500 €</span></div></div>';
       zones=(el)=>{const z=el.dataset.z,c=CT[+z];return {gagne:z==='j'?d.gain>0:!!(c&&c.g),style:z==='j'?{grad:['#9aa4b4','#eef1f6','#a8b0bc'],texte:'NUMÉROS DU JOUR',taille:9}:{grad:[coul[+z],clair(coul[+z]),coul[+z]],motif:nervures()}};};}
     v.innerHTML=html+'<div class="gt-res" id="gtRes"></div><button class="gt-ok" id="gtOk">Continuer</button>';$('bar').appendChild(v);
+    /* LE TICKET TIENT TOUJOURS DANS L'ÉCRAN : on mesure, et on réduit s'il dépasse.
+       Sans ça, il fallait faire défiler pour gratter le bas ou trouver « Continuer ». */
+    const ajuster=()=>{const tk=v.querySelector('.tk');if(!tk)return;
+      tk.style.transform='';tk.style.transformOrigin='top center';
+      const res=$('gtRes'),ok=$('gtOk');
+      const dispo=v.clientHeight-(res?res.offsetHeight:0)-(ok?ok.offsetHeight:0)-34;
+      const h=tk.offsetHeight;
+      if(h>dispo&&dispo>120){const k=dispo/h;tk.style.transform='scale('+k+')';tk.style.marginBottom=(-(h*(1-k)))+'px';}
+      else tk.style.marginBottom='';};
+    requestAnimationFrame(()=>{ajuster();setTimeout(ajuster,60);});
+    const surTaille=()=>ajuster();addEventListener('resize',surTaille);
     const Z=[...v.querySelectorAll('.z')].map(el=>Object.assign({el},zones(el)));let reste=Z.length,fini=false;
     const rappel=()=>{if(fini||reste<=0)return;const L=Z.filter(z=>!z.fait);const nom=L.length===1?(L[0].el.classList.contains('jour')?'les numéros du jour':(L[0].el.classList.contains('appat')?'ton appât':(L[0].el.classList.contains('tresor')?'le trésor':'une dernière case'))):L.length+' zones';
       $('gtRes').innerHTML='<small>Il reste à gratter : '+nom+'</small>';};
@@ -7789,7 +7800,7 @@ async function ouvrirLeBar(){
       else{$('gtRes').innerHTML='Pas cette fois<small>'+POURQUOI[1]+'</small>';const t=v.querySelector('.tresor');if(t)t.classList.add('rate');}
       if(typeof d.euros==='number'){e.euros=d.euros;sauver();majHaut();}$('gtOk').style.visibility='visible';};
     requestAnimationFrame(()=>Z.forEach(z=>{z.p=pellicule(z.el,z.style,()=>fin(z));}));
-    $('gtOk').onclick=()=>{v.remove();rendre();};};
+    $('gtOk').onclick=()=>{removeEventListener('resize',surTaille);v.remove();rendre();};};
   rendre();
 }
 /* ================= CHEZ FONFON : la bouillabaisse, au restaurant =================
