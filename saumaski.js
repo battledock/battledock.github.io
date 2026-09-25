@@ -641,35 +641,8 @@ function solVide(){
       F(px+1,y+0.5,0.5,0.5,'#2e2218');F(px+1,y+1.5,0.5,0.5,'#2e2218');if(l2>6){F(px+l2-1.5,y+0.5,0.5,0.5,'#2e2218');F(px+l2-1.5,y+1.5,0.5,0.5,'#2e2218');}}
     x+=long;}
   [[P.x-3,P.y-3,P.w+6,3],[P.x-3,P.y+P.h,P.w+6,3],[P.x-3,P.y,3,P.h],[P.x+P.w,P.y,3,P.h]].forEach(([x,y,w,h])=>{F(x,y,w,h,'#6b4a28');F(x,y,w,1,'#8a6238');F(x,y-1,w,1,'#ffffff');});
-  /* LA PATINOIRE : une glace bleutée, rayée par les lames, avec ses reflets ; la bande blanche à main
-     courante bleue, ses panneaux, et l'ouverture en haut pour entrer */
-  {const P=PATIN, dansP=(x,y,m)=>{const cx=Math.max(P.x0+P.r,Math.min(P.x1-P.r,x)), cy=Math.max(P.y0+P.r,Math.min(P.y1-P.r,y));return Math.hypot(x-cx,y-cy)<=P.r-m;};
-   const T=tampon(g,P.y0-2,P.y1+2);
-   for(let y=P.y0;y<P.y1;y+=0.5)for(let x=P.x0;x<P.x1;x+=0.5){if(!dansP(x,y,3))continue;
-     const n=Math.sin(x/31+y/47)*0.5+Math.sin(x/13-y/19)*0.25, t=hs(Math.round(x*2)*0.71+Math.round(y*2)*1.37);
-     T.pose(x,y,n>0.45?'#e6f4fb':(n<-0.4?'#bcdcee':(t<0.5?'#cfe7f4':'#d6ebf6')));}
-   T.fin();
-   /* les rayures des lames : de longues courbes claires */
-   g.lineWidth=0.4;for(let k=0;k<46;k++){const cx=P.x0+30+hs(k*3)*(P.x1-P.x0-60), cy=P.y0+30+hs(k*7)*(P.y1-P.y0-60), R=20+hs(k)*60, a0=hs(k*5)*6.28;
-     g.strokeStyle='rgba(255,255,255,'+(0.25+hs(k*9)*0.35).toFixed(2)+')';g.beginPath();g.arc(cx,cy,R,a0,a0+0.6+hs(k*2));g.stroke();}
-   /* les reflets de lumière, et les lignes de hockey sous la glace */
-   g.fillStyle='rgba(255,255,255,.35)';for(let k=0;k<6;k++){g.beginPath();g.ellipse(P.x0+40+k*45,P.y0+40+(k%2)*90,18,4,-0.4,0,7);g.fill();}
-   const my=(P.y0+P.y1)/2, mx=(P.x0+P.x1)/2;g.strokeStyle='rgba(192,57,43,.45)';g.lineWidth=1;g.beginPath();g.moveTo(P.x0+6,my);g.lineTo(P.x1-6,my);g.stroke();
-   g.strokeStyle='rgba(45,111,176,.4)';g.lineWidth=0.8;g.beginPath();g.arc(mx,my,22,0,7);g.stroke();
-   [P.y0+56,P.y1-56].forEach(y=>{g.strokeStyle='rgba(45,111,176,.35)';g.beginPath();g.moveTo(P.x0+6,y);g.lineTo(P.x1-6,y);g.stroke();});
-   /* la bande : un liseré blanc épais, sa main courante bleue, son ombre sur la glace, ses panneaux */
-   const bord=(x,y)=>{if(y<P.y0+3&&x>P.porte[0]&&x<P.porte[1])return;F(x-1,y-7,3,7,'#c8d4de');F(x-0.5,y-7,2,6.5,'#ffffff');F(x-1,y-8,3,1.5,'#2d6fb0');F(x-1,y-8,3,0.5,'#6aa8e8');F(x-1,y+0.5,3,1.5,'rgba(40,70,110,.3)');};
-   const per=[];const pas=1.2;
-   for(let x=P.x0+P.r;x<=P.x1-P.r;x+=pas){per.push([x,P.y0+2]);per.push([x,P.y1-1]);}
-   for(let y=P.y0+P.r;y<=P.y1-P.r;y+=pas){per.push([P.x0+2,y]);per.push([P.x1-2,y]);}
-   [[P.x1-P.r,P.y0+P.r,-Math.PI/2,0],[P.x1-P.r,P.y1-P.r,0,Math.PI/2],[P.x0+P.r,P.y1-P.r,Math.PI/2,Math.PI],[P.x0+P.r,P.y0+P.r,Math.PI,Math.PI*1.5]].forEach(([cx,cy,a0,a1])=>{
-     for(let a=a0;a<=a1;a+=pas/P.r)per.push([cx+Math.cos(a)*(P.r-2),cy+Math.sin(a)*(P.r-2)]);});
-   per.sort((a,b)=>a[1]-b[1]).forEach(([x,y])=>bord(x,y));
-   /* les panneaux sur la bande, côté sud */
-   [[P.x0+60,'LA MONTAGNE'],[mx,'PATINOIRE'],[P.x1-60,'1 850 M']].forEach(([x,t])=>{F(x-18,P.y1-7,36,5,'#1d3f6a');g.font='700 3.2px Georgia';g.textAlign='center';g.fillStyle='#fff';g.fillText(t,x,P.y1-3.4,34);g.textAlign='left';});
-   /* l'entrée : deux poteaux et un petit arceau */
-   [P.porte[0],P.porte[1]].forEach(x=>{F(x-1,P.y0-10,2,12,'#2d6fb0');F(x-1,P.y0-10,2,1,'#6aa8e8');});F(P.porte[0],P.y0-11,P.porte[1]-P.porte[0],2,'#2d6fb0');
-   g.font='700 3.4px Georgia';g.textAlign='center';g.fillStyle='#1d3f6a';g.fillText('PATINOIRE',(P.porte[0]+P.porte[1])/2,P.y0-12.5,40);g.textAlign='left';}
+  /* LA PATINOIRE EST DÉPOSÉE : la montagne est devenue un site minier. */
+
   /* 5 · LES LIMITES : rondins sur les côtés, ganivelle en bas */
   /* LES BARRIÈRES, en trois styles possibles */
   const ganivelle=(x0,y0,x1,y1)=>{const n=Math.hypot(x1-x0,y1-y0), vert=Math.abs(x1-x0)<Math.abs(y1-y0);
@@ -708,10 +681,7 @@ function solVide(){
    /* la congère qui borde la plateforme */
    for(let x=x0-3;x<x1+3;x++){F(x,y0-3,1,4,'#e7f0f8');F(x,y1-1,1,4,'#e7f0f8');}
    for(let y=y0-2;y<y1+2;y++){F(x0-3,y,4,1,'#e7f0f8');F(x1-1,y,4,1,'#e7f0f8');}
-   /* LES RAILS, gravés : de la galerie vers le bas du carreau */
-   for(let i=0;i<130;i++){const y=y0+8+i, x=WW/2+Math.sin(i/28)*10;
-     if(i%4===0){F(x-8,y,16,1.2,'#5b3f21');F(x-8,y,16,0.5,'#7d5934');}
-     F(x-6,y,1.4,1,'#98a0aa');F(x+4.6,y,1.4,1,'#98a0aa');F(x-6,y,0.6,1,'#c6ced8');F(x+4.6,y,0.6,1,'#c6ced8');}
+   /* (plus de rails sur le carreau) */
    /* les ornières et les traces de wagonnet */
    for(let i=0;i<70;i++){const x=x0+hs(i*3)*(x1-x0),y=y0+hs(i*7)*(y1-y0);F(x,y,5+hs(i)*7,1,'rgba(70,64,56,.35)');}}
   ganivelle(5,MONT+8,5,WH-5);ganivelle(WW-5,MONT+8,WW-5,WH-5);ganivelle(5,WH-5,WW-5,WH-5);
@@ -933,12 +903,19 @@ function graverPanneauAlt(){
   g.font='italic 700 3.6px Georgia';g.fillStyle='#2a1a0e';g.fillText('— 1 850 m —',cx,sol-21.6,30);g.textAlign='left';
   return {c,W,H,sol};}
 function graverLampadaireFin(){
-  const W=14,H=48,{c,g,F}=mk(W,H);const cx=W/2,sol=H-3;ombre(g,cx,sol,4,1.5);
+  const W=18,H=54,{c,g,F}=mk(W,H);const cx=W/2,sol=H-3;ombre(g,cx,sol,5,2);
   F(cx-2.5,sol-3,5,3,'#2a2e36');F(cx-2.5,sol-3,5,0.5,'#5a5e66');F(cx-2,sol-4,4,1,'#3a3e46');
   F(cx-0.75,sol-32,1.5,28,'#2a2e36');F(cx-0.75,sol-32,0.5,28,'#6a6e76');for(let y=sol-28;y<sol-6;y+=6)F(cx-1.25,y,2.5,0.8,'#3a3e46');   /* le fût cannelé, ses bagues */
   F(cx-3.5,sol-42,7,10,'#2a2e36');F(cx-3,sol-41.5,6,9,'#e8dcb0');F(cx-0.25,sol-41.5,0.5,9,'#2a2e36');F(cx-3,sol-37.25,6,0.5,'#2a2e36');   /* la lanterne, ses vitres */
   F(cx-2.5,sol-41,1,4,'rgba(255,255,255,.7)');F(cx-4,sol-43,8,1.5,'#2a2e36');F(cx-3,sol-44.5,6,1.5,'#2a2e36');F(cx-0.5,sol-46,1,1.5,'#2a2e36');
   F(cx-4,sol-44,8,1,'#ffffff');F(cx-1,sol-46.5,2,0.5,'#ffffff');
+  /* LA NEIGE POSÉE SUR LE CHAPEAU, LE HALO CHAUD ET LA GIVRE SUR LE FÛT */
+  for(let x=cx-4.5;x<cx+4.5;x++){const e=1+Math.abs(Math.sin(x))*0.8;F(x,sol-45.5,1,e,'#f4fafd');}
+  F(cx-3,sol-33,6,1,'#f0e4b8');F(cx-2.5,sol-41.5,1,9,'rgba(255,255,255,.55)');
+  {const gl=g.createRadialGradient(cx,sol-37,1,cx,sol-37,16);
+   gl.addColorStop(0,'rgba(255,224,150,.30)');gl.addColorStop(1,'rgba(255,224,150,0)');
+   g.fillStyle=gl;g.fillRect(cx-16,sol-53,32,32);}
+  F(cx-1.25,sol-14,2.5,1,'#cfe0ee');F(cx-1.25,sol-22,2.5,1,'#cfe0ee');
   return {c,W,H,sol,lampe:[cx,sol-37]};}
 /* LES GUIRLANDES entre les lampadaires, et le feu du foyer : vivants */
 let LUEUR=null;
@@ -946,8 +923,8 @@ function lueurDuFeu(){if(LUEUR)return LUEUR;const c=document.createElement('canv
   const gl=q.createRadialGradient(68,68,2,68,68,68);gl.addColorStop(0,'rgba(255,170,70,.35)');gl.addColorStop(1,'rgba(255,170,70,0)');q.fillStyle=gl;q.fillRect(0,0,136,136);return LUEUR=c;}
 function dessinerPlace(g,camX,camY,t,nuit){
   {const sc=g.getTransform().a||1, Hv=g.canvas.height/sc, Wv=g.canvas.width/sc;
-   if(PLACE.x-camX>Wv+20||PLACE.x+PLACE.w-camX<-20||PLACE.y-50-camY>Hv||PLACE.y+PLACE.h-camY<-20)return;}   /* la place n'est pas à l'écran */
-  const P=PLACE, coins=[[P.x+12,P.y+14],[P.x+P.w-12,P.y+14],[P.x+P.w-12,P.y+P.h-4],[P.x+12,P.y+P.h-4]];
+   if(COUR.x0-camX>Wv+20||COUR.x1-camX<-20||COUR.y0-60-camY>Hv||COUR.y1-camY<-20)return;}   /* la place n'est pas à l'écran */
+  const P={x:COUR.x0+6,y:COUR.y0+4,w:COUR.x1-COUR.x0-12,h:COUR.y1-COUR.y0-6}, coins=[[P.x+12,P.y+14],[P.x+P.w-12,P.y+14],[P.x+P.w-12,P.y+P.h-4],[P.x+12,P.y+P.h-4]];
   const tete=(a)=>[a[0]-camX,a[1]-34-camY];
   const guirlande=(a,b,k0)=>{const [x1,y1]=tete(a),[x2,y2]=tete(b);g.strokeStyle='rgba(40,30,20,.7)';g.lineWidth=0.4;g.beginPath();g.moveTo(x1,y1);
     g.quadraticCurveTo((x1+x2)/2,(y1+y2)/2+10,x2,y2);g.stroke();
@@ -1056,31 +1033,33 @@ function objetsVides(){
   /* LA PLACE */
   reg('foyer',graverFoyer());reg('lampe',graverLampadaireFin());reg('bac',graverBac());reg('panneauAlt',graverPanneauAlt());
   [0,1,2].forEach(v=>{reg('banc'+v,graverBancPlaid(v));reg('transat'+v,graverTransat(v));});
-  const Pl=PLACE, cxp=Pl.x+Pl.w/2, cyp=Pl.y+Pl.h/2+6;
+  /* LA PLACE D'EN BAS EST DÉPOSÉE : son feu, ses bancs, ses transats et ses lampadaires
+     remontent sur la cour, en haut, là où passent les mineurs. */
+  const Pl={x:COUR.x0+6,y:COUR.y0+4,w:COUR.x1-COUR.x0-12,h:COUR.y1-COUR.y0-6}, cxp=Pl.x+Pl.w/2, cyp=Pl.y+Pl.h/2+4;
   const Q=(nom,x,y,x2)=>L.push(Object.assign({t:'x_mo_'+nom,x,y,v:0},x2||{}));
   Q('foyer',cxp,cyp,{col:[16,6]});
-  [[cxp,cyp-20,0],[cxp-34,cyp+2,1],[cxp+34,cyp+2,2],[cxp,cyp+24,0]].forEach(([x,y,v])=>Q('banc'+v,x,y,{col:[13,3]}));
+  [[cxp-40,cyp-6,1],[cxp+40,cyp-6,2],[cxp,cyp+20,0]].forEach(([x,y,v])=>Q('banc'+v,x,y,{col:[13,3]}));
   [[Pl.x+12,Pl.y+14],[Pl.x+Pl.w-12,Pl.y+14],[Pl.x+Pl.w-12,Pl.y+Pl.h-4],[Pl.x+12,Pl.y+Pl.h-4]].forEach(([x,y])=>Q('lampe',x,y,{col:[2,2],lampe:true}));
-  [[Pl.x+44,Pl.y+Pl.h-6,0],[Pl.x+62,Pl.y+Pl.h-6,1],[Pl.x+Pl.w-62,Pl.y+Pl.h-6,2],[Pl.x+Pl.w-44,Pl.y+Pl.h-6,0]].forEach(([x,y,v])=>Q('transat'+v,x,y,{col:[6,3]}));
-  [[Pl.x+46,Pl.y+12],[Pl.x+Pl.w-46,Pl.y+12]].forEach(([x,y])=>Q('bac',x,y,{col:[11,3]}));
-  Q('panneauAlt',cxp,Pl.y+14,{col:[3,2]});
+  [[Pl.x+30,Pl.y+Pl.h-2,0],[Pl.x+Pl.w-30,Pl.y+Pl.h-2,2]].forEach(([x,y,v])=>Q('transat'+v,x,y,{col:[6,3]}));
+  [[Pl.x+18,Pl.y+10],[Pl.x+Pl.w-18,Pl.y+10]].forEach(([x,y])=>Q('bac',x,y,{col:[11,3]}));
+  Q('panneauAlt',cxp,Pl.y+8,{col:[3,2]});
   /* le moniteur attend devant l'École de ski */
   L.push({t:'x_mo_moniteur',x:COUR.x0+100,y:COUR.y1+70,v:0,col:[5,3],bati:true,demi:6,ouvre:'ecole',
     pnj:{peau:3,cheveux:1,coiffe:1,barbe:7,veste:8,haut:5,chapeau:3,pantalon:6,souliers:3,sac:0,corps:3,sourcils:1},dir:'bas'});
   /* deux bancs au bord de la glace, pour lacer ses patins */
-  reg('bancP',graverBancPlaid(2));[[PATIN.x0+20,PATIN.y0-6],[PATIN.x1-20,PATIN.y0-6]].forEach(([x,y])=>L.push({t:'x_mo_bancP',x,y,v:0,col:[13,3]}));
+  /* (les bancs de la patinoire sont déposés) */
   return {L,cal};
 }
 const zoneInterdite=(x,y)=>{
   if(y<MONT+8)return true;                                                                        /* les montagnes, au fond */
-  if(surBande(x,y))return true;                                                                   /* la bande de la patinoire */
+  /* (plus de bande de patinoire) */                                                                   /* la bande de la patinoire */
   /* PLUS DE REMONTÉES : la file, le couloir sous les câbles et l'enclos de la gare ne bloquent plus.
      On marche partout sur le carreau. */
   return false;};
-const surGlace=(x,y)=>{const P=PATIN, cx=Math.max(P.x0+P.r,Math.min(P.x1-P.r,x)), cy=Math.max(P.y0+P.r,Math.min(P.y1-P.r,y));return Math.hypot(x-cx,y-cy)<=P.r-4;};
-const surBande=(x,y)=>{const P=PATIN, cx=Math.max(P.x0+P.r,Math.min(P.x1-P.r,x)), cy=Math.max(P.y0+P.r,Math.min(P.y1-P.r,y)), d=Math.hypot(x-cx,y-cy)-(P.r-2);
+const surGlace=(x,y)=>false;const surGlaceAncien=(x,y)=>{const P=PATIN, cx=Math.max(P.x0+P.r,Math.min(P.x1-P.r,x)), cy=Math.max(P.y0+P.r,Math.min(P.y1-P.r,y));return Math.hypot(x-cx,y-cy)<=P.r-4;};
+const surBande=(x,y)=>false;const surBandeAncien=(x,y)=>{const P=PATIN, cx=Math.max(P.x0+P.r,Math.min(P.x1-P.r,x)), cy=Math.max(P.y0+P.r,Math.min(P.y1-P.r,y)), d=Math.hypot(x-cx,y-cy)-(P.r-2);
   if(Math.abs(d)>2.6)return false;if(y<P.y0+8&&x>P.porte[0]+2&&x<P.porte[1]-2)return false;return true;};
-const dansNeige=(x,y)=>{if(surGlace(x,y))return false;if(y>ESC_Y-2&&y<BAS_Y+2)return false;if(x>PLACE.x-3&&x<PLACE.x+PLACE.w+3&&y>PLACE.y-3&&y<PLACE.y+PLACE.h+3)return false;return y>MONT;};
+const dansNeige=(x,y)=>{if(surGlace(x,y))return false;if(y>ESC_Y-2&&y<BAS_Y+2)return false;if(false&&x>PLACE.x-3&&x<PLACE.x+PLACE.w+3&&y>PLACE.y-3&&y<PLACE.y+PLACE.h+3)return false;return y>MONT;};
 /* =====================================================================
    LE SOMMET — 2 450 m. On y arrive par la télécabine (forfait du jour).
    Le panorama et la mer de nuages ; la gare d'arrivée ; la terrasse
