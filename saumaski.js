@@ -941,7 +941,7 @@ function objetsVides(){
   reg('gare',graverBoucheLongue(false),graverBoucheLongue(true));
   L.push({t:'x_mo_gare',x:180,y:WH-30,v:0,bati:true,demi:42,ouvre:'metro',col:[42,10]});
   reg('galerie',graverPorteMine());
-  L.push({t:'x_mo_galerie',x:180,y:MONT+16,v:0,bati:true,demi:26,ferme:'La galerie du Puits n°1',col:[26,4]});
+  L.push({t:'x_mo_galerie',x:180,y:MONT+16,v:0,bati:true,demi:26,ouvre:'galerie',col:[26,4]});
   return {L,cal};
 }
 const zoneInterdite=(x,y)=>{
