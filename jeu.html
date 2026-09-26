@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-26-0837';
+  var MA_VERSION='2026-09-26-0843';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -7887,6 +7887,7 @@ async function ouvrirLaGazette(){
   $('page2Fond').innerHTML='<div style="position:absolute;inset:0;background:#e9e1cc;display:flex;align-items:center;justify-content:center;font:italic 15px Georgia;color:#231c14">On déplie le journal…</div>';
   let G=null;try{G=await appelRPC('gazette',{});}catch(x){}
   let NEUF=[];try{const r=await appelRPC('gazette_nouveautes',{});if(Array.isArray(r))NEUF=r;}catch(x){}   /* LA UNE : ce qui vient d'ouvrir dans le jeu */
+  let MARCHE=[];try{const r=await appelRPC('gazette_cours',{});if(Array.isArray(r))MARCHE=r;}catch(x){}   /* LES COURS DU JOUR, communs à tous */
   const CL=(G&&G.classement)||[];
   const esc=(t)=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
   const jourN=Math.floor((d-new Date(2026,0,1))/864e5);
@@ -7899,6 +7900,13 @@ async function ouvrirLaGazette(){
   else if(H.prises)faits.push('<b>'+H.prises+' poisson'+(H.prises>1?'s':'')+'</b> sortis de l’eau.');
   if(H.repas)faits.push('Crousti’Port a servi <b>'+H.repas+' menu'+(H.repas>1?'s':'')+'</b>.');
   if(H.nouveaux&&H.nouveaux.length)faits.push('Bienvenue à <b>'+H.nouveaux.map(esc).join('</b>, <b>')+'</b>, arrivé'+(H.nouveaux.length>1?'s':'')+' sur le port.');
+  const nomMarche=(k)=>POT_CULT[k]?POT_CULT[k][0]:((OBJETS[k]&&OBJETS[k].nom)||k);
+  const marcheHTML=MARCHE.length?('<div class="gzv-marche"><h3>Le marché du port</h3>'+
+    '<p class="gzv-mleg">Les prix sont les mêmes pour tout le monde : ce que vendent les autres fait bouger les tiens.</p>'+
+    MARCHE.map(m=>{const v=Math.round((m.f-1)*100);
+      const c=v>2?'#2f6a2e':(v<-2?'#b8402e':'#5a5048'), fl=v>2?'▲':(v<-2?'▼':'=');
+      return '<div class="gzv-ml"><span>'+esc(nomMarche(m.k))+'</span><b>'+enEuros(m.prix)+'</b>'+
+        '<i style="color:'+c+'">'+fl+' '+(v>0?'+':'')+v+' %</i></div>';}).join('')+'</div>'):'';
   const hierHTML='<div class="gzv-hier"><h3>Hier sur le port</h3>'+(faits.length?'<ul>'+faits.map(f=>'<li>'+f+'</li>').join('')+'</ul>':'<p>Une journée tranquille : les quais se reposaient.</p>')+'</div>';
   const DEDE=['Un pastis, ça ne se boit pas, ça se mérite.','Le poisson, c’est comme la chance : il faut savoir attendre au bon endroit.','Ici, le mistral, on l’appelle le balai du Bon Dieu.','Celui qui gratte vite gagne rarement. Celui qui gratte bien… gagne aussi rarement, mais avec style.','Une sardine a bouché le port, une fois. Depuis, on se méfie.','Le secret de Fonfon ? Trois poissons au moins, et beaucoup d’amour.','Qui paie sa tournée a toujours des amis. Qui ne la paie pas en a moins.','Le Loto, c’est comme la pêche : on rêve du gros, on se contente du petit.','Au Bar des Docks, on n’a jamais perdu : on a juste pas encore gagné.','La mer, ça se respecte. Les clients aussi, surtout quand ils paient.'];
   const HORO=['Bélier : une rencontre au bout du ponton pourrait changer ta journée.','Taureau : ta patience sera récompensée, surtout avec une canne en fibre.','Gémeaux : gratte ton ticket de la main gauche, on ne sait jamais.','Cancer : les crabes te portent chance aujourd’hui. Ou pas.','Lion : tu brilles ! Même ta coupe du Hair Studio le dit.','Vierge : range ton sac, la chance aime l’ordre.','Balance : ni trop de sardines, ni trop peu. Tout est question d’équilibre.','Scorpion : une rascasse t’attend. Méfie-toi de ses épines.','Sagittaire : vise loin, lance plus loin encore.','Capricorne : le travail paie. La Criée aussi, d’ailleurs.','Verseau : une journée idéale pour un Seau du Port.','Poissons : c’est ta journée. Évidemment.'];
@@ -7926,6 +7934,13 @@ async function ouvrirLaGazette(){
     #gzv .gzv-annonces{margin-top:14px;border-top:2px solid #b8231a;padding-top:10px}
     #gzv .gzv-pa{border:1px solid #1d1a16;padding:7px 8px;margin-top:7px;font:italic 12.5px Georgia,serif;line-height:1.35}
     #gzv .gzv-fin{text-align:center;font:italic 11px Georgia,serif;color:#5a5048;margin-top:16px}
+    #gzv .gzv-marche{margin-top:12px;border-top:2px solid #b8231a;padding-top:10px}
+    #gzv .gzv-marche h3{font:900 13px 'Times New Roman',Georgia,serif;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px}
+    #gzv .gzv-mleg{font:italic 12px 'Times New Roman',Georgia,serif;color:#5a5048;margin:0 0 7px}
+    #gzv .gzv-ml{display:flex;align-items:baseline;gap:8px;border-bottom:1px dotted #c9bfae;padding:4px 0;font:15px 'Times New Roman',Georgia,serif}
+    #gzv .gzv-ml span{flex:1}
+    #gzv .gzv-ml b{font-weight:700}
+    #gzv .gzv-ml i{font-style:normal;font:700 11px Arial;letter-spacing:.5px;min-width:64px;text-align:right}
     #gzv .gzv-neuf{margin-top:12px;border-top:2px solid #b8231a;padding-top:10px}
     #gzv .gzv-neuf h3{font:900 13px 'Times New Roman',Georgia,serif;text-transform:uppercase;letter-spacing:1px;margin:0 0 6px}
     #gzv .gzv-neuf ul{margin:0;padding-left:18px}#gzv .gzv-neuf li{margin-bottom:7px;font:15px 'Times New Roman',Georgia,serif;line-height:1.35}
@@ -7948,6 +7963,7 @@ async function ouvrirLaGazette(){
      <img class="gzv-photo" src="nouveautes/quai.jpg" alt="">
      <p class="gzv-leg">Sur le quai, à l'heure où les lanternes s'allument.</p>
      <p class="gzv-texte">${esc((G&&G.une)||'Les pêcheurs rentrent, le Fumoir fume, les mouettes veillent.')}</p>`}
+     ${marcheHTML}
      ${hierHTML}
      <div class="gzv-grille">
        <div class="gzv-bloc"><h3>Classement</h3>${CL.length?'<ol>'+CL.map((j,k)=>'<li>'+(k===0?'<b>':'')+esc(j.pseudo)+(k===0?'</b>':'')+'</li>').join('')+'</ol>':'Personne encore au registre.'}</div>
