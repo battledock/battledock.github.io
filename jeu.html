@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-26-0843';
+  var MA_VERSION='2026-09-26-0948';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -7875,6 +7875,130 @@ async function ffCuisiner(){const {pret}=ffCalcul();if(!pret){ffBulle('Il me fau
 /* ================= LA GAZETTE DU VIEUX-PORT =================
    Le journal du jeu : la une (écrite par l'auteur, sur le serveur), le classement, la météo et le cours du poisson du jour
    (ils changent chaque jour, les mêmes pour tout le monde), et les petites annonces. */
+/* LES GRAVURES DU JOURNAL : trois scènes dessinées au pixel, avec leur trame
+   d'impression par-dessus, comme une photographie de presse. */
+function gravure(c,quoi){
+  if(!c||!c.clientWidth)return;
+  const D=Math.min(2,window.devicePixelRatio||1);
+  c.width=Math.round(c.clientWidth*D);c.height=Math.round(c.clientHeight*D);
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const W=c.width,H=c.height,S=W/360;
+  g.save();g.scale(S,S);
+  const w=360,h=H/S;
+  const al=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+  const R=(x,y,ww,hh,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(ww)),Math.max(1,Math.round(hh)));};
+  if(quoi==='mine'){
+    for(let y=0;y<h*0.66;y++){const k=y/(h*0.66);g.fillStyle=`rgb(${110+k*126|0},${138+k*102|0},${176+k*66|0})`;g.fillRect(0,y,w,1);}
+    const gr=g.createRadialGradient(w*0.78,h*0.2,4,w*0.78,h*0.2,74);
+    gr.addColorStop(0,'rgba(255,238,200,.95)');gr.addColorStop(1,'rgba(255,224,170,0)');
+    g.fillStyle=gr;g.fillRect(w*0.4,0,w*0.6,h*0.6);R(w*0.78-5,h*0.2-5,10,10,'#fff3d0');
+    const crete=(base,amp,col,neige,seed)=>{g.fillStyle=col;g.beginPath();g.moveTo(0,base);
+      for(let x=0;x<=w;x+=5){const hh=base-amp*(0.42+0.58*Math.abs(Math.sin(x*0.016+seed)))-al(x*0.5+seed)*7;g.lineTo(x,hh);}
+      g.lineTo(w,base+60);g.lineTo(0,base+60);g.fill();
+      for(let x=0;x<=w;x+=5){const hh=base-amp*(0.42+0.58*Math.abs(Math.sin(x*0.016+seed)))-al(x*0.5+seed)*7;
+        if(al(x+seed)<0.55)R(x,hh,5,3,neige);}};
+    crete(h*0.52,h*0.30,'#9fb0c2','#eef3f8',0.6);crete(h*0.60,h*0.24,'#8496aa','#e2e9f2',2.4);crete(h*0.66,h*0.18,'#6e8094','#d6dfea',4.8);
+    for(let y=h*0.66;y<h;y++){const k=(y-h*0.66)/(h*0.34);g.fillStyle=`rgb(${238-k*12|0},${242-k*10|0},${248-k*8|0})`;g.fillRect(0,y,w,1);}
+    for(let i=0;i<40;i++){const x=al(i*5)*w,y=h*0.68+al(i*3)*h*0.3,rx=16+al(i)*34;
+      g.fillStyle='rgba(206,218,232,.55)';g.beginPath();g.ellipse(x,y,rx,3.5,0,0,7);g.fill();
+      g.fillStyle='rgba(255,255,255,.8)';g.beginPath();g.ellipse(x-2,y-2,rx*0.8,2.4,0,0,7);g.fill();}
+    const mx=w*0.46, base=h*0.78;
+    for(let y=h*0.42;y<base+4;y++){const l=52-(base-y)*0.16;
+      for(let x=mx-l;x<mx+l;x++){const u=(x-(mx-l))/(2*l), band=Math.floor((y*0.9+Math.sin(x/11)*4)/6);
+        let i2=u<0.3?0:(u<0.55?1:(u<0.78?2:3));
+        if(((band%3)+3)%3===0)i2=Math.max(0,i2-1);
+        if(al(x*2.1+y*1.7)<0.12)i2=Math.min(4,i2+1);
+        R(x,y,1,1,['#7c8798','#6b7686','#5b6574','#4c5463','#3d4452'][i2]);}
+      R(mx-l,y,1.5,1,'#93a0b0');R(mx+l-1.5,y,1.5,1,'#33394a');}
+    for(let x=mx-52;x<mx+52;x++){const e=3+Math.sin(x/9)*1.6+al(x)*2;R(x,h*0.42,1,e,'#f2f7fc');}
+    const lE=22,hE=40,bb=base,bx=mx;
+    g.fillStyle='rgba(20,26,34,.3)';g.beginPath();g.ellipse(bx,bb+5,40,7,0,0,7);g.fill();
+    g.fillStyle='#0d1319';g.beginPath();g.moveTo(bx-lE,bb);g.lineTo(bx-lE,bb-hE+lE);g.arc(bx,bb-hE+lE,lE,Math.PI,0);g.lineTo(bx+lE,bb);g.fill();
+    for(let i2=0;i2<3;i2++){g.fillStyle='rgba(18,24,30,'+(0.3+i2*0.22)+')';
+      g.beginPath();g.ellipse(bx,bb-hE*0.5,lE-5-i2*5,hE*0.34-i2*4,0,0,7);g.fill();}
+    const bois=(x,y,ww,hh)=>{for(let j=0;j<hh;j++){const k=al((x+j)*1.9);
+      R(x,y+j,ww,1,k<0.3?'#6a4a2a':(k<0.7?'#7d5934':'#8a6238'));}R(x,y,ww,1,'#a5764a');R(x,y+hh-1,ww,1,'#4a3218');};
+    bois(bx-lE-6,bb-hE+lE,6,hE-lE);bois(bx+lE,bb-hE+lE,6,hE-lE);
+    g.save();g.beginPath();g.rect(bx-lE-8,bb-hE-4,2*lE+16,lE+6);g.clip();
+    g.strokeStyle='#7d5934';g.lineWidth=7;g.beginPath();g.arc(bx,bb-hE+lE,lE+3,Math.PI,0);g.stroke();
+    g.strokeStyle='#a5764a';g.lineWidth=1.5;g.beginPath();g.arc(bx,bb-hE+lE,lE+6.5,Math.PI,0);g.stroke();g.restore();
+    for(let x=bx-lE-9;x<bx+lE+9;x++){const dd=Math.abs(x-bx)/(lE+9);
+      R(x,bb-hE+lE-Math.sqrt(Math.max(0,1-dd*dd))*lE-4,1,2+al(x)*1.5,'#f2f9fd');}
+    R(bx-22,bb-hE-11,44,10,'#2a1a0e');R(bx-21,bb-hE-10,42,8,'#3a2616');
+    g.font='700 8px Georgia';g.textAlign='center';g.fillStyle='#f0cf7d';g.fillText('MINE DES CIMES',bx,bb-hE-3.5);g.textAlign='left';
+    R(bx+lE+7,bb-hE+lE-3,2,7,'#39454f');R(bx+lE+4,bb-hE+lE+4,8,9,'#c9a24a');R(bx+lE+5,bb-hE+lE+5,6,7,'#ffe9a8');
+    for(let i2=0;i2<26;i2++){const y=bb+2+i2*2.2,e=i2*1.1;
+      R(bx-10-e,y,20+e*2,1.6,'#5b3f21');R(bx-8-e,y,1.6,1.6,'#98a0aa');R(bx+6+e,y,1.6,1.6,'#98a0aa');}
+    const wag=(x,y)=>{R(x-13,y-13,26,13,'#7d5934');R(x-13,y-13,26,2,'#a5764a');
+      R(x-14,y-9,28,1.4,'#39454f');R(x-14,y-4,28,1.4,'#39454f');
+      for(let k=0;k<9;k++)R(x-9+al(k*3)*17,y-15+al(k*5)*2.5,3,2.4,al(k)<.5?'#8c94a0':'#6d7581');
+      g.fillStyle='#39454f';g.beginPath();g.arc(x-8,y+2,3.4,0,7);g.fill();g.beginPath();g.arc(x+7,y+2,3.4,0,7);g.fill();};
+    wag(bx+46,bb+34);
+    const mineur=(x,y,v)=>{R(x-5,y-13,4,13,'#2f3a52');R(x+1,y-13,4,13,'#2f3a52');
+      R(x-6,y-26,12,14,v);R(x-6,y-26,12,2.5,'#e8763a');R(x-4,y-36,8,10,'#e8b890');R(x-5,y-38,10,3,'#f2c230');
+      R(x-2.5,y-33,1.6,1.6,'#1b1b1b');R(x+1,y-33,1.6,1.6,'#1b1b1b');
+      const gl=g.createRadialGradient(x,y-36,1,x,y-36,16);gl.addColorStop(0,'rgba(255,224,150,.35)');gl.addColorStop(1,'rgba(255,224,150,0)');
+      g.fillStyle=gl;g.fillRect(x-16,y-52,32,32);};
+    mineur(bx-44,bb+22,'#c85a2a');mineur(bx+18,bb+44,'#8a5a2a');
+    [[w*0.2,h*0.2],[w*0.28,h*0.27]].forEach(([x,y])=>{g.strokeStyle='#4a5560';g.lineWidth=1.4;
+      g.beginPath();g.moveTo(x-6,y);g.quadraticCurveTo(x-3,y-4,x,y);g.quadraticCurveTo(x+3,y-4,x+6,y);g.stroke();});
+  }
+  if(quoi==='etal'){
+    for(let y=0;y<h;y++){const k=y/h;g.fillStyle=`rgb(${210-k*30|0},${214-k*26|0},${218-k*24|0})`;g.fillRect(0,y,w,1);}
+    R(0,0,w,h*0.30,'#b9c6ce');
+    for(let x=0;x<w;x+=30){R(x,0,4,h*0.30,'#8a99a4');R(x+4,0,26,3,'#98a7b2');}
+    for(let x=0;x<w;x+=30)for(let y=6;y<h*0.28;y+=9)R(x+6,y,22,7,'rgba(238,246,250,.55)');
+    R(0,h*0.30,w,3,'#7e8d98');
+    for(let y=h*0.62;y<h;y+=7)for(let x=((y/7|0)%2)*10;x<w;x+=20)R(x,y,19,6,al(x+y)<.5?'#c9c3b4':'#d4cec0');
+    R(26,h*0.42,w-120,h*0.26,'#a5764a');R(26,h*0.42,w-120,5,'#c19468');R(26,h*0.68,w-120,h*0.1,'#7d5934');
+    R(30,h*0.40,w-128,h*0.08,'#dfe8ee');
+    for(let i=0;i<120;i++)R(32+al(i*3)*(w-134),h*0.40+al(i*7)*h*0.08,3,2,al(i)<.5?'#fff':'#c5d3dc');
+    const poisson=(x,y,col,L)=>{R(x,y,L,5,col[0]);R(x,y,L,2,col[1]);R(x+L,y-2,5,9,col[2]);R(x+3,y+1,1.5,1.5,'#1b1b1b');};
+    for(let i=0;i<5;i++)poisson(38+i*15,h*0.44,['#9fb3c4','#cfdbe4','#8fa2b2'],13);
+    for(let i=0;i<4;i++)poisson(112+i*17,h*0.44,['#c03a2a','#e06a4a','#a02a1e'],15);
+    for(let i=0;i<4;i++)poisson(186+i*16,h*0.44,['#c9a24a','#e8c06a','#a8822a'],14);
+    const cageot=(x,y,col)=>{R(x,y,30,16,'#b8905c');R(x,y,30,3,'#d0a878');
+      for(let k=0;k<7;k++)R(x+3+al(k*3)*22,y+3+al(k*5)*8,6,5,col[k%col.length]);};
+    cageot(w-88,h*0.46,['#c03a2a','#e06a4a']);cageot(w-88,h*0.66,['#6a9a3a','#8aba5a']);
+    R(w-136,h*0.30,3,h*0.14,'#7e8d98');R(w-146,h*0.28,23,3,'#8e9daa');
+    g.fillStyle='#8e9daa';g.beginPath();g.arc(w-142,h*0.33,6,0,7);g.fill();g.beginPath();g.arc(w-128,h*0.33,6,0,7);g.fill();
+    R(w-48,h*0.24,42,h*0.5,'#2f3a2c');R(w-48,h*0.24,42,3,'#5a6a54');
+    for(let i=0;i<6;i++){R(w-43,h*0.31+i*9,24+al(i)*8,2,'rgba(255,255,255,.75)');R(w-16,h*0.31+i*9,9,2,'rgba(255,224,150,.9)');}
+    const gens=(x,y,v,p)=>{R(x-6,y-24,12,14,v);R(x-4,y-34,8,10,p);R(x-5,y-36,10,3,'#3a2a1a');
+      R(x-5,y-10,4,10,'#3a3f4a');R(x+1,y-10,4,10,'#3a3f4a');};
+    gens(w-104,h*0.94,'#f0e8d8','#e8b890');gens(64,h*0.98,'#7a3f52','#e8b890');gens(120,h*0.99,'#3f5f7a','#d8a880');
+  }
+  if(quoi==='quai'){
+    for(let y=0;y<h*0.52;y++){const k=y/(h*0.52);g.fillStyle=`rgb(${58+k*140|0},${68+k*90|0},${104+k*56|0})`;g.fillRect(0,y,w,1);}
+    g.fillStyle='#f6f0d8';g.beginPath();g.arc(w*0.84,h*0.16,9,0,7);g.fill();
+    g.fillStyle='rgb(92,86,120)';g.beginPath();g.arc(w*0.87,h*0.13,8,0,7);g.fill();
+    for(let i=0;i<26;i++)R(al(i*3)*w,al(i*7)*h*0.4,1,1,'rgba(255,255,255,.7)');
+    for(let i=0;i<8;i++){const x=i*48, hh=h*0.30+al(i)*h*0.2, y0=h*0.56-hh;
+      R(x,y0,45,hh,['#6a5f52','#5e5449','#766a5c'][i%3]);R(x,y0,45,3,['#8a7d6c','#7b6f60','#93866f'][i%3]);
+      for(let y=y0+8;y<h*0.56-8;y+=12)for(let xx=x+5;xx<x+40;xx+=11){
+        const on=al(xx*1.7+y)<0.5;R(xx,y,7,8,on?'#f2c65a':'#3b3a3e');if(on)R(xx,y,7,2,'#fbe08a');}
+      R(x,y0-4,45,4,'#8a5a44');}
+    R(0,h*0.56,w,h*0.14,'#8e8676');R(0,h*0.56,w,3,'#a79e8b');
+    for(let x=0;x<w;x+=6)R(x,h*0.69,5,2,'rgba(50,42,32,.3)');
+    for(let i=0;i<5;i++){const x=26+i*72;
+      R(x,h*0.56-26,3,26,'#3a434c');R(x-5,h*0.56-33,13,9,'#f6e6a8');R(x-5,h*0.56-33,13,2,'#3a434c');
+      const gl=g.createRadialGradient(x+1,h*0.56-28,2,x+1,h*0.56-28,34);
+      gl.addColorStop(0,'rgba(255,220,140,.35)');gl.addColorStop(1,'rgba(255,220,140,0)');
+      g.fillStyle=gl;g.fillRect(x-34,h*0.56-62,70,70);}
+    for(let y=h*0.70;y<h;y++){const k=(y-h*0.70)/(h*0.3);g.fillStyle=`rgb(${18+k*10|0},${44+k*24|0},${64+k*30|0})`;g.fillRect(0,y,w,1);}
+    for(let i=0;i<5;i++){const x=26+i*72;
+      for(let y=h*0.71;y<h*0.95;y+=3)R(x-3+Math.sin(y/4)*2,y,6,2,'rgba(255,220,140,'+Math.max(0,0.22-(y-h*0.71)/h*0.5)+')');}
+    for(let i=0;i<90;i++)R(al(i*3)*w,h*0.71+al(i*7)*h*0.28,7,1,'rgba(255,255,255,.18)');
+    const barque=(x,y,col)=>{g.fillStyle=col;g.beginPath();g.moveTo(x-20,y);g.lineTo(x+20,y);g.lineTo(x+14,y+8);g.lineTo(x-14,y+8);g.closePath();g.fill();
+      R(x-20,y-2,40,2,'#e8e0d0');R(x-1,y-24,2,24,'#c9bda8');};
+    barque(w*0.22,h*0.80,'#2f3a46');barque(w*0.55,h*0.88,'#3a2f2a');barque(w*0.84,h*0.78,'#2a3a3a');
+    [[w*0.3,h*0.2],[w*0.4,h*0.28],[w*0.62,h*0.22]].forEach(([x,y])=>{g.strokeStyle='#e8e0d0';g.lineWidth=1.4;
+      g.beginPath();g.moveTo(x-7,y);g.quadraticCurveTo(x-3.5,y-5,x,y);g.quadraticCurveTo(x+3.5,y-5,x+7,y);g.stroke();});
+  }
+  g.restore();
+  /* la trame d'impression */
+  for(let y=0;y<H;y+=3)for(let x=((y/3)%2)?0:1;x<W;x+=3){g.fillStyle='rgba(30,26,20,.07)';g.fillRect(x,y,1,1);}
+}
 async function ouvrirLaGazette(){
   const d=new Date(), jour=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const graine=(n)=>{const v=Math.sin((d.getFullYear()*400+d.getMonth()*32+d.getDate())*12.9898+n*78.233)*43758.5453;return v-Math.floor(v);};
@@ -7902,12 +8026,14 @@ async function ouvrirLaGazette(){
   if(H.nouveaux&&H.nouveaux.length)faits.push('Bienvenue à <b>'+H.nouveaux.map(esc).join('</b>, <b>')+'</b>, arrivé'+(H.nouveaux.length>1?'s':'')+' sur le port.');
   const nomMarche=(k)=>POT_CULT[k]?POT_CULT[k][0]:((OBJETS[k]&&OBJETS[k].nom)||k);
   const marcheHTML=MARCHE.length?('<div class="gzv-marche"><h3>Le marché du port</h3>'+
+    '<div class="gzv-illu petite"><canvas data-gr="etal"></canvas></div>'+
+    '<p class="gzv-leg">L’étal de la criée, à l’heure où les prix se décident.</p>'+
     '<p class="gzv-mleg">Les prix sont les mêmes pour tout le monde : ce que vendent les autres fait bouger les tiens.</p>'+
     MARCHE.map(m=>{const v=Math.round((m.f-1)*100);
       const c=v>2?'#2f6a2e':(v<-2?'#b8402e':'#5a5048'), fl=v>2?'▲':(v<-2?'▼':'=');
       return '<div class="gzv-ml"><span>'+esc(nomMarche(m.k))+'</span><b>'+enEuros(m.prix)+'</b>'+
         '<i style="color:'+c+'">'+fl+' '+(v>0?'+':'')+v+' %</i></div>';}).join('')+'</div>'):'';
-  const hierHTML='<div class="gzv-hier"><h3>Hier sur le port</h3>'+(faits.length?'<ul>'+faits.map(f=>'<li>'+f+'</li>').join('')+'</ul>':'<p>Une journée tranquille : les quais se reposaient.</p>')+'</div>';
+  const hierHTML='<div class="gzv-hier"><h3>Hier sur le port</h3>'+'<div class="gzv-illu petite"><canvas data-gr="quai"></canvas></div><p class="gzv-leg">Le quai au crépuscule, les lanternes allumées.</p>'+(faits.length?'<ul>'+faits.map(f=>'<li>'+f+'</li>').join('')+'</ul>':'<p>Une journée tranquille : les quais se reposaient.</p>')+'</div>';
   const DEDE=['Un pastis, ça ne se boit pas, ça se mérite.','Le poisson, c’est comme la chance : il faut savoir attendre au bon endroit.','Ici, le mistral, on l’appelle le balai du Bon Dieu.','Celui qui gratte vite gagne rarement. Celui qui gratte bien… gagne aussi rarement, mais avec style.','Une sardine a bouché le port, une fois. Depuis, on se méfie.','Le secret de Fonfon ? Trois poissons au moins, et beaucoup d’amour.','Qui paie sa tournée a toujours des amis. Qui ne la paie pas en a moins.','Le Loto, c’est comme la pêche : on rêve du gros, on se contente du petit.','Au Bar des Docks, on n’a jamais perdu : on a juste pas encore gagné.','La mer, ça se respecte. Les clients aussi, surtout quand ils paient.'];
   const HORO=['Bélier : une rencontre au bout du ponton pourrait changer ta journée.','Taureau : ta patience sera récompensée, surtout avec une canne en fibre.','Gémeaux : gratte ton ticket de la main gauche, on ne sait jamais.','Cancer : les crabes te portent chance aujourd’hui. Ou pas.','Lion : tu brilles ! Même ta coupe du Hair Studio le dit.','Vierge : range ton sac, la chance aime l’ordre.','Balance : ni trop de sardines, ni trop peu. Tout est question d’équilibre.','Scorpion : une rascasse t’attend. Méfie-toi de ses épines.','Sagittaire : vise loin, lance plus loin encore.','Capricorne : le travail paie. La Criée aussi, d’ailleurs.','Verseau : une journée idéale pour un Seau du Port.','Poissons : c’est ta journée. Évidemment.'];
   const ANNONCES=['Loto du Port : tirage chaque soir à 21 h au Bar des Docks. La cagnotte n’attend que vous !','Chez Fonfon rachète vos bouillabaisses : plus c’est varié, mieux c’est payé.','Le Pêcheur Heureux : la canne en carbone est arrivée. Demandez Fanny.','Crousti’Port : un ticket d’or se cache peut-être dans votre seau. Tenue de poulet garantie.','Hair Studio : envie de changement ? La Comète, série limitée, il en reste encore.','Perdu : une casquette rouge près du ponton 3. Récompense : une sardine.','La Criée achète toutes vos prises, même les petites. Surtout les petites, dit le poissonnier.','Cherche équipier sérieux pour la pêche du matin. Pas de ronfleurs.','Vends canne en bambou, peu servie, cause passage au carbone.','Le Bar des Docks rappelle : vingt tickets par jour, pas un de plus. Même pour Marius.']
@@ -7934,6 +8060,9 @@ async function ouvrirLaGazette(){
     #gzv .gzv-annonces{margin-top:14px;border-top:2px solid #b8231a;padding-top:10px}
     #gzv .gzv-pa{border:1px solid #1d1a16;padding:7px 8px;margin-top:7px;font:italic 12.5px Georgia,serif;line-height:1.35}
     #gzv .gzv-fin{text-align:center;font:italic 11px Georgia,serif;color:#5a5048;margin-top:16px}
+    #gzv .gzv-illu{width:100%;height:150px;border:1px solid #cdbfa4;margin:8px 0 4px;background:#e2dcc8}
+    #gzv .gzv-illu.petite{height:112px}
+    #gzv .gzv-illu canvas{width:100%;height:100%;display:block;image-rendering:pixelated}
     #gzv .gzv-marche{margin-top:12px;border-top:2px solid #b8231a;padding-top:10px}
     #gzv .gzv-marche h3{font:900 13px 'Times New Roman',Georgia,serif;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px}
     #gzv .gzv-mleg{font:italic 12px 'Times New Roman',Georgia,serif;color:#5a5048;margin:0 0 7px}
@@ -7955,12 +8084,13 @@ async function ouvrirLaGazette(){
      <span class="gzv-edition">ÉDITION DU MATIN</span>
      ${NEUF.length?`
      <h2>${esc(NEUF[0].titre)}</h2>
-     <p class="gzv-leg">${esc(NEUF[0].lieu||'Le port')} · ${esc(new Date(NEUF[0].quand).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}))}</p>
+     <div class="gzv-illu"><canvas data-gr="mine"></canvas></div>
+     <p class="gzv-leg">${esc(NEUF[0].lieu||'Le port')} · ${esc(new Date(NEUF[0].quand).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}))} — gravure de notre envoyé</p>
      <p class="gzv-texte">${esc(NEUF[0].texte)}</p>
      <div class="gzv-neuf"><h3>Ce qui vient d’ouvrir</h3><ul>${NEUF.slice(1).map(n=>
        '<li><b>'+esc(n.titre)+'</b> — '+esc(n.texte)+' <i>('+esc(n.lieu||'le port')+')</i></li>').join('')}</ul></div>`
      :`<h2>${esc((G&&G.titre)||'Le quai s’éveille')}</h2>
-     <img class="gzv-photo" src="nouveautes/quai.jpg" alt="">
+     <div class="gzv-illu"><canvas data-gr="quai"></canvas></div>
      <p class="gzv-leg">Sur le quai, à l'heure où les lanternes s'allument.</p>
      <p class="gzv-texte">${esc((G&&G.une)||'Les pêcheurs rentrent, le Fumoir fume, les mouettes veillent.')}</p>`}
      ${marcheHTML}
@@ -7977,6 +8107,8 @@ async function ouvrirLaGazette(){
      <div class="gzv-annonces"><h3>Petites annonces</h3>${[0,1].map(k=>'<div class="gzv-pa">'+esc(ANNONCES[(jourN*2+k)%ANNONCES.length])+'</div>').join('')}</div>
      <div class="gzv-fin">— Le Vieux-Port, le journal des quais —</div>
    </div><div class="gzv-pied"><button class="gzv-fermer" id="gzFermer">Replier le journal</button></div></div>`;
+  const peindre=()=>document.querySelectorAll('#gzv canvas[data-gr]').forEach(c=>{try{gravure(c,c.dataset.gr);}catch(x){}});
+  requestAnimationFrame(peindre);setTimeout(peindre,140);
   $('gzFermer').onclick=()=>{$('page2').classList.remove('on');};
 }
 function nuitComptoir(g,x,y){
