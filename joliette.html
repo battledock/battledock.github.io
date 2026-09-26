@@ -1,0 +1,312 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0}body{background:#111;display:flex;flex-direction:column;gap:14px;padding:16px;width:max-content;font-family:Georgia,serif}
+.rang{display:flex;gap:16px}
+.cap{font:700 12px Arial;color:#e8c06a;text-align:center;margin-top:6px}
+.large{border-radius:10px;overflow:hidden;box-shadow:0 0 0 3px #000}
+.tel{width:330px;height:714px;border-radius:30px;overflow:hidden;box-shadow:0 0 0 5px #000;position:relative}
+canvas{display:block;image-rendering:pixelated}
+.tel canvas{width:100%;height:100%}
+.pl{position:absolute;left:11px;bottom:16px;background:linear-gradient(180deg,rgba(253,251,244,.96),rgba(236,229,209,.96));
+  color:#33291b;border-radius:13px;padding:10px 14px 9px 40px;font:400 16px Georgia;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.pl small{display:block;font:600 7px system-ui;letter-spacing:1.6px;color:#6a5a3a;margin-top:2px}
+.pl::before{content:'';position:absolute;left:9px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,#f6e6c2,#c9a878);box-shadow:inset 0 0 0 1px rgba(90,72,44,.35)}
+</style></head><body>
+<div><canvas id="plan" class="large" width="620" height="430"></canvas>
+  <div class="cap">LE TERMINAL DE LA JOLIETTE · vue d’ensemble</div></div>
+<div class="rang">
+  <div><div class="tel"><canvas id="v1" width="165" height="357"></canvas>
+    <div class="pl">Pointer le navire<small>LISTE DE CHARGEMENT · QUAI 3</small></div></div>
+    <div class="cap">SOUS LE PORTIQUE</div></div>
+  <div><div class="tel"><canvas id="v2" width="165" height="357"></canvas>
+    <div class="pl">Prendre le poste<small>PORTIQUE N°2 · GRUTIER</small></div></div>
+    <div class="cap">LES PILES DE CONTENEURS</div></div>
+  <div><div class="tel"><canvas id="v3" width="165" height="357"></canvas>
+    <div class="pl">Pointeuse<small>LA BARAQUE · PRENDRE SON SERVICE</small></div></div>
+    <div class="cap">L’ENTRÉE DU TERMINAL</div></div>
+</div>
+<script>
+const al=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+function ctx(id){const c=document.getElementById(id),g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  return {g,R,W:c.width,H:c.height};}
+const CT={
+ R:['#a8332a','#8a271f','#c14a3a','#6d1d16'],
+ B:['#1d4f7a','#163e60','#2a6a9a','#102b45'],
+ V:['#2f6a4a','#24543a','#3f8a5f','#1a3c2a'],
+ J:['#c08a2a','#9a6e1e','#e0a83f','#6e4f12'],
+ G:['#8a8f98','#6f747c','#a3a8b1','#565a61'],
+ O:['#c4622a','#9e4c1e','#e0803f','#6e340f']};
+const CLES=['R','B','V','J','G','O'];
+/* ---------- UN CONTENEUR, vu de trois quarts, en pixel fin ---------- */
+function conteneur(R,g,x,y,L,h,k,seed,ouvert){
+  const C=CT[k]||CT.G, prof=Math.round(h*0.42);
+  /* la face de côté, nervurée */
+  for(let i=0;i<L;i+=3){
+    const n=al(x+i*0.7+seed);
+    R(x+i,y,1.6,h,n<.5?C[1]:C[3]);
+    R(x+i+1.6,y,1.4,h,C[0]);}
+  /* le bandeau haut et bas */
+  R(x,y,L,2.4,C[2]);R(x,y+h-3,L,3,C[3]);
+  /* les coins renforcés */
+  R(x,y,2.6,h,C[3]);R(x+L-2.6,y,2.6,h,C[3]);
+  R(x,y,2.6,3,'#3a3f46');R(x+L-2.6,y,2.6,3,'#3a3f46');
+  R(x,y+h-3,2.6,3,'#3a3f46');R(x+L-2.6,y+h-3,2.6,3,'#3a3f46');
+  /* le dessus, en perspective */
+  g.fillStyle=C[2];g.beginPath();g.moveTo(x,y);g.lineTo(x+prof*0.7,y-prof);g.lineTo(x+L+prof*0.7,y-prof);g.lineTo(x+L,y);g.closePath();g.fill();
+  g.fillStyle='rgba(255,255,255,.10)';g.beginPath();g.moveTo(x+2,y-1);g.lineTo(x+prof*0.7+2,y-prof+1);g.lineTo(x+L-2,y-prof+1);g.lineTo(x+L-4,y-1);g.closePath();g.fill();
+  for(let i=4;i<L;i+=7)R(x+i+prof*0.35,y-prof*0.5,3,1,'rgba(0,0,0,.12)');
+  /* la face avant : portes ou marquage */
+  if(ouvert){
+    R(x+L-1,y,3,h,C[3]);
+  }
+  /* le marquage au pochoir */
+  const nom=['MSC','CMA','MRK','EVG','ONE','HPL'][Math.floor(al(seed*3)*6)];
+  g.font='700 5px Georgia';g.fillStyle='rgba(245,240,228,.72)';
+  g.fillText(nom,x+5,y+h*0.42);
+  g.font='700 3.2px Arial';g.fillStyle='rgba(245,240,228,.5)';
+  g.fillText(String(Math.floor(al(seed*7)*900000)+100000),x+5,y+h*0.42+5);
+  /* rouille et coulures */
+  for(let i=0;i<5;i++){const px=x+2+al(seed+i)*(L-6);
+    R(px,y+3+al(i)*4,1.4,h*0.5*al(i*3),'rgba(122,70,30,.30)');}
+  for(let i=0;i<3;i++)R(x+al(seed*i+1)*L,y+h-8,3,2,'rgba(40,34,28,.3)');
+}
+/* ---------- LE PORTIQUE ---------- */
+function portique(R,g,x,solY,ech,chariot,charge){
+  const H0=Math.round(150*ech), L0=Math.round(150*ech);
+  const M='#e8ba2a', Mo='#b88f18', Mc='#f6d96a', A='#3f444c';
+  /* les rails au sol */
+  R(x-L0*0.62,solY+2,L0*1.24,3,'#5a5f66');R(x-L0*0.62,solY+5,L0*1.24,1.4,'#7b818a');
+  /* les quatre jambes, en treillis */
+  [[-1,0],[1,0]].forEach(([s])=>{
+    const jx=x+s*L0*0.42;
+    R(jx-3,solY-H0,6,H0,M);R(jx-3,solY-H0,2,H0,Mc);R(jx+1.4,solY-H0,1.6,H0,Mo);
+    for(let yy=solY-H0+8;yy<solY-6;yy+=11){
+      g.strokeStyle=Mo;g.lineWidth=1.4;
+      g.beginPath();g.moveTo(jx-3,yy);g.lineTo(jx+3,yy+9);g.stroke();
+      g.beginPath();g.moveTo(jx+3,yy);g.lineTo(jx-3,yy+9);g.stroke();}
+    /* le boggie */
+    R(jx-7,solY-8,14,8,A);R(jx-7,solY-8,14,2,'#5d636d');
+    for(let i=0;i<3;i++){g.fillStyle='#2a2e34';g.beginPath();g.arc(jx-4+i*4,solY,2.2,0,7);g.fill();}});
+  /* la poutre principale, avec son porte-à-faux vers la mer */
+  const py=solY-H0;
+  R(x-L0*0.72,py-9,L0*1.5,9,M);R(x-L0*0.72,py-9,L0*1.5,2.4,Mc);R(x-L0*0.72,py-2,L0*1.5,2,Mo);
+  for(let i=0;i<L0*1.5;i+=9){g.strokeStyle=Mo;g.lineWidth=1;
+    g.beginPath();g.moveTo(x-L0*0.72+i,py-9);g.lineTo(x-L0*0.72+i+7,py);g.stroke();}
+  /* les haubans et le pylône */
+  R(x-2,py-34,5,26,M);R(x-2,py-34,2,26,Mc);
+  g.strokeStyle='#9aa0a8';g.lineWidth=1.2;
+  g.beginPath();g.moveTo(x,py-34);g.lineTo(x-L0*0.70,py-8);g.stroke();
+  g.beginPath();g.moveTo(x,py-34);g.lineTo(x+L0*0.74,py-8);g.stroke();
+  /* la cabine du grutier */
+  R(x-L0*0.30,py+1,17,12,A);R(x-L0*0.30+1,py+2,15,7,'#9fd0dc');R(x-L0*0.30+1,py+2,15,2,'#c8e8f0');
+  R(x-L0*0.30,py+12,17,2,'#2a2e34');
+  /* le chariot et le palonnier */
+  const cx=x+chariot*L0*0.66;
+  R(cx-9,py+1,18,6,A);R(cx-9,py+1,18,1.6,'#5d636d');
+  g.strokeStyle='#9aa0a8';g.lineWidth=1;
+  const ly=py+9+charge*70*ech;
+  g.beginPath();g.moveTo(cx-6,py+7);g.lineTo(cx-6,ly);g.stroke();
+  g.beginPath();g.moveTo(cx+6,py+7);g.lineTo(cx+6,ly);g.stroke();
+  R(cx-13,ly,26,4,'#e8ba2a');R(cx-13,ly,26,1.4,'#f6d96a');
+  R(cx-13,ly+4,3,3,A);R(cx+10,ly+4,3,3,A);
+  /* le conteneur suspendu */
+  if(charge>0.02){conteneur(R,g,cx-19,ly+7,38,13,'B',7,false);}
+}
+/* ---------- LA GRANDE VUE ---------- */
+{const {g,R,W,H}=ctx('plan');
+ const MER=H*0.30, QUAI=H*0.52;
+ /* le ciel du matin */
+ for(let y=0;y<MER;y++){const k=y/MER;g.fillStyle=`rgb(${120+k*96|0},${152+k*64|0},${186+k*40|0})`;g.fillRect(0,y,W,1);}
+ for(let i=0;i<6;i++){const x=al(i*7)*W,y=al(i*3)*MER*0.6;
+   g.fillStyle='rgba(255,255,255,.18)';g.beginPath();g.ellipse(x,y,34+al(i)*30,7,0,0,7);g.fill();}
+ /* la rade et la digue, au loin */
+ R(0,MER-9,W,9,'#8ca0ac');R(0,MER-9,W,2,'#a6b8c2');
+ for(let x=0;x<W;x+=22)R(x,MER-12,9,4,'#7c909c');
+ /* l'eau */
+ for(let y=MER;y<QUAI;y++){const k=(y-MER)/(QUAI-MER);
+   g.fillStyle=`rgb(${34+k*14|0},${86+k*26|0},${116+k*24|0})`;g.fillRect(0,y,W,1);}
+ for(let i=0;i<420;i++){const x=al(i*3)*W,y=MER+al(i*7)*(QUAI-MER);
+   R(x,y,5+al(i)*8,1,'rgba(255,255,255,.22)');}
+ /* LE PORTE-CONTENEURS, à quai */
+ const nx=54,ny=QUAI-8;
+ /* la coque */
+ g.fillStyle='#1b2b3a';g.beginPath();g.moveTo(nx,ny);g.lineTo(nx+330,ny);g.lineTo(nx+318,ny-38);g.lineTo(nx+16,ny-38);g.closePath();g.fill();
+ g.fillStyle='#24384a';g.beginPath();g.moveTo(nx+6,ny-6);g.lineTo(nx+324,ny-6);g.lineTo(nx+314,ny-34);g.lineTo(nx+20,ny-34);g.closePath();g.fill();
+ R(nx+8,ny-12,314,3,'#8a2f22');                       /* la ligne de flottaison */
+ R(nx+14,ny-38,302,3,'#3d556a');
+ g.font='700 8px Georgia';g.fillStyle='rgba(230,236,242,.8)';g.fillText('MARSEILLE',nx+26,ny-18);
+ /* les conteneurs en pontée, trois rangs */
+ for(let r=0;r<3;r++)for(let i=0;i<9;i++){
+   const cx2=nx+26+i*32, cy2=ny-44-r*15;
+   conteneur(R,g,cx2,cy2,30,14,CLES[Math.floor(al(i*3+r*5)*6)],i*3+r,false);}
+ /* le château arrière */
+ R(nx+286,ny-92,40,52,'#e6e8ea');R(nx+286,ny-92,40,3,'#ffffff');
+ for(let y=ny-88;y<ny-48;y+=8)for(let x=nx+290;x<nx+322;x+=7)R(x,y,5,5,'#3f5f7a');
+ R(nx+300,ny-104,10,12,'#c9ccd2');R(nx+302,ny-116,5,12,'#8a2f22');
+ /* les amarres */
+ g.strokeStyle='rgba(230,226,210,.75)';g.lineWidth=1.2;
+ [[nx+20,ny-6,30,QUAI+16],[nx+320,ny-8,W-60,QUAI+16]].forEach(([x1,y1,x2,y2])=>{
+   g.beginPath();g.moveTo(x1,y1);g.quadraticCurveTo((x1+x2)/2,y1+16,x2,y2);g.stroke();});
+ /* LE QUAI */
+ for(let y=QUAI;y<H;y++){const k=(y-QUAI)/(H-QUAI);
+   g.fillStyle=`rgb(${136-k*22|0},${132-k*22|0},${124-k*20|0})`;g.fillRect(0,y,W,1);}
+ for(let i=0;i<5200;i++){const x=al(i*1.7)*W,y=QUAI+al(i*2.3)*(H-QUAI);
+   R(x,y,1+al(i)*2,1,al(i*5)<.5?'#918c82':'#75716a');}
+ R(0,QUAI,W,3,'#a49d90');R(0,QUAI+3,W,1.4,'#6a665e');
+ /* les bollards et les défenses */
+ for(let x=24;x<W;x+=58){R(x,QUAI+5,9,7,'#3f444c');R(x-1,QUAI+4,11,2.4,'#5d636d');
+   g.fillStyle='rgba(30,34,28,.28)';g.beginPath();g.ellipse(x+4,QUAI+13,8,2.4,0,0,7);g.fill();}
+ /* les marquages au sol */
+ for(let x=0;x<W;x+=40)R(x,QUAI+30,22,2.4,'rgba(232,214,74,.55)');
+ R(0,QUAI+52,W,2,'rgba(232,214,74,.35)');
+ /* LES PORTIQUES */
+ portique(R,g,140,QUAI+34,1,-0.45,0.34);
+ portique(R,g,330,QUAI+34,1,0.25,0);
+ portique(R,g,510,QUAI+34,1,-0.1,0.6);
+ /* LES PILES DE CONTENEURS, derrière */
+ for(let b=0;b<7;b++){
+   const bx=14+b*86, by=H-18;
+   for(let r=0;r<3+Math.floor(al(b*3)*2);r++)
+     for(let i=0;i<2;i++){
+       const cx2=bx+i*40, cy2=by-r*15;
+       if(al(b*7+r*3+i)<0.12)continue;
+       conteneur(R,g,cx2,cy2,38,14,CLES[Math.floor(al(b*5+r*7+i*3)*6)],b*11+r*3+i,false);}}
+ /* les camions qui font la queue */
+ const camion=(x,y,c)=>{
+   R(x,y-11,20,11,c);R(x,y-11,20,2,'rgba(255,255,255,.28)');
+   R(x+20,y-14,11,14,'#3f444c');R(x+22,y-12,7,5,'#9fd0dc');
+   g.fillStyle='#2a2e34';[x+4,x+14,x+26].forEach(px=>{g.beginPath();g.arc(px,y,3,0,7);g.fill();});};
+ camion(200,H-8,'#c4622a');camion(246,H-8,'#2f6a4a');camion(292,H-8,'#8a8f98');
+ /* les dockers */
+ const docker=(x,y,pose)=>{
+   R(x-3,y-14,6,7,'#e8712a');R(x-3,y-12,6,1.4,'#cfd6dc');
+   R(x-2.4,y-20,5,6,'#e8b890');R(x-3,y-21,6,2.4,'#f0c02a');
+   R(x-3,y-7,2.4,7,'#2f4a6a');R(x+0.6,y-7,2.4,7,'#2f4a6a');
+   g.fillStyle='rgba(28,32,24,.28)';g.beginPath();g.ellipse(x,y+1,4,1.6,0,0,7);g.fill();};
+ [[168,H-30],[262,H-26],[398,H-34],[470,H-24],[120,QUAI+40],[352,QUAI+44]].forEach(([x,y],i)=>docker(x,y,i%2));
+ /* les mâts d'éclairage */
+ for(let i=0;i<4;i++){const x=70+i*160;
+   R(x-1.4,H-120,3,120,'#6f747c');R(x-1.4,H-120,1.4,120,'#9aa0a8');
+   R(x-9,H-128,19,8,'#3f444c');
+   for(let k=0;k<4;k++)R(x-7+k*4.6,H-126,3.4,4,'#f2e6a8');}
+}
+/* ---------- VUE 1 · SOUS LE PORTIQUE ---------- */
+{const {g,R,W,H}=ctx('v1');
+ const QUAI=H*0.42;
+ for(let y=0;y<QUAI*0.6;y++){const k=y/(QUAI*0.6);g.fillStyle=`rgb(${116+k*96|0},${150+k*62|0},${188+k*38|0})`;g.fillRect(0,y,W,1);}
+ for(let y=QUAI*0.6;y<QUAI;y++){const k=(y-QUAI*0.6)/(QUAI*0.4);
+   g.fillStyle=`rgb(${34+k*16|0},${88+k*26|0},${118+k*22|0})`;g.fillRect(0,y,W,1);}
+ for(let i=0;i<160;i++)R(al(i*3)*W,QUAI*0.6+al(i*7)*QUAI*0.4,5+al(i)*6,1,'rgba(255,255,255,.22)');
+ /* la coque du navire, tout près */
+ g.fillStyle='#1b2b3a';g.fillRect(0,QUAI*0.52,W,QUAI*0.5);
+ R(0,QUAI*0.52,W,3,'#3d556a');R(0,QUAI*0.74,W,3,'#8a2f22');
+ for(let i=0;i<4;i++)conteneur(R,g,-6+i*46,QUAI*0.30,44,20,CLES[i%6],i*5,false);
+ /* le quai */
+ for(let y=QUAI;y<H;y++){const k=(y-QUAI)/(H-QUAI);
+   g.fillStyle=`rgb(${138-k*24|0},${134-k*24|0},${126-k*22|0})`;g.fillRect(0,y,W,1);}
+ for(let i=0;i<2200;i++)R(al(i*1.7)*W,QUAI+al(i*2.3)*(H-QUAI),1+al(i)*2,1,al(i*5)<.5?'#928d83':'#75716a');
+ R(0,QUAI,W,3,'#a49d90');
+ for(let x=10;x<W;x+=44){R(x,QUAI+6,9,7,'#3f444c');R(x-1,QUAI+5,11,2.4,'#5d636d');}
+ for(let x=0;x<W;x+=34)R(x,QUAI+40,18,2.4,'rgba(232,214,74,.5)');
+ /* le portique, immense, qui enjambe la vue */
+ portique(R,g,W/2,H-46,0.9,-0.1,0.42);
+ /* le camion sous le portique, et les dockers */
+ const camion=(x,y,c)=>{R(x,y-13,26,13,c);R(x,y-13,26,2.4,'rgba(255,255,255,.28)');
+   R(x+26,y-17,13,17,'#3f444c');R(x+28,y-15,9,6,'#9fd0dc');
+   g.fillStyle='#2a2e34';[x+5,x+18,x+33].forEach(px=>{g.beginPath();g.arc(px,y,3.4,0,7);g.fill();});};
+ camion(W/2-34,H-14,'#c4622a');
+ const docker=(x,y)=>{
+   R(x-4,y-17,8,9,'#e8712a');R(x-4,y-14,8,1.6,'#cfd6dc');
+   R(x-3,y-24,6,7,'#e8b890');R(x-4,y-26,8,2.6,'#f0c02a');
+   R(x-4,y-8,3,8,'#2f4a6a');R(x+1,y-8,3,8,'#2f4a6a');
+   g.fillStyle='rgba(28,32,24,.3)';g.beginPath();g.ellipse(x,y+1,5,2,0,0,7);g.fill();};
+ docker(30,H-20);docker(W-28,H-26);
+ /* la lumière du matin, rasante */
+ const gr=g.createLinearGradient(0,QUAI,0,H);
+ gr.addColorStop(0,'rgba(255,224,160,.12)');gr.addColorStop(1,'rgba(255,224,160,0)');
+ g.fillStyle=gr;g.fillRect(0,QUAI,W,H-QUAI);
+}
+/* ---------- VUE 2 · LES PILES ---------- */
+{const {g,R,W,H}=ctx('v2');
+ for(let y=0;y<H*0.20;y++){const k=y/(H*0.20);g.fillStyle=`rgb(${124+k*90|0},${156+k*58|0},${192+k*34|0})`;g.fillRect(0,y,W,1);}
+ for(let y=H*0.20;y<H;y++){const k=(y-H*0.20)/(H*0.80);
+   g.fillStyle=`rgb(${140-k*26|0},${136-k*26|0},${128-k*24|0})`;g.fillRect(0,y,W,1);}
+ for(let i=0;i<3400;i++)R(al(i*1.7)*W,H*0.20+al(i*2.3)*H*0.8,1+al(i)*2,1,al(i*5)<.5?'#928d83':'#75716a');
+ /* les allées peintes */
+ for(let y=H*0.42;y<H;y+=30)R(0,y,W,2.4,'rgba(232,214,74,.35)');
+ /* les piles, en perspective simple */
+ for(let b=0;b<4;b++){
+   const bx=-10+b*46, base=H*0.34+b*0.5;
+   for(let r=0;r<4;r++)conteneur(R,g,bx,base-r*15,42,14,CLES[Math.floor(al(b*7+r*3)*6)],b*5+r,false);}
+ for(let b=0;b<3;b++){
+   const bx=6+b*58, base=H*0.72;
+   for(let r=0;r<3;r++)conteneur(R,g,bx,base-r*16,52,16,CLES[Math.floor(al(b*11+r*5)*6)],b*9+r*2,false);}
+ /* le chariot cavalier, au fond */
+ const cav=(x,y)=>{
+   [[-1],[1]].forEach(([s])=>{const jx=x+s*22;
+     R(jx-2.4,y-52,5,52,'#e8ba2a');R(jx-2.4,y-52,1.6,52,'#f6d96a');
+     R(jx-6,y-6,12,6,'#3f444c');
+     g.fillStyle='#2a2e34';g.beginPath();g.arc(jx-3,y,2.6,0,7);g.fill();g.beginPath();g.arc(jx+3,y,2.6,0,7);g.fill();});
+   R(x-24,y-56,48,6,'#e8ba2a');R(x-24,y-56,48,1.6,'#f6d96a');
+   R(x-10,y-50,20,9,'#3f444c');R(x-8,y-48,16,5,'#9fd0dc');
+   conteneur(R,g,x-20,y-34,40,14,'V',3,false);};
+ cav(W-40,H*0.40);
+ /* les dockers et les plots */
+ const docker=(x,y)=>{
+   R(x-4,y-16,8,9,'#e8712a');R(x-4,y-13,8,1.6,'#cfd6dc');
+   R(x-3,y-23,6,7,'#e8b890');R(x-4,y-25,8,2.6,'#f0c02a');
+   R(x-4,y-7,3,7,'#2f4a6a');R(x+1,y-7,3,7,'#2f4a6a');
+   g.fillStyle='rgba(28,32,24,.3)';g.beginPath();g.ellipse(x,y+1,5,2,0,0,7);g.fill();};
+ docker(26,H-24);docker(W-34,H-16);
+ for(let i=0;i<5;i++){const x=12+i*34;R(x,H-8,5,7,'#e8712a');R(x,H-8,5,2,'#f6a05a');}
+}
+/* ---------- VUE 3 · L'ENTRÉE ---------- */
+{const {g,R,W,H}=ctx('v3');
+ for(let y=0;y<H*0.24;y++){const k=y/(H*0.24);g.fillStyle=`rgb(${126+k*88|0},${158+k*56|0},${194+k*32|0})`;g.fillRect(0,y,W,1);}
+ for(let y=H*0.24;y<H;y++){const k=(y-H*0.24)/(H*0.76);
+   g.fillStyle=`rgb(${142-k*26|0},${138-k*26|0},${130-k*24|0})`;g.fillRect(0,y,W,1);}
+ for(let i=0;i<3000;i++)R(al(i*1.7)*W,H*0.24+al(i*2.3)*H*0.76,1+al(i)*2,1,al(i*5)<.5?'#928d83':'#75716a');
+ /* le grillage et les portails */
+ for(let x=0;x<W;x+=8)R(x,H*0.30,1.6,40,'#585c62');
+ for(let y=H*0.30;y<H*0.30+40;y+=6)R(0,y,W,1,'rgba(88,92,98,.55)');
+ for(let x=0;x<W;x+=46)R(x,H*0.26,4,46,'#6a6f76');
+ R(0,H*0.26,W,3,'#787d84');
+ /* la guérite */
+ R(16,H*0.36,54,44,'#c9bda2');R(16,H*0.36,54,3,'#ddd2b6');
+ R(22,H*0.40,42,20,'#3c3c46');R(23,H*0.41,40,18,'#9fd0dc');R(23,H*0.41,40,6,'#c2e4ec');
+ R(10,H*0.33,66,5,'#a8452f');R(10,H*0.33,66,1.6,'#c46a4a');
+ R(30,H*0.60,26,20,'#6a4a2a');R(30,H*0.60,26,2,'#8a6238');R(50,H*0.68,4,4,'#c9a24a');
+ /* la barrière levante */
+ R(78,H*0.52,6,28,'#3f444c');
+ g.save();g.translate(84,H*0.54);g.rotate(-0.5);
+ for(let i=0;i<Math.ceil(60/8);i++)R(i*8,-2,8,4,(i%2)?'#c4302a':'#f2ead8');
+ g.restore();
+ /* la pointeuse et le panneau */
+ R(96,H*0.48,14,20,'#3f444c');R(97,H*0.49,12,8,'#9fd0dc');R(99,H*0.60,8,3,'#c9a24a');
+ R(W-72,H*0.30,64,26,'#1d4f8a');R(W-70,H*0.32,60,22,'#2a6aa8');
+ g.font='700 6px Georgia';g.textAlign='center';g.fillStyle='#eaf4fb';
+ g.fillText('TERMINAL',W-40,H*0.38);g.fillText('DE LA JOLIETTE',W-40,H*0.45);g.textAlign='left';
+ /* la baraque de chantier et la file de camions */
+ R(W-84,H*0.58,72,34,'#e8e2d2');R(W-84,H*0.58,72,3,'#f6f2e8');
+ R(W-84,H*0.90-4,72,4,'#a8a294');
+ for(let i=0;i<3;i++){R(W-76+i*22,H*0.63,14,12,'#3c3c46');R(W-75+i*22,H*0.64,12,10,'#9fd0dc');}
+ R(W-56,H*0.76,18,16,'#6a4a2a');R(W-56,H*0.76,18,2,'#8a6238');
+ R(W-84,H*0.55,72,4,'#a8452f');
+ /* les dockers qui prennent leur service */
+ const docker=(x,y)=>{
+   R(x-4,y-17,8,9,'#e8712a');R(x-4,y-14,8,1.6,'#cfd6dc');
+   R(x-3,y-24,6,7,'#e8b890');R(x-4,y-26,8,2.6,'#f0c02a');
+   R(x-4,y-8,3,8,'#2f4a6a');R(x+1,y-8,3,8,'#2f4a6a');
+   g.fillStyle='rgba(28,32,24,.3)';g.beginPath();g.ellipse(x,y+1,5,2,0,0,7);g.fill();};
+ docker(60,H-30);docker(88,H-18);docker(120,H-40);
+ /* le café, une tasse posée sur un bidon */
+ R(24,H-26,14,16,'#8a8f98');R(24,H-26,14,2,'#a3a8b1');
+ R(27,H-30,7,5,'#f2ead8');R(33,H-29,3,2,'#f2ead8');
+ for(let k=0;k<3;k++)R(28+k,H-34-al(k)*3,1,3,'rgba(240,240,230,.4)');
+ /* le marquage au sol et une flaque */
+ for(let x=0;x<W;x+=26)R(x,H-58,14,2.4,'rgba(232,214,74,.45)');
+ g.fillStyle='rgba(120,140,150,.28)';g.beginPath();g.ellipse(W*0.5,H-14,26,6,0,0,7);g.fill();
+ g.fillStyle='rgba(200,225,235,.2)';g.beginPath();g.ellipse(W*0.5-6,H-16,14,3,0,0,7);g.fill();
+}
+</script></body></html>

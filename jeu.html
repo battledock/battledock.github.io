@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-26-1302';
+  var MA_VERSION='2026-09-26-1757';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -25260,6 +25260,7 @@ async function ouvrirLaBuvette(mot){
 
 /* ================= LE VOYAGE EN MÉTRO : un tap, un fondu, on y est =================
    Plus de page de station : la rame nous dépose directement. */
+const STATIONS_L2=[['joliette','La Joliette','Le terminal à conteneurs · BÊTA','joliette']];
 const STATIONS_L1=[['extramar','Le port','Les docks, la criée, le casino','port'],
   ['ferme','La ferme','Le champ, l’étal, l’étable','ferme'],
   ['foret','La forêt','Le bois, la rivière, la cabane','foret']];
@@ -25268,7 +25269,9 @@ const STATIONS_L1=[['extramar','Le port','Les docks, la criée, le casino','port
 const stationIci=()=>CARTE==='extramar'?'port':(CARTE==='montagne'||CARTE==='sommet'?'montagne':(FORET_SEULE?'foret':'ferme'));
 const autresStations=()=>STATIONS_L1.filter(([,,,k])=>k!==stationIci()).map(([,n])=>n.replace('Le ','').replace('La ','').toUpperCase()).join(' · ');
 function choisirLaDestination(){
-  const D=STATIONS_L1.filter(([,,,k])=>k!==stationIci());
+  /* LA LIGNE 2 dessert le terminal de la Joliette, en bêta : elle ne part que du port */
+  const D=STATIONS_L1.filter(([,,,k])=>k!==stationIci())
+    .concat(stationIci()==='port'?STATIONS_L2:[]);
   if(!document.getElementById('cssVoy')){const st=document.createElement('style');st.id='cssVoy';st.textContent=
     `#page2Fond.voy{background:#101418;color:#e8ecef;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%}
      #page2Fond.voy .tete{padding:calc(env(safe-area-inset-top,0px) + 18px) 18px 14px;border-bottom:2px solid #1e262c;display:flex;align-items:center;gap:12px}
@@ -25293,12 +25296,14 @@ function voyagerVers(carte,nom){
   vibrer([8,30,8]);try{jouer('porte','moment');}catch(x){}
   const v=document.createElement('div');
   v.style.cssText='position:fixed;inset:0;z-index:999;background:#0b0d12;opacity:0;transition:opacity .45s ease;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#f4ecd8;font-family:Georgia,serif';
-  v.innerHTML='<div style="font:700 10px Arial;letter-spacing:4px;color:#3fc8b0">MÉTRO · LIGNE 1</div>'+
+  v.innerHTML='<div style="font:700 10px Arial;letter-spacing:4px;color:'+(carte==='joliette'?'#f0c02a':'#3fc8b0')+'">MÉTRO · LIGNE '+(carte==='joliette'?'2':'1')+'</div>'+
     '<div style="font:400 26px Georgia">'+nom+'</div>'+
     '<div style="width:120px;height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden"><i style="display:block;height:100%;width:0;background:#3fc8b0;animation:voy 1s linear forwards"></i></div>'+
     '<style>@keyframes voy{to{width:100%}}</style>';
   document.body.appendChild(v);requestAnimationFrame(()=>{v.style.opacity='1';});
-  setTimeout(()=>{location.href='jeu.html?carte='+carte+'&arrivee=1&v='+Date.now();},1000);
+  setTimeout(()=>{
+    if(carte==='joliette')location.href='joliette.html?v='+Date.now();   /* le terminal a sa propre page */
+    else location.href='jeu.html?carte='+carte+'&arrivee=1&v='+Date.now();},1000);
 }
 
 /* ================= L'ÉTABLE : le foin, le lait, le fromage =================
