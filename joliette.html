@@ -1,312 +1,377 @@
-<!doctype html><html><head><meta charset="utf-8"><style>
-*{box-sizing:border-box;margin:0}body{background:#111;display:flex;flex-direction:column;gap:14px;padding:16px;width:max-content;font-family:Georgia,serif}
-.rang{display:flex;gap:16px}
-.cap{font:700 12px Arial;color:#e8c06a;text-align:center;margin-top:6px}
-.large{border-radius:10px;overflow:hidden;box-shadow:0 0 0 3px #000}
-.tel{width:330px;height:714px;border-radius:30px;overflow:hidden;box-shadow:0 0 0 5px #000;position:relative}
-canvas{display:block;image-rendering:pixelated}
-.tel canvas{width:100%;height:100%}
-.pl{position:absolute;left:11px;bottom:16px;background:linear-gradient(180deg,rgba(253,251,244,.96),rgba(236,229,209,.96));
-  color:#33291b;border-radius:13px;padding:10px 14px 9px 40px;font:400 16px Georgia;box-shadow:0 6px 18px rgba(0,0,0,.4)}
-.pl small{display:block;font:600 7px system-ui;letter-spacing:1.6px;color:#6a5a3a;margin-top:2px}
-.pl::before{content:'';position:absolute;left:9px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;
+<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Battle Dock · La Joliette</title>
+<style>
+:root{box-sizing:border-box}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{height:100%;background:#1b1f18;overflow:hidden;font-family:Georgia,serif;color:#f2ead6}
+canvas{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;touch-action:none}
+#hud{position:fixed;left:14px;right:14px;top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;gap:10px;align-items:flex-start;pointer-events:none;text-shadow:0 2px 5px rgba(0,0,0,.6)}
+#hud small{display:block;font:700 9px Arial;letter-spacing:2px;color:#c2b78e}
+#hud b{font:400 19px Georgia}
+#beta{margin-left:auto;font:700 9px Arial;letter-spacing:2px;color:#2a1f0c;background:linear-gradient(#f6dd8c,#c9a24a);
+  border-radius:9px;padding:6px 9px;align-self:center}
+#act{position:fixed;left:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);border:0;border-radius:14px;
+  padding:12px 16px 11px 42px;font:400 17px Georgia;color:#33291b;
+  background:linear-gradient(180deg,rgba(253,251,244,.97),rgba(236,229,209,.97));box-shadow:0 6px 20px rgba(0,0,0,.45);
+  opacity:0;transform:translateY(6px);transition:opacity .18s,transform .18s;pointer-events:none}
+#act.on{opacity:1;transform:none;pointer-events:auto}
+#act small{display:block;font:600 7px system-ui;letter-spacing:1.6px;color:#6a5a3a;margin-top:2px}
+#act::before{content:'';position:absolute;left:10px;top:50%;transform:translateY(-50%);width:25px;height:25px;border-radius:50%;
   background:radial-gradient(circle at 40% 35%,#f6e6c2,#c9a878);box-shadow:inset 0 0 0 1px rgba(90,72,44,.35)}
+#feuille{position:fixed;inset:0;background:#f4eddd;color:#33291b;display:none;flex-direction:column;z-index:9}
+#feuille.on{display:flex}
+#feuille .tete{flex:none;position:relative;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 12px;background:#1d3348;color:#eaf4fb}
+#feuille .tete small{display:block;font:700 9px Arial;letter-spacing:3px;color:#9fc4e0}
+#feuille .tete b{font:400 23px Georgia}
+#feuille .tete button{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 14px);width:32px;height:32px;border-radius:50%;border:0;background:#eaf4fb;color:#1d3348;font:700 14px Arial}
+#feuille .corps{flex:1;overflow-y:auto;padding:14px}
+#feuille .mot{font:italic 13px Georgia;color:#6a5f48;margin-bottom:10px}
+#feuille .liste{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:12px}
+#feuille .liste span{font:700 11px 'Courier New',monospace;background:#fff;border:1px solid #ddd0b2;border-radius:8px;padding:7px 8px;letter-spacing:.5px}
+#feuille .defile{height:96px;border-radius:14px;background:#26313c;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+#feuille .boite{min-width:180px;text-align:center;padding:14px 18px;border-radius:10px;background:linear-gradient(180deg,#c14a3a,#8a271f);
+  box-shadow:0 5px 0 rgba(0,0,0,.35);transition:transform .18s}
+#feuille .boite b{display:block;font:700 22px 'Courier New',monospace;color:#f6efdf;letter-spacing:2px}
+#feuille .boite em{font:700 9px Arial;letter-spacing:2px;color:rgba(246,239,223,.75)}
+#feuille .btns{display:flex;gap:10px;margin-top:12px}
+#feuille .btns button{flex:1;border:0;border-radius:14px;padding:15px 0;font:700 13px Arial;letter-spacing:1.4px;color:#fff}
+#feuille .ok{background:linear-gradient(#5aa84a,#3f7a34)}
+#feuille .ko{background:linear-gradient(#c8503a,#8a2f22)}
+#feuille .jauge{height:8px;border-radius:4px;background:#e0d4b6;overflow:hidden;margin-top:12px}
+#feuille .jauge i{display:block;height:100%;width:0;background:linear-gradient(90deg,#c9a24a,#f6dd8c)}
+#feuille .bilan{font:700 10px Arial;letter-spacing:1.6px;color:#8a7a56;margin-top:8px;text-align:center}
+#aide{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 6px);text-align:center;
+  font:italic 11px Georgia;opacity:.45;pointer-events:none}
 </style></head><body>
-<div><canvas id="plan" class="large" width="620" height="430"></canvas>
-  <div class="cap">LE TERMINAL DE LA JOLIETTE · vue d’ensemble</div></div>
-<div class="rang">
-  <div><div class="tel"><canvas id="v1" width="165" height="357"></canvas>
-    <div class="pl">Pointer le navire<small>LISTE DE CHARGEMENT · QUAI 3</small></div></div>
-    <div class="cap">SOUS LE PORTIQUE</div></div>
-  <div><div class="tel"><canvas id="v2" width="165" height="357"></canvas>
-    <div class="pl">Prendre le poste<small>PORTIQUE N°2 · GRUTIER</small></div></div>
-    <div class="cap">LES PILES DE CONTENEURS</div></div>
-  <div><div class="tel"><canvas id="v3" width="165" height="357"></canvas>
-    <div class="pl">Pointeuse<small>LA BARAQUE · PRENDRE SON SERVICE</small></div></div>
-    <div class="cap">L’ENTRÉE DU TERMINAL</div></div>
+<canvas id="c"></canvas>
+<div id="hud"><div><small>LIGNE 2 · LE TERMINAL</small><b id="titre">La Joliette</b></div><span id="beta">BÊTA</span></div>
+<button id="act"></button>
+<div id="feuille">
+  <div class="tete"><div><small>NAVIRE MSC ORAN · QUAI 3</small><b>La feuille de pointage</b></div>
+    <button id="fX">✕</button></div>
+  <div class="corps">
+    <p class="mot" id="fMot">« Tu compares ce qui passe avec la liste. Un numéro qui ne colle pas, tu le signales. »</p>
+    <div class="liste" id="fListe"></div>
+    <div class="defile"><div class="boite" id="fBoite"><b id="fNum">—</b><em id="fArm">—</em></div></div>
+    <div class="btns"><button class="ok" id="fOk">CONFORME</button><button class="ko" id="fKo">ERREUR</button></div>
+    <div class="jauge"><i id="fJ"></i></div>
+    <p class="bilan" id="fBilan">Vacation · 0 / 8</p>
+  </div>
 </div>
+<div id="aide">Pose le pouce et marche · la baraque embauche pour le pointage</div>
 <script>
 const al=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
 function ctx(id){const c=document.getElementById(id),g=c.getContext('2d');g.imageSmoothingEnabled=false;
   const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
   return {g,R,W:c.width,H:c.height};}
-const CT={
- R:['#a8332a','#8a271f','#c14a3a','#6d1d16'],
- B:['#1d4f7a','#163e60','#2a6a9a','#102b45'],
- V:['#2f6a4a','#24543a','#3f8a5f','#1a3c2a'],
- J:['#c08a2a','#9a6e1e','#e0a83f','#6e4f12'],
- G:['#8a8f98','#6f747c','#a3a8b1','#565a61'],
- O:['#c4622a','#9e4c1e','#e0803f','#6e340f']};
+const CT={R:['#a8332a','#8a271f','#c14a3a'],B:['#1d4f7a','#163e60','#2a6a9a'],
+ V:['#2f6a4a','#24543a','#3f8a5f'],J:['#c08a2a','#9a6e1e','#e0a83f'],
+ G:['#8a8f98','#6f747c','#a3a8b1'],O:['#c4622a','#9e4c1e','#e0803f']};
 const CLES=['R','B','V','J','G','O'];
-/* ---------- UN CONTENEUR, vu de trois quarts, en pixel fin ---------- */
-function conteneur(R,g,x,y,L,h,k,seed,ouvert){
+/* ---------- LE DALLAGE DU TERRE-PLEIN, comme le quai de Marseille ---------- */
+function dallage(g,R,x0,y0,x1,y1){
+  for(let y=y0;y<y1;y++){const k=(y-y0)/(y1-y0);
+    g.fillStyle=`rgb(${208-k*20|0},${196-k*18|0},${168-k*16|0})`;g.fillRect(x0,y,x1-x0,1);}
+  for(let y=y0;y<y1;y+=7){
+    for(let x=x0+((((y-y0)/7|0)%2)?10:0);x<x1;x+=20){
+      const n=al(x*0.31+y*0.17);
+      R(x,y,19,6,n<.33?'#cbbb96':(n<.66?'#c2b28d':'#d3c3a0'));
+      R(x,y,19,0.6,'#dccdac');R(x,y+5.4,19,0.6,'#b3a483');
+      if(al(x+y*3)<0.14)R(x+3+al(x)*12,y+2,2,1.4,'rgba(120,104,74,.32)');}}
+  for(let i=0;i<120;i++){const x=x0+al(i*3)*(x1-x0),y=y0+al(i*7)*(y1-y0);R(x,y,1,1,'rgba(140,124,92,.3)');}
+}
+/* ---------- UN CONTENEUR ---------- */
+function conteneur(R,g,x,y,L,h,k,seed){
   const C=CT[k]||CT.G, prof=Math.round(h*0.42);
-  /* la face de côté, nervurée */
-  for(let i=0;i<L;i+=3){
-    const n=al(x+i*0.7+seed);
-    R(x+i,y,1.6,h,n<.5?C[1]:C[3]);
-    R(x+i+1.6,y,1.4,h,C[0]);}
-  /* le bandeau haut et bas */
-  R(x,y,L,2.4,C[2]);R(x,y+h-3,L,3,C[3]);
-  /* les coins renforcés */
-  R(x,y,2.6,h,C[3]);R(x+L-2.6,y,2.6,h,C[3]);
-  R(x,y,2.6,3,'#3a3f46');R(x+L-2.6,y,2.6,3,'#3a3f46');
-  R(x,y+h-3,2.6,3,'#3a3f46');R(x+L-2.6,y+h-3,2.6,3,'#3a3f46');
-  /* le dessus, en perspective */
+  for(let i=0;i<L;i+=3){const n=al(x+i*0.7+seed);
+    R(x+i,y,1.6,h,n<.5?C[1]:C[0]);R(x+i+1.6,y,1.4,h,C[0]);}
+  R(x,y,L,2.2,C[2]);R(x,y+h-2.6,L,2.6,C[1]);
+  R(x,y,2.4,h,C[1]);R(x+L-2.4,y,2.4,h,C[1]);
+  R(x,y,2.4,2.6,'#3a3f46');R(x+L-2.4,y,2.4,2.6,'#3a3f46');
+  R(x,y+h-2.6,2.4,2.6,'#3a3f46');R(x+L-2.4,y+h-2.6,2.4,2.6,'#3a3f46');
   g.fillStyle=C[2];g.beginPath();g.moveTo(x,y);g.lineTo(x+prof*0.7,y-prof);g.lineTo(x+L+prof*0.7,y-prof);g.lineTo(x+L,y);g.closePath();g.fill();
-  g.fillStyle='rgba(255,255,255,.10)';g.beginPath();g.moveTo(x+2,y-1);g.lineTo(x+prof*0.7+2,y-prof+1);g.lineTo(x+L-2,y-prof+1);g.lineTo(x+L-4,y-1);g.closePath();g.fill();
-  for(let i=4;i<L;i+=7)R(x+i+prof*0.35,y-prof*0.5,3,1,'rgba(0,0,0,.12)');
-  /* la face avant : portes ou marquage */
-  if(ouvert){
-    R(x+L-1,y,3,h,C[3]);
+  g.fillStyle='rgba(255,255,255,.09)';g.beginPath();g.moveTo(x+2,y-1);g.lineTo(x+prof*0.7+2,y-prof+1);g.lineTo(x+L-3,y-prof+1);g.lineTo(x+L-4,y-1);g.closePath();g.fill();
+  g.font='700 4.6px Georgia';g.fillStyle='rgba(245,240,228,.7)';
+  g.fillText(['MSC','CMA','MRK','EVG','ONE','HPL'][Math.floor(al(seed*3)*6)],x+4,y+h*0.45);
+  for(let i=0;i<4;i++){const px=x+2+al(seed+i)*(L-5);
+    R(px,y+3+al(i)*3,1.2,h*0.45*al(i*3),'rgba(122,70,30,.28)');}
+}
+/* ---------- UN CHARIOT CAVALIER ---------- */
+function cavalier(R,g,x,y,ech,boite){
+  const Hh=Math.round(58*ech), Lw=Math.round(26*ech);
+  const M='#e8ba2a', Mc='#f6d96a', Mo='#b88f18', A='#3f444c';
+  g.fillStyle='rgba(40,44,34,.25)';g.beginPath();g.ellipse(x,y+3,Lw*1.15,5*ech,0,0,7);g.fill();
+  [[-1],[1]].forEach(([s])=>{const jx=x+s*Lw;
+    R(jx-2.4*ech,y-Hh,5*ech,Hh,M);R(jx-2.4*ech,y-Hh,1.6*ech,Hh,Mc);R(jx+1.4*ech,y-Hh,1.4*ech,Hh,Mo);
+    for(let yy=y-Hh+6;yy<y-10;yy+=10*ech){g.strokeStyle=Mo;g.lineWidth=1.2;
+      g.beginPath();g.moveTo(jx-2.4*ech,yy);g.lineTo(jx+2.4*ech,yy+8*ech);g.stroke();}
+    R(jx-6*ech,y-8*ech,12*ech,7*ech,A);R(jx-6*ech,y-8*ech,12*ech,1.8*ech,'#5d636d');
+    g.fillStyle='#22262b';[-3,3].forEach(d=>{g.beginPath();g.arc(jx+d*ech,y,2.6*ech,0,7);g.fill();});
+    g.fillStyle='#4a4f56';[-3,3].forEach(d=>{g.beginPath();g.arc(jx+d*ech,y,1.2*ech,0,7);g.fill();});});
+  R(x-Lw-2.4*ech,y-Hh-6*ech,Lw*2+5*ech,6*ech,M);R(x-Lw-2.4*ech,y-Hh-6*ech,Lw*2+5*ech,1.6*ech,Mc);
+  R(x-8*ech,y-Hh-1,16*ech,9*ech,A);R(x-6*ech,y-Hh+1,12*ech,5*ech,'#9fd0dc');
+  R(x-6*ech,y-Hh+1,12*ech,1.6*ech,'#c8e8f0');
+  if(boite)conteneur(R,g,x-Lw*0.82,y-Hh*0.56,Lw*1.64,13*ech,boite,x);
+}
+/* ---------- LA BOUCHE DE MÉTRO, style Marseille ---------- */
+function metro(R,g,x,y,ech){
+  const L=Math.round(58*ech), P=Math.round(30*ech);
+  g.fillStyle='rgba(40,44,34,.22)';g.beginPath();g.ellipse(x+3,y+5,L*0.62,7*ech,0,0,7);g.fill();
+  /* la margelle de pierre appareillée */
+  for(let i=0;i<L;i+=9*ech){const n=al(x+i);
+    R(x-L/2+i,y-8*ech,8.4*ech,10*ech,n<.5?'#cbbb96':'#c2b28d');
+    R(x-L/2+i,y-8*ech,8.4*ech,1.4,'#ddcfae');}
+  R(x-L/2,y+2*ech,L,2.4*ech,'#a89a7c');
+  /* l'escalier qui descend, dans l'ombre */
+  g.fillStyle='#2b2620';g.beginPath();g.moveTo(x-L*0.36,y-8*ech);g.lineTo(x+L*0.36,y-8*ech);
+  g.lineTo(x+L*0.28,y-P);g.lineTo(x-L*0.28,y-P);g.closePath();g.fill();
+  for(let i=0;i<7;i++){const k=i/7;
+    R(x-L*0.34+k*L*0.06, y-9*ech-k*(P-9*ech), L*0.68-k*L*0.12, 2.4*ech, `rgba(${160-k*70|0},${152-k*66|0},${132-k*58|0},1)`);}
+  /* la rambarde en fer, deux lisses */
+  [[-1],[1]].forEach(([s])=>{
+    const rx=x+s*L*0.40;
+    R(rx-1.2,y-P-6*ech,2.4,P+4*ech,'#3f4a52');
+    R(rx-1.2,y-P-6*ech,1.2,P+4*ech,'#5d6a74');});
+  R(x-L*0.42,y-P-6*ech,L*0.84,2.2,'#3f4a52');
+  R(x-L*0.42,y-P*0.55,L*0.84,1.8,'#3f4a52');
+  /* le totem M, bleu */
+  R(x+L*0.52,y-P-12*ech,3*ech,P+14*ech,'#4a5560');
+  R(x+L*0.44,y-P-24*ech,15*ech,14*ech,'#1d4f8a');
+  R(x+L*0.45,y-P-23*ech,13*ech,12*ech,'#2a6aa8');
+  g.font='700 '+Math.round(9*ech)+'px Georgia';g.textAlign='center';g.fillStyle='#eaf4fb';
+  g.fillText('M',x+L*0.515,y-P-13.6*ech);g.textAlign='left';
+  /* la plaque émaillée LA JOLIETTE */
+  R(x-L*0.52,y-P-20*ech,L*0.9,11*ech,'#1d4f8a');
+  R(x-L*0.51,y-P-19*ech,L*0.88,9*ech,'#2a6aa8');
+  g.font='700 '+Math.round(5.4*ech)+'px Georgia';g.textAlign='center';g.fillStyle='#eaf4fb';
+  g.fillText('LA JOLIETTE',x-L*0.07,y-P-12.4*ech);g.textAlign='left';
+  /* les ampoules du bandeau */
+  for(let i=0;i<5;i++)R(x-L*0.46+i*L*0.2,y-P-21.4*ech,1.6*ech,1.6*ech,'#cfe0ef');
+}
+
+/* ===================== LA JOLIETTE, EN BÊTA =====================
+   Le terre-plein du terminal : on s'y promène, on y voit les cavaliers et les
+   piles. Les postes de travail (pointage, portique, arrimage) viendront ensuite. */
+const cv=document.getElementById('c'),gg=cv.getContext('2d',{alpha:false});
+let W=0,H=0,K=3,DPR=Math.min(2,devicePixelRatio||1);
+function taille(){const w=innerWidth,h=innerHeight;
+  K=Math.max(2,Math.min(6,Math.round(Math.min(w/186,h/400)*2)/2));
+  cv.width=Math.round(w*DPR);cv.height=Math.round(h*DPR);W=cv.width/(K*DPR);H=cv.height/(K*DPR);}
+addEventListener('resize',taille);taille();
+const MW=420, MH=520, SOL=150;             /* le fond occupe le haut, le terre-plein le reste */
+const J={x:MW*0.34,y:SOL+150,dir:'bas',pas:0,vx:0,vy:0};
+const BARAQUE={x:MW-150,y:SOL+60,w:124,h:46};
+const METRO={x:100,y:SOL+96};
+let doigt=null, geste=null;
+const pos=(e)=>{const t=e.touches?e.touches[0]:e;return {x:t.clientX,y:t.clientY};};
+addEventListener('touchstart',e=>{if(e.target.tagName==='BUTTON')return;const p=pos(e);geste={ox:p.x,oy:p.y};doigt=p;},{passive:true});
+addEventListener('touchmove',e=>{if(doigt)doigt=pos(e);},{passive:true});
+addEventListener('touchend',()=>{doigt=null;geste=null;});
+addEventListener('mousedown',e=>{if(e.target.tagName==='BUTTON')return;const p=pos(e);geste={ox:p.x,oy:p.y};doigt=p;});
+addEventListener('mousemove',e=>{if(doigt)doigt=pos(e);});
+addEventListener('mouseup',()=>{doigt=null;geste=null;});
+const clav={};addEventListener('keydown',e=>clav[e.key.toLowerCase()]=true);
+addEventListener('keyup',e=>clav[e.key.toLowerCase()]=false);
+/* le calque du décor : on le grave une fois, on le repose à chaque image */
+let CAL=null;
+function graver(){
+  const c=document.createElement('canvas');c.width=MW;c.height=MH;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const CIEL=SOL*0.52;
+  for(let y=0;y<CIEL;y++){const k=y/CIEL;g.fillStyle=`rgb(${124+k*92|0},${156+k*60|0},${194+k*34|0})`;g.fillRect(0,y,MW,1);}
+  for(let i=0;i<5;i++){const x=al(i*7)*MW,y=al(i*3)*CIEL*0.7;
+    g.fillStyle='rgba(255,255,255,.2)';g.beginPath();g.ellipse(x,y,40+al(i)*34,7,0,0,7);g.fill();}
+  /* les portiques du fond */
+  for(let i=0;i<4;i++){const x=40+i*118, base=CIEL+6;
+    const M='rgba(232,186,42,.5)';
+    R(x-40,base-52,4,52,M);R(x+36,base-52,4,52,M);R(x-56,base-58,112,5,M);R(x-4,base-70,5,18,M);
+    g.strokeStyle='rgba(232,186,42,.3)';g.lineWidth=1;
+    g.beginPath();g.moveTo(x,base-70);g.lineTo(x-54,base-54);g.moveTo(x,base-70);g.lineTo(x+54,base-54);g.stroke();}
+  /* les piles de conteneurs */
+  for(let b=0;b<8;b++){const bx=-16+b*58;
+    for(let r=0;r<2+Math.floor(al(b*3)*2);r++)
+      for(let i=0;i<2;i++)conteneur(R,g,bx+i*30,CIEL+30-r*13,28,12,CLES[Math.floor(al(b*5+r*7+i*3)*6)],b*11+r*3+i);}
+  /* les cavaliers */
+  cavalier(R,g,96,SOL-8,0.78,'R');
+  cavalier(R,g,232,SOL-12,0.66,null);
+  cavalier(R,g,350,SOL-6,0.86,'V');
+  /* le terre-plein */
+  dallage(g,R,0,SOL,MW,MH);
+  R(0,SOL,MW,3,'#a49d90');R(0,SOL+3,MW,1.2,'#8d8679');
+  for(let x=0;x<MW;x+=46)R(x,SOL+58,26,3,'rgba(232,214,74,.5)');
+  R(0,SOL+120,MW,2.4,'rgba(232,214,74,.3)');
+  for(let x=0;x<MW;x+=18)R(x,MH-40,9,2.4,'rgba(240,240,236,.32)');
+  for(let i=0;i<6;i++){const x=al(i*11)*MW,y=SOL+30+al(i*7)*(MH-SOL-60);
+    g.fillStyle='rgba(120,140,150,.24)';g.beginPath();g.ellipse(x,y,18+al(i)*20,5,0,0,7);g.fill();
+    g.fillStyle='rgba(205,228,238,.18)';g.beginPath();g.ellipse(x-5,y-1,11+al(i)*9,2.4,0,0,7);g.fill();}
+  /* la bouche de métro et la baraque */
+  metro(R,g,METRO.x,METRO.y,1);
+  const bx=BARAQUE.x, by=BARAQUE.y;
+  g.fillStyle='rgba(40,44,34,.22)';g.beginPath();g.ellipse(bx+62,by+46,70,9,0,0,7);g.fill();
+  R(bx,by,124,44,'#e8e2d2');R(bx,by,124,3,'#f6f2e8');R(bx,by+41,124,3,'#bdb7a6');
+  for(let x=bx;x<bx+124;x+=8)R(x,by+3,4,38,'rgba(180,174,160,.3)');
+  R(bx-4,by-6,132,7,'#a8452f');R(bx-4,by-6,132,2,'#c46a4a');
+  for(let i=0;i<3;i++){R(bx+14+i*36,by+10,24,16,'#3c3c46');R(bx+15+i*36,by+11,22,14,'#9fd0dc');R(bx+15+i*36,by+11,22,5,'#c2e4ec');}
+  R(bx+96,by+22,22,22,'#6a4a2a');R(bx+96,by+22,22,2,'#8a6238');R(bx+114,by+32,3,4,'#c9a24a');
+  R(bx+20,by-18,64,12,'#1d4f8a');R(bx+21,by-17,62,10,'#2a6aa8');
+  g.font='700 6px Georgia';g.textAlign='center';g.fillStyle='#eaf4fb';
+  g.fillText('TERMINAL DE LA JOLIETTE',bx+52,by-9);g.textAlign='left';
+  R(bx+126,by+16,12,18,'#3f444c');R(bx+127,by+17,10,7,'#9fd0dc');R(bx+129,by+27,6,3,'#c9a24a');
+  /* les plots, les palettes, un camion */
+  for(let i=0;i<7;i++){const x=150+i*26;R(x,SOL+136,5,8,'#e8712a');R(x,SOL+136,5,2,'#f6a05a');}
+  for(let i=0;i<3;i++){const x=300+i*26,y=MH-46;R(x,y,22,6,'#a5764a');R(x,y,22,1.6,'#c19468');
+    R(x+2,y+6,4,5,'#7d5934');R(x+16,y+6,4,5,'#7d5934');}
+  const camion=(x,y,c)=>{R(x,y-14,30,14,c);R(x,y-14,30,2.4,'rgba(255,255,255,.3)');
+    R(x+30,y-18,15,18,'#3f444c');R(x+32,y-16,11,7,'#9fd0dc');
+    g.fillStyle='#22262b';[x+6,x+21,x+38].forEach(px=>{g.beginPath();g.arc(px,y,3.6,0,7);g.fill();});};
+  camion(180,MH-30,'#c4622a');
+  /* les mâts */
+  for(let i=0;i<3;i++){const x=50+i*160;
+    R(x-1.4,SOL-80,3,80,'#6f747c');R(x-1.4,SOL-80,1.4,80,'#9aa0a8');
+    R(x-9,SOL-88,19,8,'#3f444c');
+    for(let k=0;k<4;k++)R(x-7+k*4.6,SOL-86,3.4,4,'#f2e6a8');}
+  return c;
+}
+CAL=graver();
+/* les dockers qui vont et viennent */
+const dockers=[[150,SOL+70,320,SOL+70],[80,SOL+180,220,SOL+200],[260,SOL+150,380,SOL+120]]
+  .map(([x,y,x2,y2],i)=>({x,y,ax:x,ay:y,bx:x2,by:y2,vers:1,v:10+al(i)*8,pas:al(i)*6}));
+function docker(g,x,y,pas,s){s=s||1;
+  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(a),Math.round(b),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const bal=Math.sin(pas*7)*1.2;
+  g.fillStyle='rgba(28,32,24,.3)';g.beginPath();g.ellipse(x,y+1,5*s,2*s,0,0,7);g.fill();
+  R(x-4*s+bal*0.3,y-8*s,3*s,8*s,'#2f4a6a');R(x+1*s-bal*0.3,y-8*s,3*s,8*s,'#2f4a6a');
+  R(x-4*s,y-17*s,8*s,9*s,'#e8712a');R(x-4*s,y-14*s,8*s,1.6*s,'#cfd6dc');
+  R(x-3*s,y-24*s,6*s,7*s,'#e8b890');R(x-4*s,y-26*s,8*s,2.6*s,'#f0c02a');}
+function joueur(g,x,y,pas,dir){
+  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(a),Math.round(b),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const bal=Math.sin(pas*7)*1.4, av=dir==='gauche'?-1:1;
+  g.save();g.translate(x,y);g.scale(av,1);
+  g.fillStyle='rgba(28,32,24,.3)';g.beginPath();g.ellipse(1,2,7,2.6,0,0,7);g.fill();
+  R(-4.5+bal*0.3,-12,4,12,'#2f3a52');R(0.5-bal*0.3,-12,4,12,'#2f3a52');
+  R(-5,-24,10,12,'#3f6a4a');R(-5,-24,10,2,'rgba(255,255,255,.2)');
+  R(-3.5,-33,7,9,'#e8b890');R(-4,-35,8,3,'#3a2a1a');
+  R(-2,-30,1.4,1.4,'#1b1b1b');R(1,-30,1.4,1.4,'#1b1b1b');
+  R(-6,-22,1.6,7,'#e8b890');R(4.4,-22,1.6,7,'#e8b890');
+  g.restore();}
+/* ================= LE SERVEUR ================= */
+const URL_SB='https://zpfkekiavlfphialvphi.supabase.co';
+const CLE_SB='sb_publishable__dfR2lEOwKjhhtavvJEvGw_KVACZnHP';
+const sbEntetes={'apikey':CLE_SB,'Authorization':'Bearer '+CLE_SB,'Content-Type':'application/json'};
+let e={};try{e=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}');}catch(x){e={};}
+const sauver=()=>{try{localStorage.setItem('bdl.pix.v2',JSON.stringify(e));}catch(x){}};
+async function appel(nom,corps){
+  try{const r=await fetch(URL_SB+'/rest/v1/rpc/'+nom,{method:'POST',headers:sbEntetes,body:JSON.stringify(corps||{})});
+    return await r.json();}catch(x){return {erreur:'le terminal ne répond pas'};}}
+/* ================= LE POINTAGE =================
+   Huit boîtes passent devant toi. Celles de la liste sont conformes ; les autres
+   sont des erreurs de manifeste. Tu es payé à la vacation. */
+const ARM=['MSC','CMA','MRK','EVG','ONE','HPL'];
+let PT=null;
+function numero(){return ARM[Math.floor(Math.random()*6)]+'U '+(Math.floor(Math.random()*900000)+100000);}
+function ouvrirPointage(){
+  const liste=[];for(let i=0;i<6;i++)liste.push(numero());
+  const suite=[];
+  for(let i=0;i<8;i++){
+    if(Math.random()<0.55)suite.push({n:liste[Math.floor(Math.random()*liste.length)],bon:true});
+    else suite.push({n:numero(),bon:false});}
+  PT={liste,suite,i:0,justes:0,fini:false};
+  document.getElementById('fListe').innerHTML=liste.map(n=>'<span>'+n+'</span>').join('');
+  document.getElementById('feuille').classList.add('on');
+  montrerBoite();
+}
+function montrerBoite(){
+  const b=PT.suite[PT.i], el=document.getElementById('fBoite');
+  document.getElementById('fNum').textContent=b.n.split(' ')[1];
+  document.getElementById('fArm').textContent=b.n.split(' ')[0]+' · CONTENEUR '+(PT.i+1)+' / 8';
+  el.style.transform='translateX(60px)';requestAnimationFrame(()=>{el.style.transform='none';});
+  document.getElementById('fJ').style.width=Math.round(PT.i/8*100)+'%';
+  document.getElementById('fBilan').textContent='Vacation · '+PT.justes+' / 8 justes';
+}
+function repondre(conforme){
+  if(!PT||PT.fini)return;
+  const b=PT.suite[PT.i];
+  const juste=(conforme===b.bon);
+  if(juste)PT.justes++;
+  document.getElementById('fMot').textContent=juste
+    ?'« Bien vu. »'
+    :(b.bon?'« Celui-là était sur la liste. »':'« Il n’y était pas, celui-là. »');
+  PT.i++;
+  if(PT.i>=PT.suite.length){PT.fini=true;finirPointage();}
+  else montrerBoite();
+}
+async function finirPointage(){
+  document.getElementById('fJ').style.width='100%';
+  document.getElementById('fMot').textContent='On compte…';
+  const d=await appel('joliette_payer',{p_joueur:e.id,p_justes:PT.justes,p_total:8});
+  if(d&&d.ok){
+    if(typeof d.euros==='number'){e.euros=d.euros;sauver();}
+    document.getElementById('fMot').innerHTML='« Vacation payée : <b>'+(d.gain/100).toFixed(2).replace('.',',')+' €</b>. »'+
+      (d.reste>0?' Encore '+d.reste+' vacation'+(d.reste>1?'s':'')+' aujourd’hui.':' C’est fini pour aujourd’hui.');
+  }else if(d&&d.erreur==='assez'){
+    document.getElementById('fMot').textContent='« Tu as fait tes six vacations aujourd’hui. Reviens demain. »';
+  }else{
+    document.getElementById('fMot').textContent='« Le bureau ne répond pas. Réessaie. »';
   }
-  /* le marquage au pochoir */
-  const nom=['MSC','CMA','MRK','EVG','ONE','HPL'][Math.floor(al(seed*3)*6)];
-  g.font='700 5px Georgia';g.fillStyle='rgba(245,240,228,.72)';
-  g.fillText(nom,x+5,y+h*0.42);
-  g.font='700 3.2px Arial';g.fillStyle='rgba(245,240,228,.5)';
-  g.fillText(String(Math.floor(al(seed*7)*900000)+100000),x+5,y+h*0.42+5);
-  /* rouille et coulures */
-  for(let i=0;i<5;i++){const px=x+2+al(seed+i)*(L-6);
-    R(px,y+3+al(i)*4,1.4,h*0.5*al(i*3),'rgba(122,70,30,.30)');}
-  for(let i=0;i<3;i++)R(x+al(seed*i+1)*L,y+h-8,3,2,'rgba(40,34,28,.3)');
+  document.getElementById('fBilan').textContent='Vacation terminée · '+PT.justes+' / 8 justes';
 }
-/* ---------- LE PORTIQUE ---------- */
-function portique(R,g,x,solY,ech,chariot,charge){
-  const H0=Math.round(150*ech), L0=Math.round(150*ech);
-  const M='#e8ba2a', Mo='#b88f18', Mc='#f6d96a', A='#3f444c';
-  /* les rails au sol */
-  R(x-L0*0.62,solY+2,L0*1.24,3,'#5a5f66');R(x-L0*0.62,solY+5,L0*1.24,1.4,'#7b818a');
-  /* les quatre jambes, en treillis */
-  [[-1,0],[1,0]].forEach(([s])=>{
-    const jx=x+s*L0*0.42;
-    R(jx-3,solY-H0,6,H0,M);R(jx-3,solY-H0,2,H0,Mc);R(jx+1.4,solY-H0,1.6,H0,Mo);
-    for(let yy=solY-H0+8;yy<solY-6;yy+=11){
-      g.strokeStyle=Mo;g.lineWidth=1.4;
-      g.beginPath();g.moveTo(jx-3,yy);g.lineTo(jx+3,yy+9);g.stroke();
-      g.beginPath();g.moveTo(jx+3,yy);g.lineTo(jx-3,yy+9);g.stroke();}
-    /* le boggie */
-    R(jx-7,solY-8,14,8,A);R(jx-7,solY-8,14,2,'#5d636d');
-    for(let i=0;i<3;i++){g.fillStyle='#2a2e34';g.beginPath();g.arc(jx-4+i*4,solY,2.2,0,7);g.fill();}});
-  /* la poutre principale, avec son porte-à-faux vers la mer */
-  const py=solY-H0;
-  R(x-L0*0.72,py-9,L0*1.5,9,M);R(x-L0*0.72,py-9,L0*1.5,2.4,Mc);R(x-L0*0.72,py-2,L0*1.5,2,Mo);
-  for(let i=0;i<L0*1.5;i+=9){g.strokeStyle=Mo;g.lineWidth=1;
-    g.beginPath();g.moveTo(x-L0*0.72+i,py-9);g.lineTo(x-L0*0.72+i+7,py);g.stroke();}
-  /* les haubans et le pylône */
-  R(x-2,py-34,5,26,M);R(x-2,py-34,2,26,Mc);
-  g.strokeStyle='#9aa0a8';g.lineWidth=1.2;
-  g.beginPath();g.moveTo(x,py-34);g.lineTo(x-L0*0.70,py-8);g.stroke();
-  g.beginPath();g.moveTo(x,py-34);g.lineTo(x+L0*0.74,py-8);g.stroke();
-  /* la cabine du grutier */
-  R(x-L0*0.30,py+1,17,12,A);R(x-L0*0.30+1,py+2,15,7,'#9fd0dc');R(x-L0*0.30+1,py+2,15,2,'#c8e8f0');
-  R(x-L0*0.30,py+12,17,2,'#2a2e34');
-  /* le chariot et le palonnier */
-  const cx=x+chariot*L0*0.66;
-  R(cx-9,py+1,18,6,A);R(cx-9,py+1,18,1.6,'#5d636d');
-  g.strokeStyle='#9aa0a8';g.lineWidth=1;
-  const ly=py+9+charge*70*ech;
-  g.beginPath();g.moveTo(cx-6,py+7);g.lineTo(cx-6,ly);g.stroke();
-  g.beginPath();g.moveTo(cx+6,py+7);g.lineTo(cx+6,ly);g.stroke();
-  R(cx-13,ly,26,4,'#e8ba2a');R(cx-13,ly,26,1.4,'#f6d96a');
-  R(cx-13,ly+4,3,3,A);R(cx+10,ly+4,3,3,A);
-  /* le conteneur suspendu */
-  if(charge>0.02){conteneur(R,g,cx-19,ly+7,38,13,'B',7,false);}
+document.getElementById('fOk').onclick=()=>repondre(true);
+document.getElementById('fKo').onclick=()=>repondre(false);
+document.getElementById('fX').onclick=()=>{document.getElementById('feuille').classList.remove('on');};
+/* la plaque d'action */
+const act=document.getElementById('act');
+act.onclick=()=>{
+  const dm=Math.hypot(J.x-METRO.x,J.y-(METRO.y+6));
+  if(dm<34){location.href='jeu.html?v='+Date.now();return;}
+  const db=Math.hypot(J.x-(BARAQUE.x+62),J.y-(BARAQUE.y+56));
+  if(db<62)ouvrirPointage();
+};
+let tPrec=performance.now();
+function boucle(tt){requestAnimationFrame(boucle);
+  const dt=Math.min(.05,(tt-tPrec)/1000);tPrec=tt;
+  /* marcher */
+  let dx=0,dy=0;
+  if(doigt&&geste){dx=doigt.x-geste.ox;dy=doigt.y-geste.oy;
+    const d=Math.hypot(dx,dy)||1,k=Math.min(1,d/58);dx=dx/d*k;dy=dy/d*k;}
+  if(clav['q']||clav['arrowleft'])dx=-1;if(clav['d']||clav['arrowright'])dx=1;
+  if(clav['z']||clav['arrowup'])dy=-1;if(clav['s']||clav['arrowdown'])dy=1;
+  const V=58;
+  J.vx+=(dx*V-J.vx)*Math.min(1,dt*10);J.vy+=(dy*V-J.vy)*Math.min(1,dt*10);
+  let nx=J.x+J.vx*dt, ny=J.y+J.vy*dt;
+  /* les obstacles : la baraque et la margelle du métro */
+  const bloque=(x,y)=>{
+    if(x>BARAQUE.x-6&&x<BARAQUE.x+BARAQUE.w+6&&y>BARAQUE.y+6&&y<BARAQUE.y+BARAQUE.h+8)return true;
+    if(Math.abs(x-METRO.x)<32&&y>METRO.y-34&&y<METRO.y+8)return true;
+    return false;};
+  if(!bloque(nx,J.y))J.x=nx;
+  if(!bloque(J.x,ny))J.y=ny;
+  J.x=Math.max(10,Math.min(MW-10,J.x));
+  J.y=Math.max(SOL+14,Math.min(MH-12,J.y));
+  if(Math.abs(dx)>0.06)J.dir=dx>0?'droite':'gauche';
+  J.pas+=Math.hypot(dx,dy)*dt*3.4;
+  dockers.forEach(dk=>{
+    const cx=dk.vers>0?dk.bx:dk.ax, cy=dk.vers>0?dk.by:dk.ay;
+    const ddx=cx-dk.x, ddy=cy-dk.y, d=Math.hypot(ddx,ddy);
+    if(d<2){dk.vers*=-1;return;}
+    dk.x+=ddx/d*dk.v*dt;dk.y+=ddy/d*dk.v*dt;dk.pas+=dt*2.6;});
+  /* la plaque */
+  const dm=Math.hypot(J.x-METRO.x,J.y-(METRO.y+6));
+  const db=Math.hypot(J.x-(BARAQUE.x+62),J.y-(BARAQUE.y+56));
+  if(dm<34){act.classList.add('on');act.innerHTML='Prendre le métro<small>LIGNE 2 · RETOUR AU PORT</small>';}
+  else if(db<62){act.classList.add('on');act.innerHTML='Pointer le navire<small>UNE VACATION · PAYÉE À LA FEUILLE</small>';}
+  else act.classList.remove('on');
+  /* le rendu */
+  gg.setTransform(K*DPR,0,0,K*DPR,0,0);gg.imageSmoothingEnabled=false;
+  const camX=Math.max(0,Math.min(MW-W,J.x-W/2)), camY=Math.max(0,Math.min(MH-H,J.y-H*0.62));
+  gg.fillStyle='#1b1f18';gg.fillRect(0,0,W,H);
+  gg.save();gg.translate(-camX,-camY);
+  gg.drawImage(CAL,0,0);
+  const gens=dockers.map(dk=>({y:dk.y,f:()=>docker(gg,dk.x,dk.y,dk.pas,1)}))
+    .concat([{y:J.y,f:()=>joueur(gg,J.x,J.y,J.pas,J.dir)}]).sort((a,b)=>a.y-b.y);
+  gens.forEach(o=>o.f());
+  gg.restore();
 }
-/* ---------- LA GRANDE VUE ---------- */
-{const {g,R,W,H}=ctx('plan');
- const MER=H*0.30, QUAI=H*0.52;
- /* le ciel du matin */
- for(let y=0;y<MER;y++){const k=y/MER;g.fillStyle=`rgb(${120+k*96|0},${152+k*64|0},${186+k*40|0})`;g.fillRect(0,y,W,1);}
- for(let i=0;i<6;i++){const x=al(i*7)*W,y=al(i*3)*MER*0.6;
-   g.fillStyle='rgba(255,255,255,.18)';g.beginPath();g.ellipse(x,y,34+al(i)*30,7,0,0,7);g.fill();}
- /* la rade et la digue, au loin */
- R(0,MER-9,W,9,'#8ca0ac');R(0,MER-9,W,2,'#a6b8c2');
- for(let x=0;x<W;x+=22)R(x,MER-12,9,4,'#7c909c');
- /* l'eau */
- for(let y=MER;y<QUAI;y++){const k=(y-MER)/(QUAI-MER);
-   g.fillStyle=`rgb(${34+k*14|0},${86+k*26|0},${116+k*24|0})`;g.fillRect(0,y,W,1);}
- for(let i=0;i<420;i++){const x=al(i*3)*W,y=MER+al(i*7)*(QUAI-MER);
-   R(x,y,5+al(i)*8,1,'rgba(255,255,255,.22)');}
- /* LE PORTE-CONTENEURS, à quai */
- const nx=54,ny=QUAI-8;
- /* la coque */
- g.fillStyle='#1b2b3a';g.beginPath();g.moveTo(nx,ny);g.lineTo(nx+330,ny);g.lineTo(nx+318,ny-38);g.lineTo(nx+16,ny-38);g.closePath();g.fill();
- g.fillStyle='#24384a';g.beginPath();g.moveTo(nx+6,ny-6);g.lineTo(nx+324,ny-6);g.lineTo(nx+314,ny-34);g.lineTo(nx+20,ny-34);g.closePath();g.fill();
- R(nx+8,ny-12,314,3,'#8a2f22');                       /* la ligne de flottaison */
- R(nx+14,ny-38,302,3,'#3d556a');
- g.font='700 8px Georgia';g.fillStyle='rgba(230,236,242,.8)';g.fillText('MARSEILLE',nx+26,ny-18);
- /* les conteneurs en pontée, trois rangs */
- for(let r=0;r<3;r++)for(let i=0;i<9;i++){
-   const cx2=nx+26+i*32, cy2=ny-44-r*15;
-   conteneur(R,g,cx2,cy2,30,14,CLES[Math.floor(al(i*3+r*5)*6)],i*3+r,false);}
- /* le château arrière */
- R(nx+286,ny-92,40,52,'#e6e8ea');R(nx+286,ny-92,40,3,'#ffffff');
- for(let y=ny-88;y<ny-48;y+=8)for(let x=nx+290;x<nx+322;x+=7)R(x,y,5,5,'#3f5f7a');
- R(nx+300,ny-104,10,12,'#c9ccd2');R(nx+302,ny-116,5,12,'#8a2f22');
- /* les amarres */
- g.strokeStyle='rgba(230,226,210,.75)';g.lineWidth=1.2;
- [[nx+20,ny-6,30,QUAI+16],[nx+320,ny-8,W-60,QUAI+16]].forEach(([x1,y1,x2,y2])=>{
-   g.beginPath();g.moveTo(x1,y1);g.quadraticCurveTo((x1+x2)/2,y1+16,x2,y2);g.stroke();});
- /* LE QUAI */
- for(let y=QUAI;y<H;y++){const k=(y-QUAI)/(H-QUAI);
-   g.fillStyle=`rgb(${136-k*22|0},${132-k*22|0},${124-k*20|0})`;g.fillRect(0,y,W,1);}
- for(let i=0;i<5200;i++){const x=al(i*1.7)*W,y=QUAI+al(i*2.3)*(H-QUAI);
-   R(x,y,1+al(i)*2,1,al(i*5)<.5?'#918c82':'#75716a');}
- R(0,QUAI,W,3,'#a49d90');R(0,QUAI+3,W,1.4,'#6a665e');
- /* les bollards et les défenses */
- for(let x=24;x<W;x+=58){R(x,QUAI+5,9,7,'#3f444c');R(x-1,QUAI+4,11,2.4,'#5d636d');
-   g.fillStyle='rgba(30,34,28,.28)';g.beginPath();g.ellipse(x+4,QUAI+13,8,2.4,0,0,7);g.fill();}
- /* les marquages au sol */
- for(let x=0;x<W;x+=40)R(x,QUAI+30,22,2.4,'rgba(232,214,74,.55)');
- R(0,QUAI+52,W,2,'rgba(232,214,74,.35)');
- /* LES PORTIQUES */
- portique(R,g,140,QUAI+34,1,-0.45,0.34);
- portique(R,g,330,QUAI+34,1,0.25,0);
- portique(R,g,510,QUAI+34,1,-0.1,0.6);
- /* LES PILES DE CONTENEURS, derrière */
- for(let b=0;b<7;b++){
-   const bx=14+b*86, by=H-18;
-   for(let r=0;r<3+Math.floor(al(b*3)*2);r++)
-     for(let i=0;i<2;i++){
-       const cx2=bx+i*40, cy2=by-r*15;
-       if(al(b*7+r*3+i)<0.12)continue;
-       conteneur(R,g,cx2,cy2,38,14,CLES[Math.floor(al(b*5+r*7+i*3)*6)],b*11+r*3+i,false);}}
- /* les camions qui font la queue */
- const camion=(x,y,c)=>{
-   R(x,y-11,20,11,c);R(x,y-11,20,2,'rgba(255,255,255,.28)');
-   R(x+20,y-14,11,14,'#3f444c');R(x+22,y-12,7,5,'#9fd0dc');
-   g.fillStyle='#2a2e34';[x+4,x+14,x+26].forEach(px=>{g.beginPath();g.arc(px,y,3,0,7);g.fill();});};
- camion(200,H-8,'#c4622a');camion(246,H-8,'#2f6a4a');camion(292,H-8,'#8a8f98');
- /* les dockers */
- const docker=(x,y,pose)=>{
-   R(x-3,y-14,6,7,'#e8712a');R(x-3,y-12,6,1.4,'#cfd6dc');
-   R(x-2.4,y-20,5,6,'#e8b890');R(x-3,y-21,6,2.4,'#f0c02a');
-   R(x-3,y-7,2.4,7,'#2f4a6a');R(x+0.6,y-7,2.4,7,'#2f4a6a');
-   g.fillStyle='rgba(28,32,24,.28)';g.beginPath();g.ellipse(x,y+1,4,1.6,0,0,7);g.fill();};
- [[168,H-30],[262,H-26],[398,H-34],[470,H-24],[120,QUAI+40],[352,QUAI+44]].forEach(([x,y],i)=>docker(x,y,i%2));
- /* les mâts d'éclairage */
- for(let i=0;i<4;i++){const x=70+i*160;
-   R(x-1.4,H-120,3,120,'#6f747c');R(x-1.4,H-120,1.4,120,'#9aa0a8');
-   R(x-9,H-128,19,8,'#3f444c');
-   for(let k=0;k<4;k++)R(x-7+k*4.6,H-126,3.4,4,'#f2e6a8');}
-}
-/* ---------- VUE 1 · SOUS LE PORTIQUE ---------- */
-{const {g,R,W,H}=ctx('v1');
- const QUAI=H*0.42;
- for(let y=0;y<QUAI*0.6;y++){const k=y/(QUAI*0.6);g.fillStyle=`rgb(${116+k*96|0},${150+k*62|0},${188+k*38|0})`;g.fillRect(0,y,W,1);}
- for(let y=QUAI*0.6;y<QUAI;y++){const k=(y-QUAI*0.6)/(QUAI*0.4);
-   g.fillStyle=`rgb(${34+k*16|0},${88+k*26|0},${118+k*22|0})`;g.fillRect(0,y,W,1);}
- for(let i=0;i<160;i++)R(al(i*3)*W,QUAI*0.6+al(i*7)*QUAI*0.4,5+al(i)*6,1,'rgba(255,255,255,.22)');
- /* la coque du navire, tout près */
- g.fillStyle='#1b2b3a';g.fillRect(0,QUAI*0.52,W,QUAI*0.5);
- R(0,QUAI*0.52,W,3,'#3d556a');R(0,QUAI*0.74,W,3,'#8a2f22');
- for(let i=0;i<4;i++)conteneur(R,g,-6+i*46,QUAI*0.30,44,20,CLES[i%6],i*5,false);
- /* le quai */
- for(let y=QUAI;y<H;y++){const k=(y-QUAI)/(H-QUAI);
-   g.fillStyle=`rgb(${138-k*24|0},${134-k*24|0},${126-k*22|0})`;g.fillRect(0,y,W,1);}
- for(let i=0;i<2200;i++)R(al(i*1.7)*W,QUAI+al(i*2.3)*(H-QUAI),1+al(i)*2,1,al(i*5)<.5?'#928d83':'#75716a');
- R(0,QUAI,W,3,'#a49d90');
- for(let x=10;x<W;x+=44){R(x,QUAI+6,9,7,'#3f444c');R(x-1,QUAI+5,11,2.4,'#5d636d');}
- for(let x=0;x<W;x+=34)R(x,QUAI+40,18,2.4,'rgba(232,214,74,.5)');
- /* le portique, immense, qui enjambe la vue */
- portique(R,g,W/2,H-46,0.9,-0.1,0.42);
- /* le camion sous le portique, et les dockers */
- const camion=(x,y,c)=>{R(x,y-13,26,13,c);R(x,y-13,26,2.4,'rgba(255,255,255,.28)');
-   R(x+26,y-17,13,17,'#3f444c');R(x+28,y-15,9,6,'#9fd0dc');
-   g.fillStyle='#2a2e34';[x+5,x+18,x+33].forEach(px=>{g.beginPath();g.arc(px,y,3.4,0,7);g.fill();});};
- camion(W/2-34,H-14,'#c4622a');
- const docker=(x,y)=>{
-   R(x-4,y-17,8,9,'#e8712a');R(x-4,y-14,8,1.6,'#cfd6dc');
-   R(x-3,y-24,6,7,'#e8b890');R(x-4,y-26,8,2.6,'#f0c02a');
-   R(x-4,y-8,3,8,'#2f4a6a');R(x+1,y-8,3,8,'#2f4a6a');
-   g.fillStyle='rgba(28,32,24,.3)';g.beginPath();g.ellipse(x,y+1,5,2,0,0,7);g.fill();};
- docker(30,H-20);docker(W-28,H-26);
- /* la lumière du matin, rasante */
- const gr=g.createLinearGradient(0,QUAI,0,H);
- gr.addColorStop(0,'rgba(255,224,160,.12)');gr.addColorStop(1,'rgba(255,224,160,0)');
- g.fillStyle=gr;g.fillRect(0,QUAI,W,H-QUAI);
-}
-/* ---------- VUE 2 · LES PILES ---------- */
-{const {g,R,W,H}=ctx('v2');
- for(let y=0;y<H*0.20;y++){const k=y/(H*0.20);g.fillStyle=`rgb(${124+k*90|0},${156+k*58|0},${192+k*34|0})`;g.fillRect(0,y,W,1);}
- for(let y=H*0.20;y<H;y++){const k=(y-H*0.20)/(H*0.80);
-   g.fillStyle=`rgb(${140-k*26|0},${136-k*26|0},${128-k*24|0})`;g.fillRect(0,y,W,1);}
- for(let i=0;i<3400;i++)R(al(i*1.7)*W,H*0.20+al(i*2.3)*H*0.8,1+al(i)*2,1,al(i*5)<.5?'#928d83':'#75716a');
- /* les allées peintes */
- for(let y=H*0.42;y<H;y+=30)R(0,y,W,2.4,'rgba(232,214,74,.35)');
- /* les piles, en perspective simple */
- for(let b=0;b<4;b++){
-   const bx=-10+b*46, base=H*0.34+b*0.5;
-   for(let r=0;r<4;r++)conteneur(R,g,bx,base-r*15,42,14,CLES[Math.floor(al(b*7+r*3)*6)],b*5+r,false);}
- for(let b=0;b<3;b++){
-   const bx=6+b*58, base=H*0.72;
-   for(let r=0;r<3;r++)conteneur(R,g,bx,base-r*16,52,16,CLES[Math.floor(al(b*11+r*5)*6)],b*9+r*2,false);}
- /* le chariot cavalier, au fond */
- const cav=(x,y)=>{
-   [[-1],[1]].forEach(([s])=>{const jx=x+s*22;
-     R(jx-2.4,y-52,5,52,'#e8ba2a');R(jx-2.4,y-52,1.6,52,'#f6d96a');
-     R(jx-6,y-6,12,6,'#3f444c');
-     g.fillStyle='#2a2e34';g.beginPath();g.arc(jx-3,y,2.6,0,7);g.fill();g.beginPath();g.arc(jx+3,y,2.6,0,7);g.fill();});
-   R(x-24,y-56,48,6,'#e8ba2a');R(x-24,y-56,48,1.6,'#f6d96a');
-   R(x-10,y-50,20,9,'#3f444c');R(x-8,y-48,16,5,'#9fd0dc');
-   conteneur(R,g,x-20,y-34,40,14,'V',3,false);};
- cav(W-40,H*0.40);
- /* les dockers et les plots */
- const docker=(x,y)=>{
-   R(x-4,y-16,8,9,'#e8712a');R(x-4,y-13,8,1.6,'#cfd6dc');
-   R(x-3,y-23,6,7,'#e8b890');R(x-4,y-25,8,2.6,'#f0c02a');
-   R(x-4,y-7,3,7,'#2f4a6a');R(x+1,y-7,3,7,'#2f4a6a');
-   g.fillStyle='rgba(28,32,24,.3)';g.beginPath();g.ellipse(x,y+1,5,2,0,0,7);g.fill();};
- docker(26,H-24);docker(W-34,H-16);
- for(let i=0;i<5;i++){const x=12+i*34;R(x,H-8,5,7,'#e8712a');R(x,H-8,5,2,'#f6a05a');}
-}
-/* ---------- VUE 3 · L'ENTRÉE ---------- */
-{const {g,R,W,H}=ctx('v3');
- for(let y=0;y<H*0.24;y++){const k=y/(H*0.24);g.fillStyle=`rgb(${126+k*88|0},${158+k*56|0},${194+k*32|0})`;g.fillRect(0,y,W,1);}
- for(let y=H*0.24;y<H;y++){const k=(y-H*0.24)/(H*0.76);
-   g.fillStyle=`rgb(${142-k*26|0},${138-k*26|0},${130-k*24|0})`;g.fillRect(0,y,W,1);}
- for(let i=0;i<3000;i++)R(al(i*1.7)*W,H*0.24+al(i*2.3)*H*0.76,1+al(i)*2,1,al(i*5)<.5?'#928d83':'#75716a');
- /* le grillage et les portails */
- for(let x=0;x<W;x+=8)R(x,H*0.30,1.6,40,'#585c62');
- for(let y=H*0.30;y<H*0.30+40;y+=6)R(0,y,W,1,'rgba(88,92,98,.55)');
- for(let x=0;x<W;x+=46)R(x,H*0.26,4,46,'#6a6f76');
- R(0,H*0.26,W,3,'#787d84');
- /* la guérite */
- R(16,H*0.36,54,44,'#c9bda2');R(16,H*0.36,54,3,'#ddd2b6');
- R(22,H*0.40,42,20,'#3c3c46');R(23,H*0.41,40,18,'#9fd0dc');R(23,H*0.41,40,6,'#c2e4ec');
- R(10,H*0.33,66,5,'#a8452f');R(10,H*0.33,66,1.6,'#c46a4a');
- R(30,H*0.60,26,20,'#6a4a2a');R(30,H*0.60,26,2,'#8a6238');R(50,H*0.68,4,4,'#c9a24a');
- /* la barrière levante */
- R(78,H*0.52,6,28,'#3f444c');
- g.save();g.translate(84,H*0.54);g.rotate(-0.5);
- for(let i=0;i<Math.ceil(60/8);i++)R(i*8,-2,8,4,(i%2)?'#c4302a':'#f2ead8');
- g.restore();
- /* la pointeuse et le panneau */
- R(96,H*0.48,14,20,'#3f444c');R(97,H*0.49,12,8,'#9fd0dc');R(99,H*0.60,8,3,'#c9a24a');
- R(W-72,H*0.30,64,26,'#1d4f8a');R(W-70,H*0.32,60,22,'#2a6aa8');
- g.font='700 6px Georgia';g.textAlign='center';g.fillStyle='#eaf4fb';
- g.fillText('TERMINAL',W-40,H*0.38);g.fillText('DE LA JOLIETTE',W-40,H*0.45);g.textAlign='left';
- /* la baraque de chantier et la file de camions */
- R(W-84,H*0.58,72,34,'#e8e2d2');R(W-84,H*0.58,72,3,'#f6f2e8');
- R(W-84,H*0.90-4,72,4,'#a8a294');
- for(let i=0;i<3;i++){R(W-76+i*22,H*0.63,14,12,'#3c3c46');R(W-75+i*22,H*0.64,12,10,'#9fd0dc');}
- R(W-56,H*0.76,18,16,'#6a4a2a');R(W-56,H*0.76,18,2,'#8a6238');
- R(W-84,H*0.55,72,4,'#a8452f');
- /* les dockers qui prennent leur service */
- const docker=(x,y)=>{
-   R(x-4,y-17,8,9,'#e8712a');R(x-4,y-14,8,1.6,'#cfd6dc');
-   R(x-3,y-24,6,7,'#e8b890');R(x-4,y-26,8,2.6,'#f0c02a');
-   R(x-4,y-8,3,8,'#2f4a6a');R(x+1,y-8,3,8,'#2f4a6a');
-   g.fillStyle='rgba(28,32,24,.3)';g.beginPath();g.ellipse(x,y+1,5,2,0,0,7);g.fill();};
- docker(60,H-30);docker(88,H-18);docker(120,H-40);
- /* le café, une tasse posée sur un bidon */
- R(24,H-26,14,16,'#8a8f98');R(24,H-26,14,2,'#a3a8b1');
- R(27,H-30,7,5,'#f2ead8');R(33,H-29,3,2,'#f2ead8');
- for(let k=0;k<3;k++)R(28+k,H-34-al(k)*3,1,3,'rgba(240,240,230,.4)');
- /* le marquage au sol et une flaque */
- for(let x=0;x<W;x+=26)R(x,H-58,14,2.4,'rgba(232,214,74,.45)');
- g.fillStyle='rgba(120,140,150,.28)';g.beginPath();g.ellipse(W*0.5,H-14,26,6,0,0,7);g.fill();
- g.fillStyle='rgba(200,225,235,.2)';g.beginPath();g.ellipse(W*0.5-6,H-16,14,3,0,0,7);g.fill();
-}
+requestAnimationFrame(boucle);
 </script></body></html>
