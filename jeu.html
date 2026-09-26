@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-26-0636';
+  var MA_VERSION='2026-09-26-0837';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -22326,6 +22326,17 @@ const MODE_POISSON={nom:'La poissonnerie',mot:'« Montre-moi ta pêche, petit. �
    à l'ardoise ; on choisit combien on en vend, le total s'affiche sur le ticket de pesée, et un seul bouton vend tout.
    La page défile dans son propre cadre, le ticket et le bouton restent en bas, les messages au-dessus. */
 let CRI_VENTE={}, CRI_EN_COURS=false;
+let COURS={};                       /* LE MARCHÉ : les prix bougent pour tout le monde */
+async function lireLesCours(types){
+  const t=[...new Set(types.filter(Boolean))];if(!t.length)return;
+  try{const d=await appelRPC('cours_du_jour',{p_types:t});
+    if(d&&!d.erreur)Object.assign(COURS,d);}catch(x){}
+}
+const prixDuJour=(k,defaut)=>(COURS[k]&&typeof COURS[k].prix==='number')?COURS[k].prix:defaut;
+const fleche=(k)=>{const f=COURS[k]&&COURS[k].f;if(!f)return '';
+  if(f>1.06)return '<span style="color:#9fe0a0"> ▲</span>';
+  if(f<0.94)return '<span style="color:#e8a090"> ▼</span>';
+  return '<span style="opacity:.5"> =</span>';};
 let CRI_ETAL='poisson';                 /* LA CRIÉE A DEUX ÉTALS : la pêche, et le comptoir du port */
 const criPrix=()=>CRI_ETAL==='poisson'?PRIX_POISSON:PRIX_COMPTOIR;
 function ouvrirLaCriee(etal){CRI_ETAL=etal||'poisson';CPT=MODE_POISSON;CRI_VENTE={};$('page2Fond').className='';$('page2').classList.add('on');
@@ -22379,11 +22390,13 @@ function ouvrirLaCriee(etal){CRI_ETAL=etal||'poisson';CPT=MODE_POISSON;CRI_VENTE
   majEtals();criMaj();}
 function criBulle(t){const b=$('criBulle');if(!b)return;b.textContent=t;b.classList.add('on');clearTimeout(criBulle.t);criBulle.t=setTimeout(()=>b.classList.remove('on'),2600);}
 function criMaj(){if(!$('criCorps'))return;SAC_PEUT_BAISSER=Date.now();
-  const P=criPrix();
-  const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&P[k]).sort((a,b)=>P[b]*e.sac[b]-P[a]*e.sac[a]);
+  const P0=criPrix();
+  const P=new Proxy({},{get:(_,k)=>P0[k]?prixDuJour(k,P0[k]):undefined,has:(_,k)=>!!P0[k]});
+  const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&P0[k]).sort((a,b)=>P[b]*e.sac[b]-P[a]*e.sac[a]);
+  if(!criMaj.enCours){criMaj.enCours=true;lireLesCours(ks).then(()=>{criMaj.enCours=false;if($('criCorps'))criMaj();});}
   const n=(k)=>(k in CRI_VENTE)?CRI_VENTE[k]:e.sac[k];
   $('criCorps').innerHTML=ks.length?ks.map(k=>'<div class="cri-lg '+(n(k)>0?'':'off')+'" data-k="'+k+'"><span class="cri-ic"><svg viewBox="0 0 16 16" width="34">'+(ICONES[k]||'')+'</svg></span>'+
-    '<span class="cri-nm"><b>'+(OBJETS[k]?OBJETS[k].nom:k)+'</b><span class="cri-ardoise">'+cptSou(P[k])+' pièce</span><span class="cri-dans">· '+e.sac[k]+' dans le sac</span></span>'+
+    '<span class="cri-nm"><b>'+(OBJETS[k]?OBJETS[k].nom:k)+'</b><span class="cri-ardoise">'+cptSou(P[k])+' pièce'+fleche(k)+'</span><span class="cri-dans">· '+e.sac[k]+' dans le sac</span></span>'+
     '<span class="cri-qt"><button data-m="-1">−</button><span>'+n(k)+'</span><button data-m="1">+</button></span></div>').join('')
     :(CRI_ETAL==='poisson'?'<div class="cri-vide">Pas un poisson dans ton sac.<br>Va lancer ta ligne au bout des pontons.</div>'
       :'<div class="cri-vide">Rien à changer.<br>Le comptoir prend le minerai, la pierre, l’ambre et le reste.</div>');
