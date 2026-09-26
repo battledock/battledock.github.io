@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-26-1005';
+  var MA_VERSION='2026-09-26-1017';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -20195,7 +20195,7 @@ const ICO_ACTION=[[/^(Couper|Abattre)/,'hache'],[/^(Casser|Miner|Frapper)/,'pioc
   [/^(Pêcher|Lancer|Ferrer|Tirer)/,'canne'],[/^(Vendre|Acheter|Entrer|Ouvrir|Lire|Prendre|Rendre|Descendre|Monter|Parler|La |Le |Les |Pêche)/,'porte']];
 function icoAction(){const b=$('action');if(!b)return;const t=b.textContent||'';let k='etoile';for(const [re,v] of ICO_ACTION)if(re.test(t)){k=v;break;}
   if(b.dataset.ico!==k)b.dataset.ico=k;}
-setInterval(icoAction,250);
+setInterval(()=>{if(!document.hidden)icoAction();},250);
 function majAction(){
   plaqueVrai=$('action');
   const b=plaqueFeinte;
@@ -23835,8 +23835,31 @@ let t0=performance.now();
    écran 60 Hz faisait sauter une image (la saccade). Maintenant : on dessine à chaque rafraîchissement,
    sauf au-delà de 100 Hz (120 Hz…) où l'on en prend exactement une sur deux, régulièrement. */
 let tBrut=t0, rythmeEcran=16.7, imagePaire=false;
+/* ================= LA BATTERIE =================
+   Le jeu dessinait soixante images par seconde en permanence, même quand
+   l'écran ne changeait pas : un joueur immobile, un menu ouvert par-dessus,
+   ou l'onglet en arrière-plan. On coupe tout ça. */
+let VEILLE=0, DERNIER_GESTE=Date.now();
+['touchstart','touchmove','mousedown','mousemove','keydown','wheel'].forEach(ev=>
+  addEventListener(ev,()=>{DERNIER_GESTE=Date.now();VEILLE=0;},{passive:true}));
+const ecranPlein=()=>{try{
+  return (($('page2')&&$('page2').classList.contains('on'))
+       || ($('bar')&&$('bar').classList.contains('on'))
+       || ($('casino')&&$('casino').classList.contains('on')));}catch(x){return false;}};
+function rythmeVoulu(){
+  if(document.hidden)return 0;                  /* en arrière-plan : on ne dessine plus du tout */
+  if(ecranPlein())return 6;                    /* un écran plein couvre le jeu : six images suffisent */
+  const immobile=Date.now()-DERNIER_GESTE>2500 && !(PECHE||GESTE.t>0);
+  if(immobile)return 30;                        /* immobile : la moitié des images, l'œil ne voit rien */
+  return 0;                                     /* en action : plein régime */
+}
+let prochaineImage=0;
 requestAnimationFrame(function boucle(t){      /* la première image attend la fin du script : les calques de la ferme sont déclarés plus bas */
   requestAnimationFrame(boucle);
+  {const r=rythmeVoulu();
+   if(r===0&&document.hidden)return;            /* onglet caché : rien */
+   if(r>0){const pas=1000/r;if(t<prochaineImage)return;prochaineImage=t+pas*0.9;}
+   else prochaineImage=0;}
   const brut=t-tBrut;tBrut=t;
   if(brut>2&&brut<40)rythmeEcran=rythmeEcran*0.92+brut*0.08;
   if(rythmeEcran<10){imagePaire=!imagePaire;if(imagePaire)return;}
@@ -23886,7 +23909,7 @@ requestAnimationFrame(function boucle(t){      /* la première image attend la f
      c'est cette lecture qui fait avancer les autres : elle doit suivre. */
   envoyerSauvegarde();                            /* la partie, sur le serveur */
   ouvrirCanal();
-  bipPosition();                                  /* le direct, 10 fois par seconde */
+  if(!document.hidden&&!ecranPlein())bipPosition();   /* le direct : inutile quand un écran couvre le jeu */
   if(maintenant-envoiRapide>20000){               /* la base, juste pour la mémoire (la présence dit déjà qui est là) */
     envoiRapide=maintenant;monterEnLigne(true);
   }
@@ -23902,7 +23925,7 @@ requestAnimationFrame(function boucle(t){      /* la première image attend la f
   }
   dessinerJoy(dt);
 });
-setInterval(()=>{sauver();},4000);   /* la présence en ligne passe par le canal : plus besoin d'écrire la table toutes les 4 s */
+setInterval(()=>{if(!document.hidden)sauver();},4000);   /* la présence en ligne passe par le canal : plus besoin d'écrire la table toutes les 4 s */
 
 /* les réglages se lisent en dernier : tout le jeu est déclaré à ce moment,
    donc plus rien ne peut être touché avant sa création. */
@@ -24318,7 +24341,7 @@ async function ouvrirLeGrainetier(onglet){onglet=onglet||'graines';
   if(!e.id){if(n<40)return void setTimeout(()=>chargerLeChampVite(n+1),100);return;}
   potCharger();
 })(0);
-setInterval(()=>{if(CARTE==='village'&&POT.charge){try{if(potProche()!==null)majAction();}catch(x){}}},1000);
+setInterval(()=>{if(document.hidden)return;if(CARTE==='village'&&POT.charge){try{if(potProche()!==null)majAction();}catch(x){}}},1000);
 setInterval(()=>{if(CARTE==='village'&&document.visibilityState==='visible')potCharger();},120000);
 
 
@@ -25488,7 +25511,7 @@ async function ouvrirLePoulailler(){
 }
 setTimeout(()=>poulCharger(),2800);
 setInterval(()=>{if(CARTE==='village'&&document.visibilityState==='visible')poulCharger();},90000);
-setInterval(()=>{if(CARTE==='village'&&poulProche()){try{majAction();}catch(x){}}},1000);
+setInterval(()=>{if(document.hidden)return;if(CARTE==='village'&&poulProche()){try{majAction();}catch(x){}}},1000);
 
 
 const PZ=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
