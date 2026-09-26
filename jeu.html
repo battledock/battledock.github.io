@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-26-1026';
+  var MA_VERSION='2026-09-26-1302';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -19399,7 +19399,9 @@ const ESP_PECHE={
   espadon:{nom:'espadon',col:['#2a3a5a','#c8d0dc'],L:28,touches:8,vit:.68},
   mola:{nom:'poisson-lune',col:['#8a9aa6','#dde4ea'],L:18,touches:8,vit:.7},
   requin:{nom:'requin peau-bleue',col:['#2a5a9a','#eef2f6'],L:30,touches:9,vit:.64},
-  pain:{nom:'Pain de campagne',d:'Cuit au fournil, croûte dorée.',poids:1},
+  oeufs:{nom:'Œufs',d:'Pondus ce matin, encore tièdes.',poids:1},
+ oeufdor:{nom:'Œuf d’or',d:'Un sur deux cents. Le bijoutier t’en donnera un bon prix.',poids:1},
+ pain:{nom:'Pain de campagne',d:'Cuit au fournil, croûte dorée.',poids:1},
  confiture:{nom:'Confiture de baies',d:'Un pot bien serré, ramassé en forêt.',poids:1},
  conserve:{nom:'Conserve de tomates',d:'De quoi tenir tout l’hiver.',poids:1},
  soupe:{nom:'Soupe au pistou',d:'Le plat du dimanche, à Marseille.',poids:1},
@@ -20972,6 +20974,10 @@ const OBJETS={
  tamis:  {nom:'Tamis',  d:'Au bord de l’eau, avec 10 argiles dans le sac : appuie sur « Laver » pour en tirer des pépites.',poids:0,outil:1}
 };
 const ICONES={
+ oeufs:'<ellipse cx="8" cy="9" rx="4.5" ry="5.5" fill="#f4ead6"/><ellipse cx="6.6" cy="7.4" rx="1.6" ry="2" fill="#fffaf0"/>'+
+      '<ellipse cx="8" cy="12.6" rx="4.2" ry="1.4" fill="rgba(140,120,90,.25)"/>',
+ oeufdor:'<ellipse cx="8" cy="9" rx="4.5" ry="5.5" fill="#d8a830"/><ellipse cx="6.6" cy="7.2" rx="1.6" ry="2.1" fill="#ffe9a8"/>'+
+      '<ellipse cx="8" cy="12.6" rx="4.2" ry="1.4" fill="rgba(120,90,20,.3)"/><rect x="11" y="4" width="1.6" height="1.6" fill="#fff6d0"/>',
  pain:'<rect x="2" y="6" width="12" height="7" rx="2" fill="#c98f4a"/><rect x="2" y="6" width="12" height="2" fill="#e0aa66"/>'+
       '<rect x="4" y="5" width="2" height="2" fill="#8a5a28"/><rect x="8" y="5" width="2" height="2" fill="#8a5a28"/>'+
       '<rect x="3" y="12" width="10" height="1" fill="#8a5a28"/>',
@@ -21284,7 +21290,7 @@ if(typeof ICONES!=='undefined'){
     '<rect x="4" y="12" width="9" height="1" fill="#5f666c"/>'+
     '<rect x="6" y="8" width="2" height="2" fill="#f2f6f8"/>';
 }
-const PRIX_COMPTOIR={pain:180,confiture:400,conserve:320,soupe:380,tarte:650,
+const PRIX_COMPTOIR={oeufs:600,oeufdor:25000,pain:180,confiture:400,conserve:320,soupe:380,tarte:650,
   ambre:35,pepite:60,lingotFer:52,lingotCuivre:34,gemme:120,or:70,argent:36,
   fer:14,cuivre:8,charbon:9,brique:30,resine:10,pierre:5,champignons:4,plumes:4,
   bois:3,herbes:3,fibre:2,baies:2,argile:2,roseaux:2};
@@ -25517,7 +25523,18 @@ async function ouvrirLePoulailler(){
   brancherDepots(()=>ouvrirLePoulailler(),bulle);
   $('page2Fond').querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{const a=b.dataset.a;if(b.classList.contains('pris')){if(a==='poulailler'||a==='agrandir')bulle('Livre d’abord tous les matériaux au chantier.');return;}b.disabled=true;let d;
     if(a==='ramasser'){d=await appelRPC('poul_ramasser',{p_joueur:e.id});
-      if(d&&d.gain){poulAdopter(d.etat);jouer('vente','moment');vibrer([20,40,20]);ouvrirLePoulailler();setTimeout(()=>bulle(d.oeufs+' œuf'+(d.oeufs>1?'s':'')+' · +'+enEuros(d.gain)+(d.or?' · ✨ '+d.or+' ŒUF'+(d.or>1?'S':'')+' D’OR !':'')),60);return;}}
+      /* LES ŒUFS VONT DANS LE SAC : on les vend ensuite où l'on veut. */
+      if(d&&!d.erreur){
+        if(d.sac)e.sac=d.sac;
+        poulAdopter(d.etat);try{lireSacServeur();majPastille();}catch(x){}sauver();
+        jouer('vente','moment');vibrer([20,40,20]);ouvrirLePoulailler();
+        setTimeout(()=>bulle((d.oeufs?d.oeufs+' œuf'+(d.oeufs>1?'s':'')+' dans ton sac':'')
+          +(d.or?(d.oeufs?' · ':'')+'✨ '+d.or+' œuf'+(d.or>1?'s':'')+' d’or !':'')
+          +(d.reste?' · il en reste '+d.reste+' au nid (sac plein)':'')),60);
+        b.disabled=false;return;}
+      if(d&&d.erreur==='sac_plein'){b.disabled=false;bulle('Ton sac déborde : va vendre avant de ramasser.');return;}
+      if(d&&d.erreur==='rien'){b.disabled=false;bulle('Pas d’œuf au nid pour l’instant.');return;}
+    }
     else if(a==='gerbe'||a==='grain')d=await appelRPC('poul_nourrir',{p_joueur:e.id,p_mode:a});
     else d=await appelRPC('poul_acheter',{p_joueur:e.id,p_article:a});
     if(d&&d.erreur==='materiaux'){b.disabled=false;bulle(matManque(d.manque));return;}
