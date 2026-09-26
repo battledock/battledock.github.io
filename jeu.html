@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-26-1017';
+  var MA_VERSION='2026-09-26-1026';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -14833,7 +14833,7 @@ const CLE='bdl.pix.v2';
 /* les réglages : vibrations, finesse du dessin, avis. Déclarés ici, avant
    tout le reste, parce que le jeu peut vibrer dès les premières images. */
 var REG={vibre:true, secousses:true, ciel:'heure', finesse:'auto', avis:true,
-         sons:true, sGestes:2, sMoments:2, sAmb:2, sRev:2};
+         sons:true, sGestes:2, sMoments:2, sAmb:2, sRev:2, econome:false};
 let e={x:0,y:0,ap:Object.assign({},DEF_AP),pseudo:'',id:'',sac:{},score:0,recolte:0,
        outils:{pioche:true,hache:true},epee:0,coffreOuvert:true,
        casses:[],coffre:null,casino:null,camp:null,
@@ -17626,6 +17626,15 @@ let QUALITE=1;                 /* 1 = tout, 0.5 = allégé, 0 = l'essentiel */
    d'attendre plusieurs secondes de saccades avant que le jeu ne s'en rende compte. */
 const TELEPHONE_MODESTE=((navigator.deviceMemory||8)<=4)||((navigator.hardwareConcurrency||8)<=4);
 if(TELEPHONE_MODESTE){QUALITE=0.5;QUALITE_TOILE=0.5;}
+/* LE MODE ÉCONOME : moins d'images, moins de décor vivant, une toile plus légère.
+   On le pose au démarrage, et le réglage le change en direct. */
+function appliquerEconomie(){
+  const on=(typeof REG!=='undefined'&&REG.econome);
+  if(on){QUALITE=Math.min(QUALITE,0.5);QUALITE_TOILE=0.5;}
+  else if(!TELEPHONE_MODESTE){QUALITE=1;QUALITE_TOILE=1;}
+  try{if(typeof videCache==='function')videCache();if(typeof taille==='function')taille();}catch(x){}
+}
+try{appliquerEconomie();}catch(x){}
 let msMoyen=16, imagesLentes=0, imagesRapides=0;
 
 
@@ -23061,6 +23070,11 @@ function ouvrirReglages(){
          'secs et proches ; au maximum, on est dehors, au large.',
          niveau('sRev'))
      ):'')+
+     ligne('Économiser la batterie',
+       'Le jeu se contente de trente images par seconde, allège le décor vivant '+
+       'et dessine une toile plus légère. On joue plus longtemps, l’image est '+
+       'à peine moins fine.',
+       bouton('econome',true,'Économe')+bouton('econome',false,'Tout beau'))+
      (vibreurDispo()
        ? ligne('Faire vibrer le téléphone',
            'Un petit coup dans la main à chaque fois que tu frappes un rocher, '+
@@ -23147,6 +23161,7 @@ function ouvrirReglages(){
     REG[b.dataset.reg]=(val==='true')?true:(val==='false'?false:
       (/^\d+$/.test(val)?+val:val));
     if(b.dataset.reg==='styleFin'){POSES.clear();CACHE_FIN.clear();setTimeout(()=>{try{refaireLeSol();}catch(x){}},50);}
+    if(b.dataset.reg==='econome')try{appliquerEconomie();}catch(x){}
     appliquerReglages();vibrer(20);ouvrirReglages();
     /* on FAIT ENTENDRE ce qu'on règle : sinon on choisit à l'aveugle */
     const q=b.dataset.reg;
@@ -23848,10 +23863,11 @@ const ecranPlein=()=>{try{
        || ($('casino')&&$('casino').classList.contains('on')));}catch(x){return false;}};
 function rythmeVoulu(){
   if(document.hidden)return 0;                  /* en arrière-plan : on ne dessine plus du tout */
-  if(ecranPlein())return 6;                    /* un écran plein couvre le jeu : six images suffisent */
+  if(ecranPlein())return 6;                     /* un écran plein couvre le jeu : six images suffisent */
+  const econome=(typeof REG!=='undefined'&&REG.econome);
   const immobile=Date.now()-DERNIER_GESTE>2500 && !(PECHE||GESTE.t>0);
-  if(immobile)return 30;                        /* immobile : la moitié des images, l'œil ne voit rien */
-  return 0;                                     /* en action : plein régime */
+  if(immobile)return econome?12:30;             /* immobile : l'œil ne voit rien de moins */
+  return econome?30:0;                          /* en action : plein régime, ou trente en mode économe */
 }
 let prochaineImage=0;
 requestAnimationFrame(function boucle(t){      /* la première image attend la fin du script : les calques de la ferme sont déclarés plus bas */
