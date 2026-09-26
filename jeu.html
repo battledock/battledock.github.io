@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-26-2139';
+  var MA_VERSION='2026-09-26-2148';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -17425,9 +17425,13 @@ async function ouvrirLeChantier(mot){
     else ouvrirLeChantier(d&&d.erreur==='manque'?'« Il te manque encore de quoi. »':'« Le chantier ne répond pas. »');};
 }
 if(CARTE==='vallon'){
-  if(!ligne2Permise()){location.replace('jeu.html?v='+Date.now());}   /* le quartier est encore fermé */
+  /* le quartier est fermé : on renvoie au port, mais seulement si l'on sait qui joue */
+  if(e&&e.id&&e.id!=='e029d1fb-7baa-4225-91fd-5cdbef6f8711')location.replace('jeu.html?v='+Date.now());
   else cabLire();
 }
+/* LA LIGNE 2 : ouverte à son bâtisseur seulement. Déclarée en fonction pour être
+   disponible dès le premier appel, même très tôt au chargement. */
+function ligne2Permise(){try{return !!(e&&e.id==='e029d1fb-7baa-4225-91fd-5cdbef6f8711');}catch(x){return false;}}
 setTimeout(()=>{try{verifierLaFete();}catch(x){}},200);
 setInterval(()=>{try{verifierLaFete();}catch(x){}},600000);
 $('b-vestiaire').onclick=()=>{VEST_SEL=null;try{$('tiroir').classList.remove('on');$('barre').classList.remove('on');}catch(x){}ouvrirLeVestiaire();};
@@ -25341,7 +25345,6 @@ async function ouvrirLaBuvette(mot){
 /* LA LIGNE 2 EST FERMÉE AU PUBLIC : tant que le quartier se construit,
    seul son bâtisseur y descend. */
 const LIGNE2_OUVERTE_A='e029d1fb-7baa-4225-91fd-5cdbef6f8711';
-const ligne2Permise=()=>e.id===LIGNE2_OUVERTE_A;
 const STATIONS_L2=[['vallon','Le Vallon','Ton terrain et ton cabanon · BÊTA','vallon']];
 const STATIONS_L1=[['extramar','Le port','Les docks, la criée, le casino','port'],
   ['ferme','La ferme','Le champ, l’étal, l’étable','ferme'],
