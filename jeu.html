@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-26-2131';
+  var MA_VERSION='2026-09-26-2139';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -2202,10 +2202,10 @@ const CARTE_DEMANDEE=(()=>{let c=new URLSearchParams(location.search).get('carte
   if(c)return c;
   /* PAS DE CARTE DANS L'ADRESSE : on reprend là où l'on était (un simple rechargement ne ramène plus au port) */
   try{const sv=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}');
-    if(sv&&(sv.carte==='ferme'||sv.carte==='foret'))return sv.carte;}catch(x){}
+    if(sv&&(sv.carte==='ferme'||sv.carte==='foret'||sv.carte==='vallon'))return sv.carte;}catch(x){}
   return null;})();
-const CARTE=(()=>{const c=CARTE_DEMANDEE;return (c==='sommet'?'sommet':(c==='montagne'?'montagne':((c==='ferme'||c==='foret'||c==='village')?'village':'extramar')));   /* la ferme vit à la place de l'ancien village */})();
-const CARTE_MOD=CARTE==='montagne'||CARTE==='sommet'||CARTE==='piscine'||CARTE==='stade';        /* les cartes à module (Saumaski, le sommet, la piscine) */        /* les cartes de Saumaski (la station, le sommet) */   /* la place du haut n'existe plus */
+const CARTE=(()=>{const c=CARTE_DEMANDEE;return (c==='vallon'?'vallon':(c==='sommet'?'sommet':(c==='montagne'?'montagne':((c==='ferme'||c==='foret'||c==='village')?'village':'extramar'))));   /* la ferme vit à la place de l'ancien village */})();
+const CARTE_MOD=CARTE==='montagne'||CARTE==='sommet'||CARTE==='piscine'||CARTE==='stade'||CARTE==='vallon';        /* les cartes à module (Saumaski, le sommet, la piscine) */        /* les cartes de Saumaski (la station, le sommet) */   /* la place du haut n'existe plus */
 /* LES OBJETS ANIMÉS DU DÉCOR : chaque carte (port.js, saumaski.js) peut y ranger ses dessins vivants */
 const ANIM_DECOR={};
 
@@ -11725,15 +11725,15 @@ function dessinerSouche(g,x,y,gr,neuf){
 /* LA RIVE EST RÉTRÉCIT : 806 de large au lieu de 1166. Cinq bâtiments dans
    1166 de large donnaient un pré avec des maisons dedans ; resserrés, ils
    font un village. Le grand vide, ce sera le DEHORS, plus tard. */
-const MONDE_L=CARTE==='garde'?640:(CARTE==='montagne'?360:(CARTE==='sommet'||CARTE==='piscine'?320:(CARTE==='stade'?760:(CARTE==='village'?1900:1400))));   /* au village, la ferme s'étend à droite */               // largeur, en pixels de jeu
+const MONDE_L=CARTE==='vallon'?420:(CARTE==='garde'?640:(CARTE==='montagne'?360:(CARTE==='sommet'||CARTE==='piscine'?320:(CARTE==='stade'?760:(CARTE==='village'?1900:1400)))));   /* au village, la ferme s'étend à droite */               // largeur, en pixels de jeu
 /* La carte gagne 160 points au sud pour accueillir la VOIE FERRÉE : elle
    traverse tout l'écran et sort des deux côtés, avec son remblai, et elle
    ferme le monde par le bas — qui s'arrêtait jusqu'ici sur une lisière sans
    raison. Rien d'autre ne bouge. */
 /* La carte retrouve sa hauteur d'avant — 600 — et s'allonge vers l'EST : le
    village a de la place sans que le monde devienne un carré. */
-const MONDE_H=CARTE==='montagne'?470:   /* la montagne a été raccourcie : la hauteur doit suivre, sinon on marche hors de la carte */
-  (CARTE==='sommet'?460:(CARTE==='piscine'?580:(CARTE==='stade'?1080:600)));                // hauteur
+const MONDE_H=CARTE==='vallon'?560:(CARTE==='montagne'?470:   /* la montagne a été raccourcie : la hauteur doit suivre, sinon on marche hors de la carte */
+  (CARTE==='sommet'?460:(CARTE==='piscine'?580:(CARTE==='stade'?1080:600))));                // hauteur
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 /* ================= LA MÊME VUE POUR TOUT LE MONDE =================
    Avant, l'échelle était fixe (×2) : un petit écran de 2020 voyait 160 points
@@ -11746,7 +11746,8 @@ const ZOOM=2;                     /* ne sert plus que de repli */
 let SOL=null, SOL_FIN=null;
 /* SAUMASKI est dans saumaski.js : on ne le charge qu'à Saumaski */
 let SAUMASKI=null;
-if(CARTE==='piscine'){SAUMASKI=eval(await chargerMorceau('piscine.js'));}
+if(CARTE==='vallon'){SAUMASKI=eval(await chargerMorceau('vallon.js'));}
+else if(CARTE==='piscine'){SAUMASKI=eval(await chargerMorceau('piscine.js'));}
 else if(CARTE==='stade'){SAUMASKI=eval(await chargerMorceau('stade.js'));}                  /* le stade : son propre module */                      /* la piscine : son propre module */
 else if(CARTE_MOD){SAUMASKI=eval(await chargerMorceau('saumaski.js'));if(CARTE==='sommet')SAUMASKI=SAUMASKI.sommet;}   /* le sommet vit dans le même fichier */
 
@@ -15025,6 +15026,13 @@ function preparerMonde(){
     try{sauver();}catch(x){}
     return;
   }
+  if(CARTE==='vallon'){
+    const deQuai=new URLSearchParams(location.search).get('arrivee');
+    const P0=(!deQuai&&EXT_AU_DEPART&&EXT_AU_DEPART.x>0&&e.carte==='vallon')?[EXT_AU_DEPART.x,EXT_AU_DEPART.y]:SAUMASKI.ARRIVEE;
+    const [dx,dy]=degager(P0[0],P0[1]);joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.carte='vallon';try{sauver();}catch(x){}
+    if(deQuai)try{history.replaceState(null,'','jeu.html?carte=vallon');}catch(x){}
+    return;
+  }
   if(CARTE==='stade'){
     const deQuai=new URLSearchParams(location.search).get('arrivee');
     const P0=(!deQuai&&EXT_AU_DEPART&&EXT_AU_DEPART.x>0&&e.carte==='stade')?[EXT_AU_DEPART.x,EXT_AU_DEPART.y]:SAUMASKI.ARRIVEE;
@@ -17361,6 +17369,65 @@ function ouvrirLAide(ong){
   requestAnimationFrame(peindre);setTimeout(peindre,120);
 }
 $('b-aide').onclick=()=>ouvrirLAide('debuter');
+/* ================= LE CHANTIER DU VALLON =================
+   Ton terrain, ton cabanon : on y dépose les matériaux, le serveur bâtit. */
+let CAB={bati:false,niveau:0,sac:{},cout_cabane:{},cout_agrandir:{}};
+const CAB_ETAT=()=>CAB;
+function cabRetenir(){try{localStorage.setItem('bdl.cabanon',JSON.stringify({bati:CAB.bati,niveau:CAB.niveau}));}catch(x){}}
+async function cabLire(){
+  const d=await appelRPC('cabanon_etat',{p_joueur:e.id});
+  if(d&&!d.erreur){CAB=d;cabRetenir();}
+  return CAB;}
+const CSS_CHANT=`#page2Fond.chant{background:#f4eddd;color:#33291b;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%;overflow:hidden}
+#page2Fond.chant .tete{flex:none;position:relative;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 12px;background:#3b2a1a;color:#f6ecd8}
+#page2Fond.chant .tete small{display:block;font:700 9px Arial;letter-spacing:3px;color:#c9a878}
+#page2Fond.chant .tete b{font:400 24px Georgia}
+#page2Fond.chant .tete button{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 14px);width:32px;height:32px;border-radius:50%;border:0;background:#f6ecd8;color:#3b2a1a;font:700 14px Arial}
+#page2Fond.chant .corps{flex:1;overflow-y:auto;padding:14px}
+#page2Fond.chant .mot{font:italic 13px Georgia;color:#6a5f48;margin-bottom:12px}
+#page2Fond.chant h4{font:700 10px Arial;letter-spacing:2px;color:#8a7a56;margin:14px 0 7px}
+#page2Fond.chant .mat{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid #e0d4b6;border-radius:12px;padding:10px 12px;margin-bottom:7px}
+#page2Fond.chant .mat b{flex:1;font:400 16px Georgia}
+#page2Fond.chant .mat i{font-style:normal;font:700 13px 'Courier New',monospace}
+#page2Fond.chant .mat.ok i{color:#2f6a2e}#page2Fond.chant .mat.ko i{color:#b8402e}
+#page2Fond.chant .go{width:100%;border:0;border-radius:14px;padding:14px;font:700 15px Georgia;background:linear-gradient(#f6dd8c,#c9a24a);color:#2a1a0e;margin-top:10px}
+#page2Fond.chant .go:disabled{background:#d8cdb4;color:#8a8070}`;
+const CAB_NOMS={planche:'Planches',pierre:'Pierres',tuile:'Tuiles',poutre:'Poutres',bois:'Bûches'};
+async function ouvrirLeChantier(mot){
+  if(!document.getElementById('cssChant')){const st=document.createElement('style');st.id='cssChant';st.textContent=CSS_CHANT;document.head.appendChild(st);}
+  $('page2Fond').className='chant';$('page2').classList.add('on');
+  $('page2Fond').innerHTML='<div class="tete"><div><small>TON TERRAIN · LE VALLON</small><b>Le chantier</b></div><button id="chX">✕</button></div><div class="corps"><p class="mot">On regarde…</p></div>';
+  $('chX').onclick=()=>{$('page2').classList.remove('on');};
+  await cabLire();
+  const etape=CAB.bati?'agrandir':'cabane';
+  const cout=(etape==='cabane'?CAB.cout_cabane:CAB.cout_agrandir)||{};
+  const sac=CAB.sac||{};
+  let peut=(CAB.bati?CAB.niveau<1:true);
+  const lignes=Object.entries(cout).map(([k,n])=>{
+    const a=sac[k]||0, ok=a>=n;if(!ok)peut=false;
+    return '<div class="mat '+(ok?'ok':'ko')+'"><b>'+(CAB_NOMS[k]||k)+'</b><i>'+Math.min(a,n)+' / '+n+'</i></div>';}).join('');
+  const fini=(CAB.bati&&CAB.niveau>=1);
+  $('page2Fond').innerHTML='<div class="tete"><div><small>TON TERRAIN · LE VALLON</small><b>'+
+    (fini?'Ton cabanon':(CAB.bati?'Agrandir le cabanon':'Bâtir le cabanon'))+'</b></div><button id="chX">✕</button></div>'+
+    '<div class="corps"><p class="mot">'+(mot||(fini?'« Le coffre, le séchoir et l’établi viendront bientôt. »'
+      :(CAB.bati?'« Une pièce de plus, et un vrai toit de tuiles. »':'« Quatre murs, une porte, un toit. »')))+'</p>'+
+    (fini?'':'<h4>CE QU’IL FAUT</h4>'+lignes+
+      '<button class="go" id="chGo"'+(peut?'':' disabled')+'>'+(peut?(CAB.bati?'Agrandir':'Bâtir le cabanon'):'Il te manque de quoi')+'</button>')+
+    '</div>';
+  $('chX').onclick=()=>{$('page2').classList.remove('on');};
+  if($('chGo'))$('chGo').onclick=async function(){this.disabled=true;this.textContent='…';
+    const d=await appelRPC('cabanon_batir',{p_joueur:e.id,p_etape:etape});
+    if(d&&d.ok){if(d.sac)e.sac=d.sac;try{sauver();lireSacServeur();majPastille();}catch(x){}
+      CAB=Object.assign({},CAB,d.etat||{});cabRetenir();
+      jouer('vente','moment');vibrer([20,40,20]);
+      setTimeout(()=>location.reload(),700);          /* le cabanon apparaît sur le terrain */
+      ouvrirLeChantier(etape==='cabane'?'« Et voilà. C’est chez toi. »':'« Plus grand, plus solide. »');}
+    else ouvrirLeChantier(d&&d.erreur==='manque'?'« Il te manque encore de quoi. »':'« Le chantier ne répond pas. »');};
+}
+if(CARTE==='vallon'){
+  if(!ligne2Permise()){location.replace('jeu.html?v='+Date.now());}   /* le quartier est encore fermé */
+  else cabLire();
+}
 setTimeout(()=>{try{verifierLaFete();}catch(x){}},200);
 setInterval(()=>{try{verifierLaFete();}catch(x){}},600000);
 $('b-vestiaire').onclick=()=>{VEST_SEL=null;try{$('tiroir').classList.remove('on');$('barre').classList.remove('on');}catch(x){}ouvrirLeVestiaire();};
@@ -20300,6 +20367,11 @@ function majAction(){
   if(o.ouvre==='cabine'){b.innerHTML=(e.ap&&e.ap.maillot?'Se rhabiller':'Entrer dans la cabine')+'<small>'+(e.ap&&e.ap.maillot?'REMETTRE TES VÊTEMENTS':'SE METTRE EN MAILLOT')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='sortiePiscine'){b.innerHTML='Ressortir sur le quai<small>'+(e.ap&&e.ap.maillot?'ON TE RHABILLE EN SORTANT':'LE VIEUX-PORT')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='metroForet'){b.innerHTML='Prendre le métro<small>LIGNE 1 · '+autresStations()+'</small>';b.classList.add('on');return;}
+  if(o.ouvre==='metroVallon'){b.innerHTML='Prendre le métro<small>LIGNE 2 · RETOUR AU PORT</small>';b.classList.add('on');return;}
+  if(o.ouvre==='chantierVallon'){const c=CAB_ETAT();
+    b.innerHTML=(c.bati?(c.niveau>0?'Ton cabanon':'Agrandir le cabanon'):'Bâtir le cabanon')+
+      '<small>'+(c.bati?(c.niveau>0?'CHEZ TOI · LE VALLON':'UNE PIÈCE DE PLUS'):'PLANCHES · PIERRES · TUILES')+'</small>';
+    b.classList.add('on');return;}
   if(o.ouvre==='buvette'){b.innerHTML='La buvette du refuge<small>VIN CHAUD · RACLETTE · FROMAGE</small>';b.classList.add('on');return;}
   if(o.ouvre==='galerie'){b.innerHTML='Descendre dans la mine<small>PUITS N°1 · FILONS ET MINERAIS</small>';b.classList.add('on');return;}
   if(o.ouvre==='bucheron'){b.innerHTML='La cabane du bûcheron<small>DÉBITER · VENDRE · LA HACHE</small>';b.classList.add('on');return;}
@@ -20471,6 +20543,8 @@ function agir(){
   if(o.ouvre==='bar'){ouvrirLeBar();return;}
   if(o.ouvre==='poissonnerie'){ouvrirLaCriee();return;}
   if(o.ouvre==='metroForet'){choisirLaDestination();return;}
+  if(o.ouvre==='metroVallon'){voyagerVers('extramar','Direction Le port');return;}
+  if(o.ouvre==='chantierVallon'){ouvrirLeChantier();return;}
   if(o.ouvre==='buvette'){BUV=null;ouvrirLaBuvette();return;}
   if(o.ouvre==='galerie'){                              /* LA MINE : sa propre page, comme avant */
     try{e.ext={x:joueur.x,y:joueur.y};sauver();envoyerSauvegarde(true);}catch(x){}
@@ -25326,8 +25400,7 @@ function voyagerVers(carte,nom){
     '<style>@keyframes voy{to{width:100%}}</style>';
   document.body.appendChild(v);requestAnimationFrame(()=>{v.style.opacity='1';});
   setTimeout(()=>{
-    if(carte==='vallon')location.href='vallon.html?v='+Date.now();   /* le quartier a sa propre page */
-    else location.href='jeu.html?carte='+carte+'&arrivee=1&v='+Date.now();},1000);
+    location.href='jeu.html?carte='+carte+'&arrivee=1&v='+Date.now();},1000);
 }
 
 /* ================= L'ÉTABLE : le foin, le lait, le fromage =================
