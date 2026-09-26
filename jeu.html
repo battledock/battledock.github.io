@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-26-2047';
+  var MA_VERSION='2026-09-26-2051';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -25278,8 +25278,9 @@ const stationIci=()=>CARTE==='extramar'?'port':(CARTE==='montagne'||CARTE==='som
 const autresStations=()=>STATIONS_L1.filter(([,,,k])=>k!==stationIci()).map(([,n])=>n.replace('Le ','').replace('La ','').toUpperCase()).join(' · ');
 function choisirLaDestination(){
   /* LA LIGNE 2 dessert le terminal de la Joliette, en bêta : elle ne part que du port */
+  /* LA LIGNE 2 EST AFFICHÉE MAIS FERMÉE : on la voit en rose, on ne peut pas la prendre. */
   const D=STATIONS_L1.filter(([,,,k])=>k!==stationIci())
-    .concat((stationIci()==='port'&&ligne2Permise())?STATIONS_L2:[]);
+    .concat(stationIci()==='port'?STATIONS_L2:[]);
   if(!document.getElementById('cssVoy')){const st=document.createElement('style');st.id='cssVoy';st.textContent=
     `#page2Fond.voy{background:#101418;color:#e8ecef;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%}
      #page2Fond.voy .tete{padding:calc(env(safe-area-inset-top,0px) + 18px) 18px 14px;border-bottom:2px solid #1e262c;display:flex;align-items:center;gap:12px}
@@ -25287,13 +25288,28 @@ function choisirLaDestination(){
      #page2Fond.voy .tete button{width:34px;height:34px;border-radius:50%;border:0;background:#e8ecef;color:#101418;font:700 14px Arial}
      #page2Fond.voy .d{display:flex;align-items:center;gap:14px;margin:12px 16px;padding:14px;border:1px solid #27323a;border-radius:16px;background:#151b21;color:inherit;width:calc(100% - 32px);text-align:left}
      #page2Fond.voy .d:active{background:#1b242b}#page2Fond.voy .d i{width:26px;height:26px;border-radius:50%;background:#101418;border:6px solid #3fc8b0;flex:none}
-     #page2Fond.voy .d b{display:block;font:400 20px Georgia}#page2Fond.voy .d em{display:block;font:italic 12px Georgia;color:#9aa8b0}`;
+     #page2Fond.voy .d b{display:block;font:400 20px Georgia}#page2Fond.voy .d em{display:block;font:italic 12px Georgia;color:#9aa8b0}
+     #page2Fond.voy .d.l2{border-color:#6a2c46;background:#1c141a}
+     #page2Fond.voy .d.l2 i{border-color:#e85a9a;box-shadow:0 0 10px rgba(232,90,154,.35)}
+     #page2Fond.voy .d.l2 b{color:#f6a8cc}#page2Fond.voy .d.l2 em{color:#b98aa2}
+     #page2Fond.voy .d.ferme{opacity:.62}
+     #page2Fond.voy .d.ferme:active{background:#1c141a}
+     #page2Fond.voy .cad{margin-left:auto;font:700 8px Arial;letter-spacing:1.6px;border-radius:9px;padding:6px 9px;
+       background:rgba(232,90,154,.16);color:#f6a8cc;border:1px solid rgba(232,90,154,.4);white-space:nowrap}`;
     document.head.appendChild(st);}
   $('page2Fond').className='voy';$('page2').classList.add('on');
   $('page2Fond').innerHTML='<div class="tete"><div style="flex:1"><small>MÉTRO · LIGNE 1</small><b>Où vas-tu ?</b></div><button id="voyX">✕</button></div>'+
-    D.map(([c,n,s2])=>'<button class="d" data-c="'+c+'"><i></i><span><b>'+n+'</b><em>'+s2+'</em></span></button>').join('');
+    D.map(([c,n,s2])=>{
+      const l2=(c==='vallon'), ferme=l2&&!ligne2Permise();
+      return '<button class="d'+(l2?' l2':'')+(ferme?' ferme':'')+'" data-c="'+c+'"'+(ferme?' data-ferme="1"':'')+
+        '><i></i><span><b>'+n+'</b><em>'+(ferme?'Ligne 2 · en chantier, fermée au public':s2)+'</em></span>'+
+        (l2?'<span class="cad">'+(ferme?'FERMÉE':'LIGNE 2')+'</span>':'')+'</button>';}).join('');
   $('voyX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-  $('page2Fond').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{const n=D.find(d=>d[0]===b.dataset.c)[1];
+  $('page2Fond').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
+    if(b.dataset.ferme){vibrer(18);
+      const em=b.querySelector('em');em.textContent='Le Vallon est en chantier : la ligne 2 rouvrira bientôt.';
+      em.style.color='#f6a8cc';return;}
+    const n=D.find(d=>d[0]===b.dataset.c)[1];
     $('page2').classList.remove('on');voyagerVers(b.dataset.c,'Direction '+n);});
 }
 function voyagerVers(carte,nom){
@@ -25304,7 +25320,7 @@ function voyagerVers(carte,nom){
   vibrer([8,30,8]);try{jouer('porte','moment');}catch(x){}
   const v=document.createElement('div');
   v.style.cssText='position:fixed;inset:0;z-index:999;background:#0b0d12;opacity:0;transition:opacity .45s ease;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#f4ecd8;font-family:Georgia,serif';
-  v.innerHTML='<div style="font:700 10px Arial;letter-spacing:4px;color:'+(carte==='vallon'?'#f0c02a':'#3fc8b0')+'">MÉTRO · LIGNE '+(carte==='vallon'?'2':'1')+'</div>'+
+  v.innerHTML='<div style="font:700 10px Arial;letter-spacing:4px;color:'+(carte==='vallon'?'#e85a9a':'#3fc8b0')+'">MÉTRO · LIGNE '+(carte==='vallon'?'2':'1')+'</div>'+
     '<div style="font:400 26px Georgia">'+nom+'</div>'+
     '<div style="width:120px;height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden"><i style="display:block;height:100%;width:0;background:#3fc8b0;animation:voy 1s linear forwards"></i></div>'+
     '<style>@keyframes voy{to{width:100%}}</style>';
