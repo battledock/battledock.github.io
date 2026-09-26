@@ -9,8 +9,11 @@ canvas{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;t
 #hud{position:fixed;left:14px;right:14px;top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;gap:10px;align-items:flex-start;pointer-events:none;text-shadow:0 2px 5px rgba(0,0,0,.6)}
 #hud small{display:block;font:700 9px Arial;letter-spacing:2px;color:#c2b78e}
 #hud b{font:400 19px Georgia}
-#beta{margin-left:auto;font:700 9px Arial;letter-spacing:2px;color:#2a1f0c;background:linear-gradient(#f6dd8c,#c9a24a);
-  border-radius:9px;padding:6px 9px;align-self:center}
+#bandeau{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 62px);text-align:center;pointer-events:none;z-index:8}
+#bandeau b{display:inline-block;font:900 15px Georgia;letter-spacing:3px;color:#2a1f0c;
+  background:repeating-linear-gradient(135deg,#f6dd8c 0 12px,#e8c552 12px 24px);
+  border:2px solid #8a6a20;border-radius:6px;padding:8px 16px;box-shadow:0 5px 16px rgba(0,0,0,.5);transform:rotate(-1.4deg)}
+#bandeau em{display:block;margin-top:6px;font:italic 12px Georgia;color:#f6ecd8;text-shadow:0 2px 5px rgba(0,0,0,.8)}
 #act{position:fixed;left:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);border:0;border-radius:14px;
   padding:12px 16px 11px 42px;font:400 17px Georgia;color:#33291b;
   background:linear-gradient(180deg,rgba(253,251,244,.97),rgba(236,229,209,.97));box-shadow:0 6px 20px rgba(0,0,0,.45);
@@ -40,18 +43,21 @@ canvas{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;t
 #feuille .ko{background:linear-gradient(#c8503a,#8a2f22)}
 #feuille .jauge{height:8px;border-radius:4px;background:#e0d4b6;overflow:hidden;margin-top:12px}
 #feuille .jauge i{display:block;height:100%;width:0;background:linear-gradient(90deg,#c9a24a,#f6dd8c)}
+#feuille .betaF{font:900 10px Arial;letter-spacing:2px;color:#8a2f22;background:#f6e2c8;border:1px solid #d8b89a;border-radius:8px;padding:7px 9px;text-align:center;margin-bottom:10px}
 #feuille .bilan{font:700 10px Arial;letter-spacing:1.6px;color:#8a7a56;margin-top:8px;text-align:center}
 #aide{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 6px);text-align:center;
   font:italic 11px Georgia;opacity:.45;pointer-events:none}
 </style></head><body>
 <canvas id="c"></canvas>
-<div id="hud"><div><small>LIGNE 2 · LE TERMINAL</small><b id="titre">La Joliette</b></div><span id="beta">BÊTA</span></div>
+<div id="hud"><div><small>LIGNE 2 · LE TERMINAL</small><b id="titre">La Joliette</b></div></div>
+<div id="bandeau"><b>VERSION BÊTA · TEST EN COURS</b><em>On peut jouer, mais rien n’est gagné ici pour l’instant</em></div>
 <button id="act"></button>
 <div id="feuille">
   <div class="tete"><div><small>NAVIRE MSC ORAN · QUAI 3</small><b>La feuille de pointage</b></div>
     <button id="fX">✕</button></div>
   <div class="corps">
     <p class="mot" id="fMot">« Tu compares ce qui passe avec la liste. Un numéro qui ne colle pas, tu le signales. »</p>
+    <p class="betaF">VERSION BÊTA · VACATION À BLANC, RIEN N’EST VERSÉ</p>
     <div class="liste" id="fListe"></div>
     <div class="defile"><div class="boite" id="fBoite"><b id="fNum">—</b><em id="fArm">—</em></div></div>
     <div class="btns"><button class="ok" id="fOk">CONFORME</button><button class="ko" id="fKo">ERREUR</button></div>
@@ -59,7 +65,7 @@ canvas{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;t
     <p class="bilan" id="fBilan">Vacation · 0 / 8</p>
   </div>
 </div>
-<div id="aide">Pose le pouce et marche · la baraque embauche pour le pointage</div>
+<div id="aide">Pose le pouce et marche · la baraque embauche pour le pointage (à blanc)</div>
 <script>
 const al=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
 function ctx(id){const c=document.getElementById(id),g=c.getContext('2d');g.imageSmoothingEnabled=false;
@@ -307,9 +313,9 @@ async function finirPointage(){
   document.getElementById('fMot').textContent='On compte…';
   const d=await appel('joliette_payer',{p_joueur:e.id,p_justes:PT.justes,p_total:8});
   if(d&&d.ok){
-    if(typeof d.euros==='number'){e.euros=d.euros;sauver();}
-    document.getElementById('fMot').innerHTML='« Vacation payée : <b>'+(d.gain/100).toFixed(2).replace('.',',')+' €</b>. »'+
-      (d.reste>0?' Encore '+d.reste+' vacation'+(d.reste>1?'s':'')+' aujourd’hui.':' C’est fini pour aujourd’hui.');
+    const aurait=((d.aurait||0)/100).toFixed(2).replace('.',',');
+    document.getElementById('fMot').innerHTML='« La vacation t’aurait rapporté <b>'+aurait+' €</b>. »<br>'+
+      '<b style="color:#8a2f22">Rien n’est versé : le terminal est en bêta.</b>';
   }else if(d&&d.erreur==='assez'){
     document.getElementById('fMot').textContent='« Tu as fait tes six vacations aujourd’hui. Reviens demain. »';
   }else{
