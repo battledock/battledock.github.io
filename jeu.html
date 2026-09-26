@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-26-0958';
+  var MA_VERSION='2026-09-26-1005';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -17232,59 +17232,135 @@ async function ouvrirEnCours(){
   $('page2Fond').querySelector('.corps').innerHTML=corps;
 }
 $('b-encours').onclick=ouvrirEnCours;
-/* ================= COMMENT JOUER ================= */
-const CSS_AIDE=`#page2Fond.aide{background:#f3ecdc;color:#1d1a16;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%;overflow:hidden}
-#page2Fond.aide .tete{flex:none;display:flex;align-items:flex-start;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 12px;background:#1d1a16;color:#f3ecdc}
-#page2Fond.aide .tete small{display:block;font:700 9px Arial;letter-spacing:3px;color:#c9a878}
-#page2Fond.aide .tete b{font:400 25px Georgia}
-#page2Fond.aide .tete button{margin-left:auto;width:34px;height:34px;border-radius:50%;border:0;background:#f3ecdc;color:#1d1a16;font:700 14px Arial}
-#page2Fond.aide .corps{flex:1;overflow-y:auto;padding:14px 16px calc(env(safe-area-inset-bottom,0px) + 22px)}
-#page2Fond.aide h3{font:900 13px 'Times New Roman',Georgia,serif;text-transform:uppercase;letter-spacing:1px;margin:16px 0 6px;border-bottom:2px solid #b8231a;padding-bottom:3px}
-#page2Fond.aide h3:first-child{margin-top:0}
-#page2Fond.aide p{font:15px 'Times New Roman',Georgia,serif;line-height:1.5;margin-bottom:8px}
-#page2Fond.aide ul{margin:0 0 10px 18px;padding:0}
-#page2Fond.aide li{font:15px 'Times New Roman',Georgia,serif;line-height:1.45;margin-bottom:5px}
-#page2Fond.aide b{font-weight:700}
-#page2Fond.aide .enc{border:1px solid #cdbfa4;background:#efe8d6;padding:10px 12px;margin:10px 0}
-#page2Fond.aide .enc p{font:italic 14px Georgia;margin:0;color:#4a423a}`;
-function ouvrirLAide(){
+/* ================= COMMENT JOUER =================
+   Trois onglets, des vignettes dessinées, rien de long à lire. */
+const CSS_AIDE=`#page2Fond.aide{background:#f6f0e2;color:#2a2318;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%;overflow:hidden}
+#page2Fond.aide .tete{flex:none;position:relative;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 0;background:linear-gradient(180deg,#26405a,#1b3048);color:#f6f0e2}
+#page2Fond.aide .tete small{display:block;font:700 9px Arial;letter-spacing:3px;color:#9fc4e0}
+#page2Fond.aide .tete b{font:400 26px Georgia}
+#page2Fond.aide .tete .x{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 14px);width:34px;height:34px;border-radius:50%;border:0;background:#f6f0e2;color:#1b3048;font:700 14px Arial}
+#page2Fond.aide .ong{display:flex;gap:6px;margin-top:12px}
+#page2Fond.aide .ong button{flex:1;border:0;padding:10px 0;font:700 10px Arial;letter-spacing:1.4px;color:#9fc4e0;border-radius:12px 12px 0 0;background:rgba(255,255,255,.07)}
+#page2Fond.aide .ong button.on{background:#f6f0e2;color:#1b3048}
+#page2Fond.aide .corps{flex:1;overflow-y:auto;padding:14px 14px calc(env(safe-area-inset-bottom,0px) + 22px)}
+#page2Fond.aide h4{font:700 10px Arial;letter-spacing:2px;color:#8a7a56;margin:4px 0 9px}
+#page2Fond.aide h4.sep{margin-top:16px}
+#page2Fond.aide .pas{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
+#page2Fond.aide .pas .num{width:26px;height:26px;border-radius:50%;background:#1b3048;color:#f6f0e2;font:700 13px Georgia;display:flex;align-items:center;justify-content:center;flex:none}
+#page2Fond.aide .pas b{font:400 17px Georgia;display:block}
+#page2Fond.aide .pas em{font:italic 12.5px Georgia;color:#6a5f48}
+#page2Fond.aide .gc{display:flex;gap:12px;align-items:center;border-radius:18px;padding:12px;margin-bottom:11px;background:#fff;box-shadow:0 3px 0 rgba(120,100,60,.18);border:1px solid #e3d7bb}
+#page2Fond.aide .gc canvas{width:64px;height:64px;flex:none;border-radius:12px;image-rendering:pixelated}
+#page2Fond.aide .gc b{display:block;font:400 19px Georgia}
+#page2Fond.aide .gc em{font:italic 12px Georgia;color:#6a5f48;display:block;margin-top:2px}
+#page2Fond.aide .gc .n{flex:1}
+#page2Fond.aide .lieu{border-radius:16px;overflow:hidden;margin-bottom:10px;background:#fff;border:1px solid #e3d7bb}
+#page2Fond.aide .lieu canvas{width:100%;height:74px;display:block;image-rendering:pixelated}
+#page2Fond.aide .lieu .t{padding:9px 12px 11px}
+#page2Fond.aide .lieu b{font:400 18px Georgia}
+#page2Fond.aide .lieu em{display:block;font:italic 12px Georgia;color:#6a5f48;margin-top:2px}
+#page2Fond.aide .tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+#page2Fond.aide .tags span{font:700 8px Arial;letter-spacing:1px;background:#f0e8d4;border:1px solid #ddd0b2;border-radius:8px;padding:4px 7px;color:#6a5f48}
+#page2Fond.aide .as{display:flex;gap:10px;background:#fff;border:1px solid #e3d7bb;border-radius:14px;padding:11px 12px;margin-bottom:9px}
+#page2Fond.aide .as .p{font:700 20px Georgia;color:#c9a24a;line-height:1}
+#page2Fond.aide .as p{font:14.5px Georgia;line-height:1.45}`;
+function aideIcone(c,k){
+  const D=Math.min(2,window.devicePixelRatio||1),W=c.clientWidth||64;
+  c.width=Math.round(W*D);c.height=Math.round(W*D);
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;const S=c.width/32;g.setTransform(S,0,0,S,0,0);
+  const al=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
+  if(k==='peche'){for(let y=0;y<32;y++){const t=y/32;g.fillStyle=`rgb(${60+t*40|0},${120+t*50|0},${160+t*40|0})`;g.fillRect(0,y,32,1);}
+    R(0,20,32,12,'#2e6f92');for(let i=0;i<26;i++)R(al(i*3)*32,20+al(i*7)*12,4,1,'rgba(255,255,255,.3)');
+    g.strokeStyle='#f0e8d0';g.lineWidth=1;g.beginPath();g.moveTo(6,3);g.lineTo(21,17);g.stroke();
+    R(4,2,4,3,'#8a6238');R(19,16,3,3,'#e8402a');
+    R(12,23,8,4,'#cfdbe4');R(20,22,3,6,'#9fb3c4');R(14,24,1,1,'#1b1b1b');}
+  if(k==='ferme'){for(let y=0;y<32;y++){const t=y/32;g.fillStyle=`rgb(${120+t*30|0},${160+t*20|0},${90+t*20|0})`;g.fillRect(0,y,32,1);}
+    R(0,16,32,16,'#6a4a2a');for(let y=17;y<32;y+=4)R(0,y,32,1,'#5a3f22');
+    for(let i=0;i<6;i++){const x=3+i*5;R(x,12,2,6,'#4f8a42');R(x-1,10,4,3,'#c83a2a');}
+    R(0,0,32,6,'#8fc06a');}
+  if(k==='sous'){for(let y=0;y<32;y++){g.fillStyle=`rgb(${40+y|0},${34+y|0},${28+y|0})`;g.fillRect(0,y,32,1);}
+    for(let i=0;i<5;i++){const y=26-i*4;R(8,y,16,4,'#c9a24a');R(8,y,16,1,'#f6dd8c');}
+    R(12,4,8,8,'#f6dd8c');R(14,6,4,4,'#c9a24a');}
+  for(let y=0;y<32;y+=2)for(let x=(y/2%2)?0:1;x<32;x+=2){g.fillStyle='rgba(20,16,10,.05)';g.fillRect(x,y,1,1);}
+}
+function aideScene(c,k){
+  const D=Math.min(2,window.devicePixelRatio||1);
+  c.width=Math.round((c.clientWidth||360)*D);c.height=Math.round((c.clientHeight||74)*D);
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;const S=c.width/360;g.setTransform(S,0,0,S,0,0);
+  const W=360,H=c.height/S;
+  const al=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
+  if(k==='port'){for(let y=0;y<H*0.5;y++){const t=y/(H*0.5);g.fillStyle=`rgb(${120+t*110|0},${160+t*70|0},${200+t*40|0})`;g.fillRect(0,y,W,1);}
+    for(let i=0;i<8;i++){const x=i*46,h=18+al(i)*16;R(x,H*0.5-h,42,h,['#c8a882','#b89a74','#d4b48e'][i%3]);
+      for(let y=H*0.5-h+4;y<H*0.5-4;y+=7)for(let xx=x+4;xx<x+38;xx+=8)R(xx,y,5,5,al(xx+y)<.5?'#5a4a3a':'#8ab4d0');}
+    R(0,H*0.5,W,10,'#cbbfa4');R(0,H*0.6,W,H*0.4,'#2e6f92');
+    for(let i=0;i<60;i++)R(al(i*3)*W,H*0.6+al(i*7)*H*0.4,7,1,'rgba(255,255,255,.25)');
+    for(let i=0;i<4;i++){const x=40+i*90;R(x,H*0.66,26,6,'#2f3a46');R(x+12,H*0.5,2,16,'#e8e0d0');}}
+  if(k==='ferme'){for(let y=0;y<H*0.42;y++){const t=y/(H*0.42);g.fillStyle=`rgb(${130+t*90|0},${175+t*50|0},${210+t*30|0})`;g.fillRect(0,y,W,1);}
+    R(0,H*0.42,W,H*0.58,'#7aa85c');
+    for(let i=0;i<200;i++)R(al(i*1.7)*W,H*0.42+al(i*2.3)*H*0.58,2,2,al(i*5)<.5?'#8cbb6a':'#649048');
+    R(30,H*0.16,80,H*0.3,'#b03a2a');g.fillStyle='#8a2a1e';g.beginPath();g.moveTo(24,H*0.17);g.lineTo(70,H*0.02);g.lineTo(116,H*0.17);g.fill();
+    R(58,H*0.3,20,H*0.16,'#5a3f22');
+    for(let i=0;i<5;i++){const x=160+i*36;R(x,H*0.5,26,H*0.42,'#6a4a2a');for(let y=H*0.52;y<H*0.9;y+=6)R(x,y,26,1,'#5a3f22');
+      for(let j=0;j<4;j++)R(x+3+j*6,H*0.55,2,6,'#4f8a42');}}
+  if(k==='foret'){R(0,0,W,H,'#6e9a52');
+    for(let i=0;i<260;i++)R(al(i*1.7)*W,al(i*2.3)*H,2,2,al(i*5)<.5?'#7aa85c':'#5b8642');
+    R(W*0.62,0,26,H,'#2e6f92');for(let i=0;i<40;i++)R(W*0.62+al(i*3)*26,al(i*7)*H,6,1,'rgba(255,255,255,.3)');
+    const arbre=(x,y,r)=>{g.fillStyle='rgba(30,50,30,.22)';g.beginPath();g.ellipse(x+3,y+2,r*0.9,r*0.3,0,0,7);g.fill();
+      g.fillStyle='#6a4a2a';g.fillRect(x-2,y-r*0.6,4,r*0.6);
+      [[0,-r*0.9,r,'#3f7a3f'],[-r*0.5,-r*0.7,r*0.7,'#4a8a45'],[r*0.5,-r*0.75,r*0.7,'#357033']].forEach(([dx,dy,rr,col])=>{
+        g.fillStyle=col;g.beginPath();g.arc(x+dx,y+dy,rr,0,7);g.fill();});};
+    [[40,H*0.84,16],[100,H*0.73,13],[160,H*0.89,15],[250,H*0.78,14],[320,H*0.86,16]].forEach(([x,y,r])=>arbre(x,y,r));}
+  for(let y=0;y<H;y+=3)for(let x=((y/3)%2)?0:1;x<W;x+=3){g.fillStyle='rgba(20,16,10,.05)';g.fillRect(x,y,1,1);}
+}
+let AIDE_ONG='debuter';
+function ouvrirLAide(ong){
   if(!document.getElementById('cssAide')){const st=document.createElement('style');st.id='cssAide';st.textContent=CSS_AIDE;document.head.appendChild(st);}
   try{$('tiroir').classList.remove('on');$('barre').classList.remove('on');}catch(x){}
+  AIDE_ONG=ong||AIDE_ONG;
   $('page2Fond').className='aide';$('page2').classList.add('on');
+  const debuter=
+    '<h4>EN TROIS GESTES</h4>'+
+    '<div class="pas"><span class="num">1</span><span><b>Pose le pouce et marche</b><em>Ton personnage suit ton doigt, où que tu appuies.</em></span></div>'+
+    '<div class="pas"><span class="num">2</span><span><b>Regarde la plaque en bas</b><em>Elle dit ce que tu peux faire ici. Un tap suffit.</em></span></div>'+
+    '<div class="pas"><span class="num">3</span><span><b>Remplis ton sac, puis vends</b><em>La criée au port, la boutique à la ferme.</em></span></div>'+
+    '<h4 class="sep">PAR QUOI COMMENCER ?</h4>'+
+    '<div class="gc"><canvas data-ai="peche"></canvas><span class="n"><b>Pêcher</b><em>Au bord du quai, tout de suite, sans rien acheter.</em></span></div>'+
+    '<div class="gc"><canvas data-ai="ferme"></canvas><span class="n"><b>Semer un carré</b><em>Bêche, sème, arrose. Reviens quand c’est mûr.</em></span></div>'+
+    '<div class="gc"><canvas data-ai="sous"></canvas><span class="n"><b>Dépenser</b><em>Une meilleure canne, une tenue, ou le casino.</em></span></div>';
+  const lieux=
+    '<div class="lieu"><canvas data-sc="port"></canvas><div class="t"><b>Le port</b>'+
+      '<em>La criée, le Bar des Docks, le casino, Chez Fonfon.</em>'+
+      '<div class="tags"><span>PÊCHER</span><span>VENDRE</span><span>CUISINER</span><span>JOUER</span></div></div></div>'+
+    '<div class="lieu"><canvas data-sc="ferme"></canvas><div class="t"><b>La ferme</b>'+
+      '<em>Le champ, l’étable, la boutique et ses commandes.</em>'+
+      '<div class="tags"><span>SEMER</span><span>TRAIRE</span><span>LIVRER</span></div></div></div>'+
+    '<div class="lieu"><canvas data-sc="foret"></canvas><div class="t"><b>La forêt</b>'+
+      '<em>Le bois, la rivière, la cabane du bûcheron.</em>'+
+      '<div class="tags"><span>COUPER</span><span>CUEILLIR</span><span>PÊCHER EN RIVIÈRE</span></div></div></div>';
+  const astuces=
+    '<div class="as"><span class="p">€</span><p><b>Les prix bougent pour tout le monde.</b> Si quelqu’un vend deux cents sardines, le cours tombe. Ouvre la Gazette avant de vider ton sac.</p></div>'+
+    '<div class="as"><span class="p">◎</span><p><b>Vise l’anneau doré</b> quand ça mord. Une meilleure canne l’élargit — elle ne ralentit rien.</p></div>'+
+    '<div class="as"><span class="p">⏱</span><p><b>Tout pousse pendant ton absence.</b> L’entrée <b>En cours</b> du menu te dit où retourner, et quand.</p></div>'+
+    '<div class="as"><span class="p">🍲</span><p><b>Cuisiner rapporte trois fois plus</b> que vendre la récolte brute. Chez Fonfon, au port.</p></div>'+
+    '<div class="as"><span class="p">★</span><p><b>Huit tenues se cachent dans le jeu.</b> Dans un ticket, un jackpot, une récolte, une bûche…</p></div>'+
+    '<div class="as"><span class="p">⚓</span><p><b>Le sac plein bloque tout.</b> Garde de la place, ou va vendre avant de repartir.</p></div>';
+  const corps=AIDE_ONG==='lieux'?lieux:(AIDE_ONG==='astuces'?astuces:debuter);
   $('page2Fond').innerHTML=
-   '<div class="tete"><div><small>LE GUIDE DU PORT</small><b>Comment jouer</b></div><button id="aiX">✕</button></div>'+
-   '<div class="corps">'+
-   '<h3>En deux mots</h3><p>Tu vis sur le Vieux-Port. Tu <b>pêches</b>, tu <b>cultives</b>, tu <b>creuses</b>, tu <b>cuisines</b>, et tu revends. L’argent sert à t’équiper, à t’habiller, et à tenter ta chance au casino.</p>'+
-   '<h3>Se déplacer</h3><ul>'+
-   '<li>Pose le pouce n’importe où et fais-le glisser : ton personnage suit.</li>'+
-   '<li>La <b>plaque en bas à gauche</b> dit ce que tu peux faire là où tu es. Un tap suffit.</li>'+
-   '<li>Le <b>métro</b> relie le port, la ferme et la forêt.</li></ul>'+
-   '<h3>La pêche</h3><ul>'+
-   '<li>Au bord du quai ou au bout d’un ponton, lance la ligne. Au bout du ponton, avec une canne en carbone, tu pêches <b>au large</b> : que du gros.</li>'+
-   '<li>Quand ça mord, tape au moment où le cercle touche le poisson. L’<b>anneau doré</b> est la zone parfaite ; une meilleure canne l’élargit.</li>'+
-   '<li>En forêt, au bord de la rivière : truite, brochet, carpe, silure.</li></ul>'+
-   '<h3>La ferme</h3><ul>'+
-   '<li>Bêche, sème, arrose, récolte. La <b>lavande</b> est vivace : elle repousse sans replanter.</li>'+
-   '<li>Les <b>commandes du marché</b>, à la boutique, paient de 40 à 80 % au-dessus du cours.</li>'+
-   '<li>L’étable donne du lait, puis du fromage.</li></ul>'+
-   '<h3>La forêt et la mine</h3><ul>'+
-   '<li>Abats les arbres, casse les rochers, ramasse champignons, baies, herbes et argile.</li>'+
-   '<li>La cabane du bûcheron débite le bois en planches et rachète la cueillette.</li>'+
-   '<li>La mine se creuse à la pioche : charbon, fer, cuivre, or.</li></ul>'+
-   '<h3>Vendre au bon endroit</h3><ul>'+
-   '<li><b>La criée</b>, au port : le poisson d’un côté, tout le reste au comptoir.</li>'+
-   '<li><b>La boutique de la ferme</b> : récoltes, lait, fromage et plats cuisinés.</li>'+
-   '<li><b>La cabane du bûcheron</b> : bois, planches, cueillette et ambre.</li></ul>'+
-   '<div class="enc"><p>« Les prix sont communs à tous les joueurs. Quand quelqu’un vend beaucoup d’un produit, son cours baisse — et il remonte tout seul en quelques heures. Regarde la Gazette avant de vider ton sac. »</p></div>'+
-   '<h3>Ce qui prend du temps</h3><p>Les cultures poussent, les plats mijotent, les arbres repoussent. L’entrée <b>En cours</b> du menu te dit où en est chaque chose et quand y retourner.</p>'+
-   '<h3>Pour le plaisir</h3><ul>'+
-   '<li>Le <b>casino</b> : blackjack, roulette, machine à sous, la Roue de la Bonne Mère.</li>'+
-   '<li>Le <b>Bar des Docks</b> : tickets à gratter et Loto du Port.</li>'+
-   '<li>Les <b>tenues de collection</b> se cachent un peu partout. Huit à trouver.</li></ul>'+
-   '</div>';
+   '<div class="tete"><button class="x" id="aiX">✕</button><small>LE GUIDE DU PORT</small><b>Comment jouer</b>'+
+   '<div class="ong"><button data-ai-ong="debuter" class="'+(AIDE_ONG==='debuter'?'on':'')+'">DÉBUTER</button>'+
+   '<button data-ai-ong="lieux" class="'+(AIDE_ONG==='lieux'?'on':'')+'">LES LIEUX</button>'+
+   '<button data-ai-ong="astuces" class="'+(AIDE_ONG==='astuces'?'on':'')+'">ASTUCES</button></div></div>'+
+   '<div class="corps">'+corps+'</div>';
   $('aiX').onclick=()=>{$('page2').classList.remove('on');};
+  $('page2Fond').querySelectorAll('[data-ai-ong]').forEach(b=>b.onclick=()=>{vibrer(10);ouvrirLAide(b.dataset.aiOng);});
+  const peindre=()=>{
+    $('page2Fond').querySelectorAll('canvas[data-ai]').forEach(c=>{try{aideIcone(c,c.dataset.ai);}catch(x){}});
+    $('page2Fond').querySelectorAll('canvas[data-sc]').forEach(c=>{try{aideScene(c,c.dataset.sc);}catch(x){}});};
+  requestAnimationFrame(peindre);setTimeout(peindre,120);
 }
-$('b-aide').onclick=ouvrirLAide;
+$('b-aide').onclick=()=>ouvrirLAide('debuter');
 setTimeout(()=>{try{verifierLaFete();}catch(x){}},200);
 setInterval(()=>{try{verifierLaFete();}catch(x){}},600000);
 $('b-vestiaire').onclick=()=>{VEST_SEL=null;try{$('tiroir').classList.remove('on');$('barre').classList.remove('on');}catch(x){}ouvrirLeVestiaire();};
