@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-27-1521';
+  var MA_VERSION='2026-09-27-1529';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -12757,6 +12757,9 @@ const BLE_F={o:'#a9974e',s:'#bda75c',c:'#cdb96e',h:'#dcc981'};
 const rivePre=(x,y)=>false;
 function peindreLaFerme(g){
   if(PLACE_SEULE)return;
+  /* EN FORÊT, rien de la ferme ne doit déborder : ni terre battue, ni champs,
+     ni chemins. La rive est reste une prairie. */
+  if(FORET_SEULE&&CARTE==='village')return;
   const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
   if(false)for(let y=0;y<MONDE_H;y+=2){const x0=Math.round(rivX2(y)+RIV_LARGE+6);
     for(let x=x0;x<MONDE_L;x+=2){const n=alea(x*0.19+y*0.47), k=Math.min(1,(x-x0)/30);
@@ -12768,6 +12771,7 @@ function peindreLaFerme(g){
 }
 function peindreLaFermeFin(g){
   if(PLACE_SEULE)return;
+  if(FORET_SEULE&&CARTE==='village')return;   /* la forêt n'a rien de la ferme */
   const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
   g.save();g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
   const ondu=(x)=>Math.sin(x/90)*5+Math.sin(x/37)*2;
@@ -14272,8 +14276,7 @@ function semerDecor(){
       const TX=FZ.x1+70, TY=300;                     /* au milieu de la rive est, en face du pont */
       TERRAIN_FORET={x:TX,y:TY};
       DECOR=DECOR.filter(o=>!(Math.abs(o.x-TX)<86&&Math.abs(o.y-TY)<70));
-      /* un chemin de terre qui va du pont au terrain */
-      for(let i=0;i<9;i++)DECOR.push({t:'herbes',x:rivX(300)+30+i*((TX-40-rivX(300)-30)/8),y:300+Math.sin(i)*10,gr:0,decor:true});
+      /* la rive est reste une prairie nette : pas de touffes en travers du passage */
       DECOR.push({t:'x_cabanonMoi',x:TX,y:TY,v:0,col:CAB_LU().bati?[36,10]:[10,4],
         bati:!!CAB_LU().bati,demi:34,ouvre:'chantierVallon'});
     }catch(x){console.error(x);}
