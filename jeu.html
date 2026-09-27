@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-26-2148';
+  var MA_VERSION='2026-09-27-0743';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -24340,7 +24340,10 @@ async function potAgir(i){if(POT_OCCUPE)return;const P=POT.parc[i], s=potStade(P
   else if(s===3){potGeste('cueille',600);const d=await appelRPC('pot_recolter',{p_joueur:e.id,p_i:i});
     if(d&&!d.erreur&&d.etat){potAdopter(d.etat);try{lireSacServeur();}catch(x){}jouer('vente','moment');vibrer([20,40,20]);
       const nom=POT_CULT[d.cult]?POT_CULT[d.cult][0]:d.cult;
-      texteVolant(joueur.x,joueur.y-58,d.nb?('+'+d.nb+' '+nom+' dans ton sac'):(nom+' → au grenier'),'#ffe070');
+      texteVolant(joueur.x,joueur.y-58,
+        d.nb?('+'+d.nb+' '+nom+' dans ton sac')
+            :('+1 gerbe → réserve du poulailler'+(d.gerbes?' ('+d.gerbes+')':'')),'#ffe070');
+      if(!d.nb)setTimeout(()=>texteVolant(joueur.x,joueur.y-72,'Elle nourrira tes poules · bouton « Une gerbe »','#e8d9a0'),900);
       if(d.oiseaux)setTimeout(()=>texteVolant(joueur.x,joueur.y-70,'Les oiseaux sont passés pendant ton absence… −50 %','#ffb8a8'),1000);
       if(d.ticket){e.cos=e.cos||{};e.cos.costume_epouvantail=true;setTimeout(()=>ticketDOrTenue('epouvantail'),700);}}   /* sans épouvantail */
     else if(d&&d.erreur==='sac_plein'){texteVolant(joueur.x,joueur.y-58,'Sac plein : va vendre à la boutique','#ffd0a0');try{bulle&&bulle('Ton sac est plein.');}catch(x){}}
@@ -25616,7 +25619,7 @@ async function ouvrirLePoulailler(){
     corps='<div class="outil" style="display:block"><b style="font:700 15px Georgia">'+P.poules+' poule'+(P.poules>1?'s':'')+' sur '+POUL.places+'</b><br><small style="font:italic 12px Georgia;color:#6b5a44">'+
       (P.poules?(nourri>0?'Nourries pour encore '+(h?h+' h ':'')+String(m).padStart(2,'0')+' min':'<b style="color:#b8402a">Elles ont faim : elles ne pondent plus.</b>'):'Achète une poule pour commencer.')+'</small></div>'+
       '<div class="outil"><div class="t"><b>Les œufs</b><small>'+(P.oeufs||0)+' dans les nichoirs'+((P.oeufs||0)>=P.poules*16&&P.poules?' · les nichoirs sont pleins !':'')+'</small></div><button data-a="ramasser" class="'+((P.oeufs||0)?'':'pris')+'">Ramasser'+((P.oeufs||0)?' · +'+fmt(P.oeufs*600):'')+'</button></div>'+
-      '<div class="outil"><div class="t"><b>Nourrir · 4 heures</b><small>'+(P.grenier||0)+' gerbe'+((P.grenier||0)>1?'s':'')+' de blé au grenier (le blé récolté au champ arrive ici)</small></div>'+
+      '<div class="outil"><div class="t"><b>Nourrir · 4 heures</b><small>'+(P.grenier||0)+' gerbe'+((P.grenier||0)>1?'s':'')+' de blé en réserve ici · le blé que tu récoltes au champ arrive directement dans cette réserve</small></div>'+
         '<div style="display:flex;flex-direction:column;gap:5px">'+((P.grenier||0)?'<button data-a="gerbe">Une gerbe</button>':'')+'<button data-a="grain">Grain · '+fmt(100*Math.max(1,P.poules))+'</button></div></div>'+
       '<div class="outil"><div class="t"><b>Une poule de plus</b><small>'+(P.poules<POUL.places?'blanche, rousse ou noire, au hasard':'le poulailler est plein : agrandis-le')+'</small></div><button data-a="poule" class="'+(P.poules<POUL.places?'':'pris')+'">60 €</button></div>'+
       (P.niveau<3?'<div class="outil" style="display:block"><div style="display:flex;align-items:center;gap:8px"><div class="t"><b>Agrandir le poulailler</b><small>'+(P.niveau===1?'8':'12')+' places au lieu de '+POUL.places+'</small></div><button data-a="agrandir" class="'+(chantierComplet('poul:'+(P.niveau+1))?'':'pris')+'">'+(P.niveau===1?'800 €':'2 500 €')+'</button></div>'+chantierHTML('poul:'+(P.niveau+1))+'</div>':'');}
