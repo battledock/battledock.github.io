@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-27-0757';
+  var MA_VERSION='2026-09-27-0958';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -22845,7 +22845,14 @@ function criMaj(){if(!$('criCorps'))return;SAC_PEUT_BAISSER=Date.now();
   const P0=criPrix()||{};
   const P=new Proxy({},{get:(_,k)=>P0[k]?prixDuJour(k,P0[k]):undefined,has:(_,k)=>!!P0[k]});
   const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&P0[k]).sort((a,b)=>P[b]*e.sac[b]-P[a]*e.sac[a]);
-  if(!criMaj.enCours){criMaj.enCours=true;lireLesCours(ks).then(()=>{criMaj.enCours=false;if($('criCorps'))criMaj();});}
+  /* LES COURS : on ne les lit qu'une fois par produit. Sans ce garde-fou, chaque
+     lecture rappelait l'affichage, qui relisait les cours… et le jeu se figeait. */
+  {criMaj.lus=criMaj.lus||new Set();
+   const neufs=ks.filter(k=>!criMaj.lus.has(k));
+   if(neufs.length&&!criMaj.enCours){
+     criMaj.enCours=true;neufs.forEach(k=>criMaj.lus.add(k));
+     lireLesCours(neufs).then(()=>{criMaj.enCours=false;if($('criCorps'))criMaj();})
+       .catch(()=>{criMaj.enCours=false;});}}
   const n=(k)=>(k in CRI_VENTE)?CRI_VENTE[k]:e.sac[k];
   $('criCorps').innerHTML=ks.length?ks.map(k=>'<div class="cri-lg '+(n(k)>0?'':'off')+'" data-k="'+k+'"><span class="cri-ic"><svg viewBox="0 0 16 16" width="34">'+(ICONES[k]||'')+'</svg></span>'+
     '<span class="cri-nm"><b>'+(OBJETS[k]?OBJETS[k].nom:k)+'</b><span class="cri-ardoise">'+cptSou(P[k])+' pièce'+fleche(k)+'</span><span class="cri-dans">· '+e.sac[k]+' dans le sac</span></span>'+
