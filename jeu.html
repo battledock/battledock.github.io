@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-27-0958';
+  var MA_VERSION='2026-09-27-1056';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -17435,6 +17435,7 @@ function ligne2Permise(){try{return !!(e&&e.id==='e029d1fb-7baa-4225-91fd-5cdbef
 setTimeout(()=>{try{verifierLaFete();}catch(x){}},200);
 setInterval(()=>{try{verifierLaFete();}catch(x){}},600000);
 $('b-vestiaire').onclick=()=>{VEST_SEL=null;try{$('tiroir').classList.remove('on');$('barre').classList.remove('on');}catch(x){}ouvrirLeVestiaire();};
+$('b-sac').addEventListener('click',()=>{try{recalerLeSac(true);}catch(x){}});
 $('b-sac').onclick=()=>ouvrirSac();
 /* le tiroir a disparu : les cinq entrées tiennent dans la barre. */
 
@@ -17494,7 +17495,10 @@ let dernierRencontre=0; const rencontreVue={qui:null,on:null};
 function majHaut(){
   const s=$('hSac'), a=$('hArgent'), j=$('hJetons');
   if(!s)return;
-  const charge=Object.entries(e.sac||{}).reduce((t,[k,n])=>t+n*1  /* le sac compte les OBJETS, plus leur poids */,0);
+  const charge=Object.entries(e.sac||{}).reduce((t,[k,n])=>t+(+n>0?+n:0),0);
+  /* un sac lourd à l'écran alors qu'on n'y voit rien = un compte resté en l'air :
+     on redemande le sac au serveur, qui fait foi */
+  if(charge>0&&charge>=(e.sacMax||60)*0.9){try{recalerLeSac();}catch(x){}}
   const max=e.sacMax||60;
 
   /* On surveille la CHARGE *et* la taille du sac : en n'écoutant que la
@@ -21238,6 +21242,18 @@ function ajouter(k,n){
        disparaissaient à la première synchronisation. */
     DERNIER_BUTIN[k]=(DERNIER_BUTIN[k]||0)+q;}   /* on retient ce qu'on vient de prendre : le serveur en aura besoin */
   return q;
+}
+/* LE SAC SE REMET D'APLOMB : si le compte affiché ne correspond à rien de ce
+   qu'on voit, on redemande le sac au serveur (au plus une fois toutes les 5 s). */
+let DERNIER_RECALAGE=0;
+async function recalerLeSac(force){
+  if(!e.id)return;
+  const t=Date.now();
+  if(!force&&t-DERNIER_RECALAGE<5000)return;
+  DERNIER_RECALAGE=t;
+  try{const d=await appelRPC('lire_sac',{p_joueur:e.id});
+    if(d&&!d.erreur&&d.sac){e.sac=d.sac;if(typeof d.max==='number')e.sacMax=Math.max(d.max,e.sacMax||0);
+      sauver();majHaut();majPastille();}}catch(x){}
 }
 function majPastille(){
   const ss=$('sac-ss');if(ss){try{ss.textContent=Math.round(charge())+' / '+chargeMax();}catch(x){}}
