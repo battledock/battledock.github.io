@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-27-1501';
+  var MA_VERSION='2026-09-27-1521';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -3928,7 +3928,7 @@ const PARAM_CARTE=CARTE_DEMANDEE;
 const MODE_VIL=(CARTE_DEMANDEE==='foret')?'foret':'ferme';
 const CHAMPS_SEULS=MODE_VIL==='ferme';      /* la ferme : les champs seuls */
 const FORET_SEULE=MODE_VIL==='foret';       /* la forêt : le bois de l'ancien village, sa rivière et sa clairière */
-const FZ={x0:56,x1:668,y0:40,y1:560};       /* les bornes de la forêt */
+const FZ={x0:56,x1:668,y0:40,y1:560};       /* les bornes de la forêt (la rive est s'ouvre au-delà, jusqu'au terrain) */
 const FB={x0:760,x1:1564,y0:96,y1:444};       /* (à gauche : la gare du métro) */       /* (en haut : l'étal des graines) */       /* les bornes de la carte des champs */
 const VIL={x0:580,x1:1340,y0:82,y1:452};
 const PL_N=()=>PLACE.y-PLACE.h/2, PL_S=()=>PLACE.y+PLACE.h/2;
@@ -14269,9 +14269,11 @@ function semerDecor(){
     try{DECOR=DECOR.concat(semerLaClairiere(CL));}catch(x){console.error(x);}
     /* ===== TON TERRAIN : de l'autre côté du pont, à droite de la forêt ===== */
     try{
-      const TX=FZ.x1-16, TY=392;                     /* de l'autre côté du pont, à l'est */
+      const TX=FZ.x1+70, TY=300;                     /* au milieu de la rive est, en face du pont */
       TERRAIN_FORET={x:TX,y:TY};
-      DECOR=DECOR.filter(o=>!(Math.abs(o.x-TX)<70&&Math.abs(o.y-TY)<58));
+      DECOR=DECOR.filter(o=>!(Math.abs(o.x-TX)<86&&Math.abs(o.y-TY)<70));
+      /* un chemin de terre qui va du pont au terrain */
+      for(let i=0;i<9;i++)DECOR.push({t:'herbes',x:rivX(300)+30+i*((TX-40-rivX(300)-30)/8),y:300+Math.sin(i)*10,gr:0,decor:true});
       DECOR.push({t:'x_cabanonMoi',x:TX,y:TY,v:0,col:CAB_LU().bati?[36,10]:[10,4],
         bati:!!CAB_LU().bati,demi:34,ouvre:'chantierVallon'});
     }catch(x){console.error(x);}
@@ -15102,7 +15104,7 @@ function dessiner(){
      Un pixel du jeu vaut ECH pixels d'écran : on peut donc glisser par pas de 1/ECH,
      ce qui donne un défilement continu au lieu de sauts d'un pixel entier. */
   const CH_S=CHAMPS_SEULS&&CARTE==='village';const FO_S=FORET_SEULE&&CARTE==='village';
-  const BX0=FO_S?FZ.x0:CH_S?FB.x0:(PLACE_SEULE&&CARTE==='village')?VIL.x0:((FERME_SEULE&&CARTE==='village')?FERME_X0:0), BX1=FO_S?FZ.x1:CH_S?FB.x1:(PLACE_SEULE&&CARTE==='village')?VIL.x1:MONDE_L, BY0=FO_S?FZ.y0:CH_S?FB.y0:(PLACE_SEULE&&CARTE==='village')?VIL.y0:0, BY1=FO_S?FZ.y1:CH_S?FB.y1:(PLACE_SEULE&&CARTE==='village')?VIL.y1:MONDE_H;
+  const BX0=FO_S?FZ.x0:CH_S?FB.x0:(PLACE_SEULE&&CARTE==='village')?VIL.x0:((FERME_SEULE&&CARTE==='village')?FERME_X0:0), BX1=FO_S?(FZ.x1+150):CH_S?FB.x1:(PLACE_SEULE&&CARTE==='village')?VIL.x1:MONDE_L, BY0=FO_S?FZ.y0:CH_S?FB.y0:(PLACE_SEULE&&CARTE==='village')?VIL.y0:0, BY1=FO_S?FZ.y1:CH_S?FB.y1:(PLACE_SEULE&&CARTE==='village')?VIL.y1:MONDE_H;
   const camXf=Math.max(BX0,Math.min(BX1-VW,joueur.x-VW/2));
   /* à Extramar, la vue regarde un peu plus vers le nord : la Bonne Mère */
   const camYf=Math.max(BY0,Math.min(BY1-VH,joueur.y-VH*(CARTE==='garde'?0.74:(ANNEXE?0.62:0.5))));
@@ -25673,7 +25675,9 @@ dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
 /* LA LIMITE OUEST DE LA FERME : la clôture de bois */
 {const bloqueFermeVrai=bloque;bloque=function(x,y){if(CHAMPS_SEULS&&CARTE==='village'&&x<FERME_X0+16)return true;   /* (la limite ouest ne vaut que pour la ferme) */
   if(CHAMPS_SEULS&&CARTE==='village'&&(x<784||x>1534||y<124||y>432))return true;   /* les bordures du bocage : haies, clôtures, arbres, blé */
-  if(FORET_SEULE&&CARTE==='village'&&(x<FZ.x0+10||y<FZ.y0+12||y>FZ.y1-8||x>rivX(y)-14))return true;   /* les bords de la forêt : la rivière ferme l'est */
+  /* LES BORDS DE LA FORÊT : la rivière ne ferme plus l'est — on la traverse par
+     le pont, et la rive d'en face porte ton terrain. */
+  if(FORET_SEULE&&CARTE==='village'&&(x<FZ.x0+10||y<FZ.y0+12||y>FZ.y1-8||x>FZ.x1+150))return true;
   return bloqueFermeVrai(x,y);};}
 /* les poules s'écartent quand on passe au milieu d'elles */
 function poulEffrayer(){if(!POUL_BETES)return;const Z=POUL_Z(), jx=joueur.x-Z.x0, jy=joueur.y-Z.y0, W=Z.x1-Z.x0, H=Z.y1-Z.y0;
