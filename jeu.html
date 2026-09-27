@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-27-1954';
+  var MA_VERSION='2026-09-27-1959';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -11797,8 +11797,19 @@ function dessinerEmpreintes(g,camX,camY){
    trèfles sur l'herbe, gravillons et cailloux sur la terre, grain sur la pierre,
    joints sur le sable. Rien ne bouge de place : c'est le même sol, affiné.
    ===================================================================== */
+/* LA BANDE UTILE : la ferme, la forêt et la place partagent une même carte,
+   mais chacune n'en occupe qu'un morceau. On ne grave et on n'affine QUE ce
+   morceau : trois fois moins de pixels à peindre en forêt. */
+function bandeUtile(){
+  if(CARTE!=='village')return [0,MONDE_L];
+  if(FORET_SEULE)return [0,Math.min(MONDE_L,FZ.x1+120)];
+  if(CHAMPS_SEULS||FERME_SEULE)return [Math.max(0,FERME_X0-40),MONDE_L];
+  if(PLACE_SEULE)return [0,MONDE_L];
+  return [0,MONDE_L];
+}
 function construireSolFin(solBase){
   const W=solBase.width, H=solBase.height;
+  const [BX,BX2]=bandeUtile();
   const src=solBase.getContext('2d').getImageData(0,0,W,H).data;
   const c=document.createElement('canvas');c.width=W*2;c.height=H*2;
   const g=c.getContext('2d');const img=g.createImageData(W*2,H*2), d=img.data;
@@ -11810,14 +11821,14 @@ function construireSolFin(solBase){
   const clamp=(v)=>v<0?0:(v>255?255:v);
   /* 1 · chaque pixel devient quatre, avec un léger grain propre à sa matière */
   const G=new Uint8Array(W*H);
-  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+  for(let y=0;y<H;y++)for(let x=BX;x<BX2;x++){
     const i=(y*W+x)*4, r=src[i], gg=src[i+1], b=src[i+2];
     const t=genre(r,gg,b);G[y*W+x]=t;const amp=AMP[t];
     for(let dy=0;dy<2;dy++){const o=((y*2+dy)*W*2+x*2)*4;for(let dx=0;dx<2;dx++){const k=(h(x*2+dx,y*2+dy,1)-0.5)*amp, q=o+dx*4;
       d[q]=clamp(r+k);d[q+1]=clamp(gg+k);d[q+2]=clamp(b+k*0.7);d[q+3]=255;}}
   }
   /* 2 · les détails de chaque matière, au demi-pixel */
-  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
+  for(let y=1;y<H-1;y++)for(let x=Math.max(1,BX);x<Math.min(W-1,BX2);x++){
     const m=G[y*W+x], i=(y*W+x)*4, r=src[i], gg=src[i+1], b=src[i+2], t=h(x,y,7);
     const X=x*2+(h(x,y,3)<0.5?0:1), Y=y*2+(h(x,y,4)<0.5?0:1);
     if(m===2){
