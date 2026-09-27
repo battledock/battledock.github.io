@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-27-0743';
+  var MA_VERSION='2026-09-27-0757';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -22787,7 +22787,11 @@ const fleche=(k)=>{const f=COURS[k]&&COURS[k].f;if(!f)return '';
   return '<span style="opacity:.5"> =</span>';};
 let CRI_ETAL='poisson';                 /* LA CRIÉE A DEUX ÉTALS : la pêche, et le comptoir du port */
 const criPrix=()=>CRI_ETAL==='poisson'?PRIX_POISSON:PRIX_COMPTOIR;
-function ouvrirLaCriee(etal){CRI_ETAL=etal||'poisson';CPT=MODE_POISSON;CRI_VENTE={};$('page2Fond').className='';$('page2').classList.add('on');
+function ouvrirLaCriee(etal){try{return ouvrirLaCrieeReelle(etal);}catch(x){
+  try{$('page2').classList.remove('on');}catch(y){}
+  try{bulle('La criée a eu un souci : '+(x&&x.message?x.message:x));}catch(y){}
+  return;}}
+function ouvrirLaCrieeReelle(etal){CRI_ETAL=etal||'poisson';CPT=MODE_POISSON;CRI_VENTE={};$('page2Fond').className='';$('page2').classList.add('on');
   $('page2Fond').innerHTML=`<style>
     #cri{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#10263c;color:#f4ecd8;font-family:Georgia,serif}
     #cri .cri-tete{flex:none;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 12px;background:repeating-linear-gradient(90deg,#1f3a5a 0 5px,#1a3350 5px 6px,#24466a 6px 11px);border-bottom:3px solid #d8b050;position:relative}
@@ -22838,7 +22842,7 @@ function ouvrirLaCriee(etal){CRI_ETAL=etal||'poisson';CPT=MODE_POISSON;CRI_VENTE
   majEtals();criMaj();}
 function criBulle(t){const b=$('criBulle');if(!b)return;b.textContent=t;b.classList.add('on');clearTimeout(criBulle.t);criBulle.t=setTimeout(()=>b.classList.remove('on'),2600);}
 function criMaj(){if(!$('criCorps'))return;SAC_PEUT_BAISSER=Date.now();
-  const P0=criPrix();
+  const P0=criPrix()||{};
   const P=new Proxy({},{get:(_,k)=>P0[k]?prixDuJour(k,P0[k]):undefined,has:(_,k)=>!!P0[k]});
   const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&P0[k]).sort((a,b)=>P[b]*e.sac[b]-P[a]*e.sac[a]);
   if(!criMaj.enCours){criMaj.enCours=true;lireLesCours(ks).then(()=>{criMaj.enCours=false;if($('criCorps'))criMaj();});}
@@ -22854,7 +22858,9 @@ function criMaj(){if(!$('criCorps'))return;SAC_PEUT_BAISSER=Date.now();
   $('criCombien').textContent=CRI_ETAL==='poisson'?(nb+' poisson'+(nb>1?'s':'')+' sur l’étal')
     :(nb+' objet'+(nb>1?'s':'')+' sur le comptoir');$('criTotal').textContent=cptSou(total);$('criArgent').textContent=enEuros(e.euros||0);
   const v=$('criVendre');v.classList.toggle('rien',total===0);v.textContent=total?('Vendre · '+cptSou(total)):'Rien à vendre';}
-async function criVendre(){const P=criPrix();const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&P[k]);const n=(k)=>(k in CRI_VENTE)?CRI_VENTE[k]:e.sac[k];
+async function criVendre(){try{return await criVendreReelle();}catch(x){
+  CRI_EN_COURS=false;try{criBulle('La vente a eu un souci : '+(x&&x.message?x.message:x));}catch(y){}}}
+async function criVendreReelle(){const P=criPrix();const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&P[k]);const n=(k)=>(k in CRI_VENTE)?CRI_VENTE[k]:e.sac[k];
   if(!ks.reduce((t,k)=>t+P[k]*n(k),0)||CRI_EN_COURS)return;CRI_EN_COURS=true;const v=$('criVendre');v.textContent='…';v.classList.add('rien');let gagne=0;
   for(const k of ks){const q=n(k);if(!q)continue;SAC_PEUT_BAISSER=Date.now();const d=await appelRPC(CRI_ETAL==='poisson'?'vendre_poisson':'vendre_au_comptoir',{p_joueur:e.id,p_type:k,p_nb:q});
     if(d&&d.erreur==='plafond'){criBulle('Le marchand refuse : tu lui as déjà trop vendu.');break;}if(!d||d.erreur)continue;
