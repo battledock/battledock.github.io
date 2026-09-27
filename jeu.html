@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-27-1056';
+  var MA_VERSION='2026-09-27-1501';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -11882,7 +11882,7 @@ const alea=s=>{const v=Math.sin(s*127.1)*43758.5453;return v-Math.floor(v);};
 const BOIS_PONT={sombre:'#3d2a17',fonce:'#5b3f21',bas:'#6b4a28',moyen:'#7d5934',
                  clair:'#96703f',haut:'#a5764a'};
 function graverPontsDansSol(g){
-  if(FORET_SEULE&&CARTE==='village')return;                 /* la forêt n'a pas de pont */
+  /* LE PONT EST REVENU : la forêt a de nouveau sa passerelle sur la rivière. */
   const H=PONT_DEMI, L=PONT_LARGE;
   LES_PONTS().forEach(([cx,cy])=>{
     const R=(a,b,w,h,col)=>{g.fillStyle=col;
@@ -11911,7 +11911,7 @@ function graverPontsDansSol(g){
 }
 /* la rambarde sud : elle passe DEVANT le joueur */
 function graverRambardesSud(g){
-  if(FORET_SEULE&&CARTE==='village')return;                 /* pas de pont à la forêt */
+  /* le pont de la forêt est de retour */
   const H=PONT_DEMI, L=PONT_LARGE;
   LES_PONTS().forEach(([cx,cy])=>{
     const R=(a,b,w,h,col)=>{g.fillStyle=col;
@@ -11996,6 +11996,9 @@ function graverX(t,v){
   const cle=t+(v||0);
   if(XCAL[cle])return XCAL[cle];
   if(t==='x_chantier'){XCAL[cle]=graverLeChantier();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+  if(t==='x_cabanonMoi'){const c=CAB_LU();
+    XCAL[cle]=graverTonCabanon(c.bati?(c.niveau>0?2:1):0);
+    if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
   if(t==='x_maison'||t==='x_ndg'||t==='x_pavPoisson'||t==='x_pavPeche'||t==='x_arbuste'||t==='x_belArbre'||t==='x_criee'||t==='x_cabanon'||t==='x_stationVelo'){
     XCAL[cle]=t==='x_cabanon'?graverLeCabanon():t==='x_stationVelo'?graverLaStationVelo():t==='x_criee'?graverLaCriee():t==='x_maison'?graverImmeuble(v||0):t==='x_ndg'?graverLaGarde():t==='x_pavPoisson'?graverPavillon('poisson'):t==='x_pavPeche'?graverPavillon('peche'):t==='x_belArbre'?graverBelArbre(v||0):graverArbuste(v||0);
     if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
@@ -13304,7 +13307,7 @@ const PONT_LARGE=RIV_LARGE+11;                 /* demi-longueur du tablier, d'un
 const PONT_PASSAGE=PONT_DEMI-5;                 /* tout le tablier se traverse : seules les rambardes, au nord et au sud, arrêtent */
 const PONT_CENTRE=0;                           /* on marche au milieu : les rambardes encadrent */
 function surTablier(x,y){
-  if(FORET_SEULE&&CARTE==='village')return false;             /* plus de pont : on ne traverse pas la rivière */
+  /* on traverse de nouveau par le pont */
   return PONTS.some(py=>Math.abs(y-(py+PONT_CENTRE))<=PONT_PASSAGE&&
     Math.abs(x-rivX(py))<PONT_LARGE);
 }
@@ -13907,7 +13910,7 @@ function graverChemins(g){
   /* PLUS DE VOIE NI DE HALTE : le train quitte le village. La place et les
      bâtiments reprennent tout le terrain. */
   /* LE SEUIL DES PONTS : deux dalles qui raccordent le chemin au tablier */
-  if(!(FORET_SEULE&&CARTE==='village'))PONTS.forEach(py=>{
+  PONTS.forEach(py=>{
     const px=rivX(py);
     [-1,1].forEach(s2=>{
       g.fillStyle='#a4acb3';g.fillRect((px+s2*30-2)|0,(py-13)|0,5,26);
@@ -14242,7 +14245,7 @@ function semerDecor(){
   });
 
   /* les deux ponts, posés en travers de la rivière */
-  if(!(FORET_SEULE&&CARTE==='village'))PONTS.forEach(py=>DECOR.push({t:'pont',x:Math.round(rivX(py)),y:py,gr:0}));
+  PONTS.forEach(py=>DECOR.push({t:'pont',x:Math.round(rivX(py)),y:py,gr:0}));
 
   /* on dégage les sentiers, puis on vérifie qu'on peut aller partout */
   const deblayes=deblayerChemins();
@@ -14264,6 +14267,14 @@ function semerDecor(){
     DECOR=DECOR.filter(o=>NATURE.has(o.t)&&o.x>FZ.x0-10&&o.x<FZ.x1+40&&o.y>FZ.y0-10&&o.y<FZ.y1+20
       &&!(dansClairiere(o)&&o.t!=='fleurs'&&o.t!=='champignons'&&o.t!=='herbes'));
     try{DECOR=DECOR.concat(semerLaClairiere(CL));}catch(x){console.error(x);}
+    /* ===== TON TERRAIN : de l'autre côté du pont, à droite de la forêt ===== */
+    try{
+      const TX=FZ.x1-16, TY=392;                     /* de l'autre côté du pont, à l'est */
+      TERRAIN_FORET={x:TX,y:TY};
+      DECOR=DECOR.filter(o=>!(Math.abs(o.x-TX)<70&&Math.abs(o.y-TY)<58));
+      DECOR.push({t:'x_cabanonMoi',x:TX,y:TY,v:0,col:CAB_LU().bati?[36,10]:[10,4],
+        bati:!!CAB_LU().bati,demi:34,ouvre:'chantierVallon'});
+    }catch(x){console.error(x);}
   }
   else if(FERME_SEULE&&!PLACE_SEULE){                                                 /* LA FERME : on retire tout ce qui faisait « village » */
     const VILLE=new Set(['comptoir','echoppe','fontaine','panneauV','boite','tilleul','bancP','lanterneP','boutique','pont',
@@ -17372,6 +17383,7 @@ $('b-aide').onclick=()=>ouvrirLAide('debuter');
 /* ================= LE CHANTIER DU VALLON =================
    Ton terrain, ton cabanon : on y dépose les matériaux, le serveur bâtit. */
 let CAB={bati:false,niveau:0,sac:{},cout_cabane:{},cout_agrandir:{}};
+let TERRAIN_FORET=null;
 const CAB_ETAT=()=>CAB;
 function cabRetenir(){try{localStorage.setItem('bdl.cabanon',JSON.stringify({bati:CAB.bati,niveau:CAB.niveau}));}catch(x){}}
 async function cabLire(){
@@ -17420,15 +17432,17 @@ async function ouvrirLeChantier(mot){
     if(d&&d.ok){if(d.sac)e.sac=d.sac;try{sauver();lireSacServeur();majPastille();}catch(x){}
       CAB=Object.assign({},CAB,d.etat||{});cabRetenir();
       jouer('vente','moment');vibrer([20,40,20]);
-      setTimeout(()=>location.reload(),700);          /* le cabanon apparaît sur le terrain */
+      setTimeout(()=>location.reload(),800);          /* le cabanon apparaît sur ton terrain */
       ouvrirLeChantier(etape==='cabane'?'« Et voilà. C’est chez toi. »':'« Plus grand, plus solide. »');}
     else ouvrirLeChantier(d&&d.erreur==='manque'?'« Il te manque encore de quoi. »':'« Le chantier ne répond pas. »');};
 }
-if(CARTE==='vallon'){
-  /* le quartier est fermé : on renvoie au port, mais seulement si l'on sait qui joue */
-  if(e&&e.id&&e.id!=='e029d1fb-7baa-4225-91fd-5cdbef6f8711')location.replace('jeu.html?v='+Date.now());
-  else cabLire();
+/* LE TERRAIN EST EN FORÊT : on lit l'état du cabanon en arrivant, et on
+   redessine si le serveur nous apprend quelque chose de neuf. */
+if(FORET_SEULE&&CARTE==='village'){
+  const avant=JSON.stringify(CAB_LU());
+  cabLire().then(()=>{if(JSON.stringify({bati:!!CAB.bati,niveau:+CAB.niveau||0})!==avant)location.reload();});
 }
+if(CARTE==='vallon')location.replace('jeu.html?v='+Date.now());   /* le quartier est déposé */
 /* LA LIGNE 2 : ouverte à son bâtisseur seulement. Déclarée en fonction pour être
    disponible dès le premier appel, même très tôt au chargement. */
 function ligne2Permise(){try{return !!(e&&e.id==='e029d1fb-7baa-4225-91fd-5cdbef6f8711');}catch(x){return false;}}
@@ -20376,7 +20390,7 @@ function majAction(){
   if(o.ouvre==='sortiePiscine'){b.innerHTML='Ressortir sur le quai<small>'+(e.ap&&e.ap.maillot?'ON TE RHABILLE EN SORTANT':'LE VIEUX-PORT')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='metroForet'){b.innerHTML='Prendre le métro<small>LIGNE 1 · '+autresStations()+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='metroVallon'){b.innerHTML='Prendre le métro<small>LIGNE 2 · RETOUR AU PORT</small>';b.classList.add('on');return;}
-  if(o.ouvre==='chantierVallon'){const c=CAB_ETAT();
+  if(o.ouvre==='chantierVallon'){const c=CAB.bati?CAB:CAB_LU();
     b.innerHTML=(c.bati?(c.niveau>0?'Ton cabanon':'Agrandir le cabanon'):'Bâtir le cabanon')+
       '<small>'+(c.bati?(c.niveau>0?'CHEZ TOI · LE VALLON':'UNE PIÈCE DE PLUS'):'PLANCHES · PIERRES · TUILES')+'</small>';
     b.classList.add('on');return;}
@@ -21211,6 +21225,47 @@ lingotFer:'<rect x="1" y="7" width="14" height="6" fill="#8a8f96"/><rect x="1" y
       '<rect x="8" y="9" width="4" height="4" fill="#a83a3a"/><rect x="8" y="9" width="2" height="2" fill="#c94a4a"/>'+
       '<rect x="6" y="4" width="4" height="3" fill="#5e8a47"/><rect x="7" y="3" width="2" height="2" fill="#7db35d"/>'
 };
+/* ================= TON CABANON, EN FORÊT =================
+   Ce que le jeu en sait tout de suite (le serveur confirme ensuite). */
+function CAB_LU(){try{const v=JSON.parse(localStorage.getItem('bdl.cabanon')||'{}');
+  return {bati:!!v.bati,niveau:+v.niveau||0};}catch(x){return {bati:false,niveau:0};}}
+function graverTonCabanon(etat){
+  const W=150,H=96,D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+  const c=document.createElement('canvas');c.width=W*D;c.height=H*D;
+  const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const P=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const cx=W/2, sol=H-6;
+  const hs2=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+  if(!etat){
+    /* le terrain : quatre piquets, un cordeau, une pancarte */
+    P(cx-46,sol-2,92,4,'rgba(40,44,34,.18)');
+    [[-40,0],[40,0],[-40,-30],[40,-30]].forEach(([dx,dy])=>{
+      P(cx+dx-1,sol+dy-12,3,12,'#8a6238');P(cx+dx-2,sol+dy-13,5,2,'#c9a878');});
+    for(let x=cx-40;x<cx+40;x+=6)P(x,sol-12,4,1,'#e2d8bd');
+    for(let x=cx-40;x<cx+40;x+=6)P(x,sol-42,4,1,'#e2d8bd');
+    P(cx-14,sol-30,28,12,'#7d5934');P(cx-14,sol-30,28,2,'#a5764a');
+    g.font='700 6px Georgia';g.textAlign='center';g.fillStyle='#f0e2c0';
+    g.fillText('À BÂTIR',cx,sol-22);g.textAlign='left';
+    return {toile:c,W,H,sol,nuit:null};}
+  const gros=etat>1, L=gros?96:70, Hh=44;
+  P(cx-L/2+2,sol-2,L,5,'rgba(40,44,34,.24)');
+  for(let y=sol-Hh;y<sol;y++){const k=(y-(sol-Hh))/Hh;
+    P(cx-L/2,y,L,1,`rgb(${228-k*26|0},${198-k*24|0},${170-k*22|0})`);}
+  for(let i=0;i<120;i++){const px=cx-L/2+hs2(i*3)*L, py=sol-Hh+hs2(i*7)*Hh;
+    P(px,py,1,1,hs2(i)<.5?'rgba(160,126,96,.2)':'rgba(255,238,214,.22)');}
+  P(cx-L/2,sol-Hh,L,2,'#f0d8c0');P(cx-L/2,sol-2,L,2,'#a8896e');
+  for(let r=0;r<3;r++)for(let px=cx-L/2-4+r*2;px<cx+L/2+4-r*2;px+=4)
+    P(px,sol-Hh-5+r*3,3,3,r%2?'#a8452f':'#c46a4a');
+  P(cx-8,sol-22,16,22,'#6a4a2a');P(cx-7,sol-21,14,20,'#7d5934');P(cx+3,sol-12,2,2,'#c9a24a');
+  P(cx+L/2-22,sol-30,14,12,'#3c3c46');P(cx+L/2-21,sol-29,12,10,'#9fd0dc');P(cx+L/2-21,sol-29,12,3,'#c2e4ec');
+  P(cx+L/2-25,sol-31,4,14,'#3f7a5a');P(cx+L/2-8,sol-31,4,14,'#3f7a5a');
+  if(gros){
+    P(cx-L/2+8,sol-30,14,12,'#3c3c46');P(cx-L/2+9,sol-29,12,10,'#9fd0dc');
+    P(cx-L/2+5,sol-31,4,14,'#3f7a5a');P(cx-L/2+22,sol-31,4,14,'#3f7a5a');
+    P(cx+L/2-18,sol-Hh-18,8,16,'#b06a4a');P(cx+L/2-19,sol-Hh-20,10,3,'#c98a6a');}
+  P(cx-4,sol-26,8,5,'#1d4f8a');
+  g.font='700 4px Georgia';g.textAlign='center';g.fillStyle='#eaf4fb';g.fillText('14',cx,sol-22.4);g.textAlign='left';
+  return {toile:c,W,H,sol,nuit:null};}
 const CHARGE_MAX=60;
 const chargeMax=()=>e.sacMax||CHARGE_MAX;
 if(!e.sac)e.sac={};
@@ -25377,7 +25432,7 @@ async function ouvrirLaBuvette(mot){
 /* LA LIGNE 2 EST FERMÉE AU PUBLIC : tant que le quartier se construit,
    seul son bâtisseur y descend. */
 const LIGNE2_OUVERTE_A='e029d1fb-7baa-4225-91fd-5cdbef6f8711';
-const STATIONS_L2=[['vallon','Le Vallon','Ton terrain et ton cabanon · BÊTA','vallon']];
+const STATIONS_L2=[];   /* la ligne 2 est déposée : le terrain part en forêt */
 const STATIONS_L1=[['extramar','Le port','Les docks, la criée, le casino','port'],
   ['ferme','La ferme','Le champ, l’étal, l’étable','ferme'],
   ['foret','La forêt','Le bois, la rivière, la cabane','foret']];
