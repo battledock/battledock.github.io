@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-27-1529';
+  var MA_VERSION='2026-09-27-1534';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -17410,6 +17410,20 @@ const CSS_CHANT=`#page2Fond.chant{background:#f4eddd;color:#33291b;font-family:G
 #page2Fond.chant .go{width:100%;border:0;border-radius:14px;padding:14px;font:700 15px Georgia;background:linear-gradient(#f6dd8c,#c9a24a);color:#2a1a0e;margin-top:10px}
 #page2Fond.chant .go:disabled{background:#d8cdb4;color:#8a8070}`;
 const CAB_NOMS={planche:'Planches',pierre:'Pierres',tuile:'Tuiles',poutre:'Poutres',bois:'Bûches'};
+function ouvrirLeChantierFerme(){
+  if(!document.getElementById('cssChant')){const st=document.createElement('style');st.id='cssChant';st.textContent=CSS_CHANT;document.head.appendChild(st);}
+  $('page2Fond').className='chant';$('page2').classList.add('on');
+  $('page2Fond').innerHTML=
+   '<div class="tete"><div><small>DE L’AUTRE CÔTÉ DU PONT</small><b>Le terrain</b></div><button id="chX">✕</button></div>'+
+   '<div class="corps" style="text-align:center">'+
+   '<div style="display:inline-block;margin:18px 0 14px;font:900 15px Georgia;letter-spacing:3px;color:#2a1f0c;'+
+   'background:repeating-linear-gradient(135deg,#f6dd8c 0 12px,#e8c552 12px 24px);border:2px solid #8a6a20;'+
+   'border-radius:6px;padding:10px 16px;transform:rotate(-1.4deg)">VERSION BÊTA · EN CONSTRUCTION</div>'+
+   '<p class="mot" style="text-align:center">« Le terrain est piqueté, mais le chantier n’est pas ouvert. '+
+   'On pourra bientôt y bâtir sa cabane : un coffre, un séchoir, un établi. »</p>'+
+   '<p class="mot" style="text-align:center;color:#8a7a56">Reviens quand les cabanons seront prêts.</p></div>';
+  $('chX').onclick=()=>{$('page2').classList.remove('on');};
+}
 async function ouvrirLeChantier(mot){
   if(!document.getElementById('cssChant')){const st=document.createElement('style');st.id='cssChant';st.textContent=CSS_CHANT;document.head.appendChild(st);}
   $('page2Fond').className='chant';$('page2').classList.add('on');
@@ -20395,7 +20409,9 @@ function majAction(){
   if(o.ouvre==='sortiePiscine'){b.innerHTML='Ressortir sur le quai<small>'+(e.ap&&e.ap.maillot?'ON TE RHABILLE EN SORTANT':'LE VIEUX-PORT')+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='metroForet'){b.innerHTML='Prendre le métro<small>LIGNE 1 · '+autresStations()+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='metroVallon'){b.innerHTML='Prendre le métro<small>LIGNE 2 · RETOUR AU PORT</small>';b.classList.add('on');return;}
-  if(o.ouvre==='chantierVallon'){const c=CAB.bati?CAB:CAB_LU();
+  if(o.ouvre==='chantierVallon'){
+    if(!ligne2Permise()){b.innerHTML='Le terrain<small>BÊTA · EN CONSTRUCTION</small>';b.classList.add('on');return;}
+    const c=CAB.bati?CAB:CAB_LU();
     b.innerHTML=(c.bati?(c.niveau>0?'Ton cabanon':'Agrandir le cabanon'):'Bâtir le cabanon')+
       '<small>'+(c.bati?(c.niveau>0?'CHEZ TOI · LE VALLON':'UNE PIÈCE DE PLUS'):'PLANCHES · PIERRES · TUILES')+'</small>';
     b.classList.add('on');return;}
@@ -20571,7 +20587,9 @@ function agir(){
   if(o.ouvre==='poissonnerie'){ouvrirLaCriee();return;}
   if(o.ouvre==='metroForet'){choisirLaDestination();return;}
   if(o.ouvre==='metroVallon'){voyagerVers('extramar','Direction Le port');return;}
-  if(o.ouvre==='chantierVallon'){ouvrirLeChantier();return;}
+  if(o.ouvre==='chantierVallon'){
+    if(!ligne2Permise()){ouvrirLeChantierFerme();return;}
+    ouvrirLeChantier();return;}
   if(o.ouvre==='buvette'){BUV=null;ouvrirLaBuvette();return;}
   if(o.ouvre==='galerie'){                              /* LA MINE : sa propre page, comme avant */
     try{e.ext={x:joueur.x,y:joueur.y};sauver();envoyerSauvegarde(true);}catch(x){}
