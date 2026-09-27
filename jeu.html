@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-27-1723';
+  var MA_VERSION='2026-09-27-1943';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -14273,7 +14273,10 @@ function semerDecor(){
     try{DECOR=DECOR.concat(semerLaClairiere(CL));}catch(x){console.error(x);}
     /* ===== TON TERRAIN : de l'autre côté du pont, à droite de la forêt ===== */
     try{
-      const TX=FZ.x1+70, TY=300;                     /* au milieu de la rive est, en face du pont */
+      /* LE TERRAIN : au milieu de la rive est (entre la rivière et le bord),
+         à mi-hauteur de la carte. */
+      const RIVE0=rivX(300)+34, RIVE1=FZ.x1+372;
+      const TX=Math.round((RIVE0+RIVE1)/2), TY=Math.round((FZ.y0+FZ.y1)/2)-10;
       TERRAIN_FORET={x:TX,y:TY};
       DECOR=DECOR.filter(o=>!(Math.abs(o.x-TX)<86&&Math.abs(o.y-TY)<70));
       /* la rive est reste une prairie nette : pas de touffes en travers du passage */
@@ -15107,7 +15110,7 @@ function dessiner(){
      Un pixel du jeu vaut ECH pixels d'écran : on peut donc glisser par pas de 1/ECH,
      ce qui donne un défilement continu au lieu de sauts d'un pixel entier. */
   const CH_S=CHAMPS_SEULS&&CARTE==='village';const FO_S=FORET_SEULE&&CARTE==='village';
-  const BX0=FO_S?FZ.x0:CH_S?FB.x0:(PLACE_SEULE&&CARTE==='village')?VIL.x0:((FERME_SEULE&&CARTE==='village')?FERME_X0:0), BX1=FO_S?(FZ.x1+150):CH_S?FB.x1:(PLACE_SEULE&&CARTE==='village')?VIL.x1:MONDE_L, BY0=FO_S?FZ.y0:CH_S?FB.y0:(PLACE_SEULE&&CARTE==='village')?VIL.y0:0, BY1=FO_S?FZ.y1:CH_S?FB.y1:(PLACE_SEULE&&CARTE==='village')?VIL.y1:MONDE_H;
+  const BX0=FO_S?FZ.x0:CH_S?FB.x0:(PLACE_SEULE&&CARTE==='village')?VIL.x0:((FERME_SEULE&&CARTE==='village')?FERME_X0:0), BX1=FO_S?(FZ.x1+380):CH_S?FB.x1:(PLACE_SEULE&&CARTE==='village')?VIL.x1:MONDE_L, BY0=FO_S?FZ.y0:CH_S?FB.y0:(PLACE_SEULE&&CARTE==='village')?VIL.y0:0, BY1=FO_S?FZ.y1:CH_S?FB.y1:(PLACE_SEULE&&CARTE==='village')?VIL.y1:MONDE_H;
   const camXf=Math.max(BX0,Math.min(BX1-VW,joueur.x-VW/2));
   /* à Extramar, la vue regarde un peu plus vers le nord : la Bonne Mère */
   const camYf=Math.max(BY0,Math.min(BY1-VH,joueur.y-VH*(CARTE==='garde'?0.74:(ANNEXE?0.62:0.5))));
@@ -21260,41 +21263,68 @@ lingotFer:'<rect x="1" y="7" width="14" height="6" fill="#8a8f96"/><rect x="1" y
 function CAB_LU(){try{const v=JSON.parse(localStorage.getItem('bdl.cabanon')||'{}');
   return {bati:!!v.bati,niveau:+v.niveau||0};}catch(x){return {bati:false,niveau:0};}}
 function graverTonCabanon(etat){
-  const W=150,H=96,D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+  const W=190,H=130,D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
   const c=document.createElement('canvas');c.width=W*D;c.height=H*D;
   const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
   const P=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
-  const cx=W/2, sol=H-6;
   const hs2=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+  const cx=W/2, sol=H-8;
   if(!etat){
-    /* le terrain : quatre piquets, un cordeau, une pancarte */
     P(cx-46,sol-2,92,4,'rgba(40,44,34,.18)');
     [[-40,0],[40,0],[-40,-30],[40,-30]].forEach(([dx,dy])=>{
       P(cx+dx-1,sol+dy-12,3,12,'#8a6238');P(cx+dx-2,sol+dy-13,5,2,'#c9a878');});
-    for(let x=cx-40;x<cx+40;x+=6)P(x,sol-12,4,1,'#e2d8bd');
-    for(let x=cx-40;x<cx+40;x+=6)P(x,sol-42,4,1,'#e2d8bd');
+    for(let x=cx-40;x<cx+40;x+=6){P(x,sol-12,4,1,'#e2d8bd');P(x,sol-42,4,1,'#e2d8bd');}
     P(cx-14,sol-30,28,12,'#7d5934');P(cx-14,sol-30,28,2,'#a5764a');
     g.font='700 6px Georgia';g.textAlign='center';g.fillStyle='#f0e2c0';
     g.fillText('À BÂTIR',cx,sol-22);g.textAlign='left';
     return {toile:c,W,H,sol,nuit:null};}
-  const gros=etat>1, L=gros?96:70, Hh=44;
-  P(cx-L/2+2,sol-2,L,5,'rgba(40,44,34,.24)');
-  for(let y=sol-Hh;y<sol;y++){const k=(y-(sol-Hh))/Hh;
-    P(cx-L/2,y,L,1,`rgb(${228-k*26|0},${198-k*24|0},${170-k*22|0})`);}
-  for(let i=0;i<120;i++){const px=cx-L/2+hs2(i*3)*L, py=sol-Hh+hs2(i*7)*Hh;
-    P(px,py,1,1,hs2(i)<.5?'rgba(160,126,96,.2)':'rgba(255,238,214,.22)');}
-  P(cx-L/2,sol-Hh,L,2,'#f0d8c0');P(cx-L/2,sol-2,L,2,'#a8896e');
-  for(let r=0;r<3;r++)for(let px=cx-L/2-4+r*2;px<cx+L/2+4-r*2;px+=4)
-    P(px,sol-Hh-5+r*3,3,3,r%2?'#a8452f':'#c46a4a');
-  P(cx-8,sol-22,16,22,'#6a4a2a');P(cx-7,sol-21,14,20,'#7d5934');P(cx+3,sol-12,2,2,'#c9a24a');
-  P(cx+L/2-22,sol-30,14,12,'#3c3c46');P(cx+L/2-21,sol-29,12,10,'#9fd0dc');P(cx+L/2-21,sol-29,12,3,'#c2e4ec');
-  P(cx+L/2-25,sol-31,4,14,'#3f7a5a');P(cx+L/2-8,sol-31,4,14,'#3f7a5a');
-  if(gros){
-    P(cx-L/2+8,sol-30,14,12,'#3c3c46');P(cx-L/2+9,sol-29,12,10,'#9fd0dc');
-    P(cx-L/2+5,sol-31,4,14,'#3f7a5a');P(cx-L/2+22,sol-31,4,14,'#3f7a5a');
-    P(cx+L/2-18,sol-Hh-18,8,16,'#b06a4a');P(cx+L/2-19,sol-Hh-20,10,3,'#c98a6a');}
-  P(cx-4,sol-26,8,5,'#1d4f8a');
-  g.font='700 4px Georgia';g.textAlign='center';g.fillStyle='#eaf4fb';g.fillText('14',cx,sol-22.4);g.textAlign='left';
+  /* ===== LE MAS DE PIERRE ===== */
+  const gros=etat>1, BL=gros?164:132, murH=52, bas=sol-murH-14;
+  for(let k=0;k<4;k++)P(cx-BL/2+6+k*3,sol+k-2,BL-4-k*4,2,'rgba(44,34,18,'+(0.2-k*0.04)+')');
+  /* le toit de tuiles, rangs décalés */
+  for(let rg=6;rg>=0;rg--){
+    const y=bas-rg*4, ret=Math.round(rg/6*11), xa=Math.round(cx-BL/2-7+ret), l=Math.round(BL+14-ret*2);
+    for(let x=xa;x<xa+l;x+=5){
+      const n=hs2(x*0.7+rg*3.1);
+      P(x,y,5,5,n<.3?'#b0512c':(n<.6?'#c15f36':(n<.85?'#9c4525':'#cc6f43')));
+      P(x,y,4,1,'#dd8a5c');P(x+4,y,1,5,'#6e2c16');P(x,y+4,5,1,'rgba(70,26,12,.4)');
+      if(hs2(x+rg)<0.12)P(x+1,y+1,2,2,'rgba(60,24,10,.28)');}
+    if(rg===6){P(xa-3,y-5,l+6,5,'#6e2c16');P(xa-3,y-5,l+6,2,'#e59a62');}}
+  /* la génoise */
+  for(let r=0;r<3;r++)for(let x=Math.round(cx-BL/2-4+r*2);x<cx+BL/2+4-r*2;x+=4){
+    P(x,bas+2+r*3,3,3,r%2?'#9c4525':'#b0512c');P(x,bas+2+r*3,3,1,'#d18359');}
+  /* les moellons */
+  for(let y=bas+11;y<sol;y+=7)for(let x=Math.round(cx-BL/2);x<cx+BL/2;x+=13){
+    const dec=((y/7|0)%2)?6:0, n=hs2(x*0.4+y*0.3);
+    P(x+dec,y,12,6,n<.28?'#cec2a6':(n<.56?'#c0b396':(n<.82?'#d8cdb2':'#b3a68a')));
+    P(x+dec,y,12,1,'#e6dcc2');P(x+dec,y+5,12,1,'#9a8e74');P(x+dec+11,y,1,6,'#a89c82');
+    if(hs2(x+y*3)<0.18)P(x+dec+3,y+2,4,1,'rgba(120,108,84,.4)');}
+  /* le chaînage d'angle */
+  for(let y=bas+11;y<sol;y+=9){
+    P(cx-BL/2,y,9,8,'#e2d8bd');P(cx-BL/2,y,9,1,'#f2ead4');P(cx-BL/2,y+7,9,1,'#a89c82');
+    P(cx+BL/2-9,y,9,8,'#e2d8bd');P(cx+BL/2-9,y,9,1,'#f2ead4');P(cx+BL/2-9,y+7,9,1,'#a89c82');}
+  /* la porte en plein cintre */
+  const px=cx-15, py=sol-42, pw=30, ph=42;
+  for(let i=0;i<pw+4;i++){const h=Math.round(Math.sqrt(Math.max(0,1-Math.pow((i-(pw+4)/2)/((pw+4)/2),2)))*10);
+    P(px-2+i,py-9+10-h,1,h,'#d8cdb2');}
+  P(px-1,py-1,pw+2,ph+1,'#3a2a18');P(px,py,pw,ph,'#7a4a28');
+  for(let k=0;k<pw;k+=4){P(px+k,py,3,ph,hs2(px+k)<.5?'#7a4a28':'#6a3f22');P(px+k+3,py,1,ph,'#4e2d16');}
+  P(px,py,pw,1,'#96603a');P(px+pw-6,py+Math.round(ph*0.55),2,2,'#e2c060');
+  for(let i=0;i<pw;i++){const h=Math.round(Math.sqrt(Math.max(0,1-Math.pow((i-pw/2)/(pw/2),2)))*8);
+    P(px+i,py-h,1,h,'#6a3f22');}
+  /* les fenêtres à volets bleus */
+  const fen=(fx)=>{
+    P(fx-1,bas+21,26,22,'#2b2f36');P(fx,bas+22,24,20,'#8fc4d4');P(fx,bas+22,24,9,'#b3dce8');
+    for(let k=0;k<20;k++)P(fx+Math.round(k*0.6),bas+22+k,5,1,'rgba(255,255,255,.22)');
+    P(fx+12,bas+22,1,20,'#2b2f36');P(fx,bas+32,24,1,'#2b2f36');
+    [fx-9,fx+25].forEach(vx=>{P(vx,bas+20,8,25,'#2f5f8a');P(vx,bas+20,8,1,'#4a7fae');
+      for(let k=1;k<8;k++)P(vx,bas+20+k*3,8,1,'rgba(20,30,48,.3)');});};
+  fen(cx+30);fen(cx-56);
+  if(gros)fen(cx+76);
+  /* la lanterne au-dessus de la porte */
+  P(cx-1,bas+14,2,7,'#3f434a');P(cx-6,bas+20,12,9,'#3f434a');P(cx-5,bas+21,10,7,'#f6e6a8');
+  P(cx-5,bas+21,10,2,'#fff6d0');
+  if(gros){P(cx+BL/2-32,bas-42,12,20,'#a8563a');P(cx+BL/2-34,bas-45,16,3,'#c9b68c');}
   return {toile:c,W,H,sol,nuit:null};}
 const CHARGE_MAX=60;
 const chargeMax=()=>e.sacMax||CHARGE_MAX;
@@ -25705,7 +25735,7 @@ dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
   if(CHAMPS_SEULS&&CARTE==='village'&&(x<784||x>1534||y<124||y>432))return true;   /* les bordures du bocage : haies, clôtures, arbres, blé */
   /* LES BORDS DE LA FORÊT : la rivière ne ferme plus l'est — on la traverse par
      le pont, et la rive d'en face porte ton terrain. */
-  if(FORET_SEULE&&CARTE==='village'&&(x<FZ.x0+10||y<FZ.y0+12||y>FZ.y1-8||x>FZ.x1+150))return true;
+  if(FORET_SEULE&&CARTE==='village'&&(x<FZ.x0+10||y<FZ.y0+12||y>FZ.y1-8||x>FZ.x1+380))return true;
   return bloqueFermeVrai(x,y);};}
 /* les poules s'écartent quand on passe au milieu d'elles */
 function poulEffrayer(){if(!POUL_BETES)return;const Z=POUL_Z(), jx=joueur.x-Z.x0, jy=joueur.y-Z.y0, W=Z.x1-Z.x0, H=Z.y1-Z.y0;
