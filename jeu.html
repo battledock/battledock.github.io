@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-28-0255';
+  var MA_VERSION='2026-09-28-0302';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -25122,11 +25122,51 @@ function ouvrirLaBoutiqueFerme(mot){
 }
 
 /* ================= LA CLAIRIÈRE DE LA FORÊT : la cabane du bûcheron, le ponton, la gare ================= */
+/* ===== L'ÉDICULE DE FER : la bouche de métro à l'ancienne =====
+   Verrière verte sur ossature de fonte, deux globes, margelle de pierre et
+   l'escalier qui plonge dans le noir. */
+function graverBoucheMetro(nom){
+  const W=140,H=130,cx=70,sol=112,D=2,c=document.createElement('canvas');
+  c.width=W*D;c.height=H*D;
+  const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const P=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const al=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+  /* l'ombre, en marches */
+  for(let k=0;k<4;k++)P(cx-50+k*3,sol+k-2,100-k*6,2,'rgba(34,40,22,'+(0.2-k*0.04)+')');
+  /* la margelle de pierre appareillée */
+  for(let x=cx-48;x<cx+48;x+=8){const n=al(x);
+    P(x,sol-12,7,12,n<.5?'#c6bb9f':'#b8ab90');P(x,sol-12,7,1,'#e2d8bd');P(x+7,sol-12,1,12,'#9a8e74');}
+  P(cx-50,sol,100,3,'#9a8e74');P(cx-50,sol-13,100,2,'#ddd2b6');
+  /* la cage d'escalier, qui plonge */
+  P(cx-26,sol-40,52,28,'#171b16');
+  for(let i=0;i<7;i++){const k=i/7;
+    P(cx-24+k*3,sol-14-i*3.4,48-k*6,2.4,'rgb('+(150-k*66|0)+','+(146-k*64|0)+','+(128-k*56|0)+')');}
+  /* les montants de fonte */
+  [-30,30].forEach(dx=>{P(cx+dx-2,sol-58,4,46,'#1f4a30');P(cx+dx-2,sol-58,1,46,'#2f6a45');
+    P(cx+dx-4,sol-60,8,3,'#2a5c3a');});
+  /* la verrière : trois rangs, vitres teintées */
+  for(let r=0;r<3;r++){const w=68-r*10;
+    for(let x=cx-w/2;x<cx+w/2;x+=6){P(x,sol-64-r*5,5,5,r%2?'#2a5c3a':'#1f4a30');P(x,sol-64-r*5,5,1,'#3f7a52');}}
+  P(cx-38,sol-62,76,4,'#2f6a45');P(cx-38,sol-62,76,1,'#4a8a5e');
+  for(let x=cx-28;x<cx+28;x+=10){P(x,sol-56,8,10,'#8fc4d4');P(x,sol-56,8,3,'#b3dce8');
+    P(x+8,sol-56,1,10,'#1f4a30');}
+  /* les deux globes lumineux */
+  [-34,34].forEach(dx=>{P(cx+dx-3,sol-70,6,8,'#f6e6a8');P(cx+dx-3,sol-70,6,2,'#fff6d0');
+    P(cx+dx-1,sol-62,2,4,'#1f4a30');});
+  /* la plaque M */
+  P(cx-8,sol-85,16,16,'#1a4f2a');P(cx-7,sol-84,14,14,'#2a7a45');P(cx-7,sol-84,14,2,'#3f9a5e');
+  g.font='700 10px Georgia';g.textAlign='center';g.fillStyle='#f2f8f4';g.fillText('M',cx,sol-73.5);
+  /* le panneau émaillé */
+  P(cx-38,sol-48,76,11,'#123a6a');P(cx-37,sol-47,74,9,'#1d5090');
+  g.font='700 5.4px Georgia';g.fillStyle='#eaf4fb';
+  g.fillText((nom||'LA FORÊT')+' · LIGNE 1',cx,sol-40.4);g.textAlign='left';
+  return {toile:c,W,H,sol,nuit:null};
+}
 function semerLaClairiere(CL,GARE){
   const L=[];
   const C=graverCabaneBucheron();XCAL['x_fo_cabane0']=C;CALQUES_DECO['x_fo_cabane']=C;TAILLES['x_fo_cabane']=[{w:100,h:14}];
   L.push({t:'x_fo_cabane',x:CL[0]+54,y:CL[1]-96,v:0,gr:0,bati:true,demi:44,ouvre:'bucheron'});   /* remontée, et décalée à droite de la gare */
-  {const G=graverGareFerme('LA FORÊT');XCAL['x_fe_gare0']=G;CALQUES_DECO['x_fe_gare']=G;}
+  {const G=graverBoucheMetro('LA FORÊT');XCAL['x_fe_gare0']=G;CALQUES_DECO['x_fe_gare']=G;TAILLES['x_fe_gare']=[{w:96,h:16}];}
   {const gx=(GARE&&GARE[0])||(CL[0]-96), gy=(GARE&&GARE[1])||(CL[1]+52);
    L.push({t:'x_fe_gare',x:gx,y:gy,v:0,bati:true,demi:34,ouvre:'metroForet'});
    /* pas de parvis : l'herbe monte jusqu'à la gare */ }
