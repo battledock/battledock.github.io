@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-28-0803';
+  var MA_VERSION='2026-09-28-0813';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -20217,6 +20217,7 @@ function majAction(){
   if(o.ouvre==='buvette'){b.innerHTML='La buvette du refuge<small>VIN CHAUD · RACLETTE · FROMAGE</small>';b.classList.add('on');return;}
   if(o.ouvre==='galerie'){b.innerHTML='Descendre dans la mine<small>PUITS N°1 · FILONS ET MINERAIS</small>';b.classList.add('on');return;}
   if(o.ouvre==='bucheron'){b.innerHTML='La cabane du bûcheron<small>DÉBITER · VENDRE · LA HACHE</small>';b.classList.add('on');return;}
+  if(o.ouvre==='chantierBlague'){b.innerHTML='Regarder le chantier<small>TRAVAUX EN COURS · DEPUIS LONGTEMPS</small>';b.classList.add('on');return;}
   if(o.ouvre==='etable'){b.innerHTML='Entrer à l’étable<small>LAIT · FOIN · FROMAGE</small>';b.classList.add('on');return;}
   if(o.ouvre==='metroFerme'){b.innerHTML='Prendre le métro<small>LIGNE 1 · '+autresStations()+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='etalGraines'){b.innerHTML='Les graines<small>SEMENCES · OUTILS · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
@@ -20394,6 +20395,7 @@ function agir(){
     try{e.ext={x:joueur.x,y:joueur.y};sauver();envoyerSauvegarde(true);}catch(x){}
     vibrer([8,30,8]);setTimeout(()=>{location.href='mine.html?v='+Date.now();},120);return;}
   if(o.ouvre==='bucheron'){FOR=null;ouvrirLaCabane();return;}
+  if(o.ouvre==='chantierBlague'){regarderLeChantier();return;}
   if(o.ouvre==='etable'){ETB=null;ouvrirLEtable();return;}
   if(o.ouvre==='metroFerme'){choisirLaDestination();return;}
   if(o.ouvre==='etalGraines'){ouvrirLeGrainetier('graines');return;}
@@ -21079,6 +21081,43 @@ lingotFer:'<rect x="1" y="7" width="14" height="6" fill="#8a8f96"/><rect x="1" y
    Ce que le jeu en sait tout de suite (le serveur confirme ensuite). */
 function CAB_LU(){try{const v=JSON.parse(localStorage.getItem('bdl.cabanon')||'{}');
   return {bati:!!v.bati,niveau:+v.niveau||0};}catch(x){return {bati:false,niveau:0};}}
+/* ================= LE CHANTIER QUI N'AVANCE JAMAIS =================
+   Un panneau, deux barrières, un trou. Chaque visite, une explication
+   différente — et toujours aucun ouvrier. */
+const MOTS_CHANTIER=[
+ 'Le panneau dit « travaux en cours ». Le trou dit autre chose.',
+ 'Une brouette est posée là. Elle n’a jamais bougé. Elle ne bougera pas.',
+ 'Un écriteau : « reprise des travaux lundi ». La date est effacée.',
+ 'Tu regardes le trou. Le trou te regarde. Personne ne creuse.',
+ 'Le sable a fait une croûte. Des herbes poussent dedans.',
+ 'Deux plots orange montent la garde. C’est tout le personnel.',
+ 'Un chat dort dans la brouette. Lui au moins, il occupe le poste.',
+ 'On raconte qu’un ouvrier est venu, une fois. Il a regardé, et il est reparti.',
+ 'Le trou s’est agrandi tout seul, à force de pluie. C’est le seul avancement.',
+ 'Sur la barrière, quelqu’un a écrit « bon courage ». C’était il y a longtemps.',
+ 'Fin des travaux : prévue. C’est tout ce que dit le panneau.',
+ 'Un pigeon inspecte les lieux. Il repart sans commentaire.'];
+let CHANT_DIT=-1;
+function regarderLeChantier(){
+  let i;do{i=Math.floor(Math.random()*MOTS_CHANTIER.length);}while(i===CHANT_DIT&&MOTS_CHANTIER.length>1);
+  CHANT_DIT=i;
+  if(!document.getElementById('cssChantB')){const st=document.createElement('style');st.id='cssChantB';
+    st.textContent=`#chantB{position:fixed;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 96px);z-index:60;
+      background:#f4c020;color:#1b1b1b;border:3px solid #1b1b1b;border-radius:14px;padding:13px 16px 12px 52px;
+      font:400 16px Georgia;line-height:1.45;box-shadow:0 8px 26px rgba(0,0,0,.45);
+      opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s}
+     #chantB.on{opacity:1;transform:none}
+     #chantB small{display:block;font:700 7.5px Arial;letter-spacing:2px;color:#5a4a08;margin-bottom:4px}
+     #chantB .tri{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:22px}`;
+    document.head.appendChild(st);}
+  let b=document.getElementById('chantB');
+  if(!b){b=document.createElement('div');b.id='chantB';document.body.appendChild(b);}
+  b.innerHTML='<span class="tri">🚧</span><small>CHANTIER DU PORT · EST</small>'+MOTS_CHANTIER[i];
+  b.classList.add('on');
+  clearTimeout(regarderLeChantier.t);
+  regarderLeChantier.t=setTimeout(()=>b.classList.remove('on'),6000);
+  try{vibrer(8);}catch(x){}
+}
 function graverTonCabanon(etat){
   const W=190,H=130,D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
   const c=document.createElement('canvas');c.width=W*D;c.height=H*D;
