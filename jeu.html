@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-28-0246';
+  var MA_VERSION='2026-09-28-0255';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -25124,7 +25124,7 @@ function ouvrirLaBoutiqueFerme(mot){
 /* ================= LA CLAIRIÈRE DE LA FORÊT : la cabane du bûcheron, le ponton, la gare ================= */
 function semerLaClairiere(CL,GARE){
   const L=[];
-  const C=graverCabaneBucheron();XCAL['x_fo_cabane0']=C;CALQUES_DECO['x_fo_cabane']=C;TAILLES['x_fo_cabane']=[{w:74,h:14}];
+  const C=graverCabaneBucheron();XCAL['x_fo_cabane0']=C;CALQUES_DECO['x_fo_cabane']=C;TAILLES['x_fo_cabane']=[{w:100,h:14}];
   L.push({t:'x_fo_cabane',x:CL[0]+54,y:CL[1]-96,v:0,gr:0,bati:true,demi:44,ouvre:'bucheron'});   /* remontée, et décalée à droite de la gare */
   {const G=graverGareFerme('LA FORÊT');XCAL['x_fe_gare0']=G;CALQUES_DECO['x_fe_gare']=G;}
   {const gx=(GARE&&GARE[0])||(CL[0]-96), gy=(GARE&&GARE[1])||(CL[1]+52);
@@ -25134,30 +25134,46 @@ function semerLaClairiere(CL,GARE){
   return L;
 }
 function graverCabaneBucheron(){
-  const W=110,H=96,cx=52,sol=90,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;
+  /* L'ABRI DE PLANCHES : trois murs, un grand auvent de tôle sur poteaux,
+     et les outils accrochés au mur. Léger, ouvert, très forêt. */
+  const W=150,H=110,cx=75,sol=100,D=2,c=document.createElement('canvas');
+  c.width=W*D;c.height=H*D;
   const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
-  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,w,h);};
+  const P=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
   const al=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
-  g.fillStyle='rgba(30,40,20,.28)';g.beginPath();g.ellipse(cx+3,sol+2,40,7,0,0,7);g.fill();
-  /* les rondins empilés */
-  for(let r=0;r<6;r++){const y=sol-4-r*5;for(let x=cx-34;x<cx+34;x+=1){const k=al(x*.7+r);R(x,y-5,1,5,k<.4?'#7d5934':(k<.75?'#8a6238':'#966c3e'));}
-    R(cx-34,y-5,68,1,'#a5764a');R(cx-34,y-.6,68,.6,'#5b3f21');
-    [cx-34,cx+32].forEach(bx=>{R(bx,y-5,2,5,'#c9a878');R(bx,y-4,2,1,'#8a6238');});}
-  /* le toit de bardeaux, débordant */
-  g.fillStyle='#4a3520';g.beginPath();g.moveTo(cx-44,sol-32);g.lineTo(cx,sol-58);g.lineTo(cx+44,sol-32);g.fill();
-  for(let r=0;r<8;r++){const y=sol-34-r*3.2,w=86-r*10.6;for(let x=cx-w/2;x<cx+w/2;x+=5){R(x,y-3.4,5,3.8,al(x*1.3+r)<.5?'#6f5a44':'#7d6750');R(x+4.6,y-3.4,.4,3.8,'#4f3d2a');R(x,y-3.4,5,.4,'rgba(255,255,255,.1)');}}
-  R(cx-44,sol-33,88,1.4,'#9a7a4a');
-  /* la porte, la fenêtre, la cheminée */
-  R(cx-9,sol-22,18,22,'#3a2616');R(cx-8,sol-21,16,21,'#5b3f21');for(let x=cx-8;x<cx+8;x+=3)R(x,sol-21,.6,21,'#4a3018');R(cx+4,sol-12,1.5,1.5,'#c9a24a');
-  R(cx+16,sol-24,10,8,'#2e3a44');R(cx+17,sol-23,3.6,6,'#7aa8c0');R(cx+21,sol-23,3.6,6,'#5a88a0');R(cx+15,sol-16,12,1.2,'#9a7a4a');
-  R(cx+20,sol-64,7,12,'#7a7264');for(let y=sol-64;y<sol-52;y+=3)R(cx+20,y,7,.6,'#8f8672');R(cx+19,sol-65,9,2,'#a89d86');
-  /* pas de fumée : la cheminée reste froide */
-  /* l'enseigne */
-  R(cx-18,sol-38,36,7,'#5b3f21');R(cx-17,sol-37.4,34,5.6,'#c9a878');
-  g.font='700 4.2px Georgia';g.textAlign='center';g.fillStyle='#4a3520';g.fillText('LE BÛCHERON',cx,sol-33.4);g.textAlign='left';
-  /* ni hache plantée ni tas de bûches : la cabane reste nette */
+  const BL=96, murH=40, bas=sol-murH;
+  /* l'ombre portée, en marches */
+  for(let k=0;k<4;k++)P(cx-BL/2+5+k*3,sol+k-2,BL-2-k*4,2,'rgba(34,40,22,'+(0.2-k*0.04)+')');
+  /* les planches du mur, chacune son grain */
+  for(let x=cx-BL/2;x<cx+BL/2;x+=6){const n=al(x*1.9);
+    P(x,bas,5.4,murH,n<.33?'#9a7146':(n<.66?'#8a6238':'#a5764a'));
+    P(x,bas,5.4,1,'#bd8b58');P(x+5.4,bas,0.8,murH,'#5b3f21');
+    for(let k=0;k<2;k++)if(al(x+k*7)<0.4)P(x+1,bas+5+al(x+k)*(murH-10),3.4,1,'rgba(70,48,26,.3)');}
+  /* le grand auvent de tôle, qui déborde largement */
+  for(let r=0;r<4;r++){const w=BL+40-r*8;
+    for(let x=cx-w/2;x<cx+w/2;x+=5)P(x,bas-6-r*4,4,4,r%2?'#6e7a72':'#7f8b83');}
+  P(cx-BL/2-20,bas-2,BL+40,3,'#55605a');P(cx-BL/2-20,bas-2,BL+40,1,'#98a49c');
+  /* les poteaux qui le portent */
+  [cx-BL/2-16,cx+BL/2+11].forEach(px=>{
+    P(px,bas+2,5,sol-bas-2,'#7d5934');P(px,bas+2,2,sol-bas-2,'#a5764a');
+    P(px-1,sol-2,7,2,'#5b3f21');});
+  /* la porte, à claire-voie */
+  P(cx-10,sol-24,20,24,'#4e3419');
+  for(let k=0;k<4;k++)P(cx-8+k*4.6,sol-23,3.6,22,al(k)<.5?'#6a4a2a':'#5f4124');
+  P(cx+5,sol-12,2,2,'#c9a24a');
+  /* les outils accrochés au mur */
+  P(cx+22,bas+8,2,20,'#7d5934');P(cx+18,bas+6,10,5,'#8f959e');P(cx+18,bas+6,10,1,'#c9ccd2');
+  P(cx+34,bas+8,2,16,'#7d5934');P(cx+31,bas+6,8,4,'#6a6f76');P(cx+31,bas+6,8,1,'#9aa2ac');
+  /* deux planches posées contre le mur, à gauche */
+  P(cx-36,bas+10,14,3,'#8a6238');P(cx-36,bas+10,14,1,'#a5764a');
+  P(cx-36,bas+15,14,3,'#8a6238');P(cx-36,bas+15,14,1,'#a5764a');
+  /* l'enseigne peinte */
+  P(cx-26,bas+2,52,9,'#5b3f21');P(cx-25,bas+3,50,7,'#c9a878');
+  g.font='700 5px Georgia';g.textAlign='center';g.fillStyle='#3a2616';
+  g.fillText('LE BÛCHERON',cx,bas+9.4);g.textAlign='left';
   return {toile:c,W,H,sol,nuit:null};
 }
+
 function graverBillots(){
   const W=26,H=22,cx=13,sol=19,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;
   const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
