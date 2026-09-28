@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-28-0550';
+  var MA_VERSION='2026-09-28-0603';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -25360,40 +25360,76 @@ const STATIONS_L1=[['extramar','Le port','Les docks, la criée, le casino','port
 const stationIci=()=>CARTE==='extramar'?'port':(CARTE==='montagne'||CARTE==='sommet'?'montagne':(FORET_SEULE?'foret':'ferme'));
 const autresStations=()=>STATIONS_L1.filter(([,,,k])=>k!==stationIci()).map(([,n])=>n.replace('Le ','').replace('La ','').toUpperCase()).join(' · ');
 function choisirLaDestination(){
-  /* LA LIGNE 2 dessert le terminal de la Joliette, en bêta : elle ne part que du port */
-  /* LA LIGNE 2 EST AFFICHÉE MAIS FERMÉE : on la voit en rose, on ne peut pas la prendre. */
-  const D=STATIONS_L1.filter(([,,,k])=>k!==stationIci())
-    .concat(stationIci()==='port'?STATIONS_L2:[]);
+  const D=STATIONS_L1.filter(([,,,k])=>k!==stationIci());
   if(!document.getElementById('cssVoy')){const st=document.createElement('style');st.id='cssVoy';st.textContent=
-    `#page2Fond.voy{background:#101418;color:#e8ecef;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%}
-     #page2Fond.voy .tete{padding:calc(env(safe-area-inset-top,0px) + 18px) 18px 14px;border-bottom:2px solid #1e262c;display:flex;align-items:center;gap:12px}
-     #page2Fond.voy .tete b{flex:1;font:400 24px Georgia}#page2Fond.voy .tete small{display:block;font:700 9px Arial;letter-spacing:3px;color:#3fc8b0}
-     #page2Fond.voy .tete button{width:34px;height:34px;border-radius:50%;border:0;background:#e8ecef;color:#101418;font:700 14px Arial}
-     #page2Fond.voy .d{display:flex;align-items:center;gap:14px;margin:12px 16px;padding:14px;border:1px solid #27323a;border-radius:16px;background:#151b21;color:inherit;width:calc(100% - 32px);text-align:left}
-     #page2Fond.voy .d:active{background:#1b242b}#page2Fond.voy .d i{width:26px;height:26px;border-radius:50%;background:#101418;border:6px solid #3fc8b0;flex:none}
-     #page2Fond.voy .d b{display:block;font:400 20px Georgia}#page2Fond.voy .d em{display:block;font:italic 12px Georgia;color:#9aa8b0}
-     #page2Fond.voy .d.l2{border-color:#6a2c46;background:#1c141a}
-     #page2Fond.voy .d.l2 i{border-color:#e85a9a;box-shadow:0 0 10px rgba(232,90,154,.35)}
-     #page2Fond.voy .d.l2 b{color:#f6a8cc}#page2Fond.voy .d.l2 em{color:#b98aa2}
-     #page2Fond.voy .d.ferme{opacity:.62}
-     #page2Fond.voy .d.ferme:active{background:#1c141a}
-     #page2Fond.voy .cad{margin-left:auto;font:700 8px Arial;letter-spacing:1.6px;border-radius:9px;padding:6px 9px;
-       background:rgba(232,90,154,.16);color:#f6a8cc;border:1px solid rgba(232,90,154,.4);white-space:nowrap}`;
+    `#page2Fond.voy{background:#0f1512;color:#eef6ea;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%}
+     #page2Fond.voy .tete{padding:calc(env(safe-area-inset-top,0px) + 18px) 18px 14px;border-bottom:1px solid #1e2a22;
+       display:flex;align-items:center;gap:12px}
+     #page2Fond.voy .tete b{flex:1;font:400 26px Georgia;letter-spacing:.5px;color:#f6efd8}
+     #page2Fond.voy .tete small{display:block;font:700 8.5px Arial;letter-spacing:3px;color:#7fae90}
+     #page2Fond.voy .tete button{width:34px;height:34px;border-radius:50%;border:0;background:#eef6ea;color:#0f1512;font:700 14px Arial}
+     #page2Fond.voy .corps{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;
+       padding:12px 12px calc(env(safe-area-inset-bottom,0px) + 14px)}
+     #page2Fond.voy .st{flex:1;min-height:0;position:relative;border-radius:20px;overflow:hidden;border:1px solid #27342b;
+       box-shadow:0 8px 22px rgba(0,0,0,.4);background:#0c110e}
+     #page2Fond.voy .st canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+     #page2Fond.voy .st .voile{position:absolute;inset:0;
+       background:linear-gradient(90deg,rgba(8,12,10,.88) 34%,rgba(8,12,10,.10) 100%)}
+     #page2Fond.voy .st .g{position:absolute;left:16px;top:50%;transform:translateY(-50%)}
+     #page2Fond.voy .st b{display:block;font:400 27px Georgia;color:#fff8e8}
+     #page2Fond.voy .st em{display:block;font:700 8.5px Arial;letter-spacing:1.6px;color:#a9c7b4;margin-top:4px;font-style:normal}
+     #page2Fond.voy .st .go{position:absolute;right:16px;top:50%;transform:translateY(-50%);border:0;border-radius:12px;
+       padding:13px 18px;font:700 11.5px Arial;letter-spacing:1.2px;background:#f0d78a;color:#2e2406}`;
     document.head.appendChild(st);}
   $('page2Fond').className='voy';$('page2').classList.add('on');
   $('page2Fond').innerHTML='<div class="tete"><div style="flex:1"><small>MÉTRO · LIGNE 1</small><b>Où vas-tu ?</b></div><button id="voyX">✕</button></div>'+
-    D.map(([c,n,s2])=>{
-      const l2=(c==='vallon'), ferme=l2&&!ligne2Permise();
-      return '<button class="d'+(l2?' l2':'')+(ferme?' ferme':'')+'" data-c="'+c+'"'+(ferme?' data-ferme="1"':'')+
-        '><i></i><span><b>'+n+'</b><em>'+(ferme?'Ligne 2 · en chantier, fermée au public':s2)+'</em></span>'+
-        (l2?'<span class="cad">'+(ferme?'FERMÉE':'LIGNE 2')+'</span>':'')+'</button>';}).join('');
+    '<div class="corps">'+D.map(([c,n,s2])=>
+      '<button class="st" data-c="'+c+'"><canvas data-vue="'+c+'" width="380" height="180"></canvas><span class="voile"></span>'+
+      '<span class="g"><b>'+n+'</b><em>'+s2.toUpperCase()+'</em></span>'+
+      '<span class="go">PARTIR</span></button>').join('')+'</div>';
+  /* LES VIGNETTES : chaque station a sa petite scène, dessinée au pixel */
+  $('page2Fond').querySelectorAll('canvas[data-vue]').forEach(cv=>vignetteStation(cv,cv.dataset.vue));
   $('voyX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
   $('page2Fond').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
-    if(b.dataset.ferme){vibrer(18);
-      const em=b.querySelector('em');em.textContent='Le Vallon est en chantier : la ligne 2 rouvrira bientôt.';
-      em.style.color='#f6a8cc';return;}
     const n=D.find(d=>d[0]===b.dataset.c)[1];
     $('page2').classList.remove('on');voyagerVers(b.dataset.c,'Direction '+n);});
+}
+/* ---- les trois scènes du choix de destination ---- */
+function vignetteStation(cv,quoi){
+  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+  const W=cv.width,H=cv.height;
+  const P=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const al=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+  if(quoi==='extramar'||quoi==='port'){
+    for(let y=0;y<H*0.42;y++){const k=y/(H*0.42);P(0,y,W,1,`rgb(${118+k*90|0},${158+k*56|0},${196+k*32|0})`);}
+    for(let y=H*0.42;y<H*0.72;y++){const k=(y-H*0.42)/(H*0.3);P(0,y,W,1,`rgb(${28+k*16|0},${86+k*26|0},${118+k*22|0})`);}
+    for(let i=0;i<W*2;i++)P(al(i*3)*W,H*0.42+al(i*7)*H*0.3,4+al(i)*6,1,'rgba(255,255,255,.22)');
+    for(let y=H*0.72;y<H;y++){const k=(y-H*0.72)/(H*0.28);P(0,y,W,1,`rgb(${196-k*20|0},${186-k*18|0},${160-k*16|0})`);}
+    for(let i=0;i<W*H*0.05;i++)P(al(i*1.7)*W,H*0.72+al(i*2.3)*H*0.28,1,1,al(i*5)<.5?'#c6bb9f':'#b0a68c');
+    for(let i=0;i<3;i++){const x=40+i*110;
+      P(x,H*0.18,4,H*0.54,'#e8ba2a');P(x-26,H*0.16,70,5,'#e8ba2a');P(x-26,H*0.16,70,1.6,'#f6d96a');}
+    P(W*0.52,H*0.6,120,16,'#1b2b3a');P(W*0.54,H*0.55,96,6,'#8a2f22');
+    for(let i=0;i<5;i++)P(W*0.56+i*18,H*0.5,16,6,['#a8332a','#1d4f7a','#2f6a4a','#c08a2a','#8a8f98'][i]);
+    return;}
+  if(quoi==='ferme'){
+    for(let y=0;y<H*0.4;y++){const k=y/(H*0.4);P(0,y,W,1,`rgb(${126+k*84|0},${168+k*48|0},${202+k*28|0})`);}
+    for(let y=H*0.4;y<H;y++){const k=(y-H*0.4)/(H*0.6);P(0,y,W,1,`rgb(${142+k*24|0},${158+k*16|0},${78+k*12|0})`);}
+    for(let i=0;i<W*H*0.06;i++){const x=al(i*1.7)*W,y=H*0.4+al(i*2.3)*H*0.6;
+      P(x,y,1,2,al(i*5)<.5?'#c9b95e':'#b3a44c');}
+    P(W*0.16,H*0.42,86,54,'#a8452f');P(W*0.16,H*0.42,86,3,'#c46a4a');
+    P(W*0.13,H*0.36,98,10,'#7d2f1e');P(W*0.30,H*0.62,22,34,'#5b3f21');
+    for(let x=0;x<W;x+=22)P(x,H*0.82,4,22,'#8a6238');
+    P(0,H*0.84,W,4,'#a5764a');P(0,H*0.92,W,4,'#a5764a');
+    return;}
+  /* la forêt */
+  for(let y=0;y<H;y++){const k=y/H;P(0,y,W,1,`rgb(${96+k*20|0},${126+k*18|0},${86+k*12|0})`);}
+  for(let i=0;i<W*H*0.08;i++)P(al(i*1.7)*W,al(i*2.3)*H,1,2,al(i*5)<.5?'#7ea45f':'#6a9152');
+  for(let i=0;i<9;i++){const x=al(i*7)*W,y=H*0.3+al(i*3)*H*0.55,s=0.8+al(i*5)*0.8;
+    P(x-3*s,y,6*s,26*s,'#6a4a2a');
+    P(x-22*s,y-16*s,44*s,18*s,'#3f7a3f');P(x-17*s,y-26*s,34*s,14*s,'#4a8a45');
+    P(x-11*s,y-34*s,22*s,12*s,'#57a04e');}
+  for(let i=0;i<10;i++){const x=al(i*11)*W,y=H*0.6+al(i*13)*H*0.35;
+    P(x,y,4,5,'#f2f2ec');P(x-1,y-3,6,3,'#c03a2a');}
 }
 function voyagerVers(carte,nom){
   if(voyagerVers.enCours)return;voyagerVers.enCours=true;
