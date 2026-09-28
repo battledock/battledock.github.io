@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-28-0302';
+  var MA_VERSION='2026-09-28-0309';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -11735,7 +11735,7 @@ function dessinerSouche(g,x,y,gr,neuf){
 /* LA RIVE EST RÉTRÉCIT : 806 de large au lieu de 1166. Cinq bâtiments dans
    1166 de large donnaient un pré avec des maisons dedans ; resserrés, ils
    font un village. Le grand vide, ce sera le DEHORS, plus tard. */
-const MONDE_L=CARTE==='vallon'?420:(CARTE==='garde'?640:(CARTE==='montagne'?360:(CARTE==='sommet'||CARTE==='piscine'?320:(CARTE==='stade'?760:(CARTE==='village'?((typeof FORET_SEULE!=='undefined'&&FORET_SEULE)?(FZ.x1+120):1900):1400)))));   /* au village, la ferme s'étend à droite */               // largeur, en pixels de jeu
+const MONDE_L=CARTE==='vallon'?420:(CARTE==='garde'?640:(CARTE==='montagne'?360:(CARTE==='sommet'||CARTE==='piscine'?320:(CARTE==='stade'?760:(CARTE==='village'?((typeof FORET_SEULE!=='undefined'&&FORET_SEULE)?660:1900):1400)))));   /* au village, la ferme s'étend à droite */               // largeur, en pixels de jeu
 /* La carte gagne 160 points au sud pour accueillir la VOIE FERRÉE : elle
    traverse tout l'écran et sort des deux côtés, avec son remblai, et elle
    ferme le monde par le bas — qui s'arrêtait jusqu'ici sur une lisière sans
@@ -11906,7 +11906,7 @@ const alea=s=>{const v=Math.sin(s*127.1)*43758.5453;return v-Math.floor(v);};
 const BOIS_PONT={sombre:'#3d2a17',fonce:'#5b3f21',bas:'#6b4a28',moyen:'#7d5934',
                  clair:'#96703f',haut:'#a5764a'};
 function graverPontsDansSol(g){
-  /* LE PONT EST REVENU : la forêt a de nouveau sa passerelle sur la rivière. */
+  if(FORET_SEULE&&CARTE==='village')return;                 /* la forêt n'a plus de pont */
   const H=PONT_DEMI, L=PONT_LARGE;
   LES_PONTS().forEach(([cx,cy])=>{
     const R=(a,b,w,h,col)=>{g.fillStyle=col;
@@ -11935,7 +11935,7 @@ function graverPontsDansSol(g){
 }
 /* la rambarde sud : elle passe DEVANT le joueur */
 function graverRambardesSud(g){
-  /* le pont de la forêt est de retour */
+  if(FORET_SEULE&&CARTE==='village')return;                 /* pas de pont à la forêt */
   const H=PONT_DEMI, L=PONT_LARGE;
   LES_PONTS().forEach(([cx,cy])=>{
     const R=(a,b,w,h,col)=>{g.fillStyle=col;
@@ -13335,7 +13335,7 @@ const PONT_LARGE=RIV_LARGE+11;                 /* demi-longueur du tablier, d'un
 const PONT_PASSAGE=PONT_DEMI-5;                 /* tout le tablier se traverse : seules les rambardes, au nord et au sud, arrêtent */
 const PONT_CENTRE=0;                           /* on marche au milieu : les rambardes encadrent */
 function surTablier(x,y){
-  /* on traverse de nouveau par le pont */
+  if(FORET_SEULE&&CARTE==='village')return false;           /* on ne traverse pas la rivière */
   return PONTS.some(py=>Math.abs(y-(py+PONT_CENTRE))<=PONT_PASSAGE&&
     Math.abs(x-rivX(py))<PONT_LARGE);
 }
@@ -13938,7 +13938,7 @@ function graverChemins(g){
   /* PLUS DE VOIE NI DE HALTE : le train quitte le village. La place et les
      bâtiments reprennent tout le terrain. */
   /* LE SEUIL DES PONTS : deux dalles qui raccordent le chemin au tablier */
-  PONTS.forEach(py=>{
+  if(!(FORET_SEULE&&CARTE==='village'))PONTS.forEach(py=>{
     const px=rivX(py);
     [-1,1].forEach(s2=>{
       g.fillStyle='#a4acb3';g.fillRect((px+s2*30-2)|0,(py-13)|0,5,26);
@@ -14273,7 +14273,7 @@ function semerDecor(){
   });
 
   /* les deux ponts, posés en travers de la rivière */
-  PONTS.forEach(py=>DECOR.push({t:'pont',x:Math.round(rivX(py)),y:py,gr:0}));
+  /* pas de pont : la rivière ferme la forêt */
 
   /* on dégage les sentiers, puis on vérifie qu'on peut aller partout */
   const deblayes=deblayerChemins();
@@ -14296,7 +14296,7 @@ function semerDecor(){
       &&!(dansClairiere(o)&&o.t!=='fleurs'&&o.t!=='champignons'&&o.t!=='herbes'));
     /* LA GARE DU MÉTRO : en haut à gauche du bois, avec son parvis dégagé.
        Rien ne pousse autour : ni arbre, ni rocher, ni roseau. */
-    const GARE=[CL[0]-118, CL[1]-92];        /* à gauche de la cabane du bûcheron */
+    const GARE=[CL[0]-70, CL[1]-30];          /* au milieu du bois, à gauche */
     const R_GARE=[96,74];                       /* le rayon du parvis */
     /* LA ZONE DÉGAGÉE : l'ovale autour de la gare, PLUS une bande en dessous —
        un arbre planté plus bas dresse son feuillage jusque sur le bâtiment. */
@@ -14307,18 +14307,7 @@ function semerDecor(){
     const devantLaGare=(o)=>HAUTS.has(o.t)&&Math.abs(o.x-GARE[0])<140&&o.y>GARE[1]-90&&o.y<GARE[1]+230;
     DECOR=DECOR.filter(o=>!(surLeParvis(o)&&o.t!=='fleurs'&&o.t!=='herbes')&&!devantLaGare(o));
     try{DECOR=DECOR.concat(semerLaClairiere(CL,GARE));}catch(x){console.error(x);}
-    /* ===== TON TERRAIN : de l'autre côté du pont, à droite de la forêt ===== */
-    try{
-      /* LE TERRAIN : au milieu de la rive est (entre la rivière et le bord),
-         à mi-hauteur de la carte. */
-      const RIVE0=rivX(300)+26, RIVE1=FZ.x1+92;
-      const TX=Math.round((RIVE0+RIVE1)/2), TY=Math.round((FZ.y0+FZ.y1)/2)-10;
-      TERRAIN_FORET={x:TX,y:TY};
-      DECOR=DECOR.filter(o=>!(Math.abs(o.x-TX)<86&&Math.abs(o.y-TY)<70));
-      /* la rive est reste une prairie nette : pas de touffes en travers du passage */
-      DECOR.push({t:'x_cabanonMoi',x:TX,y:TY,v:0,col:CAB_LU().bati?[36,10]:[10,4],
-        bati:!!CAB_LU().bati,demi:34,ouvre:'chantierVallon'});
-    }catch(x){console.error(x);}
+    /* le terrain à bâtir attend un autre lieu : la forêt s'arrête à la rivière */
   }
   else if(FERME_SEULE&&!PLACE_SEULE){                                                 /* LA FERME : on retire tout ce qui faisait « village » */
     const VILLE=new Set(['comptoir','echoppe','fontaine','panneauV','boite','tilleul','bancP','lanterneP','boutique','pont',
@@ -15146,7 +15135,7 @@ function dessiner(){
      Un pixel du jeu vaut ECH pixels d'écran : on peut donc glisser par pas de 1/ECH,
      ce qui donne un défilement continu au lieu de sauts d'un pixel entier. */
   const CH_S=CHAMPS_SEULS&&CARTE==='village';const FO_S=FORET_SEULE&&CARTE==='village';
-  const BX0=FO_S?FZ.x0:CH_S?FB.x0:(PLACE_SEULE&&CARTE==='village')?VIL.x0:((FERME_SEULE&&CARTE==='village')?FERME_X0:0), BX1=FO_S?(FZ.x1+100):CH_S?FB.x1:(PLACE_SEULE&&CARTE==='village')?VIL.x1:MONDE_L, BY0=FO_S?FZ.y0:CH_S?FB.y0:(PLACE_SEULE&&CARTE==='village')?VIL.y0:0, BY1=FO_S?FZ.y1:CH_S?FB.y1:(PLACE_SEULE&&CARTE==='village')?VIL.y1:MONDE_H;
+  const BX0=FO_S?FZ.x0:CH_S?FB.x0:(PLACE_SEULE&&CARTE==='village')?VIL.x0:((FERME_SEULE&&CARTE==='village')?FERME_X0:0), BX1=FO_S?660:CH_S?FB.x1:(PLACE_SEULE&&CARTE==='village')?VIL.x1:MONDE_L, BY0=FO_S?FZ.y0:CH_S?FB.y0:(PLACE_SEULE&&CARTE==='village')?VIL.y0:0, BY1=FO_S?FZ.y1:CH_S?FB.y1:(PLACE_SEULE&&CARTE==='village')?VIL.y1:MONDE_H;
   const camXf=Math.max(BX0,Math.min(BX1-VW,joueur.x-VW/2));
   /* à Extramar, la vue regarde un peu plus vers le nord : la Bonne Mère */
   const camYf=Math.max(BY0,Math.min(BY1-VH,joueur.y-VH*(CARTE==='garde'?0.74:(ANNEXE?0.62:0.5))));
@@ -25165,7 +25154,7 @@ function graverBoucheMetro(nom){
 function semerLaClairiere(CL,GARE){
   const L=[];
   const C=graverCabaneBucheron();XCAL['x_fo_cabane0']=C;CALQUES_DECO['x_fo_cabane']=C;TAILLES['x_fo_cabane']=[{w:100,h:14}];
-  L.push({t:'x_fo_cabane',x:CL[0]+54,y:CL[1]-96,v:0,gr:0,bati:true,demi:44,ouvre:'bucheron'});   /* remontée, et décalée à droite de la gare */
+  L.push({t:'x_fo_cabane',x:CL[0]+66,y:CL[1]-28,v:0,gr:0,bati:true,demi:44,ouvre:'bucheron'});   /* à droite de la gare, au milieu du bois */
   {const G=graverBoucheMetro('LA FORÊT');XCAL['x_fe_gare0']=G;CALQUES_DECO['x_fe_gare']=G;TAILLES['x_fe_gare']=[{w:96,h:16}];}
   {const gx=(GARE&&GARE[0])||(CL[0]-96), gy=(GARE&&GARE[1])||(CL[1]+52);
    L.push({t:'x_fe_gare',x:gx,y:gy,v:0,bati:true,demi:34,ouvre:'metroForet'});
@@ -25829,7 +25818,8 @@ dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
      le pont, et la rive d'en face porte ton terrain. */
   /* LA RIVE EST : elle s'arrête net avant le bocage de la ferme (qui commence
      à 784 sur la même carte) — sinon on marchait jusque dans ses champs. */
-  if(FORET_SEULE&&CARTE==='village'&&(x<FZ.x0+10||y<FZ.y0+12||y>FZ.y1-8||x>FZ.x1+100))return true;
+  /* LA FORÊT S'ARRÊTE À LA RIVIÈRE : on va jusqu'à sa berge, pas au-delà. */
+  if(FORET_SEULE&&CARTE==='village'&&(x<FZ.x0+10||y<FZ.y0+12||y>FZ.y1-8||x>rivX(y)-16))return true;
   return bloqueFermeVrai(x,y);};}
 /* les poules s'écartent quand on passe au milieu d'elles */
 function poulEffrayer(){if(!POUL_BETES)return;const Z=POUL_Z(), jx=joueur.x-Z.x0, jy=joueur.y-Z.y0, W=Z.x1-Z.x0, H=Z.y1-Z.y0;
