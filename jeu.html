@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-28-1011';
+  var MA_VERSION='2026-09-28-1021';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -32,10 +32,13 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       .then(function(r){return r.json();})
       .then(function(d){
         if(!d||!d.v||d.v===MA_VERSION)return;
-        /* on ne recharge qu'une fois par version, sinon on bouclerait */
+        /* UNE SEULE FOIS PAR SESSION, quelle que soit la version : pendant les
+           dix minutes de cache de GitHub, le fichier servi peut rester plus
+           vieux que version.json — sans ce garde-fou, on rechargeait à chaque
+           passage d'une carte à l'autre. */
         var deja=null;
         try{deja=sessionStorage.getItem(cle);}catch(e){}
-        if(deja===d.v)return;
+        if(deja)return;
         try{sessionStorage.setItem(cle,d.v);}catch(e){}
         var q=new URLSearchParams(location.search);q.set('v',d.v);
         var u=location.pathname.split('?')[0]+'?'+q.toString();   /* on garde la carte : sinon un voyage vers la ferme ou la forêt revenait au port */
@@ -17241,17 +17244,7 @@ async function ouvrirLeChantier(mot){
 }
 /* LE TERRAIN EST EN FORÊT : on lit l'état du cabanon en arrivant, et on
    redessine si le serveur nous apprend quelque chose de neuf. */
-if(FORET_SEULE&&CARTE==='village'){
-  /* on demande l'état au serveur ; on ne redessine QUE s'il a vraiment répondu
-     autre chose (sinon on tournait en boucle de rechargements). */
-  const avant=JSON.stringify(CAB_LU());
-  cabLire().then(d=>{
-    if(!d||d.erreur||typeof d.bati!=='boolean')return;
-    const apres=JSON.stringify({bati:!!d.bati,niveau:+d.niveau||0});
-    if(apres!==avant&&!sessionStorage.getItem('bdl.cab.relu')){
-      sessionStorage.setItem('bdl.cab.relu','1');location.reload();}
-  }).catch(()=>{});
-}
+/* (plus de terrain en forêt : plus rien à relire, donc plus de rechargement) */
 if(CARTE==='vallon')location.replace('jeu.html?v='+Date.now());   /* le quartier est déposé */
 /* LA LIGNE 2 : ouverte à son bâtisseur seulement. Déclarée en fonction pour être
    disponible dès le premier appel, même très tôt au chargement. */

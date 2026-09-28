@@ -19,7 +19,12 @@ self.addEventListener('fetch',e=>{
   if(!frais)return;                       /* images, sons : le cache normal suffit */
   e.respondWith((async()=>{
     try{
-      const r=await fetch(e.request,{cache:'no-store'});
+      /* ON CONTOURNE LE CACHE DE GITHUB : dix minutes, c'est long quand on
+         vient de publier. Une adresse jamais vue force le vrai fichier. */
+      const frais2=new URL(e.request.url);
+      frais2.searchParams.set('_f',Date.now().toString(36));
+      const r=await fetch(new Request(frais2.toString(),{
+        method:'GET',headers:e.request.headers,mode:'same-origin',credentials:'same-origin'}),{cache:'no-store'});
       if(r&&r.ok){const c=await caches.open(CACHE);c.put(e.request,r.clone());}
       return r;
     }catch(x){
