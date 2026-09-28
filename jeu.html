@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-28-0321';
+  var MA_VERSION='2026-09-28-0327';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -14047,14 +14047,21 @@ function semerDecor(){
        Rien ne pousse autour : ni arbre, ni rocher, ni roseau. */
     const GARE=[CL[0]-70, CL[1]-30];          /* au milieu du bois, à gauche */
     const R_GARE=[96,74];                       /* le rayon du parvis */
-    /* LA ZONE DÉGAGÉE : l'ovale autour de la gare, PLUS une bande en dessous —
-       un arbre planté plus bas dresse son feuillage jusque sur le bâtiment. */
-    const HAUTS=new Set(['arbre','pin','sapin','bouleau','rocher','souche','roseaux','buisson']);
-    const surLeParvis=(o)=>Math.hypot((o.x-GARE[0])/R_GARE[0],(o.y-GARE[1])/R_GARE[1])<1;
-    /* la bande dégagée descend plus bas et s'élargit : un arbre planté loin
-       en dessous dresse quand même son feuillage jusque devant la porte. */
-    const devantLaGare=(o)=>HAUTS.has(o.t)&&Math.abs(o.x-GARE[0])<140&&o.y>GARE[1]-90&&o.y<GARE[1]+230;
-    DECOR=DECOR.filter(o=>!(surLeParvis(o)&&o.t!=='fleurs'&&o.t!=='herbes')&&!devantLaGare(o));
+    /* LES ABORDS : dix points de dégagement tout autour de la gare et de la
+       cabane — au-dessus, au-dessous, à gauche, à droite. Rien n'y pousse.
+       On tient compte de la hauteur du feuillage : un arbre planté plus bas
+       dresse sa cime jusque sur le toit, on l'écarte donc aussi. */
+    const MARGE=10, CIME=64;
+    const BATIS=[
+      {x:GARE[0],    y:GARE[1],    w:96,  h:16, haut:86},   /* l'édicule de fer */
+      {x:CL[0]+66,   y:CL[1]-28,   w:100, h:14, haut:64}];  /* l'abri du bûcheron */
+    const auxAbords=(o)=>BATIS.some(B=>{
+      const dx=Math.abs(o.x-B.x)-(B.w/2+MARGE);
+      if(dx>0)return false;
+      /* en hauteur : du sommet du bâtiment jusqu'au pied, plus la marge —
+         et en dessous, de quoi qu'une cime vienne le recouvrir */
+      return o.y > B.y-B.haut-MARGE && o.y < B.y+B.h/2+MARGE+CIME;});
+    DECOR=DECOR.filter(o=>!(auxAbords(o)&&o.t!=='fleurs'&&o.t!=='herbes'));
     try{DECOR=DECOR.concat(semerLaClairiere(CL,GARE));}catch(x){console.error(x);}
     /* le terrain à bâtir attend un autre lieu : la forêt s'arrête à la rivière */
   }
