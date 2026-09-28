@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-28-0603';
+  var MA_VERSION='2026-09-28-0614';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -20209,6 +20209,7 @@ function majAction(){
   if(o.ouvre==='buvette'){b.innerHTML='La buvette du refuge<small>VIN CHAUD · RACLETTE · FROMAGE</small>';b.classList.add('on');return;}
   if(o.ouvre==='galerie'){b.innerHTML='Descendre dans la mine<small>PUITS N°1 · FILONS ET MINERAIS</small>';b.classList.add('on');return;}
   if(o.ouvre==='bucheron'){b.innerHTML='La cabane du bûcheron<small>DÉBITER · VENDRE · LA HACHE</small>';b.classList.add('on');return;}
+  if(o.ouvre==='cueilleur'){b.innerHTML='Marius le cueilleur<small>IL A SON AVIS SUR TOUT</small>';b.classList.add('on');return;}
   if(o.ouvre==='etable'){b.innerHTML='Entrer à l’étable<small>LAIT · FOIN · FROMAGE</small>';b.classList.add('on');return;}
   if(o.ouvre==='metroFerme'){b.innerHTML='Prendre le métro<small>LIGNE 1 · '+autresStations()+'</small>';b.classList.add('on');return;}
   if(o.ouvre==='etalGraines'){b.innerHTML='Les graines<small>SEMENCES · OUTILS · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
@@ -20386,6 +20387,7 @@ function agir(){
     try{e.ext={x:joueur.x,y:joueur.y};sauver();envoyerSauvegarde(true);}catch(x){}
     vibrer([8,30,8]);setTimeout(()=>{location.href='mine.html?v='+Date.now();},120);return;}
   if(o.ouvre==='bucheron'){FOR=null;ouvrirLaCabane();return;}
+  if(o.ouvre==='cueilleur'){parlerAuCueilleur();return;}
   if(o.ouvre==='etable'){ETB=null;ouvrirLEtable();return;}
   if(o.ouvre==='metroFerme'){choisirLaDestination();return;}
   if(o.ouvre==='etalGraines'){ouvrirLeGrainetier('graines');return;}
@@ -24906,10 +24908,92 @@ function graverBoucheMetro(nom){
   g.fillText((nom||'LA FORÊT')+' · LIGNE 1',cx,sol-40.4);g.textAlign='left';
   return {toile:c,W,H,sol,nuit:null};
 }
+/* ===== MARIUS LE CUEILLEUR : un vieux au milieu des champignons =====
+   Il tient un panier, il a ses lunettes, et il a son avis sur tout. */
+/* CE QUE DIT MARIUS : il en sort une au hasard, jamais deux fois la même d'affilée. */
+const MOTS_CUEILLEUR=[
+ 'Celui-là, tu le manges. Celui-là aussi. Le troisième… on verra bien.',
+ 'Un champignon, ça se ramasse avec les yeux. Le reste, c’est du courage.',
+ 'J’en ai mangé un bleu en 1987. Depuis, je vois la musique.',
+ 'Ma femme m’a dit : « Marius, arrête. » Elle avait raison. Je n’ai pas arrêté.',
+ 'Ceux qui sentent la noisette : bons. Ceux qui sentent le radis : bons aussi, mais moins.',
+ 'Le cèpe, c’est comme le docker : il se lève tôt et il ne parle pas.',
+ 'Ne cueille jamais ce qui a des lamelles blanches. Ni ce qui te regarde.',
+ 'Celui-ci vaut cher. Celui-là ne vaut rien. Je les ai confondus, l’an dernier.',
+ 'Tu sais pourquoi je ne me perds jamais ? Parce que je ne cherche rien.',
+ 'Trente ans que je viens ici. Le bois me connaît mieux que ma sœur.',
+ 'Il y a deux sortes de champignons : ceux qu’on mange, et ceux qu’on mange une fois.',
+ 'Si tu trouves une morille, ne le dis à personne. Surtout pas à moi.',
+ 'Le mien, de panier, il est percé. Comme ça je donne au bois ce qu’il m’a donné.',
+ 'Un jour j’ai vu un sanglier. Il m’a regardé. J’ai dit bonjour. Il est parti.',
+ 'Le silence ici, c’est pas du vide. C’est plein, mais de rien.',
+ 'Méfie-toi de l’amanite. Elle est belle, elle est rouge, et elle t’aime pas.'];
+let CUEIL_DIT=-1;
+const CSS_CUEIL=`
+#cueilB{position:fixed;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 96px);z-index:60;
+  background:linear-gradient(180deg,rgba(253,251,244,.97),rgba(238,231,212,.97));color:#33291b;
+  border-radius:16px;padding:14px 16px 13px 58px;font:400 16px Georgia;line-height:1.45;
+  box-shadow:0 8px 26px rgba(0,0,0,.45);opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s}
+#cueilB.on{opacity:1;transform:none}
+#cueilB small{display:block;font:700 7.5px Arial;letter-spacing:2px;color:#7a6a46;margin-bottom:4px}
+#cueilB .tete{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;
+  background:radial-gradient(circle at 40% 34%,#f2ead8,#c9bda2);box-shadow:inset 0 0 0 1px rgba(90,72,44,.3);
+  display:flex;align-items:center;justify-content:center;font-size:19px}`;
+function parlerAuCueilleur(){
+  let i;do{i=Math.floor(Math.random()*MOTS_CUEILLEUR.length);}while(i===CUEIL_DIT&&MOTS_CUEILLEUR.length>1);
+  CUEIL_DIT=i;
+  if(!document.getElementById('cssCueil')){const st=document.createElement('style');st.id='cssCueil';
+    st.textContent=CSS_CUEIL;document.head.appendChild(st);}
+  let b=document.getElementById('cueilB');
+  if(!b){b=document.createElement('div');b.id='cueilB';document.body.appendChild(b);}
+  b.innerHTML='<span class="tete">🍄</span><small>MARIUS LE CUEILLEUR</small>« '+MOTS_CUEILLEUR[i]+' »';
+  b.classList.add('on');
+  clearTimeout(parlerAuCueilleur.t);
+  parlerAuCueilleur.t=setTimeout(()=>b.classList.remove('on'),6500);
+  try{vibrer(10);}catch(x){}
+}
+function graverLeCueilleur(){
+  const W=64,H=64,cx=32,sol=58,D=2,c=document.createElement('canvas');
+  c.width=W*D;c.height=H*D;
+  const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const P=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const hs=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+  P(cx-8,sol,16,3,'rgba(30,34,20,.3)');
+  /* les jambes et les godillots */
+  P(cx-5,sol-13,4,11,'#4a4438');P(cx+1,sol-13,4,11,'#4a4438');
+  P(cx-6,sol-3,5,3,'#3a2f22');P(cx+1,sol-3,5,3,'#3a2f22');
+  /* le tablier sur le gilet */
+  P(cx-7,sol-27,14,14,'#8a7a56');P(cx-7,sol-27,14,2,'#9e8e68');P(cx-7,sol-17,14,2,'#6e6142');
+  P(cx-5,sol-24,10,11,'#c9bda2');P(cx-5,sol-24,10,1,'#ded3b8');
+  for(let k=0;k<3;k++)P(cx-1,sol-25+k*4,2,2,'#c9a24a');
+  /* les bras : un tendu vers le panier, l'autre qui montre */
+  P(cx-10,sol-26,3,11,'#8a7a56');P(cx+7,sol-26,3,9,'#8a7a56');
+  P(cx-10,sol-15,3,3,'#e0c0a0');P(cx+7,sol-17,3,3,'#e0c0a0');
+  /* la tête */
+  P(cx-2,sol-29,4,2,'#d8b898');
+  P(cx-4,sol-38,8,9,'#e6c6a4');P(cx-4,sol-38,8,1,'#f0d2b4');
+  P(cx-2.4,sol-35,2,2,'#f4f2ee');P(cx-1.8,sol-34.4,1,1.4,'#2a2a2a');
+  P(cx+1,sol-35,2,2,'#f4f2ee');P(cx+1.6,sol-34.4,1,1.4,'#2a2a2a');
+  P(cx,sol-33,1,1.4,'#c9a488');P(cx-1.4,sol-31.4,3,1,'#a8705c');
+  /* les lunettes rondes */
+  P(cx-3.4,sol-35.4,3,2.6,'rgba(220,230,235,.45)');P(cx+0.6,sol-35.4,3,2.6,'rgba(220,230,235,.45)');
+  P(cx-3.4,sol-35.4,7,1,'#4a4438');
+  /* les cheveux blancs et la barbe */
+  P(cx-5,sol-40,10,2,'#d8d4cc');P(cx-5,sol-38,2,4,'#d8d4cc');P(cx+3,sol-38,2,4,'#d8d4cc');
+  P(cx-4,sol-32,8,4,'#d8d4cc');P(cx-3,sol-28,6,2,'#d8d4cc');
+  /* le panier, plein de champignons */
+  P(cx-20,sol-12,13,9,'#b8905c');P(cx-20,sol-12,13,2,'#d0a878');
+  for(let k=0;k<3;k++)P(cx-18+k*4,sol-9,3,6,'#9a7444');
+  for(let k=0;k<3;k++){P(cx-18+k*4,sol-16,3,5,'#f2f2ec');P(cx-19+k*4,sol-18,5,3,hs(k)<.5?'#c03a2a':'#a8563a');}
+  return {toile:c,W,H,sol,nuit:null};
+}
 function semerLaClairiere(CL,GARE){
   const L=[];
   const C=graverCabaneBucheron();XCAL['x_fo_cabane0']=C;CALQUES_DECO['x_fo_cabane']=C;TAILLES['x_fo_cabane']=[{w:100,h:14}];
   L.push({t:'x_fo_cabane',x:CL[0]+66,y:CL[1]-28,v:0,gr:0,bati:true,demi:44,ouvre:'bucheron'});   /* à droite de la gare, au milieu du bois */
+  /* MARIUS LE CUEILLEUR : plus bas dans la clairière, au milieu des champignons */
+  {const M=graverLeCueilleur();XCAL['x_fo_cueil0']=M;CALQUES_DECO['x_fo_cueil']=M;TAILLES['x_fo_cueil']=[{w:16,h:8}];
+   L.push({t:'x_fo_cueil',x:CL[0]-6,y:CL[1]+78,v:0,gr:0,bati:true,demi:20,ouvre:'cueilleur'});}
   {const G=graverBoucheMetro('LA FORÊT');XCAL['x_fe_gare0']=G;CALQUES_DECO['x_fe_gare']=G;TAILLES['x_fe_gare']=[{w:96,h:16}];}
   {const gx=(GARE&&GARE[0])||(CL[0]-96), gy=(GARE&&GARE[1])||(CL[1]+52);
    L.push({t:'x_fe_gare',x:gx,y:gy,v:0,bati:true,demi:34,ouvre:'metroForet'});
