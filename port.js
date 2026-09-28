@@ -1662,7 +1662,7 @@ function semerDecorExtramar(){
   STATIONS_VELO.forEach(([x,y])=>P('x_stationVelo',x,y,{col:[40,5]}));
   /* LE CHANTIER QUI N'AVANCE JAMAIS : un panneau, deux barrières, un trou vide.
      Personne n'y travaille. Personne n'y a jamais travaillé. */
-  P('x_chantier',1440,300,{col:[46,12],bati:true,demi:52,ouvre:'chantierBlague'});
+  P('x_chantier',1330,286,{col:[46,12],bati:true,demi:52,ouvre:'chantierBlague'});
   /* on grave tout d'avance : les marges de dessin en ont besoin */
   DECOR.forEach(o=>{if(o.t.slice(0,2)==='x_')graverX(o.t,o.v);});
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
