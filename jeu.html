@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-28-0150';
+  var MA_VERSION='2026-09-28-0210';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -2206,7 +2206,8 @@ const CARTE_DEMANDEE=(()=>{let c=new URLSearchParams(location.search).get('carte
   return null;})();
 /* L'ADRESSE RESTE CELLE DU LIEU : on entre par foret.html ou ferme.html, et
    c'est ce qui doit rester écrit en haut, pas jeu.html?carte=… */
-try{const cd=new URLSearchParams(location.search).get('carte');
+try{const cd=new URLSearchParams(location.search).get('carte')
+        ||(JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}').carte);
   if(cd==='foret'||cd==='ferme'){
     const p=new URLSearchParams(location.search);p.delete('carte');p.delete('v');
     const q=p.toString();
@@ -14297,8 +14298,12 @@ function semerDecor(){
        Rien ne pousse autour : ni arbre, ni rocher, ni roseau. */
     const GARE=[FZ.x0+78, FZ.y0+74];
     const R_GARE=[96,74];                       /* le rayon du parvis */
+    /* LA ZONE DÉGAGÉE : l'ovale autour de la gare, PLUS une bande en dessous —
+       un arbre planté plus bas dresse son feuillage jusque sur le bâtiment. */
+    const HAUTS=new Set(['arbre','pin','sapin','bouleau','rocher','souche','roseaux']);
     const surLeParvis=(o)=>Math.hypot((o.x-GARE[0])/R_GARE[0],(o.y-GARE[1])/R_GARE[1])<1;
-    DECOR=DECOR.filter(o=>!surLeParvis(o)||o.t==='fleurs'||o.t==='herbes');
+    const devantLaGare=(o)=>HAUTS.has(o.t)&&Math.abs(o.x-GARE[0])<108&&o.y>GARE[1]-70&&o.y<GARE[1]+150;
+    DECOR=DECOR.filter(o=>!(surLeParvis(o)&&o.t!=='fleurs'&&o.t!=='herbes')&&!devantLaGare(o));
     try{DECOR=DECOR.concat(semerLaClairiere(CL,GARE));}catch(x){console.error(x);}
     /* ===== TON TERRAIN : de l'autre côté du pont, à droite de la forêt ===== */
     try{
