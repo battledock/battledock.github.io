@@ -24,7 +24,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-28-1045';
+  var MA_VERSION='2026-09-28-1219';
   window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
   var cle='bdl.version.vue';
   function verifier(){
@@ -14064,7 +14064,7 @@ function semerDecor(){
       /* en hauteur : du sommet du bâtiment jusqu'au pied, plus la marge —
          et en dessous, de quoi qu'une cime vienne le recouvrir */
       return o.y > B.y-B.haut-MARGE && o.y < B.y+B.h/2+MARGE+CIME;});
-    DECOR=DECOR.filter(o=>!(auxAbords(o)&&o.t!=='fleurs'&&o.t!=='herbes'));
+    DECOR=DECOR.filter(o=>!surLesAbordsForet(o));
     try{DECOR=DECOR.concat(semerLaClairiere(CL,GARE));}catch(x){console.error(x);}
     /* le terrain à bâtir attend un autre lieu : la forêt s'arrête à la rivière */
   }
@@ -18145,6 +18145,7 @@ async function chargerLaCarte(){
       if(m.genre==='panneau'||m.genre==='comptoir'||m.genre==='x_chantier'||m.genre==='mine2'||m.genre==='taillerie')return;   /* retirés du jeu (le chantier, la mine, le forgeron) */
       /* un objet posé à la main ET enregistré sur le serveur : on ne le garde qu'une fois */
       if(m.genre[0]==='x'&&m.genre[1]==='_')DECOR=DECOR.filter(o=>!(o.t===m.genre&&Math.abs(o.x-m.x)<6&&Math.abs(o.y-m.y)<6));
+      if(surLesAbordsForet({t:m.genre,x:m.x,y:m.y}))return;   /* rien devant la gare ni la cabane */
       DECOR.push({t:m.genre,x:m.x,y:m.y,gr:m.gr||0,cle:m.cle});
     });
     DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
@@ -21175,6 +21176,19 @@ function graverTonCabanon(etat){
   P(cx-5,bas+21,10,2,'#fff6d0');
   if(gros){P(cx+BL/2-32,bas-42,12,20,'#a8563a');P(cx+BL/2-34,bas-45,16,3,'#c9b68c');}
   return {toile:c,W,H,sol,nuit:null};}
+/* ================= LES ABORDS DÉGAGÉS DE LA FORÊT =================
+   La gare et la cabane doivent rester visibles. Cette règle sert DEUX fois :
+   sur le décor que l'on sème, et sur celui que le serveur nous envoie. */
+function surLesAbordsForet(o){
+  if(!(typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village'))return false;
+  const t=o.t||o.genre;
+  if(!['arbre','buisson','rocher','souche','roseaux','pin','sapin','bouleau','gravats'].includes(t))return false;
+  const CL=[300,300], MARGE=64, CIME=240;
+  const B=[{x:CL[0]-70,y:CL[1]-30,w:96,h:16,haut:86},    /* la gare */
+           {x:CL[0]+66,y:CL[1]-28,w:100,h:14,haut:64}];  /* la cabane */
+  return B.some(b=>Math.abs(o.x-b.x)<=b.w/2+MARGE
+    && o.y>b.y-b.haut-MARGE && o.y<b.y+b.h/2+MARGE+CIME);
+}
 const CHARGE_MAX=60;
 const chargeMax=()=>e.sacMax||CHARGE_MAX;
 if(!e.sac)e.sac={};
