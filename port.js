@@ -1339,7 +1339,6 @@ P('x_bitte',x,XP.quaiY-3,{col:[4,3]});
 [[58,552,'haut',{veste:1,chapeau:1}],[76,560,'haut',{veste:2,cheveux:1}],
 [122,468,'bas',{veste:0,barbe:1,cheveux:0}],[134,424,'bas',{veste:2,chapeau:2}]]
 .forEach(([x,y,dir,ap],i)=>P('x_bouliste',x,y,{v:i,dir,ap,col:[5,3]}));
-[[1236,476],[1392,476]].forEach(([x,y],i)=>P('lanterneP',x,y,{gr:8+i}));
 STATIONS_VELO.forEach(([x,y])=>P('x_stationVelo',x,y,{col:[40,5]}));
 /* ===== LA NEF : l'entrée de la gare du port, une verrière en berceau ===== */
 {const N=(function(){
@@ -1376,7 +1375,7 @@ STATIONS_VELO.forEach(([x,y])=>P('x_stationVelo',x,y,{col:[40,5]}));
   [cx-52,cx+46].forEach(x=>{R(x,y0+h-28,7,30,'#3f4a54');R(x+1,y0+h-25,5,20,'#f6e6a8');});
   return {toile:c,W,H,sol:H-6,nuit:null};})();
  XCAL['x_nef0']=N;CALQUES_DECO['x_nef']=N;
- P('x_nef',1316,496,{col:[40,14],bati:true,demi:64,ouvre:'gareDuPort'});}
+ P('x_nef',1316,496,{col:[46,178],bati:true,demi:64,ouvre:'gareDuPort'});}
 
 DECOR.forEach(o=>{if(o.t.slice(0,2)==='x_')graverX(o.t,o.v);});
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
