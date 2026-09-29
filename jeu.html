@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-29-2141';
+var MA_VERSION='2026-09-29-2158';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2023,6 +2023,7 @@ const q=p.toString();
 history.replaceState(null,'',cd+'.html'+(q?'?'+q:''));}
 }catch(x){}
 const CARTE=(()=>{const c=CARTE_DEMANDEE;return (c==='paris'?'paris':(c==='vallon'?'vallon':(c==='sommet'?'sommet':(c==='montagne'?'montagne':((c==='ferme'||c==='foret'||c==='village')?'village':'extramar')))));   /* la ferme vit à la place de l'ancien village */})();
+var PARISMOD=null;          /* le module de Paris, chargé à l'entrée */
 const CARTE_MOD=CARTE==='montagne'||CARTE==='sommet'||CARTE==='piscine'||CARTE==='stade'||CARTE==='vallon';        /* les cartes à module (Saumaski, le sommet, la piscine) */        /* les cartes de Saumaski (la station, le sommet) */   /* la place du haut n'existe plus */
 const ANIM_DECOR={};
 const ANNEXE=CARTE!=='village';     /* Extramar et Notre-Dame : des cartes à part, sans le monde partagé */
@@ -9745,6 +9746,7 @@ let SAUMASKI=null;
 if(CARTE==='vallon'){SAUMASKI=eval(await chargerMorceau('vallon.js'));}
 else if(CARTE==='piscine'){SAUMASKI=eval(await chargerMorceau('piscine.js'));}
 else if(CARTE==='stade'){SAUMASKI=eval(await chargerMorceau('stade.js'));}                  /* le stade : son propre module */                      /* la piscine : son propre module */
+else if(CARTE==='paris'){PARISMOD=eval(await chargerMorceau('paris.js'));}
 else if(CARTE_MOD){SAUMASKI=eval(await chargerMorceau('saumaski.js'));if(CARTE==='sommet')SAUMASKI=SAUMASKI.sommet;}   /* le sommet vit dans le même fichier */
 let EMPREINTES=[], PAS_NEIGE=-1;
 function noterEmpreinte(){
@@ -10950,6 +10952,15 @@ const PARIS={pied:196, t1:384, t2:520};
 /* pied  : le bas des façades, comme maisonsY au port
    t1    : le bord du trottoir haut — 188 points de trottoir, comme le quai
    t2    : le haut du trottoir bas */
+function bloqueParis(x,y){
+  /* les façades barrent le haut ; le bas de la carte est le fond de décor */
+  if(y<PARIS.pied+8)return true;
+  if(y>MONDE_H-20)return true;
+  if(x<10||x>MONDE_L-10)return true;
+  /* le terre-plein du rond-point : on le contourne */
+  const CX=MONDE_L-330, CY=(PARIS.t1+PARIS.t2)/2;
+  if(Math.hypot(x-CX,y-CY)<100)return true;
+  return false;}
 function construireSolParis(){
 const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
 const g=c.getContext('2d');g.imageSmoothingEnabled=false;
@@ -10980,6 +10991,39 @@ P(0,t2-8,W,3,'#5f636a');
 for(let x=0;x<W;x+=26)P(x,t2-5,25,7,al(x)<.5?'#8e929a':'#7e828a');
 P(0,t2-5,W,2,'#a8adb4');
 trottoir(t2+2,H);
+/* ================= LE ROND-POINT, au bout de l'avenue ================= */
+{const CX=W-330, CY=(t1+t2)/2, R_INT=96, R_EXT=196;
+ const dist=(x,y)=>Math.hypot(x-CX,y-CY);
+ for(let y=0;y<H;y++)for(let x=CX-R_EXT-30;x<Math.min(W,CX+R_EXT+30);x++){
+   const d=dist(x,y);
+   if(d>R_EXT)continue;
+   if(d<R_INT-6){const n=al(x*0.4+y*0.3);
+     P(x,y,1,1,n<.34?'#6f9a52':(n<.68?'#638c48':'#7aa85c'));}
+   else if(d<R_INT)P(x,y,1,1,al(Math.floor(x/9)+Math.floor(y/9)*3)<.5?'#8e929a':'#7e828a');
+   else P(x,y,1,1,'#787c84');}
+ /* la bande pointillée sur l'anneau */
+ for(let a2=0;a2<6.283;a2+=0.055){
+   if(Math.floor(a2*9)%2)continue;
+   P(CX+Math.cos(a2)*((R_INT+R_EXT)/2),CY+Math.sin(a2)*((R_INT+R_EXT)/2),5,5,'rgba(240,238,228,.6)');}
+ /* les massifs et les allées du terre-plein */
+ for(let k=0;k<24;k++){const a2=k/24*6.283;
+   const mx=CX+Math.cos(a2)*(R_INT-26),my=CY+Math.sin(a2)*(R_INT-26);
+   for(let i=0;i<8;i++)P(mx+(al(k*7+i)-0.5)*16,my+(al(k*11+i)-0.5)*11,3,3,
+     ['#c0392b','#e8c06a','#e07fb0','#f2efe4','#8a4a8a'][(k+i)%5]);}
+ /* le bassin et sa fontaine */
+ for(let a2=0;a2<6.283;a2+=0.01)for(let r=0;r<38;r++){
+   const x=CX+Math.cos(a2)*r,y=CY+Math.sin(a2)*r;
+   if(r>34)P(x,y,2,2,al(a2*7)<.5?'#8e929a':'#7e828a');
+   else{const n=al(x*0.3+y*0.4);P(x,y,2,2,n<.3?'#4a8aa8':(n<.6?'#3f7c9a':'#5c9cba'));}}
+ for(let r=0;r<14;r++){const w=24-r;P(CX-w/2,CY+6-r,w,1,r<3?'#b8b0a0':'#a89e8c');}
+ P(CX-4,CY-24,8,24,'#a89e8c');P(CX-4,CY-24,3,24,'#c4bcaa');
+ for(let r=0;r<10;r++){const w=30-r*2;P(CX-w/2,CY-32+r,w,1,r<3?'#c4bcaa':'#a89e8c');}
+ P(CX-2,CY-46,4,16,'rgba(200,236,250,.55)');
+ /* les passages piétons, à l'ouest et à l'est */
+ [-1,1].forEach(s2=>{for(let k=-4;k<5;k++){
+   if(k%2)continue;
+   P(CX+s2*(R_EXT+16)-4,CY+k*11-4,9,9,'#efece0');}});
+}
 return c;}
 function construireSol(){
 if(CARTE==='paris')return construireSolParis();
@@ -11650,7 +11694,29 @@ DECOR=DECOR.filter((o,i)=>!aRetirer.has(i));invaliderGrille();
 }
 return {enfermees,retires:aRetirer.size};
 }
+/* ================= LE DÉCOR DE PARIS =================
+   Huit immeubles jointifs en haut, le mobilier sur le trottoir,
+   et le rond-point à l'est de l'avenue. */
+function semerDecorParis(){
+DECOR=[];
+if(!PARISMOD)return;
+const L=[];
+const pose=(t,C,x,y,o)=>{XCAL[t+'0']=C;CALQUES_DECO[t]=C;
+  L.push(Object.assign({t,x,y,v:0,gr:0},o||{}));};
+/* les huit immeubles : leur pied est à PARIS.pied */
+for(let v=0;v<8;v++){const im=PARISMOD.graverImmeuble(v);
+  pose('x_pa_im'+v,im,10+v*184+im.W/2,PARIS.pied+6,{col:[92,214],bati:true,demi:92,ouvre:'boutiqueParis',n:v});}
+/* le mobilier du trottoir : lampadaire, banc, corbeille, en trame de 176 */
+for(let k=0;k*176+64<MONDE_L;k++){const lp=PARISMOD.graverLampadaire();
+  pose('x_pa_lp'+k,lp,64+k*176,PARIS.t1-18,{col:[10,86]});}
+for(let k=0;k*176+150<MONDE_L;k++){const bc=PARISMOD.graverBanc();
+  pose('x_pa_bc'+k,bc,150+k*176,PARIS.t1-20,{col:[34,20]});}
+for(let k=0;k*176+232<MONDE_L;k++){const cb=PARISMOD.graverCorbeille();
+  pose('x_pa_cb'+k,cb,232+k*176,PARIS.t1-16,{col:[10,30]});}
+DECOR=L;DECOR.sort((a,b)=>a.y-b.y);
+}
 function semerDecor(){
+if(CARTE==='paris')return semerDecorParis();
 if(CARTE==='extramar')return semerDecorExtramar();
 if(CARTE_MOD){const M=SAUMASKI.objets();Object.entries(M.cal).forEach(([k,C])=>{XCAL['x_mo_'+k+'0']=C;});
 DECOR=SAUMASKI.METRO?M.L.concat([{t:'metro',x:SAUMASKI.METRO[0],y:SAUMASKI.METRO[1],gr:0,col:[88,8]}]):M.L;   /* la bouche du métro, en long */DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}
@@ -11993,6 +12059,7 @@ if(l)for(const o of l)out.push(o);
 return out;
 }
 function bloque(x,y){
+if(CARTE==='paris')return bloqueParis(x,y);
 if(CARTE==='extramar')return bloqueExtramar(x,y);
 if(CHAMPS_SEULS&&CARTE==='village'){
 for(const o of autourDe(x,y)){const t=TAILLES[o.t];if(!t)continue;const d=t[o.gr||0];
