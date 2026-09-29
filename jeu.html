@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-29-1027';
+var MA_VERSION='2026-09-29-1035';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -17016,7 +17016,7 @@ try{e.ext={x:joueur.x,y:joueur.y};sauver();envoyerSauvegarde(true);}catch(x){}
 vibrer([8,30,8]);setTimeout(()=>{location.href='mine.html?v='+Date.now();},120);return;}
 if(o.ouvre==='bucheron'){FOR=null;ouvrirLaCabane();return;}
 if(o.ouvre==='chantierBlague'){regarderLeChantier();return;}
-if(o.ouvre==='gareDuPort'){try{bulleQuai('La grille est fermée. « Ouverture prochaine », dit l’écriteau.');}catch(x){}vibrer(8);return;}
+if(o.ouvre==='gareDuPort'){ouvrirLaGareDuPort();return;}
 if(o.ouvre==='etable'){ETB=null;ouvrirLEtable();return;}
 if(o.ouvre==='metroFerme'){choisirLaDestination();return;}
 if(o.ouvre==='etalGraines'){ouvrirLeGrainetier('graines');return;}
@@ -17663,6 +17663,46 @@ const MOTS_CHANTIER=[
 'Fin des travaux : prévue. C’est tout ce que dit le panneau.',
 'Un pigeon inspecte les lieux. Il repart sans commentaire.'];
 let CHANT_DIT=-1;
+/* ================= LA GARE DU PORT =================
+   Un tableau des départs, à l'ancienne : ardoise noire, lettres ambre,
+   une ligne par destination. Rien n'est encore ouvert. */
+const DEPARTS=[['08:12','La Ciotat','les calanques et le chantier naval','1'],
+               ['09:40','Cassis','le port, les vignes, le cap Canaille','2'],
+               ['11:05','Aubagne','le marché du samedi','3'],
+               ['14:20','Les Goudes','le bout du monde','1'],
+               ['18:45','Aix','la ville aux fontaines','2']];
+function ouvrirLaGareDuPort(){
+if(!document.getElementById('cssGare')){const st=document.createElement('style');st.id='cssGare';st.textContent=
+`#page2Fond.gar{background:#0b1014;color:#eaf2f6;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%}
+ #page2Fond.gar .tt{flex:none;padding:calc(env(safe-area-inset-top,0px) + 18px) 18px 14px;
+   background:#12202a;border-bottom:3px solid #f0cf6a;display:flex;align-items:center;gap:12px}
+ #page2Fond.gar .tt b{flex:1;font:400 24px Georgia;color:#eaf2f6}
+ #page2Fond.gar .tt small{display:block;font:700 8.5px Arial;letter-spacing:3px;color:#8aa0b0}
+ #page2Fond.gar .tt button{width:34px;height:34px;border-radius:50%;border:0;background:#eaf2f6;color:#12202a;font:700 14px Arial}
+ #page2Fond.gar .en{flex:none;display:flex;padding:12px 18px 6px;font:700 7px Arial;letter-spacing:2px;color:#5f7a8a}
+ #page2Fond.gar .en i{font-style:normal}
+ #page2Fond.gar .corps{flex:1;min-height:0;overflow-y:auto;padding:0 14px calc(env(safe-area-inset-bottom,0px) + 10px)}
+ #page2Fond.gar .l{display:flex;align-items:center;gap:12px;padding:13px 12px;margin-bottom:9px;
+   background:#111a20;border-left:3px solid #2a3a44;border-radius:10px}
+ #page2Fond.gar .l .h{font:400 15px Georgia;color:#4f6472;width:46px;flex:none}
+ #page2Fond.gar .l .g{flex:1;min-width:0}
+ #page2Fond.gar .l b{display:block;font:400 18px Georgia;color:#5f7480}
+ #page2Fond.gar .l em{display:block;font:italic 11px Georgia;color:#4a5e6a;margin-top:3px;font-style:italic}
+ #page2Fond.gar .l .q{width:30px;height:28px;border-radius:6px;background:#16222c;color:#4a5e6a;
+   display:flex;align-items:center;justify-content:center;font:400 15px Georgia;flex:none}
+ #page2Fond.gar .l .b{font:700 6.5px Arial;letter-spacing:1.4px;color:#4a5e6a;margin-top:4px;display:block}
+ #page2Fond.gar .pied{flex:none;text-align:center;font:italic 12px Georgia;color:#5f7a8a;padding:10px 0 14px}`;
+ document.head.appendChild(st);}
+$('page2Fond').className='gar';$('page2').classList.add('on');
+$('page2Fond').innerHTML=
+ '<div class="tt"><div style="flex:1"><small>GARE DU PORT</small><b>Départs</b></div><button id="garX">✕</button></div>'+
+ '<div class="en"><i style="width:46px">HEURE</i><i style="flex:1">DESTINATION</i><i>QUAI</i></div>'+
+ '<div class="corps">'+DEPARTS.map(([h,n,s2,q])=>
+   '<div class="l"><span class="h">'+h+'</span><span class="g"><b>'+n+'</b><em>'+s2+'</em>'+
+   '<span class="b">BIENTÔT</span></span><span class="q">'+q+'</span></div>').join('')+
+ '<div class="pied">les grandes lignes ouvriront bientôt</div></div>';
+$('garX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+}
 function regarderLeChantier(){
 let i;do{i=Math.floor(Math.random()*MOTS_CHANTIER.length);}while(i===CHANT_DIT&&MOTS_CHANTIER.length>1);
 CHANT_DIT=i;
