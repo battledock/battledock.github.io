@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-29-1050';
+var MA_VERSION='2026-09-29-2141';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2022,7 +2022,7 @@ const p=new URLSearchParams(location.search);p.delete('carte');p.delete('v');
 const q=p.toString();
 history.replaceState(null,'',cd+'.html'+(q?'?'+q:''));}
 }catch(x){}
-const CARTE=(()=>{const c=CARTE_DEMANDEE;return (c==='vallon'?'vallon':(c==='sommet'?'sommet':(c==='montagne'?'montagne':((c==='ferme'||c==='foret'||c==='village')?'village':'extramar'))));   /* la ferme vit à la place de l'ancien village */})();
+const CARTE=(()=>{const c=CARTE_DEMANDEE;return (c==='paris'?'paris':(c==='vallon'?'vallon':(c==='sommet'?'sommet':(c==='montagne'?'montagne':((c==='ferme'||c==='foret'||c==='village')?'village':'extramar')))));   /* la ferme vit à la place de l'ancien village */})();
 const CARTE_MOD=CARTE==='montagne'||CARTE==='sommet'||CARTE==='piscine'||CARTE==='stade'||CARTE==='vallon';        /* les cartes à module (Saumaski, le sommet, la piscine) */        /* les cartes de Saumaski (la station, le sommet) */   /* la place du haut n'existe plus */
 const ANIM_DECOR={};
 const ANNEXE=CARTE!=='village';     /* Extramar et Notre-Dame : des cartes à part, sans le monde partagé */
@@ -9734,9 +9734,9 @@ const V=VERTS, R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
 g.fillStyle=V.ombre;g.beginPath();g.ellipse(x+1,y-1,6,2,0,0,7);g.fill();
 R(-4,-5,9,5,V.tronc);R(-4,-5,9,2,V.troncC);R(-2,-4,5,1,'#a5764a');R(-4,-2,9,2,V.troncO);
 }
-const MONDE_L=CARTE==='vallon'?420:(CARTE==='garde'?640:(CARTE==='montagne'?360:(CARTE==='sommet'||CARTE==='piscine'?320:(CARTE==='stade'?760:(CARTE==='village'?((typeof FORET_SEULE!=='undefined'&&FORET_SEULE)?660:1900):1400)))));   /* au village, la ferme s'étend à droite */               // largeur, en pixels de jeu
-const MONDE_H=CARTE==='vallon'?560:(CARTE==='montagne'?470:   /* la montagne a été raccourcie : la hauteur doit suivre, sinon on marche hors de la carte */
-(CARTE==='sommet'?460:(CARTE==='piscine'?580:(CARTE==='stade'?1080:600))));                // hauteur
+const MONDE_L=CARTE==='paris'?1268:(CARTE==='vallon'?420:(CARTE==='garde'?640:(CARTE==='montagne'?360:(CARTE==='sommet'||CARTE==='piscine'?320:(CARTE==='stade'?760:(CARTE==='village'?((typeof FORET_SEULE!=='undefined'&&FORET_SEULE)?660:1900):1400))))));   /* au village, la ferme s'étend à droite */               // largeur, en pixels de jeu
+const MONDE_H=CARTE==='paris'?620:(CARTE==='vallon'?560:(CARTE==='montagne'?470:   /* la montagne a été raccourcie : la hauteur doit suivre, sinon on marche hors de la carte */
+(CARTE==='sommet'?460:(CARTE==='piscine'?580:(CARTE==='stade'?1080:600)))));                // hauteur
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 const VUE_L=196, VUE_H=400;       /* la vue de référence, en points de jeu */
 const ZOOM=2;                     /* ne sert plus que de repli */
@@ -10943,7 +10943,46 @@ const C=graverGrainetier3();XCAL['x_fe_grain0']=C;CALQUES_DECO['x_fe_grain']=C; 
 return [{t:'x_fe_grain',x:1340,y:156,v:0,bati:true,demi:80,ouvre:'grainetier'}].concat(semerLaCour());      /* le Grainetier, en haut, dans la rangée des boutiques */
 const L=[];const P=(t,x,y,o)=>L.push(Object.assign({t:'x_fe_'+t,x,y,v:0},o||{}));void P;
 return L;}
+/* ================= LE SOL DE PARIS =================
+   Une coupe d'avenue : trottoir dallé, bordure de granit, caniveau,
+   chaussée d'asphalte avec sa bande blanche, puis l'autre trottoir. */
+const PARIS={pied:196, t1:384, t2:520};
+/* pied  : le bas des façades, comme maisonsY au port
+   t1    : le bord du trottoir haut — 188 points de trottoir, comme le quai
+   t2    : le haut du trottoir bas */
+function construireSolParis(){
+const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+const W=MONDE_L,H=MONDE_H,t1=PARIS.t1,t2=PARIS.t2;
+const P=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+const al=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+const trottoir=(y0,y1)=>{
+  for(let y=y0;y<y1;y++){const k=(y-y0)/(y1-y0);
+    P(0,y,W,1,'rgb('+(226-k*8|0)+','+(216-k*8|0)+','+(192-k*8|0)+')');}
+  for(let y=y0;y<y1;y+=20)for(let x=(((y-y0)/20|0)%2)?0:17;x<W;x+=34){
+    const n=al(x*0.3+y*0.2);
+    P(x,y,33,19,n<.34?'#eee0c0':(n<.68?'#e6d7b4':'#f2e6cc'));
+    P(x,y,33,1,'#f8eed8');P(x,y+18,33,1,'#cfc09a');}
+  for(let i=0;i<W*(y1-y0)*0.012;i++)P(al(i*1.7)*W,y0+al(i*2.3)*(y1-y0),1,1,'#d8c8a0');};
+trottoir(0,t1);
+/* la bordure de granit, taillée bloc par bloc */
+for(let x=0;x<W;x+=26)P(x,t1,25,7,al(x)<.5?'#8e929a':'#7e828a');
+P(0,t1,W,2,'#a8adb4');P(0,t1+7,W,3,'#5f636a');P(0,t1+10,W,5,'#6a6e74');
+/* l'asphalte */
+for(let y=t1+15;y<t2;y++){const k=(y-t1-15)/(t2-t1-15);
+  P(0,y,W,1,'rgb('+(74+k*10|0)+','+(76+k*10|0)+','+(82+k*10|0)+')');}
+for(let x=0;x<W;x+=56)P(x,(t1+t2)/2,30,5,'#e8e4d8');
+/* quelques plaques d'égout */
+[120,520,940].forEach(x=>{P(x,t2-30,26,14,'#4a4e54');P(x+2,t2-28,22,10,'#3a3e44');
+  for(let k=0;k<5;k++)P(x+4,t2-27+k*2,18,1,'#5a5e64');});
+/* la bordure du bas, puis l'autre trottoir */
+P(0,t2-8,W,3,'#5f636a');
+for(let x=0;x<W;x+=26)P(x,t2-5,25,7,al(x)<.5?'#8e929a':'#7e828a');
+P(0,t2-5,W,2,'#a8adb4');
+trottoir(t2+2,H);
+return c;}
 function construireSol(){
+if(CARTE==='paris')return construireSolParis();
 if(CARTE==='extramar')return construireSolExtramar();
 if(CARTE==='garde')return construireSolGarde();
 const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;

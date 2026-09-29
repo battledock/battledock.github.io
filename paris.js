@@ -1,27 +1,4 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Battle Dock · Paris</title>
-<script src="maintenance.js"></script>
-<style>
-*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:#1b1a16;overflow:hidden;font-family:Georgia,serif;color:#f2ece0}
-#vue{position:fixed;inset:0;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
-canvas{display:block;image-rendering:pixelated}
-#haut{position:fixed;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 12px;
-  background:linear-gradient(rgba(14,12,10,.92),rgba(14,12,10,0));z-index:5}
-#haut b{font:400 20px Georgia}
-#haut small{font:700 8px Arial;letter-spacing:2.6px;color:#c9a24a}
-#retour{position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);z-index:5;
-  border:0;border-radius:14px;padding:14px 18px;font:700 11px Arial;letter-spacing:1.4px;
-  background:#f0d78a;color:#2e2406;box-shadow:0 3px 0 rgba(0,0,0,.35)}
-#note{position:fixed;left:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);z-index:5;
-  font:italic 12px Georgia;color:#c9bda2;text-shadow:0 1px 3px rgba(0,0,0,.6)}
-</style></head><body>
-<div id="haut"><small>GRANDES LIGNES</small><br><b>Paris · l'avenue</b></div>
-<div id="vue"><canvas id="c" width="1268" height="620"></canvas></div>
-<div id="note">glisse pour longer l'avenue</div>
-<button id="retour">RETOUR AU PORT</button>
-<script>const PARISMOD=/* =====================================================================
+/* =====================================================================
    PARIS — l'avenue. Chargé par jeu.html seulement quand on y est.
    Évalué DANS la portée du jeu : il voit toutes ses fonctions.
    ===================================================================== */
@@ -391,52 +368,3 @@ function graverCorbeille(){
 }
 return {graverImmeuble,graverPlatane,graverBanc,graverLampadaire,graverColonne,graverCorbeille};
 })()
-;</script>
-<script>
-const c=document.getElementById('c'),g=c.getContext('2d');g.imageSmoothingEnabled=false;
-const W=c.width,H=c.height,MONDE_L=W,MONDE_H=H;
-const al=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
-const P=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
-const PARIS={pied:196,t1:384,t2:520};
-/* LE SOL */
-(function(){const t1=PARIS.t1,t2=PARIS.t2;
-const trottoir=(y0,y1)=>{
-  for(let y=y0;y<y1;y++){const k=(y-y0)/(y1-y0);
-    P(0,y,W,1,'rgb('+(226-k*8|0)+','+(216-k*8|0)+','+(192-k*8|0)+')');}
-  for(let y=y0;y<y1;y+=20)for(let x=(((y-y0)/20|0)%2)?0:17;x<W;x+=34){
-    const n=al(x*0.3+y*0.2);
-    P(x,y,33,19,n<.34?'#eee0c0':(n<.68?'#e6d7b4':'#f2e6cc'));
-    P(x,y,33,1,'#f8eed8');P(x,y+18,33,1,'#cfc09a');}
-  for(let i=0;i<W*(y1-y0)*0.012;i++)P(al(i*1.7)*W,y0+al(i*2.3)*(y1-y0),1,1,'#d8c8a0');};
-trottoir(0,t1);
-for(let x=0;x<W;x+=26)P(x,t1,25,7,al(x)<.5?'#8e929a':'#7e828a');
-P(0,t1,W,2,'#a8adb4');P(0,t1+7,W,3,'#5f636a');P(0,t1+10,W,5,'#6a6e74');
-for(let y=t1+15;y<t2;y++){const k=(y-t1-15)/(t2-t1-15);
-  P(0,y,W,1,'rgb('+(74+k*10|0)+','+(76+k*10|0)+','+(82+k*10|0)+')');}
-for(let x=0;x<W;x+=56)P(x,(t1+t2)/2,30,5,'#e8e4d8');
-[120,520,940].forEach(x=>{P(x,t2-30,26,14,'#4a4e54');P(x+2,t2-28,22,10,'#3a3e44');
-  for(let k=0;k<5;k++)P(x+4,t2-27+k*2,18,1,'#5a5e64');});
-P(0,t2-8,W,3,'#5f636a');
-for(let x=0;x<W;x+=26)P(x,t2-5,25,7,al(x)<.5?'#8e929a':'#7e828a');
-P(0,t2-5,W,2,'#a8adb4');
-trottoir(t2+2,H);})();
-/* LES IMMEUBLES */
-const PAS=184;
-for(let v=0;v<8;v++){const im=PARISMOD.graverImmeuble(v);
-  g.drawImage(im.toile,0,0,im.toile.width,im.toile.height, 10+v*PAS, PARIS.pied-im.H+6, im.W, im.H);}
-/* LE MOBILIER DU TROTTOIR */
-const MODL=176;
-for(let k=0;k*MODL+64<W;k++){const lp=PARISMOD.graverLampadaire();
-  g.drawImage(lp.toile,0,0,lp.toile.width,lp.toile.height, 64+k*MODL-lp.W/2, PARIS.t1-18-lp.H, lp.W, lp.H);}
-for(let k=0;k*MODL+150<W;k++){const bc=PARISMOD.graverBanc();
-  g.drawImage(bc.toile,0,0,bc.toile.width,bc.toile.height, 150+k*MODL-bc.W/2, PARIS.t1-20-bc.H, bc.W, bc.H);}
-for(let k=0;k*MODL+232<W;k++){const cb=PARISMOD.graverCorbeille();
-  g.drawImage(cb.toile,0,0,cb.toile.width,cb.toile.height, 232+k*MODL-cb.W/2, PARIS.t1-16-cb.H, cb.W, cb.H);}
-/* on met à l'échelle du téléphone */
-(function(){const v=document.getElementById('vue');
-  const k=Math.max(window.innerHeight/H,1);
-  c.style.width=Math.round(W*k)+'px';c.style.height=Math.round(H*k)+'px';
-  v.scrollLeft=(W*k-window.innerWidth)/2;})();
-document.getElementById('retour').onclick=function(){
-  location.href='jeu.html?carte=extramar&arrivee=1&v='+Date.now();};
-</script></body></html>
