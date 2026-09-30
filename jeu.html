@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-1029';
+var MA_VERSION='2026-09-30-1109';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -9990,6 +9990,12 @@ function graverX(t,v){
 const cle=t+(v||0);
 if(XCAL[cle])return XCAL[cle];
 if(t==='x_chantier'){XCAL[cle]=graverLeChantier();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_scierie'){XCAL[cle]=graverScierie();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_camp'){XCAL[cle]=graverCampement();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_herbo'){XCAL[cle]=graverHerbo();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_carriere'){XCAL[cle]=graverCarriere();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_grandArbre'){XCAL[cle]=graverGrandArbre();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_champiRare'){XCAL[cle]=graverChampiRare();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_pin'){XCAL[cle]=graverConifere(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_aut'){XCAL[cle]=graverArbreAutomne(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_cabanonMoi'){const c=CAB_LU();
@@ -17194,6 +17200,13 @@ if(o.ouvre==='bucheron'){b.innerHTML='La cabane du bûcheron<small>DÉBITER · V
 if(o.ouvre==='chantierBlague'){b.innerHTML='Regarder le chantier<small>TRAVAUX EN COURS · DEPUIS LONGTEMPS</small>';b.classList.add('on');return;}
 if(o.ouvre==='gareDuPort'){b.innerHTML='La gare du port<small>BIENTÔT · LES GRANDES LIGNES</small>';b.classList.add('on');return;}
 if(o.ouvre==='gareParis'){b.innerHTML='La gare de Paris<small>RETOUR · DIRECTION MARSEILLE</small>';b.classList.add('on');return;}
+{const FO={scierie:['La scierie','DÉBITER LE BOIS EN PLANCHES'],
+  campement:['Le campement','SE REPOSER · ÉCHANGER'],
+  herboriste:['L’herboristerie','PLANTES · FLEURS · REMÈDES'],
+  carriere:['La carrière','PIERRE · ARGILE · MINERAI'],
+  grandArbre:['Le grand chêne','UN ARBRE DE TROIS CENTS ANS'],
+  champiRare:['Champignons rares','CUEILLIR AVEC PRÉCAUTION']}[o.ouvre];
+ if(FO){b.innerHTML=FO[0]+'<small>'+FO[1]+'</small>';b.classList.add('on');return;}}
 if(o.ouvre==='epicerie'){b.innerHTML='L’épicerie fine<small>ON Y ACHÈTE LE MIDI TRÈS CHER</small>';b.classList.add('on');return;}
 if(o.ouvre==='voiture'){const nm=(PARISMOD&&PARISMOD.MODELES[o.n])?PARISMOD.MODELES[o.n].nom:'La voiture';
   b.innerHTML=(AUVOLANT===o.n?'Descendre de '+nm.toLowerCase():'Monter dans '+nm.toLowerCase())+
@@ -17370,6 +17383,14 @@ if(o.ouvre==='bucheron'){FOR=null;ouvrirLaCabane();return;}
 if(o.ouvre==='chantierBlague'){regarderLeChantier();return;}
 if(o.ouvre==='gareDuPort'){ouvrirLaGareDuPort();return;}
 if(o.ouvre==='epicerie'){try{bulleQuai('« Fermé pour inventaire », dit l’écriteau.');}catch(x){}vibrer(8);return;}
+if(['scierie','campement','herboriste','carriere','grandArbre','champiRare'].includes(o.ouvre)){
+  try{bulleQuai({scierie:'La lame est immobile. « Bientôt », dit l’écriteau.',
+    campement:'Le feu couve. Personne, pour l’instant.',
+    herboriste:'La porte est close. Ça sent la menthe et le thym.',
+    carriere:'Les outils sont posés. On n’a pas encore commencé.',
+    grandArbre:'Trois cents ans, peut-être plus. On se sent petit.',
+    champiRare:'Ils luisent un peu. Mieux vaut attendre d’en savoir plus.'}[o.ouvre]);}catch(x){}
+  vibrer(8);return;}
 if(o.ouvre==='gareParis'){
   try{e.ext={x:1316,y:560};e.carte='extramar';sauver();envoyerSauvegarde(true);}catch(x){}
   location.href='jeu.html?carte=extramar&arrivee=1&v='+Date.now();return;}
@@ -21553,6 +21574,107 @@ return {toile:c,W,H,sol,nuit:null};
 /* ================= LE CONIFÈRE ET L'ARBRE D'AUTOMNE =================
    Deux silhouettes de plus pour casser l'uniformité du bois. */
 TAILLES['x_fo_pin']=[{w:20,h:12},{w:20,h:12},{w:20,h:12}];
+/* ================= LES NOUVEAUX LIEUX DE LA FORÊT ================= */
+function toileFo(W,H,f){
+  const D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;
+  const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const hs=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+  f(R,g,W,H,hs);
+  return {toile:c,W,H,sol:H-4,nuit:null};
+}
+/* LA SCIERIE : un hangar ouvert, sa lame, ses grumes et ses planches */
+function graverScierie(){return toileFo(132,104,(R,g,W,H,hs)=>{
+  R(10,H-10,112,8,'rgba(24,34,20,.2)');
+  /* le corps */
+  for(let x=18;x<114;x+=7)R(x,30,6,64,hs(x)<.5?'#9a7146':'#8a6238');
+  R(18,30,96,3,'#a5764a');R(18,92,96,3,'#5b3f21');
+  /* le toit de tuiles */
+  for(let r=0;r<4;r++)for(let x=12-r*2;x<120+r*2;x+=7){
+    const n=hs(x*0.7+r*3.1);R(x,26-r*5,6,6,n<.3?'#a8452f':(n<.6?'#bd5a3c':'#9c4525'));}
+  R(10,26,112,4,'#6e2c16');
+  /* l'ouverture et la lame circulaire */
+  R(44,54,44,40,'#2a2018');
+  for(let a2=0;a2<6.283;a2+=0.06){const x=66+Math.cos(a2)*13,y=74+Math.sin(a2)*13;R(x,y,3,3,'#9aa0a8');}
+  R(63,71,7,7,'#5f636a');
+  /* les grumes empilées et les planches */
+  for(let r=0;r<2;r++)for(let k=0;k<3;k++)R(6+k*11,H-22-r*9,10,8,hs(k+r)<.5?'#a5764a':'#8a6238');
+  for(let k=0;k<4;k++)R(94+k*3,H-26,3,22,'#c9a878');
+  R(92,H-28,18,4,'#b8905c');});}
+/* LE CAMPEMENT : une tente, un feu, des rondins */
+function graverCampement(){return toileFo(104,86,(R,g,W,H,hs)=>{
+  R(8,H-8,88,6,'rgba(24,34,20,.2)');
+  /* la tente */
+  for(let i=0;i<34;i++){const w=Math.round(i*1.5);
+    R(50-w/2,H-18-i*1.6,w,2,i%3?'#c9b48a':'#b8a074');}
+  R(28,H-22,44,6,'#8a7a58');
+  R(44,H-34,12,16,'#3a2f22');
+  R(50,H-70,2,14,'#6a4a2a');
+  /* le feu, à gauche */
+  for(let k=0;k<5;k++)R(10+k*4,H-16,9,4,'#6a4a2a');
+  for(let k=0;k<6;k++)R(14+hs(k)*10,H-24-k*3,4+hs(k*3)*3,4,['#e8ba2a','#e07f2e','#c03a2a'][k%3]);
+  /* les rondins-sièges */
+  for(let k=0;k<3;k++){R(74+k*8,H-24-k*2,7,9,'#8a6238');R(74+k*8,H-24-k*2,7,3,'#a5764a');}});}
+/* L'HERBORISTERIE : une maisonnette, ses bacs de plantes, ses bottes séchées */
+function graverHerbo(){return toileFo(118,104,(R,g,W,H,hs)=>{
+  R(10,H-10,98,8,'rgba(24,34,20,.2)');
+  for(let y=40;y<94;y+=8)for(let x=16;x<104;x+=14){
+    const n=hs(x*0.4+y*0.3);R(x,y,13,7,n<.3?'#9aa08e':(n<.6?'#8a9080':'#a8ae9c'));}
+  R(16,40,88,3,'#b8bda8');R(16,92,88,3,'#5f6458');
+  /* le toit pentu */
+  for(let i=0;i<9;i++){const w=104-i*9;R(W/2-w/2,38-i*4,w,5,i%2?'#2f5a3a':'#3f7a52');}
+  R(10,36,98,4,'#264c30');
+  /* la porte et les fenêtres */
+  R(52,64,20,30,'#4e3419');R(26,54,16,14,'#8fc4d4');R(82,54,16,14,'#8fc4d4');
+  /* les bacs de plantes devant */
+  for(let k=0;k<3;k++){const x=14+k*34;R(x,H-16,28,10,'#7d5934');R(x,H-18,28,3,'#a5764a');
+    for(let f=0;f<4;f++)R(x+3+f*6,H-26+hs(k+f)*4,4,9,['#4f7a36','#3f6a2a','#5f8a46','#c03a2a'][f]);}
+  /* les bottes d'herbes pendues sous l'auvent */
+  for(let k=0;k<4;k++)R(24+k*20,44,4,12,'#8a9a52');});}
+/* LA CARRIÈRE : une paroi entaillée, des blocs, des outils */
+function graverCarriere(){return toileFo(126,92,(R,g,W,H,hs)=>{
+  R(8,H-8,110,6,'rgba(24,34,20,.2)');
+  for(let y=10;y<70;y+=9)for(let x=10;x<116;x+=14){
+    const n=hs(x*0.4+y*0.3);R(x,y,13,8,n<.28?'#8e9a92':(n<.56?'#7c8880':(n<.82?'#9aa69e':'#6a7670')));}
+  R(10,10,106,3,'#a6b2aa');R(10,66,106,4,'#55605a');
+  /* les blocs taillés, au pied */
+  for(let k=0;k<4;k++){const x=12+k*26,y=H-26+((k%2)?4:0);
+    R(x,y,22,18,'#8e929a');R(x,y,22,4,'#a8adb4');R(x+2,y+14,18,3,'#6a6e74');}
+  /* la brouette et la pioche */
+  R(96,H-30,22,10,'#8a4a2a');R(96,H-32,22,3,'#a86a3a');
+  g.fillStyle='#3a3f46';g.fillRect(100,H-20,3,10);
+  R(88,H-44,3,18,'#8a6238');R(82,H-46,16,4,'#9aa0a8');});}
+/* L'ARBRE REMARQUABLE : un chêne immense, à contre-emploi des autres */
+function graverGrandArbre(){return toileFo(150,170,(R,g,W,H,hs)=>{
+  const cx=W/2,sol=H-8;
+  R(cx-40,sol,80,8,'rgba(24,34,20,.24)');
+  /* les racines */
+  for(let k=0;k<5;k++){const dx=(k-2)*15;R(cx+dx-4,sol-10,10,12,'#5b3f21');}
+  /* le tronc, épais */
+  for(let y=0;y<62;y++){const w=40-y*0.16;
+    R(cx-w/2,sol-10-y,w,1,'rgb('+(122-y*0.5|0)+','+(88-y*0.4|0)+','+(52-y*0.2|0)+')');}
+  for(let i=0;i<40;i++)R(cx-16+hs(i*3)*32,sol-70+hs(i*7)*58,2,7,'rgba(58,40,22,.45)');
+  /* la couronne, très large, en masses */
+  const T=['#1f4a24','#2a5e2e','#367239','#448647'];
+  const masse=(mx,my,rx,ry,gr)=>{
+    for(let y=-ry;y<=ry;y++){
+      const dx=Math.round(rx*Math.sqrt(Math.max(0,1-(y/ry)*(y/ry))));
+      const on=Math.round((hs(gr+y*0.7)-0.5)*7);
+      for(let x=-dx+on;x<=dx+on;x++){
+        const d=Math.sqrt((x/rx)*(x/rx)+(y/ry)*(y/ry)),n=hs(gr+x*0.31+y*0.57);
+        let t;if(d>0.88)t=0;else if(y<-ry*0.24&&d<0.7)t=n<.4?3:2;else t=n<.3?0:(n<.62?1:2);
+        R(cx+x,my+y,1,1,T[t]);}}};
+  masse(0,sol-104,44,34,3.1);masse(-38,sol-86,34,26,7.7);masse(38,sol-84,33,25,11.3);
+  masse(-20,sol-124,32,24,15.9);masse(22,sol-122,30,23,19.3);
+  for(let i=0;i<40;i++)R(cx+(hs(i*3)-0.5)*150,sol-140+hs(i*7)*70,4,3,hs(i)<.5?'#57a04e':'#183d1c');});}
+/* LES CHAMPIGNONS RARES : une touffe bleutée qui luit */
+function graverChampiRare(){return toileFo(40,34,(R,g,W,H,hs)=>{
+  R(6,H-6,28,4,'rgba(24,34,20,.2)');
+  for(let k=0;k<4;k++){const x=6+k*8,h2=10+hs(k*3)*7;
+    R(x+2,H-8-h2,4,h2,'#e8e2f0');
+    R(x-1,H-11-h2,11,6,'#6a5ac0');R(x-1,H-11-h2,11,2,'#8a7ae0');
+    for(let f=0;f<3;f++)R(x+1+f*3,H-10-h2,2,2,'#c8bcff');}});}
+
 TAILLES['x_fo_aut']=[{w:22,h:12},{w:22,h:12},{w:22,h:12}];
 function graverConifere(v){
   const W=64,H=96,D=2,c=document.createElement('canvas');
@@ -21668,13 +21790,27 @@ L.push({t:'x_fe_gare',x:gx,y:gy,v:0,bati:true,demi:34,ouvre:'metroForet'});
 }
 /* les six moments réservent leur espace : aucun arbre ne vient les masquer */
 const SX_M=(y)=>sentierX(y);
-const MOMENTS=[[366,272,132],   /* la clairière du bûcheron : large et protégée */
+const MOMENTS=[[366,272,132],
+               [520,250,96],[150,452,82],[176,640,90],[540,830,92],[220,980,96],   /* la clairière du bûcheron : large et protégée */
                [SX_M(1120),1120,92],[MONDE_L-124,1240,84],[230,1210,110],
                [sentierX(120),140,100],[120,420,92],[sentierX(640)-90,660,90],
                [MONDE_L-130,1010,100],[MONDE_L-90,1260,90],[sentierX(880)+120,900,96],
                [sentierX(1180)-24,1180,86],[MONDE_L-124,1372,80],
                [230,1470,110],[sentierX(1060),1120,80]];
 const dansUnMoment=(x,y)=>MOMENTS.some(([mx,my,r])=>Math.hypot(x-mx,y-my)<r);
+/* ================= LES NOUVEAUX LIEUX, POSÉS SUR LA CARTE ================= */
+{const nouveau=(t,x,y,demi,ouvre,colw,colh)=>{
+   const C=graverX(t,0);if(C){XCAL[t+'0']=C;CALQUES_DECO[t]=C;TAILLES[t]=[{w:colw*2,h:12}];}
+   L.push({t,x,y,v:0,gr:0,bati:true,demi,ouvre,col:[colw,colh]});};
+ nouveau('x_fo_scierie',    520, 250, 62,'scierie',    58,96);
+ nouveau('x_fo_camp',       150, 452, 48,'campement',  46,74);
+ nouveau('x_fo_herbo',      176, 640, 54,'herboriste', 52,92);
+ nouveau('x_fo_carriere',   540, 830, 58,'carriere',   56,80);
+ nouveau('x_fo_grandArbre', 220, 980, 60,'grandArbre', 24,140);
+ /* les champignons rares, trois touffes cachées dans le bas du bois */
+ [[420,1130],[128,1224],[586,1046]].forEach(([x,y],k)=>{
+   nouveau('x_fo_champiRare',x,y,18,'champiRare',16,28);});
+}
 /* ================= LE SOUS-BOIS : BAIES, TOUFFES ET FLEURS =================
    Ce qui manquait : les buissons à baies vont par groupes, les champignons
    par touffes, et un semis fin de fleurs couvre l'herbe. */
