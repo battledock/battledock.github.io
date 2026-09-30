@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-0846';
+var MA_VERSION='2026-09-30-0900';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -3450,7 +3450,7 @@ const PARAM_CARTE=CARTE_DEMANDEE;
 const MODE_VIL=(CARTE_DEMANDEE==='foret')?'foret':'ferme';
 const CHAMPS_SEULS=MODE_VIL==='ferme';      /* la ferme : les champs seuls */
 const FORET_SEULE=MODE_VIL==='foret';       /* la forêt : le bois de l'ancien village, sa rivière et sa clairière */
-const FZ={x0:56,x1:668,y0:40,y1:560};       /* les bornes de la forêt (la rive est s'ouvre au-delà, jusqu'au terrain) */
+const FZ={x0:56,x1:668,y0:40,y1:1560};      /* les bornes de la forêt : elle descend maintenant jusqu'en bas */
 const FB={x0:760,x1:1564,y0:96,y1:444};       /* (à gauche : la gare du métro) */       /* (en haut : l'étal des graines) */       /* les bornes de la carte des champs */
 const VIL={x0:580,x1:1340,y0:82,y1:452};
 const PL_N=()=>PLACE.y-PLACE.h/2, PL_S=()=>PLACE.y+PLACE.h/2;
@@ -12187,7 +12187,7 @@ function bloque(x,y){
 if(CARTE==='paris')return bloqueParis(x,y);
 if(CARTE==='extramar')return bloqueExtramar(x,y);
 if(CHAMPS_SEULS&&CARTE==='village'){
-for(const o of autourDe(x,y)){const t=TAILLES[o.t];if(!t)continue;const d=t[o.gr||0];
+for(const o of autourDe(x,y)){const t=TAILLES[o.t];if(!t)continue;const d=t[o.gr||0]||t[0];if(!d)continue;
 if(Math.abs(o.x-x)<d.w/2+3&&Math.abs(o.y-y)<d.h/2+2)return true;}
 for(const o of DECOR)if(o.t==='comptoir'&&Math.abs(x-o.x)<128&&y>o.y-100&&y<o.y+4)return true;   /* le comptoir : un vrai bâtiment */
 return false;
@@ -12197,6 +12197,7 @@ if(SAUMASKI.zoneInterdite(x,y))return true;                                     
 for(const o of DECOR){if(!o.col)continue;if(Math.abs(x-o.x)<o.col[0]&&y>o.y-o.col[1]&&y<o.y+3)return true;}return false;}
 if(CARTE==='garde')return bloqueGarde(x,y);
 if(dansLisiere(x,y))return true;                     /* la forêt du pourtour */
+if(surLeSentier(x,y,0))return false;                 /* le sentier est toujours praticable */
 if(contreRambarde(x,y)||rambardeEst(x,y))return true;                  /* les rambardes des ponts */
 if(dansRiviere(x,y)&&!surTablier(x,y)&&!surTablierEst(x,y))return true;   /* l'eau est trop profonde, sauf sur les ponts */
 {
@@ -21461,6 +21462,8 @@ return {toile:c,W,H,sol,nuit:null};
 }
 /* ================= LE CONIFÈRE ET L'ARBRE D'AUTOMNE =================
    Deux silhouettes de plus pour casser l'uniformité du bois. */
+TAILLES['x_fo_pin']=[{w:20,h:12},{w:20,h:12},{w:20,h:12}];
+TAILLES['x_fo_aut']=[{w:22,h:12},{w:22,h:12},{w:22,h:12}];
 function graverConifere(v){
   const W=64,H=96,D=2,c=document.createElement('canvas');
   c.width=W*D;c.height=H*D;
@@ -21528,7 +21531,9 @@ L.push({t:'x_fe_gare',x:gx,y:gy,v:0,bati:true,demi:34,ouvre:'metroForet'});
      const x=cx+Math.cos(aa)*rr, y=cy+Math.sin(aa)*rr*0.72;
      if(x<30||x>MONDE_L-30||y<40)continue;
      if(surLeSentier(x,y,24))continue;
-     L.push({t:alea(k*11+j)<0.6?'x_fo_pin':'arbre',x,y,v:k%3,gr:k%4,
+     const quoi=alea(k*11+j)<0.6?'x_fo_pin':'arbre';
+     const nbv=(TAILLES[quoi]&&TAILLES[quoi].length)||1;
+     L.push({t:quoi,x,y,v:k%3,gr:k%nbv,
              bati:true,demi:10,col:[10,74]});}});
  /* LE SENTIER QUI DESCEND rejoindre le chemin : des pas japonais en pierre */
  for(let k=0;k<9;k++){
