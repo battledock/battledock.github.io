@@ -122,7 +122,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-2057';
+var MA_VERSION='2026-09-30-2111';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -7029,6 +7029,17 @@ function bol(c){const P=mrmCtx(c,26);
 const MRM_T3=[['#5f92bc','#a8cde4','#e8f2f8'],['#8a93a8','#c4d2e2','#f0f4f8'],
                ['#7e8f7a','#bccdb8','#e6eee2'],['#b4553a','#dc8a6a','#f2c4ac']];
 function mrmNom(k){const P=POISSONS[k];return P?P[0]:k.charAt(0).toUpperCase()+k.slice(1);}
+/* le doigt : on relaie nous-mêmes, le jeu annule les gestes par défaut */
+function mrmRelais(dv){
+  if(!dv||dv.__relais)return; dv.__relais=true;
+  const relayer=(ev)=>{
+    const t=ev.target&&ev.target.closest&&ev.target.closest('button,[data-pl],[data-p],[data-m]');
+    if(!t||t.disabled)return;
+    ev.preventDefault();ev.stopPropagation();
+    if(typeof t.onclick==='function')t.onclick(ev);};
+  dv.addEventListener('pointerup',relayer,{passive:false});
+  dv.addEventListener('touchend',relayer,{passive:false});
+}
 function mrmCadre(titre,sous,corps,boutons){
   let dv=document.getElementById('mrm');
   if(!dv){dv=document.createElement('div');dv.id='mrm';document.body.appendChild(dv);}
@@ -7040,15 +7051,7 @@ function mrmCadre(titre,sous,corps,boutons){
     corps+'<div class="bt">'+boutons+'</div></div></div>';
   dv.classList.add('on');
   const r=document.getElementById('mrmRet');if(r)r.onclick=mrmFermer;
-  /* le doigt : on relaie nous-mêmes, le jeu bloque les gestes par défaut */
-  if(!dv.__relais){dv.__relais=true;
-    const relayer=(ev)=>{
-      const t=ev.target&&ev.target.closest&&ev.target.closest('button,[data-pl],[data-p],[data-m]');
-      if(!t||t.disabled)return;
-      ev.preventDefault();ev.stopPropagation();
-      if(typeof t.onclick==='function')t.onclick(ev);};
-    dv.addEventListener('pointerup',relayer,{passive:false});
-    dv.addEventListener('touchend',relayer,{passive:false});}
+  mrmRelais(dv);
   return dv;
 }
 function mrmAnimer(){
@@ -7157,7 +7160,7 @@ function mrmMarmite(){
   let anneaux='';const n=Math.max(6,Math.floor(innerHeight/46));
   for(let k=0;k<n;k++)anneaux+='<i style="margin-top:'+(k?34:26)+'px"></i>';
   dv.innerHTML='<div class="mrmPan"><div class="rl">'+anneaux+'</div>'+
-   '<div class="ret" id="mrmRet">FERMER ✕</div>'+
+   '<button class="ret" id="mrmRet" type="button">FERMER ✕</button>'+
    '<div class="in"><h1>La marmite</h1><div class="sub">Chez Fonfon · ça mijote</div>'+
    '<div class="sc"><canvas id="mrmSc" width="700" height="300"></canvas></div>'+
    '<div class="tm"><small>IL RESTE</small><b id="mrmTxt">…</b></div>'+
@@ -7175,9 +7178,16 @@ function mrmMarmite(){
             ['#7e8f7a','#bccdb8','#e6eee2'],['#9a8a6a','#cfc2a4','#efe8d8']];
   ing.forEach((p,k)=>{const cv=dv.querySelector('.mrmF'+k);if(cv)poisson(cv,T3[k%4][0],T3[k%4][1],T3[k%4][2]);});
   const bo=document.getElementById('mrmBol');if(bo)bol(bo);
+  mrmRelais(dv);
   document.getElementById('mrmRet').onclick=mrmFermer;
-  document.getElementById('mrmRec').onclick=()=>{mrmFermer();ffOuvrirLivre();};
-  document.getElementById('mrmOk').onclick=async()=>{await ffPrendreMarmite();mrmFermer();};
+  document.getElementById('mrmRec').onclick=()=>{mrmFermer();mrmLivre();};
+  document.getElementById('mrmOk').onclick=async()=>{
+    const b=document.getElementById('mrmOk');
+    if(b.disabled)return;
+    b.disabled=true;b.textContent='…';
+    await ffPrendreMarmite();
+    FF_MIJ=null;try{await ffMarmiteMaj();}catch(x){}
+    mrmResultat();};
   cancelAnimationFrame(MRM_RAF);
   (function boucle(){MRM_T++;
     const cv=document.getElementById('mrmSc');
