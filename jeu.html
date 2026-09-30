@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-0922';
+var MA_VERSION='2026-09-30-1006';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11892,6 +11892,15 @@ for(let k=0;k*176+232<MONDE_L;k++){const cb=PARISMOD.graverCorbeille();
 DECOR=L;DECOR.sort((a,b)=>a.y-b.y);
 try{invaliderGrille();}catch(x){}   /* la grille de proximité doit reconnaître le nouveau décor */
 }
+/* ================= LE BALAI DU SENTIER =================
+   Passé en dernier sur tout le décor de la forêt : rien ne reste sur le
+   chemin ni dans le lac, quelle que soit la fonction qui l'a semé. */
+function balayerLeSentier(){
+  if(!(typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village'))return;
+  const garde=['x_fo_cabane','x_fe_gare'];      /* les bâtiments restent */
+  DECOR=DECOR.filter(o=>garde.includes(o.t)||
+    (!surLeSentier(o.x,o.y,15)&&!dansEtang(o.x,o.y,-30)));
+}
 function semerDecor(){
 if(CARTE==='paris')return semerDecorParis();
 if(CARTE==='extramar')return semerDecorExtramar();
@@ -12643,7 +12652,7 @@ let MONDE_PRET=false;
 function preparerMonde(){
 if(MONDE_PRET&&SOL)return;
 MONDE_PRET=true;
-LISIERE=construireLisiere();refaireLeSol();semerDecor();
+LISIERE=construireLisiere();refaireLeSol();semerDecor();balayerLeSentier();
 if(CARTE==='garde'){
 const arrive=new URLSearchParams(location.search).has('arrivee')||!EXT_AU_DEPART;
 const p0=arrive?[GX.descente.x,GX.plS-14]:[EXT_AU_DEPART.x,EXT_AU_DEPART.y];
