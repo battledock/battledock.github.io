@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-0704';
+var MA_VERSION='2026-09-30-0712';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -10460,6 +10460,11 @@ if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];              /* pour les marges d
 return XCAL[cle];
 }
 function dessinerX(g,o,x,y){
+/* LA VOITURE QU'ON CONDUIT : elle pivote selon son cap */
+if(o.ouvre==='voiture'&&AUVOLANT===o.n&&typeof o.cap==='number'){
+  const C=graverX(o.t,o.v||0);
+  if(C){g.save();g.translate(Math.round(x),Math.round(y-C.sol/2));g.rotate(o.cap);
+    g.drawImage(C.toile,-C.W/2,-C.H/2,C.W,C.H);g.restore();return;}}
 if(o.anim&&ANIM_DECOR[o.anim]){try{ANIM_DECOR[o.anim](g,o,x,y);}catch(err){}return;}   /* un objet animé (la manif du port…) */
 if(o.pnj){                                     /* un personnage du décor (le moniteur, les dockers…) : dessiné comme un joueur */
 if(!o._pose||o._poseFin!==STYLE_FIN()){try{const src=poseDe(Object.assign({},DEF_AP,o.pnj),o.dir||'bas',0);
@@ -10953,6 +10958,13 @@ const PARIS={pied:196, t1:384, t2:520};
 /* pied  : le bas des façades, comme maisonsY au port
    t1    : le bord du trottoir haut — 188 points de trottoir, comme le quai
    t2    : le haut du trottoir bas */
+function bloqueRoute(x,y){
+  /* la voiture ne roule que sur la chaussée, entre les deux bordures */
+  if(y<PARIS.t1+16||y>PARIS.t2-8)return true;
+  if(x<40||x>MONDE_L-40)return true;
+  const CX=MONDE_L-330, CY=(PARIS.t1+PARIS.t2)/2;
+  if(Math.hypot(x-CX,y-CY)<104)return true;       /* le terre-plein */
+  return false;}
 function bloqueParis(x,y){
   /* les façades barrent le haut ; le bas de la carte est le fond de décor */
   if(y<PARIS.pied+8)return true;
@@ -13956,6 +13968,28 @@ c:i%2?'#b8a482':'#c9b894',rebondi:false});
 }
 }
 }else dernierAppui=-1;
+/* ================= AU VOLANT =================
+   Le joystick devient une commande de conduite : haut accélère, bas freine
+   puis recule, gauche et droite tournent. La voiture a de l'inertie. */
+if(AUVOLANT!==null&&VOITURE_O){
+  const pousse=-vy/220, tourne=vx/220;            /* le joystick, ramené à -1..1 */
+  const MAXI=210, RECUL=-70;
+  VIT += (pousse>0? pousse*300 : pousse*420) * dt;
+  VIT *= Math.pow(0.34,dt);                        /* le frein moteur */
+  if(VIT>MAXI)VIT=MAXI;
+  if(VIT<RECUL)VIT=RECUL;
+  if(Math.abs(VIT)<3)VIT=0;
+  /* on ne tourne qu'en roulant, comme une vraie voiture */
+  CAP += tourne * dt * 2.4 * Math.max(-1,Math.min(1,VIT/90)) * (VIT<0?-1:1);
+  const nx2=VOITURE_O.x+Math.cos(CAP)*VIT*dt, ny2=VOITURE_O.y+Math.sin(CAP)*VIT*dt;
+  let okx=!bloqueRoute(nx2,VOITURE_O.y), oky=!bloqueRoute(VOITURE_O.x,ny2);
+  if(okx)VOITURE_O.x=nx2; if(oky)VOITURE_O.y=ny2;
+  if(!okx&&!oky&&Math.abs(VIT)>40){VIT*=-0.25;try{vibrer(14);}catch(x){}}   /* on cogne */
+  VOITURE_O.cap=CAP;
+  joueur.x=VOITURE_O.x;joueur.y=VOITURE_O.y+2;    /* on suit la voiture */
+  joueur.marche=false;
+  return;
+}
 const v=Math.hypot(vx,vy);
 if(v>1.2){
 const nx=joueur.x+vxMoy*dt, ny=joueur.y+vyMoy*dt;
