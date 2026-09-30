@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-1527';
+var MA_VERSION='2026-09-30-1538';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -19905,7 +19905,7 @@ $('page2Fond').innerHTML=
 '<div class="regR"><button class="regB on" id="reg-maj">Chercher et recharger</button></div>'+
 '</div>'+
 ligne('Ultra économe',
-'Trente images par seconde au lieu de soixante, et une toile sans densité de pixels : deux fois et demie moins à dessiner. Sur iPhone et Safari, la batterie tient nettement plus longtemps, et le jeu reste fluide.',
+'Soixante images par seconde, comme d’habitude — mais quand rien ne bouge à l’écran, le jeu cesse de redessiner : en immobile, soixante fois moins de travail. La toile perd aussi sa densité de pixels. Sur iPhone et Safari, la batterie tient nettement plus longtemps sans rien perdre en fluidité.',
 '<button class="regB'+(ECO?' on':'')+'" data-reg="eco" data-val="true">Économe</button>'+
 '<button class="regB'+(ECO?'':' on')+'" data-reg="eco" data-val="false">Tout beau</button>')+
 ligne('Le personnage',
@@ -20614,16 +20614,33 @@ function mettreEco(v){
   try{if(typeof SOL_FIN!=='undefined')SOL_FIN=null;}catch(e){}
 }
 function rythmeVoulu(){
-if(ECO){                                      /* en ultra économe : trente images par seconde */
+if(ECO){                                      /* en économe : on garde les soixante images */
   if(document.hidden)return 0;
-  if(ecranPlein())return 6;
-  return 30;
+  if(ecranPlein())return 6;                   /* sauf sous un écran plein, où rien ne bouge */
+  return 0;
 }
 if(document.hidden)return 0;                  /* en arrière-plan : on ne dessine plus du tout */
 if(ecranPlein())return 6;                     /* un écran plein couvre le jeu : six images suffisent */
 return 0;                                     /* sinon : soixante images par seconde */
 }
 try{if(ECO)QUALITE_TOILE=0;}catch(e){}
+/* ================= L'IMAGE IMMOBILE =================
+   La vraie économie : quand le joueur ne bouge pas, que la caméra est fixe
+   et qu'aucune animation ne tourne, l'image d'avant est encore bonne. On
+   la garde, et le processeur graphique se repose. */
+let SIGNATURE='', SAUTEES=0;
+function ecranFige(){
+  if(!ECO)return false;
+  try{
+    const sec=Math.floor(Date.now()/1000);      /* l'heure du jeu bouge : une image par seconde */
+    const sg=[Math.round(joueur.x),Math.round(joueur.y),joueur.dir,joueur.marche?1:0,
+              (document.getElementById('action')||{}).className||'',
+              (document.getElementById('page2')||{}).className||'',
+              sec].join('|');
+    if(sg===SIGNATURE){SAUTEES++;return true;}
+    SIGNATURE=sg;SAUTEES=0;return false;
+  }catch(e){return false;}
+}
 let prochaineImage=0;
 requestAnimationFrame(function boucle(t){      /* la première image attend la fin du script : les calques de la ferme sont déclarés plus bas */
 requestAnimationFrame(boucle);
@@ -20634,6 +20651,7 @@ else prochaineImage=0;}
 const brut=t-tBrut;tBrut=t;
 if(brut>2&&brut<40)rythmeEcran=rythmeEcran*0.92+brut*0.08;
 if(rythmeEcran<10){imagePaire=!imagePaire;if(imagePaire)return;}
+if(ecranFige()){t0=t;return;}                 /* rien n'a changé : on garde l'image */
 const dt=Math.min(.05,(t-t0)/1000);mesurer(t-t0);majPerf(t-t0);
 if(PERF.on)PERF.traits=0;
 t0=t;
