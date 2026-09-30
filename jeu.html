@@ -55,6 +55,32 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 #mrm .bt .p[disabled]{background:#c9bca4;color:#8a7a5c;box-shadow:none}
 #mrm .bt .s{background:transparent;color:#5f5240;border:1px solid #b8a888}
 #mrm .bt button:active{transform:translateY(1px)}
+#mrm .q{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px dotted #c4b694}
+#mrm .q canvas{width:30px;height:30px;image-rendering:pixelated;flex:none}
+#mrm .q .nm{flex:1}
+#mrm .q .nm b{font:400 14.5px Georgia;color:#4a4032;display:block}
+#mrm .q .nm small{font:italic 11.5px Georgia;color:#9a8a6c}
+#mrm .q .n{display:flex;align-items:center;gap:7px}
+#mrm .q .n button{width:29px;height:29px;border-radius:50%;border:1px solid #b8a888;background:#f0e8d4;
+  font:700 15px Georgia;color:#5f5240;line-height:1;padding:0}
+#mrm .q .n span{min-width:16px;text-align:center;font:400 16px Georgia}
+#mrm .tot{margin-top:13px;padding:11px 13px;background:#dcd2b8;border-radius:4px;display:flex;align-items:baseline}
+#mrm .tot i{font:700 7.5px Arial;letter-spacing:2.2px;color:#8a7a5c;font-style:normal}
+#mrm .tot b{margin-left:auto;font:400 23px Georgia;color:#8a2f22}
+#mrm .ch{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dotted #c4b694}
+#mrm .ch canvas{width:34px;height:34px;image-rendering:pixelated}
+#mrm .ch .nm b{font:400 15px Georgia;color:#2f2820;display:block}
+#mrm .ch .nm small{font:italic 12px Georgia;color:#8a7a5c}
+#mrm .ch em{margin-left:auto;font-style:normal;font:400 13px Georgia;color:#8a7a5c;text-align:right}
+#mrm .jr{margin-top:14px;padding:11px 13px;background:#2f2820;border-radius:4px;color:#f0d78a;
+  font:italic 13.5px Georgia;line-height:1.45}
+#mrm .jr b{display:block;font:700 7.5px Arial;letter-spacing:2.4px;color:#c9a24a;font-style:normal;margin-bottom:3px}
+#mrm .et{text-align:center;margin-top:16px;font-size:24px;letter-spacing:5px;color:#c9a24a}
+#mrm .gn{text-align:center;margin-top:8px}
+#mrm .gn b{font:400 40px Georgia;color:#2f7a3a;display:block;line-height:1.1}
+#mrm .gn small{font:700 7.5px Arial;letter-spacing:2.6px;color:#9a8a6c}
+#mrm .in{overflow-y:auto}
+#mrm .bt .pl{background:#d8cdb0;color:#4a4032;border:1px solid #b8a888}
 #mrm .ret{position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);right:16px;z-index:3;
   font:700 10px Arial;letter-spacing:1.8px;color:#9a8a6c}
 </style>
@@ -65,7 +91,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-1902';
+var MA_VERSION='2026-09-30-1911';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -6855,7 +6881,10 @@ $('gtOk').onclick=()=>{removeEventListener('resize',surTaille);v.remove();rendre
 rendre();
 }
 let FONFON={};
-function ouvrirChezFonfon(){FONFON={};$('page2Fond').className='';$('page2').classList.add('on');
+function ouvrirChezFonfon(){
+  try{ffMarmiteMaj();}catch(x){}
+  if(typeof mrmAccueil==='function'){mrmAccueil();return;}
+FONFON={};$('page2Fond').className='';$('page2').classList.add('on');
 $('page2Fond').innerHTML=`<style>#ff{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#f6efe2;color:#2a1418;font-family:Georgia,serif}
 #ff .ff-h{flex:none;padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 14px;background:#5a1a1e;color:#f8e8c8;border-bottom:3px solid #e8c46a;position:relative}
 #ff .ff-h small{font:700 9px Arial,sans-serif;letter-spacing:4px;color:#e8c46a}#ff .ff-h b{display:block;font:italic 900 30px Georgia,serif;color:#e8c46a;line-height:1.05;margin:2px 0}
@@ -6965,7 +6994,122 @@ function bol(c){const P=mrmCtx(c,26);
   for(let k=0;k<6;k++)P(6+k*3,10+mrmAl(k),2,1,['#f6d06a','#c03a2a','#f2ede0'][k%3]);
   P(3,9,20,2,'#8a8a92');}
 
-function mrmOuvrir(){
+/* ================= LE CARNET DE FONFON : quatre vues ================= */
+const MRM_T3=[['#5f92bc','#a8cde4','#e8f2f8'],['#8a93a8','#c4d2e2','#f0f4f8'],
+               ['#7e8f7a','#bccdb8','#e6eee2'],['#b4553a','#dc8a6a','#f2c4ac']];
+function mrmNom(k){const P=POISSONS[k];return P?P[0]:k.charAt(0).toUpperCase()+k.slice(1);}
+function mrmCadre(titre,sous,corps,boutons){
+  let dv=document.getElementById('mrm');
+  if(!dv){dv=document.createElement('div');dv.id='mrm';document.body.appendChild(dv);}
+  let an='';const n=Math.max(6,Math.floor(innerHeight/46));
+  for(let k=0;k<n;k++)an+='<i style="margin-top:'+(k?34:26)+'px"></i>';
+  dv.innerHTML='<div class="mrmPan"><div class="rl">'+an+'</div>'+
+    '<div class="ret" id="mrmRet">FERMER ✕</div>'+
+    '<div class="in"><h1>'+titre+'</h1><div class="sub">'+sous+'</div>'+
+    corps+'<div class="bt">'+boutons+'</div></div></div>';
+  dv.classList.add('on');
+  const r=document.getElementById('mrmRet');if(r)r.onclick=mrmFermer;
+  return dv;
+}
+function mrmAnimer(){
+  cancelAnimationFrame(MRM_RAF);
+  (function b(){MRM_T++;
+    const cv=document.getElementById('mrmSc');
+    if(cv){const r=cv.getBoundingClientRect();
+      if(r.width>4&&(Math.abs(cv.width-r.width*2)>2||Math.abs(cv.height-r.height*2)>2)){
+        cv.width=Math.round(r.width*2);cv.height=Math.round(r.height*2);}
+      try{scene(MRM_T);}catch(e){}}
+    if(document.getElementById('mrmTxt'))mrmMinuteur();
+    MRM_RAF=requestAnimationFrame(b);})();
+}
+/* ① L'ACCUEIL */
+function mrmAccueil(){
+  mrmCadre('Chez Fonfon','Restaurant · bouillabaisse',
+   '<div class="dit">« Donne-moi de 4 à 6 poissons, au moins 3 sortes : je te fais la bouillabaisse et je te l’achète. »</div>'+
+   '<div class="sc"><canvas id="mrmSc" width="700" height="600"></canvas></div>',
+   '<button class="p" id="mA1">COMPOSER LA MARMITE</button>'+
+   '<button class="pl" id="mA2">LE LIVRE DES RECETTES</button>'+
+   '<button class="s" id="mA3">PASSER EN CUISINE</button>');
+  document.getElementById('mA1').onclick=()=>{if(FF_MIJ)mrmMarmite();else mrmCompo();};
+  document.getElementById('mA2').onclick=mrmLivre;
+  document.getElementById('mA3').onclick=()=>{mrmFermer();try{ouvrirLaCuisineDeFonfon();}catch(e){}};
+  mrmAnimer();
+}
+/* ② LA COMPOSITION */
+function mrmCompo(){
+  const sac=(e.sac||{});
+  const ESP=['sardine','bogue','girelle','rouget','mulet','saupe','seiche','maquereau','dorade','rascasse',
+    'loup','denti','murene','congre','poulpe','saintpierre','thon','sar','vieille','grondin','pagre',
+    'barracuda','liche','chapon','baliste','raie','coryphene'];
+  const dispo=ESP.filter(k=>(sac[k]||0)>0);
+  if(!dispo.length){
+    mrmCadre('La marmite','choisis tes poissons',
+      '<div class="dit">Ton sac est vide. Va donc pêcher, et reviens me voir.</div>',
+      '<button class="s" id="mC0">RETOUR</button>');
+    document.getElementById('mC0').onclick=mrmAccueil;return;}
+  const lignes=dispo.map((k,i)=>'<div class="q"><canvas class="mrmQ'+i+'" width="60" height="60"></canvas>'+
+    '<div class="nm"><b>'+mrmNom(k)+'</b><small>'+(sac[k]||0)+' dans le sac · '+
+      enEuros(PRIX_POISSON[k]||0)+'</small></div>'+
+    '<div class="n"><button data-m="'+k+'">−</button><span id="mq_'+k+'">'+(FONFON[k]||0)+
+    '</span><button data-p="'+k+'">+</button></div></div>').join('');
+  mrmCadre('La marmite','choisis tes poissons',
+    '<div class="tt" style="font:700 7.5px Arial;letter-spacing:2.6px;color:#9a8a6c;margin:14px 0 5px">TA PÊCHE</div>'+
+    lignes+'<div class="tot"><i id="mrmCpt">—</i><b id="mrmPrix">0,00 €</b></div>',
+    '<button class="p" id="mC1">CUISINER MAINTENANT</button>'+
+    '<button class="pl" id="mC2">FAIRE MIJOTER · 2 H</button>'+
+    '<button class="s" id="mC3">RETOUR</button>');
+  dispo.forEach((k,i)=>{const c=document.querySelector('.mrmQ'+i);
+    if(c)poisson(c,MRM_T3[i%4][0],MRM_T3[i%4][1],MRM_T3[i%4][2]);});
+  const maj=()=>{const {tot,esp,prix,pret}=ffCalcul();
+    document.getElementById('mrmCpt').textContent=tot+' POISSON'+(tot>1?'S':'')+' · '+esp+' SORTE'+(esp>1?'S':'');
+    document.getElementById('mrmPrix').textContent=enEuros(prix);
+    document.getElementById('mC1').disabled=!pret;document.getElementById('mC2').disabled=!pret;
+    dispo.forEach(k=>{const el=document.getElementById('mq_'+k);if(el)el.textContent=FONFON[k]||0;});};
+  document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{
+    const k=b.dataset.p;if((FONFON[k]||0)<(sac[k]||0)){FONFON[k]=(FONFON[k]||0)+1;vibrer(5);maj();}});
+  document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{
+    const k=b.dataset.m;if(FONFON[k]>0){FONFON[k]--;if(!FONFON[k])delete FONFON[k];vibrer(4);maj();}});
+  document.getElementById('mC1').onclick=async()=>{await ffCuisiner();mrmResultat();};
+  document.getElementById('mC2').onclick=async()=>{await ffMijoter();await ffMarmiteMaj();mrmMarmite();};
+  document.getElementById('mC3').onclick=mrmAccueil;
+  maj();
+}
+/* ③ LE LIVRE */
+async function mrmLivre(){
+  const L0=await appelRPC('cuisine_livre_lire',{p_joueur:e.id});
+  const L=Array.isArray(L0)?L0:[];
+  const R=await appelRPC('recette_du_jour',{});
+  const NOMP={bouillabaisse:'Bouillabaisse',marmite:'Marmite mijotée'};
+  const faits={};L.forEach(p=>faits[p.plat]=p);
+  const tous=['bouillabaisse','marmite'];
+  const lignes=tous.map((k,i)=>{const p=faits[k];
+    return '<div class="ch"'+(p?'':' style="opacity:.45"')+'><canvas class="mrmB'+i+'" width="68" height="68"></canvas>'+
+      '<div class="nm"><b>'+NOMP[k]+'</b><small>'+(p?p.fois+' fois':'pas encore')+'</small></div>'+
+      '<em>'+(p?'record<br>'+enEuros(p.meilleure):'—')+'</em></div>';}).join('');
+  mrmCadre('Le livre','les recettes de Fonfon',
+    '<div class="tt" style="font:700 7.5px Arial;letter-spacing:2.6px;color:#9a8a6c;margin:14px 0 5px">CE QUE TU AS RÉUSSI</div>'+
+    lignes+(R&&R.espece?'<div class="jr"><b>AUJOURD’HUI</b>Fonfon veut du '+R.espece+' : la marmite paie double.</div>':''),
+    '<button class="s" id="mL1">RETOUR</button>');
+  tous.forEach((k,i)=>{const c=document.querySelector('.mrmB'+i);if(c)bol(c);});
+  document.getElementById('mL1').onclick=mrmAccueil;
+}
+/* ④ LE RÉSULTAT */
+let MRM_RES=null;
+function mrmResultat(){
+  const d=MRM_RES||{};
+  const et='★'.repeat(d.note||3)+'☆'.repeat(5-(d.note||3));
+  mrmCadre('Servie !','Fonfon goûte, puis il paie',
+    '<div class="et">'+et+'</div>'+
+    '<div class="gn"><b>'+enEuros(d.gain||0)+'</b><small>FONFON TE LA RACHÈTE</small></div>'+
+    '<div class="sc"><canvas id="mrmSc" width="700" height="420"></canvas></div>'+
+    '<div class="dit">'+(d.bonus?'« La recette du jour ! Je te double la mise, petit. »'
+      :(d.note>=4?'« Tu commences à savoir faire, petit. »':'« C’est honnête. On fera mieux la prochaine fois. »'))+'</div>',
+    '<button class="p" id="mR1">ENCORE UNE</button><button class="s" id="mR2">SORTIR</button>');
+  document.getElementById('mR1').onclick=mrmCompo;
+  document.getElementById('mR2').onclick=mrmFermer;
+  mrmAnimer();
+}
+function mrmMarmite(){
   let dv=document.getElementById('mrm');
   if(!dv){dv=document.createElement('div');dv.id='mrm';document.body.appendChild(dv);}
   const ing=(MRM_ING||[]).slice(0,4);
@@ -7076,6 +7220,7 @@ const d=await appelRPC('cuisiner_bouillabaisse',{p_joueur:e.id,p_recette:FONFON}
 if(!d||d.erreur){ffBulle(!d?'Le feu s’est éteint, réessaie.':String(d.erreur));ffMaj();return;}
 if(d.sac){adopterSac(d,num);e.sac=d.sac;}if(typeof d.euros==='number')e.euros=d.euros;sauver();majHaut();FONFON={};
 jouer('vente','moment');vibrer([20,40,20]);
+MRM_RES={gain:d.gain,note:d.note,bonus:d.bonus};
 const et='★'.repeat(d.note||3)+'☆'.repeat(5-(d.note||3));
 ffBulle((d.bonus?'La recette du jour ! Fonfon double la mise. ':'')+
   'Fonfon te la rachète '+enEuros(d.gain||0)+'.<br><span style="letter-spacing:2px;color:#c9a24a">'+et+'</span>');
@@ -7097,6 +7242,7 @@ async function ffPrendreMarmite(){
   if(typeof d.euros==='number')e.euros=d.euros;sauver();majHaut();
   const et='★'.repeat(d.note||3)+'☆'.repeat(5-(d.note||3));
   jouer('vente','moment');vibrer([25,50,25]);
+  MRM_RES={gain:d.gain,note:d.note,bonus:false};
   ffBulle('Elle a mijoté deux heures. Fonfon te la rachète '+enEuros(d.gain||0)+
     '.<br><span style="letter-spacing:2px;color:#c9a24a">'+et+'</span>');FF_MIJ=null;ffMarmiteMaj();ffMaj();}
 (()=>{const P=document.getElementById('page2'),F=document.getElementById('page2Fond');if(!P||!F)return;let avant=P.classList.contains('on');
