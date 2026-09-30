@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-1811';
+var MA_VERSION='2026-09-30-1815';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -6824,6 +6824,15 @@ $('page2Fond').innerHTML=`<style>#ff{position:fixed;inset:0;z-index:5;display:fl
 #ff .ff-regle{margin-top:6px;padding:10px 12px;border-radius:12px;background:#f0e4d0;font:italic 12.5px Georgia,serif;color:#6a4a3a;line-height:1.45}
 #ff .ff-pied{flex:none;position:relative;background:#fbf6ec;border-top:2px solid #e8c46a;padding:10px 14px calc(env(safe-area-inset-bottom,0px) + 12px)}
 #ff .ff-marmite{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+#ff .ff-mij{display:none;margin-bottom:10px;padding:10px 12px;border-radius:12px;
+  background:linear-gradient(180deg,#5a2e18,#3f2010);border:1px solid #8a4a2a;color:#f6e6d0}
+#ff .ff-mij.on{display:block}
+#ff .ff-mij b{display:block;font:400 16px Georgia,serif}
+#ff .ff-mij small{display:block;font:700 7.5px Arial;letter-spacing:2px;color:#e8a05a;margin-bottom:5px}
+#ff .ff-mij .jg{height:8px;border-radius:5px;background:rgba(0,0,0,.35);margin-top:7px;overflow:hidden}
+#ff .ff-mij .jg i{display:block;height:100%;background:linear-gradient(90deg,#c9503a,#e8ba2a);border-radius:5px}
+#ff .ff-mij .fum{float:right;font-size:17px;animation:ffFum 2.4s ease-in-out infinite}
+@keyframes ffFum{0%,100%{opacity:.35;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}
 #ff .ff-pot{flex:none;width:52px;height:40px;position:relative}#ff .ff-pot:before{content:'';position:absolute;left:2px;right:2px;bottom:0;height:28px;border-radius:0 0 26px 26px;background:linear-gradient(#d8843a,#9a4a1a)}
 #ff .ff-pot:after{content:'';position:absolute;left:0;right:0;top:8px;height:6px;border-radius:3px;background:#e8603a;box-shadow:0 0 0 2px #b8622a}
 #ff .ff-pot i{position:absolute;left:50%;top:-6px;width:8px;height:8px;border-radius:50%;background:rgba(180,160,150,.5);animation:ffV 2s ease-out infinite}@keyframes ffV{from{transform:translate(-50%,6px);opacity:.8}to{transform:translate(-50%,-14px) scale(2);opacity:0}}
@@ -6836,7 +6845,9 @@ $('page2Fond').innerHTML=`<style>#ff{position:fixed;inset:0;z-index:5;display:fl
 #ff .ff-bulle.on{opacity:1;transform:none}</style>
 <div id="ff" lang="fr"><div class="ff-h"><small>RESTAURANT · BOUILLABAISSE</small><b>Chez Fonfon</b><i>« Donne-moi de 4 à 6 poissons, au moins 3 sortes : je te fais la bouillabaisse et je te l’achète. »</i><div class="ff-bourse">BOURSE<b id="ffArgent">—</b></div></div>
 <div class="ff-page" id="ffCorps"></div>
-<div class="ff-pied"><div class="ff-bulle" id="ffBulle"></div><div class="ff-marmite"><span class="ff-pot"><i></i></span><div class="ff-etat" id="ffEtat"></div></div>
+<div class="ff-pied"><div class="ff-bulle" id="ffBulle"></div>
+<div class="ff-mij" id="ffMijBar"></div>
+<div class="ff-marmite"><span class="ff-pot"><i></i></span><div class="ff-etat" id="ffEtat"></div></div>
 <div class="ff-btns"><button class="ff-sortir" id="ffSortir">Sortir</button><button class="ff-cuire pas" id="ffCuire">—</button></div>
 <div class="ff-btns" style="margin-top:8px"><button class="ff-sortir" id="ffLivre">Le livre des recettes</button><button class="ff-cuire" id="ffMij" style="background:#8a4a2a">Faire mijoter · 2 h</button></div>
 <button class="ff-cuisine" id="ffCuisine">Passer en cuisine<small>PAIN · CONFITURE · CONSERVES · SOUPE · TARTE</small></button></div></div>`;
@@ -6847,13 +6858,29 @@ $('ffCuire').onclick=ffCuisiner;
  const l=$('ffLivre');if(l)l.onclick=ffOuvrirLivre;}
 ffMarmiteMaj();ffMaj();}
 /* l'état de la marmite, et le livre */
+let FF_MIJ=null, FF_MIJ_T=0;
+function ffMijBandeau(){
+  const bar=$('ffMijBar'), m=$('ffMij');
+  if(!bar||!m)return;
+  if(!FF_MIJ||FF_MIJ.vide){bar.classList.remove('on');bar.innerHTML='';
+    m.textContent='Faire mijoter · 2 h';m.onclick=ffMijoter;return;}
+  const reste=Math.max(0, Math.round((FF_MIJ.fin-Date.now())/1000));
+  const total=2*3600, fait=Math.max(0,Math.min(1,(total-reste)/total));
+  const h=Math.floor(reste/3600), mi=Math.floor((reste%3600)/60), se=reste%60;
+  bar.classList.add('on');
+  bar.innerHTML='<span class="fum">♨</span><small>SUR LE FEU</small>'+
+    '<b>'+(reste>0?('Encore '+(h?h+' h ':'')+(h?mi+' min':mi+' min '+se+' s')):'Elle est prête !')+'</b>'+
+    '<div class="jg"><i style="width:'+Math.round(fait*100)+'%"></i></div>';
+  if(reste>0){m.textContent='Elle mijote…';m.onclick=()=>ffBulle('Laisse-la faire. Elle n’en sera que meilleure.');}
+  else{m.textContent='Retirer la marmite';m.onclick=ffPrendreMarmite;}
+}
 async function ffMarmiteMaj(){
   const d=await appelRPC('marmite_etat',{p_joueur:e.id});
-  const m=$('ffMij');if(!m||!d)return;
-  if(d.vide){m.textContent='Faire mijoter · 2 h';m.onclick=ffMijoter;return;}
-  if((d.reste_s||0)>0){const h=Math.floor(d.reste_s/3600),mi=Math.floor((d.reste_s%3600)/60);
-    m.textContent='Elle mijote · '+(h?h+' h ':'')+mi+' min';m.onclick=()=>ffBulle('Encore un peu de patience.');}
-  else{m.textContent='Retirer la marmite';m.onclick=ffPrendreMarmite;}}
+  if(!d)return;
+  FF_MIJ = d.vide ? null : {fin:Date.now()+(d.reste_s||0)*1000};
+  clearInterval(FF_MIJ_T);
+  ffMijBandeau();
+  if(FF_MIJ)FF_MIJ_T=setInterval(()=>{if(!$('ffMijBar')){clearInterval(FF_MIJ_T);return;}ffMijBandeau();},1000);}
 async function ffOuvrirLivre(){
   const L=await appelRPC('cuisine_livre_lire',{p_joueur:e.id});
   const R=await appelRPC('recette_du_jour',{});
@@ -6897,7 +6924,7 @@ async function ffMijoter(){const {pret}=ffCalcul();
   if(b)b.disabled=false;
   if(!d||d.erreur){ffBulle(!d?'Le feu s’est éteint.':(d.erreur==='deja'?'Une marmite mijote déjà.':String(d.erreur)));ffMaj();return;}
   if(d.sac){adopterSac(d,num);e.sac=d.sac;}sauver();majHaut();FONFON={};
-  vibrer([16,30,16]);ffBulle('La marmite est sur le feu. Reviens dans deux heures.');ffMaj();}
+  vibrer([16,30,16]);ffBulle('La marmite est sur le feu. Reviens dans deux heures.');ffMarmiteMaj();ffMaj();}
 async function ffPrendreMarmite(){
   const d=await appelRPC('marmite_prendre',{p_joueur:e.id});
   if(!d||d.erreur){ffBulle(d&&d.erreur==='pas prete'?'Elle mijote encore.':'Rien sur le feu.');return;}
@@ -6905,7 +6932,7 @@ async function ffPrendreMarmite(){
   const et='★'.repeat(d.note||3)+'☆'.repeat(5-(d.note||3));
   jouer('vente','moment');vibrer([25,50,25]);
   ffBulle('Elle a mijoté deux heures. Fonfon te la rachète '+enEuros(d.gain||0)+
-    '.<br><span style="letter-spacing:2px;color:#c9a24a">'+et+'</span>');ffMaj();}
+    '.<br><span style="letter-spacing:2px;color:#c9a24a">'+et+'</span>');FF_MIJ=null;ffMarmiteMaj();ffMaj();}
 (()=>{const P=document.getElementById('page2'),F=document.getElementById('page2Fond');if(!P||!F)return;let avant=P.classList.contains('on');
 new MutationObserver(()=>{const on=P.classList.contains('on');
 if(avant&&!on){F.innerHTML='';F.className='sacFond';}                                   /* fermée : on efface tout de suite */
