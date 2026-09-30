@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-1725';
+var MA_VERSION='2026-09-30-1731';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -6584,6 +6584,22 @@ if(animer)try{localStorage.setItem('loto_vu',D.jour);}catch(x){}
 V.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{const n=+b.dataset.n;if(SEL.includes(n))SEL=SEL.filter(x=>x!==n);else if(SEL.length<5)SEL.push(n);else{bulle('Cinq numéros, pas plus');return;}vibrer(6);dessinerLoto();});
 V.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{CH=+b.dataset.c;vibrer(6);dessinerLoto();});
 $('loFlash').onclick=()=>{const p=Array.from({length:25},(_,i)=>i+1);SEL=[];while(SEL.length<5)SEL.push(p.splice(Math.floor(Math.random()*p.length),1)[0]);CH=1+Math.floor(Math.random()*5);vibrer(10);dessinerLoto();};
+{const bo=$('loOk');
+ if(bo&&!$('loAbo')){const ab=document.createElement('button');
+  ab.id='loAbo';ab.className=bo.className;ab.style.cssText='margin-top:8px;background:#2f5a3a';
+  ab.innerHTML='S’ABONNER 7 JOURS · 12 €';
+  bo.parentNode.insertBefore(ab,bo.nextSibling);
+  ab.onclick=async()=>{
+    if(SEL.length!==5||!CH){bulle('Choisis d’abord 5 numéros et 1 Chance');return;}
+    if((e.euros||0)<1200){bulle('Il te manque '+enEuros(1200-(e.euros||0)));return;}
+    ab.disabled=true;ab.textContent='…';
+    const r=await appelRPC('loto_abonner',{p_joueur:e.id,p_numeros:SEL,p_chance:CH});
+    ab.disabled=false;ab.innerHTML='S’ABONNER 7 JOURS · 12 €';
+    if(!r||r.erreur){bulle(r&&r.erreur==='deja'?'Tu es déjà abonné cette semaine':
+      (r&&r.erreur==='pas_assez'?'Il te manque de quoi payer':'Grille invalide'));return;}
+    ETAT=r;if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}
+    SEL=[];CH=0;jouer('vente','moment');vibrer([20,40,20]);
+    bulle('Abonné ! Ta grille est jouée chaque soir pendant sept jours.');dessinerLoto();};}}
 $('loOk').onclick=async()=>{if(SEL.length!==5||!CH){bulle('Choisis 5 numéros et 1 numéro Chance');return;}if((e.euros||0)<200){bulle('Il te manque '+enEuros(200-(e.euros||0)));return;}
 const b=$('loOk');b.disabled=true;b.textContent='…';const r=await appelRPC('loto_jouer',{p_joueur:e.id,p_numeros:SEL,p_chance:CH});b.disabled=false;
 if(!r||r.erreur){bulle(r&&r.erreur==='limite'?'Dix grilles aujourd’hui : c’est le maximum':(r&&r.erreur==='pas_assez'?'Il te manque de quoi payer':(r&&r.erreur==='grille'?'Grille invalide':'Le buraliste n’a pas pu')));dessinerLoto();return;}
