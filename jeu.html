@@ -110,6 +110,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 #mrm .vl i{font:700 10px Arial;letter-spacing:2.2px;color:#8a7a5c;font-style:normal}
 #mrm .vl b{margin-left:auto;font:400 22px Georgia;color:#8a2f22}
 #mrm .bt button[disabled]{background:#c9bca4;color:#8a7a5c;box-shadow:none}
+#mrm .bt button.attend{background:#c9bca4;color:#6a5c46;box-shadow:none}
 #mrm .ret{position:absolute;top:calc(env(safe-area-inset-top,0px) + 6px);right:8px;z-index:9;
   font:700 10px Arial;letter-spacing:1.8px;color:#7d6a4a;background:none;border:0;
   padding:14px;min-width:96px;min-height:44px;touch-action:manipulation}
@@ -122,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-2135';
+var MA_VERSION='2026-09-30-2142';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -7184,7 +7185,16 @@ function mrmMarmite(){
   document.getElementById('mrmRec').onclick=()=>{mrmFermer();mrmLivre();};
   document.getElementById('mrmOk').onclick=async()=>{
     const b=document.getElementById('mrmOk');
-    if(b.disabled)return;
+    if(b.dataset.prete!=='1'){          /* pas prête : on le DIT, au lieu de ne rien faire */
+      const reste=Math.max(0,Math.round((MRM_FIN-Date.now())/1000));
+      const h=Math.floor(reste/3600), m=Math.floor((reste%3600)/60);
+      const d=document.getElementById('mrmDit');
+      if(d)d.innerHTML='<b>Elle n’est pas prête.</b> Il faut encore '+
+        (h?h+' h ':'')+m+' min. Reviens à ce moment-là, ou laisse-la : elle t’attendra.';
+      try{vibrer(14);}catch(x){}
+      b.animate([{transform:'translateX(0)'},{transform:'translateX(-5px)'},
+                 {transform:'translateX(5px)'},{transform:'translateX(0)'}],{duration:260});
+      return;}
     b.disabled=true;b.textContent='…';
     const ok=await ffPrendreMarmite();
     try{await ffMarmiteMaj();}catch(x){}
@@ -7209,8 +7219,10 @@ function mrmMinuteur(){
   const dit=document.getElementById('mrmDit');
   if(dit&&reste<=0)dit.textContent='Voilà, elle est à point. Viens la chercher !';
   const ok=document.getElementById('mrmOk');
-  if(ok){ok.disabled=reste>0;
-    /* le bouton dit ce qu'il fait : inutile d'appuyer dans le vide */
+  if(ok){
+    ok.disabled=false;                 /* jamais grisé : il doit pouvoir répondre */
+    ok.dataset.prete=reste>0?'0':'1';
+    ok.classList.toggle('attend',reste>0);
     ok.textContent=reste>0
       ? ('ELLE MIJOTE ENCORE · '+(h?h+' H ':'')+m+' MIN')
       : 'RETIRER LA MARMITE';}
