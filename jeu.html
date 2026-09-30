@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-0841';
+var MA_VERSION='2026-09-30-0846';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -21503,6 +21503,40 @@ L.push({t:'x_fo_cabane',x:CL[0]+66,y:CL[1]-28,v:0,gr:0,bati:true,demi:44,ouvre:'
 {const gx=(GARE&&GARE[0])||(CL[0]-96), gy=(GARE&&GARE[1])||(CL[1]+52);
 L.push({t:'x_fe_gare',x:gx,y:gy,v:0,bati:true,demi:34,ouvre:'metroForet'});
 }
+/* ================= LA CLAIRIÈRE DU BÛCHERON =================
+   Une vraie clairière : un tapis de fleurs et d'herbes devant la cabane,
+   le bûcheronnage à ses pieds — bûches, souches, feu — et un sentier qui
+   descend rejoindre le chemin principal. Les arbres forment sa lisière,
+   par paquets, jamais en rond régulier. */
+{const cx=CL[0]+66, cy=CL[1]-28;        /* la cabane */
+ const R=118;                            /* le rayon de la clairière */
+ /* LE TAPIS FLEURI, au-dessus et autour de la cabane */
+ for(let k=0;k<16;k++){const a2=(k/16)*6.283, r2=52+alea(k*3)*34;
+   const x=cx+Math.cos(a2)*r2, y=cy-46+Math.sin(a2)*r2*0.52;
+   L.push({t:alea(k*7)<0.55?'fleurs':'herbes',x,y,gr:k%3});}
+ /* LE BÛCHERONNAGE, devant la cabane */
+ for(let k=0;k<4;k++)L.push({t:'souche',x:cx-72+k*30,y:cy+34+Math.sin(k)*12,gr:k%3});
+ for(let k=0;k<7;k++)L.push({t:'herbes',x:cx-96+k*32,y:cy+68+Math.sin(k/1.6)*14,gr:k%3});
+ /* LA LISIÈRE DE LA CLAIRIÈRE : des paquets d'arbres, pas un cercle */
+ const paquets=[[-1.15,1.0],[-0.72,1.06],[-0.35,0.94],[0.5,1.02],[0.95,0.96],
+                [1.55,1.04],[2.15,0.98],[2.62,1.06],[3.35,0.95],[3.9,1.02],
+                [4.45,0.99],[5.05,1.05],[5.6,0.97]];
+ paquets.forEach(([a2,f],k)=>{
+   const n=1+Math.floor(alea(k*5)*2);
+   for(let j=0;j<n;j++){
+     const aa=a2+(j-0.5)*0.18, rr=R*f+alea(k*7+j)*26;
+     const x=cx+Math.cos(aa)*rr, y=cy+Math.sin(aa)*rr*0.72;
+     if(x<30||x>MONDE_L-30||y<40)continue;
+     if(surLeSentier(x,y,24))continue;
+     L.push({t:alea(k*11+j)<0.6?'x_fo_pin':'arbre',x,y,v:k%3,gr:k%4,
+             bati:true,demi:10,col:[10,74]});}});
+ /* LE SENTIER QUI DESCEND rejoindre le chemin : des pas japonais en pierre */
+ for(let k=0;k<9;k++){
+   const t=k/8, x=cx-10-t*66+Math.sin(t*3)*14, y=cy+96+t*96;
+   L.push({t:'rocher',x,y,gr:k%3});}
+ /* les champignons au pied de la lisière, côté ombre */
+ for(let k=0;k<6;k++)L.push({t:'champignons',x:cx+82+Math.sin(k)*22,y:cy-10+k*22,gr:k%3});
+}
 /* ================= LES SIX MOMENTS DU PARCOURS =================
    L'écran du téléphone montre environ 390 x 560 de carte. En descendant, le
    joueur traverse six fenêtres : chacune doit avoir son point d'intérêt, et
@@ -21538,7 +21572,8 @@ L.push({t:'x_fe_gare',x:gx,y:gy,v:0,bati:true,demi:34,ouvre:'metroForet'});
  for(let k=0;k<10;k++)L.push({t:'champignons',x:SX(880)+38+k*22,y:876+Math.sin(k/2.4)*36,gr:k%3});
 }
 /* les six moments réservent leur espace : aucun arbre ne vient les masquer */
-const MOMENTS=[[sentierX(120),140,100],[120,420,92],[sentierX(640)-90,660,90],
+const MOMENTS=[[366,272,132],   /* la clairière du bûcheron : large et protégée */
+               [sentierX(120),140,100],[120,420,92],[sentierX(640)-90,660,90],
                [MONDE_L-130,1010,100],[MONDE_L-90,1260,90],[sentierX(880)+120,900,96],
                [sentierX(1180)-24,1180,86],[MONDE_L-124,1372,80],
                [230,1470,110],[sentierX(1060),1120,80]];
