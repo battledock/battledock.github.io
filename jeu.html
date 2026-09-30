@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-1545';
+var MA_VERSION='2026-09-30-1621';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -6481,6 +6481,7 @@ const ancre='<svg viewBox="0 0 24 24" width="30"><circle cx="12" cy="4.5" r="2.3
 const coquille='<svg viewBox="0 0 24 24" width="28"><path d="M12 20 L3 10 Q12 0 21 10 Z" fill="#e8a8a0"/><path d="M12 20 L7 8 M12 20 L12 5 M12 20 L17 8" stroke="#b86a60" stroke-width="1"/></svg>';
 const etoile='<svg viewBox="0 0 24 24" width="28"><path d="M12 2 l2.8 6.6 7 .6-5.3 4.6 1.7 7-6.2-3.8-6.2 3.8 1.7-7L2.2 9.2l7-.6z" fill="#f0a040"/></svg>';
 const sirene='<svg viewBox="0 0 24 24" width="30"><circle cx="12" cy="5" r="3" fill="#e0b088"/><path d="M9 4 q3 -4 7 1 q-1 6 -2 8" fill="#c84a2a"/><path d="M12 8 q-4 5 0 9 q2 3 -2 5 l6 -1 q-3 -2 -1 -4 q3 -4 -3 -9z" fill="#2aa0a0"/></svg>';
+let GRATTE_EN_COURS=false;
 function pellicule(z,style,fini){const cv=document.createElement('canvas');z.appendChild(cv);const r=z.getBoundingClientRect(),D=Math.min(3,devicePixelRatio||1);cv.width=Math.max(4,Math.round(r.width*D));cv.height=Math.max(4,Math.round(r.height*D));
 const W=cv.width,H=cv.height,g=cv.getContext('2d');const gr=g.createLinearGradient(0,0,W,H);style.grad.forEach((c,i)=>gr.addColorStop(i/(style.grad.length-1),c));g.fillStyle=gr;g.fillRect(0,0,W,H);
 if(style.motif)style.motif(g,W,H,D);for(let k=0;k<W*H/90;k++){g.fillStyle=Math.random()<.5?'rgba(255,255,255,.16)':'rgba(0,0,0,.05)';g.fillRect(Math.random()*W,Math.random()*H,D,D);}
@@ -6495,8 +6496,23 @@ mg.lineWidth=R*2*MW/W;mg.beginPath();mg.moveTo(a.x*MW/W,a.y*MH/H);mg.lineTo(b.x*
 const boucle=(ts)=>{raf=0;for(const p of file){trait(der||p,der?p:{x:p.x+.1,y:p.y+.1});der=p;}file=[];if(!fin&&ts-mes>100){mes=ts;mesurer();}};
 const pt=ev=>{const r=cv.getBoundingClientRect();return {x:(ev.clientX-r.left)*D,y:(ev.clientY-r.top)*D};};
 const prendre=ev=>{const L=ev.getCoalescedEvents?ev.getCoalescedEvents():[];for(const x of (L.length?L:[ev]))file.push(pt(x));if(!raf)raf=requestAnimationFrame(boucle);};
-cv.onpointerdown=ev=>{ev.preventDefault();cv.setPointerCapture(ev.pointerId);der=null;prendre(ev);};cv.onpointermove=ev=>{if(cv.hasPointerCapture(ev.pointerId))prendre(ev);};
-cv.onpointerup=cv.onpointercancel=()=>{der=null;requestAnimationFrame(mesurer);};
+/* ================= GRATTER SANS FAIRE BOUGER LA PAGE =================
+   Safari fait défiler la page dès qu'un doigt glisse, et la capture de
+   pointeur ne suffit pas à l'en empêcher. On coupe le geste à la racine :
+   touch-action sur la pellicule, et on retient les événements tactiles.
+   Et on gratte d'une pellicule à l'autre : le doigt traverse les zones. */
+try{cv.style.touchAction='none';cv.style.webkitUserSelect='none';cv.style.userSelect='none';}catch(e){}
+const bloqueDefil=ev=>{ev.preventDefault();ev.stopPropagation();};
+cv.addEventListener('touchstart',bloqueDefil,{passive:false});
+cv.addEventListener('touchmove', bloqueDefil,{passive:false});
+cv.onpointerdown=ev=>{ev.preventDefault();GRATTE_EN_COURS=true;cv.setPointerCapture(ev.pointerId);der=null;prendre(ev);};
+cv.onpointermove=ev=>{
+  if(cv.hasPointerCapture(ev.pointerId)){prendre(ev);return;}
+  /* le doigt vient d'une autre pellicule : on gratte quand même */
+  if(GRATTE_EN_COURS&&ev.buttons!==0){
+    const r=cv.getBoundingClientRect();
+    if(ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom)prendre(ev);}};
+cv.onpointerup=cv.onpointercancel=()=>{der=null;GRATTE_EN_COURS=false;requestAnimationFrame(mesurer);};
 return {devoiler};}
 const bullesMotif=(g,W,H,D)=>{for(let k=0;k<6;k++){g.fillStyle='rgba(255,255,255,.35)';g.beginPath();g.arc(Math.random()*W,Math.random()*H,(2+Math.random()*5)*D,0,7);g.fill();}g.fillStyle='rgba(255,255,255,.55)';g.beginPath();g.arc(W*.32,H*.3,W*.09,0,7);g.fill();};
 const maillesMotif=(g,W,H,D)=>{g.strokeStyle='rgba(255,246,216,.4)';g.lineWidth=D;for(let k=-H;k<W+H;k+=8*D){g.beginPath();g.moveTo(k,0);g.lineTo(k+H,H);g.stroke();g.beginPath();g.moveTo(k,H);g.lineTo(k+H,0);g.stroke();}};
@@ -6632,6 +6648,7 @@ faits++;gratter(T,d);
 if(d.ticket){e.cos=e.cos||{};e.cos.costume_pirate=true;setTimeout(()=>{const v=document.querySelector('.gt');if(v)v.remove();ticketDOrTenue('pirate');},2600);}});};
 const gratter=(T,d)=>{const C=d.compo||{},n=('000000'+Math.floor(Math.random()*999999)).slice(-6),eu=(c)=>(c/100).toLocaleString('fr-FR')+' €';
 const v=document.createElement('div');v.className='gt';let html='',zones=[];
+try{v.style.touchAction='pan-y';v.style.overscrollBehavior='contain';}catch(e){}
 if(T[0]==='poisson'){const B=C.bulles||[];
 html='<div class="tk t1"><div class="flot"></div><div class="hd"><small>BAR DES DOCKS · 1 €</small><b>Le Petit Poisson</b></div><div class="regle">Gratte ton appât, puis les six bulles. Retrouve ton poisson : tu gagnes le montant affiché dessous.</div>'+
 '<div class="z appat" data-z="a"><div class="dessous"><small>TON APPÂT</small>'+poissonSVG(C.appat,54)+'<b>'+POISSONS[C.appat][0]+'</b></div></div>'+
