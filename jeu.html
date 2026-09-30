@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-1344';
+var MA_VERSION='2026-09-30-1523';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12645,14 +12645,16 @@ const cv=$('cv'), ctx=cv.getContext('2d',{alpha:false});   /* toile opaque : le 
 let VW=0,VH=0;
 let ECH=ZOOM;
 let ECH_CSS=ZOOM;                 /* combien de points d'écran pour un point de jeu */
-let QUALITE_TOILE=1;           /* 1 : toile en 2×, sinon 1,5× (réglé une fois, si ça rame) */
+var ECO=false;                 /* l'ultra économie d'énergie : lue avant tout le reste */
+try{ECO=localStorage.getItem('bdl.eco')==='1';}catch(e){}
+let QUALITE_TOILE=ECO?0:1;     /* 1 : toile en 2×, sinon 1,5× (réglé une fois, si ça rame) */
 function taille(){
 const w=window.innerWidth, h=window.innerHeight;
 let e=Math.max(w/VUE_L,h/VUE_H);
 e=Math.max(1.2,Math.round(e*8)/8);
 ECH_CSS=e;
 const plafond=QUALITE_TOILE<1?1.5:2;
-const dpr=Math.max(1,Math.min(plafond,window.devicePixelRatio||1));
+const dpr=ECO?1:Math.max(1,Math.min(plafond,window.devicePixelRatio||1));
 ECH=e*dpr;
 VW=Math.ceil(w/e)+1;VH=Math.ceil(h/e)+1;
 cv.width=Math.round(VW*ECH);cv.height=Math.round(VH*ECH);
@@ -19902,6 +19904,10 @@ $('page2Fond').innerHTML=
 '<i id="reg-quoi" style="display:block;font-style:normal;margin-top:3px"></i></span>'+
 '<div class="regR"><button class="regB on" id="reg-maj">Chercher et recharger</button></div>'+
 '</div>'+
+ligne('Ultra économe',
+'Douze images par seconde, une toile allégée, ni halos ni animations, et beaucoup moins d’échanges avec le serveur. Sur iPhone et Safari, la batterie tient nettement plus longtemps. Le jeu devient un peu saccadé : c’est le prix.',
+'<button class="regB'+(ECO?' on':'')+'" data-reg="eco" data-val="true">Économe</button>'+
+'<button class="regB'+(ECO?'':' on')+'" data-reg="eco" data-val="false">Tout beau</button>')+
 ligne('Le personnage',
 'Le pixel fin : deux fois plus de détail, huit directions, des gestes et des vêtements vivants. Le classique : l’ancien dessin, plus léger pour les vieux téléphones.',
 '<button class="regB'+(STYLE_FIN()?' on':'')+'" data-reg="styleFin" data-val="true">Pixel fin</button>'+bouton('styleFin',false,'Classique'))+
@@ -20006,6 +20012,7 @@ REG[b.dataset.reg]=(val==='true')?true:(val==='false'?false:
 (/^\d+$/.test(val)?+val:val));
 if(b.dataset.reg==='styleFin'){POSES.clear();CACHE_FIN.clear();setTimeout(()=>{try{refaireLeSol();}catch(x){}},50);}
 if(b.dataset.reg==='econome')try{appliquerEconomie();}catch(x){}
+if(b.dataset.reg==='eco')try{mettreEco(REG.eco);}catch(x){}
 appliquerReglages();vibrer(20);ouvrirReglages();
 const q=b.dataset.reg;
 if(q==='sGestes')jouer('hache');
@@ -20595,11 +20602,28 @@ const ecranPlein=()=>{try{
 return (($('page2')&&$('page2').classList.contains('on'))
 || ($('bar')&&$('bar').classList.contains('on'))
 || ($('casino')&&$('casino').classList.contains('on')));}catch(x){return false;}};
+/* ================= L'ULTRA ÉCONOMIE D'ÉNERGIE =================
+   Pensée pour Safari et les vieux iPhone : on dessine cinq fois moins
+   souvent, sur une toile deux fois plus petite, sans animations ni halos,
+   et on parle au serveur beaucoup plus rarement. */
+function mettreEco(v){
+  ECO=!!v;
+  try{localStorage.setItem('bdl.eco',ECO?'1':'0');}catch(e){}
+  QUALITE_TOILE=ECO?0:1;                      /* la toile passe en 1,5× au lieu de 2× */
+  try{taille();}catch(e){}                    /* on refait la toile tout de suite */
+  try{if(typeof SOL_FIN!=='undefined')SOL_FIN=null;}catch(e){}
+}
 function rythmeVoulu(){
+if(ECO){                                      /* en ultra économe : douze images par seconde */
+  if(document.hidden)return 0;
+  if(ecranPlein())return 3;
+  return 12;
+}
 if(document.hidden)return 0;                  /* en arrière-plan : on ne dessine plus du tout */
 if(ecranPlein())return 6;                     /* un écran plein couvre le jeu : six images suffisent */
 return 0;                                     /* sinon : soixante images par seconde */
 }
+try{if(ECO)QUALITE_TOILE=0;}catch(e){}
 let prochaineImage=0;
 requestAnimationFrame(function boucle(t){      /* la première image attend la fin du script : les calques de la ferme sont déclarés plus bas */
 requestAnimationFrame(boucle);
