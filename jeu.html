@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-1720';
+var MA_VERSION='2026-09-30-1725';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -6483,7 +6483,11 @@ const coquille='<svg viewBox="0 0 24 24" width="28"><path d="M12 20 L3 10 Q12 0 
 const etoile='<svg viewBox="0 0 24 24" width="28"><path d="M12 2 l2.8 6.6 7 .6-5.3 4.6 1.7 7-6.2-3.8-6.2 3.8 1.7-7L2.2 9.2l7-.6z" fill="#f0a040"/></svg>';
 const sirene='<svg viewBox="0 0 24 24" width="30"><circle cx="12" cy="5" r="3" fill="#e0b088"/><path d="M9 4 q3 -4 7 1 q-1 6 -2 8" fill="#c84a2a"/><path d="M12 8 q-4 5 0 9 q2 3 -2 5 l6 -1 q-3 -2 -1 -4 q3 -4 -3 -9z" fill="#2aa0a0"/></svg>';
 let GRATTE_EN_COURS=false;
-function pellicule(z,style,fini){const cv=document.createElement('canvas');z.appendChild(cv);const r=z.getBoundingClientRect(),D=Math.min(3,devicePixelRatio||1);cv.width=Math.max(4,Math.round(r.width*D));cv.height=Math.max(4,Math.round(r.height*D));
+function pellicule(z,style,fini){
+/* si la case n'a pas encore de taille, on attend l'image suivante :
+   sinon le masque est minuscule et la pellicule s'ouvre toute seule */
+if(z.getBoundingClientRect().width<12){requestAnimationFrame(()=>pellicule(z,style,fini));return null;}
+const cv=document.createElement('canvas');z.appendChild(cv);const r=z.getBoundingClientRect(),D=Math.min(3,devicePixelRatio||1);cv.width=Math.max(4,Math.round(r.width*D));cv.height=Math.max(4,Math.round(r.height*D));
 const W=cv.width,H=cv.height,g=cv.getContext('2d');const gr=g.createLinearGradient(0,0,W,H);style.grad.forEach((c,i)=>gr.addColorStop(i/(style.grad.length-1),c));g.fillStyle=gr;g.fillRect(0,0,W,H);
 if(style.motif)style.motif(g,W,H,D);for(let k=0;k<W*H/90;k++){g.fillStyle=Math.random()<.5?'rgba(255,255,255,.16)':'rgba(0,0,0,.05)';g.fillRect(Math.random()*W,Math.random()*H,D,D);}
 if(style.texte){g.fillStyle=style.coulTexte||'rgba(40,40,50,.4)';g.font='700 '+Math.round((style.taille||9)*D)+'px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText(style.texte,W/2,H/2);}
@@ -6763,7 +6767,7 @@ $('gtRes').innerHTML='<small>Il reste à gratter : '+nom+'</small>';};
 const fin=(z)=>{if(z)z.fait=true;
 if(T[0]==='bouteille'){if(Z.filter(q=>q.fait).length<4)return;reste=0;}
 if(--reste>0){clearTimeout(fin.t);fin.t=setTimeout(rappel,1200);return;}fini=true;clearTimeout(fin.t);Z.forEach(z=>z.gagne&&z.el.classList.add('gg'));
-const POURQUOI={poisson:['Ton poisson était dans une bulle !','Ton poisson n’était dans aucune bulle.'],filet:['Trois ancres alignées !','Pas trois ancres alignées : le trésor t’échappe.'],cargo:['Des conteneurs portent un numéro du jour !','Aucun conteneur ne porte un numéro du jour.']}[T[0]];
+const POURQUOI={poisson:['Ton poisson était dans une bulle !','Ton poisson n’était dans aucune bulle.'],filet:['Trois ancres alignées !','Pas trois ancres alignées : le trésor t’échappe.'],cargo:['Des conteneurs portent un numéro du jour !','Aucun conteneur ne porte un numéro du jour.'],bouteille:['Trois messages identiques !','Pas trois messages identiques.']}[T[0]]||['Gagné !','Pas cette fois.'];
 if(d.gain>0){jouer('vente','moment');vibrer([25,40,25]);$('gtRes').innerHTML='Gagné · <span>'+enEuros(d.gain)+'</span><small>'+POURQUOI[0]+'</small>';}
 else{$('gtRes').innerHTML='Pas cette fois<small>'+POURQUOI[1]+'</small>';const t=v.querySelector('.tresor');if(t)t.classList.add('rate');}
 if(typeof d.euros==='number'){e.euros=d.euros;sauver();majHaut();}$('gtOk').style.visibility='visible';};
