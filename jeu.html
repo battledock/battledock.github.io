@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-0737';
+var MA_VERSION='2026-09-30-0841';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -9738,11 +9738,23 @@ R(-4,-5,9,5,V.tronc);R(-4,-5,9,2,V.troncC);R(-2,-4,5,1,'#a5764a');R(-4,-2,9,2,V.
 }
 const MONDE_L=CARTE==='paris'?1268:(CARTE==='vallon'?420:(CARTE==='garde'?640:(CARTE==='montagne'?360:(CARTE==='sommet'||CARTE==='piscine'?320:(CARTE==='stade'?760:(CARTE==='village'?((typeof FORET_SEULE!=='undefined'&&FORET_SEULE)?660:1900):1400))))));   /* au village, la ferme s'étend à droite */               // largeur, en pixels de jeu
 const MONDE_H=CARTE==='paris'?620:(CARTE==='vallon'?560:(CARTE==='montagne'?470:   /* la montagne a été raccourcie : la hauteur doit suivre, sinon on marche hors de la carte */
-(CARTE==='sommet'?460:(CARTE==='piscine'?580:(CARTE==='stade'?1080:600)))));                // hauteur
+(CARTE==='sommet'?460:(CARTE==='piscine'?580:(CARTE==='stade'?1080:((typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village')?1600:600))))));                // hauteur
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 const VUE_L=196, VUE_H=400;       /* la vue de référence, en points de jeu */
 const ZOOM=2;                     /* ne sert plus que de repli */
 let SOL=null, SOL_FIN=null;
+let CHEMIN=null;             /* la couche du sentier : entre le sol et le décor */
+/* le tracé du sentier de la forêt, partagé par le dessin et par le semis */
+function sentierX(y){return 330+Math.sin(y/300)*150+Math.sin(y/104)*22;}
+function sentierLargeur(y){return y<380?28:(y<1240?21:26);}
+function surLeSentier(x,y,marge){
+  if(!(typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village'))return false;
+  const m=marge||0;
+  if(Math.abs(x-sentierX(y))<sentierLargeur(y)+m)return true;
+  /* la branche vers la clairière */
+  const by=880+Math.sin((x-sentierX(880))/72)*38;
+  if(x>sentierX(880)&&x<sentierX(880)+210&&Math.abs(y-by)<16+m)return true;
+  return false;}
 let SAUMASKI=null;
 if(CARTE==='vallon'){SAUMASKI=eval(await chargerMorceau('vallon.js'));}
 else if(CARTE==='piscine'){SAUMASKI=eval(await chargerMorceau('piscine.js'));}
@@ -9849,7 +9861,7 @@ if(!CARTE_MOD&&SOL_CACHE.pret){SOL=SOL_CACHE.sol;SOL_FIN=SOL_CACHE.fin;SOL_CACHE
 setTimeout(rangerSolCache,4000);                                                                              /* on le range, sans ralentir le jeu */
 if(CARTE_MOD){SOL_FIN=SAUMASKI.solFin();SOL=document.createElement('canvas');SOL.width=MONDE_L;SOL.height=MONDE_H;
 const g=SOL.getContext('2d');g.drawImage(SOL_FIN,0,0,MONDE_L,MONDE_H);return SOL;}   /* à Saumaski, le sol fin est dessiné tel quel */
-SOL=construireSol();SOL_FIN=null;
+SOL=construireSol();SOL_FIN=null;CHEMIN=construireChemin();
 if(SOL_FIN&&CARTE==='village')try{peindreLaFermeFin(SOL_FIN.getContext('2d'));}catch(x){}   /* la campagne, au demi-pixel */
 return SOL;}
 const alea=s=>{const v=Math.sin(s*127.1)*43758.5453;return v-Math.floor(v);};
@@ -9960,6 +9972,8 @@ function graverX(t,v){
 const cle=t+(v||0);
 if(XCAL[cle])return XCAL[cle];
 if(t==='x_chantier'){XCAL[cle]=graverLeChantier();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_pin'){XCAL[cle]=graverConifere(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_aut'){XCAL[cle]=graverArbreAutomne(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_cabanonMoi'){const c=CAB_LU();
 XCAL[cle]=graverTonCabanon(c.bati?(c.niveau>0?2:1):0);
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
@@ -10598,7 +10612,7 @@ g.fillStyle=h;g.fillRect(x-34,y-C.sol-17,68,68);
 }
 function scintillerLaMer(g,camX,camY){
 const T=Date.now()/1000;
-for(let i=0;i<46;i++){
+for(let i=0;i<Math.round(46*FAC);i++){
 const bx=XP.bassinO+10+alea(i*7.1)*(XP.bassinE-XP.bassinO-20);
 const by=XP.quaiY+14+alea(i*3.3)*(MONDE_H-XP.quaiY-18);
 const x=bx+Math.sin(T*.6+i)*6-camX, y=by-camY;
@@ -11038,13 +11052,76 @@ trottoir(t2+2,H);
    P(CX+s2*(R_EXT+16)-4,CY+k*11-4,9,9,'#efece0');}});
 }
 return c;}
+/* ================= LA COUCHE DU CHEMIN =================
+   Une toile transparente posée SUR le sol et SOUS le décor. L'herbe et les
+   fleurs ne poussent pas dessus : le semis les en écarte. */
+function construireChemin(){
+  if(!(typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village'))return null;
+  const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const al2=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+  const terre=(x,y)=>{if(x<0||x>=MONDE_L||y<0||y>=MONDE_H)return;
+    const n=al2(x*0.5+y*0.3);
+    g.fillStyle=n<0.28?'#b08c5e':(n<0.56?'#a07c50':(n<0.82?'#c09a6c':'#8e6e44'));
+    g.fillRect(x,y,1,1);};
+  for(let y=0;y<MONDE_H;y++){
+    const w=sentierLargeur(y), cx2=sentierX(y);
+    for(let x=cx2-w;x<cx2+w;x++){
+      const b2=Math.abs(x-cx2)/w;
+      if(b2>0.86&&al2(x*0.5+y*0.3)<0.5)continue;      /* le bord s'effrite */
+      terre(x,y);}}
+  /* la branche vers la clairière du bûcheron */
+  for(let t=0;t<210;t++){const x=sentierX(880)+t, y=880+Math.sin(t/72)*38;
+    for(let w=-15;w<15;w++)if(!(Math.abs(w)>12&&al2(x+w)<0.42))terre(x,y+w);}
+  /* les cailloux, et l'herbe qui mord sur les bords */
+  for(let i2=0;i2<300;i2++){const y=al2(i2*7)*MONDE_H, x=sentierX(y)+(al2(i2*3)-0.5)*40;
+    g.fillStyle=al2(i2)<0.5?'#cbbd96':'#8e8064';g.fillRect(Math.round(x),Math.round(y),2,2);}
+  for(let i2=0;i2<420;i2++){const y=al2(i2*11)*MONDE_H;
+    const cote=al2(i2*5)<0.5?-1:1, x=sentierX(y)+cote*(sentierLargeur(y)-2+al2(i2*3)*6);
+    g.fillStyle=al2(i2*13)<0.5?'#6f9553':'#5b7d44';g.fillRect(Math.round(x),Math.round(y),1,2);}
+  return c;}
 function construireSol(){
 if(CARTE==='paris')return construireSolParis();
 if(CARTE==='extramar')return construireSolExtramar();
 if(CARTE==='garde')return construireSolGarde();
 const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
 const g=c.getContext('2d');
-const OLIVE={base:'#8fa464',moyen:'#889d5e',fonce:'#819658',ombre:'#70844b',clair:'#9cb072'};
+const FOR_Z=(typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village');
+/* LES ZONES DE LA FORÊT : la lisière est claire, le bois dense est sombre,
+   la clairière s'éclaircit, la rive tire vers le jaune des galets. */
+const ZONES=[{h:340,base:'#a6bc78',moyen:'#9fb572',fonce:'#96ac6a',ombre:'#869c5c',clair:'#b6ca88'},
+             {h:1000,base:'#44603a',moyen:'#3f5a36',fonce:'#385230',ombre:'#2d4526',clair:'#517046'},
+             {h:1300,base:'#8fa868',moyen:'#88a162',fonce:'#7f985a',ombre:'#6e884e',clair:'#9db674'},
+             {h:9999,base:'#b0b478',moyen:'#a9ad72',fonce:'#a0a46a',ombre:'#8e925c',clair:'#c0c488'}];
+/* ================= LA TRANSITION AU BRUIT =================
+   La frontière entre zones n'est plus une ligne : elle ondule, et surtout
+   les deux teintes se mélangent sur une large bande. On ne voit jamais où
+   une zone finit. */
+const brz=(x,y)=>{   /* un bruit doux, deux octaves */
+  const b1=(a,b)=>{const v=Math.sin(a*127.1+b*311.7)*43758.5453;return v-Math.floor(v);};
+  const li=(a,b,t)=>a+(b-a)*(t*t*(3-2*t));
+  const ech=(u,v)=>{const x0=Math.floor(u),y0=Math.floor(v),fx=u-x0,fy=v-y0;
+    return li(li(b1(x0,y0),b1(x0+1,y0),fx),li(b1(x0,y0+1),b1(x0+1,y0+1),fx),fy);};
+  return ech(x/120,y/120)*0.66+ech(x/38,y/38)*0.34;};
+const melange=(c1,c2,t)=>{   /* deux couleurs hexadécimales, mêlées */
+  const h=(c)=>[parseInt(c.substr(1,2),16),parseInt(c.substr(3,2),16),parseInt(c.substr(5,2),16)];
+  const A=h(c1),B=h(c2);
+  return 'rgb('+(A[0]+(B[0]-A[0])*t|0)+','+(A[1]+(B[1]-A[1])*t|0)+','+(A[2]+(B[2]-A[2])*t|0)+')';};
+/* renvoie la zone ET la part de la suivante, sur une bande de 130 points
+   dont la limite ondule avec le bruit */
+const zoneMelee=(x,y)=>{
+  const LARGE=130;
+  for(let i=0;i<ZONES.length-1;i++){
+    const lim=ZONES[i].h+(brz(x,ZONES[i].h)-0.5)*90;   /* la limite serpente */
+    if(y<lim-LARGE/2)return {a:ZONES[i],b:ZONES[i],t:0};
+    if(y<lim+LARGE/2){
+      let t=(y-(lim-LARGE/2))/LARGE;
+      t=t*t*(3-2*t);                                    /* adouci */
+      t=Math.max(0,Math.min(1,t+(brz(x,y)-0.5)*0.45));  /* et grignoté par le bruit */
+      return {a:ZONES[i],b:ZONES[i+1],t};}}
+  return {a:ZONES[ZONES.length-1],b:ZONES[ZONES.length-1],t:0};};
+const zoneDe=(y)=>{for(const z of ZONES)if(y<z.h)return z;return ZONES[3];};
+const OLIVE=FOR_Z?ZONES[1]:{base:'#8fa464',moyen:'#889d5e',fonce:'#819658',ombre:'#70844b',clair:'#9cb072'};
 const bruit=(x,y)=>{const v=Math.sin(x*127.1+y*311.7)*43758.5453;return v-Math.floor(v);};
 const lisse=(x,y)=>{
 const x0=Math.floor(x),y0=Math.floor(y),fx=x-x0,fy=y-y0;
@@ -11052,7 +11129,9 @@ const m=(a,b,t)=>a+(b-a)*(t*t*(3-2*t));
 return m(m(bruit(x0,y0),bruit(x0+1,y0),fx),m(bruit(x0,y0+1),bruit(x0+1,y0+1),fx),fy);
 };
 for(let y=0;y<MONDE_H;y+=2)for(let x=0;x<MONDE_L;x+=2){
-g.fillStyle=((x+y)&2)?OLIVE.base:OLIVE.moyen;
+if(FOR_Z){const Z=zoneMelee(x,y);
+  g.fillStyle=((x+y)&2)?melange(Z.a.base,Z.b.base,Z.t):melange(Z.a.moyen,Z.b.moyen,Z.t);}
+else g.fillStyle=((x+y)&2)?OLIVE.base:OLIVE.moyen;
 g.fillRect(x,y,2,2);
 }
 for(let y=0;y<MONDE_H;y+=8)for(let x=0;x<MONDE_L;x+=8){
@@ -11768,8 +11847,10 @@ if(CARTE==='garde')return semerDecorGarde();
 DECOR=[];
 const A=alea;
 const libre=(x,y,r)=>DECOR.every(o=>Math.hypot(o.x-x,o.y-y)>r);
-const dedans=(x,y)=>!dansLisiere(x,y)&&!dansLisiere(x,y-16)&&!dansLaFerme(x,y)&&!(Math.abs(x-rivX2(y))<RIV_LARGE+14)&&!PONTS2.some(py=>Math.hypot(x-rivX2(py),y-py)<50)
+const dedans=(x,y)=>!surLeSentier(x,y,10)&&!dansLisiere(x,y)&&!dansLisiere(x,y-16)&&!dansLaFerme(x,y)&&!(Math.abs(x-rivX2(y))<RIV_LARGE+14)&&!PONTS2.some(py=>Math.hypot(x-rivX2(py),y-py)<50)
 &&x>BORD+10&&x<MONDE_L-BORD-10&&y>BORD+16&&y<MONDE_H-BORD-10;
+/* la forêt est trois fois plus haute : il lui faut autant de ressources */
+const FAC=(typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village')?2.6:1;
 const depart=(x,y)=>Math.hypot(x-CAMP_FIXE[0],y-CAMP_FIXE[1])<60;  /* la clairière du camp */
 const LIEUX_FIXES=[[CAMP_FIXE,34],[COFFRE_FIXE,20],[FORGE_FIXE,30],
 [CASINO_FIXE,36],[CARREAU_FIXE,32]];
@@ -11827,7 +11908,7 @@ DECOR.push({t:'roseaux',x,y,gr:Math.floor(A(b*11+k)*3)});
 }
 }
 if(false){
-for(let b=0;b<22;b++){const yb=Math.round(BORD+40+A(b*5.9+3)*(MONDE_H-2*BORD-80)), n=3+Math.floor(A(b*9.1)*4);
+for(let b=0;b<Math.round(22*FAC);b++){const yb=Math.round(BORD+40+A(b*5.9+3)*(MONDE_H-2*BORD-80)), n=3+Math.floor(A(b*9.1)*4);
 if(PONTS2.some(py=>Math.abs(yb-py)<PONT_DEMI+18))continue;
 for(let k=0;k<n;k++){const y=Math.round(yb+(k-n/2)*8+A(b*3.3+k)*5);
 const x=Math.round(rivX2(y)+(RIV_LARGE+2+A(b*7.9+k)*6));                 /* rive est */
@@ -12585,6 +12666,7 @@ const lw=Math.min(VW+2,MONDE_L-camX), lh=Math.min(VH+2,MONDE_H-camY);
 if(lw<VW+2||lh<VH+2){ctx.fillStyle='#2b3a26';ctx.fillRect(0,0,VW+2,VH+2);}   /* le fond uni, seulement si le sol ne couvre pas tout l'écran */
 if(SOL_FIN)ctx.drawImage(SOL_FIN,camX*2,camY*2,lw*2,lh*2,0,0,lw,lh);   /* le sol affiné */
 else ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
+if(CHEMIN)ctx.drawImage(CHEMIN,camX,camY,lw,lh,0,0,lw,lh);   /* la couche du chemin */
 if(CARTE==='village'&&FIN_OK()&&!FERME_SEULE)dessinerLaPlaceFin(ctx,camX,camY);    /* la grand-place en dalles fines */
 if(CARTE_MOD){const nG=performance.now();dessinerGlisse(ctx,camX,camY,Math.min(0.05,(nG-(GLISSE.tD||nG))/1000));GLISSE.tD=nG;}   /* les gerbes de glace */
 if(CARTE==='extramar'){scintillerLaMer(ctx,camX,camY);eauVivante(ctx,camX,camY);}
@@ -21377,6 +21459,42 @@ for(let k=0;k<3;k++)P(cx-18+k*4,sol-9,3,6,'#9a7444');
 for(let k=0;k<3;k++){P(cx-18+k*4,sol-16,3,5,'#f2f2ec');P(cx-19+k*4,sol-18,5,3,hs(k)<.5?'#c03a2a':'#a8563a');}
 return {toile:c,W,H,sol,nuit:null};
 }
+/* ================= LE CONIFÈRE ET L'ARBRE D'AUTOMNE =================
+   Deux silhouettes de plus pour casser l'uniformité du bois. */
+function graverConifere(v){
+  const W=64,H=96,D=2,c=document.createElement('canvas');
+  c.width=W*D;c.height=H*D;
+  const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const hs=n=>{const q=Math.sin(n*12.9898)*43758.5453;return q-Math.floor(q);};
+  const cx=W/2,sol=H-6;
+  const T=[['#1d4a30','#245a38','#2f6a44','#153a26'],
+           ['#245a2c','#2c6a34','#377a3e','#1b4622'],
+           ['#2a5a3c','#336a46','#3e7a52','#1f4a30']][v%3];
+  R(cx-9,sol,18,4,'rgba(24,34,20,.22)');
+  R(cx-3,sol-16,6,16,'#5b3f21');R(cx-3,sol-16,2,16,'#6f4f2c');
+  for(let k=0;k<6;k++){const w=30-k*4.4, yy=sol-18-k*10;
+    R(cx-w/2,yy,w,11,k%2?T[0]:T[1]);R(cx-w/2,yy,w,3,T[2]);}
+  R(cx-2,sol-78,4,8,T[1]);
+  for(let i=0;i<8;i++)R(cx+(hs(i*5+v)-0.5)*26,sol-70+hs(i*3+v)*48,2,2,T[3]);
+  return {toile:c,W,H,sol,nuit:null};
+}
+function graverArbreAutomne(v){
+  const W=72,H=88,D=2,c=document.createElement('canvas');
+  c.width=W*D;c.height=H*D;
+  const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const hs=n=>{const q=Math.sin(n*12.9898)*43758.5453;return q-Math.floor(q);};
+  const cx=W/2,sol=H-6;
+  const T=[['#c06a1e','#d8862a','#e8a43a','#a8521a'],
+           ['#b4541e','#c96a28','#dc8434','#984418'],
+           ['#c98a1e','#dca42c','#eabe44','#a86e14']][v%3];
+  R(cx-11,sol,22,4,'rgba(24,34,20,.22)');
+  R(cx-3,sol-24,6,24,'#6a4a2a');R(cx-3,sol-24,2,24,'#8a6238');
+  R(cx-20,sol-40,40,18,T[0]);R(cx-15,sol-51,30,14,T[1]);R(cx-9,sol-60,18,11,T[2]);
+  for(let i=0;i<9;i++)R(cx+(hs(i*3+v)-0.5)*36,sol-56+hs(i*7+v)*30,3,2,T[3]);
+  return {toile:c,W,H,sol,nuit:null};
+}
 function semerLaClairiere(CL,GARE){
 const L=[];
 const C=graverCabaneBucheron();XCAL['x_fo_cabane0']=C;CALQUES_DECO['x_fo_cabane']=C;TAILLES['x_fo_cabane']=[{w:100,h:14}];
@@ -21385,6 +21503,68 @@ L.push({t:'x_fo_cabane',x:CL[0]+66,y:CL[1]-28,v:0,gr:0,bati:true,demi:44,ouvre:'
 {const gx=(GARE&&GARE[0])||(CL[0]-96), gy=(GARE&&GARE[1])||(CL[1]+52);
 L.push({t:'x_fe_gare',x:gx,y:gy,v:0,bati:true,demi:34,ouvre:'metroForet'});
 }
+/* ================= LES SIX MOMENTS DU PARCOURS =================
+   L'écran du téléphone montre environ 390 x 560 de carte. En descendant, le
+   joueur traverse six fenêtres : chacune doit avoir son point d'intérêt, et
+   celui du suivant doit déjà pointer au bord de l'écran précédent. */
+{const SX=(y)=>sentierX(y);
+ /* 1 · LA LISIÈRE : un portail naturel, deux gros arbres qui encadrent l'entrée */
+ L.push({t:'x_fo_pin',x:SX(120)-64,y:130,v:0,gr:0,bati:true,demi:10,col:[10,74]});
+ L.push({t:'x_fo_pin',x:SX(120)+64,y:142,v:1,gr:0,bati:true,demi:10,col:[10,74]});
+ /* des souches et du bois mort, pour dire qu'on bûcheronne ici */
+ for(let k=0;k<5;k++)L.push({t:'souche',x:SX(200)+(k-2)*56,y:200+Math.sin(k)*30,gr:k%3});
+ /* 2 · LES PREMIÈRES RESSOURCES : un bouquet de buissons à cueillir, à gauche */
+ for(let k=0;k<9;k++)L.push({t:'buisson',x:72+k*24,y:400+((k%2)?22:0)+Math.sin(k/2)*14,gr:k%2});
+ /* 3 · LE BOIS DENSE : un rocher marquant au bord du sentier */
+ for(let k=0;k<5;k++)L.push({t:'rocher',x:SX(640)-72-k*24,y:630+k*22+Math.sin(k)*14,gr:k%3});
+ /* 4 · LA DÉCOUVERTE DE L'EAU : des roseaux qui annoncent la rivière,
+        visibles depuis l'écran précédent */
+ for(let k=0;k<14;k++)L.push({t:'roseaux',x:MONDE_L-126+((k%3)-1)*30,y:950+k*22,gr:k%3});
+ /* 5 · LE PASSAGE : des rochers de gué, au bord de l'eau */
+ for(let k=0;k<5;k++)L.push({t:'rocher',x:MONDE_L-96+((k%2)?26:0),y:1210+k*30,gr:k%3});
+ /* 7 · LE BAS DU BOIS : trois raisons d'y descendre */
+ /* un cercle de rochers, comme un ancien campement */
+ for(let k=0;k<7;k++){const a2=k/7*6.283;
+   L.push({t:'rocher',x:SX(1180)-24+Math.cos(a2)*54,y:1180+Math.sin(a2)*34,gr:k%3});}
+ /* un carré d'argile, au bord de l'eau */
+ for(let k=0;k<9;k++)L.push({t:'argile',x:MONDE_L-150+(k%3)*26,y:1340+Math.floor(k/3)*24,gr:0});
+ /* un massif de buissons et d'herbes, tout en bas */
+ for(let k=0;k<11;k++)L.push({t:'buisson',x:90+k*30,y:1440+((k%2)?22:0)+Math.sin(k/2)*14,gr:k%2});
+ for(let k=0;k<9;k++)L.push({t:'herbes',x:150+k*28,y:1510+Math.sin(k)*18,gr:k%3});
+ /* des plumes, à ramasser sous les grands arbres */
+ for(let k=0;k<7;k++)L.push({t:'plumes',x:SX(1060)+((k%2)?40:-40),y:1040+k*26,gr:k%3});
+ /* 6 · LA CLAIRIÈRE : des champignons semés sur la branche du sentier,
+        ils mènent l'oeil vers la cabane */
+ for(let k=0;k<10;k++)L.push({t:'champignons',x:SX(880)+38+k*22,y:876+Math.sin(k/2.4)*36,gr:k%3});
+}
+/* les six moments réservent leur espace : aucun arbre ne vient les masquer */
+const MOMENTS=[[sentierX(120),140,100],[120,420,92],[sentierX(640)-90,660,90],
+               [MONDE_L-130,1010,100],[MONDE_L-90,1260,90],[sentierX(880)+120,900,96],
+               [sentierX(1180)-24,1180,86],[MONDE_L-124,1372,80],
+               [230,1470,110],[sentierX(1060),1120,80]];
+const dansUnMoment=(x,y)=>MOMENTS.some(([mx,my,r])=>Math.hypot(x-mx,y-my)<r);
+/* ================= LA VARIÉTÉ DU BOIS =================
+   Des conifères et quelques arbres d'automne, semés là où rien ne gêne :
+   ni le sentier, ni les abords des bâtiments, ni les autres arbres. */
+{const A2=alea;
+ for(let i=0;i<820;i++){
+   const x=24+A2(i*13+5)*(MONDE_L-48), y=64+A2(i*7+3)*(MONDE_H-150);
+   if(surLeSentier(x,y,26))continue;
+   if(surLesAbordsForet({t:'arbre',x,y}))continue;
+   if(dansUnMoment(x,y))continue;      /* on laisse respirer les points d'intérêt */
+   /* l'écart minimal se resserre dans le bois : les arbres s'y chevauchent */
+   const prof0=Math.max(0,Math.min(1,(y-260)/520));
+   const ecart=42-prof0*18;
+   if(L.some(o=>Math.hypot(o.x-x,o.y-y)<ecart))continue;
+   /* LA DENSITÉ SUIT LA ZONE : rare en lisière, serré dans le bois dense,
+      et les arbres d'automne se cantonnent aux marges du bois. */
+   const prof=prof0;                                     /* 0 en lisière, 1 au coeur */
+   if(A2(i*17)>0.10+prof*0.86)continue;                   /* rare en haut, serré au coeur */
+   const r=A2(i*3);
+   /* les arbres d'automne restent rares et jamais côte à côte */
+   const auto=(r>0.9)&&!L.some(o=>o.t==='x_fo_aut'&&Math.hypot(o.x-x,o.y-y)<120);
+   if(auto)L.push({t:'x_fo_aut',x,y,v:i%3,gr:0,bati:true,demi:11,col:[11,62]});
+   else L.push({t:'x_fo_pin',x,y,v:i%3,gr:0,bati:true,demi:10,col:[10,74]});}}
 return L;
 }
 function graverCabaneBucheron(){
