@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-0900';
+var MA_VERSION='2026-09-30-0907';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -10972,6 +10972,13 @@ const PARIS={pied:196, t1:384, t2:520};
 /* pied  : le bas des façades, comme maisonsY au port
    t1    : le bord du trottoir haut — 188 points de trottoir, comme le quai
    t2    : le haut du trottoir bas */
+/* ================= L'ÉTANG DE LA FORÊT =================
+   Une eau douce au bas de la carte, avec sa berge. On ne marche pas dedans. */
+const ETANG={x:300,y:1430,rx:210,ry:112};
+function dansEtang(x,y,m){
+  if(!(typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village'))return false;
+  const mm=m||0;
+  return Math.hypot((x-ETANG.x)/(ETANG.rx+mm),(y-ETANG.y)/(ETANG.ry+mm))<1;}
 function bloqueRoute(x,y){
   /* la voiture ne roule que sur la chaussée, entre les deux bordures */
   if(y<PARIS.t1+16||y>PARIS.t2-8)return true;
@@ -11052,6 +11059,37 @@ trottoir(t2+2,H);
    P(CX+s2*(R_EXT+16)-4,CY+k*11-4,9,9,'#efece0');}});
 }
 return c;}
+/* on peint l'étang dans la couche du chemin : il passe au-dessus de l'herbe */
+function peindreEtang(g){
+  const al2=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+  const E=ETANG;
+  for(let y=E.y-E.ry-16;y<E.y+E.ry+16;y++){
+    for(let x=E.x-E.rx-16;x<E.x+E.rx+16;x++){
+      if(x<0||y<0||x>=MONDE_L||y>=MONDE_H)continue;
+      const d=Math.hypot((x-E.x)/E.rx,(y-E.y)/E.ry);
+      const n=al2(x*0.4+y*0.3);
+      if(d>1.10)continue;
+      if(d>1.0){g.fillStyle=n<.5?'#cbbd96':'#b8aa82';g.fillRect(x,y,1,1);continue;}
+      if(d>0.94){g.fillStyle=n<.5?'#d8cba4':'#c6b88e';g.fillRect(x,y,1,1);continue;}
+      /* l'eau : plus sombre au centre, plus claire au bord */
+      const p=1-d;
+      g.fillStyle=(p>0.62)?(n<.4?'#1d5878':(n<.72?'#22627f':'#2a6e8c')):
+                  (p>0.3 )?(n<.4?'#2a6e8c':(n<.72?'#33809f':'#3d8fae')):
+                           (n<.4?'#4a9cbc':(n<.72?'#5aaac8':'#6cb8d4'));
+      g.fillRect(x,y,1,1);}}
+  /* les reflets, en traits horizontaux */
+  for(let i=0;i<300;i++){
+    const a2=al2(i*3)*6.283, r2=Math.sqrt(al2(i*7))*0.88;
+    const x=E.x+Math.cos(a2)*r2*E.rx, y=E.y+Math.sin(a2)*r2*E.ry;
+    g.fillStyle='rgba(255,255,255,'+(0.14+al2(i*5)*0.2)+')';
+    g.fillRect(Math.round(x),Math.round(y),5+al2(i)*9,1);}
+  /* quelques galets sur la berge */
+  for(let i=0;i<46;i++){
+    const a2=al2(i*11)*6.283, r2=1.0+al2(i*13)*0.08;
+    const x=E.x+Math.cos(a2)*r2*E.rx, y=E.y+Math.sin(a2)*r2*E.ry;
+    g.fillStyle=al2(i)<0.5?'#9aa0a8':'#8a9098';
+    g.fillRect(Math.round(x),Math.round(y),3,2);}
+}
 /* ================= LA COUCHE DU CHEMIN =================
    Une toile transparente posée SUR le sol et SOUS le décor. L'herbe et les
    fleurs ne poussent pas dessus : le semis les en écarte. */
@@ -11079,6 +11117,7 @@ function construireChemin(){
   for(let i2=0;i2<420;i2++){const y=al2(i2*11)*MONDE_H;
     const cote=al2(i2*5)<0.5?-1:1, x=sentierX(y)+cote*(sentierLargeur(y)-2+al2(i2*3)*6);
     g.fillStyle=al2(i2*13)<0.5?'#6f9553':'#5b7d44';g.fillRect(Math.round(x),Math.round(y),1,2);}
+  peindreEtang(g);
   return c;}
 function construireSol(){
 if(CARTE==='paris')return construireSolParis();
@@ -11847,7 +11886,7 @@ if(CARTE==='garde')return semerDecorGarde();
 DECOR=[];
 const A=alea;
 const libre=(x,y,r)=>DECOR.every(o=>Math.hypot(o.x-x,o.y-y)>r);
-const dedans=(x,y)=>!surLeSentier(x,y,10)&&!dansLisiere(x,y)&&!dansLisiere(x,y-16)&&!dansLaFerme(x,y)&&!(Math.abs(x-rivX2(y))<RIV_LARGE+14)&&!PONTS2.some(py=>Math.hypot(x-rivX2(py),y-py)<50)
+const dedans=(x,y)=>!surLeSentier(x,y,22)&&!dansEtang(x,y,16)&&!dansLisiere(x,y)&&!dansLisiere(x,y-16)&&!dansLaFerme(x,y)&&!(Math.abs(x-rivX2(y))<RIV_LARGE+14)&&!PONTS2.some(py=>Math.hypot(x-rivX2(py),y-py)<50)
 &&x>BORD+10&&x<MONDE_L-BORD-10&&y>BORD+16&&y<MONDE_H-BORD-10;
 /* la forêt est trois fois plus haute : il lui faut autant de ressources */
 const FAC=(typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village')?2.6:1;
@@ -22246,7 +22285,10 @@ const bordDecorVrai=dessinerDecor;
 dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
 if(CHAMPS_SEULS&&CARTE==='village'){if(!BORD_F)BORD_F=graverBordureFerme();const Z=BORD_Z;g.drawImage(BORD_F,Math.round(Z.x0-camX),Math.round(Z.y0-camY),Z.x1-Z.x0,Z.y1-Z.y0);}
 return bordDecorVrai(g,camX,camY,VW2,VH2,acteurs);};
-{const bloqueFermeVrai=bloque;bloque=function(x,y){if(CHAMPS_SEULS&&CARTE==='village'&&x<FERME_X0+16)return true;   /* (la limite ouest ne vaut que pour la ferme) */
+{const bloqueFermeVrai=bloque;bloque=function(x,y){
+if(FORET_SEULE&&CARTE==='village'&&dansEtang(x,y,-4))return true;      /* l'eau de l'étang */
+if(FORET_SEULE&&CARTE==='village'&&surLeSentier(x,y,6)&&!dansEtang(x,y,-4))return false;   /* le sentier ne se bouche jamais */
+if(CHAMPS_SEULS&&CARTE==='village'&&x<FERME_X0+16)return true;   /* (la limite ouest ne vaut que pour la ferme) */
 if(CHAMPS_SEULS&&CARTE==='village'&&(x<784||x>1534||y<124||y>432))return true;   /* les bordures du bocage : haies, clôtures, arbres, blé */
 if(FORET_SEULE&&CARTE==='village'&&(x<FZ.x0+10||y<FZ.y0+12||y>FZ.y1-8||x>rivX(y)-16))return true;
 return bloqueFermeVrai(x,y);};}
