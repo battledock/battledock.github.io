@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-1815';
+var MA_VERSION='2026-09-30-1820';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -6824,6 +6824,10 @@ $('page2Fond').innerHTML=`<style>#ff{position:fixed;inset:0;z-index:5;display:fl
 #ff .ff-regle{margin-top:6px;padding:10px 12px;border-radius:12px;background:#f0e4d0;font:italic 12.5px Georgia,serif;color:#6a4a3a;line-height:1.45}
 #ff .ff-pied{flex:none;position:relative;background:#fbf6ec;border-top:2px solid #e8c46a;padding:10px 14px calc(env(safe-area-inset-bottom,0px) + 12px)}
 #ff .ff-marmite{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+#ff .ff-bulle b{font:400 16px Georgia,serif;display:block;margin-bottom:5px}
+#ff .ff-bulle .ff-lg{font:400 13px Georgia,serif;color:#f2e4d0;background:rgba(0,0,0,.22);
+  border-radius:8px;padding:6px 9px;margin:3px 0;text-align:left}
+#ff .ff-bulle .ff-jour{display:block;margin-top:6px;font:italic 13px Georgia,serif;color:#f0d78a}
 #ff .ff-mij{display:none;margin-bottom:10px;padding:10px 12px;border-radius:12px;
   background:linear-gradient(180deg,#5a2e18,#3f2010);border:1px solid #8a4a2a;color:#f6e6d0}
 #ff .ff-mij.on{display:block}
@@ -6884,10 +6888,14 @@ async function ffMarmiteMaj(){
 async function ffOuvrirLivre(){
   const L=await appelRPC('cuisine_livre_lire',{p_joueur:e.id});
   const R=await appelRPC('recette_du_jour',{});
-  const lignes=(L&&L.length)?L.map(p=>'<div class="ff-lg"><b>'+p.plat+'</b> — '+p.fois+' fois · record '+enEuros(p.meilleure)+'</div>').join(''):'<div class="ff-lg">Rien encore. Mets donc une marmite sur le feu.</div>';
+  const NOMP={bouillabaisse:'Bouillabaisse',marmite:'Marmite mijotée'};
+  const lignes=(L&&L.length)
+    ? L.map(p=>'<div class="ff-lg">'+(NOMP[p.plat]||p.plat)+' · '+p.fois+' fois · record '+enEuros(p.meilleure)+'</div>').join('')
+    : '<div class="ff-lg">Rien encore. Mets donc une marmite sur le feu.</div>';
   ffBulle('<b>Le livre des recettes</b><br>'+lignes+
-    (R&&R.espece?'<br><span style="color:#f0d78a">Aujourd’hui, Fonfon veut du '+R.espece+' : la marmite paie double.</span>':''), true);}
+    (R&&R.espece?'<span class="ff-jour">Aujourd’hui : du '+R.espece+', et la marmite paie double.</span>':''), true);}
 function ffBulle(t,longue){const b=$('ffBulle');if(!b)return;
+b.onclick=()=>{b.classList.remove('on');clearTimeout(ffBulle.t);};
 b.innerHTML=String(t);                       /* on accepte le gras, les retours, les étoiles */
 b.classList.add('on');clearTimeout(ffBulle.t);
 ffBulle.t=setTimeout(()=>b.classList.remove('on'),longue?7000:2800);}
