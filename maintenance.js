@@ -58,6 +58,48 @@
       .then(function(r){return r.json();}).then(function(d){if(d&&d.bloque){if(document.body)montrer(d.version,d);else document.addEventListener('DOMContentLoaded',function(){montrer(d.version,d);});}})
       .catch(function(){});
   }
+  /* ================= LA FORÊT EN TRAVAUX =================
+     Elle se ferme à part : on n'entre pas dans le bois, le reste du jeu
+     continue de tourner. Les joueurs autorisés passent quand même. */
+  var FORET_FERMEE=true;
+  var FORET_OUVERTS=['e029d1fb-7baa-4225-91fd-5cdbef6f8711'];
+  function versLaForet(){
+    try{
+      var q=new URLSearchParams(location.search);
+      if(location.pathname.indexOf('foret.html')>=0)return true;
+      if((q.get('carte')||'')==='foret')return true;
+      var sv=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}');
+      if(!q.get('carte')&&location.pathname.indexOf('jeu.html')>=0&&sv.carte==='foret')return true;
+    }catch(e){}
+    return false;
+  }
+  function ecranForet(){
+    var d=document.createElement('div');d.id='bdForet';
+    d.style.cssText='position:fixed;inset:0;z-index:99999;background:#101a12;color:#eef6ea;'+
+      'font-family:Georgia,serif;display:flex;flex-direction:column;align-items:center;'+
+      'justify-content:center;text-align:center;padding:34px 26px';
+    d.innerHTML=
+      '<div style="font:700 9px Arial;letter-spacing:4px;color:#7fae90">LA FORÊT</div>'+
+      '<div style="font:400 34px Georgia;margin:12px 0 4px">Nouveautés en cours d’ajout</div>'+
+      '<div style="width:110px;height:1px;margin:18px auto;background:linear-gradient(90deg,transparent,#c9a24a,transparent)"></div>'+
+      '<div style="font:italic 15px Georgia;color:#a9c7b4;line-height:1.6;max-width:340px">'+
+      'Le bois est fermé le temps d’y planter ce qui manque.<br>Le port et la ferme restent ouverts.</div>'+
+      '<button id="bdfRetour" style="margin-top:30px;border:1px solid #c9a24a;border-radius:3px;'+
+      'background:rgba(201,162,74,.12);color:#f6efdc;padding:15px 26px;font:700 11px Arial;letter-spacing:3px">'+
+      'RETOUR AU PORT</button>';
+    (document.body||document.documentElement).appendChild(d);
+    try{document.documentElement.style.overflow='hidden';}catch(e){}
+    window.__MAINTENANCE=true;
+    var b=document.getElementById('bdfRetour');
+    if(b)b.onclick=function(){
+      try{var sv=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}');
+        sv.carte='extramar';localStorage.setItem('bdl.pix.v2',JSON.stringify(sv));}catch(e){}
+      location.href='jeu.html?carte=extramar&v='+Date.now();};
+  }
+  if(FORET_FERMEE&&versLaForet()&&FORET_OUVERTS.indexOf(id)<0){
+    if(document.body)ecranForet();
+    else document.addEventListener('DOMContentLoaded',ecranForet);
+  }
   verifier();
   setInterval(function(){if(!document.getElementById('bd3'))verifier();},60000);   /* si la maintenance commence pendant qu'on joue */
 })();
