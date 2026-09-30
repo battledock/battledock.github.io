@@ -110,8 +110,10 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 #mrm .vl i{font:700 10px Arial;letter-spacing:2.2px;color:#8a7a5c;font-style:normal}
 #mrm .vl b{margin-left:auto;font:400 22px Georgia;color:#8a2f22}
 #mrm .bt button[disabled]{background:#c9bca4;color:#8a7a5c;box-shadow:none}
-#mrm .ret{position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);right:16px;z-index:3;
-  font:700 10px Arial;letter-spacing:1.8px;color:#9a8a6c}
+#mrm .ret{position:absolute;top:calc(env(safe-area-inset-top,0px) + 6px);right:8px;z-index:9;
+  font:700 10px Arial;letter-spacing:1.8px;color:#7d6a4a;background:none;border:0;
+  padding:14px;min-width:96px;min-height:44px;touch-action:manipulation}
+#mrm .ret:active{color:#8a2f22}
 </style>
 <script>(function(){var champ=function(t){return t&&t.closest&&t.closest('input,textarea,[contenteditable="true"]');};
 ['selectstart','copy','cut','contextmenu','dragstart'].forEach(function(k){document.addEventListener(k,function(e){if(!champ(e.target))e.preventDefault();},{capture:true});});})();</script>
@@ -120,7 +122,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-2042';
+var MA_VERSION='2026-09-30-2057';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -7033,11 +7035,20 @@ function mrmCadre(titre,sous,corps,boutons){
   let an='';const n=Math.max(6,Math.floor(innerHeight/46));
   for(let k=0;k<n;k++)an+='<i style="margin-top:'+(k?34:26)+'px"></i>';
   dv.innerHTML='<div class="mrmPan"><div class="rl">'+an+'</div>'+
-    '<div class="ret" id="mrmRet">FERMER ✕</div>'+
+    '<button class="ret" id="mrmRet" type="button">FERMER ✕</button>'+
     '<div class="in"><h1>'+titre+'</h1><div class="sub">'+sous+'</div>'+
     corps+'<div class="bt">'+boutons+'</div></div></div>';
   dv.classList.add('on');
   const r=document.getElementById('mrmRet');if(r)r.onclick=mrmFermer;
+  /* le doigt : on relaie nous-mêmes, le jeu bloque les gestes par défaut */
+  if(!dv.__relais){dv.__relais=true;
+    const relayer=(ev)=>{
+      const t=ev.target&&ev.target.closest&&ev.target.closest('button,[data-pl],[data-p],[data-m]');
+      if(!t||t.disabled)return;
+      ev.preventDefault();ev.stopPropagation();
+      if(typeof t.onclick==='function')t.onclick(ev);};
+    dv.addEventListener('pointerup',relayer,{passive:false});
+    dv.addEventListener('touchend',relayer,{passive:false});}
   return dv;
 }
 function mrmAnimer(){
