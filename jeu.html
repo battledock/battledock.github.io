@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-0907';
+var MA_VERSION='2026-09-30-0918';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -10974,11 +10974,12 @@ const PARIS={pied:196, t1:384, t2:520};
    t2    : le haut du trottoir bas */
 /* ================= L'ÉTANG DE LA FORÊT =================
    Une eau douce au bas de la carte, avec sa berge. On ne marche pas dedans. */
-const ETANG={x:300,y:1430,rx:210,ry:112};
+const ETANG={bord:1330};        /* la rive : au-delà, c'est l'eau, sur toute la largeur */
+/* la rive ondule doucement, comme le bord d'un lac */
+function riveY(x){return ETANG.bord+Math.sin(x/120)*26+Math.sin(x/47)*9;}
 function dansEtang(x,y,m){
   if(!(typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village'))return false;
-  const mm=m||0;
-  return Math.hypot((x-ETANG.x)/(ETANG.rx+mm),(y-ETANG.y)/(ETANG.ry+mm))<1;}
+  return y>riveY(x)+(m||0);}
 function bloqueRoute(x,y){
   /* la voiture ne roule que sur la chaussée, entre les deux bordures */
   if(y<PARIS.t1+16||y>PARIS.t2-8)return true;
@@ -11062,34 +11063,87 @@ return c;}
 /* on peint l'étang dans la couche du chemin : il passe au-dessus de l'herbe */
 function peindreEtang(g){
   const al2=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
-  const E=ETANG;
-  for(let y=E.y-E.ry-16;y<E.y+E.ry+16;y++){
-    for(let x=E.x-E.rx-16;x<E.x+E.rx+16;x++){
-      if(x<0||y<0||x>=MONDE_L||y>=MONDE_H)continue;
-      const d=Math.hypot((x-E.x)/E.rx,(y-E.y)/E.ry);
-      const n=al2(x*0.4+y*0.3);
-      if(d>1.10)continue;
-      if(d>1.0){g.fillStyle=n<.5?'#cbbd96':'#b8aa82';g.fillRect(x,y,1,1);continue;}
-      if(d>0.94){g.fillStyle=n<.5?'#d8cba4':'#c6b88e';g.fillRect(x,y,1,1);continue;}
-      /* l'eau : plus sombre au centre, plus claire au bord */
-      const p=1-d;
-      g.fillStyle=(p>0.62)?(n<.4?'#1d5878':(n<.72?'#22627f':'#2a6e8c')):
-                  (p>0.3 )?(n<.4?'#2a6e8c':(n<.72?'#33809f':'#3d8fae')):
-                           (n<.4?'#4a9cbc':(n<.72?'#5aaac8':'#6cb8d4'));
+  /* LA BERGE : une bande de sable et de galets, juste avant l'eau */
+  for(let x=0;x<MONDE_L;x++){
+    const ry=riveY(x);
+    for(let y=ry-26;y<ry;y++){
+      if(y<0||y>=MONDE_H)continue;
+      const t=(y-(ry-26))/26, n=al2(x*0.4+y*0.3);
+      if(t<0.3&&n<0.5)continue;                     /* le sable se fond dans l'herbe */
+      g.fillStyle=n<.28?'#d8cba4':(n<.56?'#cbbd96':(n<.82?'#e2d6b0':'#b8aa82'));
       g.fillRect(x,y,1,1);}}
-  /* les reflets, en traits horizontaux */
-  for(let i=0;i<300;i++){
-    const a2=al2(i*3)*6.283, r2=Math.sqrt(al2(i*7))*0.88;
-    const x=E.x+Math.cos(a2)*r2*E.rx, y=E.y+Math.sin(a2)*r2*E.ry;
-    g.fillStyle='rgba(255,255,255,'+(0.14+al2(i*5)*0.2)+')';
-    g.fillRect(Math.round(x),Math.round(y),5+al2(i)*9,1);}
-  /* quelques galets sur la berge */
-  for(let i=0;i<46;i++){
-    const a2=al2(i*11)*6.283, r2=1.0+al2(i*13)*0.08;
-    const x=E.x+Math.cos(a2)*r2*E.rx, y=E.y+Math.sin(a2)*r2*E.ry;
-    g.fillStyle=al2(i)<0.5?'#9aa0a8':'#8a9098';
-    g.fillRect(Math.round(x),Math.round(y),3,2);}
+  /* L'EAU : plus claire au bord, plus profonde vers le bas */
+  for(let x=0;x<MONDE_L;x++){
+    const ry=riveY(x);
+    for(let y=Math.max(0,Math.round(ry));y<MONDE_H;y++){
+      const p=Math.min(1,(y-ry)/150), n=al2(x*0.4+y*0.3);
+      g.fillStyle=(p<0.14)?(n<.4?'#7fc0d8':(n<.72?'#6cb2cc':'#8fcde2')):
+                  (p<0.42)?(n<.4?'#4a9cbc':(n<.72?'#3d8fae':'#57a8c6')):
+                  (p<0.72)?(n<.4?'#2a6e8c':(n<.72?'#33809f':'#256480')):
+                           (n<.4?'#1a4f6a':(n<.72?'#1d5878':'#173f56'));
+      g.fillRect(x,y,1,1);}}
+  /* LE CLAPOT : des traits clairs, plus serrés près de la rive */
+  for(let i=0;i<1400;i++){
+    const x=al2(i*3)*MONDE_L, ry=riveY(x);
+    const y=ry+Math.pow(al2(i*7),1.7)*(MONDE_H-ry);
+    if(y>=MONDE_H)continue;
+    g.fillStyle='rgba(255,255,255,'+(0.10+al2(i*5)*0.22)+')';
+    g.fillRect(Math.round(x),Math.round(y),4+al2(i)*9,1);}
+  /* LES GALETS, sur la berge et dans l'eau peu profonde */
+  for(let i=0;i<140;i++){
+    const x=al2(i*11)*MONDE_L, ry=riveY(x);
+    const y=ry-10+al2(i*13)*38;
+    if(y<0||y>=MONDE_H)continue;
+    const n=al2(i);
+    g.fillStyle=n<.4?'#9aa0a8':(n<.7?'#8a9098':'#aab0b8');
+    g.fillRect(Math.round(x),Math.round(y),3+(n<.3?2:0),2);
+    g.fillStyle='rgba(255,255,255,.25)';g.fillRect(Math.round(x),Math.round(y),2,1);}
+  /* LE PONTON : deux rangées de pilotis, un tablier de madriers, une rambarde */
+  const px=Math.round(sentierX(ETANG.bord)), pl=54, py0=Math.round(riveY(px))-14;
+  const py1=py0+186;
+  /* l'ombre sur l'eau */
+  g.fillStyle='rgba(12,38,54,.28)';g.fillRect(px-pl/2+5,py0+7,pl,py1-py0);
+  /* les pilotis */
+  for(let k=0;k<7;k++){const y=py0+16+k*28;
+    [-1,1].forEach(s2=>{const x=px+s2*(pl/2-7);
+      g.fillStyle='#5b3f21';g.fillRect(x-4,y,8,26);
+      g.fillStyle='#6f4f2c';g.fillRect(x-4,y,3,26);
+      g.fillStyle='rgba(255,255,255,.18)';g.fillRect(x-4,y+24,8,2);});}
+  /* le tablier, madrier par madrier */
+  for(let y=py0;y<py1;y+=9){
+    const n=al2(y*1.7);
+    g.fillStyle=n<.3?'#a5764a':(n<.6?'#96693e':(n<.85?'#b4855a':'#8a6238'));
+    g.fillRect(px-pl/2,y,pl,8);
+    g.fillStyle='rgba(255,255,255,.14)';g.fillRect(px-pl/2,y,pl,1);
+    g.fillStyle='rgba(40,26,12,.35)';g.fillRect(px-pl/2,y+8,pl,1);
+    /* les clous */
+    g.fillStyle='#6a5a48';g.fillRect(px-pl/2+4,y+3,2,2);g.fillRect(px+pl/2-6,y+3,2,2);}
+  /* les longerons */
+  g.fillStyle='#7d5934';g.fillRect(px-pl/2-3,py0,3,py1-py0);g.fillRect(px+pl/2,py0,3,py1-py0);
+  /* la rambarde : montants et lisse, des deux côtés */
+  for(let k=0;k<8;k++){const y=py0+10+k*24;
+    [-1,1].forEach(s2=>{const x=px+s2*(pl/2+1);
+      g.fillStyle='#6a4a2a';g.fillRect(x-2,y-13,4,15);
+      g.fillStyle='#8a6238';g.fillRect(x-2,y-13,2,15);});}
+  [-1,1].forEach(s2=>{const x=px+s2*(pl/2+1);
+    g.fillStyle='#8a6238';g.fillRect(x-4,py0+2,8,3);
+    g.fillRect(x-4,py0-4,8,3);
+    g.fillStyle='#a5764a';g.fillRect(x-4,py0-4,8,1);});
+  /* le bout du ponton : une plateforme un peu plus large */
+  g.fillStyle='#8a6238';g.fillRect(px-pl/2-12,py1-4,pl+24,22);
+  for(let x=px-pl/2-12;x<px+pl/2+12;x+=8){
+    g.fillStyle=al2(x)<.5?'#a5764a':'#96693e';g.fillRect(x,py1-4,7,22);}
+  g.fillStyle='rgba(255,255,255,.14)';g.fillRect(px-pl/2-12,py1-4,pl+24,1);
+  /* une lanterne au bout, et une barque amarrée */
+  g.fillStyle='#3a3f46';g.fillRect(px-2,py1-30,4,26);
+  g.fillRect(px-7,py1-38,14,10);
+  g.fillStyle='#f6e6a8';g.fillRect(px-5,py1-36,10,7);
+  for(let k=0;k<7;k++){const w=40-Math.abs(k-3)*5;
+    g.fillStyle=al2(k)<.5?'#c9a878':'#b8905c';
+    g.fillRect(px+pl/2+18+(40-w)/2,py1-14+k*3,w,3);}
+  g.fillStyle='#8a6238';g.fillRect(px+pl/2+24,py1-24,3,12);
 }
+
 /* ================= LA COUCHE DU CHEMIN =================
    Une toile transparente posée SUR le sol et SOUS le décor. L'herbe et les
    fleurs ne poussent pas dessus : le semis les en écarte. */
@@ -11886,7 +11940,7 @@ if(CARTE==='garde')return semerDecorGarde();
 DECOR=[];
 const A=alea;
 const libre=(x,y,r)=>DECOR.every(o=>Math.hypot(o.x-x,o.y-y)>r);
-const dedans=(x,y)=>!surLeSentier(x,y,22)&&!dansEtang(x,y,16)&&!dansLisiere(x,y)&&!dansLisiere(x,y-16)&&!dansLaFerme(x,y)&&!(Math.abs(x-rivX2(y))<RIV_LARGE+14)&&!PONTS2.some(py=>Math.hypot(x-rivX2(py),y-py)<50)
+const dedans=(x,y)=>!surLeSentier(x,y,22)&&!dansEtang(x,y,-34)&&!dansLisiere(x,y)&&!dansLisiere(x,y-16)&&!dansLaFerme(x,y)&&!(Math.abs(x-rivX2(y))<RIV_LARGE+14)&&!PONTS2.some(py=>Math.hypot(x-rivX2(py),y-py)<50)
 &&x>BORD+10&&x<MONDE_L-BORD-10&&y>BORD+16&&y<MONDE_H-BORD-10;
 /* la forêt est trois fois plus haute : il lui faut autant de ressources */
 const FAC=(typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village')?2.6:1;
@@ -11920,13 +11974,13 @@ for(let i=0;i<90;i++){
 const x=Math.round(BORD+14+A(i*3.1)*(MONDE_L-2*BORD-28));
 const y=Math.round(BORD+24+A(i*4.3)*(MONDE_H-2*BORD-40));
 if(rivEst(x,y)||!loinDeLEau(x,y,'rocher')||!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,24))continue;
-DECOR.push({t:'rocher',x,y,gr:Math.floor(A(i*7)*3)});
+if(!dansEtang(x,y,-34))DECOR.push({t:'rocher',x,y,gr:Math.floor(A(i*7)*3)});
 }
 for(let i=0;i<150;i++){
 const x=Math.round(BORD+18+A(i*5.7)*(MONDE_L-2*BORD-36));
 const y=Math.round(BORD+34+A(i*6.3)*(MONDE_H-2*BORD-50));
 if(rivEst(x,y)||!loinDeLEau(x,y,'buisson')||!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,22))continue;
-DECOR.push({t:'buisson',x,y,gr:Math.floor(A(i*9)*2)});
+if(!dansEtang(x,y,-34))DECOR.push({t:'buisson',x,y,gr:Math.floor(A(i*9)*2)});
 }
 if(!NUAGES.length)semerNuages();
 if(!PAPILLONS.length)setTimeout(semerPapillons,0);
@@ -11934,7 +11988,7 @@ for(let i=0;i<46;i++){
 const y=Math.round(BORD+60+A(i*2.3)*(MONDE_H-2*BORD-120));
 const x=Math.round(rivX(y)-(RIV_LARGE+21+A(i*5.1)*5));   /* toujours la rive ouest */
 if(x<BORD+20||x>MONDE_L-BORD-20||surLieu(x,y)||!libre(x,y,16))continue;
-DECOR.push({t:'argile',x,y,gr:0});
+if(!dansEtang(x,y,-34))DECOR.push({t:'argile',x,y,gr:0});
 }
 for(let b=0;b<26;b++){
 const yb=Math.round(BORD+40+A(b*4.7)*(MONDE_H-2*BORD-80));
@@ -11943,7 +11997,7 @@ for(let k=0;k<n;k++){
 const y=Math.round(yb+(k-n/2)*8+A(b*3+k)*5);
 const x=Math.round(rivX(y)-(RIV_LARGE+2+A(b*7.3+k)*6));  /* rive ouest */
 if(x<BORD+20||x>MONDE_L-BORD-20||surLieu(x,y)||!libre(x,y,7))continue;
-DECOR.push({t:'roseaux',x,y,gr:Math.floor(A(b*11+k)*3)});
+if(!dansEtang(x,y,-34))DECOR.push({t:'roseaux',x,y,gr:Math.floor(A(b*11+k)*3)});
 }
 }
 if(false){
@@ -11952,11 +12006,11 @@ if(PONTS2.some(py=>Math.abs(yb-py)<PONT_DEMI+18))continue;
 for(let k=0;k<n;k++){const y=Math.round(yb+(k-n/2)*8+A(b*3.3+k)*5);
 const x=Math.round(rivX2(y)+(RIV_LARGE+2+A(b*7.9+k)*6));                 /* rive est */
 if(x<BORD+20||x>MONDE_L-BORD-20||!libre(x,y,7))continue;
-DECOR.push({t:'roseaux',x,y,gr:Math.floor(A(b*13+k)*3)});}}
+if(!dansEtang(x,y,-34))DECOR.push({t:'roseaux',x,y,gr:Math.floor(A(b*13+k)*3)});}}
 for(let i=0;i<30;i++){const y=Math.round(BORD+60+A(i*2.9+5)*(MONDE_H-2*BORD-120));
 if(PONTS2.some(py=>Math.abs(y-py)<PONT_DEMI+18))continue;
 const x=Math.round(rivX2(y)+(RIV_LARGE+21+A(i*5.7)*5));
-if(x<BORD+20||x>MONDE_L-BORD-20||!libre(x,y,16))continue;DECOR.push({t:'argile',x,y,gr:0});}}
+if(x<BORD+20||x>MONDE_L-BORD-20||!libre(x,y,16))continue;if(!dansEtang(x,y,-34))DECOR.push({t:'argile',x,y,gr:0});}}
 for(let i=0;i<50;i++){
 const a=DECOR.filter(o=>o.t==='arbre');
 if(!a.length)break;
@@ -11964,13 +12018,13 @@ const arbre=a[Math.floor(A(i*9.7)*a.length)];
 const x=Math.round(arbre.x+(A(i*11.3)-.5)*54);
 const y=Math.round(arbre.y+14+A(i*13.1)*26);
 if(rivEst(x,y)||!loinDeLEau(x,y,'champignons')||!dedans(x,y)||libre(x,y,16)===false)continue;
-DECOR.push({t:'champignons',x,y,gr:0});
+if(!dansEtang(x,y,-34))DECOR.push({t:'champignons',x,y,gr:0});
 }
 for(let i=0;i<110;i++){
 const x=Math.round(BORD+22+A(i*15.7)*(MONDE_L-2*BORD-44));
 const y=Math.round(BORD+40+A(i*17.3)*(MONDE_H-2*BORD-60));
 if(rivEst(x,y)||!loinDeLEau(x,y,'herbes')||!dedans(x,y)||!libre(x,y,15))continue;
-DECOR.push({t:'herbes',x,y,gr:0});
+if(!dansEtang(x,y,-34))DECOR.push({t:'herbes',x,y,gr:0});
 }
 for(let i=0;i<18;i++){
 const a=DECOR.filter(o=>o.t==='arbre');
@@ -11979,7 +12033,7 @@ const arbre=a[Math.floor(A(i*19.1)*a.length)];
 const x=Math.round(arbre.x+(A(i*21.7)-.5)*44);
 const y=Math.round(arbre.y+10+A(i*23.3)*22);
 if(rivEst(x,y)||!loinDeLEau(x,y,'plumes')||!dedans(x,y))continue;
-DECOR.push({t:'plumes',x,y,gr:0});
+if(!dansEtang(x,y,-34))DECOR.push({t:'plumes',x,y,gr:0});
 }
 for(let i=0;i<110;i++){
 const x=Math.round(BORD+16+A(i*7.1)*(MONDE_L-2*BORD-32));
@@ -21599,16 +21653,16 @@ L.push({t:'x_fe_gare',x:gx,y:gy,v:0,bati:true,demi:34,ouvre:'metroForet'});
         visibles depuis l'écran précédent */
  for(let k=0;k<14;k++)L.push({t:'roseaux',x:MONDE_L-126+((k%3)-1)*30,y:950+k*22,gr:k%3});
  /* 5 · LE PASSAGE : des rochers de gué, au bord de l'eau */
- for(let k=0;k<5;k++)L.push({t:'rocher',x:MONDE_L-96+((k%2)?26:0),y:1210+k*30,gr:k%3});
+ for(let k=0;k<5;k++)L.push({t:'rocher',x:MONDE_L-96+((k%2)?26:0),y:1120+k*26,gr:k%3});
  /* 7 · LE BAS DU BOIS : trois raisons d'y descendre */
  /* un cercle de rochers, comme un ancien campement */
  for(let k=0;k<7;k++){const a2=k/7*6.283;
-   L.push({t:'rocher',x:SX(1180)-24+Math.cos(a2)*54,y:1180+Math.sin(a2)*34,gr:k%3});}
+   L.push({t:'rocher',x:SX(1120)-24+Math.cos(a2)*54,y:1120+Math.sin(a2)*34,gr:k%3});}
  /* un carré d'argile, au bord de l'eau */
- for(let k=0;k<9;k++)L.push({t:'argile',x:MONDE_L-150+(k%3)*26,y:1340+Math.floor(k/3)*24,gr:0});
+ for(let k=0;k<9;k++)L.push({t:'argile',x:MONDE_L-150+(k%3)*26,y:1214+Math.floor(k/3)*24,gr:0});
  /* un massif de buissons et d'herbes, tout en bas */
- for(let k=0;k<11;k++)L.push({t:'buisson',x:90+k*30,y:1440+((k%2)?22:0)+Math.sin(k/2)*14,gr:k%2});
- for(let k=0;k<9;k++)L.push({t:'herbes',x:150+k*28,y:1510+Math.sin(k)*18,gr:k%3});
+ for(let k=0;k<11;k++)L.push({t:'buisson',x:90+k*30,y:1180+((k%2)?22:0)+Math.sin(k/2)*14,gr:k%2});
+ for(let k=0;k<9;k++)L.push({t:'herbes',x:150+k*28,y:1256+Math.sin(k)*18,gr:k%3});
  /* des plumes, à ramasser sous les grands arbres */
  for(let k=0;k<7;k++)L.push({t:'plumes',x:SX(1060)+((k%2)?40:-40),y:1040+k*26,gr:k%3});
  /* 6 · LA CLAIRIÈRE : des champignons semés sur la branche du sentier,
@@ -21616,7 +21670,9 @@ L.push({t:'x_fe_gare',x:gx,y:gy,v:0,bati:true,demi:34,ouvre:'metroForet'});
  for(let k=0;k<10;k++)L.push({t:'champignons',x:SX(880)+38+k*22,y:876+Math.sin(k/2.4)*36,gr:k%3});
 }
 /* les six moments réservent leur espace : aucun arbre ne vient les masquer */
+const SX_M=(y)=>sentierX(y);
 const MOMENTS=[[366,272,132],   /* la clairière du bûcheron : large et protégée */
+               [SX_M(1120),1120,92],[MONDE_L-124,1240,84],[230,1210,110],
                [sentierX(120),140,100],[120,420,92],[sentierX(640)-90,660,90],
                [MONDE_L-130,1010,100],[MONDE_L-90,1260,90],[sentierX(880)+120,900,96],
                [sentierX(1180)-24,1180,86],[MONDE_L-124,1372,80],
@@ -21629,6 +21685,7 @@ const dansUnMoment=(x,y)=>MOMENTS.some(([mx,my,r])=>Math.hypot(x-mx,y-my)<r);
  for(let i=0;i<820;i++){
    const x=24+A2(i*13+5)*(MONDE_L-48), y=64+A2(i*7+3)*(MONDE_H-150);
    if(surLeSentier(x,y,26))continue;
+   if(dansEtang(x,y,-30))continue;      /* pas d'arbre dans le lac */
    if(surLesAbordsForet({t:'arbre',x,y}))continue;
    if(dansUnMoment(x,y))continue;      /* on laisse respirer les points d'intérêt */
    /* l'écart minimal se resserre dans le bois : les arbres s'y chevauchent */
@@ -22286,7 +22343,10 @@ dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
 if(CHAMPS_SEULS&&CARTE==='village'){if(!BORD_F)BORD_F=graverBordureFerme();const Z=BORD_Z;g.drawImage(BORD_F,Math.round(Z.x0-camX),Math.round(Z.y0-camY),Z.x1-Z.x0,Z.y1-Z.y0);}
 return bordDecorVrai(g,camX,camY,VW2,VH2,acteurs);};
 {const bloqueFermeVrai=bloque;bloque=function(x,y){
-if(FORET_SEULE&&CARTE==='village'&&dansEtang(x,y,-4))return true;      /* l'eau de l'étang */
+if(FORET_SEULE&&CARTE==='village'&&dansEtang(x,y,-4)){
+  const px=sentierX(ETANG.bord);
+  if(Math.abs(x-px)<27&&y<riveY(px)+178)return false;   /* le ponton : on y marche */
+  return true;}
 if(FORET_SEULE&&CARTE==='village'&&surLeSentier(x,y,6)&&!dansEtang(x,y,-4))return false;   /* le sentier ne se bouche jamais */
 if(CHAMPS_SEULS&&CARTE==='village'&&x<FERME_X0+16)return true;   /* (la limite ouest ne vaut que pour la ferme) */
 if(CHAMPS_SEULS&&CARTE==='village'&&(x<784||x>1534||y<124||y>432))return true;   /* les bordures du bocage : haies, clôtures, arbres, blé */
