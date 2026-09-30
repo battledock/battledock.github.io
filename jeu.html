@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-1621';
+var MA_VERSION='2026-09-30-1626';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -6488,10 +6488,41 @@ if(style.motif)style.motif(g,W,H,D);for(let k=0;k<W*H/90;k++){g.fillStyle=Math.r
 if(style.texte){g.fillStyle=style.coulTexte||'rgba(40,40,50,.4)';g.font='700 '+Math.round((style.taille||9)*D)+'px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText(style.texte,W/2,H/2);}
 g.globalCompositeOperation='destination-out';g.lineCap='round';g.lineJoin='round';
 const MW=24,MH=Math.max(8,Math.round(24*H/W)),m=document.createElement('canvas');m.width=MW;m.height=MH;const mg=m.getContext('2d');mg.fillStyle='#000';mg.fillRect(0,0,MW,MH);mg.strokeStyle='#fff';mg.lineCap='round';
-const R=12*D;let fin=false,der=null,file=[],raf=0,mes=0;
-const devoiler=()=>{if(fin)return;fin=true;cv.classList.add('parti');fini();};
-const mesurer=()=>{const px=mg.getImageData(0,0,MW,MH).data;let v=0;for(let i=0;i<px.length;i+=4)if(px[i]>128)v++;if(v/(MW*MH)>=.5)devoiler();};
+const R=14*D;let fin=false,der=null,file=[],raf=0,mes=0;
+/* LES COPEAUX : la matière grattée se détache et tombe */
+const COP=[];
+const cop=document.createElement('canvas');cop.width=W;cop.height=H;
+cop.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3';
+try{z.appendChild(cop);}catch(e){}
+const cg=cop.getContext('2d');
+const teinte=style.grad[1]||style.grad[0];
+let copRaf=0;
+const animCop=()=>{
+  cg.clearRect(0,0,W,H);
+  for(let i=COP.length-1;i>=0;i--){const p=COP[i];
+    p.vy+=0.28*D;p.x+=p.vx;p.y+=p.vy;p.vie--;
+    if(p.vie<=0||p.y>H+8){COP.splice(i,1);continue;}
+    cg.globalAlpha=Math.max(0,Math.min(1,p.vie/16));
+    cg.fillStyle=p.c;cg.fillRect(p.x|0,p.y|0,p.t,p.t);}
+  cg.globalAlpha=1;
+  copRaf=COP.length?requestAnimationFrame(animCop):0;};
+const semerCopeaux=(x,y,n)=>{
+  for(let k=0;k<n;k++)COP.push({x:x+(Math.random()-.5)*R,y:y+(Math.random()-.5)*R,
+    vx:(Math.random()-.5)*1.6*D,vy:-Math.random()*1.4*D,
+    vie:10+Math.random()*14,t:Math.max(1,Math.round(D*(1+Math.random()))),
+    c:Math.random()<.5?teinte:(style.grad[0]||teinte)});
+  if(!copRaf)copRaf=requestAnimationFrame(animCop);};
+const devoiler=()=>{if(fin)return;fin=true;
+  semerCopeaux(W/2,H/2,26);                    /* le reste de la pellicule s'envole */
+  try{vibrer(12);}catch(e){}
+  cv.classList.add('parti');fini();};
+const mesurer=()=>{const px=mg.getImageData(0,0,MW,MH).data;let v=0;for(let i=0;i<px.length;i+=4)if(px[i]>128)v++;if(v/(MW*MH)>=.42)devoiler();   /* on n'oblige plus à tout gratter */};
 const trait=(a,b)=>{for(let q=0;q<3;q++){g.lineWidth=R*2*(.84+q*.08);g.beginPath();g.moveTo(a.x+(q-1)*D,a.y+(q-1)*D*.6);g.lineTo(b.x+(q-1)*D*.6,b.y-(q-1)*D);g.stroke();}
+/* le bord du trait s'effrite, comme une vraie pellicule */
+for(let k=0;k<6;k++){const t=Math.random(),x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t;
+  const an=Math.random()*6.283,rr=R*(0.85+Math.random()*0.5);
+  g.beginPath();g.arc(x+Math.cos(an)*rr,y+Math.sin(an)*rr,R*0.22,0,7);g.fill();}
+semerCopeaux((a.x+b.x)/2,(a.y+b.y)/2,2+Math.round(Math.random()*2));
 mg.lineWidth=R*2*MW/W;mg.beginPath();mg.moveTo(a.x*MW/W,a.y*MH/H);mg.lineTo(b.x*MW/W,b.y*MH/H);mg.stroke();};
 const boucle=(ts)=>{raf=0;for(const p of file){trait(der||p,der?p:{x:p.x+.1,y:p.y+.1});der=p;}file=[];if(!fin&&ts-mes>100){mes=ts;mesurer();}};
 const pt=ev=>{const r=cv.getBoundingClientRect();return {x:(ev.clientX-r.left)*D,y:(ev.clientY-r.top)*D};};
@@ -6505,13 +6536,15 @@ try{cv.style.touchAction='none';cv.style.webkitUserSelect='none';cv.style.userSe
 const bloqueDefil=ev=>{ev.preventDefault();ev.stopPropagation();};
 cv.addEventListener('touchstart',bloqueDefil,{passive:false});
 cv.addEventListener('touchmove', bloqueDefil,{passive:false});
-cv.onpointerdown=ev=>{ev.preventDefault();GRATTE_EN_COURS=true;cv.setPointerCapture(ev.pointerId);der=null;prendre(ev);};
+let vibA=0;
+const vibrerGratte=()=>{const t=Date.now();if(t-vibA>110){vibA=t;try{vibrer(3);}catch(e){}}};
+cv.onpointerdown=ev=>{ev.preventDefault();GRATTE_EN_COURS=true;cv.setPointerCapture(ev.pointerId);der=null;prendre(ev);vibrerGratte();};
 cv.onpointermove=ev=>{
-  if(cv.hasPointerCapture(ev.pointerId)){prendre(ev);return;}
+  if(cv.hasPointerCapture(ev.pointerId)){prendre(ev);vibrerGratte();return;}
   /* le doigt vient d'une autre pellicule : on gratte quand même */
   if(GRATTE_EN_COURS&&ev.buttons!==0){
     const r=cv.getBoundingClientRect();
-    if(ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom)prendre(ev);}};
+    if(ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom){prendre(ev);vibrerGratte();}}};
 cv.onpointerup=cv.onpointercancel=()=>{der=null;GRATTE_EN_COURS=false;requestAnimationFrame(mesurer);};
 return {devoiler};}
 const bullesMotif=(g,W,H,D)=>{for(let k=0;k<6;k++){g.fillStyle='rgba(255,255,255,.35)';g.beginPath();g.arc(Math.random()*W,Math.random()*H,(2+Math.random()*5)*D,0,7);g.fill();}g.fillStyle='rgba(255,255,255,.55)';g.beginPath();g.arc(W*.32,H*.3,W*.09,0,7);g.fill();};
@@ -6602,7 +6635,7 @@ $('page2Fond').innerHTML=`<style>#bar{position:fixed;inset:0;z-index:5;display:f
 #bar .regle{position:relative;font:italic 12.5px Georgia,serif;opacity:.9;padding:0 16px 10px;line-height:1.35}
 #bar .pd{position:relative;display:flex;justify-content:space-between;padding:8px 16px 12px;font:500 9px Arial;letter-spacing:2px;opacity:.65}
 #bar .z{position:relative;overflow:hidden}#bar .z .dessous{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-#bar .z canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;transition:opacity .45s}#bar .z canvas.parti{opacity:0;pointer-events:none}
+#bar .z canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;transition:opacity .45s}#bar .z canvas.parti{opacity:0;transform:scale(1.04);transition:opacity .42s ease,transform .42s ease;pointer-events:none}
 #bar .z.gg .dessous{animation:gg .55s ease-in-out 4 alternate}@keyframes gg{to{transform:scale(1.07)}}
 #bar .t1{background:radial-gradient(circle at 20% 15%,#7fd4e8,transparent 45%),radial-gradient(circle at 85% 70%,#2a8ab8,transparent 55%),linear-gradient(160deg,#4ab8d8,#1a6a98);color:#fff}
 #bar .t1 .flot{position:absolute;left:0;right:0;top:0;height:6px;background:repeating-linear-gradient(90deg,#fff 0 10px,#e8402a 10px 20px);opacity:.85}
