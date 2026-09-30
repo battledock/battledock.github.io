@@ -405,6 +405,44 @@ function graverVoiture(n){
   if(o.toitOuvrant){R(x-L*0.02,y-5,L*0.12,10,'#1b2228');R(x-L*0.01,y-4,L*0.1,8,'#3a4a54');}
   return {toile:c,W,H,sol:H-4,nuit:null,nom:o.nom,L:o.L,l:o.l};
 }
+/* ================= L'ÉPICERIE FINE =================
+   Une devanture bleu nuit : bandeau émaillé à lettres blanches, vitrine à
+   trois travées avec ses étagères garnies, soubassement de carreaux blancs,
+   et deux lanternes en col de cygne. */
+function graverEpicerie(){
+  const W=182,H=160,D=2,c=document.createElement('canvas');
+  c.width=W*D;c.height=H*D;
+  const g2=c.getContext('2d');g2.setTransform(D,0,0,D,0,0);g2.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g2.fillStyle=col;g2.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const hs=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+  const dy=6,dh=H-12,bas=dy+dh;
+  R(4,dy,W-8,dh,'#17283e');R(4,dy,W-8,3,'#3a6690');
+  /* le bandeau émaillé */
+  R(6,dy+2,W-12,30,'#101e30');R(8,dy+4,W-16,26,'#1d3f66');R(8,dy+4,W-16,1,'#4f7ba8');
+  g2.font='700 14px Georgia,serif';g2.textAlign='center';g2.fillStyle='#f2f8fc';
+  g2.fillText('ÉPICERIE FINE',W/2,dy+23);g2.textAlign='left';
+  for(let k=0;k<Math.floor((W-16)/10);k++)R(10+k*10,dy+29,8,1,'rgba(160,200,230,.4)');
+  /* le carrelage du soubassement */
+  for(let y=bas-40;y<bas;y+=10)for(let x=8;x<W-8;x+=13){
+    const n=hs(x*0.4+y*0.3);
+    R(x,y,12,9,n<.3?'#dce8ee':(n<.6?'#cfe0e8':'#e8f2f6'));R(x,y,12,1,'#f2f8fa');}
+  /* la vitrine et ses étagères */
+  const vy=dy+38,vh=bas-40-vy,vx=16,vw=W-32;
+  R(vx-4,vy-4,vw+8,vh+8,'#264566');R(vx-4,vy-4,vw+8,2,'#4f7ba8');
+  R(vx,vy,vw,vh,'#0e1518');R(vx+3,vy+3,vw-6,vh-6,'#cfe2ea');
+  for(let d=0;d<vh-6;d++)R(vx+3+Math.round(d*0.85),vy+3+d,13,1,'rgba(255,255,255,.28)');
+  for(let k=1;k<3;k++)R(vx+k*(vw/3)-1,vy,3,vh,'#0e1518');
+  for(let r=0;r<3;r++){const y=vy+14+r*((vh-18)/3);
+    R(vx+5,y+12,vw-10,3,'#6a4a2a');
+    for(let f=0;f<7;f++){const px=vx+8+f*((vw-18)/7);
+      R(px,y,11,12,['#8a2f22','#c9a24a','#2f6a4a','#a8452f'][(f+r)%4]);
+      R(px,y,11,3,'rgba(255,255,255,.35)');}}
+  /* les deux lanternes en col de cygne */
+  [12,W-18].forEach(x=>{const s2=(x<W/2)?1:-1;
+    for(let k=0;k<6;k++)R(x+s2*k*2,dy+34-Math.round(Math.sin(k/6*1.5)*5),3,3,'#2b3138');
+    R(x+(s2>0?10:-16),dy+38,12,9,'#2b3138');R(x+(s2>0?11:-15),dy+39,10,6,'#f6e6a8');});
+  return {toile:c,W,H,sol:H-4,nuit:null};
+}
 return {graverImmeuble,graverPlatane,graverBanc,graverLampadaire,graverColonne,graverCorbeille,
-        graverVoiture,MODELES};
+        graverVoiture,MODELES,graverEpicerie};
 })()
