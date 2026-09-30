@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-1731';
+var MA_VERSION='2026-09-30-1738';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -6574,7 +6574,11 @@ V.innerHTML='<div class="lo-cag"><small>CAGNOTTE</small><b>'+enEuros(d.cagnotte|
 '<div class="lo-g">'+Array.from({length:25},(_,i)=>'<button data-n="'+(i+1)+'" class="'+(SEL.includes(i+1)?'on':'')+'">'+(i+1)+'</button>').join('')+'</div>'+
 '<div class="lo-cl">NUMÉRO CHANCE</div><div class="lo-ch">'+[1,2,3,4,5].map(n=>'<button data-c="'+n+'" class="'+(CH===n?'on':'')+'">'+n+'</button>').join('')+'</div>'+
 '<div class="lo-act"><button class="lo-flash" id="loFlash">Flash</button><button class="lo-ok'+(SEL.length===5&&CH?'':' pas')+'" id="loOk">'+(SEL.length===5&&CH?'Valider · 2 €':'Choisis 5 numéros et 1 Chance')+'</button></div>'+
-(mes.length?'<div class="lo-cl" style="margin-top:14px">TES GRILLES POUR CE TIRAGE</div>'+mes.map(g=>'<div class="lo-mg">'+g.numeros.map(n=>'<span>'+n+'</span>').join('')+'<span class="c">'+g.chance+'</span></div>').join(''):'')+
+(mes.length?'<div class="lo-cl" style="margin-top:14px">TES GRILLES POUR CE TIRAGE</div>'+mes.map(g=>'<div class="lo-mg">'+g.numeros.map(n=>'<span>'+n+'</span>').join('')+
+ '<span class="c">'+g.chance+'</span>'+
+ (g.chance2?'<span class="c">'+g.chance2+'</span>'
+          :'<button class="lo-fl" data-fl="'+g.id+'">+ CHANCE · 1 €</button>')+
+ '</div>').join(''):'')+
 (D?'<div class="lo-der"><div class="lo-cl">DERNIER TIRAGE · '+new Date(D.jour+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+'</div><div class="lo-boules'+(animer?' anim':'')+'">'+D.numeros.map((n,k)=>boule(n,false,k)).join('')+boule(D.chance,true,5)+'</div>'+
 ((D.mes_grilles||[]).length?(D.mes_grilles.map(g=>'<div class="lo-mg'+(g.gain>0?' gagne':'')+'">'+g.numeros.map(n=>'<span class="'+(D.numeros.includes(n)?'bon':'')+'">'+n+'</span>').join('')+'<span class="c '+(g.chance===D.chance?'bon':'')+'">'+g.chance+'</span><em>'+(g.gain>0?'+'+enEuros(g.gain):'—')+'</em></div>').join('')):'<div class="bar-jour" style="margin:6px 0 0">Tu n’avais pas joué ce soir-là.</div>')+
 (D.gagnants_cagnotte?'<div class="bar-jour">La cagnotte de '+enEuros(D.cagnotte)+' a été gagnée !</div>':'')+
@@ -6583,6 +6587,15 @@ V.innerHTML='<div class="lo-cag"><small>CAGNOTTE</small><b>'+enEuros(d.cagnotte|
 if(animer)try{localStorage.setItem('loto_vu',D.jour);}catch(x){}
 V.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{const n=+b.dataset.n;if(SEL.includes(n))SEL=SEL.filter(x=>x!==n);else if(SEL.length<5)SEL.push(n);else{bulle('Cinq numéros, pas plus');return;}vibrer(6);dessinerLoto();});
 V.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{CH=+b.dataset.c;vibrer(6);dessinerLoto();});
+V.querySelectorAll('[data-fl]').forEach(b=>b.onclick=async()=>{
+  if((e.euros||0)<100){bulle('Il te manque '+enEuros(100-(e.euros||0)));return;}
+  b.disabled=true;b.textContent='…';
+  const r=await appelRPC('loto_flash',{p_joueur:e.id,p_grille:+b.dataset.fl});
+  if(!r||r.erreur){b.disabled=false;b.textContent='+ CHANCE · 1 €';
+    bulle(r&&r.erreur==='deja'?'Cette grille a déjà son second Chance':'Impossible pour l’instant');return;}
+  ETAT=r;if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}
+  jouer('vente','moment');vibrer([16,30,16]);
+  bulle('Second numéro Chance ajouté à cette grille.');dessinerLoto();});
 $('loFlash').onclick=()=>{const p=Array.from({length:25},(_,i)=>i+1);SEL=[];while(SEL.length<5)SEL.push(p.splice(Math.floor(Math.random()*p.length),1)[0]);CH=1+Math.floor(Math.random()*5);vibrer(10);dessinerLoto();};
 {const bo=$('loOk');
  if(bo&&!$('loAbo')){const ab=document.createElement('button');
@@ -6629,7 +6642,8 @@ $('page2Fond').innerHTML=`<style>#bar{position:fixed;inset:0;z-index:5;display:f
 #bar .lo-ch{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;max-width:320px;margin:0 auto}#bar .lo-ch button{border-color:#e8c0c0;color:#b8321e}#bar .lo-ch button.on{background:#b8321e;border-color:#b8321e;color:#fff}
 #bar .lo-act{display:flex;gap:8px;margin-top:14px}#bar .lo-flash{flex:none;border:1.5px solid #16336a;border-radius:12px;padding:12px 14px;background:none;color:#16336a;font:700 14px Arial,sans-serif}
 #bar .lo-ok{flex:1;border:0;border-radius:12px;padding:12px;background:#16336a;color:#fff;font:700 14px Arial,sans-serif}#bar .lo-ok.pas{background:#aab4c8}
-#bar .lo-mg{display:flex;align-items:center;gap:5px;padding:7px 8px;margin-bottom:6px;border-radius:10px;background:#fff}#bar .lo-mg span{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#eef1f6;color:#16336a;font:700 12px Arial,sans-serif}
+#bar .lo-mg{display:flex;align-items:center;gap:5px;padding:7px 8px;margin-bottom:6px;border-radius:10px;background:#fff}
+#bar .lo-fl{margin-left:auto;border:0;border-radius:9px;padding:6px 9px;background:#2f5a3a;color:#eafaf0;font:700 7.5px Arial;letter-spacing:1.4px}#bar .lo-mg span{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#eef1f6;color:#16336a;font:700 12px Arial,sans-serif}
 #bar .lo-mg span.c{background:#fbe6e2;color:#b8321e}#bar .lo-mg span.bon{background:#16336a;color:#fff}#bar .lo-mg span.c.bon{background:#b8321e;color:#fff}#bar .lo-mg em{margin-left:auto;font:700 14px Arial,sans-serif;font-style:normal;color:#6a7488}#bar .lo-mg.gagne em{color:#1f8a4a}
 #bar .lo-der{margin-top:6px}#bar .lo-boules{display:flex;gap:7px;justify-content:center;margin:4px 0 12px}
 #bar .lo-boule{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:900 16px Arial,sans-serif;color:#16336a;background:radial-gradient(circle at 35% 30%,#fff,#dfe6f2 60%,#b8c4d8);box-shadow:0 4px 10px rgba(22,51,106,.25)}
