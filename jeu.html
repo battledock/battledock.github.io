@@ -115,7 +115,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-2009';
+var MA_VERSION='2026-09-30-2018';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -7056,7 +7056,7 @@ function mrmAccueil(){
    '<button class="s" id="mA3">PASSER EN CUISINE</button>');
   document.getElementById('mA1').onclick=()=>{if(FF_MIJ)mrmMarmite();else mrmCompo();};
   document.getElementById('mA2').onclick=mrmLivre;
-  document.getElementById('mA3').onclick=()=>{mrmFermer();try{ouvrirLaCuisineDeFonfon();}catch(e){}};
+  document.getElementById('mA3').onclick=()=>{try{cuiCarte();}catch(e){}};
   mrmAnimer();
 }
 /* ② LA COMPOSITION */
@@ -21988,6 +21988,7 @@ for(let i=0;i<3;i++)R(60+i*2,26-((t*2+i)%4)*1.2,1.5,2,'rgba(255,255,255,.35)');
 }
 let CUI_ANIM=0;
 /* ================= LA CUISINE, DANS LE CARNET ================= */
+const CUI_PRIX={pain:420,confiture:900,conserve:780,soupe:880,tarte:1500};
 const CUI_IC={
  pain:(P)=>{for(let y=0;y<11;y++){const w=20-Math.abs(y-5)*1.1;P(13-w/2,8+y,w,1,y<3?'#d8a860':'#b8843a');}
    for(let k=0;k<3;k++)P(8+k*4,9,3,1,'#8a5a20');},
@@ -22012,15 +22013,16 @@ async function cuiCarte(){
       '<div class="dit">La cuisine est froide pour l’instant. Reviens plus tard.</div>',
       '<button class="s" id="cQ">RETOUR</button>');
     document.getElementById('cQ').onclick=mrmAccueil;return;}
-  const manque=(k)=>{const c=R[k].cout||{};const m=[];
+  const besoin=(k)=>R[k].besoins||R[k].cout||{};
+  const manque=(k)=>{const c=besoin(k);const m=[];
     for(const q in c){const a=sac[q]||0;if(a<c[q])m.push((c[q]-a)+' '+cuiNomI(q));}
     return m;};
   const lignes=cles.map((k,i)=>{const m=manque(k),ok=!m.length;
-    const ing=Object.entries(R[k].cout||{}).map(([q,n])=>n+' '+cuiNomI(q)).join(' · ');
+    const ing=Object.entries(besoin(k)).map(([q,n])=>n+' '+cuiNomI(q)).join(' · ');
     return '<div class="pl2'+(ok?'':' no')+'" data-pl="'+k+'">'+
       '<canvas class="cuiI'+i+'" width="76" height="76"></canvas>'+
       '<div class="nm"><b>'+R[k].nom+'</b><small>'+(ok?ing:('il te manque '+m.join(', ')))+'</small></div>'+
-      '<em>'+enEuros(R[k].prix||0)+'</em></div>';}).join('');
+      '<em>'+enEuros(CUI_PRIX[k]||R[k].prix||0)+'</em></div>';}).join('');
   mrmCadre('La cuisine','ce que Fonfon sait faire',
     '<div class="tt2">LA CARTE</div>'+lignes,
     '<button class="s" id="cQ">RETOUR</button>');
@@ -22032,7 +22034,7 @@ async function cuiCarte(){
 function cuiFiche(k){
   const C=CUI||{recettes:{}}, R=(C.recettes||{})[k]; if(!R)return;
   const sac=(e.sac||{});
-  const cout=Object.entries(R.cout||{});
+  const cout=Object.entries(R.besoins||R.cout||{});
   const manque=cout.filter(([q,n])=>(sac[q]||0)<n);
   const lignes=cout.map(([q,n],i)=>{const a=sac[q]||0,ok=a>=n;
     return '<div class="g"><canvas class="cuiF'+i+'" width="52" height="52"></canvas>'+
@@ -22040,10 +22042,10 @@ function cuiFiche(k){
       '<em class="'+(ok?'ok':'no')+'">'+a+' / '+n+(ok?' ✓':'')+'</em></div>';}).join('');
   mrmCadre('La recette','page du carnet',
     '<div class="gr"><canvas id="cuiG" width="124" height="124"></canvas>'+
-    '<div class="nm"><b>'+R.nom+'</b><small>'+(R.rend||'')+
+    '<div class="nm"><b>'+R.nom+'</b><small>'+(R.rend?(R.rend+(R.rend>1?' pièces':' pièce')):'')+
       (R.minutes?' · '+R.minutes+' min de cuisson':'')+'</small></div></div>'+
     '<div class="tt2">IL FAUT</div><div class="ing">'+lignes+'</div>'+
-    '<div class="vl"><i>ELLE VAUT</i><b>'+enEuros(R.prix||0)+'</b></div>',
+    '<div class="vl"><i>ELLE VAUT</i><b>'+enEuros(CUI_PRIX[k]||R.prix||0)+'</b></div>',
     '<button class="p" id="cF1"'+(manque.length?' disabled':'')+'>'+
       (manque.length?('IL TE MANQUE '+manque.map(([q,n])=>(n-(sac[q]||0))+' '+cuiNomI(q)).join(', ')).toUpperCase()
                     :'METTRE AU FOUR')+'</button>'+
