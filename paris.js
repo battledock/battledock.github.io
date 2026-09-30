@@ -366,5 +366,45 @@ function graverCorbeille(){
     for(let yy=0;yy<22;yy++)R(x-9,y-42+yy,18,1,yy%5<1?'#5a6068':'#414850');
     R(x-10,y-44,20,4,'#5a6068');R(x-10,y-44,20,1,'#767e88');});
 }
-return {graverImmeuble,graverPlatane,graverBanc,graverLampadaire,graverColonne,graverCorbeille};
+/* ================= LES VOITURES ================= */
+const MODELES=[
+ {nom:'La citadine',   corps:'#b4302c',sombre:'#8e211e',clair:'#d05a52',L:74, l:38},
+ {nom:'La berline',    corps:'#1d3f66',sombre:'#132c49',clair:'#2f5f8a',L:96, l:42},
+ {nom:'La décapotable',corps:'#c9a24a',sombre:'#9e7c2c',clair:'#e0bc68',L:88, l:40,toit:'#2b2118'},
+ {nom:'La familiale',  corps:'#2f6a4a',sombre:'#215034',clair:'#3f8a62',L:104,l:44},
+ {nom:'Le taxi',       corps:'#f0d78a',sombre:'#c4aa58',clair:'#f8e8b4',L:92, l:42,toitOuvrant:1},
+ {nom:'La sportive',   corps:'#e8e4dc',sombre:'#b8b4ac',clair:'#ffffff',L:86, l:36,bande:'#b4302c'}];
+/* la carrosserie, vue du dessus, tournée vers la droite */
+function graverVoiture(n){
+  const o=MODELES[n%MODELES.length];
+  const W=o.L+22,H=o.l+22,D=2,c=document.createElement('canvas');
+  c.width=W*D;c.height=H*D;
+  const g2=c.getContext('2d');g2.setTransform(D,0,0,D,0,0);g2.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g2.fillStyle=col;g2.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const x=W/2,y=H/2,L=o.L,l=o.l;
+  R(x-L/2+3,y-l/2+4,L,l,'rgba(20,24,28,.26)');
+  [[-L*0.3,-1],[-L*0.3,1],[L*0.28,-1],[L*0.28,1]].forEach(([dx,s2])=>{
+    R(x+dx-7,y+s2*(l/2)-4,15,7,'#1b1e22');R(x+dx-6,y+s2*(l/2)-3,13,2,'#2e3338');});
+  for(let i=0;i<l;i++){const t=Math.abs(i-l/2)/(l/2);
+    R(x-L/2,y-l/2+i,L,1,t<0.25?o.clair:(t<0.62?o.corps:o.sombre));}
+  for(let i=0;i<5;i++){
+    R(x-L/2+i,y-l/2+(5-i),1,l-(5-i)*2,o.corps);
+    R(x+L/2-i-1,y-l/2+(4-i),1,l-(4-i)*2,o.corps);}
+  R(x-L*0.12,y-l/2+3,L*0.2,l-6,'#2b3038');
+  R(x-L*0.11,y-l/2+4,L*0.18,l-8,'#8fc4d4');R(x-L*0.11,y-l/2+4,L*0.18,3,'#b3dce8');
+  R(x+L*0.2,y-l/2+3,L*0.13,l-6,'#2b3038');R(x+L*0.21,y-l/2+4,L*0.11,l-8,'#7fb4c8');
+  R(x-L*0.1,y-l/2+3,L*0.3,l-6,o.toit||o.clair);
+  R(x-L*0.1,y-2,L*0.3,1,'rgba(255,255,255,.18)');
+  R(x-L*0.08,y-l/2+2,L*0.26,2,'#5f7a88');R(x-L*0.08,y+l/2-4,L*0.26,2,'#5f7a88');
+  for(let k=0;k<2;k++)R(x-L*0.46,y-6+k*11,L*0.3,1,'rgba(255,255,255,.12)');
+  R(x-L/2+1,y-l/2+3,4,5,'#f6f0c8');R(x-L/2+1,y+l/2-8,4,5,'#f6f0c8');
+  R(x+L/2-4,y-l/2+3,3,5,'#c03a2a');R(x+L/2-4,y+l/2-8,3,5,'#c03a2a');
+  R(x-L*0.06,y-l/2-2,4,3,o.sombre);R(x-L*0.06,y+l/2-1,4,3,o.sombre);
+  R(x-L/2,y-l/2+9,3,l-18,o.sombre);R(x+L/2-2,y-l/2+8,2,l-16,'#9aa0a8');
+  if(o.bande)R(x-L/2+6,y-2,L-12,4,o.bande);
+  if(o.toitOuvrant){R(x-L*0.02,y-5,L*0.12,10,'#1b2228');R(x-L*0.01,y-4,L*0.1,8,'#3a4a54');}
+  return {toile:c,W,H,sol:H-4,nuit:null,nom:o.nom,L:o.L,l:o.l};
+}
+return {graverImmeuble,graverPlatane,graverBanc,graverLampadaire,graverColonne,graverCorbeille,
+        graverVoiture,MODELES};
 })()
