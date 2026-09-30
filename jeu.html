@@ -81,6 +81,30 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 #mrm .gn small{font:700 7.5px Arial;letter-spacing:2.6px;color:#9a8a6c}
 #mrm .in{overflow-y:auto}
 #mrm .bt .pl{background:#d8cdb0;color:#4a4032;border:1px solid #b8a888}
+#mrm .tt2{font:700 7.5px Arial;letter-spacing:2.6px;color:#9a8a6c;margin:14px 0 5px}
+#mrm .pl2{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dotted #c4b694}
+#mrm .pl2 canvas{width:38px;height:38px;image-rendering:pixelated;flex:none}
+#mrm .pl2 .nm{flex:1}
+#mrm .pl2 .nm b{font:400 15px Georgia;color:#2f2820;display:block}
+#mrm .pl2 .nm small{font:italic 11.5px Georgia;color:#8a7a5c}
+#mrm .pl2 em{font-style:normal;font:400 16px Georgia;color:#8a2f22}
+#mrm .pl2.no{opacity:.45}#mrm .pl2.no em{color:#9a8a6c}
+#mrm .gr{display:flex;align-items:center;gap:11px;margin-top:14px}
+#mrm .gr canvas{width:62px;height:62px;image-rendering:pixelated;border:1px solid #b8a888;
+  border-radius:5px;background:rgba(255,255,255,.4)}
+#mrm .gr .nm b{font:400 19px Georgia;color:#2f2820;display:block}
+#mrm .gr .nm small{font:italic 12.5px Georgia;color:#8a7a5c}
+#mrm .ing .g{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dotted #c4b694;
+  font:400 14px Georgia;color:#4a4032}
+#mrm .ing .g canvas{width:26px;height:26px;image-rendering:pixelated}
+#mrm .ing .g em{margin-left:auto;font-style:normal;font:400 13px Georgia}
+#mrm .ing .g em{background:none !important;padding:0 !important;border-radius:0 !important;
+  box-shadow:none !important;width:auto !important;display:inline !important}
+#mrm .ing .g em.ok{color:#2f7a3a !important}#mrm .ing .g em.no{color:#a03a2a !important}
+#mrm .vl{margin-top:13px;padding:11px 13px;background:#dcd2b8;border-radius:4px;display:flex;align-items:baseline}
+#mrm .vl i{font:700 7.5px Arial;letter-spacing:2.2px;color:#8a7a5c;font-style:normal}
+#mrm .vl b{margin-left:auto;font:400 22px Georgia;color:#8a2f22}
+#mrm .bt button[disabled]{background:#c9bca4;color:#8a7a5c;box-shadow:none}
 #mrm .ret{position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);right:16px;z-index:3;
   font:700 10px Arial;letter-spacing:1.8px;color:#9a8a6c}
 </style>
@@ -91,7 +115,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-1931';
+var MA_VERSION='2026-09-30-2009';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -21963,7 +21987,82 @@ R(66,44,4,12,'#e8b890');R(84,44,4,12,'#e8b890');
 for(let i=0;i<3;i++)R(60+i*2,26-((t*2+i)%4)*1.2,1.5,2,'rgba(255,255,255,.35)');
 }
 let CUI_ANIM=0;
+/* ================= LA CUISINE, DANS LE CARNET ================= */
+const CUI_IC={
+ pain:(P)=>{for(let y=0;y<11;y++){const w=20-Math.abs(y-5)*1.1;P(13-w/2,8+y,w,1,y<3?'#d8a860':'#b8843a');}
+   for(let k=0;k<3;k++)P(8+k*4,9,3,1,'#8a5a20');},
+ confiture:(P)=>{P(8,8,10,12,'#a03050');P(8,8,10,3,'#c85070');P(7,6,12,3,'#7a5530');P(9,12,8,6,'#c04060');},
+ conserve:(P)=>{P(8,7,10,14,'#9aa8b8');P(8,7,10,3,'#c4d2e0');P(7,5,12,3,'#7a8a9a');
+   for(let k=0;k<3;k++)P(9,11+k*3,8,1,'#7a8a9a');},
+ soupe:(P)=>{for(let y=0;y<9;y++){const w=21-y*1.7;P(13-w/2,12+y,w,1,y<2?'#8a8a92':'#6a6a74');}
+   for(let y=0;y<3;y++)P(3,10+y,20,1,y<1?'#e8a03a':'#d0742a');},
+ tarte:(P)=>{for(let y=0;y<7;y++){const w=22-y*1.4;P(13-w/2,12+y,w,1,'#c9a06a');}
+   P(3,10,20,3,'#e8c890');for(let k=0;k<5;k++)P(5+k*4,9,3,3,['#c03a2a','#8a3a8a','#d8a02a'][k%3]);},
+ defaut:(P)=>{P(7,9,12,12,'#b8a888');P(7,9,12,3,'#d8c8a8');}};
+function cuiIcone(c,k){const P=mrmCtx(c,26);(CUI_IC[k]||CUI_IC.defaut)(P);}
+function cuiNomI(q){try{return POT_CULT[q]?POT_CULT[q][0].toLowerCase():((OBJETS[q]&&OBJETS[q].nom.toLowerCase())||q);}catch(e){return q;}}
+/* ① LA CARTE DES PLATS */
+async function cuiCarte(){
+  const d=await appelRPC('cuisine_etat',{p_joueur:e.id});
+  if(d&&!d.erreur&&d.recettes&&Object.keys(d.recettes).length)CUI=d;
+  const C=CUI||{recettes:{}}, R=C.recettes||{}, sac=(e.sac||{});
+  const cles=Object.keys(R);
+  if(!cles.length){
+    mrmCadre('La cuisine','ce que Fonfon sait faire',
+      '<div class="dit">La cuisine est froide pour l’instant. Reviens plus tard.</div>',
+      '<button class="s" id="cQ">RETOUR</button>');
+    document.getElementById('cQ').onclick=mrmAccueil;return;}
+  const manque=(k)=>{const c=R[k].cout||{};const m=[];
+    for(const q in c){const a=sac[q]||0;if(a<c[q])m.push((c[q]-a)+' '+cuiNomI(q));}
+    return m;};
+  const lignes=cles.map((k,i)=>{const m=manque(k),ok=!m.length;
+    const ing=Object.entries(R[k].cout||{}).map(([q,n])=>n+' '+cuiNomI(q)).join(' · ');
+    return '<div class="pl2'+(ok?'':' no')+'" data-pl="'+k+'">'+
+      '<canvas class="cuiI'+i+'" width="76" height="76"></canvas>'+
+      '<div class="nm"><b>'+R[k].nom+'</b><small>'+(ok?ing:('il te manque '+m.join(', ')))+'</small></div>'+
+      '<em>'+enEuros(R[k].prix||0)+'</em></div>';}).join('');
+  mrmCadre('La cuisine','ce que Fonfon sait faire',
+    '<div class="tt2">LA CARTE</div>'+lignes,
+    '<button class="s" id="cQ">RETOUR</button>');
+  cles.forEach((k,i)=>{const c=document.querySelector('.cuiI'+i);if(c)cuiIcone(c,k);});
+  document.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>cuiFiche(b.dataset.pl));
+  document.getElementById('cQ').onclick=mrmAccueil;
+}
+/* ③ LA FICHE DE RECETTE */
+function cuiFiche(k){
+  const C=CUI||{recettes:{}}, R=(C.recettes||{})[k]; if(!R)return;
+  const sac=(e.sac||{});
+  const cout=Object.entries(R.cout||{});
+  const manque=cout.filter(([q,n])=>(sac[q]||0)<n);
+  const lignes=cout.map(([q,n],i)=>{const a=sac[q]||0,ok=a>=n;
+    return '<div class="g"><canvas class="cuiF'+i+'" width="52" height="52"></canvas>'+
+      cuiNomI(q).charAt(0).toUpperCase()+cuiNomI(q).slice(1)+
+      '<em class="'+(ok?'ok':'no')+'">'+a+' / '+n+(ok?' ✓':'')+'</em></div>';}).join('');
+  mrmCadre('La recette','page du carnet',
+    '<div class="gr"><canvas id="cuiG" width="124" height="124"></canvas>'+
+    '<div class="nm"><b>'+R.nom+'</b><small>'+(R.rend||'')+
+      (R.minutes?' · '+R.minutes+' min de cuisson':'')+'</small></div></div>'+
+    '<div class="tt2">IL FAUT</div><div class="ing">'+lignes+'</div>'+
+    '<div class="vl"><i>ELLE VAUT</i><b>'+enEuros(R.prix||0)+'</b></div>',
+    '<button class="p" id="cF1"'+(manque.length?' disabled':'')+'>'+
+      (manque.length?('IL TE MANQUE '+manque.map(([q,n])=>(n-(sac[q]||0))+' '+cuiNomI(q)).join(', ')).toUpperCase()
+                    :'METTRE AU FOUR')+'</button>'+
+    '<button class="s" id="cF2">RETOUR À LA CARTE</button>');
+  const g=document.getElementById('cuiG');if(g)cuiIcone(g,k);
+  cout.forEach(([q],i)=>{const c=document.querySelector('.cuiF'+i);if(c)cuiIcone(c,'defaut');});
+  document.getElementById('cF2').onclick=cuiCarte;
+  const b=document.getElementById('cF1');
+  if(b&&!manque.length)b.onclick=async()=>{
+    b.disabled=true;b.textContent='…';
+    const r=await appelRPC('cuisine_lancer',{p_joueur:e.id,p_recette:k});
+    if(!r||r.erreur){b.disabled=false;b.textContent='METTRE AU FOUR';
+      try{bulle(String((r&&r.erreur)||'Impossible pour l’instant'));}catch(x){}return;}
+    CUI=r;if(r.sac){e.sac=r.sac;}sauver();majHaut();vibrer([16,30,16]);
+    cuiCarte();};
+}
 async function ouvrirLaCuisineDeFonfon(mot){
+  if(typeof mrmCadre==='function'){cuiCarte();return;}
+
 if(!document.getElementById('cssCui')){const st=document.createElement('style');st.id='cssCui';st.textContent=CSS_CUI;document.head.appendChild(st);}
 $('page2Fond').className='cui';$('page2').classList.add('on');
 const d=await appelRPC('cuisine_etat',{p_joueur:e.id});if(d&&!d.erreur)CUI=d;
