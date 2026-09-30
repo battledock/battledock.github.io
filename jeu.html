@@ -18,7 +18,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-09-30-1807';
+var MA_VERSION='2026-09-30-1811';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -6859,17 +6859,20 @@ async function ffOuvrirLivre(){
   const R=await appelRPC('recette_du_jour',{});
   const lignes=(L&&L.length)?L.map(p=>'<div class="ff-lg"><b>'+p.plat+'</b> — '+p.fois+' fois · record '+enEuros(p.meilleure)+'</div>').join(''):'<div class="ff-lg">Rien encore. Mets donc une marmite sur le feu.</div>';
   ffBulle('<b>Le livre des recettes</b><br>'+lignes+
-    (R&&R.espece?'<br><span style="color:#c9a24a">Aujourd’hui, Fonfon veut du '+R.espece+' : la marmite paie double.</span>':''));}
-function ffBulle(t){const b=$('ffBulle');if(!b)return;b.textContent=t;b.classList.add('on');clearTimeout(ffBulle.t);ffBulle.t=setTimeout(()=>b.classList.remove('on'),2800);}
+    (R&&R.espece?'<br><span style="color:#f0d78a">Aujourd’hui, Fonfon veut du '+R.espece+' : la marmite paie double.</span>':''), true);}
+function ffBulle(t,longue){const b=$('ffBulle');if(!b)return;
+b.innerHTML=String(t);                       /* on accepte le gras, les retours, les étoiles */
+b.classList.add('on');clearTimeout(ffBulle.t);
+ffBulle.t=setTimeout(()=>b.classList.remove('on'),longue?7000:2800);}
 function ffCalcul(){const tot=Object.values(FONFON).reduce((t,n)=>t+n,0), esp=Object.values(FONFON).filter(n=>n>0).length;
-const valeur=Object.entries(FONFON).reduce((t,[k,n])=>t+(PRIX_POISSON[k]||0)*n,0), coef=esp>=3?2+(esp-3)*0.25:0;return {tot,esp,prix:Math.round(valeur*coef),pret:tot>=4&&tot<=6&&esp>=3};}
+const valeur=Object.entries(FONFON).reduce((t,[k,n])=>t+(PRIX_POISSON[k]||0)*n,0), coef=esp>=3?2.8+(esp-3)*0.45:0;return {tot,esp,prix:Math.round(valeur*coef),pret:tot>=4&&tot<=6&&esp>=3};}
 function ffMaj(){if(!$('ffCorps'))return;$('ffArgent').textContent=enEuros(e.euros||0);const {tot,esp,prix,pret}=ffCalcul();
 const dispo=POISSONS_MARMITE.filter(k=>(e.sac||{})[k]>0);
 $('ffCorps').innerHTML=(dispo.length?'<div class="ff-t">TA PÊCHE</div>'+dispo.map(k=>{const n=FONFON[k]||0,max=e.sac[k];
 return '<div class="ff-lg"><span class="ff-ic"><svg viewBox="0 0 16 16" width="30">'+(ICONES[k]||'')+'</svg></span><span class="ff-nm"><b>'+(OBJETS[k]?OBJETS[k].nom:k)+'</b><span>'+max+' dans le sac</span></span>'+
 '<span class="ff-qt"><button data-m="'+k+'"'+(n<=0?' disabled':'')+'>−</button><b>'+n+'</b><button data-p="'+k+'"'+(n>=max||tot>=6?' disabled':'')+'>+</button></span></div>';}).join('')
 :'<div class="ff-vide">Tu n’as pas de poisson pour la marmite.<br>Va pêcher au bout des pontons, et reviens me voir !</div>')+
-'<div class="ff-regle">Plus ta bouillabaisse est variée, mieux Fonfon la paie : trois sortes, c’est deux fois la valeur des poissons ; chaque sorte en plus ajoute encore un quart.</div>';
+'<div class="ff-regle">Plus ta bouillabaisse est variée, mieux Fonfon la paie : trois sortes, c’est presque trois fois la valeur des poissons ; chaque sorte en plus ajoute encore près d’une demie. La marmite qui mijote deux heures rapporte moitié plus.</div>';
 $('ffCorps').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{FONFON[b.dataset.p]=(FONFON[b.dataset.p]||0)+1;vibrer(6);ffMaj();});
 $('ffCorps').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{FONFON[b.dataset.m]=Math.max(0,(FONFON[b.dataset.m]||0)-1);vibrer(6);ffMaj();});
 $('ffEtat').innerHTML='<b>La marmite · '+tot+' poisson'+(tot>1?'s':'')+'</b><span>'+esp+' sorte'+(esp>1?'s':'')+(pret?' · prête à mijoter':'')+'</span>';
