@@ -1578,14 +1578,76 @@ function coiffeur(R,x,y,tablier,cheveux){R(x-2.5,y-16,5,5,'#e0b088');R(x-3,y-17,
 function poteau(R,px,py,h,e){e=e||1;R(px-2*e,py-4,4*e+2,4,'#d8b050');R(px-2*e,py+h,4*e+2,4,'#d8b050');R(px-1.5*e,py,3*e+2,h,'#ffffff');
 for(let k=0;k<h;k+=2){const off=((k*0.9)%(3*e+2));R(px-1.5*e+off,py+k,1.6,2,k%4<2?'#c8281e':'#2d5fb0');}R(px-1*e,py,1,h,'rgba(255,255,255,.4)');R(px-1.5*e-.5,py-7,3*e+3,3,'#e8e8e8');}
 function graverLePeigne(){return devanture(4,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
-R(x0-2,yR-12,BL+4,rez+12,'#0e0e10');R(x0+4,yR-8,BL-8,rez+4,nuit?'#fff6e8':'#20242a');
-for(let r=0;r<2;r++){R(x0+8,yR-4+r*7,BL-16,1,'#c8ccd4');for(let k=0;k<22;k++)R(x0+9+k*5.5,yR-9+r*7,3,5,['#e84a8a','#4ab0e8','#f0c040','#5d9a4e','#ffffff','#9a6ad8'][(k+r)%6]);}
-[[cx-42],[cx-6],[cx+30]].forEach(([x],k)=>{R(x-7,yR+8,14,14,'#9ab0b8');for(let q=0;q<5;q++){R(x-8.5,yR+8+q*3,2,2,nuit?'#fff8c0':'#f0e0a0');R(x+6.5,yR+8+q*3,2,2,nuit?'#fff8c0':'#f0e0a0');}
-clientCape(R,x,sol-13,['#e8c040','#2a2a30','#c84a2a'][k],'#1a1a1c');R(x-6,sol-7,12,2,'#e84a8a');coiffeur(R,x+11,sol-2,'#1a1a1c',['#2a2a30','#e8a040','#6a4a2a'][k]);});
-R(x0+4,sol-3,BL-8,3,'#0e0e10');for(let k=x0+4;k<x0+BL-4;k+=34)R(k,yR-8,1.5,rez+4,'#0e0e10');       /* les montants de la vitre */
-const ny=yR-14;R(x0+10,ny-8,BL-20,10,'#0e0e10');g.save();g.font='300 8.5px Arial,sans-serif';g.textAlign='center';if(nuit){g.shadowColor='#ffffff';g.shadowBlur=8;}
-g.fillStyle='#ffffff';g.fillText('H A I R   S T U D I O',cx,ny,BL-24);g.restore();g.textAlign='left';
-LU(g,cx,sol,nuit,'rgba(255,245,230,.5)');});}
+/* ================= LA MARINIÈRE =================
+   Boutique de vêtements, sur l'architecture validée du Pêcheur Heureux. */
+const T={b:'#1b3f52',bh:'#28586f',bs:'#0e2634',store:['#1d5a78','#e8e0cc'],or:'#e2c070'};
+const mannequin=(x,y,haut,bas,tete)=>{
+  R(x-1.6,y-26,3.2,4,'#9aa0a8');
+  if(tete){for(let a=0;a<6.283;a+=0.3)R(x+Math.cos(a)*3,y-30+Math.sin(a)*3,2,2,'#c9b89a');}
+  R(x-5,y-23,10,12,haut);R(x-5,y-23,10,3,'rgba(255,255,255,.3)');
+  R(x-7,y-22,2.4,8,haut);R(x+4.6,y-22,2.4,8,haut);
+  R(x-4.4,y-11,8.8,11,bas);R(x-0.6,y-11,1.2,11,'rgba(0,0,0,.2)');
+  R(x-2.4,y,5,1.6,'#3a3f46');};
+const cintre=(x,y,c)=>{R(x-0.6,y-4,1.2,3,'#9aa0a8');R(x-3,y-1.4,6,1.4,'#9aa0a8');
+  R(x-4.4,y,8.8,8,c);R(x-6,y+0.6,1.8,5,c);R(x+4.2,y+0.6,1.8,5,c);};
+const pile=(x,y,cs)=>{cs.forEach((c,i)=>{R(x,y-i*3,13,2.6,c);R(x,y-i*3,13,0.8,'rgba(255,255,255,.35)');});};
+const chapeau=(x,y,c)=>{R(x-6,y,12,1.6,c);R(x-3.4,y-4,7,4,c);R(x-3.4,y-1.4,7,1,'rgba(0,0,0,.25)');};
+/* le corps et les montants */
+R(x0-2,yR-4,BL+4,rez+4,T.b);R(x0-2,yR-4,BL+4,1.5,T.or);
+R(x0-2,sol-6,BL+4,6,T.bs);R(x0-2,sol-6,BL+4,1,T.bh);
+[x0,x0+44,x0+BL-50,x0+BL-6].forEach(x=>{
+  R(x,yR,6,rez-6,T.bh);R(x+1,yR,1,rez-6,'rgba(255,255,255,.18)');R(x+5,yR,1,rez-6,T.bs);
+  R(x-1,yR,8,2,T.or);R(x-1,sol-8,8,2,T.or);});
+/* les deux vitrines */
+[[x0+6,38],[x0+BL-44,38]].forEach(([x,w],k)=>{
+  R(x,yR+2,w,rez-10,nuit?'#ffe2b0':'#e8d2a8');R(x,yR+2,w,10,nuit?'#f0c890':'#d8bc90');
+  for(let q=0;q<3;q++){R(x+4+q*12,yR+4,1,6,'#6a4a2a');R(x+2+q*12,yR+10,5,2,'#fff4d0');}
+  R(x,yR+12,w,1,'#b89a6a');
+  if(!k){mannequin(x+11,sol-12,'#2a4a7a','#3a3f46',true);
+    mannequin(x+27,sol-12,'#b4302c','#2a3a4a',false);
+    R(x+3,sol-11,32,2,'#8a6238');}
+  else{R(x+3,sol-28,32,1.4,'#8a6238');
+    [0,1,2,3].forEach(i=>cintre(x+8+i*7,sol-27,['#2f6a4a','#e2c070','#8a4a6a','#2a6a9a'][i]));
+    pile(x+5,sol-13,['#dfe4e8','#2a4a7a','#b4302c']);
+    pile(x+21,sol-13,['#6a7a4a','#e8c46a']);}
+  {const lv=g.createLinearGradient(x,yR+2,x,sol-9);
+   lv.addColorStop(0,nuit?'rgba(255,196,96,.42)':'rgba(255,214,140,.26)');
+   lv.addColorStop(1,'rgba(255,186,90,0)');g.fillStyle=lv;g.fillRect(x,yR+2,w,rez-11);}
+  R(x,yR+2,w,rez-10,'rgba(255,255,255,.06)');
+  g.fillStyle='rgba(255,255,255,.14)';g.beginPath();
+  g.moveTo(x+4,sol-8);g.lineTo(x+14,yR+2);g.lineTo(x+19,yR+2);g.lineTo(x+9,sol-8);g.fill();
+  R(x+w/2-.5,yR+2,1,rez-10,T.b);R(x,yR+2,w,1.5,T.b);R(x,sol-9,w,1.5,T.b);
+  g.font='italic 700 4.4px Georgia,serif';g.textAlign='center';g.fillStyle=T.or;
+  g.fillText(k?'Chandails':'Vareuses',x+w/2,yR+17.5,w-8);g.textAlign='left';});
+/* la porte */
+R(cx-8,yR+2,16,rez-8,T.bs);R(cx-7,yR+3,14,rez-10,nuit?'#ffe8b8':'#cfe0e4');
+R(cx-.5,yR+3,1,rez-10,T.b);R(cx-7,yR+14,14,1,T.b);
+R(cx+2.5,sol-18,1.4,4,T.or);R(cx-3.6,sol-18,1.4,4,T.or);
+/* le store */
+const sy=yR-10;
+for(let k=0;k<BL+8;k++){const c=(k%12<6)?T.store[0]:T.store[1];
+  R(x0-4+k,sy,1,8,c);R(x0-4+k,sy+8,1,2,(k%12<6)?T.bs:'#c8c0ac');}
+for(let k=0;k<Math.floor((BL+8)/12);k++){const c=(k%2)?T.store[0]:T.store[1];
+  for(let i=0;i<5;i++)R(x0-4+k*12+i,sy+10,12-i*2.4,1,c);}
+R(x0-4,sy-2,BL+8,2,T.bs);
+/* l'enseigne, avec son aiguille et son fil */
+const ey=sy-15;
+R(x0-6,ey,BL+12,14,T.bs);R(x0-4,ey+2,BL+8,10,T.b);R(x0-4,ey+2,BL+8,1,T.or);
+R(x0+3,ey+9,9,1.4,T.or);R(x0+11,ey+8,3,3,T.or);
+for(let i=0;i<7;i++)R(x0+4+i*1.4,ey+5+Math.sin(i)*1.6,1.4,1.4,T.or);
+g.font='italic 900 9px Georgia,serif';g.textAlign='center';
+g.fillStyle='rgba(0,0,0,.4)';g.fillText('La Marinière',cx+5.6,ey+10.6,BL-28);
+g.fillStyle=T.or;g.fillText('La Marinière',cx+5,ey+10,BL-28);g.textAlign='left';
+/* devant : le portant et le panier à chapeaux */
+R(x0+3,sol-24,2,22,'#9aa0a8');R(x0+22,sol-24,2,22,'#9aa0a8');R(x0+3,sol-25,21,2,'#b4bcc4');
+[0,1,2].forEach(i=>cintre(x0+8+i*6,sol-23,['#2a4a7a','#b4302c','#2f6a4a'][i]));
+R(x0+BL-20,sol-12,16,10,'#9a7146');R(x0+BL-20,sol-12,16,2,'#b8905c');
+chapeau(x0+BL-12,sol-14,'#2a3a4a');
+/* la lumière du dedans */
+{const l=g.createRadialGradient(cx,sol-14,5,cx,sol-14,nuit?80:56);
+ l.addColorStop(0,nuit?'rgba(255,200,120,.5)':'rgba(255,214,150,.16)');
+ l.addColorStop(1,'rgba(255,200,120,0)');g.fillStyle=l;g.fillRect(cx-80,sol-86,160,88);}
+});}
 function graverBanderole(l1,l2,W0,haut){const W=W0||86,H=haut||40,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);
 const sol=H-2;[[3],[W-5]].forEach(([x])=>{g.fillStyle='#6b4a28';g.fillRect(x,6,2,sol-6);g.fillStyle='#8a6238';g.fillRect(x,6,0.7,sol-6);});   /* des perches plus longues quand on la tient bien haut */
 g.fillStyle='#f4f0e6';g.beginPath();g.moveTo(5,9);g.quadraticCurveTo(W/2,11,W-5,9);g.lineTo(W-5,27);g.quadraticCurveTo(W/2,29.5,5,27);g.closePath();g.fill();
