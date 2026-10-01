@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-01-0828';
+var MA_VERSION='2026-10-01-0835';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -6757,6 +6757,7 @@ let ONG='gratter', SEL=[], CH=0, LOTO_T=0, ETAT=null;
 const boule=(n,rouge,k)=>'<span class="lo-boule'+(rouge?' ch':'')+'" style="animation-delay:'+(k*0.45)+'s">'+n+'</span>';
 const loto=async()=>{const V=$('lotoVue');if(!V)return;const d=await appelRPC('loto_etat',{p_joueur:e.id});if(!d||d.erreur){V.innerHTML='<div class="bar-jour">Le tirage n’a pas pu s’ouvrir. Réessaie dans un instant.</div>';return;}
 ETAT=d;if(typeof d.euros==='number'){e.euros=d.euros;majHaut();}dessinerLoto();};
+let OUVRE_JEU=false;
 const dessinerLoto=()=>{const V=$('lotoVue'),d=ETAT;if(!V||!d)return;const mes=d.mes_grilles||[],D=d.dernier;
 const vu=(()=>{try{return localStorage.getItem('loto_vu')}catch(x){return null}})(), animer=D&&vu!==D.jour;
 V.innerHTML='<div class="bar-t"><canvas width="36" height="36" data-i="trefle"></canvas>LOTO DU PORT'+
@@ -6770,33 +6771,39 @@ V.innerHTML='<div class="bar-t"><canvas width="36" height="36" data-i="trefle"><
    '<b>'+nom+'</b><small>'+({simple:'Tu choisis tes 5 numéros',flash:'Le guichet choisit pour toi',
      chance:'Un second numéro chance',abo:'Une grille offerte chaque jour'}[id])+'</small>'+
    '<button class="bt-px" data-lo="'+id+'"><u></u>'+px+'</button></div>').join('')+'</div>'+
+'<div id="loJeu" style="display:none">'+
 '<div class="bt-sh">TA GRILLE<i>'+mes.length+' / 10 aujourd’hui</i></div>'+
 '<div class="lo-g">'+Array.from({length:25},(_,i)=>'<button data-n="'+(i+1)+'" class="'+(SEL.includes(i+1)?'on':'')+'">'+(i+1)+'</button>').join('')+'</div>'+
 '<div class="lo-cl">NUMÉRO CHANCE</div><div class="lo-ch">'+[1,2,3,4,5].map(n=>'<button data-c="'+n+'" class="'+(CH===n?'on':'')+'">'+n+'</button>').join('')+'</div>'+
-'<div class="lo-act"><button class="lo-flash" id="loFlash">Flash</button><button class="lo-ok'+(SEL.length===5&&CH?'':' pas')+'" id="loOk">'+(SEL.length===5&&CH?'Valider · 2 €':'Choisis 5 numéros et 1 Chance')+'</button></div>'+
+'<div class="lo-act"><button class="lo-ok'+(SEL.length===5&&CH?'':' pas')+'" id="loOk">'+(SEL.length===5&&CH?'VALIDER · 2 €':'Choisis 5 numéros et 1 Chance')+'</button></div>'+
 (mes.length?'<div class="lo-cl" style="margin-top:14px">TES GRILLES POUR CE TIRAGE</div>'+mes.map(g=>'<div class="lo-mg">'+g.numeros.map(n=>'<span>'+n+'</span>').join('')+
  '<span class="c">'+g.chance+'</span>'+
- (g.chance2?'<span class="c">'+g.chance2+'</span>'
-          :'<button class="lo-fl" data-fl="'+g.id+'">+ CHANCE · 1 €</button>')+
+ (g.chance2?'<span class="c">'+g.chance2+'</span>':'<button class="lo-fl" data-fl="'+g.id+'">+ CHANCE · 1 €</button>')+
  '</div>').join(''):'')+
-(D?'<div class="lo-der"><div class="lo-cl">DERNIER TIRAGE · '+new Date(D.jour+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+'</div><div class="lo-boules'+(animer?' anim':'')+'">'+D.numeros.map((n,k)=>boule(n,false,k)).join('')+boule(D.chance,true,5)+'</div>'+
-((D.mes_grilles||[]).length?(D.mes_grilles.map(g=>'<div class="lo-mg'+(g.gain>0?' gagne':'')+'">'+g.numeros.map(n=>'<span class="'+(D.numeros.includes(n)?'bon':'')+'">'+n+'</span>').join('')+'<span class="c '+(g.chance===D.chance?'bon':'')+'">'+g.chance+'</span><em>'+(g.gain>0?'+'+enEuros(g.gain):'—')+'</em></div>').join('')):'<div class="bar-jour" style="margin:6px 0 0">Tu n’avais pas joué ce soir-là.</div>')+
-(D.gagnants_cagnotte?'<div class="bar-jour">La cagnotte de '+enEuros(D.cagnotte)+' a été gagnée !</div>':'')+
-'<details class="lo-verif"><summary>Vérifier ce tirage</summary>Empreinte publiée avant les ventes :<code>'+D.empreinte+'</code>Graine révélée après le tirage :<code>'+D.graine+'</code>L’empreinte est le SHA-256 de la graine, et les numéros découlent de la graine seule : personne n’a pu les choisir.</details></div>':'')+
-'<div class="bar-jour" style="margin-top:12px">5 + Chance : la cagnotte · 5 : 1 200 € · 4+C : 250 € · 4 : 80 € · 3+C : 18 € · 3 : 9 € · 2+C : 4 € · Chance seule : 2 €</div>';
-/* les vignettes du loto se dessinent ici, à chaque rendu */
-V.querySelectorAll('canvas[data-lv]').forEach(cv=>{
-  const f=BT_DESS[cv.dataset.lv];if(!f)return;
-  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
-  const S=cv.height/24;g.setTransform(S,0,0,S,(cv.width-24*S)/2,0);
-  f((x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));});});
-V.querySelectorAll('canvas[data-i]').forEach(cv=>{
-  const f=BT_DESS[cv.dataset.i];if(!f)return;
-  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
-  const S=cv.height/24;g.setTransform(S,0,0,S,(cv.width-24*S)/2,0);
-  f((x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));});});
-if(typeof btDessiner==='function')btDessiner();
+'</div>'+
+'<button class="lo-flash" id="loFlash" style="display:none"></button>';
 if(animer)try{localStorage.setItem('loto_vu',D.jour);}catch(x){}
+/* LES QUATRE VIGNETTES DU LOTO : branchées ici, où elles existent vraiment */
+V.querySelectorAll('[data-lo]').forEach(b=>b.onclick=async()=>{
+  const q=b.dataset.lo, jeu=V.querySelector('#loJeu');
+  if(q==='simple'){OUVRE_JEU=true;
+    if(jeu){jeu.style.display='';jeu.scrollIntoView({behavior:'smooth',block:'start'});} }
+  else if(q==='flash'){
+    const p=Array.from({length:25},(_,i)=>i+1);SEL=[];
+    while(SEL.length<5)SEL.push(p.splice(Math.floor(Math.random()*p.length),1)[0]);
+    SEL.sort((x,y)=>x-y);CH=1+Math.floor(Math.random()*5);
+    OUVRE_JEU=true;dessinerLoto();}
+  else if(q==='chance'){
+    const c=V.querySelector('[data-fl]');
+    if(c)c.click(); else bulle('Il te faut d’abord une grille pour ce tirage.');}
+  else if(q==='abo'){
+    const r=await appelRPC('loto_abonner',{p_joueur:e.id,p_numeros:SEL.length===5?SEL:null,p_chance:CH||null});
+    if(!r||r.erreur)bulle(r&&r.erreur?String(r.erreur):'L’abonnement n’a pas pu être pris.');
+    else{if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}
+      bulle('Abonné 7 jours : une grille déposée chaque jour.');loto();}}
+});
+if(OUVRE_JEU){const j3=V.querySelector('#loJeu');
+  if(j3){j3.style.display='';j3.scrollIntoView({behavior:'smooth',block:'start'});}}
 V.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{const n=+b.dataset.n;if(SEL.includes(n))SEL=SEL.filter(x=>x!==n);else if(SEL.length<5)SEL.push(n);else{bulle('Cinq numéros, pas plus');return;}vibrer(6);dessinerLoto();});
 V.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{CH=+b.dataset.c;vibrer(6);dessinerLoto();});
 V.querySelectorAll('[data-fl]').forEach(b=>b.onclick=async()=>{
@@ -7078,14 +7085,24 @@ ${!['gratter','loto'].includes(ONG)?'<div class="bt-vide">Fanny n’a pas encore
 <div class="bar-jour">Chaque ticket a sa règle : elle est écrite dessus.<br><b>${faits} / 20</b> tickets aujourd'hui · remise à zéro à minuit.</div>`}</div>
 </div></div><div class="bt-pied"><div class="bar-bulle" id="barBulle"></div><span>« Des paris, des rêves… »</span><button class="bt-fermer" id="barFermer">RETOUR</button></div></div>`;
 btDessiner();
-document.querySelectorAll('#bar [data-lo]').forEach(b=>b.onclick=()=>{
-  const q=b.dataset.lo;
-  if(q==='flash'){const f=$('loFlash');if(f)f.click();}
-  else if(q==='abo'){const a2=document.querySelector('#bar .lo-abo, #bar [id*="bonn"]');if(a2)a2.click();}
-  else if(q==='chance'){const c=document.querySelector('#bar [data-fl]');
-    if(c)c.click();else bulle('Il te faut d’abord une grille pour ce tirage.');}
-  else{const g=document.querySelector('#bar .lo-g');
-    if(g)g.scrollIntoView({behavior:'smooth',block:'start'});}
+/* LES QUATRE VIGNETTES DU LOTO : elles agissent vraiment */
+$('page2Fond').querySelectorAll('[data-lo]').forEach(b=>b.onclick=async()=>{
+  const q=b.dataset.lo, jeu=$('loJeu');
+  if(q==='simple'){ if(jeu){jeu.style.display='';jeu.scrollIntoView({behavior:'smooth',block:'start'});} }
+  else if(q==='flash'){
+    const p=Array.from({length:25},(_,i)=>i+1);SEL=[];
+    while(SEL.length<5)SEL.push(p.splice(Math.floor(Math.random()*p.length),1)[0]);
+    SEL.sort((x,y)=>x-y);CH=1+Math.floor(Math.random()*5);
+    dessinerLoto();
+    const j2=$('loJeu');if(j2){j2.style.display='';j2.scrollIntoView({behavior:'smooth',block:'start'});}}
+  else if(q==='chance'){
+    const c=$('page2Fond').querySelector('[data-fl]');
+    if(c)c.click(); else bulle('Il te faut d’abord une grille pour ce tirage.');}
+  else if(q==='abo'){
+    const r=await appelRPC('loto_abonner',{p_joueur:e.id,p_numeros:SEL.length===5?SEL:null,p_chance:CH||null});
+    if(!r||r.erreur)bulle(r&&r.erreur?String(r.erreur):'L’abonnement n’a pas pu être pris.');
+    else{if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}
+      bulle('Abonné 7 jours : une grille déposée chaque jour.');loto();}}
 });
 $('barFermer').onclick=()=>{fermeA=Date.now();clearInterval(LOTO_T);$('page2').classList.remove('on');};
 $('page2Fond').querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{ONG=b.dataset.o;vibrer(8);rendre();});
