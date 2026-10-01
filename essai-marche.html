@@ -1,0 +1,135 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Battle Dock · la marche</title>
+<style>
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{height:100%;background:#1a1510;font-family:Georgia,serif;overflow:hidden;touch-action:none;overscroll-behavior:none}
+#ec{position:fixed;inset:0;display:flex;flex-direction:column}
+#bar{flex:none;background:#17365a;border-bottom:2px solid #c9a24a;padding:calc(env(safe-area-inset-top,0px) + 9px) 11px 9px;
+  display:flex;gap:8px;align-items:center}
+#bar b{flex:1;font:900 14px Georgia;color:#f0d78a}
+#bar b i{display:block;font:italic 10px Georgia;color:#9fc4d8;font-weight:400}
+.bt{border:1px solid #27506e;border-radius:9px;background:#0f2c3c;color:#9fc4d8;padding:9px 13px;
+  font:700 9.5px Arial;letter-spacing:1.2px}
+.bt.on{background:#f0d78a;border-color:#f0d78a;color:#16303c}
+#jeu{flex:1;position:relative;overflow:hidden;background:#d8caa8}
+#jeu canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+#hud{position:absolute;left:11px;top:11px;background:rgba(23,54,90,.85);border-radius:9px;padding:8px 11px;
+  color:#e8dcc0;font:400 11.5px Georgia;line-height:1.5}
+#hud b{color:#f0d78a}
+#joy{position:absolute;left:18px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);
+  width:132px;height:132px;border-radius:50%;background:rgba(23,54,90,.35);border:2px solid rgba(240,215,138,.4)}
+#stick{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;
+  background:rgba(240,215,138,.85);box-shadow:0 3px 9px rgba(0,0,0,.4)}
+#note{position:absolute;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);
+  width:150px;background:rgba(26,21,16,.86);border-radius:9px;padding:9px 11px;color:#e8dcc0;
+  font:italic 11px Georgia;line-height:1.45}
+</style></head><body>
+<div id="ec">
+  <div id="bar"><b>LA MARCHE<i id="quoi">Version actuelle</i></b>
+    <button class="bt on" id="bAv">AVANT</button><button class="bt" id="bAp">APRÈS</button></div>
+  <div id="jeu"><canvas id="cv"></canvas>
+    <div id="hud">vitesse <b id="hv">0</b><br>pas <b id="hp">0</b></div>
+    <div id="note" id="note">Pousse le joystick, lâche-le, fais demi-tour. Compare les deux versions.</div>
+    <div id="joy"><div id="stick"></div></div>
+  </div>
+</div>
+<script>
+const $=(id)=>document.getElementById(id);
+const cv=$('cv'), g=cv.getContext('2d');
+let W=0,H=0,ECH=4;
+function taille(){const r=$('jeu').getBoundingClientRect();
+  W=Math.ceil(r.width/ECH);H=Math.ceil(r.height/ECH);
+  cv.width=Math.round(W*ECH*2);cv.height=Math.round(H*ECH*2);
+  g.setTransform(ECH*2,0,0,ECH*2,0,0);g.imageSmoothingEnabled=false;}
+addEventListener('resize',taille);
+/* ===== les deux réglages ===== */
+const REG={
+ avant:{demarre:11, arrete:16, penche:0.9, balance:0, tete:0, demiTour:0, poussiere:false,
+        respire:0, cadence:0.30, nom:'Version actuelle'},
+ apres:{demarre:7.5, arrete:8.5, penche:1.25, balance:0.9, tete:1, demiTour:0.42, poussiere:true,
+        respire:1, cadence:0.34, nom:'Plus douce'}};
+let M='avant';
+/* ===== le personnage ===== */
+let J={x:0,y:0,vx:0,vy:0,pas:0,dir:'bas',marche:false,tour:0};
+const VIT=132;
+let joy={x:0,y:0,actif:false}, PEN={x:0,v:0}, pouss=[], t0=performance.now();
+function perso(px,py,dir,pas,marche,R){
+  const r=REG[M];
+  const F=Math.floor(pas*2)%4;                       /* quatre images de marche */
+  const lev=marche?[0,1,0,-1][F]:0;
+  const bal=marche?r.balance*[0,1,0,-1][F]:0;
+  const resp=(!marche&&r.respire)?Math.round(Math.sin(performance.now()/900)*0.5):0;
+  const haut=py-resp-(marche&&r.tete?Math.abs(lev)*0.6:0);
+  const incl=PEN.x*0.8;
+  /* l'ombre */
+  for(let a=0;a<6.283;a+=0.3)R(px+Math.cos(a)*6,py+1+Math.sin(a)*2.4,1.6,1.6,'rgba(60,45,25,.22)');
+  /* les jambes */
+  const j1=marche?lev*1.6:0, j2=marche?-lev*1.6:0;
+  R(px-4,haut-8+j1,3,9,'#3a4358');R(px+1,haut-8+j2,3,9,'#3a4358');
+  R(px-4,haut+1+j1,3,2,'#2f2a24');R(px+1,haut+1+j2,3,2,'#2f2a24');
+  /* le buste, qui se penche */
+  const dx=incl;
+  R(px-5+dx,haut-20,10,12,'#17365a');R(px-5+dx,haut-20,10,2,'rgba(255,255,255,.22)');
+  /* les bras, en opposition */
+  R(px-7+dx-bal,haut-19+j2,2.4,8,'#17365a');R(px+5+dx+bal,haut-19+j1,2.4,8,'#17365a');
+  /* la tête */
+  R(px-4+dx*1.4,haut-29,8,9,'#e8c8a8');R(px-4+dx*1.4,haut-29,8,2,'#4a3220');
+  if(dir==='bas'){R(px-2+dx*1.4,haut-26,1.6,1.6,'#2a1a14');R(px+1+dx*1.4,haut-26,1.6,1.6,'#2a1a14');}
+  if(dir==='droite')R(px+1+dx*1.4,haut-26,1.6,1.6,'#2a1a14');
+  if(dir==='gauche')R(px-3+dx*1.4,haut-26,1.6,1.6,'#2a1a14');}
+function boucle(t){
+  requestAnimationFrame(boucle);
+  const dt=Math.min(0.05,(t-t0)/1000);t0=t;
+  const r=REG[M];
+  const n=Math.hypot(joy.x,joy.y), pousse=Math.min(1,n);
+  const cx=n>0.16?(joy.x/n)*VIT*pousse:0, cy=n>0.16?(joy.y/n)*VIT*pousse:0;
+  /* LE DEMI-TOUR : on freine un instant quand on repart dans l'autre sens */
+  if(r.demiTour&&cx*J.vx<0&&Math.abs(J.vx)>30){J.vx*=1-r.demiTour;J.tour=0.12;}
+  if(J.tour>0)J.tour-=dt;
+  const k=1-Math.exp(-(n>0.16?r.demarre:r.arrete)*dt);
+  const vx0=J.vx;
+  J.vx+=(cx-J.vx)*k;J.vy+=(cy-J.vy)*k;
+  const v=Math.hypot(J.vx,J.vy);
+  J.x+=J.vx*dt;J.y+=J.vy*dt;
+  J.x=Math.max(14,Math.min(W-14,J.x));J.y=Math.max(30,Math.min(H-10,J.y));
+  J.marche=v>8;
+  if(J.marche)J.pas+=v*dt*r.cadence;
+  if(Math.abs(J.vx)>Math.abs(J.vy))J.dir=J.vx>0?'droite':'gauche';
+  else if(Math.abs(J.vy)>6)J.dir=J.vy>0?'bas':'haut';
+  /* le penché du buste */
+  {const ax=(J.vx-vx0)/Math.max(dt,1e-3);
+   const cible=Math.max(-1.6,Math.min(1.6,J.vx/VIT*r.penche-ax*0.0009));
+   PEN.v+=(cible-PEN.x)*70*dt;PEN.v*=Math.exp(-8*dt);PEN.x+=PEN.v*dt;}
+  /* la poussière au démarrage */
+  if(r.poussiere&&J.marche&&Math.random()<v*dt*0.12)
+    pouss.push({x:J.x-J.vx*0.04,y:J.y,t:0.45,d:(Math.random()-0.5)*14});
+  pouss=pouss.filter(p=>(p.t-=dt)>0);
+  /* le dessin */
+  const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
+  g.fillStyle='#d8caa8';g.fillRect(0,0,W,H);
+  for(let y=0;y<H;y+=7)for(let x=((y/7|0)%2?0:9);x<W;x+=18)
+    R(x,y,17,6,((x+y)>>3)%2?'#e4d7b6':'#d0c29e');
+  for(let y=24;y<H;y+=34)R(0,y,W,1,'rgba(120,96,56,.12)');
+  pouss.forEach(p=>{const a=p.t/0.45;
+    R(p.x+p.d*(1-a),p.y-(1-a)*5,2.4,2.4,'rgba(150,130,95,'+(a*0.5).toFixed(2)+')');});
+  perso(J.x,J.y,J.dir,J.pas,J.marche,R);
+  $('hv').textContent=Math.round(v);
+  $('hp').textContent=J.pas.toFixed(1);}
+/* le joystick */
+const jd=$('joy'), st=$('stick');
+function pos(ev){const r=jd.getBoundingClientRect();
+  const x=(ev.clientX-r.left-r.width/2)/(r.width/2), y=(ev.clientY-r.top-r.height/2)/(r.height/2);
+  const n=Math.hypot(x,y), k=n>1?1/n:1;
+  joy.x=x*k;joy.y=y*k;
+  st.style.transform='translate('+(joy.x*34)+'px,'+(joy.y*34)+'px)';}
+jd.onpointerdown=(ev)=>{ev.preventDefault();joy.actif=true;jd.setPointerCapture(ev.pointerId);pos(ev);};
+jd.onpointermove=(ev)=>{if(joy.actif)pos(ev);};
+const lache=()=>{joy.actif=false;joy.x=0;joy.y=0;st.style.transform='';};
+jd.onpointerup=lache;jd.onpointercancel=lache;
+$('bAv').onclick=()=>{M='avant';$('bAv').classList.add('on');$('bAp').classList.remove('on');
+  $('quoi').textContent=REG.avant.nom;};
+$('bAp').onclick=()=>{M='apres';$('bAp').classList.add('on');$('bAv').classList.remove('on');
+  $('quoi').textContent=REG.apres.nom;};
+taille();J.x=W/2;J.y=H/2;requestAnimationFrame(boucle);
+</script></body></html>
