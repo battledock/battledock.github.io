@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-01-0431';
+var MA_VERSION='2026-10-01-0451';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -17152,8 +17152,48 @@ P.dist=1-P.touches/P.besoin;
 const vers=Math.min(1,1-P.dist)*0.75;
 P.fx=P.bx+(P.px-P.bx)*vers+(Math.random()-.5)*34*(P.dist+.3);
 P.fy=P.by+((P.py+12)-P.by)*vers+(Math.random()-.5)*8;
-P.cercle={t0:performance.now(),duree:1000/S.vit*(1.04-P.touches*.05),k:0,juge:null};
+/* ================= L'ALLURE DE CHAQUE ESPÈCE =================
+   Le geste ne change pas : c'est le rythme du cercle qui raconte le poisson. */
+P.cercle={t0:performance.now(),duree:dureeDuCercle(P,S),k:0,juge:null};
 eclaboussure(P.fx,P.fy,5);
+}
+/* chaque poisson a sa façon de se battre */
+const ALLURE={
+  /* les nerveux : des cercles courts, qui se resserrent peu */
+  sardine:'nerveux',anchois:'nerveux',bogue:'nerveux',girelle:'nerveux',gardon:'nerveux',
+  /* les têtus : lents, mais ils se durcissent vite */
+  thon:'tetu',merou:'tetu',coelacanthe:'tetu',silure:'tetu',calamar:'tetu',mola:'tetu',
+  congre:'tetu',murene:'tetu',lotte:'tetu',
+  /* les sournois : le cercle ralentit, puis détale */
+  poulpe:'sournois',seiche:'sournois',baliste:'sournois',hippocampe:'sournois',
+  raie:'sournois',saintpierre:'sournois',
+  /* les fuyants : la vitesse change d'un cercle à l'autre */
+  loup:'fuyant',barracuda:'fuyant',denti:'fuyant',liche:'fuyant',espadon:'fuyant',
+  requin:'fuyant',brochet:'fuyant',coryphene:'fuyant',legende:'fuyant',rascassedor:'fuyant'
+};
+function dureeDuCercle(P,S){
+  const base=1000/S.vit;
+  const a=ALLURE[P.esp]||'droit';
+  const n=P.touches, reste=P.besoin-n;
+  let d;
+  if(a==='nerveux'){
+    /* vif dès le départ, mais il ne se durcit presque pas */
+    d=base*0.72*(1.02-n*0.015);
+  }else if(a==='tetu'){
+    /* large au début, de plus en plus serré : le dernier tour est le pire */
+    d=base*1.26*(1.06-n*0.085);
+  }else if(a==='sournois'){
+    /* un cercle lent, un cercle rapide, en alternance */
+    d=base*(n%2?0.62:1.3)*(1.04-n*0.04);
+  }else if(a==='fuyant'){
+    /* on ne sait jamais : entre très lent et très vif */
+    d=base*(0.6+Math.random()*0.85)*(1.04-n*0.05);
+  }else{
+    d=base*(1.04-n*0.05);
+  }
+  /* le dernier cercle est toujours le plus tendu */
+  if(reste<=1)d*=0.84;
+  return Math.max(260,d);
 }
 function taperPeche(){
 const P=PECHE;if(!P||P.etat!=='combat'||!P.cercle||P.cercle.juge)return;
