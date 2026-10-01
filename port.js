@@ -1267,10 +1267,14 @@ R(x0+14,yR+26,BL-28,6,nuit?'#c8281e':'#8a1e16');R(x0+14,yR+26,BL-28,1,'#f4efe6')
 [[0],[1],[2]].forEach(([k])=>{const mx=x0+22+k*34;R(mx,yR+16,26,8,nuit?'#1a1a1e':'#1a1a1e');R(mx+2,yR+17.5,6,5,'#e8a030');R(mx+10,yR+18,14,1,'#f4efe6');R(mx+10,yR+20,10,1,'#f4efe6');R(mx+10,yR+22,12,1,'#c8281e');});
 for(let k=x0+10;k<x0+BL-10;k+=22)R(k,yR+14,1,rez-16,'#5a1008');
 R(cx-9,yR+12,18,rez-12,'#5a1008');R(cx-8,yR+13,16,rez-14,nuit?'#ffe0a0':'#3a3636');R(cx-0.5,yR+13,1,rez-14,'#5a1008');R(cx-4,sol-12,2,1,'#e8c06a');R(cx+2,sol-12,2,1,'#e8c06a');
-for(let k=0;k<BL;k+=8){R(x0+k,yR+5,8,6,(k/8)%2?'#f4efe6':'#c8281e');g.fillStyle=(k/8)%2?'#f4efe6':'#c8281e';g.beginPath();g.arc(x0+k+4,yR+11,4,0,Math.PI);g.fill();}
+/* LE STORE jaune et rouge, remonté au-dessus de la vitrine */
+for(let k=0;k<BL+8;k+=8){const c=((k/8)%2)?'#e8b030':'#c8281e';
+  R(x0-4+k,yR-10,8,8,c);
+  g.fillStyle=c;g.beginPath();g.arc(x0-4+k+4,yR-2,4,0,Math.PI);g.fill();}
+R(x0-4,yR-12,BL+8,2,'#7a1610');
 R(x0-2,yR+4,BL+4,1.5,'#7a1610');
 /* L'ENSEIGNE PLEINE LARGEUR, comme les autres façades du quai */
-const ey=yR-27;
+const ey=yR-29;
 R(x0-6,ey,BL+12,16,'#7a1610');R(x0-4,ey+2,BL+8,12,'#c8281e');
 R(x0-4,ey+2,BL+8,1,'#e8b030');R(x0-4,ey+13,BL+8,1,'#8a1a12');
 /* les ampoules du pourtour */
