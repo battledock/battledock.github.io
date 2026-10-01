@@ -1197,18 +1197,104 @@ if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,85);l.addColorStop(0,'rg
 const LUP=(g,cx,sol,nuit,c)=>{if(!nuit)return;const l=g.createRadialGradient(cx,sol,4,cx,sol,75);l.addColorStop(0,c||'rgba(255,215,150,.5)');l.addColorStop(1,'rgba(255,215,150,0)');g.fillStyle=l;g.fillRect(cx-75,sol-75,150,80);};
 const bouee=(g,x,y,r,c1,c2)=>{g.strokeStyle=c1;g.lineWidth=r*.55;g.beginPath();g.arc(x,y,r,0,7);g.stroke();g.strokeStyle=c2;for(let q=0;q<4;q++){g.beginPath();g.arc(x,y,r,q*Math.PI/2+.2,q*Math.PI/2+.62);g.stroke();}};
 const canne=(R,g,x,y,h,c,lance)=>{R(x,y,1,h,'#c8b890');R(x-.4,y+h-6,1.8,6,'#3a3a40');R(x-.6,y+h-9,2.2,2,'#8a8a90');if(lance){g.strokeStyle='rgba(230,230,230,.7)';g.lineWidth=.4;g.beginPath();g.moveTo(x+.5,y);g.quadraticCurveTo(x+6,y+10,x+4,y+h*.6);g.stroke();}R(x-.5,y+h*.35,2,1.2,c);};
-function graverLaBoutiquePeche(){return devanture(1,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
-R(x0,yR,BL,rez,'#f0c030');for(let k=0;k<300;k++)R(x0+((k*37)%BL),yR+((k*53)%rez),1,1,k%2?'#e0b020':'#f8d860');R(x0,sol-3,BL,3,'#1f5aa0');R(x0,yR,BL,2,'#1f5aa0');
-R(x0+8,yR+8,56,rez-12,nuit?'#fff0c8':'#23405a');for(let k=0;k<9;k++){const a=-.55+k*.14;g.save();g.translate(x0+36,sol-6);g.rotate(a);canne(R,g,0,-30,30,['#e8402a','#2a6ab0','#f0c040'][k%3],false);g.restore();}   /* l'éventail de cannes */
-R(cx+2,yR+8,18,rez-8,'#1f5aa0');R(cx+3,yR+9,16,rez-10,nuit?'#ffe8b8':'#2a4a70');R(cx+15,sol-14,1.5,3,'#f0c030');
-R(x0+BL-40,yR+10,32,rez-14,'#e8f2f8');R(x0+BL-40,yR+10,32,5,'#2a8ad8');g.font='700 3.6px Arial';g.fillStyle='#fff';g.fillText('APPÂTS VIVANTS',x0+BL-38.5,yR+14);
-for(let k=0;k<3;k++){R(x0+BL-38,yR+18+k*6,28,4,'#c8dce8');for(let q=0;q<6;q++)R(x0+BL-37+q*4.5,yR+19+k*6,3,2,['#c86a4a','#6a8a3a','#8a6a4a'][q%3]);}
-[[x0+2],[x0+14]].forEach(([x],k)=>{R(x,sol-9,11,7,'#8a6238');for(let q=0;q<4;q++)R(x+1+q*2.6,sol-11,2,3,['#e8402a','#f0c040','#2ab0a0','#e86aa0'][(q+k)%4]);});
-const px=cx+10,py=yR-16;g.fillStyle='#2a8ad8';g.beginPath();g.ellipse(px,py,40,9,0,0,7);g.fill();g.beginPath();g.moveTo(px+36,py);g.lineTo(px+50,py-9);g.lineTo(px+50,py+9);g.closePath();g.fill();
-g.fillStyle='#8ac8f0';g.beginPath();g.ellipse(px-4,py-3,30,3,0,0,7);g.fill();g.fillStyle='#fff';g.beginPath();g.arc(px-30,py-2,2.6,0,7);g.fill();g.fillStyle='#111';g.beginPath();g.arc(px-30,py-2,1.3,0,7);g.fill();
-g.font='900 6.6px Arial';g.textAlign='center';g.fillStyle='#fff';g.fillText('LE PÊCHEUR HEUREUX',px+2,py+2.4,64);g.textAlign='left';R(px-2,py-11,1,3,'#3a3a40');R(px+20,py-11,1,3,'#3a3a40');
-LUP(g,cx,sol,nuit);});}
 const LU=(g,cx,sol,nuit,c)=>{if(!nuit)return;const l=g.createRadialGradient(cx,sol,4,cx,sol,75);l.addColorStop(0,c||'rgba(255,215,150,.5)');l.addColorStop(1,'rgba(255,215,150,0)');g.fillStyle=l;g.fillRect(cx-75,sol-75,150,80);};
+function graverLaBoutiquePeche(){return devanture(1,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+/* ================= LE PÊCHEUR HEUREUX =================
+   Bâtie comme Chez Fonfon : un corps de devanture, des montants, deux
+   vitrines chaudes, un store rayé, une enseigne, puis les objets devant. */
+const T={b:'#1b3f52',bh:'#28586f',bs:'#0e2634',store:['#1d5a78','#e8e0cc'],or:'#e2c070'};
+const A=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+/* LE CORPS ET LES MONTANTS, aux mesures de Fonfon */
+R(x0-2,yR-4,BL+4,rez+4,T.b);R(x0-2,yR-4,BL+4,1.5,T.or);
+R(x0-2,sol-6,BL+4,6,T.bs);R(x0-2,sol-6,BL+4,1,T.bh);
+[x0,x0+44,x0+BL-50,x0+BL-6].forEach(x=>{
+  R(x,yR,6,rez-6,T.bh);R(x+1,yR,1,rez-6,'rgba(255,255,255,.18)');R(x+5,yR,1,rez-6,T.bs);
+  R(x-1,yR,8,2,T.or);R(x-1,sol-8,8,2,T.or);});
+/* LES DEUX VITRINES, chaudes comme chez Fonfon */
+[[x0+6,38],[x0+BL-44,38]].forEach(([x,w],k)=>{
+  const fond=nuit?'#ffe2b0':'#e8d2a8';
+  R(x,yR+2,w,rez-10,fond);
+  R(x,yR+2,w,10,nuit?'#f0c890':'#d8bc90');
+  for(let q=0;q<3;q++){R(x+4+q*12,yR+4,1,6,'#6a4a2a');R(x+2+q*12,yR+10,5,2,'#fff4d0');}
+  R(x,yR+12,w,1,'#b89a6a');
+  if(!k){
+    /* à gauche : les leurres sur deux planches, et un moulinet */
+    for(let r=0;r<2;r++){R(x+4,sol-22+r*7,30,1,'#6a4a2a');
+      for(let q=0;q<5;q++){const px=x+5+q*6,py=sol-27+r*7;
+        R(px,py,4.4,4,['#c8402a','#2f7a4a','#e2c070','#2a6a9a','#8a4a8a'][(q+r)%5]);
+        R(px,py,4.4,1.2,'rgba(255,255,255,.45)');
+        R(px+1.4,py+4,1.6,1.4,'#9aa0a8');}}
+    for(let a=0;a<6.283;a+=0.42)R(x+30+Math.cos(a)*3,sol-13+Math.sin(a)*3,1.4,1.4,'#b4bcc4');
+    R(x+29,sol-14,2,2,'#e2c070');
+  }else{
+    /* à droite : la caisse de poissons sur son lit de glace */
+    for(let i=0;i<5;i++)R(x+4,sol-18+i,30,1,i<2?'#eef8fc':'#cfe6f0');
+    for(let q=0;q<4;q++){const px=x+5+q*7.6,py=sol-21;
+      R(px,py,6.4,3,'#9fc0d0');R(px,py,6.4,1,'#d8e8f0');R(px+5.6,py-.6,2,4.2,'#9fc0d0');
+      R(px+1.4,py+.8,1,1,'#1a2228');}
+    R(x+3,sol-14,32,2,'#8a6238');R(x+3,sol-14,32,.7,'#a5764a');
+    /* le seau, posé dedans */
+    R(x+8,sol-28,8,7,'#2f7a8a');R(x+8,sol-28,8,1.4,'#49a0b2');R(x+7,sol-29,10,1.4,'#3a8a9a');
+  }
+  /* le reflet du verre, exactement comme chez Fonfon */
+  R(x,yR+2,w,rez-10,'rgba(255,255,255,.06)');
+  g.fillStyle='rgba(255,255,255,.14)';g.beginPath();
+  g.moveTo(x+4,sol-8);g.lineTo(x+14,yR+2);g.lineTo(x+19,yR+2);g.lineTo(x+9,sol-8);g.fill();
+  R(x+w/2-.5,yR+2,1,rez-10,T.b);R(x,yR+2,w,1.5,T.b);R(x,sol-9,w,1.5,T.b);
+  g.font='italic 700 4.6px Georgia,serif';g.textAlign='center';g.fillStyle=T.or;
+  g.fillText(k?'Appâts du jour':'Leurres & moulinets',x+w/2,yR+17.5,w-6);g.textAlign='left';});
+/* LA PORTE */
+R(cx-10,yR+2,20,rez-8,T.bs);R(cx-9,yR+3,18,rez-10,nuit?'#ffe8b8':'#cfe0e4');
+R(cx-.5,yR+3,1,rez-10,T.b);R(cx-9,yR+14,18,1,T.b);
+R(cx+3,sol-18,1.5,4,T.or);R(cx-4.5,sol-18,1.5,4,T.or);
+/* L'ARDOISE accrochée près de la porte */
+R(cx-24,yR+8,10,13,'#2a2a2a');R(cx-23,yR+9,8,11,'#3a3a3a');
+g.font='700 2.6px Arial';g.textAlign='center';g.fillStyle='#f0ece0';
+g.fillText('APPÂTS',cx-19,yR+12.6);g.fillText('CANNES',cx-19,yR+16);g.fillText('FILETS',cx-19,yR+19.4);g.textAlign='left';
+/* LE STORE RAYÉ, bleu et crème */
+const sy=yR-10;
+for(let k=0;k<BL+8;k++){const c=(k%12<6)?T.store[0]:T.store[1];
+  R(x0-4+k,sy,1,8,c);R(x0-4+k,sy+8,1,2,(k%12<6)?T.bs:'#c8c0ac');}
+for(let k=0;k<Math.floor((BL+8)/12);k++){const c=(k%2)?T.store[0]:T.store[1];
+  for(let i=0;i<5;i++)R(x0-4+k*12+i,sy+10,12-i*2.4,1,c);}
+R(x0-4,sy-2,BL+8,2,T.bs);
+/* L'ENSEIGNE, avec son petit poisson */
+const ey=sy-15;
+R(x0-6,ey,BL+12,14,T.bs);R(x0-4,ey+2,BL+8,10,T.b);R(x0-4,ey+2,BL+8,1,T.or);
+(function(px,py,s,c){
+  for(let i=0;i<13*s;i++){const t=i/(13*s);
+    const h=Math.round(4*s*Math.sqrt(Math.max(0.04,1-Math.pow(t*2-0.82,2))));
+    for(let q=-h;q<=h;q++)R(px+i,py+q,1,1,c);}
+  R(px+13*s,py-3*s,1.6*s,6*s,c);R(px+14.6*s,py-4.4*s,1.4*s,3*s,c);R(px+14.6*s,py+1.4*s,1.4*s,3*s,c);
+  R(px+5*s,py+3*s,4*s,1.4*s,c);R(px+3*s,py-1.2*s,1.6*s,1.6*s,T.b);})(x0+4,ey+7,1,T.or);
+g.font='italic 900 9.5px Georgia,serif';g.textAlign='center';
+g.fillStyle='rgba(0,0,0,.4)';g.fillText('Le Pêcheur Heureux',cx+7.6,ey+10.6,BL-34);
+g.fillStyle=T.or;g.fillText('Le Pêcheur Heureux',cx+7,ey+10,BL-34);g.textAlign='left';
+/* LE FILET SUSPENDU, sous le store à droite */
+for(let i=0;i<22;i+=3)for(let j=0;j<12;j+=3){
+  R(x0+BL-26+i,sy+11+j,1,1,nuit?'#8a8068':'#c0b498');
+  R(x0+BL-24.5+i,sy+12.5+j,1,1,nuit?'#7a7058':'#b0a488');}
+/* LA BOUÉE, à gauche sous le store */
+for(let a=0;a<6.283;a+=0.16)R(x0+4+Math.cos(a)*5,sy+17+Math.sin(a)*5,1.6,1.6,(Math.floor(a/0.8)%2)?'#c0392b':'#f2ece0');
+/* DEVANT LA BOUTIQUE : trois cannes, une caisse, un seau */
+R(x0+BL-16,sol-11,13,9,'#8a6238');R(x0+BL-16,sol-12,13,2,'#a5764a');R(x0+BL-16,sol-4,13,1.4,'#5b3f21');
+for(let q=0;q<3;q++){const x=x0+BL-12+q*4, h=22+q*2;
+  for(let i=0;i<h;i++){const w=1.8-i*1.2/h;R(x-w/2,sol-12-i,w,1,i<5?'#c9a878':'#2a4654');}
+  R(x-1.6,sol-17,1.6,3,'#3a3f46');
+  for(let a=0;a<6.283;a+=0.6)R(x-2.9+Math.cos(a)*1.5,sol-15.5+Math.sin(a)*1.5,1,1,'#b4bcc4');
+  for(let i=0;i<3;i++)R(x-.7,sol-22-i*5,1.4,.7,T.or);}
+/* la caisse de poissons, posée à gauche */
+R(x0+2,sol-9,17,7,'#9a7146');R(x0+2,sol-10,17,1.6,'#b8905c');
+for(let i=0;i<17;i+=4)R(x0+2+i,sol-8.6,1.2,6,'#7d5934');
+for(let q=0;q<3;q++){R(x0+4+q*5,sol-12,4,2.4,'#9fc0d0');R(x0+4+q*5,sol-12,4,.8,'#d8e8f0');}
+/* le seau, à côté */
+R(x0+22,sol-8,7,6,'#2f7a8a');R(x0+22,sol-8,7,1.2,'#49a0b2');R(x0+21,sol-9,9,1.2,'#3a8a9a');
+R(x0+24,sol-11,1,2.4,'#8a8a92');
+/* la lumière chaude du dedans, la nuit */
+if(nuit){const l=g.createRadialGradient(cx,sol-14,5,cx,sol-14,72);
+  l.addColorStop(0,'rgba(255,206,130,.42)');l.addColorStop(1,'rgba(255,206,130,0)');
+  g.fillStyle=l;g.fillRect(cx-72,sol-80,144,78);}
+});}
 function clientCape(R,x,y,cheveux,cape){R(x-5,y-2,10,9,cape||'#f4f4f4');R(x-5,y-2,10,1,'#ffffff');R(x-2.5,y-8,5,6,'#e0b088');R(x-3,y-9,6,3,cheveux);R(x-1,y+7,2,4,'#3a3a40');R(x-4,y+10,8,1.5,'#3a3a40');}
 function coiffeur(R,x,y,tablier,cheveux){R(x-2.5,y-16,5,5,'#e0b088');R(x-3,y-17,6,2.5,cheveux);R(x-3,y-11,6,9,tablier);R(x-2.5,y-2,2,6,'#2a2a30');R(x+.5,y-2,2,6,'#2a2a30');R(x+3,y-10,4,1.5,'#e0b088');R(x+6.5,y-11,2,1,'#c8ccd4');R(x+6.5,y-9.5,2,1,'#c8ccd4');}
 function poteau(R,px,py,h,e){e=e||1;R(px-2*e,py-4,4*e+2,4,'#d8b050');R(px-2*e,py+h,4*e+2,4,'#d8b050');R(px-1.5*e,py,3*e+2,h,'#ffffff');
