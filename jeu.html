@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-01-0652';
+var MA_VERSION='2026-10-01-0757';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -6724,8 +6724,10 @@ const loto=async()=>{const V=$('lotoVue');if(!V)return;const d=await appelRPC('l
 ETAT=d;if(typeof d.euros==='number'){e.euros=d.euros;majHaut();}dessinerLoto();};
 const dessinerLoto=()=>{const V=$('lotoVue'),d=ETAT;if(!V||!d)return;const mes=d.mes_grilles||[],D=d.dernier;
 const vu=(()=>{try{return localStorage.getItem('loto_vu')}catch(x){return null}})(), animer=D&&vu!==D.jour;
-V.innerHTML='<div class="lo-cag"><small>CAGNOTTE</small><b>'+enEuros(d.cagnotte||0)+'</b><span id="loCompte">—</span><i title="Empreinte publiée avant le tirage">Sceau du tirage · '+String(d.empreinte||'').slice(0,16)+'…</i></div>'+
-'<div class="bar-t" style="margin-top:14px">Ta grille <small class="lo-reste">'+mes.length+' / 10 aujourd’hui</small></div>'+
+V.innerHTML='<div class="bar-t"><canvas width="36" height="36" data-i="trefle"></canvas>LOTO DU PORT'+
+'<small>Tentez votre chance, ça peut tout changer&nbsp;!</small></div>'+
+'<div class="lo-cag"><small>CAGNOTTE</small><b>'+enEuros(d.cagnotte||0)+'</b><span id="loCompte">—</span><i title="Empreinte publiée avant le tirage">Sceau du tirage · '+String(d.empreinte||'').slice(0,16)+'…</i></div>'+
+'<div class="bt-sh">TA GRILLE<i>'+mes.length+' / 10 aujourd’hui</i></div>'+
 '<div class="lo-g">'+Array.from({length:25},(_,i)=>'<button data-n="'+(i+1)+'" class="'+(SEL.includes(i+1)?'on':'')+'">'+(i+1)+'</button>').join('')+'</div>'+
 '<div class="lo-cl">NUMÉRO CHANCE</div><div class="lo-ch">'+[1,2,3,4,5].map(n=>'<button data-c="'+n+'" class="'+(CH===n?'on':'')+'">'+n+'</button>').join('')+'</div>'+
 '<div class="lo-act"><button class="lo-flash" id="loFlash">Flash</button><button class="lo-ok'+(SEL.length===5&&CH?'':' pas')+'" id="loOk">'+(SEL.length===5&&CH?'Valider · 2 €':'Choisis 5 numéros et 1 Chance')+'</button></div>'+
@@ -6840,6 +6842,52 @@ $('page2Fond').innerHTML=`<style>#bar{position:fixed;inset:0;z-index:5;display:f
 #bar .bt-vide{text-align:center;padding:40px 16px;font:italic 13px Georgia,serif;color:#8a7454}
 #bar .bt-pied{position:static!important;order:99}
 #bar .bt-gr{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+/* ===== LE LOTO, AU MÊME DESSIN QUE LE RESTE ===== */
+#bar .bt-sh{display:flex;align-items:center;gap:8px;font:900 11.5px Georgia,serif;color:#143352;
+  letter-spacing:.5px;margin:14px 0 8px}
+#bar .bt-sh i{flex:1;font:italic 10.5px Georgia,serif;color:#8a7454;border-bottom:1px dotted #c3b391;
+  padding-bottom:3px;text-align:right}
+#bar .lo-cag{background:#143352!important;background-image:none!important;
+  border:1px solid #27506e;border-radius:10px;padding:11px 12px;
+  text-align:center;color:#f0d78a;box-shadow:0 3px 9px rgba(0,0,0,.2);animation:none!important}
+#bar .lo-cag small{display:block;font:700 7.5px Arial,sans-serif;letter-spacing:2.4px;color:#7fa8c4}
+#bar .lo-cag b{display:block;font:900 25px Georgia,serif;color:#f6e0a8;margin:2px 0}
+#bar .lo-cag span{display:block;font:italic 11px Georgia,serif;color:#a8c4d8}
+#bar .lo-cag i{display:block;font:700 7px Arial,sans-serif;letter-spacing:1px;color:#5f84a0;margin-top:4px}
+#bar .lo-g{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+#bar .lo-g{gap:5px}
+#bar .lo-g button{aspect-ratio:1;border:1px solid #d8c9a6;border-radius:50%;background:#fbf6e8!important;
+  color:#5a4a30!important;font:700 12.5px Georgia,serif;box-shadow:0 2px 0 rgba(120,96,56,.14);
+  padding:0;min-height:0;animation:none!important}
+#bar .lo-g button.on{background:#143352;border-color:#c9a24a;color:#f0d78a;
+  box-shadow:0 0 0 2px #e2c070 inset,0 2px 6px rgba(0,0,0,.25)}
+#bar .lo-cl{font:700 8px Arial,sans-serif;letter-spacing:2.2px;color:#8a7454;margin:12px 0 6px}
+#bar .lo-ch{display:flex;gap:7px}
+#bar .lo-ch button{flex:1;border:1px solid #d8c9a6;border-radius:9px;background:#fbf6e8;color:#5a4a30;
+  padding:11px 0;font:700 14px Georgia,serif}
+#bar .lo-ch button.on{background:#8a2228;border-color:#8a2228;color:#f6ecd8}
+#bar .lo-act{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+#bar .lo-act button{flex:1 1 auto;min-width:0;white-space:nowrap;font-size:10px!important;
+  padding:11px 9px!important;line-height:1.1}
+#bar .lo-ch button{animation:none!important}
+#bar .lo-flash{flex:none;border:1px solid #c9a24a;border-radius:9px;background:#fbf6e8;color:#8a6a20;
+  padding:12px 15px;font:700 10px Arial,sans-serif;letter-spacing:1.4px}
+#bar .lo-ok{flex:1;border:0;border-radius:9px;background:#143352;color:#f0d78a;padding:12px;
+  font:700 10.5px Arial,sans-serif;letter-spacing:1.4px}
+#bar .lo-ok.pas{background:#ddd2b8;color:#8a7a5c}
+#bar .lo-mg{display:flex;align-items:center;gap:5px;flex-wrap:wrap;background:#fbf6e8;
+  border:1px solid #d8c9a6;border-radius:9px;padding:8px;margin-bottom:7px}
+#bar .lo-mg span{width:27px;height:27px;border-radius:50%;background:#ece2c8;color:#5a4a30;
+  display:flex;align-items:center;justify-content:center;font:700 12.5px Georgia,serif}
+#bar .lo-mg span.c{background:#8a2228;color:#f6ecd8}
+#bar .lo-mg span.bon{background:#2f7a4a;color:#fff}
+#bar .lo-mg.gagne{border-color:#c9a24a;background:#fdf6e0;box-shadow:0 0 0 1px #e2c070 inset}
+#bar .lo-fl{margin-left:auto;border:1px solid #2f7a4a;border-radius:7px;background:#eaf6ee;color:#2f6a3a;
+  padding:7px 9px;font:700 8.5px Arial,sans-serif;letter-spacing:1px}
+#bar .lo-der{margin-top:14px;background:#fbf6e8;border:1px solid #d8c9a6;border-radius:10px;padding:10px}
+#bar .lo-verif{margin-top:10px;font:italic 11px Georgia,serif;color:#8a7454}
+#bar .lo-verif code{display:block;background:#ece2c8;border-radius:5px;padding:5px 7px;margin:4px 0;
+  font:400 9px ui-monospace,monospace;color:#5a4a30;word-break:break-all}
 #bar .bt-it{background:#fbf6e8;border:1px solid #d8c9a6;border-radius:9px;padding:8px 7px 9px;
   text-align:center;display:flex;flex-direction:column;box-shadow:0 2px 0 rgba(120,96,56,.14)}
 #bar .bt-viz{position:relative;height:72px;border-radius:6px;overflow:hidden;margin-bottom:5px;
