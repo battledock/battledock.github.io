@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-01-1929';
+var MA_VERSION='2026-10-01-1947';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -14260,7 +14260,14 @@ const choix=(typeof REG!=='undefined'&&REG.nettete)||'auto';
 const palier=(choix==='auto')?(typeof NET_AUTO!=='undefined'?NET_AUTO:'fluide'):choix;
 const plafond=QUALITE_TOILE<1?1.25:(palier==='nette'?3:(palier==='equilibre'?2:1.5));
 const dpr=ECO?1:Math.max(1,Math.min(plafond,window.devicePixelRatio||1));
-ECH=e*dpr;
+/* L'ÉCHELLE ENTIÈRE, au palier net seulement : chaque point du dessin occupe
+   alors un nombre ROND de pixels d'écran, et le décor ne tremble plus quand on
+   avance. Aux paliers plus légers, la toile est volontairement plus petite que
+   l'écran : l'échelle ne peut pas être ronde sans en annuler l'économie. */
+if(palier==='nette'&&!ECO){
+  ECH=Math.max(1,Math.round(e*dpr));
+  e=ECH/dpr;ECH_CSS=e;
+}else ECH=e*dpr;
 VW=Math.ceil(w/e)+1;VH=Math.ceil(h/e)+1;
 cv.width=Math.round(VW*ECH);cv.height=Math.round(VH*ECH);
 cv.style.width=(VW*e)+'px';cv.style.height=(VH*e)+'px';
