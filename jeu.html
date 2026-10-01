@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-01-0911';
+var MA_VERSION='2026-10-01-0917';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -6744,14 +6744,10 @@ const PRESSE=[
   gros:'Les nuits de pleine lune font monter le gros'}];
 function presseHTML(){
   return '<div class="bar-t"><canvas width="36" height="36" data-i="journal"></canvas>LA PRESSE'+
-   '<small>Les nouvelles du port, et d’ailleurs.</small></div>'+
-   '<div class="bt-gr">'+PRESSE.map(j=>
-     '<div class="bt-it"><div class="bt-viz"><canvas width="192" height="120" data-pr="'+j.id+'"></canvas></div>'+
-     '<b>'+j.nom+'</b><small>'+j.d+'</small>'+
-     '<button class="bt-px'+((e.euros||0)<j.prix?' cher':'')+'" data-pj="'+j.id+'"><u></u>'+
-     enEuros(j.prix)+'</button></div>').join('')+'</div>'+
-   '<div class="bar-jour">Un journal lu te donne la nouvelle du jour.</div>';
+   '<small>Gratuit · toutes les nouveautés du port.</small></div>'+
+   '<div id="presseVue"><div class="bt-vide">On déplie le journal…</div></div>';
 }
+
 const PR_DESS=(id)=>(R)=>{
   const T={marseillais:['#e8e2d2','#2a3a4a','#c0392b'],echo:['#dfe8ee','#1d3a5a','#2a7a9a'],
            courrier:['#e4dcc8','#3a2a1a','#8a6238'],almanach:['#f0e2c0','#2f5a3a','#c9a24a']}[id];
@@ -6810,6 +6806,25 @@ const COUL_MINI={poisson:'#fff',filet:'#4a3410',cargo:'#fff',bouteille:'#eaf4fb'
 const mini=(nom,k)=>'<span class="bar-mini" style="background:'+FOND_MINI[k]+';color:'+COUL_MINI[k]+'"><small>BAR DES DOCKS</small><b>'+nom+'</b><i></i></span>';
 let ONG='gratter', SEL=[], CH=0, LOTO_T=0, ETAT=null;
 const boule=(n,rouge,k)=>'<span class="lo-boule'+(rouge?' ch':'')+'" style="animation-delay:'+(k*0.45)+'s">'+n+'</span>';
+/* ================= LA PRESSE : le journal du port ================= */
+const presse=async()=>{
+  const V=$('presseVue');if(!V)return;
+  let N=null;
+  try{const r=await fetch('nouveautes.json?v='+Date.now());N=await r.json();}catch(x){}
+  const j2=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+  const arts=(N&&Array.isArray(N.articles))?N.articles:[];
+  const dateFr=(d)=>{try{return new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long'});}catch(x){return d;}};
+  V.innerHTML=
+   '<div class="pr-une"><small>LE QUOTIDIEN DU PORT · GRATUIT</small><b>L’Écho des Docks</b>'+
+     '<i>'+j2+'</i></div>'+
+   (arts.length
+     ? '<div class="pr-art"><h4>LES NOUVELLES DU PORT</h4>'+
+        arts.map((a,k)=>'<div class="pr-nouv'+(k===0?' une':'')+'">'+
+          '<span class="pr-d">'+dateFr(a.d)+'</span>'+
+          '<b>'+a.t+'</b><p>'+a.x+'</p></div>').join('')+'</div>'
+     : '<div class="pr-art"><p>Le tirage du jour n’est pas encore arrivé au kiosque.</p></div>')+
+   '<div class="pr-pied">« Tout ce qui se passe au port finit dans ce journal. »</div>';
+};
 const loto=async()=>{const V=$('lotoVue');if(!V)return;const d=await appelRPC('loto_etat',{p_joueur:e.id});if(!d||d.erreur){V.innerHTML='<div class="bar-jour">Le tirage n’a pas pu s’ouvrir. Réessaie dans un instant.</div>';return;}
 ETAT=d;if(typeof d.euros==='number'){e.euros=d.euros;majHaut();}dessinerLoto();};
 let OUVRE_JEU=false;
@@ -6954,6 +6969,33 @@ $('page2Fond').innerHTML=`<style>#bar{position:fixed;inset:0;z-index:5;display:f
   padding:10px 14px;font:700 9.5px Arial,sans-serif;letter-spacing:1.5px}
 #bar .bt-vide{text-align:center;padding:40px 16px;font:italic 13px Georgia,serif;color:#8a7454}
 body.gratte #bar .bt-pied{display:none!important}
+/* ===== LE JOURNAL ===== */
+#bar .pr-une{background:#f8f4e8;border:1px solid #cdbf9e;border-radius:9px;padding:12px;text-align:center;
+  box-shadow:0 2px 0 rgba(120,96,56,.14)}
+#bar .pr-une small{display:block;font:700 7px Arial,sans-serif;letter-spacing:3px;color:#8a7454}
+#bar .pr-une b{display:block;font:900 26px Georgia,serif;color:#2f2820;margin:2px 0 1px;letter-spacing:.5px}
+#bar .pr-une i{display:block;font:italic 11px Georgia,serif;color:#8a7454;border-top:1px solid #d8c9a6;
+  padding-top:5px;margin-top:5px}
+#bar .pr-art{background:#fbf6e8;border:1px solid #d8c9a6;border-radius:9px;padding:10px 11px;margin-top:9px}
+#bar .pr-art h4{font:900 9.5px Arial,sans-serif;letter-spacing:2px;color:#143352;margin:0 0 7px}
+#bar .pr-art p{font:italic 11.5px Georgia,serif;color:#7d6a4a;line-height:1.45;margin-top:7px}
+#bar .pr-art p b{font-style:normal;color:#8a2228}
+#bar .pr-cours{display:flex;flex-wrap:wrap;gap:6px}
+#bar .pr-cours span{flex:1 1 44%;display:flex;justify-content:space-between;align-items:baseline;
+  background:#f2e9d4;border-radius:6px;padding:6px 8px;font:700 11.5px Georgia,serif;color:#143352}
+#bar .pr-cours u{text-decoration:none;font:400 11.5px Georgia,serif;color:#5a4a30}
+#bar .pr-ligne{display:flex;align-items:baseline;gap:7px;padding:5px 0;border-bottom:1px dotted #d8c9a6}
+#bar .pr-ligne u{flex:1;text-decoration:none;font:400 12px Georgia,serif;color:#2f2820}
+#bar .pr-ligne b{font:700 12px Georgia,serif;color:#143352}
+#bar .pr-ligne i{font:italic 10.5px Georgia,serif;color:#8a7454;min-width:62px;text-align:right}
+#bar .pr-pied{text-align:center;font:italic 11px Georgia,serif;color:#8a7454;margin:10px 0 4px}
+#bar .pr-nouv{padding:9px 0;border-bottom:1px dotted #d8c9a6}
+#bar .pr-nouv:last-child{border-bottom:0;padding-bottom:2px}
+#bar .pr-nouv .pr-d{display:block;font:700 7.5px Arial,sans-serif;letter-spacing:1.6px;color:#8a2228}
+#bar .pr-nouv b{display:block;font:700 14px Georgia,serif;color:#2f2820;line-height:1.2;margin-top:2px}
+#bar .pr-nouv p{font:400 12px Georgia,serif;font-style:normal;color:#5f4d34;line-height:1.5;margin-top:4px}
+#bar .pr-nouv.une b{font:900 18px Georgia,serif;line-height:1.15}
+#bar .pr-nouv.une p{font-size:12.5px}
 /* le pied est en dehors du cadre : on l'ancre au bas de l'écran */
 #bar .bt-pied{position:fixed!important;left:0;right:0;bottom:0;top:auto!important;z-index:9}
 #bar .bt-corps{padding-bottom:60px}
@@ -7165,6 +7207,7 @@ ${ONG==='presse'?presseHTML()
 <div class="bar-jour">Chaque ticket a sa règle : elle est écrite dessus.<br><b>${faits} / 20</b> tickets aujourd'hui · remise à zéro à minuit.</div>`}</div>
 </div></div><div class="bt-pied"><div class="bar-bulle" id="barBulle"></div><span>« Des paris, des rêves… »</span><button class="bt-fermer" id="barFermer">RETOUR</button></div></div>`;
 btDessiner();
+if(ONG==='presse')presse();
 $('page2Fond').querySelectorAll('canvas[data-pr]').forEach(cv=>{
   const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
   const S=cv.width/64;g.setTransform(S,0,0,S,0,0);
