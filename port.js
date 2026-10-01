@@ -1091,9 +1091,10 @@ const SECTIONS=[
  {id:'access',t:'LES ACCESSOIRES',s:'De petits détails qui font une grande différence.',ic:'moulinet',
   l:ACCESSOIRES.map(a=>({id:a.id,nom:a.nom,prix:a.prix,d:a.effet,
     etat:({moulinet:q.moulinet,bouchon:q.bouchon,sondeur:q.sondeur,glaciere:q.glaciere}[a.id])?'possede':'achat'}))},
- {id:'appats',t:'LES APPÂTS',s:'Ils attirent les poissons… ou les surprises.',ic:'vers',
+ {id:'appats',t:'LES APPÂTS',s:'Choisis celui que tu accroches, rachète quand la boîte est vide.',ic:'vers',
+  liste:true,
   l:APPATS.map(a=>({id:a.id,nom:a.nom,prix:a.prix,d:a.effet,
-    etat:'achat',n:sacApp[a.id]||0,choisi:q.appat===a.id,choix:'m'}))},
+    n:sacApp[a.id]||0,choisi:q.appat===a.id}))},
  {id:'finitions',t:'LES FINITIONS',s:'Parce qu’un bon pêcheur reconnaît sa canne au premier coup d’œil.',ic:'dore',
   l:[['bleu','Bleu',500],['rouge','Rouge',500],['olive','Olive',500],['dore','Doré',3000],['nacre','Nacré',6000]]
     .map(([id,nom,prix])=>({id,nom,prix,d:'',
@@ -1119,9 +1120,23 @@ const carte=(a)=>{
     '<b>'+a.nom+'</b><span class="pPx"><u></u>'+enEuros(a.prix)+'</span>'+
     (a.d?'<em>'+a.d+'</em>':'<em></em>')+bouton+'</div>';
 };
+/* les appâts s'affichent en lignes : on voit d'un coup la boîte et celui qui est accroché */
+const ligneAppat=(a)=>{
+  const vide=a.n<=0;
+  return '<div class="pL'+(a.choisi?' act':'')+(vide?' vide':'')+'">'+
+    '<canvas data-img="'+a.id+'" width="144" height="80"></canvas>'+
+    '<div class="pLt"><b>'+a.nom+'</b>'+
+      '<span class="pLs">'+(vide?'boîte vide':'il t’en reste '+a.n)+'</span>'+
+      '<em>'+a.d+'</em></div>'+
+    '<div class="pLb">'+
+      (a.choisi?'<span class="pTag">ACCROCHÉ</span>'
+              :(vide?'':'<button class="pB ch" data-m="'+a.id+'">CHOISIR</button>'))+
+      '<button class="pB" data-a="'+a.id+'">'+enEuros(a.prix)+' <small>×10</small></button>'+
+    '</div></div>';};
 $('catPages').innerHTML = ongl +
   '<div class="pCorps"><h3 class="pT">'+S.t+'</h3><i class="pS">'+S.s+'</i>'+
-  '<div class="pGr">'+S.l.map(carte).join('')+'</div>'+
+  (S.liste ? '<div class="pLs2">'+S.l.map(ligneAppat).join('')+'</div>'
+           : '<div class="pGr">'+S.l.map(carte).join('')+'</div>')+
   (mot?'<div class="pMot">'+mot+'</div>':'')+'</div>';
 /* les dessins */
 $('catPages').querySelectorAll('canvas[data-img]').forEach(cv=>illustrerArticle(cv,cv.dataset.img));
