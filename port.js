@@ -982,9 +982,12 @@ else if(id==='sardine'||id==='appatSardine'){
     for(let k=0;k<5;k++)R(bx+8+k*3,by,1.4,1,'rgba(255,255,255,.35)');}
 }
 /* ================= LES FINITIONS ================= */
-else if(id==='bleu'||id==='rouge'||id==='olive'||id==='dore'||id==='nacre'){
+else if(['bleu','rouge','olive','dore','nacre','bois','raies','flamme','ecaille','nuit','corail','abysse','phosphore'].includes(id)){
   const T={bleu:['#1d5b9a','#4f9ad8'],rouge:['#b4302c','#e06a5a'],olive:['#5f7a3a','#90ae60'],
-           dore:['#c9a24a','#f0d78a'],nacre:['#cfd8e0','#f4f8fc']}[id];
+           dore:['#c9a24a','#f0d78a'],nacre:['#cfd8e0','#f4f8fc'],
+           bois:['#6a4420','#b8884a'],raies:['#1d3a5a','#f2ece0'],flamme:['#8a2a10','#f0a030'],
+           ecaille:['#1d5b4a','#6fd0a8'],nuit:['#101a3a','#3a5a9a'],corail:['#b02a4a','#f08aa0'],
+           abysse:['#0a1420','#2a6a8a'],phosphore:['#1a3a1a','#8fe060']}[id];
   const cx=W/2,cy=H/2+2;
   /* le pot, avec son reflet et sa coulure */
   R(cx-11,cy-10,22,22,T[0]);R(cx-11,cy-10,22,5,T[1]);
@@ -1096,7 +1099,11 @@ const SECTIONS=[
   l:APPATS.map(a=>({id:a.id,nom:a.nom,prix:a.prix,d:a.effet,
     n:sacApp[a.id]||0,choisi:q.appat===a.id}))},
  {id:'finitions',t:'LES FINITIONS',s:'Parce qu’un bon pêcheur reconnaît sa canne au premier coup d’œil.',ic:'dore',
-  l:[['bleu','Bleu',500],['rouge','Rouge',500],['olive','Olive',500],['dore','Doré',3000],['nacre','Nacré',6000]]
+  l:[['bleu','Bleu marine',500],['rouge','Rouge Estaque',500],['olive','Vert olive',500],
+     ['bois','Bois ciré',800],['raies','Rayures de régate',1200],['flamme','Flammes',2000],
+     ['dore','Vernis doré',3000],['ecaille','Écailles',4000],['nuit','Bleu de nuit',5000],
+     ['nacre','Nacre',6000],['corail','Corail',7000],['abysse','Abysse',12000],
+     ['phosphore','Phosphore',20000]]
     .map(([id,nom,prix])=>({id,nom,prix,d:'',
       etat:fin.includes(id)?'possede':'achat',choisi:q.finition===id,choix:'f'}))}
 ];
