@@ -1459,19 +1459,76 @@ function poissonPx(g,x,y,c1,c2,sens){sens=sens||1;g.fillStyle=c1;g.beginPath();g
 g.fillStyle=c1;g.beginPath();g.moveTo(x-4*sens,y);g.lineTo(x-6.5*sens,y-2.2);g.lineTo(x-6.5*sens,y+2.2);g.fill();g.fillStyle='#1a1a1a';g.fillRect(x+2.6*sens-0.4,y-0.6,0.8,0.8);}
 const PX_P=[['#8aa0b0','#c8d4dc'],['#c86a4a','#e89a7a'],['#6a8aa0','#a8c0d0'],['#d8b060','#f0d890'],['#b04a3a','#e07a5a']];
 function graverLaPoissonnerie(){return devanture(1,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
-R(x0,yR,BL,rez,'#1f3a5a');for(let x=x0;x<x0+BL;x+=6){R(x,yR,1,rez,'#16304c');R(x+1,yR,1,rez,'#28486a');}R(x0,yR,BL,1.5,'#d8b050');R(x0,sol-3,BL,3,'#12263c');
-R(x0+8,yR+12,BL-16,rez-26,nuit?'#ffe6b0':'#223040');for(let k=0;k<6;k++)poissonPx(g,x0+22+k*19,yR+20,PX_P[k%5][0],PX_P[k%5][1]);   /* les poissons suspendus en vitrine */
-R(cx-9,yR+8,18,rez-8,'#12263c');R(cx-8,yR+9,16,rez-10,nuit?'#ffe8b8':'#2a3a4c');R(cx+4,sol-14,1.5,3,'#d8b050');
-[[x0+4],[x0+BL-50]].forEach(([x])=>{R(x,sol-12,46,10,'#8a6238');R(x,sol-12,46,1.5,'#a8804a');R(x+1,sol-15,44,4,'#e8f4fa');R(x+1,sol-15,44,1,'#ffffff');
-for(let k=0;k<5;k++)poissonPx(g,x+6+k*8.6,sol-13.5,PX_P[(k+1)%5][0],PX_P[(k+1)%5][1],k%2?1:-1);R(x+40,sol-16,3,3,'#f0d040');});
-for(let k=0;k<BL;k+=8){R(x0+k,yR+1,8,8,(k/8)%2?'#ffffff':'#2d6fb0');g.fillStyle=(k/8)%2?'#ffffff':'#2d6fb0';g.beginPath();g.arc(x0+k+4,yR+9,4,0,Math.PI);g.fill();}
-R(x0+BL-18,yR+14,14,16,'#5b3f21');R(x0+BL-17,yR+15,12,14,'#2e3a34');for(let k=0;k<4;k++)R(x0+BL-15,yR+17+k*3,8,.7,'#f4f0e0');
-g.strokeStyle='rgba(220,200,160,.8)';g.lineWidth=.5;for(let k=0;k<5;k++){g.beginPath();g.moveTo(x0+4+k*3,yR+10);g.lineTo(x0+4+k*3,yR+28);g.stroke();g.beginPath();g.moveTo(x0+2,yR+12+k*4);g.lineTo(x0+18,yR+12+k*4);g.stroke();}
-R(x0+6,yR+26,3,3,'#e8402a');R(x0+13,yR+27,3,3,'#e8402a');
-const ey=yR-16;R(x0+10,ey,BL-20,13,'#d8b050');R(x0+11,ey+1,BL-22,11,'#1f3a5a');
-g.font='700 8px Georgia,serif';g.textAlign='center';g.fillStyle=nuit?'#fff0c0':'#f0d890';g.fillText('LA CRIÉE',cx+8,ey+9,BL-50);g.textAlign='left';poissonPx(g,x0+30,ey+6.5,'#f0d890','#fff0c0');
-[[x0+2],[x0+BL-4]].forEach(([x])=>{R(x,ey+2,2,6,'#3a3a40');R(x-1,ey+8,4,5,'#3a3a40');R(x-.5,ey+8.5,3,4,nuit?'#ffe080':'#c8b070');});
-if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,220,160,.45)');l.addColorStop(1,'rgba(255,220,160,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}});}
+/* ================= LA CRIÉE =================
+   L'architecture validée, en vert bouteille : deux étals de glace garnis,
+   la balance, les cageots et l'ardoise des cours. */
+const T={b:'#1f4a32',bh:'#2d6a47',bs:'#102a1c',store:['#27593b','#e8e0cc'],or:'#e2c070'};
+const glace=(x,y,w)=>{for(let i=0;i<7;i++)R(x,y+i,w-i*0.6,1,i<2?'#f0f8fc':'#cfe6f0');};
+const poisson=(x,y,lg,c1,c2)=>{
+  for(let i=0;i<lg;i++){const t=i/lg,h=Math.round(lg*0.17*Math.sqrt(Math.max(.04,1-Math.pow(t*2-.82,2))));
+    for(let q=-h;q<=h;q++)R(x+i,y+q,1,1,q<0?c2:c1);}
+  R(x+lg,y-lg*0.14,lg*0.12,lg*0.28,c1);R(x+lg*0.18,y-1,1.4,1.4,'#101418');};
+const cageot=(x,y,w,h,cs)=>{R(x,y,w,h,'#9a7146');R(x,y,w,2,'#b8905c');
+  for(let i=0;i<w;i+=5)R(x+i,y+2,1.2,h-4,'#7d5934');
+  cs.forEach((c,q)=>R(x+2+q*5,y-3,4,4,c));};
+const ardoise=(x,y,w,h,l)=>{R(x,y,w,h,'#2a2a2a');R(x+1,y+1,w-2,h-2,'#3a3a3a');
+  g.font='700 3px Arial,sans-serif';g.textAlign='center';g.fillStyle='#f0ece0';
+  l.forEach((t,i)=>g.fillText(t,x+w/2,y+4.6+i*3.6));g.textAlign='left';};
+const balance=(x,y)=>{R(x-1,y-10,2,10,'#8a8a92');R(x-6,y-11,12,2,'#b4bcc4');
+  R(x-7,y-9,5,3,'#c8ced4');R(x+2,y-9,5,3,'#c8ced4');R(x-4,y,8,3,'#5a6a74');};
+/* le corps et les montants */
+R(x0-2,yR-4,BL+4,rez+4,T.b);R(x0-2,yR-4,BL+4,1.5,T.or);
+R(x0-2,sol-6,BL+4,6,T.bs);R(x0-2,sol-6,BL+4,1,T.bh);
+[x0,x0+44,x0+BL-50,x0+BL-6].forEach(x=>{
+  R(x,yR,6,rez-6,T.bh);R(x+1,yR,1,rez-6,'rgba(255,255,255,.18)');R(x+5,yR,1,rez-6,T.bs);
+  R(x-1,yR,8,2,T.or);R(x-1,sol-8,8,2,T.or);});
+/* les deux étals */
+[[x0+6,38],[x0+BL-44,38]].forEach(([x,w],k)=>{
+  R(x,yR+2,w,rez-10,nuit?'#ffe2b0':'#e8d2a8');R(x,yR+2,w,10,nuit?'#f0c890':'#d8bc90');
+  for(let q=0;q<3;q++){R(x+4+q*12,yR+4,1,6,'#6a4a2a');R(x+2+q*12,yR+10,5,2,'#fff4d0');}
+  R(x,yR+12,w,1,'#b89a6a');
+  glace(x+3,sol-20,32);
+  const C=[['#5f92bc','#a8cde4'],['#b4553a','#e09070'],['#8a93a8','#c8d6e4'],['#7e8f7a','#bccdb8']];
+  for(let q=0;q<3;q++){const c=C[(q+k*2)%4];poisson(x+5+q*10,sol-24,9,c[0],c[1]);}
+  for(let q=0;q<3;q++){const c=C[(q+k+1)%4];poisson(x+6+q*10,sol-30,8,c[0],c[1]);}
+  R(x+3,sol-13,32,2,'#8a6238');
+  if(k)balance(x+30,sol-13);
+  {const lv=g.createLinearGradient(x,yR+2,x,sol-9);
+   lv.addColorStop(0,nuit?'rgba(255,196,96,.42)':'rgba(255,214,140,.26)');
+   lv.addColorStop(1,'rgba(255,186,90,0)');g.fillStyle=lv;g.fillRect(x,yR+2,w,rez-11);}
+  R(x,yR+2,w,rez-10,'rgba(255,255,255,.06)');
+  g.fillStyle='rgba(255,255,255,.14)';g.beginPath();
+  g.moveTo(x+4,sol-8);g.lineTo(x+14,yR+2);g.lineTo(x+19,yR+2);g.lineTo(x+9,sol-8);g.fill();
+  R(x+w/2-.5,yR+2,1,rez-10,T.b);R(x,yR+2,w,1.5,T.b);R(x,sol-9,w,1.5,T.b);
+  g.font='italic 700 4.4px Georgia,serif';g.textAlign='center';g.fillStyle=T.or;
+  g.fillText(k?'Pêche du jour':'Arrivage',x+w/2,yR+17.5,w-8);g.textAlign='left';});
+/* la porte */
+R(cx-8,yR+2,16,rez-8,T.bs);R(cx-7,yR+3,14,rez-10,nuit?'#ffe8b8':'#cfe0e4');
+R(cx-.5,yR+3,1,rez-10,T.b);R(cx-7,yR+14,14,1,T.b);
+R(cx+2.5,sol-18,1.4,4,T.or);R(cx-3.6,sol-18,1.4,4,T.or);
+/* le store */
+const sy=yR-10;
+for(let k=0;k<BL+8;k++){const c=(k%12<6)?T.store[0]:T.store[1];
+  R(x0-4+k,sy,1,8,c);R(x0-4+k,sy+8,1,2,(k%12<6)?T.bs:'#c8c0ac');}
+for(let k=0;k<Math.floor((BL+8)/12);k++){const c=(k%2)?T.store[0]:T.store[1];
+  for(let i=0;i<5;i++)R(x0-4+k*12+i,sy+10,12-i*2.4,1,c);}
+R(x0-4,sy-2,BL+8,2,T.bs);
+/* l'enseigne, avec son poisson doré */
+const ey=sy-15;
+R(x0-6,ey,BL+12,14,T.bs);R(x0-4,ey+2,BL+8,10,T.b);R(x0-4,ey+2,BL+8,1,T.or);
+poisson(x0+3,ey+7,10,T.or,'#f6e0a8');
+g.font='italic 900 9.5px Georgia,serif';g.textAlign='center';
+g.fillStyle='rgba(0,0,0,.4)';g.fillText('La Criée',cx+5.6,ey+10.6,BL-28);
+g.fillStyle=T.or;g.fillText('La Criée',cx+5,ey+10,BL-28);g.textAlign='left';
+/* devant : les cageots et l'ardoise des cours */
+cageot(x0+2,sol-13,24,11,['#9fc0d0','#c0604a','#8aa8c0','#b8ccd8']);
+cageot(x0+BL-28,sol-12,24,10,['#8aa8c0','#9fc0d0','#c0604a']);
+ardoise(x0+30,sol-22,22,20,['LOUP 38','DORADE 17','SAR 19','ROUGET 9']);
+/* la lumière du dedans */
+{const l=g.createRadialGradient(cx,sol-14,5,cx,sol-14,nuit?80:56);
+ l.addColorStop(0,nuit?'rgba(255,200,120,.5)':'rgba(255,214,150,.16)');
+ l.addColorStop(1,'rgba(255,200,120,0)');g.fillStyle=l;g.fillRect(cx-80,sol-86,160,88);}
+});}
 function graverLaPresse(){return devanture(2,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
 R(x0,yR,BL,rez,'#24503e');R(x0,yR,BL,1.5,'#d8b050');R(x0,sol-2,BL,2,'#163a2c');
 for(let k=x0+4;k<x0+BL-2;k+=30)R(k,yR+3,0.8,rez-5,'#d8b050');                                            /* les filets d'or */
