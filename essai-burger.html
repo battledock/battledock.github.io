@@ -56,19 +56,56 @@ html,body{height:100%;background:#241c16;font-family:Georgia,serif;overflow:hidd
 #fin p{font:italic 14px Georgia;color:#e8dcc0;margin-top:8px;line-height:1.5}
 #fin button{margin-top:18px;border:0;border-radius:11px;padding:15px 28px;background:#c8281e;
   color:#fff6e0;font:700 11px Arial;letter-spacing:2px}
+/* le client */
+#tete2{width:38px;height:38px;image-rendering:pixelated;flex:none;border-radius:9px;background:#443a30}
+#bulle{position:absolute;left:58px;right:14px;top:calc(env(safe-area-inset-top,0px) + 62px);
+  background:#f6efdc;border-radius:11px;padding:9px 12px;font:italic 12.5px Georgia;color:#2f2820;
+  box-shadow:0 5px 14px rgba(0,0,0,.4);opacity:0;transform:translateY(-7px);transition:.2s;
+  pointer-events:none;z-index:8}
+#bulle.on{opacity:1;transform:none}
+#bulle:before{content:'';position:absolute;left:14px;top:-7px;border:7px solid transparent;
+  border-bottom-color:#f6efdc;border-top:0}
+/* les étages restants */
+#reste{display:flex;gap:5px;justify-content:center;margin-bottom:8px;min-height:13px}
+#reste i{width:22px;height:9px;border-radius:3px;opacity:.9;box-shadow:0 1px 0 rgba(120,96,56,.3)}
+#reste i.fait{opacity:.18}
+/* la série */
+#combo{position:absolute;right:12px;top:14px;background:rgba(200,40,30,.92);color:#ffd76a;
+  border-radius:11px;padding:5px 11px;font:900 14px Georgia;opacity:0;transform:scale(.7);
+  transition:.16s;z-index:7}
+#combo.on{opacity:1;transform:scale(1)}
+/* les étincelles */
+.pouf{position:absolute;width:5px;height:5px;border-radius:50%;background:#ffd76a;pointer-events:none;
+  animation:pouf .5s ease-out forwards}
+@keyframes pouf{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+/* l'étage qui rate : il glisse et tombe */
+@keyframes chute{to{transform:translate(90px,120px) rotate(38deg);opacity:0}}
+.et.rate{animation:chute .42s ease-in forwards}
+/* le papier d'emballage à la fin */
+/* le papier se referme sur le burger, puis le plateau part à droite */
+#papier{position:absolute;left:50%;bottom:38px;width:252px;height:0;border-radius:12px;
+  background:repeating-linear-gradient(45deg,#f6efdc 0 9px,#ffffff 9px 18px);
+  box-shadow:0 6px 18px rgba(0,0,0,.4);z-index:4;opacity:0;
+  transform:translateX(-50%);transition:height .26s ease-out,opacity .12s}
+#papier.on{height:118px;opacity:1}
+#pile.part,#papier.part{animation:part .5s ease-in forwards}
+@keyframes part{to{transform:translateX(calc(-50% + 240px)) rotate(7deg);opacity:0}}
 </style></head><body>
 <div id="ec">
   <div id="tete"><b>CROUSTI’PORT<i id="sous">Service · burger 3</i></b>
     <span class="paye"><span>TA PAIE</span><b id="paye">6,40 €</b></span></div>
-  <div id="cmd"><div class="q"><small>LA COMMANDE</small><b id="recette">—</b></div>
+  <div id="cmd"><canvas id="tete2" width="112" height="112"></canvas>
+    <div class="q"><small id="qui">LE CLIENT</small><b id="recette">—</b></div>
     <div id="chrono"><i></i></div></div>
+  <div id="bulle"></div>
   <div id="scene">
-    <div id="bravo"></div>
+    <div id="bravo"></div><div id="combo"></div><div id="papier"></div>
     <div id="fantome"></div>
     <div id="pile"></div>
     <div id="planche"></div>
   </div>
-  <div id="bac"><div id="aide">Pose les ingrédients de bas en haut.</div><div id="gr"></div></div>
+  <div id="bac"><div id="reste"></div>
+    <div id="aide">Pose les ingrédients de bas en haut.</div><div id="gr"></div></div>
 </div>
 <div id="fin"><b id="finT"></b><p id="finP"></p><button id="rej">UN AUTRE</button></div>
 <script>
@@ -82,12 +119,19 @@ const ING={
  cornichon:['#8aa83a','cornichon',''],bacon:['#b4553a','bacon',''],
  sauce:['#e8c46a','sauce',''],        poisson:['#9fc0d0','poisson',''],
  pain_haut:['#d8a048','pain',' haut']};
+const CLIENTS=[
+ ['Un docker pressé','#c8281e','#4a3220',['Deux minutes, pas plus !','J’ai la grue qui m’attend.']],
+ ['Une touriste','#e8a83a','#d9c48a',['C’est vous le fameux Crousti ?','On m’a dit que c’était le meilleur.']],
+ ['Le vieux Marius','#5a6b8f','#c9c9c9',['Comme d’habitude, petit.','Et sans oignon, hein.']],
+ ['Un gamin du quai','#2f7a4a','#8a5f30',['Le plus gros que vous avez !','Pépé paie.']],
+ ['Fanny du bar','#8a4a6a','#1c140d',['Je ferme dans dix minutes.','Fais-moi plaisir.']]];
+const BRAVOS=['NICKEL !','PILE POIL','BIEN VU','ET D’UN !','ÇA GLISSE'];
 const RECETTES=[
  ['Le Docker','pain_bas,steak,cheddar,salade,pain_haut'],
  ['Le Marseillais','pain_bas,poisson,tomate,oignon,sauce,pain_haut'],
  ['Le Gros Cargo','pain_bas,steak,bacon,cheddar,cornichon,salade,pain_haut'],
  ['Le Végé du Quai','pain_bas,salade,tomate,oignon,cornichon,sauce,pain_haut']];
-let R=[], pose=0, paye=640, nb=3, t0=0, duree=18000, boucle=0, fini=false;
+let R=[], pose=0, paye=640, nb=3, t0=0, duree=18000, boucle=0, fini=false, serie=0;
 function etage(id,fantome){
   const [c,n,cl]=ING[id];
   const d=document.createElement('div');
@@ -108,10 +152,37 @@ function rendreIng(){
     b.innerHTML='<div class="v" style="background:'+c+'"></div><small>'+n+'</small>';
     b.onpointerdown=(ev)=>{ev.preventDefault();poser(id);};
     g.appendChild(b);});}
+function tete(c1,c2){
+  const cv=$('tete2'),g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+  const S=cv.width/28;g.setTransform(S,0,0,S,0,0);g.clearRect(0,0,28,28);
+  const R2=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+  R2(7,4,14,6,c2);R2(6,9,16,12,'#e8c8a8');R2(6,9,16,2,c2);
+  R2(10,13,2.4,2.4,'#2a1a14');R2(16,13,2.4,2.4,'#2a1a14');R2(12,18,5,1.4,'#b08a6a');
+  R2(4,21,20,7,c1);R2(4,21,20,2,'rgba(255,255,255,.3)');}
+function direBulle(t){const b=$('bulle');b.textContent='« '+t+' »';b.classList.add('on');
+  clearTimeout(direBulle.t);direBulle.t=setTimeout(()=>b.classList.remove('on'),2400);}
+function rendreReste(){
+  const r=$('reste');r.innerHTML='';
+  R.forEach((id,i)=>{const e2=document.createElement('i');
+    e2.style.background=ING[id][0];if(i<pose)e2.className='fait';r.appendChild(e2);});}
+function etincelles(n){
+  const s2=$('scene'),r=$('pile').getBoundingClientRect(),rs=s2.getBoundingClientRect();
+  for(let i=0;i<n;i++){const d=document.createElement('span');d.className='pouf';
+    d.style.left=(r.left-rs.left+r.width/2)+'px';d.style.top=(r.top-rs.top)+'px';
+    d.style.setProperty('--dx',(Math.random()*120-60)+'px');
+    d.style.setProperty('--dy',(-30-Math.random()*60)+'px');
+    s2.appendChild(d);setTimeout(()=>d.remove(),520);}}
 function nouvelle(){
   const [nom,l]=RECETTES[Math.floor(Math.random()*RECETTES.length)];
+  const C=CLIENTS[Math.floor(Math.random()*CLIENTS.length)];
+  tete(C[1],C[2]);$('qui').textContent=C[0].toUpperCase();
+  setTimeout(()=>direBulle(C[3][Math.floor(Math.random()*C[3].length)]),380);
+  serie=0;$('combo').classList.remove('on');
+  $('papier').classList.remove('on');
   R=l.split(',');pose=0;fini=false;
   $('recette').textContent=nom+' · '+R.length+' étages';
+  rendreReste();
+  $('pile').classList.remove('part');$('papier').classList.remove('part');
   $('pile').innerHTML='';rendreFantome();
   $('aide').textContent='Pose les ingrédients de bas en haut.';
   $('fin').classList.remove('on');
@@ -127,14 +198,23 @@ function poser(id){
   if(fini)return;
   if(id!==R[pose]){
     vib(26);$('aide').textContent='Pas celui-là : il faut ' + ING[R[pose]][1] + '.';
-    const s=$('scene');s.style.transform='translateX(4px)';
-    setTimeout(()=>s.style.transform='translateX(-4px)',60);
-    setTimeout(()=>s.style.transform='',120);
+    const p2=$('pile'), t=etage(id);t.classList.add('rate');
+    p2.insertBefore(t,p2.firstChild);setTimeout(()=>t.remove(),430);
+    serie=0;$('combo').classList.remove('on');
+    const s=$('scene');s.style.transition='transform .06s';s.style.transform='translateX(5px)';
+    setTimeout(()=>s.style.transform='translateX(-5px)',60);
+    setTimeout(()=>{s.style.transform='';s.style.transition='';},120);
     paye=Math.max(0,paye-30);$('paye').textContent=(paye/100).toFixed(2).replace('.',',')+' €';
     return;}
-  const p=$('pile');p.insertBefore(etage(id),p.firstChild);
-  pose++;vib(9);
-  $('fantome').style.opacity=String(0.22*(1-pose/R.length));
+  const p=$('pile'), el=etage(id);
+  el.style.marginLeft=(Math.random()*9-4.5)+'px';     /* chaque burger est fait main */
+  p.insertBefore(el,p.firstChild);
+  pose++;vib(9);serie++;
+  if(serie>=3){const c=$('combo');c.textContent='×'+serie;c.classList.add('on');}
+  if(serie===3||serie===6)montre(BRAVOS[Math.floor(Math.random()*BRAVOS.length)]);
+  etincelles(serie>=3?7:3);
+  $('fantome').style.opacity=String(0.3*(1-pose/R.length));
+  rendreReste();
   $('aide').textContent=pose<R.length?('Et maintenant : '+ING[R[pose]][1]+'.'):'';
   if(pose>=R.length)reussi();}
 function montre(t){const b=$('bravo');b.textContent=t;b.classList.add('on');
@@ -144,7 +224,10 @@ function reussi(){
   const reste=Math.max(0,1-(performance.now()-t0)/duree);
   const prime=Math.round(reste*180), gain=120+R.length*40+prime;
   paye+=gain;$('paye').textContent=(paye/100).toFixed(2).replace('.',',')+' €';
-  montre('SERVI !');vib([14,30,14]);
+  montre('SERVI !');vib([14,30,14]);etincelles(16);
+  setTimeout(()=>$('papier').classList.add('on'),180);
+  setTimeout(()=>{$('papier').classList.add('part');$('pile').classList.add('part');},680);
+  direBulle(reste>0.5?'Rapide, merci !':'Ça valait l’attente.');
   setTimeout(()=>{
     $('finT').textContent='+ '+(gain/100).toFixed(2).replace('.',',')+' €';
     $('finP').innerHTML='Burger servi en '+((performance.now()-t0)/1000).toFixed(1).replace('.',',')+' s.'+
