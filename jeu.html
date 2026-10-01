@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-01-0902';
+var MA_VERSION='2026-10-01-0911';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -6731,6 +6731,39 @@ const TK_ICONE={
    R(26,18,12,10,'#f2ece0');for(let k=0;k<4;k++)R(28,20+k*2.4,8,1,'#9a8a6a');
    R(26,2,12,3,'#8a6238');
    for(let i=0;i<8;i++)R(6+i*7,34+Math.sin(i*1.2)*2,5,1.6,'rgba(255,255,255,.3)');}};
+/* ================= LE RAYON PRESSE =================
+   Quatre titres, qui racontent ce qui se passe sur le port. */
+const PRESSE=[
+ {id:'marseillais',nom:'Le Marseillais',prix:180,d:'Les nouvelles du port, chaque matin.',
+  gros:'La criée bat son record de l’année'},
+ {id:'echo',nom:'L’Écho des Quais',prix:220,d:'Pêche, marées et petites annonces.',
+  gros:'Un cœlacanthe remonté au Vieux-Port ?'},
+ {id:'courrier',nom:'Le Courrier du Soir',prix:320,d:'Le journal du soir, encré de frais.',
+  gros:'La cagnotte du Loto grimpe encore'},
+ {id:'almanach',nom:'L’Almanach du Pêcheur',prix:650,d:'Marées, lunes et conseils de saison.',
+  gros:'Les nuits de pleine lune font monter le gros'}];
+function presseHTML(){
+  return '<div class="bar-t"><canvas width="36" height="36" data-i="journal"></canvas>LA PRESSE'+
+   '<small>Les nouvelles du port, et d’ailleurs.</small></div>'+
+   '<div class="bt-gr">'+PRESSE.map(j=>
+     '<div class="bt-it"><div class="bt-viz"><canvas width="192" height="120" data-pr="'+j.id+'"></canvas></div>'+
+     '<b>'+j.nom+'</b><small>'+j.d+'</small>'+
+     '<button class="bt-px'+((e.euros||0)<j.prix?' cher':'')+'" data-pj="'+j.id+'"><u></u>'+
+     enEuros(j.prix)+'</button></div>').join('')+'</div>'+
+   '<div class="bar-jour">Un journal lu te donne la nouvelle du jour.</div>';
+}
+const PR_DESS=(id)=>(R)=>{
+  const T={marseillais:['#e8e2d2','#2a3a4a','#c0392b'],echo:['#dfe8ee','#1d3a5a','#2a7a9a'],
+           courrier:['#e4dcc8','#3a2a1a','#8a6238'],almanach:['#f0e2c0','#2f5a3a','#c9a24a']}[id];
+  for(let y=0;y<40;y++)R(0,y,64,1,'#8a7a5a');
+  R(6,3,52,34,T[0]);R(6,3,52,1.4,'#fff');
+  R(9,6,46,5,T[1]);                                   /* le bandeau du titre */
+  R(9,13,21,13,T[1]);                                 /* la photo */
+  for(let k=0;k<3;k++)R(11,15+k*3.4,17,1,T[0]);
+  for(let k=0;k<7;k++)R(32,13+k*2,23,1,'#9aa0a8');    /* les colonnes */
+  for(let k=0;k<5;k++)R(9,28+k*1.8,46,1,'#b4bcc4');
+  R(9,6,21,5,T[2]);                                   /* la manchette */
+  R(6,37,52,2,'#6a5a3a');};
 const BT_DESS={
  piece:(R)=>{for(let a2=0;a2<6.283;a2+=0.1)R(11+Math.cos(a2)*9,11+Math.sin(a2)*9,3,3,'#a8822a');
    for(let a2=0;a2<6.283;a2+=0.12)R(11+Math.cos(a2)*6.4,11+Math.sin(a2)*6.4,3,3,'#f0d78a');
@@ -7123,14 +7156,29 @@ body.gratte #bar .bt-pied{display:none!important}
 #bar .t2 .tresor.rate .dessous{opacity:.45}#bar .t2 .tresor.rate .dessous b{text-decoration:line-through}
 #bar .gt-ok{flex:none;border:0;border-radius:22px;padding:12px 28px;font:700 14px Arial,sans-serif;background:#fff;color:#16336a;visibility:hidden}</style>
 <div id="bar" lang="fr"><div class="bt-ec"><div class="bt-tete">
-<div class="bt-plaque"><canvas class="g" width="52" height="52"></canvas><b>PMU / LOTO / PRESSE</b><i>Ici, tout se joue&nbsp;!</i><canvas class="d" width="52" height="52"></canvas></div>
+<div class="bt-plaque"><canvas class="g" width="52" height="52"></canvas><b>LOTO / JEUX / PRESSE</b><i>Ici, tout se joue&nbsp;!</i><canvas class="d" width="52" height="52"></canvas></div>
 <div class="bt-jauges"><div class="bt-jg"><canvas width="44" height="44" data-i="piece"></canvas><div><small>TON ARGENT</small><b>${enEuros(e.euros||0)}</b></div></div><div class="bt-jg"><canvas width="44" height="44" data-i="trefle"></canvas><div><small>TICKETS DU JOUR</small><b>${faits} / 20</b></div></div></div>
-</div><div class="bt-corps"><div class="bt-rail">${[["gratter","Gratter","ticketor"],["loto","Loto","trefle"],["pmu","PMU","cheval"],["presse","Presse","journal"],["boissons","Boissons","bouteille"],["divers","Divers","panier"]].map(([id,nom,ic])=>`<button data-o="${id}" class="${ONG===id?'on':''}"><canvas width="52" height="52" data-i="${ic}"></canvas>${nom}</button>`).join('')}</div><div class="bt-page">
-${!['gratter','loto'].includes(ONG)?'<div class="bt-vide">Fanny n’a pas encore sorti ce rayon.<br>Reviens bientôt.</div>':ONG==='loto'?'<div id="lotoVue"><div class="bar-jour">On ouvre le tirage…</div></div>':`
+</div><div class="bt-corps"><div class="bt-rail">${[["gratter","Gratter","ticketor"],["loto","Loto","trefle"],["presse","Presse","journal"],["boissons","Boissons","bouteille"],["divers","Divers","panier"]].map(([id,nom,ic])=>`<button data-o="${id}" class="${ONG===id?'on':''}"><canvas width="52" height="52" data-i="${ic}"></canvas>${nom}</button>`).join('')}</div><div class="bt-page">
+${ONG==='presse'?presseHTML()
+  :!['gratter','loto'].includes(ONG)?'<div class="bt-vide">Fanny n’a pas encore sorti ce rayon.<br>Reviens bientôt.</div>':ONG==='loto'?'<div id="lotoVue"><div class="bar-jour">On ouvre le tirage…</div></div>':`
 <div class="bar-t"><canvas width="36" height="36" data-i="ticketor"></canvas>JEUX À GRATTER<small>Tentez votre chance, ça peut tout changer&nbsp;!</small></div><div class="bt-gr">${TICKETS.map(([k,n,px])=>`<div class="bt-it"><div class="bt-viz"><canvas width="192" height="120" data-tk="${k}"></canvas></div><b>${n}</b><small>jusqu’à ${MAX[k]} €</small><button class="bt-px${(e.euros||0)<px?' cher':''}" data-t="${k}"><u></u>${enEuros(px)}</button></div>`).join('')}</div>
 <div class="bar-jour">Chaque ticket a sa règle : elle est écrite dessus.<br><b>${faits} / 20</b> tickets aujourd'hui · remise à zéro à minuit.</div>`}</div>
 </div></div><div class="bt-pied"><div class="bar-bulle" id="barBulle"></div><span>« Des paris, des rêves… »</span><button class="bt-fermer" id="barFermer">RETOUR</button></div></div>`;
 btDessiner();
+$('page2Fond').querySelectorAll('canvas[data-pr]').forEach(cv=>{
+  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+  const S=cv.width/64;g.setTransform(S,0,0,S,0,0);
+  PR_DESS(cv.dataset.pr)((x,y,w,h,col)=>{g.fillStyle=col;
+    g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));});});
+$('page2Fond').querySelectorAll('[data-pj]').forEach(b=>b.onclick=async()=>{
+  const j=PRESSE.find(x=>x.id===b.dataset.pj);if(!j)return;
+  if((e.euros||0)<j.prix){bulle('Il te manque '+enEuros(j.prix-(e.euros||0))+'.');return;}
+  const r=await appelRPC('acheter_journal',{p_joueur:e.id,p_journal:j.id});
+  if(!r||r.erreur){bulle(r&&r.erreur?String(r.erreur):'Le kiosque n’a pas répondu.');return;}
+  if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}
+  vibrer([14,26,14]);
+  bulle('« '+(r.gros||j.gros)+' »');
+  rendre();});
 $('page2Fond').querySelectorAll('canvas[data-tk]').forEach(cv=>{
   const f=TK_ICONE[cv.dataset.tk];if(!f)return;
   const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
@@ -7155,6 +7203,14 @@ $('page2Fond').querySelectorAll('[data-lo]').forEach(b=>b.onclick=async()=>{
     else{if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}
       bulle('Abonné 7 jours : une grille déposée chaque jour.');loto();}}
 });
+/* LA PRESSE : la Gazette s'ouvre depuis le rayon */
+$('page2Fond').querySelectorAll('[data-pr]').forEach(b=>b.onclick=()=>{
+  if(b.dataset.pr==='gazette'){clearInterval(LOTO_T);ouvrirLaGazette();}});
+$('page2Fond').querySelectorAll('canvas[data-lv]').forEach(cv=>{
+  const f=BT_DESS[cv.dataset.lv];if(!f)return;
+  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+  const S=cv.height/24;g.setTransform(S,0,0,S,(cv.width-24*S)/2,0);
+  f((x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));});});
 $('barFermer').onclick=()=>{fermeA=Date.now();clearInterval(LOTO_T);$('page2').classList.remove('on');};
 $('page2Fond').querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{ONG=b.dataset.o;vibrer(8);rendre();});
 if(ONG==='loto')loto();
