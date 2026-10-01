@@ -871,7 +871,9 @@ const CANNES=[{id:null,nom:'Ligne à main'},{id:'bambou',nom:'Canne en bambou',p
 {id:'maitre',nom:'Canne de maître',prix:50000,effet:'Le cercle 45 % plus lent, « bien » très large. Espadon, poisson-lune, requin.'},
 {id:'roi',nom:'Canne du Roi René',prix:150000,effet:'Le cercle 52 % plus lent, « parfait » très large. Hippocampe, calamar géant, cœlacanthe.'}];
 const ACCESSOIRES=[{id:'moulinet',nom:'Moulinet',prix:4000,effet:'Une bonne touche compte double, dès la deuxième.'},
-{id:'bouchon',nom:'Bouchon plombé',prix:2500,effet:'Ça mord deux fois plus vite.'}];
+{id:'bouchon',nom:'Bouchon plombé',prix:2500,effet:'Ça mord deux fois plus vite.'},
+{id:'sondeur',nom:'Sondeur',prix:9000,effet:'Annonce l’espèce avant de ferrer.'},
+{id:'glaciere',nom:'Glacière',prix:14000,effet:'Le poisson arrive frais : +12 % à la criée.'}];
 const APPATS=[{id:'vers',nom:'Vers de mer',prix:100,effet:'Espèces rares ×2.'},
 {id:'crevettes',nom:'Crevettes',prix:150,effet:'Loup, dorade, denti et saupe ×3.'},
 {id:'sardine',nom:'Sardine fraîche',prix:200,effet:'Congre et murène ×3 ; thon et légendaires ×2.'}];
@@ -996,6 +998,21 @@ else if(id==='fil'){
   R(W/2-14,H/2-13,28,4,'#5a6a74');R(W/2-14,H/2+9,28,4,'#5a6a74');
   for(let i=0;i<10;i++)R(W/2+13+i,H/2-11+i*1.4,1.4,1.4,'rgba(240,248,252,.7)');
 }
+else if(id==='sondeur'){
+  R(W/2-13,H/2-14,26,24,'#23262a');R(W/2-11,H/2-12,22,17,'#1d4a3a');
+  for(let k=0;k<5;k++){const h=4+al(k*7)*9;R(W/2-9+k*4.4,H/2+4-h,3,h,'#8fe0a0');}
+  for(let k=0;k<7;k++)R(W/2-10+k*3,H/2-10,2,1.4,'rgba(140,224,160,.4)');
+  R(W/2-4,H/2+10,8,3,'#8a8a92');R(W/2-2,H/2+13,4,6,'#5f666e');
+  R(W/2+9,H/2-18,3,6,'#8a8a92');                                   /* la sonde */
+}
+else if(id==='glaciere'){
+  R(W/2-16,H/2-6,32,18,'#2f7a8a');R(W/2-16,H/2-6,32,5,'#49a0b2');
+  R(W/2-18,H/2-10,36,5,'#3a8a9a');R(W/2-18,H/2-10,36,1.6,'#6fc0d0');
+  R(W/2-5,H/2-15,10,5,'#8a8a92');                                  /* la poignée */
+  R(W/2-12,H/2+1,10,6,'rgba(255,255,255,.35)');
+  for(let k=0;k<3;k++)R(W/2+2+k*4,H/2+2,3,3,'#dff0f8');            /* la glace */
+  R(W/2-16,H/2+12,32,3,'#1d5a68');
+}
 else if(id==='hamecon'){
   const cx=W/2,cy=H/2;
   R(cx-1.4,cy-18,3,16,'#c8ced4');R(cx-3,cy-20,6,3,'#c8ced4');
@@ -1029,7 +1046,7 @@ const SECTIONS=[
       etat: q.canne>n?'possede' : (q.canne===n?'equipee' : (q.canne===n-1?'achat':'verrou'))};})},
  {id:'access',t:'LES ACCESSOIRES',s:'De petits détails qui font une grande différence.',ic:'moulinet',
   l:ACCESSOIRES.map(a=>({id:a.id,nom:a.nom,prix:a.prix,d:a.effet,
-    etat:(a.id==='moulinet'?q.moulinet:q.bouchon)?'possede':'achat'}))},
+    etat:({moulinet:q.moulinet,bouchon:q.bouchon,sondeur:q.sondeur,glaciere:q.glaciere}[a.id])?'possede':'achat'}))},
  {id:'appats',t:'LES APPÂTS',s:'Ils attirent les poissons… ou les surprises.',ic:'vers',
   l:APPATS.map(a=>({id:a.id,nom:a.nom,prix:a.prix,d:a.effet,
     etat:'achat',n:sacApp[a.id]||0,choisi:q.appat===a.id,choix:'m'}))},
