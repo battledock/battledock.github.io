@@ -100,7 +100,9 @@ return c;
 function graverLaBasilique(){
 const W=320,Ht=320,cx=W/2,sol=Ht-6;
 const c=document.createElement('canvas');
-const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+/* on grave les façades plus finement : les enseignes étaient tracées
+   sur une toile deux fois trop petite, puis agrandies à l'écran */
+const D=Math.max(2,Math.min(3,Math.ceil(window.devicePixelRatio||2)));
 c.width=W*D;c.height=Ht*D;
 const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
@@ -173,7 +175,9 @@ return {toile:c,W,H:Ht,sol,nuit:n2};
 function graverLaLongueVue(){
 const W=24,Ht=30,cx=12,sol=26;
 const c=document.createElement('canvas');
-const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+/* on grave les façades plus finement : les enseignes étaient tracées
+   sur une toile deux fois trop petite, puis agrandies à l'écran */
+const D=Math.max(2,Math.min(3,Math.ceil(window.devicePixelRatio||2)));
 c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
 g.fillStyle='rgba(40,30,18,.25)';g.beginPath();g.ellipse(cx,sol+1,7,2,0,0,7);g.fill();
@@ -403,7 +407,9 @@ const VOLETS=[{o:'#3f5a48',p:'#5f8a6c',h:'#7fa88a'},{o:'#35506a',p:'#4f7898',h:'
 function graverImmeuble(v){
 const W=172,Ht=176,cx=W/2,sol=Ht-8;
 const c=document.createElement('canvas');
-const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+/* on grave les façades plus finement : les enseignes étaient tracées
+   sur une toile deux fois trop petite, puis agrandies à l'écran */
+const D=Math.max(2,Math.min(3,Math.ceil(window.devicePixelRatio||2)));
 c.width=W*D;c.height=Ht*D;
 const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
@@ -510,7 +516,9 @@ return {toile:c,W,H:Ht,sol,nuit:n2};
 function graverLaGarde(){
 const W=190,Ht=196,cx=W/2,sol=Ht-4;
 const c=document.createElement('canvas');
-const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+/* on grave les façades plus finement : les enseignes étaient tracées
+   sur une toile deux fois trop petite, puis agrandies à l'écran */
+const D=Math.max(2,Math.min(3,Math.ceil(window.devicePixelRatio||2)));
 c.width=W*D;c.height=Ht*D;
 const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
@@ -603,7 +611,9 @@ x+=w+2+Math.floor(alea(x+rang*11)*6);
 function graverBelArbre(v){
 const W=112,Ht=132,cx=56,sol=124;
 const c=document.createElement('canvas');
-const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+/* on grave les façades plus finement : les enseignes étaient tracées
+   sur une toile deux fois trop petite, puis agrandies à l'écran */
+const D=Math.max(2,Math.min(3,Math.ceil(window.devicePixelRatio||2)));
 c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
 const A=(i)=>alea(i*1.93+v*17.1);
@@ -641,7 +651,9 @@ return {toile:c,W,H:Ht,sol};
 function graverLaCriee(){
 const W=196,Ht=150,cx=98,sol=142;
 const c=document.createElement('canvas');
-const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+/* on grave les façades plus finement : les enseignes étaient tracées
+   sur une toile deux fois trop petite, puis agrandies à l'écran */
+const D=Math.max(2,Math.min(3,Math.ceil(window.devicePixelRatio||2)));
 c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
 const BL=176,x0=cx-BL/2,murH=54,basToit=sol-murH;
@@ -700,7 +712,9 @@ return {toile:c,W,H:Ht,sol,nuit:n2};
 function graverLeCabanon(){
 const W=120,Ht=100,cx=60,sol=92;
 const c=document.createElement('canvas');
-const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+/* on grave les façades plus finement : les enseignes étaient tracées
+   sur une toile deux fois trop petite, puis agrandies à l'écran */
+const D=Math.max(2,Math.min(3,Math.ceil(window.devicePixelRatio||2)));
 c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
 const BL=74,x0=cx-BL/2-10,murH=34,basToit=sol-murH-10;
@@ -741,7 +755,9 @@ return {toile:c,W,H:Ht,sol,nuit:n2};
 function graverLaStationVelo(){
 const W=106,Ht=46,cx=45,sol=40;                    /* 8 px de marge de chaque côté : le 4e vélo n'est plus coupé */
 const c=document.createElement('canvas');
-const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+/* on grave les façades plus finement : les enseignes étaient tracées
+   sur une toile deux fois trop petite, puis agrandies à l'écran */
+const D=Math.max(2,Math.min(3,Math.ceil(window.devicePixelRatio||2)));
 c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,8*D,0);g.imageSmoothingEnabled=false;
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
 g.fillStyle='rgba(40,30,18,.22)';g.beginPath();g.ellipse(cx,sol+1,40,4,0,0,7);g.fill();
@@ -797,7 +813,9 @@ jouer('vente','moment');vibrer([20,40,20]);
 function graverPavillon(sorte){
 const W=124,Ht=104,cx=62,sol=98;
 const c=document.createElement('canvas');
-const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+/* on grave les façades plus finement : les enseignes étaient tracées
+   sur une toile deux fois trop petite, puis agrandies à l'écran */
+const D=Math.max(2,Math.min(3,Math.ceil(window.devicePixelRatio||2)));
 c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
 const BL=104,x0=cx-BL/2,murH=40,basToit=sol-murH;
@@ -860,7 +878,9 @@ return {toile:c,W,H:Ht,sol,nuit:n2};
 function graverArbuste(v){
 const W=40,Ht=40,cx=20,sol=36;
 const c=document.createElement('canvas');
-const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+/* on grave les façades plus finement : les enseignes étaient tracées
+   sur une toile deux fois trop petite, puis agrandies à l'écran */
+const D=Math.max(2,Math.min(3,Math.ceil(window.devicePixelRatio||2)));
 c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
 g.fillStyle='rgba(40,30,18,.25)';g.beginPath();g.ellipse(cx+1,sol+1,14,3,0,0,7);g.fill();
@@ -1405,6 +1425,7 @@ return {toile:c,W,H,sol,nuit:null};}
 function devanture(v,peindre){const base=graverImmeuble(v), W=base.W, H=base.H, sol=base.sol, cx=W/2, BL=138, x0=cx-BL/2, rez=40, yR=sol-rez;
 const copie=(src)=>{const c=document.createElement('canvas');c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);return c;};
 const go=(cv,nuit)=>{const D=cv.width/W, g=cv.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+g.textRendering='geometricPrecision';
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};peindre(g,R,{W,H,sol,cx,BL,x0,rez,yR},nuit);};
 const toile=copie(base.toile), nuit=copie(base.nuit||base.toile);go(toile,false);go(nuit,true);return {toile,W,H,sol,nuit};}
 function graverLeFumoir(){return devanture(5,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
