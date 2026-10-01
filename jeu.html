@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-01-2039';
+var MA_VERSION='2026-10-01-2051';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -14278,7 +14278,8 @@ ctx.imageSmoothingEnabled=false;
 }
 let largeurVue=window.innerWidth;
 addEventListener('resize',()=>{
-if(window.innerWidth===largeurVue&&bandeauOuvert())return;   /* c'est le clavier */
+if(bandeauOuvert())return;                     /* c'est le clavier : on ne touche à rien */
+if(window.innerWidth===largeurVue)return;
 largeurVue=window.innerWidth;
 videCache();
 taille();
@@ -16404,6 +16405,9 @@ $('saisie').addEventListener('focus',()=>{envoiAuto=false;});
 if($('envoyer'))$('envoyer').onclick=()=>{direQuelqueChose($('saisie').value);fermerBandeau();};
 if($('micro'))$('micro').onclick=()=>{envoiAuto=true;dicter();};
 if($('cv'))$('cv').addEventListener('touchstart',()=>{
+/* on ne ferme le clavier que si le bandeau n'est pas ouvert :
+   sur Safari, le moindre contact sur la toile le refermait aussitôt. */
+if(bandeauOuvert())return;
 const i=$('saisie');
 if(i&&document.activeElement===i&&i.blur)i.blur();
 },{passive:true});
@@ -22050,6 +22054,8 @@ const echapperT=(t)=>String(t||'').replace(/[<>&"]/g,c=>
 function ouvrirBandeau(){
 const b=$('bandeau');if(!b)return;
 b.classList.add('on');
+const champ=$('saisie');
+if(champ){try{champ.focus({preventScroll:true});}catch(x){try{champ.focus();}catch(y){}}}
 $('suggest').innerHTML=SUGGEST.map(p=>'<button>'+p+'</button>').join('');
 $('suggest').querySelectorAll('button').forEach(x=>x.onclick=()=>{
 direQuelqueChose(x.textContent);fermerBandeau();});
