@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-01-1529';
+var MA_VERSION='2026-10-01-1808';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -15735,13 +15735,18 @@ const avant=GLISSE.ph;GLISSE.ph+=dt*(n>0.16?(1.6+v*1.4):0.25);
 if(n>0.16&&v>0.25&&Math.floor(avant)!==Math.floor(GLISSE.ph)){const cote=Math.floor(GLISSE.ph)%2?1:-1;   /* une gerbe de glace à chaque poussée */
 for(let q=0;q<7;q++)GLISSE.p.push({x:joueur.x+cote*3,y:joueur.y,vx:cote*(10+Math.random()*25)-vx*0.2,vy:-Math.random()*14,t:0.5+Math.random()*0.3});}}
 else GLISSE.v=0;
-const k=1-Math.exp(-(glace?(n>0.16?2.2:0.55):(n>0.16?11:16))*dt);
+/* LA MARCHE EN DOUCEUR : il se met en route au lieu de bondir,
+   et il glisse un peu à l'arrêt au lieu de se figer net. */
+const k=1-Math.exp(-(glace?(n>0.16?2.2:0.55):(n>0.16?7.5:9))*dt);
+/* LE DEMI-TOUR : le corps freine avant de repartir dans l'autre sens */
+if(!glace&&cibleX*vx<0&&Math.abs(vx)>30)vx*=0.55;
+if(!glace&&cibleY*vy<0&&Math.abs(vy)>30)vy*=0.55;
 const vx0=vx, vy0=vy;
 vx+=(cibleX-vx)*k;
 vy+=(cibleY-vy)*k;
 const vxMoy=(vx0+vx)/2, vyMoy=(vy0+vy)/2;
 {const ax=(vx-vx0)/Math.max(dt,1e-3);
-const cibleP=Math.max(-1.6,Math.min(1.6,vx/Math.max(60,allure)*0.9-ax*0.0009));
+const cibleP=Math.max(-1.8,Math.min(1.8,vx/Math.max(60,allure)*1.25-ax*0.0012));
 PENCHE.v+=(cibleP-PENCHE.x)*70*dt;PENCHE.v*=Math.exp(-8*dt);PENCHE.x+=PENCHE.v*dt;
 if(Math.abs(PENCHE.x)<0.02&&Math.abs(PENCHE.v)<0.05){PENCHE.x=0;PENCHE.v=0;}}
 if(SOL&&bloque(joueur.x,joueur.y)){          /* jamais coincé pour de bon */
