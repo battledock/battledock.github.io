@@ -27,10 +27,11 @@ html,body{height:100%;background:#1a1510;font-family:Georgia,serif;overflow:hidd
 </style></head><body>
 <div id="ec">
   <div id="bar"><b>LA MARCHE<i id="quoi">Version actuelle</i></b>
-    <button class="bt on" id="bAv">AVANT</button><button class="bt" id="bAp">APRÈS</button></div>
+    <button class="bt" id="bAv">AVANT</button><button class="bt" id="bAp">APRÈS</button>
+    <button class="bt on" id="bDx">LES DEUX</button></div>
   <div id="jeu"><canvas id="cv"></canvas>
     <div id="hud">vitesse <b id="hv">0</b><br>pas <b id="hp">0</b></div>
-    <div id="note" id="note">Pousse le joystick, lâche-le, fais demi-tour. Compare les deux versions.</div>
+    <div id="note" id="note">Les deux personnages suivent le même joystick. Pousse, lâche d’un coup, fais demi-tour : regarde l’écart.</div>
     <div id="joy"><div id="stick"></div></div>
   </div>
 </div>
@@ -45,23 +46,25 @@ function taille(){const r=$('jeu').getBoundingClientRect();
 addEventListener('resize',taille);
 /* ===== les deux réglages ===== */
 const REG={
- avant:{demarre:11, arrete:16, penche:0.9, balance:0, tete:0, demiTour:0, poussiere:false,
-        respire:0, cadence:0.30, nom:'Version actuelle'},
- apres:{demarre:7.5, arrete:8.5, penche:1.25, balance:0.9, tete:1, demiTour:0.42, poussiere:true,
-        respire:1, cadence:0.34, nom:'Plus douce'}};
-let M='avant';
+ avant:{demarre:16, arrete:22, penche:0.5, balance:0, tete:0, demiTour:0, poussiere:false,
+        respire:0, cadence:0.30, nom:'Version actuelle', col:'#8a2228'},
+ apres:{demarre:4.6, arrete:3.8, penche:1.7, balance:1.6, tete:1, demiTour:0.78, poussiere:true,
+        respire:1, cadence:0.36, nom:'Plus douce', col:'#17365a'}};
+
 /* ===== le personnage ===== */
-let J={x:0,y:0,vx:0,vy:0,pas:0,dir:'bas',marche:false,tour:0};
+function neuf(){return {x:0,y:0,vx:0,vy:0,pas:0,dir:'bas',marche:false,tour:0,pen:{x:0,v:0},pouss:[],trace:[]};}
+const JJ={avant:neuf(), apres:neuf()};
+let J=JJ.avant;
 const VIT=132;
-let joy={x:0,y:0,actif:false}, PEN={x:0,v:0}, pouss=[], t0=performance.now();
+let joy={x:0,y:0,actif:false}, t0=performance.now(), M='deux';
 function perso(px,py,dir,pas,marche,R){
-  const r=REG[M];
+  const r=REG[M]||REG.apres;
   const F=Math.floor(pas*2)%4;                       /* quatre images de marche */
   const lev=marche?[0,1,0,-1][F]:0;
   const bal=marche?r.balance*[0,1,0,-1][F]:0;
   const resp=(!marche&&r.respire)?Math.round(Math.sin(performance.now()/900)*0.5):0;
   const haut=py-resp-(marche&&r.tete?Math.abs(lev)*0.6:0);
-  const incl=PEN.x*0.8;
+  const incl=(JJ[M]?JJ[M].pen.x:0)*0.9;
   /* l'ombre */
   for(let a=0;a<6.283;a+=0.3)R(px+Math.cos(a)*6,py+1+Math.sin(a)*2.4,1.6,1.6,'rgba(60,45,25,.22)');
   /* les jambes */
@@ -78,44 +81,64 @@ function perso(px,py,dir,pas,marche,R){
   if(dir==='bas'){R(px-2+dx*1.4,haut-26,1.6,1.6,'#2a1a14');R(px+1+dx*1.4,haut-26,1.6,1.6,'#2a1a14');}
   if(dir==='droite')R(px+1+dx*1.4,haut-26,1.6,1.6,'#2a1a14');
   if(dir==='gauche')R(px-3+dx*1.4,haut-26,1.6,1.6,'#2a1a14');}
-function boucle(t){
-  requestAnimationFrame(boucle);
-  const dt=Math.min(0.05,(t-t0)/1000);t0=t;
-  const r=REG[M];
-  const n=Math.hypot(joy.x,joy.y), pousse=Math.min(1,n);
-  const cx=n>0.16?(joy.x/n)*VIT*pousse:0, cy=n>0.16?(joy.y/n)*VIT*pousse:0;
-  /* LE DEMI-TOUR : on freine un instant quand on repart dans l'autre sens */
-  if(r.demiTour&&cx*J.vx<0&&Math.abs(J.vx)>30){J.vx*=1-r.demiTour;J.tour=0.12;}
+function avancer(J,r,dt,cx,cy,n){
+  if(r.demiTour&&cx*J.vx<0&&Math.abs(J.vx)>30){J.vx*=1-r.demiTour;J.tour=0.14;}
   if(J.tour>0)J.tour-=dt;
   const k=1-Math.exp(-(n>0.16?r.demarre:r.arrete)*dt);
   const vx0=J.vx;
   J.vx+=(cx-J.vx)*k;J.vy+=(cy-J.vy)*k;
   const v=Math.hypot(J.vx,J.vy);
   J.x+=J.vx*dt;J.y+=J.vy*dt;
-  J.x=Math.max(14,Math.min(W-14,J.x));J.y=Math.max(30,Math.min(H-10,J.y));
+  J.x=Math.max(16,Math.min(W-16,J.x));J.y=Math.max(34,Math.min(H-12,J.y));
   J.marche=v>8;
   if(J.marche)J.pas+=v*dt*r.cadence;
   if(Math.abs(J.vx)>Math.abs(J.vy))J.dir=J.vx>0?'droite':'gauche';
   else if(Math.abs(J.vy)>6)J.dir=J.vy>0?'bas':'haut';
-  /* le penché du buste */
   {const ax=(J.vx-vx0)/Math.max(dt,1e-3);
-   const cible=Math.max(-1.6,Math.min(1.6,J.vx/VIT*r.penche-ax*0.0009));
-   PEN.v+=(cible-PEN.x)*70*dt;PEN.v*=Math.exp(-8*dt);PEN.x+=PEN.v*dt;}
-  /* la poussière au démarrage */
-  if(r.poussiere&&J.marche&&Math.random()<v*dt*0.12)
-    pouss.push({x:J.x-J.vx*0.04,y:J.y,t:0.45,d:(Math.random()-0.5)*14});
-  pouss=pouss.filter(p=>(p.t-=dt)>0);
-  /* le dessin */
+   const cible=Math.max(-1.8,Math.min(1.8,J.vx/VIT*r.penche-ax*0.0012));
+   J.pen.v+=(cible-J.pen.x)*70*dt;J.pen.v*=Math.exp(-8*dt);J.pen.x+=J.pen.v*dt;}
+  if(r.poussiere&&J.marche&&Math.random()<v*dt*0.2)
+    J.pouss.push({x:J.x-J.vx*0.05,y:J.y,t:0.5,d:(Math.random()-0.5)*16});
+  J.pouss=J.pouss.filter(p=>(p.t-=dt)>0);
+  /* la trace : elle montre d'un coup d'œil comment la vitesse monte et descend */
+  J.trace.push(v);if(J.trace.length>110)J.trace.shift();
+  return v;}
+function tracer(J,x0,y0,w,h,col){
+  const R=(x,y,ww,hh,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,ww),Math.max(0.5,hh));};
+  R(x0,y0,w,h,'rgba(26,21,16,.5)');
+  J.trace.forEach((v,i)=>{const hh=Math.max(0.5,v/VIT*h);
+    R(x0+i*(w/110),y0+h-hh,w/110+0.5,hh,col);});}
+function boucle(t){
+  requestAnimationFrame(boucle);
+  const dt=Math.min(0.05,(t-t0)/1000);t0=t;
+  const n=Math.hypot(joy.x,joy.y), pousse=Math.min(1,n);
+  const cx=n>0.16?(joy.x/n)*VIT*pousse:0, cy=n>0.16?(joy.y/n)*VIT*pousse:0;
   const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
   g.fillStyle='#d8caa8';g.fillRect(0,0,W,H);
   for(let y=0;y<H;y+=7)for(let x=((y/7|0)%2?0:9);x<W;x+=18)
     R(x,y,17,6,((x+y)>>3)%2?'#e4d7b6':'#d0c29e');
-  for(let y=24;y<H;y+=34)R(0,y,W,1,'rgba(120,96,56,.12)');
-  pouss.forEach(p=>{const a=p.t/0.45;
-    R(p.x+p.d*(1-a),p.y-(1-a)*5,2.4,2.4,'rgba(150,130,95,'+(a*0.5).toFixed(2)+')');});
-  perso(J.x,J.y,J.dir,J.pas,J.marche,R);
-  $('hv').textContent=Math.round(v);
-  $('hp').textContent=J.pas.toFixed(1);}
+  const duo=(M==='deux');
+  const liste=duo?['avant','apres']:[M];
+  if(duo)R(0,H/2-0.5,W,1,'rgba(120,96,56,.35)');
+  liste.forEach((nom,idx)=>{
+    const r=REG[nom], J2=JJ[nom];
+    /* chacun dans sa bande quand on compare */
+    const bandeH=duo?H/2:H, bandeY=duo?idx*H/2:0;
+    if(J2.y<bandeY+34)J2.y=bandeY+34;
+    if(J2.y>bandeY+bandeH-12)J2.y=bandeY+bandeH-12;
+    const v=avancer(J2,r,dt,cx,cy,n);
+    J2.pouss.forEach(p=>{const a=p.t/0.5;
+      R(p.x+p.d*(1-a),p.y-(1-a)*6,2.6,2.6,'rgba(150,130,95,'+(a*0.55).toFixed(2)+')');});
+    M=nom;perso(J2.x,J2.y,J2.dir,J2.pas,J2.marche,R);
+    /* l'étiquette et la trace de vitesse */
+    g.font='700 4px Arial,sans-serif';g.fillStyle=r.col;
+    g.fillText(nom==='avant'?'AVANT':'APRÈS',4,bandeY+7);
+    tracer(J2,4,bandeY+9,46,10,r.col);
+    g.font='4px Arial,sans-serif';g.fillStyle='#5f4d34';
+    g.fillText(Math.round(v)+'',52,bandeY+17);});
+  M=duo?'deux':M;
+  $('hv').textContent=Math.round(Math.hypot(JJ.apres.vx,JJ.apres.vy));
+  $('hp').textContent=JJ.apres.pas.toFixed(1);}
 /* le joystick */
 const jd=$('joy'), st=$('stick');
 function pos(ev){const r=jd.getBoundingClientRect();
@@ -127,9 +150,15 @@ jd.onpointerdown=(ev)=>{ev.preventDefault();joy.actif=true;jd.setPointerCapture(
 jd.onpointermove=(ev)=>{if(joy.actif)pos(ev);};
 const lache=()=>{joy.actif=false;joy.x=0;joy.y=0;st.style.transform='';};
 jd.onpointerup=lache;jd.onpointercancel=lache;
-$('bAv').onclick=()=>{M='avant';$('bAv').classList.add('on');$('bAp').classList.remove('on');
-  $('quoi').textContent=REG.avant.nom;};
-$('bAp').onclick=()=>{M='apres';$('bAp').classList.add('on');$('bAv').classList.remove('on');
-  $('quoi').textContent=REG.apres.nom;};
-taille();J.x=W/2;J.y=H/2;requestAnimationFrame(boucle);
+function choisir(m,bouton,titre){M=m;
+  ['bAv','bAp','bDx'].forEach(id=>$(id).classList.remove('on'));
+  $(bouton).classList.add('on');$('quoi').textContent=titre;}
+$('bAv').onclick=()=>choisir('avant','bAv',REG.avant.nom);
+$('bAp').onclick=()=>choisir('apres','bAp',REG.apres.nom);
+$('bDx').onclick=()=>choisir('deux','bDx','Les deux, même joystick');
+taille();
+JJ.avant.x=W/2;JJ.avant.y=H*0.28;
+JJ.apres.x=W/2;JJ.apres.y=H*0.76;
+M='deux';$('quoi').textContent='Les deux, même joystick';
+requestAnimationFrame(boucle);
 </script></body></html>
