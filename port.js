@@ -1013,54 +1013,69 @@ afficherPecheMarine();
 }
 function fermerLeCatalogue(){$('catalogue').classList.remove('on');}
 function afficherPecheMarine(mot){
+/* ================= LA BOUTIQUE DU PÊCHEUR HEUREUX =================
+   Onglets, parchemin, cartes à deux colonnes. Les appels serveur ne changent pas. */
 const q=EQUIP_PECHE||{canne:0,appats:{},finitions:[]};
 $('catArgent').textContent=enEuros(e.euros||0);
-const etiquette=(prix,note)=>'<div class="catPrix">'+enEuros(prix)+(note?'<small>'+note+'</small>':'')+'</div>';
-const fiche=(id,nom,accroche,effet,prix,bouton,marque)=>
-'<article class="catFiche">'+(marque?'<div class="catMarque">'+marque+'</div>':'')+
-'<div class="catImage"><canvas data-img="'+id+'" width="112" height="64"></canvas></div>'+
-'<div class="catTexte"><h3>'+nom+'</h3><p class="catAccroche">'+accroche+'</p><p class="catEffet">'+effet+'</p>'+
-'<div class="catBas">'+(prix!=null?etiquette(prix):'')+bouton+'</div></div></article>';
-const acheter=(id,txt)=>'<button class="catAcheter" data-a="'+id+'">'+(txt||'Acheter')+'</button>';
-const possede='<span class="catAToi">✓ Dans ton équipement</span>';
-let h='';
-if(mot)h+='<div class="catMot">'+mot+'</div>';
-h+='<h2 class="catRubrique"><span>Les cannes</span><i>tu pêches avec : '+CANNES[q.canne||0].nom.toLowerCase()+'</i></h2>';
-const accr={bambou:'La canne de nos grands-pères. Souple, légère, increvable.',
-fibre:'Le bon compromis : nerveuse, sensible, elle sent la touche avant toi.',
-carbone:'La reine des pontons. Pour ceux qui veulent le Vieux Loup.',
-maitre:'Montée à la main par Fanny, sur commande. Pour ceux qui ne craignent rien.',
-roi:'Une seule au monde. On dit qu’elle a sorti un poisson d’avant les dinosaures.'};
-CANNES.slice(1).forEach((k,i)=>{const niv=i+1, a=(q.canne||0)>=niv, libre=(q.canne||0)===niv-1;
-h+=fiche(k.id,k.nom,accr[k.id],k.effet,a?null:k.prix,a?possede:(libre?acheter(k.id):'<span class="catBloque">D’abord la canne d’avant</span>'),
-k.id==='roi'?'PIÈCE UNIQUE':(k.id==='maitre'?'SUR COMMANDE':(k.id==='carbone'?'HAUT DE GAMME':(k.id==='bambou'?'POUR DÉBUTER':null))));});
-h+='<h2 class="catRubrique"><span>Les accessoires</span></h2>';
-const accrA={moulinet:'Un moulinet à tambour fixe, graissé à l’huile d’olive.',bouchon:'Un bouchon rouge et blanc, lesté juste ce qu’il faut.'};
-ACCESSOIRES.forEach(a=>{h+=fiche(a.id,a.nom,accrA[a.id],a.effet,q[a.id]?null:a.prix,q[a.id]?possede:acheter(a.id),a.id==='moulinet'?'COUP DE CŒUR':null);});
-h+='<h2 class="catRubrique"><span>Les appâts</span><i>par boîte de 10 lancers · monté : '+(q.appat?APPATS.find(a=>a.id===q.appat).nom.toLowerCase():'aucun')+'</i></h2>';
-const accrP={vers:'Des vers bien vivants, ramassés à marée basse.',crevettes:'Grises, fraîches du matin : le loup ne résiste pas.',sardine:'Coupée en tronçons. Le congre la sent de loin, la nuit.'};
-APPATS.forEach(a=>{const n=(q.appats||{})[a.id]||0;
-h+=fiche(a.id,a.nom+(n?' <span class="catStock">'+n+' en réserve</span>':''),accrP[a.id],a.effet,a.prix,
-(n?'<button class="catMonter'+(q.appat===a.id?' on':'')+'" data-m="'+a.id+'">'+(q.appat===a.id?'✓ Monté':'Monter')+'</button>':'')+acheter(a.id,'+10'));});
-h+='<div class="catLien"><button data-m="aucun">Pêcher sans appât</button></div>';
-h+='<h2 class="catRubrique"><span>Les finitions</span><i>elles se voient quand tu pêches</i></h2>';
-FINITIONS.forEach(f=>{const a=(q.finitions||[]).includes(f.id);
-h+=fiche(f.id,f.nom,f.nacre?'Une laque irisée qui scintille au soleil.':(f.id==='dore'?'Pour briller sur le quai.':'Une belle peinture, séchée au soleil.'),
-'Cosmétique · s’applique à ta canne, même quand tu en changes.',a?null:f.prix,
-a?'<button class="catMonter'+(q.finition===f.id?' on':'')+'" data-f="'+f.id+'">'+(q.finition===f.id?'✓ Appliquée':'Appliquer')+'</button>':acheter(f.id),
-f.nacre?'ÉDITION RARE':null);});
-h+='<div class="catLien"><button data-f="aucune">Revenir au bois naturel</button></div>';
-h+='<p class="catPied">Pêche & Marine · Quai du Vieux-Port · « Fanny vous conseille, ne repartez pas bredouille. »</p>';
-const lu=$('catPages').scrollTop;
-$('catPages').innerHTML=h;
-$('catPages').scrollTop=mot?Math.max(0,lu):lu;
+if(!window.PECHE_ONGLET)window.PECHE_ONGLET='cannes';
+const sacApp=q.appats||{}, fin=q.finitions||[];
+/* ce que contient chaque onglet */
+const SECTIONS=[
+ {id:'cannes',t:'LES CANNES',s:'Chaque canne a son caractère. À toi de trouver la tienne.',ic:'bambou',
+  l:CANNES.filter(c=>c.id).map((c,k)=>{
+    const n=k+1;
+    return {id:c.id,nom:c.nom.replace('Canne en ','').replace('Canne de ','').replace('Canne du ',''),
+      prix:c.prix,d:c.effet,
+      etat: q.canne>n?'possede' : (q.canne===n?'equipee' : (q.canne===n-1?'achat':'verrou'))};})},
+ {id:'access',t:'LES ACCESSOIRES',s:'De petits détails qui font une grande différence.',ic:'moulinet',
+  l:ACCESSOIRES.map(a=>({id:a.id,nom:a.nom,prix:a.prix,d:a.effet,
+    etat:(a.id==='moulinet'?q.moulinet:q.bouchon)?'possede':'achat'}))},
+ {id:'appats',t:'LES APPÂTS',s:'Ils attirent les poissons… ou les surprises.',ic:'vers',
+  l:APPATS.map(a=>({id:a.id,nom:a.nom,prix:a.prix,d:a.effet,
+    etat:'achat',n:sacApp[a.id]||0,choisi:q.appat===a.id,choix:'m'}))},
+ {id:'finitions',t:'LES FINITIONS',s:'Parce qu’un bon pêcheur reconnaît sa canne au premier coup d’œil.',ic:'dore',
+  l:[['bleu','Bleu',500],['rouge','Rouge',500],['olive','Olive',500],['dore','Doré',3000],['nacre','Nacré',6000]]
+    .map(([id,nom,prix])=>({id,nom,prix,d:'',
+      etat:fin.includes(id)?'possede':'achat',choisi:q.finition===id,choix:'f'}))}
+];
+const S=SECTIONS.find(x=>x.id===window.PECHE_ONGLET)||SECTIONS[0];
+/* les onglets */
+const ongl='<div class="pOng">'+SECTIONS.map(x=>
+  '<button class="pOngB'+(x.id===S.id?' on':'')+'" data-o="'+x.id+'">'+
+  '<canvas data-img="'+x.ic+'" width="68" height="40"></canvas>'+x.t.replace('LES ','')+'</button>').join('')+'</div>';
+/* les cartes */
+const carte=(a)=>{
+  const bouton =
+    a.etat==='equipee' ? '<button class="pB eq" disabled>ÉQUIPÉE</button>' :
+    a.etat==='possede' ? (a.choix
+        ? '<button class="pB '+(a.choisi?'eq':'ch')+'" data-'+a.choix+'="'+a.id+'">'+(a.choisi?'CHOISI':'CHOISIR')+'</button>'
+        : '<button class="pB eq" disabled>✓ À TOI</button>') :
+    a.etat==='verrou'  ? '<button class="pB off" disabled>VERROUILLÉ</button>' :
+    '<button class="pB" data-a="'+a.id+'">ACHETER</button>';
+  const extra = (typeof a.n==='number'&&a.n>0) ? '<span class="pQte">×'+a.n+'</span>' : '';
+  return '<div class="pC'+(a.etat==='verrou'?' gris':'')+'">'+extra+
+    '<canvas data-img="'+a.id+'" width="144" height="80"></canvas>'+
+    '<b>'+a.nom+'</b><span class="pPx"><u></u>'+enEuros(a.prix)+'</span>'+
+    (a.d?'<em>'+a.d+'</em>':'<em></em>')+bouton+'</div>';
+};
+$('catPages').innerHTML = ongl +
+  '<div class="pCorps"><h3 class="pT">'+S.t+'</h3><i class="pS">'+S.s+'</i>'+
+  '<div class="pGr">'+S.l.map(carte).join('')+'</div>'+
+  (mot?'<div class="pMot">'+mot+'</div>':'')+'</div>';
+/* les dessins */
 $('catPages').querySelectorAll('canvas[data-img]').forEach(cv=>illustrerArticle(cv,cv.dataset.img));
+/* les gestes */
+$('catPages').querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{
+  window.PECHE_ONGLET=b.dataset.o;afficherPecheMarine();});
 $('catPages').querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>acheterALaBoutique(b.dataset.a,b));
-$('catPages').querySelectorAll('[data-m]').forEach(b=>b.onclick=async()=>{const d=await appelRPC('choisir_peche',{p_joueur:e.id,p_appat:b.dataset.m,p_finition:null});
-if(d&&!d.erreur)EQUIP_PECHE=d;afficherPecheMarine();});
-$('catPages').querySelectorAll('[data-f]').forEach(b=>b.onclick=async()=>{const d=await appelRPC('choisir_peche',{p_joueur:e.id,p_appat:null,p_finition:b.dataset.f});
-if(d&&!d.erreur)EQUIP_PECHE=d;afficherPecheMarine();});
+$('catPages').querySelectorAll('[data-m]').forEach(b=>b.onclick=async()=>{
+  const d=await appelRPC('choisir_peche',{p_joueur:e.id,p_appat:b.dataset.m,p_finition:null});
+  if(d&&!d.erreur)EQUIP_PECHE=d;afficherPecheMarine();});
+$('catPages').querySelectorAll('[data-f]').forEach(b=>b.onclick=async()=>{
+  const d=await appelRPC('choisir_peche',{p_joueur:e.id,p_appat:null,p_finition:b.dataset.f});
+  if(d&&!d.erreur)EQUIP_PECHE=d;afficherPecheMarine();});
 }
+
 async function acheterALaBoutique(id,b){
 b.disabled=true;b.textContent='…';
 const d=await appelRPC('acheter_peche',{p_joueur:e.id,p_article:id});
