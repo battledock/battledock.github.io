@@ -1100,8 +1100,8 @@ const tabouret=(x,y)=>{R(x-3,y-6,6,1.8,'#a8322a');R(x-0.8,y-4.4,1.6,4.4,'#3a3f46
 const ardoise=(x,y,w,h,lignes,taille)=>{R(x,y,w,h,'#2a2a2a');R(x+1,y+1,w-2,h-2,'#3a3a3a');
   g.font='700 '+(taille||2.8)+'px Arial';g.textAlign='center';g.fillStyle='#f0ece0';
   lignes.forEach((l,i)=>g.fillText(l,x+w/2,y+4.6+i*3.6));g.textAlign='left';};
-const chevalet=(x,y,lignes)=>{R(x-1,y,14,16,'#5b3f21');ardoise(x,y+1,12,13,lignes,2.4);
-  R(x,y+16,2,5,'#5b3f21');R(x+10,y+16,2,5,'#5b3f21');};
+const chevalet=(x,y,lignes)=>{R(x-1,y,16,18,'#5b3f21');ardoise(x,y+1,14,15,lignes,2.1);
+  R(x,y+18,2,5,'#5b3f21');R(x+12,y+18,2,5,'#5b3f21');};
 const jardiniere=(x,y,w)=>{R(x,y,w,6,'#9a7146');R(x,y,w,1.4,'#b8905c');
   for(let k=0;k<w;k+=3)R(x+k,y-3,2.6,4,'#3f7a3a');
   for(let k=0;k<w;k+=5)R(x+1+k,y-4,1.6,1.6,'#e8c040');};
@@ -1132,17 +1132,47 @@ R(x0-2,sol-6,BL+4,6,T.bs);R(x0-2,sol-6,BL+4,1,T.bh);
   R(x,yR+2,w,rez-10,nuit?'#ffe2b0':'#e8d2a8');R(x,yR+2,w,10,nuit?'#f0c890':'#d8bc90');
   for(let q=0;q<3;q++){R(x+4+q*12,yR+4,1,6,'#6a4a2a');R(x+2+q*12,yR+10,5,2,'#fff4d0');}
   R(x,yR+12,w,1,'#b89a6a');
-  if(!k){etagere(x+3,sol-26,32,7,4.2);
-    R(x+3,sol-18,32,2.6,'#8a5a30');R(x+3,sol-18,32,.9,'#a87a48');
-    tireuses(x+8,sol-19,3);
-    R(x+3,sol-15.4,32,5,'#2a1c18');}
-  else{fdj(x+8,sol-30,20,17);R(x+3,sol-12,32,2,'#8a5a30');}
+  if(!k){
+    /* LE BAR : deux étagères, le zinc, les tireuses, les verres, deux tabourets */
+    etagere(x+3,sol-30,32,7,4.2);
+    etagere(x+3,sol-23,32,6,4.8);
+    R(x+3,sol-16,32,2.6,'#9a6a3a');R(x+3,sol-16,32,.9,'#b8864c');
+    tireuses(x+6,sol-17,3);
+    for(let q=0;q<4;q++){R(x+20+q*3.4,sol-19.4,2,2.6,'rgba(240,248,252,.8)');
+      R(x+20.6+q*3.4,sol-16.8,0.8,1.2,'rgba(240,248,252,.7)');}
+    R(x+3,sol-13.4,32,3.4,'#3a2820');
+    for(let q=0;q<2;q++){const bx=x+11+q*14;
+      R(bx-2.6,sol-12,5.2,1.4,'#a8322a');R(bx-0.7,sol-10.6,1.4,3.6,'#3a3f46');R(bx-2,sol-7,4,.9,'#3a3f46');}
+  }else{
+    /* LES JEUX : le panneau, puis trois rangs de tickets colorés */
+    R(x+3,sol-32,32,7,'#1a2a5a');R(x+4,sol-31,30,5,'#24357a');
+    g.font='900 3.4px Arial';g.textAlign='center';g.fillStyle='#f2f4f8';
+    g.fillText('JEUX',x+10,sol-26.8);
+    g.font='700 2.1px Arial';g.fillStyle='#9fc0e8';
+    g.fillText('LOTO · EUROMILLIONS · PMU',x+23,sol-26.8);g.textAlign='left';
+    for(let r=0;r<3;r++)for(let q=0;q<6;q++){
+      const px=x+4+q*5.2, py=sol-24+r*4.4;
+      const c=['#c8402a','#e2c070','#2f7a4a','#8a4a8a','#2a6a9a','#d8782a'][(q+r*2)%6];
+      R(px,py,4.4,3.6,c);R(px,py,4.4,1.1,'rgba(255,255,255,.45)');
+      R(px+0.8,py+2.2,2.8,0.8,'rgba(0,0,0,.25)');}
+    R(x+3,sol-11,32,2,'#9a6a3a');
+    R(x+27,sol-11,7,3,'#c8ccd4');R(x+27,sol-11,7,1,'#e4e8ee');
+  }
+  /* la lumière du dedans : un dégradé chaud qui descend des appliques */
+  {const lv=g.createLinearGradient(x,yR+2,x,sol-9);
+   lv.addColorStop(0,nuit?'rgba(255,196,96,.42)':'rgba(255,214,140,.26)');
+   lv.addColorStop(0.55,nuit?'rgba(255,186,90,.18)':'rgba(255,214,140,.10)');
+   lv.addColorStop(1,'rgba(255,186,90,0)');
+   g.fillStyle=lv;g.fillRect(x,yR+2,w,rez-11);}
+  for(let q=0;q<3;q++){const ax=x+6+q*12;
+    g.fillStyle=nuit?'rgba(255,220,150,.22)':'rgba(255,228,170,.14)';
+    g.beginPath();g.moveTo(ax,yR+11);g.lineTo(ax-7,sol-9);g.lineTo(ax+9,sol-9);g.closePath();g.fill();}
   R(x,yR+2,w,rez-10,'rgba(255,255,255,.06)');
   g.fillStyle='rgba(255,255,255,.14)';g.beginPath();
   g.moveTo(x+4,sol-8);g.lineTo(x+14,yR+2);g.lineTo(x+19,yR+2);g.lineTo(x+9,sol-8);g.fill();
   R(x+w/2-.5,yR+2,1,rez-10,T.b);R(x,yR+2,w,1.5,T.b);R(x,sol-9,w,1.5,T.b);
   g.font='italic 700 4.6px Georgia,serif';g.textAlign='center';g.fillStyle=T.or;
-  g.fillText(k?'Jeux & tabac':'Le comptoir',x+w/2,yR+17.5,w-6);g.textAlign='left';});
+  g.fillText(k?'Jeux à gratter':'Le comptoir',x+w/2,yR+17.5,w-6);g.textAlign='left';});
 /* LA PORTE */
 R(cx-8,yR+2,16,rez-8,T.bs);R(cx-7,yR+3,14,rez-10,nuit?'#ffe8b8':'#cfe0e4');
 R(cx-.5,yR+3,1,rez-10,T.b);R(cx-7,yR+14,14,1,T.b);
@@ -1170,11 +1200,12 @@ R(x0+18,sol-12,11,10,'#7d5934');R(x0+18,sol-12,11,1.8,'#a5764a');
 R(x0+18,sol-8.6,11,1,'#4e3519');R(x0+18,sol-4.6,11,1,'#4e3519');
 tabouret(x0+12,sol-2);tabouret(x0+32,sol-2);
 jardiniere(x0+BL-26,sol-8,12);
-chevalet(x0+BL-12,sol-21,['TICKETS','LOTO','PMU']);
+chevalet(x0+BL-13,sol-23,['JEUX À','GRATTER','LOTO','EUROMILLIONS']);
 /* la lumière chaude, la nuit */
-if(nuit){const l=g.createRadialGradient(cx,sol-14,5,cx,sol-14,72);
-  l.addColorStop(0,'rgba(255,200,120,.44)');l.addColorStop(1,'rgba(255,200,120,0)');
-  g.fillStyle=l;g.fillRect(cx-72,sol-80,144,78);}
+{const l=g.createRadialGradient(cx,sol-14,5,cx,sol-14,nuit?80:56);
+  l.addColorStop(0,nuit?'rgba(255,200,120,.52)':'rgba(255,214,150,.16)');
+  l.addColorStop(1,'rgba(255,200,120,0)');
+  g.fillStyle=l;g.fillRect(cx-80,sol-86,160,88);}
 });}
 function graverTerrasse(v){const W=160,H=60,sol=H-4,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(.5,w),Math.max(.5,h));};
