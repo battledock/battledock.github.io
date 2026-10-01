@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-01-0451';
+var MA_VERSION='2026-10-01-0456';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -17138,7 +17138,7 @@ if(P.etat==='mord'&&t-P.mordT>1100)annulerLaPeche('il s’est décroché');
 if(P.etat==='combat'&&P.cercle){
 const C=P.cercle;
 C.k=(t-C.t0)/C.duree;                            /* 0 : grand · 1 : sur le poisson */
-if(C.k>1.18&&!C.juge)jugerLaTouche(P,false);     /* trop tard : raté */
+if((C.k-1)*C.duree>0.52*900&&!C.juge)jugerLaTouche(P,false);   /* trop tard : raté */
 if(C.juge&&t-C.juge.t>420){
 if(P.touches>=P.besoin){gagnerLeCombat();return;}
 if(P.coeurs<=0){perdreLeCombat('il a filé…');return;}
@@ -17202,7 +17202,10 @@ jugerLaTouche(P,true);
 const fenetreParfaite=(cn)=>[.09,.12,.15,.19,.23,.28][cn||0];    /* la canne élargit le liseré doré */
 const fenetreBonne=(cn)=>[.22,.26,.30,.34,.38,.42][cn||0];
 function jugerLaTouche(P,tape){
-const C=P.cercle, ecart=Math.abs(1-C.k);
+/* On juge en millisecondes, pas en fraction du cercle : sinon un cercle lent
+   offrirait une fenêtre immense et tout deviendrait parfait. */
+const REF=900;                                   /* le cercle de référence */
+const C=P.cercle, ecart=Math.abs(1-C.k)*C.duree/REF;
 const cn=(P.eq&&P.eq.canne)||0;
 const note=!tape?'rate':(ecart<fenetreParfaite(cn)?'parfait':(ecart<fenetreBonne(cn)?'bien':'rate'));
 C.juge={note,t:performance.now()};
