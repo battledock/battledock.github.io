@@ -1145,19 +1145,65 @@ function poissonPx(g,x,y,c1,c2,sens){sens=sens||1;g.fillStyle=c1;g.beginPath();g
 g.fillStyle=c1;g.beginPath();g.moveTo(x-4*sens,y);g.lineTo(x-6.5*sens,y-2.2);g.lineTo(x-6.5*sens,y+2.2);g.fill();g.fillStyle='#1a1a1a';g.fillRect(x+2.6*sens-0.4,y-0.6,0.8,0.8);}
 const PX_P=[['#8aa0b0','#c8d4dc'],['#c86a4a','#e89a7a'],['#6a8aa0','#a8c0d0'],['#d8b060','#f0d890'],['#b04a3a','#e07a5a']];
 function graverLaPoissonnerie(){return devanture(1,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
-R(x0,yR,BL,rez,'#1f3a5a');for(let x=x0;x<x0+BL;x+=6){R(x,yR,1,rez,'#16304c');R(x+1,yR,1,rez,'#28486a');}R(x0,yR,BL,1.5,'#d8b050');R(x0,sol-3,BL,3,'#12263c');
-R(x0+8,yR+12,BL-16,rez-26,nuit?'#ffe6b0':'#223040');for(let k=0;k<6;k++)poissonPx(g,x0+22+k*19,yR+20,PX_P[k%5][0],PX_P[k%5][1]);   /* les poissons suspendus en vitrine */
-R(cx-9,yR+8,18,rez-8,'#12263c');R(cx-8,yR+9,16,rez-10,nuit?'#ffe8b8':'#2a3a4c');R(cx+4,sol-14,1.5,3,'#d8b050');
-[[x0+4],[x0+BL-50]].forEach(([x])=>{R(x,sol-12,46,10,'#8a6238');R(x,sol-12,46,1.5,'#a8804a');R(x+1,sol-15,44,4,'#e8f4fa');R(x+1,sol-15,44,1,'#ffffff');
-for(let k=0;k<5;k++)poissonPx(g,x+6+k*8.6,sol-13.5,PX_P[(k+1)%5][0],PX_P[(k+1)%5][1],k%2?1:-1);R(x+40,sol-16,3,3,'#f0d040');});
-for(let k=0;k<BL;k+=8){R(x0+k,yR+1,8,8,(k/8)%2?'#ffffff':'#2d6fb0');g.fillStyle=(k/8)%2?'#ffffff':'#2d6fb0';g.beginPath();g.arc(x0+k+4,yR+9,4,0,Math.PI);g.fill();}
-R(x0+BL-18,yR+14,14,16,'#5b3f21');R(x0+BL-17,yR+15,12,14,'#2e3a34');for(let k=0;k<4;k++)R(x0+BL-15,yR+17+k*3,8,.7,'#f4f0e0');
-g.strokeStyle='rgba(220,200,160,.8)';g.lineWidth=.5;for(let k=0;k<5;k++){g.beginPath();g.moveTo(x0+4+k*3,yR+10);g.lineTo(x0+4+k*3,yR+28);g.stroke();g.beginPath();g.moveTo(x0+2,yR+12+k*4);g.lineTo(x0+18,yR+12+k*4);g.stroke();}
-R(x0+6,yR+26,3,3,'#e8402a');R(x0+13,yR+27,3,3,'#e8402a');
-const ey=yR-16;R(x0+10,ey,BL-20,13,'#d8b050');R(x0+11,ey+1,BL-22,11,'#1f3a5a');
-g.font='700 8px Georgia,serif';g.textAlign='center';g.fillStyle=nuit?'#fff0c0':'#f0d890';g.fillText('LA CRIÉE',cx+8,ey+9,BL-50);g.textAlign='left';poissonPx(g,x0+30,ey+6.5,'#f0d890','#fff0c0');
-[[x0+2],[x0+BL-4]].forEach(([x])=>{R(x,ey+2,2,6,'#3a3a40');R(x-1,ey+8,4,5,'#3a3a40');R(x-.5,ey+8.5,3,4,nuit?'#ffe080':'#c8b070');});
-if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rgba(255,220,160,.45)');l.addColorStop(1,'rgba(255,220,160,0)');g.fillStyle=l;g.fillRect(cx-70,sol-70,140,76);}});}
+/* ================= LE PÊCHEUR HEUREUX =================
+   Une boutique d'articles de pêche : grande baie, quatre cannes de combat
+   dressées, et une enseigne au néon qui s'allume la nuit, avec son poisson. */
+const al=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+const RZ=30, YR=sol-RZ;                      /* plus basse : l'immeuble respire au-dessus */
+/* LA CANNE DE COMBAT : manche quadrillé, virole, gros moulinet, anneaux */
+const canne=(x,y,h)=>{
+  for(let i=0;i<h;i++){const w=4-i*2.8/h;
+    R(x-w/2,y-i,w,1,i<h*0.22?'#2a2a30':(nuit?'#17323f':'#1d3a4a'));
+    if(i<h*0.22&&i%4<2)R(x-w/2,y-i,w,1,'#3a3a44');}
+  R(x-2.2,y-h*0.23,4.4,1.6,'#e2c070');
+  const my=y-h*0.33;
+  R(x-2.6,my,2.6,6,'#2a2a30');
+  for(let a=0;a<6.283;a+=0.26)R(x-6.8+Math.cos(a)*3.8,my+3+Math.sin(a)*3.8,1.6,1.6,nuit?'#aeb6bc':'#c8ced4');
+  for(let a=0;a<6.283;a+=0.3)R(x-6.8+Math.cos(a)*2,my+3+Math.sin(a)*2,1.3,1.3,'#6a7278');
+  R(x-7.8,my+2.2,2,2,'#e2c070');R(x-10,my+2.8,2.6,1.2,'#8a8a92');
+  for(let i=0;i<4;i++){const yy=y-h*0.46-i*h*0.14;
+    R(x-1.2,yy,2.4,1,'#e2c070');R(x-1.8,yy-0.8,3.6,0.8,'#9a8a4a');}
+  R(x-0.5,y-h,1,2,'#e8eef2');};
+/* LE POISSON STYLISÉ */
+const poisson=(x,y,s,c,creux)=>{
+  for(let i=0;i<20*s;i++){const t=i/(20*s);
+    const h=Math.round(6.5*s*Math.sqrt(Math.max(0.03,1-Math.pow(t*2-0.82,2))));
+    for(let q=-h;q<=h;q++)R(x+i,y+q,1,1,c);}
+  R(x+20*s,y-5*s,2*s,10*s,c);R(x+22*s,y-7.5*s,2*s,5*s,c);R(x+22*s,y+2.5*s,2*s,5*s,c);
+  R(x+8*s,y+5*s,6*s,2*s,c);R(x+9*s,y-7*s,5*s,2*s,c);
+  R(x+4.5*s,y-2*s,2.4*s,2.4*s,creux);};
+/* le corps de la devanture, en planches bleu nuit */
+R(x0-5,YR-20,BL+10,RZ+20,nuit?'#0e2630':'#16333f');
+for(let x=x0-5;x<x0+BL+5;x+=8){const n=al(x);
+  R(x,YR-20,8,RZ+20,n<.5?(nuit?'#0e2630':'#16333f'):(nuit?'#123039':'#1b3e4b'));}
+R(x0-5,YR-20,BL+10,2,'#c9a24a');R(x0-5,sol-4,BL+10,4,'#091c24');
+/* LA GRANDE BAIE */
+const fw=BL-34;
+R(x0+5,YR-5,fw,RZ,'#06161c');
+R(x0+8,YR-2,fw-6,RZ-6,nuit?'#1f4e5c':'#aecfe0');
+if(!nuit)for(let d=0;d<24;d++)R(x0+8+d*1.4,YR-2+d,16,1,'rgba(255,255,255,.26)');
+for(let q=0;q<4;q++)canne(x0+24+q*24,sol-10,23);
+R(x0+12,sol-10,fw-14,1.8,'#8a6238');R(x0+12,sol-10,fw-14,.7,'#a5764a');
+R(x0+5+fw/2,YR-5,1.4,RZ,'#06161c');
+if(nuit){g.fillStyle='rgba(255,226,150,.14)';g.fillRect(x0+8,YR-2,fw-6,RZ-6);}
+/* la porte vitrée, à droite */
+R(x0+BL-26,YR-5,24,RZ,'#06161c');R(x0+BL-23,YR-2,18,RZ-6,nuit?'#2a6a7a':'#8fb8cc');
+R(x0+BL-9,sol-14,2,4,'#e2c070');
+/* LE BANDEAU, LE POISSON ET LE NÉON */
+R(x0-5,YR-20,BL+10,16,nuit?'#071820':'#0e2630');
+R(x0-3,YR-18,BL+6,12,nuit?'#0b2029':'#16333f');R(x0-3,YR-18,BL+6,1,'#c9a24a');
+poisson(x0+3,YR-12,0.6,nuit?'#9ee8f8':'#7fb8cc',nuit?'#0b2029':'#16333f');
+if(nuit){g.fillStyle='rgba(140,220,245,.16)';g.beginPath();g.arc(x0+10,YR-12,11,0,7);g.fill();}
+g.font='italic 900 8.5px Georgia,serif';g.textAlign='center';
+if(nuit){g.fillStyle='rgba(140,220,245,.20)';
+  for(let r=5;r>0;r--)g.fillText('Le Pêcheur Heureux',cx+9,YR-9.5);}
+g.fillStyle=nuit?'#b6f2ff':'#dff0f6';g.fillText('Le Pêcheur Heureux',cx+9,YR-10,BL-32);
+g.font='700 3.4px Arial';g.fillStyle=nuit?'#6fc0d8':'#8fb4c4';
+g.fillText('C A N N E S   ·   M O U L I N E T S   ·   A P P Â T S',cx+9,YR-6);g.textAlign='left';
+if(nuit){const l=g.createRadialGradient(cx,YR-4,4,cx,YR-4,56);
+  l.addColorStop(0,'rgba(150,220,245,.2)');l.addColorStop(1,'rgba(150,220,245,0)');
+  g.fillStyle=l;g.fillRect(cx-56,YR-44,112,62);}
+});}
 function graverLaPresse(){return devanture(2,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
 R(x0,yR,BL,rez,'#24503e');R(x0,yR,BL,1.5,'#d8b050');R(x0,sol-2,BL,2,'#163a2c');
 for(let k=x0+4;k<x0+BL-2;k+=30)R(k,yR+3,0.8,rez-5,'#d8b050');                                            /* les filets d'or */
