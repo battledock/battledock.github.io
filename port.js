@@ -4,7 +4,7 @@ quaiY:340,               /* le bord du quai, au-dessus du bassin */
 bassinO:170, bassinE:1210,
 pontons:[360,880], pontonL:13,           /* le ponton du milieu (620) est retiré, avec ses voiliers */ pontonFin:470,
 metro:[250,268],
-ruelle:{x:630,l:22,haut:30},   /* la montée vers Notre-Dame : axe, demi-largeur, sommet */
+ruelle:{x:630,l:38,haut:30},   /* la montée vers Notre-Dame : axe, demi-largeur, sommet */
 boulo:[30,392,120,172],   /* le boulodrome : x, y, largeur, hauteur */
 };
 const CARGO_X={pile:[1266,566],docks:[1318,446]};
@@ -247,7 +247,7 @@ x+=w;
 graverLesToitsDuFond(g,MONDE_L,160);
 {
 const cx=XP.ruelle.x, xg=cx-71, xd=cx+71, ym=XP.maisonsY+6;
-[[xg,cx-30,1],[cx+30,xd,-1]].forEach(([a,b,sens],j)=>{
+[[xg,cx-46,1],[cx+46,xd,-1]].forEach(([a,b,sens],j)=>{
 for(let y=0;y<ym;y+=4)for(let x=a;x<b;x+=5){R(x,y,5,4,((x+y*3)>>2)%3?'#b85e32':'#c9743e');R(x+4,y,1,4,'#8f3f20');R(x,y,5,1,'#e0925a');}
 const fx=Math.round((a+b)/2);R(fx-1,0,3,ym,'#e59a62');R(fx+(sens>0?2:-3),0,1,ym,'#8f3f20');
 R(sens>0?a:fx+2,0,sens>0?fx-a-1:b-fx-2,ym,'rgba(60,25,10,.16)');
@@ -259,7 +259,7 @@ for(let y=18;y<ym-10;y+=34){R(mur+1,y,4,10,'#3a2616');R(mur+1,y,4,1,'#7a5230'); 
 R(mur+1,y+14,4,5,'#2e3a44');                                                            /* une fenêtre */
 R(sens>0?mur-2:mur+6,y-4,2,3,'#3b3a36');R(sens>0?mur-2:mur+6,y-1,2,2,'#ffd98a');}      /* une lanterne */
 });
-const x0=cx-30, w=60, tx=x0+15, tw=30;
+const x0=cx-46, w=92, tx=x0+23, tw=46;   /* l'escalier élargi : il mange la moitié des briques */
 for(let y=XP.maisonsY+6,k=0;y>XP.ruelle.haut-14;k++){
 const palier=k%6===5, h=palier?10:6, yh=y-h;
 R(x0,yh,w,h,palier?'#f3eee4':'#e9e3d6');R(x0,yh,w,1,'#ffffff');R(x0,y-2,w,2,'#bdb4a2');
@@ -283,20 +283,25 @@ g.strokeStyle='#d8b050';g.lineWidth=1;g.beginPath();g.arc(cx,hy-8,w/2+2,Math.PI,
 const fond=g.createLinearGradient(0,hy,0,hy+24);fond.addColorStop(0,'rgba(20,16,12,.55)');fond.addColorStop(1,'rgba(20,16,12,0)');
 g.fillStyle=fond;g.fillRect(x0,hy,w,24);
 const ey=Math.max(0,hy-30);
-R(cx-30,ey,60,13,'#5a0e14');R(cx-29,ey+1,58,11,'#9e1822');R(cx-29,ey+1,58,1,'#c83a44');
-for(let k=0;k<15;k++){R(cx-29+k*4,ey,2,2,k%2?'#fff4b0':'#ffd24a');R(cx-29+k*4,ey+11,2,2,k%2?'#ffd24a':'#fff4b0');}
-/* CASINO en lettres de pixels : le texte flou venait de l'ombre portée sur une police vectorielle */
-{const L={C:[[1,1,1],[1,0,0],[1,0,0],[1,0,0],[1,1,1]],
-          A:[[0,1,0],[1,0,1],[1,1,1],[1,0,1],[1,0,1]],
-          S:[[1,1,1],[1,0,0],[1,1,1],[0,0,1],[1,1,1]],
-          I:[[1,1,1],[0,1,0],[0,1,0],[0,1,0],[1,1,1]],
-          N:[[1,0,1],[1,1,1],[1,1,1],[1,0,1],[1,0,1]],
-          O:[[1,1,1],[1,0,1],[1,0,1],[1,0,1],[1,1,1]]};
- const mot='CASINO', lx=cx-(mot.length*4-1)/2, ly=ey+3.5;
- for(let i=0;i<mot.length;i++){const G=L[mot[i]];
-   for(let r=0;r<5;r++)for(let c=0;c<3;c++)if(G[r][c]){
-     R(lx+i*4+c,ly+r+0.5,1,1,'#7a0a10');            /* l'ombre, en dur */
-     R(lx+i*4+c,ly+r,1,1,'#ffe49a');}}}
+R(cx-34,ey-1,68,17,'#5a0e14');R(cx-33,ey,66,15,'#9e1822');R(cx-33,ey,66,1,'#c83a44');
+for(let k=0;k<17;k++){R(cx-33+k*4,ey-1,2,2,k%2?'#fff4b0':'#ffd24a');R(cx-33+k*4,ey+14,2,2,k%2?'#ffd24a':'#fff4b0');}
+/* LE COMPLEXE FESTIF, en lettres de pixels : net à toutes les tailles */
+{const A2={A:[[0,1,0],[1,0,1],[1,1,1],[1,0,1],[1,0,1]],C:[[1,1,1],[1,0,0],[1,0,0],[1,0,0],[1,1,1]],
+ E:[[1,1,1],[1,0,0],[1,1,0],[1,0,0],[1,1,1]],F:[[1,1,1],[1,0,0],[1,1,0],[1,0,0],[1,0,0]],
+ I:[[1,1,1],[0,1,0],[0,1,0],[0,1,0],[1,1,1]],L:[[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,1,1]],
+ M:[[1,0,1],[1,1,1],[1,1,1],[1,0,1],[1,0,1]],O:[[1,1,1],[1,0,1],[1,0,1],[1,0,1],[1,1,1]],
+ P:[[1,1,1],[1,0,1],[1,1,1],[1,0,0],[1,0,0]],S:[[1,1,1],[1,0,0],[1,1,1],[0,0,1],[1,1,1]],
+ T:[[1,1,1],[0,1,0],[0,1,0],[0,1,0],[0,1,0]],X:[[1,0,1],[1,0,1],[0,1,0],[1,0,1],[1,0,1]],
+ ' ':[[0],[0],[0],[0],[0]]};
+ const lignes=['LE COMPLEXE','FESTIF'];
+ lignes.forEach((mot,n)=>{
+   let lg=0;for(const ch of mot)lg+=(A2[ch]?A2[ch][0].length:1)+1;
+   let px=cx-(lg-1)/2;
+   for(const ch of mot){const G=A2[ch]||A2[' '];
+     for(let r=0;r<5;r++)for(let c=0;c<G[0].length;c++)if(G[r][c]){
+       R(px+c,ey+1+n*6+r+0.5,1,1,'#7a0a10');
+       R(px+c,ey+1+n*6+r,1,1,'#ffe49a');}
+     px+=G[0].length+1;}});}
 }
 for(let y=XP.quaiY;y<MONDE_H;y++){
 const k=(y-XP.quaiY)/(MONDE_H-XP.quaiY);
