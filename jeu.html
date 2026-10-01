@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-01-0929';
+var MA_VERSION='2026-10-01-0937';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -6773,7 +6773,10 @@ const BT_DESS={
      for(let a2=0;a2<6.283;a2+=0.3)R(x+Math.cos(a2)*3,y+Math.sin(a2)*3,2.4,2.4,C[k]);
      R(x-1,y-1,2,2,'rgba(255,255,255,.45)');});
    R(10,14,2,7,'#2f6a3a');},
-  journal:(R)=>{R(3,5,18,15,'#f2ece0');R(3,5,18,2,'#c9bda2');
+  enveloppe:(R)=>{R(3,7,18,12,'#f6f2ea');R(3,7,18,2,'#d8cdb4');
+   for(let i=0;i<9;i++){R(3+i,9+i,2,1.4,'#c9bda2');R(21-i,9+i,2,1.4,'#c9bda2');}
+   R(15,4,6,5,'#c0392b');R(16,5,4,3,'#e8604a');},
+ journal:(R)=>{R(3,5,18,15,'#f2ece0');R(3,5,18,2,'#c9bda2');
    R(5,8,8,5,'#9aa0a8');for(let k=0;k<5;k++)R(14,8+k*2,6,1,'#9aa0a8');},
  bouteille:(R)=>{R(9,3,5,4,'#2f6a4a');R(7,6,9,15,'#2f7a52');R(7,6,3,15,'#49a06a');
    R(8,12,7,6,'#f2ece0');},
@@ -6807,6 +6810,87 @@ const mini=(nom,k)=>'<span class="bar-mini" style="background:'+FOND_MINI[k]+';c
 let ONG='gratter', SEL=[], CH=0, LOTO_T=0, ETAT=null;
 const boule=(n,rouge,k)=>'<span class="lo-boule'+(rouge?' ch':'')+'" style="animation-delay:'+(k*0.45)+'s">'+n+'</span>';
 /* ================= LA PRESSE : le journal du port ================= */
+/* ================= LES CARTES POSTALES ================= */
+const CP_VIS=[['port','Le Vieux-Port'],['bonnemere','La Bonne Mère'],['calanques','Les calanques'],
+              ['cargo','Un cargo au large'],['foret','La forêt']];
+let CP_V='port', CP_DEST=null, CP_ONG='ecrire';
+const cpDessin={
+ port:(R)=>{for(let y=0;y<40;y++)R(0,y,64,1,y<22?'#9fd0e8':'#2a7aa8');
+   for(let i=0;i<5;i++)R(4+i*12,14+(i%2)*3,10,9,['#e8d2a8','#c9a878','#d8b490','#e8c0a0','#cfa888'][i]);
+   for(let i=0;i<5;i++)R(4+i*12,12+(i%2)*3,10,2,'#b4302c');
+   for(let k=0;k<3;k++){R(14+k*16,24,2,8,'#f2ece0');R(10+k*16,31,10,3,'#f6f2ea');}},
+ bonnemere:(R)=>{for(let y=0;y<40;y++)R(0,y,64,1,y<26?'#bfe0f0':'#8aa86a');
+   R(26,16,12,18,'#e8dcc0');R(26,16,12,3,'#d8c8a0');R(30,6,4,10,'#c9a24a');
+   R(29,2,6,5,'#f0d78a');for(let k=0;k<3;k++)R(24+k*7,34,5,5,'#9a8a6a');},
+ calanques:(R)=>{for(let y=0;y<40;y++)R(0,y,64,1,y<20?'#cfe8f4':'#1d8aa8');
+   for(let i=0;i<64;i++)R(i,14+Math.abs(Math.sin(i/8))*6,2,10,'#e0d2b0');
+   for(let i=0;i<64;i+=3)R(i,26+Math.sin(i/5)*2,3,1.6,'rgba(255,255,255,.4)');},
+ cargo:(R)=>{for(let y=0;y<40;y++)R(0,y,64,1,y<22?'#8fb8d8':'#1d3358');
+   R(10,20,42,9,'#2a3a5a');R(10,20,42,2,'#4a5f88');
+   R(16,12,7,8,'#8a4a3a');R(25,14,6,6,'#c9a24a');R(33,13,7,7,'#2f6a5a');
+   R(44,8,4,12,'#dfe4e8');
+   for(let i=0;i<9;i++)R(3+i*7,32+Math.sin(i)*1.6,6,1.6,'rgba(255,255,255,.3)');},
+ foret:(R)=>{for(let y=0;y<40;y++)R(0,y,64,1,y<18?'#cfe4d8':'#4a6a3a');
+   for(let k=0;k<5;k++){const x=5+k*13,h=10+((k%3)*4);
+     R(x+3,30-h,3,h,'#5b3f21');
+     for(let i=0;i<4;i++)R(x+1-i*0.5,26-h+i*3,8+i*1.6,4,['#2f6a3a','#3a7a44','#2a5e34'][i%3]);}}};
+const cartes=async()=>{
+  const V=$('cpVue');if(!V)return;
+  let recues=[],liste=[];
+  try{recues=await appelRPC('cartes_recues',{p_joueur:e.id})||[];}catch(x){}
+  try{liste=await appelRPC('liste_joueurs',{})||[];}catch(x){}
+  if(!Array.isArray(recues))recues=[];
+  if(!Array.isArray(liste))liste=[];
+  const autres=liste.filter(j=>j&&j.id&&j.id!==e.id).slice(0,60);
+  const nonLues=recues.filter(c=>!c.lue).length;
+  V.innerHTML=
+   '<div class="bar-t"><canvas width="36" height="36" data-i="enveloppe"></canvas>LA POSTE DU PORT'+
+     '<small>Une carte par jour, 1,20 € le timbre.</small></div>'+
+   '<div class="cp-ong"><button data-cp="ecrire" class="'+(CP_ONG==='ecrire'?'on':'')+'">ÉCRIRE</button>'+
+     '<button data-cp="boite" class="'+(CP_ONG==='boite'?'on':'')+'">MA BOÎTE'+
+     (nonLues?'<u>'+nonLues+'</u>':'')+'</button></div>'+
+   (CP_ONG==='ecrire'
+    ? '<div class="cp-vis">'+CP_VIS.map(([id,n])=>
+        '<button class="cp-v'+(CP_V===id?' on':'')+'" data-v="'+id+'">'+
+        '<canvas width="128" height="80" data-cpv="'+id+'"></canvas><span>'+n+'</span></button>').join('')+'</div>'+
+      '<div class="lo-cl">À QUI ?</div>'+
+      (autres.length
+        ? '<div class="cp-qui">'+autres.map(j=>'<button class="cp-j'+(CP_DEST===j.id?' on':'')+'" data-j="'+j.id+'">'+
+            (j.pseudo||'sans nom')+'</button>').join('')+'</div>'
+        : '<div class="bt-vide">Personne d’autre sur le port pour l’instant.</div>')+
+      '<div class="lo-cl">TON MESSAGE</div>'+
+      '<textarea id="cpMsg" class="cp-msg" maxlength="200" rows="3" placeholder="Deux mots du port…"></textarea>'+
+      '<div class="lo-act"><button class="lo-ok'+(CP_DEST?'':' pas')+'" id="cpOk">ENVOYER · 1,20 €</button></div>'
+    : (recues.length
+       ? '<div class="cp-boite">'+recues.map(c=>
+           '<div class="cp-r'+(c.lue?'':' neuve')+'">'+
+           '<canvas width="128" height="80" data-cpv="'+c.visuel+'"></canvas>'+
+           '<div><b>'+c.de+'</b><i>'+new Date(c.envoye).toLocaleDateString('fr-FR',{day:'numeric',month:'long'})+'</i>'+
+           '<p>'+String(c.message).replace(/[<>]/g,'')+'</p></div></div>').join('')+'</div>'
+       : '<div class="bt-vide">Ta boîte est vide.<br>Écris à quelqu’un, on te répondra peut-être.</div>'));
+  V.querySelectorAll('canvas[data-cpv]').forEach(cv=>{
+    const f=cpDessin[cv.dataset.cpv];if(!f)return;
+    const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+    const S=cv.width/64;g.setTransform(S,0,0,S,0,0);
+    f((x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));});});
+  V.querySelectorAll('[data-cp]').forEach(b=>b.onclick=()=>{CP_ONG=b.dataset.cp;
+    if(CP_ONG==='boite'){try{appelRPC('cartes_lues',{p_joueur:e.id});}catch(x){}}
+    cartes();});
+  V.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{CP_V=b.dataset.v;vibrer(6);cartes();});
+  V.querySelectorAll('[data-j]').forEach(b=>b.onclick=()=>{CP_DEST=b.dataset.j;vibrer(6);cartes();});
+  const ok=$('cpOk');
+  if(ok)ok.onclick=async()=>{
+    const t=$('cpMsg');
+    if(!CP_DEST){bulle('Choisis d’abord à qui tu écris.');return;}
+    if(!t||t.value.trim().length<2){bulle('Écris au moins un mot.');return;}
+    ok.disabled=true;ok.textContent='…';
+    const r=await appelRPC('carte_envoyer',{p_joueur:e.id,p_dest:CP_DEST,p_visuel:CP_V,p_message:t.value.trim()});
+    ok.disabled=false;
+    if(!r||r.erreur){bulle(r&&r.erreur?String(r.erreur):'La poste est fermée.');cartes();return;}
+    if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}
+    bulle('Carte postée. Elle arrivera à sa prochaine connexion.');
+    CP_DEST=null;vibrer([14,30,14]);cartes();};
+};
 const presse=async()=>{
   const V=$('presseVue');if(!V)return;
   let N=null;
@@ -6996,6 +7080,33 @@ body.gratte #bar .bt-pied{display:none!important}
 #bar .pr-nouv p{font:400 12px Georgia,serif;font-style:normal;color:#5f4d34;line-height:1.5;margin-top:4px}
 #bar .pr-nouv.une b{font:900 18px Georgia,serif;line-height:1.15}
 #bar .pr-nouv.une p{font-size:12.5px}
+/* ===== LES CARTES POSTALES ===== */
+#bar .cp-ong{display:flex;gap:7px;margin:0 0 10px}
+#bar .cp-ong button{flex:1;border:1px solid #c6b795;border-radius:9px;background:#f6f0e2;color:#6a5c42;
+  padding:10px;font:700 9.5px Arial,sans-serif;letter-spacing:1.3px;position:relative}
+#bar .cp-ong button.on{background:#143352;border-color:#143352;color:#f0d78a}
+#bar .cp-ong button u{position:absolute;top:-5px;right:-4px;background:#c0392b;color:#fff;
+  border-radius:9px;padding:1px 6px;font:700 9px Arial,sans-serif;text-decoration:none}
+#bar .cp-vis{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+#bar .cp-vis::-webkit-scrollbar{display:none}
+#bar .cp-v{flex:none;width:96px;border:1px solid #d8c9a6;border-radius:8px;background:#fbf6e8;
+  padding:5px;text-align:center}
+#bar .cp-v.on{border-color:#c9a24a;box-shadow:0 0 0 2px #e2c070 inset}
+#bar .cp-v canvas{width:100%;height:54px;image-rendering:pixelated;border-radius:4px;display:block}
+#bar .cp-v span{display:block;font:400 10.5px Georgia,serif;color:#5f4d34;margin-top:3px}
+#bar .cp-qui{display:flex;flex-wrap:wrap;gap:6px}
+#bar .cp-j{border:1px solid #d8c9a6;border-radius:16px;background:#fbf6e8;color:#5a4a30;
+  padding:8px 12px;font:400 12px Georgia,serif}
+#bar .cp-j.on{background:#143352;border-color:#143352;color:#f0d78a}
+#bar .cp-msg{width:100%;border:1px solid #d8c9a6;border-radius:8px;background:#fbf6e8;color:#2f2820;
+  padding:10px;font:400 13px Georgia,serif;resize:none;-webkit-appearance:none}
+#bar .cp-boite{display:flex;flex-direction:column;gap:9px}
+#bar .cp-r{display:flex;gap:10px;background:#fbf6e8;border:1px solid #d8c9a6;border-radius:9px;padding:9px}
+#bar .cp-r.neuve{border-color:#c9a24a;background:#fdf6e0;box-shadow:0 0 0 1px #e2c070 inset}
+#bar .cp-r canvas{flex:none;width:74px;height:46px;image-rendering:pixelated;border-radius:5px}
+#bar .cp-r b{display:block;font:700 13px Georgia,serif;color:#2f2820}
+#bar .cp-r i{display:block;font:italic 10.5px Georgia,serif;color:#8a7454}
+#bar .cp-r p{font:400 12px Georgia,serif;color:#5f4d34;line-height:1.4;margin-top:4px}
 /* le pied est en dehors du cadre : on l'ancre au bas de l'écran */
 #bar .bt-pied{position:fixed!important;left:0;right:0;bottom:0;top:auto!important;z-index:9}
 #bar .bt-corps{padding-bottom:60px}
@@ -7201,13 +7312,14 @@ body.gratte #bar .bt-pied{display:none!important}
 <div class="bt-plaque"><canvas class="g" width="52" height="52"></canvas><b>LOTO / JEUX / PRESSE</b><i>Ici, tout se joue&nbsp;!</i><canvas class="d" width="52" height="52"></canvas></div>
 <div class="bt-jauges"><div class="bt-jg"><canvas width="44" height="44" data-i="piece"></canvas><div><small>TON ARGENT</small><b>${enEuros(e.euros||0)}</b></div></div><div class="bt-jg"><canvas width="44" height="44" data-i="trefle"></canvas><div><small>TICKETS DU JOUR</small><b>${faits} / 20</b></div></div></div>
 </div><div class="bt-corps"><div class="bt-rail">${[["gratter","Gratter","ticketor"],["loto","Loto","trefle"],["presse","Presse","journal"],["divers","Divers","panier"]].map(([id,nom,ic])=>`<button data-o="${id}" class="${ONG===id?'on':''}"><canvas width="52" height="52" data-i="${ic}"></canvas>${nom}</button>`).join('')}</div><div class="bt-page">
-${ONG==='presse'?presseHTML()
+${ONG==='divers'?'<div id="cpVue"><div class="bt-vide">On ouvre le tiroir aux cartes…</div></div>':ONG==='presse'?presseHTML()
   :!['gratter','loto'].includes(ONG)?'<div class="bt-vide">Fanny n’a pas encore sorti ce rayon.<br>Reviens bientôt.</div>':ONG==='loto'?'<div id="lotoVue"><div class="bar-jour">On ouvre le tirage…</div></div>':`
 <div class="bar-t"><canvas width="36" height="36" data-i="ticketor"></canvas>JEUX À GRATTER<small>Tentez votre chance, ça peut tout changer&nbsp;!</small></div><div class="bt-gr">${TICKETS.map(([k,n,px])=>`<div class="bt-it"><div class="bt-viz"><canvas width="192" height="120" data-tk="${k}"></canvas></div><b>${n}</b><small>jusqu’à ${MAX[k]} €</small><button class="bt-px${(e.euros||0)<px?' cher':''}" data-t="${k}"><u></u>${enEuros(px)}</button></div>`).join('')}</div>
 <div class="bar-jour">Chaque ticket a sa règle : elle est écrite dessus.<br><b>${faits} / 20</b> tickets aujourd'hui · remise à zéro à minuit.</div>`}</div>
 </div></div><div class="bt-pied"><div class="bar-bulle" id="barBulle"></div><span>« Des paris, des rêves… »</span><button class="bt-fermer" id="barFermer">RETOUR</button></div></div>`;
 btDessiner();
 if(ONG==='presse')presse();
+if(ONG==='divers')cartes();
 $('page2Fond').querySelectorAll('canvas[data-pr]').forEach(cv=>{
   const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
   const S=cv.width/64;g.setTransform(S,0,0,S,0,0);
