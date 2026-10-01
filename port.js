@@ -1005,6 +1005,12 @@ else if(id==='hamecon'){
 }
 else R(W/2-8,H/2-8,16,16,'#b8a888');
 }
+async function ouvrirLaBoutiqueDePeche(){
+$('catalogue').classList.add('on');
+$('catPages').innerHTML='<div class="catVide">Fanny cherche ses clés…</div>';
+await chargerLEquipement();
+afficherPecheMarine();
+}
 function fermerLeCatalogue(){$('catalogue').classList.remove('on');}
 function afficherPecheMarine(mot){
 const q=EQUIP_PECHE||{canne:0,appats:{},finitions:[]};
