@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-01-0607';
+var MA_VERSION='2026-10-01-0642';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -6776,8 +6776,57 @@ if(ms<=0){el.textContent='Tirage en cours…';clearInterval(LOTO_T);setTimeout(l
 el.textContent='Tirage dans '+(h?h+' h ':'')+String(m).padStart(2,'0')+' min '+String(sc).padStart(2,'0')+' s';};
 clearInterval(LOTO_T);maj();LOTO_T=setInterval(maj,1000);};
 const rendre=()=>{
+/* les pictogrammes du bar, dessinés en pixel */
+const BT_DESS={
+ piece:(R)=>{for(let a2=0;a2<6.283;a2+=0.1)R(11+Math.cos(a2)*9,11+Math.sin(a2)*9,3,3,'#a8822a');
+   for(let a2=0;a2<6.283;a2+=0.12)R(11+Math.cos(a2)*6.4,11+Math.sin(a2)*6.4,3,3,'#f0d78a');
+   R(8,7,6,8,'#a8822a');R(9,8,4,2,'#f6e8b8');},
+ cheval:(R)=>{const c='#8a5a2a', cl='#b07a44';
+   R(5,9,11,6,c);R(5,9,11,2,cl);R(14,5,5,6,c);R(18,6,3,2,c);
+   R(12,4,3,4,'#5a3a18');R(5,14,2,6,c);R(9,14,2,6,c);R(14,14,2,5,c);
+   R(3,9,3,5,'#5a3a18');R(17,7,1.4,1.4,'#1a1008');},
+ trefle:(R)=>{const C=['#c0392b','#2a6a9a','#e8c040','#2f8a4a'];
+   [[8,7],[14,7],[8,13],[14,13]].forEach(([x,y],k)=>{
+     for(let a2=0;a2<6.283;a2+=0.3)R(x+Math.cos(a2)*3,y+Math.sin(a2)*3,2.4,2.4,C[k]);
+     R(x-1,y-1,2,2,'rgba(255,255,255,.45)');});
+   R(10,14,2,7,'#2f6a3a');},
+ ticketor:(R)=>{R(3,8,18,8,'#c9821a');R(3,8,18,2,'#e8a84a');
+   for(let k=0;k<4;k++)R(5+k*4,11,2,3,'rgba(255,255,255,.6)');
+   R(3,8,2,8,'#e8a84a');R(19,8,2,8,'#e8a84a');},
+ plume:(R)=>{for(let i=0;i<15;i++){const w=6-i*0.3;
+     R(16-i,4+i,w,2,i%2?'#f4f0e4':'#d8dce0');}R(3,18,4,3,'#f4f0e4');}};
+function btDessiner(){
+  document.querySelectorAll('#bar canvas[data-i], #bar .bt-plaque canvas').forEach(cv=>{
+    const n=cv.dataset.i||(cv.classList.contains('g')?'plume':'trefle');
+    const f=BT_DESS[n];if(!f)return;
+    const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+    const S=cv.width/24;g.setTransform(S,0,0,S,0,0);g.clearRect(0,0,24,24);
+    f((x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));});});
+}
 $('page2Fond').innerHTML=`<style>#bar{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#efe8da;background-image:radial-gradient(rgba(0,0,0,.035) 1px,transparent 1px);background-size:5px 5px;color:#1a2a4a;font-family:Georgia,serif}
 #bar .bar-page{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 12px}
+
+/* ================= LE BAR, NOUVELLE EN-TÊTE ================= */
+#bar .bt-plaque{position:relative;border:2px solid #c0392b;border-radius:7px;background:#143352;
+  box-shadow:0 0 0 2px #0a1828,0 6px 14px rgba(0,0,0,.4);padding:10px 36px 9px;text-align:center;margin-bottom:9px}
+#bar .bt-plaque:before{content:'';position:absolute;inset:3px;border:1px solid rgba(255,255,255,.18);border-radius:4px}
+#bar .bt-plaque b{display:block;font:900 17px Georgia,serif;color:#f4f0e4;letter-spacing:1.1px}
+#bar .bt-plaque i{display:block;font:italic 11px Georgia,serif;color:#c9d8e4;margin-top:1px}
+#bar .bt-plaque canvas{position:absolute;top:50%;transform:translateY(-50%);width:26px;height:26px;image-rendering:pixelated}
+#bar .bt-plaque .g{left:8px}#bar .bt-plaque .d{right:8px}
+#bar .bt-jauges{display:flex;gap:7px;margin-bottom:10px}
+#bar .bt-jg{flex:1;display:flex;align-items:center;gap:7px;background:#143352;border:1px solid #27506e;
+  border-radius:8px;padding:6px 8px}
+#bar .bt-jg canvas{width:22px;height:22px;image-rendering:pixelated;flex:none}
+#bar .bt-jg small{display:block;font:700 7px Arial,sans-serif;letter-spacing:1.5px;color:#7fa8c4}
+#bar .bt-jg b{display:block;font:700 13px Georgia,serif;color:#f0d78a;white-space:nowrap}
+#bar .bt-ong{display:flex;gap:7px;margin:0 0 13px}
+#bar .bt-ong button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+  border:1px solid #c6b795;border-radius:9px;background:#f6f0e2;color:#6a5c42;
+  padding:10px 6px;font:700 9.5px Arial,sans-serif;letter-spacing:1.2px}
+#bar .bt-ong button canvas{width:20px;height:20px;image-rendering:pixelated}
+#bar .bt-ong button.on{background:#143352;border-color:#143352;color:#f0d78a;
+  box-shadow:0 2px 6px rgba(0,0,0,.25)}
 #bar .bar-plaque{border-radius:16px;padding:14px 12px;text-align:center;background:linear-gradient(180deg,#244a8a,#16336a);color:#fff;border:4px solid #fff;box-shadow:0 0 0 2px #16336a,0 10px 24px rgba(22,51,106,.35),inset 0 2px 0 rgba(255,255,255,.3);position:relative;margin-bottom:10px}
 #bar .bar-plaque:before,#bar .bar-plaque:after{content:'';position:absolute;top:50%;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#9aa0a8);margin-top:-4px}#bar .bar-plaque:before{left:10px}#bar .bar-plaque:after{right:10px}
 #bar .bar-plaque small{display:block;font:700 11px Arial,sans-serif;letter-spacing:6px;opacity:.9}#bar .bar-plaque b{display:block;font:900 32px 'Arial Black',Arial,sans-serif;letter-spacing:2px;margin:2px 0;text-shadow:0 2px 0 rgba(0,0,0,.25)}
@@ -6864,13 +6913,14 @@ $('page2Fond').innerHTML=`<style>#bar{position:fixed;inset:0;z-index:5;display:f
 #bar .t2 .tresor.rate .dessous{opacity:.45}#bar .t2 .tresor.rate .dessous b{text-decoration:line-through}
 #bar .gt-ok{flex:none;border:0;border-radius:22px;padding:12px 28px;font:700 14px Arial,sans-serif;background:#fff;color:#16336a;visibility:hidden}</style>
 <div id="bar" lang="fr"><div class="bar-page">
-<div class="bar-plaque"><small>BAR · TABAC</small><b>DES DOCKS</b><small>JEUX · PMU · PRESSE</small></div>
-<div class="bar-bourse">TA BOURSE<b>${enEuros(e.euros||0)}</b></div>
-<div class="bar-ong"><button data-o="gratter" class="${ONG==='gratter'?'on':''}">Jeux à gratter</button><button data-o="loto" class="${ONG==='loto'?'on':''}">Loto du Port</button></div>
+<div class="bt-plaque"><canvas class="g" width="52" height="52"></canvas><b>PMU / LOTO / PRESSE</b><i>Ici, tout se joue&nbsp;!</i><canvas class="d" width="52" height="52"></canvas></div>
+<div class="bt-jauges"><div class="bt-jg"><canvas width="44" height="44" data-i="piece"></canvas><div><small>TON ARGENT</small><b>${enEuros(e.euros||0)}</b></div></div><div class="bt-jg"><canvas width="44" height="44" data-i="trefle"></canvas><div><small>TICKETS DU JOUR</small><b>${faits} / 20</b></div></div></div>
+<div class="bt-ong"><button data-o="gratter" class="${ONG==='gratter'?'on':''}"><canvas width="40" height="40" data-i="ticketor"></canvas>JEUX À GRATTER</button><button data-o="loto" class="${ONG==='loto'?'on':''}"><canvas width="40" height="40" data-i="trefle"></canvas>LOTO DU PORT</button></div>
 ${ONG==='loto'?'<div id="lotoVue"><div class="bar-jour">On ouvre le tirage…</div></div>':`<div class="bar-t">Jeux à gratter</div>
 ${TICKETS.map(([k,n,px])=>'<div class="bar-tk">'+mini(n,k)+'<div class="bar-x"><b>'+n+'</b><small>Gagnez jusqu’à '+MAX[k]+' €</small></div><button class="bar-px'+((e.euros||0)<px?' cher':'')+'" data-t="'+k+'">'+enEuros(px).replace(',00','')+'<i>LE TICKET</i></button></div>').join('')}
 <div class="bar-jour">Chaque ticket a sa règle : elle est écrite dessus.<br><b>${faits} / 20</b> tickets aujourd'hui · remise à zéro à minuit.</div>`}</div>
 <div class="bar-pied"><div class="bar-bulle" id="barBulle"></div><button class="bar-fermer" id="barFermer">Ressortir sur le quai</button></div></div>`;
+btDessiner();
 $('barFermer').onclick=()=>{fermeA=Date.now();clearInterval(LOTO_T);$('page2').classList.remove('on');};
 $('page2Fond').querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{ONG=b.dataset.o;vibrer(8);rendre();});
 if(ONG==='loto')loto();
