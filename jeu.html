@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-01-1013';
+var MA_VERSION='2026-10-01-1019';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -7469,6 +7469,141 @@ $('gtOk').onclick=()=>{removeEventListener('resize',surTaille);
   try{document.body.classList.remove('gratte');}catch(x){}
   v.remove();rendre();};};
 rendre();
+}
+/* ================= LA MARINIÈRE : LA BOUTIQUE DE VÊTEMENTS ================= */
+const CSS_VET=`
+#vt{position:fixed;inset:0;display:flex;flex-direction:column;background:#f4ead2;
+  background-image:radial-gradient(rgba(120,96,56,.07) 1px,transparent 1px);background-size:7px 7px;
+  font-family:Georgia,serif;color:#2b2419}
+#vt .vt-tete{flex:none;background:linear-gradient(180deg,#1b3f52,#0e2634);
+  padding:calc(env(safe-area-inset-top,0px) + 12px) 12px 11px;border-bottom:2px solid #c9a24a;
+  display:flex;align-items:center;gap:10px}
+#vt .vt-plaque{flex:1;min-width:0}
+#vt .vt-plaque b{display:block;font:900 17px Georgia,serif;color:#f0d78a;letter-spacing:1px}
+#vt .vt-plaque i{display:block;font:italic 11px Georgia,serif;color:#9fc4d8}
+#vt .vt-bourse{flex:none;background:#0b1f29;border:1px solid #c9a24a;border-radius:14px;padding:6px 10px;text-align:right}
+#vt .vt-bourse span{display:block;font:700 6.5px Arial,sans-serif;letter-spacing:1.6px;color:#7fa8c4}
+#vt .vt-bourse b{display:block;font:700 13px Georgia,serif;color:#f0d78a}
+#vt .vt-ong{flex:none;display:flex;gap:6px;padding:9px 11px;background:#163b4e;border-bottom:1px solid #27506e}
+#vt .vt-ong button{flex:1;border:1px solid #27506e;border-radius:9px;background:#0f2c3c;color:#9fc4d8;
+  padding:10px 4px;font:700 9.5px Arial,sans-serif;letter-spacing:1.2px}
+#vt .vt-ong button.on{background:#f0d78a;border-color:#f0d78a;color:#16303c}
+#vt .vt-page{flex:1;overflow-y:auto;padding:11px;overscroll-behavior:contain}
+#vt .vt-gr{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+#vt .vt-c{background:#fbf6e8;border:1px solid #d8c9a6;border-radius:9px;padding:8px 7px 9px;
+  text-align:center;display:flex;flex-direction:column;box-shadow:0 2px 0 rgba(120,96,56,.14)}
+#vt .vt-c.porte{border-color:#c9a24a;background:#fdf6e0;box-shadow:0 0 0 1px #e2c070 inset}
+#vt .vt-viz{height:104px;border-radius:6px;background:#ece2c8;margin-bottom:5px;display:flex;
+  align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(120,96,56,.18)}
+#vt .vt-viz canvas{height:100%;image-rendering:pixelated}
+#vt .vt-c b{display:block;font:700 13px Georgia,serif;color:#2f2820;line-height:1.15}
+#vt .vt-c small{display:block;font:italic 10.5px Georgia,serif;color:#8a7454;margin:2px 0 7px;flex:1;line-height:1.35}
+#vt .vt-b{border:0;border-radius:7px;padding:10px;background:#17364a;color:#f0d78a;
+  font:700 10.5px Georgia,serif;display:flex;align-items:center;justify-content:center;gap:5px}
+#vt .vt-b u{width:8px;height:8px;border-radius:50%;background:#e2c070;text-decoration:none}
+#vt .vt-b.cher{background:#ddd2b8;color:#8a7a5c}
+#vt .vt-b.mettre{background:#2f6a4a;color:#eaf6ee;font:700 9.5px Arial,sans-serif;letter-spacing:1.3px}
+#vt .vt-b.porte{background:#e2c070;color:#3a2a10;font:700 9.5px Arial,sans-serif;letter-spacing:1.3px}
+#vt .vt-pied{flex:none;position:relative;display:flex;align-items:center;gap:9px;background:#1b3f52;
+  border-top:2px solid #c9a24a;padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 10px)}
+#vt .vt-pied span{flex:1;font:italic 10.5px Georgia,serif;color:#9fc4d8}
+#vt .vt-fermer{border:1px solid #c9a24a;border-radius:8px;background:#0b1f29;color:#f0d78a;
+  padding:10px 14px;font:700 9.5px Arial,sans-serif;letter-spacing:1.4px}
+#vt .vt-bulle{position:absolute;left:12px;right:12px;bottom:100%;margin-bottom:7px;background:#2f2820;
+  color:#f4ead2;border-radius:7px;padding:9px 11px;font:italic 12px Georgia,serif;opacity:0;
+  transform:translateY(6px);transition:.18s;pointer-events:none}
+#vt .vt-bulle.on{opacity:1;transform:translateY(0)}
+`;
+const VETEMENTS=[
+ {id:'mariniere',nom:'Marinière',prix:1800,fam:'haut',d:'Rayée blanc et marine. L’uniforme du quai.',
+  ap:{haut:3,veste:19,motif:1,raye:16}},
+ {id:'marin_rouge',nom:'Marinière rouge',prix:2200,fam:'haut',d:'La même, mais on te voit de loin.',
+  ap:{haut:3,veste:19,motif:1,raye:18}},
+ {id:'pull_ecru',nom:'Pull écru',prix:2600,fam:'haut',d:'Grosse maille, pour les matins de mistral.',
+  ap:{haut:3,veste:24,motif:0}},
+ {id:'chemise_lin',nom:'Chemise de lin',prix:2400,fam:'haut',d:'Légère, un peu froissée. C’est voulu.',
+  ap:{haut:2,veste:19,motif:0}},
+ {id:'vareuse',nom:'Vareuse bleue',prix:3800,fam:'haut',d:'Celle des pêcheurs, en toile épaisse.',
+  ap:{haut:0,veste:16,motif:0}},
+ {id:'cire_jaune',nom:'Ciré jaune',prix:4500,fam:'haut',d:'Pour les jours où la mer monte.',
+  ap:{haut:5,veste:23,motif:0}},
+ {id:'caban',nom:'Caban de quart',prix:6800,fam:'haut',d:'Laine lourde, boutons dorés. Le plus beau du port.',
+  ap:{haut:5,veste:20,motif:0}},
+ {id:'gilet_quai',nom:'Gilet du quai',prix:3200,fam:'haut',d:'Sans manches, mille poches.',
+  ap:{haut:6,veste:25,motif:0}},
+ {id:'pantalon_toile',nom:'Pantalon de toile',prix:1900,fam:'bas',d:'Droit, solide, couleur sable.',
+  ap:{bas:0,pantalon:10}},
+ {id:'short_plage',nom:'Short de plage',prix:1400,fam:'bas',d:'Pour aller du quai aux calanques.',
+  ap:{bas:1,pantalon:8}},
+ {id:'bottes_mer',nom:'Bottes de mer',prix:3600,fam:'pieds',d:'Hautes, jaunes, increvables.',
+  ap:{souliers:0,chaussures:6}},
+ {id:'espadrilles',nom:'Espadrilles',prix:1600,fam:'pieds',d:'En toile, elles ne craignent que l’eau.',
+  ap:{souliers:2,chaussures:7}},
+ {id:'beret',nom:'Béret',prix:2100,fam:'tete',d:'Penché sur l’oreille, évidemment.',
+  ap:{chapeau:6}},
+ {id:'casquette_marin',nom:'Casquette de marin',prix:1700,fam:'tete',d:'Visière courte, galon doré.',
+  ap:{chapeau:1}}];
+const VET_FAM=[['haut','Hauts'],['bas','Bas'],['pieds','Souliers'],['tete','Chapeaux']];
+let VET_ONG='haut', VET_SAC=[];
+function vetPorte(v){return Object.keys(v.ap).every(k=>(e.ap[k]||0)===v.ap[k]);}
+async function ouvrirLaMariniere(){
+  $('page2Fond').className='';$('page2').classList.add('on');
+  try{const g=await appelRPC('ma_garde_robe',{p_joueur:e.id});if(Array.isArray(g))VET_SAC=g;}catch(x){}
+  const bulle=(t)=>{const b=$('vtBulle');if(!b)return;b.textContent=t;b.classList.add('on');
+    clearTimeout(bulle.t);bulle.t=setTimeout(()=>b.classList.remove('on'),2400);};
+  const rendre=()=>{
+    $('page2Fond').innerHTML='<style>'+CSS_VET+'</style>'+
+    '<div id="vt"><div class="vt-tete">'+
+      '<div class="vt-plaque"><b>LA MARINIÈRE</b><i>Vêtements du port</i></div>'+
+      '<div class="vt-bourse"><span>TON ARGENT</span><b>'+enEuros(e.euros||0)+'</b></div></div>'+
+    '<div class="vt-ong">'+VET_FAM.map(([id,n])=>
+      '<button data-f="'+id+'" class="'+(VET_ONG===id?'on':'')+'">'+n+'</button>').join('')+'</div>'+
+    '<div class="vt-page"><div class="vt-gr">'+
+      VETEMENTS.filter(v=>v.fam===VET_ONG).map(v=>{
+        const a=VET_SAC.includes(v.id), p=a&&vetPorte(v);
+        return '<div class="vt-c'+(p?' porte':'')+'">'+
+          '<div class="vt-viz"><canvas width="132" height="150" data-v="'+v.id+'"></canvas></div>'+
+          '<b>'+v.nom+'</b><small>'+v.d+'</small>'+
+          (p?'<button class="vt-b porte" disabled>PORTÉ</button>'
+            :a?'<button class="vt-b mettre" data-p="'+v.id+'">METTRE</button>'
+               :'<button class="vt-b'+((e.euros||0)<v.prix?' cher':'')+'" data-a="'+v.id+'"><u></u>'+
+                 enEuros(v.prix)+'</button>')+
+          '</div>';}).join('')+
+      '</div></div>'+
+    '<div class="vt-pied"><div class="vt-bulle" id="vtBulle"></div>'+
+      '<span>« Un pêcheur bien habillé prend plus de poissons. »</span>'+
+      '<button class="vt-fermer" id="vtFermer">RETOUR</button></div></div>';
+    /* les vignettes : le personnage habillé de l'article */
+    $('page2Fond').querySelectorAll('canvas[data-v]').forEach(cv=>{
+      const v=VETEMENTS.find(z=>z.id===cv.dataset.v);if(!v)return;
+      const ap=Object.assign({},e.ap,v.ap);
+      try{
+        const img=poseDe(ap,'bas',0);
+        const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+        g.clearRect(0,0,cv.width,cv.height);
+        if(img&&img.width){
+          const k=Math.min(cv.width/img.width,cv.height/img.height);
+          const w=Math.round(img.width*k),h=Math.round(img.height*k);
+          g.drawImage(img,Math.round((cv.width-w)/2),Math.round((cv.height-h)/2),w,h);}
+      }catch(x){}});
+    $('page2Fond').querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{VET_ONG=b.dataset.f;vibrer(6);rendre();});
+    $('page2Fond').querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{
+      const v=VETEMENTS.find(z=>z.id===b.dataset.a);
+      b.disabled=true;b.textContent='…';
+      const r=await appelRPC('acheter_vetement',{p_joueur:e.id,p_article:v.id});
+      if(!r||r.erreur){bulle(r&&r.erreur?String(r.erreur):'La caisse est fermée.');rendre();return;}
+      if(typeof r.euros==='number'){e.euros=r.euros;}
+      if(Array.isArray(r.garde_robe))VET_SAC=r.garde_robe;
+      sauver();majHaut();vibrer([14,30,14]);bulle(v.nom+' est à toi. Essaie-le.');rendre();});
+    $('page2Fond').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{
+      const v=VETEMENTS.find(z=>z.id===b.dataset.p);
+      e.ap=Object.assign({},e.ap,v.ap);
+      try{POSES.clear();}catch(x){}
+      sauver();if(typeof envoyerMaPosition==='function')envoyerMaPosition();
+      vibrer([12,24,12]);bulle('Tu portes '+v.nom.toLowerCase()+'.');rendre();});
+    $('vtFermer').onclick=()=>{$('page2').classList.remove('on');};
+  };
+  rendre();
 }
 let FONFON={};
 function ouvrirChezFonfon(){
@@ -18511,7 +18646,7 @@ if(o.ouvre==='poste'){b.innerHTML='Entrer à la poste<small>'+(COURRIER_N?COURRI
 if(o.ouvre==='poissonnerie'){b.innerHTML='Vendre ta pêche<small>LA CRIÉE · POISSONNERIE</small>';b.classList.add('on');return;}
 if(o.ouvre==='peche'){b.innerHTML='Le Pêcheur Heureux<small>CANNES, MOULINETS, APPÂTS</small>';b.classList.add('on');return;}
 if(o.ouvre==='avis'){b.innerHTML='Donner ton avis<small>UN AVIS · UN BUG · UNE IDÉE</small>';b.classList.add('on');return;}
-if(o.ouvre==='salon'){b.innerHTML='Entrer au Hair Studio<small>COUPES ET COULEURS EXCLUSIVES</small>';b.classList.add('on');return;}
+if(o.ouvre==='salon'){b.innerHTML='Entrer à La Marinière<small>VÊTEMENTS DU PORT</small>';b.classList.add('on');return;}
 if(o.ouvre==='presse'){b.innerHTML='Acheter la Gazette<small>PRESSE · JOURNAUX</small>';b.classList.add('on');return;}
 if(o.ouvre==='bar'){b.innerHTML='Entrer au Bar des Docks<small>BAR · TABAC · JEUX À GRATTER</small>';b.classList.add('on');return;}
 if(o.ouvre==='crousti'){b.innerHTML='Entrer chez Crousti’Port<small>'+(REPU_FIN>Date.now()?'TU ES REPU · ENCORE '+Math.ceil((REPU_FIN-Date.now())/60000)+' MIN':'POULET FRIT · MENUS 1 À 12 €')+'</small>';b.classList.add('on');return;}
@@ -18655,7 +18790,7 @@ if(o.t==='x_cabanon'){ouvrirLeCabanon();return;}
 if(o.ouvre==='skishop'){ouvrirLeSkiShop();return;}
 if(o.ouvre==='crousti'){ouvrirCrousti();return;}
 if(o.ouvre==='avis'){ouvrirLaBoite();return;}
-if(o.ouvre==='salon'){ouvrirLeSalon();return;}
+if(o.ouvre==='salon'){ouvrirLaMariniere();return;}
 if(o.ouvre==='presse'){ouvrirLaGazette();return;}
 if(o.ouvre==='bar'){ouvrirLeBar();return;}
 if(o.ouvre==='poissonnerie'){ouvrirLaCriee();return;}
