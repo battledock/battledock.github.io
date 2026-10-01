@@ -1,0 +1,206 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Crousti’Port · les boissons</title>
+<style>
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{height:100%;background:#241c16;font-family:Georgia,serif;overflow:hidden;
+  touch-action:none;overscroll-behavior:none}
+#ec{position:fixed;inset:0;display:flex;flex-direction:column}
+#tete{flex:none;background:linear-gradient(180deg,#c8281e,#8a1a12);border-bottom:3px solid #e8b030;
+  padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 10px;display:flex;align-items:center;gap:9px}
+#tete b{flex:1;font:900 15px Georgia;color:#fff6e0;letter-spacing:.5px}
+#tete b i{display:block;font:italic 10px Georgia;color:#ffd9a8;font-weight:400}
+#tete .paye{background:#5a1008;border:1px solid #e8b030;border-radius:13px;padding:5px 9px;text-align:right}
+#tete .paye span{display:block;font:700 6px Arial;letter-spacing:1.4px;color:#f0b89a}
+#tete .paye b{display:block;font:700 12px Georgia;color:#ffd76a}
+#serie{flex:none;display:flex;gap:4px;padding:7px 12px;background:#1a1510;justify-content:center}
+#serie i{flex:1;max-width:28px;height:6px;border-radius:3px;background:#3a3026}
+#serie i.ok{background:linear-gradient(90deg,#e8b030,#ffd76a)}
+#serie i.rate{background:#7a2a1a}
+#serie i.en{background:#c8281e}
+/* la commande */
+#cmd{flex:none;background:#2f2820;padding:9px 12px;display:flex;align-items:center;gap:9px}
+#cmd canvas{width:36px;height:36px;image-rendering:pixelated;border-radius:8px;background:#443a30;flex:none}
+#cmd .q{flex:1;min-width:0}
+#cmd .q small{display:block;font:700 6.5px Arial;letter-spacing:1.8px;color:#b8a888}
+#cmd .q b{display:block;font:700 13px Georgia;color:#f6efdc}
+/* la scène */
+#scene{flex:1;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 30%,#3f342a,#241c16 72%)}
+#machine{position:absolute;left:50%;transform:translateX(-50%);top:14px;width:250px;height:74px;
+  background:#4a4036;border-radius:9px;box-shadow:inset 0 0 0 3px #6a5c4c}
+#machine .bec{position:absolute;left:50%;transform:translateX(-50%);bottom:-13px;width:16px;height:14px;
+  background:#9aa2a8;border-radius:0 0 5px 5px}
+#machine .bt{position:absolute;top:13px;display:flex;gap:7px;left:50%;transform:translateX(-50%)}
+#machine .bt span{width:34px;height:22px;border-radius:5px;background:#2f2820;
+  box-shadow:inset 0 0 0 2px #6a5c4c}
+#machine .bt span.on{background:#c8281e;box-shadow:inset 0 0 0 2px #ffd76a}
+#jet{position:absolute;left:50%;transform:translateX(-50%);top:88px;width:9px;height:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.1));border-radius:5px;
+  transition:height .08s linear}
+/* le gobelet */
+#gob{position:absolute;left:50%;transform:translateX(-50%);bottom:44px;width:134px;height:176px}
+#gob .corps{position:absolute;inset:0;border-radius:10px 10px 22px 22px;
+  background:linear-gradient(90deg,rgba(255,255,255,.14),rgba(255,255,255,.3) 24%,rgba(255,255,255,.1));
+  box-shadow:inset 0 0 0 3px rgba(255,255,255,.4)}
+#liq{position:absolute;left:5px;right:5px;bottom:5px;height:0;border-radius:6px 6px 18px 18px;
+  transition:height .07s linear}
+#mousse{position:absolute;left:5px;right:5px;height:10px;border-radius:5px;background:rgba(255,255,255,.75);
+  opacity:0;transition:.1s}
+#trait{position:absolute;left:-10px;right:-10px;border-top:3px dashed #ffd76a;opacity:.9}
+#trait small{position:absolute;right:-2px;top:-15px;font:700 7px Arial;letter-spacing:1.4px;color:#ffd76a}
+#zoneOk{position:absolute;left:-6px;right:-6px;background:rgba(255,215,106,.17);border-radius:4px}
+#deborde{position:absolute;left:50%;transform:translateX(-50%);bottom:30px;width:150px;height:10px;
+  border-radius:50%;background:rgba(255,255,255,.3);opacity:0;transition:.2s}
+#bravo{position:absolute;left:0;right:0;top:104px;text-align:center;font:900 24px Georgia;color:#ffd76a;
+  opacity:0;transform:scale(.8);transition:.16s;text-shadow:0 2px 0 rgba(0,0,0,.4)}
+#bravo.on{opacity:1;transform:scale(1)}
+.pouf{position:absolute;width:5px;height:5px;border-radius:50%;background:#ffd76a;pointer-events:none;
+  animation:pouf .5s ease-out forwards}
+@keyframes pouf{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+/* le bas */
+#bas{flex:none;background:#f6efdc;border-top:3px solid #e8b030;padding:11px 12px calc(env(safe-area-inset-bottom,0px) + 13px)}
+#aide{text-align:center;font:italic 11.5px Georgia;color:#8a7454;min-height:17px;margin-bottom:9px}
+#go{width:100%;border:0;border-radius:12px;padding:22px;background:#c8281e;color:#fff6e0;
+  font:900 15px Georgia;letter-spacing:1px;box-shadow:0 5px 0 #8a1a12;transition:transform .07s}
+#go:active{transform:translateY(4px);box-shadow:0 1px 0 #8a1a12}
+#go.verse{background:#e8b030;color:#5a3008;box-shadow:0 5px 0 #a87a18}
+#fin{position:fixed;inset:0;z-index:9;display:none;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(36,28,22,.95);text-align:center;padding:24px}
+#fin.on{display:flex}
+#fin b{font:900 30px Georgia;color:#ffd76a}
+#fin p{font:italic 14px Georgia;color:#e8dcc0;margin-top:9px;line-height:1.55}
+#fin button{margin-top:18px;border:0;border-radius:11px;padding:15px 28px;background:#c8281e;color:#fff6e0;
+  font:700 11px Arial;letter-spacing:2px}
+</style></head><body>
+<div id="ec">
+  <div id="tete"><b>CROUSTI’PORT<i id="sous">À la pression · verre 1 sur 10</i></b>
+    <span class="paye"><span>TA PAIE</span><b id="paye">0,00 €</b></span></div>
+  <div id="serie"></div>
+  <div id="cmd"><canvas id="tete2" width="112" height="112"></canvas>
+    <div class="q"><small id="qui">LE CLIENT</small><b id="quoi">—</b></div></div>
+  <div id="scene">
+    <div id="machine"><div class="bt" id="btns"></div><span class="bec"></span></div>
+    <div id="jet"></div><div id="bravo"></div>
+    <div id="gob"><div class="corps"></div>
+      <div id="zoneOk"></div><div id="liq"></div><div id="mousse"></div>
+      <div id="trait"><small id="traitT">LE TRAIT</small></div></div>
+    <div id="deborde"></div>
+  </div>
+  <div id="bas">
+    <div id="aide">Appuie et garde pour verser. Relâche au bon niveau.</div>
+    <button id="go">VERSER</button>
+  </div>
+</div>
+<div id="fin"><b id="finT"></b><p id="finP"></p><button id="rej">ENCORE</button></div>
+<script>
+const $=(id)=>document.getElementById(id);
+const vib=n=>{try{navigator.vibrate&&navigator.vibrate(n);}catch(e){}};
+const TOTAL=5, HG=176;
+const BOISSONS=[
+ ['limonade','Limonade','#9fd8e8',1.0,true],
+ ['orangeade','Orangeade','#f0a030',0.9,false],
+ ['menthe','Sirop de menthe','#6ac88a',1.15,false],
+ ['cola','Cola','#4a2a1a',0.85,true],
+ ['grenadine','Grenadine','#d8405a',1.05,false]];
+const CLIENTS=[
+ ['Un docker pressé','#c8281e','#4a3220'],['Une touriste','#e8a83a','#d9c48a'],
+ ['Le vieux Marius','#5a6b8f','#c9c9c9'],['Un gamin du quai','#2f7a4a','#8a5f30'],
+ ['Fanny du bar','#8a4a6a','#1c140d']];
+let nb=0, paye=0, bons=0, rates=0, suite=0, H=[];
+let etat='pret', B=null, niv=0, cible=0, large=0, boucle=0, t0=0;
+function rendreSerie(){const d=$('serie');d.innerHTML='';
+  for(let i=0;i<TOTAL;i++){const e=document.createElement('i');
+    e.className=i<nb-1?(H[i]||'ok'):(i===nb-1?'en':'');d.appendChild(e);}}
+function tete(c1,c2){
+  const cv=$('tete2'),g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+  const S=cv.width/28;g.setTransform(S,0,0,S,0,0);g.clearRect(0,0,28,28);
+  const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+  R(7,4,14,6,c2);R(6,9,16,12,'#e8c8a8');R(6,9,16,2,c2);
+  R(10,13,2.4,2.4,'#2a1a14');R(16,13,2.4,2.4,'#2a1a14');R(12,18,5,1.4,'#b08a6a');
+  R(4,21,20,7,c1);R(4,21,20,2,'rgba(255,255,255,.3)');}
+function etincelles(n){
+  const s=$('scene'),r=$('gob').getBoundingClientRect(),rs=s.getBoundingClientRect();
+  for(let i=0;i<n;i++){const d=document.createElement('span');d.className='pouf';
+    d.style.left=(r.left-rs.left+r.width/2)+'px';d.style.top=(r.top-rs.top+20)+'px';
+    d.style.setProperty('--dx',(Math.random()*130-65)+'px');
+    d.style.setProperty('--dy',(-40-Math.random()*60)+'px');
+    s.appendChild(d);setTimeout(()=>d.remove(),520);}}
+function montre(t){const b=$('bravo');b.textContent=t;b.classList.add('on');
+  setTimeout(()=>b.classList.remove('on'),720);}
+function nouvelle(){
+  nb++;
+  if(nb>TOTAL){finService();return;}
+  B=BOISSONS[Math.floor(Math.random()*BOISSONS.length)];
+  const C=CLIENTS[Math.floor(Math.random()*CLIENTS.length)];
+  tete(C[1],C[2]);$('qui').textContent=C[0].toUpperCase();
+  $('quoi').textContent=B[1]+' · '+(Math.random()<0.5?'au trait':'bien rempli');
+  $('sous').textContent='À la pression · verre '+nb+' sur '+TOTAL;
+  rendreSerie();
+  /* le trait se place plus haut et la marge se resserre au fil des verres */
+  cible=0.62+Math.random()*0.26;
+  large=Math.max(0.035,0.10-nb*0.006);
+  $('trait').style.bottom=(5+cible*(HG-10))+'px';
+  $('traitT').textContent='LE TRAIT';
+  const z=$('zoneOk');
+  z.style.bottom=(5+(cible-large)*(HG-10))+'px';
+  z.style.height=((large*2)*(HG-10))+'px';
+  niv=0;$('liq').style.height='0px';$('liq').style.background=B[2];
+  $('mousse').style.opacity='0';$('deborde').style.opacity='0';
+  $('jet').style.height='0px';$('jet').style.background=
+    'linear-gradient(180deg,'+B[2]+'cc,'+B[2]+'44)';
+  $('btns').innerHTML=BOISSONS.map(b=>'<span class="'+(b[0]===B[0]?'on':'')+'"></span>').join('');
+  etat='pret';$('go').textContent='VERSER';$('go').classList.remove('verse');
+  $('aide').textContent='Appuie et garde pour verser. Relâche au bon niveau.';}
+function tic(){
+  boucle=requestAnimationFrame(tic);
+  if(etat!=='verse')return;
+  const dt=(performance.now()-t0)/1000;t0=performance.now();
+  niv+=dt*0.46*B[3];                       /* chaque boisson coule à son rythme */
+  $('liq').style.height=(niv*(HG-10))+'px';
+  $('mousse').style.bottom=(5+niv*(HG-10)-5)+'px';
+  $('mousse').style.opacity=B[4]?'0.9':'0.25';
+  $('jet').style.height=(HG-18-niv*(HG-10)+46)+'px';
+  if(niv>=1.02){fin(true);}}
+function presser(){
+  if(etat!=='pret')return;
+  etat='verse';t0=performance.now();vib(8);
+  $('go').textContent='RELÂCHE AU BON NIVEAU';$('go').classList.add('verse');tic();}
+function relacher(){
+  if(etat!=='verse')return;fin(false);}
+function fin(deborde){
+  etat='fini';cancelAnimationFrame(boucle);
+  $('jet').style.height='0px';
+  let gain=0, cl='ok';
+  if(deborde||niv>cible+large){
+    gain=-40;rates++;suite=0;cl='rate';
+    $('deborde').style.opacity='1';montre('ÇA DÉBORDE !');vib([40,60,40]);
+  }else if(niv>=cible-large){
+    const juste=Math.abs(niv-cible)<large*0.34;
+    gain=juste?130:80;bons++;suite++;
+    montre(juste?'PILE AU TRAIT':'BIEN SERVI');etincelles(juste?14:7);vib([12,26,12]);
+  }else{
+    gain=20;rates++;suite=0;montre('UN PEU JUSTE');vib(20);
+  }
+  H[nb-1]=cl;
+  paye=Math.max(0,paye+gain);
+  $('paye').textContent=(paye/100).toFixed(2).replace('.',',')+' €';
+  $('aide').textContent=(gain>=0?'+ ':'− ')+(Math.abs(gain)/100).toFixed(2).replace('.',',')+' €'+
+    (suite>=3?' · série ×'+suite:'');
+  $('go').textContent='VERRE SUIVANT';$('go').classList.remove('verse');
+  etat='pret2';}
+const go=$('go');
+go.onpointerdown=(ev)=>{ev.preventDefault();
+  if(etat==='pret')presser(); else if(etat==='pret2')nouvelle();};
+go.onpointerup=()=>relacher();
+go.onpointerleave=()=>relacher();
+function finService(){
+  const prime=suite>=5?200:0;paye+=prime;
+  $('finT').textContent=(paye/100).toFixed(2).replace('.',',')+' €';
+  $('finP').innerHTML=bons+' verres bien servis · '+rates+' ratés'+
+    (prime?'<br>Prime de régularité : 2,00 €':'')+
+    '<br><br>« '+(rates>3?'Tu m’as noyé le comptoir, va éponger.':
+      (bons>=8?'Tu sers mieux que Fanny, ne lui dis pas.':'Ça ira pour aujourd’hui.'))+' »';
+  $('rej').textContent='RESSORTIR';$('fin').classList.add('on');}
+$('rej').onpointerup=()=>{location.href='essai-burger.html';};
+rendreSerie();nouvelle();
+</script></body></html>
