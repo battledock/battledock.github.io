@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-01-2018';
+var MA_VERSION='2026-10-01-2039';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -22366,17 +22366,35 @@ veilleur.addEventListener('release',()=>{veilleur=null;});
 }
 }catch(x){}
 }
+/* LE RETOUR DANS LE JEU : après un long passage en arrière-plan, le téléphone
+   vide la mémoire des images gravées — les boutiques disparaissaient et il
+   fallait actualiser. On les regrave en revenant. */
+function regraverLeDecor(){
+  try{for(const k in XCAL)delete XCAL[k];}catch(x){}
+  try{for(const k in CALQUES_DECO)delete CALQUES_DECO[k];}catch(x){}
+  try{POSES.clear();}catch(x){}
+  videCache();
+  try{refaireLeSol();}catch(x){}
+  try{LISIERE=construireLisiere();}catch(x){}
+  try{semerDecor();}catch(x){}
+  mctx=null;MINI=null;
+  try{taille();}catch(x){}
+}
+let CACHE_QUITTE=0;
 document.addEventListener('visibilitychange',()=>{
 if(document.visibilityState==='visible'){
 garderAllume();
-refaireLeSol();LISIERE=construireLisiere();mctx=null;MINI=null;taille();
+if(Date.now()-CACHE_QUITTE>20000)regraverLeDecor();   /* plus de vingt secondes dehors */
+else{refaireLeSol();LISIERE=construireLisiere();mctx=null;MINI=null;taille();}
 }
-else{sauver();monterEnLigne(true);}       /* on enregistre en quittant */
+else{CACHE_QUITTE=Date.now();sauver();monterEnLigne(true);}   /* on enregistre en quittant */
 });
 addEventListener('pagehide',()=>{
 envoyerSauvegarde(true);
 try{CANAL&&CANAL.send({type:'broadcast',event:'sortie',payload:{id:e.id}});}catch(x){}sauver();monterEnLigne(true);});
-addEventListener('pageshow',()=>{refaireLeSol();LISIERE=construireLisiere();mctx=null;taille();});
+addEventListener('pageshow',(ev)=>{
+  if(ev&&ev.persisted)regraverLeDecor();                /* page sortie du congélateur */
+  else{refaireLeSol();LISIERE=construireLisiere();mctx=null;taille();}});
 addEventListener('beforeunload',()=>{sauver();});
 let fondu=0;
 taille();
