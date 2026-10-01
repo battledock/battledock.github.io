@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-01-0423';
+var MA_VERSION='2026-10-01-0431';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -17027,6 +17027,7 @@ hippocampe:{nom:'hippocampe',col:['#e8a02a','#f8d070'],L:8,touches:9,vit:.6},
 calamar:{nom:'Calamar géant',col:['#b83a3a','#f0a8a0'],L:30,touches:10,vit:.56},
 coelacanthe:{nom:'Cœlacanthe',col:['#1f3a6a','#6a8ab8'],L:26,touches:10,vit:.52},
 };
+let SERIE_VUE=0;
 let PECHE=null, TIENT_PECHE=false, CARNET_PECHE=null;
 function lieuDePeche(){
 if(FORET_SEULE&&CARTE==='village'){          /* LE BORD DE LA RIVIÈRE, EN FORÊT */
@@ -17096,6 +17097,16 @@ setTimeout(()=>{
 if(PECHE!==P)return;
 texteVolant(joueur.x,joueur.y-44,(LEGENDES.includes(d.espece)?'🏆 ':'')+S.nom+' · '+d.cm+' cm',
 LEGENDES.includes(d.espece)?'#f4d98a':(d.neuf?'#9fdfb8':'#cfe0f2'));
+/* LA SÉRIE : enchaîner les prises paie, une vieille chaussure casse tout */
+if(typeof d.serie==='number'){
+  if(d.espece==='botte'&&SERIE_VUE>=3){
+    setTimeout(()=>texteVolant(joueur.x,joueur.y-62,'série brisée','#e8806a'),420);}
+  else if(d.palier>0){
+    const t=(d.prime>0?'série ×'+d.serie+' · +'+d.palier+'% · '+enEuros(d.prime):'série ×'+d.serie);
+    setTimeout(()=>texteVolant(joueur.x,joueur.y-62,t,
+      d.palier>=25?'#f4d98a':(d.palier>=12?'#9fdfb8':'#cfe0f2')),420);
+    if(d.serie===3||d.serie===5||d.serie===10||d.serie===15)vibrer([14,30,14]);}
+  SERIE_VUE=d.espece==='botte'?0:d.serie;}
 if(d.neuf)setTimeout(()=>texteVolant(joueur.x,joueur.y-54,'nouvelle espèce au carnet !','#9fdfb8'),500);
 else if(d.record)setTimeout(()=>texteVolant(joueur.x,joueur.y-54,'nouveau record !','#e8c06a'),500);
 if(d.points>0){marquer('peche',d.points);sauver();setTimeout(()=>texteVolant(joueur.x+14,joueur.y-30,'+'+d.points+' pt'+(d.points>1?'s':''),'#ffd76a'),900);}
