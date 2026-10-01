@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-01-1429';
+var MA_VERSION='2026-10-01-1529';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -14254,7 +14254,9 @@ const w=window.innerWidth, h=window.innerHeight;
 let e=Math.max(w/VUE_L,h/VUE_H);
 e=Math.max(1.2,Math.round(e*8)/8);
 ECH_CSS=e;
-const plafond=QUALITE_TOILE<1?1.5:2;
+/* sur un écran dense, on grave jusqu'à 3× : le personnage avance par pas plus fins,
+   donc le mouvement est plus doux. La mesure d'images redescend toute seule si ça rame. */
+const plafond=QUALITE_TOILE<1?1.5:(QUALITE_TOILE>=1?3:2);
 const dpr=ECO?1:Math.max(1,Math.min(plafond,window.devicePixelRatio||1));
 ECH=e*dpr;
 VW=Math.ceil(w/e)+1;VH=Math.ceil(h/e)+1;
@@ -14350,12 +14352,24 @@ const [dx,dy]=degager(joueur.x,joueur.y);   /* on ne démarre jamais dans un tro
 joueur.x=dx;joueur.y=dy;e.x=dx;e.y=dy;
 }
 function poserCoffre(){ e.coffre=null; }
+const CAM={x:null,y:null,t:0};
 function dessiner(){
 preparerMonde();
 const CH_S=CHAMPS_SEULS&&CARTE==='village';const FO_S=FORET_SEULE&&CARTE==='village';
 const BX0=FO_S?FZ.x0:CH_S?FB.x0:(PLACE_SEULE&&CARTE==='village')?VIL.x0:((FERME_SEULE&&CARTE==='village')?FERME_X0:0), BX1=FO_S?660:CH_S?FB.x1:(PLACE_SEULE&&CARTE==='village')?VIL.x1:MONDE_L, BY0=FO_S?FZ.y0:CH_S?FB.y0:(PLACE_SEULE&&CARTE==='village')?VIL.y0:0, BY1=FO_S?FZ.y1:CH_S?FB.y1:(PLACE_SEULE&&CARTE==='village')?VIL.y1:MONDE_H;
-const camXf=Math.max(BX0,Math.min(BX1-VW,joueur.x-VW/2));
-const camYf=Math.max(BY0,Math.min(BY1-VH,joueur.y-VH*(CARTE==='garde'?0.74:(ANNEXE?0.62:0.5))));
+const cibleX=Math.max(BX0,Math.min(BX1-VW,joueur.x-VW/2));
+const cibleY=Math.max(BY0,Math.min(BY1-VH,joueur.y-VH*(CARTE==='garde'?0.74:(ANNEXE?0.62:0.5))));
+/* LA CAMÉRA SUIT EN DOUCEUR : elle rattrape le joueur au lieu de lui coller,
+   ce qui gomme les à-coups quand la vitesse n'est pas un nombre rond de pixels. */
+if(CAM.x===null||Math.abs(cibleX-CAM.x)>VW*0.6||Math.abs(cibleY-CAM.y)>VH*0.6){
+  CAM.x=cibleX;CAM.y=cibleY;}                 /* un saut de carte : on recadre d'un coup */
+else{
+  const nC=performance.now(), dtC=Math.min(0.05,(nC-(CAM.t||nC))/1000);CAM.t=nC;
+  const k=1-Math.pow(0.0008,dtC);             /* rattrapage doux, indépendant du rythme */
+  CAM.x+=(cibleX-CAM.x)*k;CAM.y+=(cibleY-CAM.y)*k;
+  if(Math.abs(cibleX-CAM.x)<0.04)CAM.x=cibleX;
+  if(Math.abs(cibleY-CAM.y)<0.04)CAM.y=cibleY;}
+const camXf=CAM.x, camYf=CAM.y;
 const camX=Math.floor(camXf), camY=Math.floor(camYf);
 const fx=Math.round((camXf-camX)*ECH)/ECH;      /* la part fractionnaire, calée sur l'écran */
 const fy=Math.round((camYf-camY)*ECH)/ECH;
@@ -22351,7 +22365,8 @@ function ecranFige(){
   if(!ECO)return false;
   try{
     const sec=Math.floor(Date.now()/1000);      /* l'heure du jeu bouge : une image par seconde */
-    const sg=[Math.round(joueur.x),Math.round(joueur.y),joueur.dir,joueur.marche?1:0,
+    const sg=[Math.round(joueur.x),Math.round(joueur.y),
+  Math.round((CAM.x||0)*4),Math.round((CAM.y||0)*4),joueur.dir,joueur.marche?1:0,
               (document.getElementById('action')||{}).className||'',
               (document.getElementById('page2')||{}).className||'',
               sec].join('|');
@@ -22368,7 +22383,7 @@ if(r>0){const pas=1000/r;if(t<prochaineImage)return;prochaineImage=t+pas*0.9;}
 else prochaineImage=0;}
 const brut=t-tBrut;tBrut=t;
 if(brut>2&&brut<40)rythmeEcran=rythmeEcran*0.92+brut*0.08;
-if(rythmeEcran<10){imagePaire=!imagePaire;if(imagePaire)return;}
+/* on ne saute plus une image sur deux : ça hachait le pas du personnage */
 if(ecranFige()){t0=t;return;}                 /* rien n'a changé : on garde l'image */
 const dt=Math.min(.05,(t-t0)/1000);mesurer(t-t0);majPerf(t-t0);
 if(PERF.on)PERF.traits=0;
