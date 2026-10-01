@@ -1,0 +1,206 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Crousti’Port · les frites</title>
+<style>
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{height:100%;background:#241c16;font-family:Georgia,serif;overflow:hidden;
+  touch-action:none;overscroll-behavior:none}
+#ec{position:fixed;inset:0;display:flex;flex-direction:column}
+#tete{flex:none;background:linear-gradient(180deg,#c8281e,#8a1a12);border-bottom:3px solid #e8b030;
+  padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 10px;display:flex;align-items:center;gap:9px}
+#tete b{flex:1;font:900 15px Georgia;color:#fff6e0;letter-spacing:.5px}
+#tete b i{display:block;font:italic 10px Georgia;color:#ffd9a8;font-weight:400}
+#tete .paye{background:#5a1008;border:1px solid #e8b030;border-radius:13px;padding:5px 9px;text-align:right}
+#tete .paye span{display:block;font:700 6px Arial;letter-spacing:1.4px;color:#f0b89a}
+#tete .paye b{display:block;font:700 12px Georgia;color:#ffd76a}
+#dix{flex:none;display:flex;gap:4px;padding:7px 12px;background:#1a1510;justify-content:center}
+#dix i{flex:1;max-width:26px;height:6px;border-radius:3px;background:#3a3026}
+#dix i.ok{background:linear-gradient(90deg,#e8b030,#ffd76a)}
+#dix i.brule{background:#7a2a1a}
+#dix i.en{background:#c8281e}
+/* la scène */
+#scene{flex:1;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 32%,#3f342a,#241c16 72%)}
+#jauge{position:absolute;left:14px;right:14px;top:22px;height:26px;border-radius:13px;background:#1a1510;
+  box-shadow:inset 0 0 0 2px #5a4c3c;overflow:hidden}
+#jauge .deg{position:absolute;inset:0;
+  background:linear-gradient(90deg,#6a9ad0 0 14%,#8ae0a0 14%,#e8c040 46%,#f0a030 72%,#c8281e 100%)}
+#jauge .mask{position:absolute;top:0;bottom:0;right:0;background:#1a1510}
+#zone{position:absolute;top:22px;height:26px;border:3px solid #fff;border-radius:7px;
+  box-shadow:0 0 12px rgba(255,255,255,.55);pointer-events:none}
+#cur{position:absolute;top:16px;width:4px;height:38px;border-radius:2px;background:#fff;
+  box-shadow:0 0 10px rgba(255,255,255,.9);pointer-events:none}
+#mot{position:absolute;top:58px;left:0;right:0;text-align:center;font:700 10px Arial;
+  letter-spacing:2.6px;color:#ffd9a8}
+#bac{position:absolute;left:50%;transform:translateX(-50%);bottom:34px;width:268px;height:146px;
+  background:#4a4036;border-radius:10px 10px 5px 5px;box-shadow:inset 0 0 0 3px #6a5c4c,0 9px 22px rgba(0,0,0,.5)}
+#huile{position:absolute;left:10px;right:10px;bottom:10px;height:96px;border-radius:5px;
+  background:linear-gradient(180deg,#f0bc3c,#c98a1a);overflow:hidden}
+.bul{position:absolute;border-radius:50%;background:rgba(255,248,214,.55);
+  animation:monte linear infinite}
+@keyframes monte{from{transform:translateY(0);opacity:.8}to{transform:translateY(-96px);opacity:0}}
+#panier{position:absolute;left:50%;transform:translateX(-50%);bottom:46px;width:214px;height:80px;
+  border:3px solid #9aa2a8;border-radius:5px;background:rgba(154,162,168,.08);
+  transition:transform .3s cubic-bezier(.3,1.4,.5,1)}
+#panier.sorti{transform:translateX(-50%) translateY(-118px)}
+#panier .manche{position:absolute;right:-58px;top:-9px;width:60px;height:10px;border-radius:5px;background:#9aa2a8}
+.fr{position:absolute;width:8px;border-radius:2px;background:#f6d070;box-shadow:0 1px 0 #d8a830;
+  transition:background .25s}
+#bravo{position:absolute;left:0;right:0;top:92px;text-align:center;font:900 24px Georgia;color:#ffd76a;
+  opacity:0;transform:scale(.8);transition:.16s;text-shadow:0 2px 0 rgba(0,0,0,.4)}
+#bravo.on{opacity:1;transform:scale(1)}
+#combo{position:absolute;right:12px;top:86px;background:rgba(200,40,30,.92);color:#ffd76a;
+  border-radius:11px;padding:5px 11px;font:900 14px Georgia;opacity:0;transform:scale(.7);transition:.16s}
+#combo.on{opacity:1;transform:scale(1)}
+.pouf{position:absolute;width:5px;height:5px;border-radius:50%;background:#ffd76a;pointer-events:none;
+  animation:pouf .5s ease-out forwards}
+@keyframes pouf{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+/* le bas */
+#bas{flex:none;background:#f6efdc;border-top:3px solid #e8b030;padding:11px 12px calc(env(safe-area-inset-bottom,0px) + 13px)}
+#aide{text-align:center;font:italic 11.5px Georgia;color:#8a7454;min-height:17px;margin-bottom:9px}
+#stats{display:flex;gap:8px;margin-bottom:10px}
+#stats div{flex:1;background:#fff;border:1px solid #e0d3b4;border-radius:9px;padding:7px;text-align:center}
+#stats small{display:block;font:700 7px Arial;letter-spacing:1.3px;color:#8a7454}
+#stats b{display:block;font:700 16px Georgia;color:#2f2820;margin-top:1px}
+#stats b.v{color:#2f7a4a}#stats b.r{color:#c8281e}
+#go{width:100%;border:0;border-radius:12px;padding:20px;background:#c8281e;color:#fff6e0;
+  font:900 15px Georgia;letter-spacing:1px;box-shadow:0 5px 0 #8a1a12;transition:transform .08s}
+#go:active{transform:translateY(4px);box-shadow:0 1px 0 #8a1a12}
+#fin{position:fixed;inset:0;z-index:9;display:none;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(36,28,22,.95);text-align:center;padding:24px}
+#fin.on{display:flex}
+#fin b{font:900 30px Georgia;color:#ffd76a}
+#fin p{font:italic 14px Georgia;color:#e8dcc0;margin-top:9px;line-height:1.55}
+#fin button{margin-top:18px;border:0;border-radius:11px;padding:15px 28px;background:#c8281e;color:#fff6e0;
+  font:700 11px Arial;letter-spacing:2px}
+</style></head><body>
+<div id="ec">
+  <div id="tete"><b>CROUSTI’PORT<i id="sous">Au piano · fournée 1 sur 10</i></b>
+    <span class="paye"><span>TA PAIE</span><b id="paye">0,00 €</b></span></div>
+  <div id="dix"></div>
+  <div id="scene">
+    <div id="jauge"><div class="deg"></div><div class="mask" id="mask"></div></div>
+    <div id="zone"></div><div id="cur"></div>
+    <div id="mot">LANCE LA FOURNÉE</div>
+    <div id="bravo"></div><div id="combo"></div>
+    <div id="bac"><div id="huile"></div><div id="panier"><span class="manche"></span></div></div>
+  </div>
+  <div id="bas">
+    <div id="aide">Le panier plonge, la jauge court. Sors-le dans la zone blanche.</div>
+    <div id="stats">
+      <div><small>PARFAITES</small><b class="v" id="sP">0</b></div>
+      <div><small>RÉUSSIES</small><b class="v" id="sR">0</b></div>
+      <div><small>BRÛLÉES</small><b class="r" id="sB">0</b></div>
+    </div>
+    <button id="go">PLONGER LE PANIER</button>
+  </div>
+</div>
+<div id="fin"><b id="finT"></b><p id="finP"></p><button id="rej">ENCORE</button></div>
+<script>
+const $=(id)=>document.getElementById(id);
+const vib=n=>{try{navigator.vibrate&&navigator.vibrate(n);}catch(e){}};
+const TOTAL=10;
+let nb=0, paye=0, parf=0, reus=0, brul=0, serie=0;
+let etat='pret', t0=0, duree=3200, boucle=0, zA=0.58, zB=0.74, FR=[];
+function rendreDix(){const d=$('dix');d.innerHTML='';
+  for(let i=0;i<TOTAL;i++){const e=document.createElement('i');
+    e.className=i<nb-1?(FR[i]||'ok'):(i===nb-1?'en':'');d.appendChild(e);}}
+function bulles(){
+  const h=$('huile');h.querySelectorAll('.bul').forEach(b=>b.remove());
+  for(let i=0;i<9;i++){const b=document.createElement('span');b.className='bul';
+    const t=3+Math.random()*3;
+    b.style.cssText='left:'+(8+Math.random()*230)+'px;bottom:0;width:'+t+'px;height:'+t+'px;'+
+      'animation-duration:'+(1.1+Math.random()*1.4)+'s;animation-delay:'+(Math.random()*1.5)+'s';
+    h.appendChild(b);}}
+function frites(n){
+  const p=$('panier');p.querySelectorAll('.fr').forEach(f=>f.remove());
+  for(let i=0;i<n;i++){const f=document.createElement('span');f.className='fr';
+    f.style.cssText='left:'+(10+Math.random()*190)+'px;bottom:'+(6+Math.random()*52)+'px;'+
+      'height:'+(16+Math.random()*10)+'px;transform:rotate('+(Math.random()*60-30)+'deg)';
+    p.appendChild(f);}}
+function teinte(k){
+  /* la couleur des frites suit la cuisson : pâle, dorée, puis brûlée */
+  const c = k<0.28?'#f6e8b8' : k<0.58?'#f6d070' : k<0.80?'#e8a83a' : k<0.92?'#c87a2a':'#6a3a1a';
+  $('panier').querySelectorAll('.fr').forEach(f=>f.style.background=c);}
+function etincelles(n){
+  const s=$('scene'),r=$('panier').getBoundingClientRect(),rs=s.getBoundingClientRect();
+  for(let i=0;i<n;i++){const d=document.createElement('span');d.className='pouf';
+    d.style.left=(r.left-rs.left+r.width/2)+'px';d.style.top=(r.top-rs.top)+'px';
+    d.style.setProperty('--dx',(Math.random()*140-70)+'px');
+    d.style.setProperty('--dy',(-40-Math.random()*70)+'px');
+    s.appendChild(d);setTimeout(()=>d.remove(),520);}}
+function montre(t){const b=$('bravo');b.textContent=t;b.classList.add('on');
+  setTimeout(()=>b.classList.remove('on'),720);}
+function placerZone(){
+  /* la fenêtre se resserre et se déplace au fil des fournées */
+  const large=Math.max(0.09,0.20-nb*0.011);
+  zA=0.46+Math.random()*(0.46-large);zB=zA+large;
+  const z=$('zone'),j=$('jauge').getBoundingClientRect(),s=$('scene').getBoundingClientRect();
+  z.style.left=(j.left-s.left+j.width*zA)+'px';z.style.width=(j.width*(zB-zA))+'px';}
+function nouvelle(){
+  nb++;
+  if(nb>TOTAL){finService();return;}
+  $('sous').textContent='Au piano · fournée '+nb+' sur '+TOTAL;
+  rendreDix();placerZone();
+  etat='pret';$('mot').textContent='LANCE LA FOURNÉE';
+  $('aide').textContent='Le panier plonge, la jauge court. Sors-le dans la zone blanche.';
+  $('go').textContent='PLONGER LE PANIER';
+  $('panier').classList.remove('sorti');
+  $('mask').style.width='100%';$('cur').style.opacity='0';
+  frites(10+Math.floor(Math.random()*5));teinte(0);}
+function plonger(){
+  etat='cuit';t0=performance.now();duree=Math.max(1800,3400-nb*130);
+  $('go').textContent='SORTIR LE PANIER';$('mot').textContent='ÇA CUIT…';
+  $('cur').style.opacity='1';vib(10);bulles();tic();}
+function tic(){
+  boucle=requestAnimationFrame(tic);
+  if(etat!=='cuit')return;
+  const k=(performance.now()-t0)/duree;
+  const j=$('jauge').getBoundingClientRect(),s=$('scene').getBoundingClientRect();
+  $('mask').style.width=Math.max(0,(1-k)*100)+'%';
+  $('cur').style.left=(j.left-s.left+j.width*Math.min(1,k)-2)+'px';
+  teinte(k);
+  if(k>=zB-0.004&&k<zB+0.02)$('mot').textContent='DORÉES · SORS-LES';
+  if(k>=1){sortir(true);}}
+function sortir(auto){
+  if(etat!=='cuit')return;
+  const k=(performance.now()-t0)/duree;
+  etat='fini';cancelAnimationFrame(boucle);
+  $('panier').classList.add('sorti');
+  const milieu=(zA+zB)/2, parfait=Math.abs(k-milieu)<(zB-zA)*0.3;
+  let gain=0, cl='ok';
+  if(k>=zA&&k<=zB){
+    if(parfait){gain=140;parf++;serie++;montre('NICKEL !');etincelles(14);}
+    else{gain=80;reus++;serie++;montre('BIEN DORÉES');etincelles(7);}
+    vib([12,26,12]);
+  }else if(k<zA){
+    gain=20;reus++;serie=0;montre('UN PEU MOLLES');vib(20);
+  }else{
+    gain=-40;brul++;serie=0;cl='brule';montre('BRÛLÉES !');vib([40,60,40]);
+  }
+  FR[nb-1]=cl;
+  paye=Math.max(0,paye+gain);
+  $('paye').textContent=(paye/100).toFixed(2).replace('.',',')+' €';
+  $('sP').textContent=parf;$('sR').textContent=reus;$('sB').textContent=brul;
+  if(serie>=3){const c=$('combo');c.textContent='×'+serie;c.classList.add('on');}
+  else $('combo').classList.remove('on');
+  $('aide').textContent=(gain>=0?'+ ':'− ')+(Math.abs(gain)/100).toFixed(2).replace('.',',')+' €';
+  $('go').textContent='FOURNÉE SUIVANTE';
+  $('mot').textContent=k>zB?'TROP TARD':(k<zA?'TROP TÔT':'PILE POIL');
+  etat='pret2';}
+$('go').onpointerdown=(ev)=>{ev.preventDefault();
+  if(etat==='pret')plonger();
+  else if(etat==='cuit')sortir(false);
+  else if(etat==='pret2')nouvelle();};
+function finService(){
+  const prime=serie>=5?200:0;
+  paye+=prime;
+  $('finT').textContent=(paye/100).toFixed(2).replace('.',',')+' €';
+  $('finP').innerHTML=parf+' parfaites · '+reus+' réussies · '+brul+' brûlées'+
+    (prime?'<br>Prime de régularité : 2,00 €':'')+
+    '<br><br>« '+(brul>3?'Tu m’as cramé la moitié du bac. On révise demain.':
+      (parf>=5?'Du beau travail. Tu reviens quand tu veux.':'Pas mal pour un début.'))+' »';
+  $('rej').textContent='RESSORTIR';
+  $('fin').classList.add('on');}
+$('rej').onpointerup=()=>{location.href='essai-burger.html';};
+rendreDix();nouvelle();
+</script></body></html>

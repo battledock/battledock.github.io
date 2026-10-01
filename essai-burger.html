@@ -66,6 +66,11 @@ html,body{height:100%;background:#241c16;font-family:Georgia,serif;overflow:hidd
 #bulle:before{content:'';position:absolute;left:14px;top:-7px;border:7px solid transparent;
   border-bottom-color:#f6efdc;border-top:0}
 /* les étages restants */
+/* les dix burgers du service */
+#dix{flex:none;display:flex;gap:4px;padding:7px 12px;background:#1a1510;justify-content:center}
+#dix i{flex:1;max-width:28px;height:6px;border-radius:3px;background:#3a3026}
+#dix i.ok{background:linear-gradient(90deg,#e8b030,#ffd76a)}
+#dix i.en{background:#c8281e}
 #reste{display:flex;gap:5px;justify-content:center;margin-bottom:8px;min-height:13px}
 #reste i{width:22px;height:9px;border-radius:3px;opacity:.9;box-shadow:0 1px 0 rgba(120,96,56,.3)}
 #reste i.fait{opacity:.18}
@@ -92,8 +97,9 @@ html,body{height:100%;background:#241c16;font-family:Georgia,serif;overflow:hidd
 @keyframes part{to{transform:translateX(calc(-50% + 240px)) rotate(7deg);opacity:0}}
 </style></head><body>
 <div id="ec">
-  <div id="tete"><b>CROUSTI’PORT<i id="sous">Service · burger 3</i></b>
+  <div id="tete"><b>CROUSTI’PORT<i id="sous">Service · burger 1 sur 10</i></b>
     <span class="paye"><span>TA PAIE</span><b id="paye">6,40 €</b></span></div>
+  <div id="dix"></div>
   <div id="cmd"><canvas id="tete2" width="112" height="112"></canvas>
     <div class="q"><small id="qui">LE CLIENT</small><b id="recette">—</b></div>
     <div id="chrono"><i></i></div></div>
@@ -131,7 +137,11 @@ const RECETTES=[
  ['Le Marseillais','pain_bas,poisson,tomate,oignon,sauce,pain_haut'],
  ['Le Gros Cargo','pain_bas,steak,bacon,cheddar,cornichon,salade,pain_haut'],
  ['Le Végé du Quai','pain_bas,salade,tomate,oignon,cornichon,sauce,pain_haut']];
-let R=[], pose=0, paye=640, nb=3, t0=0, duree=18000, boucle=0, fini=false, serie=0;
+let R=[], pose=0, paye=0, nb=0, t0=0, duree=18000, boucle=0, fini=false, serie=0;
+const TOTAL=10;
+function rendreDix(){const d=$('dix');d.innerHTML='';
+  for(let i=0;i<TOTAL;i++){const e2=document.createElement('i');
+    e2.className=i<nb-1?'ok':(i===nb-1?'en':'');d.appendChild(e2);}}
 function etage(id,fantome){
   const [c,n,cl]=ING[id];
   const d=document.createElement('div');
@@ -173,6 +183,10 @@ function etincelles(n){
     d.style.setProperty('--dy',(-30-Math.random()*60)+'px');
     s2.appendChild(d);setTimeout(()=>d.remove(),520);}}
 function nouvelle(){
+  nb++;
+  if(nb>TOTAL){finService();return;}
+  $('sous').textContent='Service · burger '+nb+' sur '+TOTAL;
+  rendreDix();
   const [nom,l]=RECETTES[Math.floor(Math.random()*RECETTES.length)];
   const C=CLIENTS[Math.floor(Math.random()*CLIENTS.length)];
   tete(C[1],C[2]);$('qui').textContent=C[0].toUpperCase();
@@ -236,6 +250,16 @@ function reussi(){
 function rate(t,p){
   fini=true;cancelAnimationFrame(boucle);vib([40,60,40]);
   $('finT').textContent=t;$('finP').textContent=p;$('fin').classList.add('on');}
-$('rej').onpointerup=(ev)=>{ev.stopPropagation();nb++;$('sous').textContent='Service · burger '+nb;nouvelle();};
+function finService(){
+  fini=true;cancelAnimationFrame(boucle);
+  $('finT').textContent='Dix burgers servis';
+  $('finP').innerHTML='Tu as gagné <b>'+(paye/100).toFixed(2).replace('.',',')+' €</b> au comptoir.<br>'+
+    'Le patron te fait signe : « Passe au piano, j’ai les frites qui attendent. »';
+  $('rej').textContent='AUX FRITES';
+  $('rej').dataset.suite='frites';
+  $('fin').classList.add('on');}
+$('rej').onpointerup=(ev)=>{ev.stopPropagation();
+  if($('rej').dataset.suite==='frites'){location.href='essai-frites.html';return;}
+  nouvelle();};
 rendreIng();nouvelle();
 </script></body></html>
