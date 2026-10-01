@@ -883,62 +883,127 @@ return EQUIP_PECHE;
 function illustrerArticle(cv,id){
 const W=cv.width,H=cv.height,g=cv.getContext('2d');g.imageSmoothingEnabled=false;
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+const al=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
 g.clearRect(0,0,W,H);
-const canne=(c1,c2,poignee,anneaux,noeuds,motif)=>{
-const x0=8,y0=H-8,x1=W-8,y1=8, L=Math.hypot(x1-x0,y1-y0);
-for(let i=0;i<=L;i++){const k=i/L, x=x0+(x1-x0)*k, y=y0+(y1-y0)*k, e2=Math.max(1,Math.round(4-k*3));
-const col=k<.22?poignee:(motif&&Math.floor(i/2)%2?c2:c1);
-R(x-e2/2,y-e2/2,e2,e2,col);if(k>=.22&&k<.95)R(x-e2/2,y-e2/2,1,1,'rgba(255,255,255,.45)');
-if(noeuds&&k>.22&&Math.floor(i)%14===0)R(x-2,y-2,4,4,noeuds);}
-for(let a=0;a<5;a++){const k=.35+a*.14, x=x0+(x1-x0)*k, y=y0+(y1-y0)*k;R(x-1,y+1,3,3,anneaux);R(x,y+2,1,1,'#1b1b1b');}
-R(x0+8,y0-14,6,6,'#2a2c2e');R(x0+9,y0-13,4,4,'#b9c1c7');                               /* le moulinet */
+/* un fond d'établi discret, pour que l'objet se détache */
+for(let y=H-9;y<H;y++)R(0,y,W,1,y<H-6?'#c9a878':'#a5764a');
+for(let x=0;x<W;x+=9)R(x,H-9,1,9,'rgba(90,62,30,.22)');
+g.fillStyle='rgba(60,40,18,.16)';g.beginPath();g.ellipse(W/2,H-7,W*0.34,3.4,0,0,7);g.fill();
+/* ================= LA CANNE =================
+   talon de liège, poignée gainée, porte-moulinet, moulinet détaillé,
+   anneaux qui diminuent vers le scion, viroles et reflet. */
+const canne=(corps,clair,liege,metal,virole,motif,eclat)=>{
+  const x0=9,y0=H-13,x1=W-10,y1=9, L=Math.hypot(x1-x0,y1-y0);
+  const px=(x1-x0)/L, py=(y1-y0)/L, nx=-py, ny=px;
+  /* le talon de liège, épais */
+  for(let i=0;i<L*0.2;i++){const x=x0+px*i,y=y0+py*i,e=4.6-i*0.9/L;
+    for(let q=-e;q<=e;q+=1)R(x+nx*q,y+ny*q,1.2,1.2,al(i*3+q)<0.4?liege:'#dcc08c');}
+  /* la gaine de la poignée */
+  for(let i=L*0.2;i<L*0.27;i++){const x=x0+px*i,y=y0+py*i;
+    for(let q=-4;q<=4;q+=1)R(x+nx*q,y+ny*q,1.2,1.2,'#2a2a30');}
+  /* le blank : s'affine du talon au scion */
+  for(let i=L*0.27;i<=L;i++){const k=i/L, x=x0+px*i, y=y0+py*i, e=3.6-k*3.0;
+    for(let q=-e;q<=e;q+=1){
+      const c = (q<-e*0.3)?clair:((motif&&Math.floor(i/3)%2)?clair:corps);
+      R(x+nx*q,y+ny*q,1.2,1.2,c);}
+    if(virole&&Math.floor(i)%26===0)for(let q=-e-0.6;q<=e+0.6;q+=1)R(x+nx*q,y+ny*q,1.4,1.4,virole);}
+  /* les anneaux, de plus en plus petits */
+  for(let a=0;a<5;a++){const k=0.36+a*0.145, x=x0+px*L*k, y=y0+py*L*k, r=2.6-a*0.34;
+    for(let t=0;t<6.283;t+=0.5)R(x+nx*(r+1.2)+Math.cos(t)*r*0.7,y+ny*(r+1.2)+Math.sin(t)*r*0.7,1.2,1.2,metal);
+    R(x+nx*0.6,y+ny*0.6,1.6,1.6,metal);}
+  /* le porte-moulinet et le moulinet */
+  const mx=x0+px*L*0.22+nx*5.4, my=y0+py*L*0.22+ny*5.4;
+  R(mx-1.6,my-3.4,3.2,7,'#3a3f46');
+  for(let t=0;t<6.283;t+=0.16)R(mx-5+Math.cos(t)*4.6,my+1+Math.sin(t)*4.6,1.8,1.8,'#7f868d');
+  for(let t=0;t<6.283;t+=0.2)R(mx-5+Math.cos(t)*2.8,my+1+Math.sin(t)*2.8,1.6,1.6,'#c8ced4');
+  R(mx-6,my,2.2,2.2,virole||'#e2c070');
+  R(mx-9.4,my+0.6,3.4,1.4,'#8a8a92');
+  /* le fil, fin, qui suit les anneaux */
+  for(let i=L*0.34;i<L;i+=1.4){const x=x0+px*i,y=y0+py*i;R(x+nx*3.4,y+ny*3.4,1,1,'rgba(240,248,252,.55)');}
+  if(eclat)for(let k=0;k<8;k++){const i=L*(0.3+al(k)*0.65);
+    R(x0+px*i+nx*2,y0+py*i+ny*2,1.6,1.6,'rgba(255,248,210,.9)');}
 };
-if(id==='bambou')canne('#c9a86a','#b89456','#6b4a2c','#8a8a82','#8a6a3a');
-else if(id==='fibre')canne('#e8e8e2','#d8d8d0','#2e3a44','#b9c1c7');
-else if(id==='carbone')canne('#2a2c2e','#3e4246','#1b1b1b','#e8c06a',null,true);
-else if(id==='maitre')canne('#5a2a1a','#8a3a22','#2a1a10','#e8c06a','#e8c06a',true);
-else if(id==='roi'){canne('#e8c06a','#fff0b8','#3a1a4a','#ffffff','#c9a24a',true);for(let k=0;k<7;k++){g.fillStyle='rgba(255,240,180,.9)';g.fillRect(12+k*14,H-14-k*7,2,2);}}
+if(id==='bambou')      canne('#b8894c','#d8ad6e','#c9a878','#9aa0a8',null,false,false);
+else if(id==='fibre')  canne('#dfe4e8','#f4f7fa','#c9a878','#8fb8cc','#9fc0d0',false,false);
+else if(id==='carbone')canne('#23262a','#3d4247','#1a1a1e','#e2c070','#c9a24a',true,false);
+else if(id==='maitre') canne('#5a2018','#8a3626','#3a2418','#e2c070','#f0d78a',true,false);
+else if(id==='roi')    canne('#c9a24a','#f6e0a8','#3a1a4a','#fff6d0','#ffffff',true,true);
+/* ================= LE MOULINET ================= */
 else if(id==='moulinet'){
-const cx=W/2,cy=H/2;
-g.fillStyle='#2a2c2e';g.beginPath();g.arc(cx,cy,16,0,7);g.fill();
-g.fillStyle='#8f959b';g.beginPath();g.arc(cx,cy,13,0,7);g.fill();
-g.fillStyle='#e8e8e2';g.beginPath();g.arc(cx,cy,9,0,7);g.fill();
-for(let k=0;k<5;k++)R(cx-9,cy-6+k*3,18,1,'#b9c1c7');                                     /* le fil sur la bobine */
-g.fillStyle='#2a2c2e';g.beginPath();g.arc(cx,cy,3,0,7);g.fill();
-R(cx+14,cy-2,14,3,'#2a2c2e');R(cx+26,cy-6,4,11,'#c9a24a');                              /* la manivelle */
-R(cx-4,cy+16,8,6,'#3a3a36');R(cx-10,cy+21,20,3,'#3a3a36');                               /* le pied */
-R(cx-12,cy-12,5,2,'rgba(255,255,255,.6)');
-}else if(id==='bouchon'){
-const cx=W/2;
-R(cx-1,4,2,H-8,'rgba(240,240,240,.8)');
-g.fillStyle='#f2efe4';g.beginPath();g.ellipse(cx,H/2-6,7,10,0,Math.PI,0);g.fill();
-g.fillStyle='#d0402f';g.beginPath();g.ellipse(cx,H/2-6,7,12,0,0,Math.PI);g.fill();
-R(cx-1,H/2-20,2,6,'#1b1b1b');R(cx-4,H/2-4,2,3,'rgba(255,255,255,.5)');
-g.fillStyle='#5f666c';g.beginPath();g.ellipse(cx,H-12,4,5,0,0,7);g.fill();              /* le plomb */
-R(cx-2,H-15,2,2,'#a4acb3');
-}else if(id==='vers'){
-R(W/2-22,H/2-6,44,20,'#8a6238');R(W/2-20,H/2-4,40,16,'#5a3f21');
-for(let k=0;k<4;k++){g.strokeStyle=['#c0607a','#d07088','#b05068','#e08aa0'][k];g.lineWidth=2.5;g.beginPath();
-g.moveTo(W/2-16+k*9,H/2+8);g.quadraticCurveTo(W/2-10+k*9,H/2-12,W/2-4+k*9,H/2+2);g.stroke();}
-R(W/2-22,H/2-8,44,3,'#a97f52');
-}else if(id==='crevettes'){
-for(let k=0;k<3;k++){const x=W/2-22+k*18, y=H/2-4+(k%2)*6;
-g.strokeStyle='#e8806a';g.lineWidth=4;g.beginPath();g.arc(x+6,y,7,Math.PI*0.2,Math.PI*1.3);g.stroke();
-R(x+11,y-4,3,3,'#1b1b1b');g.strokeStyle='#d0553f';g.lineWidth=.8;g.beginPath();g.moveTo(x+12,y-4);g.lineTo(x+22,y-12);g.stroke();}
-}else if(id==='sardine'){
-for(let k=0;k<3;k++){const y=H/2-10+k*9;
-R(W/2-24,y,40,6,'#9fb3c4');R(W/2-24,y,40,2,'#c9d6e0');R(W/2+16,y-1,6,8,'#8499aa');R(W/2-20,y+2,2,2,'#1b1b1b');}
-}else{
-const f=FINITIONS.find(x=>x.id===id);
-if(f)canne(f.col[0],f.col[1],'#3a2616',f.id==='dore'?'#fff0b8':'#e8c06a',null,f.nacre);
-if(f&&f.nacre)for(let k=0;k<6;k++)R(14+k*16,H-16-k*7,2,2,['#ffd0e8','#d0e8ff','#d8ffd8'][k%3]);
+  const cx=W/2,cy=H/2-2;
+  for(let t=0;t<6.283;t+=0.08)R(cx+Math.cos(t)*17,cy+Math.sin(t)*17,2.6,2.6,'#2f343a');
+  for(let t=0;t<6.283;t+=0.1)R(cx+Math.cos(t)*14,cy+Math.sin(t)*14,2.4,2.4,'#8f959b');
+  for(let t=0;t<6.283;t+=0.14)R(cx+Math.cos(t)*10,cy+Math.sin(t)*10,2.2,2.2,'#d8dde2');
+  for(let r=0;r<9;r+=1.6)for(let t=0;t<6.283;t+=0.3)R(cx+Math.cos(t)*r,cy+Math.sin(t)*r,1.4,1.4,'rgba(250,252,255,.5)');
+  for(let t=0;t<6.283;t+=0.9)R(cx+Math.cos(t)*12,cy+Math.sin(t)*12,3,3,'#3a3f46');
+  R(cx-3,cy-3,6,6,'#e2c070');R(cx-1.4,cy-1.4,3,3,'#8a6a20');
+  R(cx+16,cy-2,10,3.4,'#8a8a92');R(cx+24,cy-4,4,7,'#c9a878');     /* la manivelle */
+  R(cx-20,cy-6,6,12,'#3a3f46');R(cx-20,cy-6,6,3,'#5f666e');        /* le pied */
 }
+/* ================= LE BOUCHON ================= */
+else if(id==='bouchon'){
+  const cx=W/2,cy=H/2;
+  for(let y=-11;y<=11;y++){const dx=Math.round(9*Math.sqrt(Math.max(0,1-(y/11)*(y/11))));
+    for(let x=-dx;x<=dx;x++)R(cx+x,cy+y,1,1,y<0?(x<-dx*0.4?'#e8604a':'#c0392b'):(x<-dx*0.4?'#f6f2ea':'#e2ddd2'));}
+  R(cx-1.4,cy-18,3,8,'#8a8a92');R(cx-2.4,cy-19,5,2,'#c8ced4');
+  R(cx-1.4,cy+11,3,9,'#c9a878');R(cx-2.4,cy+19,5,2.4,'#8a6238');
+  R(cx-5,cy-6,3,3,'rgba(255,255,255,.5)');
 }
-async function ouvrirLaBoutiqueDePeche(){
-$('catalogue').classList.add('on');
-$('catPages').innerHTML='<div class="catVide">Fanny cherche ses clés…</div>';
-await chargerLEquipement();
-afficherPecheMarine();
+/* ================= LES APPÂTS ================= */
+else if(id==='vers'){
+  R(10,H-18,W-20,8,'#6a4a2a');R(10,H-18,W-20,2,'#8a6238');           /* la boîte de terre */
+  for(let x=12;x<W-12;x+=3)R(x,H-16,2,5,al(x)<0.5?'#3a2a18':'#4a3524');
+  for(let v=0;v<3;v++){const y0=H-22-v*7;
+    for(let i=0;i<26;i++){const x=16+i+v*4, y=y0+Math.sin(i/3.2+v)*4;
+      R(x,y,2.4,2.4,i%5<3?'#c0604a':'#d8806a');}}
+}
+else if(id==='crevettes'){
+  for(let c=0;c<2;c++){const bx=14+c*26, by=H/2+c*6;
+    for(let i=0;i<14;i++){const t=i/14, a=t*2.2;
+      const x=bx+Math.cos(a)*11, y=by+Math.sin(a)*8;
+      R(x,y,3.4-t,3.4-t,i%3?'#e8805a':'#f4a888');}
+    for(let k=0;k<3;k++)R(bx+10,by-6+k*2,5,1.2,'#e8805a');
+    R(bx+8,by-7,2,2,'#2a1a14');
+    for(let k=0;k<4;k++)R(bx+4-k*2,by+7,1.4,3,'#f4a888');}
+}
+else if(id==='sardine'||id==='appatSardine'){
+  for(let p2=0;p2<2;p2++){const bx=12+p2*28, by=H/2-4+p2*10, lg=26, ht=9;
+    for(let i=0;i<lg;i++){const t=i/lg;
+      const h=Math.round(ht/2*Math.sqrt(Math.max(0.03,1-Math.pow(t*2-0.85,2))));
+      for(let q=-h;q<=h;q++)R(bx+i,by+q,1,1,q<-h*0.3?'#dfe8ee':'#8aa8c0');}
+    R(bx+lg,by-4,3,8,'#8aa8c0');R(bx+lg+2,by-6,2.4,4,'#8aa8c0');R(bx+lg+2,by+2,2.4,4,'#8aa8c0');
+    R(bx+3,by-1.4,2.4,2.4,'#f4f2ee');R(bx+3.6,by-0.8,1.2,1.2,'#101418');
+    for(let k=0;k<5;k++)R(bx+8+k*3,by,1.4,1,'rgba(255,255,255,.35)');}
+}
+/* ================= LES FINITIONS ================= */
+else if(id==='bleu'||id==='rouge'||id==='olive'||id==='dore'||id==='nacre'){
+  const T={bleu:['#1d5b9a','#4f9ad8'],rouge:['#b4302c','#e06a5a'],olive:['#5f7a3a','#90ae60'],
+           dore:['#c9a24a','#f0d78a'],nacre:['#cfd8e0','#f4f8fc']}[id];
+  const cx=W/2,cy=H/2+2;
+  /* le pot, avec son reflet et sa coulure */
+  R(cx-11,cy-10,22,22,T[0]);R(cx-11,cy-10,22,5,T[1]);
+  R(cx-8,cy-6,5,14,'rgba(255,255,255,.28)');
+  R(cx-13,cy-14,26,5,'#8a8a92');R(cx-13,cy-14,26,1.6,'#c8ced4');
+  R(cx-4,cy-19,8,5,'#5f666e');
+  for(let i=0;i<9;i++)R(cx+10+i,cy+8+i*0.6,2.4,2.4,T[0]);    /* la coulure */
+  /* le pinceau posé à côté */
+  R(cx-26,cy+2,5,16,'#8a6238');R(cx-26,cy-6,5,9,'#9aa0a8');
+  R(cx-26,cy-12,5,7,T[0]);
+}
+/* ================= CE QUI N'EST PAS ENCORE AU CATALOGUE ================= */
+else if(id==='fil'){
+  for(let y=0;y<20;y++)R(W/2-11,H/2-10+y,22,1,y%3?'#9fc0d0':'#dfe8ee');
+  R(W/2-14,H/2-13,28,4,'#5a6a74');R(W/2-14,H/2+9,28,4,'#5a6a74');
+  for(let i=0;i<10;i++)R(W/2+13+i,H/2-11+i*1.4,1.4,1.4,'rgba(240,248,252,.7)');
+}
+else if(id==='hamecon'){
+  const cx=W/2,cy=H/2;
+  R(cx-1.4,cy-18,3,16,'#c8ced4');R(cx-3,cy-20,6,3,'#c8ced4');
+  for(let a=0;a<3.5;a+=0.12)R(cx-Math.sin(a)*11,cy+2+Math.cos(a)*11,2.6,2.6,'#c8ced4');
+  R(cx-12,cy-4,3,5,'#c8ced4');
+  R(cx+2,cy-14,4,4,'#e2c070');
+}
+else R(W/2-8,H/2-8,16,16,'#b8a888');
 }
 function fermerLeCatalogue(){$('catalogue').classList.remove('on');}
 function afficherPecheMarine(mot){
