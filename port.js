@@ -1269,8 +1269,18 @@ for(let k=x0+10;k<x0+BL-10;k+=22)R(k,yR+14,1,rez-16,'#5a1008');
 R(cx-9,yR+12,18,rez-12,'#5a1008');R(cx-8,yR+13,16,rez-14,nuit?'#ffe0a0':'#3a3636');R(cx-0.5,yR+13,1,rez-14,'#5a1008');R(cx-4,sol-12,2,1,'#e8c06a');R(cx+2,sol-12,2,1,'#e8c06a');
 for(let k=0;k<BL;k+=8){R(x0+k,yR+5,8,6,(k/8)%2?'#f4efe6':'#c8281e');g.fillStyle=(k/8)%2?'#f4efe6':'#c8281e';g.beginPath();g.arc(x0+k+4,yR+11,4,0,Math.PI);g.fill();}
 R(x0-2,yR+4,BL+4,1.5,'#7a1610');
-const ey=yR-15;R(x0+18,ey,BL-36,14,'#e8b030');R(x0+19,ey+1,BL-38,12,'#c8281e');
-g.font='900 9px Georgia,serif';g.textAlign='center';g.fillStyle='#7a1610';g.fillText('CROUSTI’PORT',cx+8.6,ey+10.6,BL-66);g.fillStyle=nuit?'#fff6d0':'#ffffff';g.fillText('CROUSTI’PORT',cx+8,ey+10,BL-66);g.textAlign='left';
+/* L'ENSEIGNE PLEINE LARGEUR, comme les autres façades du quai */
+const ey=yR-27;
+R(x0-6,ey,BL+12,16,'#7a1610');R(x0-4,ey+2,BL+8,12,'#c8281e');
+R(x0-4,ey+2,BL+8,1,'#e8b030');R(x0-4,ey+13,BL+8,1,'#8a1a12');
+/* les ampoules du pourtour */
+for(let k=0;k<Math.floor((BL+8)/9);k++){
+  R(x0-4+k*9,ey,2,2,k%2?'#fff4b0':'#ffd24a');
+  R(x0-4+k*9,ey+14,2,2,k%2?'#ffd24a':'#fff4b0');}
+/* le cornet de frites, à gauche du nom */
+R(x0+4,ey+5,7,8,'#e8b030');R(x0+4,ey+5,7,2,'#f6d070');
+for(let k=0;k<4;k++)R(x0+5+k*1.6,ey+2+((k%2)?0:1),1.4,4,'#f6e0a8');
+g.font='900 9.5px Georgia,serif';g.textAlign='center';g.fillStyle='#7a1610';g.fillText('CROUSTI’PORT',cx+5.6,ey+11.6,BL-30);g.fillStyle=nuit?'#fff6d0':'#ffffff';g.fillText('CROUSTI’PORT',cx+5,ey+11,BL-30);g.textAlign='left';
 const lx=x0+30, ly=ey+7;g.fillStyle='#ffffff';g.beginPath();g.arc(lx,ly,8.5,0,7);g.fill();g.fillStyle='#e8b030';g.beginPath();g.arc(lx,ly,8.5,0,7);g.lineWidth=1.2;g.strokeStyle='#e8b030';g.stroke();
 R(lx-4,ly-1,7,6,'#f4efe6');R(lx-4,ly-1,7,1,'#d8d0c0');R(lx+2.5,ly+1,3,1.5,'#e8a030');R(lx+2,ly+2.5,2,1.5,'#c8281e');       /* la tête, le bec, la barbe */
 R(lx,ly,1,1,'#1a1a1e');R(lx-5,ly-4,8,2.5,'#1d3f8f');R(lx-3,ly-6,5,2.5,'#1d3f8f');R(lx-5,ly-2,9,1,'#1a1a1e');R(lx-2,ly-7,1.5,1.5,'#c8281e');   /* la casquette de marin, et la crête qui dépasse */
