@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-01-0529';
+var MA_VERSION='2026-10-01-0536';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -17224,8 +17224,8 @@ function dureeDuCercle(P,S){
   }else{
     d=base*(1.04-n*0.05);
   }
-  /* le dernier cercle est toujours le plus tendu */
-  if(reste<=1)d*=0.84;
+  /* le dernier cercle est le plus nerveux : il accélère */
+  if(reste<=1)d*=0.78;
   /* LA CANNE RALENTIT LE CERCLE : c'est ce que promet la boutique */
   const cn=(P.eq&&P.eq.canne)||0;
   d*= [1,1.15,1.25,1.35,1.45,1.52][cn]||1;
@@ -17243,7 +17243,12 @@ function jugerLaTouche(P,tape){
 const REF=900;                                   /* le cercle de référence */
 const C=P.cercle, ecart=Math.abs(1-C.k)*C.duree/REF;
 const cn=(P.eq&&P.eq.canne)||0;
-const note=!tape?'rate':(ecart<fenetreParfaite(cn)?'parfait':(ecart<fenetreBonne(cn)?'bien':'rate'));
+/* on plafonne : une fenêtre ne prend jamais plus du quart du tour pour le parfait,
+   ni plus de la moitié pour le bien. Sinon les petits poissons deviennent gratuits. */
+const tour=C.duree/REF;
+const fp=Math.min(fenetreParfaite(cn), tour*0.15);
+const fb=Math.min(fenetreBonne(cn),    tour*0.34);
+const note=!tape?'rate':(ecart<fp?'parfait':(ecart<fb?'bien':'rate'));
 C.juge={note,t:performance.now()};
 if(note==='rate'){P.coeurs--;vibrer(60);texteVolant(P.fx,P.fy-10,tape?(C.k<1?'trop tôt !':'trop tard !'):'trop tard !','#ff7a5a');}
 else{
