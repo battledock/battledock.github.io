@@ -876,7 +876,11 @@ const ACCESSOIRES=[{id:'moulinet',nom:'Moulinet',prix:4000,effet:'Une bonne touc
 {id:'glaciere',nom:'Glacière',prix:14000,effet:'Le poisson arrive frais : +12 % à la criée.'}];
 const APPATS=[{id:'vers',nom:'Vers de mer',prix:100,effet:'Espèces rares ×2.'},
 {id:'crevettes',nom:'Crevettes',prix:150,effet:'Loup, dorade, denti et saupe ×3.'},
-{id:'sardine',nom:'Sardine fraîche',prix:200,effet:'Congre et murène ×3 ; thon et légendaires ×2.'}];
+{id:'sardine',nom:'Sardine fraîche',prix:200,effet:'Congre et murène ×3 ; thon et légendaires ×2.'},
+{id:'crabe',nom:'Crabe mou',prix:400,effet:'Le fond rocheux ×4 : mérou, chapon, rascasse. Chasse les petits.'},
+{id:'calamarpetit',nom:'Petit calamar',prix:700,effet:'Les chasseurs de pleine eau ×4 : barracuda, liche, thon.'},
+{id:'leurre',nom:'Leurre doré',prix:1800,effet:'Les prises rares ×2,4 — et presque plus de détritus.'},
+{id:'esche',nom:'Esche vivante',prix:2600,effet:'Tout le gros ×2,2 : congre, mérou, raie, poulpe.'}];
 async function chargerLEquipement(){
 const d=await appelRPC('mon_equipement',{p_joueur:e.id});
 if(d&&!d.erreur)EQUIP_PECHE=d;
@@ -997,6 +1001,46 @@ else if(id==='fil'){
   for(let y=0;y<20;y++)R(W/2-11,H/2-10+y,22,1,y%3?'#9fc0d0':'#dfe8ee');
   R(W/2-14,H/2-13,28,4,'#5a6a74');R(W/2-14,H/2+9,28,4,'#5a6a74');
   for(let i=0;i<10;i++)R(W/2+13+i,H/2-11+i*1.4,1.4,1.4,'rgba(240,248,252,.7)');
+}
+else if(id==='crabe'){
+  const cx=W/2,cy=H/2+2;
+  for(let y=-7;y<=7;y++){const dx=Math.round(13*Math.sqrt(Math.max(0,1-(y/7)*(y/7))));
+    for(let x=-dx;x<=dx;x++)R(cx+x,cy+y,1,1,y<-2?'#e08a6a':'#c0604a');}
+  for(let k=0;k<3;k++){R(cx-16-k,cy-2+k*4,6,2,'#c0604a');R(cx+10,cy-2+k*4,6,2,'#c0604a');}
+  R(cx-19,cy-9,7,4,'#c0604a');R(cx-22,cy-11,5,3,'#e08a6a');
+  R(cx+12,cy-9,7,4,'#c0604a');R(cx+17,cy-11,5,3,'#e08a6a');
+  R(cx-5,cy-4,2.4,2.4,'#2a1a14');R(cx+2,cy-4,2.4,2.4,'#2a1a14');
+}
+else if(id==='calamarpetit'){
+  const cx=W/2,cy=H/2-3;
+  for(let y=-11;y<=5;y++){const dx=Math.round(8*Math.sqrt(Math.max(0,1-Math.pow((y+3)/9,2))));
+    for(let x=-dx;x<=dx;x++)R(cx+x,cy+y,1,1,y<-6?'#f0a8a0':'#b83a3a');}
+  R(cx-9,cy-13,18,4,'#d86a5a');
+  for(let b=0;b<6;b++){const a2=-0.5+b*0.2;
+    for(let i=0;i<12;i++)R(cx+Math.sin(a2)*i*1.2,cy+5+i*1.2+Math.sin(i*0.7+b)*1.6,2,2,i<8?'#b83a3a':'#f0a8a0');}
+  R(cx-4,cy-6,2.6,2.6,'#2a1014');R(cx+2,cy-6,2.6,2.6,'#2a1014');
+}
+else if(id==='leurre'){
+  const cx=W/2,cy=H/2;
+  for(let i=0;i<24;i++){const t=i/24;
+    const h=Math.round(8*Math.sqrt(Math.max(0.04,1-Math.pow(t*2-0.8,2))));
+    for(let q=-h;q<=h;q++)R(cx-12+i,cy+q,1,1,q<-h*0.3?'#f6e0a8':'#c9a24a');}
+  for(let k=0;k<5;k++)R(cx-8+k*4,cy-1,2,1.4,'rgba(255,255,255,.6)');
+  R(cx+12,cy-5,4,10,'#c9a24a');
+  R(cx-9,cy-2,2.4,2.4,'#f4f2ee');R(cx-8.6,cy-1.6,1.2,1.2,'#101418');
+  for(let k=0;k<2;k++){const hx=cx+2+k*7;R(hx,cy+8,1.6,5,'#c8ced4');
+    for(let a2=0;a2<3.2;a2+=0.3)R(hx-Math.sin(a2)*4,cy+13+Math.cos(a2)*4,1.6,1.6,'#c8ced4');}
+  R(cx-16,cy-1,5,2,'#8a8a92');
+}
+else if(id==='esche'){
+  R(10,H-20,W-20,12,'#3a4a52');R(10,H-20,W-20,3,'#5a6e78');      /* le seau d'eau */
+  for(let x=13;x<W-13;x+=3)R(x,H-17,2,7,'#2f6a8a');
+  for(let p2=0;p2<3;p2++){const bx=16+p2*22, by=H-26-p2*5;
+    for(let i=0;i<14;i++){const t=i/14;
+      const h=Math.round(4*Math.sqrt(Math.max(0.04,1-Math.pow(t*2-0.82,2))));
+      for(let q=-h;q<=h;q++)R(bx+i,by+q,1,1,q<0?'#dfe8ee':'#8aa8c0');}
+    R(bx+14,by-2,2.4,4,'#8aa8c0');R(bx+2,by-0.8,1.6,1.6,'#101418');}
+  for(let k=0;k<6;k++)R(14+k*9,H-24,2,2,'rgba(210,235,245,.6)');
 }
 else if(id==='sondeur'){
   R(W/2-13,H/2-14,26,24,'#23262a');R(W/2-11,H/2-12,22,17,'#1d4a3a');
