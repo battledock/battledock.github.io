@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-01-1840';
+var MA_VERSION='2026-10-01-1916';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -14163,7 +14163,7 @@ g.restore();
 poserGens(1e9);
 }
 const CLE='bdl.pix.v2';
-var REG={vibre:true, secousses:true, ciel:'heure', finesse:'auto', avis:true,
+var REG={vibre:true, secousses:true, ciel:'heure', finesse:'auto', avis:true, nettete:'fluide',
 sons:true, sGestes:2, sMoments:2, sAmb:2, sRev:2, econome:false};
 let e={x:0,y:0,ap:Object.assign({},DEF_AP),pseudo:'',id:'',sac:{},score:0,recolte:0,
 outils:{pioche:true,hache:true},epee:0,coffreOuvert:true,
@@ -14254,9 +14254,10 @@ const w=window.innerWidth, h=window.innerHeight;
 let e=Math.max(w/VUE_L,h/VUE_H);
 e=Math.max(1.2,Math.round(e*8)/8);
 ECH_CSS=e;
-/* sur un écran dense, on grave jusqu'à 3× : le personnage avance par pas plus fins,
-   donc le mouvement est plus doux. La mesure d'images redescend toute seule si ça rame. */
-const plafond=QUALITE_TOILE<1?1.5:(QUALITE_TOILE>=1?3:2);
+/* LA NETTETÉ : plus la toile est gravée gros, plus c'est net — et plus c'est lourd.
+   « fluide » vise les soixante images par seconde, « nette » privilégie le dessin. */
+const choix=(typeof REG!=='undefined'&&REG.nettete)||'fluide';
+const plafond=QUALITE_TOILE<1?1.25:(choix==='nette'?3:(choix==='equilibre'?2:1.5));
 const dpr=ECO?1:Math.max(1,Math.min(plafond,window.devicePixelRatio||1));
 ECH=e*dpr;
 VW=Math.ceil(w/e)+1;VH=Math.ceil(h/e)+1;
@@ -21616,6 +21617,8 @@ try{localStorage.setItem('bdl.reglages',JSON.stringify(REG));}catch(x){}
 try{
 if(REG.finesse==='haute')QUALITE=1;
 else if(REG.finesse==='basse')QUALITE=0;
+if(typeof taille==='function')taille();          /* la netteté change la toile */
+if(typeof videCache==='function')videCache();
 }catch(x){}
 }
 function vibreurDispo(){
@@ -21698,6 +21701,13 @@ ligne('Le jour et la nuit',
 'nuit après 21 h. En « plein jour », il fait clair en permanence et les '+
 'lampes restent éteintes.',
 bouton('ciel','heure','Suivre l’heure')+bouton('ciel','jour','Plein jour'))+
+ligne('La netteté de l’image',
+'Le jeu peut dessiner plus gros pour être plus net, mais chaque pixel '+
+'coûte de la fluidité. « Fluide » vise les soixante images par seconde sur '+
+'tous les téléphones ; « Nette » donne le plus beau dessin, et demande un '+
+'appareil récent.',
+bouton('nettete','fluide','Fluide')+bouton('nettete','equilibre','Équilibrée')+
+bouton('nettete','nette','Nette'))+
 ligne('Le détail du décor',
 'Les nuages qui passent et les papillons coûtent de la fluidité. En '+
 '« automatique », le jeu les enlève tout seul s’il commence à ramer ; '+
