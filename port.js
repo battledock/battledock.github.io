@@ -281,7 +281,18 @@ g.fillStyle=fond;g.fillRect(x0,hy,w,24);
 const ey=Math.max(0,hy-30);
 R(cx-30,ey,60,13,'#5a0e14');R(cx-29,ey+1,58,11,'#9e1822');R(cx-29,ey+1,58,1,'#c83a44');
 for(let k=0;k<15;k++){R(cx-29+k*4,ey,2,2,k%2?'#fff4b0':'#ffd24a');R(cx-29+k*4,ey+11,2,2,k%2?'#ffd24a':'#fff4b0');}
-g.font='700 9px Georgia,serif';g.textAlign='center';g.shadowColor='#ffcf50';g.shadowBlur=4;g.fillStyle='#f6d98a';g.fillText('CASINO',cx,ey+10);g.shadowBlur=0;g.textAlign='left';
+/* CASINO en lettres de pixels : le texte flou venait de l'ombre portée sur une police vectorielle */
+{const L={C:[[1,1,1],[1,0,0],[1,0,0],[1,0,0],[1,1,1]],
+          A:[[0,1,0],[1,0,1],[1,1,1],[1,0,1],[1,0,1]],
+          S:[[1,1,1],[1,0,0],[1,1,1],[0,0,1],[1,1,1]],
+          I:[[1,1,1],[0,1,0],[0,1,0],[0,1,0],[1,1,1]],
+          N:[[1,0,1],[1,1,1],[1,1,1],[1,0,1],[1,0,1]],
+          O:[[1,1,1],[1,0,1],[1,0,1],[1,0,1],[1,1,1]]};
+ const mot='CASINO', lx=cx-(mot.length*4-1)/2, ly=ey+3.5;
+ for(let i=0;i<mot.length;i++){const G=L[mot[i]];
+   for(let r=0;r<5;r++)for(let c=0;c<3;c++)if(G[r][c]){
+     R(lx+i*4+c,ly+r+0.5,1,1,'#7a0a10');            /* l'ombre, en dur */
+     R(lx+i*4+c,ly+r,1,1,'#ffe49a');}}}
 }
 for(let y=XP.quaiY;y<MONDE_H;y++){
 const k=(y-XP.quaiY)/(MONDE_H-XP.quaiY);
