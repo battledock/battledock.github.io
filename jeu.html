@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-01-0949';
+var MA_VERSION='2026-10-01-1013';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2201,9 +2201,14 @@ cheveux:['#1c140d','#2b1d12','#4a3220','#6b4726','#8a5f30','#b58a4a','#d9c48a','
 '#8a8f96','#c9c9c9','#a8402c','#c2604a','#6b3f8f','#2f6b8f','#3f7d4a','#b53f6b'],
 yeux:['#26241f','#3f5f6b','#4a6b3f','#6b4a3f','#5a4a6b','#7d6a3f','#2f6b8f','#8f4a3f'],
 veste:['#4f7d5c','#5a6b8f','#8a5a4a','#6b5f8f','#7d6a3f','#3f5f6b','#8f6a3f','#54606b',
-'#a8524a','#3f7d4a','#c2a04a','#2f3a4a','#7a4f6b','#4a7d7d','#9c5f2f','#5f5f5f'],
-pantalon:['#3a4358','#4a4038','#2f3a2f','#5a4a3a','#3a3a44','#6b5f4a','#2b3340','#7d6a4a'],
-chaussures:['#4a3524','#2f2a24','#5a4a3a','#6b4a28','#3f4a53','#7d5934'],
+'#a8524a','#3f7d4a','#c2a04a','#2f3a4a','#7a4f6b','#4a7d7d','#9c5f2f','#5f5f5f',
+/* La Marinière : les teintes de la boutique */
+'#17365a','#1d4a72','#b4302c','#f2ece0','#1d2630','#2f6a5a','#8a2a3a','#c9a24a',
+'#e8dcc0','#3a2a4a','#6a7a3a','#2a6a9a'],
+pantalon:['#3a4358','#4a4038','#2f3a2f','#5a4a3a','#3a3a44','#6b5f4a','#2b3340','#7d6a4a',
+'#17365a','#1d2630','#e8dcc0','#5a3a2a','#2f4a3a','#6a5a7a'],
+chaussures:['#4a3524','#2f2a24','#5a4a3a','#6b4a28','#3f4a53','#7d5934',
+'#f2ece0','#17365a','#8a2a3a','#c9a24a'],
 sac:['aucun','#7d5934','#4a5c6b','#6b4a4a','#4f6b4a','#8a6a44','#54606b']
 };
 const COIFFES=['courts','très courts','dégradé','bol','carré','mi-longs','longs','très longs',
@@ -2225,7 +2230,7 @@ const BOUCLES=['aucune','anneau','perle','plume'];
 const DEF_AP={peau:2,cheveux:2,coiffe:0,barbe:0,yeux:0,formeYeux:0,veste:0,pantalon:0,
 chaussures:0,chapeau:0,sac:1,
 sourcils:0,nez:1,bouche:0,marque:0,boucle:0,
-corps:0,haut:0,bas:0,souliers:0};
+corps:0,haut:0,bas:0,souliers:0,motif:0,raye:19};
 const teint=(c,k)=>{
 const n=parseInt(c.slice(1),16);
 const f=v=>Math.max(0,Math.min(255,v+k));
@@ -2265,6 +2270,7 @@ const marque=MARQUES[p.marque]||'aucune';
 const boucle=BOUCLES[p.boucle]||'aucune';
 const silhouette=SILHOUETTES[p.corps]||'masculine';
 const hautT=HAUTS[p.haut]||'veste';
+const RAYE=(p.motif===1), MARIN=(p.motif===2);   /* rayures fines ou larges */
 const basT=BAS[p.bas]||'pantalon';
 const soulier=SOULIERS[p.souliers]||'bottes';
 const SIL={'fine'      :{ep:6,ta:5,ha:6,tete:5,menton:1},
@@ -2499,6 +2505,7 @@ if(MANCHE_AR>0)R(bx,yT+2,3,MANCHE_AR,vesteT);
 R(bx,yT+13,3,3,peauT);
 }
 const colH=veste, colHC=vesteC, colHO=vesteO, colHT=vesteT;
+const RAY=(p.raye!=null?(PALETTES.veste[p.raye]||'#f2ece0'):'#f2ece0');
 const pen=fr>0?Math.round(penche*(dir==='gauche'?-1:1)):0;   /* il se penche dans l'effort */
 const tas=fr>0?Math.max(0,Math.round(tasse)):0;              /* et se tasse */
 R(-EP+pen,yT-1+tas,EP*2,TH+1-tas,N);           /* contour aux épaules */
@@ -2506,9 +2513,11 @@ R(-EP+1,yT,EP*2-2,3,colH);                     /* les épaules */
 R(-EP+1,yT,EP*2-2,2,colHC);
 for(let i=3;i<TH-1;i++){                       /* le buste, resserré à la taille */
 const w2=Math.round(EP-1-(EP-TA)*Math.min(1,(i-2)/(TH-5)));
-R(-w2,yT+i,w2*2,1,colH);
-R(-w2,yT+i,2,1,colHT);
-R(w2-2,yT+i,2,1,colHO);
+/* LES RAYURES DE LA MARINIÈRE : une ligne sur deux, ou sur trois */
+const raye = RAYE ? (i%2===0) : (MARIN ? (i%4<2) : false);
+R(-w2,yT+i,w2*2,1,raye?RAY:colH);
+R(-w2,yT+i,2,1,raye?teint(RAY,-30):colHT);
+R(w2-2,yT+i,2,1,raye?teint(RAY,-18):colHO);
 }
 R(-TA,yT+TH-4,TA*2,2,colHO);                   /* ceinture */
 R(-1,yT+TH-4,2,2,'#c9a24a');
@@ -2552,6 +2561,8 @@ R(-EP+2,yT+6,EP*2-6,1,teint(sacC,-24));
 const MANCHE={'veste':11,'chemise':11,'pull':11,'manteau':11,'tunique':9,
 'gilet':0,'t-shirt':4,'débardeur':0}[hautT];
 const brasCol=(dev)=>dev?veste:vesteT;
+const brasRaye=(dev,i)=>{const r=RAYE?(i%2===0):(MARIN?(i%4<2):false);
+  return r?(dev?RAY:teint(RAY,-30)):brasCol(dev);};
 const bras=(bx,by,dev)=>{
 R(bx,by,3,11,dev?teint(peau,2):peauO);       /* le bras nu */
 if(MANCHE>0){
