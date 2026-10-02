@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-02-1743';
+var MA_VERSION='2026-10-02-1746';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -13965,6 +13965,15 @@ TAILLES['x_fe_vacheB']=[{w:20,h:7}];
 const VE=graverVeauFerme('#a8442a',1);XCAL['x_fe_veauB0']=VE;CALQUES_DECO['x_fe_veauB']=VE;TAILLES['x_fe_veauB']=[{w:12,h:5}];
 DECOR.push({t:'x_fe_veauB',x:884,y:404,v:0,gr:0});}   /* (sans « bati » : sinon la plaque d'action le prend pour un mur muet) */   /* le comptoir, juste à gauche de l'étal, au-dessus du champ */   /* …sauf l'étal des graines, en haut du champ */
 }
+/* LA FORÊT VIDE : le dernier mot. Ce filtre passe après TOUS les semis,
+   quels qu'ils soient, juste avant le tri final. */
+if(typeof FORET_VIDE!=='undefined'&&FORET_VIDE&&
+   typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village'){
+  const RES=new Set(['arbre','buisson','rocher','champignons','herbes','plumes',
+    'argile','fleurs','roseaux','souche','x_fo_aut','x_fo_champiRare',
+    'fer','cuivre','charbon','gravats']);
+  DECOR=DECOR.filter(o=>!RES.has(o.t));
+}
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
 let LISIERE=null, LISIERE_SUD=null;
@@ -14149,6 +14158,13 @@ if(Math.abs(o.x-x)<d.w/2+3&&Math.abs(o.y-y)<d.h/2+2)return true;
 return false;
 }
 function poserDansLeDecor(o){
+/* LA FORÊT VIDE : on bloque ici toute ressource, d'où qu'elle vienne.
+   C'est le seul passage obligé pour ajouter un objet au décor. */
+if(typeof FORET_VIDE!=='undefined'&&FORET_VIDE&&
+   typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village'&&
+   ['arbre','buisson','rocher','champignons','herbes','plumes','argile','fleurs',
+    'roseaux','souche','x_fo_aut','x_fo_champiRare','fer','cuivre','charbon','gravats'].includes(o&&o.t))
+  return o;
 let a=0,b=DECOR.length;
 while(a<b){const m=(a+b)>>1;if(DECOR[m].y<o.y)a=m+1;else b=m;}
 DECOR.splice(a,0,o);
