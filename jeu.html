@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-02-2116';
+var MA_VERSION='2026-10-02-2120';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12118,6 +12118,22 @@ function semerLaForet(){
   semerBuis('x_fo_mure',8,457);
   semerBuis('x_fo_framboise',10,509);
   semerBuis('x_fo_myrtille',7,569);
+  /* LES HERBES, LES SOUCHES ET LA RÉSINE : les sprites du jeu, repris tels quels */
+  const semerSimple=(type,combien,graine,ecart,bati)=>{
+    let n=0;
+    for(let k=0;k<3200&&n<combien;k++){
+      const x=Math.round(F_hs(k*1.3+graine)*(MONDE_L-150))+75;
+      const y=Math.round(F_hs(k*4.9+graine*2)*(MONDE_H-250))+F_BAR+46;
+      if(y>F_rive(x)-16)continue;
+      if(Math.hypot(x-MONDE_L/2,y-MONDE_H/2)<76)continue;
+      if(DECOR.some(o=>o.t===type&&Math.hypot(o.x-x,o.y-y)<ecart))continue;
+      if(DECOR.some(o=>ARBRES.includes(o.t)&&Math.hypot(o.x-x,o.y-y)<22))continue;
+      const o={t:type,x,y,v:k%2,gr:k%3};
+      if(bati){o.bati=true;o.demi=8;}
+      DECOR.push(o);n++;}};
+  semerSimple('herbes',26,613,56,false);
+  semerSimple('souche',9,661,120,true);
+  /* la résine n'est pas un objet : elle apparaît d'elle-même sur les arbres */
   DECOR.push({t:'x_fo_quai',x:MONDE_L/2,y:MONDE_H/2,v:0,gr:0,bati:true,demi:46,ouvre:'metroFerme'});
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
@@ -19818,7 +19834,7 @@ b.classList.add('on');
 if(!MINE_OUVERTE)b.onclick=null;
 return;
 }
-if((o.t==='souche'||o.t==='arbre')&&ambrePret(o)){
+if((o.t==='souche'||['arbre','x_fo_erable','x_fo_chene','x_fo_charme','x_fo_olive'].includes(o.t))&&ambrePret(o)){
 b.innerHTML='Saigner<small>'+(o.t==='arbre'?'LE TRONC':'LA SOUCHE')+' · AMBRE</small>';
 b.classList.add('on');return;
 }
@@ -20002,11 +20018,11 @@ return;
 if(o.t==='metro')return;                       /* jamais de geste dessus */
 if((o.t==='rocher'||['fer','cuivre','charbon'].includes(o.t))&&!e.outils.pioche)return;
 if(o.t==='arbre'&&!e.outils.hache&&!ambrePret(o))return;   /* sans hache, on peut quand même saigner un pin à la gouge */
-if(o.t==='arbre'&&resinePrete(o))return recolterResine(o);
+if(['arbre','x_fo_erable','x_fo_chene','x_fo_charme','x_fo_olive'].includes(o.t)&&resinePrete(o))return recolterResine(o);
 if(sacPlein()&&o.t!=='coffre'&&o.t!=='casino'&&o.t!=='forge'){
 prevenirSacPlein(o);return;                  /* inutile de taper : rien ne rentrerait */
 }
-if((o.t==='souche'||o.t==='arbre')&&ambrePret(o)){
+if((o.t==='souche'||['arbre','x_fo_erable','x_fo_chene','x_fo_charme','x_fo_olive'].includes(o.t))&&ambrePret(o)){
 GESTE={t:1,cible:o,impact:false,type:'gouge',pourMoi:true};
 joueur.dir=Math.abs(o.x-joueur.x)>Math.abs(o.y-joueur.y)?(o.x>joueur.x?'droite':'gauche')
 :(o.y>joueur.y?'bas':'haut');
@@ -20120,7 +20136,7 @@ return d>13&&d<30;                        /* sur la berge, pas dans l'eau */
 };
 const peutLaver=()=>e.metiers&&e.metiers.tamis&&
 auBordDeLEau(joueur.x,joueur.y)&&(e.sac&&(e.sac.argile||0)>=ARGILE_PAR_LAVAGE);
-const resinePrete=(o)=>o.t==='arbre'&&e.outils.hache&&
+const resinePrete=(o)=>['arbre','x_fo_erable','x_fo_chene','x_fo_charme','x_fo_olive'].includes(o.t)&&e.outils.hache&&
 o.saigne&&Date.now()-o.saigne>=180000;
 function saignerLAmbre(o){
 if(!ambrePret(o))return;
