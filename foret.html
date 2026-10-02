@@ -55,11 +55,14 @@ const ELIAS='e029d1fb-7baa-4225-91fd-5cdbef6f8711';
         px[ligne+x]=n<.36?A:(n<.70?B:C);}}
     pg.putImageData(img,0,0);
     s.drawImage(pt,0,0,LW,LH,0,0,LW*2,LH*2);
+    /* le lac, avant les feuilles : elles ne tombent pas dans l'eau */
+    graverLeLac(s);
     /* les feuilles mortes, posées à plat : nervure et reflet */
     const T=['#c9821a','#b4552a','#8a3a22','#d8a83a','#9a6a2a'];
     const nb=Math.round(MONDE_L*MONDE_H/40);   /* la même densité que l'aperçu */
     for(let k=0;k<nb;k++){
       const x=Math.floor(hs(k*1.37)*MONDE_L), y=Math.floor(hs(k*2.71)*MONDE_H);
+      if(y>rive(x)-4)continue;                 /* pas de feuilles sur l'eau */
       const col=T[Math.floor(hs(k*3.11)*T.length)];
       const l=3+Math.floor(hs(k*4.3)*3), h=2+Math.floor(hs(k*5.7)*2);
       s.fillStyle=col;s.fillRect(x,y,l,h);
@@ -67,6 +70,46 @@ const ELIAS='e029d1fb-7baa-4225-91fd-5cdbef6f8711';
       s.fillStyle='rgba(90,60,20,.34)';s.fillRect(x+Math.floor(l*0.45),y,1,h);
     }
     SOL=c;
+  }
+
+  /* ================= LE LAC =================
+     Les trois cents points du bas. Eau profonde : bleu nuit au large,
+     vert sombre près du bord, avec quelques roseaux plantés sur la rive. */
+  const LAC_Y=MONDE_H-300;                 /* la hauteur moyenne de la rive */
+  const rive=(x)=>LAC_Y+Math.sin(x*0.0075)*26+Math.sin(x*0.021+2)*11+Math.sin(x*0.052)*5;
+  const dansLeLac=(x,y)=>y>rive(x);
+  function graverLeLac(s){
+    for(let x=0;x<MONDE_L;x++){
+      const r=Math.round(rive(x));
+      /* la berge de terre, juste avant l'eau */
+      s.fillStyle='#6a5434';s.fillRect(x,r-5,1,5);
+      s.fillStyle='#7a6240';s.fillRect(x,r-5,1,1);
+      for(let y=r;y<MONDE_H;y++){
+        const p=(y-r)/Math.max(1,MONDE_H-r);
+        s.fillStyle=p<0.14?'#3f6a5a':(p<0.40?'#2a5260':(p<0.72?'#1d3f52':'#142c3e'));
+        s.fillRect(x,y,1,1);}}
+    /* les rides de lumière à la surface */
+    for(let k=0;k<620;k++){
+      const x=hs(k*3.1)*MONDE_L, r=rive(x);
+      const y=r+8+hs(k*7.3)*(MONDE_H-r-14);
+      s.fillStyle='rgba(150,200,220,.16)';
+      s.fillRect(Math.round(x),Math.round(y),6+Math.round(hs(k)*7),1);}
+    /* les touffes d'herbe du bord */
+    for(let k=0;k<220;k++){
+      const x=Math.round(hs(k*9.1)*MONDE_L), r=Math.round(rive(x));
+      s.fillStyle='#4f7a3a';s.fillRect(x,r-1,5,2);
+      s.fillStyle='#3f6a30';s.fillRect(x+1,r-3,3,2);}
+    /* QUELQUES ROSEAUX, plantés sur la rive sans la couvrir */
+    for(let k=0;k<110;k++){
+      const x=Math.round(hs(k*2.9+5)*MONDE_L), r=Math.round(rive(x));
+      if(hs(k*5.7)<0.45)continue;                 /* ils viennent par paquets */
+      const n=2+Math.floor(hs(k*3.3)*3);
+      for(let i=0;i<n;i++){
+        const dx=x+i*2, h=9+Math.floor(hs(k+i)*13);
+        s.fillStyle=i%2?'#5f8a4a':'#4f7a3a';
+        s.fillRect(dx,r-h+Math.floor(hs(k*2+i)*4),2,h);
+        s.fillStyle='#8a6238';s.fillRect(dx,r-h-2,2,4);}   /* l'épi brun */
+    }
   }
 
   /* ================= LA LISIÈRE =================
