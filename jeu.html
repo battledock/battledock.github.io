@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-02-1727';
+var MA_VERSION='2026-10-02-1735';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -7913,6 +7913,8 @@ function afficheComplexe(){
    Elle s'affiche une fois par joueur au démarrage, tant que la forêt n'est
    pas ouverte. Pour la retirer, il suffira de passer FORET_OUVERTE à vrai. */
 const FORET_OUVERTE=false;
+/* mets ceci à faux pour que la forêt retrouve ses ressources */
+const FORET_VIDE=true;
 function annonceForet(){
   if(FORET_OUVERTE)return;
   try{if(localStorage.getItem('bdl.annonce.foret')==='1')return;}catch(x){}
@@ -13831,6 +13833,13 @@ DECOR.push({t:'fleurs',x,y,gr:0});
    la repousse ne joue qu'au sein d'une même visite. */
 if(typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village'){
   e.casses=[];e.aRepousser=[];try{sauver();}catch(x){}
+}
+/* LA FORÊT VIDE : on retire toutes les ressources, d'où qu'elles viennent. */
+if(FORET_VIDE&&typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village'){
+  const RES=new Set(['arbre','buisson','rocher','champignons','herbes','plumes',
+    'argile','fleurs','roseaux','souche','x_fo_aut','x_fo_champiRare',
+    'fer','cuivre','charbon','gravats']);
+  DECOR=DECOR.filter(o=>!RES.has(o.t));invaliderGrille();
 }
 const casses=casseEncore();
 DECOR=DECOR.filter(o=>!(o.t==='rocher'&&casses.has('r'+o.x+','+o.y)));invaliderGrille();
@@ -24073,6 +24082,14 @@ const dansUnMoment=(x,y)=>MOMENTS.some(([mx,my,r])=>Math.hypot(x-mx,y-my)<r);
    if(auto)L.push({t:'x_fo_aut',x,y,v:i%3,gr:0,bati:true,demi:11,col:[11,62]});
    else {const nbv=(TAILLES['arbre']&&TAILLES['arbre'].length)||1;
      L.push({t:'arbre',x,y,gr:i%nbv});}          /* uniquement des feuillus */}}
+/* ================= LA FORÊT VIDE =================
+   Toutes les ressources sont retirées : plus un arbre, plus un rocher,
+   plus un champignon. Seuls restent les bâtiments et les points d'intérêt. */
+if(FORET_VIDE){
+  const RESSOURCES=new Set(['arbre','buisson','rocher','champignons','herbes',
+    'plumes','argile','fleurs','roseaux','souche','x_fo_aut','x_fo_champiRare']);
+  for(let i=L.length-1;i>=0;i--)if(RESSOURCES.has(L[i].t))L.splice(i,1);
+}
 return L;
 }
 function graverCabaneBucheron(){
