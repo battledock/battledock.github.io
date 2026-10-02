@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-02-2017';
+var MA_VERSION='2026-10-02-2027';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11711,6 +11711,44 @@ function F_masse(g,R,x,y,w,h,col,clair,sombre,graine){
     const i=Math.round(F_hs(graine*7+k)*(w-8))+4, j=Math.round(F_hs(graine*9+k)*(h-6))+3;
     R(x+i,y+j,2,2,sombre);}
 }
+/* LE CHÊNE DORÉ et LE CHARME : les deux compagnons de l'érable.
+   Même grammaire, palettes différentes. */
+function F_arbre(v,haut,ep,EC,etages){
+  const LW=84, LH=112;
+  const c=document.createElement('canvas');c.width=LW;c.height=LH;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
+    g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const cx=LW/2, sol=LH-6, G=v*37+3;
+  g.fillStyle='rgba(24,34,20,.26)';
+  g.beginPath();g.ellipse(cx,sol,Math.max(9,ep),3.4,0,0,7);g.fill();
+  for(let y=0;y<haut;y++){
+    const t=y/haut, w=ep*(1-t*0.18)+(F_hs(y*0.7+G)<0.3?1:0);
+    R(cx-w/2,sol-haut+y,w,1,EC[0]);
+    R(cx-w/2,sol-haut+y,1.4,1,EC[1]);R(cx+w/2-1.4,sol-haut+y,1.4,1,EC[2]);}
+  for(let k=0;k<Math.round(haut/8);k++){
+    const y=sol-haut+3+Math.round(F_hs(k*5+G)*(haut-6));R(cx-ep/2+1,y,ep-3,1,EC[2]);}
+  for(let k=0;k<4;k++){const s2=k<2?-1:1, dx=(k%2)*3+2;
+    for(let i=0;i<5;i++)R(cx+s2*(dx+i*1.1),sol-4+i*0.9,3,2,EC[0]);
+    R(cx+s2*dx,sol-4,3,1,EC[1]);}
+  const y0=sol-haut;
+  etages.forEach(([dy,w,h,col,clair,sombre],i)=>
+    F_masse(g,R,cx-w/2,y0+dy,w,h,col,clair,sombre,G+i*8));
+  return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
+}
+function graverCheneDore(v){
+  return F_arbre(v,38+v*3,12,['#6b4a28','#8a6238','#4f3520'],[
+    [-12,56,14,'#9a6a1a','#b4842f','#704a0c'],
+    [-25,64,15,'#b4832a','#cf9d46','#86611a'],
+    [-39,48,15,'#c9a03a','#e2ba58','#97742a'],
+    [-52,28,14,'#d8b854','#f0d078','#a48a34']]);
+}
+function graverCharme(v){
+  return F_arbre(v,28+v*2,9,['#8a8278','#a8a096','#5f5a52'],[
+    [-10,42,13,'#8a5420','#a46e36','#623a0e'],
+    [-21,48,13,'#a86a28','#c2843e','#7a4c16'],
+    [-32,32,12,'#bc8236','#d69c52','#8c5e20']]);
+}
 function graverErable(v){
   const LW=84, LH=112;
   const c=document.createElement('canvas');c.width=LW;c.height=LH;
@@ -11781,14 +11819,22 @@ function semerLaForet(){
     if(x<40||x>MONDE_L-40)continue;
     if(DECOR.some(o=>Math.abs(o.x-x)<34))continue;      /* jamais deux côte à côte */
     DECOR.push({t:'roseaux',x,y:r+2+Math.round(F_hs(k*11)*7),gr:Math.floor(F_hs(k*13)*3)});}
-  /* LES ÉRABLES : semés partout sauf sur la rive, autour du quai et aux bords */
-  for(let k=0;k<1400&&DECOR.filter(o=>o.t==='x_fo_erable').length<15;k++){
-    const x=Math.round(F_hs(k*1.7+2)*(MONDE_L-180))+90;
-    const y=Math.round(F_hs(k*3.3+7)*(MONDE_H-260))+F_BAR+48;
-    if(y>F_rive(x)-26)continue;                         /* pas les pieds dans l'eau */
-    if(Math.hypot(x-MONDE_L/2,y-MONDE_H/2)<96)continue;  /* on dégage le quai */
-    if(DECOR.some(o=>o.t==='x_fo_erable'&&Math.hypot(o.x-x,o.y-y)<58))continue;
-    DECOR.push({t:'x_fo_erable',x,y,v:k%3,gr:k%3,bati:true,demi:12});}
+  /* LES ARBRES : quinze érables, sept chênes dorés, sept charmes.
+     Jamais sur la rive, jamais contre le quai, jamais collés entre eux. */
+  const ARBRES=['x_fo_erable','x_fo_chene','x_fo_charme'];
+  const semer=(type,combien,graine)=>{
+    let n=0;
+    for(let k=0;k<2600&&n<combien;k++){
+      const x=Math.round(F_hs(k*1.7+graine)*(MONDE_L-180))+90;
+      const y=Math.round(F_hs(k*3.3+graine*2)*(MONDE_H-260))+F_BAR+48;
+      if(y>F_rive(x)-26)continue;
+      if(Math.hypot(x-MONDE_L/2,y-MONDE_H/2)<96)continue;
+      if(DECOR.some(o=>ARBRES.includes(o.t)&&Math.hypot(o.x-x,o.y-y)<58))continue;
+      DECOR.push({t:type,x,y,v:k%3,gr:k%3,bati:true,demi:type==='x_fo_charme'?10:12});n++;}
+  };
+  semer('x_fo_erable',15,2);
+  semer('x_fo_chene',7,23);
+  semer('x_fo_charme',7,61);
   DECOR.push({t:'x_fo_quai',x:MONDE_L/2,y:MONDE_H/2,v:0,gr:0,bati:true,demi:46,ouvre:'metroFerme'});
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
@@ -11924,6 +11970,8 @@ if(t==='x_fo_champiRare'){XCAL[cle]=graverChampiRare();if(!CALQUES_DECO[t])CALQU
 if(t==='x_fo_pin'){XCAL[cle]=graverConifere(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_quai'){XCAL[cle]=graverQuaiMetro();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_erable'){XCAL[cle]=graverErable(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_chene'){XCAL[cle]=graverCheneDore(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_charme'){XCAL[cle]=graverCharme(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_aut'){XCAL[cle]=graverArbreAutomne(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_cabanonMoi'){const c=CAB_LU();
 XCAL[cle]=graverTonCabanon(c.bati?(c.niveau>0?2:1):0);
@@ -19493,7 +19541,7 @@ const reste=Math.max(2,dur-(e.outils.piocheFer?3:0))-(o.coups||0);
 b.innerHTML=e.outils.pioche
 ? 'Extraire<small>'+n+' · '+reste+' COUP'+(reste>1?'S':'')+'</small>'
 : 'Il faut une pioche<small>'+n+'</small>';
-}else if(o.t==='arbre'||o.t==='x_fo_pin'||o.t==='x_fo_erable'){
+}else if(o.t==='arbre'||o.t==='x_fo_pin'||o.t==='x_fo_erable'||o.t==='x_fo_chene'||o.t==='x_fo_charme'){
 if(!e.outils.hache){b.innerHTML='Il faut une hache<small>ARBRE</small>';}
 else if(resinePrete(o)){
 b.innerHTML='Recueillir<small>LA RÉSINE</small>';
@@ -19689,7 +19737,7 @@ if(o&&DECOR.includes(o)&&o.t==='buisson')return cueillir(o);
 if(o&&DECOR.includes(o)&&RECOLTES[o.t])return ramasser(o);
 if(o&&DECOR.includes(o)&&MINERAIS[o.t])return miner(o);
 /* LE CONIFÈRE EST UN ARBRE : il se coupait à la pioche et donnait de la pierre */
-if(o&&DECOR.includes(o)&&(o.t==='arbre'||o.t==='x_fo_pin'||o.t==='x_fo_erable'))return couper(o);
+if(o&&DECOR.includes(o)&&(o.t==='arbre'||o.t==='x_fo_pin'||o.t==='x_fo_erable'||o.t==='x_fo_chene'||o.t==='x_fo_charme'))return couper(o);
 if(o&&DECOR.includes(o)){
 o.coups=(o.coups||0)+1;o.frappe=Date.now();o.recul=1;
 eclats(o.x,o.y-12,9,null,1);
@@ -23975,6 +24023,8 @@ return {toile:c,W,H,sol,nuit:null};
 TAILLES['x_fo_pin']=[{w:20,h:12},{w:20,h:12},{w:20,h:12}];
 TAILLES['x_fo_quai']=[{w:92,h:12}];
 TAILLES['x_fo_erable']=[{w:12,h:8},{w:12,h:8},{w:12,h:8}];
+TAILLES['x_fo_chene']=[{w:13,h:8},{w:13,h:8},{w:13,h:8}];
+TAILLES['x_fo_charme']=[{w:10,h:7},{w:10,h:7},{w:10,h:7}];
 /* ================= LES NOUVEAUX LIEUX DE LA FORÊT ================= */
 function toileFo(W,H,f){
   const D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;
