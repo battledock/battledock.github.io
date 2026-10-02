@@ -3,7 +3,7 @@ maisonsY:152,            /* le pied des façades */
 quaiY:340,               /* le bord du quai, au-dessus du bassin */
 bassinO:170, bassinE:1210,
 pontons:[360,880], pontonL:13,           /* le ponton du milieu (620) est retiré, avec ses voiliers */ pontonFin:470,
-metro:[250,268],
+metro:[1316,496],      /* le métro reprend la place de l'ancienne gare */
 ruelle:{x:630,l:38,haut:30},   /* la montée vers Notre-Dame : axe, demi-largeur, sommet */
 boulo:[30,392,120,172],   /* le boulodrome : x, y, largeur, hauteur */
 };
@@ -1942,42 +1942,6 @@ P('x_bitte',x,XP.quaiY-3,{col:[4,3]});
 [122,468,'bas',{veste:0,barbe:1,cheveux:0}],[134,424,'bas',{veste:2,chapeau:2}]]
 .forEach(([x,y,dir,ap],i)=>P('x_bouliste',x,y,{v:i,dir,ap,col:[5,3]}));
 STATIONS_VELO.forEach(([x,y])=>P('x_stationVelo',x,y,{col:[40,5]}));
-/* ===== LA NEF : l'entrée de la gare du port, une verrière en berceau ===== */
-{const N=(function(){
-  const W=100,H=196,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;
-  const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
-  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
-  const cx=W/2,y0=28,h=146;
-  /* l'ombre portée sur les dalles */
-  R(cx-48,y0+6,96,h,'rgba(60,54,30,.14)');
-  /* le berceau de verre : chaque ligne est une tranche de la voûte */
-  for(let i=0;i<h;i++){
-    const t=i/h, r=Math.round(34+Math.sin(t*3.14159)*5);
-    for(let x=-r;x<r;x++){
-      const vitre=((x+i)%16<14);
-      const om=1-Math.abs(x)/r*0.42;
-      R(cx+x,y0+i,1,1,vitre?'rgba('+(150*om|0)+','+(200*om|0)+','+(220*om|0)+',.86)':'#3f4a54');}}
-  /* les arceaux de fer */
-  for(let k=0;k<8;k++){const y=y0+k*20;
-    const r=Math.round(34+Math.sin((k*20)/h*3.14159)*5);
-    for(let x=-r;x<r;x+=2)R(cx+x,y,2,4,'#3f4a54');}
-  /* les poutres latérales */
-  R(cx-41,y0,5,h,'#3f4a54');R(cx+36,y0,5,h,'#3f4a54');
-  R(cx-41,y0,5,h*0.5,'rgba(255,255,255,.07)');
-  /* l'escalier qu'on devine à travers le verre */
-  R(cx-21,y0+38,42,92,'rgba(14,18,22,.5)');
-  for(let i=0;i<8;i++){const y=y0+44+i*11,ww=34-i*1.6;
-    R(cx-ww/2,y,ww,9,'rgba('+(150-i*5|0)+','+(146-i*5|0)+','+(128-i*4|0)+',.78)');}
-  /* le fronton émaillé */
-  for(let x=cx-44;x<cx+44;x+=10)R(x,y0-22,8,4,'#3f4a54');
-  R(cx-44,y0-18,88,18,'#123a6a');R(cx-42,y0-16,84,14,'#1d5090');
-  g.font='700 7px Georgia';g.textAlign='center';g.fillStyle='#eaf4fb';
-  g.fillText('GARE DU PORT',cx,y0-6);g.textAlign='left';
-  /* les deux bornes lumineuses, au pied */
-  [cx-52,cx+46].forEach(x=>{R(x,y0+h-28,7,30,'#3f4a54');R(x+1,y0+h-25,5,20,'#f6e6a8');});
-  return {toile:c,W,H,sol:H-6,nuit:null};})();
- XCAL['x_nef0']=N;CALQUES_DECO['x_nef']=N;
- P('x_nef',1316,496,{col:[46,178],bati:true,demi:64,ouvre:'gareDuPort'});}
 
 DECOR.forEach(o=>{if(o.t.slice(0,2)==='x_')graverX(o.t,o.v);});
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
