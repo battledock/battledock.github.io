@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-02-1703';
+var MA_VERSION='2026-10-02-1722';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -17234,16 +17234,23 @@ const CUEILLI=new Map();                        /* clé → heure de la cueillet
 const REPOUSSE={cueillette:210000, buisson:240000, resine:240000, champignons:150000,
 arbre:900000, rocher:3600000, fer:3600000, cuivre:3600000, charbon:3600000,
 argile:210000, roseaux:210000, herbes:210000, plumes:210000};
-const REPOUSSE_ARBRE=15*60000;
-const REPOUSSE_PIERRE=60*60000;
+/* LA REPOUSSE : une heure pour la pierre, c'était trop long. Avec plusieurs
+   centaines de récoltes dans la journée, la forêt finissait vidée de ses
+   arbres et de ses rochers en même temps. */
+const REPOUSSE_ARBRE=8*60000;
+const REPOUSSE_PIERRE=15*60000;
 function delaiDeRepousse(cle){
 return cle[0]==='a'?REPOUSSE_ARBRE:REPOUSSE_PIERRE;
 }
 function noterCasse(cle){
 if(!e.casses)e.casses=[];
-e.casses=e.casses.filter(c=>String(c).split('@')[0]!==cle);
-e.casses.push(cle+'@'+Date.now());
-if(e.casses.length>900)e.casses.splice(0,e.casses.length-900);
+/* on purge d'abord ce qui a déjà repoussé : la liste gonflait à neuf cents
+   entrées et vidait la forêt de tout ce qui se récolte. */
+const n=Date.now();
+e.casses=e.casses.filter(c=>{const [k,q]=String(c).split('@');
+  return k!==cle && q && !isNaN(+q) && n-(+q)<delaiDeRepousse(k);});
+e.casses.push(cle+'@'+n);
+if(e.casses.length>300)e.casses.splice(0,e.casses.length-300);
 }
 function casseEncore(){
 const vivants=[], dehors=new Set();
