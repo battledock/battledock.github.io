@@ -134,6 +134,57 @@ const ELIAS='e029d1fb-7baa-4225-91fd-5cdbef6f8711';
     LISIERE=c;
   }
 
+  /* ================= LA STATION DE MÉTRO =================
+     Le quai de bois, au centre exact de la carte. Le M, son mât et
+     l'escalier sont alignés sur le même axe ; les deux lanternes sont
+     à la même hauteur, à égale distance des bords. */
+  const METRO={x:MONDE_L/2, y:MONDE_H/2};
+  let STATION=null;
+  function graverStation(){
+    const LW=110, LH=90;
+    const c=document.createElement('canvas');c.width=LW;c.height=LH;
+    const g2=c.getContext('2d');g2.imageSmoothingEnabled=false;
+    const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g2.fillStyle=col;
+      g2.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+    const cx=LW/2, sol=LH-6;
+    const lettreM=(x,y,t,col)=>{const e=Math.max(1,t/5);
+      R(x,y,e,t,col);R(x+t-e,y,e,t,col);
+      for(let i=0;i<=t/2;i++){R(x+i*0.6,y+i,e,e,col);R(x+t-e-i*0.6,y+i,e,e,col);}};
+    const lanterne=(x,y)=>{
+      R(x,y,2,9,'#4a4a52');                      /* la potence */
+      R(x-4,y+8,10,2,'#2a2f34');                 /* le chapeau */
+      R(x-3,y+9,8,9,'#3a3f46');                  /* le boîtier */
+      R(x-2,y+10,6,7,'#ffd96a');R(x-2,y+10,6,2,'#fff2b8');
+      R(x,y+18,2,14,'#6b4a2a');                  /* le poteau jusqu'au plancher */
+      for(let a=0;a<6.283;a+=0.4)R(x+1+Math.cos(a)*8,y+13+Math.sin(a)*8,2,2,'rgba(255,214,110,.13)');};
+    const escalier=(x,y,w,n)=>{
+      R(x-2,y-2,w+4,4,'#8a8a92');
+      R(x,y,w,n*2.6+4,'#1a1f24');
+      for(let k=0;k<n;k++){R(x+2,y+2+k*2.6,w-4,1.8,'#39424a');R(x+2,y+2+k*2.6,w-4,0.7,'#5a666e');}};
+    R(cx-48,sol+1,96,4,'rgba(24,34,20,.26)');    /* l'ombre portée */
+    /* le plancher */
+    R(cx-46,sol-20,92,22,'#6b4a2a');
+    for(let x=cx-46;x<cx+46;x+=6){
+      R(x,sol-20,5,22,hs(x)<0.5?'#7d5833':'#6b4a2a');
+      R(x,sol-20,5,1,'#96693c');}
+    R(cx-46,sol+2,92,3,'#4a3218');
+    escalier(cx-12,sol-18,24,6);                 /* l'escalier, au centre */
+    /* la rampe */
+    [cx-48,cx+44].forEach(x=>{R(x,sol-40,4,20,'#7d5833');R(x,sol-40,1.4,20,'#ab7a49');});
+    R(cx-48,sol-42,96,3,'#7d5833');R(cx-48,sol-42,96,1,'#ab7a49');
+    for(let x=cx-44;x<cx+44;x+=9)R(x,sol-40,2.4,18,'#6b4a2a');
+    /* le banc */
+    R(cx+22,sol-32,16,4,'#8a6238');R(cx+22,sol-32,16,1.4,'#a5764a');
+    R(cx+24,sol-28,2,8,'#6b4a2a');R(cx+34,sol-28,2,8,'#6b4a2a');
+    /* les deux lanternes, à la même hauteur */
+    lanterne(cx-40,sol-58);lanterne(cx+38,sol-58);
+    /* le panneau, dans l'axe */
+    R(cx-1,sol-44,3,22,'#8a939a');
+    R(cx-11,sol-62,23,18,'#17365a');R(cx-10,sol-61,21,16,'#1d5090');
+    lettreM(cx-6,sol-58,12,'#f4f8fc');
+    STATION={toile:c, W:LW, H:LH, sol:sol};
+  }
+
   const cv=document.createElement('canvas');cv.id='cv';document.body.appendChild(cv);
   const hud=document.createElement('div');hud.id='hud';document.body.appendChild(hud);
   const g=cv.getContext('2d');
@@ -162,13 +213,19 @@ const ELIAS='e029d1fb-7baa-4225-91fd-5cdbef6f8711';
     g.drawImage(SOL,-x0,-y0);
     if(!LISIERE)construireLisiere();
     g.drawImage(LISIERE,-x0,-y0);
+    /* la station, posée par son pied au centre de la carte */
+    if(!STATION)graverStation();
+    g.drawImage(STATION.toile,
+      Math.round(METRO.x-STATION.W/2-x0),
+      Math.round(METRO.y-STATION.sol-y0));
     /* le cadre */
     g.fillStyle='#e8c46a';
     g.fillRect(-x0,-y0,MONDE_L,1);g.fillRect(-x0,MONDE_H-1-y0,MONDE_L,1);
     g.fillRect(-x0,-y0,1,MONDE_H);g.fillRect(MONDE_L-1-x0,-y0,1,MONDE_H);
     hud.innerHTML='carte <b>'+MONDE_L+' × '+MONDE_H+'</b><br>'+
       'vue <b>'+VW+' × '+VH+'</b> points<br>'+
-      'caméra <b>'+Math.round(camX)+' , '+Math.round(camY)+'</b>';
+      'caméra <b>'+Math.round(camX)+' , '+Math.round(camY)+'</b><br>'+
+      'métro <b>'+METRO.x+' , '+METRO.y+'</b>';
   }
 
   /* le doigt fait glisser la carte */
