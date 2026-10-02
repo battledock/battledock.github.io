@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-02-0738';
+var MA_VERSION='2026-10-02-0809';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11357,9 +11357,17 @@ function surAmorce(x,y,m){
     const cx=a.x0+(ax1-a.x0)*e;
     if(Math.abs(x-cx)<a.w+(m||0))return true;}
   return false;}
-/* LE SENTIER GARDE LA MÊME LARGEUR d'un bout à l'autre de la forêt :
-   celle du haut, la plus généreuse. */
-function sentierLargeur(y){return 28;}
+/* LE SENTIER GARDE LA MÊME LARGEUR RÉELLE d'un bout à l'autre.
+   Comme on le dessine ligne par ligne, une bande horizontale de 56 points
+   ne fait 56 points de large QUE si le sentier descend tout droit. Dès
+   qu'il part en biais, sa largeur vue perpendiculairement se réduit.
+   On compense donc par la pente : c'est ce qui le faisait paraître
+   large en haut, étroit au milieu, large en bas. */
+function sentierPente(y){
+  const d=(sentierX(y+1)-sentierX(y-1))/2;      /* de combien il dérive par ligne */
+  return Math.sqrt(1+d*d);
+}
+function sentierLargeur(y){return 28*sentierPente(y);}
 function surLeSentier(x,y,marge){
   if(surAmorce(x,y,marge||0))return true;
   if(!(typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village'))return false;
