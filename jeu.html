@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-02-2056';
+var MA_VERSION='2026-10-02-2103';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11891,6 +11891,44 @@ function graverPlumeFo(v){
   plume(cx-11,sol,9,0.2,'#eae4d6','#fbf7ec','#bfb8a4','#a0978a');
   return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
 }
+/* L'ARGILE : le dessin exact de l'ancienne forêt, trois lobes fusionnés,
+   avec son état plein et son état déjà pris. */
+const F_ARG={fonce:'#7d3826',bas:'#9c4a32',moyen:'#a85039',clair:'#bb5e42',
+  haut:'#c76b4c',luisant:'#e0977a'};
+function F_lobes(lobes,LW){
+  const h=new Array(LW).fill(null);
+  for(let x=0;x<LW;x++){
+    let y=null;
+    lobes.forEach(([cx2,cy,r])=>{
+      const dx=x+0.5-cx2;if(Math.abs(dx)>=r)return;
+      const t=cy-Math.sqrt(r*r-dx*dx);
+      if(y===null||t<y)y=t;});
+    h[x]=y===null?null:Math.round(y);}
+  return h;}
+function graverArgileFo(pleine){
+  const LW=40, LH=26;
+  const c=document.createElement('canvas');c.width=LW;c.height=LH;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
+    g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const cx=LW/2, sol=LH-4;
+  g.fillStyle='rgba(24,34,20,.24)';
+  g.beginPath();g.ellipse(cx+1,sol,15,4.5,0,0,7);g.fill();
+  const haut=F_lobes(pleine
+    ? [[cx-8,sol-5,7],[cx+7,sol-5.5,7.4],[cx-1,sol-11,7.8]]
+    : [[cx-7,sol-3.5,5.4],[cx+6,sol-3,5]],LW);
+  for(let x=0;x<LW;x++){
+    const y=haut[x];if(y===null)continue;
+    const h=sol-y;if(h<=0)continue;
+    R(x,y,1,h,F_ARG.moyen);
+    R(x,y,1,Math.max(2,Math.round(h*0.4)),F_ARG.clair);
+    if(x<LW*0.5)R(x,y,1,2,F_ARG.haut);
+    R(x,sol-3,1,3,F_ARG.bas);R(x,sol-1,1,1,F_ARG.fonce);}
+  if(pleine){R(cx-6,sol-14,4,1,F_ARG.luisant);R(cx+3,sol-7,4,1,F_ARG.luisant);
+    R(cx-11,sol-6,3,1,F_ARG.luisant);}
+  else{R(cx-8,sol-6,3,1,F_ARG.luisant);R(cx-2,sol-4,5,2,F_ARG.fonce);}
+  return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
+}
 /* LE QUAI DE BOIS : la station de métro de la forêt */
 function graverQuaiMetro(){
   const LW=110, LH=90;
@@ -11965,6 +12003,17 @@ function semerLaForet(){
   semerChampi('x_fo_cepe',7,179);
   semerChampi('x_fo_girolle',3,223);
   semerChampi('x_fo_plume',10,277);
+  /* L'ARGILE : treize gisements, plutôt vers la rive du lac */
+  {let n=0;
+   for(let k=0;k<3000&&n<13;k++){
+     const x=Math.round(F_hs(k*3.7+311)*(MONDE_L-160))+80;
+     const r=F_rive(x);
+     const y=Math.round(r-18-F_hs(k*5.3+41)*260);        /* du bord de l'eau vers le haut */
+     if(y<F_BAR+50)continue;
+     if(Math.hypot(x-MONDE_L/2,y-MONDE_H/2)<80)continue;
+     if(DECOR.some(o=>o.t==='x_fo_argile'&&Math.hypot(o.x-x,o.y-y)<110))continue;
+     if(DECOR.some(o=>ARBRES.includes(o.t)&&Math.hypot(o.x-x,o.y-y)<26))continue;
+     DECOR.push({t:'x_fo_argile',x,y,v:0,gr:0});n++;}}
   DECOR.push({t:'x_fo_quai',x:MONDE_L/2,y:MONDE_H/2,v:0,gr:0,bati:true,demi:46,ouvre:'metroFerme'});
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
@@ -12107,6 +12156,7 @@ if(t==='x_fo_amanite'){XCAL[cle]=graverChampiFo(0,v||0);if(!CALQUES_DECO[t])CALQ
 if(t==='x_fo_cepe'){XCAL[cle]=graverChampiFo(1,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_girolle'){XCAL[cle]=graverChampiFo(2,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_plume'){XCAL[cle]=graverPlumeFo(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_argile'){XCAL[cle]=graverArgileFo(!v);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_aut'){XCAL[cle]=graverArbreAutomne(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_cabanonMoi'){const c=CAB_LU();
 XCAL[cle]=graverTonCabanon(c.bati?(c.niveau>0?2:1):0);
@@ -18377,7 +18427,7 @@ const AVEC_PORTE=(o)=>!!o.ouvre||LARGES.includes(o.t)||o.t==='mine';   /* les li
 for(const o of DECOR)if(LARGES.includes(o.t)&&autour.indexOf(o)<0)autour.push(o);
 for(const o of autour){
 const cueillable=['argile','roseaux','champignons','herbes','plumes',
-  'x_fo_amanite','x_fo_cepe','x_fo_girolle','x_fo_plume'].includes(o.t);   /* les champignons et les plumes de la forêt aussi */
+  'x_fo_amanite','x_fo_cepe','x_fo_girolle','x_fo_plume','x_fo_argile'].includes(o.t);   /* les récoltes de la forêt aussi */
 const minerai=['fer','cuivre','charbon'].includes(o.t);
 const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro','x_etal','x_pavPoisson','x_pavPeche','x_cabanon','x_cabanonMoi','x_stationVelo','x_paillasson','x_chantier'].includes(o.t);
 if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'
@@ -19717,7 +19767,7 @@ b.innerHTML='Ramasser<small>'+
 ({argile:'ARGILE',roseaux:'ROSEAUX',champignons:'CHAMPIGNONS',
 herbes:'HERBES',plumes:'PLUMES',
 x_fo_amanite:'AMANITES',x_fo_cepe:'CÈPES',x_fo_girolle:'GIROLLES',
-x_fo_plume:'PLUMES'})[o.t]+'</small>';
+x_fo_plume:'PLUMES',x_fo_argile:'ARGILE'})[o.t]+'</small>';
 }
 b.classList.add('on');
 }
@@ -19872,7 +19922,7 @@ else jouer('pioche');
 if(GESTE.type==='gouge'&&o&&DECOR.includes(o))return saignerLAmbre(o);
 if(GESTE.type==='tamis')return finirLeLavage();
 if(o&&DECOR.includes(o)&&o.t==='buisson')return cueillir(o);
-if(o&&DECOR.includes(o)&&(RECOLTES[o.t]||['x_fo_amanite','x_fo_cepe','x_fo_girolle','x_fo_plume'].includes(o.t)))return ramasser(o);
+if(o&&DECOR.includes(o)&&(RECOLTES[o.t]||['x_fo_amanite','x_fo_cepe','x_fo_girolle','x_fo_plume','x_fo_argile'].includes(o.t)))return ramasser(o);
 if(o&&DECOR.includes(o)&&MINERAIS[o.t])return miner(o);
 /* LE CONIFÈRE EST UN ARBRE : il se coupait à la pioche et donnait de la pierre */
 if(o&&DECOR.includes(o)&&(o.t==='arbre'||o.t==='x_fo_pin'||o.t==='x_fo_erable'||o.t==='x_fo_chene'||o.t==='x_fo_charme'||o.t==='x_fo_olive'))return couper(o);
@@ -20046,7 +20096,7 @@ herbes:      {nom:'herbes',      q:[2,3], pts:2, col:['#4a944a','#c98fe0'], vole
 plumes:      {nom:'plumes',      q:[1,2], pts:3, col:['#f2efe4','#c9c2b0'], vole:true}
 };
 function ramasser(o){
-const R=RECOLTES[o.t]||(['x_fo_amanite','x_fo_cepe','x_fo_girolle'].includes(o.t)?RECOLTES.champignons:(o.t==='x_fo_plume'?RECOLTES.plumes:null));
+const R=RECOLTES[o.t]||(['x_fo_amanite','x_fo_cepe','x_fo_girolle'].includes(o.t)?RECOLTES.champignons:(o.t==='x_fo_plume'?RECOLTES.plumes:(o.t==='x_fo_argile'?RECOLTES.argile:null)));
 o.cueilli=Date.now();o.frappe=Date.now();
 signalerLeMonde(o,o.t==='champignons'?'champignons':'cueillette',o.t);   /* les champignons ont leur propre rythme */
 for(let i=0;i<8;i++){
@@ -24168,6 +24218,7 @@ TAILLES['x_fo_amanite']=[{w:22,h:6},{w:22,h:6},{w:22,h:6}];
 TAILLES['x_fo_cepe']=[{w:22,h:6},{w:22,h:6},{w:22,h:6}];
 TAILLES['x_fo_girolle']=[{w:24,h:6},{w:24,h:6},{w:24,h:6}];
 TAILLES['x_fo_plume']=[{w:16,h:5},{w:16,h:5},{w:16,h:5}];
+TAILLES['x_fo_argile']=[{w:26,h:7},{w:26,h:7},{w:26,h:7}];
 /* ================= LES NOUVEAUX LIEUX DE LA FORÊT ================= */
 function toileFo(W,H,f){
   const D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;
