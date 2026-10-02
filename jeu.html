@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-02-0809';
+var MA_VERSION='2026-10-02-0850';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12769,6 +12769,15 @@ function construireChemin(){
       for(let x=cx2-w;x<cx2+w;x++){
         if(Math.abs(x-cx2)/w>0.86&&al2(x*0.5+y*0.3)<0.5)continue;
         terre(x,y);}}}
+  /* LE REPLAT DEVANT LA CARRIÈRE : quelques pas de terre battue qui
+     relient le bord du sentier à l'entrée de la galerie. */
+  {const qx=478, qy=826;
+   for(let y=qy-8;y<qy+24;y++){
+     const sx2=sentierX(y), bord=sx2+sentierLargeur(y)-4;
+     for(let x=bord;x<qx+14;x++){
+       const t=(x-bord)/Math.max(1,(qx+16-bord));
+       if(al2(x*0.5+y*0.3)<0.22+t*0.3)continue;    /* le raccord s'effrite */
+       terre(x,y);}}}
   /* la branche vers la clairière du bûcheron */
   for(let t=0;t<210;t++){const x=sentierX(880)+t, y=880+Math.sin(t/72)*38;
     for(let w=-15;w<15;w++)if(!(Math.abs(w)>12&&al2(x+w)<0.42))terre(x,y+w);}
@@ -23596,18 +23605,46 @@ function graverHerbo(){return toileFo(118,104,(R,g,W,H,hs)=>{
   /* les bottes d'herbes pendues sous l'auvent */
   for(let k=0;k<4;k++)R(24+k*20,44,4,12,'#8a9a52');});}
 /* LA CARRIÈRE : une paroi entaillée, des blocs, des outils */
-function graverCarriere(){return toileFo(126,92,(R,g,W,H,hs)=>{
-  R(8,H-8,110,6,'rgba(24,34,20,.2)');
-  for(let y=10;y<70;y+=9)for(let x=10;x<116;x+=14){
-    const n=hs(x*0.4+y*0.3);R(x,y,13,8,n<.28?'#8e9a92':(n<.56?'#7c8880':(n<.82?'#9aa69e':'#6a7670')));}
-  R(10,10,106,3,'#a6b2aa');R(10,66,106,4,'#55605a');
-  /* les blocs taillés, au pied */
-  for(let k=0;k<4;k++){const x=12+k*26,y=H-26+((k%2)?4:0);
-    R(x,y,22,18,'#8e929a');R(x,y,22,4,'#a8adb4');R(x+2,y+14,18,3,'#6a6e74');}
-  /* la brouette et la pioche */
-  R(96,H-30,22,10,'#8a4a2a');R(96,H-32,22,3,'#a86a3a');
-  g.fillStyle='#3a3f46';g.fillRect(100,H-20,3,10);
-  R(88,H-44,3,18,'#8a6238');R(82,H-46,16,4,'#9aa0a8');});}
+function graverCarriere(){return toileFo(66,44,(R,g,W,H,hs)=>{
+  /* ================= L'EXCAVATION =================
+     Une entaille dans le talus : la terre s'ouvre, on a boisé le passage
+     avec trois madriers, un bout de rail sort vers le chemin. C'est tout.
+     La végétation de la forêt recouvre presque le reste. */
+  const cx=W/2, sol=H-4;
+  /* le talus : un bourrelet de terre, dans les bruns du sol d'automne */
+  for(let k=0;k<26;k++){
+    const a=Math.PI+(k/26)*Math.PI, x=cx+Math.cos(a)*25, y=sol-16+Math.sin(a)*9;
+    const n=hs(x*0.5+k);
+    R(x-2,y,5,sol-y+2,n<.34?'#5a4428':(n<.68?'#4a3820':'#6a5230'));}
+  R(cx-26,sol-6,52,7,'#4a3820');R(cx-26,sol-6,52,2,'#5f4a2c');
+  /* la terre remuée devant, plus claire */
+  for(let k=0;k<22;k++){const x=cx-24+hs(k*3)*48, y=sol-4+hs(k*7)*5;
+    R(x,y,4,2,hs(k)<.5?'#7a6238':'#8a7244');}
+  /* quelques cailloux sortis de la galerie */
+  for(let k=0;k<6;k++){const x=cx-20+hs(k*5)*40, y=sol-9+hs(k*9)*8;
+    R(x,y,5,3,'#8e9a92');R(x,y,5,1.4,'#a6b2aa');R(x,y+2,5,1,'#55605a');}
+  /* L'OUVERTURE, creusée dans le talus */
+  const ew=9, ey=sol-7;
+  for(let a=0;a<3.15;a+=0.08)R(cx+Math.cos(a)*ew-1,ey-11-Math.sin(a)*7,3,3,'#141210');
+  R(cx-ew,ey-11,ew*2,11,'#141210');
+  for(let k=0;k<3;k++)R(cx-ew+2+k*6,ey-10,3,10,'rgba(255,255,255,'+(0.03+k*0.013).toFixed(3)+')');
+  /* LES TROIS MADRIERS : deux debout, un en travers */
+  R(cx-ew-3,ey-15,3,15,'#6a4a2a');R(cx-ew-3,ey-15,1.2,15,'#8a6238');
+  R(cx+ew,ey-15,3,15,'#6a4a2a');R(cx+ew,ey-15,1.2,15,'#8a6238');
+  R(cx-ew-4,ey-17,ew*2+8,3,'#6a4a2a');R(cx-ew-4,ey-17,ew*2+8,1.2,'#8a6238');
+  /* LE BOUT DE RAIL qui sort vers le chemin */
+  for(let t=0;t<11;t++){const y=ey+t;
+    if(t%4===0)R(cx-5,y,11,1.2,'#5b3f21');
+    R(cx-4,y,1.2,1,'#9aa2a8');R(cx+3,y,1.2,1,'#9aa2a8');}
+  /* LE PETIT WAGONNET, posé au bout du rail */
+  const wx=cx+14, wy=ey+3;
+  R(wx-6,wy,12,7,'#4f5f6a');R(wx-6,wy,12,2,'#6f7f8a');R(wx-5,wy+1,10,4,'#39474f');
+  for(let k=0;k<3;k++)R(wx-4+k*3,wy,2.4,1.6,k%2?'#a7a49c':'#8d8a84');
+  [wx-4,wx+2].forEach(x=>R(x,wy+7,2.4,2.4,'#2a2f34'));
+  /* la petite pancarte, plantée de travers */
+  R(cx-22,ey-9,1.6,9,'#6a4a2a');
+  R(cx-27,ey-13,12,5,'#8a6238');R(cx-26,ey-12,10,3,'#c9a878');});}
+
 /* L'ARBRE REMARQUABLE : un chêne immense, à contre-emploi des autres */
 function graverGrandArbre(){return toileFo(150,170,(R,g,W,H,hs)=>{
   const cx=W/2,sol=H-8;
@@ -23751,6 +23788,17 @@ L.push({t:'x_fe_gare',x:gx,y:gy,v:0,bati:true,demi:34,ouvre:'metroForet'});
  /* 6 · LA CLAIRIÈRE : des champignons semés sur la branche du sentier,
         ils mènent l'oeil vers la cabane */
  for(let k=0;k<10;k++)L.push({t:'champignons',x:SX(880)+38+k*22,y:876+Math.sin(k/2.4)*36,gr:k%3});
+ /* AUTOUR DE LA CARRIÈRE : on habille avec les éléments de la forêt,
+    pour que la zone minérale reste petite et se referme tout de suite. */
+ {const qx=478, qy=826;
+  /* la forêt reprend ses droits tout autour : quelques rochers seulement,
+     et de la végétation qui mord sur les bords de l'excavation */
+  for(let k=0;k<4;k++)L.push({t:'rocher',x:qx-34+k*24,y:qy-18+Math.sin(k*1.7)*12,gr:k%3});
+  for(let k=0;k<6;k++)L.push({t:'buisson',x:qx-56+k*9,y:qy+26+Math.sin(k)*10,gr:k%2});
+  for(let k=0;k<4;k++)L.push({t:'buisson',x:qx+16+k*13,y:qy+20+Math.sin(k)*12,gr:k%2});
+  for(let k=0;k<5;k++)L.push({t:'herbes',x:qx-30+k*15,y:qy+6+Math.sin(k*2)*8,gr:k%3});
+  for(let k=0;k<4;k++)L.push({t:'champignons',x:qx-34+k*26,y:qy+34+Math.sin(k*1.4)*8,gr:k%3});
+  for(let k=0;k<3;k++)L.push({t:'souche',x:qx-40+k*38,y:qy-32+Math.sin(k)*10,gr:k%3});}
 }
 /* les six moments réservent leur espace : aucun arbre ne vient les masquer */
 const SX_M=(y)=>sentierX(y);
@@ -23769,7 +23817,7 @@ const dansUnMoment=(x,y)=>MOMENTS.some(([mx,my,r])=>Math.hypot(x-mx,y-my)<r);
  nouveau('x_fo_scierie',    520, 250, 62,'scierie',    58,96);
  nouveau('x_fo_camp',       150, 452, 48,'campement',  46,74);
  nouveau('x_fo_herbo',      176, 640, 54,'herboriste', 52,92);
- nouveau('x_fo_carriere',   540, 830, 58,'carriere',   56,80);
+ nouveau('x_fo_carriere',   478, 826, 26,'carriere',   24,30);   /* juste à droite du sentier */
  nouveau('x_fo_grandArbre', 220, 980, 60,'grandArbre', 24,140);
  /* les champignons rares, trois touffes cachées dans le bas du bois */
  [[420,1130],[128,1224],[586,1046]].forEach(([x,y],k)=>{
