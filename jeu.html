@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-02-1641';
+var MA_VERSION='2026-10-02-1646';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -7908,6 +7908,69 @@ function afficheComplexe(){
     <button id="afcOk">REDESCENDRE SUR LE QUAI</button>
   </div></div>`;
   $('afcOk').onclick=()=>{$('page2').classList.remove('on');};
+}
+/* ================= L'ANNONCE DE LA RÉOUVERTURE =================
+   Elle s'affiche une fois par joueur au démarrage, tant que la forêt n'est
+   pas ouverte. Pour la retirer, il suffira de passer FORET_OUVERTE à vrai. */
+const FORET_OUVERTE=false;
+function annonceForet(){
+  if(FORET_OUVERTE)return;
+  try{if(localStorage.getItem('bdl.annonce.foret')==='1')return;}catch(x){}
+  $('page2Fond').className='';$('page2').classList.add('on');
+  $('page2Fond').innerHTML=`<style>
+  #anf{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    background:#241a10;padding:18px;font-family:Georgia,serif;overflow-y:auto}
+  #anf .pan{width:100%;max-width:350px;background:#f2e7d2;border:6px solid #4a3218;border-radius:7px;
+    box-shadow:0 12px 34px rgba(0,0,0,.6);padding:20px 17px 17px;text-align:center;position:relative}
+  #anf .pan:before{content:'';position:absolute;inset:6px;border:1px dashed #c9a24a;border-radius:3px;pointer-events:none}
+  #anf .clou{position:absolute;width:9px;height:9px;border-radius:50%;background:#8a8a92;box-shadow:inset 0 1px 0 #c8ced4}
+  #anf .c1{left:10px;top:10px}#anf .c2{right:10px;top:10px}
+  #anf .c3{left:10px;bottom:10px}#anf .c4{right:10px;bottom:10px}
+  #anf small{display:block;font:700 8px Arial,sans-serif;letter-spacing:3.4px;color:#8a2228}
+  #anf canvas{width:120px;height:86px;image-rendering:pixelated;margin:10px 0 2px}
+  #anf h2{font:900 23px Georgia,serif;color:#2f2820;margin:2px 0 4px;line-height:1.16}
+  #anf .ban{display:inline-block;background:#2f7a4a;color:#eaf6ee;border-radius:4px;
+    padding:5px 13px;font:700 9px Arial,sans-serif;letter-spacing:2.2px;margin:9px 0 12px}
+  #anf p{font:italic 13.5px Georgia,serif;color:#5f4d34;line-height:1.55;margin-bottom:10px}
+  #anf .l{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:4px 0 12px}
+  #anf .l span{background:#e4d6bc;border:1px solid #c9b48a;border-radius:13px;padding:5px 10px;
+    font:700 9px Arial,sans-serif;letter-spacing:1px;color:#5a4428}
+  #anf .sig{font:italic 12px Georgia,serif;color:#8a7454;border-top:1px solid #d8c9a6;padding-top:10px;margin-top:6px}
+  #anf button{margin-top:13px;width:100%;border:0;border-radius:9px;padding:14px;
+    background:#4a3218;color:#f2e7d2;font:700 10px Arial,sans-serif;letter-spacing:2.2px}
+  </style>
+  <div id="anf"><div class="pan">
+    <i class="clou c1"></i><i class="clou c2"></i><i class="clou c3"></i><i class="clou c4"></i>
+    <small>AVIS À LA POPULATION</small>
+    <canvas id="anfBois" width="240" height="172"></canvas>
+    <h2>La forêt rouvre ses portes<br>aujourd’hui</h2>
+    <span class="ban">AVANT 20 HEURES</span>
+    <p>Le métro vous y redescendra. Les sentiers ont été refaits, le bois replanté,
+       et l’atelier du bûcheron a changé du tout au tout.</p>
+    <div class="l"><span>COUPER DU BOIS</span><span>CASSER LA PIERRE</span><span>L’ARGILE</span>
+      <span>LES PLUMES</span><span>LES CHAMPIGNONS</span><span>LA RÉSINE</span></div>
+    <p>Et quelques surprises que je vous laisse découvrir.</p>
+    <div class="sig">Le bûcheron</div>
+    <button id="anfOk">J’AI HÂTE</button>
+  </div></div>`;
+  /* un arbre d'automne, en pixels */
+  {const cv=$('anfBois'),g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+   const S=cv.width/60;g.setTransform(S,0,0,S,0,0);
+   const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+   const cx=30, sol=40;
+   g.fillStyle='rgba(74,56,32,.22)';g.beginPath();g.ellipse(cx,sol+1,13,4,0,0,7);g.fill();
+   R(cx-3,sol-14,6,14,'#6b4a28');R(cx-3,sol-14,1.6,14,'#8a6238');R(cx+1.4,sol-12,1.6,12,'#4f3520');
+   const M=(x,y,w,h,c)=>{R(x,y,w,h,c);g.clearRect(x,y,2,1);g.clearRect(x+w-2,y,2,1);
+     g.clearRect(x,y+h-1,2,1);g.clearRect(x+w-2,y+h-1,2,1);};
+   M(cx-20,sol-26,40,9,'#a8562a');M(cx-16,sol-34,32,9,'#c9821a');
+   M(cx-11,sol-42,22,9,'#d8a83a');M(cx-6,sol-48,12,7,'#e8c45a');
+   /* quelques feuilles qui tombent */
+   const hs=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+   for(let k=0;k<16;k++)R(hs(k)*58,sol-4+hs(k*3)*8,3,2,['#c9821a','#b4552a','#d8a83a'][k%3]);
+   for(let k=0;k<7;k++)R(2+hs(k*7)*54,6+hs(k*5)*22,3,2,['#c9821a','#8a3a22'][k%2]);}
+  $('anfOk').onclick=()=>{
+    try{localStorage.setItem('bdl.annonce.foret','1');}catch(x){}
+    $('page2').classList.remove('on');};
 }
 let FONFON={};
 function ouvrirChezFonfon(){
@@ -16501,6 +16564,8 @@ else ouvrirLeChantier(d&&d.erreur==='manque'?'« Il te manque encore de quoi. »
 if(CARTE==='vallon')location.replace('jeu.html?v='+Date.now());   /* le quartier est déposé */
 function ligne2Permise(){try{return !!(e&&e.id==='e029d1fb-7baa-4225-91fd-5cdbef6f8711');}catch(x){return false;}}
 setTimeout(()=>{try{verifierLaFete();}catch(x){}},200);
+/* l'annonce de la réouverture, une fois par joueur */
+setTimeout(()=>{try{if(CARTE==='extramar')annonceForet();}catch(x){}},1400);
 setInterval(()=>{try{verifierLaFete();}catch(x){}},600000);
 $('b-vestiaire').onclick=()=>{VEST_SEL=null;try{$('tiroir').classList.remove('on');$('barre').classList.remove('on');}catch(x){}ouvrirLeVestiaire();};
 $('b-sac').addEventListener('click',()=>{try{recalerLeSac(true);}catch(x){}});
