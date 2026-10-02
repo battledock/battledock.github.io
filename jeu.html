@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-02-2103';
+var MA_VERSION='2026-10-02-2110';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11929,6 +11929,43 @@ function graverArgileFo(pleine){
   else{R(cx-8,sol-6,3,1,F_ARG.luisant);R(cx-2,sol-4,5,2,F_ARG.fonce);}
   return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
 }
+/* LES ROCHERS : le dessin de l'ancienne forêt, trois tailles, avec une
+   coiffe de mousse qui épouse la crête et retombe de quelques pixels. */
+const F_PIE={pierre:'#7b8288',clair:'#8b939a',haut:'#a2a9b0',ombre:'#5f666c',eclat:'#b7bec4'};
+const F_MOU={fonce:'#3a6a30',moyen:'#4f7a3a',clair:'#669a4e',vif:'#7cb45e'};
+const F_TAILLES_PIERRE=[{h:22,l:11},{h:26,l:13},{h:30,l:15}];
+function graverRocherFo(v){
+  const S=F_TAILLES_PIERRE[Math.min(2,v||0)];
+  const HT=S.h, L=S.l, LW=L*2+10, LH=HT+8;
+  const c=document.createElement('canvas');c.width=LW;c.height=LH;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
+    g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const cx=LW/2, sol=LH-4, r=L*0.62, G=v*31+11;
+  g.fillStyle='rgba(24,34,20,.24)';
+  g.beginPath();g.ellipse(cx+1,sol,L*0.95,3,0,0,7);g.fill();
+  const haut=F_lobes([[cx-L*0.42,sol-r*0.72,r],[cx+L*0.46,sol-r*0.64,r*0.92],
+    [cx-L*0.06,sol-HT*0.58,r*1.04]],LW);
+  for(let x=0;x<LW;x++){
+    const y=haut[x];if(y===null)continue;
+    const h=sol-y;if(h<=0)continue;
+    R(x,y,1,h,F_PIE.pierre);
+    R(x,y,1,Math.max(2,Math.round(h*0.36)),F_PIE.clair);
+    if(x<LW*0.5)R(x,y,1,2,F_PIE.haut);
+    R(x,sol-3,1,3,F_PIE.ombre);}
+  const xx=Math.round(cx-L*0.2);                    /* la cassure */
+  for(let i=0;i<Math.round(HT*0.34);i++)R(xx+Math.round(i*0.5),sol-6-i,2,1,F_PIE.eclat);
+  R(cx-L-4,sol-5,5,3,F_PIE.pierre);R(cx-L-4,sol-5,5,1,F_PIE.clair);
+  /* LA COIFFE DE MOUSSE : elle suit la crête, son bord est grignoté */
+  for(let x=0;x<LW;x++){
+    const y=haut[x];if(y===null)continue;
+    if(F_hs(x*0.7+G)<0.18)continue;
+    const ep=2+Math.round(F_hs(x*0.5+G)*3);
+    R(x,y,1,ep,F_MOU.moyen);
+    R(x,y,1,1,F_MOU.clair);
+    if(F_hs(x*1.3+G)<0.3)R(x,y-1,1,1,F_MOU.vif);}   /* les brins qui dépassent */
+  return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
+}
 /* LE QUAI DE BOIS : la station de métro de la forêt */
 function graverQuaiMetro(){
   const LW=110, LH=90;
@@ -12014,6 +12051,16 @@ function semerLaForet(){
      if(DECOR.some(o=>o.t==='x_fo_argile'&&Math.hypot(o.x-x,o.y-y)<110))continue;
      if(DECOR.some(o=>ARBRES.includes(o.t)&&Math.hypot(o.x-x,o.y-y)<26))continue;
      DECOR.push({t:'x_fo_argile',x,y,v:0,gr:0});n++;}}
+  /* LES ROCHERS : trois tailles mêlées, semés dans tout le bois */
+  {let n=0;
+   for(let k=0;k<3000&&n<22;k++){
+     const x=Math.round(F_hs(k*1.9+401)*(MONDE_L-160))+80;
+     const y=Math.round(F_hs(k*4.7+67)*(MONDE_H-280))+F_BAR+52;
+     if(y>F_rive(x)-20)continue;
+     if(Math.hypot(x-MONDE_L/2,y-MONDE_H/2)<86)continue;
+     if(DECOR.some(o=>o.t==='x_fo_rocher'&&Math.hypot(o.x-x,o.y-y)<90))continue;
+     if(DECOR.some(o=>ARBRES.includes(o.t)&&Math.hypot(o.x-x,o.y-y)<28))continue;
+     DECOR.push({t:'x_fo_rocher',x,y,v:k%3,gr:k%3,bati:true,demi:10+((k%3)*2)});n++;}}
   DECOR.push({t:'x_fo_quai',x:MONDE_L/2,y:MONDE_H/2,v:0,gr:0,bati:true,demi:46,ouvre:'metroFerme'});
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
@@ -12157,6 +12204,7 @@ if(t==='x_fo_cepe'){XCAL[cle]=graverChampiFo(1,v||0);if(!CALQUES_DECO[t])CALQUES
 if(t==='x_fo_girolle'){XCAL[cle]=graverChampiFo(2,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_plume'){XCAL[cle]=graverPlumeFo(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_argile'){XCAL[cle]=graverArgileFo(!v);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_rocher'){XCAL[cle]=graverRocherFo(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_aut'){XCAL[cle]=graverArbreAutomne(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_cabanonMoi'){const c=CAB_LU();
 XCAL[cle]=graverTonCabanon(c.bati?(c.niveau>0?2:1):0);
@@ -18430,7 +18478,7 @@ const cueillable=['argile','roseaux','champignons','herbes','plumes',
   'x_fo_amanite','x_fo_cepe','x_fo_girolle','x_fo_plume','x_fo_argile'].includes(o.t);   /* les récoltes de la forêt aussi */
 const minerai=['fer','cuivre','charbon'].includes(o.t);
 const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro','x_etal','x_pavPoisson','x_pavPeche','x_cabanon','x_cabanonMoi','x_stationVelo','x_paillasson','x_chantier'].includes(o.t);
-if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'
+if(o.t!=='rocher'&&o.t!=='x_fo_rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'
 &&!batiment&&!o.bati&&!cueillable&&!minerai)continue;
 if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
 if(o.t==='buisson'&&o.cueilli&&Date.now()-o.cueilli<240000)continue;   /* repousse en 4 min */
@@ -19715,7 +19763,7 @@ b.classList.add('on');return;
 if(o.t==='coffre'){
 if(e.coffreOuvert){secours();return;}
 b.innerHTML='Ouvrir<small>LE COFFRE</small>';
-}else if(o.t==='rocher'){
+}else if(o.t==='rocher'||o.t==='x_fo_rocher'){
 const reste=3-(o.coups||0);
 b.innerHTML=e.outils.pioche
 ? 'Casser<small>ROCHER · '+reste+' COUP'+(reste>1?'S':'')+'</small>'+jaugeAction((o.coups||0)/3)
@@ -24219,6 +24267,7 @@ TAILLES['x_fo_cepe']=[{w:22,h:6},{w:22,h:6},{w:22,h:6}];
 TAILLES['x_fo_girolle']=[{w:24,h:6},{w:24,h:6},{w:24,h:6}];
 TAILLES['x_fo_plume']=[{w:16,h:5},{w:16,h:5},{w:16,h:5}];
 TAILLES['x_fo_argile']=[{w:26,h:7},{w:26,h:7},{w:26,h:7}];
+TAILLES['x_fo_rocher']=[{w:20,h:8},{w:24,h:9},{w:28,h:10}];
 /* ================= LES NOUVEAUX LIEUX DE LA FORÊT ================= */
 function toileFo(W,H,f){
   const D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;
