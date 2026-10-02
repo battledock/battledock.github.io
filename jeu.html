@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-02-1405';
+var MA_VERSION='2026-10-02-1416';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12861,7 +12861,14 @@ const x0=Math.floor(x),y0=Math.floor(y),fx=x-x0,fy=y-y0;
 const m=(a,b,t)=>a+(b-a)*(t*t*(3-2*t));
 return m(m(bruit(x0,y0),bruit(x0+1,y0),fx),m(bruit(x0,y0+1),bruit(x0+1,y0+1),fx),fy);
 };
+/* LE FOND D'UN SEUL COUP : on remplissait un carré de deux pixels à la fois
+   sur toute la carte, soit plus de deux cent mille appels. On pose d'abord la
+   couleur de base en un seul rectangle, puis on ne dessine que les variations. */
+{const Zb=FOR_Z?zoneMelee(MONDE_L/2,MONDE_H/2):null;
+ g.fillStyle=FOR_Z?melange(Zb.a.base,Zb.b.base,Zb.t):OLIVE.base;
+ g.fillRect(0,0,MONDE_L,MONDE_H);}
 for(let y=0;y<MONDE_H;y+=2)for(let x=0;x<MONDE_L;x+=2){
+if(((x+y)&2)===0)continue;        /* une case sur deux garde la couleur de base */
 if(FOR_Z){const Z=zoneMelee(x,y);
   g.fillStyle=((x+y)&2)?melange(Z.a.base,Z.b.base,Z.t):melange(Z.a.moyen,Z.b.moyen,Z.t);}
 else g.fillStyle=((x+y)&2)?OLIVE.base:OLIVE.moyen;
@@ -12882,13 +12889,13 @@ if(FOR_Z){
    Elles se recouvrent, et le sol disparaît dessous. */
 if(FOR_Z){
   const FEUILLES=['#c9821a','#b4552a','#8a3a22','#d8a83a','#9a6a2a','#a8402a','#e0c05a','#b8742a'];
-  const nb=Math.round(MONDE_L*MONDE_H/190);
+  /* le tapis : trois traits par feuille au lieu de cinq, et un peu moins dense */
+  const nb=Math.round(MONDE_L*MONDE_H/260);
   for(let i=0;i<nb;i++){
     const x=Math.floor(alea(i*1.37)*MONDE_L), y=Math.floor(alea(i*2.71)*MONDE_H);
     const c=FEUILLES[Math.floor(alea(i*3.11)*FEUILLES.length)];
     const l=3+Math.floor(alea(i*4.3)*3), h=2+Math.floor(alea(i*5.7)*2);
-    g.fillStyle='rgba(40,28,14,.22)';g.fillRect(x+1,y+h,l-1,1);     /* l'ombre portée */
-    g.fillStyle=c;g.fillRect(x,y,l,h);g.fillRect(x+1,y+h,l-2,1);
+    g.fillStyle=c;g.fillRect(x,y,l,h);
     g.fillStyle='rgba(255,255,255,.16)';g.fillRect(x,y,l,1);        /* la lumière dessus */
     g.fillStyle='rgba(90,60,20,.34)';g.fillRect(x+Math.floor(l*0.45),y,1,h);  /* la nervure */
   }
