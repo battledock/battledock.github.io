@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-02-2110';
+var MA_VERSION='2026-10-02-2116';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11966,6 +11966,48 @@ function graverRocherFo(v){
     if(F_hs(x*1.3+G)<0.3)R(x,y-1,1,1,F_MOU.vif);}   /* les brins qui dépassent */
   return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
 }
+/* LES BUISSONS À BAIES : les trois variétés de l'ancienne forêt,
+   quatre lobes fusionnés, avec leur état cueilli. */
+const F_VAR_BUIS=[
+ {id:'mure',      V:['#2f6b34','#3d7d3f','#4a944a','#5aa855','#6fbb66'],
+  baie:['#2e2438','#5a4a68'],nb:5,h:26,l:13},
+ {id:'framboise', V:['#3a7a3a','#4a8a44','#59a052','#68b25f','#7cc470'],
+  baie:['#b8344a','#d4506a'],nb:6,h:30,l:11},
+ {id:'myrtille',  V:['#2a5c30','#36703c','#427f46','#4e9152','#5ea45f'],
+  baie:['#3a4a8a','#6478bc'],nb:7,h:20,l:15}];
+function graverBuissonFo(sorte,v){
+  const B=F_VAR_BUIS[Math.min(2,sorte)];
+  const gr=v&1, avecBaies=!(v&2);
+  const k=gr?1:0.8;
+  const HT=Math.round(B.h*k), L=Math.round(B.l*k), LW=L*2+8, LH=HT+8;
+  const c=document.createElement('canvas');c.width=LW;c.height=LH;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
+    g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const cx=LW/2, sol=LH-4, r=L*0.52;
+  g.fillStyle='rgba(24,34,20,.24)';
+  g.beginPath();g.ellipse(cx+1,sol,L*0.9,3,0,0,7);g.fill();
+  const lobes=[[cx-L*0.52,sol-r*0.9,r],[cx+L*0.5,sol-r*0.82,r*0.96],
+    [cx-L*0.16,sol-HT*0.56,r*1.06],[cx+L*0.3,sol-HT*0.72,r*0.8]];
+  for(let x=0;x<LW;x++){
+    let y=null;
+    lobes.forEach(([lx,ly,lr])=>{
+      const dx=x+0.5-lx;if(Math.abs(dx)>=lr)return;
+      const t=ly-Math.sqrt(lr*lr-dx*dx);if(y===null||t<y)y=t;});
+    if(y===null)continue;
+    y=Math.round(y);
+    const h=sol-y;if(h<=0)continue;
+    R(x,y,1,h,B.V[1]);                                  /* la masse */
+    R(x,y,1,Math.max(2,Math.round(h*0.34)),B.V[2]);     /* le haut, plus clair */
+    if(x<LW*0.56)R(x,y,1,2,B.V[3]);                     /* la lumière à gauche */
+    R(x,sol-3,1,3,B.V[0]);}                             /* l'ombre au pied */
+  if(avecBaies)for(let i=0;i<B.nb;i++){
+    const [lx,ly,lr]=lobes[i%lobes.length];
+    const bx=Math.round(lx+(F_hs(i*5.3+B.nb)-0.5)*lr*1.1);
+    const by=Math.round(ly+(F_hs(i*9.1+B.nb)-0.2)*lr*0.9);
+    R(bx,by,3,3,B.baie[0]);R(bx,by,2,1,B.baie[1]);}
+  return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
+}
 /* LE QUAI DE BOIS : la station de métro de la forêt */
 function graverQuaiMetro(){
   const LW=110, LH=90;
@@ -12061,6 +12103,21 @@ function semerLaForet(){
      if(DECOR.some(o=>o.t==='x_fo_rocher'&&Math.hypot(o.x-x,o.y-y)<90))continue;
      if(DECOR.some(o=>ARBRES.includes(o.t)&&Math.hypot(o.x-x,o.y-y)<28))continue;
      DECOR.push({t:'x_fo_rocher',x,y,v:k%3,gr:k%3,bati:true,demi:10+((k%3)*2)});n++;}}
+  /* LES BUISSONS À BAIES : mûres, framboises et myrtilles */
+  const semerBuis=(type,combien,graine)=>{
+    let n=0;
+    for(let k=0;k<3000&&n<combien;k++){
+      const x=Math.round(F_hs(k*2.1+graine)*(MONDE_L-150))+75;
+      const y=Math.round(F_hs(k*3.9+graine*2)*(MONDE_H-250))+F_BAR+46;
+      if(y>F_rive(x)-18)continue;
+      if(Math.hypot(x-MONDE_L/2,y-MONDE_H/2)<78)continue;
+      if(DECOR.some(o=>['x_fo_mure','x_fo_framboise','x_fo_myrtille'].includes(o.t)
+        &&Math.hypot(o.x-x,o.y-y)<64))continue;
+      if(DECOR.some(o=>ARBRES.includes(o.t)&&Math.hypot(o.x-x,o.y-y)<24))continue;
+      DECOR.push({t:type,x,y,v:k%2,gr:k%2});n++;}};
+  semerBuis('x_fo_mure',8,457);
+  semerBuis('x_fo_framboise',10,509);
+  semerBuis('x_fo_myrtille',7,569);
   DECOR.push({t:'x_fo_quai',x:MONDE_L/2,y:MONDE_H/2,v:0,gr:0,bati:true,demi:46,ouvre:'metroFerme'});
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
@@ -12205,6 +12262,9 @@ if(t==='x_fo_girolle'){XCAL[cle]=graverChampiFo(2,v||0);if(!CALQUES_DECO[t])CALQ
 if(t==='x_fo_plume'){XCAL[cle]=graverPlumeFo(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_argile'){XCAL[cle]=graverArgileFo(!v);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_rocher'){XCAL[cle]=graverRocherFo(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_mure'){XCAL[cle]=graverBuissonFo(0,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_framboise'){XCAL[cle]=graverBuissonFo(1,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_myrtille'){XCAL[cle]=graverBuissonFo(2,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_aut'){XCAL[cle]=graverArbreAutomne(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_cabanonMoi'){const c=CAB_LU();
 XCAL[cle]=graverTonCabanon(c.bati?(c.niveau>0?2:1):0);
@@ -18478,8 +18538,10 @@ const cueillable=['argile','roseaux','champignons','herbes','plumes',
   'x_fo_amanite','x_fo_cepe','x_fo_girolle','x_fo_plume','x_fo_argile'].includes(o.t);   /* les récoltes de la forêt aussi */
 const minerai=['fer','cuivre','charbon'].includes(o.t);
 const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro','x_etal','x_pavPoisson','x_pavPeche','x_cabanon','x_cabanonMoi','x_stationVelo','x_paillasson','x_chantier'].includes(o.t);
-if(o.t!=='rocher'&&o.t!=='x_fo_rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'
+const buisFo=['x_fo_mure','x_fo_framboise','x_fo_myrtille'].includes(o.t);
+if(o.t!=='rocher'&&o.t!=='x_fo_rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'&&!buisFo
 &&!batiment&&!o.bati&&!cueillable&&!minerai)continue;
+if(buisFo&&o.cueilli&&Date.now()-o.cueilli<240000)continue;
 if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
 if(o.t==='buisson'&&o.cueilli&&Date.now()-o.cueilli<240000)continue;   /* repousse en 4 min */
 if(o.tombe)continue;
@@ -19808,8 +19870,9 @@ b.innerHTML='Entrer<small>AUTOS TAMPONNEUSES · GRATUIT</small>';
 b.innerHTML=(CHAMPS_SEULS&&CARTE==='village')?'La boutique<small>FRUITS & LÉGUMES · VENDRE TA RÉCOLTE</small>':'Entrer<small>COMPTOIR · VENDRE</small>';
 }else if(o.t==='casino'){
 b.innerHTML='Entrer<small>LE COMPLEXE FESTIF</small>';
-}else if(o.t==='buisson'){
-b.innerHTML='Cueillir<small>BUISSON</small>';
+}else if(o.t==='buisson'||['x_fo_mure','x_fo_framboise','x_fo_myrtille'].includes(o.t)){
+b.innerHTML='Cueillir<small>'+({x_fo_mure:'MÛRES',x_fo_framboise:'FRAMBOISES',
+  x_fo_myrtille:'MYRTILLES'}[o.t]||'BUISSON')+'</small>';
 }else{
 b.innerHTML='Ramasser<small>'+
 ({argile:'ARGILE',roseaux:'ROSEAUX',champignons:'CHAMPIGNONS',
@@ -19969,7 +20032,7 @@ else if(GESTE.type==='tamis')jouer('tamis');
 else jouer('pioche');
 if(GESTE.type==='gouge'&&o&&DECOR.includes(o))return saignerLAmbre(o);
 if(GESTE.type==='tamis')return finirLeLavage();
-if(o&&DECOR.includes(o)&&o.t==='buisson')return cueillir(o);
+if(o&&DECOR.includes(o)&&(o.t==='buisson'||['x_fo_mure','x_fo_framboise','x_fo_myrtille'].includes(o.t)))return cueillir(o);
 if(o&&DECOR.includes(o)&&(RECOLTES[o.t]||['x_fo_amanite','x_fo_cepe','x_fo_girolle','x_fo_plume','x_fo_argile'].includes(o.t)))return ramasser(o);
 if(o&&DECOR.includes(o)&&MINERAIS[o.t])return miner(o);
 /* LE CONIFÈRE EST UN ARBRE : il se coupait à la pioche et donnait de la pierre */
@@ -24268,6 +24331,9 @@ TAILLES['x_fo_girolle']=[{w:24,h:6},{w:24,h:6},{w:24,h:6}];
 TAILLES['x_fo_plume']=[{w:16,h:5},{w:16,h:5},{w:16,h:5}];
 TAILLES['x_fo_argile']=[{w:26,h:7},{w:26,h:7},{w:26,h:7}];
 TAILLES['x_fo_rocher']=[{w:20,h:8},{w:24,h:9},{w:28,h:10}];
+TAILLES['x_fo_mure']=[{w:22,h:8},{w:26,h:9}];
+TAILLES['x_fo_framboise']=[{w:18,h:8},{w:22,h:9}];
+TAILLES['x_fo_myrtille']=[{w:26,h:7},{w:30,h:8}];
 /* ================= LES NOUVEAUX LIEUX DE LA FORÊT ================= */
 function toileFo(W,H,f){
   const D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;
