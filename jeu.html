@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-02-1557';
+var MA_VERSION='2026-10-02-1641';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -19078,7 +19078,7 @@ b.innerHTML=(c.bati?(c.niveau>0?'Ton cabanon':'Agrandir le cabanon'):'Bâtir le 
 b.classList.add('on');return;}
 if(o.ouvre==='buvette'){b.innerHTML='La buvette du refuge<small>VIN CHAUD · RACLETTE · FROMAGE</small>';b.classList.add('on');return;}
 if(o.ouvre==='galerie'){b.innerHTML='Descendre dans la mine<small>PUITS N°1 · FILONS ET MINERAIS</small>';b.classList.add('on');return;}
-if(o.ouvre==='bucheron'){b.innerHTML='La cabane du bûcheron<small>DÉBITER · VENDRE · LA HACHE</small>';b.classList.add('on');return;}
+if(o.ouvre==='bucheron'){b.innerHTML='L’atelier du bois<small>PLANCHES · POUTRES · CHARBON</small>';b.classList.add('on');return;}
 if(o.ouvre==='chantierBlague'){b.innerHTML='Regarder le chantier<small>TRAVAUX EN COURS · DEPUIS LONGTEMPS</small>';b.classList.add('on');return;}
 
 if(o.ouvre==='gareParis'){b.innerHTML='La gare de Paris<small>RETOUR · DIRECTION MARSEILLE</small>';b.classList.add('on');return;}
@@ -19261,7 +19261,7 @@ if(o.ouvre==='buvette'){BUV=null;ouvrirLaBuvette();return;}
 if(o.ouvre==='galerie'){                              /* LA MINE : sa propre page, comme avant */
 try{e.ext={x:joueur.x,y:joueur.y};sauver();envoyerSauvegarde(true);}catch(x){}
 vibrer([8,30,8]);setTimeout(()=>{location.href='mine.html?v='+Date.now();},120);return;}
-if(o.ouvre==='bucheron'){FOR=null;ouvrirLaCabane();return;}
+if(o.ouvre==='bucheron'){ouvrirLAtelier();return;}
 if(o.ouvre==='chantierBlague'){regarderLeChantier();return;}
 
 if(o.ouvre==='epicerie'){try{bulleQuai('« Fermé pour inventaire », dit l’écriteau.');}catch(x){}vibrer(8);return;}
@@ -24077,6 +24077,141 @@ const OUTILS_BUC=()=>[
 {k:'pioche',titre:'La pioche',unite:'coups par rocher',val:PIOCHE_COUPS,prix:PIOCHE_PRIX,niv:e.nivPioche||0,dit:'Acier trempé : le rocher cède plus vite.'},
 {k:'sac',titre:'Le sac',unite:'objets',val:SAC_PALIERS,prix:SAC_PRIX,niv:e.nivSac||0,dit:'Tu ramènes plus, tu fais moins d’allers-retours.'},
 {k:'pied',titre:'Les souliers',unite:'de pas',val:PAS_VITESSE,prix:PIED_PRIX,niv:e.nivPied||0,dit:'Cuir souple, semelle cloutée : on va plus loin, plus vite.'}];
+/* ================= L'ATELIER DU BOIS =================
+   Deux onglets : l'établi pour lancer une pièce, le carnet pour suivre
+   ce qui est en cours. Les recettes et les durées viennent du serveur. */
+let AT_VUE='etabli', AT_ETAT=null, AT_MINUTEUR=0;
+const AT_DESS={
+ planche:(R)=>{for(let k=0;k<3;k++){R(3,8+k*7,26,5,'#c9a878');R(3,8+k*7,26,1.4,'#e0c69a');R(3,12+k*7,26,1,'#a5764a');}},
+ poutre:(R)=>{R(5,10,22,12,'#8a6238');R(5,10,22,3,'#a5764a');R(5,19,22,3,'#6a4a2a');
+   R(9,10,1.6,12,'rgba(74,50,24,.5)');R(19,10,1.6,12,'rgba(74,50,24,.5)');},
+ bardeau:(R)=>{for(let k=0;k<4;k++)for(let i=0;i<3;i++)R(4+i*8+((k%2)?4:0),8+k*5,7,4,(i+k)%2?'#9a7146':'#b8905c');},
+ manche:(R)=>{R(14,4,4,22,'#a5764a');R(14,4,1.4,22,'#c9a878');R(12,24,8,4,'#6a4a2a');},
+ charbon:(R)=>{for(let k=0;k<5;k++){const a2=k*1.25;R(16+Math.cos(a2)*7,16+Math.sin(a2)*6,7,6,'#2a2420');
+   R(16+Math.cos(a2)*7,16+Math.sin(a2)*6,7,2,'#443c34');}},
+ resine_pure:(R)=>{R(10,8,12,16,'#d8a83a');R(10,8,12,3,'#e8c45a');R(12,24,8,3,'#a07a22');
+   R(13,11,2,8,'rgba(255,255,255,.4)');}};
+function atDessiner(cv,k){
+  const f=AT_DESS[k];if(!f)return;
+  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+  const S=cv.width/32;g.setTransform(S,0,0,S,0,0);
+  f((x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));});}
+const atDuree=(mn)=>mn<=0?'instantané':(mn<60?mn+' min':Math.round(mn/60)+' h');
+const atReste=(s)=>s<=0?'prête':(s<60?s+' s':(s<3600?Math.ceil(s/60)+' min':Math.round(s/3600)+' h'));
+const AT_NOMS={bois:'bûches',pierre:'pierres',fibre:'fibre',resine:'résine',
+  planche:'planches',poutre:'poutres',bardeau:'bardeaux',manche:'manches',charbon:'charbon',resine_pure:'résine épurée'};
+async function ouvrirLAtelier(){
+  if(!document.getElementById('cssAt')){const st=document.createElement('style');st.id='cssAt';st.textContent=CSS_AT;document.head.appendChild(st);}
+  const d=await appelRPC('atelier_etat',{p_joueur:e.id});
+  if(d&&!d.erreur)AT_ETAT=d;
+  atRendre();
+}
+function atRendre(){
+  if(!document.getElementById('cssAt')){const st=document.createElement('style');st.id='cssAt';st.textContent=CSS_AT;document.head.appendChild(st);}
+  const E=AT_ETAT||{recettes:[],sac:{},encours:[]};
+  const sac=E.sac||{}, enc=E.encours||[];
+  $('page2Fond').className='at';$('page2').classList.add('on');
+  const pretes=enc.filter(c=>c.reste<=0).length;
+  const stock=['bois','planche','resine'].map(k=>
+    '<div><small>'+(AT_NOMS[k]||k).toUpperCase()+'</small><b>'+(sac[k]||0)+'</b></div>').join('');
+  let corps='';
+  if(AT_VUE==='etabli'){
+    corps='<div class="at-t">CE QU’IL SAIT FAIRE</div>'+(E.recettes||[]).map(r=>{
+      const prend=Object.entries(r.prend||{});
+      const peut=prend.every(([k,q])=>(sac[k]||0)>=q);
+      const recette=prend.map(([k,q])=>q+' '+(AT_NOMS[k]||k)).join(' + ');
+      return '<div class="at-r"><canvas width="88" height="88" data-at="'+r.k+'"></canvas>'+
+        '<div class="t"><b>'+r.nom+'</b><small>'+recette+' → '+r.nbr+' '+(AT_NOMS[r.rend]||r.rend)+'</small>'+
+        '<u>'+atDuree(r.minutes).toUpperCase()+'</u></div>'+
+        '<button class="go'+(peut?'':' pas')+'" data-faire="'+r.k+'">'+(peut?'FAIRE':'IL MANQUE')+'</button></div>';}).join('');
+  }else{
+    corps=enc.length?enc.map(c=>{
+      const r=(E.recettes||[]).find(z=>z.k===c.piece)||{nom:c.piece,minutes:1,nbr:1,rend:c.piece};
+      const tot=Math.max(1,r.minutes*60*c.nb), part=Math.max(0,Math.min(1,1-c.reste/tot));
+      return '<div class="at-c"><div class="h"><b>'+(c.nb>1?c.nb+' × ':'')+r.nom+'</b>'+
+        '<span'+(c.reste<=0?' class="ok"':'')+'>'+atReste(c.reste).toUpperCase()+'</span></div>'+
+        '<div class="barre"><i style="width:'+Math.round(part*100)+'%"></i></div></div>';}).join('')
+      :'<div class="at-vide">Rien sur l’établi.<br>Va voir ce qu’il sait faire.</div>';
+  }
+  $('page2Fond').innerHTML=
+   '<div id="at"><div class="at-h"><b>L’ATELIER DU BOIS<i>Chez le bûcheron</i></b>'+
+   '<span class="at-st"><span>EN COURS</span><b>'+enc.length+' / 5</b></span></div>'+
+   '<div class="at-ong"><button data-v="etabli" class="'+(AT_VUE==='etabli'?'on':'')+'">L’ÉTABLI</button>'+
+   '<button data-v="encours" class="'+(AT_VUE==='encours'?'on':'')+'">EN COURS'+(pretes?' · '+pretes:'')+'</button></div>'+
+   '<div class="at-stock">'+stock+'</div>'+
+   '<div class="at-page">'+corps+'</div>'+
+   '<div class="at-pied"><button class="s" id="atSortir">SORTIR</button>'+
+   '<button class="p" id="atPrendre"'+(pretes?'':' disabled')+'>'+(pretes?'PRENDRE CE QUI EST PRÊT':'RIEN DE PRÊT')+'</button></div></div>';
+  $('page2Fond').querySelectorAll('canvas[data-at]').forEach(cv=>atDessiner(cv,cv.dataset.at));
+  $('page2Fond').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{AT_VUE=b.dataset.v;vibrer(6);atRendre();});
+  $('page2Fond').querySelectorAll('[data-faire]').forEach(b=>b.onclick=async()=>{
+    if(b.classList.contains('pas')){bulle('Il te manque de quoi.');return;}
+    b.disabled=true;
+    const r=await appelRPC('atelier_poser',{p_joueur:e.id,p_piece:b.dataset.faire,p_nb:1});
+    if(r&&r.erreur){bulle(r.erreur);b.disabled=false;return;}
+    vibrer(10);AT_VUE='encours';
+    const d=await appelRPC('atelier_etat',{p_joueur:e.id});if(d&&!d.erreur)AT_ETAT=d;
+    atRendre();});
+  $('atSortir').onclick=()=>{clearInterval(AT_MINUTEUR);AT_MINUTEUR=0;$('page2').classList.remove('on');};
+  $('atPrendre').onclick=async()=>{
+    const r=await appelRPC('atelier_prendre',{p_joueur:e.id});
+    if(r&&r.rendu){const l=Object.entries(r.rendu).map(([k,n])=>n+' '+(AT_NOMS[k]||k)).join(', ');
+      if(l)bulle('Tu récupères '+l+'.');}
+    vibrer([10,24,10]);
+    try{await chargerSac();}catch(x){}
+    const d=await appelRPC('atelier_etat',{p_joueur:e.id});if(d&&!d.erreur)AT_ETAT=d;
+    atRendre();};
+  /* le compte à rebours, tant qu'on reste dans l'atelier */
+  clearInterval(AT_MINUTEUR);
+  if(enc.some(c=>c.reste>0))AT_MINUTEUR=setInterval(()=>{
+    if(!$('page2').classList.contains('on')){clearInterval(AT_MINUTEUR);return;}
+    (AT_ETAT.encours||[]).forEach(c=>{c.reste=Math.max(0,c.reste-1);});
+    if(AT_VUE==='encours')atRendre();},1000);
+}
+const CSS_AT=`
+#at{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#f2e7d2;font-family:Georgia,serif}
+#at .at-h{flex:none;background:linear-gradient(180deg,#6a4a2a,#4a3218);border-bottom:3px solid #c9a24a;
+  padding:calc(env(safe-area-inset-top,0px) + 12px) 12px 12px;display:flex;align-items:center;gap:10px}
+#at .at-h b{flex:1;font:900 17px Georgia,serif;color:#e8c46a}
+#at .at-h b i{display:block;font:italic 10.5px Georgia,serif;color:#d8c0a0;font-weight:400}
+#at .at-st{background:#2f2218;border:1px solid #8a6238;border-radius:13px;padding:5px 10px;text-align:right}
+#at .at-st span{display:block;font:700 6.5px Arial,sans-serif;letter-spacing:1.5px;color:#a89070}
+#at .at-st b{display:block;font:700 13px Georgia,serif;color:#e8c46a}
+#at .at-ong{flex:none;display:flex;background:#4a3218}
+#at .at-ong button{flex:1;border:0;background:none;color:#c8ae88;padding:11px 3px;
+  font:700 9px Arial,sans-serif;letter-spacing:1.2px;border-bottom:3px solid transparent}
+#at .at-ong button.on{color:#e8c46a;border-color:#c9a24a}
+#at .at-stock{flex:none;background:#e4d6bc;border-bottom:1px solid #c9b48a;padding:10px 12px;display:flex;gap:8px}
+#at .at-stock div{flex:1;background:#fbf6e8;border:1px solid #d8c9a6;border-radius:9px;padding:7px;text-align:center}
+#at .at-stock small{display:block;font:700 7px Arial,sans-serif;letter-spacing:1.2px;color:#8a7454}
+#at .at-stock b{display:block;font:700 16px Georgia,serif;color:#2f2820;margin-top:1px}
+#at .at-page{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:11px}
+#at .at-t{font:900 9px Arial,sans-serif;letter-spacing:1.8px;color:#8a7454;margin:2px 2px 8px}
+#at .at-r{background:#fbf6e8;border:1px solid #d8c9a6;border-radius:11px;padding:10px 11px;margin-bottom:9px;
+  display:flex;align-items:center;gap:10px;box-shadow:0 2px 0 rgba(120,96,56,.1)}
+#at .at-r canvas{flex:none;width:44px;height:44px;image-rendering:pixelated}
+#at .at-r .t{flex:1;min-width:0}
+#at .at-r .t b{display:block;font:700 13.5px Georgia,serif;color:#2f2820}
+#at .at-r .t small{display:block;font:italic 11.5px Georgia,serif;color:#5f4d34;margin-top:1px}
+#at .at-r .t u{display:block;text-decoration:none;font:700 8px Arial,sans-serif;letter-spacing:1.1px;color:#8a7454;margin-top:3px}
+#at .at-r .go{flex:none;border:0;border-radius:9px;background:#6a4a2a;color:#f2e7d2;padding:11px 13px;
+  font:700 9px Arial,sans-serif;letter-spacing:1.2px}
+#at .at-r .go.pas{background:#ddd2b8;color:#9a8a6c}
+#at .at-c{background:#fbf6e8;border:1px solid #d8c9a6;border-radius:11px;padding:11px;margin-bottom:9px}
+#at .at-c .h{display:flex;align-items:center;gap:8px}
+#at .at-c .h b{flex:1;font:700 13.5px Georgia,serif;color:#2f2820}
+#at .at-c .h span{background:#8a6238;color:#f6ecd8;border-radius:11px;padding:3px 9px;font:700 9px Georgia,serif}
+#at .at-c .h span.ok{background:#2f7a4a}
+#at .at-c .barre{height:9px;border-radius:5px;background:#e8dcc0;margin-top:8px;overflow:hidden}
+#at .at-c .barre i{display:block;height:100%;background:linear-gradient(90deg,#8a6238,#c9a24a)}
+#at .at-vide{text-align:center;font:italic 13px Georgia,serif;color:#8a7454;padding:40px 20px;line-height:1.6}
+#at .at-pied{flex:none;background:#e4d6bc;border-top:1px solid #c9b48a;
+  padding:11px 12px calc(env(safe-area-inset-bottom,0px) + 13px);display:flex;gap:9px}
+#at .at-pied button{flex:1;border:0;border-radius:9px;padding:13px;font:700 10px Arial,sans-serif;letter-spacing:1.3px}
+#at .at-pied .s{background:#ddd2b8;color:#6a5c42}
+#at .at-pied .p{background:#6a4a2a;color:#f2e7d2}
+#at .at-pied .p:disabled{background:#ddd2b8;color:#9a8a6c}
+`;
 async function ouvrirLaCabane(mot){
 if(!document.getElementById('cssBuc')){const st=document.createElement('style');st.id='cssBuc';st.textContent=CSS_BUC;document.head.appendChild(st);}
 $('page2Fond').className='buc';$('page2').classList.add('on');
