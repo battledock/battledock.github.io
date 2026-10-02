@@ -32,6 +32,43 @@ const ELIAS='e029d1fb-7baa-4225-91fd-5cdbef6f8711';
   if(moi!==ELIAS)return;                  /* les autres voient l'écriteau */
   document.getElementById('att').remove();
 
+  /* ================= LE SOL =================
+     Le tapis dense : la terre disparaît sous les feuilles mortes.
+     Il est gravé une fois pour toutes dans une image de la taille de la
+     carte, écrite directement en pixels pour que ce soit instantané. */
+  const hs=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+  let SOL=null;
+  function graverLeSol(){
+    const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
+    const s=c.getContext('2d');s.imageSmoothingEnabled=false;
+    /* la terre, en trois tons, écrite pixel par pixel sur une image réduite */
+    const LW=Math.ceil(MONDE_L/2), LH=Math.ceil(MONDE_H/2);
+    const pt=document.createElement('canvas');pt.width=LW;pt.height=LH;
+    const pg=pt.getContext('2d');
+    const img=pg.createImageData(LW,LH), px=new Uint32Array(img.data.buffer);
+    const ent=(h)=>{const n=parseInt(h.slice(1),16);
+      return (255<<24)|((n&255)<<16)|(((n>>8)&255)<<8)|((n>>16)&255);};
+    const A=ent('#5a4428'), B=ent('#4a3820'), C=ent('#3d2e1a');
+    for(let y=0;y<LH;y++){const ligne=y*LW;
+      for(let x=0;x<LW;x++){
+        const n=hs(x*0.42+y*0.26);
+        px[ligne+x]=n<.36?A:(n<.70?B:C);}}
+    pg.putImageData(img,0,0);
+    s.drawImage(pt,0,0,LW,LH,0,0,LW*2,LH*2);
+    /* les feuilles mortes, posées à plat : nervure et reflet */
+    const T=['#c9821a','#b4552a','#8a3a22','#d8a83a','#9a6a2a'];
+    const nb=Math.round(MONDE_L*MONDE_H/40);   /* la même densité que l'aperçu */
+    for(let k=0;k<nb;k++){
+      const x=Math.floor(hs(k*1.37)*MONDE_L), y=Math.floor(hs(k*2.71)*MONDE_H);
+      const col=T[Math.floor(hs(k*3.11)*T.length)];
+      const l=3+Math.floor(hs(k*4.3)*3), h=2+Math.floor(hs(k*5.7)*2);
+      s.fillStyle=col;s.fillRect(x,y,l,h);
+      s.fillStyle='rgba(255,255,255,.17)';s.fillRect(x,y,l,1);
+      s.fillStyle='rgba(90,60,20,.34)';s.fillRect(x+Math.floor(l*0.45),y,1,h);
+    }
+    SOL=c;
+  }
+
   const cv=document.createElement('canvas');cv.id='cv';document.body.appendChild(cv);
   const hud=document.createElement('div');hud.id='hud';document.body.appendChild(hud);
   const g=cv.getContext('2d');
@@ -55,24 +92,13 @@ const ELIAS='e029d1fb-7baa-4225-91fd-5cdbef6f8711';
     const x0=Math.round(camX-VW/2), y0=Math.round(camY-VH/2);
     /* le vide autour de la carte */
     g.fillStyle='#0e1310';g.fillRect(0,0,VW,VH);
-    /* la carte elle-même */
-    g.fillStyle='#1b241a';
-    g.fillRect(-x0,-y0,MONDE_L,MONDE_H);
-    /* la grille de repère : un trait tous les cent points, marqué tous les cinq cents */
-    for(let x=0;x<=MONDE_L;x+=100){
-      g.fillStyle=(x%500===0)?'#40583c':'#27331f';
-      g.fillRect(x-x0,-y0,1,MONDE_H);}
-    for(let y=0;y<=MONDE_H;y+=100){
-      g.fillStyle=(y%500===0)?'#40583c':'#27331f';
-      g.fillRect(-x0,y-y0,MONDE_L,1);}
+    /* le sol */
+    if(!SOL)graverLeSol();
+    g.drawImage(SOL,-x0,-y0);
     /* le cadre */
     g.fillStyle='#e8c46a';
     g.fillRect(-x0,-y0,MONDE_L,1);g.fillRect(-x0,MONDE_H-1-y0,MONDE_L,1);
     g.fillRect(-x0,-y0,1,MONDE_H);g.fillRect(MONDE_L-1-x0,-y0,1,MONDE_H);
-    /* le centre */
-    g.fillStyle='#8a6a28';
-    g.fillRect(MONDE_L/2-x0-6,MONDE_H/2-y0,13,1);
-    g.fillRect(MONDE_L/2-x0,MONDE_H/2-y0-6,1,13);
     hud.innerHTML='carte <b>'+MONDE_L+' × '+MONDE_H+'</b><br>'+
       'vue <b>'+VW+' × '+VH+'</b> points<br>'+
       'caméra <b>'+Math.round(camX)+' , '+Math.round(camY)+'</b>';
