@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-02-0451';
+var MA_VERSION='2026-10-02-0733';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12779,10 +12779,11 @@ const g=c.getContext('2d');
 const FOR_Z=(typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village');
 /* LES ZONES DE LA FORÊT : la lisière est claire, le bois dense est sombre,
    la clairière s'éclaircit, la rive tire vers le jaune des galets. */
-const ZONES=[{h:340,base:'#a6bc78',moyen:'#9fb572',fonce:'#96ac6a',ombre:'#869c5c',clair:'#b6ca88'},
-             {h:1000,base:'#44603a',moyen:'#3f5a36',fonce:'#385230',ombre:'#2d4526',clair:'#517046'},
-             {h:1300,base:'#8fa868',moyen:'#88a162',fonce:'#7f985a',ombre:'#6e884e',clair:'#9db674'},
-             {h:9999,base:'#b0b478',moyen:'#a9ad72',fonce:'#a0a46a',ombre:'#8e925c',clair:'#c0c488'}];
+/* L'AUTOMNE : la terre brune passe sous un tapis de feuilles mortes. */
+const ZONES=[{h:340,base:'#6a5230',moyen:'#5f4a2c',fonce:'#584428',ombre:'#4a3820',clair:'#7a5f3a'},
+             {h:1000,base:'#4a3820',moyen:'#45341e',fonce:'#3d2e1a',ombre:'#332616',clair:'#5a4428'},
+             {h:1300,base:'#6f553088',moyen:'#664e2c',fonce:'#5c4628',ombre:'#4e3a20',clair:'#7f6238'},
+             {h:9999,base:'#7a6238',moyen:'#725a34',fonce:'#68522e',ombre:'#5a4628',clair:'#8a7244'}];
 /* ================= LA TRANSITION AU BRUIT =================
    La frontière entre zones n'est plus une ligne : elle ondule, et surtout
    les deux teintes se mélangent sur une large bande. On ne voit jamais où
@@ -12826,8 +12827,29 @@ g.fillRect(x,y,2,2);
 }
 for(let y=0;y<MONDE_H;y+=8)for(let x=0;x<MONDE_L;x+=8){
 const n=lisse(x/90,y/90);
-if(n<0.38){g.fillStyle='rgba(112,132,75,.34)';g.fillRect(x,y,8,8);}
-else if(n>0.68){g.fillStyle='rgba(156,176,114,.28)';g.fillRect(x,y,8,8);}
+if(FOR_Z){
+  if(n<0.38){g.fillStyle='rgba(74,56,32,.34)';g.fillRect(x,y,8,8);}
+  else if(n>0.68){g.fillStyle='rgba(138,110,62,.26)';g.fillRect(x,y,8,8);}
+}else{
+  if(n<0.38){g.fillStyle='rgba(112,132,75,.34)';g.fillRect(x,y,8,8);}
+  else if(n>0.68){g.fillStyle='rgba(156,176,114,.28)';g.fillRect(x,y,8,8);}
+}
+}
+/* ================= LE TAPIS DE FEUILLES =================
+   Chaque feuille est posée à plat, avec sa nervure et son ombre.
+   Elles se recouvrent, et le sol disparaît dessous. */
+if(FOR_Z){
+  const FEUILLES=['#c9821a','#b4552a','#8a3a22','#d8a83a','#9a6a2a','#a8402a','#e0c05a','#b8742a'];
+  const nb=Math.round(MONDE_L*MONDE_H/190);
+  for(let i=0;i<nb;i++){
+    const x=Math.floor(alea(i*1.37)*MONDE_L), y=Math.floor(alea(i*2.71)*MONDE_H);
+    const c=FEUILLES[Math.floor(alea(i*3.11)*FEUILLES.length)];
+    const l=3+Math.floor(alea(i*4.3)*3), h=2+Math.floor(alea(i*5.7)*2);
+    g.fillStyle='rgba(40,28,14,.22)';g.fillRect(x+1,y+h,l-1,1);     /* l'ombre portée */
+    g.fillStyle=c;g.fillRect(x,y,l,h);g.fillRect(x+1,y+h,l-2,1);
+    g.fillStyle='rgba(255,255,255,.16)';g.fillRect(x,y,l,1);        /* la lumière dessus */
+    g.fillStyle='rgba(90,60,20,.34)';g.fillRect(x+Math.floor(l*0.45),y,1,h);  /* la nervure */
+  }
 }
 for(let i=0;i<26;i++){
 const cx=Math.floor(alea(i*5.9)*MONDE_L), cy=Math.floor(alea(i*6.1)*MONDE_H);
