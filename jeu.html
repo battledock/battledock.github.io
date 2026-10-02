@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-02-2037';
+var MA_VERSION='2026-10-02-2044';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11809,6 +11809,51 @@ function graverErable(v){
   F_masse(g,R,cx-11,y0-49,22,12,'#d8702a','#f08a4a','#a4521a',G+24);
   return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
 }
+/* LES CHAMPIGNONS DE LA FORÊT : amanite, cèpe et girolle.
+   Chacun en touffe de deux à quatre, de tailles inégales. */
+function graverChampiFo(sorte,v){
+  const LW=44, LH=34;
+  const c=document.createElement('canvas');c.width=LW;c.height=LH;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
+    g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const cx=LW/2, sol=LH-4, G=v*29+sorte*13+3;
+  g.fillStyle='rgba(24,34,20,.26)';
+  g.beginPath();g.ellipse(cx,sol,13,4,0,0,7);g.fill();
+  const chapeau=(x,y,lg,ht,col,clair,sombre,pois)=>{
+    for(let i=-lg;i<=lg;i++){
+      const t=i/lg, h=Math.round(ht*Math.sqrt(Math.max(0,1-t*t)));
+      R(x+i,y-h,1,h+2,col);R(x+i,y-h,1,Math.max(1,Math.round(h*0.34)),clair);}
+    R(x-lg,y+1,lg*2+1,2,sombre);
+    if(pois)for(let k=0;k<5;k++){
+      const i=Math.round((F_hs(k*7+x+G)-0.5)*lg*1.5);
+      const t=i/lg, h=Math.round(ht*Math.sqrt(Math.max(0,1-t*t)));
+      R(x+i,y-h+2+Math.round(F_hs(k*3+G)*h*0.5),2,2,pois);}};
+  const pied=(x,y,h,ep,col,clair,sombre,jupe)=>{
+    R(x-ep/2,y,ep,h,col);R(x-ep/2,y,1,h,clair);R(x+ep/2-1,y,1,h,sombre);
+    R(x-ep/2-1,y+h-1,ep+2,2,sombre);
+    if(jupe){R(x-ep/2-2,y+3,ep+4,2,clair);R(x-ep/2-2,y+5,ep+4,1,sombre);}};
+  if(sorte===0){           /* L'AMANITE */
+    [[-9,-3,5,9],[3,0,7,12],[11,-2,4,8]].slice(0,2+v).forEach(([dx,dy,lg,h])=>{
+      pied(cx+dx,sol+dy-h,h,3,'#f2ece0','#ffffff','#c9c2b0',true);
+      chapeau(cx+dx,sol+dy-h,lg,Math.round(lg*0.9),'#c0392b','#e05a48','#8a241a','#f6f0e4');});
+  }else if(sorte===1){     /* LE CÈPE */
+    [[-8,0,6,10],[5,-2,8,13],[13,1,5,8]].slice(0,2+v).forEach(([dx,dy,lg,h])=>{
+      for(let y=0;y<h;y++){const w=Math.round(5+Math.sin(y/h*3.14)*3);
+        R(cx+dx-w/2,sol+dy-h+y,w,1,'#e4d7b6');
+        R(cx+dx-w/2,sol+dy-h+y,1,1,'#f4ebd2');R(cx+dx+w/2-1,sol+dy-h+y,1,1,'#bdb092');}
+      chapeau(cx+dx,sol+dy-h,lg,Math.round(lg*0.68),'#8a5a2a','#a87a46','#5f3a16');});
+  }else{                   /* LA GIROLLE */
+    [[-11,0,5,8],[-3,-2,6,10],[6,1,5,8],[13,-1,4,7]].slice(0,3+v).forEach(([dx,dy,lg,h])=>{
+      pied(cx+dx,sol+dy-h,h,3,'#e8c45a','#f6dc86','#b4922a');
+      for(let i=-lg;i<=lg;i++){
+        const t=i/lg, k=Math.round(Math.abs(t)*3)-2;
+        R(cx+dx+i,sol+dy-h-3+k,1,5,'#e8b43a');
+        R(cx+dx+i,sol+dy-h-3+k,1,2,'#f6cf62');}
+      R(cx+dx-lg,sol+dy-h,lg*2+1,1,'#b4882a');});
+  }
+  return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
+}
 /* LE QUAI DE BOIS : la station de métro de la forêt */
 function graverQuaiMetro(){
   const LW=110, LH=90;
@@ -11868,6 +11913,20 @@ function semerLaForet(){
   semer('x_fo_chene',7,23);
   semer('x_fo_charme',7,61);
   semer('x_fo_olive',6,97);
+  /* LES CHAMPIGNONS : ils poussent au pied des arbres, jamais dans l'eau */
+  const semerChampi=(type,combien,graine)=>{
+    let n=0;
+    for(let k=0;k<2600&&n<combien;k++){
+      const x=Math.round(F_hs(k*2.3+graine)*(MONDE_L-140))+70;
+      const y=Math.round(F_hs(k*4.1+graine*3)*(MONDE_H-240))+F_BAR+40;
+      if(y>F_rive(x)-14)continue;
+      if(Math.hypot(x-MONDE_L/2,y-MONDE_H/2)<70)continue;
+      if(DECOR.some(o=>o.t===type&&Math.hypot(o.x-x,o.y-y)<70))continue;
+      if(DECOR.some(o=>ARBRES.includes(o.t)&&Math.hypot(o.x-x,o.y-y)<22))continue;
+      DECOR.push({t:type,x,y,v:k%2,gr:0});n++;}};
+  semerChampi('x_fo_amanite',12,131);
+  semerChampi('x_fo_cepe',12,179);
+  semerChampi('x_fo_girolle',12,223);
   DECOR.push({t:'x_fo_quai',x:MONDE_L/2,y:MONDE_H/2,v:0,gr:0,bati:true,demi:46,ouvre:'metroFerme'});
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
@@ -12006,6 +12065,9 @@ if(t==='x_fo_erable'){XCAL[cle]=graverErable(v||0);if(!CALQUES_DECO[t])CALQUES_D
 if(t==='x_fo_chene'){XCAL[cle]=graverCheneDore(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_charme'){XCAL[cle]=graverCharme(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_olive'){XCAL[cle]=graverDoubleOlive(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_amanite'){XCAL[cle]=graverChampiFo(0,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_cepe'){XCAL[cle]=graverChampiFo(1,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_girolle'){XCAL[cle]=graverChampiFo(2,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_aut'){XCAL[cle]=graverArbreAutomne(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_cabanonMoi'){const c=CAB_LU();
 XCAL[cle]=graverTonCabanon(c.bati?(c.niveau>0?2:1):0);
@@ -19613,7 +19675,8 @@ b.innerHTML='Cueillir<small>BUISSON</small>';
 }else{
 b.innerHTML='Ramasser<small>'+
 ({argile:'ARGILE',roseaux:'ROSEAUX',champignons:'CHAMPIGNONS',
-herbes:'HERBES',plumes:'PLUMES'})[o.t]+'</small>';
+herbes:'HERBES',plumes:'PLUMES',
+x_fo_amanite:'AMANITES',x_fo_cepe:'CÈPES',x_fo_girolle:'GIROLLES'})[o.t]+'</small>';
 }
 b.classList.add('on');
 }
@@ -19768,7 +19831,7 @@ else jouer('pioche');
 if(GESTE.type==='gouge'&&o&&DECOR.includes(o))return saignerLAmbre(o);
 if(GESTE.type==='tamis')return finirLeLavage();
 if(o&&DECOR.includes(o)&&o.t==='buisson')return cueillir(o);
-if(o&&DECOR.includes(o)&&RECOLTES[o.t])return ramasser(o);
+if(o&&DECOR.includes(o)&&(RECOLTES[o.t]||['x_fo_amanite','x_fo_cepe','x_fo_girolle'].includes(o.t)))return ramasser(o);
 if(o&&DECOR.includes(o)&&MINERAIS[o.t])return miner(o);
 /* LE CONIFÈRE EST UN ARBRE : il se coupait à la pioche et donnait de la pierre */
 if(o&&DECOR.includes(o)&&(o.t==='arbre'||o.t==='x_fo_pin'||o.t==='x_fo_erable'||o.t==='x_fo_chene'||o.t==='x_fo_charme'||o.t==='x_fo_olive'))return couper(o);
@@ -19942,7 +20005,7 @@ herbes:      {nom:'herbes',      q:[2,3], pts:2, col:['#4a944a','#c98fe0'], vole
 plumes:      {nom:'plumes',      q:[1,2], pts:3, col:['#f2efe4','#c9c2b0'], vole:true}
 };
 function ramasser(o){
-const R=RECOLTES[o.t];
+const R=RECOLTES[o.t]||(['x_fo_amanite','x_fo_cepe','x_fo_girolle'].includes(o.t)?RECOLTES.champignons:null);
 o.cueilli=Date.now();o.frappe=Date.now();
 signalerLeMonde(o,o.t==='champignons'?'champignons':'cueillette',o.t);   /* les champignons ont leur propre rythme */
 for(let i=0;i<8;i++){
@@ -24060,6 +24123,9 @@ TAILLES['x_fo_erable']=[{w:12,h:8},{w:12,h:8},{w:12,h:8}];
 TAILLES['x_fo_chene']=[{w:13,h:8},{w:13,h:8},{w:13,h:8}];
 TAILLES['x_fo_charme']=[{w:10,h:7},{w:10,h:7},{w:10,h:7}];
 TAILLES['x_fo_olive']=[{w:20,h:8},{w:20,h:8},{w:20,h:8}];
+TAILLES['x_fo_amanite']=[{w:22,h:6},{w:22,h:6},{w:22,h:6}];
+TAILLES['x_fo_cepe']=[{w:22,h:6},{w:22,h:6},{w:22,h:6}];
+TAILLES['x_fo_girolle']=[{w:24,h:6},{w:24,h:6},{w:24,h:6}];
 /* ================= LES NOUVEAUX LIEUX DE LA FORÊT ================= */
 function toileFo(W,H,f){
   const D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;
