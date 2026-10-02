@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-02-0914';
+var MA_VERSION='2026-10-02-1305';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -6922,6 +6922,7 @@ const loPrix=()=>{
   if(SEL.length<5)return 'Choisis au moins 5 numéros.';
   const g=loCombi(SEL.length)*Math.max(1,CHS.length);
   return g+' grille'+(g>1?'s':'')+' · '+enEuros(loCout());};
+let DEJA_CADRE=false;
 const dessinerLoto=()=>{const V=$('lotoVue'),d=ETAT;if(!V||!d)return;const mes=d.mes_grilles||[],D=d.dernier;
 const vu=(()=>{try{return localStorage.getItem('loto_vu')}catch(x){return null}})(), animer=D&&vu!==D.jour;
 V.innerHTML='<div class="bar-t"><canvas width="36" height="36" data-i="trefle"></canvas>LOTO DU PORT'+
@@ -6946,7 +6947,7 @@ V.innerHTML='<div class="bar-t"><canvas width="36" height="36" data-i="trefle"><
  (g.chance2?'<span class="c">'+g.chance2+'</span>':'<button class="lo-fl" data-fl="'+g.id+'">+ CHANCE · 1 €</button>')+
  '</div>').join(''):'')+
 '</div>'+
-'<button class="lo-flash" id="loFlash" style="display:none"></button>';
+'<button class="lo-flash" id="loFlash">⚡ FLASH · 5 NUMÉROS ET 1 CHANCE AU HASARD</button>';
 if(animer)try{localStorage.setItem('loto_vu',D.jour);}catch(x){}
 /* LES QUATRE VIGNETTES DU LOTO : branchées ici, où elles existent vraiment */
 V.querySelectorAll('canvas[data-lv]').forEach(cv=>{
@@ -6965,7 +6966,10 @@ V.querySelectorAll('[data-lo]').forEach(b=>b.onclick=async()=>{
       bulle('Abonné 7 jours : une grille déposée chaque jour.');loto();}}
 });
 if(OUVRE_JEU){const j3=V.querySelector('#loJeu');
-  if(j3){j3.style.display='';j3.scrollIntoView({behavior:'smooth',block:'start'});}}
+  if(j3){j3.style.display='';
+    /* on ne recadre qu'à l'ouverture : sinon l'écran glissait à chaque
+       numéro coché et le doigt tombait sur la case du dessous. */
+    if(!DEJA_CADRE){DEJA_CADRE=true;j3.scrollIntoView({behavior:'smooth',block:'start'});}}}
 V.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{
   const n=+b.dataset.n;
   if(SEL.includes(n))SEL=SEL.filter(x=>x!==n);
@@ -6985,7 +6989,12 @@ V.querySelectorAll('[data-fl]').forEach(b=>b.onclick=async()=>{
   ETAT=r;if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}
   jouer('vente','moment');vibrer([16,30,16]);
   bulle('Second numéro Chance ajouté à cette grille.');dessinerLoto();});
-$('loFlash').onclick=()=>{const p=Array.from({length:25},(_,i)=>i+1);SEL=[];while(SEL.length<5)SEL.push(p.splice(Math.floor(Math.random()*p.length),1)[0]);CH=1+Math.floor(Math.random()*5);vibrer(10);dessinerLoto();};
+$('loFlash').onclick=()=>{
+  const p=Array.from({length:25},(_,i)=>i+1);SEL=[];
+  while(SEL.length<5)SEL.push(p.splice(Math.floor(Math.random()*p.length),1)[0]);
+  SEL.sort((x,y)=>x-y);
+  CH=1+Math.floor(Math.random()*5);CHS=[CH];      /* la grille multiple lit CHS */
+  OUVRE_JEU=true;vibrer(10);dessinerLoto();};
 {const bo=$('loOk');
  if(bo&&!$('loAbo')){const ab=document.createElement('button');
   ab.id='loAbo';ab.className=bo.className;ab.style.cssText='margin-top:8px;background:#2f5a3a';
@@ -18148,7 +18157,12 @@ if(d.sondeur&&d.annonce){const S2=ESP_PECHE[d.annonce];
   if(S2)setTimeout(()=>{if(PECHE===P)texteVolant(joueur.x,joueur.y-54,'sondeur · '+S2.nom,'#8fe0a0');},260);}
 if(EQUIP_PECHE){EQUIP_PECHE.canne=P.eq.canne;EQUIP_PECHE.finition=P.eq.finition;if(d.appat)EQUIP_PECHE.appats[d.appat]=d.reste;}
 if(P.eq.bouchon)P.mordA=Math.max(performance.now()+300,P.t0+600+1000+Math.random()*2000);
-if(d.appat)texteVolant(joueur.x,joueur.y-40,({vers:'vers de mer',crevettes:'crevettes',sardine:'sardine fraîche'})[d.appat]+' · '+d.reste,'#e8c06a');
+/* les quatre nouveaux appâts manquaient dans cette table : leur nom sortait en « undefined » */
+if(d.appat)texteVolant(joueur.x,joueur.y-40,
+  ({vers:'vers de mer',crevettes:'crevettes',sardine:'sardine fraîche',
+    crabe:'crabe mou',calamarpetit:'petit calamar',
+    leurre:'leurre doré',esche:'esche vivante'})[d.appat]
+  || String(d.appat).replace(/_/g,' '),'#e8c06a');
 }
 function annulerLaPeche(mot){
 if(!PECHE)return;
@@ -23821,7 +23835,7 @@ const dansUnMoment=(x,y)=>MOMENTS.some(([mx,my,r])=>Math.hypot(x-mx,y-my)<r);
  nouveau('x_fo_camp',       150, 452, 48,'campement',  46,74);
  nouveau('x_fo_herbo',      176, 640, 54,'herboriste', 52,92);
  nouveau('x_fo_carriere',   474, 820, 42,'carriere',   40,54);   /* juste à droite du sentier */
- nouveau('x_fo_grandArbre', 220, 980, 60,'grandArbre', 24,140);
+
  /* les champignons rares, trois touffes cachées dans le bas du bois */
  [[420,1130],[128,1224],[586,1046]].forEach(([x,y],k)=>{
    nouveau('x_fo_champiRare',x,y,18,'champiRare',16,28);});
