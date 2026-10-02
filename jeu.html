@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-02-2001';
+var MA_VERSION='2026-10-02-2012';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11691,6 +11691,54 @@ function construireSolForet(){
     if(y<F_rive(F_BAR)-20)s.drawImage(PR,F_BAR-9,y,12,20);
     if(y<F_rive(MONDE_L-F_BAR)-20)s.drawImage(PR,MONDE_L-F_BAR-3,y,12,20);}
   return c;}
+/* L'ÉRABLE : l'arbre de la nouvelle forêt. Bords dentelés, touffes qui
+   débordent, trous de ciel, écorce striée et racines au pied. */
+function F_masse(g,R,x,y,w,h,col,clair,sombre,graine){
+  const bord=[];
+  for(let i=0;i<w;i++){
+    const d=Math.round(F_hs(graine+i*0.37)*3), b=Math.round(F_hs(graine*2+i*0.29)*2);
+    bord.push([d,b]);R(x+i,y+d,1,h-d-b,col);}
+  for(let i=0;i<w;i++)R(x+i,y+bord[i][0],1,2,clair);
+  for(let i=0;i<w;i++)R(x+i,y+h-bord[i][1]-2,1,2,sombre);
+  for(let k=0;k<Math.round(w/7);k++){
+    const i=Math.round(F_hs(graine*3+k)*(w-6))+3;
+    R(x+i-1,y+bord[i][0]-2,4,3,col);R(x+i-1,y+bord[i][0]-2,4,1,clair);}
+  for(let k=0;k<2;k++){
+    const j=Math.round(F_hs(graine*5+k)*(h-6))+3;
+    R(x-2,y+j,3,4,col);R(x+w-1,y+j+1,3,4,col);
+    R(x-2,y+j,3,1,clair);R(x+w-1,y+j+1,3,1,clair);}
+  for(let k=0;k<Math.round(w/14);k++){
+    const i=Math.round(F_hs(graine*7+k)*(w-8))+4, j=Math.round(F_hs(graine*9+k)*(h-6))+3;
+    R(x+i,y+j,2,2,sombre);}
+}
+function graverErable(v){
+  const LW=84, LH=112;
+  const c=document.createElement('canvas');c.width=LW;c.height=LH;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
+    g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const cx=LW/2, sol=LH-6, G=v*37+3;
+  g.fillStyle='rgba(24,34,20,.26)';
+  g.beginPath();g.ellipse(cx,sol,11,3.4,0,0,7);g.fill();
+  /* le tronc */
+  const haut=38+v*3;
+  for(let y=0;y<haut;y++){
+    const t=y/haut, w=10*(1-t*0.18)+(F_hs(y*0.7+G)<0.3?1:0);
+    R(cx-w/2,sol-haut+y,w,1,'#6b4a28');
+    R(cx-w/2,sol-haut+y,1.4,1,'#8a6238');R(cx+w/2-1.4,sol-haut+y,1.4,1,'#4f3520');}
+  for(let k=0;k<5;k++){const y=sol-haut+3+Math.round(F_hs(k*5+G)*(haut-6));
+    R(cx-4,y,7,1,'#4f3520');}
+  for(let k=0;k<4;k++){const s2=k<2?-1:1, dx=(k%2)*3+2;
+    for(let i=0;i<5;i++)R(cx+s2*(dx+i*1.1),sol-4+i*0.9,3,2,'#6b4a28');
+    R(cx+s2*dx,sol-4,3,1,'#8a6238');}
+  /* le houppier, en pointe */
+  const y0=sol-haut;
+  F_masse(g,R,cx-24,y0-12,48,13,'#8a2a1a','#a44232','#5f1808',G);
+  F_masse(g,R,cx-28,y0-24,56,14,'#a8362a','#c24e3a','#7a1e18',G+8);
+  F_masse(g,R,cx-20,y0-37,40,14,'#c04a2a','#da6244','#8e2e18',G+16);
+  F_masse(g,R,cx-11,y0-49,22,12,'#d8702a','#f08a4a','#a4521a',G+24);
+  return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
+}
 /* LE QUAI DE BOIS : la station de métro de la forêt */
 function graverQuaiMetro(){
   const LW=110, LH=90;
@@ -11733,6 +11781,14 @@ function semerLaForet(){
     if(x<40||x>MONDE_L-40)continue;
     if(DECOR.some(o=>Math.abs(o.x-x)<34))continue;      /* jamais deux côte à côte */
     DECOR.push({t:'roseaux',x,y:r+2+Math.round(F_hs(k*11)*7),gr:Math.floor(F_hs(k*13)*3)});}
+  /* LES ÉRABLES : semés partout sauf sur la rive, autour du quai et aux bords */
+  for(let k=0;k<1400&&DECOR.filter(o=>o.t==='x_fo_erable').length<90;k++){
+    const x=Math.round(F_hs(k*1.7+2)*(MONDE_L-180))+90;
+    const y=Math.round(F_hs(k*3.3+7)*(MONDE_H-260))+F_BAR+48;
+    if(y>F_rive(x)-26)continue;                         /* pas les pieds dans l'eau */
+    if(Math.hypot(x-MONDE_L/2,y-MONDE_H/2)<96)continue;  /* on dégage le quai */
+    if(DECOR.some(o=>o.t==='x_fo_erable'&&Math.hypot(o.x-x,o.y-y)<58))continue;
+    DECOR.push({t:'x_fo_erable',x,y,v:k%3,gr:k%3,bati:true,demi:12});}
   DECOR.push({t:'x_fo_quai',x:MONDE_L/2,y:MONDE_H/2,v:0,gr:0,bati:true,demi:46,ouvre:'metroFerme'});
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
@@ -11867,6 +11923,7 @@ if(t==='x_fo_grandArbre'){XCAL[cle]=graverGrandArbre();if(!CALQUES_DECO[t])CALQU
 if(t==='x_fo_champiRare'){XCAL[cle]=graverChampiRare();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_pin'){XCAL[cle]=graverConifere(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_quai'){XCAL[cle]=graverQuaiMetro();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_erable'){XCAL[cle]=graverErable(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_aut'){XCAL[cle]=graverArbreAutomne(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_cabanonMoi'){const c=CAB_LU();
 XCAL[cle]=graverTonCabanon(c.bati?(c.niveau>0?2:1):0);
@@ -19436,7 +19493,7 @@ const reste=Math.max(2,dur-(e.outils.piocheFer?3:0))-(o.coups||0);
 b.innerHTML=e.outils.pioche
 ? 'Extraire<small>'+n+' · '+reste+' COUP'+(reste>1?'S':'')+'</small>'
 : 'Il faut une pioche<small>'+n+'</small>';
-}else if(o.t==='arbre'||o.t==='x_fo_pin'){
+}else if(o.t==='arbre'||o.t==='x_fo_pin'||o.t==='x_fo_erable'){
 if(!e.outils.hache){b.innerHTML='Il faut une hache<small>ARBRE</small>';}
 else if(resinePrete(o)){
 b.innerHTML='Recueillir<small>LA RÉSINE</small>';
@@ -19632,7 +19689,7 @@ if(o&&DECOR.includes(o)&&o.t==='buisson')return cueillir(o);
 if(o&&DECOR.includes(o)&&RECOLTES[o.t])return ramasser(o);
 if(o&&DECOR.includes(o)&&MINERAIS[o.t])return miner(o);
 /* LE CONIFÈRE EST UN ARBRE : il se coupait à la pioche et donnait de la pierre */
-if(o&&DECOR.includes(o)&&(o.t==='arbre'||o.t==='x_fo_pin'))return couper(o);
+if(o&&DECOR.includes(o)&&(o.t==='arbre'||o.t==='x_fo_pin'||o.t==='x_fo_erable'))return couper(o);
 if(o&&DECOR.includes(o)){
 o.coups=(o.coups||0)+1;o.frappe=Date.now();o.recul=1;
 eclats(o.x,o.y-12,9,null,1);
@@ -23917,6 +23974,7 @@ return {toile:c,W,H,sol,nuit:null};
    Deux silhouettes de plus pour casser l'uniformité du bois. */
 TAILLES['x_fo_pin']=[{w:20,h:12},{w:20,h:12},{w:20,h:12}];
 TAILLES['x_fo_quai']=[{w:92,h:12}];
+TAILLES['x_fo_erable']=[{w:12,h:8},{w:12,h:8},{w:12,h:8}];
 /* ================= LES NOUVEAUX LIEUX DE LA FORÊT ================= */
 function toileFo(W,H,f){
   const D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;
