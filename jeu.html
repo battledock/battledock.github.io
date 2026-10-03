@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-1711';
+var MA_VERSION='2026-10-03-1735';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12112,13 +12112,21 @@ function etalRendre(){
     const r=await appelRPC('etal_vendre',{p_joueur:e.id,p_type:b.dataset.v,p_nb:null});
     if(r&&r.erreur){motOuverture(r.erreur);b.disabled=false;return;}
     if(r&&r.gain){motOuverture('+'+r.gain+' €');vibrer(10);}
+    /* l'argent arrive avec la réponse : on l'affiche tout de suite */
+    if(r&&typeof r.euros==='number'){e.euros=r.euros;try{sauver();}catch(x){}majHaut();}
+    if(r&&r.sac)e.sac=r.sac;
     try{await chargerSac();}catch(x){}
     etalRendre();});
   $('etSortir').onclick=()=>{$('page2').classList.remove('on');};
   $('etTout').onclick=async()=>{
+    let total=0;
     for(const k of aVendre){
       const r=await appelRPC('etal_vendre',{p_joueur:e.id,p_type:k,p_nb:null});
-      if(r&&r.gain)motOuverture('+'+r.gain+' €');}
+      if(r&&r.gain)total+=r.gain;
+      if(r&&typeof r.euros==='number'){e.euros=r.euros;majHaut();}
+      if(r&&r.sac)e.sac=r.sac;}
+    if(total)motOuverture('+'+total.toFixed(2).replace('.',',')+' €');
+    try{sauver();}catch(x){}
     vibrer([10,24,10]);
     try{await chargerSac();}catch(x){}
     etalRendre();};
