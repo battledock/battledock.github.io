@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-0520';
+var MA_VERSION='2026-10-04-0600';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -17172,10 +17172,7 @@ const i=$('saisie');
 if(i&&document.activeElement===i&&i.blur)i.blur();
 },{passive:true});
 $('action').onclick=agir;
-$('b-class').onclick=()=>{
-sauver();envoyerSauvegarde(true);            /* on part avec un score à jour */
-location.href='classement.html';
-};
+$('b-class').onclick=()=>{try{fermerTiroir();}catch(x){}ouvrirLeClassement();};
 $('pan').onclick=(ev)=>{if(ev.target===$('pan')){fermeA=Date.now();$('pan').classList.remove('on');}};
 let dernierSolde=0;
 async function lireLeSolde(){
@@ -19811,6 +19808,308 @@ b.onclick=carnetGarde;f.appendChild(b);
 f.scrollTop=0;
 }
 if($('b-carnet'))$('b-carnet').onclick=ouvrirLeCarnet;
+/* ================= LE CLASSEMENT, DANS LE JEU =================
+   Il vivait dans classement.html : on en sortait par un rechargement complet.
+   Ici, c'est un écran comme les autres, en affiche : le premier du port en
+   grand, puis la liste, puis l'écart à combler. */
+const CSS_CLS=`#cls{position:absolute;inset:0;background:#15212e;display:flex;flex-direction:column;
+font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;overflow:hidden}
+#cls .hd{flex:none;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 12px;display:flex;align-items:flex-start;gap:10px}
+#cls .hd .tx{flex:1;min-width:0}
+#cls .hd small{display:block;font:700 9px ui-monospace,monospace;letter-spacing:3px;color:#e8c06a}
+#cls .hd b{display:block;font:700 23px 'Baloo 2',sans-serif;color:#f6efdc;margin-top:4px}
+#cls .hd button{flex:none;border:0;background:none;color:#e8c06a;font:700 20px 'Baloo 2',sans-serif;padding:0 2px}
+#cls .corps{flex:1;overflow-y:auto}
+#cls .un{padding:20px 16px 18px;text-align:center;background:rgba(232,192,106,.1)}
+#cls .un small{display:block;font:700 9px ui-monospace,monospace;letter-spacing:3px;color:#e8c06a}
+#cls .un img{width:74px;height:74px;border-radius:50%;background:#e8c06a;display:block;margin:14px auto 10px;
+image-rendering:pixelated}
+#cls .un b{display:block;font:700 24px 'Baloo 2',sans-serif;color:#f6efdc}
+#cls .un em{font:italic 13px Georgia,serif;color:#e8c06a}
+#cls .l{display:flex;align-items:center;gap:13px;padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+#cls .l .r{width:24px;text-align:center;font:700 15px 'Baloo 2',sans-serif;color:#5f7489;flex:none}
+#cls .l img{width:38px;height:38px;flex:none;border-radius:50%;background:#2f4a66;image-rendering:pixelated}
+#cls .l .g{flex:1;min-width:0}
+#cls .l .g b{display:block;font:700 15px 'Baloo 2',sans-serif;color:#f6efdc;
+overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cls .l .g i{font:italic 12px Georgia,serif;color:#e8c06a;font-style:italic}
+#cls .l .g small{font:italic 12px Georgia,serif;color:#5f7489}
+#cls .l .s{font:700 15px 'Baloo 2',sans-serif;color:#f6efdc;flex:none}
+#cls .l.moi{background:rgba(232,192,106,.08)}
+#cls .l.moi .s,#cls .l.moi .r{color:#e8c06a}
+#cls .ecart{padding:16px;text-align:center;font:italic 13px Georgia,serif;color:#8fa6bd}
+#cls .ecart b{font-style:normal;color:#e8c06a}
+#cls .vide{padding:40px 16px;text-align:center;font:italic 14px Georgia,serif;color:#8fa6bd}`;
+const clsPts=(n)=>Number(n||0).toLocaleString('fr-FR');
+const clsVu=(maj)=>{const v=maj?Math.round((Date.now()-new Date(maj).getTime())/60000):null;
+if(v===null)return '';
+if(v<3)return 'en ligne';
+if(v<60)return 'vu il y a '+v+' min';
+if(v<1440)return 'vu il y a '+Math.round(v/60)+' h';
+return 'vu il y a '+Math.round(v/1440)+' j';};
+function clsTete(j){
+try{return teteDe({ap:(j.apparence||{}),pseudo:j.pseudo}).toDataURL();}catch(x){return '';}
+}
+async function ouvrirLeClassement(){
+if(!document.getElementById('cssCls')){const st=document.createElement('style');
+st.id='cssCls';st.textContent=CSS_CLS;document.head.appendChild(st);}
+$('page2Fond').className='';$('page2').classList.add('on');
+const tete='<div class="hd"><span class="tx"><small>BATTLE DOCK · DEPUIS TOUJOURS</small>'+
+'<b>Classement</b></span><button id="clsX">✕</button></div>';
+$('page2Fond').innerHTML='<div id="cls">'+tete+'<div class="corps"><div class="vide">On ouvre le registre…</div></div></div>';
+$('clsX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+try{sauver();envoyerSauvegarde(true);}catch(x){}   /* on se compte avec un score à jour */
+let liste=[];
+try{
+const r=await fetch(URL_SB+'/rest/v1/joueurs?select=id,pseudo,apparence,score,recolte,maj&order=score.desc,maj.desc&limit=40',{headers:sbEntetes});
+const d=await r.json();
+liste=(Array.isArray(d)?d:[]).filter(j=>j&&j.pseudo&&j.pseudo!=='sans nom');
+}catch(x){}
+const C=$('page2Fond').querySelector('#cls .corps');if(!C)return;
+if(!liste.length){C.innerHTML='<div class="vide">Personne n’est encore au registre.</div>';return;}
+const un=liste[0], moiUn=un.id===e.id;
+let h='<div class="un"><small>PREMIER DU PORT</small>'+
+'<img src="'+clsTete(un)+'" alt="">'+
+'<b>'+echapperT(un.pseudo)+(moiUn?' <em>toi</em>':'')+'</b>'+
+'<em>'+clsPts(un.score)+' objet'+((un.score||0)>1?'s':'')+' récolté'+((un.score||0)>1?'s':'')+'</em></div>';
+h+=liste.slice(1).map((j,k)=>{
+const i=k+1, moi=j.id===e.id, vu=clsVu(j.maj);
+const sous=[vu,(j.recolte||0)>0?clsPts(j.recolte)+' objets':''].filter(Boolean).join(' · ');
+return '<div class="l'+(moi?' moi':'')+'"><span class="r">'+(i+1)+'</span>'+
+'<img src="'+clsTete(j)+'" alt="">'+
+'<span class="g"><b>'+echapperT(j.pseudo)+(moi?' <i>toi</i>':'')+'</b><small>'+sous+'</small></span>'+
+'<span class="s">'+clsPts(j.score)+'</span></div>';}).join('');
+const iMoi=liste.findIndex(j=>j.id===e.id);
+if(iMoi>0){
+const ecart=(liste[iMoi-1].score||0)-(liste[iMoi].score||0)+1;
+h+='<div class="ecart">Il te manque <b>'+clsPts(ecart)+' objet'+(ecart>1?'s':'')+'</b> pour passer '+iMoi+(iMoi===1?'ᵉʳ':'ᵉ')+'</div>';
+}else if(iMoi===0){h+='<div class="ecart">Tu es <b>premier du port</b>. Tiens bon.</div>';}
+C.innerHTML=h;
+}
+let COURRIER_N=0;
+async function lireLeCourrier(){if(!e.id)return;
+try{const d=await appelRPC('messagerie_fils',{p_joueur:e.id});
+if(Array.isArray(d))COURRIER_N=d.reduce((t,f)=>t+(+f.nonlus||0),0);}catch(x){}
+const p=$('po-nb');if(p){p.textContent=COURRIER_N;p.classList.toggle('on',COURRIER_N>0);}}
+setTimeout(()=>lireLeCourrier(),3000);setInterval(()=>lireLeCourrier(),180000);
+const NOM_OBJ=(k)=>{try{const o=OBJETS&&OBJETS[k];if(o&&o.nom)return o.nom;}catch(x){}return k;};
+const CSS_MSG=`#msg{position:absolute;inset:0;background:#15212e;display:flex;flex-direction:column;
+box-shadow:inset 0 0 0 3px #e8c06a;font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif}
+#msg .hd{flex:none;padding:calc(env(safe-area-inset-top,0px) + 15px) 16px 12px;
+border-bottom:1px solid rgba(232,192,106,.3);display:flex;align-items:center;gap:11px}
+#msg .hd .ret{border:0;background:none;color:#e8c06a;font:700 22px 'Baloo 2',sans-serif;padding:0 2px}
+#msg .hd .tx{flex:1;min-width:0}
+#msg .hd small{display:block;font:700 9px ui-monospace,monospace;letter-spacing:3px;color:#e8c06a}
+#msg .hd b{display:block;font:700 21px 'Baloo 2',sans-serif;color:#f6efdc;overflow:hidden;
+text-overflow:ellipsis;white-space:nowrap}
+#msg .hd i{font-style:normal;font:italic 13px Georgia,serif;color:#8fa6bd}
+#msg .hd .enligne{font:700 9px ui-monospace,monospace;letter-spacing:2px;color:#9fd47e}
+#msg .hd .x{border:0;background:none;color:#e8c06a;font:700 20px 'Baloo 2',sans-serif;padding:0 2px}
+#msg .corps{flex:1;overflow-y:auto}
+/* LES FILS : un filet entre eux, pas de blocs empiles */
+#msg .f{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;text-align:left;
+padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+#msg .f:active{background:rgba(255,255,255,.05)}
+#msg .av{width:36px;height:36px;flex:none;border-radius:50%;background:#2f4a66;display:flex;
+align-items:center;justify-content:center;font:700 15px 'Baloo 2',sans-serif;color:#cfe0ee}
+#msg .f.neuf .av{background:#1d4f8a}
+#msg .f .tx{flex:1;min-width:0}
+#msg .f b{display:block;font:700 15px 'Baloo 2',sans-serif;color:#8fa6bd}
+#msg .f.neuf b{color:#f6efdc}
+#msg .f span.ap{display:block;font:italic 13px Georgia,serif;color:#5f7489;overflow:hidden;
+text-overflow:ellipsis;white-space:nowrap}
+#msg .f.neuf span.ap{color:#cfd9e2}
+#msg .f .h{font:11px ui-monospace,monospace;color:#5f7489;flex:none}
+#msg .f em{font-style:normal;font:700 11px 'Baloo 2',sans-serif;background:#c0392b;color:#fff;
+border-radius:9px;padding:1px 7px;flex:none}
+#msg .ecrire{margin:14px 16px calc(env(safe-area-inset-bottom,0px) + 16px);width:calc(100% - 32px);
+border:0;border-radius:16px;padding:13px;background:#e8c06a;color:#2a2016;font:700 14px 'Baloo 2',sans-serif}
+/* LA CONVERSATION */
+#msg .jour{text-align:center;font:700 9px ui-monospace,monospace;letter-spacing:2px;color:#5f7489;
+margin:14px 0 12px}
+#msg .b{display:flex;margin:0 16px 8px}
+#msg .b.mien{justify-content:flex-end}
+#msg .b p{max-width:80%;margin:0;padding:10px 13px;border-radius:16px 16px 16px 5px;background:#223447;
+font:14px/1.55 Georgia,serif;color:#f6efdc;word-break:break-word}
+#msg .b.mien p{border-radius:16px 16px 5px 16px;background:#1d4f8a}
+#msg .b p u{display:block;text-decoration:none;font:10px ui-monospace,monospace;color:#6d8296;margin-top:5px}
+#msg .b.mien p u{color:#9bbcd9;text-align:right}
+#msg .colis{display:flex;align-items:center;gap:11px;margin:0 16px 8px;padding:11px 13px;border-radius:16px;
+background:rgba(232,192,106,.14);box-shadow:inset 0 0 0 1px rgba(232,192,106,.4)}
+#msg .colis .ic{width:32px;height:30px;flex:none;background:#efe6cc;display:flex;align-items:center;justify-content:center}
+#msg .colis .ic svg{image-rendering:pixelated}
+#msg .colis .tx{flex:1;min-width:0}
+#msg .colis b{display:block;font:700 13px 'Baloo 2',sans-serif;color:#e8c06a}
+#msg .colis span{font:italic 11px Georgia,serif;color:#b99f6a}
+#msg .colis button{flex:none;border:0;border-radius:10px;padding:7px 13px;background:#e8c06a;
+color:#2a2016;font:700 12px 'Baloo 2',sans-serif}
+/* LE PIED : le plus ouvre le tiroir objet et argent */
+#msg .pied{flex:none;border-top:1px solid rgba(255,255,255,.07);
+padding:10px 14px calc(env(safe-area-inset-bottom,0px) + 12px);display:flex;gap:8px;align-items:center}
+#msg .pied .plus{width:36px;height:36px;flex:none;border:0;border-radius:50%;background:rgba(255,255,255,.08);
+color:#e8c06a;font:700 18px 'Baloo 2',sans-serif}
+#msg .pied .plus.on{background:#e8c06a;color:#2a2016}
+#msg .pied input{flex:1;min-width:0;border:0;border-radius:18px;padding:11px 14px;
+background:rgba(255,255,255,.08);color:#f6efdc;font:14px Georgia,serif}
+#msg .pied input::placeholder{color:#5f7489;font-style:italic}
+#msg .pied .go{width:38px;height:38px;flex:none;border:0;border-radius:50%;background:#e8c06a;
+color:#2a2016;font:700 16px 'Baloo 2',sans-serif}
+#msg .tiroirM{flex:none;display:none;gap:8px;padding:0 14px 10px;flex-wrap:wrap}
+#msg .tiroirM.on{display:flex}
+#msg .tiroirM select,#msg .tiroirM input{border:0;border-radius:12px;padding:9px 11px;
+background:rgba(255,255,255,.08);color:#f6efdc;font:13px Georgia,serif;min-width:0}
+#msg .vide{font:italic 14px/1.7 Georgia,serif;color:#8fa6bd;text-align:center;padding:40px 16px}
+#msg .bulleM{position:absolute;left:14px;right:14px;bottom:80px;background:#1d4f8a;color:#fff;
+border-radius:12px;padding:10px 12px;font:italic 14px Georgia,serif;opacity:0;transform:translateY(8px);
+transition:.25s;pointer-events:none}
+#msg .bulleM.on{opacity:1;transform:none}`;
+
+let MSG={vue:'fils',avec:null,pseudo:'',brouillon:'',obj:'',qte:'',arg:''};
+function msgBulle(t){const b=document.getElementById('msgBulle');if(!b)return;
+b.textContent=t;b.classList.remove('on');void b.offsetWidth;b.classList.add('on');
+setTimeout(()=>b.classList.remove('on'),2600);}
+const msgHeure=(q)=>{try{const d=new Date(q),n=Date.now()-d.getTime();
+if(n<60000)return 'à l’instant';
+if(n<3600000)return Math.floor(n/60000)+' min';
+if(n<86400000)return Math.floor(n/3600000)+' h';
+return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});}catch(x){return '';}};
+function ouvrirLaPoste(){
+if(!document.getElementById('cssMsg')){const st=document.createElement('style');
+st.id='cssMsg';st.textContent=CSS_MSG;document.head.appendChild(st);}
+$('page2Fond').className='';$('page2').classList.add('on');
+MSG={vue:'fils',avec:null,pseudo:'',brouillon:'',obj:'',qte:'',arg:''};
+msgRendre();
+}
+const msgJour=(q)=>{try{const d=new Date(q),a=new Date(),h=new Date(a.getTime()-86400000);
+const m=(x,y)=>x.toDateString()===y.toDateString();
+if(m(d,a))return 'AUJOURD’HUI';
+if(m(d,h))return 'HIER';
+return d.toLocaleDateString('fr-FR',{day:'numeric',month:'long'}).toUpperCase();}catch(x){return '';}};
+const msgQuand=(q)=>{try{return new Date(q).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}catch(x){return '';}};
+async function msgRendre(){
+const F=$('page2Fond');
+if(MSG.vue==='fils'){
+F.innerHTML='<div id="msg"><div class="hd"><span class="tx"><small>BOÎTE AUX LETTRES</small>'+
+'<b>Courrier</b></span><button class="x" id="msgX">✕</button></div>'+
+'<div class="corps"><div class="vide">On relève la boîte…</div></div>'+
+'<div class="bulleM" id="msgBulle"></div></div>';
+$('msgX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+const fils=await appelRPC('messagerie_fils',{p_joueur:e.id});
+const L=Array.isArray(fils)?fils:[];
+COURRIER_N=L.reduce((t,f)=>t+(+f.nonlus||0),0);
+const p=$('po-nb');if(p){p.textContent=COURRIER_N;p.classList.toggle('on',COURRIER_N>0);}
+const C=F.querySelector('.corps');if(!C)return;
+const nonlus=L.reduce((t,f)=>t+(+f.nonlus||0),0);
+const sous=F.querySelector('.hd .tx');
+if(sous&&nonlus)sous.innerHTML='<small>BOÎTE AUX LETTRES</small><b>Courrier</b>';
+C.innerHTML=(L.length?L.map(f=>{
+const colis=(+f.colis>0)?'<span style="color:#e8c06a">◆</span> ':'';
+const apercu=f.mot?(f.recu?'':'Toi : ')+echapperT(f.mot)
+:(colis?'un colis t’attend':'…');
+return '<button class="f'+(+f.nonlus>0?' neuf':'')+'" data-fil="'+echapperT(f.avec)+'" data-pseudo="'+echapperT(f.pseudo)+'">'+
+'<span class="av">'+echapperT(String(f.pseudo||'?').slice(0,1).toUpperCase())+'</span>'+
+'<span class="tx"><b>'+echapperT(f.pseudo)+'</b><span class="ap">'+colis+apercu+'</span></span>'+
+(+f.nonlus>0?'<em>'+f.nonlus+'</em>':'<span class="h">'+msgHeure(f.quand)+'</span>')+
+'</button>';}).join('')
+:'<div class="vide">Personne ne t’a encore écrit.<br>Lance la conversation.</div>')+
+'<button class="ecrire" id="msgNouveau">Écrire à quelqu’un</button>';
+$('msgNouveau').onclick=msgChoisir;
+C.querySelectorAll('[data-fil]').forEach(b=>b.onclick=()=>{
+MSG.vue='fil';MSG.avec=b.dataset.fil;MSG.pseudo=b.dataset.pseudo;msgRendre();});
+return;
+}
+/* LE FIL : la conversation avec une personne */
+const objets=Object.entries(e.sac||{}).filter(([k,v])=>v>0);
+F.innerHTML='<div id="msg"><div class="hd"><button class="ret" id="msgRetour">‹</button>'+
+'<span class="av">'+echapperT(String(MSG.pseudo||'?').slice(0,1).toUpperCase())+'</span>'+
+'<span class="tx"><b>'+echapperT(MSG.pseudo)+'</b></span>'+
+'<button class="x" id="msgX">✕</button></div>'+
+'<div class="corps"><div class="vide">On ouvre le paquet de lettres…</div></div>'+
+'<div class="tiroirM" id="msgTiroir">'+
+(objets.length?'<select id="msgObj"><option value="">joindre un objet…</option>'+
+objets.map(([k,v])=>'<option value="'+k+'">'+echapperT(NOM_OBJ(k))+' · '+v+'</option>').join('')+'</select>'+
+'<input id="msgQte" inputmode="numeric" placeholder="combien ?" style="width:92px">':'')+
+'<input id="msgArg" inputmode="decimal" placeholder="joindre des €" style="width:120px">'+
+'</div>'+
+'<div class="pied"><button class="plus" id="msgPlus">+</button>'+
+'<input id="msgMot" maxlength="200" placeholder="Écrire un mot…">'+
+'<button class="go" id="msgGo">↑</button></div>'+
+'<div class="bulleM" id="msgBulle"></div></div>';
+$('msgX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+$('msgRetour').onclick=()=>{MSG.vue='fils';msgRendre();};
+$('msgGo').onclick=msgEnvoyer;
+$('msgPlus').onclick=()=>{const t=$('msgTiroir');t.classList.toggle('on');
+$('msgPlus').classList.toggle('on',t.classList.contains('on'));};
+$('msgMot').onkeydown=(ev)=>{if(ev.key==='Enter')msgEnvoyer();};
+const d=await appelRPC('messagerie_fil',{p_joueur:e.id,p_avec:MSG.avec});
+const M=(d&&Array.isArray(d.messages))?d.messages:[];
+const C=F.querySelector('.corps');if(!C)return;
+let jour='';
+C.innerHTML=M.length?M.map(m=>{
+let h='';
+const j=msgJour(m.quand);
+if(j!==jour){jour=j;h='<div class="jour">'+j+'</div>';}
+const corps=m.mot?'<div class="b'+(m.mien?' mien':'')+'"><p>'+echapperT(m.mot)+
+'<u>'+msgQuand(m.quand)+'</u></p></div>':'';
+const quoi=[(m.qte?m.qte+' × '+echapperT(NOM_OBJ(m.objet)):''),(m.argent?enEuros(m.argent):'')].filter(Boolean).join(' et ');
+const colis=(m.argent||m.qte)?'<div class="colis">'+
+'<span class="ic"><svg viewBox="0 0 16 16" width="24">'+(ICONES[m.objet]||
+'<rect x="2" y="4" width="12" height="9" fill="#8a6238"/><rect x="2" y="4" width="12" height="2" fill="#a5764a"/>')+'</svg></span>'+
+'<span class="tx"><b>'+quoi+'</b><span>'+(m.mien?'tu l’envoies':'on te l’envoie')+'</span></span>'+
+(!m.mien&&!m.pris?'<button data-prendre="'+m.id+'">Prendre</button>'
+:'<span style="font:11px ui-monospace,monospace;color:#b99f6a">retiré</span>')+
+'</div>':'';
+return h+corps+colis;}).join('')
+:'<div class="vide">Rien encore.<br>Écris-lui le premier mot.</div>';
+C.scrollTop=C.scrollHeight;
+C.querySelectorAll('[data-prendre]').forEach(b=>b.onclick=async()=>{
+const r=await appelRPC('poste_prendre',{p_joueur:e.id,p_id:+b.dataset.prendre});
+if(!r||r.erreur){msgBulle(r&&r.erreur==='sac plein'?'Ton inventaire est plein : vide-le d’abord.':'Le facteur n’a pas pu.');return;}
+if(r.sac)e.sac=r.sac;if(typeof r.euros==='number')e.euros=r.euros;
+try{sauver();majHaut();majPastille();}catch(x){}
+jouer('vente','moment');vibrer(18);
+msgBulle(r.partiel?'Une partie seulement : ton inventaire est plein.':'Reçu !');msgRendre();});
+}
+async function msgChoisir(){
+const F=$('page2Fond');
+F.innerHTML='<div id="msg"><div class="hd"><button class="ret" id="msgRetour">‹</button>'+
+'<span class="tx"><small>NOUVEAU MESSAGE</small><b>À qui ?</b></span>'+
+'<button class="x" id="msgX">✕</button></div>'+
+'<div class="corps"><div class="vide">On regarde qui est sur le port…</div></div>'+
+'<div class="bulleM" id="msgBulle"></div></div>';
+$('msgX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+$('msgRetour').onclick=()=>{MSG.vue='fils';msgRendre();};
+let liste=[];
+try{liste=await appelRPC('liste_joueurs',{})||[];}catch(x){}
+if(!Array.isArray(liste))liste=[];
+const autres=liste.filter(j=>j&&j.id&&j.id!==e.id);
+const C=F.querySelector('.corps');if(!C)return;
+C.innerHTML=autres.length?autres.map(j=>
+'<button class="f" data-fil="'+echapperT(j.id)+'" data-pseudo="'+echapperT(j.pseudo||'sans nom')+'">'+
+'<span class="av">'+echapperT(String(j.pseudo||'?').slice(0,1).toUpperCase())+'</span>'+
+'<span class="tx"><b>'+echapperT(j.pseudo||'sans nom')+'</b></span></button>').join('')
+:'<div class="vide">Personne d’autre sur le port pour l’instant.</div>';
+C.querySelectorAll('[data-fil]').forEach(b=>b.onclick=()=>{
+MSG.vue='fil';MSG.avec=b.dataset.fil;MSG.pseudo=b.dataset.pseudo;msgRendre();});
+}
+async function msgEnvoyer(){
+const mot=($('msgMot')&&$('msgMot').value||'').trim();
+const obj=$('msgObj')?$('msgObj').value:'';
+const q=Math.max(0,parseInt(($('msgQte')&&$('msgQte').value)||'0',10)||0);
+const arg=Math.max(0,Math.round(parseFloat(String(($('msgArg')&&$('msgArg').value)||'0').replace(',','.'))*100)||0);
+if(!mot&&!obj&&!arg){msgBulle('Écris un mot, ou joins quelque chose.');return;}
+const b=$('msgGo');if(b)b.disabled=true;
+const d=await appelRPC('poste_envoyer',{p_joueur:e.id,p_pour:MSG.pseudo,p_mot:mot,
+p_objet:obj||null,p_qte:obj?q:0,p_argent:arg});
+if(b)b.disabled=false;
+if(!d||d.erreur){msgBulle(d&&d.erreur==='inconnu'?'Ce joueur n’existe plus.'
+:(d&&d.erreur==='pas_assez'?'Tu n’as pas cette somme.'
+:(d&&d.erreur==='trop'?'Dix messages par heure, pas plus !'
+:(d&&d.erreur==='toi meme'?'T’écrire à toi-même ? Peuchère…':'Le message n’est pas parti.'))));return;}
+if(d.sac)e.sac=d.sac;if(typeof d.euros==='number')e.euros=d.euros;
+try{sauver();majHaut();majPastille();}catch(x){}
+vibrer([12,30,12]);msgRendre();
+}
 if($('b-courrier'))$('b-courrier').onclick=()=>{try{fermerTiroir();}catch(x){}ouvrirLaPoste();};
 if($('carnetP'))$('carnetP').onclick=(ev)=>{if(ev.target===$('carnetP'))$('carnetP').classList.remove('on');};
 if($('catFermer'))$('catFermer').onclick=fermerLeCatalogue;
