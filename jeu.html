@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-2205';
+var MA_VERSION='2026-10-03-2220';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -7954,6 +7954,38 @@ function afficheComplexe(){
 const FORET_OUVERTE=true;    /* la forêt est ouverte à tous */
 /* mets ceci à faux pour que la forêt retrouve ses ressources */
 const FORET_VIDE=true;
+/* ================= L'ANNONCE DE LA NOUVELLE INTERFACE =================
+   Elle s'affiche une fois par joueur, au premier lancement apres la refonte. */
+const CSS_ANI=`#ani{position:absolute;inset:0;background:#15212e;box-shadow:inset 0 0 0 3px #e8c06a;
+display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+padding:34px 22px calc(24px + env(safe-area-inset-bottom,0px))}
+#ani .pil{display:inline-flex;align-items:center;gap:8px;background:rgba(16,22,30,.9);
+border-radius:16px;padding:7px 14px 7px 11px;margin-bottom:20px}
+#ani .pil .enc{display:flex;gap:2px}
+#ani .pil .enc i{display:block;width:3px;height:13px;background:rgba(255,255,255,.25)}
+#ani .pil .enc i.on{background:#9fd47e}
+#ani .pil b{font:700 15px 'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#f6efdc}
+#ani .pil b em{font-style:normal;opacity:.5;font-size:12px}
+#ani h2{font:700 26px/1.2 'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#f6efdc;margin:0 0 12px}
+#ani p{font:italic 15px/1.7 Georgia,serif;color:#8fa6bd;max-width:290px;margin:0}
+#ani button{width:100%;max-width:320px;margin-top:26px;border:0;border-radius:14px;padding:14px;
+background:#e8c06a;color:#2a2016;font:700 15px 'Baloo 2','Trebuchet MS',system-ui,sans-serif}`;
+function annonceInterface(){
+try{if(localStorage.getItem('bdl.annonce.interface')==='1')return;}catch(x){}
+if(!document.getElementById('cssAni')){const st=document.createElement('style');
+st.id='cssAni';st.textContent=CSS_ANI;document.head.appendChild(st);}
+$('page2Fond').className='';$('page2').classList.add('on');
+$('page2Fond').innerHTML=
+ '<div id="ani">'+
+ '<span class="pil"><span class="enc"><i class="on"></i><i></i><i></i><i></i><i></i></span>'+
+ '<b>8<em>/200</em></b></span>'+
+ '<h2>Tout est plus clair</h2>'+
+ '<p>Le bandeau, le menu et le sac ont \u00e9t\u00e9 refaits. Moins de cadres, plus de port.</p>'+
+ '<button id="aniOk">C\u2019est parti</button></div>';
+$('aniOk').onclick=()=>{
+try{localStorage.setItem('bdl.annonce.interface','1');}catch(x){}
+fermeA=Date.now();$('page2').classList.remove('on');};
+}
 async function annonceForet(){
   /* L'ANNONCE D'OUVERTURE : elle s'affiche une fois par joueur, et c'est
      d'elle qu'on repart avec son nom gravé et la tenue du garde forestier. */
@@ -17875,6 +17907,7 @@ function ligne2Permise(){try{return !!(e&&e.id==='e029d1fb-7baa-4225-91fd-5cdbef
 setTimeout(()=>{try{verifierLaFete();}catch(x){}},200);
 /* l'annonce de la réouverture, une fois par joueur */
 setTimeout(()=>{try{if(CARTE==='extramar')annonceForet();}catch(x){}},1400);
+setTimeout(()=>{try{annonceInterface();}catch(x){}},1800);
 setInterval(()=>{try{verifierLaFete();}catch(x){}},600000);
 $('b-vestiaire').onclick=()=>{VEST_SEL=null;try{$('tiroir').classList.remove('on');$('barre').classList.remove('on');}catch(x){}ouvrirLeVestiaire();};
 $('b-sac').addEventListener('click',()=>{try{recalerLeSac(true);}catch(x){}});
