@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-0356';
+var MA_VERSION='2026-10-03-0403';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12025,6 +12025,8 @@ function graverBuissonFo(sorte,v){
 const F_NOMS={bois:'bûches',champignons:'champignons',baies:'baies',roseaux:'roseaux',
   herbes:'herbes',plumes:'plumes',argile:'argile',pierre:'pierre',fibre:'fibre',
   resine:'résine',ambre:'ambre'};
+/* les prises du lac portent le nom que leur donne le moteur de pêche */
+try{Object.keys(ESP_PECHE||{}).forEach(k=>{if(ESP_PECHE[k].lac)F_NOMS[k]=ESP_PECHE[k].nom;});}catch(x){}
 let ETAL={cours:null,vedette:null};
 async function ouvrirLEtalDuBois(){
   if(!document.getElementById('cssEtal')){const st=document.createElement('style');
@@ -12105,68 +12107,6 @@ const CSS_ETAL=`
   letter-spacing:1.3px;background:#ddd2b8;color:#6a5c42}
 #et .et-pied .p{background:#8a3a22;color:#f6ecd8}
 #et .et-pied .p:disabled{background:#ddd2b8;color:#9a8a6c}
-`;
-let LAC_CONNUES=0, LAC_EN_COURS=false;
-async function pecherAuLac(o){
-  /* la canne vit dans l'équipement de pêche, pas dans les outils */
-  if(EQUIP_PECHE&&!(EQUIP_PECHE.canne>0)){bulle('Il te faut une canne.');return;}
-  if(LAC_EN_COURS)return;
-  LAC_EN_COURS=true;
-  GESTE={t:1,cible:o,impact:false,type:'canne',pourMoi:true};
-  joueur.dir='bas';vibrer(14);
-  texteVolant(joueur.x,joueur.y-34,'…','#c8e0ea');
-  const d=await appelRPC('lac_pecher',{p_joueur:e.id});
-  LAC_EN_COURS=false;
-  if(!d||d.erreur){
-    bulle(d&&d.erreur==='sac_plein'?'Ton sac est plein.':((d&&d.erreur)||'rien ne mord'));
-    return;}
-  LAC_CONNUES=d.connues||LAC_CONNUES;
-  vibrer(d.rarete==='legendaire'?[12,40,12,40]:[10,24]);
-  for(let i=0;i<14;i++){const a=-1.1-Math.random()*0.8;
-    PARTS.push({x:joueur.x+(Math.random()-.5)*14,y:joueur.y-14,
-      vx:Math.cos(a)*(20+Math.random()*40)*(Math.random()<.5?-1:1),
-      vy:Math.sin(a)*(26+Math.random()*28),vie:1,taille:2,rot:0,vrot:0,
-      c:i%2?'#9ac4d8':'#d8ecf4',rebondi:false});}
-  try{await chargerSac();}catch(x){}
-  montrerLaPrise(d);
-}
-function montrerLaPrise(d){
-  if(!document.getElementById('cssLac')){const st=document.createElement('style');
-    st.id='cssLac';st.textContent=CSS_LAC;document.head.appendChild(st);}
-  const RAR={commun:['COMMUN','#7a8a74'],moyen:['PEU COMMUN','#4a7a9a'],
-    rare:['RARE','#8a5aa8'],trouvaille:['TROUVAILLE','#8a7454'],
-    objet:['OBJET','#c9a24a'],legendaire:['LÉGENDAIRE','#c0392b']};
-  const r=RAR[d.rarete]||RAR.commun;
-  $('page2Fond').className='';$('page2').classList.add('on');
-  $('page2Fond').innerHTML=
-   '<div id="lac"><div class="lc-c'+(d.rarete==='legendaire'?' leg':'')+'">'+
-   (d.nouvelle?'<div class="lc-neuf">NOUVELLE ESPÈCE</div>':'')+
-   '<canvas id="lcDess" width="300" height="140"></canvas>'+
-   '<div class="lc-r" style="background:'+r[1]+'">'+r[0]+'</div>'+
-   '<b>'+d.nom+'</b>'+
-   '<div class="lc-p">'+d.prix+' € · '+d.poids+' place'+(d.poids>1?'s':'')+'</div>'+
-   '<div class="lc-n">'+(d.connues||0)+' espèces sur 50</div>'+
-   '<button id="lcOk">CONTINUER</button></div></div>';
-  const cv2=$('lcDess'), g2=cv2.getContext('2d');
-  g2.imageSmoothingEnabled=false;
-  lacDessiner(g2,d.cle,150,70,3);
-  $('lcOk').onclick=()=>{$('page2').classList.remove('on');};
-}
-const CSS_LAC=`
-#lac{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;
-  background:rgba(14,26,34,.88);padding:20px;font-family:Georgia,serif}
-#lac .lc-c{width:100%;max-width:330px;background:#f2e7d2;border:4px solid #1d3f52;
-  border-radius:12px;padding:16px;text-align:center;box-shadow:0 12px 34px rgba(0,0,0,.6)}
-#lac .lc-c.leg{border-color:#c9a24a;box-shadow:0 0 0 3px rgba(201,162,74,.3),0 12px 34px rgba(0,0,0,.6)}
-#lac .lc-neuf{font:700 8px Arial,sans-serif;letter-spacing:2.4px;color:#2f7a4a;margin-bottom:6px}
-#lac canvas{width:100%;max-width:300px;image-rendering:pixelated;background:#1d3f52;border-radius:8px}
-#lac .lc-r{display:inline-block;margin:10px 0 6px;padding:4px 11px;border-radius:4px;
-  color:#f6ecd8;font:700 8px Arial,sans-serif;letter-spacing:2px}
-#lac .lc-c b{display:block;font:900 19px Georgia,serif;color:#2f2820}
-#lac .lc-p{font:italic 13px Georgia,serif;color:#5f4d34;margin-top:3px}
-#lac .lc-n{font:700 8px Arial,sans-serif;letter-spacing:1.6px;color:#8a7454;margin-top:8px}
-#lac button{margin-top:13px;width:100%;border:0;border-radius:9px;padding:14px;
-  background:#1d3f52;color:#e8eef2;font:700 10px Arial,sans-serif;letter-spacing:2px}
 `;
 /* ================= LA PÊCHE AU LAC =================
    Cinquante prises possibles. Le serveur tire l'espèce, le jeu la dessine. */
@@ -19223,6 +19163,57 @@ return '<image href="'+c.toDataURL()+'" x="0" y="0" width="16" height="16" style
 }
 const LEGENDES=['legende','rascassedor','calamar','coelacanthe'];
 const ESP_PECHE={
+/* ===== LES CINQUANTE PRISES DU LAC ===== */
+gardon:{nom:'Gardon',col:['#4a5a46','#c8d4ce'],L:8,touches:2,vit:1.2,lac:1},
+perche:{nom:'Perche',col:['#3a5a28','#d87a2a'],L:9,touches:3,vit:1.1,lac:1},
+ablette:{nom:'Ablette',col:['#5a6a74','#f2f6fa'],L:7,touches:2,vit:1.4,lac:1},
+rotengle:{nom:'Rotengle',col:['#5a6a2a','#c0392b'],L:8,touches:3,vit:1.1,lac:1},
+goujon:{nom:'Goujon',col:['#5a4a2a','#e4dcb8'],L:6,touches:2,vit:1.3,lac:1},
+vairon:{nom:'Vairon',col:['#3a5a4a','#c8d4d8'],L:5,touches:2,vit:1.5,lac:1},
+able:{nom:'Able de Heckel',col:['#4a5a3a','#f4f8f6'],L:5,touches:2,vit:1.5,lac:1},
+chevesne:{nom:'Chevesne',col:['#3a4a5a','#e4ecf2'],L:10,touches:3,vit:1.0,lac:1},
+hotu:{nom:'Hotu',col:['#3a4a54','#b4443a'],L:9,touches:3,vit:1.0,lac:1},
+perche_soleil:{nom:'Perche soleil',col:['#2a5a5a','#e8b43a'],L:7,touches:3,vit:1.1,lac:1},
+tanche:{nom:'Tanche',col:['#2e4a28','#d4c45a'],L:10,touches:4,vit:0.8,lac:1},
+brochet:{nom:'Brochet',col:['#3a4a2a','#dcd892'],L:13,touches:5,vit:0.9,lac:1},
+carpe:{nom:'Carpe',col:['#5a3a18','#e8c87a'],L:12,touches:5,vit:0.7,lac:1},
+breme:{nom:'Brème',col:['#4a3a1a','#dcc684'],L:11,touches:4,vit:0.8,lac:1},
+barbeau:{nom:'Barbeau',col:['#5a5a2a','#e8e2b4'],L:11,touches:4,vit:0.9,lac:1},
+sandre:{nom:'Sandre',col:['#3a4a34','#dce2bc'],L:12,touches:5,vit:0.9,lac:1},
+black_bass:{nom:'Black-bass',col:['#2a4a2a','#d0e4b4'],L:11,touches:4,vit:1.0,lac:1},
+poisson_chat:{nom:'Poisson-chat',col:['#1e2420','#8a9088'],L:9,touches:4,vit:0.7,lac:1},
+lotte:{nom:'Lotte',col:['#4a3a1e','#d8c894'],L:12,touches:4,vit:0.7,lac:1},
+truite_fario:{nom:'Truite fario',col:['#4a5a34','#f0ecc8'],L:10,touches:4,vit:1.3,lac:1},
+truite_arc:{nom:'Truite arc-en-ciel',col:['#4a5a5a','#d85a7a'],L:11,touches:4,vit:1.3,lac:1},
+ombre:{nom:'Ombre commun',col:['#4a4a5a','#7a5a9a'],L:10,touches:4,vit:1.2,lac:1},
+anguille:{nom:'Anguille',col:['#242a1a','#c8b44a'],L:14,touches:6,vit:0.8,lac:1},
+silure:{nom:'Silure',col:['#2a2e2a','#b0b6ae'],L:16,touches:7,vit:0.6,lac:1},
+esturgeon:{nom:'Esturgeon',col:['#4a5248','#cdd4c8'],L:15,touches:7,vit:0.6,lac:1},
+carpe_koi:{nom:'Carpe koï',col:['#e8e4d8','#e8762a'],L:12,touches:5,vit:0.8,lac:1},
+saumon_fontaine:{nom:'Saumon de fontaine',col:['#2e4a3a','#f0a85a'],L:11,touches:5,vit:1.3,lac:1},
+lamproie:{nom:'Lamproie',col:['#3a2e22','#a89880'],L:11,touches:4,vit:0.9,lac:1},
+ecrevisse:{nom:'Écrevisse',col:['#8a2a1a','#c8564a'],L:6,touches:3,vit:0.9,lac:1},
+moule:{nom:'Moule d’eau douce',col:['#584c3a','#c8bca0'],L:5,touches:2,vit:0.4,lac:1},
+grenouille:{nom:'Grenouille verte',col:['#4a8a3a','#e8dc8a'],L:6,touches:2,vit:1.4,lac:1},
+tetard:{nom:'Têtard',col:['#2a2a24','#6a6a5a'],L:4,touches:1,vit:1.3,lac:1},
+sangsue:{nom:'Sangsue',col:['#4a5a2a','#c08a2a'],L:7,touches:2,vit:0.9,lac:1},
+gammare:{nom:'Gammare',col:['#c8c4a0','#e8e4c8'],L:4,touches:1,vit:1.4,lac:1},
+larve_libellule:{nom:'Larve de libellule',col:['#4a5a34','#7a8a5a'],L:5,touches:2,vit:1.1,lac:1},
+tortue:{nom:'Tortue cistude',col:['#3a2e18','#d8c45a'],L:11,touches:5,vit:0.5,lac:1},
+botte:{nom:'Vieille botte',col:['#2e3a2a','#52644a'],L:11,touches:4,vit:0.4,lac:1},
+conserve:{nom:'Boîte de conserve',col:['#8a7a62','#c8bc9e'],L:7,touches:3,vit:0.5,lac:1},
+bouteille:{nom:'Bouteille',col:['#2e5a3a','#4a7a52'],L:9,touches:3,vit:0.5,lac:1},
+hamecon:{nom:'Hameçon rouillé',col:['#8a6a4a','#c9b48a'],L:6,touches:2,vit:0.7,lac:1},
+roue:{nom:'Roue de vélo',col:['#6a6a72','#9a9aa2'],L:14,touches:6,vit:0.35,lac:1},
+seau:{nom:'Seau percé',col:['#8a929a','#b7bec4'],L:11,touches:5,vit:0.4,lac:1},
+piece:{nom:'Pièce ancienne',col:['#7a6a26','#b4a44a'],L:6,touches:3,vit:0.9,lac:1},
+bague:{nom:'Bague',col:['#c9a24a','#3a6ab4'],L:5,touches:3,vit:1.0,lac:1},
+poterie:{nom:'Éclat de poterie',col:['#a8663a','#e0a87a'],L:8,touches:3,vit:0.6,lac:1},
+bouchon:{nom:'Bouchon de cristal',col:['#b8d4e4','#f0fafe'],L:7,touches:3,vit:0.8,lac:1},
+plaque:{nom:'Plaque du métro',col:['#1d5090','#f4f8fc'],L:12,touches:5,vit:0.5,lac:1},
+silure_geant:{nom:'Silure géant',col:['#242a26','#a2aaa0'],L:20,touches:9,vit:0.5,lac:1},
+truite_or:{nom:'Truite d’or',col:['#a8761a','#fbeaa8'],L:13,touches:7,vit:1.4,lac:1},
+anguille_blanche:{nom:'Anguille blanche',col:['#d8d4cc','#fbf8f2'],L:15,touches:7,vit:1.0,lac:1},
 oursou:      {nom:'oursou',                 col:['#5a3f72','#8a6aa8'],L:9, touches:4,vit:0.9},
 /* les nouvelles prises improbables */
 cabas:       {nom:'cabas de mamie',         col:['#b4302c','#e8c06a'],L:11,touches:3,vit:0.6},
@@ -19299,6 +19290,13 @@ coelacanthe:{nom:'Cœlacanthe',col:['#1f3a6a','#6a8ab8'],L:26,touches:10,vit:.52
 let SERIE_VUE=0;
 let PECHE=null, TIENT_PECHE=false, CARNET_PECHE=null;
 function lieuDePeche(){
+/* LE PONTON DU LAC : on pêche depuis n'importe quel point du tablier. */
+if(CARTE==='foret'){
+  if(!surLePonton())return null;
+  const bout=joueur.y>F_PONT.y+86;
+  return {bx:joueur.x+(joueur.dir==='gauche'?-28:(joueur.dir==='droite'?28:0)),
+          by:Math.min(F_PONT.y+150,joueur.y+34), lieu:'lac', bout};
+}
 if(FORET_SEULE&&CARTE==='village'){          /* LE BORD DE LA RIVIÈRE, EN FORÊT */
 const x=joueur.x,y=joueur.y,cx=rivX(y);
 if(y>110&&y<520&&x>cx-46&&x<cx-8)
@@ -19615,7 +19613,7 @@ g.fillStyle='#ffd76a';g.fillText('ÇA MORD !',bx,by-10);
 }
 }
 function actionDePeche(b){
-if(CARTE!=='extramar')return false;
+if(CARTE!=='extramar'&&CARTE!=='foret')return false;   /* le lac aussi */
 if(PECHE){
 const E=PECHE.etat;
 b.innerHTML=E==='mord'?'FERRER !<small>VITE, ÇA MORD</small>'
@@ -20203,9 +20201,7 @@ if(o.ouvre==='voiture'){const nm=(PARISMOD&&PARISMOD.MODELES[o.n])?PARISMOD.MODE
 if(o.ouvre==='etable'){b.innerHTML='Entrer à l’étable<small>LAIT · FOIN · FROMAGE</small>';b.classList.add('on');return;}
 if(o.ouvre==='metroFerme'){b.innerHTML='Prendre le métro<small>LIGNE 1 · '+autresStations()+'</small>';b.classList.add('on');return;}
 if(o.ouvre==='etalForet'){b.innerHTML='L’étal du bois<small>VENDRE SA RÉCOLTE</small>';b.classList.add('on');return;}
-if(o.t==='x_fo_ponton'){b.innerHTML=(!EQUIP_PECHE||EQUIP_PECHE.canne>0)
-  ? 'Pêcher<small>LE LAC · '+(LAC_CONNUES||0)+' / 50 ESPÈCES</small>'
-  : 'Il faut une canne<small>LE LAC</small>';b.classList.add('on');return;}
+if(o.t==='x_fo_ponton')return;   /* le moteur de pêche s'en occupe */
 if(o.ouvre==='etalGraines'){b.innerHTML='Les graines<small>SEMENCES · OUTILS · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
 if(o.ouvre==='grainetier'){b.innerHTML='Entrer au Grainetier<small>OUTILS · GRAINES · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
 if(o.ouvre==='fumoir'){b.innerHTML='Entrer au fumoir<small>TON POISSON VAUT 2,5× PLUS · 30 MIN</small>';b.classList.add('on');return;}
@@ -20396,7 +20392,7 @@ if(o.ouvre==='voiture'){
 if(o.ouvre==='etable'){ETB=null;ouvrirLEtable();return;}
 if(o.ouvre==='metroFerme'){choisirLaDestination();return;}
 if(o.ouvre==='etalForet'){ouvrirLEtalDuBois();return;}
-if(o.t==='x_fo_ponton'){pecherAuLac(o);return;}
+
 if(o.ouvre==='etalGraines'){ouvrirLeGrainetier('graines');return;}
 if(o.ouvre==='grainetier'){ouvrirLeGrainetier('outils');return;}
 if(o.ouvre==='fumoir'){ouvrirLeFumoir();return;}
