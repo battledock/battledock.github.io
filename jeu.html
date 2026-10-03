@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-1429';
+var MA_VERSION='2026-10-03-1434';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -7921,69 +7921,100 @@ function afficheComplexe(){
 const FORET_OUVERTE=true;    /* la forêt est ouverte à tous */
 /* mets ceci à faux pour que la forêt retrouve ses ressources */
 const FORET_VIDE=true;
-function annonceForet(){
-  if(FORET_OUVERTE)return;
-  try{if(localStorage.getItem('bdl.annonce.foret2')==='1')return;}catch(x){}
+async function annonceForet(){
+  /* L'ANNONCE D'OUVERTURE : elle s'affiche une fois par joueur, et c'est
+     d'elle qu'on repart avec son nom gravé et la tenue du garde forestier. */
+  try{if(localStorage.getItem('bdl.annonce.ouverture')==='1')return;}catch(x){}
+  if(!document.getElementById('cssAnf')){const st=document.createElement('style');
+    st.id='cssAnf';st.textContent=CSS_ANF;document.head.appendChild(st);}
   $('page2Fond').className='';$('page2').classList.add('on');
-  $('page2Fond').innerHTML=`<style>
-  #anf{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-    background:#241a10;padding:16px;font-family:Georgia,serif;overflow-y:auto}
-  #anf .pan{width:100%;max-width:352px;background:#f2e7d2;border:6px solid #4a3218;border-radius:7px;
-    box-shadow:0 12px 34px rgba(0,0,0,.6);padding:20px 17px 17px;text-align:center;position:relative}
-  #anf .pan:before{content:'';position:absolute;inset:6px;border:1px dashed #c9a24a;border-radius:3px;pointer-events:none}
-  #anf .clou{position:absolute;width:9px;height:9px;border-radius:50%;background:#8a8a92;box-shadow:inset 0 1px 0 #c8ced4}
-  #anf .c1{left:10px;top:10px}#anf .c2{right:10px;top:10px}
-  #anf .c3{left:10px;bottom:10px}#anf .c4{right:10px;bottom:10px}
-  #anf small{display:block;font:700 8px Arial,sans-serif;letter-spacing:3.4px;color:#8a2228}
-  #anf canvas{width:118px;height:84px;image-rendering:pixelated;margin:9px 0 2px}
-  #anf h2{font:900 22px Georgia,serif;color:#2f2820;margin:2px 0 4px;line-height:1.18}
-  #anf .ban{display:inline-block;background:#8a2228;color:#f6ecd8;border-radius:4px;
-    padding:5px 13px;font:700 9px Arial,sans-serif;letter-spacing:2.2px;margin:9px 0 11px}
-  #anf p{font:italic 13.5px Georgia,serif;color:#5f4d34;line-height:1.55;margin-bottom:10px}
-  #anf .cadeau{background:#e4d6bc;border:1px solid #c9a24a;border-radius:11px;padding:12px 13px;margin:6px 0 10px}
-  #anf .cadeau b{display:block;font:900 10px Arial,sans-serif;letter-spacing:2.4px;color:#8a6a20;margin-bottom:5px}
-  #anf .cadeau i{display:block;font:italic 13px Georgia,serif;color:#4a3218;line-height:1.5}
-  #anf .sig{font:italic 12px Georgia,serif;color:#8a7454;border-top:1px solid #d8c9a6;padding-top:10px;margin-top:6px}
-  #anf button{margin-top:12px;width:100%;border:0;border-radius:9px;padding:14px;
-    background:#4a3218;color:#f2e7d2;font:700 10px Arial,sans-serif;letter-spacing:2.2px}
-  </style>
-  <div id="anf"><div class="pan">
-    <i class="clou c1"></i><i class="clou c2"></i><i class="clou c3"></i><i class="clou c4"></i>
-    <small>AVIS À LA POPULATION</small>
-    <canvas id="anfBois" width="236" height="168"></canvas>
-    <h2>La forêt ouvrira dans la nuit<br>de ce samedi 3 octobre</h2>
-    <span class="ban">UN JOUR DE PLUS</span>
-    <p>Je préfère être franc avec vous : il reste trop de choses qui clochent,
-       et ouvrir ce soir ferait tomber le jeu entier. Une nuit de travail de plus,
-       et le bois sera prêt pour de bon.</p>
-    <div class="cadeau"><b>POUR VOUS REMERCIER D’ATTENDRE</b>
-      <i>Une récompense unique attend tous ceux qui se connecteront
-         le samedi 3 octobre. Un seul jour. Passé cette date,
-         plus personne ne pourra l’obtenir.</i></div>
-    <p>Merci de votre patience. Elle sera payée.</p>
-    <div class="sig">Le bûcheron</div>
-    <button id="anfOk">JE SERAI LÀ SAMEDI</button>
-  </div></div>`;
-  {const cv=$('anfBois'),g=cv.getContext('2d');g.imageSmoothingEnabled=false;
-   const S=cv.width/60;g.setTransform(S,0,0,S,0,0);
-   const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
-   const cx=30, sol=40;
-   g.fillStyle='rgba(74,56,32,.22)';g.beginPath();g.ellipse(cx,sol+1,13,4,0,0,7);g.fill();
-   R(cx-3,sol-14,6,14,'#6b4a28');R(cx-3,sol-14,1.6,14,'#8a6238');R(cx+1.4,sol-12,1.6,12,'#4f3520');
-   const M=(x,y,w,h,c)=>{R(x,y,w,h,c);g.clearRect(x,y,2,1);g.clearRect(x+w-2,y,2,1);
-     g.clearRect(x,y+h-1,2,1);g.clearRect(x+w-2,y+h-1,2,1);};
-   M(cx-20,sol-26,40,9,'#a8562a');M(cx-16,sol-34,32,9,'#c9821a');
-   M(cx-11,sol-42,22,9,'#d8a83a');M(cx-6,sol-48,12,7,'#e8c45a');
-   const hs=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
-   for(let k=0;k<16;k++)R(hs(k)*58,sol-4+hs(k*3)*8,3,2,['#c9821a','#b4552a','#d8a83a'][k%3]);
-   /* la lune et quelques étoiles : l'ouverture se fera de nuit */
-   for(let a=0;a<6.283;a+=0.18)R(50+Math.cos(a)*5,10+Math.sin(a)*5,2,2,'#e8dcb0');
-   for(let a=0;a<6.283;a+=0.2)R(52+Math.cos(a)*5,10+Math.sin(a)*5,3,3,'#f2e7d2');
-   for(let k=0;k<6;k++)R(4+hs(k*11)*34,4+hs(k*7)*12,2,2,'#e8dcb0');}
-  $('anfOk').onclick=()=>{
-    try{localStorage.setItem('bdl.annonce.foret2','1');}catch(x){}
-    $('page2').classList.remove('on');};
+  $('page2Fond').innerHTML=
+   '<div id="anf"><div class="pan">'+
+   '<canvas id="anfD" width="320" height="104"></canvas>'+
+   '<small>BATTLE DOCK · OCTOBRE 2026</small>'+
+   '<h2>La forêt est ouverte</h2>'+
+   '<p class="ch">Érables, chênes dorés, charmes et oliviers. Des champignons sous les arbres, '+
+   'des baies dans les buissons, de l’argile au bord de l’eau.</p>'+
+   '<div class="lst2">'+
+   '<div><b>L’Étal du bois</b><em>vends ta récolte sur place, les cours changent chaque jour</em></div>'+
+   '<div><b>Le ponton du lac</b><em>cinquante prises d’eau douce, du goujon au silure géant</em></div>'+
+   '<div><b>L’atelier du bois</b><em>planches, poutres, bardeaux et charbon</em></div>'+
+   '</div>'+
+   '<div class="cad2"><small>POUR CELLES ET CEUX QUI SONT LÀ AUJOURD’HUI</small>'+
+   '<b>La tenue du garde forestier</b>'+
+   '<em>ton nom gravé sur le grand chêne, et la tenue à vie dans ton vestiaire</em>'+
+   '<i id="anfFin">jusqu’à dimanche, midi</i></div>'+
+   '<button id="anfOk">GRAVER MON NOM ET ENTRER</button>'+
+   '<button id="anfPlus" class="pl">Plus tard</button>'+
+   '</div></div>';
+  /* le petit dessin : la forêt d'automne et son lac */
+  {const c=$('anfD'), g=c.getContext('2d');g.imageSmoothingEnabled=false;
+   g.setTransform(4,0,0,4,0,0);
+   const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+   const hs2=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+   for(let y=0;y<26;y++)for(let x=0;x<80;x++){
+     const n=hs2(x*0.3+y*0.5);R(x,y,1,1,n<.4?'#4a3820':(n<.72?'#5a4428':'#3d2e1a'));}
+   for(let k=0;k<70;k++){const x=hs2(k*1.7)*80,y=hs2(k*4.3)*18;
+     R(x,y,2,1,['#c9821a','#b4552a','#8a3a22','#d8a83a'][(hs2(k*2.1)*4)|0]);}
+   /* trois arbres */
+   [[14,'#b8392c','#d4584a'],[40,'#c9821a','#e0a03a'],[66,'#8a9a2a','#a8b84a']].forEach(([x,c1,c2])=>{
+     R(x-1,10,3,9,'#6b4a2a');
+     for(let e2=0;e2<3;e2++){const r=7-e2*1.6;
+       for(let i=-r;i<=r;i++){const h=Math.round(r*0.7*Math.sqrt(Math.max(0,1-(i/r)**2)));
+         for(let j=-h;j<=h;j++)R(x+i,10-e2*3.4+j,1,1,j<0?c2:c1);}}});
+   /* le lac */
+   for(let y=19;y<26;y++)for(let x=0;x<80;x++){
+     const p=(y-19)/7;R(x,y,1,1,p<0.3?'#3f6a5a':(p<0.7?'#2a5260':'#1d3f52'));}
+   for(let k=0;k<9;k++)R(hs2(k*3.1)*80,20+hs2(k*7)*5,4,1,'rgba(150,200,220,.3)');}
+  /* la date limite, en clair */
+  try{const d=await appelRPC('foret_noms',{});
+    if(d&&!d.ouvert)$('anfFin').textContent='la plaque est close';
+    else if(d&&d.combien)$('anfFin').textContent='jusqu’à dimanche, midi · '+d.combien+' nom'+(d.combien>1?'s':'')+' déjà gravé'+(d.combien>1?'s':'');
+  }catch(x){}
+  $('anfPlus').onclick=()=>{$('page2').classList.remove('on');};
+  $('anfOk').onclick=async()=>{
+    const b=$('anfOk');b.disabled=true;b.textContent='…';
+    const r=await appelRPC('foret_signer',{p_joueur:e.id});
+    try{localStorage.setItem('bdl.annonce.ouverture','1');}catch(x){}
+    if(r&&r.ok){
+      e.cos=e.cos||{};e.cos.costume_forestier=true;
+      try{sauver();envoyerSauvegarde(true);}catch(x){}
+      vibrer([10,30,10,30]);
+      $('page2').classList.remove('on');
+      setTimeout(()=>bulle(r.nouveau?'Ton nom est gravé · la tenue du garde forestier est à ton vestiaire'
+                                    :'Ton nom était déjà gravé · la tenue est à ton vestiaire'),600);
+    }else{
+      $('page2').classList.remove('on');
+      setTimeout(()=>bulle((r&&r.erreur)||'la plaque est close'),600);
+    }
+  };
 }
+const CSS_ANF=`
+#anf{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(20,14,8,.94);padding:16px;font-family:Georgia,serif;overflow-y:auto}
+#anf .pan{width:100%;max-width:356px;background:#f4ead2;border:6px solid #4a3218;border-radius:9px;
+  box-shadow:0 14px 38px rgba(0,0,0,.7);padding:0 0 16px;text-align:center;overflow:hidden}
+#anf canvas{display:block;width:100%;image-rendering:pixelated;border-bottom:3px solid #4a3218}
+#anf small{display:block;font:700 8px Arial;letter-spacing:3px;color:#9a7a30;margin-top:13px}
+#anf h2{font:900 27px Georgia;color:#3a2614;margin-top:3px}
+#anf .ch{font:italic 12.5px Georgia;color:#6a5434;padding:9px 18px 0;line-height:1.5}
+#anf .lst2{margin:13px 16px 0;text-align:left}
+#anf .lst2 div{background:#e8dcc0;border:1px solid #cdbb97;border-radius:9px;padding:8px 11px;margin-bottom:6px}
+#anf .lst2 b{display:block;font:700 13.5px Georgia;color:#3a2614}
+#anf .lst2 em{display:block;font:italic 10.5px Georgia;color:#6a5434;margin-top:1px}
+#anf .cad2{margin:14px 16px 0;background:linear-gradient(180deg,#f8e8bc,#ecd08a);
+  border:2px solid #c9a24a;border-radius:11px;padding:12px 13px}
+#anf .cad2 small{margin:0;color:#8a6a1a}
+#anf .cad2 b{display:block;font:900 17px Georgia;color:#3a2614;margin-top:3px}
+#anf .cad2 em{display:block;font:italic 11px Georgia;color:#6a5020;margin-top:3px;line-height:1.4}
+#anf .cad2 i{display:block;font:700 9px Arial;letter-spacing:1.6px;color:#8a3a22;margin-top:7px;font-style:normal}
+#anf button#anfOk{margin:15px 16px 0;width:calc(100% - 32px);border:0;border-radius:11px;padding:16px;
+  background:linear-gradient(180deg,#3f7040,#2a5230);color:#f2e7d2;
+  font:900 11px Arial;letter-spacing:2px;box-shadow:0 3px 0 #1d3a22}
+#anf button.pl{margin:8px 16px 0;width:calc(100% - 32px);border:0;background:transparent;
+  color:#8a7454;font:italic 12px Georgia;padding:6px}
+`;
+
 let FONFON={};
 function ouvrirChezFonfon(){
   try{ffMarmiteMaj();}catch(x){}
