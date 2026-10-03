@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-1915';
+var MA_VERSION='2026-10-03-1925';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -1725,8 +1725,10 @@ padding:calc(env(safe-area-inset-top,0px) + clamp(8px,2vh,16px)) max(12px,calc((
 background:#1b3a5c;box-shadow:inset 0 0 0 4px #e8c06a;transform-origin:50% 50%;
 display:none;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr)) auto;
 gap:clamp(6px,1.6vh,12px)}
-#tiroir.on{display:grid;animation:tiroirFin .18s ease-out}
-@keyframes tiroirFin{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+#tiroir.on{display:grid;animation:tiroirFin .16s ease-out}
+#tiroir.part{animation:tiroirPart .14s ease-in forwards}
+@keyframes tiroirFin{from{opacity:0}to{opacity:1}}
+@keyframes tiroirPart{from{opacity:1;transform:none}to{opacity:0;transform:scale(.98)}}
 #tiroir::after{display:none}
 /* les tuiles du tiroir : carrées, icône et texte centrés */
 #tiroir .latte{background:#efe6cc;border:2px solid #8a6a3a;border-radius:0;box-shadow:none;
@@ -1748,10 +1750,15 @@ max-width:100%;overflow:hidden;text-overflow:ellipsis}
 #tiroir .bas .latte .b{color:#e8c06a;font:700 clamp(12px,2.2vh,16px)/1 Georgia,serif}
 #tiroir .bas .latte svg{width:auto;height:clamp(18px,3.6vh,28px)}
 #tiroir #t-fermer{flex:0 0 clamp(58px,18%,88px)}
-#tiroir.on .latte{animation:ligneFin .22s ease-out both}
-#tiroir.on .latte:nth-child(2){animation-delay:.03s}#tiroir.on .latte:nth-child(3){animation-delay:.06s}
-#tiroir.on .latte:nth-child(4){animation-delay:.09s}#tiroir.on .latte:nth-child(5){animation-delay:.12s}
-@keyframes ligneFin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}</style>
+/* LES TUILES ARRIVENT UNE PAR UNE, dans l'ordre affiche, avec un petit rebond */
+#tiroir.on .latte,#tiroir.on .bas{animation:ligneFin .3s ease-out both}
+#tiroir.on #b-carnet{animation-delay:0s}#tiroir.on #b-sac{animation-delay:.045s}
+#tiroir.on #b-encours{animation-delay:.09s}#tiroir.on #b-vestiaire{animation-delay:.135s}
+#tiroir.on #b-class{animation-delay:.18s}#tiroir.on #b-aide{animation-delay:.225s}
+#tiroir.on .bas{animation-delay:.27s}#tiroir.on .bas .latte{animation:none}
+#tiroir.part .latte,#tiroir.part .bas{animation:none}
+@keyframes ligneFin{from{opacity:0;transform:translateY(10px) scale(.9)}
+60%{opacity:1;transform:translateY(0) scale(1.04)}to{opacity:1;transform:none}}</style>
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -19293,8 +19300,13 @@ if(d<portee&&dd<d0){d0=dd;res=o;continue;}
 }
 return res;
 }
-const fermerTiroir=()=>{$('tiroir').classList.remove('on');$('b-plus').classList.remove('ouvert');};
-$('b-plus').onclick=(ev)=>{ev.stopPropagation();const o=$('tiroir').classList.toggle('on');$('b-plus').classList.toggle('ouvert',o);};
+const fermerTiroir=()=>{const t=$('tiroir');
+if(!t.classList.contains('on')||t.classList.contains('part')){t.classList.remove('on','part');$('b-plus').classList.remove('ouvert');return;}
+t.classList.add('part');$('b-plus').classList.remove('ouvert');
+setTimeout(()=>{t.classList.remove('on','part');},140);};
+$('b-plus').onclick=(ev)=>{ev.stopPropagation();const t=$('tiroir');
+if(t.classList.contains('on')&&!t.classList.contains('part')){fermerTiroir();return;}
+t.classList.remove('part');t.classList.add('on');$('b-plus').classList.add('ouvert');};
 ['b-sac','b-class','t-fermer'].forEach(id=>{
 const b=$(id);if(b)b.addEventListener('click',fermerTiroir);
 });
