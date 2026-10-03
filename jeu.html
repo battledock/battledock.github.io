@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-0326';
+var MA_VERSION='2026-10-03-0330';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12112,7 +12112,7 @@ const F_PONT={x:520,y:0};          /* y calculé à la rive, voir le semis */
 const F_B={n:'#3a2614',o:'#4e3620',b:'#5f4426',mm:'#715430',
   c:'#8a6a3c',h:'#a8854e',e:'#c6a46a',s:'#2a1c0e'};
 function graverPontonFo(){
-  const LW=40, LH=72, PROF=50, LARG=24;
+  const LW=56, LH=140, PROF=118, LARG=34;   /* plus long et plus large */
   const c=document.createElement('canvas');c.width=LW;c.height=LH;
   const g=c.getContext('2d');g.imageSmoothingEnabled=false;
   const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
@@ -12120,14 +12120,15 @@ function graverPontonFo(){
   const cx=LW/2, y0=LH-PROF-4;
   /* l'ombre dans l'eau */
   g.fillStyle='rgba(10,30,40,.3)';
-  g.beginPath();g.ellipse(cx+2,y0+46,16,6,0,0,7);g.fill();
+  g.beginPath();g.ellipse(cx+2,y0+110,22,7,0,0,7);g.fill();
   /* les quatre pilotis */
   const pilotis=(x,y,h)=>{
     R(x,y-h,3,h,F_B.b);R(x,y-h,1,h,F_B.h);R(x+2,y-h+1,1,h-1,F_B.n);
     R(x-1,y-h-1,5,2,F_B.c);R(x-1,y-h-1,5,1,F_B.e);
     R(x,y-h+Math.round(h*0.45),3,1,F_B.o);
     for(let k=0;k<4;k++)R(x-1,y+k,5,1,'rgba(26,62,76,'+(0.34-k*0.07).toFixed(2)+')');};
-  [[-11,30],[9,30],[-10,46],[8,46]].forEach(([dx,dy])=>pilotis(cx+dx,y0+dy+7,11));
+  [[-16,34],[13,34],[-16,62],[13,62],[-15,90],[12,90],[-15,114],[12,114]]
+    .forEach(([dx,dy])=>pilotis(cx+dx,y0+dy+7,12));
   /* le tablier, planches de deux pixels */
   for(let j=0;j<PROF;j++){
     const l=Math.round(LARG/2), rang=Math.floor(j/2), ton=rang%3;
@@ -12139,13 +12140,17 @@ function graverPontonFo(){
       if(i<-l+1)col=F_B.e; if(i>l-1)col=F_B.o;      /* les bords biseautés */
       R(cx+i,y0+j,1,1,col);}}
   R(cx-LARG/2-1,y0,1,PROF,F_B.s);R(cx+LARG/2+1,y0,1,PROF,F_B.s);
-  /* le garde-corps, d'un pixel */
-  [[-13],[13]].forEach(([dx])=>{
-    for(let j=0;j<PROF;j+=8){R(cx+dx,y0+j-9,1,10,F_B.b);R(cx+dx,y0+j-9,1,4,F_B.h);}
-    R(cx+dx,y0-10,1,PROF,F_B.c);R(cx+dx,y0-11,1,PROF,F_B.e);
-    R(cx+dx,y0-5,1,PROF,F_B.o);});
-  R(cx-13,y0-11,27,1,F_B.e);
-  R(cx-13,y0,26,1,F_B.e);
+  /* le garde-corps, épaissi pour qu'on le voie en jeu */
+  [[-18],[17]].forEach(([dx])=>{
+    for(let j=2;j<PROF;j+=10){
+      R(cx+dx,y0+j-11,2,12,F_B.b);R(cx+dx,y0+j-11,1,12,F_B.h);
+      R(cx+dx,y0+j-11,2,2,F_B.e);}
+    R(cx+dx,y0-12,2,PROF,F_B.c);R(cx+dx,y0-13,2,PROF,F_B.e);
+    R(cx+dx,y0-6,2,PROF,F_B.o);});
+  R(cx-18,y0-13,37,2,F_B.e);
+  R(cx-18,y0,37,1,F_B.e);
+  /* l'ombre du ponton sur l'eau */
+  for(let j=0;j<PROF;j++)R(cx+LARG/2+2,y0+j+2,3,1,'rgba(14,38,48,.26)');
   return {toile:c,W:LW,H:LH,sol:y0+2,nuit:null};   /* il se pose par son entrée */
 }
 /* L'ÉTAL DU BOIS : bâche haute à rayures, enseigne, deux lanternes et
@@ -12323,7 +12328,7 @@ function semerLaForet(){
   F_PONT.y=Math.round(F_rive(F_PONT.x))-2;
   DECOR.push({t:'x_fo_ponton',x:F_PONT.x,y:F_PONT.y,v:0,gr:0});
   DECOR=DECOR.filter(o=>o.t==='x_fo_ponton'
-    ||Math.hypot(o.x-F_PONT.x,o.y-F_PONT.y)>40);
+    ||Math.hypot(o.x-F_PONT.x,o.y-F_PONT.y)>46);
   /* on dégage autour de l'étal, sinon il serait à moitié caché */
   DECOR=DECOR.filter(o=>o.t==='x_fo_etal'||o.t==='x_fo_quai'
     ||Math.hypot(o.x-F_ETAL.x,o.y-F_ETAL.y)>86);
@@ -12332,7 +12337,7 @@ function semerLaForet(){
 /* ce qui barre le passage dans la forêt */
 function bloqueForet(x,y){
   /* LE PONTON : on marche dessus, au-dessus de l'eau */
-  if(Math.abs(x-F_PONT.x)<11&&y>F_rive(F_PONT.x)-10&&y<F_PONT.y+48)return false;
+  if(Math.abs(x-F_PONT.x)<16&&y>F_rive(F_PONT.x)-14&&y<F_PONT.y+116)return false;
   if(y>F_rive(x)-3)return true;
   if(y<F_BAR+8)return true;
   if(x<F_BAR+6&&y<F_rive(F_BAR)-20)return true;
@@ -14865,7 +14870,9 @@ return out;
 function bloque(x,y){
 if(CARTE==='foret'){
   if(bloqueForet(x,y))return true;
-  for(const o of autourDe(x,y)){const t=TAILLES[o.t];if(!t)continue;
+  for(const o of autourDe(x,y)){
+    if(o.t==='x_fo_ponton')continue;          /* on marche dessus, il ne barre rien */
+    const t=TAILLES[o.t];if(!t)continue;
     const d=t[o.gr||0]||t[0];if(!d)continue;
     if(Math.abs(o.x-x)<d.w/2+3&&Math.abs(o.y-y)<d.h/2+2)return true;}
   return false;}
@@ -24609,7 +24616,7 @@ TAILLES['x_fo_plume']=[{w:16,h:5},{w:16,h:5},{w:16,h:5}];
 TAILLES['x_fo_argile']=[{w:26,h:7},{w:26,h:7},{w:26,h:7}];
 TAILLES['x_fo_rocher']=[{w:20,h:8},{w:24,h:9},{w:28,h:10}];
 TAILLES['x_fo_etal']=[{w:62,h:12}];
-TAILLES['x_fo_ponton']=[{w:26,h:10}];
+TAILLES['x_fo_ponton']=[{w:36,h:10}];
 TAILLES['x_fo_mure']=[{w:22,h:8},{w:26,h:9}];
 TAILLES['x_fo_framboise']=[{w:18,h:8},{w:22,h:9}];
 TAILLES['x_fo_myrtille']=[{w:26,h:7},{w:30,h:8}];
