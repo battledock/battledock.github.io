@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-0620';
+var MA_VERSION='2026-10-04-0700';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16886,7 +16886,7 @@ $('pan').classList.add('on');
 animerAllure();
 }
 /* l'allure se règle maintenant à La Marinière */
-$('b-reglages').onclick=ouvrirReglages;
+$('b-reglages').onclick=()=>{REG_VUE='liste';ouvrirReglages();};   /* on rouvre toujours sur la liste */
 const CSS_ENC=`#page2Fond.enc{background:#1f2a20;color:#eef3e8;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%;overflow:hidden}
 #page2Fond.enc .tete{flex:none;display:flex;align-items:flex-start;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 12px;background:linear-gradient(180deg,#2c3b2a,#1f2a20);border-bottom:2px solid #6a8a45}
 #page2Fond.enc .tete small{display:block;font:700 9px Arial;letter-spacing:3px;color:#a8c48a}
@@ -22302,187 +22302,255 @@ if(typeof REG==='undefined'||!REG.vibre)return null;
 if(!vibreurDispo())return null;
 try{return navigator.vibrate(m);}catch(x){return null;}
 }
+/* ================= LES RÉGLAGES =================
+   Un vrai menu : des groupes en cartes, un interrupteur quand c'est oui ou
+   non, la valeur actuelle à droite quand il y a un choix, et un sous-écran
+   derrière un chevron pour tout ce qui demande une explication. */
+const CSS_REG=`#rg{position:absolute;inset:0;background:#15212e;display:flex;flex-direction:column;
+font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;overflow:hidden}
+#rg .hd{flex:none;padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 10px;display:flex;align-items:center;gap:10px}
+#rg .hd .ret{border:0;background:none;color:#e8c06a;font:700 22px 'Baloo 2',sans-serif;padding:0 2px}
+#rg .hd b{flex:1;font:700 24px 'Baloo 2',sans-serif;color:#f6efdc;min-width:0;
+overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#rg .hd .x{border:0;background:none;color:#e8c06a;font:700 20px 'Baloo 2',sans-serif;padding:0 2px}
+#rg .corps{flex:1;overflow-y:auto;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 20px)}
+#rg .rub{font:700 9px ui-monospace,monospace;letter-spacing:2px;color:#5f7489;padding:16px 20px 8px}
+#rg .grp{background:rgba(255,255,255,.05);border-radius:16px;margin:0 14px;overflow:hidden}
+#rg .r{display:flex;align-items:center;gap:13px;padding:14px 15px;width:100%;border:0;background:none;
+text-align:left;border-bottom:1px solid rgba(255,255,255,.06)}
+#rg .grp .r:last-child{border-bottom:0}
+#rg .r:active{background:rgba(255,255,255,.04)}
+#rg .r .ic{width:30px;height:30px;flex:none;border-radius:9px;background:rgba(255,255,255,.08);
+display:flex;align-items:center;justify-content:center;font:700 14px 'Baloo 2',sans-serif;color:#e8c06a}
+#rg .r .g{flex:1;min-width:0}
+#rg .r b{display:block;font:700 15px 'Baloo 2',sans-serif;color:#f6efdc}
+#rg .r small{display:block;font:italic 12px Georgia,serif;color:#5f7489;
+overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#rg .r .v{font:700 13px 'Baloo 2',sans-serif;color:#8fa6bd;flex:none}
+#rg .r .ch{color:#5f7489;font:700 15px 'Baloo 2',sans-serif;flex:none}
+#rg .sw{width:44px;height:26px;border-radius:13px;background:rgba(255,255,255,.14);flex:none;position:relative}
+#rg .sw.on{background:#e8c06a}
+#rg .sw i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#f6efdc;
+transition:left .18s ease}
+#rg .sw.on i{left:21px;background:#2a2016}
+#rg .r.danger b{color:#e8947f}#rg .r.danger .ic{color:#e8947f}
+/* LES SOUS-ÉCRANS */
+#rg .mot{font:italic 13px/1.6 Georgia,serif;color:#8fa6bd;padding:4px 20px 14px}
+#rg .choix{margin:0 14px;background:rgba(255,255,255,.05);border-radius:16px;overflow:hidden}
+#rg .choix button{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;
+text-align:left;padding:14px 15px;border-bottom:1px solid rgba(255,255,255,.06)}
+#rg .choix button:last-child{border-bottom:0}
+#rg .choix b{flex:1;font:700 15px 'Baloo 2',sans-serif;color:#f6efdc}
+#rg .choix small{display:block;font:italic 12px Georgia,serif;color:#5f7489}
+#rg .choix .co{color:#e8c06a;font:700 16px 'Baloo 2',sans-serif}
+#rg .act{margin:16px 14px 0;width:calc(100% - 28px);border:0;border-radius:14px;padding:13px;
+background:#e8c06a;color:#2a2016;font:700 14px 'Baloo 2',sans-serif}
+#rg .act.gris{background:rgba(255,255,255,.07);color:#f6efdc}
+#rg .act.danger{background:rgba(192,57,43,.25);color:#e8947f}
+#rg .champ{margin:0 14px;display:flex;gap:8px}
+#rg .champ input{flex:1;min-width:0;border:0;border-radius:12px;padding:12px 14px;
+background:rgba(255,255,255,.08);color:#f6efdc;font:700 15px 'Baloo 2',sans-serif}
+#rg .code{margin:0 14px;background:rgba(255,255,255,.05);border-radius:14px;padding:13px;
+font:11px/1.8 ui-monospace,monospace;color:#8fa6bd;word-break:break-all}
+#rg .bulleR{position:absolute;left:14px;right:14px;bottom:24px;background:#1d4f8a;color:#fff;
+border-radius:12px;padding:10px 12px;font:italic 14px Georgia,serif;opacity:0;transform:translateY(8px);
+transition:.25s;pointer-events:none}
+#rg .bulleR.on{opacity:1;transform:none}`;
+let REG_VUE='liste';
+function regBulle(t){const b=document.getElementById('rgBulle');if(!b)return;
+b.textContent=t;b.classList.remove('on');void b.offsetWidth;b.classList.add('on');
+setTimeout(()=>b.classList.remove('on'),2600);}
+/* LA PERFORMANCE : un seul réglage qui en pilote trois */
+const perfChoisie=()=>{
+if(REG.nettete==='auto'&&REG.finesse==='auto')return 'auto';
+if(REG.nettete==='nette')return 'beaute';
+return 'fluide';};
+function mettrePerf(v){
+if(v==='auto'){REG.nettete='auto';REG.finesse='auto';REG.eco=false;}
+else if(v==='fluide'){REG.nettete='fluide';REG.finesse='basse';REG.eco=true;}
+else{REG.nettete='nette';REG.finesse='haute';REG.eco=false;}
+try{mettreEco(REG.eco);}catch(x){}
+appliquerReglages();
+}
+const PERF_NOM={auto:'Automatique',fluide:'Fluidité',beaute:'Beauté'};
+function regCadre(titre,retour){
+return '<div class="hd">'+(retour?'<button class="ret" id="rgRetour">‹</button>':'')+
+'<b>'+titre+'</b><button class="x" id="rgX">✕</button></div>';
+}
+function regBrancher(){
+$('rgX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+const r=$('rgRetour');if(r)r.onclick=()=>{REG_VUE='liste';ouvrirReglages();};
+}
 function ouvrirReglages(){
-const bouton=(cle,val,texte)=>
-'<button class="regB'+(REG[cle]===val?' on':'')+'" data-reg="'+cle+'" data-val="'+val+'">'+
-texte+'</button>';
-const NIVEAUX=['muet','bas','moyen','fort'];
-const niveau=(cle)=>NIVEAUX.map((n,i)=>
-'<button class="regB'+((REG[cle]|0)===i?' on':'')+'" data-reg="'+cle+
-'" data-val="'+i+'">'+n+'</button>').join('');
-const ligne=(titre,mot,corps)=>
-'<div class="regL"><b>'+titre+'</b><span>'+mot+'</span><div class="regR">'+corps+'</div></div>';
-$('page2Fond').className='sacFond clairS';
-$('page2Fond').innerHTML=
-'<div class="rabatC"><span class="tC"><b>Réglages</b>'+
-'<i>ILS S’APPLIQUENT TOUT DE SUITE</i></span></div>'+
-'<div class="corpsC">'+
-'<div class="regL"><b>Mettre à jour le jeu</b>'+
-'<span>Ta version : <b style="display:inline">'+(window.MA_VERSION||'?')+'</b>'+
-'<i id="reg-quoi" style="display:block;font-style:normal;margin-top:3px"></i></span>'+
-'<div class="regR"><button class="regB on" id="reg-maj">Chercher et recharger</button></div>'+
+if(!document.getElementById('cssReg')){const st=document.createElement('style');
+st.id='cssReg';st.textContent=CSS_REG;document.head.appendChild(st);}
+$('page2Fond').className='';$('page2').classList.add('on');
+if(REG_VUE!=='liste')return regSousEcran();
+const rang=(ic,nom,sous,droite,id)=>'<button class="r" data-v="'+(id||'')+'">'+
+'<span class="ic">'+ic+'</span><span class="g"><b>'+nom+'</b>'+(sous?'<small>'+sous+'</small>':'')+'</span>'+
+droite+'</button>';
+const inter=(cle,on)=>'<span class="sw'+(on?' on':'')+'" data-sw="'+cle+'"><i></i></span>';
+const val=(t)=>'<span class="v">'+t+'</span><span class="ch">›</span>';
+$('page2Fond').innerHTML='<div id="rg">'+regCadre('Réglages',false)+'<div class="corps">'+
+'<div class="rub">LE JEU</div><div class="grp">'+
+rang('↻','Mettre à jour','<i id="rgMaj">on regarde…</i>','<span class="ch">›</span>','maj')+
+rang('?','Comment jouer','','<span class="ch">›</span>','aide')+
 '</div>'+
-ligne('Ultra économe',
-'Soixante images par seconde, comme d’habitude — mais quand rien ne bouge à l’écran, le jeu cesse de redessiner : en immobile, soixante fois moins de travail. La toile perd aussi sa densité de pixels. Sur iPhone et Safari, la batterie tient nettement plus longtemps sans rien perdre en fluidité.',
-'<button class="regB'+(ECO?' on':'')+'" data-reg="eco" data-val="true">Économe</button>'+
-'<button class="regB'+(ECO?'':' on')+'" data-reg="eco" data-val="false">Tout beau</button>')+
-ligne('Le personnage',
-'Le pixel fin : deux fois plus de détail, huit directions, des gestes et des vêtements vivants. Le classique : l’ancien dessin, plus léger pour les vieux téléphones.',
-'<button class="regB'+(STYLE_FIN()?' on':'')+'" data-reg="styleFin" data-val="true">Pixel fin</button>'+bouton('styleFin',false,'Classique'))+
-ligne('Les sons',
-'Tout est fabriqué par le téléphone, rien n’est téléchargé.',
-bouton('sons',true,'Écouter')+bouton('sons',false,'Silence'))+
-(REG.sons!==false?(
-ligne('Les gestes',
-'La hache, la pioche, la cueillette. C’est ce qu’on entend le plus : '+
-'baisse-le si ça fatigue.',
-niveau('sGestes'))+
-ligne('Les moments',
-'La vente au comptoir, un achat à l’échoppe, une pépite qui sort du '+
-'tamis.',
-niveau('sMoments'))+
-ligne('L’ambiance',
-'L’eau quand tu en approches, le vent, les oiseaux le jour, les '+
-'grillons la nuit.',
-niveau('sAmb'))+
-ligne('La réverbération',
-'La « pièce » dans laquelle tout résonne. Au minimum, les sons sont '+
-'secs et proches ; au maximum, on est dehors, au large.',
-niveau('sRev'))
-):'')+
+'<div class="rub">L’IMAGE</div><div class="grp">'+
+rang('◧','Performance','',val(PERF_NOM[perfChoisie()]),'perf')+
+rang('☺','Le personnage','',val(STYLE_FIN()?'Pixel fin':'Classique'),'perso')+
+rang('☾','Jour et nuit','',val(REG.ciel==='jour'?'Plein jour':'Suivre l’heure'),'ciel')+
+rang('≈','Secouer aux impacts','',inter('secousses',REG.secousses!==false),'')+
+'</div>'+
+'<div class="rub">LE SON ET LE TOUCHER</div><div class="grp">'+
+rang('♪','Les sons','',inter('sons',REG.sons!==false),'')+
+rang('✦','Volumes','gestes, ambiance',val((['muet','bas','moyen','fort'])[REG.sGestes|0]),'sons')+
 (vibreurDispo()
-? ligne('Faire vibrer le téléphone',
-'Un petit coup dans la main à chaque fois que tu frappes un rocher, '+
-'coupes un arbre ou ramasses quelque chose. Si tu ne sens rien, '+
-'vérifie le retour tactile dans les réglages de ton téléphone.',
-bouton('vibre',true,'Vibrer')+bouton('vibre',false,'Silencieux')+
-'<button class="regB" id="reg-essai">Essayer</button>')
-: '<div class="regL"><b>Faire vibrer le téléphone</b>'+
-'<span>Ton navigateur ne sait pas commander le vibreur. C’est le cas '+
-'de tous les navigateurs sur iPhone, et de Firefox. Sur Chrome pour '+
-'Android, ça marche.</span>'+
-'<div class="regR"><button class="regB" disabled '+
-'style="opacity:.45">Impossible ici</button></div></div>')+
-ligne('Secouer l’écran aux impacts',
-'L’image tremble une demi-seconde quand ta pioche touche. Coupe-le si '+
-'ça te gêne les yeux.',
-bouton('secousses',true,'Secouer')+bouton('secousses',false,'Stable'))+
-ligne('Le jour et la nuit',
-'Le jeu suit l’heure de Marseille : doré le matin, orange à 19 h, bleu '+
-'nuit après 21 h. En « plein jour », il fait clair en permanence et les '+
-'lampes restent éteintes.',
-bouton('ciel','heure','Suivre l’heure')+bouton('ciel','jour','Plein jour'))+
-ligne('Où suis-je',
-'Un relevé pour m’aider à comprendre les soucis d’affichage : ta carte, ta position, '+
-'et le nombre d’objets que le jeu dessine autour de toi en ce moment.',
-'<div style="font:700 12px Georgia;color:#2f2820;background:#fbf6e8;border:1px solid #d8c9a6;'+
-'border-radius:9px;padding:10px 12px;line-height:1.6">'+
- 'version <b>'+(typeof MA_VERSION!=='undefined'?MA_VERSION:'?')+'</b><br>'+
- 'forêt vidée <b>'+(typeof FORET_VIDE!=='undefined'?(FORET_VIDE?'oui':'non'):'inconnue')+'</b><br>'+
- 'carte <b>'+(typeof CARTE!=='undefined'?CARTE:'?')+'</b><br>'+
- 'position <b>'+Math.round(joueur.x)+' , '+Math.round(joueur.y)+'</b><br>'+
- 'objets au total <b>'+(typeof DECOR!=='undefined'?DECOR.length:0)+'</b><br>'+
- 'objets autour de toi <b>'+((()=>{try{const camY=joueur.y-VH*0.5;let n=0;
-   for(const o of DECOR)if(o.y>=camY-420&&o.y<=camY+VH+220)n++;return n;}catch(x){return '?';}})())+'</b><br>'+
- 'par sorte <b>'+((()=>{try{const c={};DECOR.forEach(o=>{c[o.t]=(c[o.t]||0)+1;});
-   return Object.entries(c).sort((a2,b2)=>b2[1]-a2[1]).slice(0,8)
-     .map(([k,n])=>k.replace('x_fo_','').replace('x_fe_','')+' '+n).join(' · ');}catch(x){return '?';}})())+'</b><br>'+
- 'cassés en attente <b>'+((e.casses||[]).length)+'</b><br>'+
- 'dernière erreur <b>'+(window.__ERR||'aucune')+'</b>'+
-'</div>')+
-ligne('La netteté de l’image',
-'Le jeu démarre au plus léger, pour que tout téléphone tienne ses soixante '+
-'images par seconde. S’il y arrive sans forcer pendant sept secondes, il monte '+
-'d’un cran tout seul ; au premier essoufflement, il redescend. Tu peux aussi '+
-'choisir toi-même, et il n’y touchera plus.',
-bouton('nettete','auto','Automatique')+bouton('nettete','fluide','Fluide')+
-bouton('nettete','equilibre','Équilibrée')+bouton('nettete','nette','Nette'))+
-ligne('Le détail du décor',
-'Les nuages qui passent et les papillons coûtent de la fluidité. En '+
-'« automatique », le jeu les enlève tout seul s’il commence à ramer ; '+
-'sinon c’est toi qui décides, et il n’y touche plus.',
-bouton('finesse','auto','Automatique')+bouton('finesse','haute','Tout montrer')+
-bouton('finesse','basse','Au plus simple'))+
-ligne('Mes petits mots',
-'Les bandes de texte qui apparaissent en haut de l’écran quand j’ajoute '+
-'quelque chose au jeu.',
-bouton('avis',true,'Les voir')+bouton('avis',false,'Les cacher'))+
-'<div class="regL"><b>Repartir de zéro</b>'+
-'<span>Efface ta partie sur CE téléphone : le sac, l’argent, les '+
-'rochers déjà cassés. Ton compte et ton classement ne bougent pas.</span>'+
-'<div class="regR"><button class="regB danger" id="reg-raz">Tout effacer</button></div>'+
+?rang('◉','Vibrer','',inter('vibre',!!REG.vibre),'')
+:rang('◉','Vibrer','impossible sur ce navigateur','<span class="v">—</span>',''))+
 '</div>'+
-'<div class="regFin">Battle Dock · ces réglages restent sur ce téléphone</div>'+
+'<div class="rub">TOI</div><div class="grp">'+
+rang('☰','Ton pseudo','',val(echapperT(e.pseudo||'sans nom')),'pseudo')+
+rang('#','Ton identifiant','',"<span class=\"v\">Copier</span>",'id')+
+rang('✉','Mes petits mots','',inter('avis',REG.avis!==false),'')+
 '</div>'+
-'<button class="bandeC" id="reg-fermer"><u></u><span>REFERMER</span><u></u></button>';
-$('reg-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-(function(){
-const b=$('reg-maj'), quoi=$('reg-quoi');
-if(!b)return;
-fetch('version.json?t='+Date.now(),{cache:'no-store'})
-.then(r2=>r2.json())
-.then(d=>{
-if(!quoi)return;
-if(d&&d.v&&d.v!==window.MA_VERSION)
-quoi.innerHTML='Une version plus récente existe : <b style="display:inline">'+d.v+'</b>';
-else quoi.textContent='Tu as déjà la dernière version.';
-})
-.catch(()=>{if(quoi)quoi.textContent='';});
-b.onclick=async()=>{
-b.textContent='Nettoyage…';b.disabled=true;
-try{
-if(window.caches&&caches.keys){
-const cles=await caches.keys();
-await Promise.all(cles.map(k=>caches.delete(k)));
-}
-}catch(x){}
-try{
-if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations){
-const rs=await navigator.serviceWorker.getRegistrations();
-await Promise.all(rs.map(r2=>r2.unregister()));
-}
-}catch(x){}
-try{sessionStorage.removeItem('bdl.version.vue');}catch(x){}
-b.textContent='Rechargement…';
-const q2=new URLSearchParams(location.search);q2.set('maj',Date.now());
-const u=location.pathname.split('?')[0]+'?'+q2.toString();   /* on garde la carte */
-setTimeout(()=>{location.replace(u);},220);
-};
-})();
-$('page2Fond').querySelectorAll('[data-reg]').forEach(b=>b.onclick=()=>{
-const val=b.dataset.val;
-REG[b.dataset.reg]=(val==='true')?true:(val==='false'?false:
-(/^\d+$/.test(val)?+val:val));
-if(b.dataset.reg==='styleFin'){POSES.clear();CACHE_FIN.clear();setTimeout(()=>{try{refaireLeSol();}catch(x){}},50);}
-if(b.dataset.reg==='econome')try{appliquerEconomie();}catch(x){}
-if(b.dataset.reg==='eco')try{mettreEco(REG.eco);}catch(x){}
-appliquerReglages();vibrer(20);ouvrirReglages();
-const q=b.dataset.reg;
-if(q==='sGestes')jouer('hache');
-else if(q==='sMoments')jouer('pepite','moment');
-else if(q==='sRev')jouer('achat','moment');
+'<div class="rub">&nbsp;</div><div class="grp">'+
+'<button class="r danger" data-v="raz"><span class="ic">⌫</span>'+
+'<span class="g"><b>Repartir de zéro</b><small>efface ta partie sur ce téléphone</small></span>'+
+'<span class="ch">›</span></button>'+
+rang('⚙','Relevé technique','',"<span class=\"ch\">›</span>",'tech')+
+'</div>'+
+'<div class="mot" style="text-align:center;padding-top:18px">Battle Dock · ces réglages restent sur ce téléphone</div>'+
+'</div><div class="bulleR" id="rgBulle"></div></div>';
+regBrancher();
+/* les interrupteurs : ils basculent sur place */
+$('page2Fond').querySelectorAll('[data-sw]').forEach(sw=>{
+sw.parentNode.onclick=(ev)=>{ev.stopPropagation();
+const cle=sw.dataset.sw;
+REG[cle]=!(REG[cle]!==false&&REG[cle]!==undefined);   /* une seule bascule, pas deux */
+sw.classList.toggle('on',!!REG[cle]);
+appliquerReglages();vibrer(18);ouvrirReglages();};
 });
-const essai=$('reg-essai');
-if(essai)essai.onclick=()=>{
-if(!REG.vibre){essai.textContent='mets « Vibrer » d’abord';
-setTimeout(()=>{essai.textContent='Essayer';},2500);return;}
-let rep=null;
-try{rep=navigator.vibrate([120,60,120]);}catch(x){}
-essai.textContent=(rep===false)?'refusé par le téléphone'
-:(rep===true?'envoyé — tu as senti ?':'impossible ici');
-setTimeout(()=>{essai.textContent='Essayer';},3500);
-};
-const raz=$('reg-raz');
-if(raz)raz.onclick=()=>{
-if(raz.dataset.sur!=='1'){
-raz.dataset.sur='1';raz.textContent='Vraiment ? Touche encore';
-setTimeout(()=>{if(raz){raz.dataset.sur='';raz.textContent='Tout effacer';}},4000);
-return;
+$('page2Fond').querySelectorAll('.r[data-v]').forEach(b=>{
+const v=b.dataset.v;if(!v)return;
+b.onclick=()=>{
+if(v==='aide'){try{ouvrirLAide('debuter');}catch(x){}return;}
+if(v==='id'){const t=e.id||'';
+try{navigator.clipboard.writeText(t);regBulle('Identifiant copié.');}
+catch(x){regBulle(t);}
+return;}
+REG_VUE=v;ouvrirReglages();};
+});
+/* la version : on regarde s'il y a mieux */
+fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{
+const q=document.getElementById('rgMaj');if(!q)return;
+q.textContent=(d&&d.v&&d.v!==window.MA_VERSION)?('version '+d.v+' disponible'):'tu as la dernière version';
+}).catch(()=>{});
 }
+function regSousEcran(){
+const v=REG_VUE;
+const choix=(cle,liste,actuel,appliquer)=>'<div class="choix">'+liste.map(([val,nom,sous])=>
+'<button data-c="'+val+'"><span class="g"><b>'+nom+'</b>'+(sous?'<small>'+sous+'</small>':'')+'</span>'+
+(actuel===val?'<span class="co">✓</span>':'')+'</button>').join('')+'</div>';
+let titre='', corps='';
+if(v==='perf'){titre='Performance';
+corps='<div class="mot">En automatique, le jeu ajuste lui-même la netteté de l’image et la densité du décor selon ce que tient ton téléphone. Si tu choisis, il n’y touche plus.</div>'+
+choix('perf',[['auto','Automatique','le jeu décide, et s’adapte'],
+['fluide','Fluidité','image plus douce, décor allégé, batterie ménagée'],
+['beaute','Beauté','image nette, tout le décor, plus gourmand']],perfChoisie());}
+else if(v==='perso'){titre='Le personnage';
+corps='<div class="mot">Le pixel fin : deux fois plus de détail, huit directions, des gestes et des tenues vivantes. Le classique : l’ancien dessin, plus léger pour les vieux téléphones.</div>'+
+choix('styleFin',[['true','Pixel fin',''],['false','Classique','']],STYLE_FIN()?'true':'false');}
+else if(v==='ciel'){titre='Jour et nuit';
+corps='<div class="mot">Le jeu suit l’heure de Marseille : doré le matin, orange à 19 h, bleu nuit après 21 h. En plein jour, il fait clair en permanence et les lampes restent éteintes.</div>'+
+choix('ciel',[['heure','Suivre l’heure',''],['jour','Plein jour','']],REG.ciel);}
+else if(v==='sons'){titre='Volumes';
+const niv=(cle,nom,mot)=>'<div class="rub">'+nom+'</div><div class="mot" style="padding-bottom:8px">'+mot+'</div>'+
+'<div class="choix">'+['muet','bas','moyen','fort'].map((n,i)=>
+'<button data-n="'+cle+':'+i+'"><span class="g"><b>'+n+'</b></span>'+((REG[cle]|0)===i?'<span class="co">✓</span>':'')+'</button>').join('')+'</div>';
+corps=niv('sGestes','LES GESTES','La hache, la pioche, la cueillette. C’est ce qu’on entend le plus.')+
+niv('sAmb','L’AMBIANCE','L’eau quand tu en approches, le vent, les oiseaux le jour, les grillons la nuit.');}
+else if(v==='pseudo'){titre='Ton pseudo';
+corps='<div class="mot">Il s’affiche au classement, sur le quai et dans le courrier des autres joueurs.</div>'+
+'<div class="champ"><input id="rgPseudo" maxlength="18" value="'+echapperT(e.pseudo||'')+'"></div>'+
+'<button class="act" id="rgPseudoOk">Changer de pseudo</button>';}
+else if(v==='tech'){titre='Relevé technique';
+let autour='?';try{const camY=joueur.y-VH*0.5;let n=0;
+for(const o of DECOR)if(o.y>=camY-420&&o.y<=camY+VH+220)n++;autour=n;}catch(x){}
+corps='<div class="mot">Un relevé pour comprendre les soucis d’affichage.</div>'+
+'<div class="code">version '+(window.MA_VERSION||'?')+'<br>'+
+'carte '+(typeof CARTE!=='undefined'?CARTE:'?')+'<br>'+
+'position '+Math.round(joueur.x)+' , '+Math.round(joueur.y)+'<br>'+
+'objets au total '+(typeof DECOR!=='undefined'?DECOR.length:0)+'<br>'+
+'objets autour de toi '+autour+'<br>'+
+'cassés en attente '+((e.casses||[]).length)+'<br>'+
+'dernière erreur '+(window.__ERR||'aucune')+'</div>'+
+'<button class="act gris" id="rgTechCopie">Copier le relevé</button>';}
+else if(v==='raz'){titre='Repartir de zéro';
+corps='<div class="mot">Efface ta partie sur CE téléphone : l’inventaire, l’argent, les rochers déjà cassés. Ton compte, ton classement et tes tenues ne bougent pas.</div>'+
+'<button class="act danger" id="rgRaz">Tout effacer</button>';}
+else if(v==='maj'){titre='Mettre à jour';
+corps='<div class="mot">Ta version : '+(window.MA_VERSION||'?')+'<br><i id="rgMaj2">on regarde…</i></div>'+
+'<button class="act" id="rgMajGo">Chercher et recharger</button>';}
+$('page2Fond').innerHTML='<div id="rg">'+regCadre(titre,true)+'<div class="corps">'+corps+'</div>'+
+'<div class="bulleR" id="rgBulle"></div></div>';
+regBrancher();
+/* les choix simples */
+$('page2Fond').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
+const c=b.dataset.c;
+if(v==='perf')mettrePerf(c);
+else if(v==='perso'){REG.styleFin=(c==='true');POSES.clear();CACHE_FIN.clear();
+setTimeout(()=>{try{refaireLeSol();}catch(x){}},50);appliquerReglages();}
+else if(v==='ciel'){REG.ciel=c;appliquerReglages();}
+vibrer(18);ouvrirReglages();});
+/* les volumes */
+$('page2Fond').querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{
+const [cle,n]=b.dataset.n.split(':');
+REG[cle]=+n;appliquerReglages();
+if(cle==='sGestes')jouer('hache');vibrer(14);ouvrirReglages();});
+/* le pseudo */
+const po=$('rgPseudoOk');
+if(po)po.onclick=async()=>{
+const t=($('rgPseudo').value||'').trim();
+if(t.length<2){regBulle('Deux lettres au moins.');return;}
+po.disabled=true;
+const d=await appelRPC('renommer_joueur',{p_joueur:e.id,p_pseudo:t});
+po.disabled=false;
+if(!d||d.erreur){regBulle(d&&d.erreur==='pris'?'Ce pseudo est déjà pris.'
+:(d&&d.erreur==='taille'?'Entre deux et dix-huit lettres.'
+:(d&&d.erreur==='caracteres'?'Pas de chevrons ni de guillemets.':'Ça n’a pas marché.')));return;}
+e.pseudo=t;try{sauver();envoyerSauvegarde(true);monterEnLigne(true);}catch(x){}
+regBulle('Te voilà '+t+'.');};
+/* le relevé */
+const tc=$('rgTechCopie');
+if(tc)tc.onclick=()=>{try{navigator.clipboard.writeText(
+($('page2Fond').querySelector('.code')||{innerText:''}).innerText);regBulle('Relevé copié.');}catch(x){}};
+/* repartir de zéro */
+const raz=$('rgRaz');
+if(raz)raz.onclick=()=>{
+if(raz.dataset.sur!=='1'){raz.dataset.sur='1';raz.textContent='Vraiment ? Touche encore';
+setTimeout(()=>{if(raz&&raz.isConnected){raz.dataset.sur='';raz.textContent='Tout effacer';}},4000);return;}
 try{localStorage.removeItem(CLE);}catch(x){}
-location.reload();
-};
-$('page2').classList.add('on');
+location.reload();};
+/* la mise à jour */
+const mg=$('rgMajGo');
+if(mg){
+fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{
+const q=document.getElementById('rgMaj2');if(!q)return;
+q.textContent=(d&&d.v&&d.v!==window.MA_VERSION)?('Une version plus récente existe : '+d.v):'Tu as déjà la dernière version.';
+}).catch(()=>{});
+mg.onclick=async()=>{
+mg.textContent='Nettoyage…';mg.disabled=true;
+try{if(window.caches&&caches.keys){const cles=await caches.keys();
+await Promise.all(cles.map(k=>caches.delete(k)));}}catch(x){}
+try{if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations){
+const rs=await navigator.serviceWorker.getRegistrations();
+await Promise.all(rs.map(r2=>r2.unregister()));}}catch(x){}
+try{sessionStorage.removeItem('bdl.version.vue');}catch(x){}
+mg.textContent='Rechargement…';
+const q2=new URLSearchParams(location.search);q2.set('maj',Date.now());
+setTimeout(()=>{location.replace(location.pathname.split('?')[0]+'?'+q2.toString());},220);};
+}
 }
 const FONTES=[
 {id:'lingotFer',   nom:'Lingot de fer',    cout:{fer:2,charbon:1},    rend:{lingotFer:1},   duree:90},
