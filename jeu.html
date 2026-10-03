@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-1738';
+var MA_VERSION='2026-10-03-1744';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12314,6 +12314,20 @@ async function ouvrirLeGrandChene(){
   $('page2Fond').innerHTML='<div id="chn"><div class="att">On déchiffre la plaque…</div></div>';
   let d=null;
   try{d=await appelRPC('foret_noms',{});}catch(x){d=null;}
+  /* SI LA FONCTION NE RÉPOND PAS, on lit la table directement : c'est une
+     simple lecture, elle passe là où un appel de fonction échoue. */
+  if(!d||d.erreur){
+    try{
+      const r=await fetch(URL_SB+'/rest/v1/foret_ouverture?select=pseudo,quand&order=quand.asc',
+        {headers:sbEntetes});
+      if(r.ok){
+        const l=await r.json();
+        d={noms:Array.isArray(l)?l:[],combien:(l||[]).length,
+           ouvert:Date.now()<=Date.parse('2026-10-05T12:00:00+02:00')};
+      }else{DERNIER_RPC={nom:'table foret_ouverture',code:r.status,
+             texte:(await r.text()).slice(0,200)};}
+    }catch(x){}
+  }
   if(!d||d.erreur){            /* le serveur n'a pas répondu : on le dit au lieu de rester bloqué */
     $('page2Fond').innerHTML=
      '<div id="chn"><div class="hd"><small>À L’OUVERTURE DE LA FORÊT</small>'+
@@ -12347,14 +12361,30 @@ async function ouvrirLeGrandChene(){
   const bg=$('chnGraver');
   if(bg)bg.onclick=async()=>{
     bg.disabled=true;bg.textContent='…';
-    const r=await appelRPC('foret_signer',{p_joueur:e.id});
-    if(r&&r.erreur){motOuverture(r.erreur);bg.disabled=false;bg.textContent='GRAVER MON NOM';return;}
+    let r=await appelRPC('foret_signer',{p_joueur:e.id});
+    if(!r||r.erreur)r=await signerDirect();
+    if(!r||r.erreur){motOuverture((r&&r.erreur)||'impossible pour l’instant');
+      bg.disabled=false;bg.textContent='GRAVER MON NOM';return;}
     e.cos=e.cos||{};e.cos.costume_forestier=true;
     try{sauver();envoyerSauvegarde(true);}catch(x){}
     vibrer([10,30,10,30]);
     ouvrirLeGrandChene();
     setTimeout(()=>motOuverture('La tenue du garde forestier est à ton vestiaire'),900);
   };
+}
+/* le repli : on écrit la ligne et la tenue à la main, sans passer par la fonction */
+async function signerDirect(){
+  try{
+    const a=await fetch(URL_SB+'/rest/v1/foret_ouverture',
+      {method:'POST',headers:Object.assign({},sbEntetes,{'Prefer':'resolution=ignore-duplicates'}),
+       body:JSON.stringify({joueur:e.id,pseudo:e.pseudo||'sans nom'})});
+    if(!a.ok&&a.status!==409){DERNIER_RPC={nom:'ecrire foret_ouverture',code:a.status,
+      texte:(await a.text()).slice(0,200)};return {erreur:'serveur '+a.status};}
+    await fetch(URL_SB+'/rest/v1/cosmetiques',
+      {method:'POST',headers:Object.assign({},sbEntetes,{'Prefer':'resolution=ignore-duplicates'}),
+       body:JSON.stringify({joueur:e.id,piece:'costume_forestier',paye:0})});
+    return {ok:true,nouveau:true};
+  }catch(x){return {erreur:'réseau'};}
 }
 const CSS_CHENE=`
 #chn{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#20160c;
