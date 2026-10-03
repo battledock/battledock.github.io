@@ -305,7 +305,7 @@ text-shadow:0 1px 4px rgba(0,0,0,.8);pointer-events:none;transition:opacity .6s}
 <button id="action"></button>
 <div id="menus">
   <button class="menuB feu" id="b-torche">TORCHE</button>
-  <button class="menuB" id="b-sortir">SORTIR</button>
+  <button class="menuB" id="b-sortir" style="display:none">SORTIR</button>
 </div>
 <div id="page"><div id="fond"></div></div>
 <div id="pageA"><div id="fondP"></div></div>
@@ -1137,33 +1137,24 @@ const dalle=(v)=>toile(CASE,CASE,({P,R,trame})=>{
   }
 });
 const dessus=(v)=>toile(CASE,CASE,({P,R,trame})=>{
-trame(0,0,CASE,CASE,c2,c3,0.4);
-const dec=v%2?5:0;
-const blocs=[[-3+dec,-2,11,9],[8+dec,-2,11,9],[-5+dec,7,10,11],[5+dec,7,12,11]];
-blocs.forEach(([x,y,w,h],i)=>{
-for(let j=0;j<h;j++)for(let k=0;k<w;k++){
-const X=x+k, Y=y+j;
-if(X<0||Y<0||X>=CASE||Y>=CASE)continue;
-let col=(i+v)%2?c2:c1;
-if(j===0||k===0)col=c0;                  /* l'arête éclairée */
-if(j>=h-2)col=c3;                        /* l'assise sombre */
-if(k>=w-1)col=c3;
-if(j===h-1||k===w-1)col=c4;              /* le joint */
-if((X*3+Y*5)%11===0)col=(col===c1?c0:c2);
-P(X,Y,col);
-}
-});
-if(v===2){
-let x=1,y=11;
-for(let k=0;k<13;k++){P(x,y,'rgba(255,248,228,.5)');
-x++;y+=A(k*3)<.5?-1:(A(k*7)<.3?1:0);y=Math.max(1,Math.min(14,y));}
-}
-if(N.accent&&niveau>12){
-for(let k=0;k<3;k++){
-const u=A(v*3+k)*13|0, t=A(v*7+k)*13|0;
-P(u,t,N.accent);P(u+1,t,N.accent);P(u,t+1,N.accent);
-}
-}
+  /* LE DESSUS DE LA ROCHE : grain brut, sans appareillage.
+     Quelques éclats clairs et des creux sombres, c'est tout. */
+  trame(0,0,CASE,CASE,c2,c3,0.46);
+  for(let j=0;j<CASE;j++)for(let k=0;k<CASE;k++){
+    const n=A(k*0.43+j*0.67+v*11.3);
+    P(k,j,n<.28?c4:(n<.58?c3:(n<.84?c2:c1)));
+  }
+  /* les éclats qui accrochent la lumière */
+  for(let e=0;e<9;e++){
+    const x=(A(v*9.1+e*3.7)*CASE)|0, y=(A(v*5.3+e*7.1)*CASE)|0;
+    P(x,y,c0);
+    if(A(e*2.3+v)<0.4)P(x+1,y,c1);
+  }
+  /* les creux */
+  for(let e=0;e<5;e++){
+    const x=(A(v*13+e*5.1)*CASE)|0, y=(A(v*7.7+e*3.3)*CASE)|0;
+    P(x,y,c4);P(x,y+1,c4);P(x+1,y,c4);
+  }
 });
 const face=(v)=>toile(CASE,14,({P,R,trame})=>{
   /* LA PAROI ÉTAYÉE : de la roche brute, et un montant de bois une case sur trois */
@@ -1541,7 +1532,7 @@ const POIDS={fer:2,cuivre:2,charbon:2,argent:2,or:2,gemme:1,pierre:2,bois:1,torc
 async function arriver(){
 if(!e.id){
 enLigne=false;SAC={torche:3};majSac();
-creuser();placerLeJoueur();dire('mode découverte — rien n’est enregistré');return;
+creuser();placerLeJoueur();return;
 }
 const d=await appel('mine_entrer',{p_joueur:e.id});
 if(!d||d.erreur){
@@ -1557,7 +1548,7 @@ else{PALIERS_OUVERTS=[1];for(let n=5;n<=niveau;n+=5)PALIERS_OUVERTS.push(n);}
 const s2=await appel('lire_sac',{p_joueur:e.id});
 SAC=(s2&&s2.sac)||{};
 creuser();placerLeJoueur();majSac();
-dire('niveau '+niveau+' · '+palier().nom);
+/* plus de bandeau de niveau : il n'y a qu'une salle */
 }
 async function ramasser(o){
 const x=o.a*CASE+CASE/2, y=o.b*CASE+CASE/2;
