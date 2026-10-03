@@ -1157,33 +1157,42 @@ const dessus=(v)=>toile(CASE,CASE,({P,R,trame})=>{
   }
 });
 const face=(v)=>toile(CASE,14,({P,R,trame})=>{
-  /* LA PAROI ÉTAYÉE : de la roche brute, et un montant de bois une case sur trois */
-  for(let k=0;k<CASE;k++){P(k,0,c0);P(k,1,c1);}     /* l'arête du dessus */
+  /* LA PAROI ÉTAYÉE : roche brute, un montant une case sur trois, et une
+     traverse à la même hauteur que la tête des montants, pour qu'elles se
+     rejoignent au lieu de flotter. */
+  const HT=2;                 /* la hauteur de la traverse : la même pour tous */
+  for(let k=0;k<CASE;k++){P(k,0,c0);P(k,1,c1);}
   for(let j=2;j<14;j++)for(let k=0;k<CASE;k++){
     const n=A(k*0.41+j*0.63+v*7.3);
     P(k,j,n<.3?c3:(n<.62?c2:(n<.88?c1:c0)));
   }
-  /* quelques éclats plus sombres */
   for(let e=0;e<7;e++){
-    const x=(A(v*9.1+e*3.7)*CASE)|0, y=2+((A(v*5.3+e*7.1)*11)|0);
+    const x=(A(v*9.1+e*3.7)*CASE)|0, y=5+((A(v*5.3+e*7.1)*8)|0);
     P(x,y,c4);P(x+1,y,c3);
   }
+  /* LA TRAVERSE : elle court sur toute la largeur de chaque case, montants
+     compris, donc la ligne de bois ne s'interrompt jamais. */
+  for(let k=0;k<CASE;k++){
+    P(k,HT,'#a8854e');P(k,HT+1,'#8a6a3c');
+    P(k,HT+2,'#5f4426');P(k,HT+3,'#3a2614');
+    if(k%5===0)P(k,HT+1,'#715430');          /* le fil du bois */
+  }
   if(v===1){
-    /* LE MONTANT DE BOIS, avec sa lumière à gauche et son ombre à droite */
+    /* LE MONTANT, qui part sous la traverse et descend jusqu'au sol */
     const x0=5;
-    for(let j=1;j<14;j++){
+    for(let j=HT+4;j<14;j++){
       P(x0,j,'#8a6a3c');P(x0+1,j,'#715430');P(x0+2,j,'#5f4426');
       P(x0+3,j,'#4e3620');P(x0+4,j,'#3a2614');
-      if(j%4===0)P(x0+1,j,'#4e3620');          /* le fil du bois */
+      if(j%4===0)P(x0+1,j,'#4e3620');
     }
-    /* le sabot, en bas */
+    /* l'écharpe qui relie le montant à la traverse, des deux côtés */
+    for(let d=0;d<3;d++){
+      P(x0-1-d,HT+4+d,'#715430');P(x0-d,HT+4+d,'#5f4426');
+      P(x0+5+d,HT+4+d,'#715430');P(x0+4+d,HT+4+d,'#5f4426');
+    }
+    /* le sabot */
     for(let k=x0-1;k<=x0+5;k++){P(k,12,'#715430');P(k,13,'#3a2614');}
     P(x0-1,12,'#a8854e');
-  }
-  if(v===2){
-    /* LA TRAVERSE HAUTE, qui relie deux montants */
-    for(let k=0;k<CASE;k++){P(k,2,'#a8854e');P(k,3,'#715430');
-      P(k,4,'#5f4426');P(k,5,'#3a2614');}
   }
 });
 const bordG=toile(3,CASE,({P})=>{
@@ -2081,7 +2090,7 @@ g.drawImage(T.dessus[(a*7+b*13)&3],x,y,CASE,CASE);
 if(!mur(a,b-1))g.drawImage(T.bordH,x,y,CASE,3);
 if(!mur(a-1,b))g.drawImage(T.bordG,x,y,3,CASE);
 if(!mur(a+1,b))g.drawImage(T.bordD,x+CASE-3,y,3,CASE);
-if(!mur(a,b+1))g.drawImage(T.faces[a%3===0?1:(a%3===1?2:0)],x,y+CASE-2,CASE,14);
+if(!mur(a,b+1))g.drawImage(T.faces[a%3===0?1:0],x,y+CASE-2,CASE,14);
   /* un montant toutes les trois cases, une traverse entre deux */
 }
 const liste=[];
