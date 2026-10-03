@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-1637';
+var MA_VERSION='2026-10-03-1641';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -6917,14 +6917,14 @@ const cartes=async()=>{
   const ok=$('cpOk');
   if(ok)ok.onclick=async()=>{
     const t=$('cpMsg');
-    if(!CP_DEST){bulle('Choisis d’abord à qui tu écris.');return;}
-    if(!t||t.value.trim().length<2){bulle('Écris au moins un mot.');return;}
+    if(!CP_DEST){motOuverture('Choisis d’abord à qui tu écris.');return;}
+    if(!t||t.value.trim().length<2){motOuverture('Écris au moins un mot.');return;}
     ok.disabled=true;ok.textContent='…';
     const r=await appelRPC('carte_envoyer',{p_joueur:e.id,p_dest:CP_DEST,p_visuel:CP_V,p_message:t.value.trim()});
     ok.disabled=false;
-    if(!r||r.erreur){bulle(r&&r.erreur?String(r.erreur):'La poste est fermée.');cartes();return;}
+    if(!r||r.erreur){motOuverture(r&&r.erreur?String(r.erreur):'La poste est fermée.');cartes();return;}
     if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}
-    bulle('Carte postée. Elle arrivera à sa prochaine connexion.');
+    motOuverture('Carte postée. Elle arrivera à sa prochaine connexion.');
     CP_DEST=null;vibrer([14,30,14]);cartes();};
 };
 const presse=async()=>{
@@ -6995,9 +6995,9 @@ V.querySelectorAll('[data-lo]').forEach(b=>b.onclick=async()=>{
     if(jeu){jeu.style.display='';jeu.scrollIntoView({behavior:'smooth',block:'start'});} }
   else if(q==='abo'){
     const r=await appelRPC('loto_abonner',{p_joueur:e.id,p_numeros:SEL.length>=5?SEL.slice(0,5):null,p_chance:CHS[0]||null});
-    if(!r||r.erreur)bulle(r&&r.erreur?String(r.erreur):'L’abonnement n’a pas pu être pris.');
+    if(!r||r.erreur)motOuverture(r&&r.erreur?String(r.erreur):'L’abonnement n’a pas pu être pris.');
     else{if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}
-      bulle('Abonné 7 jours : une grille déposée chaque jour.');loto();}}
+      motOuverture('Abonné 7 jours : une grille déposée chaque jour.');loto();}}
 });
 if(OUVRE_JEU){const j3=V.querySelector('#loJeu');
   if(j3){j3.style.display='';
@@ -7008,21 +7008,21 @@ V.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{
   const n=+b.dataset.n;
   if(SEL.includes(n))SEL=SEL.filter(x=>x!==n);
   else if(SEL.length<8)SEL.push(n);
-  else bulle('Huit numéros au maximum.');
+  else motOuverture('Huit numéros au maximum.');
   SEL.sort((x,y)=>x-y);OUVRE_JEU=true;vibrer(6);dessinerLoto();});
 V.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
   const n=+b.dataset.c;
   if(CHS.includes(n))CHS=CHS.filter(x=>x!==n);else CHS.push(n);
   CH=CHS[0]||null;OUVRE_JEU=true;vibrer(6);dessinerLoto();});
 V.querySelectorAll('[data-fl]').forEach(b=>b.onclick=async()=>{
-  if((e.euros||0)<100){bulle('Il te manque '+enEuros(100-(e.euros||0)));return;}
+  if((e.euros||0)<100){motOuverture('Il te manque '+enEuros(100-(e.euros||0)));return;}
   b.disabled=true;b.textContent='…';
   const r=await appelRPC('loto_flash',{p_joueur:e.id,p_grille:+b.dataset.fl});
   if(!r||r.erreur){b.disabled=false;b.textContent='+ CHANCE · 1 €';
-    bulle(r&&r.erreur==='deja'?'Cette grille a déjà son second Chance':'Impossible pour l’instant');return;}
+    motOuverture(r&&r.erreur==='deja'?'Cette grille a déjà son second Chance':'Impossible pour l’instant');return;}
   ETAT=r;if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}
   jouer('vente','moment');vibrer([16,30,16]);
-  bulle('Second numéro Chance ajouté à cette grille.');dessinerLoto();});
+  motOuverture('Second numéro Chance ajouté à cette grille.');dessinerLoto();});
 $('loFlash').onclick=()=>{
   const p=Array.from({length:25},(_,i)=>i+1);SEL=[];
   while(SEL.length<5)SEL.push(p.splice(Math.floor(Math.random()*p.length),1)[0]);
@@ -7035,24 +7035,24 @@ $('loFlash').onclick=()=>{
   ab.innerHTML='S’ABONNER 7 JOURS · 12 €';
   bo.parentNode.insertBefore(ab,bo.nextSibling);
   ab.onclick=async()=>{
-    if(SEL.length!==5||!CH){bulle('Choisis d’abord 5 numéros et 1 Chance');return;}
-    if((e.euros||0)<1200){bulle('Il te manque '+enEuros(1200-(e.euros||0)));return;}
+    if(SEL.length!==5||!CH){motOuverture('Choisis d’abord 5 numéros et 1 Chance');return;}
+    if((e.euros||0)<1200){motOuverture('Il te manque '+enEuros(1200-(e.euros||0)));return;}
     ab.disabled=true;ab.textContent='…';
     const r=await appelRPC('loto_abonner',{p_joueur:e.id,p_numeros:SEL,p_chance:CH});
     ab.disabled=false;ab.innerHTML='S’ABONNER 7 JOURS · 12 €';
-    if(!r||r.erreur){bulle(r&&r.erreur==='deja'?'Tu es déjà abonné cette semaine':
+    if(!r||r.erreur){motOuverture(r&&r.erreur==='deja'?'Tu es déjà abonné cette semaine':
       (r&&r.erreur==='pas_assez'?'Il te manque de quoi payer':'Grille invalide'));return;}
     ETAT=r;if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}
     SEL=[];CH=0;jouer('vente','moment');vibrer([20,40,20]);
-    bulle('Abonné ! Ta grille est jouée chaque soir pendant sept jours.');dessinerLoto();};}}
+    motOuverture('Abonné ! Ta grille est jouée chaque soir pendant sept jours.');dessinerLoto();};}}
 $('loOk').onclick=async()=>{
-  if(!loValide()){bulle('Choisis 5 à 8 numéros et au moins un numéro chance.');return;}
+  if(!loValide()){motOuverture('Choisis 5 à 8 numéros et au moins un numéro chance.');return;}
   const b=$('loOk');b.disabled=true;b.textContent='…';
   const r=await appelRPC('loto_jouer_multi',{p_joueur:e.id,p_numeros:SEL,p_chances:CHS});
   b.disabled=false;
-  if(!r||r.erreur){bulle(r&&r.erreur?String(r.erreur):'Le guichet n’a pas répondu.');dessinerLoto();return;}
+  if(!r||r.erreur){motOuverture(r&&r.erreur?String(r.erreur):'Le guichet n’a pas répondu.');dessinerLoto();return;}
   if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}
-  bulle(r.grilles+' grille'+(r.grilles>1?'s':'')+' validée'+(r.grilles>1?'s':'')+' · '+enEuros(r.prix));
+  motOuverture(r.grilles+' grille'+(r.grilles>1?'s':'')+' validée'+(r.grilles>1?'s':'')+' · '+enEuros(r.prix));
   SEL=[];CHS=[];CH=null;vibrer([16,30,16]);loto();};
 const maj=()=>{const el=$('loCompte');if(!el||!ETAT){clearInterval(LOTO_T);return;}const ms=new Date(ETAT.tirage_a)-Date.now();
 if(ms<=0){el.textContent='Tirage en cours…';clearInterval(LOTO_T);setTimeout(loto,20000);return;}const h=Math.floor(ms/36e5),m=Math.floor(ms%36e5/6e4),sc=Math.floor(ms%6e4/1e3);
@@ -7372,12 +7372,12 @@ $('page2Fond').querySelectorAll('canvas[data-pr]').forEach(cv=>{
     g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));});});
 $('page2Fond').querySelectorAll('[data-pj]').forEach(b=>b.onclick=async()=>{
   const j=PRESSE.find(x=>x.id===b.dataset.pj);if(!j)return;
-  if((e.euros||0)<j.prix){bulle('Il te manque '+enEuros(j.prix-(e.euros||0))+'.');return;}
+  if((e.euros||0)<j.prix){motOuverture('Il te manque '+enEuros(j.prix-(e.euros||0))+'.');return;}
   const r=await appelRPC('acheter_journal',{p_joueur:e.id,p_journal:j.id});
-  if(!r||r.erreur){bulle(r&&r.erreur?String(r.erreur):'Le kiosque n’a pas répondu.');return;}
+  if(!r||r.erreur){motOuverture(r&&r.erreur?String(r.erreur):'Le kiosque n’a pas répondu.');return;}
   if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}
   vibrer([14,26,14]);
-  bulle('« '+(r.gros||j.gros)+' »');
+  motOuverture('« '+(r.gros||j.gros)+' »');
   rendre();});
 $('page2Fond').querySelectorAll('canvas[data-tk]').forEach(cv=>{
   const f=TK_ICONE[cv.dataset.tk];if(!f)return;
@@ -7396,12 +7396,12 @@ $('page2Fond').querySelectorAll('[data-lo]').forEach(b=>b.onclick=async()=>{
     const j2=$('loJeu');if(j2){j2.style.display='';j2.scrollIntoView({behavior:'smooth',block:'start'});}}
   else if(q==='chance'){
     const c=$('page2Fond').querySelector('[data-fl]');
-    if(c)c.click(); else bulle('Il te faut d’abord une grille pour ce tirage.');}
+    if(c)c.click(); else motOuverture('Il te faut d’abord une grille pour ce tirage.');}
   else if(q==='abo'){
     const r=await appelRPC('loto_abonner',{p_joueur:e.id,p_numeros:SEL.length>=5?SEL.slice(0,5):null,p_chance:CHS[0]||null});
-    if(!r||r.erreur)bulle(r&&r.erreur?String(r.erreur):'L’abonnement n’a pas pu être pris.');
+    if(!r||r.erreur)motOuverture(r&&r.erreur?String(r.erreur):'L’abonnement n’a pas pu être pris.');
     else{if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}
-      bulle('Abonné 7 jours : une grille déposée chaque jour.');loto();}}
+      motOuverture('Abonné 7 jours : une grille déposée chaque jour.');loto();}}
 });
 /* LA PRESSE : la Gazette s'ouvre depuis le rayon */
 $('page2Fond').querySelectorAll('[data-pr]').forEach(b=>b.onclick=()=>{
@@ -7415,10 +7415,10 @@ $('barFermer').onclick=()=>{fermeA=Date.now();clearInterval(LOTO_T);$('page2').c
 $('page2Fond').querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{ONG=b.dataset.o;vibrer(8);rendre();});
 if(ONG==='loto')loto();
 $('page2Fond').querySelectorAll('[data-t]').forEach(b=>b.onclick=async()=>{const T=TICKETS.find(x=>x[0]===b.dataset.t);
-if(faits>=20){bulle('Vingt tickets aujourd’hui : reviens demain !');return;}
-if((e.euros||0)<T[2]){bulle('Il te manque '+enEuros(T[2]-(e.euros||0)));return;}
+if(faits>=20){motOuverture('Vingt tickets aujourd’hui : reviens demain !');return;}
+if((e.euros||0)<T[2]){motOuverture('Il te manque '+enEuros(T[2]-(e.euros||0)));return;}
 b.disabled=true;const d=await appelRPC('gratter_ticket',{p_joueur:e.id,p_ticket:T[0]});b.disabled=false;
-if(!d||d.erreur){bulle(d&&d.erreur==='limite'?'Vingt tickets aujourd’hui : reviens demain !':(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':(d&&d.erreur==='doucement'?'Un ticket à la fois !':'Le buraliste n’a pas pu')));return;}
+if(!d||d.erreur){motOuverture(d&&d.erreur==='limite'?'Vingt tickets aujourd’hui : reviens demain !':(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':(d&&d.erreur==='doucement'?'Un ticket à la fois !':'Le buraliste n’a pas pu')));return;}
 faits++;gratter(T,d);
 if(d.ticket){e.cos=e.cos||{};e.cos.costume_pirate=true;setTimeout(()=>{const v=document.querySelector('.gt');if(v)v.remove();ticketDOrTenue('pirate');},2600);}});};
 const gratter=(T,d)=>{const C=d.compo||{},n=('000000'+Math.floor(Math.random()*999999)).slice(-6),eu=(c)=>(c/100).toLocaleString('fr-FR')+' €';
@@ -7817,16 +7817,16 @@ async function ouvrirLaMariniere(){
       const v=VETEMENTS.find(z=>z.id===b.dataset.a);
       b.disabled=true;b.textContent='…';
       const r=await appelRPC('acheter_vetement',{p_joueur:e.id,p_article:v.id});
-      if(!r||r.erreur){bulle(r&&r.erreur?String(r.erreur):'La caisse est fermée.');rendre();return;}
+      if(!r||r.erreur){motOuverture(r&&r.erreur?String(r.erreur):'La caisse est fermée.');rendre();return;}
       if(typeof r.euros==='number'){e.euros=r.euros;}
       if(Array.isArray(r.garde_robe))VET_SAC=r.garde_robe;
-      sauver();majHaut();vibrer([14,30,14]);bulle(v.nom+' est à toi. Essaie-le.');rendre();});
+      sauver();majHaut();vibrer([14,30,14]);motOuverture(v.nom+' est à toi. Essaie-le.');rendre();});
     $('page2Fond').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{
       const v=VETEMENTS.find(z=>z.id===b.dataset.p);
       e.ap=Object.assign({},e.ap,v.ap);
       try{POSES.clear();}catch(x){}
       sauver();if(typeof envoyerMaPosition==='function')envoyerMaPosition();
-      vibrer([12,24,12]);bulle('Tu portes '+v.nom.toLowerCase()+'.');rendre();});
+      vibrer([12,24,12]);motOuverture('Tu portes '+v.nom.toLowerCase()+'.');rendre();});
     if(VET_ONG==='atelier')atelierBrancher(rendre);
     $('vtFermer').onclick=()=>{$('page2').classList.remove('on');};
   };
@@ -12108,15 +12108,15 @@ function etalRendre(){
   $('page2Fond').querySelectorAll('[data-v]').forEach(b=>b.onclick=async()=>{
     b.disabled=true;
     const r=await appelRPC('etal_vendre',{p_joueur:e.id,p_type:b.dataset.v,p_nb:null});
-    if(r&&r.erreur){bulle(r.erreur);b.disabled=false;return;}
-    if(r&&r.gain){bulle('+'+r.gain+' €');vibrer(10);}
+    if(r&&r.erreur){motOuverture(r.erreur);b.disabled=false;return;}
+    if(r&&r.gain){motOuverture('+'+r.gain+' €');vibrer(10);}
     try{await chargerSac();}catch(x){}
     etalRendre();});
   $('etSortir').onclick=()=>{$('page2').classList.remove('on');};
   $('etTout').onclick=async()=>{
     for(const k of aVendre){
       const r=await appelRPC('etal_vendre',{p_joueur:e.id,p_type:k,p_nb:null});
-      if(r&&r.gain)bulle('+'+r.gain+' €');}
+      if(r&&r.gain)motOuverture('+'+r.gain+' €');}
     vibrer([10,24,10]);
     try{await chargerSac();}catch(x){}
     etalRendre();};
@@ -22840,13 +22840,13 @@ ${costume?'<button id="crvCost">'+(porte?'Retirer la tenue':'Enfiler la tenue')+
 </div></div><div class="crv-pied"><div class="crv-bulle" id="crvBulle"></div><button class="crv-fermer" id="crvFermer">Ressortir sur le quai</button></div></div>`;
 $('page2Fond').querySelectorAll('canvas[data-crx]').forEach(c=>CRX.scene(c,c.dataset.crx));
 $('crvFermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-if(msg)bulle(msg);
+if(msg)motOuverture(msg);
 const bc=$('crvCost');if(bc)bc.onclick=()=>{e.ap=Object.assign({},e.ap||DEF_AP);if(e.ap.deguisement==='poulet')delete e.ap.deguisement;else e.ap.deguisement='poulet';
 sauver();envoyerSauvegarde(true);monterEnLigne(true);vibrer(20);rendre(e.ap.deguisement?'Cot cot codêêêt !':'Te revoilà en humain.');};
 $('page2Fond').querySelectorAll('[data-m]').forEach(b=>b.onclick=async()=>{const M=MENUS_CROUSTI.find(m=>m[0]===b.dataset.m);if(!M)return;
-if((e.euros||0)<M[3]){bulle('Il te manque '+enEuros(M[3]-(e.euros||0)));return;}
+if((e.euros||0)<M[3]){motOuverture('Il te manque '+enEuros(M[3]-(e.euros||0)));return;}
 b.disabled=true;const d=await appelRPC('commander_crousti',{p_joueur:e.id,p_menu:M[0]});
-if(!d||d.erreur){b.disabled=false;bulle(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':(d&&d.erreur==='doucement'?'Une commande à la fois !':'La cuisine n’a pas pu'));return;}
+if(!d||d.erreur){b.disabled=false;motOuverture(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':(d&&d.erreur==='doucement'?'Une commande à la fois !':'La cuisine n’a pas pu'));return;}
 if(typeof d.euros==='number')e.euros=d.euros;REPU_FIN=d.repu_jusqua?new Date(d.repu_jusqua).getTime():REPU_FIN;sauver();majHaut();jouer('vente','moment');vibrer(20);
 if(d.ticket){e.cos=e.cos||{};e.cos.costume_poulet=true;rendre();ticketDOr();}else rendre(M[4]?'Bon appétit ! Repu pour '+M[4]+' min.':'Rafraîchissant !');});};
 const ticketDOr=()=>{vibrer([40,60,40,60,120]);const t=document.createElement('div');t.className='crv-ticket';
@@ -23009,7 +23009,7 @@ let CRI_ETAL='poisson';                 /* LA CRIÉE A DEUX ÉTALS : la pêche, 
 const criPrix=()=>CRI_ETAL==='poisson'?PRIX_POISSON:PRIX_COMPTOIR;
 function ouvrirLaCriee(etal){try{return ouvrirLaCrieeReelle(etal);}catch(x){
 try{$('page2').classList.remove('on');}catch(y){}
-try{bulle('La criée a eu un souci : '+(x&&x.message?x.message:x));}catch(y){}
+try{motOuverture('La criée a eu un souci : '+(x&&x.message?x.message:x));}catch(y){}
 return;}}
 function ouvrirLaCrieeReelle(etal){CRI_ETAL=etal||'poisson';CPT=MODE_POISSON;CRI_VENTE={};$('page2Fond').className='';$('page2').classList.add('on');
 $('page2Fond').innerHTML=`<style>#cri{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#10263c;color:#f4ecd8;font-family:Georgia,serif}
@@ -24442,7 +24442,7 @@ d.nb?('+'+d.nb+' '+nom+' dans ton sac')
 if(!d.nb)setTimeout(()=>texteVolant(joueur.x,joueur.y-72,'Elle nourrira tes poules · bouton « Une gerbe »','#e8d9a0'),900);
 if(d.oiseaux)setTimeout(()=>texteVolant(joueur.x,joueur.y-70,'Les oiseaux sont passés pendant ton absence… −50 %','#ffb8a8'),1000);
 if(d.ticket){e.cos=e.cos||{};e.cos.costume_epouvantail=true;setTimeout(()=>ticketDOrTenue('epouvantail'),700);}}   /* sans épouvantail */
-else if(d&&d.erreur==='sac_plein'){texteVolant(joueur.x,joueur.y-58,'Sac plein : va vendre à la boutique','#ffd0a0');try{bulle&&bulle('Ton sac est plein.');}catch(x){}}
+else if(d&&d.erreur==='sac_plein'){texteVolant(joueur.x,joueur.y-58,'Sac plein : va vendre à la boutique','#ffd0a0');try{bulle&&motOuverture('Ton sac est plein.');}catch(x){}}
 else potRefus(d);}
 else if(VIVACES.includes(P.cult))await potArracher(i);
 else if(!P.eau&&J.arrosoir){POT_ARROSE=Date.now();vibrer(12);const d=await appelRPC('pot_arroser',{p_joueur:e.id,p_i:i});if(!potAdopter(d))potRefus(d);}
@@ -24508,16 +24508,16 @@ brancherDepots(()=>ouvrirLeGrainetier(onglet),bulle);
 $('page2Fond').querySelectorAll('[data-deb]').forEach(b=>b.onclick=async()=>{const k=b.dataset.deb;
 if(!b.dataset.sur){b.dataset.sur='1';b.textContent='Sûr ? Touche encore';setTimeout(()=>{if(b.isConnected){delete b.dataset.sur;b.textContent='Débloquer · '+enEuros(POT_VERROU[k]).replace(',00','');}},2500);return;}
 b.disabled=true;const d=await appelRPC('pot_debloquer',{p_joueur:e.id,p_cult:k});
-if(!d||d.erreur){b.disabled=false;bulle(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':'Madeleine n’a pas pu.');return;}
-potAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);ouvrirLeGrainetier('graines');setTimeout(()=>bulle(POT_CULT[k][0]+' débloqué ! Tu peux en semer.'),60);});
-$('page2Fond').querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{let art=b.dataset.a;if(art==='agrandir'&&b.classList.contains('pris')){bulle('Livre d’abord tous les matériaux au chantier.');return;}
+if(!d||d.erreur){b.disabled=false;motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':'Madeleine n’a pas pu.');return;}
+potAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);ouvrirLeGrainetier('graines');setTimeout(()=>motOuverture(POT_CULT[k][0]+' débloqué ! Tu peux en semer.'),60);});
+$('page2Fond').querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{let art=b.dataset.a;if(art==='agrandir'&&b.classList.contains('pris')){motOuverture('Livre d’abord tous les matériaux au chantier.');return;}
 if(art==='arroseur'){const libres=[];for(const i of POT_ORDRE.slice(0,J.nb))if(!(J.arroseurs||[]).includes(i))libres.push(i);
-if(!libres.length){bulle('Toutes tes parcelles ont déjà leur arroseur.');return;}art='arroseur:'+libres[0];}
+if(!libres.length){motOuverture('Toutes tes parcelles ont déjà leur arroseur.');return;}art='arroseur:'+libres[0];}
 b.disabled=true;const d=await appelRPC('pot_acheter',{p_joueur:e.id,p_article:art});
-if(d&&d.erreur==='materiaux'){b.disabled=false;bulle(matManque(d.manque));return;}
-if(!d||d.erreur){b.disabled=false;bulle(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':(d&&d.erreur==='deja'?'Tu l’as déjà.':(d&&d.erreur==='max'?'Tes trois rangs sont déjà gardés.':'Madeleine n’a pas pu.')));return;}
+if(d&&d.erreur==='materiaux'){b.disabled=false;motOuverture(matManque(d.manque));return;}
+if(!d||d.erreur){b.disabled=false;motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':(d&&d.erreur==='deja'?'Tu l’as déjà.':(d&&d.erreur==='max'?'Tes trois rangs sont déjà gardés.':'Madeleine n’a pas pu.')));return;}
 try{lireSacServeur();}catch(x){}potAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);ouvrirLeGrainetier(onglet);
-setTimeout(()=>bulle(art==='agrandir'?'Six parcelles de plus ! Va les bêcher.':(art.startsWith('arroseur')?'Arroseur installé.':(art==='epouvantail'?'Ton épouvantail est planté au bout du rang.':'Merci ! Bon jardinage.'))),60);});
+setTimeout(()=>motOuverture(art==='agrandir'?'Six parcelles de plus ! Va les bêcher.':(art.startsWith('arroseur')?'Arroseur installé.':(art==='epouvantail'?'Ton épouvantail est planté au bout du rang.':'Merci ! Bon jardinage.'))),60);});
 $('page2Fond').querySelectorAll('canvas[data-p]').forEach(cv=>{const D=2, W=cv.clientWidth||150, H=72;cv.width=W*D;cv.height=H*D;const g=cv.getContext('2d');
 g.setTransform(D*4,0,0,D*4,0,0);g.imageSmoothingEnabled=false;[0.3,0.7].forEach(f=>PLANTES[cv.dataset.p](g,W/4*f,H/4*0.83,3));});
 $('page2Fond').querySelectorAll('canvas[data-o]').forEach(cv=>{const D=2;cv.width=64*D;cv.height=64*D;const g=cv.getContext('2d');g.setTransform(D*4,0,0,D*4,0,0);
@@ -24622,8 +24622,8 @@ return '<div style="margin-top:6px">'+lignes+ou+(chantierComplet(cle)?'<div styl
 function brancherDepots(recharger,bulle){document.querySelectorAll('[data-dep]').forEach(b=>b.onclick=async()=>{b.disabled=true;
 const d=await appelRPC('chantier_deposer',{p_joueur:e.id,p_cle:b.dataset.dep});
 if(d&&d.chantiers)CHANTIERS=d.chantiers;
-if(!d||d.erreur){b.disabled=false;bulle(d&&d.erreur==='rien'?'Rien dans ton sac ne sert à ce chantier.':'Réessaie dans un instant.');return;}
-if(d.sac){e.sac=d.sac;try{majHaut();majPastille();}catch(x){}}sauver();jouer('pioche');vibrer(15);recharger();setTimeout(()=>bulle(d.depose+' matériaux déposés au chantier.'),60);});}
+if(!d||d.erreur){b.disabled=false;motOuverture(d&&d.erreur==='rien'?'Rien dans ton sac ne sert à ce chantier.':'Réessaie dans un instant.');return;}
+if(d.sac){e.sac=d.sac;try{majHaut();majPastille();}catch(x){}}sauver();jouer('pioche');vibrer(15);recharger();setTimeout(()=>motOuverture(d.depose+' matériaux déposés au chantier.'),60);});}
 function matTexte(besoin){if(!besoin)return '';return Object.entries(besoin).map(([k,n])=>{const a=(e.sac&&e.sac[k])||0, ok=a>=n;
 return '<span style="white-space:nowrap;color:'+(ok?'#2f6a2e':'#b8402a')+';font-weight:700">'+(ok?'✓ ':'')+n+' '+NOM_MAT[k][n>1?1:0]+'</span> <span style="opacity:.75">(tu en as '+a+')</span>';}).join(' · ');}
 function matManque(m){if(!m)return 'Il te manque des matériaux.';return 'Il te manque '+Object.entries(m).map(([k,n])=>n+' '+NOM_MAT[k][n>1?1:0]).join(' et ')+'. Va couper des arbres et casser des rochers !';}
@@ -24949,7 +24949,7 @@ function cuiFiche(k){
     b.disabled=true;b.textContent='…';
     const r=await appelRPC('cuisine_lancer',{p_joueur:e.id,p_recette:k});
     if(!r||r.erreur){b.disabled=false;b.textContent='METTRE AU FOUR';
-      try{bulle(String((r&&r.erreur)||'Impossible pour l’instant'));}catch(x){}return;}
+      try{motOuverture(String((r&&r.erreur)||'Impossible pour l’instant'));}catch(x){}return;}
     CUI=r;if(r.sac){e.sac=r.sac;}sauver();majHaut();vibrer([16,30,16]);
     cuiCarte();};
 }
@@ -25702,10 +25702,10 @@ function atRendre(){
   $('page2Fond').querySelectorAll('canvas[data-at]').forEach(cv=>atDessiner(cv,cv.dataset.at));
   $('page2Fond').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{AT_VUE=b.dataset.v;vibrer(6);atRendre();});
   $('page2Fond').querySelectorAll('[data-faire]').forEach(b=>b.onclick=async()=>{
-    if(b.classList.contains('pas')){bulle('Il te manque de quoi.');return;}
+    if(b.classList.contains('pas')){motOuverture('Il te manque de quoi.');return;}
     b.disabled=true;
     const r=await appelRPC('atelier_poser',{p_joueur:e.id,p_piece:b.dataset.faire,p_nb:1});
-    if(r&&r.erreur){bulle(r.erreur);b.disabled=false;return;}
+    if(r&&r.erreur){motOuverture(r.erreur);b.disabled=false;return;}
     vibrer(10);AT_VUE='encours';
     const d=await appelRPC('atelier_etat',{p_joueur:e.id});if(d&&!d.erreur)AT_ETAT=d;
     atRendre();});
@@ -25713,7 +25713,7 @@ function atRendre(){
   $('atPrendre').onclick=async()=>{
     const r=await appelRPC('atelier_prendre',{p_joueur:e.id});
     if(r&&r.rendu){const l=Object.entries(r.rendu).map(([k,n])=>n+' '+(AT_NOMS[k]||k)).join(', ');
-      if(l)bulle('Tu récupères '+l+'.');}
+      if(l)motOuverture('Tu récupères '+l+'.');}
     vibrer([10,24,10]);
     try{await chargerSac();}catch(x){}
     const d=await appelRPC('atelier_etat',{p_joueur:e.id});if(d&&!d.erreur)AT_ETAT=d;
@@ -26360,25 +26360,25 @@ $('poulSortir').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on')
 const cvP=document.querySelector('canvas[data-poul]');if(cvP){cvP.width=280;cvP.height=264;const q=cvP.getContext('2d');q.imageSmoothingEnabled=false;q.drawImage(graverPoulailler(),0,0,280,264);}
 const bulle=(t)=>{const b=$('poulBulle');b.textContent=t;b.style.opacity=1;clearTimeout(b._t);b._t=setTimeout(()=>b.style.opacity=0,2600);};
 brancherDepots(()=>ouvrirLePoulailler(),bulle);
-$('page2Fond').querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{const a=b.dataset.a;if(b.classList.contains('pris')){if(a==='poulailler'||a==='agrandir')bulle('Livre d’abord tous les matériaux au chantier.');return;}b.disabled=true;let d;
+$('page2Fond').querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{const a=b.dataset.a;if(b.classList.contains('pris')){if(a==='poulailler'||a==='agrandir')motOuverture('Livre d’abord tous les matériaux au chantier.');return;}b.disabled=true;let d;
 if(a==='ramasser'){d=await appelRPC('poul_ramasser',{p_joueur:e.id});
 if(d&&!d.erreur){
 if(d.sac)e.sac=d.sac;
 poulAdopter(d.etat);try{lireSacServeur();majPastille();}catch(x){}sauver();
 jouer('vente','moment');vibrer([20,40,20]);ouvrirLePoulailler();
-setTimeout(()=>bulle((d.oeufs?d.oeufs+' œuf'+(d.oeufs>1?'s':'')+' dans ton sac':'')
+setTimeout(()=>motOuverture((d.oeufs?d.oeufs+' œuf'+(d.oeufs>1?'s':'')+' dans ton sac':'')
 +(d.or?(d.oeufs?' · ':'')+'✨ '+d.or+' œuf'+(d.or>1?'s':'')+' d’or !':'')
 +(d.reste?' · il en reste '+d.reste+' au nid (sac plein)':'')),60);
 b.disabled=false;return;}
-if(d&&d.erreur==='sac_plein'){b.disabled=false;bulle('Ton sac déborde : va vendre avant de ramasser.');return;}
-if(d&&d.erreur==='rien'){b.disabled=false;bulle('Pas d’œuf au nid pour l’instant.');return;}
+if(d&&d.erreur==='sac_plein'){b.disabled=false;motOuverture('Ton sac déborde : va vendre avant de ramasser.');return;}
+if(d&&d.erreur==='rien'){b.disabled=false;motOuverture('Pas d’œuf au nid pour l’instant.');return;}
 }
 else if(a==='gerbe'||a==='grain')d=await appelRPC('poul_nourrir',{p_joueur:e.id,p_mode:a});
 else d=await appelRPC('poul_acheter',{p_joueur:e.id,p_article:a});
-if(d&&d.erreur==='materiaux'){b.disabled=false;bulle(matManque(d.manque));return;}
-if(!d||d.erreur){b.disabled=false;bulle(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':(d&&d.erreur==='repues'?'Elles ont déjà de quoi manger pour longtemps.':(d&&d.erreur==='plein'?'Le poulailler est plein.':'Réessaie dans un instant.')));return;}
+if(d&&d.erreur==='materiaux'){b.disabled=false;motOuverture(matManque(d.manque));return;}
+if(!d||d.erreur){b.disabled=false;motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':(d&&d.erreur==='repues'?'Elles ont déjà de quoi manger pour longtemps.':(d&&d.erreur==='plein'?'Le poulailler est plein.':'Réessaie dans un instant.')));return;}
 poulAdopter(d);try{lireSacServeur();}catch(x){}sauver();vibrer(15);ouvrirLePoulailler();
-setTimeout(()=>bulle(a==='poulailler'?'Le poulailler est à toi ! Achète tes premières poules.':(a==='poule'?'Une nouvelle poule !':(a==='agrandir'?'Le poulailler est plus grand.':'Elles picorent, contentes.'))),60);});
+setTimeout(()=>motOuverture(a==='poulailler'?'Le poulailler est à toi ! Achète tes premières poules.':(a==='poule'?'Une nouvelle poule !':(a==='agrandir'?'Le poulailler est plus grand.':'Elles picorent, contentes.'))),60);});
 }
 setTimeout(()=>poulCharger(),2800);
 setInterval(()=>{if(CARTE==='village'&&document.visibilityState==='visible')poulCharger();},90000);
