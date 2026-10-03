@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-1352';
+var MA_VERSION='2026-10-03-1356';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -7802,7 +7802,7 @@ async function ouvrirLaMariniere(){
     /* les vignettes : le personnage habillé de l'article */
     $('page2Fond').querySelectorAll('canvas[data-v]').forEach(cv=>{
       const v=VETEMENTS.find(z=>z.id===cv.dataset.v);if(!v)return;
-      const ap=Object.assign({},e.ap,v.ap);
+      const ap=sansDeguisement(Object.assign({},e.ap,v.ap));
       try{
         const img=poseDe(ap,'bas',0);
         const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
@@ -15667,6 +15667,13 @@ return c;
 };
 const STYLE_FIN=()=>!(typeof REG!=='undefined'&&REG.styleFin===false);   /* le pixel fin, pour tous (le classique reste au choix) */
 const PLAFOND_PLANCHES=24;
+/* L'APERÇU D'UNE BOUTIQUE : on retire le déguisement, sinon l'épouvantail
+   s'affiche à la place des vêtements qu'on essaie. */
+function sansDeguisement(ap){
+  const a=Object.assign({},ap||{});
+  delete a.deguisement;delete a.maillot;
+  return a;
+}
 function planche(ap){
 const cle=clePose(ap);
 let P=POSES.get(cle);
@@ -17326,7 +17333,7 @@ majChoix();dessinerLesTetes();dessinerApercu();
 });
 }
 function ouvrirLook(){
-LOOK.ap=Object.assign({},DEF_AP,e.ap||{});
+LOOK.ap=sansDeguisement(Object.assign({},DEF_AP,e.ap||{}));   /* la boutique montre les vêtements, pas le déguisement */
 LOOK.t0=Date.now();LOOK.dir='bas';LOOK.marche=true;
 $('feuille').innerHTML=
 '<div class="scene"><canvas id="vg-c"></canvas></div>'+
@@ -21854,7 +21861,8 @@ const neuf={};
 miennes.forEach(p=>{neuf[p]=true;});
 e.cos=neuf;
 ETOILES_VENDUES=typeof d.etoiles==='number'?d.etoiles:ETOILES_VENDUES;
-if(e.ap&&e.ap.deguisement&&!neuf['costume_poulet']){delete e.ap.deguisement;monterEnLigne(true);}
+/* chaque déguisement a sa tenue : on ne le retire que si elle manque vraiment */
+if(e.ap&&e.ap.deguisement&&!neuf['costume_'+e.ap.deguisement]){delete e.ap.deguisement;monterEnLigne(true);}
 if(e.ap&&e.ap.coupe&&!neuf[e.ap.coupe]){delete e.ap.coupe;monterEnLigne(true);}
 if(e.ap&&e.ap.teinte&&!neuf[e.ap.teinte]){delete e.ap.teinte;monterEnLigne(true);}
 COMETES_VENDUES=typeof d.cometes==='number'?d.cometes:COMETES_VENDUES;
@@ -21969,7 +21977,7 @@ clearInterval(CAB_T);let k=0;const dirs=['bas','bas-droite','droite','haut-droit
 CAB_T=setInterval(()=>{if(!$('page2').classList.contains('on')){clearInterval(CAB_T);return;}k=(k+1)%8;dessinerCabine(dirs[k]);},700);
 }
 function skiBulle(t){const b=$('skiBulle');if(!b)return;b.textContent=t;b.classList.add('on');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),2600);}
-function apAvec(slot,id){const ap=Object.assign({},e.ap||DEF_AP);ap.ski=Object.assign({},(e.ap&&e.ap.ski)||{});if(id)ap.ski[slot]=id;else delete ap.ski[slot];return ap;}
+function apAvec(slot,id){const ap=sansDeguisement(Object.assign({},e.ap||DEF_AP));ap.ski=Object.assign({},(e.ap&&e.ap.ski)||{});if(id)ap.ski[slot]=id;else delete ap.ski[slot];return ap;}
 function dessinerCabine(dir){const cv=$('skiCabine');if(!cv||!CAT_SEL)return;const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
 const L0=40,H0=50,E=((cv.clientWidth||96)/L0)*D;cv.width=L0*E;cv.height=H0*E;const g=cv.getContext('2d');g.setTransform(E,0,0,E,0,0);g.imageSmoothingEnabled=false;
 g.fillStyle='rgba(18,53,106,.14)';g.beginPath();g.ellipse(L0/2,H0-5,10,3,0,0,7);g.fill();
@@ -22127,7 +22135,7 @@ cadre();
 }
 function partirSkier(ep){
 try{const c=document.createElement('canvas');c.width=128;c.height=160;const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
-const ap=Object.assign({},e.ap||DEF_AP);if(ap.ski){ap.ski=Object.assign({},ap.ski);delete ap.ski.skis;}
+const ap=sansDeguisement(Object.assign({},e.ap||DEF_AP));if(ap.ski){ap.ski=Object.assign({},ap.ski);delete ap.ski.skis;}
 const av=GESTE;GESTE={t:0};sprite(g,32,70,ap,'haut',0,false);GESTE=av;sessionStorage.setItem('bdl.skieur',c.toDataURL());}catch(x){}
 try{sauver();envoyerSauvegarde(true);}catch(x){}
 location.href='ski.html?e='+ep+'&v='+encodeURIComponent(window.MA_VERSION||'');
