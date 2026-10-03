@@ -1034,149 +1034,49 @@ if(marque==='fard')R(dx-1,YT+8,3,1,'#c9707a');
 }
 }
 const monAp=()=>Object.assign({},DEF_AP,(e&&e.ap)||{});
-const CASE=16, L=52, H=46;
+const CASE=16, L=44, H=44;   /* une seule salle : 704 x 704 */
 let MUR=[], DALLE=[], OMBRE=[], OBJETS=[], BANDES={}, niveau=1;
 const alea2=(a,b)=>alea(a*7.13+b*3.71+niveau*13.7);
 const PALIERS=[
-{nom:'les premières galeries',
-roche:['#8a7860','#6b5c47','#4a3f30'],sol:['#5e4f3e','#523f30','#463a2c'],
-fond:'#241d16',accent:'#7fae5c',mousse:true},
-{nom:'la roche dure',
-roche:['#7c7164','#5c554a','#3c372f'],sol:['#544a3f','#483f36','#3c352d'],
-fond:'#1e1a15',accent:'#a8791f'},
-{nom:'les veines profondes',
-roche:['#6a6b76','#4c4d58','#32333c'],sol:['#494a54','#3f4049','#36373f'],
-fond:'#171820',accent:'#5fc79c'},
-{nom:'sous la nappe',
-roche:['#5f5972','#453f58','#2e2940'],sol:['#443f58','#3a354c','#322d42'],
-fond:'#13111c',accent:'#6fd8e0',eau:true},
-{nom:'le fond du monde',
-roche:['#4f4762','#37304a','#221d31'],sol:['#3a3450','#322c46','#2a253c'],
-fond:'#0e0b16',accent:'#c88aff',cristaux:true}
+{nom:'la salle de basalte',
+ roche:['#2d3034','#232629','#191b1d'],sol:['#1e2022','#191b1d','#141618'],
+ fond:'#0a0b0c',accent:'#5fc79c'}
 ];
-const palier=()=>{ /* une seule galerie : toujours le premier palier */ niveau=1;
-const N=NUANCES[Math.min(4,Math.floor((niveau-1)/4))];
-const P=PALIERS[Math.min(4,Math.floor((niveau-1)/4))];
+/* LE BASALTE : cinq tons pour la roche, cinq pour le sol, du plus clair
+   au plus sombre. C'est la seule nuance : une seule salle. */
+const NUANCES=[{
+  roche:['#3a3e42','#2d3034','#232629','#191b1d','#0f1113'],
+  sol:  ['#2a2d30','#1e2022','#191b1d','#141618','#0a0b0c'],
+  fond:'#070808', accent:'#5fc79c'
+}];
+const palier=()=>{ /* une seule salle : toujours la même nuance */ niveau=1;
+const N=NUANCES[0];
+const P=PALIERS[0];
 return {nom:P.nom,eau:P.eau,cristaux:P.cristaux,mousse:P.mousse,
-roche:[N.roche[1],N.roche[2],N.roche[3]],
-sol:[N.sol[1],N.sol[2],N.sol[3]],
+roche:N.roche,
+sol:N.sol,
 fond:N.fond,accent:N.accent};
 };
+const nuance=palier;      /* le reste du jeu appelle nuance() */
+/* la roche barre le passage ; hors de la salle aussi */
+const mur=(x,y)=>(x<0||y<0||x>=L||y>=H)?1:MUR[y][x];
 const EST_RELAIS=(n)=>n===1||n%5===0;
 function creuser(){
-MUR=Array.from({length:H},()=>Array.from({length:L},()=>1));
-DALLE=Array.from({length:H},()=>Array.from({length:L},()=>0));
-const creux=(x,y)=>{if(x>1&&y>2&&x<L-2&&y<H-2)MUR[y][x]=0;};
-const salles=[];
-const n=7+((alea(niveau*3)*4)|0);
-for(let i=0;i<n;i++){
-const w=7+((alea(i*3.1+niveau)*7)|0), h=5+((alea(i*7.7+niveau)*6)|0);
-const cx=8+((alea(i*5.3+niveau)*(L-17))|0), cy=8+((alea(i*9.1+niveau)*(H-18))|0);
-salles.push([cx,cy]);
-for(let a=-w;a<=w;a++)for(let b=-h;b<=h;b++){
-if(Math.abs(a)>=w-1&&Math.abs(b)>=h-1)continue;
-if(Math.abs(a)===w&&Math.abs(b)>=h-2)continue;
-if(Math.abs(b)===h&&Math.abs(a)>=w-2)continue;
-creux(cx+a,cy+b);
+  /* UNE SEULE SALLE, VIDE. Le pourtour est de la roche, le reste est dégagé.
+     Plus de galeries creusées au hasard : on posera tout à la main. */
+  MUR=Array.from({length:H},()=>Array.from({length:L},()=>0));
+  DALLE=Array.from({length:H},()=>Array.from({length:L},()=>0));
+  OMBRE=Array.from({length:H},()=>Array.from({length:L},()=>0));
+  OBJETS=[];BANDES={};
+  for(let y=0;y<H;y++)for(let x=0;x<L;x++){
+    if(x<2||y<3||x>L-3||y>H-3)MUR[y][x]=1;      /* la bordure de roche */
+    else DALLE[y][x]=(alea2(x,y)*4)|0;          /* la variante de dalle */
+  }
+  /* l'ombre portée sous chaque bloc de roche */
+  for(let y=1;y<H;y++)for(let x=0;x<L;x++)
+    if(!MUR[y][x]&&MUR[y-1][x])OMBRE[y][x]=1;
 }
-}
-for(let i=1;i<salles.length;i++){
-let [x,y]=salles[i-1];const [tx,ty]=salles[i];
-while(x!==tx){x+=Math.sign(tx-x);
-creux(x,y-1);creux(x,y);creux(x,y+1);
-if(alea2(x,y)<.28)creux(x,y+2);}
-while(y!==ty){y+=Math.sign(ty-y);
-creux(x-1,y);creux(x,y);creux(x+1,y);
-if(alea2(x*3,y)<.28)creux(x+2,y);}
-}
-for(let b=2;b<H-2;b++)for(let a=2;a<L-2;a++){
-if(!MUR[b][a])continue;
-let voisins=0;
-if(MUR[b-1][a])voisins++;
-if(MUR[b+1][a])voisins++;
-if(MUR[b][a-1])voisins++;
-if(MUR[b][a+1])voisins++;
-if(voisins<=1)MUR[b][a]=0;
-}
-for(let b=0;b<H;b++)for(let a=0;a<L;a++){
-const r=alea2(a,b);
-DALLE[b][a]=r<.58?0:r<.82?1:r<.94?2:3;
-}
-OMBRE=Array.from({length:H},()=>Array.from({length:L},()=>0));
-for(let b=0;b<H;b++)for(let a=0;a<L;a++){
-if(MUR[b][a])continue;
-let o=0;
-if(mur(a,b-1))o|=1;      /* un mur au nord : sa face nous ombre */
-if(mur(a-1,b))o|=2;
-if(mur(a+1,b))o|=4;
-OMBRE[b][a]=o;
-}
-OBJETS=[];
-const libres=[];
-for(let b=3;b<H-2;b++)for(let a=2;a<L-2;a++)if(!MUR[b][a])libres.push([a,b]);
-const prend=()=>libres.splice((Math.random()*libres.length)|0,1)[0];
-const poser=(t,n,extra)=>{for(let i=0;i<n;i++){const p=prend();
-if(p)OBJETS.push(Object.assign({t,a:p[0],b:p[1],coups:0,g:(alea2(p[0],p[1])*3)|0},extra||{}));}};
-poser('charbon',16);poser('fer',14);poser('cuivre',10);poser('or',4);
-poser('caillou',52);          /* la roche se ramasse ici, plus à la surface */
-poser('gravats',18);          /* (plus de stalagmites, de tonneaux, de caisses ni de champignons) */
-if(palier().eau)poser('flaque',12);
-if(palier().cristaux)poser('cristal',14);
-const A=salles[0], B=salles[1]||salles[0];
-let rx=A[0], ry=A[1];
-while(rx!==B[0]){rx+=Math.sign(B[0]-rx);}
-while(ry!==B[1]){ry+=Math.sign(B[1]-ry);}
-for(let b=3;b<H-2;b++)for(let a=2;a<L-2;a++){
-if(MUR[b][a]||!mur(a,b-1))continue;
-if(alea2(a*3,b*5)<0.09)OBJETS.push({t:'torche',a,b});
-}
-for(let b=4;b<H-3;b++)for(let a=3;a<L-3;a++){
-if(MUR[b][a]||!mur(a-1,b)||!mur(a+1,b))continue;
-if(alea2(a*11,b*7)<0.12)OBJETS.push({t:'etai',a,b});
-}
-const der=salles[salles.length-1];
-OBJETS.push({t:'echelle',a:der[0],b:der[1]});
-const pre=salles[0];
-OBJETS.sort((x,y)=>x.b-y.b);
-BANDES={};
-OBJETS.forEach(o=>{(BANDES[o.b]=BANDES[o.b]||[]).push(o);});
-joueur.x=pre[0]*CASE+CASE/2;joueur.y=pre[1]*CASE+CASE/2;
-if(bloque(joueur.x,joueur.y)){
-let trouve=null;
-for(let r=1;r<8&&!trouve;r++)
-for(let b=-r;b<=r&&!trouve;b++)for(let a=-r;a<=r&&!trouve;a++){
-const x=(pre[0]+a)*CASE+CASE/2, y=(pre[1]+b)*CASE+CASE/2;
-if(!mur(pre[0]+a,pre[1]+b)&&!bloque(x,y))trouve=[x,y];
-}
-if(trouve){joueur.x=trouve[0];joueur.y=trouve[1];}
-}
-peupler();
-}
-const mur=(a,b)=>(a<0||b<0||a>=L||b>=H)?1:MUR[b][a];
-const DUR=['tonneau','caisse','stalagmite','wagonnet','etai','ascenseur'];
-const bloque=(x,y)=>{
-if(mur((x/CASE)|0,(y/CASE)|0))return true;
-return OBJETS.some(o=>!o.mort&&DUR.includes(o.t)&&
-Math.abs(o.a*CASE+CASE/2-x)<11&&Math.abs(o.b*CASE+CASE/2-y)<9);
-};
-const NUANCES=[
-{roche:['#9aa0a8','#7e848d','#626871','#484d55','#2f3339'],
-sol:  ['#6e747c','#5b6068','#4a4f56','#3a3e44','#282b30'],
-fond:'#14171b',accent:'#8fbf64'},
-{roche:['#9c917f','#7e7466','#5f584d','#454038','#2d2a24'],
-sol:  ['#6f6554','#5b5243','#484135','#383228',"#26221a"],
-fond:'#17140f',accent:'#c9a24a'},
-{roche:['#8d909c','#71747f','#555863','#3e414a','#282a31'],
-sol:  ['#5f626d','#4d505a','#3e4048','#313339','#212227'],
-fond:'#121318',accent:'#5fc79c'},
-{roche:['#847a9c','#68607e','#4d4661','#383247','#242030'],
-sol:  ['#57506b','#474159','#393447','#2d2937','#1e1b26'],
-fond:'#0f0d15',accent:'#6fd8e0'},
-{roche:['#7a6b96','#5f5378','#463c5b','#312945','#1f192e'],
-sol:  ['#4d4266','#3f3654','#332b45','#282136','#181425'],
-fond:'#0a0812',accent:'#c88aff'}
-];
-const nuance=()=>NUANCES[Math.min(4,Math.floor((niveau-1)/4))];
+
 function toile(w,h,f){
 const c=document.createElement('canvas');
 c.width=w*DPR*2;c.height=h*DPR*2;
@@ -1202,27 +1102,27 @@ const [c0,c1,c2,c3,c4]=N.roche;     /* c0 la plus claire, c4 la plus sombre */
 const [s0,s1,s2,s3,s4]=N.sol;
 const A=alea;
 const dalle=(v)=>toile(CASE,CASE,({P,R,trame})=>{
-trame(0,0,CASE,CASE,s2,s3,0.42);
-for(let k=0;k<26;k++){
-const x=(alea(v*9.1+k*3.7)*CASE)|0, y=(alea(v*5.3+k*7.1)*CASE)|0;
-const t=alea(v*2.3+k*1.9);
-P(x,y,t<0.42?s1:(t<0.78?s3:s0));
-if(t>0.9){P(x+1,y,s3);P(x,y+1,s3);}
-}
-for(let f=0;f<2+(v%2);f++){
-let x=(alea(v*11+f*13)*CASE)|0, y=(alea(v*17+f*7)*CASE)|0;
-const n=4+((alea(v+f)*5)|0);
-for(let k=0;k<n;k++){
-P(x,y,s4);
-x+=alea(v*3+f*2+k)<0.5?1:0;
-y+=alea(v*5+f*3+k)<0.6?1:0;
-if(x>=CASE||y>=CASE)break;
-}
-}
-for(let k=0;k<5;k++){
-const x=(alea(v*23+k*5)*CASE)|0, y=(alea(v*29+k*3)*CASE)|0, l=2+((alea(v+k)*3)|0);
-for(let q=0;q<l&&x+q<CASE;q++)P(x+q,y,s0);
-}
+  /* LE BASALTE : grain très sombre, éclats plus clairs, fissures nettes */
+  trame(0,0,CASE,CASE,s1,s2,0.5);
+  for(let k=0;k<34;k++){
+    const x=(alea(v*9.1+k*3.7)*CASE)|0, y=(alea(v*5.3+k*7.1)*CASE)|0;
+    const t=alea(v*2.3+k*1.9);
+    P(x,y,t<0.46?s0:(t<0.8?s2:s3));
+    if(t>0.93){P(x+1,y,s3);P(x,y+1,s2);}
+  }
+  /* les fissures */
+  for(let f=0;f<1+(v%2);f++){
+    let x=(alea(v*11+f*13)*CASE)|0, y=(alea(v*17+f*7)*CASE)|0;
+    let a=alea(v*3+f)*6.283;
+    const n=6+((alea(v+f)*7)|0);
+    for(let k=0;k<n;k++){
+      a+=(alea(v*5+f*3+k)-0.5)*1.1;
+      x+=Math.round(Math.cos(a));y+=Math.round(Math.sin(a));
+      if(x<0||y<0||x>=CASE||y>=CASE)break;
+      P(x,y,s4);
+      if(alea(k*3+v)<0.3)P(x,y-1,s3);
+    }
+  }
 });
 const dessus=(v)=>toile(CASE,CASE,({P,R,trame})=>{
 trame(0,0,CASE,CASE,c2,c3,0.4);
