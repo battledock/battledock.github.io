@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-0455';
+var MA_VERSION='2026-10-04-0510';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2239,12 +2239,16 @@ return spriteClassique(g,x,y,ap0,dir,pas,bouge);
 }
 function spriteClassique(g,x,y,ap0,dir,pas,bouge){
 const p=Object.assign({},DEF_AP,ap0||{});
+appliquerDeguisement(p);                 /* les tenues valent aussi pour le dessin classique */
 const P=PALETTES;
+/* LES TENUES DONNENT DES COULEURS EN HEXADÉCIMAL, pas des index de palette :
+   sans ça, la veste du garde forestier retombait sur le rouge par défaut. */
+const couleurOu=(v,liste)=>typeof v==='string'&&v[0]==='#'?v:(liste[v]||liste[0]);
 const peau=P.peau[p.peau]||P.peau[2], peauO=teint(peau,-24), peauC=teint(peau,14), peauT=teint(peau,-52);
 const chev=P.cheveux[p.cheveux]||P.cheveux[2], chevC=teint(chev,22), chevO=teint(chev,-22);
-const veste=P.veste[p.veste]||P.veste[0], vesteC=teint(veste,20), vesteO=teint(veste,-26), vesteT=teint(veste,-48);
-const pant=P.pantalon[p.pantalon]||P.pantalon[0], pantO=teint(pant,-18), pantC=teint(pant,12);
-const chau=P.chaussures[p.chaussures]||P.chaussures[0], chauC=teint(chau,20);
+const veste=couleurOu(p.veste,P.veste), vesteC=teint(veste,20), vesteO=teint(veste,-26), vesteT=teint(veste,-48);
+const pant=couleurOu(p.pantalon,P.pantalon), pantO=teint(pant,-18), pantC=teint(pant,12);
+const chau=couleurOu(p.chaussures,P.chaussures), chauC=teint(chau,20);
 const oeil=P.yeux[p.yeux]||P.yeux[0];
 const coiffe=COIFFES[p.coiffe]||'courts', barbe=BARBES[p.barbe]||'aucune';
 const chapeau=CHAPEAUX[p.chapeau]||'aucun', sacC=P.sac[p.sac]||'aucun';
@@ -24492,9 +24496,8 @@ box-shadow:0 3px 7px rgba(43,36,25,.18);color:inherit;position:relative}
 #page2Fond.vest .c:nth-child(3n+2){transform:rotate(1deg)}
 #page2Fond.vest .c:nth-child(3n){transform:rotate(-.5deg)}
 #page2Fond.vest .c canvas{width:100%;height:62px;image-rendering:pixelated;background:#f6f1e6;display:block}
-#page2Fond.vest .c b{display:block;font:700 10px 'Baloo 2','Trebuchet MS',system-ui,sans-serif;
-color:#2b2419;margin-top:6px;letter-spacing:.5px;text-transform:uppercase;
-overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#page2Fond.vest .c b{display:block;font:700 10px/1.25 'Baloo 2','Trebuchet MS',system-ui,sans-serif;
+color:#2b2419;margin-top:6px;letter-spacing:.3px;text-transform:uppercase;min-height:25px}
 #page2Fond.vest .c.on{box-shadow:0 3px 7px rgba(43,36,25,.18),inset 0 0 0 2px #b4302c}
 #page2Fond.vest .c.no{background:none;box-shadow:none;border:2px dashed rgba(43,36,25,.22);
 padding:9px 5px 8px;transform:none}
@@ -24549,7 +24552,7 @@ function ouvrirLeVestiaire(){
 if(!document.getElementById('cssVest')){const st=document.createElement('style');st.id='cssVest';st.textContent=CSS_VEST;document.head.appendChild(st);}
 const a=(e.cos||{}), ai=(k)=>!k||a['costume_'+k];
 const porte=(e.ap&&e.ap.deguisement)||'';
-if(VEST_SEL===null)VEST_SEL=porte;
+if(VEST_SEL===null)VEST_SEL=porte;   /* au premier coup d'oeil : la tenue portee */
 const LISTE=TENUES.filter(t=>!t.fete||FETE_AUJOURDHUI);
 const eues=LISTE.filter(t=>t.k&&ai(t.k)).length, tot=LISTE.filter(t=>t.k).length;
 const sel=LISTE.find(t=>t.k===VEST_SEL)||LISTE[0];
