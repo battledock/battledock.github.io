@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-0750';
+var MA_VERSION='2026-10-04-0810';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -19996,6 +19996,77 @@ h+='<div class="ecart">les points suivent la rareté des prises</div>';
 C.innerHTML=h;
 C.querySelectorAll('canvas[data-f]').forEach(cv=>clsPoisson(cv,cv.dataset.f));
 }
+/* ================= DONNER SON AVIS =================
+   Le tableau du port le promettait depuis toujours sans rien ouvrir.
+   Trois genres, un champ, et c'est posé en base avec la version et la carte. */
+const CSS_AVIS=`#avi{position:absolute;inset:0;background:#15212e;display:flex;flex-direction:column;
+font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;overflow:hidden}
+#avi .hd{flex:none;padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 12px;display:flex;align-items:flex-start;gap:10px}
+#avi .hd .tx{flex:1;min-width:0}
+#avi .hd small{display:block;font:700 9px ui-monospace,monospace;letter-spacing:3px;color:#e8c06a}
+#avi .hd b{display:block;font:700 23px 'Baloo 2',sans-serif;color:#f6efdc;margin-top:4px}
+#avi .hd button{border:0;background:none;color:#e8c06a;font:700 20px 'Baloo 2',sans-serif;padding:0 2px}
+#avi .corps{flex:1;overflow-y:auto;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 20px)}
+#avi .mot{font:italic 13px/1.6 Georgia,serif;color:#8fa6bd;padding:0 18px 14px}
+#avi .seg{display:flex;gap:7px;padding:0 18px 14px}
+#avi .seg button{flex:1;border:0;border-radius:13px;padding:10px 6px;font:700 12px 'Baloo 2',sans-serif;
+background:rgba(255,255,255,.07);color:#8fa6bd}
+#avi .seg button.on{background:#e8c06a;color:#2a2016}
+#avi textarea{display:block;width:calc(100% - 36px);margin:0 18px;min-height:150px;border:0;border-radius:14px;
+background:rgba(255,255,255,.07);color:#f6efdc;padding:14px;resize:none;
+font:15px/1.5 'Baloo 2','Trebuchet MS',system-ui,sans-serif}
+#avi .cpt{text-align:right;padding:6px 18px 0;font:11px ui-monospace,monospace;color:#5f7489}
+#avi .env{display:block;width:calc(100% - 36px);margin:14px 18px 0;border:0;border-radius:14px;padding:13px;
+background:#e8c06a;color:#2a2016;font:700 15px 'Baloo 2',sans-serif}
+#avi .env:disabled{background:rgba(255,255,255,.07);color:#5f7489}
+#avi .fin{text-align:center;padding:40px 24px}
+#avi .fin b{display:block;font:700 20px 'Baloo 2',sans-serif;color:#f6efdc}
+#avi .fin em{display:block;font:italic 13px/1.6 Georgia,serif;color:#8fa6bd;margin-top:8px}`;
+let AVIS_GENRE='avis', AVIS_TEXTE='';
+const AVIS_MOT={avis:'Ce que tu en penses, en vrac. Ce qui te plaît, ce qui t’ennuie.',
+bug:'Qu’est-ce qui s’est passé, et où ? Plus tu es précis, plus vite je trouve.',
+idee:'Ce que tu aimerais voir au port. Les meilleures idées finissent dans le jeu.'};
+function ouvrirLesAvis(){
+if(!document.getElementById('cssAvis')){const st=document.createElement('style');
+st.id='cssAvis';st.textContent=CSS_AVIS;document.head.appendChild(st);}
+$('page2Fond').className='';$('page2').classList.add('on');
+const garde=(AVIS_TEXTE||'');
+$('page2Fond').innerHTML='<div id="avi">'+
+'<div class="hd"><span class="tx"><small>LE TABLEAU DU PORT</small><b>Donner ton avis</b></span>'+
+'<button id="aviX">✕</button></div><div class="corps">'+
+'<div class="seg">'+
+'<button data-g="avis"'+(AVIS_GENRE==='avis'?' class="on"':'')+'>Un avis</button>'+
+'<button data-g="bug"'+(AVIS_GENRE==='bug'?' class="on"':'')+'>Un bug</button>'+
+'<button data-g="idee"'+(AVIS_GENRE==='idee'?' class="on"':'')+'>Une idée</button></div>'+
+'<div class="mot">'+AVIS_MOT[AVIS_GENRE]+'</div>'+
+'<textarea id="aviT" maxlength="1200" placeholder="Écris ici…">'+echapperT(garde)+'</textarea>'+
+'<div class="cpt"><i id="aviC">0</i> / 1200</div>'+
+'<button class="env" id="aviGo">Envoyer</button>'+
+'<div class="mot" style="padding-top:14px;text-align:center">Ta version et ta carte partent avec le message, pour m’aider à comprendre.</div>'+
+'</div></div>';
+$('aviX').onclick=()=>{AVIS_TEXTE=($('aviT')||{}).value||'';fermeA=Date.now();$('page2').classList.remove('on');};
+$('page2Fond').querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{
+AVIS_TEXTE=($('aviT')||{}).value||'';AVIS_GENRE=b.dataset.g;vibrer(12);ouvrirLesAvis();});
+const t=$('aviT'), c=$('aviC');
+const cpt=()=>{if(c)c.textContent=(t.value||'').length;};
+t.oninput=cpt;cpt();
+$('aviGo').onclick=async()=>{
+const txt=(t.value||'').trim();
+const go=$('aviGo');
+if(txt.length<4){go.textContent='Écris un peu plus…';setTimeout(()=>{go.textContent='Envoyer';},2200);return;}
+go.disabled=true;go.textContent='Envoi…';
+const d=await appelRPC('poser_un_avis',{p_joueur:e.id,p_genre:AVIS_GENRE,p_texte:txt,
+p_version:(window.MA_VERSION||''),p_carte:(typeof CARTE!=='undefined'?CARTE:'')});
+if(!d||d.erreur){
+go.disabled=false;
+go.textContent=(d&&d.erreur==='trop')?'Doucement — réessaie plus tard':'Ça n’est pas parti';
+setTimeout(()=>{go.textContent='Envoyer';},2800);return;}
+AVIS_TEXTE='';vibrer([12,30,12]);
+$('page2Fond').querySelector('#avi .corps').innerHTML=
+'<div class="fin"><b>C’est posé sur le tableau.</b>'+
+'<em>Merci — je lis tout. Si c’est un bug, il se peut que je te réponde par courrier.</em></div>';
+};
+}
 let COURRIER_N=0;
 /* LE SIGNAL DU COURRIER : un point sur le Menu quand il est fermé, pour qu'on
    voie qu'il se passe quelque chose ; le nombre sur l'entrée Courrier, pour
@@ -20524,6 +20595,7 @@ if(o.ouvre==='mineForet'){
   location.href='mine.html?v='+Date.now();   /* sans cela, le navigateur ressert l'ancienne mine */
   return;}
 
+if(o.ouvre==='avis'){ouvrirLesAvis();return;}
 if(o.ouvre==='etalGraines'){ouvrirLeGrainetier('graines');return;}
 if(o.ouvre==='grainetier'){ouvrirLeGrainetier('outils');return;}
 if(o.ouvre==='bouillabaisse'){ouvrirChezFonfon();return;}
@@ -20570,9 +20642,16 @@ joueur.dir=Math.abs(o.x-joueur.x)>Math.abs(o.y-joueur.y)?(o.x>joueur.x?'droite':
 :(o.y>joueur.y?'bas':'haut');
 vibrer(20);return;
 }
-const aLaMain=['buisson','argile','roseaux','champignons','herbes','plumes'].includes(o.t);
+/* LE GARDE-FOU : on ne frappe que ce qui donne quelque chose.
+   Avant, tout décor sans action définie tombait ici et se prenait des coups
+   de pioche — y compris le tableau d'avis du port. */
+const aLaMain=['buisson','argile','roseaux','champignons','herbes','plumes','cueillette',
+'x_fo_amanite','x_fo_cepe','x_fo_girolle','x_fo_plume','x_fo_argile'].includes(o.t);
+const aLaHache=['arbre','x_fo_erable','x_fo_chene','x_fo_charme','x_fo_olive','souche'].includes(o.t);
+const aLaPioche=['rocher','x_fo_rocher','fer','cuivre','charbon'].includes(o.t);
+if(!aLaMain&&!aLaHache&&!aLaPioche)return;   /* ni récolte ni casse : on ne tape pas */
 GESTE={t:1,pourMoi:true,cible:o,impact:false,
-type:aLaMain?'cueille':(o.t==='arbre'?'hache':'pioche')};
+type:aLaMain?'cueille':(aLaHache?'hache':'pioche')};
 joueur.dir=Math.abs(o.x-joueur.x)>Math.abs(o.y-joueur.y)?(o.x>joueur.x?'droite':'gauche')
 :(o.y>joueur.y?'bas':'haut');
 vibrer(22);
