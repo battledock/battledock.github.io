@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-0210';
+var MA_VERSION='2026-10-03-0230';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11609,6 +11609,7 @@ const F_hs=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
 const F_LAC_Y=()=>MONDE_H-300;
 const F_rive=(x)=>F_LAC_Y()+Math.sin(x*0.0075)*26+Math.sin(x*0.021+2)*11+Math.sin(x*0.052)*5;
 const F_LIS=30, F_BAR=44;
+const F_ETAL={x:900,y:640};        /* l'étal, à mi-chemin du lac */
 const F_BOIS={sombre:'#5b3f26',bas:'#6b4a2a',moyen:'#7d5833',clair:'#96693c',haut:'#ab7a49'};
 function F_palissade(){
   const c=document.createElement('canvas');c.width=20;c.height=34;
@@ -12018,6 +12019,127 @@ function graverBuissonFo(sorte,v){
     R(bx,by,3,3,B.baie[0]);R(bx,by,2,1,B.baie[1]);}
   return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
 }
+/* ================= L'ÉTAL DU BOIS : LE MENU =================
+   Les cours du jour, une ressource vedette payée plus cher, et
+   une ligne par chose à vendre. */
+const F_NOMS={bois:'bûches',champignons:'champignons',baies:'baies',roseaux:'roseaux',
+  herbes:'herbes',plumes:'plumes',argile:'argile',pierre:'pierre',fibre:'fibre',
+  resine:'résine',ambre:'ambre'};
+let ETAL={cours:null,vedette:null};
+async function ouvrirLEtalDuBois(){
+  if(!document.getElementById('cssEtal')){const st=document.createElement('style');
+    st.id='cssEtal';st.textContent=CSS_ETAL;document.head.appendChild(st);}
+  const d=await appelRPC('etal_cours',{});
+  if(d&&d.cours){ETAL.cours=d.cours;ETAL.vedette=d.vedette;}
+  etalRendre();
+}
+function etalRendre(){
+  if(!document.getElementById('cssEtal')){const st=document.createElement('style');
+    st.id='cssEtal';st.textContent=CSS_ETAL;document.head.appendChild(st);}
+  const C=ETAL.cours||{}, sac=e.sac||{};
+  const aVendre=Object.keys(C).filter(k=>(sac[k]||0)>0);
+  $('page2Fond').className='';$('page2').classList.add('on');
+  const lignes=aVendre.length?aVendre.map(k=>{
+    const n=sac[k]||0, p=C[k]||0, ved=k===ETAL.vedette;
+    return '<div class="et-l'+(ved?' ved':'')+'">'+
+      '<div class="t"><b>'+(F_NOMS[k]||k)+'</b><small>'+n+' dans le sac · '+p+' € pièce'+
+      (ved?' · LE COURS DU JOUR':'')+'</small></div>'+
+      '<button data-v="'+k+'">VENDRE<i>'+(p*n)+' €</i></button></div>';}).join('')
+    : '<div class="et-vide">Ton sac est vide.<br>Reviens avec de quoi vendre.</div>';
+  const tableau=Object.keys(C).sort((a,b)=>C[b]-C[a]).map(k=>
+    '<div class="et-c'+(k===ETAL.vedette?' ved':'')+'"><span>'+(F_NOMS[k]||k)+'</span><b>'+C[k]+' €</b></div>').join('');
+  $('page2Fond').innerHTML=
+   '<div id="et"><div class="et-h"><b>L’ÉTAL DU BOIS<i>On achète ta récolte</i></b></div>'+
+   '<div class="et-ved">Aujourd’hui, <b>'+(F_NOMS[ETAL.vedette]||'—')+'</b> à bon prix</div>'+
+   '<div class="et-page"><div class="et-t">CE QUE TU PEUX VENDRE</div>'+lignes+
+   '<div class="et-t" style="margin-top:14px">LES COURS DU JOUR</div>'+
+   '<div class="et-cours">'+tableau+'</div></div>'+
+   '<div class="et-pied"><button id="etSortir">SORTIR</button>'+
+   '<button id="etTout" class="p"'+(aVendre.length?'':' disabled')+'>TOUT VENDRE</button></div></div>';
+  $('page2Fond').querySelectorAll('[data-v]').forEach(b=>b.onclick=async()=>{
+    b.disabled=true;
+    const r=await appelRPC('etal_vendre',{p_joueur:e.id,p_type:b.dataset.v,p_nb:null});
+    if(r&&r.erreur){bulle(r.erreur);b.disabled=false;return;}
+    if(r&&r.gain){bulle('+'+r.gain+' €');vibrer(10);}
+    try{await chargerSac();}catch(x){}
+    etalRendre();});
+  $('etSortir').onclick=()=>{$('page2').classList.remove('on');};
+  $('etTout').onclick=async()=>{
+    for(const k of aVendre){
+      const r=await appelRPC('etal_vendre',{p_joueur:e.id,p_type:k,p_nb:null});
+      if(r&&r.gain)bulle('+'+r.gain+' €');}
+    vibrer([10,24,10]);
+    try{await chargerSac();}catch(x){}
+    etalRendre();};
+}
+const CSS_ETAL=`
+#et{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#f2e7d2;font-family:Georgia,serif}
+#et .et-h{flex:none;background:linear-gradient(180deg,#8a3a22,#5f2414);border-bottom:3px solid #c9a24a;
+  padding:calc(env(safe-area-inset-top,0px) + 12px) 12px 12px}
+#et .et-h b{font:900 17px Georgia,serif;color:#e8c46a}
+#et .et-h b i{display:block;font:italic 10.5px Georgia,serif;color:#e0c0a8;font-weight:400}
+#et .et-ved{flex:none;background:#e4d6bc;border-bottom:1px solid #c9b48a;padding:9px 12px;
+  font:italic 12.5px Georgia,serif;color:#5f4d34}
+#et .et-ved b{font-style:normal;font-weight:700;color:#8a3a22}
+#et .et-page{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:11px}
+#et .et-t{font:900 9px Arial,sans-serif;letter-spacing:1.8px;color:#8a7454;margin:2px 2px 8px}
+#et .et-l{background:#fbf6e8;border:1px solid #d8c9a6;border-radius:11px;padding:10px 11px;margin-bottom:8px;
+  display:flex;align-items:center;gap:10px}
+#et .et-l.ved{border-color:#c9a24a;background:#fdf3dc}
+#et .et-l .t{flex:1;min-width:0}
+#et .et-l .t b{display:block;font:700 13.5px Georgia,serif;color:#2f2820;text-transform:capitalize}
+#et .et-l .t small{display:block;font:italic 11.5px Georgia,serif;color:#5f4d34;margin-top:1px}
+#et .et-l button{flex:none;border:0;border-radius:9px;background:#8a3a22;color:#f6ecd8;padding:9px 12px;
+  font:700 9px Arial,sans-serif;letter-spacing:1.1px;text-align:center}
+#et .et-l button i{display:block;font:700 12px Georgia,serif;font-style:normal;margin-top:2px}
+#et .et-cours{background:#fbf6e8;border:1px solid #d8c9a6;border-radius:11px;padding:4px 11px}
+#et .et-c{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dotted #d8c9a6;
+  font:400 12.5px Georgia,serif;color:#5f4d34;text-transform:capitalize}
+#et .et-c:last-child{border:0}
+#et .et-c.ved{color:#8a3a22;font-weight:700}
+#et .et-c b{font:700 12.5px Georgia,serif;color:#2f2820}
+#et .et-vide{text-align:center;font:italic 13px Georgia,serif;color:#8a7454;padding:34px 20px;line-height:1.6}
+#et .et-pied{flex:none;background:#e4d6bc;border-top:1px solid #c9b48a;
+  padding:11px 12px calc(env(safe-area-inset-bottom,0px) + 13px);display:flex;gap:9px}
+#et .et-pied button{flex:1;border:0;border-radius:9px;padding:13px;font:700 10px Arial,sans-serif;
+  letter-spacing:1.3px;background:#ddd2b8;color:#6a5c42}
+#et .et-pied .p{background:#8a3a22;color:#f6ecd8}
+#et .et-pied .p:disabled{background:#ddd2b8;color:#9a8a6c}
+`;
+/* L'ÉTAL SOUS BÂCHE : on y vend ce qu'on récolte dans le bois. */
+function graverEtalFo(){
+  const LW=96, LH=74;
+  const c=document.createElement('canvas');c.width=LW;c.height=LH;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
+    g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const cx=LW/2, sol=LH-6;
+  g.fillStyle='rgba(24,34,20,.24)';
+  g.beginPath();g.ellipse(cx,sol+1,42,7,0,0,7);g.fill();
+  /* les quatre perches */
+  [[-34,0],[30,0],[-28,-14],[24,-14]].forEach(([dx,dy])=>{
+    R(cx+dx,sol+dy-30,3,30-dy,'#6b4a2a');R(cx+dx,sol+dy-30,1.2,30-dy,'#96693c');});
+  /* la bâche, rayée et tendue */
+  for(let i=0;i<68;i++){const x=cx-34+i;
+    const h=Math.round(Math.sin(i/68*3.14)*5);
+    R(x,sol-34-h,1,3,i%7<4?'#8a3a22':'#c9a878');}
+  R(cx-34,sol-32,68,2,'#5b3f26');
+  /* l'étal et ses pieds */
+  R(cx-26,sol-14,52,5,'#7d5833');R(cx-26,sol-14,52,1.4,'#96693c');
+  R(cx-24,sol-9,3,9,'#6b4a2a');R(cx+21,sol-9,3,9,'#6b4a2a');
+  /* les cageots et leurs marchandises */
+  for(let k=0;k<5;k++){const x=cx-23+k*10;
+    R(x,sol-21,9,7,'#8a6238');R(x,sol-21,9,2,'#a5764a');
+    R(x,sol-16,9,1.4,'#6b4a2a');
+    for(let i=0;i<3;i++)R(x+1+i*3,sol-23,2,2,
+      ['#c0392b','#e8b43a','#2e2438','#8a5a2a','#3a4a8a'][k]);}
+  /* une pancarte posée contre un pied */
+  R(cx+30,sol-20,14,9,'#8a6238');R(cx+31,sol-19,12,7,'#c9a878');
+  g.font='700 4px Arial,sans-serif';g.textAlign='center';g.fillStyle='#4a3420';
+  g.fillText('ON ACHÈTE',cx+37,sol-14);g.textAlign='left';
+  R(cx+36,sol-11,2,11,'#6b4a2a');
+  return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
+}
 /* LE QUAI DE BOIS : la station de métro de la forêt */
 function graverQuaiMetro(){
   const LW=110, LH=90;
@@ -12145,6 +12267,10 @@ function semerLaForet(){
   semerSimple('souche',9,661,120,true);
   /* la résine n'est pas un objet : elle apparaît d'elle-même sur les arbres */
   DECOR.push({t:'x_fo_quai',x:MONDE_L/2,y:MONDE_H/2,v:0,gr:0,bati:true,demi:46,ouvre:'metroFerme'});
+  DECOR.push({t:'x_fo_etal',x:F_ETAL.x,y:F_ETAL.y,v:0,gr:0,bati:true,demi:30,ouvre:'etalForet'});
+  /* on dégage autour de l'étal, sinon il serait à moitié caché */
+  DECOR=DECOR.filter(o=>o.t==='x_fo_etal'||o.t==='x_fo_quai'
+    ||Math.hypot(o.x-F_ETAL.x,o.y-F_ETAL.y)>74);
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
 /* ce qui barre le passage dans la forêt */
@@ -12288,6 +12414,7 @@ if(t==='x_fo_girolle'){XCAL[cle]=graverChampiFo(2,v||0);if(!CALQUES_DECO[t])CALQ
 if(t==='x_fo_plume'){XCAL[cle]=graverPlumeFo(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_argile'){XCAL[cle]=graverArgileFo(!v);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_rocher'){XCAL[cle]=graverRocherFo(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_etal'){XCAL[cle]=graverEtalFo();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_mure'){XCAL[cle]=graverBuissonFo(0,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_framboise'){XCAL[cle]=graverBuissonFo(1,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_myrtille'){XCAL[cle]=graverBuissonFo(2,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
@@ -19847,6 +19974,7 @@ if(o.ouvre==='voiture'){const nm=(PARISMOD&&PARISMOD.MODELES[o.n])?PARISMOD.MODE
   b.classList.add('on');return;}
 if(o.ouvre==='etable'){b.innerHTML='Entrer à l’étable<small>LAIT · FOIN · FROMAGE</small>';b.classList.add('on');return;}
 if(o.ouvre==='metroFerme'){b.innerHTML='Prendre le métro<small>LIGNE 1 · '+autresStations()+'</small>';b.classList.add('on');return;}
+if(o.ouvre==='etalForet'){b.innerHTML='L’étal du bois<small>VENDRE SA RÉCOLTE</small>';b.classList.add('on');return;}
 if(o.ouvre==='etalGraines'){b.innerHTML='Les graines<small>SEMENCES · OUTILS · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
 if(o.ouvre==='grainetier'){b.innerHTML='Entrer au Grainetier<small>OUTILS · GRAINES · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
 if(o.ouvre==='fumoir'){b.innerHTML='Entrer au fumoir<small>TON POISSON VAUT 2,5× PLUS · 30 MIN</small>';b.classList.add('on');return;}
@@ -20036,6 +20164,7 @@ if(o.ouvre==='voiture'){
   vibrer(10);return;}
 if(o.ouvre==='etable'){ETB=null;ouvrirLEtable();return;}
 if(o.ouvre==='metroFerme'){choisirLaDestination();return;}
+if(o.ouvre==='etalForet'){ouvrirLEtalDuBois();return;}
 if(o.ouvre==='etalGraines'){ouvrirLeGrainetier('graines');return;}
 if(o.ouvre==='grainetier'){ouvrirLeGrainetier('outils');return;}
 if(o.ouvre==='fumoir'){ouvrirLeFumoir();return;}
@@ -24413,6 +24542,7 @@ TAILLES['x_fo_girolle']=[{w:24,h:6},{w:24,h:6},{w:24,h:6}];
 TAILLES['x_fo_plume']=[{w:16,h:5},{w:16,h:5},{w:16,h:5}];
 TAILLES['x_fo_argile']=[{w:26,h:7},{w:26,h:7},{w:26,h:7}];
 TAILLES['x_fo_rocher']=[{w:20,h:8},{w:24,h:9},{w:28,h:10}];
+TAILLES['x_fo_etal']=[{w:56,h:12}];
 TAILLES['x_fo_mure']=[{w:22,h:8},{w:26,h:9}];
 TAILLES['x_fo_framboise']=[{w:18,h:8},{w:22,h:9}];
 TAILLES['x_fo_myrtille']=[{w:26,h:7},{w:30,h:8}];
