@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-0730';
+var MA_VERSION='2026-10-04-0750';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -1720,7 +1720,16 @@ transition:transform .22s ease,opacity .18s ease}
 #b-plus.ouvert .pts i:nth-child(1){transform:translateY(5.5px) rotate(45deg)}
 #b-plus.ouvert .pts i:nth-child(2){opacity:0}
 #b-plus.ouvert .pts i:nth-child(3){transform:translateY(-5.5px) rotate(-45deg)}
-#b-plus .pastille{top:-4px;right:-4px}
+/* LE COURRIER NON LU : un simple point sur le Menu, le nombre sur le Courrier */
+#b-plus .pastille{top:-3px;right:-3px;min-width:11px;width:11px;height:11px;padding:0;
+border-radius:50%;background:#c0392b;font-size:0;box-shadow:0 0 0 2px rgba(16,22,30,.9)}
+#b-plus .pastille.on{display:block}
+#b-courrier{position:relative}
+#b-courrier .pastille{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;
+border-radius:10px;background:#c0392b;color:#fff;padding:0 5px;font-style:normal;
+font:700 11px 'Baloo 2','Trebuchet MS',system-ui,sans-serif;
+display:none;align-items:center;justify-content:center;box-shadow:0 0 0 2px rgba(16,22,30,.9)}
+#b-courrier .pastille.on{display:flex}
 #tiroir{position:fixed;left:auto;right:12px;top:auto;width:auto;height:auto;border:0;border-radius:0;
 bottom:calc(66px + env(safe-area-inset-bottom));background:none;box-shadow:none;padding:0;
 display:none;flex-direction:column;align-items:flex-end;gap:7px;max-width:calc(100vw - 24px)}
@@ -1835,7 +1844,7 @@ white-space:nowrap}
 </div>
 <div id="barre">
   <div id="tiroir">
-<button class="latte" id="b-courrier"><svg viewBox="0 0 20 18" shape-rendering="crispEdges" width="30"><rect x="2" y="3" width="16" height="12" fill="#efe6cc"/><rect x="2" y="3" width="16" height="12" fill="none" stroke="#8a6a3a" stroke-width="1"/><rect x="2" y="3" width="16" height="2" fill="#d8cba8"/><rect x="3" y="4" width="7" height="5" fill="#b9a57c"/><rect x="10" y="4" width="7" height="5" fill="#b9a57c"/><rect x="13" y="10" width="4" height="4" fill="#b4302c"/></svg><span class="b">Courrier</span><em class="pastille" id="po-nb">0</em></button>
+<button class="latte" id="b-courrier"><em class="pastille" id="co-nb">0</em><svg viewBox="0 0 20 18" shape-rendering="crispEdges" width="30"><rect x="2" y="3" width="16" height="12" fill="#efe6cc"/><rect x="2" y="3" width="16" height="12" fill="none" stroke="#8a6a3a" stroke-width="1"/><rect x="2" y="3" width="16" height="2" fill="#d8cba8"/><rect x="3" y="4" width="7" height="5" fill="#b9a57c"/><rect x="10" y="4" width="7" height="5" fill="#b9a57c"/><rect x="13" y="10" width="4" height="4" fill="#b4302c"/></svg><span class="b">Courrier</span><em class="pastille" id="po-nb">0</em></button>
 <button class="latte" id="b-carnet">
     <svg viewBox="0 0 20 18" shape-rendering="crispEdges" width="30"><rect x="3" y="2" width="14" height="14" fill="#6b4a2c"/><rect x="5" y="3" width="11" height="12" fill="#efe6cc"/><rect x="3" y="2" width="2" height="14" fill="#4f3520"/><rect x="7" y="6" width="7" height="1" fill="#b9a57c"/><rect x="7" y="9" width="5" height="1" fill="#b9a57c"/><rect x="7" y="12" width="6" height="1" fill="#b9a57c"/><rect x="13" y="2" width="2" height="6" fill="#b4302c"/></svg>
     <span class="b">Carnet</span><i class="clou g"></i><i class="clou d"></i></button>
@@ -19988,10 +19997,19 @@ C.innerHTML=h;
 C.querySelectorAll('canvas[data-f]').forEach(cv=>clsPoisson(cv,cv.dataset.f));
 }
 let COURRIER_N=0;
+/* LE SIGNAL DU COURRIER : un point sur le Menu quand il est fermé, pour qu'on
+   voie qu'il se passe quelque chose ; le nombre sur l'entrée Courrier, pour
+   qu'on sache combien et où aller. */
+function majPastilleCourrier(){
+const c=$('co-nb');
+if(c){c.textContent=COURRIER_N>9?'9+':COURRIER_N;c.classList.toggle('on',COURRIER_N>0);}
+const m=$('plus-nb');
+if(m)m.classList.toggle('on',COURRIER_N>0);
+}
 async function lireLeCourrier(){if(!e.id)return;
 try{const d=await appelRPC('messagerie_fils',{p_joueur:e.id});
 if(Array.isArray(d))COURRIER_N=d.reduce((t,f)=>t+(+f.nonlus||0),0);}catch(x){}
-const p=$('po-nb');if(p){p.textContent=COURRIER_N;p.classList.toggle('on',COURRIER_N>0);}}
+majPastilleCourrier();}
 setTimeout(()=>lireLeCourrier(),3000);setInterval(()=>lireLeCourrier(),180000);
 const NOM_OBJ=(k)=>{try{const o=OBJETS&&OBJETS[k];if(o&&o.nom)return o.nom;}catch(x){}return k;};
 const CSS_MSG=`#msg{position:absolute;inset:0;background:#15212e;display:flex;flex-direction:column;
@@ -20098,7 +20116,7 @@ $('msgX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
 const fils=await appelRPC('messagerie_fils',{p_joueur:e.id});
 const L=Array.isArray(fils)?fils:[];
 COURRIER_N=L.reduce((t,f)=>t+(+f.nonlus||0),0);
-const p=$('po-nb');if(p){p.textContent=COURRIER_N;p.classList.toggle('on',COURRIER_N>0);}
+majPastilleCourrier();
 const C=F.querySelector('.corps');if(!C)return;
 const nonlus=L.reduce((t,f)=>t+(+f.nonlus||0),0);
 const sous=F.querySelector('.hd .tx');
