@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-0415';
+var MA_VERSION='2026-10-03-0425';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11655,10 +11655,7 @@ function construireSolForet(){
       const p=(y-r)/Math.max(1,MONDE_H-r);
       s.fillStyle=p<0.14?'#3f6a5a':(p<0.40?'#2a5260':(p<0.72?'#1d3f52':'#142c3e'));
       s.fillRect(x,y,1,1);}}
-  for(let k=0;k<620;k++){const x=F_hs(k*3.1)*MONDE_L, r=F_rive(x);
-    const y=r+8+F_hs(k*7.3)*(MONDE_H-r-14);
-    s.fillStyle='rgba(150,200,220,.16)';
-    s.fillRect(Math.round(x),Math.round(y),6+Math.round(F_hs(k)*7),1);}
+  /* les rides ne sont plus gravées : elles défilent, voir dessinerLesRides */
   for(let k=0;k<220;k++){const x=Math.round(F_hs(k*9.1)*MONDE_L), r=Math.round(F_rive(x));
     s.fillStyle='#4f7a3a';s.fillRect(x,r-1,5,2);
     s.fillStyle='#3f6a30';s.fillRect(x+1,r-3,3,2);}
@@ -12427,6 +12424,27 @@ function semerLaForet(){
   DECOR=DECOR.filter(o=>o.t==='x_fo_etal'||o.t==='x_fo_quai'
     ||Math.hypot(o.x-F_ETAL.x,o.y-F_ETAL.y)>86);
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
+}
+/* ================= LES RIDES QUI DÉFILENT =================
+   Elles glissent lentement vers la droite, chacune à sa vitesse, et
+   réapparaissent de l'autre côté. Dessinées par-dessus le sol. */
+function dessinerLesRides(g,camX,camY,VW2,VH2){
+  if(CARTE!=='foret')return;
+  const t=Date.now()/1000;
+  const haut=F_rive(camX+VW2/2)-20;
+  if(camY+VH2<haut)return;                     /* le lac n'est pas à l'écran */
+  g.fillStyle='rgba(176,216,232,.2)';
+  const n=Math.round(MONDE_L*0.42);
+  for(let k=0;k<n;k++){
+    const base=F_hs(k*3.1)*MONDE_L;
+    const r=F_rive(base);
+    const y=r+8+F_hs(k*7.3)*(MONDE_H-r-16);
+    if(y<camY-6||y>camY+VH2+6)continue;
+    const x=(base+t*(5+F_hs(k)*6))%MONDE_L;
+    const ex=x-camX;
+    if(ex<-14||ex>VW2+14)continue;
+    g.fillRect(Math.round(ex),Math.round(y-camY),6+Math.round(F_hs(k)*5),1);
+  }
 }
 /* ce qui barre le passage dans la forêt */
 function bloqueForet(x,y){
@@ -15508,6 +15526,7 @@ if(ax<-40||ay<-70||ax>VW+40||ay>VH+40)continue;
 acteurs.push({y:a.y,f:()=>dessinerUnAutre(ctx,a,camX,camY)});
 }
 if(LISIERE&&!(CHAMPS_SEULS&&CARTE==='village'))ctx.drawImage(LISIERE,camX,camY,lw,lh,0,0,lw,lh);
+dessinerLesRides(ctx,camX,camY,VW,VH);   /* l'eau du lac remue */
 dessinerDecor(ctx,camX,camY,VW,VH,acteurs);
 if(CARTE_MOD){try{const tt=performance.now()/1000;if(SAUMASKI.dessinerPlace)SAUMASKI.dessinerPlace(ctx,camX,camY,tt,lampesAllumees());SAUMASKI.dessinerTelepherique(ctx,camX,camY,tt,lampesAllumees());}catch(x){}}   /* la place vivante, les cabines */
 if(CARTE==='extramar'||CARTE==='foret')dessinerLaPeche(ctx,camX,camY);   /* le lac aussi */
