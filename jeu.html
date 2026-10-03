@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-0340';
+var MA_VERSION='2026-10-04-0410';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2165,10 +2165,9 @@ const p=new URLSearchParams(location.search);p.delete('carte');p.delete('v');
 const q=p.toString();
 history.replaceState(null,'',cd+'.html'+(q?'?'+q:''));}
 }catch(x){}
-const CARTE=(()=>{const c=CARTE_DEMANDEE;return (c==='paris'?'paris':(c==='vallon'?'vallon':(c==='sommet'?'sommet':(c==='montagne'?'montagne':(c==='foret'?'foret':((c==='ferme'||c==='village')?'village':'extramar'))))));   /* la forêt est désormais sa propre carte ; la ferme garde l'ancien village */})();
+const CARTE=(()=>{const c=CARTE_DEMANDEE;return (c==='paris'?'paris':(c==='foret'?'foret':((c==='ferme'||c==='village')?'village':'extramar')));   /* la forêt est sa propre carte ; la ferme garde l'ancien village */})();
 var PARISMOD=null;
 let AUVOLANT=null, VOITURE_O=null, VIT=0, CAP=0;   /* la conduite à Paris */          /* le module de Paris, chargé à l'entrée */
-const CARTE_MOD=false;                   /* la montagne, le sommet, la piscine, le stade et le vallon sont fermés */
 const ANIM_DECOR={};
 const ANNEXE=CARTE!=='village';     /* Extramar et Notre-Dame : des cartes à part, sans le monde partagé */
 let createClient=null, sb=null, SB_PRET=false;
@@ -11209,9 +11208,8 @@ const V=VERTS, R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
 g.fillStyle=V.ombre;g.beginPath();g.ellipse(x+1,y-1,6,2,0,0,7);g.fill();
 R(-4,-5,9,5,V.tronc);R(-4,-5,9,2,V.troncC);R(-2,-4,5,1,'#a5764a');R(-4,-2,9,2,V.troncO);
 }
-const MONDE_L=CARTE==='foret'?1500:(CARTE==='paris'?1268:(CARTE==='vallon'?420:(CARTE==='garde'?640:(CARTE==='montagne'?360:(CARTE==='sommet'||CARTE==='piscine'?320:(CARTE==='stade'?760:(CARTE==='village'?1900:1400)))))));   /* la forêt fait 1500 ; au village, la ferme s'étend à droite */
-const MONDE_H=CARTE==='foret'?1000:(CARTE==='paris'?620:(CARTE==='vallon'?560:(CARTE==='montagne'?470:   /* la montagne a été raccourcie : la hauteur doit suivre, sinon on marche hors de la carte */
-(CARTE==='sommet'?460:(CARTE==='piscine'?580:(CARTE==='stade'?1080:600))))));                // hauteur
+const MONDE_L=CARTE==='foret'?1500:(CARTE==='paris'?1268:(CARTE==='garde'?640:(CARTE==='village'?1900:1400)));   /* la forêt fait 1500 ; au village, la ferme s'étend à droite */
+const MONDE_H=CARTE==='foret'?1000:(CARTE==='paris'?620:600);                // hauteur
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 const VUE_L=196, VUE_H=400;       /* la vue de référence, en points de jeu */
 const ZOOM=2;                     /* ne sert plus que de repli */
@@ -11258,42 +11256,7 @@ function surLeSentier(x,y,marge){
   const by=880+Math.sin((x-sentierX(880))/72)*38;
   if(x>sentierX(880)&&x<sentierX(880)+210&&Math.abs(y-by)<16+m)return true;
   return false;}
-let SAUMASKI=null;
 if(CARTE==='paris'){PARISMOD=eval(await chargerMorceau('paris.js'));}
-let EMPREINTES=[], PAS_NEIGE=-1;
-function noterEmpreinte(){
-if(CARTE!=='montagne'||!SAUMASKI.dansNeige(joueur.x,joueur.y))return;        /* seulement dans la neige */
-const n=Math.floor(joueur.pas*(STYLE_PAS==='sillon'?5:2));if(n===PAS_NEIGE)return;PAS_NEIGE=n;
-const d=joueur.dir||'bas', ax=d.includes('droite')?1:(d.includes('gauche')?-1:0), ay=d.includes('bas')?1:(d.includes('haut')?-1:0);
-const L=Math.hypot(ax,ay)||1, px=-ay/L, py=ax/L, cote=n%2?1:-1;
-EMPREINTES.push({x:joueur.x+px*(STYLE_PAS==='sillon'?0:1.8)*cote,y:joueur.y+py*(STYLE_PAS==='sillon'?0:1.8)*cote,ax:ax/L,ay:ay/L,t:Date.now()});
-if(EMPREINTES.length>1200)EMPREINTES.shift();
-}
-let STYLE_PAS='sillon';          /* bottes | sillon | poudre */
-function dessinerEmpreintes(g,camX,camY){
-const now=Date.now(), VIE=150000;EMPREINTES=EMPREINTES.filter(e2=>now-e2.t<VIE);
-const vus=EMPREINTES.filter(e2=>{const x=e2.x-camX, y=e2.y-camY;return x>-8&&y>-8&&x<innerWidth&&y<innerHeight;});
-if(STYLE_PAS==='sillon'){
-for(let k=1;k<vus.length;k++){const a=vus[k-1], b=vus[k];if(b.t-a.t>900||Math.hypot(b.x-a.x,b.y-a.y)>14)continue;
-const al=Math.max(0,1-(now-b.t)/VIE);g.globalAlpha=al;
-const x1=a.x-camX,y1=a.y-camY,x2=b.x-camX,y2=b.y-camY, nx=-(y2-y1), ny=(x2-x1), L=Math.hypot(nx,ny)||1;
-[[3.2,'#ffffff'],[2.4,'#c9d6e4'],[1.6,'#aebfd3'],[0.8,'#9cb0c6']].forEach(([w,col])=>{g.strokeStyle=col;g.lineWidth=w;g.lineCap='round';g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();});
-g.fillStyle='rgba(255,255,255,.9)';g.fillRect(x1+nx/L*2-0.25,y1+ny/L*2-0.25,0.6,0.6);g.fillRect(x1-nx/L*2-0.25,y1-ny/L*2-0.25,0.6,0.6);}
-g.globalAlpha=1;return;}
-for(const e2 of vus){const age=now-e2.t, a=Math.max(0,1-age/VIE);const x=e2.x-camX, y=e2.y-camY;
-g.save();g.translate(x,y);g.rotate(Math.atan2(e2.ay,e2.ax)+Math.PI/2);g.globalAlpha=a;
-g.fillStyle='rgba(255,255,255,.95)';g.beginPath();g.ellipse(0,-0.4,1.9,3.1,0,0,7);g.fill();                  /* le bourrelet autour */
-g.fillStyle='#b8c8da';g.beginPath();g.ellipse(0,-1.2,1.35,1.9,0,0,7);g.fill();                               /* l'avant du pied */
-g.beginPath();g.ellipse(0,2.1,1.05,0.95,0,0,7);g.fill();                                                        /* le talon */
-g.fillStyle='#9fb3c9';for(let k=-2.4;k<0.4;k+=0.9)g.fillRect(-1,k,2,0.35);g.fillRect(-0.7,1.8,1.4,0.35);g.fillRect(-0.7,2.5,1.4,0.35);   /* les crans */
-g.fillStyle='#8aa0b8';g.fillRect(-0.4,-0.6,0.8,0.8);                                                           /* le plus profond, sous la voûte */
-g.restore();
-if(STYLE_PAS==='poudre'&&age<700){const q=age/700;g.globalAlpha=(1-q)*0.9;g.fillStyle='#ffffff';
-for(let k=0;k<7;k++){const an=k/7*6.283+e2.t, r=1.5+q*4;g.fillRect(x+Math.cos(an)*r-0.3,y-q*3+Math.sin(an)*r*0.5-0.3,0.7,0.7);}
-g.globalAlpha=(1-q)*0.35;g.beginPath();g.ellipse(x,y-1-q*2,2+q*3,1+q*1.5,0,0,7);g.fill();}
-}
-g.globalAlpha=1;
-}
 function bandeUtile(){
 if(CARTE!=='village')return [0,MONDE_L];
 if(FORET_SEULE)return [0,MONDE_L];                 /* la forêt EST sa carte */
@@ -11351,15 +11314,13 @@ function baseSol(){return new Promise((ok,ko)=>{try{const r=indexedDB.open('bdl-
 async function chargerSolCache(){try{const db=await baseSol();const v=await new Promise(ok=>{const q=db.transaction('s').objectStore('s').get(cleSol());q.onsuccess=()=>ok(q.result);q.onerror=()=>ok(null);});
 if(!v||!v.sol)return;const toile=async(b)=>{if(!b)return null;const im=await createImageBitmap(b);const c=document.createElement('canvas');c.width=im.width;c.height=im.height;c.getContext('2d').drawImage(im,0,0);return c;};
 SOL_CACHE.sol=await toile(v.sol);SOL_CACHE.fin=await toile(v.fin);SOL_CACHE.pret=!!SOL_CACHE.sol;}catch(x){}}
-function rangerSolCache(){try{if(!SOL||CARTE_MOD)return;const cle=cleSol(), fin=SOL_FIN;
+function rangerSolCache(){try{if(!SOL)return;const cle=cleSol(), fin=SOL_FIN;
 SOL.toBlob(async(b1)=>{const b2=fin?await new Promise(ok=>fin.toBlob(ok)):null;try{const db=await baseSol();const tx=db.transaction('s','readwrite');const st=tx.objectStore('s');
 st.clear();st.put({sol:b1,fin:b2},cle);}catch(x){}});}catch(x){}}
-const SOL_CACHE_PROMESSE=(CARTE_MOD?Promise.resolve():chargerSolCache());
+const SOL_CACHE_PROMESSE=chargerSolCache();
 function refaireLeSol(){
-if(!CARTE_MOD&&SOL_CACHE.pret){SOL=SOL_CACHE.sol;SOL_FIN=SOL_CACHE.fin;SOL_CACHE.pret=false;return SOL;}     /* déjà construit lors d'un lancement précédent */
+if(SOL_CACHE.pret){SOL=SOL_CACHE.sol;SOL_FIN=SOL_CACHE.fin;SOL_CACHE.pret=false;return SOL;}     /* déjà construit lors d'un lancement précédent */
 setTimeout(rangerSolCache,4000);                                                                              /* on le range, sans ralentir le jeu */
-if(CARTE_MOD){SOL_FIN=SAUMASKI.solFin();SOL=document.createElement('canvas');SOL.width=MONDE_L;SOL.height=MONDE_H;
-const g=SOL.getContext('2d');g.drawImage(SOL_FIN,0,0,MONDE_L,MONDE_H);return SOL;}   /* à Saumaski, le sol fin est dessiné tel quel */
 if(CARTE==='foret'){SOL=construireSolForet();SOL_FIN=null;CHEMIN=null;return SOL;}
 SOL=construireSol();SOL_FIN=null;CHEMIN=construireChemin();
 if(SOL_FIN&&CARTE==='village')try{peindreLaFermeFin(SOL_FIN.getContext('2d'));}catch(x){}   /* la campagne, au demi-pixel */
@@ -14647,8 +14608,6 @@ function semerDecor(){
 if(CARTE==='foret')return semerLaForet();
 if(CARTE==='paris')return semerDecorParis();
 if(CARTE==='extramar')return semerDecorExtramar();
-if(CARTE_MOD){const M=SAUMASKI.objets();Object.entries(M.cal).forEach(([k,C])=>{XCAL['x_mo_'+k+'0']=C;});
-DECOR=SAUMASKI.METRO?M.L.concat([{t:'metro',x:SAUMASKI.METRO[0],y:SAUMASKI.METRO[1],gr:0,col:[88,8]}]):M.L;   /* la bouche du métro, en long */DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}
 if(CARTE==='garde')return semerDecorGarde();
 DECOR=[];
 const A=alea;
@@ -15034,9 +14993,6 @@ if(Math.abs(o.x-x)<d.w/2+3&&Math.abs(o.y-y)<d.h/2+2)return true;}
 for(const o of DECOR)if(o.t==='comptoir'&&Math.abs(x-o.x)<128&&y>o.y-100&&y<o.y+4)return true;   /* le comptoir : un vrai bâtiment */
 return false;
 }
-if(CARTE_MOD){if(x<11||x>MONDE_L-11||y<20||y>MONDE_H-10)return true;          /* le garde-corps, les rondins, les ganivelles */
-if(SAUMASKI.zoneInterdite(x,y))return true;                                            /* la zone du téléphérique, clôturée */
-for(const o of DECOR){if(!o.col)continue;if(Math.abs(x-o.x)<o.col[0]&&y>o.y-o.col[1]&&y<o.y+3)return true;}return false;}
 if(CARTE==='garde')return bloqueGarde(x,y);
 if(dansLisiere(x,y))return true;                     /* la forêt du pourtour */
 if(surLeSentier(x,y,0))return false;                 /* le sentier est toujours praticable */
@@ -15255,7 +15211,7 @@ else if(o.t==='passage')dessinerLePassage(g,x,y);
 else if(o.t==='entrepot')dessinerLEntrepot(g,x,y);
 else if(o.t==='gare')dessinerLaGare(g,x,y);
 else if(o.t==='echoppe')dessinerLaBoutique(g,x,y);
-else if(o.t==='metro'){if(CARTE==='extramar')dessinerX(g,{t:'x_metroM',v:0,x:o.x,y:o.y},x,y);else if(CARTE==='montagne')dessinerX(g,{t:'x_mo_gare',v:0,x:o.x,y:o.y},x,y);else dessinerLeMetro(g,x,y);}
+else if(o.t==='metro'){if(CARTE==='extramar')dessinerX(g,{t:'x_metroM',v:0,x:o.x,y:o.y},x,y);else dessinerLeMetro(g,x,y);}
 else if(o.t==='fontaine')dessinerLaFontaine(g,x,y);
 else if(o.t==='panneauV')dessinerLeTableau(g,x,y);
 else if(o.t==='arbrePot'||o.t==='bancP')dessinerDeco(g,o.t,x,y);
@@ -15323,7 +15279,6 @@ sacMax:60};
 try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(e,JSON.parse(b));}catch(x){}
 const EXT_AU_DEPART=e.ext?{x:e.ext.x,y:e.ext.y}:null;
 if(CARTE==='village'&&!PARAM_CARTE&&(e.carte==='extramar'||e.carte==='garde')){location.replace('jeu.html?carte=extramar');}   /* (pas quand on demande la ferme ou la forêt dans l'adresse) */
-if(CARTE==='village'&&!PARAM_CARTE&&(e.carte==='montagne'||e.carte==='sommet')){location.replace('jeu.html?carte='+e.carte);}
 e.casino=null;e.camp=null;e.coffre=null;e.comptoir=null;
 if(typeof e.nivSac==='number'&&e.nivSac>0)e.sacMax=SAC_PALIERS[Math.min(e.nivSac,SAC_PALIERS.length-1)];
 /* LE SCORE NE PEUT PAS ÊTRE EN DESSOUS DE LA RÉCOLTE : l'ancienne reprise
@@ -15460,49 +15415,10 @@ joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.carte='garde';
 try{sauver();}catch(x){}
 return;
 }
-if(CARTE==='vallon'){
-const deQuai=new URLSearchParams(location.search).get('arrivee');
-const P0=(!deQuai&&EXT_AU_DEPART&&EXT_AU_DEPART.x>0&&e.carte==='vallon')?[EXT_AU_DEPART.x,EXT_AU_DEPART.y]:SAUMASKI.ARRIVEE;
-const [dx,dy]=degager(P0[0],P0[1]);joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.carte='vallon';try{sauver();}catch(x){}
-if(deQuai)try{history.replaceState(null,'','jeu.html?carte=vallon');}catch(x){}
-return;
-}
-if(CARTE==='stade'){
-const deQuai=new URLSearchParams(location.search).get('arrivee');
-const P0=(!deQuai&&EXT_AU_DEPART&&EXT_AU_DEPART.x>0&&e.carte==='stade')?[EXT_AU_DEPART.x,EXT_AU_DEPART.y]:SAUMASKI.ARRIVEE;
-const [dx,dy]=degager(P0[0],P0[1]);joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.carte='stade';try{sauver();}catch(x){}
-if(deQuai)try{history.replaceState(null,'','jeu.html?carte=stade');}catch(x){}
-return;
-}
-if(CARTE==='piscine'){
-const deQuai=new URLSearchParams(location.search).get('arrivee');
-const P0=(!deQuai&&EXT_AU_DEPART&&EXT_AU_DEPART.x>0&&e.carte==='piscine')?[EXT_AU_DEPART.x,EXT_AU_DEPART.y]:SAUMASKI.ARRIVEE;
-const [dx,dy]=degager(P0[0],P0[1]);joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.carte='piscine';try{sauver();}catch(x){}
-if(deQuai)try{history.replaceState(null,'','jeu.html?carte=piscine');}catch(x){}
-return;
-}
-if(CARTE==='sommet'){
-const deTC=new URLSearchParams(location.search).get('arrivee');
-const P0=(!deTC&&EXT_AU_DEPART&&EXT_AU_DEPART.x>0&&e.carte==='sommet')?[EXT_AU_DEPART.x,EXT_AU_DEPART.y]:SAUMASKI.ARRIVEE;
-const [dx,dy]=degager(P0[0],P0[1]);joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.carte='sommet';try{sauver();}catch(x){}
-if(deTC)try{history.replaceState(null,'','jeu.html?carte=sommet');}catch(x){}
-return;
-}
-if(CARTE==='montagne'){
-const deMetro=new URLSearchParams(location.search).get('arrivee');
-const depuis=new URLSearchParams(location.search).get('depuis');
-const P0=depuis==='telecabine'?[150,332]:(depuis==='piste'?[300,640]:((!deMetro&&EXT_AU_DEPART&&EXT_AU_DEPART.x>0&&e.carte!=='sommet')?[EXT_AU_DEPART.x,EXT_AU_DEPART.y]:SAUMASKI.ARRIVEE));   /* la position gardée au démarrage */
-const [dx,dy]=degager(P0[0],P0[1]);
-joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.carte='montagne';try{sauver();}catch(x){}
-if(deMetro||depuis)try{history.replaceState(null,'','jeu.html?carte=montagne');}catch(x){}   /* un rechargement ne ramène plus devant le métro */
-return;
-}
 if(CARTE==='extramar'){
 const arrive=new URLSearchParams(location.search).has('arrivee')||!EXT_AU_DEPART;
 const garde=new URLSearchParams(location.search).has('garde');
-const depuis=new URLSearchParams(location.search).get('depuis'), dePiscine=depuis==='piscine'||depuis==='stade';
-const p0=depuis==='stade'?[910,200]:dePiscine?[210,200]:(garde?[XP.ruelle.x,XP.ruelle.haut+26]:(arrive?[XP.metro[0],XP.metro[1]+22]:[EXT_AU_DEPART.x,EXT_AU_DEPART.y]));
-if(dePiscine)try{history.replaceState(null,'','jeu.html?carte=extramar');}catch(x){}
+const p0=garde?[XP.ruelle.x,XP.ruelle.haut+26]:(arrive?[XP.metro[0],XP.metro[1]+22]:[EXT_AU_DEPART.x,EXT_AU_DEPART.y]);
 const [dx,dy]=degager(p0[0],p0[1]);
 joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.carte='extramar';
 try{sauver();}catch(x){}
@@ -15561,7 +15477,6 @@ acteurs.push({y:a.y,f:()=>dessinerUnAutre(ctx,a,camX,camY)});
 if(LISIERE&&!(CHAMPS_SEULS&&CARTE==='village'))ctx.drawImage(LISIERE,camX,camY,lw,lh,0,0,lw,lh);
 dessinerLesRides(ctx,camX,camY,VW,VH);   /* l'eau du lac remue */
 dessinerDecor(ctx,camX,camY,VW,VH,acteurs);
-if(CARTE_MOD){try{const tt=performance.now()/1000;if(SAUMASKI.dessinerPlace)SAUMASKI.dessinerPlace(ctx,camX,camY,tt,lampesAllumees());SAUMASKI.dessinerTelepherique(ctx,camX,camY,tt,lampesAllumees());}catch(x){}}   /* la place vivante, les cabines */
 if(CARTE==='extramar'||CARTE==='foret')dessinerLaPeche(ctx,camX,camY);   /* le lac aussi */
 dessinerBulles(ctx,camX,camY,px,py);
 dessinerParts(ctx,camX,camY);
@@ -17565,7 +17480,6 @@ setTimeout(()=>location.reload(),800);          /* le cabanon apparaît sur ton 
 ouvrirLeChantier(etape==='cabane'?'« Et voilà. C’est chez toi. »':'« Plus grand, plus solide. »');}
 else ouvrirLeChantier(d&&d.erreur==='manque'?'« Il te manque encore de quoi. »':'« Le chantier ne répond pas. »');};
 }
-if(CARTE==='vallon')location.replace('jeu.html?v='+Date.now());   /* le quartier est déposé */
 function ligne2Permise(){try{return !!(e&&e.id==='e029d1fb-7baa-4225-91fd-5cdbef6f8711');}catch(x){return false;}}
 setTimeout(()=>{try{verifierLaFete();}catch(x){}},200);
 /* l'annonce de la réouverture, une fois par joueur */
@@ -18556,10 +18470,6 @@ return l;
 }
 function coinDuJoueur(){
 if(CARTE==='extramar')return 'à Extramar';
-if(CARTE==='montagne')return 'à la montagne';
-if(CARTE==='sommet')return 'au sommet';
-if(CARTE==='piscine')return 'à la piscine';
-if(CARTE==='stade')return 'au stade';
 if(CARTE==='garde')return 'à Notre-Dame';
 try{return joueur.x<rivX(joueur.y)?'en forêt':'au village';}catch(x){return 'au village';}
 }
@@ -18594,10 +18504,6 @@ if(p&&p.id&&p.id!==e.id&&!gens.some(g2=>g2.id===p.id))gens.push(p);
 gens.sort((a,b)=>(a.depuis||0)-(b.depuis||0));
 EN_LIGNE=gens;
 const ici=(p)=>CARTE==='extramar'?p.lieu==='à Extramar'
-:CARTE==='montagne'?p.lieu==='à la montagne'
-:CARTE==='sommet'?p.lieu==='au sommet'
-:CARTE==='piscine'?p.lieu==='à la piscine'
-:CARTE==='stade'?p.lieu==='au stade'
 :CARTE==='garde'?p.lieu==='à Notre-Dame'
 :(p.lieu!=='à Extramar'&&p.lieu!=='dans le métro'&&p.lieu!=='à Notre-Dame'&&p.lieu!=='à la montagne');
 const places=placesDesBancs();
@@ -20558,7 +20464,6 @@ if(o.ouvre==='bouillabaisse'){ouvrirChezFonfon();return;}
 if(o.ouvre==='peche'){ouvrirLaBoutiqueDePeche();return;}
 if(o.ouvre==='sortieStade'){sortirDuStade();return;}
 if(o.ouvre==='ecole'){ouvrirLEcole();return;}
-if(o.ouvre==='telecabine'){passerLesTourniquets();return;}
 if(o.ouvre==='descenteTC'){redescendreEnTelecabine();return;}
 if(o.ouvre==='pistes'){partirSkier('descente');return;}
 if(o.ouvre==='longuevue'){regarderLaVue();return;}
@@ -23794,7 +23699,6 @@ return poulDecorVrai(g,camX,camY,VW2,VH2,acteurs);};
 const SORTIES=[
 {nom:'LA FORÊT',      cote:'g', y:268, col:'#4f7d42', vers:null},
 {nom:'LE VIEUX-PORT', cote:'d', y:268, col:'#2a6ab0', vers:'jeu.html?carte=extramar', carte:'extramar', ligne:'port'},
-{nom:'LA MONTAGNE',   cote:'b', x:960, col:'#7a8aa8', vers:'jeu.html?carte=montagne', carte:'montagne', ligne:'montagne'},
 {nom:'LA MINE',       cote:'h', x:960, col:'#8a7050', vers:'mine.html'}];
 function poteauSortie(nom,col,sens){
 const m=document.createElement('canvas').getContext('2d');m.font='700 8px Georgia';const tw=Math.ceil(m.measureText(nom).width);
@@ -25099,7 +25003,7 @@ const STATIONS_L2=[];   /* la ligne 2 est déposée : le terrain part en forêt 
 const STATIONS_L1=[['extramar','Le port','Les docks, la criée, le casino','port'],
 ['ferme','La ferme','Le champ, l’étal, l’étable','ferme'],
 ['foret','La forêt','Le bois, le lac, les roseaux','foret']];
-const stationIci=()=>CARTE==='extramar'?'port':(CARTE==='montagne'||CARTE==='sommet'?'montagne':(CARTE==='foret'?'foret':'ferme'));
+const stationIci=()=>CARTE==='extramar'?'port':(CARTE==='foret'?'foret':'ferme');
 const autresStations=()=>STATIONS_L1.filter(([,,,k])=>k!==stationIci()).map(([,n])=>n.replace('Le ','').replace('La ','').toUpperCase()).join(' · ');
 function choisirLaDestination(){
 const D=STATIONS_L1.filter(([,,,q])=>q!==stationIci());
