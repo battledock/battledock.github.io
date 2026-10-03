@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-0349';
+var MA_VERSION='2026-10-03-0356';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12108,7 +12108,8 @@ const CSS_ETAL=`
 `;
 let LAC_CONNUES=0, LAC_EN_COURS=false;
 async function pecherAuLac(o){
-  if(!e.outils.canne){bulle('Il te faut une canne.');return;}
+  /* la canne vit dans l'équipement de pêche, pas dans les outils */
+  if(EQUIP_PECHE&&!(EQUIP_PECHE.canne>0)){bulle('Il te faut une canne.');return;}
   if(LAC_EN_COURS)return;
   LAC_EN_COURS=true;
   GESTE={t:1,cible:o,impact:false,type:'canne',pourMoi:true};
@@ -18954,7 +18955,15 @@ g.restore();
 });
 g.globalAlpha=1;
 }
+/* SUR LE PONTON : où qu'on soit dessus, c'est lui qu'on vise. */
+function surLePonton(){
+  if(CARTE!=='foret'||typeof F_PONT==='undefined')return null;
+  if(Math.abs(joueur.x-F_PONT.x)>17)return null;
+  if(joueur.y<F_rive(F_PONT.x)-16||joueur.y>F_PONT.y+120)return null;
+  return DECOR.find(o=>o.t==='x_fo_ponton')||null;
+}
 function cible(){
+  {const p=surLePonton();if(p)return p;}
 let d0=48,res=null;
 const autour=autourDe(joueur.x,joueur.y);
 const LARGES=['casino','forge','comptoir','fete','echoppe','mine2','taillerie'];
@@ -20194,7 +20203,7 @@ if(o.ouvre==='voiture'){const nm=(PARISMOD&&PARISMOD.MODELES[o.n])?PARISMOD.MODE
 if(o.ouvre==='etable'){b.innerHTML='Entrer à l’étable<small>LAIT · FOIN · FROMAGE</small>';b.classList.add('on');return;}
 if(o.ouvre==='metroFerme'){b.innerHTML='Prendre le métro<small>LIGNE 1 · '+autresStations()+'</small>';b.classList.add('on');return;}
 if(o.ouvre==='etalForet'){b.innerHTML='L’étal du bois<small>VENDRE SA RÉCOLTE</small>';b.classList.add('on');return;}
-if(o.t==='x_fo_ponton'){b.innerHTML=e.outils.canne
+if(o.t==='x_fo_ponton'){b.innerHTML=(!EQUIP_PECHE||EQUIP_PECHE.canne>0)
   ? 'Pêcher<small>LE LAC · '+(LAC_CONNUES||0)+' / 50 ESPÈCES</small>'
   : 'Il faut une canne<small>LE LAC</small>';b.classList.add('on');return;}
 if(o.ouvre==='etalGraines'){b.innerHTML='Les graines<small>SEMENCES · OUTILS · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
