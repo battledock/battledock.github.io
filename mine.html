@@ -1060,6 +1060,13 @@ fond:N.fond,accent:N.accent};
 const nuance=palier;      /* le reste du jeu appelle nuance() */
 /* la roche barre le passage ; hors de la salle aussi */
 const mur=(x,y)=>(x<0||y<0||x>=L||y>=H)?1:MUR[y][x];
+/* LE PERSONNAGE : on teste les quatre coins de ses pieds, pas son centre,
+   pour qu'il ne rentre pas dans la roche par un angle. */
+const bloque=(x,y)=>{
+  const dx=5, hy=3;
+  return mur(((x-dx)/CASE)|0,((y-hy)/CASE)|0)||mur(((x+dx)/CASE)|0,((y-hy)/CASE)|0)
+      || mur(((x-dx)/CASE)|0,((y+hy)/CASE)|0)||mur(((x+dx)/CASE)|0,((y+hy)/CASE)|0);
+};
 const EST_RELAIS=(n)=>n===1||n%5===0;
 function creuser(){
   /* UNE SEULE SALLE, VIDE. Le pourtour est de la roche, le reste est dégagé.
@@ -1075,6 +1082,11 @@ function creuser(){
   /* l'ombre portée sous chaque bloc de roche */
   for(let y=1;y<H;y++)for(let x=0;x<L;x++)
     if(!MUR[y][x]&&MUR[y-1][x])OMBRE[y][x]=1;
+}
+/* on pose le personnage au milieu de la salle, une fois qu'elle est creusée */
+function placerLeJoueur(){
+  joueur.x=(L/2)*CASE+CASE/2; joueur.y=(H/2)*CASE+CASE/2;
+  joueur.dir='bas'; joueur.pas=0; joueur.marche=false;
 }
 
 function toile(w,h,f){
@@ -1529,11 +1541,11 @@ const POIDS={fer:2,cuivre:2,charbon:2,argent:2,or:2,gemme:1,pierre:2,bois:1,torc
 async function arriver(){
 if(!e.id){
 enLigne=false;SAC={torche:3};majSac();
-creuser();dire('mode découverte — rien n’est enregistré');return;
+creuser();placerLeJoueur();dire('mode découverte — rien n’est enregistré');return;
 }
 const d=await appel('mine_entrer',{p_joueur:e.id});
 if(!d||d.erreur){
-enLigne=false;SAC={torche:3};majSac();creuser();
+enLigne=false;SAC={torche:3};majSac();creuser();placerLeJoueur();
 dire(d&&d.erreur?d.erreur:'serveur injoignable — tu joues hors ligne');return;
 }
 niveau=d.niveau||1;
@@ -1544,7 +1556,7 @@ if(Array.isArray(d.paliers)&&d.paliers.length)PALIERS_OUVERTS=d.paliers.slice();
 else{PALIERS_OUVERTS=[1];for(let n=5;n<=niveau;n+=5)PALIERS_OUVERTS.push(n);}
 const s2=await appel('lire_sac',{p_joueur:e.id});
 SAC=(s2&&s2.sac)||{};
-creuser();majSac();
+creuser();placerLeJoueur();majSac();
 dire('niveau '+niveau+' · '+palier().nom);
 }
 async function ramasser(o){
@@ -1585,7 +1597,7 @@ if(d&&d.erreur)return dire(d.erreur);
 }
 niveau=vers;
 if(!ouvrirPalier(vers))dire('niveau '+vers+' · '+palier().nom);
-creuser();
+creuser();placerLeJoueur();
 }
 function remonterAuJour(){
 if(enLigne&&e.id)appel('mine_sortir',{p_joueur:e.id});
@@ -2200,7 +2212,7 @@ g.textAlign='left';
 $('b-torche').onclick=rallumer;
 $('b-sortir').onclick=remonterAuJour;
 $('mortOk').onclick=()=>{$('mort').classList.remove('on');mortJoueur=false;
-vie=vieMax;niveau=1;creuser();majSac();remonterAuJour();};
+vie=vieMax;niveau=1;creuser();placerLeJoueur();majSac();remonterAuJour();};
 majSac();taille();arriver();
 setTimeout(()=>{$('aide').style.opacity='0';},9000);
 requestAnimationFrame(boucle);</script>
