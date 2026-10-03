@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-1434';
+var MA_VERSION='2026-10-03-1637';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -7981,13 +7981,26 @@ async function annonceForet(){
       try{sauver();envoyerSauvegarde(true);}catch(x){}
       vibrer([10,30,10,30]);
       $('page2').classList.remove('on');
-      setTimeout(()=>bulle(r.nouveau?'Ton nom est gravé · la tenue du garde forestier est à ton vestiaire'
+      setTimeout(()=>motOuverture(r.nouveau?'Ton nom est gravé · la tenue du garde forestier est à ton vestiaire'
                                     :'Ton nom était déjà gravé · la tenue est à ton vestiaire'),600);
     }else{
       $('page2').classList.remove('on');
-      setTimeout(()=>bulle((r&&r.erreur)||'la plaque est close'),600);
+      setTimeout(()=>motOuverture((r&&r.erreur)||'la plaque est close'),600);
     }
   };
+}
+/* un mot qui s'affiche en bas de l'écran, sans dépendre des autres écrans */
+function motOuverture(t){
+  let b=document.getElementById('motOuv');
+  if(!b){b=document.createElement('div');b.id='motOuv';
+    b.style.cssText='position:fixed;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 86px);'+
+      'z-index:9;background:rgba(26,20,12,.94);border:1px solid #8a6a2a;border-radius:12px;'+
+      'padding:13px 15px;color:#f2dfa8;font:400 13.5px Georgia,serif;text-align:center;'+
+      'box-shadow:0 8px 24px rgba(0,0,0,.5);opacity:0;transition:opacity .25s';
+    document.body.appendChild(b);}
+  b.textContent=t;requestAnimationFrame(()=>b.style.opacity='1');
+  clearTimeout(motOuverture.t);
+  motOuverture.t=setTimeout(()=>{b.style.opacity='0';},4600);
 }
 const CSS_ANF=`
 #anf{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
@@ -12314,12 +12327,12 @@ async function ouvrirLeGrandChene(){
   if(bg)bg.onclick=async()=>{
     bg.disabled=true;bg.textContent='…';
     const r=await appelRPC('foret_signer',{p_joueur:e.id});
-    if(r&&r.erreur){bulle(r.erreur);bg.disabled=false;bg.textContent='GRAVER MON NOM';return;}
+    if(r&&r.erreur){motOuverture(r.erreur);bg.disabled=false;bg.textContent='GRAVER MON NOM';return;}
     e.cos=e.cos||{};e.cos.costume_forestier=true;
     try{sauver();envoyerSauvegarde(true);}catch(x){}
     vibrer([10,30,10,30]);
     ouvrirLeGrandChene();
-    setTimeout(()=>bulle('La tenue du garde forestier est à ton vestiaire'),900);
+    setTimeout(()=>motOuverture('La tenue du garde forestier est à ton vestiaire'),900);
   };
 }
 const CSS_CHENE=`
