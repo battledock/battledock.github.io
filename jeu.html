@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-0230';
+var MA_VERSION='2026-10-03-0241';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11609,7 +11609,7 @@ const F_hs=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
 const F_LAC_Y=()=>MONDE_H-300;
 const F_rive=(x)=>F_LAC_Y()+Math.sin(x*0.0075)*26+Math.sin(x*0.021+2)*11+Math.sin(x*0.052)*5;
 const F_LIS=30, F_BAR=44;
-const F_ETAL={x:900,y:640};        /* l'étal, à mi-chemin du lac */
+const F_ETAL={x:1280,y:530};       /* l'étal, à l'est de la carte */
 const F_BOIS={sombre:'#5b3f26',bas:'#6b4a2a',moyen:'#7d5833',clair:'#96693c',haut:'#ab7a49'};
 function F_palissade(){
   const c=document.createElement('canvas');c.width=20;c.height=34;
@@ -12106,38 +12106,47 @@ const CSS_ETAL=`
 #et .et-pied .p{background:#8a3a22;color:#f6ecd8}
 #et .et-pied .p:disabled{background:#ddd2b8;color:#9a8a6c}
 `;
-/* L'ÉTAL SOUS BÂCHE : on y vend ce qu'on récolte dans le bois. */
+/* L'ÉTAL DU BOIS : bâche haute à rayures, enseigne, deux lanternes et
+   le tableau des cours. Il se repère de loin dans le brun du sous-bois. */
 function graverEtalFo(){
-  const LW=96, LH=74;
+  const LW=112, LH=94;
   const c=document.createElement('canvas');c.width=LW;c.height=LH;
   const g=c.getContext('2d');g.imageSmoothingEnabled=false;
   const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
     g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
   const cx=LW/2, sol=LH-6;
   g.fillStyle='rgba(24,34,20,.24)';
-  g.beginPath();g.ellipse(cx,sol+1,42,7,0,0,7);g.fill();
-  /* les quatre perches */
-  [[-34,0],[30,0],[-28,-14],[24,-14]].forEach(([dx,dy])=>{
-    R(cx+dx,sol+dy-30,3,30-dy,'#6b4a2a');R(cx+dx,sol+dy-30,1.2,30-dy,'#96693c');});
-  /* la bâche, rayée et tendue */
-  for(let i=0;i<68;i++){const x=cx-34+i;
-    const h=Math.round(Math.sin(i/68*3.14)*5);
-    R(x,sol-34-h,1,3,i%7<4?'#8a3a22':'#c9a878');}
-  R(cx-34,sol-32,68,2,'#5b3f26');
-  /* l'étal et ses pieds */
-  R(cx-26,sol-14,52,5,'#7d5833');R(cx-26,sol-14,52,1.4,'#96693c');
-  R(cx-24,sol-9,3,9,'#6b4a2a');R(cx+21,sol-9,3,9,'#6b4a2a');
-  /* les cageots et leurs marchandises */
-  for(let k=0;k<5;k++){const x=cx-23+k*10;
-    R(x,sol-21,9,7,'#8a6238');R(x,sol-21,9,2,'#a5764a');
-    R(x,sol-16,9,1.4,'#6b4a2a');
-    for(let i=0;i<3;i++)R(x+1+i*3,sol-23,2,2,
-      ['#c0392b','#e8b43a','#2e2438','#8a5a2a','#3a4a8a'][k]);}
-  /* une pancarte posée contre un pied */
-  R(cx+30,sol-20,14,9,'#8a6238');R(cx+31,sol-19,12,7,'#c9a878');
-  g.font='700 4px Arial,sans-serif';g.textAlign='center';g.fillStyle='#4a3420';
-  g.fillText('ON ACHÈTE',cx+37,sol-14);g.textAlign='left';
-  R(cx+36,sol-11,2,11,'#6b4a2a');
+  g.beginPath();g.ellipse(cx,sol+1,52,8,0,0,7);g.fill();
+  /* les deux grandes perches */
+  [[-44],[40]].forEach(([dx])=>{
+    R(cx+dx,sol-52,4,52,'#6b4a2a');R(cx+dx,sol-52,1.4,52,'#96693c');});
+  /* la bâche, rayée rouge et blanc, bombée */
+  for(let i=0;i<88;i++){const x=cx-44+i, h=Math.round(Math.sin(i/88*3.14)*11);
+    R(x,sol-56-h,1,9,i%10<5?'#a8342a':'#f2e7d2');}
+  R(cx-44,sol-48,88,3,'#5b3f26');
+  for(let k=0;k<11;k++)R(cx-44+k*8,sol-45,6,4,k%2?'#a8342a':'#f2e7d2');   /* les festons */
+  /* l'enseigne */
+  R(cx-26,sol-38,52,10,'#5b3f26');R(cx-25,sol-37,50,8,'#c9a878');
+  g.font='700 5.5px Georgia,serif';g.textAlign='center';g.fillStyle='#4a3420';
+  g.fillText('L’ÉTAL DU BOIS',cx,sol-31);g.textAlign='left';
+  /* les deux lanternes, avec leur halo */
+  [[-46],[42]].forEach(([dx])=>{
+    R(cx+dx-2,sol-44,9,10,'#3a3f46');R(cx+dx-1,sol-43,7,8,'#ffd96a');
+    R(cx+dx-1,sol-43,7,2,'#fff2b8');
+    for(let a=0;a<6.283;a+=0.3)
+      R(cx+dx+2+Math.cos(a)*11,sol-39+Math.sin(a)*11,3,2,'rgba(255,214,110,.12)');});
+  /* l'étal et ses cageots */
+  R(cx-40,sol-16,56,6,'#7d5833');R(cx-40,sol-16,56,1.6,'#96693c');
+  R(cx-38,sol-10,4,10,'#6b4a2a');R(cx+10,sol-10,4,10,'#6b4a2a');
+  for(let k=0;k<5;k++){const x=cx-38+k*11;
+    R(x,sol-24,10,8,'#8a6238');R(x,sol-24,10,2,'#a5764a');R(x,sol-19,10,1.4,'#6b4a2a');
+    for(let i=0;i<3;i++)R(x+1+i*3,sol-26,2.4,2.4,
+      ['#c0392b','#e8b43a','#2e2438','#4f7a3a','#3a4a8a'][(k+i)%5]);}
+  /* le tableau des cours */
+  R(cx+20,sol-28,22,20,'#5b3f26');R(cx+21,sol-27,20,18,'#e4d7b6');
+  for(let k=0;k<4;k++){
+    R(cx+23,sol-25+k*4,4,2.4,['#c0392b','#8a5a2a','#e8b43a','#2e2438'][k]);
+    R(cx+29,sol-24+k*4,8,1.4,'#8a7454');}
   return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
 }
 /* LE QUAI DE BOIS : la station de métro de la forêt */
@@ -12267,10 +12276,10 @@ function semerLaForet(){
   semerSimple('souche',9,661,120,true);
   /* la résine n'est pas un objet : elle apparaît d'elle-même sur les arbres */
   DECOR.push({t:'x_fo_quai',x:MONDE_L/2,y:MONDE_H/2,v:0,gr:0,bati:true,demi:46,ouvre:'metroFerme'});
-  DECOR.push({t:'x_fo_etal',x:F_ETAL.x,y:F_ETAL.y,v:0,gr:0,bati:true,demi:30,ouvre:'etalForet'});
+  DECOR.push({t:'x_fo_etal',x:F_ETAL.x,y:F_ETAL.y,v:0,gr:0,bati:true,demi:34,ouvre:'etalForet'});
   /* on dégage autour de l'étal, sinon il serait à moitié caché */
   DECOR=DECOR.filter(o=>o.t==='x_fo_etal'||o.t==='x_fo_quai'
-    ||Math.hypot(o.x-F_ETAL.x,o.y-F_ETAL.y)>74);
+    ||Math.hypot(o.x-F_ETAL.x,o.y-F_ETAL.y)>86);
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
 /* ce qui barre le passage dans la forêt */
@@ -24542,7 +24551,7 @@ TAILLES['x_fo_girolle']=[{w:24,h:6},{w:24,h:6},{w:24,h:6}];
 TAILLES['x_fo_plume']=[{w:16,h:5},{w:16,h:5},{w:16,h:5}];
 TAILLES['x_fo_argile']=[{w:26,h:7},{w:26,h:7},{w:26,h:7}];
 TAILLES['x_fo_rocher']=[{w:20,h:8},{w:24,h:9},{w:28,h:10}];
-TAILLES['x_fo_etal']=[{w:56,h:12}];
+TAILLES['x_fo_etal']=[{w:62,h:12}];
 TAILLES['x_fo_mure']=[{w:22,h:8},{w:26,h:9}];
 TAILLES['x_fo_framboise']=[{w:18,h:8},{w:22,h:9}];
 TAILLES['x_fo_myrtille']=[{w:26,h:7},{w:30,h:8}];
