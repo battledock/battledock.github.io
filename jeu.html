@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-0600';
+var MA_VERSION='2026-10-04-0620';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -19839,7 +19839,31 @@ overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #cls .l.moi .s,#cls .l.moi .r{color:#e8c06a}
 #cls .ecart{padding:16px;text-align:center;font:italic 13px Georgia,serif;color:#8fa6bd}
 #cls .ecart b{font-style:normal;color:#e8c06a}
-#cls .vide{padding:40px 16px;text-align:center;font:italic 14px Georgia,serif;color:#8fa6bd}`;
+#cls .vide{padding:40px 16px;text-align:center;font:italic 14px Georgia,serif;color:#8fa6bd}
+#cls .seg{display:flex;gap:7px;padding:0 16px 14px;flex:none}
+#cls .seg button{border:0;border-radius:13px;padding:7px 15px;font:700 12px 'Baloo 2',sans-serif;
+background:rgba(255,255,255,.07);color:#8fa6bd}
+#cls .seg button.on{background:#e8c06a;color:#2a2016}
+/* LE MUR DES TROPHÉES */
+#cls .rub{font:700 9px ui-monospace,monospace;letter-spacing:2px;color:#8fa6bd;padding:16px 16px 9px}
+#cls .cartes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:0 16px}
+#cls .carte{background:rgba(255,255,255,.06);border-radius:14px;padding:12px 8px;text-align:center;position:relative}
+#cls .carte.or{background:rgba(232,192,106,.14);box-shadow:inset 0 0 0 2px #e8c06a}
+#cls .carte .rg{position:absolute;left:8px;top:8px;font:700 11px 'Baloo 2',sans-serif;color:#5f7489}
+#cls .carte.or .rg{color:#e8c06a}
+#cls .carte img{width:52px;height:52px;border-radius:50%;background:#2f4a66;display:block;margin:0 auto 7px;image-rendering:pixelated}
+#cls .carte b{display:block;font:700 13px 'Baloo 2',sans-serif;color:#f6efdc;
+overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cls .carte .v{font:11px ui-monospace,monospace;color:#e8c06a;margin-top:2px}
+#cls .carte small{display:block;font:italic 11px Georgia,serif;color:#5f7489;margin-top:3px}
+#cls .plaque{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+#cls .plaque canvas{width:62px;height:26px;flex:none;image-rendering:pixelated}
+#cls .plaque .g{flex:1;min-width:0}
+#cls .plaque b{display:block;font:700 14px 'Baloo 2',sans-serif;color:#f6efdc;
+overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cls .plaque small{font:italic 11px Georgia,serif;color:#5f7489}
+#cls .plaque .cm{font:700 16px 'Baloo 2',sans-serif;color:#e8c06a;flex:none}
+#cls .plaque .cm i{font:9px ui-monospace,monospace;color:#5f7489;font-style:normal;margin-left:2px}`;
 const clsPts=(n)=>Number(n||0).toLocaleString('fr-FR');
 const clsVu=(maj)=>{const v=maj?Math.round((Date.now()-new Date(maj).getTime())/60000):null;
 if(v===null)return '';
@@ -19850,14 +19874,23 @@ return 'vu il y a '+Math.round(v/1440)+' j';};
 function clsTete(j){
 try{return teteDe({ap:(j.apparence||{}),pseudo:j.pseudo}).toDataURL();}catch(x){return '';}
 }
+let CLS_VUE='recolte';
+function clsCadre(titre,sus){
+const tete='<div class="hd"><span class="tx"><small>'+sus+'</small><b>'+titre+'</b></span>'+
+'<button id="clsX">✕</button></div>'+
+'<div class="seg"><button data-cv="recolte"'+(CLS_VUE==='recolte'?' class="on"':'')+'>Récolte</button>'+
+'<button data-cv="peche"'+(CLS_VUE==='peche'?' class="on"':'')+'>Pêche</button></div>';
+$('page2Fond').innerHTML='<div id="cls">'+tete+'<div class="corps"><div class="vide">On ouvre le registre…</div></div></div>';
+$('clsX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+$('page2Fond').querySelectorAll('[data-cv]').forEach(b=>b.onclick=()=>{
+CLS_VUE=b.dataset.cv;ouvrirLeClassement();});
+}
 async function ouvrirLeClassement(){
 if(!document.getElementById('cssCls')){const st=document.createElement('style');
 st.id='cssCls';st.textContent=CSS_CLS;document.head.appendChild(st);}
 $('page2Fond').className='';$('page2').classList.add('on');
-const tete='<div class="hd"><span class="tx"><small>BATTLE DOCK · DEPUIS TOUJOURS</small>'+
-'<b>Classement</b></span><button id="clsX">✕</button></div>';
-$('page2Fond').innerHTML='<div id="cls">'+tete+'<div class="corps"><div class="vide">On ouvre le registre…</div></div></div>';
-$('clsX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+if(CLS_VUE==='peche')return clsLeMur();
+clsCadre('Classement','BATTLE DOCK · DEPUIS TOUJOURS');
 try{sauver();envoyerSauvegarde(true);}catch(x){}   /* on se compte avec un score à jour */
 let liste=[];
 try{
@@ -19885,6 +19918,61 @@ const ecart=(liste[iMoi-1].score||0)-(liste[iMoi].score||0)+1;
 h+='<div class="ecart">Il te manque <b>'+clsPts(ecart)+' objet'+(ecart>1?'s':'')+'</b> pour passer '+iMoi+(iMoi===1?'ᵉʳ':'ᵉ')+'</div>';
 }else if(iMoi===0){h+='<div class="ecart">Tu es <b>premier du port</b>. Tiens bon.</div>';}
 C.innerHTML=h;
+}
+/* ================= LE MUR DES TROPHÉES =================
+   Les meilleurs pêcheurs, les légendes sorties de l'eau, et les cinq plus
+   grosses prises de la semaine. Les poissons sont dessinés par le jeu. */
+function clsPoisson(cv,esp){
+try{
+const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+cv.width=62*D;cv.height=26*D;g.setTransform(D,0,0,D,0,0);
+if(ESP_PECHE[esp]&&ESP_PECHE[esp].lac){
+g.save();g.translate(31,13);g.scale(0.62,0.62);
+try{lacDessiner(g,esp,0,0,1);}catch(x){}
+g.restore();return;
+}
+const F=FORMES_POISSON[esp]||{L:12,H:6};
+const ech=Math.min(1.4,52/(F.L+(F.f==='epee'?14:6)),20/(F.H+8));
+g.save();g.translate(31,13);g.scale(ech,ech);
+try{dessinerPoisson(g,0,0,esp,1,0,false);}catch(x){}
+g.restore();
+}catch(x){}
+}
+async function clsLeMur(){
+clsCadre('Le mur des trophées','LES PLUS BEAUX COUPS DE LIGNE');
+let d=null, teteDe2={};
+try{d=await appelRPC('records_peche',{});}catch(x){}
+try{
+const r=await fetch(URL_SB+'/rest/v1/joueurs?select=pseudo,apparence&limit=200',{headers:sbEntetes});
+const l=await r.json();
+(Array.isArray(l)?l:[]).forEach(j=>{if(j&&j.pseudo)teteDe2[j.pseudo]=j.apparence;});
+}catch(x){}
+const C=$('page2Fond').querySelector('#cls .corps');if(!C)return;
+if(!d||d.erreur||d.code){C.innerHTML='<div class="vide">Le mur est en travaux, reviens dans un moment.</div>';return;}
+const esp={};(d.especes||[]).forEach(x=>esp[x.pseudo]=x.n);
+const quand=(t)=>{const j=Math.round((Date.now()-new Date(t).getTime())/86400000);
+return j<=0?'aujourd’hui':(j===1?'hier':'il y a '+j+' jours');};
+const nomP=(k)=>(OBJETS[k]&&OBJETS[k].nom)||(ESP_PECHE[k]&&ESP_PECHE[k].nom)||k;
+let h='<div class="rub">LES MEILLEURS PÊCHEURS</div><div class="cartes">'+
+((d.points||[]).length?(d.points||[]).slice(0,8).map((x,i)=>
+'<div class="carte'+(i===0?' or':'')+'"><span class="rg">'+(i+1)+'</span>'+
+'<img src="'+clsTete({apparence:teteDe2[x.pseudo],pseudo:x.pseudo})+'" alt="">'+
+'<b>'+echapperT(x.pseudo)+'</b><div class="v">'+clsPts(x.points)+' pts</div>'+
+'<small>'+(esp[x.pseudo]||0)+' espèces · '+clsPts(x.total)+' poisson'+(x.total>1?'s':'')+'</small></div>').join('')
+:'<div class="vide" style="grid-column:1/3">Personne n’a encore rien pêché.</div>')+'</div>';
+const plaque=(e2,titre,sous,cm)=>'<div class="plaque"><canvas data-f="'+echapperT(e2)+'"></canvas>'+
+'<span class="g"><b>'+titre+'</b><small>'+sous+'</small></span>'+
+'<span class="cm">'+cm+'<i>cm</i></span></div>';
+h+='<div class="rub">LES LÉGENDES</div>'+((d.legendes||[]).length
+?(d.legendes||[]).map(x=>plaque(x.espece,echapperT(nomP(x.espece))+' · '+echapperT(x.pseudo),'légendaire · '+quand(x.jour),x.cm)).join('')
+:'<div class="vide">Les légendes attendent encore leur maître.</div>');
+h+='<div class="rub">LES CINQ PLUS GROSSES PRISES DE LA SEMAINE</div>'+((d.gros||[]).length
+?(d.gros||[]).slice(0,5).map((x,i)=>plaque(x.espece,(i+1)+'. '+echapperT(nomP(x.espece))+' · '+echapperT(x.pseudo),quand(x.quand),x.cm)).join('')
+:'<div class="vide">Rien de sorti de l’eau cette semaine.</div>');
+h+='<div class="ecart">les points suivent la rareté des prises</div>';
+C.innerHTML=h;
+C.querySelectorAll('canvas[data-f]').forEach(cv=>clsPoisson(cv,cv.dataset.f));
 }
 let COURRIER_N=0;
 async function lireLeCourrier(){if(!e.id)return;
