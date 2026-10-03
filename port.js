@@ -1928,7 +1928,6 @@ nv++;
 }
 });
 P('metro',XP.metro[0],XP.metro[1],{col:[38,14]});
-P('x_tuto',XP.ruelle.x,XP.maisonsY+80,{col:[22,3],bati:true,ouvre:'avis'});
 [280,420,840,980,1120].forEach((x,i)=>P('lanterneP',x,324,{gr:i}));
 [[210,316],[490,316],[770,316],[1050,316],[1190,316],[1270,560],[1340,560]]
 .forEach(([x,y])=>P('bancP',x,y));
