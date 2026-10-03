@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-0425';
+var MA_VERSION='2026-10-03-0438';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -773,6 +773,12 @@ box-shadow:inset 0 0 0 2px #3a2616,inset 0 0 0 3px rgba(240,207,125,.35)}
 padding:16px 16px calc(18px + env(safe-area-inset-bottom));background-image:repeating-linear-gradient(0deg,transparent 0 23px,rgba(120,90,50,.12) 23px 24px)}
 #carnetP h2{font:400 22px Georgia,serif;margin:0 0 4px}
 #carnetP .sousC{font:italic 13px Georgia,serif;color:#6a5a40;margin-bottom:12px}
+/* les jauges d'avancement du carnet */
+#carnetP .jaugeC{background:#e4d6bc;border-radius:9px;padding:8px 11px;margin:0 0 7px}
+#carnetP .jaugeC .hC{display:flex;justify-content:space-between;
+  font:700 8px Arial,sans-serif;letter-spacing:1.4px;color:#5f4d34}
+#carnetP .jaugeC .bC{height:9px;border-radius:5px;background:#cdbb97;margin-top:5px;overflow:hidden}
+#carnetP .jaugeC .bC i{display:block;height:100%}
 #carnetP .esp{display:flex;align-items:center;gap:12px;padding:8px 4px;border-bottom:1px dashed rgba(90,70,40,.3)}
 #carnetP .esp canvas{image-rendering:pixelated;flex:0 0 60px}
 #carnetP .esp b{display:block;font:700 15px Georgia,serif}
@@ -20083,17 +20089,43 @@ const f=$('feuilleC');f.innerHTML='<h2>Carnet de pêche</h2><div class="sousC">O
 $('carnetP').classList.add('on');
 const d=await appelRPC('mon_carnet',{p_joueur:e.id});
 CARNET_PECHE=(d&&typeof d==='object'&&!d.erreur)?d:(CARNET_PECHE||{});
-const n=Object.keys(CARNET_PECHE).length;
-f.innerHTML='<h2>Carnet de pêche</h2><div class="sousC">'+n+' espèce'+(n>1?'s':'')+' sur '+CARNET_ORDRE.length+' · le port</div>';
-CARNET_ORDRE.forEach(([id,rare,indice])=>{
+/* LA LISTE COMPLÈTE : celle du port, plus toutes les prises du lac.
+   Elle se construit toute seule, donc elle ne peut plus être en retard. */
+const LAC_LISTE=Object.keys(ESP_PECHE).filter(k=>ESP_PECHE[k].lac)
+  .map(k=>[k,'LE LAC','le lac, depuis le ponton']);
+const ORDRE=CARNET_ORDRE.concat(LAC_LISTE.filter(([k])=>!CARNET_ORDRE.some(([j])=>j===k)));
+const n=ORDRE.filter(([id])=>CARNET_PECHE[id]).length;
+/* le compte par monde, et par rareté */
+const dansLac=(id)=>ESP_PECHE[id]&&ESP_PECHE[id].lac;
+const nMer=ORDRE.filter(([id])=>!dansLac(id)).length;
+const nMerPris=ORDRE.filter(([id])=>!dansLac(id)&&CARNET_PECHE[id]).length;
+const nLac=ORDRE.filter(([id])=>dansLac(id)).length;
+const nLacPris=ORDRE.filter(([id])=>dansLac(id)&&CARNET_PECHE[id]).length;
+const jauge=(titre,pris,tot,col)=>
+  '<div class="jaugeC"><div class="hC"><span>'+titre+'</span><span>'+pris+' / '+tot+'</span></div>'+
+  '<div class="bC"><i style="width:'+Math.round(pris/Math.max(1,tot)*100)+'%;background:'+col+'"></i></div></div>';
+f.innerHTML='<h2>Carnet de pêche</h2><div class="sousC">'+n+' espèce'+(n>1?'s':'')+' sur '+ORDRE.length+'</div>'+
+  jauge('LA COLLECTION',n,ORDRE.length,'#c9a24a')+
+  jauge('LA MER',nMerPris,nMer,'#4a93b4')+
+  jauge('LE LAC',nLacPris,nLac,'#4f7a3a');
+ORDRE.forEach(([id,rare,indice])=>{
 const c=CARNET_PECHE[id], S=ESP_PECHE[id];
 const ligne=document.createElement('div');ligne.className='esp'+(c?'':' inconnu');
 const cv=document.createElement('canvas');cv.width=48;cv.height=26;cv.style.width='60px';cv.style.height='32px';
 const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
-const FF=FORMES_POISSON[id]||{L:12,H:6}, ech=Math.min(1,40/(FF.L+(FF.f==='epee'?14:6)),20/(FF.H+8));
-g.save();g.translate(24,13);g.scale(ech,ech);
-if(c)dessinerPoisson(g,0,0,id,1,0,false);else{g.globalAlpha=.85;dessinerPoisson(g,0,0,id,1,0,true);}
-g.restore();ligne.appendChild(cv);
+if(dansLac(id)){
+  /* les prises du lac ont leur propre dessin */
+  g.save();g.translate(24,13);g.scale(0.62,0.62);
+  if(!c)g.globalAlpha=.4;
+  try{lacDessiner(g,id,0,0,1);}catch(x){}
+  g.restore();
+}else{
+  const FF=FORMES_POISSON[id]||{L:12,H:6}, ech=Math.min(1,40/(FF.L+(FF.f==='epee'?14:6)),20/(FF.H+8));
+  g.save();g.translate(24,13);g.scale(ech,ech);
+  if(c)dessinerPoisson(g,0,0,id,1,0,false);else{g.globalAlpha=.85;dessinerPoisson(g,0,0,id,1,0,true);}
+  g.restore();
+}
+ligne.appendChild(cv);
 const t=document.createElement('div');
 t.innerHTML=c?'<b>'+(OBJETS[id]?OBJETS[id].nom:S.nom)+'</b><span>'+c.n+' prise'+(c.n>1?'s':'')+' · record '+c.record+' cm</span>'
 :'<b>???</b><span>'+indice+'</span>';
