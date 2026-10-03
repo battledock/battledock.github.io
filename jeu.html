@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-2115';
+var MA_VERSION='2026-10-03-2125';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -23078,9 +23078,28 @@ if(!OBJETS[x.cle])OBJETS[x.cle]={nom:x.nom||x.cle,d:'Pris au lac, sur l\u2019aut
 if(!PRIX_POISSON[x.cle])PRIX_POISSON[x.cle]=(x.prix||0)*100;
 if(!F_NOMS[x.cle])F_NOMS[x.cle]=x.nom||x.cle;
 });
+graverLesIconesDuLac();
 }catch(x){}
 }
 chargerLesEspecesDuLac();
+/* L'ICÔNE DES PRISES DU LAC : elles ne sont pas dans FORMES_POISSON, elles ont
+   leur propre dessin. On le grave une fois sur une toile, et on le pose dans la
+   liste comme une image, exactement comme pour les poissons de mer. */
+function iconeDuLac(cle){
+try{
+if(typeof LAC_P==='undefined'||!LAC_P[cle])return '';
+const c=document.createElement('canvas');c.width=32;c.height=32;
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+g.save();g.translate(16,16);g.scale(0.52,0.52);
+lacDessiner(g,cle,0,0,1);
+g.restore();
+return '<image href="'+c.toDataURL()+'" x="0" y="0" width="16" height="16" style="image-rendering:pixelated"/>';
+}catch(x){return '';}
+}
+function graverLesIconesDuLac(){
+try{Object.keys(LAC_P||{}).forEach(k=>{if(!ICONES[k]){const i=iconeDuLac(k);if(i)ICONES[k]=i;}});}catch(x){}
+}
+
 let CRI_VENTE={}, CRI_EN_COURS=false;
 let COURS={};                       /* LE MARCHÉ : les prix bougent pour tout le monde */
 async function lireLesCours(types){
