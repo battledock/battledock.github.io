@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-0306';
+var MA_VERSION='2026-10-03-0326';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12106,6 +12106,48 @@ const CSS_ETAL=`
 #et .et-pied .p{background:#8a3a22;color:#f6ecd8}
 #et .et-pied .p:disabled{background:#ddd2b8;color:#9a8a6c}
 `;
+/* LE PONTON : une passerelle de planches fines qui avance dans le lac,
+   avec son garde-corps léger et ses pilotis reflétés dans l'eau. */
+const F_PONT={x:520,y:0};          /* y calculé à la rive, voir le semis */
+const F_B={n:'#3a2614',o:'#4e3620',b:'#5f4426',mm:'#715430',
+  c:'#8a6a3c',h:'#a8854e',e:'#c6a46a',s:'#2a1c0e'};
+function graverPontonFo(){
+  const LW=40, LH=72, PROF=50, LARG=24;
+  const c=document.createElement('canvas');c.width=LW;c.height=LH;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
+    g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const cx=LW/2, y0=LH-PROF-4;
+  /* l'ombre dans l'eau */
+  g.fillStyle='rgba(10,30,40,.3)';
+  g.beginPath();g.ellipse(cx+2,y0+46,16,6,0,0,7);g.fill();
+  /* les quatre pilotis */
+  const pilotis=(x,y,h)=>{
+    R(x,y-h,3,h,F_B.b);R(x,y-h,1,h,F_B.h);R(x+2,y-h+1,1,h-1,F_B.n);
+    R(x-1,y-h-1,5,2,F_B.c);R(x-1,y-h-1,5,1,F_B.e);
+    R(x,y-h+Math.round(h*0.45),3,1,F_B.o);
+    for(let k=0;k<4;k++)R(x-1,y+k,5,1,'rgba(26,62,76,'+(0.34-k*0.07).toFixed(2)+')');};
+  [[-11,30],[9,30],[-10,46],[8,46]].forEach(([dx,dy])=>pilotis(cx+dx,y0+dy+7,11));
+  /* le tablier, planches de deux pixels */
+  for(let j=0;j<PROF;j++){
+    const l=Math.round(LARG/2), rang=Math.floor(j/2), ton=rang%3;
+    for(let i=-l;i<=l;i++){
+      let col = ton===0?F_B.mm : (ton===1?F_B.c : F_B.b);
+      if(((i*7+rang*13)%11)===0)col=F_B.o;          /* la veine */
+      if(j%2===0)col = ton===0?F_B.h : (ton===1?F_B.e : F_B.c);
+      if(j%2===1)col=F_B.n;                         /* le joint */
+      if(i<-l+1)col=F_B.e; if(i>l-1)col=F_B.o;      /* les bords biseautés */
+      R(cx+i,y0+j,1,1,col);}}
+  R(cx-LARG/2-1,y0,1,PROF,F_B.s);R(cx+LARG/2+1,y0,1,PROF,F_B.s);
+  /* le garde-corps, d'un pixel */
+  [[-13],[13]].forEach(([dx])=>{
+    for(let j=0;j<PROF;j+=8){R(cx+dx,y0+j-9,1,10,F_B.b);R(cx+dx,y0+j-9,1,4,F_B.h);}
+    R(cx+dx,y0-10,1,PROF,F_B.c);R(cx+dx,y0-11,1,PROF,F_B.e);
+    R(cx+dx,y0-5,1,PROF,F_B.o);});
+  R(cx-13,y0-11,27,1,F_B.e);
+  R(cx-13,y0,26,1,F_B.e);
+  return {toile:c,W:LW,H:LH,sol:y0+2,nuit:null};   /* il se pose par son entrée */
+}
 /* L'ÉTAL DU BOIS : bâche haute à rayures, enseigne, deux lanternes et
    le tableau des cours. Il se repère de loin dans le brun du sous-bois. */
 function graverEtalFo(){
@@ -12277,6 +12319,11 @@ function semerLaForet(){
   /* la résine n'est pas un objet : elle apparaît d'elle-même sur les arbres */
   DECOR.push({t:'x_fo_quai',x:MONDE_L/2,y:MONDE_H/2,v:0,gr:0,bati:true,demi:46,ouvre:'metroFerme'});
   DECOR.push({t:'x_fo_etal',x:F_ETAL.x,y:F_ETAL.y,v:0,gr:0,bati:true,demi:34,ouvre:'etalForet'});
+  /* LE PONTON : il part de la rive et avance dans l'eau */
+  F_PONT.y=Math.round(F_rive(F_PONT.x))-2;
+  DECOR.push({t:'x_fo_ponton',x:F_PONT.x,y:F_PONT.y,v:0,gr:0});
+  DECOR=DECOR.filter(o=>o.t==='x_fo_ponton'
+    ||Math.hypot(o.x-F_PONT.x,o.y-F_PONT.y)>40);
   /* on dégage autour de l'étal, sinon il serait à moitié caché */
   DECOR=DECOR.filter(o=>o.t==='x_fo_etal'||o.t==='x_fo_quai'
     ||Math.hypot(o.x-F_ETAL.x,o.y-F_ETAL.y)>86);
@@ -12284,6 +12331,8 @@ function semerLaForet(){
 }
 /* ce qui barre le passage dans la forêt */
 function bloqueForet(x,y){
+  /* LE PONTON : on marche dessus, au-dessus de l'eau */
+  if(Math.abs(x-F_PONT.x)<11&&y>F_rive(F_PONT.x)-10&&y<F_PONT.y+48)return false;
   if(y>F_rive(x)-3)return true;
   if(y<F_BAR+8)return true;
   if(x<F_BAR+6&&y<F_rive(F_BAR)-20)return true;
@@ -12424,6 +12473,7 @@ if(t==='x_fo_plume'){XCAL[cle]=graverPlumeFo(v||0);if(!CALQUES_DECO[t])CALQUES_D
 if(t==='x_fo_argile'){XCAL[cle]=graverArgileFo(!v);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_rocher'){XCAL[cle]=graverRocherFo(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_etal'){XCAL[cle]=graverEtalFo();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_ponton'){XCAL[cle]=graverPontonFo();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_mure'){XCAL[cle]=graverBuissonFo(0,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_framboise'){XCAL[cle]=graverBuissonFo(1,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_myrtille'){XCAL[cle]=graverBuissonFo(2,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
@@ -24559,6 +24609,7 @@ TAILLES['x_fo_plume']=[{w:16,h:5},{w:16,h:5},{w:16,h:5}];
 TAILLES['x_fo_argile']=[{w:26,h:7},{w:26,h:7},{w:26,h:7}];
 TAILLES['x_fo_rocher']=[{w:20,h:8},{w:24,h:9},{w:28,h:10}];
 TAILLES['x_fo_etal']=[{w:62,h:12}];
+TAILLES['x_fo_ponton']=[{w:26,h:10}];
 TAILLES['x_fo_mure']=[{w:22,h:8},{w:26,h:9}];
 TAILLES['x_fo_framboise']=[{w:18,h:8},{w:22,h:9}];
 TAILLES['x_fo_myrtille']=[{w:26,h:7},{w:30,h:8}];
