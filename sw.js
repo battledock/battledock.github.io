@@ -4,7 +4,7 @@
    entre le navigateur et le réseau : pour les pages du jeu, il va TOUJOURS
    demander au serveur, et ne se rabat sur sa copie que si le réseau tombe. */
 const RESEAU_DABORD=[/\.html(\?|$)/i, /version\.json/i, /\.js(\?|$)/i];
-const CACHE='bdl-secours-v1';
+const CACHE='bdl-secours-v2';   /* on change de nom : l'ancien cache est jeté à l'activation */
 self.addEventListener('install',e=>{self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil((async()=>{
   const noms=await caches.keys();
