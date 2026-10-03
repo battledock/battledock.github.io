@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-1140';
+var MA_VERSION='2026-10-03-1212';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12250,6 +12250,56 @@ function graverPontonFo(){
   for(let j=0;j<PROF;j++)R(cx+LARG/2+2,y0+j+2,3,1,'rgba(14,38,48,.26)');
   return {toile:c,W:LW,H:LH,sol:y0+2,nuit:null};   /* il se pose par son entrée */
 }
+/* L'ENTRÉE DE LA MINE : un cadre de poutres dans l'éboulis, le trou noir,
+   des rails qui sortent et un wagonnet chargé de minerai. */
+function graverMineFo(){
+  const LW=112, LH=86;
+  const c=document.createElement('canvas');c.width=LW;c.height=LH;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
+    g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const cx=LW/2, sol=LH-6;
+  const P={o:'#4f4f4c',m:'#6a6760',c:'#7a7770',h:'#8e9a92',e:'#a8b4ac'};
+  const B={n:'#3a2614',o:'#4e3620',b:'#5f4426',m:'#715430',c:'#8a6a3c',h:'#a8854e',e:'#c6a46a'};
+  g.fillStyle='rgba(24,34,20,.28)';
+  g.beginPath();g.ellipse(cx,sol+1,48,8,0,0,7);g.fill();
+  /* l'éboulis de roche */
+  const LG=50, HT=48;
+  for(let i=-LG;i<=LG;i++){
+    const t=i/LG, h=Math.round(HT*Math.pow(Math.max(0,1-t*t),0.6));
+    for(let j=0;j<=h;j++){
+      const n=F_hs(i*0.4+j*0.7);
+      R(cx+i,sol-j,1,1,n<.3?P.o:(n<.62?P.m:(n<.86?P.c:P.h)));}
+    R(cx+i,sol-h,1,1,P.e);}
+  /* le trou noir */
+  for(let i=-19;i<=19;i++){
+    const t=i/19, h=Math.round(30*Math.sqrt(Math.max(0,1-t*t)));
+    for(let j=0;j<=h;j++){const p=j/Math.max(1,h);
+      R(cx+i,sol-j,1,1,p>0.72?'#141210':(p>0.4?'#0e0c0a':'#070605'));}}
+  /* la charpente */
+  R(cx-25,sol-38,7,38,B.b);R(cx-25,sol-38,2.4,38,B.h);R(cx-19,sol-38,2,38,B.n);
+  R(cx+18,sol-38,7,38,B.b);R(cx+18,sol-38,2.4,38,B.h);R(cx+24,sol-38,2,38,B.n);
+  R(cx-30,sol-45,61,7,B.m);R(cx-30,sol-45,61,2.4,B.e);R(cx-30,sol-39,61,2,B.n);
+  R(cx-22,sol-34,45,4,B.o);
+  /* les rails qui sortent */
+  for(let k=0;k<11;k++)R(cx-34+k*7,sol+1,5,2,'#5f666c');
+  R(cx-36,sol-1,74,1.6,'#8a929a');R(cx-36,sol+2,74,1.6,'#8a929a');
+  /* le wagonnet, chargé */
+  const wx=cx+8;
+  R(wx,sol-17,28,13,'#5a5f64');R(wx,sol-17,28,2.4,'#848d94');
+  R(wx,sol-6,28,2,'#3a3f44');
+  for(let k=0;k<4;k++)R(wx+3+k*7,sol-17,1.6,13,'#484d52');
+  for(let k=0;k<8;k++){const x=wx+3+F_hs(k*5)*22;
+    R(x,sol-20,5,4,k%3?'#7a6a52':'#9a8a6a');R(x,sol-20,5,1.4,'#b8a888');}
+  [[5],[22]].forEach(([dx])=>{
+    for(let a=0;a<6.283;a+=0.14)R(wx+dx+Math.cos(a)*4.4,sol-2+Math.sin(a)*4.4,2,2,'#2e3338');
+    R(wx+dx-1.5,sol-3.5,3,3,'#6a7278');});
+  /* la lanterne accrochée au linteau */
+  R(cx+26,sol-44,3,8,B.b);
+  R(cx+23,sol-38,9,9,'#3a3f46');R(cx+24,sol-37,7,7,'#ffd96a');
+  for(let a=0;a<6.283;a+=0.3)R(cx+27+Math.cos(a)*12,sol-34+Math.sin(a)*12,3,2,'rgba(255,214,110,.12)');
+  return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
+}
 /* LA MAISON DE PIERRE : moellons gris, chaînage d'angle, toit de tuiles
    et cheminée qui fume. C'est l'atelier du bois. */
 function graverMaisonFo(){
@@ -12464,6 +12514,9 @@ function semerLaForet(){
   DECOR.push({t:'x_fo_etal',x:F_ETAL.x,y:F_ETAL.y,v:0,gr:0,bati:true,demi:34,ouvre:'etalForet'});
   /* LA MAISON DE PIERRE : l'atelier du bois, au nord-est */
   DECOR.push({t:'x_fo_maison',x:1090,y:230,v:0,gr:0,bati:true,demi:40,ouvre:'atelierBois'});
+  /* L'ENTRÉE DE LA MINE, à l'ouest */
+  DECOR.push({t:'x_fo_mine',x:370,y:300,v:0,gr:0,bati:true,demi:42,ouvre:'mineForet'});
+  DECOR=DECOR.filter(o=>o.t==='x_fo_mine'||Math.hypot(o.x-370,o.y-300)>96);
   DECOR=DECOR.filter(o=>o.t==='x_fo_maison'||Math.hypot(o.x-1090,o.y-230)>92);
   /* LE PONTON : il part de la rive et avance dans l'eau */
   F_PONT.y=Math.round(F_rive(F_PONT.x))-2;
@@ -12642,6 +12695,7 @@ if(t==='x_fo_rocher'){XCAL[cle]=graverRocherFo(v||0);if(!CALQUES_DECO[t])CALQUES
 if(t==='x_fo_etal'){XCAL[cle]=graverEtalFo();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_ponton'){XCAL[cle]=graverPontonFo();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_maison'){XCAL[cle]=graverMaisonFo();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_mine'){XCAL[cle]=graverMineFo();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_mure'){XCAL[cle]=graverBuissonFo(0,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_framboise'){XCAL[cle]=graverBuissonFo(1,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_fo_myrtille'){XCAL[cle]=graverBuissonFo(2,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
@@ -20300,6 +20354,9 @@ if(o.ouvre==='etable'){b.innerHTML='Entrer à l’étable<small>LAIT · FOIN · 
 if(o.ouvre==='metroFerme'){b.innerHTML='Prendre le métro<small>LIGNE 1 · '+autresStations()+'</small>';b.classList.add('on');return;}
 if(o.ouvre==='etalForet'){b.innerHTML='L’étal du bois<small>VENDRE SA RÉCOLTE</small>';b.classList.add('on');return;}
 if(o.ouvre==='atelierBois'){b.innerHTML='L’atelier du bois<small>PLANCHES · POUTRES · CHARBON</small>';b.classList.add('on');return;}
+if(o.ouvre==='mineForet'){b.innerHTML=(MINE_OUVERTE?'Descendre dans la mine':'La mine est fermée')+
+  '<small>'+(MINE_OUVERTE?'ROCHERS, MINERAIS ET DIAMANTS':'OUVERTURE PROCHAINE')+'</small>';
+  b.classList.add('on');return;}
 if(o.t==='x_fo_ponton')return;   /* le moteur de pêche s'en occupe */
 if(o.ouvre==='etalGraines'){b.innerHTML='Les graines<small>SEMENCES · OUTILS · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
 if(o.ouvre==='grainetier'){b.innerHTML='Entrer au Grainetier<small>OUTILS · GRAINES · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
@@ -20492,6 +20549,11 @@ if(o.ouvre==='etable'){ETB=null;ouvrirLEtable();return;}
 if(o.ouvre==='metroFerme'){choisirLaDestination();return;}
 if(o.ouvre==='etalForet'){ouvrirLEtalDuBois();return;}
 if(o.ouvre==='atelierBois'){ouvrirLAtelier();return;}   /* l'atelier du bois existe déjà */
+if(o.ouvre==='mineForet'){
+  if(!MINE_OUVERTE)return;
+  try{sauver();}catch(x){}
+  location.href='mine.html';
+  return;}
 
 if(o.ouvre==='etalGraines'){ouvrirLeGrainetier('graines');return;}
 if(o.ouvre==='grainetier'){ouvrirLeGrainetier('outils');return;}
@@ -24880,6 +24942,7 @@ TAILLES['x_fo_rocher']=[{w:20,h:8},{w:24,h:9},{w:28,h:10}];
 TAILLES['x_fo_etal']=[{w:62,h:12}];
 TAILLES['x_fo_ponton']=[{w:36,h:10}];
 TAILLES['x_fo_maison']=[{w:56,h:14}];
+TAILLES['x_fo_mine']=[{w:60,h:14}];
 TAILLES['x_fo_mure']=[{w:22,h:8},{w:26,h:9}];
 TAILLES['x_fo_framboise']=[{w:18,h:8},{w:22,h:9}];
 TAILLES['x_fo_myrtille']=[{w:26,h:7},{w:30,h:8}];
