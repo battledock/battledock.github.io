@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-1402';
+var MA_VERSION='2026-10-03-1405';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -24811,9 +24811,15 @@ if(r&&!r.erreur){if(r.sac)e.sac=r.sac;CUI=r.etat||null;try{sauver();lireSacServe
 vibrer([12,30,12]);ouvrirLaCuisineDeFonfon('« Ça mijote. Reviens tout à l’heure. »');}
 else ouvrirLaCuisineDeFonfon(r&&r.erreur==='occupee'?'« Une chose à la fois : le four est pris. »':'« Il te manque de quoi. »');});
 }
-function bqLignes(){const L=[];for(const k of Object.keys(POT_CULT).concat(['lait','fromage'])){const n=(e.sac&&e.sac[k])||0;if(n>0)L.push([k,n,PRIX_COMPTOIR[k]||0]);}return L;}
+function bqLignes(){const L=[];for(const k of Object.keys(POT_CULT).concat(['lait','fromage'])){const n=(e.sac&&e.sac[k])||0;
+  /* LE COURS DU JOUR, le même que celui qui sera payé : sans cela la boutique
+     de la ferme affichait un prix fixe et le serveur en versait un autre. */
+  if(n>0)L.push([k,n,prixDuJour(k,PRIX_COMPTOIR[k]||0)]);}return L;}
 function ouvrirLaBoutiqueFerme(mot){
 if(!CMD.commandes.length)lireLesCommandes().then(()=>{if($('page2').classList.contains('on'))ouvrirLaBoutiqueFerme(mot);});
+/* on demande les cours du jour pour tout ce qui est dans le sac */
+{const aLire=Object.keys(e.sac||{}).filter(k=>!COURS[k]);
+ if(aLire.length)lireLesCours(aLire).then(()=>{if($('page2').classList.contains('on')&&$('page2Fond').className==='bq')ouvrirLaBoutiqueFerme(mot);});}
 if(!document.getElementById('cssBq')){const st=document.createElement('style');st.id='cssBq';st.textContent=CSS_BQ;document.head.appendChild(st);}
 const L=bqLignes(), total=L.reduce((t,[,n,p])=>t+n*p,0);
 const charge=Object.values(e.sac||{}).reduce((t,n)=>t+(n||0),0);
