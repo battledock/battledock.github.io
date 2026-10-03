@@ -123,7 +123,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-0330';
+var MA_VERSION='2026-10-03-0349';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12106,6 +12106,159 @@ const CSS_ETAL=`
 #et .et-pied .p{background:#8a3a22;color:#f6ecd8}
 #et .et-pied .p:disabled{background:#ddd2b8;color:#9a8a6c}
 `;
+let LAC_CONNUES=0, LAC_EN_COURS=false;
+async function pecherAuLac(o){
+  if(!e.outils.canne){bulle('Il te faut une canne.');return;}
+  if(LAC_EN_COURS)return;
+  LAC_EN_COURS=true;
+  GESTE={t:1,cible:o,impact:false,type:'canne',pourMoi:true};
+  joueur.dir='bas';vibrer(14);
+  texteVolant(joueur.x,joueur.y-34,'…','#c8e0ea');
+  const d=await appelRPC('lac_pecher',{p_joueur:e.id});
+  LAC_EN_COURS=false;
+  if(!d||d.erreur){
+    bulle(d&&d.erreur==='sac_plein'?'Ton sac est plein.':((d&&d.erreur)||'rien ne mord'));
+    return;}
+  LAC_CONNUES=d.connues||LAC_CONNUES;
+  vibrer(d.rarete==='legendaire'?[12,40,12,40]:[10,24]);
+  for(let i=0;i<14;i++){const a=-1.1-Math.random()*0.8;
+    PARTS.push({x:joueur.x+(Math.random()-.5)*14,y:joueur.y-14,
+      vx:Math.cos(a)*(20+Math.random()*40)*(Math.random()<.5?-1:1),
+      vy:Math.sin(a)*(26+Math.random()*28),vie:1,taille:2,rot:0,vrot:0,
+      c:i%2?'#9ac4d8':'#d8ecf4',rebondi:false});}
+  try{await chargerSac();}catch(x){}
+  montrerLaPrise(d);
+}
+function montrerLaPrise(d){
+  if(!document.getElementById('cssLac')){const st=document.createElement('style');
+    st.id='cssLac';st.textContent=CSS_LAC;document.head.appendChild(st);}
+  const RAR={commun:['COMMUN','#7a8a74'],moyen:['PEU COMMUN','#4a7a9a'],
+    rare:['RARE','#8a5aa8'],trouvaille:['TROUVAILLE','#8a7454'],
+    objet:['OBJET','#c9a24a'],legendaire:['LÉGENDAIRE','#c0392b']};
+  const r=RAR[d.rarete]||RAR.commun;
+  $('page2Fond').className='';$('page2').classList.add('on');
+  $('page2Fond').innerHTML=
+   '<div id="lac"><div class="lc-c'+(d.rarete==='legendaire'?' leg':'')+'">'+
+   (d.nouvelle?'<div class="lc-neuf">NOUVELLE ESPÈCE</div>':'')+
+   '<canvas id="lcDess" width="300" height="140"></canvas>'+
+   '<div class="lc-r" style="background:'+r[1]+'">'+r[0]+'</div>'+
+   '<b>'+d.nom+'</b>'+
+   '<div class="lc-p">'+d.prix+' € · '+d.poids+' place'+(d.poids>1?'s':'')+'</div>'+
+   '<div class="lc-n">'+(d.connues||0)+' espèces sur 50</div>'+
+   '<button id="lcOk">CONTINUER</button></div></div>';
+  const cv2=$('lcDess'), g2=cv2.getContext('2d');
+  g2.imageSmoothingEnabled=false;
+  lacDessiner(g2,d.cle,150,70,3);
+  $('lcOk').onclick=()=>{$('page2').classList.remove('on');};
+}
+const CSS_LAC=`
+#lac{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;
+  background:rgba(14,26,34,.88);padding:20px;font-family:Georgia,serif}
+#lac .lc-c{width:100%;max-width:330px;background:#f2e7d2;border:4px solid #1d3f52;
+  border-radius:12px;padding:16px;text-align:center;box-shadow:0 12px 34px rgba(0,0,0,.6)}
+#lac .lc-c.leg{border-color:#c9a24a;box-shadow:0 0 0 3px rgba(201,162,74,.3),0 12px 34px rgba(0,0,0,.6)}
+#lac .lc-neuf{font:700 8px Arial,sans-serif;letter-spacing:2.4px;color:#2f7a4a;margin-bottom:6px}
+#lac canvas{width:100%;max-width:300px;image-rendering:pixelated;background:#1d3f52;border-radius:8px}
+#lac .lc-r{display:inline-block;margin:10px 0 6px;padding:4px 11px;border-radius:4px;
+  color:#f6ecd8;font:700 8px Arial,sans-serif;letter-spacing:2px}
+#lac .lc-c b{display:block;font:900 19px Georgia,serif;color:#2f2820}
+#lac .lc-p{font:italic 13px Georgia,serif;color:#5f4d34;margin-top:3px}
+#lac .lc-n{font:700 8px Arial,sans-serif;letter-spacing:1.6px;color:#8a7454;margin-top:8px}
+#lac button{margin-top:13px;width:100%;border:0;border-radius:9px;padding:14px;
+  background:#1d3f52;color:#e8eef2;font:700 10px Arial,sans-serif;letter-spacing:2px}
+`;
+/* ================= LA PÊCHE AU LAC =================
+   Cinquante prises possibles. Le serveur tire l'espèce, le jeu la dessine. */
+const LAC_P={gardon:{lg:30,ht:6,dos:'#4a5a46',mil:'#8a9a92',ventre:'#c8d4ce',clair:'#e8eee8',nag:'#b4543a'},
+ perche:{lg:32,ht:7,dos:'#3a5a28',mil:'#7a9a4a',ventre:'#c8d49a',clair:'#e4eac4',nag:'#d87a2a',ray:1},
+ ablette:{lg:28,ht:4,dos:'#5a6a74',mil:'#9aaab4',ventre:'#d4e0e8',clair:'#f2f6fa',nag:'#8a9aa4',bande:1},
+ rotengle:{lg:30,ht:7,dos:'#5a6a2a',mil:'#b4a84a',ventre:'#dcd07a',clair:'#f2eaa8',nag:'#c0392b'},
+ goujon:{lg:22,ht:5,dos:'#5a4a2a',mil:'#9a8a5a',ventre:'#c8bc90',clair:'#e4dcb8',nag:'#7a6a3a',tache:1},
+ vairon:{lg:18,ht:4,dos:'#3a5a4a',mil:'#6a8a8a',ventre:'#c8d4d8',clair:'#e8f0f2',nag:'#4a6a5a'},
+ able:{lg:18,ht:4,dos:'#4a5a3a',mil:'#a8b4a8',ventre:'#dce4e0',clair:'#f4f8f6',nag:'#8a9a8a'},
+ chevesne:{lg:34,ht:7,dos:'#3a4a5a',mil:'#7a8a94',ventre:'#c0ccd4',clair:'#e4ecf2',nag:'#5a6a74'},
+ hotu:{lg:32,ht:7,dos:'#3a4a54',mil:'#8a9aa0',ventre:'#c4ccd0',clair:'#e8eef0',nag:'#b4443a',bande:1},
+ perche_soleil:{lg:24,ht:11,dos:'#2a5a5a',mil:'#4a8a7a',ventre:'#9ac4a0',clair:'#c8e4c4',nag:'#2a5a5a'},
+ tanche:{lg:30,ht:9,dos:'#2e4a28',mil:'#5a7a38',ventre:'#a89a3a',clair:'#d4c45a',nag:'#3a5a2a'},
+ brochet:{lg:40,ht:6,dos:'#3a4a2a',mil:'#6a7a3a',ventre:'#b4b46a',clair:'#dcd892',nag:'#4a5a2a',tache:1},
+ carpe:{lg:34,ht:10,dos:'#5a3a18',mil:'#9a6a28',ventre:'#c8a04a',clair:'#e8c87a',nag:'#6a4a20'},
+ breme:{lg:28,ht:12,dos:'#4a3a1a',mil:'#8a7434',ventre:'#bca058',clair:'#dcc684',nag:'#3a2e16'},
+ barbeau:{lg:34,ht:7,dos:'#5a5a2a',mil:'#9a9450',ventre:'#c8c088',clair:'#e8e2b4',nag:'#8a6a2a'},
+ sandre:{lg:36,ht:7,dos:'#3a4a34',mil:'#7a8a5a',ventre:'#b8c094',clair:'#dce2bc',nag:'#4a5a3a'},
+ black_bass:{lg:34,ht:8,dos:'#2a4a2a',mil:'#5a8a4a',ventre:'#a8c488',clair:'#d0e4b4',nag:'#2a4a2a',bande:1},
+ poisson_chat:{lg:28,ht:8,dos:'#1e2420',mil:'#3a4440',ventre:'#6a7068',clair:'#8a9088',nag:'#141816'},
+ lotte:{lg:38,ht:6,dos:'#4a3a1e',mil:'#8a7440',ventre:'#b8a46a',clair:'#d8c894',nag:'#3a2e18',tache:1},
+ truite_fario:{lg:32,ht:6,dos:'#4a5a34',mil:'#9a9a5a',ventre:'#d8d49a',clair:'#f0ecc8',nag:'#8a7a4a',points:1},
+ truite_arc:{lg:34,ht:6,dos:'#4a5a5a',mil:'#9aa4a0',ventre:'#d4dcd8',clair:'#f0f4f2',nag:'#7a8a86',rose:1},
+ ombre:{lg:32,ht:6,dos:'#4a4a5a',mil:'#8a8a9a',ventre:'#c0c0cc',clair:'#e4e4ec',nag:'#6a5a8a',voile:1},
+ anguille:{serp:1,dos:'#242a1a',mil:'#4a5a2a',ventre:'#c8b44a'},
+ silure:{lg:44,ht:9,dos:'#2a2e2a',mil:'#52585a',ventre:'#8a9088',clair:'#b0b6ae',nag:'#1e2220',tache:1,barb:1},
+ esturgeon:{lg:42,ht:7,dos:'#4a5248',mil:'#7a8278',ventre:'#aab2a4',clair:'#cdd4c8',nag:'#3a4238',ecus:1},
+ carpe_koi:{lg:34,ht:10,dos:'#e8e4d8',mil:'#f2eee4',ventre:'#f8f6f0',clair:'#ffffff',nag:'#d8d4c8',koi:1},
+ saumon_fontaine:{lg:34,ht:7,dos:'#2e4a3a',mil:'#6a8a5a',ventre:'#d8863a',clair:'#f0a85a',nag:'#c04a2a',points:1},
+ lamproie:{serp:1,dos:'#3a2e22',mil:'#6a5a46',ventre:'#a89880'},
+ silure_geant:{lg:52,ht:12,dos:'#242a26',mil:'#454d48',ventre:'#7a827a',clair:'#a2aaa0',nag:'#141816',tache:1,barb:1,halo:'rgba(200,210,200,.14)'},
+ truite_or:{lg:34,ht:7,dos:'#a8761a',mil:'#d8a83a',ventre:'#f0cf6a',clair:'#fbeaa8',nag:'#f6f0e0',halo:'rgba(255,230,140,.16)'},
+ anguille_blanche:{serp:1,dos:'#d8d4cc',mil:'#eeeae2',ventre:'#fbf8f2',halo:'rgba(240,236,228,.14)',oeil:'#c0392b'}};
+const LAC_AUTRE={ecrevisse:'#8a2a1a',moule:'#584c3a',grenouille:'#4a8a3a',tetard:'#2a2a24',
+ sangsue:'#4a5a2a',gammare:'#c8c4a0',larve_libellule:'#4a5a34',tortue:'#3a2e18',
+ botte:'#2e3a2a',conserve:'#8a7a62',bouteille:'#2e5a3a',hamecon:'#8a6a4a',roue:'#6a6a72',
+ seau:'#8a929a',piece:'#7a6a26',bague:'#c9a24a',poterie:'#a8663a',bouchon:'#b8d4e4',plaque:'#1d5090'};
+function lacDessiner(g2,cle,x,y,ech){
+  const E=ech||1;
+  g2.save();g2.translate(x,y);g2.scale(E,E);
+  const R=(a,b,w,h,c)=>{g2.fillStyle=c;g2.fillRect(Math.round(a),Math.round(b),
+    Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const o=LAC_P[cle];
+  if(o&&o.halo)for(let a=0;a<6.283;a+=0.26)R(Math.cos(a)*22,Math.sin(a)*11,3,2,o.halo);
+  if(o&&o.serp){
+    for(let i=0;i<46;i++){
+      const t=i/45, h=Math.round(3.4*Math.sin(Math.pow(t,0.4)*3.14))+1;
+      const dy=Math.round(Math.sin(t*7)*3);
+      for(let j=-h;j<=h;j++){const v=j/h;
+        R(-23+i,dy+j,1,1,v<-0.3?o.dos:(v<0.4?o.mil:o.ventre));}}
+    const dy=Math.round(Math.sin(7)*3);
+    R(20,dy-2,2,2,o.oeil||'#f2ece0');
+    g2.restore();return;}
+  if(o){
+    const x0=-o.lg/2;
+    for(let i=0;i<7;i++){const h=Math.round(2+i*0.9);
+      for(let j=-h;j<=h;j++)R(x0-5+i,j,1,1,Math.abs(j)>h-1?o.nag:o.mil);}
+    for(let i=0;i<o.lg;i++){
+      const t=i/(o.lg-1);
+      const h=Math.round(o.ht*Math.sin(Math.pow(t,0.72)*3.14159)*0.9)+1;
+      for(let j=-h;j<=h;j++){
+        const v=j/h;
+        let c = v<-0.55?o.dos : (v<0.05?o.mil : (v<0.62?o.ventre:o.clair));
+        if(o.ray&&((i+Math.round(v*3))%6)<2&&v<0.2)c=o.dos;
+        if(o.bande&&Math.abs(v)<0.22)c=o.clair;
+        if(o.tache&&F_hs(i*2.3+j*1.7)<0.12)c=o.dos;
+        R(x0+i,j,1,1,c);}
+      R(x0+i,-h,1,1,o.dos);R(x0+i,h,1,1,o.clair);}
+    const d0=Math.round(o.lg*0.34), d1=Math.round(o.lg*0.62);
+    for(let i=d0;i<d1;i++){
+      const t=(i-d0)/(d1-d0);
+      const h=Math.round(o.ht*Math.sin(Math.pow(i/(o.lg-1),0.72)*3.14159)*0.9)+1;
+      const hh=Math.round((o.voile?6:3)*Math.sin(t*3.14));
+      R(x0+i,-h-hh,1,hh+1,o.nag);}
+    for(let i=0;i<6;i++)R(x0+Math.round(o.lg*0.38)+i,Math.round(o.ht*0.55)+Math.round(i*0.4),1,3,o.nag);
+    if(o.points)for(let k=0;k<11;k++){const a=x0+2+F_hs(k*5)*(o.lg-4), b=-3+F_hs(k*3)*6;
+      R(a,b,2,2,k%3?'#2a2a1a':'#c0392b');}
+    if(o.rose)for(let i=0;i<o.lg-8;i++)R(x0+4+i,Math.round(Math.sin(i*0.22)),2,2,'#d85a7a');
+    if(o.koi)for(let k=0;k<7;k++){const a=x0+3+F_hs(k*5)*(o.lg-6), b=-4+F_hs(k*3)*8;
+      R(a,b,5,4,k%3?'#e8762a':'#2a2420');}
+    if(o.ecus)for(let k=0;k<9;k++){R(x0+4+k*4,-5,2,2,'#c8d0c4');R(x0+4+k*4,3,2,2,'#c8d0c4');}
+    if(o.barb){R(x0+o.lg-4,-4,9,1.4,o.dos);R(x0+o.lg-4,-6,7,1.4,o.dos);
+      R(x0+o.lg-5,3,6,1.4,o.dos);R(x0+o.lg-5,5,5,1.4,o.dos);}
+    R(x0+o.lg-5,-2,2,2,'#f2ece0');R(x0+o.lg-5,-2,1.4,1.4,'#1a1410');
+    g2.restore();return;}
+  /* les bêtes, les trouvailles et les objets : une vignette simple mais nette */
+  const c=LAC_AUTRE[cle]||'#8a8a92';
+  R(-8,-6,16,12,c);R(-8,-6,16,3,'rgba(255,255,255,.26)');
+  R(-8,4,16,2,'rgba(0,0,0,.3)');
+  R(-5,-3,4,3,'rgba(255,255,255,.2)');
+  g2.restore();
+}
 /* LE PONTON : une passerelle de planches fines qui avance dans le lac,
    avec son garde-corps léger et ses pilotis reflétés dans l'eau. */
 const F_PONT={x:520,y:0};          /* y calculé à la rive, voir le semis */
@@ -18814,7 +18967,7 @@ const minerai=['fer','cuivre','charbon'].includes(o.t);
 const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro','x_etal','x_pavPoisson','x_pavPeche','x_cabanon','x_cabanonMoi','x_stationVelo','x_paillasson','x_chantier'].includes(o.t);
 const buisFo=['x_fo_mure','x_fo_framboise','x_fo_myrtille'].includes(o.t);
 if(o.t!=='rocher'&&o.t!=='x_fo_rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'&&!buisFo
-&&!batiment&&!o.bati&&!cueillable&&!minerai)continue;
+&&o.t!=='x_fo_ponton'&&!batiment&&!o.bati&&!cueillable&&!minerai)continue;
 if(buisFo&&o.cueilli&&Date.now()-o.cueilli<240000)continue;
 if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
 if(o.t==='buisson'&&o.cueilli&&Date.now()-o.cueilli<240000)continue;   /* repousse en 4 min */
@@ -20041,6 +20194,9 @@ if(o.ouvre==='voiture'){const nm=(PARISMOD&&PARISMOD.MODELES[o.n])?PARISMOD.MODE
 if(o.ouvre==='etable'){b.innerHTML='Entrer à l’étable<small>LAIT · FOIN · FROMAGE</small>';b.classList.add('on');return;}
 if(o.ouvre==='metroFerme'){b.innerHTML='Prendre le métro<small>LIGNE 1 · '+autresStations()+'</small>';b.classList.add('on');return;}
 if(o.ouvre==='etalForet'){b.innerHTML='L’étal du bois<small>VENDRE SA RÉCOLTE</small>';b.classList.add('on');return;}
+if(o.t==='x_fo_ponton'){b.innerHTML=e.outils.canne
+  ? 'Pêcher<small>LE LAC · '+(LAC_CONNUES||0)+' / 50 ESPÈCES</small>'
+  : 'Il faut une canne<small>LE LAC</small>';b.classList.add('on');return;}
 if(o.ouvre==='etalGraines'){b.innerHTML='Les graines<small>SEMENCES · OUTILS · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
 if(o.ouvre==='grainetier'){b.innerHTML='Entrer au Grainetier<small>OUTILS · GRAINES · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
 if(o.ouvre==='fumoir'){b.innerHTML='Entrer au fumoir<small>TON POISSON VAUT 2,5× PLUS · 30 MIN</small>';b.classList.add('on');return;}
@@ -20231,6 +20387,7 @@ if(o.ouvre==='voiture'){
 if(o.ouvre==='etable'){ETB=null;ouvrirLEtable();return;}
 if(o.ouvre==='metroFerme'){choisirLaDestination();return;}
 if(o.ouvre==='etalForet'){ouvrirLEtalDuBois();return;}
+if(o.t==='x_fo_ponton'){pecherAuLac(o);return;}
 if(o.ouvre==='etalGraines'){ouvrirLeGrainetier('graines');return;}
 if(o.ouvre==='grainetier'){ouvrirLeGrainetier('outils');return;}
 if(o.ouvre==='fumoir'){ouvrirLeFumoir();return;}
