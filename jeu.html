@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-03-2055';
+var MA_VERSION='2026-10-03-2115';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -23062,6 +23062,25 @@ telephone:900,cagole:1500,scaphandrier:4200,sirene:6800,botte:0};   /* le serveu
 const MODE_POISSON={nom:'La poissonnerie',mot:'« Montre-moi ta pêche, petit. »',
 prix:PRIX_POISSON,rpc:'vendre_poisson',ap:{veste:0,cheveux:3,chapeau:1},
 vide:'<div class="cptVide">Pas un poisson dans ton sac.<br>Va lancer ta ligne au bout des pontons.</div>'};
+/* ================= LES PRISES DU LAC =================
+   Le serveur les connaît (table lac_especes) et les met dans le sac ; le
+   téléphone, lui, ignorait leurs noms et leurs prix. Elles entraient donc
+   dans le sac sans jamais s'afficher ni pouvoir se vendre. On les lit au
+   démarrage : une espèce ajoutée en base arrive toute seule dans le jeu. */
+async function chargerLesEspecesDuLac(){
+try{
+const r=await fetch(URL_SB+'/rest/v1/lac_especes?select=cle,nom,prix',{headers:sbEntetes});
+if(!r.ok)return;
+const l=await r.json();
+(l||[]).forEach(x=>{
+if(!x||!x.cle)return;
+if(!OBJETS[x.cle])OBJETS[x.cle]={nom:x.nom||x.cle,d:'Pris au lac, sur l\u2019autre rive.',poids:1};
+if(!PRIX_POISSON[x.cle])PRIX_POISSON[x.cle]=(x.prix||0)*100;
+if(!F_NOMS[x.cle])F_NOMS[x.cle]=x.nom||x.cle;
+});
+}catch(x){}
+}
+chargerLesEspecesDuLac();
 let CRI_VENTE={}, CRI_EN_COURS=false;
 let COURS={};                       /* LE MARCHÉ : les prix bougent pour tout le monde */
 async function lireLesCours(types){
