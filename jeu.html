@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-2130';
+var MA_VERSION='2026-10-05-2200';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -23764,21 +23764,6 @@ catch(x){regBulle(t);}
 return;}
 REG_VUE=v;ouvrirReglages();};
 });
-/* LA PORTE DU LABO : cinq appuis sur le numéro de version.
-   Rien n'indique sa présence ; un joueur ne tombera pas dessus par hasard,
-   et l'outil reste à portée de main sans dépendre de l'URL. */
-(()=>{const v=document.getElementById('rgVersion');if(!v)return;
-let n=0, dernier=0;
-v.onclick=()=>{const t=Date.now();
-n=(t-dernier<1200)?n+1:1;dernier=t;
-if(n>=3)try{vibrer(10);}catch(x){}
-if(n>=5){n=0;
-const b=document.getElementById('rgLaboBoite');
-if(b&&!b.innerHTML){b.innerHTML='<button class="act" id="rgLabo" '+
-'style="background:#2a3426;color:#c9a24a">Character Lab</button>';
-const bt=document.getElementById('rgLabo');
-if(bt)bt.onclick=()=>{try{labo();}catch(x){}};}
-try{regBulle('Le labo est ouvert, en bas de cette page.');}catch(x){}}};})();
 /* la version : on regarde s'il y a mieux */
 fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{
 const q=document.getElementById('rgMaj');if(!q)return;
@@ -23845,6 +23830,24 @@ corps='<div class="mot" id="rgVersion">Ta version : '+(window.MA_VERSION||'?')+'
 $('page2Fond').innerHTML='<div id="rg">'+regCadre(titre,true)+'<div class="corps">'+corps+'</div>'+
 '<div class="bulleR" id="rgBulle"></div></div>';
 regBrancher();
+/* LA PORTE DU LABO : cinq appuis sur la ligne « Ta version ».
+   Elle vit dans ce sous-écran, donc on l'accroche ici, une fois le HTML
+   posé — ailleurs, l'élément n'existe pas encore. */
+(()=>{const lv=document.getElementById('rgVersion');if(!lv)return;
+lv.style.cursor='pointer';lv.style.userSelect='none';
+let n=0, dernier=0;
+const tap=(ev)=>{if(ev&&ev.stopPropagation)ev.stopPropagation();
+const t=Date.now();n=(t-dernier<1500)?n+1:1;dernier=t;
+try{vibrer(n>=3?16:8);}catch(x){}
+try{regBulle(n<5?('encore '+(5-n)):'Character Lab ouvert, en bas.');}catch(x){}
+if(n>=5){n=0;
+const b=document.getElementById('rgLaboBoite');
+if(b&&!b.innerHTML){
+b.innerHTML='<button class="act" id="rgLabo" style="background:#2a3426;color:#c9a24a">Character Lab</button>';
+const bt=document.getElementById('rgLabo');
+if(bt)bt.onclick=()=>{try{labo();}catch(x){}};}}};
+lv.addEventListener('click',tap);
+lv.addEventListener('touchend',tap,{passive:true});})();
 /* les choix simples */
 $('page2Fond').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
 const c=b.dataset.c;
