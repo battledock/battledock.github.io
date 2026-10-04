@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-1720';
+var MA_VERSION='2026-10-05-1800';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -17418,9 +17418,44 @@ g.setTransform(1,0,0,1,0,0);
 const im=g.getImageData(0,0,L,H), d=im.data, plein=new Uint8Array(L*H);
 for(let i=0;i<L*H;i++)plein[i]=d[i*4+3]>200?1:0;
 const sortie=g.createImageData(L,H), o=sortie.data;
-for(let yy=0;yy<H;yy++)for(let xx=0;xx<L;xx++){const i=yy*L+xx;
+/* ================= LE CONTOUR SÉLECTIF =================
+   Un cerne posé tout autour transforme le personnage en autocollant : il
+   l'aplatit et il écrase les nuances qu'on a mis tant de soin à dériver.
+
+   La règle, celle qu'emploient les pixel artists : le contour n'existe que
+   là où la lumière ne tombe pas. La lumière vient du haut-gauche, donc
+
+     — en bas et à droite : contour franc, c'est l'ombre propre du corps
+     — en haut et à gauche : rien, la lumière mange le bord
+     — sauf si le bord est lui-même sombre : alors un contour discret
+       suffit à le décoller d'un fond sombre, sans l'encrer
+
+   Et surtout, le contour n'est pas une encre fixe : c'est la couleur du
+   pixel voisin, très assombrie. Un bord de peau a un cerne brun, un bord de
+   veste rouge un cerne bordeaux. Le personnage reste coloré jusqu'au bord. */
+const lum=(i)=>(d[i*4]*0.3+d[i*4+1]*0.59+d[i*4+2]*0.11);
+for(let yy=0;yy<H;yy++)for(let xx=0;xx<L;xx++){
+const i=yy*L+xx;
 if(plein[i])continue;
-if((xx>0&&plein[i-1])||(xx<L-1&&plein[i+1])||(yy>0&&plein[i-L])||(yy<H-1&&plein[i+L])){o[i*4]=27;o[i*4+1]=23;o[i*4+2]=18;o[i*4+3]=235;}}
+const g1=(xx>0&&plein[i-1]), d1=(xx<L-1&&plein[i+1]);
+const h1=(yy>0&&plein[i-L]), b1=(yy<H-1&&plein[i+L]);
+if(!g1&&!d1&&!h1&&!b1)continue;
+/* le voisin plein dont on reprend la teinte */
+const v=b1?(i+L):(d1?(i+1):(g1?(i-1):(i-L)));
+/* bas et droite : le côté à l'ombre. haut et gauche : la lumière. */
+const ombre=b1||g1;                 /* (le voisin plein est en bas ou à gauche
+                                       veut dire qu'on borde son flanc droit) */
+const sombre=lum(v)<86;             /* un bord déjà sombre a besoin d'aide */
+let a;
+if(ombre)a=228;                     /* le contour franc */
+else if(sombre)a=150;               /* le contour discret, pour décoller du fond */
+else continue;                      /* la lumière mange le bord : rien du tout */
+/* le coin inférieur droit, là où deux ombres se rejoignent : un peu plus dense */
+if(b1&&g1)a=Math.min(242,a+14);
+o[i*4]=Math.round(d[v*4]*0.30);
+o[i*4+1]=Math.round(d[v*4+1]*0.30);
+o[i*4+2]=Math.round(d[v*4+2]*0.32);
+o[i*4+3]=a;}
 const tmp=document.createElement('canvas');tmp.width=L;tmp.height=H;tmp.getContext('2d',{willReadFrequently:true}).putImageData(sortie,0,0);
 g.drawImage(tmp,0,0);
 return c;
