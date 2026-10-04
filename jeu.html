@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-0730';
+var MA_VERSION='2026-10-05-0800';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2358,6 +2358,7 @@ return '#'+((1<<24)+(f((n>>16)&255)<<16)+(f((n>>8)&255)<<8)+f(n&255)).toString(1
    Chaque pose est gravée une fois puis gardée en cache, comme
    pour le pixel fin. */
 const CACHE_FUTUR=new Map();
+let futSqTampon=null;
 const FUT_R=Math.PI/180;
 
 /* LE PLAN : les longueurs sont en pixels du personnage */
@@ -2443,7 +2444,7 @@ function futAppliquer(sq,anim,f){
  if(hb||hf){
   const tete=sq.os.get('head');
   const prec=((f-2)+A.duree)%A.duree;
-  const sq2=futSquelette();futPoser(sq2);
+  const sq2=futSqTampon||(futSqTampon=futSquelette());futPoser(sq2);
   for(const nom in A.pistes){
    const o2=sq2.os.get(nom); if(!o2)continue;
    const piste=A.pistes[nom];
@@ -2486,7 +2487,9 @@ function futGraver(ap,dir,pas,bouge){
  const sens=dir==='gauche'?-1:1;
  const sq=futSquelette();
  futPoser(sq);
- futAppliquer(sq,bouge?'walk':'idle',bouge?(Math.floor((pas||0)*2)%16):((Date.now()/420)%16));
+ /* la pose doit être reproductible : pas d'horloge ici, sinon
+   le cache des planches regrave sans cesse et le jeu saccade. */
+futAppliquer(sq,bouge?'walk':'idle',bouge?(Math.floor((pas||0)*2)%16):0);
  sq.racine.x=0;sq.racine.y=0;
  futMondes(sq.racine);
  const ox=CASE_L/2, oy=CASE_H-10;
@@ -16029,12 +16032,18 @@ let L=P.dirs[dir];
 if(!L){L=P.dirs[dir]=[];}
 if(L[i])return L[i];
 const c=document.createElement('canvas');
-const D=STYLE_FIN()?2:Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+const ST=(typeof STYLE_PERSO==='function')?STYLE_PERSO():'fin';
+const D=(ST!=='classique')?2:Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
 c.width=CASE_L*D;c.height=CASE_H*D;
 const g=c.getContext('2d');
 g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
 const sauve=GESTE;GESTE={t:0};
-if(STYLE_FIN()){g.setTransform(1,0,0,1,0,0);const cl=i>=300, j=cl?i-300:i, repos=j>=100;
+if(ST==='futur'){
+/* LE PANTIN : la pose est gravée par son propre moteur */
+g.setTransform(1,0,0,1,0,0);
+const j=i>=300?i-300:i, repos=j>=100;
+try{g.drawImage(futGraver(ap,dir,repos?0:(j?(j-1)/2:0),!repos&&j>0),0,0,c.width,c.height);}catch(x){}}
+else if(ST==='fin'){g.setTransform(1,0,0,1,0,0);const cl=i>=300, j=cl?i-300:i, repos=j>=100;
 g.drawImage(graverFin(ap,dir,repos?0:(j?(j-1)/2:0),!repos&&j>0,repos?j-100:0,cl),0,0,c.width,c.height);CLIGNE_FIN=false;}
 else spriteClassique(g,CASE_L/2,CASE_H-10,ap,dir,i?(i-1)/2:0,i>0);
 GESTE=sauve;
