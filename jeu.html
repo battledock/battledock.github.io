@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-0435';
+var MA_VERSION='2026-10-05-0455';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -15537,6 +15537,41 @@ for(let q=0;q<4;q++){
 ctx.fillStyle='rgba(175,205,225,'+(0.55-q*0.1)*(0.55+bat*0.45)+')';
 ctx.fillRect(bx+sx*(3+q*2.2),by-3+q*1.1*sy,2,1);}});
 }
+const pousses_bete=[];
+/* ================= LA BASSE-COUR =================
+   Les poules picorent devant le poulailler. Elles étaient animées par
+   l'ancienne zone de la ferme, que cette carte n'appelle plus. */
+if(!window.FERME_POULES)window.FERME_POULES=[];
+{const combien=Math.max(0,Math.min(12,(POUL.p&&POUL.p.poules)||0));
+const F=window.FERME_POULES;
+while(F.length<combien+1){
+const k=F.length;
+F.push({x:400+(Math.random()*120-60),y:430+Math.random()*54,
+tx:400,ty:440,dir:Math.random()<0.5?1:-1,pas:Math.random(),
+robe:['blanche','rousse','noire'][k%3],coq:k===combien,
+etat:'picore',t:Math.random()*4});}
+while(F.length>combien+1)F.pop();
+const dt=Math.min(0.1,(Date.now()-(window.FERME_POULES_T||Date.now()))/1000);
+window.FERME_POULES_T=Date.now();
+F.forEach(b=>{
+b.t-=dt;
+if(b.t<=0){
+if(b.etat==='marche'){b.etat=Math.random()<0.25?'ailes':'picore';b.t=1.5+Math.random()*3;}
+else{b.etat='marche';b.t=1+Math.random()*2.2;
+b.tx=400+(Math.random()*130-65);b.ty=428+Math.random()*58;
+b.dir=b.tx>b.x?1:-1;}}
+if(b.etat==='marche'){
+const dx=b.tx-b.x, dy=b.ty-b.y, d=Math.hypot(dx,dy);
+if(d>1){const v=(b.coq?13:11)*dt;b.x+=dx/d*v;b.y+=dy/d*v;b.pas+=dt*2.2;}
+else b.etat='picore';}
+/* elles s'écartent du joueur */
+const jx=b.x-joueur.x, jy=b.y-joueur.y, dj=Math.hypot(jx,jy);
+if(dj<22&&dj>0.1){b.x+=jx/dj*24*dt;b.y+=jy/dj*24*dt;b.dir=jx>0?1:-1;}
+b.x=Math.max(330,Math.min(470,b.x));b.y=Math.max(422,Math.min(492,b.y));});
+F.forEach(b=>{
+if(b.x-camX<-30||b.x-camX>VW+30||b.y-camY<-30||b.y-camY>VH+30)return;
+pousses_bete.push({y:b.y,f:()=>{try{
+poule(ctx,b.x-camX,b.y-camY,b.robe,b.etat,b.dir,b.coq,b.pas);}catch(x){}}});});}
 const pousses=[];
 if(POT.charge)for(let i=0;i<24;i++){
 const P=POT.parc[i];if(!P||!P.cult||!PLANTES[P.cult])continue;
@@ -15564,7 +15599,7 @@ PLANTES[P.cult](ctx,0,0,st);
 ctx.restore();
 }catch(x){}}});
 }}
-const pile=acteursF.concat(pousses).concat(DECOR.map(o=>({y:o.y,f:()=>{
+const pile=acteursF.concat(pousses).concat(pousses_bete).concat(DECOR.map(o=>({y:o.y,f:()=>{
 try{dessinerX(ctx,o,o.x-camX,o.y-camY);}catch(x){}}})));
 pile.sort((a,b)=>a.y-b.y);
 for(const p of pile)p.f();
