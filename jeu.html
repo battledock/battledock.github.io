@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-1815';
+var MA_VERSION='2026-10-04-1900';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -15294,7 +15294,21 @@ if(ax2<-40||ay2<-70||ax2>VW+40||ay2>VH+40)continue;
 acteursF.push({y:a.y,f:()=>dessinerUnAutre(ctx,a,camX,camY)});}
 /* ON DESSINE NOUS-MÊMES : dessinerDecor peint aussi l'ancien potager, la
    haie et la berge, à des coordonnées qui n'existent plus ici. */
-const pile=acteursF.concat(DECOR.map(o=>({y:o.y,f:()=>{
+/* LES CULTURES : chaque plante est triée en profondeur avec le joueur,
+   comme un objet du décor, pour qu'on passe devant et derrière. */
+const pousses=[];
+if(POT.charge)for(let i=0;i<24;i++){
+const P=POT.parc[i];if(!P||!P.cult||!PLANTES[P.cult])continue;
+if(!potOuverte(i))continue;
+const Q=POT_XY(i), st=potStade(P);
+if(Q.x-camX>VW+30||Q.x+Q.PW-camX<-30||Q.y-camY>VH+40||Q.y+Q.PH-camY<-40)continue;
+pousses.push({y:Q.y+Q.PH,f:()=>{try{
+const g2=ctx, n=3;
+for(let r=0;r<2;r++)for(let c=0;c<3;c++){
+const px=Q.x+Q.PW*(0.22+c*0.28)-camX, py=Q.y+Q.PH*(0.42+r*0.34)-camY;
+PLANTES[P.cult](g2,px,py,st);}
+}catch(x){}}});}
+const pile=acteursF.concat(pousses).concat(DECOR.map(o=>({y:o.y,f:()=>{
 try{dessinerX(ctx,o,o.x-camX,o.y-camY);}catch(x){}}})));
 pile.sort((a,b)=>a.y-b.y);
 for(const p of pile)p.f();
@@ -23697,9 +23711,20 @@ if(!ICONES.planche)ICONES.planche='<rect x="2" y="5" width="12" height="3" fill=
 const POT_VERROU={pommes_terre:10000,oignons:15000,poivrons:30000,mais:40000,aubergines:50000,tournesol:80000,pasteque:150000,safran:500000};
 const potDuree=(m)=>m<60?m+' min':(m%60?Math.floor(m/60)+' h '+String(m%60).padStart(2,'0'):(m/60)+' h');
 const potLibre=(k)=>!POT_VERROU[k]||(POT.debloque||[]).includes(k);
-const POT_Z=()=>FERME.champ2, POT_COLS=8, POT_ROWS=3, POT_ALLEE=6;
-const POT_DIM=()=>{const Z=POT_Z();return {PW:Math.floor((Z.x1-Z.x0-POT_ALLEE*(POT_COLS+1))/POT_COLS),PH:Math.floor((Z.y1-Z.y0-POT_ALLEE*(POT_ROWS+1))/POT_ROWS)};};
-const POT_XY=(i)=>{const Z=POT_Z(), {PW,PH}=POT_DIM(), r=Math.floor(i/POT_COLS), c=i%POT_COLS;return {x:Z.x0+POT_ALLEE+c*(PW+POT_ALLEE),y:Z.y0+POT_ALLEE+r*(PH+POT_ALLEE),PW,PH};};
+/* LE CARRÉ DE LA FERME : six colonnes sur quatre rangs, aux coordonnées
+   peintes dans le sol. L'ancienne ferme en avait huit sur trois, ailleurs :
+   d'où des parcelles qu'on ne trouvait plus. Les numéros 0 à 23 ne changent
+   pas, donc chacun retrouve ses cultures. */
+const POT_NEUF=()=>typeof CHAMPS_SEULS!=='undefined'&&CHAMPS_SEULS&&CARTE==='village';
+const POT_COLS=POT_NEUF()?6:8, POT_ROWS=POT_NEUF()?4:3, POT_ALLEE=POT_NEUF()?16:6;
+const POT_Z=()=>POT_NEUF()
+?{x0:CARRE.x0-POT_ALLEE,x1:CARRE.x0+CARRE.L+POT_ALLEE,y0:CARRE.y0-POT_ALLEE,y1:CARRE.y0+CARRE.H+POT_ALLEE}
+:FERME.champ2;
+const POT_DIM=()=>POT_NEUF()?{PW:CARRE.px,PH:CARRE.py}
+:(()=>{const Z=POT_Z();return {PW:Math.floor((Z.x1-Z.x0-POT_ALLEE*(POT_COLS+1))/POT_COLS),PH:Math.floor((Z.y1-Z.y0-POT_ALLEE*(POT_ROWS+1))/POT_ROWS)};})();
+const POT_XY=(i)=>{if(POT_NEUF()){const P=potCase(i);return {x:P.x,y:P.y,PW:P.w,PH:P.h};}
+const Z=POT_Z(), {PW,PH}=POT_DIM(), r=Math.floor(i/POT_COLS), c=i%POT_COLS;
+return {x:Z.x0+POT_ALLEE+c*(PW+POT_ALLEE),y:Z.y0+POT_ALLEE+r*(PH+POT_ALLEE),PW,PH};};
 const POT_ORDRE=[0,1,2,8,9,10, 3,4,5,11,12,13, 16,17,18,19,20,21, 6,7,14,15,22,23];
 let POT={j:null,parc:{},decal:0,charge:false}, POT_CHAMP=null, POT_SALE=true, POT_ARROSE=0, POT_OCCUPE=false;
 const potOuverte=(i)=>POT.j&&POT_ORDRE.indexOf(i)<POT.j.nb;
@@ -23708,8 +23733,7 @@ function potStade(P){if(!P||!P.cult)return -1;const t0=new Date(P.t0).getTime(),
 function potAdopter(d){if(!d||d.erreur||!d.j)return false;POT.j=d.j;POT.debloque=d.debloque||POT.debloque||[];POT.parc={};(d.parcelles||[]).forEach(p=>POT.parc[p.i]=p);
 if(d.now)POT.decal=new Date(d.now).getTime()-Date.now();if(typeof d.euros==='number'){e.euros=d.euros;try{majHaut();}catch(x){}}POT_SALE=true;POT.charge=true;return true;}
 async function potCharger(){if(PLACE_SEULE||CARTE!=='village'||!e.id)return;try{potAdopter(await appelRPC('pot_etat',{p_joueur:e.id}));}catch(x){}}
-function potProche(){if(CARTE!=='village'||PLACE_SEULE)return null;
-if(CHAMPS_SEULS)return null;   /* LE NOUVEAU POTAGER N'EST PAS ENCORE BRANCHÉ : plus de plaque « Semer » sur des parcelles qui n'existent plus */for(let i=0;i<24;i++){const {x,y,PW,PH}=POT_XY(i);
+function potProche(){if(CARTE!=='village'||PLACE_SEULE)return null;for(let i=0;i<24;i++){const {x,y,PW,PH}=POT_XY(i);
 if(joueur.x>x-2&&joueur.x<x+PW+2&&joueur.y>y+2&&joueur.y<y+PH+8)return i;}return null;}
 function potGraver(){const Z=POT_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0, D=2, c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');
 g.setTransform(D,0,0,D,-Z.x0*D,-Z.y0*D);g.imageSmoothingEnabled=false;
@@ -23805,21 +23829,61 @@ const i=potProche();if(i===null||!POT.charge)return;
 const P=POT.parc[i];if(!P||!P.cult)return;
 clearTimeout(POT_LONG);POT_LONG=setTimeout(()=>potArracher(i),650);},true));
 ['touchend','touchmove','mouseup','mouseleave'].forEach(ev=>$('action').addEventListener(ev,()=>clearTimeout(POT_LONG),true));
+/* ================= LE CHOIX DE LA GRAINE =================
+   Il s'ouvre quand on touche une planche bêchée. Même peau que le
+   grainetier : bois de grange, Baloo 2, une ligne par espèce avec son
+   temps de pousse et sa marge. */
 function potGraines(i){const old=document.getElementById('potGr');if(old)old.remove();
+if(!document.getElementById('cssPotGr')){const st=document.createElement('style');st.id='cssPotGr';
+st.textContent=`#potGr{position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 86px);
+z-index:60;background:#2a2118;border-radius:18px;padding:0;overflow:hidden;max-height:62vh;
+display:flex;flex-direction:column;box-shadow:0 10px 30px rgba(0,0,0,.5);
+font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif}
+#potGr .hd{flex:none;display:flex;align-items:center;gap:10px;padding:13px 14px 11px}
+#potGr .hd b{flex:1;font:700 16px 'Baloo 2',sans-serif;color:#f0e4c6}
+#potGr .hd small{display:block;font:11px system-ui,sans-serif;color:#a08f72;font-weight:400}
+#potGr .hd button{border:0;background:rgba(255,255,255,.08);color:#f0e4c6;border-radius:50%;
+width:30px;height:30px;font:700 14px 'Baloo 2',sans-serif;flex:none}
+#potGr .liste{overflow-y:auto;padding-bottom:8px}
+#potGr .gn{display:flex;align-items:center;gap:11px;padding:10px 14px;width:100%;border:0;
+background:none;text-align:left;border-top:1px solid rgba(201,162,74,.18)}
+#potGr .gn:active{background:rgba(255,255,255,.05)}
+#potGr .gn canvas{width:34px;height:34px;flex:none;border-radius:9px;background:rgba(255,255,255,.06)}
+#potGr .gn .t{flex:1;min-width:0}
+#potGr .gn .t b{display:block;font:700 13.5px 'Baloo 2',sans-serif;color:#f0e4c6}
+#potGr .gn .t small{display:block;font:11px system-ui,sans-serif;color:#a08f72;margin-top:1px}
+#potGr .gn .t small em{color:#9fd47e;font-style:normal;font-weight:700}
+#potGr .gn .px{flex:none;font:700 12.5px 'Baloo 2',sans-serif;color:#c9a24a}
+#potGr .gn.cher{opacity:.45}#potGr .gn.verrou{opacity:.6}
+#potGr .gn.verrou .px{color:#a08f72}`;
+document.head.appendChild(st);}
 const box=document.createElement('div');box.id='potGr';
-box.style.cssText='position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 86px);z-index:60;background:#f4ecd8;border-radius:16px;padding:10px;display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font:14px Georgia;box-shadow:0 8px 24px rgba(0,0,0,.45);max-height:60vh;overflow:auto';
-box.innerHTML='<div style="grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;font:700 14px Georgia;color:#5b3f21">Quelle graine ?<button id="potGrX" style="border:0;background:#e2d4b4;border-radius:50%;width:30px;height:30px;font:15px Georgia">✕</button></div>';
-Object.entries(POT_CULT).forEach(([k,[nom,g,min,v]])=>{const b=document.createElement('button');const peu=(e.euros||0)<g;
-if(!potLibre(k)){b.style.cssText='border:0;border-radius:10px;padding:8px;background:#e8dcc0;color:#6b5a44;font:700 13px Georgia;text-align:left';
-b.innerHTML='🔒 '+nom+'<br><small style="font-weight:400">à débloquer au Grainetier · '+enEuros(POT_VERROU[k]).replace(',00','')+'</small>';
-b.onclick=()=>{box.remove();texteVolant(joueur.x,joueur.y-56,nom+' : à débloquer au Grainetier','#ffe8a0');};box.appendChild(b);return;}
-b.style.cssText='border:0;border-radius:10px;padding:8px;background:#fff;color:#3a2a1a;font:700 13px Georgia;text-align:left;opacity:'+(peu?.5:1);
-b.innerHTML=nom+'<br><small style="font-weight:400">'+enEuros(g).replace(',00','')+' · '+potDuree(min)+' · rend '+enEuros(v).replace(',00','')+'</small>';
-b.onclick=async()=>{box.remove();if(POT_OCCUPE)return;POT_OCCUPE=true;potGeste('cueille',600);vibrer(10);
-try{const d=await appelRPC('pot_semer',{p_joueur:e.id,p_i:i,p_cult:k});if(!potAdopter(d))potRefus(d);else texteVolant(joueur.x,joueur.y-56,nom+' semé'+(POT.j&&POT.j.engrais>=0&&d.j&&d.j.engrais<(POT.j.engrais+1)?'':''),'#dff0c8');}
-finally{POT_OCCUPE=false;majAction();}};
-box.appendChild(b);});
-document.body.appendChild(box);$('potGrX').onclick=()=>box.remove();}
+const fmt=(c)=>enEuros(c).replace(',00','');
+let h='<div class="hd"><b>Quelle graine ?<small>la plus rapide en haut</small></b>'+
+'<button id="potGrX">✕</button></div><div class="liste">';
+h+=Object.entries(POT_CULT).sort((x,y)=>x[1][2]-y[1][2]).map(([k,[nom,g,min,v]])=>{
+const libre=potLibre(k), peu=(e.euros||0)<g;
+return '<button class="gn'+(libre?(peu?' cher':''):' verrou')+'" data-k="'+k+'"'+(libre&&!peu?'':' data-no="1"')+'>'+
+'<canvas data-p="'+k+'"></canvas>'+
+'<span class="t"><b>'+nom+'</b><small>'+potDuree(min)+
+(libre?' · marge <em>'+fmt(v-g)+'</em>':' · à débloquer au Grainetier')+'</small></span>'+
+'<span class="px">'+fmt(libre?g:POT_VERROU[k])+'</span></button>';}).join('');
+box.innerHTML=h+'</div>';
+document.body.appendChild(box);
+$('potGrX').onclick=()=>box.remove();
+box.querySelectorAll('canvas[data-p]').forEach(cv=>{
+const D=2,W=34,H=34;cv.width=W*D;cv.height=H*D;
+const g2=cv.getContext('2d');g2.setTransform(D*2.9,0,0,D*2.9,0,0);g2.imageSmoothingEnabled=false;
+try{PLANTES[cv.dataset.p](g2,W/2.9*0.5,H/2.9*0.9,3);}catch(x){}});
+box.querySelectorAll('.gn').forEach(b=>b.onclick=async()=>{
+const k=b.dataset.k, nom=POT_CULT[k][0];
+if(!potLibre(k)){box.remove();texteVolant(joueur.x,joueur.y-56,nom+' : à débloquer au Grainetier','#ffe8a0');return;}
+if((e.euros||0)<POT_CULT[k][1]){texteVolant(joueur.x,joueur.y-56,'Pas assez d’argent','#ffe8a0');return;}
+box.remove();if(POT_OCCUPE)return;POT_OCCUPE=true;potGeste('cueille',600);vibrer(10);
+try{const d=await appelRPC('pot_semer',{p_joueur:e.id,p_i:i,p_cult:k});
+if(!potAdopter(d))potRefus(d);else texteVolant(joueur.x,joueur.y-56,nom+' semé','#dff0c8');}
+finally{POT_OCCUPE=false;majAction();}});
+}
 let GR_FEN='h1';
 async function ouvrirLeGrainetier(onglet){onglet=onglet||'graines';
 if(!document.getElementById('cssGr')){const st=document.createElement('style');st.id='cssGr';st.textContent=CSS_GR;document.head.appendChild(st);}
