@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-2130';
+var MA_VERSION='2026-10-04-2150';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -15319,21 +15319,23 @@ if(POT.charge&&POT.j&&POT.j.arroseurs)for(const i of POT.j.arroseurs){
 if(!potOuverte(i))continue;
 const Q=POT_XY(i);
 if(Q.x-camX>VW+30||Q.x+Q.PW-camX<-30||Q.y-camY>VH+40||Q.y+Q.PH-camY<-40)continue;
-const px=Q.x+Q.PW-11, py=Q.y+Q.PH-5;
-arroseurs.push({y:py,f:()=>{try{
-const ex=px-camX, ey=py-camY, t=Date.now()/1000;
-const G=PI_F;
-ctx.fillStyle='rgba(20,14,8,.4)';ctx.fillRect(ex-4,ey+1,10,2);
-ctx.fillStyle=G.o;ctx.fillRect(ex-4,ey-3,10,4);          /* le socle */
-ctx.fillStyle=G.p;ctx.fillRect(ex-4,ey-3,10,1);
-ctx.fillStyle=G.s;ctx.fillRect(ex-2,ey-8,6,5);           /* le corps étagé */
-ctx.fillStyle=G.c;ctx.fillRect(ex-2,ey-8,2,5);
-ctx.fillStyle=G.h;ctx.fillRect(ex-2,ey-8,6,1);
-ctx.fillStyle=G.p;ctx.fillRect(ex+3,ey-7,4,2);           /* la buse */
-const bat=Math.sin(t*2.2);                                /* le jet balaie doucement */
-for(let k=0;k<6;k++){const d=4+k*1.6;
-ctx.fillStyle='rgba(175,205,225,'+(0.6-k*0.08)+')';
-ctx.fillRect(ex+4+d,ey-7+Math.sin(k*0.5+bat)*1.6,2,1);}
+/* QUATRE BUSES AUX ANGLES, RELIÉES PAR UN TUYAU qui longe la planche :
+   on voit l'installation entière, et rien ne masque les cultures. */
+arroseurs.push({y:Q.y+Q.PH-1,f:()=>{try{
+const X=Q.x-camX, Y=Q.y-camY, w=Q.PW, h=Q.PH, t=Date.now()/1000, G=PI_F;
+ctx.fillStyle='rgba(20,14,8,.3)';ctx.fillRect(X+3,Y+h-1,w-6,1);
+ctx.fillStyle=G.o;                                   /* le tuyau, sur les quatre bords */
+ctx.fillRect(X+3,Y+2,w-6,2);ctx.fillRect(X+3,Y+h-4,w-6,2);
+ctx.fillRect(X+3,Y+2,2,h-4);ctx.fillRect(X+w-5,Y+2,2,h-4);
+ctx.fillStyle=G.p;ctx.fillRect(X+3,Y+2,w-6,1);ctx.fillRect(X+3,Y+2,1,h-4);
+const B=[[X+4,Y+4,1,1],[X+w-5,Y+4,-1,1],[X+4,Y+h-3,1,-1],[X+w-5,Y+h-3,-1,-1]];
+B.forEach(([bx,by,sx,sy],k)=>{
+ctx.fillStyle=G.c;ctx.fillRect(bx-1,by-2,4,3);       /* la buse */
+ctx.fillStyle=G.e;ctx.fillRect(bx,by-3,2,1);
+const bat=Math.sin(t*2+k*1.6)*0.5+0.5;                /* les jets pulsent, décalés */
+for(let q=0;q<4;q++){
+ctx.fillStyle='rgba(175,205,225,'+(0.55-q*0.1)*(0.55+bat*0.45)+')';
+ctx.fillRect(bx+sx*(3+q*2.2),by-3+q*1.1*sy,2,1);}});
 }catch(x){}}});}
 const pousses=[];
 if(POT.charge)for(let i=0;i<24;i++){
