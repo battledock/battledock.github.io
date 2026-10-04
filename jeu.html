@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-1100';
+var MA_VERSION='2026-10-04-1130';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11163,6 +11163,7 @@ SOL.toBlob(async(b1)=>{const b2=fin?await new Promise(ok=>fin.toBlob(ok)):null;t
 st.clear();st.put({sol:b1,fin:b2},cle);}catch(x){}});}catch(x){}}
 const SOL_CACHE_PROMESSE=chargerSolCache();
 function refaireLeSol(){
+if(CHAMPS_SEULS&&CARTE==='village'){SOL=construireSolPre();SOL_FIN=null;CHEMIN=null;LISIERE=null;LISIERE_SUD=null;return SOL;}   /* LA FERME : son pré, rien d'autre, jamais le cache */
 if(SOL_CACHE.pret){SOL=SOL_CACHE.sol;SOL_FIN=SOL_CACHE.fin;SOL_CACHE.pret=false;return SOL;}     /* déjà construit lors d'un lancement précédent */
 setTimeout(rangerSolCache,4000);                                                                              /* on le range, sans ralentir le jeu */
 if(CARTE==='foret'){SOL=construireSolForet();SOL_FIN=null;CHEMIN=null;return SOL;}
@@ -14327,6 +14328,7 @@ function balayerLeSentier(){
     (!surLeSentier(o.x,o.y,15)&&!dansEtang(o.x,o.y,-30)));
 }
 function semerDecor(){
+if(CHAMPS_SEULS&&CARTE==='village'){DECOR=[];invaliderGrille();return;}   /* LA FERME EST NUE */
 if(CARTE==='foret')return semerLaForet();
 if(CARTE==='extramar')return semerDecorExtramar();
 if(CARTE==='garde')return semerDecorGarde();
@@ -15161,6 +15163,28 @@ ctx.setTransform(ECH,0,0,ECH,Math.round(-fx*ECH)+sx,Math.round(-fy*ECH)+sy);
 ctx.imageSmoothingEnabled=false;
 const lw=Math.min(VW+2,MONDE_L-camX), lh=Math.min(VH+2,MONDE_H-camY);
 if(lw<VW+2||lh<VH+2){ctx.fillStyle='#2b3a26';ctx.fillRect(0,0,VW+2,VH+2);}   /* le fond uni, seulement si le sol ne couvre pas tout l'écran */
+/* ================= LA FERME : REMISE À ZÉRO =================
+   Une carte de 1200 x 1200, son sol, le joueur, les autres joueurs. Rien
+   d'autre ne passe par ici : ni chemin, ni lisière, ni place, ni nuages,
+   ni papillons, ni décor, ni pêche. Tout le reste du dessin est court-
+   circuité, pour qu'il n'y ait plus rien à chercher. */
+if(CHAMPS_SEULS&&CARTE==='village'){
+ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
+const pxF=Math.round((joueur.x-camX)*ECH)/ECH;
+const pyF=Math.round((joueur.y-camY)*ECH)/ECH;
+for(const [,a] of AUTRES){
+const ax=a.x-camX, ay=a.y-camY;
+if(ax<-40||ay<-70||ax>VW+40||ay>VH+40)continue;
+try{dessinerUnAutre(ctx,a,camX,camY);}catch(x){}
+}
+try{const m=ctx.getTransform();JOUEUR_ECRAN={x:m.a*pxF+m.e,y:m.d*(pyF-18)+m.f,sc:m.a/3};}catch(x){}
+personne(ctx,pxF,pyF,e.ap,(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche);
+nettoyerBulles();
+dessinerBulles(ctx,camX,camY,pxF,pyF);
+dessinerTextes(ctx,camX,camY);
+ctx.setTransform(1,0,0,1,0,0);
+return;
+}
 if(SOL_FIN)ctx.drawImage(SOL_FIN,camX*2,camY*2,lw*2,lh*2,0,0,lw,lh);   /* le sol affiné */
 else ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
 if(CHEMIN)ctx.drawImage(CHEMIN,camX,camY,lw,lh,0,0,lw,lh);   /* la couche du chemin */
