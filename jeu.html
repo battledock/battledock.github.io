@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-0830';
+var MA_VERSION='2026-10-05-0900';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -7954,68 +7954,30 @@ border-radius:16px;padding:7px 14px 7px 11px;margin-bottom:20px}
 #ani p{font:italic 15px/1.7 Georgia,serif;color:#8fa6bd;max-width:290px;margin:0}
 #ani button{width:100%;max-width:320px;margin-top:26px;border:0;border-radius:14px;padding:14px;
 background:#e8c06a;color:#2a2016;font:700 15px 'Baloo 2','Trebuchet MS',system-ui,sans-serif}`;
-function annonceInterface(){
-try{if(localStorage.getItem('bdl.annonce.interface')==='1')return;}catch(x){}
+/* ================= L'ANNONCE DU CHANTIER =================
+   Une seule annonce dans le jeu. Elle s'affiche une fois par
+   joueur, puis ne revient plus : le bouton pose son marqueur. */
+function annonceChantier(){
+try{if(localStorage.getItem('bdl.annonce.perso')==='1')return;}catch(x){}
 if(!document.getElementById('cssAni')){const st=document.createElement('style');
 st.id='cssAni';st.textContent=CSS_ANI;document.head.appendChild(st);}
 $('page2Fond').className='';$('page2').classList.add('on');
 $('page2Fond').innerHTML=
  '<div id="ani">'+
- '<span class="pil"><span class="enc"><i class="on"></i><i></i><i></i><i></i><i></i></span>'+
- '<b>8<em>/200</em></b></span>'+
- '<h2>Tout est plus clair</h2>'+
- '<p>Le bandeau, le menu et le sac ont \u00e9t\u00e9 refaits. Moins de cadres, plus de port.</p>'+
- '<button id="aniOk">C\u2019est parti</button></div>';
+ '<span class="pil"><span class="enc"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span>'+
+ '<b>EN COURS</b></span>'+
+ '<h2>On refait ton personnage</h2>'+
+ '<p>Les prochains jours, le dessin du personnage et ses animations vont '+
+ 'changer : la marche, les gestes, les coupes de cheveux et les tenues. '+
+ 'Tu verras peut-être des choses bizarres en chemin — c’est normal, '+
+ 'ça veut dire que ça avance.</p>'+
+ '<p style="opacity:.75">Le style Classique reste disponible dans les '+
+ 'réglages si quelque chose te gêne.</p>'+
+ '<button id="aniOk">Compris</button></div>';
 $('aniOk').onclick=()=>{
-try{localStorage.setItem('bdl.annonce.interface','1');}catch(x){}
+try{localStorage.setItem('bdl.annonce.perso','1');}catch(x){}
 fermeA=Date.now();$('page2').classList.remove('on');};
 }
-async function annonceForet(){
-  /* L'ANNONCE D'OUVERTURE : elle s'affiche une fois par joueur, et c'est
-     d'elle qu'on repart avec son nom gravé et la tenue du garde forestier. */
-  try{if(localStorage.getItem('bdl.annonce.ouverture')==='1')return;}catch(x){}
-  if(!document.getElementById('cssAnf')){const st=document.createElement('style');
-    st.id='cssAnf';st.textContent=CSS_ANF;document.head.appendChild(st);}
-  $('page2Fond').className='';$('page2').classList.add('on');
-  $('page2Fond').innerHTML=
-   '<div id="anf"><div class="pan">'+
-   '<canvas id="anfD" width="320" height="104"></canvas>'+
-   '<small>BATTLE DOCK · OCTOBRE 2026</small>'+
-   '<h2>La forêt est ouverte</h2>'+
-   '<p class="ch">Érables, chênes dorés, charmes et oliviers. Des champignons sous les arbres, '+
-   'des baies dans les buissons, de l’argile au bord de l’eau.</p>'+
-   '<div class="lst2">'+
-   '<div><b>L’Étal du bois</b><em>vends ta récolte sur place, les cours changent chaque jour</em></div>'+
-   '<div><b>Le ponton du lac</b><em>cinquante prises d’eau douce, du goujon au silure géant</em></div>'+
-   '<div><b>L’atelier du bois</b><em>planches, poutres, bardeaux et charbon</em></div>'+
-   '</div>'+
-   '<button id="anfOk">ENTRER DANS LA FORÊT</button>'+
-   '</div></div>';
-  /* le petit dessin : la forêt d'automne et son lac */
-  {const c=$('anfD'), g=c.getContext('2d');g.imageSmoothingEnabled=false;
-   g.setTransform(4,0,0,4,0,0);
-   const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
-   const hs2=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
-   for(let y=0;y<26;y++)for(let x=0;x<80;x++){
-     const n=hs2(x*0.3+y*0.5);R(x,y,1,1,n<.4?'#4a3820':(n<.72?'#5a4428':'#3d2e1a'));}
-   for(let k=0;k<70;k++){const x=hs2(k*1.7)*80,y=hs2(k*4.3)*18;
-     R(x,y,2,1,['#c9821a','#b4552a','#8a3a22','#d8a83a'][(hs2(k*2.1)*4)|0]);}
-   /* trois arbres */
-   [[14,'#b8392c','#d4584a'],[40,'#c9821a','#e0a03a'],[66,'#8a9a2a','#a8b84a']].forEach(([x,c1,c2])=>{
-     R(x-1,10,3,9,'#6b4a2a');
-     for(let e2=0;e2<3;e2++){const r=7-e2*1.6;
-       for(let i=-r;i<=r;i++){const h=Math.round(r*0.7*Math.sqrt(Math.max(0,1-(i/r)**2)));
-         for(let j=-h;j<=h;j++)R(x+i,10-e2*3.4+j,1,1,j<0?c2:c1);}}});
-   /* le lac */
-   for(let y=19;y<26;y++)for(let x=0;x<80;x++){
-     const p=(y-19)/7;R(x,y,1,1,p<0.3?'#3f6a5a':(p<0.7?'#2a5260':'#1d3f52'));}
-   for(let k=0;k<9;k++)R(hs2(k*3.1)*80,20+hs2(k*7)*5,4,1,'rgba(150,200,220,.3)');}
-  $('anfOk').onclick=()=>{
-    try{localStorage.setItem('bdl.annonce.ouverture','1');}catch(x){}
-    $('page2').classList.remove('on');
-  };
-}
-/* un mot qui s'affiche en bas de l'écran, sans dépendre des autres écrans */
 function motOuverture(t){
   let b=document.getElementById('motOuv');
   if(!b){b=document.createElement('div');b.id='motOuv';
@@ -17763,8 +17725,8 @@ else ouvrirLeChantier(d&&d.erreur==='manque'?'« Il te manque encore de quoi. »
 function ligne2Permise(){try{return !!(e&&e.id==='e029d1fb-7baa-4225-91fd-5cdbef6f8711');}catch(x){return false;}}
 setTimeout(()=>{try{verifierLaFete();}catch(x){}},200);
 /* l'annonce de la réouverture, une fois par joueur */
-setTimeout(()=>{try{if(CARTE==='extramar')annonceForet();}catch(x){}},1400);
-setTimeout(()=>{try{annonceInterface();}catch(x){}},1800);
+/* UNE SEULE ANNONCE : le chantier du personnage. */
+setTimeout(()=>{try{annonceChantier();}catch(x){}},1600);
 setInterval(()=>{try{verifierLaFete();}catch(x){}},600000);
 $('b-vestiaire').onclick=()=>{VEST_SEL=null;try{$('tiroir').classList.remove('on');$('barre').classList.remove('on');}catch(x){}ouvrirLeVestiaire();};
 $('r-ecrire').onclick=()=>{if(bandeauOuvert())fermerBandeau();else ouvrirBandeau();};
