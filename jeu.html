@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-06-0430';
+var MA_VERSION='2026-10-06-0520';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16371,19 +16371,47 @@ const tr=balVet((r-yHan)*1.4);
 if(cote){w+=Math.round(k2*2);xx-=Math.round(k2*2)+tr;}
 else{xx+=Math.round(tr*0.8*k2);w+=Math.round(Math.abs(tr)*k2*0.9);}}
 if(cote){if(r>yEp+3&&r<yEp+12){w+=1;}if(r>=yHan-3){w+=1;xx-=1;}}
-R(xx,r,w,1,r<yEp+3?vestC:vest);R(xx,r,1,1,vestT);R(xx+w-1,r,1,1,cote?vestC:vestT);
-if(!cote&&!dos){R(xx+1,r,2,1,vestO);R(xx+w-3,r,2,1,vestC);}
+/* ================= LE MODELÉ DU TORSE =================
+   C'était trois tons : un bord clair, un bord sombre, le reste uni. Le
+   torse étant la plus grande surface du personnage, c'est là que l'aplat
+   se voyait le plus. Cinq tons maintenant, et des accents aux endroits où
+   le tissu se casse vraiment. La lumière vient du haut-gauche. */
+R(xx,r,w,1,vest);
+R(xx,r,1,1,vestT);                                   /* le bord gauche */
+R(xx+1,r,2,1,cote?vest:vestC);                       /* le quart éclairé */
+R(xx+w-3,r,2,1,vestO);                               /* le quart dans l'ombre */
+R(xx+w-1,r,1,1,vestT);                               /* le bord droit */
+/* LE HAUT DES ÉPAULES attrape la lumière du ciel */
+if(r<yEp+2)R(xx+1,r,w-2,1,T(veste,32));
+else if(r<yEp+4)R(xx+1,r,w-2,1,vestC);
+if(!cote&&!dos){
+/* L'OMBRE SOUS LES BRAS : elle détache le bras du torse. */
+if(r>yEp+3&&r<yEp+12){R(xx+1,r,2,1,vestT);R(xx+w-3,r,2,1,vestT);}
+/* LE CREUX DE LA TAILLE : le tissu rentre, donc il s'assombrit. */
+if(r>yEp+16&&r<yEp+24&&((r-yEp)%3)===0)R(xx+2,r,w-4,1,vestO);}
+if(cote){
+if(r>yEp+6&&r<yEp+14)R(xx,r,2,1,vestT);              /* le creux sous l'omoplate */
+if(r>yEp+16&&r<yEp+24)R(xx+1,r,2,1,vestO);           /* les reins */
+if(r>yEp+8&&r<yEp+18)R(xx+w-2,r,1,1,T(veste,32));}   /* la poitrine, bombée */
+if(dos){
+if(r>yEp+3&&r<yEp+13){R(xx+3,r,3,1,vestC);R(xx+w-6,r,3,1,vestO);}   /* les omoplates */
+R(0,r,1,1,r<yEp+6?vestO:vestT);}                     /* la colonne */
 }
 if(!cote){
 const cx0=diag?vis:0;
 if(!dos){
-R(cx0-EP+3,yEp+10,EP-4,1,vestO);R(cx0+2,yEp+10,EP-4,1,vestO);
+/* LES PLIS : trois accents, là où le tissu se casse. */
+R(cx0-EP+3,yEp+10,EP-4,1,vestT);R(cx0+2,yEp+10,EP-4,1,vestT);   /* sous la poitrine */
+R(cx0-TA+1,yHan-5,TA*2-2,1,vestO);                               /* au-dessus de la ceinture */
+R(cx0-TA+3,yHan-4,TA*2-6,1,vestC);                               /* le bourrelet du tissu */
+R(cx0-2,yEp+6,1,8,vestO);                                        /* l'ouverture, au milieu */
 if(SX.pec){R(cx0,yEp+4,1,6,vestO);R(cx0-EP+4,yEp+9,EP-5,1,vestT);R(cx0+2,yEp+9,EP-5,1,vestT);R(cx0-5,yEp+14,1,5,vestO);R(cx0+4,yEp+14,1,5,vestO);}
 if(SX.ventre){R(cx0-TA,yHan-3,TA*2,1,vestO);R(cx0-TA+2,yHan-4,TA*2-4,1,vestC);}
 R(cx0-TA+2,yHan-5,3,1,vestO);R(cx0+TA-5,yHan-5,3,1,vestO);
 }else{
 R(-EP+3,yEp+5,4,1,vestC);R(EP-7,yEp+5,4,1,vestC);R(-EP+3,yEp+9,4,1,vestO);R(EP-7,yEp+9,4,1,vestO);
-R(0,yEp+4,1,yHan-yEp-6,vestO);R(-3,yHan-4,6,1,vestO);
+R(0,yEp+4,1,yHan-yEp-6,vestO);
+R(-3,yHan-4,6,1,vestO);R(-4,yHan-5,8,1,vestT);                   /* le pli du bas du dos */
 }
 }else{
 R(3,yEp+10,2,1,vestO);R(-Math.round(demiDos())-1,yHan-2,2,2,T(pant,-10));      /* sous la poitrine ; le haut des fesses */
