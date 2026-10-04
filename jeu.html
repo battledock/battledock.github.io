@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-1350';
+var MA_VERSION='2026-10-05-1430';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -15966,6 +15966,7 @@ if(phi<appui){const k=phi/appui;return {x:1-2*k,lift:0,pointe:k>0.72?(k-0.72)/0.
 const k=(phi-appui)/(1-appui), e=k*k*(3-2*k);
 return {x:-1+2*e,lift:Math.sin(Math.PI*Math.min(1,k*1.15))*(COURSE?1.7:1),pointe:0,talon:0};};
 const pG=bouge?pied(tC):{x:0,lift:0,pointe:0,talon:0}, pD=bouge?pied(tC+0.5):{x:0,lift:0,pointe:0,talon:0};
+
 const hanche=pG.x;                                              /* (gardé pour les anciens calculs) */
 const leveG=pG.lift, leveD=pD.lift;
 const AMPL=COURSE?1.35:1;
@@ -15992,6 +15993,50 @@ const souffle=bouge?0:[0,1,1,0][iBrise];
 const bobPas=COURSE?Math.round(-2.5*Math.max(0,Math.sin(4*Math.PI*(tC-0.19)))+1):Math.round(1.5*Math.cos(4*Math.PI*(tC-0.1)));
 const bob=(bouge?bobPas:-souffle)+Math.round(tasseG*1.5)+(frG>0&&!(dir==='gauche'||dir==='droite')?Math.round(Math.max(0,pencheG)*0.5):0);
 const yHan=-26+bob, yEp=-54+bob, yCou=-58+bob, yTete=-81+bob;
+/* ================= LE MODÈLE DE POSE =================
+   Seize points nommés, calculés à partir des mêmes formules que le dessin.
+   Ce modèle ne dessine RIEN et ne change RIEN à l'image : il met des noms
+   sur des positions qui existaient déjà, éparpillées dans le code.
+
+   Il sert de socle : une animation, un accessoire ou un outil peuvent s'y
+   accrocher sans toucher au dessin. Tant qu'aucun code ne le lit, le
+   personnage est au pixel près identique à avant.
+
+   Repère : x=0 au milieu du corps, y négatif vers le haut, origine aux pieds.
+   Lecture depuis l'extérieur : window.POSE_FIN après un appel à spriteFin. */
+const POSE=(()=>{
+const AM=(typeof AMPL==='number')?AMPL:1;
+const demiEp=EP/2, demiHan=HA/2;
+/* les pieds, là où le dessin les pose */
+const piedG={x:-demiHan+pG.x*11*AM, y:-3-pG.lift*6, pointe:pG.pointe, talon:pG.talon};
+const piedD={x: demiHan+pD.x*11*AM, y:-3-pD.lift*6, pointe:pD.pointe, talon:pD.talon};
+/* les genoux : au milieu de la cuisse et du tibia, légèrement en avant */
+const genou=(h,p)=>({x:(h.x+p.x)/2+(p.y>-8?0.6:0), y:(h.y+p.y)/2});
+const hancheG={x:-demiHan, y:yHan}, hancheD={x:demiHan, y:yHan};
+/* les bras : le balancement du dessin, converti en position */
+const balG=bouge?Math.sin(2*Math.PI*tC)*(COURSE?1.5:1):0;
+const balD=-balG;
+const epauleG={x:-demiEp, y:yEp}, epauleD={x:demiEp, y:yEp};
+const coude=(e,b)=>({x:e.x+b*3*AM, y:e.y+9});
+const main=(e,b)=>({x:e.x+b*6*AM, y:e.y+19});
+return {
+root:{x:0,y:0},
+pelvis:{x:0,y:yHan},
+torso:{x:0,y:yEp},
+neck:{x:0,y:yCou},
+head:{x:0,y:yTete},
+crane:{x:0,y:yTete},                 /* sommet du crâne */
+menton:{x:0,y:yTete+23},
+armL:epauleG, forearmL:coude(epauleG,balG), handL:main(epauleG,balG),
+armR:epauleD, forearmR:coude(epauleD,balD), handR:main(epauleD,balD),
+thighL:hancheG, shinL:genou(hancheG,piedG), footL:piedG,
+thighR:hancheD, shinR:genou(hancheD,piedD), footR:piedD,
+/* les mesures, pour qui veut s'y caler */
+mesures:{EP:EP,TA:TA,HA:HA,bras:SX.bras,jambe:SX.jambe,cou:SX.cou,
+image:F,images:16,course:COURSE,vue:(cote?'profil':(dos?'dos':(diag?'troisQuarts':'face'))),
+sens:(cote?(dir==='gauche'?-1:1):(diag?vis:0))}};
+})();
+try{window.POSE_FIN=POSE;}catch(x){}
 const court=basT==='short'||basT==='bermuda', jupe=basT==='jupe'||basT==='longue jupe';
 const manches={'veste':1,'chemise':1,'pull':1,'manteau':1,'tunique':0.7,'t-shirt':0.3,'gilet':0,'débardeur':0}[hautT];
 const long=hautT==='manteau'?10:(hautT==='tunique'?6:0);
