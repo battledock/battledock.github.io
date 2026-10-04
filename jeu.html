@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-2350';
+var MA_VERSION='2026-10-06-0020';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16701,7 +16701,9 @@ const base=lg?Math.min(lg+6,26):(cf.fr==='rase'||cf.fr==='degrade'?4:8);
 for(let i=0;i<9;i++){
 const x=-11+i*2.6;
 const vers=(x-RAIE)/12;                       /* l'écart à la raie, en -1..1 */
-const dep=Math.round(-vol+Math.abs(vers)*vol*0.7);
+/* LE DÉPART DE LA MÈCHE : au centre elle part du sommet, sur les côtés
+   elle part plus bas — sinon la chevelure se hérisse en pointes. */
+const dep=Math.round(-vol*(1-Math.abs(vers)*0.55));
 /* les mèches du côté le plus fourni sont plus longues */
 const plus=vers<0?1.18:0.9;
 L.push({x:Math.round(x),y:dep,
@@ -16981,7 +16983,9 @@ const w=Math.max(1,Math.round(M.la*(1-t/M.lo*0.55)));
 const xx=Math.round(M.x+M.p*t+(M.ond?Math.sin(t*0.9+M.x)*M.ond:0))+dx
 +(t>3?bal(t):0);                               /* la brise prend les pointes */
 const yy=y0+t;
-/* LE BORD : une mèche ne sort jamais de la silhouette. */
+/* LE BORD : une mèche ne sort jamais de la silhouette, ni sur les côtés
+   ni par le haut. */
+if(yy<top)continue;
 const bord=bordCheveux(yy,hy,craneF(yy<hy?hy:yy,hy),vol);
 if(bord<=0)continue;
 if(xx-dx<-bord||xx-dx+w>bord)continue;
@@ -17063,11 +17067,20 @@ if(barbe==='favoris'){for(let r=hy+8;r<hy+18;r++)R(2,r,3,1,r%3?bB:bO);}
 if(barbe==='collier'){for(let r=hy+12;r<hy+24;r++){const x=2+Math.round((r-hy-12)*0.6);R(x,r,2,1,r%2?bB:bO);}R(6,hy+23,5,1,bB);}
 if(barbe==='fine'){for(let r=hy+14;r<hy+23;r++)R(2+Math.round((r-hy-14)*0.7),r,1,1,bO);R(7,hy+22,4,1,bO);}
 if(barbe==='courte'||barbe==='pleine'||barbe==='longue'||barbe==='fourchue'){
-joue(hy+(barbe==='courte'?15:13),hy+(barbe==='courte'?23:25),2,11);R(6,hy+16,5,1,bB);R(7,hy+16,2,1,bC);
+joue(hy+(barbe==='courte'?15:13),hy+(barbe==='courte'?22:24),2,11);R(6,hy+16,5,1,bB);R(7,hy+16,2,1,bC);
 R(6,hy+18,4,1,fente);R(9,hy+19,1,1,levreC);
-if(barbe==='longue'||barbe==='fourchue'){for(let r=hy+25;r<hy+34;r++){const w=Math.max(2,8-Math.round((r-hy-25)*0.7));
-R(3+Math.round((r-hy-25)*0.3),r,w,1,poil(3,r,4)?bO:bB);}
-if(barbe==='fourchue')R(5,hy+31,1,3,peau);}
+/* LA BARBE LONGUE, DE PROFIL. Elle partait droit vers le bas depuis le
+   menton et finissait détachée, en masse flottante devant la poitrine.
+   Elle suit maintenant la ligne du menton vers le cou : elle rentre en
+   s'affinant au lieu de pendre dans le vide. */
+if(barbe==='longue'||barbe==='fourchue'){
+for(let r=hy+25;r<hy+33;r++){
+const k=(r-hy-25)/8;
+const w=Math.max(1,Math.round(7-k*5));          /* elle s'affine vite */
+const x0=3+Math.round(k*2.2);                   /* et rentre vers le cou */
+R(x0,r,w,1,poil(x0,r,4)?bO:bB);
+R(x0,r,1,1,bOO);}                               /* le bord, dans l'ombre */
+if(barbe==='fourchue')R(5,hy+30,1,2,peau);}
 }
 return;
 }
