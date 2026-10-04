@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-2345';
+var MA_VERSION='2026-10-05-0030';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -25664,32 +25664,122 @@ const STATIONS_L1=[['extramar','Le port','Les docks, la criée, le casino','port
 ['foret','La forêt','Le bois, le lac, les roseaux','foret']];
 const stationIci=()=>CARTE==='extramar'?'port':(CARTE==='foret'?'foret':'ferme');
 const autresStations=()=>STATIONS_L1.filter(([,,,k])=>k!==stationIci()).map(([,n])=>n.replace('Le ','').replace('La ','').toUpperCase()).join(' · ');
+/* ================= LE MÉTRO : LE CIEL DE MARSEILLE =================
+   Un dégradé qui suit l'heure réelle du jeu, une silhouette de toits sur
+   l'horizon, le soleil qui irradie. Les destinations sont de simples
+   contours clairs : le ciel reste le sujet. */
+function heureDuJeu(){
+try{const d=new Date(new Date().toLocaleString('en-US',{timeZone:'Europe/Paris'}));
+return d.getHours()+d.getMinutes()/60;}catch(x){return 12;}}
+function cielDuVoyage(){
+const h=heureDuJeu();
+/* six moments, du petit matin à la nuit profonde */
+if(h<6)   return {haut:'#1b2748',bas:'#3a3f6a',sol:'#191628',astre:'#dfe6ff',lune:true, mot:'AVANT L’AUBE'};
+if(h<9)   return {haut:'#f4c9a0',bas:'#e9a2a0',sol:'#3b2f46',astre:'#fff4d8',lune:false,mot:'AU PETIT MATIN'};
+if(h<17)  return {haut:'#8fc4e8',bas:'#cfe4ee',sol:'#3a3f44',astre:'#fffaea',lune:false,mot:'EN PLEIN JOUR'};
+if(h<20)  return {haut:'#f9d49a',bas:'#b8617f',sol:'#2f2638',astre:'#fff6dc',lune:false,mot:'AU COUCHANT'};
+if(h<22)  return {haut:'#8a5a7e',bas:'#4a3a62',sol:'#241f33',astre:'#ffe8c0',lune:false,mot:'À LA TOMBÉE DU JOUR'};
+return    {haut:'#16203c',bas:'#2a3152',sol:'#17142a',astre:'#fff6dc',lune:true, mot:'DERNIER MÉTRO'};
+}
 function choisirLaDestination(){
 const D=STATIONS_L1.filter(([,,,q])=>q!==stationIci());
-if(!document.getElementById('cssVoy')){const st=document.createElement('style');st.id='cssVoy';st.textContent=
-`#page2Fond.voy{background:#f2ece0;color:#2b2419;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%}
- #page2Fond.voy .tete{padding:calc(env(safe-area-inset-top,0px) + 18px) 18px 14px;border-bottom:2px solid rgba(43,36,25,.25);
-   display:flex;align-items:center;gap:12px}
- #page2Fond.voy .tete b{flex:1;font:400 24px Georgia}
- #page2Fond.voy .tete small{display:block;font:700 9px Arial;letter-spacing:3px;color:#b4302c}
- #page2Fond.voy .tete button{width:34px;height:34px;border-radius:50%;border:0;background:#2b2419;color:#f6f1e4;font:700 14px Arial}
- #page2Fond.voy .d{display:flex;align-items:center;gap:14px;margin:12px 16px;padding:14px;
-   border:1px solid #2b2419;border-radius:16px;background:#fbf8ef;color:inherit;width:calc(100% - 32px);text-align:left}
- #page2Fond.voy .d:active{background:#f2ece0}
- #page2Fond.voy .d i{width:26px;height:26px;border-radius:50%;background:#fbf8ef;border:6px solid #b4302c;flex:none}
- #page2Fond.voy .d b{display:block;font:400 20px Georgia}
- #page2Fond.voy .d em{display:block;font:italic 12px Georgia;color:#7d7566;margin-top:3px}
- #page2Fond.voy .d.ici{opacity:.45}
- #page2Fond.voy .d.ici i{border-color:#a8a090}`;
- document.head.appendChild(st);}
+const C=cielDuVoyage();
+if(!document.getElementById('cssVoy')){const st=document.createElement('style');st.id='cssVoy';
+st.textContent=
+`#page2Fond.voy{position:absolute;inset:0;overflow:hidden;
+font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#fff6dc}
+#page2Fond.voy canvas.ciel{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+#page2Fond.voy .tete{position:absolute;left:0;right:0;top:0;
+padding:calc(env(safe-area-inset-top,0px) + 18px) 18px 0;display:flex;align-items:flex-start;gap:10px}
+#page2Fond.voy .tete .tx{flex:1;min-width:0}
+#page2Fond.voy .tete small{display:block;font:700 9px ui-monospace,monospace;letter-spacing:3px;
+color:rgba(255,246,220,.75)}
+#page2Fond.voy .tete b{display:block;font:700 25px 'Baloo 2',sans-serif;margin-top:4px;
+text-shadow:0 2px 6px rgba(30,20,40,.45)}
+#page2Fond.voy .tete button{flex:none;width:34px;height:34px;border-radius:50%;border:0;
+background:rgba(255,246,220,.9);color:#2f2638;font:700 15px 'Baloo 2',sans-serif}
+#page2Fond.voy .liste{position:absolute;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
+#page2Fond.voy .d{display:flex;align-items:center;gap:12px;width:100%;margin-top:9px;
+border:2px solid rgba(255,246,220,.85);background:rgba(30,22,40,.18);border-radius:15px;
+padding:12px 14px;text-align:left;color:#fff6dc}
+#page2Fond.voy .d:active{background:rgba(255,246,220,.2)}
+#page2Fond.voy .d b{display:block;font:700 17px 'Baloo 2',sans-serif}
+#page2Fond.voy .d em{display:block;font:italic 12px Georgia,serif;color:rgba(255,246,220,.72);
+font-style:italic;margin-top:1px}
+#page2Fond.voy .d i{font:700 10px ui-monospace,monospace;color:rgba(255,246,220,.8);font-style:normal}`;
+document.head.appendChild(st);}
 $('page2Fond').className='voy';$('page2').classList.add('on');
-$('page2Fond').innerHTML='<div class="tete"><div style="flex:1"><small>MÉTRO · LIGNE 1</small><b>Où vas-tu ?</b></div>'+
-  '<button id="voyX">✕</button></div>'+
-  D.map(([c,nom,sous])=>'<button class="d" data-c="'+c+'"><i></i><span><b>'+nom+'</b><em>'+sous+'</em></span></button>').join('');
+$('page2Fond').innerHTML='<canvas class="ciel" id="voyCiel"></canvas>'+
+'<div class="tete"><span class="tx"><small>'+C.mot+' · LIGNE 1</small><b>Où vas-tu ?</b></span>'+
+'<button id="voyX">✕</button></div>'+
+'<div class="liste">'+D.map(([c,nom,sous])=>
+'<button class="d" data-c="'+c+'"><span style="flex:1"><b>'+nom+'</b><em>'+sous+'</em></span>'+
+'<i>'+(c==='extramar'?'2 MIN':'5 MIN')+'</i></button>').join('')+'</div>';
+dessinerLeCiel($('voyCiel'),C);
 $('voyX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
 $('page2Fond').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
-  const d=D.find(x=>x[0]===b.dataset.c);
-  $('page2').classList.remove('on');voyagerVers(d[0],'Direction '+d[1]);});
+const d=D.find(x=>x[0]===b.dataset.c);
+$('page2').classList.remove('on');voyagerVers(d[0],'Direction '+d[1]);});
+}
+function dessinerLeCiel(cv,C){
+if(!cv)return;
+const W=cv.clientWidth||320, H=cv.clientHeight||560;
+const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+cv.width=W*D;cv.height=H*D;
+const g=cv.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+const al=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+const hex=(c)=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];
+const A=hex(C.haut), B=hex(C.bas), horizon=Math.round(H*0.66);
+/* LE DÉGRADÉ, par bandes de deux pixels : on reste dans la langue du jeu */
+for(let y=0;y<horizon;y+=2){
+const k=y/horizon;
+g.fillStyle='rgb('+Math.round(A[0]+(B[0]-A[0])*k)+','+
+Math.round(A[1]+(B[1]-A[1])*k)+','+Math.round(A[2]+(B[2]-A[2])*k)+')';
+g.fillRect(0,y,W,2);}
+/* LES ÉTOILES, seulement la nuit */
+if(C.lune)for(let k=0;k<70;k++){
+const x=Math.round(al(k*1.37)*W), y=Math.round(al(k*2.71)*horizon*0.8);
+g.fillStyle='rgba(255,255,255,'+(0.3+al(k*3.11)*0.6)+')';g.fillRect(x,y,1,1);}
+/* L'ASTRE, avec son halo */
+const ax=Math.round(W*0.76), ay=Math.round(horizon*0.34), r=Math.round(Math.min(W,H)*0.045);
+const hal=g.createRadialGradient(ax,ay,1,ax,ay,r*5);
+hal.addColorStop(0,'rgba(255,246,220,.42)');
+hal.addColorStop(1,'rgba(255,246,220,0)');
+g.fillStyle=hal;g.fillRect(ax-r*5,ay-r*5,r*10,r*10);
+g.fillStyle=C.astre;g.beginPath();g.arc(ax,ay,r,0,7);g.fill();
+if(C.lune){g.fillStyle='rgb('+Math.round(A[0]+(B[0]-A[0])*0.3)+','+
+Math.round(A[1]+(B[1]-A[1])*0.3)+','+Math.round(A[2]+(B[2]-A[2])*0.3)+')';
+g.beginPath();g.arc(ax+r*0.55,ay-r*0.2,r*0.92,0,7);g.fill();}
+/* LA SILHOUETTE DES TOITS : des blocs, des cheminées, une grue au loin */
+g.fillStyle=C.sol;
+const bloc=(x,w,h)=>{g.fillRect(x,horizon-h,w,h+40);};
+let x=-10;
+let i=0;
+while(x<W+20){
+const w=Math.round(26+al(i*5.3)*48), h=Math.round(18+al(i*7.7)*52);
+bloc(x,w,h);
+if(al(i*9.1)<0.45)g.fillRect(x+Math.round(w*0.3),horizon-h-9,6,9);   /* la cheminée */
+if(al(i*11.3)<0.25){                                                 /* le toit en pente */
+g.beginPath();g.moveTo(x,horizon-h);g.lineTo(x+w/2,horizon-h-12);g.lineTo(x+w,horizon-h);
+g.closePath();g.fill();}
+x+=w+Math.round(al(i*3.7)*10);i++;}
+/* la grue du port, au loin */
+const gx=Math.round(W*0.17), gh=Math.round(H*0.17);
+g.fillRect(gx,horizon-gh,4,gh);
+g.fillRect(gx-20,horizon-gh,44,4);
+g.fillRect(gx+20,horizon-gh,3,12);
+/* LE SOL ET LE QUAI */
+g.fillStyle=C.sol;g.fillRect(0,horizon,W,H-horizon);
+g.fillStyle='rgba(255,255,255,.07)';g.fillRect(0,horizon,W,2);
+/* le lampadaire, allumé quand il fait sombre */
+const lx=Math.round(W*0.12), ly=horizon+Math.round((H-horizon)*0.18);
+g.fillStyle=C.sol;g.fillRect(lx,ly-54,3,54);
+g.fillStyle=(C.lune||C.mot==='À LA TOMBÉE DU JOUR')?'#ffd27a':C.sol;
+g.fillRect(lx-5,ly-62,13,9);
+if(C.lune||C.mot==='À LA TOMBÉE DU JOUR'){
+const h2=g.createRadialGradient(lx+1,ly-58,1,lx+1,ly-58,54);
+h2.addColorStop(0,'rgba(255,210,122,.32)');h2.addColorStop(1,'rgba(255,210,122,0)');
+g.fillStyle=h2;g.fillRect(lx-53,ly-111,108,108);}
 }
 function vignetteStation(cv,quoi){
 const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
