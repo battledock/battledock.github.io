@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-1110';
+var MA_VERSION='2026-10-05-1150';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16439,6 +16439,13 @@ const mat=(r,r0,r1)=>{const k=(r-r0)/Math.max(1,r1-r0);return k<0.12?H5.c:(k>0.8
 /* LE PROFIL DU CRÂNE, de face : c'est exactement celui que dessine tete(),
    24 de large, resserré à 18 sur les deux premiers rangs. Les cheveux s'y
    calent au lieu d'être une calotte uniforme qui déborde. */
+/* DE PROFIL : le crâne va de -10 à 11, resserré à 16 de large sur les deux
+   premiers rangs, et il avance de 2 px au niveau de la mâchoire. */
+const craneC=(r,hy)=>{const k=r-hy;
+if(k<0)return {g:-8,d:6};                 /* au-dessus : le volume */
+if(k<2)return {g:-10,d:6};
+if(k>20)return {g:-8,d:7};
+return {g:-10,d:11};};
 const craneF=(r,hy)=>{const k=r-hy;
 if(k<0)return 12;                       /* au-dessus du crâne : le volume */
 if(k<2)return 9;
@@ -16447,9 +16454,16 @@ return 12;};
 const calotte=(cx,yTop,yBas,hw,ry,epouse,hy)=>{
 for(let r=yTop;r<yBas;r++){const dy=Math.max(0,(yTop+ry)-r);
 let w=Math.round(hw*Math.sqrt(Math.max(0,1-(dy/ry)*(dy/ry))));
-if(epouse){const c=craneF(r,hy)+1;if(w>c)w=c;}   /* un pixel de cheveux par-dessus la peau */
-if(w<=0)continue;R(cx-w,r,w*2,1,mat(r,yTop,yBas));
-R(cx-w,r,1,1,H5.o);R(cx+w-1,r,1,1,H5.o);}
+if(w<=0)continue;
+let g0=cx-w, g1=cx+w;
+if(epouse==='face'){const c=craneF(r,hy)+1;
+if(w>c){g0=cx-c;g1=cx+c;}}
+else if(epouse==='profil'){const c=craneC(r,hy);
+if(g0<c.g-1)g0=c.g-1;if(g1>c.d+2)g1=c.d+2;}
+else if(epouse===true){const c=craneF(r,hy)+1;if(w>c){g0=cx-c;g1=cx+c;}}
+if(g1<=g0)continue;
+R(g0,r,g1-g0,1,mat(r,yTop,yBas));
+R(g0,r,1,1,H5.o);R(g1-1,r,1,1,H5.o);}
 };
 const meches=(x0,x1,y0,y1,pas2,c)=>{for(let x2=x0+1;x2<x1-1;x2+=pas2)for(let r=y0+1;r<y1;r++){if((r+x2)%5===0)continue;
 const xx=x2+Math.round(Math.sin((r-y0)*0.25)*0.6);R(xx,r,1,1,c||((r+x2)%7===0?H5.oo:H5.o));if((r+x2)%6===0)R(xx+1,r,1,1,H5.c);}};
@@ -16492,11 +16506,19 @@ const hy=yTete;
 if(coiffe==='crâne'){calotteCrane();return;}
 if(cote){
 const vol=cf.vol, top=hy-vol;
-calotte(-1,top,hy+8,13+(cf.fr==='afro'?5:0),6+vol);
+calotte(-1,top,hy+8,13+(cf.fr==='afro'?5:0),6+vol,cf.fr==='afro'?false:'profil',hy);
+/* LA RACINE sur le front, du côté du visage */
+if(cf.fr!=='rase'&&cf.fr!=='crane'&&cf.fr!=='crete')
+for(let r=hy+4;r<hy+7;r++)R(craneC(r,hy).d-3,r,3,1,T(peau,-13));
+/* LA NUQUE : elle part du bord réel du crâne et se creuse vers le cou,
+   au lieu de descendre droit depuis -13. */
 const basNuque=cf.fr==='rase'||cf.fr==='degrade'?hy+17:hy+20;
-for(let r=hy+8;r<basNuque;r++){const w=r<basNuque-4?10:Math.max(3,10-(r-(basNuque-4))*2);
-R(-13,r,w,1,r>basNuque-3?H5.o:H5.b);R(-13,r,1,1,H5.oo);}
-meches(-13,-3,hy+8,basNuque-1,2);
+for(let r=hy+8;r<basNuque;r++){
+const bord=craneC(r,hy).g-1;
+const w=r<basNuque-4?(10-Math.max(0,r-(hy+15))):Math.max(3,10-(r-(basNuque-4))*2);
+R(bord,r,w,1,r>basNuque-3?H5.o:H5.b);
+R(bord,r,1,1,H5.oo);}
+meches(-12,-3,hy+8,basNuque-1,2);
 if(cf.fr==='degrade')R(-12,hy+15,6,5,T(peau,-12));
 meches(-12,10,top,hy+8,3);
 reflet(-1,top+1,10);
@@ -16540,7 +16562,7 @@ return;
 }
 const vol=cf.vol, top=hy-vol-sautH, dx=diag?vis*2:0;
 const HW=cf.fr==='afro'?19:13;
-calotte(dx,top,hy+6,HW,6+vol,cf.fr!=='afro',hy);
+calotte(dx,top,hy+6,HW,6+vol,cf.fr==='afro'?false:'face',hy);
 /* LA RACINE : une ombre portée des cheveux sur le front, qui donne
    l'épaisseur. Sans elle, la coupe est une étiquette collée. */
 if(cf.fr!=='rase'&&cf.fr!=='crane'&&cf.fr!=='crete')
