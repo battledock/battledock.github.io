@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-06-0220';
+var MA_VERSION='2026-10-06-0300';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16644,23 +16644,53 @@ if(diag)R(vis>0?9+1:-11,hy+12,2,3,peau);                                  /* le 
 }
 };
 function oeilDe(ex,ey,profil){
+/* ================= L'ŒIL =================
+   Un œil plat se reconnaît à trois choses : un blanc uniforme, un iris
+   d'une seule teinte, un seul reflet. On corrige les trois.
+   La lumière vient du haut-gauche, comme pour tout le personnage. */
 const gauche=!profil&&ex<0, w=profil?3:5, x0=gauche?ex-1:ex;
-const blanc='#f6f2e8', lid=T(peau,-60), coinExt=gauche?x0-1:x0+w;
-if(CLIGNE_FIN){R(x0,ey+1,w,1,lid);R(profil?x0+w-1:coinExt,ey+1,1,1,N);return;}
-if(fy==='plisses'){R(x0,ey+1,w,1,N);R(x0+Math.floor(w/2),ey+1,1,1,T(oeil,-10));R(coinExt,ey,1,1,N);return;}
+const blanc='#f6f2e8', lid=T(peau,-60);
+const coinExt=gauche?x0-1:x0+w, coinInt=gauche?x0+w:x0-1;
+if(CLIGNE_FIN){R(x0,ey+1,w,1,lid);R(x0,ey,w,1,T(peau,-22));
+R(profil?x0+w-1:coinExt,ey+1,1,1,N);return;}
 const h=fy==='ronds'?4:3;
-R(x0,ey,w,h,blanc);
 const regard=diag?vis:(profil?1:0);
-const iw=profil?2:3, ix=Math.max(x0,Math.min(x0+w-iw,x0+(profil?1:1)+regard));
-R(ix,ey,iw,h,oeil);R(ix,ey,iw,1,T(oeil,-34));                      /* l'iris et son anneau sombre */
-R(ix+(iw>2?1:0),ey+1,1,Math.min(2,h-1),N);                           /* la pupille */
-R(ix,ey,1,1,'#ffffff');if(h>3)R(ix+iw-1,ey+h-1,1,1,T(oeil,40));    /* les reflets */
-R(x0,ey-1,w,1,lid);                                                  /* la paupière */
-if(!profil)R(coinExt,ey-1,1,1,N);else R(x0+w,ey-1,1,1,N);            /* les cils, au coin extérieur */
-if(fy==='fatigues'){R(x0,ey,w,1,T(peau,-22));R(x0+1,ey+h,w-2,1,T(peau,-16));}
-else if(fy==='doux'){R(x0,ey+h,w,1,T(peau,-14));R(gauche?x0:x0+w-1,ey,1,1,T(peau,-8));}
-else if(fy==='severes'){R(gauche?x0+w-2:x0,ey,2,1,lid);}
-else if(fy==='ronds'){R(x0,ey+h,w,1,T(peau,-10));}
+if(fy==='plisses'){
+/* LES YEUX PLISSÉS : on voit encore l'iris, coincé entre deux paupières,
+   au lieu d'un simple trait noir. */
+R(x0,ey+1,w,1,T(oeil,-30));
+R(Math.max(x0,Math.min(x0+w-2,x0+1+regard)),ey+1,2,1,oeil);
+R(Math.max(x0,Math.min(x0+w-2,x0+1+regard)),ey+1,1,1,N);
+R(x0,ey,w,1,lid);R(coinExt,ey,1,1,N);
+R(x0,ey+2,w,1,T(peau,-20));
+return;}
+/* LE BLANC, jamais uniforme : ombre de la paupière en haut, ombre du nez
+   au coin intérieur. */
+R(x0,ey,w,h,blanc);
+R(x0,ey,w,1,T(blanc,-14));
+R(coinInt+(gauche?-1:1),ey,1,h,T(blanc,-10));
+/* L'IRIS : anneau sombre en haut, éclairci en bas — la lumière traverse
+   l'œil et rebondit au fond. */
+const iw=profil?2:3, ix=Math.max(x0,Math.min(x0+w-iw,x0+1+regard));
+R(ix,ey,iw,h,oeil);
+R(ix,ey,iw,1,T(oeil,-38));
+R(ix,ey+h-1,iw,1,T(oeil,16));
+R(ix,ey,1,h,T(oeil,-16));
+R(ix+(iw>2?1:0),ey+1,1,Math.min(2,h-1),N);                 /* la pupille */
+/* LES DEUX REFLETS : un franc en haut-gauche, un discret en bas-droite. */
+R(ix,ey,1,1,'#ffffff');
+R(ix+iw-1,ey+h-1,1,1,T(oeil,46));
+/* LA PAUPIÈRE a une épaisseur, et ses cils tombent au coin extérieur. */
+R(x0,ey-1,w,1,lid);
+R(x0,ey-2,w,1,T(peau,-26));
+if(!profil)R(coinExt,ey-1,1,2,N);else R(x0+w,ey-1,1,2,N);
+R(coinInt,ey+h-2,1,1,T(peau,-30));                          /* le coin intérieur, rosé */
+if(fy==='fatigues'){R(x0,ey+h,w,1,T(peau,-24));R(x0+1,ey+h+1,w-2,1,T(peau,-14));
+R(x0,ey-1,w,1,T(peau,-38));}
+else if(fy==='doux'){R(x0,ey+h,w,1,T(peau,-12));
+R(gauche?x0:x0+w-1,ey+h-1,1,1,T(peau,-6));R(x0+1,ey-2,w-2,1,T(peau,-16));}
+else if(fy==='severes'){R(gauche?x0+w-2:x0,ey-1,2,2,lid);R(x0,ey,w,1,T(oeil,-40));}
+else if(fy==='ronds'){R(x0,ey+h,w,1,T(peau,-12));R(coinExt,ey,1,1,T(peau,-20));}
 }
 function sourcilDe(ex,ey,profil){
 const gauche=!profil&&ex<0, w=profil?4:6, x0=gauche?ex-1:ex, c=chevO, c2=chev;
