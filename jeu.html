@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-1300';
+var MA_VERSION='2026-10-04-1315';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16589,7 +16589,7 @@ const vxMoy=(vx0+vx)/2, vyMoy=(vy0+vy)/2;
 const cibleP=Math.max(-1.8,Math.min(1.8,vx/Math.max(60,allure)*1.25-ax*0.0012));
 PENCHE.v+=(cibleP-PENCHE.x)*70*dt;PENCHE.v*=Math.exp(-8*dt);PENCHE.x+=PENCHE.v*dt;
 if(Math.abs(PENCHE.x)<0.02&&Math.abs(PENCHE.v)<0.05){PENCHE.x=0;PENCHE.v=0;}}
-if(SOL&&bloque(joueur.x,joueur.y)){          /* jamais coincé pour de bon */
+if(SOL&&!(CHAMPS_SEULS&&CARTE==='village')&&bloque(joueur.x,joueur.y)){          /* jamais coincé pour de bon */
 const [dx,dy]=degager(joueur.x,joueur.y);
 joueur.x=dx;joueur.y=dy;
 }
@@ -16616,10 +16616,17 @@ c:i%2?'#b8a482':'#c9b894',rebondi:false});
    puis recule, gauche et droite tournent. La voiture a de l'inertie. */
 const v=Math.hypot(vx,vy);
 if(v>1.2){
-const nx=joueur.x+vxMoy*dt, ny=joueur.y+vyMoy*dt;
-let ax=joueur.x, ay=joueur.y;
+const nx=(+joueur.x||0)+vxMoy*dt, ny=(+joueur.y||0)+vyMoy*dt;
+let ax=+joueur.x||0, ay=+joueur.y||0;
+if(CHAMPS_SEULS&&CARTE==='village'){
+/* À LA FERME, ON MARCHE. Pas de décor, pas de grille, pas de collision :
+   on se contente de rester dans le carré de la carte. */
+ax=Math.max(BORD+1,Math.min(MONDE_L-BORD-1,nx));
+ay=Math.max(BORD+15,Math.min(MONDE_H-BORD-1,ny));
+}else{
 if(!bloque(nx,joueur.y))ax=nx;
 if(!bloque(ax,ny))ay=ny;
+}
 bloqueBord=(ax===joueur.x&&Math.abs(vx)>2)||(ay===joueur.y&&Math.abs(vy)>2);
 joueur.x=ax;joueur.y=ay;
 if(!bloqueBord)joueur.pas+=v*dt*0.30;
