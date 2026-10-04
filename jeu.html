@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-1000';
+var MA_VERSION='2026-10-04-1030';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11053,8 +11053,8 @@ const V=VERTS, R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
 g.fillStyle=V.ombre;g.beginPath();g.ellipse(x+1,y-1,6,2,0,0,7);g.fill();
 R(-4,-5,9,5,V.tronc);R(-4,-5,9,2,V.troncC);R(-2,-4,5,1,'#a5764a');R(-4,-2,9,2,V.troncO);
 }
-const MONDE_L=CARTE==='foret'?1500:(CARTE==='garde'?640:1400);   /* la forêt fait 1500 ; la ferme et le port 1400 */
-const MONDE_H=CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?1200:600);   /* la ferme gagne en profondeur : 1200 au lieu de 600 */
+const MONDE_L=CARTE==='foret'?1500:(CARTE==='garde'?640:(CARTE==='village'&&!FORET_SEULE?1200:1400));   /* la ferme : 1200 x 1200 */
+const MONDE_H=CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?1200:600);   /* la ferme : 1200 x 1200 */
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 const VUE_L=196, VUE_H=400;       /* la vue de référence, en points de jeu */
 const ZOOM=2;                     /* ne sert plus que de repli */
@@ -11166,9 +11166,56 @@ function refaireLeSol(){
 if(SOL_CACHE.pret){SOL=SOL_CACHE.sol;SOL_FIN=SOL_CACHE.fin;SOL_CACHE.pret=false;return SOL;}     /* déjà construit lors d'un lancement précédent */
 setTimeout(rangerSolCache,4000);                                                                              /* on le range, sans ralentir le jeu */
 if(CARTE==='foret'){SOL=construireSolForet();SOL_FIN=null;CHEMIN=null;return SOL;}
+if(CHAMPS_SEULS&&CARTE==='village'){        /* LA FERME : le pré nu, rien d'autre */
+SOL=construireSolPre();SOL_FIN=null;CHEMIN=null;return SOL;}
 SOL=construireSol();SOL_FIN=null;CHEMIN=construireChemin();
 if(SOL_FIN&&CARTE==='village')try{peindreLaFermeFin(SOL_FIN.getContext('2d'));}catch(x){}   /* la campagne, au demi-pixel */
 return SOL;}
+/* ================= LE PRÉ DE LA FERME =================
+   Rien que l'herbe, ses touffes, ses reflets et ses fleurettes : le sol
+   qu'on a retenu. Aucune haie, aucune barrière, aucun champ, aucun bâtiment. */
+const PR_h=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;
+n=(n^(n>>>13))*1274126177;return ((n^(n>>>16))>>>0)/4294967296;};
+function construireSolPre(){
+const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+const img=g.createImageData(MONDE_L,MONDE_H), d=img.data;
+const pose=(x,y,r,v,b)=>{if(x<0||y<0||x>=MONDE_L||y>=MONDE_H)return;
+const i=(y*MONDE_L+x)*4;d[i]=r;d[i+1]=v;d[i+2]=b;d[i+3]=255;};
+const V=[[111,144,72],[122,155,80],[104,138,68]];
+for(let y=0;y<MONDE_H;y++)for(let x=0;x<MONDE_L;x++){
+const n=alea(x*0.3+y*0.6), c2=V[n<.4?0:(n<.75?1:2)];
+pose(x,y,c2[0],c2[1],c2[2]);}
+/* les touffes, les brins, les reflets et les creux d'ombre */
+const cl=(v)=>v<0?0:(v>255?255:v);
+for(let y=1;y<MONDE_H-1;y++)for(let x=1;x<MONDE_L-1;x++){
+const t=PR_h(x,y,7), B=V[1];
+if(t<0.035){
+const f=(dx,ht,c2)=>{for(let k=0;k<ht;k++)
+pose(x+dx+(k>1&&dx?(dx>0?1:-1):0), y-k,
+cl(B[0]+(k===ht-1?c2+14:(k?c2-6:-24))),
+cl(B[1]+(k===ht-1?c2+22:(k?c2:-20))),
+cl(B[2]+(k===ht-1?c2:-18)));};
+f(0,4,4);f(-1,3,-2);f(1,3,0);
+}else if(t<0.055){pose(x,y,cl(B[0]-14),cl(B[1]-10),cl(B[2]-12));
+pose(x,y-1,cl(B[0]+10),cl(B[1]+18),cl(B[2]+4));
+}else if(t<0.070){pose(x,y,cl(B[0]+16),cl(B[1]+24),cl(B[2]+8));
+pose(x+1,y,cl(B[0]+8),cl(B[1]+14),cl(B[2]+4));
+}else if(t<0.080){pose(x,y,cl(B[0]-26),cl(B[1]-20),cl(B[2]-22));
+pose(x+1,y,cl(B[0]-26),cl(B[1]-20),cl(B[2]-22));}}
+g.putImageData(img,0,0);
+/* les fleurettes sur tige */
+const FL=[[240,236,220],[236,214,90],[220,120,130],[170,160,220],[216,86,70],[90,130,210],[230,150,70]];
+for(let y=4;y<MONDE_H-4;y++)for(let x=4;x<MONDE_L-4;x++){
+if(PR_h(x,y,9)>=0.0026)continue;
+const f=FL[Math.floor(PR_h(x,y,11)*FL.length)];
+const gros=PR_h(x,y,13)<0.3;
+g.fillStyle='rgb(60,110,50)';g.fillRect(x,y,1,2);
+g.fillStyle='rgb('+f[0]+','+f[1]+','+f[2]+')';
+if(gros){g.fillRect(x-1,y-2,3,1);g.fillRect(x,y-3,1,3);g.fillRect(x-2,y-1,5,1);
+g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x,y-2,1,1);}
+else g.fillRect(x,y-2,1,1);}
+return c;}
 const alea=s=>{const v=Math.sin(s*127.1)*43758.5453;return v-Math.floor(v);};
 /* ================= LA NOUVELLE FORÊT =================
    Carte de 1500 sur 1000 : tapis de feuilles d'automne, lac profond sur les
@@ -14503,13 +14550,7 @@ DECOR=DECOR.filter(o=>!VILLE.has(o.t)&&o.x>FERME_X0+6);
 DECOR=DECOR.filter(o=>o.t==='metro'||o.t==='pont'||String(o.t).startsWith('x_fe_')||!(o.x>670&&o.x<1250&&o.y>90&&o.y<392));
 DECOR=DECOR.filter(o=>!(String(o.t).startsWith('x_fe_')&&!o.bati&&o.x<1528&&o.x>1240&&o.y>200));   /* les petits objets de l'ancienne cour, là où passe maintenant le champ */
 try{DECOR=DECOR.concat(semerLeDomaine());}catch(x){console.error(x);}
-if(CHAMPS_SEULS){DECOR=[];
-/* LA FERME REPART DE ZÉRO : rien n'est posé que la gare du métro, pour
-   pouvoir entrer et sortir. Le plan, les champs, la cour et les bâtiments
-   seront redessinés sur la nouvelle carte de 1400 x 1200. Rien n'est perdu :
-   les potagers, les vaches et les poules vivent en base, pas dans ce décor. */
-const G=graverGareFerme();XCAL['x_fe_gare0']=G;CALQUES_DECO['x_fe_gare']=G;
-DECOR.push({t:'x_fe_gare',x:700,y:200,v:0,bati:true,demi:34,ouvre:'metroFerme'});
+if(CHAMPS_SEULS){DECOR=[];   /* LA FERME EST NUE : aucun bâtiment, aucun objet */
 }
 }
 /* LA FORÊT VIDE : le dernier mot. Ce filtre passe après TOUS les semis,
