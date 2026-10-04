@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-06-0520';
+var MA_VERSION='2026-10-06-0610';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16360,7 +16360,9 @@ const k=(r-yEp)/(yHan-yEp);
 let demi=Math.round(r<yHan?EP+(TA-EP)*Math.min(1,k*1.4):HA+(r>yHan?1:0));
 if(!cote&&r<yEp+4)demi=Math.round(5+(EP-5)*(r-yEp+1)/4);            /* les trapèzes, en pente depuis le cou */
 if(souffle&&r>=yEp+4&&r<yEp+11)demi+=1;                              /* la poitrine, au souffle */
-const dd=diag?Math.round(demi*0.86):demi;
+/* DE TROIS QUARTS, le corps est plus étroit : on en voit la tranche.
+   0,86 laissait des épaules presque aussi larges que de face. */
+const dd=diag?Math.round(demi*0.78):demi;
 let w=cote?Math.round(demi*1.5):dd*2, xx=cote?-Math.round(w/2):-dd+(diag?vis:0);
 const yV0=yEp+12, bV=SX.ventre&&r>yV0&&r<yHan+1?Math.round(SX.ventre*Math.sin(Math.PI*(r-yV0)/(yHan+1-yV0))):0;
 if(bV){if(cote)w+=bV;else{w+=bV*2;xx-=bV;}}
@@ -16389,6 +16391,8 @@ if(!cote&&!dos){
 if(r>yEp+3&&r<yEp+12){R(xx+1,r,2,1,vestT);R(xx+w-3,r,2,1,vestT);}
 /* LE CREUX DE LA TAILLE : le tissu rentre, donc il s'assombrit. */
 if(r>yEp+16&&r<yEp+24&&((r-yEp)%3)===0)R(xx+2,r,w-4,1,vestO);}
+/* LE PLI DU PIVOT : de trois quarts, un côté du torse rentre. */
+if(diag&&!cote&&r>yEp+5&&r<yEp+24)R(vis>0?xx+w-5:xx+3,r,1,1,vestO);
 if(cote){
 if(r>yEp+6&&r<yEp+14)R(xx,r,2,1,vestT);              /* le creux sous l'omoplate */
 if(r>yEp+16&&r<yEp+24)R(xx+1,r,2,1,vestO);           /* les reins */
@@ -16670,9 +16674,17 @@ if(marque==='peinture')R(2,hy+11,8,2,'#c0392b');
 for(let r=0;r<24;r++){const w=r<2?18:(r>21?16:24);R(-Math.round(w/2),hy+r,w,1,peau);}
 oreille(-12,hy,-1,true);oreille(12,hy,1,true);
 }else{
-for(let r=0;r<24;r++){const w=r<2?18:(r>19?22-(r-20)*2:24);R(-Math.round(w/2),hy+r,w,1,r>19?peauO:peau);}
-R(-12,hy+2,1,18,peauO);R(11,hy+2,1,18,peauC);
-if(diag){R(vis>0?-12:10,hy+2,2,18,peauO);}                                  /* la joue qui tourne */
+/* LE CRÂNE DE TROIS QUARTS : il rétrécit de 7 %, comme un volume qu'on
+   voit en biais, et il tourne d'un pixel de plus que les épaules. */
+const dT=diag?vis:0;
+for(let r=0;r<24;r++){let w=r<2?18:(r>19?22-(r-20)*2:24);
+if(diag)w=Math.round(w*0.93);
+R(-Math.round(w/2)+dT,hy+r,w,1,r>19?peauO:peau);}
+R(-12+dT,hy+2,1,18,peauO);R(11+dT,hy+2,1,18,peauC);
+/* LA JOUE DU FOND : trois pixels d'ombre au lieu de deux — c'est la
+   surface qui s'éloigne du regard. */
+if(diag){R((vis>0?-11:8)+dT,hy+2,3,17,T(peau,-13));
+R((vis>0?-12:10)+dT,hy+2,1,18,T(peau,-24));}
 {const m=diag?vis*2:0, ombre=T(peau,-11), creux2=T(peau,-17);
 R(-11+m,hy+4,2,14,ombre);                                                     /* le côté dans l'ombre */
 R(-11+m,hy+6,1,5,creux2);R(10+m,hy+6,1,4,T(peau,-6));                          /* les tempes */
@@ -16686,7 +16698,9 @@ if(!diag||vis<0)oreille(12,hy,1,false);if(!diag||vis>0)oreille(-12,hy,-1,false);
 if(boucle!=='aucune'){const bc=boucle==='perle'?'#f2efe4':(boucle==='plume'?'#c0392b':'#e8c06a');
 if(!diag||vis>0)R(-14,hy+16,2,2,bc);if(!diag||vis<0)R(12,hy+16,2,2,bc);}
 const f3=diag?vis*3:0;
-oeilDe(-7+f3+(diag&&vis>0?1:0),hy+11,false);oeilDe(3+f3-(diag&&vis<0?1:0),hy+11,false);sourcilDe(-7+f3,hy+8,false);sourcilDe(3+f3,hy+8,false);
+oeilDe(-7+f3+(diag&&vis>0?1:0),hy+11,false,diag&&vis>0);
+oeilDe(3+f3-(diag&&vis<0?1:0),hy+11,false,diag&&vis<0);
+sourcilDe(-7+f3,hy+8,false);sourcilDe(3+f3,hy+8,false);
 g.save();g.translate(f3*u*(1),0);
 if(nez==='petit'){R(0,hy+14,1,1,peauC);R(-1,hy+15,3,1,peauO);R(-1,hy+15,1,1,peauT);R(1,hy+15,1,1,peauT);}
 else if(nez==='large'){R(-1,hy+12,1,2,peauO);R(-3,hy+14,6,2,peauO);R(-1,hy+14,2,1,peauC);R(-3,hy+15,1,1,peauT);R(2,hy+15,1,1,peauT);R(-2,hy+16,4,1,T(peau,-12));}
@@ -16722,12 +16736,15 @@ g.restore();
 if(diag)R(vis>0?9+1:-11,hy+12,2,3,peau);                                  /* le nez qui dépasse le profil */
 }
 };
-function oeilDe(ex,ey,profil){
+function oeilDe(ex,ey,profil,loin){
 /* ================= L'ŒIL =================
    Un œil plat se reconnaît à trois choses : un blanc uniforme, un iris
    d'une seule teinte, un seul reflet. On corrige les trois.
    La lumière vient du haut-gauche, comme pour tout le personnage. */
-const gauche=!profil&&ex<0, w=profil?3:5, x0=gauche?ex-1:ex;
+/* DE TROIS QUARTS, l'œil du fond est rogné par l'arête du nez : il perd
+   un pixel du côté intérieur. C'est ce détail qui vend la rotation. */
+const gauche=!profil&&ex<0, w=profil?3:(loin?4:5);
+const x0=(gauche?ex-1:ex)+(loin&&!gauche?1:0);
 const blanc='#f6f2e8', lid=T(peau,-60);
 const coinExt=gauche?x0-1:x0+w, coinInt=gauche?x0+w:x0-1;
 if(CLIGNE_FIN){R(x0,ey+1,w,1,lid);R(x0,ey,w,1,T(peau,-22));
@@ -17703,8 +17720,11 @@ const loinG=(tourne>0)!==dos;                                          /* quelle
 const hG=-Math.round(HA/2)-1+vis, hD=Math.round(HA/2)+1+vis;
 if(loinG){jd(hG,dos?pD:pG,true);jd(hD,dos?pG:pD,false);}else{jd(hD,dos?pG:pD,true);jd(hG,dos?pD:pG,false);}
 }else{
-jambe(-Math.round(HA/2)-1,0,dos?lvD:lvG,false);
-jambe(Math.round(HA/2)+1,0,dos?lvG:lvD,false);
+/* DE TROIS QUARTS, l'écart entre les jambes se réduit et l'ensemble
+   glisse dans le sens du pivot. */
+const ej=diag?0:1, dj=diag?Math.round(vis*1.5):0;
+jambe(-Math.round(HA/2)-ej+dj,0,dos?lvD:lvG,false);
+jambe(Math.round(HA/2)+ej+dj,0,dos?lvG:lvD,false);
 }
 if(!dos)sac(false);
 const avanceD=diag&&bouge?tourne*(COURSE?2:1):0;              /* de trois-quarts, le buste se porte vers l'avant */
