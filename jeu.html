@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-1640';
+var MA_VERSION='2026-10-05-1720';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16267,9 +16267,12 @@ const dd=diag?Math.round(demi*0.86):demi;
 let w=cote?Math.round(demi*1.5):dd*2, xx=cote?-Math.round(w/2):-dd+(diag?vis:0);
 const yV0=yEp+12, bV=SX.ventre&&r>yV0&&r<yHan+1?Math.round(SX.ventre*Math.sin(Math.PI*(r-yV0)/(yHan+1-yV0))):0;
 if(bV){if(cote)w+=bV;else{w+=bV*2;xx-=bV;}}
+/* LE PAN DU MANTEAU : il traîne derrière le corps et dépasse en bout de
+   course, au lieu de suivre une sinusoïde collée au pas. */
 if(long&&r>yHan&&bouge){const k2=(r-yHan)/long;
-if(cote){w+=Math.round(k2*2);xx-=Math.round(k2*(2+Math.sin(ph*2)));}
-else{xx+=Math.round(Math.sin(ph+r*0.15)*1.6*k2);w+=Math.round(Math.abs(Math.sin(ph))*k2*2);}}
+const tr=balVet((r-yHan)*1.4);
+if(cote){w+=Math.round(k2*2);xx-=Math.round(k2*2)+tr;}
+else{xx+=Math.round(tr*0.8*k2);w+=Math.round(Math.abs(tr)*k2*0.9);}}
 if(cote){if(r>yEp+3&&r<yEp+12){w+=1;}if(r>=yHan-3){w+=1;xx-=1;}}
 R(xx,r,w,1,r<yEp+3?vestC:vest);R(xx,r,1,1,vestT);R(xx+w-1,r,1,1,cote?vestC:vestT);
 if(!cote&&!dos){R(xx+1,r,2,1,vestO);R(xx+w-3,r,2,1,vestC);}
@@ -16393,7 +16396,9 @@ if(dos){R(-HA+2,yHan+2,HA-3,1,pantO);R(2,yHan+2,HA-3,1,pantO);R(-HA+2,yHan+4,HA-
 if(court&&!cote)R(-HA,yHan+1,HA*2,3,pant);
 }
 if(jupe){const L=basT==='jupe'?12:22, w=cote?Math.round(HA*1.2):HA*2+2;
-const ondJ=(r)=>bouge?Math.round(Math.sin(ph+r*0.22)*1.5*(r/L)):Math.round(Math.sin((typeof BRISE_PH==='number'?BRISE_PH:0)+r*0.3)*0.5*(r/L));
+/* LA JUPE : le tissu traîne et dépasse, d'autant plus qu'on descend
+   vers l'ourlet. */
+const ondJ=(r)=>Math.round(balJupe(r*1.6)*(r/L));
 for(let r=0;r<L;r++){const ww=w+Math.round(r*0.4)*2+(bouge?Math.round(Math.abs(Math.sin(ph))*(r/L)*2):0);
 R(-Math.round(ww/2)+ondJ(r),yHan+1+r,ww,1,r%4===0?pantO:(r===L-1?T(pant,-18):pant));}
 for(let x2=-Math.round(w/2)+2;x2<Math.round(w/2);x2+=3)for(let r=2;r<L-1;r++)R(x2+ondJ(r),yHan+1+r,1,1,T(pant,-12));}    /* les plis */
@@ -16680,7 +16685,47 @@ R(g0,r,1,1,H5.o);R(g1-1,r,1,1,H5.o);}
 const meches=(x0,x1,y0,y1,pas2,c)=>{for(let x2=x0+1;x2<x1-1;x2+=pas2)for(let r=y0+1;r<y1;r++){if((r+x2)%5===0)continue;
 const xx=x2+Math.round(Math.sin((r-y0)*0.25)*0.6);R(xx,r,1,1,c||((r+x2)%7===0?H5.oo:H5.o));if((r+x2)%6===0)R(xx+1,r,1,1,H5.c);}};
 const phH=bouge?ph:(typeof BRISE_PH==='number'?BRISE_PH:0), ampH=bouge?1:0.55;
-const bal=(r)=>Math.round(Math.sin(phH*(bouge?1:1)+r*0.16)*Math.min(3,r*0.13)*ampH);
+/* ================= L'INERTIE =================
+   Jusqu'ici tout ce qui pendait suivait le corps instantanément : une seule
+   sinusoïde pour les cheveux, les pans de veste et le sac. Or une masse
+   accélère en retard, dépasse la position d'équilibre, puis revient.
+
+   Comme les poses sont gravées puis mises en cache, l'inertie ne peut pas
+   être un ressort qui se souvient : elle doit se calculer à partir de la
+   seule phase. On la modélise donc par deux termes :
+
+     le retard   — on lit la phase du corps telle qu'elle était un peu avant
+     le dépassement — une seconde onde, deux fois plus rapide et déphasée,
+                    qui fait le sursaut de la masse en bout de course
+
+   Chaque matière a ses réglages : une chevelure longue traîne davantage
+   qu'une mèche courte, un pan de manteau davantage qu'un ourlet de chemise. */
+const INERTIE={
+courts:  {ret:0.06, amp:0.13, sur:0.18, max:3},
+longs:   {ret:0.16, amp:0.20, sur:0.34, max:5},
+queue:   {ret:0.22, amp:0.26, sur:0.42, max:6},
+veste:   {ret:0.10, amp:0.10, sur:0.22, max:3},
+manteau: {ret:0.18, amp:0.16, sur:0.30, max:5},
+jupe:    {ret:0.14, amp:0.15, sur:0.26, max:4},
+echarpe: {ret:0.24, amp:0.28, sur:0.46, max:6},
+sac:     {ret:0.12, amp:0.09, sur:0.20, max:3}};
+/* la masse de la coupe décide de son inertie */
+const INER_CH=(cf.lg>=22||cf.sp==='queue'||cf.sp==='tresse')?INERTIE.queue
+:((cf.lg>=9||cf.fr==='afro')?INERTIE.longs:INERTIE.courts);
+/* r : la distance à la racine. Plus on est loin, plus on traîne et plus on
+   dépasse — une pointe de cheveu bouge bien plus que sa racine. */
+const balDe=(r,I)=>{
+const d=Math.max(0,r);
+const phase=phH-I.ret*(bouge?1:0.5)*(1+d*0.05);     /* le retard croît avec la distance */
+const porte=Math.min(I.max,d*I.amp)*ampH;
+const base=Math.sin(phase+d*0.16)*porte;
+const sursaut=Math.sin(phase*2+d*0.22)*porte*I.sur; /* le dépassement en bout de course */
+return Math.round(base+sursaut);};
+const bal=(r)=>balDe(r,INER_CH);
+const balVet=(r)=>balDe(r,hautT==='manteau'?INERTIE.manteau:INERTIE.veste);
+const balJupe=(r)=>balDe(r,INERTIE.jupe);
+const balSac=(r)=>balDe(r,INERTIE.sac);
+const balEch=(r)=>balDe(r,INERTIE.echarpe);
 const sautH=bouge?Math.round(Math.max(0,Math.sin(ph*2))*1):0;           /* le dessus rebondit à chaque pas */
 const reflet=(cx,y0,w)=>{for(let x2=-Math.round(w/2);x2<Math.round(w/2);x2++){if((x2+20)%5===4)continue;
 const yy=y0+Math.round(Math.pow(x2/(w/2),2)*2);R(cx+x2,yy,1,1,Math.abs(x2)<w/4?H5.cc:H5.c);}
@@ -17178,12 +17223,16 @@ R(-12+dx,y0+1,24,2,M[0]);                                                       
 R(-9+dx,y0-1,18,6,M[0]);R(-8+dx,y0,16,4,M[1]);R(-8+dx,y0,16,1,M[2]);R(-6+dx,y0+1,3,1,M[2]);   /* le cadre, le verre, ses reflets */
 R(-1+dx,y0+3,2,2,M[0]);};                                                                  /* le pont du nez */
 const echarpeDe=()=>{const E=p._echarpe;if(!E)return;const c=E.e[0], c2=E.e[1], c3=E.e[2]||c2, cO=T(c,-30);
+const volE=(r)=>balEch(r*1.8);   /* le pan flotte loin derrière le pas */
 const w=SX.cou+6, x0=-Math.floor(w/2)+(cote?0:(diag?vis:0));
 R(x0,yCou+1,w,5,c);R(x0,yCou+1,w,1,T(c,20));R(x0,yCou+5,w,1,cO);
 if(E.m==='rayee')for(let x=x0+1;x<x0+w;x+=4)R(x,yCou+1,2,5,c2);
 if(E.m==='nordique'){R(x0,yCou+3,w,1,c2);for(let x=x0+1;x<x0+w;x+=3)R(x,yCou+2,1,1,c3);}
-const pan=(px,dirX)=>{for(let r=0;r<13;r++){const xx=px+Math.round(r*0.15*dirX);R(xx,yCou+5+r,4,1,(E.m==='rayee'&&Math.floor(r/3)%2)?c2:c);R(xx+3,yCou+5+r,1,1,cO);}
-for(let k=0;k<4;k++)R(px+k+Math.round(13*0.15*dirX),yCou+18,1,2,c2);};                  /* les franges */
+const pan=(px,dirX)=>{for(let r=0;r<13;r++){
+const xx=px+Math.round(r*0.15*dirX)+volE(r);     /* le pan traîne et dépasse */
+R(xx,yCou+5+r,4,1,(E.m==='rayee'&&Math.floor(r/3)%2)?c2:c);R(xx+3,yCou+5+r,1,1,cO);}
+const fx=px+Math.round(13*0.15*dirX)+volE(13);
+for(let k=0;k<4;k++)R(fx+k,yCou+18,1,2,c2);};                  /* les franges */
 if(dos)pan(-2,0);else if(cote)pan(-6,-1);else pan(x0+w-6,1);};
 const angleBras=()=>{
 let a, L=15;
