@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-0345';
+var MA_VERSION='2026-10-05-0420';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -26158,27 +26158,151 @@ const t=!P||!P.niveau?['Le poulailler','CHANTIER · 300 € ET DES MATÉRIAUX']:
 ((P.oeufs||0)>0?['Ramasser les œufs','×'+P.oeufs+' · +'+enEuros((P.oeufs||0)*600).replace(',00','')]:['Le poulailler',P.poules+' POULE'+(P.poules>1?'S':'')+' · VOIR']));
 b.innerHTML=t[0]+'<small>'+t[1]+'</small>';b.classList.add('on');};
 $('action').addEventListener('click',(ev)=>{if(!poulProche())return;ev.stopImmediatePropagation();ev.preventDefault();ouvrirLePoulailler();},true);
+const CSS_POUL=`
+#page2Fond.poul{position:absolute;inset:0;background:#2a2118;color:#f0e4c6;
+font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;display:flex;flex-direction:column;overflow:hidden}
+#page2Fond.poul .hd{flex:none;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 0;
+display:flex;align-items:flex-start;gap:10px}
+#page2Fond.poul .hd .tx{flex:1;min-width:0}
+#page2Fond.poul .hd .kick{font:700 9px ui-monospace,monospace;letter-spacing:3px;color:#c9a24a}
+#page2Fond.poul .hd .ttl{font:700 23px 'Baloo 2',sans-serif;color:#f0e4c6;margin-top:4px;line-height:1.15}
+#page2Fond.poul .hd .bs{flex:none;text-align:right;font:700 8px ui-monospace,monospace;
+letter-spacing:1.5px;color:#a08f72}
+#page2Fond.poul .hd .bs b{display:block;font:700 16px 'Baloo 2',sans-serif;color:#c9a24a;
+letter-spacing:0;margin:0}
+#page2Fond.poul .hd button{flex:none;width:32px;height:32px;border-radius:50%;border:0;
+background:rgba(255,255,255,.08);color:#f0e4c6;font:700 14px 'Baloo 2',sans-serif}
+#page2Fond.poul .corps{flex:1;overflow-y:auto;padding:14px 16px calc(env(safe-area-inset-bottom,0px) + 96px)}
+/* LA PONTE DU JOUR, en tête */
+#page2Fond.poul .ponte{background:rgba(232,192,106,.1);border-radius:16px;padding:13px;
+display:flex;align-items:center;gap:11px;margin-bottom:16px}
+#page2Fond.poul .ponte .o{width:36px;height:36px;border-radius:11px;background:#c9a24a;flex:none;
+display:flex;align-items:center;justify-content:center}
+#page2Fond.poul .ponte .t{flex:1;min-width:0}
+#page2Fond.poul .ponte .t b{display:block;font:700 16px 'Baloo 2',sans-serif;line-height:1.2}
+#page2Fond.poul .ponte .t i{display:block;font:10px system-ui,sans-serif;color:#c9a24a;
+font-style:normal;margin-top:2px}
+#page2Fond.poul .ponte .v{flex:none;font:700 16px 'Baloo 2',sans-serif;color:#c9a24a}
+#page2Fond.poul .ponte.vide{background:rgba(255,255,255,.05)}
+#page2Fond.poul .ponte.vide .o{background:rgba(255,255,255,.08)}
+#page2Fond.poul .ponte.vide .t i{color:#a08f72}
+/* LES RUBRIQUES */
+#page2Fond.poul .rub{font:700 8px ui-monospace,monospace;letter-spacing:2px;color:#7d7158;margin:0 0 8px}
+#page2Fond.poul .bloc{margin-bottom:16px}
+/* LES POULES, une vignette chacune */
+#page2Fond.poul .poules{display:flex;gap:6px;flex-wrap:wrap}
+#page2Fond.poul .poules span{flex:1 1 0;min-width:44px;background:rgba(255,255,255,.06);
+border-radius:11px;padding:9px 3px;text-align:center}
+#page2Fond.poul .poules canvas{width:26px;height:26px;display:block;margin:0 auto}
+#page2Fond.poul .poules i{display:block;font:8px ui-monospace,monospace;color:#a08f72;
+font-style:normal;margin-top:4px}
+#page2Fond.poul .poules span.libre{background:rgba(255,255,255,.035)}
+#page2Fond.poul .poules span.libre i{color:#6e6454}
+/* LES LIGNES D'ACTION */
+#page2Fond.poul .row{display:flex;align-items:center;gap:11px;padding:11px 0;
+border-top:1px solid rgba(201,162,74,.18)}
+#page2Fond.poul .row:first-of-type{border-top:0;padding-top:0}
+#page2Fond.poul .row .ic{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.07);
+flex:none;display:flex;align-items:center;justify-content:center;font:700 13px 'Baloo 2',sans-serif;color:#c9a24a}
+#page2Fond.poul .row .nm{flex:1;min-width:0}
+#page2Fond.poul .row .nm b{display:block;font:700 13px 'Baloo 2',sans-serif;line-height:1.25}
+#page2Fond.poul .row .nm i{display:block;font:10px system-ui,sans-serif;color:#a08f72;
+font-style:normal;margin-top:2px;line-height:1.35}
+#page2Fond.poul .row button{flex:none;border:0;border-radius:11px;padding:9px 12px;
+background:#c9a24a;color:#2a2016;font:700 11.5px 'Baloo 2',sans-serif}
+#page2Fond.poul .row button.pris{background:rgba(255,255,255,.07);color:#a08f72}
+#page2Fond.poul .faim{color:#e8947f;font-weight:700}
+/* LE PIED */
+#page2Fond.poul .pied{position:absolute;left:0;right:0;bottom:0;background:#231b13;
+border-top:1px solid rgba(201,162,74,.22);
+padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 14px)}
+#page2Fond.poul .pied button{width:100%;border:0;border-radius:14px;padding:13px;
+font:700 15px 'Baloo 2',sans-serif;background:#c9a24a;color:#2a2016}
+#page2Fond.poul .pied button.pris{background:rgba(255,255,255,.07);color:#7d7158}
+#page2Fond.poul .bulle{position:absolute;left:16px;right:16px;
+bottom:calc(env(safe-area-inset-bottom,0px) + 82px);background:#1d4f8a;color:#fff;border-radius:12px;
+padding:10px 12px;font:italic 13px Georgia,serif;opacity:0;transition:.25s;pointer-events:none}`;
 async function ouvrirLePoulailler(){
-if(!document.getElementById('cssGr')){const st=document.createElement('style');st.id='cssGr';st.textContent=CSS_GR;document.head.appendChild(st);}
-await poulCharger();await lireChantiers();$('page2Fond').className='gr';$('page2').classList.add('on');
+if(!document.getElementById('cssPoul')){const st=document.createElement('style');
+st.id='cssPoul';st.textContent=CSS_POUL;document.head.appendChild(st);}
+await poulCharger();await lireChantiers();
+$('page2Fond').className='poul';$('page2').classList.add('on');
 const P=POUL.p||{niveau:0,poules:0,oeufs:0,grenier:0}, fmt=(c)=>enEuros(c).replace(',00','');
-const nourri=P.nourri_jusqua?new Date(P.nourri_jusqua).getTime()-poulNow():-1, h=Math.floor(Math.max(0,nourri)/3600000), m=Math.floor(Math.max(0,nourri)%3600000/60000);
-let corps='';
-if(!P.niveau)corps='<div class="outil" style="display:block;text-align:center"><canvas data-poul="1" style="width:140px;height:132px;background:none"></canvas>'+
-'<b style="display:block;font:700 16px Georgia;margin:6px 0">Le poulailler est à vendre</b><small style="font:italic 13px Georgia;color:#6b5a44">4 places pour commencer. Une poule nourrie pond un œuf toutes les 30 minutes, qui se vend 6 €. Un œuf sur 200 est en or : 250 €.</small>'+
-'<div style="font:700 12px Georgia;margin-top:10px;text-align:left;color:#6b4a28">LE CHANTIER</div>'+chantierHTML('poulailler')+'<button data-a="poulailler" class="'+(chantierComplet('poulailler')?'':'pris')+'" style="display:block;width:100%;margin-top:10px">Construire le poulailler · 300 €</button></div>';
-else{
-corps='<div class="outil" style="display:block"><b style="font:700 15px Georgia">'+P.poules+' poule'+(P.poules>1?'s':'')+' sur '+POUL.places+'</b><br><small style="font:italic 12px Georgia;color:#6b5a44">'+
-(P.poules?(nourri>0?'Nourries pour encore '+(h?h+' h ':'')+String(m).padStart(2,'0')+' min':'<b style="color:#b8402a">Elles ont faim : elles ne pondent plus.</b>'):'Achète une poule pour commencer.')+'</small></div>'+
-'<div class="outil"><div class="t"><b>Les œufs</b><small>'+(P.oeufs||0)+' dans les nichoirs'+((P.oeufs||0)>=P.poules*16&&P.poules?' · les nichoirs sont pleins !':'')+'</small></div><button data-a="ramasser" class="'+((P.oeufs||0)?'':'pris')+'">Ramasser'+((P.oeufs||0)?' · +'+fmt(P.oeufs*600):'')+'</button></div>'+
-'<div class="outil"><div class="t"><b>Nourrir · 4 heures</b><small>'+(P.grenier||0)+' gerbe'+((P.grenier||0)>1?'s':'')+' de blé en réserve ici · le blé que tu récoltes au champ arrive directement dans cette réserve</small></div>'+
-'<div style="display:flex;flex-direction:column;gap:5px">'+((P.grenier||0)?'<button data-a="gerbe">Une gerbe</button>':'')+'<button data-a="grain">Grain · '+fmt(100*Math.max(1,P.poules))+'</button></div></div>'+
-'<div class="outil"><div class="t"><b>Une poule de plus</b><small>'+(P.poules<POUL.places?'blanche, rousse ou noire, au hasard':'le poulailler est plein : agrandis-le')+'</small></div><button data-a="poule" class="'+(P.poules<POUL.places?'':'pris')+'">60 €</button></div>'+
-(P.niveau<3?'<div class="outil" style="display:block"><div style="display:flex;align-items:center;gap:8px"><div class="t"><b>Agrandir le poulailler</b><small>'+(P.niveau===1?'8':'12')+' places au lieu de '+POUL.places+'</small></div><button data-a="agrandir" class="'+(chantierComplet('poul:'+(P.niveau+1))?'':'pris')+'">'+(P.niveau===1?'800 €':'2 500 €')+'</button></div>'+chantierHTML('poul:'+(P.niveau+1))+'</div>':'');}
-$('page2Fond').innerHTML='<div class="haut"><b>LE POULAILLER</b><small>« Cot cot ! » — les poules</small><div class="bs">ta bourse<br><b>'+enEuros(e.euros||0)+'</b></div></div><div class="corps" style="padding-top:18px">'+corps+'</div>'+
-'<div id="poulBulle" style="position:absolute;left:14px;right:14px;bottom:76px;background:#4f7d42;color:#fff;border-radius:12px;padding:10px 12px;font:italic 14px Georgia;opacity:0;transition:.25s;pointer-events:none"></div><button class="sortir" id="poulSortir">Ressortir</button>';
+const nourri=P.nourri_jusqua?new Date(P.nourri_jusqua).getTime()-poulNow():-1;
+const h=Math.floor(Math.max(0,nourri)/3600000), m=Math.floor(Math.max(0,nourri)%3600000/60000);
+const duree=(h?h+' h ':'')+String(m).padStart(2,'0')+' min';
+let corps='', pied='';
+if(!P.niveau){
+/* PAS ENCORE DE POULAILLER : une seule chose à faire, le construire. */
+corps='<div class="bloc" style="text-align:center">'+
+'<canvas data-poul="1" style="width:150px;height:130px;display:block;margin:4px auto 10px"></canvas>'+
+'<b style="display:block;font:700 17px \'Baloo 2\',sans-serif">Le poulailler est à vendre</b>'+
+'<i style="display:block;font:11.5px/1.5 system-ui;color:#a08f72;font-style:normal;margin-top:6px">'+
+'Quatre places pour commencer. Une poule nourrie pond un œuf toutes les 30 minutes, '+
+'qui se vend 6 €. Un œuf sur 200 est en or : 250 €.</i></div>'+
+'<div class="bloc"><div class="rub">LE CHANTIER</div>'+chantierHTML('poulailler')+'</div>';
+pied='<button data-a="poulailler" class="'+(chantierComplet('poulailler')?'':'pris')+'">'+
+'Construire · 300 €</button>';
+}else{
+const oeufs=P.oeufs||0;
+/* LA PONTE DU JOUR, en tête : c'est la première question qu'on se pose. */
+corps='<div class="ponte'+(oeufs?'':' vide')+'">'+
+'<span class="o"><canvas data-oeuf="1" style="width:22px;height:22px"></canvas></span>'+
+'<span class="t"><b>'+(oeufs?oeufs+' œuf'+(oeufs>1?'s':''):'Aucun œuf')+'</b>'+
+'<i>'+(oeufs?'dans les nichoirs'+(oeufs>=P.poules*16&&P.poules?' · c’est plein !':''):
+(P.poules?'reviens dans une demi-heure':'achète une poule pour commencer'))+'</i></span>'+
+(oeufs?'<span class="v">'+fmt(oeufs*600)+'</span>':'')+'</div>';
+/* LES POULES, une vignette chacune */
+corps+='<div class="bloc"><div class="rub">TES POULES · '+P.poules+' SUR '+POUL.places+'</div>'+
+'<div class="poules">'+
+Array.from({length:POUL.places},(_,i)=>i<P.poules
+?'<span><canvas data-pou="'+i+'"></canvas><i>pond</i></span>'
+:'<span class="libre"><canvas data-pou="-1"></canvas><i>libre</i></span>').join('')+
+'</div></div>';
+/* CE QU'ON PEUT FAIRE */
+corps+='<div class="bloc"><div class="rub">ENCORE</div>'+
+'<div class="row"><span class="ic">🌾</span><span class="nm">'+
+'<b>'+(nourri>0?'Nourries '+duree:'<span class="faim">Elles ont faim</span>')+'</b>'+
+'<i>'+(P.grenier||0)+' gerbe'+((P.grenier||0)>1?'s':'')+' au grenier · '+
+'le blé du champ y arrive tout seul</i></span>'+
+((P.grenier||0)?'<button data-a="gerbe">Une gerbe</button>':
+'<button data-a="grain">'+fmt(100*Math.max(1,P.poules))+'</button>')+'</div>'+
+'<div class="row"><span class="ic">+</span><span class="nm"><b>Une poule de plus</b>'+
+'<i>'+(P.poules<POUL.places?'blanche, rousse ou noire, au hasard':'le poulailler est plein')+'</i></span>'+
+'<button data-a="poule" class="'+(P.poules<POUL.places?'':'pris')+'">60 €</button></div>'+
+(P.niveau<3?'<div class="row"><span class="ic">▲</span><span class="nm">'+
+'<b>Agrandir le poulailler</b><i>'+(P.niveau===1?'8':'12')+' places au lieu de '+POUL.places+'</i></span>'+
+'<button data-a="agrandir" class="'+(chantierComplet('poul:'+(P.niveau+1))?'':'pris')+'">'+
+(P.niveau===1?'800 €':'2 500 €')+'</button></div>'+chantierHTML('poul:'+(P.niveau+1)):'')+
+'</div>';
+pied='<button data-a="ramasser" class="'+(oeufs?'':'pris')+'">'+
+(oeufs?'Ramasser '+oeufs+' œuf'+(oeufs>1?'s':'')+' · '+fmt(oeufs*600):'Rien à ramasser')+'</button>';
+}
+$('page2Fond').innerHTML=
+'<div class="hd"><span class="tx"><span class="kick">LA FERME</span>'+
+'<span class="ttl">Le poulailler</span></span>'+
+'<span class="bs">TA BOURSE<b>'+enEuros(e.euros||0)+'</b></span>'+
+'<button id="poulSortir">✕</button></div>'+
+'<div class="corps">'+corps+'</div>'+
+'<div id="poulBulle" class="bulle"></div>'+
+'<div class="pied">'+pied+'</div>';
+/* LES DESSINS : le bâtiment, l'œuf, et chaque poule */
+{const cvP=document.querySelector('canvas[data-poul]');
+if(cvP){cvP.width=300;cvP.height=260;const q=cvP.getContext('2d');q.imageSmoothingEnabled=false;
+try{q.drawImage(graverGrandPoulailler(),0,0,300,260);}catch(x){}}}
+$('page2Fond').querySelectorAll('canvas[data-oeuf]').forEach(cv=>{
+const D=2;cv.width=22*D;cv.height=22*D;const q=cv.getContext('2d');
+q.setTransform(D,0,0,D,0,0);q.imageSmoothingEnabled=false;
+q.fillStyle='#2a2016';q.beginPath();q.ellipse(11,12,6,7.5,0,0,7);q.fill();
+q.fillStyle='#f4ece0';q.beginPath();q.ellipse(11,11,6,7.5,0,0,7);q.fill();
+q.fillStyle='#fffdf6';q.beginPath();q.ellipse(9,8,2,2.5,0,0,7);q.fill();});
+$('page2Fond').querySelectorAll('canvas[data-pou]').forEach(cv=>{
+const D=2;cv.width=26*D;cv.height=26*D;const q=cv.getContext('2d');
+q.setTransform(D,0,0,D,0,0);q.imageSmoothingEnabled=false;
+if(cv.dataset.pou==='-1'){q.fillStyle='rgba(255,255,255,.14)';
+q.fillRect(12,7,2,12);q.fillRect(7,12,12,2);return;}
+try{poule(q,13,22,['blanche','rousse','noire'][(+cv.dataset.pou)%3],'assise',1,false,0);}catch(x){}});
 $('poulSortir').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-const cvP=document.querySelector('canvas[data-poul]');if(cvP){cvP.width=280;cvP.height=264;const q=cvP.getContext('2d');q.imageSmoothingEnabled=false;q.drawImage(graverPoulailler(),0,0,280,264);}
 const bulle=(t)=>{const b=$('poulBulle');b.textContent=t;b.style.opacity=1;clearTimeout(b._t);b._t=setTimeout(()=>b.style.opacity=0,2600);};
 brancherDepots(()=>ouvrirLePoulailler(),bulle);
 $('page2Fond').querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{const a=b.dataset.a;if(b.classList.contains('pris')){if(a==='poulailler'||a==='agrandir')motOuverture('Livre d’abord tous les matériaux au chantier.');return;}b.disabled=true;let d;
