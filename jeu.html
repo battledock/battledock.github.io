@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-0300';
+var MA_VERSION='2026-10-05-0345';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -14434,6 +14434,51 @@ if(CHAMPS_SEULS&&CARTE==='village'){
    graineterie au centre, le potager au sud : l'axe de la ferme. */
 DECOR=[];
 /* (l'ancienne gare du nord laisse la place à la halte, près de La Récolte) */
+/* ================= LE GRAND POULAILLER =================
+   Le vocabulaire de l'ancien — pilotis, bardage vertical à trois tons,
+   tuiles en rangs, trappe, échelle, nichoirs, lucarne, girouette — mais
+   en double corps : deux cabanes de hauteurs différentes, pour que le
+   bâtiment ait un profil au lieu d'un rectangle. */
+function graverGrandPoulailler(){
+const T=TEINTES[1], W=150, Ht=130, cx=W/2, sol=Ht-16;
+const B={bois:'#7d5934',boisC:'#96703f',boisO:'#5b3f21',boisS:'#3d2a17'};
+return toileH(W,Ht,({R,g})=>{
+g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(cx+2,sol+3,58,11,0,0,7);g.fill();
+const bardage=(x,y,w,h)=>{
+for(let i=0;i<w;i+=6){const q=Math.round(x+i)*7%3;
+R(x+i,y,6,h,q===0?B.bois:(q===1?B.boisC:'#6b4a28'));
+R(x+i+5,y,1,h,B.boisO);}
+R(x,y,w,2,B.boisC);R(x,y+h-2,w,2,B.boisO);};
+/* LES PILOTIS */
+[-52,-28,4,38].forEach(dx=>R(cx+dx,sol-12,5,12,B.boisO));
+/* LE PETIT CORPS, à gauche */
+bardage(cx-56,sol-46,54,34);
+tuilesH(R,cx-62,sol-46,66,3,5,T);
+/* LE GRAND CORPS, à droite et plus haut */
+bardage(cx-2,sol-58,50,46);
+tuilesH(R,cx-8,sol-58,62,4,5,T);
+/* LA TRAPPE ET SON ÉCHELLE */
+R(cx-40,sol-32,18,20,B.boisS);R(cx-38,sol-30,14,16,'#2a1f16');
+R(cx-38,sol-30,14,1,'#4a3a2a');
+for(let k=0;k<6;k++)R(cx-36,sol-12+k*2,10,1,B.boisC);
+R(cx-37,sol-14,1,14,B.boisO);R(cx-26,sol-14,1,14,B.boisO);
+/* LES NICHOIRS, sur le flanc du grand corps */
+[0,1].forEach(k=>{
+const y=sol-50+k*18;
+R(cx+44,y,14,16,B.bois);R(cx+44,y,14,2,B.boisC);
+R(cx+46,y+3,10,10,'#2a1f16');
+R(cx+50,y+8,3,2,'#e8c890');
+R(cx+44,y+15,14,1,B.boisO);});
+/* LA LUCARNE DU GRAND CORPS */
+R(cx+8,sol-50,12,9,'#2a1f16');R(cx+10,sol-48,8,5,'#4a3a2a');
+R(cx+13,sol-48,1,5,B.bois);
+/* LA LUCARNE DU PETIT CORPS */
+R(cx-48,sol-40,10,7,'#2a1f16');R(cx-46,sol-38,6,3,'#4a3a2a');
+/* LA GIROUETTE, au faîte du grand corps */
+R(cx+22,sol-92,1,12,'#5a5f64');
+g.fillStyle='#3a3a40';g.beginPath();
+g.moveTo(cx+17,sol-92);g.lineTo(cx+29,sol-94);g.lineTo(cx+25,sol-88);g.closePath();g.fill();
+});}
 /* ================= LA HALTE : LA STATION DE LA FERME =================
    Le même bardage et la même toiture que La Récolte, en plus petit : les
    deux bâtiments se répondent et forment une petite place. */
@@ -14579,6 +14624,10 @@ return c;}
 
 /* LE CALQUE : dessinerX attend {toile,W,H,sol}, pas une toile nue —
    c'est pour ça que la boutique ne s'affichait pas. */
+const PO=calque(graverGrandPoulailler(),150,130,114);
+XCAL['x_fe_poul2_0']=PO;CALQUES_DECO['x_fe_poul2']=PO;
+TAILLES['x_fe_poul2']=[{w:112,h:20}];
+DECOR.push({t:'x_fe_poul2',x:400,y:400,v:0,bati:true,demi:60,ouvre:'poulailler'});
 const HA=calque(graverHalte(),120,120,106);
 XCAL['x_fe_halte0']=HA;CALQUES_DECO['x_fe_halte']=HA;
 TAILLES['x_fe_halte']=[{w:84,h:20}];
@@ -26097,7 +26146,11 @@ function poulEffrayer(){if(!POUL_BETES)return;const Z=POUL_Z(), jx=joueur.x-Z.x0
 const fuir=(b,r,v)=>{const dx=b.x-jx, dy=b.y-jy, d=Math.hypot(dx,dy);if(d<r&&d>0.01){b.x=Math.max(10,Math.min(W-10,b.x+dx/d*v));b.y=Math.max(H*0.36,Math.min(H-10,b.y+dy/d*v));
 if(b.etat!==undefined){b.etat='marche';b.tx=Math.max(12,Math.min(W-12,b.x+dx/d*20));b.ty=Math.max(H*0.38,Math.min(H-12,b.y+dy/d*14));b.dir=dx>0?1:-1;}}};
 POUL_BETES.B.forEach(b=>fuir(b,12,0.9));POUL_BETES.P.forEach(p=>fuir(p,8,1.1));}
-const poulProche=()=>{if(CARTE!=='village'||PLACE_SEULE)return false;const Z=POUL_Z(), H=Z.y1-Z.y0, ey0=Z.y0+Math.min(46,H*0.34);
+const poulProche=()=>{if(CARTE!=='village'||PLACE_SEULE)return false;
+/* LA FERME REFAITE : le poulailler est un bâtiment du décor, en 400,400.
+   Sa plaque et son écran passent par là, plus par l'ancienne zone. */
+if(typeof CHAMPS_SEULS!=='undefined'&&CHAMPS_SEULS)
+return Math.abs(joueur.x-400)<62&&joueur.y>380&&joueur.y<428;const Z=POUL_Z(), H=Z.y1-Z.y0, ey0=Z.y0+Math.min(46,H*0.34);
 return joueur.x>Z.x0-14&&joueur.x<Z.x0+110&&joueur.y>ey0-46&&joueur.y<ey0+52;};   /* plus facile à viser : la cabane s'annonce de plus loin */
 const poulMajVrai=majAction;
 majAction=function(){if(!poulProche())return poulMajVrai();const b=$('action'), P=POUL.p;
