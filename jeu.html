@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-2230';
+var MA_VERSION='2026-10-04-2300';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -14436,7 +14436,103 @@ DECOR=[];
 const G=graverGareFerme();XCAL['x_fe_gare0']=G;CALQUES_DECO['x_fe_gare']=G;
 TAILLES['x_fe_gare']=[{w:66,h:14}];
 DECOR.push({t:'x_fe_gare',x:600,y:238,v:0,bati:true,demi:34,ouvre:'metroFerme'});
-/* (la graineterie quitte la ferme : une boutique de vente la remplacera) */
+/* ================= LA RÉCOLTE : LA BOUTIQUE DE LA FERME =================
+   Le bois vivant : chaque planche a sa teinte, son veinage et ses nœuds,
+   au lieu d'une texture répétée. Toiture de tuiles, deux vitrines à petits
+   bois, porte à lattes, enseigne de bois sur ses deux potences. */
+function graverRecolte(){
+const W=190, Ht=150, cx=W/2, sol=Ht-14;
+const c=document.createElement('canvas');
+const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+c.width=W*D;c.height=Ht*D;
+const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+const al=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+const BL=150, basToit=sol-78;
+g.fillStyle='rgba(30,50,24,.26)';
+g.beginPath();g.ellipse(cx+4,sol+4,BL*0.55,12,0,0,7);g.fill();
+/* LA TOITURE : quatre rangs de tuiles qui se rétractent */
+for(let rg=4;rg>=0;rg--){
+const t=rg/5, y=basToit-rg*4, ret=Math.round(t*13);
+const x0=cx-BL/2-11+ret, l2=BL+22-ret*2;
+for(let x=x0;x<x0+l2;x+=6){
+const q=(x*7+rg*13)%4;
+R(x,y,6,5,q===0?TU_F.p:(q===1?TU_F.c:(q===2?TU_F.s:TU_F.p)));
+R(x,y,6,1,rg>2?TU_F.h:TU_F.c);R(x+5,y,1,5,TU_F.o);}
+R(x0,y+4,l2,1,TU_F.o);
+if(rg===4){R(x0-2,y-4,l2+4,5,TU_F.o);R(x0-2,y-4,l2+4,2,TU_F.faite);}}
+R(cx-BL/2-12,basToit+3,BL+24,4,B_F.boisS);          /* la sablière */
+/* LE BARDAGE : une planche à la fois, avec son veinage et ses nœuds */
+const y0=basToit+6, hM=sol-24-y0;
+for(let i=0;i<BL;i+=7){
+const t=Math.floor(al(i*13.7)*4);
+R(cx-BL/2+i,y0,6,hM,[B_F.bois,B_F.boisC,B_F.boisO,B_F.bois][t]);
+R(cx-BL/2+i,y0,1,hM,B_F.boisH);
+R(cx-BL/2+i+6,y0,1,hM,B_F.boisS);
+for(let k=0;k<hM;k+=9){
+const d=Math.floor(al(i*2.3+k)*2);
+R(cx-BL/2+i+1,y0+k+d,4,1,'rgba(60,40,22,.30)');}
+if(al(i*5.1)<0.3){
+const ky=y0+5+Math.floor(al(i*7.3)*(hM-12));
+R(cx-BL/2+i+2,ky,2,2,B_F.boisO);R(cx-BL/2+i+2,ky,1,1,B_F.boisS);}}
+/* LA LISSE ET LA PLINTHE */
+R(cx-BL/2-3,basToit+20,BL+6,5,B_F.boisC);
+R(cx-BL/2-3,basToit+20,BL+6,2,B_F.boisH);
+R(cx-BL/2,sol-24,BL,16,B_F.boisO);
+for(let k=0;k<BL;k+=8)R(cx-BL/2+k,sol-24,1,16,B_F.boisS);
+R(cx-BL/2,sol-24,BL,2,B_F.bois);
+/* LES DEUX VITRINES */
+[-44,44].forEach(dx=>{
+R(cx+dx-28,basToit+30,56,44,B_F.boisO);
+R(cx+dx-28,basToit+30,56,3,B_F.boisH);
+R(cx+dx-25,basToit+33,50,38,'#3a4750');
+for(let i=1;i<4;i++)R(cx+dx-25+i*12.5,basToit+33,2,38,B_F.boisO);
+R(cx+dx-25,basToit+51,50,2,B_F.boisO);
+g.fillStyle='rgba(230,240,246,.16)';
+g.beginPath();g.moveTo(cx+dx-23,basToit+69);g.lineTo(cx+dx-6,basToit+35);
+g.lineTo(cx+dx+4,basToit+35);g.lineTo(cx+dx-13,basToit+69);g.closePath();g.fill();
+/* des cageots de légumes derrière la vitre */
+const LEG=['#c0392b','#5f8a3c','#e8881c','#d8c040','#7e3f98','#c0392b'];
+for(let k=0;k<4;k++){
+const px=cx+dx-22+k*12;
+R(px,basToit+38,10,11,B_F.bois);R(px,basToit+38,10,2,B_F.boisH);
+for(let q=0;q<3;q++)R(px+1+q*3,basToit+35,2,3,LEG[(k*3+q)%LEG.length]);}
+for(let k=0;k<3;k++){
+const px=cx+dx-20+k*15;
+R(px,basToit+55,11,12,'#c8b078');R(px,basToit+55,11,2,'#a89060');
+R(px+1,basToit+53,9,3,'#e0c890');}});
+/* LA PORTE À LATTES */
+const PL=32, PH=48;
+R(cx-PL/2-4,sol-PH-10,PL+8,PH+4,B_F.boisO);
+R(cx-PL/2-4,sol-PH-10,PL+8,2,B_F.boisH);
+R(cx-PL/2,sol-PH-6,PL,PH,'#4a3320');
+for(let k=0;k<PH;k+=5)R(cx-PL/2,sol-PH-6+k,PL,1,'#3d2a17');
+R(cx-PL/2,sol-PH-6,PL/2,PH,'rgba(150,112,63,.25)');
+R(cx+PL/2-7,sol-PH/2-4,3,3,'#b7bec4');
+R(cx-PL/2-6,sol-8,PL+12,3,B_F.boisC);
+/* L'ENSEIGNE */
+const hy=basToit+12;
+R(cx-48,hy-9,96,18,B_F.boisS);R(cx-48,hy-9,96,2,B_F.boisC);
+R(cx-48,hy+7,96,2,'#2a1c12');
+R(cx-52,hy-11,4,22,B_F.boisO);R(cx+48,hy-11,4,22,B_F.boisO);
+g.font="700 13px Georgia,serif";g.fillStyle='#f0cf7d';g.textAlign='center';
+g.fillText('La Récolte',cx,hy+5,86);g.textAlign='left';
+/* DEVANT : des cageots, un tonneau */
+const cageot=(x,y,fr)=>{R(x,y,16,12,B_F.bois);R(x,y,16,2,B_F.boisH);
+R(x,y+5,16,2,B_F.boisO);R(x+7,y,2,12,B_F.boisO);
+for(let q=0;q<3;q++)R(x+2+q*5,y-3,4,3,fr[q%fr.length]);};
+cageot(cx-84,sol-12,['#c0392b','#5f8a3c','#e8881c']);
+cageot(cx-66,sol-12,['#d8c040','#c0392b','#5f8a3c']);
+cageot(cx+66,sol-12,['#5f8a3c','#e8881c','#7e3f98']);
+for(let k=0;k<5;k++)R(cx+84+k*3,sol-18,3,18,k===0||k===4?B_F.boisO:B_F.bois);
+R(cx+84,sol-18,15,2,B_F.boisH);
+R(cx+83,sol-15,17,3,'#4a4a52');R(cx+83,sol-7,17,3,'#4a4a52');
+return c;}
+
+const CR=graverRecolte();XCAL['x_fe_recolte0']=CR;CALQUES_DECO['x_fe_recolte']=CR;
+TAILLES['x_fe_recolte']=[{w:150,h:24}];
+DECOR.push({t:'x_fe_recolte',x:325,y:940,v:0,bati:true,demi:80,ouvre:'laRecolte'});
+
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}
 if(CARTE==='foret')return semerLaForet();
 if(CARTE==='extramar')return semerDecorExtramar();
@@ -20593,6 +20689,7 @@ if(o.ouvre==='mineForet'){b.innerHTML=(MINE_OUVERTE?'Descendre dans la mine':'La
   if(!MINE_OUVERTE)b.onclick=null;
   return;}
 if(o.t==='x_fo_ponton')return;   /* le moteur de pêche s'en occupe */
+if(o.ouvre==='laRecolte'){b.innerHTML='La Récolte<small>VENDRE TA RÉCOLTE</small>';b.classList.add('on');return;}
 if(o.ouvre==='etalGraines'){b.innerHTML='Les graines<small>SEMENCES · OUTILS · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
 if(o.ouvre==='grainetier'){b.innerHTML='Entrer au Grainetier<small>OUTILS · GRAINES · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
 if(o.ouvre==='bouillabaisse'){b.innerHTML='Entrer Chez Fonfon<small>RESTAURANT · CUISINE TA BOUILLABAISSE</small>';b.classList.add('on');return;}
@@ -20766,6 +20863,7 @@ if(o.ouvre==='mineForet'){
   location.href='mine.html?v='+Date.now();   /* sans cela, le navigateur ressert l'ancienne mine */
   return;}
 
+if(o.ouvre==='laRecolte'){ouvrirLaBoutiqueFerme();return;}
 if(o.ouvre==='etalGraines'){ouvrirLeGrainetier('graines');return;}
 if(o.ouvre==='grainetier'){ouvrirLeGrainetier('outils');return;}
 if(o.ouvre==='bouillabaisse'){ouvrirChezFonfon();return;}
