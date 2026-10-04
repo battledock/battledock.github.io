@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-1320';
+var MA_VERSION='2026-10-05-1350';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16539,19 +16539,40 @@ const hy=yTete;
 if(coiffe==='crâne'){calotteCrane();return;}
 if(cote){
 const vol=cf.vol, top=hy-vol;
-calotte(-1,top,hy+8,13+(cf.fr==='afro'?5:0),6+vol,cf.fr==='afro'?false:'profil',hy);
-/* LA RACINE sur le front, du côté du visage */
-if(cf.fr!=='rase'&&cf.fr!=='crane'&&cf.fr!=='crete')
-for(let r=hy+4;r<hy+7;r++)R(craneC(r,hy).d-3,r,3,1,T(peau,-13));
-/* LA NUQUE : elle part du bord réel du crâne et se creuse vers le cou,
-   au lieu de descendre droit depuis -13. */
 const basNuque=cf.fr==='rase'||cf.fr==='degrade'?hy+17:hy+20;
+if(cf.fr==='crane'||cf.fr==='crete'||cf.fr==='rase'||cf.fr==='degrade'){
+calotte(-1,top,hy+8,13+(cf.fr==='afro'?5:0),6+vol,cf.fr==='afro'?false:'profil',hy);
 for(let r=hy+8;r<basNuque;r++){
 const bord=craneC(r,hy).g-1;
 const w=r<basNuque-4?(10-Math.max(0,r-(hy+15))):Math.max(3,10-(r-(basNuque-4))*2);
-R(bord,r,w,1,r>basNuque-3?H5.o:H5.b);
-R(bord,r,1,1,H5.oo);}
-meches(-12,-3,hy+8,basNuque-1,2);
+R(bord,r,w,1,r>basNuque-3?H5.o:H5.b);R(bord,r,1,1,H5.oo);}
+}else{
+/* ===== DE PROFIL, MÈCHE PAR MÈCHE =====
+   Elles partent du sommet et filent vers l'arrière : c'est ce qui donne la
+   coiffure couchée par le mouvement, au lieu d'un casque posé. */
+for(let rr=top;rr<hy+7;rr++){
+const c=craneC(rr,hy);
+let g0=c.g-1, g1=c.d+1;
+if(rr<hy){const k=1-(hy-rr)/(vol+3);g0=Math.round(g0*k)-1;g1=Math.round(g1*k);}
+if(g1<=g0)continue;R(g0,rr,g1-g0,1,H5.oo);}
+const longC=cf.lg?Math.min(cf.lg+10,34):12;
+for(let i=0;i<8;i++){
+const x0=-10+i*2.6, dep=top+Math.round(Math.abs((x0+2)/9)*vol*0.8);
+const lo=Math.max(4,Math.round(longC*(x0<2?1:0.55)*(0.82+alea(i*5.3)*0.3)));
+const la=2+(i%3===1?1:0);
+const pente=-0.26+i*0.03;                 /* toutes couchées vers l'arrière */
+for(let t=0;t<lo;t++){
+const w=Math.max(1,Math.round(la*(1-t/lo*0.5)));
+const xx=Math.round(x0+pente*t+(cf.ond?Math.sin(t*0.8+i)*cf.ond:0))+(t>3?bal(t):0);
+const yy=dep+t;
+if(yy>hy+6&&xx>craneC(yy,hy).g+1&&yy<hy+22)continue;   /* jamais sur le visage */
+const k=t/lo;
+let col=k<0.18?H5.cc:(k<0.45?H5.c:(k<0.8?H5.b:H5.o));
+if(xx<-7)col=k<0.4?H5.b:H5.oo;                        /* l'arrière, dans l'ombre */
+R(xx,yy,w,1,col);
+if(t>1&&t<lo-1)R(xx+w,yy,1,1,H5.oo);}}
+/* la racine sur le front, et la patte devant l'oreille */
+for(let r=hy+4;r<hy+7;r++)R(craneC(r,hy).d-3,r,3,1,T(peau,-13));}
 if(cf.fr==='degrade')R(-12,hy+15,6,5,T(peau,-12));
 meches(-12,10,top,hy+8,3);
 reflet(-1,top+1,10);
@@ -16573,9 +16594,29 @@ return;
 if(dos){
 const vol=cf.vol, top=hy-vol-sautH, L=cf.lg;
 const W=cf.fr==='afro'?19:14;
-/* LA CALOTTE épouse le crâne jusqu'au bas du cuir chevelu ; au-delà, les
-   cheveux longs reprennent la main et peuvent déborder librement. */
+if(cf.fr==='crane'||cf.fr==='crete'||cf.fr==='rase'||cf.fr==='degrade'||cf.fr==='afro'){
 calotte(0,top,hy+21+Math.min(L,6),W,7+vol,cf.fr==='afro'?false:'dos',hy);
+}else{
+/* ===== DE DOS, MÈCHE PAR MÈCHE ===== */
+for(let rr=top;rr<hy+21+Math.min(L,6);rr++){
+let c=craneD(rr,hy);
+if(rr<hy){const k=1-(hy-rr)/(vol+3);c=Math.round(c*k);}
+if(c<=0)continue;R(-c-1,rr,c*2+2,1,H5.oo);}
+const longD=22+L;
+for(let i=0;i<11;i++){
+const x0=-12+i*2.4, vers=(x0-RAIE)/12;
+const dep=top+Math.round(Math.abs(vers)*vol*0.7);
+const lo=Math.max(6,Math.round(longD*(vers<0?1.1:0.92)*(0.84+alea(i*7.1)*0.28)));
+const la=2+(i%3===1?1:0);
+for(let t=0;t<lo;t++){
+const w=Math.max(1,Math.round(la*(1-t/lo*0.45)));
+const xx=Math.round(x0+vers*0.2*t+(cf.ond?Math.sin(t*0.6+i)*cf.ond:0))+(t>4?bal(t):0);
+const yy=dep+t;
+const k=t/lo;
+let col=k<0.16?H5.cc:(k<0.42?H5.c:(k<0.78?H5.b:H5.o));
+if(xx>3)col=k<0.3?H5.b:(k<0.7?H5.o:H5.oo);
+R(xx,yy,w,1,col);
+if(t>1&&t<lo-1)R(xx+w,yy,1,1,H5.oo);}}}
 /* LA LIGNE DE NUQUE : une ombre là où les cheveux s'arrêtent sur le cou.
    Sans elle, la chevelure et la peau se touchent sans transition. */
 if(cf.fr!=='rase'&&cf.fr!=='crane'&&L<7)
