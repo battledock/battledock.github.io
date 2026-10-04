@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-0930';
+var MA_VERSION='2026-10-05-0950';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -24119,7 +24119,13 @@ function potStade(P){if(!P||!P.cult)return -1;const t0=new Date(P.t0).getTime(),
 function potAdopter(d){if(!d||d.erreur||!d.j)return false;POT.j=d.j;POT.debloque=d.debloque||POT.debloque||[];POT.parc={};(d.parcelles||[]).forEach(p=>POT.parc[p.i]=p);
 if(d.now)POT.decal=new Date(d.now).getTime()-Date.now();if(typeof d.euros==='number'){e.euros=d.euros;try{majHaut();}catch(x){}}POT_SALE=true;POT.charge=true;return true;}
 async function potCharger(){if(PLACE_SEULE||CARTE!=='village'||!e.id)return;try{potAdopter(await appelRPC('pot_etat',{p_joueur:e.id}));}catch(x){}}
-function potProche(){if(CARTE!=='village'||PLACE_SEULE)return null;for(let i=0;i<24;i++){const {x,y,PW,PH}=POT_XY(i);
+function potProche(){if(CARTE!=='village'||PLACE_SEULE)return null;
+/* ON VÉRIFIE D'ABORD LE CARRÉ ENTIER. Sans ce garde-fou, une erreur de
+   coordonnées fait apparaître « Semer » en plein pré, loin du potager. */
+if(POT_NEUF()){
+if(joueur.x<CARRE.x0-20||joueur.x>CARRE.x0+CARRE.L+20)return null;
+if(joueur.y<CARRE.y0-20||joueur.y>CARRE.y0+CARRE.H+30)return null;}
+for(let i=0;i<24;i++){if(!potOuverte(i))continue;const {x,y,PW,PH}=POT_XY(i);
 if(joueur.x>x-2&&joueur.x<x+PW+2&&joueur.y>y+2&&joueur.y<y+PH+8)return i;}return null;}
 function potGraver(){const Z=POT_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0, D=2, c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');
 g.setTransform(D,0,0,D,-Z.x0*D,-Z.y0*D);g.imageSmoothingEnabled=false;
