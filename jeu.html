@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-1520';
+var MA_VERSION='2026-10-04-1545';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -14429,7 +14429,17 @@ function balayerLeSentier(){
     (!surLeSentier(o.x,o.y,15)&&!dansEtang(o.x,o.y,-30)));
 }
 function semerDecor(){
-if(CHAMPS_SEULS&&CARTE==='village'){DECOR=[];invaliderGrille();return;}   /* LA FERME EST NUE */
+if(CHAMPS_SEULS&&CARTE==='village'){
+/* LA FERME : deux bâtiments, et rien d'autre. Le métro plein nord, la
+   graineterie au centre, le potager au sud : l'axe de la ferme. */
+DECOR=[];
+const G=graverGareFerme();XCAL['x_fe_gare0']=G;CALQUES_DECO['x_fe_gare']=G;
+TAILLES['x_fe_gare']=[{w:66,h:14}];
+DECOR.push({t:'x_fe_gare',x:600,y:238,v:0,bati:true,demi:34,ouvre:'metroFerme'});
+const C=graverGrainetier3();XCAL['x_fe_grain0']=C;CALQUES_DECO['x_fe_grain']=C;
+TAILLES['x_fe_grain']=[{w:150,h:22}];
+DECOR.push({t:'x_fe_grain',x:600,y:620,v:0,bati:true,demi:80,ouvre:'grainetier'});
+DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}
 if(CARTE==='foret')return semerLaForet();
 if(CARTE==='extramar')return semerDecorExtramar();
 if(CARTE==='garde')return semerDecorGarde();
@@ -15273,14 +15283,15 @@ if(!SOL)return;
 ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
 const pxF=Math.round((joueur.x-camX)*ECH)/ECH;
 const pyF=Math.round((joueur.y-camY)*ECH)/ECH;
-for(const [,a] of AUTRES){
-const ax=a.x-camX, ay=a.y-camY;
-if(ax<-40||ay<-70||ax>VW+40||ay>VH+40)continue;
-try{dessinerUnAutre(ctx,a,camX,camY);}catch(x){}
-}
-try{const m=ctx.getTransform();JOUEUR_ECRAN={x:m.a*pxF+m.e,y:m.d*(pyF-18)+m.f,sc:m.a/3};}catch(x){}
-personne(ctx,pxF,pyF,e.ap,(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche);
 nettoyerBulles();
+const acteursF=[{y:joueur.y,f:()=>{
+try{const m=ctx.getTransform();JOUEUR_ECRAN={x:m.a*pxF+m.e,y:m.d*(pyF-18)+m.f,sc:m.a/3};}catch(x){}
+return personne(ctx,pxF,pyF,e.ap,(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche);}}];
+for(const [,a] of AUTRES){
+const ax2=a.x-camX, ay2=a.y-camY;
+if(ax2<-40||ay2<-70||ax2>VW+40||ay2>VH+40)continue;
+acteursF.push({y:a.y,f:()=>dessinerUnAutre(ctx,a,camX,camY)});}
+try{dessinerDecor(ctx,camX,camY,VW,VH,acteursF);}catch(x){}
 dessinerBulles(ctx,camX,camY,pxF,pyF);
 dessinerTextes(ctx,camX,camY);
 ctx.setTransform(1,0,0,1,0,0);
@@ -16724,6 +16735,12 @@ if(CHAMPS_SEULS&&CARTE==='village'){
    on se contente de rester dans le carré de la carte. */
 ax=Math.max(BORD_FERME+8,Math.min(MONDE_L-BORD_FERME-8,nx));
 ay=Math.max(BORD_FERME+10,Math.min(MONDE_H-BORD_FERME-8,ny));
+/* les deux bâtiments barrent la route */
+const mur=(px,py)=>DECOR.some(o=>{const t=TAILLES[o.t];if(!t)return false;
+const d=t[0];if(!d)return false;
+return Math.abs(o.x-px)<d.w/2+3&&py>o.y-d.h-2&&py<o.y+3;});
+if(mur(ax,+joueur.y||0))ax=+joueur.x||0;
+if(mur(ax,ay))ay=+joueur.y||0;
 }else{
 if(!bloque(nx,joueur.y))ax=nx;
 if(!bloque(ax,ny))ay=ny;
@@ -18041,7 +18058,7 @@ if(m.genre[0]==='x'&&m.genre[1]==='_')DECOR=DECOR.filter(o=>!(o.t===m.genre&&Mat
 if(surLesAbordsForet({t:m.genre,x:m.x,y:m.y}))return;   /* rien devant la gare ni la cabane */
 DECOR.push({t:m.genre,x:m.x,y:m.y,gr:m.gr||0,cle:m.cle});
 });
-if(CHAMPS_SEULS&&CARTE==='village')DECOR=[];   /* LA FERME EST NUE */
+if(CHAMPS_SEULS&&CARTE==='village'){CARTE_RECUE=true;return true;}   /* LA FERME : rien à recevoir */
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 CARTE_RECUE=true;
 appliquerLeMonde();
@@ -18106,7 +18123,7 @@ g.fillStyle='rgba(159,214,122,.85)';g.fillRect(Math.round(x-6),Math.round(y-12),
 }
 function appliquerLeMonde(){
 if(ANNEXE)return;
-if(CHAMPS_SEULS&&CARTE==='village'){DECOR=[];invaliderGrille();return;}   /* LA FERME EST NUE */
+if(CHAMPS_SEULS&&CARTE==='village')return;   /* LA FERME : son décor est à elle, le monde partagé n'y entre pas */
 const casses=new Set(e.casses||[]);
 let change=false;
 for(let i=DECOR.length-1;i>=0;i--){
