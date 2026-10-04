@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-2200';
+var MA_VERSION='2026-10-05-2240';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16836,14 +16836,19 @@ if(g1<=g0)continue;R(g0,rr,g1-g0,1,H5.oo);}
 const longC=cf.lg?Math.min(cf.lg+10,34):12;
 for(let i=0;i<8;i++){
 const x0=-10+i*2.6, dep=top+Math.round(Math.abs((x0+2)/9)*vol*0.8);
-const lo=Math.max(4,Math.round(longC*(x0<2?1:0.55)*(0.82+alea(i*5.3)*0.3)));
+/* les mèches de l'avant s'arrêtent au front ; seules celles de l'arrière
+   descendent sur la nuque */
+const lo=Math.max(3,Math.round(longC*(x0<0?1:(x0<4?0.4:0.22))*(0.82+alea(i*5.3)*0.3)));
 const la=2+(i%3===1?1:0);
 const pente=-0.26+i*0.03;                 /* toutes couchées vers l'arrière */
 for(let t=0;t<lo;t++){
 const w=Math.max(1,Math.round(la*(1-t/lo*0.5)));
 const xx=Math.round(x0+pente*t+(cf.ond?Math.sin(t*0.8+i)*cf.ond:0))+(t>3?bal(t):0);
 const yy=dep+t;
-if(yy>hy+6&&xx>craneC(yy,hy).g+1&&yy<hy+22)continue;   /* jamais sur le visage */
+/* JAMAIS SUR LE VISAGE : sous le front, tout ce qui dépasse vers l'avant
+   est coupé. L'ancienne condition laissait passer les mèches qui piquaient
+   par-dessus le nez. */
+if(yy>hy+5&&yy<hy+23&&xx+w>craneC(yy,hy).d-4)continue;
 const k=t/lo;
 let col=k<0.18?H5.cc:(k<0.45?H5.c:(k<0.8?H5.b:H5.o));
 if(xx<-7)col=k<0.4?H5.b:H5.oo;                        /* l'arrière, dans l'ombre */
@@ -16880,7 +16885,10 @@ for(let rr=top;rr<hy+21+Math.min(L,6);rr++){
 let c=craneD(rr,hy);
 if(rr<hy){const k=1-(hy-rr)/(vol+3);c=Math.round(c*k);}
 if(c<=0)continue;R(-c-1,rr,c*2+2,1,H5.oo);}
-const longD=22+L;
+/* LA LONGUEUR DE DOS : elle doit partir de la coupe, pas d'un socle de
+   22 px. Avant, « courts » et « bol » recevaient la même masse qu'une
+   chevelure longue : de dos, toutes les coupes se ressemblaient. */
+const longD=(L>6?20+L:(cf.fr==='rase'||cf.fr==='degrade'?9:13));
 for(let i=0;i<11;i++){
 const x0=-12+i*2.4, vers=(x0-RAIE)/12;
 const dep=top+Math.round(Math.abs(vers)*vol*0.7);
@@ -22604,13 +22612,21 @@ const hs=LAB_DIRS.map(haut);
 const ecart=Math.max.apply(null,hs)-Math.min.apply(null,hs);
 L.push((ecart>2?'⚠ ':'✓ ')+'sommet du crâne : écart de '+ecart+' px entre les 4 directions');
 /* 3. la largeur, qui révèle le crâne trop étroit de profil */
+/* LA LARGEUR DU CRÂNE : on cherche d'abord le sommet réel, puis on mesure
+   huit rangs plus bas. L'ancienne version lisait les 40 premiers rangs du
+   canevas, qui sont vides : elle renvoyait toujours 0. */
 const larg=(d)=>{try{const c=poseDe(ap,d,0);
 const g=c.getContext('2d',{willReadFrequently:true});
-const im=g.getImageData(0,0,c.width,40).data;
+const im=g.getImageData(0,0,c.width,c.height).data;
+let haut=-1;
+for(let y=0;y<c.height&&haut<0;y++)for(let x=0;x<c.width;x++)
+if(im[(y*c.width+x)*4+3]>200){haut=y;break;}
+if(haut<0)return 0;
+const y0=haut+8;
 let a=1e9,b=-1;
-for(let y=0;y<40;y++)for(let x=0;x<c.width;x++)
-if(im[(y*c.width+x)*4+3]>200){if(x<a)a=x;if(x>b)b=x;}
-return b<0?0:Math.round((b-a)/2);}catch(x){return 0;}};
+for(let x=0;x<c.width;x++)
+if(im[(y0*c.width+x)*4+3]>200){if(x<a)a=x;if(x>b)b=x;}
+return b<0?0:Math.round((b-a+1)/2);}catch(x){return 0;}};
 const lf=larg('bas'), lp=larg('droite'), ld=larg('haut');
 L.push((lp<lf-1?'⚠ ':'✓ ')+'crâne : face '+lf+' px · profil '+lp+' px · dos '+ld+' px'+
 (lp<lf-1?'  (le profil devrait être le plus LONG)':''));
