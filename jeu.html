@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-2320';
+var MA_VERSION='2026-10-05-2350';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16688,8 +16688,10 @@ const bordCheveux=(rr,hy,demi,vol)=>{
 const k=hy-rr;                                   /* combien de rangs au-dessus */
 if(k<=0)return demi+1;                           /* sur le crâne : un pixel de plus */
 if(k>vol)return 0;                               /* au-delà du volume : plus rien */
+/* une courbe un peu bombée plutôt qu'un cercle : le haut du crâne reste
+   large sur un rang ou deux, puis se referme vite. */
 const t=k/(vol+0.6);
-return Math.max(0,Math.round((demi+1)*Math.sqrt(Math.max(0,1-t*t))));};
+return Math.max(0,Math.round((demi+1)*Math.pow(Math.max(0,1-t*t),0.62)));};
 const mechesDe=()=>{
 const L=[], lg=cf.lg, vol=cf.vol;
 /* la longueur sur les côtés : une coupe courte s'arrête à l'oreille,
@@ -16903,9 +16905,19 @@ if(cf.fr==='crane'||cf.fr==='crete'||cf.fr==='rase'||cf.fr==='degrade'||cf.fr===
 calotte(0,top,hy+21+Math.min(L,6),W,7+vol,cf.fr==='afro'?false:'dos',hy);
 }else{
 /* ===== DE DOS, MÈCHE PAR MÈCHE ===== */
+/* LE BORD DE DOS : il suit le crâne, puis se resserre vers la nuque.
+   Sans ce resserrement, la chevelure descend droite et le dos ressemble à
+   une boîte posée sur les épaules. */
+const bordDos=(rr)=>{
+let c=bordCheveux(rr,hy,craneD(rr<hy?hy:rr,hy),vol);
+const sous=rr-(hy+15);                 /* à partir du bas du crâne */
+if(sous>0)c=Math.max(2,c-Math.round(sous*0.9));
+return c;};
 for(let rr=top;rr<hy+21+Math.min(L,6);rr++){
-const c=bordCheveux(rr,hy,craneD(rr<hy?hy:rr,hy),vol);
-if(c<=0)continue;R(-c,rr,c*2,1,H5.oo);}
+const c=bordDos(rr);
+if(c<=0)continue;
+R(-c,rr,c*2,1,H5.oo);
+R(-c,rr,1,1,H5.o);R(c-1,rr,1,1,H5.o);}   /* les bords, plus sombres : du relief */
 /* LA LONGUEUR DE DOS : elle doit partir de la coupe, pas d'un socle de
    22 px. Avant, « courts » et « bol » recevaient la même masse qu'une
    chevelure longue : de dos, toutes les coupes se ressemblaient. */
@@ -16920,7 +16932,7 @@ const w=Math.max(1,Math.round(la*(1-t/lo*0.45)));
 const xx=Math.round(x0+vers*0.2*t+(cf.ond?Math.sin(t*0.6+i)*cf.ond:0))+(t>4?bal(t):0);
 const yy=dep+t;
 /* le haut du crâne borne la mèche ; sous la nuque, elle est libre */
-if(yy<hy+20){const bd=bordCheveux(yy,hy,craneD(yy<hy?hy:yy,hy),vol);
+if(yy<hy+22){const bd=bordDos(yy);
 if(bd<=0||xx<-bd||xx+w>bd)continue;}
 const k=t/lo;
 let col=k<0.16?H5.cc:(k<0.42?H5.c:(k<0.78?H5.b:H5.o));
