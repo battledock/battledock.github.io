@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-0800';
+var MA_VERSION='2026-10-05-0830';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2351,230 +2351,9 @@ const n=parseInt(c.slice(1),16);
 const f=v=>Math.max(0,Math.min(255,v+k));
 return '#'+((1<<24)+(f((n>>16)&255)<<16)+(f((n>>8)&255)<<8)+f(n&255)).toString(16).slice(1);
 };
-/* ================= LE STYLE « FUTUR » =================
-   Un pantin articulé : un squelette d'os porte des pièces, les
-   animations sont des tables de keyframes, et les cheveux
-   suivent la tête avec un temps de retard.
-   Chaque pose est gravée une fois puis gardée en cache, comme
-   pour le pixel fin. */
-const CACHE_FUTUR=new Map();
-let futSqTampon=null;
-const FUT_R=Math.PI/180;
-
-/* LE PLAN : les longueurs sont en pixels du personnage */
-const FUT_PLAN={nom:'root',x:0,y:0,enfants:[
-{nom:'pelvis',x:0,y:-11,lg:4,enfants:[
- {nom:'torso',x:0,y:0,lg:9,enfants:[
-  {nom:'neck',x:0,y:-9,lg:2,enfants:[
-   {nom:'head',x:0,y:-2,lg:8,enfants:[
-    {nom:'hairBack',x:0,y:0,lg:4},{nom:'hairFront',x:0,y:0,lg:3}]}]},
-  {nom:'armL',x:-4,y:-8,lg:6,rot:1.5708,enfants:[
-   {nom:'foreL',x:0,y:6,lg:5,enfants:[{nom:'handL',x:0,y:5,lg:2}]}]},
-  {nom:'armR',x:4,y:-8,lg:6,rot:1.5708,enfants:[
-   {nom:'foreR',x:0,y:6,lg:5,enfants:[{nom:'handR',x:0,y:5,lg:2}]}]}]},
- {nom:'thighL',x:-2,y:1,lg:6,enfants:[
-  {nom:'shinL',x:0,y:6,lg:5,enfants:[{nom:'footL',x:0,y:5,lg:3}]}]},
- {nom:'thighR',x:2,y:1,lg:6,enfants:[
-  {nom:'shinR',x:0,y:6,lg:5,enfants:[{nom:'footR',x:0,y:5,lg:3}]}]}]}]};
-
-function futSquelette(){
- const os=new Map();
- const bati=(n,parent)=>{
-  const b={nom:n.nom,repos:{x:n.x||0,y:n.y||0,rot:n.rot||0},
-   x:n.x||0,y:n.y||0,rot:n.rot||0,lg:n.lg||0,parent:parent||null,enfants:[],
-   m:{a:1,b:0,c:0,d:1,e:0,f:0}};
-  os.set(n.nom,b);
-  if(parent)parent.enfants.push(b);
-  (n.enfants||[]).forEach(e=>bati(e,b));
-  return b;};
- const racine=bati(FUT_PLAN,null);
- return {os,racine};}
-
-function futPoser(sq){ for(const b of sq.os.values()){b.x=b.repos.x;b.y=b.repos.y;b.rot=b.repos.rot;} }
-function futMondes(b){
- const co=Math.cos(b.rot), si=Math.sin(b.rot);
- const l={a:co,b:si,c:-si,d:co,e:b.x,f:b.y};
- if(!b.parent)b.m=l;
- else{const p=b.parent.m;
-  b.m={a:p.a*l.a+p.c*l.b,b:p.b*l.a+p.d*l.b,c:p.a*l.c+p.c*l.d,d:p.b*l.c+p.d*l.d,
-   e:p.a*l.e+p.c*l.f+p.e,f:p.b*l.e+p.d*l.f+p.f};}
- b.enfants.forEach(futMondes);}
-
-/* LES ANIMATIONS : des écarts à la pose de repos */
-const FUT_ANIM={
- idle:{duree:16,pistes:{
-  torso:[[0,{y:0,rot:0}],[8,{y:-1,rot:1*FUT_R}],[16,{y:0,rot:0}]],
-  head:[[0,{rot:0}],[5,{rot:-1.5*FUT_R}],[8,{y:-1}],[12,{rot:1.5*FUT_R}],[16,{rot:0}]],
-  armL:[[0,{rot:0}],[8,{rot:3*FUT_R}],[16,{rot:0}]],
-  armR:[[0,{rot:0}],[8,{rot:-3*FUT_R}],[16,{rot:0}]]}},
- walk:{duree:16,pistes:{
-  pelvis:[[0,{y:0}],[4,{y:-1}],[8,{y:0}],[12,{y:-1}],[16,{y:0}]],
-  torso:[[0,{rot:2*FUT_R}],[8,{rot:-2*FUT_R}],[16,{rot:2*FUT_R}]],
-  thighL:[[0,{rot:26*FUT_R}],[4,{rot:0}],[8,{rot:-22*FUT_R}],[12,{rot:-4*FUT_R}],[16,{rot:26*FUT_R}]],
-  shinL:[[0,{rot:-4*FUT_R}],[3,{rot:-26*FUT_R}],[8,{rot:4*FUT_R}],[12,{rot:30*FUT_R}],[16,{rot:-4*FUT_R}]],
-  footL:[[0,{rot:-12*FUT_R}],[5,{rot:6*FUT_R}],[10,{rot:10*FUT_R}],[16,{rot:-12*FUT_R}]],
-  thighR:[[0,{rot:-22*FUT_R}],[4,{rot:-4*FUT_R}],[8,{rot:26*FUT_R}],[12,{rot:0}],[16,{rot:-22*FUT_R}]],
-  shinR:[[0,{rot:4*FUT_R}],[4,{rot:30*FUT_R}],[8,{rot:-4*FUT_R}],[11,{rot:-26*FUT_R}],[16,{rot:4*FUT_R}]],
-  footR:[[0,{rot:10*FUT_R}],[5,{rot:-12*FUT_R}],[13,{rot:6*FUT_R}],[16,{rot:10*FUT_R}]],
-  armL:[[0,{rot:-20*FUT_R}],[8,{rot:20*FUT_R}],[16,{rot:-20*FUT_R}]],
-  foreL:[[0,{rot:6*FUT_R}],[8,{rot:16*FUT_R}],[16,{rot:6*FUT_R}]],
-  armR:[[0,{rot:20*FUT_R}],[8,{rot:-20*FUT_R}],[16,{rot:20*FUT_R}]],
-  foreR:[[0,{rot:16*FUT_R}],[8,{rot:6*FUT_R}],[16,{rot:16*FUT_R}]],
-  head:[[0,{y:0}],[4,{y:-0.5}],[8,{y:0}],[12,{y:-0.5}],[16,{y:0}]]}}};
-
-function futAppliquer(sq,anim,f){
- const A=FUT_ANIM[anim]; if(!A)return;
- for(const nom in A.pistes){
-  const os=sq.os.get(nom); if(!os)continue;
-  const piste=A.pistes[nom];
-  for(const champ of ['x','y','rot']){
-   let av=null,ap=null;
-   for(const k of piste){ if(k[1][champ]===undefined)continue;
-    if(k[0]<=f)av=k; if(k[0]>=f&&!ap)ap=k; }
-   if(!av&&!ap)continue;
-   let v;
-   if(!av)v=ap[1][champ];
-   else if(!ap||av===ap)v=av[1][champ];
-   else{const sp=ap[0]-av[0];
-    const t=sp<=0?1:(f-av[0])/sp, e=t*t*(3-2*t);
-    v=av[1][champ]+(ap[1][champ]-av[1][champ])*e;}
-   os[champ]+=v;}}
- /* LES CHEVEUX EN RETARD : on lit la pose deux images plus tôt */
- const hb=sq.os.get('hairBack'), hf=sq.os.get('hairFront');
- if(hb||hf){
-  const tete=sq.os.get('head');
-  const prec=((f-2)+A.duree)%A.duree;
-  const sq2=futSqTampon||(futSqTampon=futSquelette());futPoser(sq2);
-  for(const nom in A.pistes){
-   const o2=sq2.os.get(nom); if(!o2)continue;
-   const piste=A.pistes[nom];
-   for(const champ of ['x','y','rot']){
-    let av=null,ap=null;
-    for(const k of piste){ if(k[1][champ]===undefined)continue;
-     if(k[0]<=prec)av=k; if(k[0]>=prec&&!ap)ap=k; }
-    if(!av&&!ap)continue;
-    let v;
-    if(!av)v=ap[1][champ];
-    else if(!ap||av===ap)v=av[1][champ];
-    else{const sp=ap[0]-av[0], t=sp<=0?1:(prec-av[0])/sp, e=t*t*(3-2*t);
-     v=av[1][champ]+(ap[1][champ]-av[1][champ])*e;}
-    o2[champ]+=v;}}
-  const t2=sq2.os.get('head');
-  const retard=(t2.rot-tete.rot)*1.6+(t2.y-tete.y)*0.04;
-  if(hb)hb.rot+=retard;
-  if(hf)hf.rot+=retard*0.5;}}
-
-/* LE DESSIN D'UNE POSE */
-function futGraver(ap,dir,pas,bouge){
- const L=CASE_L*2, H=CASE_H*2;
- const c=document.createElement('canvas');c.width=L;c.height=H;
- const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(2,0,0,2,0,0);
- const p=Object.assign({},DEF_AP,ap||{});
- try{appliquerDeguisement(p);}catch(x){}
- const P=PALETTES;
- const cOu=(v,liste)=>typeof v==='string'&&v[0]==='#'?v:(liste[v]||liste[0]);
- const peau=P.peau[p.peau]||P.peau[2];
- const chev=P.cheveux[p.cheveux]||P.cheveux[2];
- const veste=cOu(p.veste,P.veste);
- const pant=cOu(p.pantalon,P.pantalon);
- const chau=cOu(p.chaussures,P.chaussures);
- const T={peau:peau,peauC:teint(peau,16),peauO:teint(peau,-22),peauT:teint(peau,-44),
-  chev:chev,chevC:teint(chev,22),chevO:teint(chev,-24),
-  ves:veste,vesC:teint(veste,20),vesO:teint(veste,-26),
-  pan:pant,panC:teint(pant,14),panO:teint(pant,-20),
-  cha:chau,chaC:teint(chau,20),N:'#1b1712'};
- const dos=dir==='haut', cote=(dir==='gauche'||dir==='droite');
- const sens=dir==='gauche'?-1:1;
- const sq=futSquelette();
- futPoser(sq);
- /* la pose doit être reproductible : pas d'horloge ici, sinon
-   le cache des planches regrave sans cesse et le jeu saccade. */
-futAppliquer(sq,bouge?'walk':'idle',bouge?(Math.floor((pas||0)*2)%16):0);
- sq.racine.x=0;sq.racine.y=0;
- futMondes(sq.racine);
- const ox=CASE_L/2, oy=CASE_H-10;
- const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
-  const xx=sens<0?(-x-w):x;
-  g.fillRect(Math.round(ox+xx),Math.round(oy+y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
- const pos=(n)=>{const b=sq.os.get(n);return {x:b.m.e,y:b.m.f,a:Math.atan2(b.m.b,b.m.a)};};
- /* l'ombre portée */
- g.fillStyle='rgba(18,26,12,.32)';
- g.beginPath();g.ellipse(ox,oy+1,8,2.4,0,0,7);g.fill();
- /* un membre : un segment épais, du pivot vers le bout */
- const membre=(a,b,ep,c1,c2,c3)=>{
-  const n=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)));
-  for(let i=0;i<=n;i++){
-   const t=i/n, x=a.x+(b.x-a.x)*t, y=a.y+(b.y-a.y)*t;
-   R(x-ep/2-1,y-1,ep+2,2,T.N);}
-  for(let i=0;i<=n;i++){
-   const t=i/n, x=a.x+(b.x-a.x)*t, y=a.y+(b.y-a.y)*t;
-   R(x-ep/2,y,ep,1,c1);R(x-ep/2,y,1,1,c2);R(x+ep/2-1,y,1,1,c3);}};
- const bout=(n)=>{const b=sq.os.get(n);
-  return {x:b.m.e+b.m.a*b.lg,y:b.m.f+b.m.b*b.lg};};
- /* LES CHEVEUX ARRIÈRE */
- if(!cote||dos){const h=pos('hairBack');
-  R(h.x-5,h.y-5,10,7,T.N);R(h.x-4,h.y-4,8,5,T.chevO);R(h.x-4,h.y-4,3,5,T.chev);}
- /* LES JAMBES */
- ['L','R'].forEach((k,i)=>{
-  membre(pos('thigh'+k),bout('thigh'+k),4,i?T.panO:T.pan,T.panC,T.panO);
-  membre(pos('shin'+k),bout('shin'+k),4,i?T.panO:T.pan,T.panC,T.panO);
-  const f=pos('foot'+k);
-  R(f.x-3,f.y-1,6,3,T.N);R(f.x-2,f.y,4,2,T.cha);R(f.x-2,f.y,4,1,T.chaC);});
- /* LE TORSE, en trapèze */
- {const t0=pos('torso'), t1=bout('torso');
-  const hT=Math.max(1,Math.round(Math.hypot(t1.x-t0.x,t1.y-t0.y)));
-  R(t0.x-7,t0.y-1,14,hT+2,T.N);
-  for(let j=0;j<hT;j++){
-   const k=j/(hT-1||1), w=Math.round(12-k*4);
-   const x=t0.x+(t1.x-t0.x)*k, y=t0.y+(t1.y-t0.y)*k;
-   R(x-w/2,y,w,1,T.ves);R(x-w/2,y,2,1,T.vesC);R(x+w/2-2,y,2,1,T.vesO);}}
- /* LES BRAS */
- ['L','R'].forEach((k,i)=>{
-  membre(pos('arm'+k),bout('arm'+k),3,i?T.vesO:T.ves,T.vesC,T.vesO);
-  membre(pos('fore'+k),bout('fore'+k),3,i?T.vesO:T.ves,T.vesC,T.vesO);
-  const m=pos('hand'+k);
-  R(m.x-2,m.y-1,4,5,T.N);R(m.x-1,m.y,2,3,i?T.peauO:T.peau);});
- /* LE COU */
- {const n=pos('neck');R(n.x-3,n.y-1,6,5,T.N);
-  R(n.x-2,n.y,4,3,T.peauO);R(n.x-2,n.y,4,1,T.peauT);}
- /* LA TÊTE */
- {const h=pos('head'), Lr=[7,9,9,9,9,9,9,7,5];
-  for(let r=0;r<9;r++){const w=Lr[r];
-   R(h.x-w/2-1,h.y-8+r,w+2,1,T.N);
-   R(h.x-w/2,h.y-8+r,w,1,T.peau);
-   R(h.x-w/2,h.y-8+r,3,1,T.peauC);
-   R(h.x+w/2-2,h.y-8+r,2,1,T.peauO);}
-  R(h.x-2,h.y+0,5,1,T.peauT);
-  /* LES CHEVEUX DU DESSUS */
-  R(h.x-5,h.y-10,10,5,T.N);
-  R(h.x-4,h.y-9,8,4,T.chev);
-  R(h.x-4,h.y-9,3,4,T.chevC);
-  if(!dos){R(h.x-4,h.y-6,1,4,T.chev);R(h.x+3,h.y-6,1,4,T.chevO);}
-  /* LA MÈCHE AVANT, en retard */
-  if(!dos){const hf=pos('hairFront');
-   const d=[1,0,1,2,1,0,1,1];
-   for(let i=0;i<8;i++)if(d[i]){
-    R(hf.x-4+i,hf.y-6,1,d[i],T.chev);
-    R(hf.x-4+i,hf.y-6,1,1,T.chevC);}}
-  /* LE VISAGE */
-  if(!dos){const dx=cote?2:0;
-   R(h.x-3+dx,h.y-4,1,1,T.N);
-   if(!cote)R(h.x+2,h.y-4,1,1,T.N);
-   R(h.x-1+dx,h.y-2,2,1,T.peauT);}}
- return c;}
-
-function spriteFutur(g,x,y,ap0,dir,pas,bouge){
- const cle=clePose(ap0||{})+'|'+dir+'|'+(bouge?Math.floor((pas||0)*2)%16:'r');
- let c=CACHE_FUTUR.get(cle);
- if(!c){if(CACHE_FUTUR.size>220)CACHE_FUTUR.clear();
-  c=futGraver(ap0,dir||'bas',pas||0,!!bouge);CACHE_FUTUR.set(cle,c);}
- g.drawImage(c,Math.round(x-CASE_L/2),Math.round(y-CASE_H+10),CASE_L,CASE_H);}
-
 const CACHE_FIN=new Map();
 function sprite(g,x,y,ap0,dir,pas,bouge){
-let st='fin';try{st=STYLE_PERSO();}catch(x){st='classique';}
-if(st==='futur')return spriteFutur(g,x,y,ap0,dir,pas,bouge);
-const fin=(st==='fin');
+let fin=false;try{fin=STYLE_FIN();}catch(x){fin=false;}          /* (au tout début du chargement, on reste classique) */
 if(fin){
 const ges=(typeof GESTE!=='undefined'&&GESTE&&GESTE.t>0)?(GESTE.type||'pioche')+':'+Math.round((1-GESTE.t)*11):'';
 const cle=clePose(ap0||{})+'|'+dir+'|'+(bouge?Math.floor((pas||0)*2)%16:'r')+'|'+ges;
@@ -15999,17 +15778,10 @@ const PASM=16;                        /* seize images pour un cycle de marche */
 const CASE_L=64, CASE_H=80;           /* la boîte d'une pose */
 const POSES=new Map();                /* une planche par apparence rencontrée */
 const clePose=(ap)=>{
-let c=(typeof STYLE_PERSO==='function'?STYLE_PERSO():'fin')+'|';for(const k in ap){const v=ap[k];c+=(v&&typeof v==='object'?JSON.stringify(v):v)+',';}
+let c=STYLE_FIN()?'fin|':'';for(const k in ap){const v=ap[k];c+=(v&&typeof v==='object'?JSON.stringify(v):v)+',';}
 return c;
 };
-/* TROIS STYLES DE PERSONNAGE : classique, pixel fin, futur.
-   REG.stylePerso vaut 'classique', 'fin' ou 'futur'. L'ancien
-   REG.styleFin est toujours lu, pour ne pas perdre les choix déjà faits. */
-const STYLE_PERSO=()=>{
-if(typeof REG==='undefined')return 'fin';
-if(REG.stylePerso)return REG.stylePerso;
-return REG.styleFin===false?'classique':'fin';};
-const STYLE_FIN=()=>STYLE_PERSO()!=='classique';   /* le futur partage les calques du fin */
+const STYLE_FIN=()=>!(typeof REG!=='undefined'&&REG.styleFin===false);   /* le pixel fin, pour tous (le classique reste au choix) */
 const PLAFOND_PLANCHES=24;
 /* L'APERÇU D'UNE BOUTIQUE : on retire le déguisement, sinon l'épouvantail
    s'affiche à la place des vêtements qu'on essaie. */
@@ -16032,18 +15804,12 @@ let L=P.dirs[dir];
 if(!L){L=P.dirs[dir]=[];}
 if(L[i])return L[i];
 const c=document.createElement('canvas');
-const ST=(typeof STYLE_PERSO==='function')?STYLE_PERSO():'fin';
-const D=(ST!=='classique')?2:Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+const D=STYLE_FIN()?2:Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
 c.width=CASE_L*D;c.height=CASE_H*D;
 const g=c.getContext('2d');
 g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
 const sauve=GESTE;GESTE={t:0};
-if(ST==='futur'){
-/* LE PANTIN : la pose est gravée par son propre moteur */
-g.setTransform(1,0,0,1,0,0);
-const j=i>=300?i-300:i, repos=j>=100;
-try{g.drawImage(futGraver(ap,dir,repos?0:(j?(j-1)/2:0),!repos&&j>0),0,0,c.width,c.height);}catch(x){}}
-else if(ST==='fin'){g.setTransform(1,0,0,1,0,0);const cl=i>=300, j=cl?i-300:i, repos=j>=100;
+if(STYLE_FIN()){g.setTransform(1,0,0,1,0,0);const cl=i>=300, j=cl?i-300:i, repos=j>=100;
 g.drawImage(graverFin(ap,dir,repos?0:(j?(j-1)/2:0),!repos&&j>0,repos?j-100:0,cl),0,0,c.width,c.height);CLIGNE_FIN=false;}
 else spriteClassique(g,CASE_L/2,CASE_H-10,ap,dir,i?(i-1)/2:0,i>0);
 GESTE=sauve;
@@ -23335,9 +23101,8 @@ choix('perf',[['auto','Automatique','le jeu décide, et s’adapte'],
 ['fluide','Fluidité','image plus douce, décor allégé, batterie ménagée'],
 ['beaute','Beauté','image nette, tout le décor, plus gourmand']],perfChoisie());}
 else if(v==='perso'){titre='Le personnage';
-corps='<div class="mot">Le pixel fin : deux fois plus de détail, huit directions, des gestes et des tenues vivantes. Le classique : l’ancien dessin, plus léger pour les vieux téléphones. Le futur : un pantin articulé, seize images par foulée et des cheveux qui suivent avec un temps de retard.</div>'+
-choix('stylePerso',[['fin','Pixel fin',''],['classique','Classique',''],
-['futur','Futur','']],STYLE_PERSO());}
+corps='<div class="mot">Le pixel fin : deux fois plus de détail, huit directions, des gestes et des tenues vivantes. Le classique : l’ancien dessin, plus léger pour les vieux téléphones.</div>'+
+choix('styleFin',[['true','Pixel fin',''],['false','Classique','']],STYLE_FIN()?'true':'false');}
 else if(v==='ciel'){titre='Jour et nuit';
 corps='<div class="mot">Le jeu suit l’heure de Marseille : doré le matin, orange à 19 h, bleu nuit après 21 h. En plein jour, il fait clair en permanence et les lampes restent éteintes.</div>'+
 choix('ciel',[['heure','Suivre l’heure',''],['jour','Plein jour','']],REG.ciel);}
@@ -23387,8 +23152,7 @@ regBrancher();
 $('page2Fond').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
 const c=b.dataset.c;
 if(v==='perf')mettrePerf(c);
-else if(v==='perso'){REG.stylePerso=c;REG.styleFin=(c!=='classique');
-POSES.clear();CACHE_FIN.clear();CACHE_FUTUR.clear();
+else if(v==='perso'){REG.styleFin=(c==='true');POSES.clear();CACHE_FIN.clear();
 setTimeout(()=>{try{refaireLeSol();}catch(x){}},50);appliquerReglages();}
 else if(v==='ciel'){REG.ciel=c;appliquerReglages();}
 vibrer(18);ouvrirReglages();});
