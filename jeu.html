@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-1340';
+var MA_VERSION='2026-10-04-1420';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11176,6 +11176,18 @@ return SOL;}
    Rien que l'herbe, ses touffes, ses reflets et ses fleurettes : le sol
    qu'on a retenu. Aucune haie, aucune barrière, aucun champ, aucun bâtiment. */
 const BORD_FERME=120;             /* la barrière, à 120 pixels du bord */
+/* ================= LE POTAGER : LE GRAND CARRÉ =================
+   Vingt-quatre planches en six colonnes sur quatre rangs, séparées par des
+   allées de terre tassée. La terre est montée en billons, avec des mottes
+   retournées et quelques cailloux : elle a une direction, donc on voit les
+   rangs sans qu'ils fassent rayure. */
+const CARRE={px:92, py:64, gx:16, gy:16, c:6, r:4};
+CARRE.L=CARRE.c*CARRE.px+(CARRE.c-1)*CARRE.gx;      /* 632 */
+CARRE.H=CARRE.r*CARRE.py+(CARRE.r-1)*CARRE.gy;      /* 304 */
+CARRE.x0=Math.round((1200-CARRE.L)/2);        /* centré */
+CARRE.y0=620;                                /* au sud de la cour */
+const potCase=(n)=>({x:CARRE.x0+(n%CARRE.c)*(CARRE.px+CARRE.gx),
+y:CARRE.y0+Math.floor(n/CARRE.c)*(CARRE.py+CARRE.gy),w:CARRE.px,h:CARRE.py});
 const PR_h=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;
 n=(n^(n>>>13))*1274126177;return ((n^(n>>>16))>>>0)/4294967296;};
 function construireSolPre(){
@@ -11265,6 +11277,44 @@ lisse(B-6,B,B-6,hb);   lisse(B+4,B,B+4,hb);       /* à gauche */
 lisse(lb-6,B,lb-6,hb); lisse(lb+4,B,lb+4,hb);     /* à droite */
 for(let x=B;x<=lb;x+=36){piquet(x,B);piquet(x,hb);}
 for(let y=B;y<=hb;y+=36){piquet(B,y);piquet(lb,y);}
+/* ---------- LE POTAGER ---------- */
+const AL=14;      /* la largeur des allées autour des planches */
+for(let y=CARRE.y0-AL;y<CARRE.y0+CARRE.H+AL;y++)
+for(let x=CARRE.x0-AL;x<CARRE.x0+CARRE.L+AL;x++){
+const n=PR_h(x,y,41);
+g.fillStyle=n<.5?'#cfc0a0':(n<.8?'#c3b494':'#d8cbae');
+g.fillRect(x,y,1,1);}
+/* les traces de pas dans les allées */
+for(let k=0;k<Math.round(CARRE.L*CARRE.H/420);k++){
+const x=CARRE.x0-AL+Math.floor(PR_h(k,3,43)*(CARRE.L+2*AL));
+const y=CARRE.y0-AL+Math.floor(PR_h(k,7,45)*(CARRE.H+2*AL));
+g.fillStyle='rgba(150,136,108,.45)';g.fillRect(x,y,2,1);}
+for(let n=0;n<CARRE.c*CARRE.r;n++){
+const P=potCase(n);
+/* LA TERRE EN BILLONS : crête claire, flanc, sillon */
+for(let j=0;j<P.h;j++)for(let i=0;i<P.w;i++){
+const ond=Math.sin((P.x+i)/16)*0.9+Math.sin((P.x+i)/6)*0.3;
+const rel=((j+ond)%5+5)%5, q=PR_h(P.x+i,Math.floor(j/5),47);
+let col;
+if(rel<1)col=q<.5?'#a68d62':'#9c845a';
+else if(rel<2.4)col=q<.5?'#8d7550':'#96795a';
+else if(rel<3.6)col=q<.5?'#7d6746':'#745f40';
+else col=q<.5?'#63512f':'#6c5835';
+g.fillStyle=col;g.fillRect(P.x+i,P.y+j,1,1);}
+/* LES MOTTES RETOURNÉES */
+for(let k=0;k<Math.round(P.w*P.h/26);k++){
+const i=Math.floor(PR_h(k,n,49)*(P.w-3)), j=Math.floor(PR_h(k,n,51)*(P.h-3));
+const t=PR_h(k,n,53), w2=2+Math.floor(t*2);
+g.fillStyle=t<.5?'#9a8158':'#a3895d';g.fillRect(P.x+i,P.y+j,w2,2);
+g.fillStyle='rgba(30,22,12,.38)';g.fillRect(P.x+i,P.y+j+2,w2,1);}
+/* LES CAILLOUX REMONTÉS */
+for(let k=0;k<Math.round(P.w*P.h/90);k++){
+const i=Math.floor(PR_h(k,n,55)*(P.w-2)), j=Math.floor(PR_h(k,n,57)*(P.h-2));
+g.fillStyle='#b6a98e';g.fillRect(P.x+i,P.y+j,1,1);
+g.fillStyle='rgba(30,22,12,.3)';g.fillRect(P.x+i,P.y+j+1,1,1);}
+/* LE REBORD : la planche est un peu plus haute que l'allée */
+g.fillStyle='rgba(40,30,18,.34)';g.fillRect(P.x,P.y+P.h,P.w,1);
+g.fillStyle='rgba(255,246,220,.14)';g.fillRect(P.x,P.y,P.w,1);}
 return c;}
 const alea=s=>{const v=Math.sin(s*127.1)*43758.5453;return v-Math.floor(v);};
 /* ================= LA NOUVELLE FORÊT =================
