@@ -8,7 +8,21 @@
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="preconnect" href="https://zpfkekiavlfphialvphi.supabase.co" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<link rel="prefetch" href="jeu.html">
+<script>
+/* LE NUMÉRO DE VERSION, lu au plus tôt. Sans lui, le navigateur ressert la
+   copie de jeu.html qu'il a en cache et le joueur reste bloqué sur une
+   ancienne version sans comprendre pourquoi. */
+window.__VJEU='';
+try{fetch('version.json?t='+Date.now(),{cache:'no-store'})
+.then(function(r){return r.json();})
+.then(function(d){if(d&&d.v){window.__VJEU=d.v;
+var l=document.createElement('link');l.rel='prefetch';
+l.href='jeu.html?v='+encodeURIComponent(d.v);document.head.appendChild(l);}})
+.catch(function(){});}catch(e){}
+/* toutes les entrées dans le jeu passent par ici */
+window.allerAuJeu=function(){
+location.href='jeu.html'+(window.__VJEU?('?v='+encodeURIComponent(window.__VJEU)):'');};
+</script>
 <style id="pasDeSelection">*{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}</style>
 <script>(function(){var champ=function(t){return t&&t.closest&&t.closest('input,textarea,[contenteditable="true"]');};
@@ -515,12 +529,12 @@ const b=$('valider');b.disabled=true;const av=b.textContent;b.textContent='Un in
 try{
 if(mode==='co'){
 const {error}=await sb.auth.signInWithPassword({email,password:mdp});
-if(error)throw error;location.href='jeu.html';
+if(error)throw error;allerAuJeu();
 }else{
 const {data,error}=await sb.auth.signUp({email,password:mdp,options:{data:{nom}}});
 if(error)throw error;
 try{localStorage.setItem('bdl.nom',nom);}catch(x){}
-if(data.session){location.href='jeu.html';return;}
+if(data.session){allerAuJeu();return;}
 afficher('Compte créé. Confirme ton adresse par e-mail, puis reviens.','ok');
 basculer('co');
 }
@@ -537,9 +551,9 @@ if(!email)return afficher('Écris ton adresse, je t’envoie un lien.','err');
 const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin});
 afficher(error?('Échec : '+error.message):'Lien de réinitialisation envoyé.',error?'err':'ok');
 };
-$('invite').onclick=()=>{try{localStorage.setItem('bdl.invite','1');}catch(x){}location.href='jeu.html';};
+$('invite').onclick=()=>{try{localStorage.setItem('bdl.invite','1');}catch(x){}allerAuJeu();};
 document.addEventListener('keydown',ev=>{if(ev.key==='Enter')$('valider').click();});
-sb.auth.getSession().then(({data})=>{if(data&&data.session)location.href='jeu.html';});</script>
+sb.auth.getSession().then(({data})=>{if(data&&data.session)allerAuJeu();});</script>
 <script>const $=(i)=>document.getElementById(i);
 const cv=$('pre');
 let dir=0,PIX=0;
