@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-0830';
+var MA_VERSION='2026-10-04-0930';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11053,8 +11053,8 @@ const V=VERTS, R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
 g.fillStyle=V.ombre;g.beginPath();g.ellipse(x+1,y-1,6,2,0,0,7);g.fill();
 R(-4,-5,9,5,V.tronc);R(-4,-5,9,2,V.troncC);R(-2,-4,5,1,'#a5764a');R(-4,-2,9,2,V.troncO);
 }
-const MONDE_L=CARTE==='foret'?1500:(CARTE==='garde'?640:(CARTE==='village'?1900:1400));   /* la forêt fait 1500 ; au village, la ferme s'étend à droite */
-const MONDE_H=CARTE==='foret'?1000:600;                // hauteur
+const MONDE_L=CARTE==='foret'?1500:(CARTE==='garde'?640:1400);   /* la forêt fait 1500 ; la ferme et le port 1400 */
+const MONDE_H=CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?1200:600);   /* la ferme gagne en profondeur : 1200 au lieu de 600 */
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 const VUE_L=196, VUE_H=400;       /* la vue de référence, en points de jeu */
 const ZOOM=2;                     /* ne sert plus que de repli */
@@ -13111,11 +13111,10 @@ if(false)for(let y=0;y<MONDE_H;y+=2){const x0=Math.round(rivX2(y)+RIV_LARGE+6);
 for(let x=x0;x<MONDE_L;x+=2){const n=alea(x*0.19+y*0.47), k=Math.min(1,(x-x0)/30);
 if(n>k*1.2)continue;                                                    /* le long de la berge, on se mélange */
 R(x,y,2,2,n<0.42?'#93a562':(n<0.8?'#8c9e5b':'#a0a868'));}}
-const Z=FERME.champ2;
-for(let y=Z.y0;y<Z.y1;y+=2)for(let x=Z.x0;x<Z.x1;x+=2){const n=alea(x*0.23+y*0.51);
-R(x,y,2,2,n<0.4?'#8d7550':(n<0.75?'#9c8159':'#ab9166'));}
+/* (le champ labouré attend son nouveau plan) */
 }
 function peindreLaFermeFin(g){
+return;   /* LE SOL RESTE NU : le labour reviendra avec le nouveau plan */
 if(PLACE_SEULE)return;
 if(FORET_SEULE&&CARTE==='village')return;   /* la forêt n'a rien de la ferme */
 const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
@@ -14504,24 +14503,14 @@ DECOR=DECOR.filter(o=>!VILLE.has(o.t)&&o.x>FERME_X0+6);
 DECOR=DECOR.filter(o=>o.t==='metro'||o.t==='pont'||String(o.t).startsWith('x_fe_')||!(o.x>670&&o.x<1250&&o.y>90&&o.y<392));
 DECOR=DECOR.filter(o=>!(String(o.t).startsWith('x_fe_')&&!o.bati&&o.x<1528&&o.x>1240&&o.y>200));   /* les petits objets de l'ancienne cour, là où passe maintenant le champ */
 try{DECOR=DECOR.concat(semerLeDomaine());}catch(x){console.error(x);}
-if(CHAMPS_SEULS){DECOR=[];                                                 /* les champs seuls : aucun décor… */
-const C=graverEtalGraines();XCAL['x_fe_etal0']=C;CALQUES_DECO['x_fe_etal']=C;
-DECOR.push({t:'x_fe_etal',x:1258,y:220,v:0,bati:true,demi:50,ouvre:'etalGraines'});
+if(CHAMPS_SEULS){DECOR=[];
+/* LA FERME REPART DE ZÉRO : rien n'est posé que la gare du métro, pour
+   pouvoir entrer et sortir. Le plan, les champs, la cour et les bâtiments
+   seront redessinés sur la nouvelle carte de 1400 x 1200. Rien n'est perdu :
+   les potagers, les vaches et les poules vivent en base, pas dans ce décor. */
 const G=graverGareFerme();XCAL['x_fe_gare0']=G;CALQUES_DECO['x_fe_gare']=G;
-['#d8402f','#c0304a','#e0b840'].forEach((f,k)=>{const A=graverArbreFruitier(f,k);XCAL['x_fe_arbreB'+k]=A;});
-CALQUES_DECO['x_fe_arbreB']=XCAL['x_fe_arbreB0'];TAILLES['x_fe_arbreB']=[{w:6,h:5},{w:6,h:5},{w:6,h:5}];
-for(let x=800;x<1560;x+=84)DECOR.push({t:'x_fe_arbreB',x,y:122,v:0,gr:0});
-for(let y=150,k=0;y<450;y+=46,k++)DECOR.push({t:'x_fe_arbreB',x:1552,y,v:k%2?1:2,gr:k%2?1:2});
-DECOR.push({t:'x_fe_gare',x:846,y:214,v:0,bati:true,demi:34,ouvre:'metroFerme'});   /* la petite gare du métro, en haut à gauche */
-DECOR.push({t:'comptoir',x:1062,y:226,v:0,gr:0,demi:96});
-const ET=graverEtableFerme();XCAL['x_fe_etable0']=ET;CALQUES_DECO['x_fe_etable']=ET;TAILLES['x_fe_etable']=[{w:120,h:14}];
-DECOR.push({t:'x_fe_etable',x:872,y:348,v:0,gr:0,bati:true,demi:52,ouvre:'etable'});
-const VACHES=[[824,396,'#a8442a','broute',1],[900,422,'#8a3a22','debout',-1],[966,388,'#b85a32','debout',-1],[846,368,'#9a4026','broute',1]];
-VACHES.forEach(([x,y,robe,pose,dir],k)=>{const C=graverVacheFerme(robe,pose,dir);XCAL['x_fe_vacheB'+k]=C;if(!CALQUES_DECO['x_fe_vacheB'])CALQUES_DECO['x_fe_vacheB']=C;
-DECOR.push({t:'x_fe_vacheB',x,y,v:k,gr:0});});
-TAILLES['x_fe_vacheB']=[{w:20,h:7}];
-const VE=graverVeauFerme('#a8442a',1);XCAL['x_fe_veauB0']=VE;CALQUES_DECO['x_fe_veauB']=VE;TAILLES['x_fe_veauB']=[{w:12,h:5}];
-DECOR.push({t:'x_fe_veauB',x:884,y:404,v:0,gr:0});}   /* (sans « bati » : sinon la plaque d'action le prend pour un mur muet) */   /* le comptoir, juste à gauche de l'étal, au-dessus du champ */   /* …sauf l'étal des graines, en haut du champ */
+DECOR.push({t:'x_fe_gare',x:700,y:200,v:0,bati:true,demi:34,ouvre:'metroFerme'});
+}
 }
 /* LA FORÊT VIDE : le dernier mot. Ce filtre passe après TOUS les semis,
    quels qu'ils soient, juste avant le tri final. */
@@ -23092,7 +23081,9 @@ majPastille();
 $('porte').classList.add('parti');
 preparerMonde();
 if(ANNEXE&&e.ext){joueur.x=e.ext.x;joueur.y=e.ext.y;}
-if(CHAMPS_SEULS&&CARTE==='village'&&(joueur.x<790||joueur.x>1528||joueur.y<128||joueur.y>428)){joueur.x=1258;joueur.y=410;}
+/* LA NOUVELLE CARTE : on arrive devant la gare, et plus rien ne pousse
+   le joueur vers l'ancienne cour, qui n'existe plus. */
+if(CHAMPS_SEULS&&CARTE==='village'&&(joueur.x<40||joueur.x>MONDE_L-40||joueur.y<40||joueur.y>MONDE_H-40)){joueur.x=700;joueur.y=260;}
 if(FORET_SEULE&&CARTE==='village'){
 const deMetro=new URLSearchParams(location.search).has('arrivee');
 if(deMetro||joueur.x<FZ.x0+12||joueur.x>rivX(joueur.y)-30||joueur.y<FZ.y0+14||joueur.y>FZ.y1-10){joueur.x=214;joueur.y=372;}   /* on sort de la gare de la forêt */
