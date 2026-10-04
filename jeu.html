@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-06-0340';
+var MA_VERSION='2026-10-06-0430';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2707,10 +2707,22 @@ const brasCol=(dev)=>dev?veste:vesteT;
 const brasRaye=(dev,i)=>{const r=RAYE?(i%2===0):(MARIN?(i%4<2):false);
   return r?(dev?RAY:teint(RAY,-30)):brasCol(dev);};
 const bras=(bx,by,dev)=>{
-R(bx,by,3,11,dev?teint(peau,2):peauO);       /* le bras nu */
+/* ================= LE BRAS =================
+   C'était une colonne de 3 px presque unie. On lui donne une épaule
+   arrondie, un pli au coude et un avant-bras qui s'affine. */
+const pk=dev?teint(peau,2):peauO, pkC=dev?peauC:peau, pkO=dev?peauO:peauT;
+R(bx,by,3,11,pk);                            /* le bras nu */
+R(bx,by,1,11,pkC);R(bx+2,by,1,11,pkO);       /* le modelé : lumière à gauche */
+R(bx,by+5,3,1,pkO);                          /* le pli du coude */
 if(MANCHE>0){
 R(bx,by,3,MANCHE,brasCol(dev));
+/* L'ÉPAULE déborde d'un pixel vers l'extérieur : le bras s'emmanche au
+   lieu d'être collé au torse. */
+R(bx+(bx<0?-1:0),by,4,2,dev?vesteC:vesteO);
 R(bx,by,3,2,dev?vesteC:vesteO);
+R(bx,by,1,MANCHE,dev?vesteC:veste);          /* le côté éclairé de la manche */
+R(bx+2,by,1,MANCHE,dev?vesteO:vesteT);       /* le côté dans l'ombre */
+if(MANCHE>6)R(bx,by+5,3,1,dev?vesteO:vesteT);/* le pli du coude, sous la manche */
 if(MANCHE<11)R(bx,by+MANCHE-1,3,1,teint(brasCol(dev),-20));
 }
 /* ================= LA MAIN =================
@@ -16271,9 +16283,18 @@ for(let r=y0;r<yChev;r++){
 let w=r<y0+6?J+(SX.ventre?1:0):J;                                               /* le haut de la cuisse */
 if(r>yGen+1)w=r<yGen+6?J:J-1;                                                   /* le mollet, puis la cheville */
 if(r>yChev-3)w=J-2;
-const x0=cx-Math.floor(J/2)+Math.floor((J-w)/2);
-R(x0,r,w,1,court&&r>=yGen-2?sk:col(r));
-R(x0,r,1,1,court&&r>=yGen-2?skO:colO(r));R(x0+w-1,r,1,1,court&&r>=yGen-2?skC:colC(r));
+/* LE MOLLET BOMBÉ VERS L'EXTÉRIEUR. La jambe avait déjà ses largeurs,
+   mais toujours centrées : un mollet pousse du côté opposé à l'autre
+   jambe, c'est ce qui donne la forme de la jambe vue de face. */
+const dehors=(cx<0)?-1:1;
+const bombe=(r>yGen+1&&r<yGen+5)?1:0;
+const x0=cx-Math.floor(J/2)+Math.floor((J-w)/2)+(bombe&&dehors<0?-1:0);
+const ww=w+bombe;
+R(x0,r,ww,1,court&&r>=yGen-2?sk:col(r));
+R(x0,r,1,1,court&&r>=yGen-2?skO:colO(r));
+R(x0+ww-1,r,1,1,court&&r>=yGen-2?skC:colC(r));
+/* LA CHEVILLE, resserrée, prend l'ombre du bas de jambe */
+if(r===yChev-1)R(x0,r,ww,1,court?skO:cO);
 }
 if(!dos){R(cx-1,yGen,2,1,court?skC:cc);R(cx-2,yGen+1,1,1,court?skO:cO);}           /* le genou */
 else R(cx-2,yGen,4,1,court?skO:cO);                                               /* le creux derrière le genou */
@@ -16567,8 +16588,20 @@ R(x+(cote2<0?1:0),hy+16,2,1,peauO);                                           /*
 const tete=()=>{
 const hy=yTete;
 const cx1=-Math.floor(SX.cou/2);
-R(cx1,yCou-1,SX.cou,6,peau);R(cx1,yCou-1,SX.cou,2,peauO);R(cx1,yCou-1,1,6,peauO);R(cx1+SX.cou-1,yCou+1,1,4,peauC);
-if(!cote&&!dos){R(-1,yCou+2,1,2,peauO);R(1,yCou+2,1,2,peauO);}          /* les tendons */
+/* ================= LE COU =================
+   C'était un rectangle de peau avec une bande claire. Un cou se lit à
+   l'ombre que le menton y porte, au creux entre les clavicules et aux
+   trapèzes qui montent vers les épaules. */
+R(cx1,yCou-1,SX.cou,6,peau);
+R(cx1,yCou-1,SX.cou,1,peauT);                                   /* l'ombre portée du menton */
+R(cx1,yCou,SX.cou,1,peauO);
+R(cx1,yCou-1,1,6,peauO);
+R(cx1+SX.cou-1,yCou+1,1,4,peauC);                               /* le côté éclairé */
+if(!cote&&!dos){
+R(-1,yCou+2,1,2,peauO);R(1,yCou+2,1,2,peauO);                   /* les tendons */
+R(-1,yCou+3,2,1,peauO);R(0,yCou+4,1,1,peauT);                   /* le creux des clavicules */
+R(cx1,yCou+4,2,1,peau);R(cx1+SX.cou-2,yCou+4,2,1,peauO);}       /* les trapèzes */
+else if(dos){R(cx1+1,yCou+1,SX.cou-2,1,peauO);}                 /* la nuque, de dos */
 if(cote){
 /* LE CRÂNE DE PROFIL. Il mesurait 21 px de long pour 24 de large de face :
    plus court que large, donc aplati dès que le personnage tourne. Un crâne
