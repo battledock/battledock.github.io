@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-1900';
+var MA_VERSION='2026-10-05-2010';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -18188,6 +18188,9 @@ setTimeout(()=>{try{verifierLaFete();}catch(x){}},200);
 /* l'annonce de la réouverture, une fois par joueur */
 /* UNE SEULE ANNONCE : le chantier du personnage. */
 setTimeout(()=>{try{annonceChantier();}catch(x){}},1600);
+/* LE CHARACTER LAB : il ne s'ouvre que si on le demande explicitement.
+   Aucun bouton n'y mène, aucun joueur ne peut tomber dessus. */
+try{if(/[?&]labo=1/.test(location.search))setTimeout(()=>{try{labo();}catch(x){}},900);}catch(x){}
 setInterval(()=>{try{verifierLaFete();}catch(x){}},600000);
 $('b-vestiaire').onclick=()=>{VEST_SEL=null;try{$('tiroir').classList.remove('on');$('barre').classList.remove('on');}catch(x){}ouvrirLeVestiaire();};
 $('r-ecrire').onclick=()=>{if(bandeauOuvert())fermerBandeau();else ouvrirBandeau();};
@@ -22370,6 +22373,243 @@ ICONES.pepite='<rect x="3" y="7" width="10" height="6" fill="#a4acb3"/>'+
 '<rect x="4" y="12" width="9" height="1" fill="#5f666c"/>'+
 '<rect x="6" y="8" width="2" height="2" fill="#f2f6f8"/>';
 }
+/* ================= LE CHARACTER LAB =================
+   Un outil de diagnostic, pas une fonctionnalité de jeu. Aucun bouton n'y
+   mène : il s'ouvre par ?labo=1 dans l'URL, ou par labo() en console.
+
+   Il ne dessine AUCUN pixel de personnage lui-même : il appelle poseDe(),
+   qui renvoie le canvas déjà gravé par le moteur existant, et le pose avec
+   drawImage. Tout ce qu'il écrit en propre, ce sont des cadres et du texte.
+   Il n'y a donc aucune seconde logique de rendu à maintenir. */
+const LAB={ouvert:false,mode:'grille',coiffe:0,dir:'bas',etat:'marche',img:0,
+compare:false,points:false,auto:true,tenue:0};
+const LAB_ETATS={
+repos  :{nom:'Arrêt',     idx:(f)=>100+(f%8),  n:8,  court:false},
+marche :{nom:'Marche',    idx:(f)=>1+(f%16),   n:16, court:false},
+course :{nom:'Course',    idx:(f)=>1+(f%16),   n:16, court:true},
+elan   :{nom:'Élan',      idx:(f)=>200+(f%5),  n:5,  court:true},
+frein  :{nom:'Freinage',  idx:(f)=>220+(f%5),  n:5,  court:false},
+pivot  :{nom:'Pivot',     idx:(f)=>240+(f%5),  n:5,  court:true}};
+const LAB_DIRS=['bas','droite','haut','gauche'];
+const LAB_TENUES=[
+{nom:'Base',    ap:{}},
+{nom:'Manteau', ap:{haut:5,bas:0,souliers:0}},
+{nom:'Jupe',    ap:{haut:1,bas:2,souliers:2}},
+{nom:'Débardeur',ap:{haut:4,bas:1,souliers:1}},
+{nom:'Marin',   ap:{haut:2,bas:0,motif:2,chapeau:1}}];
+function labAp(coiffe,tenue){
+const base=Object.assign({},DEF_AP,(typeof e!=='undefined'&&e.ap)?e.ap:{});
+const t=LAB_TENUES[tenue||0]||LAB_TENUES[0];
+return Object.assign(base,{coiffe:coiffe,coupe:null},t.ap);}
+/* LE RENDU D'UNE VIGNETTE : rien d'autre qu'un appel au moteur existant */
+function labVignette(g,x,y,ap,dir,etat,f,ech){
+const E=LAB_ETATS[etat]||LAB_ETATS.marche;
+const ap2=E.court?Object.assign({},ap,{court:1}):ap;
+let c=null;
+try{c=poseDe(ap2,dir,E.idx(f));}catch(err){}
+if(!c){g.fillStyle='#8a2a2a';g.fillRect(x,y,CASE_L*ech,CASE_H*ech);return false;}
+g.imageSmoothingEnabled=false;
+g.drawImage(c,x,y,CASE_L*ech,CASE_H*ech);
+return true;}
+const CSS_LAB=`#labo{position:absolute;inset:0;background:#10140e;overflow:auto;
+-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top,0px) + 8px) 8px
+calc(env(safe-area-inset-bottom,0px) + 70px)}
+#labo *{box-sizing:border-box}
+#labo .bar{position:sticky;top:0;z-index:3;background:rgba(16,20,14,.96);
+padding:6px 0 8px;border-bottom:1px solid #2a3426}
+#labo h3{font:700 9px ui-monospace,monospace;letter-spacing:2px;color:#c9a24a;margin:8px 0 5px}
+#labo .lig{display:flex;gap:4px;flex-wrap:wrap}
+#labo button{border:0;border-radius:8px;padding:5px 9px;font:700 11px 'Baloo 2',sans-serif;
+background:rgba(255,255,255,.08);color:#a8b09a;cursor:pointer}
+#labo button.on{background:#c9a24a;color:#241c10}
+#labo .gr{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:6px}
+#labo .cel{background:#1b2318;border-radius:5px;padding:2px;position:relative}
+#labo .cel canvas{width:100%;height:auto;display:block;image-rendering:pixelated}
+#labo .et{font:700 7px ui-monospace,monospace;color:#8d9680;padding:1px 2px;letter-spacing:.5px}
+#labo .dbg{font:10px/1.5 ui-monospace,monospace;color:#8d9680;background:#161d13;
+border-radius:8px;padding:8px;margin-top:8px;white-space:pre-wrap}
+#labo .gros{display:flex;gap:6px;justify-content:center;margin-top:6px}
+#labo .gros .cel{flex:1;max-width:190px}
+#labo .fermer{position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);
+z-index:5;background:#c9a24a;color:#241c10;border-radius:10px;padding:9px 14px;
+font:700 12px 'Baloo 2';border:0}
+#labo .alerte{color:#e8947f}`;
+function labo(){
+if(!document.getElementById('cssLabo')){const st=document.createElement('style');
+st.id='cssLabo';st.textContent=CSS_LAB;document.head.appendChild(st);}
+LAB.ouvert=true;
+$('page2Fond').className='';$('page2').classList.add('on');
+$('page2Fond').innerHTML='<div id="labo"></div>'+
+'<button class="fermer" id="labFermer">Fermer le labo</button>';
+$('labFermer').onclick=()=>{LAB.ouvert=false;$('page2').classList.remove('on');};
+labRendre();}
+try{window.labo=labo;}catch(x){}
+function labBouton(lab,actif,fn){
+return '<button data-x="'+lab+'" class="'+(actif?'on':'')+'">'+lab+'</button>';}
+function labRendre(){
+const L=document.getElementById('labo');if(!L)return;
+const E=LAB_ETATS[LAB.etat];
+let h='<div class="bar">';
+h+='<div class="lig">'+['grille','detail','regression'].map(m=>
+'<button data-m="'+m+'" class="'+(LAB.mode===m?'on':'')+'">'+m+'</button>').join('')+'</div>';
+h+='<div class="lig" style="margin-top:4px">'+Object.keys(LAB_ETATS).map(k=>
+'<button data-e="'+k+'" class="'+(LAB.etat===k?'on':'')+'">'+LAB_ETATS[k].nom+'</button>').join('')+'</div>';
+h+='<div class="lig" style="margin-top:4px">'+LAB_DIRS.map(d=>
+'<button data-d="'+d+'" class="'+(LAB.dir===d?'on':'')+'">'+d+'</button>').join('')+'</div>';
+h+='<div class="lig" style="margin-top:4px">'+
+'<button data-f="-1">◀ image</button>'+
+'<button data-f="1">image ▶</button>'+
+'<button data-a="1" class="'+(LAB.auto?'on':'')+'">auto</button>'+
+'<button data-p="1" class="'+(LAB.points?'on':'')+'">points</button>'+
+'<button data-v="1">vider le cache</button>'+
+'</div>';
+h+='<div class="lig" style="margin-top:4px">'+LAB_TENUES.map((t,k)=>
+'<button data-t="'+k+'" class="'+(LAB.tenue===k?'on':'')+'">'+t.nom+'</button>').join('')+'</div>';
+h+='</div>';
+if(LAB.mode==='grille')h+=labGrille();
+else if(LAB.mode==='detail')h+=labDetail();
+else h+=labRegression();
+L.innerHTML=h;
+L.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{LAB.mode=b.dataset.m;labRendre();});
+L.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{LAB.etat=b.dataset.e;LAB.img=0;labRendre();});
+L.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{LAB.dir=b.dataset.d;labRendre();});
+L.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{LAB.tenue=+b.dataset.t;labRendre();});
+L.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{
+LAB.auto=false;LAB.img=(LAB.img+ +b.dataset.f+E.n*4)%E.n;labRendre();});
+L.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{LAB.auto=!LAB.auto;labRendre();});
+L.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{LAB.points=!LAB.points;labRendre();});
+L.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{
+/* LE TEST DE PREMIÈRE GRAVURE : on vide tout, les vignettes qui suivent
+   sont donc gravées à la volée, comme au premier déclenchement en jeu. */
+try{POSES.clear();CACHE_FIN.clear();}catch(x){}
+LAB.vide=Date.now();labRendre();});
+L.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{LAB.coiffe=+b.dataset.c;LAB.mode='detail';labRendre();});
+labPeindre();}
+/* ---------- LE MODE GRILLE : les 30 coiffures ---------- */
+function labGrille(){
+const n=(typeof COIFFES!=='undefined')?COIFFES.length:22;
+let h='<h3>'+n+' COIFFURES · '+LAB.dir+' · '+LAB_ETATS[LAB.etat].nom+'</h3><div class="gr">';
+for(let k=0;k<n;k++)
+h+='<div class="cel" data-c="'+k+'"><canvas data-coiffe="'+k+'" width="64" height="80"></canvas>'+
+'<div class="et">'+k+' '+(COIFFES[k]||'?')+'</div></div>';
+h+='</div>';
+return h;}
+/* ---------- LE MODE DÉTAIL : une coiffure, les quatre directions ---------- */
+function labDetail(){
+const E=LAB_ETATS[LAB.etat];
+let h='<h3>'+(COIFFES[LAB.coiffe]||'?')+' · image '+(LAB.img+1)+'/'+E.n+'</h3>';
+h+='<div class="gros">';
+for(const d of LAB_DIRS)
+h+='<div class="cel"><canvas data-detail="'+d+'" width="128" height="160"></canvas>'+
+'<div class="et">'+d+'</div></div>';
+h+='</div>';
+h+='<div class="dbg" id="labDbg">…</div>';
+return h;}
+/* ---------- LE MODE RÉGRESSION : les tests ciblés ---------- */
+function labRegression(){
+let h='<h3>TESTS CIBLÉS</h3><div class="dbg" id="labTests">calcul…</div>';
+h+='<h3>PROFIL CONTRE FACE · alignement du crâne</h3><div class="gros">'+
+'<div class="cel"><canvas data-aligne="bas" width="128" height="160"></canvas><div class="et">face</div></div>'+
+'<div class="cel"><canvas data-aligne="droite" width="128" height="160"></canvas><div class="et">profil</div></div>'+
+'<div class="cel"><canvas data-aligne="haut" width="128" height="160"></canvas><div class="et">dos</div></div>'+
+'</div>';
+h+='<h3>LES TRANSITIONS, IMAGE PAR IMAGE</h3>';
+for(const t of ['elan','frein','pivot']){
+h+='<div class="et">'+LAB_ETATS[t].nom+'</div><div class="gr" style="grid-template-columns:repeat(5,1fr)">';
+for(let f=0;f<5;f++)h+='<div class="cel"><canvas data-trans="'+t+'" data-f="'+f+'" width="64" height="80"></canvas></div>';
+h+='</div>';}
+return h;}
+/* ---------- LA PEINTURE : uniquement des drawImage ---------- */
+function labPeindre(){
+const L=document.getElementById('labo');if(!L||!LAB.ouvert)return;
+const E=LAB_ETATS[LAB.etat];
+const f=LAB.auto?Math.floor(Date.now()/110)%E.n:LAB.img;
+const t0=performance.now();let rates=0;
+L.querySelectorAll('canvas[data-coiffe]').forEach(cv=>{
+const g=cv.getContext('2d');g.clearRect(0,0,cv.width,cv.height);
+if(!labVignette(g,0,0,labAp(+cv.dataset.coiffe,LAB.tenue),LAB.dir,LAB.etat,f,1))rates++;});
+L.querySelectorAll('canvas[data-detail]').forEach(cv=>{
+const g=cv.getContext('2d');g.clearRect(0,0,cv.width,cv.height);
+labVignette(g,0,0,labAp(LAB.coiffe,LAB.tenue),cv.dataset.detail,LAB.etat,f,2);
+if(LAB.points)labPoints(g,2);});
+L.querySelectorAll('canvas[data-aligne]').forEach(cv=>{
+const g=cv.getContext('2d');g.clearRect(0,0,cv.width,cv.height);
+labVignette(g,0,0,labAp(LAB.coiffe,LAB.tenue),cv.dataset.aligne,LAB.etat,f,2);
+/* LES LIGNES DE RÉFÉRENCE : sommet du crâne, yeux, menton, sol */
+g.strokeStyle='rgba(201,162,74,.5)';g.lineWidth=1;g.setLineDash([3,3]);
+[{y:-81,n:'crâne'},{y:-70,n:'yeux'},{y:-58,n:'menton'},{y:0,n:'sol'}].forEach(R=>{
+const yy=Math.round((CASE_H-10+R.y)*2);
+g.beginPath();g.moveTo(0,yy);g.lineTo(cv.width,yy);g.stroke();});
+g.setLineDash([]);});
+L.querySelectorAll('canvas[data-trans]').forEach(cv=>{
+const g=cv.getContext('2d');g.clearRect(0,0,cv.width,cv.height);
+labVignette(g,0,0,labAp(LAB.coiffe,LAB.tenue),LAB.dir,cv.dataset.trans,+cv.dataset.f,1);});
+const dt=Math.round(performance.now()-t0);
+const dbg=document.getElementById('labDbg');
+if(dbg){
+const P=(typeof window!=='undefined'&&window.POSE_FIN)||null;
+let txt='animation   '+E.nom+'\nimage       '+(f+1)+'/'+E.n+
+'\nprogression '+Math.round((f+1)/E.n*100)+'%'+
+'\ndirection   '+LAB.dir+'\ncoiffure    '+LAB.coiffe+' · '+(COIFFES[LAB.coiffe]||'?')+
+'\ntenue       '+LAB_TENUES[LAB.tenue].nom+
+'\nstyle       '+(STYLE_FIN()?'pixel fin':'classique')+
+'\ntransition  '+(typeof TRANS!=='undefined'?TRANS.etat:'—')+
+'\ngravure     '+dt+' ms'+(rates?'  ⚠ '+rates+' ratées':'')+
+'\nplanches    '+(typeof POSES!=='undefined'?POSES.size:'?')+' en cache';
+if(P)txt+='\n\nPOSE   pelvis '+labXY(P.pelvis)+'   torso '+labXY(P.torso)+
+'\n       head   '+labXY(P.head)+'   menton '+labXY(P.menton)+
+'\n       mainG  '+labXY(P.handL)+'   mainD  '+labXY(P.handR)+
+'\n       piedG  '+labXY(P.footL)+'   piedD  '+labXY(P.footR)+
+'\n       vue '+P.mesures.vue+'  EP '+P.mesures.EP+'  TA '+P.mesures.TA+'  HA '+P.mesures.HA;
+dbg.textContent=txt;}
+const tests=document.getElementById('labTests');
+if(tests&&!tests.dataset.fait){tests.dataset.fait='1';
+setTimeout(()=>{tests.textContent=labTests();},30);}
+if(LAB.ouvert)requestAnimationFrame(labPeindre);}
+const labXY=(p)=>p?('('+Math.round(p.x)+','+Math.round(p.y)+')'):'—';
+/* ---------- LES TESTS AUTOMATIQUES ---------- */
+function labTests(){
+const L=[];
+const ap=labAp(LAB.coiffe,LAB.tenue);
+/* 1. toutes les coiffures se gravent, dans les quatre directions */
+let casse=0, total=0;
+for(let k=0;k<COIFFES.length;k++)for(const d of LAB_DIRS){
+total++;try{if(!poseDe(labAp(k,0),d,1))casse++;}catch(x){casse++;}}
+L.push((casse?'⚠ ':'✓ ')+'coiffures × directions : '+(total-casse)+'/'+total+' gravées');
+/* 2. la hauteur du personnage ne change pas selon la direction */
+const haut=(d)=>{try{const c=poseDe(ap,d,0);
+const g=c.getContext('2d',{willReadFrequently:true});
+const im=g.getImageData(0,0,c.width,c.height).data;
+for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++)
+if(im[(y*c.width+x)*4+3]>200)return y;return -1;}catch(x){return -1;}};
+const hs=LAB_DIRS.map(haut);
+const ecart=Math.max.apply(null,hs)-Math.min.apply(null,hs);
+L.push((ecart>2?'⚠ ':'✓ ')+'sommet du crâne : écart de '+ecart+' px entre les 4 directions');
+/* 3. la largeur, qui révèle le crâne trop étroit de profil */
+const larg=(d)=>{try{const c=poseDe(ap,d,0);
+const g=c.getContext('2d',{willReadFrequently:true});
+const im=g.getImageData(0,0,c.width,40).data;
+let a=1e9,b=-1;
+for(let y=0;y<40;y++)for(let x=0;x<c.width;x++)
+if(im[(y*c.width+x)*4+3]>200){if(x<a)a=x;if(x>b)b=x;}
+return b<0?0:Math.round((b-a)/2);}catch(x){return 0;}};
+const lf=larg('bas'), lp=larg('droite'), ld=larg('haut');
+L.push((lp<lf-1?'⚠ ':'✓ ')+'crâne : face '+lf+' px · profil '+lp+' px · dos '+ld+' px'+
+(lp<lf-1?'  (le profil devrait être le plus LONG)':''));
+/* 4. le pilotage par la pose donne le même rendu que l'ancien chemin */
+try{const r=comparerPose(ap,'bas',6);
+L.push((r.differents?'⚠ ':'✓ ')+'pose contre ancien chemin : '+r.differents+' pixel(s) d\u2019écart ('+r.verdict+')');}
+catch(x){L.push('— comparaison indisponible : '+x);}
+/* 5. les transitions se gravent toutes */
+let tc=0;
+for(const t of ['elan','frein','pivot'])for(let f=0;f<5;f++){
+try{if(!poseDe(ap,LAB.dir,LAB_ETATS[t].idx(f)))tc++;}catch(x){tc++;}}
+L.push((tc?'⚠ ':'✓ ')+'transitions : '+(15-tc)+'/15 poses gravées');
+/* 6. le coût d'une première gravure, cache vidé */
+try{POSES.clear();const t0=performance.now();poseDe(ap,'bas',200);
+L.push('⏱ première gravure d\u2019une transition : '+Math.round(performance.now()-t0)+' ms');}catch(x){}
+return L.join('\n');}
+
 const PRIX_COMPTOIR={oeufs:600,oeufdor:25000,pain:180,confiture:400,conserve:320,soupe:380,tarte:650,
 ambre:35,pepite:60,lingotFer:52,lingotCuivre:34,gemme:120,or:70,argent:36,
 fer:14,cuivre:8,charbon:9,brique:30,resine:10,pierre:5,champignons:4,plumes:4,
