@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-1900';
+var MA_VERSION='2026-10-04-1930';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -15303,10 +15303,19 @@ if(!potOuverte(i))continue;
 const Q=POT_XY(i), st=potStade(P);
 if(Q.x-camX>VW+30||Q.x+Q.PW-camX<-30||Q.y-camY>VH+40||Q.y+Q.PH-camY<-40)continue;
 pousses.push({y:Q.y+Q.PH,f:()=>{try{
-const g2=ctx, n=3;
-for(let r=0;r<2;r++)for(let c=0;c<3;c++){
-const px=Q.x+Q.PW*(0.22+c*0.28)-camX, py=Q.y+Q.PH*(0.42+r*0.34)-camY;
-PLANTES[P.cult](g2,px,py,st);}
+const g2=ctx;
+/* QUATRE RANGS DE TROIS, CALÉS DANS LES SILLONS. Les plants ne flottent
+   plus sur la terre : chacun est posé dans un creux, avec une motte
+   retournée à son pied. */
+for(let r=0;r<4;r++)for(let c=0;c<3;c++){
+const px=Q.x+Math.round(Q.PW*((c+0.5)/3));
+let py=Q.y+Math.round(Q.PH*((r+0.62)/4));
+const ond=Math.sin(px/16)*0.9+Math.sin(px/6)*0.3;
+py=Q.y+Math.round(Math.floor((py-Q.y)/5)*5+3-ond);   /* le creux du billon */
+const ex=px-camX, ey=py-camY;
+g2.fillStyle='#9a8158';g2.fillRect(ex-2,ey-1,5,2);            /* la motte */
+g2.fillStyle='rgba(30,22,12,.38)';g2.fillRect(ex-2,ey+1,5,1);
+PLANTES[P.cult](g2,ex,ey,st);}
 }catch(x){}}});}
 const pile=acteursF.concat(pousses).concat(DECOR.map(o=>({y:o.y,f:()=>{
 try{dessinerX(ctx,o,o.x-camX,o.y-camY);}catch(x){}}})));
