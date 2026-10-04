@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-06-0625';
+var MA_VERSION='2026-10-06-0710';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16139,6 +16139,43 @@ else if(typeG==='gouge'){if(fr>0.62){const t=(1-fr)/0.38;arcG=-0.5*doux(t);pench
 else if(fr>0.42){const t=(0.62-fr)/0.2;arcG=-0.5+entreRap(t)*1.1;pencheG=1.2+t*0.8;tasseG=0.6;}
 else{const t=1-fr/0.42;arcG=0.6*(1-sortRap(t));pencheG=2*(1-sortRap(t));tasseG=0.6*(1-sortRap(t));}}
 else if(typeG==='tamis'){arcG=Math.sin((1-fr)*Math.PI*6)*0.3;pencheG=3.2;tasseG=2.6;}
+/* ================= QUATRE GESTES DE PLUS =================
+   Semer, arroser, ramasser et lancer passaient tous par l'animation de
+   pioche. Chacun a maintenant sa courbe : la pioche frappe, semer balaie,
+   arroser se penche et tient, ramasser plonge et se relève, lancer part
+   en arrière avant de fouetter vers l'avant.
+
+   fr va de 1 (début du geste) à 0 (fin). */
+else if(typeG==='houe'){
+/* LA HOUE : on lève haut, on abat court, on racle vers soi. Plus ample
+   que la pioche et plus basse. */
+if(fr>0.6){const t=(1-fr)/0.4;arcG=-1.7*doux(t);pencheG=-doux(t)*1.4;tasseG=doux(t)*1.2;phaseG=1;}
+else if(fr>0.4){const t=(0.6-fr)/0.2;arcG=-1.7+entreRap(t)*3.1;pencheG=-1.4+t*4.4;tasseG=1.2-t*2;phaseG=2;}
+else{const t=1-fr/0.4;arcG=1.4*(1-sortRap(t))-0.5*doux(t);pencheG=3*(1-sortRap(t));tasseG=-0.8*(1-sortRap(t));phaseG=3;}}
+else if(typeG==='semer'){
+/* LE SEMIS : le bras balaie de l'intérieur vers l'extérieur, le buste
+   accompagne à peine. Un geste large et sans effort. */
+if(fr>0.6){const t=(1-fr)/0.4;arcG=-0.8*doux(t);pencheG=doux(t)*0.8;}
+else if(fr>0.25){const t=(0.6-fr)/0.35;arcG=-0.8+entreRap(t)*2.2;pencheG=0.8+t*0.4;tasseG=t*0.4;}
+else{const t=1-fr/0.25;arcG=1.4*(1-sortRap(t));pencheG=1.2*(1-sortRap(t));tasseG=0.4*(1-sortRap(t));}}
+else if(typeG==='arrose'){
+/* L'ARROSAGE : on se penche, on tient la pose, on se redresse. Le bras
+   descend et reste bas — c'est l'immobilité qui fait lire l'arrosoir. */
+if(fr>0.75){const t=(1-fr)/0.25;pencheG=doux(t)*2.2;arcG=0.9*doux(t);tasseG=doux(t)*0.8;}
+else if(fr>0.25){pencheG=2.2;arcG=0.9+Math.sin((0.75-fr)*Math.PI*4)*0.12;tasseG=0.8;}
+else{const t=1-fr/0.25;pencheG=2.2*(1-sortRap(t));arcG=0.9*(1-sortRap(t));tasseG=0.8*(1-sortRap(t));}}
+else if(typeG==='ramasse'){
+/* RAMASSER : on plonge vite, on saisit, on se relève lentement en
+   serrant le bras contre soi. */
+if(fr>0.55){const t=(1-fr)/0.45;pencheG=entreRap(t)*4;tasseG=entreRap(t)*3;arcG=1.5*entreRap(t);}
+else if(fr>0.38){pencheG=4;tasseG=3;arcG=1.5;}
+else{const t=1-fr/0.38;pencheG=4*(1-doux(t));tasseG=3*(1-doux(t));arcG=1.5*(1-doux(t))-0.3*doux(t);}}
+else if(typeG==='lance'){
+/* LE LANCER : l'anticipation part en arrière, puis le bras fouette vers
+   l'avant et le buste suit. C'est le geste de la canne à pêche. */
+if(fr>0.6){const t=(1-fr)/0.4;arcG=-2.2*doux(t);pencheG=-doux(t)*2.4;tasseG=doux(t)*0.6;phaseG=1;}
+else if(fr>0.42){const t=(0.6-fr)/0.18;arcG=-2.2+entreRap(t)*4;pencheG=-2.4+t*5;tasseG=0.6-t*1.2;phaseG=2;}
+else{const t=1-fr/0.42;arcG=1.8*(1-sortRap(t));pencheG=2.6*(1-sortRap(t));tasseG=-0.6*(1-sortRap(t));phaseG=3;}}
 else{if(fr>0.58){const t=(1-fr)/0.42;arcG=-1.45*doux(t);pencheG=-doux(t)*1.6;tasseG=doux(t)*1.2;phaseG=1;}
 else if(fr>0.42){const t=(0.58-fr)/0.16;arcG=-1.45+entreRap(t)*2.75;pencheG=-1.6+t*4.4;tasseG=1.2-t*2.4;phaseG=2;}
 else{const t=1-fr/0.42;arcG=1.3*(1-sortRap(t));pencheG=2.8*(1-sortRap(t));tasseG=-1.2*(1-sortRap(t));phaseG=3;}}
@@ -20337,6 +20374,11 @@ if(!L||PECHE)return;
 PECHE={etat:'lance',lieu:L.lieu,t0:performance.now(),bx:L.bx,by:L.by,px:joueur.x,py:joueur.y,
 cote:joueur.dir==='gauche'?-1:1,esp:null,cm:0};
 PECHE.mordA=PECHE.t0+600+2000+Math.random()*4000;
+/* LE LANCER : le bras part en arrière puis fouette vers l'avant. */
+try{GESTE={t:1,pourMoi:true,cible:null,impact:false,type:'lance'};
+const t0L=Date.now();
+const idL=setInterval(()=>{GESTE.t=Math.max(0,1-(Date.now()-t0L)/520);
+if(GESTE.t<=0){clearInterval(idL);GESTE={t:0};}},40);}catch(x){}
 jouer('cueille');vibrer(8);majAction();
 const P=PECHE;
 const d=await appelRPC('pecher_touche',{p_joueur:e.id,p_lieu:L.lieu});
@@ -25232,7 +25274,8 @@ if(d.ticket){e.cos=e.cos||{};e.cos.costume_epouvantail=true;setTimeout(()=>ticke
 else if(d&&d.erreur==='sac_plein'){texteVolant(joueur.x,joueur.y-58,'Inventaire plein : va vendre à la boutique','#ffd0a0');try{bulle&&motOuverture('Ton inventaire est plein.');}catch(x){}}
 else potRefus(d);}
 else if(VIVACES.includes(P.cult))await potArracher(i);
-else if(!P.eau&&J.arrosoir){POT_ARROSE=Date.now();vibrer(12);const d=await appelRPC('pot_arroser',{p_joueur:e.id,p_i:i});if(!potAdopter(d))potRefus(d);}
+else if(!P.eau&&J.arrosoir){POT_ARROSE=Date.now();vibrer(12);
+potGeste('arrose',900);        /* on se penche et on tient la pose */const d=await appelRPC('pot_arroser',{p_joueur:e.id,p_i:i});if(!potAdopter(d))potRefus(d);}
 else texteVolant(joueur.x,joueur.y-56,J.arrosoir||P.eau?'Ça pousse… patience':'Un arrosoir irait deux fois plus vite','#fff3d0');
 }finally{POT_OCCUPE=false;try{majAction();}catch(x){}}}
 $('action').addEventListener('click',(ev)=>{const i=potProche();if(i===null||!POT.charge)return;ev.stopImmediatePropagation();ev.preventDefault();potAgir(i);},true);
@@ -25300,7 +25343,7 @@ box.querySelectorAll('.gn').forEach(b=>b.onclick=async()=>{
 const k=b.dataset.k, nom=POT_CULT[k][0];
 if(!potLibre(k)){box.remove();texteVolant(joueur.x,joueur.y-56,nom+' : à débloquer au Grainetier','#ffe8a0');return;}
 if((e.euros||0)<POT_CULT[k][1]){texteVolant(joueur.x,joueur.y-56,'Pas assez d’argent','#ffe8a0');return;}
-box.remove();if(POT_OCCUPE)return;POT_OCCUPE=true;potGeste('cueille',600);vibrer(10);
+box.remove();if(POT_OCCUPE)return;POT_OCCUPE=true;potGeste('semer',600);vibrer(10);
 try{const d=await appelRPC('pot_semer',{p_joueur:e.id,p_i:i,p_cult:k});
 if(!potAdopter(d))potRefus(d);else texteVolant(joueur.x,joueur.y-56,nom+' semé','#dff0c8');}
 finally{POT_OCCUPE=false;majAction();}});
@@ -27469,7 +27512,9 @@ $('poulSortir').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on')
 const bulle=(t)=>{const b=$('poulBulle');b.textContent=t;b.style.opacity=1;clearTimeout(b._t);b._t=setTimeout(()=>b.style.opacity=0,2600);};
 brancherDepots(()=>ouvrirLePoulailler(),bulle);
 $('page2Fond').querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{const a=b.dataset.a;if(b.classList.contains('pris')){if(a==='poulailler'||a==='agrandir')motOuverture('Livre d’abord tous les matériaux au chantier.');return;}b.disabled=true;let d;
-if(a==='ramasser'){d=await appelRPC('poul_ramasser',{p_joueur:e.id});
+if(a==='ramasser'){
+try{GESTE={t:1,pourMoi:true,cible:null,impact:false,type:'ramasse'};vibrer(14);}catch(x){}
+d=await appelRPC('poul_ramasser',{p_joueur:e.id});
 if(d&&!d.erreur){
 if(d.sac)e.sac=d.sac;
 poulAdopter(d.etat);try{lireSacServeur();majPastille();}catch(x){}sauver();
