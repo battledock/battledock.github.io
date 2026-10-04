@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-06-0130';
+var MA_VERSION='2026-10-06-0220';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -15767,7 +15767,11 @@ const clePose=(ap)=>{
 let c=STYLE_FIN()?'fin|':'';for(const k in ap){const v=ap[k];c+=(v&&typeof v==='object'?JSON.stringify(v):v)+',';}
 return c;
 };
-const STYLE_FIN=()=>!(typeof REG!=='undefined'&&REG.styleFin===false);   /* le pixel fin, pour tous (le classique reste au choix) */
+/* LE PIXEL FIN POUR TOUT LE MONDE. Le classique n'est plus proposé : un
+   seul dessin à soigner, et tous les joueurs voient la même chose. Le code
+   de spriteClassique reste en place comme filet de sécurité, mais rien ne
+   l'appelle plus. */
+const STYLE_FIN=()=>true;
 const PLAFOND_PLANCHES=24;
 /* L'APERÇU D'UNE BOUTIQUE : on retire le déguisement, sinon l'épouvantail
    s'affiche à la place des vêtements qu'on essaie. */
@@ -16688,6 +16692,32 @@ const cf=CF[coiffe]||CF['courts'];
    avec son départ sur le crâne, sa largeur, sa longueur et sa pente. C'est
    leur réunion qui fait la silhouette, et les creux entre elles qui donnent
    l'épaisseur. La raie décentre l'ensemble : rien n'est symétrique. */
+/* ================= LE CARACTÈRE D'UNE COUPE =================
+   Jusqu'ici toutes les coupes étaient dessinées avec les mêmes neuf mèches
+   régulières : seules leur longueur et leur volume changeaient. Résultat,
+   elles se ressemblaient. Chacune reçoit maintenant sa densité, son
+   désordre, l'épaisseur de ses mèches et sa brillance.
+
+   dens    : combien de mèches (plus = plus fourni, mèches plus fines)
+   desordre: de combien chaque mèche s'écarte de sa place théorique
+   ep      : l'épaisseur de base d'une mèche
+   lustre  : l'intensité du reflet (une chevelure saine brille, pas une rase)
+   pointe  : combien la mèche s'affine vers son extrémité */
+const CARACTERE={
+rase    :{dens:0.6,desordre:0,   ep:2,lustre:0.2,pointe:0.3},
+degrade :{dens:0.8,desordre:0.3, ep:2,lustre:0.3,pointe:0.4},
+meche   :{dens:1.0,desordre:0.5, ep:3,lustre:0.9,pointe:0.55},
+frange  :{dens:1.3,desordre:0.25,ep:3,lustre:1.0,pointe:0.45},
+raie    :{dens:1.1,desordre:0.4, ep:3,lustre:1.1,pointe:0.6},
+tire    :{dens:1.2,desordre:0.15,ep:2,lustre:1.3,pointe:0.5},
+boucle  :{dens:1.5,desordre:1.1, ep:3,lustre:0.7,pointe:0.35},
+afro    :{dens:1.8,desordre:1.4, ep:3,lustre:0.4,pointe:0.2},
+dreads  :{dens:0.7,desordre:0.6, ep:4,lustre:0.3,pointe:0.15},
+banane  :{dens:1.2,desordre:0.2, ep:3,lustre:1.4,pointe:0.5},
+crete   :{dens:0.9,desordre:0.8, ep:3,lustre:0.8,pointe:0.7},
+hirsute :{dens:1.3,desordre:1.6, ep:2,lustre:0.5,pointe:0.7},
+crane   :{dens:0,  desordre:0,   ep:1,lustre:0,  pointe:0}};
+const CAR=CARACTERE[cf.fr]||CARACTERE.meche;
 const RAIE=(coiffe==='carré'||coiffe==='mi-longs'||coiffe==='longs'
 ||coiffe==='très longs'||coiffe==='ondulés')?-3:(cf.fr==='raie'?-2:-4);
 /* LE BORD DE LA CHEVELURE.
@@ -16708,18 +16738,22 @@ const L=[], lg=cf.lg, vol=cf.vol;
    une longue descend sous la mâchoire */
 const base=lg?Math.min(lg+6,26):(cf.fr==='rase'||cf.fr==='degrade'?4:8);
 /* neuf mèches réparties sur la largeur du crâne, décalées par la raie */
-for(let i=0;i<9;i++){
-const x=-11+i*2.6;
+const NM=Math.max(5,Math.round(9*CAR.dens));
+for(let i=0;i<NM;i++){
+const x=-11+i*(22/(NM-1));
 const vers=(x-RAIE)/12;                       /* l'écart à la raie, en -1..1 */
 /* LE DÉPART DE LA MÈCHE : au centre elle part du sommet, sur les côtés
    elle part plus bas — sinon la chevelure se hérisse en pointes. */
 const dep=Math.round(-vol*(1-Math.abs(vers)*0.55));
 /* les mèches du côté le plus fourni sont plus longues */
 const plus=vers<0?1.18:0.9;
-L.push({x:Math.round(x),y:dep,
+/* le désordre : chaque mèche s'écarte un peu de sa place, toujours de la
+   même façon — c'est ce qui donne du naturel sans faire du bruit. */
+const ecart=Math.round((alea(i*9.1)-0.5)*2*CAR.desordre);
+L.push({x:Math.round(x)+ecart,y:dep+Math.round((alea(i*4.3)-0.5)*CAR.desordre),
 lo:Math.max(3,Math.round(base*plus*(0.82+alea(i*3.7)*0.3))),
-la:2+(i%3===1?1:0)+(cf.fr==='afro'||cf.fr==='hirsute'?1:0),
-p:vers*0.16,
+la:Math.max(1,CAR.ep-(i%3===1?0:1)+(CAR.dens>1.4?1:0)),
+p:vers*0.16+(alea(i*6.7)-0.5)*0.1*CAR.desordre,
 ond:cf.ond||0});}
 return L;};
 
@@ -16889,11 +16923,20 @@ if(xx<b0||xx+w>b1)continue;}
    est coupé. L'ancienne condition laissait passer les mèches qui piquaient
    par-dessus le nez. */
 if(yy>hy+5&&yy<hy+23&&xx+w>craneC(yy,hy).d-4)continue;
+/* de profil, la lumière vient de l'avant-haut : l'occiput est le plus sombre */
 const k=t/lo;
-let col=k<0.18?H5.cc:(k<0.45?H5.c:(k<0.8?H5.b:H5.o));
-if(xx<-7)col=k<0.4?H5.b:H5.oo;                        /* l'arrière, dans l'ombre */
+const lat=(-xx+4)/16;
+let lum=(1-k)*0.72+(0.55-lat)*0.6;
+if(((xx+yy)&1)===0)lum+=0.06;
+let col=lum>1.0?H5.cc:(lum>0.78?H5.c:(lum>0.48?H5.b:(lum>0.26?H5.o:H5.oo)));
 R(xx,yy,w,1,col);
-if(t>1&&t<lo-1)R(xx+w,yy,1,1,H5.oo);}}
+if(t>1&&t<lo-1)R(xx+w,yy,1,1,H5.oo);
+if(t===lo-1&&CAR.pointe>0.4)R(xx,yy,Math.max(1,w-1),1,H5.c);}}
+/* le lustre, de profil : au-dessus de l'oreille, là où le crâne tourne */
+if(CAR.lustre>0.35)for(let x5=-6;x5<5;x5++){
+if(((x5+40)%3)===0)continue;
+const yy5=top+1+Math.round(Math.pow(Math.abs(x5+1)/7,2)*2);
+R(x5,yy5,1,1,CAR.lustre>0.95?H5.cc:H5.c);}
 /* la racine sur le front, et la patte devant l'oreille */
 for(let r=hy+4;r<hy+7;r++)R(craneC(r,hy).d-3,r,3,1,T(peau,-13));}
 if(cf.fr==='degrade')R(-12,hy+15,6,5,T(peau,-12));
@@ -16958,11 +17001,20 @@ const yy=dep+t;
 /* le haut du crâne borne la mèche ; sous la nuque, elle est libre */
 if(yy<hy+22){const bd=bordDos(yy);
 if(bd<=0||xx<-bd||xx+w>bd)continue;}
+/* la même règle de couleur que de face : deux axes, plus le tramage */
 const k=t/lo;
-let col=k<0.16?H5.cc:(k<0.42?H5.c:(k<0.78?H5.b:H5.o));
-if(xx>3)col=k<0.3?H5.b:(k<0.7?H5.o:H5.oo);
+const lat=xx/13;
+let lum=(1-k)*0.74+(0.5-lat)*0.5;
+if(((xx+yy)&1)===0)lum+=0.06;
+let col=lum>1.0?H5.cc:(lum>0.78?H5.c:(lum>0.48?H5.b:(lum>0.26?H5.o:H5.oo)));
 R(xx,yy,w,1,col);
-if(t>1&&t<lo-1)R(xx+w,yy,1,1,H5.oo);}}}
+if(t>1&&t<lo-1)R(xx+w,yy,1,1,H5.oo);
+if(t===lo-1&&CAR.pointe>0.4)R(xx,yy,Math.max(1,w-1),1,H5.c);}}
+/* le lustre, de dos : il court sur le haut du crâne */
+if(CAR.lustre>0.35)for(let x4=-7;x4<8;x4++){
+if(((x4+40)%3)===0)continue;
+const yy4=top+1+Math.round(Math.pow(Math.abs(x4)/8,2)*2);
+R(x4,yy4,1,1,CAR.lustre>0.95?H5.cc:H5.c);}}
 /* LA LIGNE DE NUQUE : une ombre là où les cheveux s'arrêtent sur le cou.
    Sans elle, la chevelure et la peau se touchent sans transition. */
 if(cf.fr!=='rase'&&cf.fr!=='crane'&&L<7)
@@ -17012,11 +17064,32 @@ const bord=bordCheveux(yy,hy,craneF(yy<hy?hy:yy,hy),vol);
 if(bord<=0)continue;
 if(xx-dx<-bord||xx-dx+w>bord)continue;
 if(yy>hy+5&&Math.abs(xx-dx)<craneF(yy,hy)-1)continue;  /* jamais sur le visage */
+/* LA COULEUR : la hauteur dans la mèche ET l'écart au centre du crâne.
+   La lumière vient du haut-gauche, donc le côté droit s'assombrit. */
 const k=t/M.lo;
-let col=k<0.18?H5.cc:(k<0.45?H5.c:(k<0.8?H5.b:H5.o));
-if(xx-dx>2)col=k<0.3?H5.b:(k<0.7?H5.o:H5.oo);          /* le côté à l'ombre */
+const lat=(xx-dx)/13;
+let lum=(1-k)*0.78+(0.5-lat)*0.55;
+/* le tramage sur la frontière entre deux tons : un damier d'un pixel,
+   qui supprime la marche d'escalier sans ajouter de couleur */
+if(((xx+yy)&1)===0)lum+=0.06;
+let col=lum>1.02?H5.cc:(lum>0.80?H5.c:(lum>0.50?H5.b:(lum>0.28?H5.o:H5.oo)));
 R(xx,yy,w,1,col);
-if(t>1&&t<M.lo-1)R(xx+w,yy,1,1,H5.oo);}}              /* le creux entre deux mèches */
+if(t>1&&t<M.lo-1)R(xx+w,yy,1,1,H5.oo);                /* le creux entre deux mèches */
+/* LA POINTE : le dernier pixel s'éclaircit, comme un cheveu qui attrape
+   la lumière au bout. */
+if(t===M.lo-1&&CAR.pointe>0.4)R(xx,yy,Math.max(1,w-1),1,H5.c);}}
+/* LE LUSTRE : un bandeau de lumière qui épouse la rondeur du crâne et
+   s'interrompt entre les mèches. C'est lui qui fait la différence entre
+   des cheveux et une perruque de feutre. */
+if(CAR.lustre>0.35){
+const yL=top+1+Math.round(vol*0.2);
+for(let x3=-9;x3<6;x3++){
+if(((x3+40)%3)===0)continue;                   /* il n'est jamais continu */
+const courbe=Math.round(Math.pow(Math.abs(x3+2)/8,2)*2.2);
+const yy3=yL+courbe;
+if(Math.abs(x3)>craneF(yy3<hy?hy:yy3,hy))continue;
+R(x3+dx,yy3,1,1,CAR.lustre>0.95?H5.cc:H5.c);
+if(CAR.lustre>1.1&&((x3+40)%5)===0)R(x3+dx,yy3+1,1,1,H5.c);}}
 /* LA LIGNE DE RACINE : les golfes aux tempes, jamais droite */
 const GOLFE=[0,0,1,2,2,1,0,0,0,1,2,2,1,0];
 for(let x2=0;x2<14;x2++){
@@ -23872,8 +23945,9 @@ choix('perf',[['auto','Automatique','le jeu décide, et s’adapte'],
 ['fluide','Fluidité','image plus douce, décor allégé, batterie ménagée'],
 ['beaute','Beauté','image nette, tout le décor, plus gourmand']],perfChoisie());}
 else if(v==='perso'){titre='Le personnage';
-corps='<div class="mot">Le pixel fin : deux fois plus de détail, huit directions, des gestes et des tenues vivantes. Le classique : l’ancien dessin, plus léger pour les vieux téléphones.</div>'+
-choix('styleFin',[['true','Pixel fin',''],['false','Classique','']],STYLE_FIN()?'true':'false');}
+corps='<div class="mot">Ton personnage est dessiné au pixel fin : '+
+'deux fois plus de détail, huit directions, des gestes, des tenues et '+
+'des coiffures animées. C\u2019est désormais le seul style.</div>';}
 else if(v==='ciel'){titre='Jour et nuit';
 corps='<div class="mot">Le jeu suit l’heure de Marseille : doré le matin, orange à 19 h, bleu nuit après 21 h. En plein jour, il fait clair en permanence et les lampes restent éteintes.</div>'+
 choix('ciel',[['heure','Suivre l’heure',''],['jour','Plein jour','']],REG.ciel);}
