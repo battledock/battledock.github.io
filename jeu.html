@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-1245';
+var MA_VERSION='2026-10-04-1300';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -14694,10 +14694,9 @@ if(CARTE==='foret'){
   return false;}
 if(CARTE==='extramar')return bloqueExtramar(x,y);
 if(CHAMPS_SEULS&&CARTE==='village'){
-/* LA FERME EST NUE : seuls les bords du monde retiennent. On ne consulte
-   pas la grille des objets — elle gardait en mémoire l'ancien décor, et
-   barrait la route contre des bâtiments qui n'existent plus. */
-return x<BORD||x>MONDE_L-BORD||y<BORD+14||y>MONDE_H-BORD;
+/* LA FERME EST NUE : seuls les bords du monde retiennent. */
+const nx=+x, ny=+y;
+return !(nx>BORD&&nx<MONDE_L-BORD&&ny>BORD+14&&ny<MONDE_H-BORD);
 }
 if(CARTE==='garde')return bloqueGarde(x,y);
 if(dansLisiere(x,y))return true;                     /* la forêt du pourtour */
@@ -17800,7 +17799,7 @@ e.outils.pioche=true;e.outils.hache=true;
 if(typeof e.epee!=='number')e.epee=0;
 e.coffreOuvert=true;
 if(!e.casses)e.casses=[];
-joueur.x=e.x||joueur.x;joueur.y=e.y||joueur.y;
+joueur.x=+(e.x||joueur.x)||0;joueur.y=+(e.y||joueur.y)||0;
 sauver();
 }
 }catch(x){}
@@ -22972,7 +22971,7 @@ if(SB_PRET&&sb){
 try{const {data}=await sb.auth.getSession();session=data&&data.session;}catch(x){}
 }
 if(!session||!session.user){
-if(e.id&&e.pseudo){etape(4);joueur.x=e.x||joueur.x;joueur.y=e.y||joueur.y;return entrer();}
+if(e.id&&e.pseudo){etape(4);joueur.x=+(e.x||joueur.x)||0;joueur.y=+(e.y||joueur.y)||0;return entrer();}
 leverLeVoile();                            /* il faut créer un compte : on montre la porte */
 $('pCarte').style.display='';
 $('p-ok').onclick=()=>{location.href='index.html';};
@@ -23008,7 +23007,7 @@ try{await envoyerSauvegarde(true);}catch(x){}
 lireMesNiveaux();             /* et les niveaux qu'on a vraiment payés */
 etape(4);
 await chargerLaCarte();       /* et la carte aussi */
-joueur.x=e.x;joueur.y=e.y;
+joueur.x=+e.x||0;joueur.y=+e.y||0;
 await monterEnLigne(true);
 entrer();
 }
@@ -23157,13 +23156,16 @@ setTimeout(montrerLAnnonce,1200);
 majPastille();
 $('porte').classList.add('parti');
 preparerMonde();
-if(ANNEXE&&e.ext){joueur.x=e.ext.x;joueur.y=e.ext.y;}
+if(ANNEXE&&e.ext){joueur.x=+e.ext.x||0;joueur.y=+e.ext.y||0;}
 /* LA NOUVELLE CARTE : on arrive devant la gare, et plus rien ne pousse
    le joueur vers l'ancienne cour, qui n'existe plus. */
 /* UNE SEULE FOIS, AU CHARGEMENT : si la position vient de l'ancienne carte,
    on revient au centre. Jamais dans la boucle de dessin, sinon on reste
    cloué sur place. */
-if(CHAMPS_SEULS&&CARTE==='village'&&(joueur.x<BORD+6||joueur.x>MONDE_L-BORD-6||joueur.y<BORD+20||joueur.y>MONDE_H-BORD-6)){
+/* LA POSITION EST UN NOMBRE. Elle revenait de la sauvegarde sous forme de
+   texte : « 600 » + 12 donnait « 60012 », et la collision barrait tout. */
+joueur.x=+joueur.x||0;joueur.y=+joueur.y||0;
+if(CHAMPS_SEULS&&CARTE==='village'&&!(joueur.x>BORD+6&&joueur.x<MONDE_L-BORD-6&&joueur.y>BORD+20&&joueur.y<MONDE_H-BORD-6)){
 joueur.x=600;joueur.y=600;e.x=600;e.y=600;e.ext=null;try{sauver();}catch(x){}}
 if(FORET_SEULE&&CARTE==='village'){
 const deMetro=new URLSearchParams(location.search).has('arrivee');
