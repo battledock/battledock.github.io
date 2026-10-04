@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-1550';
+var MA_VERSION='2026-10-05-1640';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2353,6 +2353,7 @@ const n=parseInt(c.slice(1),16);
 const f=v=>Math.max(0,Math.min(255,v+k));
 return '#'+((1<<24)+(f((n>>16)&255)<<16)+(f((n>>8)&255)<<8)+f(n&255)).toString(16).slice(1);
 };
+let TRANS_FIN=null;
 const CACHE_FIN=new Map();
 function sprite(g,x,y,ap0,dir,pas,bouge){
 let fin=false;try{fin=STYLE_FIN();}catch(x){fin=false;}          /* (au tout début du chargement, on reste classique) */
@@ -15773,8 +15774,20 @@ c.width=CASE_L*D;c.height=CASE_H*D;
 const g=c.getContext('2d');
 g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
 const sauve=GESTE;GESTE={t:0};
-if(STYLE_FIN()){g.setTransform(1,0,0,1,0,0);const cl=i>=300, j=cl?i-300:i, repos=j>=100;
-g.drawImage(graverFin(ap,dir,repos?0:(j?(j-1)/2:0),!repos&&j>0,repos?j-100:0,cl),0,0,c.width,c.height);CLIGNE_FIN=false;}
+if(STYLE_FIN()){g.setTransform(1,0,0,1,0,0);
+const cl=i>=300, j=cl?i-300:i;
+if(j>=200&&j<260){
+/* UNE TRANSITION : élan, freinage ou pivot, sur cinq étapes */
+const type=j<220?'elan':(j<240?'frein':'pivot');
+const et=(j-(type==='elan'?200:(type==='frein'?220:240)))/4;
+TRANS_FIN={type:type,k:Math.max(0,Math.min(1,et))};
+const enMarche=(type!=='frein');
+g.drawImage(graverFin(ap,dir,et*1.4,enMarche,0,false),0,0,c.width,c.height);
+TRANS_FIN=null;
+}else{
+const repos=j>=100;
+g.drawImage(graverFin(ap,dir,repos?0:(j?(j-1)/2:0),!repos&&j>0,repos?j-100:0,cl),0,0,c.width,c.height);}
+CLIGNE_FIN=false;}
 else spriteClassique(g,CASE_L/2,CASE_H-10,ap,dir,i?(i-1)/2:0,i>0);
 GESTE=sauve;
 L[i]=c;
@@ -15861,6 +15874,43 @@ R(x+dx,hanche+11,6,1,chauC);
 });
 if(C&&C.id!=='cape'){try{C.dessin(g,x,hanche+8,tc);}catch(err){}}
 }
+/* ================= LES TRANSITIONS =================
+   Entre l'arrêt et la course, il manquait les moments charnières : l'élan,
+   le freinage, le demi-tour. Sans eux le personnage passe de zéro à sa
+   vitesse de croisière en une image, et s'arrête net comme un pantin.
+
+   La machine ne suit QUE le joueur (une seule apparence suivie), pour ne
+   rien coûter sur les autres personnages à l'écran. */
+const TRANS={etat:'idle', depuis:0, dirPrec:'bas', couPrec:false, marchePrec:false};
+const DUREE={elan:260, frein:300, pivot:180};
+function majTransition(dir,marche,court){
+const t=Date.now();
+const age=t-TRANS.depuis;
+/* une transition en cours se termine d'elle-même */
+if(TRANS.etat!=='idle'&&TRANS.etat!=='marche'&&TRANS.etat!=='course'){
+if(age<DUREE[TRANS.etat]) return TRANS;
+TRANS.etat=marche?(court?'course':'marche'):'idle';TRANS.depuis=t;}
+const demarre=marche&&!TRANS.marchePrec;
+const stoppe=!marche&&TRANS.marchePrec;
+const accelere=marche&&court&&!TRANS.couPrec;
+const demiTour=marche&&TRANS.marchePrec&&dir!==TRANS.dirPrec
+&&((dir==='gauche'&&TRANS.dirPrec==='droite')||(dir==='droite'&&TRANS.dirPrec==='gauche'));
+if(demiTour){TRANS.etat='pivot';TRANS.depuis=t;}
+else if(stoppe&&(TRANS.couPrec||TRANS.etat==='course')){TRANS.etat='frein';TRANS.depuis=t;}
+else if(demarre&&court){TRANS.etat='elan';TRANS.depuis=t;}
+else if(accelere){TRANS.etat='elan';TRANS.depuis=t;}
+else if(!marche&&TRANS.etat!=='frein')TRANS.etat='idle';
+else if(marche&&TRANS.etat!=='pivot'&&TRANS.etat!=='elan')TRANS.etat=court?'course':'marche';
+TRANS.dirPrec=dir;TRANS.couPrec=court;TRANS.marchePrec=marche;
+return TRANS;}
+/* L'INDICE DE POSE d'une transition : 200 l'élan, 220 le freinage,
+   240 le pivot, sur cinq étapes chacun. */
+function indiceTransition(){
+const e=TRANS.etat;
+if(e!=='elan'&&e!=='frein'&&e!=='pivot')return null;
+const k=Math.min(0.999,(Date.now()-TRANS.depuis)/DUREE[e]);
+const et=Math.floor(k*5);
+return (e==='elan'?200:(e==='frein'?220:240))+et;}
 function personne(g,x,y,ap,dir,pas,marche,enCourse){
 if(ap&&ap._nage){                                                              /* dans l'eau : le haut du corps seulement */
 const ap2=Object.assign({},ap);delete ap2._nage;const t=Date.now()/1000;
@@ -15907,7 +15957,12 @@ g.drawImage(c,Math.round(x-CASE_L/2),Math.round(y-CASE_H+10),CASE_L,CASE_H);
 }
 }
 else{
-let i=marche?1+(Math.floor(pas*2)%PASM):(STYLE_FIN()?100+(Math.floor(Date.now()/520)%8):0);
+let i;
+if(STYLE_FIN()&&ap===e.ap){
+majTransition(dir||'bas',!!marche,!!enCourse);
+const it=indiceTransition();
+i=(it!==null)?it:(marche?1+(Math.floor(pas*2)%PASM):100+(Math.floor(Date.now()/520)%8));
+}else i=marche?1+(Math.floor(pas*2)%PASM):(STYLE_FIN()?100+(Math.floor(Date.now()/520)%8):0);
 if(STYLE_FIN()&&!marche&&((Date.now()+((ap.peau|0)*431+(ap.cheveux|0)*97))%3600)<130)i+=300;   /* on ne cligne qu'à l'arrêt : 160 poses de moins à graver */
 const c=poseDe(ap,dir||'bas',i);
 const px0=Math.round(x-CASE_L/2), py0=Math.round(y-CASE_H+10);
@@ -16055,12 +16110,23 @@ const bobPas=COURSE
    d'un pixel de plus. Une seule image sur seize, mais c'est elle qui donne
    le poids. */
 const frappe=(!COURSE&&bouge&&(F===0||F===8))?1:0;
-const bob=(bouge?bobPas+frappe:-souffle)+Math.round(tasseG*1.5)+(frG>0&&!(dir==='gauche'||dir==='droite')?Math.round(Math.max(0,pencheG)*0.5):0);
+/* LA TRANSITION, lue par le dessin : elle penche le buste, tasse le corps
+   et ouvre la foulée. Les trois moments ont une signature opposée :
+   l'élan pousse en avant, le freinage retient en arrière, le pivot tasse. */
+const TR=(typeof TRANS_FIN==='object'&&TRANS_FIN)?TRANS_FIN:null;
+const trK=TR?TR.k:0;
+const trPenche=!TR?0:(TR.type==='elan'?Math.round((1-trK)*3+1)
+:(TR.type==='frein'?-Math.round((1-trK)*3+1):0));
+const trTasse=!TR?0:(TR.type==='pivot'?Math.round(Math.sin(trK*Math.PI)*2)
+:(TR.type==='frein'?Math.round((1-trK)*2):0));
+const bob=(bouge?bobPas+frappe:-souffle)+trTasse+Math.round(tasseG*1.5)+(frG>0&&!(dir==='gauche'||dir==='droite')?Math.round(Math.max(0,pencheG)*0.5):0);
 /* LE REPORT DE POIDS : à l'arrêt, les épaules et la tête glissent d'un
    pixel au-dessus de la jambe porteuse. C'est ce qui empêche la pose
    d'être une statue. */
 const dxAppui=bouge?0:(appui?1:0);
-const yHan=-26+bob, yEp=-54+bob, yCou=-58+bob, yTete=-81+bob;
+const yHan=-26+bob, yEp=-54+bob-Math.round(trPenche*0.2),
+yCou=-58+bob-Math.round(trPenche*0.3), yTete=-81+bob-Math.round(trPenche*0.4);
+const dxPenche=trPenche;
 /* ================= LE MODÈLE DE POSE =================
    Seize points nommés, calculés à partir des mêmes formules que le dessin.
    Ce modèle ne dessine RIEN et ne change RIEN à l'image : il met des noms
@@ -16090,9 +16156,9 @@ const main=(e,b)=>({x:e.x+b*6*AM, y:e.y+19});
 return {
 root:{x:0,y:0},
 pelvis:{x:0,y:yHan},
-torso:{x:dxAppui,y:yEp},
-neck:{x:dxAppui,y:yCou},
-head:{x:dxAppui,y:yTete},
+torso:{x:dxAppui+dxPenche,y:yEp},
+neck:{x:dxAppui+dxPenche,y:yCou},
+head:{x:dxAppui+dxPenche,y:yTete},
 crane:{x:0,y:yTete},                 /* sommet du crâne */
 menton:{x:0,y:yTete+23},
 armL:epauleG, forearmL:coude(epauleG,balG), handL:main(epauleG,balG),
