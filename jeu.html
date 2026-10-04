@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-2240';
+var MA_VERSION='2026-10-05-2320';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16680,6 +16680,16 @@ const cf=CF[coiffe]||CF['courts'];
    l'épaisseur. La raie décentre l'ensemble : rien n'est symétrique. */
 const RAIE=(coiffe==='carré'||coiffe==='mi-longs'||coiffe==='longs'
 ||coiffe==='très longs'||coiffe==='ondulés')?-3:(cf.fr==='raie'?-2:-4);
+/* LE BORD DE LA CHEVELURE.
+   La masse de cheveux ne doit jamais dépasser le crâne de plus d'un pixel
+   sur les côtés, et au-dessus elle doit S'ARRONDIR : sans ça on obtient un
+   champignon de face et un bloc carré de dos. */
+const bordCheveux=(rr,hy,demi,vol)=>{
+const k=hy-rr;                                   /* combien de rangs au-dessus */
+if(k<=0)return demi+1;                           /* sur le crâne : un pixel de plus */
+if(k>vol)return 0;                               /* au-delà du volume : plus rien */
+const t=k/(vol+0.6);
+return Math.max(0,Math.round((demi+1)*Math.sqrt(Math.max(0,1-t*t))));};
 const mechesDe=()=>{
 const L=[], lg=cf.lg, vol=cf.vol;
 /* la longueur sur les côtés : une coupe courte s'arrête à l'oreille,
@@ -16829,9 +16839,14 @@ R(bord,r,w,1,r>basNuque-3?H5.o:H5.b);R(bord,r,1,1,H5.oo);}
    Elles partent du sommet et filent vers l'arrière : c'est ce qui donne la
    coiffure couchée par le mouvement, au lieu d'un casque posé. */
 for(let rr=top;rr<hy+7;rr++){
-const c=craneC(rr,hy);
+const c=craneC(rr<hy?hy:rr,hy);
+const k=hy-rr;
 let g0=c.g-1, g1=c.d+1;
-if(rr<hy){const k=1-(hy-rr)/(vol+3);g0=Math.round(g0*k)-1;g1=Math.round(g1*k);}
+if(k>0){                                     /* au-dessus : la calotte s'arrondit */
+if(k>vol)continue;
+const t2=k/(vol+0.6), r2=Math.sqrt(Math.max(0,1-t2*t2));
+const cx2=(c.g+c.d)/2;
+g0=Math.round(cx2+(g0-cx2)*r2);g1=Math.round(cx2+(g1-cx2)*r2);}
 if(g1<=g0)continue;R(g0,rr,g1-g0,1,H5.oo);}
 const longC=cf.lg?Math.min(cf.lg+10,34):12;
 for(let i=0;i<8;i++){
@@ -16845,6 +16860,13 @@ for(let t=0;t<lo;t++){
 const w=Math.max(1,Math.round(la*(1-t/lo*0.5)));
 const xx=Math.round(x0+pente*t+(cf.ond?Math.sin(t*0.8+i)*cf.ond:0))+(t>3?bal(t):0);
 const yy=dep+t;
+/* la mèche reste dans la silhouette tant qu'on est au niveau du crâne */
+if(yy<hy+7){const cc=craneC(yy<hy?hy:yy,hy), kk=hy-yy;
+let b0=cc.g-1, b1=cc.d+1;
+if(kk>0){if(kk>vol)continue;
+const t3=kk/(vol+0.6), r3=Math.sqrt(Math.max(0,1-t3*t3)), cx3=(cc.g+cc.d)/2;
+b0=Math.round(cx3+(b0-cx3)*r3);b1=Math.round(cx3+(b1-cx3)*r3);}
+if(xx<b0||xx+w>b1)continue;}
 /* JAMAIS SUR LE VISAGE : sous le front, tout ce qui dépasse vers l'avant
    est coupé. L'ancienne condition laissait passer les mèches qui piquaient
    par-dessus le nez. */
@@ -16882,9 +16904,8 @@ calotte(0,top,hy+21+Math.min(L,6),W,7+vol,cf.fr==='afro'?false:'dos',hy);
 }else{
 /* ===== DE DOS, MÈCHE PAR MÈCHE ===== */
 for(let rr=top;rr<hy+21+Math.min(L,6);rr++){
-let c=craneD(rr,hy);
-if(rr<hy){const k=1-(hy-rr)/(vol+3);c=Math.round(c*k);}
-if(c<=0)continue;R(-c-1,rr,c*2+2,1,H5.oo);}
+const c=bordCheveux(rr,hy,craneD(rr<hy?hy:rr,hy),vol);
+if(c<=0)continue;R(-c,rr,c*2,1,H5.oo);}
 /* LA LONGUEUR DE DOS : elle doit partir de la coupe, pas d'un socle de
    22 px. Avant, « courts » et « bol » recevaient la même masse qu'une
    chevelure longue : de dos, toutes les coupes se ressemblaient. */
@@ -16898,6 +16919,9 @@ for(let t=0;t<lo;t++){
 const w=Math.max(1,Math.round(la*(1-t/lo*0.45)));
 const xx=Math.round(x0+vers*0.2*t+(cf.ond?Math.sin(t*0.6+i)*cf.ond:0))+(t>4?bal(t):0);
 const yy=dep+t;
+/* le haut du crâne borne la mèche ; sous la nuque, elle est libre */
+if(yy<hy+20){const bd=bordCheveux(yy,hy,craneD(yy<hy?hy:yy,hy),vol);
+if(bd<=0||xx<-bd||xx+w>bd)continue;}
 const k=t/lo;
 let col=k<0.16?H5.cc:(k<0.42?H5.c:(k<0.78?H5.b:H5.o));
 if(xx>3)col=k<0.3?H5.b:(k<0.7?H5.o:H5.oo);
@@ -16933,10 +16957,9 @@ const HW=cf.fr==='afro'?19:13;
 /* LA MASSE DE FOND : seulement ce qui couvre le crâne, dans le ton le plus
    sombre. Les mèches claires se posent dessus et débordent. */
 if(cf.fr!=='crane')for(let rr=top;rr<hy+5;rr++){
-let c=craneF(rr,hy);
-if(rr<hy)c=Math.round(c*(1-(hy-rr)/(vol+3)));
+const c=bordCheveux(rr,hy,craneF(rr<hy?hy:rr,hy),vol);
 if(c<=0)continue;
-R(-c-1+dx,rr,c*2+2,1,H5.oo);}
+R(-c+dx,rr,c*2,1,H5.oo);}
 /* LES MÈCHES */
 if(cf.fr!=='crane'&&cf.fr!=='crete'&&cf.fr!=='rase'){
 for(const M of mechesDe()){
@@ -16946,6 +16969,10 @@ const w=Math.max(1,Math.round(M.la*(1-t/M.lo*0.55)));
 const xx=Math.round(M.x+M.p*t+(M.ond?Math.sin(t*0.9+M.x)*M.ond:0))+dx
 +(t>3?bal(t):0);                               /* la brise prend les pointes */
 const yy=y0+t;
+/* LE BORD : une mèche ne sort jamais de la silhouette. */
+const bord=bordCheveux(yy,hy,craneF(yy<hy?hy:yy,hy),vol);
+if(bord<=0)continue;
+if(xx-dx<-bord||xx-dx+w>bord)continue;
 if(yy>hy+5&&Math.abs(xx-dx)<craneF(yy,hy)-1)continue;  /* jamais sur le visage */
 const k=t/M.lo;
 let col=k<0.18?H5.cc:(k<0.45?H5.c:(k<0.8?H5.b:H5.o));
