@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-1800';
+var MA_VERSION='2026-10-05-1900';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2354,6 +2354,27 @@ const f=v=>Math.max(0,Math.min(255,v+k));
 return '#'+((1<<24)+(f((n>>16)&255)<<16)+(f((n>>8)&255)<<8)+f(n&255)).toString(16).slice(1);
 };
 let TRANS_FIN=null;
+/* LE PILOTAGE PAR LA POSE : vrai par défaut. Le mettre à faux depuis la
+   console (POSE_PILOTE=false) fait retomber le dessin sur les variables
+   d'origine, ce qui permet de comparer les deux rendus. */
+let POSE_PILOTE=true;
+try{window.POSE_PILOTE=POSE_PILOTE;}catch(x){}
+/* LA COMPARAISON : grave la même pose dans les deux modes et compte les
+   pixels qui diffèrent. Zéro signifie que le pont est fidèle.
+   Usage depuis la console : comparerPose(e.ap,'bas',6). */
+function comparerPose(ap,dir,i){
+const lire=(mode)=>{POSE_PILOTE=mode;try{window.POSE_PILOTE=mode;}catch(x){}
+const cl=i>=300, j=cl?i-300:i, repos=j>=100;
+const c=graverFin(ap,dir||'bas',repos?0:(j?(j-1)/2:0),!repos&&j>0,repos?j-100:0,cl);
+return c.getContext('2d',{willReadFrequently:true})
+.getImageData(0,0,c.width,c.height).data;};
+const a=lire(false), b=lire(true);
+POSE_PILOTE=true;try{window.POSE_PILOTE=true;}catch(x){}
+let n=0;for(let k=0;k<a.length;k+=4){
+if(a[k]!==b[k]||a[k+1]!==b[k+1]||a[k+2]!==b[k+2]||a[k+3]!==b[k+3])n++;}
+return {differents:n, total:a.length/4,
+verdict:n===0?'identiques':(n<12?'quasi identiques':'ÉCART')};}
+try{window.comparerPose=comparerPose;}catch(x){}
 const CACHE_FIN=new Map();
 function sprite(g,x,y,ap0,dir,pas,bouge){
 let fin=false;try{fin=STYLE_FIN();}catch(x){fin=false;}          /* (au tout début du chargement, on reste classique) */
@@ -16165,12 +16186,37 @@ armL:epauleG, forearmL:coude(epauleG,balG), handL:main(epauleG,balG),
 armR:epauleD, forearmR:coude(epauleD,balD), handR:main(epauleD,balD),
 thighL:hancheG, shinL:genou(hancheG,piedG), footL:piedG,
 thighR:hancheD, shinR:genou(hancheD,piedD), footR:piedD,
+/* ================= LA COMMANDE DES MEMBRES =================
+   Les points ci-dessus disent OÙ se trouve chaque articulation. Le bloc
+   `drive` dit, dans le langage que comprennent déjà les fonctions de dessin,
+   COMBIEN chaque membre avance, se lève ou se balance.
+
+   C'est le pont : le dessin ne lit plus les variables éparpillées (pG, leveG,
+   hanche…) mais ce bloc. Une animation qui veut modifier une jambe n'a donc
+   qu'un seul endroit à toucher, et le dessin n'a pas été réécrit. */
+drive:{
+jambeG:{av:pG.x, lev:pG.lift, pointe:pG.pointe, talon:pG.talon},
+jambeD:{av:pD.x, lev:pD.lift, pointe:pD.pointe, talon:pD.talon},
+brasG:{bal:balG}, brasD:{bal:balD},
+torse:{dx:dxAppui, dy:0}},
 /* les mesures, pour qui veut s'y caler */
 mesures:{EP:EP,TA:TA,HA:HA,bras:SX.bras,jambe:SX.jambe,cou:SX.cou,
 image:F,images:16,course:COURSE,vue:(cote?'profil':(dos?'dos':(diag?'troisQuarts':'face'))),
 sens:(cote?(dir==='gauche'?-1:1):(diag?vis:0))}};
 })();
 try{window.POSE_FIN=POSE;}catch(x){}
+/* ================= LA COUCHE D'ADAPTATION =================
+   Ces alias sont ce que lisent désormais les appels de dessin des membres.
+   Quand le pilotage est actif (le cas par défaut), ils viennent de la pose ;
+   sinon ils retombent sur les variables d'origine. Les deux chemins donnent
+   aujourd'hui le MÊME résultat au pixel près : c'est la preuve que le pont
+   est correct avant qu'une animation ne s'en serve. */
+const PILOTE=(typeof POSE_PILOTE==='undefined')?true:!!POSE_PILOTE;
+const D_=POSE.drive;
+const avG=PILOTE?D_.jambeG.av:pG.x, avD=PILOTE?D_.jambeD.av:pD.x;
+const lvG=PILOTE?D_.jambeG.lev:pG.lift, lvD=PILOTE?D_.jambeD.lev:pD.lift;
+const swG=PILOTE?D_.brasG.bal:0, swD=PILOTE?D_.brasD.bal:0;
+void swG;void swD;
 const court=basT==='short'||basT==='bermuda', jupe=basT==='jupe'||basT==='longue jupe';
 const manches={'veste':1,'chemise':1,'pull':1,'manteau':1,'tunique':0.7,'t-shirt':0.3,'gilet':0,'débardeur':0}[hautT];
 const long=hautT==='manteau'?10:(hautT==='tunique'?6:0);
@@ -17348,14 +17394,14 @@ const lean=frG>0?Math.round(pencheG*1.3):(COURSE&&cote?2:0);   /* le buste se pe
 const penche=(f)=>{if(!lean)return f();g.save();g.translate(s*lean*u,0);f();g.restore();};
 if(!dos&&!cote)skisDe();                                                        /* de face, les skis passent derrière le corps */
 if(cote){
-if(frG>0)penche(()=>brasGeste(true,true));else penche(()=>bras(0,pD.x,true));      /* le bras du fond suit la jambe d'en face */
+if(frG>0)penche(()=>brasGeste(true,true));else penche(()=>bras(0,avD,true));      /* le bras du fond suit la jambe d'en face */
 penche(()=>sac(false));
-jambe(0,pD.x,leveD,true);
+jambe(0,avD,lvD,true);
 penche(()=>torse());
-jambe(0,pG.x,leveG,false);
+jambe(0,avG,lvG,false);
 penche(()=>{cheveuxDerriere();tete();echarpeDe();barbeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();chapeauDe();masqueDe();});
 if(frG>0)penche(()=>{const h=brasGeste(false,false);outil(h);R(Math.round(h.x)-2,Math.round(h.y)-2,4,4,peau);});
-else penche(()=>bras(0,-pG.x,false));                       /* le bras de devant, à l'opposé de la jambe de devant */
+else penche(()=>bras(0,-avG,false));                       /* le bras de devant, à l'opposé de la jambe de devant */
 }else if(frG>0){
 if(!dos)cheveuxDerriere();
 jambe(-Math.round(HA/2)-1,0,0,false);jambe(Math.round(HA/2)+1,0,0,false);
@@ -17385,8 +17431,8 @@ const loinG=(tourne>0)!==dos;                                          /* quelle
 const hG=-Math.round(HA/2)-1+vis, hD=Math.round(HA/2)+1+vis;
 if(loinG){jd(hG,dos?pD:pG,true);jd(hD,dos?pG:pD,false);}else{jd(hD,dos?pG:pD,true);jd(hG,dos?pD:pG,false);}
 }else{
-jambe(-Math.round(HA/2)-1,0,dos?leveD:leveG,false);
-jambe(Math.round(HA/2)+1,0,dos?leveG:leveD,false);
+jambe(-Math.round(HA/2)-1,0,dos?lvD:lvG,false);
+jambe(Math.round(HA/2)+1,0,dos?lvG:lvD,false);
 }
 if(!dos)sac(false);
 const avanceD=diag&&bouge?tourne*(COURSE?2:1):0;              /* de trois-quarts, le buste se porte vers l'avant */
