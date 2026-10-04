@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-1315';
+var MA_VERSION='2026-10-04-1340';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11175,6 +11175,7 @@ return SOL;}
 /* ================= LE PRÉ DE LA FERME =================
    Rien que l'herbe, ses touffes, ses reflets et ses fleurettes : le sol
    qu'on a retenu. Aucune haie, aucune barrière, aucun champ, aucun bâtiment. */
+const BORD_FERME=120;             /* la barrière, à 120 pixels du bord */
 const PR_h=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;
 n=(n^(n>>>13))*1274126177;return ((n^(n>>>16))>>>0)/4294967296;};
 function construireSolPre(){
@@ -11216,6 +11217,54 @@ g.fillStyle='rgb('+f[0]+','+f[1]+','+f[2]+')';
 if(gros){g.fillRect(x-1,y-2,3,1);g.fillRect(x,y-3,1,3);g.fillRect(x-2,y-1,5,1);
 g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x,y-2,1,1);}
 else g.fillRect(x,y-2,1,1);}
+/* ================= LA LISIÈRE : BLÉ ET BARRIÈRE =================
+   Tout autour de la carte : un champ de blé, puis une barrière de bois qui
+   marque la limite. Le joueur s'arrête devant la barrière ; le blé continue
+   derrière elle jusqu'au bord du monde. */
+const B=BORD_FERME;               /* la barrière est à cette distance du bord */
+const dehors=(x,y)=>x<B||x>MONDE_L-B||y<B||y>MONDE_H-B;
+/* LA TERRE DU CHAMP, sous les épis */
+for(let y=0;y<MONDE_H;y++)for(let x=0;x<MONDE_L;x++){
+if(!dehors(x,y))continue;
+const n=PR_h(x,y,21);
+g.fillStyle=n<.36?'#8a7446':(n<.70?'#7c6840':'#6f5c38');
+g.fillRect(x,y,1,1);}
+/* LES ÉPIS : une tige, une barbe, un grain clair en haut */
+const EP=['#d8b45a','#c9a24a','#e0c278','#b4903a'];
+for(let y=2;y<MONDE_H-2;y++)for(let x=2;x<MONDE_L-2;x++){
+if(!dehors(x,y))continue;
+if(PR_h(x,y,23)>=0.34)continue;
+const t=PR_h(x,y,25), h=7+Math.floor(t*5);
+g.fillStyle=t<.5?'#8a7a36':'#7a6b2e';
+g.fillRect(x,y-h,1,h);                                  /* la tige */
+const c2=EP[Math.floor(PR_h(x,y,27)*EP.length)];
+g.fillStyle=c2;
+g.fillRect(x,y-h-4,1,4);                                /* l'épi */
+g.fillRect(x-1,y-h-3,1,2);g.fillRect(x+1,y-h-2,1,2);    /* les barbes */
+g.fillStyle='rgba(255,255,255,.35)';g.fillRect(x,y-h-4,1,1);}
+/* LA BARRIÈRE : deux lisses et un piquet tous les trente-six pixels */
+const lisse=(x0,y0,x1,y1)=>{
+const vert=(x0===x1);
+const L=vert?Math.abs(y1-y0):Math.abs(x1-x0);
+for(let k=0;k<L;k++){
+const x=vert?x0:x0+k, y=vert?y0+k:y0;
+const n=PR_h(x,y,31);
+g.fillStyle=n<.4?'#8a6238':(n<.75?'#7a5530':'#9a7046');
+if(vert){g.fillRect(x,y,3,1);g.fillStyle='rgba(255,255,255,.18)';g.fillRect(x,y,1,1);}
+else{g.fillRect(x,y,1,3);g.fillStyle='rgba(255,255,255,.18)';g.fillRect(x,y,1,1);}
+}};
+const piquet=(x,y)=>{
+g.fillStyle='rgba(30,24,14,.3)';g.fillRect(x-2,y+13,6,2);
+g.fillStyle='#6b4a2c';g.fillRect(x-1,y-12,4,26);
+g.fillStyle='#8a6238';g.fillRect(x-1,y-12,2,26);
+g.fillStyle='#a5764a';g.fillRect(x-1,y-12,4,2);};
+const hb=MONDE_H-B, lb=MONDE_L-B;
+lisse(B,B-6,lb,B-6);   lisse(B,B+4,lb,B+4);       /* en haut */
+lisse(B,hb-6,lb,hb-6); lisse(B,hb+4,lb,hb+4);     /* en bas */
+lisse(B-6,B,B-6,hb);   lisse(B+4,B,B+4,hb);       /* à gauche */
+lisse(lb-6,B,lb-6,hb); lisse(lb+4,B,lb+4,hb);     /* à droite */
+for(let x=B;x<=lb;x+=36){piquet(x,B);piquet(x,hb);}
+for(let y=B;y<=hb;y+=36){piquet(B,y);piquet(lb,y);}
 return c;}
 const alea=s=>{const v=Math.sin(s*127.1)*43758.5453;return v-Math.floor(v);};
 /* ================= LA NOUVELLE FORÊT =================
@@ -16621,8 +16670,8 @@ let ax=+joueur.x||0, ay=+joueur.y||0;
 if(CHAMPS_SEULS&&CARTE==='village'){
 /* À LA FERME, ON MARCHE. Pas de décor, pas de grille, pas de collision :
    on se contente de rester dans le carré de la carte. */
-ax=Math.max(BORD+1,Math.min(MONDE_L-BORD-1,nx));
-ay=Math.max(BORD+15,Math.min(MONDE_H-BORD-1,ny));
+ax=Math.max(BORD_FERME+8,Math.min(MONDE_L-BORD_FERME-8,nx));
+ay=Math.max(BORD_FERME+10,Math.min(MONDE_H-BORD_FERME-8,ny));
 }else{
 if(!bloque(nx,joueur.y))ax=nx;
 if(!bloque(ax,ny))ay=ny;
