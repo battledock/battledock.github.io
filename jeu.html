@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-04-2325';
+var MA_VERSION='2026-10-04-2345';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -14433,9 +14433,57 @@ if(CHAMPS_SEULS&&CARTE==='village'){
 /* LA FERME : deux bâtiments, et rien d'autre. Le métro plein nord, la
    graineterie au centre, le potager au sud : l'axe de la ferme. */
 DECOR=[];
-const G=graverGareFerme();XCAL['x_fe_gare0']=G;CALQUES_DECO['x_fe_gare']=G;
-TAILLES['x_fe_gare']=[{w:66,h:14}];
-DECOR.push({t:'x_fe_gare',x:600,y:238,v:0,bati:true,demi:34,ouvre:'metroFerme'});
+/* (l'ancienne gare du nord laisse la place à la halte, près de La Récolte) */
+/* ================= LA HALTE : LA STATION DE LA FERME =================
+   Le même bardage et la même toiture que La Récolte, en plus petit : les
+   deux bâtiments se répondent et forment une petite place. */
+function graverHalte(){
+const W=120, Ht=120, cx=W/2, sol=Ht-14;
+const c=document.createElement('canvas');
+const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+c.width=W*D;c.height=Ht*D;
+const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+const al=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+g.fillStyle='rgba(30,50,24,.26)';
+g.beginPath();g.ellipse(cx+3,sol+4,46,10,0,0,7);g.fill();
+/* LES QUATRE POTEAUX */
+[-36,30].forEach(dx=>{R(cx+dx,sol-40,6,40,B_F.boisO);R(cx+dx,sol-40,2,40,B_F.bois);
+R(cx+dx-2,sol-2,10,3,B_F.boisS);});
+/* LE FOND DE PLANCHES, chacune avec sa teinte et son veinage */
+const y0=sol-58, hM=18;
+for(let i=0;i<80;i+=7){
+const t=Math.floor(al(i*13.7)*4);
+R(cx-40+i,y0,6,hM,[B_F.bois,B_F.boisC,B_F.boisO,B_F.bois][t]);
+R(cx-40+i,y0,1,hM,B_F.boisH);R(cx-40+i+6,y0,1,hM,B_F.boisS);
+for(let k=0;k<hM;k+=9)R(cx-40+i+1,y0+k+Math.floor(al(i*2.3+k)*2),4,1,'rgba(60,40,22,.3)');
+if(al(i*5.1)<0.3){const ky=y0+4+Math.floor(al(i*7.3)*(hM-8));
+R(cx-40+i+2,ky,2,2,B_F.boisO);}}
+/* LA TOITURE, trois rangs */
+for(let rg=2;rg>=0;rg--){
+const t=rg/3, y=sol-58-rg*4, ret=Math.round(t*9);
+const x0=cx-42-7+ret, l2=84+14-ret*2;
+for(let x=x0;x<x0+l2;x+=6){const q=(x*7+rg*13)%4;
+R(x,y,6,5,q===0?TU_F.p:(q===1?TU_F.c:(q===2?TU_F.s:TU_F.p)));
+R(x,y,6,1,rg>1?TU_F.h:TU_F.c);R(x+5,y,1,5,TU_F.o);}
+R(x0,y+4,l2,1,TU_F.o);
+if(rg===2){R(x0-2,y-4,l2+4,5,TU_F.o);R(x0-2,y-4,l2+4,2,TU_F.faite);}}
+R(cx-42,sol-40,84,4,B_F.boisC);R(cx-42,sol-40,84,1,B_F.boisH);
+/* LE BANC */
+R(cx-28,sol-18,52,6,B_F.bois);R(cx-28,sol-18,52,2,B_F.boisH);
+[-26,18].forEach(dx=>R(cx+dx,sol-12,6,12,B_F.boisO));
+/* LA PANCARTE ÉMAILLÉE */
+R(cx-32,sol-54,64,14,'#2f5a7a');
+R(cx-32,sol-54,64,2,'rgba(255,255,255,.3)');
+R(cx-30,sol-52,60,10,'#2f5a7a');
+g.font="700 8px Georgia,serif";g.fillStyle='#f4ecd8';g.textAlign='center';
+g.fillText('LA FERME',cx,sol-44,56);g.textAlign='left';
+/* LE LOSANGE DU RÉSEAU */
+R(cx-6,sol-32,12,12,'#2f5a7a');R(cx-4,sol-30,8,8,'#f4ecd8');
+R(cx-2,sol-28,4,4,'#2f5a7a');
+/* LE POTEAU DE QUAI, à droite */
+R(cx+36,sol-34,4,34,B_F.boisO);R(cx+36,sol-34,1,34,B_F.bois);
+return c;}
 /* ================= LA RÉCOLTE : LA BOUTIQUE DE LA FERME =================
    Le bois vivant : chaque planche a sa teinte, son veinage et ses nœuds,
    au lieu d'une texture répétée. Toiture de tuiles, deux vitrines à petits
@@ -14531,6 +14579,10 @@ return c;}
 
 /* LE CALQUE : dessinerX attend {toile,W,H,sol}, pas une toile nue —
    c'est pour ça que la boutique ne s'affichait pas. */
+const HA=calque(graverHalte(),120,120,106);
+XCAL['x_fe_halte0']=HA;CALQUES_DECO['x_fe_halte']=HA;
+TAILLES['x_fe_halte']=[{w:84,h:20}];
+DECOR.push({t:'x_fe_halte',x:420,y:900,v:0,bati:true,demi:46,ouvre:'metroFerme'});
 const CR=calque(graverRecolte(),190,150,136);
 XCAL['x_fe_recolte0']=CR;CALQUES_DECO['x_fe_recolte']=CR;
 TAILLES['x_fe_recolte']=[{w:150,h:24}];
