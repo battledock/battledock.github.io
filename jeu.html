@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-06-0020';
+var MA_VERSION='2026-10-06-0100';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16865,6 +16865,10 @@ const w=Math.max(1,Math.round(la*(1-t/lo*0.5)));
 const xx=Math.round(x0+pente*t+(cf.ond?Math.sin(t*0.8+i)*cf.ond:0))+(t>3?bal(t):0);
 const yy=dep+t;
 /* la mèche reste dans la silhouette tant qu'on est au niveau du crâne */
+/* UNE MÈCHE DE DEVANT S'ARRÊTE AU FRONT. Seules celles qui partent de
+   l'arrière du crâne descendent sur la nuque : sans cette règle, une masse
+   de cheveux pend devant le menton et la poitrine. */
+if(x0>-2&&yy>hy+7)continue;
 if(yy<hy+7){const cc=craneC(yy<hy?hy:yy,hy), kk=hy-yy;
 let b0=cc.g-1, b1=cc.d+1;
 if(kk>0){if(kk>vol)continue;
@@ -16911,11 +16915,19 @@ calotte(0,top,hy+21+Math.min(L,6),W,7+vol,cf.fr==='afro'?false:'dos',hy);
    Sans ce resserrement, la chevelure descend droite et le dos ressemble à
    une boîte posée sur les épaules. */
 const bordDos=(rr)=>{
-let c=bordCheveux(rr,hy,craneD(rr<hy?hy:rr,hy),vol);
-const sous=rr-(hy+15);                 /* à partir du bas du crâne */
-if(sous>0)c=Math.max(2,c-Math.round(sous*0.9));
+const k=hy-rr;
+/* La chevelure ne dépasse pas le crâne : au-delà, elle devient plus large
+   que les épaules (22 px) et le personnage porte un couvercle. */
+let c=craneD(rr<hy?hy:rr,hy);
+/* LE SOMMET : il se referme sur trois rangs, franchement. */
+if(k>0){if(k>vol+1)return 0;
+c=Math.round(c*Math.sqrt(Math.max(0,1-Math.pow(k/(vol+1.4),1.7))));}
+/* LES TEMPES : la masse se rétrécit dès le haut des oreilles. */
+const bas=rr-(hy+5);
+if(bas>0)c=Math.max(3,c-Math.round(bas*0.8));
 return c;};
-for(let rr=top;rr<hy+21+Math.min(L,6);rr++){
+const basDos=hy+(L>6?20+Math.min(L,6):16);
+for(let rr=top;rr<basDos;rr++){
 const c=bordDos(rr);
 if(c<=0)continue;
 R(-c,rr,c*2,1,H5.oo);
