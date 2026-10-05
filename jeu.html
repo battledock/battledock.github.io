@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-0610';
+var MA_VERSION='2026-10-07-0710';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -10111,43 +10111,8 @@ const q=$('quiR');
 if(q&&qui)q.textContent=qui+' est là';
 }
 }
-let caissePortee=false;
 function majPastilleVocaux(){const nb=document.getElementById('rencontre-nb');
 if(nb&&String(nonLus)!==nb.textContent){nb.textContent=String(nonLus);nb.style.display=nonLus?'':'none';}}
-function prèsDuWagon(){
-const F=positionDuFret();
-if(!F||F.etat.q!=='a quai')return false;
-return Math.abs(joueur.x-(F.x+35))<90&&Math.abs(joueur.y-VOIE2_Y)<44;
-}
-const prèsDeLEntrepot=()=>
-Math.abs(joueur.x-ENTREPOT_FIXE[0])<104&&
-joueur.y>ENTREPOT_FIXE[1]-4&&joueur.y<ENTREPOT_FIXE[1]+46;
-function prendreUneCaisse(){
-if(caissePortee||!prèsDuWagon())return;
-caissePortee=true;
-GESTE={t:1,pourMoi:true,cible:null,impact:false,type:'cueille'};
-jouer('cueille');vibrer(18);majAction();
-}
-async function deposerLaCaisse(){
-if(!caissePortee||!prèsDeLEntrepot())return;
-caissePortee=false;
-GESTE={t:1,pourMoi:true,cible:null,impact:false,type:'cueille'};
-const d=await appelRPC('decharger',{p_joueur:e.id});
-if(d&&typeof d.euros==='number'){
-e.euros=d.euros;sauver();majHaut();
-texteVolant(joueur.x,joueur.y-34,'+'+enEuros(PRIX_CAISSE),'#cfe0f2');
-jouer('vente','moment');vibrer([12,26,18]);
-}else texteVolant(joueur.x,joueur.y-34,'le contremaître refuse','#e8a06a');
-majAction();
-}
-function dessinerLaCaisse(g,x,y,marche,pas){
-const b=marche?Math.sin(pas*4)*0.8:0;
-const cy=y-20+b;
-g.fillStyle='#8a6238';g.fillRect(Math.round(x-7),Math.round(cy-9),14,11);
-g.fillStyle='#c09a6a';g.fillRect(Math.round(x-7),Math.round(cy-9),14,2);
-g.fillStyle='#5b3f21';g.fillRect(Math.round(x-7),Math.round(cy-4),14,1);
-g.fillStyle='#e8dcc0';g.fillRect(Math.round(x-3),Math.round(cy-7),6,3);
-}
 function dessinerTGV(g,lx,base,avance,VW){
 const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,Math.max(1,w),Math.max(1,h));};
 const ARG='#c6ccd2', ARG_H='#e6eaee', ARG_O='#8d959c';
@@ -16472,7 +16437,6 @@ g.drawImage(c,0,0,c.width,H2*k,px0+lean,py0,CASE_L,H2);
 }
 }
 if(C&&C.id!=='cape'){try{C.dessin(g,x,y,tc);}catch(err){}}
-if(ap===e.ap&&caissePortee)dessinerLaCaisse(g,x,y,marche,pas);
 if(aVelo)dessinerUnVelo(g,x,y+7+(marche?Math.abs(Math.sin((pas||0)*4.2))*0.8:0),dir||'bas',pas||0,0,!!marche);
 
 }
@@ -18312,7 +18276,7 @@ const n=Math.hypot(joyX,joyY);
 const pousse=Math.min(1,n);
 const max=vitesseDuJoueur();
 const aFond=pousse>0.88;
-const allure=(aFond?max:VITESSE)*(caissePortee?0.72:1)*(VELO&&CARTE==='extramar'?1.75:1)*(REPU_FIN>Date.now()?1.15:1);
+const allure=(aFond?max:VITESSE)*(VELO&&CARTE==='extramar'?1.75:1)*(REPU_FIN>Date.now()?1.15:1);
 court=aFond&&max>=SEUIL_COURSE;
 const cibleX=n>0.16?(joyX/n)*allure*pousse:0;
 const cibleY=n>0.16?(joyY/n)*allure*pousse:0;
@@ -20501,96 +20465,12 @@ else plaqueVrai.classList.toggle(c,v);},
 contains(c){return plaqueVrai.classList.contains(c);}
 }
 };
-const presDeLaPile=()=>CARTE==='extramar'&&Math.abs(joueur.x-CARGO_X.pile[0])<28&&Math.abs(joueur.y-CARGO_X.pile[1]-4)<18;
-const presDesDocks=()=>CARTE==='extramar'&&Math.abs(joueur.x-CARGO_X.docks[0])<34&&joueur.y>CARGO_X.docks[1]-2&&joueur.y<CARGO_X.docks[1]+30;
-let depotEnCours=false;
-function prendreUneCaisseDuCaboteur(){
-if(caissePortee||!presDeLaPile())return;
-caissePortee=true;
-GESTE={t:1,pourMoi:true,cible:null,impact:false,type:'cueille'};
-jouer('cueille');vibrer(18);majAction();
-}
-async function deposerAuxDocks(){
-if(!caissePortee||!presDesDocks()||depotEnCours)return;
-depotEnCours=true;
-const d=await appelRPC('decharger_cargo',{p_joueur:e.id});
-depotEnCours=false;
-if(d&&typeof d.euros==='number'){
-caissePortee=false;
-GESTE={t:1,pourMoi:true,cible:null,impact:false,type:'cueille'};
-e.euros=d.euros;sauver();majHaut();
-texteVolant(joueur.x,joueur.y-34,'+'+enEuros(d.gagne||30),'#cfe0f2');
-jouer('vente','moment');vibrer([12,26,18]);
-}else if(d&&d.erreur==='trop_tot'){
-texteVolant(joueur.x,joueur.y-34,'le contremaître compte encore…','#e8c06a');
-}else if(d&&d.erreur==='plafond'){
-caissePortee=false;
-texteVolant(joueur.x,joueur.y-34,'le contremaître ne paie plus','#e8a06a');
-}else texteVolant(joueur.x,joueur.y-34,'personne aux Docks, réessaie','#e8a06a');
-majAction();
-}
-function actionDuCaboteur(b){
-if(CARTE!=='extramar')return false;
-if(caissePortee){
-if(presDesDocks()){
-b.innerHTML='Déposer la caisse<small>AUX DOCKS · +0,30 €</small>';
-b.classList.add('on');b.onclick=deposerAuxDocks;return true;
-}
-/* ON PEUT REPOSER LA CAISSE. Avant, la plaque n'était qu'un rappel sans
-   bouton : si on ne voulait plus la porter, on restait coincé avec. */
-b.innerHTML='Tu portes une caisse<small>APPUIE POUR LA REPOSER · LES DOCKS SONT AU NORD</small>';
-b.classList.add('on');
-b.onclick=()=>{caissePortee=false;
-GESTE={t:1,pourMoi:true,cible:null,impact:false,type:'ramasse'};
-try{jouer('cueille');vibrer(12);}catch(x){}
-try{texteVolant(joueur.x,joueur.y-34,'caisse reposée','#d8c9a0');}catch(x){}
-majAction();};
-return true;
-}
-if(presDeLaPile()&&GESTE.t<=0){
-b.innerHTML='Prendre une caisse<small>LE CABOTEUR DÉCHARGE · 0,30 € LA CAISSE</small>';
-b.classList.add('on');b.onclick=prendreUneCaisseDuCaboteur;return true;
-}
-return false;
-}
-const FORMES_POISSON={
-sardine:{f:'fuseau',L:12,H:4,dos:'#4f6f8a',ventre:'#dfe8ee',nag:'#8499aa',motif:'points',acc:'#2a4050'},
-bogue:{f:'fuseau',L:12,H:4,dos:'#8a9a7a',ventre:'#e8ecd8',nag:'#a8b098',motif:'bande',acc:'#c8b060'},
-girelle:{f:'fuseau',L:11,H:4,dos:'#2f8a8a',ventre:'#8ad0c0',nag:'#2a7070',motif:'bande',acc:'#e8803a'},
-rouget:{f:'fuseau',L:12,H:5,dos:'#c0402f',ventre:'#f0b8a0',nag:'#e8806a',motif:'bande',acc:'#f0d060',barbe:true},
-mulet:{f:'fuseau',L:15,H:5,dos:'#5f6f78',ventre:'#dde4e8',nag:'#8a9aa2',motif:'lignes',acc:'#8a9aa2'},
-saupe:{f:'fuseau',L:14,H:5,dos:'#8a929a',ventre:'#e8ecee',nag:'#a8b0b8',motif:'lignes',acc:'#e0c050'},
-maquereau:{f:'fuseau',L:15,H:5,dos:'#2a5a7a',ventre:'#e8f0f4',nag:'#3a6a8a',motif:'tigre',acc:'#1a3a52'},
-dorade:{f:'haut',L:14,H:7,dos:'#8a969c',ventre:'#e6ecee',nag:'#a8b4ba',motif:'bandeau',acc:'#e0b43a'},
-seiche:{f:'seiche',L:13,H:7,dos:'#b8a888',ventre:'#e8dcc0',nag:'#d8c8a8',motif:'zebre',acc:'#7a6a4a'},
-rascasse:{f:'haut',L:12,H:7,dos:'#b0402a',ventre:'#e8a080',nag:'#c85a3a',motif:'marbre',acc:'#7a2a1a',epines:true},
-loup:{f:'fuseau',L:18,H:6,dos:'#5a6a74',ventre:'#e4eaee',nag:'#7d8b96',motif:'aucun',acc:'#5a6a74'},
-poulpe:{f:'poulpe',L:13,H:8,dos:'#b8506a',ventre:'#e89ab0',nag:'#c0607a',motif:'points',acc:'#f0c0d0'},
-denti:{f:'haut',L:18,H:8,dos:'#b87890',ventre:'#f0d8e0',nag:'#c08aa0',motif:'taches',acc:'#4a7ab8'},
-murene:{f:'anguille',L:24,H:4,dos:'#4a3a1a',ventre:'#8a7a4a',nag:'#5a4a2a',motif:'taches',acc:'#e0c060'},
-congre:{f:'anguille',L:24,H:4,dos:'#4a4438',ventre:'#8a8270',nag:'#5a5040',motif:'aucun',acc:'#5a5040'},
-saintpierre:{f:'haut',L:14,H:10,dos:'#8a8272',ventre:'#d8d0bc',nag:'#a8a090',motif:'pouce',acc:'#1b1b1b',voile:true},
-thon:{f:'fuseau',L:26,H:9,dos:'#1a2a4a',ventre:'#c8d4de',nag:'#e8c040',motif:'pinnules',acc:'#e8c040'},
-legende:{f:'fuseau',L:24,H:8,dos:'#a8822a',ventre:'#fff0b8',nag:'#e8c060',motif:'or',acc:'#fff6d0'},
-rascassedor:{f:'haut',L:14,H:8,dos:'#d8a02a',ventre:'#fff0a0',nag:'#f0c040',motif:'or',acc:'#fff6d0',epines:true},
-botte:{f:'botte',L:10,H:8,dos:'#3a2a1c',ventre:'#5a3f21',nag:'#5a3f21',motif:'aucun',acc:'#8a6238'},
-sar:{f:'haut',L:14,H:7,dos:'#9aa2a8',ventre:'#eef2f4',nag:'#b0b8be',motif:'rayures',acc:'#2a2c2e'},
-vieille:{f:'fuseau',L:15,H:6,dos:'#3f7a4a',ventre:'#c8e0b0',nag:'#e07a3a',motif:'marbre',acc:'#e8c060'},
-grondin:{f:'fuseau',L:15,H:5,dos:'#c04a3a',ventre:'#f0c0a8',nag:'#3a8ad0',motif:'aucun',acc:'#c04a3a',ailes:true},
-pagre:{f:'haut',L:17,H:8,dos:'#c87a7a',ventre:'#f4dcd8',nag:'#d89090',motif:'points',acc:'#6aa0d8'},
-barracuda:{f:'anguille',L:24,H:5,dos:'#5a6a74',ventre:'#e8eef2',nag:'#8a9aa2',motif:'chevrons',acc:'#2a3a44',machoire:true},
-liche:{f:'fuseau',L:22,H:7,dos:'#6a7a5a',ventre:'#eef0e4',nag:'#c8b060',motif:'bande',acc:'#e0c050'},
-chapon:{f:'haut',L:16,H:9,dos:'#c02a1a',ventre:'#f09070',nag:'#d8402a',motif:'marbre',acc:'#7a1a0a',epines:true},
-baliste:{f:'haut',L:14,H:9,dos:'#6a6a5a',ventre:'#c8c4a8',nag:'#3a8ab0',motif:'lignes',acc:'#3a8ab0',corne:true},
-coryphene:{f:'fuseau',L:22,H:8,dos:'#2a9a6a',ventre:'#f0e050',nag:'#3aa0d8',motif:'points',acc:'#3aa0d8',front:true},
-raie:{f:'raie',L:18,H:14,dos:'#8a7a5a',ventre:'#d8ccb0',nag:'#6a5a3a',motif:'taches',acc:'#5a4a2a'},
-espadon:{f:'epee',L:28,H:8,dos:'#2a3a5a',ventre:'#c8d0dc',nag:'#1a2a44',motif:'aucun',acc:'#b9c1c7'},
-mola:{f:'lune',L:18,H:18,dos:'#8a9aa6',ventre:'#dde4ea',nag:'#6a7a86',motif:'marbre',acc:'#b8c4cc'},
-requin:{f:'requin',L:30,H:8,dos:'#2a5a9a',ventre:'#eef2f6',nag:'#1f4a80',motif:'aucun',acc:'#1f4a80'},
-hippocampe:{f:'hippo',L:8,H:14,dos:'#e8a02a',ventre:'#f8d070',nag:'#c87a1a',motif:'anneaux',acc:'#fff0b0'},
-calamar:{f:'calamar',L:30,H:10,dos:'#b83a3a',ventre:'#f0a8a0',nag:'#d85a5a',motif:'points',acc:'#ffd0c8'},
-coelacanthe:{f:'coela',L:26,H:10,dos:'#1f3a6a',ventre:'#6a8ab8',nag:'#2a4a80',motif:'taches',acc:'#e8f0ff'},
-};
+/* ================= LES CAISSES, RETIRÉES =================
+   Deux systèmes coexistaient : l'un, mort, allait du wagon à l'entrepôt ;
+   l'autre faisait porter une caisse de la pile du caboteur jusqu'aux docks.
+   Les deux sont supprimés — plaque d'action, dessin sur le dos du joueur,
+   ralentissement à la marche et repères de proximité compris.
+   La fonction serveur decharger_cargo reste en place, inutilisée. */
 function dessinerPoisson(g,x,y,esp,dir,bat,ombre){
 const F=FORMES_POISSON[esp]||FORMES_POISSON.sardine;
 const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(a),Math.round(b),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
@@ -21167,7 +21047,7 @@ b.classList.remove('mord');
    après chaque lancer et l'on croit que l'action est cassée. */
 const gesteTravail=GESTE.t>0&&['houe','pioche','cueille','hache','gouge','tamis',
 'semer','arrose','ramasse'].indexOf(GESTE.type)>=0;
-if(LP&&!gesteTravail&&!caissePortee){
+if(LP&&!gesteTravail){
 const longue=((EQUIP_PECHE&&EQUIP_PECHE.canne)||0)>=3;
 b.innerHTML=LP.lieu==='large'?'Lancer au large<small>LE GROS POISSON · CANNE LONGUE</small>'
 :(LP.bout&&!longue?'Pêcher<small>LE LARGE DEMANDE UNE CANNE EN CARBONE</small>'
@@ -22122,7 +22002,6 @@ b.innerHTML='Laver<small>'+ARGILE_PAR_LAVAGE+' ARGILES · AU TAMIS</small>';
 b.classList.add('on');b.onclick=laverLArgile;return;
 }
 if(actionDePeche(b))return;
-if(actionDuCaboteur(b))return;
 if(CARTE==='extramar'&&Math.abs(joueur.x-XP.ruelle.x)<XP.ruelle.l&&joueur.y<XP.ruelle.haut+22&&GESTE.t<=0){
 /* LE COMPLEXE FESTIF EST EN TRAVAUX : on affiche l'affiche au lieu d'entrer */
 b.innerHTML='Lire l’affiche<small>LE COMPLEXE EST EN TRAVAUX</small>';
