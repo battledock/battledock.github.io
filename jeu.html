@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-06-0920';
+var MA_VERSION='2026-10-06-1010';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11418,19 +11418,36 @@ for(let y=B;y<=hb;y+=36){piquet(B,y);
 if(y<PASSAGE.y0-18||y>PASSAGE.y1+18)piquet(lb,y);}
 /* LES DEUX PIQUETS D'ENTRÉE, plus gros, qui marquent la trouée */
 piquet(lb,PASSAGE.y0);piquet(lb,PASSAGE.y1);
-/* LE CHEMIN DE TERRE qui sort par là : il s'élargit vers le dehors */
-for(let y=PASSAGE.y0+4;y<PASSAGE.y1-4;y++)
-for(let x=lb-70;x<MONDE_L;x++){
-const bord=Math.min(y-PASSAGE.y0-4,PASSAGE.y1-4-y);
-if(bord<4&&PR_h(x,y,53)>0.3+bord*0.16)continue;
+/* ================= LE CHEMIN DE GRAVIER =================
+   Il part de la barrière et file jusqu'au bord du monde. Trois couches :
+   la terre meuble des bords, le lit de cailloux tassé au centre, puis les
+   deux traces de roues qui assombrissent le gravier là où l'on roule. */
+const CH_X0=lb-4, CH_X1=MONDE_L;
+const CH_Y0=PASSAGE.y0+4, CH_Y1=PASSAGE.y1-4;
+for(let y=CH_Y0;y<CH_Y1;y++)
+for(let x=CH_X0;x<CH_X1;x++){
+const bord=Math.min(y-CH_Y0,CH_Y1-1-y);
+if(bord<3&&PR_h(x,y,53)>0.26+bord*0.24)continue;
 const n=PR_h(x,y,51);
-g.fillStyle=n<.42?'#7a6648':(n<.78?'#6b5740':'#8a7656');
-g.fillRect(x,y,1,1);
-if(PR_h(x,y,55)>0.975)g.fillRect(x,y-1,2,1);}
-/* les ornières, deux traces de roues */
-for(let x=lb-70;x<MONDE_L;x++){
-g.fillStyle='rgba(60,48,30,.35)';
-g.fillRect(x,PASSAGE.y0+26,1,3);g.fillRect(x,PASSAGE.y1-30,1,3);}
+/* les bords : de la terre meuble. le centre : le lit de gravier. */
+g.fillStyle=bord<5?(n<.5?'#6b5740':'#5e4c38'):(n<.5?'#8a7f6a':'#7d7260');
+g.fillRect(x,y,1,1);}
+/* LES CAILLOUX, de tailles variées */
+const nbCaillou=Math.round((CH_X1-CH_X0)*(CH_Y1-CH_Y0)/26);
+for(let k=0;k<nbCaillou;k++){
+const gx=CH_X0+2+Math.floor(PR_h(k,3,57)*(CH_X1-CH_X0-4));
+const gy=CH_Y0+2+Math.floor(PR_h(k,7,59)*(CH_Y1-CH_Y0-4));
+const t=PR_h(k,11,61), w=t>0.88?2:1, h=t>0.94?2:1;
+g.fillStyle=t<0.3?'#b8ae98':(t<0.6?'#a29780':(t<0.85?'#8d8270':'#c8c0ac'));
+g.fillRect(gx,gy,w,h);
+if(w>1){g.fillStyle='rgba(255,255,255,.22)';g.fillRect(gx,gy,1,1);}}
+/* LES DEUX TRACES DE ROUES, qui ondulent légèrement */
+const mil=(CH_Y0+CH_Y1)/2;
+[mil-12,mil+10].forEach((oy)=>{
+for(let x=CH_X0;x<CH_X1;x++){
+const d=Math.round(Math.sin(x*0.16)*1);
+g.fillStyle='rgba(70,58,40,.30)';
+g.fillRect(x,Math.round(oy+d),1,3);}});
 /* ---------- LE POTAGER ---------- */
 /* LES ALLÉES : une terre battue sombre. En inversant le contraste, ce sont
    les planches qui deviennent claires, et les cultures ressortent. */
@@ -17950,8 +17967,11 @@ PARTIR_AU_PORT=true;
 try{texteVolant(joueur.x,joueur.y-40,'Direction le port…','#f0cf7d');}catch(x){}
 try{sauver();}catch(x){}
 setTimeout(()=>{try{
-const v=(window.MA_VERSION?('?v='+encodeURIComponent(window.MA_VERSION)):'');
-location.href='jeu.html'+v;}catch(x){location.href='jeu.html';}},620);}
+/* LA DESTINATION, DITE EXPLICITEMENT. Sans le paramètre, le jeu relit la
+   sauvegarde — qui dit « ferme » — et on revenait d'où l'on partait. */
+const v=(window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'');
+location.href='jeu.html?carte=extramar'+v;}
+catch(x){location.href='jeu.html?carte=extramar';}},620);}
 /* les deux bâtiments barrent la route */
 const mur=(px,py)=>DECOR.some(o=>{const t=TAILLES[o.t];if(!t)return false;
 const d=t[0];if(!d)return false;
