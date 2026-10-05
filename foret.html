@@ -1,13 +1,29 @@
 <!doctype html><html lang="fr"><head><meta charset="utf-8">
 <title>Battle Dock</title>
 <script>
-/* La forêt vit désormais dans le jeu, comme le port et la ferme.
-   Cette page ne fait plus que passer la main. */
+/* PAS D'ÉCRAN D'ATTENTE : on part vers le jeu avant même d'avoir dessiné quoi
+   que ce soit. La page ne montre rien, elle ne fait que passer la main.
+
+   LA VERSION : on allait chercher Date.now(), donc l'adresse changeait à
+   chaque visite et le téléphone retéléchargeait les 1,6 Mo du jeu à chaque
+   passage. On lit maintenant le vrai numéro de version, comme la page
+   d'accueil : le cache ne se vide que lors d'une vraie mise à jour. */
 (function(){
   var p=new URLSearchParams(location.search);
   p.set('carte','foret');
-  if(!p.get('v'))p.set('v',Date.now());
-  location.replace('jeu.html?'+p.toString());
+  function partir(v){
+    if(v)p.set('v',v);
+    location.replace('jeu.html?'+p.toString());
+  }
+  if(p.get('v'))return partir(null);
+  var fini=false;
+  var t=setTimeout(function(){if(!fini){fini=true;partir(null);}},1200);
+  try{
+    fetch('version.json',{cache:'no-store'})
+      .then(function(r){return r.json();})
+      .then(function(d){if(fini)return;fini=true;clearTimeout(t);partir(d&&d.v);})
+      .catch(function(){if(fini)return;fini=true;clearTimeout(t);partir(null);});
+  }catch(x){if(!fini){fini=true;clearTimeout(t);partir(null);}}
 })();
 </script>
 <style>html,body{margin:0;height:100%;background:#151a12}</style>
