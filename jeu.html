@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-06-2235';
+var MA_VERSION='2026-10-06-2320';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -20816,11 +20816,10 @@ if(!L||PECHE)return;
 PECHE={etat:'lance',lieu:L.lieu,t0:performance.now(),bx:L.bx,by:L.by,px:joueur.x,py:joueur.y,
 cote:joueur.dir==='gauche'?-1:1,esp:null,cm:0};
 PECHE.mordA=PECHE.t0+600+2000+Math.random()*4000;
-/* LE LANCER : le bras part en arrière puis fouette vers l'avant. */
-try{GESTE={t:1,pourMoi:true,cible:null,impact:false,type:'lance'};
-const t0L=Date.now();
-const idL=setInterval(()=>{GESTE.t=Math.max(0,1-(Date.now()-t0L)/520);
-if(GESTE.t<=0){clearInterval(idL);GESTE={t:0};}},40);}catch(x){}
+/* LE LANCER : le bras part en arrière puis fouette vers l'avant.
+   C'est majGeste, dans la boucle de jeu, qui fait avancer le geste — une
+   minuterie en plus entrerait en conflit avec lui. */
+try{GESTE={t:1,pourMoi:true,cible:null,impact:false,type:'lance'};}catch(x){}
 jouer('cueille');vibrer(8);majAction();
 const P=PECHE;
 const d=await appelRPC('pecher_touche',{p_joueur:e.id,p_lieu:L.lieu});
@@ -21124,7 +21123,12 @@ return true;
 }
 b.classList.remove('mord');
 {const LP=lieuDePeche();
-if(LP&&GESTE.t<=0&&!caissePortee){
+/* LA PLAQUE DE PÊCHE reste disponible pendant les gestes qui ne sont pas
+   un travail en cours : sinon, le bouton disparaît pendant une seconde
+   après chaque lancer et l'on croit que l'action est cassée. */
+const gesteTravail=GESTE.t>0&&['houe','pioche','cueille','hache','gouge','tamis',
+'semer','arrose','ramasse'].indexOf(GESTE.type)>=0;
+if(LP&&!gesteTravail&&!caissePortee){
 const longue=((EQUIP_PECHE&&EQUIP_PECHE.canne)||0)>=3;
 b.innerHTML=LP.lieu==='large'?'Lancer au large<small>LE GROS POISSON · CANNE LONGUE</small>'
 :(LP.bout&&!longue?'Pêcher<small>LE LARGE DEMANDE UNE CANNE EN CARBONE</small>'
@@ -25696,7 +25700,11 @@ else{const reste=Math.max(0,new Date(P.mur_a).getTime()-potNow()), m=Math.ceil(r
 b.innerHTML=t[0]+'<small>'+t[1]+'</small>';b.classList.add('on');
 };
 const VIVACES=['lavande'];
-const potGeste=(type,ms)=>{GESTE={t:1,pourMoi:true,cible:null,impact:false,type};const t0=Date.now();const id=setInterval(()=>{GESTE.t=Math.max(0,1-(Date.now()-t0)/ms);if(GESTE.t<=0){clearInterval(id);GESTE={t:0};}},30);};
+/* LE GESTE DU POTAGER. Il était piloté par une minuterie qui tournait en
+   parallèle de majGeste, dans la boucle de jeu : les deux se disputaient la
+   même variable, et la plaque d'action pouvait rester bloquée. La boucle de
+   jeu est désormais la seule à faire avancer le geste. */
+const potGeste=(type,ms)=>{GESTE={t:1,pourMoi:true,cible:null,impact:false,type};};
 const potRefus=(d)=>texteVolant(joueur.x,joueur.y-56,d&&d.erreur==='pas_assez'?'Pas assez d’argent':(d&&d.erreur==='pas_mur'?'Pas encore mûr':'Réessaie dans un instant'),'#ffe8a0');
 async function potAgir(i){if(POT_OCCUPE)return;const P=POT.parc[i], s=potStade(P), J=POT.j;
 if(!potOuverte(i)){texteVolant(joueur.x,joueur.y-56,'Parcelle à louer · au Grainetier','#ffe8a0');return;}
