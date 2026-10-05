@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-1010';
+var MA_VERSION='2026-10-07-1100';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11288,11 +11288,15 @@ const PASSAGE={y0:700, y1:800};   /* la trouée, en hauteur */
    allées de terre tassée. La terre est montée en billons, avec des mottes
    retournées et quelques cailloux : elle a une direction, donc on voit les
    rangs sans qu'ils fassent rayure. */
-const CARRE={px:92, py:64, gx:16, gy:16, c:6, r:4};
-CARRE.L=CARRE.c*CARRE.px+(CARRE.c-1)*CARRE.gx;      /* 632 */
-CARRE.H=CARRE.r*CARRE.py+(CARRE.r-1)*CARRE.gy;      /* 304 */
-CARRE.x0=Math.round((1200-CARRE.L)/2);        /* centré */
-CARRE.y0=1050;                               /* au sud de la cour, dans le tiers bas */
+/* LE POTAGER EST DEBOUT : trois colonnes sur huit rangs au lieu de six sur
+   quatre. Il tient ainsi dans la bande libre entre la place et la barrière
+   de droite, et descend jusqu'au bas de la ferme. */
+const CARRE={px:92, py:64, gx:14, gy:14, c:3, r:8};
+CARRE.L=CARRE.c*CARRE.px+(CARRE.c-1)*CARRE.gx;      /* 304 */
+CARRE.H=CARRE.r*CARRE.py+(CARRE.r-1)*CARRE.gy;      /* 610 */
+/* centré entre le bord droit de la place (705) et la barrière (1055) */
+CARRE.x0=Math.round(705+((1055-705)-CARRE.L)/2);
+CARRE.y0=820;                                /* juste sous la chaussée */
 const potCase=(n)=>({x:CARRE.x0+(n%CARRE.c)*(CARRE.px+CARRE.gx),
 y:CARRE.y0+Math.floor(n/CARRE.c)*(CARRE.py+CARRE.gy),w:CARRE.px,h:CARRE.py});
 const PR_h=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;
@@ -11493,9 +11497,12 @@ g.fillRect(x,Math.round(oy+d),1,3);}});
 const BR=52, BX=PLACE.x-BR/2;
 /* LA BRANCHE NORD est retirée : elle ne menait nulle part depuis que le
    poulailler se rejoint par le pré. */
-for(let y=PLACE.y+PLACE.r-6;y<1046;y++)
-for(let x=BX;x<BX+BR;x++){
-const bord=Math.min(x-BX,BX+BR-1-x);
+/* LA BRANCHE SUD rejoint le potager, qui a changé de place : elle part
+   maintenant de la chaussée, à l'aplomb du potager. */
+const BX2=Math.round(714+(1046-714)/2)-BR/2;
+for(let y=796;y<812;y++)
+for(let x=BX2;x<BX2+BR;x++){
+const bord=Math.min(x-BX2,BX2+BR-1-x);
 if(bord<3&&PR_h(x,y,55)>0.26+bord*0.24)continue;
 if(bord<4)bordure(x,y);else grav(x,y);}
 /* ---------- LA PLACE : des pavés posés en arcs ----------
@@ -25575,7 +25582,8 @@ const potLibre=(k)=>!POT_VERROU[k]||(POT.debloque||[]).includes(k);
    d'où des parcelles qu'on ne trouvait plus. Les numéros 0 à 23 ne changent
    pas, donc chacun retrouve ses cultures. */
 const POT_NEUF=()=>typeof CHAMPS_SEULS!=='undefined'&&CHAMPS_SEULS&&CARTE==='village';
-const POT_COLS=POT_NEUF()?6:8, POT_ROWS=POT_NEUF()?4:3, POT_ALLEE=POT_NEUF()?16:6;
+/* TROIS COLONNES SUR HUIT RANGS, pour suivre le potager debout. */
+const POT_COLS=POT_NEUF()?3:8, POT_ROWS=POT_NEUF()?8:3, POT_ALLEE=POT_NEUF()?14:6;
 const POT_Z=()=>POT_NEUF()
 ?{x0:CARRE.x0-POT_ALLEE,x1:CARRE.x0+CARRE.L+POT_ALLEE,y0:CARRE.y0-POT_ALLEE,y1:CARRE.y0+CARRE.H+POT_ALLEE}
 :FERME.champ2;
@@ -25584,7 +25592,10 @@ const POT_DIM=()=>POT_NEUF()?{PW:CARRE.px,PH:CARRE.py}
 const POT_XY=(i)=>{if(POT_NEUF()){const P=potCase(i);return {x:P.x,y:P.y,PW:P.w,PH:P.h};}
 const Z=POT_Z(), {PW,PH}=POT_DIM(), r=Math.floor(i/POT_COLS), c=i%POT_COLS;
 return {x:Z.x0+POT_ALLEE+c*(PW+POT_ALLEE),y:Z.y0+POT_ALLEE+r*(PH+POT_ALLEE),PW,PH};};
-const POT_ORDRE=[0,1,2,8,9,10, 3,4,5,11,12,13, 16,17,18,19,20,21, 6,7,14,15,22,23];
+/* L'ORDRE DE DÉBLOCAGE suit la nouvelle forme : le potager étant debout,
+   on l'ouvre deux rangs à la fois, du haut vers le bas. L'ancien ordre
+   était pensé pour six colonnes et dispersait les planches. */
+const POT_ORDRE=[0,1,2,3,4,5, 6,7,8,9,10,11, 12,13,14,15,16,17, 18,19,20,21,22,23];
 let POT={j:null,parc:{},decal:0,charge:false}, POT_CHAMP=null, POT_SALE=true, POT_ARROSE=0, POT_OCCUPE=false;
 const potOuverte=(i)=>POT.j&&POT_ORDRE.indexOf(i)<POT.j.nb;
 const potNow=()=>Date.now()+POT.decal;
