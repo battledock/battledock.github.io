@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-0320';
+var MA_VERSION='2026-10-07-0430';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -24110,10 +24110,12 @@ vide:'<div class="cptVide">Pas un poisson dans ton inventaire.<br>Va lancer ta l
    téléphone, lui, ignorait leurs noms et leurs prix. Elles entraient donc
    dans le sac sans jamais s'afficher ni pouvoir se vendre. On les lit au
    démarrage : une espèce ajoutée en base arrive toute seule dans le jeu. */
+let LAC_CHARGE=false;
 async function chargerLesEspecesDuLac(){
+if(LAC_CHARGE)return true;
 try{
 const r=await fetch(URL_SB+'/rest/v1/lac_especes?select=cle,nom,prix',{headers:sbEntetes});
-if(!r.ok)return;
+if(!r.ok)return false;
 const l=await r.json();
 (l||[]).forEach(x=>{
 if(!x||!x.cle)return;
@@ -24122,9 +24124,15 @@ if(!PRIX_POISSON[x.cle])PRIX_POISSON[x.cle]=(x.prix||0)*100;
 if(!F_NOMS[x.cle])F_NOMS[x.cle]=x.nom||x.cle;
 });
 graverLesIconesDuLac();
-}catch(x){}
+LAC_CHARGE=true;return true;
+}catch(x){return false;}
 }
 chargerLesEspecesDuLac();
+/* ON RÉESSAIE. Le chargement se faisait une seule fois au démarrage : s'il
+   ratait — connexion lente, réseau coupé — les prises du lac restaient sans
+   nom et invendables jusqu'au rechargement de la page. */
+setTimeout(()=>{if(!LAC_CHARGE&&!document.hidden)chargerLesEspecesDuLac();},8000);
+setTimeout(()=>{if(!LAC_CHARGE&&!document.hidden)chargerLesEspecesDuLac();},30000);
 /* L'ICÔNE DES PRISES DU LAC : elles ne sont pas dans FORMES_POISSON, elles ont
    leur propre dessin. On le grave une fois sur une toile, et on le pose dans la
    liste comme une image, exactement comme pour les poissons de mer. */
@@ -24161,7 +24169,12 @@ function ouvrirLaCriee(etal){try{return ouvrirLaCrieeReelle(etal);}catch(x){
 try{$('page2').classList.remove('on');}catch(y){}
 try{motOuverture('La criée a eu un souci : '+(x&&x.message?x.message:x));}catch(y){}
 return;}}
-function ouvrirLaCrieeReelle(etal){CRI_ETAL=etal||'poisson';CPT=MODE_POISSON;CRI_VENTE={};$('page2Fond').className='';$('page2').classList.add('on');
+function ouvrirLaCrieeReelle(etal){
+/* LES PRISES DU LAC doivent être connues avant d'ouvrir la criée, sinon
+   elles n'apparaissent pas dans la liste de ce qu'on peut vendre. */
+if(!LAC_CHARGE)chargerLesEspecesDuLac().then(ok=>{
+if(ok&&$('page2').classList.contains('on'))ouvrirLaCrieeReelle(CRI_ETAL);});
+CRI_ETAL=etal||'poisson';CPT=MODE_POISSON;CRI_VENTE={};$('page2Fond').className='';$('page2').classList.add('on');
 $('page2Fond').innerHTML=`<style>#cri{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#10263c;color:#f4ecd8;font-family:Georgia,serif}
 #cri .cri-tete{flex:none;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 12px;background:repeating-linear-gradient(90deg,#1f3a5a 0 5px,#1a3350 5px 6px,#24466a 6px 11px);border-bottom:3px solid #d8b050;position:relative}
 #cri .cri-etals{flex:none;display:flex;gap:8px;padding:8px 14px 10px;background:#0c1e30}
