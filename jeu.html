@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-06-0710';
+var MA_VERSION='2026-10-06-0830';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -25703,6 +25703,28 @@ return poulBloqueVrai(x,y);};
 const CSS_BQ=`
 #page2Fond.bq{background:#2a2118;color:#f0e4c6;display:flex;flex-direction:column;height:100%;
 font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;overflow:hidden}
+/* LE BANDEAU PEINT : la grange au petit matin, derrière le nom. Il
+   remplace l'en-tête plat et donne un lieu plutôt qu'un menu. */
+#page2Fond.bq .hdr{position:relative;flex:none;height:116px;overflow:hidden;
+border-bottom:3px solid #8a6238}
+#page2Fond.bq .hdr canvas{position:absolute;inset:0;width:100%;height:100%;
+image-rendering:pixelated}
+#page2Fond.bq .hdr .voile{position:absolute;inset:0;
+background:linear-gradient(180deg,rgba(26,16,9,.32),rgba(26,16,9,.92))}
+#page2Fond.bq .hdr .tx{position:absolute;left:16px;bottom:9px;z-index:2}
+#page2Fond.bq .hdr .tx small{display:block;font:700 8px ui-monospace,monospace;
+letter-spacing:3px;color:#e8b06a}
+#page2Fond.bq .hdr .tx b{display:block;font:400 25px Georgia,serif;color:#f6ead2;
+text-shadow:0 2px 5px rgba(0,0,0,.8);margin-top:2px}
+#page2Fond.bq .hdr .bs{position:absolute;right:58px;bottom:12px;z-index:2;text-align:right;
+font:700 8px ui-monospace,monospace;letter-spacing:1.5px;color:#d8bf9a;
+text-shadow:0 1px 3px rgba(0,0,0,.9)}
+#page2Fond.bq .hdr .bs b{display:block;font:700 16px 'Baloo 2',sans-serif;color:#f0cf7d;
+letter-spacing:0;margin:0}
+#page2Fond.bq .hdr button{position:absolute;right:14px;z-index:3;
+top:calc(env(safe-area-inset-top,0px) + 12px);
+width:34px;height:34px;border-radius:50%;border:0;
+background:rgba(20,13,8,.6);color:#f6ead2;font:700 15px 'Baloo 2',sans-serif}
 #page2Fond.bq .tete{flex:none;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 12px;
 display:flex;align-items:flex-start;gap:10px}
 #page2Fond.bq .tete .tx{flex:1;min-width:0}
@@ -25714,12 +25736,12 @@ display:flex;align-items:flex-start;gap:10px}
 background:rgba(255,255,255,.08);color:#f0e4c6;font:700 14px 'Baloo 2',sans-serif}
 /* LES TROIS ONGLETS. La classe .ong existe déjà ailleurs dans le jeu,
    avec un fond crème : d'où le bandeau clair qui chevauchait. */
-#page2Fond.bq .bqOng{display:flex;gap:6px;padding:0 16px 14px;flex:none}
+#page2Fond.bq .bqOng{display:flex;gap:6px;padding:11px 16px 12px;flex:none}
 #page2Fond.bq .bqOng button{border:0;border-radius:13px;padding:7px 14px;font:700 12px 'Baloo 2',sans-serif;
 background:rgba(255,255,255,.07);color:#a08f72}
 #page2Fond.bq .bqOng button.on{background:#c9a24a;color:#2a2016}
 #page2Fond.bq .corps{flex:1;overflow-y:auto;padding:0 0 calc(env(safe-area-inset-bottom,0px) + 90px)}
-#page2Fond.bq .mot{font:italic 12.5px/1.55 Georgia,serif;color:#a08f72;padding:0 16px 12px}
+#page2Fond.bq .mot{font-family:Georgia,serif;font-style:italic;color:#d8bf9a;font:italic 12.5px/1.55 Georgia,serif;color:#a08f72;padding:0 16px 12px}
 #page2Fond.bq .rub{font:700 9px ui-monospace,monospace;letter-spacing:2px;color:#7d7158;padding:10px 16px 8px}
 /* UNE LIGNE PAR PRODUIT */
 #page2Fond.bq .lg{display:flex;align-items:center;gap:12px;width:100%;padding:11px 16px;
@@ -25989,17 +26011,70 @@ function bqLignes(){const L=[];for(const k of Object.keys(POT_CULT).concat(['lai
 let BQ_ONG='vendre';
 /* LES OUTILS DU POTAGER : la graineterie est partie, ils avaient perdu
    leur porte d'entrée. La Récolte les reprend. */
+/* ================= LES ICÔNES DE L'ATELIER =================
+   Le code appelait dessinerOutilPotager, une fonction qui n'a jamais
+   existé : le garde `typeof === 'function'` avalait l'échec en silence et
+   laissait des carrés vides. La voici, gravée au pixel.
+   Le repère est une case de 20 × 20. */
+function dessinerOutilPotager(g,quoi){
+const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+const T2=(h,d)=>teint(h,d);
+const BOIS='#8a6238', boisC=T2(BOIS,20), boisO=T2(BOIS,-26);
+const FER='#8d969e', ferC=T2(FER,22), ferO=T2(FER,-30);
+const TOILE='#b8a478', toileO=T2(TOILE,-26);
+const EAU='#4a7a9a', eauC=T2(EAU,22);
+const VERT='#5f8440', vertC=T2(VERT,20), vertO=T2(VERT,-26);
+if(quoi==='houe'){
+R(9,3,2,13,BOIS);R(9,3,1,13,boisC);              /* le manche */
+R(6,15,8,2,ferO);R(6,15,8,1,FER);                /* la lame */
+R(5,16,10,2,ferO);R(5,17,10,1,T2(FER,-44));
+R(8,13,4,2,T2(BOIS,-34));}                       /* la douille */
+else if(quoi==='arrosoir'){
+R(4,8,10,9,FER);R(4,8,3,9,ferC);R(12,8,2,9,ferO);
+R(4,8,10,1,ferC);R(4,16,10,1,T2(FER,-44));
+R(13,6,5,2,FER);R(16,4,2,4,FER);R(16,3,3,1,ferC);   /* le bec */
+R(3,6,3,2,boisO);R(2,5,2,3,BOIS);                   /* l'anse */
+R(6,2,6,2,FER);R(6,1,6,1,ferC);
+R(17,2,1,2,eauC);R(18,4,1,2,EAU);}                  /* l'eau qui coule */
+else if(quoi==='engrais'){
+R(4,5,12,13,TOILE);R(4,5,4,13,T2(TOILE,16));
+R(13,5,3,13,toileO);
+R(4,5,12,2,T2(TOILE,-14));                          /* le repli du haut */
+R(6,9,8,5,vertO);R(7,10,2,2,vertC);R(10,11,2,2,vertC);
+R(6,16,8,2,T2(TOILE,-36));}
+else if(quoi==='arroseur'){
+R(8,10,4,8,ferO);R(8,10,1,8,FER);
+R(5,17,10,2,T2(FER,-44));R(5,17,10,1,ferO);
+R(6,6,8,4,FER);R(6,6,8,1,ferC);R(12,6,2,4,ferO);
+R(9,3,2,3,ferO);
+R(3,2,2,2,eauC);R(15,2,2,2,eauC);R(6,0,2,2,EAU);R(12,0,2,2,EAU);
+R(1,5,1,1,eauC);R(18,5,1,1,eauC);}                  /* les gouttes */
+else if(quoi==='epouvantail'){
+R(9,6,2,13,BOIS);R(9,6,1,13,boisC);
+R(3,9,14,2,BOIS);R(3,9,14,1,boisC);                 /* les bras */
+R(6,3,8,6,TOILE);R(6,3,3,6,T2(TOILE,16));R(12,3,2,6,toileO);
+R(7,5,2,1,'#2a1a10');R(11,5,2,1,'#2a1a10');
+R(8,7,4,1,'#2a1a10');
+R(4,1,12,2,'#c9a24a');R(4,1,12,1,T2('#c9a24a',22));
+R(6,0,8,1,'#c9a24a');
+R(5,11,3,4,'#a8482e');R(12,11,3,4,'#a8482e');}
+else if(quoi==='parcelle'){
+/* LA LOCATION DE PARCELLES : une planche de terre labourée */
+R(2,6,16,11,'#6b5740');R(2,6,16,2,'#7d6850');
+for(let i=0;i<4;i++)R(3,8+i*2,14,1,'#5b4a33');
+R(5,4,2,3,VERT);R(10,3,2,4,vertC);R(14,5,2,2,VERT);}
+}
 function bqOutils(){
 const J=(POT&&POT.j)||{nb:6,houe:false,arrosoir:false,engrais:0,arroseurs:[],epouvantails:0};
 const fmt=(c)=>enEuros(c).replace(',00','');
 const ligne=(k,nom,dit,prix,pris)=>'<div class="outil"><canvas data-o="'+k+'"></canvas>'+
 '<span class="t"><b>'+nom+'</b><small>'+dit+'</small></span>'+
-'<button data-a="'+k+'" class="'+(pris?'pris':'')+'">'+(pris?'✓ acheté':fmt(prix))+'</button></div>';
-let h='<div class="mot">Tout ce qu’il faut pour tenir un champ.</div>';
+'<button data-a="'+k+'" class="'+(pris?'pris':'')+'">'+(pris?'\u2713':fmt(prix))+'</button></div>';
+let h='<div class="mot">« Prends ce qu’il te faut, on comptera après. »</div>';
 h+=ligne('houe','La houe','pour bêcher les parcelles en friche',2500,J.houe);
 h+=ligne('arrosoir','L’arrosoir','une plante arrosée pousse deux fois plus vite',1500,J.arrosoir);
-h+=ligne('engrais','Sac d’engrais','la prochaine récolte pousse 1,5 × plus vite (tu en as '+(J.engrais||0)+')',1000,false);
-h+=ligne('arroseur','L’arroseur automatique','arrose une parcelle pour toujours · '+((J.arroseurs||[]).length)+' installé(s)',25000,false);
+h+=ligne('engrais','Sac d’engrais','la prochaine récolte pousse 1,5 × plus vite · tu en as '+(J.engrais||0),1000,false);
+h+=ligne('arroseur','L’arroseur automatique','arrose une parcelle pour toujours · '+((J.arroseurs||[]).length)+' posés',25000,false);
 h+=ligne('epouvantail','L’épouvantail','garde un rang de parcelles · tu en as '+((J.epouvantails||0))+' / 3',2000,(J.epouvantails||0)>=3);
 h+='<div class="rub">TON CHAMP · '+J.nb+' PARCELLES SUR 24</div>';
 const prix={6:150000,12:500000,18:1500000};
@@ -26030,21 +26105,49 @@ corps='<div class="mot" id="bqMot">'+(mot||'Madeleine reprend ta récolte au cou
 '<span class="p">'+enEuros(n*p)+'</span></button>').join('')
 :'<div class="vide">Ton inventaire est vide.<br>Va récolter ton champ, et reviens me voir.</div>');
 }
-if(ong==='commandes')corps='<div class="mot">Ce que Madeleine attend aujourd’hui.</div>'+cmdHTML();
+if(ong==='commandes')corps='<div class="mot">« Voilà ce qu’il me faut pour aujourd’hui. '+
+'Ce que tu m’apportes, je te le paie mieux qu’au marché. »</div>'+cmdHTML();
 if(ong==='outils')corps=bqOutils();
 $('page2Fond').innerHTML=
-'<div class="tete"><span class="tx"><small>LA FERME</small><b>La Récolte</b></span>'+
+'<div class="hdr"><canvas id="bqBandeau"></canvas><span class="voile"></span>'+
+'<span class="tx"><small>LA FERME · DEPUIS 1947</small><b>Chez Madeleine</b></span>'+
 '<span class="bs">TON SAC<b>'+charge+' / '+(e.sacMax||200)+'</b></span>'+
 '<button id="bqX">✕</button></div>'+
 '<div class="bqOng">'+
 '<button data-bo="vendre" class="'+(ong==='vendre'?'on':'')+'">Vendre</button>'+
 '<button data-bo="commandes" class="'+(ong==='commandes'?'on':'')+'">Commandes</button>'+
-'<button data-bo="outils" class="'+(ong==='outils'?'on':'')+'">Outils</button></div>'+
+'<button data-bo="outils" class="'+(ong==='outils'?'on':'')+'">L\u2019atelier</button></div>'+
 '<div class="corps">'+corps+'</div>'+
 (ong==='vendre'?'<div class="pied"><div class="tot"><span>TOTAL DU PANIER</span><b>'+enEuros(total)+'</b></div>'+
 '<button class="go" id="bqTout"'+(L.length?'':' disabled')+'>Tout vendre</button></div>':'');
 $('page2Fond').querySelectorAll('[data-bo]').forEach(b=>b.onclick=()=>{
 BQ_ONG=b.dataset.bo;vibrer(10);ouvrirLaBoutiqueFerme();});
+/* LE BANDEAU : la grange de Madeleine au petit matin. */
+try{const bd=$('bqBandeau');
+if(bd){const D=2, W=Math.round(bd.clientWidth||340), H=116;
+bd.width=W*D;bd.height=H*D;
+const g=bd.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};
+for(let y=0;y<H;y++){const k=y/H;
+g.fillStyle='rgb('+Math.round(58+k*92)+','+Math.round(44+k*62)+','+Math.round(34+k*28)+')';
+g.fillRect(0,y,W,1);}
+const sol=H-42;
+for(let y=sol;y<H;y++)for(let x=0;x<W;x+=2){
+const n=Math.abs(Math.sin((x*12.9+y*7.3)*0.7)*43758.5)%1;
+R(x,y,2,1,n<0.5?'#4a6a34':'#3f5c2c');}
+for(let r=sol+4;r<H;r+=8){R(0,r,W,2,'rgba(40,30,18,.32)');}
+R(W*0.78,sol-26,34,34,'rgba(240,200,120,.18)');
+g.fillStyle='#f6dd8c';g.beginPath();g.arc(W*0.8,sol-16,11,0,7);g.fill();
+const bx=Math.round(W*0.12);
+R(bx,sol-34,84,34,'#6a4228');R(bx,sol-34,84,3,'#7d5030');
+R(bx+66,sol-34,18,34,'#4e2f1c');
+for(let t=0;t<9;t++)R(bx-6+t*11,sol-44,11,11,'#8a2a22');
+R(bx-6,sol-44,99,3,'#a83a2e');
+R(bx+28,sol-20,22,20,'#2a1a10');
+R(bx+32,sol-16,6,8,'#e8c06a');R(bx+42,sol-16,6,8,'#e8c06a');
+R(bx+104,sol-10,22,10,'#8a6238');R(bx+104,sol-10,22,2,'#a5764a');
+R(bx+107,sol-13,4,3,'#c0392b');R(bx+114,sol-13,4,3,'#c0392b');
+R(bx+130,sol-6,16,6,'#8a6238');R(bx+130,sol-6,16,2,'#a5764a');}}catch(x){}
 /* LES OUTILS : mêmes achats qu'au grainetier, même RPC */
 if(ong==='outils'){
 const J2=(POT&&POT.j)||{nb:6,arroseurs:[]};
