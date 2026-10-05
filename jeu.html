@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-2200';
+var MA_VERSION='2026-10-08-0030';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -27915,59 +27915,339 @@ const page=(carte==='foret')?'foret.html':((carte==='ferme')?'ferme.html':'jeu.h
 location.href=page+(page.indexOf('?')<0?'?':'&')+'arrivee=1&v='+Date.now();
 }
 let ETB=null;
-const CSS_ETB=`#page2Fond.etb{background:#f4ecd8;color:#2a1a0e;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%}
-#page2Fond.etb .tete{background:#7a2e1c;color:#f4ecd8;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:3px solid #c9a24a;flex:none}
-#page2Fond.etb .tete b{flex:1;font:400 23px Georgia}#page2Fond.etb .tete small{display:block;font:700 9px Arial;letter-spacing:2px;color:#e8c8a8}
-#page2Fond.etb .tete button{width:34px;height:34px;border-radius:50%;border:0;background:#f4ecd8;color:#2a1a0e;font:700 14px Arial}
-#page2Fond.etb .corps{padding:12px 14px;overflow-y:auto;flex:1}
-#page2Fond.etb h4{font:700 10px Arial;letter-spacing:2px;color:#8a6a2a;margin:6px 2px 8px}
-#page2Fond.etb .lg{display:flex;align-items:center;gap:10px;background:#fbf6e8;border:1px solid #e2d6b8;border-radius:12px;padding:10px 12px;margin-bottom:8px}
-#page2Fond.etb .lg .ic{width:34px;height:34px;flex:none;border-radius:8px;background:#efe2c4;display:flex;align-items:center;justify-content:center}
-#page2Fond.etb .lg b{font:400 16px Georgia;display:block}#page2Fond.etb .lg em{font:italic 12px Georgia;color:#7a5a3a}
-#page2Fond.etb .lg button{margin-left:auto;border:0;border-radius:10px;padding:9px 12px;font:700 13px Georgia;background:#7a2e1c;color:#f4ecd8;white-space:nowrap}
-#page2Fond.etb .lg button.or{background:#e0b850;color:#2a1a0e}#page2Fond.etb .lg button:disabled{opacity:.45}
-#page2Fond.etb .barre{height:6px;border-radius:3px;background:#e2d6b8;margin-top:5px;overflow:hidden}#page2Fond.etb .barre i{display:block;height:100%;background:#7aa04a}
-#page2Fond.etb .mot{margin:2px 2px 10px;font:italic 13px Georgia;color:#6a5a3a;min-height:18px}`;
-const etbDuree=(s)=>{s=Math.max(0,Math.round(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?h+' h '+(m<10?'0':'')+m:(m?m+' min':Math.max(1,s)+' s');};
-async function ouvrirLEtable(mot){
-if(!document.getElementById('cssEtb')){const st=document.createElement('style');st.id='cssEtb';st.textContent=CSS_ETB;document.head.appendChild(st);}
+const CSS_ETB=`
+/* ================= L'ENCLOS, VU DU DESSUS =================
+   Pas de liste : le pré lui-même, avec les bêtes dessus et une étiquette
+   sur chacune. On appuie sur une bête pour agir. */
+#page2Fond.etb{background:#1a2416;display:flex;flex-direction:column}
+#page2Fond.etb .tete{flex:none;position:relative;
+padding:calc(env(safe-area-inset-top,0px) + 13px) 14px 10px}
+#page2Fond.etb .tete small{display:block;font:700 7.5px ui-monospace,monospace;
+letter-spacing:3px;color:#9fc47a}
+#page2Fond.etb .tete b{display:block;font:400 21px Georgia,serif;color:#f0e6d2;margin-top:1px}
+#page2Fond.etb .tete .eu{position:absolute;right:54px;bottom:12px;
+font:700 13px 'Baloo 2',sans-serif;color:#f0cf7d}
+#page2Fond.etb .tete button{position:absolute;right:12px;
+top:calc(env(safe-area-inset-top,0px) + 11px);
+width:34px;height:34px;border-radius:50%;border:0;
+background:rgba(255,255,255,.1);color:#f0e6d2;font:700 15px 'Baloo 2',sans-serif}
+#page2Fond.etb .scene{position:relative;flex:1;min-height:0;overflow:hidden;
+border-top:2px solid #2c4023;border-bottom:2px solid #2c4023}
+#page2Fond.etb .scene canvas{position:absolute;inset:0;width:100%;height:100%;
+image-rendering:pixelated}
+#page2Fond.etb .bulle{position:absolute;transform:translate(-50%,-100%);
+padding:4px 9px;border-radius:12px;background:rgba(14,20,10,.84);
+font:700 10px 'Baloo 2',sans-serif;color:#f0e6d2;
+border:1px solid rgba(201,162,74,.45);white-space:nowrap;
+box-shadow:0 3px 10px rgba(0,0,0,.4)}
+#page2Fond.etb .bulle u{display:block;text-decoration:none;
+font:italic 8px Georgia,serif;color:#9fc47a}
+#page2Fond.etb .bulle.pret{background:rgba(201,162,74,.94);color:#1d1708;border-color:#f0d78a}
+#page2Fond.etb .bulle.pret u{color:#4a3a10}
+#page2Fond.etb .bulle.vide{background:rgba(14,20,10,.72);border-style:dashed}
+#page2Fond.etb .bas{flex:none;padding:11px 12px calc(env(safe-area-inset-bottom,0px) + 13px);
+background:linear-gradient(180deg,#20301a,#16200f)}
+#page2Fond.etb .lot{display:flex;gap:7px}
+#page2Fond.etb .lot button{flex:1;border:1px solid rgba(159,196,122,.22);border-radius:12px;
+padding:9px 2px 8px;background:#2c4023;color:#dff0cc;font:700 10.5px 'Baloo 2',sans-serif}
+#page2Fond.etb .lot button i{display:block;font-style:normal;
+font:italic 8px Georgia,serif;color:#9fb490;margin-top:1px}
+#page2Fond.etb .lot button.p{background:linear-gradient(180deg,#f0d78a,#d8a84a);
+color:#241a06;border-color:#f6e6b0;box-shadow:0 3px 0 rgba(0,0,0,.26)}
+#page2Fond.etb .lot button.p i{color:#5a4410}
+#page2Fond.etb .lot button:disabled{opacity:.45}
+#page2Fond.etb .mot{margin:0 1px 9px;font:italic 10.5px Georgia,serif;color:#9fb490}
+#page2Fond.etb .tiroir{position:absolute;left:0;right:0;bottom:0;z-index:4;
+background:#20301a;border-top:2px solid #3f5c2c;border-radius:16px 16px 0 0;
+padding:12px 13px 14px;transform:translateY(102%);transition:transform .22s}
+#page2Fond.etb .tiroir.on{transform:none}
+#page2Fond.etb .tiroir .h{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+#page2Fond.etb .tiroir canvas{width:46px;height:46px;border-radius:10px;
+image-rendering:pixelated;flex:none;background:#16200f}
+#page2Fond.etb .tiroir b{display:block;font:700 13px 'Baloo 2',sans-serif;color:#f0e6d2}
+#page2Fond.etb .tiroir em{font:italic 9.5px Georgia,serif;color:#9fb490}
+#page2Fond.etb .tiroir .x{margin-left:auto;border:0;background:rgba(255,255,255,.08);
+color:#dff0cc;width:30px;height:30px;border-radius:50%;font:700 14px 'Baloo 2',sans-serif}
+#page2Fond.etb .tiroir .act{display:flex;gap:7px;flex-wrap:wrap}
+#page2Fond.etb .tiroir .act button{flex:1;min-width:92px;border:0;border-radius:11px;padding:10px 0;
+font:700 11px 'Baloo 2',sans-serif;background:#2c4023;color:#dff0cc}
+#page2Fond.etb .tiroir .act button.p{background:linear-gradient(180deg,#f0d78a,#d8a84a);
+color:#241a06;box-shadow:0 2px 0 rgba(0,0,0,.24)}
+#page2Fond.etb .tiroir .act button:disabled{opacity:.4}
+`;
+
+/* ================= LES PORTRAITS DES BÊTES ================= */
+const BETE_DESSIN={
+vache:(R)=>{
+R(-9,-10,18,8,'#f2efe4');R(-9,-10,18,2,'#ffffff');R(-9,-3,18,1,'#c8c2b4');
+R(-6,-9,6,5,'#2a241e');R(2,-7,5,4,'#2a241e');
+R(-8,-2,3,5,'#e8e2d4');R(5,-2,3,5,'#e8e2d4');
+R(8,-14,7,6,'#f2efe4');R(8,-14,7,1,'#ffffff');
+R(10,-12,1,1,'#1b1712');R(13,-11,2,2,'#e8b0b0');
+R(8,-15,1,2,'#d8d2c4');R(14,-15,1,2,'#d8d2c4');
+R(-10,-8,2,7,'#e8e2d4');R(-2,0,4,2,'#e8b0b0');},
+mouton:(R)=>{
+R(-8,-9,15,8,'#e8e2d4');
+for(let k=0;k<15;k+=3)R(-8+k,-11,4,4,'#f2efe4');
+R(-8,-2,15,1,'#c8c2b4');
+R(-7,-1,3,4,'#8d8678');R(3,-1,3,4,'#8d8678');
+R(7,-12,6,6,'#3a3228');R(7,-12,6,1,'#4e453a');
+R(9,-10,1,1,'#f2efe4');
+R(6,-13,2,2,'#2a241e');R(11,-13,2,2,'#2a241e');},
+cochon:(R)=>{
+R(-9,-9,18,9,'#e8a0a8');R(-9,-9,18,2,'#f2b8c0');R(-9,-1,18,1,'#c87f8a');
+R(-7,0,3,4,'#d890a0');R(4,0,3,4,'#d890a0');
+R(8,-12,7,7,'#e8a0a8');R(8,-12,7,1,'#f2b8c0');
+R(10,-10,1,1,'#1b1712');
+R(13,-9,3,4,'#d87f90');R(14,-8,1,1,'#a85a68');
+R(8,-14,3,3,'#d890a0');R(12,-14,3,3,'#d890a0');
+R(-11,-6,3,2,'#d890a0');}};
+function dessinerBete(g,espece,cx,cy,Z,ombre){
+if(ombre!==false){g.fillStyle='rgba(20,16,10,.3)';
+g.beginPath();g.ellipse(cx+2*Z,cy+4*Z,10*Z,2.4*Z,0,0,7);g.fill();}
+const R=(a,b,w,h,c)=>{g.fillStyle=c;
+g.fillRect(Math.round(cx+a*Z),Math.round(cy+b*Z),
+Math.max(1,Math.round(w*Z)),Math.max(1,Math.round(h*Z)));};
+(BETE_DESSIN[espece]||BETE_DESSIN.vache)(R);}
+/* ================= L'ENCLOS, VU DU DESSUS =================
+   Chaque bête garde sa place d'une ouverture à l'autre : on la tire de son
+   numéro, pas du hasard, sinon le troupeau sauterait partout. */
+let ETB_PRE=null, ETB_BOUCLE=0;
+const etbDuree=(s)=>{if(s==null)return '';
+const h=Math.floor(s/3600), m=Math.floor(s%3600/60);
+return h>0?(h+' h '+(m<10?'0':'')+m):(Math.max(1,m)+' min');};
+function placesDuTroupeau(E){
+const L=[];
+const pose=(esp,n,b)=>{for(let k=0;k<n;k++)L.push({esp,i:k,
+fx:0.08+PR_h(b+k*7,k*3+1,141)*0.84,
+fy:0.16+PR_h(b+k*11,k*5+2,142)*0.72,
+ph:PR_h(k,b,143)*6.283});};
+pose('vache',E.vaches||0,11);
+pose('mouton',E.moutons||0,37);
+pose('cochon',E.cochons||0,71);
+return L;}
+function peindreLePre(cv,L,t){
+const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+const D=Math.min(2,window.devicePixelRatio||1);
+const W=Math.round(cv.clientWidth)||300, H=Math.round(cv.clientHeight)||260;
+if(cv.width!==W*D||cv.height!==H*D){cv.width=W*D;cv.height=H*D;}
+g.setTransform(D,0,0,D,0,0);
+for(let y=0;y<H;y+=2)for(let x=0;x<W;x+=2){
+const n=PR_h(x,y,101);
+g.fillStyle=n<.38?'#4e7a38':(n<.72?'#58873f':'#447030');
+g.fillRect(x,y,2,2);}
+const nb=Math.round(W*H/900);
+for(let k=0;k<nb;k++){
+const tx=Math.floor(PR_h(k,8,102)*W), ty=Math.floor(PR_h(k,9,103)*H);
+g.fillStyle='rgba(30,48,22,.3)';g.fillRect(tx-1,ty+1,6,1);
+for(let b=0;b<4;b++){g.fillStyle=PR_h(k,b,104)<.5?'#63954a':'#6fa052';
+g.fillRect(tx+b,ty-(b%2?3:2),1,3);}}
+for(let p=0;p<W;p+=7){
+const h=11+Math.round(PR_h(p,1,105)*4), c=PR_h(p,2,106);
+g.fillStyle=c<.35?'#8a6238':(c<.7?'#7d5934':'#96703f');
+g.fillRect(p,0,5,h);
+g.fillStyle='#a5764a';g.fillRect(p+1,h,3,2);}
+L.forEach(o=>{
+const bal=Math.sin(t/900+o.ph);
+o.x=Math.round(o.fx*(W-70))+35+Math.round(bal*5);
+o.y=Math.round(o.fy*(H-70))+40;
+dessinerBete(g,o.esp,o.x,o.y,o.esp==='mouton'?1.25:1.5);});}
+function ouvrirLEtable(mot){
+if(!document.getElementById('cssEtb')){const st=document.createElement('style');
+st.id='cssEtb';st.textContent=CSS_ETB;document.head.appendChild(st);}
 $('page2Fond').className='etb';$('page2').classList.add('on');
-if(!ETB)$('page2Fond').innerHTML='<div class="corps"><div class="mot">On ouvre la porte…</div></div>';
-const d=await appelRPC('etable_etat',{p_joueur:e.id});
-if(d&&!d.erreur)ETB=d;
-const E=ETB||{vaches:2,lait:0,lait_max:8,foin:0,ble:0,lait_sac:0};
-const laitSac=(e.sac&&e.sac.lait)||E.lait_sac||0, ble=(e.sac&&e.sac.ble)||E.ble||0;
+peindreLEcranDesBetes(mot);
+Promise.all([appelRPC('etable_etat',{p_joueur:e.id}),
+appelRPC('betes_etat',{p_joueur:e.id})]).then(([a,b])=>{
+ETB=Object.assign({},(a&&!a.erreur)?a:{},(b&&!b.erreur)?b:{});
+if($('page2Fond').className==='etb')peindreLEcranDesBetes(mot);}).catch(()=>{});}
+function peindreLEcranDesBetes(mot){
+const E=ETB||{vaches:0,moutons:0,cochons:0,lait:0,lait_max:0};
 $('page2Fond').innerHTML=
-'<div class="tete"><div style="flex:1"><small>LA FERME</small><b>L’étable</b></div><button id="etbX">✕</button></div>'+
-'<div class="corps"><div class="mot">'+(mot||'« Elles ont bien travaillé, ce matin. »')+'</div>'+
-'<h4>TES VACHES · '+E.vaches+' / 4</h4>'+
-'<div class="lg"><span class="ic">🥛</span><div style="flex:1"><b>'+(E.lait?E.lait+' bidon'+(E.lait>1?'s':'')+' de lait':'Pas de lait pour l’instant')+'</b>'+
-'<em>'+(E.foin>0?(E.prochain!=null?'prochain bidon dans '+etbDuree(E.prochain):'le seau est plein'):'elles n’ont plus de foin')+'</em>'+
-'<div class="barre"><i style="width:'+Math.round(100*E.lait/Math.max(1,E.lait_max))+'%"></i></div></div>'+
-'<button class="or" id="etbTraire"'+(E.lait?'':' disabled')+'>Traire</button></div>'+
-'<div class="lg"><span class="ic">🌾</span><div style="flex:1"><b>Le foin</b><em>'+(E.foin>0?'encore '+etbDuree(E.foin):'mangeoire vide')+' · 2 gerbes de blé ou 3,00 €'+(ble>=2?' (tu as '+ble+' blé)':'')+'</em>'+
-'<div class="barre"><i style="width:'+Math.round(100*Math.min(1,E.foin/43200))+'%"></i></div></div>'+
-'<button id="etbFoin">'+(ble>=2?'Donner du blé':'3,00 €')+'</button></div>'+
-'<h4>LA CAVE</h4>'+
-'<div class="lg"><span class="ic">🧀</span><div style="flex:1"><b>'+(E.fromage==null?'Affiner un fromage':(E.fromage>0?'Fromage en cave':'Fromage prêt !'))+'</b>'+
-'<em>'+(E.fromage==null?'4 bidons de lait → 1 fromage (2 h) · tu as '+laitSac+' bidon'+(laitSac>1?'s':'')+' dans le sac'
-:(E.fromage>0?'prêt dans '+etbDuree(E.fromage):'il t’attend, bien affiné'))+'</em>'+
-(E.fromage!=null?'<div class="barre"><i style="width:'+Math.round(100*(1-Math.min(1,E.fromage/7200)))+'%;background:#e0b850"></i></div>':'')+'</div>'+
-'<button class="'+(E.fromage===0?'or':'')+'" id="etbCave"'+((E.fromage==null&&laitSac<4)||(E.fromage>0)?' disabled':'')+'>'+(E.fromage==null?'Mettre en cave':(E.fromage>0?'Ça affine…':'Récupérer'))+'</button></div>'+
-'<h4>AGRANDIR LE TROUPEAU</h4>'+
-'<div class="lg"><span class="ic">🐄</span><div style="flex:1"><b>Une vache de plus</b><em>elle donne un bidon toutes les 45 min'+(E.prix_vache?' · '+enEuros(E.prix_vache):'')+'</em></div>'+
-'<button id="etbVache"'+(E.prix_vache?'':' disabled')+'>'+(E.prix_vache?enEuros(E.prix_vache):'✓ complet')+'</button></div></div>';
-$('etbX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-const faire=async(nom,bt,ok)=>{bt.disabled=true;const d2=await appelRPC(nom,{p_joueur:e.id});
-if(!d2||d2.erreur){const m={pas_assez:'Pas assez d’argent.',sac_plein:'Ton inventaire est plein.',rien:'Rien à traire pour l’instant.',plein:'La mangeoire est déjà pleine.',pas_assez_lait:'Il faut 4 bidons de lait dans ton inventaire.',max:'Tu as déjà quatre vaches.'}[d2&&d2.erreur]||'Ça n’a pas marché.';
-ouvrirLEtable(m);return;}
-ETB=d2.etat||d2;try{lireSacServeur();lireLeSolde();}catch(x){}jouer('vente','moment');vibrer([15,40,15]);
-ouvrirLEtable(typeof ok==='function'?ok(d2):ok);};
-$('etbTraire').onclick=function(){faire('etable_traire',this,(d2)=>'+'+d2.pris+' bidon'+(d2.pris>1?'s':'')+' de lait dans ton inventaire.');};
-$('etbFoin').onclick=function(){faire('etable_nourrir',this,'Le foin est dans la mangeoire.');};
-$('etbCave').onclick=function(){faire('etable_cave',this,(d2)=>d2.fromage?'Un beau fromage pour ton inventaire !':'En cave : reviens dans deux heures.');};
-$('etbVache').onclick=function(){faire('etable_vache',this,'Une vache de plus au pré !');};
-}
+'<div class="tete"><small>L’ENCLOS · LA FERME</small><b>Les bêtes</b>'+
+'<span class="eu">'+fmt(e.euros||0)+'</span><button id="etbX">✕</button></div>'+
+'<div class="scene"><canvas id="etbPre"></canvas><div id="etbBulles"></div>'+
+'<div class="tiroir" id="etbTiroir"></div></div>'+
+'<div class="bas">'+(mot?'<div class="mot">'+mot+'</div>':'')+
+'<div class="lot">'+
+'<button data-g="nourrir" class="'+((E.foin||0)>0?'':'p')+'">Nourrir'+
+'<i>'+((E.foin||0)>0?'foin : '+etbDuree(E.foin):'elles ont faim')+'</i></button>'+
+'<button data-g="traire" '+((E.lait||0)>0?'class="p"':'disabled')+'>Traire'+
+'<i>'+(E.lait||0)+' / '+(E.lait_max||0)+' L</i></button>'+
+'<button data-g="marche">Le marché<i>acheter · vendre</i></button>'+
+'</div></div>';
+$('etbX').onclick=()=>{ETB_PRE=null;$('page2').classList.remove('on');};
+ETB_PRE=placesDuTroupeau(E);
+const cv=$('etbPre');
+const mien=++ETB_BOUCLE;
+const boucle=()=>{
+if(mien!==ETB_BOUCLE)return;
+if(!$('page2').classList.contains('on')||$('page2Fond').className!=='etb')return;
+if(!document.hidden){peindreLePre(cv,ETB_PRE,performance.now());poserLesBulles(E);}
+requestAnimationFrame(boucle);};
+requestAnimationFrame(boucle);
+$('page2Fond').querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{
+vibrer(10);gesteDesBetes(b.dataset.g);});}
+function poserLesBulles(E){
+const d=$('etbBulles');if(!d||!ETB_PRE)return;
+const grp={};ETB_PRE.forEach(o=>{if(!grp[o.esp])grp[o.esp]=o;});
+const dit={
+vache:()=>({n:(E.vaches||0)+' vache'+((E.vaches||0)>1?'s':''),
+t:(E.lait||0)>0?((E.lait)+' L prêts'):(E.prochain?('lait dans '+etbDuree(E.prochain)):'il leur faut du foin'),
+pret:(E.lait||0)>0}),
+mouton:()=>({n:(E.moutons||0)+' mouton'+((E.moutons||0)>1?'s':''),
+t:(E.laine_prete||0)>0?((E.laine_prete)+' toison'+(E.laine_prete>1?'s':'')+' prête'+(E.laine_prete>1?'s':'')):('laine dans '+etbDuree(E.laine_dans)),
+pret:(E.laine_prete||0)>0}),
+cochon:()=>({n:(E.cochons||0)+' cochon'+((E.cochons||0)>1?'s':''),
+t:(E.poids_bete||0)+' kg'+(E.truffe_prete?' · une truffe ?':''),
+pret:!!E.truffe_prete})};
+let html='';
+Object.keys(grp).forEach(esp=>{
+const o=grp[esp], q=dit[esp]();
+html+='<span class="bulle'+(q.pret?' pret':'')+'" data-b="'+esp+'" '+
+'style="left:'+o.x+'px;top:'+(o.y-20)+'px">'+q.t+'<u>'+q.n+'</u></span>';});
+if(!Object.keys(grp).length)
+html='<span class="bulle vide" style="left:50%;top:46%">L’enclos est vide<u>ouvre le marché</u></span>';
+if(d.dataset.h!==html){d.dataset.h=html;d.innerHTML=html;
+d.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{
+vibrer(8);ouvrirLeTiroir(b.dataset.b);});}
+else{d.querySelectorAll('[data-b]').forEach(b=>{
+const o=grp[b.dataset.b];if(o){b.style.left=o.x+'px';b.style.top=(o.y-20)+'px';}});}}
+
+/* ================= LE TIROIR D'UNE BÊTE =================
+   Il monte du bas quand on touche une étiquette, et porte les gestes
+   propres à l'espèce. */
+function ouvrirLeTiroir(esp){
+const E=ETB||{}, d=$('etbTiroir');if(!d)return;
+const nom={vache:'Les vaches',mouton:'Les moutons',cochon:'Les cochons'}[esp]||'';
+const dit={
+vache:(E.lait||0)>0?((E.lait)+' litres dans le seau'):
+(E.prochain?('le prochain litre dans '+etbDuree(E.prochain)):'elles ont besoin de foin'),
+mouton:(E.laine_prete||0)>0?('la laine est prête'):('laine dans '+etbDuree(E.laine_dans)),
+cochon:(E.poids_bete||0)+' kg la bête'+((E.poids_bete||0)<40?' · trop maigre pour vendre':'')
+}[esp]||'';
+let act='';
+if(esp==='vache')
+act='<button data-a="traire" '+((E.lait||0)>0?'class="p"':'disabled')+'>Traire</button>'+
+'<button data-a="nourrir">Donner du foin</button>';
+if(esp==='mouton')
+act='<button data-a="tondre" '+((E.laine_prete||0)>0?'class="p"':'disabled')+'>Tondre</button>'+
+'<button data-a="marche">Le marché</button>';
+if(esp==='cochon')
+act='<button data-a="truffe" '+(E.truffe_prete?'class="p"':'disabled')+'>Chercher une truffe</button>'+
+'<button data-a="vendre_cochon" '+((E.poids_bete||0)>=40?'':'disabled')+'>Vendre une bête</button>';
+d.innerHTML='<div class="h"><canvas id="etbPort" width="92" height="92"></canvas>'+
+'<span><b>'+nom+'</b><em>'+dit+'</em></span>'+
+'<button class="x" id="etbTX">✕</button></div><div class="act">'+act+'</div>';
+try{const c=$('etbPort'), g=c.getContext('2d');
+g.imageSmoothingEnabled=false;
+for(let y=0;y<92;y+=2)for(let x=0;x<92;x+=2){
+const n=PR_h(x,y,101);
+g.fillStyle=n<.38?'#2f4a22':(n<.72?'#365426':'#2a431e');g.fillRect(x,y,2,2);}
+dessinerBete(g,esp,46,62,2.1);}catch(x){}
+d.classList.add('on');
+$('etbTX').onclick=()=>{vibrer(8);d.classList.remove('on');};
+d.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
+vibrer(10);gesteDesBetes(b.dataset.a);});}
+/* ================= LES GESTES ================= */
+let ETB_OCCUPE=false;
+async function gesteDesBetes(quoi){
+if(ETB_OCCUPE)return;ETB_OCCUPE=true;
+const dire=(t,c)=>{try{texteVolant(joueur.x,joueur.y-34,t,c||'#dff0cc');}catch(x){}};
+try{
+if(quoi==='marche'){ouvrirLeMarcheAuxBetes();return;}
+if(quoi==='nourrir'){
+const d=await appelRPC('etable_nourrir',{p_joueur:e.id});
+if(d&&d.erreur){dire(d.erreur==='pas_de_ble'?'il te faut du blé':'impossible','#e8a06a');}
+else{ETB=Object.assign({},ETB,d||{});jouer('cueille');dire('elles sont nourries');
+try{const b=await appelRPC('betes_etat',{p_joueur:e.id});
+if(b&&!b.erreur)ETB=Object.assign({},ETB,b);}catch(x){}
+peindreLEcranDesBetes();}
+return;}
+if(quoi==='traire'){
+const d=await appelRPC('etable_traire',{p_joueur:e.id});
+if(d&&d.erreur){dire('rien à traire','#e8a06a');}
+else{ETB=Object.assign({},ETB,(d&&d.etat)||d||{});
+jouer('cueille');dire('+'+((d&&d.lait)||0)+' litres');
+try{await recalerLeSac(true);majHaut();}catch(x){}
+peindreLEcranDesBetes();}
+return;}
+if(quoi==='tondre'){
+const d=await appelRPC('betes_tondre',{p_joueur:e.id});
+if(d&&d.erreur){dire(d.erreur==='pas_prete'?'la laine n’est pas prête':'pas de mouton','#e8a06a');}
+else{ETB=Object.assign({},ETB,(d&&d.etat)||{});
+jouer('cueille');dire('+'+((d&&d.laine)||0)+' toison'+(((d&&d.laine)||0)>1?'s':''));
+try{await recalerLeSac(true);majHaut();}catch(x){}
+peindreLEcranDesBetes();}
+return;}
+if(quoi==='truffe'){
+const d=await appelRPC('betes_truffe',{p_joueur:e.id});
+if(d&&d.erreur){dire('pas encore','#e8a06a');}
+else{ETB=Object.assign({},ETB,(d&&d.etat)||{});
+if(d&&d.trouve){jouer('achat');dire('une truffe !','#f0cf7d');}
+else{dire('il n’a rien trouvé','#e8a06a');}
+try{await recalerLeSac(true);majHaut();}catch(x){}
+peindreLEcranDesBetes();}
+return;}
+if(quoi==='vendre_cochon'){
+const d=await appelRPC('betes_vendre_cochon',{p_joueur:e.id});
+if(d&&d.erreur){dire(d.erreur==='trop_maigre'?('trop maigre : '+(d.poids||0)+' kg'):'pas de cochon','#e8a06a');}
+else{ETB=Object.assign({},ETB,(d&&d.etat)||{});
+jouer('achat');dire('+'+fmt(d.gain)+' · '+d.poids+' kg','#f0cf7d');
+try{if(typeof r==='object'&&r&&typeof r.euros==='number'){e.euros=r.euros;sauver();}majHaut();}catch(x){}
+peindreLEcranDesBetes();}
+return;}
+}catch(x){dire('le réseau a flanché','#e8a06a');}
+finally{ETB_OCCUPE=false;const t=$('etbTiroir');if(t)t.classList.remove('on');}}
+/* ================= LE MARCHÉ AUX BÊTES ================= */
+async function ouvrirLeMarcheAuxBetes(){
+const C=await appelRPC('betes_cours',{}).catch(()=>null);
+const E=ETB||{};
+const sac=(k)=>((e.sac&&e.sac[k])||0);
+const ligne=(k,nom,prix)=>'<button data-v="'+k+'" '+(sac(k)>0?'class="p"':'disabled')+'>'+
+nom+'<i>'+sac(k)+' × '+fmt(prix||0)+'</i></button>';
+const d=$('etbTiroir');if(!d)return;
+d.innerHTML='<div class="h"><span><b>Le marché</b>'+
+'<em>le cours change chaque matin</em></span>'+
+'<button class="x" id="etbTX">✕</button></div>'+
+'<div class="act" style="margin-bottom:8px">'+
+ligne('lait','Vendre le lait',(C&&C.lait)||0)+
+ligne('laine','Vendre la laine',(C&&C.laine)||0)+
+ligne('truffe','Vendre les truffes',(C&&C.truffe)||0)+
+'</div><div class="act">'+
+'<button data-ac="vache" '+(E.prix_vache?'':'disabled')+'>Une vache<i>'+
+(E.prix_vache?fmt(E.prix_vache):'au complet')+'</i></button>'+
+'<button data-ac="mouton" '+(E.prix_mouton?'':'disabled')+'>Un mouton<i>'+
+(E.prix_mouton?fmt(E.prix_mouton):'au complet')+'</i></button>'+
+'<button data-ac="cochon" '+(E.prix_cochon?'':'disabled')+'>Un cochon<i>'+
+(E.prix_cochon?fmt(E.prix_cochon):'au complet')+'</i></button>'+
+'</div>';
+d.classList.add('on');
+$('etbTX').onclick=()=>{vibrer(8);d.classList.remove('on');};
+d.querySelectorAll('[data-v]').forEach(b=>b.onclick=async()=>{
+vibrer(10);
+const r=await appelRPC('betes_vendre',{p_joueur:e.id,p_quoi:b.dataset.v}).catch(()=>null);
+if(r&&r.erreur){try{texteVolant(joueur.x,joueur.y-34,'rien à vendre','#e8a06a');}catch(x){}return;}
+jouer('achat');
+try{texteVolant(joueur.x,joueur.y-34,'+'+fmt(r.gain),'#f0cf7d');}catch(x){}
+try{await recalerLeSac(true);majHaut();}catch(x){}
+ETB=Object.assign({},ETB,(r&&r.etat)||{});
+peindreLEcranDesBetes();ouvrirLeMarcheAuxBetes();});
+d.querySelectorAll('[data-ac]').forEach(b=>b.onclick=async()=>{
+vibrer(12);
+const esp=b.dataset.ac;
+const r=esp==='vache'?await appelRPC('etable_vache',{p_joueur:e.id}).catch(()=>null)
+:await appelRPC('betes_acheter',{p_joueur:e.id,p_espece:esp}).catch(()=>null);
+if(r&&r.erreur){try{texteVolant(joueur.x,joueur.y-34,
+r.erreur==='pas_assez'?'pas assez d’argent':'déjà au complet','#e8a06a');}catch(x){}return;}
+jouer('achat');
+try{texteVolant(joueur.x,joueur.y-34,'une bête de plus','#f0cf7d');}catch(x){}
+try{if(typeof r==='object'&&r&&typeof r.euros==='number'){e.euros=r.euros;sauver();}majHaut();}catch(x){}
+const a=await appelRPC('etable_etat',{p_joueur:e.id}).catch(()=>null);
+const bb=await appelRPC('betes_etat',{p_joueur:e.id}).catch(()=>null);
+ETB=Object.assign({},(a&&!a.erreur)?a:{},(bb&&!bb.erreur)?bb:{});
+peindreLEcranDesBetes();ouvrirLeMarcheAuxBetes();});}
+
 function graverEtableFerme(){
 const W=160,H=120,cx=72,sol=112,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;
 const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
