@@ -28083,7 +28083,7 @@ o.y=Math.round(o.fy*(H-70))+40;
 dessinerBete(g,o.esp,o.x,o.y,o.esp==='mouton'?1.25:1.5);});}
 function ouvrirLEtable(mot){
 if(!document.getElementById('cssEtb')){const st=document.createElement('style');
-st.id='cssEtb';st.textContent=CSS_ETB;document.head.appendChild(st);}
+st.id='cssEtb';st.textContent=CSS_ETB+CSS_MARCHE;document.head.appendChild(st);}
 $('page2Fond').className='etb';$('page2').classList.add('on');
 peindreLEcranDesBetes(mot);
 Promise.all([appelRPC('etable_etat',{p_joueur:e.id}),
@@ -28228,31 +28228,164 @@ peindreLEcranDesBetes();}
 return;}
 }catch(x){dire('le réseau a flanché','#e8a06a');}
 finally{ETB_OCCUPE=false;const t=$('etbTiroir');if(t)t.classList.remove('on');}}
-/* ================= LE MARCHÉ AUX BÊTES ================= */
+/* ================= LE MARCHÉ AUX BÊTES =================
+   Plus un tableau de prix : un étal. Lucien tient le comptoir, l'ardoise
+   porte les cours du matin, les marchandises sont posées devant lui et les
+   bêtes à vendre attendent sur des pancartes en bois. */
+const CSS_MARCHE=`
+#page2Fond .mk{position:absolute;inset:0;z-index:6;background:#20301a;
+display:flex;flex-direction:column;overflow:hidden}
+#page2Fond .mk .etal{position:relative;flex:none;background:#16200f;
+border-bottom:2px solid #3f5c2c}
+#page2Fond .mk .etal canvas{display:block;width:100%;height:170px;image-rendering:pixelated}
+#page2Fond .mk .dit{position:absolute;left:10px;
+top:calc(env(safe-area-inset-top,0px) + 10px);max-width:62%;
+background:rgba(14,20,10,.84);border:1px solid rgba(201,162,74,.45);
+border-radius:12px;padding:5px 10px;color:#f0e6d2;
+font:700 11px 'Baloo 2',sans-serif}
+#page2Fond .mk .dit u{display:block;text-decoration:none;
+font:italic 9px Georgia,serif;color:#9fc47a}
+#page2Fond .mk .eu{position:absolute;right:52px;
+top:calc(env(safe-area-inset-top,0px) + 11px);
+background:rgba(201,162,74,.94);color:#241a06;border-radius:12px;
+padding:5px 9px;font:700 12px 'Baloo 2',sans-serif}
+#page2Fond .mk .x{position:absolute;right:10px;
+top:calc(env(safe-area-inset-top,0px) + 9px);width:34px;height:34px;
+border-radius:50%;border:0;background:rgba(14,20,10,.7);color:#f0e6d2;
+font:700 15px 'Baloo 2',sans-serif}
+#page2Fond .mk .corps{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
+padding:11px 12px calc(env(safe-area-inset-bottom,0px) + 14px)}
+#page2Fond .mk .eti{margin:2px 1px 7px;font:700 7.5px ui-monospace,monospace;
+letter-spacing:3px;color:#9fc47a}
+#page2Fond .mk .lot{display:flex;align-items:center;gap:10px;background:#2c4023;
+border:1px solid rgba(159,196,122,.22);border-left:6px solid #d8a84a;
+padding:8px 10px;margin-bottom:8px}
+#page2Fond .mk .lot.rien{background:#243318;border:1px dashed rgba(159,196,122,.25);
+border-left:1px dashed rgba(159,196,122,.25);opacity:.68}
+#page2Fond .mk .lot canvas{width:38px;height:38px;flex:none;image-rendering:pixelated}
+#page2Fond .mk .lot span{flex:1;min-width:0}
+#page2Fond .mk .lot b{display:block;font:700 13px 'Baloo 2',sans-serif;color:#f0e6d2}
+#page2Fond .mk .lot em{font:italic 9.5px Georgia,serif;color:#9fc47a}
+#page2Fond .mk .lot button{border:0;border-bottom:3px solid #8a6a20;border-radius:11px;
+padding:9px 13px;background:linear-gradient(180deg,#f0d78a,#d8a84a);
+color:#241a06;font:700 13px 'Baloo 2',sans-serif}
+#page2Fond .mk .pan{display:flex;gap:8px;margin-top:4px}
+#page2Fond .mk .pan>div{flex:1;background:#8a6238;border:2px solid #a5764a;
+border-radius:12px;padding:6px 5px 8px;text-align:center}
+#page2Fond .mk .pan>div.plein{background:#6e4e2c;border-color:#7d5934;opacity:.62}
+#page2Fond .mk .pan canvas{width:100%;height:50px;background:#365426;
+border-radius:8px;image-rendering:pixelated}
+#page2Fond .mk .pan b{display:block;font:700 11.5px 'Baloo 2',sans-serif;
+color:#f4ecd8;margin:5px 0 1px}
+#page2Fond .mk .pan em{font:italic 9px Georgia,serif;color:#e4cfa8}
+#page2Fond .mk .pan button{width:100%;margin-top:5px;border:0;
+border-bottom:3px solid #8a6a20;border-radius:10px;padding:7px 0;
+background:linear-gradient(180deg,#f0d78a,#d8a84a);color:#241a06;
+font:700 12px 'Baloo 2',sans-serif}
+#page2Fond .mk .pan button:disabled{background:#4a3a24;color:#c4b394;border-bottom:0}
+`;
+/* LES MARCHANDISES, dessinées au pixel comme les bêtes */
+const MARCH_DESSIN={
+lait:(R)=>{R(5,6,10,3,'#d8d2c4');R(4,9,12,18,'#f2efe4');R(4,9,12,2,'#ffffff');
+R(4,22,12,5,'#e8e2d4');R(6,12,3,7,'#ffffff');R(4,25,12,2,'#c8c2b4');},
+laine:(R)=>{R(4,10,22,16,'#e8e2d4');for(let k=0;k<22;k+=4)R(4+k,7,6,6,'#f2efe4');
+R(4,24,22,2,'#c8c2b4');R(9,14,4,4,'#d8d2c4');R(17,17,4,4,'#d8d2c4');},
+truffe:(R)=>{R(8,12,14,12,'#3a2b1e');R(8,12,14,2,'#4e3a28');R(10,22,10,3,'#2a1e14');
+R(12,15,3,3,'#5a4432');R(17,18,2,2,'#5a4432');R(13,9,2,4,'#4e3a28');}};
+function dessinerMarchandise(cv,quoi){
+try{const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+const D=Math.min(2,window.devicePixelRatio||1);
+cv.width=38*D;cv.height=38*D;const S=D*38/30;g.setTransform(S,0,0,S,0,0);
+const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+(MARCH_DESSIN[quoi]||MARCH_DESSIN.lait)(R);}catch(x){}}
+/* L'ÉTAL : le décor du marché, redessiné à chaque ouverture. */
+function peindreLEtal(cv,E,C){
+const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+const W=180,H=85,D=Math.min(2,window.devicePixelRatio||1)*2;
+cv.width=W*D;cv.height=H*D;g.setTransform(D,0,0,D,0,0);
+const al=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+for(let y=0;y<H;y+=2)for(let x=0;x<W;x+=2){const n=al(x*1.7+y*0.9);
+g.fillStyle=y<34?(n<.5?'#2b3f20':'#304724'):(n<.38?'#4e7a38':(n<.72?'#58873f':'#447030'));
+g.fillRect(x,y,2,2);}
+for(let p=0;p<W;p+=7){const h=9+Math.round(al(p)*3);
+R(p,0,5,h,al(p*2)<.5?'#8a6238':'#7d5934');R(p+1,h,3,2,'#a5764a');}
+R(14,20,152,4,'#6a4a28');
+for(let s=0;s<150;s+=10){R(15+s,24,5,9,'#c23b2a');R(20+s,24,5,9,'#f4ecd8');}
+for(let s=0;s<155;s+=5)R(15+s,33,4,2,al(s)<.5?'#b03424':'#e4dcc8');
+R(16,24,3,32,'#7d5934');R(162,24,3,32,'#7d5934');
+R(22,52,136,14,'#8a6238');R(22,52,136,2,'#a5764a');R(22,64,136,2,'#5e4024');
+for(let b=26;b<156;b+=13)R(b,54,1,10,'#6e4e2c');
+if((E.moutons||0)>0)dessinerBete(g,'mouton',44,50,0.95);
+if((E.cochons||0)>0)dessinerBete(g,'cochon',132,50,0.95);
+if((E.vaches||0)>0)dessinerBete(g,'vache',152,48,0.85);
+R(84,34,14,16,'#5a6b8f');R(84,34,14,2,'#6c7da1');R(86,50,4,5,'#3a3228');R(93,50,4,5,'#3a3228');
+R(86,26,11,9,'#e8c49a');R(86,26,11,2,'#f2d2ae');R(84,24,15,4,'#7d5934');R(83,27,17,2,'#8a6238');
+R(88,30,1,1,'#2a241e');R(94,30,1,1,'#2a241e');R(89,33,4,1,'#b0836a');
+R(80,38,5,10,'#e8c49a');R(97,38,5,10,'#e8c49a');
+R(100,44,9,7,'#d8a84a');R(100,44,9,2,'#f0d78a');R(102,46,2,2,'#8a6a20');
+R(52,56,12,8,'#c9a040');R(52,56,12,2,'#e0c060');R(116,55,14,9,'#f2efe4');R(116,55,14,2,'#ffffff');
+/* L'ARDOISE : les cours du matin, écrits à la craie. */
+R(62,34,48,15,'#2a241e');R(63,35,46,13,'#3a3228');
+const craie=(x,y,t)=>{g.fillStyle='#e4dcc8';
+for(let i=0;i<t.length;i++){const c=t[i];
+if(c==='.')R(x+i*4+1,y+4,1,1,'#e4dcc8');
+else if(c==='|')R(x+i*4+1,y,1,5,'#e4dcc8');
+else if(c==='^'){R(x+i*4+1,y,1,5,'#e4dcc8');R(x+i*4,y+1,3,1,'#e4dcc8');}
+else if(c==='v'){R(x+i*4+1,y,1,5,'#e4dcc8');R(x+i*4,y+3,3,1,'#e4dcc8');}
+else R(x+i*4,y+2,3,1,'#e4dcc8');}};
+craie(66,37,'-|-.');craie(66,43,'-^-.');craie(90,37,'|-.-');craie(90,43,'-v|.');}
 async function ouvrirLeMarcheAuxBetes(){
 const C=await appelRPC('betes_cours',{}).catch(()=>null);
 const E=ETB||{};
+const fond=$('page2Fond');if(!fond)return;
+const vieux=fond.querySelector('.mk');if(vieux)vieux.remove();
 const sac=(k)=>((e.sac&&e.sac[k])||0);
-const ligne=(k,nom,prix)=>'<button data-v="'+k+'" '+(sac(k)>0?'class="p"':'disabled')+'>'+
-nom+'<i>'+sac(k)+' × '+enEuros(prix||0)+'</i></button>';
-const d=$('etbTiroir');if(!d)return;
-d.innerHTML='<div class="h"><span><b>Le marché</b>'+
-'<em>le cours change chaque matin</em></span>'+
-'<button class="x" id="etbTX">✕</button></div>'+
-'<div class="act" style="margin-bottom:8px">'+
-ligne('lait','Vendre le lait',(C&&C.lait)||0)+
-ligne('laine','Vendre la laine',(C&&C.laine)||0)+
-ligne('truffe','Vendre les truffes',(C&&C.truffe)||0)+
-'</div><div class="act">'+
-'<button data-ac="vache" '+(E.prix_vache?'':'disabled')+'>Une vache<i>'+
-(E.prix_vache?enEuros(E.prix_vache):'au complet')+'</i></button>'+
-'<button data-ac="mouton" '+(E.prix_mouton?'':'disabled')+'>Un mouton<i>'+
-(E.prix_mouton?enEuros(E.prix_mouton):'au complet')+'</i></button>'+
-'<button data-ac="cochon" '+(E.prix_cochon?'':'disabled')+'>Un cochon<i>'+
-(E.prix_cochon?enEuros(E.prix_cochon):'au complet')+'</i></button>'+
-'</div>';
-d.classList.add('on');
-$('etbTX').onclick=()=>{vibrer(8);d.classList.remove('on');};
+const cours=(k)=>((C&&C[k])||0);
+const lot=(k,nom,unite)=>{const n=sac(k);
+if(n<=0)return '<div class="lot rien"><canvas data-i="'+k+'"></canvas>'+
+'<span><b>'+({lait:'Pas de lait au seau',laine:'Pas de toison',
+truffe:'Pas de truffe'}[k])+'</b><em>'+({lait:'il faut traire les vaches',
+laine:'il faut tondre les moutons',
+truffe:'envoie un cochon fouiller sous les chênes'}[k])+'</em></span></div>';
+return '<div class="lot"><canvas data-i="'+k+'"></canvas>'+
+'<span><b>'+nom+'</b><em>'+n+' '+unite+' · '+enEuros(cours(k))+' pièce</em></span>'+
+'<button data-v="'+k+'">'+enEuros(n*cours(k))+'</button></div>';};
+const pancarte=(esp,nom,prix,combien)=>
+'<div class="'+(prix?'':'plein')+'"><canvas data-b="'+esp+'"></canvas>'+
+'<b>'+nom+'</b><em>'+combien+' à l’enclos</em>'+
+'<button data-ac="'+esp+'" '+(prix?'':'disabled')+'>'+
+(prix?enEuros(prix):'au complet')+'</button></div>';
+const mot=(E.lait||0)>0?'« tu as du lait, il part bien ce matin »':
+((E.laine_prete||0)>0?'« de la belle laine, je te la prends »':
+'« entre donc, je tiens l’étal jusqu’au soir »');
+const d=document.createElement('div');d.className='mk';
+d.innerHTML='<div class="etal"><canvas id="mkEtal"></canvas>'+
+'<div class="dit">Lucien, le maquignon<u>'+mot+'</u></div>'+
+'<div class="eu">'+enEuros(e.euros||0)+'</div>'+
+'<button class="x" id="mkX">✕</button></div>'+
+'<div class="corps">'+
+'<div class="eti">CE QUE TU VENDS</div>'+
+lot('lait','Le seau de lait','L')+
+lot('laine','Les toisons','toisons')+
+lot('truffe','Les truffes','truffes')+
+'<div class="eti">CE QU’IL TE VEND</div>'+
+'<div class="pan">'+
+pancarte('vache','Une vache',E.prix_vache,(E.vaches||0))+
+pancarte('mouton','Un mouton',E.prix_mouton,(E.moutons||0))+
+pancarte('cochon','Un cochon',E.prix_cochon,(E.cochons||0))+
+'</div></div>';
+fond.appendChild(d);
+try{peindreLEtal($('mkEtal'),E,C);}catch(x){}
+d.querySelectorAll('[data-i]').forEach(c=>dessinerMarchandise(c,c.dataset.i));
+d.querySelectorAll('[data-b]').forEach(c=>{try{
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+const D=Math.min(2,window.devicePixelRatio||1);c.width=90*D;c.height=62*D;
+g.setTransform(D,0,0,D,0,0);
+for(let y=0;y<62;y+=2)for(let x=0;x<90;x+=2){const n=PR_h(x,y,101);
+g.fillStyle=n<.38?'#2f4a22':(n<.72?'#365426':'#2a431e');g.fillRect(x,y,2,2);}
+dessinerBete(g,c.dataset.b,45,44,1.5);}catch(x){}});
+$('mkX').onclick=()=>{vibrer(8);d.remove();};
 d.querySelectorAll('[data-v]').forEach(b=>b.onclick=async()=>{
 vibrer(10);
 const r=await appelRPC('betes_vendre',{p_joueur:e.id,p_quoi:b.dataset.v}).catch(()=>null);
@@ -28276,7 +28409,6 @@ const a=await appelRPC('etable_etat',{p_joueur:e.id}).catch(()=>null);
 const bb=await appelRPC('betes_etat',{p_joueur:e.id}).catch(()=>null);
 ETB=Object.assign({},(a&&!a.erreur)?a:{},(bb&&!bb.erreur)?bb:{});
 peindreLEcranDesBetes();ouvrirLeMarcheAuxBetes();});}
-
 function graverEtableFerme(){
 const W=160,H=120,cx=72,sol=112,D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;
 const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
