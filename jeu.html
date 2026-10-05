@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-2125';
+var MA_VERSION='2026-10-05-2133';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -15969,27 +15969,31 @@ if(window.ENCLOS_CLE!==cle){window.ENCLOS_CLE=cle;B.length=0;
 voulu.forEach(([esp,k],i)=>{
 const x=EN.x0+30+PR_h(i*7,k*3+1,141)*(EN.x1-EN.x0-60);
 const y=EN.y0+30+PR_h(i*11,k*5+2,142)*(EN.y1-EN.y0-60);
-B.push({esp,robe:k,x,y,tx:x,ty:y,etat:'broute',t:PR_h(i,k,143)*4});});}
+B.push({esp,robe:k,x,y,tx:x,ty:y,dir:PR_h(i,k,144)<0.5?-1:1,pas:PR_h(i,k,145)*6,etat:'broute',t:PR_h(i,k,143)*4});});}
 const dt2=Math.min(0.1,(Date.now()-(window.ENCLOS_T||Date.now()))/1000);
 window.ENCLOS_T=Date.now();
 B.forEach((b,k)=>{
 b.t-=dt2;
 if(b.etat==='marche'){
 const dx=b.tx-b.x, dy=b.ty-b.y, d=Math.hypot(dx,dy);
-if(d>1.5){const v=(b.esp==='mouton'?9:7)*dt2;b.x+=dx/d*v;b.y+=dy/d*v;}
+if(d>1.5){const v=(b.esp==='mouton'?9:7)*dt2;b.x+=dx/d*v;b.y+=dy/d*v;
+if(Math.abs(dx)>0.4)b.dir=dx>0?1:-1;b.pas=(b.pas||0)+dt2*2.4;}
 else{b.etat='broute';b.t=3+Math.random()*6;}}
 else if(b.t<=0){b.etat='marche';b.t=6+Math.random()*8;
 b.tx=EN.x0+24+Math.random()*(EN.x1-EN.x0-48);
 b.ty=EN.y0+24+Math.random()*(EN.y1-EN.y0-48);}
 /* ELLES S'ÉCARTENT quand on leur marche dessus */
 const jx=b.x-joueur.x, jy=b.y-joueur.y, dj=Math.hypot(jx,jy);
-if(dj<26&&dj>0.1){b.x+=jx/dj*20*dt2;b.y+=jy/dj*20*dt2;}
+if(dj<26&&dj>0.1){b.x+=jx/dj*20*dt2;b.y+=jy/dj*20*dt2;
+if(Math.abs(jx)>0.4)b.dir=jx>0?1:-1;b.pas=(b.pas||0)+dt2*2.4;}
+if(b.etat!=='marche')b.pas=(b.pas||0)+dt2;
 b.x=Math.max(EN.x0+16,Math.min(EN.x1-16,b.x));
 b.y=Math.max(EN.y0+16,Math.min(EN.y1-16,b.y));});
 B.forEach(b=>{
 if(b.x-camX<-60||b.x-camX>VW+60||b.y-camY<-60||b.y-camY>VH+60)return;
 pousses_bete.push({y:b.y,f:()=>{try{
-dessinerBete(ctx,b.esp,b.x-camX,b.y-camY,b.esp==='vache'?1.3:1.1,true,b.robe);}catch(x){}}});});}
+dessinerBete(ctx,b.esp,b.x-camX,b.y-camY,b.esp==='vache'?1.3:1.1,true,b.robe,
+b.dir||1,b.etat==='marche'?'marche':'broute',b.pas||0);}catch(x){}}});});}
 const pousses=[];
 if(POT.charge)for(let i=0;i<24;i++){
 const P=POT.parc[i];if(!P||!P.cult||!PLANTES[P.cult])continue;
@@ -27699,41 +27703,63 @@ mouton:[{corps:'#e8e2d4',clair:'#f2efe4',ombre:'#c8c2b4',patte:'#8d8678',tete:'#
 {corps:'#4a443c',clair:'#5c554b',ombre:'#332e28',patte:'#2a241e',tete:'#1f1b17',tete2:'#2d2824',oeil:'#d8d2c4'}],
 cochon:[{corps:'#e8a0a8',clair:'#f2b8c0',ombre:'#c87f8a',patte:'#d890a0',groin:'#d87f90'},
 {corps:'#e8a0a8',clair:'#f2b8c0',ombre:'#c87f8a',patte:'#d890a0',groin:'#d87f90',tache:'#5a4a46'}]};
+/* LES BÊTES, DE PROFIL. Elles regardent là où elles vont (dir), lèvent ou
+   baissent la tête selon qu'elles broutent, et avancent une patte après
+   l'autre comme les poules du poulailler. */
 const BETE_DESSIN={
-vache:(R,p)=>{
+vache:(R,p,A)=>{
+R(-10+A.q,-8,2,7,p.patte);                                  /* la queue, qui balaie */
+R(-8+A.m,-2,3,5,p.patte);R(5-A.m,-2,3,5,p.patte);           /* les pattes */
 R(-9,-10,18,8,p.corps);R(-9,-10,18,2,p.clair);R(-9,-3,18,1,p.ombre);
 R(-6,-9,6,5,p.tache);R(2,-7,5,4,p.tache);
-R(-8,-2,3,5,p.patte);R(5,-2,3,5,p.patte);
-R(8,-14,7,6,p.corps);R(8,-14,7,1,p.clair);
-R(10,-12,1,1,'#1b1712');R(13,-11,2,2,p.museau);
-R(8,-15,1,2,p.ombre);R(14,-15,1,2,p.ombre);
-R(-10,-8,2,7,p.patte);R(-2,0,4,2,p.museau);},
-mouton:(R,p)=>{
+R(-2,0,4,2,p.museau);                                        /* le pis */
+R(8,-15+A.dy,1,2,p.ombre);R(14,-15+A.dy,1,2,p.ombre);        /* les cornes */
+R(8,-14+A.dy,7,6,p.corps);R(8,-14+A.dy,7,1,p.clair);
+R(10,-12+A.dy,1,A.oeil?1:0.5,'#1b1712');
+R(13,-11+A.dy,2,2,p.museau);
+if(A.mache)R(13,-10+A.dy,2,1,p.ombre);},
+mouton:(R,p,A)=>{
+R(-9+A.q*0.6,-7,2,3,p.patte);                               /* la petite queue */
+R(-7+A.m,-1,3,4,p.patte);R(3-A.m,-1,3,4,p.patte);
 R(-8,-9,15,8,p.corps);
 for(let k=0;k<15;k+=3)R(-8+k,-11,4,4,p.clair);
 R(-8,-2,15,1,p.ombre);
-R(-7,-1,3,4,p.patte);R(3,-1,3,4,p.patte);
-R(7,-12,6,6,p.tete);R(7,-12,6,1,p.tete2);
-R(9,-10,1,1,p.oeil);
-R(6,-13,2,2,p.tete);R(11,-13,2,2,p.tete);},
-cochon:(R,p)=>{
+R(7,-12+A.dy,6,6,p.tete);R(7,-12+A.dy,6,1,p.tete2);
+R(6,-13+A.dy,2,2,p.tete);R(11,-13+A.dy,2,2,p.tete);          /* les oreilles */
+R(9,-10+A.dy,1,A.oeil?1:0.5,p.oeil);
+if(A.mache)R(12,-8+A.dy,1,1,p.tete2);},
+cochon:(R,p,A)=>{
+R(-11+A.q,-6,3,2,p.patte);                                   /* la queue en tire-bouchon */
+R(-7+A.m,0,3,4,p.patte);R(4-A.m,0,3,4,p.patte);
 R(-9,-9,18,9,p.corps);R(-9,-9,18,2,p.clair);R(-9,-1,18,1,p.ombre);
 if(p.tache){R(-6,-8,5,4,p.tache);R(2,-5,4,3,p.tache);}
-R(-7,0,3,4,p.patte);R(4,0,3,4,p.patte);
-R(8,-12,7,7,p.corps);R(8,-12,7,1,p.clair);
-R(10,-10,1,1,'#1b1712');
-R(13,-9,3,4,p.groin);R(14,-8,1,1,'#a85a68');
-R(8,-14,3,3,p.patte);R(12,-14,3,3,p.patte);
-R(-11,-6,3,2,p.patte);}};
-function dessinerBete(g,espece,cx,cy,Z,ombre,robe){
+R(8,-14+A.dy,3,3,p.patte);R(12,-14+A.dy,3,3,p.patte);        /* les oreilles */
+R(8,-12+A.dy,7,7,p.corps);R(8,-12+A.dy,7,1,p.clair);
+R(10,-10+A.dy,1,A.oeil?1:0.5,'#1b1712');
+R(13,-9+A.dy,3,4,p.groin);R(14,-8+A.dy,1,1,'#a85a68');
+if(A.mache)R(13,-5+A.dy,3,1,p.ombre);}};
+function dessinerBete(g,espece,cx,cy,Z,ombre,robe,dir,pose,pas){
+pose=pose||'repos';pas=pas||0;
+/* LES GESTES : une patte après l'autre en marchant, la tête dans l'herbe
+   en broutant, et un clignement de temps en temps. */
+const marche=pose==='marche';
+const m=marche?Math.round(Math.sin(pas*Math.PI*2)*1.6):0;
+const saut=marche?Math.abs(Math.sin(pas*Math.PI*2))*0.6:0;
+const dy=(pose==='broute')?5:(marche?0:Math.round(Math.sin(pas*0.9)*0.5));
+const mache=(pose==='broute')&&Math.sin(pas*5)>0.2;
+const q=Math.round(Math.sin(pas*1.7)*1.2);
+const oeil=((Date.now()+(robe|0)*613)%4200)>160;
 if(ombre!==false){g.fillStyle='rgba(20,16,10,.3)';
 g.beginPath();g.ellipse(cx+2*Z,cy+4*Z,10*Z,2.4*Z,0,0,7);g.fill();}
 const rb=BETE_ROBES[espece]||BETE_ROBES.vache;
 const p=rb[((robe|0)%rb.length+rb.length)%rb.length];
-const R=(a,b,w,h,c)=>{g.fillStyle=c;
-g.fillRect(Math.round(cx+a*Z),Math.round(cy+b*Z),
+const gauche=dir<0;
+const cyy=cy-saut*Z;
+const R=(a,b,w,h,c)=>{if(h<=0||w<=0)return;g.fillStyle=c;
+const ax=gauche?-(a+w):a;
+g.fillRect(Math.round(cx+ax*Z),Math.round(cyy+b*Z),
 Math.max(1,Math.round(w*Z)),Math.max(1,Math.round(h*Z)));};
-(BETE_DESSIN[espece]||BETE_DESSIN.vache)(R,p);}
+(BETE_DESSIN[espece]||BETE_DESSIN.vache)(R,p,{m,dy,q,mache,oeil});}
 /* ================= L'ENCLOS, VU DU DESSUS =================
    Chaque bête garde sa place d'une ouverture à l'autre : on la tire de son
    numéro, pas du hasard, sinon le troupeau sauterait partout. */
@@ -27780,7 +27806,8 @@ o.x=Math.round(o.fx*(W-70))+35+Math.round(bal*5);
 o.y=Math.round(o.fy*(H-70))+40;});
 /* LA PROFONDEUR : celles du fond passent derrière celles du devant. */
 L.slice().sort((a,b)=>a.y-b.y).forEach(o=>{
-dessinerBete(g,o.esp,o.x,o.y,o.esp==='mouton'?1.25:1.5,true,o.robe);});}
+dessinerBete(g,o.esp,o.x,o.y,o.esp==='mouton'?1.25:1.5,true,o.robe,
+Math.cos(t/900+o.ph)>0?1:-1,'broute',t/420+o.ph);});}
 function ouvrirLEtable(mot){
 if(!document.getElementById('cssEtb')){const st=document.createElement('style');
 st.id='cssEtb';st.textContent=CSS_ETB+CSS_BETES+CSS_MARCHE;document.head.appendChild(st);}
