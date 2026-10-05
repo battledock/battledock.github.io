@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-0200';
+var MA_VERSION='2026-10-07-0320';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -13033,7 +13033,17 @@ if(iconesPoissonsFaites)return;iconesPoissonsFaites=true;
 Object.keys(FORMES_POISSON).forEach(k=>{if(k!=='botte'&&OBJETS[k])ICONES[k]=iconeDePoisson(k);});
 }
 let XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar;
+/* SI port.js NE CHARGE PAS, les cinquante-trois symboles ci-dessous
+   restent indéfinis et le port ne se dessine pas, sans un mot. On le dit. */
+try{
 if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar}=eval(await chargerMorceau('port.js')));}
+}catch(erPort){
+try{document.body.insertAdjacentHTML('beforeend',
+'<div style="position:fixed;left:12px;right:12px;top:12px;z-index:99;padding:12px 14px;'+
+'border-radius:12px;background:#3a1a16;color:#f6ead2;font:14px Georgia;'+
+'box-shadow:0 8px 24px rgba(0,0,0,.5)">Le décor du port n\u2019a pas pu se charger. '+
+'V\u00e9rifie ta connexion, puis recharge la page.</div>');}catch(x){}
+throw erPort;}
 const XCAL={};
 function graverX(t,v){
 const cle=t+(v||0);
@@ -18983,7 +18993,7 @@ const ouvrir=/[?&]labo=1/.test(location.search)||/labo/.test(location.hash)
 if(/[?&]labo=1/.test(location.search))try{localStorage.setItem('bdl.labo','1');}catch(x){}
 if(ouvrir)setTimeout(()=>{try{labo();}catch(x){}},900);
 }catch(x){}
-setInterval(()=>{try{verifierLaFete();}catch(x){}},600000);
+setInterval(()=>{if(document.hidden)return;try{verifierLaFete();}catch(x){}},600000);
 $('b-vestiaire').onclick=()=>{VEST_SEL=null;try{$('tiroir').classList.remove('on');$('barre').classList.remove('on');}catch(x){}ouvrirLeVestiaire();};
 $('r-ecrire').onclick=()=>{if(bandeauOuvert())fermerBandeau();else ouvrirBandeau();};
 if($('saisie')){
@@ -19401,10 +19411,18 @@ msMoyen=msMoyen*0.9+ms*0.1;
 if(msMoyen>26){
 imagesLentes++;imagesRapides=0;
 if(imagesLentes>24&&QUALITE>0){QUALITE=QUALITE===1?0.5:0;imagesLentes=0;}
-if(imagesLentes>40&&QUALITE===0&&QUALITE_TOILE===1){QUALITE_TOILE=0.5;imagesLentes=0;try{taille();}catch(x){}}
+/* LE SECOND PALIER CHANGEAIT L'ÉCHELLE DE LA TOILE en pleine partie :
+   la caméra semblait zoomer d'un coup, et rien ne la ramenait ensuite.
+   On ne le déclenche plus que si ça rame vraiment longtemps, et il
+   redevient réversible (voir plus bas). */
+if(imagesLentes>240&&QUALITE===0&&QUALITE_TOILE===1){QUALITE_TOILE=0.5;imagesLentes=0;try{taille();}catch(x){}}
 }else if(msMoyen<18.5){                 /* 60 images/s tenues (la boucle est plafonnée à 60) */
 imagesRapides++;imagesLentes=0;
 if(imagesRapides>240&&QUALITE<1){QUALITE=QUALITE===0?0.5:1;imagesRapides=0;}
+/* LA TOILE REMONTE AUSSI. Avant, elle ne pouvait que se dégrader : une
+   fois l'échelle baissée, elle le restait jusqu'au rechargement. */
+else if(imagesRapides>480&&QUALITE===1&&QUALITE_TOILE<1&&!ECO){
+QUALITE_TOILE=1;imagesRapides=0;try{taille();}catch(x){}}
 }
 }
 const CACHE={};
@@ -19986,6 +20004,7 @@ MA_BOITE.subscribe();
 majPastilleL();
 }
 setInterval(()=>{
+if(document.hidden)return;              /* rien à signaler quand l'écran est éteint */
 if(!PRESENCE||!e.id)return;
 const c=coinDuJoueur();
 if(c!==monCoin){monCoin=c;try{PRESENCE.track(maPresence());}catch(x){}}
@@ -21845,7 +21864,9 @@ async function lireLeCourrier(){if(!e.id)return;
 try{const d=await appelRPC('messagerie_fils',{p_joueur:e.id});
 if(Array.isArray(d))COURRIER_N=d.reduce((t,f)=>t+(+f.nonlus||0),0);}catch(x){}
 majPastilleCourrier();}
-setTimeout(()=>lireLeCourrier(),3000);setInterval(()=>lireLeCourrier(),180000);
+setTimeout(()=>lireLeCourrier(),3000);/* Elles tournaient même écran éteint : on ne va chercher le courrier que
+   si la page est visible. */
+setInterval(()=>{if(!document.hidden)lireLeCourrier();},180000);
 const NOM_OBJ=(k)=>{try{const o=OBJETS&&OBJETS[k];if(o&&o.nom)return o.nom;}catch(x){}return k;};
 const CSS_MSG=`#msg{position:absolute;inset:0;background:#15212e;display:flex;flex-direction:column;
 box-shadow:inset 0 0 0 3px #e8c06a;font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif}
@@ -25798,7 +25819,10 @@ let h='<div class="hd"><b>Quelle graine ?<small>la plus rapide en haut</small></
 '<button id="potGrX">✕</button></div><div class="liste">';
 h+=Object.entries(POT_CULT).sort((x,y)=>x[1][2]-y[1][2]).map(([k,[nom,g,min,v]])=>{
 const libre=potLibre(k), peu=(e.euros||0)<g;
-return '<button class="gn'+(libre?(peu?' cher':''):' verrou')+'" data-k="'+k+'"'+(libre&&!peu?'':' data-no="1"')+'>'+
+/* data-no ne servait à rien : il était écrit, jamais lu. La classe
+   « cher » ou « verrou » suffit à griser le bouton, et le gestionnaire de
+   data-k vérifie déjà qu'on peut semer. */
+return '<button class="gn'+(libre?(peu?' cher':''):' verrou')+'" data-k="'+k+'">'+
 '<canvas data-p="'+k+'"></canvas>'+
 '<span class="t"><b>'+nom+'</b><small>'+potDuree(min)+
 (libre?' · marge <em>'+fmt(v-g)+'</em>':' · à débloquer au Grainetier')+'</small></span>'+
