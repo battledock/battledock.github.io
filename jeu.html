@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-08-0400';
+var MA_VERSION='2026-10-08-0450';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -1420,7 +1420,7 @@ z-index:4;display:none;justify-content:center;gap:22px;pointer-events:none}
 #replie .latte .b{font-size:10.5px;color:rgba(253,251,244,.88)}
 #voile{position:fixed;inset:0;z-index:60;background:#0d1410;overflow:hidden;
 display:flex;flex-direction:column;justify-content:center;
-transition:opacity .5s ease}
+transition:opacity .28s ease}   /* le voile s'efface vite : il n'a rien à raconter */
 #voile.parti{opacity:0;pointer-events:none}
 #vPre{position:absolute;inset:0;width:100%;height:100%;display:block;
 image-rendering:pixelated}
@@ -25178,10 +25178,13 @@ function leverLeVoile(){
 const v=document.getElementById('voile');
 if(!v||v.classList.contains('parti'))return;
 etape(ETAPES.length-1);
-const reste=Math.max(0,1000-(Date.now()-voileNe));
+/* LE VOILE NE S'ATTARDE PLUS. Il restait une seconde pleine même quand
+   tout était prêt en deux cents millisecondes : c'était du décor. On garde
+   juste de quoi voir la dernière étape s'afficher. */
+const reste=Math.max(0,220-(Date.now()-voileNe));
 setTimeout(()=>{
 v.classList.add('parti');
-setTimeout(()=>{if(v.parentNode)v.parentNode.removeChild(v);},600);
+setTimeout(()=>{if(v.parentNode)v.parentNode.removeChild(v);},320);
 },reste);
 }
 setTimeout(leverLeVoile,12000);
@@ -25371,7 +25374,9 @@ temps(tour);
 }
 async function entrer(){
 setTimeout(precuireLeJoueur,1500);
-try{await Promise.race([SOL_CACHE_PROMESSE,new Promise(r=>setTimeout(r,900))]);}catch(x){}
+/* ON N'ATTEND PLUS NEUF CENTS MILLISECONDES le sol en cache : s'il n'est
+   pas encore lu au bout de trois cents, on construit et on entre. */
+try{await Promise.race([SOL_CACHE_PROMESSE,new Promise(r=>setTimeout(r,300))]);}catch(x){}
 setTimeout(()=>{try{if(e&&e.id)appelRPC('signaler_version',{p_joueur:e.id,p_version:window.MA_VERSION||'?',p_nav:(navigator.userAgent||'').slice(0,240)});}catch(x){}},4000);
 verifierLaCarte();
 setTimeout(montrerLAnnonce,1200);
