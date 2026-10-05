@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-08-0300';
+var MA_VERSION='2026-10-08-0400';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11270,7 +11270,16 @@ SOL.toBlob(async(b1)=>{const b2=fin?await new Promise(ok=>fin.toBlob(ok)):null;t
 st.clear();st.put({sol:b1,fin:b2},cle);}catch(x){}});}catch(x){}}
 const SOL_CACHE_PROMESSE=chargerSolCache();
 function refaireLeSol(){
-if(CHAMPS_SEULS&&CARTE==='village'){SOL=construireSolPre();SOL_FIN=null;CHEMIN=null;LISIERE=null;LISIERE_SUD=null;return SOL;}   /* LA FERME : son pré, rien d'autre, jamais le cache */
+/* LA FERME : son pré, rien d'autre — mais elle a droit au cache comme les
+   autres cartes. Le construire coûte cinq passes sur 1 920 000 pixels, soit
+   une bonne demi-seconde où l'écran titre reste figé. La clé du cache
+   contient le numéro de version, donc une mise à jour le renouvelle. */
+if(CHAMPS_SEULS&&CARTE==='village'){
+if(SOL_CACHE.pret){SOL=SOL_CACHE.sol;SOL_FIN=null;CHEMIN=null;LISIERE=null;LISIERE_SUD=null;
+SOL_CACHE.pret=false;return SOL;}
+SOL=construireSolPre();SOL_FIN=null;CHEMIN=null;LISIERE=null;LISIERE_SUD=null;
+setTimeout(rangerSolCache,4000);
+return SOL;}
 if(SOL_CACHE.pret){SOL=SOL_CACHE.sol;SOL_FIN=SOL_CACHE.fin;SOL_CACHE.pret=false;return SOL;}     /* déjà construit lors d'un lancement précédent */
 setTimeout(rangerSolCache,4000);                                                                              /* on le range, sans ralentir le jeu */
 if(CARTE==='foret'){SOL=construireSolForet();SOL_FIN=null;CHEMIN=null;return SOL;}
