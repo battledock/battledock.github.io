@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-06-1520';
+var MA_VERSION='2026-10-06-1600';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11482,12 +11482,29 @@ const n=PR_h(x,y,51);
 g.fillStyle=n<.5?'#8a7f6a':'#7d7260';
 g.fillRect(x,y,1,1);};
 const bordure=(x,y)=>{g.fillStyle=PR_h(x,y,52)<.5?'#6b5740':'#5e4c38';g.fillRect(x,y,1,1);};
-/* ---------- LA CHAUSSÉE EST-OUEST, de la place au passage ---------- */
+/* ---------- LA CHAUSSÉE EST-OUEST, D'UNE BARRIÈRE À L'AUTRE ----------
+   Elle traverse toute la ferme et rejoint le chemin du port sans rupture :
+   même gravier, mêmes cailloux, mêmes ornières. */
 for(let y=RY;y<RY+ROUTE_H;y++)
-for(let x=PLACE.x;x<lb;x++){
+for(let x=BORD_FERME;x<lb;x++){
 const bord=Math.min(y-RY,RY+ROUTE_H-1-y);
 if(bord<3&&PR_h(x,y,53)>0.26+bord*0.24)continue;
 if(bord<4)bordure(x,y);else grav(x,y);}
+/* LES CAILLOUX de la chaussée : la même densité que sur le chemin du port */
+{const nb=Math.round((lb-BORD_FERME)*ROUTE_H/26);
+for(let k=0;k<nb;k++){
+const gx=BORD_FERME+2+Math.floor(PR_h(k,13,64)*(lb-BORD_FERME-4));
+const gy=RY+4+Math.floor(PR_h(k,17,65)*(ROUTE_H-8));
+const t=PR_h(k,19,66), w=t>0.88?2:1, h=t>0.94?2:1;
+g.fillStyle=t<0.3?'#b8ae98':(t<0.6?'#a29780':(t<0.85?'#8d8270':'#c8c0ac'));
+g.fillRect(gx,gy,w,h);
+if(w>1){g.fillStyle='rgba(255,255,255,.22)';g.fillRect(gx,gy,1,1);}}}
+/* LES ORNIÈRES, qui prolongent celles du chemin */
+[RY+16,RY+38].forEach((oy)=>{
+for(let x=BORD_FERME;x<lb;x++){
+const d=Math.round(Math.sin(x*0.16)*1);
+g.fillStyle='rgba(70,58,40,.30)';
+g.fillRect(x,Math.round(oy+d),1,3);}});
 /* ---------- LES DEUX BRANCHES, vers le poulailler et le potager ---------- */
 const BR=52, BX=PLACE.x-BR/2;
 for(let y=430;y<PLACE.y-PLACE.r+8;y++)
@@ -11500,7 +11517,9 @@ for(let x=BX;x<BX+BR;x++){
 const bord=Math.min(x-BX,BX+BR-1-x);
 if(bord<3&&PR_h(x,y,55)>0.26+bord*0.24)continue;
 if(bord<4)bordure(x,y);else grav(x,y);}
-/* ---------- LA PLACE : des pavés posés en arcs ---------- */
+/* ---------- LA PLACE : des pavés posés en arcs ----------
+   Elle est peinte APRÈS la chaussée, donc elle s'y pose par-dessus et le
+   raccord se fait tout seul. */
 for(let y=PLACE.y-PLACE.r;y<=PLACE.y+PLACE.r;y++)
 for(let x=PLACE.x-PLACE.r;x<=PLACE.x+PLACE.r;x++){
 const dx=x-PLACE.x, dy=y-PLACE.y, d=Math.hypot(dx,dy);
