@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-1500';
+var MA_VERSION='2026-10-07-1540';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11637,6 +11637,68 @@ Rb(q[0]+1,q[1]+1,1,1,'#1f3c5e');
 const dx=(i%2)?2:-2, dy=(i<2)?-2:2;
 Rb(q[0]+1+dx,q[1]+1+dy,2,2,'#c9a24a');});
 }
+/* ================= LE GRAND ENCLOS =================
+   Tout le bas de la ferme, de la barrière de gauche jusqu'au potager. Une
+   herbe de pâture, plus rase et plus pâle que le pré, et une clôture de
+   bois sur les quatre côtés avec un portillon au nord. */
+{
+const EN={x0:140, x1:698, y0:812, y1:1462};
+/* L'HERBE DE PÂTURE : plus rase, plus jaune, avec ses plaques pelées */
+for(let y=EN.y0;y<EN.y1;y++)
+for(let x=EN.x0;x<EN.x1;x++){
+const n=PR_h(x,y,61);
+const pele=PR_h(Math.floor(x/22),Math.floor(y/22),62);
+if(pele>0.88&&PR_h(x,y,63)>0.4){
+g.fillStyle=PR_h(x,y,64)<.5?'#8a7a56':'#7d6e4c';   /* la terre à nu */
+g.fillRect(x,y,1,1);continue;}
+g.fillStyle=n<.42?'#79a054':(n<.76?'#6f9449':'#83a85e');
+g.fillRect(x,y,1,1);
+if(PR_h(x,y,65)>0.985)g.fillRect(x,y-1,1,1);}
+/* LES BOUSES ET LES TOUFFES QUE LES BÊTES ÉVITENT */
+for(let k=0;k<40;k++){
+const tx=EN.x0+20+Math.floor(PR_h(k,3,66)*(EN.x1-EN.x0-40));
+const ty=EN.y0+20+Math.floor(PR_h(k,7,67)*(EN.y1-EN.y0-40));
+for(let r=0;r<7;r++)for(let c2=0;c2<9;c2++){
+if(Math.hypot((c2-4)/4.5,(r-3)/3.5)>1)continue;
+g.fillStyle=PR_h(tx+c2,ty+r,68)<.5?'#4e7236':'#5f8440';
+g.fillRect(tx+c2,ty+r,1,1);
+if(r===0)g.fillRect(tx+c2,ty-1,1,1);}}
+/* LA CLÔTURE : deux lisses et un piquet tous les quarante-deux pixels */
+const lisseH=(x1,x2,y)=>{
+for(let x=x1;x<x2;x++){
+const t=PR_h(x,y,69);
+g.fillStyle=t<.4?'#8a6238':(t<.75?'#7d5934':'#96703f');
+g.fillRect(x,y,1,3);
+g.fillStyle='rgba(40,28,16,.3)';g.fillRect(x,y+3,1,1);}};
+const lisseV=(y1,y2,x)=>{
+for(let y=y1;y<y2;y++){
+const t=PR_h(x,y,70);
+g.fillStyle=t<.4?'#8a6238':(t<.75?'#7d5934':'#96703f');
+g.fillRect(x,y,3,1);
+g.fillStyle='rgba(40,28,16,.3)';g.fillRect(x+3,y,1,1);}};
+const piquet=(x,y)=>{
+g.fillStyle='rgba(30,24,14,.3)';g.fillRect(x-2,y+14,7,2);
+g.fillStyle='#6b4a2c';g.fillRect(x-1,y-13,4,28);
+g.fillStyle='#8a6238';g.fillRect(x-1,y-13,2,28);
+g.fillStyle='#a5764a';g.fillRect(x-1,y-13,4,2);};
+/* le portillon : on laisse un trou de soixante pixels au nord */
+const PORT={x0:520,x1:580};
+lisseH(EN.x0,PORT.x0,EN.y0-6);   lisseH(EN.x0,PORT.x0,EN.y0+4);
+lisseH(PORT.x1,EN.x1,EN.y0-6);   lisseH(PORT.x1,EN.x1,EN.y0+4);
+lisseH(EN.x0,EN.x1,EN.y1-6);     lisseH(EN.x0,EN.x1,EN.y1+4);
+lisseV(EN.y0,EN.y1,EN.x0-6);     lisseV(EN.y0,EN.y1,EN.x0+4);
+lisseV(EN.y0,EN.y1,EN.x1-6);     lisseV(EN.y0,EN.y1,EN.x1+4);
+for(let x=EN.x0;x<=EN.x1;x+=42){
+if(x>PORT.x0-12&&x<PORT.x1+12)continue;
+piquet(x,EN.y0);piquet(x,EN.y1);}
+for(let y=EN.y0;y<=EN.y1;y+=42){piquet(EN.x0,y);piquet(EN.x1,y);}
+/* LES DEUX MONTANTS DU PORTILLON, plus gros */
+[PORT.x0,PORT.x1].forEach(x=>{
+g.fillStyle='rgba(30,24,14,.34)';g.fillRect(x-3,EN.y0+16,9,3);
+g.fillStyle='#5a3820';g.fillRect(x-2,EN.y0-20,6,36);
+g.fillStyle='#7d5934';g.fillRect(x-2,EN.y0-20,3,36);
+g.fillStyle='#a5764a';g.fillRect(x-2,EN.y0-20,6,2);});
+}
 /* ================= LE PANNEAU DU PORT =================
    Une grande affiche de toile écrue tendue sur son châssis, plantée dans le
    blé juste au-dessus du chemin. « LE PORT » en lettres de neuf pixels,
@@ -18364,6 +18426,13 @@ ay=Math.max(BORD_FERME+10,Math.min(MONDE_H-BORD_FERME-8,ny));
    traverser le blé par le haut ni par le bas. */
 if(ax>MONDE_L-BORD_FERME-33)
 ay=Math.max(PASSAGE.y0+8,Math.min(PASSAGE.y1-8,ay));
+/* LA CLÔTURE DE L'ENCLOS : on n'entre et on ne sort que par le portillon. */
+{const E={x0:140,x1:698,y0:812,y1:1462}, P={x0:522,x1:578};
+const dedans=(X,Y)=>X>E.x0&&X<E.x1&&Y>E.y0&&Y<E.y1;
+const etait=dedans(joueur.x,joueur.y);
+if(dedans(ax,ay)!==etait){
+const parLePortillon=(ax>P.x0&&ax<P.x1&&Math.abs(ay-E.y0)<30);
+if(!parLePortillon){ax=joueur.x;ay=joueur.y;}}}
 if(dansLePassage&&ax>MONDE_L-BORD_FERME-33+96&&!PARTIR_AU_PORT){
 PARTIR_AU_PORT=true;
 try{texteVolant(joueur.x,joueur.y-40,'Direction le port…','#f0cf7d');}catch(x){}
