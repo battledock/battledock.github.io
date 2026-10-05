@@ -28083,36 +28083,132 @@ o.y=Math.round(o.fy*(H-70))+40;
 dessinerBete(g,o.esp,o.x,o.y,o.esp==='mouton'?1.25:1.5);});}
 function ouvrirLEtable(mot){
 if(!document.getElementById('cssEtb')){const st=document.createElement('style');
-st.id='cssEtb';st.textContent=CSS_ETB+CSS_MARCHE;document.head.appendChild(st);}
+st.id='cssEtb';st.textContent=CSS_ETB+CSS_BETES+CSS_MARCHE;document.head.appendChild(st);}
 $('page2Fond').className='etb';$('page2').classList.add('on');
 peindreLEcranDesBetes(mot);
 Promise.all([appelRPC('etable_etat',{p_joueur:e.id}),
 appelRPC('betes_etat',{p_joueur:e.id})]).then(([a,b])=>{
 ETB=Object.assign({},(a&&!a.erreur)?a:{},(b&&!b.erreur)?b:{});
 if($('page2Fond').className==='etb')peindreLEcranDesBetes(mot);}).catch(()=>{});}
+/* ================= L'ÉCRAN DES BÊTES, EN FICHES =================
+   Un bandeau de pré en haut pour garder le troupeau sous les yeux, puis
+   une fiche par espèce : portrait, jauge, et le geste qui va avec. */
+const CSS_BETES=`
+#page2Fond.etb .bande{position:relative;flex:none;height:92px;background:#365426;
+border-bottom:2px solid #2c4023;overflow:hidden}
+#page2Fond.etb .bande canvas{position:absolute;inset:0;width:100%;height:100%;
+image-rendering:pixelated}
+#page2Fond.etb .chap{position:absolute;left:0;right:0;top:0;display:flex;
+align-items:center;gap:9px;padding:calc(env(safe-area-inset-top,0px) + 9px) 11px 9px;
+background:linear-gradient(180deg,rgba(14,20,10,.82),rgba(14,20,10,0))}
+#page2Fond.etb .chap .ti{flex:1;min-width:0}
+#page2Fond.etb .chap small{display:block;font:700 7.5px ui-monospace,monospace;
+letter-spacing:3px;color:#9fc47a}
+#page2Fond.etb .chap b{display:block;font:400 17px Georgia,serif;color:#f0e6d2}
+#page2Fond.etb .chap .eu{background:rgba(201,162,74,.94);color:#241a06;
+border-radius:11px;padding:4px 9px;font:700 12px 'Baloo 2',sans-serif}
+#page2Fond.etb .chap button{width:30px;height:30px;border-radius:50%;border:0;
+background:rgba(14,20,10,.6);color:#f0e6d2;font:700 14px 'Baloo 2',sans-serif}
+#page2Fond.etb .liste{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
+padding:10px 11px calc(env(safe-area-inset-bottom,0px) + 12px)}
+#page2Fond.etb .foin{display:flex;align-items:center;gap:7px;background:#16200f;
+border-radius:10px;padding:7px 10px;margin-bottom:8px;
+font:700 11px 'Baloo 2',sans-serif;color:#dff0cc}
+#page2Fond.etb .foin i{flex:1;font:italic 9.5px Georgia,serif;color:#9fb490}
+#page2Fond.etb .fi{display:flex;gap:10px;background:#2c4023;
+border:1px solid rgba(159,196,122,.22);border-radius:12px;padding:9px 10px;margin-bottom:8px}
+#page2Fond.etb .fi.pret{border-color:rgba(240,215,138,.5)}
+#page2Fond.etb .fi canvas{width:56px;height:56px;border-radius:10px;
+background:#2f4a22;image-rendering:pixelated;flex:none}
+#page2Fond.etb .fi .co{flex:1;min-width:0}
+#page2Fond.etb .fi .li{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+#page2Fond.etb .fi b{font:700 13.5px 'Baloo 2',sans-serif;color:#f0e6d2}
+#page2Fond.etb .fi em{font:italic 9.5px Georgia,serif;color:#9fb490;white-space:nowrap}
+#page2Fond.etb .fi em.or{color:#f0cf7d}
+#page2Fond.etb .fi .ja{height:5px;background:#16200f;border-radius:3px;
+margin:6px 0 8px;overflow:hidden}
+#page2Fond.etb .fi .ja span{display:block;height:100%}
+#page2Fond.etb .fi .ge{display:flex;gap:7px}
+#page2Fond.etb .fi .ge button{flex:1;border:1px solid rgba(159,196,122,.22);
+border-radius:10px;padding:8px 0;background:#243318;color:#dff0cc;
+font:700 12.5px 'Baloo 2',sans-serif}
+#page2Fond.etb .fi .ge button.p{border:0;border-bottom:3px solid #8a6a20;
+background:linear-gradient(180deg,#f0d78a,#d8a84a);color:#241a06}
+#page2Fond.etb .fi .ge button:disabled{color:#9fb490;background:#243318;opacity:.75}
+#page2Fond.etb .vide{background:#243318;border:1px dashed rgba(159,196,122,.25);
+border-radius:12px;padding:16px 12px;text-align:center;margin-bottom:8px}
+#page2Fond.etb .vide b{display:block;font:700 13px 'Baloo 2',sans-serif;color:#f0e6d2}
+#page2Fond.etb .vide em{font:italic 10px Georgia,serif;color:#9fb490}
+#page2Fond.etb .pied{display:flex;gap:8px;margin-top:2px}
+#page2Fond.etb .pied button{flex:1;border:1px solid rgba(159,196,122,.22);
+border-bottom:3px solid #1b2915;border-radius:12px;padding:10px 0;background:#2c4023;
+color:#dff0cc;font:700 12.5px 'Baloo 2',sans-serif}
+#page2Fond.etb .pied button.bois{border:2px solid #a5764a;background:#8a6238;color:#f4ecd8}
+#page2Fond.etb .mot{margin:8px 1px 0;font:italic 10.5px Georgia,serif;color:#9fb490;text-align:center}
+`;
 function peindreLEcranDesBetes(mot){
 const E=ETB||{vaches:0,moutons:0,cochons:0,lait:0,lait_max:0};
+const pc=(a,b)=>Math.max(0,Math.min(100,Math.round((a||0)/(b||1)*100)));
+const fiche=(esp,n,titre,etat,or,jauge,coul,gestes)=>
+'<div class="fi'+(or?' pret':'')+'"><canvas data-f="'+esp+'"></canvas>'+
+'<div class="co"><div class="li"><b>'+titre+'</b>'+
+'<em'+(or?' class="or"':'')+'>'+etat+'</em></div>'+
+'<div class="ja"><span style="width:'+jauge+'%;background:'+coul+'"></span></div>'+
+'<div class="ge">'+gestes+'</div></div></div>';
+let fiches='';
+if((E.vaches||0)>0)fiches+=fiche('vache',E.vaches,
+(E.vaches)+' vache'+(E.vaches>1?'s':''),
+(E.lait||0)>0?((E.lait)+' / '+(E.lait_max||0)+' L'):
+(E.prochain?('lait dans '+etbDuree(E.prochain)):'il leur faut du foin'),
+(E.lait||0)>0,pc(E.lait,E.lait_max||1),'#e8e2d4',
+'<button data-g="traire" '+((E.lait||0)>0?'class="p"':'disabled')+'>'+
+((E.lait||0)>0?'Traire le seau':'Le seau est vide')+'</button>');
+if((E.moutons||0)>0)fiches+=fiche('mouton',E.moutons,
+(E.moutons)+' mouton'+(E.moutons>1?'s':''),
+(E.laine_prete||0)>0?((E.laine_prete)+' toison'+(E.laine_prete>1?'s':'')+' prête'+(E.laine_prete>1?'s':'')):
+('laine dans '+etbDuree(E.laine_dans)),
+(E.laine_prete||0)>0,(E.laine_prete||0)>0?100:0,'#f0d78a',
+'<button data-g="tondre" '+((E.laine_prete||0)>0?'class="p"':'disabled')+'>'+
+((E.laine_prete||0)>0?'Tondre':'Pas encore à tondre')+'</button>');
+if((E.cochons||0)>0)fiches+=fiche('cochon',E.cochons,
+(E.cochons)+' cochon'+(E.cochons>1?'s':''),
+(E.poids_bete||0)+' kg la bête',!!E.truffe_prete,
+pc(E.poids_bete,40),'#e8a0a8',
+'<button data-g="truffe" '+(E.truffe_prete?'class="p"':'disabled')+'>'+
+(E.truffe_prete?'Fouiller':'Rien à flairer')+'</button>'+
+'<button data-g="vendre_cochon" '+((E.poids_bete||0)>=40?'':'disabled')+'>'+
+((E.poids_bete||0)>=40?'Vendre':'Trop maigre')+'</button>');
+if(!fiches)fiches='<div class="vide"><b>L’enclos est vide</b>'+
+'<em>Lucien tient son étal juste à côté</em></div>';
 $('page2Fond').innerHTML=
-'<div class="tete"><small>L’ENCLOS · LA FERME</small><b>Les bêtes</b>'+
-'<span class="eu">'+enEuros(e.euros||0)+'</span><button id="etbX">✕</button></div>'+
-'<div class="scene"><canvas id="etbPre"></canvas><div id="etbBulles"></div>'+
-'<div class="tiroir" id="etbTiroir"></div></div>'+
-'<div class="bas">'+(mot?'<div class="mot">'+mot+'</div>':'')+
-'<div class="lot">'+
-'<button data-g="nourrir" class="'+((E.foin||0)>0?'':'p')+'">Nourrir'+
-'<i>'+((E.foin||0)>0?'foin : '+etbDuree(E.foin):'elles ont faim')+'</i></button>'+
-'<button data-g="traire" '+((E.lait||0)>0?'class="p"':'disabled')+'>Traire'+
-'<i>'+(E.lait||0)+' / '+(E.lait_max||0)+' L</i></button>'+
-'<button data-g="marche">Le marché<i>acheter · vendre</i></button>'+
-'</div></div>';
+'<div class="bande"><canvas id="etbPre"></canvas>'+
+'<div class="chap"><div class="ti"><small>L’ENCLOS · LA FERME</small>'+
+'<b>Les bêtes</b></div>'+
+'<span class="eu">'+enEuros(e.euros||0)+'</span>'+
+'<button id="etbX">✕</button></div></div>'+
+'<div class="liste">'+
+'<div class="foin">Foin<i>'+((E.foin||0)>0?('la mangeoire tient encore '+etbDuree(E.foin)):
+'la mangeoire est vide, elles ont faim')+'</i></div>'+
+fiches+
+'<div class="pied">'+
+'<button data-g="nourrir" class="'+((E.foin||0)>0?'':'p')+'">Nourrir tout le monde</button>'+
+'<button data-g="marche" class="bois">Le marché</button>'+
+'</div>'+(mot?'<div class="mot">'+mot+'</div>':'')+'</div>';
 $('etbX').onclick=()=>{ETB_PRE=null;$('page2').classList.remove('on');};
+$('page2Fond').querySelectorAll('[data-f]').forEach(c=>{try{
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+const D=Math.min(2,window.devicePixelRatio||1);c.width=56*D;c.height=56*D;
+g.setTransform(D,0,0,D,0,0);
+for(let y=0;y<56;y+=2)for(let x=0;x<56;x+=2){const n=PR_h(x,y,101);
+g.fillStyle=n<.38?'#2f4a22':(n<.72?'#365426':'#2a431e');g.fillRect(x,y,2,2);}
+dessinerBete(g,c.dataset.f,27,40,1.5);}catch(x){}});
 ETB_PRE=placesDuTroupeau(E);
 const cv=$('etbPre');
 const mien=++ETB_BOUCLE;
 const boucle=()=>{
 if(mien!==ETB_BOUCLE)return;
 if(!$('page2').classList.contains('on')||$('page2Fond').className!=='etb')return;
-if(!document.hidden){peindreLePre(cv,ETB_PRE,performance.now());poserLesBulles(E);}
+if(!document.hidden)peindreLePre(cv,ETB_PRE,performance.now());
 requestAnimationFrame(boucle);};
 requestAnimationFrame(boucle);
 $('page2Fond').querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{
@@ -28223,7 +28319,7 @@ const d=await appelRPC('betes_vendre_cochon',{p_joueur:e.id});
 if(d&&d.erreur){dire(d.erreur==='trop_maigre'?('trop maigre : '+(d.poids||0)+' kg'):'pas de cochon','#e8a06a');}
 else{ETB=Object.assign({},ETB,(d&&d.etat)||{});
 jouer('achat');dire('+'+enEuros(d.gain)+' · '+d.poids+' kg','#f0cf7d');
-try{if(typeof r==='object'&&r&&typeof r.euros==='number'){e.euros=r.euros;sauver();}majHaut();}catch(x){}
+try{if(d&&typeof d.euros==='number'){e.euros=d.euros;sauver();}majHaut();}catch(x){}
 peindreLEcranDesBetes();}
 return;}
 }catch(x){dire('le réseau a flanché','#e8a06a');}
