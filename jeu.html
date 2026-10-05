@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-08-0200';
+var MA_VERSION='2026-10-08-0300';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11420,14 +11420,11 @@ for(let x=lb;x<=MONDE_L;x+=36){piquet(x,PASSAGE.y0);piquet(x,PASSAGE.y1);}
    deux traces de roues qui assombrissent le gravier là où l'on roule. */
 const CH_X0=lb-4, CH_X1=MONDE_L;
 const CH_Y0=PASSAGE.y0+4, CH_Y1=PASSAGE.y1-4;
-for(let y=CH_Y0;y<CH_Y1;y++)
-for(let x=CH_X0;x<CH_X1;x++){
+peindreVite(g,CH_X0,CH_Y0,CH_X1-CH_X0,CH_Y1-CH_Y0,(x,y)=>{
 const bord=Math.min(y-CH_Y0,CH_Y1-1-y);
-if(bord<3&&PR_h(x,y,53)>0.26+bord*0.24)continue;
+if(bord<3&&PR_h(x,y,53)>0.26+bord*0.24)return null;
 const n=PR_h(x,y,51);
-/* les bords : de la terre meuble. le centre : le lit de gravier. */
-g.fillStyle=bord<5?(n<.5?'#6b5740':'#5e4c38'):(n<.5?'#8a7f6a':'#7d7260');
-g.fillRect(x,y,1,1);}
+return bord<5?(n<.5?'#6b5740':'#5e4c38'):(n<.5?'#8a7f6a':'#7d7260');});
 /* LES CAILLOUX, de tailles variées */
 const nbCaillou=Math.round((CH_X1-CH_X0)*(CH_Y1-CH_Y0)/26);
 for(let k=0;k<nbCaillou;k++){
@@ -11444,6 +11441,29 @@ for(let x=CH_X0;x<CH_X1;x++){
 const d=Math.round(Math.sin(x*0.16)*1);
 g.fillStyle='rgba(70,58,40,.30)';
 g.fillRect(x,Math.round(oy+d),1,3);}});
+/* ================= PEINDRE VITE UNE GRANDE SURFACE =================
+   Un appel à fillRect par pixel coûte cher : le navigateur relit la couleur
+   écrite en texte à chaque fois. Pour les grands aplats — l'herbe, la
+   chaussée, le pavage — on écrit directement dans la mémoire de l'image,
+   puis on la repose d'un seul coup. Le dessin est identique, mais au lieu
+   de centaines de milliers d'appels il n'y en a plus que deux.
+   `teinte(x,y)` doit renvoyer une couleur '#rrggbb', ou null pour laisser
+   le pixel tel quel. */
+function peindreVite(g,x0,y0,w,h,teinte){
+if(w<=0||h<=0)return;
+const img=g.getImageData(x0,y0,w,h), d=img.data;
+const cache=new Map();
+const lire=(c)=>{let v=cache.get(c);
+if(v===undefined){v=[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];
+cache.set(c,v);}
+return v;};
+let p=0;
+for(let y=0;y<h;y++)for(let x=0;x<w;x++,p+=4){
+const c=teinte(x0+x,y0+y);
+if(!c)continue;
+const v=lire(c);
+d[p]=v[0];d[p+1]=v[1];d[p+2]=v[2];d[p+3]=255;}
+g.putImageData(img,x0,y0);}
 /* ================= LA ROUTE ET LA PLACE =================
    La ferme était quatre bâtiments posés dans un pré, sans rien qui les
    relie. Une route les dessert et s'ouvre au milieu sur une place pavée :
@@ -11480,11 +11500,11 @@ const bordure=(x,y)=>{g.fillStyle=PR_h(x,y,52)<.5?'#6b5740':'#5e4c38';g.fillRect
 /* ---------- LA CHAUSSÉE EST-OUEST, D'UNE BARRIÈRE À L'AUTRE ----------
    Elle traverse toute la ferme et rejoint le chemin du port sans rupture :
    même gravier, mêmes cailloux, mêmes ornières. */
-for(let y=RY;y<RY+ROUTE_H;y++)
-for(let x=BORD_FERME;x<lb;x++){
+peindreVite(g,BORD_FERME,RY,lb-BORD_FERME,ROUTE_H,(x,y)=>{
 const bord=Math.min(y-RY,RY+ROUTE_H-1-y);
-if(bord<3&&PR_h(x,y,53)>0.26+bord*0.24)continue;
-if(bord<4)bordure(x,y);else grav(x,y);}
+if(bord<3&&PR_h(x,y,53)>0.26+bord*0.24)return null;
+const n=PR_h(x,y,bord<4?52:51);
+return bord<4?(n<.5?'#6b5740':'#5e4c38'):(n<.5?'#8a7f6a':'#7d7260');});
 /* LES CAILLOUX de la chaussée : la même densité que sur le chemin du port */
 {const nb=Math.round((lb-BORD_FERME)*ROUTE_H/26);
 for(let k=0;k<nb;k++){
@@ -11520,30 +11540,22 @@ if(bord<4)bordure(x,y);else grav(x,y);}
 /* LE PAVAGE : des rangs de pavés décalés d'un demi-pavé, comme un mur
    appareillé. Les joints sont creusés, et chaque pavé a sa teinte. */
 const PAVE=11, JOINT=1;
-for(let y=PLACE.y-PLACE.r;y<=PLACE.y+PLACE.r;y++)
-for(let x=PLACE.x-PLACE.r;x<=PLACE.x+PLACE.r;x++){
-const dx=Math.abs(x-PLACE.x), dy=Math.abs(y-PLACE.y);
-const bord=Math.max(dx,dy);
-if(bord>PLACE.r)continue;
-if(bord>PLACE.r-6){                                /* la bordure de pierre */
-const tb=PR_h(x,y,56);
-g.fillStyle=bord>PLACE.r-2?'#7b7266':(tb<.5?'#9a948a':'#8d8678');
-g.fillRect(x,y,1,1);continue;}
+peindreVite(g,PLACE.x-PLACE.r,PLACE.y-PLACE.r,PLACE.r*2+1,PLACE.r*2+1,(x,y)=>{
+const dx=Math.abs(x-PLACE.x), dy=Math.abs(y-PLACE.y), bord=Math.max(dx,dy);
+if(bord>PLACE.r)return null;
+if(bord>PLACE.r-6){const tb=PR_h(x,y,56);
+return bord>PLACE.r-2?'#7b7266':(tb<.5?'#9a948a':'#8d8678');}
 const rang=Math.floor((y-PLACE.y)/PAVE);
-const dec=(rang%2)?Math.round(PAVE/2):0;           /* un rang sur deux décalé */
+const dec=(rang%2)?Math.round(PAVE/2):0;
 const col=Math.floor((x-PLACE.x+dec)/PAVE);
 const ix=((x-PLACE.x+dec)%PAVE+PAVE)%PAVE;
 const iy=((y-PLACE.y)%PAVE+PAVE)%PAVE;
-if(ix<JOINT||iy<JOINT){g.fillStyle='#6f6558';g.fillRect(x,y,1,1);continue;}
+if(ix<JOINT||iy<JOINT)return '#6f6558';
+if(iy===JOINT)return '#b3a894';
+if(iy===PAVE-1)return '#857c6c';
+if(PR_h(x,y,58)>0.93)return '#b3a894';
 const t=PR_h(col,rang,57);
-g.fillStyle=t<.28?'#a79c88':(t<.58?'#9c9280':(t<.84?'#918876':'#aba08c'));
-g.fillRect(x,y,1,1);
-/* le grain de la pierre, et la lumière sur le haut de chaque pavé */
-if(iy===JOINT)g.fillStyle='#b3a894';
-else if(iy===PAVE-1)g.fillStyle='#857c6c';
-else if(PR_h(x,y,58)>0.93)g.fillStyle='#b3a894';
-else continue;
-g.fillRect(x,y,1,1);}
+return t<.28?'#a79c88':(t<.58?'#9c9280':(t<.84?'#918876':'#aba08c'));});
 /* QUATRE ARBRES, aux quatre coins du carré.
    (La fonction était définie dans le bloc de la fontaine peinte, que j'ai
    retiré en passant la fontaine en volume : la voici à sa place.) */
@@ -11654,11 +11666,9 @@ Rb(q[0]+1+dx,q[1]+1+dy,2,2,'#c9a24a');});
    qu'ils ne mordent ni sur la barrière de la ferme ni sur le potager. */
 const EN={x0:176, x1:672, y0:812, y1:1462};
 /* L'HERBE GRASSE : un vert profond, avec ses touffes et leurs ombres */
-for(let y=EN.y0;y<EN.y1;y++)
-for(let x=EN.x0;x<EN.x1;x++){
+peindreVite(g,EN.x0,EN.y0,EN.x1-EN.x0,EN.y1-EN.y0,(x,y)=>{
 const n=PR_h(x,y,101);
-g.fillStyle=n<.38?'#4e7a38':(n<.72?'#58873f':'#447030');
-g.fillRect(x,y,1,1);}
+return n<.38?'#4e7a38':(n<.72?'#58873f':'#447030');});
 /* LES TOUFFES : quatre brins d'inégale hauteur, et leur ombre au pied */
 {const nb=Math.round((EN.x1-EN.x0)*(EN.y1-EN.y0)/620);
 for(let k=0;k<nb;k++){
