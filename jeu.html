@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-06-2320';
+var MA_VERSION='2026-10-07-0030';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -26530,12 +26530,27 @@ h+='<div class="rub">TON CHAMP · '+J.nb+' PARCELLES SUR 24</div>';
 const prix={6:150000,12:500000,18:1500000};
 [[6,'6 → 12 parcelles'],[12,'12 → 18 parcelles'],[18,'18 → 24 parcelles']].forEach(([n,t])=>{
 const fait=J.nb>n, dispo=J.nb===n;
-h+='<div class="outil"><span class="t"><b>'+t+'</b><small>'+
-(fait?'déjà loué':(dispo?'six parcelles de plus, prêtes à bêcher':'d’abord l’étape précédente'))+
-'</small></span><button '+(dispo?'data-a="agrandir"':'')+' class="'+(dispo?'':'pris')+'">'+
-(fait?'✓':fmt(prix[n]))+'</button></div>';});
+/* LA LOCATION DE PARCELLES demande des matériaux, apportés de la forêt.
+   Le panneau de chantier manquait ici : on voyait le prix, mais ni ce qu'il
+   fallait livrer, ni le bouton pour le déposer. */
+const cleC='champ:'+(n+6);
+const pret=chantierComplet(cleC);
+h+='<div class="outil" style="display:block">'+
+'<div style="display:flex;align-items:center;gap:8px">'+
+'<span class="t"><b>'+t+'</b><small>'+
+(fait?'déjà loué':(dispo?(pret?'les matériaux sont livrés · prête à louer'
+:'six parcelles de plus · il faut des matériaux'):'d’abord l’étape précédente'))+
+'</small></span>'+
+'<button '+((dispo&&pret)?'data-a="agrandir"':'')+' class="'+((dispo&&pret)?'':'pris')+'">'+
+(fait?'✓':fmt(prix[n]))+'</button></div>'+
+(dispo?chantierHTML(cleC):'')+'</div>';});
 return h;}
 function ouvrirLaBoutiqueFerme(mot){
+/* L'ÉTAT DES CHANTIERS : sans lui, les matériaux déjà livrés comptent pour
+   zéro et la location de parcelles reste bloquée. Le grainetier et le
+   poulailler le lisaient, pas cette boutique. */
+if(!CHANTIERS||!Object.keys(CHANTIERS).length)
+lireChantiers().then(()=>{if($('page2').classList.contains('on'))ouvrirLaBoutiqueFerme(mot);});
 if(!CMD.commandes.length)lireLesCommandes().then(()=>{if($('page2').classList.contains('on'))ouvrirLaBoutiqueFerme(mot);});
 /* on demande les cours du jour pour tout ce qui est dans le sac */
 {const aLire=Object.keys(e.sac||{}).filter(k=>!COURS[k]);
@@ -26605,6 +26620,12 @@ $('page2Fond').querySelectorAll('canvas[data-o]').forEach(cv=>{
 try{const D=2;cv.width=46*D;cv.height=46*D;const g=cv.getContext('2d');
 g.setTransform(D*2.9,0,0,D*2.9,0,0);g.imageSmoothingEnabled=false;
 if(typeof dessinerOutilPotager==='function')dessinerOutilPotager(g,cv.dataset.o);}catch(x){}});
+/* LES DÉPÔTS DE MATÉRIAUX : ils étaient branchés au grainetier et au
+   poulailler, mais pas ici — alors que Chez Madeleine est devenu le seul
+   endroit où l'on loue des parcelles. Sans ça, les boutons « Déposer » et
+   « Louer » s'affichaient sans rien faire. */
+try{brancherDepots(()=>ouvrirLaBoutiqueFerme(),
+(t)=>{try{texteVolant(joueur.x,joueur.y-34,t,'#d8c9a0');}catch(x){}});}catch(x){}
 $('page2Fond').querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{
 let art=b.dataset.a;
 if(b.classList.contains('pris'))return;
