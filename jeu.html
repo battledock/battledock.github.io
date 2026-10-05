@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-2028';
+var MA_VERSION='2026-10-05-2121';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16305,6 +16305,52 @@ F.forEach(b=>{
 if(b.x-camX<-30||b.x-camX>VW+30||b.y-camY<-30||b.y-camY>VH+30)return;
 pousses_bete.push({y:b.y,f:()=>{try{
 poule(ctx,b.x-camX,b.y-camY,b.robe,b.etat,b.dir,b.coq,b.pas);}catch(x){}}});});}
+/* ================= LE TROUPEAU DE L'ENCLOS =================
+   Les bêtes achetées au marché broutent pour de vrai dans le grand enclos.
+   On tire leur nombre de la base une fois, puis on le resynchronise quand
+   on sort de l'écran des bêtes. */
+if(!window.FERME_TROUPEAU&&!window.FERME_TROUPEAU_EN_COURS){
+window.FERME_TROUPEAU_EN_COURS=true;
+try{appelRPC('betes_etat',{p_joueur:e.id}).then(d=>{
+window.FERME_TROUPEAU=(d&&!d.erreur)?{vaches:d.vaches||0,moutons:d.moutons||0,cochons:d.cochons||0}
+:{vaches:0,moutons:0,cochons:0};
+window.FERME_TROUPEAU_EN_COURS=false;}).catch(()=>{window.FERME_TROUPEAU_EN_COURS=false;});}
+catch(x){window.FERME_TROUPEAU_EN_COURS=false;}}
+if(window.FERME_TROUPEAU){
+const EN={x0:206,x1:642,y0:842,y1:1432};
+const T=window.FERME_TROUPEAU;
+if(!window.ENCLOS_BETES)window.ENCLOS_BETES=[];
+const voulu=[];
+for(let k=0;k<(T.vaches||0);k++)voulu.push(['vache',k]);
+for(let k=0;k<(T.moutons||0);k++)voulu.push(['mouton',k]);
+for(let k=0;k<(T.cochons||0);k++)voulu.push(['cochon',k]);
+const B=window.ENCLOS_BETES;
+const cle=voulu.map(v=>v[0]+v[1]).join(',');
+if(window.ENCLOS_CLE!==cle){window.ENCLOS_CLE=cle;B.length=0;
+voulu.forEach(([esp,k],i)=>{
+const x=EN.x0+30+PR_h(i*7,k*3+1,141)*(EN.x1-EN.x0-60);
+const y=EN.y0+30+PR_h(i*11,k*5+2,142)*(EN.y1-EN.y0-60);
+B.push({esp,robe:k,x,y,tx:x,ty:y,etat:'broute',t:PR_h(i,k,143)*4});});}
+const dt2=Math.min(0.1,(Date.now()-(window.ENCLOS_T||Date.now()))/1000);
+window.ENCLOS_T=Date.now();
+B.forEach((b,k)=>{
+b.t-=dt2;
+if(b.etat==='marche'){
+const dx=b.tx-b.x, dy=b.ty-b.y, d=Math.hypot(dx,dy);
+if(d>1.5){const v=(b.esp==='mouton'?9:7)*dt2;b.x+=dx/d*v;b.y+=dy/d*v;}
+else{b.etat='broute';b.t=3+Math.random()*6;}}
+else if(b.t<=0){b.etat='marche';b.t=6+Math.random()*8;
+b.tx=EN.x0+24+Math.random()*(EN.x1-EN.x0-48);
+b.ty=EN.y0+24+Math.random()*(EN.y1-EN.y0-48);}
+/* ELLES S'ÉCARTENT quand on leur marche dessus */
+const jx=b.x-joueur.x, jy=b.y-joueur.y, dj=Math.hypot(jx,jy);
+if(dj<26&&dj>0.1){b.x+=jx/dj*20*dt2;b.y+=jy/dj*20*dt2;}
+b.x=Math.max(EN.x0+16,Math.min(EN.x1-16,b.x));
+b.y=Math.max(EN.y0+16,Math.min(EN.y1-16,b.y));});
+B.forEach(b=>{
+if(b.x-camX<-60||b.x-camX>VW+60||b.y-camY<-60||b.y-camY>VH+60)return;
+pousses_bete.push({y:b.y,f:()=>{try{
+dessinerBete(ctx,b.esp,b.x-camX,b.y-camY,b.esp==='vache'?1.3:1.1,true,b.robe);}catch(x){}}});});}
 const pousses=[];
 if(POT.charge)for(let i=0;i<24;i++){
 const P=POT.parc[i];if(!P||!P.cult||!PLANTES[P.cult])continue;
@@ -28163,6 +28209,8 @@ color:#dff0cc;font:700 12.5px 'Baloo 2',sans-serif}
 `;
 function peindreLEcranDesBetes(mot){
 const E=ETB||{vaches:0,moutons:0,cochons:0,lait:0,lait_max:0};
+/* LE PRÉ DE LA CARTE suit ce que l'on vient d'acheter. */
+try{window.FERME_TROUPEAU={vaches:E.vaches||0,moutons:E.moutons||0,cochons:E.cochons||0};}catch(x){}
 const pc=(a,b)=>Math.max(0,Math.min(100,Math.round((a||0)/(b||1)*100)));
 const fiche=(esp,n,titre,etat,or,jauge,coul,gestes)=>
 '<div class="fi'+(or?' pret':'')+'"><canvas data-f="'+esp+'"></canvas>'+
