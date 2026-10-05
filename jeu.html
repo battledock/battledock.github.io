@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-06-2110';
+var MA_VERSION='2026-10-06-2210';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11560,54 +11560,10 @@ else if(iy===PAVE-1)g.fillStyle='#857c6c';
 else if(PR_h(x,y,58)>0.93)g.fillStyle='#b3a894';
 else continue;
 g.fillRect(x,y,1,1);}
-/* ---------- LA FONTAINE, au centre ---------- */
-{const fx=PLACE.x, fy=PLACE.y;
-/* la margelle */
-for(let y=fy-26;y<=fy+26;y++)for(let x=fx-26;x<=fx+26;x++){
-const d=Math.hypot(x-fx,y-fy);
-if(d>26)continue;
-if(d>20){const t=PR_h(x,y,59);
-g.fillStyle=d>24?'#7b7266':(t<.5?'#a8a094':'#9a9286');g.fillRect(x,y,1,1);continue;}
-/* l'eau, plus sombre au fond et plus claire au bord */
-const t2=PR_h(x,y,60);
-g.fillStyle=d>17?'#4a7a9a':(t2<.5?'#3f6a86':'#36607c');
-g.fillRect(x,y,1,1);
-if(t2>0.965){g.fillStyle='#8fc0d8';g.fillRect(x,y,2,1);}}
-/* la vasque centrale et son jet */
-g.fillStyle='#8d949c';g.fillRect(fx-7,fy-9,14,14);
-g.fillStyle='#a8b0b8';g.fillRect(fx-7,fy-9,14,2);
-g.fillStyle='#6f767e';g.fillRect(fx-7,fy+3,14,2);
-g.fillStyle='#8fc0d8';g.fillRect(fx-2,fy-18,4,9);
-g.fillStyle='#c8e4f2';g.fillRect(fx-1,fy-18,2,6);
-g.fillStyle='rgba(143,192,216,.5)';g.fillRect(fx-5,fy-12,10,2);
-/* l'ombre portée de la fontaine */
-g.fillStyle='rgba(30,26,18,.18)';
-g.beginPath();g.ellipse(fx+3,fy+22,24,7,0,0,7);g.fill();}
-/* ---------- QUATRE ARBRES ET DEUX BANCS ---------- */
-const arbre=(ax,ay)=>{
-g.fillStyle='rgba(26,22,14,.26)';
-g.beginPath();g.ellipse(ax+4,ay+3,17,6,0,0,7);g.fill();
-g.fillStyle='#5b3f26';g.fillRect(ax-4,ay-14,8,18);
-g.fillStyle='#7d5934';g.fillRect(ax-4,ay-14,3,18);
-for(let k=0;k<70;k++){
-const a=PR_h(k,ax,61)*6.283, r=PR_h(k,ay,62)*19;
-const bx2=Math.round(ax+Math.cos(a)*r), by2=Math.round(ay-20+Math.sin(a)*r*0.8);
-const t=PR_h(k,3,63);
-g.fillStyle=t<.3?'#3f5c2c':(t<.7?'#4e7236':'#5f8440');
-g.fillRect(bx2,by2,3,3);}};
 /* QUATRE ARBRES, aux quatre coins du carré */
 const cA=PLACE.r-22;
 [[-cA,-cA],[cA,-cA],[-cA,cA],[cA,cA]].forEach(q=>
 arbre(PLACE.x+q[0],PLACE.y+q[1]));
-const banc=(bx,by)=>{
-g.fillStyle='rgba(26,22,14,.22)';g.fillRect(bx-1,by+9,34,3);
-g.fillStyle='#6b4a2c';g.fillRect(bx,by,32,6);
-g.fillStyle='#8a6238';g.fillRect(bx,by,32,2);
-g.fillStyle='#4e3620';g.fillRect(bx+2,by+6,4,5);g.fillRect(bx+26,by+6,4,5);
-g.fillStyle='#7d5934';g.fillRect(bx,by-7,32,3);};
-/* QUATRE BANCS, aux quatre points cardinaux, tournés vers la fontaine */
-banc(PLACE.x-16,PLACE.y-PLACE.r+16);
-banc(PLACE.x-16,PLACE.y+PLACE.r-26);
 /* DEUX LAMPADAIRES de fonte, qui encadrent l'entrée sud */
 const lampadaire=(lx,ly)=>{
 g.fillStyle='rgba(26,22,14,.26)';
@@ -14984,6 +14940,68 @@ g.moveTo(cx+17,sol-92);g.lineTo(cx+29,sol-94);g.lineTo(cx+25,sol-88);g.closePath
 /* ================= LA HALTE : LA STATION DE LA FERME =================
    Le même bardage et la même toiture que La Récolte, en plus petit : les
    deux bâtiments se répondent et forment une petite place. */
+/* ================= LA FONTAINE DE LA PLACE =================
+   Un bac de pierre appareillé, posé comme un vrai objet : il a une paroi
+   avant, donc une hauteur, et il passe devant ou derrière le joueur selon
+   l'endroit où l'on se tient. */
+function graverFontaine(){
+const L=64, H=48;
+const c=document.createElement('canvas');c.width=L*2;c.height=H*2;
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(2,0,0,2,0,0);
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
+Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+const T2=(h,d)=>teint(h,d);
+const PI='#9a948a', piC=T2(PI,16), piO=T2(PI,-22), piT=T2(PI,-40);
+const EAU='#3f6a86', eauC=T2(EAU,22), eauX=T2(EAU,40);
+const cx=L/2, sol=H-2;
+/* LE DESSUS DU BAC, appareillé */
+R(cx-24,sol-30,48,10,PI);
+for(let k=0;k<48;k+=8)R(cx-24+k,sol-30,1,10,piO);
+R(cx-24,sol-30,48,1,piC);
+/* L'EAU */
+R(cx-20,sol-28,40,7,EAU);R(cx-20,sol-28,40,1,'#2f5570');
+R(cx-20,sol-23,40,2,eauC);
+for(let k=0;k<9;k++)
+R(cx-18+Math.round(alea(k*3.1)*34),sol-27+Math.round(alea(k*5.3)*5),2,1,eauX);
+/* LA PAROI AVANT : c'est elle qui donne la hauteur */
+R(cx-24,sol-21,48,9,piO);
+for(let r=0;r<9;r+=4)R(cx-24,sol-21+r,48,1,piT);
+for(let k=0;k<48;k+=11)R(cx-24+k,sol-21,1,9,piT);
+R(cx-24,sol-13,48,2,piT);
+/* LE JET */
+R(cx-2,sol-46,4,16,eauC);R(cx-1,sol-46,2,10,eauX);
+R(cx-6,sol-32,12,3,'rgba(143,192,216,.6)');
+/* LES QUATRE BORNES D'ANGLE */
+[[-27,-32],[22,-32],[-27,-18],[22,-18]].forEach(q=>{
+R(cx+q[0],sol+q[1],5,8,PI);R(cx+q[0],sol+q[1],5,1,piC);
+R(cx+q[0]+4,sol+q[1],1,8,piO);});
+return c;}
+/* ================= LE BANC DE PIERRE =================
+   Un bloc massif sur deux dés : rien ne bouge, rien ne pourrit. */
+function graverBancPierre(){
+const L=52, H=24;
+const c=document.createElement('canvas');c.width=L*2;c.height=H*2;
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(2,0,0,2,0,0);
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
+Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+const T2=(h,d)=>teint(h,d);
+const PI='#9a948a', piC=T2(PI,16), piO=T2(PI,-22), piT=T2(PI,-40);
+const cx=L/2, sol=H-2;
+/* LES DEUX DÉS */
+[[-18],[10]].forEach(q=>{
+const px=cx+q[0];
+R(px,sol-12,8,12,PI);R(px,sol-12,8,1,piC);R(px+6,sol-12,2,12,piO);
+R(px,sol-1,8,1,piT);});
+/* LA DALLE D'ASSISE */
+R(cx-22,sol-16,44,5,PI);
+R(cx-22,sol-16,44,1,piC);
+R(cx-22,sol-12,44,1,piO);
+for(let k=0;k<44;k+=13)R(cx-22+k,sol-16,1,5,piO);
+/* LE GRAIN DE LA PIERRE */
+for(let k=0;k<24;k++)
+R(cx-20+Math.round(alea(k*2.7)*40),sol-15+Math.round(alea(k*4.1)*3),1,1,
+alea(k*7.7)>0.5?piC:piO);
+return c;}
 function graverHalte(){
 const W=120, Ht=120, cx=W/2, sol=Ht-14;
 const c=document.createElement('canvas');
@@ -15140,6 +15158,20 @@ const CR=calque(graverRecolte(),190,150,136);
 XCAL['x_fe_recolte0']=CR;CALQUES_DECO['x_fe_recolte']=CR;
 TAILLES['x_fe_recolte']=[{w:150,h:24}];
 DECOR.push({t:'x_fe_recolte',x:620,y:970,v:0,bati:true,demi:80,ouvre:'laRecolte'});
+/* LE MOBILIER DE LA PLACE : des objets posés, pas du décor peint. Ils se
+   trient en profondeur avec le joueur et lui barrent le passage. */
+{const PX=588, PY=750;
+const FO=calque(graverFontaine(),64,48,44);
+XCAL['x_fe_fontaine0']=FO;CALQUES_DECO['x_fe_fontaine']=FO;
+TAILLES['x_fe_fontaine']=[{w:52,h:14}];
+DECOR.push({t:'x_fe_fontaine',x:PX,y:PY,v:0,bati:true,demi:27});
+const BP=calque(graverBancPierre(),52,24,20);
+XCAL['x_fe_banc0']=BP;CALQUES_DECO['x_fe_banc']=BP;
+TAILLES['x_fe_banc']=[{w:44,h:10}];
+DECOR.push({t:'x_fe_banc',x:PX-78,y:PY-62,v:0,bati:true,demi:22});
+DECOR.push({t:'x_fe_banc',x:PX+78,y:PY-62,v:0,bati:true,demi:22});
+DECOR.push({t:'x_fe_banc',x:PX-78,y:PY+72,v:0,bati:true,demi:22});
+DECOR.push({t:'x_fe_banc',x:PX+78,y:PY+72,v:0,bati:true,demi:22});}
 
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}
 if(CARTE==='foret')return semerLaForet();
