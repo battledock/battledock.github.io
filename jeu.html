@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-0710';
+var MA_VERSION='2026-10-07-0820';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11548,23 +11548,6 @@ g.fillRect(bx2,by2,3,3);}};
 const cA=PLACE.r-22;
 [[-cA,-cA],[cA,-cA],[-cA,cA],[cA,cA]].forEach(q=>
 arbre(PLACE.x+q[0],PLACE.y+q[1]));
-/* DEUX LAMPADAIRES de fonte, qui encadrent l'entrée sud */
-const lampadaire=(lx,ly)=>{
-g.fillStyle='rgba(26,22,14,.26)';
-g.beginPath();g.ellipse(lx+3,ly+2,8,3,0,0,7);g.fill();
-g.fillStyle='#3a3f46';g.fillRect(lx-3,ly-2,8,4);
-g.fillStyle='#4e545c';g.fillRect(lx-1,ly-30,3,30);
-g.fillStyle='#6a727c';g.fillRect(lx-1,ly-30,1,30);
-g.fillStyle='#3a3f46';g.fillRect(lx-4,ly-38,9,8);
-g.fillStyle='#f6dd8c';g.fillRect(lx-2,ly-36,5,5);
-g.fillStyle='#fff4c8';g.fillRect(lx-2,ly-36,5,2);
-g.fillStyle='#2e3238';g.fillRect(lx-5,ly-40,11,2);
-g.fillStyle='rgba(246,221,140,.14)';
-g.beginPath();g.arc(lx,ly-33,16,0,7);g.fill();};
-lampadaire(PLACE.x-PLACE.r+14,PLACE.y-PLACE.r+18);
-lampadaire(PLACE.x+PLACE.r-14,PLACE.y-PLACE.r+18);
-lampadaire(PLACE.x-PLACE.r+14,PLACE.y+PLACE.r-10);
-lampadaire(PLACE.x+PLACE.r-14,PLACE.y+PLACE.r-10);
 /* QUATRE PARTERRES DE FLEURS, entre les bancs */
 const parterre=(px,py)=>{
 for(let y=py-9;y<py+9;y++)for(let x=px-13;x<px+13;x++){
@@ -14934,6 +14917,74 @@ g.moveTo(cx+17,sol-92);g.lineTo(cx+29,sol-94);g.lineTo(cx+25,sol-88);g.closePath
 /* ================= LA HALTE : LA STATION DE LA FERME =================
    Le même bardage et la même toiture que La Récolte, en plus petit : les
    deux bâtiments se répondent et forment une petite place. */
+/* ================= LE LAMPADAIRE DE FONTE =================
+   Posé comme objet, il a une hauteur : on passe derrière quand on est au
+   nord, devant quand on est au sud, et il barre le passage à son pied. */
+function graverLampadaire(){
+const L=24, H=56;
+const c=document.createElement('canvas');c.width=L*2;c.height=H*2;
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(2,0,0,2,0,0);
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
+Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+const T2=(h,d)=>teint(h,d);
+const FER='#3a3f46', ferC=T2(FER,26), ferO=T2(FER,-18);
+const cx=L/2, sol=H-2;
+/* LE SOCLE, en deux gradins */
+R(cx-6,sol-5,12,5,ferO);R(cx-6,sol-5,12,1,FER);
+R(cx-5,sol-8,10,3,FER);R(cx-5,sol-8,10,1,ferC);
+/* LE FÛT : trois tons pour le rond, et des bagues */
+R(cx-2,sol-40,4,32,FER);
+R(cx-2,sol-40,1,32,ferC);
+R(cx+1,sol-40,1,32,T2(FER,-30));
+for(let r=0;r<32;r+=9)R(cx-2,sol-40+r,4,1,T2(FER,-34));
+/* LA CROSSE, qui part sur le côté */
+R(cx-2,sol-44,4,4,FER);R(cx-2,sol-44,1,4,ferC);
+R(cx,sol-46,4,2,FER);R(cx+3,sol-48,2,3,FER);
+/* LA LANTERNE : chapeau, verre, lumière */
+R(cx-1,sol-52,9,2,T2(FER,-30));
+R(cx,sol-51,7,2,FER);R(cx,sol-51,7,1,ferC);
+R(cx+1,sol-49,5,7,'#2a2e34');
+R(cx+2,sol-48,3,5,'#f6dd8c');
+R(cx+2,sol-48,3,2,'#fff4c8');
+R(cx+1,sol-42,5,2,T2(FER,-30));
+return c;}
+/* ================= LE BANC DE BOIS =================
+   Quatre lattes d'assise, un dossier incliné, deux pieds de fonte. */
+function graverBancBois(){
+const L=46, H=28;
+const c=document.createElement('canvas');c.width=L*2;c.height=H*2;
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(2,0,0,2,0,0);
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
+Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+const T2=(h,d)=>teint(h,d);
+const BOIS='#a5764a', boisC=T2(BOIS,22), boisO=T2(BOIS,-24), boisT=T2(BOIS,-42);
+const FER='#3a3f46', ferC=T2(FER,24);
+const cx=L/2, sol=H-2;
+/* LES DEUX PIEDS */
+[-16,10].forEach((dx)=>{
+const px=cx+dx;
+R(px,sol-11,4,11,FER);R(px,sol-11,1,11,ferC);
+R(px-2,sol-1,8,2,T2(FER,-24));});
+/* L'ASSISE : trois lattes, chacune sa teinte */
+for(let k=0;k<3;k++){
+const t=T2(BOIS,Math.round((alea(k*3.7)-0.5)*14));
+R(cx-20,sol-14-k*2,40,2,t);
+R(cx-20,sol-14-k*2,40,1,T2(t,20));
+R(cx-20,sol-13-k*2,40,1,T2(t,-22));}
+/* LE DOSSIER, incliné : chaque latte recule d'un pixel */
+for(let k=0;k<3;k++){
+const t=T2(BOIS,Math.round((alea(k*5.3+9)-0.5)*14));
+R(cx-20+k,sol-21-k*3,40,3,t);
+R(cx-20+k,sol-21-k*3,40,1,T2(t,24));
+R(cx-20+k,sol-19-k*3,40,1,T2(t,-26));}
+/* LES MONTANTS DU DOSSIER */
+R(cx-19,sol-24,3,13,boisO);R(cx+16,sol-24,3,13,boisO);
+R(cx-19,sol-24,1,13,boisC);R(cx+16,sol-24,1,13,boisC);
+/* LES VEINES ET LES NŒUDS */
+for(let k=0;k<10;k++){
+const vx=cx-18+Math.round(alea(k*2.9)*36), vy=sol-20+Math.round(alea(k*4.1)*8);
+R(vx,vy,2,1,boisT);}
+return c;}
 /* ================= LA FONTAINE DE LA PLACE =================
    Un bac de pierre appareillé, posé comme un vrai objet : il a une paroi
    avant, donc une hauteur, et il passe devant ou derrière le joueur selon
@@ -15165,7 +15216,19 @@ TAILLES['x_fe_banc']=[{w:44,h:10}];
 DECOR.push({t:'x_fe_banc',x:PX-78,y:PY-62,v:0,bati:true,demi:22});
 DECOR.push({t:'x_fe_banc',x:PX+78,y:PY-62,v:0,bati:true,demi:22});
 DECOR.push({t:'x_fe_banc',x:PX-78,y:PY+72,v:0,bati:true,demi:22});
-DECOR.push({t:'x_fe_banc',x:PX+78,y:PY+72,v:0,bati:true,demi:22});}
+DECOR.push({t:'x_fe_banc',x:PX+78,y:PY+72,v:0,bati:true,demi:22});
+/* LES QUATRE LAMPADAIRES, aux angles de la place */
+const LA=calque(graverLampadaire(),24,56,54);
+XCAL['x_fe_lampadaire0']=LA;CALQUES_DECO['x_fe_lampadaire']=LA;
+TAILLES['x_fe_lampadaire']=[{w:12,h:6}];
+[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(q=>
+DECOR.push({t:'x_fe_lampadaire',x:PX+q[0]*103,y:PY+q[1]*103,v:0,bati:true,demi:6}));
+/* DEUX BANCS DE BOIS, face à la fontaine, en plus des bancs de pierre */
+const BB=calque(graverBancBois(),46,28,26);
+XCAL['x_fe_bancbois0']=BB;CALQUES_DECO['x_fe_bancbois']=BB;
+TAILLES['x_fe_bancbois']=[{w:40,h:10}];
+DECOR.push({t:'x_fe_bancbois',x:PX,y:PY-74,v:0,bati:true,demi:20});
+DECOR.push({t:'x_fe_bancbois',x:PX,y:PY+82,v:0,bati:true,demi:20});}
 
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}
 if(CARTE==='foret')return semerLaForet();
