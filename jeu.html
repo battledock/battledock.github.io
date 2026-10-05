@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-06-0830';
+var MA_VERSION='2026-10-06-0920';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11305,7 +11305,13 @@ return SOL;}
 /* ================= LE PRÉ DE LA FERME =================
    Rien que l'herbe, ses touffes, ses reflets et ses fleurettes : le sol
    qu'on a retenu. Aucune haie, aucune barrière, aucun champ, aucun bâtiment. */
+let PARTIR_AU_PORT=false;         /* on ne déclenche le départ qu'une fois */
 const BORD_FERME=120;             /* la barrière, à 120 pixels du bord */
+/* ================= LE PASSAGE VERS LE PORT =================
+   Une trouée de cent pixels dans la barrière de droite, à mi-hauteur de la
+   carte. Pas de porte, pas de bouton : on marche dedans, et le chemin mène
+   au port. */
+const PASSAGE={y0:700, y1:800};   /* la trouée, en hauteur */
 /* ================= LE POTAGER : LE GRAND CARRÉ =================
    Vingt-quatre planches en six colonnes sur quatre rangs, séparées par des
    allées de terre tassée. La terre est montée en billons, avec des mottes
@@ -11404,9 +11410,27 @@ const hb=MONDE_H-B, lb=MONDE_L-B;
 lisse(B,B-6,lb,B-6);   lisse(B,B+4,lb,B+4);       /* en haut */
 lisse(B,hb-6,lb,hb-6); lisse(B,hb+4,lb,hb+4);     /* en bas */
 lisse(B-6,B,B-6,hb);   lisse(B+4,B,B+4,hb);       /* à gauche */
-lisse(lb-6,B,lb-6,hb); lisse(lb+4,B,lb+4,hb);     /* à droite */
+/* à droite : la barrière s'interrompt sur la trouée */
+lisse(lb-6,B,lb-6,PASSAGE.y0); lisse(lb+4,B,lb+4,PASSAGE.y0);
+lisse(lb-6,PASSAGE.y1,lb-6,hb); lisse(lb+4,PASSAGE.y1,lb+4,hb);
 for(let x=B;x<=lb;x+=36){piquet(x,B);piquet(x,hb);}
-for(let y=B;y<=hb;y+=36){piquet(B,y);piquet(lb,y);}
+for(let y=B;y<=hb;y+=36){piquet(B,y);
+if(y<PASSAGE.y0-18||y>PASSAGE.y1+18)piquet(lb,y);}
+/* LES DEUX PIQUETS D'ENTRÉE, plus gros, qui marquent la trouée */
+piquet(lb,PASSAGE.y0);piquet(lb,PASSAGE.y1);
+/* LE CHEMIN DE TERRE qui sort par là : il s'élargit vers le dehors */
+for(let y=PASSAGE.y0+4;y<PASSAGE.y1-4;y++)
+for(let x=lb-70;x<MONDE_L;x++){
+const bord=Math.min(y-PASSAGE.y0-4,PASSAGE.y1-4-y);
+if(bord<4&&PR_h(x,y,53)>0.3+bord*0.16)continue;
+const n=PR_h(x,y,51);
+g.fillStyle=n<.42?'#7a6648':(n<.78?'#6b5740':'#8a7656');
+g.fillRect(x,y,1,1);
+if(PR_h(x,y,55)>0.975)g.fillRect(x,y-1,2,1);}
+/* les ornières, deux traces de roues */
+for(let x=lb-70;x<MONDE_L;x++){
+g.fillStyle='rgba(60,48,30,.35)';
+g.fillRect(x,PASSAGE.y0+26,1,3);g.fillRect(x,PASSAGE.y1-30,1,3);}
 /* ---------- LE POTAGER ---------- */
 /* LES ALLÉES : une terre battue sombre. En inversant le contraste, ce sont
    les planches qui deviennent claires, et les cultures ressortent. */
@@ -17916,8 +17940,18 @@ let ax=+joueur.x||0, ay=+joueur.y||0;
 if(CHAMPS_SEULS&&CARTE==='village'){
 /* À LA FERME, ON MARCHE. Pas de décor, pas de grille, pas de collision :
    on se contente de rester dans le carré de la carte. */
-ax=Math.max(BORD_FERME+8,Math.min(MONDE_L-BORD_FERME-8,nx));
+/* LE PASSAGE : sur la trouée, la limite de droite est levée. Au-delà, on
+   part au port. */
+const dansLePassage=(ny>PASSAGE.y0+6&&ny<PASSAGE.y1-6);
+ax=Math.max(BORD_FERME+8,dansLePassage?nx:Math.min(MONDE_L-BORD_FERME-8,nx));
 ay=Math.max(BORD_FERME+10,Math.min(MONDE_H-BORD_FERME-8,ny));
+if(dansLePassage&&ax>MONDE_L-BORD_FERME+26&&!PARTIR_AU_PORT){
+PARTIR_AU_PORT=true;
+try{texteVolant(joueur.x,joueur.y-40,'Direction le port…','#f0cf7d');}catch(x){}
+try{sauver();}catch(x){}
+setTimeout(()=>{try{
+const v=(window.MA_VERSION?('?v='+encodeURIComponent(window.MA_VERSION)):'');
+location.href='jeu.html'+v;}catch(x){location.href='jeu.html';}},620);}
 /* les deux bâtiments barrent la route */
 const mur=(px,py)=>DECOR.some(o=>{const t=TAILLES[o.t];if(!t)return false;
 const d=t[0];if(!d)return false;
