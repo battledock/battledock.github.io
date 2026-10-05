@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-0030';
+var MA_VERSION='2026-10-07-0200';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11286,7 +11286,14 @@ const cleSol=()=>'sol:'+(typeof MA_VERSION!=='undefined'?MA_VERSION:'?')+':'+CAR
 (typeof MODE_VIL!=='undefined'?MODE_VIL:'-')+':'+MONDE_L+'x'+MONDE_H;
 function baseSol(){return new Promise((ok,ko)=>{try{const r=indexedDB.open('bdl-sol',1);r.onupgradeneeded=()=>r.result.createObjectStore('s');r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error);}catch(x){ko(x);}});}
 async function chargerSolCache(){try{const db=await baseSol();const v=await new Promise(ok=>{const q=db.transaction('s').objectStore('s').get(cleSol());q.onsuccess=()=>ok(q.result);q.onerror=()=>ok(null);});
-if(!v||!v.sol)return;const toile=async(b)=>{if(!b)return null;const im=await createImageBitmap(b);const c=document.createElement('canvas');c.width=im.width;c.height=im.height;c.getContext('2d').drawImage(im,0,0);return c;};
+if(!v||!v.sol)return;/* createImageBitmap manque sur les vieux Safari : on repasse par une image. */
+const toile=async(b)=>{if(!b)return null;
+if(typeof createImageBitmap!=='function'){
+return await new Promise((ok)=>{const u=URL.createObjectURL(b), im2=new Image();
+im2.onload=()=>{const c2=document.createElement('canvas');c2.width=im2.width;c2.height=im2.height;
+c2.getContext('2d').drawImage(im2,0,0);URL.revokeObjectURL(u);ok(c2);};
+im2.onerror=()=>{URL.revokeObjectURL(u);ok(null);};im2.src=u;});}
+const im=await createImageBitmap(b);const c=document.createElement('canvas');c.width=im.width;c.height=im.height;c.getContext('2d').drawImage(im,0,0);return c;};
 SOL_CACHE.sol=await toile(v.sol);SOL_CACHE.fin=await toile(v.fin);SOL_CACHE.pret=!!SOL_CACHE.sol;}catch(x){}}
 function rangerSolCache(){try{if(!SOL)return;const cle=cleSol(), fin=SOL_FIN;
 SOL.toBlob(async(b1)=>{const b2=fin?await new Promise(ok=>fin.toBlob(ok)):null;try{const db=await baseSol();const tx=db.transaction('s','readwrite');const st=tx.objectStore('s');
@@ -15907,6 +15914,20 @@ const dansLaCarte=(v,max)=>typeof v==='number'&&v>BORD&&v<max-BORD;
 let joueur={x:dansLaCarte(e.x,MONDE_L)?(e.x<400?e.x+400:e.x):CAMP_FIXE[0],
 y:dansLaCarte(e.y,MONDE_H)?e.y:CAMP_FIXE[1]+30,dir:'bas',pas:0,marche:false};
 let joyX=0,joyY=0;
+/* ================= roundRect SUR LES VIEUX SAFARI =================
+   ctx.roundRect n'existe qu'à partir de Safari 16.4. Trois appels n'étaient
+   pas protégés : sur un iPhone un peu ancien, le dessin s'arrêtait net à cet
+   endroit. On fournit la méthode quand elle manque. */
+try{if(!CanvasRenderingContext2D.prototype.roundRect){
+CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+let rr=Array.isArray(r)?r[0]:(r||0);
+rr=Math.min(rr,Math.abs(w)/2,Math.abs(h)/2);
+this.moveTo(x+rr,y);
+this.lineTo(x+w-rr,y);this.quadraticCurveTo(x+w,y,x+w,y+rr);
+this.lineTo(x+w,y+h-rr);this.quadraticCurveTo(x+w,y+h,x+w-rr,y+h);
+this.lineTo(x+rr,y+h);this.quadraticCurveTo(x,y+h,x,y+h-rr);
+this.lineTo(x,y+rr);this.quadraticCurveTo(x,y,x+rr,y);
+return this;};}}catch(x){}
 const cv=$('cv'), ctx=cv.getContext('2d',{alpha:false});   /* toile opaque : le téléphone n'a plus à la mélanger avec la page à chaque image */
 let VW=0,VH=0;
 let ECH=ZOOM;
