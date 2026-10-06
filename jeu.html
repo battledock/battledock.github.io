@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-05-2133';
+var MA_VERSION='2026-10-06-0534';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -15950,9 +15950,14 @@ poule(ctx,b.x-camX,b.y-camY,b.robe,b.etat,b.dir,b.coq,b.pas);}catch(x){}}});});}
    on sort de l'écran des bêtes. */
 if(!window.FERME_TROUPEAU&&!window.FERME_TROUPEAU_EN_COURS){
 window.FERME_TROUPEAU_EN_COURS=true;
-try{appelRPC('betes_etat',{p_joueur:e.id}).then(d=>{
-window.FERME_TROUPEAU=(d&&!d.erreur)?{vaches:d.vaches||0,moutons:d.moutons||0,cochons:d.cochons||0}
-:{vaches:0,moutons:0,cochons:0};
+/* LES VACHES VIENNENT DE L'ÉTABLE, les moutons et les cochons de l'enclos :
+   il faut les deux appels, sinon le pré reste sans vache. */
+try{Promise.all([
+appelRPC('etable_etat',{p_joueur:e.id}).catch(()=>null),
+appelRPC('betes_etat',{p_joueur:e.id}).catch(()=>null)]).then(([a,b])=>{
+const A=(a&&!a.erreur)?a:{}, B=(b&&!b.erreur)?b:{};
+window.FERME_TROUPEAU={vaches:A.vaches||B.vaches||0,
+moutons:B.moutons||A.moutons||0,cochons:B.cochons||A.cochons||0};
 window.FERME_TROUPEAU_EN_COURS=false;}).catch(()=>{window.FERME_TROUPEAU_EN_COURS=false;});}
 catch(x){window.FERME_TROUPEAU_EN_COURS=false;}}
 if(window.FERME_TROUPEAU){
