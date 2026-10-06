@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-06-0534';
+var MA_VERSION='2026-10-06-0544';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -14958,7 +14958,7 @@ return c;}
 const PO=calque(graverGrandPoulailler(),150,130,114);
 XCAL['x_fe_poulG0']=PO;CALQUES_DECO['x_fe_poulG']=PO;
 TAILLES['x_fe_poulG']=[{w:112,h:20}];
-DECOR.push({t:'x_fe_poulG',x:400,y:400,v:0,bati:true,demi:60,ouvre:'poulailler'});
+/* LE POULAILLER A ÉTÉ DÉMOLI : les poules vivent dans l'enclos, avec les bêtes. */
 /* LA STATION DE MÉTRO EST RETIRÉE de la ferme : on en sort désormais à
    pied, par le chemin de l'est. */
 const CR=calque(graverRecolte(),190,150,136);
@@ -15910,6 +15910,8 @@ ctx.fillStyle='rgba(175,205,225,'+(0.55-q*0.1)*(0.55+bat*0.45)+')';
 ctx.fillRect(bx+sx*(3+q*2.2),by-3+q*1.1*sy,2,1);}});
 }
 const pousses_bete=[];
+/* LE GRAND ENCLOS : poules et bêtes partagent désormais le même pré. */
+const ENCLOS_Z={x0:206,x1:642,y0:842,y1:1432,cx:424,cy:1137};
 /* ================= LA BASSE-COUR =================
    Les poules picorent devant le poulailler. Elles étaient animées par
    l'ancienne zone de la ferme, que cette carte n'appelle plus. */
@@ -15918,8 +15920,9 @@ if(!window.FERME_POULES)window.FERME_POULES=[];
 const F=window.FERME_POULES;
 while(F.length<combien+1){
 const k=F.length;
-F.push({x:400+(Math.random()*120-60),y:430+Math.random()*54,
-tx:400,ty:440,dir:Math.random()<0.5?1:-1,pas:Math.random(),
+F.push({x:ENCLOS_Z.x0+40+Math.random()*(ENCLOS_Z.x1-ENCLOS_Z.x0-80),
+y:ENCLOS_Z.y0+40+Math.random()*(ENCLOS_Z.y1-ENCLOS_Z.y0-80),
+tx:ENCLOS_Z.cx,ty:ENCLOS_Z.cy,dir:Math.random()<0.5?1:-1,pas:Math.random(),
 robe:['blanche','rousse','noire'][k%3],coq:k===combien,
 etat:'picore',t:Math.random()*4});}
 while(F.length>combien+1)F.pop();
@@ -15930,7 +15933,8 @@ b.t-=dt;
 if(b.t<=0){
 if(b.etat==='marche'){b.etat=Math.random()<0.25?'ailes':'picore';b.t=1.5+Math.random()*3;}
 else{b.etat='marche';b.t=1+Math.random()*2.2;
-b.tx=400+(Math.random()*130-65);b.ty=428+Math.random()*58;
+b.tx=ENCLOS_Z.x0+30+Math.random()*(ENCLOS_Z.x1-ENCLOS_Z.x0-60);
+b.ty=ENCLOS_Z.y0+30+Math.random()*(ENCLOS_Z.y1-ENCLOS_Z.y0-60);
 b.dir=b.tx>b.x?1:-1;}}
 if(b.etat==='marche'){
 const dx=b.tx-b.x, dy=b.ty-b.y, d=Math.hypot(dx,dy);
@@ -15939,7 +15943,8 @@ else b.etat='picore';}
 /* elles s'écartent du joueur */
 const jx=b.x-joueur.x, jy=b.y-joueur.y, dj=Math.hypot(jx,jy);
 if(dj<22&&dj>0.1){b.x+=jx/dj*24*dt;b.y+=jy/dj*24*dt;b.dir=jx>0?1:-1;}
-b.x=Math.max(330,Math.min(470,b.x));b.y=Math.max(422,Math.min(492,b.y));});
+b.x=Math.max(ENCLOS_Z.x0+14,Math.min(ENCLOS_Z.x1-14,b.x));
+b.y=Math.max(ENCLOS_Z.y0+14,Math.min(ENCLOS_Z.y1-14,b.y));});
 F.forEach(b=>{
 if(b.x-camX<-30||b.x-camX>VW+30||b.y-camY<-30||b.y-camY>VH+30)return;
 pousses_bete.push({y:b.y,f:()=>{try{
@@ -15961,7 +15966,7 @@ moutons:B.moutons||A.moutons||0,cochons:B.cochons||A.cochons||0};
 window.FERME_TROUPEAU_EN_COURS=false;}).catch(()=>{window.FERME_TROUPEAU_EN_COURS=false;});}
 catch(x){window.FERME_TROUPEAU_EN_COURS=false;}}
 if(window.FERME_TROUPEAU){
-const EN={x0:206,x1:642,y0:842,y1:1432};
+const EN=ENCLOS_Z;
 const T=window.FERME_TROUPEAU;
 if(!window.ENCLOS_BETES)window.ENCLOS_BETES=[];
 const voulu=[];
@@ -27818,8 +27823,12 @@ if(!document.getElementById('cssEtb')){const st=document.createElement('style');
 st.id='cssEtb';st.textContent=CSS_ETB+CSS_BETES+CSS_MARCHE;document.head.appendChild(st);}
 $('page2Fond').className='etb';$('page2').classList.add('on');
 peindreLEcranDesBetes(mot);
+/* LES POULES SONT DANS L'ENCLOS maintenant : leur état et les chantiers
+   se chargent avec celui des bêtes. */
 Promise.all([appelRPC('etable_etat',{p_joueur:e.id}),
-appelRPC('betes_etat',{p_joueur:e.id})]).then(([a,b])=>{
+appelRPC('betes_etat',{p_joueur:e.id}),
+poulCharger().catch(()=>null),
+lireChantiers().catch(()=>null)]).then(([a,b])=>{
 ETB=Object.assign({},(a&&!a.erreur)?a:{},(b&&!b.erreur)?b:{});
 if($('page2Fond').className==='etb')peindreLEcranDesBetes(mot);}).catch(()=>{});}
 /* ================= L'ÉCRAN DES BÊTES, EN FICHES =================
@@ -27876,6 +27885,25 @@ border-radius:12px;padding:16px 12px;text-align:center;margin-bottom:8px}
 border-bottom:3px solid #1b2915;border-radius:12px;padding:10px 0;background:#2c4023;
 color:#dff0cc;font:700 12.5px 'Baloo 2',sans-serif}
 #page2Fond.etb .pied button.bois{border:2px solid #a5764a;background:#8a6238;color:#f4ecd8}
+#page2Fond.etb .enc{background:#243318;border:1px solid rgba(159,196,122,.22);
+border-radius:12px;padding:9px 10px;margin-bottom:8px}
+#page2Fond.etb .enc .rub{font:700 7.5px ui-monospace,monospace;letter-spacing:3px;
+color:#9fc47a;margin-bottom:6px}
+#page2Fond.etb .enc .row{display:flex;align-items:center;gap:9px;padding:6px 0;
+border-top:1px solid rgba(159,196,122,.12)}
+#page2Fond.etb .enc .row:first-of-type{border-top:0}
+#page2Fond.etb .enc .row .nm{flex:1;min-width:0}
+#page2Fond.etb .enc .row b{display:block;font:700 12.5px 'Baloo 2',sans-serif;color:#f0e6d2}
+#page2Fond.etb .enc .row i{font:italic 9.5px Georgia,serif;color:#9fb490}
+#page2Fond.etb .enc .row .faim{color:#e8a06a}
+#page2Fond.etb .enc .row button{flex:none;border:0;border-bottom:3px solid #8a6a20;
+border-radius:10px;padding:7px 11px;background:linear-gradient(180deg,#f0d78a,#d8a84a);
+color:#241a06;font:700 12px 'Baloo 2',sans-serif}
+#page2Fond.etb .enc .row button.pris{background:#3a4c2d;color:#9fb490;border-bottom:0}
+#page2Fond.etb .tout{width:100%;margin-bottom:8px;border:0;border-bottom:3px solid #8a6a20;
+border-radius:12px;padding:11px 0;background:linear-gradient(180deg,#f0d78a,#d8a84a);
+color:#241a06;font:700 14px 'Baloo 2',sans-serif}
+#page2Fond.etb .tout.pris{background:#2c4023;color:#9fb490;border:1px solid rgba(159,196,122,.22);border-bottom:3px solid #1b2915}
 #page2Fond.etb .mot{margin:8px 1px 0;font:italic 10.5px Georgia,serif;color:#9fb490;text-align:center}
 `;
 function peindreLEcranDesBetes(mot){
@@ -27912,8 +27940,50 @@ pc(E.poids_bete,40),'#e8a0a8',
 (E.truffe_prete?'Fouiller':'Rien à flairer')+'</button>'+
 '<button data-g="vendre_cochon" '+((E.poids_bete||0)>=40?'':'disabled')+'>'+
 ((E.poids_bete||0)>=40?'Vendre':'Trop maigre')+'</button>');
+/* LES POULES, qui vivent maintenant dans l'enclos avec les bêtes. */
+const P=POUL.p||{niveau:0,poules:0,oeufs:0,grenier:0};
+const nid=P.oeufs||0, nichoir=Math.max(1,(P.poules||0)*16);
+if(P.niveau&&(P.poules||0)>0)fiches+=
+'<div class="fi'+(nid?' pret':'')+'"><canvas data-poule="1"></canvas>'+
+'<div class="co"><div class="li"><b>'+P.poules+' poule'+(P.poules>1?'s':'')+'</b>'+
+'<em'+(nid?' class="or"':'')+'>'+(nid?nid+' œuf'+(nid>1?'s':'')+' au nid':'rien au nid')+'</em></div>'+
+'<div class="ja"><span style="width:'+Math.min(100,Math.round(nid/nichoir*100))+
+'%;background:#f4ece0"></span></div>'+
+'<div class="ge"><button data-p="ramasser" '+(nid?'class="p"':'disabled')+'>'+
+(nid?'Ramasser · '+enEuros(nid*600).replace(',00',''):'Reviens dans une demi-heure')+
+'</button></div></div></div>';
 if(!fiches)fiches='<div class="vide"><b>L’enclos est vide</b>'+
 '<em>Lucien tient son étal juste à côté</em></div>';
+/* L'ABRI À POULES : le chantier, le grain, l'agrandissement. */
+const nourri=P.nourri_jusqua?new Date(P.nourri_jusqua).getTime()-poulNow():-1;
+const hh=Math.floor(Math.max(0,nourri)/3600000), mm=Math.floor(Math.max(0,nourri)%3600000/60000);
+const duree=(hh?hh+' h ':'')+String(mm).padStart(2,'0')+' min';
+const fmt=(c)=>enEuros(c).replace(',00','');
+let encore;
+if(!P.niveau){
+encore='<div class="enc"><div class="rub">L’ABRI À POULES</div>'+
+'<div class="row"><span class="nm"><b>Il n’y a pas encore d’abri</b>'+
+'<i>quatre places pour commencer · une poule nourrie pond un œuf '+
+'toutes les trente minutes</i></span>'+
+'<button data-p="poulailler" class="'+(chantierComplet('poulailler')?'':'pris')+'">300 €</button>'+
+'</div>'+chantierHTML('poulailler')+'</div>';}
+else{
+encore='<div class="enc"><div class="rub">L’ABRI À POULES · '+(P.poules||0)+' SUR '+(POUL.places||0)+'</div>'+
+'<div class="row"><span class="nm"><b>'+(nourri>0?'Nourries '+duree:
+'<span class="faim">Elles ont faim</span>')+'</b>'+
+'<i>'+(P.grenier||0)+' gerbe'+((P.grenier||0)>1?'s':'')+' au grenier · '+
+'le blé du champ y arrive tout seul</i></span>'+
+((P.grenier||0)?'<button data-p="gerbe">Une gerbe</button>':
+'<button data-p="grain">'+fmt(100*Math.max(1,P.poules||1))+'</button>')+'</div>'+
+'<div class="row"><span class="nm"><b>Une poule de plus</b>'+
+'<i>'+((P.poules||0)<(POUL.places||0)?'blanche, rousse ou noire, au hasard':'l’abri est plein')+
+'</i></span><button data-p="poule" class="'+((P.poules||0)<(POUL.places||0)?'':'pris')+'">60 €</button></div>'+
+(P.niveau<3?'<div class="row"><span class="nm"><b>Agrandir l’abri</b>'+
+'<i>'+(P.niveau===1?'8':'12')+' places au lieu de '+(POUL.places||0)+'</i></span>'+
+'<button data-p="agrandir" class="'+(chantierComplet('poul:'+(P.niveau+1))?'':'pris')+'">'+
+(P.niveau===1?'800 €':'2 500 €')+'</button></div>'+chantierHTML('poul:'+(P.niveau+1)):'')+
+'</div>';}
+const aRamasser=(nid>0)+((E.lait||0)>0)+((E.laine_prete||0)>0)+(E.truffe_prete?1:0);
 $('page2Fond').innerHTML=
 '<div class="bande"><canvas id="etbPre"></canvas>'+
 '<div class="chap"><div class="ti"><small>L’ENCLOS · LA FERME</small>'+
@@ -27923,7 +27993,10 @@ $('page2Fond').innerHTML=
 '<div class="liste">'+
 '<div class="foin">Foin<i>'+((E.foin||0)>0?('la mangeoire tient encore '+etbDuree(E.foin)):
 'la mangeoire est vide, elles ont faim')+'</i></div>'+
-fiches+
+fiches+encore+
+'<button class="tout'+(aRamasser?'':' pris')+'" id="etbTout">'+
+(aRamasser?'Tout ramasser · '+aRamasser+' chose'+(aRamasser>1?'s':'')+' prête'+(aRamasser>1?'s':''):
+'Rien à ramasser pour l’instant')+'</button>'+
 '<div class="pied">'+
 '<button data-g="nourrir" class="'+((E.foin||0)>0?'':'p')+'">Nourrir tout le monde</button>'+
 '<button data-g="marche" class="bois">Le marché</button>'+
@@ -27945,8 +28018,61 @@ if(!$('page2').classList.contains('on')||$('page2Fond').className!=='etb')return
 if(!document.hidden)peindreLePre(cv,ETB_PRE,performance.now());
 requestAnimationFrame(boucle);};
 requestAnimationFrame(boucle);
+{const cp=$('page2Fond').querySelector('canvas[data-poule]');
+if(cp)try{const g=cp.getContext('2d');g.imageSmoothingEnabled=false;
+const D=Math.min(2,window.devicePixelRatio||1);cp.width=56*D;cp.height=56*D;
+g.setTransform(D,0,0,D,0,0);
+for(let y=0;y<56;y+=2)for(let x=0;x<56;x+=2){const n=PR_h(x,y,101);
+g.fillStyle=n<.38?'#2f4a22':(n<.72?'#365426':'#2a431e');g.fillRect(x,y,2,2);}
+g.save();g.translate(28,46);g.scale(3,3);poule(g,0,0,'rousse','debout',1,false,0);g.restore();
+}catch(x){}}
 $('page2Fond').querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{
-vibrer(10);gesteDesBetes(b.dataset.g);});}
+vibrer(10);gesteDesBetes(b.dataset.g);});
+try{brancherDepots(()=>ouvrirLEtable(),(t)=>motOuverture(t));}catch(x){}
+$('page2Fond').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{
+if(b.classList.contains('pris')){
+motOuverture(b.dataset.p==='poulailler'||b.dataset.p==='agrandir'
+?'Livre d’abord tous les matériaux au chantier.':'Pas possible pour l’instant.');return;}
+vibrer(12);gesteDesPoules(b.dataset.p);});
+const bt=$('etbTout');if(bt)bt.onclick=()=>{vibrer(12);ramasserToutALaFerme();};}
+/* ================= LES GESTES DES POULES =================
+   Les mêmes appels qu'au poulailler : seul l'écran a changé de place. */
+async function gesteDesPoules(a){
+if(ETB_OCCUPE)return;ETB_OCCUPE=true;
+try{
+let d;
+if(a==='gerbe'||a==='grain')d=await appelRPC('poul_nourrir',{p_joueur:e.id,p_mode:a});
+else if(a==='ramasser')return await ramasserToutALaFerme(true);
+else d=await appelRPC('poul_acheter',{p_joueur:e.id,p_article:a});
+if(d&&d.erreur==='materiaux'){motOuverture(matManque(d.manque));return;}
+if(!d||d.erreur){motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':
+(d&&d.erreur==='repues'?'Elles ont déjà de quoi manger pour longtemps.':
+(d&&d.erreur==='plein'?'L’abri est plein.':'Réessaie dans un instant.')));return;}
+poulAdopter(d);try{lireSacServeur();}catch(x){}sauver();jouer('achat');
+peindreLEcranDesBetes();
+setTimeout(()=>motOuverture(a==='poulailler'?'L’abri est monté ! Achète tes premières poules.':
+(a==='poule'?'Une poule de plus dans l’enclos !':
+(a==='agrandir'?'L’abri est plus grand.':'Elles picorent, contentes.'))),60);
+}catch(x){motOuverture('Réessaie dans un instant.');}
+finally{ETB_OCCUPE=false;}}
+/* TOUT RAMASSER : les œufs, le lait, la laine et les truffes d'un geste. */
+async function ramasserToutALaFerme(seulementLesOeufs){
+const E=ETB||{}, P=POUL.p||{};
+try{GESTE={t:1,pourMoi:true,cible:null,impact:false,type:'ramasse'};}catch(x){}
+let dit=[];
+if((P.oeufs||0)>0){
+const d=await appelRPC('poul_ramasser',{p_joueur:e.id}).catch(()=>null);
+if(d&&!d.erreur){if(d.sac)e.sac=d.sac;poulAdopter(d.etat);
+try{lireSacServeur();majPastille();}catch(x){}sauver();jouer('vente','moment');
+if(d.oeufs)dit.push(d.oeufs+' œuf'+(d.oeufs>1?'s':''));
+if(d.or)dit.push('✨ '+d.or+' œuf'+(d.or>1?'s':'')+' d’or');}
+else if(d&&d.erreur==='sac_plein')dit.push('sac plein');}
+if(!seulementLesOeufs){
+if((E.lait||0)>0)await gesteDesBetes('traire');
+if((E.laine_prete||0)>0)await gesteDesBetes('tondre');
+if(ETB&&ETB.truffe_prete)await gesteDesBetes('truffe');}
+peindreLEcranDesBetes();
+if(dit.length)setTimeout(()=>motOuverture(dit.join(' · ')),60);}
 function poserLesBulles(E){
 const d=$('etbBulles');if(!d||!ETB_PRE)return;
 const grp={};ETB_PRE.forEach(o=>{if(!grp[o.esp])grp[o.esp]=o;});
@@ -28363,7 +28489,8 @@ const poulProche=()=>{if(CARTE!=='village'||PLACE_SEULE)return false;
 /* LA FERME REFAITE : le poulailler est un bâtiment du décor, en 400,400.
    Sa plaque et son écran passent par là, plus par l'ancienne zone. */
 if(typeof CHAMPS_SEULS!=='undefined'&&CHAMPS_SEULS)
-return Math.abs(joueur.x-400)<62&&joueur.y>380&&joueur.y<428;const Z=POUL_Z(), H=Z.y1-Z.y0, ey0=Z.y0+Math.min(46,H*0.34);
+return false;                        /* le poulailler n'existe plus : tout se passe à l'appentis */
+const Z=POUL_Z(), H=Z.y1-Z.y0, ey0=Z.y0+Math.min(46,H*0.34);
 return joueur.x>Z.x0-14&&joueur.x<Z.x0+110&&joueur.y>ey0-46&&joueur.y<ey0+52;};   /* plus facile à viser : la cabane s'annonce de plus loin */
 const poulMajVrai=majAction;
 majAction=function(){if(!poulProche())return poulMajVrai();const b=$('action'), P=POUL.p;
