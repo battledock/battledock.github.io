@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-07-0610"></script>
+<script src="maintenance.js?v=2026-10-07-0700"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-06-1256';
+var MA_VERSION='2026-10-07-0700';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -15613,6 +15613,16 @@ let idDeCompte=false;
 if(!e.id){                                  /* un identifiant provisoire */
 e.id='j'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 }
+/* LA CLÉ DE LA SAUVEGARDE : l'identifiant du joueur se lit dans la page, donc
+   il ne prouve rien. On tire une fois un secret, gardé sur l'appareil et jamais
+   affiché ; le serveur le réclame avant de laisser écrire la sauvegarde.
+   Sans lui, n'importe qui pouvait écraser la partie de n'importe qui. */
+if(!e.cle){
+e.cle=(window.crypto&&crypto.randomUUID)?crypto.randomUUID()
+      :('k'+Date.now().toString(36)+Math.random().toString(36).slice(2,12)
+        +Math.random().toString(36).slice(2,12));
+try{localStorage.setItem(CLE,JSON.stringify(e));}catch(x){}
+}
 const sauver=()=>{
 e.quand=Date.now();
 try{localStorage.setItem(CLE,JSON.stringify(e));}catch(x){}
@@ -15621,7 +15631,8 @@ if(typeof aSauver==='function')aSauver();     /* et ça partira sur le serveur *
 const URL_SB='https://zpfkekiavlfphialvphi.supabase.co';
 const CLE_SB='sb_publishable__dfR2lEOwKjhhtavvJEvGw_KVACZnHP';
 const sbEntetes={'apikey':CLE_SB,'Authorization':'Bearer '+CLE_SB,
-'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'};
+'Content-Type':'application/json','Prefer':'resolution=merge-duplicates',
+'x-cle':e.cle};
 let enVol=false, dernierEnvoi=0;
 async function monterEnLigne(force){
 if(!idDeCompte)return;          /* tant qu'on n'a pas le compte, on reste invisible */
@@ -19356,7 +19367,7 @@ poserLeCiel(g);                  /* la lumière du moment, par-dessus tout */
 const A_GARDER=['sac','jetons','euros','outils','sacMax','score','recolte','casses','epee',
 'nivSac','nivPioche','nivHache','nivPied','metiers','cos','aRepousser',
 'four','habitCasino','ap','pseudo','x','y','coffreOuvert'];
-let derniereSauv=0, sauvEnVol=false, sauvSale=false;
+let derniereSauv=0, sauvEnVol=false, sauvSale=false, SAUV_REFUS=false;
 function etatAGarder(){
 const o={};
 A_GARDER.forEach(k=>{if(e[k]!==undefined)o[k]=e[k];});
@@ -19370,9 +19381,20 @@ const now=Date.now();
 if(!force&&(!sauvSale||now-derniereSauv<12000))return;
 sauvEnVol=true;derniereSauv=now;sauvSale=false;
 try{
-await fetch(URL_SB+'/rest/v1/sauvegardes',{method:'POST',
+const r=await fetch(URL_SB+'/rest/v1/sauvegardes',{method:'POST',
 headers:Object.assign({},sbEntetes,{Prefer:'resolution=merge-duplicates,return=minimal'}),
-body:JSON.stringify([{id:e.id,etat:etatAGarder(),maj:new Date().toISOString()}])});
+body:JSON.stringify([{id:e.id,cle:e.cle,etat:etatAGarder(),maj:new Date().toISOString()}])});
+/* ON NE JETTE PLUS L'ÉCHEC : avant, une sauvegarde refusée passait inaperçue
+   et le joueur perdait sa partie sans rien voir. 401/403 = la clé ne passe
+   pas (page d'une ancienne version restée en cache) : on le lui dit. */
+if(!r.ok){
+sauvSale=true;
+DERNIER_RPC={nom:'sauvegardes',code:r.status,quand:Date.now()};
+if((r.status===401||r.status===403)&&!SAUV_REFUS){
+SAUV_REFUS=true;
+try{motOuverture('Ta partie ne s’enregistre plus. Recharge la page pour reprendre.');}catch(x){}
+}
+}else SAUV_REFUS=false;
 }catch(x){sauvSale=true;}
 sauvEnVol=false;
 }
