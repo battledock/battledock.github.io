@@ -17283,7 +17283,27 @@ if(court)R(Math.round(cx+(kx-cx)*0.6)-3,Math.round(yHan+(ky-yHan)*0.6),7,1,cO); 
 soulierDe(fx,fyy+3,fonce,cote?(fonce?pD:pG):null);
 return;
 }
-const lev=Math.round(leve*4), y0=-26+bob, yGen=-14-Math.round(lev*0.6), yChev=-5-lev;
+/* ================= LA FOULÉE DE FACE ET DE DOS =================
+   Jusqu'ici cette branche ignorait `avance` — et les deux appels lui
+   passaient 0 de toute façon. Résultat : vus de face, les deux pieds
+   restaient côte à côte du début à la fin du cycle. Les jambes ne se
+   croisaient jamais, le personnage glissait sur un chariot.
+
+   De profil l'avance du pied se voit telle quelle, parce qu'elle est
+   perpendiculaire à la caméra. De face elle pointe VERS la caméra : elle
+   disparaît. Il faut donc la traduire en deux signes que l'œil lit :
+
+     — LE CROISEMENT. Au passage (avance ≈ 0, la jambe est en l'air et
+       frôle l'autre) elle se rapproche de l'axe du corps ; aux extrêmes
+       elle revient à son écart. Le ciseau avant-arrière devient un
+       ciseau gauche-droite.
+     — LA PERSPECTIVE. La jambe qui vient vers nous se dessine plus bas et
+       plus courte ; celle qui s'éloigne, plus haut et plus longue. */
+const av=avance||0;
+const passage=1-Math.min(1,Math.abs(av));
+const prof=Math.round(av*1.6);                   /* vers nous : plus bas */
+cx+=Math.round(passage*(leve>0.2?2:1))*((cx<0)?1:-1);
+const lev=Math.round(leve*4), y0=-26+bob, yGen=-14-Math.round(lev*0.6)+prof, yChev=-5-lev+prof;
 const col=(r)=>r<yGen?c:(court?sk:c), colO=(r)=>r<yGen?cO:(court?skO:cO), colC=(r)=>r<yGen?cc:(court?skC:cc);
 const J=SX.jambe;
 for(let r=y0;r<yChev;r++){
@@ -17308,7 +17328,7 @@ else R(cx-2,yGen,4,1,court?skO:cO);                                             
 if(court)R(cx-4,yGen-3,8,1,cO);                                                   /* le bas du short */
 if(!court&&basT==='treillis'){R(cx-3,-18,3,4,cO);R(cx-3,-18,3,1,cc);}             /* la poche du treillis */
 if(!court&&!jupe)R(cx+(cx<0?2:-3),yChev-2,2,1,cO);                                /* le pli du bas de pantalon */
-soulierDe(cx,-lev,fonce);
+soulierDe(cx,-lev+prof,fonce);
 };
 function soulierDe(cx,by,fonce,pp){
 if(p.patin){const b='#f4f1ea', bO='#c8c2b4', lame='#c4ccd2';                /* LE PATIN : bottine blanche lacée, lame d'acier */
@@ -17571,7 +17591,11 @@ return;
 const bx=cote2*(EP+Math.ceil(SX.bras[0]/2)+1), dy=Math.round(balance*3), yC=yEp+11+Math.round(dy/2), yM=yEp+19+dy;
 const out=cote2<0?bx-2:bx+2, inn=cote2<0?bx+2:bx-2;
 const lb=SX.bras[0]+1;R(bx-Math.floor(lb/2),yEp,lb,3,manches>0?c:sk);R(bx-2,yEp-1,4,1,manches>0?cC:sk);R(bx-2,yEp,3,1,manches>0?cC:peauC);
-const dxS=diag?Math.round(balance*4*tourne*(dos?-1:1)):0;
+/* DE FACE, la main ne bougeait que verticalement (±3 px) : les bras
+   restaient collés au corps et le balancement ne se lisait pas. Elle
+   glisse maintenant aussi vers l'axe du corps quand le bras part en
+   avant, et vers l'extérieur quand il part en arrière. */
+const dxS=diag?Math.round(balance*4*tourne*(dos?-1:1)):Math.round(balance*2*-cote2);
 const bande=(y0,y1,w,col,colO,colC)=>{for(let r=y0;r<y1;r++){const x0=bx+Math.round(dxS*Math.max(0,r-yEp-2)/Math.max(1,yM-yEp-2))-Math.floor(w/2);R(x0,r,w,1,col);R(cote2<0?x0:x0+w-1,r,1,1,colO);R(cote2<0?x0+w-1:x0,r,1,1,colC);}};
 const mancheBas=manches>=1?yM:(manches>0?Math.round(yEp+2+(yM-yEp)*manches):yEp+2);
 bande(yEp+2,Math.min(yC,mancheBas),SX.bras[0],manches>0?c:sk,manches>0?cT:skO,manches>0?cC:peauC);   /* le bras */
@@ -18730,8 +18754,12 @@ if(loinG){jd(hG,dos?pD:pG,true);jd(hD,dos?pG:pD,false);}else{jd(hD,dos?pG:pD,tru
 /* DE TROIS QUARTS, l'écart entre les jambes se réduit et l'ensemble
    glisse dans le sens du pivot. */
 const ej=diag?0:1, dj=diag?Math.round(vis*1.5):0;
-jambe(-Math.round(HA/2)-ej+dj,0,dos?lvD:lvG,false);
-jambe(Math.round(HA/2)+ej+dj,0,dos?lvG:lvD,false);
+/* L'AVANCE DU PIED, enfin transmise. Elle valait 0 en dur : la table de
+   poses était calculée puis jetée pour ces deux vues. De dos, les deux
+   jambes sont inversées — c'est l'autre qui vient vers nous. */
+const avJG=diag?0:(dos?-avD:avG), avJD=diag?0:(dos?-avG:avD);
+jambe(-Math.round(HA/2)-ej+dj,avJG,dos?lvD:lvG,false);
+jambe(Math.round(HA/2)+ej+dj,avJD,dos?lvG:lvD,false);
 }
 if(!dos)sac(false);
 const avanceD=diag&&bouge?tourne*(COURSE?2:1):0;              /* de trois-quarts, le buste se porte vers l'avant */
