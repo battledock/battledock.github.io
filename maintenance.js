@@ -13,6 +13,17 @@
          localStorage.setItem('bd.passe','1')
      Pour le retirer : localStorage.removeItem('bd.passe') */
   var PASSE=false;try{PASSE=localStorage.getItem('bd.passe')==='1';}catch(e){}
+  /* LES PSEUDOS QUI PASSENT MALGRÉ LES TRAVAUX. Poser le laissez-passer à la
+     main demande une console, ce qu'on n'a pas sur un téléphone : on lit
+     donc aussi le pseudo de la sauvegarde locale.
+     Ce n'est PAS une serrure — la sauvegarde est sur l'appareil, n'importe
+     qui peut y écrire ce pseudo. C'est un raccourci de chantier, et la
+     vraie protection est côté serveur. */
+  var LAISSES=['eliasse'];
+  try{
+    var pse=(JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}')).pseudo||'';
+    if(LAISSES.indexOf(String(pse).trim().toLowerCase())>=0)PASSE=true;
+  }catch(e){}
   var NOUV=[
     [null,'La forêt, en grand','Le pont est remonté, la rive est s’ouvre de l’autre côté de la rivière, et la forêt devient sa propre carte : elle charge plus vite et ne traîne plus les champs de la ferme derrière elle.','🌲'],
     [null,'Ton terrain, ta maison','Au milieu de la rive est, un terrain piqueté qui n’attend que toi. Rassemble planches, pierres et tuiles, et bâtis ton mas — puis agrandis-le.','🏠'],

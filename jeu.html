@@ -4046,7 +4046,7 @@ lueurNuit(g,cx+dx+camX,cy+dy-28+camY,22,'rgba(255,200,110,§)');
 });
 }
 }
-const V={gestes:.50,moments:.55,amb:.26,rev:.34};
+const V={gestes:.50,moments:.55,amb:.26,mus:.34,rev:.34};
 let SON_PRET=false;
 let ac=null,SEC=null,REV=null,REVG=null;
 function A(){
@@ -4300,15 +4300,73 @@ const n=A().currentTime;
 for(let i=0;i<2;i++)souffle(n+i*0.07,0.02,hasard(2650,3050),2550,7,0.010*V.amb,'bandpass',0.5);
 },760);
 return[{stop:()=>clearInterval(t)}];}},
-vent:{nom:'Le vent dans les arbres',mot:'il monte et redescend lentement',
+vent:{nom:'Le vent dans les arbres',mot:'un souffle égal, à peine audible',
+/* IL ÉTAIT STRESSANT. Un bruit large qui enfle et retombe toutes les
+   quinze secondes, l'oreille le lit comme une menace qui approche : c'est
+   le ressort de toutes les bandes-son d'angoisse. On garde le souffle
+   comme fond de décor mais on lui retire sa houle — gain presque de
+   moitié, respiration quatre fois moins ample, et filtre plus bas pour
+   qu'il n'y reste pas de sifflement. */
 f:(c)=>{const s=c.createBufferSource();s.buffer=bruit();s.loop=true;
-const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=380;
-const g=c.createGain();g.gain.value=0.03*V.amb;
-const l=c.createOscillator();l.frequency.value=0.06;
-const lg=c.createGain();lg.gain.value=0.018*V.amb;
+const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=300;
+const g=c.createGain();g.gain.value=0.017*V.amb;
+const l=c.createOscillator();l.frequency.value=0.045;
+const lg=c.createGain();lg.gain.value=0.0045*V.amb;
 l.connect(lg);lg.connect(g.gain);
 s.connect(f);f.connect(g);vers(g,0.5);s.start();l.start();
-return[s,l];}}
+return[s,l];}},
+/* ================= LA NAPPE =================
+   Pas une musique avec un début et une fin, qu'on reconnaîtrait à la
+   troisième boucle : trois voix lentes qui se recouvrent et ne retombent
+   jamais sur la même suite.
+   TOUT EST CONSONANT PAR CONSTRUCTION : chaque accord est une fondamentale
+   prise dans un ré majeur, sa quinte juste, et une couleur prise dans la
+   même gamme. Aucun demi-ton ne peut se rencontrer, donc aucune tension —
+   rien qui « veuille se résoudre » et tienne l'oreille en haleine.
+   Pas de rythme non plus : rien qui presse. */
+musique:{nom:'La nappe',mot:'trois voix lentes, jamais la même suite',
+f:(c)=>{
+const sortie=c.createGain();sortie.gain.value=1;
+const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=1000;f.Q.value=0.5;
+f.connect(sortie);vers(sortie,0.62);          /* beaucoup de réverbération : de l'air */
+/* le timbre s'ouvre et se referme très lentement, sur une minute */
+const l=c.createOscillator();l.frequency.value=0.017;
+const lg=c.createGain();lg.gain.value=300;
+l.connect(lg);lg.connect(f.frequency);l.start();
+const voix=(freq,quand,duree,vol)=>{
+const o=c.createOscillator(), o2=c.createOscillator();
+const g=c.createGain(), g2=c.createGain();
+o.type='sine';o2.type='triangle';
+o.frequency.value=freq;o2.frequency.value=freq*1.0035;   /* un battement très lent, ça respire */
+g2.gain.value=0.3;o2.connect(g2);g2.connect(g);o.connect(g);
+g.connect(f);
+const mont=duree*0.40, chute=duree*0.48;
+g.gain.setValueAtTime(0.0001,quand);
+g.gain.exponentialRampToValueAtTime(Math.max(0.0001,vol),quand+mont);
+g.gain.setValueAtTime(Math.max(0.0001,vol),quand+duree-chute);
+g.gain.exponentialRampToValueAtTime(0.0001,quand+duree);
+o.start(quand);o2.start(quand);
+o.stop(quand+duree+0.5);o2.stop(quand+duree+0.5);
+};
+const FOND=[146.83,164.81,185.00,196.00];      /* ré, mi, fa#, sol — graves */
+const HAUT=[293.66,329.63,369.99,440.00];      /* ré, mi, fa#, la — aigus */
+let minuteur=0, n=0, dernier=-1;
+const accord=()=>{
+const t=A().currentTime+0.05;
+const d=hasard(14,20);
+let i=Math.floor(Math.random()*FOND.length);
+if(i===dernier)i=(i+1)%FOND.length;            /* jamais deux fois le même accord */
+dernier=i;
+const base=FOND[i];
+voix(base,            t,                d,      0.065*V.mus);
+voix(base*1.5,        t+hasard(0.5,2.5), d*0.88, 0.045*V.mus);   /* la quinte juste */
+voix(HAUT[(i+n)%HAUT.length], t+hasard(2,5),  d*0.70, 0.028*V.mus);
+n++;
+minuteur=setTimeout(accord, d*620);            /* le suivant entre avant que celui-ci s'éteigne */
+};
+accord();
+return[l,{stop:()=>clearTimeout(minuteur)},
+       {stop:()=>{try{sortie.disconnect();}catch(x){}}}];}}
 };
 function reveillerLeSon(){
 if(SON_PRET)return;
@@ -4327,6 +4385,7 @@ const k=(cle)=>K[Math.max(0,Math.min(3,REG[cle]===undefined?2:REG[cle]|0))];
 V.gestes =.50*m*k('sGestes');
 V.moments=.55*m*k('sMoments');
 V.amb    =.26*m*k('sAmb');
+V.mus    =.34*m*k('sMus');
 V.rev    =.34*[0,.15,.34,.6][Math.max(0,Math.min(3,REG.sRev===undefined?2:REG.sRev|0))]/.34;
 try{if(REVG)REVG.gain.value=V.rev;}catch(x){}
 couperLAmbiance();
@@ -4381,6 +4440,7 @@ const nuit=(typeof lampesAllumees==='function')&&lampesAllumees();
 if(CARTE==='foret'){
 /* LE LIT : le vent dans les feuilles, en permanence, très bas. Par-dessus,
    les oiseaux le jour ou les grillons la nuit — jamais les deux. */
+poserAmbiance('musique',V.mus>0);
 poserAmbiance('vent',true);
 poserAmbiance('oiseaux',!nuit);
 poserAmbiance('grillons',nuit);
@@ -4396,6 +4456,7 @@ else AMB_PRES_EAU=(d<130&&d>-40);
 poserAmbiance('riviere',AMB_PRES_EAU);
 return;
 }
+poserAmbiance('musique',false);
 poserAmbiance('vent',false);
 poserAmbiance('oiseaux',false);
 poserAmbiance('riviere',false);
@@ -16209,7 +16270,7 @@ poserGens(1e9);
 }
 const CLE='bdl.pix.v2';
 var REG={vibre:true, secousses:true, ciel:'heure', finesse:'auto', avis:true, nettete:'auto',
-sons:true, sGestes:2, sMoments:2, sAmb:2, sRev:2, econome:false};
+sons:true, sGestes:2, sMoments:2, sAmb:2, sMus:2, sRev:2, econome:false};
 let e={x:0,y:0,ap:Object.assign({},DEF_AP),pseudo:'',id:'',sac:{},score:0,recolte:0,
 outils:{pioche:true,hache:true},epee:0,coffreOuvert:true,
 casses:[],coffre:null,casino:null,camp:null,
@@ -25201,7 +25262,8 @@ const niv=(cle,nom,mot)=>'<div class="rub">'+nom+'</div><div class="mot" style="
 '<div class="choix">'+['muet','bas','moyen','fort'].map((n,i)=>
 '<button data-n="'+cle+':'+i+'"><span class="g"><b>'+n+'</b></span>'+((REG[cle]|0)===i?'<span class="co">✓</span>':'')+'</button>').join('')+'</div>';
 corps=niv('sGestes','LES GESTES','La hache, la pioche, la cueillette. C’est ce qu’on entend le plus.')+
-niv('sAmb','L’AMBIANCE','L’eau quand tu en approches, le vent, les oiseaux le jour, les grillons la nuit.');}
+niv('sAmb','L’AMBIANCE','L’eau quand tu en approches, le vent, les oiseaux le jour, les grillons la nuit.')+
+niv('sMus','LA MUSIQUE','Une nappe lente en forêt. Sans rythme, sans refrain : elle ne revient jamais au même endroit.');}
 else if(v==='pseudo'){titre='Ton pseudo';
 corps='<div class="mot">Il s’affiche au classement, sur le quai et dans le courrier des autres joueurs.</div>'+
 '<div class="champ"><input id="rgPseudo" maxlength="18" value="'+echapperT(e.pseudo||'')+'"></div>'+
