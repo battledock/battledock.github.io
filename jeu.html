@@ -12809,6 +12809,7 @@ function semerLaForet(){
     [F_PONT.x,Math.round(F_rive(F_PONT.x))-2,46],   /* le ponton */
     [F_PONT2.x,Math.round(F_rive(F_PONT2.x))-2,46], /* le second ponton */
     [F_CABANE[0],F_CABANE[1],94],                   /* la cabane du bûcheron */
+    [566,432,44],                                   /* le carrefour et son poteau */
   ];
   const placeLibre=(x,y)=>{
     /* le sentier du port : rien ne doit boucher la seule sortie */
@@ -13231,6 +13232,75 @@ function dessinerLesTraces(g,camX,camY){
     }
   }
   g.globalAlpha=1;
+}
+/* ================= LES LUCIOLES =================
+   Une forêt la nuit n'est pas une pièce noire : elle bouge. Les lucioles
+   sont le moyen le plus économique de le dire — quelques points qui
+   dérivent, s'allument, s'éteignent. Elles n'éclairent presque rien, et
+   c'est voulu : leur travail est de rendre le noir habité, pas lisible.
+
+   Elles ne vivent qu'autour du joueur, et seulement la nuit. */
+const LUCIOLES=[];
+function majLucioles(dt){
+  if(CARTE!=='foret'||!lampesAllumees()){LUCIOLES.length=0;return;}
+  let cx=joueur.x-VW/2, cy=joueur.y-VH/2;
+  try{if(CAM&&CAM.x!==null){cx=CAM.x;cy=CAM.y;}}catch(e){}
+  /* on en garde une trentaine dans la vue, et on remplace celles qui sortent */
+  while(LUCIOLES.length<30){
+    const x=cx-30+Math.random()*(VW+60), y=cy-30+Math.random()*(VH+60);
+    if(y>F_rive(x)-10){continue;}                 /* pas au-dessus de l'eau */
+    LUCIOLES.push({x,y,
+      a:Math.random()*6.283,                      /* le cap de la dérive */
+      v:4+Math.random()*7,
+      ph:Math.random()*6.283,                     /* la phase du clignotement */
+      vp:0.5+Math.random()*1.1});
+  }
+  for(let i=LUCIOLES.length-1;i>=0;i--){
+    const L=LUCIOLES[i];
+    L.a+=(Math.random()-0.5)*dt*3.2;              /* elle flâne, elle ne file pas droit */
+    L.x+=Math.cos(L.a)*L.v*dt;
+    L.y+=Math.sin(L.a)*L.v*dt*0.6;
+    L.ph+=dt*L.vp;
+    if(L.x<cx-60||L.x>cx+VW+60||L.y<cy-60||L.y>cy+VH+60||L.y>F_rive(L.x)-6)
+      LUCIOLES.splice(i,1);
+  }
+}
+function dessinerLesLucioles(g,camX,camY){
+  if(CARTE!=='foret'||!LUCIOLES.length)return;
+  for(let i=0;i<LUCIOLES.length;i++){
+    const L=LUCIOLES[i];
+    /* le clignotement : longtemps éteinte, brève et franche quand elle
+       s'allume. Une sinusoïde donnerait un clignotant de voiture. */
+    const b2=Math.pow(Math.max(0,Math.sin(L.ph)),3.2);
+    if(b2<0.04)continue;
+    const x=Math.round(L.x-camX), y=Math.round(L.y-camY);
+    if(x<-4||y<-4||x>VW+4||y>VH+4)continue;
+    g.globalAlpha=b2*0.9;g.fillStyle='#d8ff9a';g.fillRect(x,y,1,1);
+    g.globalAlpha=b2*0.28;g.fillStyle='#9ad86a';
+    g.fillRect(x-1,y,1,1);g.fillRect(x+1,y,1,1);g.fillRect(x,y-1,1,1);g.fillRect(x,y+1,1,1);
+    try{lueurNuit(g,L.x-camX,L.y-camY,7*b2,'rgba(170,230,120,§)');}catch(e){}
+  }
+  g.globalAlpha=1;
+}
+/* LA LANTERNE DU CARREFOUR. Le poteau est peint dans le sol ; sa lanterne,
+   elle, doit passer par-dessus le décor et éclairer. C'est le seul point
+   fixe du bois la nuit : si tu la vois, tu sais où tu es. */
+const F_CARREFOUR=[566,432];
+function dessinerLaLanterne(g,camX,camY){
+  if(CARTE!=='foret')return;
+  const x=Math.round(F_CARREFOUR[0]-camX), y=Math.round(F_CARREFOUR[1]-camY);
+  if(x<-30||y<-60||x>VW+30||y>VH+40)return;
+  const on=lampesAllumees();
+  const tete=y-40;
+  g.fillStyle='#2a1d0f';g.fillRect(x-4,tete,8,2);           /* le chapeau */
+  g.fillStyle='#4a3a1d';g.fillRect(x-3,tete+2,6,6);         /* la cage */
+  g.fillStyle=on?'#ffd98a':'#6a6252';g.fillRect(x-2,tete+3,4,4);
+  if(on){
+    const vac=0.86+Math.sin(Date.now()/420)*0.14;           /* la flamme vacille */
+    g.globalAlpha=vac;g.fillStyle='#fff0bc';g.fillRect(x-1,tete+4,2,2);g.globalAlpha=1;
+    lueurNuit(g,x,tete+5,52,'rgba(255,206,122,§)');
+  }
+  g.fillStyle='#2a1d0f';g.fillRect(x-4,tete+8,8,1);
 }
 /* ---- les dessins ---- */
 function dessinerChevreuil(g,b,camX,camY){
@@ -14034,6 +14104,14 @@ XCAL[cle]={toile:c,W,H,sol};
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];              /* pour les marges de dessin */
 return XCAL[cle];
 }
+/* UNE FENÊTRE ALLUMÉE : le carré de lumière, et son reflet sur l'appui.
+   Sans ce carré, un bâtiment n'a qu'un halo autour de lui et semble
+   éclairé par l'extérieur ; avec lui, la lumière vient de dedans. */
+function fenetreAllumee(g,x,y,w,h,col){
+  g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),w,h);
+  g.fillStyle='rgba(255,246,214,.55)';g.fillRect(Math.round(x),Math.round(y),w,1);
+  g.fillStyle='rgba(255,214,140,.22)';g.fillRect(Math.round(x)-1,Math.round(y)+h,w+2,1);
+}
 function dessinerX(g,o,x,y){
 /* LA VOITURE QU'ON CONDUIT : elle pivote selon son cap */
 if(o.anim&&ANIM_DECOR[o.anim]){try{ANIM_DECOR[o.anim](g,o,x,y);}catch(err){}return;}   /* un objet animé (la manif du port…) */
@@ -14070,6 +14148,19 @@ g.drawImage(C.toile,X0,Y0,C.W,C.H);
 if(lampesAllumees()){const t=o.t||'';
 if(/lampe/i.test(t))lueurNuit(g,x,y-38,26,'rgba(255,214,150,§)');
 else if(/foyer|brasero/i.test(t))lueurNuit(g,x,y-8,40,'rgba(255,140,60,§)');
+/* LES QUATRE LIEUX DE LA FORÊT S'ALLUMENT. Rien n'éclairait le bois : la
+   nuit, on ne retrouvait plus ni la cabane, ni la mine, ni l'étal. Une
+   fenêtre allumée au loin, c'est un repère — et c'est tout ce qu'il faut
+   pour qu'une forêt nocturne cesse d'être une pièce noire.
+   Chacune a sa couleur : le feu de la cabane est rouge, la lampe à huile de
+   la mine est blanche et dure, l'étal a ses guirlandes. */
+else if(t==='x_fo_cabane'){lueurNuit(g,x-4,y-30,46,'rgba(255,164,72,§)');
+  fenetreAllumee(g,x-16,y-34,5,4,'#ffc268');}
+else if(t==='x_fo_maison'){lueurNuit(g,x,y-34,40,'rgba(255,196,110,§)');
+  fenetreAllumee(g,x-13,y-38,5,5,'#ffd48a');fenetreAllumee(g,x+9,y-38,5,5,'#ffd48a');}
+else if(t==='x_fo_mine')lueurNuit(g,x,y-20,32,'rgba(226,236,255,§)');
+else if(t==='x_fo_etal'){lueurNuit(g,x,y-30,44,'rgba(255,186,96,§)');
+  for(let k=-2;k<=2;k++)fenetreAllumee(g,x+k*11,y-40,2,2,k%2?'#ff9a7a':'#ffe08a');}
 }
 if(o.feu||o.grand){const t=Date.now()/1000;
 if(o.feu){for(let k=0;k<7;k++){const q=((t*1.8+k/7)%1);g.globalAlpha=1-q;g.fillStyle=q<0.3?'#fff0a0':(q<0.6?'#ffb040':'#e8602a');g.fillRect(x-3+Math.sin(t*7+k*2)*2.5,y-8-q*9,1.2,1.5);}g.globalAlpha=1;
@@ -16879,6 +16970,10 @@ try{dessinerLesTraces(ctx,camX,camY);}catch(x){}   /* les pas dans les feuilles,
 dessinerLesRides(ctx,camX,camY,VW,VH);   /* l'eau du lac remue */
 if(CARTE==='foret'){
   try{dessinerLesSauts(ctx,camX,camY);}catch(x){}   /* les poissons, sur l'eau */
+  /* LA LANTERNE SE TRIE AVEC LE DÉCOR. Dessinée avant lui, elle passait
+     derrière le premier tronc venu — et c'est justement le repère qu'on ne
+     doit jamais perdre de vue. */
+  acteurs.push({y:F_CARREFOUR[1],f:()=>{try{dessinerLaLanterne(ctx,camX,camY);}catch(x){}}});
   /* LES BÊTES se trient avec le décor : un chevreuil derrière un tronc
      passe derrière, devant il passe devant. */
   for(let i=0;i<FAUNE.length;i++){
@@ -16892,6 +16987,9 @@ if(CARTE==='foret'){
   }
 }
 dessinerDecor(ctx,camX,camY,VW,VH,acteurs);
+/* LES LUCIOLES FLOTTENT : elles passent par-dessus le décor, jamais
+   derrière un tronc — elles sont entre les arbres et nous. */
+if(CARTE==='foret'){try{dessinerLesLucioles(ctx,camX,camY);}catch(x){}}
 if(CARTE==='extramar'||CARTE==='foret')dessinerLaPeche(ctx,camX,camY);   /* le lac aussi */
 dessinerBulles(ctx,camX,camY,px,py);
 dessinerParts(ctx,camX,camY);
@@ -20080,8 +20178,12 @@ HALOS[cle]=d;
 return HALOS[cle];
 }
 const LUMIERES=[];                       /* les lumières de l'image en cours : on les pose toutes à la fin */
+/* LE TROISIÈME INTERRUPTEUR. poserLeCiel et ancienPoserLeCiel avaient le
+   leur ; celui-ci coupait les sources elles-mêmes. Résultat : même la nuit
+   rallumée, pas une lampe du jeu ne s'allumait — ni au village, ni au port,
+   ni en forêt. La nuit était noire et vide. */
 function lueurNuit(g,x,y,rayon,teinte){
-const C=null;
+const C=(typeof REG!=='undefined'&&REG.ciel==='jour')?null:cielDuMoment();
 if(!C||C.lampes<0.05)return;
 const m=g.getTransform?g.getTransform():null, sc=m?m.a:1;
 const X=m?m.a*x+m.c*y+m.e:x, Y=m?m.b*x+m.d*y+m.f:y;
@@ -26364,6 +26466,7 @@ majVent(dt);
 if(QUALITE>=0.5)majNuages(dt);
 if(QUALITE>=1)majPapillons(dt);
 try{majFaune(dt);}catch(x){}
+try{majLucioles(dt);}catch(x){}
 poussiereDePas();bornerParts();
 majParts(dt);majTextes(dt);majVols(dt);majAction();majAutres(dt);
 brancherPerf();
