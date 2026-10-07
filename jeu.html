@@ -13039,14 +13039,32 @@ function majFaune(dt){
     if(b.g==='chevreuil')majChevreuil(b,dt);else majOiseau(b,dt);
   }
   /* LES POISSONS DU LAC : un saut de temps en temps, loin de la rive */
+  /* LES POISSONS SAUTAIENT POUR PERSONNE. Le point était tiré sur toute la
+     largeur du lac — 1 260 px — alors qu'on n'en voit que 185 à la fois :
+     six sauts sur sept tombaient hors de l'écran. Un saut toutes les six
+     secondes, oui, mais un saut VISIBLE toutes les quarante : on pouvait
+     pêcher dix minutes sans jamais en voir un.
+     On tire maintenant dans l'eau qu'on a sous les yeux. */
   prochainSaut-=dt;
-  if(prochainSaut<=0){
-    prochainSaut=3+Math.random()*6;
-    const x=120+Math.random()*(MONDE_L-240);
-    const r=F_rive(x), bas=MONDE_H-50;
-    if(bas>r+46){
-      const y=r+46+Math.random()*(bas-r-46);
-      SAUTS.push({x,y,t:0,dur:0.85,dir:Math.random()<.5?-1:1});
+  if(prochainSaut<=0&&SAUTS.length<2){
+    prochainSaut=5+Math.random()*6;
+    let cx=joueur.x-VW/2, cy=joueur.y-VH/2;
+    try{if(CAM&&CAM.x!==null){cx=CAM.x;cy=CAM.y;}}catch(err){}
+    /* la bande d'eau réellement à l'écran, avec une marge pour que le
+       poisson n'apparaisse pas toujours en plein milieu */
+    const x=cx-24+Math.random()*(VW+48);
+    if(x>60&&x<MONDE_L-60){
+      const r=F_rive(x);
+      const haut=Math.max(r+30, cy+8);            /* jamais sur la rive ni au-dessus du haut de l'écran */
+      /* ni tout au fond de l'écran : la barre d'action occupe les derniers
+         pixels, un poisson qui saute derrière elle ne se voit pas. Mais la
+         marge reste courte : vu de la berge, l'eau visible n'est qu'une
+         bande étroite, et une marge large la supprimait tout entière. */
+      const bas=Math.min(MONDE_H-50, cy+VH-26);
+      if(bas>haut+8){
+        const y=haut+Math.random()*(bas-haut);
+        SAUTS.push({x,y,t:0,dur:0.85,dir:Math.random()<.5?-1:1});
+      }else prochainSaut=1.5;                     /* pas d'eau en vue : on repasse vite */
     }
   }
   for(let i=SAUTS.length-1;i>=0;i--){
