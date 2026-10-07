@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-07-1015"></script>
+<script src="maintenance.js?v=2026-10-07-1045"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-1015';
+var MA_VERSION='2026-10-07-1045';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -18881,12 +18881,33 @@ $('page2Fond').innerHTML='<div class="tete"><div><small>TON TERRAIN · LE VALLON
 $('chX').onclick=()=>{$('page2').classList.remove('on');};
 if($('chGo'))$('chGo').onclick=async function(){this.disabled=true;this.textContent='…';
 const d=await appelRPC('cabanon_batir',{p_joueur:e.id,p_etape:etape});
-if(d&&d.ok){if(d.sac)e.sac=d.sac;try{sauver();lireSacServeur();majPastille();}catch(x){}
-CAB=Object.assign({},CAB,d.etat||{});cabRetenir();
-jouer('vente','moment');vibrer([20,40,20]);
-setTimeout(()=>location.reload(),800);          /* le cabanon apparaît sur ton terrain */
-ouvrirLeChantier(etape==='cabane'?'« Et voilà. C’est chez toi. »':'« Plus grand, plus solide. »');}
-else ouvrirLeChantier(d&&d.erreur==='manque'?'« Il te manque encore de quoi. »':'« Le chantier ne répond pas. »');};
+if(d&&d.ok){
+  if(d.sac)e.sac=d.sac;try{sauver();lireSacServeur();majPastille();}catch(x){}
+  CAB=Object.assign({},CAB,d.etat||{});cabRetenir();
+  jouer('vente','moment');vibrer([20,40,20]);
+  ouvrirLeChantier(etape==='cabane'?'« Et voilà. C’est chez toi. »':'« Plus grand, plus solide. »');
+  /* ON PART LA SAUVEGARDE AVANT DE RECHARGER, et on laisse le temps de lire :
+     le rechargement arrivait au bout de 800 ms, il effaçait le message qu'on
+     venait d'afficher et annulait la sauvegarde en cours de route. */
+  try{await envoyerSauvegarde(true);}catch(x){}
+  setTimeout(()=>location.reload(),2200);        /* le cabanon apparaît sur ton terrain */
+  return;
+}
+/* CHAQUE REFUS A SON MOT. « deja » et « pas_de_cabane » manquaient à l'appel
+   et tombaient dans « ne répond pas » : le joueur croyait à une panne alors
+   que le chantier avait abouti. */
+const MOTS={manque:'« Il te manque encore de quoi. »',
+            deja:'« C’est déjà fait. »',
+            pas_de_cabane:'« Il faut d’abord bâtir le cabanon. »',
+            etape:'« Je ne sais pas faire ça. »'};
+if(d&&d.erreur){ouvrirLeChantier(MOTS[d.erreur]||('« '+d.erreur+' »'));return;}
+/* AUCUNE RÉPONSE LISIBLE : le chantier a peut-être abouti quand même
+   (appelRPC renvoie null sur un corps non-JSON). On ne fait pas deviner
+   le joueur et on ne l'invite pas à recliquer : on redemande au serveur. */
+await cabLire();
+const fait=(etape==='cabane')?!!CAB.bati:((CAB.niveau||0)>=1);
+if(fait){ouvrirLeChantier('« C’est fait. »');setTimeout(()=>location.reload(),1800);}
+else ouvrirLeChantier('« Le chantier n’a pas répondu. Réessaie. »');};
 }
 /* LA PORTE DE LA BÊTA : c'est le serveur qui dit qui entre, pas la page.
    Avant, l'identifiant du développeur était écrit en clair ici — une fois lu,
@@ -19480,14 +19501,30 @@ return o;
 }
 function aSauver(){sauvSale=true;}
 async function envoyerSauvegarde(force){
-if(!e.id||sauvEnVol)return;
+if(!e.id)return;
+/* UNE SAUVEGARDE FORCÉE NE S'ABANDONNE PAS. Avant, « if(sauvEnVol) return »
+   la jetait purement et simplement si une autre était en vol — et c'est
+   justement le cas au moment de changer de carte ou de recharger la page,
+   quand une sauvegarde périodique vient de partir. On attend son tour. */
+if(sauvEnVol){
+  if(!force)return;
+  for(let i=0;i<40&&sauvEnVol;i++)await new Promise(r=>setTimeout(r,50));
+  if(sauvEnVol)return;                 /* deux secondes d'attente, on renonce */
+}
 const now=Date.now();
 if(!force&&(!sauvSale||now-derniereSauv<12000))return;
 sauvEnVol=true;derniereSauv=now;sauvSale=false;
 try{
+const corps=JSON.stringify([{id:e.id,cle:e.cle,etat:etatAGarder(),maj:new Date().toISOString()}]);
+/* keepalive : la requête survit au changement de page qui suit, sinon le
+   navigateur l'annule et le dernier progrès est perdu. Mais le navigateur
+   refuse keepalive au-delà de 64 Ko de corps — en cas de grosse partie on
+   repasse en envoi normal plutôt que de tout faire échouer. */
+const petit=corps.length<60000;
 const r=await fetch(URL_SB+'/rest/v1/sauvegardes',{method:'POST',
+keepalive:petit,
 headers:Object.assign({},sbEntetes,{Prefer:'resolution=merge-duplicates,return=minimal'}),
-body:JSON.stringify([{id:e.id,cle:e.cle,etat:etatAGarder(),maj:new Date().toISOString()}])});
+body:corps});
 /* ON NE JETTE PLUS L'ÉCHEC : avant, une sauvegarde refusée passait inaperçue
    et le joueur perdait sa partie sans rien voir. 401/403 = la clé ne passe
    pas (page d'une ancienne version restée en cache) : on le lui dit. */
@@ -27653,10 +27690,14 @@ P(x-11*s,y-34*s,22*s,12*s,'#57a04e');}
 for(let i=0;i<10;i++){const x=al(i*11)*W,y=H*0.6+al(i*13)*H*0.35;
 P(x,y,4,5,'#f2f2ec');P(x-1,y-3,6,3,'#c03a2a');}
 }
-function voyagerVers(carte,nom){
+async function voyagerVers(carte,nom){
 if(voyagerVers.enCours)return;voyagerVers.enCours=true;
 /* PLUS DE VOILE DE TRAJET : on part tout de suite, le lieu se charge directement. */
-try{e.ext={x:joueur.x,y:joueur.y};e.carte=carte;sauver();envoyerSauvegarde(true);}catch(x){}
+try{e.ext={x:joueur.x,y:joueur.y};e.carte=carte;sauver();}catch(x){}
+/* ON ATTEND QUE LA SAUVEGARDE SOIT PARTIE avant de quitter la page. Elle
+   était lancée sans être attendue, et le changement d'adresse l'annulait :
+   le dernier bout de progrès se perdait à chaque voyage. */
+try{await envoyerSauvegarde(true);}catch(x){}
 const page=(carte==='foret')?'foret.html':((carte==='ferme')?'ferme.html':'jeu.html?carte='+carte);
 location.href=page+(page.indexOf('?')<0?'?':'&')+'arrivee=1&v='+Date.now();
 }
