@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-07-1710"></script>
+<script src="maintenance.js?v=2026-10-07-1915"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-1710';
+var MA_VERSION='2026-10-07-1915';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12176,6 +12176,11 @@ function lacDessiner(g2,cle,x,y,ech){
 /* LE PONTON : une passerelle de planches fines qui avance dans le lac,
    avec son garde-corps léger et ses pilotis reflétés dans l'eau. */
 const F_PONT={x:520,y:0};          /* y calculé à la rive, voir le semis */
+/* LE SECOND PONTON, À L'EST. Mille cinq cents pixels de rive pour un seul
+   point de pêche : on traversait toute la forêt pour lancer une ligne.
+   Celui-ci tombe à côté de l'étal, là où l'on vend le poisson. */
+const F_PONT2={x:1180,y:0};
+const F_PONTS=[F_PONT,F_PONT2];
 const F_B={n:'#3a2614',o:'#4e3620',b:'#5f4426',mm:'#715430',
   c:'#8a6a3c',h:'#a8854e',e:'#c6a46a',s:'#2a1c0e'};
 function graverPontonFo(){
@@ -12576,6 +12581,7 @@ function semerLaForet(){
     [1090,230,92],                                  /* la maison de pierre */
     [F_ETAL.x,F_ETAL.y,86],                         /* l'étal */
     [F_PONT.x,Math.round(F_rive(F_PONT.x))-2,46],   /* le ponton */
+    [F_PONT2.x,Math.round(F_rive(F_PONT2.x))-2,46], /* le second ponton */
     [F_CABANE[0],F_CABANE[1],94],                   /* la cabane du bûcheron */
   ];
   const placeLibre=(x,y)=>{
@@ -12701,10 +12707,12 @@ function semerLaForet(){
   DECOR=DECOR.filter(o=>o.t==='x_fo_mine'||Math.hypot(o.x-370,o.y-300)>96);
   DECOR=DECOR.filter(o=>o.t==='x_fo_maison'||Math.hypot(o.x-1090,o.y-230)>92);
   /* LE PONTON : il part de la rive et avance dans l'eau */
-  F_PONT.y=Math.round(F_rive(F_PONT.x))-2;
-  DECOR.push({t:'x_fo_ponton',x:F_PONT.x,y:F_PONT.y,v:0,gr:0});
+  F_PONTS.forEach(P=>{
+    P.y=Math.round(F_rive(P.x))-2;
+    DECOR.push({t:'x_fo_ponton',x:P.x,y:P.y,v:0,gr:0});
+  });
   DECOR=DECOR.filter(o=>o.t==='x_fo_ponton'
-    ||Math.hypot(o.x-F_PONT.x,o.y-F_PONT.y)>46);
+    ||F_PONTS.every(P=>Math.hypot(o.x-P.x,o.y-P.y)>46));
   /* on dégage autour de l'étal, sinon il serait à moitié caché */
   DECOR=DECOR.filter(o=>o.t==='x_fo_etal'||o.t==='x_fo_quai'
     ||Math.hypot(o.x-F_ETAL.x,o.y-F_ETAL.y)>86);
@@ -12786,10 +12794,30 @@ const FAM_COUP={
   x_fo_amanite:'souple', x_fo_cepe:'souple', x_fo_girolle:'souple',
   x_fo_plume:'souple', x_fo_argile:'souple'
 };
+/* COMBIEN DE TEMPS AVANT QUE ÇA REVIENNE, pour chaque récolte de la forêt.
+   Ce sont les durées déjà utilisées par le dessin (dessinerX) et par la
+   visée (cible) : on les nomme une fois pour toutes. */
+const REPOUSSE_FO={
+  x_fo_amanite:150000, x_fo_cepe:150000, x_fo_girolle:150000,
+  x_fo_mure:240000, x_fo_framboise:240000, x_fo_myrtille:240000,
+  x_fo_argile:210000, x_fo_plume:210000
+};
+/* LA PETITE BARRE VERTE, la même qu'au village : fond sombre, remplissage
+   clair, deux pixels de haut, juste au-dessus du pied de l'objet. */
+function jaugeDeRepousseFo(g,o,x,y){
+  const duree=REPOUSSE_FO[o.t];
+  if(!duree||!o.cueilli)return;
+  const part=(Date.now()-o.cueilli)/duree;
+  if(part<0||part>=1)return;
+  const X=Math.round(x-6), Y=Math.round(y-12);
+  g.fillStyle='rgba(20,28,18,.35)';g.fillRect(X,Y,12,2);
+  g.fillStyle='rgba(159,214,122,.85)';g.fillRect(X,Y,Math.round(12*part),2);
+}
 /* ce qui barre le passage dans la forêt */
 function bloqueForet(x,y){
-  /* LE PONTON : on marche dessus, au-dessus de l'eau */
-  if(Math.abs(x-F_PONT.x)<16&&y>F_rive(F_PONT.x)-14&&y<F_PONT.y+116)return false;
+  /* LES PONTONS : on marche dessus, au-dessus de l'eau */
+  for(let i=0;i<F_PONTS.length;i++){const P=F_PONTS[i];
+    if(Math.abs(x-P.x)<16&&y>F_rive(P.x)-14&&y<P.y+116)return false;}
   /* LE SENTIER : la palissade est ouverte ici, on passe jusqu'au bord */
   if(dansLeSentier(x,y))return x<0;
   if(y>F_rive(x)-3)return true;
@@ -15677,6 +15705,11 @@ if(o.t[0]==='x'&&o.t[1]==='_'){
       g.restore();
     }
   }
+  /* LA JAUGE DE REPOUSSE. Au village, une ressource récoltée affiche la
+     petite barre verte qui dit où en est la pousse. En forêt le sprite
+     changeait (pieds coupés, buisson dépouillé) mais rien ne disait quand
+     ça revenait : on repassait dix fois pour rien. */
+  jaugeDeRepousseFo(g,o,x,y);
 }
 else if(o.t==='arbre'){
 if(o.cueilli&&Date.now()-o.cueilli<REPOUSSE.arbre){tracesDeRepousse(g,o,x,y,REPOUSSE.arbre);}
@@ -19776,16 +19809,30 @@ const o=DECOR[i];
 if(o.t!=='souche'||!o.neuf)continue;
 if(Date.now()-o.neuf<REPOUSSE_ARBRE)continue;
 DECOR.splice(i,1);
-poserDansLeDecor({t:'arbre',x:o.x,y:o.y,gr:0,coups:0,neuf:Date.now()});
+if(o.essence){                                 /* l'essence de la forêt revient telle quelle */
+poserDansLeDecor({t:o.essence,x:o.x,y:o.y,v:o.essV||0,gr:0,coups:0,
+  bati:true,demi:o.essDemi||12,neuf:Date.now()});
+}else poserDansLeDecor({t:'arbre',x:o.x,y:o.y,gr:0,coups:0,neuf:Date.now()});
 change=true;
 }
 const dehors=casseEncore();
 const dedans=new Set(DECOR.map(o=>o.t+o.x+','+o.y));
 (e.aRepousser||[]).slice().forEach((p,k)=>{
-const cle=({rocher:'r',fer:'m',cuivre:'m',charbon:'m'}[p.t]||'c')+p.x+','+p.y;
+/* CHACUN SUR SA CARTE : la liste est commune aux deux mondes et ne portait
+   pas de quelle carte venait la pierre. Un rocher cassé au village
+   repoussait donc en forêt, aux mêmes coordonnées. */
+if(p.c&&p.c!==CARTE)return;
+const cle=({rocher:'r',x_fo_rocher:'r',fer:'m',cuivre:'m',charbon:'m'}[p.t]||'c')+p.x+','+p.y;
 if(dehors.has(cle))return;                     /* pas encore l'heure */
-if(!dedans.has(p.t+p.x+','+p.y))
-poserDansLeDecor({t:p.t,x:p.x,y:p.y,gr:p.gr||0,coups:0,neuf:Date.now()});
+if(!dedans.has(p.t+p.x+','+p.y)){
+/* les gravats s'en vont avec le rocher qui revient : ils restaient là,
+   et la pierre repoussait par-dessus son propre tas de débris. */
+for(let j=DECOR.length-1;j>=0;j--)
+if(DECOR[j].t==='gravats'&&DECOR[j].x===p.x&&DECOR[j].y===p.y)DECOR.splice(j,1);
+const n={t:p.t,x:p.x,y:p.y,gr:p.gr||0,coups:0,neuf:Date.now()};
+if(p.t[0]==='x'){n.v=p.v||0;n.bati=true;n.demi=p.demi||12;}
+poserDansLeDecor(n);
+}
 e.aRepousser=e.aRepousser.filter(q=>q!==p);
 change=true;
 });
@@ -19865,10 +19912,13 @@ if(vivants.length!==(e.casses||[]).length)e.casses=vivants;
 return dehors;
 }
 function noterARepousser(o){
-if(!['rocher','fer','cuivre','charbon'].includes(o.t))return;
+/* LE ROCHER DE LA FORÊT était absent de cette liste : cassé, il ne
+   revenait jamais de la partie. On l'ajoute, avec sa variante de dessin
+   et sa largeur de collision pour qu'il repousse à l'identique. */
+if(!['rocher','fer','cuivre','charbon','x_fo_rocher'].includes(o.t))return;
 if(!e.aRepousser)e.aRepousser=[];
 if(!e.aRepousser.some(p=>p.t===o.t&&p.x===o.x&&p.y===o.y))
-e.aRepousser.push({t:o.t,x:o.x,y:o.y,gr:o.gr||0});
+e.aRepousser.push({t:o.t,x:o.x,y:o.y,gr:o.gr||0,v:o.v||0,demi:o.demi||0,c:CARTE});
 if(e.aRepousser.length>400)e.aRepousser.splice(0,e.aRepousser.length-400);
 }
 function cleDe(o){
@@ -20591,9 +20641,20 @@ function surLePonton(){
      abscisses 503 et 537 on était sur la terre ferme, on n'avait jamais
      mis un pied sur le ponton, et le jeu proposait quand même de pêcher
      — la ligne partait de la berge et le bouchon tombait au milieu du lac. */
-  if(Math.abs(joueur.x-F_PONT.x)>=16)return null;
-  if(joueur.y<F_rive(F_PONT.x)-14||joueur.y>F_PONT.y+116)return null;
-  return DECOR.find(o=>o.t==='x_fo_ponton')||null;
+  const P=pontonSousLesPieds();
+  if(!P)return null;
+  return DECOR.find(o=>o.t==='x_fo_ponton'&&o.x===P.x)||null;
+}
+/* SUR LEQUEL DES DEUX ? Celui dont on occupe le tablier, ou rien. */
+function pontonSousLesPieds(){
+  if(CARTE!=='foret'||typeof F_PONTS==='undefined')return null;
+  for(let i=0;i<F_PONTS.length;i++){
+    const P=F_PONTS[i];
+    if(Math.abs(joueur.x-P.x)>=16)continue;
+    if(joueur.y<F_rive(P.x)-14||joueur.y>P.y+116)continue;
+    return P;
+  }
+  return null;
 }
 function cible(){
   {const p=surLePonton();if(p)return p;}
@@ -20958,11 +21019,12 @@ let DERNIERE_PECHE=null;
 function lieuDePeche(){
 /* LE PONTON DU LAC : on pêche depuis n'importe quel point du tablier. */
 if(CARTE==='foret'){
-  if(!surLePonton())return null;
-  const bout=joueur.y>F_PONT.y+86;
+  const P=pontonSousLesPieds();
+  if(!P)return null;
+  const bout=joueur.y>P.y+86;
   /* le bouchon tombe toujours dans l'eau libre, au-delà du bout du ponton */
-  const bx=F_PONT.x+(joueur.dir==='gauche'?-34:(joueur.dir==='droite'?34:0));
-  const by=Math.max(joueur.y+40, F_PONT.y+128);
+  const bx=P.x+(joueur.dir==='gauche'?-34:(joueur.dir==='droite'?34:0));
+  const by=Math.max(joueur.y+40, P.y+128);
   return {bx, by:Math.min(by, MONDE_H-26), lieu:'lac', bout};
 }
 if(FORET_SEULE&&CARTE==='village'){          /* LE BORD DE LA RIVIÈRE, EN FORÊT */
@@ -22895,7 +22957,11 @@ poussiere(o.x,o.y,14);
 const i=DECOR.indexOf(o);
 if(i>=0){
 DECOR.splice(i,1);invaliderGrille();
-poserDansLeDecor({t:'souche',x:o.x,y:o.y,gr:0,neuf:Date.now()});   /* à sa place dans l'ordre de dessin, pas au bout */
+/* LA SOUCHE SE SOUVIENT DE SON ESSENCE. Sans cela, un érable rouge de la
+   forêt repoussait en arbre vert du village : on coupait un érable, il
+   revenait générique. On range dans la souche de quoi le refaire tel quel. */
+poserDansLeDecor({t:'souche',x:o.x,y:o.y,gr:0,neuf:Date.now(),
+  essence:(o.t[0]==='x'?o.t:null),essV:o.v||0,essDemi:o.demi||0});
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
 const pris=encaisser('arbre',o.x,o.y);
