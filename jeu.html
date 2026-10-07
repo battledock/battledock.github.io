@@ -11739,7 +11739,95 @@ function construireSolForet(){
       s.drawImage(PR,F_BAR-9,y,12,20);
     if(y<F_rive(MONDE_L-F_BAR)-6)s.drawImage(PR,MONDE_L-F_BAR-3,y,12,20);}
   peindreLeSentier(s);
+  peindreLesSentes(s);
   return c;}
+/* ================= LES SENTES DU BOIS =================
+   La forêt n'avait qu'un chemin, celui qui sort vers le port : la mine, la
+   cabane, la maison de pierre et l'étal se trouvaient en errant dans les
+   feuilles. Mille cinq cents pixels sans une seule ligne de force.
+
+   Ce ne sont pas des routes : une sente, c'est de la terre qu'on voit
+   parce que des pas l'ont dénudée. Elle est donc étroite, elle ondule, et
+   elle s'efface par endroits — là où l'on passe moins. Même palette que le
+   sentier du port, mais sans ornières : on n'y mène pas de charrette. */
+function peindreLesSentes(s){
+  const riveSure=(x)=>Math.round(F_rive(x))-18;      /* jamais dans l'eau */
+  const N={
+    arrivee:  [214, F_SENT_Y],
+    carrefour:[566, 432],
+    mine:     [370, 324],
+    cabane:   [760, 368],
+    maison:   [1090,258],
+    etal:     [F_ETAL.x, F_ETAL.y+26],
+    ponton1:  [F_PONT.x,  riveSure(F_PONT.x)],
+    ponton2:  [F_PONT2.x, riveSure(F_PONT2.x)]
+  };
+  /* le réseau : qui mène à qui, et combien la sente est battue (1 = très
+     passante, 0,5 = à peine marquée) */
+  const SENTES=[
+    ['arrivee','carrefour',1.00],
+    ['carrefour','mine',0.80],
+    ['carrefour','cabane',0.95],
+    ['carrefour','ponton1',0.70],
+    ['cabane','maison',0.80],
+    ['maison','etal',0.75],
+    ['etal','ponton2',0.65]
+  ];
+  let graine=0;
+  for(const [a,b,force] of SENTES){
+    const A=N[a], B=N[b];
+    graine+=37;
+    const dx=B[0]-A[0], dy=B[1]-A[1], L=Math.max(1,Math.round(Math.hypot(dx,dy)));
+    const ux=dx/L, uy=dy/L, nx=-uy, ny=ux;          /* le vecteur, et sa perpendiculaire */
+    for(let i=0;i<=L;i++){
+      const k=i/L;
+      /* LA SENTE N'EST PAS UNE RÈGLE. Deux ondes de périodes différentes
+         l'écartent de la ligne droite : sans elles on obtient un trait
+         tiré au cordeau, qui ne ressemble à rien de ce qu'un pas creuse. */
+      const serp=(F_hs(i*0.021+graine)-0.5)*26+(F_hs(i*0.073+graine*2)-0.5)*9;
+      const cx=A[0]+ux*i+nx*serp, cy=A[1]+uy*i+ny*serp;
+      if(cy>riveSure(cx)+10)continue;               /* on s'arrête au bord de l'eau */
+      /* AUSSI LARGE QU'UN HOMME, au moins : une sente plus étroite que le
+         personnage ne se lit pas, elle se confond avec le bruit de la
+         litière. */
+      const demi=5.5+force*3.4+(F_hs(i*0.11+graine)-0.5)*2.4;
+      for(let j=-Math.ceil(demi);j<=Math.ceil(demi);j++){
+        const px=Math.round(cx+nx*j), py=Math.round(cy+ny*j);
+        if(px<4||py<F_BAR+4||px>MONDE_L-4||py>MONDE_H-4)continue;
+        if(py>F_rive(px)-6)continue;
+        const bord=Math.abs(j)/demi;
+        /* UNE SENTE, C'EST D'ABORD L'ABSENCE DE FEUILLES. Le centre est
+           donc peint plein : les feuilles y sont effacées, et c'est ce
+           vide qui dessine le chemin. Seuls les bords se trouent, là où la
+           litière reprend ses droits. */
+        const dens=bord>0.82?0.30*force:(bord>0.6?0.70*force:1);
+        if(dens<1&&F_hs(px*0.37+py*0.71+graine)>dens)continue;
+        const t=F_hs(px*0.21+py*0.37);
+        s.fillStyle = bord>0.82 ? (t<.5?'#4a3c1e':'#544323')
+                    : bord>0.6  ? (t<.5?'#64501f':'#6d5726')
+                    : (t<.4?'#7a6030':'#846734');
+        s.fillRect(px,py,1,1);
+        if(bord<0.3&&t<0.14){s.fillStyle='#8f7540';s.fillRect(px,py,1,1);}   /* la terre polie par les pas */
+      }
+    }
+  }
+  /* LE CARREFOUR : là où quatre sentes se rejoignent, la terre est nue et
+     quelqu'un a planté un poteau. C'est le repère du bois. */
+  const [cx0,cy0]=N.carrefour;
+  for(let a=0;a<360;a+=2)for(let r=0;r<20;r++){
+    const px=Math.round(cx0+Math.cos(a*Math.PI/180)*r), py=Math.round(cy0+Math.sin(a*Math.PI/180)*r*0.72);
+    if(r>12&&F_hs(px*0.31+py*0.53)>1-(r-12)/9)continue;
+    const t=F_hs(px*0.21+py*0.37);
+    s.fillStyle=t<.4?'#7a6030':'#846734';s.fillRect(px,py,1,1);
+  }
+  /* LE POTEAU DU CARREFOUR : un piquet et sa planche, le repère du bois */
+  s.fillStyle='#3a2a15';s.fillRect(cx0-2,cy0-34,4,34);
+  s.fillStyle='#5b4423';s.fillRect(cx0-2,cy0-34,2,34);
+  s.fillStyle='#6b5228';s.fillRect(cx0-11,cy0-33,22,7);
+  s.fillStyle='#8a6a38';s.fillRect(cx0-11,cy0-33,22,2);
+  s.fillStyle='#2a1d0f';s.fillRect(cx0-11,cy0-27,22,1);
+  for(let k=0;k<4;k++){s.fillStyle='#3d2e18';s.fillRect(cx0-8+k*5,cy0-31,3,1);}   /* l'inscription effacée */
+}
 /* LE CHEMIN DE TERRE qui sort de la forêt vers l'ouest. Il se peint par
    dessus la lisière et la palissade : plus simple que de trouer chacune,
    et c'est bien ce qu'on veut voir — un passage battu par les pas. */
@@ -12972,6 +13060,17 @@ function semerLaFaune(){
       etat:'sol',t:0.4+Math.random()*1.2,vx:0,vy:0,h:0,a:1,pas:0});
   }
 }
+/* LE SABOT QUI MARQUE. Une trace tous les `ecart` pixels parcourus : on
+   compte la distance, pas le temps, sinon une bête lente en sèmerait
+   autant qu'une bête au galop. */
+function traceDeBete(b,dt,ecart){
+  const v=Math.hypot(b.vx,b.vy);
+  if(v<4)return;
+  b.parcouru=(b.parcouru||0)+v*dt;
+  if(b.parcouru<ecart)return;
+  b.parcouru=0;
+  poserUneTrace(b.x,b.y,b.vx/v,b.vy/v,true);
+}
 /* LE CHEVREUIL : broute, guette, détale. */
 function majChevreuil(b,dt){
   const d=Math.hypot(joueur.x-b.x,joueur.y-b.y);
@@ -12987,11 +13086,13 @@ function majChevreuil(b,dt){
     if(bonCoinFaune(nx,ny)){b.x=nx;b.y=ny;}
     else{b.vx=-b.vx*0.6;b.vy=-b.vy*0.6;b.dir=b.vx<0?-1:1;}
     b.pas+=dt*13;
+    traceDeBete(b,dt,16);                        /* au galop, les sabots marquent plus loin */
     if(b.t<=0){b.etat='guette';b.t=2+Math.random()*3;b.vx=b.vy=0;}
   }else if(b.etat==='marche'){
     const nx=b.x+b.vx*dt, ny=b.y+b.vy*dt;
     if(bonCoinFaune(nx,ny)){b.x=nx;b.y=ny;}else b.t=0;
     b.pas+=dt*5;
+    traceDeBete(b,dt,9);
     if(b.t<=0){b.etat='broute';b.t=3+Math.random()*5;b.vx=b.vy=0;}
   }else if(b.etat==='broute'){
     if(b.t<=0){b.etat='guette';b.t=1.5+Math.random()*3;}
@@ -13071,6 +13172,57 @@ function majFaune(dt){
     SAUTS[i].t+=dt;
     if(SAUTS[i].t>SAUTS[i].dur+0.7)SAUTS.splice(i,1);
   }
+}
+/* ================= LES TRACES AU SOL =================
+   Le tapis de feuilles ne gardait aucune marque : on traversait la forêt
+   sans y laisser le moindre signe de son passage. Un pas, dans les
+   feuilles mortes, ce n'est pas une empreinte en relief — c'est un endroit
+   où les feuilles ont été écartées et où la terre nue apparaît. C'est donc
+   une tache sombre qu'on dessine, pas un pied.
+
+   Elles s'effacent en une demi-minute : assez pour voir d'où l'on vient,
+   trop peu pour que la forêt se couvre de boue. */
+const TRACES=[];
+const TRACE_VIE=30000, TRACE_MAX=110;
+function poserUneTrace(x,y,ux,uy,bete){
+  if(CARTE!=='foret')return;
+  TRACES.push({x,y,ux,uy,t:Date.now(),b:!!bete});
+  if(TRACES.length>TRACE_MAX)TRACES.splice(0,TRACES.length-TRACE_MAX);
+}
+let traceCote=1;
+function dessinerLesTraces(g,camX,camY){
+  if(CARTE!=='foret'||!TRACES.length)return;
+  const n=Date.now();
+  for(let i=TRACES.length-1;i>=0;i--){
+    const T=TRACES[i];
+    const part=(n-T.t)/TRACE_VIE;
+    if(part>=1){TRACES.splice(i,1);continue;}
+    const x=Math.round(T.x-camX), y=Math.round(T.y-camY);
+    if(x<-12||y<-12||x>VW+12||y>VH+12)continue;
+    /* elle s'efface doucement, et pas d'un coup à la fin */
+    const a=(1-part)*(1-part);
+    const vert=Math.abs(T.uy)>Math.abs(T.ux);     /* on marche vers le haut ou le bas */
+    if(T.b){
+      /* LE SABOT DU CHEVREUIL : deux onglons, un creux au milieu */
+      g.globalAlpha=a*0.6;g.fillStyle='#17110a';
+      if(vert){g.fillRect(x-2,y-1,2,3);g.fillRect(x+1,y-1,2,3);}
+      else{g.fillRect(x-1,y-2,3,2);g.fillRect(x-1,y+1,3,2);}
+    }else{
+      /* LE PAS : la terre nue, là où les feuilles ont été poussées.
+         Le tapis de feuilles est très bruité — des taches claires et
+         sombres de la taille d'un pas. Une marque discrète s'y perd
+         entièrement. Celle-ci est donc plus sombre que tout ce que la
+         litière contient, et bordée d'un liseré clair : c'est le contraste
+         des deux qui la détache, pas sa seule noirceur. */
+      const w=vert?3:4, h=vert?4:3;
+      const X=x-(w>>1), Y=y-(h>>1);
+      g.globalAlpha=a*0.62;g.fillStyle='#17110a';
+      g.fillRect(X,Y,w,h);
+      g.globalAlpha=a*0.34;g.fillStyle='#8a7449';   /* les feuilles repoussées sur le bord */
+      g.fillRect(X,Y-1,w,1);g.fillRect(X-1,Y,1,h);
+    }
+  }
+  g.globalAlpha=1;
 }
 /* ---- les dessins ---- */
 function dessinerChevreuil(g,b,camX,camY){
@@ -16715,6 +16867,7 @@ if(ax<-40||ay<-70||ax>VW+40||ay>VH+40)continue;
 acteurs.push({y:a.y,f:()=>dessinerUnAutre(ctx,a,camX,camY)});
 }
 if(LISIERE&&!(CHAMPS_SEULS&&CARTE==='village'))ctx.drawImage(LISIERE,camX,camY,lw,lh,0,0,lw,lh);
+try{dessinerLesTraces(ctx,camX,camY);}catch(x){}   /* les pas dans les feuilles, sous tout le reste */
 dessinerLesRides(ctx,camX,camY,VW,VH);   /* l'eau du lac remue */
 if(CARTE==='foret'){
   try{dessinerLesSauts(ctx,camX,camY);}catch(x){}   /* les poissons, sur l'eau */
@@ -20168,9 +20321,18 @@ else{g.fillRect(x-2,y+1,2,1);g.fillRect(x+1,y+1,2,1);}
 g.fillStyle='rgba(60,50,30,.7)';g.fillRect(x,y,1,2);
 });
 }
-let pasPrec=0;
+let pasPrec=0, tracePrec=0;
 function poussiereDePas(){
 if(!joueur.marche)return;
+/* LES PAS DANS LES FEUILLES. Un pas tous les 2,2 de foulée, alternativement
+   à gauche et à droite de l'axe de marche : c'est l'alternance qui fait
+   lire une piste plutôt qu'une traînée. */
+if(CARTE==='foret'&&joueur.pas-tracePrec>=2.2){
+tracePrec=joueur.pas;
+const v=Math.hypot(vx,vy)||1, ux=vx/v, uy=vy/v;
+traceCote=-traceCote;
+poserUneTrace(joueur.x-uy*2.4*traceCote, joueur.y+ux*1.6*traceCote, ux, uy, false);
+}
 if(!dansRiviere(joueur.x,joueur.y))return;     /* plus de poussière sur la terre : seules les éclaboussures restent */
 if(joueur.pas-pasPrec<1.6)return;
 pasPrec=joueur.pas;
