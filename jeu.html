@@ -14146,7 +14146,9 @@ const X0=Math.round(x-C.W/2), Y0=Math.round(y-C.sol+dy);
 if(o.flip){g.save();g.translate(Math.round(x)*2,0);g.scale(-1,1);}
 g.drawImage(C.toile,X0,Y0,C.W,C.H);
 if(lampesAllumees()){const t=o.t||'';
-if(/lampe/i.test(t))lueurNuit(g,x,y-38,26,'rgba(255,214,150,§)');
+/* « lampadaire » ne contient pas « lampe » : les quatre lampadaires de
+   la ferme n'entraient dans aucun test et restaient éteints. */
+if(/lamp/i.test(t))lueurNuit(g,x,y-38,26,'rgba(255,214,150,§)');
 else if(/foyer|brasero/i.test(t))lueurNuit(g,x,y-8,40,'rgba(255,140,60,§)');
 /* LES QUATRE LIEUX DE LA FORÊT S'ALLUMENT. Rien n'éclairait le bois : la
    nuit, on ne retrouvait plus ni la cabane, ni la mine, ni l'étal. Une
@@ -14161,6 +14163,13 @@ else if(t==='x_fo_maison'){lueurNuit(g,x,y-34,40,'rgba(255,196,110,§)');
 else if(t==='x_fo_mine')lueurNuit(g,x,y-20,32,'rgba(226,236,255,§)');
 else if(t==='x_fo_etal'){lueurNuit(g,x,y-30,44,'rgba(255,186,96,§)');
   for(let k=-2;k<=2;k++)fenetreAllumee(g,x+k*11,y-40,2,2,k%2?'#ff9a7a':'#ffe08a');}
+/* LA FERME AUSSI : le mas et le fournil. Sans eux, la nuit qu'on vient de
+   lui rendre serait un rectangle noir de douze cents pixels de côté. */
+else if(t==='x_fe_mas'){lueurNuit(g,x,y-40,52,'rgba(255,198,112,§)');
+  fenetreAllumee(g,x-18,y-44,5,5,'#ffd48a');fenetreAllumee(g,x+13,y-44,5,5,'#ffd48a');}
+else if(/fournil/i.test(t)){lueurNuit(g,x,y-22,40,'rgba(255,146,58,§)');
+  fenetreAllumee(g,x-4,y-20,6,4,'#ff9a46');}
+else if(t==='x_fe_poulailler')lueurNuit(g,x,y-24,22,'rgba(255,206,128,§)');
 }
 if(o.feu||o.grand){const t=Date.now()/1000;
 if(o.feu){for(let k=0;k<7;k++){const q=((t*1.8+k/7)%1);g.globalAlpha=1-q;g.fillStyle=q<0.3?'#fff0a0':(q<0.6?'#ffb040':'#e8602a');g.fillRect(x-3+Math.sin(t*7+k*2)*2.5,y-8-q*9,1.2,1.5);}g.globalAlpha=1;
@@ -16943,6 +16952,12 @@ pile.sort((a,b)=>a.y-b.y);
 for(const p of pile)p.f();
 dessinerBulles(ctx,camX,camY,pxF,pyF);
 dessinerTextes(ctx,camX,camY);
+/* LE JOUR ET LA NUIT À LA FERME. Ce chemin de dessin court-circuite tout
+   le reste — c'est voulu — mais il sortait aussi avant la lumière du
+   moment. La ferme restait donc en plein jour à trois heures du matin,
+   pendant que la forêt et le port suivaient l'heure. Mesuré : écart
+   jour/nuit de 49 en forêt, 123 au port, 0 à la ferme. */
+ambiance(ctx);
 ctx.setTransform(1,0,0,1,0,0);
 return;
 }
