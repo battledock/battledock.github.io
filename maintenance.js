@@ -68,7 +68,7 @@
   /* ================= LA FORÊT EN TRAVAUX =================
      Elle se ferme à part : on n'entre pas dans le bois, le reste du jeu
      continue de tourner. Les joueurs autorisés passent quand même. */
-  var FORET_FERMEE=false;   /* la foret est rouverte a tout le monde */
+  var FORET_FERMEE=true;    /* pour rouvrir : repasser a false */
   function versLaForet(){
     try{
       var q=new URLSearchParams(location.search);
@@ -79,20 +79,120 @@
     }catch(e){}
     return false;
   }
+  /* L'ÉCRAN DE LA FORÊT, bâti comme celui de la ferme : tailles en clamp()
+     et hauteurs en dvh, pour qu'il se lise sur un petit Android comme sur
+     une tablette, sans que personne ait à pincer. */
+  var CSS_FORET='#bdForet{position:fixed;inset:0;z-index:2147483000;overflow:hidden;background:#101810;'+
+    'color:#f1efe2;font-family:Georgia,serif;text-align:center;'+
+    'display:flex;flex-direction:column;align-items:center;justify-content:space-between;'+
+    '-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:none;'+
+    '-webkit-user-select:none;user-select:none}'+
+    '#bdForet .scene{position:absolute;inset:0;width:100%;height:100%;display:block}'+
+    '#bdForet .in{position:relative;z-index:2;width:100%;max-width:min(520px,92vw);'+
+    'padding:calc(env(safe-area-inset-top,0px) + clamp(26px,7dvh,64px)) clamp(18px,6vw,34px) 0;box-sizing:border-box}'+
+    '#bdForet .k{font:700 clamp(10px,2.9vw,13px)/1 Arial,sans-serif;letter-spacing:.38em;color:#d8a24a}'+
+    '#bdForet h2{margin:clamp(12px,2.4dvh,20px) 0 0;font:400 clamp(30px,8.4vw,52px)/1.1 Georgia,serif;color:#fdf6e3;'+
+    'text-shadow:0 2px 18px rgba(0,0,0,.6)}'+
+    '#bdForet .r{width:clamp(90px,26vw,150px);height:1px;margin:clamp(16px,3dvh,26px) auto;'+
+    'background:linear-gradient(90deg,transparent,#c9a24a,transparent)}'+
+    '#bdForet p{margin:0 auto;max-width:30ch;font:italic clamp(16px,4.2vw,21px)/1.62 Georgia,serif;color:#ddd6bd;'+
+    'text-shadow:0 1px 12px rgba(0,0,0,.65)}'+
+    '#bdForet .bas{position:relative;z-index:2;width:100%;max-width:min(520px,92vw);'+
+    'padding:0 clamp(18px,6vw,34px) calc(env(safe-area-inset-bottom,0px) + clamp(26px,5dvh,52px));box-sizing:border-box}'+
+    '#bdForet button{-webkit-appearance:none;appearance:none;width:100%;max-width:340px;'+
+    'border:1px solid #c9a24a;border-radius:4px;background:rgba(16,24,16,.55);'+
+    'backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);'+
+    'color:#f6efdc;padding:clamp(15px,2.1dvh,20px) 20px;font:700 clamp(12px,3.3vw,15px)/1 Arial,sans-serif;'+
+    'letter-spacing:.26em;cursor:pointer;touch-action:manipulation}'+
+    '#bdForet button:active{background:rgba(201,162,74,.3)}'+
+    '@media (min-height:760px){#bdForet .in{padding-top:calc(env(safe-area-inset-top,0px) + 11dvh)}}'+
+    '#bdForet .ride{animation:bdri 7s linear infinite}'+
+    '@keyframes bdri{0%{transform:translateX(0);opacity:0}15%{opacity:.5}100%{transform:translateX(90px);opacity:0}}'+
+    '#bdForet .ride2{animation-duration:9s;animation-delay:-3s}'+
+    '#bdForet .ride3{animation-duration:5.5s;animation-delay:-1.5s}'+
+    '#bdForet .feuille{animation:bdfe 9s linear infinite}'+
+    '@keyframes bdfe{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(38px,210px) rotate(220deg)}}'+
+    '#bdForet .feuille2{animation-duration:12s;animation-delay:-5s}'+
+    '#bdForet .feuille3{animation-duration:7.5s;animation-delay:-2.5s}'+
+    '@media (prefers-reduced-motion:reduce){#bdForet *{animation:none!important}}';
+  function sceneForet(){
+    return '<svg class="scene" viewBox="0 0 400 760" preserveAspectRatio="xMidYMax slice" aria-hidden="true">'+
+      '<defs>'+
+      '<linearGradient id="bfc" x1="0" y1="0" x2="0" y2="1">'+
+      '<stop offset="0" stop-color="#0e150e"/><stop offset=".42" stop-color="#2a2414"/>'+
+      '<stop offset=".72" stop-color="#4a3a1e"/><stop offset="1" stop-color="#5a4526"/></linearGradient>'+
+      '<linearGradient id="bfe" x1="0" y1="0" x2="0" y2="1">'+
+      '<stop offset="0" stop-color="#3f6a5a"/><stop offset=".45" stop-color="#2a5260"/>'+
+      '<stop offset="1" stop-color="#16303f"/></linearGradient>'+
+      '<linearGradient id="bfv" x1="0" y1="0" x2="0" y2="1">'+
+      '<stop offset="0" stop-color="#0e150e" stop-opacity=".66"/><stop offset=".6" stop-color="#0e150e" stop-opacity=".25"/>'+
+      '<stop offset="1" stop-color="#0e150e" stop-opacity="0"/></linearGradient>'+
+      '</defs>'+
+      '<rect width="400" height="760" fill="url(#bfc)"/>'+
+      /* le tapis de feuilles mortes */
+      '<g>'+(function(){var o='',T=['#c9821a','#b4552a','#8a3a22','#d8a83a','#9a6a2a'];
+        for(var i=0;i<210;i++){var h=(Math.sin(i*12.9898)*43758.5453);h=h-Math.floor(h);
+          var h2=(Math.sin(i*78.233)*43758.5453);h2=h2-Math.floor(h2);
+          var h3=(Math.sin(i*39.77)*43758.5453);h3=h3-Math.floor(h3);
+          o+='<rect x="'+Math.round(h*398)+'" y="'+Math.round(300+h2*310)+'" width="3" height="2" fill="'+T[Math.floor(h3*5)]+'" opacity=".85"/>';}
+        return o;})()+'</g>'+
+      /* le lac, en bas */
+      '<path d="M0 618 Q110 606 212 616 Q310 625 400 612 L400 760 L0 760Z" fill="url(#bfe)"/>'+
+      '<path d="M0 614 Q110 602 212 612 Q310 621 400 608 L400 620 L0 626Z" fill="#6a5434"/>'+
+      '<g stroke="#b0d8e8" stroke-width="2" opacity=".45" stroke-linecap="round">'+
+      '<path class="ride"  d="M30 660h16"/><path class="ride ride2" d="M150 690h20"/>'+
+      '<path class="ride ride3" d="M250 648h14"/><path class="ride" d="M310 712h18"/>'+
+      '<path class="ride ride2" d="M80 724h16"/></g>'+
+      /* le ponton qui avance dans l’eau */
+      '<g><rect x="186" y="612" width="18" height="96" fill="#7d5934"/>'+
+      '<rect x="186" y="612" width="18" height="3" fill="#a5764a"/>'+
+      '<g fill="#5b3f21">'+(function(){var o='';for(var y=620;y<706;y+=10)o+='<rect x="186" y="'+y+'" width="18" height="2"/>';return o;})()+'</g></g>'+
+      /* le sentier : il sort du bord gauche et se perd dans les feuilles */
+      (function(){var o='',Y=540;
+        /* la bande de terre, qui s'amincit vers le bois */
+        o+='<path d="M0 '+(Y-19)+' L120 '+(Y-11)+' L150 '+(Y-5)+' L150 '+(Y+5)+' L120 '+(Y+11)+' L0 '+(Y+19)+'Z" fill="#6b5428"/>';
+        o+='<path d="M0 '+(Y-19)+' L120 '+(Y-11)+' L150 '+(Y-5)+' L150 '+(Y-2)+' L120 '+(Y-8)+' L0 '+(Y-15)+'Z" fill="#7a6130"/>';
+        /* deux ornières qui s'effacent */
+        o+='<path d="M0 '+(Y-7)+' L112 '+(Y-3)+' L112 '+(Y-1)+' L0 '+(Y-5)+'Z" fill="#4a3a1b" opacity=".75"/>';
+        o+='<path d="M0 '+(Y+7)+' L112 '+(Y+3)+' L112 '+(Y+5)+' L0 '+(Y+9)+'Z" fill="#4a3a1b" opacity=".75"/>';
+        /* quelques feuilles qui mordent sur la terre, pour fondre le bord */
+        for(var i=0;i<34;i++){var h=((Math.sin(i*12.9898)*43758.5453)%1+1)%1;
+          var h2=((Math.sin(i*78.233)*43758.5453)%1+1)%1;
+          o+='<rect x="'+Math.round(60+h*95)+'" y="'+Math.round(Y-16+h2*32)+'" width="3" height="2" fill="#9a6a2a" opacity=".8"/>';}
+        return o;})()+
+      /* les érables, tous sous le bloc de texte */
+      (function(){var o='',A=[[46,432,24],[138,392,21],[228,446,23],[318,398,24],[378,462,20],[88,520,19],[272,536,18]];
+        for(var i=0;i<A.length;i++){var x=A[i][0],y=A[i][1],r=A[i][2];
+          o+='<ellipse cx="'+(x+3)+'" cy="'+(y+3)+'" rx="'+(r*0.9)+'" ry="'+(r*0.26)+'" fill="#0e150e" opacity=".4"/>'+
+             '<rect x="'+(x-3)+'" y="'+(y-r*1.2)+'" width="6" height="'+(r*1.2)+'" fill="#5a3f22"/>'+
+             '<rect x="'+(x-r)+'" y="'+(y-r*1.85)+'" width="'+(r*2)+'" height="'+(r*0.72)+'" fill="#a33b26"/>'+
+             '<rect x="'+(x-r*0.82)+'" y="'+(y-r*2.42)+'" width="'+(r*1.64)+'" height="'+(r*0.66)+'" fill="#b4452a"/>'+
+             '<rect x="'+(x-r*0.52)+'" y="'+(y-r*2.9)+'" width="'+(r*1.04)+'" height="'+(r*0.56)+'" fill="#d2762a"/>';}
+        return o;})()+
+      /* trois feuilles qui tombent */
+      '<rect class="feuille"  x="110" y="150" width="4" height="3" fill="#d8a83a"/>'+
+      '<rect class="feuille feuille2" x="266" y="120" width="4" height="3" fill="#b4552a"/>'+
+      '<rect class="feuille feuille3" x="330" y="180" width="4" height="3" fill="#c9821a"/>'+
+      '<rect width="400" height="520" fill="url(#bfv)"/>'+
+      '</svg>';
+  }
   function ecranForet(){
+    if(document.getElementById('bdForet'))return;
+    if(!document.querySelector('meta[name="viewport"]')){
+      var mv=document.createElement('meta');mv.name='viewport';
+      mv.content='width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover';
+      (document.head||document.documentElement).appendChild(mv);
+    }
+    var st=document.createElement('style');st.textContent=CSS_FORET;document.head.appendChild(st);
     var d=document.createElement('div');d.id='bdForet';
-    d.style.cssText='position:fixed;inset:0;z-index:99999;background:#101a12;color:#eef6ea;'+
-      'font-family:Georgia,serif;display:flex;flex-direction:column;align-items:center;'+
-      'justify-content:center;text-align:center;padding:34px 26px';
-    d.innerHTML=
-      '<div style="font:700 9px Arial;letter-spacing:4px;color:#7fae90">LA FORÊT</div>'+
-      '<div style="font:400 34px Georgia;margin:12px 0 4px">Nouveautés en cours d’ajout</div>'+
-      '<div style="width:110px;height:1px;margin:18px auto;background:linear-gradient(90deg,transparent,#c9a24a,transparent)"></div>'+
-      '<div style="font:italic 15px Georgia;color:#a9c7b4;line-height:1.6;max-width:340px">'+
-      'Le bois est fermé le temps d’y planter ce qui manque.<br>Le port et la ferme restent ouverts.</div>'+
-      '<button id="bdfRetour" style="margin-top:30px;border:1px solid #c9a24a;border-radius:3px;'+
-      'background:rgba(201,162,74,.12);color:#f6efdc;padding:15px 26px;font:700 11px Arial;letter-spacing:3px">'+
-      'RETOUR AU PORT</button>';
+    d.innerHTML=sceneForet()+
+      '<div class="in">'+
+      '<div class="k">LA FORÊT</div>'+
+      '<h2>Le bois<br>est en travaux</h2>'+
+      '<div class="r"></div>'+
+      '<p>On replante, on redresse les sentiers et on remet le lac d’aplomb. Le port et la ville restent ouverts.</p>'+
+      '</div>'+
+      '<div class="bas"><button id="bdfRetour">RETOUR AU PORT</button></div>';
     (document.body||document.documentElement).appendChild(d);
     try{document.documentElement.style.overflow='hidden';}catch(e){}
     window.__MAINTENANCE=true;
@@ -103,6 +203,7 @@
       location.href='jeu.html?carte=extramar&v='+Date.now();};
   }
   if(FORET_FERMEE&&versLaForet()&&!PASSE){
+    window.__MAINTENANCE=true;   /* posé tout de suite : foret.html lit ce drapeau avant de rediriger */
     if(document.body)ecranForet();
     else document.addEventListener('DOMContentLoaded',ecranForet);
   }
