@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-07-1045"></script>
+<script src="maintenance.js?v=2026-10-07-1115"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-1045';
+var MA_VERSION='2026-10-07-1115';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11534,15 +11534,37 @@ function construireSolForet(){
     for(let x=0;x<LW;x++){const n=F_hs(x*0.42+y*0.26);px[l+x]=n<.36?A:(n<.70?B:C);}}
   pg.putImageData(img,0,0);
   s.drawImage(pt,0,0,LW,LH,0,0,LW*2,LH*2);
-  /* le lac */
+  /* LE LAC, PEINT PAR BANDES.
+     Il était peint pixel par pixel : 447 000 fillRect de 1x1, chacun
+     précédé d'une affectation de couleur — à lui seul, l'essentiel du
+     gel au premier chargement de la forêt sur téléphone.
+     Or le dégradé ne compte que quatre teintes. Pour chaque colonne on
+     calcule les trois frontières et on pose quatre rectangles : 6 000
+     opérations au lieu de 447 000, pour exactement la même image.
+     Les frontières sont les mêmes qu'avant : la première ligne de la
+     bande suivante est le premier y dont (y-r)/profondeur atteint le
+     seuil, d'où le ceil. */
+  const LAC_T=['#3f6a5a','#2a5260','#1d3f52','#142c3e'], LAC_S=[0.14,0.40,0.72];
   for(let x=0;x<MONDE_L;x++){
     const r=Math.round(F_rive(x));
     s.fillStyle='#6a5434';s.fillRect(x,r-5,1,5);
     s.fillStyle='#7a6240';s.fillRect(x,r-5,1,1);
-    for(let y=r;y<MONDE_H;y++){
-      const p=(y-r)/Math.max(1,MONDE_H-r);
-      s.fillStyle=p<0.14?'#3f6a5a':(p<0.40?'#2a5260':(p<0.72?'#1d3f52':'#142c3e'));
-      s.fillRect(x,y,1,1);}}
+    const prof=Math.max(1,MONDE_H-r);
+    let y0=r;
+    for(let b=0;b<4;b++){
+      let y1=MONDE_H;
+      if(b<3){
+        /* LA FRONTIÈRE AU PIXEL PRÈS. Un simple ceil(seuil*prof) se décale
+           d'une ligne quand le seuil tombe pile, parce que la division en
+           virgule flottante ne rend pas exactement le seuil. On recale donc
+           sur le test d'origine lui-même : la première ligne dont
+           (y-r)/prof atteint le seuil. */
+        y1=r+Math.ceil(LAC_S[b]*prof);
+        while(y1>y0&&(y1-1-r)/prof>=LAC_S[b])y1--;
+        while(y1<MONDE_H&&(y1-r)/prof<LAC_S[b])y1++;
+        if(y1>MONDE_H)y1=MONDE_H;
+      }
+      if(y1>y0){s.fillStyle=LAC_T[b];s.fillRect(x,y0,1,y1-y0);y0=y1;}}}
   /* les rides ne sont plus gravées : elles défilent, voir dessinerLesRides */
   for(let k=0;k<220;k++){const x=Math.round(F_hs(k*9.1)*MONDE_L), r=Math.round(F_rive(x));
     s.fillStyle='#4f7a3a';s.fillRect(x,r-1,5,2);
