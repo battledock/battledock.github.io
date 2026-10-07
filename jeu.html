@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-07-1140"></script>
+<script src="maintenance.js?v=2026-10-07-1205"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-1140';
+var MA_VERSION='2026-10-07-1205';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11596,10 +11596,13 @@ function construireSolForet(){
   const SP=F_palissade(), PR=F_profil();
   for(let x=0;x<MONDE_L;x+=20)s.drawImage(SP,x,F_BAR-31,20,34);
   for(let y=0;y<MONDE_H;y+=20){
-    /* on saute les pieux en face du sentier : c'est la trouée */
-    if(!(Math.abs(y+10-F_SENT_Y)<F_SENT_DEMI)&&y<F_rive(F_BAR)-20)
+    /* on saute les pieux en face du sentier : c'est la trouée.
+       Les pieux descendent jusqu'à la rive (-6 et non -20) : en s'arrêtant
+       plus haut ils laissaient une bande sans rien, juste au-dessus de
+       l'eau, là où le joueur passait. */
+    if(!(Math.abs(y+10-F_SENT_Y)<F_SENT_DEMI)&&y<F_rive(F_BAR)-6)
       s.drawImage(PR,F_BAR-9,y,12,20);
-    if(y<F_rive(MONDE_L-F_BAR)-20)s.drawImage(PR,MONDE_L-F_BAR-3,y,12,20);}
+    if(y<F_rive(MONDE_L-F_BAR)-6)s.drawImage(PR,MONDE_L-F_BAR-3,y,12,20);}
   peindreLeSentier(s);
   return c;}
 /* LE CHEMIN DE TERRE qui sort de la forêt vers l'ouest. Il se peint par
@@ -12715,8 +12718,17 @@ function bloqueForet(x,y){
   if(dansLeSentier(x,y))return x<0;
   if(y>F_rive(x)-3)return true;
   if(y<F_BAR+8)return true;
-  if(x<F_BAR+6&&y<F_rive(F_BAR)-20)return true;
-  if(x>MONDE_L-F_BAR-6&&y<F_rive(MONDE_L-F_BAR)-20)return true;
+  /* LES MURS LATÉRAUX, SUR TOUTE LEUR HAUTEUR.
+     Ils ne bloquaient que jusqu'à F_rive(F_BAR)-20, une constante prise au
+     niveau du mur — alors que la rive descend plus bas ailleurs. Entre les
+     deux, ni le mur ni l'eau ne barraient : on passait derrière la
+     palissade et on marchait sur la bande de buissons peinte (mesuré :
+     x 12→49 et y 695→713 à l'ouest, x 1451→1488 et y 666→687 à l'est).
+     La condition était de toute façon inutile : le test de l'eau,
+     deux lignes plus haut, a déjà renvoyé vrai pour tout ce qui est
+     dans le lac. */
+  if(x<F_BAR+6)return true;
+  if(x>MONDE_L-F_BAR-6)return true;
   return x<12||x>MONDE_L-12;}
 const BOIS_PONT={sombre:'#3d2a17',fonce:'#5b3f21',bas:'#6b4a28',moyen:'#7d5934',
 clair:'#96703f',haut:'#a5764a'};
