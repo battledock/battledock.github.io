@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-07-1115"></script>
+<script src="maintenance.js?v=2026-10-07-1140"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-1115';
+var MA_VERSION='2026-10-07-1140';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12667,22 +12667,44 @@ function semerLaForet(){
 /* ================= LES RIDES QUI DÉFILENT =================
    Elles glissent lentement vers la droite, chacune à sa vitesse, et
    réapparaissent de l'autre côté. Dessinées par-dessus le sol. */
+/* LA TABLE DES RIDES, calculée une seule fois.
+   Tout ce qui définit une ride — sa ligne d'eau, sa vitesse, sa longueur —
+   ne bouge jamais : seule son abscisse défile avec le temps. On recalculait
+   pourtant le tout à chaque image, soit six sinus par ride et six cent
+   trente rides : près de quatre mille sinus par image, deux cent mille par
+   seconde, pour un effet décoratif. On les pose une fois pour toutes.
+   Les rides sont rangées par hauteur : dès qu'on dépasse le bas de
+   l'écran, les suivantes sont forcément plus bas, on arrête. */
+let F_RIDES=null;
+function tableDesRides(){
+  if(F_RIDES)return F_RIDES;
+  const n=Math.round(MONDE_L*0.42), t=[];
+  for(let k=0;k<n;k++){
+    const base=F_hs(k*3.1)*MONDE_L;
+    const r=F_rive(base);
+    const h=F_hs(k);
+    t.push({base:base,
+            y:r+8+F_hs(k*7.3)*(MONDE_H-r-16),
+            v:5+h*6,
+            l:6+Math.round(h*5)});
+  }
+  t.sort((a,b)=>a.y-b.y);
+  F_RIDES=t;return t;
+}
 function dessinerLesRides(g,camX,camY,VW2,VH2){
   if(CARTE!=='foret')return;
   const t=Date.now()/1000;
   const haut=F_rive(camX+VW2/2)-20;
   if(camY+VH2<haut)return;                     /* le lac n'est pas à l'écran */
   g.fillStyle='rgba(176,216,232,.2)';
-  const n=Math.round(MONDE_L*0.42);
-  for(let k=0;k<n;k++){
-    const base=F_hs(k*3.1)*MONDE_L;
-    const r=F_rive(base);
-    const y=r+8+F_hs(k*7.3)*(MONDE_H-r-16);
-    if(y<camY-6||y>camY+VH2+6)continue;
-    const x=(base+t*(5+F_hs(k)*6))%MONDE_L;
-    const ex=x-camX;
+  const T=tableDesRides(), bas=camY+VH2+6, cime=camY-6;
+  for(let k=0;k<T.length;k++){
+    const o=T[k];
+    if(o.y<cime)continue;
+    if(o.y>bas)break;                          /* rangées : le reste est plus bas */
+    const ex=((o.base+t*o.v)%MONDE_L)-camX;
     if(ex<-14||ex>VW2+14)continue;
-    g.fillRect(Math.round(ex),Math.round(y-camY),6+Math.round(F_hs(k)*5),1);
+    g.fillRect(Math.round(ex),Math.round(o.y-camY),o.l,1);
   }
 }
 /* ce qui barre le passage dans la forêt */
