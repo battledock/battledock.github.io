@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-07-0905"></script>
+<script src="maintenance.js?v=2026-10-07-0935"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-0905';
+var MA_VERSION='2026-10-07-0935';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -27007,6 +27007,14 @@ const OUTILS_BUC=()=>[
    Deux onglets : l'établi pour lancer une pièce, le carnet pour suivre
    ce qui est en cours. Les recettes et les durées viennent du serveur. */
 let AT_VUE='etabli', AT_ETAT=null, AT_MINUTEUR=0;
+/* AT_EN_VOL : un retrait est parti au serveur. Le bouton se désactive à
+   chaque redessin tant qu'on n'a pas la réponse — et l'écran est redessiné
+   une fois par seconde par le compte à rebours, donc un simple
+   « bouton.disabled » ne tiendrait pas une seconde.
+   AT_VERIFIE : le compte à rebours tourne sur l'horloge du téléphone. Quand
+   il arrive à zéro, on ne croit pas le téléphone sur parole : on redemande
+   l'état au serveur, une seule fois, avant d'allumer le bouton. */
+let AT_EN_VOL=false, AT_VERIFIE=false;
 const AT_DESS={
  planche:(R)=>{for(let k=0;k<3;k++){R(3,8+k*7,26,5,'#c9a878');R(3,8+k*7,26,1.4,'#e0c69a');R(3,12+k*7,26,1,'#a5764a');}},
  poutre:(R)=>{R(5,10,22,12,'#8a6238');R(5,10,22,3,'#a5764a');R(5,19,22,3,'#6a4a2a');
@@ -27028,8 +27036,10 @@ const AT_NOMS={bois:'bûches',pierre:'pierres',fibre:'fibre',resine:'résine',
   planche:'planches',poutre:'poutres',bardeau:'bardeaux',manche:'manches',charbon:'charbon',resine_pure:'résine épurée'};
 async function ouvrirLAtelier(){
   if(!document.getElementById('cssAt')){const st=document.createElement('style');st.id='cssAt';st.textContent=CSS_AT;document.head.appendChild(st);}
+  AT_EN_VOL=false;
   const d=await appelRPC('atelier_etat',{p_joueur:e.id});
   if(d&&!d.erreur)AT_ETAT=d;
+  AT_VERIFIE=true;                     /* l'état sort du serveur : il fait foi */
   atRendre();
 }
 function atRendre(){
@@ -27037,7 +27047,10 @@ function atRendre(){
   const E=AT_ETAT||{recettes:[],sac:{},encours:[]};
   const sac=E.sac||{}, enc=E.encours||[];
   $('page2Fond').className='at';$('page2').classList.add('on');
-  const pretes=enc.filter(c=>c.reste<=0).length;
+  /* « prêt » n'est vrai que si le serveur l'a dit. Le compte à rebours local
+     peut atteindre zéro par dérive d'horloge ou après une mise en veille :
+     on ne propose pas de prendre une pièce que le serveur refuserait. */
+  const pretes=AT_VERIFIE?enc.filter(c=>c.reste<=0).length:0;
   const stock=['bois','planche','resine'].map(k=>
     '<div><small>'+(AT_NOMS[k]||k).toUpperCase()+'</small><b>'+(sac[k]||0)+'</b></div>').join('');
   let corps='';
@@ -27067,7 +27080,8 @@ function atRendre(){
    '<div class="at-stock">'+stock+'</div>'+
    '<div class="at-page">'+corps+'</div>'+
    '<div class="at-pied"><button class="s" id="atSortir">SORTIR</button>'+
-   '<button class="p" id="atPrendre"'+(pretes?'':' disabled')+'>'+(pretes?'PRENDRE CE QUI EST PRÊT':'RIEN DE PRÊT')+'</button></div></div>';
+   '<button class="p" id="atPrendre"'+((pretes&&!AT_EN_VOL)?'':' disabled')+'>'+
+   (AT_EN_VOL?'…':(pretes?'PRENDRE CE QUI EST PRÊT':'RIEN DE PRÊT'))+'</button></div></div>';
   $('page2Fond').querySelectorAll('canvas[data-at]').forEach(cv=>atDessiner(cv,cv.dataset.at));
   $('page2Fond').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{AT_VUE=b.dataset.v;vibrer(6);atRendre();});
   $('page2Fond').querySelectorAll('[data-faire]').forEach(b=>b.onclick=async()=>{
@@ -27077,23 +27091,57 @@ function atRendre(){
     if(r&&r.erreur){motOuverture(r.erreur);b.disabled=false;return;}
     vibrer(10);AT_VUE='encours';
     const d=await appelRPC('atelier_etat',{p_joueur:e.id});if(d&&!d.erreur)AT_ETAT=d;
+    AT_VERIFIE=true;                     /* l'état sort du serveur */
     atRendre();});
   $('atSortir').onclick=()=>{clearInterval(AT_MINUTEUR);AT_MINUTEUR=0;$('page2').classList.remove('on');};
   $('atPrendre').onclick=async()=>{
-    const r=await appelRPC('atelier_prendre',{p_joueur:e.id});
-    if(r&&r.rendu){const l=Object.entries(r.rendu).map(([k,n])=>n+' '+(AT_NOMS[k]||k)).join(', ');
-      if(l)motOuverture('Tu récupères '+l+'.');}
-    vibrer([10,24,10]);
-    /* chargerSac n'existe que dans forge.html : ici l'appel levait une
-       ReferenceError avalée par le catch, et le sac n'était jamais relu. */
-    try{await lireSacServeur();}catch(x){}
-    const d=await appelRPC('atelier_etat',{p_joueur:e.id});if(d&&!d.erreur)AT_ETAT=d;
-    atRendre();};
+    if(AT_EN_VOL)return;                      /* un retrait est déjà parti */
+    AT_EN_VOL=true;atRendre();
+    let frais=false;                          /* l'état a-t-il été relu avec succès ? */
+    try{
+      const r=await appelRPC('atelier_prendre',{p_joueur:e.id});
+      /* ON NE VIBRE PLUS AVANT DE SAVOIR : le téléphone confirmait d'un coup
+         de vibreur un retrait que le serveur venait de refuser, et aucun
+         message ne s'affichait. */
+      if(!r||r.erreur){
+        motOuverture((r&&r.erreur)||'le serveur n’a pas répondu');
+      }else{
+        const l=r.rendu?Object.entries(r.rendu).map(([k,n])=>n+' '+(AT_NOMS[k]||k)).join(', '):'';
+        motOuverture(l?('Tu récupères '+l+'.'):'Il n’y avait rien à prendre.');
+        if(l)vibrer([10,24,10]);
+      }
+      /* chargerSac n'existe que dans forge.html : ici l'appel levait une
+         ReferenceError avalée par le catch, et le sac n'était jamais relu. */
+      try{await lireSacServeur();}catch(x){}
+      const d=await appelRPC('atelier_etat',{p_joueur:e.id});
+      if(d&&!d.erreur){AT_ETAT=d;frais=true;}
+    }finally{
+      AT_EN_VOL=false;
+      /* si la relecture a échoué, on ne prétend pas connaître l'état :
+         le bouton reste éteint jusqu'à une réponse du serveur. */
+      AT_VERIFIE=frais;
+      atRendre();
+    }};
   /* le compte à rebours, tant qu'on reste dans l'atelier */
   clearInterval(AT_MINUTEUR);
   if(enc.some(c=>c.reste>0))AT_MINUTEUR=setInterval(()=>{
     if(!$('page2').classList.contains('on')){clearInterval(AT_MINUTEUR);return;}
-    (AT_ETAT.encours||[]).forEach(c=>{c.reste=Math.max(0,c.reste-1);});
+    let arriveAZero=false;
+    (AT_ETAT.encours||[]).forEach(c=>{
+      const avant=c.reste;
+      c.reste=Math.max(0,c.reste-1);
+      if(avant>0&&c.reste<=0)arriveAZero=true;
+    });
+    /* UNE PIÈCE VIENT D'ARRIVER À TERME SELON NOUS : on demande au serveur
+       avant d'allumer le bouton. C'est lui qui décide si elle est prête. */
+    if(arriveAZero&&AT_VERIFIE){
+      AT_VERIFIE=false;
+      appelRPC('atelier_etat',{p_joueur:e.id}).then(d=>{
+        if(d&&!d.erreur)AT_ETAT=d;
+        AT_VERIFIE=true;
+        if($('page2').classList.contains('on'))atRendre();
+      }).catch(()=>{AT_VERIFIE=true;});
+    }
     if(AT_VUE==='encours')atRendre();},1000);
 }
 const CSS_AT=`
