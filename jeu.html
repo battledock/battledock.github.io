@@ -16916,8 +16916,15 @@ const accelere=marche&&court&&!TRANS.couPrec;
 const demiTour=marche&&TRANS.marchePrec&&dir!==TRANS.dirPrec
 &&((dir==='gauche'&&TRANS.dirPrec==='droite')||(dir==='droite'&&TRANS.dirPrec==='gauche'));
 if(demiTour){TRANS.etat='pivot';TRANS.depuis=t;}
-else if(stoppe&&(TRANS.couPrec||TRANS.etat==='course')){TRANS.etat='frein';TRANS.depuis=t;}
-else if(demarre&&court){TRANS.etat='elan';TRANS.depuis=t;}
+/* L'ÉLAN ET LE FREINAGE NE SERVAIENT QU'À LA COURSE. Le départ exigeait
+   `court`, l'arrêt exigeait d'avoir couru : en marchant, on passait donc de
+   l'immobilité à la vitesse de croisière en une image, et on s'arrêtait net
+   comme un pantin — ce que ce bloc dit vouloir éviter depuis le début.
+   On les déclenche maintenant à tout départ et à tout arrêt. Le freinage
+   demande d'avoir vraiment marché : sans ce délai, une poussée brève du
+   joystick déclencherait un freinage à chaque fois. */
+else if(stoppe&&(t-TRANS.depuis)>140){TRANS.etat='frein';TRANS.depuis=t;}
+else if(demarre){TRANS.etat='elan';TRANS.depuis=t;}
 else if(accelere){TRANS.etat='elan';TRANS.depuis=t;}
 else if(!marche&&TRANS.etat!=='frein')TRANS.etat='idle';
 else if(marche&&TRANS.etat!=='pivot'&&TRANS.etat!=='elan')TRANS.etat=court?'course':'marche';
@@ -17074,7 +17081,13 @@ course:[
 {t:0.58, x:-0.30, lift:1.70, pointe:0,   talon:0},   /* le talon vient aux fesses */
 {t:0.72, x: 0.45, lift:1.45, pointe:0,   talon:0},
 {t:0.86, x: 0.95, lift:0.75, pointe:0,   talon:0.3},
-{t:0.94, x: 0.98, lift:0.25, pointe:0,   talon:0.6},
+{t:0.96, x: 0.98, lift:0.42, pointe:0,   talon:0.6},   /* LA SUSPENSION : le pied
+                                                        arrière était déjà presque
+                                                        posé (0,25) quand l'autre
+                                                        était au plus haut. Les deux
+                                                        pieds quittent le sol en même
+                                                        temps — c'est ce qui sépare
+                                                        une course d'une marche vive. */
 {t:1.00, x: 0.86, lift:0.00, pointe:0.3, talon:0.5}]};
 /* LA LECTURE : on cherche les deux poses clés qui encadrent la phase et on
    interpole entre elles. La courbe « douce » évite les ruptures. */
@@ -17181,8 +17194,13 @@ const TR=(typeof TRANS_FIN==='object'&&TRANS_FIN)?TRANS_FIN:null;
 const trK=TR?TR.k:0;
 const trPenche=!TR?0:(TR.type==='elan'?Math.round((1-trK)*3+1)
 :(TR.type==='frein'?-Math.round((1-trK)*3+1):0));
+/* L'ÉLAN N'AVAIT AUCUN EFFET DE FACE. Il ne jouait que sur trPenche, qui
+   penche le buste vers l'avant — invisible quand l'avant pointe vers la
+   caméra. On lui donne ce qui se voit de face : le corps s'accroupit d'un
+   coup puis se détend, c'est la poussée du départ. */
 const trTasse=!TR?0:(TR.type==='pivot'?Math.round(Math.sin(trK*Math.PI)*2)
-:(TR.type==='frein'?Math.round((1-trK)*2):0));
+:(TR.type==='elan'?Math.round(Math.sin(trK*Math.PI)*2)
+:(TR.type==='frein'?Math.round((1-trK)*2):0)));
 const bob=(bouge?bobPas+frappe:-souffle)+trTasse+Math.round(tasseG*1.5)+(frG>0&&!(dir==='gauche'||dir==='droite')?Math.round(Math.max(0,pencheG)*0.5):0);
 /* LE REPORT DE POIDS : à l'arrêt, les épaules et la tête glissent d'un
    pixel au-dessus de la jambe porteuse. C'est ce qui empêche la pose
@@ -17303,7 +17321,7 @@ const av=avance||0;
 const passage=1-Math.min(1,Math.abs(av));
 const prof=Math.round(av*1.6);                   /* vers nous : plus bas */
 cx+=Math.round(passage*(leve>0.2?2:1))*((cx<0)?1:-1);
-const lev=Math.round(leve*4), y0=-26+bob, yGen=-14-Math.round(lev*0.6)+prof, yChev=-5-lev+prof;
+const lev=Math.round(leve*4*(COURSE?1.3:1)), y0=-26+bob, yGen=-14-Math.round(lev*0.6)+prof, yChev=-5-lev+prof;
 const col=(r)=>r<yGen?c:(court?sk:c), colO=(r)=>r<yGen?cO:(court?skO:cO), colC=(r)=>r<yGen?cc:(court?skC:cc);
 const J=SX.jambe;
 for(let r=y0;r<yChev;r++){
@@ -17588,7 +17606,13 @@ R(Math.round(ex)+2,Math.round(ey),1,1,manches>=1?cT:skO);               /* le pl
 main(Math.round(hx),Math.round(hy),cote2,true,fonce,false);
 return;
 }
-const bx=cote2*(EP+Math.ceil(SX.bras[0]/2)+1), dy=Math.round(balance*3), yC=yEp+11+Math.round(dy/2), yM=yEp+19+dy;
+/* LES BRAS DE LA COURSE. De face, la course ne se distinguait de la
+   marche que par l'amplitude des jambes — les bras, eux, pendaient
+   pareil. Or c'est le premier signe qu'on lit : en courant, le coude se
+   plie et la main monte à hauteur de taille, et le balancement double. */
+const bx=cote2*(EP+Math.ceil(SX.bras[0]/2)+1), dy=Math.round(balance*(COURSE?5:3)),
+      hCoude=COURSE?9:11, hPoignet=COURSE?14:19,
+      yC=yEp+hCoude+Math.round(dy/2), yM=yEp+hPoignet+dy;
 const out=cote2<0?bx-2:bx+2, inn=cote2<0?bx+2:bx-2;
 const lb=SX.bras[0]+1;R(bx-Math.floor(lb/2),yEp,lb,3,manches>0?c:sk);R(bx-2,yEp-1,4,1,manches>0?cC:sk);R(bx-2,yEp,3,1,manches>0?cC:peauC);
 /* DE FACE, la main ne bougeait que verticalement (±3 px) : les bras
