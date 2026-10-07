@@ -24696,6 +24696,22 @@ function brancherEtagere(c,rayon){
 c.querySelectorAll('canvas[data-px]').forEach(cv=>pixEch(cv,cv.dataset.px));
 c.querySelectorAll('[data-sel]').forEach(b=>b.onclick=()=>{ECH_SEL[rayon]=b.dataset.sel;echMaj();vibrer(8);});
 }
+/* CE QUE LE DERNIER CRAN DE SOULIERS DÉBLOQUE VRAIMENT.
+   La fiche n'annonçait qu'un nombre : « 142 de pas → 152 de pas ». À cinq
+   cents euros, +10 de pas ressemble à une arnaque — alors que c'est le
+   seul cran de toute la série qui change quelque chose : au-delà du seuil,
+   le joueur ne marche plus, il court, avec sa propre foulée.
+   On le lit dans PAS_VITESSE et SEUIL_COURSE plutôt que de l'écrire en
+   dur : si le seuil bouge, la phrase suit toute seule. */
+function motDeLaCourse(clef,niv){
+if(clef!=='pied')return '';
+const V=PAS_VITESSE, n=Math.min(niv,V.length-1);
+if(V[n]>=SEUIL_COURSE)return 'tu cours déjà';
+if(n+1<V.length&&V[n+1]>=SEUIL_COURSE)return 'et tu te mets à courir';
+/* on annonce le palier de loin : ça donne une raison d'épargner */
+for(let i=n+1;i<V.length;i++)if(V[i]>=SEUIL_COURSE)return 'la course au '+(i+1)+'ᵉ cran';
+return '';
+}
 function echEquipement(c){
 const niv={sac:e.nivSac||0,pioche:e.nivPioche||0,hache:e.nivHache||0,pied:e.nivPied||0};
 const A=[
@@ -24710,7 +24726,7 @@ crans:a.val.map((v,i)=>i<=n)};}));
 const n=niv[sel.k], max=n>=sel.prix.length, prix=max?0:sel.prix[n], peut=!max&&(e.euros||0)>=prix;
 c.innerHTML+='<div class="echFiche"><b>'+sel.titre+(max?' · au maximum':' · '+(n+2)+'ᵉ cran')+'</b>'+
 '<p>« '+sel.dit+' »</p>'+
-'<div class="echGain">'+sel.val[n]+' '+sel.unite+(max?'':' <span>→</span> <b>'+sel.val[n+1]+' '+sel.unite+'</b>')+'</div>'+
+'<div class="echGain">'+sel.val[n]+' '+sel.unite+(max?'':' <span>→</span> <b>'+sel.val[n+1]+' '+sel.unite+'</b>')+(motDeLaCourse(sel.k,n)?' <b style="color:#c9a24a">· '+motDeLaCourse(sel.k,n)+'</b>':'')+'</div>'+
 '<button id="echAcheter" class="'+(max?'max':(peut?'':'pas'))+'">'+(max?'Rien de plus à vendre':(peut?'Acheter · '+enEuros(prix):'Il te manque '+enEuros(prix-(e.euros||0))))+'</button></div>';
 brancherEtagere(c,'equipement');
 $('echAcheter').onclick=async()=>{
@@ -28153,7 +28169,7 @@ bande('b3','🪚','Poutres',(peutPou?(nPou*4+' BÛCHES · TU EN AS '+(F.bois||0)
 (peutPou?'TAILLER ×'+nPou:'MANQUE'),'bucPou',peutPou)+
 bande('b4','💰','Vendre','BÛCHES, PLANCHES, RÉSINE'+(cueilTot?' ET CUEILLETTE':''),
 ((total+cueilTot)>0?enEuros(total+cueilTot):'RIEN'),'bucTout',(total+cueilTot)>0)+
-bande('b5','🪓',sel.titre,(max?('AU MAXIMUM · '+sel.val[nv]+' '+sel.unite):(sel.val[nv]+' → '+sel.val[nv+1]+' '+sel.unite)),
+bande('b5','🪓',sel.titre,(max?('AU MAXIMUM · '+sel.val[nv]+' '+sel.unite):(sel.val[nv]+' → '+sel.val[nv+1]+' '+sel.unite))+(motDeLaCourse(sel.k,nv)?' · '+motDeLaCourse(sel.k,nv).toUpperCase():''),
 (max?'✓':(peut?enEuros(prix).replace(',00',''):'IL MANQUE')),'bucOut',(!max&&peut))+
 '<div class="outils">'+O.map(o=>'<button class="pet'+(o.k===sel.k?' on':'')+'" data-o="'+o.k+'">'+o.titre+
 '<span class="crans">'+o.val.map((v,i)=>'<i'+(i<=o.niv?' class="p"':'')+'></i>').join('')+'</span></button>').join('')+'</div>'+
