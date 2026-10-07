@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-07-1510"></script>
+<script src="maintenance.js?v=2026-10-07-1600"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-1510';
+var MA_VERSION='2026-10-07-1600';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12728,6 +12728,16 @@ function semerLaForet(){
    Les rides sont rangées par hauteur : dès qu'on dépasse le bas de
    l'écran, les suivantes sont forcément plus bas, on arrête. */
 let F_RIDES=null;
+/* LA RIVE, COLONNE PAR COLONNE, calculée une fois.
+   F_rive coûte trois sinus ; on la consulte à chaque ride et à chaque
+   image. Un tableau de 1 500 nombres règle la question. */
+let F_RIVE_T=null;
+function tableDeLaRive(){
+  if(F_RIVE_T)return F_RIVE_T;
+  const t=new Float32Array(MONDE_L);
+  for(let x=0;x<MONDE_L;x++)t[x]=F_rive(x);
+  F_RIVE_T=t;return t;
+}
 function tableDesRides(){
   if(F_RIDES)return F_RIDES;
   const n=Math.round(MONDE_L*0.42), t=[];
@@ -12749,16 +12759,33 @@ function dessinerLesRides(g,camX,camY,VW2,VH2){
   const haut=F_rive(camX+VW2/2)-20;
   if(camY+VH2<haut)return;                     /* le lac n'est pas à l'écran */
   g.fillStyle='rgba(176,216,232,.2)';
-  const T=tableDesRides(), bas=camY+VH2+6, cime=camY-6;
+  const T=tableDesRides(), RIV=tableDeLaRive(), bas=camY+VH2+6, cime=camY-6;
   for(let k=0;k<T.length;k++){
     const o=T[k];
     if(o.y<cime)continue;
     if(o.y>bas)break;                          /* rangées : le reste est plus bas */
-    const ex=((o.base+t*o.v)%MONDE_L)-camX;
+    const x=(o.base+t*o.v)%MONDE_L;
+    /* UNE RIDE NE SORT PAS DE L'EAU. Sa hauteur est fixée à son point de
+       départ, mais son abscisse défile sur toute la largeur du monde — et
+       la rive ondule de 663 à 739. Soixante-quatre rides sur six cent
+       trente finissaient donc par glisser sur le tapis de feuilles, jusqu'à
+       cinquante-quatre pixels au-dessus de l'eau. On les efface le temps
+       qu'elles repassent sous la rive. */
+    if(o.y<RIV[x|0]+4)continue;
+    const ex=x-camX;
     if(ex<-14||ex>VW2+14)continue;
     g.fillRect(Math.round(ex),Math.round(o.y-camY),o.l,1);
   }
 }
+/* QUELLE SECOUSSE POUR QUEL OBJET, quand on le frappe. Les trois familles
+   reprennent exactement les mouvements des objets du village. */
+const FAM_COUP={
+  x_fo_erable:'arbre', x_fo_chene:'arbre', x_fo_charme:'arbre', x_fo_olive:'arbre',
+  x_fo_rocher:'rocher',
+  x_fo_mure:'souple', x_fo_framboise:'souple', x_fo_myrtille:'souple',
+  x_fo_amanite:'souple', x_fo_cepe:'souple', x_fo_girolle:'souple',
+  x_fo_plume:'souple', x_fo_argile:'souple'
+};
 /* ce qui barre le passage dans la forêt */
 function bloqueForet(x,y){
   /* LE PONTON : on marche dessus, au-dessus de l'eau */
@@ -15609,7 +15636,48 @@ const M=margesDe(o.t);
 const haut=M.haut;
 const demiL=M.demi;
 if(x<-demiL||y<-50-haut||x>VW2+demiL||y>VH2+haut)continue;
-if(o.t[0]==='x'&&o.t[1]==='_')dessinerX(g,o,x,y);   /* les objets d'Extramar */
+/* LA RÉACTION AU COUP, pour les objets de la forêt.
+   dessinerX n'est qu'un report de calque en cache : il ignore o.frappe,
+   qui est pourtant bien posé à chaque coup. On tapait donc un érable, un
+   rocher ou un buisson qui ne bougeait pas d'un pixel, alors que leurs
+   équivalents du village vibrent, reculent et s'écrasent. On applique ici
+   la même mécanique, avec les mêmes constantes, avant le report. */
+if(o.t[0]==='x'&&o.t[1]==='_'){
+  const recent=o.frappe&&(Date.now()-o.frappe)<560;
+  if(!recent)dessinerX(g,o,x,y);
+  else{
+    const fam=FAM_COUP[o.t];
+    if(!fam)dessinerX(g,o,x,y);
+    else if(fam==='arbre'){
+      const e2=(Date.now()-o.frappe)/420;
+      const dx=e2<1?Math.exp(-e2*5)*Math.cos(e2*30)*2.4:0;
+      g.save();g.translate(x,y);
+      if(dx)g.transform(1,0,dx*0.03,1,0,0);          /* le tronc se cintre */
+      dessinerX(g,o,0,0);
+      g.restore();
+    }else if(fam==='rocher'){
+      const e2=(Date.now()-o.frappe)/320;
+      let dx=0,dy=0,ecrase=0;
+      if(e2<1){const a=Math.exp(-e2*6)*Math.cos(e2*26);
+        dx=Math.round(a*3);dy=Math.round(Math.abs(a)*2);ecrase=a*0.12;}
+      g.save();g.translate(x+dx,y+dy);
+      if(ecrase)g.scale(1+ecrase,1-ecrase);          /* il s'écrase à l'impact */
+      dessinerX(g,o,0,0);
+      g.restore();
+      if(Date.now()-o.frappe<70){
+        g.globalAlpha=.5;g.fillStyle='#fff';
+        g.fillRect(x-12,y-22,24,20);g.globalAlpha=1;
+      }
+    }else{                                            /* buissons, champignons… */
+      const e2=(Date.now()-o.frappe)/520;
+      const ec=e2<1?Math.exp(-e2*4)*Math.sin(e2*24)*0.14:0;
+      g.save();g.translate(x,y);
+      if(ec)g.scale(1+ec,1-ec);                      /* il tressaute */
+      dessinerX(g,o,0,0);
+      g.restore();
+    }
+  }
+}
 else if(o.t==='arbre'){
 if(o.cueilli&&Date.now()-o.cueilli<REPOUSSE.arbre){tracesDeRepousse(g,o,x,y,REPOUSSE.arbre);}
 else{
