@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-07-0935"></script>
+<script src="maintenance.js?v=2026-10-07-1015"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-0935';
+var MA_VERSION='2026-10-07-1015';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11486,6 +11486,17 @@ const F_hs=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
 const F_LAC_Y=()=>MONDE_H-300;
 const F_rive=(x)=>F_LAC_Y()+Math.sin(x*0.0075)*26+Math.sin(x*0.021+2)*11+Math.sin(x*0.052)*5;
 const F_LIS=30, F_BAR=44;
+/* ================= LE SENTIER DU PORT =================
+   Une trouée dans la palissade, pile au milieu du bord gauche. C'est la
+   seule sortie de la forêt : le quai du métro a été retiré du centre.
+   On s'en va en marchant dedans, mais il faut pousser vers l'ouest un
+   demi-seconde — sinon on partirait en longeant simplement le bord. */
+const F_SENT_Y=Math.round(MONDE_H/2);   /* 500 : le milieu exact */
+const F_SENT_DEMI=46;                   /* l'ouverture fait 92 px de haut */
+const F_SENT_FOND=78;                   /* profondeur du couloir dans le bois */
+const F_SENT_SEUIL=26;                  /* passé ce x, en poussant, on s'en va */
+const F_SENT_ARRIVEE=[152,F_SENT_Y];    /* où l'on apparaît : bien à l'intérieur */
+const dansLeSentier=(x,y)=>x<F_SENT_FOND&&Math.abs(y-F_SENT_Y)<F_SENT_DEMI;
 const F_ETAL={x:1280,y:530};       /* l'étal, à l'est de la carte */
 const F_BOIS={sombre:'#5b3f26',bas:'#6b4a2a',moyen:'#7d5833',clair:'#96693c',haut:'#ab7a49'};
 function F_palissade(){
@@ -11563,9 +11574,55 @@ function construireSolForet(){
   const SP=F_palissade(), PR=F_profil();
   for(let x=0;x<MONDE_L;x+=20)s.drawImage(SP,x,F_BAR-31,20,34);
   for(let y=0;y<MONDE_H;y+=20){
-    if(y<F_rive(F_BAR)-20)s.drawImage(PR,F_BAR-9,y,12,20);
+    /* on saute les pieux en face du sentier : c'est la trouée */
+    if(!(Math.abs(y+10-F_SENT_Y)<F_SENT_DEMI)&&y<F_rive(F_BAR)-20)
+      s.drawImage(PR,F_BAR-9,y,12,20);
     if(y<F_rive(MONDE_L-F_BAR)-20)s.drawImage(PR,MONDE_L-F_BAR-3,y,12,20);}
+  peindreLeSentier(s);
   return c;}
+/* LE CHEMIN DE TERRE qui sort de la forêt vers l'ouest. Il se peint par
+   dessus la lisière et la palissade : plus simple que de trouer chacune,
+   et c'est bien ce qu'on veut voir — un passage battu par les pas. */
+function peindreLeSentier(s){
+  const y0=F_SENT_Y, D=F_SENT_DEMI, L=210;
+  /* la terre, large au bord puis qui s'amenuise ; et sur le dernier tiers
+     on ne pose plus qu'une partie des points, pour que le chemin se perde
+     dans les feuilles mortes au lieu de s'arrêter au couteau. */
+  for(let x=0;x<L;x++){
+    const k=x/L;                                   /* 0 au bord, 1 au fond */
+    /* le bord n'est pas une règle : il ondule, sinon le chemin ressemble
+       à une bande peinte au pochoir */
+    const onde=(F_hs(x*0.08+3)-0.5)*14 + (F_hs(x*0.23+11)-0.5)*7;
+    const demi=Math.round(D*(1-k*0.34)+onde);
+    const densite=k<0.52?1:Math.max(0,1-(k-0.52)/0.48);
+    for(let y=-demi;y<=demi;y++){
+      if(densite<1&&F_hs(x*0.61+y*1.13+40)>densite)continue;
+      const b=F_hs(x*0.21+y*0.37);
+      const bord=Math.abs(y)/demi;                 /* plus clair au centre */
+      s.fillStyle = bord>0.86 ? (b<.5?'#3a3119':'#45391d')
+                  : bord>0.6  ? (b<.5?'#56431f':'#614b23')
+                  : (b<.33?'#6b5428':'#755c2c');
+      s.fillRect(x,y0+y,1,1);}}
+  /* deux ornières creusées par les charrettes, qui s'effacent elles aussi */
+  for(const dy of [-15,15])for(let x=0;x<L-24;x++){
+    const k=x/L;
+    if(k>0.52&&F_hs(x*0.83+(dy>0?5:2))>Math.max(0,1-(k-0.52)/0.48))continue;
+    const on=Math.round(F_hs(x*0.17+(dy>0?9:3))*3)-1;
+    s.fillStyle='#4a3a1b';s.fillRect(x,y0+dy+on,1,3);}
+  /* quelques cailloux et touffes au bord du chemin */
+  for(let i=0;i<46;i++){
+    const x=Math.round(F_hs(i*1.7)*L*0.8);
+    const c=(F_hs(i*2.3)<.5?-1:1)*Math.round(D*(0.62+F_hs(i*3.1)*0.3));
+    if(F_hs(i*4.7)<.45){s.fillStyle='#6e6a5c';s.fillRect(x,y0+c,3,2);
+      s.fillStyle='#8a867a';s.fillRect(x,y0+c,3,1);}
+    else{s.fillStyle='#3d6b35';s.fillRect(x-2,y0+c-2,5,4);
+      s.fillStyle='#4f8a44';s.fillRect(x-1,y0+c-3,3,2);}}
+  /* les deux montants de la trouée, plantés de part et d'autre */
+  for(const dy of [-D-4,D+2]){
+    s.fillStyle='#3a2a15';s.fillRect(F_BAR-10,y0+dy-24,13,30);
+    s.fillStyle='#5b4423';s.fillRect(F_BAR-10,y0+dy-24,13,4);
+    s.fillStyle='#2a1d0f';s.fillRect(F_BAR-10,y0+dy+2,13,4);}
+}
 /* L'ÉRABLE : l'arbre de la nouvelle forêt. Bords dentelés, touffes qui
    débordent, trous de ciel, écorce striée et racines au pied. */
 function F_masse(g,R,x,y,w,h,col,clair,sombre,graine){
@@ -12559,7 +12616,8 @@ function semerLaForet(){
   semerSimple('herbes',26,613,56,false);
   semerSimple('souche',9,661,120,true);
   /* la résine n'est pas un objet : elle apparaît d'elle-même sur les arbres */
-  DECOR.push({t:'x_fo_quai',x:MONDE_L/2,y:MONDE_H/2,v:0,gr:0,bati:true,demi:46,ouvre:'metroFerme'});
+  /* (le quai du métro a quitté le centre de la forêt : on repart par le
+     sentier de l'ouest, à pied. Voir F_SENT_* et verifierLeSentier.) */
   DECOR.push({t:'x_fo_etal',x:F_ETAL.x,y:F_ETAL.y,v:0,gr:0,bati:true,demi:34,ouvre:'etalForet'});
   /* LA MAISON DE PIERRE : l'atelier du bois, au nord-est */
   DECOR.push({t:'x_fo_maison',x:1090,y:230,v:0,gr:0,bati:true,demi:40,ouvre:'atelierBois'});
@@ -12576,6 +12634,12 @@ function semerLaForet(){
   /* on dégage autour de l'étal, sinon il serait à moitié caché */
   DECOR=DECOR.filter(o=>o.t==='x_fo_etal'||o.t==='x_fo_quai'
     ||Math.hypot(o.x-F_ETAL.x,o.y-F_ETAL.y)>86);
+  /* ON DÉGAGE LE SENTIER : rien ne doit boucher le seul chemin qui sort.
+     Un peu plus large que le couloir de marche, pour que les feuillages
+     ne débordent pas par-dessus le passage. */
+  /* Un arbre se dessine vers le HAUT depuis son pied : un pied posé sous le
+     chemin masque quand même le chemin. On dégage donc large en dessous. */
+  DECOR=DECOR.filter(o=>!(o.x<236&&o.y>F_SENT_Y-84&&o.y<F_SENT_Y+142));
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
 /* ================= LES RIDES QUI DÉFILENT =================
@@ -12603,6 +12667,8 @@ function dessinerLesRides(g,camX,camY,VW2,VH2){
 function bloqueForet(x,y){
   /* LE PONTON : on marche dessus, au-dessus de l'eau */
   if(Math.abs(x-F_PONT.x)<16&&y>F_rive(F_PONT.x)-14&&y<F_PONT.y+116)return false;
+  /* LE SENTIER : la palissade est ouverte ici, on passe jusqu'au bord */
+  if(dansLeSentier(x,y))return x<0;
   if(y>F_rive(x)-3)return true;
   if(y<F_BAR+8)return true;
   if(x<F_BAR+6&&y<F_rive(F_BAR)-20)return true;
@@ -18248,6 +18314,29 @@ c:Math.random()<.5?'#4a944a':'#3d7d3f',rebondi:false});
 }
 if(ANNEXE)e.ext={x:Math.round(joueur.x),y:Math.round(joueur.y)};
 else{e.x=Math.round(joueur.x);e.y=Math.round(joueur.y);}
+if(CARTE==='foret')verifierLeSentier(dt);
+}
+/* QUITTER LA FORÊT PAR LE SENTIER.
+   On ne part pas d'un simple frôlement : il faut être au fond du couloir
+   ET pousser franchement vers l'ouest, sans relâcher, pendant une demi-
+   seconde. Longer le bord en montant ou en descendant ne déclenche rien,
+   et on arrive de toute façon à 152 px, bien en retrait du seuil. */
+let F_SENT_T=0, F_SENT_DIT=0;
+function verifierLeSentier(dt){
+  const pousseOuest = joyX < -0.35;
+  if(!(joueur.x<F_SENT_SEUIL && dansLeSentier(joueur.x,joueur.y) && pousseOuest)){
+    F_SENT_T=0;return;
+  }
+  F_SENT_T+=dt;
+  if(F_SENT_T>=0.5){
+    F_SENT_T=0;
+    try{voyagerVers('extramar','Direction Le port');}catch(x){}
+    return;
+  }
+  if(Date.now()-F_SENT_DIT>900){
+    F_SENT_DIT=Date.now();
+    texteVolant(joueur.x,joueur.y-54,'Direction le port…','#ffe8a0');
+  }
 }
 const jc=$('joy'), jg=jc.getContext('2d');
 let JDPR=1;
@@ -25069,6 +25158,11 @@ majPastille();
 $('porte').classList.add('parti');
 preparerMonde();
 if(ANNEXE&&e.ext){joueur.x=+e.ext.x||0;joueur.y=+e.ext.y||0;}
+/* EN FORÊT, ON ARRIVE TOUJOURS PAR LE SENTIER. e.ext est une case unique,
+   réécrite à chaque pas sur n'importe quelle carte annexe : on arrivait
+   donc dans le bois à la position qu'on avait à Extramar, parfois à
+   l'intérieur d'un arbre. Le sentier est l'entrée, et la seule. */
+if(CARTE==='foret'){joueur.x=F_SENT_ARRIVEE[0];joueur.y=F_SENT_ARRIVEE[1];joueur.dir='droite';}
 /* LA NOUVELLE CARTE : on arrive devant la gare, et plus rien ne pousse
    le joueur vers l'ancienne cour, qui n'existe plus. */
 /* UNE SEULE FOIS, AU CHARGEMENT : si la position vient de l'ancienne carte,
