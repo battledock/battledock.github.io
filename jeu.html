@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-07-1245"></script>
+<script src="maintenance.js?v=2026-10-07-1320"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-1245';
+var MA_VERSION='2026-10-07-1320';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -14254,33 +14254,42 @@ etabli: [{w:42,h:12}]
 };
 const PAS_CH=5, N_CH=Math.ceil(MONDE_L/PAS_CH), M_CH=Math.ceil(MONDE_H/PAS_CH);
 let SURCHEMIN=null, ROUTES=[];
+/* LA GRILLE DE CHEMIN ÉTAIT CARRÉE. Elle allouait N_CH x N_CH, donc autant
+   de lignes que de colonnes, alors que la hauteur du monde a son propre
+   compte : M_CH. Sur la forêt (1500x1000) N_CH valait 300 et M_CH 200, la
+   grille était donc trop grande, sans dégât. Mais sur LA FERME, qui fait
+   1200 de large sur 1600 de haut, N_CH vaut 240 et M_CH 320 : la grille
+   s'arrêtait à y=1200 et tout le tiers sud de la ferme restait hors
+   grille. Aucun chemin ne pouvait y passer. */
 function tracerChemin(a,b){
-const dur=new Uint8Array(N_CH*N_CH);
+const dur=new Uint8Array(N_CH*M_CH);
 for(let y=0;y<MONDE_H;y++){
 if(surGue(y))continue;
 for(let d=-RIV_LARGE;d<=RIV_LARGE;d++){
 const gx=Math.round((rivX(y)+d)/PAS_CH),gy=Math.round(y/PAS_CH);
-if(gx>=0&&gy>=0&&gx<N_CH&&gy<N_CH)dur[gy*N_CH+gx]=1;
+if(gx>=0&&gy>=0&&gx<N_CH&&gy<M_CH)dur[gy*N_CH+gx]=1;
 }
 }
-for(let j=0;j<N_CH;j++)for(let i=0;i<N_CH;i++)
+for(let j=0;j<M_CH;j++)for(let i=0;i<N_CH;i++)
 if(i*PAS_CH<BORD-8||j*PAS_CH<BORD-8||i*PAS_CH>MONDE_L-BORD+8||j*PAS_CH>MONDE_H-BORD+8)
 dur[j*N_CH+i]=1;
 const dep=Math.round(a[1]/PAS_CH)*N_CH+Math.round(a[0]/PAS_CH);
 const arr=Math.round(b[1]/PAS_CH)*N_CH+Math.round(b[0]/PAS_CH);
-const cout=new Float32Array(N_CH*N_CH).fill(1e9);
-const prev=new Int32Array(N_CH*N_CH).fill(-1);
-const dd=new Int8Array(N_CH*N_CH).fill(-1);
+const cout=new Float32Array(N_CH*M_CH).fill(1e9);
+const prev=new Int32Array(N_CH*M_CH).fill(-1);
+const dd=new Int8Array(N_CH*M_CH).fill(-1);
 const v=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
 cout[dep]=0;
 let front=[dep],tours=0;
-while(front.length&&tours++<N_CH*4){
+/* le garde-fou suivait N_CH : il doit suivre la plus grande des deux
+   dimensions, sinon la recherche s'arrête avant d'avoir traversé */
+while(front.length&&tours++<Math.max(N_CH,M_CH)*4){
 const suite=[];
 for(const i of front){
 const x=i%N_CH,y=(i/N_CH)|0;
 v.forEach(([dx,dy],k)=>{
 const nx=x+dx,ny=y+dy;
-if(nx<0||ny<0||nx>=N_CH||ny>=N_CH)return;
+if(nx<0||ny<0||nx>=N_CH||ny>=M_CH)return;
 const j=ny*N_CH+nx;if(dur[j])return;
 const c=cout[i]+(dx&&dy?1.42:1)+(dd[i]>=0&&dd[i]!==k?2.2:0);
 if(c<cout[j]-0.001){cout[j]=c;prev[j]=i;dd[j]=k;suite.push(j);}
@@ -14289,7 +14298,7 @@ if(c<cout[j]-0.001){cout[j]=c;prev[j]=i;dd[j]=k;suite.push(j);}
 front=suite;
 }
 const route=[];let k=arr,garde=0;
-while(k>=0&&garde++<N_CH*N_CH){route.push([(k%N_CH)*PAS_CH,((k/N_CH)|0)*PAS_CH]);k=prev[k];}
+while(k>=0&&garde++<N_CH*M_CH){route.push([(k%N_CH)*PAS_CH,((k/N_CH)|0)*PAS_CH]);k=prev[k];}
 return route.reverse();
 }
 function calculerChemins(){
@@ -14306,13 +14315,13 @@ ROUTES=[[pont,bordDeLaPlace(pont)],
 [bordDeLaPlace(ECHOPPE_FIXE),ECHOPPE_FIXE],
 ]
 .map(([a,b])=>tracerChemin(a,b));
-SURCHEMIN=new Uint8Array(N_CH*N_CH);
+SURCHEMIN=new Uint8Array(N_CH*M_CH);
 ROUTES.forEach((r,nr)=>r.forEach(([x,y])=>{
 const gx=Math.round(x/PAS_CH),gy=Math.round(y/PAS_CH);
 const e=nr<2?Math.ceil(PONT_DEMI/PAS_CH)+1:2;
 for(let a=-e;a<=e;a++)for(let b=-e;b<=e;b++){
 const k=(gy+b)*N_CH+(gx+a);
-if(k>=0&&k<N_CH*N_CH)SURCHEMIN[k]=1;
+if(k>=0&&k<N_CH*M_CH)SURCHEMIN[k]=1;
 }
 }));
 }
@@ -14680,19 +14689,19 @@ DECOR=DECOR.filter(o=>{
 if(o.t==='fleurs')return true;
 if(BATI(o.t))return true;
 const k=Math.round(o.y/PAS_CH)*N_CH+Math.round(o.x/PAS_CH);
-return k<0||k>=N_CH*N_CH||!SURCHEMIN[k];
+return k<0||k>=N_CH*M_CH||!SURCHEMIN[k];
 });
 return avant-DECOR.length;
 }
 function verifierAcces(){
-const bloque=new Uint8Array(N_CH*N_CH);
+const bloque=new Uint8Array(N_CH*M_CH);
 const coupables=new Map();
 DECOR.forEach((o,idx)=>{
 const t=TAILLES[o.t];if(!t)return;
 const b=t[Math.min(t.length-1,o.gr||0)];
 for(let dy=-b.h;dy<=2;dy++)for(let dx=-b.w/2;dx<=b.w/2;dx++){
 const gx=Math.round((o.x+dx)/PAS_CH),gy=Math.round((o.y+dy)/PAS_CH);
-if(gx<0||gy<0||gx>=N_CH||gy>=N_CH)continue;
+if(gx<0||gy<0||gx>=N_CH||gy>=M_CH)continue;
 const k=gy*N_CH+gx;bloque[k]=1;
 if(!coupables.has(k))coupables.set(k,idx);
 }
@@ -14701,14 +14710,14 @@ for(let y=0;y<MONDE_H;y++){
 if(surGue(y))continue;
 for(let d=-RIV_LARGE;d<=RIV_LARGE;d++){
 const gx=Math.round((rivX(y)+d)/PAS_CH),gy=Math.round(y/PAS_CH);
-if(gx>=0&&gy>=0&&gx<N_CH&&gy<N_CH)bloque[gy*N_CH+gx]=1;
+if(gx>=0&&gy>=0&&gx<N_CH&&gy<M_CH)bloque[gy*N_CH+gx]=1;
 }
 }
-for(let j=0;j<N_CH;j++)for(let i=0;i<N_CH;i++)
+for(let j=0;j<M_CH;j++)for(let i=0;i<N_CH;i++)
 if(i*PAS_CH<BORD||j*PAS_CH<BORD||i*PAS_CH>MONDE_L-BORD||j*PAS_CH>MONDE_H-BORD)
 bloque[j*N_CH+i]=1;
-if(SURCHEMIN)for(let i=0;i<N_CH*N_CH;i++)if(SURCHEMIN[i])bloque[i]=0;
-const vu=new Uint8Array(N_CH*N_CH);
+if(SURCHEMIN)for(let i=0;i<N_CH*M_CH;i++)if(SURCHEMIN[i])bloque[i]=0;
+const vu=new Uint8Array(N_CH*M_CH);
 const i0=Math.round(CAMP_FIXE[0]/PAS_CH),j0=Math.round((CAMP_FIXE[1]+30)/PAS_CH);
 let front=[j0*N_CH+i0];vu[front[0]]=1;
 while(front.length){
@@ -14717,7 +14726,7 @@ for(const i of front){
 const x=i%N_CH,y=(i/N_CH)|0;
 [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy])=>{
 const nx=x+dx,ny=y+dy;
-if(nx<0||ny<0||nx>=N_CH||ny>=N_CH)return;
+if(nx<0||ny<0||nx>=N_CH||ny>=M_CH)return;
 const k=ny*N_CH+nx;if(vu[k]||bloque[k])return;
 vu[k]=1;suite.push(k);
 });
@@ -14726,7 +14735,7 @@ front=suite;
 }
 let enfermees=0;
 const aRetirer=new Set();
-for(let i=0;i<N_CH*N_CH;i++){
+for(let i=0;i<N_CH*M_CH;i++){
 if(bloque[i]||vu[i])continue;
 enfermees++;
 const x=i%N_CH,y=(i/N_CH)|0;
@@ -18844,14 +18853,30 @@ R(30,H*0.16,80,H*0.3,'#b03a2a');g.fillStyle='#8a2a1e';g.beginPath();g.moveTo(24,
 R(58,H*0.3,20,H*0.16,'#5a3f22');
 for(let i=0;i<5;i++){const x=160+i*36;R(x,H*0.5,26,H*0.42,'#6a4a2a');for(let y=H*0.52;y<H*0.9;y+=6)R(x,y,26,1,'#5a3f22');
 for(let j=0;j<4;j++)R(x+3+j*6,H*0.55,2,6,'#4f8a42');}}
-if(k==='foret'){R(0,0,W,H,'#6e9a52');
-for(let i=0;i<260;i++)R(al(i*1.7)*W,al(i*2.3)*H,2,2,al(i*5)<.5?'#7aa85c':'#5b8642');
-R(W*0.62,0,26,H,'#2e6f92');for(let i=0;i<40;i++)R(W*0.62+al(i*3)*26,al(i*7)*H,6,1,'rgba(255,255,255,.3)');
-const arbre=(x,y,r)=>{g.fillStyle='rgba(30,50,30,.22)';g.beginPath();g.ellipse(x+3,y+2,r*0.9,r*0.3,0,0,7);g.fill();
-g.fillStyle='#6a4a2a';g.fillRect(x-2,y-r*0.6,4,r*0.6);
-[[0,-r*0.9,r,'#3f7a3f'],[-r*0.5,-r*0.7,r*0.7,'#4a8a45'],[r*0.5,-r*0.75,r*0.7,'#357033']].forEach(([dx,dy,rr,col])=>{
-g.fillStyle=col;g.beginPath();g.arc(x+dx,y+dy,rr,0,7);g.fill();});};
-[[40,H*0.84,16],[100,H*0.73,13],[160,H*0.89,15],[250,H*0.78,14],[320,H*0.86,16]].forEach(([x,y,r])=>arbre(x,y,r));}
+/* LA VIGNETTE DE LA FORÊT, refaite d'après la carte réelle.
+   Elle montrait un pré d'été, une rivière verticale et cinq arbres ronds
+   et verts : rien de tout cela n'existe. La forêt, c'est un sol de terre
+   couvert de feuilles mortes, un lac en bas, des érables rouge et orange,
+   et depuis ce matin un sentier qui sort à gauche. */
+if(k==='foret'){
+R(0,0,W,H,'#4a3820');                                    /* la terre */
+const T=['#c9821a','#b4552a','#8a3a22','#d8a83a','#9a6a2a'];
+for(let i=0;i<300;i++){const y=al(i*2.3)*H*0.74;
+  R(al(i*1.7)*W,y,3,2,T[(al(i*3.1)*T.length)|0]);}       /* les feuilles mortes */
+/* le lac, en bas, avec sa rive de galets */
+R(0,H*0.74,W,H*0.26,'#3f6a5a');R(0,H*0.80,W,H*0.20,'#2a5260');
+R(0,H*0.88,W,H*0.12,'#1d3f52');
+R(0,H*0.72,W,3,'#6a5434');
+for(let i=0;i<26;i++)R(al(i*3)*W,H*0.76+al(i*7)*H*0.2,5,1,'rgba(176,216,232,.45)');
+/* le ponton, qui avance dans l'eau */
+R(W*0.46,H*0.72,9,H*0.17,'#7d5934');R(W*0.46,H*0.72,9,2,'#a5764a');
+/* le sentier du port, à gauche */
+R(0,H*0.40,W*0.26,16,'#6b5428');R(0,H*0.40,W*0.26,2,'#755c2c');
+const arbre=(x,y,r)=>{g.fillStyle='rgba(30,22,10,.26)';g.beginPath();g.ellipse(x+3,y+2,r*0.9,r*0.3,0,0,7);g.fill();
+g.fillStyle='#6a4a2a';g.fillRect(x-2,y-r*1.1,4,r*1.1);
+[[0,-r*1.5,r,'#b4452a'],[0,-r*1.1,r*1.15,'#a33b26'],[0,-r*1.9,r*0.7,'#d2762a']].forEach(([dx,dy,rr,col])=>{
+g.fillStyle=col;g.fillRect(x+dx-rr,y+dy,rr*2,rr*0.7);});};
+[[46,H*0.30,13],[108,H*0.17,11],[168,H*0.34,12],[252,H*0.22,13],[322,H*0.31,12],[300,H*0.60,11]].forEach(([x,y,r])=>arbre(x,y,r));}
 for(let y=0;y<H;y+=3)for(let x=((y/3)%2)?0:1;x<W;x+=3){g.fillStyle='rgba(20,16,10,.05)';g.fillRect(x,y,1,1);}
 }
 let AIDE_ONG='debuter';
@@ -18877,8 +18902,10 @@ const lieux=
 '<em>Le champ, l’étable, la boutique et ses commandes.</em>'+
 '<div class="tags"><span>SEMER</span><span>TRAIRE</span><span>LIVRER</span></div></div></div>'+
 '<div class="lieu"><canvas data-sc="foret"></canvas><div class="t"><b>La forêt</b>'+
-'<em>Le bois, la rivière, la cabane du bûcheron.</em>'+
-'<div class="tags"><span>COUPER</span><span>CUEILLIR</span><span>PÊCHER EN RIVIÈRE</span></div></div></div>';
+/* le texte disait « la rivière » et « la cabane du bûcheron » : ni l'une
+   ni l'autre n'existent sur la carte, et on pêche au lac depuis le ponton */
+'<em>Le bois, le lac et son ponton, l’atelier du bois.</em>'+
+'<div class="tags"><span>COUPER</span><span>CUEILLIR</span><span>PÊCHER AU LAC</span></div></div></div>';
 const astuces=
 '<div class="as"><span class="p">€</span><p><b>Les prix bougent pour tout le monde.</b> Si quelqu’un vend deux cents sardines, le cours tombe. Regarde la cote avant de tout écouler.</p></div>'+
 '<div class="as"><span class="p">◎</span><p><b>Vise l’anneau doré</b> quand ça mord. Une meilleure canne l’élargit — elle ne ralentit rien.</p></div>'+
