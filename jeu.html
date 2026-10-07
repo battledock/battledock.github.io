@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-07-0820"></script>
+<script src="maintenance.js?v=2026-10-07-0840"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-0820';
+var MA_VERSION='2026-10-07-0840';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12147,8 +12147,11 @@ async function ouvrirLeGrandChene(){
         {headers:sbEntetes});
       if(r.ok){
         const l=await r.json();
-        d={noms:Array.isArray(l)?l:[],combien:(l||[]).length,
-           ouvert:Date.now()<=Date.parse('2026-10-05T12:00:00+02:00')};
+        /* ON NE DÉCIDE PLUS DE L'OUVERTURE ICI : c'était l'horloge du
+           téléphone qui tranchait, donc il suffisait de la reculer pour
+           rouvrir le bouton. Seule foret_noms() dit si le tronc est encore
+           ouvert ; sans elle, on montre la plaque sans proposer de graver. */
+        d={noms:Array.isArray(l)?l:[],combien:(l||[]).length,ouvert:false};
       }else{DERNIER_RPC={nom:'table foret_ouverture',code:r.status,
              texte:(await r.text()).slice(0,200)};}
     }catch(x){}
@@ -12186,10 +12189,14 @@ async function ouvrirLeGrandChene(){
   const bg=$('chnGraver');
   if(bg)bg.onclick=async()=>{
     bg.disabled=true;bg.textContent='…';
-    let r=await appelRPC('foret_signer',{p_joueur:e.id});
-    if(!r||r.erreur)r=await signerDirect();
-    if(!r||r.erreur){motOuverture((r&&r.erreur)||'impossible pour l’instant');
+    /* UNE SEULE VOIE : foret_signer(). Le repli qui écrivait la ligne à la
+       main servait aussi à passer outre la date limite, puisqu'un refus du
+       serveur ressemble à une panne. Et il posait la tenue dans l'état local
+       sans savoir si le serveur l'avait réellement accordée. */
+    const r=await appelRPC('foret_signer',{p_joueur:e.id});
+    if(!r||r.erreur){motOuverture((r&&r.erreur)||'le serveur n’a pas répondu');
       bg.disabled=false;bg.textContent='GRAVER MON NOM';return;}
+    /* la tenue n'est posée ici que parce que le serveur vient de la donner */
     e.cos=e.cos||{};e.cos.costume_forestier=true;
     try{sauver();envoyerSauvegarde(true);}catch(x){}
     vibrer([10,30,10,30]);
@@ -12197,20 +12204,13 @@ async function ouvrirLeGrandChene(){
     setTimeout(()=>motOuverture('La tenue du garde forestier est à ton vestiaire'),900);
   };
 }
-/* le repli : on écrit la ligne et la tenue à la main, sans passer par la fonction */
-async function signerDirect(){
-  try{
-    const a=await fetch(URL_SB+'/rest/v1/foret_ouverture',
-      {method:'POST',headers:Object.assign({},sbEntetes,{'Prefer':'resolution=ignore-duplicates'}),
-       body:JSON.stringify({joueur:e.id,pseudo:e.pseudo||'sans nom'})});
-    if(!a.ok&&a.status!==409){DERNIER_RPC={nom:'ecrire foret_ouverture',code:a.status,
-      texte:(await a.text()).slice(0,200)};return {erreur:'serveur '+a.status};}
-    await fetch(URL_SB+'/rest/v1/cosmetiques',
-      {method:'POST',headers:Object.assign({},sbEntetes,{'Prefer':'resolution=ignore-duplicates'}),
-       body:JSON.stringify({joueur:e.id,piece:'costume_forestier',paye:0})});
-    return {ok:true,nouveau:true};
-  }catch(x){return {erreur:'réseau'};}
-}
+/* (signerDirect retiré. Il écrivait la ligne et la tenue à la main, en
+   court-circuitant foret_signer() : un refus légitime du serveur — date
+   limite passée — était indistinguable d'une panne réseau, donc le repli
+   s'enclenchait et signait quand même. Il traitait aussi un 409 « tu as
+   déjà signé » comme une création, avec vibration de fête et message de
+   récompense à la clé, et il n'a jamais vérifié que l'écriture de la tenue
+   avait abouti — elle échouait en 403, en silence, depuis toujours.) */
 const CSS_CHENE=`
 #chn{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#20160c;
   font-family:Georgia,serif}
