@@ -4057,7 +4057,12 @@ sortie.threshold.value=-18;sortie.knee.value=26;sortie.ratio.value=2.6;
 sortie.attack.value=0.006;sortie.release.value=0.22;
 sortie.connect(ac.destination);
 SEC=ac.createBiquadFilter();
-SEC.type='lowpass';SEC.frequency.value=5200;SEC.Q.value=0.4;
+/* LE FILTRE DE SORTIE : tout passe par lui. À 5 200 Hz, les cris d'oiseaux
+   et les grillons tapaient en plein dans la bande où l'oreille est la plus
+   sensible (3 à 5 kHz) : au bout de dix minutes ça fatigue. On descend à
+   4 600 Hz — on perd un rien de mordant sur la hache, on gagne de pouvoir
+   laisser le son allumé une heure. */
+SEC.type='lowpass';SEC.frequency.value=4600;SEC.Q.value=0.4;
 SEC.connect(sortie);
 const n=Math.floor(ac.sampleRate*1.7);
 const b=ac.createBuffer(2,n,ac.sampleRate);
@@ -4074,8 +4079,9 @@ REVG=ac.createGain();REVG.gain.value=V.rev;
 REV.connect(hp);hp.connect(REVG);REVG.connect(sortie);
 return ac;
 }
+let AMB_BUS=null;      /* posé le temps de construire une ambiance : voir poserAmbiance */
 function vers(n,part){
-n.connect(SEC);
+n.connect(AMB_BUS||SEC);
 const g=A().createGain();g.gain.value=(part===undefined?0.5:part);
 n.connect(g);g.connect(REV);
 }
@@ -4270,19 +4276,29 @@ minuteur=setTimeout(goutte,hasard(2000,5200));
 };
 minuteur=setTimeout(goutte,hasard(1200,3000));
 return[s,l,{stop:()=>clearTimeout(minuteur)}];}},
-oiseaux:{nom:'Les oiseaux, le jour',mot:'quatre espèces, très espacées',
-f:(c)=>{const noms=Object.keys(OISEAUX);
-const t=setInterval(()=>{
-if(Math.random()>0.4)return;
-const k=noms[Math.floor(Math.random()*(noms.length-1))];   /* pas la mouette */
-OISEAUX[k].f(c.currentTime+0.02,V.amb);
-},1600);
-return[{stop:()=>clearInterval(t)}];}},
-grillons:{nom:'Les grillons, la nuit',mot:'un tapis régulier, très bas',
+oiseaux:{nom:'Les oiseaux, le jour',mot:'trois espèces, très espacées',
+/* UN CHANT TOUTES LES DIX À VINGT SECONDES, jamais deux fois le même
+   oiseau de suite. Avant : un essai toutes les 1,6 s avec quatre chances
+   sur dix, soit un cri toutes les quatre secondes — une volière, pas une
+   forêt, et au bout de cinq minutes on coupait le son. */
+f:(c)=>{const noms=Object.keys(OISEAUX).filter(k=>k!=='mouette');
+let dernier=null, minuteur=0;
+const chanter=()=>{
+const choix=noms.filter(k=>k!==dernier);
+const k=choix[Math.floor(Math.random()*choix.length)];
+dernier=k;
+try{OISEAUX[k].f(A().currentTime+0.02,V.amb*0.8);}catch(x){}
+minuteur=setTimeout(chanter,hasard(9500,21000));
+};
+minuteur=setTimeout(chanter,hasard(2500,7000));
+return[{stop:()=>clearTimeout(minuteur)}];}},
+grillons:{nom:'Les grillons, la nuit',mot:'un tapis lent, très bas',
+/* PLUS GRAVES ET PLUS LENTS. À 3 600-4 200 Hz toutes les 430 ms, c'était
+   un sifflement continu en plein dans la bande sensible. */
 f:(c)=>{const t=setInterval(()=>{
-const n=c.currentTime;
-for(let i=0;i<3;i++)souffle(n+i*0.055,0.022,hasard(3600,4200),3400,9,0.014*V.amb,'bandpass',0.5);
-},430);
+const n=A().currentTime;
+for(let i=0;i<2;i++)souffle(n+i*0.07,0.02,hasard(2650,3050),2550,7,0.010*V.amb,'bandpass',0.5);
+},760);
 return[{stop:()=>clearInterval(t)}];}},
 vent:{nom:'Le vent dans les arbres',mot:'il monte et redescend lentement',
 f:(c)=>{const s=c.createBufferSource();s.buffer=bruit();s.loop=true;
@@ -4316,27 +4332,80 @@ try{if(REVG)REVG.gain.value=V.rev;}catch(x){}
 couperLAmbiance();
 if(m&&V.amb>0&&SON_PRET)ambiancer();
 }
-let AMB_EN_COURS={};
+let AMB_EN_COURS={}, AMB_SORTIE={};
 function couperLAmbiance(){
 Object.values(AMB_EN_COURS).forEach(l=>l.forEach(n=>{try{n.stop();}catch(x){}}));
 AMB_EN_COURS={};
+/* les bus de fondu s'en vont avec : sans cela ils s'empilaient à chaque
+   changement de réglage et le navigateur gardait des nœuds pour rien. */
+try{Object.values(AMB_SORTIE).forEach(b=>{try{b.disconnect();}catch(x){}});}catch(x){}
+AMB_SORTIE={};
 }
+/* ON ENTRE ET ON SORT EN FONDU. Une boucle de bruit qui démarre à plein
+   volume fait un clic sec, et s'arrêter net en fait un autre : c'est
+   exactement le genre de bruit qui fait mal aux oreilles au casque. Deux
+   secondes et demie pour monter, une seconde et demie pour redescendre. */
 function poserAmbiance(cle,oui){
-if(oui&&!AMB_EN_COURS[cle]){try{AMB_EN_COURS[cle]=AMB[cle].f(A());}catch(x){}}
+if(oui&&!AMB_EN_COURS[cle]){
+try{
+const c=A();
+const bus=c.createGain();bus.gain.value=0.0001;bus.connect(SEC);
+AMB_BUS=bus;                                   /* vers() s'y branche */
+let n=[];
+try{n=AMB[cle].f(c);}finally{AMB_BUS=null;}
+bus.gain.setValueAtTime(0.0001,c.currentTime);
+bus.gain.exponentialRampToValueAtTime(1,c.currentTime+2.5);
+AMB_EN_COURS[cle]=n;AMB_SORTIE[cle]=bus;
+}catch(x){AMB_BUS=null;}
+}
 else if(!oui&&AMB_EN_COURS[cle]){
-AMB_EN_COURS[cle].forEach(n=>{try{n.stop();}catch(x){}});
-delete AMB_EN_COURS[cle];
+const liste=AMB_EN_COURS[cle], bus=AMB_SORTIE[cle];
+delete AMB_EN_COURS[cle];delete AMB_SORTIE[cle];
+let attendre=0;
+if(bus){try{const c=A();
+bus.gain.cancelScheduledValues(c.currentTime);
+bus.gain.setValueAtTime(Math.max(0.0001,bus.gain.value),c.currentTime);
+bus.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+1.5);
+attendre=1700;}catch(x){}}
+const couper=()=>liste.forEach(n=>{try{n.stop();}catch(x){}});
+if(attendre)setTimeout(couper,attendre);else couper();
 }
 }
+/* CHAQUE CARTE SON FOND SONORE. Tout était posé à false : les ambiances
+   existaient dans le code et ne sortaient jamais. */
+let AMB_PRES_EAU=false;
 function ambiancer(){
-if(!SON_PRET||(typeof REG!=='undefined'&&REG.sons===false))return;
+if(!SON_PRET||(typeof REG!=='undefined'&&REG.sons===false)){couperLAmbiance();return;}
+if(typeof document!=='undefined'&&document.hidden){couperLAmbiance();return;}
 const nuit=(typeof lampesAllumees==='function')&&lampesAllumees();
+if(CARTE==='foret'){
+/* LE LIT : le vent dans les feuilles, en permanence, très bas. Par-dessus,
+   les oiseaux le jour ou les grillons la nuit — jamais les deux. */
+poserAmbiance('vent',true);
+poserAmbiance('oiseaux',!nuit);
+poserAmbiance('grillons',nuit);
+poserAmbiance('fontaine',false);
+/* LE CLAPOT DU LAC, seulement quand on en approche. Deux seuils différents
+   pour entrer et pour sortir : sinon, marcher sur la limite ferait
+   clignoter le son. */
+try{
+const d=F_rive(joueur.x)-joueur.y;
+if(AMB_PRES_EAU)AMB_PRES_EAU=(d<190&&d>-70);
+else AMB_PRES_EAU=(d<130&&d>-40);
+}catch(x){AMB_PRES_EAU=false;}
+poserAmbiance('riviere',AMB_PRES_EAU);
+return;
+}
 poserAmbiance('vent',false);
 poserAmbiance('oiseaux',false);
 poserAmbiance('riviere',false);
 poserAmbiance('fontaine',false);
 poserAmbiance('grillons',nuit);
 }
+/* ONGLET CACHÉ : on se tait. Un fond sonore qui continue dans un onglet
+   qu'on a quitté, c'est le genre de chose qu'on cherche pendant dix
+   minutes avant de comprendre d'où ça vient. */
+try{document.addEventListener('visibilitychange',()=>{try{ambiancer();}catch(x){}});}catch(x){}
 let dernierSon={};
 function jouer(cle,groupe){
 if(!SON_PRET)return;
@@ -15961,6 +16030,19 @@ if(o.t[0]==='x'&&o.t[1]==='_'){
      changeait (pieds coupés, buisson dépouillé) mais rien ne disait quand
      ça revenait : on repassait dix fois pour rien. */
   jaugeDeRepousseFo(g,o,x,y);
+  /* LES ENTAILLES DE LA HACHE ET L'ENTAILLE À RÉSINE. Elles n'étaient
+     dessinées que pour l'arbre du village : les arbres de la forêt passent
+     par le report de calque en cache, qui ignore o.coups et o.saigne. On
+     frappait donc un érable quatre fois sans qu'il porte une marque, et on
+     le saignait sans rien voir — impossible de retrouver, trois minutes
+     plus tard, lequel des trente-cinq arbres on avait entamé. */
+  if(FAM_COUP[o.t]==='arbre'&&(o.coups||o.saigne)){
+    let ht=0;try{ht=graverX(o.t,o.v||0).sol;}catch(err){}
+    if(ht>12){
+      if(o.coups)entailles(g,x,y,o.coups,ht);
+      if(o.saigne)dessinerEntaille(g,x,y,ht,Date.now()-o.saigne>180000);
+    }
+  }
 }
 else if(o.t==='arbre'){
 if(o.cueilli&&Date.now()-o.cueilli<REPOUSSE.arbre){tracesDeRepousse(g,o,x,y,REPOUSSE.arbre);}
