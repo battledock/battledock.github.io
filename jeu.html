@@ -20483,7 +20483,7 @@ const dedans=new Set(DECOR.map(o=>o.t+o.x+','+o.y));
    pas de quelle carte venait la pierre. Un rocher cassé au village
    repoussait donc en forêt, aux mêmes coordonnées. */
 if(p.c&&p.c!==CARTE)return;
-const cle=({rocher:'r',x_fo_rocher:'r',fer:'m',cuivre:'m',charbon:'m'}[p.t]||'c')+p.x+','+p.y;
+const cle=PREFIXE_CARTE+({rocher:'r',x_fo_rocher:'r',fer:'m',cuivre:'m',charbon:'m'}[p.t]||'c')+p.x+','+p.y;
 if(dehors.has(cle))return;                     /* pas encore l'heure */
 if(!dedans.has(p.t+p.x+','+p.y)){
 /* les gravats s'en vont avec le rocher qui revient : ils restaient là,
@@ -20548,7 +20548,7 @@ argile:210000, roseaux:210000, herbes:210000, plumes:210000};
 const REPOUSSE_ARBRE=8*60000;
 const REPOUSSE_PIERRE=15*60000;
 function delaiDeRepousse(cle){
-return cle[0]==='a'?REPOUSSE_ARBRE:REPOUSSE_PIERRE;
+return genreDeLaCle(cle)==='a'?REPOUSSE_ARBRE:REPOUSSE_PIERRE;
 }
 function noterCasse(cle){
 if(!e.casses)e.casses=[];
@@ -20582,11 +20582,34 @@ if(!e.aRepousser.some(p=>p.t===o.t&&p.x===o.x&&p.y===o.y))
 e.aRepousser.push({t:o.t,x:o.x,y:o.y,gr:o.gr||0,v:o.v||0,demi:o.demi||0,c:CARTE});
 if(e.aRepousser.length>400)e.aRepousser.splice(0,e.aRepousser.length-400);
 }
+/* ================= LA CLÉ PORTE SA CARTE =================
+   Une clé s'écrivait « a520,300 » : une lettre de genre et des
+   coordonnées. Rien n'y disait de quelle carte il s'agissait. Un arbre du
+   village et un arbre de la forêt posés aux mêmes coordonnées étaient donc
+   le MÊME objet pour la mémoire du jeu comme pour le serveur — c'est ce
+   qui interdisait de faire se souvenir la forêt.
+
+   Le village garde ses clés telles quelles : ses lignes déjà enregistrées
+   restent valables. Seules les autres cartes reçoivent un préfixe. */
+const PREFIXE_CARTE=(CARTE==='village')?'':(CARTE+':');
+const cleDeCetteCarte=(cle)=>{
+const t=String(cle), i=t.indexOf(':');
+return i<0 ? (PREFIXE_CARTE==='') : (t.slice(0,i+1)===PREFIXE_CARTE);
+};
+/* le genre, lu APRÈS le préfixe */
+const genreDeLaCle=(cle)=>{const t=String(cle), i=t.indexOf(':');
+return i<0?t.charAt(0):t.charAt(i+1);};
+const ARBRES_FO=['x_fo_erable','x_fo_chene','x_fo_charme','x_fo_olive','x_fo_pin'];
 function cleDe(o){
 if(o.cle)return o.cle;                        /* la clé de la carte du serveur */
 const p={rocher:'r',arbre:'a',fer:'m',cuivre:'m',charbon:'m',
-buisson:'b',resine:'s'}[o.t]||'c';
-return p+o.x+','+o.y;
+buisson:'b',resine:'s',
+/* LES ARBRES ET LES ROCHERS DE LA FORÊT prenaient le 'c' des cueillettes,
+   alors que couper() et miner() notaient 'a' et 'r' : le jeu et le serveur
+   ne parlaient pas du même objet. */
+x_fo_rocher:'r',x_fo_pin:'a',
+x_fo_erable:'a',x_fo_chene:'a',x_fo_charme:'a',x_fo_olive:'a'}[o.t]||'c';
+return PREFIXE_CARTE+p+o.x+','+o.y;
 }
 let CARTE_RECUE=false;
 async function chargerLaCarte(){
@@ -20616,9 +20639,10 @@ return true;
 }catch(x){return false;}
 }
 function appliquerLigneMonde(m){
-if(ANNEXE)return;
+if(ANNEXE&&CARTE!=='foret')return;
 if(CHAMPS_SEULS&&CARTE==='village')return;   /* LA FERME EST NUE */
 if(!m||!m.cle)return;
+if(!cleDeCetteCarte(m.cle))return;           /* une récolte d'une autre carte */
 if(m.par===e.id)return;                        /* c'est nous, c'est déjà fait */
 const t=m.quand?new Date(m.quand).getTime():Date.now();
 const duree=REPOUSSE[m.genre];
@@ -20629,6 +20653,7 @@ CUEILLI.set(m.cle,t);
 appliquerLeMonde();
 }
 async function chargerLeMonde(){
+if(ANNEXE&&CARTE!=='foret')return;
 try{
 const r=await fetch(URL_SB+'/rest/v1/monde?select=cle,genre,quand&limit=2000',
 {headers:sbEntetes});
@@ -20636,6 +20661,10 @@ const d=await r.json();
 if(!Array.isArray(d))return;
 const maintenant=Date.now();
 d.forEach(m=>{
+/* CHACUN SA CARTE. La table les porte toutes : sans ce tri, la liste des
+   casses du joueur — plafonnée à trois cents — se remplirait des clés du
+   village pendant qu'il est en forêt, et chasserait les siennes. */
+if(!cleDeCetteCarte(m.cle))return;
 const t=new Date(m.quand).getTime();
 const duree=REPOUSSE[m.genre];
 if(duree&&maintenant-t>duree)return;       /* ça a déjà repoussé */
@@ -20669,20 +20698,35 @@ g.fillStyle='rgba(20,28,18,.35)';g.fillRect(Math.round(x-6),Math.round(y-12),12,
 g.fillStyle='rgba(159,214,122,.85)';g.fillRect(Math.round(x-6),Math.round(y-12),Math.round(12*part),2);
 }
 }
+/* ================= LA FORÊT SE SOUVIENT =================
+   Elle sortait ici sur `if(ANNEXE)return` — et la forêt est une annexe.
+   On rechargeait la page, semerLaForet() reposait les trente-cinq arbres
+   neufs, et le joueur revoyait un érable entier. Mais le SERVEUR, lui, se
+   souvenait : on le coupait, il répondait « déjà coupé ». Le jeu et le
+   serveur ne montraient pas la même forêt.
+
+   Ce qui l'interdisait, c'étaient les clés sans carte — c'est réglé plus
+   haut. La forêt entre donc, avec ses propres genres. */
 function appliquerLeMonde(){
-if(ANNEXE)return;
+if(ANNEXE&&CARTE!=='foret')return;
 if(CHAMPS_SEULS&&CARTE==='village')return;   /* LA FERME : son décor est à elle, le monde partagé n'y entre pas */
-const casses=new Set(e.casses||[]);
+/* on garde l'heure de la casse : elle devient l'âge de la souche, donc le
+   compte à rebours de sa repousse. Sans elle, une souche rechargée ne
+   repoussait jamais — fairePousser ignore celles qui n'ont pas de `neuf`. */
+const quand=new Map();
+(e.casses||[]).forEach(c=>{const [k,q]=String(c).split('@');
+if(k&&q&&!isNaN(+q))quand.set(k,+q);});
 let change=false;
 for(let i=DECOR.length-1;i>=0;i--){
 const o=DECOR[i];
 const c=cleDe(o);
-if(['rocher','fer','cuivre','charbon'].includes(o.t)&&casses.has(c)){
+if(['rocher','fer','cuivre','charbon','x_fo_rocher'].includes(o.t)&&quand.has(c)){
 DECOR.splice(i,1);invaliderGrille();
 poserDansLeDecor({t:'gravats',x:o.x,y:o.y,gr:0});change=true;
-}else if(o.t==='arbre'&&casses.has(c)){
+}else if((o.t==='arbre'||ARBRES_FO.includes(o.t))&&quand.has(c)){
 DECOR.splice(i,1);invaliderGrille();
-poserDansLeDecor({t:'souche',x:o.x,y:o.y,gr:0});change=true;
+poserDansLeDecor({t:'souche',x:o.x,y:o.y,gr:0,neuf:quand.get(c),
+  essence:(o.t[0]==='x'?o.t:null),essV:o.v||0,essDemi:o.demi||0});change=true;
 }else if(CUEILLI.has(c)&&!o.cueilli){
 o.cueilli=CUEILLI.get(c);change=true;
 }
@@ -23343,7 +23387,7 @@ poussiere(o.x,o.y,14);
 secouer(1.3);ARRET=0.085;
 vibrer([12,30,26]);
 const pris=encaisser('rocher',o.x,o.y);
-noterCasse('r'+o.x+','+o.y);noterARepousser(o);
+noterCasse(cleDe(o));noterARepousser(o);
 signalerLeMonde(o,'rocher',o.t);
 DECOR.splice(DECOR.indexOf(o),1);invaliderGrille();
 poserDansLeDecor({t:'gravats',x:o.x,y:o.y,gr:0,neuf:Date.now()});   /* à sa place dans l'ordre de dessin, pas au bout */
@@ -23388,7 +23432,7 @@ vibrer([12,30,26]);
 const pris=encaisser(o.t,o.x,o.y);
 const cailloux=0;
 marquer(o.t,pris);marquer('pierre',cailloux);
-noterCasse('m'+o.x+','+o.y);noterARepousser(o);
+noterCasse(cleDe(o));noterARepousser(o);
 signalerLeMonde(o,'minerai',o.t);
 DECOR.splice(DECOR.indexOf(o),1);invaliderGrille();
 poserDansLeDecor({t:'gravats',x:o.x,y:o.y,gr:0,neuf:Date.now()});   /* à sa place dans l'ordre de dessin, pas au bout */
@@ -23627,7 +23671,7 @@ DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
 const pris=encaisser('arbre',o.x,o.y);
 const fib=0;
-noterCasse('a'+o.x+','+o.y);signalerLeMonde(o,'arbre','arbre');
+noterCasse(cleDe(o));signalerLeMonde(o,'arbre','arbre');
 texteVolant(o.x,o.y-26,'+'+pris+' bois','#d9b98a');
 texteVolant(o.x,o.y-38,'+8 pts','#a9c96a');
 for(let i2=0;i2<pris;i2++)setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,'bois'),i2*80);
@@ -26168,6 +26212,11 @@ setTimeout(montrerLAnnonce,1200);
 majPastille();
 $('porte').classList.add('parti');
 preparerMonde();
+/* LE DÉCOR VIENT D'ÊTRE SEMÉ NEUF : on lui applique tout de suite ce que le
+   joueur a déjà cassé. Sans cela, il voit ses arbres entiers pendant les
+   secondes qu'il faut au serveur pour répondre — et les coupe une seconde
+   fois pour rien. Le monde partagé arrivera par-dessus, un peu plus tard. */
+try{appliquerLeMonde();}catch(x){}
 if(ANNEXE&&e.ext){joueur.x=+e.ext.x||0;joueur.y=+e.ext.y||0;}
 /* EN FORÊT, ON ARRIVE TOUJOURS PAR LE SENTIER. e.ext est une case unique,
    réécrite à chaque pas sur n'importe quelle carte annexe : on arrivait
