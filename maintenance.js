@@ -115,74 +115,136 @@
     }catch(e){}
     return false;
   }
-  var CSS_FERME='#bdFerme{position:fixed;inset:0;z-index:2147483000;overflow:hidden;background:#1a1409;'+
-    'color:#f6efdc;font-family:Georgia,serif;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}'+
-    '#bdFerme .scene{position:absolute;inset:0;width:100%;height:100%}'+
-    '#bdFerme{justify-content:flex-start}'+
-    '#bdFerme .in{position:relative;z-index:2;padding:calc(env(safe-area-inset-top,0px) + 11vh) 26px 0;max-width:360px}'+
-    '#bdFerme .k{font:700 9px Arial;letter-spacing:4px;color:#d6b36a}'+
-    '#bdFerme h2{margin:12px 0 4px;font:400 34px Georgia;line-height:1.15;color:#fdf6e3}'+
-    '#bdFerme .r{width:110px;height:1px;margin:18px auto;background:linear-gradient(90deg,transparent,#c9a24a,transparent)}'+
-    '#bdFerme p{margin:0;font:italic 15px Georgia;color:#d9c9a3;line-height:1.6}'+
-    '#bdFerme button{margin-top:30px;border:1px solid #c9a24a;border-radius:3px;background:rgba(201,162,74,.14);'+
-    'color:#f6efdc;padding:15px 26px;font:700 11px Arial;letter-spacing:3px;cursor:pointer}'+
-    '#bdFerme button:active{background:rgba(201,162,74,.28)}'+
-    '#bdFerme .ble{transform-origin:bottom center;animation:bdble 4.5s ease-in-out infinite}'+
-    '#bdFerme .ble2{animation-duration:6s;animation-delay:-1.5s}'+
-    '@keyframes bdble{0%,100%{transform:skewX(0deg)}50%{transform:skewX(-5deg)}}'+
-    '#bdFerme .lune{animation:bdlu 6s ease-in-out infinite}'+
-    '@keyframes bdlu{0%,100%{opacity:.85}50%{opacity:1}}'+
-    '#bdFerme .fum{animation:bdfu 5s linear infinite;transform-origin:center}'+
-    '@keyframes bdfu{0%{opacity:0;transform:translateY(0) scale(.7)}30%{opacity:.5}100%{opacity:0;transform:translateY(-34px) scale(1.5)}}';
+  /* L'ÉCRAN : il doit tenir sur un petit Android comme sur une tablette, sans
+     que personne ait à pincer pour lire. D'où les tailles en clamp() et la
+     hauteur en dvh : pas de texte minuscule, pas de zoom. */
+  var CSS_FERME='#bdFerme{position:fixed;inset:0;z-index:2147483000;overflow:hidden;background:#17120a;'+
+    'color:#f6efdc;font-family:Georgia,serif;text-align:center;'+
+    'display:flex;flex-direction:column;align-items:center;justify-content:space-between;'+
+    '-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:none;'+
+    '-webkit-user-select:none;user-select:none}'+
+    '#bdFerme .scene{position:absolute;inset:0;width:100%;height:100%;display:block}'+
+    '#bdFerme .in{position:relative;z-index:2;width:100%;max-width:min(520px,92vw);'+
+    'padding:calc(env(safe-area-inset-top,0px) + clamp(26px,7dvh,64px)) clamp(18px,6vw,34px) 0;box-sizing:border-box}'+
+    '#bdFerme .k{font:700 clamp(10px,2.9vw,13px)/1 Arial,sans-serif;letter-spacing:.38em;color:#e0bb6e}'+
+    '#bdFerme h2{margin:clamp(12px,2.4dvh,20px) 0 0;font:400 clamp(30px,8.4vw,52px)/1.1 Georgia,serif;color:#fdf6e3;'+
+    'text-shadow:0 2px 18px rgba(0,0,0,.55)}'+
+    '#bdFerme .r{width:clamp(90px,26vw,150px);height:1px;margin:clamp(16px,3dvh,26px) auto;'+
+    'background:linear-gradient(90deg,transparent,#c9a24a,transparent)}'+
+    '#bdFerme p{margin:0 auto;max-width:30ch;font:italic clamp(16px,4.2vw,21px)/1.62 Georgia,serif;color:#e2d2ab;'+
+    'text-shadow:0 1px 12px rgba(0,0,0,.6)}'+
+    '#bdFerme .bas{position:relative;z-index:2;width:100%;max-width:min(520px,92vw);'+
+    'padding:0 clamp(18px,6vw,34px) calc(env(safe-area-inset-bottom,0px) + clamp(26px,5dvh,52px));box-sizing:border-box}'+
+    '#bdFerme button{-webkit-appearance:none;appearance:none;width:100%;max-width:340px;'+
+    'border:1px solid #c9a24a;border-radius:4px;background:rgba(23,18,10,.55);'+
+    'backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);'+
+    'color:#f6efdc;padding:clamp(15px,2.1dvh,20px) 20px;font:700 clamp(12px,3.3vw,15px)/1 Arial,sans-serif;'+
+    'letter-spacing:.26em;cursor:pointer;touch-action:manipulation}'+
+    '#bdFerme button:active{background:rgba(201,162,74,.3)}'+
+    '@media (min-height:760px){#bdFerme .in{padding-top:calc(env(safe-area-inset-top,0px) + 11dvh)}}'+
+    '#bdFerme .ble{transform-origin:bottom center;animation:bdble 5s ease-in-out infinite}'+
+    '#bdFerme .ble2{animation-duration:6.5s;animation-delay:-1.8s}'+
+    '#bdFerme .ble3{animation-duration:4.2s;animation-delay:-3s}'+
+    '@keyframes bdble{0%,100%{transform:skewX(0deg)}50%{transform:skewX(-6deg)}}'+
+    '#bdFerme .lune{animation:bdlu 7s ease-in-out infinite}'+
+    '@keyframes bdlu{0%,100%{opacity:.86}50%{opacity:1}}'+
+    '#bdFerme .lant{animation:bdla 3.4s ease-in-out infinite}'+
+    '@keyframes bdla{0%,100%{opacity:.22;r:8}50%{opacity:.4;r:11}}'+
+    '@media (prefers-reduced-motion:reduce){#bdFerme *{animation:none!important}}';
   function sceneFerme(){
-    return '<svg class="scene" viewBox="0 0 400 700" preserveAspectRatio="xMidYMid slice" aria-hidden="true">'+
-      '<defs><linearGradient id="bdc" x1="0" y1="0" x2="0" y2="1">'+
-      '<stop offset="0" stop-color="#1d1a10"/><stop offset=".38" stop-color="#3d3018"/><stop offset=".62" stop-color="#7a5425"/><stop offset=".78" stop-color="#c8862f"/><stop offset="1" stop-color="#e8b457"/></linearGradient>'+
-      '<linearGradient id="bdt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2e2512"/><stop offset="1" stop-color="#16110a"/></linearGradient>'+
-      '<linearGradient id="bdv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16110a" stop-opacity=".34"/><stop offset="1" stop-color="#16110a" stop-opacity="0"/></linearGradient>'+
+    return '<svg class="scene" viewBox="0 0 400 760" preserveAspectRatio="xMidYMax slice" aria-hidden="true">'+
+      '<defs>'+
+      '<linearGradient id="bdc" x1="0" y1="0" x2="0" y2="1">'+
+      '<stop offset="0" stop-color="#16130c"/><stop offset=".3" stop-color="#2f2714"/><stop offset=".52" stop-color="#6b4a21"/>'+
+      '<stop offset=".68" stop-color="#b9792c"/><stop offset=".8" stop-color="#e3a845"/><stop offset="1" stop-color="#f3cd77"/></linearGradient>'+
+      '<linearGradient id="bdt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#32280f"/><stop offset="1" stop-color="#14100a"/></linearGradient>'+
+      '<linearGradient id="bdv" x1="0" y1="0" x2="0" y2="1">'+
+      '<stop offset="0" stop-color="#14100a" stop-opacity=".62"/><stop offset=".55" stop-color="#14100a" stop-opacity=".3"/>'+
+      '<stop offset="1" stop-color="#14100a" stop-opacity="0"/></linearGradient>'+
+      '<radialGradient id="bdh" cx=".5" cy=".5" r=".5">'+
+      '<stop offset="0" stop-color="#ffd98a" stop-opacity=".5"/><stop offset="1" stop-color="#ffd98a" stop-opacity="0"/></radialGradient>'+
       '</defs>'+
-      '<rect width="400" height="700" fill="url(#bdc)"/>'+
-      /* lune */
-      '<circle class="lune" cx="336" cy="62" r="21" fill="#f6e3b0"/>'+
-      '<circle cx="327" cy="55" r="18" fill="#201b10" opacity=".9"/>'+
-      '<g fill="#fdf6e3" opacity=".5"><circle cx="60" cy="74" r="1.6"/><circle cx="142" cy="128" r="1.1"/><circle cx="228" cy="52" r="1.4"/><circle cx="356" cy="186" r="1.1"/><circle cx="96" cy="196" r="1.2"/><circle cx="268" cy="156" r="1"/></g>'+
-      /* colline */
-      '<path d="M0 560 Q130 512 400 548 L400 700 L0 700Z" fill="url(#bdt)"/>'+
+      '<rect width="400" height="760" fill="url(#bdc)"/>'+
+      /* halo du soleil couché, juste au-dessus de l'horizon */
+      '<ellipse cx="150" cy="600" rx="230" ry="120" fill="url(#bdh)"/>'+
+      /* ÉTOILES : posées bas dans le cadre. L'image est ancrée en bas
+         (xMidYMax) donc tout ce qui est trop haut disparaît sur un écran large. */
+      '<g class="lune" fill="#fdf6e3" opacity=".42">'+
+      '<circle cx="46" cy="252" r="1.6"/><circle cx="128" cy="300" r="1.1"/><circle cx="214" cy="236" r="1.3"/>'+
+      '<circle cx="312" cy="286" r="1.1"/><circle cx="366" cy="244" r="1.4"/><circle cx="268" cy="330" r="1"/>'+
+      '<circle cx="88" cy="344" r="1.2"/><circle cx="178" cy="372" r="1"/></g>'+
+      /* vol d’oiseaux, pour que le ciel ne soit pas vide */
+      '<g stroke="#1e1710" stroke-width="2.4" fill="none" opacity=".5" stroke-linecap="round">'+
+      '<path d="M96 420q7-7 14 0q7-7 14 0"/><path d="M148 398q6-6 12 0q6-6 12 0"/>'+
+      '<path d="M206 432q5-5 10 0q5-5 10 0"/><path d="M252 406q6-6 12 0q6-6 12 0"/></g>'+
+      /* collines lointaines */
+      '<path d="M0 596 Q90 560 182 584 Q270 606 400 576 L400 760 L0 760Z" fill="#241c0d" opacity=".75"/>'+
+      /* colline principale */
+      '<path d="M0 630 Q140 586 400 620 L400 760 L0 760Z" fill="url(#bdt)"/>'+
       /* silo */
-      '<g transform="translate(266 452)"><rect x="0" y="22" width="32" height="104" fill="#1d160c"/><path d="M0 24 Q16 0 32 24Z" fill="#2e2113"/></g>'+
+      '<g transform="translate(276 512)">'+
+      '<rect x="0" y="24" width="34" height="116" fill="#1b150b"/>'+
+      '<path d="M0 26 Q17 -2 34 26Z" fill="#2c2012"/>'+
+      '<g stroke="#120e07" stroke-width="2" opacity=".55"><path d="M0 52h34M0 80h34M0 108h34"/></g></g>'+
       /* grange */
-      '<g transform="translate(112 436)">'+
-      '<rect x="0" y="50" width="118" height="82" fill="#23180d"/>'+
-      '<path d="M-13 52 L59 6 L131 52Z" fill="#32220f"/>'+
-      '<rect x="43" y="88" width="32" height="44" fill="#e8b457" opacity=".9"/>'+
-      '<rect x="12" y="66" width="19" height="17" fill="#f6d27a" opacity=".85"/>'+
-      '<rect x="88" y="66" width="19" height="17" fill="#f6d27a" opacity=".85"/>'+
-      '<rect x="55" y="20" width="8" height="26" fill="#16110a"/>'+
-      '<circle class="fum" cx="59" cy="16" r="6" fill="#f6e3b0" opacity=".32"/>'+
+      '<g transform="translate(104 496)">'+
+      '<rect x="0" y="54" width="130" height="92" fill="#20160c"/>'+
+      '<path d="M-15 56 L65 6 L145 56Z" fill="#30200f"/>'+
+      '<path d="M-15 56 L145 56 L145 62 L-15 62Z" fill="#3d2a15"/>'+
+      /* porte */
+      '<rect x="47" y="96" width="36" height="50" fill="#f0bb58"/>'+
+      '<rect x="47" y="96" width="36" height="50" fill="none" stroke="#120e07" stroke-width="2"/>'+
+      '<path d="M65 96v50" stroke="#120e07" stroke-width="2"/>'+
+      /* fenêtres */
+      '<rect x="14" y="70" width="21" height="19" fill="#f8d684"/>'+
+      '<rect x="95" y="70" width="21" height="19" fill="#f8d684"/>'+
+      /* oculus du pignon */
+      '<circle cx="65" cy="40" r="8" fill="#f8d684" opacity=".9"/>'+
+      /* cheminée */
+      '<rect x="100" y="24" width="9" height="30" fill="#14100a"/>'+
       '</g>'+
+      /* lanterne sur son piquet, devant la grange */
+      '<g transform="translate(62 598)">'+
+      '<rect x="3" y="0" width="4" height="52" fill="#17110a"/>'+
+      '<path d="M-5 -4h20v-5h-20z" fill="#17110a"/>'+
+      '<circle class="lant" cx="5" cy="4" r="9" fill="#ffd98a" opacity=".3"/>'+
+      '<rect x="1" y="0" width="8" height="9" fill="#ffd27a"/></g>'+
+      /* bottes de foin */
+      '<g fill="#3a2a12">'+
+      '<ellipse cx="152" cy="668" rx="25" ry="18"/><ellipse cx="152" cy="668" rx="15" ry="10" fill="#4a371a"/>'+
+      '<ellipse cx="330" cy="660" rx="20" ry="14"/><ellipse cx="330" cy="660" rx="11" ry="7" fill="#4a371a"/></g>'+
       /* clôture */
-      '<g stroke="#1b1409" stroke-width="5" opacity=".92">'+
-      '<path d="M0 604h400M0 626h400"/><path d="M26 586v62M96 590v60M166 594v58M236 596v58M306 594v58M376 590v60"/></g>'+
-      /* blé */
-      '<g stroke="#6d4a1f" stroke-width="3" opacity=".9">'+
-      '<g class="ble"><path d="M20 700v-62M56 700v-52M92 700v-68"/></g>'+
-      '<g class="ble ble2"><path d="M140 700v-56M188 700v-66M236 700v-50"/></g>'+
-      '<g class="ble"><path d="M288 700v-64M332 700v-54M374 700v-60"/></g></g>'+
-      '<rect width="400" height="470" fill="url(#bdv)"/>'+
+      '<g stroke="#17110a" stroke-width="5" opacity=".95">'+
+      '<path d="M0 678h400M0 700h400"/>'+
+      '<path d="M24 660v62M94 664v60M164 668v58M234 670v58M304 668v58M374 664v60"/></g>'+
+      /* blé au vent */
+      '<g stroke="#6b4a1f" stroke-width="3" opacity=".92">'+
+      '<g class="ble"><path d="M18 760v-54M52 760v-44M88 760v-60"/></g>'+
+      '<g class="ble ble2"><path d="M132 760v-48M176 760v-58M220 760v-42"/></g>'+
+      '<g class="ble ble3"><path d="M268 760v-56M310 760v-46M352 760v-52M386 760v-44"/></g></g>'+
+      /* voile sombre en haut : le texte doit rester lisible quoi qu'il arrive */
+      '<rect width="400" height="520" fill="url(#bdv)"/>'+
       '</svg>';
   }
   function ecranFerme(){
     if(document.getElementById('bdFerme'))return;
+    /* LE ZOOM : sans cette balise le téléphone compose la page à 980 px de
+       large puis réduit tout — texte minuscule et pincement possible. */
+    if(!document.querySelector('meta[name="viewport"]')){
+      var mv=document.createElement('meta');mv.name='viewport';
+      mv.content='width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover';
+      (document.head||document.documentElement).appendChild(mv);
+    }
     var st=document.createElement('style');st.textContent=CSS_FERME;document.head.appendChild(st);
     var d=document.createElement('div');d.id='bdFerme';
     d.innerHTML=sceneFerme()+
       '<div class="in">'+
       '<div class="k">LA FERME</div>'+
-      '<h2>Les travaux ont commencé</h2>'+
+      '<h2>Les travaux<br>ont commencé</h2>'+
       '<div class="r"></div>'+
-      '<p>La grange est fermée le temps de refaire les enclos et les cultures.<br>Le port et la ville restent ouverts.</p>'+
-      '<button id="bdfeRetour">RETOUR AU PORT</button>'+
-      '</div>';
+      '<p>La grange est fermée le temps de refaire les enclos et les cultures. Le port et la ville restent ouverts.</p>'+
+      '</div>'+
+      '<div class="bas"><button id="bdfeRetour">RETOUR AU PORT</button></div>';
     (document.body||document.documentElement).appendChild(d);
     try{document.documentElement.style.overflow='hidden';}catch(e){}
     window.__MAINTENANCE=true;
