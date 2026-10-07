@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-07-1320"></script>
+<script src="maintenance.js?v=2026-10-07-1420"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-1320';
+var MA_VERSION='2026-10-07-1420';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11498,6 +11498,11 @@ const F_SENT_SEUIL=26;                  /* passé ce x, en poussant, on s'en va 
 const F_SENT_ARRIVEE=[152,F_SENT_Y];    /* où l'on apparaît : bien à l'intérieur */
 const dansLeSentier=(x,y)=>x<F_SENT_FOND&&Math.abs(y-F_SENT_Y)<F_SENT_DEMI;
 const F_ETAL={x:1280,y:530};       /* l'étal, à l'est de la carte */
+/* LA CABANE DU BÛCHERON, au milieu du bois, sur le chemin de celui qui
+   arrive par le sentier. Son écran existait depuis toujours mais aucune
+   porte n'y menait : la seule qui en posait une était dans un bloc de
+   code jamais exécuté. */
+const F_CABANE=[760,340];
 const F_BOIS={sombre:'#5b3f26',bas:'#6b4a2a',moyen:'#7d5833',clair:'#96693c',haut:'#ab7a49'};
 function F_palissade(){
   const c=document.createElement('canvas');c.width=20;c.height=34;
@@ -12218,6 +12223,14 @@ function graverPontonFo(){
 /* ================= L'ÉCRAN DU GRAND CHÊNE =================
    On y grave son nom une fois, jusqu'à dimanche midi, et on repart
    avec la tenue du garde forestier. */
+/* ÉCHAPPER UN TEXTE AVANT DE L'INSÉRER DANS DU HTML.
+   Deux endroits appelaient « echapper », qui n'existait nulle part dans ce
+   fichier : la plaque du grand chêne levait une erreur dès qu'elle avait un
+   nom à afficher. Il existe bien un « esc », mais il est enfermé dans une
+   autre fonction et invisible d'ici. On la déclare au niveau du module,
+   là où tout le monde la voit. */
+function echapper(t){return String(t==null?'':t)
+  .replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
 async function ouvrirLeGrandChene(){
   if(!document.getElementById('cssChn')){const st=document.createElement('style');
     st.id='cssChn';st.textContent=CSS_CHENE;document.head.appendChild(st);}
@@ -12563,6 +12576,7 @@ function semerLaForet(){
     [1090,230,92],                                  /* la maison de pierre */
     [F_ETAL.x,F_ETAL.y,86],                         /* l'étal */
     [F_PONT.x,Math.round(F_rive(F_PONT.x))-2,46],   /* le ponton */
+    [F_CABANE[0],F_CABANE[1],94],                   /* la cabane du bûcheron */
   ];
   const placeLibre=(x,y)=>{
     /* le sentier du port : rien ne doit boucher la seule sortie */
@@ -12674,6 +12688,15 @@ function semerLaForet(){
   DECOR.push({t:'x_fo_maison',x:1090,y:230,v:0,gr:0,bati:true,demi:46,ouvre:'atelierBois'});
   /* L'ENTRÉE DE LA MINE, à l'ouest */
   DECOR.push({t:'x_fo_mine',x:370,y:300,v:0,gr:0,bati:true,demi:54,ouvre:'mineForet'});
+  /* LA CABANE DU BÛCHERON. Son calque n'était enregistré que dans
+     semerLaClairiere, qui ne tourne jamais : on le pose ici. */
+  {const C=graverCabaneBucheron();
+   XCAL['x_fo_cabane0']=C;CALQUES_DECO['x_fo_cabane']=C;
+   /* la boîte de collision aussi n'existait que dans le code mort : sans
+      elle on traversait la cabane. Mesure au sol : 130 px de large. */
+   TAILLES['x_fo_cabane']=[{w:118,h:14}];}
+  DECOR.push({t:'x_fo_cabane',x:F_CABANE[0],y:F_CABANE[1],v:0,gr:0,
+              bati:true,demi:70,ouvre:'bucheron'});
   /* le grand chêne de l'ouverture a été retiré */
   DECOR=DECOR.filter(o=>o.t==='x_fo_mine'||Math.hypot(o.x-370,o.y-300)>96);
   DECOR=DECOR.filter(o=>o.t==='x_fo_maison'||Math.hypot(o.x-1090,o.y-230)>92);
@@ -22233,7 +22256,7 @@ b.innerHTML=(c.bati?(c.niveau>0?'Ton cabanon':'Agrandir le cabanon'):'Bâtir le 
 b.classList.add('on');return;}
 if(o.ouvre==='buvette'){b.innerHTML='La buvette du refuge<small>VIN CHAUD · RACLETTE · FROMAGE</small>';b.classList.add('on');return;}
 if(o.ouvre==='galerie'){b.innerHTML='Descendre dans la mine<small>PUITS N°1 · FILONS ET MINERAIS</small>';b.classList.add('on');return;}
-if(o.ouvre==='bucheron'){b.innerHTML='L’atelier du bois<small>PLANCHES · POUTRES · CHARBON</small>';b.classList.add('on');return;}
+if(o.ouvre==='bucheron'){b.innerHTML='Voir le bûcheron<small>SCIER · CUIRE · TAILLER · VENDRE</small>';b.classList.add('on');return;}
 if(o.ouvre==='chantierBlague'){b.innerHTML='Regarder le chantier<small>TRAVAUX EN COURS · DEPUIS LONGTEMPS</small>';b.classList.add('on');return;}
 
 {const FO={scierie:['La scierie','DÉBITER LE BOIS EN PLANCHES'],
@@ -22406,7 +22429,10 @@ ouvrirLeChantier();return;}
 if(o.ouvre==='galerie'){                              /* LA MINE : sa propre page, comme avant */
 try{e.ext={x:joueur.x,y:joueur.y};sauver();envoyerSauvegarde(true);}catch(x){}
 vibrer([8,30,8]);setTimeout(()=>{location.href='mine.html?v='+Date.now();},120);return;}
-if(o.ouvre==='bucheron'){ouvrirLAtelier();return;}
+/* LA CABANE OUVRE SUR LE BÛCHERON, et non sur l'atelier du bois : les
+   deux portes menaient au même écran, et celui du bûcheron n'était
+   atteignable par aucun chemin. L'atelier garde la maison de pierre. */
+if(o.ouvre==='bucheron'){ouvrirLaCabane();return;}
 if(o.ouvre==='chantierBlague'){regarderLeChantier();return;}
 
 if(o.ouvre==='epicerie'){try{bulleQuai('« Fermé pour inventaire », dit l’écriteau.');}catch(x){}vibrer(8);return;}
@@ -27438,10 +27464,27 @@ const CSS_AT=`
 #at .at-pied .p{background:#6a4a2a;color:#f2e7d2}
 #at .at-pied .p:disabled{background:#ddd2b8;color:#9a8a6c}
 `;
+let BUC_EN_VOL=false;
 async function ouvrirLaCabane(mot){
 if(!document.getElementById('cssBuc')){const st=document.createElement('style');st.id='cssBuc';st.textContent=CSS_BUC;document.head.appendChild(st);}
 $('page2Fond').className='buc';$('page2').classList.add('on');
-const d=await appelRPC('foret_etat',{p_joueur:e.id});if(d&&!d.erreur)FOR=d;
+/* ON ATTEND LE SAC ET LE SOLDE. Ils partaient sans être attendus, et
+   l'écran se redessinait aussitôt avec les anciennes valeurs : après une
+   vente, le bandeau montrait encore le solde d'avant. */
+try{await lireSacServeur();}catch(x){}
+const d=await appelRPC('foret_etat',{p_joueur:e.id});
+if(d&&!d.erreur)FOR=d;
+else if(!FOR){
+  /* ON NE FAIT PLUS SEMBLANT. Sans réponse, l'écran affichait « 0 BÛCHE
+     EN RÉSERVE » et tout grisé : il annonçait au joueur qu'il n'avait
+     rien alors que son stock serveur était intact. */
+  $('page2Fond').innerHTML=
+    '<div class="tt"><div style="flex:1"><small>LA FORÊT</small><b>Le bûcheron</b></div><button id="bucX">✕</button></div>'+
+    '<div class="corps"><div class="bd"><div class="g"><b>Il n’est pas là</b>'+
+    '<span>le serveur n’a pas répondu · réessaie dans un moment</span></div></div></div>';
+  $('bucX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+  return;
+}
 const F=FOR||{bois:0,planche:0,resine:0};
 const ic=(k)=>ICONES[k]?'<svg viewBox="0 0 16 16">'+ICONES[k]+'</svg>':'';
 const charge=Object.values(e.sac||{}).reduce((t,n)=>t+(n||0),0);
@@ -27461,9 +27504,15 @@ const bande=(cl,ic,nom,det,btn,id,actif)=>
 '<div class="g"><b>'+nom+'</b><span>'+det+'</span></div>'+
 '<button class="go"'+(actif?'':' disabled')+' id="'+id+'">'+btn+'</button></div>';
 $('page2Fond').innerHTML=
-'<div class="tt"><div style="flex:1"><small>LA FORÊT · CLAIRIÈRE</small><b>Le bûcheron</b></div><button id="bucX">✕</button></div>'+
+'<div class="tt"><div style="flex:1"><small>LA FORÊT · LA CABANE</small><b>Le bûcheron</b></div><button id="bucX">✕</button></div>'+
 '<div class="sac"><span>TON SAC · '+charge+' / '+(e.sacMax||60)+'</span><span>'+enEuros(e.euros)+'</span></div>'+
 '<div class="corps">'+
+/* LE MOT DU BÛCHERON. Le paramètre existait, tous les refus construisaient
+   soigneusement leur phrase — et personne ne l'affichait jamais. Sac plein,
+   on cliquait, l'écran se redessinait à l'identique, sans un mot. */
+(mot?'<div style="margin:2px 0 12px;padding:11px 13px;border-radius:12px;'+
+     'background:rgba(201,162,74,.14);border:1px solid rgba(201,162,74,.35);'+
+     'font:italic 15px Georgia,serif;color:#f0e2c2;line-height:1.45">'+echapper(mot)+'</div>':'')+
 '<div class="seg">'+[1,5,'tout'].map(q=>'<button'+(((q==='tout'&&BUC_N===99)||q===BUC_N)?' class="on"':'')+
 ' data-q="'+q+'">'+(q==='tout'?'TOUT':'×'+q)+'</button>').join('')+'</div>'+
 bande('b1','🪵','Planches',(F.bois||0)+' BÛCHES EN RÉSERVE',(nMax>0?'SCIER ×'+N:'PAS ASSEZ'),'bucDeb',nMax>0)+
@@ -27481,45 +27530,96 @@ bande('b5','🪓',sel.titre,(max?('AU MAXIMUM · '+sel.val[nv]+' '+sel.unite):(s
 $('bucX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
 $('page2Fond').querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{BUC_N=b.dataset.q==='tout'?99:+b.dataset.q;ouvrirLaCabane();});
 $('page2Fond').querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{BUC_OUTIL=b.dataset.o;ouvrirLaCabane();});
-const apres=(d2,ok)=>{if(d2&&!d2.erreur){FOR=d2.etat||d2;try{lireSacServeur();lireLeSolde();sauver();majHaut();}catch(x){}jouer('vente','moment');vibrer([12,30,12]);ouvrirLaCabane(ok);}
-else{const m={pas_assez:'« Reviens quand tu auras de quoi. »',pas_assez_bois:'« Deux bûches au moins, sinon je scie du vent. »',sac_plein:'« Ton sac déborde : va le vider. »',deja:'« Tu l’as déjà. »'}[d2&&d2.erreur]||'« Ça n’a pas marché. »';ouvrirLaCabane(m);}};
-$('bucDeb').onclick=async function(){this.disabled=true;const d2=await appelRPC('foret_debiter',{p_joueur:e.id,p_nb:BUC_N||1});
-if(d2&&d2.ticket){e.cos=e.cos||{};e.cos.costume_ours=true;$('page2').classList.remove('on');try{lireSacServeur();}catch(x){}ticketDOrTenue('ours');return;}
-apres(d2,d2&&d2.planches?('« Et voilà '+d2.planches+' planche'+(d2.planches>1?'s':'')+', bien droites. »'):null);};
-const vendre=async(liste)=>{let gain=0;
-for(const k of liste){const d2=await appelRPC('vendre_au_comptoir',{p_joueur:e.id,p_type:k});
-if(d2&&!d2.erreur){gain+=d2.gain||0;if(typeof d2.euros==='number')e.euros=d2.euros;if(d2.sac)e.sac=d2.sac;}}
-const d3=await appelRPC('foret_etat',{p_joueur:e.id});if(d3&&!d3.erreur)FOR=d3;
-try{sauver();majHaut();lireSacServeur();}catch(x){}if(gain){jouer('vente','moment');vibrer([12,30,12]);}
-ouvrirLaCabane(gain?('« Marché conclu : '+enEuros(gain)+'. »'):'« Tu n’as rien à me vendre. »');};
-$('page2Fond').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{b.disabled=true;vendre([b.dataset.v]);});
-$('bucTout').onclick=()=>{const ks=VENTES.map(([k])=>k).filter(k=>(F[k]||0)>0);
-if(ks.length)vendre(ks);
-else if((F.cueillette||[]).length)vendreCueil(F.cueillette.map(o=>o.k));};
-const faconner=async(quoi)=>{const n=(quoi==='tuile')?nTui:nPou;
-const d3=await appelRPC('foret_facon',{p_joueur:e.id,p_quoi:quoi,p_nb:n});
-if(d3&&d3.ok){if(d3.sac)e.sac=d3.sac;try{sauver();lireSacServeur();majPastille();}catch(x){}
-jouer('vente','moment');vibrer([12,26,12]);
-ouvrirLaCabane('« '+d3.fait+' '+(quoi==='tuile'?'tuiles':'poutres')+', voilà pour ton chantier. »');}
-else ouvrirLaCabane(d3&&d3.erreur==='sac_plein'?'« Ton sac déborde. »':'« Il te manque de quoi. »');};
-if($('bucTui'))$('bucTui').onclick=function(){this.disabled=true;faconner('tuile');};
-if($('bucPou'))$('bucPou').onclick=function(){this.disabled=true;faconner('poutre');};
-const vendreCueil=async(liste)=>{let gain=0;
-for(const k of liste){const d2=await appelRPC('vendre_au_bucheron',{p_joueur:e.id,p_type:k});
-if(d2&&!d2.erreur){gain+=d2.gain||0;if(typeof d2.euros==='number')e.euros=d2.euros;if(d2.sac)e.sac=d2.sac;}}
-const d3=await appelRPC('foret_etat',{p_joueur:e.id});if(d3&&!d3.erreur)FOR=d3;
-try{sauver();majHaut();lireSacServeur();}catch(x){}if(gain){jouer('vente','moment');vibrer([12,30,12]);}
-ouvrirLaCabane(gain?('« Marché conclu : '+enEuros(gain)+'. »'):'« Tu n’as rien à me vendre. »');};
-$('page2Fond').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{b.disabled=true;vendreCueil([b.dataset.c]);});
-if($('bucCueil'))$('bucCueil').onclick=()=>vendreCueil((F.cueillette||[]).map(o=>o.k));
-$('bucOut').onclick=async function(){this.disabled=true;
-const d2=await appelRPC('acheter_amelioration',{p_joueur:e.id,p_clef:sel.k});
-if(!d2||d2.erreur){ouvrirLaCabane(d2&&d2.erreur==='pas_assez'?'« Il te manque de quoi payer. »':(d2&&d2.erreur==='au maximum'?'« C’est déjà au maximum. »':'« Ça n’a pas marché. »'));return;}
-if(typeof d2.euros==='number')e.euros=d2.euros;
-if(sel.k==='sac'){e.nivSac=d2.niveau;e.sacMax=SAC_PALIERS[Math.min(d2.niveau,SAC_PALIERS.length-1)];}
-if(sel.k==='pioche')e.nivPioche=d2.niveau;if(sel.k==='hache')e.nivHache=d2.niveau;if(sel.k==='pied')e.nivPied=d2.niveau;
-try{sauver();envoyerSauvegarde(true);majHaut();majAction();}catch(x){}jouer('achat','moment');vibrer(24);
-ouvrirLaCabane('« '+sel.titre+' : '+sel.val[Math.min(d2.niveau,sel.val.length-1)]+' '+sel.unite+'. »');};
+/* UN SEUL VERROU POUR TOUT L'ÉCRAN. Chaque bouton relance ouvrirLaCabane,
+   qui redessine tout : un « bouton.disabled » ne survit pas au redessin.
+   On garde donc le drapeau au niveau du module, et on refuse d'entamer une
+   action tant que la précédente n'a pas rendu sa réponse. */
+const agir=async(faire)=>{
+  if(BUC_EN_VOL)return;
+  BUC_EN_VOL=true;
+  try{await faire();}
+  finally{BUC_EN_VOL=false;}
+};
+const MOTS_BUC={pas_assez:'« Reviens quand tu auras de quoi. »',
+  pas_assez_bois:'« Deux bûches au moins, sinon je scie du vent. »',
+  sac_plein:'« Ton sac déborde : va le vider. »',
+  manque:'« Il te manque de quoi. »',
+  deja:'« Tu l’as déjà. »',
+  rien:'« Tu n’as rien à me vendre. »',
+  'au maximum':'« C’est déjà au maximum. »'};
+const motDe=(d2)=>MOTS_BUC[d2&&d2.erreur]||(d2&&d2.erreur?('« '+d2.erreur+' »'):'« Le bûcheron n’a pas répondu. »');
+const apres=async(d2,ok)=>{
+  if(d2&&!d2.erreur){
+    FOR=d2.etat||d2;
+    /* attendus, cette fois : sinon l'écran se redessine avant eux */
+    try{await lireSacServeur();}catch(x){}
+    try{await lireLeSolde();}catch(x){}
+    try{sauver();majHaut();}catch(x){}
+    jouer('vente','moment');vibrer([12,30,12]);
+    await ouvrirLaCabane(ok);
+  }else await ouvrirLaCabane(motDe(d2));
+};
+$('bucDeb').onclick=()=>agir(async()=>{
+  const d2=await appelRPC('foret_debiter',{p_joueur:e.id,p_nb:BUC_N||1});
+  if(d2&&d2.ticket){e.cos=e.cos||{};e.cos.costume_ours=true;$('page2').classList.remove('on');
+    try{await lireSacServeur();}catch(x){}ticketDOrTenue('ours');return;}
+  await apres(d2,d2&&d2.planches?('« Et voilà '+d2.planches+' planche'+(d2.planches>1?'s':'')+', bien droites. »'):null);
+});
+/* LA VENTE. On ne jette plus les échecs : « if(ok) » sans « else » faisait
+   qu'une vente refusée au milieu de la liste passait inaperçue — le gain
+   des bûches suffisait à annoncer « Marché conclu » pendant que les
+   planches restaient en poche. */
+const vendre=async(liste,rpc)=>{
+  let gain=0, rates=[];
+  for(const k of liste){
+    const d2=await appelRPC(rpc,{p_joueur:e.id,p_type:k});
+    if(d2&&!d2.erreur){gain+=d2.gain||0;if(typeof d2.euros==='number')e.euros=d2.euros;if(d2.sac)e.sac=d2.sac;}
+    else rates.push(k);
+  }
+  const d3=await appelRPC('foret_etat',{p_joueur:e.id});if(d3&&!d3.erreur)FOR=d3;
+  try{await lireSacServeur();}catch(x){}
+  try{sauver();majHaut();}catch(x){}
+  if(gain){jouer('vente','moment');vibrer([12,30,12]);}
+  let m;
+  if(gain&&rates.length) m='« Marché conclu : '+enEuros(gain)+'. Mais il n’a pas pu tout prendre — réessaie. »';
+  else if(gain)          m='« Marché conclu : '+enEuros(gain)+'. »';
+  else if(rates.length)  m='« Ça n’a pas marché. Réessaie dans un moment. »';
+  else                   m='« Tu n’as rien à me vendre. »';
+  await ouvrirLaCabane(m);
+};
+$('bucTout').onclick=()=>agir(async()=>{
+  const ks=VENTES.map(([k])=>k).filter(k=>(F[k]||0)>0);
+  if(ks.length)await vendre(ks,'vendre_au_comptoir');
+  else if((F.cueillette||[]).length)await vendre(F.cueillette.map(o=>o.k),'vendre_au_bucheron');
+  else await ouvrirLaCabane('« Tu n’as rien à me vendre. »');
+});
+const faconner=async(quoi)=>{
+  const n=(quoi==='tuile')?nTui:nPou;
+  const d3=await appelRPC('foret_facon',{p_joueur:e.id,p_quoi:quoi,p_nb:n});
+  if(d3&&d3.ok){
+    if(d3.sac)e.sac=d3.sac;
+    try{await lireSacServeur();}catch(x){}
+    try{sauver();majPastille();majHaut();}catch(x){}
+    const e2=await appelRPC('foret_etat',{p_joueur:e.id});if(e2&&!e2.erreur)FOR=e2;
+    jouer('vente','moment');vibrer([12,26,12]);
+    await ouvrirLaCabane('« '+d3.fait+' '+(quoi==='tuile'?'tuiles':'poutres')+', voilà pour ton chantier. »');
+  }else await ouvrirLaCabane(motDe(d3));
+};
+if($('bucTui'))$('bucTui').onclick=()=>agir(()=>faconner('tuile'));
+if($('bucPou'))$('bucPou').onclick=()=>agir(()=>faconner('poutre'));
+$('bucOut').onclick=()=>agir(async()=>{
+  const d2=await appelRPC('acheter_amelioration',{p_joueur:e.id,p_clef:sel.k});
+  if(!d2||d2.erreur){
+    await ouvrirLaCabane(d2&&d2.erreur==='pas_assez'?'« Il te manque de quoi payer. »':motDe(d2));
+    return;
+  }
+  if(typeof d2.euros==='number')e.euros=d2.euros;
+  if(sel.k==='sac'){e.nivSac=d2.niveau;e.sacMax=SAC_PALIERS[Math.min(d2.niveau,SAC_PALIERS.length-1)];}
+  if(sel.k==='pioche')e.nivPioche=d2.niveau;if(sel.k==='hache')e.nivHache=d2.niveau;if(sel.k==='pied')e.nivPied=d2.niveau;
+  try{sauver();await envoyerSauvegarde(true);majHaut();majAction();}catch(x){}
+  jouer('achat','moment');vibrer(24);
+  await ouvrirLaCabane('« '+sel.titre+' : '+sel.val[Math.min(d2.niveau,sel.val.length-1)]+' '+sel.unite+'. »');
+});
 }
 const TENUES=[{k:'',nom:'Tes habits',lieu:'toujours à toi',rare:''},
 {k:'forestier',nom:'Le garde forestier',lieu:'Le grand chêne · ouverture de la forêt',rare:'OCTOBRE 2026'},
