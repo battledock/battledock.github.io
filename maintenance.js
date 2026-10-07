@@ -100,6 +100,103 @@
     if(document.body)ecranForet();
     else document.addEventListener('DOMContentLoaded',ecranForet);
   }
+  /* ================= LA FERME EN TRAVAUX =================
+     Même principe que la forêt : seule la ferme se ferme, le port continue
+     de tourner. Pour rouvrir : passer FERME_FERMEE à false. */
+  var FERME_FERMEE=true;
+  var FERME_OUVERTS=['e029d1fb-7baa-4225-91fd-5cdbef6f8711'];
+  function versLaFerme(){
+    try{
+      var q=new URLSearchParams(location.search);
+      if(location.pathname.indexOf('ferme.html')>=0)return true;
+      if((q.get('carte')||'')==='ferme')return true;
+      var sv=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}');
+      if(!q.get('carte')&&location.pathname.indexOf('jeu.html')>=0&&sv.carte==='ferme')return true;
+    }catch(e){}
+    return false;
+  }
+  var CSS_FERME='#bdFerme{position:fixed;inset:0;z-index:2147483000;overflow:hidden;background:#1a1409;'+
+    'color:#f6efdc;font-family:Georgia,serif;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}'+
+    '#bdFerme .scene{position:absolute;inset:0;width:100%;height:100%}'+
+    '#bdFerme{justify-content:flex-start}'+
+    '#bdFerme .in{position:relative;z-index:2;padding:calc(env(safe-area-inset-top,0px) + 11vh) 26px 0;max-width:360px}'+
+    '#bdFerme .k{font:700 9px Arial;letter-spacing:4px;color:#d6b36a}'+
+    '#bdFerme h2{margin:12px 0 4px;font:400 34px Georgia;line-height:1.15;color:#fdf6e3}'+
+    '#bdFerme .r{width:110px;height:1px;margin:18px auto;background:linear-gradient(90deg,transparent,#c9a24a,transparent)}'+
+    '#bdFerme p{margin:0;font:italic 15px Georgia;color:#d9c9a3;line-height:1.6}'+
+    '#bdFerme button{margin-top:30px;border:1px solid #c9a24a;border-radius:3px;background:rgba(201,162,74,.14);'+
+    'color:#f6efdc;padding:15px 26px;font:700 11px Arial;letter-spacing:3px;cursor:pointer}'+
+    '#bdFerme button:active{background:rgba(201,162,74,.28)}'+
+    '#bdFerme .ble{transform-origin:bottom center;animation:bdble 4.5s ease-in-out infinite}'+
+    '#bdFerme .ble2{animation-duration:6s;animation-delay:-1.5s}'+
+    '@keyframes bdble{0%,100%{transform:skewX(0deg)}50%{transform:skewX(-5deg)}}'+
+    '#bdFerme .lune{animation:bdlu 6s ease-in-out infinite}'+
+    '@keyframes bdlu{0%,100%{opacity:.85}50%{opacity:1}}'+
+    '#bdFerme .fum{animation:bdfu 5s linear infinite;transform-origin:center}'+
+    '@keyframes bdfu{0%{opacity:0;transform:translateY(0) scale(.7)}30%{opacity:.5}100%{opacity:0;transform:translateY(-34px) scale(1.5)}}';
+  function sceneFerme(){
+    return '<svg class="scene" viewBox="0 0 400 700" preserveAspectRatio="xMidYMid slice" aria-hidden="true">'+
+      '<defs><linearGradient id="bdc" x1="0" y1="0" x2="0" y2="1">'+
+      '<stop offset="0" stop-color="#1d1a10"/><stop offset=".38" stop-color="#3d3018"/><stop offset=".62" stop-color="#7a5425"/><stop offset=".78" stop-color="#c8862f"/><stop offset="1" stop-color="#e8b457"/></linearGradient>'+
+      '<linearGradient id="bdt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2e2512"/><stop offset="1" stop-color="#16110a"/></linearGradient>'+
+      '<linearGradient id="bdv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16110a" stop-opacity=".34"/><stop offset="1" stop-color="#16110a" stop-opacity="0"/></linearGradient>'+
+      '</defs>'+
+      '<rect width="400" height="700" fill="url(#bdc)"/>'+
+      /* lune */
+      '<circle class="lune" cx="336" cy="62" r="21" fill="#f6e3b0"/>'+
+      '<circle cx="327" cy="55" r="18" fill="#201b10" opacity=".9"/>'+
+      '<g fill="#fdf6e3" opacity=".5"><circle cx="60" cy="74" r="1.6"/><circle cx="142" cy="128" r="1.1"/><circle cx="228" cy="52" r="1.4"/><circle cx="356" cy="186" r="1.1"/><circle cx="96" cy="196" r="1.2"/><circle cx="268" cy="156" r="1"/></g>'+
+      /* colline */
+      '<path d="M0 560 Q130 512 400 548 L400 700 L0 700Z" fill="url(#bdt)"/>'+
+      /* silo */
+      '<g transform="translate(266 452)"><rect x="0" y="22" width="32" height="104" fill="#1d160c"/><path d="M0 24 Q16 0 32 24Z" fill="#2e2113"/></g>'+
+      /* grange */
+      '<g transform="translate(112 436)">'+
+      '<rect x="0" y="50" width="118" height="82" fill="#23180d"/>'+
+      '<path d="M-13 52 L59 6 L131 52Z" fill="#32220f"/>'+
+      '<rect x="43" y="88" width="32" height="44" fill="#e8b457" opacity=".9"/>'+
+      '<rect x="12" y="66" width="19" height="17" fill="#f6d27a" opacity=".85"/>'+
+      '<rect x="88" y="66" width="19" height="17" fill="#f6d27a" opacity=".85"/>'+
+      '<rect x="55" y="20" width="8" height="26" fill="#16110a"/>'+
+      '<circle class="fum" cx="59" cy="16" r="6" fill="#f6e3b0" opacity=".32"/>'+
+      '</g>'+
+      /* clôture */
+      '<g stroke="#1b1409" stroke-width="5" opacity=".92">'+
+      '<path d="M0 604h400M0 626h400"/><path d="M26 586v62M96 590v60M166 594v58M236 596v58M306 594v58M376 590v60"/></g>'+
+      /* blé */
+      '<g stroke="#6d4a1f" stroke-width="3" opacity=".9">'+
+      '<g class="ble"><path d="M20 700v-62M56 700v-52M92 700v-68"/></g>'+
+      '<g class="ble ble2"><path d="M140 700v-56M188 700v-66M236 700v-50"/></g>'+
+      '<g class="ble"><path d="M288 700v-64M332 700v-54M374 700v-60"/></g></g>'+
+      '<rect width="400" height="470" fill="url(#bdv)"/>'+
+      '</svg>';
+  }
+  function ecranFerme(){
+    if(document.getElementById('bdFerme'))return;
+    var st=document.createElement('style');st.textContent=CSS_FERME;document.head.appendChild(st);
+    var d=document.createElement('div');d.id='bdFerme';
+    d.innerHTML=sceneFerme()+
+      '<div class="in">'+
+      '<div class="k">LA FERME</div>'+
+      '<h2>Les travaux ont commencé</h2>'+
+      '<div class="r"></div>'+
+      '<p>La grange est fermée le temps de refaire les enclos et les cultures.<br>Le port et la ville restent ouverts.</p>'+
+      '<button id="bdfeRetour">RETOUR AU PORT</button>'+
+      '</div>';
+    (document.body||document.documentElement).appendChild(d);
+    try{document.documentElement.style.overflow='hidden';}catch(e){}
+    window.__MAINTENANCE=true;
+    var b=document.getElementById('bdfeRetour');
+    if(b)b.onclick=function(){
+      try{var sv=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}');
+        sv.carte='extramar';localStorage.setItem('bdl.pix.v2',JSON.stringify(sv));}catch(e){}
+      location.href='jeu.html?carte=extramar&v='+Date.now();};
+  }
+  if(FERME_FERMEE&&versLaFerme()&&FERME_OUVERTS.indexOf(id)<0){
+    window.__MAINTENANCE=true;   /* posé tout de suite : ferme.html lit ce drapeau avant de rediriger */
+    if(document.body)ecranFerme();
+    else document.addEventListener('DOMContentLoaded',ecranFerme);
+  }
   verifier();
   setInterval(function(){if(!document.getElementById('bd3'))verifier();},60000);   /* si la maintenance commence pendant qu'on joue */
 })();
