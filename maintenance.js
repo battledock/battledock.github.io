@@ -210,8 +210,12 @@
     var b=document.getElementById('bdfRetour');
     if(b)b.onclick=function(){
       try{var sv=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}');
-        sv.carte='extramar';localStorage.setItem('bdl.pix.v2',JSON.stringify(sv));}catch(e){}
-      location.href='jeu.html?carte=extramar&v='+Date.now();};
+        sv.carte='extramar';sv.ext=null;sv.extc=null;
+        localStorage.setItem('bdl.pix.v2',JSON.stringify(sv));}catch(e){}
+      /* arrivee=1 : sans ce parametre le jeu relit la position d'annexe
+         de la sauvegarde — celle de la foret — et posait le joueur a
+         l'ouest du port, hors du quai. On arrive par le metro. */
+      location.href='jeu.html?carte=extramar&arrivee=1&v='+Date.now();};
   }
   if(FORET_FERMEE&&versLaForet()&&!PASSE){
     window.__MAINTENANCE=true;   /* posé tout de suite : foret.html lit ce drapeau avant de rediriger */
@@ -371,8 +375,12 @@
     var b=document.getElementById('bdfeRetour');
     if(b)b.onclick=function(){
       try{var sv=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}');
-        sv.carte='extramar';localStorage.setItem('bdl.pix.v2',JSON.stringify(sv));}catch(e){}
-      location.href='jeu.html?carte=extramar&v='+Date.now();};
+        sv.carte='extramar';sv.ext=null;sv.extc=null;
+        localStorage.setItem('bdl.pix.v2',JSON.stringify(sv));}catch(e){}
+      /* arrivee=1 : sans ce parametre le jeu relit la position d'annexe
+         de la sauvegarde — celle de la foret — et posait le joueur a
+         l'ouest du port, hors du quai. On arrive par le metro. */
+      location.href='jeu.html?carte=extramar&arrivee=1&v='+Date.now();};
   }
   if(FERME_FERMEE&&versLaFerme()&&!PASSE){
     window.__MAINTENANCE=true;   /* posé tout de suite : ferme.html lit ce drapeau avant de rediriger */

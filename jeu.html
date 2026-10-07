@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-07-2040"></script>
+<script src="maintenance.js?v=2026-10-08-1030"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-2040';
+var MA_VERSION='2026-10-08-1030';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16555,7 +16555,15 @@ casses:[],coffre:null,casino:null,camp:null,
 four:null,           /* {recette, fin} : ce qui cuit en ce moment */
 sacMax:60};
 try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(e,JSON.parse(b));}catch(x){}
-const EXT_AU_DEPART=e.ext?{x:e.ext.x,y:e.ext.y}:null;
+/* LA POSITION D'ANNEXE PORTE DESORMAIS LE NOM DE SA CARTE.
+   e.ext etait une case unique, reecrite a chaque pas sur n'importe quelle
+   carte annexe. On quittait la foret a 152,500 ; en rouvrant le port sans
+   le parametre d'arrivee (le bouton RETOUR AU PORT de l'ecran de travaux,
+   la sortie de la ferme), le jeu relisait cette case et posait le joueur
+   a 152,500 sur le port — a l'ouest de tout, hors du quai. D'ou le port
+   « bloque par la foret ». La case ne vaut maintenant que pour la carte
+   qui l'a ecrite ; sinon on arrive par l'entree, comme il se doit. */
+const EXT_AU_DEPART=(e.ext&&e.extc===CARTE)?{x:e.ext.x,y:e.ext.y}:null;
 if(CARTE==='village'&&!PARAM_CARTE&&(e.carte==='extramar'||e.carte==='garde')){location.replace('jeu.html?carte=extramar');}   /* (pas quand on demande la ferme ou la forêt dans l'adresse) */
 e.casino=null;e.camp=null;e.coffre=null;e.comptoir=null;
 if(typeof e.nivSac==='number'&&e.nivSac>0)e.sacMax=SAC_PALIERS[Math.min(e.nivSac,SAC_PALIERS.length-1)];
@@ -16714,7 +16722,7 @@ if(CARTE==='garde'){
 const arrive=new URLSearchParams(location.search).has('arrivee')||!EXT_AU_DEPART;
 const p0=arrive?[GX.descente.x,GX.plS-14]:[EXT_AU_DEPART.x,EXT_AU_DEPART.y];
 const [dx,dy]=degager(p0[0],p0[1]);
-joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.carte='garde';
+joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.extc=CARTE;e.carte='garde';
 try{sauver();}catch(x){}
 return;
 }
@@ -16723,7 +16731,7 @@ const arrive=new URLSearchParams(location.search).has('arrivee')||!EXT_AU_DEPART
 const garde=new URLSearchParams(location.search).has('garde');
 const p0=garde?[XP.ruelle.x,XP.ruelle.haut+26]:(arrive?[XP.metro[0],XP.metro[1]+22]:[EXT_AU_DEPART.x,EXT_AU_DEPART.y]);
 const [dx,dy]=degager(p0[0],p0[1]);
-joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.carte='extramar';
+joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.extc=CARTE;e.carte='extramar';
 try{sauver();}catch(x){}
 return;
 }
@@ -19236,8 +19244,8 @@ setTimeout(()=>{try{
 /* LA DESTINATION, DITE EXPLICITEMENT. Sans le paramètre, le jeu relit la
    sauvegarde — qui dit « ferme » — et on revenait d'où l'on partait. */
 const v=(window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'');
-location.href='jeu.html?carte=extramar'+v;}
-catch(x){location.href='jeu.html?carte=extramar';}},620);}
+location.href='jeu.html?carte=extramar&arrivee=1'+v;}
+catch(x){location.href='jeu.html?carte=extramar&arrivee=1';}},620);}
 /* les deux bâtiments barrent la route */
 const mur=(px,py)=>DECOR.some(o=>{const t=TAILLES[o.t];if(!t)return false;
 const d=t[0];if(!d)return false;
@@ -19279,7 +19287,7 @@ c:Math.random()<.5?'#4a944a':'#3d7d3f',rebondi:false});
 }
 }
 }
-if(ANNEXE)e.ext={x:Math.round(joueur.x),y:Math.round(joueur.y)};
+if(ANNEXE){e.ext={x:Math.round(joueur.x),y:Math.round(joueur.y)};e.extc=CARTE;}
 else{e.x=Math.round(joueur.x);e.y=Math.round(joueur.y);}
 if(CARTE==='foret')verifierLeSentier(dt);
 }
@@ -23162,7 +23170,7 @@ return;
 if(CARTE==='garde'&&GESTE.t<=0){
 if(Math.abs(joueur.x-GX.descente.x)<GX.descente.l&&joueur.y>GX.plS-16){
 b.innerHTML='Redescendre<small>PAR LA RUELLE, VERS LE VIEUX-PORT</small>';b.classList.add('on');
-b.onclick=()=>{e.carte='extramar';e.ext=null;try{sauver();envoyerSauvegarde(true);}catch(x){}
+b.onclick=()=>{e.carte='extramar';e.ext=null;e.extc=null;try{sauver();envoyerSauvegarde(true);}catch(x){}
 setTimeout(()=>{location.href='jeu.html?carte=extramar&garde=1';},120);};
 return;
 }
@@ -23387,7 +23395,7 @@ if(o.ouvre==='chantierVallon'){
 if(!ligne2Permise()){ouvrirLeChantierFerme();return;}
 ouvrirLeChantier();return;}
 if(o.ouvre==='galerie'){                              /* LA MINE : sa propre page, comme avant */
-try{e.ext={x:joueur.x,y:joueur.y};sauver();envoyerSauvegarde(true);}catch(x){}
+try{e.ext={x:joueur.x,y:joueur.y};e.extc=CARTE;sauver();envoyerSauvegarde(true);}catch(x){}
 vibrer([8,30,8]);setTimeout(()=>{location.href='mine.html?v='+Date.now();},120);return;}
 /* LA CABANE OUVRE SUR LE BÛCHERON, et non sur l'atelier du bois : les
    deux portes menaient au même écran, et celui du bûcheron n'était
@@ -26342,7 +26350,7 @@ preparerMonde();
    secondes qu'il faut au serveur pour répondre — et les coupe une seconde
    fois pour rien. Le monde partagé arrivera par-dessus, un peu plus tard. */
 try{appliquerLeMonde();}catch(x){}
-if(ANNEXE&&e.ext){joueur.x=+e.ext.x||0;joueur.y=+e.ext.y||0;}
+if(ANNEXE&&e.ext&&e.extc===CARTE){joueur.x=+e.ext.x||0;joueur.y=+e.ext.y||0;}
 /* EN FORÊT, ON ARRIVE TOUJOURS PAR LE SENTIER. e.ext est une case unique,
    réécrite à chaque pas sur n'importe quelle carte annexe : on arrivait
    donc dans le bois à la position qu'on avait à Extramar, parfois à
@@ -26357,11 +26365,11 @@ if(CARTE==='foret'){joueur.x=F_SENT_ARRIVEE[0];joueur.y=F_SENT_ARRIVEE[1];joueur
    texte : « 600 » + 12 donnait « 60012 », et la collision barrait tout. */
 joueur.x=+joueur.x||0;joueur.y=+joueur.y||0;
 if(CHAMPS_SEULS&&CARTE==='village'&&!(joueur.x>BORD+6&&joueur.x<MONDE_L-BORD-6&&joueur.y>BORD+20&&joueur.y<MONDE_H-BORD-6)){
-joueur.x=600;joueur.y=600;e.x=600;e.y=600;e.ext=null;try{sauver();}catch(x){}}
+joueur.x=600;joueur.y=600;e.x=600;e.y=600;e.ext=null;e.extc=null;try{sauver();}catch(x){}}
 if(FORET_SEULE&&CARTE==='village'){
 const deMetro=new URLSearchParams(location.search).has('arrivee');
 if(deMetro||joueur.x<FZ.x0+12||joueur.x>rivX(joueur.y)-30||joueur.y<FZ.y0+14||joueur.y>FZ.y1-10){joueur.x=214;joueur.y=372;}   /* on sort de la gare de la forêt */
-e.ext={x:joueur.x,y:joueur.y};try{sauver();}catch(x){}
+e.ext={x:joueur.x,y:joueur.y};e.extc=CARTE;try{sauver();}catch(x){}
 }   /* hors des champs : on arrive sous le champ */
 try{if(CARTE==='extramar'&&dansLeBassin(joueur.x,joueur.y)&&!surPonton(joueur.x,joueur.y))joueur.y=XP.quaiY-14;}catch(x){}
 taille();garderAllume();
@@ -27166,7 +27174,7 @@ PARTI=true;
 (async()=>{if(S.ligne){const d=await appelRPC('ticket_metro',{p_joueur:e.id,p_de:'village',p_vers:S.ligne});
 if(!d||d.erreur){PARTI=false;texteVolant(joueur.x,joueur.y-50,d&&d.erreur==='ferme'?'Ce chemin ouvre bientôt…':'Réessaie dans un instant','#ffe8a0');
 joueur.x+=(S.cote==='d'?-24:0);joueur.y+=(S.cote==='b'?-24:(S.cote==='h'?24:0));return;}}
-try{if(S.carte){e.carte=S.carte;e.ext=null;}sauver();envoyerSauvegarde&&envoyerSauvegarde(true);}catch(x){}
+try{if(S.carte){e.carte=S.carte;e.ext=null;e.extc=null;}sauver();envoyerSauvegarde&&envoyerSauvegarde(true);}catch(x){}
 texteVolant(joueur.x,joueur.y-50,'En route : '+S.nom.toLowerCase().replace(/^./,m=>m.toUpperCase()),'#ffe070');
 setTimeout(()=>{location.href=S.vers;},450);})();},200);
 let LISIERE_PLACE=null;
@@ -28917,7 +28925,7 @@ P(x,y,4,5,'#f2f2ec');P(x-1,y-3,6,3,'#c03a2a');}
 async function voyagerVers(carte,nom){
 if(voyagerVers.enCours)return;voyagerVers.enCours=true;
 /* PLUS DE VOILE DE TRAJET : on part tout de suite, le lieu se charge directement. */
-try{e.ext={x:joueur.x,y:joueur.y};e.carte=carte;sauver();}catch(x){}
+try{e.ext={x:joueur.x,y:joueur.y};e.extc=CARTE;e.carte=carte;sauver();}catch(x){}
 /* ON ATTEND QUE LA SAUVEGARDE SOIT PARTIE avant de quitter la page. Elle
    était lancée sans être attendue, et le changement d'adresse l'annulait :
    le dernier bout de progrès se perdait à chaque voyage. */
