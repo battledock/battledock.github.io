@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-07-1205"></script>
+<script src="maintenance.js?v=2026-10-07-1245"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-1205';
+var MA_VERSION='2026-10-07-1245';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12551,11 +12551,37 @@ function graverQuaiMetro(){
 /* LE DÉCOR DE LA FORÊT : les roseaux du bord de l'eau et la station */
 function semerLaForet(){
   DECOR=[];
-  /* TRENTE TOUFFES, pas une de plus, réparties sur toute la rive */
-  for(let k=0;DECOR.length<30&&k<400;k++){
+  /* ================= LES PLACES DÉJÀ PRISES =================
+     Elles étaient dégagées APRÈS coup, en filtrant ce qui venait d'être
+     semé : les quotas annoncés n'étaient donc jamais atteints. On semait
+     trois girolles, le filtre en retirait deux, il en restait UNE sur
+     toute la carte. Pareil pour les roseaux (30 annoncés, 28 posés), les
+     érables (15 → 13), les rochers (22 → 17)…
+     On les connaît d'avance : on les consulte pendant le semis. */
+  const F_PRIS=[
+    [370,300,96],                                   /* l'entrée de la mine */
+    [1090,230,92],                                  /* la maison de pierre */
+    [F_ETAL.x,F_ETAL.y,86],                         /* l'étal */
+    [F_PONT.x,Math.round(F_rive(F_PONT.x))-2,46],   /* le ponton */
+  ];
+  const placeLibre=(x,y)=>{
+    /* le sentier du port : rien ne doit boucher la seule sortie */
+    if(x<236&&y>F_SENT_Y-84&&y<F_SENT_Y+142)return false;
+    for(let i=0;i<F_PRIS.length;i++){
+      const p=F_PRIS[i];
+      if(Math.hypot(x-p[0],y-p[1])<p[2])return false;
+    }
+    return true;
+  };
+  /* LES TOUFFES DE ROSEAUX, réparties sur toute la rive. On en vise trente,
+     jamais deux à moins de 34 px l'une de l'autre ; le ponton en occupe une
+     place, et la rive n'en loge que vingt-neuf. C'est la géométrie, pas un
+     raté : à 5 000 essais le résultat est le même. */
+  for(let k=0;DECOR.length<30&&k<1200;k++){
     const x=Math.round(F_hs(k*2.9+5)*(MONDE_L-120))+60, r=Math.round(F_rive(x));
     if(x<40||x>MONDE_L-40)continue;
     if(DECOR.some(o=>Math.abs(o.x-x)<34))continue;      /* jamais deux côte à côte */
+    if(!placeLibre(x,r+6))continue;
     DECOR.push({t:'roseaux',x,y:r+2+Math.round(F_hs(k*11)*7),gr:Math.floor(F_hs(k*13)*3)});}
   /* LES ARBRES : quinze érables, sept chênes dorés, sept charmes.
      Jamais sur la rive, jamais contre le quai, jamais collés entre eux. */
@@ -12566,7 +12592,7 @@ function semerLaForet(){
       const x=Math.round(F_hs(k*1.7+graine)*(MONDE_L-180))+90;
       const y=Math.round(F_hs(k*3.3+graine*2)*(MONDE_H-260))+F_BAR+48;
       if(y>F_rive(x)-26)continue;
-      if(Math.hypot(x-MONDE_L/2,y-MONDE_H/2)<96)continue;
+      if(!placeLibre(x,y))continue;
       if(DECOR.some(o=>ARBRES.includes(o.t)&&Math.hypot(o.x-x,o.y-y)<58))continue;
       DECOR.push({t:type,x,y,v:k%3,gr:k%3,bati:true,demi:type==='x_fo_charme'?10:(type==='x_fo_olive'?18:12)});n++;}
   };
@@ -12581,7 +12607,7 @@ function semerLaForet(){
       const x=Math.round(F_hs(k*2.3+graine)*(MONDE_L-140))+70;
       const y=Math.round(F_hs(k*4.1+graine*3)*(MONDE_H-240))+F_BAR+40;
       if(y>F_rive(x)-14)continue;
-      if(Math.hypot(x-MONDE_L/2,y-MONDE_H/2)<70)continue;
+      if(!placeLibre(x,y))continue;
       if(DECOR.some(o=>o.t===type&&Math.hypot(o.x-x,o.y-y)<70))continue;
       if(DECOR.some(o=>ARBRES.includes(o.t)&&Math.hypot(o.x-x,o.y-y)<22))continue;
       DECOR.push({t:type,x,y,v:k%2,gr:0});n++;}};
@@ -12596,7 +12622,7 @@ function semerLaForet(){
      const r=F_rive(x);
      const y=Math.round(r-18-F_hs(k*5.3+41)*260);        /* du bord de l'eau vers le haut */
      if(y<F_BAR+50)continue;
-     if(Math.hypot(x-MONDE_L/2,y-MONDE_H/2)<80)continue;
+     if(!placeLibre(x,y))continue;
      if(DECOR.some(o=>o.t==='x_fo_argile'&&Math.hypot(o.x-x,o.y-y)<110))continue;
      if(DECOR.some(o=>ARBRES.includes(o.t)&&Math.hypot(o.x-x,o.y-y)<26))continue;
      DECOR.push({t:'x_fo_argile',x,y,v:0,gr:0});n++;}}
@@ -12606,7 +12632,7 @@ function semerLaForet(){
      const x=Math.round(F_hs(k*1.9+401)*(MONDE_L-160))+80;
      const y=Math.round(F_hs(k*4.7+67)*(MONDE_H-280))+F_BAR+52;
      if(y>F_rive(x)-20)continue;
-     if(Math.hypot(x-MONDE_L/2,y-MONDE_H/2)<86)continue;
+     if(!placeLibre(x,y))continue;
      if(DECOR.some(o=>o.t==='x_fo_rocher'&&Math.hypot(o.x-x,o.y-y)<90))continue;
      if(DECOR.some(o=>ARBRES.includes(o.t)&&Math.hypot(o.x-x,o.y-y)<28))continue;
      DECOR.push({t:'x_fo_rocher',x,y,v:k%3,gr:k%3,bati:true,demi:10+((k%3)*2)});n++;}}
@@ -12617,7 +12643,7 @@ function semerLaForet(){
       const x=Math.round(F_hs(k*2.1+graine)*(MONDE_L-150))+75;
       const y=Math.round(F_hs(k*3.9+graine*2)*(MONDE_H-250))+F_BAR+46;
       if(y>F_rive(x)-18)continue;
-      if(Math.hypot(x-MONDE_L/2,y-MONDE_H/2)<78)continue;
+      if(!placeLibre(x,y))continue;
       if(DECOR.some(o=>['x_fo_mure','x_fo_framboise','x_fo_myrtille'].includes(o.t)
         &&Math.hypot(o.x-x,o.y-y)<64))continue;
       if(DECOR.some(o=>ARBRES.includes(o.t)&&Math.hypot(o.x-x,o.y-y)<24))continue;
@@ -12632,7 +12658,7 @@ function semerLaForet(){
       const x=Math.round(F_hs(k*1.3+graine)*(MONDE_L-150))+75;
       const y=Math.round(F_hs(k*4.9+graine*2)*(MONDE_H-250))+F_BAR+46;
       if(y>F_rive(x)-16)continue;
-      if(Math.hypot(x-MONDE_L/2,y-MONDE_H/2)<76)continue;
+      if(!placeLibre(x,y))continue;
       if(DECOR.some(o=>o.t===type&&Math.hypot(o.x-x,o.y-y)<ecart))continue;
       if(DECOR.some(o=>ARBRES.includes(o.t)&&Math.hypot(o.x-x,o.y-y)<22))continue;
       const o={t:type,x,y,v:k%2,gr:k%3};
@@ -12643,11 +12669,11 @@ function semerLaForet(){
   /* la résine n'est pas un objet : elle apparaît d'elle-même sur les arbres */
   /* (le quai du métro a quitté le centre de la forêt : on repart par le
      sentier de l'ouest, à pied. Voir F_SENT_* et verifierLeSentier.) */
-  DECOR.push({t:'x_fo_etal',x:F_ETAL.x,y:F_ETAL.y,v:0,gr:0,bati:true,demi:34,ouvre:'etalForet'});
+  DECOR.push({t:'x_fo_etal',x:F_ETAL.x,y:F_ETAL.y,v:0,gr:0,bati:true,demi:50,ouvre:'etalForet'});
   /* LA MAISON DE PIERRE : l'atelier du bois, au nord-est */
-  DECOR.push({t:'x_fo_maison',x:1090,y:230,v:0,gr:0,bati:true,demi:40,ouvre:'atelierBois'});
+  DECOR.push({t:'x_fo_maison',x:1090,y:230,v:0,gr:0,bati:true,demi:46,ouvre:'atelierBois'});
   /* L'ENTRÉE DE LA MINE, à l'ouest */
-  DECOR.push({t:'x_fo_mine',x:370,y:300,v:0,gr:0,bati:true,demi:42,ouvre:'mineForet'});
+  DECOR.push({t:'x_fo_mine',x:370,y:300,v:0,gr:0,bati:true,demi:54,ouvre:'mineForet'});
   /* le grand chêne de l'ouverture a été retiré */
   DECOR=DECOR.filter(o=>o.t==='x_fo_mine'||Math.hypot(o.x-370,o.y-300)>96);
   DECOR=DECOR.filter(o=>o.t==='x_fo_maison'||Math.hypot(o.x-1090,o.y-230)>92);
@@ -20442,8 +20468,13 @@ g.globalAlpha=1;
 /* SUR LE PONTON : où qu'on soit dessus, c'est lui qu'on vise. */
 function surLePonton(){
   if(CARTE!=='foret'||typeof F_PONT==='undefined')return null;
-  if(Math.abs(joueur.x-F_PONT.x)>17)return null;
-  if(joueur.y<F_rive(F_PONT.x)-16||joueur.y>F_PONT.y+120)return null;
+  /* EXACTEMENT LE TABLIER, NI PLUS NI MOINS. Ces bornes étaient plus
+     larges que le couloir de marche (17 contre 16, 16 contre 14) : aux
+     abscisses 503 et 537 on était sur la terre ferme, on n'avait jamais
+     mis un pied sur le ponton, et le jeu proposait quand même de pêcher
+     — la ligne partait de la berge et le bouchon tombait au milieu du lac. */
+  if(Math.abs(joueur.x-F_PONT.x)>=16)return null;
+  if(joueur.y<F_rive(F_PONT.x)-14||joueur.y>F_PONT.y+116)return null;
   return DECOR.find(o=>o.t==='x_fo_ponton')||null;
 }
 function cible(){
@@ -20459,8 +20490,13 @@ const cueillable=['argile','roseaux','champignons','herbes','plumes',
 const minerai=['fer','cuivre','charbon'].includes(o.t);
 const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro','x_etal','x_pavPoisson','x_pavPeche','x_cabanon','x_cabanonMoi','x_stationVelo','x_paillasson','x_chantier'].includes(o.t);
 const buisFo=['x_fo_mure','x_fo_framboise','x_fo_myrtille'].includes(o.t);
+/* LE PONTON NE PASSE PLUS PAR ICI. Il a son propre test, surLePonton(),
+   tout en haut de cette fonction : il exige d'avoir les pieds sur le
+   tablier. Mais il était aussi admis dans la recherche générale, qui
+   accroche à 48 px — donc depuis la berge, à côté du ponton, le jeu
+   proposait de pêcher et la ligne partait de la terre ferme. */
 if(o.t!=='rocher'&&o.t!=='x_fo_rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'&&!buisFo
-&&o.t!=='x_fo_ponton'&&!batiment&&!o.bati&&!cueillable&&!minerai)continue;
+&&!batiment&&!o.bati&&!cueillable&&!minerai)continue;
 if(buisFo&&o.cueilli&&Date.now()-o.cueilli<240000)continue;
 if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
 if(o.t==='buisson'&&o.cueilli&&Date.now()-o.cueilli<240000)continue;   /* repousse en 4 min */
@@ -26726,10 +26762,10 @@ TAILLES['x_fo_girolle']=[{w:24,h:6},{w:24,h:6},{w:24,h:6}];
 TAILLES['x_fo_plume']=[{w:16,h:5},{w:16,h:5},{w:16,h:5}];
 TAILLES['x_fo_argile']=[{w:26,h:7},{w:26,h:7},{w:26,h:7}];
 TAILLES['x_fo_rocher']=[{w:20,h:8},{w:24,h:9},{w:28,h:10}];
-TAILLES['x_fo_etal']=[{w:62,h:12}];
+TAILLES['x_fo_etal']=[{w:80,h:12}];     /* mesure au sol : 88 px */
 TAILLES['x_fo_ponton']=[{w:36,h:10}];
-TAILLES['x_fo_maison']=[{w:56,h:14}];
-TAILLES['x_fo_mine']=[{w:60,h:14}];
+TAILLES['x_fo_maison']=[{w:72,h:14}];   /* mesure au sol : 80 px */
+TAILLES['x_fo_mine']=[{w:90,h:14}];     /* mesure au sol : 99 px */
 TAILLES['x_fo_chene_grand']=[{w:26,h:12}];
 TAILLES['x_fo_mure']=[{w:22,h:8},{w:26,h:9}];
 TAILLES['x_fo_framboise']=[{w:18,h:8},{w:22,h:9}];
