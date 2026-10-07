@@ -104,7 +104,7 @@
      Même principe que la forêt : seule la ferme se ferme, le port continue
      de tourner. Pour rouvrir : passer FERME_FERMEE à false. */
   var FERME_FERMEE=true;
-  var FERME_OUVERTS=['e029d1fb-7baa-4225-91fd-5cdbef6f8711'];
+  var FERME_OUVERTS=[];   /* personne ne passe, toi compris */
   function versLaFerme(){
     try{
       var q=new URLSearchParams(location.search);
