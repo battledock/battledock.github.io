@@ -11753,7 +11753,11 @@ function construireSolForet(){
 function peindreLesSentes(s){
   const riveSure=(x)=>Math.round(F_rive(x))-18;      /* jamais dans l'eau */
   const N={
-    arrivee:  [214, F_SENT_Y],
+    /* ON SE BRANCHE DANS LA PARTIE PLEINE DU SENTIER DU PORT, pas dans sa
+       queue : peindreLeSentier dissout volontairement sa piste dans les
+       feuilles à partir de la moitié. En partant de 214 on démarrait dans
+       le vide, et les deux chemins ne se rejoignaient pas. */
+    arrivee:  [140, F_SENT_Y],
     carrefour:[566, 432],
     mine:     [370, 324],
     cabane:   [760, 368],
@@ -11784,7 +11788,11 @@ function peindreLesSentes(s){
       /* LA SENTE N'EST PAS UNE RÈGLE. Deux ondes de périodes différentes
          l'écartent de la ligne droite : sans elles on obtient un trait
          tiré au cordeau, qui ne ressemble à rien de ce qu'un pas creuse. */
-      const serp=(F_hs(i*0.021+graine)-0.5)*26+(F_hs(i*0.073+graine*2)-0.5)*9;
+      /* L'ONDULATION S'ÉTEINT AUX DEUX BOUTS. Sans cela une sente arrive à
+         vingt-six pixels de son point d'arrivée : aucune jonction ne tombe
+         juste, et celle du sentier du port tombait carrément à côté. */
+      const amorti=Math.min(1,Math.min(k,1-k)*5);
+      const serp=((F_hs(i*0.021+graine)-0.5)*26+(F_hs(i*0.073+graine*2)-0.5)*9)*amorti;
       const cx=A[0]+ux*i+nx*serp, cy=A[1]+uy*i+ny*serp;
       if(cy>riveSure(cx)+10)continue;               /* on s'arrête au bord de l'eau */
       /* AUSSI LARGE QU'UN HOMME, au moins : une sente plus étroite que le
