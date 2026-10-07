@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-07-0700"></script>
+<script src="maintenance.js?v=2026-10-07-0745"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-07-0700';
+var MA_VERSION='2026-10-07-0745';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -18795,8 +18795,19 @@ setTimeout(()=>location.reload(),800);          /* le cabanon apparaît sur ton 
 ouvrirLeChantier(etape==='cabane'?'« Et voilà. C’est chez toi. »':'« Plus grand, plus solide. »');}
 else ouvrirLeChantier(d&&d.erreur==='manque'?'« Il te manque encore de quoi. »':'« Le chantier ne répond pas. »');};
 }
-function ligne2Permise(){try{return !!(e&&e.id==='e029d1fb-7baa-4225-91fd-5cdbef6f8711');}catch(x){return false;}}
+/* LA PORTE DE LA BÊTA : c'est le serveur qui dit qui entre, pas la page.
+   Avant, l'identifiant du développeur était écrit en clair ici — une fois lu,
+   n'importe qui pouvait se faire passer pour lui. La réponse est demandée une
+   fois au démarrage et gardée ici ; tant qu'on ne l'a pas, la porte est fermée.
+   Pour ouvrir à quelqu'un : une ligne de plus dans la table developpeurs. */
+let BETA_OK=false;
+async function demanderLaBeta(){
+  try{const r=await appelRPC('beta_permise',{p_joueur:e.id});BETA_OK=(r===true);}
+  catch(x){BETA_OK=false;}
+}
+function ligne2Permise(){return BETA_OK===true;}
 setTimeout(()=>{try{verifierLaFete();}catch(x){}},200);
+setTimeout(()=>{try{demanderLaBeta();}catch(x){}},200);
 /* l'annonce de la réouverture, une fois par joueur */
 /* UNE SEULE ANNONCE : le chantier du personnage. */
 setTimeout(()=>{try{annonceChantier();}catch(x){}},1600);
@@ -27333,7 +27344,7 @@ d.querySelector('#tkPlusTard').onclick=()=>d.remove();
 d.querySelector('#tkEnfiler').onclick=()=>{e.ap=Object.assign({},e.ap||DEF_AP,{deguisement:k});
 try{sauver();envoyerSauvegarde(true);monterEnLigne(true);}catch(x){}d.remove();};
 }
-const LIGNE2_OUVERTE_A='e029d1fb-7baa-4225-91fd-5cdbef6f8711';
+/* (LIGNE2_OUVERTE_A retiré : jamais lu, et il publiait un identifiant de compte) */
 const STATIONS_L2=[];   /* la ligne 2 est déposée : le terrain part en forêt */
 const STATIONS_L1=[['extramar','Le port','Les docks, la criée, le casino','port'],
 ['ferme','La ferme','Le champ, l’étal, l’étable','ferme'],

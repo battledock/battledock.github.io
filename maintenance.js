@@ -6,6 +6,13 @@
 (function(){
   var SB='https://zpfkekiavlfphialvphi.supabase.co', CLE='sb_publishable__dfR2lEOwKjhhtavvJEvGw_KVACZnHP';
   var id='';try{id=(JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}')).id||'';}catch(e){}
+  /* LE LAISSEZ-PASSER : on listait ici l'identifiant du développeur, en clair,
+     dans un fichier que tout le monde télécharge. On se contente maintenant
+     d'un marqueur posé sur l'appareil : il n'identifie personne et ne se
+     devine pas depuis la page. Pour se le poser, une fois, dans la console :
+         localStorage.setItem('bd.passe','1')
+     Pour le retirer : localStorage.removeItem('bd.passe') */
+  var PASSE=false;try{PASSE=localStorage.getItem('bd.passe')==='1';}catch(e){}
   var NOUV=[
     [null,'La forêt, en grand','Le pont est remonté, la rive est s’ouvre de l’autre côté de la rivière, et la forêt devient sa propre carte : elle charge plus vite et ne traîne plus les champs de la ferme derrière elle.','🌲'],
     [null,'Ton terrain, ta maison','Au milieu de la rive est, un terrain piqueté qui n’attend que toi. Rassemble planches, pierres et tuiles, et bâtis ton mas — puis agrandis-le.','🏠'],
@@ -62,7 +69,6 @@
      Elle se ferme à part : on n'entre pas dans le bois, le reste du jeu
      continue de tourner. Les joueurs autorisés passent quand même. */
   var FORET_FERMEE=false;   /* la foret est rouverte a tout le monde */
-  var FORET_OUVERTS=['e029d1fb-7baa-4225-91fd-5cdbef6f8711'];
   function versLaForet(){
     try{
       var q=new URLSearchParams(location.search);
@@ -96,7 +102,7 @@
         sv.carte='extramar';localStorage.setItem('bdl.pix.v2',JSON.stringify(sv));}catch(e){}
       location.href='jeu.html?carte=extramar&v='+Date.now();};
   }
-  if(FORET_FERMEE&&versLaForet()&&FORET_OUVERTS.indexOf(id)<0){
+  if(FORET_FERMEE&&versLaForet()&&!PASSE){
     if(document.body)ecranForet();
     else document.addEventListener('DOMContentLoaded',ecranForet);
   }
@@ -104,7 +110,9 @@
      Même principe que la forêt : seule la ferme se ferme, le port continue
      de tourner. Pour rouvrir : passer FERME_FERMEE à false. */
   var FERME_FERMEE=true;
-  var FERME_OUVERTS=[];   /* personne ne passe, toi compris */
+  /* Qui passe malgré la fermeture : personne, sauf un appareil portant le
+     laissez-passer (voir en haut du fichier). Pour fermer même à toi,
+     retire-le : localStorage.removeItem('bd.passe') */
   function versLaFerme(){
     try{
       var q=new URLSearchParams(location.search);
@@ -254,7 +262,7 @@
         sv.carte='extramar';localStorage.setItem('bdl.pix.v2',JSON.stringify(sv));}catch(e){}
       location.href='jeu.html?carte=extramar&v='+Date.now();};
   }
-  if(FERME_FERMEE&&versLaFerme()&&FERME_OUVERTS.indexOf(id)<0){
+  if(FERME_FERMEE&&versLaFerme()&&!PASSE){
     window.__MAINTENANCE=true;   /* posé tout de suite : ferme.html lit ce drapeau avant de rediriger */
     if(document.body)ecranFerme();
     else document.addEventListener('DOMContentLoaded',ecranFerme);
