@@ -18771,7 +18771,17 @@ g.save();g.translate(f3*u*(1),0);
 if(nez==='petit'){R(0,hy+14,1,1,peauC);R(-1,hy+15,3,1,peauO);R(-1,hy+15,1,1,peauT);R(1,hy+15,1,1,peauT);}
 else if(nez==='large'){R(-1,hy+12,1,2,peauO);R(-3,hy+14,6,2,peauO);R(-1,hy+14,2,1,peauC);R(-3,hy+15,1,1,peauT);R(2,hy+15,1,1,peauT);R(-2,hy+16,4,1,T(peau,-12));}
 else if(nez==='retrousse'){R(-1,hy+12,1,2,peauO);R(0,hy+13,1,1,peauC);R(-2,hy+14,4,1,peauO);R(-1,hy+14,1,1,peauT);R(1,hy+14,1,1,peauT);}
-else{R(-1,hy+11,1,4,peauO);R(0,hy+14,1,1,peauC);R(-2,hy+15,4,1,peauO);R(-2,hy+15,1,1,peauT);R(1,hy+15,1,1,peauT);}
+else{
+/* LE NEZ DROIT était une seule colonne d'ombre entre deux grands aplats
+   de peau : à la taille du jeu, il disparaissait. Un nez ne se lit pas à
+   son ombre seule, il se lit au CONTRASTE entre son côté éclairé et son
+   côté sombre. On lui donne donc les deux, plus son ombre portée. */
+R(-1,hy+11,1,4,peauO);                 /* l'arête, côté ombre */
+R(0,hy+11,1,3,T(peau,12));             /* l'arête, côté lumière */
+R(0,hy+14,1,1,peauC);
+R(-2,hy+15,4,1,peauO);R(-2,hy+15,1,1,peauT);R(1,hy+15,1,1,peauT);
+R(-1,hy+16,3,1,T(peau,-10));           /* l'ombre portée sous le nez */
+}
 const bc=T(peau,-62);
 void bc;
 if(bouche==='sourire'){
@@ -18840,9 +18850,17 @@ R(coinInt+(gauche?-1:1),ey,1,h,T(blanc,-10));
 /* L'IRIS : anneau sombre en haut, éclairci en bas — la lumière traverse
    l'œil et rebondit au fond. */
 const iw=profil?2:3, ix=Math.max(x0,Math.min(x0+w-iw,x0+1+regard));
+/* LA COULEUR DES YEUX NE SE VOYAIT PAS. La teinte par défaut est très
+   sombre (#26241f) et l'iris n'était éclairci que de seize points en
+   bas : à l'écran, l'œil lisait comme un trou noir, et personne ne
+   pouvait dire si son personnage avait les yeux bruns ou bleus. On
+   ouvre l'écart — le bas de l'iris monte à quarante, et le bord
+   extérieur reçoit son propre reflet. La pupille, elle, reste noire :
+   c'est elle qui doit rester le point le plus sombre du visage. */
 R(ix,ey,iw,h,oeil);
 R(ix,ey,iw,1,T(oeil,-38));
-R(ix,ey+h-1,iw,1,T(oeil,16));
+R(ix,ey+h-1,iw,1,T(oeil,40));
+R(ix+iw-1,ey+1,1,1,T(oeil,26));
 R(ix,ey,1,h,T(oeil,-16));
 R(ix+(iw>2?1:0),ey+1,1,Math.min(2,h-1),N);                 /* la pupille */
 /* LES DEUX REFLETS : un franc en haut-gauche, un discret en bas-droite. */
@@ -18859,6 +18877,11 @@ else if(fy==='doux'){R(x0,ey+h,w,1,T(peau,-12));
 R(gauche?x0:x0+w-1,ey+h-1,1,1,T(peau,-6));R(x0+1,ey-2,w-2,1,T(peau,-16));}
 else if(fy==='severes'){R(gauche?x0+w-2:x0,ey-1,2,2,lid);R(x0,ey,w,1,T(oeil,-40));}
 else if(fy==='ronds'){R(x0,ey+h,w,1,T(peau,-12));R(coinExt,ey,1,1,T(peau,-20));}
+/* LA PAUPIÈRE DU BAS. Les formes « fatigués », « doux » et « ronds » en
+   avaient une, la forme par défaut non : l'œil flottait sur la joue au
+   lieu d'être posé dans son orbite. Une ligne, à peine plus sombre que
+   la peau — assez pour fermer la forme, pas assez pour faire un cerne. */
+else R(x0+1,ey+h,w-2,1,T(peau,-11));
 }
 function sourcilDe(ex,ey,profil){
 /* LE SOURCIL SUIT L'ŒIL. Quand le regard part de côté, le sourcil du
