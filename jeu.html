@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-08-1810"></script>
+<script src="maintenance.js?v=2026-10-08-1845"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-08-1810';
+var MA_VERSION='2026-10-08-1845';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -19682,7 +19682,25 @@ if(!bloque(ax,ny))ay=ny;
 }
 bloqueBord=(ax===joueur.x&&Math.abs(vx)>2)||(ay===joueur.y&&Math.abs(vy)>2);
 joueur.x=ax;joueur.y=ay;
-if(!bloqueBord)joueur.pas+=v*dt*0.30;
+/* ================= LA CADENCE DE LA FOULÉE =================
+   Mesuré : le personnage fait 44,5 px de haut, sa hanche est à 11,5 px du
+   sol et son pas mesure 11 px. À 112 px/s il se déplace donc à 2,5
+   hauteurs de corps par seconde — un humain qui marche en fait 0,8, un
+   sprinteur 2,7. Pour que les pieds ne patinent pas à cette vitesse il
+   faudrait DIX pas par seconde : c'est ce que faisait le coefficient 0,30
+   (4,2 cycles/s, soit 8,4 pas/s), et c'est ce qui donnait la machine à
+   coudre.
+
+   Allonger la foulée ne marche pas : à l'extrême elle étire déjà la jambe
+   de 10 % (hypot(5,5 ; 11,5) = 12,7 pour une jambe de 11,5), et un pas de
+   11 px vaut 0,96 longueur de jambe quand le confortable est 0,8.
+
+   On calme donc la cadence à 2,8 cycles/s et on assume 45 % de glissement
+   sous les pieds — l'œil pardonne un pied qui traîne, jamais une jambe
+   qui s'affole. C'est le compromis de la quasi-totalité des jeux en deux
+   dimensions. Pour revenir en arrière : 0,30. Pour supprimer le
+   glissement sans rien dessiner : baisser la vitesse à 65 px/s. */
+if(!bloqueBord)joueur.pas+=v*dt*0.20;
 const versX=Math.abs(vx)>Math.abs(vy)*1.35;
 const versY=Math.abs(vy)>Math.abs(vx)*1.35;
 if(versX)joueur.dir=vx>0?'droite':'gauche';
@@ -21695,7 +21713,7 @@ const dx=bx-a.x, dy=by-a.y, d=Math.hypot(dx,dy);
 if(d>1){
 const v=Math.min(d,Math.max(95,d*2.6)*dt);
 a.x+=dx/d*v;a.y+=dy/d*v;
-a.pas+=v*0.34;a.marche=true;
+a.pas+=v*0.227;a.marche=true;      /* même cadence que le joueur, voir LA CADENCE DE LA FOULÉE */
 const vSec=v/Math.max(dt,0.001);
 a.court=vSec>150;
 a.dir=a.dirEnvoyee||a.dir||'bas';
