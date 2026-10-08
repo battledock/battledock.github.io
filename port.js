@@ -12,6 +12,13 @@ metro:[1316,496],      /* le métro reprend la place de l'ancienne gare */
    derniere facade et l'eau. 'seuil' est la ligne au-dela de laquelle, en
    poussant, on part ; 'arrivee' est l'endroit ou l'on repose le pied. */
 sente:{seuil:1690, y0:194, y1:332, arrivee:[1636,258]},
+/* LA SORTIE DES CHAMPS, au bout ouest de la promenade : le pendant exact
+   de la sente du bois, de l'autre cote du quai. Meme bande, meme demi-
+   seconde de poussee, mais vers l'ouest. 'seuil' est la ligne en deca de
+   laquelle on part ; 'arrivee' est l'endroit ou l'on repose le pied en
+   revenant. Le platane de l'ouest a ete retire : il tenait pile dans la
+   bande et on se cognait dedans avant d'avoir pu pousser. */
+chemin:{seuil:70, y0:194, y1:332, arrivee:[124,258]},
 ruelle:{x:630,l:38,haut:30},   /* la montée vers Notre-Dame : axe, demi-largeur, sommet */
 boulo:[30,392,120,172],   /* le boulodrome : x, y, largeur, hauteur */
 };
@@ -2122,7 +2129,16 @@ if(k===5){XCAL['x_peigne0']=graverLePeigne();CALQUES_DECO['x_peigne']=XCAL['x_pe
 if(k===7){XCAL['x_crousti0']=graverCroustiPort();CALQUES_DECO['x_crousti']=XCAL['x_crousti0'];P('x_crousti',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'crousti'});continue;}   /* le fast-food du quai */
 P('x_maison',70+k*140,XP.maisonsY,{v:k,col:[70,24]});
 }
-[44,1190].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+30,XP.maisonsY+72);});   /* les quatre platanes du quai, chacun avec son banc */
+/* LE PLATANE DE L'OUEST EST PARTI avec son banc : il poussait en 44,212,
+   c'est-a-dire au milieu de la bande du chemin de la ferme. On butait
+   dessus au lieu de s'en aller. Il reste celui de l'est. */
+[1190].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k+1,col:[8,4]});P('bancP',x+30,XP.maisonsY+72);});   /* le platane du quai, avec son banc */
+/* LES DEUX PANNEAUX DU BOUT DU QUAI. Ils etaient graves mais jamais semes :
+   le dessin existait, l'objet n'etait pose nulle part et l'on ne voyait
+   donc aucun des deux. On les plante maintenant, chacun en retrait de son
+   seuil, au milieu de sa bande (y=258). */
+P('x_panneauF',XP.sente.seuil-78,258,{col:[6,8]});      /* « LA FORÊT », a l'est */
+P('x_panneauFe',XP.chemin.seuil+78,258,{col:[6,8]});    /* « LA FERME », a l'ouest */
 let nv=0;
 [360,620,880].forEach(px=>{                     /* on compte aussi l'ancien ponton du milieu : les autres voiliers gardent leur allure */
 const la=XP.pontons.includes(px);
