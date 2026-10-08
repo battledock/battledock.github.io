@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-08-1145"></script>
+<script src="maintenance.js?v=2026-10-08-1230"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-08-1145';
+var MA_VERSION='2026-10-08-1230';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -13544,16 +13544,51 @@ function dessinerUnVelo(g,x,y,dir,pas,v,roule,couche){
 const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(a),Math.round(b),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
 const c='#7a1f2b', cr='#efe4c8', rot=(pas||0)*4.2;
 const COTE=dir==='gauche'||dir==='droite';
+/* LES TROIS QUARTS. On ne redessine pas un troisième vélo : on reprend
+   celui de profil, écrasé à 62 % en largeur — c'est ce que fait la
+   perspective — avec un léger cisaillement qui fait descendre l'avant
+   quand il vient vers nous, et monter quand il s'éloigne. Les roues,
+   tracées à l'arc, deviennent ainsi les ellipses qu'il faut. */
+const DIAG=String(dir).indexOf('-')>0;
 /* LE VÉLO AVANCE DE CINQ PIXELS SOUS SON CYCLISTE. Il était centré sur
    lui : la selle tombait cinq pixels derrière ses fesses et le pédalier
    juste sous son nombril. Décalé, la selle vient sous les hanches, le
    pédalier passe devant — c'est la position d'un vélo, pas d'un tabouret. */
-const s0=dir==='droite'?1:-1;
-if(COTE)x+=5*s0;
+const s0=String(dir).endsWith('droite')?1:-1;
+if(COTE||DIAG)x+=(DIAG?3:5)*s0;
 const DEVANT=couche===1;
-if(!DEVANT){g.fillStyle='rgba(30,25,15,.28)';g.beginPath();g.ellipse(x,y+1,COTE?13:4,2,0,0,Math.PI*2);g.fill();}
-if(COTE){
-if(DEVANT)return;
+if(!DEVANT){g.fillStyle='rgba(30,25,15,.28)';g.beginPath();g.ellipse(x,y+1,COTE?13:(DIAG?9:4),2,0,0,Math.PI*2);g.fill();}
+const versNous=String(dir).startsWith('bas')?1:-1;
+if(COTE||DIAG){
+/* ================= LE GUIDON DE TROIS QUARTS =================
+   Sous l'écrasement, il se réduisait à un point : les mains se refermaient
+   sur du vide. On le redessine à plat, par-dessus la perspective — une
+   barre de quinze pixels dont le bout proche descend. Devant le cycliste
+   quand on vient vers nous, derrière quand on s'éloigne. */
+const guidon34=()=>{
+  /* LA BARRE EST PERPENDICULAIRE À LA MARCHE : si l'on file vers le bas à
+     droite, la poignée de gauche est la plus proche de nous, donc la plus
+     basse. Le premier essai inclinait la barre dans l'autre sens et elle
+     barrait la poitrine comme une ceinture de sécurité. */
+  const gy=y-16, d=-1.9*s0*versNous;
+  g.strokeStyle='#aab2b9';g.lineWidth=2;g.lineCap='round';
+  g.beginPath();g.moveTo(x-7.5,gy-d);g.lineTo(x+7.5,gy+d);g.stroke();
+  g.strokeStyle='#e2e8ec';g.lineWidth=.7;
+  g.beginPath();g.moveTo(x-7,gy-d-.6);g.lineTo(x+7,gy+d-.6);g.stroke();g.lineCap='butt';
+  R(x-9.6,gy-d-1.4,3,2.8,'#5a3418');R(x-9.6,gy-d-1.4,3,.8,'#8a5a30');
+  R(x+6.8,gy+d-1.4,3,2.8,'#5a3418');R(x+6.8,gy+d-1.4,3,.8,'#8a5a30');
+  if(versNous>0)R(x-1.2,gy-1,2.4,1.6,'#e8c06a');                /* la sonnette */
+};
+if(DIAG){
+  if(DEVANT&&versNous<0)return;        /* de dos, rien ne passe devant */
+  if(DEVANT){guidon34();return;}       /* de face, le guidon est devant lui */
+  guidon34();                          /* de dos, il est derrière : on le pose d'abord */
+}
+else if(DEVANT)return;
+if(DIAG){
+  g.save();g.translate(x,y);g.transform(0.62,0.10*versNous*s0,0,1,0,0);
+  x=0;y=0;
+}
 const s=s0;
 const P=(dx,dy)=>[x+dx*s,y+dy];
 const B=(dx,dy,w,h,col)=>{g.fillStyle=col;g.fillRect(s>0?x+dx:x-dx-w,y+dy,w,h);};       /* un bloc, retourné si l'on va à gauche */
@@ -13592,7 +13627,8 @@ g.strokeStyle='#3a3a36';g.lineWidth=.8;g.beginPath();g.arc(px,py,2,0,Math.PI*2);
 g.strokeStyle='#5a5a54';g.lineWidth=.9;g.beginPath();g.moveTo(px,py);g.lineTo(qx,qy);g.stroke();
 R(qx-1.5,qy-.5,3,1,'#2a2c2e');
 if(roule!==false)R(qx-1.5+.5*s,qy-1.8,3,1.6,k?'#3a2616':'#4a3220');});
-if(roule){g.fillStyle='rgba(255,255,255,.35)';g.fillRect(Math.round(x-15*s-(s>0?5:0)),Math.round(y-9),5,1);g.fillRect(Math.round(x-14*s-(s>0?3:0)),Math.round(y-6),3,1);}
+if(roule&&!DIAG){g.fillStyle='rgba(255,255,255,.35)';g.fillRect(Math.round(x-15*s-(s>0?5:0)),Math.round(y-9),5,1);g.fillRect(Math.round(x-14*s-(s>0?3:0)),Math.round(y-6),3,1);}
+if(DIAG)g.restore();
 }else{
 /* ================= LE VÉLO DE FACE ET DE DOS =================
    Il n'en restait qu'un piquet, une roue grosse comme une allumette et un
@@ -17544,6 +17580,20 @@ if(PEDALE){
   if(cote){
     pG=surCercle(PEDALE.k,      -demiH);
     pD=surCercle(PEDALE.k+0.5,   demiH);
+  }else if(diag){
+    /* DE TROIS QUARTS, le cercle se voit encore, mais écrasé : c'est une
+       ellipse. Le pied avance et recule d'un peu plus du tiers de ce qu'il
+       fait de profil, et monte de toute sa hauteur. Sans cela on avait le
+       va-et-vient de face sur un corps tourné — ce qui ne ressemblait à
+       rien. */
+    const sv=(tourne<0)?-1:1;
+    const ell=(ph2)=>{
+      const a=ph2*Math.PI*2*sv;
+      return {x:Math.cos(a)*0.38, lift:Math.sin(a)*1.25,
+              pointe:Math.max(0,Math.sin(a))*0.5, talon:Math.max(0,-Math.sin(a))*0.3};
+    };
+    pG=ell(PEDALE.k);
+    pD=ell(PEDALE.k+0.5);
   }else{
     /* DE FACE ET DE DOS, le cercle ne se voit pas : il ne reste de lui que
        le haut et le bas. Les pieds montent et descendent en opposition, et
