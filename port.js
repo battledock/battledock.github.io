@@ -1315,11 +1315,17 @@ const sacApp=q.appats||{}, fin=q.finitions||[];
 /* ce que contient chaque onglet */
 const SECTIONS=[
  {id:'cannes',t:'LES CANNES',s:'Chaque canne a son caractère. À toi de trouver la tienne.',ic:'bambou',
+  /* UNE CANNE ACHETÉE RESTE À SOI. 'canne' ne dit plus que celle qu'on
+     tient ; 'cannes_max' dit jusqu'où l'on est monté. Les cannes déjà
+     payées portent donc un bouton CHOISIR — sans quoi acheter la suivante
+     effaçait la précédente, et on ne pouvait plus pêcher qu'au large.
+     Si le serveur est d'une version plus ancienne et ne renvoie pas
+     cannes_max, on retombe sur l'échelle d'avant. */
   l:CANNES.filter(c=>c.id).map((c,k)=>{
-    const n=k+1;
+    const n=k+1, max=(typeof q.cannes_max==='number')?q.cannes_max:(q.canne||0);
     return {id:c.id,nom:c.nom.replace('Canne en ','').replace('Canne de ','').replace('Canne du ',''),
-      prix:c.prix,d:c.effet,
-      etat: q.canne>n?'possede' : (q.canne===n?'equipee' : (q.canne===n-1?'achat':'verrou'))};})},
+      prix:c.prix,d:c.effet,cval:n,choix:(n<=max&&n!==q.canne)?'c':null,
+      etat: q.canne===n?'equipee' : (n<=max?'possede' : (n===max+1?'achat':'verrou'))};})},
  {id:'access',t:'LES ACCESSOIRES',s:'De petits détails qui font une grande différence.',ic:'moulinet',
   l:ACCESSOIRES.map(a=>({id:a.id,nom:a.nom,prix:a.prix,d:a.effet,
     etat:({moulinet:q.moulinet,bouchon:q.bouchon,sondeur:q.sondeur,glaciere:q.glaciere}[a.id])?'possede':'achat'}))},
@@ -1346,7 +1352,7 @@ const carte=(a)=>{
   const bouton =
     a.etat==='equipee' ? '<button class="pB eq" disabled>ÉQUIPÉE</button>' :
     a.etat==='possede' ? (a.choix
-        ? '<button class="pB '+(a.choisi?'eq':'ch')+'" data-'+a.choix+'="'+a.id+'">'+(a.choisi?'CHOISI':'CHOISIR')+'</button>'
+        ? '<button class="pB '+(a.choisi?'eq':'ch')+'" data-'+a.choix+'="'+(a.cval!==undefined?a.cval:a.id)+'">'+(a.choisi?'CHOISI':'CHOISIR')+'</button>'
         : '<button class="pB eq" disabled>✓ À TOI</button>') :
     a.etat==='verrou'  ? '<button class="pB off" disabled>VERROUILLÉ</button>' :
     '<button class="pB" data-a="'+a.id+'">ACHETER</button>';
@@ -1386,6 +1392,12 @@ $('catPages').querySelectorAll('[data-m]').forEach(b=>b.onclick=async()=>{
 $('catPages').querySelectorAll('[data-f]').forEach(b=>b.onclick=async()=>{
   const d=await appelRPC('choisir_peche',{p_joueur:e.id,p_appat:null,p_finition:b.dataset.f});
   if(d&&!d.erreur)EQUIP_PECHE=d;afficherPecheMarine();});
+/* REPRENDRE UNE CANNE DÉJÀ ACHETÉE */
+$('catPages').querySelectorAll('[data-c]').forEach(b=>b.onclick=async()=>{
+  b.disabled=true;b.textContent='…';
+  const d=await appelRPC('choisir_peche',{p_joueur:e.id,p_appat:null,p_finition:null,p_canne:+b.dataset.c});
+  if(d&&!d.erreur){EQUIP_PECHE=d;jouer('cueille');afficherPecheMarine('« Celle-là ? Bon choix. »');}
+  else afficherPecheMarine((d&&d.erreur)||'La boutique n’a pas suivi : recharge la page.');});
 }
 
 async function acheterALaBoutique(id,b){
