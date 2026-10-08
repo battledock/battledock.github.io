@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-09-0330"></script>
+<script src="maintenance.js?v=2026-10-09-0420"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-09-0330';
+var MA_VERSION='2026-10-09-0420';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -18323,7 +18323,12 @@ if(PI2&&PI2.st==='ski'){R(cx-4,by-7,8,1,'#c8ccd2');R(cx-4,by-4,8,1,'#c8ccd2');R(
 }
 function soulierBase(cx,by,fonce,pp){
 const c=fonce?chauO:chau, cC=fonce?chau:chauC, cO=fonce?T(chau,-40):chauO;
-const deroule=pp&&cote?(pp.pointe>0.3?1:(pp.talon>0.5?-1:0)):0;   /* 1 : talon levé ; -1 : pointe levée */
+/* LE DÉROULÉ DU PIED N'EXISTAIT QUE DE PROFIL. De face, de dos et sur
+   les quatre diagonales, le soulier était un bloc posé bien à plat du
+   premier au dernier temps du cycle — le personnage glissait sur deux
+   patins. Or le déroulé est ce qui fait qu'un pied MARCHE : le talon qui
+   touche, le pied qui se pose, la pointe qui pousse. */
+const deroule=pp?(pp.pointe>0.3?1:(pp.talon>0.5?-1:0)):0;   /* 1 : talon levé ; -1 : pointe levée */
 const semelle=soulier==='baskets'?'#f2efe4':T(chau,-50);
 if(cote){
 if(soulier==='sandales'){
@@ -18344,7 +18349,12 @@ if(soulier==='sandales'){
 R(cx-3,by-3,7,3,peau);for(let k=0;k<4;k++)R(cx-3+k*2,by-1,1,1,peauO);            /* les orteils */
 R(cx-3,by-3,7,1,c);R(cx-1,by-2,3,1,c);R(cx-3,by,7,1,cO);return;}
 const h=soulier==='bottes'?8:(soulier==='bottillons'?5:3);
-R(cx-4,by-h,8,h,c);R(cx-4,by-2,9,2,c);                                              /* la tige, le bout qui dépasse */
+/* DE FACE on ne voit presque rien du déroulé — c'est normal, il pointe
+   vers la caméra. DE TROIS QUARTS on en voit la moitié : la tige monte
+   quand le talon se lève, le bout monte quand la pointe se lève, et le
+   bout part dans le sens de la marche au lieu de rester centré. */
+const dyT=deroule===1?-1:0, dyB=deroule===-1?-1:0, avB=diag?tourne:0;
+R(cx-4,by-h+dyT,8,h,c);R(cx-4+avB,by-2+dyB,9,2,c);                                  /* la tige, le bout qui dépasse */
 /* LE CREUX ENTRE LES DEUX SOULIERS : sans lui, de face, les deux pieds se
    touchent et forment une seule masse. */
 R(cx+4,by-h,1,h+2,cO);
@@ -19783,7 +19793,19 @@ const lean=frG>0?Math.round(pencheG*1.3):(PEDALE&&cote?9:(COURSE&&cote?2:0));   
 const penche=(f)=>{if(!lean)return f();g.save();g.translate(s*lean*u,0);f();g.restore();};
 if(!dos&&!cote)skisDe();                                                        /* de face, les skis passent derrière le corps */
 if(cote){
-if(frG>0)penche(()=>brasGeste(true,true));else penche(()=>bras(0,avD,true));      /* le bras du fond suit la jambe d'en face */
+/* ================= LES DEUX BRAS =================
+   De profil, le bras du fond recevait l'avance de SA PROPRE jambe. Or un
+   bras s'oppose toujours à la jambe de son côté — c'est ce qui équilibre
+   la marche, et c'est la première chose qu'on remarque quand ça manque.
+
+   Pire : la jambe du fond et celle de devant étant en opposition de
+   phase, les deux bras recevaient alors presque la même valeur. Ils se
+   superposaient donc exactement, et le personnage marchait avec UN seul
+   bras visible — l'autre caché derrière, au même endroit.
+
+   Vérifié en débardeur, où les deux bras se voient : avant, un bras ;
+   après, deux bras qui se croisent. */
+if(frG>0)penche(()=>brasGeste(true,true));else penche(()=>bras(0,-avD,true));     /* à l'opposé de SA jambe, voir LES DEUX BRAS */
 penche(()=>sac(false));
 jambe(0,avD,lvD,true);
 penche(()=>torse());
@@ -19876,7 +19898,7 @@ seg(hX,hY,kX,kY,SX.jambe,c);
 seg(hX+1,hY+1,kX+1,kY,1,fonce?pant:pantC);                               /* la cuisse, éclairée devant */
 seg(kX,kY,fX,fY,SX.jambe-1,bas2);
 R(Math.round(kX)-1,Math.round(kY),2,1,fonce?pant:pantC);                 /* le genou */
-soulierDe(Math.round(fX),Math.round(fY)+3,fonce);};
+soulierDe(Math.round(fX),Math.round(fY)+3,fonce,pp);};
 /* QUELLE JAMBE EST AU FOND : celle dont l'écart de hanche la fait monter
    à l'écran. Le signe sort de la projection elle-même, on ne le devine
    plus. */
