@@ -286,7 +286,16 @@ g.fillStyle='#000';g.beginPath();g.rect(0,0,W,H);g.arc(W/2,H/2,Math.min(W,H)*0.4
    l'autre. */
 function dallesDuQuai(cb){
   const A=(i)=>alea(i*1.37+0.5);
-  let y=70;
+  /* LE PAVE COMMENCE AU PIED DES FACADES, PAS A 70.
+     Il partait de 70, c'est-a-dire 80 px au-dessus du sol : tout ce qui
+     est peint par-dessus avec de la transparence — les trois plans de
+     collines et leur voile atmospherique, la brume, les toits du fond —
+     laissait voir la grille des dalles au travers. On avait un quadrillage
+     de briques dans le ciel, derriere les affiches et sur les collines.
+     On ne pave donc plus que le sol, a partir de six pixels au-dessus du
+     pied des facades ; au-dessus, l'aplat de fond suffit, il est de toute
+     facon couvert par les immeubles ou par les collines. */
+  let y=XP.maisonsY-6;
   while(y<MONDE_H){
     /* CHAQUE RANG A SA PROPRE HAUTEUR. Des rangs tous egaux, c'est de
        l'appareil de briques quoi qu'on fasse aux proportions : l'oeil lit
