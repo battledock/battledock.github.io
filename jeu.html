@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-09-0020"></script>
+<script src="maintenance.js?v=2026-10-09-0115"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-09-0020';
+var MA_VERSION='2026-10-09-0115';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -19704,40 +19704,66 @@ else{sac(false);tete();echarpeDe();cheveuxDessus();if(chapeau==='aucun')finition
 if(!dos)cheveuxDerriere();
 if(diag){
 /* ================= LA JAMBE DE TROIS QUARTS =================
-   Elle faisait une boucle : une cuisse qui part en biais, un mollet qui
-   revient, et entre les deux un genou planté à cinq pixels sur le côté.
+   Elle avait sa propre cinématique, inventée à part : un pied raccourci
+   d'un côté, un genou résolu de l'autre, un écart de hanches à plat, et
+   une profondeur de un virgule six collée au jugé. Quatre règles qui ne
+   savaient rien les unes des autres — d'où les jambes qui se croisaient,
+   enfermaient un trou, et ne ressemblaient à rien de logique.
 
-   La cause : le PIED était raccourci pour la perspective (PAS_34 au lieu
-   de PAS_U, 54 %) mais le GENOU, lui, était résolu à pleine échelle. On
-   calculait donc le coude d'une jambe longue qu'on posait sur une jambe
-   courte — d'où le genou qui sort du corps.
+   Il n'y a plus qu'UNE règle : on résout la jambe dans LE PLAN DE
+   MARCHE, à pleine échelle, exactement comme de profil — même table de
+   foulée, même longueur de jambe, même genou. Puis on projette le
+   résultat. Hanche, genou, pied subissent la même projection, donc ils
+   ne peuvent plus se contredire.
 
-   On résout maintenant la jambe DE PROFIL, à pleine échelle, puis on
-   projette : pied et genou subissent exactement le même raccourci. La
-   verticale, elle, ne se raccourcit pas — c'est tout l'intérêt de ne pas
-   écraser l'IK elle-même. */
-const jd=(hx,pp,fonce)=>{
-const K=PAS_34/PAS_U;
-const dxP=pp.x*PAS_U*AMPL*tourne;                     /* l'avance du pied, vue de profil */
-const fy=-3-pp.lift*6+(dos?-1:1)*pp.x*1.6;
-const L2=(Y_PIED-Y_HANCHE)/2, dyk=fy-yHan, d=Math.min(L2*2,Math.hypot(dxP,dyk));
-const hk=Math.sqrt(Math.max(0,L2*L2-(d/2)*(d/2))), nl=Math.hypot(dxP,dyk)||1;
-let nx=-dyk/nl, ny=dxP/nl;if(nx*tourne<0){nx=-nx;ny=-ny;}                    /* le genou plie vers l'avant */
-const fx=hx+dxP*K;
-const kx=hx+(dxP/2+nx*hk)*K, ky=yHan+dyk/2+ny*hk;
+   LA PROJECTION. Le sol est vu de biais : un pas en profondeur descend à
+   l'écran de PROF_Z fois sa longueur. Pour une diagonale à quarante-cinq
+   degrés, l'axe de marche et l'axe des hanches se projettent ainsi :
+
+     marche  (u) -> ( u·0,707·sx ,  u·0,707·PROF_Z·sy )
+     hanches (v) -> ( v·0,707·sy , -v·0,707·PROF_Z·sx )
+     hauteur (h) -> (          0 ,                  h )
+
+   où sx est le sens horizontal de la marche et sy son sens vertical.
+   C'est ce deuxième terme qui manquait : l'axe des hanches a une
+   composante VERTICALE. Une hanche est donc plus haute que l'autre, et
+   la jambe du fond part de plus haut — c'est ce qui fait qu'on lit un
+   corps tourné et non deux jambes côte à côte.
+
+   PROF_Z vaut 0,23 : la même compression que la vue de face, où un pas
+   entier de treize unités descend de trois. Les deux vues racontent donc
+   la même perspective. */
+const CX=0.7071, PROF_Z=0.23;
+const sx=tourne, sy=dos?-1:1;
+/* un point du plan de marche (u = avance, h = hauteur) vers l'écran,
+   pour une jambe décalée de v sur l'axe des hanches */
+const pjX=(v,u)=>v*CX*sy+u*CX*sx+vis;
+const pjY=(v,u,h)=>h-v*CX*PROF_Z*sx+u*CX*PROF_Z*sy;
+const jd=(v,pp,fonce)=>{
+const fu=pp.x*PAS_U*AMPL, fh=-3-pp.lift*6;
+/* LE GENOU, résolu dans le plan de marche : deux os égaux, pliés vers
+   l'avant. C'est le même calcul que de profil, au signe près. */
+const L2=(Y_PIED-Y_HANCHE)/2;
+const du=fu, dh=fh-yHan, d=Math.min(L2*2,Math.hypot(du,dh));
+const hk=Math.sqrt(Math.max(0,L2*L2-(d/2)*(d/2))), nl=Math.hypot(du,dh)||1;
+let nu=-dh/nl, nh=du/nl; if(nu<0){nu=-nu;nh=-nh;}
+const ku=du/2+nu*hk, kh=yHan+dh/2+nh*hk;
+const hX=pjX(v,0),  hY=pjY(v,0,yHan);
+const kX=pjX(v,ku), kY=pjY(v,ku,kh);
+const fX=pjX(v,fu), fY=pjY(v,fu,fh);
 const c=fonce?pantO:pant, bas2=court?(fonce?peauO:peau):c;
-seg(hx,yHan,kx,ky,SX.jambe,c);seg(kx,ky,fx,fy,SX.jambe-1,bas2);
-R(Math.round(kx)-1,Math.round(ky),2,1,fonce?pant:pantC);                  /* le genou */
-soulierDe(Math.round(fx),Math.round(fy)+3,fonce);};
-const loinG=(tourne>0)!==dos;                                          /* quelle jambe est au fond */
-/* L'ÉCART DES HANCHES SE RACCOURCIT AUSSI. Il était à pleine largeur
-   alors que la foulée, elle, était projetée : les deux jambes se
-   croisaient donc plus que de raison et enfermaient un trou de fond
-   entre elles. L'axe des hanches est perpendiculaire à la marche, donc
-   en diagonale il subit exactement le même cos 45° que le pas. */
-const ecH=Math.max(1,Math.round(HA/2*PAS_34/PAS_U));
-const hG=-ecH+vis, hD=ecH+vis;
-if(loinG){jd(hG,dos?pD:pG,true);jd(hD,dos?pG:pD,false);}else{jd(hD,dos?pG:pD,true);jd(hG,dos?pD:pG,false);}
+seg(hX,hY,kX,kY,SX.jambe,c);
+seg(hX+1,hY+1,kX+1,kY,1,fonce?pant:pantC);                               /* la cuisse, éclairée devant */
+seg(kX,kY,fX,fY,SX.jambe-1,bas2);
+R(Math.round(kX)-1,Math.round(kY),2,1,fonce?pant:pantC);                 /* le genou */
+soulierDe(Math.round(fX),Math.round(fY)+3,fonce);};
+/* QUELLE JAMBE EST AU FOND : celle dont l'écart de hanche la fait monter
+   à l'écran. Le signe sort de la projection elle-même, on ne le devine
+   plus. */
+const vD=HA/2, vG=-HA/2;
+const loinEstD=(vD*sx)>0;
+if(loinEstD){jd(vD,pD,true);jd(vG,pG,false);}
+else{jd(vG,pG,true);jd(vD,pD,false);}
 }else{
 /* DE TROIS QUARTS, l'écart entre les jambes se réduit et l'ensemble
    glisse dans le sens du pivot. */
