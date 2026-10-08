@@ -395,8 +395,8 @@ R(0,XP.maisonsY-2,MONDE_L,8,'rgba(60,40,20,.12)');
    faisant maintenant la meme largeur, les deux distances sont egales : 25
    px de bois nu entre le cadre et la facade, 25 entre le cadre et le bord
    du cadre du monde, des deux cotes. */
-graverLAffiche(g,Math.round((XP.finVille+MONDE_L)/2),XP.maisonsY-4,AFFICHE_STYLE,'LA FORÊT',1);
-graverLAffiche(g,Math.round(XP.debutVille/2),XP.maisonsY-4,AFFICHE_STYLE,'LA FERME',-1);
+graverLAffiche(g,Math.round((XP.finVille+MONDE_L)/2),XP.maisonsY-4,'peinte','LA FORÊT',1);
+graverLAffiche(g,Math.round(XP.debutVille/2),XP.maisonsY-4,'peinte_ferme','LA FERME',-1);
 /* ================= LE GARDE-CORPS DU BOUT =================
    La ou les facades s'arretent, un parapet a balustres separe la
    promenade du coteau. Sans lui le pave et la colline se touchaient sans
@@ -658,12 +658,16 @@ for(let i=0;i<lacets.length;i++){h2.fillStyle='#ffd98a';h2.fillRect(lacets[i][0]
 return {toile:c,W,H:Ht,sol,nuit:n2};
 }
 /* ================= LA GRANDE AFFICHE DU BOUT DU QUAI =================
-   Trois dessins possibles, tous de meme encombrement : 'peinte' (une
-   affiche de chemin de fer, coucher de soleil et pinede), 'bois' (le
-   panneau de parc, planche epaisse et lettres creusees), 'email' (la
-   plaque emaillee bleue des rues de Marseille, en grand). On en change
-   avec AFFICHE_STYLE. */
-const AFFICHE_STYLE='email';
+   Quatre dessins possibles, tous de meme encombrement : 'peinte' (une
+   affiche de chemin de fer, coucher de soleil et pinede), 'peinte_ferme'
+   (la meme serie, mais le mas, les cypres et les sillons), 'bois' (le
+   panneau de parc, planche epaisse et lettres creusees) et 'email' (la
+   plaque emaillee bleue des rues de Marseille, en grand).
+
+   LE STYLE N'EST PLUS UN REGLAGE UNIQUE : chaque bout du quai nomme le
+   sien a l'appel, dans construireSolExtramar. Les deux en service sont
+   les deux affiches peintes — meme construction, memes mesures, meme
+   bandeau de titre, et pour seule difference le pays qu'elles montrent. */
 /* L'ALPHABET, en pixels pleins : net a toutes les tailles, contrairement a
    une police vectorielle que la camera agrandirait. Sept rangs : les deux
    premiers ne servent qu'au chapeau du E. */
@@ -743,6 +747,40 @@ if(style==='peinte'){
      lettres. */
   const by=y0+H-26;
   R(x0,by,L,22,'#241a0e');R(x0,by,L,2,'#6b5330');
+  ecrireA(g,mot,cx,by+3,2,'#f3e3b6','#120c06');
+}
+else if(style==='peinte_ferme'){
+  /* LA MEME AFFICHE DE CHEMIN DE FER, MAIS LES CHAMPS. Celle de la foret
+     montre une pinede ; celle-ci montre ce qu'on va trouver a l'ouest : le
+     mas a toit rouge, les cypres en rideau, les sillons et les epis, le
+     soleil bas. Meme construction, memes mesures, meme bandeau de titre —
+     seuls les motifs changent, pour que les deux bouts du quai restent
+     deux affiches de la meme serie et non deux objets differents. */
+  const cielH=24, col1=y0+cielH;
+  for(let y=0;y<cielH;y++){const t=y/cielH;
+    R(x0,y0+y,L,1,'rgb('+Math.round(250-t*10)+','+Math.round(232-t*40)+','+Math.round(190-t*66)+')');}
+  /* LE SOLEIL EST DU COTE OU L'ON VA : a l'ouest sur l'affiche de la
+     ferme, comme il l'est a l'est sur celle de la foret. */
+  const sx=cx+34*sens;
+  g.fillStyle='#f6d98a';g.beginPath();g.arc(sx,col1-7,10,0,7);g.fill();
+  g.fillStyle='#fbeab8';g.beginPath();g.arc(sx,col1-7,5,0,7);g.fill();
+  g.fillStyle='#b98a52';g.beginPath();                      /* la colline */
+  g.moveTo(x0,col1+4);g.quadraticCurveTo(x0+40,col1-9,x0+78,col1+1);
+  g.quadraticCurveTo(x0+102,col1+7,x0+L,col1-2);g.lineTo(x0+L,col1+14);g.lineTo(x0,col1+14);g.fill();
+  const cypres=(px,py,h)=>{for(let k=0;k<h;k++){const w=1+Math.round(k*0.22);
+    R(px-Math.round(w/2),py-h+k,Math.max(1,w),1,k<2?'#4a6b3a':'#2f4a28');}};
+  [[x0+14,13],[x0+20,16],[x0+26,11],[x0+96,14],[x0+102,10]].forEach(([px,h])=>cypres(px,col1+13,h));
+  const my=col1+6;                                          /* le mas */
+  R(cx-6*sens,my-1,26,13,'#e3d2ab');R(cx-6*sens,my-1,26,1,'#f4ecd8');
+  R(cx-8*sens,my-6,30,5,'#b5552f');R(cx-8*sens,my-6,30,1,'#c96a3f');
+  R(cx-1*sens,my+5,4,7,'#5b3f21');R(cx+8*sens,my+3,4,4,'#3a4a58');R(cx+14*sens,my+3,4,4,'#3a4a58');
+  R(x0,col1+13,L,H-cielH-13,'#c9a44e');                     /* le champ */
+  for(let r=0;r<9;r++){const y=col1+15+r*3;
+    for(let x=x0;x<x0+L;x+=4)R(x+((r*2)%4),y,3,1,r%2?'#b58b38':'#d8b65e');}
+  for(let i=0;i<26;i++){const px=x0+3+A(i*2.9)*(L-6), py=col1+16+A(i*4.1)*18;
+    R(px,py-3,1,3,'#8a6a2c');R(px-1,py-4,3,1,'#e8c86a');}   /* les epis */
+  const by=y0+H-24;
+  R(x0,by,L,21,'#241a0e');R(x0,by,L,2,'#6b5330');
   ecrireA(g,mot,cx,by+3,2,'#f3e3b6','#120c06');
 }
 else if(style==='email'){

@@ -226,9 +226,14 @@
      Même principe que la forêt : seule la ferme se ferme, le port continue
      de tourner. Pour rouvrir : passer FERME_FERMEE à false. */
   var FERME_FERMEE=true;
-  /* Qui passe malgré la fermeture : personne, sauf un appareil portant le
-     laissez-passer (voir en haut du fichier). Pour fermer même à toi,
-     retire-le : localStorage.removeItem('bd.passe') */
+  /* LE JEU DOIT SAVOIR QUE LA FERME EST FERMÉE, lui aussi : sans ce
+     drapeau, marcher vers l'ouest du quai chargeait les 1,6 Mo du jeu
+     pour n'afficher que l'écran de chantier. Le port lit ce drapeau et
+     prévient sur place, sans quitter la carte. */
+  try{window.__FERME_FERMEE=FERME_FERMEE;}catch(e){}
+  /* PERSONNE NE PASSE, LAISSEZ-PASSER COMPRIS. La forêt garde sa
+     dérogation ; la ferme, non : on veut la voir fermée comme la voient
+     les joueurs. C'est le seul endroit du fichier où PASSE est ignoré. */
   function versLaFerme(){
     try{
       var q=new URLSearchParams(location.search);
@@ -366,7 +371,7 @@
       '<div class="k">LA FERME</div>'+
       '<h2>Les travaux<br>ont commencé</h2>'+
       '<div class="r"></div>'+
-      '<p>La grange est fermée le temps de refaire les enclos et les cultures. Le port et la ville restent ouverts.</p>'+
+      '<p>La grange est fermée le temps de refaire les enclos et les cultures. <b>Ouverture avant 22h00.</b> Le port et la ville restent ouverts.</p>'+
       '</div>'+
       '<div class="bas"><button id="bdfeRetour">RETOUR AU PORT</button></div>';
     (document.body||document.documentElement).appendChild(d);
@@ -382,7 +387,7 @@
          l'ouest du port, hors du quai. On arrive par le metro. */
       location.href='jeu.html?carte=extramar&arrivee=1&v='+Date.now();};
   }
-  if(FERME_FERMEE&&versLaFerme()&&!PASSE){
+  if(FERME_FERMEE&&versLaFerme()){
     window.__MAINTENANCE=true;   /* posé tout de suite : ferme.html lit ce drapeau avant de rediriger */
     if(document.body)ecranFerme();
     else document.addEventListener('DOMContentLoaded',ecranFerme);

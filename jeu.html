@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-08-2330"></script>
+<script src="maintenance.js?v=2026-10-09-0030"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-08-2330';
+var MA_VERSION='2026-10-09-0030';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -20797,6 +20797,19 @@ function verifierLeChemin(dt){
   const S=XP.chemin;
   const dedans=joueur.x<S.seuil&&joueur.y>S.y0&&joueur.y<S.y1;
   if(!(dedans&&joyX<-0.35)){XP_CHEMIN_T=0;return;}
+  /* LA FERME EN TRAVAUX SE DIT SUR PLACE. Sans ce test, pousser vers
+     l'ouest chargeait les 1,6 Mo du jeu dans ferme.html pour n'afficher
+     que l'ecran de chantier, puis renvoyait au port : trois ecrans et un
+     telechargement pour apprendre qu'on ne passe pas. Le drapeau vient de
+     maintenance.js, qui est charge bien avant nous. */
+  if(window.__FERME_FERMEE){
+    XP_CHEMIN_T=0;
+    if(Date.now()-XP_CHEMIN_DIT>1600){
+      XP_CHEMIN_DIT=Date.now();
+      texteVolant(joueur.x,joueur.y-54,'Ouverture avant 22h00','#e8d08a');
+    }
+    return;
+  }
   XP_CHEMIN_T+=dt;
   if(XP_CHEMIN_T>=0.5){
     XP_CHEMIN_T=0;
