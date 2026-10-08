@@ -2023,6 +2023,19 @@ let TRANS_FIN=null;
    poids sur une jambe, `souffle` prend une grande inspiration. Posé par
    poseDe pour les poses 600 à 631, remis à null juste après. */
 let REPOS_FIN=null;
+/* ================= L'ÉTAT DU VISAGE =================
+   Le visage était figé : deux yeux qui regardent droit devant, et un
+   clignement d'une seule image toutes les trois secondes et demie. Un
+   masque, pas un visage.
+
+   Ce drapeau porte deux choses. `regard` décale l'iris d'un pixel —
+   c'est la saccade, le mouvement que font les yeux en permanence et
+   qu'on ne remarque que s'il manque. `mi` ferme la paupière à
+   mi-course : un clignement passe par là en descendant ET en remontant,
+   ce qui sépare un clignement d'un clignotement de néon.
+
+   Posé par poseDe pour les poses 700 à 727, remis à null juste après. */
+let FACE_FIN=null;
 /* ================= LE PÉDALAGE =================
    Quand ce drapeau porte une phase, le personnage n'est plus en marche :
    il est assis, penché, les mains au guidon, et ses pieds tournent sur le
@@ -17469,6 +17482,14 @@ VELO_FIN={k:(j-500)/16};
 g.drawImage(graverFin(ap,dir,0,true,0,false),0,0,c.width,c.height);
 VELO_FIN=null;
 }
+else if(j>=700&&j<730){
+/* LE VISAGE : 700 regard à gauche, 710 à droite, 720 demi-clignement.
+   Huit images chacune — celles de la respiration, qui continue. */
+const base=j<710?700:(j<720?710:720);
+FACE_FIN={regard:base===700?-1:(base===710?1:0), mi:base===720};
+g.drawImage(graverFin(ap,dir,0,false,j-base,false),0,0,c.width,c.height);
+FACE_FIN=null;
+}
 else if(j>=600&&j<640){
 /* UNE MICRO-PAUSE : douze images, gravées et gardées comme les autres.
    600 pour le report de poids, 620 pour la grande inspiration. */
@@ -17648,6 +17669,49 @@ const DUREE_PAUSE={appui:1500, souffle:1900};
 /* deux reports de poids pour une inspiration : c'est le geste le plus
    banal, donc celui qui doit revenir le plus souvent */
 const TIRAGE_PAUSE=['appui','souffle','appui'];
+/* ================= LE VISAGE QUI VIT =================
+   Trois choses qu'un visage fait sans qu'on les remarque, et dont
+   l'absence se remarque tout de suite.
+
+   LA SACCADE. L'œil ne fixe pas : il saute toutes les deux à six
+   secondes, tient un demi-point de seconde ailleurs, et revient. Un
+   pixel d'iris suffit à la rendre.
+
+   LE CLIGNEMENT EN TROIS TEMPS. Il valait une seule image, donc un
+   clignotement. Il descend maintenant par la demi-paupière, se ferme,
+   et remonte par la demi-paupière : soixante, quatre-vingt-dix, soixante
+   millisecondes — la durée d'un vrai clignement.
+
+   LE DOUBLE. Un clignement sur quatre est suivi d'un second, cent
+   soixante millisecondes après. C'est ce qui casse la régularité de
+   métronome qu'on finit toujours par entendre.
+
+   Comme les transitions et les micro-pauses, cette machine ne suit que
+   le joueur. Les autres gardent leur clignement au hasard, qui ne coûte
+   aucune planche de poses supplémentaire. */
+const VIS={clinA:0, prochainClin:0, regardA:0, regardD:0, regard:0, prochainRegard:0};
+function indiceVisage(ph){
+const t=Date.now();
+if(!VIS.prochainClin)VIS.prochainClin=t+1500+Math.random()*3500;
+if(!VIS.clinA&&t>=VIS.prochainClin)VIS.clinA=t;
+if(VIS.clinA){
+const k=t-VIS.clinA;
+if(k<60)return 720+ph;                       /* la paupière descend */
+if(k<150)return 400+ph;                      /* fermé */
+if(k<215)return 720+ph;                      /* elle remonte */
+VIS.clinA=0;
+VIS.prochainClin=t+(Math.random()<0.25?160:1800+Math.random()*4200);
+}
+if(!VIS.prochainRegard)VIS.prochainRegard=t+2000+Math.random()*4000;
+if(VIS.regardA){
+if(t-VIS.regardA<VIS.regardD)return (VIS.regard<0?700:710)+ph;
+VIS.regardA=0;VIS.prochainRegard=t+2500+Math.random()*5000;
+}else if(t>=VIS.prochainRegard){
+VIS.regardA=t;VIS.regardD=400+Math.random()*700;
+VIS.regard=Math.random()<0.5?-1:1;
+return (VIS.regard<0?700:710)+ph;
+}
+return null;}
 function indicePause(marche){
 const t=Date.now();
 if(marche){PAUSE.type=null;PAUSE.prochaine=0;return null;}
@@ -17720,10 +17784,15 @@ const it=indiceTransition();
 const ip=indicePause(!!marche);
 i=(it!==null)?it:(marche?1+(Math.floor(pas*2)%PASM):(ip!==null?ip:100+(Math.floor(Date.now()/520)%8)));
 }else i=marche?1+(Math.floor(pas*2)%PASM):(STYLE_FIN()?100+(Math.floor(Date.now()/520)%8):0);
-/* ON NE CLIGNE QU'À L'ARRÊT et jamais pendant une micro-pause : le
+/* LE VISAGE NE VIT QU'À L'ARRÊT, et jamais pendant une micro-pause : le
    clignement ajoute 300 à la pose, ce qui ferait de la 604 une 904 que
-   personne ne sait graver. */
-if(STYLE_FIN()&&!aVelo&&!marche&&i<200&&((Date.now()+((ap.peau|0)*431+(ap.cheveux|0)*97))%3600)<130)i+=300;
+   personne ne sait graver. Le joueur a la machine à trois temps, les
+   autres gardent le clignement au hasard — une planche de poses de moins
+   par figurant. */
+if(STYLE_FIN()&&!aVelo&&!marche&&i>=100&&i<108){
+if(ap===e.ap){const v=indiceVisage(i-100);if(v!==null)i=v;}
+else if(((Date.now()+((ap.peau|0)*431+(ap.cheveux|0)*97))%3600)<130)i+=300;
+}
 /* LE VÉLO SE DESSINE AVANT SON CYCLISTE. Il passait par-dessus : les
    jambes étaient cachées par le cadre, ce qui arrangeait bien une marche
    déguisée en pédalage. Maintenant que les pieds tournent vraiment sur la
@@ -18702,7 +18771,17 @@ g.save();g.translate(f3*u*(1),0);
 if(nez==='petit'){R(0,hy+14,1,1,peauC);R(-1,hy+15,3,1,peauO);R(-1,hy+15,1,1,peauT);R(1,hy+15,1,1,peauT);}
 else if(nez==='large'){R(-1,hy+12,1,2,peauO);R(-3,hy+14,6,2,peauO);R(-1,hy+14,2,1,peauC);R(-3,hy+15,1,1,peauT);R(2,hy+15,1,1,peauT);R(-2,hy+16,4,1,T(peau,-12));}
 else if(nez==='retrousse'){R(-1,hy+12,1,2,peauO);R(0,hy+13,1,1,peauC);R(-2,hy+14,4,1,peauO);R(-1,hy+14,1,1,peauT);R(1,hy+14,1,1,peauT);}
-else{R(-1,hy+11,1,4,peauO);R(0,hy+14,1,1,peauC);R(-2,hy+15,4,1,peauO);R(-2,hy+15,1,1,peauT);R(1,hy+15,1,1,peauT);}
+else{
+/* LE NEZ DROIT était une seule colonne d'ombre entre deux grands aplats
+   de peau : à la taille du jeu, il disparaissait. Un nez ne se lit pas à
+   son ombre seule, il se lit au CONTRASTE entre son côté éclairé et son
+   côté sombre. On lui donne donc les deux, plus son ombre portée. */
+R(-1,hy+11,1,4,peauO);                 /* l'arête, côté ombre */
+R(0,hy+11,1,3,T(peau,12));             /* l'arête, côté lumière */
+R(0,hy+14,1,1,peauC);
+R(-2,hy+15,4,1,peauO);R(-2,hy+15,1,1,peauT);R(1,hy+15,1,1,peauT);
+R(-1,hy+16,3,1,T(peau,-10));           /* l'ombre portée sous le nez */
+}
 const bc=T(peau,-62);
 void bc;
 if(bouche==='sourire'){
@@ -18740,14 +18819,20 @@ function oeilDe(ex,ey,profil,loin){
    La lumière vient du haut-gauche, comme pour tout le personnage. */
 /* DE TROIS QUARTS, l'œil du fond est rogné par l'arête du nez : il perd
    un pixel du côté intérieur. C'est ce détail qui vend la rotation. */
+const F=(typeof FACE_FIN==='object'&&FACE_FIN)?FACE_FIN:null;
+const mi=!!(F&&F.mi)&&!CLIGNE_FIN;
+if(mi)ey=ey+1;                      /* la paupière descend d'un pixel */
 const gauche=!profil&&ex<0, w=profil?3:(loin?4:5);
 const x0=(gauche?ex-1:ex)+(loin&&!gauche?1:0);
 const blanc='#f6f2e8', lid=T(peau,-60);
 const coinExt=gauche?x0-1:x0+w, coinInt=gauche?x0+w:x0-1;
 if(CLIGNE_FIN){R(x0,ey+1,w,1,lid);R(x0,ey,w,1,T(peau,-22));
 R(profil?x0+w-1:coinExt,ey+1,1,1,N);return;}
-const h=fy==='ronds'?4:3;
-const regard=diag?vis:(profil?1:0);
+const h=(fy==='ronds'?4:3)-(mi?1:0);
+/* LE REGARD : la direction donne le cap, la saccade ajoute le pixel qui
+   bouge. L'iris est ensuite borné au blanc de l'œil, donc il ne peut pas
+   en sortir même si les deux s'additionnent. */
+const regard=(diag?vis:(profil?1:0))+(F?(F.regard||0):0);
 if(fy==='plisses'){
 /* LES YEUX PLISSÉS : on voit encore l'iris, coincé entre deux paupières,
    au lieu d'un simple trait noir. */
@@ -18765,9 +18850,17 @@ R(coinInt+(gauche?-1:1),ey,1,h,T(blanc,-10));
 /* L'IRIS : anneau sombre en haut, éclairci en bas — la lumière traverse
    l'œil et rebondit au fond. */
 const iw=profil?2:3, ix=Math.max(x0,Math.min(x0+w-iw,x0+1+regard));
+/* LA COULEUR DES YEUX NE SE VOYAIT PAS. La teinte par défaut est très
+   sombre (#26241f) et l'iris n'était éclairci que de seize points en
+   bas : à l'écran, l'œil lisait comme un trou noir, et personne ne
+   pouvait dire si son personnage avait les yeux bruns ou bleus. On
+   ouvre l'écart — le bas de l'iris monte à quarante, et le bord
+   extérieur reçoit son propre reflet. La pupille, elle, reste noire :
+   c'est elle qui doit rester le point le plus sombre du visage. */
 R(ix,ey,iw,h,oeil);
 R(ix,ey,iw,1,T(oeil,-38));
-R(ix,ey+h-1,iw,1,T(oeil,16));
+R(ix,ey+h-1,iw,1,T(oeil,40));
+R(ix+iw-1,ey+1,1,1,T(oeil,26));
 R(ix,ey,1,h,T(oeil,-16));
 R(ix+(iw>2?1:0),ey+1,1,Math.min(2,h-1),N);                 /* la pupille */
 /* LES DEUX REFLETS : un franc en haut-gauche, un discret en bas-droite. */
@@ -18784,8 +18877,18 @@ else if(fy==='doux'){R(x0,ey+h,w,1,T(peau,-12));
 R(gauche?x0:x0+w-1,ey+h-1,1,1,T(peau,-6));R(x0+1,ey-2,w-2,1,T(peau,-16));}
 else if(fy==='severes'){R(gauche?x0+w-2:x0,ey-1,2,2,lid);R(x0,ey,w,1,T(oeil,-40));}
 else if(fy==='ronds'){R(x0,ey+h,w,1,T(peau,-12));R(coinExt,ey,1,1,T(peau,-20));}
+/* LA PAUPIÈRE DU BAS. Les formes « fatigués », « doux » et « ronds » en
+   avaient une, la forme par défaut non : l'œil flottait sur la joue au
+   lieu d'être posé dans son orbite. Une ligne, à peine plus sombre que
+   la peau — assez pour fermer la forme, pas assez pour faire un cerne. */
+else R(x0+1,ey+h,w-2,1,T(peau,-11));
 }
 function sourcilDe(ex,ey,profil){
+/* LE SOURCIL SUIT L'ŒIL. Quand le regard part de côté, le sourcil du
+   même côté se soulève d'un pixel — c'est involontaire chez un humain,
+   et son absence est exactement ce qui fait les yeux de poupée. */
+const FS=(typeof FACE_FIN==='object'&&FACE_FIN)?FACE_FIN:null;
+if(FS&&FS.regard){const cote=ex<0?-1:1;if(cote===FS.regard)ey=ey-1;}
 const gauche=!profil&&ex<0, w=profil?4:6, x0=gauche?ex-1:ex, c=chevO, c2=chev;
 const px=(k,yy,cc)=>R(x0+k,yy,1,1,cc||c);
 if(sourcil==='epais'){R(x0,ey-1,w,2,c);R(x0+1,ey-2,w-2,1,c2);}
