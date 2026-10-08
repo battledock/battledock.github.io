@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-08-2155"></script>
+<script src="maintenance.js?v=2026-10-08-2250"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-08-2155';
+var MA_VERSION='2026-10-08-2250';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -17941,6 +17941,19 @@ const hanche=pG.x;                                              /* (gardé pour 
 const leveG=pG.lift, leveD=pD.lift;
 const AMPL=COURSE?1.35:1;
 const balance=bouge&&!COURSE?Math.round(Math.sin(2*Math.PI*tC)*1):0;
+/* ================= LA VRILLE DU BUSTE =================
+   Les épaules restaient parfaitement carrées et horizontales d'un bout à
+   l'autre du cycle : le buste était un bloc posé sur des jambes qui
+   marchent. Dans une vraie foulée il vrille — les épaules partent à
+   l'opposé des hanches, et c'est ce contre-mouvement qui fait qu'un
+   corps marche au lieu d'être transporté.
+
+   Elle ne se voit que de face, de dos et de trois quarts : de profil la
+   rotation pointe vers la caméra. Une unité en marche, deux en course —
+   un demi-pixel et un pixel. C'est peu, et c'est tout ce qu'il faut : au
+   delà, les épaules se décrochent du cou. */
+const vrilleAmp=bouge&&!cote?Math.sin(2*Math.PI*tC)*(COURSE?2:1.2):0;
+const vrille=Math.round(vrilleAmp);
 const frG=(typeof GESTE!=='undefined'&&GESTE&&GESTE.t>0)?GESTE.t:0, typeG=(typeof GESTE!=='undefined'&&GESTE&&GESTE.type)||'pioche';
 let arcG=0, pencheG=0, tasseG=0, phaseG=0;
 if(frG>0){const fr=frG;
@@ -18063,8 +18076,19 @@ const vAssis=PEDALE?VELO_ASSIS:0, vBuste=PEDALE?VELO_BUSTE:0;
    plus que le bassin. C'est cette unité d'écart qui fait une poitrine qui
    se remplit, et non un corps qui saute. */
 const rpEp=rpS?-rpS.ep[rpF]:0;
+/* ================= LA TÊTE SE STABILISE =================
+   Elle suivait le bassin au pixel près : quand le corps encaissait le
+   talon, la tête plongeait avec lui. Un corps ne fait pas ça — la nuque
+   amortit, parce que l'œil a besoin d'un horizon stable.
+
+   On ne retire qu'une unité, et seulement aux deux moments où le bassin
+   bouge vraiment de deux : l'instant du contact en marche, et le sommet
+   de la foulée en course. Partout ailleurs l'amplitude est d'une unité,
+   qu'on ne peut pas couper en deux sur une grille de pixels. */
+const bGait=bouge?(bobPas+frappe):0;
+const amortiTete=Math.abs(bGait)>=2?(bGait>0?1:-1):0;
 const yHan=Y_HANCHE+bob+vAssis, yEp=Y_EPAULE+bob+rpEp+vBuste-Math.round(trPenche*0.2),
-yCou=Y_COU+bob+rpEp+vBuste+(PEDALE?1:0)-Math.round(trPenche*0.3), yTete=Y_TETE+bob+rpEp+vBuste+(PEDALE?VELO_TETE:0)-Math.round(trPenche*0.4);
+yCou=Y_COU+bob-amortiTete+rpEp+vBuste+(PEDALE?1:0)-Math.round(trPenche*0.3), yTete=Y_TETE+bob-amortiTete+rpEp+vBuste+(PEDALE?VELO_TETE:0)-Math.round(trPenche*0.4);
 const dxPenche=trPenche+(PEDALE?VELO_PENCHE:0);
 /* ================= LE MODÈLE DE POSE =================
    Seize points nommés, calculés à partir des mêmes formules que le dessin.
@@ -18266,6 +18290,10 @@ if(souffle&&r>=yEp+4&&r<yEp+11)demi+=1;                              /* la poitr
    0,86 laissait des épaules presque aussi larges que de face. */
 const dd=diag?Math.round(demi*0.78):demi;
 let w=cote?Math.round(demi*1.5):dd*2, xx=cote?-Math.round(w/2):-dd+(diag?vis:0);
+/* LA VRILLE, ligne par ligne : tout le décalage aux épaules, rien au
+   milieu, l'opposé aux hanches. C'est un dégradé, pas deux blocs — en
+   deux blocs le buste se casse en marche d'escalier. */
+if(vrille)xx+=Math.round(vrilleAmp*(1-2*Math.min(1,Math.max(0,k))));
 const yV0=yEp+12, bV=SX.ventre&&r>yV0&&r<yHan+1?Math.round(SX.ventre*Math.sin(Math.PI*(r-yV0)/(yHan+1-yV0))):0;
 if(bV){if(cote)w+=bV;else{w+=bV*2;xx-=bV;}}
 /* LE PAN DU MANTEAU : il traîne derrière le corps et dépasse en bout de
@@ -18456,8 +18484,17 @@ const sk=fonce?peauO:peau, skO=fonce?peauT:peauO;
    fond est un peu plus court, il est plus loin. */
 if(cote&&PEDALE)balance=0;
 if(cote){
-const ex=PEDALE?(fonce?3:4):2+balance*5*AMPL, ey=yEp+11-(COURSE?1:0);
-const hx=PEDALE?(fonce?5:6):(COURSE?ex+4+Math.max(0,balance)*2:2+balance*8*AMPL+(balance>0?1:0)), hy=PEDALE?yEp+22:(COURSE?ey-3+Math.min(0,balance)*-2:yEp+20);
+/* LE BRAS DE COURSE, DE PROFIL. Il partait tendu droit devant : la main
+   allait à six pixels et demi en avant du corps, à hauteur de poitrine,
+   et n'y bougeait plus que de deux unités en hauteur. Un bras tendu,
+   pas une course.
+
+   Un coureur garde le coude fermé près du buste et fait monter la main
+   de la hanche à l'épaule. On échange donc l'avancée contre de la
+   hauteur : quatre pixels et demi devant au lieu de six et demi, et dix
+   unités de battement vertical au lieu de deux. */
+const ex=PEDALE?(fonce?3:4):(COURSE?1+balance*2*AMPL:2+balance*5*AMPL), ey=yEp+11-(COURSE?1:0);
+const hx=PEDALE?(fonce?5:6):(COURSE?ex+3+Math.max(0,balance)*3:2+balance*8*AMPL+(balance>0?1:0)), hy=PEDALE?yEp+22:(COURSE?ey-2-balance*5:yEp+20);
 const hautC=manches>0?c:sk, basC=manches>=1?c:sk;
 R(-3,yEp,7,4,manches>0?cC:sk);R(-3,yEp+3,7,1,manches>0?c:skO);          /* l'épaule, arrondie */
 seg(1,yEp+3,ex,ey,SX.bras[0]+1,hautC);seg(1,yEp+3,ex,ey,2,manches>0?cC:peauC);
@@ -18474,7 +18511,11 @@ return;
    plie et la main monte à hauteur de taille, et le balancement double. */
 /* DE FACE ET DE DOS, en selle : les bras s'écartent un peu et les mains
    descendent au guidon, qui est plus bas et plus large que la taille. */
-const bx=cote2*(EP+Math.ceil(SX.bras[0]/2)+1+(PEDALE?2:0)), dy=PEDALE?0:Math.round(balance*(COURSE?5:3)),
+/* DE FACE, LE BALANCEMENT NE SE VOYAIT PAS : trois unités de battement
+   en marche, soit un pixel et demi sur un buste de douze. Les mains
+   restaient collées à la taille d'un bout à l'autre du cycle. Cinq en
+   marche, sept en course. */
+const bx=cote2*(EP+Math.ceil(SX.bras[0]/2)+1+(PEDALE?2:0))+vrille, dy=PEDALE?0:Math.round(balance*(COURSE?7:5)),
       hCoude=PEDALE?10:(COURSE?9:11), hPoignet=PEDALE?21:(COURSE?14:19),
       yC=yEp+hCoude+Math.round(dy/2), yM=yEp+hPoignet+dy;
 const out=cote2<0?bx-2:bx+2, inn=cote2<0?bx+2:bx-2;
@@ -18483,7 +18524,7 @@ const lb=SX.bras[0]+1;R(bx-Math.floor(lb/2),yEp,lb,3,manches>0?c:sk);R(bx-2,yEp-
    restaient collés au corps et le balancement ne se lisait pas. Elle
    glisse maintenant aussi vers l'axe du corps quand le bras part en
    avant, et vers l'extérieur quand il part en arrière. */
-const dxS=PEDALE?cote2*3:(diag?Math.round(balance*4*tourne*(dos?-1:1)):Math.round(balance*2*-cote2));
+const dxS=PEDALE?cote2*3:(diag?Math.round(balance*4*tourne*(dos?-1:1)):Math.round(balance*3*-cote2));
 const bande=(y0,y1,w,col,colO,colC)=>{for(let r=y0;r<y1;r++){const x0=bx+Math.round(dxS*Math.max(0,r-yEp-2)/Math.max(1,yM-yEp-2))-Math.floor(w/2);R(x0,r,w,1,col);R(cote2<0?x0:x0+w-1,r,1,1,colO);R(cote2<0?x0+w-1:x0,r,1,1,colC);}};
 const mancheBas=manches>=1?yM:(manches>0?Math.round(yEp+2+(yM-yEp)*manches):yEp+2);
 bande(yEp+2,Math.min(yC,mancheBas),SX.bras[0],manches>0?c:sk,manches>0?cT:skO,manches>0?cC:peauC);   /* le bras */
