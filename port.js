@@ -18,7 +18,9 @@ boulo:[30,392,120,172],   /* le boulodrome : x, y, largeur, hauteur */
 const CARGO_X={pile:[1266,566],docks:[1318,446]};
 const PAV={poisson:[552,250],peche:[708,250]};
 const CABANON=[1320,440];                              /* le cabanon de la bouillabaisse */
-const STATIONS_VELO=[[284,214],[1190,238]];            /* les stations de vélos */
+/* LA STATION DE L'EST remonte au bout du quai, sur la nouvelle esplanade :
+   on prend le velo la ou commence la longue ligne droite, pas au milieu. */
+const STATIONS_VELO=[[284,214],[1462,240]];            /* les stations de vélos */
 /* sur un vélo : on va plus vite */    /* les deux pavillons du milieu */   /* où l'on prend, où l'on dépose */
 const surPonton=(x,y)=>XP.pontons.some(px=>Math.abs(x-px)<XP.pontonL&&y<XP.pontonFin);
 const dansLeBassin=(x,y)=>x>XP.bassinO&&x<XP.bassinE&&y>XP.quaiY;
