@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-08-1845"></script>
+<script src="maintenance.js?v=2026-10-08-1935"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-08-1845';
+var MA_VERSION='2026-10-08-1935';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2034,8 +2034,12 @@ let VELO_FIN=null;
    vélo dessiné par dessinerUnVelo : axe du pédalier deux unités en arrière
    et quatre sous la ligne des pieds, manivelle de cinq unités. */
 const VELO_BB={x:8, y:4, r:5};
-const VELO_ASSIS=11;      /* de combien les hanches descendent sur la selle */
-const VELO_BUSTE=12;      /* de combien le haut du corps suit — un peu plus que les hanches : il se tasse sur le guidon */
+/* LES DEUX DESCENTES ONT ÉTÉ REMONTÉES DE CINQ en même temps que la
+   hanche : la selle, elle, n'a pas bougé. Sans ça le cycliste flottait
+   deux pixels et demi au-dessus de son vélo. Vérifié : hanche assise
+   à -15, épaule à -42, nuque à -45, tête à -66 — exactement comme avant. */
+const VELO_ASSIS=21;      /* de combien les hanches descendent sur la selle */
+const VELO_BUSTE=22;      /* de combien le haut du corps suit — un peu plus que les hanches : il se tasse sur le guidon */
 const VELO_PENCHE=4;      /* l'inclinaison du buste vers l'avant */
 const VELO_TETE=3;        /* la tête rentre encore un peu dans les épaules */
 /* LE PILOTAGE PAR LA POSE : vrai par défaut. Le mettre à faux depuis la
@@ -17626,6 +17630,50 @@ const hautT=HAUTS[p.haut]||'veste', basT=BAS[p.bas]||'pantalon', soulier=SOULIER
    morphologie et déborde sur une autre. Le classique garde les cinq. */
 const SILN='fine';
 const SIL=[11,9,11];
+/* ================= LES PROPORTIONS =================
+   Mesuré sur la pose à l'arrêt : 44,5 px de haut, hanche à 11,5 px du
+   sol, épaules à 25,5. Les jambes faisaient donc 26 % de sa taille et le
+   torse 31 % — le torse plus long que les jambes, c'est la définition du
+   trapu. Un humain : jambes 48 %, torse 30 %.
+
+   On remonte la hanche de cinq unités et on remonte le haut du corps
+   d'autant : les jambes gagnent 22 %, le torse et la tête gardent
+   exactement leur longueur, et le personnage grandit de 2,5 px. Le choix
+   inverse — remonter la hanche seule — aurait raccourci le torse de 14 %
+   et tout le vêtement est calé dessus.
+
+   L'autre gain est mécanique : le pas de 11 px valait 0,96 longueur de
+   jambe, au-delà du confortable humain (0,8), et l'IK du genou étirait
+   déjà la jambe de 10 % en bout de foulée. Il vaut maintenant 0,79, et
+   l'étirement tombe à 4 % une fois l'amorti du talon compté.
+
+   TOUT CE QUI EST CALÉ SUR LA HANCHE lit ces deux constantes : le dessin
+   de profil, celui de face, celui de trois quarts et le modèle de pose.
+   Les vêtements, eux, sont calés sur yHan et yEp, donc ils suivent. */
+const Y_HANCHE=-36, Y_PIED=-3;
+/* LE GENOU DE FACE était à -14 pour une hanche à -26 et une cheville à
+   -5 : douze unités de cuisse pour neuf de mollet. On garde ce rapport
+   sur la jambe allongée, sinon le mollet devient plus long que la cuisse. */
+const Y_GENOU_F=-17;
+/* ================= LA LONGUEUR DU PAS =================
+   Le pied va de -PAS_U à +PAS_U autour de la hanche : le pas vaut donc
+   PAS_U unités, soit PAS_U/2 pixels. Le confortable humain est 0,8 fois
+   la longueur de jambe — pour une jambe de 33 unités, treize.
+
+   Il valait onze pour une jambe de vingt-trois (0,96 : trop long, la
+   jambe s'étirait). Il vaudrait 0,67 sur la jambe allongée si on n'y
+   touchait pas, et le personnage marcherait à petits pas avec de
+   grandes jambes.
+
+   PAS_34 est le même pas vu de trois quarts, où la foulée pointe en
+   partie vers la caméra et se raccourcit d'un peu moins de moitié.
+
+   QUI LIT CES DEUX CONSTANTES doit les lire ensemble : le pédalage
+   convertit une position sur la manivelle en avance de pied, donc il
+   divise par PAS_U ce que le dessin multiplie. Les désaccorder ferait
+   pédaler le personnage à côté de ses pédales. */
+const PAS_U=13, PAS_34=7;
+const Y_EPAULE=-64, Y_COU=-68, Y_TETE=-91;       /* l'ancien -54 / -58 / -81, remonté de 10 */
 const SX={bras:[4,3],jambe:7,cou:6,ventre:0,pec:0};
 const EP=SIL[0], TA=SIL[1], HA=SIL[2], N='#1b1712';
 const F=bouge?(Math.floor(pas*2)%16):-1, ph=bouge?F/16*Math.PI*2:0;
@@ -17749,7 +17797,7 @@ if(PEDALE){
   const surCercle=(ph2,cx0)=>{
     const a=ph2*Math.PI*2*sv;
     const fx=VELO_BB.x+Math.cos(a)*VELO_BB.r, fy=VELO_BB.y+Math.sin(a)*VELO_BB.r;
-    return {x:(fx-cx0)/11, lift:(-3-fy)/6,
+    return {x:(fx-cx0)/PAS_U, lift:(-3-fy)/6,
             /* la cheville suit le plateau : pointe en bas de course,
                talon qui remonte au passage haut */
             pointe:Math.max(0,Math.sin(a))*0.7, talon:Math.max(0,-Math.sin(a))*0.4};
@@ -17896,8 +17944,8 @@ const vAssis=PEDALE?VELO_ASSIS:0, vBuste=PEDALE?VELO_BUSTE:0;
    plus que le bassin. C'est cette unité d'écart qui fait une poitrine qui
    se remplit, et non un corps qui saute. */
 const rpEp=rpS?-rpS.ep[rpF]:0;
-const yHan=-26+bob+vAssis, yEp=-54+bob+rpEp+vBuste-Math.round(trPenche*0.2),
-yCou=-58+bob+rpEp+vBuste+(PEDALE?1:0)-Math.round(trPenche*0.3), yTete=-81+bob+rpEp+vBuste+(PEDALE?VELO_TETE:0)-Math.round(trPenche*0.4);
+const yHan=Y_HANCHE+bob+vAssis, yEp=Y_EPAULE+bob+rpEp+vBuste-Math.round(trPenche*0.2),
+yCou=Y_COU+bob+rpEp+vBuste+(PEDALE?1:0)-Math.round(trPenche*0.3), yTete=Y_TETE+bob+rpEp+vBuste+(PEDALE?VELO_TETE:0)-Math.round(trPenche*0.4);
 const dxPenche=trPenche+(PEDALE?VELO_PENCHE:0);
 /* ================= LE MODÈLE DE POSE =================
    Seize points nommés, calculés à partir des mêmes formules que le dessin.
@@ -17914,8 +17962,8 @@ const POSE=(()=>{
 const AM=(typeof AMPL==='number')?AMPL:1;
 const demiEp=EP/2, demiHan=HA/2;
 /* les pieds, là où le dessin les pose */
-const piedG={x:-demiHan+pG.x*11*AM, y:-3-pG.lift*6, pointe:pG.pointe, talon:pG.talon};
-const piedD={x: demiHan+pD.x*11*AM, y:-3-pD.lift*6, pointe:pD.pointe, talon:pD.talon};
+const piedG={x:-demiHan+pG.x*PAS_U*AM, y:-3-pG.lift*6, pointe:pG.pointe, talon:pG.talon};
+const piedD={x: demiHan+pD.x*PAS_U*AM, y:-3-pD.lift*6, pointe:pD.pointe, talon:pD.talon};
 /* les genoux : au milieu de la cuisse et du tibia, légèrement en avant */
 const genou=(h,p)=>({x:(h.x+p.x)/2+(p.y>-8?0.6:0), y:(h.y+p.y)/2});
 const hancheG={x:-demiHan, y:yHan}, hancheD={x:demiHan, y:yHan};
@@ -17976,8 +18024,8 @@ const jambe=(cx,avance,leve,fonce)=>{
 const c=fonce?pantO:pant, cc=fonce?pant:pantC, cO=fonce?T(pant,-34):pantO;
 const sk=fonce?peauO:peau, skO=fonce?peauT:peauO, skC=fonce?peau:peauC;
 if(cote){
-const fx=cx+avance*11*AMPL, fyy=-3-leve*6+(typeof toeOff==='number'?0:0);
-const jambeL=(-3)-(-26), cuisse=jambeL/2, tibia=jambeL/2, hx0=cx, hy0=yHan, dxk=fx-hx0, dyk=fyy-hy0, dd=Math.min(cuisse+tibia,Math.hypot(dxk,dyk));
+const fx=cx+avance*PAS_U*AMPL, fyy=-3-leve*6+(typeof toeOff==='number'?0:0);
+const jambeL=Y_PIED-Y_HANCHE, cuisse=jambeL/2, tibia=jambeL/2, hx0=cx, hy0=yHan, dxk=fx-hx0, dyk=fyy-hy0, dd=Math.min(cuisse+tibia,Math.hypot(dxk,dyk));
 const mxk=hx0+dxk/2, myk=hy0+dyk/2, hk=Math.sqrt(Math.max(0,cuisse*cuisse-(dd/2)*(dd/2)));
 const nx=-dyk/Math.hypot(dxk,dyk)||0, ny=dxk/Math.hypot(dxk,dyk)||0;
 const kx=mxk+nx*hk*(nx>0?1:-1)*(1)+ (nx>0?0:0), ky=myk+ny*hk*(nx>0?1:-1);
@@ -18011,7 +18059,7 @@ const av=avance||0;
 const passage=1-Math.min(1,Math.abs(av));
 const prof=Math.round(av*1.6);                   /* vers nous : plus bas */
 cx+=Math.round(passage*(leve>0.2?2:1))*((cx<0)?1:-1);
-const lev=Math.round(leve*4*(COURSE?1.3:1)), y0=-26+bob, yGen=-14-Math.round(lev*0.6)+prof, yChev=-5-lev+prof;
+const lev=Math.round(leve*4*(COURSE?1.3:1)), y0=Y_HANCHE+bob, yGen=Y_GENOU_F-Math.round(lev*0.6)+prof, yChev=-5-lev+prof;
 const col=(r)=>r<yGen?c:(court?sk:c), colO=(r)=>r<yGen?cO:(court?skO:cO), colC=(r)=>r<yGen?cc:(court?skC:cc);
 const J=SX.jambe;
 for(let r=y0;r<yChev;r++){
@@ -19459,8 +19507,8 @@ else{sac(false);tete();echarpeDe();cheveuxDessus();if(chapeau==='aucun')finition
 if(!dos)cheveuxDerriere();
 if(diag){
 const jd=(hx,pp,fonce)=>{
-const fx=hx+pp.x*6*AMPL*tourne, fy=-3-pp.lift*6+(dos?-1:1)*pp.x*1.6;
-const L2=((-3)-(-26))/2, dxk=fx-hx, dyk=fy-yHan, d=Math.min(L2*2,Math.hypot(dxk,dyk));   /* debout : jambe droite */
+const fx=hx+pp.x*PAS_34*AMPL*tourne, fy=-3-pp.lift*6+(dos?-1:1)*pp.x*1.6;
+const L2=(Y_PIED-Y_HANCHE)/2, dxk=fx-hx, dyk=fy-yHan, d=Math.min(L2*2,Math.hypot(dxk,dyk));   /* debout : jambe droite */
 const hk=Math.sqrt(Math.max(0,L2*L2-(d/2)*(d/2))), nl=Math.hypot(dxk,dyk)||1;
 let nx=-dyk/nl, ny=dxk/nl;if(nx*tourne<0){nx=-nx;ny=-ny;}                    /* le genou plie vers l'avant */
 const kx=hx+dxk/2+nx*hk, ky=yHan+dyk/2+ny*hk;
@@ -19699,8 +19747,14 @@ joueur.x=ax;joueur.y=ay;
    sous les pieds — l'œil pardonne un pied qui traîne, jamais une jambe
    qui s'affole. C'est le compromis de la quasi-totalité des jeux en deux
    dimensions. Pour revenir en arrière : 0,30. Pour supprimer le
-   glissement sans rien dessiner : baisser la vitesse à 65 px/s. */
-if(!bloqueBord)joueur.pas+=v*dt*0.20;
+   glissement sans rien dessiner : baisser la vitesse à 65 px/s.
+
+   LA JAMBE ALLONGÉE A RENDU UN CRAN : le pas est passé de 11 à 13 px, donc
+   le même glissement de 45 % s'obtient maintenant à 2,3 cycles par
+   seconde au lieu de 2,8 — soit 4,7 pas par seconde au lieu de 5,6. C'est
+   le seul moyen de gagner encore du calme une fois la vitesse fixée :
+   allonger l'enjambée, pas ralentir le pied. */
+if(!bloqueBord)joueur.pas+=v*dt*0.17;
 const versX=Math.abs(vx)>Math.abs(vy)*1.35;
 const versY=Math.abs(vy)>Math.abs(vx)*1.35;
 if(versX)joueur.dir=vx>0?'droite':'gauche';
@@ -21713,7 +21767,7 @@ const dx=bx-a.x, dy=by-a.y, d=Math.hypot(dx,dy);
 if(d>1){
 const v=Math.min(d,Math.max(95,d*2.6)*dt);
 a.x+=dx/d*v;a.y+=dy/d*v;
-a.pas+=v*0.227;a.marche=true;      /* même cadence que le joueur, voir LA CADENCE DE LA FOULÉE */
+a.pas+=v*0.193;a.marche=true;      /* même cadence que le joueur, voir LA CADENCE DE LA FOULÉE */
 const vSec=v/Math.max(dt,0.001);
 a.court=vSec>150;
 a.dir=a.dirEnvoyee||a.dir||'bas';
