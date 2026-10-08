@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-08-1935"></script>
+<script src="maintenance.js?v=2026-10-08-2030"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-08-1935';
+var MA_VERSION='2026-10-08-2030';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -14322,6 +14322,60 @@ function silhouetteDe(C){
    l'immeuble voisin. Les bâtiments s'ombrageront entre eux le jour où
    l'ombre saura s'arrêter au pied du mur ; d'ici là, ils s'abstiennent. */
 const SANS_OMBRE=/ponton|quai|bitte|paillasson|voilier|barque|ferry|caboteur|cargo|rides|etal$|_sol|traces|fleurs|herbe|maison|fonfon|presse|facPeche|facPoisson|_bar$|peigne|crousti|ndg|criee|immeuble|toits/i;
+/* ================= LE SOLEIL DU MOMENT =================
+   Les trois nombres qui font une ombre portée : sa densité, son
+   inclinaison et son écrasement. Ils ne dépendent que de l'heure, donc
+   ils se calculent une fois et servent au décor comme au personnage.
+   Renvoie null quand il n'y a plus de soleil. */
+function soleilDuMoment(){
+  let force=0.30, pente=-0.52, ecrase=0.40;
+  try{
+    const m=(typeof minuteDuJour==='function')?minuteDuJour():null;
+    if(m!==null){
+      const h=m/60;
+      if(h<6.6||h>19.6)return null;                  /* la nuit, plus de soleil */
+      const k=Math.max(0,Math.min(1,(h-6.6)/13));
+      const midi=1-Math.abs(k-0.5)*2;
+      force=0.14+midi*0.20;
+      ecrase=0.22+midi*0.26;
+      pente=-0.95+k*1.90;
+      if(h<7.4)force*=(h-6.6)/0.8;
+      if(h>18.8)force*=(19.6-h)/0.8;
+    }
+  }catch(e){}
+  return {force:force, pente:pente, ecrase:ecrase};
+}
+/* ================= L'OMBRE DU PERSONNAGE =================
+   Le décor portait son ombre et pas lui : il flottait au-dessus d'un
+   quai qui, lui, était planté.
+
+   Elle ne se grave PAS. Les ombres du décor sont gardées une par calque
+   — quelques dizaines en tout — alors qu'un personnage a cent poses par
+   direction : en garder la silhouette coûterait plusieurs mégaoctets sur
+   un téléphone. On repasse donc par un seul tampon, réutilisé à chaque
+   image et par tout le monde : deux drawImage et un remplissage, pas un
+   octet de plus en mémoire. */
+let OMBRE_TAMPON=null;
+function ombreDuPersonnage(g,c,x,y){
+  const S=soleilDuMoment();
+  if(!S)return;
+  if(!OMBRE_TAMPON)OMBRE_TAMPON=document.createElement('canvas');
+  const t=OMBRE_TAMPON;
+  if(t.width!==c.width||t.height!==c.height){t.width=c.width;t.height=c.height;}
+  const g2=t.getContext('2d');
+  g2.globalCompositeOperation='source-over';
+  g2.clearRect(0,0,t.width,t.height);
+  g2.drawImage(c,0,0);
+  g2.globalCompositeOperation='source-in';
+  g2.fillStyle='#000';g2.fillRect(0,0,t.width,t.height);
+  g2.globalCompositeOperation='source-over';
+  g.save();
+  g.translate(Math.round(x),Math.round(y));
+  g.transform(1,0,S.pente,S.ecrase,0,0);
+  g.globalAlpha=S.force;
+  g.drawImage(t,Math.round(-CASE_L/2),Math.round(-(CASE_H-10)),CASE_L,CASE_H);
+  g.restore();
+}
 function ombrePortee(g,C,x,y,t){
   if(SANS_OMBRE.test(t||''))return;
   if(C.H<10||C.W<6)return;
@@ -14354,6 +14408,7 @@ if(o.anim&&ANIM_DECOR[o.anim]){try{ANIM_DECOR[o.anim](g,o,x,y);}catch(err){}retu
 if(o.pnj){                                     /* un personnage du décor (le moniteur, les dockers…) : dessiné comme un joueur */
 if(!o._pose||o._poseFin!==STYLE_FIN()){try{const src=poseDe(Object.assign({},DEF_AP,o.pnj),o.dir||'bas',0);
 const c=document.createElement('canvas');c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);o._pose=c;o._poseFin=STYLE_FIN();}catch(err){return;}}
+try{ombreDuPersonnage(g,o._pose,x,y);}catch(err){}                   /* les figurants portent la leur aussi */
 g.drawImage(o._pose,Math.round(x-CASE_L/2),Math.round(y-CASE_H+10),CASE_L,CASE_H);return;}
 if(o.t==='x_bouliste'){
 const sv=GESTE;GESTE={t:0};
@@ -17581,8 +17636,11 @@ if(STYLE_FIN()&&!aVelo&&!marche&&i<200&&((Date.now()+((ap.peau|0)*431+(ap.cheveu
    jambes étaient cachées par le cadre, ce qui arrangeait bien une marche
    déguisée en pédalage. Maintenant que les pieds tournent vraiment sur la
    manivelle, c'est la jambe qu'on veut voir devant le cadre. */
-if(aVelo)dessinerUnVelo(g,x,yV,dir||'bas',pas||0,0,!!marche,0);
 const c=poseDe(ap,dir||'bas',i);
+/* L'OMBRE D'ABORD, avant le vélo comme avant le corps : elle passe sous
+   les deux. Posée après le vélo, elle barrait le cadre. */
+try{ombreDuPersonnage(g,c,x,y);}catch(err){}
+if(aVelo)dessinerUnVelo(g,x,yV,dir||'bas',pas||0,0,!!marche,0);
 const px0=Math.round(x-CASE_L/2), py0=Math.round(y-CASE_H+10);
 const lean=(ap===e.ap&&!aVelo)?Math.round(PENCHE.x*2)/2:0;
 if(lean===0)g.drawImage(c,px0,py0,CASE_L,CASE_H);
@@ -17665,14 +17723,17 @@ const Y_GENOU_F=-17;
    touchait pas, et le personnage marcherait à petits pas avec de
    grandes jambes.
 
-   PAS_34 est le même pas vu de trois quarts, où la foulée pointe en
-   partie vers la caméra et se raccourcit d'un peu moins de moitié.
+   PAS_34 est le même pas vu de trois quarts. Une diagonale est à
+   quarante-cinq degrés, donc la foulée se raccourcit de cos 45°, soit
+   0,71 : neuf unités pour treize. L'ancien rapport valait 0,54 — les
+   jambes ne se séparaient presque pas et la marche de trois quarts ne
+   montrait pas de foulée du tout.
 
    QUI LIT CES DEUX CONSTANTES doit les lire ensemble : le pédalage
    convertit une position sur la manivelle en avance de pied, donc il
    divise par PAS_U ce que le dessin multiplie. Les désaccorder ferait
    pédaler le personnage à côté de ses pédales. */
-const PAS_U=13, PAS_34=7;
+const PAS_U=13, PAS_34=9;
 const Y_EPAULE=-64, Y_COU=-68, Y_TETE=-91;       /* l'ancien -54 / -58 / -81, remonté de 10 */
 const SX={bras:[4,3],jambe:7,cou:6,ventre:0,pec:0};
 const EP=SIL[0], TA=SIL[1], HA=SIL[2], N='#1b1712';
@@ -19506,12 +19567,28 @@ else{sac(false);tete();echarpeDe();cheveuxDessus();if(chapeau==='aucun')finition
 }else{
 if(!dos)cheveuxDerriere();
 if(diag){
+/* ================= LA JAMBE DE TROIS QUARTS =================
+   Elle faisait une boucle : une cuisse qui part en biais, un mollet qui
+   revient, et entre les deux un genou planté à cinq pixels sur le côté.
+
+   La cause : le PIED était raccourci pour la perspective (PAS_34 au lieu
+   de PAS_U, 54 %) mais le GENOU, lui, était résolu à pleine échelle. On
+   calculait donc le coude d'une jambe longue qu'on posait sur une jambe
+   courte — d'où le genou qui sort du corps.
+
+   On résout maintenant la jambe DE PROFIL, à pleine échelle, puis on
+   projette : pied et genou subissent exactement le même raccourci. La
+   verticale, elle, ne se raccourcit pas — c'est tout l'intérêt de ne pas
+   écraser l'IK elle-même. */
 const jd=(hx,pp,fonce)=>{
-const fx=hx+pp.x*PAS_34*AMPL*tourne, fy=-3-pp.lift*6+(dos?-1:1)*pp.x*1.6;
-const L2=(Y_PIED-Y_HANCHE)/2, dxk=fx-hx, dyk=fy-yHan, d=Math.min(L2*2,Math.hypot(dxk,dyk));   /* debout : jambe droite */
-const hk=Math.sqrt(Math.max(0,L2*L2-(d/2)*(d/2))), nl=Math.hypot(dxk,dyk)||1;
-let nx=-dyk/nl, ny=dxk/nl;if(nx*tourne<0){nx=-nx;ny=-ny;}                    /* le genou plie vers l'avant */
-const kx=hx+dxk/2+nx*hk, ky=yHan+dyk/2+ny*hk;
+const K=PAS_34/PAS_U;
+const dxP=pp.x*PAS_U*AMPL*tourne;                     /* l'avance du pied, vue de profil */
+const fy=-3-pp.lift*6+(dos?-1:1)*pp.x*1.6;
+const L2=(Y_PIED-Y_HANCHE)/2, dyk=fy-yHan, d=Math.min(L2*2,Math.hypot(dxP,dyk));
+const hk=Math.sqrt(Math.max(0,L2*L2-(d/2)*(d/2))), nl=Math.hypot(dxP,dyk)||1;
+let nx=-dyk/nl, ny=dxP/nl;if(nx*tourne<0){nx=-nx;ny=-ny;}                    /* le genou plie vers l'avant */
+const fx=hx+dxP*K;
+const kx=hx+(dxP/2+nx*hk)*K, ky=yHan+dyk/2+ny*hk;
 const c=fonce?pantO:pant, bas2=court?(fonce?peauO:peau):c;
 seg(hx,yHan,kx,ky,SX.jambe,c);seg(kx,ky,fx,fy,SX.jambe-1,bas2);
 R(Math.round(kx)-1,Math.round(ky),2,1,fonce?pant:pantC);                  /* le genou */
