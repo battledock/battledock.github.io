@@ -676,7 +676,11 @@ const ALPHA_A={
  E:[[0,0,0],[0,0,0],[1,1,1],[1,0,0],[1,1,0],[1,0,0],[1,1,1]],
  'Ê':[[0,1,0],[1,0,1],[1,1,1],[1,0,0],[1,1,0],[1,0,0],[1,1,1]],
  T:[[0,0,0],[0,0,0],[1,1,1],[0,1,0],[0,1,0],[0,1,0],[0,1,0]],
- M:[[0,0,0],[0,0,0],[1,0,1],[1,1,1],[1,1,1],[1,0,1],[1,0,1]],
+ /* LE M EST LE SEUL A CINQ COLONNES. Sur trois, ses deux obliques se
+    rejoignent des la premiere ligne et il devient un N : « LA FERME » se
+    lisait « LA FERNE ». ecrireA mesure chaque glyphe, il n'y a donc rien
+    d'autre a changer pour qu'il prenne ses deux pixels de plus. */
+ M:[[0,0,0,0,0],[0,0,0,0,0],[1,0,0,0,1],[1,1,0,1,1],[1,0,1,0,1],[1,0,0,0,1],[1,0,0,0,1]],
  ' ':[[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0]]};
 function ecrireA(g,txt,cx,y,s,col,ombre){
 const R=(x,yy,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,yy|0,Math.max(1,w|0),Math.max(1,h|0));};
