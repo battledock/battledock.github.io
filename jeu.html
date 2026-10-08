@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-08-1500"></script>
+<script src="maintenance.js?v=2026-10-08-1540"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-08-1500';
+var MA_VERSION='2026-10-08-1540';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -14279,6 +14279,65 @@ function fenetreAllumee(g,x,y,w,h,col){
   g.fillStyle='rgba(255,246,214,.55)';g.fillRect(Math.round(x),Math.round(y),w,1);
   g.fillStyle='rgba(255,214,140,.22)';g.fillRect(Math.round(x)-1,Math.round(y)+h,w+2,1);
 }
+/* ================= L'OMBRE PORTÉE =================
+   Chaque objet du décor était posé sur le sol sans rien lui faire : une
+   petite ellipse grise cuite dans son dessin, et c'est tout. Le soleil est
+   haut et à gauche — ils doivent coucher leur propre silhouette sur la
+   pierre, vers la droite, raccourcie et penchée.
+
+   La silhouette se grave UNE FOIS par calque, pas par objet : on redessine
+   le calque puis on le remplit en noir par « source-in ». À l'écran, c'est
+   un drawImage de plus sous une matrice — les ombres coûtent donc un
+   dessin, pas un calcul.
+
+   L'ombre suit l'heure : à midi elle est courte et droite, au couchant
+   longue et couchée ; la nuit, il n'y en a plus. */
+const OMBRES_X=new WeakMap();
+function silhouetteDe(C){
+  let s=OMBRES_X.get(C.toile);
+  if(s)return s;
+  const c=document.createElement('canvas');
+  c.width=C.toile.width;c.height=C.toile.height;
+  const g2=c.getContext('2d');
+  g2.drawImage(C.toile,0,0);
+  g2.globalCompositeOperation='source-in';
+  g2.fillStyle='#000';g2.fillRect(0,0,c.width,c.height);
+  OMBRES_X.set(C.toile,c);
+  return c;
+}
+/* SANS OMBRE : ce qui flotte, ce qui est dans l'eau, ce qui est déjà au sol */
+/* CE QUI NE PORTE PAS D'OMBRE : ce qui flotte, ce qui est déjà couché au
+   sol — et les façades. Une façade fait cent cinquante pixels de haut :
+   même écrasée au tiers, son ombre dépasse la chaussée et vient barrer
+   l'immeuble voisin. Les bâtiments s'ombrageront entre eux le jour où
+   l'ombre saura s'arrêter au pied du mur ; d'ici là, ils s'abstiennent. */
+const SANS_OMBRE=/ponton|quai|bitte|paillasson|voilier|barque|ferry|caboteur|cargo|rides|etal$|_sol|traces|fleurs|herbe|maison|fonfon|presse|facPeche|facPoisson|_bar$|peigne|crousti|ndg|criee|immeuble|toits/i;
+function ombrePortee(g,C,x,y,t){
+  if(SANS_OMBRE.test(t||''))return;
+  if(C.H<10||C.W<6)return;
+  let force=0.30, pente=-0.52, ecrase=0.40;
+  try{
+    const m=(typeof minuteDuJour==='function')?minuteDuJour():null;
+    if(m!==null){
+      const h=m/60;
+      if(h<6.6||h>19.6)return;                       /* la nuit, plus de soleil */
+      const k=Math.max(0,Math.min(1,(h-6.6)/13));    /* 0 au lever, 1 au coucher */
+      const midi=1-Math.abs(k-0.5)*2;                /* 1 à midi, 0 aux bords */
+      force=0.14+midi*0.20;
+      ecrase=0.22+midi*0.26;
+      pente=-0.95+k*1.90;                            /* l'ombre bascule d'un côté à l'autre */
+      if(h<7.4)force*=(h-6.6)/0.8;
+      if(h>18.8)force*=(19.6-h)/0.8;
+    }
+  }catch(e){}
+  const sil=silhouetteDe(C);
+  g.save();
+  g.translate(Math.round(x),Math.round(y));
+  g.transform(1,0,pente,ecrase,0,0);
+  g.globalAlpha=force;
+  g.drawImage(sil,Math.round(-C.W/2),Math.round(-C.sol),C.W,C.H);
+  g.restore();
+}
 function dessinerX(g,o,x,y){
 /* LA VOITURE QU'ON CONDUIT : elle pivote selon son cap */
 if(o.anim&&ANIM_DECOR[o.anim]){try{ANIM_DECOR[o.anim](g,o,x,y);}catch(err){}return;}   /* un objet animé (la manif du port…) */
@@ -14311,6 +14370,7 @@ if(o.t==='x_barque'||o.t==='x_voilier')dy=Math.round(Math.sin(Date.now()/900+o.x
 if(o.t==='x_cargo'||o.t==='x_caboteur')dy=Math.round(Math.sin(Date.now()/2400)*0.6);
 const X0=Math.round(x-C.W/2), Y0=Math.round(y-C.sol+dy);
 if(o.flip){g.save();g.translate(Math.round(x)*2,0);g.scale(-1,1);}
+ombrePortee(g,C,x,y+dy,o.t);
 g.drawImage(C.toile,X0,Y0,C.W,C.H);
 if(lampesAllumees()){const t=o.t||'';
 /* « lampadaire » ne contient pas « lampe » : les quatre lampadaires de
