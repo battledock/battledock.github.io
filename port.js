@@ -7,13 +7,18 @@ bassinO:0, bassinE:MONDE_L,     /* LA MER SORT DU CADRE DES DEUX COTES.
                                    s'ouvrant aussi a l'ouest, cette terre
                                    n'avait plus de raison d'etre et la
                                    petanque est partie avec elle. */
-finVille:1404,                  /* la face est de la derniere facade : la
+/* LA RANGEE EST RECENTREE DANS LE CADRE. Elle commencait a 70, collee au
+   bord ouest, et laissait 356 px de quai nu a l'est contre rien a l'ouest.
+   Son axe de depart passe a 250 : les dix facades couvrent 180 -> 1580, et
+   il reste EXACTEMENT 180 px de chaque cote. Aucun immeuble n'est retire,
+   aucune boutique ne bouge dans la rangee — tout glisse ensemble, la
+   ruelle de Notre-Dame comprise, qui est calee sur la meme grille (k=4). */
+rangX0:250,                     /* l'axe de la premiere facade ; les suivantes a +140 */
+finVille:1584,                  /* la face est de la derniere facade : la
                                    ville s'arrete la, et l'esplanade mene
                                    aux collines */
-debutVille:140,                 /* sa face ouest, le pendant de finVille :
-                                   la premiere facade (un immeuble vide)
-                                   est retiree, et les 140 px liberes font
-                                   l'esplanade de l'ouest */
+debutVille:176,                 /* sa face ouest, le pendant exact : les deux
+                                   esplanades font 176 px au meme pixel */
 pontons:[360,880], pontonL:13,           /* le ponton du milieu (620) est retiré, avec ses voiliers */ pontonFin:470,
 metro:[1316,496],      /* le métro reprend la place de l'ancienne gare */
 /* LA SORTIE DES BOIS, au bout est de la promenade. Rien n'est bati : un
@@ -28,7 +33,7 @@ sente:{seuil:1690, y0:194, y1:332, arrivee:[1636,258]},
    revenant. Le platane de l'ouest a ete retire : il tenait pile dans la
    bande et on se cognait dedans avant d'avoir pu pousser. */
 chemin:{seuil:70, y0:194, y1:332, arrivee:[124,258]},
-ruelle:{x:630,l:38,haut:30},   /* la montée vers Notre-Dame : axe, demi-largeur, sommet */
+ruelle:{x:810,l:38,haut:30},   /* la montée vers Notre-Dame : axe (250+4*140), demi-largeur, sommet */
 };
 const CARGO_X={pile:[1266,566],docks:[1318,446]};
 const PAV={poisson:[552,250],peche:[708,250]};
@@ -37,11 +42,10 @@ const CABANON=[1320,440];                              /* le cabanon de la bouil
    velo la ou commence la longue ligne droite, pas au milieu. Celle de
    l'ouest etait restee a 284, au milieu de rien ; elle rejoint son
    esplanade, a la meme distance de la ville que sa jumelle de l'est. */
-/* CELLE DE L'OUEST EST DECALEE DE 34 PX vers la ville par rapport au
-   miroir exact (82) : son emprise de collision fait 40 px de demi-largeur
-   et mordait sinon sur le couloir du chemin (x<70). On se serait cogne
-   dans les velos en essayant de partir aux champs. */
-const STATIONS_VELO=[[116,240],[1462,240]];            /* les stations de vélos */
+/* A 58 PX DE LA VILLE DES DEUX COTES, puisque les deux esplanades font
+   desormais la meme largeur. Leur emprise de collision (40 px de
+   demi-largeur) reste en dehors des deux couloirs de sortie. */
+const STATIONS_VELO=[[118,240],[1642,240]];            /* les stations de vélos */
 /* sur un vélo : on va plus vite */    /* les deux pavillons du milieu */   /* où l'on prend, où l'on dépose */
 const surPonton=(x,y)=>XP.pontons.some(px=>Math.abs(x-px)<XP.pontonL&&y<XP.pontonFin);
 const dansLeBassin=(x,y)=>x>XP.bassinO&&x<XP.bassinE&&y>XP.quaiY;
@@ -387,11 +391,11 @@ R(0,XP.maisonsY-2,MONDE_L,8,'rgba(60,40,20,.12)');
 /* (le sol fin, au demi-pixel, est peint par affinerLeSolExtramar) */
 /* LA GRANDE AFFICHE se pose avant le garde-corps : son pied passe
    derriere la balustrade, comme si elle etait plantee de l'autre cote. */
-graverLAffiche(g,1596,XP.maisonsY-4,AFFICHE_STYLE,'LA FORÊT',1);
-/* SON PENDANT A L'OUEST, au milieu de sa propre esplanade. Elle y est
-   centree et non posee a la meme distance du bord : l'esplanade de l'ouest
-   fait 140 px contre 356 a l'est — un miroir au pixel la planterait dans
-   la facade de Chez Fonfon. */
+/* LES DEUX AFFICHES, chacune au milieu de son esplanade. Les esplanades
+   faisant maintenant la meme largeur, les deux distances sont egales : 25
+   px de bois nu entre le cadre et la facade, 25 entre le cadre et le bord
+   du cadre du monde, des deux cotes. */
+graverLAffiche(g,Math.round((XP.finVille+MONDE_L)/2),XP.maisonsY-4,AFFICHE_STYLE,'LA FORÊT',1);
 graverLAffiche(g,Math.round(XP.debutVille/2),XP.maisonsY-4,AFFICHE_STYLE,'LA FERME',-1);
 /* ================= LE GARDE-CORPS DU BOUT =================
    La ou les facades s'arretent, un parapet a balustres separe la
@@ -2139,21 +2143,21 @@ DECOR=[];
 const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
 for(let k=0;k<10;k++){
 if(k===4)continue;                                                  /* la ruelle du casino (plus de panneau en bois) */
-if(k===0)continue;                                                  /* L'ESPLANADE DE L'OUEST : cet immeuble-la etait le seul de la rangee a ne rien abriter. Il part, et le quai s'ouvre de ce cote comme il s'ouvre a l'est. */
-if(k===1){XCAL['x_fonfon0']=restoFonfon('bordeaux');CALQUES_DECO['x_fonfon']=XCAL['x_fonfon0'];P('x_fonfon',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'bouillabaisse'});continue;}   /* Chez Fonfon, le restaurant de bouillabaisse (à la place du Fumoir) */
-if(k===9){XCAL['x_presse0']=graverLaPresse();CALQUES_DECO['x_presse']=XCAL['x_presse0'];P('x_presse',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'presse'});continue;}   /* la maison de la presse */
-if(k===2){XCAL['x_facPeche0']=graverLaBoutiquePeche();CALQUES_DECO['x_facPeche']=XCAL['x_facPeche0'];P('x_facPeche',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'peche'});continue;}   /* Pêche & Marine */
-if(k===6){XCAL['x_facPoisson0']=graverLaPoissonnerie();CALQUES_DECO['x_facPoisson']=XCAL['x_facPoisson0'];P('x_facPoisson',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'poissonnerie'});continue;}   /* la poissonnerie */
-if(k===3){XCAL['x_bar0']=graverLeBar();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'bar'});
+if(k===1){XCAL['x_fonfon0']=restoFonfon('bordeaux');CALQUES_DECO['x_fonfon']=XCAL['x_fonfon0'];P('x_fonfon',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'bouillabaisse'});continue;}   /* Chez Fonfon, le restaurant de bouillabaisse (à la place du Fumoir) */
+if(k===9){XCAL['x_presse0']=graverLaPresse();CALQUES_DECO['x_presse']=XCAL['x_presse0'];P('x_presse',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'presse'});continue;}   /* la maison de la presse */
+if(k===2){XCAL['x_facPeche0']=graverLaBoutiquePeche();CALQUES_DECO['x_facPeche']=XCAL['x_facPeche0'];P('x_facPeche',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'peche'});continue;}   /* Pêche & Marine */
+if(k===6){XCAL['x_facPoisson0']=graverLaPoissonnerie();CALQUES_DECO['x_facPoisson']=XCAL['x_facPoisson0'];P('x_facPoisson',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'poissonnerie'});continue;}   /* la poissonnerie */
+if(k===3){XCAL['x_bar0']=graverLeBar();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'bar'});
 continue;}   /* le bar-tabac PMU (sans terrasse) */
-if(k===5){XCAL['x_peigne0']=graverLePeigne();CALQUES_DECO['x_peigne']=XCAL['x_peigne0'];P('x_peigne',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'salon'});continue;}   /* le salon de coiffure */
-if(k===7){XCAL['x_crousti0']=graverCroustiPort();CALQUES_DECO['x_crousti']=XCAL['x_crousti0'];P('x_crousti',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'crousti'});continue;}   /* le fast-food du quai */
-P('x_maison',70+k*140,XP.maisonsY,{v:k,col:[70,24]});
+if(k===5){XCAL['x_peigne0']=graverLePeigne();CALQUES_DECO['x_peigne']=XCAL['x_peigne0'];P('x_peigne',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'salon'});continue;}   /* le salon de coiffure */
+if(k===7){XCAL['x_crousti0']=graverCroustiPort();CALQUES_DECO['x_crousti']=XCAL['x_crousti0'];P('x_crousti',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'crousti'});continue;}   /* le fast-food du quai */
+P('x_maison',XP.rangX0+k*140,XP.maisonsY,{v:k,col:[70,24]});
 }
 /* LE PLATANE DE L'OUEST EST PARTI avec son banc : il poussait en 44,212,
-   c'est-a-dire au milieu de l'esplanade et de la bande du chemin. On
-   butait dessus au lieu de s'en aller. Il reste celui de l'est. */
-[1190].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k+1,col:[8,4]});P('bancP',x+30,XP.maisonsY+72);});   /* le platane du quai, avec son banc */
+   c'est-a-dire au milieu de l'esplanade et du couloir du chemin. On butait
+   dessus au lieu de s'en aller, et les deux esplanades doivent rester nues
+   de la meme facon. Il reste celui de l'est, qui a suivi sa facade. */
+[1370].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k+1,col:[8,4]});P('bancP',x+30,XP.maisonsY+72);});   /* le platane du quai, avec son banc (il suit sa facade, +180) */
 let nv=0;
 [360,620,880].forEach(px=>{                     /* on compte aussi l'ancien ponton du milieu : les autres voiliers gardent leur allure */
 const la=XP.pontons.includes(px);
@@ -2167,7 +2171,7 @@ nv++;
 /* LE METRO EST DEPOSE. On ne prend plus la ligne 1 pour aller au bois :
    on y va a pied, par le bas du quai droit. */
 [280,420,840,980,1120,1248,1510,1710].forEach((x,i)=>P('lanterneP',x,324,{gr:i}));
-[[100,316],[210,316],[490,316],[770,316],[1050,316],[1190,316],[1316,316],[1600,316]]
+[[88,316],[390,316],[670,316],[950,316],[1230,316],[1370,316],[1496,316],[1672,316]]
 .forEach(([x,y])=>P('bancP',x,y));
 /* L'ESPLANADE DU BOUT reste nue : les deux platanes et la petite pancarte
    sont retires. C'est la grande affiche, derriere le garde-corps, qui dit
@@ -2274,7 +2278,7 @@ for(let y=0;y<14;y++){
 {
 const REF=['#dfb672','#dca088','#d6c6a0','#c8845a','#1d3a5a','#9e1822','#b8853e','#e3d6b6'];
 for(let x=XP.bassinO+2;x<XP.bassinE-2;x+=0.5){
-  const k=Math.max(0,Math.round((x-70)/140));
+  const k=Math.max(0,Math.round((x-XP.rangX0)/140));
   const col=REF[k%REF.length];
   const h=16+A(k*3.1)*10;
   for(let y=0;y<h;y++){
