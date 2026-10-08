@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-09-0230"></script>
+<script src="maintenance.js?v=2026-10-09-0330"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-09-0230';
+var MA_VERSION='2026-10-09-0330';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -23611,12 +23611,24 @@ let bx=P.bx-camX, by=P.by-camY;
 if(combat){bx=P.fx-camX;by=P.fy-camY;}
 const tire=combat?.6+(P.cercle&&P.cercle.juge&&P.cercle.juge.note!=='rate'?.4:0):(P.etat==='mord'?.4:0);
 const hx=joueur.x+c*5-camX, hy=joueur.y-14-camY;
-const sx=joueur.x+c*(17-tire*3)-camX+(bx-(joueur.x-camX))*0.08*tire, sy=joueur.y-34-camY+tire*9;
+/* ================= LE SCION PLIE =================
+   Il etait raide : une courbe fixe que seul le combat inflechissait. Il se
+   charge maintenant au lancer — il part en arriere puis se detend —, a la
+   touche, et surtout quand on sort la prise : c'est la canne qui souleve
+   le poisson, pas le poisson qui saute tout seul. */
+let plie=0;
+if(P.etat==='lance')plie=-0.9*(1-Math.min(1,(t-P.t0)/600));
+else if(P.etat==='mord')plie=0.55;
+else if(P.etat==='remonte'||P.etat==='saute')plie=1.15;
+/* un hasard repetable, pour que les gouttes d'une meme eclaboussure
+   gardent leur direction d'une image a l'autre */
+const al=(n)=>{const z=Math.sin(n*127.1)*43758.5453;return z-Math.floor(z);};
+const sx=joueur.x+c*(17-tire*3)-camX+(bx-(joueur.x-camX))*0.08*tire, sy=joueur.y-34-camY+tire*9+plie*6;
 const fin=FINITIONS.find(f=>f.id===((P.eq&&P.eq.finition)||(EQUIP_PECHE&&EQUIP_PECHE.finition)));
 const colC=fin?fin.col:['#6b4a28','#a5764a'];
 g.strokeStyle=colC[0];g.lineWidth=1.4;
-g.beginPath();g.moveTo(hx,hy);g.quadraticCurveTo(hx+c*8,hy-14-tire*2,sx,sy);g.stroke();
-g.strokeStyle=colC[1];g.lineWidth=.7;g.beginPath();g.moveTo(hx+c*4,hy-6);g.quadraticCurveTo(hx+c*9,hy-15,sx,sy);g.stroke();
+g.beginPath();g.moveTo(hx,hy);g.quadraticCurveTo(hx+c*8,hy-14-tire*2+plie*4,sx,sy);g.stroke();
+g.strokeStyle=colC[1];g.lineWidth=.7;g.beginPath();g.moveTo(hx+c*4,hy-6);g.quadraticCurveTo(hx+c*9,hy-15+plie*4,sx,sy);g.stroke();
 /* LES MOTIFS : ils courent le long du brin */
 if(fin&&(fin.raies||fin.flamme||fin.ecaille||fin.etoiles||fin.phospho)){
   for(let i=0;i<=16;i++){const k=i/16;
@@ -23641,15 +23653,96 @@ if(fin&&(fin.raies||fin.flamme||fin.ecaille||fin.etoiles||fin.phospho)){
 if(fin&&fin.nacre){const k=(t/700)%1, px=hx+(sx-hx)*k, py=hy+(sy-hy)*k-4*Math.sin(k*Math.PI);
 g.fillStyle='rgba(255,255,255,.95)';g.fillRect(Math.round(px),Math.round(py),1,1);
 g.fillStyle=['rgba(255,200,230,.8)','rgba(200,230,255,.8)','rgba(220,255,220,.8)'][Math.floor(t/300)%3];g.fillRect(Math.round(px)+1,Math.round(py),1,1);}
-if(P.etat==='lance'){const k=Math.min(1,(t-P.t0)/600);bx=sx+(bx-sx)*k;by=sy+(by-sy)*k-Math.sin(k*Math.PI)*22;}
-else if(P.etat==='attend'){by+=Math.sin(t/260)*.8;if(P.mordA-t<900&&Math.sin(t/60)>.6)by+=1;}
-else if(P.etat==='mord'){by+=2+Math.sin(t/40)*1.5;}
+/* ================= L'ANNEAU QUI S'ELARGIT =================
+   Le meme geste sert a la pose, aux coups de museau et a la prise : une
+   ellipse qui grandit et s'efface. q va de 0 a 1. */
+const anneauP=(ax,ay,q,force)=>{if(q<0||q>1)return;
+  g.strokeStyle='rgba(224,244,252,'+(force*(1-q)).toFixed(3)+')';g.lineWidth=1;
+  g.beginPath();g.ellipse(ax,ay,2+q*16,0.8+q*5,0,0,7);g.stroke();};
+if(P.etat==='lance'){
+const k=Math.min(1,(t-P.t0)/600);
+/* LA TRAINEE DU BOUCHON : quatre positions en arriere de lui. Sans elle le
+   lancer n'est qu'un point qui glisse et l'on ne voit pas la vitesse. */
+for(let i=1;i<=4;i++){const q=k-i*0.055;if(q<=0)continue;
+  g.fillStyle='rgba(240,246,248,'+(0.30-i*0.06).toFixed(2)+')';
+  g.fillRect(Math.round(sx+(bx-sx)*q),Math.round(sy+(by-sy)*q-Math.sin(q*Math.PI)*22),1,1);}
+bx=sx+(bx-sx)*k;by=sy+(by-sy)*k-Math.sin(k*Math.PI)*22;}
+else if(P.etat==='attend'){
+by+=Math.sin(t/260)*.8;
+/* LA POSE : une couronne de gouttes et deux anneaux, les 420 ms qui
+   suivent l'arrivee du bouchon. L'etat 'lance' dure 600 ms, on compte
+   donc depuis P.t0+600. Avant, le bouchon se posait sans rien. */
+const kp=(t-P.t0-600)/420;
+if(kp>=0&&kp<=1){
+  for(let i=0;i<14;i++){
+    const a=-0.18-i*0.21, vv=1.5+al(i)*1.3;
+    const gx=bx+Math.cos(a)*vv*17*kp, gy=by-Math.sin(a)*vv*22*kp+kp*kp*34;
+    if(gy<by+1){g.fillStyle='rgba(224,244,252,'+(0.85-kp*0.7).toFixed(2)+')';
+      g.fillRect(Math.round(gx),Math.round(gy),1,kp<0.5?2:1);}}
+  anneauP(bx,by+1,kp,0.9);anneauP(bx,by+1,kp-0.35,0.6);
+}
+/* L'OMBRE QUI APPROCHE. Rien n'annoncait la touche : elle tombait d'un
+   coup. Le poisson vient maintenant du large dans les 1 100 ms qui
+   precedent, museau en avant, et grossit en se rapprochant. */
+const ka=1-Math.min(1,Math.max(0,(P.mordA-t)/1100));
+if(ka>0){
+  const ox=bx+c*(46-44*ka), oy=by+16-7*ka;
+  g.fillStyle='rgba(8,38,58,'+(0.16+0.26*ka).toFixed(2)+')';
+  g.beginPath();g.ellipse(ox,oy,7+ka*2,2.2+ka*0.8,0,0,7);g.fill();
+  if(ka>0.55){g.fillStyle='rgba(8,38,58,.18)';
+    g.beginPath();g.ellipse(ox-c*8,oy-1,3,1.2,0,0,7);g.fill();}
+}
+/* LES DEUX COUPS DE MUSEAU : il goute avant de prendre. C'est ce qui fait
+   qu'on guette le bon instant au lieu d'attendre un signal. */
+[[900,2],[450,3.4]].forEach(([avant,prof])=>{
+  const k2=(t-(P.mordA-avant))/300;
+  if(k2>=0&&k2<=1){by+=Math.sin(k2*Math.PI)*prof;anneauP(bx,by+2,k2,0.7);}
+});}
+else if(P.etat==='mord'){
+/* LA PRISE : le bouchon ne tremble plus sur place, il file sous l'eau en
+   diagonale, et des bulles remontent de la ou il a disparu. */
+const k=Math.min(1,(t-P.mordT)/420);
+bx+=c*k*7;by+=2+k*9+Math.sin(t/40)*1.2;
+for(let i=0;i<7;i++){const q=(k*1.6-i*0.14);if(q<0||q>1)continue;
+  g.fillStyle='rgba(214,240,248,'+(0.7*(1-q)).toFixed(2)+')';
+  g.fillRect(Math.round(bx-c*2+Math.sin(q*7+i)*2),Math.round(by-q*14),1,1);}
+g.fillStyle='rgba(8,38,58,.30)';
+g.beginPath();g.ellipse(bx+c*3,by+3,8,2.6,0,0,7);g.fill();
+anneauP(bx,by-k*9+2,k,0.5);}
 if(P.etat==='saute'){
+/* ================= LA SORTIE DE L'EAU =================
+   Le poisson glissait le long d'un arc, a plat, sans rien derriere lui.
+   Il creve maintenant la surface dans une couronne de gouttes, tourne sur
+   lui-meme pendant la montee — c'est la canne qui le souleve — et seme
+   des gouttes tout du long.
+   LE DEPART SE RECALCULE A CHAQUE IMAGE depuis P.bx/P.by, les coordonnees
+   MONDE du bouchon. Un premier essai le gardait en memoire une fois pour
+   toutes — mais en coordonnees ecran : des que la camera bougeait, la
+   couronne se decalait du trou qu'elle est censee entourer. */
 const k=Math.min(1,(t-P.t0)/600), S=ESP_PECHE[P.fin.espece]||ESP_PECHE.sardine;
-const x=bx+((joueur.x-camX)-bx)*k, y=by+((joueur.y-26-camY)-by)*k-Math.sin(k*Math.PI)*34;
+const dx0=P.bx-camX, dy0=P.by-camY;
+const x=dx0+((joueur.x-camX)-dx0)*k, y=dy0+((joueur.y-26-camY)-dy0)*k-Math.sin(k*Math.PI)*34;
+if(k<0.30){                                  /* la couronne du moment ou il perce */
+  const q=k/0.30;
+  for(let i=0;i<11;i++){
+    const a=-0.25-i*0.26, vv=1.3+al(i*3.1)*1.2;
+    g.fillStyle='rgba(224,244,252,'+(0.85-q*0.7).toFixed(2)+')';
+    g.fillRect(Math.round(dx0+Math.cos(a)*vv*20*q),Math.round(dy0-Math.sin(a)*vv*26*q+q*q*26),1,q<0.5?2:1);
+  }
+  g.strokeStyle='rgba(224,244,252,'+(1-q).toFixed(2)+')';g.lineWidth=1;
+  g.beginPath();g.ellipse(dx0,dy0,2+q*16,0.8+q*5,0,0,7);g.stroke();
+}
+for(let i=0;i<5;i++){                        /* les gouttes qui le quittent */
+  const q=((k*2.2-i*0.18)%1);
+  if(q>0&&k>0.12){g.fillStyle='rgba(224,244,252,'+(0.7*(1-q)).toFixed(2)+')';
+    g.fillRect(Math.round(x-6+al(i*7.7)*12),Math.round(y+2+q*20),1,1);}
+}
 g.strokeStyle='rgba(240,240,240,.8)';g.lineWidth=.5;g.beginPath();g.moveTo(sx,sy);g.lineTo(x,y);g.stroke();
 if(LEGENDES.includes(P.fin.espece)){const r=g.createRadialGradient(x,y,1,x,y,18);r.addColorStop(0,'rgba(255,220,120,.7)');r.addColorStop(1,'rgba(255,220,120,0)');g.fillStyle=r;g.fillRect(x-18,y-18,36,36);}
-dessinerPoisson(g,x,y,P.fin.espece,c,Math.sin(t/40)>0?1:-1,false);
+/* IL TOURNE EN MONTANT, un tour et demi, dans le sens de la canne. */
+g.save();g.translate(Math.round(x),Math.round(y));g.rotate(c*(-0.9+k*7.2));
+dessinerPoisson(g,0,0,P.fin.espece,c,Math.sin(t/40)>0?1:-1,false);
+g.restore();
 return;
 }
 g.strokeStyle=combat?'rgba(255,255,255,.95)':'rgba(240,240,240,.75)';g.lineWidth=combat?.7:.5;
