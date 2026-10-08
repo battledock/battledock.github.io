@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-08-2030"></script>
+<script src="maintenance.js?v=2026-10-08-2155"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-08-2030';
+var MA_VERSION='2026-10-08-2155';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -17338,7 +17338,86 @@ ctx.moveTo(cx-4,cy-30+h);ctx.lineTo(cx+4,cy-30+h);ctx.lineTo(cx,cy-24+h);ctx.fil
 }
 if(LISIERE_SUD&&!(CHAMPS_SEULS&&CARTE==='village'))ctx.drawImage(LISIERE_SUD,camX,camY,lw,lh,0,0,lw,lh);
 }
-const PASM=16;                        /* seize images pour un cycle de marche */
+/* ================= LA FINESSE DU CYCLE =================
+   Seize images pendant longtemps, et c'était le maximum utile : à 4,2
+   cycles par seconde, deux des seize étaient sautées à chaque tour. En
+   rajouter n'aurait rien donné de plus à voir.
+
+   La cadence est maintenant à 2,3 cycles par seconde : un cycle dure 435
+   millisecondes, soit vingt-six images d'écran à soixante hertz. Seize
+   poses, c'est 1,6 image d'écran chacune — l'œil voit le saut. Vingt-
+   quatre, c'est 1,09 : une pose par image d'écran, le maximum que
+   l'écran puisse montrer. Au-delà, on graverait des images que personne
+   ne verra jamais. */
+const PASM=24;
+/* ================= LES PROPORTIONS =================
+   Mesuré sur la pose à l'arrêt : 44,5 px de haut, hanche à 11,5 px du
+   sol, épaules à 25,5. Les jambes faisaient donc 26 % de sa taille et le
+   torse 31 % — le torse plus long que les jambes, c'est la définition du
+   trapu. Un humain : jambes 48 %, torse 30 %.
+
+   On remonte la hanche de cinq unités et on remonte le haut du corps
+   d'autant : les jambes gagnent 22 %, le torse et la tête gardent
+   exactement leur longueur, et le personnage grandit de 2,5 px. Le choix
+   inverse — remonter la hanche seule — aurait raccourci le torse de 14 %
+   et tout le vêtement est calé dessus.
+
+   L'autre gain est mécanique : le pas de 11 px valait 0,96 longueur de
+   jambe, au-delà du confortable humain (0,8), et l'IK du genou étirait
+   déjà la jambe de 10 % en bout de foulée. Il vaut maintenant 0,79, et
+   l'étirement tombe à 4 % une fois l'amorti du talon compté.
+
+   TOUT CE QUI EST CALÉ SUR LA HANCHE lit ces deux constantes : le dessin
+   de profil, celui de face, celui de trois quarts et le modèle de pose.
+   Les vêtements, eux, sont calés sur yHan et yEp, donc ils suivent. */
+const Y_HANCHE=-36, Y_PIED=-3;
+/* LE GENOU DE FACE était à -14 pour une hanche à -26 et une cheville à
+   -5 : douze unités de cuisse pour neuf de mollet. On garde ce rapport
+   sur la jambe allongée, sinon le mollet devient plus long que la cuisse. */
+const Y_GENOU_F=-17;
+/* ================= LA LONGUEUR DU PAS =================
+   Le pied va de -PAS_U à +PAS_U autour de la hanche : le pas vaut donc
+   PAS_U unités, soit PAS_U/2 pixels. Le confortable humain est 0,8 fois
+   la longueur de jambe — pour une jambe de 33 unités, treize.
+
+   Il valait onze pour une jambe de vingt-trois (0,96 : trop long, la
+   jambe s'étirait). Il vaudrait 0,67 sur la jambe allongée si on n'y
+   touchait pas, et le personnage marcherait à petits pas avec de
+   grandes jambes.
+
+   PAS_34 est le même pas vu de trois quarts. Une diagonale est à
+   quarante-cinq degrés, donc la foulée se raccourcit de cos 45°, soit
+   0,71 : neuf unités pour treize. L'ancien rapport valait 0,54 — les
+   jambes ne se séparaient presque pas et la marche de trois quarts ne
+   montrait pas de foulée du tout.
+
+   QUI LIT CES DEUX CONSTANTES doit les lire ensemble : le pédalage
+   convertit une position sur la manivelle en avance de pied, donc il
+   divise par PAS_U ce que le dessin multiplie. Les désaccorder ferait
+   pédaler le personnage à côté de ses pédales. */
+const PAS_U=13, PAS_34=9;
+/* ================= LA CADENCE, DÉRIVÉE =================
+   Elle était écrite en dur. Le jour où le cycle est passé de seize images
+   à vingt-quatre, le même coefficient a donné une foulée une fois et
+   demie plus lente — la marche avait l'air de patiner sur place, et rien
+   dans le code ne disait pourquoi. Elle se calcule donc, maintenant.
+
+   Le seul chiffre choisi est GLISSE : la part de la distance que les
+   pieds posent vraiment sous un corps qui va plus vite qu'eux. Quarante-
+   cinq pour cent de glissement, c'est le compromis assumé de la
+   quasi-totalité des jeux en deux dimensions (voir LA CADENCE DE LA
+   FOULÉE, plus bas). Tout le reste en découle :
+
+     un pas               = PAS_U pixels (deux unités de dessin par pixel)
+     un cycle             = deux pas, donc 2·PAS_U pixels
+     cycles par seconde   = GLISSE · v / (2·PAS_U)
+     et `pas` avance d'un demi par image de cycle,
+     donc                   pas/s = cycles/s · PASM/2
+
+   Changer PASM, PAS_U ou GLISSE recale maintenant les trois autres tout
+   seul. C'est le seul moyen de ne pas refaire la même erreur. */
+const GLISSE=0.55;
+const CADENCE_PAS=GLISSE*PASM/(4*PAS_U);
 const CASE_L=64, CASE_H=80;           /* la boîte d'une pose */
 const POSES=new Map();                /* une planche par apparence rencontrée */
 const clePose=(ap)=>{
@@ -17400,10 +17479,12 @@ g.drawImage(graverFin(ap,dir,0,false,0,false),0,0,c.width,c.height);
 REPOS_FIN=null;
 }
 else if(j>=200&&j<260){
-/* UNE TRANSITION : élan, freinage ou pivot, sur cinq étapes */
-const type=j<220?'elan':(j<240?'frein':'pivot');
-const et=(j-(type==='elan'?200:(type==='frein'?220:240)))/4;
-TRANS_FIN={type:type,k:Math.max(0,Math.min(1,et))};
+/* UNE TRANSITION : élan, freinage ou pivot, sur cinq étapes. Le pivot en
+   occupe deux familles, 240 à droite et 245 à gauche. */
+const type=j<220?'elan':(j<240?'frein':(j<250?'pivot':'lance'));
+const base=type==='elan'?200:(type==='frein'?220:(type==='lance'?250:(j<245?240:245)));
+const et=(j-base)/4;
+TRANS_FIN={type:type,k:Math.max(0,Math.min(1,et)),sens:(type==='pivot'&&j>=245)?-1:1};
 const enMarche=(type!=='frein');
 g.drawImage(graverFin(ap,dir,et*1.4,enMarche,0,false),0,0,c.width,c.height);
 TRANS_FIN=null;
@@ -17504,21 +17585,28 @@ if(C&&C.id!=='cape'){try{C.dessin(g,x,hanche+8,tc);}catch(err){}}
 
    La machine ne suit QUE le joueur (une seule apparence suivie), pour ne
    rien coûter sur les autres personnages à l'écran. */
-const TRANS={etat:'idle', depuis:0, dirPrec:'bas', couPrec:false, marchePrec:false};
-const DUREE={elan:260, frein:300, pivot:180};
+const TRANS={etat:'idle', depuis:0, dirPrec:'bas', couPrec:false, marchePrec:false, sens:1, duree:0};
+/* LANCE : le passage de la marche à la course. Il empruntait l'élan, qui
+   est dessiné pour un départ arrêté — le corps s'accroupissait pour
+   pousser alors qu'il était déjà lancé. Un changement de régime ne
+   s'accroupit pas : il pique du buste vers l'avant. */
+const DUREE={elan:260, frein:300, pivot:180, lance:220};
 function majTransition(dir,marche,court){
 const t=Date.now();
 const age=t-TRANS.depuis;
 /* une transition en cours se termine d'elle-même */
 if(TRANS.etat!=='idle'&&TRANS.etat!=='marche'&&TRANS.etat!=='course'){
-if(age<DUREE[TRANS.etat]) return TRANS;
-TRANS.etat=marche?(court?'course':'marche'):'idle';TRANS.depuis=t;}
+/* UN VIRAGE DURE PLUS LONGTEMPS QU'UN AUTRE : un quart de tour n'est pas
+   un demi-tour. TRANS.duree porte la mesure, DUREE sert de repli. */
+if(age<(TRANS.duree||DUREE[TRANS.etat])) return TRANS;
+TRANS.etat=marche?(court?'course':'marche'):'idle';TRANS.depuis=t;TRANS.duree=0;}
 const demarre=marche&&!TRANS.marchePrec;
 const stoppe=!marche&&TRANS.marchePrec;
 const accelere=marche&&court&&!TRANS.couPrec;
 const demiTour=marche&&TRANS.marchePrec&&dir!==TRANS.dirPrec
 &&((dir==='gauche'&&TRANS.dirPrec==='droite')||(dir==='droite'&&TRANS.dirPrec==='gauche'));
-if(demiTour){TRANS.etat='pivot';TRANS.depuis=t;}
+if(demiTour){TRANS.etat='pivot';TRANS.depuis=t;TRANS.duree=DUREE.pivot;
+TRANS.sens=(dir==='droite')?1:-1;}
 /* L'ÉLAN ET LE FREINAGE NE SERVAIENT QU'À LA COURSE. Le départ exigeait
    `court`, l'arrêt exigeait d'avoir couru : en marchant, on passait donc de
    l'immobilité à la vitesse de croisière en une image, et on s'arrêtait net
@@ -17526,9 +17614,9 @@ if(demiTour){TRANS.etat='pivot';TRANS.depuis=t;}
    On les déclenche maintenant à tout départ et à tout arrêt. Le freinage
    demande d'avoir vraiment marché : sans ce délai, une poussée brève du
    joystick déclencherait un freinage à chaque fois. */
-else if(stoppe&&(t-TRANS.depuis)>140){TRANS.etat='frein';TRANS.depuis=t;}
-else if(demarre){TRANS.etat='elan';TRANS.depuis=t;}
-else if(accelere){TRANS.etat='elan';TRANS.depuis=t;}
+else if(stoppe&&(t-TRANS.depuis)>140){TRANS.etat='frein';TRANS.depuis=t;TRANS.duree=0;}
+else if(demarre){TRANS.etat='elan';TRANS.depuis=t;TRANS.duree=0;}
+else if(accelere){TRANS.etat='lance';TRANS.depuis=t;TRANS.duree=0;}
 else if(!marche&&TRANS.etat!=='frein')TRANS.etat='idle';
 else if(marche&&TRANS.etat!=='pivot'&&TRANS.etat!=='elan')TRANS.etat=court?'course':'marche';
 TRANS.dirPrec=dir;TRANS.couPrec=court;TRANS.marchePrec=marche;
@@ -17537,10 +17625,14 @@ return TRANS;}
    240 le pivot, sur cinq étapes chacun. */
 function indiceTransition(){
 const e=TRANS.etat;
-if(e!=='elan'&&e!=='frein'&&e!=='pivot')return null;
-const k=Math.min(0.999,(Date.now()-TRANS.depuis)/DUREE[e]);
+if(e!=='elan'&&e!=='frein'&&e!=='pivot'&&e!=='lance')return null;
+const k=Math.min(0.999,(Date.now()-TRANS.depuis)/(TRANS.duree||DUREE[e]));
 const et=Math.floor(k*5);
-return (e==='elan'?200:(e==='frein'?220:240))+et;}
+/* LE PIVOT A DEUX FAMILLES, une par côté : 240 vers la droite, 245 vers
+   la gauche. Sans ça le corps pencherait toujours du même bord, et un
+   virage sur deux se ferait à contresens. */
+if(e==='pivot')return (TRANS.sens<0?245:240)+et;
+return (e==='elan'?200:(e==='frein'?220:250))+et;}
 /* ================= LES MICRO-PAUSES À L'ARRÊT =================
    Rester planté n'est pas une absence d'animation, c'est une animation à
    part entière. La boucle de respiration à huit temps tournait seule : au
@@ -17688,57 +17780,12 @@ const hautT=HAUTS[p.haut]||'veste', basT=BAS[p.bas]||'pantalon', soulier=SOULIER
    morphologie et déborde sur une autre. Le classique garde les cinq. */
 const SILN='fine';
 const SIL=[11,9,11];
-/* ================= LES PROPORTIONS =================
-   Mesuré sur la pose à l'arrêt : 44,5 px de haut, hanche à 11,5 px du
-   sol, épaules à 25,5. Les jambes faisaient donc 26 % de sa taille et le
-   torse 31 % — le torse plus long que les jambes, c'est la définition du
-   trapu. Un humain : jambes 48 %, torse 30 %.
 
-   On remonte la hanche de cinq unités et on remonte le haut du corps
-   d'autant : les jambes gagnent 22 %, le torse et la tête gardent
-   exactement leur longueur, et le personnage grandit de 2,5 px. Le choix
-   inverse — remonter la hanche seule — aurait raccourci le torse de 14 %
-   et tout le vêtement est calé dessus.
-
-   L'autre gain est mécanique : le pas de 11 px valait 0,96 longueur de
-   jambe, au-delà du confortable humain (0,8), et l'IK du genou étirait
-   déjà la jambe de 10 % en bout de foulée. Il vaut maintenant 0,79, et
-   l'étirement tombe à 4 % une fois l'amorti du talon compté.
-
-   TOUT CE QUI EST CALÉ SUR LA HANCHE lit ces deux constantes : le dessin
-   de profil, celui de face, celui de trois quarts et le modèle de pose.
-   Les vêtements, eux, sont calés sur yHan et yEp, donc ils suivent. */
-const Y_HANCHE=-36, Y_PIED=-3;
-/* LE GENOU DE FACE était à -14 pour une hanche à -26 et une cheville à
-   -5 : douze unités de cuisse pour neuf de mollet. On garde ce rapport
-   sur la jambe allongée, sinon le mollet devient plus long que la cuisse. */
-const Y_GENOU_F=-17;
-/* ================= LA LONGUEUR DU PAS =================
-   Le pied va de -PAS_U à +PAS_U autour de la hanche : le pas vaut donc
-   PAS_U unités, soit PAS_U/2 pixels. Le confortable humain est 0,8 fois
-   la longueur de jambe — pour une jambe de 33 unités, treize.
-
-   Il valait onze pour une jambe de vingt-trois (0,96 : trop long, la
-   jambe s'étirait). Il vaudrait 0,67 sur la jambe allongée si on n'y
-   touchait pas, et le personnage marcherait à petits pas avec de
-   grandes jambes.
-
-   PAS_34 est le même pas vu de trois quarts. Une diagonale est à
-   quarante-cinq degrés, donc la foulée se raccourcit de cos 45°, soit
-   0,71 : neuf unités pour treize. L'ancien rapport valait 0,54 — les
-   jambes ne se séparaient presque pas et la marche de trois quarts ne
-   montrait pas de foulée du tout.
-
-   QUI LIT CES DEUX CONSTANTES doit les lire ensemble : le pédalage
-   convertit une position sur la manivelle en avance de pied, donc il
-   divise par PAS_U ce que le dessin multiplie. Les désaccorder ferait
-   pédaler le personnage à côté de ses pédales. */
-const PAS_U=13, PAS_34=9;
 const Y_EPAULE=-64, Y_COU=-68, Y_TETE=-91;       /* l'ancien -54 / -58 / -81, remonté de 10 */
 const SX={bras:[4,3],jambe:7,cou:6,ventre:0,pec:0};
 const EP=SIL[0], TA=SIL[1], HA=SIL[2], N='#1b1712';
-const F=bouge?(Math.floor(pas*2)%16):-1, ph=bouge?F/16*Math.PI*2:0;
-const COURSE=!!p.court&&bouge, tC=bouge?F/16:0;
+const F=bouge?(Math.floor(pas*2)%PASM):-1, ph=bouge?F/PASM*Math.PI*2:0;
+const COURSE=!!p.court&&bouge, tC=bouge?F/PASM:0;
 /* ================= LES MICRO-PAUSES =================
    À l'arrêt, le personnage respirait et c'était tout : la même boucle de
    huit temps, à l'infini. Une micro-pause casse cette boucle — un report
@@ -17967,27 +18014,38 @@ const appui=bouge?0:(rpA?(rpA.sway[rpF]?1:0):(rpS?0:APPUI[((iBrise%8)+8)%8]));
    L'ancienne version n'avait que deux niveaux en course et son sommet
    durait cinq images : pas de pointe, donc pas de propulsion. Celle-ci a
    trois niveaux et un sommet net d'une seule image par foulée. */
-const BOB_M=[ 0, 1, 1, 0,-1,-1,-1, 0, 0, 1, 1, 0,-1,-1,-1, 0];
-const BOB_C=[ 1, 0,-1,-1, 0, 1, 2, 1, 1, 0,-1,-1, 0, 1, 2, 1];
-const bobPas=(COURSE?BOB_C:BOB_M)[((F%16)+16)%16];
+/* RÉÉCHANTILLONNÉES POUR VINGT-QUATRE. Chaque table vaut une foulée,
+   répétée deux fois par cycle. Le sommet de la course tient toujours sur
+   UNE seule image — c'est lui qui donne la propulsion, l'étaler le tue. */
+const BOB_M=[ 0, 1, 1, 1, 0, 0,-1,-1,-1,-1, 0, 0,
+              0, 1, 1, 1, 0, 0,-1,-1,-1,-1, 0, 0];
+const BOB_C=[ 1, 0, 0,-1,-1,-1, 0, 1, 1, 2, 1, 1,
+              1, 0, 0,-1,-1,-1, 0, 1, 1, 2, 1, 1];
+const bobPas=(COURSE?BOB_C:BOB_M)[((F%PASM)+PASM)%PASM];
 /* L'AMORTI DU TALON : au moment où le pied se pose, le corps s'enfonce
    d'un pixel de plus. Une seule image sur seize, mais c'est elle qui donne
    le poids. */
-const frappe=(!COURSE&&bouge&&(F===0||F===8))?1:0;
+const frappe=(!COURSE&&bouge&&(F===0||F===PASM/2))?1:0;
 /* LA TRANSITION, lue par le dessin : elle penche le buste, tasse le corps
    et ouvre la foulée. Les trois moments ont une signature opposée :
    l'élan pousse en avant, le freinage retient en arrière, le pivot tasse. */
 const TR=(typeof TRANS_FIN==='object'&&TRANS_FIN)?TRANS_FIN:null;
 const trK=TR?TR.k:0;
 const trPenche=!TR?0:(TR.type==='elan'?Math.round((1-trK)*3+1)
-:(TR.type==='frein'?-Math.round((1-trK)*3+1):0));
+:(TR.type==='frein'?-Math.round((1-trK)*3+1)
+:(TR.type==='lance'?Math.round(trK*4):0)));
 /* L'ÉLAN N'AVAIT AUCUN EFFET DE FACE. Il ne jouait que sur trPenche, qui
    penche le buste vers l'avant — invisible quand l'avant pointe vers la
    caméra. On lui donne ce qui se voit de face : le corps s'accroupit d'un
    coup puis se détend, c'est la poussée du départ. */
+/* LE CORPS VIRE : il penche vers l'intérieur du virage, comme un coureur
+   en courbe. Le tassement seul disait « il se passe quelque chose » sans
+   dire de quel côté — le même dessin servait pour les deux sens. */
+const trVire=(TR&&TR.type==='pivot')?Math.round(Math.sin(trK*Math.PI)*2)*(TR.sens||1):0;
 const trTasse=!TR?0:(TR.type==='pivot'?Math.round(Math.sin(trK*Math.PI)*2)
 :(TR.type==='elan'?Math.round(Math.sin(trK*Math.PI)*2)
-:(TR.type==='frein'?Math.round((1-trK)*2):0)));
+:(TR.type==='lance'?-Math.round(Math.sin(trK*Math.PI))
+:(TR.type==='frein'?Math.round((1-trK)*2):0))));
 /* LE BASSIN PENDANT UNE PAUSE : il se tasse d'une unité sur le report de
    poids (le corps s'assoit sur une hanche), et il monte de deux sur la
    grande inspiration, avec une unité de retombée à la fin — le soupir. */
@@ -18061,7 +18119,7 @@ brasG:{bal:balG}, brasD:{bal:balD},
 torse:{dx:dxAppui, dy:0}},
 /* les mesures, pour qui veut s'y caler */
 mesures:{EP:EP,TA:TA,HA:HA,bras:SX.bras,jambe:SX.jambe,cou:SX.cou,
-image:F,images:16,course:COURSE,vue:(cote?'profil':(dos?'dos':(diag?'troisQuarts':'face'))),
+image:F,images:PASM,course:COURSE,vue:(cote?'profil':(dos?'dos':(diag?'troisQuarts':'face'))),
 sens:(cote?(dir==='gauche'?-1:1):(diag?vis:0))}};
 })();
 try{window.POSE_FIN=POSE;}catch(x){}
@@ -19617,7 +19675,7 @@ const avanceD=diag&&bouge?tourne*(COURSE?2:1):0;              /* de trois-quarts
    de la jambe QUI PORTE, pas au-dessus de celle qui se repose. Dans le
    premier essai il partait du même côté que le pied qui glisse — le corps
    se penchait du côté où il n'y avait plus personne. */
-const swayX=balance+avanceD-(rpA?rpA.sway[rpF]:0), swayY=diag&&COURSE?1:0;
+const swayX=balance+avanceD-(rpA?rpA.sway[rpF]:0)+trVire, swayY=diag&&COURSE?1:0;
 if(swayX||swayY){g.save();g.translate(swayX*u,swayY*u);}           /* le poids passe d'un pied sur l'autre */
 if(diag){const loin=vis;bras(loin,loin>0?(dos?hanche:-hanche):(dos?-hanche:hanche),true);}
 torse();
@@ -19703,7 +19761,7 @@ function tournerEnDouceur(dt){
 if(joueur._dirPrec!==joueur.dir){if(!joueur.marche)joueur.dir8=joueur.dir;joueur._dirPrec=joueur.dir;}
 const cible=joueur.dir8||joueur.dir;
 if(!joueur.dirVue){joueur.dirVue=cible;return;}
-if(joueur.dirVue===cible){joueur.tVue=0;return;}
+if(joueur.dirVue===cible){joueur.tVue=0;joueur._cibleVue=cible;return;}
 joueur.tVue=(joueur.tVue||0)+dt;
 if(joueur.tVue<0.042)return;
 joueur.tVue=0;
@@ -19720,6 +19778,33 @@ const max=vitesseDuJoueur();
 const aFond=pousse>0.88;
 const allure=(aFond?max:VITESSE)*(VELO&&CARTE==='extramar'?1.75:1)*(REPU_FIN>Date.now()?1.15:1);
 court=aFond&&max>=SEUIL_COURSE;
+/* ================= LE VIRAGE =================
+   Le pivot ne se déclenchait que sur un cas : le renversement
+   gauche↔droite. Les six autres changements de cap claquaient sec.
+
+   Et il ne pouvait pas en couvrir plus, parce qu'il lisait la direction
+   du DESSIN. Celle-ci ne bouge que d'un octant à la fois, et la vitesse
+   elle-même tourne en douceur sous l'inertie : vues d'elles, une
+   volte-face et un pas de côté se ressemblent exactement — huit petits
+   crans dans les deux cas.
+
+   Le virage se lit donc au JOYSTICK, qui lui ne ment pas : il saute d'un
+   coup au nouveau cap. Deux octants d'écart ou plus avec ce qu'on
+   montre, et le corps vire. Le signe de l'écart dit de quel côté il
+   penche, la taille de l'écart combien de temps ça dure. */
+if(n>0.5){
+const sC=((Math.round(Math.atan2(joyY,joyX)/(Math.PI/4))%8)+8)%8;
+const capVoulu=ORDRE8[sC];
+if(joueur._capVoulu!==capVoulu){
+joueur._capVoulu=capVoulu;
+const a0=ORDRE8.indexOf(joueur.dirVue||capVoulu);
+if(a0>=0){
+let ec=(sC-a0+8)%8; if(ec>4)ec-=8;
+if(Math.abs(ec)>=2&&joueur.marche){
+TRANS.etat='pivot';TRANS.depuis=Date.now();
+TRANS.sens=ec>0?1:-1;TRANS.duree=120+Math.abs(ec)*40;}
+}}}
+else joueur._capVoulu=null;
 const cibleX=n>0.16?(joyX/n)*allure*pousse:0;
 const cibleY=n>0.16?(joyY/n)*allure*pousse:0;
 const glace=false;
@@ -19827,11 +19912,16 @@ joueur.x=ax;joueur.y=ay;
    glissement sans rien dessiner : baisser la vitesse à 65 px/s.
 
    LA JAMBE ALLONGÉE A RENDU UN CRAN : le pas est passé de 11 à 13 px, donc
-   le même glissement de 45 % s'obtient maintenant à 2,3 cycles par
-   seconde au lieu de 2,8 — soit 4,7 pas par seconde au lieu de 5,6. C'est
+   le même glissement de 45 % s'obtient maintenant à 2,4 cycles par
+   seconde au lieu de 2,8 — soit 4,8 pas par seconde au lieu de 5,6. C'est
    le seul moyen de gagner encore du calme une fois la vitesse fixée :
-   allonger l'enjambée, pas ralentir le pied. */
-if(!bloqueBord)joueur.pas+=v*dt*0.17;
+   allonger l'enjambée, pas ralentir le pied.
+
+   LE COEFFICIENT N'EST PLUS ÉCRIT ICI : il se calcule en haut, dans LA
+   CADENCE, DÉRIVÉE, à partir du glissement, de la longueur du pas et du
+   nombre d'images du cycle. Pour revenir à l'ancienne marche nerveuse,
+   c'est GLISSE qu'on monte. */
+if(!bloqueBord)joueur.pas+=v*dt*CADENCE_PAS;
 const versX=Math.abs(vx)>Math.abs(vy)*1.35;
 const versY=Math.abs(vy)>Math.abs(vx)*1.35;
 if(versX)joueur.dir=vx>0?'droite':'gauche';
@@ -21844,7 +21934,7 @@ const dx=bx-a.x, dy=by-a.y, d=Math.hypot(dx,dy);
 if(d>1){
 const v=Math.min(d,Math.max(95,d*2.6)*dt);
 a.x+=dx/d*v;a.y+=dy/d*v;
-a.pas+=v*0.193;a.marche=true;      /* même cadence que le joueur, voir LA CADENCE DE LA FOULÉE */
+a.pas+=v*CADENCE_PAS*1.13;a.marche=true;   /* même cadence que le joueur, voir LA CADENCE, DÉRIVÉE */
 const vSec=v/Math.max(dt,0.001);
 a.court=vSec>150;
 a.dir=a.dirEnvoyee||a.dir||'bas';
@@ -24875,8 +24965,8 @@ const LAB={ouvert:false,mode:'grille',coiffe:0,dir:'bas',etat:'marche',img:0,
 compare:false,points:false,auto:true,tenue:0};
 const LAB_ETATS={
 repos  :{nom:'Arrêt',     idx:(f)=>100+(f%8),  n:8,  court:false},
-marche :{nom:'Marche',    idx:(f)=>1+(f%16),   n:16, court:false},
-course :{nom:'Course',    idx:(f)=>1+(f%16),   n:16, court:true},
+marche :{nom:'Marche',    idx:(f)=>1+(f%PASM), n:PASM, court:false},
+course :{nom:'Course',    idx:(f)=>1+(f%PASM), n:PASM, court:true},
 elan   :{nom:'Élan',      idx:(f)=>200+(f%5),  n:5,  court:true},
 frein  :{nom:'Freinage',  idx:(f)=>220+(f%5),  n:5,  court:false},
 pivot  :{nom:'Pivot',     idx:(f)=>240+(f%5),  n:5,  court:true},
