@@ -371,6 +371,7 @@ R(x0+w*0.27+2,y0+44,2,2,'#d0402f');R(x0+w*0.73-2,y0+h-63,2,2,'#e8c06a');
 for(let i=0;i<40;i++)R(x0+6+A(i+7000)*(w-12),y0+6+A(i+7100)*(h-12),2,1,'rgba(120,90,50,.18)');
 }
 R(0,XP.maisonsY-2,MONDE_L,8,'rgba(60,40,20,.12)');
+/* (le sol fin, au demi-pixel, est peint par affinerLeSolExtramar) */
 /* LA GRANDE AFFICHE se pose avant le garde-corps : son pied passe
    derriere la balustrade, comme si elle etait plantee de l'autre cote. */
 graverLAffiche(g,1596,XP.maisonsY-4,AFFICHE_STYLE);
@@ -2154,4 +2155,62 @@ STATIONS_VELO.forEach(([x,y])=>P('x_stationVelo',x,y,{col:[40,5]}));
 DECOR.forEach(o=>{if(o.t.slice(0,2)==='x_')graverX(o.t,o.v);});
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
-;({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar});
+/* ================= LE SOL AU DEMI-PIXEL =================
+   Le sol du port est gravé à un pixel de jeu par pixel de toile, puis
+   étiré par la caméra : au palier « nette », sur un écran à trois points
+   par pixel, chaque pixel du pavé devient un carré de six. C'est lui, et
+   pas les personnages, qui donne au port son air de gros carrés.
+
+   Le jeu sait déjà afficher un sol en double définition — SOL_FIN, dessiné
+   en camX*2 — mais aucune carte ne s'en servait. On construit donc une
+   seconde toile deux fois plus grande : la première est agrandie dedans,
+   telle quelle, puis on repasse par-dessus ce qui gagne à être fin — les
+   joints du pavé, son grain, les rides de l'eau et le reflet des façades.
+   Tout le reste du décor est inchangé, au pixel près. */
+function affinerLeSolExtramar(sol){
+const c=document.createElement('canvas');
+c.width=MONDE_L*2;c.height=MONDE_H*2;
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+g.drawImage(sol,0,0,MONDE_L*2,MONDE_H*2);          /* la base, telle quelle */
+g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
+const A=(i)=>alea(i*1.37+0.5);
+/* ---- LE PAVÉ : des joints d'un demi-pixel, un grain plus fin ---- */
+for(let y=70;y<XP.quaiY-4;y+=14){
+  let x=-((y*7)%23);
+  while(x<MONDE_L){
+    const w=18+Math.floor(A(x*0.31+y)*16);
+    R(x,y,w,0.5,'rgba(150,132,98,.45)');            /* le joint du haut, affiné */
+    R(x,y,0.5,14,'rgba(150,132,98,.45)');
+    R(x+0.5,y+0.5,w-1,0.5,'rgba(255,250,236,.22)'); /* la lumière sur l'arête */
+    R(x+w-0.5,y+1,0.5,13,'rgba(120,104,76,.18)');   /* l'ombre du côté opposé */
+    x+=w;
+  }
+}
+for(let i=0;i<26000;i++){                            /* le grain de la pierre */
+  const x=A(i*1.7)*MONDE_L, y=70+A(i*2.9)*(XP.quaiY-74);
+  R(x,y,0.5,0.5,(i%3)?'rgba(255,252,240,.10)':'rgba(120,104,78,.10)');
+}
+for(let i=0;i<900;i++){                              /* l'usure, en creux */
+  const x=A(i*3.3+7)*MONDE_L, y=70+A(i*4.1+2)*(XP.quaiY-74);
+  R(x,y,1+A(i)*2,0.5,'rgba(126,110,80,.13)');
+}
+/* ---- L'EAU : des rides fines et le reflet des façades ---- */
+const eauH=MONDE_H-XP.quaiY;
+for(let i=0;i<9000;i++){
+  const x=XP.bassinO+2+A(i*1.9+11)*(XP.bassinE-XP.bassinO-4);
+  const y=XP.quaiY+6+A(i*3.7+5)*(eauH-8);
+  const l=1+A(i*5.1)*3;
+  R(x,y,l,0.5,(i%4)?'rgba(186,232,240,.16)':'rgba(16,62,102,.16)');
+}
+/* le reflet : une bande claire sous la margelle, qui tremble */
+for(let y=0;y<16;y++){
+  const t=y/16;
+  const d=Math.round(Math.sin(y*1.7)*1.5)/2;
+  R(XP.bassinO+d,XP.quaiY+9+y,XP.bassinE-XP.bassinO,0.5,
+    'rgba(236,246,250,'+(0.10*(1-t)).toFixed(3)+')');
+}
+g.setTransform(1,0,0,1,0,0);
+return c;
+}
+;({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar});
