@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Le Complexe Festif — Battle Dock</title>
+<style id="pasDeSelection">*{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}</style>
+<script>/* pas de sélection ni de copier-coller, sauf dans les champs où l'on écrit */
+(function(){var champ=function(t){return t&&t.closest&&t.closest('input,textarea,[contenteditable="true"]');};
+['selectstart','copy','cut','contextmenu','dragstart'].forEach(function(k){document.addEventListener(k,function(e){if(!champ(e.target))e.preventDefault();},{capture:true});});})();</script>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<script src="maintenance.js?v=2026-10-09-0630"></script>
+<script>
+/* LA VERSION, comme partout ailleurs : ajoutée au signet, une page reste en
+   mémoire et ne se recharge jamais. On demande à chaque ouverture quelle est
+   la version publiée, et on ne recharge qu'une fois par version.
+   CE FICHIER ENTRE DANS LE RITUEL DE DÉPLOIEMENT : sa chaîne doit être
+   remontée avec les autres, sinon il se recharge une fois pour rien à
+   chaque mise à jour — c'est ce qui arrive aujourd'hui à casino.html,
+   fete.html, forge.html et mine.html, restés en 2026-10-03-1818. */
+(function(){
+  var MA_VERSION='2026-10-09-0630';
+  window.MA_VERSION=MA_VERSION;
+  var cle='bdl.version.vue';
+  function verifier(){
+    fetch('version.json?t='+Date.now(),{cache:'no-store'})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(!d||!d.v||d.v===MA_VERSION)return;
+        var deja=null;
+        try{deja=sessionStorage.getItem(cle);}catch(e){}
+        if(deja===d.v)return;
+        try{sessionStorage.setItem(cle,d.v);}catch(e){}
+        location.replace(location.pathname.split('?')[0]+'?v='+encodeURIComponent(d.v));
+      })
+      .catch(function(){});
+  }
+  verifier();
+  var vu=Date.now();
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState!=='visible')return;
+    if(Date.now()-vu>120000)verifier();
+    vu=Date.now();
+  });
+})();
+</script>
+<style>
+html,body{margin:0;height:100%;background:#0b0608;overflow:hidden;
+  font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif}
+#cv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;display:block}
+/* LA BARRE DU BAS flotte au-dessus de la scène, dans le même or que les
+   dorures de la salle : elle fait partie du lieu, elle ne s'y pose pas. */
+#bas{position:absolute;left:0;right:0;bottom:0;z-index:3;
+  padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 12px);
+  display:flex;gap:9px;align-items:center;
+  background:linear-gradient(to top,rgba(11,6,8,.94),rgba(11,6,8,0))}
+#bas button{-webkit-appearance:none;appearance:none;flex:1;border:1px solid #8a6a2a;
+  border-radius:12px;padding:12px 8px;background:rgba(26,12,14,.88);color:#f0d78a;
+  font:700 10px ui-monospace,monospace;letter-spacing:2px}
+#bas button:active{background:rgba(201,162,74,.26)}
+#bas button.or{background:#c9a24a;color:#241204;border-color:#f0d78a}
+/* LE BANDEAU DU HAUT : le nom du lieu, et rien d'autre. */
+#haut{position:absolute;left:0;right:0;top:0;z-index:3;pointer-events:none;
+  padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 16px;
+  background:linear-gradient(to bottom,rgba(11,6,8,.8),rgba(11,6,8,0))}
+#haut small{display:block;font:700 8px ui-monospace,monospace;letter-spacing:3.4px;color:#c9a24a}
+#haut b{display:block;font:400 19px Georgia,serif;color:#f6efdc;margin-top:2px}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<!-- PAS DE TITRE EN SURIMPRESSION : il se posait pile sur l'enseigne,
+     qui nomme deja le lieu bien mieux que lui. -->
+<div id="bas">
+  <button id="quai">REDESCENDRE SUR LE QUAI</button>
+</div>
+<script>
+/* =====================================================================
+   LE HALL DU COMPLEXE FESTIF
+
+   Pour l'instant, le lieu et rien que le lieu : on le regarde, on n'y
+   marche pas encore. Les jeux, le personnage et les autres joueurs
+   viendront se poser dedans — la salle est donc dessinée en coordonnees
+   de salle, avec un tri en profondeur deja en place, pour qu'un corps
+   puisse s'y glisser sans rien reecrire.
+
+   TOUT EST GRAVE A UN PIXEL DE JEU PAR PIXEL DE TOILE, puis la toile est
+   etiree a l'ecran. C'est ce qui donne au port son grain, et le hall doit
+   appartenir au meme monde.
+   ===================================================================== */
+/* LA SALLE EST AUSSI HAUTE QUE L'ECRAN. Premier essai : une salle fixe de
+   460 par 300, donc un paysage pose au milieu d'un telephone en portrait —
+   deux grandes bandes noires au-dessus et au-dessous, et un hall timbre-
+   poste. La largeur reste fixe, c'est elle qui donne l'echelle du pixel ;
+   la hauteur se deduit de la forme de l'ecran. */
+let SALLE_L=300;
+let SALLE_H=560, MUR=190, CX=SALLE_L/2;
+const cv=document.getElementById('cv');
+const ctx=cv.getContext('2d');
+const toile=document.createElement('canvas');
+const g=toile.getContext('2d');
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+const alea=(n)=>{const v=Math.sin(n*127.1)*43758.5453;return v-Math.floor(v);};
+
+/* ---- la palette : bordeaux, or, marbre, velours ---- */
+const C={
+  mur:'#3a1014', murC:'#55181e', murO:'#240a0d',
+  or:'#c9a24a', orC:'#f0d78a', orO:'#8a6a2a',
+  marbre:'#e8e0cc', marbreS:'#cdc0a4', marbreV:'#cfc4a8',
+  velours:'#8e1220', veloursC:'#b2243a', veloursO:'#5a0a14',
+  bois:'#4a2d1c', boisC:'#6e4428',
+  verre:'#2a3a44', lum:'#ffe9b0'
+};
+/* MUR : la ligne ou le mur du fond rencontre le sol. Elle est recalculee a
+   chaque cadrage — un tiers de la hauteur, bornee, pour qu'il reste
+   toujours du mur a regarder et du sol pour marcher. */
+
+/* ================= LE HALO D'UNE LUMIERE =================
+   Un dégradé radial chaud. C'est lui qui fait la richesse de la salle :
+   sans halo, l'or n'est qu'une couleur jaune. */
+function halo(x,y,r,force,col){
+  const h=g.createRadialGradient(x,y,1,x,y,r);
+  h.addColorStop(0,'rgba('+(col||'255,222,150')+','+force+')');
+  h.addColorStop(1,'rgba('+(col||'255,222,150')+',0)');
+  g.fillStyle=h;g.fillRect(x-r,y-r,r*2,r*2);
+}
+
+/* ================= LE SOL DE MARBRE =================
+   Damier creme et noir, pose en LOSANGE et non en carre : un damier droit
+   se lit comme une nappe, un damier tourne a 45 degres se lit comme un sol
+   de palais. Les dalles s'aplatissent en montant — c'est le seul endroit
+   du jeu ou l'on triche avec la perspective, parce qu'un hall se regarde
+   en enfilade et non du dessus. */
+function sol(){
+  R(0,MUR,SALLE_L,SALLE_H-MUR,C.marbre);
+  /* LE DAMIER ETAIT UN JEU D'ECHECS : de gros losanges noirs sur creme,
+     qui mangeaient la salle et tiraient l'oeil au sol. Les dalles sont
+     maintenant petites, et la sombre n'est plus noire mais un gris chaud —
+     a cette taille, le contraste fait le motif, pas le dessin. */
+  const CO=15;
+  for(let y=MUR;y<SALLE_H;y++){
+    const prof=(y-MUR)/(SALLE_H-MUR);
+    const h=5+prof*6;
+    const rang=Math.floor((y-MUR)/h);
+    for(let x=-CO;x<SALLE_L+CO;x+=CO){
+      const d=x+((rang%2)?CO/2:0);
+      const q=Math.abs(((y-MUR)%h)/h-0.5)*2;
+      const l=Math.round(CO/2*(1-q));
+      if(l<1)continue;
+      if(((rang+Math.floor(d/CO))%2)===0)R(d+CO/2-l,y,l*2,1,C.marbreS);
+    }
+  }
+  /* LE POLI : la lumiere des lustres couchee sur la pierre, plus large en
+     s'approchant. C'est elle qui fait le marbre, le motif n'est qu'un
+     appui. */
+  for(let y=MUR;y<SALLE_H;y++){
+    const prof=(y-MUR)/(SALLE_H-MUR);
+    g.fillStyle='rgba(255,242,212,'+(0.20*(1-prof*0.75)).toFixed(3)+')';
+    g.fillRect(0,y,SALLE_L,1);
+  }
+  halo(CX,MUR+60,150,0.12);
+  R(0,MUR-3,SALLE_L,3,C.orO);R(0,MUR-3,SALLE_L,1,C.or);
+  R(0,MUR,SALLE_L,1,'rgba(20,10,12,.45)');
+}
+/* ================= LE TAPIS ROUGE =================
+   Il entre par la porte du bas et monte jusqu'a la loge. C'est lui qui dit
+   ou l'on va : un hall sans ligne de marche est un hangar. */
+function tapis(){
+  for(let y=MUR+6;y<SALLE_H;y++){
+    const prof=(y-MUR)/(SALLE_H-MUR);
+    const demi=Math.round(22+prof*30);          /* il s'evase vers nous */
+    R(CX-demi,y,demi*2,1,C.velours);
+    R(CX-demi,y,2,1,C.veloursO);R(CX+demi-2,y,2,1,C.veloursO);
+    /* PAS DE BANDE EN TRAVERS. Une ligne claire tous les sept pixels
+       faisait des marches : on lisait un escalier, pas un tapis. Le velours
+       se dit dans le SENS DE LA MARCHE, par des veines verticales. */
+    for(let k=-demi+4;k<demi-4;k+=7)if((Math.abs(k)+Math.floor(y/3))%3===0)
+      R(CX+k,y,1,1,C.veloursC);
+    R(CX-demi-1,y,1,1,'rgba(20,6,10,.5)');R(CX+demi,y,1,1,'rgba(20,6,10,.5)');
+  }
+  /* les galons dores, de part et d'autre */
+  for(let y=MUR+6;y<SALLE_H;y+=1){
+    const prof=(y-MUR)/(SALLE_H-MUR), demi=Math.round(22+prof*30);
+    if(y%3)continue;
+    R(CX-demi+3,y,1,2,C.orO);R(CX+demi-4,y,1,2,C.orO);
+  }
+}
+
+/* ================= LE MUR DU FOND =================
+   Lambris de bordeaux, moulures d'or, et des miroirs entre les colonnes.
+   Les miroirs ne refletent rien de precis : ils rendent la lumiere, et
+   c'est tout ce qu'on leur demande a cette taille. */
+function mur(){
+  for(let y=0;y<MUR;y++){
+    const k=y/MUR;
+    R(0,y,SALLE_L,1,'rgb('+Math.round(36+k*22)+','+Math.round(12+k*10)+','+Math.round(16+k*10)+')');
+  }
+  for(let x=0;x<SALLE_L;x+=4)if(alea(x)<0.5)R(x,0,2,MUR,'rgba(0,0,0,.07)');
+  R(0,MUR-13,SALLE_L,4,C.murO);                      /* la cimaise */
+  R(0,MUR-13,SALLE_L,1,C.or);R(0,MUR-10,SALLE_L,1,C.orO);
+  R(0,0,SALLE_L,5,C.murO);R(0,4,SALLE_L,1,C.orO);    /* la corniche */
+}
+function miroir(x,w,H){
+  R(x,96,w,H-128,'#1b2a30');
+  for(let i=0;i<w*2;i++){const px=x+alea(i*1.7)*w, py=98+alea(i*2.9)*(H-132);
+    R(px,py,1,1,'rgba(180,210,220,.08)');}
+  /* le reflet : une diagonale claire, et le halo des appliques dedans */
+  g.save();g.beginPath();g.rect(x,96,w,H-128);g.clip();
+  g.strokeStyle='rgba(214,236,244,.14)';g.lineWidth=5;
+  g.beginPath();g.moveTo(x-6,H-34);g.lineTo(x+w*0.7,92);g.stroke();
+  halo(x+w/2,H-44,24,0.20,'255,226,160');
+  g.restore();
+  R(x-2,94,w+4,3,C.orO);R(x-2,94,w+4,1,C.orC);       /* le cadre */
+  R(x-2,H-35,w+4,3,C.orO);R(x-2,H-33,w+4,1,C.or);
+  R(x-2,94,2,H-126,C.orO);R(x+w,94,2,H-126,C.orO);
+}
+
+/* ================= UNE COLONNE =================
+   Fut cannele, base et chapiteau dores. Deux largeurs de cannelure
+   suffisent : une claire a gauche, une sombre a droite, et le rond se
+   lit tout seul. */
+function colonne(x){
+  const w=16, y0=92, y1=MUR+2;
+  for(let i=0;i<w;i++){
+    const k=i/(w-1), c=k<0.22?'#6a2228':(k<0.6?'#4e171c':'#2e0d11');
+    R(x-w/2+i,y0,1,y1-y0,c);
+  }
+  for(let i=2;i<w-2;i+=4)R(x-w/2+i,y0+6,1,y1-y0-12,'rgba(0,0,0,.22)');
+  R(x-w/2-3,y0,w+6,6,C.orO);R(x-w/2-3,y0,w+6,2,C.orC);        /* le chapiteau */
+  R(x-w/2-2,y0+6,w+4,2,C.or);
+  R(x-w/2-3,y1-7,w+6,7,C.orO);R(x-w/2-3,y1-7,w+6,2,C.or);     /* la base */
+  R(x-w/2-4,y1-2,w+8,2,'#2a1a10');
+}
+
+/* ================= LA LOGE =================
+   Comptoir d'accueil au fond, sous l'enseigne. Bois sombre, dessus de
+   marbre, et une lampe a abat-jour qui fait le point chaud de la salle. */
+function loge(){
+  const w=136, x=CX-w/2, y=MUR-34, h=30;
+  R(x,y,w,h,C.bois);
+  for(let i=0;i<w;i+=10)R(x+i,y+4,8,h-10,C.boisC);          /* les panneaux */
+  for(let i=0;i<w;i+=10){R(x+i+1,y+5,6,1,'rgba(255,220,160,.12)');R(x+i+1,y+h-7,6,1,'rgba(0,0,0,.25)');}
+  R(x-4,y-5,w+8,6,C.marbreV);R(x-4,y-5,w+8,2,'#f4ecd8');     /* le dessus de marbre */
+  R(x-4,y+1,w+8,1,'rgba(0,0,0,.3)');
+  R(x,y+h-4,w,4,'#2a1a10');
+  R(x-4,y-7,w+8,2,C.or);                                     /* le jonc dore */
+  /* la lampe de la loge */
+  const lx=x+w-22, ly=y-7;
+  R(lx-1,ly-9,2,9,C.orO);
+  R(lx-7,ly-15,14,7,'#1d4a72');R(lx-7,ly-15,14,2,'#2d6fb0');R(lx-6,ly-9,12,1,C.lum);
+  halo(lx,ly-6,30,0.30);
+}
+
+/* ================= L'ENSEIGNE =================
+   Lettres de pixels sur fond noir, dans un cadre d'ampoules qui courent.
+   C'est la seule chose de la salle qui bouge vite : tout le reste respire,
+   elle, elle clignote. */
+const A5={A:[[0,1,1,0],[1,0,0,1],[1,1,1,1],[1,0,0,1],[1,0,0,1]],
+ C:[[0,1,1,1],[1,0,0,0],[1,0,0,0],[1,0,0,0],[0,1,1,1]],
+ E:[[1,1,1,1],[1,0,0,0],[1,1,1,0],[1,0,0,0],[1,1,1,1]],
+ F:[[1,1,1,1],[1,0,0,0],[1,1,1,0],[1,0,0,0],[1,0,0,0]],
+ I:[[1,1,1],[0,1,0],[0,1,0],[0,1,0],[1,1,1]],
+ /* LE J ET LE U MANQUAIENT a l'alphabet : la porte annoncait « LES E X ».
+    ecrire() remplace par un blanc ce qu'elle ne connait pas, donc une
+    lettre oubliee ne casse rien — elle disparait, ce qui est pire. */
+ J:[[0,0,1,1],[0,0,0,1],[0,0,0,1],[1,0,0,1],[0,1,1,0]],
+ U:[[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,0,0,1],[0,1,1,0]],
+ L:[[1,0,0,0],[1,0,0,0],[1,0,0,0],[1,0,0,0],[1,1,1,1]],
+ M:[[1,0,0,0,1],[1,1,0,1,1],[1,0,1,0,1],[1,0,0,0,1],[1,0,0,0,1]],
+ O:[[0,1,1,0],[1,0,0,1],[1,0,0,1],[1,0,0,1],[0,1,1,0]],
+ P:[[1,1,1,0],[1,0,0,1],[1,1,1,0],[1,0,0,0],[1,0,0,0]],
+ S:[[0,1,1,1],[1,0,0,0],[0,1,1,0],[0,0,0,1],[1,1,1,0]],
+ T:[[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],
+ X:[[1,0,0,1],[1,0,0,1],[0,1,1,0],[1,0,0,1],[1,0,0,1]],
+ ' ':[[0],[0],[0],[0],[0]]};
+function ecrire(mot,cx,y,s,col){
+  let lg=0;for(const ch of mot)lg+=((A5[ch]||A5[' '])[0].length+1);
+  lg-=1;
+  let px=Math.round(cx-lg*s/2);
+  for(const ch of mot){const G=A5[ch]||A5[' '];
+    for(let r=0;r<5;r++)for(let c=0;c<G[0].length;c++)if(G[r][c])R(px+c*s,y+r*s,s,s,col);
+    px+=(G[0].length+1)*s;}
+}
+function enseigne(T){
+  const w=214, h=46, x=CX-w/2, y=14;
+  R(x-5,y-5,w+10,h+10,'#140608');
+  R(x-5,y-5,w+10,2,C.orO);R(x-5,y+h+3,w+10,2,C.orO);
+  R(x-5,y-5,2,h+10,C.orO);R(x+w+3,y-5,2,h+10,C.orO);
+  R(x,y,w,h,'#0b0407');
+  /* les ampoules du cadre, qui courent */
+  const pas=10, n=Math.floor(w/pas);
+  for(let i=0;i<n;i++){
+    const on=((i+Math.floor(T/110))%4)!==0;
+    const col=on?'#fff0a8':'#5a4418';
+    R(x+3+i*pas,y-2,3,3,col);R(x+3+i*pas,y+h-1,3,3,col);
+    if(on){halo(x+4+i*pas,y-1,7,0.22);halo(x+4+i*pas,y+h,7,0.22);}
+  }
+  for(let j=0;j<4;j++){
+    const on=((j+Math.floor(T/110))%4)!==0, col=on?'#fff0a8':'#5a4418';
+    R(x-2,y+4+j*10,3,3,col);R(x+w-1,y+4+j*10,3,3,col);
+  }
+  /* le mot, en deux lignes, avec sa lueur */
+  const bat=0.72+0.28*Math.abs(Math.sin(T/420));
+  halo(CX,y+22,130,0.30*bat,'255,190,90');
+  ecrire('LE COMPLEXE',CX,y+7,3,'#ffcf6a');
+  ecrire('FESTIF',CX,y+28,3,'#fff0c0');
+}
+
+/* ================= LE LUSTRE =================
+   Trois rangs de pampilles et une lueur qui bat lentement. Il est accroche
+   haut, hors du cadre : on n'en voit que le bas, comme dans une vraie
+   salle ou le plafond est au-dessus du regard. */
+function lustre(x,y,ech,T){
+  const bat=0.86+0.14*Math.sin(T/1600+x);
+  /* LE CORDON PART DE LA GALERIE, pas du haut du cadre : il descendait de
+     y=0 et barrait l'enseigne de trois traits d'or. */
+  R(x-1,92,2,Math.max(0,y-104),C.orO);R(x-1,92,1,Math.max(0,y-104),C.or);
+  for(let r=0;r<3;r++){
+    const w=Math.round((26-r*7)*ech), yy=y-12+r*6;
+    R(x-w/2,yy,w,2,C.or);R(x-w/2,yy,w,1,C.orC);
+    for(let i=-w/2+2;i<w/2-1;i+=4){
+      R(x+i,yy+2,1,3+(i%3===0?2:0),'rgba(255,240,200,.75)');
+      if(i%8===0)R(x+i,yy+5,1,2,'#fff6d8');
+    }
+  }
+  for(let i=-2;i<3;i++){R(x+i*7,y-4,2,3,'#fff6d8');halo(x+i*7+1,y-3,9,0.3*bat);}
+  halo(x,y-6,84*ech,0.26*bat);
+  halo(x,y-6,34*ech,0.30*bat);
+}
+
+/* ================= LA MEZZANINE DE L'ETAGE =================
+   Deux volees d'escalier etaient dessinees ici : elles tombaient derriere
+   la loge et l'enseigne, et l'on n'en voyait pas un pixel. Une galerie a
+   balustres, posee en travers du mur au-dessus de la loge, dit la meme
+   chose — il y a un dessus — et se voit, elle. */
+function mezzanine(y){
+  R(0,y,SALLE_L,3,C.orO);R(0,y,SALLE_L,1,C.orC);          /* la main courante */
+  for(let x=4;x<SALLE_L-2;x+=7){
+    R(x,y+3,3,9,C.orO);R(x,y+3,1,9,C.or);                  /* les balustres */
+  }
+  R(0,y+12,SALLE_L,4,'#1d0b0e');R(0,y+12,SALLE_L,1,C.orO); /* le bandeau sous la galerie */
+  R(0,y+16,SALLE_L,2,'rgba(0,0,0,.35)');                   /* son ombre portee sur le mur */
+}
+/* ================= LES PALMIERS EN POT =================
+   Un hall sans vegetation est un couloir. */
+function palmier(x,y){
+  R(x-9,y-10,18,10,C.orO);R(x-9,y-10,18,2,C.or);R(x-7,y,14,3,'#2a1a10');
+  R(x-1,y-26,2,17,'#5b4428');
+  const F=[[-14,-6],[-10,-13],[0,-16],[10,-13],[14,-6],[-6,-15],[6,-15]];
+  F.forEach(([dx,dy],i)=>{
+    g.strokeStyle=i%2?'#2f5b34':'#3d7d3f';g.lineWidth=2.4;
+    g.beginPath();g.moveTo(x,y-25);
+    g.quadraticCurveTo(x+dx*0.6,y-30+dy*0.5,x+dx,y-25+dy);g.stroke();
+  });
+}
+
+/* ================= LES CORDONS DE VELOURS ================= */
+function cordon(x0,x1,y){
+  [x0,x1].forEach(px=>{R(px-2,y-16,4,16,C.orO);R(px-2,y-16,1,16,C.or);R(px-3,y-19,6,4,C.or);R(px-4,y,8,2,C.orO);});
+  g.strokeStyle=C.veloursC;g.lineWidth=2.4;
+  g.beginPath();g.moveTo(x0,y-15);g.quadraticCurveTo((x0+x1)/2,y-6,x1,y-15);g.stroke();
+  g.strokeStyle=C.veloursO;g.lineWidth=1;
+  g.beginPath();g.moveTo(x0,y-14);g.quadraticCurveTo((x0+x1)/2,y-5,x1,y-14);g.stroke();
+}
+
+/* ================= LES PORTES DES SALLES =================
+   Trois, et chacune porte son nom. Elles ne s'ouvrent pas encore. */
+function porte(x,mot,col){
+  const w=54, h=62, y=MUR-h;
+  R(x-w/2-4,y-6,w+8,h+6,C.orO);R(x-w/2-4,y-6,w+8,2,C.or);
+  R(x-w/2,y,w,h,'#140a0c');
+  halo(x,y+h*0.6,30,0.16,col);
+  for(let i=0;i<40;i++){const px=x-w/2+2+alea(i*3.1)*(w-4), py=y+4+alea(i*5.7)*(h-8);
+    R(px,py,1,1,'rgba('+col+',.10)');}
+  R(x-w/2,y,w,2,'rgba(0,0,0,.5)');
+  /* le fronton */
+  R(x-w/2-6,y-16,w+12,10,'#1d0e10');R(x-w/2-6,y-16,w+12,1,C.orO);
+  ecrire(mot,x,y-13,1,'#f0d78a');
+}
+
+/* ================= LA POUSSIERE DANS LA LUMIERE =================
+   Quelques points qui montent lentement sous les lustres. C'est le detail
+   qui fait qu'une salle a de l'air dedans. */
+function poussiere(T){
+  for(let i=0;i<46;i++){
+    const x=alea(i*1.3)*SALLE_L;
+    const y=MUR+((alea(i*2.7)*140+T/60+i*7)%150);
+    const a=0.10+0.12*Math.abs(Math.sin(T/900+i));
+    const d=Math.min(Math.abs(x-CX),Math.abs(x-110),Math.abs(x-350));
+    if(d>70)continue;
+    R(x+Math.sin(T/700+i)*2,y,1,1,'rgba(255,238,200,'+a.toFixed(2)+')');
+  }
+}
+
+/* ================= LA SALLE =================
+   LA COMPOSITION TIENT EN TROIS BANDES : l'enseigne et la mezzanine tout
+   en haut, la loge et ses deux portes contre le mur, le tapis et le marbre
+   pour tout le reste. Au premier essai l'enseigne faisait 250 de large
+   dans une salle de 460 et passait DERRIERE les portes posees a 96 et 364.
+   Chaque chose a maintenant sa bande, et rien ne chevauche rien. */
+function dessiner(T){
+  mur();
+  [[16,56],[SALLE_L-72,56]].forEach(([x,w])=>miroir(x,w,MUR));
+  enseigne(T);
+  mezzanine(74);
+  sol();
+  tapis();
+  const objets=[
+    {y:MUR-64,f:()=>{colonne(13);colonne(SALLE_L-13);}},
+    {y:MUR-58,f:()=>{porte(40,'LES JEUX','255,180,90');porte(SALLE_L-40,'LA FETE','255,120,160');}},
+    {y:MUR-34,f:()=>loge()},
+    {y:MUR+34,f:()=>{palmier(26,MUR+34);palmier(SALLE_L-26,MUR+34);}},
+    {y:MUR+110,f:()=>{cordon(CX-74,CX-38,MUR+110);cordon(CX+38,CX+74,MUR+110);}},
+    {y:SALLE_H-40,f:()=>{palmier(22,SALLE_H-40);palmier(SALLE_L-22,SALLE_H-40);}}
+  ];
+  objets.sort((a,b)=>a.y-b.y);
+  for(const o of objets)o.f();
+  /* LES LUSTRES PASSENT PAR-DESSUS TOUT : ils pendent entre la salle et
+     nous. Le grand est au centre, bas, et les deux petits l'encadrent plus
+     haut — trois hauteurs differentes, sinon la salle a un plafond plat. */
+  lustre(CX,MUR-58,2.0,T);
+  /* LES DEUX PETITS SE RAPPROCHENT DU CENTRE : poses a 60 du bord, ils
+     pendaient DANS l'embrasure des portes et mangeaient leur fronton. */
+  lustre(Math.round(CX*0.52),MUR-84,0.95,T+900);
+  lustre(Math.round(SALLE_L-CX*0.52),MUR-84,0.95,T+1800);
+  poussiere(T);
+  const v=g.createRadialGradient(CX,MUR+40,50,CX,MUR+40,SALLE_H*0.9);
+  v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(8,2,6,.62)');
+  g.fillStyle=v;g.fillRect(0,0,SALLE_L,SALLE_H);
+}
+/* ================= L'ECRAN =================
+   La toile est etiree au plus grand multiple ENTIER qui tient : c'est ce
+   qui garde les pixels carres. Au besoin on complete avec un demi-pas,
+   mais jamais en dessous de 1. */
+function cadrer(){
+  const w=innerWidth, h=innerHeight, dpr=Math.min(3,window.devicePixelRatio||1);
+  cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
+  /* L'ECHELLE EST ENTIERE, tiree de la largeur : chaque pixel de la salle
+     occupe un nombre rond de pixels d'ecran, et les dorures ne bavent pas.
+     La hauteur de la salle se deduit ensuite de ce qu'il reste — c'est
+     elle qui s'adapte a l'ecran, jamais le pixel. */
+  /* On ARRONDIT au lieu de tronquer, et c'est la salle qui s'ajuste :
+     tronquer donnait 2 au lieu de 2,6 sur un telephone, soit 600 pixels de
+     salle sur 780 d'ecran et deux bandes noires sur les cotes. */
+  ECH=Math.max(1,Math.round(cv.width/300));
+  SALLE_L=Math.ceil(cv.width/ECH);
+  SALLE_H=Math.ceil(cv.height/ECH);
+  MUR=Math.max(150,Math.min(260,Math.round(SALLE_H*0.36)));
+  CX=SALLE_L/2;
+  toile.width=SALLE_L;toile.height=SALLE_H;
+  g.imageSmoothingEnabled=false;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.imageSmoothingEnabled=false;
+}
+let ECH=1;
+addEventListener('resize',cadrer);cadrer();
+
+(function boucle(t){
+  dessiner(t);
+  ctx.fillStyle='#0b0608';ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(toile,0,0,SALLE_L*ECH,SALLE_H*ECH);
+  requestAnimationFrame(boucle);
+})(0);
+
+document.getElementById('quai').onclick=()=>{
+  location.href='jeu.html?v='+(window.MA_VERSION||Date.now());
+};
+</script>
+</body>
+</html>
