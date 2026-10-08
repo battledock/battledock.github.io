@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-09-0710"></script>
+<script src="maintenance.js?v=2026-10-09-0810"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-09-0710';
+var MA_VERSION='2026-10-09-0810';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -7745,51 +7745,185 @@ async function ouvrirLaMariniere(){
 }
 /* ================= L'AFFICHE DU COMPLEXE FESTIF ================= */
 /* ================= L'AFFICHE DE LA CAPITAINERIE ================= */
-function afficheCapitainerie(){
-  $('page2Fond').className='';$('page2').classList.add('on');
-  $('page2Fond').innerHTML=`<style>
-  #afc{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-    background:#0b1f3a;padding:18px;font-family:Georgia,serif}
-  #afc .pan{width:100%;max-width:340px;background:#f2ece0;border:6px solid #17365a;border-radius:6px;
-    box-shadow:0 10px 30px rgba(0,0,0,.6);padding:18px 16px 16px;text-align:center;position:relative}
-  #afc .pan:before{content:'';position:absolute;inset:5px;border:1px dashed #c9a24a;border-radius:3px;
-    pointer-events:none}
-  #afc .clou{position:absolute;width:9px;height:9px;border-radius:50%;background:#8a8a92;
-    box-shadow:inset 0 1px 0 #c8ced4}
-  #afc .c1{left:9px;top:9px}#afc .c2{right:9px;top:9px}
-  #afc .c3{left:9px;bottom:9px}#afc .c4{right:9px;bottom:9px}
-  #afc small{display:block;font:700 8px Arial,sans-serif;letter-spacing:3px;color:#17365a}
-  #afc canvas{width:76px;height:76px;image-rendering:pixelated;margin:8px 0 2px}
-  #afc h2{font:900 21px Georgia,serif;color:#2f2820;margin:4px 0 2px;line-height:1.2}
-  #afc .ban{display:inline-block;background:#17365a;color:#f0d78a;border-radius:4px;
-    padding:4px 11px;font:700 8.5px Arial,sans-serif;letter-spacing:2px;margin:9px 0 10px}
-  #afc p{font:italic 13px Georgia,serif;color:#5f4d34;line-height:1.55}
-  #afc .sig{font:italic 11.5px Georgia,serif;color:#8a7454;border-top:1px solid #d8c9a6;
-    padding-top:9px;margin-top:11px}
-  #afc button{margin-top:13px;width:100%;border:0;border-radius:8px;padding:13px;
-    background:#17365a;color:#f2ece0;font:700 10px Arial,sans-serif;letter-spacing:2px}
-  </style>
-  <div id="afc"><div class="pan">
-    <i class="clou c1"></i><i class="clou c2"></i><i class="clou c3"></i><i class="clou c4"></i>
-    <small>AVIS AUX MARINS</small>
-    <canvas id="afcBarre" width="152" height="152"></canvas>
-    <h2>La Capitainerie arrive prochainement</h2>
-    <span class="ban">OUVERTURE PROCHAINE</span>
-    <p>Vous pourrez y remplir des missions pour gagner des récompenses uniques&nbsp;!</p>
-    <div class="sig">Le capitaine du port</div>
-    <button id="afcOk">REDESCENDRE SUR LE QUAI</button>
-  </div></div>`;
-  /* la barre à roue, en pixels */
-  {const cv=$('afcBarre'),g=cv.getContext('2d');g.imageSmoothingEnabled=false;
-   const S=cv.width/40;g.setTransform(S,0,0,S,0,0);
-   const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
-   const c='#17365a';
-   for(let a2=0;a2<6.283;a2+=0.06)R(20+Math.cos(a2)*12,20+Math.sin(a2)*12,2.4,2.4,c);
-   for(let k=0;k<8;k++){const a2=k*0.785;
-     R(20+Math.cos(a2)*15,20+Math.sin(a2)*15,3,3,'#c9a24a');
-     for(let t=0;t<12;t+=1.2)R(20+Math.cos(a2)*t,20+Math.sin(a2)*t,2,2,c);}
-   for(let a2=0;a2<6.283;a2+=0.3)R(20+Math.cos(a2)*3.4,20+Math.sin(a2)*3.4,2.4,2.4,'#c9a24a');}
-  $('afcOk').onclick=()=>{$('page2').classList.remove('on');};
+/* ================= LE LIVRET DE MARIN =================
+   La Capitainerie ne delivre qu'une chose : le livret du titulaire.
+   Tout y est compte depuis carnet_peche, et depuis elle seule : peches.total
+   s'en ecarte (167 contre 150 pour un joueur), et un livret qui affiche deux
+   fois le meme chiffre differemment n'est plus un livret.
+   Le rang est COSMETIQUE : un titre, des galons, un cachet. Il n'ouvre rien
+   et n'en ferme rien. */
+const RANGS_MARIN=['Mousse','Matelot','Gabier','Second','Patron','Capitaine'];
+const SEUILS_MARIN=[0,5,12,25,40,60];           /* les memes que dans capitainerie_livret */
+/* Le rang suit le joueur hors de la Capitainerie : la presence le porte aux
+   autres, donc il vit dans la sauvegarde. On ne le DEDUIT jamais d'un compte
+   qu'on n'a pas eu du serveur (e.espOK) : un compte parti de zero ferait
+   redescendre un capitaine au rang de mousse. */
+function recalerLeRang(n){
+let r=0;for(let i=0;i<SEUILS_MARIN.length;i++)if(n>=SEUILS_MARIN[i])r=i;
+const avant=e.rang|0;
+e.esp=n;e.rang=r;e.espOK=true;
+try{sauver();}catch(x){}
+if(r!==avant&&typeof PRESENCE!=='undefined'&&PRESENCE){
+try{PRESENCE.track(maPresence());}catch(x){}}
+return r>avant?r:0;                             /* le nouvel echelon, si on monte */
+}
+function galonsDe(cv,n){
+const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+const S=cv.width/28;g.setTransform(S,0,0,S,0,0);
+g.clearRect(0,0,28,18);
+const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+R(0,0,28,18,'#14294a');                       /* le drap de l'epaulette */
+R(0,0,28,1,'#28466f');R(0,17,28,1,'#0a1830');
+R(0,0,1,18,'#28466f');R(27,0,1,18,'#0a1830');
+if(n<=0){                                     /* le mousse : un noeud, pas un galon */
+R(9,7,11,1,'#b9872f');R(9,10,11,1,'#b9872f');
+R(12,6,1,6,'#c9a24a');R(16,6,1,6,'#c9a24a');
+return;}
+for(let k=0;k<n;k++){const y=16-3*(k+1);
+R(3,y,22,1,'#f4d98a');R(3,y+1,22,1,'#b9872f');}
+}
+async function afficheCapitainerie(){
+$('page2Fond').className='';$('page2').classList.add('on');
+$('page2Fond').innerHTML='<div id="afc" style="position:fixed;inset:0;display:flex;'+
+'align-items:center;justify-content:center;background:#0b1f3a;color:#9db6d6;'+
+'font:italic 13px Georgia,serif">On ouvre le registre…</div>';
+const d=await appelRPC('capitainerie_livret',{p_joueur:e.id});
+if(!$('page2').classList.contains('on'))return;         /* referme entre-temps */
+if(!d||d.erreur){
+$('page2Fond').innerHTML='<div id="afc" style="position:fixed;inset:0;display:flex;'+
+'flex-direction:column;gap:14px;align-items:center;justify-content:center;background:#0b1f3a;'+
+'color:#9db6d6;font:italic 13px Georgia,serif;padding:24px;text-align:center">'+
+'Le registre est resté fermé.<br>Réessaie dans un instant.'+
+'<button id="afcOk" style="border:0;border-radius:8px;padding:12px 20px;background:#17365a;'+
+'color:#f2ece0;font:700 10px Arial,sans-serif;letter-spacing:2px">REDESCENDRE SUR LE QUAI</button></div>';
+$('afcOk').onclick=()=>{$('page2').classList.remove('on');};
+return;}
+recalerLeRang(d.especes|0);       /* la verite du serveur, une bonne fois */
+const ECH=Array.isArray(d.echelle)&&d.echelle.length?d.echelle
+:RANGS_MARIN.map((nom,i)=>({i,nom,especes:[0,5,12,25,40,60][i]}));
+const rg=d.rang|0, nEsp=d.especes|0;
+const dateFr=(t)=>{try{return new Date(t).toLocaleDateString('fr-FR',
+{day:'numeric',month:'long',year:'numeric'});}catch(x){return '—';}};
+const matricule=(()=>{let h=0;const s=String(e.id||'');
+for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;
+return 'EXM '+String(h%10000).padStart(4,'0')+' '+String((h>>>13)%100).padStart(2,'0');})();
+/* la marche vers le rang suivant, en especes */
+const suiv=d.suivant||null;
+const seuilBas=ECH[rg]?ECH[rg].especes:0;
+const part=suiv?Math.max(0,Math.min(1,(nEsp-seuilBas)/Math.max(1,suiv.especes-seuilBas))):1;
+$('page2Fond').innerHTML=`<style>
+#afc{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  display:flex;align-items:flex-start;justify-content:center;
+  background:#0b1f3a;padding:16px 13px 24px;font-family:Georgia,serif}
+#afc .lvLiv{width:100%;max-width:356px;background:#17365a;border-radius:4px 8px 8px 4px;
+  box-shadow:0 14px 34px rgba(0,0,0,.65);padding:8px 9px 9px 16px;position:relative}
+#afc .lvLiv:before{content:'';position:absolute;left:5px;top:8px;bottom:8px;width:3px;
+  background:linear-gradient(#0d2340,#2d5485,#0d2340);border-radius:2px}
+#afc .lvEnt{text-align:center;padding:5px 0 9px}
+#afc .lvEnt b{display:block;font:700 7.5px Arial,sans-serif;letter-spacing:3.5px;color:#f0d78a}
+#afc .lvEnt i{display:block;font:italic 9.5px Georgia,serif;color:#9db6d6;margin-top:3px}
+#afc .lvPage{background:#f4eee1;border-radius:3px;padding:15px 13px 13px;position:relative}
+#afc .lvPage:after{content:'';position:absolute;inset:5px;border:1px solid #dccca6;
+  pointer-events:none;border-radius:2px}
+#afc .lvId{display:flex;gap:10px;align-items:flex-start}
+#afc .lvPho{flex:0 0 auto;width:48px;height:48px;background:#e3dac5;border:1px solid #bda97e;
+  padding:2px;box-shadow:1px 1px 0 rgba(0,0,0,.12)}
+#afc .lvPho canvas{width:100%;height:100%;display:block;image-rendering:pixelated}
+#afc .lvCh{flex:1 1 auto;min-width:0}
+#afc .lvCh p{display:block;font:700 7px Arial,sans-serif;letter-spacing:2.2px;color:#8a7454;margin:1px 0 2px}
+#afc .lvCh b{display:block;font:900 17px Georgia,serif;color:#2f2820;line-height:1.15;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#afc .lvCh span{display:block;font:11px Georgia,serif;color:#6b5a40;margin-top:2px}
+#afc .lvTp{flex:0 0 auto;width:58px;height:58px;border-radius:50%;
+  border:2px double rgba(23,54,90,.5);color:rgba(23,54,90,.55);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transform:rotate(-9deg);text-align:center;line-height:1.15;margin-top:2px}
+#afc .lvTp i{font:700 5px Arial,sans-serif;letter-spacing:.6px;font-style:normal}
+#afc .lvTp b{font:900 11px Georgia,serif;letter-spacing:.5px;margin:1px 0}
+#afc hr{border:0;border-top:1px solid #dccca6;margin:12px 0 11px}
+#afc .lvRg{display:flex;gap:11px;align-items:center}
+#afc .lvRg canvas{flex:0 0 auto;width:86px;height:55px;image-rendering:pixelated;
+  border-radius:2px;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+#afc .lvRg div{min-width:0}
+#afc .lvRg p{display:block;font:700 7px Arial,sans-serif;letter-spacing:2.2px;color:#8a7454;margin:0 0 2px}
+#afc .lvRg b{display:block;font:900 21px Georgia,serif;color:#17365a;line-height:1.1}
+#afc .lvRg span{display:block;font:italic 11px Georgia,serif;color:#6b5a40;margin-top:2px}
+#afc .lvJa{margin-top:11px}
+#afc .lvJa .lvJaH{display:flex;justify-content:space-between;font:700 7.5px Arial,sans-serif;
+  letter-spacing:1.4px;color:#8a7454;margin-bottom:4px}
+#afc .lvJa .lvJaB{height:7px;background:#e3dac5;border:1px solid #cbb792;border-radius:4px;overflow:hidden}
+#afc .lvJa .lvJaB i{display:block;height:100%;background:linear-gradient(#f0d78a,#c9a24a)}
+#afc .lvEch{margin-top:12px}
+#afc .lvEch .lvL{display:flex;gap:9px;align-items:center;padding:3px 0}
+#afc .lvEch .lvL canvas{flex:0 0 auto;width:34px;height:22px;image-rendering:pixelated;border-radius:2px}
+#afc .lvEch .lvL b{flex:1 1 auto;font:600 12px Georgia,serif;color:#2f2820}
+#afc .lvEch .lvL span{font:10px Georgia,serif;color:#8a7454}
+#afc .lvEch .lvL.lvPas{opacity:.42}
+#afc .lvEch .lvL.lvIci b{color:#17365a;font-weight:900}
+#afc .lvEch .lvL.lvIci{background:rgba(201,162,74,.17);border-radius:4px;padding:3px 5px;margin:0 -5px}
+#afc .lvSt{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:13px}
+#afc .lvSt div{background:#e9e1cc;border:1px solid #d5c4a0;border-radius:4px;padding:7px 8px}
+#afc .lvSt b{display:block;font:900 16px Georgia,serif;color:#2f2820;line-height:1.1}
+#afc .lvSt span{display:block;font:700 6.5px Arial,sans-serif;letter-spacing:1.6px;
+  color:#8a7454;margin-top:3px}
+#afc .lvSig{font:italic 11px Georgia,serif;color:#8a7454;border-top:1px solid #dccca6;
+  padding-top:9px;margin-top:12px;text-align:right}
+#afc .lvNb{font:italic 10px Georgia,serif;color:#9a8a6e;margin-top:7px;text-align:center;line-height:1.5}
+#afc button#afcOk{margin-top:11px;width:100%;border:0;border-radius:8px;padding:13px;
+  background:#0d2340;color:#f0d78a;font:700 9.5px Arial,sans-serif;letter-spacing:2.4px}
+</style>
+<div id="afc"><div class="lvLiv">
+  <div class="lvEnt"><b>CAPITAINERIE DU PORT</b><i>Livret professionnel maritime</i></div>
+  <div class="lvPage">
+    <div class="lvId">
+      <div class="lvPho"><canvas id="lvTete" width="44" height="44"></canvas></div>
+      <div class="lvCh">
+        <p>LE TITULAIRE</p>
+        <b>${echapperT(d.pseudo||e.pseudo||'sans nom')}</b>
+        <span>Matricule ${matricule}</span>
+        <span>Inscrit le ${dateFr(d.inscrit)}</span>
+      </div>
+      <div class="lvTp"><i>CAPITAINERIE</i><b>VISÉ</b><i>DU PORT</i></div>
+    </div>
+    <hr>
+    <div class="lvRg">
+      <canvas id="lvGalons" width="112" height="72"></canvas>
+      <div>
+        <p>RANG AU REGISTRE</p>
+        <b>${echapperT(d.rang_nom||RANGS_MARIN[rg]||'Mousse')}</b>
+        <span>${rg+1}<sup>e</sup> échelon sur ${ECH.length}</span>
+      </div>
+    </div>
+    <div class="lvJa">
+      <div class="lvJaH"><span>${suiv?('VERS '+String(suiv.nom).toUpperCase()):'ÉCHELON LE PLUS HAUT'}</span>
+        <span>${suiv?(nEsp+' / '+suiv.especes+' ESPÈCES'):(nEsp+' ESPÈCES')}</span></div>
+      <div class="lvJaB"><i style="width:${Math.round(part*100)}%"></i></div>
+    </div>
+    <div class="lvEch">${ECH.map((x,i)=>
+      '<div class="lvL'+(i===rg?' lvIci':(i>rg?' lvPas':''))+'">'+
+      '<canvas data-g="'+i+'" width="56" height="36"></canvas>'+
+      '<b>'+echapperT(x.nom)+'</b><span>'+
+      (x.especes===0?'au premier jour':x.especes+' espèces')+'</span></div>').join('')}</div>
+    <div class="lvSt">
+      <div><b>${nEsp}</b><span>ESPÈCES AU CARNET</span></div>
+      <div><b>${d.prises|0}</b><span>PRISES ENREGISTRÉES</span></div>
+      <div><b>${d.record?(d.record.cm+' cm'):'—'}</b><span>${d.record?echapperT(String(carnetNom(d.record.espece)).toUpperCase()):'AUCUN RECORD'}</span></div>
+      <div><b>${d.serie|0}</b><span>MEILLEURE SÉRIE</span></div>
+    </div>
+    <div class="lvSig">Le capitaine du port</div>
+    <div class="lvNb">Le rang est un titre : il se porte, il n’ouvre aucune porte.</div>
+  </div>
+  <button id="afcOk">REDESCENDRE SUR LE QUAI</button>
+</div></div>`;
+/* le portrait du titulaire, et les galons */
+try{const t=$('lvTete'),g=t.getContext('2d');g.imageSmoothingEnabled=false;
+const im=teteDe({ap:e.ap,pseudo:e.pseudo});
+g.clearRect(0,0,44,44);g.drawImage(im,0,0,im.width,im.height,-5,-2,53,53);}catch(x){}
+try{galonsDe($('lvGalons'),rg);}catch(x){}
+document.querySelectorAll('#afc .lvEch canvas').forEach(c=>{
+try{galonsDe(c,+c.dataset.g);}catch(x){}});
+$('afcOk').onclick=()=>{$('page2').classList.remove('on');};
+try{jouer('achat','moment');}catch(x){}
 }
 function afficheComplexe(){
   $('page2Fond').className='';$('page2').classList.add('on');
@@ -22126,6 +22260,7 @@ try{return joueur.x<rivX(joueur.y)?'en forêt':'au village';}catch(x){return 'au
 }
 function maPresence(){
 return {id:e.id,pseudo:e.pseudo||'sans nom',ap_v:empreinteAp(e.ap),
+rang:e.rang|0,                                  /* le titre du livret, pour les autres */
 lieu:monCoin||coinDuJoueur(),depuis:DEPUIS};
 }
 function ouvrirPresence(){
@@ -22176,7 +22311,8 @@ const [x,yb]=places[k];
 const a=AUTRES.get(p.id)||{};
 Object.assign(a,{id:p.id,x,y:yb+3,hanche:yb-7,assis:true,dir:'bas',pas:0,
 marche:false,court:false,gesteT:0,geste:null,
-pseudo:p.pseudo||'survivant',lieu:p.lieu||'',depuis:p.depuis||Date.now(),vu:Date.now()});
+pseudo:p.pseudo||'survivant',rang:p.rang|0,
+lieu:p.lieu||'',depuis:p.depuis||Date.now(),vu:Date.now()});
 const connue=APPARENCES.get(p.id);
 if(!connue||connue.v!==(p.ap_v||0))aChercher.push(p.id);
 a.ap=(connue&&connue.ap)||a.ap||{};
@@ -22417,6 +22553,14 @@ GESTE=sauve;
 g.font='700 7px ui-monospace,monospace';g.textAlign='center';
 g.fillStyle='rgba(10,16,10,.55)';g.fillText(a.pseudo,x+1,yNom+1);
 g.fillStyle='#f2efe4';g.fillText(a.pseudo,x,yNom);
+/* LE TITRE DU LIVRET, au-dessus du nom. Le mousse n'en porte pas :
+   un titre que tout le monde a n'est pas un titre. */
+if((a.rang|0)>0&&RANGS_MARIN[a.rang|0]){
+const t=RANGS_MARIN[a.rang|0].toUpperCase();
+g.font='700 5.5px ui-monospace,monospace';
+g.fillStyle='rgba(10,16,10,.5)';g.fillText(t,x+1,yNom-6);
+g.fillStyle='#e8c06a';g.fillText(t,x,yNom-7);
+}
 g.textAlign='left';
 }
 function dessinerBulles(g,camX,camY,px,py){
@@ -23023,6 +23167,8 @@ texteVolant(joueur.x,joueur.y-44,(LEGENDES.includes(d.espece)?'🏆 ':'')+S.nom+
 LEGENDES.includes(d.espece)?'#f4d98a':(d.neuf?'#9fdfb8':'#cfe0f2'));
 
 if(d.neuf)setTimeout(()=>texteVolant(joueur.x,joueur.y-54,'nouvelle espèce au carnet !','#9fdfb8'),500);
+if(d.neuf&&e.espOK){const nr=recalerLeRang((e.esp|0)+1);
+if(nr)setTimeout(()=>texteVolant(joueur.x,joueur.y-66,'livret visé · '+RANGS_MARIN[nr].toUpperCase(),'#e8c06a'),1050);}
 else if(d.record)setTimeout(()=>texteVolant(joueur.x,joueur.y-54,'nouveau record !','#e8c06a'),500);
 if(d.points>0){marquer('peche',d.points);sauver();setTimeout(()=>texteVolant(joueur.x+14,joueur.y-30,'+'+d.points+' pt'+(d.points>1?'s':''),'#ffd76a'),900);}
 jouer('achat','moment');vibrer(LEGENDES.includes(d.espece)?[40,60,40,60,120]:[18,30,18]);
@@ -23716,6 +23862,7 @@ const f=$('feuilleC');f.innerHTML='<h2>Carnet de pêche</h2><div class="sousC">O
 $('carnetP').classList.add('on');
 const d=await appelRPC('mon_carnet',{p_joueur:e.id});
 CARNET_PECHE=(d&&typeof d==='object'&&!d.erreur)?d:(CARNET_PECHE||{});
+if(d&&typeof d==='object'&&!d.erreur)recalerLeRang(Object.keys(d).length);
 carnetGarde();
 }
 /* LA LISTE COMPLÈTE : celle du port, plus toutes les prises du lac.
@@ -24328,7 +24475,7 @@ if(o.ouvre==='bouillabaisse'){b.innerHTML='Entrer Chez Fonfon<small>RESTAURANT �
 if(o.ouvre==='poissonnerie'){b.innerHTML='Vendre ta pêche<small>LA CRIÉE · POISSONNERIE</small>';b.classList.add('on');return;}
 if(o.ouvre==='peche'){b.innerHTML='Le Pêcheur Heureux<small>CANNES, MOULINETS, APPÂTS</small>';b.classList.add('on');return;}
 if(o.ouvre==='salon'){b.innerHTML='Entrer à La Marinière<small>VÊTEMENTS DU PORT</small>';b.classList.add('on');return;}
-if(o.ouvre==='presse'){b.innerHTML='Lire l’affiche<small>LA CAPITAINERIE OUVRE BIENTÔT</small>';b.classList.add('on');return;}
+if(o.ouvre==='presse'){b.innerHTML='Ouvrir mon livret<small>LA CAPITAINERIE DU PORT</small>';b.classList.add('on');return;}
 if(o.ouvre==='bar'){b.innerHTML='Entrer au Bar des Docks<small>BAR · TABAC · JEUX À GRATTER</small>';b.classList.add('on');return;}
 if(o.ouvre==='crousti'){b.innerHTML='Entrer chez Crousti’Port<small>'+(REPU_FIN>Date.now()?'TU ES REPU · ENCORE '+Math.ceil((REPU_FIN-Date.now())/60000)+' MIN':'POULET FRIT · MENUS 1 À 12 €')+'</small>';b.classList.add('on');return;}
 if(o.ouvre==='skishop'){b.innerHTML='Entrer au Ski shop<small>TENUES DE MONTAGNE · DE 5 € À 2 500 €</small>';b.classList.add('on');return;}
