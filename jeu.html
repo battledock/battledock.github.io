@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-08-1430"></script>
+<script src="maintenance.js?v=2026-10-08-1500"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-08-1430';
+var MA_VERSION='2026-10-08-1500';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -1997,6 +1997,25 @@ const n=parseInt(c.slice(1),16);
 const f=v=>Math.max(0,Math.min(255,v+k));
 return '#'+((1<<24)+(f((n>>16)&255)<<16)+(f((n>>8)&255)<<8)+f(n&255)).toString(16).slice(1);
 };
+/* ================= LA FINESSE DE GRAVURE =================
+   Les sprites — personnage, façades, décor — sont gravés sur une toile
+   deux fois plus fine que leur taille de jeu, puis étirés par la caméra.
+   Au palier « nette », sur un écran à trois points par pixel, l'échelle
+   est de six : une gravure en double est donc encore agrandie trois fois.
+   On la fait en triple quand l'écran le mérite ; la toile grandit de
+   125 %, mais le dessin cesse d'être une image agrandie. */
+function finesseGravure(){
+  /* ESSAYÉ ET REFUSÉ : graver en triple au palier « nette ». Le dessin du
+     personnage est écrit pour une grille en double — ses coordonnées vont
+     au demi-point, et la passe de contour relit la toile pixel par pixel
+     en supposant ce pas. En triple, le demi-point tombe à un pixel et
+     demi : l'arrondi raye le visage et le buste de bandes horizontales,
+     et le contour se pose de travers. Ce n'est donc pas un réglage, c'est
+     un redessin — le jour où on le fera, cette fonction est l'endroit.
+     Mesuré : 60 images par seconde dans les deux cas, le coût n'était pas
+     le problème. */
+  return 2;
+}
 let TRANS_FIN=null;
 /* ================= LE PÉDALAGE =================
    Quand ce drapeau porte une phase, le personnage n'est plus en marche :
@@ -17228,7 +17247,7 @@ let L=P.dirs[dir];
 if(!L){L=P.dirs[dir]=[];}
 if(L[i])return L[i];
 const c=document.createElement('canvas');
-const D=STYLE_FIN()?2:Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+const D=STYLE_FIN()?finesseGravure():Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
 c.width=CASE_L*D;c.height=CASE_H*D;
 const g=c.getContext('2d');
 g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
@@ -19328,9 +19347,10 @@ if(dos||cote)skisDe();                                                       /* 
 let BRISE_PH=0, CLIGNE_FIN=false;
 function graverFin(ap,dir,pas,bouge,brise,cligne){
 BRISE_PH=(brise||0)*Math.PI/2;CLIGNE_FIN=!!cligne;
-const L=CASE_L*2, H=CASE_H*2;
+const FG=finesseGravure();
+const L=CASE_L*FG, H=CASE_H*FG;
 const c=document.createElement('canvas');c.width=L;c.height=H;
-const g=c.getContext('2d',{willReadFrequently:true});g.imageSmoothingEnabled=false;g.setTransform(2,0,0,2,0,0);
+const g=c.getContext('2d',{willReadFrequently:true});g.imageSmoothingEnabled=false;g.setTransform(FG,0,0,FG,0,0);
 spriteFin(g,CASE_L/2,CASE_H-10,ap,dir,pas,bouge);
 g.setTransform(1,0,0,1,0,0);
 const im=g.getImageData(0,0,L,H), d=im.data, plein=new Uint8Array(L*H);
