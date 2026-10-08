@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-09-0420"></script>
+<script src="maintenance.js?v=2026-10-09-0520"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-09-0420';
+var MA_VERSION='2026-10-09-0520';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2036,6 +2036,21 @@ let REPOS_FIN=null;
 
    Posé par poseDe pour les poses 700 à 727, remis à null juste après. */
 let FACE_FIN=null;
+/* ================= LA TÊTE QUI TOURNE =================
+   La tête était verrouillée sur l'octant du corps : il ne pouvait pas
+   regarder ailleurs qu'où il allait. Or c'est la première chose qu'un
+   corps fait — la tête mène le virage, et elle continue de fixer une
+   chose pendant que le corps passe devant.
+
+   Les poses étant gravées en entier, une tête à un angle différent du
+   corps est forcément une famille de poses de plus. On ne peut donc pas
+   la faire tourner en continu : on lui donne trois crans, -1, 0 et +1,
+   et on s'en sert là où ça compte — à l'arrêt, quand il regarde autour
+   de lui, et pendant le pivot, où la tête part avant les épaules.
+
+   Dans le pivot elle ne coûte RIEN : les cinq images existent déjà, et
+   en double puisqu'il y a un sens par famille. */
+let TETE_FIN=0;
 /* ================= LE PÉDALAGE =================
    Quand ce drapeau porte une phase, le personnage n'est plus en marche :
    il est assis, penché, les mains au guidon, et ses pieds tournent sur le
@@ -17482,6 +17497,13 @@ VELO_FIN={k:(j-500)/16};
 g.drawImage(graverFin(ap,dir,0,true,0,false),0,0,c.width,c.height);
 VELO_FIN=null;
 }
+else if(j>=800&&j<830){
+/* LA TÊTE TOURNÉE à l'arrêt : 800 vers la gauche, 820 vers la droite.
+   Huit images chacune, celles de la respiration. */
+TETE_FIN=j<820?-1:1;
+g.drawImage(graverFin(ap,dir,0,false,j-(j<820?800:820),false),0,0,c.width,c.height);
+TETE_FIN=0;
+}
 else if(j>=700&&j<730){
 /* LE VISAGE : 700 regard à gauche, 710 à droite, 720 demi-clignement.
    Huit images chacune — celles de la respiration, qui continue. */
@@ -17689,9 +17711,30 @@ const TIRAGE_PAUSE=['appui','souffle','appui'];
    Comme les transitions et les micro-pauses, cette machine ne suit que
    le joueur. Les autres gardent leur clignement au hasard, qui ne coûte
    aucune planche de poses supplémentaire. */
-const VIS={clinA:0, prochainClin:0, regardA:0, regardD:0, regard:0, prochainRegard:0};
+const VIS={clinA:0, prochainClin:0, regardA:0, regardD:0, regard:0, prochainRegard:0,
+teteA:0, teteD:0, tete:0, prochaineTete:0};
 function indiceVisage(ph){
 const t=Date.now();
+/* ================= LA TÊTE PASSE AVANT TOUT =================
+   Plus rare que la saccade et beaucoup plus longue : l'œil saute toutes
+   les deux secondes, la tête se tourne toutes les dix à quinze et tient
+   une à deux secondes et demie.
+
+   Tant qu'elle est tournée, on ne cligne pas et on ne fait pas de
+   saccade. Ce n'est pas une économie : un clignement renverrait la pose
+   tête droite, donc la tête se remettrait d'aplomb pendant deux cent
+   quinze millisecondes avant de repartir de côté. Et de toute façon on
+   cligne moins quand on regarde quelque chose. */
+if(!VIS.prochaineTete)VIS.prochaineTete=t+6000+Math.random()*9000;
+if(VIS.teteA){
+if(t-VIS.teteA<VIS.teteD)return (VIS.tete<0?800:820)+ph;
+VIS.teteA=0;VIS.prochaineTete=t+9000+Math.random()*12000;
+VIS.prochainClin=t+400;
+}else if(t>=VIS.prochaineTete&&!VIS.clinA&&!VIS.regardA){
+VIS.teteA=t;VIS.teteD=1200+Math.random()*1400;
+VIS.tete=Math.random()<0.5?-1:1;
+return (VIS.tete<0?800:820)+ph;
+}
 if(!VIS.prochainClin)VIS.prochainClin=t+1500+Math.random()*3500;
 if(!VIS.clinA&&t>=VIS.prochainClin)VIS.clinA=t;
 if(VIS.clinA){
@@ -18112,6 +18155,11 @@ const frappe=(!COURSE&&bouge&&(F===0||F===PASM/2))?1:0;
    et ouvre la foulée. Les trois moments ont une signature opposée :
    l'élan pousse en avant, le freinage retient en arrière, le pivot tasse. */
 const TR=(typeof TRANS_FIN==='object'&&TRANS_FIN)?TRANS_FIN:null;
+/* LA ROTATION DE TÊTE PROPRE À CET APPEL. Le pivot la calcule plus bas,
+   et elle doit rester LOCALE : au premier essai elle était posée dans le
+   drapeau global sans jamais être remise à zéro, et la pose suivante
+   héritait d'une tête tournée qui n'avait rien demandé. */
+let yawLocal=0;
 const trK=TR?TR.k:0;
 const trPenche=!TR?0:(TR.type==='elan'?Math.round((1-trK)*3+1)
 :(TR.type==='frein'?-Math.round((1-trK)*3+1)
@@ -18124,6 +18172,17 @@ const trPenche=!TR?0:(TR.type==='elan'?Math.round((1-trK)*3+1)
    en courbe. Le tassement seul disait « il se passe quelque chose » sans
    dire de quel côté — le même dessin servait pour les deux sens. */
 const trVire=(TR&&TR.type==='pivot')?Math.round(Math.sin(trK*Math.PI)*2)*(TR.sens||1):0;
+/* LA TÊTE MÈNE LE VIRAGE. Elle part dès la première image et revient à
+   l'axe à la dernière, pendant que les épaules, elles, suivent la
+   courbe du tassement. C'est l'ordre qu'un corps respecte toujours :
+   les yeux, puis la tête, puis le buste, puis les pieds. */
+if(TR&&TR.type==='pivot')yawLocal=(trK<0.75?(TR.sens||1):0);
+/* LE CRAN DE ROTATION DE LA TÊTE, au niveau du sprite et pas dans la
+   fonction qui dessine le crâne : l'œil doit le lire aussi, pour que le
+   regard parte du même côté. Déclaré à l'intérieur de `tete()` au
+   premier essai, il était invisible depuis `oeilDe` et le personnage
+   tournait la tête en gardant les yeux droit devant. */
+const yawT=(!cote&&!diag)?((typeof TETE_FIN==='number'&&TETE_FIN)||yawLocal):0;
 const trTasse=!TR?0:(TR.type==='pivot'?Math.round(Math.sin(trK*Math.PI)*2)
 :(TR.type==='elan'?Math.round(Math.sin(trK*Math.PI)*2)
 :(TR.type==='lance'?-Math.round(Math.sin(trK*Math.PI))
@@ -18752,7 +18811,11 @@ oreille(-12,hy,-1,true);oreille(12,hy,1,true);
 }else{
 /* LE CRÂNE DE TROIS QUARTS : il rétrécit de 7 %, comme un volume qu'on
    voit en biais, et il tourne d'un pixel de plus que les épaules. */
-const dT=diag?vis:0;
+/* LE CRÂNE, LE VISAGE ET LA JOUE suivent tous le même cran de rotation :
+   de trois quarts c'est `vis` qui commande, de face et de dos c'est la
+   tête tournée. Un seul nombre, trois décalages proportionnels — sinon
+   le visage glisse sans que le crâne suive, et la tête se dévisse. */
+const dT=diag?vis:yawT;
 for(let r=0;r<24;r++){let w=r<2?18:(r>19?22-(r-20)*2:24);
 if(diag)w=Math.round(w*0.93);
 R(-Math.round(w/2)+dT,hy+r,w,1,r>19?peauO:peau);}
@@ -18761,7 +18824,11 @@ R(-12+dT,hy+2,1,18,peauO);R(11+dT,hy+2,1,18,peauC);
    surface qui s'éloigne du regard. */
 if(diag){R((vis>0?-11:8)+dT,hy+2,3,17,T(peau,-13));
 R((vis>0?-12:10)+dT,hy+2,1,18,T(peau,-24));}
-{const m=diag?vis*2:0, ombre=T(peau,-11), creux2=T(peau,-17);
+/* DE FACE, tête tournée : la joue qu'on quitte prend un peu d'ombre.
+   Deux fois moins marquée que de trois quarts — la rotation n'est que
+   d'un cran, pas d'un octant. */
+else if(yawT)R((yawT>0?-11:9)+dT,hy+3,2,15,T(peau,-8));
+{const m=diag?vis*2:yawT, ombre=T(peau,-11), creux2=T(peau,-17);
 R(-11+m,hy+4,2,14,ombre);                                                     /* le côté dans l'ombre */
 R(-11+m,hy+6,1,5,creux2);R(10+m,hy+6,1,4,T(peau,-6));                          /* les tempes */
 R(-8+m,hy+9,5,1,T(peau,-7));R(3+m,hy+9,5,1,T(peau,-5));                       /* le creux des orbites */
@@ -18773,7 +18840,7 @@ R(-3+m,hy+2,7,2,T(peau,8));}                                                   /
 if(!diag||vis<0)oreille(12,hy,1,false);if(!diag||vis>0)oreille(-12,hy,-1,false);   /* les oreilles */
 if(boucle!=='aucune'){const bc=boucle==='perle'?'#f2efe4':(boucle==='plume'?'#c0392b':'#e8c06a');
 if(!diag||vis>0)R(-14,hy+16,2,2,bc);if(!diag||vis<0)R(12,hy+16,2,2,bc);}
-const f3=diag?vis*3:0;
+const f3=diag?vis*3:yawT*2;
 oeilDe(-7+f3+(diag&&vis>0?1:0),hy+11,false,diag&&vis>0);
 oeilDe(3+f3-(diag&&vis<0?1:0),hy+11,false,diag&&vis<0);
 sourcilDe(-7+f3,hy+8,false);sourcilDe(3+f3,hy+8,false);
@@ -18842,7 +18909,7 @@ const h=(fy==='ronds'?4:3)-(mi?1:0);
 /* LE REGARD : la direction donne le cap, la saccade ajoute le pixel qui
    bouge. L'iris est ensuite borné au blanc de l'œil, donc il ne peut pas
    en sortir même si les deux s'additionnent. */
-const regard=(diag?vis:(profil?1:0))+(F?(F.regard||0):0);
+const regard=(diag?vis:(profil?1:yawT))+(F?(F.regard||0):0);
 if(fy==='plisses'){
 /* LES YEUX PLISSÉS : on voit encore l'iris, coincé entre deux paupières,
    au lieu d'un simple trait noir. */
@@ -19811,7 +19878,14 @@ jambe(0,avD,lvD,true);
 penche(()=>torse());
 jambe(0,avG,lvG,false);
 penche(()=>{cheveuxDerriere();tete();echarpeDe();barbeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();chapeauDe();masqueDe();});
-if(frG>0)penche(()=>{const h=brasGeste(false,false);outil(h);R(Math.round(h.x)-2,Math.round(h.y)-2,4,4,peau);});
+if(frG>0)penche(()=>{const h=brasGeste(false,false);outil(h);
+/* ================= LA MAIN QUI TIENT =================
+   C'était un carré de quatre sur quatre en peau nue : ni pouce, ni
+   doigts, ni ombre — alors que la main qui pend au bout du bras, elle,
+   est dessinée depuis toujours. On lui donne la même, en poing fermé :
+   c'est la forme d'une main qui tient quelque chose, et c'est justement
+   celle que `main` dessine en profil. */
+main(Math.round(h.x),Math.round(h.y)-2,s>0?1:-1,true,false,false);});
 else penche(()=>bras(0,-avG,false));                       /* le bras de devant, à l'opposé de la jambe de devant */
 }else if(frG>0){
 if(!dos)cheveuxDerriere();
@@ -19819,7 +19893,11 @@ jambe(-Math.round(HA/2)-1,0,0,false);jambe(Math.round(HA/2)+1,0,0,false);
 if(!dos)sac(false);
 torse();
 const outilEtBras=()=>{const h1=brasGeste(false,true), h2=brasGeste(false,false);
-outil({x:Math.round((h1.x+h2.x)/2),y:Math.round((h1.y+h2.y)/2),a:h2.a});};
+outil({x:Math.round((h1.x+h2.x)/2),y:Math.round((h1.y+h2.y)/2),a:h2.a});
+/* DE FACE ET DE DOS, il n'y avait AUCUNE main : l'outil flottait au bout
+   de deux avant-bras qui s'arrêtaient dans le vide. */
+main(Math.round(h1.x),Math.round(h1.y)-2,-1,true,true,false);
+main(Math.round(h2.x),Math.round(h2.y)-2,1,true,false,false);};
 if(dos){
 const leve=momentDos(angleBras().a)==='leve';
 if(!leve){outilEtBras();torse();sac(false);tete();echarpeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();chapeauDe();masqueDe();}
