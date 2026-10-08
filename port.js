@@ -983,12 +983,20 @@ for(let i=0;i<4;i++){h2.fillStyle='#fff0b0';h2.fillRect(tx+4+i*9,basToit+4,2,2);
 return {toile:c,W,H:Ht,sol,nuit:n2};
 }
 function graverLaStationVelo(){
-const W=106,Ht=46,cx=45,sol=40;                    /* 8 px de marge de chaque côté : le 4e vélo n'est plus coupé */
+/* LA TOILE EST CALEE SUR L'ENCRE, PAS SUR LE SUPPOSE. Mesure faite dans
+   un navigateur : un velo deborde de 9 px a gauche et de 18 a droite de
+   son point d'ancrage. Le quatrieme est ancre en 83, son encre va donc
+   jusqu'a 101, et la toile s'arretait a 98 : la roue avant etait coupee
+   net sur 29 lignes. On garde cx=45 au centre exact de la vignette — sans
+   quoi la station se decalerait de quelques pixels sur le quai — et on
+   ouvre le cadre a 56 px de part et d'autre, soit 2 px d'air apres la
+   roue. */
+const W=116,Ht=46,cx=45,sol=40;
 const c=document.createElement('canvas');
 /* on grave les façades plus finement : les enseignes étaient tracées
    sur une toile deux fois trop petite, puis agrandies à l'écran */
 const D=Math.max(2,Math.min(3,Math.ceil(window.devicePixelRatio||2)));
-c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,8*D,0);g.imageSmoothingEnabled=false;
+c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,13*D,0);g.imageSmoothingEnabled=false;
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
 g.fillStyle='rgba(40,30,18,.22)';g.beginPath();g.ellipse(cx,sol+1,40,4,0,0,7);g.fill();
 R(8,sol-30,10,30,'#7a1f2b');R(8,sol-30,10,2,'#a8424e');R(10,sol-26,6,5,'#9fd0e8');R(10,sol-18,6,2,'#e8c06a');
@@ -2143,7 +2151,7 @@ DECOR=[];
 const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
 for(let k=0;k<10;k++){
 if(k===4)continue;                                                  /* la ruelle du casino (plus de panneau en bois) */
-if(k===1){XCAL['x_fonfon0']=restoFonfon('bordeaux');CALQUES_DECO['x_fonfon']=XCAL['x_fonfon0'];P('x_fonfon',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'bouillabaisse'});continue;}   /* Chez Fonfon, le restaurant de bouillabaisse (à la place du Fumoir) */
+if(k===0){XCAL['x_fonfon0']=restoFonfon('bordeaux');CALQUES_DECO['x_fonfon']=XCAL['x_fonfon0'];P('x_fonfon',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'bouillabaisse'});continue;}   /* Chez Fonfon, le restaurant de bouillabaisse. IL TIENT LE BOUT OUEST DU QUAI (k=0, ancien k=1) : l'est est tenu par la Capitainerie, les deux esplanades sont donc bordees d'une devanture et les deux immeubles vides sont rentres dans la rangee. */
 if(k===9){XCAL['x_presse0']=graverLaPresse();CALQUES_DECO['x_presse']=XCAL['x_presse0'];P('x_presse',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'presse'});continue;}   /* la maison de la presse */
 if(k===2){XCAL['x_facPeche0']=graverLaBoutiquePeche();CALQUES_DECO['x_facPeche']=XCAL['x_facPeche0'];P('x_facPeche',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'peche'});continue;}   /* Pêche & Marine */
 if(k===6){XCAL['x_facPoisson0']=graverLaPoissonnerie();CALQUES_DECO['x_facPoisson']=XCAL['x_facPoisson0'];P('x_facPoisson',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'poissonnerie'});continue;}   /* la poissonnerie */
@@ -2153,11 +2161,13 @@ if(k===5){XCAL['x_peigne0']=graverLePeigne();CALQUES_DECO['x_peigne']=XCAL['x_pe
 if(k===7){XCAL['x_crousti0']=graverCroustiPort();CALQUES_DECO['x_crousti']=XCAL['x_crousti0'];P('x_crousti',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'crousti'});continue;}   /* le fast-food du quai */
 P('x_maison',XP.rangX0+k*140,XP.maisonsY,{v:k,col:[70,24]});
 }
-/* LE PLATANE DE L'OUEST EST PARTI avec son banc : il poussait en 44,212,
-   c'est-a-dire au milieu de l'esplanade et du couloir du chemin. On butait
-   dessus au lieu de s'en aller, et les deux esplanades doivent rester nues
-   de la meme facon. Il reste celui de l'est, qui a suivi sa facade. */
-[1370].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k+1,col:[8,4]});P('bancP',x+30,XP.maisonsY+72);});   /* le platane du quai, avec son banc (il suit sa facade, +180) */
+/* LES DEUX PLATANES DU QUAI, chacun avec son banc. Celui de l'ouest avait
+   ete arrache : il poussait en 44,212, au milieu du couloir du chemin, et
+   l'on butait dessus au lieu de s'en aller. Il replante en 390, le miroir
+   exact de celui de l'est autour de l'axe de la rangee (880) — donc sur le
+   quai, devant les facades, et non sur l'esplanade qui reste nue des deux
+   cotes. */
+[390,1370].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+30,XP.maisonsY+72);});
 let nv=0;
 [360,620,880].forEach(px=>{                     /* on compte aussi l'ancien ponton du milieu : les autres voiliers gardent leur allure */
 const la=XP.pontons.includes(px);
