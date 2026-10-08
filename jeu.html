@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-08-2250"></script>
+<script src="maintenance.js?v=2026-10-08-2335"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-08-2250';
+var MA_VERSION='2026-10-08-2335';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -18520,11 +18520,39 @@ const bx=cote2*(EP+Math.ceil(SX.bras[0]/2)+1+(PEDALE?2:0))+vrille, dy=PEDALE?0:M
       yC=yEp+hCoude+Math.round(dy/2), yM=yEp+hPoignet+dy;
 const out=cote2<0?bx-2:bx+2, inn=cote2<0?bx+2:bx-2;
 const lb=SX.bras[0]+1;R(bx-Math.floor(lb/2),yEp,lb,3,manches>0?c:sk);R(bx-2,yEp-1,4,1,manches>0?cC:sk);R(bx-2,yEp,3,1,manches>0?cC:peauC);
+
 /* DE FACE, la main ne bougeait que verticalement (±3 px) : les bras
    restaient collés au corps et le balancement ne se lisait pas. Elle
    glisse maintenant aussi vers l'axe du corps quand le bras part en
    avant, et vers l'extérieur quand il part en arrière. */
 const dxS=PEDALE?cote2*3:(diag?Math.round(balance*4*tourne*(dos?-1:1)):Math.round(balance*3*-cote2));
+/* ================= LE PONT DE L'ÉPAULE =================
+   Il restait un coin de fond entre le bras et le buste. Le trapèze
+   descend en pente vers le cou sur les quatre premières lignes — de onze
+   unités de demi-largeur à sept — mais le bras, lui, garde sa place du
+   haut jusqu'en bas. D'où deux pixels de vide sous l'épaule, puis un
+   filet d'un demi-pixel le long du biceps. Mesuré sur cinq lignes, et
+   vieux comme le dessin : les deux versions d'avant donnaient le même
+   trou au pixel près.
+
+   On comble du bord du buste au bord interne du bras, ligne par ligne,
+   et seulement jusqu'au coude : le haut du bras touche les côtes,
+   l'avant-bras reste libre — c'est ce que fait un corps.
+
+   Le décalage de la vrille et celui du balancement s'appliquent aux deux
+   bords, sinon le pont se décroche dès que le corps tourne. Au-delà de
+   huit unités on ne comble plus : le bras est parti pour de bon, et le
+   vide est alors le bon dessin. */
+if(!PEDALE){
+const pont=manches>0?c:sk;
+for(let r=yEp;r<yEp+hCoude;r++){
+const dm=r<yEp+4?Math.round(5+(EP-5)*(r-yEp+1)/4):EP;
+const dec=Math.round(dxS*Math.max(0,r-yEp-2)/Math.max(1,yM-yEp-2));
+const bordCorps=cote2>0?(dm+vrille):(-dm+vrille);
+const bordBras=bx+dec-cote2*2;
+const lw=Math.abs(bordBras-bordCorps);
+if(lw>0&&lw<8)R(Math.min(bordCorps,bordBras),r,lw,1,pont);
+}}
 const bande=(y0,y1,w,col,colO,colC)=>{for(let r=y0;r<y1;r++){const x0=bx+Math.round(dxS*Math.max(0,r-yEp-2)/Math.max(1,yM-yEp-2))-Math.floor(w/2);R(x0,r,w,1,col);R(cote2<0?x0:x0+w-1,r,1,1,colO);R(cote2<0?x0+w-1:x0,r,1,1,colC);}};
 const mancheBas=manches>=1?yM:(manches>0?Math.round(yEp+2+(yM-yEp)*manches):yEp+2);
 bande(yEp+2,Math.min(yC,mancheBas),SX.bras[0],manches>0?c:sk,manches>0?cT:skO,manches>0?cC:peauC);   /* le bras */
