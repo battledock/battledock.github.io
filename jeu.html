@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-08-2335"></script>
+<script src="maintenance.js?v=2026-10-09-0020"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-08-2335';
+var MA_VERSION='2026-10-09-0020';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -18200,8 +18200,17 @@ return;
        plus courte ; celle qui s'éloigne, plus haut et plus longue. */
 const av=avance||0;
 const passage=1-Math.min(1,Math.abs(av));
-const prof=Math.round(av*1.6);                   /* vers nous : plus bas */
-cx+=Math.round(passage*(leve>0.2?2:1))*((cx<0)?1:-1);
+/* VERS NOUS : PLUS BAS. Le billboard ne peut pas avancer un pied en
+   profondeur, alors on le descend — c'est le seul signe dont dispose une
+   vue de face. Une unité et demie ne se voyait pas : de face et de dos,
+   la marche était deux colonnes parallèles et le personnage glissait.
+   Trois unités, soit un pixel et demi sur une jambe de seize. */
+const prof=Math.round(av*3);
+/* ET LE CROISEMENT, doublé pour la même raison : au passage, la jambe
+   en l'air venait d'un seul pixel vers l'axe du corps. Deux maintenant —
+   assez pour qu'on voie les jambes se croiser, pas assez pour qu'elles
+   se traversent. */
+cx+=Math.round(passage*(leve>0.2?4:2))*((cx<0)?1:-1);
 const lev=Math.round(leve*4*(COURSE?1.3:1)), y0=Y_HANCHE+bob, yGen=Y_GENOU_F-Math.round(lev*0.6)+prof, yChev=-5-lev+prof;
 const col=(r)=>r<yGen?c:(court?sk:c), colO=(r)=>r<yGen?cO:(court?skO:cO), colC=(r)=>r<yGen?cc:(court?skC:cc);
 const J=SX.jambe;
@@ -19721,7 +19730,13 @@ seg(hx,yHan,kx,ky,SX.jambe,c);seg(kx,ky,fx,fy,SX.jambe-1,bas2);
 R(Math.round(kx)-1,Math.round(ky),2,1,fonce?pant:pantC);                  /* le genou */
 soulierDe(Math.round(fx),Math.round(fy)+3,fonce);};
 const loinG=(tourne>0)!==dos;                                          /* quelle jambe est au fond */
-const hG=-Math.round(HA/2)-1+vis, hD=Math.round(HA/2)+1+vis;
+/* L'ÉCART DES HANCHES SE RACCOURCIT AUSSI. Il était à pleine largeur
+   alors que la foulée, elle, était projetée : les deux jambes se
+   croisaient donc plus que de raison et enfermaient un trou de fond
+   entre elles. L'axe des hanches est perpendiculaire à la marche, donc
+   en diagonale il subit exactement le même cos 45° que le pas. */
+const ecH=Math.max(1,Math.round(HA/2*PAS_34/PAS_U));
+const hG=-ecH+vis, hD=ecH+vis;
 if(loinG){jd(hG,dos?pD:pG,true);jd(hD,dos?pG:pD,false);}else{jd(hD,dos?pG:pD,true);jd(hG,dos?pD:pG,false);}
 }else{
 /* DE TROIS QUARTS, l'écart entre les jambes se réduit et l'ensemble
