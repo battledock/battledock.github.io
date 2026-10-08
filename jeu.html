@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-09-0115"></script>
+<script src="maintenance.js?v=2026-10-09-0210"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-09-0115';
+var MA_VERSION='2026-10-09-0210';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -19739,7 +19739,24 @@ const sx=tourne, sy=dos?-1:1;
    pour une jambe décalée de v sur l'axe des hanches */
 const pjX=(v,u)=>v*CX*sy+u*CX*sx+vis;
 const pjY=(v,u,h)=>h-v*CX*PROF_Z*sx+u*CX*PROF_Z*sy;
-const jd=(v,pp,fonce)=>{
+/* ================= LA VOIE EST PLUS ÉTROITE QUE LE BASSIN =================
+   On marche sur une ligne, pas sur deux rails. Chez un humain l'écart
+   des hanches fait une trentaine de centimètres, celui des deux appuis
+   huit à dix : les cuisses rentrent en biais vers l'intérieur et les
+   pieds se posent presque sous l'axe du corps.
+
+   Le modèle posait le pied À LA VERTICALE DE SA HANCHE. En diagonale,
+   cet écart de hanche se projette dans la même direction que la foulée :
+   il s'ajoutait d'un côté et se retranchait de l'autre, si bien qu'un
+   des deux doubles appuis se refermait complètement. Mesuré : les
+   jambes restaient collées douze images sur vingt-quatre, alors qu'une
+   vraie marche ne les superpose que deux fois par cycle, au passage.
+
+   La hanche garde donc sa largeur, le pied se resserre, et le genou se
+   place entre les deux — plus près du pied, comme une vraie cuisse. */
+const ECART_PIED=2.5;
+const jd=(cote,pp,fonce)=>{
+const vH=cote*HA/2, vP=cote*ECART_PIED, vK=cote*(HA/2*0.35+ECART_PIED*0.65);
 const fu=pp.x*PAS_U*AMPL, fh=-3-pp.lift*6;
 /* LE GENOU, résolu dans le plan de marche : deux os égaux, pliés vers
    l'avant. C'est le même calcul que de profil, au signe près. */
@@ -19748,9 +19765,9 @@ const du=fu, dh=fh-yHan, d=Math.min(L2*2,Math.hypot(du,dh));
 const hk=Math.sqrt(Math.max(0,L2*L2-(d/2)*(d/2))), nl=Math.hypot(du,dh)||1;
 let nu=-dh/nl, nh=du/nl; if(nu<0){nu=-nu;nh=-nh;}
 const ku=du/2+nu*hk, kh=yHan+dh/2+nh*hk;
-const hX=pjX(v,0),  hY=pjY(v,0,yHan);
-const kX=pjX(v,ku), kY=pjY(v,ku,kh);
-const fX=pjX(v,fu), fY=pjY(v,fu,fh);
+const hX=pjX(vH,0),  hY=pjY(vH,0,yHan);
+const kX=pjX(vK,ku), kY=pjY(vK,ku,kh);
+const fX=pjX(vP,fu), fY=pjY(vP,fu,fh);
 const c=fonce?pantO:pant, bas2=court?(fonce?peauO:peau):c;
 seg(hX,hY,kX,kY,SX.jambe,c);
 seg(hX+1,hY+1,kX+1,kY,1,fonce?pant:pantC);                               /* la cuisse, éclairée devant */
@@ -19760,10 +19777,9 @@ soulierDe(Math.round(fX),Math.round(fY)+3,fonce);};
 /* QUELLE JAMBE EST AU FOND : celle dont l'écart de hanche la fait monter
    à l'écran. Le signe sort de la projection elle-même, on ne le devine
    plus. */
-const vD=HA/2, vG=-HA/2;
-const loinEstD=(vD*sx)>0;
-if(loinEstD){jd(vD,pD,true);jd(vG,pG,false);}
-else{jd(vG,pG,true);jd(vD,pD,false);}
+const loinEstD=sx>0;
+if(loinEstD){jd(1,pD,true);jd(-1,pG,false);}
+else{jd(-1,pG,true);jd(1,pD,false);}
 }else{
 /* DE TROIS QUARTS, l'écart entre les jambes se réduit et l'ensemble
    glisse dans le sens du pivot. */
