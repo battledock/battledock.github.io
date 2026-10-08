@@ -1,14 +1,16 @@
 const XP={
 maisonsY:152,            /* le pied des façades */
 quaiY:340,               /* le bord du quai, au-dessus du bassin */
-bassinO:170, bassinE:1210,
+bassinO:170, bassinE:1400,   /* la mer court jusqu'au bord est : le bout
+                              du quai droit, une dalle de pierre vide,
+                              est rendu a l'eau */
 pontons:[360,880], pontonL:13,           /* le ponton du milieu (620) est retiré, avec ses voiliers */ pontonFin:470,
 metro:[1316,496],      /* le métro reprend la place de l'ancienne gare */
-/* LA SORTIE DES BOIS, au bas du quai droit. Rien n'est bati : le quai
-   reste nu, un panneau dit ou l'on va, et on s'en va en marchant vers le
-   sud. 'seuil' est la ligne au-dela de laquelle, en poussant, on part ;
-   'arrivee' est l'endroit ou l'on repose le pied en revenant. */
-sente:{x:1306, demi:48, seuil:552, arrivee:[1306,492]},
+/* LA SORTIE DES BOIS, au bout est de la promenade. Rien n'est bati : un
+   panneau dit ou l'on va, et on s'en va en marchant vers l'est, entre la
+   derniere facade et l'eau. 'seuil' est la ligne au-dela de laquelle, en
+   poussant, on part ; 'arrivee' est l'endroit ou l'on repose le pied. */
+sente:{seuil:1352, y0:194, y1:332, arrivee:[1322,264]},
 ruelle:{x:630,l:38,haut:30},   /* la montée vers Notre-Dame : axe, demi-largeur, sommet */
 boulo:[30,392,120,172],   /* le boulodrome : x, y, largeur, hauteur */
 };
@@ -314,7 +316,9 @@ for(let k=0;k<17;k++){R(cx-33+k*4,ey-1,2,2,k%2?'#fff4b0':'#ffd24a');R(cx-33+k*4,
 for(let y=XP.quaiY;y<MONDE_H;y++){
 const k=(y-XP.quaiY)/(MONDE_H-XP.quaiY);
 for(let x=XP.bassinO;x<XP.bassinE;x+=2){
-const bord=Math.min(x-XP.bassinO,XP.bassinE-x,(y-XP.quaiY)*1.4);
+/* PLUS DE HAUT-FOND A L'EST : la mer sort du cadre, elle ne doit pas
+   palir contre un bord qui n'existe plus. */
+const bord=Math.min(x-XP.bassinO,(y-XP.quaiY)*1.4);
 const p=Math.min(1,bord/90)*0.6+k*0.4;
 const r=Math.round(52-p*22), gg=Math.round(168-p*58), b=Math.round(186-p*30);
 g.fillStyle='rgb('+r+','+gg+','+b+')';g.fillRect(x,y,2,1);
@@ -329,8 +333,7 @@ margelle(XP.bassinO-4,XP.quaiY-4,XP.bassinE-XP.bassinO+8,5);
 R(XP.bassinO,XP.quaiY+1,XP.bassinE-XP.bassinO,6,'#8f8468');
 R(XP.bassinO,XP.quaiY+7,XP.bassinE-XP.bassinO,2,'rgba(10,40,60,.35)');
 margelle(XP.bassinO-4,XP.quaiY,5,MONDE_H-XP.quaiY);
-margelle(XP.bassinE-1,XP.quaiY,5,MONDE_H-XP.quaiY);
-R(XP.bassinE-7,XP.quaiY+6,6,MONDE_H-XP.quaiY,'rgba(10,40,60,.25)');
+/* (plus de margelle a l'est : l'eau continue hors du cadre) */
 XP.pontons.forEach(px=>{
 const x0=px-XP.pontonL, w=XP.pontonL*2;
 R(x0+2,XP.quaiY+2,w,XP.pontonFin-XP.quaiY+2,'rgba(10,40,60,.35)');   /* l'ombre */
@@ -1937,14 +1940,13 @@ nv++;
 });
 /* LE METRO EST DEPOSE. On ne prend plus la ligne 1 pour aller au bois :
    on y va a pied, par le bas du quai droit. */
-[280,420,840,980,1120].forEach((x,i)=>P('lanterneP',x,324,{gr:i}));
-/* les deux bancs du bas du quai droit restent retires : le quai est nu */
-[[210,316],[490,316],[770,316],[1050,316],[1190,316]]
+[280,420,840,980,1120,1248].forEach((x,i)=>P('lanterneP',x,324,{gr:i}));
+[[210,316],[490,316],[770,316],[1050,316],[1190,316],[1296,316]]
 .forEach(([x,y])=>P('bancP',x,y));
-/* LE PANNEAU, seul sur le quai vide, plante assez haut pour qu'on le
-   voie en arrivant : c'est lui qui dit ou mene le bas du quai. */
-P('x_panneauF',1306,436,{col:[5,4]});
-for(let x=200;x<1200;x+=74){
+/* LE PANNEAU, au bout de la promenade : c'est lui qui dit que le quai ne
+   s'arrete pas la, et que le bois est au bout. */
+P('x_panneauF',1348,334,{col:[5,4]});
+for(let x=200;x<MONDE_L-24;x+=74){
 if(XP.pontons.some(p=>Math.abs(p-x)<26))continue;
 P('x_bitte',x,XP.quaiY-3,{col:[4,3]});
 }
