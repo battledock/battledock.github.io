@@ -263,25 +263,65 @@ for(let i=0;i<34;i++){const k=alea(i*2.1),y=165+k*28,dx=(y-162)/34*18,x=86-dx+4+
 R(x,y,2+k*2|0,1,'#f2efe4');R(x+1,y-3-k*3,1,3+k*3|0,'rgba(240,240,240,.55)');}
 g.fillStyle='#000';g.beginPath();g.rect(0,0,W,H);g.arc(W/2,H/2,Math.min(W,H)*0.48,0,7,true);g.fill('evenodd');
 }
+/* ================= L'APPAREIL DU PAVE =================
+   LE QUAI SE LISAIT COMME UN MUR DE BRIQUES VU DE FACE. Trois raisons, et
+   la troisieme etait la vraie :
+     - des pierres de 14 de haut pour 18 a 34 de large, donc presque
+       carrees : un pave est beaucoup plus large que haut ;
+     - un appareil trop regulier, chaque rang decale du meme pas, ce qui
+       est exactement l'appareil en panneresse d'un mur ;
+     - et surtout un filet BLANC pose sous le joint du haut de chaque
+       pierre. Ce filet, c'est le dessus eclaire d'une brique. Il ne se
+       voit que sur une surface VERTICALE, et c'est lui qui dressait le
+       quai tout entier.
+   On aplatit : des dalles deux fois plus larges que hautes, un decalage
+   de rang tire au hasard, de loin en loin une longue dalle qui casse
+   l'alignement, plus aucun filet de lumiere sur les aretes, et des joints
+   sombres et faibles, pareils des quatre cotes — de la poussiere entre
+   les pierres, pas du mortier.
+
+   LES DEUX PASSES PARTAGENT CE TRACE. Le sol de base et le sol fin
+   posent leurs joints aux memes endroits ; calcules chacun de son cote,
+   ils finiraient par se decaler et l'on verrait deux pavages l'un sur
+   l'autre. */
+function dallesDuQuai(cb){
+  const A=(i)=>alea(i*1.37+0.5);
+  let y=70;
+  while(y<MONDE_H){
+    /* CHAQUE RANG A SA PROPRE HAUTEUR. Des rangs tous egaux, c'est de
+       l'appareil de briques quoi qu'on fasse aux proportions : l'oeil lit
+       la regularite avant de lire la forme. Entre 8 et 15, il lit des
+       dalles posees. */
+    const h=8+Math.floor(A(y*1.91)*8);
+    let x=-Math.floor(A(y*0.77)*60);
+    while(x<MONDE_L){
+      let w=30+Math.floor(A(x*0.31+y)*26);
+      if(A(x*0.53+y*1.7)<0.16)w+=26;         /* une longue dalle, de loin en loin */
+      cb(x,y,w,h);
+      x+=w;
+    }
+    y+=h;
+  }
+}
 function construireSolExtramar(){
 const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
 const g=c.getContext('2d');
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
 const A=(i)=>alea(i*1.37+0.5);
 R(0,0,MONDE_L,160,'#b8a888');
-const pierre=['#e2d2ab','#d9c7a0','#e8d9b6','#d3c097','#dccba5'];
+/* LES CINQ TONS SE RESSERRENT. Ils allaient de #d3c097 a #e8d9b6 : chaque
+   dalle se detachait de sa voisine, et un damier contraste se lit comme un
+   parement, jamais comme un sol. Resserres, le pavage redevient une
+   SURFACE sur laquelle le grain et l'usure font le relief. */
+const pierre=['#ddcca4','#d9c7a0','#dfcfa8','#d7c59e','#dbc9a2'];
 R(0,70,MONDE_L,MONDE_H-70,'#d9c7a0');
-for(let y=70;y<MONDE_H;y+=14){
-let x=-((y*7)%23);
-while(x<MONDE_L){
-const w=18+Math.floor(A(x*0.31+y)*16);
-R(x,y,w,14,pierre[Math.floor(A(x+y*3.1)*pierre.length)]);
-R(x,y,w,1,'#c2ad82');R(x,y,1,14,'#c2ad82');                 /* le joint */
-R(x+1,y+1,w-2,1,'rgba(255,255,255,.18)');
-if(A(x*1.7+y)<.12)R(x+3+A(x)*8,y+4+A(y)*6,2,1,'#b9a37a');    /* une usure */
-x+=w;
-}
-}
+dallesDuQuai((x,y,w,h)=>{
+R(x,y,w,h,pierre[Math.floor(A(x+y*3.1)*pierre.length)]);
+R(x,y,w,1,'rgba(158,140,106,.20)');R(x,y,1,h,'rgba(158,140,106,.20)');   /* le joint, pareil des quatre cotes et presque efface */
+for(let i=0;i<3;i++)                                                    /* le grain, DEDANS la dalle et non sur son arete */
+R(x+3+A(x*1.9+y+i)*(w-7),y+2+A(x*2.3+y*1.1+i)*7,2,1,'rgba(255,250,236,.09)');
+if(A(x*1.7+y)<.12)R(x+3+A(x)*(w-9),y+3+A(y)*5,3,1,'#b9a37a');           /* une usure */
+})
 /* LES COLLINES, AU BOUT DE LA VILLE. Elles se posent avant les toits :
    elles sont au fond, les toits passent devant. C'est elles qu'on voit en
    marchant vers l'est, et c'est pour cela qu'on y marche.
@@ -397,21 +437,13 @@ R(0,XP.maisonsY-2,MONDE_L,8,'rgba(60,40,20,.12)');
    du cadre du monde, des deux cotes. */
 graverLAffiche(g,Math.round((XP.finVille+MONDE_L)/2),XP.maisonsY-4,'peinte','LA FORÊT',1);
 graverLAffiche(g,Math.round(XP.debutVille/2),XP.maisonsY-4,'peinte_ferme','LA FERME',-1);
-/* ================= LE GARDE-CORPS DU BOUT =================
-   La ou les facades s'arretent, un parapet a balustres separe la
-   promenade du coteau. Sans lui le pave et la colline se touchaient sans
-   raison, et rien n'expliquait pourquoi on ne monte pas. */
-[[XP.finVille,MONDE_L],[0,XP.debutVille]].forEach(([A0,B0])=>{
-const a=A0, b=B0, y=XP.maisonsY-2;
-R(a,y-9,b-a,3,'#e3d3ad');R(a,y-9,b-a,1,'#f9f0d8');          /* la main courante */
-for(let x=a+5;x<b-3;x+=9){                                   /* les balustres */
-  R(x,y-6,4,7,'#dccaa4');R(x,y-6,4,1,'#f6ecd2');R(x+3,y-6,1,7,'#ab9a76');
-}
-R(a,y,b-a,12,'#cfbd97');R(a,y,b-a,3,'#f6ecd2');              /* le socle */
-R(a,y+9,b-a,3,'#8e7f5e');R(a,y+11,b-a,1,'#5a4f36');
-for(let x=a+11;x<b;x+=15+Math.floor(A(x*0.23)*9))R(x,y,1,9,'#b3a17a');
-R(a,y+12,b-a,4,'rgba(60,45,20,.16)');                        /* son ombre */
-});
+/* ================= PLUS DE GARDE-CORPS AU BOUT =================
+   Une balustrade fermait les deux esplanades. Elle expliquait pourquoi on
+   ne monte pas au coteau, mais elle barrait la vue d'un mur clair en
+   travers du seul endroit ouvert de la carte. C'est la poussee d'une
+   demi-seconde qui raconte la sortie maintenant, et les collines se
+   gagnent a pied : la barriere n'avait plus de role que decoratif, et son
+   decor etait un mur. */
 return c;
 }
 const TU_M={o:'#6e2c16',s:'#8f3f20',p:'#ad542c',c:'#c26a3a',h:'#d8844e',faite:'#e59a62'};
@@ -2261,17 +2293,14 @@ g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
 const A=(i)=>alea(i*1.37+0.5);
 /* ---- LE PAVÉ : des joints d'un demi-pixel, un grain plus fin ---- */
-for(let y=70;y<XP.quaiY-4;y+=14){
-  let x=-((y*7)%23);
-  while(x<MONDE_L){
-    const w=18+Math.floor(A(x*0.31+y)*16);
-    R(x,y,w,0.5,'rgba(150,132,98,.45)');
-    R(x,y,0.5,14,'rgba(150,132,98,.45)');
-    R(x+0.5,y+0.5,w-1,0.5,'rgba(255,250,236,.22)');
-    R(x+w-0.5,y+1,0.5,13,'rgba(120,104,76,.18)');
-    x+=w;
-  }
-}
+dallesDuQuai((x,y,w,h)=>{
+  if(y>=XP.quaiY-4)return;                       /* au-dela c'est l'eau */
+  R(x,y,w,0.5,'rgba(158,140,106,.24)');
+  R(x,y,0.5,h,'rgba(158,140,106,.24)');
+  R(x+w-0.5,y+0.5,0.5,h-0.5,'rgba(126,110,82,.10)');
+  /* PLUS DE FILET CLAIR SOUS LE JOINT : c'etait le dessus eclaire d'une
+     brique, et c'est lui qui dressait le quai en mur. */
+});
 for(let i=0;i<26000;i++){
   const x=A(i*1.7)*MONDE_L, y=70+A(i*2.9)*(XP.quaiY-74);
   R(x,y,0.5,0.5,(i%3)?'rgba(255,252,240,.10)':'rgba(120,104,78,.10)');
