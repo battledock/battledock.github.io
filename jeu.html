@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-09-1115"></script>
+<script src="maintenance.js?v=2026-10-09-1250"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-09-1115';
+var MA_VERSION='2026-10-09-1250';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -7789,7 +7789,9 @@ for(let k=0;k<n;k++){const y=16-3*(k+1);
 R(3,y,22,1,'#f4d98a');R(3,y+1,22,1,'#b9872f');}
 }
 let CAP=null;        /* {livret, avis, brevets, onglet} : le registre, le temps d'une visite */
-const CAP_ONGLETS=[['livret','LE LIVRET'],['avis','LES AVIS'],['brevets','LES BREVETS']];
+/* quatre onglets : les libelles sont courts parce que la tranche fait
+   moins de 80 px — « LES BREVETS » en toutes lettres debordait. */
+const CAP_ONGLETS=[['livret','LIVRET'],['avis','AVIS'],['records','RECORDS'],['brevets','BREVETS']];
 function capMessage(t){
 return '<div id="afc" style="position:fixed;inset:0;display:flex;flex-direction:column;'+
 'gap:14px;align-items:center;justify-content:center;background:#0b1f3a;color:#9db6d6;'+
@@ -7802,22 +7804,24 @@ $('page2Fond').className='';$('page2').classList.add('on');
 $('page2Fond').innerHTML='<div id="afc" style="position:fixed;inset:0;display:flex;'+
 'align-items:center;justify-content:center;background:#0b1f3a;color:#9db6d6;'+
 'font:italic 13px Georgia,serif">On ouvre le registre…</div>';
-/* les trois d'un coup : le changement d'onglet doit etre instantane */
-const [L,A,B]=await Promise.all([
+/* les quatre d'un coup : le changement d'onglet doit etre instantane */
+const [L,A,R,B]=await Promise.all([
 appelRPC('capitainerie_livret',{p_joueur:e.id}),
 appelRPC('capitainerie_avis',{p_joueur:e.id}),
+appelRPC('capitainerie_records',{p_joueur:e.id}),
 appelRPC('capitainerie_brevets',{p_joueur:e.id})]);
 if(!$('page2').classList.contains('on'))return;         /* referme entre-temps */
 if(!L||L.erreur){
 $('page2Fond').innerHTML=capMessage('Le registre est resté fermé.<br>Réessaie dans un instant.');
 $('afcOk').onclick=()=>{$('page2').classList.remove('on');};return;}
-CAP={livret:L,avis:A,brevets:B,onglet:'livret'};
+CAP={livret:L,avis:A,records:R,brevets:B,onglet:'livret'};
 recalerLeRang(L.especes|0);       /* la verite du serveur, une bonne fois */
 capPeindre();
 try{jouer('achat','moment');}catch(x){}
 }
 function capPeindre(){
 const corps=CAP.onglet==='brevets'?capPageBrevets()
+           :CAP.onglet==='records'?capPageRecords()
            :CAP.onglet==='avis'?capPageAvis():capPageLivret();
 $('page2Fond').innerHTML=CAP_STYLE+
 '<div id="afc"><div class="lvLiv">'+
@@ -7890,6 +7894,33 @@ try{const t=$('lvTete'),g=t.getContext('2d');g.imageSmoothingEnabled=false;
 const im=teteDe({ap:e.ap,pseudo:e.pseudo});
 g.clearRect(0,0,44,44);g.drawImage(im,0,0,im.width,im.height,-5,-2,53,53);}catch(x){}
 try{galonsDe($('lvGalons'),CAP.livret.rang|0);}catch(x){}
+}
+/* ---------- LES RECORDS DU PORT ----------
+   Le seul tableau sans fin : un record ne s'obtient pas, il se PREND, et
+   celui qui le tient peut le perdre demain. Les especes qu'on n'a jamais
+   prises restent « ??? » — le carnet garde ses secrets, mais on voit que
+   le mur continue. */
+function capPageRecords(){
+const R=CAP.records;
+if(!R||R.erreur||!Array.isArray(R.records))
+return '<div class="lvVide">Le mur des records n’a pas pu s’ouvrir.<br>Réessaie dans un instant.</div>';
+const L=R.records.slice();
+const aMoi=L.filter(r=>r.moi).sort((a,b)=>b.cm-a.cm);
+const aPrendre=L.filter(r=>!r.moi&&r.connu).sort((a,b)=>b.cm-a.cm);
+const inconnus=L.filter(r=>!r.moi&&!r.connu).sort((a,b)=>b.cm-a.cm);
+const ligne=(r)=>'<div class="lvRec'+(r.moi?' lvMien':'')+(r.connu?'':' lvFlou')+'">'+
+  '<b>'+(r.connu?echapperT(carnetNom(r.espece)):'???')+'</b>'+
+  '<span class="lvRecCm">'+(r.cm|0)+' cm</span>'+
+  '<span class="lvRecQui">'+(r.moi?'à toi':echapperT(r.pseudo||'quelqu’un'))+
+  /* l'ecart plutot que sa propre taille : on sait tout de suite ce qu'il manque */
+  (!r.moi&&typeof r.mien==='number'?' · à '+Math.max(1,(r.cm|0)-r.mien)+' cm':'')+'</span></div>';
+const bloc=(t,arr)=>arr.length?'<div class="lvRecT">'+t+' · '+arr.length+'</div>'+arr.map(ligne).join(''):'';
+const part=Math.round((R.miens|0)/Math.max(1,R.total|0)*100);
+return '<div class="lvTete"><p>LES RECORDS DU PORT</p>'+
+  '<b>'+(R.miens|0)+' record'+((R.miens|0)>1?'s':'')+' sur '+(R.total|0)+'</b></div>'+
+'<div class="lvJa"><div class="lvJaB"><i style="width:'+part+'%"></i></div></div>'+
+bloc('TU LES TIENS',aMoi)+bloc('À PRENDRE',aPrendre)+bloc('PAS ENCORE RENCONTRÉES',inconnus)+
+'<div class="lvNb">Un record se prend : celui qui le tient peut le perdre demain.</div>';
 }
 /* ---------- LE MUR DES BREVETS ----------
    Neuf familles, trente-cinq brevets. Le volume, la taille, la serie, la
@@ -8063,6 +8094,20 @@ const CAP_STYLE=`<style>
 #afc .lvChips .lvNo{background:none;border:1px dashed #c9b894;color:#a0906f}
 #afc .lvSuiv{font:italic 10px Georgia,serif;color:#8a7454;margin-top:5px}
 #afc .lvSuiv.lvFini{color:#2f6b45}
+#afc .lvRecT{font:700 7px Arial,sans-serif;letter-spacing:2.2px;color:#8a7454;
+  margin:15px 0 5px;padding-bottom:4px;border-bottom:1px solid #e2d4b4}
+#afc .lvRec{display:flex;align-items:baseline;gap:7px;padding:4px 5px;margin:0 -5px;
+  border-radius:4px}
+#afc .lvRec b{flex:1 1 auto;min-width:0;font:600 12px Georgia,serif;color:#2f2820;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#afc .lvRecCm{font:900 11.5px Georgia,serif;color:#17365a;white-space:nowrap}
+#afc .lvRecQui{font:italic 9.5px Georgia,serif;color:#8a7454;white-space:nowrap;
+  max-width:112px;overflow:hidden;text-overflow:ellipsis}
+#afc .lvRec.lvMien{background:rgba(201,162,74,.2)}
+#afc .lvRec.lvMien b{font-weight:900;color:#17365a}
+#afc .lvRec.lvMien .lvRecQui{color:#8a6a24;font-style:normal;font-weight:700}
+#afc .lvRec.lvFlou{opacity:.5}
+#afc .lvRec.lvFlou b{letter-spacing:2px}
 #afc .lvAvis{margin-top:11px;background:#e9e1cc;border:1px solid #d5c4a0;
   border-radius:5px;padding:10px 11px 11px;position:relative}
 #afc .lvAvis.lvSem{background:#e6e8e2;border-color:#bcc3b8;
