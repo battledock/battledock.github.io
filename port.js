@@ -2,8 +2,9 @@ const XP={
 maisonsY:152,            /* le pied des façades */
 quaiY:340,               /* le bord du quai, au-dessus du bassin */
 bassinO:170, bassinE:MONDE_L,   /* la mer court jusqu'au bord est */
-finVille:1540,                  /* apres la derniere facade, la ville s'arrete
-                                   et l'esplanade mene aux collines */
+finVille:1404,                  /* la face est de la derniere facade : la
+                                   ville s'arrete la, et l'esplanade mene
+                                   aux collines */
 pontons:[360,880], pontonL:13,           /* le ponton du milieu (620) est retiré, avec ses voiliers */ pontonFin:470,
 metro:[1316,496],      /* le métro reprend la place de l'ancienne gare */
 /* LA SORTIE DES BOIS, au bout est de la promenade. Rien n'est bati : un
@@ -256,9 +257,13 @@ x+=w;
 }
 /* LES COLLINES, AU BOUT DE LA VILLE. Elles se posent avant les toits :
    elles sont au fond, les toits passent devant. C'est elles qu'on voit en
-   marchant vers l'est, et c'est pour cela qu'on y marche. */
-graverLesCollines(g,XP.finVille-120,MONDE_L,164);
-graverLesToitsDuFond(g,XP.finVille+10,160);
+   marchant vers l'est, et c'est pour cela qu'on y marche.
+   LA COUTURE SE CACHE DERRIERE LA DERNIERE FACADE : les toits du fond
+   s'arretaient a 1550, en plein ciel, et on voyait la ville se defaire en
+   un tas de tuiles coupees net contre le coteau. Ils s'arretent maintenant
+   a l'interieur du dernier immeuble, qui les couvre du sol au faite. */
+graverLesCollines(g,XP.finVille-300,MONDE_L,164);
+graverLesToitsDuFond(g,XP.finVille-72,160);
 {
 const cx=XP.ruelle.x, xg=cx-71, xd=cx+71, ym=XP.maisonsY+6;
 [[xg,cx-46,1],[cx+46,xd,-1]].forEach(([a,b,sens],j)=>{
@@ -631,15 +636,18 @@ return {toile:c,W,H:Ht,sol,nuit:n2};
 function graverLesCollines(g,x0,x1,bas){
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
 const A=(i)=>alea(i*2.17+0.9);
+/* ELLES MONTENT VERS L'EST. Une crete qui descend en s'eloignant dirait
+   que la terre s'arrete par la ; c'est l'inverse qu'on veut faire sentir. */
 const PLANS=[
-  {dy:104, amp:24, col:'#7f98a2', cime:'#8fa8b0', voile:0.52, pins:0, pas:0},
-  {dy:74,  amp:28, col:'#5f7f6c', cime:'#6d8d77', voile:0.30, pins:1, pas:17},
-  {dy:44,  amp:22, col:'#44664f', cime:'#4f7459', voile:0.12, pins:1, pas:13}];
+  {dy:98, amp:20, monte:30, col:'#7f98a2', cime:'#8fa8b0', voile:0.52, pins:0, pas:0},
+  {dy:70, amp:24, monte:38, col:'#5f7f6c', cime:'#6d8d77', voile:0.30, pins:1, pas:17},
+  {dy:40, amp:18, monte:34, col:'#44664f', cime:'#4f7459', voile:0.12, pins:1, pas:13}];
 PLANS.forEach((P,n)=>{
   const crete=[];
   for(let x=x0;x<=x1;x++){
     const t=(x-x0)/Math.max(1,x1-x0);
-    const y=bas-P.dy-Math.sin(t*2.4+n*1.9)*P.amp-Math.sin(t*6.7+n*0.7)*P.amp*0.34
+    const y=bas-P.dy-t*(P.monte||0)
+            -Math.sin(t*2.4+n*1.9)*P.amp-Math.sin(t*6.7+n*0.7)*P.amp*0.34
             -Math.sin(t*13.1+n)*P.amp*0.12;
     crete[x]=Math.round(y);
     R(x,crete[x],1,bas-crete[x]+2,P.col);
@@ -1969,7 +1977,7 @@ if((t%5)<0.8){g.font='italic 700 6px Georgia';g.fillStyle='#ffffff';g.fillText('
 function semerDecorExtramar(){
 DECOR=[];
 const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
-for(let k=0;k<11;k++){
+for(let k=0;k<10;k++){
 if(k===4)continue;                                                  /* la ruelle du casino (plus de panneau en bois) */
 if(k===1){XCAL['x_fonfon0']=restoFonfon('bordeaux');CALQUES_DECO['x_fonfon']=XCAL['x_fonfon0'];P('x_fonfon',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'bouillabaisse'});continue;}   /* Chez Fonfon, le restaurant de bouillabaisse (à la place du Fumoir) */
 if(k===9){XCAL['x_presse0']=graverLaPresse();CALQUES_DECO['x_presse']=XCAL['x_presse0'];P('x_presse',70+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'presse'});continue;}   /* la maison de la presse */
@@ -1994,15 +2002,15 @@ nv++;
 });
 /* LE METRO EST DEPOSE. On ne prend plus la ligne 1 pour aller au bois :
    on y va a pied, par le bas du quai droit. */
-[280,420,840,980,1120,1248,1392,1560,1700].forEach((x,i)=>P('lanterneP',x,324,{gr:i}));
-[[210,316],[490,316],[770,316],[1050,316],[1190,316],[1316,316],[1620,316]]
+[280,420,840,980,1120,1248,1510,1710].forEach((x,i)=>P('lanterneP',x,324,{gr:i}));
+[[210,316],[490,316],[770,316],[1050,316],[1190,316],[1316,316],[1600,316]]
 .forEach(([x,y])=>P('bancP',x,y));
 /* L'ESPLANADE DU BOUT : deux platanes alignes sur la promenade, qui
    accompagnent la marche vers les collines. */
-[[1596,218,4],[1698,214,5]].forEach(([x,y,v])=>P('x_platane',x,y,{v,col:[7,4]}));
-/* LE PANNEAU, planté la ou la ville s'arrete : la fleche et les collines
+[[1560,220,4],[1676,214,5]].forEach(([x,y,v])=>P('x_platane',x,y,{v,col:[7,4]}));
+/* LE PANNEAU, plante la ou la ville s'arrete : la fleche et les collines
    disent la meme chose. */
-P('x_panneauF',1500,336,{col:[5,4]});
+P('x_panneauF',1444,336,{col:[5,4]});
 for(let x=200;x<MONDE_L-24;x+=74){
 if(XP.pontons.some(p=>Math.abs(p-x)<26))continue;
 P('x_bitte',x,XP.quaiY-3,{col:[4,3]});
