@@ -638,7 +638,7 @@ return {toile:c,W,H:Ht,sol,nuit:n2};
    panneau de parc, planche epaisse et lettres creusees), 'email' (la
    plaque emaillee bleue des rues de Marseille, en grand). On en change
    avec AFFICHE_STYLE. */
-const AFFICHE_STYLE='peinte';
+const AFFICHE_STYLE='email';
 /* L'ALPHABET, en pixels pleins : net a toutes les tailles, contrairement a
    une police vectorielle que la camera agrandirait. Sept rangs : les deux
    premiers ne servent qu'au chapeau du E. */
