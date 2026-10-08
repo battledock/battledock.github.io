@@ -369,6 +369,9 @@ R(x0+w*0.27+2,y0+44,2,2,'#d0402f');R(x0+w*0.73-2,y0+h-63,2,2,'#e8c06a');
 for(let i=0;i<40;i++)R(x0+6+A(i+7000)*(w-12),y0+6+A(i+7100)*(h-12),2,1,'rgba(120,90,50,.18)');
 }
 R(0,XP.maisonsY-2,MONDE_L,8,'rgba(60,40,20,.12)');
+/* LA GRANDE AFFICHE se pose avant le garde-corps : son pied passe
+   derriere la balustrade, comme si elle etait plantee de l'autre cote. */
+graverLAffiche(g,1596,XP.maisonsY-4,AFFICHE_STYLE);
 /* ================= LE GARDE-CORPS DU BOUT =================
    La ou les facades s'arretent, un parapet a balustres separe la
    promenade du coteau. Sans lui le pave et la colline se touchaient sans
@@ -628,6 +631,121 @@ const hv=h2.createRadialGradient(tx,vy-10,1,tx,vy-10,14);hv.addColorStop(0,'rgba
 h2.fillStyle=hv;h2.fillRect(tx-14,vy-24,28,28);
 for(let i=0;i<lacets.length;i++){h2.fillStyle='#ffd98a';h2.fillRect(lacets[i][0]+8,lacets[i][1]-10,2,2);}
 return {toile:c,W,H:Ht,sol,nuit:n2};
+}
+/* ================= LA GRANDE AFFICHE DU BOUT DU QUAI =================
+   Trois dessins possibles, tous de meme encombrement : 'peinte' (une
+   affiche de chemin de fer, coucher de soleil et pinede), 'bois' (le
+   panneau de parc, planche epaisse et lettres creusees), 'email' (la
+   plaque emaillee bleue des rues de Marseille, en grand). On en change
+   avec AFFICHE_STYLE. */
+const AFFICHE_STYLE='peinte';
+/* L'ALPHABET, en pixels pleins : net a toutes les tailles, contrairement a
+   une police vectorielle que la camera agrandirait. Sept rangs : les deux
+   premiers ne servent qu'au chapeau du E. */
+const ALPHA_A={
+ L:[[0,0,0],[0,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,1,1]],
+ A:[[0,0,0],[0,0,0],[0,1,0],[1,0,1],[1,1,1],[1,0,1],[1,0,1]],
+ F:[[0,0,0],[0,0,0],[1,1,1],[1,0,0],[1,1,0],[1,0,0],[1,0,0]],
+ O:[[0,0,0],[0,0,0],[1,1,1],[1,0,1],[1,0,1],[1,0,1],[1,1,1]],
+ R:[[0,0,0],[0,0,0],[1,1,0],[1,0,1],[1,1,0],[1,0,1],[1,0,1]],
+ E:[[0,0,0],[0,0,0],[1,1,1],[1,0,0],[1,1,0],[1,0,0],[1,1,1]],
+ 'Ê':[[0,1,0],[1,0,1],[1,1,1],[1,0,0],[1,1,0],[1,0,0],[1,1,1]],
+ T:[[0,0,0],[0,0,0],[1,1,1],[0,1,0],[0,1,0],[0,1,0],[0,1,0]],
+ ' ':[[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0]]};
+function ecrireA(g,txt,cx,y,s,col,ombre){
+const R=(x,yy,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,yy|0,Math.max(1,w|0),Math.max(1,h|0));};
+const L=Array.from(txt);
+let lg=0;for(const ch of L)lg+=((ALPHA_A[ch]||ALPHA_A[' '])[0].length+1);
+lg-=1;
+let px=Math.round(cx-lg*s/2);
+for(const ch of L){
+  const G=ALPHA_A[ch]||ALPHA_A[' '];
+  for(let r=0;r<G.length;r++)for(let c=0;c<G[0].length;c++)if(G[r][c]){
+    if(ombre)R(px+c*s+Math.max(1,Math.round(s/2)),y+r*s+Math.max(1,Math.round(s/2)),s,s,ombre);
+    R(px+c*s,y+r*s,s,s,col);
+  }
+  px+=(G[0].length+1)*s;
+}
+}
+function graverLAffiche(g,cx,bas,style){
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+const A=(i)=>alea(i*1.77+0.31);
+/* ELLE DESCEND LE PLUS BAS POSSIBLE. Quand on marche sur le quai, la
+   camera ne montre du ciel que les quatre-vingts pixels sous l'horizon :
+   une affiche plantee plus haut aurait la tete coupee. Son pied passe
+   derriere la balustrade, qui le cache. */
+const L=116, H=66, x0=cx-L/2, y0=bas-H-2;
+/* LES DEUX PIEDS, plantes derriere le garde-corps */
+[cx-34,cx+28].forEach(px=>{
+  R(px,y0+H-2,7,20,'#5b4428');R(px,y0+H-2,2,20,'#7d6238');R(px+5,y0+H-2,2,20,'#3f2f1b');
+});
+if(style!=='bois'){                       /* les deux faces plates ont leur cadre */
+  R(x0-5,y0-5,L+10,H+10,'#3a2b18');
+  R(x0-5,y0-5,L+10,3,'#6b5330');
+  R(x0-5,y0+H+2,L+10,3,'#241a0e');
+}
+if(style==='peinte'){
+  /* L'AFFICHE DE CHEMIN DE FER : un ciel qui tombe du creme a l'abricot,
+     le soleil bas, deux plans de pinede, un sentier, et le titre en bas. */
+  const cielH=26, col1=y0+cielH;
+  for(let y=0;y<cielH;y++){
+    const t=y/cielH;
+    R(x0,y0+y,L,1,'rgb('+Math.round(248-t*12)+','+Math.round(228-t*46)+','+Math.round(182-t*80)+')');
+  }
+  g.fillStyle='#f6d98a';g.beginPath();g.arc(cx+30,col1-6,11,0,7);g.fill();
+  g.fillStyle='#fbeab8';g.beginPath();g.arc(cx+30,col1-6,6,0,7);g.fill();
+  g.fillStyle='#c98f4a';g.beginPath();
+  g.moveTo(x0,col1+5);g.quadraticCurveTo(x0+36,col1-10,x0+72,col1+2);
+  g.quadraticCurveTo(x0+98,col1+9,x0+L,col1-3);g.lineTo(x0+L,col1+18);g.lineTo(x0,col1+18);g.fill();
+  const pin=(px,py,h,col)=>{for(let k=0;k<h;k++){const w=1+Math.round(k*0.8);
+    R(px-Math.round(w/2),py-h+k,Math.max(1,w),1,col);} R(px-1,py-2,2,3,col);};
+  for(let i=0;i<22;i++)pin(x0+4+A(i*1.3)*(L-8),col1+15,6+Math.round(A(i*2.7)*5),'#7a5a2e');
+  for(let i=0;i<20;i++)pin(x0+3+A(i*3.1+7)*(L-6),col1+23,7+Math.round(A(i*4.3)*8),'#3d5b31');
+  R(x0,col1+21,L,H-cielH-21,'#2f4a28');
+  g.fillStyle='#d8bb7c';g.beginPath();
+  g.moveTo(cx-3,col1+15);g.lineTo(cx+3,col1+15);g.lineTo(cx+15,y0+H);g.lineTo(cx-15,y0+H);g.fill();
+  /* LE BANDEAU DU TITRE remonte de six pixels : la balustrade du
+     garde-corps passe devant le pied de l'affiche et mangeait le bas des
+     lettres. */
+  const by=y0+H-26;
+  R(x0,by,L,22,'#241a0e');R(x0,by,L,2,'#6b5330');
+  ecrireA(g,'LA FORÊT',cx,by+3,2,'#f3e3b6','#120c06');
+}
+else if(style==='email'){
+  /* LA PLAQUE EMAILLEE : bleu profond, double filet blanc, lettres
+     blanches, quatre boulons et la fleche en bas. */
+  R(x0,y0,L,H,'#17365c');
+  for(let i=0;i<220;i++)R(x0+A(i)*L,y0+A(i*2.3)*H,1,1,'rgba(255,255,255,.05)');
+  R(x0+5,y0+5,L-10,2,'#f2f4f0');R(x0+5,y0+H-7,L-10,2,'#f2f4f0');
+  R(x0+5,y0+5,2,H-10,'#f2f4f0');R(x0+L-7,y0+5,2,H-10,'#f2f4f0');
+  [[x0+12,y0+12],[x0+L-16,y0+12],[x0+12,y0+H-16],[x0+L-16,y0+H-16]].forEach(([bx,by])=>{
+    R(bx,by,4,4,'#c8cdd2');R(bx,by,4,1,'#eef1f4');R(bx+3,by,1,4,'#8f979e');});
+  ecrireA(g,'LA FORÊT',cx,y0+12,2,'#f6f8f4','#0d2340');
+  const fy=y0+H-24;
+  R(cx-30,fy,46,4,'#f6f8f4');
+  g.fillStyle='#f6f8f4';g.beginPath();
+  g.moveTo(cx+16,fy-5);g.lineTo(cx+32,fy+2);g.lineTo(cx+16,fy+9);g.fill();
+}
+else {
+  /* LE PANNEAU DE PARC : planche epaisse, lettres creusees dans le bois et
+     un rameau de pin grave sous le mot. */
+  R(x0-6,y0-6,L+12,H+12,'#3f2f1b');
+  for(let i=0;i<L+8;i+=7){
+    const t=Math.floor(A(i*1.9)*4);
+    R(x0-4+i,y0-4,6,H+8,['#7d5f38','#6e5230','#86673d','#6a4e2d'][t]);
+    R(x0-4+i,y0-4,1,H+8,'#8f7245');
+    for(let k=0;k<H+8;k+=11)R(x0-2+i,y0-2+k+Math.floor(A(i+k)*3),4,1,'rgba(48,32,16,.30)');
+  }
+  R(x0-4,y0-4,L+8,3,'#9a7a4a');R(x0-4,y0+H+1,L+8,3,'#3f2f1b');
+  [[x0+4,y0+4],[x0+L-8,y0+4],[x0+4,y0+H-8],[x0+L-8,y0+H-8]].forEach(([bx,by])=>{
+    R(bx,by,3,3,'#c9b48a');R(bx,by,3,1,'#eadfc2');});
+  ecrireA(g,'LA FORÊT',cx,y0+10,2,'#f1e2bb','#3a2a14');
+  g.strokeStyle='#3f6b3a';g.lineWidth=2;
+  g.beginPath();g.moveTo(cx-26,y0+H-20);g.quadraticCurveTo(cx,y0+H-27,cx+26,y0+H-20);g.stroke();
+  g.strokeStyle='#4f8445';g.lineWidth=1.4;
+  for(let k=-4;k<=4;k++){const px=cx+k*6, py=y0+H-23-Math.round(Math.cos(k/4*1.4)*3);
+    g.beginPath();g.moveTo(px,py+2);g.lineTo(px+(k<0?-4:4),py-5);g.stroke();}
+}
 }
 /* ================= LES COLLINES DE L'EST =================
    Trois plans de pinede, du plus lointain au plus proche, chacun un peu
@@ -2005,12 +2123,9 @@ nv++;
 [280,420,840,980,1120,1248,1510,1710].forEach((x,i)=>P('lanterneP',x,324,{gr:i}));
 [[210,316],[490,316],[770,316],[1050,316],[1190,316],[1316,316],[1600,316]]
 .forEach(([x,y])=>P('bancP',x,y));
-/* L'ESPLANADE DU BOUT : deux platanes alignes sur la promenade, qui
-   accompagnent la marche vers les collines. */
-[[1560,220,4],[1676,214,5]].forEach(([x,y,v])=>P('x_platane',x,y,{v,col:[7,4]}));
-/* LE PANNEAU, plante la ou la ville s'arrete : la fleche et les collines
-   disent la meme chose. */
-P('x_panneauF',1444,336,{col:[5,4]});
+/* L'ESPLANADE DU BOUT reste nue : les deux platanes et la petite pancarte
+   sont retires. C'est la grande affiche, derriere le garde-corps, qui dit
+   ou mene le bout du quai. */
 for(let x=200;x<MONDE_L-24;x+=74){
 if(XP.pontons.some(p=>Math.abs(p-x)<26))continue;
 P('x_bitte',x,XP.quaiY-3,{col:[4,3]});
