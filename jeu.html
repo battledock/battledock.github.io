@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-09-0620"></script>
+<script src="maintenance.js?v=2026-10-09-0710"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-09-0620';
+var MA_VERSION='2026-10-09-0710';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -19280,11 +19280,34 @@ let c=craneD(rr<hy?hy:rr,hy);
 /* LE SOMMET : il se referme sur trois rangs, franchement. */
 if(k>0){if(k>vol+1)return 0;
 c=Math.round(c*Math.sqrt(Math.max(0,1-Math.pow(k/(vol+1.4),1.7))));}
-/* LES TEMPES : la masse se rétrécit dès le haut des oreilles. */
+/* ================= LE RÉTRÉCISSEMENT, ET SON EXCÈS =================
+   La masse se rétrécissait de huit dixièmes d'unité PAR RANG sous le
+   haut des oreilles, sans plancher utile : à seize unités sous le sommet
+   elle ne faisait plus que quatre de demi-largeur, et trois en dessous —
+   alors que le crâne, lui, en fait douze jusqu'à la nuque.
+
+   Le résultat était un coin de cuir chevelu nu de chaque côté, qui
+   s'élargissait vers le bas. C'EST LUI qu'on lisait comme une calvitie
+   vue de dos, bien plus que l'endroit où la masse s'arrêtait.
+
+   Le rétrécissement existe pour une bonne raison — les cheveux passent
+   DERRIÈRE les oreilles, ils ne les recouvrent pas. Mais il suffit de
+   deux unités pour ça, pas de neuf. */
 const bas=rr-(hy+5);
-if(bas>0)c=Math.max(3,c-Math.round(bas*0.8));
+if(bas>0)c=Math.max(6,c-Math.min(2,Math.round(bas*0.35)));
 return c;};
-const basDos=hy+(L>6?20+Math.min(L,6):16);
+/* ================= LA NUQUE =================
+   La masse s'arrêtait à seize unités sous le sommet du crâne, qui en
+   fait vingt-trois. Sept unités de peau nue en bas de l'occiput — trois
+   pixels et demi sur une tête de vingt-deux, soit un sixième de la
+   tête — et ça sur les vingt-deux coiffes. C'est ça qu'on lisait comme
+   une calvitie vue de dos.
+
+   Une coupe courte couvre l'arrière du crâne jusqu'à la nuque et
+   s'arrête là ; ce qui est nu en dessous, c'est le cou, et c'est normal.
+   Le dégradé et la coupe rasée, eux, montent vraiment plus haut — c'est
+   leur définition. */
+const basDos=hy+(L>6?20+Math.min(L,6):((cf.fr==='rase'||cf.fr==='degrade')?17:21));
 for(let rr=top;rr<basDos;rr++){
 const c=bordDos(rr);
 if(c<=0)continue;
@@ -19293,7 +19316,10 @@ R(-c,rr,1,1,H5.o);R(c-1,rr,1,1,H5.o);}   /* les bords, plus sombres : du relief 
 /* LA LONGUEUR DE DOS : elle doit partir de la coupe, pas d'un socle de
    22 px. Avant, « courts » et « bol » recevaient la même masse qu'une
    chevelure longue : de dos, toutes les coupes se ressemblaient. */
-const longD=(L>6?20+L:(cf.fr==='rase'||cf.fr==='degrade'?9:13));
+/* ET LES MÈCHES suivent la masse : à treize unités elles s'arrêtaient
+   bien au-dessus d'elle, et la masse sombre restait nue sur ses quatre
+   dernières lignes — une plaque plate au bas du crâne. */
+const longD=(L>6?20+L:(cf.fr==='rase'||cf.fr==='degrade'?10:18));
 for(let i=0;i<11;i++){
 const x0=-12+i*2.4, vers=(x0-RAIE)/12;
 const dep=top+Math.round(Math.abs(vers)*vol*0.7);
@@ -19374,7 +19400,7 @@ const dxH=(yy)=>dT+Math.round((f3-dT)*Math.max(0,Math.min(1,(yy-(hy-4))/12)));
 const dx=dT;
 const RETR=diag?0.93:1;                        /* le crâne rétréci de trois quarts */
 const cF=(yy)=>Math.round(craneF(yy<hy?hy:yy,hy)*RETR);
-const basMasse=dos?hy+19:hy+5;                 /* de dos, la masse descend sur la nuque */
+const basMasse=hy+5;                           /* sous le front, c'est le visage */
 const HW=cf.fr==='afro'?19:13;
 /* LA MASSE DE FOND : seulement ce qui couvre le crâne, dans le ton le plus
    sombre. Les mèches claires se posent dessus et débordent. */
@@ -19398,10 +19424,9 @@ if(yy<top)continue;
 const bord=bordCheveux(yy,hy,cF(yy),vol);
 if(bord<=0)continue;
 if(xx-dxM<-bord||xx-dxM+w>bord)continue;
-/* JAMAIS SUR LE VISAGE — mais seulement s'il y a un visage. De dos on
-   laisse la chevelure descendre jusqu'à la nuque. */
-if(!dos&&yy>hy+5&&Math.abs(xx-dxM)<cF(yy)-1)continue;
-if(dos&&yy>hy+19)continue;
+/* JAMAIS SUR LE VISAGE. Cette branche ne sert qu'aux vues de face et de
+   trois quarts : celle de dos a la sienne, plus haut, et sort avant. */
+if(yy>hy+5&&Math.abs(xx-dxM)<cF(yy)-1)continue;
 /* LA COULEUR : la hauteur dans la mèche ET l'écart au centre du crâne.
    La lumière vient du haut-gauche, donc le côté droit s'assombrit. */
 const k=t/M.lo;
