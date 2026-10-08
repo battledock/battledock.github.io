@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-08-1000"></script>
+<script src="maintenance.js?v=2026-10-08-1115"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-08-1000';
+var MA_VERSION='2026-10-08-1115';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -1998,6 +1998,21 @@ const f=v=>Math.max(0,Math.min(255,v+k));
 return '#'+((1<<24)+(f((n>>16)&255)<<16)+(f((n>>8)&255)<<8)+f(n&255)).toString(16).slice(1);
 };
 let TRANS_FIN=null;
+/* ================= LE PÉDALAGE =================
+   Quand ce drapeau porte une phase, le personnage n'est plus en marche :
+   il est assis, penché, les mains au guidon, et ses pieds tournent sur le
+   pédalier au lieu de faire des ciseaux. Posé par poseDe pour les poses
+   400 à 415, remis à null juste après. */
+let VELO_FIN=null;
+/* LA GÉOMÉTRIE DU PÉDALIER, dans le repère du dessin fin (deux unités par
+   pixel, origine aux pieds, y négatif vers le haut). Elle est calée sur le
+   vélo dessiné par dessinerUnVelo : axe du pédalier deux unités en arrière
+   et quatre sous la ligne des pieds, manivelle de cinq unités. */
+const VELO_BB={x:8, y:4, r:5};
+const VELO_ASSIS=11;      /* de combien les hanches descendent sur la selle */
+const VELO_BUSTE=12;      /* de combien le haut du corps suit — un peu plus que les hanches : il se tasse sur le guidon */
+const VELO_PENCHE=4;      /* l'inclinaison du buste vers l'avant */
+const VELO_TETE=3;        /* la tête rentre encore un peu dans les épaules */
 /* LE PILOTAGE PAR LA POSE : vrai par défaut. Le mettre à faux depuis la
    console (POSE_PILOTE=false) fait retomber le dessin sur les variables
    d'origine, ce qui permet de comparer les deux rendus. */
@@ -13521,12 +13536,25 @@ R(-L-2,H-4,3,1,BOIS_PONT.moyen);R(L-1,H-4,3,1,BOIS_PONT.moyen);
 });
 }
 let VELO=false;
-function dessinerUnVelo(g,x,y,dir,pas,v,roule){
+/* 'couche' partage le vélo en deux plans : 0 derrière le cycliste, 1
+   devant lui. De profil et de dos tout passe derrière ; de face, le
+   guidon, le panier et le phare sont entre nous et lui — ils doivent donc
+   se dessiner par-dessus, sinon le cycliste leur passe devant. */
+function dessinerUnVelo(g,x,y,dir,pas,v,roule,couche){
 const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(a),Math.round(b),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
 const c='#7a1f2b', cr='#efe4c8', rot=(pas||0)*4.2;
-g.fillStyle='rgba(30,25,15,.28)';g.beginPath();g.ellipse(x,y+1,dir==='gauche'||dir==='droite'?13:4,2,0,0,Math.PI*2);g.fill();
-if(dir==='gauche'||dir==='droite'){
-const s=dir==='droite'?1:-1;
+const COTE=dir==='gauche'||dir==='droite';
+/* LE VÉLO AVANCE DE CINQ PIXELS SOUS SON CYCLISTE. Il était centré sur
+   lui : la selle tombait cinq pixels derrière ses fesses et le pédalier
+   juste sous son nombril. Décalé, la selle vient sous les hanches, le
+   pédalier passe devant — c'est la position d'un vélo, pas d'un tabouret. */
+const s0=dir==='droite'?1:-1;
+if(COTE)x+=5*s0;
+const DEVANT=couche===1;
+if(!DEVANT){g.fillStyle='rgba(30,25,15,.28)';g.beginPath();g.ellipse(x,y+1,COTE?13:4,2,0,0,Math.PI*2);g.fill();}
+if(COTE){
+if(DEVANT)return;
+const s=s0;
 const P=(dx,dy)=>[x+dx*s,y+dy];
 const B=(dx,dy,w,h,col)=>{g.fillStyle=col;g.fillRect(s>0?x+dx:x-dx-w,y+dy,w,h);};       /* un bloc, retourné si l'on va à gauche */
 const L=(pts,col,lw)=>{g.strokeStyle=col;g.lineWidth=lw;g.lineCap='round';g.lineJoin='round';g.beginPath();pts.forEach((p,i)=>{const[a,b]=P(p[0],p[1]);i?g.lineTo(a,b):g.moveTo(a,b);});g.stroke();g.lineCap='butt';};
@@ -13555,17 +13583,48 @@ R(qx-1.5,qy-.5,3,1,'#2a2c2e');
 if(roule!==false)R(qx-1.5+.5*s,qy-1.8,3,1.6,k?'#3a2616':'#4a3220');});
 if(roule){g.fillStyle='rgba(255,255,255,.35)';g.fillRect(Math.round(x-15*s-(s>0?5:0)),Math.round(y-9),5,1);g.fillRect(Math.round(x-14*s-(s>0?3:0)),Math.round(y-6),3,1);}
 }else{
+/* ================= LE VÉLO DE FACE ET DE DOS =================
+   Il n'en restait qu'un piquet, une roue grosse comme une allumette et un
+   panier : on aurait dit un échassier. Vu de bout, un vélo se lit à trois
+   choses — la roue étroite qui descend jusqu'au sol, la fourche qui
+   l'enjambe, et le guidon, large, bien au-dessus. On les dessine. */
 const face=dir==='bas', flick=Math.floor((pas||0)*6)%2;
-R(x-1,y-10,2,10,'#2a2420');R(x-1,y-10,.6,10,cr);R(x+.4,y-10,.6,10,cr);
-R(x-.5,y-9,1,8,flick?'#8f959b':'#6b7076');
-R(x-1.5,y-11.5,3,2,cr);                                                                      /* le garde-boue */
-R(x-1,y-14,2,3,c);R(x-.5,y-14,1,3,'rgba(255,255,255,.3)');
-R(x-5,y-16,10,1.2,'#b9c1c7');R(x-6.5,y-17,2,1.6,'#5a3418');R(x+4.5,y-17,2,1.6,'#5a3418');R(x+3,y-16.8,1,1,'#e8c06a');
-if(face){R(x-3.5,y-15,7,4.5,'#b8853e');R(x-3.5,y-15.4,7,.8,'#d8a860');R(x-3.5,y-13.2,7,.5,'#8a5e28');R(x-3.5,y-11.8,7,.5,'#8a5e28');
-R(x-.7,y-10.6,1.4,1.2,'#fff6c8');}                                                          /* le panier en osier, le phare */
-else{R(x-1,y-11,2,1.5,'#e0402f');R(x-2.5,y-17.6,5,2,'#5a3418');R(x-2.2,y-17.6,4.4,.6,'#8a5a30');R(x-4,y-8,8,1.6,'#5a1620');}  /* le feu, la selle, le carter */
-const up=Math.sin((pas||0)*4.2)*1.6;
-R(x-4,y-6+up,2.5,2,'#3a2616');R(x+1.5,y-6-up,2.5,2,'#3a2616');
+const up=Math.sin((pas||0)*4.2)*2;
+if(!DEVANT){
+/* LES PÉDALES, de part et d'autre, en opposition */
+[[-5.4,up],[3.2,-up]].forEach(([dx,dy])=>{
+  R(x+dx,y-5+dy,2.2,1.2,'#5a5a54');                                        /* la manivelle */
+  R(x+dx-.4,y-4.4+dy,3,1.8,'#3a2616');R(x+dx-.4,y-4.4+dy,3,.6,'#5a4030');  /* la pédale */
+});
+/* LA ROUE, vue de bout : étroite, mais elle descend jusqu'au sol */
+R(x-1.6,y-13,3.2,13,'#20201c');R(x-1.6,y-13,.7,13,'#3a3a34');
+R(x-.6,y-12,1.2,11,flick?'#9aa1a8':'#70767c');                              /* le rayonnage qui scintille */
+R(x-.6,y-5,1.2,2,'#c8ced4');                                                /* le moyeu */
+/* LA FOURCHE, qui enjambe la roue */
+R(x-3.2,y-16,1.6,9,'#6b1d27');R(x+1.6,y-16,1.6,9,'#6b1d27');
+R(x-3.2,y-16,.6,9,'#a0404c');R(x+1.6,y-16,.6,9,'#a0404c');
+R(x-2.4,y-14.4,4.8,1.6,cr);R(x-2.4,y-14.4,4.8,.6,'#fffaf0');                /* le garde-boue */
+R(x-1.2,y-18,2.4,3,c);R(x-.6,y-18,.8,3,'rgba(255,255,255,.35)');            /* le tube de direction */
+}
+if(DEVANT&&!face)return;                 /* de dos, rien ne passe devant */
+if(!DEVANT&&face)return;                 /* de face, le guidon attend la seconde couche */
+/* LE GUIDON : il doit dépasser des épaules, sinon on ne le voit pas. Les
+   épaules font cinq pixels et demi de demi-largeur ; le guidon en fait
+   onze. */
+R(x-11,y-20.2,22,2.4,'#aab2b9');R(x-11,y-20.2,22,.8,'#e2e8ec');R(x-11,y-18.6,22,.8,'#71787e');
+R(x-13,y-21.4,3.2,4,'#5a3418');R(x+9.8,y-21.4,3.2,4,'#5a3418');
+R(x-13,y-21.4,3.2,1,'#8a5a30');R(x+9.8,y-21.4,3.2,1,'#8a5a30');
+R(x-13,y-18.4,3.2,1,'#3a2210');R(x+9.8,y-18.4,3.2,1,'#3a2210');
+if(face){
+  R(x-5.2,y-18.4,10.4,6.4,'#b8853e');R(x-5.2,y-18.8,10.4,1.1,'#d8a860');    /* le panier en osier */
+  for(let r=0;r<4;r++)R(x-5.2,y-17+r*1.6,10.4,.6,'#8a5e28');
+  for(let k=0;k<6;k++)R(x-4.6+k*1.9,y-18.4,.6,6.4,'#9a6a30');
+  R(x-1.2,y-11.6,2.4,1.8,'#fff6c8');R(x-.8,y-11.4,1.6,1.1,'#ffffff');       /* le phare */
+}else{
+  R(x-3.4,y-23,6.8,2.8,'#5a3418');R(x-3,y-23,6,.9,'#8a5a30');               /* la selle, de dos */
+  R(x-1.2,y-12.8,2.4,1.8,'#e0402f');R(x-.8,y-12.6,1.6,1,'#ff8a74');         /* le feu rouge */
+  R(x-5,y-9.6,10,1.8,'#5a1620');R(x-5,y-9.6,10,.6,'#9a3a44');               /* le porte-bagage */
+}
 }
 }
 let EQUIP_PECHE=null;
@@ -17117,8 +17176,19 @@ const g=c.getContext('2d');
 g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
 const sauve=GESTE;GESTE={t:0};
 if(STYLE_FIN()){g.setTransform(1,0,0,1,0,0);
-const cl=i>=300, j=cl?i-300:i;
-if(j>=200&&j<260){
+/* LE CLIGNEMENT AJOUTE 300 À UNE POSE : il va donc jusqu'à 407 (repos
+   100..107 + 300). Le pédalage commence à 500 pour ne pas tomber dedans —
+   c'est ce qui l'avait rendu muet au premier essai, 404 étant lu comme
+   « pose 104 qui cligne ». */
+const cl=i>=300&&i<500, j=cl?i-300:i;
+if(j>=500&&j<516){
+/* LE PÉDALAGE : seize images pour un tour de manivelle. Elles se gravent
+   et se gardent comme les autres poses — on ne recalcule rien par image. */
+VELO_FIN={k:(j-500)/16};
+g.drawImage(graverFin(ap,dir,0,true,0,false),0,0,c.width,c.height);
+VELO_FIN=null;
+}
+else if(j>=200&&j<260){
 /* UNE TRANSITION : élan, freinage ou pivot, sur cinq étapes */
 const type=j<220?'elan':(j<240?'frein':'pivot');
 const et=(j-(type==='elan'?200:(type==='frein'?220:240)))/4;
@@ -17280,6 +17350,8 @@ return;}
 if(dir&&String(dir).indexOf('-')>0&&(!STYLE_FIN()||(GESTE&&GESTE.t>0)))dir=String(dir).endsWith('droite')?'droite':'gauche';
 const aVelo=VELO&&CARTE==='extramar'&&ap===e.ap;
 if(aVelo)y-=6+(marche?Math.abs(Math.sin((pas||0)*4.2))*0.8:0);
+/* la ligne du vélo, sept pixels sous les pieds du cycliste */
+const yV=y+7+(marche?Math.abs(Math.sin((pas||0)*4.2))*0.8:0);
 const C=cosmetiqueDe(ap);
 if(enCourse)ap=Object.assign({},ap,{court:1});
 const tc=Date.now()/1000;
@@ -17307,12 +17379,22 @@ g.drawImage(c,Math.round(x-CASE_L/2),Math.round(y-CASE_H+10),CASE_L,CASE_H);
 }
 else{
 let i;
-if(STYLE_FIN()&&ap===e.ap){
+if(aVelo&&STYLE_FIN()){
+/* EN SELLE : la pose vient de la famille du pédalage. À l'arrêt on garde
+   la première image, pied en haut — on ne pédale pas dans le vide. */
+i=500+(marche?(Math.floor(pas*2)%16):0);
+}
+else if(STYLE_FIN()&&ap===e.ap){
 majTransition(dir||'bas',!!marche,!!enCourse);
 const it=indiceTransition();
 i=(it!==null)?it:(marche?1+(Math.floor(pas*2)%PASM):100+(Math.floor(Date.now()/520)%8));
 }else i=marche?1+(Math.floor(pas*2)%PASM):(STYLE_FIN()?100+(Math.floor(Date.now()/520)%8):0);
-if(STYLE_FIN()&&!marche&&((Date.now()+((ap.peau|0)*431+(ap.cheveux|0)*97))%3600)<130)i+=300;   /* on ne cligne qu'à l'arrêt : 160 poses de moins à graver */
+if(STYLE_FIN()&&!aVelo&&!marche&&((Date.now()+((ap.peau|0)*431+(ap.cheveux|0)*97))%3600)<130)i+=300;   /* on ne cligne qu'à l'arrêt : 160 poses de moins à graver */
+/* LE VÉLO SE DESSINE AVANT SON CYCLISTE. Il passait par-dessus : les
+   jambes étaient cachées par le cadre, ce qui arrangeait bien une marche
+   déguisée en pédalage. Maintenant que les pieds tournent vraiment sur la
+   manivelle, c'est la jambe qu'on veut voir devant le cadre. */
+if(aVelo)dessinerUnVelo(g,x,yV,dir||'bas',pas||0,0,!!marche,0);
 const c=poseDe(ap,dir||'bas',i);
 const px0=Math.round(x-CASE_L/2), py0=Math.round(y-CASE_H+10);
 const lean=(ap===e.ap&&!aVelo)?Math.round(PENCHE.x*2)/2:0;
@@ -17325,8 +17407,9 @@ g.drawImage(c,0,0,c.width,H2*k,px0+lean,py0,CASE_L,H2);
 }
 }
 if(C&&C.id!=='cape'){try{C.dessin(g,x,y,tc);}catch(err){}}
-if(aVelo)dessinerUnVelo(g,x,y+7+(marche?Math.abs(Math.sin((pas||0)*4.2))*0.8:0),dir||'bas',pas||0,0,!!marche);
-
+/* DE FACE, le guidon, le panier et le phare repassent par-dessus : ils
+   sont entre nous et le cycliste. */
+if(aVelo)dessinerUnVelo(g,x,yV,dir||'bas',pas||0,0,!!marche,1);
 }
 function spriteFin(g,x,y,ap0,dir,pas,bouge){
 const p=Object.assign({},DEF_AP,ap0||{}), P=PALETTES;
@@ -17425,7 +17508,40 @@ return {x:m(a.x,b.x), lift:m(a.lift,b.lift),
 pointe:m(a.pointe,b.pointe), talon:m(a.talon,b.talon)};};
 const pied=(phi)=>{phi=((phi%1)+1)%1;
 return lireFoulee(COURSE?FOULEE.course:FOULEE.marche,phi);};
-const pG=bouge?pied(tC):{x:0,lift:0,pointe:0,talon:0}, pD=bouge?pied(tC+0.5):{x:0,lift:0,pointe:0,talon:0};
+let pG=bouge?pied(tC):{x:0,lift:0,pointe:0,talon:0}, pD=bouge?pied(tC+0.5):{x:0,lift:0,pointe:0,talon:0};
+/* ================= LE PÉDALAGE : LES PIEDS SUR LE CERCLE =================
+   Le dessin de la jambe pose le pied en fx = cx + avance*11 et
+   fy = -3 - leve*6, puis remonte le genou par cinématique inverse. On n'a
+   donc rien à réécrire : il suffit de donner au pied, au lieu d'un va-et-
+   vient, un point du cercle de la manivelle — et le genou se plie tout
+   seul, comme il faut.
+   Le pied tourne vers l'arrière quand on regarde la gauche : le sens est
+   porté par le signe de la vue, sinon on pédalerait à l'envers. */
+/* (on ne l'appelle pas VELO : ce nom est deja pris par le drapeau du jeu) */
+const PEDALE=(typeof VELO_FIN==='object'&&VELO_FIN)?VELO_FIN:null;
+if(PEDALE){
+  const sv=(dir==='gauche')?-1:1;
+  const demiH=SIL[2]/2;
+  const surCercle=(ph2,cx0)=>{
+    const a=ph2*Math.PI*2*sv;
+    const fx=VELO_BB.x+Math.cos(a)*VELO_BB.r, fy=VELO_BB.y+Math.sin(a)*VELO_BB.r;
+    return {x:(fx-cx0)/11, lift:(-3-fy)/6,
+            /* la cheville suit le plateau : pointe en bas de course,
+               talon qui remonte au passage haut */
+            pointe:Math.max(0,Math.sin(a))*0.7, talon:Math.max(0,-Math.sin(a))*0.4};
+  };
+  if(cote){
+    pG=surCercle(PEDALE.k,      -demiH);
+    pD=surCercle(PEDALE.k+0.5,   demiH);
+  }else{
+    /* DE FACE ET DE DOS, le cercle ne se voit pas : il ne reste de lui que
+       le haut et le bas. Les pieds montent et descendent en opposition, et
+       c'est tout — un va-et-vient horizontal, ici, ferait des ciseaux. */
+    const h=(ph2)=>Math.sin(ph2*Math.PI*2)*1.15;
+    pG={x:0, lift:h(PEDALE.k),     pointe:0, talon:0};
+    pD={x:0, lift:h(PEDALE.k+0.5), pointe:0, talon:0};
+  }
+}
 
 const hanche=pG.x;                                              /* (gardé pour les anciens calculs) */
 const leveG=pG.lift, leveD=pD.lift;
@@ -17528,9 +17644,13 @@ const bob=(bouge?bobPas+frappe:-souffle)+trTasse+Math.round(tasseG*1.5)+(frG>0&&
    pixel au-dessus de la jambe porteuse. C'est ce qui empêche la pose
    d'être une statue. */
 const dxAppui=bouge?0:(appui?1:0);
-const yHan=-26+bob, yEp=-54+bob-Math.round(trPenche*0.2),
-yCou=-58+bob-Math.round(trPenche*0.3), yTete=-81+bob-Math.round(trPenche*0.4);
-const dxPenche=trPenche;
+/* EN SELLE, tout le corps descend : les hanches de onze unités, le haut
+   de neuf seulement — le buste se tasse de deux, comme quelqu'un qui se
+   penche sur son guidon. Le buste part aussi vers l'avant. */
+const vAssis=PEDALE?VELO_ASSIS:0, vBuste=PEDALE?VELO_BUSTE:0;
+const yHan=-26+bob+vAssis, yEp=-54+bob+vBuste-Math.round(trPenche*0.2),
+yCou=-58+bob+vBuste+(PEDALE?1:0)-Math.round(trPenche*0.3), yTete=-81+bob+vBuste+(PEDALE?VELO_TETE:0)-Math.round(trPenche*0.4);
+const dxPenche=trPenche+(PEDALE?VELO_PENCHE:0);
 /* ================= LE MODÈLE DE POSE =================
    Seize points nommés, calculés à partir des mêmes formules que le dessin.
    Ce modèle ne dessine RIEN et ne change RIEN à l'image : il met des noms
@@ -17915,9 +18035,14 @@ R(mx-2,my,5,1,pc);R(cote2<0?mx-2:mx+2,my,1,4,p1);                      /* le dos
 const bras=(cote2,balance,fonce)=>{
 const c=fonce?vestO:vest, cC=fonce?vest:vestC, cT=vestT;
 const sk=fonce?peauO:peau, skO=fonce?peauT:peauO;
+/* LES MAINS SONT AU GUIDON. Le bras ne balance plus avec la jambe
+   d'en face : il part de l'épaule, s'ouvre au coude et plonge sur la
+   poignée. Les deux bras font le même geste, à une unité près — celui du
+   fond est un peu plus court, il est plus loin. */
+if(cote&&PEDALE)balance=0;
 if(cote){
-const ex=2+balance*5*AMPL, ey=yEp+11-(COURSE?1:0);
-const hx=COURSE?ex+4+Math.max(0,balance)*2:2+balance*8*AMPL+(balance>0?1:0), hy=COURSE?ey-3+Math.min(0,balance)*-2:yEp+20;
+const ex=PEDALE?(fonce?3:4):2+balance*5*AMPL, ey=yEp+11-(COURSE?1:0);
+const hx=PEDALE?(fonce?5:6):(COURSE?ex+4+Math.max(0,balance)*2:2+balance*8*AMPL+(balance>0?1:0)), hy=PEDALE?yEp+22:(COURSE?ey-3+Math.min(0,balance)*-2:yEp+20);
 const hautC=manches>0?c:sk, basC=manches>=1?c:sk;
 R(-3,yEp,7,4,manches>0?cC:sk);R(-3,yEp+3,7,1,manches>0?c:skO);          /* l'épaule, arrondie */
 seg(1,yEp+3,ex,ey,SX.bras[0]+1,hautC);seg(1,yEp+3,ex,ey,2,manches>0?cC:peauC);
@@ -17932,8 +18057,10 @@ return;
    marche que par l'amplitude des jambes — les bras, eux, pendaient
    pareil. Or c'est le premier signe qu'on lit : en courant, le coude se
    plie et la main monte à hauteur de taille, et le balancement double. */
-const bx=cote2*(EP+Math.ceil(SX.bras[0]/2)+1), dy=Math.round(balance*(COURSE?5:3)),
-      hCoude=COURSE?9:11, hPoignet=COURSE?14:19,
+/* DE FACE ET DE DOS, en selle : les bras s'écartent un peu et les mains
+   descendent au guidon, qui est plus bas et plus large que la taille. */
+const bx=cote2*(EP+Math.ceil(SX.bras[0]/2)+1+(PEDALE?2:0)), dy=PEDALE?0:Math.round(balance*(COURSE?5:3)),
+      hCoude=PEDALE?10:(COURSE?9:11), hPoignet=PEDALE?21:(COURSE?14:19),
       yC=yEp+hCoude+Math.round(dy/2), yM=yEp+hPoignet+dy;
 const out=cote2<0?bx-2:bx+2, inn=cote2<0?bx+2:bx-2;
 const lb=SX.bras[0]+1;R(bx-Math.floor(lb/2),yEp,lb,3,manches>0?c:sk);R(bx-2,yEp-1,4,1,manches>0?cC:sk);R(bx-2,yEp,3,1,manches>0?cC:peauC);
@@ -17941,7 +18068,7 @@ const lb=SX.bras[0]+1;R(bx-Math.floor(lb/2),yEp,lb,3,manches>0?c:sk);R(bx-2,yEp-
    restaient collés au corps et le balancement ne se lisait pas. Elle
    glisse maintenant aussi vers l'axe du corps quand le bras part en
    avant, et vers l'extérieur quand il part en arrière. */
-const dxS=diag?Math.round(balance*4*tourne*(dos?-1:1)):Math.round(balance*2*-cote2);
+const dxS=PEDALE?cote2*3:(diag?Math.round(balance*4*tourne*(dos?-1:1)):Math.round(balance*2*-cote2));
 const bande=(y0,y1,w,col,colO,colC)=>{for(let r=y0;r<y1;r++){const x0=bx+Math.round(dxS*Math.max(0,r-yEp-2)/Math.max(1,yM-yEp-2))-Math.floor(w/2);R(x0,r,w,1,col);R(cote2<0?x0:x0+w-1,r,1,1,colO);R(cote2<0?x0+w-1:x0,r,1,1,colC);}};
 const mancheBas=manches>=1?yM:(manches>0?Math.round(yEp+2+(yM-yEp)*manches):yEp+2);
 bande(yEp+2,Math.min(yC,mancheBas),SX.bras[0],manches>0?c:sk,manches>0?cT:skO,manches>0?cC:peauC);   /* le bras */
@@ -19056,7 +19183,7 @@ const xs=EP-1+(diag?vis:0);
 if(snow){R(xs,yTete-12,6,62,c);R(xs,yTete-12,1,62,T(c,26));R(xs+5,yTete-12,1,62,cO);R(xs+1,yEp+6,4,6,c2);R(xs+1,yTete-13,4,1,c);}
 else{[0,3].forEach(o=>{R(xs+o,yTete-14,2,64,c);R(xs+o,yTete-14,1,64,T(c,26));R(xs+o-1,yTete-16,2,2,c);R(xs+o,yEp+6,2,5,c2);});}
 };
-const lean=frG>0?Math.round(pencheG*1.3):(COURSE&&cote?2:0);   /* le buste se penche vers ce qu'on frappe, ou en avant quand on court */
+const lean=frG>0?Math.round(pencheG*1.3):(PEDALE&&cote?9:(COURSE&&cote?2:0));   /* le buste se penche vers ce qu'on frappe, en avant quand on court, et sur le guidon à vélo */
 const penche=(f)=>{if(!lean)return f();g.save();g.translate(s*lean*u,0);f();g.restore();};
 if(!dos&&!cote)skisDe();                                                        /* de face, les skis passent derrière le corps */
 if(cote){
