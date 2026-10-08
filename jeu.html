@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-09-0810"></script>
+<script src="maintenance.js?v=2026-10-09-0935"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-09-0810';
+var MA_VERSION='2026-10-09-0935';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -7745,13 +7745,19 @@ async function ouvrirLaMariniere(){
 }
 /* ================= L'AFFICHE DU COMPLEXE FESTIF ================= */
 /* ================= L'AFFICHE DE LA CAPITAINERIE ================= */
-/* ================= LE LIVRET DE MARIN =================
-   La Capitainerie ne delivre qu'une chose : le livret du titulaire.
-   Tout y est compte depuis carnet_peche, et depuis elle seule : peches.total
-   s'en ecarte (167 contre 150 pour un joueur), et un livret qui affiche deux
-   fois le meme chiffre differemment n'est plus un livret.
-   Le rang est COSMETIQUE : un titre, des galons, un cachet. Il n'ouvre rien
-   et n'en ferme rien. */
+/* ================= LA CAPITAINERIE =================
+   Le livret du titulaire, et le mur des brevets.
+
+   Tout le livret se compte depuis carnet_peche, et depuis elle seule :
+   peches.total s'en ecarte (167 contre 150 pour un joueur), et un livret
+   qui affiche deux fois le meme chiffre differemment n'est plus un livret.
+
+   Le rang est COSMETIQUE : un titre, des galons, un cachet. Il n'ouvre rien.
+   Mais il ne pouvait rien dire a qui a deja tout : un joueur avait les 70
+   especes, 1011 prises et 63 des 70 records, et le rang n'en comptait qu'une
+   seule de ces trois choses. D'ou les brevets, qui comptent le reste et se
+   calculent RETROACTIVEMENT : on pousse la porte, on ramasse ce qu'on a
+   deja fait. */
 const RANGS_MARIN=['Mousse','Matelot','Gabier','Second','Patron','Capitaine'];
 const SEUILS_MARIN=[0,5,12,25,40,60];           /* les memes que dans capitainerie_livret */
 /* Le rang suit le joueur hors de la Capitainerie : la presence le porte aux
@@ -7782,36 +7788,131 @@ return;}
 for(let k=0;k<n;k++){const y=16-3*(k+1);
 R(3,y,22,1,'#f4d98a');R(3,y+1,22,1,'#b9872f');}
 }
+let CAP=null;        /* {livret, brevets, onglet} : le registre, le temps d'une visite */
+const CAP_ONGLETS=[['livret','LE LIVRET'],['brevets','LES BREVETS']];
+function capMessage(t){
+return '<div id="afc" style="position:fixed;inset:0;display:flex;flex-direction:column;'+
+'gap:14px;align-items:center;justify-content:center;background:#0b1f3a;color:#9db6d6;'+
+'font:italic 13px Georgia,serif;padding:24px;text-align:center">'+t+
+'<button id="afcOk" style="border:0;border-radius:8px;padding:12px 20px;background:#17365a;'+
+'color:#f2ece0;font:700 10px Arial,sans-serif;letter-spacing:2px">REDESCENDRE SUR LE QUAI</button></div>';
+}
 async function afficheCapitainerie(){
 $('page2Fond').className='';$('page2').classList.add('on');
 $('page2Fond').innerHTML='<div id="afc" style="position:fixed;inset:0;display:flex;'+
 'align-items:center;justify-content:center;background:#0b1f3a;color:#9db6d6;'+
 'font:italic 13px Georgia,serif">On ouvre le registre…</div>';
-const d=await appelRPC('capitainerie_livret',{p_joueur:e.id});
+/* les deux d'un coup : le changement d'onglet doit etre instantane */
+const [L,B]=await Promise.all([
+appelRPC('capitainerie_livret',{p_joueur:e.id}),
+appelRPC('capitainerie_brevets',{p_joueur:e.id})]);
 if(!$('page2').classList.contains('on'))return;         /* referme entre-temps */
-if(!d||d.erreur){
-$('page2Fond').innerHTML='<div id="afc" style="position:fixed;inset:0;display:flex;'+
-'flex-direction:column;gap:14px;align-items:center;justify-content:center;background:#0b1f3a;'+
-'color:#9db6d6;font:italic 13px Georgia,serif;padding:24px;text-align:center">'+
-'Le registre est resté fermé.<br>Réessaie dans un instant.'+
-'<button id="afcOk" style="border:0;border-radius:8px;padding:12px 20px;background:#17365a;'+
-'color:#f2ece0;font:700 10px Arial,sans-serif;letter-spacing:2px">REDESCENDRE SUR LE QUAI</button></div>';
-$('afcOk').onclick=()=>{$('page2').classList.remove('on');};
-return;}
-recalerLeRang(d.especes|0);       /* la verite du serveur, une bonne fois */
+if(!L||L.erreur){
+$('page2Fond').innerHTML=capMessage('Le registre est resté fermé.<br>Réessaie dans un instant.');
+$('afcOk').onclick=()=>{$('page2').classList.remove('on');};return;}
+CAP={livret:L,brevets:B,onglet:'livret'};
+recalerLeRang(L.especes|0);       /* la verite du serveur, une bonne fois */
+capPeindre();
+try{jouer('achat','moment');}catch(x){}
+}
+function capPeindre(){
+const corps=CAP.onglet==='brevets'?capPageBrevets():capPageLivret();
+$('page2Fond').innerHTML=CAP_STYLE+
+'<div id="afc"><div class="lvLiv">'+
+'<div class="lvEnt"><b>CAPITAINERIE DU PORT</b><i>Livret professionnel maritime</i></div>'+
+'<div class="lvPage">'+corps+'</div>'+
+'<div class="lvOng">'+CAP_ONGLETS.map(([k,t])=>
+'<button data-ong="'+k+'"'+(k===CAP.onglet?' class="on"':'')+'>'+t+'</button>').join('')+'</div>'+
+'<button id="afcOk">REDESCENDRE SUR LE QUAI</button>'+
+'</div></div>';
+document.querySelectorAll('#afc .lvOng button').forEach(b=>b.onclick=()=>{
+if(CAP.onglet===b.dataset.ong)return;
+CAP.onglet=b.dataset.ong;capPeindre();try{vibrer(8);}catch(x){}});
+$('afcOk').onclick=()=>{$('page2').classList.remove('on');CAP=null;};
+if(CAP.onglet==='livret')capDessinsLivret();
+document.querySelectorAll('#afc canvas[data-g]').forEach(c=>{
+try{galonsDe(c,+c.dataset.g);}catch(x){}});
+const z=document.getElementById('afc');if(z)z.scrollTop=0;
+}
+/* ---------- LA PAGE DE GARDE : le titulaire et son rang ---------- */
+function capPageLivret(){
+const d=CAP.livret;
 const ECH=Array.isArray(d.echelle)&&d.echelle.length?d.echelle
-:RANGS_MARIN.map((nom,i)=>({i,nom,especes:[0,5,12,25,40,60][i]}));
+:RANGS_MARIN.map((nom,i)=>({i,nom,especes:SEUILS_MARIN[i]}));
 const rg=d.rang|0, nEsp=d.especes|0;
 const dateFr=(t)=>{try{return new Date(t).toLocaleDateString('fr-FR',
 {day:'numeric',month:'long',year:'numeric'});}catch(x){return '—';}};
 const matricule=(()=>{let h=0;const s=String(e.id||'');
 for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;
 return 'EXM '+String(h%10000).padStart(4,'0')+' '+String((h>>>13)%100).padStart(2,'0');})();
-/* la marche vers le rang suivant, en especes */
 const suiv=d.suivant||null;
 const seuilBas=ECH[rg]?ECH[rg].especes:0;
 const part=suiv?Math.max(0,Math.min(1,(nEsp-seuilBas)/Math.max(1,suiv.especes-seuilBas))):1;
-$('page2Fond').innerHTML=`<style>
+const B=CAP.brevets;
+return '<div class="lvId">'+
+  '<div class="lvPho"><canvas id="lvTete" width="44" height="44"></canvas></div>'+
+  '<div class="lvCh"><p>LE TITULAIRE</p>'+
+  '<b>'+echapperT(d.pseudo||e.pseudo||'sans nom')+'</b>'+
+  '<span>Matricule '+matricule+'</span>'+
+  '<span>Inscrit le '+dateFr(d.inscrit)+'</span></div>'+
+  '<div class="lvTp"><i>CAPITAINERIE</i><b>VISÉ</b><i>DU PORT</i></div></div>'+
+'<hr>'+
+'<div class="lvRg"><canvas id="lvGalons" width="112" height="72"></canvas>'+
+  '<div><p>RANG AU REGISTRE</p>'+
+  '<b>'+echapperT(d.rang_nom||RANGS_MARIN[rg]||'Mousse')+'</b>'+
+  '<span>'+(rg+1)+'<sup>e</sup> échelon sur '+ECH.length+'</span></div></div>'+
+'<div class="lvJa"><div class="lvJaH">'+
+  '<span>'+(suiv?('VERS '+String(suiv.nom).toUpperCase()):'ÉCHELON LE PLUS HAUT')+'</span>'+
+  '<span>'+(suiv?(nEsp+' / '+suiv.especes+' ESPÈCES'):(nEsp+' ESPÈCES'))+'</span></div>'+
+  '<div class="lvJaB"><i style="width:'+Math.round(part*100)+'%"></i></div></div>'+
+'<div class="lvEch">'+ECH.map((x,i)=>
+  '<div class="lvL'+(i===rg?' lvIci':(i>rg?' lvPas':''))+'">'+
+  '<canvas data-g="'+i+'" width="56" height="36"></canvas>'+
+  '<b>'+echapperT(x.nom)+'</b><span>'+
+  (x.especes===0?'au premier jour':x.especes+' espèces')+'</span></div>').join('')+'</div>'+
+'<div class="lvSt">'+
+  '<div><b>'+nEsp+'</b><span>ESPÈCES AU CARNET</span></div>'+
+  '<div><b>'+(d.prises|0)+'</b><span>PRISES ENREGISTRÉES</span></div>'+
+  '<div><b>'+(d.record?(d.record.cm+' cm'):'—')+'</b><span>'+
+    (d.record?echapperT(String(carnetNom(d.record.espece)).toUpperCase()):'AUCUN RECORD')+'</span></div>'+
+  '<div><b>'+(d.serie|0)+'</b><span>MEILLEURE SÉRIE</span></div></div>'+
+(B&&!B.erreur?'<div class="lvRenvoi">Le capitaine t’a délivré <b>'+(B.obtenus|0)+
+  '</b> brevet'+((B.obtenus|0)>1?'s':'')+' sur '+(B.total|0)+'.</div>':'')+
+'<div class="lvSig">Le capitaine du port</div>'+
+'<div class="lvNb">Le rang est un titre : il se porte, il n’ouvre aucune porte.</div>';
+}
+function capDessinsLivret(){
+try{const t=$('lvTete'),g=t.getContext('2d');g.imageSmoothingEnabled=false;
+const im=teteDe({ap:e.ap,pseudo:e.pseudo});
+g.clearRect(0,0,44,44);g.drawImage(im,0,0,im.width,im.height,-5,-2,53,53);}catch(x){}
+try{galonsDe($('lvGalons'),CAP.livret.rang|0);}catch(x){}
+}
+/* ---------- LE MUR DES BREVETS ----------
+   Neuf familles, trente-cinq brevets. Le volume, la taille, la serie, la
+   nuit, l'aube et l'assiduite ne comptaient nulle part : ils comptent ici. */
+function capPageBrevets(){
+const B=CAP.brevets;
+if(!B||B.erreur||!Array.isArray(B.familles))
+return '<div class="lvVide">Le mur des brevets n’a pas pu s’ouvrir.<br>Réessaie dans un instant.</div>';
+const part=Math.round((B.obtenus|0)/Math.max(1,B.total|0)*100);
+return '<div class="lvTete"><p>LE MUR DU CAPITAINE</p>'+
+  '<b>'+(B.obtenus|0)+' brevet'+((B.obtenus|0)>1?'s':'')+' sur '+(B.total|0)+'</b></div>'+
+'<div class="lvJa"><div class="lvJaB"><i style="width:'+part+'%"></i></div></div>'+
+B.familles.map(f=>{
+const P=Array.isArray(f.paliers)?f.paliers:[];
+const suiv=P.find(x=>f.valeur<x.seuil);
+return '<div class="lvFam"><div class="lvFamH"><b>'+echapperT(f.titre)+'</b>'+
+  '<span>'+(f.valeur|0)+' '+echapperT(f.unite||'')+'</span></div>'+
+  '<div class="lvChips">'+P.map(x=>{
+    const ok=(f.valeur|0)>=x.seuil;
+    return '<i class="'+(ok?'lvOk':'lvNo')+'">'+(ok?echapperT(x.nom):('à '+x.seuil))+'</i>';
+  }).join('')+'</div>'+
+  (suiv?'<div class="lvSuiv">encore '+(suiv.seuil-(f.valeur|0))+' pour « '+echapperT(suiv.nom)+' »</div>'
+       :'<div class="lvSuiv lvFini">famille complète</div>')+
+  '</div>';}).join('')+
+'<div class="lvNb">Les brevets comptent ce que tu as déjà fait, depuis le premier jour.</div>';
+}
+const CAP_STYLE=`<style>
 #afc{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
   display:flex;align-items:flex-start;justify-content:center;
   background:#0b1f3a;padding:16px 13px 24px;font-family:Georgia,serif}
@@ -7866,65 +7967,37 @@ $('page2Fond').innerHTML=`<style>
 #afc .lvSt b{display:block;font:900 16px Georgia,serif;color:#2f2820;line-height:1.1}
 #afc .lvSt span{display:block;font:700 6.5px Arial,sans-serif;letter-spacing:1.6px;
   color:#8a7454;margin-top:3px}
+#afc .lvRenvoi{margin-top:11px;padding:8px 10px;background:rgba(23,54,90,.07);
+  border-left:2px solid #c9a24a;border-radius:0 4px 4px 0;
+  font:italic 11.5px Georgia,serif;color:#5f4d34}
+#afc .lvRenvoi b{font-style:normal;font-weight:900;color:#17365a}
 #afc .lvSig{font:italic 11px Georgia,serif;color:#8a7454;border-top:1px solid #dccca6;
   padding-top:9px;margin-top:12px;text-align:right}
-#afc .lvNb{font:italic 10px Georgia,serif;color:#9a8a6e;margin-top:7px;text-align:center;line-height:1.5}
-#afc button#afcOk{margin-top:11px;width:100%;border:0;border-radius:8px;padding:13px;
+#afc .lvNb{font:italic 10px Georgia,serif;color:#9a8a6e;margin-top:9px;text-align:center;line-height:1.5}
+#afc .lvVide{font:italic 12.5px Georgia,serif;color:#8a7454;text-align:center;padding:26px 8px;line-height:1.6}
+#afc .lvTete{text-align:center;padding:2px 0 10px}
+#afc .lvTete p{display:block;font:700 7px Arial,sans-serif;letter-spacing:2.6px;color:#8a7454;margin:0 0 3px}
+#afc .lvTete b{display:block;font:900 19px Georgia,serif;color:#17365a;line-height:1.15}
+#afc .lvFam{margin-top:13px;padding-top:11px;border-top:1px solid #e2d4b4}
+#afc .lvFamH{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+#afc .lvFamH b{font:700 12.5px Georgia,serif;color:#2f2820}
+#afc .lvFamH span{font:700 9px Georgia,serif;color:#17365a;white-space:nowrap}
+#afc .lvChips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+#afc .lvChips i{display:inline-block;font-style:normal;border-radius:3px;padding:3px 6px;
+  font:700 8.5px Georgia,serif;letter-spacing:.2px;border:1px solid transparent}
+#afc .lvChips .lvOk{background:#17365a;color:#f0d78a;border-color:#17365a;
+  box-shadow:0 1px 0 rgba(0,0,0,.18)}
+#afc .lvChips .lvNo{background:none;border:1px dashed #c9b894;color:#a0906f}
+#afc .lvSuiv{font:italic 10px Georgia,serif;color:#8a7454;margin-top:5px}
+#afc .lvSuiv.lvFini{color:#2f6b45}
+#afc .lvOng{display:flex;gap:6px;margin-top:9px}
+#afc .lvOng button{flex:1 1 0;border:0;border-radius:6px;padding:10px 4px;
+  background:rgba(255,255,255,.08);color:#9db6d6;
+  font:700 7.5px Arial,sans-serif;letter-spacing:1.8px}
+#afc .lvOng button.on{background:#f4eee1;color:#17365a}
+#afc button#afcOk{margin-top:8px;width:100%;border:0;border-radius:8px;padding:13px;
   background:#0d2340;color:#f0d78a;font:700 9.5px Arial,sans-serif;letter-spacing:2.4px}
-</style>
-<div id="afc"><div class="lvLiv">
-  <div class="lvEnt"><b>CAPITAINERIE DU PORT</b><i>Livret professionnel maritime</i></div>
-  <div class="lvPage">
-    <div class="lvId">
-      <div class="lvPho"><canvas id="lvTete" width="44" height="44"></canvas></div>
-      <div class="lvCh">
-        <p>LE TITULAIRE</p>
-        <b>${echapperT(d.pseudo||e.pseudo||'sans nom')}</b>
-        <span>Matricule ${matricule}</span>
-        <span>Inscrit le ${dateFr(d.inscrit)}</span>
-      </div>
-      <div class="lvTp"><i>CAPITAINERIE</i><b>VISÉ</b><i>DU PORT</i></div>
-    </div>
-    <hr>
-    <div class="lvRg">
-      <canvas id="lvGalons" width="112" height="72"></canvas>
-      <div>
-        <p>RANG AU REGISTRE</p>
-        <b>${echapperT(d.rang_nom||RANGS_MARIN[rg]||'Mousse')}</b>
-        <span>${rg+1}<sup>e</sup> échelon sur ${ECH.length}</span>
-      </div>
-    </div>
-    <div class="lvJa">
-      <div class="lvJaH"><span>${suiv?('VERS '+String(suiv.nom).toUpperCase()):'ÉCHELON LE PLUS HAUT'}</span>
-        <span>${suiv?(nEsp+' / '+suiv.especes+' ESPÈCES'):(nEsp+' ESPÈCES')}</span></div>
-      <div class="lvJaB"><i style="width:${Math.round(part*100)}%"></i></div>
-    </div>
-    <div class="lvEch">${ECH.map((x,i)=>
-      '<div class="lvL'+(i===rg?' lvIci':(i>rg?' lvPas':''))+'">'+
-      '<canvas data-g="'+i+'" width="56" height="36"></canvas>'+
-      '<b>'+echapperT(x.nom)+'</b><span>'+
-      (x.especes===0?'au premier jour':x.especes+' espèces')+'</span></div>').join('')}</div>
-    <div class="lvSt">
-      <div><b>${nEsp}</b><span>ESPÈCES AU CARNET</span></div>
-      <div><b>${d.prises|0}</b><span>PRISES ENREGISTRÉES</span></div>
-      <div><b>${d.record?(d.record.cm+' cm'):'—'}</b><span>${d.record?echapperT(String(carnetNom(d.record.espece)).toUpperCase()):'AUCUN RECORD'}</span></div>
-      <div><b>${d.serie|0}</b><span>MEILLEURE SÉRIE</span></div>
-    </div>
-    <div class="lvSig">Le capitaine du port</div>
-    <div class="lvNb">Le rang est un titre : il se porte, il n’ouvre aucune porte.</div>
-  </div>
-  <button id="afcOk">REDESCENDRE SUR LE QUAI</button>
-</div></div>`;
-/* le portrait du titulaire, et les galons */
-try{const t=$('lvTete'),g=t.getContext('2d');g.imageSmoothingEnabled=false;
-const im=teteDe({ap:e.ap,pseudo:e.pseudo});
-g.clearRect(0,0,44,44);g.drawImage(im,0,0,im.width,im.height,-5,-2,53,53);}catch(x){}
-try{galonsDe($('lvGalons'),rg);}catch(x){}
-document.querySelectorAll('#afc .lvEch canvas').forEach(c=>{
-try{galonsDe(c,+c.dataset.g);}catch(x){}});
-$('afcOk').onclick=()=>{$('page2').classList.remove('on');};
-try{jouer('achat','moment');}catch(x){}
-}
+</style>`;
 function afficheComplexe(){
   $('page2Fond').className='';$('page2').classList.add('on');
   $('page2Fond').innerHTML=`<style>
