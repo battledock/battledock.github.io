@@ -4,12 +4,11 @@ quaiY:340,               /* le bord du quai, au-dessus du bassin */
 bassinO:170, bassinE:1210,
 pontons:[360,880], pontonL:13,           /* le ponton du milieu (620) est retiré, avec ses voiliers */ pontonFin:470,
 metro:[1316,496],      /* le métro reprend la place de l'ancienne gare */
-/* LA SORTIE DES BOIS, au bas du quai droit. On gagne la foret a pied :
-   le pave s'arrete, la terre prend le relais, et la rampe descend hors
-   de la carte entre deux bornes. 'haut' est le haut de la rampe,
-   'seuil' la ligne au-dela de laquelle, en poussant vers le sud, on
-   part ; 'arrivee' est l'endroit ou l'on repose le pied en revenant. */
-sente:{x:1306, demi:36, haut:486, mur:512, seuil:548, arrivee:[1306,494]},
+/* LA SORTIE DES BOIS, au bas du quai droit. Rien n'est bati : le quai
+   reste nu, un panneau dit ou l'on va, et on s'en va en marchant vers le
+   sud. 'seuil' est la ligne au-dela de laquelle, en poussant, on part ;
+   'arrivee' est l'endroit ou l'on repose le pied en revenant. */
+sente:{x:1306, demi:48, seuil:552, arrivee:[1306,492]},
 ruelle:{x:630,l:38,haut:30},   /* la montée vers Notre-Dame : axe, demi-largeur, sommet */
 boulo:[30,392,120,172],   /* le boulodrome : x, y, largeur, hauteur */
 };
@@ -22,12 +21,8 @@ const surPonton=(x,y)=>XP.pontons.some(px=>Math.abs(x-px)<XP.pontonL&&y<XP.ponto
 const dansLeBassin=(x,y)=>x>XP.bassinO&&x<XP.bassinE&&y>XP.quaiY;
 function bloqueExtramar(x,y){
 const dansRuelle=Math.abs(x-XP.ruelle.x)<XP.ruelle.l&&y>=XP.ruelle.haut;   /* la montée du casino */
-const dansSente=y>=XP.sente.haut&&Math.abs(x-XP.sente.x)<XP.sente.demi*(y>XP.sente.mur?1.35:1);  /* la rampe du bois, qui s'evase */
-/* LE PARAPET ferme le bas du quai droit sur toute sa largeur : on ne sort
-   que par la rampe. A l'ouest du bassin, rien ne change. */
-if(x>XP.bassinE-2&&y>XP.sente.mur&&!dansSente)return true;
-/* LE BAS DE LA CARTE RETIENT TOUT LE MONDE, rampe comprise : on s'arrete
-   au bord, on continue de pousser, et c'est la demi-seconde de poussee
+/* LE BAS DE LA CARTE RETIENT TOUT LE MONDE. On s'arrete au bord du quai,
+   on continue de pousser vers le sud, et c'est la demi-seconde de poussee
    qui emmene au bois — pas un pas de plus hors du cadre. */
 if(x<BORD-12||x>MONDE_L-BORD+12||(y<XP.maisonsY+6&&!dansRuelle)||y>MONDE_H-6)return true;
 if(dansLeBassin(x-3,y)||dansLeBassin(x+3,y)||dansLeBassin(x,y+2)){
@@ -362,119 +357,6 @@ R(x0+w*0.27+2,y0+44,2,2,'#d0402f');R(x0+w*0.73-2,y0+h-63,2,2,'#e8c06a');
 for(let i=0;i<40;i++)R(x0+6+A(i+7000)*(w-12),y0+6+A(i+7100)*(h-12),2,1,'rgba(120,90,50,.18)');
 }
 R(0,XP.maisonsY-2,MONDE_L,8,'rgba(60,40,20,.12)');
-/* ================= LA SORTIE DES BOIS =================
-   Au bas du quai droit, un parapet de pierre ferme la ville. Il s'ouvre
-   une fois, sur une rampe de terre battue qui descend entre deux piliers
-   et se perd sous les premieres cimes : c'est le chemin de la foret.
-   Il n'y a plus de metro. */
-{
-const S=XP.sente, x0=XP.bassinE+4, x1=MONDE_L, g0=S.x-S.demi, g1=S.x+S.demi;
-const MUR=S.mur, EP=14, SOUS=MUR+EP;          /* le parapet, puis le vide dessous */
-
-/* ---- LE FEUILLAGE EN CONTREBAS : les cimes des premiers arbres, vues
-       d'en haut. Pose avant tout le reste, pour passer dessous. ---- */
-const VERTS=['#1d3a21','#24482a','#2b5430','#325c34','#19311d','#3a6638'];
-for(let i=0;i<260;i++){
-  const cx=x0-30+A(i*1.3+2)*(x1-x0+60);
-  const cy=SOUS-4+A(i*2.7+4)*(MONDE_H-SOUS+14);
-  const rx=12+A(i*3.1)*16, ry=7+A(i*4.3)*8;
-  g.fillStyle=VERTS[Math.floor(A(i*5.9+1)*VERTS.length)];
-  g.beginPath();g.ellipse(cx,cy,rx,ry,0,0,7);g.fill();
-  if(A(i*7.3)>0.5){g.fillStyle='rgba(140,190,115,.20)';
-    g.beginPath();g.ellipse(cx-rx*0.24,cy-ry*0.36,rx*0.58,ry*0.44,0,0,7);g.fill();}
-  if(A(i*9.1)>0.82){g.fillStyle='rgba(8,16,8,.30)';
-    g.beginPath();g.ellipse(cx+rx*0.2,cy+ry*0.4,rx*0.7,ry*0.5,0,0,7);g.fill();}
-}
-R(x0-30,SOUS-2,x1-x0+60,4,'rgba(8,16,8,.45)');          /* l'ombre portee du mur */
-
-/* ---- LA RAMPE : la terre descend du quai jusque dans les arbres ---- */
-/* LE BORD N'EST PAS DENTELE. Un bruit par ligne donnait une frange de
-   poils ; on l'echantillonne tous les huit pixels et on interpole. */
-const ondule=(y,graine)=>{
-  const k=y/8, i0=Math.floor(k), f=k-i0, u=f*f*(3-2*f);
-  const a=A(i0*1.7+graine)-0.5, b=A((i0+1)*1.7+graine)-0.5;
-  return (a+(b-a)*u)*7;
-};
-const bordG=[], bordD=[];
-for(let y=S.haut-6;y<MONDE_H;y++){
-  const t=Math.max(0,(y-S.haut)/(MONDE_H-S.haut));
-  const base=S.demi*(0.52+t*1.02);
-  const demi=Math.round(base+(ondule(y,3)+ondule(y,11))*0.5);
-  bordG[y]=S.x-demi;bordD[y]=S.x+demi;
-  R(S.x-demi,y,demi*2,1,'#6f5a2e');
-  if(y%2===0)R(S.x-demi+1+A(y*1.1)*(demi*0.7),y,4+A(y*2.3)*9,1,'#7f6835');
-  if(y%5===0)R(S.x-demi+2+A(y*1.9)*(demi*1.5),y,3+A(y*0.9)*5,1,'#8d7445');
-  if(y%4===0)R(S.x-demi+2+A(y*3.7)*(demi*1.6),y,2+A(y*1.3)*4,1,'#5e4b22');
-  R(S.x-demi,y,2,1,'#53431f');R(S.x+demi-2,y,2,1,'#53431f');       /* les deux bords */
-}
-/* les deux ornieres de la charrette, qui s'ecartent en descendant */
-[-1,1].forEach(c=>{
-  for(let y=S.haut+8;y<MONDE_H;y++){
-    const t=(y-S.haut)/(MONDE_H-S.haut);
-    const rx=S.x+c*(12+t*20);
-    R(rx-1,y,3,1,'rgba(52,36,14,.38)');
-    R(rx+(c>0?2:-1),y,1,1,'rgba(168,146,102,.20)');
-  }
-});
-
-/* ---- LE PARAPET, de chaque cote de l'ouverture ---- */
-const parapet=(a,b)=>{
-  if(b<=a)return;
-  R(a,MUR-4,b-a,4,'rgba(70,52,22,.14)');          /* il pose une ombre sur le pave */
-  R(a,MUR,b-a,EP,'#cfbd97');
-  R(a,MUR,b-a,4,'#f6ecd2');                       /* la tranche eclairee */
-  R(a,MUR+EP-4,b-a,4,'#80714f');                  /* l'arete, bien marquee */
-  R(a,MUR+EP-1,b-a,1,'#4e442e');
-  for(let x=a+9;x<b;x+=16+Math.floor(A(x*0.21)*10))R(x,MUR,1,EP-3,'#b3a17a');
-  for(let i=0;i<Math.round((b-a)/8);i++)R(a+A(i*1.7+a)*(b-a),MUR+5+A(i*2.9)*5,2,1,'#bead86');
-};
-parapet(x0,g0-9);parapet(g1+9,x1);
-/* les deux piliers qui encadrent l'ouverture */
-[[g0-10,1],[g1+1,-1]].forEach(([px,sens])=>{
-  R(px-1,MUR-12,11,4,'#cdbb95');R(px-1,MUR-12,11,1,'#f6ecd2');     /* le chapeau */
-  R(px,MUR-8,9,EP+9,'#d4c29c');R(px,MUR-8,9,2,'#f3e9cd');
-  R(sens>0?px:px+7,MUR-8,2,EP+9,'#ab9a76');
-  R(px,MUR+EP+1,9,4,'rgba(30,24,12,.34)');
-});
-
-/* ---- LE PAVE SE DEFAIT A L'APPROCHE DE LA TERRE ---- */
-for(let i=0;i<90;i++){
-  const x=g0-22+A(i*2.3+7)*(g1-g0+44);
-  const y=S.haut-20+A(i*3.7+9)*30;
-  if(x>bordG[Math.round(y)]-3&&x<bordD[Math.round(y)]+3)continue;
-  R(x,y,2+A(i*1.1)*4,2,'rgba(122,97,48,.28)');
-}
-/* ---- LES AIGUILLES ET LES FEUILLES, remontees du bois ---- */
-const LIT=['#c9821a','#b4552a','#8a3a22','#d8a83a','#9a6a2a','#5f6b2a'];
-for(let i=0;i<340;i++){
-  const t=A(i*1.9+11);
-  const y=Math.round(S.haut-26+t*(MONDE_H-S.haut+26));
-  const etal=S.demi*0.6+Math.max(0,y-S.haut)*0.45;
-  const x=S.x-etal+A(i*3.3+5)*etal*2;
-  if(y>MUR&&y<SOUS&&(x<bordG[y]||x>bordD[y]))continue;      /* pas sur le parapet */
-  if(A(i*5.1+2)>0.20+((y-S.haut+26)/(MONDE_H-S.haut+26))*0.80)continue;
-  R(x,y,2+A(i*2.7)*2,1,LIT[Math.floor(A(i*7.7+3)*LIT.length)]);
-}
-
-/* ---- LES BUCHES, couchees contre le parapet : c'est par la que le bois
-       arrive au port. Deux rangs, vus de cote, avec la coupe au bout. ---- */
-{
-const bx=1216, by=MUR-14, LG=26;
-for(let r=0;r<2;r++){
-  const n=3-r, lx=bx+r*4;
-  for(let k=0;k<n;k++){
-    const ly=by-r*9-k*9;
-    R(lx,ly,LG,8,'#7d5934');R(lx,ly,LG,2,'#a07a4a');R(lx,ly+6,LG,2,'#5b3f21');
-    for(let q=0;q<4;q++)R(lx+3+A(q*1.7+ly)*(LG-8),ly+2+A(q*2.9+lx)*4,3,1,'rgba(60,40,22,.35)');
-    g.fillStyle='#8a6238';g.beginPath();g.ellipse(lx+LG,ly+4,3,4.2,0,0,7);g.fill();
-    g.fillStyle='#b58a56';g.beginPath();g.ellipse(lx+LG,ly+4,2.1,3.2,0,0,7);g.fill();
-    g.strokeStyle='#8a6238';g.lineWidth=0.7;
-    g.beginPath();g.ellipse(lx+LG,ly+4,1.1,1.8,0,0,7);g.stroke();
-  }
-}
-R(bx-2,by+9,48,3,'rgba(40,30,16,.22)');
-}
-}
 return c;
 }
 const TU_M={o:'#6e2c16',s:'#8f3f20',p:'#ad542c',c:'#c26a3a',h:'#d8844e',faite:'#e59a62'};
@@ -2054,18 +1936,14 @@ nv++;
 }
 });
 /* LE METRO EST DEPOSE. On ne prend plus la ligne 1 pour aller au bois :
-   on descend la rampe, au bas du quai. */
+   on y va a pied, par le bas du quai droit. */
 [280,420,840,980,1120].forEach((x,i)=>P('lanterneP',x,324,{gr:i}));
-/* les deux bancs du bas du quai sont retires : ils barraient la rampe */
+/* les deux bancs du bas du quai droit restent retires : le quai est nu */
 [[210,316],[490,316],[770,316],[1050,316],[1190,316]]
 .forEach(([x,y])=>P('bancP',x,y));
-/* LE PANNEAU, plante juste au bord de l'ouverture, et les caisses qui
-   attendent d'etre chargees. Les cimes des arbres sont peintes dans le
-   sol : rien ne pousse sur le quai. */
-P('x_panneauF',1300,462,{col:[5,4]});   /* plante en tete du chemin */
-/* DEUX LANTERNES SUR LE PARAPET : la nuit, on voit ou descendre. */
-[[1250,510,7],[1362,510,8]].forEach(([x,y,gr])=>P('lanterneP',x,y,{gr,col:[4,3]}));
-P('x_caisses',1374,452,{col:[13,10]});
+/* LE PANNEAU, seul sur le quai vide, plante assez haut pour qu'on le
+   voie en arrivant : c'est lui qui dit ou mene le bas du quai. */
+P('x_panneauF',1306,436,{col:[5,4]});
 for(let x=200;x<1200;x+=74){
 if(XP.pontons.some(p=>Math.abs(p-x)<26))continue;
 P('x_bitte',x,XP.quaiY-3,{col:[4,3]});
