@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-09-0520"></script>
+<script src="maintenance.js?v=2026-10-09-0620"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-09-0520';
+var MA_VERSION='2026-10-09-0620';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -18183,6 +18183,10 @@ if(TR&&TR.type==='pivot')yawLocal=(trK<0.75?(TR.sens||1):0);
    premier essai, il était invisible depuis `oeilDe` et le personnage
    tournait la tête en gardant les yeux droit devant. */
 const yawT=(!cote&&!diag)?((typeof TETE_FIN==='number'&&TETE_FIN)||yawLocal):0;
+/* LE DÉCALAGE DU CRÂNE ET CELUI DU VISAGE, au niveau du sprite : la
+   chevelure doit lire les deux, et elle se dessine ailleurs. */
+const dT=diag?vis:yawT;
+const f3=diag?vis*3:yawT*2;
 const trTasse=!TR?0:(TR.type==='pivot'?Math.round(Math.sin(trK*Math.PI)*2)
 :(TR.type==='elan'?Math.round(Math.sin(trK*Math.PI)*2)
 :(TR.type==='lance'?-Math.round(Math.sin(trK*Math.PI))
@@ -18815,7 +18819,6 @@ oreille(-12,hy,-1,true);oreille(12,hy,1,true);
    de trois quarts c'est `vis` qui commande, de face et de dos c'est la
    tête tournée. Un seul nombre, trois décalages proportionnels — sinon
    le visage glisse sans que le crâne suive, et la tête se dévisse. */
-const dT=diag?vis:yawT;
 for(let r=0;r<24;r++){let w=r<2?18:(r>19?22-(r-20)*2:24);
 if(diag)w=Math.round(w*0.93);
 R(-Math.round(w/2)+dT,hy+r,w,1,r>19?peauO:peau);}
@@ -18840,7 +18843,6 @@ R(-3+m,hy+2,7,2,T(peau,8));}                                                   /
 if(!diag||vis<0)oreille(12,hy,1,false);if(!diag||vis>0)oreille(-12,hy,-1,false);   /* les oreilles */
 if(boucle!=='aucune'){const bc=boucle==='perle'?'#f2efe4':(boucle==='plume'?'#c0392b':'#e8c06a');
 if(!diag||vis>0)R(-14,hy+16,2,2,bc);if(!diag||vis<0)R(12,hy+16,2,2,bc);}
-const f3=diag?vis*3:yawT*2;
 oeilDe(-7+f3+(diag&&vis>0?1:0),hy+11,false,diag&&vis>0);
 oeilDe(3+f3-(diag&&vis<0?1:0),hy+11,false,diag&&vis<0);
 sourcilDe(-7+f3,hy+8,false);sourcilDe(3+f3,hy+8,false);
@@ -19343,34 +19345,67 @@ if(cf.fr==='afro')for(let k=0;k<40;k++){const a=k*0.7, rr=16+(k%3);R(Math.round(
 if(cf.fr==='hirsute')for(let k=0;k<8;k++)R(-13+k*4,top-2-(k%3),2,3,H5.b);
 return;
 }
-const vol=cf.vol, top=hy-vol-sautH, dx=diag?vis*2:0;
+/* ================= LES CHEVEUX SUIVENT LE CRÂNE =================
+   DEUX DÉFAUTS, et c'est eux qui donnaient l'impression d'une calvitie.
+
+   DE TROIS QUARTS, la chevelure glissait de DEUX unités quand le crâne,
+   lui, n'en glissait qu'UNE — et elle gardait sa largeur de face alors
+   que le crâne se rétrécit de sept pour cent. Résultat : une bande de
+   cuir chevelu nu le long de la tempe, du côté que la chevelure venait
+   de quitter. Elle épouse maintenant exactement le crâne : même
+   décalage, même rétrécissement.
+
+   DE DOS, la règle « jamais sur le visage » coupait toute mèche qui
+   descendait sous le front. Vue de derrière il n'y a pas de visage : la
+   règle rasait donc tout le bas de l'occiput, et la nuque restait nue
+   sur un bon tiers de la tête. On ne coupe plus que si l'on voit
+   vraiment la face. */
+/* ET LA RACINE SUIT LE VISAGE, PAS LE CRÂNE. De trois quarts le visage
+   glisse de trois unités quand le crâne n'en glisse qu'une : une
+   chevelure calée sur le seul crâne recule donc de deux par rapport aux
+   yeux, et c'est exactement la silhouette d'un front qui se dégarnit.
+
+   Le décalage varie donc avec la hauteur — celui du crâne au sommet,
+   celui du visage à la ligne des sourcils. C'est ce que fait une
+   chevelure : elle enveloppe le volume en haut et épouse la face en
+   bas. */
+const vol=cf.vol, top=hy-vol-sautH;
+const dxH=(yy)=>dT+Math.round((f3-dT)*Math.max(0,Math.min(1,(yy-(hy-4))/12)));
+const dx=dT;
+const RETR=diag?0.93:1;                        /* le crâne rétréci de trois quarts */
+const cF=(yy)=>Math.round(craneF(yy<hy?hy:yy,hy)*RETR);
+const basMasse=dos?hy+19:hy+5;                 /* de dos, la masse descend sur la nuque */
 const HW=cf.fr==='afro'?19:13;
 /* LA MASSE DE FOND : seulement ce qui couvre le crâne, dans le ton le plus
    sombre. Les mèches claires se posent dessus et débordent. */
-if(cf.fr!=='crane')for(let rr=top;rr<hy+5;rr++){
-const c=bordCheveux(rr,hy,craneF(rr<hy?hy:rr,hy),vol);
+if(cf.fr!=='crane')for(let rr=top;rr<basMasse;rr++){
+const c=bordCheveux(rr,hy,cF(rr),vol);
 if(c<=0)continue;
-R(-c+dx,rr,c*2,1,H5.oo);}
+R(-c+dxH(rr),rr,c*2,1,H5.oo);}
 /* LES MÈCHES */
 if(cf.fr!=='crane'&&cf.fr!=='crete'&&cf.fr!=='rase'){
 for(const M of mechesDe()){
 const y0=top+M.y;
 for(let t=0;t<M.lo;t++){
 const w=Math.max(1,Math.round(M.la*(1-t/M.lo*0.55)));
-const xx=Math.round(M.x+M.p*t+(M.ond?Math.sin(t*0.9+M.x)*M.ond:0))+dx
-+(t>3?bal(t):0);                               /* la brise prend les pointes */
 const yy=y0+t;
+const dxM=dxH(yy);
+const xx=Math.round(M.x+M.p*t+(M.ond?Math.sin(t*0.9+M.x)*M.ond:0))+dxM
++(t>3?bal(t):0);                               /* la brise prend les pointes */
 /* LE BORD : une mèche ne sort jamais de la silhouette, ni sur les côtés
    ni par le haut. */
 if(yy<top)continue;
-const bord=bordCheveux(yy,hy,craneF(yy<hy?hy:yy,hy),vol);
+const bord=bordCheveux(yy,hy,cF(yy),vol);
 if(bord<=0)continue;
-if(xx-dx<-bord||xx-dx+w>bord)continue;
-if(yy>hy+5&&Math.abs(xx-dx)<craneF(yy,hy)-1)continue;  /* jamais sur le visage */
+if(xx-dxM<-bord||xx-dxM+w>bord)continue;
+/* JAMAIS SUR LE VISAGE — mais seulement s'il y a un visage. De dos on
+   laisse la chevelure descendre jusqu'à la nuque. */
+if(!dos&&yy>hy+5&&Math.abs(xx-dxM)<cF(yy)-1)continue;
+if(dos&&yy>hy+19)continue;
 /* LA COULEUR : la hauteur dans la mèche ET l'écart au centre du crâne.
    La lumière vient du haut-gauche, donc le côté droit s'assombrit. */
 const k=t/M.lo;
-const lat=(xx-dx)/13;
+const lat=(xx-dxM)/13;
 let lum=(1-k)*0.78+(0.5-lat)*0.55;
 /* le tramage sur la frontière entre deux tons : un damier d'un pixel,
    qui supprime la marche d'escalier sans ajouter de couleur */
@@ -19390,7 +19425,7 @@ for(let x3=-9;x3<6;x3++){
 if(((x3+40)%3)===0)continue;                   /* il n'est jamais continu */
 const courbe=Math.round(Math.pow(Math.abs(x3+2)/8,2)*2.2);
 const yy3=yL+courbe;
-if(Math.abs(x3)>craneF(yy3<hy?hy:yy3,hy))continue;
+if(Math.abs(x3)>cF(yy3))continue;
 R(x3+dx,yy3,1,1,CAR.lustre>0.95?H5.cc:H5.c);
 if(CAR.lustre>1.1&&((x3+40)%5)===0)R(x3+dx,yy3+1,1,1,H5.c);}}
 /* LA LIGNE DE RACINE : les golfes aux tempes, jamais droite */
