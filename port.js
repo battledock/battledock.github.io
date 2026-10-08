@@ -2180,36 +2180,109 @@ for(let y=70;y<XP.quaiY-4;y+=14){
   let x=-((y*7)%23);
   while(x<MONDE_L){
     const w=18+Math.floor(A(x*0.31+y)*16);
-    R(x,y,w,0.5,'rgba(150,132,98,.45)');            /* le joint du haut, affiné */
+    R(x,y,w,0.5,'rgba(150,132,98,.45)');
     R(x,y,0.5,14,'rgba(150,132,98,.45)');
-    R(x+0.5,y+0.5,w-1,0.5,'rgba(255,250,236,.22)'); /* la lumière sur l'arête */
-    R(x+w-0.5,y+1,0.5,13,'rgba(120,104,76,.18)');   /* l'ombre du côté opposé */
+    R(x+0.5,y+0.5,w-1,0.5,'rgba(255,250,236,.22)');
+    R(x+w-0.5,y+1,0.5,13,'rgba(120,104,76,.18)');
     x+=w;
   }
 }
-for(let i=0;i<26000;i++){                            /* le grain de la pierre */
+for(let i=0;i<26000;i++){
   const x=A(i*1.7)*MONDE_L, y=70+A(i*2.9)*(XP.quaiY-74);
   R(x,y,0.5,0.5,(i%3)?'rgba(255,252,240,.10)':'rgba(120,104,78,.10)');
 }
-for(let i=0;i<900;i++){                              /* l'usure, en creux */
+for(let i=0;i<900;i++){
   const x=A(i*3.3+7)*MONDE_L, y=70+A(i*4.1+2)*(XP.quaiY-74);
   R(x,y,1+A(i)*2,0.5,'rgba(126,110,80,.13)');
 }
-/* ---- L'EAU : des rides fines et le reflet des façades ---- */
+
+/* ================= L'OMBRE DES FAÇADES SUR LE QUAI =================
+   Les immeubles posaient sur la pierre sans rien lui faire : ils avaient
+   l'air collés dessus. Le soleil est haut et à gauche — ils portent donc
+   une ombre courte, décalée vers la droite, dense au pied et qui se perd
+   en trois pas. C'est elle qui pose la ville sur le sol. */
+{
+const y0=XP.maisonsY+4, h=30;
+for(let y=0;y<h;y++){
+  const t=y/h, a=0.26*(1-t)*(1-t);
+  R(6+y*0.35,y0+y,MONDE_L,0.5,'rgba(44,34,22,'+a.toFixed(3)+')');
+}
+/* le contact, juste sous la façade : une ligne franche */
+R(0,y0-1,MONDE_L,1.5,'rgba(38,28,18,.30)');
+R(0,y0-1,MONDE_L,0.5,'rgba(30,22,14,.38)');
+}
+
+/* ================= LA LUMIÈRE SUR LE QUAI =================
+   Un dégradé chaud depuis le haut-gauche, un refroidissement vers l'eau :
+   la pierre cesse d'être un aplat et prend le soleil. */
+{
+const haut=g.createLinearGradient(0,XP.maisonsY,MONDE_L*0.55,XP.quaiY);
+haut.addColorStop(0,'rgba(255,226,160,.13)');
+haut.addColorStop(0.55,'rgba(255,238,200,.04)');
+haut.addColorStop(1,'rgba(96,118,140,.07)');
+g.fillStyle=haut;g.fillRect(0,XP.maisonsY,MONDE_L,XP.quaiY-XP.maisonsY);
+/* l'humidité au bord de l'eau : la pierre y est plus sombre et plus froide */
+for(let y=0;y<22;y++){
+  const t=y/22, a=0.16*t*t;
+  R(0,XP.quaiY-22+y,MONDE_L,0.5,'rgba(74,92,104,'+a.toFixed(3)+')');
+}
+}
+
+/* ================= L'EAU =================
+   Elle était un dégradé et quatre cents traits. On lui donne ce qui fait
+   une eau de port : l'ombre du quai juste sous la margelle, le reflet
+   coloré de la ville qui tremble, les rides fines, et le soleil qui
+   s'éparpille en paillettes dans une bande. */
 const eauH=MONDE_H-XP.quaiY;
-for(let i=0;i<9000;i++){
+/* l'ombre portée du quai sur l'eau */
+for(let y=0;y<14;y++){
+  const t=y/14, a=0.30*(1-t)*(1-t);
+  R(XP.bassinO,XP.quaiY+2+y,XP.bassinE-XP.bassinO,0.5,'rgba(10,34,54,'+a.toFixed(3)+')');
+}
+/* LE REFLET DE LA VILLE. Chaque façade de la rangée jette sa couleur dans
+   l'eau, étalée et tremblante. Les enduits sont ceux des immeubles, pris
+   dans le même ordre : la ville se reconnaît dans son port. */
+{
+const REF=['#dfb672','#dca088','#d6c6a0','#c8845a','#1d3a5a','#9e1822','#b8853e','#e3d6b6'];
+for(let x=XP.bassinO+2;x<XP.bassinE-2;x+=0.5){
+  const k=Math.max(0,Math.round((x-70)/140));
+  const col=REF[k%REF.length];
+  const h=16+A(k*3.1)*10;
+  for(let y=0;y<h;y++){
+    const t=y/h;
+    const d=Math.sin((x*0.07)+(y*0.55))*1.2*(0.3+t);
+    const a=0.16*(1-t)*(1-t);
+    if(a<0.004)continue;
+    g.globalAlpha=a;R(x+d,XP.quaiY+5+y,0.5,0.5,col);g.globalAlpha=1;
+  }
+}
+}
+/* les rides, fines */
+for(let i=0;i<14000;i++){
   const x=XP.bassinO+2+A(i*1.9+11)*(XP.bassinE-XP.bassinO-4);
   const y=XP.quaiY+6+A(i*3.7+5)*(eauH-8);
   const l=1+A(i*5.1)*3;
-  R(x,y,l,0.5,(i%4)?'rgba(186,232,240,.16)':'rgba(16,62,102,.16)');
+  R(x,y,l,0.5,(i%4)?'rgba(186,232,240,.17)':'rgba(14,58,98,.17)');
 }
-/* le reflet : une bande claire sous la margelle, qui tremble */
-for(let y=0;y<16;y++){
-  const t=y/16;
-  const d=Math.round(Math.sin(y*1.7)*1.5)/2;
-  R(XP.bassinO+d,XP.quaiY+9+y,XP.bassinE-XP.bassinO,0.5,
-    'rgba(236,246,250,'+(0.10*(1-t)).toFixed(3)+')');
+/* LES PAILLETTES DU SOLEIL, dans une bande oblique */
+for(let i=0;i<2600;i++){
+  const x=XP.bassinO+A(i*2.3+3)*(XP.bassinE-XP.bassinO);
+  const y=XP.quaiY+8+A(i*4.7+9)*(eauH-12);
+  const bande=1-Math.min(1,Math.abs((y-XP.quaiY)-(eauH*0.42)-Math.sin(x*0.013)*26)/44);
+  if(bande<=0.05)continue;
+  const a=(0.10+A(i*6.1)*0.42)*bande;
+  R(x,y,0.5+A(i)*1,0.5,'rgba(255,250,224,'+a.toFixed(3)+')');
+  if(A(i*7.7)>0.86)R(x,y-0.5,0.5,0.5,'rgba(255,255,255,'+(a*0.8).toFixed(3)+')');
 }
+/* le fond, plus profond au large */
+{
+const fond=g.createLinearGradient(0,XP.quaiY,0,MONDE_H);
+fond.addColorStop(0,'rgba(6,34,62,0)');
+fond.addColorStop(1,'rgba(6,30,58,.22)');
+g.fillStyle=fond;g.fillRect(XP.bassinO,XP.quaiY,XP.bassinE-XP.bassinO,eauH);
+}
+/* la margelle reprend sa lumière par-dessus l'eau */
+R(XP.bassinO-4,XP.quaiY-4,XP.bassinE-XP.bassinO+8,0.5,'rgba(255,248,226,.40)');
 g.setTransform(1,0,0,1,0,0);
 return c;
 }

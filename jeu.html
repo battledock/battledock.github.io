@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-08-1400"></script>
+<script src="maintenance.js?v=2026-10-08-1430"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-08-1400';
+var MA_VERSION='2026-10-08-1430';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16822,8 +16822,13 @@ ECH_CSS=e;
 /* LA NETTETÉ : plus la toile est gravée gros, plus c'est net — et plus c'est lourd.
    « fluide » vise les soixante images par seconde, « nette » privilégie le dessin. */
 const choix=(typeof REG!=='undefined'&&REG.nettete)||'auto';
-const palier=(choix==='auto')?(typeof NET_AUTO!=='undefined'?NET_AUTO:'fluide'):choix;
-const plafond=QUALITE_TOILE<1?1.25:(palier==='nette'?3:(palier==='equilibre'?2:1.5));
+/* LE PALIER « FLUIDE » EST RETIRÉ. Il dessinait le jeu sur un quart des
+   pixels de l'écran puis l'étirait — mesuré : une toile de 622 x 1144 pour
+   un écran de 1242 x 2286. C'était la première cause de flou, et elle
+   était par défaut. Le plancher est maintenant « équilibré ». */
+let palier=(choix==='auto')?(typeof NET_AUTO!=='undefined'?NET_AUTO:'nette'):choix;
+if(palier==='fluide')palier='equilibre';
+const plafond=QUALITE_TOILE<1?1.5:(palier==='nette'?3:2);
 const dpr=ECO?1:Math.max(1,Math.min(plafond,window.devicePixelRatio||1));
 /* L'ÉCHELLE ENTIÈRE, au palier net seulement : chaque point du dessin occupe
    alors un nombre ROND de pixels d'écran, et le décor ne tremble plus quand on
@@ -20603,9 +20608,9 @@ PERF.depuis=t;PERF.n=0;PERF.pire=0;
    On part au plus léger : tout téléphone doit tenir ses soixante images.
    Puis on monte d'un cran seulement si l'appareil tient confortablement,
    et on redescend au premier signe d'essoufflement. */
-var NET_AUTO='fluide';
-try{const g=localStorage.getItem('bdl.nettete');if(g)NET_AUTO=g;}catch(e){}
-const NET_PALIERS=['fluide','equilibre','nette'];
+var NET_AUTO='nette';
+try{const g=localStorage.getItem('bdl.nettete');if(g&&g!=='fluide')NET_AUTO=g;}catch(e){}
+const NET_PALIERS=['equilibre','nette'];
 let netBonnes=0, netMauvaises=0, netQuand=0;
 function netChanger(p){
   if(p===NET_AUTO)return;
@@ -25859,10 +25864,10 @@ setTimeout(()=>b.classList.remove('on'),2600);}
 const perfChoisie=()=>{
 if(REG.nettete==='auto'&&REG.finesse==='auto')return 'auto';
 if(REG.nettete==='nette')return 'beaute';
-return 'fluide';};
+return (REG.nettete==='auto')?'auto':'fluide';};
 function mettrePerf(v){
 if(v==='auto'){REG.nettete='auto';REG.finesse='auto';REG.eco=false;}
-else if(v==='fluide'){REG.nettete='fluide';REG.finesse='basse';REG.eco=true;}
+else if(v==='fluide'){REG.nettete='equilibre';REG.finesse='basse';REG.eco=true;}
 else{REG.nettete='nette';REG.finesse='haute';REG.eco=false;}
 try{mettreEco(REG.eco);}catch(x){}
 appliquerReglages();
@@ -25951,7 +25956,7 @@ let titre='', corps='';
 if(v==='perf'){titre='Performance';
 corps='<div class="mot">En automatique, le jeu ajuste lui-même la netteté de l’image et la densité du décor selon ce que tient ton téléphone. Si tu choisis, il n’y touche plus.</div>'+
 choix('perf',[['auto','Automatique','le jeu décide, et s’adapte'],
-['fluide','Fluidité','image plus douce, décor allégé, batterie ménagée'],
+['fluide','Fluidité','décor allégé, batterie ménagée — l’image reste nette'],
 ['beaute','Beauté','image nette, tout le décor, plus gourmand']],perfChoisie());}
 else if(v==='perso'){titre='Le personnage';
 corps='<div class="mot">Ton personnage est dessiné au pixel fin : '+
