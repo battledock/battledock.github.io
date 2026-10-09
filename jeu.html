@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-09-2151"></script>
+<script src="maintenance.js?v=2026-10-10-0007"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-09-2151';
+var MA_VERSION='2026-10-10-0007';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11908,7 +11908,8 @@ g.fillStyle='#a5764a';g.fillRect(VER.porte-29,MY1-3+dy,58,1);});
 /* LE MATÉRIEL : l'échelle, les cageots, la brouette, l'abreuvoir.
    Ils sont peints dans le sol : on marche dessus, ils ne bloquent pas. */
 const BOIV=['#6b4a2c','#8a6238','#a5764a'];
-{const P=verPied(2), bx=P.x+26, by=P.y+2;        /* l'échelle, contre le troisième arbre */
+{const P=verPied(2), bx=P.x+44, by=P.y+2;        /* l'échelle, contre le troisième arbre
+   (décalée : à +26 elle traversait la pancarte de l'emplacement) */
 g.fillStyle='rgba(24,20,12,.22)';g.beginPath();g.ellipse(bx+6,by,9,3,0,0,7);g.fill();
 for(let q=0;q<2;q++)for(let k=0;k<46;k++){
 g.fillStyle=k%2?BOIV[1]:BOIV[0];g.fillRect(bx+q*7-Math.round(k*0.30),by-k,2,1);}
@@ -32540,13 +32541,19 @@ const rOmb=s===0?5:(s===1?10:A.p[0]*0.9);
 g.fillStyle='rgba(24,20,12,.26)';
 g.beginPath();g.ellipse(x+2,y+1,rOmb,Math.max(2,rOmb*0.3),0,0,7);g.fill();
 
-if(s===0){                       /* LE PLANT : un brin tuteuré, trois feuilles */
-PX(g,x+3,y-13,1,13,'#9a7a4a');PX(g,x+3.5,y-13,0.5,13,'#7a5a34');
-PX(g,x,y-9,1,9,A.t[1]);PX(g,x,y-9,0.5,9,A.t[2]);
-feuille(g,x-2.6,y-9.5,2.6,1.1,-0.5,A.f);
-feuille(g,x+2.4,y-10.5,2.4,1,0.5,A.f);
-feuille(g,x-0.2,y-13,2.2,1,-1.3,A.f);
-PX(g,x+0.5,y-6,3,0.5,'#b89a6a');PX(g,x+0.5,y-6.5,0.5,0.5,'#d8c090');
+if(s===0){                       /* LE PLANT : un brin tuteuré, cinq feuilles.
+   IL ÉTAIT TROP PETIT : treize pixels au milieu d'une cuvette de
+   cinquante-deux, on ne voyait pas qu'on avait planté quelque chose. */
+PX(g,x+4,y-21,1.5,21,'#9a7a4a');PX(g,x+4.5,y-21,0.5,21,'#7a5a34');   /* le tuteur */
+PX(g,x+3.5,y-22,2.5,1,'#b89a6a');
+PX(g,x-0.5,y-15,1.5,15,A.t[1]);PX(g,x-0.5,y-15,0.5,15,A.t[2]);       /* la tige */
+feuille(g,x-3.4,y-10,3.2,1.3,-0.45,A.f);
+feuille(g,x+3.2,y-12,3,1.2,0.45,A.f);
+feuille(g,x-3,y-15,2.8,1.2,-0.35,A.f);
+feuille(g,x+2.8,y-17,2.6,1.1,0.4,A.f);
+feuille(g,x-0.2,y-19.5,2.6,1.1,-1.35,A.f);
+PX(g,x+1,y-11,4,1,'#c04a3a');PX(g,x+1,y-11.5,1,0.5,'#e8705c');       /* le lien de chiffon */
+PX(g,x+1,y-17,4,1,'#c04a3a');
 return;}
 
 if(s===1){                       /* LE BALIVEAU : un tronc fin, une couronne courte */
@@ -32701,57 +32708,97 @@ function verProche(){
 if(CARTE!=='village'||PLACE_SEULE||typeof CHAMPS_SEULS==='undefined'||!CHAMPS_SEULS)return null;
 if(joueur.x<VER.x0-30||joueur.x>VER.x0+VER.L+30)return null;
 if(joueur.y<VER.y0-30||joueur.y>VER.y0+VER.H+30)return null;
-for(let i=0;i<VER.n;i++){if(!verOuverte(i))continue;const P=verPied(i);
+/* LES FOSSES NON LOUÉES RÉPONDENT AUSSI : on plante une pancarte « À
+   LOUER » devant le joueur, autant qu'elle dise où aller la louer. */
+for(let i=0;i<VER.n;i++){const P=verPied(i);
 if(Math.abs(joueur.x-P.x)<=32&&joueur.y>P.y-24&&joueur.y<=P.y+13)return i;}
 return null;}
+const VER_LOYER={3:80000, 6:300000, 9:900000};
 
-/* ================= LA GRAVURE DES CUVETTES =================
-   Un rond de terre ratissée au pied de chaque arbre, cerné de pierres.
-   C'est la seule partie du sol qui change avec l'état du joueur : le reste
-   est peint une fois pour toutes dans construireSolPre. */
+/* ================= LA GRAVURE DES EMPLACEMENTS =================
+   LES DOUZE RONDS DE PIERRES SONT LÀ DÈS LE PREMIER JOUR, qu'on ait creusé
+   ou non. C'est eux qui disent « un arbre va ici » : sans eux, un
+   emplacement libre est un carré d'herbe comme un autre, et on ne trouve
+   que celui où l'on a déjà planté. Ce qui change avec l'état, c'est ce
+   qu'il y a dedans — herbe rase, terre ratissée, terre mouillée — et la
+   pancarte plantée au bord.
+   C'est la seule partie du sol qui dépend du joueur : le reste (l'herbe,
+   la restanque, le portillon, le matériel) est peint une fois pour toutes
+   dans construireSolPre. */
 const VER_Z=()=>({x0:VER.x0-50, y0:VER.y0-50, x1:VER.x0+VER.L+50, y1:VER.y0+VER.H+50});
+/* LA PANCARTE : un poteau et une planche assez grandes pour se lire de
+   loin. L'ancienne faisait 24 × 12 avec un texte de 6,5 px — à l'écran,
+   une tache claire qu'on ne remarquait pas. */
+function verPancarte(g,cx,y,mot,pale){
+/* LA PLANCHE SUIT LE TEXTE : fixée à 46 px, « À CREUSER » débordait et le
+   « À » se faisait couper. */
+g.font='700 9px Georgia';
+const H=15, W=Math.max(46,Math.ceil(g.measureText(mot).width)+10), x=cx-W/2;
+g.fillStyle='rgba(24,20,12,.26)';
+g.beginPath();g.ellipse(x+W/2,y+2,10,3,0,0,7);g.fill();
+PX(g,x+W/2-1.5,y-20,3,22,pale?'#7a6248':'#6b4a28');           /* le poteau */
+PX(g,x+W/2-1.5,y-20,1,22,pale?'#95805f':'#8a6238');
+PX(g,x-1,y-H-19,W+2,H+2,pale?'#8a7a5e':'#6b4a28');            /* le cadre */
+PX(g,x,y-H-18,W,H,pale?'#ded3bb':'#f2e8cc');                  /* la planche */
+PX(g,x,y-H-18,W,1,pale?'#efe6d2':'#fff8e4');
+PX(g,x,y-19,W,1,'#9a8158');                                   /* l'ombre sous la planche */
+g.fillStyle=pale?'#6b6050':'#5a3f21';g.font='700 9px Georgia';
+const l=g.measureText(mot).width;
+g.fillText(mot,x+(W-l)/2,y-H-18+11);}
 function verGraver(){
 const Z=VER_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0, D=2;
 const c=document.createElement('canvas');c.width=W*D;c.height=H*D;
 const g=c.getContext('2d');g.setTransform(D,0,0,D,-Z.x0*D,-Z.y0*D);g.imageSmoothingEnabled=false;
+const RX=26, RY=10;
 for(let i=0;i<VER.n;i++){
-const P=verPied(i), F=VERG.f[i], creusee=F&&F.etat==='creusee', plante=!!(F&&F.esp);
-if(!verOuverte(i)){                      /* la fosse n'est pas encore louée : un piquet */
-PX(g,P.x+10,P.y-26,1,26,'#6b4a28');
-PX(g,P.x,P.y-32,22,12,'#e8dcc0');PX(g,P.x,P.y-32,22,0.5,'#fff4d8');PX(g,P.x,P.y-20.5,22,0.5,'#8a6a40');
-g.fillStyle='#6b4a28';g.font='700 6.5px Georgia';g.fillText('À LOUER',P.x+1.5,P.y-23);
-continue;}
-if(!creusee&&!plante){                   /* ouverte mais pas creusée : l'herbe, et un repère */
-for(let k=0;k<26;k++){const a=P.x-20+PR_h(k,i,133)*40, b=P.y-6+PR_h(k,i+1,134)*12;
-PX(g,a,b-3,0.5,3,'#6f9050');PX(g,a,b-3.5,0.5,0.5,'#9ac072');}
-PX(g,P.x+10,P.y-26,1,26,'#6b4a28');
-PX(g,P.x,P.y-32,24,12,'#e8dcc0');PX(g,P.x,P.y-32,24,0.5,'#fff4d8');PX(g,P.x,P.y-20.5,24,0.5,'#8a6a40');
-g.fillStyle='#6b4a28';g.font='700 6.5px Georgia';g.fillText('À CREUSER',P.x+1.5,P.y-23);
-continue;}
-/* LA CUVETTE : la terre ratissée en arcs, et son cordon de pierres */
-const RX=26, RY=10, mouille=!!(F&&F.eau&&!plante);
+const P=verPied(i), F=VERG.f[i], ouverte=verOuverte(i),
+      creusee=!!(F&&F.etat==='creusee'), plante=!!(F&&F.esp),
+      mouille=!!(F&&F.eau&&plante);
+/* ---------- LE FOND DU ROND ---------- */
 for(let v=-RY;v<=RY;v+=0.5)for(let u=-RX;u<=RX;u+=0.5){
 const d=Math.hypot(u/RX,v/RY);if(d>1)continue;
 const n=PR_h(Math.round(P.x+u),Math.round(P.y+v),117);
-let col=d>0.86?'#6f5c3c':(n<.3?'#7b6644':(n<.62?'#8a7450':'#99835c'));
+let col;
+if(creusee||plante){                      /* la terre, ratissée */
+col=d>0.86?'#6f5c3c':(n<.3?'#7b6644':(n<.62?'#8a7450':'#99835c'));
 if(!plante&&d<0.34)col=n<.5?'#6a5636':'#776043';
-if(mouille)col=n<.4?'#52412a':'#5e4b31';
+if(mouille)col=n<.4?'#52412a':'#5e4b31';}
+else if(ouverte){                         /* pas encore creusé : l'herbe rase,
+   avec la terre qui perce par endroits — on voit que le sol est préparé */
+col=n<.30?'#7d9a52':(n<.62?'#86a35c':'#74914b');
+const t2=PR_h(Math.round(P.x+u*1.7),Math.round(P.y+v*1.7),135);
+if(t2<0.22)col=n<.5?'#8a7450':'#99835c';}
+else{                                     /* pas louée : l'herbe du pré, à peine marquée */
+col=n<.34?'#789a4f':'#82a257';}
 PX(g,P.x+u,P.y+v,0.5,0.5,col);}
-for(let k=0;k<7;k++){const r=0.35+k*0.09;
+/* ---------- LES COUPS DE RÂTEAU, sur la terre seulement ---------- */
+if(creusee||plante)for(let k=0;k<7;k++){const r=0.35+k*0.09;
 for(let a=-3.14;a<3.14;a+=0.07){
 const u=Math.cos(a)*RX*r, v=Math.sin(a)*RY*r;
 if(PR_h(Math.round(P.x+u),Math.round(P.y+v),118)<0.45)continue;
 PX(g,P.x+u,P.y+v,0.5,0.5,'#6f5c3c');}}
+/* ---------- LE CORDON DE PIERRES, toujours ---------- */
 for(let a=0;a<6.283;a+=0.22){
+if(!ouverte&&PR_h(Math.round(a*100),i,136)<0.35)continue;   /* à moitié enfoui */
 const u=Math.cos(a)*(RX+2), v=Math.sin(a)*(RY+1);
 const t=PR_h(Math.round(u),Math.round(v),119);
-PX(g,P.x+u-1,P.y+v-1,3,2,t<.4?'#9a9382':(t<.75?'#aba493':'#8c8674'));
-PX(g,P.x+u-1,P.y+v-1,3,0.5,'#c6bfab');}
-if(!plante){                             /* creusée et vide : l'écriteau */
-PX(g,P.x+12,P.y-28,1,22,'#6b4a28');
-PX(g,P.x+2,P.y-34,26,12,'#e8dcc0');PX(g,P.x+2,P.y-34,26,0.5,'#fff4d8');PX(g,P.x+2,P.y-22.5,26,0.5,'#8a6a40');
-g.fillStyle='#6b4a28';g.font='700 6.5px Georgia';g.fillText('À PLANTER',P.x+3.5,P.y-25);}
-else if(verStade(F)===3){                /* les fruits tombés, sous un arbre mûr */
+const cl=ouverte?(t<.4?'#9a9382':(t<.75?'#aba493':'#8c8674'))
+                :(t<.5?'#88876f':'#7a7a66');
+PX(g,P.x+u-1,P.y+v-1.5,3,2.5,cl);
+PX(g,P.x+u-1,P.y+v-1.5,3,0.5,ouverte?'#c6bfab':'#a6a28c');
+PX(g,P.x+u-1,P.y+v+0.5,3,0.5,'rgba(50,43,31,.4)');}
+/* ---------- LA PANCARTE ---------- */
+if(!ouverte){
+/* NEUF PANCARTES « À LOUER » D'UN COUP, ça crie. Seules les trois
+   prochaines — celles qu'on peut louer tout de suite — portent une
+   planche ; au-delà, le rond de pierres et un piquet suffisent à dire
+   qu'il y a là un emplacement. */
+if(i<((VERG.j&&VERG.j.nb)||0)+3)verPancarte(g,P.x,P.y-3,'À LOUER',true);
+else{PX(g,P.x+16,P.y-16,2,18,'#7a6248');PX(g,P.x+16,P.y-16,1,18,'#95805f');
+PX(g,P.x+14.5,P.y-17.5,5,2,'#8a7a5e');}}
+else if(!creusee&&!plante)verPancarte(g,P.x,P.y-3,'À CREUSER',false);
+else if(!plante)verPancarte(g,P.x,P.y-3,'À PLANTER',false);
+else if(verStade(F)===3){                 /* les fruits tombés, sous un arbre mûr */
 const A=ARB[F.esp];
 if(A)for(let k=0;k<5;k++){const a=PR_h(k,i,131)*6.283, r=0.55+PR_h(k,i+1,132)*0.45;
 PX(g,P.x+Math.cos(a)*24*r,P.y+Math.sin(a)*9*r,2,2,A.fr[2]);}}}
@@ -32797,7 +32844,10 @@ const ec=Math.max(0,Math.abs(b2.x-joueur.x)-demi), dd=Math.hypot(ec,(joueur.y-b2
 if(dd<26)return verMajVrai();}}catch(x){}
 plaqueVrai=$('action');
 const b=plaqueFeinte, F=VERG.f[i], J=VERG.j, s=verStade(F);let t;
-if(!F||F.etat!=='creusee')t=J.beche?['Creuser la fosse','POUR Y PLANTER UN ARBRE']
+if(!verOuverte(i)){const px=VER_LOYER[J.nb];
+t=(i<(J.nb||0)+3&&px)?['Fosse à louer','CHEZ MADELEINE · '+enEuros(px).replace(',00','')]
+ :['Fosse à louer','D’ABORD LES PRÉCÉDENTES'];}
+else if(!F||F.etat!=='creusee')t=J.beche?['Creuser la fosse','POUR Y PLANTER UN ARBRE']
  :['Il te faut une bêche','EN VENTE CHEZ MADELEINE'];
 else if(!F.esp)t=['Planter un arbre','CHOISIR UNE ESSENCE'];
 else{const A=ARB[F.esp], E=ARB_PRIX[F.esp];
@@ -32820,6 +32870,7 @@ d&&d.erreur==='pas_assez'?'Pas assez d’argent':(d&&d.erreur==='pas_mur'?'Pas e
 
 async function verAgir(i){if(VER_OCCUPE)return;
 const F=VERG.f[i], J=VERG.j, s=verStade(F);
+if(!verOuverte(i)){texteVolant(joueur.x,joueur.y-56,'Fosse à louer chez Madeleine','#ffe8a0');return;}
 VER_OCCUPE=true;try{
 if(!F||F.etat!=='creusee'){
 if(!J.beche){texteVolant(joueur.x,joueur.y-56,'Il te faut une bêche (chez Madeleine)','#ffe8a0');return;}
