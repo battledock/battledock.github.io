@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-09-1130"></script>
+<script src="maintenance.js?v=2026-10-09-1230"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-09-1130';
+var MA_VERSION='2026-10-09-1230';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2062,6 +2062,34 @@ let TETE_FIN=0;
    pédalier au lieu de faire des ciseaux. Posé par poseDe pour les poses
    400 à 415, remis à null juste après. */
 let VELO_FIN=null;
+/* ================= DEBOUT, MAINS AU GUIDON =================
+   Le pendant de VELO_FIN pour la trottinette. Le moteur savait deja
+   tendre les bras vers un guidon — c'est ce que fait le pedalage — mais
+   ce savoir etait SOUDE a la position assise : meme drapeau pour les
+   bras tendus, les hanches sur la selle et les jambes qui tournent. On
+   ne pouvait pas prendre l'un sans les autres.
+   TROT_FIN separe les trois : les bras partent vers le guidon, le buste
+   reste droit, les jambes restent plantees sur le plateau. */
+let TROT_FIN=false;
+/* OU EST LA POIGNEE, exactement. Le guidon de la trottinette est trace a
+   AV-s*2, soit TREIZE pixels devant l'axe du corps, et a y-27 quand le
+   conducteur a les pieds a y-4 : donc CINQ unites SOUS l'epaule.
+   Premier essai a 7 devant et 16 dessous : le bras bougeait a peine et la
+   main tombait a hauteur de hanche — on ne voyait pas la difference avec
+   le repos. Le bras fait 14 unites en tout (7 de haut, 7 d'avant-bras) ;
+   viser 13 devant et 5 dessous l'oblige a se tendre presque droit, ce qui
+   est precisement la pose qu'on veut. */
+/* ATTENTION : CES DEUX-LA SONT EN DEMI-PIXELS. Tout l'interieur du
+   sprite est trace a deux unites de dessin pour un pixel de jeu — c'est
+   la regle de la maison, et elle m'a coute deux essais. Mesure faite en
+   balayant les valeurs dans un navigateur : la main se pose a
+   TROT_AVANT/2 + 1,5 pixels devant l'axe du corps. Pour la mettre a neuf
+   pixels, il en faut donc quinze, pas dix.
+   Le bras entier fait une douzaine de pixels de portee : neuf devant et
+   sept dessous en demandent 11,4, ce qui passe tout juste. Plus loin, il
+   se tend au-dela de sa longueur et l'epaule se decroche. */
+const TROT_MAIN=14;       /* sous l'epaule, en demi-pixels : sept pixels */
+const TROT_AVANT=15;      /* devant le corps, en demi-pixels : neuf pixels */
 /* LA GÉOMÉTRIE DU PÉDALIER, dans le repère du dessin fin (deux unités par
    pixel, origine aux pieds, y négatif vers le haut). Elle est calée sur le
    vélo dessiné par dessinerUnVelo : axe du pédalier deux unités en arrière
@@ -14130,7 +14158,16 @@ function dessinerUneTrottinette(g,x,y,dir,roue,v,couche){
        pieds et file seize devant : le mat sort franchement du corps, et
        c'est ce decalage qui fait lire « il est debout DERRIERE le
        guidon » au lieu de « il a une barre plantee dans le ventre ». */
-    const sol=y-4, AR=x-s*7, AV=x+s*15;
+    /* LE GUIDON EST A LA PORTEE DU BRAS, et c'est lui qui a du ceder.
+   Mesure faite dans le moteur : le personnage fait 50 unites de haut,
+   son epaule est a 37 au-dessus du sol, et son bras fait 14 en tout —
+   sept d'epaule a coude, sept de coude a main. Le guidon etait plante a
+   quinze devant l'axe du corps et dix sous l'epaule : il fallait 16,4
+   unites de bras pour l'atteindre, donc deux de trop. Le bras restait
+   plie et les mains flottaient a cote des poignees.
+   Recule a douze, il demande 12,8 : le bras se tend presque droit et la
+   main tombe DESSUS. */
+const sol=y-4, AR=x-s*7, AV=x+s*11;   /* la poignee tombe ainsi a neuf pixels de l'axe, la portee du bras */
     R(Math.min(x-s*4,x+s*16),sol-1,20,3,PLAT);
     R(Math.min(x-s*4,x+s*16),sol-1,20,1,CAD_C);
     R(Math.min(x-s*3,x+s*15),sol-1,18,1,GRIP);         /* la bande antiderapante */
@@ -14138,15 +14175,19 @@ function dessinerUneTrottinette(g,x,y,dir,roue,v,couche){
     R(Math.min(x-s*4,x+s*16),sol+2,20,1,CAD_O);
     R(AR-3,sol-4,7,2,CAD);R(AR-3,sol-4,7,1,CAD_C);     /* le garde-boue arriere */
     R(AR-1,sol+2,2,3,CAD_O);                            /* la bequille */
-    /* LE MAT : 22 px, pas 26. Plus haut, le guidon arrivait au menton ;
-       sur une trottinette il tombe a la taille. */
-    for(let k=0;k<22;k++){
+    /* LE MAT FAIT 27, ET C'EST UNE MESURE, pas un gout. Le personnage du
+       jeu fait 50 unites de haut — pas 40, comme celui de la page d'essai
+       sur laquelle la trottinette a ete dessinee. Une trottinette dont le
+       guidon est a 23 du sol arrive donc a la HANCHE d'un conducteur de
+       cette taille : il la poussait du bassin. Sur une vraie, le guidon
+       est a 57 % de la hauteur de l'homme, soit 28 ici. */
+    for(let k=0;k<27;k++){
       const px=AV-s*1-s*Math.round(k*0.10);
       R(px,sol-2-k,3,1,k%7===6?CAD_O:CAD);
       R(px+(s>0?0:2),sol-2-k,1,1,CAD_C);
     }
     R(AV-3,sol-6,6,3,CAD);R(AV-3,sol-6,6,1,CAD_C);      /* la potence basse */
-    const gy=sol-23, gx=AV-s*2;   /* 23 et non 25 : les poignees tombent ainsi a hauteur des mains du sprite */
+    const gy=sol-28, gx=AV-s*2;   /* 28 : la hauteur mesuree des mains du sprite */
     if(!DIAG){                                          /* le T, vu de profil */
       R(gx-4,gy,9,2,CAD);R(gx-4,gy,9,1,CAD_C);
       R(gx-5,gy-1,3,4,'#1b1b1e');R(gx+3,gy-1,3,4,'#1b1b1e');}
@@ -14160,8 +14201,8 @@ function dessinerUneTrottinette(g,x,y,dir,roue,v,couche){
     if(!DIAG){R(gx-1,gy-3,3,2,'#0e1418');                /* l'ecran de bord */
       if(v>0.05)R(gx-1,gy-3,Math.max(1,Math.round(3*v)),2,ACC);}
     R(Math.min(x-s*2,x+s*14),sol+1,16,1,ACC);            /* le filet du loueur */
-    roueP(AR,sol,4.2,roue);
-    roueP(AV,sol,4.2,roue);
+    roueP(AR,sol,3.6,roue);
+    roueP(AV,sol,3.6,roue);
     if(DIAG)g.restore();
   }
   else{
@@ -14169,11 +14210,14 @@ function dessinerUneTrottinette(g,x,y,dir,roue,v,couche){
        n'en voit qu'une. Le guidon s'ouvre en largeur — c'est le seul
        moment ou l'on voit que c'est un T. */
     const sol=y-4;
-    roueP(x,sol,4.2,roue);
+    roueP(x,sol,3.6,roue);
     R(x-4,sol-1,8,3,PLAT);R(x-4,sol-1,8,1,CAD_C);
-    for(let k=0;k<26;k++)R(x-1,sol-2-k,3,1,k%7===6?CAD_O:CAD);
-    R(x,sol-28,1,26,CAD_C);
-    const gy=sol-29;
+    /* LA MEME HAUTEUR QUE LE PROFIL. Elle etait restee a 26 quand le
+       profil est passe a 27 : vu de face la trottinette etait plus haute
+       que vue de cote, et le guidon sautait d'un cran en tournant. */
+    for(let k=0;k<27;k++)R(x-1,sol-2-k,3,1,k%7===6?CAD_O:CAD);
+    R(x,sol-29,1,27,CAD_C);
+    const gy=sol-28;
     R(x-11,gy,23,2,CAD);R(x-11,gy,23,1,CAD_C);
     R(x-13,gy-1,4,4,'#1b1b1e');R(x+10,gy-1,4,4,'#1b1b1e');
     if(!dos){
@@ -17924,6 +17968,15 @@ FACE_FIN={regard:base===700?-1:(base===710?1:0), mi:base===720};
 g.drawImage(graverFin(ap,dir,0,false,j-base,false),0,0,c.width,c.height);
 FACE_FIN=null;
 }
+else if(j>=900&&j<908){
+/* DEBOUT SUR LA TROTTINETTE : huit images, celles de la respiration. On
+   ne pose pas cette famille a 600 ni a 700 — elles sont prises par les
+   micro-pauses et le visage — ni a 800, prise par la tete tournee. 900
+   est libre, et reste sous la barre du clignement, qui ajoute 300. */
+TROT_FIN=true;
+g.drawImage(graverFin(ap,dir,0,false,j-900,false),0,0,c.width,c.height);
+TROT_FIN=false;
+}
 else if(j>=600&&j<640){
 /* UNE MICRO-PAUSE : douze images, gravées et gardées comme les autres.
    600 pour le report de poids, 620 pour la grande inspiration. */
@@ -18208,8 +18261,12 @@ if(dir&&String(dir).indexOf('-')>0&&(!STYLE_FIN()||(GESTE&&GESTE.t>0)))dir=Strin
    un velo tangue au rythme du pedalage, une trottinette roule droit. */
 const enTrot=VELO&&CARTE==='extramar'&&ap===e.ap;
 const aVelo=enTrot;                 /* l'ancien nom, pour les lignes qui le lisent encore */
-if(enTrot)y-=4;
-const yV=y+4;                        /* le sol, sous le plateau */
+/* SEPT, PAS QUATRE. Les pieds du sprite tombent deux unites SOUS son
+   point d'ancrage — la vignette deborde par le bas — et le dessus du
+   plateau est a cinq au-dessus du sol. Leve de quatre, le conducteur
+   avait les semelles trois unites dans la planche. */
+if(enTrot)y-=7;
+const yV=y+7;                        /* le sol, sous les roues */
 const C=cosmetiqueDe(ap);
 if(enCourse)ap=Object.assign({},ap,{court:1});
 const tc=Date.now()/1000;
@@ -18246,7 +18303,10 @@ if(enTrot&&STYLE_FIN()){
    Effet de bord voulu : VELO_FIN n'est pose que par la famille 500, donc
    il reste nul et les hanches ne descendent plus sur une selle qui
    n'existe pas. */
-i=100+(Math.floor(Date.now()/520)%8);
+/* LA FAMILLE 900 : debout, mains au guidon. On prenait la 100, celle du
+   repos pur, et les bras pendaient le long du corps — le conducteur
+   tenait sa trottinette par la pensee. */
+i=900+(Math.floor(Date.now()/520)%8);
 }
 else if(STYLE_FIN()&&ap===e.ap){
 majTransition(dir||'bas',!!marche,!!enCourse);
@@ -18441,6 +18501,9 @@ pG={x:-rpA.pied[rpF]*0.35, lift:0, pointe:0, talon:0};
    porté par le signe de la vue, sinon on pédalerait à l'envers. */
 /* (on ne l'appelle pas VELO : ce nom est deja pris par le drapeau du jeu) */
 const PEDALE=(typeof VELO_FIN==='object'&&VELO_FIN)?VELO_FIN:null;
+/* DEBOUT SUR LA TROTTINETTE : les bras vont au guidon comme a velo, mais
+   rien d'autre ne suit — ni les hanches, ni les jambes. */
+const TROT=(typeof TROT_FIN!=='undefined')&&TROT_FIN===true;
 if(PEDALE){
   const sv=(dir==='gauche')?-1:1;
   const demiH=SIL[2]/2;
@@ -19063,7 +19126,7 @@ const sk=fonce?peauO:peau, skO=fonce?peauT:peauO;
    d'en face : il part de l'épaule, s'ouvre au coude et plonge sur la
    poignée. Les deux bras font le même geste, à une unité près — celui du
    fond est un peu plus court, il est plus loin. */
-if(cote&&PEDALE)balance=0;
+if(cote&&(PEDALE||TROT))balance=0;
 if(cote){
 /* LE BRAS DE COURSE, DE PROFIL. Il partait tendu droit devant : la main
    allait à six pixels et demi en avant du corps, à hauteur de poitrine,
@@ -19074,8 +19137,17 @@ if(cote){
    de la hanche à l'épaule. On échange donc l'avancée contre de la
    hauteur : quatre pixels et demi devant au lieu de six et demi, et dix
    unités de battement vertical au lieu de deux. */
-const ex=PEDALE?(fonce?3:4):(COURSE?1+balance*2*AMPL:2+balance*5*AMPL), ey=yEp+11-(COURSE?1:0);
-const hx=PEDALE?(fonce?5:6):(COURSE?ex+3+Math.max(0,balance)*3:2+balance*8*AMPL+(balance>0?1:0)), hy=PEDALE?yEp+22:(COURSE?ey-2-balance*5:yEp+20);
+/* EN TROTTINETTE, LE BRAS EST PLUS TENDU QU'A VELO et moins plongeant :
+   le guidon est plus haut et plus pres qu'un cintre, et l'on est debout
+   derriere lui, pas couche dessus. Le coude s'ouvre donc presque
+   entierement — il reste a mi-chemin de la main — et la main tombe a
+   seize unites sous l'epaule au lieu de vingt-deux. */
+/* LE COUDE EST A MI-CHEMIN, un rien plus haut que la ligne epaule-main :
+   c'est ce qui donne le bras TENDU plutot que le bras raide. */
+const ex=TROT?(fonce?8:9):(PEDALE?(fonce?3:4):(COURSE?1+balance*2*AMPL:2+balance*5*AMPL)),
+      ey=TROT?yEp+6:yEp+11-(COURSE?1:0);
+const hx=TROT?(fonce?TROT_AVANT-2:TROT_AVANT):(PEDALE?(fonce?5:6):(COURSE?ex+3+Math.max(0,balance)*3:2+balance*8*AMPL+(balance>0?1:0))),
+      hy=TROT?yEp+TROT_MAIN+(fonce?1:0):(PEDALE?yEp+22:(COURSE?ey-2-balance*5:yEp+20));
 const hautC=manches>0?c:sk, basC=manches>=1?c:sk;
 R(-3,yEp,7,4,manches>0?cC:sk);R(-3,yEp+3,7,1,manches>0?c:skO);          /* l'épaule, arrondie */
 seg(1,yEp+3,ex,ey,SX.bras[0]+1,hautC);seg(1,yEp+3,ex,ey,2,manches>0?cC:peauC);
@@ -19096,8 +19168,16 @@ return;
    en marche, soit un pixel et demi sur un buste de douze. Les mains
    restaient collées à la taille d'un bout à l'autre du cycle. Cinq en
    marche, sept en course. */
-const bx=cote2*(EP+Math.ceil(SX.bras[0]/2)+1+(PEDALE?2:0))+vrille, dy=PEDALE?0:Math.round(balance*(COURSE?7:5)),
-      hCoude=PEDALE?10:(COURSE?9:11), hPoignet=PEDALE?21:(COURSE?14:19),
+/* DE FACE ET DE DOS, EN TROTTINETTE : les bras s'ecartent franchement —
+   le guidon fait vingt-trois pixels de large, bien plus que les epaules —
+   et les mains s'arretent haut, a la hauteur des poignees. Sans ce cas,
+   ils pendaient le long du corps et le guidon leur passait devant : le
+   conducteur avait l'air de descendre un escalier derriere sa machine.
+   Les chiffres sont en demi-pixels, comme tout l'interieur du sprite. */
+const bx=cote2*(EP+Math.ceil(SX.bras[0]/2)+1+(PEDALE?2:0)+(TROT?5:0))+vrille,
+      dy=(PEDALE||TROT)?0:Math.round(balance*(COURSE?7:5)),
+      hCoude=TROT?8:(PEDALE?10:(COURSE?9:11)),
+      hPoignet=TROT?TROT_MAIN:(PEDALE?21:(COURSE?14:19)),
       yC=yEp+hCoude+Math.round(dy/2), yM=yEp+hPoignet+dy;
 const out=cote2<0?bx-2:bx+2, inn=cote2<0?bx+2:bx-2;
 const lb=SX.bras[0]+1;R(bx-Math.floor(lb/2),yEp,lb,3,manches>0?c:sk);R(bx-2,yEp-1,4,1,manches>0?cC:sk);R(bx-2,yEp,3,1,manches>0?cC:peauC);
@@ -19106,7 +19186,7 @@ const lb=SX.bras[0]+1;R(bx-Math.floor(lb/2),yEp,lb,3,manches>0?c:sk);R(bx-2,yEp-
    restaient collés au corps et le balancement ne se lisait pas. Elle
    glisse maintenant aussi vers l'axe du corps quand le bras part en
    avant, et vers l'extérieur quand il part en arrière. */
-const dxS=PEDALE?cote2*3:(diag?Math.round(balance*4*tourne*(dos?-1:1)):Math.round(balance*3*-cote2));
+const dxS=TROT?cote2*4:(PEDALE?cote2*3:(diag?Math.round(balance*4*tourne*(dos?-1:1)):Math.round(balance*3*-cote2)));
 /* ================= LE PONT DE L'ÉPAULE =================
    Il restait un coin de fond entre le bras et le buste. Le trapèze
    descend en pente vers le cou sur les quatre premières lignes — de onze
@@ -19124,7 +19204,7 @@ const dxS=PEDALE?cote2*3:(diag?Math.round(balance*4*tourne*(dos?-1:1)):Math.roun
    bords, sinon le pont se décroche dès que le corps tourne. Au-delà de
    huit unités on ne comble plus : le bras est parti pour de bon, et le
    vide est alors le bon dessin. */
-if(!PEDALE){
+if(!PEDALE&&!TROT){
 const pont=manches>0?c:sk;
 for(let r=yEp;r<yEp+hCoude;r++){
 const dm=r<yEp+4?Math.round(5+(EP-5)*(r-yEp+1)/4):EP;
