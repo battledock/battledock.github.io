@@ -318,6 +318,78 @@ function dallesDuQuai(cb){
     y+=h;
   }
 }
+/* ================= LE TREMPLIN, GRAVE DANS LE PAVE =================
+   Une rampe de chantier en travers du quai : charpente de madriers, deux
+   pentes, un plateau, et une tole vissee sur chaque levre pour que la
+   roue ne butte pas sur le bois.
+
+   POURQUOI DANS LE SOL ET NON EN DECOR : le decor se trie par y, et le
+   tri place l'acteur devant l'objet seulement si son y est plus grand.
+   Or sur une rampe on roule SUR le dessus, a y constant : selon le pixel
+   ou tombent les pieds, le conducteur passait devant ou derriere. Grave
+   dans le pave, le tremplin est toujours dessous, et c'est l'altitude du
+   personnage (hauteurTremplin, dans le jeu) qui raconte le relief.
+
+   LE DESSIN EST FAIT COLONNE PAR COLONNE, parce que c'est la hauteur qui
+   change d'une colonne a l'autre : le plateau de 40 px de profondeur
+   monte de hh, et le flanc sud remplit les hh px laisses libres en
+   dessous. C'est ce flanc qui donne le volume. */
+function graverLeTremplin(g){
+const T=TREMPLIN;
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
+Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+const yN=T.y-T.demiY, yS=T.y+T.demiY, prof=yS-yN;
+/* CINQ TONS DE MADRIER, du plus a l'ombre au plus au soleil. On ne degrade
+   pas : le quai est en aplats, un bois fondu y ferait une tache lisse. */
+const PAL=['#8a6134','#996c3b','#a87a46','#b78953','#c69862'];
+/* L'OMBRE PORTEE, courte et decalee a droite : le meme soleil haut et a
+   gauche que celui des facades. */
+g.fillStyle='rgba(44,32,18,.18)';
+g.beginPath();g.ellipse(T.x+3,yS-1,T.demi+5,6,0,0,7);g.fill();
+for(let dx=-T.demi;dx<=T.demi;dx++){
+const x=T.x+dx, hh=Math.round(hTremplin(x));
+const k=hh/T.h;                              /* 0 au ras du pave, 1 sur le plateau */
+const bord=Math.abs(dx)===T.demi;            /* la toute derniere colonne */
+/* LA BANDE PEINTE DES DEUX LEVRES : c'est elle qui dit que la planche est
+   un tremplin et pas une passerelle. Rouge et creme en biais, les deux
+   couleurs du port — celles de la borne a trottinettes. */
+const peinte=Math.abs(dx)>T.demi-6&&Math.abs(dx)<T.demi;
+const t0=yN-hh;
+/* ---- LE FLANC SUD : les 'hh' pixels de charpente laisses libres sous le
+   plateau quand il monte. C'est lui, et rien d'autre, qui donne le volume. */
+if(hh>0){
+R(x,yS-hh,1,hh,'#7d5934');
+R(x,yS-2,1,2,'#4e351c');                     /* le pied, dans son ombre */
+if(((dx+T.demi)%7)===0&&hh>3)R(x,yS-hh+1,1,hh-2,'#573c20');   /* les montants */
+}
+/* ---- LE PLATEAU. Les madriers sont poses DANS LE SENS DE LA DESCENTE,
+   donc leurs joints courent en travers de l'ecran, comme ceux des
+   pontons. C'est ce qui fait lire une surface sur laquelle on roule : la
+   meme planche avec des joints verticaux se lit comme une palissade.
+   Deux choses eclairent le bois : la hauteur — le plateau prend le
+   soleil, les pentes moins — et la profondeur : le bord qui nous fait
+   face reste dans son ombre. */
+for(let v=0;v<prof;v++){
+let col;
+if(bord)col='#5b3f21';                                   /* l'arete de bout */
+else if(peinte)col=(Math.floor((Math.abs(dx)+v*0.7)/3)%2)?'#b8322c':'#efe3c4';
+else{const rang=(Math.floor(v/4)%2)?0.5:-0.5;
+col=PAL[Math.max(0,Math.min(4,Math.round(1.1+2.3*k-1.5*(v/prof)+rang)))];}
+R(x,t0+v,1,1,col);
+if(!bord&&!peinte){
+if(v%4===3)R(x,t0+v,1,1,'rgba(86,60,32,.45)');         /* le joint, en creux */
+else if(v%4===0)R(x,t0+v,1,1,'rgba(255,232,190,.16)'); /* l'arete du madrier suivant */
+}
+}
+if(!bord)R(x,t0,1,1,peinte?'rgba(255,248,230,.55)':'#d6a970');   /* l'arete nord, pleine lumiere */
+R(x,t0+prof-1,1,1,'rgba(60,42,24,.34)');     /* le bord sud, dans son ombre */
+/* LES TRACES DE PNEU, deux filets le long de l'axe de roulement : la
+   rampe sert, et c'est ce qui la distingue d'une caisse posee la. */
+if(!bord&&!peinte){R(x,t0+Math.round(prof*0.38),1,1,'rgba(44,32,22,.13)');
+R(x,t0+Math.round(prof*0.62),1,1,'rgba(44,32,22,.11)');}
+}
+return g;
+}
 function construireSolExtramar(){
 const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
 const g=c.getContext('2d');
@@ -442,6 +514,7 @@ R(x0-2,y-2,3,6,'#5b3f21');R(x0+w-1,y-2,3,6,'#5b3f21');
 }
 });
 /* (le boulodrome etait grave ici : il est sous l'eau desormais) */
+graverLeTremplin(g);
 R(0,XP.maisonsY-2,MONDE_L,8,'rgba(60,40,20,.12)');
 /* (le sol fin, au demi-pixel, est peint par affinerLeSolExtramar) */
 /* LA GRANDE AFFICHE se pose avant le garde-corps : son pied passe
@@ -2322,9 +2395,17 @@ g.drawImage(sol,0,0,MONDE_L*2,MONDE_H*2);          /* la base, telle quelle */
 g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
 const A=(i)=>alea(i*1.37+0.5);
+/* LE TREMPLIN N'EST PAS DU PAVE. Le pave fin se repeint par-dessus la
+   base : sans ce masque, les joints des dalles et les 26 000 grains de
+   pierre venaient se semer sur les madriers de la rampe, et le bois
+   prenait l'air d'un rectangle de pierre un peu plus sombre. On laisse
+   deux pixels de marge autour de son encre. */
+const horsTremplin=(x,y)=>Math.abs(x-TREMPLIN.x)>TREMPLIN.demi+2
+  ||y<TREMPLIN.y-TREMPLIN.demiY-TREMPLIN.h-2||y>TREMPLIN.y+TREMPLIN.demiY+2;
 /* ---- LE PAVÉ : des joints d'un demi-pixel, un grain plus fin ---- */
 dallesDuQuai((x,y,w,h)=>{
   if(y>=XP.quaiY-4)return;                       /* au-dela c'est l'eau */
+  if(!horsTremplin(x,y)||!horsTremplin(x+w,y+h))return;
   R(x,y,w,0.5,'rgba(158,140,106,.24)');
   R(x,y,0.5,h,'rgba(158,140,106,.24)');
   R(x+w-0.5,y+0.5,0.5,h-0.5,'rgba(126,110,82,.10)');
@@ -2333,10 +2414,12 @@ dallesDuQuai((x,y,w,h)=>{
 });
 for(let i=0;i<26000;i++){
   const x=A(i*1.7)*MONDE_L, y=70+A(i*2.9)*(XP.quaiY-74);
+  if(!horsTremplin(x,y))continue;
   R(x,y,0.5,0.5,(i%3)?'rgba(255,252,240,.10)':'rgba(120,104,78,.10)');
 }
 for(let i=0;i<900;i++){
   const x=A(i*3.3+7)*MONDE_L, y=70+A(i*4.1+2)*(XP.quaiY-74);
+  if(!horsTremplin(x,y)||!horsTremplin(x+3,y))continue;
   R(x,y,1+A(i)*2,0.5,'rgba(126,110,80,.13)');
 }
 
