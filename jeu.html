@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-09-1530"></script>
+<script src="maintenance.js?v=2026-10-09-1630"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-09-1530';
+var MA_VERSION='2026-10-09-1630';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -20901,20 +20901,16 @@ else if(CARTE==='extramar'){verifierLaSente(dt);verifierLeChemin(dt);}
    et on arrive de toute façon à 152 px, bien en retrait du seuil. */
 let F_SENT_T=0, F_SENT_DIT=0;
 function verifierLeSentier(dt){
-  const pousseOuest = joyX < -0.35;
-  if(!(joueur.x<F_SENT_SEUIL && dansLeSentier(joueur.x,joueur.y) && pousseOuest)){
-    F_SENT_T=0;return;
-  }
-  F_SENT_T+=dt;
-  if(F_SENT_T>=0.5){
-    F_SENT_T=0;
-    try{voyagerVers('extramar','Direction Le port');}catch(x){}
-    return;
-  }
-  if(Date.now()-F_SENT_DIT>900){
-    F_SENT_DIT=Date.now();
-    texteVolant(joueur.x,joueur.y-54,'Direction le port…','#ffe8a0');
-  }
+  /* ON PART DES QU'ON EST DANS LE COULOIR ET QU'ON POUSSE VERS L'OUEST.
+     Avant, il fallait DEUX choses de plus : descendre jusqu'a x<26 — on
+     arrive a 152, donc 126 px de marche dans un couloir de 92 px de haut
+     — puis tenir la poussee une demi-seconde sans la relacher. D'ou
+     l'impression que le passage ne marchait pas.
+     dansLeSentier exige deja x<78 et la bonne hauteur : c'est une
+     condition suffisante, le seuil en plus ne protegeait de rien. */
+  if(!(dansLeSentier(joueur.x,joueur.y) && joyX < -0.35)){F_SENT_T=0;return;}
+  F_SENT_T=0;
+  try{voyagerVers('extramar','Direction Le port');}catch(x){}
 }
 /* S'EN ALLER AU BOIS PAR LE BOUT EST DE LA PROMENADE.
    Le pendant exact du sentier de la foret : il faut etre au bout du quai
@@ -20925,18 +20921,14 @@ let XP_SENTE_T=0, XP_SENTE_DIT=0;
 function verifierLaSente(dt){
   if(typeof XP==='undefined'||!XP||!XP.sente){XP_SENTE_T=0;return;}
   const S=XP.sente;
+  /* PLUS DE DEMI-SECONDE A TENIR : on entre dans la bande en poussant
+     vers l'est, on part. La bande fait 138 px de haut et commence apres
+     l'affiche : longer le bord de l'eau n'y mene pas, c'est elle qui
+     protege des departs involontaires, pas le temps d'attente. */
   const dedans=joueur.x>S.seuil&&joueur.y>S.y0&&joueur.y<S.y1;
   if(!(dedans&&joyX>0.35)){XP_SENTE_T=0;return;}
-  XP_SENTE_T+=dt;
-  if(XP_SENTE_T>=0.5){
-    XP_SENTE_T=0;
-    try{voyagerVers('foret','Direction la forêt');}catch(x){}
-    return;
-  }
-  if(Date.now()-XP_SENTE_DIT>900){
-    XP_SENTE_DIT=Date.now();
-    texteVolant(joueur.x,joueur.y-54,'Direction la forêt…','#bfe09a');
-  }
+  XP_SENTE_T=0;
+  try{voyagerVers('foret','Direction la forêt');}catch(x){}
 }
 /* S'EN ALLER AUX CHAMPS PAR LE BOUT OUEST DE LA PROMENADE.
    Le meme geste que la sente du bois, dans l'autre sens : etre au bout du
@@ -20962,16 +20954,9 @@ function verifierLeChemin(dt){
     }
     return;
   }
-  XP_CHEMIN_T+=dt;
-  if(XP_CHEMIN_T>=0.5){
-    XP_CHEMIN_T=0;
-    try{voyagerVers('ferme','Direction la ferme');}catch(x){}
-    return;
-  }
-  if(Date.now()-XP_CHEMIN_DIT>900){
-    XP_CHEMIN_DIT=Date.now();
-    texteVolant(joueur.x,joueur.y-54,'Direction la ferme…','#e8d08a');
-  }
+  /* PLUS DE DEMI-SECONDE A TENIR, comme du cote du bois. */
+  XP_CHEMIN_T=0;
+  try{voyagerVers('ferme','Direction la ferme');}catch(x){}
 }
 const jc=$('joy'), jg=jc.getContext('2d');
 let JDPR=1;

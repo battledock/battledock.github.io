@@ -25,14 +25,20 @@ metro:[1316,496],      /* le métro reprend la place de l'ancienne gare */
    panneau dit ou l'on va, et on s'en va en marchant vers l'est, entre la
    derniere facade et l'eau. 'seuil' est la ligne au-dela de laquelle, en
    poussant, on part ; 'arrivee' est l'endroit ou l'on repose le pied. */
-sente:{seuil:1690, y0:194, y1:332, arrivee:[1636,258]},
+/* LE SEUIL EST A L'ENTREE DU COULOIR, PLUS AU BOUT. Il etait a 1690,
+   soit 54 px apres le point d'arrivee : en revenant du bois, il fallait
+   retraverser toute l'esplanade avant que le depart redevienne possible,
+   et l'on croyait le passage casse. A 1660 il garde 24 px de marge sur
+   l'arrivee — assez pour qu'on ne reparte pas par accident en posant le
+   pied — et le depart se declenche des qu'on entre dans la bande. */
+sente:{seuil:1660, y0:194, y1:332, arrivee:[1636,258]},
 /* LA SORTIE DES CHAMPS, au bout ouest de la promenade : le pendant exact
    de la sente du bois, de l'autre cote du quai. Meme bande, meme demi-
    seconde de poussee, mais vers l'ouest. 'seuil' est la ligne en deca de
    laquelle on part ; 'arrivee' est l'endroit ou l'on repose le pied en
    revenant. Le platane de l'ouest a ete retire : il tenait pile dans la
    bande et on se cognait dedans avant d'avoir pu pousser. */
-chemin:{seuil:70, y0:194, y1:332, arrivee:[124,258]},
+chemin:{seuil:100, y0:194, y1:332, arrivee:[124,258]},   /* 100 et non 70 : meme marge de 24 px sur l'arrivee que le cote est */
 ruelle:{x:810,l:38,haut:30},   /* la montée vers Notre-Dame : axe (250+4*140), demi-largeur, sommet */
 };
 const CARGO_X={pile:[1266,566],docks:[1318,446]};

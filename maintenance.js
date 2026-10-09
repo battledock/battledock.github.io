@@ -234,15 +234,16 @@
   /* ================= LA FERME EN TRAVAUX =================
      Même principe que la forêt : seule la ferme se ferme, le port continue
      de tourner. Pour rouvrir : passer FERME_FERMEE à false. */
-  var FERME_FERMEE=true;
+  var FERME_FERMEE=false;  /* OUVERTE À TOUS. Pour refermer : repasser a true */
   /* LE JEU DOIT SAVOIR QUE LA FERME EST FERMÉE, lui aussi : sans ce
      drapeau, marcher vers l'ouest du quai chargeait les 1,6 Mo du jeu
      pour n'afficher que l'écran de chantier. Le port lit ce drapeau et
      prévient sur place, sans quitter la carte. */
   try{window.__FERME_FERMEE=FERME_FERMEE;}catch(e){}
-  /* PERSONNE NE PASSE, LAISSEZ-PASSER COMPRIS. La forêt garde sa
-     dérogation ; la ferme, non : on veut la voir fermée comme la voient
-     les joueurs. C'est le seul endroit du fichier où PASSE est ignoré. */
+  /* LE LAISSEZ-PASSER REDEVIENT VALABLE ICI, comme pour la forêt : la
+     ferme etant ouverte a tous, l'exception qui l'ignorait n'a plus
+     d'objet, et la laisser aurait fait mentir le drapeau le jour ou l'on
+     referme. */
   function versLaFerme(){
     try{
       var q=new URLSearchParams(location.search);
@@ -396,7 +397,7 @@
          l'ouest du port, hors du quai. On arrive par le metro. */
       location.href='jeu.html?carte=extramar&arrivee=1&v='+Date.now();};
   }
-  if(FERME_FERMEE&&versLaFerme()){
+  if(FERME_FERMEE&&versLaFerme()&&!PASSE){
     window.__MAINTENANCE=true;   /* posé tout de suite : ferme.html lit ce drapeau avant de rediriger */
     if(document.body)ecranFerme();
     else document.addEventListener('DOMContentLoaded',ecranFerme);
