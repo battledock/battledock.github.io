@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-09-0730"></script>
+<script src="maintenance.js?v=2026-10-09-0830"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-09-0730';
+var MA_VERSION='2026-10-09-0830';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -430,7 +430,12 @@ transition:background .25s ease}
 #haut .enc i.on{background:#9fd47e}
 #haut .enc.haut i.on{background:#e8c06a}
 #haut .enc.plein i.on{background:#ff8a76}
-#haut #pilJetons.vide{display:none}
+/* LA PASTILLE DES JETONS NE S'AFFICHE PLUS. Les jetons etaient la monnaie
+   du casino, qui n'existe plus : personne ne peut plus en gagner ni en
+   depenser, et un compteur de monnaie morte en haut de l'ecran ne fait
+   qu'inquieter. Le champ 'jetons' reste dans la sauvegarde — on ne detruit
+   pas ce que les joueurs ont amasse — il n'est simplement plus montre. */
+#haut #pilJetons{display:none}
 #haut .fil{width:26px;height:1px;margin:4px 0 3px;
 background:linear-gradient(90deg,rgba(255,255,255,.85),rgba(255,255,255,0))}
 #haut .col.d .fil{background:linear-gradient(270deg,rgba(255,255,255,.85),rgba(255,255,255,0))}
@@ -3401,79 +3406,9 @@ g.globalAlpha=1;
 }
 const FETE_FIXE=[900,476];   /* au sud-est, dégagée du coffre */
 const FETE_L=112, FETE_H=96;
-let CALQUE_FETE=null;
-function graverLaFete(){
-const W=FETE_L+40, H=FETE_H+44, cx=W/2, sol=H-16, HT=sol-FETE_H;
-const C=['#b93327','#e8a33a','#3f8fc4','#5fc79c','#b98bd9','#e8cf4e'];
-const toile=(f)=>{
-const c=document.createElement('canvas');
-const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
-c.width=W*D;c.height=H*D;
-const g=c.getContext('2d');
-g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
-f({g,R:(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));},
-T:(pts,col)=>{g.fillStyle=col;g.beginPath();g.moveTo(pts[0][0],pts[0][1]);
-for(let i=1;i<pts.length;i++)g.lineTo(pts[i][0],pts[i][1]);g.closePath();g.fill();}});
-return c;
-};
-const corps=toile(({R,T,g})=>{
-g.fillStyle=VERTS.ombre;
-g.beginPath();g.ellipse(cx+2,sol+2,FETE_L*0.48,11,0,0,7);g.fill();
-for(let i=0;i<8;i++){
-const x=cx-52+i*13, col=C[i%C.length];
-R(x,HT+26,13,sol-HT-30,col);
-R(x,HT+26,13,3,'rgba(255,255,255,.35)');
-R(x+11,HT+26,2,sol-HT-30,'rgba(0,0,0,.18)');
-}
-R(cx-52,sol-6,104,6,'#2a2d31');                 /* le soubassement */
-R(cx-52,sol-6,104,2,'#4a5158');
-for(let i=0;i<9;i++){
-const x=cx-58+i*13;
-T([[x,HT+26],[x+13,HT+26],[x+6,HT+10]],i%2?'#fdfbf4':'#b93327');
-}
-R(cx-58,HT+24,116,5,'#2a2d31');
-R(cx-50,HT-10,100,26,'#2a2d31');
-R(cx-50,HT-10,100,3,'#4a5158');
-R(cx-47,HT-7,94,20,'#1a1c20');
-g.fillStyle='#ffd77a';g.font='700 13px Georgia,serif';g.textAlign='center';
-g.fillText('AUTOS',cx,HT+1);
-g.fillStyle='#ff9d45';g.font='700 11px Georgia,serif';
-g.fillText('TAMPONNEUSES',cx,HT+12);
-g.textAlign='left';
-R(cx-20,sol-44,40,38,'#141310');
-R(cx-22,sol-48,44,5,'#2a2d31');
-for(let i=0;i<5;i++)R(cx-20+i*8,sol-44,8,4,C[i%C.length]);
-R(cx+30,sol-16,26,12,'#b93327');
-R(cx+30,sol-16,26,3,'#e0666f');
-R(cx+28,sol-13,4,8,'#2a2d31');R(cx+54,sol-13,4,8,'#2a2d31');
-R(cx+38,sol-13,10,7,'#4a5158');
-R(cx+41,sol-19,5,4,'#e8c49a');
-R(cx+42,sol-24,2,6,'#6b737a');
-});
-const lum=(on)=>toile(({R})=>{
-for(let i=0;i<=20;i++){
-const x=cx-50+i*5;
-R(x,HT-13,3,3,on?((i%2)?'#ffd77a':'#ff9d45'):'#6b5a35');
-R(x,HT+16,3,3,on?((i%2)?'#ff9d45':'#ffd77a'):'#6b5a35');
-}
-[-53,50].forEach(a=>{for(let k=0;k<5;k++)
-R(cx+a,HT-9+k*6,3,3,on?'#ffd77a':'#6b5a35');});
-for(let i=0;i<9;i++)R(cx-56+i*13,HT+20,3,3,on?((i%2)?'#ffd77a':'#b93327'):'#5b4a2a');
-R(cx-18,sol-42,36,34,on?'#3a2418':'#1a1410');
-R(cx-14,sol-24,28,16,on?'#5b3020':'#241a12');
-R(cx-24,sol-5,48,4,on?'rgba(255,170,80,.26)':'rgba(255,170,80,.10)');
-});
-CALQUE_FETE={corps,on:lum(true),off:lum(false),W,H,sol};
-}
-function dessinerFete(g,x,y){
-if(!CALQUE_FETE)graverLaFete();
-const F=CALQUE_FETE, t=Date.now()/1000;
-const ox=Math.round(x-F.W/2), oy=Math.round(y-F.sol);
-g.drawImage(F.corps,ox,oy,F.W,F.H);
-g.drawImage((t%0.7)<0.35?F.on:F.off,ox,oy,F.W,F.H);
-}
+/* (les autos tamponneuses sont retirees du jeu : graverLaFete et dessinerFete sont parties avec fete.html) */
 const PANNEAU_FIXE=[836,300];
-const BATI=(t)=>['casino','mine','forge','coffre','pont','comptoir','camp','panneau','fete',
+const BATI=(t)=>['mine','forge','coffre','pont','comptoir','camp','panneau',
 'maison','taverne','atelier','puits','fontaine','arbrePot','bancP','panneauV','echoppe','entrepot','mine2','ecriteau','poteau','taillerie','tilleul','lanterneP','boutique','boite','metro',
 'souche','gravats'].includes(t);
 const PHOTO_PANNEAU=document.createElement('img');
@@ -10880,90 +10815,7 @@ g.drawImage(lampesAllumees()?C.on:C.off,ox,oy,C.W,C.H);
 const BOIS_C={bois:'#7d5934',boisC:'#96703f',boisH:'#a5764a',boisO:'#5b3f21',boisS:'#3d2a17',
 or:'#c9a24a',orC:'#f0cf7d',tuile:'#a83a3a',tuileC:'#c94a4a',tuileS:'#7d2828'};
 const CASINO_L=96, CASINO_H=104;
-let CALQUE_CASINO=null;
-function graverLeCasino(){
-const W=CASINO_L+40, H=CASINO_H+40, cx=W/2, sol=H-16, HT=sol-CASINO_H;
-const P=BOIS_C;
-const toile=(f)=>{
-const c=document.createElement('canvas');
-const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
-c.width=W*D;c.height=H*D;
-const g=c.getContext('2d');
-g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
-f({g,R:(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));},
-T:(pts,col)=>{g.fillStyle=col;g.beginPath();g.moveTo(pts[0][0],pts[0][1]);
-for(let i=1;i<pts.length;i++)g.lineTo(pts[i][0],pts[i][1]);g.closePath();g.fill();}});
-return c;
-};
-const FEN=[[-26,HT+40],[26,HT+40],[-26,HT+70],[26,HT+70]];
-const corps=toile(({R,T,g})=>{
-g.fillStyle=VERTS.ombre;
-g.beginPath();g.ellipse(cx+3,sol+2,CASINO_L*0.46,11,0,0,7);g.fill();
-R(cx-42,HT+26,84,sol-HT-26,P.bois);                  /* le corps, en bois */
-for(let y=HT+26;y<sol;y+=4)R(cx-42,y,84,1,P.boisO);  /* les planches */
-R(cx-42,HT+26,84,3,P.boisH);
-R(cx-42,sol-5,84,5,P.boisS);
-R(cx-42,HT+26,3,sol-HT-26,P.boisC);                  /* les montants d'angle */
-R(cx+39,HT+26,3,sol-HT-26,P.boisO);
-T([[cx-50,HT+26],[cx,HT-6],[cx+50,HT+26]],P.tuile);  /* le toit */
-T([[cx-44,HT+26],[cx,HT+2],[cx+44,HT+26]],P.tuileC);
-R(cx-50,HT+26,100,4,P.tuileS);
-R(cx-3,HT-8,6,10,P.boisS);                           /* l'épi de faîtage */
-R(cx-5,HT-12,10,5,P.or);
-FEN.forEach(([a,b])=>{
-R(cx+a-11,b,22,18,P.boisS);
-R(cx+a-9,b+2,18,14,'#5b4a2a');
-R(cx+a-13,b,3,18,P.boisC);R(cx+a+11,b,3,18,P.boisC);   /* les volets */
-});
-R(cx-12,sol-40,24,34,P.boisS);                       /* la porte à deux battants */
-R(cx-10,sol-38,10,32,P.boisC);R(cx+1,sol-38,10,32,P.boisC);
-R(cx-1,sol-38,2,32,P.boisS);
-R(cx-34,HT+6,68,28,P.boisS);                         /* l'enseigne suspendue */
-R(cx-34,HT+6,68,2,P.or);
-/* LE COMPLEXE FESTIF en lettres de pixels */
-{const A2={A:[[0,1,0],[1,0,1],[1,1,1],[1,0,1],[1,0,1]],C:[[1,1,1],[1,0,0],[1,0,0],[1,0,0],[1,1,1]],
- E:[[1,1,1],[1,0,0],[1,1,0],[1,0,0],[1,1,1]],F:[[1,1,1],[1,0,0],[1,1,0],[1,0,0],[1,0,0]],
- I:[[1,1,1],[0,1,0],[0,1,0],[0,1,0],[1,1,1]],L:[[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,1,1]],
- M:[[1,0,1],[1,1,1],[1,1,1],[1,0,1],[1,0,1]],O:[[1,1,1],[1,0,1],[1,0,1],[1,0,1],[1,1,1]],
- P:[[1,1,1],[1,0,1],[1,1,1],[1,0,0],[1,0,0]],S:[[1,1,1],[1,0,0],[1,1,1],[0,0,1],[1,1,1]],
- T:[[1,1,1],[0,1,0],[0,1,0],[0,1,0],[0,1,0]],X:[[1,0,1],[1,0,1],[0,1,0],[1,0,1],[1,0,1]],
- ' ':[[0],[0],[0],[0],[0]]};
- ['LE COMPLEXE','FESTIF'].forEach((mot,n)=>{
-   let lg=0;for(const ch of mot)lg+=((A2[ch]?A2[ch][0].length:1)+1)*2;
-   let px=cx-(lg-2)/2;
-   for(const ch of mot){const G=A2[ch]||A2[' '];
-     for(let r=0;r<5;r++)for(let c=0;c<G[0].length;c++)if(G[r][c]){
-       R(px+c*2,HT+10+n*12+r*2+1,2,2,'#4a3410');
-       R(px+c*2,HT+10+n*12+r*2,2,2,P.orC);}
-     px+=(G[0].length+1)*2;}});}
-R(cx-34,sol-8,72,3,P.boisO);                         /* le perron */
-R(cx-38,sol-5,80,4,P.boisS);
-});
-const lum=(on)=>toile(({R})=>{
-FEN.forEach(([a,b])=>{
-R(cx+a-9,b+2,18,14,on?'#e8c46a':'#5b4a2a');
-R(cx+a-9,b+2,18,3,on?'#f6dc9a':'#6b5a35');
-});
-[-34,34].forEach(a=>{                                /* les lanternes rouges */
-R(cx+a-4,HT+30,8,10,on?'#d14a3a':'#7d2b22');
-R(cx+a-4,HT+30,8,3,on?'#f07a5a':'#8a3a2a');
-R(cx+a-1,HT+26,2,4,P.boisS);
-});
-for(let i=-28;i<=28;i+=8)R(cx+i,HT+22,3,2,on?'#fff3cd':'#8a6a2a');
-});
-CALQUE_CASINO={corps,on:lum(true),off:lum(false),W,H,sol};
-}
-function dessinerCasino(g,x,y){
-if(!CALQUE_CASINO)graverLeCasino();
-const C=CALQUE_CASINO, t=Date.now()/1000;
-g.save();g.globalAlpha=.10+Math.sin(t*1.6)*0.03;
-g.fillStyle='#f0cf7d';
-g.beginPath();g.ellipse(x,y-4,CASINO_L*0.9,26,0,0,7);g.fill();
-g.restore();
-const ox=Math.round(x-C.W/2), oy=Math.round(y-C.sol);
-g.drawImage(C.corps,ox,oy,C.W,C.H);
-g.drawImage(((t+0.3)%1.1)<0.55?C.on:C.off,ox,oy,C.W,C.H);
-}
+/* (le casino est retire du jeu : graverLeCasino et dessinerCasino sont partis avec casino.html) */
 function dessinerPont(g,cx,cy){
 const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(cx+a,cy+b,w,h);};
 const H=PONT_DEMI;                           /* demi-hauteur du tablier */
@@ -16694,7 +16546,7 @@ if(o.t!=='arbre'||!casses.has('a'+o.x+','+o.y))return true;
 poserDansLeDecor({t:'souche',x:o.x,y:o.y,gr:0});return false;});
 e.casino=null;
 e.comptoir=COMPTOIR_FIXE;
-const BATIS=['casino','mine','forge','coffre','pont','comptoir','camp','panneau'];
+const BATIS=['mine','forge','coffre','pont','comptoir','camp','panneau'];
 DECOR=DECOR.filter(o=>BATI(o.t)||o.t==='fleurs'||
 !(Math.abs(o.x-e.comptoir[0])<150&&Math.abs(o.y-e.comptoir[1])<90));invaliderGrille();
 DECOR.push({t:'comptoir',x:e.comptoir[0],y:e.comptoir[1],gr:0});
@@ -17016,9 +16868,9 @@ else if(t==='metro'){if(!CALQUE_METRO)graverLeMetro();C=CALQUE_METRO;}
 else if(CALQUES_DECO[t])C=CALQUES_DECO[t];
 }catch(x){}
 const m=C?{demi:C.W/2+20,haut:C.sol+20,bas:C.H-C.sol+20}
-:{demi:60,haut:(t==='casino'?230:(t==='fete'?200:(t==='fontaine'?104:
+:{demi:60,haut:(t==='fontaine'?104:
 (t==='arbrePot'?64:(t==='panneauV'?88:(t==='ecriteau'?44:
-(t==='poteau'?70:80)))))))};
+(t==='poteau'?70:80)))))};
 MARGES_VUES[t]=m;return m;
 }
 function premierVisible(yMin){
@@ -17203,7 +17055,6 @@ g.restore();
 else if(o.t==='forge'){dessinerForge(g,x,y,true);lueurNuit(g,x,y-18,42,'rgba(255,140,50,§)');}
 else if(o.t==='four')dessinerFour(g,x,y,0,!!(e.four&&Date.now()<e.four.fin));
 else if(o.t==='etabli')dessinerEtabli(g,x,y);
-else if(o.t==='casino'){dessinerCasino(g,x,y);lueurNuit(g,x,y-24,46,'rgba(255,200,110,§)');}
 else if(o.t==='poteau')dessinerLePoteau(g,x,y);
 else if(o.t==='ecriteau')dessinerLEcriteau(g,x,y);
 else if(o.t==='taillerie')dessinerLeForgeron(g,x,y);
@@ -17229,7 +17080,6 @@ lueurNuit(g,x,y-26,38,'rgba(255,200,110,§)');          /* la porte */
 [-78,78].forEach(dx=>lueurNuit(g,x+dx,y-30,24,'rgba(255,190,90,§)'));  /* les fenêtres */
 }}
 else if(o.t==='panneau'){dessinerPanneau(g,x,y);lueurNuit(g,x,y-14,18,'rgba(255,200,120,§)');}
-else if(o.t==='fete'){dessinerFete(g,x,y);lueurNuit(g,x,y-30,58,'rgba(255,170,70,§)');}
 else if(o.t==='mine'){dessinerMine(g,x,y);lueurNuit(g,x,y-16,30,'rgba(255,180,90,§)');}
 else if(o.t==='coffre'){
 let k=e.coffreOuvert?1:0;
@@ -21319,10 +21169,10 @@ const debuter=
 '<h4 class="sep">PAR QUOI COMMENCER ?</h4>'+
 '<div class="gc"><canvas data-ai="peche"></canvas><span class="n"><b>Pêcher</b><em>Au bord du quai, tout de suite, sans rien acheter.</em></span></div>'+
 '<div class="gc"><canvas data-ai="ferme"></canvas><span class="n"><b>Semer un carré</b><em>Bêche, sème, arrose. Reviens quand c’est mûr.</em></span></div>'+
-'<div class="gc"><canvas data-ai="sous"></canvas><span class="n"><b>Dépenser</b><em>Une meilleure canne, une tenue, ou le casino.</em></span></div>';
+'<div class="gc"><canvas data-ai="sous"></canvas><span class="n"><b>Dépenser</b><em>Une meilleure canne, une tenue, un cosmétique.</em></span></div>';
 const lieux=
 '<div class="lieu"><canvas data-sc="port"></canvas><div class="t"><b>Le port</b>'+
-'<em>La criée, le Bar des Docks, le casino, Chez Fonfon.</em>'+
+'<em>La criée, le Bar des Docks, le Complexe Festif, Chez Fonfon.</em>'+
 '<div class="tags"><span>PÊCHER</span><span>VENDRE</span><span>CUISINER</span><span>JOUER</span></div></div></div>'+
 '<div class="lieu"><canvas data-sc="ferme"></canvas><div class="t"><b>La ferme</b>'+
 '<em>Le champ, l’étable, la boutique et ses commandes.</em>'+
@@ -21588,10 +21438,6 @@ g.beginPath();g.arc(x,y-2,4,0,7);g.fill();}
 else if(o.t==='roseaux'){g.fillStyle='#5e8a47';g.fillRect(x-3,y-3,6,6);}
 else if(o.t==='argile'){g.fillStyle='#a85039';g.fillRect(x-3,y-2,6,5);}
 else if(o.t==='souche'||o.t==='gravats'){g.fillStyle='#8a7a62';g.fillRect(x-3,y-2,6,4);}
-else if(o.t==='casino'){
-g.fillStyle='#c9a24a';g.fillRect(x-11,y-9,22,11);
-g.fillStyle='#f0cf7d';g.fillRect(x-11,y-9,22,3);
-g.fillStyle='#3d2a17';g.fillRect(x-2,y-4,4,6);}
 else if(o.t==='forge'){
 g.fillStyle='#8a6238';g.fillRect(x-10,y-8,20,10);
 g.fillStyle='#c17a3c';g.fillRect(x-10,y-8,20,3);}
@@ -22295,12 +22141,12 @@ const r=await fetch(URL_SB+'/rest/v1/carte?select=cle,genre,x,y,gr&limit=500',
 {headers:sbEntetes});
 const d=await r.json();
 if(!Array.isArray(d)||!d.length)return false;
-const garder=['pont','casino','mine','forge','coffre','comptoir','panneau','fete',
+const garder=['pont','mine','forge','coffre','comptoir','panneau',
 'maison','taverne','atelier','puits','fontaine','arbrePot','bancP',
 'panneauV','echoppe','entrepot','mine2','ecriteau','poteau','taillerie','souche','gravats','tilleul','lanterneP','boutique','boite','metro'];
 DECOR=DECOR.filter(o=>garder.includes(o.t)||(o.t[0]==='x'&&o.t[1]==='_'));invaliderGrille();
 d.forEach(m=>{
-if(m.genre==='panneau'||m.genre==='comptoir'||m.genre==='x_chantier'||m.genre==='mine2'||m.genre==='taillerie')return;   /* retirés du jeu (le chantier, la mine, le forgeron) */
+if(['panneau','comptoir','x_chantier','mine2','taillerie','casino','fete'].includes(m.genre))return;   /* retirés du jeu : le chantier, la mine, le forgeron, et le casino avec ses autos tamponneuses — la table carte les renvoie encore, on les ignore ici */
 if(m.genre[0]==='x'&&m.genre[1]==='_')DECOR=DECOR.filter(o=>!(o.t===m.genre&&Math.abs(o.x-m.x)<6&&Math.abs(o.y-m.y)<6));
 if(surLesAbordsForet({t:m.genre,x:m.x,y:m.y}))return;   /* rien devant la gare ni la cabane */
 DECOR.push({t:m.genre,x:m.x,y:m.y,gr:m.gr||0,cle:m.cle});
@@ -23050,14 +22896,14 @@ function cible(){
   {const p=surLePonton();if(p)return p;}
 let d0=48,res=null;
 const autour=autourDe(joueur.x,joueur.y);
-const LARGES=['casino','forge','comptoir','fete','echoppe','mine2','taillerie'];
+const LARGES=['forge','comptoir','echoppe','mine2','taillerie'];
 const AVEC_PORTE=(o)=>!!o.ouvre||LARGES.includes(o.t)||o.t==='mine';   /* les lieux où l'on entre : plus faciles à viser */
 for(const o of DECOR)if(LARGES.includes(o.t)&&autour.indexOf(o)<0)autour.push(o);
 for(const o of autour){
 const cueillable=['argile','roseaux','champignons','herbes','plumes',
   'x_fo_amanite','x_fo_cepe','x_fo_girolle','x_fo_plume','x_fo_argile'].includes(o.t);   /* les récoltes de la forêt aussi */
 const minerai=['fer','cuivre','charbon'].includes(o.t);
-const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro','x_etal','x_pavPoisson','x_pavPeche','x_cabanon','x_cabanonMoi','x_stationVelo','x_paillasson','x_chantier'].includes(o.t);
+const batiment=['mine','forge','comptoir','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro','x_etal','x_pavPoisson','x_pavPeche','x_cabanon','x_cabanonMoi','x_stationVelo','x_paillasson','x_chantier'].includes(o.t);
 const buisFo=['x_fo_mure','x_fo_framboise','x_fo_myrtille'].includes(o.t);
 /* LE PONTON NE PASSE PLUS PAR ICI. Il a son propre test, surLePonton(),
    tout en haut de cette fonction : il exige d'avoir les pieds sur le
@@ -25001,12 +24847,8 @@ b.innerHTML='Forger<small>L’ÉTABLI</small>';
 b.innerHTML='';b.classList.remove('on');return;
 }else if(o.t==='mine'){
 b.innerHTML='Descendre<small>LA MINE</small>';
-}else if(o.t==='fete'){
-b.innerHTML='Entrer<small>AUTOS TAMPONNEUSES · GRATUIT</small>';
 }else if(o.t==='comptoir'){
 b.innerHTML=(CHAMPS_SEULS&&CARTE==='village')?'La boutique<small>FRUITS & LÉGUMES · VENDRE TA RÉCOLTE</small>':'Entrer<small>COMPTOIR · VENDRE</small>';
-}else if(o.t==='casino'){
-b.innerHTML='Entrer<small>LE COMPLEXE FESTIF</small>';
 }else if(o.t==='buisson'||['x_fo_mure','x_fo_framboise','x_fo_myrtille'].includes(o.t)){
 b.innerHTML='Cueillir<small>'+({x_fo_mure:'MÛRES',x_fo_framboise:'FRAMBOISES',
   x_fo_myrtille:'MYRTILLES'}[o.t]||'BUISSON')+'</small>';
@@ -25046,7 +24888,6 @@ ouvrirPage('Le coffre','TU L’AS OUVERT',
 '<div class="vide2">Les buissons se cueillent à la main.</div>',false);
 return;
 }
-if(o.t==='fete'){location.href='fete.html';return;}
 if(o.t==='panneauV'){ouvrirLeTuto();return;}
 if(o.t==='metro'){choisirLaDestination();return;}
 if(o.t==='x_etal'||o.t==='x_pavPoisson'){ouvrirLeComptoir(MODE_POISSON);return;}
@@ -25123,16 +24964,11 @@ sauver();envoyerSauvegarde(true);
 try{direOuJeSuis&&direOuJeSuis('mine');}catch(x){}
 location.href='mine.html?v='+Date.now();   /* sans cela, le navigateur ressert l'ancienne mine */return;
 }
-if(o.t==='casino'){
-sauver();monterEnLigne(true);
-location.href='casino.html?v='+Date.now();
-return;
-}
 if(o.t==='metro')return;                       /* jamais de geste dessus */
 if((o.t==='rocher'||['fer','cuivre','charbon'].includes(o.t))&&!e.outils.pioche)return;
 if(o.t==='arbre'&&!e.outils.hache&&!ambrePret(o))return;   /* sans hache, on peut quand même saigner un pin à la gouge */
 if(['arbre','x_fo_erable','x_fo_chene','x_fo_charme','x_fo_olive'].includes(o.t)&&resinePrete(o))return recolterResine(o);
-if(sacPlein()&&o.t!=='coffre'&&o.t!=='casino'&&o.t!=='forge'){
+if(sacPlein()&&o.t!=='coffre'&&o.t!=='forge'){
 prevenirSacPlein(o);return;                  /* inutile de taper : rien ne rentrerait */
 }
 if((o.t==='souche'||['arbre','x_fo_erable','x_fo_chene','x_fo_charme','x_fo_olive'].includes(o.t))&&ambrePret(o)){
@@ -27640,7 +27476,7 @@ ouvrirEtabli();
 }
 const BULLES=new Map();                         /* id → {txt, jusqu'a} */
 const PHRASES=['Salut !','Ça va ?','Viens par ici','Attention !','Bien joué',
-'Tu mines quoi ?','On va au casino ?','À plus','Merci !','Aide-moi'];
+'Tu mines quoi ?','On se voit au complexe ?','À plus','Merci !','Aide-moi'];
 let clavierOuvert=false;
 function direQuelqueChose(txt){
 txt=String(txt||'').slice(0,48).trim();
@@ -27700,7 +27536,7 @@ const t=Date.now();
 for(const [k,b] of BULLES)if(t>b.jusqua)BULLES.delete(k);
 }
 const SUGGEST=['Salut !','J’arrive','Attends-moi','Oui','Non','Merci !','Où es-tu ?',
-'On va au casino ?','À la rivière','Tu mines quoi ?','Bien joué','À plus'];
+'On se voit au complexe ?','À la rivière','Tu mines quoi ?','Bien joué','À plus'];
 const REPONSES=[
 {si:/\?$|où|quand|tu viens|veux|va au/i, quoi:['Oui','Non','J’arrive']},
 {si:/salut|bonjour|coucou/i,             quoi:['Salut !','Ça va ?']},
@@ -27913,7 +27749,6 @@ entrer();
 }
 const ANN_PAGES=[
 {sur:'NOUVELLE VERSION DU JEU',titre:'Le village s’est refait une beauté',txt:'En une journée, tout a été redessiné : les habitants, les bâtiments, la place, le sol, jusqu’aux gestes. Promène-toi : chaque recoin a changé.',dessin:'village'},
-{sur:'BIENTÔT SUR LE PORT',titre:'Marseille aura son casino',txt:'Sur le port, derrière les échafaudages, quelque chose se prépare. Les lumières s’allumeront prochainement.',dessin:'casino'},
 {sur:'LE MINAGE VA ÉVOLUER',titre:'Un lieu rien que pour lui',txt:'Le minage aura bientôt son propre endroit… et plusieurs surprises. On n’en dit pas plus.',dessin:'mine'},
 {sur:'À L’EST DU VILLAGE',titre:'La campagne arrive',txt:'Tu pourras planter et récolter fruits et légumes, faire pousser du blé et le moudre au moulin. Et une boulangerie ouvrira ses portes.',dessin:'campagne'},
 {sur:'MERCI',titre:'Un cadeau pour toi',txt:'',dessin:'cadeau'}];
@@ -28139,7 +27974,7 @@ addEventListener(ev,()=>{DERNIER_GESTE=Date.now();VEILLE=0;},{passive:true}));
 const ecranPlein=()=>{try{
 return (($('page2')&&$('page2').classList.contains('on'))
 || ($('bar')&&$('bar').classList.contains('on'))
-|| ($('casino')&&$('casino').classList.contains('on')));}catch(x){return false;}};
+);}catch(x){return false;}};
 /* ================= L'ULTRA ÉCONOMIE D'ÉNERGIE =================
    Pensée pour Safari et les vieux iPhone : on dessine cinq fois moins
    souvent, sur une toile deux fois plus petite, sans animations ni halos,
@@ -30479,7 +30314,7 @@ try{sauver();envoyerSauvegarde(true);monterEnLigne(true);}catch(x){}d.remove();}
 }
 /* (LIGNE2_OUVERTE_A retiré : jamais lu, et il publiait un identifiant de compte) */
 const STATIONS_L2=[];   /* la ligne 2 est déposée : le terrain part en forêt */
-const STATIONS_L1=[['extramar','Le port','Les docks, la criée, le casino','port'],
+const STATIONS_L1=[['extramar','Le port','Les docks, la criée, le Complexe Festif','port'],
 ['ferme','La ferme','Le champ, l’étal, l’étable','ferme'],
 ['foret','La forêt','Le bois, le lac, les roseaux','foret']];
 const stationIci=()=>CARTE==='extramar'?'port':(CARTE==='foret'?'foret':'ferme');
