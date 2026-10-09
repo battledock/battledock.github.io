@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-09-1330"></script>
+<script src="maintenance.js?v=2026-10-09-1430"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-09-1330';
+var MA_VERSION='2026-10-09-1430';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -13926,6 +13926,14 @@ R(-L-2,H-4,3,1,BOIS_PONT.moyen);R(L-1,H-4,3,1,BOIS_PONT.moyen);
 });
 }
 let VELO=false;
+/* ================= LEVER LA ROUE AVANT =================
+   CABRE compte le temps qui reste au cabrage, en secondes. Zero : les
+   deux roues au sol. Le geste dure une demi-seconde de montee puis
+   retombe — on ne tient pas un wheelie indefiniment, et surtout on ne
+   veut pas que le conducteur reste plante en l'air si le joueur lache
+   son telephone. */
+let CABRE=0;
+const CABRE_DUREE=0.85;
 /* 'couche' partage le vélo en deux plans : 0 derrière le cycliste, 1
    devant lui. De profil et de dos tout passe derrière ; de face, le
    guidon, le panier et le phare sont entre nous et lui — ils doivent donc
@@ -18272,6 +18280,22 @@ const aVelo=enTrot;                 /* l'ancien nom, pour les lignes qui le lise
    qu'un joueur montait sur une trottinette. Le decor s'affichait quand
    meme : l'erreur ne tombe qu'a la premiere image ou l'on est dessus. */
 const vTrot=enTrot?Math.min(1,Math.hypot(vx||0,vy||0)/170):0;
+/* ================= L'ANGLE DU CABRAGE =================
+   Il monte vite et retombe doucement — c'est l'inverse d'une cloche
+   symetrique, et c'est ce qui donne le coup de reins puis la chute du
+   nez. Au sommet, vingt-huit degres : au-dela le conducteur part en
+   arriere, en deca on ne voit rien.
+   IL NE SE PRODUIT QU'EN PROFIL. De face ou de dos, lever la roue ne se
+   verrait pas — la machine est dans l'axe du regard — et faire pivoter
+   le sprite donnerait un personnage couche sur le cote. */
+const profil=(dir==='gauche'||dir==='droite');
+const kCab=(enTrot&&CABRE>0&&profil)?(CABRE/CABRE_DUREE):0;
+/* 0 au sol, 1 au sommet : montee en un tiers du temps, retour sur les
+   deux tiers restants. kCab part de 1 et descend, d'ou le miroir. */
+const u=1-kCab;
+const hausse=u<0.33?(u/0.33):(1-(u-0.33)/0.67);
+const angCab=(dir==='gauche'?1:-1)*0.49*Math.max(0,hausse);
+const sensCab=(dir==='gauche'?-1:1);
 /* SEPT, PAS QUATRE. Les pieds du sprite tombent deux unites SOUS son
    point d'ancrage — la vignette deborde par le bas — et le dessus du
    plateau est a cinq au-dessus du sol. Leve de quatre, le conducteur
@@ -18340,6 +18364,10 @@ else if(((Date.now()+((ap.peau|0)*431+(ap.cheveux|0)*97))%3600)<130)i+=300;
    La vitesse nourrit le phare et l'ecran de bord ; la roue tourne vite,
    un tour tous les dix-sept pixels, parce qu'elle est petite. */
 const c=poseDe(ap,dir||'bas',i);
+/* LE PIVOT EST LE CONTACT DE LA ROUE ARRIERE, pas le centre du dessin :
+   une trottinette qui se cabre tourne autour du point ou elle touche
+   encore le sol. Sept pixels en arriere de l'axe, au niveau du sol. */
+if(angCab){g.save();g.translate(x-sensCab*7,yV);g.rotate(angCab);g.translate(-(x-sensCab*7),-yV);}
 if(enTrot)dessinerUneTrottinette(g,x,yV,dir||'bas',(pas||0)*2.2,vTrot,0);
 const px0=Math.round(x-CASE_L/2), py0=Math.round(y-CASE_H+10);
 const lean=(ap===e.ap&&!aVelo)?Math.round(PENCHE.x*2)/2:0;
@@ -18355,6 +18383,22 @@ if(C&&C.id!=='cape'){try{C.dessin(g,x,y,tc,dir||'bas');}catch(err){}}
 /* DE FACE, le guidon, le panier et le phare repassent par-dessus : ils
    sont entre nous et le cycliste. */
 if(enTrot)dessinerUneTrottinette(g,x,yV,dir||'bas',(pas||0)*2.2,vTrot,1);
+/* ON REFERME LE PIVOT APRES LE SECOND APPEL, pas entre les deux : la
+   machine et le corps doivent se cabrer ENSEMBLE, sinon le guidon reste
+   droit pendant que le plateau se leve. */
+if(angCab){
+  g.restore();
+  /* LA POUSSIERE SOUS LA ROUE ARRIERE : trois points qui partent en
+     arriere. Sans eux on croit a un bug d'affichage ; avec eux, c'est un
+     appui. */
+  const al2=(n)=>{const z=Math.sin(n*127.1)*43758.5453;return z-Math.floor(z);};
+  for(let k=0;k<3;k++){
+    const q=(1-kCab)*1.4-k*0.12;
+    if(q<0||q>1)continue;
+    g.fillStyle='rgba(190,172,136,'+(0.5*(1-q)).toFixed(2)+')';
+    g.fillRect(Math.round(x-sensCab*(7+q*14+al2(k)*4)),Math.round(yV-al2(k*3)*3),1,1);
+  }
+}
 }
 function spriteFin(g,x,y,ap0,dir,pas,bouge){
 const p=Object.assign({},DEF_AP,ap0||{}), P=PALETTES;
@@ -23225,6 +23269,16 @@ return {mot:'Répondre',sous:nonLus+' message'+(nonLus>1?'s':'')+' non lu'+(nonL
 f:()=>{if(bandeauOuvert())fermerBandeau();else ouvrirBandeau();}};
 return null;
 }
+/* ON CABRE. Rien d'autre a verifier : le bouton ne s'affiche que quand
+   c'est possible, et un second appui pendant le cabrage est deja bloque
+   par la plaque mise en « inerte ». */
+function cabrer(){
+  if(CABRE>0)return;
+  CABRE=CABRE_DUREE;
+  try{jouer('cueille');}catch(x){}
+  vibrer([14,26,10]);
+  try{majAction();}catch(x){}
+}
 function marquer(type,nb){
 e.score=(e.score||0)+(nb||0);
 }
@@ -24972,6 +25026,15 @@ b.innerHTML=echapperT(pres.pseudo)+'<small>EN LIGNE · LUI PARLER</small>';
 b.classList.add('on');b.onclick=()=>ouvrirFicheJoueur(pres.id);return;
 }
 const o=cible();
+/* LE CABRAGE PREND LA PLACE DU BOUTON QUAND IL N'Y A RIEN D'AUTRE A
+   FAIRE : apres les objets du decor, donc la borne garde « Rendre la
+   trottinette » quand on est dessus, et apres la peche. Il ne s'offre
+   qu'en roulant — cabrer a l'arret n'est pas un wheelie, c'est tomber. */
+if(!o&&GESTE.t<=0&&VELO&&CARTE==='extramar'&&joueur.marche){
+b.innerHTML=(CABRE>0?'Roue levée !':'Lever la roue')+'<small>UN COUP DE GUIDON</small>';
+b.classList.add('on');b.classList.toggle('inerte',CABRE>0);
+b.onclick=CABRE>0?null:cabrer;return;
+}
 if(!o||GESTE.t>0){secours();return;}
 b.onclick=agir;                     /* une cible : c'est elle qu'on vise */
 if(o.t==='echoppe'){
@@ -25266,6 +25329,10 @@ joueur.dir=Math.abs(o.x-joueur.x)>Math.abs(o.y-joueur.y)?(o.x>joueur.x?'droite':
 vibrer(22);
 }
 function majGeste(dt){
+/* LE CABRAGE S'EPUISE ICI parce que cette fonction recoit deja le dt a
+   chaque image et qu'elle tourne meme sans geste en cours — il suffit de
+   le decompter AVANT le retour anticipe d'en dessous. */
+if(CABRE>0)CABRE=Math.max(0,CABRE-dt);
 if(GESTE.t<=0)return;
 const avant=GESTE.t;
 GESTE.t=Math.max(0,GESTE.t-dt*2.3);
