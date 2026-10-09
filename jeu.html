@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-10-0245"></script>
+<script src="maintenance.js?v=2026-10-10-0320"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-10-0245';
+var MA_VERSION='2026-10-10-0320';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -28751,8 +28751,11 @@ function potProche(){if(CARTE!=='village'||PLACE_SEULE)return null;
 if(POT_NEUF()){
 if(joueur.x<CARRE.x0-20||joueur.x>CARRE.x0+CARRE.L+20)return null;
 if(joueur.y<CARRE.y0-20||joueur.y>CARRE.y0+CARRE.H+30)return null;}
+/* LES PIEDS DANS LA PLANCHE, pas dans l'allée : la marge basse était de
+   huit pixels alors que l'allée n'en fait que quatorze, donc « Semer »
+   s'allumait en plein passage entre deux planches. */
 for(let i=0;i<24;i++){if(!potOuverte(i))continue;const {x,y,PW,PH}=POT_XY(i);
-if(joueur.x>x-2&&joueur.x<x+PW+2&&joueur.y>y+2&&joueur.y<y+PH+8)return i;}return null;}
+if(joueur.x>=x&&joueur.x<=x+PW&&joueur.y>y&&joueur.y<=y+PH+3)return i;}return null;}
 function potGraver(){const Z=POT_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0, D=2, c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');
 g.setTransform(D,0,0,D,-Z.x0*D,-Z.y0*D);g.imageSmoothingEnabled=false;
 TEX(g,Z.x0,Z.y0,Z.x1-Z.x0,Z.y1-Z.y0,(x,y)=>{const n=alea((x+Z.x0)*2.3+(y+Z.y0)*3.1);return n<0.3?'#b8a476':(n<0.7?'#c8b688':'#d4c498');});
@@ -28797,9 +28800,18 @@ try{const b2=cible();                                   /* une porte ne passe de
 if(b2&&(b2.ouvre||b2.t==='comptoir')){const demi=b2.demi||40;
 const ec=Math.max(0,Math.abs(b2.x-joueur.x)-demi), dd=Math.hypot(ec,(joueur.y-b2.y)*0.8);
 if(dd<26)return potMajVrai();}}catch(x){}
-const b=$('action'), P=POT.parc[i], s=potStade(P), J=POT.j;let t;
-if(!potOuverte(i))t=['Parcelle à louer','AGRANDIS TON CHAMP AU GRAINETIER'];
-else if(!P||P.etat!=='bechee')t=J.houe?['Bêcher','AVEC LA HOUE']:['Il te faut une houe','EN VENTE AU GRAINETIER'];
+/* ON ÉCRIT PAR plaqueFeinte, JAMAIS DANS $('action') EN DIRECT.
+   La plaque est mémoïsée : plaqueFeinte retient le dernier texte et le
+   dernier état du « on », et ne touche au DOM que s'ils changent. En
+   écrivant dans l'élément par-dessus, on laissait le cache croire que la
+   plaque était éteinte ; en sortant de la parcelle, le remove('on') de la
+   plaque normale était donc sauté et « Semer » restait collé en bas de
+   l'écran pendant qu'on marchait ailleurs dans la ferme.
+   potProche() ne rend que des parcelles ACHETÉES : la branche « Parcelle à
+   louer » ne pouvait jamais s'afficher, elle disparaît. */
+plaqueVrai=$('action');
+const b=plaqueFeinte, P=POT.parc[i], s=potStade(P), J=POT.j;let t;
+if(!P||P.etat!=='bechee')t=J.houe?['Bêcher','AVEC LA HOUE']:['Il te faut une houe','EN VENTE AU GRAINETIER'];
 else if(!P.cult)t=['Semer','CHOISIR UNE GRAINE'];
 else if(s===3){const chargeS=Object.values(e.sac||{}).reduce((t2,n)=>t2+(n||0),0);
 t=(chargeS+6>(e.sacMax||60))?['Sac plein','VA VENDRE À LA BOUTIQUE']:['Récolter','6 '+POT_CULT[P.cult][0].toUpperCase()+' DANS TON SAC'];}
