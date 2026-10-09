@@ -444,7 +444,13 @@ R(0,XP.maisonsY-2,MONDE_L,8,'rgba(60,40,20,.12)');
    faisant maintenant la meme largeur, les deux distances sont egales : 25
    px de bois nu entre le cadre et la facade, 25 entre le cadre et le bord
    du cadre du monde, des deux cotes. */
-graverLAffiche(g,Math.round((XP.finVille+MONDE_L)/2),XP.maisonsY-4,'peinte','LA FORÊT',1);
+/* LA FORÊT REPREND SA PLAQUE EMAILLEE BLEUE. Les deux bouts du quai
+   etaient passes ensemble a l'affiche peinte, et ils se ressemblaient
+   trop : meme cadre, meme bandeau, meme construction — deux planches
+   d'une meme serie, et l'on ne savait plus lequel on regardait.
+   Le bleu de l'est contre le coucher de soleil de l'ouest : on reconnait
+   son bout de quai d'un coup d'oeil. La ferme ne bouge pas. */
+graverLAffiche(g,Math.round((XP.finVille+MONDE_L)/2),XP.maisonsY-4,'email','LA FORÊT',1);
 graverLAffiche(g,Math.round(XP.debutVille/2),XP.maisonsY-4,'peinte_ferme','LA FERME',-1);
 /* ================= PLUS DE GARDE-CORPS AU BOUT =================
    Une balustrade fermait les deux esplanades. Elle expliquait pourquoi on
