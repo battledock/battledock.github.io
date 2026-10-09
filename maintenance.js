@@ -24,6 +24,15 @@
     var pse=(JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}')).pseudo||'';
     if(LAISSES.indexOf(String(pse).trim().toLowerCase())>=0)PASSE=true;
   }catch(e){}
+  /* LE JEU DOIT CONNAÎTRE LE LAISSEZ-PASSER, lui aussi : le Complexe Festif
+     s'ouvre pour qui le porte et reste en travaux pour les autres, et c'est
+     jeu.html qui décide à l'entrée de la ruelle.
+     CE N'EST PAS UNE SERRURE, et il ne faut pas s'en servir comme telle :
+     la sauvegarde est sur l'appareil, n'importe qui peut y écrire 'eliasse'
+     ou poser bd.passe à la main. C'est un rideau de chantier, pas une
+     porte fermée à clé. Le jour où il y aura de l'argent derrière, la
+     vérification devra se faire côté serveur. */
+  try{window.__PASSE=PASSE;}catch(e){}
   var NOUV=[
     [null,'La forêt, en grand','Le pont est remonté, la rive est s’ouvre de l’autre côté de la rivière, et la forêt devient sa propre carte : elle charge plus vite et ne traîne plus les champs de la ferme derrière elle.','🌲'],
     [null,'Ton terrain, ta maison','Au milieu de la rive est, un terrain piqueté qui n’attend que toi. Rassemble planches, pierres et tuiles, et bâtis ton mas — puis agrandis-le.','🏠'],
