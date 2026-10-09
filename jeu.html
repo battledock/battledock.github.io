@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-10-0115"></script>
+<script src="maintenance.js?v=2026-10-10-0200"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-10-0115';
+var MA_VERSION='2026-10-10-0200';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -17832,9 +17832,7 @@ pousses.push({y:py,f:()=>{try{
 const ex=px-camX, ey=py-camY;
 ctx.fillStyle='#9a8158';ctx.fillRect(ex-4,ey-1,9,3);            /* la motte */
 ctx.fillStyle='rgba(30,22,12,.38)';ctx.fillRect(ex-4,ey+2,9,1);
-ctx.save();ctx.translate(ex,ey);ctx.scale(2,2);
-PLANTES[P.cult](ctx,0,0,st);
-ctx.restore();
+poserPlant(ctx,P.cult,st,ex,ey,2);
 }catch(x){}}});
 }}
 const pile=acteursF.concat(pousses).concat(pousses_bete).concat(DECOR.map(o=>({y:o.y,f:()=>{
@@ -28579,6 +28577,33 @@ if(s>=2)[[-1.4,-5],[1.4,-5.4],[0,-6.2]].forEach(([dx,dy],k)=>{if(s===2&&k>0)retu
 for(let p=0;p<6;p++){const a=p/6*6.283;feuille(g,x+dx+Math.cos(a)*0.8,y+dy+Math.sin(a)*0.8,0.9,0.45,a,['#5a2a8a','#8a5ac8','#a878e0','#d0b8f8']);}
 if(s===3){PX(g,x+dx-0.3,y+dy-0.3,0.5,1.4,'#e84010');PX(g,x+dx+0.3,y+dy-0.2,0.5,1.2,'#f06020');PX(g,x+dx,y+dy-0.6,0.5,1.2,'#d83010');}});}
 };
+/* ================= LES PLANTS, GRAVÉS UNE FOIS =================
+   MESURÉ : au stade mûr une plante coûte 197 fillRect en moyenne, 622 pour
+   une citrouille. Vingt-quatre planches de six plants font 28 000 fillRect
+   PAR IMAGE, 1,7 million par seconde à soixante images — c'est ça qui fait
+   ramer le champ quand on le traverse.
+   Chaque couple (culture, stade, échelle) est donc gravé une seule fois sur
+   une petite toile, et l'image est reposée telle quelle. Les plantes sont
+   déterministes — aucune n'appelle Date.now, Math.random, ni alea avec sa
+   position (vérifié) — donc une gravure vaut pour tous les plants.
+   BOÎTE MESURÉE sur les dix-huit plantes et les quatre stades :
+   x de -7 à 7.5, y de -15 à 4. On prend de la marge. */
+const PLANT_BX=10, PLANT_BY=18, PLANT_BB=7;   /* gauche, haut, bas */
+const PLANT_IMG={};
+function plantGrave(cult,st,Z){
+const cle=cult+'|'+st+'|'+Z;
+let c=PLANT_IMG[cle];if(c)return c;
+const W=Math.ceil(PLANT_BX*2*Z), H=Math.ceil((PLANT_BY+PLANT_BB)*Z);
+c=document.createElement('canvas');c.width=W;c.height=H;
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+g.setTransform(Z,0,0,Z,PLANT_BX*Z,PLANT_BY*Z);
+try{PLANTES[cult](g,0,0,st);}catch(x){}
+c.ox=PLANT_BX*Z;c.oy=PLANT_BY*Z;
+PLANT_IMG[cle]=c;return c;}
+function poserPlant(g,cult,st,x,y,Z){
+const c=plantGrave(cult,st,Z);
+g.drawImage(c,Math.round(x)-c.ox,Math.round(y)-c.oy);}
+
 const GRAINES=[['radis','Radis',1.2,5,8],['salade','Salade',2.5,15,18],['carottes','Carottes',3.5,30,32],['ble','Blé',3,45,27],
 ['tomates','Tomates',6,60,56],['courgettes','Courgettes',9,120,88],['fraises','Fraises',15,180,136],['melon','Melon de Cavaillon',24,360,224],
 ['citrouille','Citrouille géante',36,720,352],['lavande','Lavande (vivace)',60,480,128]];
@@ -28746,7 +28771,7 @@ if(POT_SALE||!POT_CHAMP){POT_CHAMP=potGraver();POT_SALE=false;}
 g.drawImage(POT_CHAMP,Math.round(Z.x0-camX),Math.round(Z.y0-camY),Z.x1-Z.x0,Z.y1-Z.y0);
 for(let i=0;i<24;i++){const P=POT.parc[i];if(!P||!P.cult||!PLANTES[P.cult])continue;const {x,y,PW,PH}=POT_XY(i), s=potStade(P);
 if(x-camX>VW2+20||x+PW-camX<-20||y-camY>VH2+30||y+PH-camY<-30)continue;
-for(let r=0;r<2;r++)for(let q=0;q<3;q++){const px=x+9+q*((PW-18)/2), py=y+PH*(0.45+r*0.45);acteurs.push({y:py,f:()=>PLANTES[P.cult](g,px-camX,py-camY,s)});}
+for(let r=0;r<2;r++)for(let q=0;q<3;q++){const px=x+9+q*((PW-18)/2), py=y+PH*(0.45+r*0.45);acteurs.push({y:py,f:()=>poserPlant(g,P.cult,s,px-camX,py-camY,1)});}
 if(s===3)acteurs.push({y:y+PH,f:()=>{const t=Date.now()/300;PX(g,x+PW-4-camX,y+3-camY+Math.sin(t)*0.5,1,1,'#fff6c0');PX(g,x+PW-4.5-camX,y+3.25-camY,2,0.5,'#fff6c0');}});}}}
 if(CARTE==='village'&&POT.charge){const nEp=Math.min(3,(POT.j&&POT.j.epouvantails)||0);   /* les épouvantails, au milieu de chaque rang gardé */
 for(let r=0;r<nEp;r++){const A=POT_XY(r*8+4), ex=A.x-POT_ALLEE/2, ey=A.y+A.PH-1;acteurs.push({y:ey,f:()=>dessinerEpouvantail(g,ex-camX,ey-camY)});}}
