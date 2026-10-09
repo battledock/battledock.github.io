@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-10-0320"></script>
+<script src="maintenance.js?v=2026-10-10-0420"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-10-0320';
+var MA_VERSION='2026-10-10-0420';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16388,6 +16388,68 @@ DECOR=[];
    tuiles en rangs, trappe, échelle, nichoirs, lucarne, girouette — mais
    en double corps : deux cabanes de hauteurs différentes, pour que le
    bâtiment ait un profil au lieu d'un rectangle. */
+/* ================= LA FROMAGERIE =================
+   Le premier atelier de la ferme : le lait y entre, le fromage en sort deux
+   heures plus tard. Murs de pierre, toit de tuiles, une porte large pour
+   faire passer les bidons, et l'enseigne avec sa meule. */
+function graverFromagerie(){
+const L=120, H=116;
+const c=document.createElement('canvas');c.width=L*2;c.height=H*2;
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(2,0,0,2,0,0);
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
+Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+const T2=(h,d)=>teint(h,d);
+const PI='#c2b495', BOIS='#7d5934', TUILE='#a8502e';
+const cx=L/2, sol=H-2, DEMI=46, MUR=46;
+g.fillStyle='rgba(18,14,8,.32)';
+g.beginPath();g.ellipse(cx+5,sol+1,DEMI+7,7,0,0,7);g.fill();
+/* LES MURS DE PIERRE, appareillés en assises décalées */
+{let y2=sol-MUR, r=0;
+while(y2<sol){const h2=Math.min(6,sol-y2);
+let x=cx-DEMI-((r%2)?4:0), i=0;
+while(x<cx+DEMI){const w=Math.min(11+Math.round(PR_h(i,r,311)*5),cx+DEMI-x);
+if(x+w>cx-DEMI)R(Math.max(x,cx-DEMI),y2,Math.min(w,cx+DEMI-Math.max(x,cx-DEMI)),h2,
+T2(PI,Math.round((PR_h(i*3,r*5,312)-0.5)*26)));
+x+=w;i++;}
+R(cx-DEMI,y2,DEMI*2,1,T2(PI,16));r++;y2+=6;}}
+R(cx-DEMI,sol-MUR,DEMI*2,1,T2(PI,26));
+R(cx-DEMI,sol-2,DEMI*2,2,T2(PI,-30));
+/* LE TOIT DE TUILES, en deux pans */
+for(let k=0;k<11;k++){const w=DEMI*2+10-k*3.6, y2=sol-MUR-2-k*2.2;
+R(cx-w/2,y2,w,3,k%2?T2(TUILE,10):TUILE);
+R(cx-w/2,y2,w,1,T2(TUILE,22));}
+R(cx-7,sol-MUR-28,14,4,T2(TUILE,-18));
+/* LA CHEMINÉE, la fromagerie chauffe le lait */
+R(cx+22,sol-MUR-34,9,14,PI);R(cx+22,sol-MUR-34,9,2,T2(PI,20));
+R(cx+21,sol-MUR-36,11,3,T2(PI,-16));
+/* LA PORTE LARGE, pour les bidons */
+R(cx-13,sol-30,26,28,T2(BOIS,-28));
+R(cx-11,sol-28,22,26,BOIS);
+for(let k=0;k<5;k++)R(cx-11+k*4.6,sol-28,1,26,T2(BOIS,-20));
+R(cx-11,sol-20,22,2,T2(BOIS,16));
+R(cx+6,sol-16,2,2,'#e0c060');
+/* LES DEUX FENÊTRES GRILLAGÉES : une cave doit respirer */
+[[-32],[26]].forEach(([dx])=>{
+R(cx+dx,sol-38,12,11,'#2e3a2a');R(cx+dx,sol-38,12,1,T2(PI,-22));
+for(let k=0;k<3;k++)R(cx+dx+1+k*4,sol-37,1,9,T2(PI,8));
+R(cx+dx,sol-28,12,2,T2(PI,12));});
+/* L'ENSEIGNE : une meule de fromage sur sa planche */
+/* L'ENSEIGNE DOIT TENIR SON TEXTE : à quarante pixels de large, le mot
+   « FROMAGERIE » débordait de la planche et mordait sur le toit. */
+R(cx-35,sol-MUR-19,70,14,'#6b4a28');
+R(cx-34,sol-MUR-18,68,12,'#efe4c8');
+R(cx-31,sol-MUR-15,9,6,'#e0b64a');R(cx-31,sol-MUR-15,9,2,'#f2d282');
+R(cx-29,sol-MUR-13,1.5,1.5,'#c89a2e');R(cx-26,sol-MUR-12,1.5,1.5,'#c89a2e');
+g.fillStyle='#6b4a28';g.font='700 7px Georgia';g.textAlign='center';
+g.fillText('FROMAGERIE',cx+3,sol-MUR-8.5);g.textAlign='left';
+/* LES BIDONS DE LAIT, posés contre le mur */
+[[-44,0],[-38,2]].forEach(([dx,dy])=>{
+R(cx+dx,sol-13+dy,8,11,'#b8bec4');R(cx+dx,sol-13+dy,8,2,'#d8dee4');
+R(cx+dx,sol-9+dy,8,1,'#8f979e');R(cx+dx+2,sol-16+dy,4,3,'#9aa2a8');});
+/* UNE CAISSE ET DEUX MEULES QUI SÈCHENT */
+R(cx+36,sol-12,14,10,'#8a6238');R(cx+36,sol-12,14,2,'#a5764a');
+R(cx+38,sol-18,10,6,'#e0b64a');R(cx+38,sol-18,10,2,'#f2d282');
+return calque(c,L,H,sol);}
 function graverAppentis(){
 const L=116, H=104;
 const c=document.createElement('canvas');c.width=L*2;c.height=H*2;
@@ -16716,6 +16778,13 @@ const AP=calque(graverAppentis(),116,104,96);
 XCAL['x_fe_appentis0']=AP;CALQUES_DECO['x_fe_appentis']=AP;
 TAILLES['x_fe_appentis']=[{w:104,h:18}];
 DECOR.push({t:'x_fe_appentis',x:244,y:930,v:0,bati:true,demi:56,ouvre:'etable'});
+/* LA FROMAGERIE, juste au-dessus de l'enclos : le lait sort de l'étable à
+   quelques pas. Elle occupe la bande vide du milieu de la carte, qui ne
+   servait à rien. L'enclos commence à y=812, elle s'arrête à 740. */
+const FRO=graverFromagerie();
+XCAL['x_fe_fromagerie0']=FRO;CALQUES_DECO['x_fe_fromagerie']=FRO;
+TAILLES['x_fe_fromagerie']=[{w:92,h:18}];
+DECOR.push({t:'x_fe_fromagerie',x:300,y:740,v:0,bati:true,demi:52,ouvre:'fromagerie'});
 /* LES QUATRE LAMPADAIRES, aux angles de la place */
 const LA=calque(graverLampadaire(),24,56,54);
 XCAL['x_fe_lampadaire0']=LA;CALQUES_DECO['x_fe_lampadaire']=LA;
@@ -25128,7 +25197,8 @@ if(o.ouvre==='chantierBlague'){b.innerHTML='Regarder le chantier<small>TRAVAUX E
   champiRare:['Champignons rares','CUEILLIR AVEC PRÉCAUTION']}[o.ouvre];
  if(FO){b.innerHTML=FO[0]+'<small>'+FO[1]+'</small>';b.classList.add('on');return;}}
 if(o.ouvre==='epicerie'){b.innerHTML='L’épicerie fine<small>ON Y ACHÈTE LE MIDI TRÈS CHER</small>';b.classList.add('on');return;}
-if(o.ouvre==='etable'){b.innerHTML='Entrer à l’étable<small>LAIT · FOIN · FROMAGE</small>';b.classList.add('on');return;}
+if(o.ouvre==='etable'){b.innerHTML='Entrer à l’étable<small>LAIT · FOIN · BÊTES</small>';b.classList.add('on');return;}
+if(o.ouvre==='fromagerie'){b.innerHTML='Entrer à la fromagerie<small>LE LAIT S’AFFINE EN FROMAGE</small>';b.classList.add('on');return;}
 if(o.ouvre==='metroFerme'){b.innerHTML='Prendre le métro<small>LIGNE 1 · '+autresStations()+'</small>';b.classList.add('on');return;}
 if(o.ouvre==='etalForet'){b.innerHTML='L’étal du bois<small>VENDRE SA RÉCOLTE</small>';b.classList.add('on');return;}
 if(o.ouvre==='atelierBois'){b.innerHTML='L’atelier du bois<small>PLANCHES · POUTRES · CHARBON</small>';b.classList.add('on');return;}
@@ -25301,6 +25371,7 @@ if(['scierie','campement','herboriste','carriere','grandArbre','champiRare'].inc
     champiRare:'Ils luisent un peu. Mieux vaut attendre d’en savoir plus.'}[o.ouvre]);}catch(x){}
   vibrer(8);return;}
 if(o.ouvre==='etable'){ETB=null;ouvrirLEtable();return;}
+if(o.ouvre==='fromagerie'){ouvrirLaFromagerie();return;}
 if(o.ouvre==='metroFerme'){choisirLaDestination();return;}
 if(o.ouvre==='etalForet'){ouvrirLEtalDuBois();return;}
 if(o.ouvre==='atelierBois'){ouvrirLAtelier();return;}   /* l'atelier du bois existe déjà */
@@ -31630,6 +31701,145 @@ finally{ETB_OCCUPE=false;const t=$('etbTiroir');if(t)t.classList.remove('on');}}
    Plus un tableau de prix : un étal. Lucien tient le comptoir, l'ardoise
    porte les cours du matin, les marchandises sont posées devant lui et les
    bêtes à vendre attendent sur des pancartes en bois. */
+/* ================= LA FROMAGERIE =================
+   Le serveur savait déjà tout faire : etable_cave prend 4 L de lait dans le
+   sac, les met en cave deux heures, et rend une meule. Elle n'était appelée
+   nulle part — il manquait seulement l'écran. */
+const CSS_FRO = `
+#page2Fond.fro{position:absolute;inset:0;background:#efe3c8;
+display:flex;flex-direction:column;overflow:hidden}
+#page2Fond.fro .cadre{position:relative;flex:none;
+margin:calc(env(safe-area-inset-top,0px) + 12px) 14px 0;
+border:5px solid #8a6238;border-radius:14px;background:#4e7a38;overflow:hidden}
+#page2Fond.fro .cadre canvas{display:block;width:100%;height:150px;image-rendering:pixelated}
+#page2Fond.fro .chap{position:absolute;left:0;right:0;top:0;display:flex;
+align-items:center;gap:9px;padding:9px 11px;
+background:linear-gradient(180deg,rgba(12,18,8,.72),rgba(12,18,8,0))}
+#page2Fond.fro .chap .ti{flex:1;min-width:0}
+#page2Fond.fro .chap small{display:block;font:700 11px 'Baloo 2',sans-serif;color:#d8e4c0}
+#page2Fond.fro .chap b{display:block;font:400 19px Georgia,serif;color:#fbf5e6}
+#page2Fond.fro .chap .eu{background:#fbf5e6;color:#3a2c1a;border-radius:12px;
+padding:4px 10px;font:700 13px 'Baloo 2',sans-serif}
+#page2Fond.fro .chap button{flex:none;width:28px;height:28px;border-radius:50%;border:0;
+background:rgba(12,18,8,.55);color:#fbf5e6;font:700 13px 'Baloo 2',sans-serif}
+#page2Fond.fro .corps{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
+padding:16px 14px calc(env(safe-area-inset-bottom,0px) + 14px)}
+#page2Fond.fro .eti{margin:0 2px 10px;font:700 11px 'Baloo 2',sans-serif;
+letter-spacing:2px;color:#8a7a5e}
+#page2Fond.fro .carte{background:#fbf5e6;border:1.5px solid #d8c6a0;border-radius:14px;
+padding:14px;margin-bottom:12px;box-shadow:0 3px 0 rgba(120,100,60,.18)}
+#page2Fond.fro .carte.pret{border-color:#c9a24a}
+#page2Fond.fro .carte .h{display:flex;align-items:center;gap:13px}
+#page2Fond.fro .carte canvas{width:56px;height:56px;flex:none;border-radius:12px;
+background:#bda987;border:1px solid #a8926e;image-rendering:pixelated}
+#page2Fond.fro .carte .nm{flex:1;min-width:0}
+#page2Fond.fro .carte b{display:block;font:400 19px Georgia,serif;color:#3a2c1a}
+#page2Fond.fro .carte i{font-style:normal;font:400 12.5px 'Baloo 2',sans-serif;color:#8a7a5e}
+#page2Fond.fro .ja{height:8px;background:#e2d5b6;border-radius:4px;margin-top:12px;overflow:hidden}
+#page2Fond.fro .ja span{display:block;height:100%;background:#c9a24a;border-radius:4px}
+#page2Fond.fro .carte button{width:100%;margin-top:12px;border:1.5px solid #c9a24a;
+border-radius:12px;padding:13px 0;background:linear-gradient(180deg,#f3d992,#e8c877);
+color:#3a2a08;font:700 15px 'Baloo 2',sans-serif}
+#page2Fond.fro .carte button:disabled{background:#e7dbc1;border-color:#d2c09a;color:#8a7a5e}
+#page2Fond.fro .note{margin:2px 2px 0;font:400 12.5px 'Baloo 2',sans-serif;
+color:#8a7a5e;text-align:center}
+#page2Fond.fro .mot{margin:12px 2px 0;font:400 13px 'Baloo 2',sans-serif;
+color:#b98520;text-align:center}
+`;
+let FRO_OCCUPE=false, FRO_BOUCLE=0;
+function froDuree(sec){const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60);
+return h>0?(h+' h '+(m<10?'0':'')+m):(Math.max(1,m)+' min');}
+function peindreLaFromagerie(E,mot){
+E=E||ETB||{};
+const lait=E.lait_sac||0, reste=E.fromage;          /* null : la cave est vide */
+const enCave=(reste!==null&&reste!==undefined);
+const pret=enCave&&reste<=0;
+const AFFINAGE=2*3600;
+let carte;
+if(pret)carte='<div class="carte pret"><div class="h"><canvas id="froIc"></canvas>'+
+'<span class="nm"><b>La meule est prête</b><i>affinée à point · elle se vend '+enEuros(650)+'</i></span></div>'+
+'<button data-f="1">Prendre le fromage</button></div>';
+else if(enCave)carte='<div class="carte"><div class="h"><canvas id="froIc"></canvas>'+
+'<span class="nm"><b>Une meule s’affine</b><i>prête dans '+froDuree(reste)+'</i></span></div>'+
+'<div class="ja"><span style="width:'+Math.max(2,Math.round((1-reste/AFFINAGE)*100))+'%"></span></div>'+
+'<button disabled>Il faut la laisser faire</button></div>';
+else carte='<div class="carte"><div class="h"><canvas id="froIc"></canvas>'+
+'<span class="nm"><b>La cave est vide</b><i>'+(lait>=4?('tu as '+lait+' L de lait dans ton sac'):
+('il te faut 4 L de lait · tu en as '+lait))+'</i></span></div>'+
+'<button data-f="1"'+(lait>=4?'':' disabled')+'>Mettre 4 L en cave</button></div>';
+$('page2Fond').innerHTML=
+'<div class="cadre"><canvas id="froVue"></canvas>'+
+'<div class="chap"><div class="ti"><small>LA FROMAGERIE</small>'+
+'<b>'+(pret?'Une meule t’attend':(enCave?'Ça travaille en cave':'Le lait devient fromage'))+'</b></div>'+
+'<span class="eu">'+enEuros(e.euros||0)+'</span>'+
+'<button id="froX">✕</button></div></div>'+
+'<div class="corps"><div class="eti">LA CAVE</div>'+carte+
+'<div class="note">4 litres de lait valent '+enEuros(480)+' au comptoir.<br>'+
+'Deux heures de cave en font une meule à '+enEuros(650)+'.</div>'+
+(mot?'<div class="mot">'+mot+'</div>':'')+'</div>';
+/* LE BÂTIMENT EN PHOTO : on repose la gravure du décor, pas un second dessin. */
+try{const v=$('froVue'), g=v.getContext('2d');g.imageSmoothingEnabled=false;
+const D=Math.min(2,window.devicePixelRatio||1);
+const LW=Math.round(v.clientWidth)||300, LH=150;
+v.width=LW*D;v.height=LH*D;g.setTransform(D,0,0,D,0,0);
+for(let y=0;y<LH;y+=2)for(let x=0;x<LW;x+=2){const n=PR_h(x,y,101);
+g.fillStyle=n<.38?'#4e7a38':(n<.72?'#58873f':'#447030');g.fillRect(x,y,2,2);}
+const C=XCAL['x_fe_fromagerie0'];
+if(C)g.drawImage(C.toile,0,0,C.W*2,C.H*2,Math.round(LW/2-C.W/2),LH-C.sol-6,C.W,C.H);
+}catch(x){}
+try{const v=$('froIc'), g=v.getContext('2d');g.imageSmoothingEnabled=false;
+const D=Math.min(2,window.devicePixelRatio||1);v.width=56*D;v.height=56*D;
+g.setTransform(D,0,0,D,0,0);
+g.fillStyle='#bda987';g.fillRect(0,0,56,56);
+const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+if(enCave&&!pret){R(10,20,36,8,'#6b4a28');R(10,20,36,2,'#8a6238');       /* la planche d'affinage */
+R(14,10,28,12,'#d8ae44');R(14,10,28,3,'#eaca78');R(20,14,3,3,'#b4881e');R(30,16,3,3,'#b4881e');
+R(10,34,36,4,'rgba(40,30,18,.22)');}
+else if(pret){R(8,18,40,16,'#e0b64a');R(8,18,40,4,'#f2d282');
+R(8,32,40,3,'#b4881e');R(16,24,4,4,'#c89a2e');R(28,26,4,4,'#c89a2e');R(36,22,3,3,'#c89a2e');
+R(8,38,40,4,'rgba(40,30,18,.22)');}
+else{R(18,14,20,30,'#f2efe4');R(18,14,20,4,'#ffffff');                    /* un bidon vide */
+R(18,38,20,6,'#d8d2c4');R(22,8,12,6,'#c8c2b4');}
+}catch(x){}
+$('froX').onclick=()=>{vibrer(8);FRO_BOUCLE++;$('page2').classList.remove('on');};
+const b=$('page2Fond').querySelector('[data-f]');
+if(b&&!b.disabled)b.onclick=()=>{vibrer(12);gesteDeLaFromagerie();};}
+function ouvrirLaFromagerie(mot){
+if(!document.getElementById('cssFro')){const st=document.createElement('style');
+st.id='cssFro';st.textContent=CSS_FRO;document.head.appendChild(st);}
+$('page2Fond').className='fro';$('page2').classList.add('on');
+peindreLaFromagerie(ETB,mot);
+const mien=++FRO_BOUCLE;
+appelRPC('etable_etat',{p_joueur:e.id}).then(d=>{
+if(mien!==FRO_BOUCLE)return;
+if(d&&!d.erreur){ETB=Object.assign({},ETB||{},d);peindreLaFromagerie(ETB,mot);}}).catch(()=>{});
+/* LE COMPTE À REBOURS vit tant que l'écran est ouvert : sans ça, « prête
+   dans 1 h 58 » reste figé et on ne voit jamais la meule arriver. */
+const tic=()=>{if(mien!==FRO_BOUCLE)return;
+if(!$('page2').classList.contains('on'))return;
+if(ETB&&typeof ETB.fromage==='number'&&ETB.fromage>0){
+ETB.fromage=Math.max(0,ETB.fromage-1);
+if(ETB.fromage===0)peindreLaFromagerie(ETB,'Elle est prête !');
+else{const el=$('page2Fond').querySelector('.carte .nm i');
+if(el)el.textContent='prête dans '+froDuree(ETB.fromage);}}
+setTimeout(tic,1000);};
+setTimeout(tic,1000);}
+async function gesteDeLaFromagerie(){
+if(FRO_OCCUPE)return;FRO_OCCUPE=true;
+try{
+const d=await appelRPC('etable_cave',{p_joueur:e.id});
+if(!d||d.erreur){
+peindreLaFromagerie(ETB,{pas_assez_lait:'Il te faut 4 litres de lait dans ton sac.',
+sac_plein:'Ton sac est plein.',pas_pret:'Elle n’est pas encore affinée.'}[d&&d.erreur]
+||'Réessaie dans un instant.');return;}
+if(d.etat)ETB=Object.assign({},ETB||{},d.etat);
+try{await recalerLeSac(true);majHaut();}catch(x){}
+try{sauver();}catch(x){}
+jouer(d.fromage?'cueille':'achat');
+peindreLaFromagerie(ETB,d.fromage?'Une meule de plus dans ton sac.':
+'En cave. Reviens dans deux heures.');
+}catch(x){peindreLaFromagerie(ETB,'Réessaie dans un instant.');}
+finally{FRO_OCCUPE=false;}}
 const CSS_MARCHE=`
 /* LE MARCHÉ SUIT LE CARNET. Il était resté en vert sombre pendant que
    l'étable passait au papier : on sortait d'un écran clair pour tomber sur
