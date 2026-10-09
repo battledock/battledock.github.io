@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-10-0420"></script>
+<script src="maintenance.js?v=2026-10-09-2151"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-10-0420';
+var MA_VERSION='2026-10-09-2151';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11458,6 +11458,22 @@ CARRE.x0=Math.round(705+((1055-705)-CARRE.L)/2);
 CARRE.y0=820;                                /* juste sous la chaussée */
 const potCase=(n)=>({x:CARRE.x0+(n%CARRE.c)*(CARRE.px+CARRE.gx),
 y:CARRE.y0+Math.floor(n/CARRE.c)*(CARRE.py+CARRE.gy),w:CARRE.px,h:CARRE.py});
+/* ================= LE VERGER : LES DOUZE FOSSES =================
+   Tout le nord de la ferme était vide : de la barrière (y=120) à la place
+   (y=470), neuf cents pixels sur trois cents sans rien dessus. Le verger
+   s'y installe, et rien d'autre ne bouge. Son axe est celui de la place,
+   donc son portillon tombe pile dans l'allée.
+   Le potager se resème à chaque récolte ; le verger, lui, se plante une
+   fois et donne ses fruits pour toujours : c'est la rente de la ferme. */
+const VER={c:6, r:2, cw:112, ch:98, al:22, mur:18, n:12};
+VER.L=VER.c*VER.cw+(VER.c-1)*VER.al;                 /* 782 */
+VER.H=VER.r*VER.ch+(VER.r-1)*VER.al;                 /* 218 */
+VER.x0=Math.round(BORD_FERME+((MONDE_L-BORD_FERME-25-BORD_FERME)-VER.L)/2);   /* 197 */
+VER.y0=180;                                          /* 180 → 398, la place commence à 470 */
+VER.porte=VER.x0+VER.L/2;                            /* 588 : l'axe de la place */
+const verCase=(n)=>({x:VER.x0+(n%VER.c)*(VER.cw+VER.al),
+y:VER.y0+Math.floor(n/VER.c)*(VER.ch+VER.al), w:VER.cw, h:VER.ch});
+const verPied=(n)=>{const C=verCase(n);return {x:C.x+C.w/2, y:C.y+C.h-10};};
 const PR_h=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;
 n=(n^(n>>>13))*1274126177;return ((n^(n>>>16))>>>0)/4294967296;};
 function construireSolPre(){
@@ -11810,6 +11826,120 @@ Rb(q[0]+1,q[1]+1,1,1,'#1f3c5e');
 /* la corde part vers le châssis */
 const dx=(i%2)?2:-2, dy=(i<2)?-2:2;
 Rb(q[0]+1+dx,q[1]+1+dy,2,2,'#c9a24a');});
+}
+/* ================= LE SOL DU VERGER =================
+   Ce qui ne bouge jamais : l'herbe fauchée, la restanque de pierre sèche,
+   le portillon, et le matériel qui traîne. Les cuvettes et les arbres
+   dépendent du joueur : ils sont peints par-dessus, à chaque état reçu. */
+{
+const Mb=VER.mur, X0=VER.x0, Y0=VER.y0, X1=VER.x0+VER.L, Y1=VER.y0+VER.H;
+const MX0=X0-Mb, MX1=X1+Mb, MY0=Y0-Mb, MY1=Y1+Mb;
+/* L'HERBE FAUCHÉE : un ton plus clair que le pré. Pas de bandes de
+   tondeuse — un pré de ferme n'est pas une pelouse de stade, et le damier
+   faisait moquette. */
+peindreVite(g,X0-30,Y0-30,VER.L+60,VER.H+60,(x,y)=>{
+const n=PR_h(x,y,121);
+return n<.34?'#7fa055':(n<.68?'#88a95d':'#769a4e');});
+for(let k=0;k<900;k++){                       /* les touffes épargnées par la faux */
+const x=Math.round(X0-26+PR_h(k,1,122)*(VER.L+52)), y=Math.round(Y0-26+PR_h(k,2,123)*(VER.H+52));
+g.fillStyle='#6f9050';g.fillRect(x,y-2,1,3);g.fillStyle='#9ac072';g.fillRect(x,y-3,1,1);}
+{const FLV=[[240,236,220],[236,214,90],[220,120,130],[216,86,70]];
+for(let k=0;k<300;k++){                       /* les fleurs des prés, au pied des murets */
+const x=Math.round(X0-24+PR_h(k,3,124)*(VER.L+48)), y=Math.round(Y0-24+PR_h(k,4,125)*(VER.H+48));
+const f=FLV[Math.floor(PR_h(k,5,126)*4)];
+g.fillStyle='rgb(60,110,50)';g.fillRect(x,y,1,2);
+g.fillStyle='rgb('+f[0]+','+f[1]+','+f[2]+')';g.fillRect(x,y-2,1,1);}}
+/* LA RESTANQUE : un muret de pierre sèche, vu de trois quarts comme tout
+   le reste du jeu. Il a donc deux faces — le dessus qu'on voit en plein, et
+   le parement qui retombe vers nous. Un seul rang de pierres faisait une
+   bordure de trottoir. Onze pixels de haut, c'est ce que la collision
+   retient (verMuret). */
+/* Deux jeux de tons : le dessus prend la lumière, le parement reste dans
+   l'ombre. Les écarts sont faibles d'une pierre à l'autre — un contraste
+   fort donnait un damier noir et blanc. */
+const PI_HAUT=['#b3a98c','#a79c80','#bdb396','#9e937a','#aaa086'];
+const PI_FACE=['#8a8069','#7b7260','#938a72','#6f6756','#857b65'];
+const pierre=(x,y,w,h,t,ecl)=>{
+g.fillStyle=(ecl?PI_HAUT:PI_FACE)[Math.floor(t*5)%5];g.fillRect(x,y,w,h);
+for(let q=0;q<w*h/6;q++){              /* le grain : des éclats clairs et des creux */
+const gx=x+Math.floor(PR_h(q,Math.round(x),131)*w), gy=y+Math.floor(PR_h(q,Math.round(y),132)*h);
+g.fillStyle=PR_h(gx,gy,133)<.5?'rgba(255,250,235,.16)':'rgba(40,34,24,.14)';
+g.fillRect(gx,gy,1,1);}
+if(ecl){g.fillStyle='rgba(255,248,230,.30)';g.fillRect(x,y,w,1);}
+g.fillStyle='rgba(55,48,35,.40)';g.fillRect(x+w-1,y,1,h);};
+/* LE MUR HORIZONTAL : quatre pixels de dessus, sept de parement */
+const murH=(ax,bx,ay)=>{
+for(let k=0;ax+k<bx;){
+const w=Math.min(8+Math.round(PR_h(k,0,127)*6),bx-ax-k);
+if(w<=0)break;const x=ax+k;
+pierre(x,ay,w,4,PR_h(x,ay,129),true);                 /* le dessus, en pleine lumière */
+pierre(x,ay+4,w,7,PR_h(x,ay+9,134)*0.8+0.1,false);    /* le parement, plus sombre */
+g.fillStyle='rgba(40,34,24,.28)';g.fillRect(x,ay+4,w,1);
+g.fillStyle='rgba(50,43,31,.45)';g.fillRect(x,ay+10,w,1);
+k+=w;}};
+/* LE MUR VERTICAL : sept pixels de large, vu par la tranche */
+const murV=(ax,ay,by)=>{
+for(let k=0;ay+k<by;){
+const h=Math.min(7+Math.round(PR_h(k,1,128)*5),by-ay-k);
+if(h<=0)break;const y=ay+k;
+pierre(ax,y,7,h,PR_h(ax,y,129),true);
+g.fillStyle='rgba(255,248,230,.26)';g.fillRect(ax,y,1,h);
+g.fillStyle='rgba(50,43,31,.42)';g.fillRect(ax,y+h-1,7,1);
+k+=h;}};
+murH(MX0,MX1+7,MY0);
+murV(MX0,MY0,MY1+11);
+murV(MX1,MY0,MY1+11);
+/* LE MUR DU BAS s'interrompt sur le portillon, face à la place */
+murH(MX0,VER.porte-30,MY1);
+murH(VER.porte+30,MX1+7,MY1);
+/* L'OMBRE PORTÉE, pour que les murets ne flottent pas sur l'herbe */
+[[MX0,MY0+11,MX1-MX0+7,3],[MX0,MY1+11,VER.porte-30-MX0,3],
+ [VER.porte+30,MY1+11,MX1-VER.porte-30+7,3]].forEach(([ax,ay,aw,ah])=>{
+for(let y=0;y<ah;y++)for(let x=0;x<aw;x++){
+if(PR_h(ax+x,ay+y,130)<0.3)continue;
+g.fillStyle='rgba(30,38,20,'+(0.22-y*0.06).toFixed(2)+')';g.fillRect(ax+x,ay+y,1,1);}});
+/* LE PORTILLON : deux montants et deux lisses, grand ouvert */
+[[VER.porte-33],[VER.porte+29]].forEach(([px])=>{
+g.fillStyle='#6b4a2c';g.fillRect(px,MY1-8,4,20);
+g.fillStyle='#8a6238';g.fillRect(px,MY1-8,2,20);
+g.fillStyle='#a5764a';g.fillRect(px,MY1-8,4,2);});
+[0,6].forEach(dy=>{g.fillStyle='#8a6238';g.fillRect(VER.porte-29,MY1-3+dy,58,3);
+g.fillStyle='#a5764a';g.fillRect(VER.porte-29,MY1-3+dy,58,1);});
+/* LE MATÉRIEL : l'échelle, les cageots, la brouette, l'abreuvoir.
+   Ils sont peints dans le sol : on marche dessus, ils ne bloquent pas. */
+const BOIV=['#6b4a2c','#8a6238','#a5764a'];
+{const P=verPied(2), bx=P.x+26, by=P.y+2;        /* l'échelle, contre le troisième arbre */
+g.fillStyle='rgba(24,20,12,.22)';g.beginPath();g.ellipse(bx+6,by,9,3,0,0,7);g.fill();
+for(let q=0;q<2;q++)for(let k=0;k<46;k++){
+g.fillStyle=k%2?BOIV[1]:BOIV[0];g.fillRect(bx+q*7-Math.round(k*0.30),by-k,2,1);}
+for(let k=4;k<44;k+=6){g.fillStyle=BOIV[2];g.fillRect(bx-Math.round(k*0.30),by-k,9,1);}}
+/* LES CAGEOTS, dans l'allée entre les deux rangs, à l'aplomb du portillon :
+   posés près du mur ils tombaient en plein sur une cuvette. */
+{const bx=VER.porte-18, by=Y0+VER.ch+16;
+const cag=(x,y,fr)=>{g.fillStyle='rgba(24,20,12,.22)';g.beginPath();g.ellipse(x+8,y+1,10,3,0,0,7);g.fill();
+g.fillStyle=BOIV[1];g.fillRect(x,y-11,17,11);
+g.fillStyle=BOIV[2];g.fillRect(x,y-11,17,2);
+g.fillStyle=BOIV[0];g.fillRect(x,y-6,17,2);g.fillRect(x+7,y-11,2,11);
+for(let q=0;q<3;q++){g.fillStyle=fr[q%fr.length];g.fillRect(x+2+q*5,y-14,4,3);
+g.fillStyle='rgba(255,255,255,.4)';g.fillRect(x+2+q*5,y-14,2,1);}};
+cag(bx,by,['#b42232','#dc3a46']);cag(bx+20,by,['#d47010','#f0901e']);cag(bx+9,by-13,['#4d5a3c','#6a7a52']);}
+{const bx=X0-6, by=Y0+VER.H/2;                    /* la brouette, au bout de l'allée */
+g.fillStyle='rgba(24,20,12,.22)';g.beginPath();g.ellipse(bx+9,by+1,13,4,0,0,7);g.fill();
+g.fillStyle='#7a7f86';g.fillRect(bx,by-14,20,10);
+g.fillStyle='#a0a6ad';g.fillRect(bx,by-14,20,2);
+g.fillStyle='#5c6168';g.fillRect(bx,by-5,20,1);
+for(let k=0;k<12;k++){g.fillStyle=BOIV[1];g.fillRect(bx+20+k,by-13+k,2,1);}
+g.fillStyle='#4a4f55';g.fillRect(bx+3,by-4,6,6);
+g.fillStyle='#2e3238';g.fillRect(bx+4,by-3,4,4);
+['#b42232','#dc3a46','#d47010','#eda02e'].forEach((c2,q)=>{g.fillStyle=c2;g.fillRect(bx+2+q*4,by-17,3,3);});}
+{const bx=X1-56, by=Y0-8;                         /* l'abreuvoir, pour l'arrosoir */
+g.fillStyle='rgba(24,20,12,.22)';g.beginPath();g.ellipse(bx+16,by+1,19,4,0,0,7);g.fill();
+g.fillStyle='#9a9382';g.fillRect(bx,by-12,32,12);
+g.fillStyle='#bab3a1';g.fillRect(bx,by-12,32,2);
+g.fillStyle='#6e6857';g.fillRect(bx,by-1,32,1);
+g.fillStyle='#3f6f8c';g.fillRect(bx+2,by-10,28,5);
+g.fillStyle='#6fa8c4';g.fillRect(bx+2,by-10,28,1);
+for(let k=0;k<6;k++){g.fillStyle='rgba(255,255,255,.45)';g.fillRect(bx+4+k*5,by-9,2,1);}}
 }
 /* ================= LE GRAND ENCLOS =================
    Tout le bas de la ferme, de la barrière de gauche jusqu'au potager.
@@ -17159,9 +17289,11 @@ if(CARTE==='foret'){
   return false;}
 if(CARTE==='extramar')return bloqueExtramar(x,y);
 if(CHAMPS_SEULS&&CARTE==='village'){
-/* LA FERME EST NUE : seuls les bords du monde retiennent. */
+/* LA FERME EST NUE : seuls les bords du monde, et la restanque du verger. */
 const nx=+x, ny=+y;
-return !(nx>BORD&&nx<MONDE_L-BORD&&ny>BORD+14&&ny<MONDE_H-BORD);
+if(!(nx>BORD&&nx<MONDE_L-BORD&&ny>BORD+14&&ny<MONDE_H-BORD))return true;
+if(verMuret(nx,ny))return true;
+return false;
 }
 if(CARTE==='garde')return bloqueGarde(x,y);
 if(dansLisiere(x,y))return true;                     /* la forêt du pourtour */
@@ -32352,6 +32484,519 @@ g.fillStyle='rgba(200,228,242,'+(0.9-u*0.7).toFixed(2)+')';
 g.fillRect(gx,gy,1,1);}
 };
 ANIM_DECOR.ruche=(g,o,x,y)=>{const C=XCAL[o.t+'0'];if(!C)return;g.drawImage(C.toile,Math.round(x)-C.W/2,Math.round(y)-C.sol,C.W,C.H);const t=performance.now()/1000;
-for(let k=0;k<6;k++){const a=t*2+k*1.7+x, rr=8+(k%3)*6;abeille(g,x+Math.cos(a)*rr,y-30+Math.sin(a*1.3)*rr*0.5,t+k);}};</script>
+for(let k=0;k<6;k++){const a=t*2+k*1.7+x, rr=8+(k%3)*6;abeille(g,x+Math.cos(a)*rr,y-30+Math.sin(a*1.3)*rr*0.5,t+k);}};
+/* ======================================================================
+   LE VERGER
+   ----------------------------------------------------------------------
+   Le potager se resème à chaque récolte : c'est du travail, et ça rapporte
+   bien. Le verger est l'inverse : on creuse, on plante une fois, l'arbre
+   pousse une fois — puis il donne ses fruits en boucle, pour toujours,
+   même quand on n'est pas là. C'est la rente qui manquait à la ferme.
+
+   Il s'installe dans le nord, qui était vide : rien n'a été déplacé.
+   Douze fosses, six par deux, closes d'une restanque de pierre sèche dont
+   le portillon tombe dans l'axe de la place.
+   ====================================================================== */
+
+/* ================= LES ESSENCES =================
+   f  : les quatre tons du feuillage, de l'ombre à la lumière
+   t  : les trois tons de l'écorce
+   fr : la palette du fruit, pour boule()
+   p  : [rayon horizontal, rayon vertical] de la couronne adulte
+   port : 'rond' | 'etale' | 'haut' | 'tordu' — la silhouette */
+const ARB={
+olivier:  {n:'Olivier',    fruit:'olives',   f:['#44563a','#5a7049','#6f895c','#8a9f74'], t:['#5a4a38','#75604a','#8d7760'], fr:['#262c1e','#3a4230','#4d5a3c','#6a7a52','#95a070'], p:[20,18], port:'tordu'},
+amandier: {n:'Amandier',   fruit:'amandes',  f:['#3a5f30','#4c7a3e','#5f9150','#7fad68'], t:['#4e3c28','#6a5238','#886c4c'], fr:['#6f8a44','#89a55c','#a3bd74','#c0d694','#e4eec4'], p:[18,19], port:'rond'},
+figuier:  {n:'Figuier',    fruit:'figues',   f:['#2d5529','#3e7436','#519048','#6fae60'], t:['#5c5048','#7d6f62','#9a8c7c'], fr:['#4a2548','#6a3660','#874a78','#a86c95','#d0a8c0'], p:[23,16], port:'etale'},
+cerisier: {n:'Cerisier',   fruit:'cerises',  f:['#355f2d','#487b3b','#5c9550','#7cb46c'], t:['#4a3524','#67472f','#8a6342'], fr:['#78101c','#ae1c2c','#d8303f','#f06878','#ffd0d6'], p:[19,20], port:'rond'},
+abricotier:{n:'Abricotier',fruit:'abricots', f:['#3c6030','#507d40','#659756','#86b672'], t:['#4e3826','#6c4e33','#8e6b48'], fr:['#a85a10','#d4801c','#eda02e','#f8c05e','#ffe6b0'], p:[18,19], port:'rond'},
+pommier:  {n:'Pommier',    fruit:'pommes',   f:['#2f5a2e','#3f7a3a','#56994a','#76b765'], t:['#4a3628','#664b36','#86664c'], fr:['#7d1420','#b42232','#dc3a46','#f0707a','#ffd4d8'], p:[19,20], port:'rond'},
+oranger:  {n:'Oranger',    fruit:'oranges',  f:['#1f4a26','#2d6633','#3d8143','#57a05c'], t:['#4a3b2c','#64523c','#806c52'], fr:['#a04c06','#d47010','#f0901e','#ffb64e','#ffe4a8'], p:[17,19], port:'haut'},
+citronnier:{n:'Citronnier',fruit:'citrons',  f:['#24502a','#346c38','#458749','#60a664'], t:['#4a3b2c','#64523c','#806c52'], fr:['#b09410','#d8ba1c','#efd836','#f8ea74','#fffbc8'], p:[17,19], port:'haut'},
+grenadier:{n:'Grenadier',  fruit:'grenades', f:['#3a5c2c','#4e783c','#63924e','#84b06c'], t:['#55412c','#70583c','#8e7352'], fr:['#8a1420','#b82a2c','#d8484a','#ef7c74','#ffcfc0'], p:[19,17], port:'tordu'},
+mimosa:   {n:'Mimosa',     fruit:'mimosa',   f:['#365a34','#487344','#5c8c55','#79a76e'], t:['#55483a','#6f6050','#8b7a68'], fr:['#b08a08','#d8ae14','#efc92c','#f8e068','#fff4b8'], p:[21,18], port:'etale'}};
+/* plant (centimes) · pousse (min) · cycle (min) · fruits · vente unité.
+   Le même barème que verger_essence() côté serveur : s'ils divergent, le
+   serveur gagne — ici on n'affiche que des prévisions. */
+const ARB_PRIX={
+cerisier:[4000,360,180,8,180], pommier:[3000,360,180,10,120], abricotier:[5000,480,240,8,220],
+figuier:[7000,600,300,6,420], amandier:[9000,720,360,6,540], grenadier:[12000,720,360,5,850],
+oranger:[16000,960,480,6,980], citronnier:[20000,960,480,6,1200], olivier:[30000,1440,720,8,1400],
+mimosa:[45000,1200,600,4,3200]};
+const ARB_ORDRE=['pommier','cerisier','abricotier','figuier','amandier','grenadier',
+'oranger','citronnier','olivier','mimosa'];
+const ARB_GRAIN={};ARB_ORDRE.forEach((k,i)=>ARB_GRAIN[k]=i*7);
+
+/* ================= L'ARBRE =================
+   Quatre stades : le plant tuteuré, le baliveau, l'arbre nu, l'arbre en
+   fruits. Même vocabulaire que les cultures du potager — PX au demi-pixel,
+   boule() pour les fruits, feuille() pour le bord dentelé de la couronne.
+   LA COURONNE EST UNE MASSE PLEINE, pas des blocs semés : des blocs isolés
+   laissent voir le fond entre eux à certains zooms. On peint plein, puis
+   on creuse quelques percées. */
+function arbreSprite(g,x,y,esp,s,gr){
+const A=ARB[esp];if(!A)return;const G=gr||0;
+const rOmb=s===0?5:(s===1?10:A.p[0]*0.9);
+g.fillStyle='rgba(24,20,12,.26)';
+g.beginPath();g.ellipse(x+2,y+1,rOmb,Math.max(2,rOmb*0.3),0,0,7);g.fill();
+
+if(s===0){                       /* LE PLANT : un brin tuteuré, trois feuilles */
+PX(g,x+3,y-13,1,13,'#9a7a4a');PX(g,x+3.5,y-13,0.5,13,'#7a5a34');
+PX(g,x,y-9,1,9,A.t[1]);PX(g,x,y-9,0.5,9,A.t[2]);
+feuille(g,x-2.6,y-9.5,2.6,1.1,-0.5,A.f);
+feuille(g,x+2.4,y-10.5,2.4,1,0.5,A.f);
+feuille(g,x-0.2,y-13,2.2,1,-1.3,A.f);
+PX(g,x+0.5,y-6,3,0.5,'#b89a6a');PX(g,x+0.5,y-6.5,0.5,0.5,'#d8c090');
+return;}
+
+if(s===1){                       /* LE BALIVEAU : un tronc fin, une couronne courte */
+const h=22;
+for(let k=0;k<=h;k+=0.5){const w=3-k/h*1.2;
+for(let q=-w/2;q<w/2;q+=0.5){const n=PR_h(Math.round(q*2)+20,Math.round(k*2),76);
+PX(g,x+q,y-k,0.5,0.5,q<-w/2+0.6?A.t[0]:(n<0.4?A.t[0]:(n<0.82?A.t[1]:A.t[2])));}}
+PX(g,x-4,y-14,3.5,0.5,A.t[0]);PX(g,x+1,y-17,3.5,0.5,A.t[1]);
+for(let v=-9;v<=9;v+=0.5)for(let u=-12;u<=12;u+=0.5){
+const nx=u/(12*(1+0.14*Math.sin(Math.atan2(v,u)*3))), ny=v/9, d=Math.hypot(nx,ny);
+if(d>1)continue;const l=-(nx*0.62+ny*0.78), t2=PR_h(Math.round(u*2)+60,Math.round(v*2)+60,90);
+PX(g,x+u,y-h-1+v,0.5,0.5,d>0.88||l<-0.25?A.f[0]:(l<0.25?(t2<0.35?A.f[0]:A.f[1]):(t2<0.4?A.f[1]:A.f[2])));}
+for(let k=0;k<10;k++){const a=PR_h(k,2,91)*6.283;
+feuille(g,x+Math.cos(a)*11.5,y-h-1+Math.sin(a)*8.6,1.9,0.8,a,A.f);}
+return;}
+
+/* ---------- L'ARBRE ADULTE ---------- */
+const TR=A.port==='haut'?34:(A.port==='etale'?26:30);
+const pen=A.port==='tordu'?1:0;
+for(let k=0;k<=TR;k+=0.5){                 /* le tronc, en colonnes : il s'épaissit au pied */
+const w=4.5-k/TR*1.6, dx=pen?Math.sin(k*0.12)*2.2:0;
+for(let q=-w/2;q<w/2;q+=0.5){
+const n=PR_h(Math.round(q*2)+20,Math.round(k*2),76);
+PX(g,x+dx+q,y-k,0.5,0.5,q<-w/2+1?A.t[0]:(n<0.35?A.t[0]:(n<0.78?A.t[1]:A.t[2])));}}
+for(let q=-1;q<=1;q++)for(let k=2;k<TR-3;k+=0.5){   /* les crevasses de l'écorce */
+const dx=pen?Math.sin(k*0.12)*2.2:0;
+if(PR_h(q+5,Math.round(k*2),94)<0.34)continue;
+PX(g,x+dx+q*1.4-0.25,y-k,0.5,0.5,q<1?A.t[0]:A.t[2]);}
+for(let k=0;k<4;k+=0.5){                   /* l'empattement : le pied s'évase */
+const w=5+(4-k)*0.9;
+for(let q=-w/2;q<w/2;q+=0.5)PX(g,x+q,y-k,0.5,0.5,Math.abs(q)>w/2-1?A.t[0]:A.t[1]);}
+[[-4,0],[-2.5,0.5],[3,0],[4.5,0.5]].forEach(([dx,dy])=>PX(g,x+dx,y+dy,1.5,1,A.t[0]));
+/* LES CHARPENTIÈRES mordent de 1,5 unité dans le tronc : posées bord à
+   bord, un arrondi ouvrirait un trou entre elles et lui. */
+const cy=y-TR, br=A.port==='etale'?[[-1,-0.9,14],[1,-1.15,13],[-1,-1.5,9],[1,-0.6,11]]
+ :A.port==='haut'?[[-1,-1.2,9],[1,-1.35,9],[-1,-1.7,7]]
+ :[[-1,-1.05,11],[1,-1.25,11],[-1,-1.6,8],[1,-1.75,7]];
+br.forEach(([sg,ang,lg],i)=>{const ca=Math.cos(ang)*sg, sa=Math.sin(ang);
+for(let u=-1.5;u<lg;u+=0.5)PX(g,x+ca*u,cy+4+sa*u,1.5,1,i%2?A.t[1]:A.t[0]);});
+/* LA COURONNE */
+const RX=A.p[0], RY=A.p[1], ccy=cy-RY*0.62;
+const lob=(a)=>1+0.075*Math.sin(a*3+G)+0.05*Math.sin(a*5-G*1.7)+0.035*Math.sin(a*7+G*0.6);
+for(let v=-RY*1.25;v<=RY*1.25;v+=0.5)for(let u=-RX*1.25;u<=RX*1.25;u+=0.5){
+const a=Math.atan2(v,u), L=lob(a);
+const nx=u/(RX*L), ny=v/(RY*L), d=Math.hypot(nx,ny);
+if(d>1)continue;
+const tr=PR_h(Math.round(u*2)+80,Math.round(v*2)+80,83);
+if(d>0.45&&tr<0.055&&v>-RY*0.2)continue;        /* quelques percées vers le ciel */
+const l=-(nx*0.60+ny*0.80);                     /* la lumière vient du haut-gauche */
+/* LE GRAIN se fait par paquets de trois unités : un bruit pixel par pixel
+   grésille et fait apparaître des bandes au moindre arrondi. */
+const am=Math.floor((u+64)/3), bm=Math.floor((v+64)/3);
+const paq=PR_h(am,bm,84)*0.62+PR_h(Math.round(u*2)+128,Math.round(v*2)+128,93)*0.38;
+const k2=l*1.05+(paq-0.5)*0.42-(d>0.78?(d-0.78)*2.4:0);
+PX(g,x+u,ccy+v,0.5,0.5,k2<-0.30?A.f[0]:(k2<0.08?A.f[1]:(k2<0.46?A.f[2]:A.f[3])));}
+for(let k=0;k<16;k++){                          /* les touffes claires, sur le dessus */
+const a=-0.4-PR_h(k,G,85)*2.2, r=0.45+PR_h(k,G+1,86)*0.42;
+const tx=x+Math.cos(a)*RX*r, ty=ccy+Math.sin(a)*RY*r;
+for(let q=0;q<7;q++){const b=PR_h(q,k+G,87)*6.283, rr=PR_h(q,k+G+1,88)*2.6;
+PX(g,tx+Math.cos(b)*rr,ty+Math.sin(b)*rr*0.8,1,1,q<4?A.f[3]:A.f[2]);}}
+for(let k=0;k<22;k++){                          /* le bord dentelé, pour casser l'ovale */
+const a=PR_h(k,G+3,89)*6.283, L=lob(a);
+feuille(g,x+Math.cos(a)*RX*L*0.97,ccy+Math.sin(a)*RY*L*0.97,2.1,0.85,a,A.f);}
+if(s===2)return;
+/* ---------- LES FRUITS ---------- */
+const nf=A.port==='etale'?9:8;
+for(let k=0;k<nf;k++){
+const a=(k/nf)*6.283+PR_h(k,G+5,81)*0.9, r=0.38+PR_h(k,G+6,82)*0.5;
+const fx=x+Math.cos(a)*RX*r, fy=ccy+Math.sin(a)*RY*r*0.9+2;
+if(esp==='olivier'||esp==='amandier')boule(g,fx,fy,1.1,1.4,A.fr,true);
+else if(esp==='cerisier'){PX(g,fx,fy-2.5,0.5,2.5,'#4e7236');boule(g,fx,fy,1.3,1.3,A.fr,true);
+ PX(g,fx+1.6,fy-2.2,0.5,2.2,'#4e7236');boule(g,fx+1.6,fy+0.4,1.2,1.2,A.fr,true);}
+else if(esp==='figuier'){boule(g,fx,fy,1.6,2,A.fr,true);PX(g,fx-0.25,fy-2.4,0.5,0.8,'#3f7a3a');}
+else if(esp==='citronnier')boule(g,fx,fy,1.5,2.1,A.fr,true);
+else if(esp==='mimosa'){for(let q=0;q<4;q++)PX(g,fx-1.5+q,fy+(q%2)*0.5,1,1,A.fr[q===1?3:2]);}
+else boule(g,fx,fy,2,1.9,A.fr,true);}
+}
+/* ================= LE CACHE DES ARBRES =================
+   Un arbre adulte coûte plus de quatre mille PX : à douze par écran et
+   soixante images par seconde, c'est trois millions d'appels. On le grave
+   une fois dans sa toile, et on ne recolle plus que l'image. */
+const ARB_BX=38, ARB_BY=80, ARB_BB=12;
+const ARB_IMG={};
+function arbGrave(esp,st,Z){
+const cle=esp+'|'+st+'|'+Z;let c=ARB_IMG[cle];if(c)return c;
+c=document.createElement('canvas');
+c.width=Math.ceil(ARB_BX*2*Z);c.height=Math.ceil((ARB_BY+ARB_BB)*Z);
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+g.setTransform(Z,0,0,Z,ARB_BX*Z,ARB_BY*Z);
+try{arbreSprite(g,0,0,esp,st,ARB_GRAIN[esp]||0);}catch(x){}
+c.ox=Math.round(ARB_BX*Z);c.oy=Math.round(ARB_BY*Z);
+ARB_IMG[cle]=c;return c;}
+function poserArbre(g,esp,st,x,y,Z){const c=arbGrave(esp,st,Z||1);
+g.drawImage(c,Math.round(x)-c.ox,Math.round(y)-c.oy);}
+
+/* ================= CE QUE LE VERGER DONNE =================
+   Les fruits entrent dans le sac comme les légumes. Le serveur les paie
+   par prix_verger() : les deux barèmes doivent rester d'accord. */
+{const COULF={cerises:['#d8303f','#4e7236'],pommes:['#dc3a46','#4e7236'],abricots:['#eda02e','#4e7236'],
+figues:['#874a78','#3f7a3a'],amandes:['#a3bd74','#4f7a30'],grenades:['#d8484a','#4e783c'],
+oranges:['#f0901e','#2d6633'],citrons:['#efd836','#346c38'],olives:['#4d5a3c','#5a7049'],
+mimosa:['#efc92c','#487344']};
+ARB_ORDRE.forEach(k=>{const A=ARB[k], f=A.fruit, [c1,c2]=COULF[f];
+if(!OBJETS[f])OBJETS[f]={nom:A.n==='Mimosa'?'Branches de mimosa':(f.charAt(0).toUpperCase()+f.slice(1)),
+ d:'Cueilli au verger de la ferme. Se vend à la boutique des fruits et légumes.',poids:1};
+if(!ICONES[f])ICONES[f]='<rect x="5" y="7" width="6" height="6" fill="'+c1+'"/>'+
+'<rect x="4" y="8" width="8" height="4" fill="'+c1+'"/>'+
+'<rect x="5" y="8" width="2" height="2" fill="rgba(255,255,255,.45)"/>'+
+'<rect x="7" y="3" width="1" height="4" fill="'+c2+'"/>'+
+'<rect x="8" y="3" width="3" height="2" fill="'+c2+'"/>';
+PRIX_COMPTOIR[f]=ARB_PRIX[k][4];});
+PRIX_COMPTOIR.fromage=1100;     /* le serveur en donne 1100 depuis la fromagerie : on s'aligne */
+}
+
+/* ================= L'ÉTAT DU VERGER ================= */
+let VERG={j:null, f:{}, decal:0, charge:false}, VER_CHAMP=null, VER_SALE=true,
+    VER_OCCUPE=false, VER_ARROSE=0, VER_LONG=0, VER_PRES=null, VER_CLE='';
+const verNow=()=>Date.now()+VERG.decal;
+const verOuverte=(i)=>!!(VERG.j&&i<VERG.j.nb);
+const verDuree=(ms)=>{const m=Math.max(0,Math.ceil(ms/60000));
+return m>=60?(Math.floor(m/60)+' H '+String(m%60).padStart(2,'0')):(m+' MIN');};
+function verStade(P){if(!P||!P.esp)return -1;
+const t0=new Date(P.t0).getTime(), ad=new Date(P.adulte_a).getTime(), n=verNow();
+if(n<ad)return ((n-t0)/Math.max(1,ad-t0))<0.45?0:1;
+return n>=new Date(P.mur_a).getTime()?3:2;}
+function verAdopter(d){if(!d||d.erreur||!d.j)return false;
+VERG.j=d.j;VERG.f={};(d.fosses||[]).forEach(p=>VERG.f[p.i]=p);
+if(d.now)VERG.decal=new Date(d.now).getTime()-Date.now();
+if(typeof d.euros==='number'){e.euros=d.euros;try{majHaut();}catch(x){}}
+VER_SALE=true;VERG.charge=true;return true;}
+async function verCharger(){if(PLACE_SEULE||CARTE!=='village'||!CHAMPS_SEULS||!e.id)return;
+try{verAdopter(await appelRPC('verger_etat',{p_joueur:e.id}));}catch(x){}}
+
+/* LA RESTANQUE ARRÊTE LE JOUEUR, le portillon non. Appelée par bloque(),
+   donc à chaque pas : on sort tout de suite si l'on est loin du verger. */
+function verMuret(x,y){
+const Mb=VER.mur, X0=VER.x0-Mb, X1=VER.x0+VER.L+Mb, Y0=VER.y0-Mb, Y1=VER.y0+VER.H+Mb;
+if(x<X0-4||x>X1+12||y<Y0-4||y>Y1+16)return false;
+const surH=(yy)=>y>=yy-2&&y<=yy+12;      /* 4 de dessus + 7 de parement */
+const surV=(xx)=>x>=xx-2&&x<=xx+8;
+const dansX=(x>=X0-2&&x<=X1+9), dansY=(y>=Y0-2&&y<=Y1+12);
+if(surH(Y0)&&dansX)return true;
+if(surV(X0)&&dansY)return true;
+if(surV(X1)&&dansY)return true;
+if(surH(Y1)&&dansX&&!(x>VER.porte-28&&x<VER.porte+28))return true;
+return false;}
+
+/* ON EST DEVANT UN ARBRE quand on touche sa cuvette, pas n'importe où dans
+   la case : une case fait 112 × 98, la cuvette 52 × 20. Sans ça, « Planter »
+   s'allumerait sur la moitié du verger à la fois. */
+function verProche(){
+if(CARTE!=='village'||PLACE_SEULE||typeof CHAMPS_SEULS==='undefined'||!CHAMPS_SEULS)return null;
+if(joueur.x<VER.x0-30||joueur.x>VER.x0+VER.L+30)return null;
+if(joueur.y<VER.y0-30||joueur.y>VER.y0+VER.H+30)return null;
+for(let i=0;i<VER.n;i++){if(!verOuverte(i))continue;const P=verPied(i);
+if(Math.abs(joueur.x-P.x)<=32&&joueur.y>P.y-24&&joueur.y<=P.y+13)return i;}
+return null;}
+
+/* ================= LA GRAVURE DES CUVETTES =================
+   Un rond de terre ratissée au pied de chaque arbre, cerné de pierres.
+   C'est la seule partie du sol qui change avec l'état du joueur : le reste
+   est peint une fois pour toutes dans construireSolPre. */
+const VER_Z=()=>({x0:VER.x0-50, y0:VER.y0-50, x1:VER.x0+VER.L+50, y1:VER.y0+VER.H+50});
+function verGraver(){
+const Z=VER_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0, D=2;
+const c=document.createElement('canvas');c.width=W*D;c.height=H*D;
+const g=c.getContext('2d');g.setTransform(D,0,0,D,-Z.x0*D,-Z.y0*D);g.imageSmoothingEnabled=false;
+for(let i=0;i<VER.n;i++){
+const P=verPied(i), F=VERG.f[i], creusee=F&&F.etat==='creusee', plante=!!(F&&F.esp);
+if(!verOuverte(i)){                      /* la fosse n'est pas encore louée : un piquet */
+PX(g,P.x+10,P.y-26,1,26,'#6b4a28');
+PX(g,P.x,P.y-32,22,12,'#e8dcc0');PX(g,P.x,P.y-32,22,0.5,'#fff4d8');PX(g,P.x,P.y-20.5,22,0.5,'#8a6a40');
+g.fillStyle='#6b4a28';g.font='700 6.5px Georgia';g.fillText('À LOUER',P.x+1.5,P.y-23);
+continue;}
+if(!creusee&&!plante){                   /* ouverte mais pas creusée : l'herbe, et un repère */
+for(let k=0;k<26;k++){const a=P.x-20+PR_h(k,i,133)*40, b=P.y-6+PR_h(k,i+1,134)*12;
+PX(g,a,b-3,0.5,3,'#6f9050');PX(g,a,b-3.5,0.5,0.5,'#9ac072');}
+PX(g,P.x+10,P.y-26,1,26,'#6b4a28');
+PX(g,P.x,P.y-32,24,12,'#e8dcc0');PX(g,P.x,P.y-32,24,0.5,'#fff4d8');PX(g,P.x,P.y-20.5,24,0.5,'#8a6a40');
+g.fillStyle='#6b4a28';g.font='700 6.5px Georgia';g.fillText('À CREUSER',P.x+1.5,P.y-23);
+continue;}
+/* LA CUVETTE : la terre ratissée en arcs, et son cordon de pierres */
+const RX=26, RY=10, mouille=!!(F&&F.eau&&!plante);
+for(let v=-RY;v<=RY;v+=0.5)for(let u=-RX;u<=RX;u+=0.5){
+const d=Math.hypot(u/RX,v/RY);if(d>1)continue;
+const n=PR_h(Math.round(P.x+u),Math.round(P.y+v),117);
+let col=d>0.86?'#6f5c3c':(n<.3?'#7b6644':(n<.62?'#8a7450':'#99835c'));
+if(!plante&&d<0.34)col=n<.5?'#6a5636':'#776043';
+if(mouille)col=n<.4?'#52412a':'#5e4b31';
+PX(g,P.x+u,P.y+v,0.5,0.5,col);}
+for(let k=0;k<7;k++){const r=0.35+k*0.09;
+for(let a=-3.14;a<3.14;a+=0.07){
+const u=Math.cos(a)*RX*r, v=Math.sin(a)*RY*r;
+if(PR_h(Math.round(P.x+u),Math.round(P.y+v),118)<0.45)continue;
+PX(g,P.x+u,P.y+v,0.5,0.5,'#6f5c3c');}}
+for(let a=0;a<6.283;a+=0.22){
+const u=Math.cos(a)*(RX+2), v=Math.sin(a)*(RY+1);
+const t=PR_h(Math.round(u),Math.round(v),119);
+PX(g,P.x+u-1,P.y+v-1,3,2,t<.4?'#9a9382':(t<.75?'#aba493':'#8c8674'));
+PX(g,P.x+u-1,P.y+v-1,3,0.5,'#c6bfab');}
+if(!plante){                             /* creusée et vide : l'écriteau */
+PX(g,P.x+12,P.y-28,1,22,'#6b4a28');
+PX(g,P.x+2,P.y-34,26,12,'#e8dcc0');PX(g,P.x+2,P.y-34,26,0.5,'#fff4d8');PX(g,P.x+2,P.y-22.5,26,0.5,'#8a6a40');
+g.fillStyle='#6b4a28';g.font='700 6.5px Georgia';g.fillText('À PLANTER',P.x+3.5,P.y-25);}
+else if(verStade(F)===3){                /* les fruits tombés, sous un arbre mûr */
+const A=ARB[F.esp];
+if(A)for(let k=0;k<5;k++){const a=PR_h(k,i,131)*6.283, r=0.55+PR_h(k,i+1,132)*0.45;
+PX(g,P.x+Math.cos(a)*24*r,P.y+Math.sin(a)*9*r,2,2,A.fr[2]);}}}
+return c;}
+
+/* ================= LE DESSIN =================
+   Les cuvettes sous les pieds, les arbres triés en profondeur avec le
+   joueur : on passe devant un tronc, on passe derrière le suivant. */
+const verDecorVrai=dessinerDecor;
+dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
+if(CARTE==='village'&&typeof CHAMPS_SEULS!=='undefined'&&CHAMPS_SEULS&&VERG.charge){
+const Z=VER_Z();
+if(Z.x1-camX>-10&&Z.x0-camX<VW2+10&&Z.y1-camY>-10&&Z.y0-camY<VH2+40){
+if(VER_SALE||!VER_CHAMP){VER_CHAMP=verGraver();VER_SALE=false;}
+g.drawImage(VER_CHAMP,Math.round(Z.x0-camX),Math.round(Z.y0-camY),Z.x1-Z.x0,Z.y1-Z.y0);
+for(let i=0;i<VER.n;i++){const F=VERG.f[i];if(!F||!F.esp||!ARB[F.esp])continue;
+const P=verPied(i), s=verStade(F);
+if(P.x-camX>VW2+60||P.x-camX<-60||P.y-camY>VH2+40||P.y-camY<-110)continue;
+acteurs.push({y:P.y,f:()=>poserArbre(g,F.esp,s,P.x-camX,P.y-camY,1)});
+if(s===3)acteurs.push({y:P.y+1,f:()=>{const t=Date.now()/300;
+PX(g,P.x+24-camX,P.y-46-camY+Math.sin(t)*0.5,1,1,'#fff6c0');
+PX(g,P.x+23.5-camX,P.y-45.75-camY,2,0.5,'#fff6c0');}});}}}
+return verDecorVrai(g,camX,camY,VW2,VH2,acteurs);};
+/* L'ARROSOIR : le même geste qu'au potager, pour qu'on le reconnaisse */
+const verBullesVrai=dessinerBulles;
+dessinerBulles=function(g,camX,camY,px,py){const d=Date.now()-VER_ARROSE;
+if(d<900){const f=d/900, R=(a,b,w,h,c)=>PX(g,a,b,w,h,c), x=joueur.x-camX, y=joueur.y-camY;
+g.save();g.translate(x+7,y-18);g.rotate(Math.min(1,f*3)*0.7);
+R(-3,-3,7,6,'#5f8f7a');R(-3,-3,7,1,'#8fc0aa');R(-4,-5,5,1,'#4f7a66');R(4,-1,6,1.2,'#5f8f7a');R(9.5,-2,1.5,2.5,'#4f7a66');g.restore();
+if(f>0.2)for(let q=0;q<10;q++){const t=((f*4+q*0.11)%1);R(x+17+t*2,y-17+t*14,0.5,1.5,'rgba(160,210,240,.9)');}}
+return verBullesVrai(g,camX,camY,px,py);};
+
+/* ================= LA PLAQUE D'ACTION =================
+   Comme au potager : on écrit par plaqueFeinte, jamais dans $('action'),
+   sinon le cache de la plaque se désynchronise et le texte reste collé en
+   bas de l'écran quand on s'éloigne. */
+const verMajVrai=majAction;
+majAction=function(){
+const i=verProche();if(i===null||!VERG.charge)return verMajVrai();
+try{const b2=cible();
+if(b2&&(b2.ouvre||b2.t==='comptoir')){const demi=b2.demi||40;
+const ec=Math.max(0,Math.abs(b2.x-joueur.x)-demi), dd=Math.hypot(ec,(joueur.y-b2.y)*0.8);
+if(dd<26)return verMajVrai();}}catch(x){}
+plaqueVrai=$('action');
+const b=plaqueFeinte, F=VERG.f[i], J=VERG.j, s=verStade(F);let t;
+if(!F||F.etat!=='creusee')t=J.beche?['Creuser la fosse','POUR Y PLANTER UN ARBRE']
+ :['Il te faut une bêche','EN VENTE CHEZ MADELEINE'];
+else if(!F.esp)t=['Planter un arbre','CHOISIR UNE ESSENCE'];
+else{const A=ARB[F.esp], E=ARB_PRIX[F.esp];
+if(s<2){const reste=new Date(F.adulte_a).getTime()-verNow();
+t=F.eau?[A.n+' · il pousse','ADULTE DANS '+verDuree(reste)]
+ :['Arroser le '+A.n.toLowerCase(),'IL POUSSERA DEUX FOIS PLUS VITE'];}
+else if(s===3){const charge=Object.values(e.sac||{}).reduce((t2,n)=>t2+(n||0),0);
+const nb=F.taille?Math.ceil(E[3]*1.5):E[3];
+t=(charge+nb>(e.sacMax||60))?['Sac plein','VA VENDRE CHEZ MADELEINE']
+ :['Cueillir',nb+' '+OBJETS[A.fruit].nom.toUpperCase()+' DANS TON SAC'];}
+else if(J.secateur&&!F.taille)t=['Tailler le '+A.n.toLowerCase(),'+50 % À LA PROCHAINE CUEILLETTE'];
+else{const reste=new Date(F.mur_a).getTime()-verNow();
+t=[A.n+(F.taille?' · taillé':''),OBJETS[A.fruit].nom.toUpperCase()+' DANS '+verDuree(reste)];}}
+b.innerHTML=t[0]+'<small>'+t[1]+'</small>';b.classList.add('on');};
+
+const verGeste=(type)=>{GESTE={t:1,pourMoi:true,cible:null,impact:false,type};};
+const verRefus=(d)=>texteVolant(joueur.x,joueur.y-56,
+d&&d.erreur==='pas_assez'?'Pas assez d’argent':(d&&d.erreur==='pas_mur'?'Pas encore mûr':
+(d&&d.erreur==='sac_plein'?'Inventaire plein : va vendre':'Réessaie dans un instant')),'#ffe8a0');
+
+async function verAgir(i){if(VER_OCCUPE)return;
+const F=VERG.f[i], J=VERG.j, s=verStade(F);
+VER_OCCUPE=true;try{
+if(!F||F.etat!=='creusee'){
+if(!J.beche){texteVolant(joueur.x,joueur.y-56,'Il te faut une bêche (chez Madeleine)','#ffe8a0');return;}
+verGeste('houe');vibrer(15);
+const d=await appelRPC('verger_creuser',{p_joueur:e.id,p_i:i});
+if(!verAdopter(d))verRefus(d);else texteVolant(joueur.x,joueur.y-56,'Fosse creusée','#dff0c8');}
+else if(!F.esp){VER_OCCUPE=false;verPlants(i);return;}
+else if(s<2){
+if(F.eau){texteVolant(joueur.x,joueur.y-56,'Il pousse… patience','#fff3d0');return;}
+VER_ARROSE=Date.now();vibrer(12);verGeste('arrose');
+const d=await appelRPC('verger_arroser',{p_joueur:e.id,p_i:i});
+if(!verAdopter(d))verRefus(d);}
+else if(s===3){verGeste('cueille');
+const d=await appelRPC('verger_cueillir',{p_joueur:e.id,p_i:i});
+if(d&&!d.erreur&&d.etat){verAdopter(d.etat);try{lireSacServeur();}catch(x){}
+jouer('vente','moment');vibrer([20,40,20]);
+texteVolant(joueur.x,joueur.y-58,'+'+d.nb+' '+(OBJETS[d.fruit]?OBJETS[d.fruit].nom.toLowerCase():d.fruit),'#ffe070');
+if(d.taille)setTimeout(()=>texteVolant(joueur.x,joueur.y-74,'La taille a payé : moitié plus','#dff0c8'),800);
+setTimeout(()=>texteVolant(joueur.x,joueur.y-90,'L’arbre reste : il redonnera','#cfe0b8'),1500);}
+else verRefus(d);}
+else if(J.secateur&&!F.taille){verGeste('houe');vibrer(12);
+const d=await appelRPC('verger_tailler',{p_joueur:e.id,p_i:i});
+if(!verAdopter(d))verRefus(d);else texteVolant(joueur.x,joueur.y-56,'Taillé · +50 % à la prochaine','#dff0c8');}
+else texteVolant(joueur.x,joueur.y-56,'Ça mûrit… repasse plus tard','#fff3d0');
+}finally{VER_OCCUPE=false;try{majAction();}catch(x){}}}
+
+$('action').addEventListener('click',(ev)=>{const i=verProche();
+if(i===null||!VERG.charge)return;
+ev.stopImmediatePropagation();ev.preventDefault();verAgir(i);},true);
+/* L'APPUI LONG ARRACHE L'ARBRE : c'est la seule façon de changer d'essence */
+const verArracher=async(i)=>{const F=VERG.f[i];if(!F||!F.esp)return;
+const A=ARB[F.esp];
+if(!confirm('Arracher le '+A.n.toLowerCase()+' ? L’arbre est perdu, la fosse repart vide.'))return;
+const d=await appelRPC('verger_arracher',{p_joueur:e.id,p_i:i});
+if(d&&!d.erreur){verAdopter(d);texteVolant(joueur.x,joueur.y-56,A.n+' arraché','#ffd0a0');vibrer([14,40,14]);}
+else verRefus(d);
+try{majAction();}catch(x){}};
+['touchstart','mousedown'].forEach(ev=>$('action').addEventListener(ev,()=>{
+const i=verProche();if(i===null||!VERG.charge)return;
+const F=VERG.f[i];if(!F||!F.esp)return;
+clearTimeout(VER_LONG);VER_LONG=setTimeout(()=>verArracher(i),650);},true));
+['touchend','touchmove','mouseup','mouseleave'].forEach(ev=>
+$('action').addEventListener(ev,()=>clearTimeout(VER_LONG),true));
+
+/* ================= LE CHOIX DE L'ESSENCE =================
+   Même peau que le choix de la graine, mais une colonne de plus : on ne
+   compare pas un prix à une marge, on compare un investissement à ce qu'il
+   rapportera chaque cycle, pour toujours. */
+function verPlants(i){const old=document.getElementById('verPl');if(old)old.remove();
+if(!document.getElementById('cssVerPl')){const st=document.createElement('style');st.id='cssVerPl';
+st.textContent=`#verPl{position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 86px);
+z-index:60;background:#2a2118;border-radius:18px;padding:0;overflow:hidden;max-height:62vh;
+display:flex;flex-direction:column;box-shadow:0 10px 30px rgba(0,0,0,.5);
+font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif}
+#verPl .hd{flex:none;display:flex;align-items:center;gap:10px;padding:13px 14px 11px}
+#verPl .hd b{flex:1;font:700 16px 'Baloo 2',sans-serif;color:#f0e4c6}
+#verPl .hd small{display:block;font:11px system-ui,sans-serif;color:#a08f72;font-weight:400}
+#verPl .hd button{border:0;background:rgba(255,255,255,.08);color:#f0e4c6;border-radius:50%;
+width:30px;height:30px;font:700 14px 'Baloo 2',sans-serif;flex:none}
+#verPl .liste{overflow-y:auto;padding-bottom:8px}
+#verPl .gn{display:flex;align-items:center;gap:11px;padding:10px 14px;width:100%;border:0;
+background:none;text-align:left;border-top:1px solid rgba(201,162,74,.18)}
+#verPl .gn:active{background:rgba(255,255,255,.05)}
+#verPl .gn canvas{width:40px;height:40px;flex:none;border-radius:9px;background:rgba(255,255,255,.06)}
+#verPl .gn .t{flex:1;min-width:0}
+#verPl .gn .t b{display:block;font:700 13.5px 'Baloo 2',sans-serif;color:#f0e4c6}
+#verPl .gn .t small{display:block;font:11px system-ui,sans-serif;color:#a08f72;margin-top:1px}
+#verPl .gn .t small em{color:#9fd47e;font-style:normal;font-weight:700}
+#verPl .gn .px{flex:none;font:700 12.5px 'Baloo 2',sans-serif;color:#c9a24a}
+#verPl .gn.cher{opacity:.45}`;
+document.head.appendChild(st);}
+const box=document.createElement('div');box.id='verPl';
+const fmt=(c)=>enEuros(c).replace(',00','');
+let h='<div class="hd"><b>Quel arbre ?<small>on le plante une fois, il donne pour toujours</small></b>'+
+'<button id="verPlX">✕</button></div><div class="liste">';
+h+=ARB_ORDRE.map(k=>{const A=ARB[k], E=ARB_PRIX[k], peu=(e.euros||0)<E[0];
+return '<button class="gn'+(peu?' cher':'')+'" data-k="'+k+'">'+
+'<canvas data-a="'+k+'"></canvas>'+
+'<span class="t"><b>'+A.n+'</b><small>adulte en '+potDuree(E[1])+
+' · puis '+E[3]+' '+A.fruit+' toutes les '+potDuree(E[2])+
+' · <em>'+fmt(E[3]*E[4])+'</em> par cueillette</small></span>'+
+'<span class="px">'+fmt(E[0])+'</span></button>';}).join('');
+box.innerHTML=h+'</div>';
+document.body.appendChild(box);
+$('verPlX').onclick=()=>box.remove();
+box.querySelectorAll('canvas[data-a]').forEach(cv=>{
+const D=2,W=40,H=40;cv.width=W*D;cv.height=H*D;
+const g2=cv.getContext('2d');g2.imageSmoothingEnabled=false;
+g2.setTransform(D*0.42,0,0,D*0.42,W*D/2,H*D*0.97);
+try{arbreSprite(g2,0,0,cv.dataset.a,3,ARB_GRAIN[cv.dataset.a]||0);}catch(x){}});
+box.querySelectorAll('.gn').forEach(b=>b.onclick=async()=>{
+const k=b.dataset.k, A=ARB[k];
+if((e.euros||0)<ARB_PRIX[k][0]){texteVolant(joueur.x,joueur.y-56,'Pas assez d’argent','#ffe8a0');return;}
+box.remove();if(VER_OCCUPE)return;VER_OCCUPE=true;verGeste('semer');vibrer(10);
+try{const d=await appelRPC('verger_planter',{p_joueur:e.id,p_i:i,p_esp:k});
+if(!verAdopter(d))verRefus(d);
+else texteVolant(joueur.x,joueur.y-56,A.n+' planté','#dff0c8');}
+finally{VER_OCCUPE=false;majAction();}});}
+
+/* ================= CHEZ MADELEINE : LE RAYON DU VERGER =================
+   La bêche, le sécateur et la location des fosses. On greffe la section
+   sur l'onglet « L'atelier » au lieu d'ouvrir un quatrième onglet : c'est
+   le même geste, et le même comptoir. */
+const verBqLignesVrai=bqLignes;
+bqLignes=function(){const L=verBqLignesVrai();
+for(const k of ARB_ORDRE){const f=ARB[k].fruit, n=(e.sac&&e.sac[f])||0;
+if(n>0)L.push([f,n,prixDuJour(f,PRIX_COMPTOIR[f]||0)]);}
+return L;};
+function verBqSection(){
+const J=(VERG&&VERG.j)||{nb:3,beche:false,secateur:false};
+const fmt=(c)=>enEuros(c).replace(',00','');
+const ligne=(k,nom,dit,prix,pris)=>'<div class="outil"><canvas data-ov="'+k+'"></canvas>'+
+'<span class="t"><b>'+nom+'</b><small>'+dit+'</small></span>'+
+'<button data-av="'+k+'" class="'+(pris?'pris':'')+'">'+(pris?'✓':fmt(prix))+'</button></div>';
+let h='<div class="rub">LE VERGER · '+J.nb+' FOSSES SUR 12</div>';
+h+=ligne('beche','La bêche','pour creuser les fosses du verger',3000,J.beche);
+h+=ligne('secateur','Le sécateur','tailler un arbre donne moitié plus à la cueillette suivante',8000,J.secateur);
+const prix={3:80000,6:300000,9:900000};
+[[3,'3 → 6 fosses'],[6,'6 → 9 fosses'],[9,'9 → 12 fosses']].forEach(([n,t])=>{
+const fait=J.nb>n, dispo=J.nb===n;
+h+='<div class="outil"><span class="t"><b>'+t+'</b><small>'+
+(fait?'déjà loué':(dispo?'trois fosses de plus, prêtes à creuser':'d’abord l’étape précédente'))+
+'</small></span><button '+(dispo?'data-av="agrandir"':'')+' class="'+(dispo?'':'pris')+'">'+
+(fait?'✓':fmt(prix[n]))+'</button></div>';});
+return h;}
+const verBqOutilsVrai=bqOutils;
+bqOutils=function(){return verBqOutilsVrai()+verBqSection();};
+/* LES BOUTONS : la boutique câble [data-a] sur pot_acheter, pas les nôtres.
+   On repasse derrière elle une fois la page écrite. */
+const verBqVrai=ouvrirLaBoutiqueFerme;
+ouvrirLaBoutiqueFerme=function(mot){const r=verBqVrai.apply(this,arguments);
+try{
+const fond=$('page2Fond');if(!fond||fond.className!=='bq')return r;
+fond.querySelectorAll('canvas[data-ov]').forEach(cv=>{try{
+const D=2;cv.width=46*D;cv.height=46*D;const g=cv.getContext('2d');
+g.setTransform(D*2.9,0,0,D*2.9,0,0);g.imageSmoothingEnabled=false;
+const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+if(cv.dataset.ov==='beche'){g.save();g.translate(8,8);g.rotate(-0.5);
+R(-0.5,-6.5,1,12,'#8a6238');R(-0.5,-6.5,0.5,12,'#a8814a');
+R(-2,5,4,4,'#8b9198');R(-2,5,4,1,'#c8ced2');R(-1.5,9,3,1.5,'#6f767c');g.restore();}
+else{R(4,9,7,1.2,'#8b9198');R(4,9,7,0.5,'#c8ced2');
+R(5,5,5.5,1.2,'#8b9198');R(5,5,5.5,0.5,'#c8ced2');
+R(9.5,5,1,5.5,'#6f767c');
+R(2,9,3,1.5,'#b93327');R(2.5,4.5,3,1.5,'#b93327');}}catch(x){}});
+fond.querySelectorAll('[data-av]').forEach(b=>b.onclick=async()=>{
+if(b.classList.contains('pris'))return;
+b.disabled=true;
+const d=await appelRPC('verger_acheter',{p_joueur:e.id,p_article:b.dataset.av});
+if(!d||d.erreur){b.disabled=false;
+motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':
+(d&&d.erreur==='deja'?'Tu l’as déjà.':'Madeleine n’a pas pu.'));return;}
+verAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);
+ouvrirLaBoutiqueFerme();
+setTimeout(()=>motOuverture(b.dataset.av==='agrandir'?'Trois fosses de plus ! Va les creuser.'
+:(b.dataset.av==='beche'?'Une bonne bêche. Le verger t’attend.':'Un sécateur bien aiguisé.')),60);});
+}catch(x){}
+return r;};
+
+/* ================= LA MISE EN ROUTE ================= */
+(function chargerLeVergerVite(n){
+if(CARTE!=='village'||PLACE_SEULE||typeof CHAMPS_SEULS==='undefined'||!CHAMPS_SEULS)return;
+if(!e.id){if(n<40)return void setTimeout(()=>chargerLeVergerVite(n+1),100);return;}
+verCharger();})(0);
+/* LA PLAQUE DOIT AUSSI S'EFFACER quand on s'éloigne d'un arbre : sans ce
+   rappel, « Cueillir » resterait affiché pendant qu'on marche ailleurs. */
+setInterval(()=>{if(document.hidden)return;
+if(CARTE!=='village'||!VERG.charge)return;
+try{const i=verProche();
+if(i!==VER_PRES){VER_PRES=i;majAction();}
+else if(i!==null)majAction();}catch(x){}},400);
+/* LES ARBRES MÛRISSENT SANS NOUS : on relit l'état de temps en temps pour
+   que la cuvette se couvre de fruits tombés sans qu'on ait à ressortir. */
+setInterval(()=>{if(CARTE==='village'&&document.visibilityState==='visible')verCharger();},120000);
+/* LE SOL SE REDESSINE quand un arbre change de stade, pas à chaque image */
+setInterval(()=>{if(!VERG.charge||document.hidden)return;
+let cle='';for(let i=0;i<VER.n;i++){const F=VERG.f[i];cle+=(F&&F.esp?F.esp+verStade(F):'-')+',';}
+if(cle!==VER_CLE){VER_CLE=cle;VER_SALE=true;}},3000);
+</script>
 </body>
 </html>
