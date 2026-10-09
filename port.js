@@ -1080,18 +1080,27 @@ function graverLaStationVelo(){
    quoi la station se decalerait de quelques pixels sur le quai — et on
    ouvre le cadre a 56 px de part et d'autre, soit 2 px d'air apres la
    roue. */
-const W=116,Ht=46,cx=45,sol=40;
+/* QUATRE TROTTINETTES AU LIEU DE QUATRE VELOS, et la vignette se
+   resserre avec elles : une trottinette tient dans 24 px de long contre
+   32 pour un velo, et son guidon monte moins haut qu'une selle. Mesure
+   refaite dans un navigateur, comme pour les velos — c'est elle qui fixe
+   le cadre, pas le suppose. */
+const W=104,Ht=42,cx=42,sol=36;
 const c=document.createElement('canvas');
 /* on grave les façades plus finement : les enseignes étaient tracées
    sur une toile deux fois trop petite, puis agrandies à l'écran */
 const D=Math.max(2,Math.min(3,Math.ceil(window.devicePixelRatio||2)));
-c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,13*D,0);g.imageSmoothingEnabled=false;
+c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,10*D,0);g.imageSmoothingEnabled=false;
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
 g.fillStyle='rgba(40,30,18,.22)';g.beginPath();g.ellipse(cx,sol+1,40,4,0,0,7);g.fill();
 R(8,sol-30,10,30,'#7a1f2b');R(8,sol-30,10,2,'#a8424e');R(10,sol-26,6,5,'#9fd0e8');R(10,sol-18,6,2,'#e8c06a');
 R(9,sol-34,8,4,'#f2efe4');R(11,sol-33,4,2,'#7a1f2b');
-R(20,sol-8,66,2,'#8f959b');
-for(let k=0;k<4;k++)dessinerUnVelo(g,32+k*17,sol-1,'droite',0,k,false);
+R(18,sol-7,62,2,'#8f959b');
+/* RANGEES EN EPI, le nez vers la borne, et DEUX COUCHES par machine
+   pour que le guidon de l'une passe devant le plateau de la suivante —
+   c'est ce qui fait un rang serre plutot que quatre dessins poses. */
+for(let k=0;k<4;k++)dessinerUneTrottinette(g,26+k*15,sol-1,'droite',k*0.8,0,0);
+for(let k=0;k<4;k++)dessinerUneTrottinette(g,26+k*15,sol-1,'droite',k*0.8,0,1);
 return {toile:c,W,H:Ht,sol};
 }
 const POISSONS_MARMITE=['sardine','bogue','girelle','rouget','mulet','saupe','seiche','maquereau','dorade','rascasse','loup','denti','murene','congre','poulpe','saintpierre','thon',

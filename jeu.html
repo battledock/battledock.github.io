@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-09-1030"></script>
+<script src="maintenance.js?v=2026-10-09-1130"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-09-1030';
+var MA_VERSION='2026-10-09-1130';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -4659,10 +4659,10 @@ g.fillStyle='#2a2c2e';g.beginPath();g.ellipse(w*0.35,h*0.62,40,14,0,0,7);g.fill(
 g.fillStyle='#f0a050';[[-14,0],[6,-3],[18,2],[-2,4]].forEach(([a,b])=>{g.beginPath();g.ellipse(w*0.35+a,h*0.56+b,6,2.5,0,0,7);g.fill();});
 g.strokeStyle='rgba(255,255,255,.5)';g.lineWidth=1.2;[0,12,24].forEach(d=>{g.beginPath();g.moveTo(w*0.3+d,h*0.4);g.quadraticCurveTo(w*0.3+d+6,h*0.28,w*0.3+d,h*0.16);g.stroke();});
 g.fillStyle='#f0cf7d';g.font='italic 15px Georgia,serif';g.fillText('Bouillabaisse',w*0.58,h*0.55);}},
-{titre:'Se promener',sous:'VÉLOS, MÉTRO, DEUX SORTIES',
-txt:['Aux <b>bornes bordeaux</b>, prends un vélo en libre-service : tu vas presque <b>deux fois plus vite</b>. Rends-le à une borne.',
+{titre:'Se promener',sous:'TROTTINETTES, MÉTRO, DEUX SORTIES',
+txt:['Aux <b>bornes bordeaux</b>, prends une <b>trottinette électrique</b> en libre-service : tu vas presque <b>deux fois plus vite</b>. Rends-la à une borne.',
 'Le quai a <b>deux bouts</b>. Va jusqu’à l’un d’eux et <b>continue de pousser</b> une demi-seconde : à l’est tu pars pour <b>la forêt</b>, à l’ouest pour <b>la ferme</b>.'],
-img:(g,w,h)=>{g.fillStyle='#d9c7a0';g.fillRect(0,0,w,h);if(typeof dessinerUnVelo==='function'){g.save();g.translate(w*0.28,h*0.78);g.scale(2.6,2.6);dessinerUnVelo(g,0,0,'droite',0.3,0,false);g.restore();}
+img:(g,w,h)=>{g.fillStyle='#d9c7a0';g.fillRect(0,0,w,h);if(typeof dessinerUneTrottinette==='function'){g.save();g.translate(w*0.24,h*0.78);g.scale(2.6,2.6);dessinerUneTrottinette(g,0,0,'droite',0.6,0.8,0);dessinerUneTrottinette(g,0,0,'droite',0.6,0.8,1);g.restore();}
 g.fillStyle='#c0392b';g.beginPath();g.arc(w*0.72,h*0.42,16,0,7);g.fill();g.fillStyle='#fff';g.font='700 18px Arial';g.textAlign='center';g.fillText('M',w*0.72,h*0.42+6);g.textAlign='left';
 g.fillStyle='#8f959b';[[0.66,0.84],[0.74,0.8],[0.8,0.86]].forEach(([a,b])=>{g.beginPath();g.arc(w*a,h*b,5,0,7);g.fill();});}},
 {titre:'Se divertir',sous:'EN HAUT DU TAPIS ROUGE',
@@ -14036,6 +14036,167 @@ if(face){
 }
 }
 }
+/* =====================================================================
+   LA TROTTINETTE ELECTRIQUE
+   Dessinee dans le meme esprit que le velo du jeu : un pixel de jeu par
+   pixel de toile, ancree au PIED du conducteur, et rendue en trois vues
+   — profil, de face, de dos — comme le reste du decor.
+
+   CE QUI LA DISTINGUE DU VELO, et qui dicte tout le dessin :
+     - on est DEBOUT dessus, un pied devant l'autre. Pas de selle, pas de
+       pedalier, donc pas de jambes qui tournent : le corps est immobile
+       et c'est la machine qui bouge.
+     - les roues sont PETITES, donc elles tournent vite : a vitesse egale
+       elles font trois fois plus de tours que celles d'un velo.
+     - le mat est vertical et haut, le guidon est un T. C'est cette
+       silhouette-la qu'on reconnait de loin, pas le cadre en losange.
+   ===================================================================== */
+function dessinerUneTrottinette(g,x,y,dir,roue,v,couche){
+  const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(a),Math.round(b),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const CAD='#2e343a', CAD_C='#596470', CAD_O='#1b2025';   /* l'aluminium brosse */
+  const PLAT='#1d2227', GRIP='#14181c';                    /* le plateau et sa bande */
+  const PNEU='#1b1b1e', JANTE='#8a929a', JANTE_C='#c6ced6';
+  const ACC='#9fdfb8';                                     /* le vert du jeu, sur les flancs */
+  /* ================= LES HUIT DIRECTIONS =================
+     Quatre sont dessinees pour de vrai — profil gauche, profil droit, de
+     face, de dos. Les quatre diagonales reprennent le PROFIL, ecrase a
+     62 % en largeur avec un cisaillement : c'est ce que fait la
+     perspective, et c'est exactement la methode du velo du jeu. Les
+     roues, tracees a l'arc, deviennent ainsi les ellipses qu'il faut sans
+     qu'on ait rien a recalculer.
+     Le guidon, lui, est REDESSINE a plat par-dessus : ecrase, son T se
+     reduisait a un trait et les mains se refermaient sur du vide. */
+  const COTE=(dir==='gauche'||dir==='droite');
+  const DIAG=String(dir).indexOf('-')>0;
+  const s=String(dir).endsWith('droite')?1:-1;
+  const DEVANT=couche===1;
+  const dos=dir==='haut';
+  const versNous=String(dir).startsWith('bas')?1:-1;
+
+  /* L'OMBRE : une ellipse basse et longue, comme celle du velo. */
+  if(!DEVANT){
+    g.fillStyle='rgba(30,25,15,.28)';g.beginPath();
+    g.ellipse((COTE||DIAG)?x+s*(DIAG?4:6):x,y+1,COTE?13:(DIAG?9:5),2,0,0,Math.PI*2);g.fill();
+  }
+
+  /* UNE ROUE. Petite, pleine, avec trois rayons qui tournent — a cette
+     taille un rayon de plus devient une bouillie grise. */
+  const roueP=(rx,ry,r,ang)=>{
+    g.fillStyle=PNEU;g.beginPath();g.arc(rx,ry,r,0,7);g.fill();
+    g.fillStyle=JANTE;g.beginPath();g.arc(rx,ry,r-1.6,0,7);g.fill();
+    for(let k=0;k<3;k++){
+      const a=ang+k*2.094;
+      R(rx+Math.cos(a)*(r-2.4)-0.5,ry+Math.sin(a)*(r-2.4)-0.5,1,1,JANTE_C);
+    }
+    g.fillStyle=CAD_O;g.beginPath();g.arc(rx,ry,1,0,7);g.fill();
+  };
+
+  /* LE GUIDON DE TROIS QUARTS : une barre de treize pixels dont le bout
+     proche descend. Devant le conducteur quand il vient vers nous,
+     derriere quand il s'eloigne. */
+  const guidon34=(gy)=>{
+    const d=2.2*versNous*s;
+    g.fillStyle=CAD;g.fillRect(x-7,gy-d/2-1,14,2);
+    g.fillStyle=CAD_C;g.fillRect(x-7,gy-d/2-1,14,1);
+    g.fillStyle='#1b1b1e';
+    g.fillRect(x-9,gy-d-1.6,3,3.2);g.fillRect(x+6,gy+d-1.6,3,3.2);
+    if(versNous>0){
+      g.fillStyle='#e8eef2';g.fillRect(x-1,gy+2,2,3);          /* le phare */
+      g.fillStyle='#0e1418';g.fillRect(x-2,gy-4,4,2);
+      if(v>0.05){g.fillStyle=ACC;g.fillRect(x-2,gy-4,Math.max(1,Math.round(4*v)),2);}
+    }
+  };
+  if(DIAG){
+    if(DEVANT&&versNous<0)return;        /* de dos, rien ne passe devant lui */
+    if(DEVANT){guidon34(y-27);return;}   /* de face, le guidon est devant */
+    guidon34(y-27);                      /* de dos, il est derriere : d'abord */
+  }
+  else if(DEVANT&&!COTE)return;
+  if(DIAG){
+    g.save();g.translate(x,y);g.transform(0.62,0.10*versNous*s,0,1,0,0);
+    /* ON RECULE DE NEUF PIXELS AVANT DE DESSINER. Le plateau du profil
+       part quatre pixels derriere les pieds et file seize devant — c'est
+       ce qu'il faut de face, le mat doit sortir du corps. Ecrase a 62 %
+       et laisse a sa place, ce meme decalage posait la trottinette A COTE
+       du conducteur au lieu de SOUS lui : vue de trois quarts, la machine
+       se raccourcit, donc elle doit se recentrer. */
+    x=-s*9;y=0;
+  }
+  if(COTE||DIAG){
+    /* LA GEOMETRIE EST CALEE SUR LE CORPS, pas centree sur lui.
+       Premier essai : plateau centre en x et mat a x+11. Le sprite fait
+       32 de large, donc le mat tombait DANS le buste et le guidon barrait
+       le visage. Le plateau part maintenant quatre pixels derriere les
+       pieds et file seize devant : le mat sort franchement du corps, et
+       c'est ce decalage qui fait lire « il est debout DERRIERE le
+       guidon » au lieu de « il a une barre plantee dans le ventre ». */
+    const sol=y-4, AR=x-s*7, AV=x+s*15;
+    R(Math.min(x-s*4,x+s*16),sol-1,20,3,PLAT);
+    R(Math.min(x-s*4,x+s*16),sol-1,20,1,CAD_C);
+    R(Math.min(x-s*3,x+s*15),sol-1,18,1,GRIP);         /* la bande antiderapante */
+    for(let k=-7;k<8;k+=3)R(x+k+s*6,sol-1,1,1,'#22282d');
+    R(Math.min(x-s*4,x+s*16),sol+2,20,1,CAD_O);
+    R(AR-3,sol-4,7,2,CAD);R(AR-3,sol-4,7,1,CAD_C);     /* le garde-boue arriere */
+    R(AR-1,sol+2,2,3,CAD_O);                            /* la bequille */
+    /* LE MAT : 22 px, pas 26. Plus haut, le guidon arrivait au menton ;
+       sur une trottinette il tombe a la taille. */
+    for(let k=0;k<22;k++){
+      const px=AV-s*1-s*Math.round(k*0.10);
+      R(px,sol-2-k,3,1,k%7===6?CAD_O:CAD);
+      R(px+(s>0?0:2),sol-2-k,1,1,CAD_C);
+    }
+    R(AV-3,sol-6,6,3,CAD);R(AV-3,sol-6,6,1,CAD_C);      /* la potence basse */
+    const gy=sol-23, gx=AV-s*2;   /* 23 et non 25 : les poignees tombent ainsi a hauteur des mains du sprite */
+    if(!DIAG){                                          /* le T, vu de profil */
+      R(gx-4,gy,9,2,CAD);R(gx-4,gy,9,1,CAD_C);
+      R(gx-5,gy-1,3,4,'#1b1b1e');R(gx+3,gy-1,3,4,'#1b1b1e');}
+    if(!DIAG)R(gx+(s>0?4:-1),gy+3,2,3,'#e8eef2');      /* le phare : en diagonale c'est guidon34 qui le pose */
+    if(v>0.25&&!DIAG){
+      const h=g.createRadialGradient(gx+s*5,gy+5,1,gx+s*5,gy+5,16);
+      h.addColorStop(0,'rgba(255,250,214,'+(0.22*v).toFixed(2)+')');
+      h.addColorStop(1,'rgba(255,250,214,0)');
+      g.fillStyle=h;g.fillRect(gx+s*5-16,gy-11,32,32);
+    }
+    if(!DIAG){R(gx-1,gy-3,3,2,'#0e1418');                /* l'ecran de bord */
+      if(v>0.05)R(gx-1,gy-3,Math.max(1,Math.round(3*v)),2,ACC);}
+    R(Math.min(x-s*2,x+s*14),sol+1,16,1,ACC);            /* le filet du loueur */
+    roueP(AR,sol,4.2,roue);
+    roueP(AV,sol,4.2,roue);
+    if(DIAG)g.restore();
+  }
+  else{
+    /* DE FACE ET DE DOS : les deux roues sont l'une derriere l'autre, on
+       n'en voit qu'une. Le guidon s'ouvre en largeur — c'est le seul
+       moment ou l'on voit que c'est un T. */
+    const sol=y-4;
+    roueP(x,sol,4.2,roue);
+    R(x-4,sol-1,8,3,PLAT);R(x-4,sol-1,8,1,CAD_C);
+    for(let k=0;k<26;k++)R(x-1,sol-2-k,3,1,k%7===6?CAD_O:CAD);
+    R(x,sol-28,1,26,CAD_C);
+    const gy=sol-29;
+    R(x-11,gy,23,2,CAD);R(x-11,gy,23,1,CAD_C);
+    R(x-13,gy-1,4,4,'#1b1b1e');R(x+10,gy-1,4,4,'#1b1b1e');
+    if(!dos){
+      R(x-1,gy+3,3,3,'#e8eef2');                       /* le phare, vers nous */
+      R(x-2,gy-3,5,2,'#0e1418');
+      if(v>0.05)R(x-2,gy-3,Math.max(1,Math.round(5*v)),2,ACC);
+      if(v>0.25){
+        const h=g.createRadialGradient(x,gy+10,1,x,gy+10,18);
+        h.addColorStop(0,'rgba(255,250,214,'+(0.18*v).toFixed(2)+')');
+        h.addColorStop(1,'rgba(255,250,214,0)');
+        g.fillStyle=h;g.fillRect(x-18,gy-8,36,36);
+      }
+    }else{
+      R(x-1,sol-6,3,2,'#c0392b');                      /* le feu rouge, de dos */
+      if(v>0.25){const h=g.createRadialGradient(x,sol-5,1,x,sol-5,10);
+        h.addColorStop(0,'rgba(220,60,40,'+(0.26*v).toFixed(2)+')');
+        h.addColorStop(1,'rgba(220,60,40,0)');
+        g.fillStyle=h;g.fillRect(x-10,sol-15,20,20);}
+    }
+    R(x-4,sol+1,8,1,ACC);
+  }
+}
+
 let EQUIP_PECHE=null;
 const FINITIONS=[{id:'bleu',nom:'Bleu marine',prix:500,col:['#1f3f6f','#4f7fb8']},{id:'rouge',nom:'Rouge Estaque',prix:500,col:['#8a2a22','#c8503f']},
 {id:'olive',nom:'Vert olive',prix:500,col:['#5a6a2e','#8a9a4e']},{id:'dore',nom:'Vernis doré',prix:3000,col:['#a8822a','#f0cf7d']},
@@ -18036,10 +18197,19 @@ g.fillStyle='rgba(60,90,130,.18)';g.beginPath();g.ellipse(-pousse*3*v,1,6+v*3,1.
 g.drawImage(c,Math.round(-CASE_L/2),Math.round(-CASE_H+10),CASE_L,CASE_H);g.restore();
 return;}
 if(dir&&String(dir).indexOf('-')>0&&(!STYLE_FIN()||(GESTE&&GESTE.t>0)))dir=String(dir).endsWith('droite')?'droite':'gauche';
-const aVelo=VELO&&CARTE==='extramar'&&ap===e.ap;
-if(aVelo)y-=6+(marche?Math.abs(Math.sin((pas||0)*4.2))*0.8:0);
-/* la ligne du vélo, sept pixels sous les pieds du cycliste */
-const yV=y+7+(marche?Math.abs(Math.sin((pas||0)*4.2))*0.8:0);
+/* ================= EN TROTTINETTE =================
+   Les bornes du quai pretent desormais des trottinettes electriques, pas
+   des velos. Le drapeau garde son nom — VELO — parce qu'il est lu a une
+   dizaine d'endroits et que le renommer n'apprendrait rien a personne ;
+   ce qui change, c'est ce qu'on dessine et comment on se tient.
+   ON SE TIENT DEBOUT : plus de sept pixels de descente sur une selle, le
+   conducteur monte seulement de QUATRE — la hauteur du plateau — et la
+   machine se pose au sol, pas sous ses fesses. Et plus de balancement :
+   un velo tangue au rythme du pedalage, une trottinette roule droit. */
+const enTrot=VELO&&CARTE==='extramar'&&ap===e.ap;
+const aVelo=enTrot;                 /* l'ancien nom, pour les lignes qui le lisent encore */
+if(enTrot)y-=4;
+const yV=y+4;                        /* le sol, sous le plateau */
 const C=cosmetiqueDe(ap);
 if(enCourse)ap=Object.assign({},ap,{court:1});
 const tc=Date.now()/1000;
@@ -18067,10 +18237,16 @@ g.drawImage(c,Math.round(x-CASE_L/2),Math.round(y-CASE_H+10),CASE_L,CASE_H);
 }
 else{
 let i;
-if(aVelo&&STYLE_FIN()){
-/* EN SELLE : la pose vient de la famille du pédalage. À l'arrêt on garde
-   la première image, pied en haut — on ne pédale pas dans le vide. */
-i=500+(marche?(Math.floor(pas*2)%16):0);
+if(enTrot&&STYLE_FIN()){
+/* DEBOUT, ET C'EST TOUT L'INTERET. Le velo prenait la famille 500, celle
+   du pedalage : seize images de jambes qui tournent. Une trottinette ne
+   se pedale pas — on tient le guidon et on regarde devant. On prend donc
+   la famille du REPOS (100 a 107), en marche comme a l'arret, et c'est le
+   sol qui file dessous.
+   Effet de bord voulu : VELO_FIN n'est pose que par la famille 500, donc
+   il reste nul et les hanches ne descendent plus sur une selle qui
+   n'existe pas. */
+i=100+(Math.floor(Date.now()/520)%8);
 }
 else if(STYLE_FIN()&&ap===e.ap){
 majTransition(dir||'bas',!!marche,!!enCourse);
@@ -18087,12 +18263,18 @@ if(STYLE_FIN()&&!aVelo&&!marche&&i>=100&&i<108){
 if(ap===e.ap){const v=indiceVisage(i-100);if(v!==null)i=v;}
 else if(((Date.now()+((ap.peau|0)*431+(ap.cheveux|0)*97))%3600)<130)i+=300;
 }
-/* LE VÉLO SE DESSINE AVANT SON CYCLISTE. Il passait par-dessus : les
-   jambes étaient cachées par le cadre, ce qui arrangeait bien une marche
-   déguisée en pédalage. Maintenant que les pieds tournent vraiment sur la
-   manivelle, c'est la jambe qu'on veut voir devant le cadre. */
+/* LA MACHINE SE DESSINE EN DEUX COUCHES, avant et apres le corps : le
+   plateau et les roues passent derriere les jambes, le guidon devant les
+   mains. C'est ce qui fait qu'on est DESSUS et non A COTE.
+   La vitesse nourrit le phare et l'ecran de bord ; la roue tourne vite,
+   un tour tous les dix-sept pixels, parce qu'elle est petite. */
 const c=poseDe(ap,dir||'bas',i);
-if(aVelo)dessinerUnVelo(g,x,yV,dir||'bas',pas||0,0,!!marche,0);
+/* LA VITESSE VIENT DE vx/vy, les memes que la marche : joueur.vx
+   n'existe pas, le joueur ne porte pas sa vitesse. Elle n'est lue que
+   pour le joueur local — enTrot exige ap===e.ap — donc jamais pour un
+   figurant, qui n'aurait pas la bonne. */
+const vTrot=enTrot?Math.min(1,Math.hypot(vx||0,vy||0)/170):0;
+if(enTrot)dessinerUneTrottinette(g,x,yV,dir||'bas',(pas||0)*2.2,vTrot,0);
 const px0=Math.round(x-CASE_L/2), py0=Math.round(y-CASE_H+10);
 const lean=(ap===e.ap&&!aVelo)?Math.round(PENCHE.x*2)/2:0;
 if(lean===0)g.drawImage(c,px0,py0,CASE_L,CASE_H);
@@ -18106,7 +18288,7 @@ g.drawImage(c,0,0,c.width,H2*k,px0+lean,py0,CASE_L,H2);
 if(C&&C.id!=='cape'){try{C.dessin(g,x,y,tc,dir||'bas');}catch(err){}}
 /* DE FACE, le guidon, le panier et le phare repassent par-dessus : ils
    sont entre nous et le cycliste. */
-if(aVelo)dessinerUnVelo(g,x,yV,dir||'bas',pas||0,0,!!marche,1);
+if(enTrot)dessinerUneTrottinette(g,x,yV,dir||'bas',(pas||0)*2.2,vTrot,1);
 }
 function spriteFin(g,x,y,ap0,dir,pas,bouge){
 const p=Object.assign({},DEF_AP,ap0||{}), P=PALETTES;
@@ -24781,7 +24963,7 @@ if(o.ouvre==='longuevue'){b.innerHTML='Regarder dans la longue-vue<small>LE PANO
 if(o.ferme){b.innerHTML=o.ferme+'<small>FERMÉ · OUVERTURE PROCHAINE</small>';b.classList.add('on','inerte');b.onclick=null;return;}   /* Saumaski : tout est fermé pour l'instant */
 if(o.t==='x_pavPoisson'){b.innerHTML='Vendre ta pêche<small>LA POISSONNERIE</small>';b.classList.add('on');return;}
 if(o.t==='x_cabanon'){b.innerHTML='La bouillabaisse<small>CHEZ FONFON · CUISINE TA PÊCHE</small>';b.classList.add('on');return;}
-if(o.t==='x_stationVelo'){b.innerHTML=VELO?'Rendre le vélo<small>À LA STATION</small>':'Prendre un vélo<small>EN LIBRE-SERVICE · TU IRAS PLUS VITE</small>';b.classList.add('on');return;}
+if(o.t==='x_stationVelo'){b.innerHTML=VELO?'Rendre la trottinette<small>À LA BORNE</small>':'Prendre une trottinette<small>ÉLECTRIQUE · EN LIBRE-SERVICE</small>';b.classList.add('on');return;}
 if(o.t==='x_pavPeche'){b.innerHTML='Pêche & Marine<small>CANNES, MOULINETS, APPÂTS</small>';b.classList.add('on');return;}
 if(o.t==='x_etal'){
 b.innerHTML='Vendre ta pêche<small>LA POISSONNERIE DU PORT</small>';
@@ -24946,7 +25128,7 @@ if(o.ouvre==='descenteTC'){redescendreEnTelecabine();return;}
 if(o.ouvre==='pistes'){partirSkier('descente');return;}
 if(o.ouvre==='longuevue'){regarderLaVue();return;}
 if(o.t==='x_stationVelo'){VELO=!VELO;jouer('cueille');vibrer(VELO?[10,30,10]:12);
-texteVolant(joueur.x,joueur.y-40,VELO?'en selle !':'vélo rendu','#9fdfb8');majAction();return;}
+texteVolant(joueur.x,joueur.y-40,VELO?'en route !':'trottinette rendue','#9fdfb8');majAction();return;}
 if(o.t==='entrepot')return;          /* on n'y ramasse rien : c'est un bâtiment */
 if(o.t==='taillerie'){ouvrirLaForge();return;}
 if(o.t==='ecriteau')return;
