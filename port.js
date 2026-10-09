@@ -353,7 +353,7 @@ const bord=Math.abs(dx)===T.demi;            /* la toute derniere colonne */
 /* LA BANDE PEINTE DES DEUX LEVRES : c'est elle qui dit que la planche est
    un tremplin et pas une passerelle. Rouge et creme en biais, les deux
    couleurs du port — celles de la borne a trottinettes. */
-const peinte=Math.abs(dx)>T.demi-6&&Math.abs(dx)<T.demi;
+const peinte=Math.abs(dx)>T.demi-7&&Math.abs(dx)<T.demi;
 const t0=yN-hh;
 /* ---- LE FLANC SUD : les 'hh' pixels de charpente laisses libres sous le
    plateau quand il monte. C'est lui, et rien d'autre, qui donne le volume. */
