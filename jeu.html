@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-09-2320"></script>
+<script src="maintenance.js?v=2026-10-10-0010"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-09-2320';
+var MA_VERSION='2026-10-10-0010';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -30928,6 +30928,68 @@ border-color:#c9a24a;color:#3a2a08}
 #page2Fond.etb .tiroir .act button:disabled{opacity:.45}
 `;
 
+/* ================= LES POULES =================
+   Elle était appelée par la basse-cour ET par le portrait de l'étable, mais
+   n'existait nulle part : les deux appels sont dans un try/catch, donc elle
+   échouait en silence et les poules avaient disparu des deux écrans.
+   Mêmes règles que les bêtes : silhouette montée ligne par ligne, rangées
+   de 1.5 unité pour qu'aucun arrondi n'ouvre de trou, et tout ce qui dépasse
+   (crête, bec, queue, aile) mord d'au moins une unité sur son support. */
+const POULE_ROBES={
+blanche:{corps:'#f0ece0',clair:'#fffdf6',ombre:'#c8c0ae',aile:'#ddd4c0',queue:'#e4dcc8',col:'#efe6d2'},
+rousse:{corps:'#bf6a2e',clair:'#d88a44',ombre:'#8c4a1b',aile:'#a4551e',queue:'#7a3d16',col:'#d89a52'},
+noire:{corps:'#343029',clair:'#4e473d',ombre:'#1d1a16',aile:'#282420',queue:'#201d19',col:'#5a5146'}};
+function poule(g,cx,cy,robe,etat,dir,coq,pas){
+pas=pas||0;etat=etat||'picore';
+const p=POULE_ROBES[robe]||POULE_ROBES.rousse;
+const Z=coq?1.22:1, PATTE='#e0962c', PATTES='#b4731c', BEC='#f0bc46', CRETE='#cc2f22', CRETE2='#e8503f';
+const marche=etat==='marche', ailes=etat==='ailes';
+const m=marche?Math.round(Math.sin(pas*Math.PI*2)*1.4):0;
+const saut=marche?Math.abs(Math.sin(pas*Math.PI*2))*0.7:0;
+/* EN PICORANT la tête plonge d'un coup sec puis remonte : c'est le geste
+   qui fait reconnaître une poule de loin, bien plus que sa silhouette. */
+const becque=(etat==='picore')?(Math.sin(pas*4.5)>0.45?5.5:0):0;
+const bat=ailes?Math.abs(Math.sin(pas*7))*2.5:0;
+const oeil=((Date.now()+(cx|0)*311)%3800)>150;
+const gauche=dir<0, cyy=cy-saut*Z;
+const R=(a,b,w,h,c)=>{if(w<=0||h<=0)return;g.fillStyle=c;
+const ax=gauche?-(a+w):a;
+g.fillRect(Math.round(cx+ax*Z),Math.round(cyy+b*Z),
+Math.max(1,Math.round(w*Z)),Math.max(1,Math.round(h*Z)));};
+g.fillStyle='rgba(20,16,10,.28)';
+g.beginPath();g.ellipse(cx+Z,cyy+0.5*Z,5.5*Z,1.6*Z,0,0,7);g.fill();
+/* les pattes */
+R(-2+m,-3,1.2,3,PATTE);R(1.5-m,-3,1.2,3,PATTE);
+R(-2.5+m,0,2.5,1,PATTES);R(1-m,0,2.5,1,PATTES);
+/* LA QUEUE, relevée, montée en trois morceaux qui se mordent : posée bout
+   à bout elle se détachait de la croupe au moindre changement d'échelle. */
+const ql=coq?7:5;
+R(-8,-10.5-bat*0.3,3.5,ql,p.queue);
+R(-9.5,-12-bat*0.3,3,ql-1.5,p.queue);
+R(-8,-10.5-bat*0.3,3.5,1.2,p.clair);
+if(coq){R(-10.5,-14,3,5,p.queue);R(-10.5,-14,3,1.2,p.clair);}
+/* le corps */
+[[-11,-3.5,2.5],[-10,-5.5,3.5],[-9,-6.5,4],[-8,-7,4.5],[-7,-7,4.5],
+ [-6,-7,4.5],[-5,-6.5,4],[-4,-5.5,3.5]]
+.forEach(([y,a,b])=>R(a,y,b-a,1.5,y<=-10?p.clair:(y>=-5?p.ombre:p.corps)));
+/* l'aile, posée sur le flanc */
+R(-5.5,-9+bat,5.5,4,p.aile);R(-5.5,-9+bat,5.5,1.2,p.clair);
+R(-5.5,-5.5+bat,5.5,1,p.ombre);
+/* le cou et la tête : becque les fait plonger ensemble */
+const hy=-14+becque;
+R(1.5,hy+3,3,5.5,p.col);R(1.5,hy+3,3,1.2,p.clair);          /* le cou */
+R(1,hy,4.5,4.5,p.corps);R(1,hy,4.5,1.2,p.clair);            /* la tête */
+/* LA CRÊTE : une base posée sur le crâne, et les pointes qui partent d'elle.
+   En trois barres séparées, la dernière flottait au-dessus de la tête. */
+R(1.6,hy-1,3.8,2.5,CRETE);
+R(2,hy-2.5,1,3,CRETE2);R(3.4,hy-3,1,3.3,CRETE2);R(4.6,hy-2.2,1,2.7,CRETE2);
+if(coq){R(2,hy-4,1,4.5,CRETE2);R(3.4,hy-4.6,1,5,CRETE2);R(4.6,hy-3.6,1,4,CRETE2);
+R(0.6,hy+0.5,1.4,2.5,CRETE);}
+R(2.6,hy+1.2,1.2,oeil?1.2:0.5,'#1a1a1e');
+if(oeil)R(2.9,hy+1.4,0.5,0.5,'#ffffff');
+R(5,hy+1.8,2.5,1.8,BEC);R(5,hy+1.8,2.5,0.7,'#f8d478');      /* le bec */
+R(3.4,hy+3.6,1.6,2,CRETE);                                   /* le barbillon */
+}
 /* ================= LES PORTRAITS DES BÊTES =================
    Chaque espèce a plusieurs robes : la bête n° 2 est toujours la même,
    on tire sa robe de son numéro et non du hasard. */
@@ -31349,8 +31411,8 @@ const D=Math.min(2,window.devicePixelRatio||1);c.width=52*D;c.height=52*D;
 g.setTransform(D,0,0,D,0,0);
 g.fillStyle='#e6dcc0';g.fillRect(0,0,52,52);
 g.fillStyle='rgba(120,100,60,.10)';g.fillRect(0,38,52,14);
-if(c.dataset.f==='poule'){g.save();g.translate(25,42);g.scale(2.7,2.7);
-poule(g,0,0,'rousse','debout',1,false,0);g.restore();}
+if(c.dataset.f==='poule'){g.save();g.translate(26,46);g.scale(2.3,2.3);
+poule(g,0,0,'rousse','debout',1,false,0);g.restore();}   /* 2.7 lui coupait la crête */
 else dessinerBete(g,c.dataset.f,25,40,1.45,true,0);}catch(x){}});
 ETB_PRE=placesDuTroupeau(E);
 const cv=$('etbPre');
