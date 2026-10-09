@@ -88,7 +88,7 @@
   /* ================= LA FORÊT EN TRAVAUX =================
      Elle se ferme à part : on n'entre pas dans le bois, le reste du jeu
      continue de tourner. Les joueurs autorisés passent quand même. */
-  var FORET_FERMEE=true;    /* pour rouvrir : repasser a false */
+  var FORET_FERMEE=false;   /* ROUVERTE À TOUS. Pour refermer : repasser a true */
   function versLaForet(){
     try{
       var q=new URLSearchParams(location.search);
