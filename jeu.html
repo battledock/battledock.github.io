@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-09-2045"></script>
+<script src="maintenance.js?v=2026-10-09-2130"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-09-2045';
+var MA_VERSION='2026-10-09-2130';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -17790,85 +17790,6 @@ if(b.x-camX<-60||b.x-camX>VW+60||b.y-camY<-60||b.y-camY>VH+60)return;
 pousses_bete.push({y:b.y,f:()=>{try{
 dessinerBete(ctx,b.esp,b.x-camX,b.y-camY,b.esp==='vache'?1.3:1.1,true,b.robe,
 b.dir||1,b.etat==='marche'?'marche':'broute',b.pas||0);}catch(x){}}});});}
-/* ================= LE FOOT DANS L'ENCLOS =================
-   Deux cages aux deux bouts du pré, un ballon, et un cochon en maillot qui
-   ne pense qu'à ça : il court au ballon, se place derrière, et frappe vers
-   la cage la plus loin. Le joueur tire en marchant dedans.
-   TOUT EST LOCAL : aucune sauvegarde, aucun appel Supabase, rien de partagé
-   entre joueurs — on peut y toucher sans rien risquer. */
-{
-const EZ=ENCLOS_Z, DEMI=34;
-const CAGE_N={x:EZ.cx,y:EZ.y0+54}, CAGE_S={x:EZ.cx,y:EZ.y1-34};
-if(!window.FOOT)window.FOOT={
-b:{x:EZ.cx,y:EZ.cy,vx:0,vy:0,rot:0},
-c:{x:EZ.cx-70,y:EZ.cy+46,dir:1,pas:0,froid:0,joie:0},
-froidJ:0,buts:0,sens:1};
-const FT=window.FOOT, BA=FT.b, CO=FT.c;
-const dtf=Math.min(0.08,(Date.now()-(FT.t||Date.now()))/1000);FT.t=Date.now();
-const py0=BA.y, px0=BA.x;
-BA.x+=BA.vx*dtf;BA.y+=BA.vy*dtf;
-BA.rot+=(Math.abs(BA.vx)+Math.abs(BA.vy))*dtf*0.09;
-/* LE FROTTEMENT décide de la portée : à 0.22 par seconde le ballon
-   mourait au bout de 165 px, soit bien avant la cage, qui est à 240 px du
-   rond central — aucun but en quatre-vingt-dix secondes de simulation.
-   À 0.5 il roule sur 350 à 500 px : le terrain fait 590 px de long. */
-const frot=Math.pow(0.5,dtf);BA.vx*=frot;BA.vy*=frot;
-if(Math.abs(BA.vx)<2)BA.vx=0;
-if(Math.abs(BA.vy)<2)BA.vy=0;
-/* LE BUT se teste sur la TRAVERSÉE de la ligne, pas sur la distance : à
-   400 px/s le ballon avance de six pixels par image et sauterait par-dessus. */
-const traverse=(G)=>Math.abs(BA.x-G.x)<DEMI&&(py0-G.y)*(BA.y-G.y)<=0&&Math.abs(BA.y-py0)>0.01;
-if(traverse(CAGE_N)||traverse(CAGE_S)){
-FT.buts++;
-try{texteVolant(BA.x,BA.y-20,'BUT !','#f4e08a');}catch(x){}
-BA.x=EZ.cx;BA.y=EZ.cy;BA.vx=0;BA.vy=0;CO.joie=1.8;FT.sens=-FT.sens;}
-else{
-const mb=8;                                               /* il rebondit sur la palissade */
-if(BA.x<EZ.x0+mb){BA.x=EZ.x0+mb;BA.vx=Math.abs(BA.vx)*0.6;}
-if(BA.x>EZ.x1-mb){BA.x=EZ.x1-mb;BA.vx=-Math.abs(BA.vx)*0.6;}
-if(BA.y<EZ.y0+mb){BA.y=EZ.y0+mb;BA.vy=Math.abs(BA.vy)*0.6;}
-if(BA.y>EZ.y1-mb){BA.y=EZ.y1-mb;BA.vy=-Math.abs(BA.vy)*0.6;}}
-/* LE JOUEUR TIRE en marchant dedans : le ballon part à l'opposé de lui. */
-FT.froidJ=Math.max(0,FT.froidJ-dtf);
-{const jx=BA.x-joueur.x, jy=BA.y-joueur.y, dj=Math.hypot(jx,jy);
-if(dj<13&&FT.froidJ<=0){
-const a=(dj>0.5)?Math.atan2(jy,jx):Math.random()*6.283;
-const force=joueur.marche?280:200;
-BA.vx=Math.cos(a)*force;BA.vy=Math.sin(a)*force;FT.froidJ=0.28;}}
-/* LE COCHON attaque une cage, puis l'autre : en visant simplement la plus
-   éloignée, il repartait toujours vers le sud depuis le rond central, qui
-   en est un peu plus loin — dix buts d'affilée dans la même cage. */
-CO.froid=Math.max(0,CO.froid-dtf);CO.joie=Math.max(0,CO.joie-dtf);
-const CIBLE=FT.sens>0?CAGE_S:CAGE_N;
-const vis=Math.atan2(CIBLE.y-BA.y,CIBLE.x-BA.x);
-/* LE POINT D'APPEL, derrière le ballon, doit tomber PLUS PRÈS que le rayon
-   de frappe, sinon le cochon se gare pile hors de portée et reste planté
-   devant le ballon sans jamais tirer : appel à 10 px, arrêt à 1.5 px, donc
-   11.5 px au pire — la frappe en demande 14. */
-const appelX=BA.x-Math.cos(vis)*10, appelY=BA.y-Math.sin(vis)*10;
-const cdx=appelX-CO.x, cdy=appelY-CO.y, cdd=Math.hypot(cdx,cdy)||1;
-if(CO.joie<=0&&cdd>1.5){
-const vc=72;CO.x+=cdx/cdd*vc*dtf;CO.y+=cdy/cdd*vc*dtf;
-CO.pas+=dtf*2.6;
-if(Math.abs(cdx)>0.6)CO.dir=cdx>0?1:-1;}
-else CO.pas+=dtf;
-if(Math.hypot(BA.x-CO.x,BA.y-CO.y)<14&&CO.froid<=0&&CO.joie<=0){
-const ec=(Math.random()-0.5)*0.4, force=250+Math.random()*120;
-BA.vx=Math.cos(vis+ec)*force;BA.vy=Math.sin(vis+ec)*force;
-CO.froid=0.5;}
-CO.x=Math.max(EZ.x0+14,Math.min(EZ.x1-14,CO.x));
-CO.y=Math.max(EZ.y0+14,Math.min(EZ.y1-14,CO.y));
-const vu=(x,y)=>!(x-camX<-80||x-camX>VW+80||y-camY<-80||y-camY>VH+80);
-if(vu(CAGE_N.x,CAGE_N.y))pousses_bete.push({y:CAGE_N.y,f:()=>{try{
-dessinerCage(ctx,CAGE_N.x-camX,CAGE_N.y-camY,DEMI);}catch(x){}}});
-if(vu(CAGE_S.x,CAGE_S.y))pousses_bete.push({y:CAGE_S.y,f:()=>{try{
-dessinerCage(ctx,CAGE_S.x-camX,CAGE_S.y-camY,DEMI);}catch(x){}}});
-if(vu(BA.x,BA.y))pousses_bete.push({y:BA.y,f:()=>{try{
-dessinerBallon(ctx,BA.x-camX,BA.y-camY,5,BA.rot);}catch(x){}}});
-if(vu(CO.x,CO.y))pousses_bete.push({y:CO.y,f:()=>{try{
-dessinerBete(ctx,'cochon',CO.x-camX,CO.y-camY,1.1,true,0,CO.dir,
-(CO.joie>0||cdd<=2)?'repos':'marche',CO.pas,FOOT_MAILLOT);}catch(x){}}});
-}
 const pousses=[];
 if(POT.charge)for(let i=0;i<24;i++){
 const P=POT.parc[i];if(!P||!P.cult||!PLANTES[P.cult])continue;
@@ -31101,17 +31022,6 @@ R(2.5,-10.5,5,6.5,p.corps);R(2.5,-10.5,5,1.5,p.clair);                /* l'encol
 const yB=hy+2;
 if(yB>-4)for(let y=-4;y<yB;y+=1){const t=(y+4)/(yB+4);
 const x=4.5+(hx+1-4.5)*t;R(x,y,5,1.5,p.corps);R(x,y,1.5,1.5,p.clair);}
-/* LE MAILLOT suit la silhouette ligne par ligne, sinon c'est un rectangle
-   collé sur le flanc. Il se peint APRÈS l'encolure, qui repasserait du rose
-   par-dessus son épaule. */
-/* UNI, PAS RAYÉ : sur un cochon de dix-sept pixels, quatre rayures ne font
-   plus un maillot mais un code-barres. Couleur pleine, col clair, numéro. */
-if(A.maillot){const M=A.maillot;
-[[-10,-6.5,4.5],[-9,-8.5,5],[-8,-9,5],[-7,-9,5],[-6,-9,5],[-5,-8.5,4.5]]
-.forEach(([y,a2,b2])=>R(a2,y,b2-a2,1.5,M.a));
-R(-6.5,-10,11,1.5,M.b);                                               /* le col */
-R(-3,-8.5,2.5,3.5,M.b);                                               /* le numéro */
-R(-9,-8.5,1.5,3,M.c);}                                                /* l'ombre du pli, derrière */
 R(hx+1.5,hy-1.5,3.5,3.5,p.corps);R(hx+1.5,hy-1.5,3.5,1,p.clair);      /* l'oreille, qui mord sur le crâne */
 R(hx,hy+0.5,7,6.5,p.corps);R(hx,hy+0.5,7,1.5,p.clair);                /* la tête */
 R(hx+2.5,hy+0.5,3,1.5,p.ombre);                                        /* le dessous de l'oreille */
@@ -31120,7 +31030,7 @@ if(A.oeil)R(hx+1.5,hy+2.5,0.5,0.5,'#ffffff');
 R(hx+5.5,hy+2.5+mj,3.5,4.5,p.groin);R(hx+5.5,hy+2.5+mj,3.5,1,p.groinC); /* le groin, relevé */
 R(hx+6.5,hy+4+mj,1,1,p.naseau);R(hx+8,hy+4+mj,1,1,p.naseau);
 R(hx+5,hy+6.5+mj,3.5,1,p.ombre);}};
-function dessinerBete(g,espece,cx,cy,Z,ombre,robe,dir,pose,pas,maillot){
+function dessinerBete(g,espece,cx,cy,Z,ombre,robe,dir,pose,pas){
 pose=pose||'repos';pas=pas||0;
 /* LES GESTES : une patte après l'autre en marchant, la tête dans l'herbe
    en broutant, et un clignement de temps en temps. */
@@ -31141,50 +31051,7 @@ const R=(a,b,w,h,c)=>{if(h<=0||w<=0)return;g.fillStyle=c;
 const ax=gauche?-(a+w):a;
 g.fillRect(Math.round(cx+ax*Z),Math.round(cyy+b*Z),
 Math.max(1,Math.round(w*Z)),Math.max(1,Math.round(h*Z)));};
-(BETE_DESSIN[espece]||BETE_DESSIN.vache)(R,p,{m,dy,q,mache,oeil,maillot});}
-/* ================= LE TERRAIN DE L'ENCLOS =================
-   Deux cages, un ballon, et le maillot du cochon qui joue dedans. */
-const FOOT_MAILLOT={a:'#cf3b2c',b:'#f4efe4',c:'#9a2a1e'};
-function dessinerCage(g,sx,sy,L){
-/* sy est la LIGNE DE BUT. Les deux cages s'ouvrent vers la caméra : le
-   cadre blanc devant, le filet qui fuit vers le haut derrière. Un premier
-   essai dessinait la barre ENTRE le filet couché et le filet dressé — ça
-   se lisait comme deux panneaux de grillage, pas comme un but. */
-sx=Math.round(sx);sy=Math.round(sy);
-const H=20, P=12, haut=sy-H, fond=haut-P;
-/* LA BOUCHE RESTE OUVERTE : le filet ne couvre que le toit, derrière la
-   barre. Grillagée de haut en bas, la cage se lisait comme une clôture. */
-/* LA BOUCHE NE PORTE AUCUN TRAIT : des verticales dedans, et c'est une
-   balustrade. Juste l'ombre, et l'herbe qu'on voit au travers. */
-g.fillStyle='rgba(18,28,12,.16)';g.fillRect(sx-L,haut,L*2,H);     /* l'ombre dans la cage */
-g.fillStyle='rgba(18,28,12,.20)';g.fillRect(sx-L,fond,L*2,P);
-g.fillStyle='rgba(246,250,238,.42)';                              /* les mailles du toit */
-for(let x=-L;x<=L;x+=4)g.fillRect(sx+x,fond,1,P);
-for(let y=0;y<=P;y+=4)g.fillRect(sx-L,fond+y,L*2,1);
-g.fillStyle='rgba(246,250,238,.62)';g.fillRect(sx-L,fond,L*2,1);  /* l'arête du fond */
-const B='#f8f6ee', O='#c6c2b2';
-g.fillStyle=B;
-g.fillRect(sx-L-2,haut-2,L*2+5,3);                                /* la barre transversale */
-g.fillRect(sx-L-2,haut,3,H+2);g.fillRect(sx+L,haut,3,H+2);        /* les montants */
-g.fillStyle=O;
-g.fillRect(sx-L-2,haut+1,L*2+5,1);
-g.fillRect(sx-L,haut,1,H+2);g.fillRect(sx+L+2,haut,1,H+2);
-g.fillStyle='rgba(248,246,238,.75)';g.fillRect(sx-L-2,sy,L*2+5,1);/* la ligne de but */
-}
-function dessinerBallon(g,sx,sy,r,rot){
-sx=Math.round(sx);sy=Math.round(sy);
-g.fillStyle='rgba(20,30,14,.32)';
-g.beginPath();g.ellipse(sx,sy,r,r*0.42,0,0,7);g.fill();
-const cy=sy-r;
-g.fillStyle='#f6f4ea';g.beginPath();g.arc(sx,cy,r,0,7);g.fill();
-g.fillStyle='#d6d2c2';g.beginPath();g.arc(sx,cy+0.8,r,0.35,2.79);g.fill();
-g.fillStyle='#262220';                                     /* les pentagones, qui tournent */
-for(let k=0;k<5;k++){const a=rot+k*1.2566;
-if(Math.cos(a)<-0.25)continue;
-g.fillRect(Math.round(sx+Math.cos(a)*r*0.6)-1,Math.round(cy+Math.sin(a)*r*0.6)-1,2,2);}
-g.fillRect(sx-1,cy-1,2,2);
-g.fillStyle='rgba(255,255,255,.75)';g.fillRect(sx-r+1,cy-r+1,2,1);
-}
+(BETE_DESSIN[espece]||BETE_DESSIN.vache)(R,p,{m,dy,q,mache,oeil});}
 /* ================= L'ENCLOS, VU DU DESSUS =================
    Chaque bête garde sa place d'une ouverture à l'autre : on la tire de son
    numéro, pas du hasard, sinon le troupeau sauterait partout. */
