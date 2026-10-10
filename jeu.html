@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-10-0618"></script>
+<script src="maintenance.js?v=2026-10-10-0712"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-10-0618';
+var MA_VERSION='2026-10-10-0712';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11467,7 +11467,13 @@ y:CARRE.y0+Math.floor(n/CARRE.c)*(CARRE.py+CARRE.gy),w:CARRE.px,h:CARRE.py});
    fois et donne ses fruits pour toujours : c'est la rente de la ferme. */
 const VER={c:6, r:2, cw:112, ch:98, al:22, mur:18, n:12};
 VER.L=VER.c*VER.cw+(VER.c-1)*VER.al;                 /* 782 */
-VER.H=VER.r*VER.ch+(VER.r-1)*VER.al;                 /* 218 */
+/* LA HAUTEUR N'EST PLUS CELLE DES SEULES RANGÉES. Au ras des deux rangs,
+   il restait quatre-vingt-quatre pixels d'herbe au-dessus du premier rond
+   et dix-huit sous le dernier : le verger était posé de travers. On le
+   prolonge vers le bas jusqu'à ce que les deux marges soient égales.
+   rond du haut : y0+88-11 · rond du bas : y0+208+11 · marge : 84 de chaque
+   côté, mesurée depuis la face intérieure du muret. */
+VER.H=VER.r*VER.ch+(VER.r-1)*VER.al+67;              /* 285 */
 VER.x0=Math.round(BORD_FERME+((MONDE_L-BORD_FERME-25-BORD_FERME)-VER.L)/2);   /* 197 */
 VER.y0=180;                                          /* 180 → 398, la place commence à 470 */
 VER.porte=VER.x0+VER.L/2;                            /* 588 : l'axe de la place */
@@ -11703,62 +11709,11 @@ for(let x=BX2;x<BX2+BR;x++){
 const bord=Math.min(x-BX2,BX2+BR-1-x);
 if(bord<3&&PR_h(x,y,55)>0.26+bord*0.24)continue;
 if(bord<4)bordure(x,y);else grav(x,y);}
-/* ---------- LA PLACE : des pavés posés en arcs ----------
-   Elle est peinte APRÈS la chaussée, donc elle s'y pose par-dessus et le
-   raccord se fait tout seul. */
-/* LE PAVAGE : des rangs de pavés décalés d'un demi-pavé, comme un mur
-   appareillé. Les joints sont creusés, et chaque pavé a sa teinte. */
-const PAVE=11, JOINT=1;
-peindreVite(g,PLACE.x-PLACE.r,PLACE.y-PLACE.r,PLACE.r*2+1,PLACE.r*2+1,(x,y)=>{
-const dx=Math.abs(x-PLACE.x), dy=Math.abs(y-PLACE.y), bord=Math.max(dx,dy);
-if(bord>PLACE.r)return null;
-if(bord>PLACE.r-6){const tb=PR_h(x,y,56);
-return bord>PLACE.r-2?'#7b7266':(tb<.5?'#9a948a':'#8d8678');}
-const rang=Math.floor((y-PLACE.y)/PAVE);
-const dec=(rang%2)?Math.round(PAVE/2):0;
-const col=Math.floor((x-PLACE.x+dec)/PAVE);
-const ix=((x-PLACE.x+dec)%PAVE+PAVE)%PAVE;
-const iy=((y-PLACE.y)%PAVE+PAVE)%PAVE;
-if(ix<JOINT||iy<JOINT)return '#6f6558';
-if(iy===JOINT)return '#b3a894';
-if(iy===PAVE-1)return '#857c6c';
-if(PR_h(x,y,58)>0.93)return '#b3a894';
-const t=PR_h(col,rang,57);
-return t<.28?'#a79c88':(t<.58?'#9c9280':(t<.84?'#918876':'#aba08c'));});
-/* QUATRE ARBRES, aux quatre coins du carré.
-   (La fonction était définie dans le bloc de la fontaine peinte, que j'ai
-   retiré en passant la fontaine en volume : la voici à sa place.) */
-const arbre=(ax,ay)=>{
-g.fillStyle='rgba(26,22,14,.26)';
-g.beginPath();g.ellipse(ax+4,ay+3,17,6,0,0,7);g.fill();
-g.fillStyle='#5b3f26';g.fillRect(ax-4,ay-14,8,18);
-g.fillStyle='#7d5934';g.fillRect(ax-4,ay-14,3,18);
-for(let k=0;k<70;k++){
-const a=PR_h(k,ax,61)*6.283, r=PR_h(k,ay,62)*19;
-const bx2=Math.round(ax+Math.cos(a)*r), by2=Math.round(ay-20+Math.sin(a)*r*0.8);
-const t=PR_h(k,3,63);
-g.fillStyle=t<.3?'#3f5c2c':(t<.7?'#4e7236':'#5f8440');
-g.fillRect(bx2,by2,3,3);}};
-const cA=PLACE.r-22;
-[[-cA,-cA],[cA,-cA],[-cA,cA],[cA,cA]].forEach(q=>
-arbre(PLACE.x+q[0],PLACE.y+q[1]));
-/* QUATRE PARTERRES DE FLEURS, entre les bancs */
-const parterre=(px,py)=>{
-for(let y=py-9;y<py+9;y++)for(let x=px-13;x<px+13;x++){
-if(Math.hypot((x-px)/13,(y-py)/9)>1)continue;
-const t=PR_h(x,y,67);
-g.fillStyle=t<.5?'#5e4c38':'#6b5740';g.fillRect(x,y,1,1);}
-for(let k=0;k<26;k++){
-const a=PR_h(k,px,68)*6.283, r=PR_h(k,py,69);
-const fx=Math.round(px+Math.cos(a)*12*r), fy=Math.round(py+Math.sin(a)*8*r);
-g.fillStyle='#4e7236';g.fillRect(fx,fy,1,3);
-const t2=PR_h(k,7,70);
-g.fillStyle=t2<.3?'#d8546a':(t2<.6?'#e8c06a':(t2<.85?'#c88ad0':'#f2efe4'));
-g.fillRect(fx,fy-2,2,2);}};
-parterre(PLACE.x-PLACE.r+34,PLACE.y-PLACE.r+34);
-parterre(PLACE.x+PLACE.r-34,PLACE.y-PLACE.r+34);
-parterre(PLACE.x-PLACE.r+34,PLACE.y+PLACE.r-34);
-parterre(PLACE.x+PLACE.r-34,PLACE.y+PLACE.r-34);
+/* ---------- LA PLACE EST RETIRÉE ----------
+   Le pavage, ses quatre arbres, ses quatre parterres, sa fontaine, ses
+   bancs et ses lampadaires : tout part. La ferme n'avait pas besoin d'un
+   square au milieu de son pré, et il mangeait la place du verger, qui
+   peut maintenant descendre. La chaussée reste : c'est le chemin du port. */
 }
 /* ================= LA BÂCHE DE CHANTIER =================
    À l'autre bout de la route, là où la barrière est fermée : une toile
@@ -11927,42 +11882,10 @@ g.fillStyle=t<.4?'#9a9382':(t<.75?'#aba493':'#8c8674');
 g.fillRect(P.x+u-1,P.y+v-2,3,3);
 g.fillStyle='#c6bfab';g.fillRect(P.x+u-1,P.y+v-2,3,1);
 g.fillStyle='rgba(50,43,31,.4)';g.fillRect(P.x+u-1,P.y+v+1,3,1);}}
-/* LE MATÉRIEL : l'échelle, les cageots, la brouette, l'abreuvoir.
-   Ils sont peints dans le sol : on marche dessus, ils ne bloquent pas. */
-const BOIV=['#6b4a2c','#8a6238','#a5764a'];
-{const P=verPied(2), bx=P.x+44, by=P.y+2;        /* l'échelle, contre le troisième arbre
-   (décalée : à +26 elle traversait la pancarte de l'emplacement) */
-g.fillStyle='rgba(24,20,12,.22)';g.beginPath();g.ellipse(bx+6,by,9,3,0,0,7);g.fill();
-for(let q=0;q<2;q++)for(let k=0;k<46;k++){
-g.fillStyle=k%2?BOIV[1]:BOIV[0];g.fillRect(bx+q*7-Math.round(k*0.30),by-k,2,1);}
-for(let k=4;k<44;k+=6){g.fillStyle=BOIV[2];g.fillRect(bx-Math.round(k*0.30),by-k,9,1);}}
-/* LES CAGEOTS, dans l'allée entre les deux rangs, à l'aplomb du portillon :
-   posés près du mur ils tombaient en plein sur une cuvette. */
-{const bx=VER.porte-18, by=Y0+VER.ch+16;
-const cag=(x,y,fr)=>{g.fillStyle='rgba(24,20,12,.22)';g.beginPath();g.ellipse(x+8,y+1,10,3,0,0,7);g.fill();
-g.fillStyle=BOIV[1];g.fillRect(x,y-11,17,11);
-g.fillStyle=BOIV[2];g.fillRect(x,y-11,17,2);
-g.fillStyle=BOIV[0];g.fillRect(x,y-6,17,2);g.fillRect(x+7,y-11,2,11);
-for(let q=0;q<3;q++){g.fillStyle=fr[q%fr.length];g.fillRect(x+2+q*5,y-14,4,3);
-g.fillStyle='rgba(255,255,255,.4)';g.fillRect(x+2+q*5,y-14,2,1);}};
-cag(bx,by,['#b42232','#dc3a46']);cag(bx+20,by,['#d47010','#f0901e']);cag(bx+9,by-13,['#4d5a3c','#6a7a52']);}
-{const bx=X0-6, by=Y0+VER.H/2;                    /* la brouette, au bout de l'allée */
-g.fillStyle='rgba(24,20,12,.22)';g.beginPath();g.ellipse(bx+9,by+1,13,4,0,0,7);g.fill();
-g.fillStyle='#7a7f86';g.fillRect(bx,by-14,20,10);
-g.fillStyle='#a0a6ad';g.fillRect(bx,by-14,20,2);
-g.fillStyle='#5c6168';g.fillRect(bx,by-5,20,1);
-for(let k=0;k<12;k++){g.fillStyle=BOIV[1];g.fillRect(bx+20+k,by-13+k,2,1);}
-g.fillStyle='#4a4f55';g.fillRect(bx+3,by-4,6,6);
-g.fillStyle='#2e3238';g.fillRect(bx+4,by-3,4,4);
-['#b42232','#dc3a46','#d47010','#eda02e'].forEach((c2,q)=>{g.fillStyle=c2;g.fillRect(bx+2+q*4,by-17,3,3);});}
-{const bx=X1-56, by=Y0-8;                         /* l'abreuvoir, pour l'arrosoir */
-g.fillStyle='rgba(24,20,12,.22)';g.beginPath();g.ellipse(bx+16,by+1,19,4,0,0,7);g.fill();
-g.fillStyle='#9a9382';g.fillRect(bx,by-12,32,12);
-g.fillStyle='#bab3a1';g.fillRect(bx,by-12,32,2);
-g.fillStyle='#6e6857';g.fillRect(bx,by-1,32,1);
-g.fillStyle='#3f6f8c';g.fillRect(bx+2,by-10,28,5);
-g.fillStyle='#6fa8c4';g.fillRect(bx+2,by-10,28,1);
-for(let k=0;k<6;k++){g.fillStyle='rgba(255,255,255,.45)';g.fillRect(bx+4+k*5,by-9,2,1);}}
+/* PAS DE MATÉRIEL DANS LE VERGER : l'échelle, les cageots, la brouette et
+   l'abreuvoir encombraient les allées sans rien apporter, et l'échelle
+   finissait toujours par croiser une pancarte. Le verger, c'est l'herbe,
+   les ronds de pierres et les arbres. */
 }
 /* ================= LE GRAND ENCLOS =================
    Tout le bas de la ferme, de la barrière de gauche jusqu'au potager.
@@ -16910,22 +16833,9 @@ TAILLES['x_fe_recolte']=[{w:150,h:24}];
    à vingt-cinq pixels au-dessus de la chaussée, donc on l'aborde de face
    en venant du port ou de la place. */
 DECOR.push({t:'x_fe_recolte',x:880,y:PASSAGE.y0+4-25,v:0,bati:true,demi:80,ouvre:'laRecolte'});
-/* LE MOBILIER DE LA PLACE : des objets posés, pas du décor peint. Ils se
-   trient en profondeur avec le joueur et lui barrent le passage. */
-{/* Les objets suivent la place, qui a remonté : on recalcule au lieu de
-   répéter ses coordonnées. */
-const PX=588, PY=(700+4)-117;
-const FO=calque(graverFontaine(),64,48,44);
-XCAL['x_fe_fontaine0']=FO;CALQUES_DECO['x_fe_fontaine']=FO;
-TAILLES['x_fe_fontaine']=[{w:52,h:14}];
-DECOR.push({t:'x_fe_fontaine',x:PX,y:PY,v:0,bati:true,demi:27,anim:'fontaine'});
-const BP=calque(graverBancPierre(),52,24,20);
-XCAL['x_fe_banc0']=BP;CALQUES_DECO['x_fe_banc']=BP;
-TAILLES['x_fe_banc']=[{w:44,h:10}];
-DECOR.push({t:'x_fe_banc',x:PX-78,y:PY-62,v:0,bati:true,demi:22});
-DECOR.push({t:'x_fe_banc',x:PX+78,y:PY-62,v:0,bati:true,demi:22});
-DECOR.push({t:'x_fe_banc',x:PX-78,y:PY+72,v:0,bati:true,demi:22});
-DECOR.push({t:'x_fe_banc',x:PX+78,y:PY+72,v:0,bati:true,demi:22});
+/* LE MOBILIER DE LA PLACE EST RETIRÉ avec elle : la fontaine, les quatre
+   bancs et les quatre lampadaires n'entouraient plus rien. */
+{
 /* L'APPENTIS AUX BÊTES, dans l'enclos, à gauche du portillon */
 const AP=calque(graverAppentis(),116,104,96);
 XCAL['x_fe_appentis0']=AP;CALQUES_DECO['x_fe_appentis']=AP;
@@ -16938,12 +16848,10 @@ const FRO=graverFromagerie();
 XCAL['x_fe_fromagerie0']=FRO;CALQUES_DECO['x_fe_fromagerie']=FRO;
 TAILLES['x_fe_fromagerie']=[{w:92,h:18}];
 DECOR.push({t:'x_fe_fromagerie',x:300,y:740,v:0,bati:true,demi:52,ouvre:'fromagerie'});
-/* LES QUATRE LAMPADAIRES, aux angles de la place */
-const LA=calque(graverLampadaire(),24,56,54);
-XCAL['x_fe_lampadaire0']=LA;CALQUES_DECO['x_fe_lampadaire']=LA;
-TAILLES['x_fe_lampadaire']=[{w:12,h:6}];
-[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(q=>
-DECOR.push({t:'x_fe_lampadaire',x:PX+q[0]*103,y:PY+q[1]*103,v:0,bati:true,demi:6}));
+/* LES QUATRE LAMPADAIRES PARTENT AVEC LA PLACE. Ils étaient posés en
+   PX ± 103 — or PX était le centre de la place, qui n'existe plus, et le
+   nom est aussi celui du traceur de pixels : ils se seraient retrouvés en
+   NaN, sans que rien ne proteste. */
 }
 
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}
