@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-10-2104"></script>
+<script src="maintenance.js?v=2026-10-10-2228"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-10-2104';
+var MA_VERSION='2026-10-10-2228';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -17071,13 +17071,18 @@ return q;}
    bouché. Un porche est couvert : dessous il fait sombre, et c'est ce
    noir qui creuse le trou. */
 function ruArche(){
-const W=330, H=132, sol=124, D=2;
+const W=378, H=132, sol=124, D=2;
 const c=document.createElement('canvas');c.width=W*D;c.height=H*D;
 const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(D,0,0,D,0,0);
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
 Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
 const cx=W/2, rx=36, ry=24, naiss=sol-46, haut=sol-84;
-/* ---------- LES DEUX MURETS DE PIERRE SÈCHE ---------- */
+/* ---------- LES DEUX MURETS DE PIERRE SÈCHE ----------
+   ILS VONT D'UN BOUT À L'AUTRE. Plus courts, on les contournait par
+   leurs extrémités : à l'ouest par le couloir qui longe l'enclos, à
+   l'est par la bande d'herbe avant la barrière du monde. Le mur touche
+   maintenant la palissade de l'enclos d'un côté et le bord du monde de
+   l'autre. */
 [[0,cx-54],[cx+54,W-(cx+54)]].forEach(([x,l])=>{
 for(let j=0;j<16;j+=6){const dec=(Math.floor(j/6)%2)?4:0;
 for(let i=-8+dec;i<l;i+=9){const a=Math.max(x,x+i), b=Math.min(x+l,x+i+8);
@@ -21501,40 +21506,83 @@ ay=Math.max(BORD_FERME+10,Math.min(MONDE_H-BORD_FERME-8,ny));
    traverser le blé par le haut ni par le bas. */
 if(ax>MONDE_L-BORD_FERME-33)
 ay=Math.max(PASSAGE.y0+8,Math.min(PASSAGE.y1-8,ay));
-/* ================= LA GANIVELLE DU VERGER =================
+/* ======================================================================
+   LES CLÔTURES DE LA FERME : DES BANDES, PAS DES LIGNES
+   ----------------------------------------------------------------------
    LA FERME N'APPELLE PAS bloque() : elle a sa propre branche de
-   déplacement, qui se contente des bords du monde et de deux règles
-   écrites à la main. verMuret() y était donc parfaitement inutile — on
-   marchait sur la clôture. On reprend ici l'idiome de l'enclos des
-   bêtes : on ne regarde pas où l'on est, on regarde si l'on FRANCHIT
-   le pourtour, et on n'autorise le franchissement que par la trouée.
-   C'est plus sûr qu'un test de point : on ne peut pas le traverser
-   en un pas, même en courant. */
-{const Vm=VER.mur;
-const VZ={x0:VER.x0-Vm, x1:VER.x0+VER.L+Vm+6, y0:VER.y0-Vm, y1:VER.y0+VER.H+Vm+4};
-const dansV=(X,Y)=>X>VZ.x0&&X<VZ.x1&&Y>VZ.y0&&Y<VZ.y1;
-const etaitV=dansV(joueur.x,joueur.y);
-if(dansV(ax,ay)!==etaitV){
-const parLaTrouee=(ax>VER.porte-27&&ax<VER.porte+27&&Math.abs(ay-VZ.y1)<34);
-if(!parLaTrouee){ax=joueur.x;ay=joueur.y;}}}
-/* LA CLÔTURE DE L'ENCLOS : on n'entre et on ne sort que par le portillon. */
-{const E={x0:176,x1:672,y0:812,y1:1462}, P={x0:522,x1:578};
-const dedans=(X,Y)=>X>E.x0&&X<E.x1&&Y>E.y0&&Y<E.y1;
-const etait=dedans(joueur.x,joueur.y);
-if(dedans(ax,ay)!==etait){
-const parLePortillon=(ax>P.x0&&ax<P.x1&&Math.abs(ay-E.y0)<30);
-if(!parLePortillon){ax=joueur.x;ay=joueur.y;}}}
-/* ================= LES MURETS DE LA RUELLE =================
-   Les six corps barrent déjà la route par TAILLES, mais l'arche et ses
-   deux murets sont un seul calque, et TAILLES ne sait poser qu'une boîte
-   centrée : une boîte unique aurait aussi bouché la trouée. On écrit donc
-   la règle à la main, avec l'idiome de l'enclos et du verger — on regarde
-   le FRANCHISSEMENT de la ligne, pas la position — pour qu'on ne puisse
-   pas sauter par-dessus en courant. On entre par l'arche, et par elle
-   seule. */
-{const MY=898;
-const avant=(+joueur.y||0)<MY;
-if((ay<MY)!==avant&&((ax>698&&ax<831)||(ax>899&&ax<1032))){ax=+joueur.x||0;ay=+joueur.y||0;}}
+   déplacement. On y testait le FRANCHISSEMENT D'UNE LIGNE — on ne
+   regardait pas où l'on est, mais si l'on traversait le pourtour.
+   C'était solide contre le saut (impossible de passer en un pas, même en
+   courant), mais ça laissait un défaut qui se voyait : on peut avancer
+   JUSQU'À la ligne, et la ligne tombe au milieu de la palissade
+   dessinée. On finissait donc les pieds dans le bois, ou dans les
+   pierres du muret.
+   On teste maintenant une BANDE, épaisse comme la clôture l'est à
+   l'écran. Deux refus au lieu d'un :
+     — on n'entre pas dans la bande ;
+     — on ne la saute pas d'un pas, car un pas de quarante pixels
+       enjamberait une bande de seize sans jamais y poser le pied.
+   Le second test est un Liang–Barsky : il coupe le SEGMENT du pas contre
+   le rectangle, donc il attrape les deux cas d'un coup.
+   ET UNE SORTIE DE SECOURS : si l'on est DÉJÀ dans une bande — une
+   sauvegarde d'avant ce changement, un décor déplacé — on la laisse
+   franchir, sinon on reste coincé dedans pour toujours.
+   ====================================================================== */
+{
+const coupe=(x0,y0,x1,y1,B)=>{
+let t0=0,t1=1;const dx=x1-x0, dy=y1-y0;
+/* ON RÉTRÉCIT LA BANDE D'UN CHEVEU. Sans ça, un pas qui LONGE une arête
+   — p vaut zéro, q vaut zéro — est compté comme passant dedans : on se
+   retrouvait bloqué à l'angle rentrant de deux clôtures, incapable de
+   glisser le long du mur. Le centième d'unité ne change rien au blocage
+   réel et libère les coins. */
+const E=0.01;
+const p=[-dx,dx,-dy,dy], q=[x0-(B[0]+E),(B[1]-E)-x0,y0-(B[2]+E),(B[3]-E)-y0];
+for(let i=0;i<4;i++){
+if(p[i]===0){if(q[i]<0)return false;}
+else{const r=q[i]/p[i];
+if(p[i]<0){if(r>t1)return false;if(r>t0)t0=r;}
+else{if(r<t0)return false;if(r<t1)t1=r;}}}
+/* t1>t0 ET PAS true : sans ça, un pas qui part d'un point posé EXACTEMENT
+   sur le bord d'une bande compte comme une intersection, dans quelque
+   direction qu'il aille — on se retrouvait collé au mur sans pouvoir s'en
+   écarter. Mesuré au balayage : trois cent soixante-sept points de la
+   ferme étaient ainsi sans issue, tous sur une arête de bande. Il faut
+   une LONGUEUR de segment à l'intérieur, pas un simple contact. */
+return t1>t0+1e-9;};
+const dansB=(X,Y,B)=>X>B[0]&&X<B[1]&&Y>B[2]&&Y<B[3];
+const BANDES=[];
+/* ---------- LA GANIVELLE DU VERGER ----------
+   Les quatre courants, à l'épaisseur où ils sont gravés : verBandesClot
+   pose le nord à MY0+5, le sud à MY1+5, et les côtés sur vingt-deux et
+   vingt-quatre unités de large. La trouée du sud laisse passer. */
+{const Mb=VER.mur, MX0=VER.x0-Mb, MX1=VER.x0+VER.L+Mb,
+ MY0=VER.y0-Mb, MY1=VER.y0+VER.H+Mb, P=VER.porte;
+BANDES.push([MX0-3,MX1+3,MY0-24,MY0+8]);
+BANDES.push([MX0-3,P-27,MY1-22,MY1+9]);
+BANDES.push([P+27,MX1+3,MY1-22,MY1+9]);
+BANDES.push([MX0-3,MX0+24,MY0+8,MY1-22]);
+BANDES.push([MX1-26,MX1+3,MY0+8,MY1-22]);}
+/* ---------- LA PALISSADE DE L'ENCLOS ----------
+   Les pieux du nord et du sud sont plantés huit unités sous la ligne de
+   l'enclos et montent de trente-quatre ; ceux des côtés font cinq de
+   large. Le portillon du nord reste ouvert. */
+{const E={x0:176,x1:672,y0:812,y1:1462}, P={x0:513,x1:580};
+BANDES.push([E.x0-4,P.x0,E.y0-26,E.y0+13]);
+BANDES.push([P.x1,E.x1+4,E.y0-26,E.y0+13]);
+BANDES.push([E.x0-4,E.x1+4,E.y1-26,E.y1+13]);
+BANDES.push([E.x0-4,E.x0+7,E.y0+13,E.y1-26]);
+BANDES.push([E.x1-9,E.x1+4,E.y0+13,E.y1-26]);}
+/* ---------- LES MURETS DE L'ARCHE ----------
+   Ils sont gravés de 892 à 908. On s'arrête juste avant la première
+   pierre, pas au milieu du mur. Le passage reste ouvert entre les
+   jambages, à 829 et 901 — là où ils sont dessinés. */
+BANDES.push([676,829,889,910]);
+BANDES.push([901,1056,889,910]);
+for(const B of BANDES){
+if(dansB(+joueur.x||0,+joueur.y||0,B))continue;
+if(coupe(+joueur.x||0,+joueur.y||0,ax,ay,B)){ax=+joueur.x||0;ay=+joueur.y||0;break;}}
+}
 if(dansLePassage&&ax>MONDE_L-BORD_FERME-33+96&&!PARTIR_AU_PORT){
 PARTIR_AU_PORT=true;
 try{texteVolant(joueur.x,joueur.y-40,'Direction le port…','#f0cf7d');}catch(x){}
