@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-10-1742"></script>
+<script src="maintenance.js?v=2026-10-10-1908"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-10-1742';
+var MA_VERSION='2026-10-10-1908';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -16852,71 +16852,191 @@ const PI2={p:'#9a948a',c:'#b0aba1',o:'#7e786e',s:'#655f57'};       /* la pierre 
 /* ---------- UN CORPS : murs, toit, porte, fenêtre, plaque ----------
    L  : la largeur du mur · Hm : sa hauteur · cote : de quel côté est la
    porte (+1 la ruelle est à droite, −1 à gauche). */
+/* ---------- UN CORPS : une VOLUME, pas une façade peinte ----------
+   LA PREMIÈRE VERSION ÉTAIT UNE CARTE À JOUER posée sur l'herbe : un
+   rectangle de mur, un toit en bandeau, et rien qui dise que la chose
+   occupe du terrain. Cinq choses donnent le relief, et elles comptent
+   toutes les cinq :
+     1. L'EMPRISE AU SOL. Une dalle de terre tassée devant le corps, un
+        peu plus large que lui. C'est elle qu'on voit, et c'est elle que
+        la collision recopie : ce qu'on ne peut pas traverser se voit.
+     2. LE SOUBASSEMENT, qui déborde de deux unités de chaque côté et
+        porte le mur. Un mur qui s'arrête net sur l'herbe flotte.
+     3. L'OMBRE DE L'AVANT-TOIT sur le mur. Le toit déborde de dix : sans
+        la bande sombre dessous, il a l'air collé en applique.
+     4. LES RETOURS DE MUR. La lumière vient du haut-gauche : colonne
+        claire à gauche, colonne sombre à droite, et le dessous du
+        débord de toit en triangle noir aux deux bouts.
+     5. LES EMBRASURES. Porte et fenêtre sont creusées : un liseré sombre
+        en haut et à gauche, clair en bas à droite. C'est l'épaisseur du
+        mur qui se lit là.
+   L  : la largeur du mur · Hm : sa hauteur · cote : de quel côté est la
+   porte (+1 la ruelle est à droite, −1 à gauche). */
 function ruCorps(L,Hm,cote,o){
 o=o||{};
 const rangs=o.rangs||4, hToit=(rangs+1)*4+5, hPl=o.mot?24:0;
-const W=L+30, sol=hPl+hToit+Hm+3, H=sol+5, D=2;
+const DALLE=14;                               /* la profondeur de l'emprise au sol */
+/* LA PROFONDEUR VUE. On ne regarde pas la ferme tout à fait de face : le
+   flanc droit de chaque corps fuit de dix unités vers la droite en
+   remontant de six. C'est une projection oblique — la plus simple qui
+   donne un volume — et c'est elle qui transforme la façade peinte en
+   boîte posée sur le terrain. Le flanc est du côté de l'ombre, donc
+   nettement plus sombre : la lumière vient du haut-gauche. */
+const PROF=11, FUITE=8;
+const W=L+34+PROF, sol=hPl+hToit+Hm+5, H=sol+DALLE+4, D=2;
 const c=document.createElement('canvas');c.width=W*D;c.height=H*D;
 const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(D,0,0,D,0,0);
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
 Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
-const cx=W/2, x0=Math.round(cx-L/2), yM=sol-Hm;
-/* LE MUR */
+/* LE CALQUE EST PLUS LARGE QUE LA FAÇADE à cause du flanc : on recale le
+   milieu sur la FAÇADE, sinon le corps paraît décalé vers la gauche. */
+const cx=Math.round(W/2-PROF/2), x0=Math.round(cx-L/2), x1=x0+L, yM=sol-Hm;
+const P=o.gris?PI2:PIE;
+/* ---------- 1. L'EMPRISE AU SOL ----------
+   LE SEUIL : une bande de pierres plates posées dans la terre, devant
+   toute la façade. Il faut qu'elle se DISTINGUE de la cour, sinon elle ne
+   dit rien : la cour est ocre, le seuil est gris, et c'est exactement la
+   surface que la collision interdit. */
+{const dx0=x0-6, dl=L+12+PROF;
+/* la terre tassée du pourtour, plus sombre que la cour · elle remonte
+   avec le flanc, sinon le seuil trahirait que le corps est plat */
+const mont=(i)=>{const u=i-(L+12);return u<=0?0:Math.round(u/PROF*FUITE);};
+for(let j=0;j<DALLE;j++)for(let i=0;i<dl;i++){
+const m=mont(i);
+const bord=(j>DALLE-4)||(i<3)||(i>dl-4);
+if(bord&&PR_h(dx0+i,sol+j,312)<0.5)continue;
+const n=PR_h(dx0+i,sol+j,311);
+R(dx0+i,sol+j-m,1,1,n<.34?'#7d6a48':(n<.68?'#726040':'#876f4d'));}
+/* les pierres plates du seuil, deux rangs décalés */
+for(let j=1;j<DALLE-3;j+=5){const dec=(Math.floor(j/5)%2)?6:0;
+for(let i=2+dec;i<dl-4;i+=13){
+const a=Math.max(dx0+2,dx0+i), b=Math.min(dx0+dl-3,dx0+i+12);
+if(b-a<4)continue;const n=PR_h(dx0+i,sol+j,314);
+R(a,sol+j,b-a,4,n<.3?'#a9a294':(n<.62?'#9b9486':'#8d8678'));
+R(a,sol+j,b-a,1,'#bdb6a7');R(a,sol+j+3,b-a,1,'#756f63');}}
+/* l'ombre du corps sur son seuil : courte, dense, et elle fond */
+for(let j=0;j<6;j++)R(dx0+3+j,sol+j,L+6-j*2,1,'rgba(26,20,10,'+(0.42-j*0.062).toFixed(2)+')');}
+/* ---------- LE FLANC DROIT, QUI FUIT ----------
+   Il se dessine AVANT la façade : celle-ci repasse par-dessus et cache
+   l'arête, ce qui évite un liseré double au coin. */
+{/* LE FLANC EST DU MÊME APPAREIL QUE LA FAÇADE, mais à l'ombre, et ses
+   assises MONTENT en fuyant : c'est cette pente des joints qui fait
+   tourner le volume. Un aplat gris bruité ne l'aurait pas fait. */
+const som=(c)=>teint(c,-46);
+for(let u=1;u<=PROF;u++){
+const m=Math.round(u/PROF*FUITE);
+const yH=yM, yB=sol-7;
+for(let yy=yH;yy<yB;yy++){
+const as=Math.floor((yy-yH)/7), joint=((yy-yH)%7)===6;
+let col;
+if(o.bois){const n=PR_h(x1+u,as,315);
+col=joint?som(BO.boisS):som(n<.34?BO.bois:(n<.70?BO.boisC:BO.boisH));}
+else{const P2=o.gris?PI2:PIE, n=PR_h(Math.floor((x1+u)/5),as,315);
+col=joint?som(P2.s):som(n<.30?P2.c:(n<.62?P2.p:P2.o));}
+R(x1+u,yy-m,1,1,col);}
+/* le soubassement du flanc, qui fuit avec lui */
+for(let k=0;k<7;k++)R(x1+u,yB-m+k,1,1,k===0?som('#c2bdb3'):(k>=5?som('#4e4942'):som(PR_h(x1+u,k,316)<.5?PI2.p:PI2.o)));}
+/* l'arête du coin, un cran plus claire : c'est elle qui dit où ça tourne */
+for(let yy=yM;yy<sol;yy++)R(x1,yy,1,1,teint(o.bois?BO.boisH:(o.gris?PI2.c:PIE.c),-14));}
+/* ---------- 2. LE SOUBASSEMENT ---------- */
+{const sy=sol-7;
+R(x0-2,sy,L+4,7,PI2.o);
+for(let i=x0-2;i<x1+2;i+=9){const n=PR_h(i,sy,313);
+R(i,sy,9,6,n<.3?PI2.c:(n<.64?PI2.p:PI2.o));R(i+8,sy,1,6,PI2.s);}
+R(x0-2,sy,L+4,2,'#c2bdb3');R(x0-2,sol-3,L+4,2,'#6a655c');R(x0-2,sol-1,L+4,1,'#4e4942');}
+/* ---------- LE MUR ---------- */
+const yBas=sol-7;
 if(o.bois){for(let i=0;i<L;i+=5){const n=PR_h(x0+i,yM,91);
-R(x0+i,yM,5,Hm,n<.33?BO.bois:(n<.66?BO.boisC:BO.boisH));R(x0+i+4,yM,1,Hm,BO.boisO);
-for(let k=0;k<2;k++){const ny=yM+Math.floor(PR_h(i,k,92)*Hm);R(x0+i+1,ny,3,1,BO.boisO);}}
-R(x0,yM,L,1,BO.boisH);R(x0,sol-1,L,1,BO.boisS);}
-else{const P=o.gris?PI2:PIE;
-R(x0,yM,L,Hm,P.p);
-let j=0;for(let yy=yM;yy<sol;yy+=7,j++){const dec=(j%2)?5:0;
-for(let xx=x0-10+dec;xx<x0+L;xx+=11){const a=Math.max(x0,xx), b=Math.min(x0+L,xx+10);
+R(x0+i,yM,5,Hm-7,n<.33?BO.bois:(n<.66?BO.boisC:BO.boisH));R(x0+i+4,yM,1,Hm-7,BO.boisO);
+for(let k=0;k<2;k++){const ny=yM+Math.floor(PR_h(i,k,92)*(Hm-9));R(x0+i+1,ny,3,1,BO.boisO);}}
+R(x0,yM,L,1,BO.boisH);
+R(x0,yM,2,Hm-7,'#9d7a4a');R(x1-2,yM,2,Hm-7,'#4a3219');}      /* les retours */
+else{R(x0,yM,L,Hm-7,P.p);
+let j=0;for(let yy=yM;yy<yBas;yy+=7,j++){const dec=(j%2)?5:0;
+for(let xx=x0-10+dec;xx<x1;xx+=11){const a=Math.max(x0,xx), b=Math.min(x1,xx+10);
 if(b-a<2)continue;const n=PR_h(xx,yy,81);
 R(a,yy,b-a,6,n<.3?P.c:(n<.62?P.p:P.o));R(a,yy,b-a,1,P.c);}
 R(x0,yy+6,L,1,P.s);}
-R(x0,yM,L,1,P.c);R(x0,sol-1,L,1,P.s);}
-/* LE SOUBASSEMENT */
-if(o.socle){R(x0,sol-9,L,9,PI2.p);R(x0,sol-9,L,1,PI2.c);R(x0,sol-1,L,1,PI2.s);}
-/* LE TOIT : tuiles, ou chaume pour les communs */
+/* les chaînages d'angle, clair à gauche, sombre à droite */
+for(let yy=yM;yy<yBas;yy+=12){R(x0,yy,8,11,P.c);R(x0,yy,8,1,'#e6dcc4');
+R(x1-8,yy,8,11,P.o);R(x1-8,yy,8,1,P.p);}
+R(x0,yM,L,1,P.c);}
+/* ---------- 3. L'OMBRE DE L'AVANT-TOIT ---------- */
+R(x0,yM,L,4,'rgba(28,20,10,.42)');R(x0,yM+4,L,2,'rgba(28,20,10,.20)');
+/* ---------- LE TOIT ---------- */
 if(o.chaume){
 for(let rg=rangs;rg>=0;rg--){const t=rg/(rangs+1), y=yM-rg*4, ret=Math.round(t*(L*0.07));
-const a=x0-10+ret, l2=L+20-ret*2;
+const a=x0-11+ret, l2=L+22-ret*2+PROF;
 for(let i=a;i<a+l2;i+=4){const n=PR_h(i,y,111);
-R(i,y,4,5,n<.3?'#9d8450':(n<.62?'#8d7444':'#ab9260'));R(i,y,4,1,'#b8a071');R(i+3,y,1,5,'#6f5c35');}
+const loin=i>x1+8;
+R(i,y,4,5,loin?(n<.5?'#7a6436':'#6d5a30'):(n<.3?'#9d8450':(n<.62?'#8d7444':'#ab9260')));
+R(i,y,4,1,loin?'#8d7444':'#b8a071');R(i+3,y,1,5,'#6f5c35');}
 R(a,y+4,l2,1,'#6f5c35');}
-R(x0-8,yM-rangs*4-5,L+16,5,'#7d6840');R(x0-8,yM-rangs*4-5,L+16,2,'#a08a56');}
-else{for(let rg=rangs;rg>=0;rg--){const t=rg/(rangs+1), y=yM-rg*4, ret=Math.round(t*(L*0.08));
-const a=x0-10+ret, l2=L+20-ret*2;
+R(x0-9,yM-rangs*4-5,L+18+PROF,5,'#7d6840');R(x0-9,yM-rangs*4-5,L+18+PROF,2,'#a08a56');}
+else{
+/* LE TOIT. L'AVANT-TOIT COUVRE LE FLANC À PLAT : la première version
+   faisait monter les tuiles avec la fuite, et le versant partait en
+   éperon tordu à droite. Un toit de ferme déborde droit ; c'est le MUR
+   qui fuit dessous, et ça suffit à faire le volume. La partie qui
+   surplombe le flanc est d'un cran plus sombre : elle est à l'ombre. */
+for(let rg=rangs;rg>=0;rg--){const t=rg/(rangs+1), y=yM-rg*4, ret=Math.round(t*(L*0.08));
+const a=x0-11+ret, l2=L+22-ret*2+PROF;
 for(let i=a;i<a+l2;i+=6){const q=(Math.round(i)*7+rg*13)%4;
-R(i,y,6,5,q===0?TU.p:(q===1?TU.c:(q===2?TU.s:TU.p)));
-R(i,y,6,1,rg>rangs-2?TU.h:TU.c);R(i+5,y,1,5,TU.o);}
+const loin=i>x1+8;
+R(i,y,6,5,loin?(q===0?TU.s:(q===1?TU.p:TU.o)):(q===0?TU.p:(q===1?TU.c:(q===2?TU.s:TU.p))));
+R(i,y,6,1,loin?TU.p:(rg>rangs-2?TU.h:TU.c));R(i+5,y,1,5,TU.o);}
 R(a,y+4,l2,1,TU.o);
+/* le dessous du débord : c'est l'épaisseur du toit qui se lit là */
+const deb=Math.max(1,11-ret);
+R(a,y+5,deb,2,'rgba(24,14,8,.55)');R(a+l2-deb,y+5,deb,2,'rgba(24,14,8,.55)');
 if(rg===rangs){R(a-2,y-4,l2+4,5,TU.o);R(a-2,y-4,l2+4,2,TU.faite);}}}
-/* LA PORTE, du côté de la ruelle, avec son auvent */
-{const hp=Math.round(Hm*0.62), px=Math.round(cx+cote*20-11);
-R(px-2,sol-hp-2,26,hp+2,BO.boisS);
-for(let i=0;i<22;i+=5){R(px+i,sol-hp,1,hp,BO.boisO);R(px+i+1,sol-hp,3,hp,(i/5)%2?BO.bois:BO.boisC);}
-R(px,sol-hp+Math.round(hp*0.28),22,2,BO.boisO);R(px,sol-hp+Math.round(hp*0.72),22,2,BO.boisO);
-R(px+18,sol-Math.round(hp/2)-1,2,3,'#e8c86a');
-R(px-7,sol-hp-10,36,5,BO.boisS);R(px-7,sol-hp-10,36,2,BO.boisC);
-R(px-5,sol-hp-5,2,4,BO.boisO);R(px+26,sol-hp-5,2,4,BO.boisO);}
-/* LA FENÊTRE, de l'autre côté, volets ouverts */
-{const fx=Math.round(cx-cote*28-11), fy=sol-Math.round(Hm*0.74);
-R(fx-1,fy-1,24,20,BO.boisS);R(fx,fy,22,18,'#2b3a3f');R(fx,fy,22,7,'#3c5157');
+/* ---------- LA PORTE, creusée dans le mur ---------- */
+{const hp=Math.round(Hm*0.58), px=Math.round(cx+cote*20-11), py=yBas-hp;
+R(px-3,py-3,28,hp+3,'rgba(20,14,6,.5)');                     /* l'embrasure */
+R(px-1,py-1,24,hp+1,BO.boisS);
+for(let i=0;i<22;i+=5){R(px+i,py,1,hp,BO.boisO);R(px+i+1,py,3,hp,(i/5)%2?BO.bois:BO.boisC);}
+R(px,py+Math.round(hp*0.28),22,2,BO.boisO);R(px,py+Math.round(hp*0.72),22,2,BO.boisO);
+R(px,py,22,2,'rgba(16,10,4,.55)');R(px,py,2,hp,'rgba(16,10,4,.4)');  /* le creux */
+R(px+20,py,2,hp,'#9d7a4a');
+R(px+18,py+Math.round(hp/2)-1,2,3,'#e8c86a');
+R(px-8,py-11,38,6,BO.boisS);R(px-8,py-11,38,2,BO.boisC);     /* l'auvent */
+R(px-8,py-5,38,2,'rgba(16,10,4,.45)');
+R(px-6,py-5,2,5,BO.boisO);R(px+26,py-5,2,5,BO.boisO);}
+/* ---------- LA FENÊTRE, creusée elle aussi ---------- */
+{const fx=Math.round(cx-cote*28-11), fy=yBas-Math.round(Hm*0.70);
+R(fx-3,fy-3,28,24,'rgba(20,14,6,.45)');
+R(fx-1,fy-1,24,20,BO.boisS);R(fx,fy,22,18,'#222e33');
+R(fx,fy,22,6,'#3c5157');R(fx,fy+6,22,1,'#2b3a3f');
 R(fx+11,fy,1,18,BO.boisC);R(fx,fy+9,22,1,BO.boisC);
-[[fx-6],[fx+22]].forEach(([vx])=>{R(vx,fy-1,6,20,'#56794f');
-for(let k=0;k<19;k+=3)R(vx+1,fy+k,4,1,'#43613e');R(vx,fy-1,6,1,'#6d9163');});}
-/* LA CHEMINÉE */
+R(fx+2,fy+2,7,5,'rgba(190,220,232,.22)');                     /* un reflet */
+R(fx,fy,22,2,'rgba(16,10,4,.5)');
+R(fx+1,fy+17,22,3,'#b0a68e');R(fx+1,fy+19,22,1,'#6f6655');    /* l'appui */
+[[fx-7],[fx+23]].forEach(([vx],q)=>{R(vx,fy-1,7,20,q?'#3f5b3a':'#56794f');
+for(let k=0;k<19;k+=3)R(vx+1,fy+k,5,1,q?'#32492e':'#43613e');
+R(vx,fy-1,7,1,q?'#527049':'#6d9163');});}
+/* ---------- LA CHEMINÉE ---------- */
 if(o.cheminee){const hx=Math.round(cx+o.cheminee*(L/2-14)), hy=yM-rangs*4-18;
-R(hx,hy,14,24,PIE.p);R(hx,hy,2,24,PIE.c);R(hx+12,hy,2,24,PIE.o);
-R(hx-3,hy-6,20,6,PIE.o);R(hx-3,hy-6,20,2,PIE.c);
+R(hx,hy,14,24,P.p);R(hx,hy,2,24,P.c);R(hx+12,hy,2,24,P.o);
+for(let k=6;k<24;k+=8)R(hx,hy+k,14,1,P.s);
+R(hx-3,hy-6,20,6,P.o);R(hx-3,hy-6,20,2,P.c);
 R(hx-1,hy-11,16,5,TU.p);R(hx-1,hy-11,16,2,TU.h);}
-/* LA PLAQUE : elle mord de trois unités dans le faîtage, sinon elle flotte */
+/* ---------- LA PLAQUE : elle mord dans le faîtage ---------- */
 if(o.mot){const PL=Math.min(W-10,o.mot.length*11+34), hpl=22, py=hPl-9;
+R(cx-PL/2+2,py+3,PL,hpl,'rgba(16,10,4,.35)');
 R(cx-PL/2,py,PL,hpl,'#3d2a17');R(cx-PL/2,py,PL,2,BO.boisC);R(cx-PL/2,py+hpl-2,PL,2,'#241709');
+R(cx-PL/2,py,2,hpl,'#5b4229');R(cx+PL/2-2,py,2,hpl,'#241709');
 R(cx-PL/2-3,py-1,3,hpl+2,BO.boisO);R(cx+PL/2,py-1,3,hpl+2,BO.boisO);
-g.font='700 13px Georgia,serif';g.fillStyle='#f0cf7d';g.textAlign='center';
-g.fillText(o.mot,cx,py+hpl/2+5,PL-8);g.textAlign='left';}
-return calque(c,W,H,sol);}
+g.font='700 13px Georgia,serif';g.fillStyle='rgba(16,10,4,.6)';g.textAlign='center';
+g.fillText(o.mot,cx+1,py+hpl/2+6,PL-8);
+g.fillStyle='#f0cf7d';g.fillText(o.mot,cx,py+hpl/2+5,PL-8);g.textAlign='left';}
+/* ---------- L'EMPRISE, RENDUE AVEC LE CALQUE ----------
+   La boîte couvre le seuil dessiné ET l'épaisseur du corps derrière la
+   façade : on ne peut ni marcher sur les pierres plates, ni se retrouver
+   DANS le mur. Au-delà, on passe derrière la maison, et elle nous cache —
+   c'est le tri par y de la pile de dessin qui s'en charge. */
+const q=calque(c,W,H,sol+DALLE-3);
+q.emprise={w:L+PROF+2,h:DALLE+18};
+return q;}
 /* ---------- L'ARCHE D'ENTRÉE, AVEC SES DEUX MURETS ---------- */
 function ruArche(){
 const W=330, H=100, sol=94, D=2;
@@ -16990,22 +17110,28 @@ R(cx+i,sol-k,1,1,n<.3?'#24452a':(n<.66?'#2e5734':'#1c3722'));}}
 return calque(c,W,H,sol);}
 /* ---------- ON GRAVE, ON ENREGISTRE, ON POSE ----------
    demi : la demi-largeur de la zone où la porte s'attrape. */
+/* LA COLLISION RECOPIE L'EMPRISE DESSINÉE. Les chiffres étaient écrits à
+   la main, et ils ne valaient que pour le dessin du jour : au premier
+   changement de proportion, on traversait le mur ou on butait dans le
+   vide. ruCorps rend maintenant la boîte avec son calque, et poser la
+   prend telle quelle. Ce qu'on voit est ce qui arrête. */
 const poser=(nom,C,bx,by,boite,extra)=>{
 XCAL['x_fe_'+nom+'0']=C;CALQUES_DECO['x_fe_'+nom]=C;
-if(boite)TAILLES['x_fe_'+nom]=[boite];
+const B=boite||C.emprise;
+if(B)TAILLES['x_fe_'+nom]=[B];
 DECOR.push(Object.assign({t:'x_fe_'+nom,x:RX+bx,y:RY+by,v:0},extra||{}));};
 /* les six corps, du nord au sud · [cx, sol, L, Hm, côté de la porte] */
-poser('ruA',ruCorps(108,42, 1,{cheminee:-1}),             72,196,{w:108,h:20});
-poser('ruB',ruCorps(104,40,-1,{bois:true,chaume:true}),  278,272,{w:104,h:18});
-poser('ruC',ruCorps(104,40, 1,{bois:true}),               70,374,{w:104,h:18});
-poser('ruD',ruCorps(108,44,-1,{cheminee:1}),             276,456,{w:108,h:20});
-poser('ruE',ruCorps(112,46, 1,{socle:true,cheminee:-1,mot:'LA FERME'}),
-      74,552,{w:112,h:22},{bati:true,demi:60,ouvre:'laFerme'});
-poser('ruF',ruCorps(104,40,-1,{bois:true,socle:true}),   280,622,{w:104,h:18});
+poser('ruA',ruCorps(108,42, 1,{cheminee:-1}),             72,200);
+poser('ruB',ruCorps(104,40,-1,{bois:true,chaume:true}),  278,276);
+poser('ruC',ruCorps(104,40, 1,{bois:true}),               70,378);
+poser('ruD',ruCorps(108,44,-1,{cheminee:1}),             276,460);
+poser('ruE',ruCorps(112,46, 1,{mot:'LA FERME'}),
+      74,556,null,{bati:true,demi:62,ouvre:'laFerme'});
+poser('ruF',ruCorps(104,40,-1,{bois:true}),              280,626);
 /* l'arche et les deux cyprès de l'entrée */
 poser('ruArche',ruArche(),175,88,null);
-poser('ruCyp1',ruCypres(78), 34,104,{w:14,h:8});
-poser('ruCyp2',ruCypres(70),316,104,{w:14,h:8});
+poser('ruCyp1',ruCypres(78), 34,104,{w:10,h:6});
+poser('ruCyp2',ruCypres(70),316,104,{w:10,h:6});
 /* ---------- CE QUI FAIT QU'UNE COUR EST HABITÉE ----------
    Sans ça, six maisons posées sur un rectangle de terre font un lotissement.
    Rien de tout ceci ne bloque — sauf le four et la charrette, qui ont de
@@ -21364,7 +21490,7 @@ if(!parLePortillon){ax=joueur.x;ay=joueur.y;}}}
    seule. */
 {const MY=898;
 const avant=(+joueur.y||0)<MY;
-if((ay<MY)!==avant&&((ax>698&&ax<822)||(ax>894&&ax<1032))){ax=+joueur.x||0;ay=+joueur.y||0;}}
+if((ay<MY)!==avant&&((ax>698&&ax<840)||(ax>890&&ax<1032))){ax=+joueur.x||0;ay=+joueur.y||0;}}
 if(dansLePassage&&ax>MONDE_L-BORD_FERME-33+96&&!PARTIR_AU_PORT){
 PARTIR_AU_PORT=true;
 try{texteVolant(joueur.x,joueur.y-40,'Direction le port…','#f0cf7d');}catch(x){}
