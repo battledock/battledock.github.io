@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-10-0532"></script>
+<script src="maintenance.js?v=2026-10-10-0618"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-10-0532';
+var MA_VERSION='2026-10-10-0618';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -17886,6 +17886,29 @@ if(lw<VW+2||lh<VH+2){ctx.fillStyle='#2b3a26';ctx.fillRect(0,0,VW+2,VH+2);}   /* 
 if(CHAMPS_SEULS&&CARTE==='village'){
 if(!SOL)return;
 ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
+/* ================= LE VERGER =================
+   IL SE DESSINE ICI, ET NULLE PART AILLEURS. Il était accroché à
+   dessinerDecor — comme le potager l'était pour ses planches — alors que
+   ce chemin de dessin ne rejoint jamais dessinerDecor : il sort en return
+   quarante lignes plus bas, et le commentaire d'origine le dit. Le verger
+   était donc chargé, cliquable, on y creusait et on y plantait… et il
+   restait parfaitement invisible. Les cuvettes se posent sur le sol, les
+   arbres partent dans la pile triée avec le joueur et les bêtes. */
+const vergerArbres=[];
+try{
+if(VERG.charge){
+const ZV=VER_Z();
+if(ZV.x1-camX>-10&&ZV.x0-camX<VW+10&&ZV.y1-camY>-10&&ZV.y0-camY<VH+40){
+if(VER_SALE||!VER_CHAMP){VER_CHAMP=verGraver();VER_SALE=false;}
+ctx.drawImage(VER_CHAMP,Math.round(ZV.x0-camX),Math.round(ZV.y0-camY),ZV.x1-ZV.x0,ZV.y1-ZV.y0);
+for(let i=0;i<VER.n;i++){const F=VERG.f[i];if(!F||!F.esp||!ARB[F.esp])continue;
+const P=verPied(i), st=verStade(F);
+if(P.x-camX>VW+60||P.x-camX<-60||P.y-camY>VH+40||P.y-camY<-110)continue;
+vergerArbres.push({y:P.y,f:()=>{try{poserArbre(ctx,F.esp,st,P.x-camX,P.y-camY,1);}catch(x){}}});
+if(st===3)vergerArbres.push({y:P.y+1,f:()=>{try{const t2=Date.now()/300;
+PX(ctx,P.x+24-camX,P.y-46-camY+Math.sin(t2)*0.5,1,1,'#fff6c0');
+PX(ctx,P.x+23.5-camX,P.y-45.75-camY,2,0.5,'#fff6c0');}catch(x){}}});}
+}}}catch(x){}
 const pxF=Math.round((joueur.x-camX)*ECH)/ECH;
 const pyF=Math.round((joueur.y-camY)*ECH)/ECH;
 nettoyerBulles();
@@ -18061,7 +18084,7 @@ ctx.fillStyle='rgba(30,22,12,.38)';ctx.fillRect(ex-4,ey+2,9,1);
 poserPlant(ctx,P.cult,st,ex,ey,2);
 }catch(x){}}});
 }}
-const pile=acteursF.concat(pousses).concat(pousses_bete).concat(DECOR.map(o=>({y:o.y,f:()=>{
+const pile=acteursF.concat(pousses).concat(pousses_bete).concat(vergerArbres).concat(DECOR.map(o=>({y:o.y,f:()=>{
 try{dessinerX(ctx,o,o.x-camX,o.y-camY);}catch(x){}}})));
 pile.sort((a,b)=>a.y-b.y);
 for(const p of pile)p.f();
@@ -32834,23 +32857,11 @@ PX(g,P.x+Math.cos(a)*24*r,P.y+Math.sin(a)*9*r,2,2,A.fr[2]);}}}
 return c;}
 
 /* ================= LE DESSIN =================
-   Les cuvettes sous les pieds, les arbres triés en profondeur avec le
-   joueur : on passe devant un tronc, on passe derrière le suivant. */
-const verDecorVrai=dessinerDecor;
-dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
-if(CARTE==='village'&&typeof CHAMPS_SEULS!=='undefined'&&CHAMPS_SEULS&&VERG.charge){
-const Z=VER_Z();
-if(Z.x1-camX>-10&&Z.x0-camX<VW2+10&&Z.y1-camY>-10&&Z.y0-camY<VH2+40){
-if(VER_SALE||!VER_CHAMP){VER_CHAMP=verGraver();VER_SALE=false;}
-g.drawImage(VER_CHAMP,Math.round(Z.x0-camX),Math.round(Z.y0-camY),Z.x1-Z.x0,Z.y1-Z.y0);
-for(let i=0;i<VER.n;i++){const F=VERG.f[i];if(!F||!F.esp||!ARB[F.esp])continue;
-const P=verPied(i), s=verStade(F);
-if(P.x-camX>VW2+60||P.x-camX<-60||P.y-camY>VH2+40||P.y-camY<-110)continue;
-acteurs.push({y:P.y,f:()=>poserArbre(g,F.esp,s,P.x-camX,P.y-camY,1)});
-if(s===3)acteurs.push({y:P.y+1,f:()=>{const t=Date.now()/300;
-PX(g,P.x+24-camX,P.y-46-camY+Math.sin(t)*0.5,1,1,'#fff6c0');
-PX(g,P.x+23.5-camX,P.y-45.75-camY,2,0.5,'#fff6c0');}});}}}
-return verDecorVrai(g,camX,camY,VW2,VH2,acteurs);};
+   Il n'y a rien ici. Le verger se dessine dans dessiner(), au milieu du
+   chemin de la ferme, parce que ce chemin sort avant dessinerDecor.
+   Un enrobage de dessinerDecor vivait ici : il n'a jamais rien peint.
+   Si tu ajoutes un jour quelque chose à la ferme, regarde d'abord par où
+   elle passe — elle ne passe pas par dessinerDecor. */
 /* L'ARROSOIR : le même geste qu'au potager, pour qu'on le reconnaisse */
 const verBullesVrai=dessinerBulles;
 dessinerBulles=function(g,camX,camY,px,py){const d=Date.now()-VER_ARROSE;
