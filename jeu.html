@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-11-0505"></script>
+<script src="maintenance.js?v=2026-10-11-0530"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-11-0505';
+var MA_VERSION='2026-10-11-0530';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -29369,16 +29369,9 @@ function TEX(g,x0,y0,w,h,f){const W2=Math.max(1,Math.round(w*2)),H2=Math.max(1,M
 const q=c.getContext('2d'),im=q.createImageData(W2,H2),d=new Uint32Array(im.data.buffer);
 for(let j=0;j<H2;j++){const yy=j/2;for(let i=0;i<W2;i++){const col=f(i/2,yy);if(col)d[j*W2+i]=texCoul(col);}}
 q.putImageData(im,0,0);const lisse=g.imageSmoothingEnabled;g.imageSmoothingEnabled=false;g.drawImage(c,x0,y0,W2/2,H2/2);g.imageSmoothingEnabled=lisse;}
-function parcelle(g,x,y,W,H,etat){
-const R=(a,b,w,hh,c)=>PX(g,a,b,w,hh,c);
-if(etat==='herbe'){TEX(g,x,y,W,H,(xx,yy)=>alea(xx*3.1+yy*7.3+x)<0.5?'#8fa464':'#889d5e');
-for(let k=0;k<20;k++){const a=x+alea(k*2.1+x)*W, b=y+2+alea(k*3.7)*(H-2);R(a,b-2,0.5,2,'#70844b');R(a,b-2.5,0.5,0.5,'#9cb072');}return;}
-const arr=etat==='arrosee';
-R(x-0.5,y-0.5,W+1,H+1.5,arr?'#3d2e1c':'#6a5538');
-TEX(g,x,y,W,H,(xx,yy)=>{const n=alea(xx*5.1+yy*9.7+x*0.3);return arr?(n<0.35?'#4a3824':(n<0.7?'#55412a':'#604b31')):(n<0.35?TERRE_P[1]:(n<0.7?TERRE_P[2]:'#95805b'));});
-for(let r=0;r<2;r++){const yy=y+H*(0.3+r*0.42);for(let xx=0;xx<W;xx+=0.5){R(x+xx,yy,0.5,0.5,arr?'#35281a':TERRE_P[0]);R(x+xx,yy-0.5,0.5,0.5,arr?'#6e5638':TERRE_P[3]);}}
-if(arr)for(let k=0;k<9;k++){const a=x+1+alea(k*4.3+x)*(W-2), b=y+1+alea(k*6.1)*(H-2);R(a,b,1,0.5,'rgba(170,215,240,.6)');R(a+0.5,b-0.5,0.5,0.5,'rgba(230,245,255,.7)');}
-}
+/* parcelle() a été retirée : c'était l'ancien dessin des planches, à plat,
+   au fillRect d'un demi-pixel sur toute la largeur. Le potager du village
+   est passé aux billons de la ferme (potGraver), et plus rien ne l'appelait. */
 const semis=(g,x,y)=>{PX(g,x-1,y-0.5,2,1,'#4f3c26');PX(g,x-0.5,y-1,1,0.5,'#c8b080');};
 const pousse=(g,x,y,c)=>{PX(g,x,y-2.5,0.5,2.5,'#5f8f3c');feuille(g,x-1.2,y-2.8,1.3,0.6,-0.5,c||VERTC);feuille(g,x+1.4,y-3,1.3,0.6,0.5,c||VERTC);};
 const PLANTES={
@@ -29649,17 +29642,75 @@ if(joueur.y<CARRE.y0-20||joueur.y>CARRE.y0+CARRE.H+30)return null;}
    s'allumait en plein passage entre deux planches. */
 for(let i=0;i<24;i++){if(!potOuverte(i))continue;const {x,y,PW,PH}=POT_XY(i);
 if(joueur.x>=x&&joueur.x<=x+PW&&joueur.y>y&&joueur.y<=y+PH+3)return i;}return null;}
+/* ================= LE POTAGER DU VILLAGE, AU MÊME LOOK QUE LA FERME =====
+   Il gardait l'ancien dessin : des planches plates au ton uni posées sur
+   une texture de terre claire, alors que la ferme est passée au gravier
+   et aux billons. Même palette, même ondulation des crêtes — les deux
+   potagers se ressemblent enfin, et les plants se posent dans le creux du
+   sillon des deux côtés.
+   LE GRAVIER ET LES BILLONS SE POSENT EN UNE SEULE FOIS, par getImageData
+   /putImageData : au fillRect d'un pixel, les trois cent mille carrés de
+   cette toile coûtaient plus que tout le reste du potager. C'est le piège
+   déjà corrigé pour le blé du pourtour puis pour la ferme. Les mottes, le
+   buis, les herbes et les pancartes restent au pinceau : ils sont peu
+   nombreux, leurs rectangles font plusieurs pixels, et ils doivent passer
+   PAR-DESSUS — donc après la pose. */
 function potGraver(){const Z=POT_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0, D=2, c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');
 g.setTransform(D,0,0,D,-Z.x0*D,-Z.y0*D);g.imageSmoothingEnabled=false;
-TEX(g,Z.x0,Z.y0,Z.x1-Z.x0,Z.y1-Z.y0,(x,y)=>{const n=alea((x+Z.x0)*2.3+(y+Z.y0)*3.1);return n<0.3?'#b8a476':(n<0.7?'#c8b688':'#d4c498');});
-for(let k=0;k<900;k++){const x=Z.x0+alea(k*1.3)*(Z.x1-Z.x0), y=Z.y0+alea(k*2.9)*(Z.y1-Z.y0);PX(g,x,y,1.5,0.5,alea(k)<0.5?'#a89060':'#e0d0a8');}
+{
+const LW=W*D, LH=H*D, im=g.createImageData(LW,LH), d2=im.data;
+/* met2 prend des coordonnées MONDE et remplit le bloc D×D correspondant */
+const met2=(x,y,co)=>{const i=(x-Z.x0)*D, j=(y-Z.y0)*D;
+if(i<0||j<0||i>=LW||j>=LH)return;
+for(let b=0;b<D;b++)for(let a=0;a<D;a++){const k=((j+b)*LW+(i+a))*4;d2[k]=co[0];d2[k+1]=co[1];d2[k+2]=co[2];d2[k+3]=255;}};
+const GRA=[[191,179,147],[202,190,158],[178,166,134]], GRAIN=[157,145,118];
+for(let y=Z.y0;y<Z.y1;y++)for(let x=Z.x0;x<Z.x1;x++){
+const n=PR_h(x,y,41);
+met2(x,y,n<.4?GRA[0]:(n<.75?GRA[1]:GRA[2]));}
+/* le grain du gravier */
+for(let k=0;k<Math.round(W*H/40);k++){
+const x=Z.x0+Math.floor(PR_h(k,3,43)*W);
+const y=Z.y0+Math.floor(PR_h(k,7,45)*H);
+met2(x,y,GRAIN);}
+/* LA TERRE EN BILLONS : crête, flanc, sillon. La planche arrosée descend
+   d'un cran de plus : on voit de loin ce qui vient d'être arrosé. */
+const BIL=[[[127,103,69],[135,110,74]],[[106,84,56],[114,89,60]],
+           [[87,67,44],[93,72,48]],[[71,54,38],[77,59,41]]];
+const BIL_EAU=[[[91,74,52],[97,79,56]],[[76,61,43],[82,64,46]],
+               [[63,49,34],[67,52,37]],[[51,39,29],[55,43,31]]];
+for(let i=0;i<24;i++){const {x,y,PW,PH}=POT_XY(i), P=POT.parc[i];
+const B=(P&&P.etat==='bechee'&&P.eau)?BIL_EAU:BIL;
+for(let j=0;j<PH;j++)for(let a=0;a<PW;a++){
+const ond=Math.sin((x+a)/16)*0.9+Math.sin((x+a)/6)*0.3;
+const rel=((j+ond)%5+5)%5, q=PR_h(x+a,Math.floor(j/5),47);
+const et=rel<1?0:(rel<2.4?1:(rel<3.6?2:3));
+met2(x+a,y+j,B[et][q<.5?0:1]);}}
+g.putImageData(im,0,0);
+}
 for(let i=0;i<24;i++){const {x,y,PW,PH}=POT_XY(i), P=POT.parc[i], bechee=P&&P.etat==='bechee';
-if(!bechee){parcelle(g,x,y,PW,PH,'bechee');
-for(let k=0;k<60;k++){const a=x+1+alea(k*1.7+x)*(PW-2), b=y+3+alea(k*3.1+y)*(PH-3), h=2+alea(k*5.3)*3;PX(g,a,b-h,0.5,h,k%2?'#6f8449':'#7d9450');PX(g,a,b-h-0.5,0.5,0.5,'#9cb072');}
+/* LES MOTTES RETOURNÉES */
+for(let k=0;k<Math.round(PW*PH/30);k++){
+const a=Math.floor(PR_h(k,i,49)*(PW-3)), b=Math.floor(PR_h(k,i,51)*(PH-3));
+const w2=2+Math.floor(PR_h(k,i,53)*2);
+g.fillStyle=(bechee&&P.eau)?'#67553a':'#8e7550';g.fillRect(x+a,y+b,w2,2);}
+/* LES GOUTTES, sur la planche qu'on vient d'arroser */
+if(bechee&&P.eau)for(let k=0;k<9;k++){const a=x+1+PR_h(k,i,55)*(PW-2), b=y+1+PR_h(k,i,57)*(PH-2);
+PX(g,a,b,1,0.5,'rgba(170,215,240,.6)');PX(g,a+0.5,b-0.5,0.5,0.5,'rgba(230,245,255,.7)');}
+/* LA PLANCHE EN FRICHE : l'herbe reprend le dessus */
+if(!bechee){for(let k=0;k<60;k++){const a=x+1+PR_h(k,i,59)*(PW-2), b=y+3+PR_h(k,i,61)*(PH-3), h=2+PR_h(k,i,63)*3;
+PX(g,a,b-h,0.5,h,k%2?'#6f8449':'#7d9450');PX(g,a,b-h-0.5,0.5,0.5,'#9cb072');}
 if(!potOuverte(i)){const sx=x+PW-8, sy=y+PH-6;PX(g,sx,sy-10,1,10,'#6b4a28');PX(g,sx-4,sy-12,9,5,'#e8dcc0');PX(g,sx-4,sy-12,9,0.5,'#fff4d8');PX(g,sx-4,sy-7.5,9,0.5,'#8a6a40');
 g.fillStyle='#6b4a28';g.font='700 2.6px Georgia';g.fillText('À LOUER',sx-3.6,sy-8.6);}}
-else parcelle(g,x,y,PW,PH,P.eau?'arrosee':'bechee');
 if(POT.j&&POT.j.arroseurs&&POT.j.arroseurs.includes(i)){PX(g,x+2,y+2,1,5,'#8b9198');PX(g,x+1,y+1.5,3,1,'#6f767c');}}
+/* LA BORDURE DE BUIS. À la ferme elle fait le tour de chaque planche ;
+   ici les allées ne font que six pixels, deux haies s'y toucheraient et
+   le gravier disparaîtrait. Elle ne cerne donc que le carré entier. */
+{const buis=(x,y)=>{const t=PR_h(x,y,65);
+g.fillStyle=t<.5?'#3f6b34':'#487a3a';g.fillRect(x,y-3,3,4);
+g.fillStyle='#5a9044';g.fillRect(x,y-4,3,1);
+g.fillStyle='#6aa44e';g.fillRect(x+1,y-4,1,1);};
+for(let a=Z.x0;a<Z.x1;a+=3){buis(a,Z.y0+4);buis(a,Z.y1-1);}
+for(let b=Z.y0+7;b<Z.y1-3;b+=3){buis(Z.x0,b);buis(Z.x1-3,b);}}
 return c;}
 const potDecorVrai=dessinerDecor;
 dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
@@ -29669,7 +29720,16 @@ if(POT_SALE||!POT_CHAMP){POT_CHAMP=potGraver();POT_SALE=false;}
 g.drawImage(POT_CHAMP,Math.round(Z.x0-camX),Math.round(Z.y0-camY),Z.x1-Z.x0,Z.y1-Z.y0);
 for(let i=0;i<24;i++){const P=POT.parc[i];if(!P||!P.cult||!PLANTES[P.cult])continue;const {x,y,PW,PH}=POT_XY(i), s=potStade(P);
 if(x-camX>VW2+20||x+PW-camX<-20||y-camY>VH2+30||y+PH-camY<-30)continue;
-for(let r=0;r<2;r++)for(let q=0;q<3;q++){const px=x+9+q*((PW-18)/2), py=y+PH*(0.45+r*0.45);acteurs.push({y:py,f:()=>poserPlant(g,P.cult,s,px-camX,py-camY,1)});}
+/* CHAQUE PLANT DANS LE CREUX DE SON SILLON, comme à la ferme : la même
+   ondulation que les billons, et un tri en profondeur par rangée. */
+for(let r=0;r<2;r++)for(let q=0;q<3;q++){
+const px=x+Math.round(PW*((q+0.5)/3));
+const ond=Math.sin(px/16)*0.9+Math.sin(px/6)*0.3;
+const py=y+Math.round(Math.floor((Math.round(PH*((r+0.55)/2)))/5)*5+3-ond);
+acteurs.push({y:py,f:()=>{const ex=px-camX, ey=py-camY;
+g.fillStyle='#9a8158';g.fillRect(ex-2,ey-1,5,2);
+g.fillStyle='rgba(30,22,12,.38)';g.fillRect(ex-2,ey+1,5,1);
+poserPlant(g,P.cult,s,ex,ey,1);}});}
 if(s===3)acteurs.push({y:y+PH,f:()=>{const t=Date.now()/300;PX(g,x+PW-4-camX,y+3-camY+Math.sin(t)*0.5,1,1,'#fff6c0');PX(g,x+PW-4.5-camX,y+3.25-camY,2,0.5,'#fff6c0');}});}}}
 if(CARTE==='village'&&POT.charge){const nEp=Math.min(3,(POT.j&&POT.j.epouvantails)||0);   /* les épouvantails, au milieu de chaque rang gardé */
 /* LE SERVEUR GARDE PAR GROUPES DE HUIT (pot_recolter : p_i / 8), ce qui
