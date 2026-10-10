@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-10-1908"></script>
+<script src="maintenance.js?v=2026-10-10-2036"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-10-1908';
+var MA_VERSION='2026-10-10-2036';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11956,11 +11956,15 @@ cx+=7;}
    du pourtour si cher. Une lecture, une écriture, et la cour ne coûte
    plus que quelques dizaines de millisecondes. Seules les flaques, qui
    sont translucides, restent en fillRect : il n'y en a que trente et un. */
-const RX=690, RY=812, X1=20, X2=330, Y1=40, Y2=640;
-const img=g.getImageData(RX+X1,RY+Y1,X2-X1,Y2-Y1), d=img.data, LAR=X2-X1;
+const RX=690, RY=812, X1=20, X2=330, Y1=84, Y2=640;
+/* LA ZONE LUE MONTE PLUS HAUT QUE LA TERRE BATTUE : l'allée, elle, va
+   chercher la chaussée seize unités au-dessus du terrain, pour qu'on voie
+   le chemin arriver sous l'arche au lieu de l'herbe. */
+const YI=-16;
+const img=g.getImageData(RX+X1,RY+YI,X2-X1,Y2-YI), d=img.data, LAR=X2-X1;
 /* met(i,j) : i et j sont en coordonnées du terrain */
-const met=(i,j,c)=>{if(i<X1||j<Y1||i>=X2||j>=Y2)return;
-const k=((j-Y1)*LAR+(i-X1))*4;d[k]=c[0];d[k+1]=c[1];d[k+2]=c[2];d[k+3]=255;};
+const met=(i,j,c)=>{if(i<X1||j<YI||i>=X2||j>=Y2)return;
+const k=((j-YI)*LAR+(i-X1))*4;d[k]=c[0];d[k+1]=c[1];d[k+2]=c[2];d[k+3]=255;};
 const TER=[[160,138,99],[148,126,87],[138,116,78],[171,149,112]];   /* a08a63 947e57 8a744e ab9570 */
 const TRACE=[124,104,69];                                            /* 7c6845 */
 const GAL=[[154,138,110],[142,126,99],[166,149,120]];                /* 9a8a6e 8e7e63 a69578 */
@@ -11985,7 +11989,7 @@ for(let q=0;q<l;q++)met(a+q,b,TRACE);}
    PAS DU PAVÉ GRIS : des galets chauds, de la même famille que la terre
    qui les borde. Du gris en plein milieu d'une cour ocre faisait une
    dalle de béton. */
-{const A1=150, A2=200, J0=40, J1=636;
+{const A1=150, A2=200, J0=84, J1=636;
 for(let j=J0;j<J1;j++)for(let i=A1;i<A2;i++){
 const n=PR_h(RX+i,RY+j,61);
 met(i,j,n<.34?GAL[0]:(n<.68?GAL[1]:GAL[2]));}
@@ -11994,6 +11998,23 @@ for(let i=A1-6;i<A2;i+=7){const a=Math.max(A1,i+dec), b=Math.min(A2,i+dec+6);
 if(b-a<2)continue;const n=PR_h(RX+i,RY+j,62);
 const c=n<.28?PAV[0]:(n<.56?PAV[1]:(n<.80?PAV[2]:PAV[3]));
 for(let v=0;v<6;v++)for(let u=a;u<b;u++)met(u,j+v,v===0?PAVH:(v===5?PAVB:c));}}
+/* LE CHEMIN DE TERRE, DU CHEMIN PRINCIPAL JUSQU'AU PORCHE.
+   Le pavé ne commence qu'À L'INTÉRIEUR : prolongé dehors, il montait
+   derrière l'arche et on le prenait pour une cheminée de pierre. Un
+   chemin de ferme est en terre jusqu'au seuil. */
+for(let j=YI;j<J0+6;j++){
+/* IL S'ÉVASE EN APPROCHANT DU PORCHE : à la chaussée c'est une sente,
+   sous l'arche il doit couvrir toute l'ouverture, sinon on voit l'herbe
+   de part et d'autre du passage. */
+const t=Math.max(0,Math.min(1,(j-YI)/(J0-YI)));
+const lar=20+Math.round(t*t*18)+Math.round(PR_h(RX,RY+j,64)*3);
+for(let i=175-lar;i<175+lar;i++){
+const ec=Math.min(i-(175-lar),(175+lar)-1-i);
+if(ec<4&&PR_h(RX+i,RY+j,65)>=0.18+ec*0.2)continue;
+const n=PR_h(RX+i,RY+j,171);
+met(i,j,n<.30?TER[0]:(n<.58?TER[1]:(n<.84?TER[2]:TER[3])));}}
+for(let k=0;k<90;k++){const a=156+Math.floor(PR_h(k,3,176)*38), b=YI+Math.floor(PR_h(k,4,177)*(J0-YI));
+met(a,b,TRACE);met(a+1,b,TRACE);}
 /* les deux bordures, en pierre debout */
 for(let j=J0;j<J1;j+=5){
 const cg=PR_h(RX,RY+j,63)<.5?BORD[0]:BORD[1], cd=PR_h(RX+9,RY+j,63)<.5?BORD[0]:BORD[1];
@@ -12002,7 +12023,7 @@ for(let v=0;v<5;v++)for(let u=0;u<3;u++){met(A1-3+u,j+v,cg);met(A2+u,j+v,cd);}}}
 for(let k=0;k<380;k++){const a=24+Math.floor(PR_h(k,1,201)*300), b=78+Math.floor(PR_h(k,2,202)*524);
 const l=2+Math.floor(PR_h(k,3,203)*4), couche=PR_h(k,4,204)<0.5;
 for(let q=0;q<l;q++)met(a+q,b+(couche?0:Math.floor(q/2)),PR_h(k,q,205)<.5?PAI[0]:PAI[1]);}
-g.putImageData(img,RX+X1,RY+Y1);
+g.putImageData(img,RX+X1,RY+YI);
 /* ---------- LES FLAQUES, par-dessus : elles sont translucides ---------- */
 for(let k=0;k<31;k++){const a=RX+30+Math.floor(PR_h(k,5,206)*272), b=RY+84+Math.floor(PR_h(k,6,207)*508);
 const rw=8+Math.floor(PR_h(k,7,208)*14), rh=3+Math.floor(PR_h(k,8,209)*3);
@@ -17037,55 +17058,82 @@ g.fillStyle='#f0cf7d';g.fillText(o.mot,cx,py+hpl/2+5,PL-8);g.textAlign='left';}
 const q=calque(c,W,H,sol+DALLE-3);
 q.emprise={w:L+PROF+2,h:DALLE+18};
 return q;}
-/* ---------- L'ARCHE D'ENTRÉE, AVEC SES DEUX MURETS ---------- */
+/* ---------- L'ARCHE D'ENTRÉE, AVEC SES DEUX MURETS ----------
+   L'ARCHE BASSE, EN PLEIN APPAREIL. La première version assemblait des
+   morceaux — deux piles, un cintre posé dessus, des écoinçons rapportés —
+   et ça se voyait : le cintre flottait au-dessus des piles, le toit
+   faisait un bandeau détaché, et sous le passage on voyait l'herbe.
+   On monte maintenant un MASSIF DE PIERRE DE TAILLE ENTIER, et on CREUSE
+   l'ouverture dedans. C'est la seule façon d'avoir des écoinçons qui
+   tiennent, et une arête de cintre qui ne se décolle de rien.
+   ET SURTOUT L'OMBRE DU PASSAGE. Sans elle, l'allée qu'on voit par
+   l'ouverture a exactement la couleur de la pierre, et le trou paraît
+   bouché. Un porche est couvert : dessous il fait sombre, et c'est ce
+   noir qui creuse le trou. */
 function ruArche(){
-const W=330, H=100, sol=94, D=2;
+const W=330, H=132, sol=124, D=2;
 const c=document.createElement('canvas');c.width=W*D;c.height=H*D;
 const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(D,0,0,D,0,0);
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
 Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
-const cx=W/2;
-/* les deux murets de pierre sèche, de part et d'autre */
-[[0,120],[196,134]].forEach(([x,l])=>{
+const cx=W/2, rx=36, ry=24, naiss=sol-46, haut=sol-84;
+/* ---------- LES DEUX MURETS DE PIERRE SÈCHE ---------- */
+[[0,cx-54],[cx+54,W-(cx+54)]].forEach(([x,l])=>{
 for(let j=0;j<16;j+=6){const dec=(Math.floor(j/6)%2)?4:0;
 for(let i=-8+dec;i<l;i+=9){const a=Math.max(x,x+i), b=Math.min(x+l,x+i+8);
 if(b-a<2)continue;const n=PR_h(x+i,sol-16+j,121);
 R(a,sol-16+j,b-a,6,n<.28?PI2.c:(n<.58?PI2.p:(n<.82?PI2.o:'#8a857c')));
 R(a,sol-16+j,b-a,1,'#b8b3a9');}}
 R(x,sol-16,l,2,'#c6c1b6');R(x,sol-2,l,2,PI2.s);});
-/* les deux piles */
-[[cx-48],[cx+30]].forEach(([x])=>{
-for(let j=0;j<46;j+=7){const dec=(Math.floor(j/7)%2)?4:0;
-for(let i=-4+dec;i<18;i+=9){const a=Math.max(x,x+i), b=Math.min(x+18,x+i+8);
-if(b-a<2)continue;const n=PR_h(x+i,sol-46+j,251);
-R(a,sol-46+j,b-a,6,n<.3?PIE.c:(n<.62?PIE.p:PIE.o));R(a,sol-46+j,b-a,1,'#ded3bb');}}
-R(x-3,sol-52,24,6,PIE.o);R(x-3,sol-52,24,2,PIE.c);});
-/* ---------- LE CINTRE ----------
-   UNE ARCHE, PAS UN DÔME. La première version remplissait un demi-disque
-   PLEIN : elle bouchait l'entrée au lieu de l'ouvrir. La pierre va du bas
-   du linteau JUSQU'À la courbe, qui est haute au milieu — c'est le vide
-   sous la courbe qui fait le passage, et on voit la ruelle au travers. */
-{const r=30, naiss=sol-46, haut=sol-80;
-for(let k=0;k<r;k++){
-const h2=Math.round(Math.sqrt(Math.max(0,1-Math.pow(k/r,2)))*r);
-const yb=naiss-h2, ht=yb-haut;
-if(ht<1)continue;
-const n1=PR_h(k,1,253), n2=PR_h(k,2,253);
-R(cx-k-1,haut,1,ht,n1<.4?PIE.c:(n1<.78?PIE.p:PIE.o));
-R(cx+k,haut,1,ht,n2<.4?PIE.p:(n2<.78?PIE.c:PIE.o));
-/* le claveau : un liseré sombre le long de la courbe */
-R(cx-k-1,yb-2,1,2,PIE.s);R(cx+k,yb-2,1,2,PIE.s);}
+/* ---------- LE MASSIF, EN ASSISES DE PIERRE DE TAILLE ---------- */
+const taille=(x,y,w,h,gr)=>{
+for(let j=0;j<h;j+=7){const dec=(Math.floor(j/7)%2)?5:0;
+for(let i=-9+dec;i<w;i+=11){const a=Math.max(x,x+i), b=Math.min(x+w,x+i+10);
+if(b-a<2)continue;const n=PR_h(x+i,y+j,gr||251);
+R(a,y+j,b-a,6,n<.3?PIE.c:(n<.62?PIE.p:PIE.o));
+R(a,y+j,b-a,1,teint(PIE.c,14));R(a,y+j+6,b-a,1,PIE.s);}}};
+taille(cx-54,haut,108,84);
+/* ---------- ON CREUSE L'OUVERTURE ----------
+   putImageData ne subit pas la transformation : on travaille donc en
+   pixels de la toile, qui est gravée au double. */
+{const img=g.getImageData(0,0,c.width,c.height), d=img.data;
+for(let y=haut;y<sol;y++)for(let x=cx-54;x<cx+54;x++){
+const dx=(x-cx)/rx, dy=(y-naiss)/ry;
+const dedans=(y>=naiss)?(Math.abs(x-cx)<rx):(dx*dx+dy*dy<1);
+if(!dedans)continue;
+for(let sy=0;sy<D;sy++)for(let sx=0;sx<D;sx++){
+const k=(((y*D+sy)|0)*c.width+((x*D+sx)|0))*4;d[k+3]=0;}}
+g.putImageData(img,0,0);}
+/* ---------- L'ARÊTE DU CINTRE ET LES JAMBAGES ---------- */
+for(let a=Math.PI;a<Math.PI*2;a+=0.004){
+const x=cx+Math.cos(a)*rx, y=naiss+Math.sin(a)*ry;
+R(x,y,2,2,PIE.s);R(x,y-2,2,1,teint(PIE.c,10));}
+R(cx-rx-1,naiss,2,46,PIE.s);R(cx+rx-1,naiss,2,46,PIE.s);
 /* la clé de voûte */
-R(cx-5,naiss-r-4,10,12,PIE.o);R(cx-5,naiss-r-4,10,2,PIE.c);}
-/* le linteau et la couverture de tuiles */
-R(cx-54,sol-80,108,7,PIE.o);R(cx-54,sol-80,108,2,PIE.c);
-for(let i=cx-56;i<cx+56;i+=7){R(i,sol-90,7,10,TU.p);R(i,sol-90,7,2,TU.h);R(i+6,sol-90,1,10,TU.o);}
-R(cx-58,sol-94,116,5,TU.o);R(cx-58,sol-94,116,2,TU.faite);
-/* la lanterne pendue sous la clé : c'est elle qui dit « on entre ici »,
-   pas une seconde plaque — celle du corps du sud suffit. */
-R(cx-1,sol-73,2,7,'#4e545c');
-R(cx-5,sol-67,10,11,'#2e3238');R(cx-4,sol-66,8,9,'#f0cf7d');
-R(cx-3,sol-65,6,7,'#fff0b8');R(cx-6,sol-69,12,3,'#4e545c');
+R(cx-7,naiss-ry-8,14,16,PIE.c);R(cx-7,naiss-ry-8,14,2,teint(PIE.c,22));
+R(cx-7,naiss-ry-8,2,16,teint(PIE.c,12));R(cx+5,naiss-ry-8,2,16,PIE.o);
+/* ---------- LE BANDEAU, LE NOM GRAVÉ ----------
+   Gravé veut dire CREUSÉ : la lettre est sombre, et c'est son bord
+   supérieur qui prend la lumière. Pas de l'or, pas une plaque. */
+R(cx-54,haut,108,16,PIE.o);R(cx-54,haut,108,2,teint(PIE.c,18));
+R(cx-54,haut+14,108,2,PIE.s);
+g.font='700 11px Georgia,serif';g.textAlign='center';
+g.fillStyle=teint(PIE.c,18);g.fillText('LA FERME',cx,sol-72,96);
+g.fillStyle='#7a6e58';g.fillText('LA FERME',cx,sol-73,96);g.textAlign='left';
+/* ---------- LA CORNICHE ET LES DEUX BOULES ---------- */
+R(cx-58,haut-6,116,7,PIE.p);R(cx-58,haut-6,116,2,teint(PIE.c,20));R(cx-58,haut,116,2,PIE.s);
+[[cx-52],[cx+44]].forEach(([x])=>{
+for(let k=0;k<10;k++){const w2=Math.round(5*Math.sqrt(Math.max(0,1-Math.pow((k-4.5)/5.5,2))));
+R(x+4-w2,haut-16+k,w2*2,1,k<4?teint(PIE.c,14):PIE.p);}
+R(x,haut-8,8,3,PIE.o);});
+/* ---------- L'OMBRE DU PASSAGE ---------- */
+{const prof=70;
+for(let y=sol-prof;y<sol;y++){
+const t=(y-(sol-prof))/prof, a=Math.max(0,0.50-t*0.62);
+if(a>0.01)R(cx-rx,y,rx*2,1,'rgba(26,18,10,'+a.toFixed(3)+')');
+const b2=Math.max(0,0.42-t*0.34);
+R(cx-rx,y,4,1,'rgba(20,14,8,'+b2.toFixed(3)+')');
+R(cx+rx-4,y,4,1,'rgba(20,14,8,'+b2.toFixed(3)+')');}}
 return calque(c,W,H,sol);}
 /* ---------- UN PETIT OBJET DE COUR ---------- */
 function ruPetit(W,H,sol,dessin){
@@ -17129,7 +17177,7 @@ poser('ruE',ruCorps(112,46, 1,{mot:'LA FERME'}),
       74,556,null,{bati:true,demi:62,ouvre:'laFerme'});
 poser('ruF',ruCorps(104,40,-1,{bois:true}),              280,626);
 /* l'arche et les deux cyprès de l'entrée */
-poser('ruArche',ruArche(),175,88,null);
+poser('ruArche',ruArche(),175,96,null);
 poser('ruCyp1',ruCypres(78), 34,104,{w:10,h:6});
 poser('ruCyp2',ruCypres(70),316,104,{w:10,h:6});
 /* ---------- CE QUI FAIT QU'UNE COUR EST HABITÉE ----------
@@ -21490,7 +21538,7 @@ if(!parLePortillon){ax=joueur.x;ay=joueur.y;}}}
    seule. */
 {const MY=898;
 const avant=(+joueur.y||0)<MY;
-if((ay<MY)!==avant&&((ax>698&&ax<840)||(ax>890&&ax<1032))){ax=+joueur.x||0;ay=+joueur.y||0;}}
+if((ay<MY)!==avant&&((ax>698&&ax<831)||(ax>899&&ax<1032))){ax=+joueur.x||0;ay=+joueur.y||0;}}
 if(dansLePassage&&ax>MONDE_L-BORD_FERME-33+96&&!PARTIR_AU_PORT){
 PARTIR_AU_PORT=true;
 try{texteVolant(joueur.x,joueur.y-40,'Direction le port…','#f0cf7d');}catch(x){}
