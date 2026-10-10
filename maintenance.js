@@ -238,8 +238,13 @@
   /* LE JEU DOIT SAVOIR QUE LA FERME EST FERMÉE, lui aussi : sans ce
      drapeau, marcher vers l'ouest du quai chargeait les 1,6 Mo du jeu
      pour n'afficher que l'écran de chantier. Le port lit ce drapeau et
-     prévient sur place, sans quitter la carte. */
-  try{window.__FERME_FERMEE=FERME_FERMEE;}catch(e){}
+     prévient sur place, sans quitter la carte.
+     IL TIENT COMPTE DU LAISSEZ-PASSER. Sans le !PASSE, l'écran de
+     chantier s'écartait bien pour qui porte le passe — mais le quai, lui,
+     continuait de refuser le chemin de l'ouest : la ferme restait
+     inaccessible à celui-là même qui est censé pouvoir y travailler.
+     Le drapeau dit « fermée POUR CE JOUEUR », pas « en travaux ». */
+  try{window.__FERME_FERMEE=FERME_FERMEE&&!PASSE;}catch(e){}
   /* LE LAISSEZ-PASSER REDEVIENT VALABLE ICI, comme pour la forêt : la
      ferme etant ouverte a tous, l'exception qui l'ignorait n'a plus
      d'objet, et la laisser aurait fait mentir le drapeau le jour ou l'on
