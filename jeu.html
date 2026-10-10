@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-10-0007"></script>
+<script src="maintenance.js?v=2026-10-10-0532"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-10-0007';
+var MA_VERSION='2026-10-10-0532';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11905,6 +11905,28 @@ g.fillStyle='#8a6238';g.fillRect(px,MY1-8,2,20);
 g.fillStyle='#a5764a';g.fillRect(px,MY1-8,4,2);});
 [0,6].forEach(dy=>{g.fillStyle='#8a6238';g.fillRect(VER.porte-29,MY1-3+dy,58,3);
 g.fillStyle='#a5764a';g.fillRect(VER.porte-29,MY1-3+dy,58,1);});
+/* LES DOUZE RONDS DE PIERRES, GRAVÉS DANS LE TERRAIN.
+   Ils étaient peints par la couche vivante, celle qui dépend du serveur :
+   tant que l'état du verger n'était pas revenu, le verger était un pré
+   vide et on ne trouvait aucun emplacement. Or un rond de pierres ne
+   dépend de rien — il est là, creusé ou non. On le grave donc dans le sol,
+   une fois pour toutes. La couche vivante ne fait plus que poser par-dessus
+   ce qui change : la terre retournée, la pancarte, les fruits tombés. */
+for(let i=0;i<VER.n;i++){
+const P=verPied(i), RX=26, RY=10;
+for(let v=-RY;v<=RY;v++)for(let u=-RX;u<=RX;u++){
+const d=Math.hypot(u/RX,v/RY);if(d>1)continue;
+const n=PR_h(P.x+u,P.y+v,117);
+let col=n<.30?'#7d9a52':(n<.62?'#86a35c':'#74914b');
+if(PR_h(P.x+Math.round(u*1.7),P.y+Math.round(v*1.7),135)<0.22)col=n<.5?'#8a7450':'#99835c';
+g.fillStyle=col;g.fillRect(P.x+u,P.y+v,1,1);}
+for(let a=0;a<6.283;a+=0.22){
+const u=Math.round(Math.cos(a)*(RX+2)), v=Math.round(Math.sin(a)*(RY+1));
+const t=PR_h(u,v,119);
+g.fillStyle=t<.4?'#9a9382':(t<.75?'#aba493':'#8c8674');
+g.fillRect(P.x+u-1,P.y+v-2,3,3);
+g.fillStyle='#c6bfab';g.fillRect(P.x+u-1,P.y+v-2,3,1);
+g.fillStyle='rgba(50,43,31,.4)';g.fillRect(P.x+u-1,P.y+v+1,3,1);}}
 /* LE MATÉRIEL : l'échelle, les cageots, la brouette, l'abreuvoir.
    Ils sont peints dans le sol : on marche dessus, ils ne bloquent pas. */
 const BOIV=['#6b4a2c','#8a6238','#a5764a'];
@@ -29248,6 +29270,13 @@ try{const i=potProche();
 if(i!==POT_PRES){POT_PRES=i;majAction();}
 else if(i!==null)majAction();}catch(x){}},400);
 setInterval(()=>{if(CARTE==='village'&&document.visibilityState==='visible')potCharger();},120000);
+/* LA MÊME COURSE QUE LE VERGER : chargerLeChampVite abandonne au bout de
+   quatre secondes, alors que e.id n'arrive qu'avec la session. On insiste
+   jusqu'à ce que le champ soit là, et on recharge si l'identité change. */
+let POT_ID=null;
+setInterval(()=>{if(CARTE!=='village'||PLACE_SEULE||document.hidden||!e.id)return;
+if(POT.charge&&e.id===POT_ID)return;
+POT_ID=e.id;potCharger();},2000);
 const PQL=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
 /* LE POULAILLER, SES POUSSINS ET SON MOTEUR DE BASSE-COUR SONT SUPPRIMÉS. */
 /* L'ANCIENNE ZONE DU POULAILLER N'EXISTE PLUS. */
@@ -33002,6 +33031,7 @@ bqOutils=function(){return verBqOutilsVrai()+verBqSection();};
    On repasse derrière elle une fois la page écrite. */
 const verBqVrai=ouvrirLaBoutiqueFerme;
 ouvrirLaBoutiqueFerme=function(mot){const r=verBqVrai.apply(this,arguments);
+if(!VERG.charge)verCharger();        /* si l'état n'est pas encore là, c'est le moment */
 try{
 const fond=$('page2Fond');if(!fond||fond.className!=='bq')return r;
 fond.querySelectorAll('canvas[data-ov]').forEach(cv=>{try{
@@ -33029,11 +33059,22 @@ setTimeout(()=>motOuverture(b.dataset.av==='agrandir'?'Trois fosses de plus ! Va
 }catch(x){}
 return r;};
 
-/* ================= LA MISE EN ROUTE ================= */
-(function chargerLeVergerVite(n){
+/* ================= LA MISE EN ROUTE =================
+   ON INSISTE JUSQU'À CE QUE ÇA CHARGE. L'ancienne version réessayait
+   quarante fois toutes les cent millisecondes, puis abandonnait : quatre
+   secondes. Or e.id n'existe qu'une fois la session Supabase ouverte —
+   le module du client arrive d'un CDN, puis il faut lire la session. En
+   4G c'est souvent plus long que quatre secondes, et le verger restait
+   vide jusqu'au rafraîchissement suivant, deux minutes plus tard.
+   On surveille aussi le changement d'identité : au démarrage e.id vaut
+   d'abord un identifiant provisoire, puis celui du compte. Sans ça, on
+   chargeait le verger d'un joueur qui n'existe pas. */
+let VER_ID=null;
+setInterval(()=>{
 if(CARTE!=='village'||PLACE_SEULE||typeof CHAMPS_SEULS==='undefined'||!CHAMPS_SEULS)return;
-if(!e.id){if(n<40)return void setTimeout(()=>chargerLeVergerVite(n+1),100);return;}
-verCharger();})(0);
+if(document.hidden||!e.id)return;
+if(VERG.charge&&e.id===VER_ID)return;
+VER_ID=e.id;verCharger();},2000);
 /* LA PLAQUE DOIT AUSSI S'EFFACER quand on s'éloigne d'un arbre : sans ce
    rappel, « Cueillir » resterait affiché pendant qu'on marche ailleurs. */
 setInterval(()=>{if(document.hidden)return;
