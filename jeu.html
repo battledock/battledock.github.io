@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-11-0218"></script>
+<script src="maintenance.js?v=2026-10-11-0505"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-11-0218';
+var MA_VERSION='2026-10-11-0505';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -12066,29 +12066,44 @@ g.putImageData(img,RX+X1,RY+YI);
    brune. Du gravier clair détache chaque planche, et la terre peut devenir
    franchement plus sombre — les légumes y ressortent enfin. */
 const AL=14;
-for(let y=CARRE.y0-AL;y<CARRE.y0+CARRE.H+AL;y++)
-for(let x=CARRE.x0-AL;x<CARRE.x0+CARRE.L+AL;x++){
+/* LE GRAVIER ET LES BILLONS, ÉCRITS EN MÉMOIRE D'IMAGE. Ils étaient
+   peints au fillRect d'un pixel : cent soixante-huit mille carrés pour
+   les allées, cent sept mille pour la terre — deux cent soixante-quinze
+   mille appels, cinq cent soixante millisecondes à chaque chargement de
+   la ferme, soit plus de la moitié du temps du sol. Exactement le piège
+   déjà corrigé pour le blé du pourtour. Les mottes et le buis restent au
+   pinceau : ils sont peu nombreux, leurs rectangles font plusieurs
+   pixels, et ils doivent passer PAR-DESSUS — donc après la pose. */
+{
+const PX0=CARRE.x0-AL, PY0=CARRE.y0-AL, PW=CARRE.L+2*AL, PH=CARRE.H+2*AL;
+const im2=g.getImageData(PX0,PY0,PW,PH), d2=im2.data;
+const met2=(x,y,co)=>{const i=x-PX0, j=y-PY0;
+if(i<0||j<0||i>=PW||j>=PH)return;
+const k=(j*PW+i)*4;d2[k]=co[0];d2[k+1]=co[1];d2[k+2]=co[2];d2[k+3]=255;};
+const GRA=[[191,179,147],[202,190,158],[178,166,134]], GRAIN=[157,145,118];
+for(let y=PY0;y<PY0+PH;y++)for(let x=PX0;x<PX0+PW;x++){
 const n=PR_h(x,y,41);
-g.fillStyle=n<.4?'#bfb393':(n<.75?'#cabe9e':'#b2a686');
-g.fillRect(x,y,1,1);}
+met2(x,y,n<.4?GRA[0]:(n<.75?GRA[1]:GRA[2]));}
 /* le grain du gravier */
-for(let k=0;k<Math.round((CARRE.L+2*AL)*(CARRE.H+2*AL)/40);k++){
-const x=CARRE.x0-AL+Math.floor(PR_h(k,3,43)*(CARRE.L+2*AL));
-const y=CARRE.y0-AL+Math.floor(PR_h(k,7,45)*(CARRE.H+2*AL));
-g.fillStyle='#9d9176';g.fillRect(x,y,1,1);}
-for(let n=0;n<CARRE.c*CARRE.r;n++){
-const P=potCase(n);
+for(let k=0;k<Math.round(PW*PH/40);k++){
+const x=PX0+Math.floor(PR_h(k,3,43)*PW);
+const y=PY0+Math.floor(PR_h(k,7,45)*PH);
+met2(x,y,GRAIN);}
 /* LA TERRE EN BILLONS : crête, flanc, sillon. Quatre tons plus sombres
    qu'avant, pour tenir contre le gravier. */
+const BIL=[[[127,103,69],[135,110,74]],[[106,84,56],[114,89,60]],
+           [[87,67,44],[93,72,48]],[[71,54,38],[77,59,41]]];
+for(let n=0;n<CARRE.c*CARRE.r;n++){
+const P=potCase(n);
 for(let j=0;j<P.h;j++)for(let i=0;i<P.w;i++){
 const ond=Math.sin((P.x+i)/16)*0.9+Math.sin((P.x+i)/6)*0.3;
 const rel=((j+ond)%5+5)%5, q=PR_h(P.x+i,Math.floor(j/5),47);
-let col;
-if(rel<1)col=q<.5?'#7f6745':'#876e4a';
-else if(rel<2.4)col=q<.5?'#6a5438':'#72593c';
-else if(rel<3.6)col=q<.5?'#57432c':'#5d4830';
-else col=q<.5?'#473626':'#4d3b29';
-g.fillStyle=col;g.fillRect(P.x+i,P.y+j,1,1);}
+const et=rel<1?0:(rel<2.4?1:(rel<3.6?2:3));
+met2(P.x+i,P.y+j,BIL[et][q<.5?0:1]);}}
+g.putImageData(im2,PX0,PY0);
+}
+for(let n=0;n<CARRE.c*CARRE.r;n++){
+const P=potCase(n);
 /* LES MOTTES RETOURNÉES */
 for(let k=0;k<Math.round(P.w*P.h/30);k++){
 const i=Math.floor(PR_h(k,n,49)*(P.w-3)), j=Math.floor(PR_h(k,n,51)*(P.h-3));
@@ -15121,6 +15136,18 @@ if(o.flip){g.save();g.translate(Math.round(x)*2,0);g.scale(-1,1);}
 ombrePortee(g,C,x,y+dy,o.t);
 g.drawImage(C.toile,X0,Y0,C.W,C.H);
 if(lampesAllumees()){const t=o.t||'';
+/* LES FEUX PORTÉS PAR LE CALQUE. Les tests par nom ci-dessous ne
+   marchent que pour un dessin dont on connaît d'avance la taille : la
+   ruelle a quatre corps de largeurs et de hauteurs différentes, et leurs
+   fenêtres ne tombent jamais au même endroit. Chaque calque dit donc
+   lui-même où sont ses lumières, DANS SON PROPRE REPÈRE, et on les
+   ramène ici au monde. C'est pour ça que les lanternes de la ruelle
+   restaient noires : elles s'appellent ruLant, et /lamp/ ne les voyait
+   pas — maintenant elles n'ont plus besoin d'un nom. */
+if(C.feux&&C.feux.length){for(const F of C.feux){
+const fx=X0+F.x, fy=Y0+F.y;
+lueurNuit(g,fx,fy,F.r||30,F.teinte||'rgba(255,206,130,§)');
+if(F.w)fenetreAllumee(g,fx-F.w/2,fy-F.h/2,F.w,F.h,F.vitre||'#ffd48a');}}
 /* « lampadaire » ne contient pas « lampe » : les quatre lampadaires de
    la ferme n'entraient dans aucun test et restaient éteints. */
 if(/lamp/i.test(t))lueurNuit(g,x,y-38,26,'rgba(255,214,150,§)');
@@ -16845,14 +16872,12 @@ return c;}
 /* LE POULAILLER A ÉTÉ DÉMOLI : les poules vivent dans l'enclos, avec les bêtes. */
 /* LA STATION DE MÉTRO EST RETIRÉE de la ferme : on en sort désormais à
    pied, par le chemin de l'est. */
-const CR=calque(graverRecolte(),190,150,136);
-XCAL['x_fe_recolte0']=CR;CALQUES_DECO['x_fe_recolte']=CR;
-TAILLES['x_fe_recolte']=[{w:150,h:24}];
-/* LA RÉCOLTE EST RETIRÉE — TEMPORAIREMENT, le temps de réorganiser la
-   ferme. Son calque reste gravé, il suffira de remettre cette ligne.
-   ATTENTION : c'est la seule boutique de la ferme. Tant qu'elle n'est pas
-   là, on ne peut ni vendre sa récolte, ni acheter houe, arrosoir, bêche
-   ou sécateur, ni louer de parcelles. */
+/* LA RÉCOLTE EST REMPLACÉE PAR LA MAISON DE MADELEINE, dans la ruelle :
+   c'est elle qui ouvre la boutique (ouvre:'bqFerme'). SON CALQUE N'EST
+   PLUS GRAVÉ. Il l'était encore à chaque chargement de la ferme — une
+   gravure de cent cinquante sur cent cinquante que personne ne dessinait
+   jamais, le DECOR.push étant commenté juste en dessous. graverRecolte()
+   existe toujours plus haut si on veut la reposer un jour. */
 /* DECOR.push({t:'x_fe_recolte',x:880,y:PASSAGE.y0+4-25,v:0,bati:true,demi:80,ouvre:'laRecolte'}); */
 /* LE MOBILIER DE LA PLACE EST RETIRÉ avec elle : la fontaine, les quatre
    bancs et les quatre lampadaires n'entouraient plus rien. */
@@ -16865,13 +16890,11 @@ DECOR.push({t:'x_fe_appentis',x:244,y:930,v:0,bati:true,demi:56,ouvre:'etable'})
 /* LA FROMAGERIE, juste au-dessus de l'enclos : le lait sort de l'étable à
    quelques pas. Elle occupe la bande vide du milieu de la carte, qui ne
    servait à rien. L'enclos commence à y=812, elle s'arrête à 740. */
-/* LA FROMAGERIE EST RETIRÉE — TEMPORAIREMENT elle aussi. Son calque est
-   toujours gravé et son écran toujours là : il suffira de remettre le
-   DECOR.push. Le lait continue de s'affiner en cave côté serveur. */
-const FRO=graverFromagerie();
-XCAL['x_fe_fromagerie0']=FRO;CALQUES_DECO['x_fe_fromagerie']=FRO;
-TAILLES['x_fe_fromagerie']=[{w:92,h:18}];
-/* DECOR.push({t:'x_fe_fromagerie',x:300,y:740,v:0,bati:true,demi:52,ouvre:'fromagerie'}); */
+/* LA FROMAGERIE A DÉMÉNAGÉ DANS LA RUELLE : c'est le corps 'ruFrom' qui
+   l'ouvre. SON ANCIEN CALQUE N'EST PLUS GRAVÉ — il l'était encore à
+   chaque chargement sans que rien ne le pose. La photo d'en-tête de son
+   écran montre désormais le corps de la ruelle (x_fe_ruFrom0). Le lait
+   continue de s'affiner en cave côté serveur. */
 /* LES QUATRE LAMPADAIRES PARTENT AVEC LA PLACE. Ils étaient posés en
    PX ± 103 — or PX était le centre de la place, qui n'existe plus, et le
    nom est aussi celui du traceur de pixels : ils se seraient retrouvés en
@@ -17051,7 +17074,13 @@ R(px-8,py-11,38,6,BO.boisS);R(px-8,py-11,38,2,BO.boisC);     /* l'auvent */
 R(px-8,py-5,38,2,'rgba(16,10,4,.45)');
 R(px-6,py-5,2,5,BO.boisO);R(px+26,py-5,2,5,BO.boisO);}
 /* ---------- LA FENÊTRE, creusée elle aussi ---------- */
+const FEUX=[];
 {const fx=Math.round(cx-cote*28-11), fy=yBas-Math.round(Hm*0.70);
+/* LA FENÊTRE S'ALLUME LA NUIT. On note ici où elle est, DANS LE REPÈRE DU
+   CALQUE : dessinerX ne connaît que x et y, il ne peut pas deviner où
+   tombe la fenêtre d'un corps dont la largeur et la hauteur varient.
+   La vitre fait 22 sur 18, posée en (fx,fy). */
+FEUX.push({x:fx+11,y:fy+9,w:22,h:18,r:34});
 R(fx-3,fy-3,28,24,'rgba(20,14,6,.45)');
 R(fx-1,fy-1,24,20,BO.boisS);R(fx,fy,22,18,'#222e33');
 R(fx,fy,22,6,'#3c5157');R(fx,fy+6,22,1,'#2b3a3f');
@@ -17084,6 +17113,7 @@ g.fillStyle='#f0cf7d';g.fillText(o.mot,cx,py+hpl/2+5,PL-8);g.textAlign='left';}
    c'est le tri par y de la pile de dessin qui s'en charge. */
 const q=calque(c,W,H,sol+DALLE-3);
 q.emprise={w:L+PROF+2,h:DALLE+18};
+q.feux=FEUX;
 return q;}
 /* ---------- L'ARCHE D'ENTRÉE, AVEC SES DEUX MURETS ----------
    L'ARCHE BASSE, EN PLEIN APPAREIL. La première version assemblait des
@@ -17438,6 +17468,13 @@ R(x-4,y-h-2,9,3,'#b5a681');R(x-2,y-h-4,5,3,'#9d9070');});};
  ['ruSacs', 34,28,24,DSACS,  126,540,null],
  ['ruJarre',34,28,24,DJARRE,  40,560,null]]
 .forEach(([nom,w,h,s,d,bx,by,boite])=>poser(nom,ruPetit(w,h,s,d),bx,by,boite));
+/* LES TROIS LANTERNES S'ALLUMENT. Leur verre fait huit sur neuf, posé en
+   (W/2-4, sol-33) : son milieu tombe donc en (8, 29) dans le calque.
+   Elles ne portaient aucune lumière — la ruelle était le seul endroit de
+   la ferme à rester noir la nuit, alors que c'est le seul où l'on va. */
+['ruLant1','ruLant2','ruLant3'].forEach(n=>{
+const C=XCAL['x_fe_'+n+'0'];
+if(C)C.feux=[{x:8,y:29,w:6,h:7,r:30,teinte:'rgba(255,216,146,§)',vitre:'#fff0b8'}];});
 }
 
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}
@@ -32244,7 +32281,11 @@ corps+=carte('fromagerie','La fromagerie',
  (fromage===0)?'MEULE PRÊTE':'');
 corps+=carte('encours','En cours',
  'tout ce qui pousse, tout ce qui mijote, et dans combien de temps','');
-corps+='<div class="pied">'+(mot||'Tout ce qui touche à la ferme passe par cette porte.')+'</div>';
+/* LE PIED DISAIT « tout passe par cette porte » — ce n'était plus vrai :
+   Madeleine, la fromagerie et les bêtes ont chacune la leur dans la
+   ruelle. Cette porte-ci est le raccourci qui mène partout, pas le seul
+   chemin. */
+corps+='<div class="pied">'+(mot||'Tout est aussi accessible depuis les portes de la ruelle. Celle-ci mène partout d’un seul coup.')+'</div>';
 $('page2Fond').innerHTML=
 '<div class="tete"><small>LA RUELLE · DEPUIS 1947</small><b>La ferme</b>'+
 '<span class="bourse">EN POCHE<b>'+enEuros(e.euros||0)+'</b></span>'+
@@ -32780,7 +32821,7 @@ const LW=Math.round(v.clientWidth)||300, LH=150;
 v.width=LW*D;v.height=LH*D;g.setTransform(D,0,0,D,0,0);
 for(let y=0;y<LH;y+=2)for(let x=0;x<LW;x+=2){const n=PR_h(x,y,101);
 g.fillStyle=n<.38?'#4e7a38':(n<.72?'#58873f':'#447030');g.fillRect(x,y,2,2);}
-const C=XCAL['x_fe_fromagerie0'];
+const C=XCAL['x_fe_ruFrom0']||XCAL['x_fe_fromagerie0'];
 if(C)g.drawImage(C.toile,0,0,C.W*2,C.H*2,Math.round(LW/2-C.W/2),LH-C.sol-6,C.W,C.H);
 }catch(x){}
 try{const v=$('froIc'), g=v.getContext('2d');g.imageSmoothingEnabled=false;

@@ -234,7 +234,7 @@
   /* ================= LA FERME EN TRAVAUX =================
      Même principe que la forêt : seule la ferme se ferme, le port continue
      de tourner. Pour rouvrir : passer FERME_FERMEE à false. */
-  var FERME_FERMEE=true;   /* EN TRAVAUX : dernière journée. Pour rouvrir : repasser a false */
+  var FERME_FERMEE=false;  /* LA FERME EST ROUVERTE. Pour la refermer : repasser a true */
   /* LE JEU DOIT SAVOIR QUE LA FERME EST FERMÉE, lui aussi : sans ce
      drapeau, marcher vers l'ouest du quai chargeait les 1,6 Mo du jeu
      pour n'afficher que l'écran de chantier. Le port lit ce drapeau et
