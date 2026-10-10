@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-10-1520"></script>
+<script src="maintenance.js?v=2026-10-10-1604"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-10-1520';
+var MA_VERSION='2026-10-10-1604';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -18972,7 +18972,7 @@ void swG;void swD;
 const court=basT==='short'||basT==='bermuda', jupe=basT==='jupe'||basT==='longue jupe';
 const manches={'veste':1,'chemise':1,'pull':1,'manteau':1,'tunique':0.7,'t-shirt':0.3,'gilet':0,'débardeur':0}[hautT];
 const long=hautT==='manteau'?10:(hautT==='tunique'?6:0);
-g.fillStyle='rgba(20,28,16,.28)';g.beginPath();g.ellipse(x,y+0.5,cote?6.5:6,1.8,0,0,Math.PI*2);g.fill();
+ombreAuSol(g,x,y+0.5,cote?6.5:6,1.8,'rgba(20,28,16,.28)');   /* au pixel plein, comme celle des bêtes */
 const jambe=(cx,avance,leve,fonce)=>{
 const c=fonce?pantO:pant, cc=fonce?pant:pantC, cO=fonce?T(pant,-34):pantO;
 const sk=fonce?peauO:peau, skO=fonce?peauT:peauO, skC=fonce?peau:peauC;
@@ -28894,13 +28894,47 @@ if(CARTE==='village'&&POT.charge){const nEp=Math.min(3,(POT.j&&POT.j.epouvantail
    donc chaque épouvantail au milieu de son groupe, pas au bout d'un rang. */
 for(let r=0;r<nEp;r++){const A=POT_XY(r*8+3), ex=A.x-POT_ALLEE/2, ey=A.y+A.PH-1;acteurs.push({y:ey,f:()=>dessinerEpouvantail(g,ex-camX,ey-camY)});}}
 return potDecorVrai(g,camX,camY,VW2,VH2,acteurs);};
-function dessinerEpouvantail(g,x,y){const t=Date.now()/900,b=Math.sin(t)*0.4;
-PX(g,x-.5,y-22,1.2,22,'#6a4a2a');PX(g,x-8,y-15+b,16,1,'#6a4a2a');
-PX(g,x-3,y-15,6,8,'#b93327');PX(g,x-3,y-12,6,.6,'#8a2a1a');PX(g,x-.5,y-15,1,8,'#8a2a1a');PX(g,x-2.5,y-7,5,2,'#4a5a7a');
-PX(g,x-2.5,y-21,5,5,'#e8d4a0');PX(g,x-1.5,y-19.5,.8,.8,'#1b1b1b');PX(g,x+.7,y-19.5,.8,.8,'#1b1b1b');PX(g,x-1,y-17.5,2,.5,'#8a5a30');
-PX(g,x-4.5,y-22.5,9,1.2,'#c9a24a');PX(g,x-2.5,y-25,5,2.6,'#d8b060');PX(g,x-2.5,y-23,5,.6,'#8a3a2a');
-[[-9,-15],[8,-15]].forEach(([dx,dy])=>{PX(g,x+dx,y+dy+b,1.2,.5,'#e0c46a');PX(g,x+dx,y+dy+1+b,1.2,.5,'#e0c46a');});
-g.fillStyle='rgba(40,34,18,.25)';g.beginPath();g.ellipse(x+1,y+.5,4,1.2,0,0,7);g.fill();}
+/* ================= L'ÉPOUVANTAIL, AU PIXEL PLEIN =================
+   Il était le plus flou de la ferme : cinquante-cinq pour cent de ses
+   pixels étaient des mélanges. Toutes ses pièces tombaient sur des demis
+   — un mât de 1,2 de large posé en x−0,5, un bord de chapeau de 1,2 de
+   haut posé en y−22,5, des yeux de 0,8 — et le navigateur les étalait
+   sur deux pixels en les délavant.
+   Tout est maintenant en unités entières, posé sur une base arrondie.
+   Le balancement des bras, qui valait ±0,4 — donc jamais un pixel
+   entier — passe à ±1 : on le voit enfin bouger au lieu de le voir
+   trembloter.
+   Règle de la maison : chaque pièce mord d'au moins une unité dans celle
+   qui la porte. Le chapeau mord la tête, la tête mord le mât, les bras
+   mordent le mât, le pantalon mord la chemise, les touffes mordent la
+   traverse. */
+function dessinerEpouvantail(g,x,y){
+const X=Math.round(x), Y=Math.round(y);
+const souffle=Math.sin(Date.now()/800)>0?-1:1;             /* la paille se lève, puis retombe */
+const R=(a,c,w,h,col)=>{g.fillStyle=col;g.fillRect(X+a,Y+c,w,h);};
+ombreAuSol(g,X+1,Y,5,1.4,'rgba(40,34,18,.25)');            /* l'ombre */
+R(0,-22,1,22,'#6a4a2a');                                   /* le mât */
+R(-3,-16,7,9,'#b93327');                                   /* la chemise */
+R(-3,-16,1,9,'#cf4a39');                                   /* son flanc éclairé, la lumière vient de gauche */
+R(3,-16,1,9,'#8f2820');                                    /* son flanc à l'ombre */
+R(-3,-12,7,1,'#8a2a1a');                                   /* le pli de la taille */
+R(-2,-8,5,3,'#4a5a7a');                                    /* le pantalon, mord la chemise */
+R(-2,-8,1,3,'#5d6e8e');
+/* LA TRAVERSE NE BOUGE PAS : elle est clouée. C'est la paille des manches
+   qui bat au vent, et c'est elle qui porte le mouvement. */
+R(-8,-16,16,1,'#6a4a2a');                                  /* la traverse des bras, aux épaules */
+R(-9,-16,2,1,'#e0c46a');R(-9,-16+souffle,2,1,'#c9a84e');   /* la paille qui dépasse des manches */
+R(7,-16,2,1,'#e0c46a');R(7,-16+souffle,2,1,'#c9a84e');
+R(-2,-22,5,5,'#e8d4a0');                                   /* la tête, un sac de toile */
+R(2,-22,1,5,'#c9b47e');                                    /* son côté à l'ombre */
+R(-3,-21,2,2,'#e0c46a');R(2,-21,2,2,'#e0c46a');            /* la paille qui sort du sac */
+R(-1,-21,1,1,'#1b1b1b');R(1,-21,1,1,'#1b1b1b');            /* les yeux */
+R(-1,-19,3,1,'#8a5a30');                                   /* la bouche cousue */
+R(-2,-25,5,3,'#d8b060');                                   /* la calotte du chapeau */
+R(-2,-25,1,3,'#e8c87c');
+R(-2,-24,5,1,'#8a3a2a');                                   /* le ruban */
+R(-4,-23,9,2,'#c9a24a');                                   /* le bord, mord la calotte */
+R(-4,-22,9,1,'#a8853a');}                                  /* son dessous, dans l'ombre */
 const potBullesVrai=dessinerBulles;
 dessinerBulles=function(g,camX,camY,px,py){const d=Date.now()-POT_ARROSE;
 if(d<900){const f=d/900, R=(a,b,w,h,c)=>PX(g,a,b,w,h,c), x=joueur.x-camX, y=joueur.y-camY;
@@ -31098,6 +31132,23 @@ const POULE_ROBES={
 blanche:{corps:'#f0ece0',clair:'#fffdf6',ombre:'#c8c0ae',aile:'#ddd4c0',queue:'#e4dcc8',col:'#efe6d2'},
 rousse:{corps:'#bf6a2e',clair:'#d88a44',ombre:'#8c4a1b',aile:'#a4551e',queue:'#7a3d16',col:'#d89a52'},
 noire:{corps:'#343029',clair:'#4e473d',ombre:'#1d1a16',aile:'#282420',queue:'#201d19',col:'#5a5146'}};
+/* ================= L'OMBRE AU SOL, AU PIXEL PLEIN =================
+   LES BÊTES ÉTAIENT NETTES PARTOUT SAUF DESSOUS. Mesuré : une vache sans
+   son ombre ne compte pas un seul pixel mélangé ; avec son ombre, vingt-
+   deux pour cent. Tout venait de l'ellipse, qui est un tracé courbe et
+   que le navigateur adoucit sur son pourtour par construction. Sous un
+   sprite posé au pixel près, cette frange floue se voyait.
+   On pose donc la galette rang par rang, en rectangles entiers : même
+   forme, même transparence, bords francs. Un rang par ligne, jamais deux
+   l'un sur l'autre, sinon la transparence se cumulerait et laisserait une
+   bande sombre au milieu. */
+function ombreAuSol(g,cx,cy,rx,ry,couleur){
+g.fillStyle=couleur;
+const X=Math.round(cx), Y=Math.round(cy), RY=Math.max(1,Math.round(ry));
+for(let k=-RY;k<=RY;k++){
+const t=k/(RY+0.5), w=Math.round(2*rx*Math.sqrt(Math.max(0,1-t*t)));
+if(w<1)continue;
+g.fillRect(X-(w>>1),Y+k,w,1);}}
 function poule(g,cx,cy,robe,etat,dir,coq,pas){
 pas=pas||0;etat=etat||'picore';
 const p=POULE_ROBES[robe]||POULE_ROBES.rousse;
@@ -31115,8 +31166,7 @@ const R=(a,b,w,h,c)=>{if(w<=0||h<=0)return;g.fillStyle=c;
 const ax=gauche?-(a+w):a;
 g.fillRect(Math.round(cx+ax*Z),Math.round(cyy+b*Z),
 Math.max(1,Math.round(w*Z)),Math.max(1,Math.round(h*Z)));};
-g.fillStyle='rgba(20,16,10,.28)';
-g.beginPath();g.ellipse(cx+Z,cyy+0.5*Z,5.5*Z,1.6*Z,0,0,7);g.fill();
+ombreAuSol(g,cx+Z,cyy+0.5*Z,5.5*Z,1.6*Z,'rgba(20,16,10,.28)');
 /* les pattes */
 R(-2+m,-3,1.2,3,PATTE);R(1.5-m,-3,1.2,3,PATTE);
 R(-2.5+m,0,2.5,1,PATTES);R(1-m,0,2.5,1,PATTES);
@@ -31287,8 +31337,7 @@ const dy=(pose==='broute')?5:(marche?0:Math.round(Math.sin(pas*0.9)*0.5));
 const mache=(pose==='broute')&&Math.sin(pas*5)>0.2;
 const q=Math.round(Math.sin(pas*1.7)*1.2);
 const oeil=((Date.now()+(robe|0)*613)%4200)>160;
-if(ombre!==false){g.fillStyle='rgba(20,16,10,.3)';
-g.beginPath();g.ellipse(cx+2*Z,cy+4*Z,10*Z,2.4*Z,0,0,7);g.fill();}
+if(ombre!==false)ombreAuSol(g,cx+2*Z,cy+4*Z,10*Z,2.4*Z,'rgba(20,16,10,.3)');
 const rb=BETE_ROBES[espece]||BETE_ROBES.vache;
 const p=rb[((robe|0)%rb.length+rb.length)%rb.length];
 const gauche=dir<0;
@@ -32858,8 +32907,7 @@ function verPancarte(g,cx,y,mot,pale){
    « À » se faisait couper. */
 g.font='700 9px Georgia';
 const H=15, W=Math.max(46,Math.ceil(g.measureText(mot).width)+10), x=cx-W/2;
-g.fillStyle='rgba(24,20,12,.26)';
-g.beginPath();g.ellipse(x+W/2,y+2,10,3,0,0,7);g.fill();
+ombreAuSol(g,x+W/2,y+2,10,3,'rgba(24,20,12,.26)');
 PX(g,x+W/2-1.5,y-20,3,22,pale?'#7a6248':'#6b4a28');           /* le poteau */
 PX(g,x+W/2-1.5,y-20,1,22,pale?'#95805f':'#8a6238');
 PX(g,x-1,y-H-19,W+2,H+2,pale?'#8a7a5e':'#6b4a28');            /* le cadre */
