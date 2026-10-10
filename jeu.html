@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-10-0921"></script>
+<script src="maintenance.js?v=2026-10-10-1038"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-10-0921';
+var MA_VERSION='2026-10-10-1038';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11447,15 +11447,21 @@ const PASSAGE={y0:700, y1:800};   /* la trouée, en hauteur */
    allées de terre tassée. La terre est montée en billons, avec des mottes
    retournées et quelques cailloux : elle a une direction, donc on voit les
    rangs sans qu'ils fassent rayure. */
-/* LE POTAGER EST DEBOUT : trois colonnes sur huit rangs au lieu de six sur
-   quatre. Il tient ainsi dans la bande libre entre la place et la barrière
-   de droite, et descend jusqu'au bas de la ferme. */
-const CARRE={px:92, py:64, gx:14, gy:14, c:3, r:8};
-CARRE.L=CARRE.c*CARRE.px+(CARRE.c-1)*CARRE.gx;      /* 304 */
-CARRE.H=CARRE.r*CARRE.py+(CARRE.r-1)*CARRE.gy;      /* 610 */
-/* centré entre le bord droit de la place (705) et la barrière (1055) */
-CARRE.x0=Math.round(705+((1055-705)-CARRE.L)/2);
-CARRE.y0=820;                                /* juste sous la chaussée */
+/* LE POTAGER EST COUCHÉ, ET IL REMONTE. Il était debout — trois colonnes
+   sur huit rangs — en bas de la ferme, sous la chaussée. Il prend
+   maintenant toute la largeur dans la bande laissée libre entre le pied
+   du verger (494) et le haut de la chaussée (704) : deux rangs en
+   hauteur, douze planches en largeur. Les numéros 0 à 23 ne changent pas,
+   chacun retrouve ses cultures — seul leur emplacement change. */
+const CARRE={px:62, py:72, gx:12, gy:14, c:12, r:2};
+CARRE.L=CARRE.c*CARRE.px+(CARRE.c-1)*CARRE.gx;      /* 876 */
+CARRE.H=CARRE.r*CARRE.py+(CARRE.r-1)*CARRE.gy;      /* 158 */
+/* centré dans la largeur jouable, de la barrière de gauche (120) à celle
+   de droite (1055) */
+CARRE.x0=Math.round(BORD_FERME+((MONDE_L-BORD_FERME-25)-BORD_FERME-CARRE.L)/2);
+/* et centré dans la bande : 497 sous l'ombre du verger, 704 au bord de la
+   chaussée — vingt-quatre pixels d'herbe de part et d'autre */
+CARRE.y0=Math.round(497+((704-497)-CARRE.H)/2);
 const potCase=(n)=>({x:CARRE.x0+(n%CARRE.c)*(CARRE.px+CARRE.gx),
 y:CARRE.y0+Math.floor(n/CARRE.c)*(CARRE.py+CARRE.gy),w:CARRE.px,h:CARRE.py});
 /* ================= LE VERGER : LES DOUZE FOSSES =================
@@ -11701,87 +11707,16 @@ g.fillRect(x,Math.round(oy+d),1,3);}});
 const BR=52, BX=PLACE.x-BR/2;
 /* LA BRANCHE NORD est retirée : elle ne menait nulle part depuis que le
    poulailler se rejoint par le pré. */
-/* LA BRANCHE SUD rejoint le potager, qui a changé de place : elle part
-   maintenant de la chaussée, à l'aplomb du potager. */
-const BX2=Math.round(714+(1046-714)/2)-BR/2;
-for(let y=796;y<812;y++)
-for(let x=BX2;x<BX2+BR;x++){
-const bord=Math.min(x-BX2,BX2+BR-1-x);
-if(bord<3&&PR_h(x,y,55)>0.26+bord*0.24)continue;
-if(bord<4)bordure(x,y);else grav(x,y);}
+/* LA BRANCHE SUD EST RETIRÉE avec le potager, qui est passé au nord de la
+   chaussée : elle descendait vers un pré vide. */
 /* ---------- LA PLACE EST RETIRÉE ----------
    Le pavage, ses quatre arbres, ses quatre parterres, sa fontaine, ses
    bancs et ses lampadaires : tout part. La ferme n'avait pas besoin d'un
    square au milieu de son pré, et il mangeait la place du verger, qui
    peut maintenant descendre. La chaussée reste : c'est le chemin du port. */
 }
-/* ================= LA BÂCHE DE CHANTIER =================
-   À l'autre bout de la route, là où la barrière est fermée : une toile
-   bleue tendue sur un châssis, avec ses œillets, ses plis et ses cordes.
-   Elle annonce « SURPRISE À VENIR » sans rien barrer : le joueur comprend
-   que quelque chose se prépare ici. */
-{
-const PAN_X=BORD_FERME+14, PAN_Y=PASSAGE.y0-96;
-const Rb=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(PAN_X+Math.round(x),PAN_Y+Math.round(y),
-Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
-const Tb=(h,d)=>teint(h,d);
-/* UN ALPHABET DE 5 × 7, épais : lisible même à travers les plis. */
-const FB={
-S:[[1,0],[2,0],[3,0],[0,1],[4,1],[0,2],[1,3],[2,3],[3,3],[4,4],[0,5],[4,5],[1,6],[2,6],[3,6]],
-U:[[0,0],[4,0],[0,1],[4,1],[0,2],[4,2],[0,3],[4,3],[0,4],[4,4],[0,5],[4,5],[1,6],[2,6],[3,6]],
-R:[[0,0],[1,0],[2,0],[3,0],[0,1],[4,1],[0,2],[4,2],[0,3],[1,3],[2,3],[3,3],[0,4],[2,4],[0,5],[3,5],[0,6],[4,6]],
-P:[[0,0],[1,0],[2,0],[3,0],[0,1],[4,1],[0,2],[4,2],[0,3],[1,3],[2,3],[3,3],[0,4],[0,5],[0,6]],
-I:[[0,0],[1,0],[2,0],[1,1],[1,2],[1,3],[1,4],[1,5],[0,6],[1,6],[2,6]],
-E:[[0,0],[1,0],[2,0],[3,0],[0,1],[0,2],[1,2],[2,2],[0,3],[0,4],[0,5],[0,6],[1,6],[2,6],[3,6]],
-A:[[1,0],[2,0],[3,0],[0,1],[4,1],[0,2],[4,2],[0,3],[1,3],[2,3],[3,3],[4,3],[0,4],[4,4],[0,5],[4,5],[0,6],[4,6]],
-V:[[0,0],[4,0],[0,1],[4,1],[0,2],[4,2],[0,3],[4,3],[1,4],[3,4],[1,5],[3,5],[2,6]],
-N:[[0,0],[4,0],[0,1],[1,1],[4,1],[0,2],[1,2],[4,2],[0,3],[2,3],[4,3],[0,4],[3,4],[4,4],[0,5],[3,5],[4,5],[0,6],[4,6]],
-' ':[]};
-const lrgB=(t)=>{let w=0;for(const c of t)w+=(c===' '?3:6);return w-1;};
-const ecrB=(t,x,y,c,o)=>{let cx=x;
-for(const ch of t){const G=FB[ch];
-if(!G){cx+=3;continue;}
-for(const q of G){if(o)Rb(cx+q[0]+1,y+q[1]+1,1,1,o);Rb(cx+q[0],y+q[1],1,1,c);}
-cx+=6;}};
-const W=78, H=46, x0=3, y0=3, sol=76;
-/* L'OMBRE PORTÉE */
-g.fillStyle='rgba(18,14,8,.32)';
-g.beginPath();g.ellipse(PAN_X+42,PAN_Y+sol+1,34,4,0,0,7);g.fill();
-/* LES DEUX PIEDS */
-const BOISb='#8a6238';
-[x0+9,x0+W-15].forEach((px,i)=>{
-for(let r=0;r<sol-(y0+H)+3;r++){
-const t=Tb(BOISb,Math.round((PR_h(r,i,81)-0.5)*11));
-Rb(px,y0+H-2+r,6,1,t);
-Rb(px,y0+H-2+r,1,1,Tb(t,22));Rb(px+5,y0+H-2+r,1,1,Tb(t,-28));
-if(r%9===4)Rb(px+1,y0+H-2+r,4,1,Tb(t,-14));}
-Rb(px-2,sol-3,10,4,Tb(BOISb,-44));
-for(let k=0;k<9;k++){const dx=(i?1:-1)*k;
-Rb(px+(i?5:0)+dx,sol-13+k,2,2,Tb(BOISb,-16));}});
-/* LE CHÂSSIS, derrière la toile */
-Rb(x0-3,y0-3,W+6,3,'#6a4228');
-Rb(x0-3,y0+H,W+6,3,'#5a3820');
-/* LA TOILE BLEUE, qui ondule */
-const BL='#2f5a8a';
-for(let j=0;j<H;j++){
-const d=Math.round(Math.sin(j*0.5)*1.2);
-Rb(x0+d,y0+j,W,1,j%5===0?'#27486e':BL);
-if(PR_h(j,3,82)>0.76)Rb(x0+2+d,y0+j,W-4,1,'#3a6b9e');}
-/* les bords tendus, plus sombres */
-Rb(x0,y0,2,H,'#1f3c5e');Rb(x0+W-2,y0,2,H,'#1f3c5e');
-Rb(x0,y0,W,1,'#4a7aaa');Rb(x0,y0+H-1,W,1,'#1a3250');
-/* LE TEXTE, sur deux lignes */
-ecrB('SURPRISE',x0+Math.round((W-lrgB('SURPRISE'))/2),y0+9,'#f6f4ec','#12273f');
-Rb(x0+14,y0+22,W-28,1,'#8ab0d8');
-ecrB('A VENIR',x0+Math.round((W-lrgB('A VENIR'))/2),y0+28,'#bcd6ee','#15304e');
-/* LES ŒILLETS ET LES CORDES, aux quatre coins */
-[[x0+2,y0+3],[x0+W-5,y0+3],[x0+2,y0+H-6],[x0+W-5,y0+H-6]].forEach((q,i)=>{
-Rb(q[0],q[1],3,3,'#c8cdd4');
-Rb(q[0]+1,q[1]+1,1,1,'#1f3c5e');
-/* la corde part vers le châssis */
-const dx=(i%2)?2:-2, dy=(i<2)?-2:2;
-Rb(q[0]+1+dx,q[1]+1+dy,2,2,'#c9a24a');});
-}
+/* LA BÂCHE DE CHANTIER EST RETIRÉE : « SURPRISE À VENIR » annonçait le
+   verger, qui est là. */
 /* ================= LE SOL DU VERGER =================
    Ce qui ne bouge jamais : l'herbe fauchée, la restanque de pierre sèche,
    le portillon, et le matériel qui traîne. Les cuvettes et les arbres
@@ -16779,10 +16714,12 @@ return c;}
 const CR=calque(graverRecolte(),190,150,136);
 XCAL['x_fe_recolte0']=CR;CALQUES_DECO['x_fe_recolte']=CR;
 TAILLES['x_fe_recolte']=[{w:150,h:24}];
-/* LA RÉCOLTE est posée sur le chemin, à l'est de la place : son pied est
-   à vingt-cinq pixels au-dessus de la chaussée, donc on l'aborde de face
-   en venant du port ou de la place. */
-DECOR.push({t:'x_fe_recolte',x:880,y:PASSAGE.y0+4-25,v:0,bati:true,demi:80,ouvre:'laRecolte'});
+/* LA RÉCOLTE EST RETIRÉE — TEMPORAIREMENT, le temps de réorganiser la
+   ferme. Son calque reste gravé, il suffira de remettre cette ligne.
+   ATTENTION : c'est la seule boutique de la ferme. Tant qu'elle n'est pas
+   là, on ne peut ni vendre sa récolte, ni acheter houe, arrosoir, bêche
+   ou sécateur, ni louer de parcelles. */
+/* DECOR.push({t:'x_fe_recolte',x:880,y:PASSAGE.y0+4-25,v:0,bati:true,demi:80,ouvre:'laRecolte'}); */
 /* LE MOBILIER DE LA PLACE EST RETIRÉ avec elle : la fontaine, les quatre
    bancs et les quatre lampadaires n'entouraient plus rien. */
 {
@@ -16794,10 +16731,13 @@ DECOR.push({t:'x_fe_appentis',x:244,y:930,v:0,bati:true,demi:56,ouvre:'etable'})
 /* LA FROMAGERIE, juste au-dessus de l'enclos : le lait sort de l'étable à
    quelques pas. Elle occupe la bande vide du milieu de la carte, qui ne
    servait à rien. L'enclos commence à y=812, elle s'arrête à 740. */
+/* LA FROMAGERIE EST RETIRÉE — TEMPORAIREMENT elle aussi. Son calque est
+   toujours gravé et son écran toujours là : il suffira de remettre le
+   DECOR.push. Le lait continue de s'affiner en cave côté serveur. */
 const FRO=graverFromagerie();
 XCAL['x_fe_fromagerie0']=FRO;CALQUES_DECO['x_fe_fromagerie']=FRO;
 TAILLES['x_fe_fromagerie']=[{w:92,h:18}];
-DECOR.push({t:'x_fe_fromagerie',x:300,y:740,v:0,bati:true,demi:52,ouvre:'fromagerie'});
+/* DECOR.push({t:'x_fe_fromagerie',x:300,y:740,v:0,bati:true,demi:52,ouvre:'fromagerie'}); */
 /* LES QUATRE LAMPADAIRES PARTENT AVEC LA PLACE. Ils étaient posés en
    PX ± 103 — or PX était le centre de la place, qui n'existe plus, et le
    nom est aussi celui du traceur de pixels : ils se seraient retrouvés en
@@ -28858,8 +28798,8 @@ const potLibre=(k)=>!POT_VERROU[k]||(POT.debloque||[]).includes(k);
    d'où des parcelles qu'on ne trouvait plus. Les numéros 0 à 23 ne changent
    pas, donc chacun retrouve ses cultures. */
 const POT_NEUF=()=>typeof CHAMPS_SEULS!=='undefined'&&CHAMPS_SEULS&&CARTE==='village';
-/* TROIS COLONNES SUR HUIT RANGS, pour suivre le potager debout. */
-const POT_COLS=POT_NEUF()?3:8, POT_ROWS=POT_NEUF()?8:3, POT_ALLEE=POT_NEUF()?14:6;
+/* DOUZE COLONNES SUR DEUX RANGS, pour suivre le potager couché. */
+const POT_COLS=POT_NEUF()?12:8, POT_ROWS=POT_NEUF()?2:3, POT_ALLEE=POT_NEUF()?14:6;
 const POT_Z=()=>POT_NEUF()
 ?{x0:CARRE.x0-POT_ALLEE,x1:CARRE.x0+CARRE.L+POT_ALLEE,y0:CARRE.y0-POT_ALLEE,y1:CARRE.y0+CARRE.H+POT_ALLEE}
 :FERME.champ2;
@@ -28913,7 +28853,10 @@ if(x-camX>VW2+20||x+PW-camX<-20||y-camY>VH2+30||y+PH-camY<-30)continue;
 for(let r=0;r<2;r++)for(let q=0;q<3;q++){const px=x+9+q*((PW-18)/2), py=y+PH*(0.45+r*0.45);acteurs.push({y:py,f:()=>poserPlant(g,P.cult,s,px-camX,py-camY,1)});}
 if(s===3)acteurs.push({y:y+PH,f:()=>{const t=Date.now()/300;PX(g,x+PW-4-camX,y+3-camY+Math.sin(t)*0.5,1,1,'#fff6c0');PX(g,x+PW-4.5-camX,y+3.25-camY,2,0.5,'#fff6c0');}});}}}
 if(CARTE==='village'&&POT.charge){const nEp=Math.min(3,(POT.j&&POT.j.epouvantails)||0);   /* les épouvantails, au milieu de chaque rang gardé */
-for(let r=0;r<nEp;r++){const A=POT_XY(r*8+4), ex=A.x-POT_ALLEE/2, ey=A.y+A.PH-1;acteurs.push({y:ey,f:()=>dessinerEpouvantail(g,ex-camX,ey-camY)});}}
+/* LE SERVEUR GARDE PAR GROUPES DE HUIT (pot_recolter : p_i / 8), ce qui
+   ne tombe plus sur une rangée depuis que le potager est couché. On pose
+   donc chaque épouvantail au milieu de son groupe, pas au bout d'un rang. */
+for(let r=0;r<nEp;r++){const A=POT_XY(r*8+3), ex=A.x-POT_ALLEE/2, ey=A.y+A.PH-1;acteurs.push({y:ey,f:()=>dessinerEpouvantail(g,ex-camX,ey-camY)});}}
 return potDecorVrai(g,camX,camY,VW2,VH2,acteurs);};
 function dessinerEpouvantail(g,x,y){const t=Date.now()/900,b=Math.sin(t)*0.4;
 PX(g,x-.5,y-22,1.2,22,'#6a4a2a');PX(g,x-8,y-15+b,16,1,'#6a4a2a');
