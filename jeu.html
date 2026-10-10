@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-11-0106"></script>
+<script src="maintenance.js?v=2026-10-11-0218"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-11-0106';
+var MA_VERSION='2026-10-11-0218';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -17236,14 +17236,27 @@ XCAL['x_fe_'+nom+'0']=C;CALQUES_DECO['x_fe_'+nom]=C;
 const B=boite||C.emprise;
 if(B)TAILLES['x_fe_'+nom]=[B];
 DECOR.push(Object.assign({t:'x_fe_'+nom,x:RX+bx,y:RY+by,v:0},extra||{}));};
-/* les six corps, du nord au sud · [cx, sol, L, Hm, côté de la porte] */
-poser('ruA',ruCorps(108,42, 1,{cheminee:-1}),             72,200);
-poser('ruB',ruCorps(104,40,-1,{bois:true,chaume:true}),  278,276);
-poser('ruC',ruCorps(104,40, 1,{bois:true}),               70,378);
-poser('ruD',ruCorps(108,44,-1,{cheminee:1}),             276,460);
-poser('ruE',ruCorps(112,46, 1,{mot:'LA FERME'}),
-      74,556,null,{bati:true,demi:62,ouvre:'laFerme'});
-poser('ruF',ruCorps(104,40,-1,{bois:true}),              280,626);
+/* ======================================================================
+   QUATRE CORPS, QUATRE MÉTIERS, QUATRE ENSEIGNES
+   ----------------------------------------------------------------------
+   IL Y EN AVAIT SIX, ET CINQ NE FAISAIENT RIEN. Des boîtes muettes le
+   long d'une rue : on ne pouvait ni savoir ce qu'elles étaient, ni rien
+   en faire. Une rue de ferme n'est pas un lotissement — chaque porte y
+   donne sur un métier, et ça doit se lire DEPUIS LA RUE, sans cliquer.
+   On descend donc à quatre, chacun porte son enseigne et ouvre son
+   écran, et deux sont de chaque côté, décalés, pour qu'on les voie tous
+   en descendant.
+   LA FERME, au sud, reste l'entrée générale : son menu contient tout, y
+   compris ce qui n'a pas de porte ici — l'étable, qui est dans l'enclos,
+   et le journal de ce qui pousse. */
+poser('ruMade',ruCorps(106,42, 1,{cheminee:-1,mot:'MADELEINE'}),
+      74,214,null,{bati:true,demi:58,ouvre:'bqFerme'});
+poser('ruFrom',ruCorps(104,40,-1,{mot:'FROMAGERIE'}),
+     278,330,null,{bati:true,demi:58,ouvre:'fromagerie'});
+poser('ruFerme',ruCorps(112,46, 1,{mot:'LA FERME'}),
+      74,486,null,{bati:true,demi:62,ouvre:'laFerme'});
+poser('ruBetes',ruCorps(106,42,-1,{bois:true,mot:'LES BÊTES'}),
+     278,604,null,{bati:true,demi:58,ouvre:'marcheBetes'});
 /* l'arche et les deux cyprès de l'entrée */
 poser('ruArche',ruArche(),175,96,null);
 poser('ruCyp1',ruCypres(86), 34,106);
@@ -17329,23 +17342,101 @@ const DRUCHE=(R,cx,sol)=>{[[-10,0],[6,-3]].forEach(([dx,dy])=>{
 const x=cx+dx, y=sol+dy;
 for(let k=0;k<4;k++){R(x,y-5-k*5,15,5,k%2?'#c9a24a':'#b8903a');R(x,y-5-k*5,15,1,'#ddba66');}
 R(x-2,y-27,19,4,'#8a6238');R(x-2,y-27,19,2,'#a5764a');R(x+5,y-3,5,2,'#2a2218');});};
+/* ---------- CE QUI DIT LE MÉTIER DE CHAQUE PORTE ----------
+   Un objet qui n'explique rien est du bruit. Le linge, les ruches et le
+   four à pain disaient « quelqu'un habite ici » devant des maisons qui
+   ne logent personne : ils s'en vont. Ce qui reste est posé DEVANT la
+   porte qu'il explique — les cageots chez Madeleine, les bidons et la
+   claie à fromages à la fromagerie, le parc de claies et l'abreuvoir au
+   marché aux bêtes. */
+/* les bidons de lait */
+const DBIDON=(R,cx,sol)=>{[[-13,0],[1,-2],[-6,-13]].forEach(([dx,dy])=>{
+const x=cx+dx, y=sol+dy;
+for(let k=0;k<13;k++){const w=k<2?5:(k>10?5:6);
+for(let q=-w;q<=w;q++){const nx=q/w;
+R(x+q,y-k,1,1,nx<-0.4?'#c8ced2':(nx>0.5?'#6f767c':'#8b9198'));}}
+R(x-5,y-16,11,3,'#9aa2a8');R(x-5,y-16,11,1,'#c8ced2');
+R(x-2,y-19,5,3,'#6f767c');R(x-6,y-11,13,1,'#6f767c');});};
+/* la claie à fromages : deux meules qui s'égouttent sur un bâti de bois */
+const DCLAIE=(R,cx,sol)=>{const x=cx-19;
+[[0],[26]].forEach(([dx])=>{R(x+dx,sol-15,4,15,BOI.boisO);R(x+dx,sol-15,2,15,BOI.bois);});
+R(x-2,sol-17,42,3,BOI.bois);R(x-2,sol-17,42,1,BOI.boisH);
+R(x-2,sol-8,42,3,BOI.bois);R(x-2,sol-8,42,1,BOI.boisH);
+for(let i=0;i<40;i+=4)R(x-1+i,sol-16,2,1,BOI.boisO);
+[[2,-17],[22,-17],[12,-26]].forEach(([dx,dy])=>{
+const a=x+dx, b=sol+dy;
+R(a,b-7,16,7,'#e8c86a');R(a,b-7,16,2,'#f4de96');R(a,b-1,16,1,'#bb9c3e');
+R(a+3,b-5,2,2,'#c9a84e');R(a+9,b-4,2,2,'#c9a84e');});};
+/* le parc de claies du marché, avec sa botte */
+const DPARC=(R,cx,sol)=>{const x=cx-28;
+for(let i=0;i<56;i+=8){R(x+i,sol-16,3,18,BOI.boisO);R(x+i,sol-16,1,18,BOI.boisH);}
+R(x,sol-15,58,3,BOI.bois);R(x,sol-15,58,1,BOI.boisH);
+R(x,sol-7,58,3,BOI.bois);R(x,sol-7,58,1,BOI.boisH);
+R(x+16,sol-14,22,13,'#b49a55');
+for(let j=0;j<13;j+=3)R(x+16,sol-14+j,22,1,'#9d8545');
+R(x+16,sol-14,22,2,'#cbb270');};
+/* la balance à plateaux, devant Madeleine */
+const DBALANCE=(R,cx,sol)=>{
+/* BOIS ET LAITON, PAS DE L'ACIER BLEU : en gris froid, à cette taille,
+   elle passait pour une antenne plantée dans la cour. */
+R(cx-8,sol-4,17,4,BOI.boisO);R(cx-8,sol-4,17,1,BOI.boisH);
+R(cx-6,sol-9,13,5,BOI.bois);R(cx-6,sol-9,13,1,BOI.boisH);
+R(cx-3,sol-30,6,21,BOI.bois);R(cx-3,sol-30,2,21,BOI.boisH);R(cx+2,sol-30,1,21,BOI.boisO);
+R(cx-17,sol-33,35,4,'#c9a24a');R(cx-17,sol-33,35,1,'#e8c86a');R(cx-17,sol-30,35,1,'#8a6a20');
+[[-15],[12]].forEach(([dx])=>{for(let k=0;k<6;k++)R(cx+dx+2,sol-32+k,1,1,'#8a6a20');
+R(cx+dx-4,sol-26,13,3,'#d8b45a');R(cx+dx-4,sol-26,13,1,'#f0cf7d');
+R(cx+dx-3,sol-24,11,1,'#a8842a');});
+R(cx-5,sol-38,11,6,'#c9a24a');R(cx-5,sol-38,11,2,'#e8c86a');
+R(cx-1,sol-41,3,3,'#8a6a20');};
+/* l'étal couvert de Madeleine : c'est lui qui dit « on vend ici » */
+const DETAL=(R,cx,sol)=>{const x=cx-30;
+[[0],[56]].forEach(([dx])=>{R(x+dx,sol-26,4,26,BOI.boisO);R(x+dx,sol-26,2,26,BOI.bois);});
+R(x-4,sol-13,68,4,BOI.bois);R(x-4,sol-13,68,1,BOI.boisH);     /* le plateau */
+R(x-4,sol-10,68,2,BOI.boisS);
+for(let i=0;i<64;i+=8)R(x-3+i,sol-9,2,9,BOI.boisO);
+/* la toile tendue, à rayures */
+for(let i=0;i<70;i+=7){const cl=((i/7)|0)%2;
+R(x-5+i,sol-34,7,7,cl?'#d8d2c4':'#b9533c');R(x-5+i,sol-34,7,2,cl?'#efeade':'#cf6a4e');}
+R(x-7,sol-36,74,3,BOI.bois);R(x-7,sol-36,74,1,BOI.boisH);
+for(let i=0;i<70;i+=7)R(x-5+i,sol-27,4,3,((i/7)|0)%2?'#9d9788':'#8a3f2c');
+/* ce qu'il y a dessus */
+[[4,'#c0392b','#5f8a3c'],[22,'#d8c040','#e8881c'],[40,'#5f8a3c','#7e3f98']].forEach(([dx,c1,c2])=>{
+R(x+dx,sol-20,15,7,BOI.bois);R(x+dx,sol-20,15,2,BOI.boisH);
+for(let k=0;k<3;k++)R(x+dx+2+k*5,sol-23,4,3,k%2?c1:c2);});};
+/* les sacs de graines */
+const DSACS=(R,cx,sol)=>{[[-12,0,13],[2,-1,12],[-5,-13,10]].forEach(([dx,dy,h])=>{
+const x=cx+dx, y=sol+dy;
+for(let k=0;k<h;k++){const t=k/h, w=Math.round(7*(0.7+0.5*Math.sin(0.5+t*2.0)));
+for(let q=-w;q<=w;q++){const nx=q/w, n=PR_h(x+q,k,441);
+R(x+q,y-k,1,1,nx<-0.4?'#d8ccab':(nx>0.5?'#a89a78':(n<.5?'#c4b792':'#cbbe9a')));}}
+R(x-4,y-h-2,9,3,'#b5a681');R(x-2,y-h-4,5,3,'#9d9070');});};
 /* on les grave et on les pose · [nom, largeur, hauteur, sol, dessin, x, y, boîte] */
-[['ruLant1',16,40,38,DLANT,140,242,null],
- ['ruLant2',16,40,38,DLANT,210,306,null],
- ['ruLant3',16,40,38,DLANT,140,428,null],
- ['ruLant4',16,40,38,DLANT,210,492,null],
- ['ruLant5',16,40,38,DLANT,140,588,null],
- ['ruFour', 46,44,40,DFOUR, 42,326,{w:40,h:14}],
- ['ruChar', 92,32,30,DCHAR, 64,492,{w:64,h:16}],
- ['ruLinge',108,42,38,DLINGE,268,170,null],
- ['ruMeule',42,36,32,DMEULE,302,330,{w:34,h:12}],
- ['ruBotte',32,50,46,DBOTTE,236,420,null],
- ['ruBuche',44,36,32,DBUCHE,108,300,null],
- ['ruCage', 40,22,18,DCAGEOT,126,608,null],
- ['ruTonn', 26,22,18,DTONNEAU,248,592,null],
- ['ruJarre',34,28,24,DJARRE, 44,604,null],
- ['ruAbre', 38,16,14,DABREUV,300,560,null],
- ['ruRuche',32,32,28,DRUCHE,  44,166,null]]
+/* OÙ POSER : un décor tombé DANS la hauteur du sprite d'un corps est
+   dessiné avant lui et disparaît derrière. Chaque corps occupe cent
+   unités au-dessus de son pied : Madeleine 114→225, la fromagerie
+   230→341, La Ferme 386→497, les bêtes 504→615. Les objets vont dans
+   les intervalles. */
+[['ruLant1',16,40,38,DLANT,140,268,null],
+ ['ruLant2',16,40,38,DLANT,210,400,null],
+ ['ruLant3',16,40,38,DLANT,140,540,null],
+ /* CHEZ MADELEINE : l'étal couvert, la balance, les cageots, un tonneau */
+ ['ruBal',  40,46,42,DBALANCE,120,240,{w:18,h:10}],
+ ['ruCage', 40,22,18,DCAGEOT, 36,242,null],
+ ['ruEtal', 78,44,40,DETAL,   66,278,{w:68,h:16}],
+ ['ruTonn', 26,22,18,DTONNEAU,34,308,null],
+ /* LA FROMAGERIE : le bois du feu au nord, les bidons et la claie devant */
+ ['ruBuche',44,36,32,DBUCHE, 310,196,null],
+ ['ruBidon',34,24,20,DBIDON, 230,358,{w:26,h:10}],
+ ['ruClaie',48,34,30,DCLAIE, 316,362,{w:40,h:12}],
+ /* LES BÊTES : le foin entre les deux, le parc et l'abreuvoir devant */
+ ['ruMeule',42,36,32,DMEULE, 312,462,{w:34,h:12}],
+ ['ruBotte',32,50,46,DBOTTE, 248,470,null],
+ ['ruParc', 62,24,20,DPARC,  252,636,{w:56,h:12}],
+ ['ruAbre', 38,16,14,DABREUV,322,626,{w:30,h:8}],
+ /* LA FERME : la charrette qu'on décharge, les sacs, les jarres */
+ ['ruChar', 92,32,30,DCHAR,   56,332,{w:64,h:16}],
+ ['ruSacs', 34,28,24,DSACS,  126,540,null],
+ ['ruJarre',34,28,24,DJARRE,  40,560,null]]
 .forEach(([nom,w,h,s,d,bx,by,boite])=>poser(nom,ruPetit(w,h,s,d),bx,by,boite));
 }
 
@@ -25861,7 +25952,9 @@ if(o.ouvre==='chantierBlague'){b.innerHTML='Regarder le chantier<small>TRAVAUX E
   champiRare:['Champignons rares','CUEILLIR AVEC PRÉCAUTION']}[o.ouvre];
  if(FO){b.innerHTML=FO[0]+'<small>'+FO[1]+'</small>';b.classList.add('on');return;}}
 if(o.ouvre==='epicerie'){b.innerHTML='L’épicerie fine<small>ON Y ACHÈTE LE MIDI TRÈS CHER</small>';b.classList.add('on');return;}
-if(o.ouvre==='laFerme'){b.innerHTML='Entrer à la ferme<small>RÉCOLTE · BÊTES · FROMAGE · OUTILS</small>';b.classList.add('on');return;}
+if(o.ouvre==='laFerme'){b.innerHTML='Entrer à la ferme<small>TOUT CE QUI TOUCHE À LA FERME</small>';b.classList.add('on');return;}
+if(o.ouvre==='bqFerme'){b.innerHTML='Entrer chez Madeleine<small>VENDRE TA RÉCOLTE · LES COMMANDES · L’ATELIER</small>';b.classList.add('on');return;}
+if(o.ouvre==='marcheBetes'){b.innerHTML='Le marché aux bêtes<small>LAIT · LAINE · TRUFFES · ACHETER UNE BÊTE</small>';b.classList.add('on');return;}
 if(o.ouvre==='etable'){b.innerHTML='Entrer à l’étable<small>LAIT · FOIN · BÊTES</small>';b.classList.add('on');return;}
 if(o.ouvre==='fromagerie'){b.innerHTML='Entrer à la fromagerie<small>LE LAIT S’AFFINE EN FROMAGE</small>';b.classList.add('on');return;}
 if(o.ouvre==='metroFerme'){b.innerHTML='Prendre le métro<small>LIGNE 1 · '+autresStations()+'</small>';b.classList.add('on');return;}
@@ -26036,6 +26129,11 @@ if(['scierie','campement','herboriste','carriere','grandArbre','champiRare'].inc
     champiRare:'Ils luisent un peu. Mieux vaut attendre d’en savoir plus.'}[o.ouvre]);}catch(x){}
   vibrer(8);return;}
 if(o.ouvre==='laFerme'){ouvrirLaFerme();return;}
+if(o.ouvre==='bqFerme'){ouvrirLaBoutiqueFerme();return;}
+/* LE MARCHÉ SE POSE PAR-DESSUS L'ÉCRAN DES BÊTES : il cherche .mk dans
+   page2Fond, donc l'étable doit être peinte avant lui. */
+if(o.ouvre==='marcheBetes'){ETB=null;ouvrirLEtable();
+setTimeout(()=>{try{ouvrirLeMarcheAuxBetes();}catch(x){}},70);return;}
 if(o.ouvre==='etable'){ETB=null;ouvrirLEtable();return;}
 if(o.ouvre==='fromagerie'){ouvrirLaFromagerie();return;}
 if(o.ouvre==='metroFerme'){choisirLaDestination();return;}
