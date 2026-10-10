@@ -234,7 +234,7 @@
   /* ================= LA FERME EN TRAVAUX =================
      Même principe que la forêt : seule la ferme se ferme, le port continue
      de tourner. Pour rouvrir : passer FERME_FERMEE à false. */
-  var FERME_FERMEE=false;  /* OUVERTE À TOUS. Pour refermer : repasser a true */
+  var FERME_FERMEE=true;   /* EN TRAVAUX : dernière journée. Pour rouvrir : repasser a false */
   /* LE JEU DOIT SAVOIR QUE LA FERME EST FERMÉE, lui aussi : sans ce
      drapeau, marcher vers l'ouest du quai chargeait les 1,6 Mo du jeu
      pour n'afficher que l'écran de chantier. Le port lit ce drapeau et
@@ -379,9 +379,9 @@
     d.innerHTML=sceneFerme()+
       '<div class="in">'+
       '<div class="k">LA FERME</div>'+
-      '<h2>Les travaux<br>ont commencé</h2>'+
+      '<h2>On la termine<br>aujourd’hui</h2>'+
       '<div class="r"></div>'+
-      '<p>La grange est fermée le temps de refaire les enclos et les cultures. <b>Ouverture avant 22h00.</b> Le port et la ville restent ouverts.</p>'+
+      '<p>Dernière journée de travaux : la ferme sera <b>définitivement terminée ce soir</b>. La ruelle et ses six corps, le porche, le verger, le potager et l’enclos. Le port et la ville restent ouverts.</p>'+
       '</div>'+
       '<div class="bas"><button id="bdfeRetour">RETOUR AU PORT</button></div>';
     (document.body||document.documentElement).appendChild(d);

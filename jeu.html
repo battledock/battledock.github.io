@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-10-2352"></script>
+<script src="maintenance.js?v=2026-10-11-0024"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-10-2352';
+var MA_VERSION='2026-10-11-0024';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11985,18 +11985,50 @@ for(let k=0;k<700;k++){const a=X1+6+Math.floor(PR_h(k,3,172)*(X2-X1-12)), b=Y1+6
 const l=2+Math.floor(PR_h(k,5,174)*3);
 for(let q=0;q<l;q++)met(a+q,b,TRACE);}
 /* ---------- LA RUELLE, DU NORD AU SUD ----------
-   PAS DU PAVÉ GRIS : des galets chauds, de la même famille que la terre
-   qui les borde. Du gris en plein milieu d'une cour ocre faisait une
-   dalle de béton. */
+   DE GRANDES DALLES AU JOINT VIF, de tailles inégales, posées en rangs
+   qui ne s'alignent pas — chaque dalle décale son rang d'une unité ou
+   deux. Chacune a son ton, son arête éclairée en haut à gauche et son
+   ombre portée en bas à droite : c'est ce relief d'une unité qui fait la
+   pierre plate plutôt que le carrelage.
+   LES JOINTS NE TRAVERSENT PAS d'un bord à l'autre. Une ligne d'herbe en
+   travers tous les dix pixels faisait des rayures : l'herbe pousse par
+   touffes courtes, à six endroits par rang. */
 {const A1=150, A2=200, J0=84, J1=636;
-for(let j=J0;j<J1;j++)for(let i=A1;i<A2;i++){
-const n=PR_h(RX+i,RY+j,61);
-met(i,j,n<.34?GAL[0]:(n<.68?GAL[1]:GAL[2]));}
-for(let j=J0;j<J1;j+=7){const dec=(Math.floor((j-J0)/7)%2)?3:0;
-for(let i=A1-6;i<A2;i+=7){const a=Math.max(A1,i+dec), b=Math.min(A2,i+dec+6);
-if(b-a<2)continue;const n=PR_h(RX+i,RY+j,62);
-const c=n<.28?PAV[0]:(n<.56?PAV[1]:(n<.80?PAV[2]:PAV[3]));
-for(let v=0;v<6;v++)for(let u=a;u<b;u++)met(u,j+v,v===0?PAVH:(v===5?PAVB:c));}}
+const DAL=[[[212,202,179],[195,184,158],[169,157,132]],
+           [[203,193,170],[185,173,148],[161,149,124]],
+           [[219,210,188],[202,192,167],[176,164,139]],
+           [[194,184,160],[177,165,140],[153,141,117]],
+           [[216,207,182],[198,187,159],[170,158,132]]];
+const JNT=[[141,129,105],[130,119,99]];
+const ARETE=[230,221,199], FLANC=[222,213,191];
+const OMBRE=[133,123,104], OMBRE2=[141,131,112];
+const HERBE=[[92,127,68],[77,110,57]];
+for(let j=J0;j<J1;j++)for(let i=A1;i<A2;i++)
+met(i,j,PR_h(RX+i,RY+j,300)<.5?JNT[0]:JNT[1]);
+let jj=J0, rang=0;
+while(jj<J1){
+const hh=10+Math.floor(PR_h(rang,0,301)*6);
+let ii=A1-7+Math.floor(PR_h(rang,1,302)*6);
+while(ii<A2){
+const w=13+Math.floor(PR_h(rang,ii,303)*11);
+const a=Math.max(A1,ii), b=Math.min(A2,ii+w);
+const dj=Math.round((PR_h(ii,rang,308)-0.5)*2);
+if(b-a>3){
+const T=DAL[Math.floor(PR_h(ii,rang,304)*DAL.length)];
+for(let v=0;v<hh-2;v++)for(let u=a;u<b-2;u++){
+const yy=jj+v+dj;if(yy<J0||yy>=J1)continue;
+const n=PR_h(u,yy,305);
+met(u,yy,n<.24?T[0]:(n<.68?T[1]:T[2]));}
+for(let u=a;u<b-2;u++)met(u,jj+dj,ARETE);
+for(let v=0;v<hh-2;v++)met(a,jj+dj+v,FLANC);
+for(let u=a+1;u<b-2;u++)met(u,jj+dj+hh-3,OMBRE);
+for(let v=1;v<hh-2;v++)met(b-3,jj+dj+v,OMBRE2);}
+ii+=w;}
+for(let k=0;k<6;k++){
+const tx=A1+Math.floor(PR_h(rang,k,306)*(A2-A1-4));
+const l=1+Math.floor(PR_h(rang,k+9,309)*3);
+for(let q=0;q<l;q++)met(tx+q,jj+hh-2,PR_h(tx+q,rang,307)<.5?HERBE[0]:HERBE[1]);}
+jj+=hh;rang++;}
 /* LE CHEMIN DE TERRE, DU CHEMIN PRINCIPAL JUSQU'AU PORCHE.
    Le pavé ne commence qu'À L'INTÉRIEUR : prolongé dehors, il montait
    derrière l'arche et on le prenait pour une cheminée de pierre. Un
@@ -12014,10 +12046,10 @@ const n=PR_h(RX+i,RY+j,171);
 met(i,j,n<.30?TER[0]:(n<.58?TER[1]:(n<.84?TER[2]:TER[3])));}}
 for(let k=0;k<90;k++){const a=156+Math.floor(PR_h(k,3,176)*38), b=YI+Math.floor(PR_h(k,4,177)*(J0-YI));
 met(a,b,TRACE);met(a+1,b,TRACE);}
-/* les deux bordures, en pierre debout */
-for(let j=J0;j<J1;j+=5){
-const cg=PR_h(RX,RY+j,63)<.5?BORD[0]:BORD[1], cd=PR_h(RX+9,RY+j,63)<.5?BORD[0]:BORD[1];
-for(let v=0;v<5;v++)for(let u=0;u<3;u++){met(A1-3+u,j+v,cg);met(A2+u,j+v,cd);}}}
+/* PLUS DE BORDURE DE PIERRE DEBOUT. Elle encadrait le pavé de galets ;
+   les dalles vont d'un bord à l'autre et leur joint sombre fait déjà la
+   limite. Doublée, la bordure faisait un double trait. */
+}
 /* ---------- LA PAILLE ÉPARPILLÉE ---------- */
 for(let k=0;k<380;k++){const a=24+Math.floor(PR_h(k,1,201)*300), b=78+Math.floor(PR_h(k,2,202)*524);
 const l=2+Math.floor(PR_h(k,3,203)*4), couche=PR_h(k,4,204)<0.5;
