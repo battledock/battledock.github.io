@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-10-2228"></script>
+<script src="maintenance.js?v=2026-10-10-2317"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-10-2228';
+var MA_VERSION='2026-10-10-2317';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -17145,18 +17145,58 @@ Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
 dessin(R,W/2,sol,g);
 return calque(c,W,H,sol);}
 /* ---------- UN CYPRÈS ---------- */
-function ruCypres(haut){
-const W=28, H=haut+12, sol=haut+8, D=2;
-const c=document.createElement('canvas');c.width=W*D;c.height=H*D;
+/* ---------- LE CYPRÈS ----------
+   L'ANCIEN ÉTAIT UN APLAT. Trois tons posés au hasard dans un ovale,
+   sans lumière, sans tronc, sans bord : une tache verte. Celui-ci reprend
+   le tracé des arbres du verger — pixel plein, lumière du haut-gauche,
+   grain par paquets de trois unités, touffes claires du côté du soleil,
+   bord en écailles — mais sur un PROFIL CONTINU au lieu d'une couronne
+   ronde. On balaie une flamme : large au tiers inférieur, effilée en
+   haut, avec trois sinus doux qui l'empêchent d'être un cône. Une pile
+   de masses rondes, essayée d'abord, faisait un bonhomme de neige vert.
+   Il montre son tronc au pied : un cyprès posé à même l'herbe flotte. */
+function ruCypres(H){
+const RX=Math.round(H*0.175);
+const W=RX*2+10, sol=H+14, HT=sol+6, D=2;
+const c=document.createElement('canvas');c.width=W*D;c.height=HT*D;
 const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(D,0,0,D,0,0);
-const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
-Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
-const cx=W/2;
-R(cx-1,sol-7,3,7,'#4a3a22');
-for(let k=0;k<haut;k++){const t=k/haut, w=Math.round(3+Math.sin(t*3.1)*8);
-for(let i=-w;i<=w;i++){const n=PR_h(cx+i,sol-k,181);
-R(cx+i,sol-k,1,1,n<.3?'#24452a':(n<.66?'#2e5734':'#1c3722'));}}
-return calque(c,W,H,sol);}
+const cx=Math.round(W/2);
+const P=['#1b3a22','#24502c','#2e6436','#3f7c45'];
+const T=['#4a3b2c','#64523c','#806c52'];
+/* le tronc court, et son empattement */
+for(let k=0;k<=9;k++){const w=6-k/9*2.2;
+for(let q=-w/2;q<w/2;q++){const n=PR_h(Math.round(q*2)+20,k,76);
+PE(g,cx+q,sol-k,1,1,q<-w/2+1?T[0]:(n<.35?T[0]:(n<.78?T[1]:T[2])));}}
+for(let k=0;k<4;k++){const w=7.6+(4-k)*0.9;
+for(let q=-w/2;q<w/2;q++)PE(g,cx+q,sol-k,1,1,Math.abs(q)>w/2-1?T[0]:T[1]);}
+/* LE PROFIL : t vaut 0 à la cime, 1 au pied */
+const prof=(t)=>{const base=Math.pow(Math.sin(Math.pow(t,0.82)*Math.PI*0.92),0.62);
+return Math.max(0,base*(1+0.10*Math.sin(t*13.0)+0.07*Math.sin(t*7.3+1.4)+0.05*Math.sin(t*21+0.6)));};
+for(let k=0;k<H;k++){
+const t=k/H, w=prof(t)*RX, dx=Math.sin(t*2.1)*1.6;
+if(w<0.6)continue;
+for(let q=-Math.round(w);q<=Math.round(w);q++){
+const nx=q/w, d=Math.abs(nx), ny=(t-0.5)*1.4;
+if(d>1)continue;
+if(d>0.55&&PR_h(Math.round(q*2)+90,k,83)<0.012)continue;    /* les percées vers le ciel */
+const l=-(nx*0.80+ny*0.30);
+const am=Math.floor((q+64)/3), bm=Math.floor((k+64)/3);
+const paq=PR_h(am,bm,84)*0.62+PR_h(Math.round(q*2)+128,k+128,93)*0.38;
+const k2=l*1.05+(paq-0.5)*0.42-(d>0.80?(d-0.80)*2.6:0);
+PE(g,cx+dx+q,sol-9-(H-k),1,1,k2<-0.30?P[0]:(k2<0.08?P[1]:(k2<0.46?P[2]:P[3])));}}
+/* les touffes claires, du côté du soleil */
+for(let k=0;k<22;k++){
+const t=0.15+PR_h(k,1,85)*0.78, w=prof(t)*RX;
+const tx=cx+Math.sin(t*2.1)*1.6-w*(0.15+PR_h(k,2,86)*0.5), ty=sol-9-(H-t*H);
+for(let q=0;q<6;q++){const b2=PR_h(q,k,87)*6.283, rr=PR_h(q,k+1,88)*2.2;
+PE(g,tx+Math.cos(b2)*rr,ty+Math.sin(b2)*rr*1.5,1,1,q<3?P[3]:P[2]);}}
+/* le bord en écailles dressées */
+for(let k=0;k<26;k++){
+const t=0.08+PR_h(k,3,89)*0.86, w=prof(t)*RX, cote=PR_h(k,4,90)<0.5?-1:1;
+feuilleN(g,cx+Math.sin(t*2.1)*1.6+cote*w*0.94,sol-9-(H-t*H),2.2,0.9,cote>0?-1.15:-1.99,P);}
+const q2=calque(c,W,HT,sol);
+q2.emprise={w:16,h:11};                /* EN DUR : le pied arrête, comme une souche */
+return q2;}
 /* ---------- ON GRAVE, ON ENREGISTRE, ON POSE ----------
    demi : la demi-largeur de la zone où la porte s'attrape. */
 /* LA COLLISION RECOPIE L'EMPRISE DESSINÉE. Les chiffres étaient écrits à
@@ -17179,8 +17219,8 @@ poser('ruE',ruCorps(112,46, 1,{mot:'LA FERME'}),
 poser('ruF',ruCorps(104,40,-1,{bois:true}),              280,626);
 /* l'arche et les deux cyprès de l'entrée */
 poser('ruArche',ruArche(),175,96,null);
-poser('ruCyp1',ruCypres(78), 34,104,{w:10,h:6});
-poser('ruCyp2',ruCypres(70),316,104,{w:10,h:6});
+poser('ruCyp1',ruCypres(86), 34,106);
+poser('ruCyp2',ruCypres(74),316,106);
 /* ---------- CE QUI FAIT QU'UNE COUR EST HABITÉE ----------
    Sans ça, six maisons posées sur un rectangle de terre font un lotissement.
    Rien de tout ceci ne bloque — sauf le four et la charrette, qui ont de
