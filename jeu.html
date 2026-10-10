@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-10-1427"></script>
+<script src="maintenance.js?v=2026-10-10-1520"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-10-1427';
+var MA_VERSION='2026-10-10-1520';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11537,25 +11537,38 @@ const B=BORD_FERME;               /* la barrière est à cette distance du bord 
    entre les deux. */
 const BORD_D0=BORD_FERME+25;
 const dehors=(x,y)=>x<B||x>MONDE_L-BORD_D0||y<B||y>MONDE_H-B;
-/* LA TERRE DU CHAMP, sous les épis */
+/* ================= LE BLÉ DU POURTOUR, ÉCRIT EN MÉMOIRE =================
+   C'ÉTAIT LES QUATRE CINQUIÈMES DU TEMPS DE CONSTRUCTION. Mesuré bloc par
+   bloc : 456 ms pour la terre, 811 ms pour les épis, sur 1 527 ms en tout.
+   La terre faisait un fillRect par pixel — six cent cinquante mille — et
+   chaque épi en demandait cinq, soit plus d'un million. Le navigateur
+   relit la couleur écrite en texte à chaque appel.
+   On écrit donc directement dans la mémoire de l'image, une seule lecture
+   et une seule écriture pour tout le pourtour. Le dessin est identique au
+   pixel près, y compris le grain clair du sommet, qui était un blanc à
+   35 % et qu'on mélange ici à la main. */
+{const img=g.getImageData(0,0,MONDE_L,MONDE_H), d=img.data;
+const met=(x,y,c)=>{if(x<0||y<0||x>=MONDE_L||y>=MONDE_H)return;
+const i=(y*MONDE_L+x)*4;d[i]=c[0];d[i+1]=c[1];d[i+2]=c[2];d[i+3]=255;};
+const TER=[[138,116,70],[124,104,64],[111,92,56]];        /* 8a7446 7c6840 6f5c38 */
+const TIG=[[138,122,54],[122,107,46]];                    /* 8a7a36 7a6b2e */
+const EPI=[[216,180,90],[201,162,74],[224,194,120],[180,144,58]];
 for(let y=0;y<MONDE_H;y++)for(let x=0;x<MONDE_L;x++){
 if(!dehors(x,y))continue;
 const n=PR_h(x,y,21);
-g.fillStyle=n<.36?'#8a7446':(n<.70?'#7c6840':'#6f5c38');
-g.fillRect(x,y,1,1);}
-/* LES ÉPIS : une tige, une barbe, un grain clair en haut */
-const EP=['#d8b45a','#c9a24a','#e0c278','#b4903a'];
+met(x,y,n<.36?TER[0]:(n<.70?TER[1]:TER[2]));}
 for(let y=2;y<MONDE_H-2;y++)for(let x=2;x<MONDE_L-2;x++){
 if(!dehors(x,y))continue;
 if(PR_h(x,y,23)>=0.34)continue;
-const t=PR_h(x,y,25), h=7+Math.floor(t*5);
-g.fillStyle=t<.5?'#8a7a36':'#7a6b2e';
-g.fillRect(x,y-h,1,h);                                  /* la tige */
-const c2=EP[Math.floor(PR_h(x,y,27)*EP.length)];
-g.fillStyle=c2;
-g.fillRect(x,y-h-4,1,4);                                /* l'épi */
-g.fillRect(x-1,y-h-3,1,2);g.fillRect(x+1,y-h-2,1,2);    /* les barbes */
-g.fillStyle='rgba(255,255,255,.35)';g.fillRect(x,y-h-4,1,1);}
+const t=PR_h(x,y,25), h=7+Math.floor(t*5), tg=t<.5?TIG[0]:TIG[1];
+for(let k=0;k<h;k++)met(x,y-h+k,tg);                      /* la tige */
+const c2=EPI[Math.floor(PR_h(x,y,27)*EPI.length)];
+for(let k=0;k<4;k++)met(x,y-h-4+k,c2);                    /* l'épi */
+met(x-1,y-h-3,c2);met(x-1,y-h-2,c2);                      /* les barbes */
+met(x+1,y-h-2,c2);met(x+1,y-h-1,c2);
+if(y-h-4>=0){const i=((y-h-4)*MONDE_L+x)*4;               /* le grain clair, blanc à 35 % */
+d[i]+= (255-d[i])*0.35; d[i+1]+=(255-d[i+1])*0.35; d[i+2]+=(255-d[i+2])*0.35;}}
+g.putImageData(img,0,0);}
 /* LA BARRIÈRE : deux lisses et un piquet tous les trente-six pixels */
 const lisse=(x0,y0,x1,y1)=>{
 const vert=(x0===x1);
@@ -17624,7 +17637,9 @@ let MONDE_PRET=false;
 function preparerMonde(){
 if(MONDE_PRET&&SOL)return;
 MONDE_PRET=true;
-LISIERE=construireLisiere();refaireLeSol();semerDecor();balayerLeSentier();
+/* ET SI LE SOL EXISTE DÉJÀ, on ne le refait pas : c'est la seconde
+   serrure contre le double chargement. */
+LISIERE=construireLisiere();if(!SOL)refaireLeSol();semerDecor();balayerLeSentier();
 if(CARTE==='garde'){
 const arrive=new URLSearchParams(location.search).has('arrivee')||!EXT_AU_DEPART;
 const p0=arrive?[GX.descente.x,GX.plS-14]:[EXT_AU_DEPART.x,EXT_AU_DEPART.y];
@@ -28402,17 +28417,32 @@ let CACHE_QUITTE=0;
 document.addEventListener('visibilitychange',()=>{
 if(document.visibilityState==='visible'){
 garderAllume();
+/* MOINS DE VINGT SECONDES DEHORS : les toiles sont encore là. On
+   reconstruisait pourtant tout le sol à chaque aller-retour entre deux
+   applications — une bonne demi-seconde de gelée pour rien. On se
+   contente de recalculer le cadrage et de refaire la minicarte. */
 if(Date.now()-CACHE_QUITTE>20000)regraverLeDecor();   /* plus de vingt secondes dehors */
-else{refaireLeSol();LISIERE=construireLisiere();mctx=null;MINI=null;taille();}
+else{mctx=null;MINI=null;taille();}
 }
 else{CACHE_QUITTE=Date.now();sauver();monterEnLigne(true);}   /* on enregistre en quittant */
 });
 addEventListener('pagehide',()=>{
 envoyerSauvegarde(true);
 try{CANAL&&CANAL.send({type:'broadcast',event:'sortie',payload:{id:e.id}});}catch(x){}sauver();monterEnLigne(true);});
+/* ================= pageshow : NE RIEN RECONSTRUIRE À L'ARRIVÉE =================
+   pageshow se déclenche à CHAQUE chargement de page, pas seulement au
+   retour arrière. Sur la branche ordinaire, il reconstruisait tout le sol
+   — puis preparerMonde() le reconstruisait une seconde fois, sans savoir
+   qu'il existait déjà. La ferme payait donc deux fois ses 1 920 000
+   pixels, et les rangeait deux fois en cache : le cache lu au démarrage
+   était consommé par le premier passage, et le second repartait de zéro.
+   C'est de là que venait la lenteur de ferme.html.
+   Au premier chargement il n'y a rien à regraver : preparerMonde s'en
+   charge. Seule la page sortie du congélateur (persisted) a perdu ses
+   toiles et doit être regravée. */
 addEventListener('pageshow',(ev)=>{
   if(ev&&ev.persisted)regraverLeDecor();                /* page sortie du congélateur */
-  else{refaireLeSol();LISIERE=construireLisiere();mctx=null;taille();}});
+  else taille();                                       /* premier chargement : rien à refaire */});
 addEventListener('beforeunload',()=>{sauver();});
 let fondu=0;
 taille();
@@ -28818,7 +28848,13 @@ const potNow=()=>Date.now()+POT.decal;
 function potStade(P){if(!P||!P.cult)return -1;const t0=new Date(P.t0).getTime(), m=new Date(P.mur_a).getTime(), k=(potNow()-t0)/Math.max(1,m-t0);return k>=1?3:(k>0.6?2:(k>0.2?1:0));}
 function potAdopter(d){if(!d||d.erreur||!d.j)return false;POT.j=d.j;POT.debloque=d.debloque||POT.debloque||[];POT.parc={};(d.parcelles||[]).forEach(p=>POT.parc[p.i]=p);
 if(d.now)POT.decal=new Date(d.now).getTime()-Date.now();if(typeof d.euros==='number'){e.euros=d.euros;try{majHaut();}catch(x){}}POT_SALE=true;POT.charge=true;return true;}
-async function potCharger(){if(PLACE_SEULE||CARTE!=='village'||!e.id)return;try{potAdopter(await appelRPC('pot_etat',{p_joueur:e.id}));}catch(x){}}
+/* IDEM POUR LE POTAGER : chargerLeChampVite, la veille de deux secondes
+   et le rafraîchissement de deux minutes tiraient en même temps. */
+let POT_ENVOL=false;
+async function potCharger(){if(PLACE_SEULE||CARTE!=='village'||!e.id)return;
+if(POT_ENVOL)return;POT_ENVOL=true;
+try{potAdopter(await appelRPC('pot_etat',{p_joueur:e.id}));}catch(x){}
+finally{POT_ENVOL=false;}}
 function potProche(){if(CARTE!=='village'||PLACE_SEULE)return null;
 /* ON VÉRIFIE D'ABORD LE CARRÉ ENTIER. Sans ce garde-fou, une erreur de
    coordonnées fait apparaître « Semer » en plein pré, loin du potager. */
@@ -32685,8 +32721,14 @@ VERG.j=d.j;VERG.f={};(d.fosses||[]).forEach(p=>VERG.f[p.i]=p);
 if(d.now)VERG.decal=new Date(d.now).getTime()-Date.now();
 if(typeof d.euros==='number'){e.euros=d.euros;try{majHaut();}catch(x){}}
 VER_SALE=true;VERG.charge=true;return true;}
+/* UN SEUL APPEL À LA FOIS. La veille de deux secondes et le premier
+   chargement se croisaient : au démarrage, verger_etat partait trois fois
+   pour rien. */
+let VER_ENVOL=false;
 async function verCharger(){if(PLACE_SEULE||CARTE!=='village'||!CHAMPS_SEULS||!e.id)return;
-try{verAdopter(await appelRPC('verger_etat',{p_joueur:e.id}));}catch(x){}}
+if(VER_ENVOL)return;VER_ENVOL=true;
+try{verAdopter(await appelRPC('verger_etat',{p_joueur:e.id}));}catch(x){}
+finally{VER_ENVOL=false;}}
 
 /* LA RESTANQUE ARRÊTE LE JOUEUR, le portillon non. Appelée par bloque(),
    donc à chaque pas : on sort tout de suite si l'on est loin du verger. */
