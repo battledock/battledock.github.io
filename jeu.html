@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-11-1625"></script>
+<script src="maintenance.js?v=2026-10-11-1750"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-11-1625';
+var MA_VERSION='2026-10-11-1750';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -11453,6 +11453,10 @@ const PASSAGE={y0:700, y1:800};   /* la trouée, en hauteur */
    du verger (494) et le haut de la chaussée (704) : deux rangs en
    hauteur, douze planches en largeur. Les numéros 0 à 23 ne changent pas,
    chacun retrouve ses cultures — seul leur emplacement change. */
+/* LE BOULODROME, SUR LE TERRAIN LAISSÉ PAR LA RUELLE : x, y, largeur,
+   hauteur, comme XP.boulo au port. Deux pistes de 117 de large, séparées
+   par la ficelle, sur 534 de long. */
+const BOULO=[748,870,234,534];
 const CARRE={px:62, py:72, gx:12, gy:14, c:12, r:2};
 CARRE.L=CARRE.c*CARRE.px+(CARRE.c-1)*CARRE.gx;      /* 876 */
 CARRE.H=CARRE.r*CARRE.py+(CARRE.r-1)*CARRE.gy;      /* 158 */
@@ -11939,12 +11943,50 @@ Rp(cx+q[0]+1,ty2+q[1]+1,1,1,'rgba(255,250,235,.6)');   /* le relief clair */
 Rp(cx+q[0],ty2+q[1],1,1,'#5a3a22');}
 cx+=7;}
 }
-/* LA RUELLE DE LA FERME A ÉTÉ RASÉE, ET SON SOL AVEC : la terre
-   battue de la cour, les grandes dalles du nord au sud, les traces de
-   roue et la paille éparpillée. L'herbe du pré reprend le coin sud-est,
-   x 690→1040, y 812→1462, en attendant ce qui viendra à sa place.
-   LA GRAVURE DU SOL Y GAGNE : c'était le deuxième plus gros morceau du
-   chargement de la ferme, après le potager. */
+/* ================= LE BOULODROME =================
+   LA RUELLE A ÉTÉ RASÉE, ET SON SOL AVEC : la terre battue de la cour,
+   les grandes dalles, les traces de roue et la paille. Le boulodrome du
+   port prend sa place — celui qui est passé sous l'eau quand la langue
+   de terre du sud-ouest a été noyée, et dont le jeu tournait depuis dans
+   le vide : dansLeBoulodrome() testait XP.boulo, qui n'existait plus, et
+   rendait donc toujours false. Le bouton « Jouer aux boules » ne
+   s'allumait nulle part.
+   LA GRAVURE EST CELLE DU PORT, AU PIXEL PRÈS : même bordure de bois,
+   même sable, même ficelle entre les deux pistes, mêmes ronds de lancer.
+   SEULS LES COMPTES CHANGENT. L'ancien terrain semait 900 grains et 40
+   traces sur 120x172, soit un grain pour vingt-trois unités carrées.
+   Celui-ci fait 234x534 : six fois la surface. Garder les mêmes nombres
+   aurait donné un sable six fois plus maigre — c'est la densité qu'on
+   reprend, pas le compte. */
+{
+const B=BOULO, x0=B[0], y0=B[1], w=B[2], h=B[3];
+const A=(i)=>alea(i*1.91+0.3);
+const R=(x,y,ww,hh,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
+Math.max(1,Math.round(ww)),Math.max(1,Math.round(hh)));};
+R(x0-3,y0-3,w+6,h+6,'#6b4a2c');R(x0-3,y0-3,w+6,1,'#a97f52');R(x0-3,y0+h+2,w+6,1,'#4f3520');
+R(x0,y0,w,h,'#d8bf8c');
+const K=(w*h)/(120*172);                       /* 6,05 */
+for(let i=0;i<Math.round(900*K);i++)R(x0+A(i+5000)*w,y0+A(i+6000)*h,1,1,
+['#c9ad78','#e6d0a0','#bca06a','#d0b682'][i%4]);
+for(let y=y0+2;y<y0+h;y+=3)R(x0+w/2,y,1,2,'#f2efe4');          /* la ficelle entre les pistes */
+for(let i=0;i<Math.round(40*K);i++)R(x0+6+A(i+7000)*(w-12),y0+6+A(i+7100)*(h-12),2,1,'rgba(120,90,50,.18)');
+/* LES MÈNES. L'ancien terrain en portait une par piste ; celui-ci est
+   quatre fois plus long, et une seule laissait les deux tiers du sable
+   vierges. Trois par piste, échelonnées. */
+const rond=(x,y)=>{g.strokeStyle='rgba(120,90,50,.55)';g.lineWidth=1;
+g.beginPath();g.ellipse(x,y,6,3,0,0,7);g.stroke();};
+const bl=(x,y)=>{R(x-1,y-1,3,3,'#7d858c');R(x-1,y-1,2,1,'#e1e6ea');R(x+1,y+1,1,1,'#50575c');};
+const mene=(cx,yr,yb,coch,n)=>{rond(cx,yr);
+[[0,0],[5,3],[-4,4],[2,-5],[8,-2],[-7,-3],[6,6],[-2,8]].slice(0,n)
+.forEach(([dx,dy])=>bl(cx+dx,yb+dy));
+R(cx+2,yb-2,2,2,coch);};
+mene(x0+w*0.27,y0+h-28,y0+h-128,'#d0402f',5);
+mene(x0+w*0.27,y0+176,y0+286,'#e8c06a',4);
+mene(x0+w*0.27,y0+22,y0+96,'#d0402f',3);
+mene(x0+w*0.73,y0+24,y0+128,'#e8c06a',5);
+mene(x0+w*0.73,y0+h-180,y0+h-286,'#d0402f',4);
+mene(x0+w*0.73,y0+h-26,y0+h-96,'#e8c06a',3);
+}
 /* ---------- LE POTAGER ---------- */
 /* LES ALLÉES DE GRAVIER CLAIR. Elles étaient en terre battue sombre, de la
    même famille que les planches : tout le potager faisait une seule masse
@@ -16882,16 +16924,35 @@ DECOR.push({t:'x_fe_comptoirF',x:290,y:930,v:0,bati:true,demi:56,ouvre:'laFerme'
    nom est aussi celui du traceur de pixels : ils se seraient retrouvés en
    NaN, sans que rien ne proteste. */
 }
-/* LA RUELLE DE LA FERME A ÉTÉ RASÉE : les quatre corps et leurs
-   enseignes, l'arche et ses cyprès, les trois lanternes, l'étal, la
-   balance, les cageots, les bidons, la claie, le parc, l'abreuvoir, la
-   charrette, les sacs et les jarres. Tout passait déjà par le comptoir
-   de la ferme, dans l'enclos, qui ouvre le même écran : la rue était un
-   détour à quatre portes vers ce qu'une seule donne déjà.
-   LE TERRAIN EST LIBRE — x 690→1040, y 812→1462, entre la palissade de
-   l'enclos et la barrière de l'est — et il attend ce qui viendra à sa
-   place. Son sol de terre battue et de dalles part avec elle, dans
-   construireSolPre : l'herbe du pré reprend tout. */
+/* ================= LE BOULODROME : CE QUI SE POSE DESSUS =================
+   LA RUELLE A ÉTÉ RASÉE — les quatre corps et leurs enseignes, l'arche
+   et ses cyprès, les lanternes, l'étal, la balance, les cageots, les
+   bidons, la claie, le parc, l'abreuvoir, la charrette, les sacs et les
+   jarres. Tout passait déjà par le comptoir de la ferme, dans l'enclos,
+   qui ouvre le même écran.
+   LE BOULODROME DU PORT PREND LA PLACE, avec ce qui l'entourait là-bas :
+   quatre platanes, deux bancs, quatre boulistes. Ce sont les MÊMES
+   sprites qu'au port — x_platane, bancP, x_bouliste — pas des copies.
+   LE SABLE N'ARRÊTE RIEN : on marche dessus, on traverse les pistes.
+   Seuls les quatre troncs arrêtent, par une bande chacun — la ferme
+   n'appelle pas bloque(), donc un décor qui doit arrêter doit poser sa
+   bande à la main, dans majJoueur. */
+{
+const B=BOULO, bx=B[0], by=B[1], bw=B[2], bh=B[3];
+/* les quatre platanes, aux quatre coins, décalés comme au port */
+[[bx-24,by+82,0],[bx+bw+24,by+186,1],[bx-24,by+388,2],[bx+bw+24,by+476,3]]
+.forEach(([x,y,v])=>DECOR.push({t:'x_platane',x:Math.round(x),y:Math.round(y),v}));
+/* les deux bancs, face aux pistes */
+[[bx-42,by+242],[bx+bw+42,by+302]]
+.forEach(([x,y])=>DECOR.push({t:'bancP',x:Math.round(x),y:Math.round(y),gr:0}));
+/* LES QUATRE BOULISTES. v:0 est celui qui soupèse sa boule — c'est lui
+   qui porte l'animation, les trois autres regardent. */
+[[bx+38,by+156,'haut',{veste:1,chapeau:1}],
+ [bx+68,by+178,'haut',{veste:2,cheveux:1}],
+ [bx+156,by+412,'bas',{veste:0,barbe:1,cheveux:0}],
+ [bx+184,by+440,'bas',{veste:2,chapeau:2}]]
+.forEach(([x,y,dir,ap],i)=>DECOR.push({t:'x_bouliste',x:Math.round(x),y:Math.round(y),v:i,dir,ap}));
+}
 
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}
 if(CARTE==='foret')return semerLaForet();
@@ -21184,6 +21245,13 @@ BANDES.push([P.x1,E.x1+4,E.y0-26,E.y0+13]);
 BANDES.push([E.x0-4,E.x1+4,E.y1-26,E.y1+13]);
 BANDES.push([E.x0-4,E.x0+7,E.y0+13,E.y1-26]);
 BANDES.push([E.x1-9,E.x1+4,E.y0+13,E.y1-26]);}
+/* ---------- LES QUATRE TRONCS DU BOULODROME ----------
+   Dix unités de large au pied, pas plus : on doit pouvoir passer entre
+   l'arbre et la bordure du terrain. */
+if(typeof BOULO!=='undefined'){const B=BOULO;
+[[B[0]-24,B[1]+82],[B[0]+B[2]+24,B[1]+186],
+ [B[0]-24,B[1]+388],[B[0]+B[2]+24,B[1]+476]]
+.forEach(([x,y])=>BANDES.push([x-6,x+6,y-11,y+4]));}
 /* LES MURETS DE L'ARCHE SONT PARTIS AVEC LA RUELLE. Leurs deux bandes
    sont restées une version de plus : de 676 à 1056, sur vingt unités de
    haut, on butait contre un mur qui n'était plus dessiné nulle part.
@@ -24434,9 +24502,17 @@ return {gagne:false,pts:lui.filter(v=>v<bm).length,bm,bl};
 }
 const PQ=PQC;
 let PET=null;
+/* LE BOULODROME A DÉMÉNAGÉ AU PRÉ. Il était au port, sur la langue de
+   terre du sud-ouest ; elle est passée sous l'eau et XP.boulo avec elle,
+   donc cette fonction rendait toujours false et la pétanque — la mène
+   contre Marius, le jeu entre amis par canal, l'Edge Function — tournait
+   dans le vide depuis. Elle regarde maintenant les deux terrains. */
 function dansLeBoulodrome(){
-if(CARTE!=='extramar'||!XP.boulo)return false;
-const [x0,y0,w,h]=XP.boulo;
+const B=(CARTE==='extramar')?XP.boulo
+:((typeof CHAMPS_SEULS!=='undefined'&&CHAMPS_SEULS&&CARTE==='village'
+   &&typeof BOULO!=='undefined')?BOULO:null);
+if(!B)return false;
+const [x0,y0,w,h]=B;
 return joueur.x>x0-4&&joueur.x<x0+w+4&&joueur.y>y0-8&&joueur.y<y0+h+4;
 }
 function menesGagnees(){try{return +(localStorage.getItem('bdl.petanque.gagnees')||0);}catch(x){return 0;}}
