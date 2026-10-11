@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-0420"></script>
+<script src="maintenance.js?v=2026-10-12-0510"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-0420';
+var MA_VERSION='2026-10-12-0510';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -17954,16 +17954,28 @@ const choix=(typeof REG!=='undefined'&&REG.nettete)||'auto';
    était par défaut. Le plancher est maintenant « équilibré ». */
 let palier=(choix==='auto')?(typeof NET_AUTO!=='undefined'?NET_AUTO:'nette'):choix;
 if(palier==='fluide')palier='equilibre';
-const plafond=QUALITE_TOILE<1?1.5:(palier==='nette'?3:2);
-const dpr=ECO?1:Math.max(1,Math.min(plafond,window.devicePixelRatio||1));
-/* L'ÉCHELLE ENTIÈRE, au palier net seulement : chaque point du dessin occupe
-   alors un nombre ROND de pixels d'écran, et le décor ne tremble plus quand on
-   avance. Aux paliers plus légers, la toile est volontairement plus petite que
-   l'écran : l'échelle ne peut pas être ronde sans en annuler l'économie. */
-if(palier==='nette'&&!ECO){
-  ECH=Math.max(1,Math.round(e*dpr));
-  e=ECH/dpr;ECH_CSS=e;
-}else ECH=e*dpr;
+/* ================= POURQUOI C'ÉTAIT FLOU, PARFOIS =================
+   L'ÉCONOMIE SE PRENAIT SUR LA RÉSOLUTION. Au palier « équilibré », la
+   toile était plafonnée à deux pixels par point d'écran ; sur un
+   téléphone qui en a trois, le navigateur étirait donc 2 vers 3, avec
+   son lissage — tout le jeu devenait flou. Et comme la nettetée
+   automatique redescend d'un cran dès que l'appareil s'essouffle, ça
+   n'arrivait QUE PAR MOMENTS : exactement ce qu'on voyait.
+   ELLE SE PREND MAINTENANT SUR LE CHAMP DE VISION. Un cran d'économie
+   agrandit l'échelle de dix-huit pour cent : on dessine trente pour
+   cent de pixels en moins parce qu'on montre un peu moins de monde,
+   pas parce qu'on dessine moins fin.
+   LA RÈGLE QUI NE SE NÉGOCIE PLUS : un pixel de la toile vaut un pixel
+   de l'écran, toujours. ECH est un entier, et la taille CSS vaut
+   exactement ECH/dpr — le navigateur n'a plus rien à étirer. */
+const ZOOM_PALIER=(palier==='nette')?1:1.18;
+if(!ECO)e=Math.max(1.2,Math.round(e*ZOOM_PALIER*8)/8);
+/* LE PLAFOND NE SERT PLUS QU'À BORNER LE COÛT sur les écrans à quatre
+   points par pixel, où la toile deviendrait énorme pour un gain que
+   l'œil ne voit pas. */
+const dpr=ECO?1:Math.max(1,Math.min(3,window.devicePixelRatio||1));
+ECH=Math.max(1,Math.round(e*dpr));
+e=ECH/dpr;ECH_CSS=e;
 VW=Math.ceil(w/e)+1;VH=Math.ceil(h/e)+1;
 cv.width=Math.round(VW*ECH);cv.height=Math.round(VH*ECH);
 cv.style.width=(VW*e)+'px';cv.style.height=(VH*e)+'px';
