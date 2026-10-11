@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-11-1015"></script>
+<script src="maintenance.js?v=2026-10-11-1115"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-11-1015';
+var MA_VERSION='2026-10-11-1115';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -32500,11 +32500,11 @@ for(const [cle,nom] of [['madeleine','Chez Madeleine'],['etable','L’étable'],
  ['marche','Le marché'],['fromagerie','La fromagerie'],['encours','En cours']])
  corps+='<button class="t" data-f="'+cle+'"><canvas data-fi="'+cle+'"></canvas><b>'+nom+'</b></button>';
 corps+='</div>';
-/* LE PIED DISAIT « tout passe par cette porte » — ce n'était plus vrai :
-   Madeleine, la fromagerie et les bêtes ont chacune la leur dans la
-   ruelle. Cette porte-ci est le raccourci qui mène partout, pas le seul
-   chemin. */
-corps+='<div class="pied">'+(mot||'Tout est aussi accessible depuis les portes de la ruelle. Celle-ci mène partout d’un seul coup.')+'</div>';
+/* LE PIED NE PARLE PLUS DE LA RUELLE : elle est appelée à disparaître,
+   et un écran qui renvoie à un endroit qui n'existe plus est pire que
+   pas de pied du tout. Il ne sert donc plus qu'aux messages de retour
+   (« ta meule est en cave »), et s'efface quand il n'y en a pas. */
+if(mot)corps+='<div class="pied">'+mot+'</div>';
 $('page2Fond').innerHTML=
 '<div class="tete"><small>LA RUELLE · DEPUIS 1947</small><b>La ferme</b>'+
 '<span class="bourse">EN POCHE<b>'+enEuros(e.euros||0)+'</b></span></div>'+
@@ -32566,9 +32566,36 @@ for(let q=0;q<4;q++)R(6,7+q*2.5,7,1,'#9a8158');
 R(12,2,2,7,'#b8c6d0');R(12,2,1,7,'#dfe8ee');R(13,8,2,3,'#8b9198');}
 }catch(x){}});
 }
+/* ---------- CE QUI RESTE EN PROPRE À L'ÉTABLE ----------
+   Le pré encadré, l'abri à poules et la ligne-bouton. Tout le reste
+   vient de CARNET(). */
+const CSS_ETB_CARNET=`
+#page2Fond.etb .bande{position:relative;margin:2px 0 14px;border:4px solid #8a6238;border-radius:14px;background:#4e7a38;overflow:hidden}
+#page2Fond.etb .bande canvas{display:block;width:100%;height:150px;image-rendering:pixelated}
+#page2Fond.etb .l canvas{flex:none;width:44px;height:44px;border-radius:11px;background:#e6dcc0}
+#page2Fond.etb .l.pret{border-color:#4e7a38;background:rgba(78,122,56,.16)}
+/* LA LIGNE QUI AGIT : la même carte, avec son bouton au bout. */
+#page2Fond.etb .l.act i{font-style:normal;flex:none;font:700 10px Arial;letter-spacing:1.3px;text-transform:uppercase;border-radius:12px;padding:7px 12px;background:#4e7a38;color:#fbf5e6}
+#page2Fond.etb .l.act[disabled]{opacity:.5}
+#page2Fond.etb .l.act[disabled] i{background:#cdbd9c;color:#7a6a4e}
+/* L'ABRI À POULES : une carte comme les autres, avec ses rangs dedans. */
+#page2Fond.etb .abri{border:1px solid #d6c4a0;border-radius:15px;background:rgba(255,255,255,.62);padding:4px 13px 10px;margin-top:9px}
+#page2Fond.etb .abri .rub{font:700 9px Arial;letter-spacing:1.6px;color:#8a6238;padding:11px 0 6px}
+#page2Fond.etb .abri .row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #e3d6b8}
+#page2Fond.etb .abri .row:first-of-type{border-top:0}
+#page2Fond.etb .abri .nm{flex:1;min-width:0}
+#page2Fond.etb .abri .nm b{display:block;font:400 15px Georgia;line-height:1.3}
+#page2Fond.etb .abri .nm i{font:italic 11px Georgia;color:#7a6a4e;line-height:1.35}
+#page2Fond.etb .abri .faim{color:#b4502e}
+#page2Fond.etb .abri button{flex:none;border:0;border-radius:12px;padding:9px 13px;background:#4e7a38;color:#fbf5e6;font:700 10px Arial;letter-spacing:1.2px}
+#page2Fond.etb .abri button.pris{background:#cdbd9c;color:#7a6a4e}
+`;
 function ouvrirLEtable(mot){
 if(!document.getElementById('cssEtb')){const st=document.createElement('style');
-st.id='cssEtb';st.textContent=CSS_ETB+CSS_BETES+CSS_MARCHE;document.head.appendChild(st);}
+/* LE CARNET PASSE EN DERNIER : il reprend la coque — fond, chapeau,
+   cartes, jauges, rail du bas — pendant que CSS_ETB et CSS_BETES gardent
+   ce qui leur appartient encore, le tiroir d'une bête et son portrait. */
+st.id='cssEtb';st.textContent=CSS_ETB+CSS_BETES+CSS_MARCHE+CARNET('etb')+CSS_ETB_CARNET;document.head.appendChild(st);}
 $('page2Fond').className='etb';$('page2').classList.add('on');
 peindreLEcranDesBetes(mot);
 /* LES POULES SONT DANS L'ENCLOS maintenant : leur état et les chantiers
@@ -32693,36 +32720,36 @@ const pc=(a,b)=>Math.max(0,Math.min(100,Math.round((a||0)/(b||1)*100)));
 const fmt=(c)=>enEuros(c).replace(',00','');
 /* UNE FICHE PAR ESPÈCE : le portrait, l'état, la jauge. Pas de bouton :
    ce qui est prêt se ramasse d'un seul geste, en haut. */
-const fiche=(esp,titre,etat,pret,jauge,coul)=>
-'<div class="fi'+(pret?' pret':'')+'"'+(pret?' data-fiche="'+esp+'"':'')+'>'+
+/* LA FICHE EST DEVENUE LA LIGNE DU CARNET : même carte, même jauge que
+   partout ailleurs. Elle gardait trois façons de dire la même chose —
+   un ✓, un doré, un cadre vert — là où la couleur de la jauge suffit. */
+const fiche=(esp,titre,etat,pret,jauge)=>
+'<div class="l'+(pret?' pret':'')+'"'+(pret?' data-fiche="'+esp+'"':'')+'>'+
 '<canvas data-f="'+esp+'"></canvas>'+
-'<div class="co"><div class="li"><b>'+titre+'</b>'+
-'<em'+(pret?' class="or"':'')+'>'+etat+'</em></div>'+
-'<div class="ja"><span style="width:'+jauge+'%;background:'+coul+'"></span></div></div>'+
-'<span class="et">'+(pret?'✓':'⏱')+'</span></div>';
+'<span class="n"><b>'+titre+'</b><em>'+etat+'</em></span>'+
+'<span class="j'+(pret?'':' bas')+'"><span style="width:'+Math.max(4,jauge)+'%"></span></span></div>';
 const nid=P.oeufs||0, nichoir=Math.max(1,(P.poules||0)*16);
 let fiches='';
 if(P.niveau&&(P.poules||0)>0)fiches+=fiche('poule',
 P.poules+' poule'+(P.poules>1?'s':''),
 nid?nid+' œuf'+(nid>1?'s':'')+' au nid':'rien au nid',
-nid>0,pc(nid,nichoir),'#f4ece0');
+nid>0,pc(nid,nichoir));
 if((E.vaches||0)>0)fiches+=fiche('vache',
 E.vaches+' vache'+(E.vaches>1?'s':''),
 (E.lait||0)>0?((E.lait)+' / '+(E.lait_max||0)+' L'):
 (E.prochain?('lait dans '+etbDuree(E.prochain)):'il leur faut du foin'),
-(E.lait||0)>0,pc(E.lait,E.lait_max||1),'#e8e2d4');
+(E.lait||0)>0,pc(E.lait,E.lait_max||1));
 if((E.moutons||0)>0)fiches+=fiche('mouton',
 E.moutons+' mouton'+(E.moutons>1?'s':''),
 (E.laine_prete||0)>0?((E.laine_prete)+' toison'+(E.laine_prete>1?'s':'')+' prête'+(E.laine_prete>1?'s':'')):
 ('laine dans '+etbDuree(E.laine_dans)),
-(E.laine_prete||0)>0,(E.laine_prete||0)>0?100:0,'#f0d78a');
+(E.laine_prete||0)>0,(E.laine_prete||0)>0?100:0);
 if((E.cochons||0)>0)fiches+=fiche('cochon',
 E.cochons+' cochon'+(E.cochons>1?'s':''),
 (E.poids_bete||0)>=40?(E.poids_bete+' kg · à vendre'):
 ((E.poids_bete||0)+' kg · vendable à 40'),
-(E.poids_bete||0)>=40||!!E.truffe_prete,pc(E.poids_bete,40),'#e8a0a8');
-if(!fiches)fiches='<div class="vide"><b>L’enclos est vide</b>'+
-'<em>Lucien tient son étal juste à côté</em></div>';
+(E.poids_bete||0)>=40||!!E.truffe_prete,pc(E.poids_bete,40));
+if(!fiches)fiches='<div class="calme">L’enclos est vide. Lucien tient son étal juste à côté.</div>';
 /* CE QU'IL Y A À RAMASSER, dit en toutes lettres. */
 const pris=[];
 if(nid>0)pris.push(nid+' œuf'+(nid>1?'s':''));
@@ -32758,28 +32785,37 @@ else abri='<div class="abri"><div class="rub">L’ABRI À POULES · '+(P.poules|
 (P.niveau===1?'800 €':'2 500 €')+'</button></div>'+chantierHTML('poul:'+(P.niveau+1)):'')+
 '</div>';
 const betes=(E.vaches||0)+(E.moutons||0)+(E.cochons||0);
+/* L'ÉCRAN PREND LE CARNET : le chapeau commun en haut — lieu, titre,
+   « en poche » —, le pré descend dans le corps comme une image encadrée,
+   ce qui est prêt remonte en « à faire maintenant », et on sort par le
+   rail du bas. L'en-tête d'avant portait le titre PAR-DESSUS le pré, avec
+   sa croix et son montant en surimpression : trois sortes d'information
+   sur un fond qui bougeait. */
+const foinPc=(E.foin||0)>0?Math.min(100,Math.round(E.foin/14400*100)):0;
 $('page2Fond').innerHTML=
-'<div class="bande"><canvas id="etbPre"></canvas>'+
-'<div class="chap"><div class="ti"><small>L’ENCLOS · LA FERME</small>'+
+'<div class="tete"><small>LA FERME · L’ENCLOS</small>'+
 '<b>'+(betes?betes+' bête'+(betes>1?'s':''):'Aucune bête')+
-((P.poules||0)?', '+P.poules+' poule'+(P.poules>1?'s':''):'')+'</b></div>'+
-'<span class="eu">'+enEuros(e.euros||0)+'</span>'+
-'<button id="etbX">✕</button></div>'+
-'<div class="foin"><span>Foin <i>'+((E.foin||0)>0?('la mangeoire tient '+etbDuree(E.foin)):
-'la mangeoire est vide, elles ont faim')+'</i></span>'+
-'<span class="ja"><b style="width:'+((E.foin||0)>0?Math.min(100,Math.round(E.foin/14400*100)):0)+'%"></b></span></div>'+
-'</div>'+
-'<div class="liste">'+
-'<button class="tout'+(pris.length?'':' pris')+'" id="etbTout"><span class="ic">›</span>'+
-'<span class="nm"><b>'+(pris.length?'Tout ramasser':'Rien à ramasser')+'</b>'+
-'<i>'+(pris.length?pris.join(', '):'reviens dans un moment')+'</i></span></button>'+
-'<div class="eti">LE TROUPEAU</div>'+
+((P.poules||0)?', '+P.poules+' poule'+(P.poules>1?'s':''):'')+'</b>'+
+'<span class="bourse">EN POCHE<b>'+enEuros(e.euros||0)+'</b></span></div>'+
+'<div class="corps">'+
+'<div class="bande"><canvas id="etbPre"></canvas></div>'+
+(pris.length?('<h3>À FAIRE MAINTENANT</h3>'+
+ '<button class="u" id="etbTout"><span class="n"><b>Tout ramasser</b>'+
+ '<em>'+pris.join(', ')+'</em></span><i>Ramasser</i></button>'):'')+
+'<h3>LA MANGEOIRE</h3>'+
+'<div class="l"><span class="n"><b>'+((E.foin||0)>0?'Du foin pour '+etbDuree(E.foin):'La mangeoire est vide')+'</b>'+
+'<em>'+((E.foin||0)>0?'elles ont de quoi tenir':'elles ont faim')+'</em></span>'+
+'<span class="j'+(foinPc>0?'':' bas')+'"><span style="width:'+Math.max(4,foinPc)+'%"></span></span></div>'+
+'<button class="l act" data-g="nourrir"'+((E.foin||0)>0?'':' disabled')+'>'+
+'<span class="n"><b>Nourrir le troupeau</b>'+
+'<em>'+((E.foin||0)>0?'une ration prise dans la mangeoire':'il faut d’abord du foin')+'</em></span>'+
+'<i>Nourrir</i></button>'+
+'<h3>LE TROUPEAU</h3>'+
 fiches+abri+
-'<div class="pied">'+
-'<button data-g="nourrir" class="'+((E.foin||0)>0?'':'p')+'">Nourrir le troupeau</button>'+
-'<button data-g="marche" class="bois">Le marché</button>'+
-'</div>'+(mot?'<div class="mot">'+mot+'</div>':'')+'</div>';
-$('etbX').onclick=()=>{ETB_PRE=null;$('page2').classList.remove('on');};
+(mot?'<div class="pied">'+mot+'</div>':'')+
+'</div>'+
+'<div class="bas"><button id="etbX">RETOUR À LA FERME</button></div>';
+$('etbX').onclick=()=>{ETB_PRE=null;vibrer(8);ouvrirLaFerme();};
 /* LES PORTRAITS */
 $('page2Fond').querySelectorAll('[data-f]').forEach(c=>{try{
 const g=c.getContext('2d');g.imageSmoothingEnabled=false;
