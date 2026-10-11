@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-1020"></script>
+<script src="maintenance.js?v=2026-10-12-1110"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-1020';
+var MA_VERSION='2026-10-12-1110';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -25539,9 +25539,9 @@ const n=pqCompteurs()[o.quoi]||0;return Math.max(0,Math.min(1,n/o.seuil));}
 function pqEtat(o,mien){
 if(pqDebloque(o))return mien?{t:'on',l:'ÉQUIPÉE'}:{t:'prendre',l:'ÉQUIPER'};
 if(o.prix){const sous=(e&&e.euros)||0;
-if(PET&&PET.achat===o.c)return {t:'conf',l:'CONFIRMER  ·  '+o.prix+' €'};
-if(sous>=o.prix)return {t:'ach',l:'ACHETER  ·  '+o.prix+' €'};
-return {t:'cher',note:'il te manque '+Math.ceil(o.prix-sous)+' €',k:sous/o.prix};}
+if(PET&&PET.achat===o.c)return {t:'conf',l:'CONFIRMER  ·  '+enEuros(o.prix)};
+if(sous>=o.prix)return {t:'ach',l:'ACHETER  ·  '+enEuros(o.prix)};
+return {t:'cher',note:'il te manque '+enEuros(o.prix-sous),k:sous/o.prix};}
 return {t:'gagner',note:o.cond||o.dit,k:pqAvance(o)};}
 const pqBas2=(E)=>E.l?('<span class="act'+(E.t==='ach'?' ach':(E.t==='conf'?' conf':''))+'">'+E.l+'</span>')
 :('<i class="jg"><u style="width:'+Math.round((E.k||0)*100)+'%"></u></i><small>'+E.note.toUpperCase()+'</small>');
@@ -25556,7 +25556,8 @@ if(!o.prix)return;
 if(((e&&e.euros)||0)<o.prix){PET.achat=null;majTextePetanque();return;}
 if(PET.achat!==cle){PET.achat=cle;try{vibrer(8);}catch(x){}majTextePetanque();return;}
 /* ON PAIE. La bourse et l'achat partent dans la même sauvegarde. */
-e.euros=Math.round(((e.euros||0)-o.prix)*100)/100;
+/* LA BOURSE EST EN CENTIMES dans tout le jeu — un prix aussi. */
+e.euros=Math.max(0,Math.round((e.euros||0)-o.prix));
 e.pqAchats=((e.pqAchats)||[]).concat([cle]);
 PET.achat=null;
 try{jouer('achat');}catch(x){}try{vibrer([12,30,12]);}catch(x){}
@@ -25575,7 +25576,7 @@ const C=pqCompteurs(), maB=pqMaBoule().c, maT=pqMonTerrain().c;
 const nB=PQ_BOULES.filter(pqDebloque).length, nT=PQ_TERRAINS.filter(pqDebloque).length;
 const R=PQ_BOULES[PQ_BOULES.length-1], okR=pqDebloque(R), ER=pqEtat(R,R.c===maB);
 let h='<div class="mTete"><small>L’ÉTAL DU BOULODROME</small><h3>La boutique</h3>'+
-'<span class="mSou">'+Math.floor((e&&e.euros)||0)+' €</span></div>'+
+'<span class="mSou">'+enEuros((e&&e.euros)||0)+'</span></div>'+
 '<div class="mVed rare'+(okR?'':' gris')+'"'+(okR?' data-item="'+R.c+'" data-fam="b"':'')+'><span class="ct">'+
 '<canvas data-boule="'+R.c+'" data-k="4"></canvas><span class="tx">'+
 '<small>LA PIÈCE RARE</small><b>'+R.nom+'</b>'+
@@ -25855,13 +25856,13 @@ const PQ_BOULES=[
 /* CELLES QU'ON ACHÈTE. Elles ne se gagnent pas : elles coûtent, et
    c'est tout ce qui les distingue — aucune ne roule autrement qu'une
    autre, le prix n'achète que l'allure. */
-{c:'olive', nom:'La verte olive', dit:'la couleur du pays', prix:30,
+{c:'olive', nom:'La verte olive', dit:'la couleur du pays', prix:2500,
  cond:'', a:'#56663c', b:'#93a66b', o:'#364024', stries:2},
-{c:'cuivre', nom:'La cuivrée', dit:'patinée par les mains', prix:50,
+{c:'cuivre', nom:'La cuivrée', dit:'patinée par les mains', prix:6000,
  cond:'', a:'#965c31', b:'#d9975a', o:'#5c3418', stries:1},
-{c:'nuit', nom:'La noire mate', dit:'elle ne renvoie rien', prix:80,
+{c:'nuit', nom:'La noire mate', dit:'elle ne renvoie rien', prix:12000,
  cond:'', a:'#2b2f33', b:'#4e555c', o:'#15181b', stries:0},
-{c:'nacre', nom:'La nacrée', dit:'une pièce de collection', prix:120,
+{c:'nacre', nom:'La nacrée', dit:'une pièce de collection', prix:28000,
  cond:'', a:'#c3bed4', b:'#f6f2ff', o:'#8b86a2', stries:0, laiton:1},
 {c:'mondial', nom:'La championne', dit:'un titre au Mondial', seuil:1, quoi:'titres',
  cond:'gagne le Mondial', a:'#b8c0c8', b:'#ffffff', o:'#6f7880', stries:0, laiton:1}];
@@ -25879,7 +25880,7 @@ const PQ_TERRAINS=[
  sable:'#e0cb9e', grain:['#d2bb88','#f0dcb4','#c6ae7c','#dcc698','#f6e8c4'],
  bord:'#2f4433', haut:'#4e7a38', taches:'rgba(60,80,30,.07)', nb:8, lignes:1},
 /* CELUI QU'ON ACHÈTE : le même terrain, la nuit tombée. */
-{c:'nuit', nom:'Sous le lampadaire', dit:'on joue jusqu’à pas d’heure', prix:150,
+{c:'nuit', nom:'Sous le lampadaire', dit:'on joue jusqu’à pas d’heure', prix:40000,
  sable:'#6e6a58', grain:['#5f5c4c','#817c66','#56533f','#6b6754','#948d72'],
  bord:'#2a2a2e', haut:'#45454c', taches:'rgba(16,18,26,.16)', nb:16}];
 /* CE QUE LE JOUEUR A FAIT, lu là où c'était déjà compté. */
