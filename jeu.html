@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-1110"></script>
+<script src="maintenance.js?v=2026-10-12-1155"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-1110';
+var MA_VERSION='2026-10-12-1155';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -25025,7 +25025,7 @@ let titre;
 if(PET.mondial)titre='LE MONDIAL · '+pqTourDuMondial();
 else if(PET.mode==='partie')titre='PARTIE EN 13 POINTS';
 else if(PET.mode==='ami')titre='EN 13 POINTS · ENTRE AMIS';
-else titre=(PET.mode==='payant'?'LE BOULODROME · MÈNE À 2 €':'LE BOULODROME · ENTRAÎNEMENT');
+else titre=(PET.mode==='payant'?'LE BOULODROME · MÈNE À 6 €':'LE BOULODROME · ENTRAÎNEMENT');
 return {duel,titre,nom:(PET.ami&&PET.ami.pseudo)||'Marius',d:(PET.adv&&PET.adv.d)||'fr',
 sous:duel?('MÈNE '+PET.mene+' · EN 13'):'TROIS BOULES CHACUNE'};}
 const pqPastilles=(n,or,droite)=>{let h='';
@@ -25188,13 +25188,19 @@ PET.etape='fin';
 if(PET.mode==='ami'||PET.mode==='partie'){finirMeneAmi();return;}
 if(PET.mode!=='payant'){PET.titreFin=pqTitreMene(R);PET.fin=verdict(R,cm,null);majTextePetanque();return;}
 PET.titreFin={t:'On mesure',c:'or'};
+const avant=(e&&e.euros)||0;
 PET.fin='Marius sort le mètre… <i>l’arbitre vérifie</i>';majTextePetanque();
 const {data,error}=await sb.functions.invoke('petanque',{body:{id:PET.id,lancers:PET.lancers}});
 if(error||!data||data.erreur){PET.titreFin={t:'Pas de verdict',c:'b'};
 PET.fin='L’arbitre n’a pas pu trancher : '+((data&&data.erreur)||'réessaie plus tard')+'.';majTextePetanque();return;}
+/* CE QU'ON A TOUCHÉ, PAS CE QU'ON CROIT AVOIR TOUCHÉ. Le gain affiché
+   était écrit en dur côté client — quatorze, neuf, cinq — et il aurait
+   menti à la première fois qu'on change le barème au serveur. On lit la
+   différence de bourse : c'est l'arbitre qui a le dernier mot. */
+const gain=(typeof data.euros==='number')?(data.euros-avant):0;
 if(typeof data.euros==='number'){e.euros=data.euros;sauver();majHaut();}
 PET.titreFin=pqTitreMene(data);
-PET.fin=verdict(data,cm,data.gagne?(data.pts>=3?14:(data.pts===2?9:5)):1)+(typeof data.restant==='number'?'<br><i>'+data.restant+' mène'+(data.restant>1?'s':'')+' payante'+(data.restant>1?'s':'')+' restante'+(data.restant>1?'s':'')+' aujourd’hui</i>':'');
+PET.fin=verdict(data,cm,gain)+(typeof data.restant==='number'?'<br><i>'+data.restant+' mène'+(data.restant>1?'s':'')+' payante'+(data.restant>1?'s':'')+' restante'+(data.restant>1?'s':'')+' aujourd’hui</i>':'');
 majTextePetanque();
 }
 let PQ_RENVOI=null, PQ_COMPTE=null;
@@ -25310,7 +25316,7 @@ lancer('lui',p.angle,p.force,ty);majTextePetanque();
    boules chacun à tour de rôle, et c'était fini. Marius joue maintenant
    la même partie que ton ami, avec le même code : seul l'envoi par le
    canal est remplacé par sa décision.
-   LA MÈNE À 2 € NE CHANGE PAS. C'est une mène, pas une partie, et c'est
+   LA MÈNE PAYANTE NE CHANGE PAS. C'est une mène, pas une partie, et c'est
    l'arbitre du serveur qui la rejoue pour payer : lui donner les vraies
    règles demande de refaire sa validation, ce qui est une autre affaire. */
 /* ================= LE MONDIAL =================
@@ -25502,7 +25508,7 @@ t.innerHTML='<div class="mBan">'+['fr','be','it','mg','th','tn','sn','es'].map(f
 '<div class="mRub">TOUS LES JOURS  ·  GLISSE  ›</div>'+
 '<div class="mRang">'+
 carte('pqPartie','treize','Partie en 13','cochonnet, point, Fanny','GRATUIT','platanes')+
-carte('pqPaye','euro','Mène à 2 €','gagne : +6 €','2 €','port',1)+
+carte('pqPaye','euro','Mène à 6 €','gagne jusqu’à 42 €','6 €','port',1)+
 carte('pqEntr','entr','Entraînement','une mène pour la main','LIBRE','place')+
 carte('pqAmiL','ami','Avec un ami','quelqu’un du port','EN LIGNE','champ')+
 '</div>';
@@ -25826,9 +25832,11 @@ if(R.gagne){
 let n=menesGagnees()+1;try{localStorage.setItem('bdl.petanque.gagnees',n);}catch(x){}
 jouer('vente','moment');vibrer([20,40,20]);
 return 'Ta meilleure boule est à '+cm(R.bm)+'.'+
-(gain?'<br><b style="color:#d8bf6a">+'+gain+',00 €</b> · « Pas mal, petit… »':'<br>« Pas mal, petit… »');
+(gain>0?'<br><b style="color:#d8bf6a">+'+enEuros(gain)+'</b> · « Pas mal, petit… »':'<br>« Pas mal, petit… »');
 }
-return 'Sa boule est à '+cm(R.bl)+'.<br>« Tu tires comme un Parisien ! »';
+return 'Sa boule est à '+cm(R.bl)+'.'+
+(gain>0?'<br><i>'+enEuros(gain)+' de consolation.</i>':'')+
+'<br>« Tu tires comme un Parisien ! »';
 }
 let SABLE_PQ=null;
 /* ================= LA VITRINE : LES BOULES ET LES TERRAINS =================
