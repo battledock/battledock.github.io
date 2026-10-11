@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-1945"></script>
+<script src="maintenance.js?v=2026-10-12-2000"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-1945';
+var MA_VERSION='2026-10-12-2000';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -8520,7 +8520,7 @@ background:#e8c06a;color:#2a2016;font:700 15px 'Baloo 2','Trebuchet MS',system-u
    Une seule annonce dans le jeu. Elle s'affiche une fois par
    joueur, puis ne revient plus : le bouton pose son marqueur. */
 function annonceChantier(){
-try{if(localStorage.getItem('bdl.annonce.perso')==='1')return;}catch(x){}
+try{if(localStorage.getItem('bdl.annonce.perso')==='1')return false;}catch(x){}
 if(!document.getElementById('cssAni')){const st=document.createElement('style');
 st.id='cssAni';st.textContent=CSS_ANI;document.head.appendChild(st);}
 $('page2Fond').className='';$('page2').classList.add('on');
@@ -8538,7 +8538,209 @@ $('page2Fond').innerHTML=
  '<button id="aniOk">Compris</button></div>';
 $('aniOk').onclick=()=>{
 try{localStorage.setItem('bdl.annonce.perso','1');}catch(x){}
+fermeA=Date.now();$('page2').classList.remove('on');
+/* ET L'AFFICHE DU MONDIAL DERRIÈRE, à la ferme : deux annonces d'un
+   coup se recouvriraient, elles se suivent donc. */
+setTimeout(()=>{try{annonceMondial();}catch(x){}},420);};
+return true;
+}
+/* ================= L'ANNONCE DU MONDIAL DE PÉTANQUE =================
+   Une affiche de tournoi, peinte en pixels : la banderole, le
+   lampadaire, la coupe sous son halo. Elle s'ouvre une fois à la ferme,
+   et le bouton la referme pour de bon. */
+const CSS_ANM=`
+#anm{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;
+  background:rgba(8,12,20,.93);padding:14px;font-family:Georgia,serif;overflow-y:auto;
+  -webkit-overflow-scrolling:touch}
+#anm .pan{width:100%;max-width:358px;margin:auto;background:#121c2c;border-radius:14px;
+  box-shadow:0 0 0 2px #c9a24a,0 0 0 5px #2a2012,0 22px 50px rgba(0,0,0,.75);overflow:hidden}
+#anm canvas{display:block;width:100%;image-rendering:pixelated;
+  border-bottom:2px solid #c9a24a}
+#anm .co{padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));text-align:center}
+#anm small{display:block;font:700 8px Arial,sans-serif;letter-spacing:3.4px;color:#c9a24a}
+#anm h2{font:900 28px/1.1 Georgia,serif;color:#f6ecd4;margin:7px 0 0;
+  text-shadow:0 2px 0 rgba(0,0,0,.5)}
+#anm .fan{display:flex;justify-content:center;gap:5px;margin:11px 0 0}
+#anm .fan i{display:block;width:21px;height:14px;border-radius:2px;
+  border:1px solid rgba(255,255,255,.26);box-shadow:0 1px 2px rgba(0,0,0,.5)}
+#anm .fr{background:linear-gradient(90deg,#1f3a93 0 33.3%,#f4f4f4 33.3% 66.6%,#c8102e 66.6%)}
+#anm .be{background:linear-gradient(90deg,#1a1a1a 0 33.3%,#f4d02c 33.3% 66.6%,#c8102e 66.6%)}
+#anm .it{background:linear-gradient(90deg,#248b48 0 33.3%,#f4f4f4 33.3% 66.6%,#c8102e 66.6%)}
+#anm .sn{background:linear-gradient(90deg,#248b48 0 33.3%,#f4d02c 33.3% 66.6%,#c8102e 66.6%)}
+#anm .mg{background:linear-gradient(90deg,#f4f4f4 0 33.3%,transparent 33.3%),linear-gradient(180deg,#c8102e 0 50%,#248b48 50%)}
+#anm .th{background:linear-gradient(180deg,#c8102e 0 16.6%,#f4f4f4 16.6% 33.3%,#1f3a93 33.3% 66.6%,#f4f4f4 66.6% 83.3%,#c8102e 83.3%)}
+#anm .tn{background:radial-gradient(circle at 56% 50%,#c8102e 0 24%,transparent 24%),radial-gradient(circle at 50% 50%,#f4f4f4 0 33%,#c8102e 33%)}
+#anm .es{background:linear-gradient(180deg,#c8102e 0 25%,#f4d02c 25% 75%,#c8102e 75%)}
+#anm .ch{font:italic 13px/1.6 Georgia,serif;color:#9fb2c8;margin:12px 4px 0}
+#anm .lst{margin:14px 0 0;text-align:left}
+#anm .lst div{background:#1a2638;border:1px solid #2c3c54;border-left:3px solid #c9a24a;
+  border-radius:9px;padding:9px 11px;margin-bottom:7px}
+#anm .lst b{display:block;font:700 13.5px Georgia,serif;color:#f0e6cf}
+#anm .lst em{display:block;font:italic 11.5px/1.45 Georgia,serif;color:#8fa3ba;margin-top:2px}
+#anm .cad{margin:12px 0 0;background:linear-gradient(180deg,#f8e8bc,#e8c87e);
+  border-radius:11px;padding:11px 12px;box-shadow:inset 0 0 0 1px #8a6a28}
+#anm .cad small{color:#8a6a1a;letter-spacing:2.6px}
+#anm .cad b{display:block;font:900 17px Georgia,serif;color:#2f2414;margin-top:3px}
+#anm .cad em{display:block;font:italic 11.5px Georgia,serif;color:#6a5020;margin-top:3px}
+#anm button{margin:15px 0 0;width:100%;border:0;border-radius:12px;padding:16px;
+  background:linear-gradient(180deg,#e8c06a,#c9a24a);color:#2a2016;
+  font:900 12px Arial,sans-serif;letter-spacing:3px;box-shadow:0 4px 0 #8a6a28}
+#anm button:active{transform:translateY(2px);box-shadow:0 2px 0 #8a6a28}
+@keyframes anmNe{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+#anm .pan{animation:anmNe .42s cubic-bezier(.2,.9,.3,1.2) both}`;
+/* ================= L'AFFICHE DU MONDIAL =================
+   Un soir de tournoi au boulodrome : la banderole de fanions, le
+   lampadaire, le sable, la coupe sous son halo. Tout est peint en
+   pixels pleins — pas un dégradé flou, pas une image chargée. */
+function peindreAfficheMondial(cv){
+const W=180,H=126,D=Math.max(2,Math.min(4,Math.ceil((cv.clientWidth||356)/W)));
+cv.width=W*D;cv.height=H*D;
+const g=cv.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+const al=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+const SOL=82;                                   /* la ligne du sable */
+/* ---------- LE CIEL, en bandes serrées : du bleu de nuit au bleu du
+     soir, avec le tramage d'une ligne sur deux pour que le passage d'un
+     ton à l'autre ne se lise pas comme une rayure. ---------- */
+const CIEL=['#0d1626','#111c31','#16243c','#1b2b48','#213353','#273b5e'];
+for(let y=0;y<SOL;y++){
+const k=y/SOL, i=Math.min(CIEL.length-1,Math.floor(k*CIEL.length));
+R(0,y,W,1,CIEL[i]);
+if(y%2===0&&i<CIEL.length-1&&(k*CIEL.length-i)>0.6)
+for(let x=(y/2)%2;x<W;x+=2)R(x,y,1,1,CIEL[i+1]);}
+/* ---------- LES ÉTOILES ---------- */
+for(let i=0;i<70;i++){const x=al(i*1.7)*W, y=al(i*2.9)*(SOL-24);
+const b=al(i*5.1);R(x,y,1,1,b<.3?'#8fa6c8':(b<.8?'#cfe0f2':'#ffffff'));}
+/* ---------- LA LUNE, et son halo ---------- */
+{const mx=151,my=31;
+for(let r=11;r>=8;r--){g.fillStyle='rgba(226,236,255,'+(0.035*(12-r))+')';
+g.beginPath();g.arc(mx,my,r,0,7);g.fill();}
+g.fillStyle='#f2efdc';g.beginPath();g.arc(mx,my,6.5,0,7);g.fill();
+g.fillStyle='#ded9c0';g.beginPath();g.arc(mx+1.5,my+1.5,1.4,0,7);g.fill();
+g.beginPath();g.arc(mx-2,my-1,1,0,7);g.fill();}
+/* ---------- LES TOITS DU FOND, une silhouette et rien de plus ---------- */
+for(let x=0;x<W;){const w=10+Math.floor(al(x*0.7)*16), h=8+Math.floor(al(x*1.3)*14);
+R(x,SOL-h,w,h,'#0b1320');
+if(al(x*2.1)<.45)R(x+2,SOL-h-3,3,3,'#0b1320');                 /* une cheminée */
+for(let fy=SOL-h+3;fy<SOL-3;fy+=5)for(let fx=x+2;fx<x+w-3;fx+=5)
+if(al(fx*3.1+fy)<.3)R(fx,fy,2,2,'rgba(240,200,120,.5)');       /* une fenêtre allumée */
+x+=w;}
+R(0,SOL-3,W,3,'#141f30');
+/* ---------- LE SABLE ---------- */
+for(let y=SOL;y<H;y++){const k=(y-SOL)/(H-SOL);
+R(0,y,W,1,k<.18?'#7b6340':(k<.42?'#8c7149':(k<.72?'#9a7e53':'#a98c5f')));}
+for(let i=0;i<520;i++){const x=al(i*1.9)*W, y=SOL+al(i*3.7)*(H-SOL);
+R(x,y,1,1,al(i*7)<.5?'rgba(255,236,190,.10)':'rgba(40,28,16,.14)');}
+/* ---------- LE LAMPADAIRE, à gauche, et la flaque de lumière ---------- */
+{const lx=20, bas=H-6, haut=34;
+g.fillStyle='rgba(255,214,130,.09)';g.beginPath();g.ellipse(lx,bas,30,11,0,0,7);g.fill();
+g.fillStyle='rgba(255,214,130,.07)';g.beginPath();g.ellipse(lx,bas,19,7,0,0,7);g.fill();
+R(lx-1,haut+6,3,bas-haut-6,'#1b2230');R(lx-1,haut+6,1,bas-haut-6,'#2e3a4c');
+R(lx-4,bas-2,9,3,'#161d29');
+R(lx-5,haut,11,3,'#2e3a4c');R(lx-4,haut+3,9,4,'#f6dfa0');
+R(lx-3,haut+4,7,2,'#fff3cf');R(lx-5,haut+7,11,2,'#1b2230');
+for(let r=16;r>=5;r-=2){g.fillStyle='rgba(255,220,140,'+(0.03+(16-r)*0.012)+')';
+g.beginPath();g.arc(lx,haut+5,r,0,7);g.fill();}}
+/* ---------- LES RAIS DE LUMIÈRE derrière la coupe ---------- */
+{const cx=92, cy=SOL-4;
+for(let i=0;i<9;i++){const a=-Math.PI/2+(i-4)*0.3;
+g.save();g.translate(cx,cy);g.rotate(a);
+g.fillStyle='rgba(243,212,134,'+(i%2?0.065:0.115)+')';
+g.beginPath();g.moveTo(-3,0);g.lineTo(3,0);g.lineTo(14,-66);g.lineTo(-14,-66);g.closePath();g.fill();
+g.restore();}}
+/* ---------- LA COUPE ----------
+   Trois ors : le corps, la lumière qui tombe de la gauche, et l'ombre
+   du côté opposé. C'est ce qui lui donne son volume. */
+{const cx=92, pied=SOL+2;
+for(let r=27;r>=12;r-=3){g.fillStyle='rgba(246,223,160,'+(0.022+(27-r)*0.006)+')';
+g.beginPath();g.arc(cx,pied-22,r,0,7);g.fill();}
+R(cx-13,pied,27,4,'#2a1f14');R(cx-13,pied,27,1,'#4a3a26');      /* le socle */
+R(cx-10,pied-4,21,4,'#3a2b1a');R(cx-10,pied-4,21,1,'#5e4830');
+R(cx-3,pied-10,7,6,'#c9a24a');R(cx-3,pied-10,2,6,'#f0cf7d');    /* le pied */
+R(cx-9,pied-13,19,3,'#c9a24a');R(cx-9,pied-13,19,1,'#f0cf7d');
+/* la vasque : on la creuse en retirant deux pixels de chaque côté
+   à mesure qu'on descend */
+for(let i=0;i<15;i++){const w=23-Math.max(0,(i-7))*2.4, x=cx-w/2;
+R(x,pied-28+i,w,1,'#c9a24a');
+R(x,pied-28+i,2,1,'#f0cf7d');R(x+w-2,pied-28+i,2,1,'#8a6a28');}
+R(cx-12,pied-29,25,2,'#f0cf7d');R(cx-12,pied-27,25,1,'#e0bb63');
+/* les deux anses */
+[[-1,-13],[1,13]].forEach(([s,dx])=>{g.strokeStyle='#c9a24a';g.lineWidth=2;
+g.beginPath();g.arc(cx+dx,pied-23,5,-Math.PI/2*s,Math.PI/2*s,s<0);g.stroke();
+g.strokeStyle='#f0cf7d';g.lineWidth=1;
+g.beginPath();g.arc(cx+dx,pied-23,5.6,-Math.PI/2*s,Math.PI/2*s,s<0);g.stroke();});
+R(cx-6,pied-24,4,8,'rgba(255,248,214,.5)');                      /* le reflet */
+R(cx-2,pied-22,1,5,'rgba(255,248,214,.25)');}
+/* ---------- LE ROND, tracé au pied dans le sable ---------- */
+{g.strokeStyle='rgba(58,40,22,.38)';g.lineWidth=1.4;
+g.beginPath();g.ellipse(44,SOL+30,19,6,0,0,7);g.stroke();
+g.strokeStyle='rgba(255,236,190,.20)';g.lineWidth=1;
+g.beginPath();g.ellipse(44,SOL+29,19,6,0,0,7);g.stroke();}
+/* ---------- LES BOULES, devant la coupe ---------- */
+const boule=(x,y,r,c1,c2,c3)=>{
+g.fillStyle='rgba(28,18,10,.3)';g.beginPath();g.ellipse(x,y+r-1,r+1.5,1.8,0,0,7);g.fill();
+g.fillStyle=c2;g.beginPath();g.arc(x,y,r,0,7);g.fill();
+g.fillStyle=c3;g.beginPath();g.arc(x+r*0.3,y+r*0.3,r*0.78,0,7);g.fill();
+g.fillStyle=c1;g.beginPath();g.arc(x-r*0.3,y-r*0.33,r*0.46,0,7);g.fill();
+R(x-r*0.55,y-r*0.62,1,1,'#ffffff');};
+boule(63,SOL+14,5.5,'#e8eef4','#9aa6b0','#6d7a86');
+boule(122,SOL+12,5,'#e8eef4','#9aa6b0','#6d7a86');
+boule(110,SOL+26,6,'#f2e0b0','#c9a24a','#8a6a28');
+R(76,SOL+27,3,3,'#c03a2a');R(76,SOL+27,1,1,'#e8705a');          /* le cochonnet */
+/* ---------- LA BANDEROLE DE FANIONS ----------
+   La corde pend : chaque fanion descend d'un creux de sinus, et le
+   premier et le dernier sont accrochés aux deux bords. */
+{const N=11, DRAP=['fr','be','it','sn','mg','th','tn','es','fr','it','sn'];
+const COUL={fr:['#1f3a93','#f4f4f4','#c8102e'],be:['#1a1a1a','#f4d02c','#c8102e'],
+it:['#248b48','#f4f4f4','#c8102e'],sn:['#248b48','#f4d02c','#c8102e'],
+mg:['#f4f4f4','#c8102e','#248b48'],th:['#c8102e','#f4f4f4','#1f3a93'],
+tn:['#c8102e','#f4f4f4','#c8102e'],es:['#c8102e','#f4d02c','#c8102e']};
+const yc=(x)=>5+Math.sin(x/W*Math.PI)*9;
+for(let x=0;x<W;x++)R(x,yc(x),1,1,'#2a3446');
+for(let i=0;i<N;i++){const x=6+i*((W-12)/(N-1)), y=yc(x)+1, C=COUL[DRAP[i]];
+for(let j=0;j<11;j++){const w=Math.max(1,11-j*1.05);
+R(x-w/2,y+j,w,1,C[Math.min(2,Math.floor(j/4))]);}
+R(x-5,y,10,1,'rgba(255,255,255,.3)');}}
+/* ---------- LES CONFETTIS ---------- */
+for(let i=0;i<22;i++){const x=al(i*4.3)*W, y=24+al(i*6.1)*(SOL-40);
+R(x,y,2,1,['#e8c06a','#c03a2a','#5ea0d8','#f4f0e0','#6aa85a'][i%5]);}
+/* ---------- LE CADRE ---------- */
+R(0,0,W,1,'rgba(0,0,0,.5)');R(0,H-1,W,1,'rgba(0,0,0,.5)');
+return cv;
+}
+/* ELLE NE S'OUVRE QU'À LA FERME, et une seule fois. Le marqueur est posé
+   par le bouton : tant qu'on n'a pas dit « continuer », elle revient. */
+function annonceMondial(){
+try{if(localStorage.getItem('bdl.annonce.mondial')==='1')return false;}catch(x){}
+if(!(CARTE==='village'&&typeof CHAMPS_SEULS!=='undefined'&&CHAMPS_SEULS))return false;
+if(!document.getElementById('cssAnm')){const st=document.createElement('style');
+st.id='cssAnm';st.textContent=CSS_ANM;document.head.appendChild(st);}
+$('page2Fond').className='';$('page2').classList.add('on');
+$('page2Fond').innerHTML=
+ '<div id="anm"><div class="pan"><canvas id="anmToile"></canvas><div class="co">'+
+ '<small>LE BOULODROME · GRANDE NOUVELLE</small>'+
+ '<h2>Le Mondial de pétanque</h2>'+
+ '<div class="fan">'+['fr','be','it','sn','mg','th','tn','es']
+   .map(d=>'<i class="'+d+'"></i>').join('')+'</div>'+
+ '<p class="ch">Huit boulistes, huit pays, un seul titre. Les quarts, '+
+ 'les demies, la finale — et un adversaire qui joue mieux à chaque tour.</p>'+
+ '<div class="lst">'+
+ '<div><b>Trois tours, sans reprise</b><em>un Mondial commencé ne se '+
+ 'recommence pas : on le termine, ou on le retrouve là où on l’a laissé</em></div>'+
+ '<div><b>Une finale qui se fête</b><em>les gradins se remplissent, les '+
+ 'projecteurs s’allument, et le ciel s’en mêle</em></div>'+
+ '<div><b>Le palmarès</b><em>le nom du champion et son nombre de titres, '+
+ 'tenus au registre — même quand c’est un bouliste qui l’emporte</em></div>'+
+ '</div>'+
+ '<div class="cad"><small>ÇA SE JOUE ICI</small>'+
+ '<b>Au boulodrome de la ferme</b>'+
+ '<em>le terrain t’attend, en bas du chemin.</em></div>'+
+ '<button id="anmOk">CONTINUER</button></div></div></div>';
+try{peindreAfficheMondial($('anmToile'));}catch(x){}
+$('anmOk').onclick=()=>{
+try{localStorage.setItem('bdl.annonce.mondial','1');}catch(x){}
 fermeA=Date.now();$('page2').classList.remove('on');};
+return true;
 }
 function motOuverture(t){
   let b=document.getElementById('motOuv');
@@ -22359,7 +22561,7 @@ setTimeout(()=>{try{verifierLaFete();}catch(x){}},200);
 setTimeout(()=>{try{demanderLaBeta();}catch(x){}},200);
 /* l'annonce de la réouverture, une fois par joueur */
 /* UNE SEULE ANNONCE : le chantier du personnage. */
-setTimeout(()=>{try{annonceChantier();}catch(x){}},1600);
+setTimeout(()=>{try{if(!annonceChantier())annonceMondial();}catch(x){}},1600);
 /* LE CHARACTER LAB : il ne s'ouvre que si on le demande explicitement.
    Aucun bouton n'y mène, aucun joueur ne peut tomber dessus. */
 /* Trois portes, parce que l'hébergement peut avaler la requête :
