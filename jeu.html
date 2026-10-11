@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-11-2215"></script>
+<script src="maintenance.js?v=2026-10-11-2250"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-11-2215';
+var MA_VERSION='2026-10-11-2250';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -15096,8 +15096,12 @@ function ombrePortee(g,C,x,y,t){
   g.restore();
 }
 function dessinerX(g,o,x,y){
-/* LA BANDEROLE DU MONDIAL NE SE DESSINE QUE PENDANT UN TABLEAU. */
-if(o.t==='x_fe_mondial'&&!mondEnCours())return;
+/* LE PANNEAU DU BOULODROME CHANGE LES JOURS DE MONDIAL. Il était sauté
+   quand aucun tableau n'était en cours : on arrivait à la ferme et il
+   n'y avait rien à voir au-dessus du terrain. Il est là tous les jours
+   et c'est son texte qui change — huit pavillons les jours de fête,
+   trois boules et un cochonnet le reste du temps. */
+if(o.t==='x_fe_mondial')o.v=mondEnCours()?1:0;
 /* LA VOITURE QU'ON CONDUIT : elle pivote selon son cap */
 if(o.anim&&ANIM_DECOR[o.anim]){try{ANIM_DECOR[o.anim](g,o,x,y);}catch(err){}return;}   /* un objet animé (la manif du port…) */
 if(o.pnj){                                     /* un personnage du décor (le moniteur, les dockers…) : dessiné comme un joueur */
@@ -16646,7 +16650,8 @@ const MOND_NAT=[['#1f3a93','#f4f4f4','#c8102e'],   /* France */
 ['#1a1a1a','#f4d02c','#c8102e'],                   /* Belgique */
 ['#248b48','#f4f4f4','#c8102e'],                   /* Italie */
 ['#c8102e','#f4d02c','#c8102e']];                  /* Espagne */
-function graverBanderoleMondial(){
+function graverBanderoleMondial(v){
+const fete=(v===1);
 const L=196, H=84;
 const c=document.createElement('canvas');c.width=L*2;c.height=H*2;
 const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(2,0,0,2,0,0);
@@ -16662,13 +16667,27 @@ R(cx-88,sol-60,176,30,'#1e2b21');R(cx-86,sol-58,172,26,'#2a3c2e');
 R(cx-86,sol-58,172,1,'#3d5543');R(cx-88,sol-31,176,1,'#16201a');
 R(cx-86,sol-33,172,2,'#d8bf6a');R(cx-86,sol-58,172,1,'#d8bf6a');
 g.fillStyle='#eef3e4';g.font='700 13px Georgia';g.textAlign='center';
-g.fillText('LE MONDIAL',cx,sol-44);
+g.fillText(fete?'LE MONDIAL':'LE BOULODROME',cx,sol-44);
 g.fillStyle='#93a68c';g.font='6px Georgia';
-g.fillText('HUIT NATIONS · TROIS TOURS · UNE FINALE',cx,sol-36);g.textAlign='left';
-/* LES HUIT PAVILLONS, EN FRISE */
-for(let k=0;k<8;k++){const x=cx-84+k*21.5, y=sol-29, C=MOND_NAT[k];
+g.fillText(fete?'HUIT NATIONS · TROIS TOURS · UNE FINALE'
+:'DEUX TERRAINS · OUVERT À TOUS',cx,sol-36);g.textAlign='left';
+/* LES HUIT PAVILLONS, EN FRISE — seulement les jours de Mondial. Le
+   reste du temps, trois boules et un cochonnet. */
+if(fete)for(let k=0;k<8;k++){const x=cx-84+k*21.5, y=sol-29, C=MOND_NAT[k];
 R(x,y,11,2,C[0]);R(x,y+2,11,3,C[1]);R(x,y+5,11,2,C[2]);
 R(x,y,11,1,'rgba(255,255,255,.3)');R(x,y+6,11,1,'rgba(0,0,0,.25)');}
+else{const by=sol-25;
+/* TROIS BOULES ET LE COCHONNET, dessinés comme sur le terrain : une
+   calotte claire en haut à gauche, un creux sombre en bas à droite. */
+[[-22],[-2],[18]].forEach(([d])=>{const a=cx+d;
+g.fillStyle='rgba(12,18,10,.35)';g.beginPath();g.ellipse(a,by+5,5,2,0,0,7);g.fill();
+g.fillStyle='#8b9399';g.beginPath();g.arc(a,by,4.5,0,7);g.fill();
+g.fillStyle='#c8ced4';g.beginPath();g.arc(a-1.3,by-1.4,2.3,0,7);g.fill();
+g.fillStyle='#636a70';g.beginPath();g.arc(a+1.7,by+1.6,1.7,0,7);g.fill();
+R(a-3,by-2,6,1,'#737a80');R(a-3,by+1,6,1,'#737a80');});
+{const a=cx+36;g.fillStyle='rgba(12,18,10,.3)';g.beginPath();g.ellipse(a,by+4,3,1.4,0,0,7);g.fill();
+g.fillStyle='#e8a030';g.beginPath();g.arc(a,by+1,2.6,0,7);g.fill();
+g.fillStyle='#ffd070';g.beginPath();g.arc(a-0.8,by+0.2,1.2,0,7);g.fill();}}
 return c;}
 /* UN TABLEAU EST-IL EN COURS ? */
 function mondEnCours(){try{mondCharger();
@@ -17059,10 +17078,11 @@ const B=BOULO, bx=B[0], by=B[1], bw=B[2], bh=B[3];
    permanence ; c'est dessinerX qui la saute quand aucun tableau n'est
    en cours — le décor de la ferme se sème une fois, au chargement, et
    le Mondial, lui, s'ouvre et se ferme en cours de partie. */
-{const BM=calque(graverBanderoleMondial(),196,84,80);
+{const BM=calque(graverBanderoleMondial(0),196,84,80);
 XCAL['x_fe_mondial0']=BM;CALQUES_DECO['x_fe_mondial']=BM;
+XCAL['x_fe_mondial1']=calque(graverBanderoleMondial(1),196,84,80);
 TAILLES['x_fe_mondial']=[{w:170,h:10}];
-DECOR.push({t:'x_fe_mondial',x:bx+Math.round(bw/2),y:by-34,v:0});}
+DECOR.push({t:'x_fe_mondial',x:bx+Math.round(bw/2),y:by-16,v:0});}
 /* les deux bancs, face aux pistes */
 [[bx-42,by+242],[bx+bw+42,by+302]]
 .forEach(([x,y])=>DECOR.push({t:'bancP',x:Math.round(x),y:Math.round(y),gr:0}));
@@ -21366,10 +21386,10 @@ BANDES.push([P.x1,E.x1+4,E.y0-26,E.y0+13]);
 BANDES.push([E.x0-4,E.x1+4,E.y1-26,E.y1+13]);
 BANDES.push([E.x0-4,E.x0+7,E.y0+13,E.y1-26]);
 BANDES.push([E.x1-9,E.x1+4,E.y0+13,E.y1-26]);}
-/* LES DEUX POTEAUX DE LA BANDEROLE, quand elle est là. */
-if(typeof BOULO!=='undefined'&&typeof mondEnCours==='function'&&mondEnCours()){
-const B=BOULO, mx=B[0]+Math.round(B[2]/2), my=B[1]-34;
-[mx-82+3,mx+76+3].forEach(x=>BANDES.push([x-4,x+4,my-5,my+3]));}
+/* LE PANNEAU DU BOULODROME N'ARRÊTE RIEN. Ses deux piquets barraient le
+   passage entre la chaussée et le terrain — deux bandes invisibles en
+   travers du seul chemin qui descend au sable. Un panneau se contourne
+   dans la vraie vie ; ici il se traverse. */
 /* ---------- LES QUATRE TRONCS DU BOULODROME ----------
    Dix unités de large au pied, pas plus : on doit pouvoir passer entre
    l'arbre et la bordure du terrain. */
