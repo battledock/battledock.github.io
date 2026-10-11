@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-2000"></script>
+<script src="maintenance.js?v=2026-10-12-2015"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-2000';
+var MA_VERSION='2026-10-12-2015';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -27475,6 +27475,19 @@ const ICO_ACTION=[[/^(Couper|Abattre)/,'hache'],[/^(Casser|Miner|Frapper)/,'pioc
 function icoAction(){const b=$('action');if(!b)return;const t=b.textContent||'';let k='etoile';for(const [re,v] of ICO_ACTION)if(re.test(t)){k=v;break;}
 if(b.dataset.ico!==k)b.dataset.ico=k;}
 setInterval(()=>{if(!document.hidden)icoAction();},250);
+/* CE QU'ON A SOUS LA MAIN, et qui se récolte. La liste est celle
+   d'agir() : ce qui s'y cueille à la main. */
+function recolteSousLaMain(){
+try{
+if(PECHE)return false;
+if(GESTE.t>0)return false;
+const o=cible();
+if(!o)return false;
+return ['buisson','argile','roseaux','champignons','herbes','plumes','cueillette',
+'x_fo_amanite','x_fo_cepe','x_fo_girolle','x_fo_plume','x_fo_argile',
+'x_fo_mure','x_fo_framboise','x_fo_myrtille'].indexOf(o.t)>=0;
+}catch(x){return false;}
+}
 function majAction(){
 plaqueVrai=$('action');
 const b=plaqueFeinte;
@@ -27492,7 +27505,15 @@ if(typeof peutLaver==='function'&&peutLaver()&&GESTE.t<=0){
 b.innerHTML='Laver<small>'+ARGILE_PAR_LAVAGE+' ARGILES · AU TAMIS</small>';
 b.classList.add('on');b.onclick=laverLArgile;return;
 }
-if(actionDePeche(b))return;
+/* LA RÉCOLTE PASSE DEVANT LA LIGNE.
+   Les roseaux poussent les pieds dans l'eau — c'est tout l'intérêt — et
+   la plaque de pêche prenait la main partout où l'on peut lancer. Au
+   bord de la rivière, le bouton disait « Pêcher » et les trente touffes
+   de la rive étaient devenues décoratives : plus un roseau de la forêt
+   n'était récoltable depuis que la pêche y est ouverte.
+   Quand une ligne est déjà à l'eau, la pêche reprend la main : il faut
+   bien pouvoir ferrer. */
+if(!recolteSousLaMain()&&actionDePeche(b))return;
 if(CARTE==='extramar'&&Math.abs(joueur.x-XP.ruelle.x)<XP.ruelle.l&&joueur.y<XP.ruelle.haut+22&&GESTE.t<=0){
 /* ================= LE HAUT DE LA RUELLE =================
    LE COMPLEXE FESTIF EST OUVERT À QUI PORTE LE LAISSEZ-PASSER, et en
