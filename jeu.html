@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-1835"></script>
+<script src="maintenance.js?v=2026-10-12-1900"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-1835';
+var MA_VERSION='2026-10-12-1900';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -25437,8 +25437,20 @@ return MOND.camps[0];}
    deux fonctions, et un joueur n'y inscrit qu'un titre par jour — le
    tableau se tire une fois par jour. */
 function mondInscrire(bot,nom,d){
-try{if(!sb)return;
-sb.rpc('mondial_titre',{p_bot:!!bot,p_nom:String(nom||''),p_drapeau:String(d||'fr')});}catch(x){}}
+const corps={p_bot:!!bot,p_nom:String(nom||''),p_drapeau:String(d||'fr')};
+/* DEUX FAUTES ICI, ET LE REGISTRE EST RESTÉ VIDE. Nacho gagne son Mondial,
+   et le classement affiche encore l'ancien nom : le titre n'est jamais parti.
+   1. un sb.rpc() qu'on ne lit pas n'est qu'un objet — la bibliothèque
+      n'envoie la requête qu'au premier .then(). Rien, pas même une erreur.
+   2. sb n'existe que si le CDN a répondu, alors que tout le reste du jeu
+      parle au serveur par appelRPC, un fetch tout simple.
+   Un titre de bouliste n'a besoin de personne : il passe par appelRPC.
+   Un titre de JOUEUR doit être signé par sa session — c'est ce qui empêche
+   d'inscrire le voisin — donc par le client Supabase, lu cette fois. */
+if(bot){try{appelRPC('mondial_titre',corps).then(()=>{},()=>{});}catch(x){}return;}
+const envoyer=()=>{try{if(sb)sb.rpc('mondial_titre',corps).then(()=>{},()=>{});}catch(x){}};
+if(sb)envoyer();
+else try{chargerSupabase().then(envoyer,()=>{});}catch(x){}}
 /* ON PASSE AU TOUR SUIVANT, avec toi dedans ou pas */
 function mondAvancer(jAiGagne){
 const suivants=mondJouerLesAutres();
@@ -25771,17 +25783,21 @@ dessiner();
 /* LE REGISTRE PEUT NE PAS RÉPONDRE. Sans limite de temps, l'écran
    restait sur « on compte les titres… » pour toujours — vu dans un
    navigateur, réseau coupé. On attend huit secondes, puis on le dit. */
-if(PALM===null&&typeof sb!=='undefined'&&sb){
+if(PALM===null){
 let rendu=false;
 const fini=(v)=>{if(rendu)return;rendu=true;
 if(!PET||PET.etape!=='palmares')return;PALM=v;dessiner();};
 setTimeout(()=>fini('coupe'),8000);
-try{sb.rpc('mondial_classement').then(({data,error})=>{
-fini((!error&&Array.isArray(data))?data:'coupe');},()=>fini('coupe'));}
+/* ON LE TIRE PAR SA SESSION QUAND ON PEUT : c'est ce qui permet au
+   serveur de reconnaître ta ligne et de la souligner. Sinon on le tire
+   comme tout le reste du jeu, par appelRPC : le classement s'affiche,
+   simplement sans savoir laquelle des lignes est la tienne. */
+try{
+if(sb)sb.rpc('mondial_classement').then(({data,error})=>{
+fini((!error&&Array.isArray(data))?data:'coupe');},()=>fini('coupe'));
+else appelRPC('mondial_classement',{}).then(
+r=>fini(Array.isArray(r)?r:'coupe'),()=>fini('coupe'));}
 catch(x){fini('coupe');}}
-/* SANS SERVEUR DU TOUT, on le dit tout de suite — et on redessine :
-   poser la réponse sans repeindre laissait l'écran sur « on compte ». */
-else if(PALM===null){PALM='coupe';dessiner();}
 return true;}
 /* ---------- CE QU'ON VOIT APRÈS SA PARTIE ---------- */
 function mondEcranFin(t,b){
