@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-11-1750"></script>
+<script src="maintenance.js?v=2026-10-11-1905"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-11-1750';
+var MA_VERSION='2026-10-11-1905';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -966,6 +966,10 @@ border-radius:6px;touch-action:none}
 #petanque .pqAmis button small{font:italic 12px Georgia;color:#6b4a28}#petanque .pqLien{border:0;background:none;color:#e8c06a;font:italic 13px Georgia;margin-top:4px}
 #petanque .pqScore{display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.25);border-radius:10px;padding:6px 10px;margin-bottom:6px;font:14px Georgia}
 #petanque .pqScore b{font-size:18px;color:#e8c06a}#petanque .pqScore i{font-size:11px;opacity:.8}
+#petanque .pqPoint{border-radius:9px;padding:5px 9px;margin:6px 0;font:700 11px Georgia;letter-spacing:.3px}
+#petanque .pqPoint.a{background:rgba(110,190,130,.22);color:#9fdfb8}
+#petanque .pqPoint.b{background:rgba(210,90,70,.20);color:#ffb0a0}
+#petanque .pqDit{margin:5px 0;font:13px Georgia;color:#f4e2b0}
 #petanque .pqChoixTir{display:flex;gap:6px;margin:6px 0}#petanque .pqChoixTir button{flex:1;border:1px solid #e8c06a;background:transparent;color:#f4e2b0;border-radius:10px;padding:7px;font:700 13px Georgia}
 #petanque .pqChoixTir button.on{background:#e8c06a;color:#2a1d0c}#petanque .pqChoixTir small{display:block;font:italic 11px Georgia;opacity:.8}
 #pqBouton{width:100%;border:0;border-radius:12px;padding:14px;background:#e8c06a;color:#2a1d0c;
@@ -24482,11 +24486,35 @@ function pqRejouer(graine,cx,cy,lancers){
 const E=pqNouvelle(cx,cy);
 for(let n=0;n<3;n++){
 const l=lancers[n]||[0,0];
-pqPoser(E,'moi',Math.max(-0.6,Math.min(0.6,+l[0]||0)),Math.max(0,Math.min(1,+l[1]||0)));pqArret(E);
+const a=Math.max(-0.6,Math.min(0.6,+l[0]||0)), f=Math.max(0,Math.min(1,+l[1]||0));
+(l[2]==='tir'?pqTirer:pqPoser)(E,'moi',a,f);pqArret(E);
 const m=pqMarius(graine,n,E);pqPoser(E,'lui',m[0],m[1]);pqArret(E);
 }
 return pqCompter(E);
 }
+/* LA BOULE QU'ON VISE EN TIRANT : celle de l'adversaire la plus près du
+   cochonnet. On retient sa place AVANT le tir, c'est elle qui dira s'il
+   y a carreau. */
+function pqCibleDuTir(E){const C=E.coch;if(!C||C.mort)return null;
+let m=null,dm=Infinity;
+for(const b of E.boules)if(b.qui!=='moi'&&!b.morte){const d=Math.hypot(b.x-C.x,b.y-C.y);if(d<dm){dm=d;m=b;}}
+return m?{b:m,x:m.x,y:m.y}:null;}
+/* LE CARREAU : sa boule part, et la tienne s'arrête à sa place. C'est le
+   geste que tout joueur cherche, et il n'avait pas de nom dans le code —
+   on tirait, la boule sortait, et rien ne le disait. */
+function pqJugerLeTir(){
+if(!PET||!PET.cible)return;
+const K=PET.cible, mienne=PET.maDerniere;
+const bouge=Math.hypot(K.b.x-K.x,K.b.y-K.y);
+const sortie=K.b.morte||bouge>14;
+PET.cible=null;
+if(!sortie){PET.annonce=bouge>2?'<b>Frôlée.</b> Elle a à peine bougé.':'<b>Manqué.</b>';return;}
+if(mienne&&!mienne.morte&&Math.hypot(mienne.x-K.x,mienne.y-K.y)<7){
+PET.carreaux=(PET.carreaux||0)+1;
+try{jouer('achat');}catch(x){}try{vibrer([12,30,12,30]);}catch(x){}
+PET.annonce=K.b.morte?'<b>CARREAU !</b> sa boule sort, la tienne prend sa place.'
+:'<b>CARREAU !</b> tu l’as chassée et tu restes dessus.';return;}
+PET.annonce=K.b.morte?'<b>Tu l’as sortie.</b>':'<b>Touchée.</b> Sa boule a bougé.';}
 function pqQuiMarque(E){const C=E.coch;if(!C||C.mort)return null;const d=b=>Math.hypot(b.x-C.x,b.y-C.y);
 const vivantes=E.boules.filter(b=>!b.morte);const moi=vivantes.filter(b=>b.qui==='moi').sort((a,b)=>d(a)-d(b)), lui=vivantes.filter(b=>b.qui==='lui').sort((a,b)=>d(a)-d(b));
 if(!moi.length&&!lui.length)return null;const bm=moi.length?d(moi[0]):Infinity, bl=lui.length?d(lui[0]):Infinity;if(bm===bl)return null;
@@ -24567,9 +24595,26 @@ if(PET.fin){t.innerHTML=PET.fin;b.textContent='Rejouer';return;}
 const en=(PET.mode==='payant'?'<b>Mène à 2 €</b> · ':'<b>Entraînement</b> · ');
 if(PET.tour==='lui'){t.innerHTML=en+'Marius joue sa boule '+(PET.n+1)+'/3…';b.textContent='…';return;}
 const n=PET.n+1;
-if(PET.etape==='viser'){t.innerHTML=en+'boule '+n+'/3 · touche pour fixer la <b>direction</b>';b.textContent='Viser';}
-else if(PET.etape==='force'){t.innerHTML=en+'boule '+n+'/3 · touche pour fixer la <b>force</b>';b.textContent='Lancer !';}
-else{t.innerHTML=en+'boule '+n+'/3 · elle roule…';b.textContent='…';}
+/* QUI TIENT LE POINT, PENDANT LA MÈNE. pqQuiMarque existait déjà mais ne
+   servait qu'à la mesure finale : on jouait ses trois boules sans jamais
+   savoir si on menait. C'est pourtant toute la décision de la pétanque —
+   pointer pour prendre, ou tirer pour enlever. */
+const M=pqQuiMarque(PET.E);
+const pt=M?('<div class="pqPoint '+(M.gagnant==='moi'?'a':'b')+'">'+
+(M.gagnant==='moi'?'tu tiens le point':'Marius tient le point')+' · '+
+M.boules.length+' boule'+(M.boules.length>1?'s':'')+'</div>'):'';
+const dit=PET.annonce?('<div class="pqDit">'+PET.annonce+'</div>'):'';
+const cible=PET.E.boules.some(x=>x.qui!=='moi'&&!x.morte);
+if(!cible)PET.typeTir='pointe';
+if(PET.etape==='viser'){
+t.innerHTML=en+'boule '+n+'/3'+pt+dit+
+(cible?('<div class="pqChoixTir"><button data-tir="pointe" class="'+(PET.typeTir!=='tir'?'on':'')+'">Pointer<small>approcher</small></button>'+
+'<button data-tir="tir" class="'+(PET.typeTir==='tir'?'on':'')+'">Tirer<small>chasser sa boule</small></button></div>'):'')+
+'touche pour fixer la <b>direction</b>';
+t.querySelectorAll('[data-tir]').forEach(x=>x.onclick=(ev)=>{ev.stopPropagation();PET.typeTir=x.dataset.tir;majTextePetanque();});
+b.textContent='Viser';}
+else if(PET.etape==='force'){t.innerHTML=en+'boule '+n+'/3'+pt+' · '+(PET.typeTir==='tir'?'<b>tir</b>':'<b>point</b>')+' · touche pour fixer la <b>force</b>';b.textContent='Lancer !';}
+else{t.innerHTML=en+'boule '+n+'/3'+pt+dit+' · elle roule…';b.textContent='…';}
 }
 function toucherPetanque(){
 if(!PET)return;
@@ -24579,9 +24624,19 @@ const t=performance.now();
 if(PET.etape==='viser'){PET.angle=Math.sin((t-PET.t0)/520)*0.5;PET.etape='force';PET.t0=t;vibrer(8);}
 else if(PET.etape==='force'){
 const force=(1-Math.cos((t-PET.t0)/480))/2;
-PET.lancers.push([PET.angle,force]);
-if(PET.mode==='ami'){const ty=PET.phase==='coch'?'coch':(PET.typeTir||'pointe');envoyerLancerAmi(PET.angle,force,ty);if(ty!=='coch')PET.reste.moi--;lancer('moi',PET.angle,force,ty);vibrer(ty==='tir'?[10,20,30]:14);majTextePetanque();return;}
-lancer('moi',PET.angle,force);vibrer(14);
+/* POINTER OU TIRER, EN SOLO AUSSI. pqTirer() et PET.typeTir existaient,
+   mais le choix n'était offert qu'entre amis : contre Marius on ne
+   pouvait que pointer, et la moitié du jeu restait éteinte. Le type part
+   avec le lancer, pour que l'arbitre rejoue la même mène que toi. */
+const ty=(PET.mode==='ami'&&PET.phase==='coch')?'coch'
+:((PET.typeTir==='tir'&&PET.E.boules.some(b=>b.qui!=='moi'&&!b.morte))?'tir':'pointe');
+PET.lancers.push([PET.angle,force,ty]);
+PET.annonce=null;
+if(PET.mode==='ami'){envoyerLancerAmi(PET.angle,force,ty);if(ty!=='coch')PET.reste.moi--;lancer('moi',PET.angle,force,ty);vibrer(ty==='tir'?[10,20,30]:14);majTextePetanque();return;}
+if(ty==='tir')PET.cible=pqCibleDuTir(PET.E);
+lancer('moi',PET.angle,force,ty);
+PET.maDerniere=PET.vol&&PET.vol.b;
+vibrer(ty==='tir'?[10,20,30]:14);
 }
 majTextePetanque();
 }
@@ -24595,6 +24650,7 @@ b.enVol=true;PET.etape='vol';
 }
 function apresLArret(){
 if(PET.mode==='ami'){apresLArretAmi();return;}
+if(PET.tour==='moi')pqJugerLeTir();
 if(PET.tour==='moi'){PET.tour='lui';PET.etape='attend';majTextePetanque();
 setTimeout(()=>{if(!PET||PET.fin)return;const m=pqMarius(PET.graine,PET.n,PET.E);lancer('lui',m[0],m[1]);majTextePetanque();},700);}
 else{PET.n++;
@@ -24816,6 +24872,13 @@ if(b.enVol)continue;
 if(b.morte){continue;}
 dessinerUneBoule(g,b.x,b.y,b.qui,0);
 }
+/* LE POINT, PENDANT LA MÈNE : un cercle sur la boule qui tient, vert si
+   c'est la tienne. Avant, on ne le voyait qu'à la mesure, une fois les
+   six boules jouées — trop tard pour que ça serve à décider. */
+if(!PET.fin&&E.coch&&!E.coch.mort){const M=pqQuiMarque(E);
+if(M&&M.boules.length){const b0=M.boules[0];
+g.strokeStyle=M.gagnant==='moi'?'rgba(150,230,175,.95)':'rgba(255,150,130,.95)';
+g.lineWidth=1;g.beginPath();g.arc(b0.x,b0.y,5,0,7);g.stroke();}}
 if(PET.fin&&E.coch&&!E.coch.mort){const M=pqQuiMarque(E);if(M){const col=M.gagnant==='moi'?'#9fdfb8':'#ffb0a0';
 g.setLineDash([2,2]);g.lineWidth=1;g.strokeStyle='rgba(255,255,255,.7)';
 M.boules.forEach(b=>{g.beginPath();g.moveTo(C.x,C.y);g.lineTo(b.x,b.y);g.stroke();});
