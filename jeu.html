@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-2100"></script>
+<script src="maintenance.js?v=2026-10-12-2115"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-2100';
+var MA_VERSION='2026-10-12-2115';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -21829,8 +21829,32 @@ return Math.abs(o.x-px)<d.w/2+3&&py>o.y-d.h-2&&py<o.y+3;});
 if(mur(ax,+joueur.y||0))ax=+joueur.x||0;
 if(mur(ax,ay))ay=+joueur.y||0;
 }else{
-if(!bloque(nx,joueur.y))ax=nx;
-if(!bloque(ax,ny))ay=ny;
+/* ================= ON AVANCE PAR PETITS PAS =================
+   bloque() ne regarde qu'un point : celui d'arrivée. Tant que le pas est
+   plus court que l'obstacle, ça suffit — on finit toujours par poser le
+   pied dedans. Mais un pas PLUS LONG que l'obstacle le franchit sans
+   jamais y toucher : départ libre, arrivée libre, et le mur est passé.
+
+   À pied le pas fait 5,6 px et rien ne se voyait. La trottinette du port
+   multiplie l'allure par 1,75, et quand l'image traîne — vingt images par
+   seconde, ce que fait un iPhone qui a chaud — le pas monte à 9,8 px.
+   Mesuré sur soixante mille pas tirés au hasard dans le port : deux pour
+   mille franchissaient un obstacle de part en part. C'est ce qui a
+   emmené des gens dans le décor.
+
+   On découpe donc le déplacement en tronçons d'un pixel et demi au plus,
+   et chaque tronçon passe par le même test, axe par axe — ce qui garde
+   le glissement le long des murs. Le pas le plus fin du décor fait
+   deux pixels — un garde-corps, un piquet —, d'où le pixel et demi :
+   mesuré, c'est la valeur à laquelle plus rien ne passe. */
+const dpx=nx-(+joueur.x||0), dpy=ny-(+joueur.y||0);
+const tron=Math.max(1,Math.min(32,Math.ceil(Math.hypot(dpx,dpy)/1.5)));
+ax=+joueur.x||0;ay=+joueur.y||0;
+for(let i=0;i<tron;i++){
+const sx=ax+dpx/tron, sy=ay+dpy/tron;
+if(!bloque(sx,ay))ax=sx;
+if(!bloque(ax,sy))ay=sy;
+}
 }
 bloqueBord=(ax===joueur.x&&Math.abs(vx)>2)||(ay===joueur.y&&Math.abs(vy)>2);
 joueur.x=ax;joueur.y=ay;
