@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-0210"></script>
+<script src="maintenance.js?v=2026-10-12-0315"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-0210';
+var MA_VERSION='2026-10-12-0315';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -25432,14 +25432,22 @@ const B=PQ_BOULES.find(x=>x.c===c);return (B&&pqDebloque(B))?B:PQ_BOULES[0];};
 const pqMonTerrain=()=>{const c=(e&&e.pqTerrain)||'port';
 const T=PQ_TERRAINS.find(x=>x.c===c);return (T&&pqDebloque(T))?T:PQ_TERRAINS[0];};
 /* ================= LES QUATRE TERRAINS =================
-   CE N'ÉTAIT QU'UN SABLE REPEINT : quatre fois le même dessin avec
-   d'autres couleurs, et personne n'aurait su dire où il jouait. Chacun
-   est maintenant un LIEU, avec sa matière, ses saletés et sa bordure.
+   DEUX DÉFAUTS À CORRIGER, PAS UNE NOUVELLE DIRECTION. Le sable était
+   plat — une poussière de pixels au hasard, sans aucune variation de
+   fond — et le relief venait de GROSSES ELLIPSES translucides posées
+   par-dessus, qui font des taches grises floues et qui gênent la
+   lecture des boules.
+   LE FOND PASSE AU BRUIT DE VALEUR, à la manière du reste du jeu :
+   PR_h lu à deux échelles, une large et une serrée, qui donne une
+   marbrure douce sans jamais faire de tache. Le grain d'un pixel se
+   pose par-dessus, comme sur le sol de la ferme.
+   ON REPREND LES PALETTES DE LA MAISON : B_F pour le bois, PI_F pour la
+   ferraille et la pierre, les verts du pré. Rien de nouveau.
    LA SURFACE DE JEU NE BOUGE PAS D'UN PIXEL. Les boules meurent à
    quatre unités du bord et l'arbitre du serveur rejoue avec les mêmes
-   limites : tout ce qui est dessiné ici est posé À PLAT, rien n'avance
-   dans le terrain, rien n'arrête une boule. Une ombre de platane est
-   une tache, pas un obstacle.
+   limites : tout est posé À PLAT, rien n'arrête une boule, et les
+   bordures gardent leur épaisseur. Une ombre de feuillage est une
+   nuance de sable, pas un obstacle.
    LE SABLE SE GRAVE PAR TERRAIN, et on garde le dernier gravé. */
 let SABLE_CLE=null;
 function graverLeSablePetanque(){
@@ -25448,143 +25456,180 @@ const c=document.createElement('canvas');c.width=W;c.height=H;
 const g=c.getContext('2d');
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
 const A=(i)=>alea(i*1.37+0.21);
-const tache=(x,y,rx,ry,col)=>{g.fillStyle=col;g.beginPath();g.ellipse(x,y,rx,ry,0,0,7);g.fill();};
-/* ---------- LE FOND, commun : le grain du sol ---------- */
-g.fillStyle=T.sable;g.fillRect(0,0,W,H);
-for(let i=0;i<3000;i++)R(A(i)*W,A(i+9)*H,1,1,T.grain[i%5]);
+/* LA MARBRURE : du bruit LISSÉ, à trois échelles.
+   Lu par cases entières, PR_h fait des CARRÉS — on voyait le damier
+   d'une maille sur l'autre, exactement le motif répétitif qu'on ne
+   veut pas. On interpole donc entre les quatre coins de la maille,
+   avec un adoucissement en 3t²−2t³ : le fond devient une marbrure
+   continue, sans grille et sans tache. */
+const lisse=(x,y,e,k)=>{
+const fx=x/e, fy=y/e, ix=Math.floor(fx), iy=Math.floor(fy);
+const tx=fx-ix, ty=fy-iy, ad=(t)=>t*t*(3-2*t);
+const p00=PR_h(ix,iy,k), p10=PR_h(ix+1,iy,k);
+const p01=PR_h(ix,iy+1,k), p11=PR_h(ix+1,iy+1,k);
+const u=ad(tx), v=ad(ty);
+return (p00*(1-u)+p10*u)*(1-v)+(p01*(1-u)+p11*u)*v;};
+const marbre=(x,y,k)=>lisse(x,y,7,k)*0.32+lisse(x,y,19,k+1)*0.36+lisse(x,y,43,k+2)*0.32;
+/* LE SABLE : cinq tons du plus clair au plus sombre, choisis par la
+   marbrure, plus un grain d'un pixel par-dessus. */
+const sable=(x0,y0,x1,y1,ramp,k,grain)=>{
+for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
+const m=marbre(x,y,k);
+const i=m<.26?0:(m<.46?1:(m<.66?2:(m<.84?3:4)));
+R(x,y,1,1,ramp[i]);}
+if(grain!==0)for(let i=0;i<(grain||1700);i++){
+const x=x0+Math.floor(A(i)*(x1-x0)), y=y0+Math.floor(A(i+9)*(y1-y0));
+R(x,y,1,1,A(i+21)<.5?ramp[5]:ramp[6]);}};
+/* LE CADRE : on ne dessine QUE la bordure, jamais dans le terrain. */
+const cadre=(ep,f)=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+if(x>=ep&&x<W-ep&&y>=ep&&y<H-ep)continue;f(x,y);}};
 
 if(T.c==='port'){
 /* ================= LE TERRAIN DU PORT =================
-   Du sable de quai : des coquillages écrasés, des galets roulés, des
-   paquets d'algues sèches, et le sel qui blanchit par plaques. */
-for(let i=0;i<30;i++)tache(A(i+40)*W,A(i+80)*H,7+A(i)*14,4+A(i+3)*7,'rgba(240,236,214,.09)');
-/* les algues sèches, poussées contre les bords */
-for(let i=0;i<22;i++){const x=A(i+120)*W, y=(A(i+160)<.5?A(i+200)*26:H-26+A(i+200)*26);
-for(let k=0;k<5;k++)R(x+k-2+A(i+k)*3,y+A(i+k*3)*4,2,1,A(i+k)<.5?'#6e6a3e':'#565434');}
-/* les galets et les coquillages */
-for(let i=0;i<46;i++){const x=4+A(i+300)*(W-8), y=4+A(i+340)*(H-8);
-if(A(i+380)<.45){R(x,y,2,2,'#b4ac96');R(x,y,1,1,'#d8d2bc');}
-else{R(x,y,3,2,'#efe8d6');R(x,y,2,1,'#fffaf0');R(x+1,y+1,1,1,'#cfc6ae');}}
-/* le sel, en fines craquelures */
-for(let i=0;i<70;i++){const x=A(i+420)*W, y=A(i+460)*H, l=2+A(i)*5;
-for(let k=0;k<l;k++)R(x+k,y+Math.round(Math.sin(k)*1),1,1,'rgba(255,252,240,.5)');}
-/* LA BORDURE : du bois de quai, gris-bleu, avec ses clous */
-R(0,0,W,4,'#6d7a7e');R(0,H-4,W,4,'#5f6c70');R(0,0,4,H,'#67747a');R(W-4,0,4,H,'#5a676c');
-R(0,0,W,1,'#93a3a8');R(0,H-1,W,1,'#44504f');
-for(let x=6;x<W-6;x+=11){R(x,1,1,1,'#3e4a4c');R(x,H-3,1,1,'#3e4a4c');}
-for(let y=6;y<H-6;y+=11){R(1,y,1,1,'#3e4a4c');R(W-3,y,1,1,'#3e4a4c');}
-/* deux anneaux d'amarrage, encastrés dans la bordure */
-[[0,54],[W-4,H-74]].forEach(([x,y])=>{g.strokeStyle='#3f4a4e';g.lineWidth=1.4;
-g.beginPath();g.arc(x+2,y,3.4,0,7);g.stroke();
-g.strokeStyle='#8e9ca0';g.lineWidth=.7;g.beginPath();g.arc(x+2,y-0.6,3.4,3.6,5.8);g.stroke();});
+   Le sable du quai : chaud, un peu gris de sel, avec les coquillages
+   et les galets qu'on y trouve. Bordure de madriers, ferrures et
+   cordage — le bois et la ferraille de la ferme, pas une palette neuve. */
+sable(5,5,W-5,H-5,['#e3cb9c','#dcc392','#d4ba88','#c9ad78','#bda069','#efdcae','#b49560'],11,1900);
+/* les coquillages et les galets, peu nombreux et petits */
+for(let i=0;i<34;i++){const x=7+A(i+300)*(W-14), y=7+A(i+340)*(H-14);
+if(A(i+380)<.5){R(x,y,2,1,'#b4ac96');R(x,y,1,1,'#cfc8b2');}
+else{R(x,y,2,2,'#efe8d6');R(x,y,1,1,'#fffaf0');R(x+1,y+1,1,1,'#cfc6ae');}}
+/* le sel, en petites plaques claires */
+for(let i=0;i<120;i++){const x=6+A(i+420)*(W-12), y=6+A(i+460)*(H-12);
+if(marbre(x,y,11)<.3)R(x,y,1+Math.round(A(i)*2),1,'rgba(255,250,236,.38)');}
+/* LA BORDURE : des madriers, leur fil et leurs clous */
+cadre(5,(x,y)=>{
+const vert=(x<5||x>=W-5);
+const u=vert?y:x, v=vert?x:y;
+const n=PR_h(Math.floor(u/14),v,31);
+let col=n<.3?B_F.bois:(n<.62?B_F.boisC:B_F.boisO);
+if(v===0)col=B_F.boisH;
+if(v===4)col=B_F.boisS;
+if(u%14===0)col=B_F.boisS;                       /* le joint entre deux madriers */
+if(PR_h(x,y,33)<.17)col=teint(col,-10);           /* le fil du bois */
+R(x,y,1,1,col);});
+/* LES FERRURES DES QUATRE COINS */
+[[0,0],[W-9,0],[0,H-9],[W-9,H-9]].forEach(([x,y])=>{
+for(let b=0;b<9;b++)for(let a=0;a<9;a++){
+if(a>4&&b>4)continue;
+R(x+a,y+b,1,1,PR_h(a,b,35)<.4?PI_F.s:PI_F.p);}
+R(x+1,y+1,1,1,PI_F.e);R(x+6,y+1,1,1,PI_F.o);R(x+1,y+6,1,1,PI_F.o);});
+/* DEUX ANNEAUX D'AMARRAGE, posés sur la bordure */
+[[2,62],[W-3,H-82]].forEach(([x,y])=>{
+g.strokeStyle=PI_F.o;g.lineWidth=1.6;g.beginPath();g.arc(x,y,3.2,0,7);g.stroke();
+g.strokeStyle=PI_F.h;g.lineWidth=.7;g.beginPath();g.arc(x,y-.6,3.2,3.5,5.9);g.stroke();});
+/* UN CORDAGE LOVÉ, en haut à gauche, sur le madrier */
+for(let k=0;k<3;k++){g.strokeStyle=k%2?'#c9a878':'#a5825a';g.lineWidth=1.1;
+g.beginPath();g.arc(13,2.5,2.2+k*1.5,0.2,3.2);g.stroke();}
 }
 
 else if(T.c==='place'){
 /* ================= LA PLACE DU VILLAGE =================
-   De la terre battue par les pas, les vieux pavés qui percent sur les
-   bords, et ce qu'on laisse tomber sur une place : capsules, mégots,
-   une ombre de banc en travers du coin. */
-for(let i=0;i<34;i++)tache(A(i+40)*W,A(i+80)*H,8+A(i)*15,4+A(i+3)*8,'rgba(60,52,34,.10)');
-/* LES PAVÉS QUI PERCENT, le long des deux grands bords */
-for(let y=6;y<H-6;y+=7){
-[[4],[W-11]].forEach(([x0])=>{if(A(y+x0)<.42)return;
-const w=5+Math.round(A(y*2+x0)*2), h=5;
-const t=Math.round((A(y*3+x0)-0.5)*16);
-R(x0,y,w,h,teint('#9c927c',t));R(x0,y,w,1,teint('#b8ae96',t));
-R(x0,y+h-1,w,1,teint('#6f6756',t));});}
-/* les traces de pas, en arcs usés */
-for(let i=0;i<120;i++){const x=A(i+200)*W, y=A(i+240)*H;
-R(x,y,2+A(i)*3,1,'rgba(74,64,44,.16)');}
-/* L'OMBRE DU BANC, en travers du coin haut-droit */
-g.save();g.globalAlpha=.16;g.fillStyle='#2a2414';
-g.fillRect(W-62,10,58,7);g.fillRect(W-62,21,58,4);
-g.fillRect(W-58,17,4,16);g.fillRect(W-14,17,4,16);g.restore();
-/* ce qui traîne : capsules, mégots, un bouchon */
-for(let i=0;i<9;i++){const x=8+A(i+500)*(W-16), y=8+A(i+540)*(H-16), n=A(i+580);
-if(n<.45){R(x,y,2,2,n<.22?'#c9a24a':'#b43a2e');R(x,y,1,1,'#f0e2b4');}
-else if(n<.8){R(x,y,3,1,'#e8e4d8');R(x+2,y,1,1,'#7a6a4e');}
-else{R(x,y,2,2,'#8a6238');R(x,y,2,1,'#a5764a');}}
-/* quelques touffes d'herbe sèche contre la bordure */
-for(let i=0;i<16;i++){const x=A(i+600)*W, y=A(i+640)<.5?(5+A(i)*4):(H-9+A(i)*4);
-for(let k=0;k<4;k++)R(x+k,y-A(i+k)*3,1,2+A(i+k)*2,'#8a8a52');}
-/* LA BORDURE : une bordure de trottoir en pierre */
-R(0,0,W,5,'#a79d86');R(0,H-5,W,5,'#9a907a');R(0,0,5,H,'#a1977f');R(W-5,0,5,H,'#958b76');
-R(0,0,W,1,'#c6bda6');R(0,H-1,W,1,'#6f6756');
-for(let x=0;x<W;x+=19)R(x,0,1,5,'#7e7563');
-for(let y=0;y<H;y+=19){R(0,y,5,1,'#7e7563');R(W-5,y,5,1,'#7e7563');}
+   Le sable au milieu, les pavés tout autour : c'est la place qui borde
+   le jeu, pas une clôture. Pierre claire de Provence, joints de terre,
+   et ce qui pousse entre deux pavés. */
+sable(9,9,W-9,H-9,['#ddc598','#d5bc8e','#cbb183','#c0a475','#b49766','#e8d4a8','#aa8c5c'],41,1500);
+/* quelques pavés descellés qui affleurent dans le sable */
+for(let i=0;i<7;i++){const x=12+A(i+700)*(W-30), y=12+A(i+740)*(H-30);
+const w=4+Math.round(A(i)*3), h=3+Math.round(A(i+5)*2);
+R(x,y,w,h,'#b3a78e');R(x,y,w,1,'#c7bba2');R(x,y+h-1,w,1,'#8e8370');}
+/* LES PAVÉS DU POURTOUR, irréguliers, en rangs décalés */
+cadre(9,(x,y)=>{R(x,y,1,1,'#6e6450');});           /* le lit de terre, dessous */
+{const pose=(x0,y0,w,h,gr)=>{
+const t=Math.round((PR_h(x0,y0,gr)-0.5)*26);
+const base=PR_h(x0*3,y0*5,gr+1)<.5?'#c2b495':'#b5a687';
+R(x0,y0,w,h,teint(base,t));
+R(x0,y0,w,1,teint(base,t+16));R(x0,y0,1,h,teint(base,t+10));
+R(x0,y0+h-1,w,1,teint(base,t-22));R(x0+w-1,y0,1,h,teint(base,t-16));};
+for(let b=0;b<2;b++){let x=1;let i=0;
+while(x<W-1){const w=Math.min(5+Math.round(PR_h(i,b,51)*4),W-1-x);
+pose(x,b*(H-8)+1,w,6,53+b);x+=w+1;i++;}}
+for(let a=0;a<2;a++){let y=8;let i=0;
+while(y<H-8){const h=Math.min(5+Math.round(PR_h(i,a,55)*4),H-8-y);
+pose(a*(W-8)+1,y,6,h,57+a);y+=h+1;i++;}}}
+/* L'HERBE ET LES FLEURS ENTRE LES PAVÉS */
+for(let i=0;i<34;i++){const sur=A(i+800)<.5;
+const x=sur?(2+A(i+840)*(W-4)):(A(i+840)<.5?2+A(i)*5:W-7+A(i)*5);
+const y=sur?(A(i+880)<.5?2+A(i)*5:H-7+A(i)*5):(10+A(i+880)*(H-20));
+for(let k=0;k<3;k++)R(x+k,y-A(i+k)*2,1,1+A(i+k)*2,A(i+k)<.5?'#5d7d3e':'#6f9149');
+if(A(i+920)<.25)R(x+1,y-3,1,1,A(i)<.5?'#e8e4d8':'#d8a83a');}
+/* ce qui traîne sur une place : une capsule, un bouchon */
+for(let i=0;i<5;i++){const x=14+A(i+500)*(W-28), y=14+A(i+540)*(H-28);
+const n=A(i+580);
+if(n<.5){R(x,y,2,2,n<.25?'#c9a24a':'#b43a2e');R(x,y,1,1,'#f0e2b4');}
+else R(x,y,2,2,B_F.bois);}
 }
 
 else if(T.c==='platanes'){
 /* ================= SOUS LES PLATANES =================
-   La lumière passe au travers des feuilles : des flaques de soleil et
-   de grandes ombres molles, des feuilles tombées, et deux racines qui
-   traversent le sable à fleur de terre. */
-/* les flaques de soleil, d'abord */
-for(let i=0;i<22;i++)tache(A(i+600)*W,A(i+640)*H,9+A(i+7)*16,6+A(i+11)*10,'rgba(255,244,200,.13)');
-/* LE FEUILLAGE, en trois couches d'ombre de plus en plus serrées */
-for(let i=0;i<16;i++)tache(A(i+40)*W,A(i+80)*H,16+A(i)*22,10+A(i+3)*14,'rgba(26,46,16,.10)');
-for(let i=0;i<30;i++)tache(A(i+140)*W,A(i+180)*H,7+A(i)*12,5+A(i+3)*8,'rgba(22,40,14,.12)');
-for(let i=0;i<60;i++)tache(A(i+240)*W,A(i+280)*H,3+A(i)*5,2+A(i+3)*4,'rgba(18,34,12,.13)');
-/* LES DEUX RACINES, à fleur de sable */
-[[0.22,-1],[0.74,1]].forEach(([fx,sens],n)=>{
-let x=fx*W;
-for(let y=0;y<H;y+=1){
-const ond=Math.sin(y/26+n*2)*9+Math.sin(y/9+n)*2.5;
-const a=Math.round(x+ond*sens), w=4+Math.round(Math.sin(y/40+n)*1.6);
-/* ELLE NE SE COUPE PAS. Une racine en pointillé fait des brindilles
-   posées là ; elle plonge et ressort, donc elle s'amincit par endroits
-   mais ne s'interrompt jamais. */
-const ep=(y%37<22)?w:Math.max(1,w-2);
-R(a,y,ep,1,(y%37<22)?'#9a8057':'#8a7250');
-R(a,y,1,1,'#b79a6c');R(a+ep-1,y,1,1,'#776240');
-if(y%37>=22)R(a,y,ep,1,'rgba(70,58,38,.18)');}});
-/* LES FEUILLES DE PLATANE, à trois lobes */
-for(let i=0;i<26;i++){const x=6+A(i+700)*(W-12), y=6+A(i+740)*(H-12), n=A(i+780);
-const co=n<.33?'#a8762e':(n<.66?'#8a5f24':'#c08d3c');
-R(x,y,3,2,co);R(x-2,y-1,3,2,co);R(x+2,y-1,3,2,co);
-R(x+1,y+2,1,2,'#6e4c1c');R(x-1,y,1,1,teint(co,22));}
-/* l'écorce tombée */
-for(let i=0;i<14;i++){const x=A(i+820)*W, y=A(i+860)*H;
-R(x,y,4,2,'#cfc3a2');R(x,y,4,1,'#e4dac0');R(x+1,y+2,3,1,'#9a8f74');}
-/* LA BORDURE : de la terre et de la mousse */
-R(0,0,W,5,'#5e5036');R(0,H-5,W,5,'#55492f');R(0,0,5,H,'#584c32');R(W-5,0,5,H,'#514630');
-for(let i=0;i<150;i++){const n=A(i+900);
-const x=n<.5?A(i+940)*W:(A(i+940)<.5?A(i)*5:W-5+A(i)*5);
-const y=n<.5?(A(i+980)<.5?A(i)*5:H-5+A(i)*5):A(i+980)*H;
+   La lumière tombe au travers des feuilles. L'ombre n'est PAS une
+   grande tache grise : c'est une marbrure serrée, du sable un peu plus
+   froid là où la feuille passe, posée par le même bruit que le fond.
+   On garde le sable clair majoritaire, sinon on ne voit plus les boules. */
+sable(6,6,W-6,H-6,['#e0c99c','#d8c092','#cfb686','#c5ab79','#bba06d','#eeddb4','#b2945f'],71,1500);
+/* LE FEUILLAGE : un seuil sur un bruit serré, donc des bords dentelés
+   et jamais un cercle. Deux passes, la seconde plus rare et plus froide. */
+for(let y=6;y<H-6;y++)for(let x=6;x<W-6;x++){
+const m=lisse(x,y,5,73)*0.44+lisse(x,y,13,74)*0.36+lisse(x,y,31,75)*0.20;
+if(m>.56)R(x,y,1,1,'rgba(88,98,64,.15)');
+if(m>.70)R(x,y,1,1,'rgba(66,80,52,.13)');
+if(m>.82)R(x,y,1,1,'rgba(52,66,42,.12)');}
+/* LES TACHES DE SOLEIL, le creux entre deux feuilles */
+for(let y=6;y<H-6;y++)for(let x=6;x<W-6;x++){
+const m=lisse(x,y,6,76)*0.6+lisse(x,y,17,77)*0.4;
+if(m<.22)R(x,y,1,1,'rgba(255,246,206,.20)');}
+/* LES FEUILLES TOMBÉES, à trois lobes, en automne clair */
+for(let i=0;i<22;i++){const x=9+A(i+700)*(W-18), y=9+A(i+740)*(H-18), n=A(i+780);
+const co=n<.34?'#b5833a':(n<.67?'#9a6b2a':'#c89a4a');
+R(x,y,3,2,co);R(x-2,y-1,3,2,teint(co,-8));R(x+2,y-1,3,2,teint(co,6));
+R(x+1,y+2,1,2,'#6e4c1c');R(x-1,y,1,1,teint(co,20));}
+/* UNE RACINE LE LONG DE CHAQUE BORD, jamais au milieu du jeu */
+[[8,1],[W-9,-1]].forEach(([bx,sens],n)=>{
+for(let y=7;y<H-7;y++){
+const a=Math.round(bx+Math.sin(y/31+n*2)*3*sens+Math.sin(y/11+n)*1.2);
+R(a,y,3,1,'#9a8057');R(a,y,1,1,'#b2936a');R(a+2,y,1,1,'#7a6442');}});
+/* LA BORDURE : de la terre, de la mousse, et l'écorce au ras */
+cadre(6,(x,y)=>{const n=PR_h(x,y,81);
+R(x,y,1,1,n<.34?'#5c4f35':(n<.68?'#51462f':'#675a3d'));});
+for(let i=0;i<210;i++){const n=A(i+900);
+const x=n<.5?A(i+940)*W:(A(i+940)<.5?A(i)*6:W-6+A(i)*6);
+const y=n<.5?(A(i+980)<.5?A(i)*6:H-6+A(i)*6):A(i+980)*H;
 R(x,y,2,1,A(i+1020)<.5?'#4e6b34':'#5d7d3e');}
+for(let i=0;i<26;i++){const n=A(i+1100);
+const x=n<.5?A(i+1140)*W:(A(i+1140)<.5?A(i)*6:W-6+A(i)*6);
+const y=n<.5?(A(i+1180)<.5?A(i)*6:H-6+A(i)*6):A(i+1180)*H;
+R(x,y,3,2,'#cfc3a2');R(x,y,3,1,'#e0d6b8');}
 R(0,0,W,1,'#7a6a48');
 }
 
 else{
 /* ================= LE BOULODROME DU CHAMPIONNAT =================
-   Du sable neuf, ratissé au peigne : des sillons parallèles d'un bord
-   à l'autre, les lignes peintes au cordeau, et un tapis vert tout
-   autour avec sa lisse de laiton. Rien ne traîne : on a balayé. */
-for(let y=5;y<H-5;y+=3){
-const ond=Math.sin(y/23)*1.2;
-for(let x=5;x<W-5;x++)R(x,Math.round(y+ond),1,1,'rgba(176,150,104,.34)');
-for(let x=5;x<W-5;x++)R(x,Math.round(y+ond)+1,1,1,'rgba(252,238,204,.26)');}
-/* quelques grains plus clairs, le sable est sec */
-for(let i=0;i<500;i++)R(5+A(i+300)*(W-10),5+A(i+340)*(H-10),1,1,'rgba(255,248,224,.45)');
-/* LES LIGNES PEINTES AU CORDEAU */
-g.strokeStyle='rgba(255,255,255,.72)';g.lineWidth=1;
-[46,H-56].forEach(y=>{g.beginPath();g.moveTo(7,y+.5);g.lineTo(W-7,y+.5);g.stroke();});
-g.strokeStyle='rgba(255,255,255,.45)';
-g.beginPath();g.moveTo(W/2+.5,50);g.lineTo(W/2+.5,H-60);g.stroke();
-/* LE TAPIS VERT, et sa lisse de laiton */
-R(0,0,W,7,'#2f4433');R(0,H-7,W,7,'#2a3d2e');R(0,0,7,H,'#2c4130');R(W-7,0,7,H,'#283a2c');
-for(let i=0;i<420;i++){const n=A(i+600);
-const x=n<.5?A(i+640)*W:(A(i+640)<.5?A(i)*7:W-7+A(i)*7);
-const y=n<.5?(A(i+680)<.5?A(i)*7:H-7+A(i)*7):A(i+680)*H;
-R(x,y,1,1,A(i+720)<.5?'#3a5440':'#476a4c');}
+   Un terrain qu'on entretient : sable fin et régulier, ratissé au
+   peigne, lignes peintes fines, et un cadre vert sombre à filet d'or.
+   C'est la sobriété qui dit le niveau, pas la décoration. */
+sable(7,7,W-7,H-7,['#e9d6ac','#e2cda1','#dac497','#d2bb8d','#cab284','#f4e6c4','#c0a878'],91,900);
+/* LE RATISSAGE : un sillon tous les quatre pixels, à peine marqué */
+for(let y=9;y<H-9;y+=5){
+const ond=Math.sin(y/31)*1.2;
+for(let x=9;x<W-9;x++){
+R(x,Math.round(y+ond),1,1,'rgba(176,150,104,.13)');
+R(x,Math.round(y+ond)+1,1,1,'rgba(252,240,210,.10)');}}
+/* LES LIGNES PEINTES, fines et nettes */
+g.fillStyle='rgba(255,255,255,.78)';
+[48,H-58].forEach(y=>g.fillRect(10,y,W-20,1));
+g.fillStyle='rgba(255,255,255,.34)';g.fillRect(Math.round(W/2),52,1,H-112);
+/* LE CADRE : vert sombre, filet d'or, coins dorés */
+cadre(7,(x,y)=>{const n=PR_h(x,y,93);
+R(x,y,1,1,n<.36?'#243a2b':(n<.72?'#2c4332':'#1e3225'));});
 R(0,6,W,1,'#d8bf6a');R(0,H-7,W,1,'#d8bf6a');R(6,0,1,H,'#d8bf6a');R(W-7,0,1,H,'#d8bf6a');
-R(0,0,W,1,'#4e7a38');
+R(0,0,W,1,'#3f5c45');R(0,H-1,W,1,'#16241a');
+[[0,0],[W-7,0],[0,H-7],[W-7,H-7]].forEach(([x,y])=>{
+for(let b=0;b<7;b++)for(let a=0;a<7;a++)R(x+a,y+b,1,1,PR_h(a,b,95)<.4?'#c9a24a':'#b08d38');
+R(x+1,y+1,1,1,'#f0e2b4');});
 }
 /* ---------- LE ROND DE LANCER, le même partout ---------- */
-g.strokeStyle='rgba(120,90,50,.5)';g.lineWidth=1;
-g.beginPath();g.ellipse(PQ.S[0],PQ.S[1],9,5,0,0,7);g.stroke();
-if(T.c==='champ'){g.strokeStyle='rgba(255,255,255,.6)';
-g.beginPath();g.ellipse(PQ.S[0],PQ.S[1],9,5,0,0,7);g.stroke();}
+g.strokeStyle=(T.c==='champ')?'rgba(255,255,255,.6)':'rgba(120,90,50,.45)';
+g.lineWidth=1;g.beginPath();g.ellipse(PQ.S[0],PQ.S[1],9,5,0,0,7);g.stroke();
 SABLE_PQ=c;SABLE_CLE=T.c;
 }
 /* LA TIENNE PORTE SON MODÈLE ; CELLE D'EN FACE NE CHANGE JAMAIS, sinon
