@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-1530"></script>
+<script src="maintenance.js?v=2026-10-12-1650"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-1530';
+var MA_VERSION='2026-10-12-1650';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -1241,6 +1241,8 @@ border:1px solid rgba(216,191,106,.16);border-radius:12px;background:rgba(230,24
 #petanque .pLig b{display:block;font:400 15px Georgia;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #petanque .pLig em{display:block;font:italic 10.5px Georgia;color:#93a68c}
 #petanque .pLig u{flex:none;text-decoration:none;font:300 22px Georgia;color:#d8bf6a}
+#petanque .pVide{padding:30px 24px;text-align:center;font:italic 13.5px Georgia;
+color:#93a68c;line-height:1.6}
 /* la bourse, dans le chapeau de la boutique */
 #petanque .mSou{display:inline-block;margin-top:11px;border:1px solid rgba(216,191,106,.5);
 border-radius:16px;padding:6px 18px;background:rgba(216,191,106,.12);
@@ -25728,7 +25730,10 @@ if(T)T.textContent='LE BOULODROME · LE PALMARÈS';}
 b.style.display='none';
 const dessiner=()=>{
 let h='<div class="mTete"><small>LE MONDIAL</small><h3>Le palmarès</h3></div>';
-if(!PALM)h+='<div class="mRub">ON COMPTE LES TITRES…</div>';
+if(PALM==='coupe')h+='<div class="mRub">LE REGISTRE NE RÉPOND PAS</div>'+
+'<div class="pVide">Le palmarès se tient au loin, et on n’arrive pas à le lire.'+
+'<br>Réessaie dans un moment.</div>';
+else if(!PALM)h+='<div class="mRub">ON COMPTE LES TITRES…</div>';
 else if(!PALM.length)h+='<div class="mRub">PERSONNE N’A ENCORE DE TITRE</div>';
 else{h+='<div class="mRub">LES '+PALM.length+' PREMIERS</div><div class="mLst">';
 PALM.forEach((p,i)=>{h+='<div class="pLig'+(p.moi?' moi':'')+'">'+
@@ -25745,11 +25750,20 @@ $('pqBas').innerHTML='<div class="mJ"><canvas data-ico="coupe" data-s="1.1"></ca
 pqPeindre($('pqBas'));
 $('pqRetourMenu').onclick=()=>{PET={etape:'choix'};majTextePetanque();};};
 dessiner();
+/* LE REGISTRE PEUT NE PAS RÉPONDRE. Sans limite de temps, l'écran
+   restait sur « on compte les titres… » pour toujours — vu dans un
+   navigateur, réseau coupé. On attend huit secondes, puis on le dit. */
 if(PALM===null&&typeof sb!=='undefined'&&sb){
-try{sb.rpc('mondial_classement').then(({data})=>{
-if(!PET||PET.etape!=='palmares')return;
-PALM=Array.isArray(data)?data:[];dessiner();},()=>{PALM=[];dessiner();});}
-catch(x){PALM=[];dessiner();}}
+let rendu=false;
+const fini=(v)=>{if(rendu)return;rendu=true;
+if(!PET||PET.etape!=='palmares')return;PALM=v;dessiner();};
+setTimeout(()=>fini('coupe'),8000);
+try{sb.rpc('mondial_classement').then(({data,error})=>{
+fini((!error&&Array.isArray(data))?data:'coupe');},()=>fini('coupe'));}
+catch(x){fini('coupe');}}
+/* SANS SERVEUR DU TOUT, on le dit tout de suite — et on redessine :
+   poser la réponse sans repeindre laissait l'écran sur « on compte ». */
+else if(PALM===null){PALM='coupe';dessiner();}
 return true;}
 /* ---------- CE QU'ON VOIT APRÈS SA PARTIE ---------- */
 function mondEcranFin(t,b){
@@ -26360,28 +26374,39 @@ function feuDArtifice(n,ecart){
 const t0=performance.now();
 for(let i=0;i<(n||1);i++)PQ_FEU.push({f:1,
 x:16+Math.random()*(PQ_CW-32),y:PQ_CH+2,
-cible:18+Math.random()*96,v:185+Math.random()*70,
+/* ÇA ÉCLATE EN HAUT, AU-DESSUS DU TERRAIN. Vu dans un navigateur :
+   des étincelles qui retombent au milieu du sable ressemblent à des
+   détritus, et on les prend pour des boules. */
+cible:6+Math.random()*34,v:215+Math.random()*80,
 col:FEU_COL[Math.floor(Math.random()*FEU_COL.length)],
 t0:t0+i*(ecart||260)+Math.random()*180});}
 function dessinerLeFeu(g,t,dt){
 if(!PQ_FEU.length)return;
+/* LA NUIT TOMBE SUR LE TERRAIN pendant le feu. Vu dans un navigateur :
+   une étincelle d'un pixel clair sur du sable clair ne se voit pas. Le
+   voile la détache, et chaque étincelle porte son ombre. */
+let actifs=0;for(const p of PQ_FEU)if(t>=p.t0)actifs++;
+if(actifs){g.fillStyle='rgba(6,9,16,'+Math.min(.5,.1+actifs*0.012).toFixed(3)+')';
+g.fillRect(0,0,PQ_CW,PQ_CH);}
 const vivants=[];let aEclate=false;
+const pt=(x,y,w,h,col)=>{g.fillStyle='rgba(6,8,14,.55)';
+g.fillRect(Math.round(x)-1,Math.round(y)-1,w+2,h+2);
+g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),w,h);};
 for(const p of PQ_FEU){
 if(t<p.t0){vivants.push(p);continue;}
 if(p.f){
 p.y-=p.v*dt;
-g.fillStyle=p.col;g.fillRect(Math.round(p.x),Math.round(p.y),1,2);
-g.fillStyle='rgba(255,240,190,.4)';g.fillRect(Math.round(p.x),Math.round(p.y)+2,1,2);
+pt(p.x,p.y,2,3,p.col);
+g.fillStyle='rgba(255,240,190,.45)';g.fillRect(Math.round(p.x),Math.round(p.y)+3,2,3);
 if(p.y>p.cible){vivants.push(p);continue;}
 aEclate=true;
 for(let k=0;k<26;k++){const a=k*(Math.PI*2/26)+Math.random()*0.22, v=42+Math.random()*68;
 vivants.push({x:p.x,y:p.y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,
-vie:0.9+Math.random()*0.6,col:p.col});}
+vie:0.55+Math.random()*0.45,col:p.col});}
 continue;}
 p.vie-=dt;if(p.vie<=0)continue;
-p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=78*dt;p.vx*=0.985;
-g.fillStyle=p.vie>0.5?p.col:'rgba(216,160,90,.7)';
-g.fillRect(Math.round(p.x),Math.round(p.y),1,1);
+p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=104*dt;p.vx*=0.985;
+pt(p.x,p.y,2,2,p.vie>0.5?p.col:'#d8a05a');
 vivants.push(p);}
 PQ_FEU=vivants;
 if(aEclate){try{jouer('vente');}catch(x){}try{vibrer(8);}catch(x){}}}
