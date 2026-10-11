@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-1745"></script>
+<script src="maintenance.js?v=2026-10-12-1835"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-1745';
+var MA_VERSION='2026-10-12-1835';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -18244,9 +18244,17 @@ try{sauver();}catch(x){}
 return;
 }
 if(CARTE==='extramar'){
-const arrive=new URLSearchParams(location.search).has('arrivee')||!EXT_AU_DEPART;
-const garde=new URLSearchParams(location.search).has('garde');
-const p0=garde?[XP.ruelle.x,XP.ruelle.haut+26]:(arrive?[XP.sente.arrivee[0],XP.sente.arrivee[1]]:[EXT_AU_DEPART.x,EXT_AU_DEPART.y]);
+const Q=new URLSearchParams(location.search);
+const arrive=Q.has('arrivee')||!EXT_AU_DEPART;
+const garde=Q.has('garde');
+/* ON REPOSE LE PIED À LA BORNE PAR LAQUELLE ON EST ENTRÉ : celle des
+   champs à l'ouest, celle du bois à l'est. À défaut d'adresse, la
+   sauvegarde dit d'où l'on venait ; et sans elle, c'est le bois, comme
+   avant. */
+const de=Q.get('de')||(e&&(e.extc||e.carte))||'';
+const parLouest=(de==='village'||de==='ferme');
+const E=parLouest?XP.chemin.arrivee:XP.sente.arrivee;
+const p0=garde?[XP.ruelle.x,XP.ruelle.haut+26]:(arrive?[E[0],E[1]]:[EXT_AU_DEPART.x,EXT_AU_DEPART.y]);
 const [dx,dy]=degager(p0[0],p0[1]);
 joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.extc=CARTE;e.carte='extramar';
 try{sauver();}catch(x){}
@@ -21672,8 +21680,8 @@ setTimeout(()=>{try{
 /* LA DESTINATION, DITE EXPLICITEMENT. Sans le paramètre, le jeu relit la
    sauvegarde — qui dit « ferme » — et on revenait d'où l'on partait. */
 const v=(window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'');
-location.href='jeu.html?carte=extramar&arrivee=1'+v;}
-catch(x){location.href='jeu.html?carte=extramar&arrivee=1';}},620);}
+location.href='jeu.html?carte=extramar&arrivee=1&de=village'+v;}
+catch(x){location.href='jeu.html?carte=extramar&arrivee=1&de=village';}},620);}
 /* les deux bâtiments barrent la route */
 const mur=(px,py)=>DECOR.some(o=>{const t=TAILLES[o.t];if(!t)return false;
 const d=t[0];if(!d)return false;
@@ -33312,7 +33320,11 @@ try{e.ext={x:joueur.x,y:joueur.y};e.extc=CARTE;e.carte=carte;sauver();}catch(x){
    le dernier bout de progrès se perdait à chaque voyage. */
 try{await envoyerSauvegarde(true);}catch(x){}
 const page=(carte==='foret')?'foret.html':((carte==='ferme')?'ferme.html':'jeu.html?carte='+carte);
-location.href=page+(page.indexOf('?')<0?'?':'&')+'arrivee=1&v='+Date.now();
+/* D'OÙ L'ON VIENT, DIT DANS L'ADRESSE. Le port a deux entrées — le
+   chemin des champs à l'ouest, la sente du bois à l'est — et les deux
+   déposaient au même endroit : en venant de la ferme on se retrouvait
+   à l'autre bout du quai. */
+location.href=page+(page.indexOf('?')<0?'?':'&')+'arrivee=1&de='+CARTE+'&v='+Date.now();
 }
 let ETB=null;
 const CSS_ETB=`
