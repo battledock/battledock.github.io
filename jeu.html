@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-0810"></script>
+<script src="maintenance.js?v=2026-10-12-0905"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-0810';
+var MA_VERSION='2026-10-12-0905';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -1129,6 +1129,10 @@ box-shadow:none;font:700 13px Arial;letter-spacing:2.6px;text-transform:uppercas
 background:radial-gradient(ellipse at 50% 38%,#1c2a1c 0%,#131c13 55%,#090e09 100%);
 border:0;border-radius:0;padding:0;box-shadow:none;text-align:left}
 #petanque.menu .pqTitre,#petanque.menu #pqBouton{display:none}
+/* LE TERRAIN N'EXISTE QUE PENDANT UNE MÈNE : la toile restait dans le
+   flux sur tous les écrans, et le sable se peignait par-dessus les
+   cartes du menu — soixante fois par seconde, pour rien. */
+#petanque:not(.plein) #pqToile{display:none}
 /* la croix passe sous la banderole : c'est la seule sortie du menu */
 #petanque.menu #pqFermer{top:calc(30px + env(safe-area-inset-top));right:10px;z-index:6;
 width:32px;height:32px;background:rgba(0,0,0,.55);color:#eef3e4;font-size:14px}
@@ -25381,15 +25385,32 @@ const fanion=(d)=>'<span class="dr fn '+d+'"></span>';
    sable que la vitrine, écrit en dur à 66×40 ; il sert maintenant aussi
    de fond aux cartes du menu, donc il est paramétré. */
 function pqVignette(cv,T,w,h,nu){
-const D=2;cv.width=w*D;cv.height=h*D;cv.style.width=w+'px';cv.style.height=h+'px';
-const g=cv.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
-g.fillStyle=T.sable;g.fillRect(0,0,w,h);
-const n=Math.min(2200,Math.round(260*(w*h)/(66*40)));
-for(let i=0;i<n;i++){g.fillStyle=T.grain[i%5];
-g.fillRect(Math.floor(alea(i*1.7)*w),Math.floor(alea(i*2.3+5)*h),1,1);}
-const kx=w/66, ky=h/40;
-for(let i=0;i<Math.round(T.nb/3*Math.max(1,kx));i++){g.fillStyle=T.taches;g.beginPath();
-g.ellipse(alea(i+40)*w,alea(i+80)*h,(5+alea(i)*7)*kx,(3+alea(i+3)*4)*ky,0,0,7);g.fill();}
+const D=2, W2=w*D, H2=h*D;
+cv.width=W2;cv.height=H2;cv.style.width=w+'px';cv.style.height=h+'px';
+const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+/* LE GRAIN SE GRAVE EN UNE PASSE. Un fillRect par pixel coûte sept fois
+   le prix d'une écriture directe, et une vignette de carte en compte
+   des milliers — c'était tout le menu qui ramait à l'ouverture. Le fond
+   d'une carte passe sous un voile à 86 % : il lui faut trois fois moins
+   de grain qu'à une vignette qu'on regarde. */
+const hx=(c)=>{const v=parseInt(String(c).slice(1),16);return [(v>>16)&255,(v>>8)&255,v&255];};
+const F=hx(T.sable), G=T.grain.map(hx);
+const im=g.createImageData(W2,H2), d=im.data;
+for(let i=0;i<d.length;i+=4){d[i]=F[0];d[i+1]=F[1];d[i+2]=F[2];d[i+3]=255;}
+const sur=(w*h)/(66*40), n=Math.round((nu?150:260)*sur);
+for(let i=0;i<n;i++){const c2=G[i%5];
+const x=Math.floor(alea(i*1.7)*w)*D, y=Math.floor(alea(i*2.3+5)*h)*D;
+for(let a2=0;a2<D;a2++)for(let b2=0;b2<D;b2++){
+const p=((y+b2)*W2+(x+a2))*4;if(p<0||p+2>=d.length)continue;
+d[p]=c2[0];d[p+1]=c2[1];d[p+2]=c2[2];}}
+g.putImageData(im,0,0);
+g.setTransform(D,0,0,D,0,0);
+/* LES TACHES GARDENT LEUR TAILLE ET SE MULTIPLIENT. Elles suivaient la
+   largeur : sur un fond de carte cinq fois plus large, c'étaient cinq
+   grosses flaques de soixante pixels au lieu d'un moucheté. */
+g.fillStyle=T.taches;
+for(let i=0;i<Math.round(T.nb/3*sur);i++){g.beginPath();
+g.ellipse(alea(i+40)*w,alea(i+80)*h,5+alea(i)*7,3+alea(i+3)*4,0,0,7);g.fill();}
 if(T.lignes){g.strokeStyle='rgba(255,255,255,.5)';g.lineWidth=1;g.setLineDash([2,3]);
 g.beginPath();g.moveTo(3,h*.75);g.lineTo(w-3,h*.75);g.stroke();g.setLineDash([]);}
 if(nu)return;
@@ -26077,11 +26098,15 @@ if(qui==='lui'){g.strokeStyle='rgba(40,30,20,.6)';g.lineWidth=.5;g.beginPath();g
 function bouclePetanque(t){
 if(!PET)return;
 const c=$('pqToile');if(!c)return;
+/* HORS MÈNE, ON NE DESSINE RIEN. On gravait le sable et on le repeignait
+   soixante fois par seconde derrière un menu qui ne le montre pas — et
+   sur la toile restée dans le flux, le sable passait par-dessus les
+   cartes. */
+if(!PET.E||PQ_MENUS.indexOf(PET.etape)>=0){requestAnimationFrame(bouclePetanque);return;}
 const g=c.getContext('2d');g.imageSmoothingEnabled=false;
 if(!SABLE_PQ||SABLE_CLE!==pqMonTerrain().c)graverLeSablePetanque();
 const dt=Math.min(0.1,(t-(PET.tp||t))/1000);PET.tp=t;
 g.drawImage(SABLE_PQ,0,0);
-if(PET.etape==='choix'||PET.etape==='amis'||PET.etape==='attenteAmi'||!PET.E){requestAnimationFrame(bouclePetanque);return;}
 const E=PET.E;
 if(PET.vol){
 const V=PET.vol,k=Math.min(1,(t-V.t0)/V.dur), [sx,sy]=PQ.S;
