@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-11-2250"></script>
+<script src="maintenance.js?v=2026-10-11-2330"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-11-2250';
+var MA_VERSION='2026-10-11-2330';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -1028,7 +1028,11 @@ border-radius:6px;touch-action:none}
 #petanque .pqAmis{display:flex;flex-direction:column;gap:6px;margin:4px 0}#petanque .pqAmis button{border:0;border-radius:10px;padding:10px;background:#f4ecd8;color:#2a1d0c;font:700 14px Georgia;display:flex;justify-content:space-between;align-items:center}
 #petanque .pqAmis button small{font:italic 12px Georgia;color:#6b4a28}#petanque .pqLien{border:0;background:none;color:#e8c06a;font:italic 13px Georgia;margin-top:4px}
 #petanque .pqScore{display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.25);border-radius:10px;padding:6px 10px;margin-bottom:6px;font:14px Georgia}
-#petanque .pqScore b{font-size:18px;color:#e8c06a}#petanque .pqScore i{font-size:11px;opacity:.8}
+#petanque .pqScore b{font-size:18px;color:#d8bf6a}#petanque .pqScore i{font-size:11px;opacity:.8}
+/* LA MESURE DES DEUX MEILLEURES, sous le score : qui mène, et de combien. */
+#petanque .pqMes{display:flex;justify-content:space-between;margin:6px 0 2px;
+font:700 11px Arial;letter-spacing:.6px;color:#93a68c}
+#petanque .pqMes .w{color:#d8bf6a}
 #petanque .pqPoint{border-radius:9px;padding:5px 9px;margin:6px 0;font:700 11px Georgia;letter-spacing:.3px}
 #petanque .pqPoint.a{background:rgba(110,190,130,.22);color:#9fdfb8}
 #petanque .pqPoint.b{background:rgba(210,90,70,.20);color:#ffb0a0}
@@ -24652,6 +24656,40 @@ return pqCompter(E);
    on enlève la punition de l'imprécision, pas la récompense de la
    précision. */
 const PQ_VIS_AMP=0.30, PQ_VIS_PER=760, PQ_FOR_PER=700;
+/* ================= CE QUE LE LANCER DIT =================
+   ON JOUAIT SIX BOULES SANS RIEN ENTENDRE. Le point était écrit en
+   petit au-dessus du terrain, la distance n'arrivait qu'à la mesure
+   finale, et une mène gagnée se résumait à un paragraphe. Trois choses
+   changent : une annonce en gros au milieu du sable après chaque
+   boule, la distance des deux meilleures sous le score, et les points
+   de fin de mène comptés un par un. */
+let PQ_ANN=null;
+function pqAnnonce(txt,col,fort){
+PQ_ANN={txt,col:col||'#eef3e4',t0:performance.now(),dur:fort?1500:1100,fort:!!fort};}
+/* LA MESURE, EN CENTIMÈTRES DU TERRAIN : une unité vaut 1,6 cm. */
+const pqCm=v=>Math.max(1,Math.round(v*1.6))+' cm';
+function pqMesures(E){
+const C=E.coch;if(!C||C.mort)return '';
+const d=b=>Math.hypot(b.x-C.x,b.y-C.y);
+const vi=E.boules.filter(b=>!b.morte);
+const m=vi.filter(b=>b.qui==='moi').map(d).sort((a,b)=>a-b)[0];
+const l=vi.filter(b=>b.qui!=='moi').map(d).sort((a,b)=>a-b)[0];
+if(m===undefined&&l===undefined)return '';
+return '<div class="pqMes"><span'+((m!==undefined&&(l===undefined||m<l))?' class="w"':'')+'>toi '+
+(m===undefined?'—':pqCm(m))+'</span><span'+((l!==undefined&&(m===undefined||l<m))?' class="w"':'')+'>'+
+(l===undefined?'—':pqCm(l))+' lui</span></div>';}
+/* CE QU'ON CRIE APRÈS UNE BOULE. On compare le point d'avant et le
+   point d'après : c'est le changement qui se commente, pas l'état. */
+function pqCrier(avant){
+if(!PET||!PET.E||!PET.E.coch||PET.E.coch.mort)return;
+const M=pqQuiMarque(PET.E);
+const C=PET.E.coch, d=b=>Math.hypot(b.x-C.x,b.y-C.y);
+const mienne=PET.maDerniere;
+if(PET.tour==='moi'&&mienne&&!mienne.morte&&d(mienne)<7){pqAnnonce('BELLE APPROCHE !','#9fdfb8');return;}
+if(!M)return;
+if(M.gagnant==='moi'&&avant!=='moi'){pqAnnonce('TU TIENS LE POINT !','#9fdfb8',true);return;}
+if(M.gagnant!=='moi'&&avant==='moi'){pqAnnonce('POINT À L’ADVERSAIRE','#ffb0a0');return;}
+if(M.gagnant==='moi'&&M.boules.length>1){pqAnnonce(M.boules.length+' BOULES DEVANT','#9fdfb8');return;}}
 function pqCibleDuTir(E){const C=E.coch;if(!C||C.mort)return null;
 let m=null,dm=Infinity;
 for(const b of E.boules)if(b.qui!=='moi'&&!b.morte){const d=Math.hypot(b.x-C.x,b.y-C.y);if(d<dm){dm=d;m=b;}}
@@ -24812,13 +24850,19 @@ const force=(1-Math.cos((t-PET.t0)/PQ_FOR_PER))/2;
    mais le choix n'était offert qu'entre amis : contre Marius on ne
    pouvait que pointer, et la moitié du jeu restait éteinte. Le type part
    avec le lancer, pour que l'arbitre rejoue la même mène que toi. */
-const ty=(PET.mode==='ami'&&PET.phase==='coch')?'coch'
+/* LE COCHONNET EST UN LANCER COMME UN AUTRE, ET IL L'EMPORTE SUR TOUT.
+   Ce test ne regardait que le mode 'ami' : en partie contre Marius, le
+   lancer du cochonnet partait comme une boule ordinaire. On croyait
+   lancer le but, on posait sa première boule sur un terrain sans but,
+   on en perdait une des trois — et la mène était jouée d'avance. */
+const ty=(PET.phase==='coch')?'coch'
 :((PET.typeTir==='tir'&&PET.E.boules.some(b=>b.qui!=='moi'&&!b.morte))?'tir':'pointe');
 PET.lancers.push([PET.angle,force,ty]);
 PET.annonce=null;
 if(PET.mode==='ami'){envoyerLancerAmi(PET.angle,force,ty);if(ty!=='coch')PET.reste.moi--;lancer('moi',PET.angle,force,ty);vibrer(ty==='tir'?[10,20,30]:14);majTextePetanque();return;}
 if(PET.mode==='partie'){if(ty!=='coch')PET.reste.moi--;
 if(ty==='tir')PET.cible=pqCibleDuTir(PET.E);
+{const M0=pqQuiMarque(PET.E);PET.__pt=M0?M0.gagnant:null;}
 lancer('moi',PET.angle,force,ty);PET.maDerniere=PET.vol&&PET.vol.b;
 vibrer(ty==='tir'?[10,20,30]:14);majTextePetanque();return;}
 if(ty==='tir')PET.cible=pqCibleDuTir(PET.E);
@@ -24837,9 +24881,12 @@ PET.vol={b,tx:b.x,ty:b.y,t0:performance.now(),dur:type==='tir'?520+force*300:650
 b.enVol=true;PET.etape='vol';
 }
 function apresLArret(){
-if(PET.mode==='ami'){apresLArretAmi();return;}
+const avant=PET.__pt;
+if(PET.mode==='ami'){apresLArretAmi(avant);return;}
 if(PET.tour==='moi')pqJugerLeTir();
-if(PET.mode==='partie'){apresLArretAmi();return;}
+if(PET.annonce&&/CARREAU/.test(PET.annonce))pqAnnonce('CARREAU !','#f6dd8c',true);
+else pqCrier(avant);
+if(PET.mode==='partie'){apresLArretAmi(avant);return;}
 if(PET.tour==='moi'){PET.tour='lui';PET.etape='attend';majTextePetanque();
 setTimeout(()=>{if(!PET||PET.fin)return;const m=pqMarius(PET.graine,PET.n,PET.E);lancer('lui',m[0],m[1]);majTextePetanque();},700);}
 else{PET.n++;
@@ -24858,7 +24905,7 @@ if(typeof data.euros==='number'){e.euros=data.euros;sauver();majHaut();}
 PET.fin=verdict(data,cm,data.gagne?(data.pts>=3?14:(data.pts===2?9:5)):1)+(typeof data.restant==='number'?'<br><i>'+data.restant+' mène'+(data.restant>1?'s':'')+' payante'+(data.restant>1?'s':'')+' restante'+(data.restant>1?'s':'')+' aujourd’hui</i>':'');
 majTextePetanque();
 }
-let PQ_RENVOI=null;
+let PQ_RENVOI=null, PQ_COMPTE=null;
 const amisAuPort=()=>(EN_LIGNE||[]).filter(p=>p&&p.id&&p.lieu==='à Extramar');
 function majTexteAmi(t,b){
 {const T=document.querySelector('#petanque .pqTitre');if(T)T.textContent=PET.mode==='ami'?'PARTIE EN 13 POINTS · ENTRE AMIS':'LE BOULODROME · JOUER AVEC UN AMI';}
@@ -24877,7 +24924,7 @@ if(PET.tour==='lui'){t.innerHTML=tab+'<b>'+n+'</b> lance le cochonnet…';b.text
 const m=PET.etape==='viser'?'la <b>direction</b>':(PET.etape==='force'?'la <b>force</b>':'…');
 t.innerHTML=tab+'À toi de lancer le <b>cochonnet</b>, entre 6 et 10 m'+(PET.essais?' <i>(essai '+(PET.essais+1)+'/3)</i>':'')+' · touche pour fixer '+m;
 b.textContent=PET.etape==='viser'?'Viser':(PET.etape==='force'?'Lancer !':'…');return true;}
-const reste='toi '+PET.reste.moi+' boule'+(PET.reste.moi>1?'s':'')+' · '+n+' '+PET.reste.lui;
+const reste='toi '+PET.reste.moi+' boule'+(PET.reste.moi>1?'s':'')+' · '+n+' '+PET.reste.lui+pqMesures(PET.E);
 if(PET.tour==='lui'){t.innerHTML=tab+reste+' · <b>'+n+'</b> '+(PET.etape==='attend'?'se prépare…':'joue…');b.textContent='…';return true;}
 if(PET.etape==='viser'){
 t.innerHTML=tab+reste+'<div class="pqChoixTir"><button data-tir="pointe" class="'+(PET.typeTir!=='tir'?'on':'')+'">Pointer<small>approcher</small></button><button data-tir="tir" class="'+(PET.typeTir==='tir'?'on':'')+'">Tirer<small>chasser une boule</small></button></div>touche <b>Viser</b> pour fixer la direction';
@@ -25168,11 +25215,13 @@ return m;}
 function jouerMarius(){
 if(!PET||PET.mode!=='partie'||PET.tour!=='lui'||PET.fin)return;
 const [a,f,ty]=mariusDecide(PET.E);
+{const M0=pqQuiMarque(PET.E);PET.__pt=M0?M0.gagnant:null;}
 if(ty!=='coch')PET.reste.lui--;
 lancer('lui',a,f,ty);majTextePetanque();
 }
 function cochValide(C){if(!C||C.mort)return false;const [sx,sy]=PQ.S, d=Math.hypot(C.x-sx,C.y-sy);return d>=PQ_COCH_MIN&&d<=PQ_COCH_MAX&&C.x>8&&C.x<PQ.W-8&&C.y>8;}
-function apresLArretAmi(){
+function apresLArretAmi(avant){
+if(PET.mode==='ami')pqCrier(avant);
 const r=PET.reste;
 if(PET.phase==='coch'){
 if(cochValide(PET.E.coch)){PET.phase='boules';PET.tour=PET.lanceurCoch;}              /* celui qui a lancé le cochonnet joue la première boule */
@@ -25204,13 +25253,33 @@ else txt='Le cochonnet est sorti : <b>mène nulle</b>.';
 if(R.nulle||R.bm===R.bl)txt='Égalité parfaite : <b>mène nulle</b>.';
 else if(R.gagne){gagnant='moi';pts=R.pts;txt='<b>Tu marques '+pts+' point'+(pts>1?'s':'')+'</b> : '+(pts>1?pts+' de tes boules sont':'ta boule est')+' plus près du cochonnet que la meilleure de '+n+' <i>(numérotées sur le terrain)</i>.';}
 else{gagnant='lui';pts=R.pts;txt='<b>'+n+' marque '+pts+' point'+(pts>1?'s':'')+'</b> : '+(pts>1?pts+' de ses boules sont':'sa boule est')+' plus près du cochonnet que ta meilleure <i>(numérotées sur le terrain)</i>.';}}
-if(gagnant){PET.score[gagnant]+=pts;PET.lanceurCoch=gagnant;}                              /* le gagnant de la mène lance le prochain cochonnet */
+/* LES POINTS SE COMPTENT UN PAR UN. Ils tombaient d'un coup, au milieu
+   d'un paragraphe : trois points gagnés faisaient le même effet qu'un.
+   Le score monte d'une unité toutes les trois cents millisecondes, avec
+   son annonce et son bruit. */
+if(gagnant){PET.lanceurCoch=gagnant;
+clearInterval(PQ_COMPTE);
+let reste2=pts;
+PQ_COMPTE=setInterval(()=>{
+if(!PET||PET.etape!=='fin'){clearInterval(PQ_COMPTE);return;}
+if(reste2<=0){clearInterval(PQ_COMPTE);
+if(PET.score.moi>=13||PET.score.lui>=13){const moi2=PET.score.moi>=13;
+pqAnnonce(moi2?'PARTIE GAGNÉE !':'PARTIE PERDUE',moi2?'#f6dd8c':'#ffb0a0',true);
+if(moi2){try{jouer('vente','moment');}catch(x){}try{vibrer([20,40,20,40,80]);}catch(x){}}}
+return;}
+PET.score[gagnant]++;reste2--;
+pqAnnonce(gagnant==='moi'?'+1 POUR TOI':'+1 POUR LUI',gagnant==='moi'?'#9fdfb8':'#ffb0a0');
+try{jouer('pioche');}catch(x){}
+try{vibrer(gagnant==='moi'?12:6);}catch(x){}
+majTextePetanque();},320);}
 PET.etape='fin';
-if(PET.score.moi>=13||PET.score.lui>=13){PET.partieFinie=true;const moi=PET.score.moi>=13;
+if((PET.score.moi+(gagnant==='moi'?pts:0))>=13||(PET.score.lui+(gagnant==='lui'?pts:0))>=13){
+PET.partieFinie=true;const moi=(PET.score.moi+(gagnant==='moi'?pts:0))>=13;
 if(PET.mondial&&MOND&&!MOND.fini){try{mondAvancer(moi);}catch(x){}}
 if(moi){jouer('vente','moment');vibrer([20,40,20,40,60]);}
-txt+='<br><b style="color:#e8c06a">'+(moi?'Tu gagnes la partie '+PET.score.moi+' à '+PET.score.lui+' !':n+' gagne la partie '+PET.score.lui+' à '+PET.score.moi+'.')+'</b>'+
-(PET.score.moi===0||PET.score.lui===0?'<br><i>… et à zéro : Fanny !</i>':'');}
+const sm=PET.score.moi+(gagnant==='moi'?pts:0), sl=PET.score.lui+(gagnant==='lui'?pts:0);
+txt+='<br><b style="color:#d8bf6a">'+(moi?'Tu gagnes la partie '+sm+' à '+sl+' !':n+' gagne la partie '+sl+' à '+sm+'.')+'</b>'+
+(sm===0||sl===0?'<br><i>… et à zéro : Fanny !</i>':'');}
 PET.fin=txt;majTextePetanque();
 }
 function revancheAmi(){
@@ -25300,6 +25369,18 @@ M.boules.forEach((b,i)=>{g.fillStyle='rgba(20,20,20,.75)';g.fillRect(b.x-4,b.y-1
 if(PET.vol){if(PET.vol.coch){const V=PET.vol;g.fillStyle='rgba(60,40,20,.25)';g.fillRect(Math.round(V.x),Math.round(V.y)+1,2,1);
 g.fillStyle='#e8a030';g.fillRect(Math.round(V.x)-1,Math.round(V.y-V.h*0.6)-1,3,3);}
 else dessinerUneBoule(g,PET.vol.x,PET.vol.y,PET.vol.b.qui,PET.vol.h);}
+/* L'ANNONCE, AU MILIEU DU SABLE : elle grossit d'un coup puis s'efface. */
+if(PQ_ANN){const k=(t-PQ_ANN.t0)/PQ_ANN.dur;
+if(k>=1)PQ_ANN=null;
+else{const e2=k<0.14?(k/0.14):1, al=k>0.72?(1-(k-0.72)/0.28):1;
+const ta=(PQ_ANN.fort?13:10)*(0.7+e2*0.3);
+g.save();g.globalAlpha=al;g.textAlign='center';
+g.font='700 '+ta.toFixed(1)+'px Georgia';
+g.fillStyle='rgba(16,22,12,.62)';
+const lg=g.measureText(PQ_ANN.txt).width+14;
+g.fillRect(PQ.W/2-lg/2,PQ.H*0.42-ta,lg,ta+8);
+g.fillStyle=PQ_ANN.col;g.fillText(PQ_ANN.txt,PQ.W/2,PQ.H*0.42);
+g.restore();g.textAlign='left';}}
 if(PET.tour==='moi'&&!PET.fin){
 const [sx,sy]=PQ.S;
 const a=PET.etape==='viser'?Math.sin((t-PET.t0)/PQ_VIS_PER)*PQ_VIS_AMP:PET.angle;
