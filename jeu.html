@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-11-1215"></script>
+<script src="maintenance.js?v=2026-10-11-1320"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-11-1215';
+var MA_VERSION='2026-10-11-1320';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -32366,7 +32366,9 @@ Math.cos(t/900+o.ph)>0?1:-1,'broute',t/420+o.ph);});}
    LE PAPIER PLUTÔT QUE LE VERT : le pixel art des bêtes et des légumes
    ressort mieux sur crème. C'est l'argument qui avait déjà fait passer
    l'étable au carnet ; il vaut pour les autres. */
-const CARNET=(c)=>{const P='#page2Fond.'+c;return `
+/* UNE CLASSE D'ÉCRAN ('fer'), OU UN MORCEAU POSÉ DESSUS ('.mk') : le
+   marché n'est pas un écran à lui, c'est un calque dans page2Fond. */
+const CARNET=(c)=>{const P=(c.charAt(0)==='.')?('#page2Fond '+c):('#page2Fond.'+c);return `
 ${P}{background:#efe3c8;color:#33291b;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%;overflow:hidden}
 /* ---------- LE CHAPEAU ----------
    Le lieu en petites capitales, le titre en Georgia, l'argent à droite,
@@ -32608,7 +32610,7 @@ if(!document.getElementById('cssEtb')){const st=document.createElement('style');
 /* LE CARNET PASSE EN DERNIER : il reprend la coque — fond, chapeau,
    cartes, jauges, rail du bas — pendant que CSS_ETB et CSS_BETES gardent
    ce qui leur appartient encore, le tiroir d'une bête et son portrait. */
-st.id='cssEtb';st.textContent=CSS_ETB+CSS_BETES+CSS_MARCHE+CARNET('etb')+CSS_ETB_CARNET;document.head.appendChild(st);}
+st.id='cssEtb';st.textContent=CSS_ETB+CSS_BETES+CSS_MARCHE+CARNET('etb')+CSS_ETB_CARNET+CARNET('.mk')+CSS_MK_CARNET;document.head.appendChild(st);}
 $('page2Fond').className='etb';$('page2').classList.add('on');
 peindreLEcranDesBetes(mot);
 /* LES POULES SONT DANS L'ENCLOS maintenant : leur état et les chantiers
@@ -33167,6 +33169,22 @@ peindreLaFromagerie(ETB,d.fromage?'Une meule de plus dans ton sac.':
 'En cave. Reviens dans deux heures.');
 }catch(x){peindreLaFromagerie(ETB,'Réessaie dans un instant.');}
 finally{FRO_OCCUPE=false;}}
+/* ---------- CE QUI RESTE EN PROPRE AU MARCHÉ ----------
+   La réplique de Lucien et la pancarte, plus large que les vignettes du
+   menu : une bête ne tient pas dans un carré de quarante pixels. */
+const CSS_MK_CARNET=`
+#page2Fond .mk .dit{font:italic 12.5px Georgia;color:#6b5a3e;background:rgba(255,255,255,.5);border-left:3px solid #c9a24a;border-radius:0 10px 10px 0;padding:9px 12px;margin:-4px 0 4px;line-height:1.5}
+#page2Fond .mk .bande canvas{height:140px}
+#page2Fond .mk .l canvas{flex:none;width:44px;height:44px;border-radius:11px;background:#e6dcc0}
+#page2Fond .mk .grille{gap:8px}
+#page2Fond .mk .t{padding:9px 6px 10px;gap:5px}
+#page2Fond .mk .t canvas{width:100%;height:auto;border-radius:9px;background:#e6dcc0}
+#page2Fond .mk .t b{font:400 13px Georgia}
+#page2Fond .mk .t em{font:italic 10.5px Georgia;color:#7a6a4e;text-align:center;line-height:1.3}
+#page2Fond .mk .t i{font-style:normal;font:700 10px Arial;letter-spacing:1px;border-radius:11px;padding:6px 10px;background:#4e7a38;color:#fbf5e6;margin-top:2px}
+#page2Fond .mk .t[disabled]{opacity:.55}
+#page2Fond .mk .t[disabled] i{background:#cdbd9c;color:#7a6a4e}
+`;
 const CSS_MARCHE=`
 /* LE MARCHÉ SUIT LE CARNET. Il était resté en vert sombre pendant que
    l'étable passait au papier : on sortait d'un écran clair pour tomber sur
@@ -33292,39 +33310,48 @@ const fond=$('page2Fond');if(!fond)return;
 const vieux=fond.querySelector('.mk');if(vieux)vieux.remove();
 const sac=(k)=>((e.sac&&e.sac[k])||0);
 const cours=(k)=>((C&&C[k])||0);
+/* LE LOT EST UNE LIGNE DE CARNET, pleine ou vide : l'une était une carte
+   à bouton, l'autre une carte grisée d'un autre dessin. Même surface,
+   même jauge de lisibilité — ce qui se vend porte son prix au bout. */
 const lot=(k,nom,unite)=>{const n=sac(k);
-if(n<=0)return '<div class="lot rien"><canvas data-i="'+k+'"></canvas>'+
-'<span><b>'+({lait:'Pas de lait au seau',laine:'Pas de toison',
+if(n<=0)return '<div class="l"><canvas data-i="'+k+'"></canvas>'+
+'<span class="n"><b>'+({lait:'Pas de lait au seau',laine:'Pas de toison',
 truffe:'Pas de truffe'}[k])+'</b><em>'+({lait:'il faut traire les vaches',
 laine:'il faut tondre les moutons',
 truffe:'envoie un cochon fouiller sous les chênes'}[k])+'</em></span></div>';
-return '<div class="lot"><canvas data-i="'+k+'"></canvas>'+
-'<span><b>'+nom+'</b><em>'+n+' '+unite+' · '+enEuros(cours(k))+' pièce</em></span>'+
-'<button data-v="'+k+'">'+enEuros(n*cours(k))+'</button></div>';};
+return '<button class="l act" data-v="'+k+'"><canvas data-i="'+k+'"></canvas>'+
+'<span class="n"><b>'+nom+'</b><em>'+n+' '+unite+' · '+enEuros(cours(k))+' pièce</em></span>'+
+'<i>'+enEuros(n*cours(k))+'</i></button>';};
+/* LA PANCARTE EST UNE VIGNETTE, comme les portes du menu de la ferme. */
 const pancarte=(esp,nom,prix,combien)=>
-'<div class="'+(prix?'':'plein')+'"><canvas data-b="'+esp+'"></canvas>'+
+'<button class="t"'+(prix?' data-ac="'+esp+'"':' disabled')+'><canvas data-b="'+esp+'"></canvas>'+
 '<b>'+nom+'</b><em>'+combien+' à l’enclos</em>'+
-'<button data-ac="'+esp+'" '+(prix?'':'disabled')+'>'+
-(prix?enEuros(prix):'au complet')+'</button></div>';
+'<i>'+(prix?enEuros(prix):'au complet')+'</i></button>';
 const mot=(E.lait||0)>0?'« tu as du lait, il part bien ce matin »':
 ((E.laine_prete||0)>0?'« de la belle laine, je te la prends »':
 '« entre donc, je tiens l’étal jusqu’au soir »');
 const d=document.createElement('div');d.className='mk';
-d.innerHTML='<div class="etal"><canvas id="mkEtal"></canvas>'+
-'<div class="dit">Lucien, le maquignon<u>'+mot+'</u></div>'+
-'<div class="eu">'+enEuros(e.euros||0)+'</div>'+
-'<button class="x" id="mkX">✕</button></div>'+
+/* L'ÉTAL PORTAIT LA RÉPLIQUE DE LUCIEN, LE MONTANT ET LA CROIX en
+   surimpression, comme le pré de l'étable avant lui. Le chapeau commun
+   prend le nom et l'argent, l'étal descend en image encadrée, et ce que
+   dit Lucien passe juste en dessous, où on le lit vraiment. */
+d.innerHTML='<div class="tete"><small>LA FERME · LE MARCHÉ AUX BÊTES</small>'+
+'<b>Lucien, le maquignon</b>'+
+'<span class="bourse">EN POCHE<b>'+enEuros(e.euros||0)+'</b></span></div>'+
 '<div class="corps">'+
-'<div class="eti">CE QUE TU VENDS</div>'+
+'<div class="bande"><canvas id="mkEtal"></canvas></div>'+
+'<div class="dit">'+mot+'</div>'+
+'<h3>CE QUE TU VENDS</h3>'+
 lot('lait','Le seau de lait','L')+
 lot('laine','Les toisons','toisons')+
 lot('truffe','Les truffes','truffes')+
-'<div class="eti">CE QU’IL TE VEND</div>'+
-'<div class="pan">'+
+'<h3>CE QU’IL TE VEND</h3>'+
+'<div class="grille">'+
 pancarte('vache','Une vache',E.prix_vache,(E.vaches||0))+
 pancarte('mouton','Un mouton',E.prix_mouton,(E.moutons||0))+
 pancarte('cochon','Un cochon',E.prix_cochon,(E.cochons||0))+
-'</div></div>';
+'</div></div>'+
+'<div class="bas"><button id="mkX">FERMER LE MARCHÉ</button></div>';
 fond.appendChild(d);
 try{peindreLEtal($('mkEtal'),E,C);}catch(x){}
 d.querySelectorAll('[data-i]').forEach(c=>dessinerMarchandise(c,c.dataset.i));
