@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-1650"></script>
+<script src="maintenance.js?v=2026-10-12-1745"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-1650';
+var MA_VERSION='2026-10-12-1745';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -25580,6 +25580,16 @@ $('pqMond').onclick=()=>mondEntrer();
 {const v=$('pqVit');if(v)v.onclick=()=>{PET={etape:'vitrine'};majTextePetanque();};}
 {const al=$('pqAmiL');if(al)al.onclick=()=>{PET={etape:'amis'};majTextePetanque();};}
 {const pa=$('pqPalm');if(pa)pa.onclick=()=>{PALM=null;PET={etape:'palmares'};majTextePetanque();};}
+/* LE SABLE SE GRAVE PENDANT QU'ON CHOISIT. Mesuré au navigateur, sur un
+   processeur bridé : trois dixièmes de seconde pour le graver, et on le
+   faisait à la première image de la mène — un à-coup pile au moment où
+   l'on entre sur le terrain. On le prépare ici, dans un temps mort, et
+   il est prêt avant que le joueur ait fini de lire le menu. */
+{const prep=()=>{try{const T=pqMonTerrain().c;
+if(!SABLE_PQ||SABLE_CLE!==T)graverLeSablePetanque();
+if(!DECOR_PQ||DECOR_CLE!==T)graverLeDecorPQ();}catch(x){}};
+if(window.requestIdleCallback)requestIdleCallback(prep,{timeout:1200});
+else setTimeout(prep,260);}
 return true;}
 /* ---------- L'ÉCRAN DU TABLEAU ---------- */
 /* ---------- LA VITRINE : ON CHOISIT SA BOULE ET SON TERRAIN ----------
@@ -26052,8 +26062,12 @@ const T=PQ_TERRAINS.find(x=>x.c===c);return (T&&pqDebloque(T))?T:PQ_TERRAINS[0];
    nuance de sable, pas un obstacle.
    LE SABLE SE GRAVE PAR TERRAIN, et on garde le dernier gravé. */
 let SABLE_CLE=null;
+const SABLE_CACHE=new Map();
 function graverLeSablePetanque(){
 const T=pqMonTerrain(), W=PQ.W, H=PQ.H;
+/* UN SABLE GRAVÉ RESTE GRAVÉ : un cinquième de seconde par terrain, et
+   on le refaisait à chaque changement. */
+{const v=SABLE_CACHE.get(T.c);if(v){SABLE_PQ=v;SABLE_CLE=T.c;return;}}
 const c=document.createElement('canvas');c.width=W;c.height=H;
 const g=c.getContext('2d');
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
@@ -26353,7 +26367,8 @@ R(x+1,y+1,1,1,'#f0e2b4');});
 /* ---------- LE ROND DE LANCER, le même partout ---------- */
 g.strokeStyle=(T.c==='champ')?'rgba(255,255,255,.6)':'rgba(120,90,50,.45)';
 g.lineWidth=1;g.beginPath();g.ellipse(PQ.S[0],PQ.S[1],9,5,0,0,7);g.stroke();
-SABLE_PQ=c;SABLE_CLE=T.c;
+SABLE_PQ=c;SABLE_CLE=T.c;SABLE_CACHE.set(T.c,c);
+if(SABLE_CACHE.size>8)SABLE_CACHE.delete(SABLE_CACHE.keys().next().value);
 }
 /* ================= CE QU'IL Y A AUTOUR DU TERRAIN =================
    La toile du match est plus grande que le terrain : 240×300 au lieu
@@ -26410,9 +26425,15 @@ pt(p.x,p.y,2,2,p.vie>0.5?p.col:'#d8a05a');
 vivants.push(p);}
 PQ_FEU=vivants;
 if(aEclate){try{jouer('vente');}catch(x){}try{vibrer(8);}catch(x){}}}
+const DECOR_CACHE=new Map();
 function graverLeDecorPQ(){
 const T=pqMonTerrain(), W=PQ_CW, H=PQ_CH;
 const FIN=!!(typeof PET!=='undefined'&&PET&&PET.finale);
+const CLE=T.c+(FIN?'·finale':'');
+/* ON NE GRAVE QU'UNE FOIS PAR LIEU. Mesuré dans un navigateur, à
+   processeur bridé : chaque gravure coûte un sixième de seconde, et on
+   la refaisait à chaque aller-retour entre deux terrains. */
+{const v=DECOR_CACHE.get(CLE);if(v){DECOR_PQ=v;DECOR_CLE=CLE;return;}}
 const BAY=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
 const c=document.createElement('canvas');c.width=W;c.height=H;
 const g=c.getContext('2d');
@@ -26420,19 +26441,42 @@ const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),M
 const A=(i)=>alea(i*1.37+0.21);
 const sp=(x,y,m,co)=>m.forEach((l,b)=>[...l].forEach((ch,a)=>{
 const c2=co[ch];if(c2)R(x+a,y+b,1,1,c2);}));
-/* le pourtour : tout sauf le terrain, qu'on recouvrira du sable */
+/* ---------- LE SOL SE GRAVE EN UNE PASSE ----------
+   C'est la règle de la maison, et je l'avais encore oubliée : le
+   pourtour fait soixante-douze mille pixels, et un fillRect par pixel
+   coûte sept fois le prix d'une écriture directe. Tout ce qui est sol
+   écrit donc dans une ImageData, qu'on pose d'un coup ; le mobilier,
+   lui, se dessine normalement par-dessus. */
+const IM=g.createImageData(W,H), D=IM.data;
+const COUL={};
+const rgb=(co)=>{let v=COUL[co];if(v)return v;
+if(co.charAt(0)==='#'){const n=parseInt(co.slice(1),16);
+v=[(n>>16)&255,(n>>8)&255,n&255,255];}
+else{const m=co.match(/[\d.]+/g);
+v=[+m[0],+m[1],+m[2],Math.round((m[3]===undefined?1:+m[3])*255)];}
+COUL[co]=v;return v;};
+const px=(x,y,co)=>{x=Math.round(x);y=Math.round(y);
+if(x<0||y<0||x>=W||y>=H)return;
+if(x>=PQ_DX&&x<PQ_DX+PQ.W&&y>=PQ_DY&&y<PQ_DY+PQ.H)return;
+const p=(y*W+x)*4, v=rgb(co);
+if(v[3]===255){D[p]=v[0];D[p+1]=v[1];D[p+2]=v[2];D[p+3]=255;}
+else{const al=v[3]/255, be=1-al;
+D[p]=v[0]*al+D[p]*be;D[p+1]=v[1]*al+D[p+1]*be;D[p+2]=v[2]*al+D[p+2]*be;D[p+3]=255;}};
 const autour=(f)=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++){
-if(x>=PQ_DX&&x<PQ_DX+PQ.W&&y>=PQ_DY&&y<PQ_DY+PQ.H)continue;f(x,y);}};
+if(x>=PQ_DX&&x<PQ_DX+PQ.W&&y>=PQ_DY&&y<PQ_DY+PQ.H)continue;
+const co=f(x,y);if(co)px(x,y,co);}};
+/* le sol posé d'un coup ; après quoi le mobilier se dessine dessus */
+const pxR=(x,y,w,h,co)=>{for(let b=0;b<h;b++)for(let a=0;a<w;a++)px(x+a,y+b,co);};
+let pose=false;
+const poser=()=>{if(!pose){pose=true;g.putImageData(IM,0,0);}};
 const SOLS={nuit:['#232833','#1b202a','#2b3140','#39414f'],
 port:['#6b5436','#5a4630','#7a613f','#8a6f48'],
 platanes:['#2e3a22','#27321d','#374427','#415232'],
 place:['#8e8574','#7d7466','#9c9382','#a9a090'],
 champ:['#2f4a2c','#284026','#375734','#3f6339']};
 const sol=(cle)=>{const S=SOLS[cle]||SOLS.port;
-autour((x,y)=>{const n=PR_h(x,y,7);R(x,y,1,1,n<.34?S[0]:(n<.7?S[1]:S[2]));});
-for(let i=0;i<900;i++){const x=A(i)*W, y=A(i+5)*H;
-if(x>=PQ_DX-1&&x<PQ_DX+PQ.W+1&&y>=PQ_DY-1&&y<PQ_DY+PQ.H+1)continue;
-R(x,y,1,1,A(i+11)<.5?S[3]:S[1]);}};
+autour((x,y)=>{const n=PR_h(x,y,7);return n<.34?S[0]:(n<.7?S[1]:S[2]);});
+for(let i=0;i<900;i++)px(A(i)*W,A(i+5)*H,A(i+11)<.5?S[3]:S[1]);};
 /* LE TERRAIN EST EN CREUX : sans son ombre portée, il a l'air collé */
 const creux=()=>{for(let t=0;t<5;t++){const a=(0.30-t*0.06).toFixed(2);
 g.fillStyle='rgba(0,0,0,'+a+')';
@@ -26500,7 +26544,7 @@ const xx=x+A(i*3+gr)*14, yy=y+A(i*7+gr)*14;
 const c2=['#8a6a2e','#9d7a38','#6f5524'][Math.floor(A(i*13)*3)];
 R(xx,yy,2,1,c2);R(xx+1,yy-1,1,1,c2);R(xx,yy+1,1,1,c2);}};
 /* ---------- LES CINQ ALENTOURS ---------- */
-if(T.c==='nuit'){sol('nuit');
+if(T.c==='nuit'){sol('nuit');poser();
 lampadaire(13,66);
 banc(206,96,34);chat(208,150);
 chaises(12,248);egout(210,252);
@@ -26510,24 +26554,26 @@ R(p[0],p[1],2,1,'#d8d2c0');R(p[0]+2,p[1],1,1,'#8a6a3a');});
 g.fillStyle='rgba(30,36,48,.5)';g.beginPath();g.ellipse(24,272,9,4,0,0,7);g.fill();
 R(21,271,6,1,'rgba(226,196,120,.35)');}
 else if(T.c==='port'){sol('port');
-autour((x,y)=>{const n=PR_h(Math.floor(x/9),y,31);
-R(x,y,1,1,n<.3?'#6b5434':(n<.62?'#5c4830':'#7a6240'));
-if(x%9===0)R(x,y,1,1,'#43341f');});
+autour((x,y)=>{if(x%9===0)return '#43341f';
+const n=PR_h(Math.floor(x/9),y,31);
+return n<.3?'#6b5434':(n<.62?'#5c4830':'#7a6240');});
+poser();
 bitte(14,60);bitte(216,190);casier(206,60);corde(22,230);
 R(10,120,22,2,'#8a7048');R(10,122,22,1,'#5c4830');}
-else if(T.c==='platanes'){sol('platanes');
+else if(T.c==='platanes'){sol('platanes');poser();
 tronc(16,52,13);tronc(222,206,11);banc(208,110,30);
 feuilles(6,100,16,2);feuilles(200,20,14,8);feuilles(50,286,12,5);
 herbes(4,160,9,'#49632f',3);herbes(224,60,8,'#49632f',7);}
 else if(T.c==='place'){
 autour((x,y)=>{const cx2=Math.floor(x/7), cy2=Math.floor(y/5), dec=(cy2%2)*3;
 const u=(x+dec)%7, v=y%5, n=PR_h(cx2,cy2,19);
-R(x,y,1,1,(u===0||v===0)?'#6a6356':(n<.3?'#9a9282':(n<.62?'#8c8474':'#a8a090')));});
+return (u===0||v===0)?'#6a6356':(n<.3?'#9a9282':(n<.62?'#8c8474':'#a8a090'));});
+poser();
 banc(208,120,30);tronc(18,70,9);herbes(36,292,7,'#5a6b3a',2);
 R(206,60,16,4,'#8a8274');R(206,60,16,1,'#a39b8c');}
 else{
 autour((x,y)=>{const bande=Math.floor(y/9)%2, n=PR_h(x,y,23);
-R(x,y,1,1,n<.5?(bande?'#355b31':'#2d5029'):(bande?'#3a6336':'#30562c'));});
+return n<.5?(bande?'#355b31':'#2d5029'):(bande?'#3a6336':'#30562c');});
 if(FIN){
 /* ================= LA FINALE : LES GRADINS =================
    On n'y joue qu'une fois par tableau. Trois rangs de chaque côté,
@@ -26537,29 +26583,35 @@ const COUL=['#b84a3a','#3f6a8a','#d8bf6a','#e8e2d0','#4e7a52','#8a5a46','#2e3338
 const PEAU=['#e0b088','#c89566','#7a4a30','#d6a470'];
 const gradin=(x0,x1)=>{const pas=(x1-x0)/3;
 for(let x=x0;x<x1;x++){const r=Math.min(2,Math.floor((x-x0)/pas));
-const t2=['#6a6a72','#5c5c64','#4e4e56'][r];
-for(let y=0;y<H;y++)R(x,y,1,1,PR_h(x,y,41)<.3?teint(t2,8):t2);}
+const t2=['#6a6a72','#5c5c64','#4e4e56'][r], tc=teint(t2,8);
+for(let y=0;y<H;y++)px(x,y,PR_h(x,y,41)<.3?tc:t2);}
 for(let r=1;r<3;r++){const x=Math.round(x0+r*pas);
-for(let y=0;y<H;y++)R(x,y,1,1,'#7e7e88');}
+for(let y=0;y<H;y++)px(x,y,'#7e7e88');}
 for(let r=0;r<3;r++){const x=Math.round(x0+(r+0.5)*pas)-2;
 for(let y=5;y<H-5;y+=7){const i=r*97+y;
 if(A(i*4.7)<.13)continue;                     /* une place vide, ça arrive */
 const dy=Math.round(A(i*5.3)*2)-1;            /* personne ne s'assied au cordeau */
-R(x,y+1+dy,5,4,COUL[Math.floor(A(i*1.7)*COUL.length)]);
-R(x+1,y-2+dy,3,3,PEAU[Math.floor(A(i*2.3)*4)]);
-if(A(i*3.1)<.3)R(x+1,y-3+dy,3,1,'#2e2620');}}};
+/* LA FOULE VA DANS LE TAMPON ELLE AUSSI : dessinée sur la toile, elle
+   disparaissait sous l'ImageData posée juste après. */
+pxR(x,y+1+dy,5,4,COUL[Math.floor(A(i*1.7)*COUL.length)]);
+pxR(x+1,y-2+dy,3,3,PEAU[Math.floor(A(i*2.3)*4)]);
+if(A(i*3.1)<.3)pxR(x+1,y-3+dy,3,1,'#2e2620');}}};
 gradin(0,PQ_DX-5);gradin(PQ_DX+PQ.W+5,W);
 /* LES DEUX PROJECTEURS, tramés comme tout le reste */
-[[18,2],[W-18,2]].forEach(p=>{autour((x,y)=>{
+[[18,2],[W-18,2]].forEach(p=>autour((x,y)=>{
 const k=1-Math.hypot((x-p[0])/130,(y-p[1])/200);
-if(k>0&&BAY[y&3][x&3]/16<k*0.4)R(x,y,1,1,'rgba(246,236,190,.14)');});
+return (k>0&&BAY[y&3][x&3]/16<k*0.4)?'rgba(246,236,190,.14)':null;}));
+poser();
+[[18,2],[W-18,2]].forEach(p=>{
 R(p[0]-5,0,10,5,'#2a2a30');R(p[0]-4,1,8,2,'#f4ecc0');R(p[0]-4,3,8,1,'#c9b878');});
 }else{
-autour((x,y)=>{if(x===6||x===W-7||y===6||y===H-7)R(x,y,1,1,'#d8d2c0');
-if(x===7||x===W-6||y===7||y===H-6)R(x,y,1,1,'#9a9484');});
+autour((x,y)=>(x===6||x===W-7||y===6||y===H-7)?'#d8d2c0'
+:((x===7||x===W-6||y===7||y===H-6)?'#9a9484':null));
+poser();
 banc(210,120,30);}}
-creux();
-DECOR_PQ=c;DECOR_CLE=T.c+(FIN?'·finale':'');
+poser();creux();
+DECOR_PQ=c;DECOR_CLE=CLE;DECOR_CACHE.set(CLE,c);
+if(DECOR_CACHE.size>10)DECOR_CACHE.delete(DECOR_CACHE.keys().next().value);
 }
 /* LA TIENNE PORTE SON MODÈLE ; CELLE D'EN FACE NE CHANGE JAMAIS, sinon
    on ne sait plus à qui est quoi au milieu d'une mène. */
