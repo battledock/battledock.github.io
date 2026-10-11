@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-1250"></script>
+<script src="maintenance.js?v=2026-10-12-1420"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-1250';
+var MA_VERSION='2026-10-12-1420';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -1230,6 +1230,17 @@ border:2.4px solid #93a68c;border-bottom:0;border-radius:6px 6px 0 0}
 #petanque .mVed.rare em{margin-top:6px}
 #petanque .mVed.rare .go{margin:10px 0 0;width:auto;display:inline-block;padding:7px 16px}
 #petanque .mVed.rare small{letter-spacing:2.2px}
+/* le palmarès : un rang, un drapeau, un nom, des titres */
+#petanque .mLst{padding:0 14px}
+#petanque .pLig{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:7px;
+border:1px solid rgba(216,191,106,.16);border-radius:12px;background:rgba(230,245,225,.04)}
+#petanque .pLig.moi{border-color:#d8bf6a;background:rgba(216,191,106,.1)}
+#petanque .pLig .r{flex:none;width:20px;font:700 11px Arial;color:#93a68c;font-style:normal;text-align:right}
+#petanque .pLig.moi .r{color:#d8bf6a}
+#petanque .pLig .n{flex:1;min-width:0}
+#petanque .pLig b{display:block;font:400 15px Georgia;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#petanque .pLig em{display:block;font:italic 10.5px Georgia;color:#93a68c}
+#petanque .pLig u{flex:none;text-decoration:none;font:300 22px Georgia;color:#d8bf6a}
 /* la bourse, dans le chapeau de la boutique */
 #petanque .mSou{display:inline-block;margin-top:11px;border:1px solid rgba(216,191,106,.5);
 border-radius:16px;padding:6px 18px;background:rgba(216,191,106,.12);
@@ -24973,7 +24984,12 @@ $('petanque').classList.add('on');
 majTextePetanque();
 requestAnimationFrame(bouclePetanque);
 }
-function fermerLaPetanque(){try{if(PET&&PET.mode==='ami'&&PET.canal){PET.canal.send({type:'broadcast',event:'quitte',payload:{de:e.id}});setTimeout(()=>{try{sb.removeChannel(PET.canal);}catch(x){}},400);}}catch(x){}
+function fermerLaPetanque(){
+/* PARTIR, C'EST PERDRE. Sans ça il suffisait de fermer l'écran quand on
+   était mené pour rejouer le même tour autant de fois qu'on voulait. */
+try{if(PET&&PET.mode==='partie'&&PET.mondial&&!PET.partieFinie
+&&MOND&&!MOND.fini&&MOND.encours)mondAvancer(false);}catch(x){}
+try{if(PET&&PET.mode==='ami'&&PET.canal){PET.canal.send({type:'broadcast',event:'quitte',payload:{de:e.id}});setTimeout(()=>{try{sb.removeChannel(PET.canal);}catch(x){}},400);}}catch(x){}
 clearInterval(PQ_RENVOI);$('petanque').classList.remove('on');PET=null;
 try{pqBandeaux();}catch(x){}}
 async function commencerLaMene(mode){
@@ -25016,7 +25032,7 @@ c.style.width=Math.round(Math.max(110,Math.min(largeur,dispo*PQ_CW/PQ_CH)))+'px'
    en haut qui mène et contre qui, juste dessous ce qui vient de se
    passer, en bas les boules qui restent et les deux mesures. Le texte de
    l'action ne garde que l'action. */
-const PQ_MENUS=['choix','vitrine','mondial','amis','attenteAmi'];
+const PQ_MENUS=['choix','vitrine','mondial','amis','attenteAmi','palmares'];
 function pqEnMatch(){return !!(PET&&PET.E&&PQ_MENUS.indexOf(PET.etape)<0);}
 function pqTourDuMondial(){try{mondCharger();return PQ_TOURS[Math.min(2,(MOND&&MOND.tour)||0)];}catch(x){return PQ_TOURS[0];}}
 function pqFiche(){
@@ -25040,7 +25056,7 @@ if(P.classList.contains('plein')){P.classList.remove('plein');
 const carte=pied.parentNode;
 if(fer&&fer.parentNode===pied&&carte)carte.insertBefore(fer,carte.firstChild);}
 /* le menu et la boutique prennent l'écran aussi, mais ils défilent */
-const grand=!!(PET&&(PET.etape==='choix'||PET.etape==='vitrine'));
+const grand=!!(PET&&(PET.etape==='choix'||PET.etape==='vitrine'||PET.etape==='palmares'));
 P.classList.toggle('menu',grand);
 haut.innerHTML='';cri.className='';cri.innerHTML='';
 if(!grand)bas.innerHTML='';
@@ -25097,6 +25113,7 @@ requestAnimationFrame(ajusterToilePQ);
 const t=$('pqTexte'),b=$('pqBouton');
 if(PET.etape==='choix'){pqEcranMenu(t,b);return;}
 if(PET.etape==='vitrine'){pqEcranVitrine(t,b);return;}
+if(PET.etape==='palmares'){pqEcranPalmares(t,b);return;}
 if(PET.etape==='mondial'){
 if(PET.ecran==='fin'){mondEcranFin(t,b);return;}
 if(PET.ecran==='adv'){mondEcranAdversaire(t,b);return;}
@@ -25288,6 +25305,8 @@ function nouvelleMene(){
 PET.mene++;PET.E={boules:[],coch:null,vraies:true};PET.reste={moi:3,lui:3};PET.phase='coch';PET.essais=0;PET.fin=null;PET.partieFinie=false;
 PET.tour=PET.lanceurCoch;PET.etape=PET.tour==='moi'?'viser':'attend';PET.t0=performance.now();PET.typeTir='pointe';PET.vol=null;
 PET.annonce=null;PET.cible=null;PET.titreFin=null;
+/* LA FINALE S'OUVRE SOUS LES FUSÉES */
+if(PET.finale&&PET.mene===1){PQ_FEU=[];feuDArtifice(5,430);}
 majTextePetanque();
 if(PET.tour==='lui'&&PET.mode==='partie'){const q=PET.mene;
 setTimeout(()=>{if(PET&&PET.mode==='partie'&&PET.mene===q&&PET.tour==='lui'&&PET.etape==='attend'&&!PET.fin)jouerMarius();},900);return;}
@@ -25382,6 +25401,29 @@ MOND.scores.push({tour:MOND.tour,gagnant:g.nom,perdant:pd.nom,
 pts:13+' – '+(3+Math.floor(Math.random()*9))});
 suivants.push(g);}
 return suivants;}
+/* LE TOURNOI CONTINUE SANS TOI. Tu sors en quarts, les sept autres se
+   départagent quand même : il en reste un, et c'est son nom qui monte
+   au palmarès. Avant, le tableau s'arrêtait avec toi — comme si le
+   Mondial n'avait pas eu de champion cette année-là. */
+function mondFinirSansMoi(){
+let garde=0;
+while(MOND.camps.length>1&&garde++<8){const nv=[];
+for(let i=0;i<MOND.camps.length;i+=2){
+const a=MOND.camps[i], b=MOND.camps[i+1];
+const fa=a.point*2+a.tir+a.sang, fb=b.point*2+b.tir+b.sang;
+const g=(Math.random()<fa/(fa+fb))?a:b, pd=(g===a)?b:a;
+MOND.scores.push({tour:MOND.tour,gagnant:g.nom,perdant:pd.nom,
+pts:'13 – '+(3+Math.floor(Math.random()*9))});
+nv.push(g);}
+MOND.camps=nv;MOND.tour++;}
+return MOND.camps[0];}
+/* LE PALMARÈS EST AU SERVEUR. Un classement qu'on peut écrire depuis la
+   console n'est pas un classement : la table ne s'atteint que par ses
+   deux fonctions, et un joueur n'y inscrit qu'un titre par jour — le
+   tableau se tire une fois par jour. */
+function mondInscrire(bot,nom,d){
+try{if(!sb)return;
+sb.rpc('mondial_titre',{p_bot:!!bot,p_nom:String(nom||''),p_drapeau:String(d||'fr')});}catch(x){}}
 /* ON PASSE AU TOUR SUIVANT, avec toi dedans ou pas */
 function mondAvancer(jAiGagne){
 const suivants=mondJouerLesAutres();
@@ -25390,11 +25432,16 @@ const gagnantMien=jAiGagne?(D.a.moi?D.a:D.b):(D.a.moi?D.b:D.a);
 const nv=[];
 for(let i=0,k=0;i<MOND.camps.length;i+=2,k++)
 nv.push(suivants[k]||gagnantMien);
-MOND.camps=nv;MOND.tour++;
-if(!jAiGagne){MOND.fini='perdu';}
+MOND.camps=nv;MOND.tour++;MOND.encours=0;
+if(!jAiGagne){MOND.fini='perdu';
+const champ=mondFinirSansMoi();
+MOND.champion=champ?{nom:champ.nom,d:champ.d}:null;
+if(champ)mondInscrire(true,champ.nom,champ.d);}
 else if(MOND.camps.length===1){MOND.fini='gagne';
+MOND.champion={nom:'Toi',d:'fr',moi:true};
 try{const n=+(localStorage.getItem('bdl.mondial.titres')||0)+1;
-localStorage.setItem('bdl.mondial.titres',n);}catch(x){}}
+localStorage.setItem('bdl.mondial.titres',n);}catch(x){}
+mondInscrire(false,(e&&e.pseudo)||'sans nom','fr');}
 mondRanger();}
 const mondTitres=()=>{try{return +(localStorage.getItem('bdl.mondial.titres')||0);}catch(x){return 0;}};
 const drap=(d,gr)=>'<span class="dr '+d+(gr?' gr':'')+'"></span>';
@@ -25511,6 +25558,7 @@ carte('pqPartie','treize','Partie en 13','cochonnet, point, Fanny','GRATUIT','pl
 carte('pqPaye','euro','Mène à 6 €','gagne jusqu’à 42 €','6 €','port',1)+
 carte('pqEntr','entr','Entraînement','une mène pour la main','LIBRE','place')+
 carte('pqAmiL','ami','Avec un ami','quelqu’un du port','EN LIGNE','champ')+
+carte('pqPalm','coupe','Le palmarès','les titres du Mondial','VOIR','place')+
 '</div>';
 $('pqBas').innerHTML='<div class="mJ"><canvas data-ico="maboule" data-s="1.2"></canvas>'+
 '<span class="n"><b>'+C.menes+' mène'+(C.menes>1?'s':'')+' · '+C.carreaux+' carreau'+(C.carreaux>1?'x':'')+'</b>'+
@@ -25524,6 +25572,7 @@ $('pqPartie').onclick=()=>demarrerPartieMarius();
 $('pqMond').onclick=()=>mondEntrer();
 {const v=$('pqVit');if(v)v.onclick=()=>{PET={etape:'vitrine'};majTextePetanque();};}
 {const al=$('pqAmiL');if(al)al.onclick=()=>{PET={etape:'amis'};majTextePetanque();};}
+{const pa=$('pqPalm');if(pa)pa.onclick=()=>{PALM=null;PET={etape:'palmares'};majTextePetanque();};}
 return true;}
 /* ---------- L'ÉCRAN DU TABLEAU ---------- */
 /* ---------- LA VITRINE : ON CHOISIT SA BOULE ET SON TERRAIN ----------
@@ -25658,11 +25707,44 @@ jauge('POINT',A.point,'#7fb463')+jauge('TIR',A.tir,'#d8bf6a')+jauge('SANG-FROID'
 b.style.display='none';
 const d=document.createElement('button');d.className='pqGros';
 d.textContent='ENTRER SUR LE TERRAIN';
-d.onclick=()=>demarrerPartieMarius(A,true);
+/* LE DUEL EST ENGAGÉ dès qu'on entre : si la page se ferme, on l'a
+   perdu. C'est le prix d'un tableau qu'on ne retire pas. */
+d.onclick=()=>{try{MOND.encours=1;mondRanger();}catch(x){}demarrerPartieMarius(A,true);};
 t.appendChild(d);
 const r=document.createElement('button');r.className='pqLien';
 r.textContent='← le tableau';r.onclick=()=>{PET.ecran='tableau';majTextePetanque();};
 t.appendChild(r);
+return true;}
+/* ---------- LE PALMARÈS ---------- */
+let PALM=null;
+function pqEcranPalmares(t,b){
+{const T=document.querySelector('#petanque .pqTitre');
+if(T)T.textContent='LE BOULODROME · LE PALMARÈS';}
+b.style.display='none';
+const dessiner=()=>{
+let h='<div class="mTete"><small>LE MONDIAL</small><h3>Le palmarès</h3></div>';
+if(!PALM)h+='<div class="mRub">ON COMPTE LES TITRES…</div>';
+else if(!PALM.length)h+='<div class="mRub">PERSONNE N’A ENCORE DE TITRE</div>';
+else{h+='<div class="mRub">LES '+PALM.length+' PREMIERS</div><div class="mLst">';
+PALM.forEach((p,i)=>{h+='<div class="pLig'+(p.moi?' moi':'')+'">'+
+'<i class="r">'+(i+1)+'</i>'+drap(p.drapeau||'fr')+
+'<span class="n"><b>'+echapperT(p.nom||'sans nom')+'</b><em>'+
+(p.bot?'bouliste du Mondial':'joueur')+'</em></span>'+
+'<u>'+(+p.titres||0)+'</u></div>';});
+h+='</div>';}
+t.innerHTML=h;
+$('pqBas').innerHTML='<div class="mJ"><canvas data-ico="coupe" data-s="1.1"></canvas>'+
+'<span class="n"><b>'+mondTitres()+' titre'+(mondTitres()>1?'s':'')+' pour toi</b>'+
+'<em>le tableau se tire une fois par jour</em></span>'+
+'<button id="pqRetourMenu">← LE JEU</button></div>';
+pqPeindre($('pqBas'));
+$('pqRetourMenu').onclick=()=>{PET={etape:'choix'};majTextePetanque();};};
+dessiner();
+if(PALM===null&&typeof sb!=='undefined'&&sb){
+try{sb.rpc('mondial_classement').then(({data})=>{
+if(!PET||PET.etape!=='palmares')return;
+PALM=Array.isArray(data)?data:[];dessiner();},()=>{PALM=[];dessiner();});}
+catch(x){PALM=[];dessiner();}}
 return true;}
 /* ---------- CE QU'ON VOIT APRÈS SA PARTIE ---------- */
 function mondEcranFin(t,b){
@@ -25674,11 +25756,18 @@ t.innerHTML='<div class="pqFiche"><div class="h">'+drap('fr',true)+
 ' T I T R E'+(mondTitres()>1?' S':'')+'</small></span></div>'+
 '<div class="mot">Huit nations, trois parties, et c’est toi qui restes sur le terrain. '+
 'Le prochain tableau se tire demain.</div></div>';
-else t.innerHTML='<div class="pqFiche"><div class="h">'+drap(mondAdversaire()?mondAdversaire().d:'fr',true)+
+else{const CH=MOND.champion;
+t.innerHTML='<div class="pqFiche"><div class="h">'+drap((CH&&CH.d)||'fr',true)+
 '<span><b>Éliminé</b><small>'+PQ_TOURS[Math.min(2,MOND.tour-1)].split('').join(' ')+'</small></span></div>'+
-'<div class="mot">C’est fini pour cette fois. Le prochain tableau se tire demain — '+
-'d’ici là, le boulodrome reste ouvert.</div></div>';
+'<div class="mot">C’est fini pour cette fois.'+
+(CH?' Le tournoi s’est joué sans toi : <b style="color:#d8bf6a">'+echapperT(CH.nom)+
+'</b> a gagné la finale, et son nom est au palmarès.':'')+
+' Le prochain tableau se tire demain.</div></div>';}
 b.style.display='none';
+const p=document.createElement('button');p.className='pqGros';
+p.textContent='LE PALMARÈS';
+p.onclick=()=>{PALM=null;PET={etape:'palmares'};majTextePetanque();};
+t.appendChild(p);
 const d=document.createElement('button');d.className='pqGros gris';
 d.textContent='RETOUR AU BOULODROME';
 d.onclick=()=>{PET={etape:'choix'};majTextePetanque();};
@@ -25687,12 +25776,16 @@ return true;}
 function mondEntrer(){
 mondCharger();
 if(!MOND||MOND.jour!==mondJour())mondNouveau();
+/* UN DUEL LAISSÉ EN PLAN EST UN DUEL PERDU : on a rechargé la page au
+   milieu, ou fermé l'onglet. Le tableau ne se retire pas. */
+if(MOND&&!MOND.fini&&MOND.encours){try{mondAvancer(false);}catch(x){}}
 PET={etape:'mondial',ecran:(MOND.fini?'fin':'tableau')};
 majTextePetanque();}
 function demarrerPartieMarius(adv,mondial){
 const A=adv||PQ_MONDIAL[PQ_MONDIAL.length-1];                      /* Marius par défaut */
 const premier=Math.random()<0.5?'moi':'lui';
-PET={mode:'partie',adv:A,mondial:!!mondial,ami:{pseudo:A.nom},
+const finale=!!(mondial&&MOND&&MOND.camps&&MOND.camps.length===2);
+PET={mode:'partie',adv:A,mondial:!!mondial,finale,ami:{pseudo:A.nom},
 graine:Math.floor(Math.random()*4294967295),
 score:{moi:0,lui:0},mene:0,lanceurCoch:premier,acc:0,vol:null,fin:null,typeTir:'pointe',lancers:[]};
 nouvelleMene();
@@ -25709,7 +25802,13 @@ const A=(PET&&PET.adv)||{point:.76,tir:.56,sang:.76};
    pointe moins bien. Et elle tremble quand il est mené, à moins d'avoir
    du sang-froid. */
 const mene=(PET&&PET.score&&PET.score.lui<PET.score.moi)?1:0;
-const DISP=9.5*(0.76/Math.max(0.3,A.point))*(1+mene*(1-A.sang)*0.45);
+/* LE NIVEAU MONTE AVEC LE TOUR. Un titre mondial ne se gagne pas trois
+   fois de la même façon : en quarts il joue le sien, en demies il
+   resserre d'un sixième, en finale d'un tiers. */
+let tourM=0;
+if(PET&&PET.mondial){try{tourM=Math.min(2,(MOND&&MOND.tour)||0);}catch(x){}}
+const niv=PET&&PET.mondial?(0.92-0.16*tourM):1;
+const DISP=9.5*(0.76/Math.max(0.3,A.point))*(1+mene*(1-A.sang)*0.45)*niv;
 const g4=()=>{let t=0;for(let i=0;i<4;i++)t+=Math.random();return (t-2)*1.7;};
 const viser=(tx,ty,roule)=>{const d0=Math.hypot(tx-sx,ty-sy), angle=Math.atan2(tx-sx,sy-ty);
 let f=Math.max(0,Math.min(1,(d0-40)/210));
@@ -25726,7 +25825,9 @@ return [ang,Math.max(0,Math.min(1,f-0.015)),'coch'];
 /* LE TIR : seulement s'il est mené, et si ta boule vaut la peine. */
 const M=pqQuiMarque(E);
 const mienne=pqCibleDuTirDe(E,'lui');
-if(M&&M.gagnant==='moi'&&mienne&&Math.hypot(mienne.x-C.x,mienne.y-C.y)<13&&Math.random()<A.tir){
+/* et il ose davantage à mesure qu'on monte */
+const oser=Math.min(0.95,A.tir*(1+0.22*tourM));
+if(M&&M.gagnant==='moi'&&mienne&&Math.hypot(mienne.x-C.x,mienne.y-C.y)<13&&Math.random()<oser){
 const [ang,f]=viser(mienne.x+g4()*(DISP*0.48),mienne.y+g4()*(DISP*0.48),false);
 return [ang,Math.max(0,Math.min(1,f-0.08)),'tir'];
 }
@@ -25795,7 +25896,9 @@ PQ_COMPTE=setInterval(()=>{
 if(!PET||PET.etape!=='fin'){clearInterval(PQ_COMPTE);return;}
 if(reste2<=0){clearInterval(PQ_COMPTE);
 if(PET.score.moi>=13||PET.score.lui>=13){const moi2=PET.score.moi>=13;
-pqAnnonce(moi2?'PARTIE GAGNÉE !':'PARTIE PERDUE',moi2?'#f6dd8c':'#ffb0a0',true);
+pqAnnonce(moi2?(PET.finale?'CHAMPION DU MONDE !':'PARTIE GAGNÉE !'):'PARTIE PERDUE',
+moi2?'#f6dd8c':'#ffb0a0',true);
+if(moi2&&PET.finale)feuDArtifice(16,170);
 if(moi2){try{jouer('vente','moment');}catch(x){}try{vibrer([20,40,20,40,80]);}catch(x){}
 try{localStorage.setItem('bdl.petanque.parties',
 (+(localStorage.getItem('bdl.petanque.parties')||0))+1);}catch(x){}}
@@ -25905,7 +26008,11 @@ const pqAchete=(o)=>{try{return (e.pqAchats||[]).indexOf(o.c)>=0;}catch(x){retur
 const pqDebloque=(o)=>o.prix?pqAchete(o):(!o.quoi||(pqCompteurs()[o.quoi]||0)>=o.seuil);
 const pqMaBoule=()=>{const c=(e&&e.pqBoule)||'acier';
 const B=PQ_BOULES.find(x=>x.c===c);return (B&&pqDebloque(B))?B:PQ_BOULES[0];};
-const pqMonTerrain=()=>{const c=(e&&e.pqTerrain)||'port';
+const pqMonTerrain=()=>{
+/* LA FINALE SE JOUE TOUJOURS AU BOULODROME DU CHAMPIONNAT, qu'on l'ait
+   gagné ou non. C'est une finale. */
+try{if(PET&&PET.finale)return PQ_TERRAINS.find(x=>x.c==='champ')||PQ_TERRAINS[0];}catch(x){}
+const c=(e&&e.pqTerrain)||'port';
 const T=PQ_TERRAINS.find(x=>x.c===c);return (T&&pqDebloque(T))?T:PQ_TERRAINS[0];};
 /* ================= LES QUATRE TERRAINS =================
    DEUX DÉFAUTS À CORRIGER, PAS UNE NOUVELLE DIRECTION. Le sable était
@@ -26239,8 +26346,44 @@ SABLE_PQ=c;SABLE_CLE=T.c;
    côtés, et le haut ne reçoit que du sol. */
 const PQ_DX=40, PQ_DY=10, PQ_CW=PQ.W+PQ_DX*2, PQ_CH=PQ.H+PQ_DY*2;
 let DECOR_PQ=null, DECOR_CLE=null;
+/* ================= LE FEU D'ARTIFICE DE LA FINALE =================
+   Des fusées qui montent, éclatent en couronne et retombent. Tout est
+   en pixels pleins : une étincelle floue n'existe pas dans ce jeu. */
+let PQ_FEU=[];
+const FEU_COL=['#f6dd8c','#9fdfb8','#ffb0a0','#9fc4d8','#f0a0d0','#fff6e0'];
+function feuDArtifice(n,ecart){
+const t0=performance.now();
+for(let i=0;i<(n||1);i++)PQ_FEU.push({f:1,
+x:16+Math.random()*(PQ_CW-32),y:PQ_CH+2,
+cible:18+Math.random()*96,v:185+Math.random()*70,
+col:FEU_COL[Math.floor(Math.random()*FEU_COL.length)],
+t0:t0+i*(ecart||260)+Math.random()*180});}
+function dessinerLeFeu(g,t,dt){
+if(!PQ_FEU.length)return;
+const vivants=[];let aEclate=false;
+for(const p of PQ_FEU){
+if(t<p.t0){vivants.push(p);continue;}
+if(p.f){
+p.y-=p.v*dt;
+g.fillStyle=p.col;g.fillRect(Math.round(p.x),Math.round(p.y),1,2);
+g.fillStyle='rgba(255,240,190,.4)';g.fillRect(Math.round(p.x),Math.round(p.y)+2,1,2);
+if(p.y>p.cible){vivants.push(p);continue;}
+aEclate=true;
+for(let k=0;k<26;k++){const a=k*(Math.PI*2/26)+Math.random()*0.22, v=42+Math.random()*68;
+vivants.push({x:p.x,y:p.y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,
+vie:0.9+Math.random()*0.6,col:p.col});}
+continue;}
+p.vie-=dt;if(p.vie<=0)continue;
+p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=78*dt;p.vx*=0.985;
+g.fillStyle=p.vie>0.5?p.col:'rgba(216,160,90,.7)';
+g.fillRect(Math.round(p.x),Math.round(p.y),1,1);
+vivants.push(p);}
+PQ_FEU=vivants;
+if(aEclate){try{jouer('vente');}catch(x){}try{vibrer(8);}catch(x){}}}
 function graverLeDecorPQ(){
 const T=pqMonTerrain(), W=PQ_CW, H=PQ_CH;
+const FIN=!!(typeof PET!=='undefined'&&PET&&PET.finale);
+const BAY=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
 const c=document.createElement('canvas');c.width=W;c.height=H;
 const g=c.getContext('2d');
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
@@ -26355,11 +26498,38 @@ R(206,60,16,4,'#8a8274');R(206,60,16,1,'#a39b8c');}
 else{
 autour((x,y)=>{const bande=Math.floor(y/9)%2, n=PR_h(x,y,23);
 R(x,y,1,1,n<.5?(bande?'#355b31':'#2d5029'):(bande?'#3a6336':'#30562c'));});
+if(FIN){
+/* ================= LA FINALE : LES GRADINS =================
+   On n'y joue qu'une fois par tableau. Trois rangs de chaque côté,
+   pleins de monde, et deux projecteurs de face. Les autres terrains
+   ont des bancs ; celui-là a du public. */
+const COUL=['#b84a3a','#3f6a8a','#d8bf6a','#e8e2d0','#4e7a52','#8a5a46','#2e3338','#c9a24a'];
+const PEAU=['#e0b088','#c89566','#7a4a30','#d6a470'];
+const gradin=(x0,x1)=>{const pas=(x1-x0)/3;
+for(let x=x0;x<x1;x++){const r=Math.min(2,Math.floor((x-x0)/pas));
+const t2=['#6a6a72','#5c5c64','#4e4e56'][r];
+for(let y=0;y<H;y++)R(x,y,1,1,PR_h(x,y,41)<.3?teint(t2,8):t2);}
+for(let r=1;r<3;r++){const x=Math.round(x0+r*pas);
+for(let y=0;y<H;y++)R(x,y,1,1,'#7e7e88');}
+for(let r=0;r<3;r++){const x=Math.round(x0+(r+0.5)*pas)-2;
+for(let y=5;y<H-5;y+=7){const i=r*97+y;
+if(A(i*4.7)<.13)continue;                     /* une place vide, ça arrive */
+const dy=Math.round(A(i*5.3)*2)-1;            /* personne ne s'assied au cordeau */
+R(x,y+1+dy,5,4,COUL[Math.floor(A(i*1.7)*COUL.length)]);
+R(x+1,y-2+dy,3,3,PEAU[Math.floor(A(i*2.3)*4)]);
+if(A(i*3.1)<.3)R(x+1,y-3+dy,3,1,'#2e2620');}}};
+gradin(0,PQ_DX-5);gradin(PQ_DX+PQ.W+5,W);
+/* LES DEUX PROJECTEURS, tramés comme tout le reste */
+[[18,2],[W-18,2]].forEach(p=>{autour((x,y)=>{
+const k=1-Math.hypot((x-p[0])/130,(y-p[1])/200);
+if(k>0&&BAY[y&3][x&3]/16<k*0.4)R(x,y,1,1,'rgba(246,236,190,.14)');});
+R(p[0]-5,0,10,5,'#2a2a30');R(p[0]-4,1,8,2,'#f4ecc0');R(p[0]-4,3,8,1,'#c9b878');});
+}else{
 autour((x,y)=>{if(x===6||x===W-7||y===6||y===H-7)R(x,y,1,1,'#d8d2c0');
 if(x===7||x===W-6||y===7||y===H-6)R(x,y,1,1,'#9a9484');});
-banc(210,120,30);}
+banc(210,120,30);}}
 creux();
-DECOR_PQ=c;DECOR_CLE=T.c;
+DECOR_PQ=c;DECOR_CLE=T.c+(FIN?'·finale':'');
 }
 /* LA TIENNE PORTE SON MODÈLE ; CELLE D'EN FACE NE CHANGE JAMAIS, sinon
    on ne sait plus à qui est quoi au milieu d'une mène. */
@@ -26386,9 +26556,9 @@ const c=$('pqToile');if(!c)return;
    cartes. */
 if(!PET.E||PQ_MENUS.indexOf(PET.etape)>=0){requestAnimationFrame(bouclePetanque);return;}
 const g=c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;
-const TER=pqMonTerrain().c;
+const TER=pqMonTerrain().c, CLEF=TER+(PET.finale?'·finale':'');
 if(!SABLE_PQ||SABLE_CLE!==TER)graverLeSablePetanque();
-if(!DECOR_PQ||DECOR_CLE!==TER)graverLeDecorPQ();
+if(!DECOR_PQ||DECOR_CLE!==CLEF)graverLeDecorPQ();
 const dt=Math.min(0.1,(t-(PET.tp||t))/1000);PET.tp=t;
 /* LE LIEU D'ABORD, LE TERRAIN DESSUS. Tout ce qui suit est dessiné dans
    les coordonnées du moteur : on décale la toile une fois pour toutes,
@@ -26465,6 +26635,10 @@ g.fillStyle=f<.5?'#6fbf5a':(f<.8?'#e8c06a':'#d0402f');g.fillRect(PQ.W-13,PQ.H-11
 const [cx2,cy2]=pqCible(a,f);g.strokeStyle='rgba(255,255,255,.55)';g.beginPath();g.ellipse(cx2,cy2,4,2,0,0,7);g.stroke();
 }
 }
+/* LE FEU PASSE AU-DESSUS DE TOUT, et dans les coordonnées de la toile,
+   pas dans celles du terrain : il monte depuis le bas de l'écran. */
+g.setTransform(1,0,0,1,0,0);
+dessinerLeFeu(g,t,dt);
 requestAnimationFrame(bouclePetanque);
 }
 const CARNET_ORDRE=[
