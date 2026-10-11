@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-0315"></script>
+<script src="maintenance.js?v=2026-10-12-0420"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-0315';
+var MA_VERSION='2026-10-12-0420';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -25470,16 +25470,62 @@ const p01=PR_h(ix,iy+1,k), p11=PR_h(ix+1,iy+1,k);
 const u=ad(tx), v=ad(ty);
 return (p00*(1-u)+p10*u)*(1-v)+(p01*(1-u)+p11*u)*v;};
 const marbre=(x,y,k)=>lisse(x,y,7,k)*0.32+lisse(x,y,19,k+1)*0.36+lisse(x,y,43,k+2)*0.32;
-/* LE SABLE : cinq tons du plus clair au plus sombre, choisis par la
-   marbrure, plus un grain d'un pixel par-dessus. */
+/* LE SABLE, AU TRAMAGE.
+   CINQ BEIGES À DIX POUR CENT L'UN DE L'AUTRE, posés en dégradé
+   continu : ça fait une bouillie qui se délave encore sur un
+   téléphone. Le pixel art de la maison ne fond pas ses tons, il les
+   TRAME — le potager, les dalles, le gravier de la ferme font tous
+   ça. On garde donc QUATRE tons franchement séparés, et on passe de
+   l'un à l'autre par une matrice de Bayer 4×4 : les transitions
+   deviennent du damier fin, qui se lit net au pixel près.
+   L'OMBRE PORTÉE DE LA BORDURE vient avec : sans elle, le cadre a
+   l'air collé sur une feuille au lieu de tenir autour d'un creux. */
+const BAYER=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
 const sable=(x0,y0,x1,y1,ramp,k,grain)=>{
+/* LA RAMPE : les quatre premiers tons sont le SABLE, les deux derniers
+   le grain. On s'arrêtait à l'avant-dernier, donc le grain clair
+   servait de ton de sable : d'où ces plaques blanchâtres à bord
+   tramé, qui faisaient des taches sur les quatre terrains. */
+const n=ramp.length-3;
 for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
-const m=marbre(x,y,k);
-const i=m<.26?0:(m<.46?1:(m<.66?2:(m<.84?3:4)));
-R(x,y,1,1,ramp[i]);}
-if(grain!==0)for(let i=0;i<(grain||1700);i++){
+/* la marbrure donne une position dans la rampe, le tramage tranche
+   entre les deux tons qui l'encadrent */
+const v=Math.max(0,Math.min(.999,(marbre(x,y,k)-.18)/.64))*n;
+const i=Math.floor(v);let f=v-i;
+/* LE TRAMAGE NE SERT QU'À LA COUTURE. Appliqué sur toute la plage, il
+   met du damier partout et le sable redevient du bruit ; on ne trame
+   donc que le quart central entre deux tons, et le reste est plein. */
+f=f<.38?0:(f>.62?1:(f-.38)/.24);
+const seuil=(BAYER[y&3][x&3]+0.5)/16;
+R(x,y,1,1,ramp[Math.min(n,i+(f>seuil?1:0))]);}
+/* L'OMBRE DU BORD, sur trois pixels, tramée elle aussi */
+const om=['rgba(70,52,26,.26)','rgba(70,52,26,.15)','rgba(70,52,26,.07)'];
+for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
+const d=Math.min(x-x0,x1-1-x,y-y0,y1-1-y);
+if(d>2)continue;
+if(((BAYER[y&3][x&3])/16)>(d===0?.95:(d===1?.7:.4)))continue;
+R(x,y,1,1,om[d]);}
+/* LE GRAIN : des points clairs et sombres, par petits paquets plutôt
+   qu'un par un — une poussière régulière ne se voit pas, trois points
+   serrés font un éclat de quartz. */
+if(grain!==0)for(let i=0;i<(grain||900);i++){
 const x=x0+Math.floor(A(i)*(x1-x0)), y=y0+Math.floor(A(i+9)*(y1-y0));
-R(x,y,1,1,A(i+21)<.5?ramp[5]:ramp[6]);}};
+R(x,y,1,1,A(i+21)<.45?ramp[ramp.length-2]:ramp[ramp.length-1]);}};
+/* CE QUI DIT QU'ON Y JOUE : les traces d'une boule qui a roulé, et les
+   pas autour du rond. Rien d'isotrope — c'est la DIRECTION qui fait la
+   différence entre un sol et un bruit. */
+const traces=(x0,y0,x1,y1,col,colc,nb,gr)=>{
+/* LE SILLON D'UNE BOULE QUI A ROULÉ : un trait d'un pixel, creux
+   sombre et lèvre claire, qui remonte vers le rond. Un sol se lit à sa
+   DIRECTION ; sans elle, il n'y a que du bruit. */
+for(let i=0;i<(nb||8);i++){
+const xd=x0+10+A(i+gr)*(x1-x0-20), yd=y0+14+A(i+gr+40)*(y1-y0-28);
+const pen=(A(i+gr+80)-0.5)*0.5, lg=14+A(i+gr+120)*30;
+for(let t=0;t<lg;t++){
+const x=Math.round(xd+pen*t), y=Math.round(yd-t);
+if(x<=x0||x>=x1-1||y<=y0||y>=y1)continue;
+R(x,y,1,1,col);
+if((t+i)%3)R(x+1,y,1,1,colc);}}};
 /* LE CADRE : on ne dessine QUE la bordure, jamais dans le terrain. */
 const cadre=(ep,f)=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++){
 if(x>=ep&&x<W-ep&&y>=ep&&y<H-ep)continue;f(x,y);}};
@@ -25489,7 +25535,8 @@ if(T.c==='port'){
    Le sable du quai : chaud, un peu gris de sel, avec les coquillages
    et les galets qu'on y trouve. Bordure de madriers, ferrures et
    cordage — le bois et la ferraille de la ferme, pas une palette neuve. */
-sable(5,5,W-5,H-5,['#e3cb9c','#dcc392','#d4ba88','#c9ad78','#bda069','#efdcae','#b49560'],11,1900);
+sable(5,5,W-5,H-5,['#e7d3a6','#dcc596','#cfb686','#c0a675','#f4e6c2','#a98f62'],11,900);
+traces(5,5,W-5,H-5,'rgba(150,122,76,.22)','rgba(248,236,204,.20)',8,500);
 /* les coquillages et les galets, peu nombreux et petits */
 for(let i=0;i<34;i++){const x=7+A(i+300)*(W-14), y=7+A(i+340)*(H-14);
 if(A(i+380)<.5){R(x,y,2,1,'#b4ac96');R(x,y,1,1,'#cfc8b2');}
@@ -25528,7 +25575,8 @@ else if(T.c==='place'){
    Le sable au milieu, les pavés tout autour : c'est la place qui borde
    le jeu, pas une clôture. Pierre claire de Provence, joints de terre,
    et ce qui pousse entre deux pavés. */
-sable(9,9,W-9,H-9,['#ddc598','#d5bc8e','#cbb183','#c0a475','#b49766','#e8d4a8','#aa8c5c'],41,1500);
+sable(9,9,W-9,H-9,['#e0cb9c','#d4bd8c','#c6ad7c','#b69d6c','#eee0b8','#a08858'],41,800);
+traces(9,9,W-9,H-9,'rgba(136,108,66,.26)','rgba(246,234,200,.18)',11,900);
 /* quelques pavés descellés qui affleurent dans le sable */
 for(let i=0;i<7;i++){const x=12+A(i+700)*(W-30), y=12+A(i+740)*(H-30);
 const w=4+Math.round(A(i)*3), h=3+Math.round(A(i+5)*2);
@@ -25566,7 +25614,8 @@ else if(T.c==='platanes'){
    grande tache grise : c'est une marbrure serrée, du sable un peu plus
    froid là où la feuille passe, posée par le même bruit que le fond.
    On garde le sable clair majoritaire, sinon on ne voit plus les boules. */
-sable(6,6,W-6,H-6,['#e0c99c','#d8c092','#cfb686','#c5ab79','#bba06d','#eeddb4','#b2945f'],71,1500);
+sable(6,6,W-6,H-6,['#e4d0a0','#d8c290','#cab380','#baa270','#f2e4be','#a48c5c'],71,800);
+traces(6,6,W-6,H-6,'rgba(140,114,70,.20)','rgba(250,238,206,.16)',6,1300);
 /* LE FEUILLAGE : un seuil sur un bruit serré, donc des bords dentelés
    et jamais un cercle. Deux passes, la seconde plus rare et plus froide. */
 for(let y=6;y<H-6;y++)for(let x=6;x<W-6;x++){
@@ -25607,7 +25656,7 @@ else{
    Un terrain qu'on entretient : sable fin et régulier, ratissé au
    peigne, lignes peintes fines, et un cadre vert sombre à filet d'or.
    C'est la sobriété qui dit le niveau, pas la décoration. */
-sable(7,7,W-7,H-7,['#e9d6ac','#e2cda1','#dac497','#d2bb8d','#cab284','#f4e6c4','#c0a878'],91,900);
+sable(7,7,W-7,H-7,['#eedfb6','#e4d3a6','#d8c696','#cab786','#f8edd2','#b8a274'],91,500);
 /* LE RATISSAGE : un sillon tous les quatre pixels, à peine marqué */
 for(let y=9;y<H-9;y+=5){
 const ond=Math.sin(y/31)*1.2;
