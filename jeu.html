@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-0905"></script>
+<script src="maintenance.js?v=2026-10-12-1020"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-0905';
+var MA_VERSION='2026-10-12-1020';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -1230,6 +1230,19 @@ border:2.4px solid #93a68c;border-bottom:0;border-radius:6px 6px 0 0}
 #petanque .mVed.rare em{margin-top:6px}
 #petanque .mVed.rare .go{margin:10px 0 0;width:auto;display:inline-block;padding:7px 16px}
 #petanque .mVed.rare small{letter-spacing:2.2px}
+/* la bourse, dans le chapeau de la boutique */
+#petanque .mSou{display:inline-block;margin-top:11px;border:1px solid rgba(216,191,106,.5);
+border-radius:16px;padding:6px 18px;background:rgba(216,191,106,.12);
+color:#d8bf6a;font:700 14px Georgia}
+/* CE QUI SE PAIE SE DIT EN DEUX TEMPS : le prix, puis la confirmation.
+   Un achat à une touche ferait perdre cent vingt euros par effleurement. */
+#petanque .bCase .act.ach,#petanque .mCarte .go.ach{background:rgba(216,191,106,.16);
+color:#d8bf6a;border:1px solid rgba(216,191,106,.55)}
+#petanque .bCase .act.conf,#petanque .mCarte .go.conf{background:#d8bf6a;color:#15201a;
+border:1px solid #d8bf6a}
+#petanque .bCase.conf,#petanque .mCarte.conf{border-color:#d8bf6a;background:rgba(216,191,106,.1)}
+#petanque .bCase.off.conf canvas,#petanque .mRang .mCarte.bTer.off.conf canvas{opacity:1}
+#petanque .bCase.conf .bCad,#petanque .mCarte.conf .bCad{display:none}
 #pqTexte{font:400 14px Georgia,serif;margin:8px 2px 8px;min-height:36px;line-height:1.4}
 #pqTexte i{color:#c9c2ae}
 #petanque .pqAmis{display:flex;flex-direction:column;gap:6px;margin:4px 0}#petanque .pqAmis button{border:0;border-radius:10px;padding:10px;background:#f4ecd8;color:#2a1d0c;font:700 14px Georgia;display:flex;justify-content:space-between;align-items:center}
@@ -25517,39 +25530,79 @@ return true;}
    pièce montre maintenant sa jauge et ce qu'il reste à faire. TOUT SE
    GAGNE : rien ne s'achète, la boutique ne touche pas à l'économie. */
 function pqAvance(o){                                    /* où en est-on de la condition */
+if(o.prix)return Math.max(0,Math.min(1,(e.euros||0)/o.prix));
 if(!o.quoi)return 1;
 const n=pqCompteurs()[o.quoi]||0;return Math.max(0,Math.min(1,n/o.seuil));}
+/* L'ÉTAT D'UNE PIÈCE, en un mot : à moi, à prendre, à payer, à gagner.
+   L'achat se fait en deux touches — la première dit le prix, la seconde
+   paie. Personne ne perd cent vingt euros en effleurant une carte. */
+function pqEtat(o,mien){
+if(pqDebloque(o))return mien?{t:'on',l:'ÉQUIPÉE'}:{t:'prendre',l:'ÉQUIPER'};
+if(o.prix){const sous=(e&&e.euros)||0;
+if(PET&&PET.achat===o.c)return {t:'conf',l:'CONFIRMER  ·  '+o.prix+' €'};
+if(sous>=o.prix)return {t:'ach',l:'ACHETER  ·  '+o.prix+' €'};
+return {t:'cher',note:'il te manque '+Math.ceil(o.prix-sous)+' €',k:sous/o.prix};}
+return {t:'gagner',note:o.cond||o.dit,k:pqAvance(o)};}
+const pqBas2=(E)=>E.l?('<span class="act'+(E.t==='ach'?' ach':(E.t==='conf'?' conf':''))+'">'+E.l+'</span>')
+:('<i class="jg"><u style="width:'+Math.round((E.k||0)*100)+'%"></u></i><small>'+E.note.toUpperCase()+'</small>');
+function pqChoisir(o,fam){
+if(fam==='b')e.pqBoule=o.c;else{e.pqTerrain=o.c;SABLE_PQ=null;}
+try{sauver();}catch(x){}try{vibrer(10);}catch(x){}majTextePetanque();}
+function pqToucheItem(cle,fam){
+const L=(fam==='b')?PQ_BOULES:PQ_TERRAINS, o=L.find(z=>z.c===cle);
+if(!o||!PET)return;
+if(pqDebloque(o)){PET.achat=null;pqChoisir(o,fam);return;}
+if(!o.prix)return;
+if(((e&&e.euros)||0)<o.prix){PET.achat=null;majTextePetanque();return;}
+if(PET.achat!==cle){PET.achat=cle;try{vibrer(8);}catch(x){}majTextePetanque();return;}
+/* ON PAIE. La bourse et l'achat partent dans la même sauvegarde. */
+e.euros=Math.round(((e.euros||0)-o.prix)*100)/100;
+e.pqAchats=((e.pqAchats)||[]).concat([cle]);
+PET.achat=null;
+try{jouer('achat');}catch(x){}try{vibrer([12,30,12]);}catch(x){}
+pqChoisir(o,fam);
+try{majHaut();}catch(x){}}
+/* ================= LA BOUTIQUE =================
+   C'était une grille de vignettes de 46 px avec un cadenas : on voyait
+   ce qu'on n'avait pas, jamais ce qui manquait pour l'avoir. Chaque
+   pièce dit maintenant où elle en est — et celles qui se paient le
+   disent aussi. CE QUI SE GAGNE NE S'ACHÈTE PAS : la championne
+   vaudrait moins si elle avait un prix. */
 function pqEcranVitrine(t,b){
 {const T=document.querySelector('#petanque .pqTitre');
 if(T)T.textContent='LE BOULODROME · LA BOUTIQUE';}
 const C=pqCompteurs(), maB=pqMaBoule().c, maT=pqMonTerrain().c;
 const nB=PQ_BOULES.filter(pqDebloque).length, nT=PQ_TERRAINS.filter(pqDebloque).length;
-/* la pièce rare : la championne, celle qui demande le titre */
-const R=PQ_BOULES[PQ_BOULES.length-1], okR=pqDebloque(R), aR=pqAvance(R);
-let h='<div class="mTete"><small>L’ÉTAL DU BOULODROME</small><h3>La boutique</h3></div>'+
-'<div class="mVed rare'+(okR?'':' gris')+'"'+(okR?' id="pqRare"':'')+'><span class="ct">'+
+const R=PQ_BOULES[PQ_BOULES.length-1], okR=pqDebloque(R), ER=pqEtat(R,R.c===maB);
+let h='<div class="mTete"><small>L’ÉTAL DU BOULODROME</small><h3>La boutique</h3>'+
+'<span class="mSou">'+Math.floor((e&&e.euros)||0)+' €</span></div>'+
+'<div class="mVed rare'+(okR?'':' gris')+'"'+(okR?' data-item="'+R.c+'" data-fam="b"':'')+'><span class="ct">'+
 '<canvas data-boule="'+R.c+'" data-k="4"></canvas><span class="tx">'+
 '<small>LA PIÈCE RARE</small><b>'+R.nom+'</b>'+
 '<em>'+(okR?R.dit:'elle ne s’achète pas : '+R.cond+'.')+'</em>'+
-(okR?'<span class="go">'+(R.c===maB?'ÉQUIPÉE':'ÉQUIPER')+'</span>'
-:'<i class="jg"><u style="width:'+Math.round(aR*100)+'%"></u></i>')+
-'</span></span></div>'+
-'<div class="mRub">LES BOULES  ·  '+nB+' SUR '+PQ_BOULES.length+'</div><div class="mGr2">';
-PQ_BOULES.slice(0,PQ_BOULES.length-1).forEach(B=>{const ok=pqDebloque(B), mien=B.c===maB;
-h+='<button class="bCase'+(mien?' on':'')+(ok?'':' off')+'"'+(ok?' data-prendB="'+B.c+'"':' disabled')+'>'+
+(okR?'<span class="go">'+ER.l+'</span>'
+:'<i class="jg"><u style="width:'+Math.round(pqAvance(R)*100)+'%"></u></i>')+
+'</span></span></div>';
+const caseB=(B)=>{const E=pqEtat(B,B.c===maB), ok=E.t==='on'||E.t==='prendre';
+return '<button class="bCase'+(E.t==='on'?' on':'')+(E.t==='conf'?' conf':'')+(ok?'':' off')+'"'+
+((ok||E.t==='ach'||E.t==='conf')?' data-item="'+B.c+'" data-fam="b"':' disabled')+'>'+
 '<canvas data-boule="'+B.c+'" data-k="2.6"></canvas>'+(ok?'':'<i class="bCad"></i>')+
-'<b>'+B.nom+'</b>'+
-(ok?'<span class="act">'+(mien?'ÉQUIPÉE':'ÉQUIPER')+'</span>'
-:'<i class="jg"><u style="width:'+Math.round(pqAvance(B)*100)+'%"></u></i><small>'+B.cond.toUpperCase()+'</small>')+
-'</button>';});
-h+='</div><div class="mRub">LES TERRAINS  ·  '+nT+' SUR '+PQ_TERRAINS.length+'  ·  GLISSE  ›</div><div class="mRang">';
-PQ_TERRAINS.forEach(T2=>{const ok=pqDebloque(T2), mien=T2.c===maT;
-h+='<button class="mCarte bTer'+(mien?' or':'')+(ok?'':' off')+'"'+(ok?' data-prendT="'+T2.c+'"':' disabled')+'>'+
+'<b>'+B.nom+'</b>'+pqBas2(E)+'</button>';};
+const aGagner=PQ_BOULES.slice(0,PQ_BOULES.length-1).filter(B=>!B.prix);
+const aPayer=PQ_BOULES.filter(B=>B.prix);
+h+='<div class="mRub">LES BOULES  ·  '+nB+' SUR '+PQ_BOULES.length+'  ·  À GAGNER</div>'+
+'<div class="mGr2">'+aGagner.map(caseB).join('')+'</div>'+
+'<div class="mRub">LES BOULES  ·  À ACHETER</div>'+
+'<div class="mGr2">'+aPayer.map(caseB).join('')+'</div>'+
+'<div class="mRub">LES TERRAINS  ·  '+nT+' SUR '+PQ_TERRAINS.length+'  ·  GLISSE  ›</div><div class="mRang">';
+PQ_TERRAINS.forEach(T2=>{const E=pqEtat(T2,T2.c===maT), ok=E.t==='on'||E.t==='prendre';
+h+='<button class="mCarte bTer'+(E.t==='on'?' or':'')+(E.t==='conf'?' conf':'')+(ok?'':' off')+'"'+
+((ok||E.t==='ach'||E.t==='conf')?' data-item="'+T2.c+'" data-fam="t"':' disabled')+'>'+
 '<span class="ct"><canvas data-terr="'+T2.c+'" data-w="126" data-h="56"></canvas>'+
 (ok?'':'<i class="bCad" style="top:46px"></i>')+
 '<b>'+T2.nom+'</b>'+
-(ok?'<span class="go">'+(mien?'EN JEU':'CHOISIR')+'</span>'
-:'<i class="jg"><u style="width:'+Math.round(pqAvance(T2)*100)+'%"></u></i><em>'+T2.cond+'</em>')+
+(E.l?'<span class="go'+(E.t==='ach'?' ach':(E.t==='conf'?' conf':''))+'">'+(E.t==='on'?'EN JEU':E.l)+'</span>'
+:'<i class="jg"><u style="width:'+Math.round((E.k||0)*100)+'%"></u></i><em>'+E.note+'</em>')+
 '</span></button>';});
 h+='</div>';
 t.innerHTML=h;b.style.display='none';
@@ -25559,12 +25612,7 @@ $('pqBas').innerHTML='<div class="mJ"><canvas data-ico="deux" data-s="1.1"></can
 '<em>'+(C.titres?C.titres+' titre'+(C.titres>1?'s':'')+' au Mondial':'pas encore de titre au Mondial')+'</em></span>'+
 '<button id="pqRetourMenu">← LE JEU</button></div>';
 pqPeindre(t);pqPeindre($('pqBas'));
-const prendre=(cle)=>{e.pqBoule=cle;try{sauver();}catch(err){}vibrer(10);majTextePetanque();};
-t.querySelectorAll('[data-prendB]').forEach(x=>x.onclick=()=>prendre(x.dataset.prendB));
-{const r=$('pqRare');if(r)r.onclick=()=>prendre(R.c);}
-t.querySelectorAll('[data-prendT]').forEach(x=>x.onclick=()=>{
-e.pqTerrain=x.dataset.prendT;try{sauver();}catch(err){}
-SABLE_PQ=null;vibrer(10);majTextePetanque();});
+t.querySelectorAll('[data-item]').forEach(x=>x.onclick=()=>pqToucheItem(x.dataset.item,x.dataset.fam));
 $('pqRetourMenu').onclick=()=>{PET={etape:'choix'};majTextePetanque();};
 return true;}
 function mondEcranTableau(t,b){
@@ -25804,6 +25852,17 @@ const PQ_BOULES=[
  cond:'gagne cinq mènes', a:'#4a6b82', b:'#9fc4d8', o:'#2c4152', stries:2},
 {c:'veteran', nom:'La rouillée du vétéran', dit:'trois carreaux', seuil:3, quoi:'carreaux',
  cond:'réussis trois carreaux', a:'#8a6a52', b:'#c0a080', o:'#4f3a2c', stries:3},
+/* CELLES QU'ON ACHÈTE. Elles ne se gagnent pas : elles coûtent, et
+   c'est tout ce qui les distingue — aucune ne roule autrement qu'une
+   autre, le prix n'achète que l'allure. */
+{c:'olive', nom:'La verte olive', dit:'la couleur du pays', prix:30,
+ cond:'', a:'#56663c', b:'#93a66b', o:'#364024', stries:2},
+{c:'cuivre', nom:'La cuivrée', dit:'patinée par les mains', prix:50,
+ cond:'', a:'#965c31', b:'#d9975a', o:'#5c3418', stries:1},
+{c:'nuit', nom:'La noire mate', dit:'elle ne renvoie rien', prix:80,
+ cond:'', a:'#2b2f33', b:'#4e555c', o:'#15181b', stries:0},
+{c:'nacre', nom:'La nacrée', dit:'une pièce de collection', prix:120,
+ cond:'', a:'#c3bed4', b:'#f6f2ff', o:'#8b86a2', stries:0, laiton:1},
 {c:'mondial', nom:'La championne', dit:'un titre au Mondial', seuil:1, quoi:'titres',
  cond:'gagne le Mondial', a:'#b8c0c8', b:'#ffffff', o:'#6f7880', stries:0, laiton:1}];
 const PQ_TERRAINS=[
@@ -25818,13 +25877,23 @@ const PQ_TERRAINS=[
  bord:'#5f4a30', haut:'#8a7050', taches:'rgba(26,46,16,.18)', nb:34},
 {c:'champ', nom:'Le boulodrome du championnat', dit:'un titre au Mondial', seuil:1, quoi:'titres',
  sable:'#e0cb9e', grain:['#d2bb88','#f0dcb4','#c6ae7c','#dcc698','#f6e8c4'],
- bord:'#2f4433', haut:'#4e7a38', taches:'rgba(60,80,30,.07)', nb:8, lignes:1}];
+ bord:'#2f4433', haut:'#4e7a38', taches:'rgba(60,80,30,.07)', nb:8, lignes:1},
+/* CELUI QU'ON ACHÈTE : le même terrain, la nuit tombée. */
+{c:'nuit', nom:'Sous le lampadaire', dit:'on joue jusqu’à pas d’heure', prix:150,
+ sable:'#6e6a58', grain:['#5f5c4c','#817c66','#56533f','#6b6754','#948d72'],
+ bord:'#2a2a2e', haut:'#45454c', taches:'rgba(16,18,26,.16)', nb:16}];
 /* CE QUE LE JOUEUR A FAIT, lu là où c'était déjà compté. */
 function pqCompteurs(){
 const n=(k)=>{try{return +(localStorage.getItem(k)||0);}catch(x){return 0;}};
 return {menes:n('bdl.petanque.gagnees'), carreaux:n('bdl.petanque.carreaux'),
 titres:mondTitres(), titres13:n('bdl.petanque.parties')};}
-const pqDebloque=(o)=>!o.quoi||(pqCompteurs()[o.quoi]||0)>=o.seuil;
+/* DEUX FAÇONS D'AVOIR UNE PIÈCE : la gagner, ou la payer. Ce qui se
+   paie ne se gagne jamais, et ce qui se gagne ne s'achète pas — sinon
+   la championne ne voudrait plus rien dire. L'achat est gardé dans la
+   sauvegarde comme le reste de la bourse : il vaut ce que vaut le reste
+   de l'économie du jeu, ni plus ni moins. */
+const pqAchete=(o)=>{try{return (e.pqAchats||[]).indexOf(o.c)>=0;}catch(x){return false;}};
+const pqDebloque=(o)=>o.prix?pqAchete(o):(!o.quoi||(pqCompteurs()[o.quoi]||0)>=o.seuil);
 const pqMaBoule=()=>{const c=(e&&e.pqBoule)||'acier';
 const B=PQ_BOULES.find(x=>x.c===c);return (B&&pqDebloque(B))?B:PQ_BOULES[0];};
 const pqMonTerrain=()=>{const c=(e&&e.pqTerrain)||'port';
@@ -26047,6 +26116,50 @@ const x=n<.5?A(i+1140)*W:(A(i+1140)<.5?A(i)*6:W-6+A(i)*6);
 const y=n<.5?(A(i+1180)<.5?A(i)*6:H-6+A(i)*6):A(i+1180)*H;
 R(x,y,3,2,'#cfc3a2');R(x,y,3,1,'#e0d6b8');}
 R(0,0,W,1,'#7a6a48');
+}
+
+else if(T.c==='nuit'){
+/* ================= SOUS LE LAMPADAIRE =================
+   Le même terrain, la nuit tombée. UN HALO NE S'OBTIENT PAS EN POSANT
+   UN JAUNE TRANSPARENT : ça fait un vernis, et le sol disparaît
+   dessous. Le sable CHANGE DE TON dans la lumière — quatre beiges
+   chauds au lieu des gris du dehors — et on passe des uns aux autres
+   par la matrice de Bayer, comme partout ailleurs dans ce terrain. Le
+   marbrage traverse les deux, pour que ce soit le même sol. */
+sable(6,6,W-6,H-6,['#8a8370','#7c7564','#6e6757','#60594b','#9d9684','#514b3f'],61,0);
+const CH=['#7e7257','#9a8a68','#b6a37b','#d2bb8e'], cx=W/2-5, cy=H*0.44;
+for(let y=7;y<H-7;y++)for(let x=7;x<W-7;x++){
+const k=1-Math.hypot((x-cx)/88,(y-cy)/118);
+if(k<=0)continue;
+const n=CH.length-1;
+/* le bord du halo doit SERPENTER : une frontière de rayon pur donne un
+   anneau de damier régulier, exactement le motif qu'on fuit */
+const v=k*n*1.25+(marbre(x,y,7)-0.5)*0.75+(lisse(x,y,27,5)-0.5)*1.05
++(BAYER[y&3][x&3]/16-0.5)*0.7;
+const i=Math.round(Math.max(0,Math.min(n,v)));
+if(i>0)R(x,y,1,1,CH[i]);}
+/* le grain : du quartz qui accroche dans la lumière, rien dehors */
+/* ASSEZ POUR QU'ÇA ACCROCHE, PAS ASSEZ POUR QUE ÇA GRÉSILLE : sept
+   cents éclats clairs faisaient une neige sur toute la lumière. */
+for(let i=0;i<380;i++){const x=7+Math.floor(A(i)*(W-14)), y=7+Math.floor(A(i+9)*(H-14));
+const k=1-Math.hypot((x-cx)/88,(y-cy)/118);
+R(x,y,1,1,k>.3?(A(i+21)<.45?'#c4ad79':'#d8c290'):(A(i+21)<.5?'#5a5547':'#413d33'));}
+/* LES LONGUES OMBRES : tout ce qui dépasse s'étire à l'opposé de la
+   lampe. C'est ce qui dit d'où vient la lumière. */
+for(let i=0;i<90;i++){const x=10+A(i+700)*(W-20), y=10+A(i+740)*(H-20);
+if(marbre(x,y,23)>.44)continue;
+const d=Math.hypot(x-cx,y-cy)||1, dx=(x-cx)/d, dy=(y-cy)/d;
+for(let t=1;t<2+A(i)*7;t++)R(x+dx*t,y+dy*t,1,1,'rgba(20,20,28,.20)');}
+traces(6,6,W-6,H-6,'rgba(26,26,34,.30)','rgba(214,198,152,.18)',7,520);
+/* LA BORDURE : de la fonte froide, et le reflet du réverbère dessus */
+cadre(6,(x,y)=>{const n=PR_h(x,y,97);
+R(x,y,1,1,n<.34?'#26262c':(n<.7?'#2e2e36':'#1d1d22'));});
+R(0,5,W,1,'#4a4a55');R(0,H-6,W,1,'#15151a');R(5,0,1,H,'#3e3e48');R(W-6,0,1,H,'#15151a');
+for(let x=Math.round(cx-40);x<cx+40;x++){const k=1-Math.abs(x-cx)/40;
+if(k>0&&BAYER[0][x&3]/16<k*.85){R(x,4,1,2,'#8a7340');R(x,5,1,1,'#c9a95e');}}
+/* LES PAPILLONS DE NUIT, trois éclats pâles autour de la lumière */
+[[cx-26,H*0.30],[cx+18,H*0.39],[cx-3,H*0.53]].forEach((p,i)=>{
+R(p[0],p[1],2,1,'#efe7c8');R(p[0]+(i%2?1:-1),p[1]-1,1,1,'#fbf5dc');});
 }
 
 else{
