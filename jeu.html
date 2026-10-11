@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-1155"></script>
+<script src="maintenance.js?v=2026-10-12-1250"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-1155';
+var MA_VERSION='2026-10-12-1250';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -1032,7 +1032,7 @@ color:inherit;padding:11px 8px 10px;text-align:center}
 #petanque .pqGros{width:100%;border:0;border-radius:24px;padding:14px;margin-top:4px;
 background:#d8bf6a;color:#15201a;font:700 12px Arial;letter-spacing:2.4px}
 #petanque .pqGros.gris{background:rgba(230,245,225,.1);color:#93a68c}
-#pqToile{display:block;width:min(100%,calc((100vh - 330px) * 160 / 280));min-width:120px;margin:0 auto;image-rendering:pixelated;
+#pqToile{display:block;width:min(100%,calc((100vh - 330px) * 240 / 300));min-width:120px;margin:0 auto;image-rendering:pixelated;
 border-radius:6px;touch-action:none}
 /* ---------- LE MATCH EN PLEIN ÉCRAN ----------
    La mène se jouait dans une fenêtre de 380 px posée sur du noir : le
@@ -2089,7 +2089,7 @@ white-space:nowrap}
   <button id="pqFermer" aria-label="Fermer">✕</button>
   <div class="pqTitre">LE BOULODROME · UNE MÈNE CONTRE MARIUS</div>
   <div id="pqSom"><div id="pqHaut"></div><div id="pqCri"></div></div>
-  <canvas id="pqToile" width="160" height="280"></canvas>
+  <canvas id="pqToile" width="240" height="300"></canvas>
   <div id="pqPied"><div id="pqBas"></div><div id="pqTexte"></div>
   <button id="pqBouton">Viser</button></div>
 </div></div>
@@ -25002,15 +25002,15 @@ if($('petanque').classList.contains('plein')){
    charge. */
 const h1=$('pqSom').offsetHeight, h2=$('pqPied').offsetHeight;
 const dispo=Math.max(120,H-h1-h2-6), large=carte.clientWidth;
-const h=Math.min(dispo,large*280/160);
+const h=Math.min(dispo,large*PQ_CH/PQ_CW);
 c.style.height=Math.round(h)+'px';
-c.style.width=Math.round(h*160/280)+'px';
+c.style.width=Math.round(h*PQ_CW/PQ_CH)+'px';
 c.style.marginTop=Math.round((h1-h2)/2)+'px';                                   /* centré entre les deux */
 return;}
 c.style.height='';c.style.marginTop='';
 const autre=carte.scrollHeight-c.offsetHeight;                                  /* tout ce qui n'est pas le terrain */
 const largeur=carte.clientWidth-24, dispo=Math.max(150,H-24-autre-8);
-c.style.width=Math.round(Math.max(110,Math.min(largeur,dispo*160/280)))+'px';}
+c.style.width=Math.round(Math.max(110,Math.min(largeur,dispo*PQ_CW/PQ_CH)))+'px';}
 /* ---------- LES DEUX BANDEAUX DE LA MÈNE ----------
    Tout ce qu'il faut lire en jouant tient ici, et nulle part ailleurs :
    en haut qui mène et contre qui, juste dessous ce qui vient de se
@@ -25552,7 +25552,7 @@ return {t:'gagner',note:o.cond||o.dit,k:pqAvance(o)};}
 const pqBas2=(E)=>E.l?('<span class="act'+(E.t==='ach'?' ach':(E.t==='conf'?' conf':''))+'">'+E.l+'</span>')
 :('<i class="jg"><u style="width:'+Math.round((E.k||0)*100)+'%"></u></i><small>'+E.note.toUpperCase()+'</small>');
 function pqChoisir(o,fam){
-if(fam==='b')e.pqBoule=o.c;else{e.pqTerrain=o.c;SABLE_PQ=null;}
+if(fam==='b')e.pqBoule=o.c;else{e.pqTerrain=o.c;SABLE_PQ=null;DECOR_PQ=null;}
 try{sauver();}catch(x){}try{vibrer(10);}catch(x){}majTextePetanque();}
 function pqToucheItem(cle,fam){
 const L=(fam==='b')?PQ_BOULES:PQ_TERRAINS, o=L.find(z=>z.c===cle);
@@ -26136,7 +26136,9 @@ else if(T.c==='nuit'){
    par la matrice de Bayer, comme partout ailleurs dans ce terrain. Le
    marbrage traverse les deux, pour que ce soit le même sol. */
 sable(6,6,W-6,H-6,['#8a8370','#7c7564','#6e6757','#60594b','#9d9684','#514b3f'],61,0);
-const CH=['#7e7257','#9a8a68','#b6a37b','#d2bb8e'], cx=W/2-5, cy=H*0.44;
+/* LA LAMPE EST EN HAUT À GAUCHE, hors du terrain : son halo n'a aucune
+   raison d'être au milieu du sable. */
+const CH=['#7e7257','#9a8a68','#b6a37b','#d2bb8e'], cx=W*0.34, cy=H*0.33;
 for(let y=7;y<H-7;y++)for(let x=7;x<W-7;x++){
 const k=1-Math.hypot((x-cx)/88,(y-cy)/118);
 if(k<=0)continue;
@@ -26164,11 +26166,37 @@ traces(6,6,W-6,H-6,'rgba(26,26,34,.30)','rgba(214,198,152,.18)',7,520);
 cadre(6,(x,y)=>{const n=PR_h(x,y,97);
 R(x,y,1,1,n<.34?'#26262c':(n<.7?'#2e2e36':'#1d1d22'));});
 R(0,5,W,1,'#4a4a55');R(0,H-6,W,1,'#15151a');R(5,0,1,H,'#3e3e48');R(W-6,0,1,H,'#15151a');
-for(let x=Math.round(cx-40);x<cx+40;x++){const k=1-Math.abs(x-cx)/40;
+/* le reflet sur la fonte, du côté d'où vient la lumière */
+for(let x=Math.round(cx-42);x<cx+42;x++){const k=1-Math.abs(x-cx)/42;
 if(k>0&&BAYER[0][x&3]/16<k*.85){R(x,4,1,2,'#8a7340');R(x,5,1,1,'#c9a95e');}}
-/* LES PAPILLONS DE NUIT, trois éclats pâles autour de la lumière */
-[[cx-26,H*0.30],[cx+18,H*0.39],[cx-3,H*0.53]].forEach((p,i)=>{
-R(p[0],p[1],2,1,'#efe7c8');R(p[0]+(i%2?1:-1),p[1]-1,1,1,'#fbf5dc');});
+for(let y=Math.round(cy-50);y<cy+50;y++){const k=1-Math.abs(y-cy)/50;
+if(k>0&&BAYER[y&3][0]/16<k*.8){R(4,y,2,1,'#8a7340');R(5,y,1,1,'#c9a95e');}}
+/* CE QU'ILS ONT LAISSÉ EN PARTANT. Rien de plus haut que six pixels :
+   une boule doit rester une boule au milieu de tout ça. */
+const sp=(x,y,m,co)=>m.forEach((l,b2)=>[...l].forEach((ch,a2)=>{
+const c2=co[ch];if(c2)R(x+a2,y+b2,1,1,c2);}));
+const omb2=(x,y,w,hh)=>{const dx=x+w/2-cx, dy=y+hh-cy, d2=Math.hypot(dx,dy)||1;
+for(let t=1;t<4+Math.min(10,d2/16);t++)R(x+dx/d2*t,y+hh-1+dy/d2*t,w,1,'rgba(16,16,24,.34)');};
+const VERRE=['.XXX.','.xxx.','.xxx.','.XXX.','..X..','.XXX.'];
+[[30,98],[38,104]].forEach(p=>{omb2(p[0],p[1],5,6);
+sp(p[0],p[1],VERRE,{X:'#cfd6d8',x:'#e8d87a'});R(p[0]+1,p[1]+1,1,1,'#fffbe0');});
+omb2(22,186,4,11);R(22,189,4,8,'#2e4a32');R(23,186,2,3,'#2e4a32');
+R(22,189,1,8,'#4e7a52');R(23,186,2,1,'#d8c14a');
+omb2(110,206,10,7);R(110,206,10,7,'#b8b2a0');R(110,209,10,1,'#9a9482');
+for(let b2=0;b2<7;b2+=2)R(111,206+b2,7,1,'#6a6456');
+[[0,0],[3,2],[1,4]].forEach((p,k)=>{R(116+p[0],128+p[1],4,6,'#ded8c4');
+R(116+p[0],128+p[1],4,1,'#b0a894');R(117+p[0],130+p[1],1,1,k===1?'#a83a2a':'#2a2a2a');});
+omb2(36,232,7,4);sp(36,232,['.XXXXX.','XXXXXXX','.XXXXX.','..X....'],{X:'#1d2733'});
+R(37,232,5,1,'#39465a');
+[[46,96],[28,112],[122,152],[52,228]].forEach(p=>{
+R(p[0],p[1],2,1,'#d8d2c0');R(p[0]+2,p[1],1,1,'#8a6a3a');});
+g.fillStyle='rgba(30,36,48,.45)';g.beginPath();g.ellipse(64,250,9,4,0,0,7);g.fill();
+R(62,249,4,1,'rgba(216,190,120,.35)');
+/* LES PHALÈNES tournent autour de l'ampoule, pas au milieu du sable */
+for(let k=0;k<8;k++){const an=k*2.399+2.2, rr=0.35+((k*37)%100)/150;
+const x=Math.round(cx+Math.cos(an)*30*rr), y=Math.round(cy-70+Math.sin(an)*14*rr);
+R(x,y+1,3,1,'rgba(20,20,26,.3)');
+R(x,y,3,1,((k*13)%10)/10>.6?'#fdf6d8':'#efe4b4');R(x+1,y-1,1,1,'#fdf6d8');}
 }
 
 else{
@@ -26201,6 +26229,138 @@ g.strokeStyle=(T.c==='champ')?'rgba(255,255,255,.6)':'rgba(120,90,50,.45)';
 g.lineWidth=1;g.beginPath();g.ellipse(PQ.S[0],PQ.S[1],9,5,0,0,7);g.stroke();
 SABLE_PQ=c;SABLE_CLE=T.c;
 }
+/* ================= CE QU'IL Y A AUTOUR DU TERRAIN =================
+   La toile du match est plus grande que le terrain : 240×300 au lieu
+   de 160×280, le sable posé à (40,10). LE MOTEUR N'EN SAIT RIEN — il
+   calcule toujours dans ses 160×280, l'arbitre du serveur aussi, et la
+   visée se fait au rythme, pas à la position du doigt. Ce qui dépasse
+   est du décor, et rien que du décor.
+   Il n'y a que dix pixels en haut et en bas : les meubles vont sur les
+   côtés, et le haut ne reçoit que du sol. */
+const PQ_DX=40, PQ_DY=10, PQ_CW=PQ.W+PQ_DX*2, PQ_CH=PQ.H+PQ_DY*2;
+let DECOR_PQ=null, DECOR_CLE=null;
+function graverLeDecorPQ(){
+const T=pqMonTerrain(), W=PQ_CW, H=PQ_CH;
+const c=document.createElement('canvas');c.width=W;c.height=H;
+const g=c.getContext('2d');
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+const A=(i)=>alea(i*1.37+0.21);
+const sp=(x,y,m,co)=>m.forEach((l,b)=>[...l].forEach((ch,a)=>{
+const c2=co[ch];if(c2)R(x+a,y+b,1,1,c2);}));
+/* le pourtour : tout sauf le terrain, qu'on recouvrira du sable */
+const autour=(f)=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+if(x>=PQ_DX&&x<PQ_DX+PQ.W&&y>=PQ_DY&&y<PQ_DY+PQ.H)continue;f(x,y);}};
+const SOLS={nuit:['#232833','#1b202a','#2b3140','#39414f'],
+port:['#6b5436','#5a4630','#7a613f','#8a6f48'],
+platanes:['#2e3a22','#27321d','#374427','#415232'],
+place:['#8e8574','#7d7466','#9c9382','#a9a090'],
+champ:['#2f4a2c','#284026','#375734','#3f6339']};
+const sol=(cle)=>{const S=SOLS[cle]||SOLS.port;
+autour((x,y)=>{const n=PR_h(x,y,7);R(x,y,1,1,n<.34?S[0]:(n<.7?S[1]:S[2]));});
+for(let i=0;i<900;i++){const x=A(i)*W, y=A(i+5)*H;
+if(x>=PQ_DX-1&&x<PQ_DX+PQ.W+1&&y>=PQ_DY-1&&y<PQ_DY+PQ.H+1)continue;
+R(x,y,1,1,A(i+11)<.5?S[3]:S[1]);}};
+/* LE TERRAIN EST EN CREUX : sans son ombre portée, il a l'air collé */
+const creux=()=>{for(let t=0;t<5;t++){const a=(0.30-t*0.06).toFixed(2);
+g.fillStyle='rgba(0,0,0,'+a+')';
+g.fillRect(PQ_DX-1-t,PQ_DY-1-t,PQ.W+2+2*t,1);
+g.fillRect(PQ_DX-1-t,PQ_DY+PQ.H+t,PQ.W+2+2*t,1);
+g.fillRect(PQ_DX-1-t,PQ_DY-1-t,1,PQ.H+2+2*t);
+g.fillRect(PQ_DX+PQ.W+t,PQ_DY-1-t,1,PQ.H+2+2*t);}};
+/* ---------- LES MEUBLES ---------- */
+const banc=(x,y,l)=>{                                  /* vu de dessus, posé debout */
+g.fillStyle='rgba(0,0,0,.3)';g.fillRect(x+6,y+1,2,l);
+R(x,y,5,l,'#6b5433');R(x,y,1,l,'#8a6f48');R(x+4,y,1,l,'#3f3120');
+for(let i=0;i<l;i+=2)R(x+2,y+i,1,1,'#7d6240');
+R(x,y+2,5,2,'#2a2a30');R(x,y+l-4,5,2,'#2a2a30');};
+const CHAT=['..X....X..','.XX....XX.','.XXXXXXXX.','XXXXXXXXXX','XXXXXXXXXX',
+'.XXXXXXXX.','..XXXXXX..','.XXXXXXXX.','XXXXXXXXXX','XXXXXXXXXX','XXXXXXXXXX',
+'XXXXXXXXXX','XXXXXXXXXXX','.XXXXXXXXX.'];
+const chat=(x,y)=>{g.fillStyle='rgba(0,0,0,.35)';g.fillRect(x+1,y+13,10,2);
+sp(x,y,CHAT,{X:'#15171c'});
+for(let b=1;b<14;b++)for(let a=0;a<11;a++){
+if(CHAT[b]&&CHAT[b][a]==='X'){R(x+a,y+b,1,1,b<6?'#c3a765':'#8d7a4a');break;}}
+R(x+2,y+3,2,1,'#e8d05a');R(x+7,y+3,2,1,'#e8d05a');
+R(x+2,y+3,1,1,'#fff6c0');R(x+7,y+3,1,1,'#fff6c0');};
+/* LE PIED DU LAMPADAIRE : c'est lui qui éclaire le sable, il est donc
+   du même côté que le halo — en haut à gauche. */
+const lampadaire=(x,y)=>{
+for(let r=42;r>0;r--){g.fillStyle='rgba(226,196,120,'+((1-r/42)*0.14).toFixed(3)+')';
+g.beginPath();g.ellipse(x+5,y+16,r,r*0.78,0,0,7);g.fill();}
+g.fillStyle='rgba(0,0,0,.45)';
+for(let t=1;t<26;t++)g.fillRect(x+4-t*0.5,y+16+t,3,1);
+R(x-3,y+12,16,7,'#2b2b33');R(x-2,y+13,14,1,'#454552');
+R(x-1,y+8,12,5,'#232329');R(x,y+9,10,1,'#3e3e4a');
+R(x+1,y-14,8,23,'#2a2a31');R(x+1,y-14,2,23,'#45454f');R(x+7,y-14,1,23,'#16161b');
+for(let b=-12;b<8;b+=4)R(x+3,y+b,3,1,'#1c1c22');};
+const chaises=(x,y)=>{g.fillStyle='rgba(0,0,0,.3)';g.fillRect(x+1,y+16,12,2);
+for(let k=0;k<3;k++){const xx=x+k*3;R(xx,y,2,16,'#5a4a2e');R(xx,y,1,16,'#7a6440');
+R(xx,y+5,2,1,'#3a3022');R(xx,y+11,2,1,'#3a3022');}};
+const egout=(x,y)=>{R(x,y,12,8,'#2a2a30');
+for(let b=1;b<8;b+=2)R(x+1,y+b,10,1,'#15151a');R(x,y,12,1,'#3e3e48');};
+const herbes=(x,y,n,col,gr)=>{for(let i=0;i<n;i++){
+const xx=x+A(i*3+gr)*10, yy=y+A(i*7+gr)*10, h2=2+A(i*11+gr)*4;
+for(let t=0;t<h2;t++)R(xx+(t>h2/2?(A(i)<.5?1:-1):0),yy-t,1,1,col);}};
+const bitte=(x,y)=>{g.fillStyle='rgba(0,0,0,.35)';g.fillRect(x+1,y+9,9,2);
+R(x,y+4,10,6,'#3a3f44');R(x+1,y+5,8,1,'#5a6066');
+R(x+2,y,6,5,'#2e3338');R(x+3,y,4,1,'#565c62');};
+const casier=(x,y)=>{g.fillStyle='rgba(0,0,0,.3)';g.fillRect(x+1,y+13,16,2);
+R(x,y,16,13,'#3f6a8a');R(x,y,16,2,'#5a8bb0');
+for(let b=3;b<13;b+=3)R(x+1,y+b,14,1,'#2e5270');
+for(let a=2;a<16;a+=4)R(x+a,y+2,1,11,'#2e5270');};
+const corde=(x,y)=>{for(let k=0;k<3;k++){g.strokeStyle=k%2?'#c9a878':'#a5825a';
+g.lineWidth=1.2;g.beginPath();g.arc(x,y,2.4+k*1.8,0,7);g.stroke();}};
+const tronc=(x,y,r)=>{
+g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(x+1,y+2,r+2,r*0.8,0,0,7);g.fill();
+for(let b=-r;b<=r;b++)for(let a=-r;a<=r;a++){if(a*a+b*b>r*r)continue;
+const n=PR_h(a,b,29);R(x+a,y+b,1,1,n<.3?'#8d8a74':(n<.6?'#6f6c58':'#a39e86'));}
+for(let i=0;i<14;i++){const a=(A(i*5)-0.5)*1.7*r, b=(A(i*9)-0.5)*1.7*r;
+if(a*a+b*b>r*r*0.8)continue;
+const w2=2+A(i*3)*3, h2=2+A(i*7)*2;
+for(let q=0;q<h2;q++)for(let p=0;p<w2;p++){
+if((a+p)*(a+p)+(b+q)*(b+q)>r*r)continue;
+R(x+a+p,y+b+q,1,1,A(i*11)<.5?'#c6c0a6':'#55523f');}}
+for(let i=0;i<5;i++){const an=i*1.3+0.4;
+for(let t=r-1;t<r+6;t++)R(x+Math.cos(an)*t,y+Math.sin(an)*t*0.8,2,1,'#5f5a44');}};
+const feuilles=(x,y,n,gr)=>{for(let i=0;i<n;i++){
+const xx=x+A(i*3+gr)*14, yy=y+A(i*7+gr)*14;
+const c2=['#8a6a2e','#9d7a38','#6f5524'][Math.floor(A(i*13)*3)];
+R(xx,yy,2,1,c2);R(xx+1,yy-1,1,1,c2);R(xx,yy+1,1,1,c2);}};
+/* ---------- LES CINQ ALENTOURS ---------- */
+if(T.c==='nuit'){sol('nuit');
+lampadaire(13,66);
+banc(206,96,34);chat(208,150);
+chaises(12,248);egout(210,252);
+herbes(4,40,7,'#2f3a28',3);herbes(222,30,6,'#2f3a28',9);herbes(60,292,6,'#2f3a28',4);
+[[30,200],[26,214],[216,230],[70,4]].forEach(p=>{
+R(p[0],p[1],2,1,'#d8d2c0');R(p[0]+2,p[1],1,1,'#8a6a3a');});
+g.fillStyle='rgba(30,36,48,.5)';g.beginPath();g.ellipse(24,272,9,4,0,0,7);g.fill();
+R(21,271,6,1,'rgba(226,196,120,.35)');}
+else if(T.c==='port'){sol('port');
+autour((x,y)=>{const n=PR_h(Math.floor(x/9),y,31);
+R(x,y,1,1,n<.3?'#6b5434':(n<.62?'#5c4830':'#7a6240'));
+if(x%9===0)R(x,y,1,1,'#43341f');});
+bitte(14,60);bitte(216,190);casier(206,60);corde(22,230);
+R(10,120,22,2,'#8a7048');R(10,122,22,1,'#5c4830');}
+else if(T.c==='platanes'){sol('platanes');
+tronc(16,52,13);tronc(222,206,11);banc(208,110,30);
+feuilles(6,100,16,2);feuilles(200,20,14,8);feuilles(50,286,12,5);
+herbes(4,160,9,'#49632f',3);herbes(224,60,8,'#49632f',7);}
+else if(T.c==='place'){
+autour((x,y)=>{const cx2=Math.floor(x/7), cy2=Math.floor(y/5), dec=(cy2%2)*3;
+const u=(x+dec)%7, v=y%5, n=PR_h(cx2,cy2,19);
+R(x,y,1,1,(u===0||v===0)?'#6a6356':(n<.3?'#9a9282':(n<.62?'#8c8474':'#a8a090')));});
+banc(208,120,30);tronc(18,70,9);herbes(36,292,7,'#5a6b3a',2);
+R(206,60,16,4,'#8a8274');R(206,60,16,1,'#a39b8c');}
+else{
+autour((x,y)=>{const bande=Math.floor(y/9)%2, n=PR_h(x,y,23);
+R(x,y,1,1,n<.5?(bande?'#355b31':'#2d5029'):(bande?'#3a6336':'#30562c'));});
+autour((x,y)=>{if(x===6||x===W-7||y===6||y===H-7)R(x,y,1,1,'#d8d2c0');
+if(x===7||x===W-6||y===7||y===H-6)R(x,y,1,1,'#9a9484');});
+banc(210,120,30);}
+creux();
+DECOR_PQ=c;DECOR_CLE=T.c;
+}
 /* LA TIENNE PORTE SON MODÈLE ; CELLE D'EN FACE NE CHANGE JAMAIS, sinon
    on ne sait plus à qui est quoi au milieu d'une mène. */
 function dessinerUneBoule(g,x,y,qui,h,mod){
@@ -26225,9 +26385,16 @@ const c=$('pqToile');if(!c)return;
    sur la toile restée dans le flux, le sable passait par-dessus les
    cartes. */
 if(!PET.E||PQ_MENUS.indexOf(PET.etape)>=0){requestAnimationFrame(bouclePetanque);return;}
-const g=c.getContext('2d');g.imageSmoothingEnabled=false;
-if(!SABLE_PQ||SABLE_CLE!==pqMonTerrain().c)graverLeSablePetanque();
+const g=c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;
+const TER=pqMonTerrain().c;
+if(!SABLE_PQ||SABLE_CLE!==TER)graverLeSablePetanque();
+if(!DECOR_PQ||DECOR_CLE!==TER)graverLeDecorPQ();
 const dt=Math.min(0.1,(t-(PET.tp||t))/1000);PET.tp=t;
+/* LE LIEU D'ABORD, LE TERRAIN DESSUS. Tout ce qui suit est dessiné dans
+   les coordonnées du moteur : on décale la toile une fois pour toutes,
+   et pas une ligne de jeu n'a besoin de le savoir. */
+g.drawImage(DECOR_PQ,0,0);
+g.translate(PQ_DX,PQ_DY);
 g.drawImage(SABLE_PQ,0,0);
 const E=PET.E;
 if(PET.vol){
