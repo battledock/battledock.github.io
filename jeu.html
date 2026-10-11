@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-11-1945"></script>
+<script src="maintenance.js?v=2026-10-11-2030"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-11-1945';
+var MA_VERSION='2026-10-11-2030';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -24597,15 +24597,17 @@ requestAnimationFrame(ajusterToilePQ);
 const t=$('pqTexte'),b=$('pqBouton');
 if(PET.etape==='choix'){
 {const T=document.querySelector('#petanque .pqTitre');if(T)T.textContent='LE BOULODROME · UNE MÈNE CONTRE MARIUS';}
-t.innerHTML='<div class="pqChoix"><button id="pqEntr">Entraînement<small>gratuit</small></button>'+
+t.innerHTML='<div class="pqChoix"><button id="pqEntr">Entraînement<small>une mène, gratuit</small></button>'+
 '<button id="pqPaye" class="or">Mène à 2 €<small>gagne-la : +6 €</small></button></div>'+
+'<div class="pqChoix"><button id="pqPartie">Partie en 13<small>les vraies règles, contre Marius</small></button></div>'+
 '<i>Ton argent : '+enEuros(e.euros||0)+'</i>';
 b.style.display='none';
 $('pqEntr').onclick=()=>commencerLaMene('entrainement');
 $('pqPaye').onclick=()=>commencerLaMene('payant');
+$('pqPartie').onclick=()=>demarrerPartieMarius();
 return;
 }
-if(PET.mode==='ami'||PET.etape==='amis'||PET.etape==='attenteAmi'){if(majTexteAmi(t,b))return;}
+if(PET.mode==='ami'||PET.mode==='partie'||PET.etape==='amis'||PET.etape==='attenteAmi'){if(majTexteAmi(t,b))return;}
 b.style.display='';
 if(PET.fin){t.innerHTML=PET.fin;b.textContent='Rejouer';return;}
 const en=(PET.mode==='payant'?'<b>Mène à 2 €</b> · ':'<b>Entraînement</b> · ');
@@ -24634,7 +24636,9 @@ else{t.innerHTML=en+'boule '+n+'/3'+pt+dit+' · elle roule…';b.textContent='�
 }
 function toucherPetanque(){
 if(!PET)return;
-if(PET.fin){if(PET.mode==='ami'){revancheAmi();return;}PET={etape:'choix'};majTextePetanque();return;}
+if(PET.fin){if(PET.mode==='ami'){revancheAmi();return;}
+if(PET.mode==='partie'){if(PET.partieFinie)demarrerPartieMarius();else nouvelleMene();return;}
+PET={etape:'choix'};majTextePetanque();return;}
 if(PET.etape==='choix'||PET.etape==='amis'||PET.etape==='attenteAmi'||PET.tour!=='moi')return;
 const t=performance.now();
 if(PET.etape==='viser'){PET.angle=Math.sin((t-PET.t0)/PQ_VIS_PER)*PQ_VIS_AMP;PET.etape='force';PET.t0=t;vibrer(8);}
@@ -24649,6 +24653,10 @@ const ty=(PET.mode==='ami'&&PET.phase==='coch')?'coch'
 PET.lancers.push([PET.angle,force,ty]);
 PET.annonce=null;
 if(PET.mode==='ami'){envoyerLancerAmi(PET.angle,force,ty);if(ty!=='coch')PET.reste.moi--;lancer('moi',PET.angle,force,ty);vibrer(ty==='tir'?[10,20,30]:14);majTextePetanque();return;}
+if(PET.mode==='partie'){if(ty!=='coch')PET.reste.moi--;
+if(ty==='tir')PET.cible=pqCibleDuTir(PET.E);
+lancer('moi',PET.angle,force,ty);PET.maDerniere=PET.vol&&PET.vol.b;
+vibrer(ty==='tir'?[10,20,30]:14);majTextePetanque();return;}
 if(ty==='tir')PET.cible=pqCibleDuTir(PET.E);
 lancer('moi',PET.angle,force,ty);
 PET.maDerniere=PET.vol&&PET.vol.b;
@@ -24667,6 +24675,7 @@ b.enVol=true;PET.etape='vol';
 function apresLArret(){
 if(PET.mode==='ami'){apresLArretAmi();return;}
 if(PET.tour==='moi')pqJugerLeTir();
+if(PET.mode==='partie'){apresLArretAmi();return;}
 if(PET.tour==='moi'){PET.tour='lui';PET.etape='attend';majTextePetanque();
 setTimeout(()=>{if(!PET||PET.fin)return;const m=pqMarius(PET.graine,PET.n,PET.E);lancer('lui',m[0],m[1]);majTextePetanque();},700);}
 else{PET.n++;
@@ -24676,7 +24685,7 @@ PET.tour='moi';PET.etape='viser';PET.t0=performance.now();majTextePetanque();}
 async function finirLaMene(){
 const R=pqCompter(PET.E), cm=v=>Math.max(1,Math.round(v*1.6))+' cm';
 PET.etape='fin';
-if(PET.mode==='ami'){finirMeneAmi();return;}
+if(PET.mode==='ami'||PET.mode==='partie'){finirMeneAmi();return;}
 if(PET.mode!=='payant'){PET.fin=verdict(R,cm,null);majTextePetanque();return;}
 PET.fin='Marius mesure… <i>l’arbitre vérifie</i>';majTextePetanque();
 const {data,error}=await sb.functions.invoke('petanque',{body:{id:PET.id,lancers:PET.lancers}});
@@ -24695,7 +24704,7 @@ t.innerHTML='<div class="pqAmis">'+(L.length?L.map(p=>'<button data-inv="'+p.id+
 t.querySelectorAll('[data-inv]').forEach(x=>x.onclick=()=>{const p=L.find(q=>q.id===x.dataset.inv);if(p)inviterAmi(p);});
 $('pqRetourChoix').onclick=()=>{PET={etape:'choix'};majTextePetanque();};return true;}
 if(PET.etape==='attenteAmi'){b.style.display='none';t.innerHTML='<b>'+echapperT(PET.ami.pseudo)+'</b> reçoit ton invitation…<br><i>La partie commence dès qu’il accepte.</i>';return true;}
-if(PET.mode!=='ami')return false;
+if(PET.mode!=='ami'&&PET.mode!=='partie')return false;
 b.style.display='';const n=echapperT(PET.ami.pseudo);
 const tab='<div class="pqScore"><span>Toi <b>'+PET.score.moi+'</b></span><i>mène '+PET.mene+' · en 13</i><span><b>'+PET.score.lui+'</b> '+n+'</span></div>';
 if(PET.fin){t.innerHTML=tab+PET.fin;b.textContent=PET.partieFinie?'Nouvelle partie':'Mène suivante';return true;}
@@ -24764,7 +24773,10 @@ PQ_RENVOI=setInterval(()=>{if(!PET||PET.mode!=='ami'){clearInterval(PQ_RENVOI);r
 function nouvelleMene(){
 PET.mene++;PET.E={boules:[],coch:null,vraies:true};PET.reste={moi:3,lui:3};PET.phase='coch';PET.essais=0;PET.fin=null;PET.partieFinie=false;
 PET.tour=PET.lanceurCoch;PET.etape=PET.tour==='moi'?'viser':'attend';PET.t0=performance.now();PET.typeTir='pointe';PET.vol=null;
+PET.annonce=null;PET.cible=null;
 majTextePetanque();
+if(PET.tour==='lui'&&PET.mode==='partie'){const q=PET.mene;
+setTimeout(()=>{if(PET&&PET.mode==='partie'&&PET.mene===q&&PET.tour==='lui'&&PET.etape==='attend'&&!PET.fin)jouerMarius();},900);return;}
 if(PET.tour==='lui'&&PET.enAttente){const p=PET.enAttente;PET.enAttente=null;recevoirLancerAmi(p);}
 }
 function envoyerLancerAmi(angle,force,type){const L={k:PET.envoyes++,angle,force,type:type||'pointe'};PET.aEnvoyer=L;try{PET.canal.send({type:'broadcast',event:'lancer',payload:L});}catch(x){}}
@@ -24777,6 +24789,67 @@ PET.recus++;const ty=p.type||'pointe';
 if(ty==='coch'&&PET.phase!=='coch'){return;}
 if(ty!=='coch')PET.reste.lui--;
 lancer('lui',p.angle,p.force,ty);majTextePetanque();
+}
+/* ================= LA PARTIE EN 13 CONTRE MARIUS =================
+   LES VRAIES RÈGLES ÉTAIENT DÉJÀ ÉCRITES, mais seulement entre amis :
+   on lance le cochonnet soi-même, il doit tomber entre six et dix
+   mètres et on a trois essais, celui qui n'a pas le point joue, la mène
+   s'arrête quand les six boules sont tirées ou que le cochonnet sort,
+   le gagnant marque autant de points qu'il a de boules devant la
+   meilleure de l'autre, il lance le cochonnet suivant, et la partie va
+   à treize — avec la Fanny si l'autre reste à zéro.
+   EN SOLO ON N'AVAIT RIEN DE TOUT ÇA : un cochonnet posé d'avance, trois
+   boules chacun à tour de rôle, et c'était fini. Marius joue maintenant
+   la même partie que ton ami, avec le même code : seul l'envoi par le
+   canal est remplacé par sa décision.
+   LA MÈNE À 2 € NE CHANGE PAS. C'est une mène, pas une partie, et c'est
+   l'arbitre du serveur qui la rejoue pour payer : lui donner les vraies
+   règles demande de refaire sa validation, ce qui est une autre affaire. */
+function demarrerPartieMarius(){
+const premier=Math.random()<0.5?'moi':'lui';
+PET={mode:'partie',ami:{pseudo:'Marius'},graine:Math.floor(Math.random()*4294967295),
+score:{moi:0,lui:0},mene:0,lanceurCoch:premier,acc:0,vol:null,fin:null,typeTir:'pointe',lancers:[]};
+nouvelleMene();
+}
+/* CE QUE MARIUS DÉCIDE. Il ne tire pas au hasard : il tire quand il n'a
+   pas le point et que ta boule est vraiment près du cochonnet, sinon il
+   pointe. Sa main reste celle qu'il a toujours eue — neuf et demi
+   d'écart-type — mais elle tremble un peu plus au tir, comme la vraie. */
+function mariusDecide(E){
+const [sx,sy]=PQ.S, C=E.coch;
+const g4=()=>{let t=0;for(let i=0;i<4;i++)t+=Math.random();return (t-2)*1.7;};
+const viser=(tx,ty,roule)=>{const d0=Math.hypot(tx-sx,ty-sy), angle=Math.atan2(tx-sx,sy-ty);
+let f=Math.max(0,Math.min(1,(d0-40)/210));
+if(roule)for(let k=0;k<4;k++){const v=pqRoulette(f), r=v*v/(2*PQC.FROT);f=Math.max(0,Math.min(1,(d0-r-40)/210));}
+return [angle,f];};
+/* LE COCHONNET : il le pose au milieu de la zone, pas au bord, pour ne
+   pas gâcher ses trois essais. */
+if(PET.phase==='coch'){
+const d=(PQ_COCH_MIN+PQ_COCH_MAX)/2+g4()*12;
+const ec=g4()*7, a=Math.atan2(ec,d);
+const [ang,f]=viser(sx+Math.sin(a)*d,sy-Math.cos(a)*d,false);
+return [ang,Math.max(0,Math.min(1,f-0.015)),'coch'];
+}
+/* LE TIR : seulement s'il est mené, et si ta boule vaut la peine. */
+const M=pqQuiMarque(E);
+const mienne=pqCibleDuTirDe(E,'lui');
+if(M&&M.gagnant==='moi'&&mienne&&Math.hypot(mienne.x-C.x,mienne.y-C.y)<13&&Math.random()<0.65){
+const [ang,f]=viser(mienne.x+g4()*4.5,mienne.y+g4()*4.5,false);
+return [ang,Math.max(0,Math.min(1,f-0.08)),'tir'];
+}
+const [ang,f]=viser(C.x+g4()*9.5,C.y+g4()*9.5,true);
+return [ang,f,'pointe'];
+}
+/* la boule de l'autre camp la plus près du cochonnet, vue par 'qui' */
+function pqCibleDuTirDe(E,qui){const C=E.coch;if(!C||C.mort)return null;
+let m=null,dm=Infinity;
+for(const b of E.boules)if(b.qui!==qui&&!b.morte){const d=Math.hypot(b.x-C.x,b.y-C.y);if(d<dm){dm=d;m=b;}}
+return m;}
+function jouerMarius(){
+if(!PET||PET.mode!=='partie'||PET.tour!=='lui'||PET.fin)return;
+const [a,f,ty]=mariusDecide(PET.E);
+if(ty!=='coch')PET.reste.lui--;
+lancer('lui',a,f,ty);majTextePetanque();
 }
 function cochValide(C){if(!C||C.mort)return false;const [sx,sy]=PQ.S, d=Math.hypot(C.x-sx,C.y-sy);return d>=PQ_COCH_MIN&&d<=PQ_COCH_MAX&&C.x>8&&C.x<PQ.W-8&&C.y>8;}
 function apresLArretAmi(){
@@ -24795,6 +24868,8 @@ else{const R=pqCompter(PET.E);qui=R.nulle?PET.lanceurCoch:(R.gagne?'lui':'moi');
 PET.tour=qui;
 }
 PET.etape=PET.tour==='moi'?'viser':'attend';PET.t0=performance.now();majTextePetanque();
+if(PET.tour==='lui'&&PET.mode==='partie'){const q=PET.mene;
+setTimeout(()=>{if(PET&&PET.mode==='partie'&&PET.mene===q&&PET.tour==='lui'&&PET.etape==='attend'&&!PET.fin)jouerMarius();},800);return;}
 if(PET.tour==='lui'&&PET.enAttente){const p=PET.enAttente;PET.enAttente=null;recevoirLancerAmi(p);}
 }
 function texteDansLeBoulodrome(m){const t=$('pqTexte');if(t){t.innerHTML='<i>'+m+'</i>';}}
@@ -24880,7 +24955,7 @@ const C=E.coch;
 if(C&&!C.enVol&&!C.mort){g.fillStyle='rgba(60,40,20,.28)';g.fillRect(Math.round(C.x),Math.round(C.y)+1,2,1);
 g.fillStyle='#e8a030';g.fillRect(Math.round(C.x)-1,Math.round(C.y)-1,3,3);
 g.fillStyle='#ffd070';g.fillRect(Math.round(C.x)-1,Math.round(C.y)-1,1,1);}
-if(PET.mode==='ami'&&PET.phase==='coch'&&!PET.fin){                                      /* la zone où le cochonnet doit tomber : entre 6 et 10 m */
+if((PET.mode==='ami'||PET.mode==='partie')&&PET.phase==='coch'&&!PET.fin){                                      /* la zone où le cochonnet doit tomber : entre 6 et 10 m */
 const [sx,sy]=PQ.S;g.strokeStyle='rgba(255,255,255,.35)';g.setLineDash([2,3]);g.lineWidth=1;
 [PQ_COCH_MIN,PQ_COCH_MAX].forEach(r=>{g.beginPath();g.arc(sx,sy,r,Math.PI*1.2,Math.PI*1.8);g.stroke();});g.setLineDash([]);}
 for(const b of E.boules.slice().sort((a,b)=>a.y-b.y)){
@@ -24913,7 +24988,7 @@ g.strokeStyle='rgba(255,255,255,.85)';g.lineWidth=1;g.setLineDash([3,3]);
    soixante-dix pixels, soit un tiers de la longueur : on fixait sa
    direction sans voir où elle pointait, et le cochonnet est au-delà. */
 g.beginPath();g.moveTo(sx,sy);g.lineTo(sx+Math.sin(a)*230,sy-Math.cos(a)*230);g.stroke();g.setLineDash([]);
-if(!(PET.mode==='ami'&&PET.phase==='coch'))dessinerUneBoule(g,sx,sy,'moi',0);else{g.fillStyle='#e8a030';g.fillRect(sx-1,sy-1,3,3);}
+if(!((PET.mode==='ami'||PET.mode==='partie')&&PET.phase==='coch'))dessinerUneBoule(g,sx,sy,'moi',0);else{g.fillStyle='#e8a030';g.fillRect(sx-1,sy-1,3,3);}
 }
 if(PET.etape==='force'){
 const f=(1-Math.cos((t-PET.t0)/PQ_FOR_PER))/2;
