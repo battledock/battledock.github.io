@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-2115"></script>
+<script src="maintenance.js?v=2026-10-12-2130"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-2115';
+var MA_VERSION='2026-10-12-2130';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -1745,6 +1745,38 @@ text-shadow:0 1px 4px rgba(0,0,0,.8)}
 #vPre{display:block}
 .vVoileTexte{top:30%;height:40%;z-index:1;background:linear-gradient(180deg,rgba(14,18,12,0),rgba(14,18,12,.62) 38%,rgba(14,18,12,.62) 62%,rgba(14,18,12,0))}
 #vVie{display:none}
+/* ================= L'ÉCRAN DE CHARGEMENT, PAR LIEU =================
+   Il n'y en avait plus : le voile avait été retiré du corps de la page et
+   il ne restait que #porte, un rectangle noir. Le code des étapes, lui,
+   tournait toujours et écrivait dans des éléments absents.
+
+   Chaque lieu a maintenant sa scène, peinte en pixels dans une toile de
+   cent trente pixels de large puis étirée — donc rien à télécharger, et
+   l'écran est à l'image AVANT que le jeu commence à se charger. C'est
+   tout l'intérêt : une image qu'on attend ne sert à rien.
+
+   Les couleurs du lieu arrivent par trois variables posées sur #voile :
+   --vf le fond, --vo l'or, --vt l'encre, --vd la phrase. */
+#voile{display:block;background:var(--vf,#0d1410);justify-content:initial}
+#vPre{position:absolute;left:0;right:0;top:30%;width:100%;height:auto;
+  display:block;image-rendering:pixelated;z-index:0}
+.vFondu{position:absolute;left:0;right:0;z-index:1;pointer-events:none}
+.vFondu.h{top:30%;height:116px;background:linear-gradient(180deg,var(--vf,#0d1410) 4%,transparent)}
+.vFondu.b{height:124px;background:linear-gradient(180deg,transparent,var(--vf,#0d1410) 92%)}
+.vHaut{position:absolute;left:0;right:0;top:9%;z-index:2;text-align:center;padding:0 18px}
+.vHaut small{display:block;font:700 10px Arial,sans-serif;letter-spacing:4.6px;
+  color:var(--vo,#c9a24a)}
+.vHaut h1{font:400 44px/1.1 Georgia,serif;color:var(--vt,#f0e6cf);margin:12px 0 2px;
+  text-shadow:0 2px 0 rgba(0,0,0,.55);letter-spacing:0}
+.vHaut i{display:block;font:italic 14.5px Georgia,serif;color:var(--vd,#8a9a7a)}
+.vBas{position:absolute;left:0;right:0;bottom:11%;z-index:2;text-align:center;padding:0 26px}
+#voile .vRail{height:2px;border:0;border-radius:2px;background:rgba(253,243,224,.16);
+  max-width:170px;margin:0 auto;overflow:hidden;box-shadow:0 0 10px rgba(240,207,125,.2)}
+#voile .vRail i{display:block;height:100%;width:4%;border-radius:2px;
+  background:linear-gradient(90deg,#c9a24a,#fff0c0);
+  transition:width .45s cubic-bezier(.2,.8,.3,1)}
+#voile .vMot{font:italic 13.5px Georgia,serif;color:var(--vt,#f0e6cf);opacity:.9;
+  margin-top:22px;text-shadow:0 1px 6px rgba(0,0,0,.6)}
 .vAnim{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
 .vAnim .ray{position:absolute;top:-10%;width:22%;height:130%;background:linear-gradient(180deg,rgba(255,214,140,.16),rgba(255,214,140,0) 80%);
 transform:rotate(28deg);transform-origin:top;animation:vRay 7s ease-in-out infinite;will-change:opacity}
@@ -2207,7 +2239,14 @@ white-space:nowrap}
 <div id="pan"><div class="feuille" id="feuille"></div></div>
 <div id="page2"><div class="sacFond" id="page2Fond"></div></div>
 
-<!-- L'ÉCRAN DE CHARGEMENT A ÉTÉ SUPPRIMÉ : le jeu s'affiche directement. -->
+<div id="voile">
+  <canvas id="vPre" width="130" height="116"></canvas>
+  <div class="vFondu h"></div>
+  <div class="vFondu b" id="vFonduB"></div>
+  <div class="vHaut"><small>BATTLE DOCK</small><h1 id="vLieu">Battle Dock</h1><i id="vDit"></i></div>
+  <div class="vBas"><div class="vRail"><i id="vJauge"></i></div>
+    <div class="vMot" id="vMot">On ouvre la porte</div></div>
+</div>
 <div id="porte">
   <div class="pCarte" id="pCarte" style="display:none">
     <h1>Battle Dock</h1>
@@ -2216,6 +2255,172 @@ white-space:nowrap}
   </div>
 </div>
 
+<script>
+/* ================= LES SCÈNES DU CHARGEMENT =================
+   Un script ordinaire, pas un module : il doit tourner tout de suite,
+   avant que le jeu commence à se lire. Tout est peint à la main dans une
+   toile de 130 pixels de large, puis étirée par le navigateur — aucune
+   image n'est téléchargée, l'écran est complet dès la première ligne. */
+(function(){
+var cv=document.getElementById('vPre');if(!cv)return;
+var g=cv.getContext('2d');if(!g)return;
+var W=130,H=116;
+g.imageSmoothingEnabled=false;
+function al(n){var v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);}
+function R(x,y,w,h,c){g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),
+  Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));}
+function bande(y0,y1,T){for(var y=y0;y<y1;y++){var k=(y-y0)/(y1-y0);
+  var t=k*(T.length-1),i=Math.min(T.length-2,Math.floor(t)),f=t-i,m=[];
+  for(var j=0;j<3;j++)m.push(Math.round(T[i][j]+(T[i+1][j]-T[i][j])*f));
+  R(0,y,W,1,'rgb('+m[0]+','+m[1]+','+m[2]+')');}}
+function houppier(x,y,l,h,col,gr){for(var i=0;i<16;i++){
+  var a=al(gr+i*1.7)*6.2832,r=al(gr+i*2.9);
+  R(x+Math.cos(a)*l*0.5*r-l*0.22,y+Math.sin(a)*h*0.5*r-h*0.16,l*0.44,h*0.32,col);}}
+
+var LIEUX={
+/* ---------- LA FORÊT · LA CANOPÉE ----------
+   On regarde en l'air. Le ciel est clair, les feuilles presque noires :
+   c'est ce contraste-là qui fait lire le contre-jour, pas la forme des
+   feuilles. Les branches partent des bords et se ramifient toutes seules. */
+foret:{nom:'La forêt',dit:'Le soleil passe entre les feuilles',
+ f:'#0c1310',o:'#d8c06a',t:'#f2ecd8',d:'#8a9a6a',
+ p:function(){
+  bande(0,H,[[188,208,206],[214,228,218],[236,242,224],[216,226,206],[180,198,184]]);
+  for(var r=64;r>14;r-=4){g.fillStyle='rgba(255,252,220,'+(0.014+(64-r)*0.0012)+')';
+   g.beginPath();g.arc(W*0.44,H*0.38,r,0,7);g.fill();}
+  function feuille(x,y,s,col){for(var i=0;i<9;i++){
+   var a=al(x*3.1+y*1.7+i)*6.2832,rr=al(x+y+i*2.3)*s;
+   R(x+Math.cos(a)*rr,y+Math.sin(a)*rr*0.8,1+al(i)*2,1+al(i*3)*2,col);}}
+  function branche(x0,y0,a0,lg,ep,col,gr){
+   var x=x0,y=y0,a=a0;
+   for(var t=0;t<lg;t++){
+    a+=(al(gr+t*0.9)-0.5)*0.14;x+=Math.cos(a);y+=Math.sin(a);
+    var e=Math.max(1,ep*(1-t/lg));
+    R(x-e/2,y-e/2,e,e,col);
+    if(t%5===2)feuille(x,y,3+(1-t/lg)*7,col);
+    if(t%17===9&&t<lg-14)branche(x,y,a+(al(gr+t)<0.5?0.8:-0.8),
+      Math.round((lg-t)*0.5),e*0.7,col,gr+t*3);}}
+  var S=[[0,0,0.80],[W,0,2.35],[0,H,-0.80],[W,H,3.94],
+         [W*0.26,0,1.25],[W*0.74,0,1.90],[0,H*0.44,0.12],[W,H*0.62,3.02]];
+  for(var i=0;i<S.length;i++){
+   branche(S[i][0],S[i][1],S[i][2],42+al(i)*22,4,'#16200f',i*23);
+   branche(S[i][0],S[i][1],S[i][2]+(i%2?0.45:-0.45),28+al(i*3)*16,3,'#223018',i*41);}
+  for(var k=0;k<5;k++){g.save();g.translate(W*0.44,H*0.38);g.rotate(0.55+k*0.3);
+   g.fillStyle='rgba(255,252,214,'+(k%2?0.05:0.085)+')';
+   g.beginPath();g.moveTo(-3,0);g.lineTo(3,0);g.lineTo(14,H);g.lineTo(-14,H);
+   g.closePath();g.fill();g.restore();}
+  var FE=['#3f6b2c','#5e8a34','#c2a84a'];
+  for(var j=0;j<14;j++)R(al(j*4.3)*W,al(j*6.1)*H,2,1,FE[j%3]);
+ }},
+/* ---------- LA FERME ---------- */
+ferme:{nom:'La ferme',dit:'Le blé n’attend pas',
+ f:'#1a1c10',o:'#e8c06a',t:'#f6ecd4',d:'#9a9a72',
+ p:function(){
+  bande(0,H*0.46,[[58,52,74],[128,86,84],[206,132,88],[238,180,110]]);
+  for(var i=0;i<30;i++)R(al(i*1.7)*W,al(i*2.9)*H*0.2,1,1,'rgba(255,240,200,.5)');
+  g.fillStyle='#ffe0a0';g.beginPath();g.arc(W*0.72,H*0.44,10,0,7);g.fill();
+  for(var r=18;r>10;r--){g.fillStyle='rgba(255,210,130,'+(0.03*(19-r))+')';
+   g.beginPath();g.arc(W*0.72,H*0.44,r,0,7);g.fill();}
+  for(var x=0;x<W;x++){var y=H*0.44+Math.sin(x/19)*3+Math.sin(x/7)*1.5;
+   R(x,y,1,H*0.47-y,'#5c5a36');}
+  R(10,H*0.33,30,16,'#7d3a2a');R(8,H*0.30,34,4,'#5e2a1e');
+  R(20,H*0.40,8,9,'#3a2418');R(10,H*0.33,30,1,'#a8513a');
+  var TON=[['#6e6326','#8a7c30'],['#7d7029','#9c8c36'],
+           ['#8a7c30','#ab9a3e'],['#9c8c36','#bdab48']];
+  for(var k=0;k<11;k++){
+   var yy=H*0.47+k*k*0.75+k*2.2;if(yy>H*0.92)break;
+   var ht=3+k*1.1,pas=2.2+k*0.42,T=TON[Math.min(3,k>>1)];
+   for(var xx=-4;xx<W+4;xx+=pas){
+    var jj=al(xx*1.7+k*9),px=xx+jj*1.4;
+    R(px,yy-ht,1,ht,jj<0.5?T[0]:'#5e5520');
+    R(px-0.5,yy-ht-2,2,2.5,jj<0.6?T[1]:T[0]);
+    if(jj>0.86)R(px-1,yy-ht-3,3,1,'#cfbd54');}
+   R(0,yy,W,1,'rgba(38,32,12,.20)');}
+  for(var xf=4;xf<W;xf+=16)R(xf,H*0.80,3,14,'#4a3218');
+  R(0,H*0.83,W,2,'#5e4426');R(0,H*0.88,W,2,'#5e4426');
+  var OI=[[W*0.3,H*0.14],[W*0.38,H*0.10]];
+  for(var o=0;o<2;o++){R(OI[o][0],OI[o][1],2,1,'#2a2418');
+   R(OI[o][0]+2,OI[o][1]-1,2,1,'#2a2418');R(OI[o][0]+4,OI[o][1],2,1,'#2a2418');}
+ }},
+/* ---------- LE PORT ---------- */
+port:{nom:'Le port',dit:'Le ferry siffle au loin',
+ f:'#0d1420',o:'#e8c06a',t:'#f0e6cf',d:'#7d93ac',
+ p:function(){
+  bande(0,H*0.52,[[26,40,66],[46,66,96],[92,96,116],[168,118,100],[228,162,112]]);
+  for(var i=0;i<34;i++)R(al(i*1.7)*W,al(i*2.9)*H*0.22,1,1,'rgba(226,236,255,.45)');
+  for(var x=0;x<W;){var w=9+Math.floor(al(x*0.7)*14),h=16+Math.floor(al(x*1.3)*22);
+   R(x,H*0.52-h,w,h,'#1a2334');
+   for(var fy=H*0.52-h+3;fy<H*0.52-3;fy+=5)
+    for(var fx=x+2;fx<x+w-2;fx+=4)
+     if(al(fx*3.1+fy)<0.34)R(fx,fy,2,2,'rgba(246,216,140,.6)');
+   x+=w;}
+  for(var m=0;m<7;m++){var mx=12+m*W/7+al(m)*8,mh=18+al(m*3)*22;
+   R(mx,H*0.52-mh,1,mh,'#3a4a5e');R(mx-3,H*0.52-mh,7,1,'#3a4a5e');}
+  R(0,H*0.52,W,5,'#b8a888');R(0,H*0.52,W,1,'#d8cbaa');
+  bande(H*0.57,H,[[24,62,86],[30,74,98],[22,56,78],[16,42,60]]);
+  for(var v=0;v<260;v++){var vx=al(v*1.9)*W,vy=H*0.57+al(v*3.7)*H*0.43;
+   R(vx,vy,3+al(v)*7,1,al(v*5)<0.5?'rgba(255,255,255,.12)':'rgba(0,0,0,.10)');}
+  for(var q=0;q<40;q++)R(al(q*2.3)*W,H*0.58+al(q*4.1)*H*0.2,2,1,'rgba(246,216,140,.22)');
+  R(W*0.6,H*0.76,22,3,'#5b3f21');R(W*0.6+2,H*0.73,18,3,'#7d5934');
+  R(W*0.6+10,H*0.66,1,7,'#3a2a18');
+  var MO=[[W*0.22,H*0.16],[W*0.3,H*0.12]];
+  for(var b=0;b<2;b++){R(MO[b][0],MO[b][1],3,1,'#f2efe4');
+   R(MO[b][0]+3,MO[b][1]-1,2,1,'#f2efe4');R(MO[b][0]+5,MO[b][1],3,1,'#f2efe4');}
+ }},
+/* ---------- NOTRE-DAME DE LA GARDE ---------- */
+garde:{nom:'La Garde',dit:'La Bonne Mère veille',
+ f:'#101420',o:'#e8c06a',t:'#f0e6cf',d:'#8a93a8',
+ p:function(){
+  bande(0,H*0.62,[[22,32,58],[40,56,84],[86,92,108],[170,124,102],[232,170,116]]);
+  for(var i=0;i<40;i++)R(al(i*1.7)*W,al(i*2.9)*H*0.26,1,1,'rgba(226,236,255,.5)');
+  for(var x=0;x<W;x++){var y=H*0.62-Math.pow(Math.max(0,1-Math.abs(x-W*0.5)/(W*0.5)),1.7)*H*0.3;
+   R(x,y,1,H-y,'#1d2433');}
+  R(W*0.46,H*0.24,9,H*0.14,'#2e3648');R(W*0.46,H*0.24,9,1,'#4a5468');
+  R(W*0.47,H*0.16,7,H*0.08,'#333c50');
+  R(W*0.485,H*0.11,2,H*0.05,'#8a6a28');
+  g.fillStyle='#f0cf7d';g.beginPath();g.arc(W*0.495,H*0.10,2.4,0,7);g.fill();
+  for(var r=16;r>4;r-=2){g.fillStyle='rgba(255,220,140,'+(0.02+(16-r)*0.006)+')';
+   g.beginPath();g.arc(W*0.495,H*0.10,r,0,7);g.fill();}
+  for(var k=0;k<40;k++){var lx=al(k*3.7)*W,ly=H*0.66+al(k*5.1)*H*0.3;
+   R(lx,ly,1,1,'rgba(246,216,140,.6)');}
+  bande(H*0.84,H,[[18,38,54],[24,50,70],[16,34,48]]);
+ }},
+/* ---------- LE REPLI, quand on ne sait pas où l'on va ---------- */
+rien:{nom:'Battle Dock',dit:'On ouvre la porte',
+ f:'#0d1410',o:'#c9a24a',t:'#f0e6cf',d:'#8a9a7a',
+ p:function(){
+  bande(0,H,[[18,26,22],[26,36,28],[20,28,22],[13,18,15]]);
+  for(var i=0;i<60;i++)R(al(i*1.7)*W,al(i*2.9)*H,1,1,'rgba(200,220,190,.10)');
+ }}};
+
+/* OÙ VA-T-ON ? L'adresse d'abord, la sauvegarde ensuite. */
+var c='';
+try{c=new URLSearchParams(location.search).get('carte')||'';}catch(e){}
+if(!c){try{c=(JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}').carte)||'';}catch(e){}}
+var cle = c==='foret' ? 'foret'
+        : (c==='ferme'||c==='village') ? 'ferme'
+        : c==='garde' ? 'garde'
+        : c==='extramar' ? 'port'
+        : 'rien';
+var L=LIEUX[cle]||LIEUX.rien;
+try{L.p();}catch(e){}
+var v=document.getElementById('voile');
+if(v){v.style.setProperty('--vf',L.f);v.style.setProperty('--vo',L.o);
+ v.style.setProperty('--vt',L.t);v.style.setProperty('--vd',L.d);}
+var n=document.getElementById('vLieu');if(n)n.textContent=L.nom;
+var d=document.getElementById('vDit');if(d)d.textContent=L.dit;
+/* LE FONDU DU BAS SE POSE SOUS LA SCÈNE : sa hauteur dépend de celle de
+   la toile, qu'on ne connaît qu'une fois la page mesurée. */
+function poserFondu(){
+ var t=document.getElementById('vPre'), b=document.getElementById('vFonduB');
+ if(!t||!b)return;
+ b.style.top=Math.round(t.offsetTop+t.offsetHeight-124)+'px';
+}
+poserFondu();addEventListener('resize',poserFondu);
+addEventListener('load',poserFondu);
+setTimeout(poserFondu,60);setTimeout(poserFondu,400);
+})();
+</script>
 <script>window.addEventListener('error',ev=>{
 if(document.getElementById('pepin'))return;
 const d=document.createElement('div');d.id='pepin';
