@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-11-1115"></script>
+<script src="maintenance.js?v=2026-10-11-1215"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-11-1115';
+var MA_VERSION='2026-10-11-1215';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -22328,11 +22328,16 @@ function dureeCourte(ms){const m=Math.ceil(ms/60000);
 if(m<=0)return 'maintenant';
 return m>=60?(Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')):(m+' min');}
 async function ouvrirEnCours(){
-if(!document.getElementById('cssEnc')){const st=document.createElement('style');st.id='cssEnc';st.textContent=CSS_ENC;document.head.appendChild(st);}
+if(!document.getElementById('cssEnc')){const st=document.createElement('style');st.id='cssEnc';st.textContent=CSS_ENC+CARNET('enc');document.head.appendChild(st);}
 try{$('tiroir').classList.remove('on');$('barre').classList.remove('on');}catch(x){}
 $('page2Fond').className='enc';$('page2').classList.add('on');
-$('page2Fond').innerHTML='<div class="tete"><div><small>TON JOURNAL DE BORD</small><b>En cours</b></div><button id="encX">✕</button></div><div class="corps"><div class="vide">On regarde…</div></div>';
-$('encX').onclick=()=>{$('page2').classList.remove('on');};
+/* LE JOURNAL PREND LE CARNET : même chapeau, même carte, même rail. Il
+   était le dernier écran vert avec celui de la ferme. */
+$('page2Fond').innerHTML='<div class="tete"><small>LA FERME · TON JOURNAL</small><b>En cours</b>'+
+'<span class="bourse">EN POCHE<b>'+enEuros(e.euros||0)+'</b></span></div>'+
+'<div class="corps"><div class="calme">On regarde…</div></div>'+
+'<div class="bas"><button id="encX">RETOUR À LA FERME</button></div>';
+$('encX').onclick=()=>{vibrer(8);ouvrirLaFerme();};
 let P=null,C=null,CM=null;
 try{P=await appelRPC('pot_etat',{p_joueur:e.id});}catch(x){}
 try{C=await appelRPC('cuisine_etat',{p_joueur:e.id});}catch(x){}
@@ -22363,7 +22368,7 @@ const grp={};lignes.forEach(l=>{(grp[l[0]]=grp[l[0]]||[]).push(l);});
 const corps=Object.keys(grp).length?Object.keys(grp).map(t=>'<h3>'+t+'</h3>'+grp[t].map(l=>
 '<div class="l"><span class="n"><b>'+l[1]+'</b><em>'+l[2]+'</em></span>'+
 (l[3]?'<i class="pret">PRÊT</i>':'<i class="att">'+(l[4]||'…')+'</i>')+'</div>').join('')).join('')
-: '<div class="vide">Rien ne mijote, rien ne pousse.<br>Sème au champ, lance une recette chez Fonfon,<br>ou prends une commande au marché.</div>';
+: '<div class="calme">Rien ne mijote, rien ne pousse.<br>Sème au champ, lance une recette chez Fonfon,<br>ou prends une commande au marché.</div>';
 $('page2Fond').querySelector('.corps').innerHTML=corps;
 }
 $('b-encours').onclick=ouvrirEnCours;
@@ -32394,6 +32399,20 @@ ${P} .l,${P} .ch,${P} .t{border:1px solid #d6c4a0;border-radius:15px;background:
 ${P} .l{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:11px 13px;margin-bottom:9px;color:inherit;font:inherit;cursor:pointer}
 ${P} .l:active,${P} .t:active{background:rgba(255,255,255,.9)}
 ${P} .l canvas{flex:none;width:40px;height:40px;border-radius:10px;background:#3a2e20}
+${P} .l.pret{border-color:#4e7a38;background:rgba(78,122,56,.16)}
+/* L'ÉTIQUETTE DE BOUT DE LIGNE : « PRÊT », ou le temps qu'il reste. */
+${P} .l i{font-style:normal;flex:none;font:700 9px Arial;letter-spacing:1.3px;border-radius:10px;padding:6px 9px;background:#e3d6b8;color:#7a6a4e}
+${P} .l i.pret{background:#4e7a38;color:#fbf5e6}
+${P} .l.act i{font-style:normal;flex:none;font:700 10px Arial;letter-spacing:1.3px;text-transform:uppercase;border-radius:12px;padding:7px 12px;background:#4e7a38;color:#fbf5e6}
+${P} .l.act[disabled]{opacity:.55}
+${P} .l.act[disabled] i{background:#cdbd9c;color:#7a6a4e}
+/* ---------- L'IMAGE DU LIEU ----------
+   Le pré, la fromagerie, l'étal : une gravure du décor, encadrée, posée
+   en haut du corps. Elle ne porte plus ni titre ni bouton — le chapeau
+   s'en charge, et le fond arrête de bouger sous le texte. */
+${P} .bande{position:relative;margin:2px 0 14px;border:4px solid #8a6238;border-radius:14px;background:#4e7a38;overflow:hidden}
+${P} .bande canvas{display:block;width:100%;height:150px;image-rendering:pixelated}
+${P} .note{font:italic 11.5px Georgia;color:#8a7a5e;line-height:1.6;padding:12px 4px 0}
 ${P} .l .n{display:block;flex:1;min-width:0}
 ${P} .l b{display:block;font:400 17px Georgia;line-height:1.25}
 ${P} .l em{font:italic 11.5px Georgia;color:#7a6a4e;display:block;line-height:1.4}
@@ -32570,14 +32589,8 @@ R(12,2,2,7,'#b8c6d0');R(12,2,1,7,'#dfe8ee');R(13,8,2,3,'#8b9198');}
    Le pré encadré, l'abri à poules et la ligne-bouton. Tout le reste
    vient de CARNET(). */
 const CSS_ETB_CARNET=`
-#page2Fond.etb .bande{position:relative;margin:2px 0 14px;border:4px solid #8a6238;border-radius:14px;background:#4e7a38;overflow:hidden}
-#page2Fond.etb .bande canvas{display:block;width:100%;height:150px;image-rendering:pixelated}
 #page2Fond.etb .l canvas{flex:none;width:44px;height:44px;border-radius:11px;background:#e6dcc0}
-#page2Fond.etb .l.pret{border-color:#4e7a38;background:rgba(78,122,56,.16)}
 /* LA LIGNE QUI AGIT : la même carte, avec son bouton au bout. */
-#page2Fond.etb .l.act i{font-style:normal;flex:none;font:700 10px Arial;letter-spacing:1.3px;text-transform:uppercase;border-radius:12px;padding:7px 12px;background:#4e7a38;color:#fbf5e6}
-#page2Fond.etb .l.act[disabled]{opacity:.5}
-#page2Fond.etb .l.act[disabled] i{background:#cdbd9c;color:#7a6a4e}
 /* L'ABRI À POULES : une carte comme les autres, avec ses rangs dedans. */
 #page2Fond.etb .abri{border:1px solid #d6c4a0;border-radius:15px;background:rgba(255,255,255,.62);padding:4px 13px 10px;margin-top:9px}
 #page2Fond.etb .abri .rub{font:700 9px Arial;letter-spacing:1.6px;color:#8a6238;padding:11px 0 6px}
@@ -33060,28 +33073,35 @@ const lait=E.lait_sac||0, reste=E.fromage;          /* null : la cave est vide *
 const enCave=(reste!==null&&reste!==undefined);
 const pret=enCave&&reste<=0;
 const AFFINAGE=2*3600;
+/* LA CAVE TIENT EN UNE LIGNE DE CARNET. Elle avait sa carte à elle, avec
+   son titre, sa jauge et son bouton pleine largeur dessous : trois
+   étages pour dire une seule chose. Quand la meule est prête, la ligne
+   remonte en « à faire maintenant », comme partout ailleurs. */
 let carte;
-if(pret)carte='<div class="carte pret"><div class="h"><canvas id="froIc"></canvas>'+
-'<span class="nm"><b>La meule est prête</b><i>affinée à point · elle se vend '+enEuros(650)+'</i></span></div>'+
-'<button data-f="1">Prendre le fromage</button></div>';
-else if(enCave)carte='<div class="carte"><div class="h"><canvas id="froIc"></canvas>'+
-'<span class="nm"><b>Une meule s’affine</b><i>prête dans '+froDuree(reste)+'</i></span></div>'+
-'<div class="ja"><span style="width:'+Math.max(2,Math.round((1-reste/AFFINAGE)*100))+'%"></span></div>'+
-'<button disabled>Il faut la laisser faire</button></div>';
-else carte='<div class="carte"><div class="h"><canvas id="froIc"></canvas>'+
-'<span class="nm"><b>La cave est vide</b><i>'+(lait>=4?('tu as '+lait+' L de lait dans ton sac'):
-('il te faut 4 L de lait · tu en as '+lait))+'</i></span></div>'+
-'<button data-f="1"'+(lait>=4?'':' disabled')+'>Mettre 4 L en cave</button></div>';
+if(pret)carte='<h3>À FAIRE MAINTENANT</h3>'+
+'<button class="u" data-f="1"><canvas id="froIc"></canvas>'+
+'<span class="n"><b>La meule est prête</b>'+
+'<em>affinée à point · elle se vend '+enEuros(650)+'</em></span><i>Prendre</i></button>'+
+'<h3>LA CAVE</h3>';
+else if(enCave)carte='<h3>LA CAVE</h3>'+
+'<div class="l"><canvas id="froIc"></canvas>'+
+'<span class="n"><b>Une meule s’affine</b><em>prête dans '+froDuree(reste)+'</em></span>'+
+'<span class="j"><span style="width:'+Math.max(4,Math.round((1-reste/AFFINAGE)*100))+'%"></span></span></div>';
+else carte='<h3>LA CAVE</h3>'+
+'<button class="l act" data-f="1"'+(lait>=4?'':' disabled')+'><canvas id="froIc"></canvas>'+
+'<span class="n"><b>La cave est vide</b><em>'+(lait>=4?('tu as '+lait+' L de lait dans ton sac'):
+('il te faut 4 L de lait · tu en as '+lait))+'</em></span><i>Mettre en cave</i></button>';
 $('page2Fond').innerHTML=
-'<div class="cadre"><canvas id="froVue"></canvas>'+
-'<div class="chap"><div class="ti"><small>LA FROMAGERIE</small>'+
-'<b>'+(pret?'Une meule t’attend':(enCave?'Ça travaille en cave':'Le lait devient fromage'))+'</b></div>'+
-'<span class="eu">'+enEuros(e.euros||0)+'</span>'+
-'<button id="froX">✕</button></div></div>'+
-'<div class="corps"><div class="eti">LA CAVE</div>'+carte+
+'<div class="tete"><small>LA FERME · LA FROMAGERIE</small>'+
+'<b>'+(pret?'Une meule t’attend':(enCave?'Ça travaille en cave':'Le lait devient fromage'))+'</b>'+
+'<span class="bourse">EN POCHE<b>'+enEuros(e.euros||0)+'</b></span></div>'+
+'<div class="corps">'+
+'<div class="bande"><canvas id="froVue"></canvas></div>'+
+carte+
 '<div class="note">4 litres de lait valent '+enEuros(480)+' au comptoir.<br>'+
 'Deux heures de cave en font une meule à '+enEuros(650)+'.</div>'+
-(mot?'<div class="mot">'+mot+'</div>':'')+'</div>';
+(mot?'<div class="pied">'+mot+'</div>':'')+'</div>'+
+'<div class="bas"><button id="froX">RETOUR À LA FERME</button></div>';
 /* LE BÂTIMENT EN PHOTO : on repose la gravure du décor, pas un second dessin. */
 try{const v=$('froVue'), g=v.getContext('2d');g.imageSmoothingEnabled=false;
 const D=Math.min(2,window.devicePixelRatio||1);
@@ -33106,12 +33126,14 @@ R(8,38,40,4,'rgba(40,30,18,.22)');}
 else{R(18,14,20,30,'#f2efe4');R(18,14,20,4,'#ffffff');                    /* un bidon vide */
 R(18,38,20,6,'#d8d2c4');R(22,8,12,6,'#c8c2b4');}
 }catch(x){}
-$('froX').onclick=()=>{vibrer(8);FRO_BOUCLE++;$('page2').classList.remove('on');};
+$('froX').onclick=()=>{vibrer(8);FRO_BOUCLE++;ouvrirLaFerme();};
 const b=$('page2Fond').querySelector('[data-f]');
 if(b&&!b.disabled)b.onclick=()=>{vibrer(12);gesteDeLaFromagerie();};}
 function ouvrirLaFromagerie(mot){
 if(!document.getElementById('cssFro')){const st=document.createElement('style');
-st.id='cssFro';st.textContent=CSS_FRO;document.head.appendChild(st);}
+/* LE CARNET PASSE EN DERNIER : il reprend la coque, CSS_FRO garde ce qui
+   lui reste en propre. */
+st.id='cssFro';st.textContent=CSS_FRO+CARNET('fro');document.head.appendChild(st);}
 $('page2Fond').className='fro';$('page2').classList.add('on');
 peindreLaFromagerie(ETB,mot);
 const mien=++FRO_BOUCLE;
