@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-2045"></script>
+<script src="maintenance.js?v=2026-10-12-2100"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-2045';
+var MA_VERSION='2026-10-12-2100';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -15424,13 +15424,50 @@ function ombrePortee(g,C,x,y,t){
       if(h>18.8)force*=(19.6-h)/0.8;
     }
   }catch(e){}
-  const sil=silhouetteDe(C);
-  g.save();
-  g.translate(Math.round(x),Math.round(y));
-  g.transform(1,0,pente,ecrase,0,0);
+  const O=ombreCuite(C,pente,ecrase);
+  if(!O)return;
+  const sa=g.globalAlpha;
   g.globalAlpha=force;
-  g.drawImage(sil,Math.round(-C.W/2),Math.round(-C.sol),C.W,C.H);
-  g.restore();
+  g.drawImage(O.toile,Math.round(x)+O.dx,Math.round(y)+O.dy);
+  g.globalAlpha=sa;
+}
+/* L'OMBRE PENCHEE, CUITE UNE FOIS POUR TOUTES.
+   Elle etait refaite a chaque image, pour chaque objet : save, une
+   matrice de cisaillement, un dessin penche, restore. Un dessin penche
+   ne se recopie pas en bloc — le moteur repasse pixel par pixel — et il
+   y en a une douzaine a l'ecran dans le bois. Mesure, en marchant :
+   52 images par seconde avec, 58 sans.
+   Or la pente et l'ecrasement ne dependent que de l'heure : ils sont les
+   memes pour tout le monde a un instant donne. On cuit donc l'ombre
+   penchee une fois par silhouette, et on la pose ensuite droite, comme
+   n'importe quelle image. Quand l'heure bouge assez pour que la pente
+   change d'un trente-deuxieme, on jette la fournee et on recommence. */
+const OMB_CUITES=new WeakMap();
+let OMB_CLE='';
+function ombreCuite(C,pente,ecrase){
+  const cle=Math.round(pente*32)+'/'+Math.round(ecrase*32);
+  if(cle!==OMB_CLE){OMB_CLE=cle;OMB_CUITES.set(ombreCuite,new WeakMap());}
+  let par=OMB_CUITES.get(ombreCuite);
+  if(!par){par=new WeakMap();OMB_CUITES.set(ombreCuite,par);}
+  const sil=silhouetteDe(C);
+  const v=par.get(sil);
+  if(v)return v;
+  const u0=Math.round(-C.W/2), u1=u0+C.W;
+  const v0=Math.round(-C.sol), v1=v0+C.H;
+  const xs=[u0+pente*v0,u1+pente*v0,u0+pente*v1,u1+pente*v1];
+  const ys=[ecrase*v0,ecrase*v1];
+  const minX=Math.floor(Math.min.apply(null,xs))-1, maxX=Math.ceil(Math.max.apply(null,xs))+1;
+  const minY=Math.floor(Math.min.apply(null,ys))-1, maxY=Math.ceil(Math.max.apply(null,ys))+1;
+  const bw=maxX-minX, bh=maxY-minY;
+  if(bw<1||bh<1||bw>1400||bh>1400)return null;
+  const c=document.createElement('canvas');c.width=bw;c.height=bh;
+  const q=c.getContext('2d');q.imageSmoothingEnabled=false;
+  q.translate(-minX,-minY);
+  q.transform(1,0,pente,ecrase,0,0);
+  q.drawImage(sil,u0,v0,C.W,C.H);
+  const o={toile:c,dx:minX,dy:minY};
+  par.set(sil,o);
+  return o;
 }
 function dessinerX(g,o,x,y){
 /* LE PANNEAU DU BOULODROME CHANGE LES JOURS DE MONDIAL. Il était sauté
@@ -22756,7 +22793,7 @@ if(!TELEPHONE_MODESTE){QUALITE=1;QUALITE_TOILE=1;}
 try{if(typeof videCache==='function')videCache();if(typeof taille==='function')taille();}catch(x){}
 }
 try{appliquerEconomie();}catch(x){}
-let msMoyen=16, imagesLentes=0, imagesRapides=0;
+let msMoyen=16, imagesLentes=0, imagesRapides=0, RECHUTES=0;
 let MINUTE=(()=>{try{const p=new Date().toLocaleString('en-US',{timeZone:'Europe/Paris'});
 const d=new Date(p);return d.getHours()*60+d.getMinutes();}catch(x){const d=new Date();return d.getHours()*60+d.getMinutes();}})();
 let MINUTE_QUAND=Date.now();
@@ -22861,7 +22898,18 @@ soleil:C0.soleil?{cote:C0.soleil.cote,c:C0.soleil.c,f:C0.soleil.f*k}:null};
 if(!C){LUMIERES.length=0;return;}
 /* la nuit simple ne sert plus qu'en dernier recours : c'est elle qui donnait
    cet éclairage pâle pendant les premières secondes, avant la vraie lumière. */
-if(typeof QUALITE!=='undefined'&&QUALITE<0.5){ancienPoserLeCiel(g,C);
+/* LE VOILE DE LUMIERE EST CE QUI COUTE LE PLUS CHER DE TOUT LE JEU :
+   une fusion « multiply » sur tout l'écran, à chaque image, à la densité
+   de pixels de l'appareil — près de trois millions de pixels sur un
+   téléphone récent. Mesuré dans le bois, en marchant : 14 images par
+   seconde avec, 57 sans.
+   Le palier « allégé » ne le touchait pas — le test était QUALITE<0.5,
+   donc 0.5 payait le plein tarif comme 1. Descendre d'un cran ne
+   changeait donc rien du tout : il fallait tomber jusqu'au plancher.
+   Maintenant, seul le plein éclairage garde la carte des lumières ;
+   dès le premier cran, c'est la nuit simple, qui garde les halos des
+   lampes sans repeindre l'écran. */
+if(typeof QUALITE!=='undefined'&&QUALITE<1){ancienPoserLeCiel(g,C);
 if(LUMIERES.length&&C.lampes>0.1){g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='lighter';
 for(const l of LUMIERES){const T=tacheTeinte(l.c[0],l.c[1],l.c[2]);g.globalAlpha=0.3*l.a;g.drawImage(T,l.x-l.r*0.6,l.y-l.r*0.6,l.r*1.2,l.r*1.2);}g.restore();}
 LUMIERES.length=0;return;}
@@ -22984,7 +23032,8 @@ if(typeof REG!=='undefined'&&REG.finesse&&REG.finesse!=='auto')return;
 msMoyen=msMoyen*0.9+ms*0.1;
 if(msMoyen>26){
 imagesLentes++;imagesRapides=0;
-if(imagesLentes>24&&QUALITE>0){QUALITE=QUALITE===1?0.5:0;imagesLentes=0;}
+if(imagesLentes>24&&QUALITE>0){if(QUALITE===1)RECHUTES++;
+QUALITE=QUALITE===1?0.5:0;imagesLentes=0;}
 /* LE SECOND PALIER CHANGEAIT L'ÉCHELLE DE LA TOILE en pleine partie :
    la caméra semblait zoomer d'un coup, et rien ne la ramenait ensuite.
    On ne le déclenche plus que si ça rame vraiment longtemps, et il
@@ -22992,7 +23041,15 @@ if(imagesLentes>24&&QUALITE>0){QUALITE=QUALITE===1?0.5:0;imagesLentes=0;}
 if(imagesLentes>240&&QUALITE===0&&QUALITE_TOILE===1){QUALITE_TOILE=0.5;imagesLentes=0;try{taille();}catch(x){}}
 }else if(msMoyen<18.5){                 /* 60 images/s tenues (la boucle est plafonnée à 60) */
 imagesRapides++;imagesLentes=0;
-if(imagesRapides>240&&QUALITE<1){QUALITE=QUALITE===0?0.5:1;imagesRapides=0;}
+/* ON NE REMONTE PAS AU PLEIN ÉCLAIRAGE À LA LÉGÈRE. Depuis que le cran
+   « allégé » coupe vraiment le voile de lumière, y remonter rend
+   l'appareil lent, ce qui le fait redescendre, ce qui le rend rapide :
+   on oscillerait toutes les quatre secondes, et c'est pire que de
+   rester en bas. Il faut donc trente secondes sans faillir pour
+   retrouver le plein éclairage, et après deux rechutes on n'y revient
+   plus de la partie. */
+if(imagesRapides>240&&QUALITE===0){QUALITE=0.5;imagesRapides=0;}
+else if(imagesRapides>1800&&QUALITE===0.5&&RECHUTES<2){QUALITE=1;imagesRapides=0;}
 /* LA TOILE REMONTE AUSSI. Avant, elle ne pouvait que se dégrader : une
    fois l'échelle baissée, elle le restait jusqu'au rechargement. */
 else if(imagesRapides>480&&QUALITE===1&&QUALITE_TOILE<1&&!ECO){
