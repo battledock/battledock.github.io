@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-12-1420"></script>
+<script src="maintenance.js?v=2026-10-12-1530"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-12-1420';
+var MA_VERSION='2026-10-12-1530';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2065,7 +2065,7 @@ white-space:nowrap}
 /* ni compteur ni pastille dans le menu */
 #tiroir .latte .ss,#tiroir .latte .pastille{display:none}
 /* l'ordre d'affichage, et la derniere ligne : Reglages puis la croix */
-#b-courrier{order:1}#b-vestiaire{order:2}#b-class{order:3}
+#b-courrier{order:1}#b-vestiaire{order:2}#b-sac{order:3}#b-class{order:4}
 /* ces entrees ne sont plus dans le menu : elles restent dans la page pour ne rien casser */
 #tiroir #b-carnet,#tiroir #b-encours,#tiroir #b-aide{display:none}
 #tiroir .tbas{order:7;display:flex;gap:7px;align-items:center}
@@ -2075,6 +2075,7 @@ white-space:nowrap}
 #tiroir.on .latte,#tiroir.on .tbas{animation:ligneFin .28s ease-out both}
 #tiroir.on .tbas{animation-delay:0s}#tiroir.on .tbas .latte{animation:none}
 #tiroir.on #b-aide{animation-delay:.04s}#tiroir.on #b-class{animation-delay:.08s}
+#tiroir.on #b-sac{animation-delay:.1s}
 #tiroir.on #b-vestiaire{animation-delay:.12s}#tiroir.on #b-encours{animation-delay:.16s}
 #tiroir.on #b-carnet{animation-delay:.2s}
 #tiroir.part .latte,#tiroir.part .tbas{animation:none}
@@ -2178,6 +2179,9 @@ white-space:nowrap}
     <i class="clou g"></i><i class="clou d"></i></button>
 <div class="tbas"><button class="latte" id="b-reglages">
     <svg viewBox="0 0 20 18" shape-rendering="crispEdges" width="30"><rect x="2" y="4" width="16" height="2" fill="#c9a24a"/><rect x="2" y="12" width="16" height="2" fill="#c9a24a"/><rect x="12" y="2" width="3" height="6" fill="#e8c06a"/><rect x="12" y="2" width="3" height="1" fill="#f4d98a"/><rect x="5" y="10" width="3" height="6" fill="#e8c06a"/><rect x="5" y="10" width="3" height="1" fill="#f4d98a"/></svg><span class="b">Réglages</span></button></div>
+  <button class="latte" id="b-sac">
+    <svg viewBox="0 0 20 18" shape-rendering="crispEdges" width="30"><rect x="7" y="1" width="6" height="3" fill="#8a6a3a"/><rect x="8" y="2" width="4" height="2" fill="#15212e"/><rect x="3" y="4" width="14" height="12" fill="#8a5a2e"/><rect x="3" y="4" width="14" height="2" fill="#a8743e"/><rect x="3" y="9" width="14" height="2" fill="#6b4525"/><rect x="8" y="11" width="4" height="4" fill="#c9a24a"/><rect x="9" y="12" width="2" height="2" fill="#6b4525"/></svg><span class="b">Sac</span>
+    <i class="clou g"></i><i class="clou d"></i></button>
   <button class="latte parch" id="b-class">
     <svg viewBox="0 0 20 18" shape-rendering="crispEdges" width="30"><rect x="2" y="15" width="16" height="2" fill="#6b4a2c"/><rect x="8" y="4" width="5" height="11" fill="#e8c06a"/><rect x="8" y="4" width="5" height="2" fill="#f4d98a"/><rect x="3" y="8" width="5" height="7" fill="#c4ced6"/><rect x="3" y="8" width="5" height="2" fill="#dde4ea"/><rect x="13" y="10" width="5" height="5" fill="#d2a271"/><rect x="13" y="10" width="5" height="2" fill="#e3bb90"/></svg><span class="b">Classement</span>
     <i class="clou g"></i><i class="clou d"></i></button>
@@ -22455,6 +22459,7 @@ const i=$('saisie');
 if(i&&document.activeElement===i&&i.blur)i.blur();
 },{passive:true});
 $('action').onclick=agir;
+{const bs=$('b-sac');if(bs)bs.onclick=()=>{try{fermerTiroir();}catch(x){}ouvrirLeSac();};}
 $('b-class').onclick=()=>{try{fermerTiroir();}catch(x){}ouvrirLeClassement();};
 $('pan').onclick=(ev)=>{if(ev.target===$('pan')){fermeA=Date.now();$('pan').classList.remove('on');}};
 let dernierSolde=0;
@@ -26831,6 +26836,69 @@ $('page2Fond').innerHTML='<div id="cls">'+tete+'<div class="corps"><div class="v
 $('clsX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
 $('page2Fond').querySelectorAll('[data-cv]').forEach(b=>b.onclick=()=>{
 CLS_VUE=b.dataset.cv;ouvrirLeClassement();});
+}
+/* ================= LE SAC =================
+   On portait ses prises sans jamais pouvoir les regarder : la jauge du
+   haut disait qu'il était plein, rien ne disait de quoi. */
+const CSS_SAC=`#sacE{position:absolute;inset:0;background:#15212e;display:flex;flex-direction:column;
+font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;overflow:hidden}
+#sacE .hd{flex:none;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 12px;display:flex;align-items:flex-start;gap:10px}
+#sacE .hd .tx{flex:1;min-width:0}
+#sacE .hd small{display:block;font:700 9px ui-monospace,monospace;letter-spacing:3px;color:#c9a24a}
+#sacE .hd b{display:block;font:700 23px 'Baloo 2',sans-serif;color:#f0e4c6;margin-top:4px}
+#sacE .hd button{flex:none;border:0;background:none;color:#e8c06a;font:700 20px 'Baloo 2',sans-serif;padding:0 2px}
+#sacE .jg{flex:none;padding:0 16px 14px}
+#sacE .jg u{display:block;height:10px;border-radius:5px;background:rgba(255,255,255,.1);
+text-decoration:none;overflow:hidden}
+#sacE .jg u i{display:block;height:100%;border-radius:5px;background:#7fb463}
+#sacE .jg u i.plein{background:#d0623f}
+#sacE .jg span{display:flex;justify-content:space-between;margin-top:7px;
+font:700 10px ui-monospace,monospace;letter-spacing:1.4px;color:#8fa6b8}
+#sacE .jg span b{color:#f0e4c6}
+#sacE .corps{flex:1;overflow-y:auto;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 16px)}
+#sacE .rub{font:700 9px ui-monospace,monospace;letter-spacing:3px;color:#c9a24a;padding:16px 16px 8px}
+#sacE .out{display:flex;flex-wrap:wrap;gap:7px;padding:0 16px}
+#sacE .out span{border:1px solid rgba(232,192,106,.4);border-radius:14px;padding:6px 12px;
+font:700 12px 'Baloo 2',sans-serif;color:#e8c06a;background:rgba(232,192,106,.1)}
+#sacE .l{display:flex;align-items:center;gap:12px;padding:12px 16px;
+border-bottom:1px solid rgba(255,255,255,.07)}
+#sacE .l .n{flex:1;min-width:0}
+#sacE .l b{display:block;font:700 15px 'Baloo 2',sans-serif;color:#f0e4c6}
+#sacE .l em{display:block;font:italic 12px Georgia,serif;color:#8fa6b8;line-height:1.35;margin-top:2px}
+#sacE .l u{flex:none;text-decoration:none;font:700 19px 'Baloo 2',sans-serif;color:#e8c06a;min-width:34px;text-align:right}
+#sacE .l u small{font:700 9px ui-monospace,monospace;color:#5f7489;display:block;letter-spacing:1px}
+#sacE .vide{padding:50px 26px;text-align:center;font:italic 15px Georgia,serif;color:#8fa6b8;line-height:1.6}`;
+function ouvrirLeSac(){
+if(!document.getElementById('cssSacE')){const st=document.createElement('style');
+st.id='cssSacE';st.textContent=CSS_SAC;document.head.appendChild(st);}
+$('page2Fond').className='';$('page2').classList.add('on');
+const tout=Object.entries(e.sac||{}).filter(([k,v])=>+v>0);
+/* LA MÊME CHARGE QUE LA JAUGE DU HAUT, calculée pareil : deux comptes
+   qui ne tombent pas juste, c'est un bogue qu'on cherche longtemps. */
+const charge=tout.reduce((t,kv)=>t+(+kv[1]>0?+kv[1]:0),0), max=e.sacMax||60;
+const part=Math.max(0,Math.min(1,charge/Math.max(1,max)));
+const outils=tout.filter(kv=>OBJETS[kv[0]]&&OBJETS[kv[0]].outil);
+const reste=tout.filter(kv=>!(OBJETS[kv[0]]&&OBJETS[kv[0]].outil))
+.sort((a,b)=>(b[1]-a[1])||NOM_OBJ(a[0]).localeCompare(NOM_OBJ(b[0])));
+let h='<div id="sacE"><div class="hd"><span class="tx"><small>CE QUE TU PORTES</small><b>Le sac</b></span>'+
+'<button id="sacX">✕</button></div>'+
+'<div class="jg"><u><i class="'+(part>=.9?'plein':'')+'" style="width:'+Math.round(part*100)+'%"></i></u>'+
+'<span><b>'+charge+' sur '+max+'</b><em>'+(part>=1?'il est plein':(part>=.9?'il va déborder':
+reste.length+' sorte'+(reste.length>1?'s':'')+' d’objet'+(reste.length>1?'s':'')))+'</em></span></div>'+
+'<div class="corps">';
+if(outils.length)h+='<div class="rub">TES OUTILS</div><div class="out">'+
+outils.map(kv=>'<span>'+echapperT(NOM_OBJ(kv[0]))+'</span>').join('')+'</div>';
+if(!reste.length)h+='<div class="vide">'+(outils.length
+?'Rien que tes outils pour l’instant.<br>Va pêcher, ramasser, couper, creuser —<br>le sac se remplira tout seul.'
+:'Ton sac est vide.<br>Va pêcher, ramasser, couper, creuser —<br>il se remplira tout seul.')+'</div>';
+else{h+='<div class="rub">DANS LE SAC</div>';
+h+=reste.map(kv=>{const O=OBJETS[kv[0]]||{};
+return '<div class="l"><span class="n"><b>'+echapperT(NOM_OBJ(kv[0]))+'</b>'+
+(O.d?'<em>'+echapperT(O.d)+'</em>':'')+'</span>'+
+'<u>'+kv[1]+(O.poids>1?'<small>'+(O.poids*kv[1])+' KG</small>':'')+'</u></div>';}).join('');}
+h+='</div></div>';
+$('page2Fond').innerHTML=h;
+$('sacX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
 }
 async function ouvrirLeClassement(){
 if(!document.getElementById('cssCls')){const st=document.createElement('style');
