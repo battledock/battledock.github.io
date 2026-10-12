@@ -12,8 +12,8 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<script src="maintenance.js?v=2026-10-12-2400"></script>
-<script src="personnage.js?v=2026-10-12-2400"></script>
+<script src="maintenance.js?v=2026-10-13-0100"></script>
+<script src="personnage.js?v=2026-10-13-0100"></script>
 <script>
 /* LA VERSION, comme partout ailleurs : ajoutée au signet, une page reste en
    mémoire et ne se recharge jamais. On demande à chaque ouverture quelle est
@@ -27,7 +27,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    MA_VERSION de jeu.html, index.html, jeu_entree.html, complexe.html,
    forge.html et mine.html. Les autres pages n'en portent pas. */
 (function(){
-  var MA_VERSION='2026-10-12-2400';
+  var MA_VERSION='2026-10-13-0100';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue';
   function verifier(){
@@ -170,10 +170,22 @@ function halo(x,y,r,force,col){
    joue en direct que la poussiere dans les rais.
    ===================================================================== */
 let NEF=null, NEF_CLE='';
-function lanterneaux(){
-  const P=[], pas=Math.max(52,Math.round(SALLE_L/9));
-  for(let x=Math.round(pas/2);x<SALLE_L;x+=pas)P.push(x);
-  return P;
+/* LES PROJECTEURS. Un pont de lumiere court sous la charpente : des
+   lyres qui balaient, et des boules a facettes entre elles. Leur place
+   est fixe, leur mouvement ne l'est pas — c'est ce qui fait la boite. */
+const COULEURS=[[255,60,120],[80,220,255],[160,110,255],[80,255,170],[255,190,60],[255,100,60]];
+function lyres(){
+  /* HUIT LYRES SUR CINQ ECRANS, c'etait une et demie par ecran : on
+     marchait dans le noir entre deux faisceaux. */
+  const L=[], pas=Math.max(58,Math.round(SALLE_L/14));
+  for(let x=Math.round(pas/2),i=0;x<SALLE_L;x+=pas,i++)
+    L.push({x:x, c:COULEURS[i%COULEURS.length], ph:i*1.9, sens:(i%2)?1:-1});
+  return L;
+}
+function boules(){
+  const B=[], pas=Math.max(130,Math.round(SALLE_L/6));
+  for(let x=Math.round(pas/2);x<SALLE_L;x+=pas)B.push(x);
+  return B;
 }
 function nefCuire(){
   const cle=SALLE_L+'/'+SALLE_H+'/'+MUR;
@@ -189,87 +201,150 @@ function nefGraver(){
   /* LES MESURES SONT PRISES SUR LA HAUTEUR DU MUR : la salle garde ses
      proportions d'un telephone a l'autre. */
   const F=MUR/286;
-  /* le mur, du sombre en haut au clair en bas : l'air d'un volume */
+  /* LE MUR, DE NUIT. Il montait du brun vers le clair quand le jour
+     tombait des lanterneaux ; la nuit, c'est l'inverse qui est vrai :
+     le haut se perd, le bas prend la couleur de ce qui danse dessous. */
   for(let y=0;y<MUR;y++){
     const k=y/MUR;
-    R(0,y,SALLE_L,1,'rgb('+Math.round(36+k*44)+','+Math.round(30+k*38)+','+Math.round(26+k*30)+')');
+    R(0,y,SALLE_L,1,'rgb('+Math.round(14+k*20)+','+Math.round(12+k*16)+','+Math.round(22+k*26)+')');
   }
-  /* LA CHARPENTE. Des fermes de pierre de plus en plus serrees vers le
-     haut : c'est ce resserrement qui donne la hauteur, pas leur nombre. */
   for(let k=0;k<5;k++){
     const y=(6+k*k*2.4+k*8)*F;
-    R(0,y,SALLE_L,3*F,'rgba(22,18,20,.75)');
-    R(0,y,SALLE_L,1,'rgba(150,140,130,.16)');
+    R(0,y,SALLE_L,3*F,'rgba(8,6,12,.8)');
+    R(0,y,SALLE_L,1,'rgba(120,112,140,.14)');
   }
   for(let x=-6;x<SALLE_L+20;x+=33){
-    R(x,0,5,66*F,'rgba(26,22,24,.8)');
-    R(x,0,1,66*F,'rgba(150,140,130,.12)');
+    R(x,0,5,66*F,'rgba(10,8,14,.85)');
+    R(x,0,1,66*F,'rgba(120,112,140,.10)');
   }
-  /* LES LANTERNEAUX, et le jour qui en tombe. */
-  const LAN=lanterneaux();
-  LAN.forEach(cx=>{
-    R(cx-16,54*F,32,12*F,'#20262c');
-    R(cx-14,56*F,28,8*F,'#cfd8d8');
-    R(cx-14,56*F,28,2,'#eef2ee');
-    for(let k=-2;k<3;k++)R(cx+k*6,56*F,1,8*F,'rgba(60,66,66,.7)');
-    R(cx-17,52*F,34,2,'rgba(170,160,150,.35)');
-    halo(cx,66*F,54*F,0.30,'248,242,214');
-    for(let y=66*F;y<MUR+74;y++){
-      const t=(y-66*F)/(MUR+74-66*F);
-      const demi=15+t*32;
-      g.fillStyle='rgba(250,242,218,'+(0.085*(1-t*0.78)).toFixed(3)+')';
-      g.fillRect(cx-demi,y,demi*2,1);
+  /* LE PONT DE LUMIERE : une poutre de fer sous la charpente, et les
+     lyres accrochees dessous. Eteintes, ce ne sont que des masses. */
+  const TY=74*F;
+  R(0,TY,SALLE_L,6*F,'#15131c');
+  R(0,TY,SALLE_L,1,'rgba(130,124,150,.22)');
+  R(0,TY+6*F,SALLE_L,2,'rgba(0,0,0,.5)');
+  for(let x=4;x<SALLE_L;x+=16)R(x,TY+1,2,6*F,'rgba(0,0,0,.35)');
+  lyres().forEach(l=>{
+    R(l.x-5,TY+6*F,10,7*F,'#1d1a26');
+    R(l.x-5,TY+6*F,10,1,'rgba(140,134,160,.3)');
+    R(l.x-3,TY+13*F,6,3*F,'#2a2636');
+  });
+  boules().forEach(bx=>{
+    R(bx-1,TY+6*F,2,14*F,'#2a2636');
+    for(let i=-6;i<7;i++)for(let j=0;j<13;j++){
+      const dx=i, dy=j-6;
+      if(dx*dx+dy*dy>42)continue;
+      const c2=((i+j)%2)?'#8e96a8':'#c8d0dc';
+      R(bx+dx,TY+20*F+dy,1,1,c2);
     }
   });
   /* LE MUR NU : des travees, une plinthe, une corniche. Rien d'autre. */
   for(let x=20;x<SALLE_L;x+=39){
-    R(x-1,82*F,2,MUR-82*F,'rgba(0,0,0,.18)');
-    R(x+1,82*F,1,MUR-82*F,'rgba(190,180,168,.06)');
+    R(x-1,96*F,2,MUR-96*F,'rgba(0,0,0,.26)');
+    R(x+1,96*F,1,MUR-96*F,'rgba(150,146,180,.05)');
   }
-  R(0,78*F,SALLE_L,4*F,'rgba(18,15,17,.6)');
-  R(0,78*F,SALLE_L,1,'rgba(176,166,152,.22)');
-  R(0,MUR-16*F,SALLE_L,16*F,'rgba(16,13,15,.35)');
-  R(0,MUR-17*F,SALLE_L,2,'rgba(176,166,152,.20)');
-  /* LE SOL. Un marbre grand format : moins de joints, plus de salle. */
-  R(0,MUR,SALLE_L,SALLE_H-MUR,'#8e8673');
+  R(0,92*F,SALLE_L,4*F,'rgba(6,5,10,.7)');
+  R(0,92*F,SALLE_L,1,'rgba(140,134,170,.18)');
+  R(0,MUR-16*F,SALLE_L,16*F,'rgba(4,3,8,.4)');
+  R(0,MUR-17*F,SALLE_L,2,'rgba(140,134,170,.16)');
+  /* LA PISTE. Un dallage sombre et poli : il ne vaut que par ce qu'il
+     renvoie, et ce qu'il renvoie change toutes les secondes. */
+  R(0,MUR,SALLE_L,SALLE_H-MUR,'#1d1a2a');
   for(let y=MUR;y<SALLE_H;y++){
     const prof=(y-MUR)/(SALLE_H-MUR), h=9+prof*13, rang=Math.floor((y-MUR)/h);
     for(let x=-26;x<SALLE_L+26;x+=26){
       const d=x+((rang%2)?13:0);
       const q=Math.abs(((y-MUR)%h)/h-0.5)*2, l=Math.round(13*(1-q));
       if(l<1)continue;
-      if(((rang+Math.floor(d/26))%2)===0)R(d+13-l,y,l*2,1,'#7e7765');
+      if(((rang+Math.floor(d/26))%2)===0)R(d+13-l,y,l*2,1,'#262235');
     }
   }
+  R(0,MUR,SALLE_L,1,'rgba(2,2,4,.6)');
+  for(let y=MUR;y<MUR+22;y++)
+    R(0,y,SALLE_L,1,'rgba(0,0,0,'+(0.30-(y-MUR)*0.013).toFixed(3)+')');
+  /* LE POLI DE LA PISTE : elle s'eclaircit en venant vers nous, comme
+     tout sol que l'on voit de biais. Sans ca, le bas de l'ecran est un
+     trou noir et le marcheur y disparait. */
   for(let y=MUR;y<SALLE_H;y++){
     const prof=(y-MUR)/(SALLE_H-MUR);
-    g.fillStyle='rgba(248,242,222,'+(0.12*(1-prof*0.8)).toFixed(3)+')';
+    g.fillStyle='rgba(180,170,220,'+(0.055*prof*prof).toFixed(3)+')';
     g.fillRect(0,y,SALLE_L,1);
   }
-  R(0,MUR,SALLE_L,1,'rgba(14,11,13,.45)');
-  /* LES FLAQUES DE JOUR SUR LA PIERRE. C'est par elles qu'une salle vide
-     se remplit : sans elles, le sol n'est qu'un aplat, et la salle un
-     fond d'ecran. */
-  LAN.forEach(cx=>{
-    for(let i=0;i<78;i++){
-      const t=i/78, demi=20+t*46;
-      g.fillStyle='rgba(252,248,226,'+(0.26*(1-t)*(1-t)).toFixed(3)+')';
-      g.fillRect(cx-demi,MUR+i*1.6,demi*2,2);
-    }
-  });
 }
-/* la poussiere qui monte dans les rais : le seul mouvement de la salle */
-function grains(T){
-  const F=MUR/286;
-  lanterneaux().forEach(cx=>{
-    if(cx<camX-40||cx>camX+VUE_L+40)return;      /* hors du cadre, rien a faire */
-    for(let i=0;i<22;i++){
-      const x=cx-26+alea(i*1.3+cx)*52;
-      const y=70*F+((alea(i*2.7+cx)*(MUR-70*F)+T/70+i*9)%(MUR-70*F));
-      const a=0.08+0.14*Math.abs(Math.sin(T/900+i));
-      R(x,y,1,1,'rgba(255,240,210,'+a.toFixed(2)+')');
+/* ================= CE QUI DANSE =================
+   Les faisceaux, les taches au sol et les grains des boules a facettes.
+   Tout est calcule a l'image, mais seulement pour ce que la camera
+   voit : une salle de cinq ecrans de large n'en allume qu'un. */
+function boite(T){
+  const F=MUR/286, TY=74*F, g0=camX-60, g1=camX+VUE_L+60;
+  const pouls=0.72+0.28*Math.abs(Math.sin(T/460));
+  /* LES FAISCEAUX. Un cone qui part de la lyre et balaie la piste. Le
+     degrade s'eteint avant d'arriver : un faisceau qui garde sa force
+     jusqu'au bout est un triangle de peinture, pas de la lumiere. */
+  lyres().forEach(l=>{
+    if(l.x<g0||l.x>g1)return;
+    const a=Math.sin(T/(1700+l.ph*120)+l.ph)*l.sens;
+    const px=l.x, py=TY+16*F;
+    const cx2=px+a*120, cy2=MUR+(SALLE_H-MUR)*(0.42+0.30*Math.abs(Math.cos(T/2300+l.ph)));
+    const [r,v,b2]=l.c;
+    const bat=((Math.floor(T/700)+Math.round(l.ph))%7)===0?0.25:1;
+    const gr=g.createLinearGradient(px,py,cx2,cy2);
+    gr.addColorStop(0,'rgba('+r+','+v+','+b2+',.46)');
+    gr.addColorStop(0.55,'rgba('+r+','+v+','+b2+',.17)');
+    gr.addColorStop(1,'rgba('+r+','+v+','+b2+',0)');
+    g.fillStyle=gr;
+    const ex=cx2-px, ey=cy2-py, n=Math.hypot(ex,ey), nx=-ey/n*16, ny=ex/n*16;
+    g.globalAlpha=bat*pouls;
+    g.beginPath();g.moveTo(px-2,py);g.lineTo(cx2+nx,cy2+ny);g.lineTo(cx2-nx,cy2-ny);
+    g.closePath();g.fill();
+    g.globalAlpha=1;
+    /* LA TACHE AU SOL, ecrasee par la perspective. C'est elle qu'on
+       regarde — un faisceau qui n'arrive nulle part n'est qu'un trait. */
+    g.save();g.translate(cx2,cy2);g.scale(1,0.40);g.translate(-cx2,-cy2);
+    const fl=g.createRadialGradient(cx2,cy2,2,cx2,cy2,42);
+    fl.addColorStop(0,'rgba('+r+','+v+','+b2+','+(0.74*bat*pouls).toFixed(3)+')');
+    fl.addColorStop(0.45,'rgba('+r+','+v+','+b2+','+(0.26*bat*pouls).toFixed(3)+')');
+    fl.addColorStop(1,'rgba('+r+','+v+','+b2+',0)');
+    g.fillStyle=fl;g.beginPath();g.arc(cx2,cy2,42,0,7);g.fill();
+    g.fillStyle='rgba(255,255,255,'+(0.13*bat*pouls).toFixed(3)+')';
+    g.beginPath();g.arc(cx2,cy2,11,0,7);g.fill();
+    g.restore();
+    /* la lentille elle-meme */
+    R(px-3,py-2,6,3,'rgba('+r+','+v+','+b2+','+(0.9*bat).toFixed(2)+')');
+    halo(px,py,14,0.48*bat*pouls,r+','+v+','+b2);
+    halo(px,py,34,0.16*bat*pouls,r+','+v+','+b2);
+  });
+  /* LES BOULES A FACETTES. Une quarantaine d'eclats qui tournent : ce
+     sont eux qui habillent le mur nu, et ils ne coutent rien. */
+  boules().forEach(bx=>{
+    if(bx<g0||bx>g1)return;
+    const by=TY+20*F;
+    halo(bx,by,22,0.22*pouls,'220,230,245');
+    /* LES ECLATS. Ils partent de la boule et s'ecartent en tournant :
+       poses au hasard, on lisait de la poussiere, pas une boule. */
+    const PORTEE=Math.round(SALLE_H-by);
+    for(let i=0;i<70;i++){
+      const a=T/2300+i*0.897;
+      const d=18+((i*29)%120);
+      const rx=Math.cos(a)*d;
+      const ry=by+14+((i*41)%PORTEE);
+      const sc=Math.cos(a);
+      if(sc<0.25)continue;
+      const al=(0.08+0.26*sc*pouls).toFixed(3);
+      R(bx+rx,ry,2,2,'rgba(226,236,250,'+al+')');
+      if(i%3===0)R(bx+rx,ry,1,1,'rgba(255,255,255,'+(0.55*sc).toFixed(2)+')');
     }
   });
+  /* LE LAVIS GENERAL : une couleur qui passe lentement sur toute la
+     salle. Sans lui, les faisceaux flottent sur un decor gris. */
+  const t2=(T/6000)%COULEURS.length;
+  const i0=Math.floor(t2), i1=(i0+1)%COULEURS.length, m=t2-i0;
+  const c0=COULEURS[i0], c1=COULEURS[i1];
+  const mr=Math.round(c0[0]+(c1[0]-c0[0])*m);
+  const mv=Math.round(c0[1]+(c1[1]-c0[1])*m);
+  const mb=Math.round(c0[2]+(c1[2]-c0[2])*m);
+  g.fillStyle='rgba('+mr+','+mv+','+mb+','+(0.05+0.03*pouls).toFixed(3)+')';
+  g.fillRect(camX-2,camY-2,VUE_L+4,VUE_H+4);
 }
 
 /* ================= OU L'ON MARCHE =================
@@ -314,7 +389,7 @@ function majJoueur(dt){
   /* ON ENTRE EN BAS DU TAPIS, mais pas colle au bord : pose a 30 du bas,
      le personnage etait a demi cache par la barre d'action, et deux pas
      vers le bas suffisaient a ressortir sans l'avoir voulu. */
-  if(!placeFaite){joueur.x=CX;joueur.y=SALLE_H-64;placeFaite=true;
+  if(!placeFaite){joueur.x=CX;joueur.y=SALLE_H-44;placeFaite=true;
     camX=Math.max(0,Math.min(SALLE_L-VUE_L,joueur.x-VUE_L/2));
     camY=Math.max(0,Math.min(SALLE_H-VUE_H,joueur.y-VUE_H*0.56));}
   if(sortie){
@@ -367,7 +442,7 @@ function dessiner(T){
   g.translate(-Math.round(camX),-Math.round(camY));
   g.drawImage(NEF,0,0);
   dessinerJoueur();
-  grains(T);
+  boite(T);
   g.restore();
   /* LE VIGNETTAGE SE POSE SUR L'ECRAN, pas sur la salle : accroche a la
      salle, il suivait la camera et le coin sombre se promenait. */
@@ -482,18 +557,25 @@ function cadrer(){
      plus qu'un marbre sans horizon, et une salle sans horizon n'est pas une
      salle, c'est un papier peint. On garde donc le fond presque toujours en
      vue, et c'est en largeur qu'on marche. */
-  SALLE_L=Math.round(VUE_L*2.8);
+  /* ELLE EST BIEN PLUS GRANDE QU'AVANT : cinq ecrans de large, une fois
+     et demie de haut. A deux virgule huit par un, on avait fait le tour
+     en quinze secondes — ce n'etait pas une salle, c'etait un couloir
+     un peu large. */
+  SALLE_L=Math.round(VUE_L*5);
   /* LA HAUTEUR RESTE CELLE DE L'ECRAN. Huit pour cent de plus suffisaient
      a faire sortir l'enseigne par le haut des qu'on descendait : on lisait
      « FESTIF » au lieu du nom du lieu. La salle est large, pas haute —
      c'est en largeur qu'on marche, et le fond ne bouge jamais. */
+  /* LA SALLE GRANDIT EN LARGEUR, PAS EN PROFONDEUR. Essaye et refuse :
+     une piste une fois et demie plus haute que l'ecran. La camera
+     descendait avec le marcheur, le pont de lumiere sortait du cadre par
+     le haut, et l'on voyait des faisceaux sans projecteurs — les lumieres
+     de boite ne valent que si l'on voit d'ou elles tombent. La hauteur
+     tient donc dans l'ecran, et c'est en largeur qu'on marche. */
   SALLE_H=VUE_H;
-  /* LA LIGNE DU SOL EST HAUTE. A un tiers de l'ecran, les deux tiers du
-     cadre etaient du dallage et la salle n'avait pas de volume : c'est
-     le mur qui fait la hauteur, pas le sol. Aux deux tiers, on marche
-     dans une bande etroite au pied d'un grand mur — et c'est ce qu'on
-     veut voir. */
-  MUR=Math.max(170,Math.min(330,Math.round(VUE_H*0.66)));
+  /* LA LIGNE DU SOL, a un peu plus de la moitie : assez de mur pour
+     accrocher le pont et les boules, assez de piste pour danser. */
+  MUR=Math.max(150,Math.min(300,Math.round(VUE_H*0.52)));
   CX=SALLE_L/2;
   toile.width=VUE_L;toile.height=VUE_H;
   g.imageSmoothingEnabled=false;
