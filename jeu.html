@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-13-0600"></script>
+<script src="maintenance.js?v=2026-10-13-0700"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-13-0600';
+var MA_VERSION='2026-10-13-0700';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2115,7 +2115,7 @@ white-space:nowrap}
 #tiroir.part .latte,#tiroir.part .tbas{animation:none}
 @keyframes ligneFin{from{opacity:0;transform:translateY(12px) scale(.92)}
 60%{opacity:1;transform:translateY(0) scale(1.04)}to{opacity:1;transform:none}}</style>
-<script src="retour.js?v=2026-10-13-0600"></script>
+<script src="retour.js?v=2026-10-13-0700"></script>
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -26109,9 +26109,21 @@ const corps={p_bot:!!bot,p_nom:String(nom||''),p_drapeau:String(d||'fr')};
    Un titre de JOUEUR doit être signé par sa session — c'est ce qui empêche
    d'inscrire le voisin — donc par le client Supabase, lu cette fois. */
 if(bot){try{appelRPC('mondial_titre',corps).then(()=>{},()=>{});}catch(x){}return;}
-const envoyer=()=>{try{if(sb)sb.rpc('mondial_titre',corps).then(()=>{},()=>{});}catch(x){}};
+/* ON LIT ENFIN LA REPONSE. Le titre partait sans qu'on sache s'il
+   arrivait ; maintenant le serveur renvoie aussi le cheque, et c'est lui
+   qui dit combien — le jeu ne s'auto-paie pas. */
+const envoyer=()=>{try{
+  if(!sb){feteDuMondial(null);return;}
+  sb.rpc('mondial_titre',corps).then(r=>{
+    const d=(r&&r.data)||null;
+    if(d&&typeof d.euros==='number'){
+      e.euros=d.euros;try{majHaut();}catch(x){}try{sauver();}catch(x){}
+    }
+    try{feteDuMondial(d&&d.prix?d.prix:null);}catch(x){}
+  },()=>{try{feteDuMondial(null);}catch(x){}});
+}catch(x){try{feteDuMondial(null);}catch(y){}}};
 if(sb)envoyer();
-else try{chargerSupabase().then(envoyer,()=>{});}catch(x){}}
+else try{chargerSupabase().then(envoyer,()=>{feteDuMondial(null);});}catch(x){feteDuMondial(null);}}
 /* ON PASSE AU TOUR SUIVANT, avec toi dedans ou pas */
 function mondAvancer(jAiGagne){
 const suivants=mondJouerLesAutres();
@@ -26132,6 +26144,186 @@ localStorage.setItem('bdl.mondial.titres',n);}catch(x){}
 mondInscrire(false,(e&&e.pseudo)||'sans nom','fr');}
 mondRanger();}
 const mondTitres=()=>{try{return +(localStorage.getItem('bdl.mondial.titres')||0);}catch(x){return 0;}};
+
+/* =====================================================================
+   LA FÊTE DU MONDIAL
+   Gagner le Mondial, c'était une ligne de plus au palmarès. Ça se fête :
+   les dockers du port montent sur le terrain, dansent, et te tendent le
+   chèque. Le montant vient du serveur — le jeu ne s'auto-paie pas — et
+   s'il n'y a pas de chèque (un seul par jour), la fête a lieu quand même,
+   le carton le dit.
+   ===================================================================== */
+const FETE_GENS=[
+  {peau:2,cheveux:2,coiffe:1, barbe:4,chapeau:1,veste:5, pantalon:0,sac:0,corps:3,yeux:0},
+  {peau:5,cheveux:0,coiffe:5, barbe:2,chapeau:3,veste:3, pantalon:6,sac:0,corps:4,yeux:6},
+  {peau:0,cheveux:6,coiffe:9, barbe:0,chapeau:0,veste:9, pantalon:2,sac:0,corps:1,yeux:1},
+  {peau:7,cheveux:1,coiffe:14,barbe:7,chapeau:6,veste:12,pantalon:4,sac:0,corps:2,yeux:3},
+  {peau:3,cheveux:9,coiffe:2, barbe:0,chapeau:1,veste:0, pantalon:7,sac:0,corps:0,yeux:2}
+];
+/* LE DOYEN : béret, moustache, une tête de plus que les autres. C'est lui
+   qui parle, et il est devant pour qu'on sache lequel. */
+const FETE_DOYEN={peau:1,cheveux:7,coiffe:20,barbe:7,chapeau:6,veste:7,pantalon:1,
+                  sac:0,corps:4,yeux:5};
+const FETE_CSS=`
+#fete{position:fixed;inset:0;z-index:9200;opacity:0;transition:opacity .4s;
+ font-family:'Nunito',system-ui,sans-serif}
+#fete.on{opacity:1}
+#feteCv{position:absolute;inset:0;width:100%;height:100%}
+#fete .cheque{position:absolute;left:50%;top:16%;width:min(340px,86vw);
+ transform:translate(-50%,40px) rotate(-2.2deg) scale(.86);opacity:0;
+ transition:transform .9s cubic-bezier(.17,1.2,.4,1),opacity .5s;
+ background:linear-gradient(160deg,#fdf6e2,#efe3c2 60%,#fdf6e2);
+ border:3px solid #8a6a2a;border-radius:10px;padding:14px 16px 12px;
+ box-shadow:0 18px 50px rgba(0,0,0,.55)}
+#fete.on .cheque{transform:translate(-50%,0) rotate(-2.2deg) scale(1);opacity:1}
+#fete .cheque .ent{display:flex;justify-content:space-between;align-items:baseline;
+ font:800 11px/1 'Nunito';color:#8a6a2a;letter-spacing:1.5px}
+#fete .cheque .som{font:900 40px/1.1 Georgia,serif;color:#1d2a38;text-align:center;
+ margin:10px 0 2px;letter-spacing:1px}
+#fete .cheque .lig{font:italic 13px/1.3 Georgia,serif;color:#5a4a2a;text-align:center}
+#fete .cheque .bas{display:flex;justify-content:space-between;align-items:flex-end;
+ margin-top:12px;border-top:1px dashed #b9a06a;padding-top:8px}
+#fete .cheque .bas small{font:700 10px 'Nunito';color:#8a7a52;letter-spacing:1px}
+#fete .cheque .sig{font:italic 18px Georgia,serif;color:#2a3a4a;transform:rotate(-6deg)}
+#fete .bulle{position:absolute;width:min(232px,62vw);background:#fdf6e2;
+ border:3px solid #2a2016;border-radius:16px;padding:12px 14px;opacity:0;
+ transform:translateY(8px);transition:opacity .4s,transform .4s;
+ font:800 17px/1.3 'Nunito';color:#2a2016;box-shadow:0 10px 26px rgba(0,0,0,.45)}
+#fete .bulle.on{opacity:1;transform:translateY(0)}
+#fete .bulle i{position:absolute;left:-13px;bottom:16px;width:0;height:0;
+ border:9px solid transparent;border-right-color:#2a2016;border-left:0}
+#fete .titre{position:absolute;left:0;right:0;top:5%;text-align:center;
+ font:900 26px/1.1 Georgia,serif;color:#ffe9b0;letter-spacing:2px;
+ text-shadow:0 3px 0 #7a4a10,0 0 26px rgba(255,200,90,.7)}
+#fete .titre small{display:block;font:700 12px 'Nunito';letter-spacing:4px;
+ color:#f0c87a;margin-top:6px}
+#fete button{position:absolute;right:6%;bottom:5%;
+ background:#c9a24a;color:#1b1407;border:0;border-radius:14px;
+ padding:14px 34px;font:900 18px/1 'Nunito';box-shadow:0 8px 22px rgba(0,0,0,.5)}
+`;
+let FETE=null;
+function feteDuMondial(prix){
+  if(FETE)return;
+  if(!document.getElementById('feteStyle')){
+    const st=document.createElement('style');st.id='feteStyle';
+    st.textContent=FETE_CSS;document.head.appendChild(st);
+  }
+/* LE MONTANT SANS LES CENTIMES. « 50000,00 € » sur un cheque, ça fait
+   une facture ; un cheque dit cinquante mille euros. */
+  const somme=(prix?Math.round(prix/100):50000).toLocaleString('fr-FR')+' €';
+  const d=document.createElement('div');d.id='fete';
+  d.innerHTML='<canvas id="feteCv"></canvas>'+
+    '<div class="titre">CHAMPION DU MONDE<small>LE MONDIAL DE PÉTANQUE</small></div>'+
+    '<div class="cheque"><div class="ent"><span>LE PORT DE MARSEILLE</span><span>N° '+
+      ('00000'+Math.floor(Math.random()*99999)).slice(-5)+'</span></div>'+
+      '<div class="som">'+somme+'</div>'+
+      '<div class="lig">'+(prix?'payable à l’ordre du champion':'un seul chèque par jour — reviens demain')+'</div>'+
+      '<div class="bas"><small>LES DOCKERS RÉUNIS</small><span class="sig">Fonfon</span></div></div>'+
+    '<div class="bulle"><i></i>Franchement, tu manies bien les boules, jeune&nbsp;!</div>'+
+    '<button>MERCI&nbsp;!</button>';
+  document.body.appendChild(d);
+  FETE={el:d,cv:d.querySelector('#feteCv'),bulle:d.querySelector('.bulle'),
+        t0:performance.now(),conf:[]};
+  d.querySelector('button').onclick=()=>fermerLaFete();
+  /* les confettis : on les seme une fois, ils retombent tout seuls */
+  const COUL=['#ffd36a','#ff6a8a','#6ad8ff','#8aff9a','#ffffff','#c9a24a'];
+  for(let i=0;i<80;i++)FETE.conf.push({
+    x:Math.random(),y:-Math.random()*1.2,v:0.10+Math.random()*0.22,
+    a:Math.random()*6.28,va:(Math.random()-.5)*0.22,
+    l:4+Math.random()*5,c:COUL[i%COUL.length],ph:Math.random()*6.28});
+  requestAnimationFrame(feteBoucle);
+  setTimeout(()=>{if(FETE)FETE.el.classList.add('on');},40);
+  setTimeout(()=>{if(FETE)FETE.bulle.classList.add('on');},1500);
+  try{vibrer([18,60,18,60,30]);}catch(x){}
+}
+function fermerLaFete(){
+  if(!FETE)return;
+  const f=FETE;FETE=null;
+  f.el.classList.remove('on');
+  setTimeout(()=>{try{f.el.remove();}catch(x){}},420);
+}
+function feteBoucle(T){
+  if(!FETE)return;
+  const f=FETE, w=innerWidth, h=innerHeight, dpr=Math.min(2,devicePixelRatio||1);
+  if(f.cv.width!==Math.round(w*dpr)){f.cv.width=Math.round(w*dpr);f.cv.height=Math.round(h*dpr);}
+  const g2=f.cv.getContext('2d');
+  g2.setTransform(dpr,0,0,dpr,0,0);
+  g2.clearRect(0,0,w,h);
+  /* LE FOND : une nuit chaude de fete, pas un voile noir. */
+  const fond=g2.createRadialGradient(w/2,h*0.42,40,w/2,h*0.42,h*0.95);
+  fond.addColorStop(0,'rgba(60,34,10,.86)');
+  fond.addColorStop(1,'rgba(10,8,14,.94)');
+  g2.fillStyle=fond;g2.fillRect(0,0,w,h);
+  /* le terrain, au pied des danseurs */
+  const sol=h*0.72;
+  const t2=g2.createLinearGradient(0,sol-20,0,h);
+  t2.addColorStop(0,'rgba(190,150,96,.10)');
+  t2.addColorStop(.3,'rgba(190,150,96,.30)');
+  t2.addColorStop(1,'rgba(120,88,52,.42)');
+  g2.fillStyle=t2;g2.fillRect(0,sol-20,w,h-sol+20);
+  /* LES PROJECTEURS qui balaient : deux cones, comme au complexe. */
+  for(let k=0;k<2;k++){
+    const a=Math.sin(T/1800+k*2.1)*0.5, px=w*(k?0.78:0.22);
+    const gr=g2.createLinearGradient(px,0,px+a*160,sol);
+    gr.addColorStop(0,'rgba(255,214,140,.16)');
+    gr.addColorStop(1,'rgba(255,214,140,0)');
+    g2.fillStyle=gr;
+    g2.beginPath();g2.moveTo(px-6,0);
+    g2.lineTo(px+a*160+70,sol);g2.lineTo(px+a*160-70,sol);
+    g2.closePath();g2.fill();
+  }
+  /* LES DOCKERS QUI DANSENT. Le pas de danse est un pas de marche qu'on
+     fait rebondir : la gravure existe deja, et quatre temps suffisent a
+     faire croire au mouvement sans vider le cache des poses. */
+  const danser=(x,y,S,ap,ph,gros)=>{
+    const bond=Math.abs(Math.sin(T/230+ph))*(gros?9:13)*S/2;
+    const pench=Math.sin(T/460+ph)*0.14;
+    const pas=(Math.floor(T/150+ph*2)%4)*2;
+    const dir=(Math.floor(T/900+ph)%2)?'gauche':'droite';
+    g2.save();
+    g2.translate(x,y-bond);g2.rotate(pench);g2.scale(S,S);
+    g2.imageSmoothingEnabled=false;
+    g2.fillStyle='rgba(0,0,0,.34)';
+    g2.beginPath();g2.ellipse(0,bond/S+1,9,3,0,0,7);g2.fill();
+    try{sprite(g2,0,0,ap,dir,pas,true);}catch(x){}
+    g2.restore();
+  };
+  const S=Math.max(1.1,Math.min(2.2,w/300));
+  /* LES DEUX PORTEURS DU CHEQUE. Il flottait en haut de l'ecran comme une
+     affiche ; deux dockers posés juste dessous, qui sautent avec lui, et
+     c'est eux qui le tendent. */
+  const chq=f.el.querySelector('.cheque');
+  const bas=chq?(chq.offsetTop+chq.offsetHeight):h*0.42;
+  [-1,1].forEach((c,i)=>danser(w/2+c*Math.min(96,w*0.24),bas+70,S,
+    FETE_GENS[i],i*2.3,false));
+  /* la rangée du fond, qui danse sur le terrain */
+  [0.1,0.34,0.66,0.92].forEach((p,i)=>
+    danser(w*p,sol,S,FETE_GENS[(i+2)%FETE_GENS.length],i*1.7+1.1,false));
+  /* LE DOYEN, en bas à gauche et plus grand : c'est lui qui parle, et on
+     doit savoir lequel sans hésiter. */
+  const dx=w*0.17, dy=h*0.93, SD=S*1.5;
+  danser(dx,dy,SD,FETE_DOYEN,0.6,true);
+  /* la bulle sort de sa bouche, à sa droite */
+  try{
+    const b=f.bulle;
+    b.style.left=Math.min(w-b.offsetWidth-10,dx+30)+'px';
+    b.style.top=Math.max(8,dy-SD*74-b.offsetHeight*0.55)+'px';
+  }catch(x){}
+  /* LES CONFETTIS. Ils tombent en vrillant : un rectangle qui tourne sur
+     lui-meme suffit, inutile de dessiner un ruban. */
+  f.conf.forEach(c=>{
+    c.y+=c.v*0.016*60/60;c.a+=c.va;
+    if(c.y>1.15){c.y=-0.1;c.x=Math.random();}
+    const cx2=(c.x*w)+Math.sin(T/700+c.ph)*16, cy2=c.y*h;
+    g2.save();g2.translate(cx2,cy2);g2.rotate(c.a);
+    g2.fillStyle=c.c;g2.globalAlpha=0.9;
+    g2.fillRect(-c.l/2,-c.l/4,c.l,c.l/2);
+    g2.restore();
+  });
+  g2.globalAlpha=1;
+  requestAnimationFrame(feteBoucle);
+}
+try{window.feteDuMondial=feteDuMondial;}catch(x){}
 const drap=(d,gr)=>'<span class="dr '+d+(gr?' gr':'')+'"></span>';
 const fanion=(d)=>'<span class="dr fn '+d+'"></span>';
 /* ================= LE MENU DU BOULODROME =================
