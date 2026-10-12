@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-13-1500"></script>
+<script src="maintenance.js?v=2026-10-13-1600"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-13-1500';
+var MA_VERSION='2026-10-13-1600';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2115,13 +2115,13 @@ white-space:nowrap}
 #tiroir.part .latte,#tiroir.part .tbas{animation:none}
 @keyframes ligneFin{from{opacity:0;transform:translateY(12px) scale(.92)}
 60%{opacity:1;transform:translateY(0) scale(1.04)}to{opacity:1;transform:none}}</style>
-<script src="retour.js?v=2026-10-13-1500"></script>
+<script src="retour.js?v=2026-10-13-1600"></script>
 <!-- LE DESSIN DU PERSONNAGE ET LES CARTES POKEDOCK. Classiques, donc
      joues avant le module : window.Perso doit exister quand une carte
      se grave, et window.Pokedock quand on ouvre le rayon du Bar. -->
-<script src="personnage.js?v=2026-10-13-1500"></script>
-<script src="pokedock.js?v=2026-10-13-1500"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-13-1500">
+<script src="personnage.js?v=2026-10-13-1600"></script>
+<script src="pokedock.js?v=2026-10-13-1600"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-13-1600">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -35476,7 +35476,23 @@ const betes=(E.vaches||0)+(E.moutons||0)+(E.cochons||0);
    rail du bas. L'en-tête d'avant portait le titre PAR-DESSUS le pré, avec
    sa croix et son montant en surimpression : trois sortes d'information
    sur un fond qui bougeait. */
-const foinPc=(E.foin||0)>0?Math.min(100,Math.round(E.foin/14400*100)):0;
+/* ---------- LA MANGEOIRE ----------
+   LE BOUTON ÉTAIT GRISÉ EXACTEMENT QUAND IL FALLAIT S'EN SERVIR. L'écran
+   racontait une réserve de foin dans laquelle on puiserait des rations :
+   mangeoire vide, « il faut d'abord du foin », bouton éteint. Sauf qu'il
+   n'existe nulle part d'endroit où remplir cette réserve — etable_nourrir
+   EST l'achat de foin. Une fois la mangeoire à sec, on ne pouvait donc
+   plus jamais nourrir le troupeau, donc plus de lait, et plus de cochons
+   qui engraissent — eux aussi vivent sur foin_jusqua. Les neuf joueurs qui
+   ont des vaches étaient tous à jeun, aucun nourri.
+   CE QU'ON DIT MAINTENANT : une ration, c'est trois heures de foin, payées
+   2 blé pris au sac, ou 3 € s'il n'y a pas de blé. On peut en remettre tant
+   qu'il reste moins de 9 h d'avance, ce qui monte au plus haut à 12 h — la
+   jauge se lit donc sur 12 h, et non sur 4 h comme avant. */
+const FOIN_MAX=12*3600, FOIN_PLAFOND=9*3600;
+const foinPc=Math.min(100,Math.round((E.foin||0)/FOIN_MAX*100));
+const mangeoirePleine=(E.foin||0)>=FOIN_PLAFOND;
+const bleAuSac=(E.ble||0);
 $('page2Fond').innerHTML=
 '<div class="tete"><small>LA FERME · L’ENCLOS</small>'+
 '<b>'+(betes?betes+' bête'+(betes>1?'s':''):'Aucune bête')+
@@ -35489,12 +35505,13 @@ $('page2Fond').innerHTML=
  '<em>'+pris.join(', ')+'</em></span><i>Ramasser</i></button>'):'')+
 '<h3>LA MANGEOIRE</h3>'+
 '<div class="l"><span class="n"><b>'+((E.foin||0)>0?'Du foin pour '+etbDuree(E.foin):'La mangeoire est vide')+'</b>'+
-'<em>'+((E.foin||0)>0?'elles ont de quoi tenir':'elles ont faim')+'</em></span>'+
-'<span class="j'+(foinPc>0?'':' bas')+'"><span style="width:'+Math.max(4,foinPc)+'%"></span></span></div>'+
-'<button class="l act" data-g="nourrir"'+((E.foin||0)>0?'':' disabled')+'>'+
-'<span class="n"><b>Nourrir le troupeau</b>'+
-'<em>'+((E.foin||0)>0?'une ration prise dans la mangeoire':'il faut d’abord du foin')+'</em></span>'+
-'<i>Nourrir</i></button>'+
+'<em>'+((E.foin||0)>0?'elles ont de quoi tenir':'elles ont faim · sans foin, ni lait ni kilos')+'</em></span>'+
+'<span class="j'+((E.foin||0)>0?'':' bas')+'"><span style="width:'+Math.max(4,foinPc)+'%"></span></span></div>'+
+'<button class="l act" data-g="nourrir"'+(mangeoirePleine?' disabled':'')+'>'+
+'<span class="n"><b>Donner du foin</b>'+
+'<em>'+(mangeoirePleine?'la mangeoire est pleine · laisse-les entamer'
+:('trois heures de plus · '+(bleAuSac>=2?'2 blé pris au sac':'3 €')))+'</em></span>'+
+'<i>'+(mangeoirePleine?'Pleine':'Donner')+'</i></button>'+
 '<h3>LE TROUPEAU</h3>'+
 fiches+abri+
 (mot?'<div class="pied">'+mot+'</div>':'')+
@@ -35646,17 +35663,26 @@ try{
 if(quoi==='marche'){ouvrirLeMarcheAuxBetes();return;}
 if(quoi==='nourrir'){
 const d=await appelRPC('etable_nourrir',{p_joueur:e.id});
-if(d&&d.erreur){dire(d.erreur==='pas_de_ble'?'il te faut du blé':'impossible','#e8a06a');}
-else{ETB=Object.assign({},ETB,d||{});jouer('cueille');dire('elles sont nourries');
+/* LE CLIENT GUETTAIT « pas_de_ble », QUE LE SERVEUR N'A JAMAIS RENVOYÉ :
+   il dit « pas_assez » quand il manque et le blé et l'argent, et « plein »
+   quand la mangeoire déborde. Les deux tombaient donc sur « impossible »,
+   qui n'apprend rien à personne. */
+if(d&&d.erreur){dire(d.erreur==='plein'?'la mangeoire est pleine'
+:(d.erreur==='pas_assez'?'il te faut 2 blé ou 3 €':'réessaie dans un instant'),'#e8a06a');}
+else{ETB=Object.assign({},ETB,d||{});jouer('cueille');dire('+3 h de foin');
 try{const b=await appelRPC('betes_etat',{p_joueur:e.id});
 if(b&&!b.erreur)ETB=Object.assign({},ETB,b);}catch(x){}
 peindreLEcranDesBetes();}
 return;}
 if(quoi==='traire'){
 const d=await appelRPC('etable_traire',{p_joueur:e.id});
-if(d&&d.erreur){dire('rien à traire','#e8a06a');}
+/* etable_traire renvoie le volume sous le nom « pris », pas « lait » :
+   on annonçait « +0 litres » à chaque traite, quel que soit le seau. Et
+   un sac plein, qui annule la traite, se disait « rien à traire ». */
+if(d&&d.erreur){dire(d.erreur==='sac_plein'?'ton sac est plein':'rien à traire','#e8a06a');}
 else{ETB=Object.assign({},ETB,(d&&d.etat)||d||{});
-jouer('cueille');dire('+'+((d&&d.lait)||0)+' litres');
+const pris=(d&&d.pris)||0;
+jouer('cueille');dire('+'+pris+' litre'+(pris>1?'s':''));
 try{await recalerLeSac(true);majHaut();}catch(x){}
 peindreLEcranDesBetes();}
 return;}
