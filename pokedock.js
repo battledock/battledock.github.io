@@ -1895,7 +1895,16 @@ function ouvrirPaquet(cartes,neuves,fini){
     q('.rev .f img').src=faceURL(n);
     rev.className='rev la'+(fin?' br':'');
     rev.style.setProperty('--ton',TON[r]);
+/* LA CARTE PRECEDENTE EST ENCORE RETOURNEE QUAND LA SUIVANTE ARRIVE.
+       Retirer « vu » tout seul ramenait rotateY de 180 a 0 EN ANIMANT, et
+       comme on le remet a 180 trois dixiemes plus tard, on voyait la carte
+       se de-retourner puis se re-retourner — deux ou trois battements pour
+       une seule carte. On remet donc la face cachee d'un coup, transition
+       coupee, avant de laisser l'animation faire son travail. */
+    dedans.style.transition='none';
     dedans.className='in';
+    dedans.offsetHeight;
+    dedans.style.transition='';
     neufEt.className='neuf'+(nouv.has(n)?' si':'');
     if(k===cartes.length-1&&fin){
       pile.classList.add('fri');setTimeout(()=>pile.classList.remove('fri'),1600);
