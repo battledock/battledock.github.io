@@ -1,0 +1,494 @@
+/* ======================================================================
+   RESPONSIVE.CSS — LA MÊME JOUABILITÉ SUR TOUS LES TÉLÉPHONES
+   ----------------------------------------------------------------------
+   LE PROBLÈME : un ami sur iPhone récent n'arrivait pas à toucher les
+   onglets de Chez Madeleine. Mesure faite : ils font 28 px de haut.
+   Le minimum tenable pour un pouce est 44 px, et 135 règles du jeu
+   dessinent des cibles en dessous — la plupart entre 28 et 33 px.
+
+   LE PARTI PRIS : NE RIEN CHANGER À CE QU'ON VOIT. On n'agrandit pas
+   les boutons, on agrandit seulement la surface qui répond au doigt.
+   Chaque bouton reçoit un ::after transparent qui déborde de 8 px en
+   haut et en bas : un bouton de 28 px devient une cible de 44 px, au
+   pixel près, sans qu'un seul écran ne bouge.
+
+   POURQUOI 8 px EN HAUT/BAS ET 3 px SUR LES CÔTÉS : les rangs serrés
+   du jeu sont presque tous horizontaux — onglets, segments, boutons
+   de quantité — avec 3 à 7 px entre voisins. Déborder sur les côtés
+   volerait le bouton d'à côté ; déborder en hauteur ne vole rien,
+   parce que ces rangs sont seuls sur leur ligne. Les huit endroits où
+   l'empilement vertical est lui aussi serré sont repris plus bas.
+
+   RÈGLE À TENIR : une zone sensible ne doit JAMAIS mordre sur la
+   partie visible d'un voisin. Tant qu'elle reste inférieure à
+   l'espace qui les sépare, l'espace vide va au plus proche et aucun
+   bouton ne perd de surface.
+   ====================================================================== */
+
+/* --- 1. chaque cible devient son propre repere ---
+   :where() ne pese rien en specificite : les neuf cibles deja posees en
+   absolute ou fixed gardent la leur, et n'importe quelle regle du jeu
+   passe devant celle-ci. */
+:where(
+#afc .lvAvis button,
+#afc .lvOng button,
+#afc button,
+#afc button#afcOk,
+#anf .ch,
+#anf button.pl,
+#annonce button,
+#apk button,
+#at .at-ong button,
+#at .at-pied button,
+#at .at-r .go,
+#bar .bar-ong button,
+#bar .bt-corps,
+#bar .bt-fermer,
+#bar .bt-ong button,
+#bar .bt-px,
+#bar .bt-rail button,
+#bar .cp-ong button,
+#bar .lo-act button,
+#bar .lo-ch button,
+#bar .lo-g button,
+#bar .pkd-bt button,
+#bas button,
+#chn .bas button,
+#cls .hd button,
+#cls .seg button,
+#cri .cri-etals button,
+#cri .cri-qt button,
+#crv .crv-or button,
+#crv .crv-ticket button,
+#didacB button,
+#enLigne .actionsF button,
+#enLigne .envoyerF,
+#et .et-l button,
+#et .et-pied button,
+#feuille .tete button,
+#ff .ff-qt button,
+#hs .hs-tabs button,
+#labo .fermer,
+#labo button,
+#mrm .bt button,
+#mrm .q .n button,
+#msg .colis button,
+#msg .hd .ret,
+#msg .pied .go,
+#page2Fond .bDevEtats button,
+#page2Fond .bDevPied button,
+#page2Fond .mk .lot button,
+#page2Fond .mk .pan button,
+#page2Fond.aide .aiOng button,
+#page2Fond.bq .bqOng button,
+#page2Fond.bq .cmdGo,
+#page2Fond.bq .go,
+#page2Fond.bq .outil button,
+#page2Fond.buc .bd .go,
+#page2Fond.buc .seg button,
+#page2Fond.buc .tt button,
+#page2Fond.chant .tete button,
+#page2Fond.cui .hdr button,
+#page2Fond.cui .l button,
+#page2Fond.enc .tete button,
+#page2Fond.etb .abri .row button,
+#page2Fond.etb .abri button,
+#page2Fond.etb .bulle,
+#page2Fond.etb .chap button,
+#page2Fond.etb .lot button,
+#page2Fond.etb .tete button,
+#page2Fond.etb .tiroir .act button,
+#page2Fond.fro .chap button,
+#page2Fond.tabl .choix button,
+#page2Fond.tabl .devB button,
+#page2Fond.tabl .devB button.env,
+#page2Fond.tabl .ong button,
+#page2Fond.tabl .sup button,
+#page2Fond.vest .hd button,
+#page2Fond.voy .tete button,
+#petanque .bCase .act,
+#petanque .mCarte .go,
+#petanque .mJ button,
+#petanque .mVed .go,
+#petanque .pqAmis button,
+#petanque .pqChoix button,
+#petanque .pqChoixTir button,
+#pkd .act button,
+#pkdm .act button,
+#pkdm .an .px button,
+#pkdm .ong button,
+#potGr .hd button,
+#rencontre button,
+#repond button,
+#rg .act,
+#rg .hd .ret,
+#sacE .hd button,
+#verPl .hd button,
+#vt .at-ong button,
+#vt .vt-ong button,
+.actes.petits button,
+.bGenres button,
+.bPied button,
+.bulle,
+.choixC button,
+.choixM button,
+.cptQt button,
+.crou .ticket button,
+.ech button,
+.familles button,
+.fiche button,
+.gr .fen button,
+.gr .gn button,
+.gr .grOng button,
+.gr .outil button,
+.gr .sachet button,
+.libre button,
+.mises button,
+.nbF button,
+.ong,
+.onglets button,
+.ongsG button,
+.peigne .bulle,
+.peigne .onglets button,
+.phrases button,
+.recette button,
+.suggest button,
+.tuPied button
+) { position: relative; }
+
+/* --- 2. la surface transparente qui recoit le doigt ---
+   Ni fond, ni bord, ni ombre : rien a voir, tout a toucher. */
+#afc .lvAvis button::after,
+#afc .lvOng button::after,
+#afc button::after,
+#afc button#afcOk::after,
+#anf .ch::after,
+#anf button.pl::after,
+#annonce button::after,
+#apk button::after,
+#at .at-ong button::after,
+#at .at-pied button::after,
+#at .at-r .go::after,
+#bar .bar-ong button::after,
+#bar .bt-corps::after,
+#bar .bt-fermer::after,
+#bar .bt-ong button::after,
+#bar .bt-px::after,
+#bar .bt-rail button::after,
+#bar .cp-ong button::after,
+#bar .lo-act button::after,
+#bar .lo-ch button::after,
+#bar .lo-g button::after,
+#bar .pkd-bt button::after,
+#bas button::after,
+#chn .bas button::after,
+#cls .hd button::after,
+#cls .seg button::after,
+#cri .cri-etals button::after,
+#cri .cri-qt button::after,
+#crv .crv-or button::after,
+#crv .crv-ticket button::after,
+#didacB button::after,
+#enLigne .actionsF button::after,
+#enLigne .envoyerF::after,
+#et .et-l button::after,
+#et .et-pied button::after,
+#feuille .tete button::after,
+#ff .ff-qt button::after,
+#hs .hs-tabs button::after,
+#labo .fermer::after,
+#labo button::after,
+#mrm .bt button::after,
+#mrm .q .n button::after,
+#msg .colis button::after,
+#msg .hd .ret::after,
+#msg .pied .go::after,
+#page2Fond .bDevEtats button::after,
+#page2Fond .bDevPied button::after,
+#page2Fond .mk .lot button::after,
+#page2Fond .mk .pan button::after,
+#page2Fond.aide .aiOng button::after,
+#page2Fond.bq .bqOng button::after,
+#page2Fond.bq .cmdGo::after,
+#page2Fond.bq .go::after,
+#page2Fond.bq .outil button::after,
+#page2Fond.buc .bd .go::after,
+#page2Fond.buc .seg button::after,
+#page2Fond.buc .tt button::after,
+#page2Fond.chant .tete button::after,
+#page2Fond.cui .hdr button::after,
+#page2Fond.cui .l button::after,
+#page2Fond.enc .tete button::after,
+#page2Fond.etb .abri .row button::after,
+#page2Fond.etb .abri button::after,
+#page2Fond.etb .bulle::after,
+#page2Fond.etb .chap button::after,
+#page2Fond.etb .lot button::after,
+#page2Fond.etb .tete button::after,
+#page2Fond.etb .tiroir .act button::after,
+#page2Fond.fro .chap button::after,
+#page2Fond.tabl .choix button::after,
+#page2Fond.tabl .devB button::after,
+#page2Fond.tabl .devB button.env::after,
+#page2Fond.tabl .ong button::after,
+#page2Fond.tabl .sup button::after,
+#page2Fond.vest .hd button::after,
+#page2Fond.voy .tete button::after,
+#petanque .bCase .act::after,
+#petanque .mCarte .go::after,
+#petanque .mJ button::after,
+#petanque .mVed .go::after,
+#petanque .pqAmis button::after,
+#petanque .pqChoix button::after,
+#petanque .pqChoixTir button::after,
+#pkd .act button::after,
+#pkdm .act button::after,
+#pkdm .an .px button::after,
+#pkdm .ong button::after,
+#potGr .hd button::after,
+#rencontre button::after,
+#repond button::after,
+#rg .act::after,
+#rg .hd .ret::after,
+#sacE .hd button::after,
+#verPl .hd button::after,
+#vt .at-ong button::after,
+#vt .vt-ong button::after,
+.actes.petits button::after,
+.bGenres button::after,
+.bPied button::after,
+.bulle::after,
+.choixC button::after,
+.choixM button::after,
+.cptQt button::after,
+.crou .ticket button::after,
+.ech button::after,
+.familles button::after,
+.fiche button::after,
+.gr .fen button::after,
+.gr .gn button::after,
+.gr .grOng button::after,
+.gr .outil button::after,
+.gr .sachet button::after,
+.libre button::after,
+.mises button::after,
+.nbF button::after,
+.ong::after,
+.onglets button::before,
+.ongsG button::after,
+.peigne .bulle::after,
+.peigne .onglets button::after,
+.phrases button::after,
+.recette button::after,
+.suggest button::after,
+.tuPied button::after {
+  content: "";
+  position: absolute;
+  pointer-events: auto;
+}
+
+/* --- 3. de combien chacune deborde ---
+   (44 - hauteur) / 2 de chaque cote, plafonne a 12 px, et ramene a la
+   moitie de l'ecart la ou les voisins du dessus et du dessous sont
+   proches. Une cible ne gagne jamais plus que ce qui lui manque. */
+#bar .bt-corps::after { inset: -12px -3px; }
+
+.onglets button::before { inset: -12px -3px; }
+
+#labo button::after,
+#page2Fond.etb .bulle::after,
+#petanque .bCase .act::after { inset: -11px -3px; }
+
+#cls .hd button::after,
+#page2Fond .bDevEtats button::after,
+#pkdm .an .px button::after,
+#sacE .hd button::after { inset: -10px -3px; }
+
+#anf .ch::after,
+#hs .hs-tabs button::after,
+#msg .hd .ret::after,
+#page2Fond.tabl .devB button::after,
+#rg .hd .ret::after,
+.gr .gn button::after,
+.ong::after { inset: -9px -3px; }
+
+#afc .lvOng button::after,
+#cls .seg button::after,
+#et .et-l button::after,
+#msg .colis button::after,
+#page2Fond.aide .aiOng button::after,
+#page2Fond.bq .bqOng button::after,
+#page2Fond.etb .chap button::after,
+#page2Fond.fro .chap button::after,
+#page2Fond.tabl .ong button::after,
+#page2Fond.tabl .sup button::after,
+#repond button::after,
+.bGenres button::after,
+.gr .grOng button::after,
+.suggest button::after { inset: -8px -3px; }
+
+#bar .bt-px::after,
+#cri .cri-qt button::after,
+#page2Fond.bq .outil button::after,
+#page2Fond.cui .l button::after,
+#page2Fond.etb .abri button::after,
+#petanque .mCarte .go::after,
+#petanque .mVed .go::after,
+#potGr .hd button::after,
+#verPl .hd button::after,
+.cptQt button::after,
+.familles button::after,
+.gr .fen button::after { inset: -7px -3px; }
+
+#afc .lvAvis button::after,
+#at .at-ong button::after,
+#at .at-r .go::after,
+#bar .bt-fermer::after,
+#bar .bt-ong button::after,
+#bar .cp-ong button::after,
+#bar .lo-act button::after,
+#crv .crv-or button::after,
+#feuille .tete button::after,
+#ff .ff-qt button::after,
+#labo .fermer::after,
+#page2Fond.bq .cmdGo::after,
+#page2Fond.chant .tete button::after,
+#page2Fond.etb .lot button::after,
+#page2Fond.tabl .devB button.env::after,
+#page2Fond.vest .hd button::after,
+#petanque .mJ button::after,
+#petanque .pqChoixTir button::after,
+#pkdm .ong button::after,
+#vt .at-ong button::after,
+#vt .vt-ong button::after,
+.ech button::after,
+.fiche button::after,
+.gr .outil button::after,
+.gr .sachet button::after,
+.peigne .onglets button::after,
+.recette button::after { inset: -6px -3px; }
+
+#bar .bar-ong button::after,
+#cri .cri-etals button::after,
+#page2Fond .bDevPied button::after,
+#page2Fond .mk .pan button::after,
+#page2Fond.buc .tt button::after,
+#page2Fond.cui .hdr button::after,
+#page2Fond.enc .tete button::after,
+#page2Fond.etb .abri .row button::after,
+#page2Fond.etb .tete button::after,
+#page2Fond.voy .tete button::after,
+.bulle::after,
+.choixM button::after { inset: -5px -3px; }
+
+#afc button#afcOk::after,
+#anf button.pl::after,
+#mrm .bt button::after,
+#rencontre button::after,
+.bPied button::after,
+.phrases button::after { inset: -4px -3px; }
+
+#afc button::after,
+#at .at-pied button::after,
+#bar .lo-ch button::after,
+#bar .lo-g button::after,
+#bar .pkd-bt button::after,
+#bas button::after,
+#crv .crv-ticket button::after,
+#et .et-pied button::after,
+#msg .pied .go::after,
+#page2Fond.tabl .choix button::after,
+#petanque .pqAmis button::after,
+#pkdm .act button::after,
+.actes.petits button::after,
+.crou .ticket button::after,
+.mises button::after,
+.nbF button::after,
+.peigne .bulle::after { inset: -3px -3px; }
+
+#didacB button::after,
+#enLigne .actionsF button::after,
+#enLigne .envoyerF::after,
+#mrm .q .n button::after,
+#page2Fond .mk .lot button::after,
+#page2Fond.bq .go::after,
+#page2Fond.buc .bd .go::after,
+#pkd .act button::after,
+.ongsG button::after { inset: -2px -3px; }
+
+#annonce button::after,
+#apk button::after,
+#bar .bt-rail button::after,
+#chn .bas button::after,
+#page2Fond.buc .seg button::after,
+#page2Fond.etb .tiroir .act button::after,
+#petanque .pqChoix button::after,
+#rg .act::after,
+.choixC button::after,
+.libre button::after,
+.tuPied button::after { inset: -1px -3px; }
+
+/* --- 4. le reste, releve en chargeant chaque page pour de vrai ---
+   Ces cibles manquaient au relevé statique : certaines n'ont pas de
+   classe, d'autres tirent leur taille d'une icône plutôt que d'un
+   texte. Mesurées une par une dans le navigateur. */
+:where(
+.champ .oeil,
+.bloc .oubli,
+#didacB .sauter,
+#note,
+#sortirB,
+.haut .rond,
+#bas button
+) { position: relative; }
+
+.champ .oeil::after,
+.bloc .oubli::after,
+#didacB .sauter::after,
+#note::after,
+#sortirB::after,
+.haut .rond::after,
+#bas button::after {
+  content: "";
+  position: absolute;
+  pointer-events: auto;
+}
+
+.bloc .oubli::after { inset: -12px -8px; }   /* 11 px de haut, isolé */
+.champ .oeil::after { inset: -9px -6px; }    /* dans le champ, au bord */
+#sortirB::after { inset: -8px -6px; }        /* seul dans son coin */
+#didacB .sauter::after { inset: -5px -4px; }
+.haut .rond::after,
+#note::after { inset: -4px -3px; }           /* rang de pastilles */
+#bas button::after { inset: -4px -2px; }     /* rail du bas, boutons jointifs */
+
+/* ======================================================================
+   LES HAUTEURS — CE QUE SAFARI CACHE SOUS SES BARRES
+   ----------------------------------------------------------------------
+   Sur iOS, 100vh vaut la hauteur de la fenêtre BARRES REPLIÉES. Tant
+   qu'elles sont affichées — c'est-à-dire au chargement, et dès qu'on
+   touche le haut de l'écran — une modale en 82vh dépasse du visible,
+   et son bouton de validation passe sous la barre du navigateur.
+   100dvh suit la hauteur réellement disponible, seconde par seconde.
+   maintenance.js s'en sert déjà ; le jeu, non.
+
+   PRÉFIXE html : plusieurs de ces écrans — le grainetier, le
+   pépiniériste, le pokédock — posent leur feuille de style à
+   l'exécution, donc APRÈS celle-ci. À spécificité égale, la dernière
+   arrivée gagne ; le html devant fait pencher la balance de ce
+   côté-ci sans rien casser d'autre.
+   ====================================================================== */
+@supports (height: 100dvh) {
+  html #enLigne .carte { max-height: 78dvh; }
+  html #enLigne .filF { max-height: 34dvh; }
+  html #carnetP .feuilleC { max-height: 82dvh; }
+  html #gaCv { height: calc(100dvh - 150px); }
+  html #pqToile { width: min(100%, calc((100dvh - 330px) * 240 / 300)); }
+  html #pkd .sc { min-height: min(560px, 70dvh); }
+  html #pkd .lp img,
+  html #pkdm .lp img { max-height: 84dvh; }
+  /* le grainetier et le pépiniériste, posés au ras du pouce */
+  html #potGr, html #verPl { max-height: 62dvh; }
+  /* la feuille qui monte du bas, en ville */
+  html #fen .b { max-height: 82dvh; }
+}
