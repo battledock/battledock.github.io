@@ -1525,7 +1525,7 @@ function graverSachet(){
 }
 
 
-/* ============ pokedock_jeu.js ============ */
+/* ============ pokedock_jeu.js + pokedock_marche.js ============ */
 /* =====================================================================
    POKÉDOCK DANS LE JEU
 
@@ -2104,12 +2104,20 @@ function rayon(hote,ctx){
         '<button id="pkdAch"'+(occupe?' disabled':'')+'>'+
           (occupe?'Fanny cherche un paquet…':'OUVRIR UN PAQUET · 6,00 €')+'</button>'+
         '<button id="pkdCla" class="v">LE CLASSEUR</button>'+
+        '<button id="pkdMar" class="v">LE MARCHÉ</button>'+
       '</div>'+
       '<div class="pkd-msg" id="pkdMsg"></div>';
     const ach=hote.querySelector('#pkdAch');
     if(ach)ach.onclick=acheter;
     const cl=hote.querySelector('#pkdCla');
     if(cl)cl.onclick=()=>classeur(col||{cartes:[],total:0,paquets:0});
+/* LE MARCHE REND LA MAIN AU RAYON : une carte achetee ou vendue change
+       la collection, donc on la relit en refermant. */
+    const mr=hote.querySelector('#pkdMar');
+    if(mr)mr.onclick=()=>marche(ctx,async()=>{
+      try{col=await ctx.collection();}catch(x){}
+      peindre();
+    });
   };
   const dire=(t)=>{const m=hote.querySelector('#pkdMsg');if(m)m.textContent=t||'';};
   async function acheter(){
@@ -2151,8 +2159,263 @@ const CSS_RAYON=`
   min-height:16px}
 `;
 
+
+/* ======= pokedock_marche.js ======= */
+/* =====================================================================
+   LE MARCHE AUX CARTES
+
+   On ne vend que ses doubles, et la carte quitte le classeur des qu'elle
+   est en vitrine. Tout le reste — qui a quoi, combien ça coute, qui
+   touche quoi — se decide en base : ici on affiche, on demande, et on
+   recharge ce que le serveur repond.
+   ===================================================================== */
+const CSS_MAR=`
+#pkdm{position:fixed;inset:0;z-index:42;display:flex;flex-direction:column;
+  align-items:center;padding:14px 12px calc(20px + env(safe-area-inset-bottom,0px));
+  background:radial-gradient(80% 50% at 50% 2%,#2b2338 0%,rgba(43,35,56,0) 62%),#13111a;
+  color:#f2ece0;font-family:Georgia,serif;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#pkdm .ent{text-align:center;margin-bottom:10px}
+#pkdm .ent b{display:block;font:900 12px Arial,sans-serif;letter-spacing:.3em;color:#e8c877}
+#pkdm .ent i{display:block;font-size:11.5px;color:rgba(242,236,224,.5);margin-top:4px}
+#pkdm .co{width:100%;max-width:560px}
+#pkdm .bo{display:flex;justify-content:space-between;align-items:baseline;
+  background:#0f2742;border:1px solid rgba(201,162,74,.3);border-radius:10px;
+  padding:9px 12px;margin-bottom:11px}
+#pkdm .bo small{font:700 9px Arial,sans-serif;letter-spacing:1.6px;color:#c9a24a}
+#pkdm .bo b{font:900 17px Georgia,serif;color:#f4ead2}
+#pkdm .ong{display:flex;gap:6px;margin-bottom:11px}
+#pkdm .ong button{flex:1;font:900 9px Arial,sans-serif;letter-spacing:1.3px;
+  border-radius:8px;padding:10px 4px;border:1px solid rgba(255,255,255,.14);
+  background:transparent;color:rgba(242,236,224,.5)}
+#pkdm .ong button.on{background:#e8c877;color:#241a0a;border-color:#e8c877}
+#pkdm h4{font:900 9px Arial,sans-serif;letter-spacing:2.2px;
+  color:rgba(242,236,224,.38);margin:16px 0 7px}
+#pkdm .vide{text-align:center;font-style:italic;font-size:12px;
+  color:rgba(242,236,224,.38);padding:22px 10px;line-height:1.6}
+
+#pkdm .an{display:flex;gap:9px;align-items:center;padding:9px 0;
+  border-top:1px solid rgba(255,255,255,.055)}
+#pkdm .an img{width:46px;border-radius:4px;flex:none;box-shadow:0 4px 11px rgba(0,0,0,.5)}
+#pkdm .an .nf{flex:1;min-width:0}
+#pkdm .an .nf b{display:block;font:400 12.5px Georgia,serif;color:#f4ead2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pkdm .an .nf small{display:block;font-size:10px;color:rgba(242,236,224,.5);margin-top:2px}
+#pkdm .an .nf u{font:900 7px Arial,sans-serif;letter-spacing:1px;text-decoration:none;
+  border-radius:999px;padding:2px 5px;margin-right:4px;color:#1a1208}
+#pkdm .an .ct{display:block;font-size:9.5px;color:#9fd0e8;margin-top:2px}
+#pkdm .an .ct s{text-decoration:none;color:rgba(242,236,224,.4)}
+#pkdm .an .px{text-align:right;flex:none}
+#pkdm .an .px b{display:block;font:900 14px Georgia,serif;color:#e8c877}
+#pkdm .an .px button{margin-top:4px;font:900 8.5px Arial,sans-serif;letter-spacing:1.1px;
+  border:0;border-radius:7px;padding:7px 10px;background:#c9a24a;color:#1a1208}
+#pkdm .an .px button.v{background:transparent;color:rgba(242,236,224,.5);
+  border:1px solid rgba(255,255,255,.18)}
+#pkdm .an .px button.pas{background:rgba(255,255,255,.07);color:rgba(242,236,224,.3)}
+
+#pkdm .ve{background:#0f2742;border:1px solid rgba(201,162,74,.3);
+  border-radius:10px;padding:11px;margin-top:4px}
+#pkdm .ve .te{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+#pkdm .ve .te img{width:56px;border-radius:5px}
+#pkdm .ve .te b{display:block;font:400 13px Georgia,serif;color:#f4ead2}
+#pkdm .ve .te small{display:block;font-size:10px;color:#a8c4d8;margin-top:3px}
+#pkdm .ve label{display:block;font:700 9px Arial,sans-serif;letter-spacing:1.4px;
+  color:#c9a24a;margin-bottom:5px}
+#pkdm .ve .ch{display:flex;align-items:center;gap:8px;background:#0a1b2e;
+  border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 11px}
+#pkdm .ve .ch input{flex:1;background:none;border:0;color:#f4ead2;outline:none;
+  font:900 19px Georgia,serif;width:100%;-moz-appearance:textfield}
+#pkdm .ve .ch input::-webkit-outer-spin-button,
+#pkdm .ve .ch input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+#pkdm .ve .ch span{font:900 17px Georgia,serif;color:#e8c877}
+#pkdm .ve .det{margin-top:9px;font-size:11px;color:#a8c4d8;line-height:1.7}
+#pkdm .ve .det b{color:#f4ead2}
+#pkdm .ve .det .cm{color:#e08a7a}
+#pkdm .ve .ok{width:100%;margin-top:10px;border:0;border-radius:9px;padding:12px;
+  background:#c9a24a;color:#1a1208;font:900 10.5px Arial,sans-serif;letter-spacing:1.5px}
+#pkdm .ve .ok[disabled]{opacity:.45}
+
+#pkdm .dbl{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:7px}
+#pkdm .dbl .c{position:relative;aspect-ratio:300/420;border-radius:6px;overflow:hidden;
+  box-shadow:0 4px 12px rgba(0,0,0,.5);border:2px solid transparent}
+#pkdm .dbl .c.on{border-color:#e8c877}
+#pkdm .dbl .c img{width:100%;height:100%;display:block}
+#pkdm .dbl .c u{position:absolute;bottom:3px;right:3px;font:900 7.5px Arial,sans-serif;
+  background:rgba(0,0,0,.65);color:#e8c877;border-radius:999px;padding:2px 5px;
+  text-decoration:none}
+
+#pkdm .msg{text-align:center;font-size:11.5px;color:#e8a44a;min-height:16px;margin-top:9px}
+#pkdm .msg.ok{color:#7ad6a0}
+#pkdm .act{display:flex;gap:9px;justify-content:center;margin-top:16px}
+#pkdm .act button{font:900 11px Arial,sans-serif;letter-spacing:1.5px;border-radius:999px;
+  padding:12px 22px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);
+  color:#f2ece0}
+#pkdm .lp{position:fixed;inset:0;z-index:70;display:none;background:rgba(7,6,10,.92);
+  align-items:center;justify-content:center;padding:22px}
+#pkdm .lp.la{display:flex}
+#pkdm .lp img{max-height:84vh;max-width:90vw;border-radius:12px}
+`;
+
+const TON_M={commune:'#cdbfa6',rare:'#9fd0e8',ultra:'#7fd2ff',epic:'#c79bff',
+  legend:'#ffd978',ex:'#ff9d62',fullart:'#8fe8ff',secrete:'#ff9ae0'};
+const NOM_M={commune:'COMMUNE',rare:'RARE',ultra:'ULTRA',epic:'EPIC',
+  legend:'LÉGEND.',ex:'EX',fullart:'FULL ART',secrete:'SECRÈTE'};
+const eur=(c)=>((c||0)/100).toLocaleString('fr-FR',
+  {minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+const eurCourt=(c)=>Math.round((c||0)/100).toLocaleString('fr-FR')+' €';
+
+/* ctx : { marche(), vendre(n,prix), retirer(id), acheterAnnonce(id), majEuros(c) }
+   ACHETER UNE ANNONCE N'EST PAS ACHETER UN PAQUET : le rayon et le
+   marche partagent le meme ctx, et deux « acheter » dans le meme objet
+   auraient fait ouvrir un paquet a chaque clic sur une carte. */
+function marche(ctx,fermer){
+  poserStyle();
+  if(!document.getElementById('cssPkdMar')){
+    const st=document.createElement('style');
+    st.id='cssPkdMar';st.textContent=CSS_MAR;document.head.appendChild(st);
+  }
+  const cal=document.createElement('div');
+  cal.id='pkdm';
+  cal.innerHTML=
+    '<div class="ent"><b>LE MARCHÉ AUX CARTES</b>'+
+      '<i>Première édition · les prix sont ceux que les joueurs demandent</i></div>'+
+    '<div class="co">'+
+      '<div class="bo"><small>TA BOURSE</small><b id="mBo">—</b></div>'+
+      '<div class="ong"><button data-g="achat" class="on">ACHETER</button>'+
+        '<button data-g="vente">VENDRE</button></div>'+
+      '<div id="mVue"><div class="vide">On ouvre les vitrines…</div></div>'+
+      '<div class="msg" id="mMsg"></div>'+
+      '<div class="act"><button data-x="1">REFERMER</button></div>'+
+    '</div>'+
+    '<div class="lp"><img alt=""></div>';
+  document.body.appendChild(cal);
+
+  const q=(s)=>cal.querySelector(s);
+  const lp=q('.lp');
+  lp.onclick=()=>lp.classList.remove('la');
+  q('[data-x]').onclick=()=>{cal.remove();if(typeof fermer==='function')fermer();};
+
+  let D=null, ONG='achat', SEL=null, occupe=false;
+  const dire=(t,bon)=>{const m=q('#mMsg');m.textContent=t||'';m.className='msg'+(bon?' ok':'');};
+
+  cal.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{
+    ONG=b.dataset.g;
+    cal.querySelectorAll('[data-g]').forEach(x=>x.classList.toggle('on',x.dataset.g===ONG));
+    dire('');peindre();
+  });
+
+  const loupe=(n)=>{lp.querySelector('img').src=faceURL(n);lp.classList.add('la');};
+
+/* UNE LIGNE D'ANNONCE. L'ecart a la cote est la vraie information : un
+     prix seul ne dit pas s'il est bon. */
+  const ligne=(a,mien)=>{
+    const r=RARETE(a.n);
+    const ec=a.cote?Math.round(100*(a.prix-a.cote)/a.cote):0;
+    const trop=!mien&&D&&a.prix>(D.euros||0);
+    return '<div class="an"><img alt="" src="'+faceURL(a.n)+'" data-z="'+a.n+'">'+
+      '<div class="nf"><b>'+NOM_CARTE(a.n)+'</b>'+
+      '<small><u style="background:'+TON_M[r]+'">'+NOM_M[r]+'</u>'+
+        ('00'+a.n).slice(-3)+'/100 · '+(mien?'ton annonce':(a.vendeur||'un docker'))+'</small>'+
+      (a.cote?'<span class="ct">cote '+eurCourt(a.cote)+
+        (a.reelle?'':' <s>(de départ)</s>')+
+        (ec?' · '+(ec>0?'+':'')+ec+' %':'')+'</span>':'')+
+      '</div>'+
+      '<div class="px"><b>'+eur(a.prix)+'</b>'+
+      '<button class="'+(mien?'v':(trop?'pas':''))+'" data-'+(mien?'ret':'ach')+'="'+a.id+'"'+
+        (trop?' disabled':'')+'>'+
+        (mien?'RETIRER':(trop?'TROP CHER':'ACHETER'))+'</button></div></div>';
+  };
+
+  function peindre(){
+    const V=q('#mVue');
+    q('#mBo').textContent=D?eur(D.euros):'—';
+    if(!D){V.innerHTML='<div class="vide">On ouvre les vitrines…</div>';return;}
+
+    if(ONG==='achat'){
+      const autres=(D.annonces||[]).filter(a=>!a.mien);
+      V.innerHTML=
+        '<h4>'+autres.length+' CARTE'+(autres.length>1?'S':'')+' EN VENTE</h4>'+
+        (autres.length?autres.map(a=>ligne(a,false)).join('')
+          :'<div class="vide">Personne ne vend pour l’instant.<br>'+
+           'Reviens quand les classeurs se seront remplis.</div>');
+    }else{
+      const dbl=(D.doubles||[]), mien=(D.miennes||[]);
+      let h='';
+      if(!dbl.length){
+        h+='<div class="vide">Tu n’as aucun double à vendre.<br>'+
+           'Ouvre des paquets : les cartes en trop finissent ici.</div>';
+      }else{
+        h+='<h4>TES DOUBLES — CHOISIS-EN UN</h4><div class="dbl">'+
+          dbl.map(d=>'<div class="c'+(SEL&&SEL.n===d.n?' on':'')+'" data-d="'+d.n+'">'+
+            '<img alt="" src="'+faceURL(d.n)+'"><u>×'+d.q+'</u></div>').join('')+'</div>';
+        if(SEL){
+          const c=SEL.cote||0;
+          h+='<div class="ve"><div class="te"><img alt="" src="'+faceURL(SEL.n)+'">'+
+            '<div><b>'+NOM_CARTE(SEL.n)+'</b><small>'+('00'+SEL.n).slice(-3)+'/100 · '+
+            NOM_M[RARETE(SEL.n)]+' · tu en as '+SEL.q+'</small></div></div>'+
+            '<label>TON PRIX</label>'+
+            '<div class="ch"><input id="mPx" type="number" inputmode="numeric" min="1" '+
+              'value="'+Math.max(1,Math.round(c/100))+'"><span>€</span></div>'+
+            '<div class="det" id="mDet"></div>'+
+            '<button class="ok" id="mOk">METTRE EN VENTE · 7 JOURS</button></div>';
+        }
+      }
+      h+='<h4>TES ANNONCES — '+mien.length+' / 10</h4>'+
+        (mien.length?mien.map(a=>ligne(Object.assign({},a,
+            {cote:(dbl.find(d=>d.n===a.n)||{}).cote}),true)).join('')
+          :'<div class="vide">Aucune annonce en cours.</div>');
+      V.innerHTML=h;
+    }
+
+    V.querySelectorAll('[data-z]').forEach(i=>i.onclick=()=>loupe(+i.dataset.z));
+    V.querySelectorAll('[data-d]').forEach(d=>d.onclick=()=>{
+      const n=+d.dataset.d;
+      SEL=(SEL&&SEL.n===n)?null:(D.doubles||[]).find(x=>x.n===n);
+      dire('');peindre();
+    });
+    V.querySelectorAll('[data-ach]').forEach(b=>b.onclick=()=>acheter(+b.dataset.ach));
+    V.querySelectorAll('[data-ret]').forEach(b=>b.onclick=()=>retirer(+b.dataset.ret));
+    const px=q('#mPx');
+    if(px){
+      const maj=()=>{
+        const e2=Math.max(0,Math.round(parseFloat(px.value||'0')*100));
+        const com=Math.round(e2*0.08);
+        q('#mDet').innerHTML=
+          'Cote actuelle : <b>'+eurCourt(SEL.cote||0)+'</b><br>'+
+          'Commission de la maison (8 %) : <span class="cm">− '+eur(com)+'</span><br>'+
+          'Tu touches : <b>'+eur(e2-com)+'</b> quand elle part';
+        const ok=q('#mOk');if(ok)ok.disabled=!(e2>=100);
+      };
+      px.oninput=maj;maj();
+      q('#mOk').onclick=()=>vendre(SEL.n,Math.round(parseFloat(px.value||'0')*100));
+    }
+  }
+
+  async function recharger(){
+    try{D=await ctx.marche();}catch(x){D=null;}
+    if(D&&typeof D.euros==='number'&&ctx.majEuros)ctx.majEuros(D.euros);
+    if(SEL)SEL=(D&&D.doubles||[]).find(x=>x.n===SEL.n)||null;
+    peindre();
+  }
+  const agir=async(p,bon)=>{
+    if(occupe)return;occupe=true;dire('…');
+    let r=null;try{r=await p;}catch(x){}
+    occupe=false;
+    if(!r||r.erreur){dire((r&&r.erreur)||'Le marché n’a pas répondu. Réessaie.');return;}
+    await recharger();dire(bon(r),true);
+  };
+  const acheter=(id)=>agir(ctx.acheterAnnonce(id),
+    r=>'Achetée : '+NOM_CARTE(r.numero)+' pour '+eur(r.prix)+'.');
+  const retirer=(id)=>agir(ctx.retirer(id),
+    r=>NOM_CARTE(r.numero)+' est revenue dans ton classeur.');
+  const vendre=(n,p)=>agir(ctx.vendre(n,p),
+    r=>NOM_CARTE(r.numero)+' est en vitrine pour '+eur(r.prix)+'.');
+
+  recharger();
+  return cal;
+}
+
 window.Pokedock={
-  rayon:rayon, classeur:classeur, ouvrirPaquet:ouvrirPaquet,
+  rayon:rayon, classeur:classeur, ouvrirPaquet:ouvrirPaquet, marche:marche,
   carte:faceURL, dos:dosURL, sachet:sacURL, css:CSS_RAYON,
   nom:NOM_CARTE, rarete:RARETE, total:100
 };
