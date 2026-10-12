@@ -12,8 +12,8 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<script src="maintenance.js?v=2026-10-13-0200"></script>
-<script src="personnage.js?v=2026-10-13-0200"></script>
+<script src="maintenance.js?v=2026-10-13-0300"></script>
+<script src="personnage.js?v=2026-10-13-0300"></script>
 <script>
 /* LA VERSION, comme partout ailleurs : ajoutée au signet, une page reste en
    mémoire et ne se recharge jamais. On demande à chaque ouverture quelle est
@@ -27,7 +27,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    MA_VERSION de jeu.html, index.html, jeu_entree.html, complexe.html,
    forge.html et mine.html. Les autres pages n'en portent pas. */
 (function(){
-  var MA_VERSION='2026-10-13-0200';
+  var MA_VERSION='2026-10-13-0300';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue';
   function verifier(){
@@ -197,6 +197,68 @@ function halo(x,y,r,force,col){
    grande comme la salle, et pose d'un seul trait a chaque image. Ne
    joue en direct que la poussiere dans les rais.
    ===================================================================== */
+/* ================= LES LETTRES =================
+   Une police de cinq points de haut, gravee a la main. Elle sert aux
+   enseignes de la salle, et a rien d'autre. */
+const A5={A:[[0,1,1,0],[1,0,0,1],[1,1,1,1],[1,0,0,1],[1,0,0,1]],
+ C:[[0,1,1,1],[1,0,0,0],[1,0,0,0],[1,0,0,0],[0,1,1,1]],
+ E:[[1,1,1,1],[1,0,0,0],[1,1,1,0],[1,0,0,0],[1,1,1,1]],
+ F:[[1,1,1,1],[1,0,0,0],[1,1,1,0],[1,0,0,0],[1,0,0,0]],
+ I:[[1,1,1],[0,1,0],[0,1,0],[0,1,0],[1,1,1]],
+ /* LE J ET LE U MANQUAIENT a l'alphabet : la porte annoncait « LES E X ».
+    ecrire() remplace par un blanc ce qu'elle ne connait pas, donc une
+    lettre oubliee ne casse rien — elle disparait, ce qui est pire. */
+ J:[[0,0,1,1],[0,0,0,1],[0,0,0,1],[1,0,0,1],[0,1,1,0]],
+ U:[[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,0,0,1],[0,1,1,0]],
+ L:[[1,0,0,0],[1,0,0,0],[1,0,0,0],[1,0,0,0],[1,1,1,1]],
+ M:[[1,0,0,0,1],[1,1,0,1,1],[1,0,1,0,1],[1,0,0,0,1],[1,0,0,0,1]],
+ O:[[0,1,1,0],[1,0,0,1],[1,0,0,1],[1,0,0,1],[0,1,1,0]],
+ P:[[1,1,1,0],[1,0,0,1],[1,1,1,0],[1,0,0,0],[1,0,0,0]],
+ S:[[0,1,1,1],[1,0,0,0],[0,1,1,0],[0,0,0,1],[1,1,1,0]],
+ T:[[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],
+ X:[[1,0,0,1],[1,0,0,1],[0,1,1,0],[1,0,0,1],[1,0,0,1]],
+ /* L'ALPHABET ÉTAIT TROUÉ, ET ÇA NE SE VOYAIT PAS : ecrire() remplace par
+    un blanc ce qu'elle ne connaît pas, donc « LE BONNETEAU » s'affichait
+    « LE O ETEAU » et « BIENTÔT » devenait « IE TOT ». Le J et le U avaient
+    déjà été rajoutés un jour pour la même raison. On le complète donc en
+    entier — les vingt-six lettres et les dix chiffres — pour que le piège
+    ne se referme plus. */
+ B:[[1,1,1,0],[1,0,0,1],[1,1,1,0],[1,0,0,1],[1,1,1,0]],
+ D:[[1,1,1,0],[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,1,1,0]],
+ G:[[0,1,1,1],[1,0,0,0],[1,0,1,1],[1,0,0,1],[0,1,1,1]],
+ H:[[1,0,0,1],[1,0,0,1],[1,1,1,1],[1,0,0,1],[1,0,0,1]],
+ K:[[1,0,0,1],[1,0,1,0],[1,1,0,0],[1,0,1,0],[1,0,0,1]],
+ N:[[1,0,0,1],[1,1,0,1],[1,0,1,1],[1,0,0,1],[1,0,0,1]],
+ Q:[[0,1,1,0],[1,0,0,1],[1,0,0,1],[1,0,1,1],[0,1,1,1]],
+ R:[[1,1,1,0],[1,0,0,1],[1,1,1,0],[1,0,1,0],[1,0,0,1]],
+ V:[[1,0,0,1],[1,0,0,1],[1,0,0,1],[0,1,1,0],[0,1,1,0]],
+ W:[[1,0,0,1],[1,0,0,1],[1,0,1,1],[1,1,1,1],[1,0,0,1]],
+ Y:[[1,0,0,1],[1,0,0,1],[0,1,1,0],[0,1,1,0],[0,1,1,0]],
+ Z:[[1,1,1,1],[0,0,1,0],[0,1,0,0],[1,0,0,0],[1,1,1,1]],
+ '0':[[1,1,1],[1,0,1],[1,0,1],[1,0,1],[1,1,1]],
+ '1':[[0,1,0],[1,1,0],[0,1,0],[0,1,0],[1,1,1]],
+ '2':[[1,1,1],[0,0,1],[1,1,1],[1,0,0],[1,1,1]],
+ '3':[[1,1,1],[0,0,1],[0,1,1],[0,0,1],[1,1,1]],
+ '4':[[1,0,1],[1,0,1],[1,1,1],[0,0,1],[0,0,1]],
+ '5':[[1,1,1],[1,0,0],[1,1,1],[0,0,1],[1,1,1]],
+ '6':[[1,1,1],[1,0,0],[1,1,1],[1,0,1],[1,1,1]],
+ '7':[[1,1,1],[0,0,1],[0,1,0],[0,1,0],[0,1,0]],
+ '8':[[1,1,1],[1,0,1],[1,1,1],[1,0,1],[1,1,1]],
+ '9':[[1,1,1],[1,0,1],[1,1,1],[0,0,1],[1,1,1]],
+ '·':[[0],[0],[1],[0],[0]],
+ '.':[[0],[0],[0],[0],[1]],
+ '-':[[0,0,0],[0,0,0],[1,1,1],[0,0,0],[0,0,0]],
+ '€':[[0,1,1,1],[1,1,0,0],[1,1,1,0],[1,1,0,0],[0,1,1,1]],
+ ' ':[[0],[0],[0],[0],[0]]};
+function ecrire(mot,cx,y,s,col){
+  let lg=0;for(const ch of mot)lg+=((A5[ch]||A5[' '])[0].length+1);
+  lg-=1;
+  let px=Math.round(cx-lg*s/2);
+  for(const ch of mot){const G=A5[ch]||A5[' '];
+    for(let r=0;r<5;r++)for(let c=0;c<G[0].length;c++)if(G[r][c])R(px+c*s,y+r*s,s,s,col);
+    px+=(G[0].length+1)*s;}
+}
+
 let NEF=null, NEF_CLE='';
 /* ================= LA SCENE ET LE BAR =================
    Une piste vide est un entrepot : il lui faut un point de mire et un
@@ -205,6 +267,8 @@ let NEF=null, NEF_CLE='';
    attend ce qu'on y mettra. */
 const SCN={hw:86, prof:34};
 const BAR={g:()=>Math.round(CX-330), d:()=>Math.round(CX-150)};
+/* L'ENTREE DU CASINO, au bout gauche de la piste. */
+const ENT={x:()=>BORD+86, hw:40, h:58};
 /* LES PROJECTEURS. Un pont de lumiere court sous la charpente : des
    lyres qui balaient, et des boules a facettes entre elles. Leur place
    est fixe, leur mouvement ne l'est pas — c'est ce qui fait la boite. */
@@ -307,6 +371,60 @@ function nefGraver(){
   }
   graverScene();
   graverBar();
+  graverEntree();
+}
+/* ================= L'ENTREE DU CASINO =================
+   Une baie ouverte dans le mur, et au-dessus son caisson d'ampoules.
+   PAS DE CHAMBRANLE : un encadrement de laiton autour d'une baie noire
+   faisait un cadre de tableau pose sur le mur, et l'on ne savait plus si
+   c'etait une porte ou une affiche. Une ouverture franche, avec son seul
+   tableau d'ombre, se lit comme un trou — donc comme un passage.
+   ON VOIT DEDANS, et c'est tout ce qu'une entree doit dire : un couloir
+   chaud qui s'enfonce, deux silhouettes au fond. */
+function graverEntree(){
+  const cx=ENT.x(), hw=ENT.hw, haut=MUR-ENT.h, bas=MUR+2;
+  R(cx-hw,haut,hw*2,bas-haut,'#140e08');
+  for(let y=haut;y<bas;y++){
+    const k=(y-haut)/(bas-haut);
+    R(cx-hw,y,hw*2,1,'rgb('+Math.round(14+k*40)+','+Math.round(10+k*26)+','+Math.round(7+k*10)+')');
+  }
+  /* les bandeaux du couloir, qui se resserrent : c'est eux qui creusent */
+  for(let i=0;i<4;i++){
+    const k=i/4, w=hw*2*(1-k*0.42);
+    R(cx-w/2,haut+8+i*11,w,2,'rgba(201,162,74,'+(0.10+0.12*k).toFixed(2)+')');
+  }
+  halo(cx,bas-8,62,0.42,'255,196,110');
+  R(cx+12,bas-32,9,26,'#1a120c');R(cx+13,bas-40,7,8,'#241a12');
+  R(cx-19,bas-30,9,24,'#16100a');R(cx-18,bas-38,7,8,'#201810');
+  /* le tableau d'ombre de la baie : l'epaisseur du mur, rien de plus */
+  R(cx-hw,haut,hw*2,3,'rgba(0,0,0,.65)');
+  R(cx-hw,haut,3,bas-haut,'rgba(0,0,0,.5)');
+  R(cx+hw-3,haut,3,bas-haut,'rgba(0,0,0,.5)');
+  R(cx-hw-1,haut-1,hw*2+2,1,'rgba(150,140,180,.14)');
+  /* le caisson de l'enseigne */
+  const by=haut-46;
+  R(cx-62,by,124,34,'#0b0a10');
+  R(cx-63,by-1,126,2,'#5a4e7a');R(cx-63,by+33,126,2,'#5a4e7a');
+  R(cx-63,by-1,2,36,'#5a4e7a');R(cx+61,by-1,2,36,'#5a4e7a');
+  /* le parvis : la lumiere qui deborde, puis le tapis */
+  for(let i=0;i<64;i++){
+    const k=i/64, d=hw+k*28;
+    g.fillStyle='rgba(255,200,130,'+(0.18*(1-k)*(1-k)).toFixed(3)+')';
+    g.fillRect(cx-d,MUR+i,d*2,1);
+  }
+  for(let i=0;i<60;i++){
+    const k=i/60, d=Math.round(hw-10+k*18), y=MUR+i;
+    R(cx-d,y,d*2,1,'#6e1020');
+    R(cx-d,y,2,1,'#420a14');R(cx+d-2,y,2,1,'#420a14');
+    if(y%3===0){R(cx-d+4,y,1,2,'#8a6a2a');R(cx+d-5,y,1,2,'#8a6a2a');}
+  }
+  cordon(cx-hw-8,cx-hw+2,MUR+34);cordon(cx+hw-2,cx+hw+8,MUR+34);
+}
+function cordon(x0,x1,y){
+  [x0,x1].forEach(px=>{R(px-2,y-16,4,16,'#3a3450');R(px-2,y-16,1,16,'#8a7aba');
+    R(px-3,y-19,6,4,'#c9a24a');R(px-4,y,8,2,'#241f33');});
+  g.strokeStyle='#8e1220';g.lineWidth=2.4;
+  g.beginPath();g.moveTo(x0,y-15);g.quadraticCurveTo((x0+x1)/2,y-6,x1,y-15);g.stroke();
 }
 /* l'estrade, les enceintes et le cadre du mur d'images : rien ne bouge */
 function graverScene(){
@@ -380,8 +498,24 @@ function cabine(T){
   for(let i=0;i<9;i++)R(sx-28+i*7,MUR+14,4,3,(Math.floor(T/220)+i)%4?'#4a4466':'#ffd36a');
   halo(sx,MUR+10,46,0.24,'255,200,120');
 }
+/* les ampoules du caisson et le neon : le seul mouvement de l'entree */
+function entree(T){
+  const cx=ENT.x(), by=MUR-ENT.h-46;
+  for(let i=0;i<13;i++){
+    const on=((i+Math.floor(T/110))%4)!==0, col=on?'#fff0a8':'#4a4020';
+    R(cx-58+i*10,by-4,3,3,col);R(cx-58+i*10,by+33,3,3,col);
+    if(on){halo(cx-57+i*10,by-3,7,0.24);halo(cx-57+i*10,by+34,7,0.24);}
+  }
+  const bat=0.64+0.36*Math.abs(Math.sin(T/330));
+  const rate=(Math.floor(T/90)%41)===0?0.3:1;
+  halo(cx,by+16,46,0.44*bat*rate,'255,120,90');
+  halo(cx,by+16,22,0.34*bat*rate,'255,220,170');
+  ecrire('CASINO',cx,by+10,3,rate<1?'#7a3028':'#ff8f6a');
+  ecrire('CASINO',cx,by+9,3,rate<1?'#9a4a3a':'#ffd9c0');
+}
 function monde(T){
   const g0=camX-50, g1=camX+VUE_L+50;
+  if(ENT.x()>g0-80&&ENT.x()<g1+80)entree(T);
   murDImages(T);
   /* LE DJ VIENT AVANT SA CABINE : dessine apres, il se tenait devant
      elle, en equilibre sur le rebord. */
