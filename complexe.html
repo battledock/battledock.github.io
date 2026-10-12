@@ -12,8 +12,8 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<script src="maintenance.js?v=2026-10-12-2340"></script>
-<script src="personnage.js?v=2026-10-12-2340"></script>
+<script src="maintenance.js?v=2026-10-12-2300"></script>
+<script src="personnage.js?v=2026-10-12-2300"></script>
 <script>
 /* LA VERSION, comme partout ailleurs : ajoutée au signet, une page reste en
    mémoire et ne se recharge jamais. On demande à chaque ouverture quelle est
@@ -27,7 +27,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    MA_VERSION de jeu.html, index.html, jeu_entree.html, complexe.html,
    forge.html et mine.html. Les autres pages n'en portent pas. */
 (function(){
-  var MA_VERSION='2026-10-12-2340';
+  var MA_VERSION='2026-10-12-2300';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue';
   function verifier(){
@@ -107,8 +107,7 @@ let SALLE_H=560, MUR=190, CX=SALLE_L/2;
 const cv=document.getElementById('cv');
 const ctx=cv.getContext('2d');
 const toile=document.createElement('canvas');
-let g=toile.getContext('2d');   /* « let » : on le detourne le temps de
-   cuire un decor dans une toile de cote, et R comme halo suivent. */
+const g=toile.getContext('2d');
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
 const alea=(n)=>{const v=Math.sin(n*127.1)*43758.5453;return v-Math.floor(v);};
 
@@ -375,31 +374,13 @@ function lustre(x,y,ech,T){
    la loge et l'enseigne, et l'on n'en voyait pas un pixel. Une galerie a
    balustres, posee en travers du mur au-dessus de la loge, dit la meme
    chose — il y a un dessus — et se voit, elle. */
-function mezzanine(y,trouG,trouD){
-  /* LA GALERIE S'INTERROMPT AU-DESSUS DE L'ARCADE DU CASINO. Elle passait
-     devant, et l'arc perdait sa hauteur — c'etait une porte sous une
-     rambarde, plus une entree. */
-  const dans=(x)=>trouG!==undefined&&x>trouG&&x<trouD;
-  const bande=(yy,h,col)=>{
-    let x=0;
-    while(x<SALLE_L){
-      let x2=x;while(x2<SALLE_L&&dans(x2)===dans(x))x2++;
-      if(!dans(x))R(x,yy,x2-x,h,col);
-      x=x2;
-    }
-  };
-  bande(y,3,C.orO);bande(y,1,C.orC);                       /* la main courante */
+function mezzanine(y){
+  R(0,y,SALLE_L,3,C.orO);R(0,y,SALLE_L,1,C.orC);          /* la main courante */
   for(let x=4;x<SALLE_L-2;x+=7){
-    if(dans(x))continue;
     R(x,y+3,3,9,C.orO);R(x,y+3,1,9,C.or);                  /* les balustres */
   }
-  bande(y+12,4,'#1d0b0e');bande(y+12,1,C.orO);             /* le bandeau sous la galerie */
-  bande(y+16,2,'rgba(0,0,0,.35)');                         /* son ombre portee sur le mur */
-  /* les deux joues de la coupure, pour que la galerie ait une epaisseur */
-  if(trouG!==undefined){
-    R(trouG,y,2,18,C.orO);R(trouD-2,y,2,18,C.orO);
-    R(trouG,y,1,18,C.or);R(trouD-1,y,1,18,C.or);
-  }
+  R(0,y+12,SALLE_L,4,'#1d0b0e');R(0,y+12,SALLE_L,1,C.orO); /* le bandeau sous la galerie */
+  R(0,y+16,SALLE_L,2,'rgba(0,0,0,.35)');                   /* son ombre portee sur le mur */
 }
 /* ================= LES PALMIERS EN POT =================
    Un hall sans vegetation est un couloir. */
@@ -436,259 +417,6 @@ function porte(x,mot,col){
   /* le fronton */
   R(x-w/2-6,y-16,w+12,10,'#1d0e10');R(x-w/2-6,y-16,w+12,1,C.orO);
   ecrire(mot,x,y-13,1,'#f0d78a');
-}
-
-/* =====================================================================
-   LE COIN CASINO
-   Le hall est vide expres, mais un hall vide sans destination n'est qu'un
-   couloir : on y entre, on regarde, on ressort. Le casino prend donc
-   l'angle gauche — la ou la camera se cogne au mur, donc la ou l'on va
-   forcement une fois. C'est une arcade, pas une porte : elle creve la
-   galerie de l'etage et monte chercher son enseigne, et c'est ce qui la
-   distingue des trois miroirs du fond.
-   ON VOIT DEDANS. Une porte fermee ne promet rien ; un tapis vert, deux
-   suspensions et une silhouette au rateau disent qu'il y a du monde de
-   l'autre cote, et c'est tout ce qu'une entree doit dire.
-   ===================================================================== */
-const CAS={x:82, hw:34, ys:86};          /* centre, demi-largeur, naissance de l'arc */
-const CAS_HAUT=()=>CAS.ys-CAS.hw;        /* la clef de voute */
-/* La demi-largeur de l'ouverture a la hauteur y : droite sous la naissance,
-   en quart de cercle au-dessus. Hors de l'arcade, elle vaut -1. */
-function casDemi(y){
-  if(y>=CAS.ys)return CAS.hw;
-  const d=CAS.ys-y;
-  if(d>CAS.hw)return -1;
-  return Math.round(Math.sqrt(CAS.hw*CAS.hw-d*d));
-}
-/* ---- ce qu'on apercoit a l'interieur ---- */
-function casDedans(){
-  const x0=CAS.x-CAS.hw, yH=CAS_HAUT();
-  g.save();
-  g.beginPath();
-  g.moveTo(x0,MUR);g.lineTo(x0,CAS.ys);
-  for(let y=CAS.ys;y>=yH;y--){const d=casDemi(y);if(d<0)break;
-    g.lineTo(CAS.x-d,y);}
-  for(let y=yH;y<=CAS.ys;y++){const d=casDemi(y);if(d<0)continue;
-    g.lineTo(CAS.x+d,y);}
-  g.lineTo(CAS.x+CAS.hw,MUR);g.closePath();g.clip();
-  /* le fond : un vert de table qui s'eteint vers le haut */
-  for(let y=yH;y<MUR;y++){
-    const k=(y-yH)/(MUR-yH);
-    R(x0,y,CAS.hw*2,1,'rgb('+Math.round(8+k*14)+','+Math.round(16+k*30)+','+Math.round(14+k*18)+')');
-  }
-  /* LE SOL INTERIEUR MONTE PLUS HAUT QUE LE SEUIL : c'est ce qui donne
-     la profondeur. A vingt-six pixels, la salle etait une plinthe. */
-  const SI=MUR-38;
-  R(x0,SI,CAS.hw*2,MUR-SI,'#24432e');
-  R(x0,SI,CAS.hw*2,1,'rgba(0,0,0,.5)');
-  for(let y=SI;y<MUR;y++){
-    const k=(y-SI)/(MUR-SI);
-    g.fillStyle='rgba(255,226,170,'+(0.07+0.10*k).toFixed(3)+')';
-    g.fillRect(x0,y,CAS.hw*2,1);
-  }
-  const tx=CAS.x+7, ty=MUR-13;
-  /* LE CROUPIER PASSE DEVANT LA TABLE : dessine apres, il avait l'air
-     pose dessus. Il vient donc d'abord, et le tapis lui mange les
-     jambes — c'est exactement ce qu'on veut voir. */
-  const hx=CAS.x-10, hb=ty-1;
-  g.fillStyle='rgba(0,0,0,.35)';g.beginPath();g.ellipse(hx,hb,7,2,0,0,7);g.fill();
-  R(hx-4,hb-11,8,11,'#1b2630');                     /* le pantalon */
-  R(hx-5,hb-23,10,13,'#f2ead4');                    /* la chemise */
-  R(hx-5,hb-22,3,12,'#1d1a16');R(hx+2,hb-22,3,12,'#1d1a16');   /* le gilet */
-  R(hx-1,hb-22,2,3,'#8e1220');                      /* le noeud papillon */
-  R(hx-7,hb-21,2,10,'#f2ead4');R(hx+5,hb-21,2,10,'#f2ead4');   /* les bras */
-  R(hx-3,hb-30,6,7,'#d8a878');                      /* la tete */
-  R(hx-3,hb-31,6,3,'#2b1d12');                      /* les cheveux */
-  R(hx+6,hb-12,11,1,'#c9a24a');R(hx+15,hb-13,3,3,'#8a6a2a');   /* le rateau, dans la main */
-  /* LA TABLE DE ROULETTE, de trois quarts et minuscule : a cette taille on
-     ne lit pas un dessin, on lit une tache verte et un disque sombre. Le
-     pietement sombre dessous lui donne son poids : sans lui, l'ellipse
-     flottait au-dessus du sol. */
-  g.fillStyle='#17251c';g.beginPath();g.ellipse(tx,ty+7,20,6,0,0,7);g.fill();
-  R(tx-19,ty,38,8,'#17251c');
-  g.fillStyle='#143a26';g.beginPath();g.ellipse(tx,ty+3,22,8,0,0,7);g.fill();
-  g.fillStyle='#2f7d4e';g.beginPath();g.ellipse(tx,ty,22,8,0,0,7);g.fill();
-  g.fillStyle='#3d9460';g.beginPath();g.ellipse(tx,ty-1,20,6,0,0,7);g.fill();
-  g.fillStyle='#17110c';g.beginPath();g.ellipse(tx-11,ty-1,8,4,0,0,7);g.fill();
-  g.fillStyle='#c9a24a';g.beginPath();g.ellipse(tx-11,ty-2,4,2,0,0,7);g.fill();
-  R(tx+3,ty-2,3,1,'#f6f3ec');R(tx+8,ty,3,1,'#c94a4a');R(tx+13,ty+1,3,1,'#f0d78a');
-  /* LES DEUX SUSPENSIONS : abat-jour en cone, ampoule, et c'est leur
-     lumiere qui sort par l'arcade. */
-  [-18,20].forEach((dx,i)=>{
-    const lx=CAS.x+dx, ly=yH+26+i*5;
-    R(lx-1,yH,2,ly-yH,'#2a2218');
-    for(let k=0;k<5;k++)R(lx-2-k,ly+k,5+k*2,1,k<2?'#2f6b4a':'#1d4a34');
-    R(lx-6,ly+5,13,1,'#3d9460');
-    R(lx-1,ly+6,3,2,'#ffe9b0');
-    halo(lx,ly+7,24,0.32);halo(lx,ly+7,52,0.15);
-  });
-  /* l'ombre des jambages, pour creuser */
-  const om=g.createLinearGradient(x0,0,x0+CAS.hw*2,0);
-  om.addColorStop(0,'rgba(0,0,0,.55)');om.addColorStop(.22,'rgba(0,0,0,0)');
-  om.addColorStop(.78,'rgba(0,0,0,0)');om.addColorStop(1,'rgba(0,0,0,.55)');
-  g.fillStyle=om;g.fillRect(x0,yH,CAS.hw*2,MUR-yH);
-  g.restore();
-}
-/* ---- l'encadrement : archivolte doree, ampoules, pilastres ---- */
-function casCadre(){
-  const yH=CAS_HAUT();
-  /* l'archivolte, posee pixel par pixel le long de l'ouverture */
-  for(let y=yH-4;y<MUR;y++){
-    const d=casDemi(y);
-    if(d<0){ /* au-dessus de la clef : la bande suit encore le cercle */
-      const dd=CAS.ys-y;
-      if(dd>CAS.hw+5)continue;
-      const r=Math.sqrt(Math.max(0,(CAS.hw+5)*(CAS.hw+5)-dd*dd));
-      R(CAS.x-r,y,r*2,1,C.orO);
-      if(dd>CAS.hw+3)R(CAS.x-r,y,r*2,1,C.or);
-      continue;
-    }
-    const e=Math.round(Math.sqrt(Math.max(0,(CAS.hw+5)*(CAS.hw+5)-Math.max(0,CAS.ys-y)**2)));
-    const ext=y>=CAS.ys?CAS.hw+5:e;
-    R(CAS.x-ext,y,ext-d,1,C.orO);R(CAS.x+d,y,ext-d,1,C.orO);
-    R(CAS.x-ext,y,1,1,C.orC);R(CAS.x+ext-1,y,1,1,C.orC);
-    R(CAS.x-d-1,y,1,1,C.or);R(CAS.x+d,y,1,1,C.or);
-  }
-  /* LA LUEUR DES AMPOULES EST CUITE AVEC LE CADRE. Vingt degrades
-     radiaux par image, c'etait le plus gros du cout du coin — et ils ne
-     bougent jamais : seules les ampoules s'allument et s'eteignent. */
-  casAmpoules(0,true);
-  /* les pilastres, de part et d'autre */
-  [-1,1].forEach(s2=>{
-    const px=CAS.x+s2*(CAS.hw+11), w=11;
-    for(let i=0;i<w;i++){
-      const k=i/(w-1), c=k<0.25?'#6a2228':(k<0.62?'#4e171c':'#2e0d11');
-      R(px-w/2+i,CAS.ys-26,1,MUR-CAS.ys+26,c);
-    }
-    R(px-w/2-3,CAS.ys-31,w+6,6,C.orO);R(px-w/2-3,CAS.ys-31,w+6,2,C.orC);
-    R(px-w/2-3,MUR-7,w+6,7,C.orO);R(px-w/2-3,MUR-7,w+6,2,C.or);
-  });
-}
-/* ---- l'enseigne du casino, au-dessus de l'arcade ---- */
-function casEnseigne(T){
-  const y=18, w=118, x=CAS.x-w/2;
-  const bat=0.62+0.38*Math.abs(Math.sin(T/330));
-  /* LE NEON A DES RATES. Un neon parfait est une image ; celui-ci saute
-     une fois de temps en temps, et c'est ce qui le rend vivant. */
-  const rate=(Math.floor(T/90)%37)===0?0.25:1;
-  R(x-4,y-5,w+8,34,'#140608');
-  R(x-4,y-5,w+8,2,C.orO);R(x-4,y+27,w+8,2,C.orO);
-  R(x-4,y-5,2,34,C.orO);R(x+w+2,y-5,2,34,C.orO);
-  halo(CAS.x,y+10,72,0.40*bat*rate,'255,120,90');
-  halo(CAS.x,y+10,34,0.34*bat*rate,'255,220,170');
-  ecrire('CASINO',CAS.x,y+2,4,rate<1?'#7a3028':'#ff8f6a');
-  ecrire('CASINO',CAS.x,y+1,4,rate<1?'#9a4a3a':'#ffd9c0');
-  /* les deux as, de part et d'autre */
-  [-1,1].forEach(s2=>{
-    const cx2=CAS.x+s2*(w/2+14);
-    R(cx2-5,y+2,10,14,'#efe8d6');R(cx2-5,y+2,10,1,'#fffdf4');
-    R(cx2-4,y+3,8,12,'#efe8d6');
-    g.fillStyle=s2>0?'#b32a2a':'#1b1712';
-    g.beginPath();g.moveTo(cx2,y+5);g.lineTo(cx2+3,y+9);g.lineTo(cx2,y+13);g.lineTo(cx2-3,y+9);
-    g.closePath();g.fill();
-  });
-}
-/* ---- ce qui deborde dans le hall : lumiere, tapis, cordons ---- */
-function casParvis(T){
-  const x0=CAS.x-CAS.hw;
-  /* LA LUMIERE QUI SORT. Un trapeze chaud qui s'elargit sur le marbre :
-     c'est lui qui dit que la porte est ouverte, bien avant le tapis. */
-  const L=96;
-  for(let i=0;i<L;i++){
-    const k=i/L, demi=CAS.hw+k*26;
-    g.fillStyle='rgba(255,214,150,'+(0.17*(1-k)*(1-k)).toFixed(3)+')';
-    g.fillRect(CAS.x-demi,MUR+i,demi*2,1);
-  }
-  /* le tapis rouge, de l'arcade vers le hall */
-  for(let i=0;i<L;i++){
-    const k=i/L, demi=Math.round(CAS.hw-7+k*17), y=MUR+i;
-    R(CAS.x-demi,y,demi*2,1,C.velours);
-    R(CAS.x-demi,y,2,1,C.veloursO);R(CAS.x+demi-2,y,2,1,C.veloursO);
-    for(let m=-demi+5;m<demi-4;m+=7)if((Math.abs(m)+Math.floor(y/3))%3===0)
-      R(CAS.x+m,y,1,1,C.veloursC);
-    if(y%3===0){R(CAS.x-demi+4,y,1,2,C.orO);R(CAS.x+demi-5,y,1,2,C.orO);}
-    R(CAS.x-demi-1,y,1,1,'rgba(20,6,10,.5)');R(CAS.x+demi,y,1,1,'rgba(20,6,10,.5)');
-  }
-  /* les deux marches de marbre du seuil */
-  R(x0-2,MUR-1,CAS.hw*2+4,2,'#cdc0a4');R(x0-2,MUR-1,CAS.hw*2+4,1,'#f4ecd8');
-  /* les cordons, en biais comme le tapis */
-  cordon(CAS.x-CAS.hw-4,CAS.x-CAS.hw+4,MUR+30);
-  cordon(CAS.x+CAS.hw-4,CAS.x+CAS.hw+4,MUR+30);
-  cordon(CAS.x-CAS.hw-9,CAS.x-CAS.hw-1,MUR+66);
-  cordon(CAS.x+CAS.hw+1,CAS.x+CAS.hw+9,MUR+66);
-  /* LE CHEVALET, a droite du tapis : ce qu'on y joue, ecrit petit. On ne
-     le lit pas de loin, mais on sait qu'il y a quelque chose a lire. */
-  const ax=CAS.x+CAS.hw+42, ay=MUR+54;
-  R(ax-25,ay-28,50,28,'#2a1a10');R(ax-25,ay-28,50,1,C.orO);
-  R(ax-23,ay-26,46,24,'#140a0c');
-  ecrire('ROULETTE',ax,ay-23,1,'#f0d78a');
-  ecrire('BOULE',ax,ay-15,1,'#d9c08a');
-  ecrire('CARTES',ax,ay-7,1,'#d9c08a');
-  R(ax-20,ay,4,6,'#2a1a10');R(ax+16,ay,4,6,'#2a1a10');
-  /* les palmiers encadrent le parvis */
-  palmier(CAS.x-CAS.hw-31,MUR+20);
-  palmier(CAS.x+CAS.hw+31,MUR+20);
-}
-/* ---- les ampoules de l'arc : le seul mouvement rapide du coin ---- */
-function casAmpoules(T,lueur){
-  const n=16;
-  for(let i=0;i<=n;i++){
-    const a=Math.PI*(i/n), r=CAS.hw+2.5;
-    const bx=CAS.x-Math.cos(a)*r, by=CAS.ys-Math.sin(a)*r;
-    if(lueur){halo(bx,by,8,0.22);continue;}
-    const on=((i+Math.floor(T/120))%3)!==0;
-    R(bx-1,by-1,3,3,on?'#fff0a8':'#5a4418');
-  }
-  for(let j=0;j<4;j++){
-    const by=CAS.ys+8+j*13;
-    [-1,1].forEach(s2=>{const bx=CAS.x+s2*(CAS.hw+2.5);
-      if(lueur){halo(bx,by,8,0.20);return;}
-      const on=((j+Math.floor(T/120))%3)!==0;
-      R(bx-1,by-1,3,3,on?'#fff0a8':'#5a4418');});
-  }
-}
-/* ---- la fumee de salle, qui passe devant la lumiere ---- */
-function casFumee(T){
-  const x0=CAS.x-CAS.hw, yH=CAS_HAUT();
-  g.save();
-  g.beginPath();
-  g.moveTo(x0,MUR);g.lineTo(x0,CAS.ys);
-  for(let y=CAS.ys;y>=yH;y--){const d=casDemi(y);if(d<0)break;g.lineTo(CAS.x-d,y);}
-  for(let y=yH;y<=CAS.ys;y++){const d=casDemi(y);if(d<0)continue;g.lineTo(CAS.x+d,y);}
-  g.lineTo(CAS.x+CAS.hw,MUR);g.closePath();g.clip();
-  for(let i=0;i<7;i++){
-    const fx=x0+((alea(i*3.7)*CAS.hw*2+T/900*7+i*9)%(CAS.hw*2));
-    const fy=yH+16+alea(i*5.1)*30;
-    g.fillStyle='rgba(210,230,215,'+(0.020+0.018*Math.abs(Math.sin(T/1700+i))).toFixed(3)+')';
-    g.beginPath();g.ellipse(fx,fy,13,4,0,0,7);g.fill();
-  }
-  g.restore();
-}
-/* ================= LE COIN, CUIT UNE FOIS =================
-   L'arcade, son interieur et ses dorures ne changent pas d'une image a
-   l'autre : les redessiner soixante fois par seconde coutait un sixieme
-   du hall pour rien. On les grave donc dans une toile de cote, posee
-   d'un seul trait, et l'on ne joue en direct que ce qui bouge. */
-let CAS_IMG=null, CAS_CLE='';
-const CAS_X0=()=>CAS.x-CAS.hw-24;
-function casCuire(){
-  const cle=CAS.x+'/'+CAS.hw+'/'+MUR;
-  if(CAS_IMG&&CAS_CLE===cle)return;
-  const c=document.createElement('canvas');
-  c.width=CAS.hw*2+48;c.height=MUR+4;
-  const gg=c.getContext('2d');
-  gg.imageSmoothingEnabled=false;
-  gg.translate(-CAS_X0(),0);
-  const gV=g;g=gg;
-  try{casDedans();casCadre();}finally{g=gV;}
-  CAS_IMG=c;CAS_CLE=cle;
-}
-function casino(T){
-  casCuire();
-  g.drawImage(CAS_IMG,CAS_X0(),0);
-  casFumee(T);
-  casAmpoules(T,false);
-  casEnseigne(T);
 }
 
 /* ================= LA POUSSIERE DANS LA LUMIERE =================
@@ -970,26 +698,18 @@ function dessiner(T){
   g.save();
   g.translate(-Math.round(camX),-Math.round(camY));
   mur();
-  /* LE COIN CASINO MANGE SA PART DU MUR : pas de miroir, pas de colonne et
-     pas de galerie au-dessus de l'arcade, sinon elle se retrouve barree. */
-  const casG=CAS.x-CAS.hw-20, casD=CAS.x+CAS.hw+20;
-  for(let x=18;x<SALLE_L-72;x+=104)if(x+56<casG||x>casD)miroir(x,56,MUR);
-  casino(T);
+  for(let x=18;x<SALLE_L-72;x+=104)miroir(x,56,MUR);
   enseigne(T);
-  mezzanine(74,casG,casD);
+  mezzanine(74);
   sol();
-  casParvis(T);
   const pas=Math.max(92,Math.round(SALLE_L/6));
   const objets=[{y:joueur.y,f:()=>dessinerJoueur()}];
-  for(let x=14;x<SALLE_L-20;x+=pas){const xx=x;
-    if(xx>casG-10&&xx<casD+10)continue;
-    objets.push({y:MUR-64,f:()=>colonne(xx)});}
+  for(let x=14;x<SALLE_L-20;x+=pas){const xx=x;objets.push({y:MUR-64,f:()=>colonne(xx)});}
   objets.push({y:MUR-64,f:()=>colonne(SALLE_L-14)});
   objets.sort((a,b)=>a.y-b.y);
   for(const o of objets)o.f();
-  for(let x=Math.round(SALLE_L*0.16);x<SALLE_L;x+=Math.round(SALLE_L*0.28)){
-    if(x>casG-18&&x<casD+18)continue;      /* un lustre tombait dans l'arcade */
-    lustre(x,MUR-70,1.35,T+x*7);}
+  for(let x=Math.round(SALLE_L*0.16);x<SALLE_L;x+=Math.round(SALLE_L*0.28))
+    lustre(x,MUR-70,1.35,T+x*7);
   poussiere(T);
   g.restore();
   /* LE VIGNETTAGE SE POSE SUR L'ECRAN, pas sur la salle : accroche a la
