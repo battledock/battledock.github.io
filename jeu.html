@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-13-0430"></script>
+<script src="maintenance.js?v=2026-10-13-0500"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-13-0430';
+var MA_VERSION='2026-10-13-0500';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -31947,7 +31947,10 @@ if(dd<26)return potMajVrai();}}catch(x){}
    louer » ne pouvait jamais s'afficher, elle disparaît. */
 plaqueVrai=$('action');
 const b=plaqueFeinte, P=POT.parc[i], s=potStade(P), J=POT.j;let t;
-if(!P||P.etat!=='bechee')t=J.houe?['Bêcher','AVEC LA HOUE']:['Il te faut une houe','EN VENTE AU GRAINETIER'];
+/* LA HOUE EST DONNEE A TOUT LE MONDE depuis que le Grainetier a fermé :
+   il n'y a plus d'endroit pour l'acheter, donc plus de raison de la
+   refuser. On ne verifie plus rien. */
+if(!P||P.etat!=='bechee')t=['Bêcher','AVEC LA HOUE'];
 else if(!P.cult)t=['Semer','CHOISIR UNE GRAINE'];
 else if(s===3){const chargeS=Object.values(e.sac||{}).reduce((t2,n)=>t2+(n||0),0);
 t=(chargeS+6>(e.sacMax||60))?['Sac plein','VA VENDRE À LA BOUTIQUE']:['Récolter','6 '+POT_CULT[P.cult][0].toUpperCase()+' DANS TON SAC'];}
@@ -31966,7 +31969,7 @@ const potRefus=(d)=>texteVolant(joueur.x,joueur.y-56,d&&d.erreur==='pas_assez'?'
 async function potAgir(i){if(POT_OCCUPE)return;const P=POT.parc[i], s=potStade(P), J=POT.j;
 if(!potOuverte(i)){texteVolant(joueur.x,joueur.y-56,'Parcelle à louer · au Grainetier','#ffe8a0');return;}
 POT_OCCUPE=true;try{
-if(!P||P.etat!=='bechee'){if(!J.houe){texteVolant(joueur.x,joueur.y-56,'Il te faut une houe (au Grainetier)','#ffe8a0');return;}
+if(!P||P.etat!=='bechee'){
 potGeste('houe',650);vibrer(15);const d=await appelRPC('pot_becher',{p_joueur:e.id,p_i:i});if(!potAdopter(d))potRefus(d);}
 else if(!P.cult){POT_OCCUPE=false;potGraines(i);return;}
 else if(s===3){potGeste('cueille',600);const d=await appelRPC('pot_recolter',{p_joueur:e.id,p_i:i});
@@ -32063,7 +32066,7 @@ async function ouvrirLeGrainetier(onglet){onglet=onglet||'graines';
 if(!document.getElementById('cssGr')){const st=document.createElement('style');st.id='cssGr';st.textContent=CSS_GR;document.head.appendChild(st);}
 if(!POT.charge)await potCharger();await lireChantiers();
 $('page2Fond').className='gr';$('page2').classList.add('on');
-const J=POT.j||{nb:6,houe:false,arrosoir:false,engrais:0,arroseurs:[]};
+const J=POT.j||{nb:6,houe:true,arrosoir:false,engrais:0,arroseurs:[]};
 const fmt=(c)=>enEuros(c).replace(',00','');const temps=potDuree;
 let corps='';
 if(onglet==='graines'){
@@ -32092,7 +32095,10 @@ return '<div class="gn'+(libre?'':' verrou')+'">'+
 '</div>';}).join('')
 :'<div class="mot">Rien ne pousse aussi vite. Essaie une fenêtre plus large.</div>');
 }
-if(onglet==='outils')corps=[['houe','La houe','pour bêcher les parcelles en friche',2500,J.houe],['arrosoir','L’arrosoir','une plante arrosée pousse deux fois plus vite',1500,J.arrosoir],
+/* LA HOUE SORT DE LA BOUTIQUE : elle est dans les mains de tout le
+   monde, l'afficher a deux mille cinq cents euros avec une coche verte
+   n'apprend rien a personne. */
+if(onglet==='outils')corps=[['arrosoir','L’arrosoir','une plante arrosée pousse deux fois plus vite',1500,J.arrosoir],
 ['engrais','Sac d’engrais','la prochaine récolte pousse 1,5 × plus vite (tu en as '+J.engrais+')',1000,false]]
 .map(([k,n,d,px,pris])=>'<div class="outil"><canvas data-o="'+k+'"></canvas><div class="t"><b>'+n+'</b><small>'+d+'</small></div><button data-a="'+k+'" class="'+(pris?'pris':'')+'">'+(pris?'✓ acheté':fmt(px))+'</button></div>').join('')+
 '<div class="outil"><canvas data-o="arroseur"></canvas><div class="t"><b>L’arroseur automatique</b><small>arrose une parcelle tout seul, pour toujours · installé sur '+(J.arroseurs||[]).length+' parcelle(s)</small></div><button data-a="arroseur">'+fmt(25000)+'</button></div>';
@@ -32646,7 +32652,7 @@ for(let i=0;i<4;i++)R(3,8+i*2,14,1,'#5b4a33');
 R(5,4,2,3,VERT);R(10,3,2,4,vertC);R(14,5,2,2,VERT);}
 }
 function bqOutils(){
-const J=(POT&&POT.j)||{nb:6,houe:false,arrosoir:false,engrais:0,arroseurs:[],epouvantails:0};
+const J=(POT&&POT.j)||{nb:6,houe:true,arrosoir:false,engrais:0,arroseurs:[],epouvantails:0};
 const fmt=(c)=>enEuros(c).replace(',00','');
 const ligne=(k,nom,dit,prix,pris)=>'<div class="outil"><canvas data-o="'+k+'"></canvas>'+
 '<span class="t"><b>'+nom+'</b><small>'+dit+'</small></span>'+
