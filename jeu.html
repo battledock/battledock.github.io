@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-13-0900"></script>
+<script src="maintenance.js?v=2026-10-13-1000"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-13-0900';
+var MA_VERSION='2026-10-13-1000';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2115,12 +2115,12 @@ white-space:nowrap}
 #tiroir.part .latte,#tiroir.part .tbas{animation:none}
 @keyframes ligneFin{from{opacity:0;transform:translateY(12px) scale(.92)}
 60%{opacity:1;transform:translateY(0) scale(1.04)}to{opacity:1;transform:none}}</style>
-<script src="retour.js?v=2026-10-13-0900"></script>
+<script src="retour.js?v=2026-10-13-1000"></script>
 <!-- LE DESSIN DU PERSONNAGE ET LES CARTES POKEDOCK. Classiques, donc
      joues avant le module : window.Perso doit exister quand une carte
      se grave, et window.Pokedock quand on ouvre le rayon du Bar. -->
-<script src="personnage.js?v=2026-10-13-0900"></script>
-<script src="pokedock.js?v=2026-10-13-0900"></script>
+<script src="personnage.js?v=2026-10-13-1000"></script>
+<script src="pokedock.js?v=2026-10-13-1000"></script>
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -26237,7 +26237,7 @@ const envoyer=()=>{try{
     if(d&&typeof d.euros==='number'){
       e.euros=d.euros;try{majHaut();}catch(x){}try{sauver();}catch(x){}
     }
-    try{feteDuMondial(d&&d.prix?d.prix:null);}catch(x){}
+    try{feteDuMondial(d);}catch(x){}
   },()=>{try{feteDuMondial(null);}catch(x){}});
 }catch(x){try{feteDuMondial(null);}catch(y){}}};
 if(sb)envoyer();
@@ -26320,8 +26320,13 @@ const FETE_CSS=`
  padding:14px 34px;font:900 18px/1 'Nunito';box-shadow:0 8px 22px rgba(0,0,0,.5)}
 `;
 let FETE=null;
-function feteDuMondial(prix){
+/* LE CHEQUE EST CELUI DU SERVEUR, rang du titre compris : le premier
+   vaut cinquante mille, les suivants cinq mille, et le cheque le dit. */
+function feteDuMondial(d0){
   if(FETE)return;
+  const prix=(d0&&typeof d0.prix==='number')?d0.prix:null;
+  const rang=(d0&&typeof d0.titres==='number')?d0.titres:0;
+  const premier=!d0||d0.premier!==false;
   if(!document.getElementById('feteStyle')){
     const st=document.createElement('style');st.id='feteStyle';
     st.textContent=FETE_CSS;document.head.appendChild(st);
@@ -26329,13 +26334,19 @@ function feteDuMondial(prix){
 /* LE MONTANT SANS LES CENTIMES. « 50000,00 € » sur un cheque, ça fait
    une facture ; un cheque dit cinquante mille euros. */
   const somme=(prix?Math.round(prix/100):50000).toLocaleString('fr-FR')+' €';
+/* LA LIGNE SOUS LE MONTANT dit pourquoi il est ce qu'il est : sans ça,
+     un champion qui touche cinq mille apres cinquante mille croit a un
+     bug plutot qu'a une regle. */
+  const ligne=!prix ? 'un seul chèque par jour — reviens demain'
+    : premier ? 'payable à l’ordre du champion'
+    : 'ton '+rang+'ᵉ titre — seul le premier vaut cinquante mille';
   const d=document.createElement('div');d.id='fete';
   d.innerHTML='<canvas id="feteCv"></canvas>'+
     '<div class="titre">CHAMPION DU MONDE<small>LE MONDIAL DE PÉTANQUE</small></div>'+
     '<div class="cheque"><div class="ent"><span>LE PORT DE MARSEILLE</span><span>N° '+
       ('00000'+Math.floor(Math.random()*99999)).slice(-5)+'</span></div>'+
       '<div class="som">'+somme+'</div>'+
-      '<div class="lig">'+(prix?'payable à l’ordre du champion':'un seul chèque par jour — reviens demain')+'</div>'+
+      '<div class="lig">'+ligne+'</div>'+
       '<div class="bas"><small>LES DOCKERS RÉUNIS</small><span class="sig">Fonfon</span></div></div>'+
     '<div class="bulle"><i></i>Franchement, tu manies bien les boules, jeune&nbsp;!</div>'+
     '<button>MERCI&nbsp;!</button>';
