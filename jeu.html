@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-13-0410"></script>
+<script src="maintenance.js?v=2026-10-13-0420"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-13-0410';
+var MA_VERSION='2026-10-13-0420';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -22825,7 +22825,11 @@ setTimeout(()=>{try{demanderLaBeta();}catch(x){}},200);
    passe. Pas de vocabulaire du jeu, pas de « inventaire » ni de
    « interagir ». On dit « ton sac » et « attraper ».
    ===================================================================== */
-const DIDAC_CLE='bdl.didac.vu';
+/* LE DRAPEAU EST ATTACHE AU JOUEUR, PAS AU TELEPHONE. Un seul drapeau
+   d'appareil privait des premiers pas tout nouveau venu qui se cree un
+   compte sur un telephone deja servi — celui d'un ami, ou le tien quand
+   tu fais essayer le jeu. */
+const didacCle=()=>'bdl.didac.'+((typeof e!=='undefined'&&e&&e.id)||'anon');
 let DIDAC=null;
 const DIDAC_CSS=`
 #didac{position:fixed;inset:0;z-index:9000;pointer-events:none;
@@ -22904,7 +22908,7 @@ function ouvrirDidacticiel(){
 }
 function fermerDidacticiel(){
   if(!DIDAC)return;
-  try{localStorage.setItem(DIDAC_CLE,'1');
+  try{localStorage.setItem(didacCle(),'1');
     localStorage.setItem('bdl.tuto.vu','1');}catch(x){}
   const d=DIDAC;DIDAC=null;
   d.el.classList.remove('on');
@@ -23014,8 +23018,11 @@ try{window.ouvrirDidacticiel=ouvrirDidacticiel;}catch(x){}
    repose jamais. */
 function didacEstNouveau(){
   try{
-    if(localStorage.getItem(DIDAC_CLE)==='1')return false;
-    if(localStorage.getItem('bdl.tuto.vu')==='1')return false;
+    if(localStorage.getItem(didacCle())==='1')return false;
+    /* UNE PARTIE DEJA COMMENCEE n'a pas besoin qu'on lui montre a
+       marcher : un score, une recolte ou un sac qui n'est pas vide
+       suffisent a le dire, et ces trois-la suivent le compte, pas
+       l'appareil. */
     if((e.score||0)>0||(e.recolte||0)>0)return false;
     if(e.sac&&Object.keys(e.sac).length>0)return false;
     return true;
@@ -23023,7 +23030,7 @@ function didacEstNouveau(){
 }
 setTimeout(()=>{try{
 if(didacEstNouveau()){ouvrirDidacticiel();return;}
-try{localStorage.setItem(DIDAC_CLE,'1');}catch(x){}
+try{localStorage.setItem(didacCle(),'1');}catch(x){}
 if(!annonceChantier())annonceMondial();
 }catch(x){}},1600);
 /* LE CHARACTER LAB : il ne s'ouvre que si on le demande explicitement.
@@ -31451,7 +31458,7 @@ if(localStorage.getItem('bdl.tuto.vu'))return;
    bulle qui disait « ça, c'est toi », et le projecteur eclairait le
    panneau au lieu du personnage. Le panneau reste accessible par Aide
    et par le poteau. */
-if(localStorage.getItem('bdl.didac.vu')!=='1')return;
+if(typeof didacEstNouveau==='function'&&didacEstNouveau())return;
 if(typeof ouvrirLeTuto==='function')ouvrirLeTuto();
 }catch(x){}
 },1400);
