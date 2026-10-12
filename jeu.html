@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-13-0300"></script>
+<script src="maintenance.js?v=2026-10-13-0400"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-13-0300';
+var MA_VERSION='2026-10-13-0400';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -5235,6 +5235,7 @@ $('page2Fond').innerHTML=
 P.txt.map(t=>'<p>'+t+'</p>').join('')+'</div>'+
 '<div class="tuPied">'+
 '<button class="tuPasser" id="tu-fermer">Fermer</button>'+
+'<button class="tuPasser" id="tu-pas">Les premiers pas</button>'+
 '<button class="tuSuite" id="tu-suite">'+
 (pageTuto===TUTO.p.length-1?'C’est parti':'Continuer')+'</button>'+
 '</div>';
@@ -5256,6 +5257,12 @@ const g2=c.getContext('2d');g2.setTransform(D,0,0,D,0,0);g2.imageSmoothingEnable
 try{P.img(g2,w,h);}catch(x){}
 }
 $('tu-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+/* ON PEUT TOUJOURS REVOIR LES PREMIERS PAS. Un didacticiel qui ne passe
+   qu'une fois est perdu pour qui l'a saute, ou pour l'ami a qui on prete
+   le telephone. */
+const bp=$('tu-pas');
+if(bp)bp.onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');
+  setTimeout(()=>{try{ouvrirDidacticiel();}catch(x){}},260);};
 $('tu-suite').onclick=()=>{
 if(pageTuto===TUTO.p.length-1){fermeA=Date.now();$('page2').classList.remove('on');return;}
 pageTuto++;vibrer(20);majTuto();
@@ -22806,7 +22813,198 @@ setTimeout(()=>{try{verifierLaFete();}catch(x){}},200);
 setTimeout(()=>{try{demanderLaBeta();}catch(x){}},200);
 /* l'annonce de la réouverture, une fois par joueur */
 /* UNE SEULE ANNONCE : le chantier du personnage. */
-setTimeout(()=>{try{if(!annonceChantier())annonceMondial();}catch(x){}},1600);
+
+/* =====================================================================
+   LE DIDACTICIEL — LES PREMIERS PAS
+   Le panneau d'aide explique le jeu a quelqu'un qui sait deja jouer :
+   il se lit, il ne se fait pas. Pour une premiere partie, il faut
+   l'inverse — une phrase a la fois, un seul endroit eclaire, et la main
+   qui fait le geste avant d'avoir compris la phrase.
+
+   LA REGLE QU'ON S'EST DONNEE : une phrase de six mots, un geste, et on
+   passe. Pas de vocabulaire du jeu, pas de « inventaire » ni de
+   « interagir ». On dit « ton sac » et « attraper ».
+   ===================================================================== */
+const DIDAC_CLE='bdl.didac.vu';
+let DIDAC=null;
+const DIDAC_CSS=`
+#didac{position:fixed;inset:0;z-index:9000;pointer-events:none;
+ font-family:'Nunito',system-ui,sans-serif;opacity:0;transition:opacity .35s}
+#didac.on{opacity:1}
+#didacV{position:absolute;inset:0;width:100%;height:100%}
+#didacB{position:absolute;left:50%;transform:translateX(-50%);
+ width:min(330px,86vw);background:#14100c;border:2px solid #c9a24a;
+ border-radius:18px;padding:18px 18px 14px;text-align:center;
+ box-shadow:0 14px 40px rgba(0,0,0,.6);pointer-events:auto}
+#didacB b{display:block;color:#f6ecd4;font-size:21px;line-height:1.3;
+ font-weight:800;white-space:pre-line}
+#didacB .pied{display:flex;gap:10px;align-items:center;justify-content:center;
+ margin-top:14px}
+#didacB button{background:#c9a24a;color:#1b1407;border:0;border-radius:12px;
+ padding:12px 26px;font:800 17px/1 'Nunito',system-ui,sans-serif;cursor:pointer}
+#didacB button:active{transform:translateY(1px)}
+#didacB .sauter{background:none;color:#8a7f6a;font-weight:700;font-size:14px;
+ padding:10px 6px;text-decoration:underline}
+#didacB .etapes{display:flex;gap:6px;justify-content:center;margin-bottom:12px}
+#didacB .etapes i{width:7px;height:7px;border-radius:50%;background:#4a4236}
+#didacB .etapes i.on{background:#c9a24a}
+`;
+/* ---- ou se trouve ce qu'on montre, en points d'ecran ---- */
+function didacCible(quoi){
+  /* LE JOYSTICK N'EXISTE PAS AVANT QU'ON LE TOUCHE : il nait sous le
+     pouce, n'importe ou. On ne peut donc pas le montrer du doigt — on
+     eclaire la zone ou le pouce tombe naturellement. */
+  if(quoi==='pouce')return {x:innerWidth*0.34, y:innerHeight*0.70,
+                            rx:92, ry:78, main:true};
+  if(quoi==='joueur'){
+    try{
+      const j=ctxJoueurEcran(), r=cv.getBoundingClientRect();
+      if(!j)return null;
+      const k=r.width/cv.width;
+      return {x:r.left+j.x*k, y:r.top+j.y*k-6, rx:42, ry:56};
+    }catch(x){return null;}
+  }
+  const el=document.querySelector(quoi);
+  if(!el)return null;
+  const b=el.getBoundingClientRect();
+  if(!b.width)return null;
+  return {x:b.left+b.width/2, y:b.top+b.height/2,
+          rx:b.width/2+16, ry:b.height/2+16};
+}
+const DIDAC_PAS=[
+  {t:'Ça, c’est toi.',                         c:'joueur',  f:'ok'},
+  {t:'Pose ton doigt ici.\nEt glisse.',        c:'pouce',   f:'bouge'},
+  {t:'Bravo !\nTu sais marcher.',              c:'joueur',  f:'ok'},
+  {t:'Ce bouton sert\nà attraper les choses.', c:'#action', f:'ok'},
+  {t:'Ici, c’est ton argent.',                 c:'#haut .pil:last-child', f:'ok'},
+  {t:'Et là, ton sac.',                        c:'#haut .pil:first-child',f:'ok'},
+  {t:'C’est tout.\nAmuse-toi bien !',          c:null,      f:'fin'}
+];
+function ouvrirDidacticiel(){
+  if(DIDAC)return;
+  if(!document.getElementById('didacStyle')){
+    const st=document.createElement('style');st.id='didacStyle';
+    st.textContent=DIDAC_CSS;document.head.appendChild(st);
+  }
+  const d=document.createElement('div');d.id='didac';
+  d.innerHTML='<canvas id="didacV"></canvas><div id="didacB">'+
+    '<div class="etapes"></div><b></b>'+
+    '<div class="pied"><button class="sauter">Passer</button>'+
+    '<button class="suite">OK</button></div></div>';
+  document.body.appendChild(d);
+  DIDAC={el:d, cv:d.querySelector('#didacV'), bulle:d.querySelector('#didacB'),
+         txt:d.querySelector('#didacB b'), pts:d.querySelector('.etapes'),
+         suite:d.querySelector('.suite'), sauter:d.querySelector('.sauter'),
+         n:0, depart:null, t0:performance.now(), fini:false};
+  DIDAC.suite.onclick=()=>didacSuivant();
+  DIDAC.sauter.onclick=()=>fermerDidacticiel();
+  didacPoser();
+  requestAnimationFrame(didacBoucle);
+  setTimeout(()=>{if(DIDAC)DIDAC.el.classList.add('on');},40);
+}
+function fermerDidacticiel(){
+  if(!DIDAC)return;
+  try{localStorage.setItem(DIDAC_CLE,'1');
+    localStorage.setItem('bdl.tuto.vu','1');}catch(x){}
+  const d=DIDAC;DIDAC=null;
+  d.el.classList.remove('on');
+  setTimeout(()=>{try{d.el.remove();}catch(x){}},380);
+}
+function didacSuivant(){
+  if(!DIDAC)return;
+  DIDAC.n++;
+  if(DIDAC.n>=DIDAC_PAS.length){fermerDidacticiel();return;}
+  didacPoser();
+}
+function didacPoser(){
+  const P=DIDAC_PAS[DIDAC.n];
+  DIDAC.txt.textContent=P.t;
+  DIDAC.pts.innerHTML=DIDAC_PAS.map((_,i)=>
+    '<i class="'+(i<=DIDAC.n?'on':'')+'"></i>').join('');
+  DIDAC.suite.textContent=P.f==='fin'?'C’est parti':'OK';
+  /* AU PAS QUI DEMANDE UN GESTE, PAS DE BOUTON : sinon on appuie sur OK
+     sans avoir essaye, et l'on n'a rien appris. */
+  DIDAC.suite.style.display=(P.f==='bouge')?'none':'';
+  DIDAC.sauter.style.display=(P.f==='fin')?'none':'';
+  DIDAC.depart=null;
+}
+function didacBoucle(T){
+  if(!DIDAC)return;
+  const d=DIDAC, P=DIDAC_PAS[d.n];
+  const w=innerWidth, h=innerHeight, dpr=Math.min(2,devicePixelRatio||1);
+  if(d.cv.width!==Math.round(w*dpr)){d.cv.width=Math.round(w*dpr);d.cv.height=Math.round(h*dpr);}
+  const g2=d.cv.getContext('2d');
+  g2.setTransform(dpr,0,0,dpr,0,0);
+  g2.clearRect(0,0,w,h);
+  g2.fillStyle='rgba(6,8,14,.74)';g2.fillRect(0,0,w,h);
+  const c=P.c?didacCible(P.c):null;
+  if(c){
+    /* LE TROU. Un bord net decoupe une forme dans le noir et l'on voit
+       une gommette ; un bord fondu fait une lampe. */
+    g2.globalCompositeOperation='destination-out';
+    g2.save();g2.translate(c.x,c.y);g2.scale(1,c.ry/c.rx);
+    const gr=g2.createRadialGradient(0,0,c.rx*0.45,0,0,c.rx*1.25);
+    gr.addColorStop(0,'rgba(0,0,0,1)');gr.addColorStop(0.62,'rgba(0,0,0,.95)');
+    gr.addColorStop(1,'rgba(0,0,0,0)');
+    g2.fillStyle=gr;g2.beginPath();g2.arc(0,0,c.rx*1.25,0,7);g2.fill();
+    g2.restore();
+    g2.globalCompositeOperation='source-over';
+    /* LA MAIN QUI GLISSE : sur le pas du pouce, l'anneau seul ne dit pas
+       quoi faire. Un rond qui part du centre et file en rond le dit. */
+    if(c.main){
+      const a=T/560, r=c.rx*0.42;
+      const px=c.x+Math.cos(a)*r, py=c.y+Math.sin(a)*r*0.8;
+      g2.strokeStyle='rgba(246,236,212,.45)';g2.lineWidth=2;
+      g2.save();g2.translate(c.x,c.y);g2.scale(1,0.8);
+      g2.beginPath();g2.arc(0,0,r,0,7);g2.stroke();g2.restore();
+      g2.fillStyle='rgba(246,236,212,.22)';
+      g2.beginPath();g2.arc(px,py,20,0,7);g2.fill();
+      g2.fillStyle='#f6ecd4';
+      g2.beginPath();g2.arc(px,py,11,0,7);g2.fill();
+      g2.fillStyle='rgba(0,0,0,.25)';
+      g2.beginPath();g2.arc(px-3,py-3,5,0,7);g2.fill();
+    }
+    /* l'anneau qui bat */
+    const bat=1+0.06*Math.sin(T/320);
+    g2.save();g2.translate(c.x,c.y);g2.scale(bat,bat*c.ry/c.rx);
+    g2.strokeStyle='rgba(201,162,74,.85)';g2.lineWidth=3;
+    g2.setLineDash([9,7]);g2.lineDashOffset=-T/40;
+    g2.beginPath();g2.arc(0,0,c.rx*1.02,0,7);g2.stroke();
+    g2.restore();
+  }
+  /* la bulle : en haut si la cible est en bas, et l'inverse */
+  const enHaut=c?(c.y>h*0.46):false;
+  d.bulle.style.top=(enHaut?h*0.10:h*0.58)+'px';
+  /* LA FLECHE part de la bulle et vise le trou. Elle ne sert a rien si
+     la cible est au milieu de l'ecran, mais sur un telephone elle est
+     presque toujours dans un coin. */
+  if(c){
+    const b=d.bulle.getBoundingClientRect();
+    const dy=(c.y<b.top)?-1:1;
+    const ax=Math.max(b.left+20,Math.min(b.right-20,c.x));
+    const ay=(dy<0?b.top:b.bottom)+dy*(10+6*Math.abs(Math.sin(T/360)));
+    g2.fillStyle='#c9a24a';
+    g2.beginPath();g2.moveTo(ax,ay+dy*16);
+    g2.lineTo(ax-11,ay);g2.lineTo(ax+11,ay);g2.closePath();g2.fill();
+  }
+  /* a-t-on fait le geste ? */
+  if(P.f==='bouge'){
+    try{
+      if(d.depart===null)d.depart=[joueur.x,joueur.y];
+      else if(Math.hypot(joueur.x-d.depart[0],joueur.y-d.depart[1])>46)didacSuivant();
+    }catch(x){}
+  }
+  requestAnimationFrame(didacBoucle);
+}
+try{window.ouvrirDidacticiel=ouvrirDidacticiel;}catch(x){}
+
+/* LE DIDACTICIEL PASSE AVANT LES ANNONCES : on n'affiche pas l'affiche
+   d'un tournoi a quelqu'un qui ne sait pas encore marcher. */
+setTimeout(()=>{try{
+let vu=false;try{vu=localStorage.getItem(DIDAC_CLE)==='1';}catch(x){}
+if(!vu){ouvrirDidacticiel();return;}
+if(!annonceChantier())annonceMondial();
+}catch(x){}},1600);
 /* LE CHARACTER LAB : il ne s'ouvre que si on le demande explicitement.
    Aucun bouton n'y mène, aucun joueur ne peut tomber dessus. */
 /* Trois portes, parce que l'hébergement peut avaler la requête :
@@ -31227,6 +31425,12 @@ lireReglages();
 setTimeout(()=>{
 try{
 if(localStorage.getItem('bdl.tuto.vu'))return;
+/* LES PREMIERS PAS PASSENT AVANT LE PANNEAU. Les deux s'ouvraient
+   ensemble sur une premiere partie : on avait un mur de texte sous une
+   bulle qui disait « ça, c'est toi », et le projecteur eclairait le
+   panneau au lieu du personnage. Le panneau reste accessible par Aide
+   et par le poteau. */
+if(localStorage.getItem('bdl.didac.vu')!=='1')return;
 if(typeof ouvrirLeTuto==='function')ouvrirLeTuto();
 }catch(x){}
 },1400);
