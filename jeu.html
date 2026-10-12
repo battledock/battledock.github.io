@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-13-0420"></script>
+<script src="maintenance.js?v=2026-10-13-0430"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-13-0420';
+var MA_VERSION='2026-10-13-0430';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -23016,22 +23016,55 @@ try{window.ouvrirDidacticiel=ouvrirDidacticiel;}catch(x){}
      — le sac n'est pas vide.
    Et dans ce cas on pose le drapeau tout de suite : la question ne se
    repose jamais. */
-function didacEstNouveau(){
+/* L'AGE DU COMPTE PASSE AVANT SON ACTIVITE.
+   Premiere regle essayee : pas de score, pas de recolte, sac vide. Elle
+   rate exactement ceux qu'on vise. Un joueur arrive il y a vingt
+   minutes avait deja ramasse cent neuf choses — il etait neuf, et le
+   test le prenait pour un ancien. On demande donc son age au serveur :
+   un compte de moins de deux jours a droit aux premiers pas, quoi qu'il
+   ait deja fait. L'activite ne sert plus que de repli, quand le serveur
+   ne repond pas. */
+const DIDAC_JEUNE=48*3600*1000;
+function didacPeutEtre(){                 /* reponse immediate, sans reseau */
+  try{return localStorage.getItem(didacCle())!=='1';}catch(x){return false;}
+}
+function didacSansActivite(){
   try{
-    if(localStorage.getItem(didacCle())==='1')return false;
-    /* UNE PARTIE DEJA COMMENCEE n'a pas besoin qu'on lui montre a
-       marcher : un score, une recolte ou un sac qui n'est pas vide
-       suffisent a le dire, et ces trois-la suivent le compte, pas
-       l'appareil. */
     if((e.score||0)>0||(e.recolte||0)>0)return false;
     if(e.sac&&Object.keys(e.sac).length>0)return false;
     return true;
   }catch(x){return false;}
 }
+function didacAgeDuCompte(){
+  return new Promise(ok=>{
+    let fini=false;
+    const rendre=v=>{if(!fini){fini=true;ok(v);}};
+    setTimeout(()=>rendre(null),2500);     /* on n'attend pas le reseau */
+    try{
+      if(!e.id)return rendre(null);
+      fetch(URL_SB+'/rest/v1/joueurs?select=cree&id=eq.'+encodeURIComponent(e.id),
+            {headers:sbEntetes})
+        .then(r=>r.json())
+        .then(l=>{
+          const c=l&&l[0]&&l[0].cree;
+          rendre(c?(Date.now()-new Date(c).getTime()):null);
+        },()=>rendre(null));
+    }catch(x){rendre(null);}
+  });
+}
+function didacEstNouveau(){
+  if(!didacPeutEtre())return Promise.resolve(false);
+  return didacAgeDuCompte().then(age=>{
+    if(age!==null)return age<DIDAC_JEUNE||didacSansActivite();
+    return didacSansActivite();
+  });
+}
 setTimeout(()=>{try{
-if(didacEstNouveau()){ouvrirDidacticiel();return;}
-try{localStorage.setItem(didacCle(),'1');}catch(x){}
-if(!annonceChantier())annonceMondial();
+didacEstNouveau().then(oui=>{
+  if(oui){ouvrirDidacticiel();return;}
+  try{localStorage.setItem(didacCle(),'1');}catch(x){}
+  try{if(!annonceChantier())annonceMondial();}catch(x){}
+});
 }catch(x){}},1600);
 /* LE CHARACTER LAB : il ne s'ouvre que si on le demande explicitement.
    Aucun bouton n'y mène, aucun joueur ne peut tomber dessus. */
@@ -31458,7 +31491,10 @@ if(localStorage.getItem('bdl.tuto.vu'))return;
    bulle qui disait « ça, c'est toi », et le projecteur eclairait le
    panneau au lieu du personnage. Le panneau reste accessible par Aide
    et par le poteau. */
-if(typeof didacEstNouveau==='function'&&didacEstNouveau())return;
+/* TANT QUE LES PREMIERS PAS NE SONT PAS FAITS, le panneau n'apparait
+   pas tout seul : la reponse se decide deux cents millisecondes plus
+   tard, et les deux ne doivent pas se superposer. */
+if(typeof didacPeutEtre==='function'&&didacPeutEtre())return;
 if(typeof ouvrirLeTuto==='function')ouvrirLeTuto();
 }catch(x){}
 },1400);
