@@ -12,8 +12,8 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<script src="maintenance.js?v=2026-10-13-0100"></script>
-<script src="personnage.js?v=2026-10-13-0100"></script>
+<script src="maintenance.js?v=2026-10-13-0200"></script>
+<script src="personnage.js?v=2026-10-13-0200"></script>
 <script>
 /* LA VERSION, comme partout ailleurs : ajoutée au signet, une page reste en
    mémoire et ne se recharge jamais. On demande à chaque ouverture quelle est
@@ -27,7 +27,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    MA_VERSION de jeu.html, index.html, jeu_entree.html, complexe.html,
    forge.html et mine.html. Les autres pages n'en portent pas. */
 (function(){
-  var MA_VERSION='2026-10-13-0100';
+  var MA_VERSION='2026-10-13-0200';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue';
   function verifier(){
@@ -134,6 +134,34 @@ const C={
    ===================================================================== */
 const Perso=window.Perso;
 const DEF_AP=Perso.DEF_AP;
+/* LES HABITUES. Six apparences, et c'est deliberement peu : le dessin du
+   personnage garde ses poses en cache, et chaque apparence nouvelle coute
+   une gravure. Six tetes, deux orientations et quatre temps de danse font
+   quarante-huit poses — le cache en tient deux cent vingt. */
+const GENS=[
+  {peau:0,cheveux:1,coiffe:2, barbe:0,chapeau:0,veste:3, pantalon:6,sac:0,corps:1,yeux:1},
+  {peau:5,cheveux:0,coiffe:16,barbe:4,chapeau:0,veste:12,pantalon:2,sac:0,corps:4,yeux:0},
+  {peau:2,cheveux:8,coiffe:5, barbe:7,chapeau:0,veste:0, pantalon:4,sac:0,corps:2,yeux:6},
+  {peau:7,cheveux:3,coiffe:6, barbe:0,chapeau:0,veste:13,pantalon:0,sac:0,corps:0,yeux:3},
+  {peau:1,cheveux:11,coiffe:9,barbe:0,chapeau:0,veste:8, pantalon:7,sac:0,corps:3,yeux:7},
+  {peau:4,cheveux:6,coiffe:14,barbe:2,chapeau:0,veste:5, pantalon:3,sac:0,corps:2,yeux:2}
+];
+function habitant(x,y,i,dir,pas,bouge){
+  g.fillStyle='rgba(0,0,0,.34)';
+  g.beginPath();g.ellipse(x,y+1,6,2.2,0,0,7);g.fill();
+  g.imageSmoothingEnabled=false;
+  Perso.sprite(g,x,y,GENS[i%GENS.length],dir,pas||0,!!bouge);
+}
+/* LE TEMPS DE DANSE EST QUANTIFIE. Passer une phase continue regraverait
+   chaque danseur a chaque image et viderait le cache en boucle : quatre
+   temps suffisent a faire croire au mouvement. */
+function danseur(x,y,i,T){
+  const ph=i*1.7;
+  const bond=Math.abs(Math.sin(T/280+ph))*3;
+  const dir=(i%5===0)?'bas':'haut';
+  const pas=(Math.floor(T/170+ph)%4)*2;
+  habitant(x,y-bond,i,dir,pas,true);
+}
 /* L'APPARENCE VIENT DE LA SAUVEGARDE : c'est le personnage du joueur qui
    entre, pas un figurant. Si la sauvegarde manque, DEF_AP donne un
    habitant par defaut plutot qu'un vide. */
@@ -170,6 +198,13 @@ function halo(x,y,r,force,col){
    joue en direct que la poussiere dans les rais.
    ===================================================================== */
 let NEF=null, NEF_CLE='';
+/* ================= LA SCENE ET LE BAR =================
+   Une piste vide est un entrepot : il lui faut un point de mire et un
+   endroit ou s'accouder. La scene prend le fond au centre, le bar prend
+   le mur a sa gauche — et le reste de la salle, qui fait cinq ecrans,
+   attend ce qu'on y mettra. */
+const SCN={hw:86, prof:34};
+const BAR={g:()=>Math.round(CX-330), d:()=>Math.round(CX-150)};
 /* LES PROJECTEURS. Un pont de lumiere court sous la charpente : des
    lyres qui balaient, et des boules a facettes entre elles. Leur place
    est fixe, leur mouvement ne l'est pas — c'est ce qui fait la boite. */
@@ -270,7 +305,117 @@ function nefGraver(){
     g.fillStyle='rgba(180,170,220,'+(0.055*prof*prof).toFixed(3)+')';
     g.fillRect(0,y,SALLE_L,1);
   }
+  graverScene();
+  graverBar();
 }
+/* l'estrade, les enceintes et le cadre du mur d'images : rien ne bouge */
+function graverScene(){
+  const sx=CX, hw=SCN.hw;
+  R(sx-hw,MUR-2,hw*2,SCN.prof,'#191822');
+  R(sx-hw,MUR-2,hw*2,2,'#2e2c3a');
+  R(sx-hw,MUR+SCN.prof-4,hw*2,3,'rgba(0,0,0,.55)');
+  R(sx-hw,MUR-4,hw*2,2,'rgba(0,0,0,.4)');
+  R(sx-63,MUR-75,126,64,'#0b0a12');
+  R(sx-64,MUR-76,128,1,'#3a3850');
+  R(sx-64,MUR-12,128,1,'#2a2838');
+  [-76,76].forEach(d=>{
+    const x=sx+d, y=MUR+SCN.prof-4, h=54, l=20;
+    R(x-l/2,y-h,l,h,'#17161d');
+    R(x-l/2,y-h,l,2,'#2e2c3a');
+    R(x-l/2,y-2,l,2,'#0b0a0e');
+    for(let k=0;k<3;k++){
+      const cy=y-h+8+k*Math.round((h-14)/3), rr=Math.min(l/2-3,7);
+      g.fillStyle='#0d0c11';g.beginPath();g.ellipse(x,cy,rr,rr,0,0,7);g.fill();
+      g.fillStyle='#232230';g.beginPath();g.ellipse(x,cy,rr-2,rr-2,0,0,7);g.fill();
+      g.fillStyle='#3a3850';g.beginPath();g.ellipse(x,cy-1,2,2,0,0,7);g.fill();
+    }
+  });
+}
+/* l'arriere-bar, son comptoir et ses tabourets */
+function graverBar(){
+  const g0=BAR.g(), g1=BAR.d();
+  R(g0,MUR-56,g1-g0,46,'#120f18');
+  for(let i=0;i<4;i++)R(g0+4,MUR-52+i*11,g1-g0-8,2,'#2a2438');
+  for(let i=0;i<34;i++){
+    const x=g0+8+((i*13)%(g1-g0-16)), y=MUR-50+((i*7)%40);
+    R(x,y,3,7,'rgba(255,220,160,.55)');R(x,y,3,2,'rgba(255,255,220,.75)');
+  }
+  halo((g0+g1)/2,MUR-34,86,0.24,'255,200,130');
+  /* LE COMPTOIR A UNE EPAISSEUR. Treize points d'un violet proche du
+     dallage, on ne voyait qu'un trait clair et le barman flottait
+     au-dessus des bouteilles. Il lui faut un devant sombre, un zinc
+     clair dessus et son ombre portee dessous. */
+  R(g0,MUR+6,g1-g0,19,'#171320');
+  for(let x=g0+3;x<g1-2;x+=11)R(x,MUR+9,8,14,'#1f1a2c');
+  for(let x=g0+3;x<g1-2;x+=11){R(x,MUR+9,8,1,'rgba(180,165,220,.10)');
+    R(x,MUR+22,8,1,'rgba(0,0,0,.4)');}
+  R(g0,MUR+2,g1-g0,5,'#4a4266');
+  R(g0,MUR+2,g1-g0,2,'#a89cc8');R(g0,MUR+4,g1-g0,1,'#7a6ea0');
+  R(g0,MUR+25,g1-g0,4,'rgba(0,0,0,.55)');
+  /* les tabourets, devant */
+  for(let x=g0+18;x<g1-10;x+=34){
+    R(x-1,MUR+34,2,14,'#262033');
+    R(x-7,MUR+30,15,5,'#3a3450');R(x-7,MUR+30,15,2,'#6b5f8a');
+    R(x-7,MUR+35,15,1,'rgba(0,0,0,.5)');
+  }
+}
+/* ================= CE QUI VIT =================
+   Le mur d'images, la cabine, le DJ, le bar et les danseurs. Tout est
+   trie en profondeur avec le marcheur : sans ce tri, on passe devant
+   quelqu'un qui est devant nous. */
+function murDImages(T){
+  const sx=CX, bat=0.6+0.4*Math.abs(Math.sin(T/420));
+  for(let i=0;i<40;i++){
+    const bx=sx-58+((i*17)%116), by=MUR-70+((i*23)%54);
+    const c=COULEURS[i%COULEURS.length];
+    const on=((i+Math.floor(T/160))%3)!==0;
+    g.fillStyle='rgba('+c[0]+','+c[1]+','+c[2]+','+(on?0.55*bat:0.08).toFixed(2)+')';
+    g.fillRect(bx,by,8,5);
+  }
+  halo(sx,MUR-44,86,0.20*bat,'180,140,255');
+}
+function cabine(T){
+  const sx=CX;
+  R(sx-34,MUR+4,68,22,'#241f33');R(sx-34,MUR+4,68,2,'#453d62');
+  for(let i=0;i<9;i++)R(sx-28+i*7,MUR+14,4,3,(Math.floor(T/220)+i)%4?'#4a4466':'#ffd36a');
+  halo(sx,MUR+10,46,0.24,'255,200,120');
+}
+function monde(T){
+  const g0=camX-50, g1=camX+VUE_L+50;
+  murDImages(T);
+  /* LE DJ VIENT AVANT SA CABINE : dessine apres, il se tenait devant
+     elle, en equilibre sur le rebord. */
+  if(CX>g0-40&&CX<g1+40)habitant(CX,MUR+20,2,'bas',(Math.floor(T/170)%4)*2,true);
+  cabine(T);
+  const gens=[];
+  const bg=BAR.g(), bd=BAR.d();
+  /* LE BARMAN SE TIENT AU-DESSUS DU COMPTOIR : son dessin s'arrete deux
+     points plus haut que le zinc, donc il passe derriere sans qu'on ait
+     a trier quoi que ce soit. */
+  if(bd>g0&&bg<g1)habitant((bg+bd)/2,MUR+4,4,'bas',0,false);
+  for(let x=bg+18,k=0;x<bd-10;x+=34,k++){
+    if(k%2||x<g0||x>g1)continue;
+    const xx=x;gens.push({y:MUR+48,f:()=>habitant(xx,MUR+48,k+1,'haut',0,false)});
+  }
+  /* LES DANSEURS, serres devant la scene et plus epars ensuite */
+  /* DOUZE DEVANT LA SCENE, PAS VINGT-DEUX : a vingt-deux on ne voyait
+     plus ni le DJ ni le mur d'images, et l'on ne pouvait plus se
+     reconnaitre dans le tas. */
+  for(let i=0;i<12;i++){
+    const x=CX-150+((i*83)%300), y=MUR+66+((i*53)%116);
+    if(x<g0||x>g1)continue;
+    const ii=i;gens.push({y:y,f:()=>danseur(x,y,ii,T)});
+  }
+  for(let i=0;i<16;i++){
+    const x=60+((i*229)%(SALLE_L-120)), y=MUR+40+((i*61)%(SALLE_H-MUR-70));
+    if(x<g0||x>g1)continue;
+    const ii=i+40;gens.push({y:y,f:()=>danseur(x,y,ii,T)});
+  }
+  gens.push({y:joueur.y,f:dessinerJoueur});
+  gens.sort((a,b)=>a.y-b.y);
+  for(const o of gens)o.f();
+}
+
 /* ================= CE QUI DANSE =================
    Les faisceaux, les taches au sol et les grains des boules a facettes.
    Tout est calcule a l'image, mais seulement pour ce que la camera
@@ -363,6 +508,10 @@ function bloque(x,y){
   if(x<BORD||x>SALLE_L-BORD)return true;
   if(y<MUR+10)return true;                          /* le mur du fond */
   if(y>SALLE_H-6)return true;
+  /* L'ESTRADE ET LE ZINC NE SE TRAVERSENT PAS. Sans ces deux lignes on
+     marchait dans la cabine du DJ et au travers du comptoir. */
+  if(y<MUR+SCN.prof+4&&Math.abs(x-CX)<SCN.hw+4)return true;
+  if(y<MUR+22&&x>BAR.g()-4&&x<BAR.d()+4)return true;
   return false;
 }
 /* LA CAMERA se cale sur le marcheur, bornee aux murs, et rattrape en
@@ -441,7 +590,7 @@ function dessiner(T){
   g.save();
   g.translate(-Math.round(camX),-Math.round(camY));
   g.drawImage(NEF,0,0);
-  dessinerJoueur();
+  monde(T);
   boite(T);
   g.restore();
   /* LE VIGNETTAGE SE POSE SUR L'ECRAN, pas sur la salle : accroche a la

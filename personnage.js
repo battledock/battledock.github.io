@@ -2494,6 +2494,13 @@ return 12;};
 const calotte=(cx,yTop,yBas,hw,ry,epouse,hy)=>{
 for(let r=yTop;r<yBas;r++){const dy=Math.max(0,(yTop+ry)-r);
 let w=Math.round(hw*Math.sqrt(Math.max(0,1-(dy/ry)*(dy/ry))));
+/* LE MODE « ROND » FERME AUSSI LE BAS. Les autres modes épousent le crâne,
+   qui s'occupe lui-même de rentrer vers la nuque ; une masse plus large que
+   le crâne n'épouse rien, et ses derniers rangs restaient à pleine largeur
+   — l'afro de dos se lisait comme une boîte posée sur les épaules. */
+if(epouse==='rond'){const rb=ry*0.72, db=Math.max(0,r-(yBas-1-rb));
+const w2=Math.round(hw*Math.sqrt(Math.max(0,1-(db/rb)*(db/rb))));
+if(w2<w)w=w2;}
 if(w<=0)continue;
 let g0=cx-w, g1=cx+w;
 if(epouse==='face'){const c=craneF(r,hy)+1;
@@ -2673,7 +2680,7 @@ if(dos){
 const vol=cf.vol, top=hy-vol-sautH, L=cf.lg;
 const W=cf.fr==='afro'?19:14;
 if(cf.fr==='crane'||cf.fr==='crete'||cf.fr==='rase'||cf.fr==='degrade'||cf.fr==='afro'){
-calotte(0,top,hy+21+Math.min(L,6),W,7+vol,cf.fr==='afro'?false:'dos',hy);
+calotte(0,top,hy+21+Math.min(L,6),W,7+vol,cf.fr==='afro'?'rond':'dos',hy);
 }else{
 /* ===== DE DOS, MÈCHE PAR MÈCHE ===== */
 /* LE BORD DE DOS : il suit le crâne, puis se resserre vers la nuque.
