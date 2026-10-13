@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-13-1600"></script>
+<script src="maintenance.js?v=2026-10-13-1700"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-13-1600';
+var MA_VERSION='2026-10-13-1700';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2115,13 +2115,13 @@ white-space:nowrap}
 #tiroir.part .latte,#tiroir.part .tbas{animation:none}
 @keyframes ligneFin{from{opacity:0;transform:translateY(12px) scale(.92)}
 60%{opacity:1;transform:translateY(0) scale(1.04)}to{opacity:1;transform:none}}</style>
-<script src="retour.js?v=2026-10-13-1600"></script>
+<script src="retour.js?v=2026-10-13-1700"></script>
 <!-- LE DESSIN DU PERSONNAGE ET LES CARTES POKEDOCK. Classiques, donc
      joues avant le module : window.Perso doit exister quand une carte
      se grave, et window.Pokedock quand on ouvre le rayon du Bar. -->
-<script src="personnage.js?v=2026-10-13-1600"></script>
-<script src="pokedock.js?v=2026-10-13-1600"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-13-1600">
+<script src="personnage.js?v=2026-10-13-1700"></script>
+<script src="pokedock.js?v=2026-10-13-1700"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-13-1700">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -5242,7 +5242,6 @@ $('page2Fond').innerHTML=
 P.txt.map(t=>'<p>'+t+'</p>').join('')+'</div>'+
 '<div class="tuPied">'+
 '<button class="tuPasser" id="tu-fermer">Fermer</button>'+
-'<button class="tuPasser" id="tu-pas">Les premiers pas</button>'+
 '<button class="tuSuite" id="tu-suite">'+
 (pageTuto===TUTO.p.length-1?'C’est parti':'Continuer')+'</button>'+
 '</div>';
@@ -5264,12 +5263,6 @@ const g2=c.getContext('2d');g2.setTransform(D,0,0,D,0,0);g2.imageSmoothingEnable
 try{P.img(g2,w,h);}catch(x){}
 }
 $('tu-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-/* ON PEUT TOUJOURS REVOIR LES PREMIERS PAS. Un didacticiel qui ne passe
-   qu'une fois est perdu pour qui l'a saute, ou pour l'ami a qui on prete
-   le telephone. */
-const bp=$('tu-pas');
-if(bp)bp.onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');
-  setTimeout(()=>{try{ouvrirDidacticiel();}catch(x){}},260);};
 $('tu-suite').onclick=()=>{
 if(pageTuto===TUTO.p.length-1){fermeA=Date.now();$('page2').classList.remove('on');return;}
 pageTuto++;vibrer(20);majTuto();
@@ -23231,270 +23224,11 @@ setTimeout(()=>{try{demanderLaBeta();}catch(x){}},200);
 /* l'annonce de la réouverture, une fois par joueur */
 /* UNE SEULE ANNONCE : le chantier du personnage. */
 
-/* =====================================================================
-   LE DIDACTICIEL — LES PREMIERS PAS
-   Le panneau d'aide explique le jeu a quelqu'un qui sait deja jouer :
-   il se lit, il ne se fait pas. Pour une premiere partie, il faut
-   l'inverse — une phrase a la fois, un seul endroit eclaire, et la main
-   qui fait le geste avant d'avoir compris la phrase.
-
-   LA REGLE QU'ON S'EST DONNEE : une phrase de six mots, un geste, et on
-   passe. Pas de vocabulaire du jeu, pas de « inventaire » ni de
-   « interagir ». On dit « ton sac » et « attraper ».
-   ===================================================================== */
-/* LE DRAPEAU EST ATTACHE AU JOUEUR, PAS AU TELEPHONE. Un seul drapeau
-   d'appareil privait des premiers pas tout nouveau venu qui se cree un
-   compte sur un telephone deja servi — celui d'un ami, ou le tien quand
-   tu fais essayer le jeu. */
-const didacCle=()=>'bdl.didac.'+((typeof e!=='undefined'&&e&&e.id)||'anon');
-let DIDAC=null;
-const DIDAC_CSS=`
-#didac{position:fixed;inset:0;z-index:9000;pointer-events:none;
- font-family:'Nunito',system-ui,sans-serif;opacity:0;transition:opacity .35s}
-#didac.on{opacity:1}
-#didacV{position:absolute;inset:0;width:100%;height:100%}
-#didacB{position:absolute;left:50%;transform:translateX(-50%);
- width:min(330px,86vw);background:#14100c;border:2px solid #c9a24a;
- border-radius:18px;padding:18px 18px 14px;text-align:center;
- box-shadow:0 14px 40px rgba(0,0,0,.6);pointer-events:auto}
-#didacB b{display:block;color:#f6ecd4;font-size:21px;line-height:1.3;
- font-weight:800;white-space:pre-line}
-#didacB .pied{display:flex;gap:10px;align-items:center;justify-content:center;
- margin-top:14px}
-#didacB button{background:#c9a24a;color:#1b1407;border:0;border-radius:12px;
- padding:12px 26px;font:800 17px/1 'Nunito',system-ui,sans-serif;cursor:pointer}
-#didacB button:active{transform:translateY(1px)}
-#didacB .sauter{background:none;color:#8a7f6a;font-weight:700;font-size:14px;
- padding:10px 6px;text-decoration:underline}
-#didacB .etapes{display:flex;gap:6px;justify-content:center;margin-bottom:12px}
-#didacB .etapes i{width:7px;height:7px;border-radius:50%;background:#4a4236}
-#didacB .etapes i.on{background:#c9a24a}
-`;
-/* ---- ou se trouve ce qu'on montre, en points d'ecran ---- */
-function didacCible(quoi){
-  /* LE JOYSTICK N'EXISTE PAS AVANT QU'ON LE TOUCHE : il nait sous le
-     pouce, n'importe ou. On ne peut donc pas le montrer du doigt — on
-     eclaire la zone ou le pouce tombe naturellement. */
-  if(quoi==='pouce')return {x:innerWidth*0.34, y:innerHeight*0.70,
-                            rx:92, ry:78, main:true};
-  if(quoi==='joueur'){
-    try{
-      const j=ctxJoueurEcran(), r=cv.getBoundingClientRect();
-      if(!j)return null;
-      const k=r.width/cv.width;
-      return {x:r.left+j.x*k, y:r.top+j.y*k-6, rx:42, ry:56};
-    }catch(x){return null;}
-  }
-  const el=document.querySelector(quoi);
-  if(!el)return null;
-  const b=el.getBoundingClientRect();
-  if(!b.width)return null;
-  return {x:b.left+b.width/2, y:b.top+b.height/2,
-          rx:b.width/2+16, ry:b.height/2+16};
-}
-const DIDAC_PAS=[
-  {t:'Ça, c’est toi.',                         c:'joueur',  f:'ok'},
-  {t:'Pose ton doigt ici.\nEt glisse.',        c:'pouce',   f:'bouge'},
-  {t:'Bravo !\nTu sais marcher.',              c:'joueur',  f:'ok'},
-  {t:'Ce bouton sert\nà attraper les choses.', c:'#action', f:'ok'},
-  {t:'Ici, c’est ton argent.',                 c:'#haut .pil:last-child', f:'ok'},
-  {t:'Et là, ton sac.',                        c:'#haut .pil:first-child',f:'ok'},
-  {t:'C’est tout.\nAmuse-toi bien !',          c:null,      f:'fin'}
-];
-function ouvrirDidacticiel(){
-  if(DIDAC)return;
-  if(!document.getElementById('didacStyle')){
-    const st=document.createElement('style');st.id='didacStyle';
-    st.textContent=DIDAC_CSS;document.head.appendChild(st);
-  }
-  const d=document.createElement('div');d.id='didac';
-  d.innerHTML='<canvas id="didacV"></canvas><div id="didacB">'+
-    '<div class="etapes"></div><b></b>'+
-    '<div class="pied"><button class="sauter">Passer</button>'+
-    '<button class="suite">OK</button></div></div>';
-  document.body.appendChild(d);
-  DIDAC={el:d, cv:d.querySelector('#didacV'), bulle:d.querySelector('#didacB'),
-         txt:d.querySelector('#didacB b'), pts:d.querySelector('.etapes'),
-         suite:d.querySelector('.suite'), sauter:d.querySelector('.sauter'),
-         n:0, depart:null, t0:performance.now(), fini:false};
-  DIDAC.suite.onclick=()=>didacSuivant();
-  DIDAC.sauter.onclick=()=>fermerDidacticiel();
-  didacPoser();
-  requestAnimationFrame(didacBoucle);
-  setTimeout(()=>{if(DIDAC)DIDAC.el.classList.add('on');},40);
-}
-function fermerDidacticiel(){
-  if(!DIDAC)return;
-  try{localStorage.setItem(didacCle(),'1');
-    localStorage.setItem('bdl.tuto.vu','1');}catch(x){}
-  const d=DIDAC;DIDAC=null;
-  d.el.classList.remove('on');
-  setTimeout(()=>{try{d.el.remove();}catch(x){}},380);
-}
-function didacSuivant(){
-  if(!DIDAC)return;
-  DIDAC.n++;
-  if(DIDAC.n>=DIDAC_PAS.length){fermerDidacticiel();return;}
-  didacPoser();
-}
-function didacPoser(){
-  const P=DIDAC_PAS[DIDAC.n];
-  DIDAC.txt.textContent=P.t;
-  DIDAC.pts.innerHTML=DIDAC_PAS.map((_,i)=>
-    '<i class="'+(i<=DIDAC.n?'on':'')+'"></i>').join('');
-  DIDAC.suite.textContent=P.f==='fin'?'C’est parti':'OK';
-  /* AU PAS QUI DEMANDE UN GESTE, PAS DE BOUTON : sinon on appuie sur OK
-     sans avoir essaye, et l'on n'a rien appris. */
-  DIDAC.suite.style.display=(P.f==='bouge')?'none':'';
-  DIDAC.sauter.style.display=(P.f==='fin')?'none':'';
-  DIDAC.depart=null;
-}
-function didacBoucle(T){
-  if(!DIDAC)return;
-  const d=DIDAC, P=DIDAC_PAS[d.n];
-  const w=innerWidth, h=innerHeight, dpr=Math.min(2,devicePixelRatio||1);
-  if(d.cv.width!==Math.round(w*dpr)){d.cv.width=Math.round(w*dpr);d.cv.height=Math.round(h*dpr);}
-  const g2=d.cv.getContext('2d');
-  g2.setTransform(dpr,0,0,dpr,0,0);
-  g2.clearRect(0,0,w,h);
-  g2.fillStyle='rgba(6,8,14,.74)';g2.fillRect(0,0,w,h);
-  const c=P.c?didacCible(P.c):null;
-  if(c){
-    /* LE TROU. Un bord net decoupe une forme dans le noir et l'on voit
-       une gommette ; un bord fondu fait une lampe. */
-    g2.globalCompositeOperation='destination-out';
-    g2.save();g2.translate(c.x,c.y);g2.scale(1,c.ry/c.rx);
-    const gr=g2.createRadialGradient(0,0,c.rx*0.45,0,0,c.rx*1.25);
-    gr.addColorStop(0,'rgba(0,0,0,1)');gr.addColorStop(0.62,'rgba(0,0,0,.95)');
-    gr.addColorStop(1,'rgba(0,0,0,0)');
-    g2.fillStyle=gr;g2.beginPath();g2.arc(0,0,c.rx*1.25,0,7);g2.fill();
-    g2.restore();
-    g2.globalCompositeOperation='source-over';
-    /* LA MAIN QUI GLISSE : sur le pas du pouce, l'anneau seul ne dit pas
-       quoi faire. Un rond qui part du centre et file en rond le dit. */
-    if(c.main){
-      const a=T/560, r=c.rx*0.42;
-      const px=c.x+Math.cos(a)*r, py=c.y+Math.sin(a)*r*0.8;
-      g2.strokeStyle='rgba(246,236,212,.45)';g2.lineWidth=2;
-      g2.save();g2.translate(c.x,c.y);g2.scale(1,0.8);
-      g2.beginPath();g2.arc(0,0,r,0,7);g2.stroke();g2.restore();
-      g2.fillStyle='rgba(246,236,212,.22)';
-      g2.beginPath();g2.arc(px,py,20,0,7);g2.fill();
-      g2.fillStyle='#f6ecd4';
-      g2.beginPath();g2.arc(px,py,11,0,7);g2.fill();
-      g2.fillStyle='rgba(0,0,0,.25)';
-      g2.beginPath();g2.arc(px-3,py-3,5,0,7);g2.fill();
-    }
-    /* l'anneau qui bat */
-    const bat=1+0.06*Math.sin(T/320);
-    g2.save();g2.translate(c.x,c.y);g2.scale(bat,bat*c.ry/c.rx);
-    g2.strokeStyle='rgba(201,162,74,.85)';g2.lineWidth=3;
-    g2.setLineDash([9,7]);g2.lineDashOffset=-T/40;
-    g2.beginPath();g2.arc(0,0,c.rx*1.02,0,7);g2.stroke();
-    g2.restore();
-  }
-  /* la bulle : en haut si la cible est en bas, et l'inverse */
-  const enHaut=c?(c.y>h*0.46):false;
-  d.bulle.style.top=(enHaut?h*0.10:h*0.58)+'px';
-  /* LA FLECHE part de la bulle et vise le trou. Elle ne sert a rien si
-     la cible est au milieu de l'ecran, mais sur un telephone elle est
-     presque toujours dans un coin. */
-  if(c){
-    const b=d.bulle.getBoundingClientRect();
-    const dy=(c.y<b.top)?-1:1;
-    const ax=Math.max(b.left+20,Math.min(b.right-20,c.x));
-    const ay=(dy<0?b.top:b.bottom)+dy*(10+6*Math.abs(Math.sin(T/360)));
-    g2.fillStyle='#c9a24a';
-    g2.beginPath();g2.moveTo(ax,ay+dy*16);
-    g2.lineTo(ax-11,ay);g2.lineTo(ax+11,ay);g2.closePath();g2.fill();
-  }
-  /* a-t-on fait le geste ? */
-  if(P.f==='bouge'){
-    try{
-      if(d.depart===null)d.depart=[joueur.x,joueur.y];
-      else if(Math.hypot(joueur.x-d.depart[0],joueur.y-d.depart[1])>46)didacSuivant();
-    }catch(x){}
-  }
-  requestAnimationFrame(didacBoucle);
-}
-try{window.ouvrirDidacticiel=ouvrirDidacticiel;}catch(x){}
-
-/* LE DIDACTICIEL PASSE AVANT LES ANNONCES : on n'affiche pas l'affiche
-   d'un tournoi a quelqu'un qui ne sait pas encore marcher. */
-/* QUI EST VRAIMENT NOUVEAU ?
-   Le seul drapeau du didacticiel ne suffit pas : personne ne l'a encore,
-   donc tous les joueurs deja installes se seraient vu expliquer « ça,
-   c'est toi » a leur prochaine ouverture. On regarde trois choses de
-   plus, et il suffit qu'une seule reponde pour que la partie soit
-   consideree comme commencee :
-     — le panneau d'aide a deja ete vu (il s'ouvrait seul, donc tout le
-       monde l'a) ;
-     — la sauvegarde porte un score ou une recolte ;
-     — le sac n'est pas vide.
-   Et dans ce cas on pose le drapeau tout de suite : la question ne se
-   repose jamais. */
-/* L'AGE DU COMPTE PASSE AVANT SON ACTIVITE.
-   Premiere regle essayee : pas de score, pas de recolte, sac vide. Elle
-   rate exactement ceux qu'on vise. Un joueur arrive il y a vingt
-   minutes avait deja ramasse cent neuf choses — il etait neuf, et le
-   test le prenait pour un ancien. On demande donc son age au serveur :
-   un compte de moins de deux jours a droit aux premiers pas, quoi qu'il
-   ait deja fait. L'activite ne sert plus que de repli, quand le serveur
-   ne repond pas. */
-const DIDAC_JEUNE=48*3600*1000;
-function didacPeutEtre(){                 /* reponse immediate, sans reseau */
-  try{return localStorage.getItem(didacCle())!=='1';}catch(x){return false;}
-}
-function didacSansActivite(){
-  try{
-    if((e.score||0)>0||(e.recolte||0)>0)return false;
-    if(e.sac&&Object.keys(e.sac).length>0)return false;
-    return true;
-  }catch(x){return false;}
-}
-function didacAgeDuCompte(){
-  return new Promise(ok=>{
-    let fini=false;
-    const rendre=v=>{if(!fini){fini=true;ok(v);}};
-    setTimeout(()=>rendre(null),2500);     /* on n'attend pas le reseau */
-    try{
-      if(!e.id)return rendre(null);
-      fetch(URL_SB+'/rest/v1/joueurs?select=cree&id=eq.'+encodeURIComponent(e.id),
-            {headers:sbEntetes})
-        .then(r=>r.json())
-        .then(l=>{
-          const c=l&&l[0]&&l[0].cree;
-          rendre(c?(Date.now()-new Date(c).getTime()):null);
-        },()=>rendre(null));
-    }catch(x){rendre(null);}
-  });
-}
-function didacEstNouveau(){
-  if(!didacPeutEtre())return Promise.resolve(false);
-  return didacAgeDuCompte().then(age=>{
-    if(age!==null)return age<DIDAC_JEUNE||didacSansActivite();
-    return didacSansActivite();
-  });
-}
+/* LES ANNONCES DU JOUR. Elles attendaient que le didacticiel ait rendu
+   la main ; il a ete retire, elles partent donc seules. */
 setTimeout(()=>{try{
-didacEstNouveau().then(oui=>{
-  if(oui){ouvrirDidacticiel();return;}
-  try{localStorage.setItem(didacCle(),'1');}catch(x){}
-  /* LE POKÉDOCK PASSE EN TÊTE : c'est la nouveauté du jour. */
-  try{if(!annoncePokedock()&&!annonceChantier())annonceMondial();}catch(x){}
-});
+  if(!annoncePokedock()&&!annonceChantier())annonceMondial();
 }catch(x){}},1600);
-/* LE CHARACTER LAB : il ne s'ouvre que si on le demande explicitement.
-   Aucun bouton n'y mène, aucun joueur ne peut tomber dessus. */
-/* Trois portes, parce que l'hébergement peut avaler la requête :
-   ?labo=1 dans l'URL, #labo à la fin, ou le drapeau posé une fois pour
-   toutes depuis la console. */
-try{
-const ouvrir=/[?&]labo=1/.test(location.search)||/labo/.test(location.hash)
-||localStorage.getItem('bdl.labo')==='1';
-if(/[?&]labo=1/.test(location.search))try{localStorage.setItem('bdl.labo','1');}catch(x){}
-if(ouvrir)setTimeout(()=>{try{labo();}catch(x){}},900);
-}catch(x){}
 setInterval(()=>{if(document.hidden)return;try{verifierLaFete();}catch(x){}},600000);
 $('b-vestiaire').onclick=()=>{VEST_SEL=null;try{$('tiroir').classList.remove('on');$('barre').classList.remove('on');}catch(x){}ouvrirLeVestiaire();};
 $('r-ecrire').onclick=()=>{if(bandeauOuvert())fermerBandeau();else ouvrirBandeau();};
@@ -29778,254 +29512,6 @@ ICONES.pepite='<rect x="3" y="7" width="10" height="6" fill="#a4acb3"/>'+
 '<rect x="4" y="12" width="9" height="1" fill="#5f666c"/>'+
 '<rect x="6" y="8" width="2" height="2" fill="#f2f6f8"/>';
 }
-/* ================= LE CHARACTER LAB =================
-   Un outil de diagnostic, pas une fonctionnalité de jeu. Aucun bouton n'y
-   mène : il s'ouvre par ?labo=1 dans l'URL, ou par labo() en console.
-
-   Il ne dessine AUCUN pixel de personnage lui-même : il appelle poseDe(),
-   qui renvoie le canvas déjà gravé par le moteur existant, et le pose avec
-   drawImage. Tout ce qu'il écrit en propre, ce sont des cadres et du texte.
-   Il n'y a donc aucune seconde logique de rendu à maintenir. */
-const LAB={ouvert:false,mode:'grille',coiffe:0,dir:'bas',etat:'marche',img:0,
-compare:false,points:false,auto:true,tenue:0};
-const LAB_ETATS={
-repos  :{nom:'Arrêt',     idx:(f)=>100+(f%8),  n:8,  court:false},
-marche :{nom:'Marche',    idx:(f)=>1+(f%PASM), n:PASM, court:false},
-course :{nom:'Course',    idx:(f)=>1+(f%PASM), n:PASM, court:true},
-elan   :{nom:'Élan',      idx:(f)=>200+(f%5),  n:5,  court:true},
-frein  :{nom:'Freinage',  idx:(f)=>220+(f%5),  n:5,  court:false},
-pivot  :{nom:'Pivot',     idx:(f)=>240+(f%5),  n:5,  court:true},
-appui  :{nom:'Report de poids', idx:(f)=>600+(f%12), n:12, court:false},
-souffleP:{nom:'Inspiration',    idx:(f)=>620+(f%12), n:12, court:false}};
-const LAB_DIRS=['bas','droite','haut','gauche'];
-const LAB_TENUES=[
-{nom:'Base',    ap:{}},
-{nom:'Manteau', ap:{haut:5,bas:0,souliers:0}},
-{nom:'Jupe',    ap:{haut:1,bas:2,souliers:2}},
-{nom:'Débardeur',ap:{haut:4,bas:1,souliers:1}},
-{nom:'Marin',   ap:{haut:2,bas:0,motif:2,chapeau:1}}];
-function labAp(coiffe,tenue){
-const base=Object.assign({},DEF_AP,(typeof e!=='undefined'&&e.ap)?e.ap:{});
-const t=LAB_TENUES[tenue||0]||LAB_TENUES[0];
-return Object.assign(base,{coiffe:coiffe,coupe:null},t.ap);}
-/* LE RENDU D'UNE VIGNETTE : rien d'autre qu'un appel au moteur existant */
-function labVignette(g,x,y,ap,dir,etat,f,ech){
-const E=LAB_ETATS[etat]||LAB_ETATS.marche;
-const ap2=E.court?Object.assign({},ap,{court:1}):ap;
-let c=null;
-try{c=poseDe(ap2,dir,E.idx(f));}catch(err){}
-if(!c){g.fillStyle='#8a2a2a';g.fillRect(x,y,CASE_L*ech,CASE_H*ech);return false;}
-g.imageSmoothingEnabled=false;
-g.drawImage(c,x,y,CASE_L*ech,CASE_H*ech);
-return true;}
-const CSS_LAB=`#labo{position:absolute;inset:0;background:#10140e;overflow:auto;
--webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top,0px) + 8px) 8px
-calc(env(safe-area-inset-bottom,0px) + 70px)}
-#labo *{box-sizing:border-box}
-#labo .bar{position:sticky;top:0;z-index:3;background:rgba(16,20,14,.96);
-padding:6px 0 8px;border-bottom:1px solid #2a3426}
-#labo h3{font:700 9px ui-monospace,monospace;letter-spacing:2px;color:#c9a24a;margin:8px 0 5px}
-#labo .lig{display:flex;gap:4px;flex-wrap:wrap}
-#labo button{border:0;border-radius:8px;padding:5px 9px;font:700 11px 'Baloo 2',sans-serif;
-background:rgba(255,255,255,.08);color:#a8b09a;cursor:pointer}
-#labo button.on{background:#c9a24a;color:#241c10}
-#labo .gr{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:6px}
-#labo .cel{background:#1b2318;border-radius:5px;padding:2px;position:relative}
-#labo .cel canvas{width:100%;height:auto;display:block;image-rendering:pixelated}
-#labo .et{font:700 7px ui-monospace,monospace;color:#8d9680;padding:1px 2px;letter-spacing:.5px}
-#labo .dbg{font:10px/1.5 ui-monospace,monospace;color:#8d9680;background:#161d13;
-border-radius:8px;padding:8px;margin-top:8px;white-space:pre-wrap}
-#labo .gros{display:flex;gap:6px;justify-content:center;margin-top:6px}
-#labo .gros .cel{flex:1;max-width:190px}
-#labo .fermer{position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);
-z-index:5;background:#c9a24a;color:#241c10;border-radius:10px;padding:9px 14px;
-font:700 12px 'Baloo 2';border:0}
-#labo .alerte{color:#e8947f}`;
-function labo(){
-if(!document.getElementById('cssLabo')){const st=document.createElement('style');
-st.id='cssLabo';st.textContent=CSS_LAB;document.head.appendChild(st);}
-LAB.ouvert=true;
-$('page2Fond').className='';$('page2').classList.add('on');
-$('page2Fond').innerHTML='<div id="labo"></div>'+
-'<button class="fermer" id="labFermer">Fermer le labo</button>';
-$('labFermer').onclick=()=>{LAB.ouvert=false;
-try{localStorage.removeItem('bdl.labo');}catch(x){}
-$('page2').classList.remove('on');};
-labRendre();}
-try{window.labo=labo;}catch(x){}
-function labBouton(lab,actif,fn){
-return '<button data-x="'+lab+'" class="'+(actif?'on':'')+'">'+lab+'</button>';}
-function labRendre(){
-const L=document.getElementById('labo');if(!L)return;
-const E=LAB_ETATS[LAB.etat];
-let h='<div class="bar">';
-h+='<div class="lig">'+['grille','detail','regression'].map(m=>
-'<button data-m="'+m+'" class="'+(LAB.mode===m?'on':'')+'">'+m+'</button>').join('')+'</div>';
-h+='<div class="lig" style="margin-top:4px">'+Object.keys(LAB_ETATS).map(k=>
-'<button data-e="'+k+'" class="'+(LAB.etat===k?'on':'')+'">'+LAB_ETATS[k].nom+'</button>').join('')+'</div>';
-h+='<div class="lig" style="margin-top:4px">'+LAB_DIRS.map(d=>
-'<button data-d="'+d+'" class="'+(LAB.dir===d?'on':'')+'">'+d+'</button>').join('')+'</div>';
-h+='<div class="lig" style="margin-top:4px">'+
-'<button data-f="-1">◀ image</button>'+
-'<button data-f="1">image ▶</button>'+
-'<button data-a="1" class="'+(LAB.auto?'on':'')+'">auto</button>'+
-'<button data-p="1" class="'+(LAB.points?'on':'')+'">points</button>'+
-'<button data-v="1">vider le cache</button>'+
-'</div>';
-h+='<div class="lig" style="margin-top:4px">'+LAB_TENUES.map((t,k)=>
-'<button data-t="'+k+'" class="'+(LAB.tenue===k?'on':'')+'">'+t.nom+'</button>').join('')+'</div>';
-h+='</div>';
-if(LAB.mode==='grille')h+=labGrille();
-else if(LAB.mode==='detail')h+=labDetail();
-else h+=labRegression();
-L.innerHTML=h;
-L.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{LAB.mode=b.dataset.m;labRendre();});
-L.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{LAB.etat=b.dataset.e;LAB.img=0;labRendre();});
-L.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{LAB.dir=b.dataset.d;labRendre();});
-L.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{LAB.tenue=+b.dataset.t;labRendre();});
-L.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{
-LAB.auto=false;LAB.img=(LAB.img+ +b.dataset.f+E.n*4)%E.n;labRendre();});
-L.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{LAB.auto=!LAB.auto;labRendre();});
-L.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{LAB.points=!LAB.points;labRendre();});
-L.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{
-/* LE TEST DE PREMIÈRE GRAVURE : on vide tout, les vignettes qui suivent
-   sont donc gravées à la volée, comme au premier déclenchement en jeu. */
-try{POSES.clear();CACHE_FIN.clear();}catch(x){}
-LAB.vide=Date.now();labRendre();});
-L.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{LAB.coiffe=+b.dataset.c;LAB.mode='detail';labRendre();});
-labPeindre();}
-/* ---------- LE MODE GRILLE : les 30 coiffures ---------- */
-function labGrille(){
-const n=(typeof COIFFES!=='undefined')?COIFFES.length:22;
-let h='<h3>'+n+' COIFFURES · '+LAB.dir+' · '+LAB_ETATS[LAB.etat].nom+'</h3><div class="gr">';
-for(let k=0;k<n;k++)
-h+='<div class="cel" data-c="'+k+'"><canvas data-coiffe="'+k+'" width="64" height="80"></canvas>'+
-'<div class="et">'+k+' '+(COIFFES[k]||'?')+'</div></div>';
-h+='</div>';
-return h;}
-/* ---------- LE MODE DÉTAIL : une coiffure, les quatre directions ---------- */
-function labDetail(){
-const E=LAB_ETATS[LAB.etat];
-let h='<h3>'+(COIFFES[LAB.coiffe]||'?')+' · image '+(LAB.img+1)+'/'+E.n+'</h3>';
-h+='<div class="gros">';
-for(const d of LAB_DIRS)
-h+='<div class="cel"><canvas data-detail="'+d+'" width="128" height="160"></canvas>'+
-'<div class="et">'+d+'</div></div>';
-h+='</div>';
-h+='<div class="dbg" id="labDbg">…</div>';
-return h;}
-/* ---------- LE MODE RÉGRESSION : les tests ciblés ---------- */
-function labRegression(){
-let h='<h3>TESTS CIBLÉS</h3><div class="dbg" id="labTests">calcul…</div>';
-h+='<h3>PROFIL CONTRE FACE · alignement du crâne</h3><div class="gros">'+
-'<div class="cel"><canvas data-aligne="bas" width="128" height="160"></canvas><div class="et">face</div></div>'+
-'<div class="cel"><canvas data-aligne="droite" width="128" height="160"></canvas><div class="et">profil</div></div>'+
-'<div class="cel"><canvas data-aligne="haut" width="128" height="160"></canvas><div class="et">dos</div></div>'+
-'</div>';
-h+='<h3>LES TRANSITIONS, IMAGE PAR IMAGE</h3>';
-for(const t of ['elan','frein','pivot']){
-h+='<div class="et">'+LAB_ETATS[t].nom+'</div><div class="gr" style="grid-template-columns:repeat(5,1fr)">';
-for(let f=0;f<5;f++)h+='<div class="cel"><canvas data-trans="'+t+'" data-f="'+f+'" width="64" height="80"></canvas></div>';
-h+='</div>';}
-return h;}
-/* ---------- LA PEINTURE : uniquement des drawImage ---------- */
-function labPeindre(){
-const L=document.getElementById('labo');if(!L||!LAB.ouvert)return;
-const E=LAB_ETATS[LAB.etat];
-const f=LAB.auto?Math.floor(Date.now()/110)%E.n:LAB.img;
-const t0=performance.now();let rates=0;
-L.querySelectorAll('canvas[data-coiffe]').forEach(cv=>{
-const g=cv.getContext('2d');g.clearRect(0,0,cv.width,cv.height);
-if(!labVignette(g,0,0,labAp(+cv.dataset.coiffe,LAB.tenue),LAB.dir,LAB.etat,f,1))rates++;});
-L.querySelectorAll('canvas[data-detail]').forEach(cv=>{
-const g=cv.getContext('2d');g.clearRect(0,0,cv.width,cv.height);
-labVignette(g,0,0,labAp(LAB.coiffe,LAB.tenue),cv.dataset.detail,LAB.etat,f,2);
-if(LAB.points)labPoints(g,2);});
-L.querySelectorAll('canvas[data-aligne]').forEach(cv=>{
-const g=cv.getContext('2d');g.clearRect(0,0,cv.width,cv.height);
-labVignette(g,0,0,labAp(LAB.coiffe,LAB.tenue),cv.dataset.aligne,LAB.etat,f,2);
-/* LES LIGNES DE RÉFÉRENCE : sommet du crâne, yeux, menton, sol */
-g.strokeStyle='rgba(201,162,74,.5)';g.lineWidth=1;g.setLineDash([3,3]);
-[{y:-81,n:'crâne'},{y:-70,n:'yeux'},{y:-58,n:'menton'},{y:0,n:'sol'}].forEach(R=>{
-const yy=Math.round((CASE_H-10+R.y)*2);
-g.beginPath();g.moveTo(0,yy);g.lineTo(cv.width,yy);g.stroke();});
-g.setLineDash([]);});
-L.querySelectorAll('canvas[data-trans]').forEach(cv=>{
-const g=cv.getContext('2d');g.clearRect(0,0,cv.width,cv.height);
-labVignette(g,0,0,labAp(LAB.coiffe,LAB.tenue),LAB.dir,cv.dataset.trans,+cv.dataset.f,1);});
-const dt=Math.round(performance.now()-t0);
-const dbg=document.getElementById('labDbg');
-if(dbg){
-const P=(typeof window!=='undefined'&&window.POSE_FIN)||null;
-let txt='animation   '+E.nom+'\nimage       '+(f+1)+'/'+E.n+
-'\nprogression '+Math.round((f+1)/E.n*100)+'%'+
-'\ndirection   '+LAB.dir+'\ncoiffure    '+LAB.coiffe+' · '+(COIFFES[LAB.coiffe]||'?')+
-'\ntenue       '+LAB_TENUES[LAB.tenue].nom+
-'\nstyle       '+(STYLE_FIN()?'pixel fin':'classique')+
-'\ntransition  '+(typeof TRANS!=='undefined'?TRANS.etat:'—')+
-'\ngravure     '+dt+' ms'+(rates?'  ⚠ '+rates+' ratées':'')+
-'\nplanches    '+(typeof POSES!=='undefined'?POSES.size:'?')+' en cache';
-if(P)txt+='\n\nPOSE   pelvis '+labXY(P.pelvis)+'   torso '+labXY(P.torso)+
-'\n       head   '+labXY(P.head)+'   menton '+labXY(P.menton)+
-'\n       mainG  '+labXY(P.handL)+'   mainD  '+labXY(P.handR)+
-'\n       piedG  '+labXY(P.footL)+'   piedD  '+labXY(P.footR)+
-'\n       vue '+P.mesures.vue+'  EP '+P.mesures.EP+'  TA '+P.mesures.TA+'  HA '+P.mesures.HA;
-dbg.textContent=txt;}
-const tests=document.getElementById('labTests');
-if(tests&&!tests.dataset.fait){tests.dataset.fait='1';
-setTimeout(()=>{tests.textContent=labTests();},30);}
-if(LAB.ouvert)requestAnimationFrame(labPeindre);}
-const labXY=(p)=>p?('('+Math.round(p.x)+','+Math.round(p.y)+')'):'—';
-/* ---------- LES TESTS AUTOMATIQUES ---------- */
-function labTests(){
-const L=[];
-const ap=labAp(LAB.coiffe,LAB.tenue);
-/* 1. toutes les coiffures se gravent, dans les quatre directions */
-let casse=0, total=0;
-for(let k=0;k<COIFFES.length;k++)for(const d of LAB_DIRS){
-total++;try{if(!poseDe(labAp(k,0),d,1))casse++;}catch(x){casse++;}}
-L.push((casse?'⚠ ':'✓ ')+'coiffures × directions : '+(total-casse)+'/'+total+' gravées');
-/* 2. la hauteur du personnage ne change pas selon la direction */
-const haut=(d)=>{try{const c=poseDe(ap,d,0);
-const g=c.getContext('2d',{willReadFrequently:true});
-const im=g.getImageData(0,0,c.width,c.height).data;
-for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++)
-if(im[(y*c.width+x)*4+3]>200)return y;return -1;}catch(x){return -1;}};
-const hs=LAB_DIRS.map(haut);
-const ecart=Math.max.apply(null,hs)-Math.min.apply(null,hs);
-L.push((ecart>2?'⚠ ':'✓ ')+'sommet du crâne : écart de '+ecart+' px entre les 4 directions');
-/* 3. la largeur, qui révèle le crâne trop étroit de profil */
-/* LA LARGEUR DU CRÂNE : on cherche d'abord le sommet réel, puis on mesure
-   huit rangs plus bas. L'ancienne version lisait les 40 premiers rangs du
-   canevas, qui sont vides : elle renvoyait toujours 0. */
-const larg=(d)=>{try{const c=poseDe(ap,d,0);
-const g=c.getContext('2d',{willReadFrequently:true});
-const im=g.getImageData(0,0,c.width,c.height).data;
-let haut=-1;
-for(let y=0;y<c.height&&haut<0;y++)for(let x=0;x<c.width;x++)
-if(im[(y*c.width+x)*4+3]>200){haut=y;break;}
-if(haut<0)return 0;
-const y0=haut+8;
-let a=1e9,b=-1;
-for(let x=0;x<c.width;x++)
-if(im[(y0*c.width+x)*4+3]>200){if(x<a)a=x;if(x>b)b=x;}
-return b<0?0:Math.round((b-a+1)/2);}catch(x){return 0;}};
-const lf=larg('bas'), lp=larg('droite'), ld=larg('haut');
-L.push((lp<lf-1?'⚠ ':'✓ ')+'crâne : face '+lf+' px · profil '+lp+' px · dos '+ld+' px'+
-(lp<lf-1?'  (le profil devrait être le plus LONG)':''));
-/* 4. le pilotage par la pose donne le même rendu que l'ancien chemin */
-try{const r=comparerPose(ap,'bas',6);
-L.push((r.differents?'⚠ ':'✓ ')+'pose contre ancien chemin : '+r.differents+' pixel(s) d\u2019écart ('+r.verdict+')');}
-catch(x){L.push('— comparaison indisponible : '+x);}
-/* 5. les transitions se gravent toutes */
-let tc=0;
-for(const t of ['elan','frein','pivot'])for(let f=0;f<5;f++){
-try{if(!poseDe(ap,LAB.dir,LAB_ETATS[t].idx(f)))tc++;}catch(x){tc++;}}
-L.push((tc?'⚠ ':'✓ ')+'transitions : '+(15-tc)+'/15 poses gravées');
-/* 6. le coût d'une première gravure, cache vidé */
-try{POSES.clear();const t0=performance.now();poseDe(ap,'bas',200);
-L.push('⏱ première gravure d\u2019une transition : '+Math.round(performance.now()-t0)+' ms');}catch(x){}
-return L.join('\n');}
 
 const PRIX_COMPTOIR={oeufs:600,oeufdor:25000,pain:180,confiture:400,conserve:320,soupe:380,tarte:650,
 ambre:35,pepite:60,lingotFer:52,lingotCuivre:34,gemme:120,or:70,argent:36,
@@ -32112,15 +31598,10 @@ lireReglages();
 setTimeout(()=>{
 try{
 if(localStorage.getItem('bdl.tuto.vu'))return;
-/* LES PREMIERS PAS PASSENT AVANT LE PANNEAU. Les deux s'ouvraient
-   ensemble sur une premiere partie : on avait un mur de texte sous une
-   bulle qui disait « ça, c'est toi », et le projecteur eclairait le
-   panneau au lieu du personnage. Le panneau reste accessible par Aide
-   et par le poteau. */
-/* TANT QUE LES PREMIERS PAS NE SONT PAS FAITS, le panneau n'apparait
-   pas tout seul : la reponse se decide deux cents millisecondes plus
-   tard, et les deux ne doivent pas se superposer. */
-if(typeof didacPeutEtre==='function'&&didacPeutEtre())return;
+/* LE PANNEAU S'OUVRE SEUL SUR UNE PREMIERE PARTIE. Il cedait le pas au
+   didacticiel, qui a ete retire : il est maintenant la seule chose qui
+   accueille un joueur neuf. Il reste aussi accessible par Aide et par
+   le poteau. */
 if(typeof ouvrirLeTuto==='function')ouvrirLeTuto();
 }catch(x){}
 },1400);
@@ -35594,66 +35075,6 @@ if((E.laine_prete||0)>0)await gesteDesBetes('tondre');
 if(ETB&&ETB.truffe_prete)await gesteDesBetes('truffe');}
 peindreLEcranDesBetes();
 if(dit.length)setTimeout(()=>motOuverture(dit.join(' · ')),60);}
-function poserLesBulles(E){
-const d=$('etbBulles');if(!d||!ETB_PRE)return;
-const grp={};ETB_PRE.forEach(o=>{if(!grp[o.esp])grp[o.esp]=o;});
-const dit={
-vache:()=>({n:(E.vaches||0)+' vache'+((E.vaches||0)>1?'s':''),
-t:(E.lait||0)>0?((E.lait)+' L prêts'):(E.prochain?('lait dans '+etbDuree(E.prochain)):'il leur faut du foin'),
-pret:(E.lait||0)>0}),
-mouton:()=>({n:(E.moutons||0)+' mouton'+((E.moutons||0)>1?'s':''),
-t:(E.laine_prete||0)>0?((E.laine_prete)+' toison'+(E.laine_prete>1?'s':'')+' prête'+(E.laine_prete>1?'s':'')):('laine dans '+etbDuree(E.laine_dans)),
-pret:(E.laine_prete||0)>0}),
-cochon:()=>({n:(E.cochons||0)+' cochon'+((E.cochons||0)>1?'s':''),
-t:(E.poids_bete||0)+' kg'+(E.truffe_prete?' · une truffe ?':''),
-pret:!!E.truffe_prete})};
-let html='';
-Object.keys(grp).forEach(esp=>{
-const o=grp[esp], q=dit[esp]();
-html+='<span class="bulle'+(q.pret?' pret':'')+'" data-b="'+esp+'" '+
-'style="left:'+o.x+'px;top:'+(o.y-20)+'px">'+q.t+'<u>'+q.n+'</u></span>';});
-if(!Object.keys(grp).length)
-html='<span class="bulle vide" style="left:50%;top:46%">L’enclos est vide<u>ouvre le marché</u></span>';
-if(d.dataset.h!==html){d.dataset.h=html;d.innerHTML=html;
-d.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{
-vibrer(8);ouvrirLeTiroir(b.dataset.b);});}
-else{d.querySelectorAll('[data-b]').forEach(b=>{
-const o=grp[b.dataset.b];if(o){b.style.left=o.x+'px';b.style.top=(o.y-20)+'px';}});}}
-
-/* ================= LE TIROIR D'UNE BÊTE =================
-   Il monte du bas quand on touche une étiquette, et porte les gestes
-   propres à l'espèce. */
-function ouvrirLeTiroir(esp){
-const E=ETB||{}, d=$('etbTiroir');if(!d)return;
-const nom={vache:'Les vaches',mouton:'Les moutons',cochon:'Les cochons'}[esp]||'';
-const dit={
-vache:(E.lait||0)>0?((E.lait)+' litres dans le seau'):
-(E.prochain?('le prochain litre dans '+etbDuree(E.prochain)):'elles ont besoin de foin'),
-mouton:(E.laine_prete||0)>0?('la laine est prête'):('laine dans '+etbDuree(E.laine_dans)),
-cochon:(E.poids_bete||0)+' kg la bête'+((E.poids_bete||0)<40?' · trop maigre pour vendre':'')
-}[esp]||'';
-let act='';
-if(esp==='vache')
-act='<button data-a="traire" '+((E.lait||0)>0?'class="p"':'disabled')+'>Traire</button>'+
-'<button data-a="nourrir">Donner du foin</button>';
-if(esp==='mouton')
-act='<button data-a="tondre" '+((E.laine_prete||0)>0?'class="p"':'disabled')+'>Tondre</button>'+
-'<button data-a="marche">Le marché</button>';
-if(esp==='cochon')
-act='<button data-a="truffe" '+(E.truffe_prete?'class="p"':'disabled')+'>Chercher une truffe</button>'+
-'<button data-a="vendre_cochon" '+((E.poids_bete||0)>=40?'':'disabled')+'>Vendre une bête</button>';
-d.innerHTML='<div class="h"><canvas id="etbPort" width="92" height="92"></canvas>'+
-'<span><b>'+nom+'</b><em>'+dit+'</em></span>'+
-'<button class="x" id="etbTX">✕</button></div><div class="act">'+act+'</div>';
-try{const c=$('etbPort'), g=c.getContext('2d');
-g.imageSmoothingEnabled=false;
-g.fillStyle='#e6dcc0';g.fillRect(0,0,92,92);
-g.fillStyle='rgba(120,100,60,.10)';g.fillRect(0,66,92,26);
-dessinerBete(g,esp,46,70,2.1);}catch(x){}
-d.classList.add('on');
-$('etbTX').onclick=()=>{vibrer(8);d.classList.remove('on');};
-d.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
-vibrer(10);gesteDesBetes(b.dataset.a);});}
 /* ================= LES GESTES ================= */
 let ETB_OCCUPE=false;
 async function gesteDesBetes(quoi){
@@ -35712,7 +35133,7 @@ try{if(d&&typeof d.euros==='number'){e.euros=d.euros;sauver();}majHaut();}catch(
 peindreLEcranDesBetes();}
 return;}
 }catch(x){dire('le réseau a flanché','#e8a06a');}
-finally{ETB_OCCUPE=false;const t=$('etbTiroir');if(t)t.classList.remove('on');}}
+finally{ETB_OCCUPE=false;}}
 /* ================= LE MARCHÉ AUX BÊTES =================
    Plus un tableau de prix : un étal. Lucien tient le comptoir, l'ardoise
    porte les cours du matin, les marchandises sont posées devant lui et les
