@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-13-2000"></script>
+<script src="maintenance.js?v=2026-10-13-2100"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-13-2000';
+var MA_VERSION='2026-10-13-2100';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2115,13 +2115,13 @@ white-space:nowrap}
 #tiroir.part .latte,#tiroir.part .tbas{animation:none}
 @keyframes ligneFin{from{opacity:0;transform:translateY(12px) scale(.92)}
 60%{opacity:1;transform:translateY(0) scale(1.04)}to{opacity:1;transform:none}}</style>
-<script src="retour.js?v=2026-10-13-2000"></script>
+<script src="retour.js?v=2026-10-13-2100"></script>
 <!-- LE DESSIN DU PERSONNAGE ET LES CARTES POKEDOCK. Classiques, donc
      joues avant le module : window.Perso doit exister quand une carte
      se grave, et window.Pokedock quand on ouvre le rayon du Bar. -->
-<script src="personnage.js?v=2026-10-13-2000"></script>
-<script src="pokedock.js?v=2026-10-13-2000"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-13-2000">
+<script src="personnage.js?v=2026-10-13-2100"></script>
+<script src="pokedock.js?v=2026-10-13-2100"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-13-2100">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -21975,7 +21975,27 @@ return c;
 }
 const PAS_VITESSE=[112,122,132,142,152];   /* les souliers accélèrent, mais on garde le contrôle */
 const VITESSE=PAS_VITESSE[0];
-const SEUIL_COURSE=150;            /* la foulée ne s'ouvre qu'au-delà */
+/* ================= LA FOULÉE S'OUVRAIT AU DERNIER CRAN =================
+   Le seuil était à 150 et l'échelle des souliers monte à 152 : la course
+   ne s'ouvrait donc QU'AU CINQUIÈME ET DERNIER CRAN. Six joueurs l'ont,
+   un est au premier cran, dix n'ont jamais acheté de souliers — pour
+   tous ceux-là, pousser le pouce à fond ne faisait rien du tout, ni
+   vitesse ni foulée. Celui du premier cran avait paye pour neuf pour
+   cent de pointe au-dela de 0,88 de poussee : invisible.
+   À 120, la course s'ouvre au deuxième cran et les souliers se sentent. */
+const SEUIL_COURSE=120;
+/* ================= LA MONTÉE EN RÉGIME =================
+   L'allure basculait d'un coup : 112 jusqu'à 0,88 de poussée, puis 152.
+   De 97 à 135 px/s sur deux pour cent de course du pouce — une falaise.
+   Et comme l'origine du joystick glisse dès qu'on dépasse le rayon,
+   relâcher de cinq pixels retombait à 0,85 : la course s'allumait et
+   s'éteignait au moindre tremblement.
+   On monte maintenant en douceur entre les deux allures, sur la plage
+   0,60 → 1,00 de poussée. */
+const POUSSE_BASSE=0.60, POUSSE_HAUTE=1.00;
+/* L'HYSTÉRÉSIS : la foulée s'ouvre à 0,88 et ne se referme qu'à 0,80.
+   Sans cet écart, le pouce qui tremble fait clignoter la course. */
+const COURSE_ENTREE=0.88, COURSE_SORTIE=0.80;
 const vitesseDuJoueur=()=>PAS_VITESSE[Math.min(e.nivPied||0,PAS_VITESSE.length-1)];
 let vx=0, vy=0;                   /* vitesse actuelle, pour l'inertie */
 let court=false;                  /* l'allure du moment */
@@ -22002,9 +22022,15 @@ tournerEnDouceur(dt);
 const n=Math.hypot(joyX,joyY);
 const pousse=Math.min(1,n);
 const max=vitesseDuJoueur();
-const aFond=pousse>0.88;
-const allure=(aFond?max:VITESSE)*(VELO&&CARTE==='extramar'?1.75:1)*(REPU_FIN>Date.now()?1.15:1);
-court=aFond&&max>=SEUIL_COURSE;
+/* L'allure glisse de la marche à la pointe sur la plage de poussée, au
+   lieu de sauter d'un cran à l'autre. En dessous de POUSSE_BASSE on
+   marche, au-dessus de POUSSE_HAUTE on est à la pointe des souliers. */
+const r=Math.max(0,Math.min(1,(pousse-POUSSE_BASSE)/(POUSSE_HAUTE-POUSSE_BASSE)));
+const allureBase=VITESSE+(max-VITESSE)*r;
+const allure=allureBase*(VELO&&CARTE==='extramar'?1.75:1)*(REPU_FIN>Date.now()?1.15:1);
+/* La foulée a deux seuils, un pour s'ouvrir, un plus bas pour se
+   refermer : le pouce qui tremble au bord ne la fait plus clignoter. */
+court=(pousse>(court?COURSE_SORTIE:COURSE_ENTREE))&&max>=SEUIL_COURSE;
 /* ================= LE VIRAGE =================
    Le pivot ne se déclenchait que sur un cas : le renversement
    gauche↔droite. Les six autres changements de cap claquaient sec.
