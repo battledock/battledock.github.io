@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-13-2200"></script>
+<script src="maintenance.js?v=2026-10-13-2300"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-13-2200';
+var MA_VERSION='2026-10-13-2300';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2115,13 +2115,13 @@ white-space:nowrap}
 #tiroir.part .latte,#tiroir.part .tbas{animation:none}
 @keyframes ligneFin{from{opacity:0;transform:translateY(12px) scale(.92)}
 60%{opacity:1;transform:translateY(0) scale(1.04)}to{opacity:1;transform:none}}</style>
-<script src="retour.js?v=2026-10-13-2200"></script>
+<script src="retour.js?v=2026-10-13-2300"></script>
 <!-- LE DESSIN DU PERSONNAGE ET LES CARTES POKEDOCK. Classiques, donc
      joues avant le module : window.Perso doit exister quand une carte
      se grave, et window.Pokedock quand on ouvre le rayon du Bar. -->
-<script src="personnage.js?v=2026-10-13-2200"></script>
-<script src="pokedock.js?v=2026-10-13-2200"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-13-2200">
+<script src="personnage.js?v=2026-10-13-2300"></script>
+<script src="pokedock.js?v=2026-10-13-2300"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-13-2300">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -31582,6 +31582,64 @@ ctx.fillRect(0,0,cv.width,cv.height);
 dessinerJoy(dt);
 });
 setInterval(()=>{if(!document.hidden)sauver();},4000);   /* la présence en ligne passe par le canal : plus besoin d'écrire la table toutes les 4 s */
+/* ================= LA COQUE DES MENUS FACE AU CLAVIER =================
+   Sur iOS, ouvrir le clavier NE REDIMENSIONNE PAS la page : Safari fait
+   defiler par-dessus. Un calque fixe reste donc ou il etait, et le champ
+   qu'on remplit — le billet du tableau, la recherche du carnet — peut
+   finir sous le clavier avec son bouton d'envoi.
+
+   On mesure la fenetre REELLEMENT visible, et on la pose dans --h-menu,
+   que responsive.css applique aux vingt-trois calques de menu. En dehors
+   de la saisie on efface la variable : les menus reprennent leur 100dvh,
+   qui suit deja les barres du navigateur.
+
+   RIEN NE DEPEND DE CE SCRIPT POUR ETRE CORRECT. Sans lui, --h-menu
+   n'existe pas et le 100dvh s'applique seul ; il ne fait qu'affiner le
+   cas du clavier. D'ou les gardes partout : un vieux navigateur sans
+   visualViewport ne doit rien casser. */
+(function(){
+try{
+  var vv = window.visualViewport;
+  if(!vv) return;                       /* avant Safari 13 : on s'abstient */
+  var saisit = false, pose = null;
+
+  function appliquer(){
+    if(!saisit) return;
+    /* La hauteur visible, moins ce qui est deja cache en haut par le
+       defilement de Safari : c'est la part du calque qu'on voit encore. */
+    var h = Math.round(vv.height + Math.min(0, vv.offsetTop));
+    if(h > 120 && h !== pose){
+      pose = h;
+      document.documentElement.style.setProperty('--h-menu', h + 'px');
+    }
+  }
+  function rendre(){
+    saisit = false; pose = null;
+    document.documentElement.style.removeProperty('--h-menu');
+  }
+  function champ(el){
+    return !!(el && (el.tagName === 'TEXTAREA' ||
+      (el.tagName === 'INPUT' && !/^(button|submit|checkbox|radio|range)$/i.test(el.type||''))));
+  }
+
+  document.addEventListener('focusin', function(ev){
+    if(!champ(ev.target)) return;
+    saisit = true;
+    /* Safari pose le clavier en deux temps : on relit un peu plus tard. */
+    appliquer(); setTimeout(appliquer, 120); setTimeout(appliquer, 400);
+  }, true);
+
+  document.addEventListener('focusout', function(ev){
+    if(!champ(ev.target)) return;
+    /* On attend : passer d'un champ a l'autre ne doit pas faire sauter
+       la coque entre les deux. */
+    setTimeout(function(){ if(!champ(document.activeElement)) rendre(); }, 60);
+  }, true);
+
+  vv.addEventListener('resize', appliquer);
+  vv.addEventListener('scroll', appliquer);
+}catch(x){}
+})();
 lireReglages();
 setTimeout(()=>{
 try{

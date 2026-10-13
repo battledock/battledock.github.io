@@ -2273,11 +2273,14 @@ P('x_maison',XP.rangX0+k*140,XP.maisonsY,{v:k,col:[70,24]});
    quai, devant les facades, et non sur l'esplanade qui reste nue des deux
    cotes. */
 [390,1370].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+30,XP.maisonsY+72);});
-/* LE TABLEAU DU PORT, au pied des escaliers du complexe festif. Il est
-   decale de 58 px a l'ouest de l'axe de la ruelle (qui fait 38 de demi-
-   largeur) : assez pres pour qu'on le lise en arrivant au bas des marches,
-   assez loin pour ne jamais boucher la montee. */
-P('x_tableau',XP.ruelle.x-58,XP.maisonsY+52,{col:[16,12]});
+/* LE TABLEAU DU PORT, DEVANT LE CENTRE DES ESCALIERS. Il etait decale de
+   58 px a l'ouest pour ne jamais gener la montee ; on le remet dans l'axe,
+   face aux marches, ou le regard tombe dessus en arrivant.
+   ON PASSE TOUJOURS : sa boite de collision fait 16 de demi-largeur, soit
+   32 px barres au milieu d'une ruelle qui en fait 76. Il reste 22 px de
+   chaque cote dans la ruelle, et tout le quai en dessous — la montee ne
+   commence qu'au-dessus de maisonsY+6, le tableau est 46 px plus bas. */
+P('x_tableau',XP.ruelle.x,XP.maisonsY+52,{col:[16,12]});
 let nv=0;
 [360,620,880].forEach(px=>{                     /* on compte aussi l'ancien ponton du milieu : les autres voiliers gardent leur allure */
 const la=XP.pontons.includes(px);
