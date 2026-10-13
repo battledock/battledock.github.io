@@ -32042,7 +32042,13 @@ async function potAgir(i){if(POT_OCCUPE)return;const P=POT.parc[i], s=potStade(P
 if(!potOuverte(i)){texteVolant(joueur.x,joueur.y-56,'Parcelle à louer · à la boutique de la ferme','#ffe8a0');return;}
 POT_OCCUPE=true;try{
 if(!P||P.etat!=='bechee'){
-potGeste('houe',650);vibrer(15);const d=await appelRPC('pot_becher',{p_joueur:e.id,p_i:i});if(!potAdopter(d))potRefus(d);}
+/* BECHER N'EST PAS UNE DECISION, c'est la formalite qui precede le
+   semis : on ne beche jamais pour autre chose. Les deux gestes n'en
+   font donc plus qu'un, et la liste des graines s'ouvre dans la
+   foulee — un toucher de moins par planche, vingt-quatre par champ. */
+potGeste('houe',650);vibrer(15);const d=await appelRPC('pot_becher',{p_joueur:e.id,p_i:i});
+if(!potAdopter(d)){potRefus(d);}
+else{POT_OCCUPE=false;setTimeout(()=>{try{potGraines(i);}catch(x){}},240);return;}}
 else if(!P.cult){POT_OCCUPE=false;potGraines(i);return;}
 else if(s===3){potGeste('cueille',600);const d=await appelRPC('pot_recolter',{p_joueur:e.id,p_i:i});
 if(d&&!d.erreur&&d.etat){potAdopter(d.etat);try{lireSacServeur();}catch(x){}jouer('vente','moment');vibrer([20,40,20]);
@@ -32101,12 +32107,22 @@ background:none;text-align:left;border-top:1px solid rgba(201,162,74,.18)}
 #potGr .gn .t small em{color:#9fd47e;font-style:normal;font-weight:700}
 #potGr .gn .px{flex:none;font:700 12.5px 'Baloo 2',sans-serif;color:#c9a24a}
 #potGr .gn.cher{opacity:.45}#potGr .gn.verrou{opacity:.6}
-#potGr .gn.verrou .px{color:#a08f72}`;
+#potGr .gn.verrou .px{color:#a08f72}
+/* L'ETENDUE DU GESTE : une planche, ou le rang de six. On choisit
+   d'abord jusqu'ou l'on seme, puis quoi — l'inverse obligerait a
+   rouvrir la liste pour changer d'avis. */
+#potGr .ou{flex:none;display:flex;gap:6px;padding:0 14px 11px}
+#potGr .ou button{flex:1;min-height:40px;border:1px solid rgba(201,162,74,.35);
+border-radius:12px;background:none;color:#a08f72;font:700 12px 'Baloo 2',sans-serif}
+#potGr .ou button.on{background:#c9a24a;border-color:#c9a24a;color:#2a2118}`;
 document.head.appendChild(st);}
 const box=document.createElement('div');box.id='potGr';
 const fmt=(c)=>enEuros(c).replace(',00','');
 let h='<div class="hd"><b>Quelle graine ?<small>la plus rapide en haut</small></b>'+
-'<button id="potGrX">✕</button></div><div class="liste">';
+'<button id="potGrX">✕</button></div>'+
+'<div class="ou"><button data-ou="une" class="'+(POT_ETENDUE==='rang'?'':'on')+'">Cette planche</button>'+
+'<button data-ou="rang" class="'+(POT_ETENDUE==='rang'?'on':'')+'">Le rang de six</button></div>'+
+'<div class="liste">';
 h+=Object.entries(POT_CULT).sort((x,y)=>x[1][2]-y[1][2]).map(([k,[nom,g,min,v]])=>{
 const libre=potLibre(k), peu=(e.euros||0)<g;
 /* data-no ne servait à rien : il était écrit, jamais lu. La classe
@@ -32120,6 +32136,9 @@ return '<button class="gn'+(libre?(peu?' cher':''):' verrou')+'" data-k="'+k+'">
 box.innerHTML=h+'</div>';
 document.body.appendChild(box);
 $('potGrX').onclick=()=>box.remove();
+box.querySelectorAll('[data-ou]').forEach(b=>b.onclick=()=>{
+POT_ETENDUE=b.dataset.ou;vibrer(8);
+box.querySelectorAll('[data-ou]').forEach(o=>o.classList.toggle('on',o.dataset.ou===POT_ETENDUE));});
 box.querySelectorAll('canvas[data-p]').forEach(cv=>{
 const D=2,W=34,H=34;cv.width=W*D;cv.height=H*D;
 const g2=cv.getContext('2d');g2.setTransform(D*2.9,0,0,D*2.9,0,0);g2.imageSmoothingEnabled=false;
@@ -32129,11 +32148,24 @@ const k=b.dataset.k, nom=POT_CULT[k][0];
 if(!potLibre(k)){box.remove();texteVolant(joueur.x,joueur.y-56,nom+' : à débloquer à la boutique','#ffe8a0');return;}
 if((e.euros||0)<POT_CULT[k][1]){texteVolant(joueur.x,joueur.y-56,'Pas assez d’argent','#ffe8a0');return;}
 box.remove();if(POT_OCCUPE)return;POT_OCCUPE=true;potGeste('semer',600);vibrer(10);
-try{const d=await appelRPC('pot_semer',{p_joueur:e.id,p_i:i,p_cult:k});
+try{
+if(POT_ETENDUE==='rang'){
+const d=await appelRPC('pot_semer_rang',{p_joueur:e.id,p_i:i,p_cult:k});
+if(!d||d.erreur){potRefus(d);}
+else{potAdopter(d.etat);sauver();
+const n=d.semees||0;
+texteVolant(joueur.x,joueur.y-56,
+n?(n+' planche'+(n>1?'s':'')+' de '+nom.toLowerCase()):'rien à semer ici','#dff0c8');
+if(d.manque)setTimeout(()=>texteVolant(joueur.x,joueur.y-74,
+'le reste du rang attendra : plus assez d’argent','#ffd0a0'),800);}
+}else{
+const d=await appelRPC('pot_semer',{p_joueur:e.id,p_i:i,p_cult:k});
 if(!potAdopter(d))potRefus(d);else texteVolant(joueur.x,joueur.y-56,nom+' semé','#dff0c8');}
-finally{POT_OCCUPE=false;majAction();}});
+}finally{POT_OCCUPE=false;majAction();}});
 }
 let GR_FEN='h1';
+/* jusqu'ou porte le prochain semis : 'une' planche, ou le 'rang' de six */
+let POT_ETENDUE='une';
 async function ouvrirLeGrainetier(onglet){onglet=onglet||'graines';
 if(!document.getElementById('cssGr')){const st=document.createElement('style');st.id='cssGr';st.textContent=CSS_GR;document.head.appendChild(st);}
 if(!POT.charge)await potCharger();await lireChantiers();
@@ -32455,7 +32487,16 @@ display:block;text-align:left;gap:0;padding:0;border:0;background:none;border-ra
 #page2Fond.bq .outil .t small{display:block;font:italic 11.5px Georgia;color:#7a6a4e;margin-top:1px}
 #page2Fond.bq .outil button{flex:none;border:0;border-radius:12px;padding:9px 13px;
 background:#4e7a38;color:#fbf5e6;font:700 10px Arial;letter-spacing:1.2px}
-#page2Fond.bq .outil button.pris{background:#cdbd9c;color:#7a6a4e}`;
+#page2Fond.bq .outil button.pris{background:#cdbd9c;color:#7a6a4e}
+/* ---------- LES GRAINES ----------
+   La fenetre de temps, puis la marge au bout de chaque ligne. */
+#page2Fond.bq .bqFen{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 12px}
+#page2Fond.bq .bqFen::-webkit-scrollbar{display:none}
+#page2Fond.bq .bqFen button{flex:0 0 auto;min-height:40px;padding:0 14px;
+border:1px solid #d6c4a0;border-radius:13px;background:rgba(255,255,255,.62);
+color:#7a6a4e;font:700 11.5px Arial;white-space:nowrap}
+#page2Fond.bq .bqFen button.on{background:#8a6238;border-color:#8a6238;color:#fbf5e6}
+#page2Fond.bq .outil .marge{flex:none;font:400 15px Georgia;color:#4e7a38}`;
 
 let CMD={commandes:[],faites:[]};
 async function lireLesCommandes(){
@@ -32762,6 +32803,36 @@ h+='<div class="outil" style="display:block">'+
 (fait?'✓':fmt(prix[n]))+'</button></div>'+
 (dispo?chantierHTML(cleC):'')+'</div>';});
 return h;}
+/* ================= LES GRAINES, CHEZ MADELEINE =================
+   LE GRAINETIER EXISTAIT, MAIS HORS DE LA CARTE : son batiment etait
+   pose en x=1340 sur un champ qui s'arrete a 1200. Personne ne pouvait
+   donc l'atteindre, et les graines ne s'achetaient plus qu'une par une,
+   en touchant une planche nue. Son catalogue remonte ici, ou se louent
+   deja les parcelles et se vendent deja les outils.
+   ON NE CHOISIT PAS UNE GRAINE, ON CHOISIT UN MOMENT : « je repasse
+   dans une heure » ne laisse que ce qui sera mur d'ici la. C'est la
+   vraie question qu'on se pose devant un champ. */
+function bqGraines(){
+const fmt=(c)=>enEuros(c).replace(',00','');
+const FEN=[['h1','Dans 1 h',60],['soir','Ce soir',360],['demain','Demain',1440],['tout','Tout',99999]];
+const fen=GR_FEN||'h1';
+const lim=(FEN.find(f=>f[0]===fen)||FEN[0])[2];
+const liste=Object.entries(POT_CULT).filter(([k,[n,px,min,v]])=>min<=lim)
+.sort((x,y)=>x[1][2]-y[1][2]);
+let h='<div class="mot">« Les graines se paient quand tu sèmes, pas ici. '
++'Regarde seulement ce qui sera mûr à ton retour. »</div>'
++'<div class="bqFen">'+FEN.map(([id,mot])=>
+'<button data-fen="'+id+'" class="'+(fen===id?'on':'')+'">'+mot+'</button>').join('')+'</div>';
+if(!liste.length)return h+'<div class="vide">Rien ne pousse aussi vite.<br>Essaie une fenêtre plus large.</div>';
+h+='<div class="rub">'+(fen==='tout'?'TOUTES LES ESPÈCES':'MÛR À TON RETOUR')+'</div>';
+h+=liste.map(([k,[nom,px,min,v]])=>{
+const libre=potLibre(k);
+return '<div class="outil"><canvas data-p="'+k+'"></canvas>'+
+'<span class="t"><b>'+nom+'</b><small>'+potDuree(min)+
+(libre?' · la graine '+fmt(px)+', la récolte '+fmt(v):' · encore à débloquer')+'</small></span>'+
+(libre?'<span class="marge">+'+fmt(v-px)+'</span>'
+:'<button data-deb="'+k+'">'+fmt(POT_VERROU[k])+'</button>')+'</div>';}).join('');
+return h;}
 function ouvrirLaBoutiqueFerme(mot){
 /* L'ÉTAT DES CHANTIERS : sans lui, les matériaux déjà livrés comptent pour
    zéro et la location de parcelles reste bloquée. Le grainetier et le
@@ -32791,6 +32862,7 @@ corps='<div class="mot">'+(mot||'Madeleine reprend ta récolte au cours du jour.
 }
 if(ong==='commandes')corps='<div class="mot">« Voilà ce qu’il me faut pour aujourd’hui. '+
 'Ce que tu m’apportes, je te le paie mieux qu’au marché. »</div>'+cmdHTML();
+if(ong==='graines')corps=bqGraines();
 if(ong==='outils')corps=bqOutils();
 /* LE BANDEAU PORTAIT LE TITRE, LE SAC ET LA CROIX EN SURIMPRESSION, sur
    une image qui change de clarté d'un bout à l'autre. Le chapeau commun
@@ -32802,6 +32874,7 @@ $('page2Fond').innerHTML=
 '<div class="bqOng">'+
 '<button data-bo="vendre" class="'+(ong==='vendre'?'on':'')+'">Vendre</button>'+
 '<button data-bo="commandes" class="'+(ong==='commandes'?'on':'')+'">Commandes</button>'+
+'<button data-bo="graines" class="'+(ong==='graines'?'on':'')+'">Graines</button>'+
 '<button data-bo="outils" class="'+(ong==='outils'?'on':'')+'">L\u2019atelier</button></div>'+
 '<div class="corps">'+
 '<div class="bande"><canvas id="bqBandeau"></canvas></div>'+
@@ -32812,6 +32885,22 @@ corps+'</div>'+
 '<div class="bas"><button id="bqX">RETOUR À LA FERME</button></div>';
 $('page2Fond').querySelectorAll('[data-bo]').forEach(b=>b.onclick=()=>{
 BQ_ONG=b.dataset.bo;vibrer(10);ouvrirLaBoutiqueFerme();});
+$('page2Fond').querySelectorAll('[data-fen]').forEach(b=>b.onclick=()=>{
+GR_FEN=b.dataset.fen;vibrer(8);ouvrirLaBoutiqueFerme();});
+$('page2Fond').querySelectorAll('canvas[data-p]').forEach(cv=>{
+try{const D=2,T=46;cv.width=T*D;cv.height=T*D;
+const g=cv.getContext('2d');g.setTransform(D*2.9,0,0,D*2.9,0,0);g.imageSmoothingEnabled=false;
+PLANTES[cv.dataset.p](g,T/2.9*0.5,T/2.9*0.9,3);}catch(x){}});
+$('page2Fond').querySelectorAll('[data-deb]').forEach(b=>b.onclick=async()=>{
+const k=b.dataset.deb;
+if(!b.dataset.sur){b.dataset.sur='1';b.textContent='Sûr ?';
+setTimeout(()=>{if(b.isConnected){delete b.dataset.sur;b.textContent=enEuros(POT_VERROU[k]).replace(',00','');}},2600);return;}
+b.disabled=true;
+const d=await appelRPC('pot_debloquer',{p_joueur:e.id,p_cult:k});
+if(!d||d.erreur){b.disabled=false;
+motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':'Madeleine n’a pas pu.');return;}
+potAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);
+ouvrirLaBoutiqueFerme(POT_CULT[k][0]+' débloqué ! Tu peux le semer.');});
 /* LE BANDEAU : la grange de Madeleine au petit matin. */
 try{const bd=$('bqBandeau');
 if(bd){const D=2, W=Math.round(bd.clientWidth||340), H=116;
@@ -34577,6 +34666,30 @@ Promise.all([
  if(mien!==FER_BOUCLE)return;
  if(a&&!a.erreur)ETB=Object.assign({},ETB||{},a);
  if($('page2Fond').className==='fer')peindreLEcranDeLaFerme(mot);}).catch(()=>{});}
+/* ================= TOUT RENTRER D'UN COUP =================
+   L'etable avait son « Tout ramasser » depuis longtemps ; le potager
+   non. On repartait donc toucher chaque planche mure, une par une, en
+   traversant le champ. Le serveur boucle sur pot_recolter et garde
+   toutes ses regles — les oiseaux, le ble qui file au grenier, la
+   lavande qui repousse — et s'arrete net quand le sac est plein. */
+async function recolterToutLePotager(){
+if(POT_OCCUPE)return;POT_OCCUPE=true;
+try{
+const d=await appelRPC('pot_recolter_tout',{p_joueur:e.id});
+if(!d||d.erreur){motOuverture('Réessaie dans un instant.');return;}
+potAdopter(d.etat);try{await recalerLeSac(true);majHaut();}catch(x){}
+sauver();
+const n=d.planches||0, pris=d.pris||0;
+if(!n)motOuverture('Rien n’est mûr pour l’instant.');
+else{jouer('vente','moment');vibrer([20,40,20]);
+let mot=n+' planche'+(n>1?'s':'')+' rentrée'+(n>1?'s':'');
+if(pris)mot+=' · '+pris+' au sac';
+if(d.oiseaux)mot+=' · les oiseaux étaient passés';
+if(d.sac_plein)mot+=' · ton sac est plein, il en reste';
+motOuverture(mot);}
+peindreLEcranDeLaFerme();
+}catch(x){motOuverture('Réessaie dans un instant.');}
+finally{POT_OCCUPE=false;}}
 let FER_BOUCLE=0;
 function peindreLEcranDeLaFerme(mot){
 const E=ETB||{};
@@ -34611,7 +34724,7 @@ const laine=E.laine_prete||0;
    donc en haut avec son bouton, et les portes descendent en vignettes :
    ce qui change à chaque visite passe devant ce qui ne change jamais. */
 const urg=[];
-if(potMur)urg.push(['pot',potMur+(potMur>1?' légumes mûrs':' légume mûr'),'le potager t’attend','Y aller']);
+if(potMur)urg.push(['pot',potMur+(potMur>1?' légumes mûrs':' légume mûr'),'tu peux tout rentrer d’ici','Récolter']);
 if(verMur)urg.push(['ver',verMur+(verMur>1?' fruits à cueillir':' fruit à cueillir'),'le verger t’attend','Y aller']);
 else if(verSoif)urg.push(['ver',verSoif+(verSoif>1?' arbres ont soif':' arbre a soif'),'sans eau, ils ne mûrissent plus','Y aller']);
 if(lait)urg.push(['etable',lait+' L au seau','les vaches sont pleines','Traire']);
@@ -34646,9 +34759,12 @@ $('page2Fond').innerHTML=
 $('ferX').onclick=()=>{vibrer(8);$('page2').classList.remove('on');};
 $('page2Fond').querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{
 vibrer(10);const q=b.dataset.f;
-/* LE POTAGER ET LE VERGER NE SONT PAS DES ÉCRANS : on y récolte sur
-   place, dans le pré. « Y aller » ne peut donc que refermer le menu. */
-if(q==='pot'||q==='ver'){$('page2').classList.remove('on');return;}
+/* LE VERGER N'EST PAS UN ÉCRAN : on y cueille sur place, dans le pré.
+   « Y aller » ne peut donc que refermer le menu. Le potager, lui, se
+   rentre d'ici en entier : on ne renvoie plus le joueur toucher ses
+   vingt-quatre planches une par une. */
+if(q==='ver'){$('page2').classList.remove('on');return;}
+if(q==='pot'){recolterToutLePotager();return;}
 if(q==='madeleine')return ouvrirLaBoutiqueFerme();
 if(q==='etable'){ETB=null;return ouvrirLEtable();}
 if(q==='fromagerie')return ouvrirLaFromagerie();
