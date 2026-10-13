@@ -2183,11 +2183,14 @@ const CSS_MAR=`
   padding:9px 12px;margin-bottom:11px}
 #pkdm .bo small{font:700 9px Arial,sans-serif;letter-spacing:1.6px;color:#c9a24a}
 #pkdm .bo b{font:900 17px Georgia,serif;color:#f4ead2}
-#pkdm .ong{display:flex;gap:6px;margin-bottom:11px}
-#pkdm .ong button{flex:1;font:900 9px Arial,sans-serif;letter-spacing:1.3px;
+/* .ong PORTE UN FOND CREME dans la feuille commune du jeu : le
+   conteneur heritait d'un bandeau clair sur l'ecran sombre du marche.
+   Meme bug qu'au tableau du port et que chez Madeleine. */
+#pkdm .mOng{display:flex;gap:6px;margin-bottom:11px}
+#pkdm .mOng button{flex:1;font:900 9px Arial,sans-serif;letter-spacing:1.3px;
   border-radius:8px;padding:10px 4px;border:1px solid rgba(255,255,255,.14);
   background:transparent;color:rgba(242,236,224,.5)}
-#pkdm .ong button.on{background:#e8c877;color:#241a0a;border-color:#e8c877}
+#pkdm .mOng button.on{background:#e8c877;color:#241a0a;border-color:#e8c877}
 #pkdm h4{font:900 9px Arial,sans-serif;letter-spacing:2.2px;
   color:rgba(242,236,224,.38);margin:16px 0 7px}
 #pkdm .vide{text-align:center;font-style:italic;font-size:12px;
@@ -2280,7 +2283,7 @@ function marche(ctx,fermer){
       '<i>Première édition · les prix sont ceux que les joueurs demandent</i></div>'+
     '<div class="co">'+
       '<div class="bo"><small>TA BOURSE</small><b id="mBo">—</b></div>'+
-      '<div class="ong"><button data-g="achat" class="on">ACHETER</button>'+
+      '<div class="mOng"><button data-g="achat" class="on">ACHETER</button>'+
         '<button data-g="vente">VENDRE</button></div>'+
       '<div id="mVue"><div class="vide">On ouvre les vitrines…</div></div>'+
       '<div class="msg" id="mMsg"></div>'+
