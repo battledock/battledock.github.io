@@ -19,7 +19,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-10-13-1700';
+  var MA_VERSION='2026-10-13-1800';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -281,7 +281,7 @@ document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&['+',
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-10-13-1700';
+  var MA_VERSION='2026-10-13-1800';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -369,15 +369,15 @@ document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&['+',
   .recette button:disabled{opacity:.4;border-color:#d4c39e;background:#eadfc2}
   svg{image-rendering:pixelated}
 </style>
-<script src="retour.js?v=2026-10-13-1700"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-13-1700">
+<script src="retour.js?v=2026-10-13-1800"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-13-1800">
 </head>
 <body>
 <canvas id="jeu"></canvas>
 <canvas id="joy"></canvas>
 <div id="titre">La forge<small>le feu ne s’éteint jamais</small></div>
 <button id="sortirB">SORTIR</button>
-<div id="aide">pose le doigt pour marcher · approche-toi du four, de l’établi ou de l’enclume</div>
+<div id="aide">pose le doigt pour marcher · approche-toi du four ou de l’établi</div>
 <div id="mot"></div>
 <button id="action"></button>
 <div id="page"><div id="fond"></div></div>
@@ -401,16 +401,6 @@ async function appel(nom,corps){
   }catch(x){return {erreur:'la mine ne répond pas'};}
 }
 let enLigne=true;      /* faux si le serveur est injoignable : on joue quand même */
-/* les épées : celle du coffre, puis les forgées */
-const EPEES=[
-  {id:'bois',  nom:'Épée de bois',   deg:4, cout:null,                    coul:['#a5764a','#7d5934']},
-  {id:'fer',   nom:'Épée de fer',    deg:8, cout:{fer:6,bois:2},          coul:['#c0c7cd','#8b939a']},
-  {id:'cuivre',nom:'Épée de cuivre', deg:14,cout:{cuivre:8,fer:3},        coul:['#5fc79c','#3f9e7a']},
-  {id:'argent',nom:'Épée d’argent',  deg:22,cout:{argent:8,cuivre:4},     coul:['#eef3f7','#c3ccd4']},
-  {id:'or',    nom:'Épée d’or',      deg:34,cout:{or:8,argent:5},         coul:['#ffe9a8','#d9a63f']},
-  {id:'gemme', nom:'Lame de gemme',  deg:52,cout:{gemme:4,or:6},          coul:['#b6f2f7','#3fa8b8']}
-];
-let epee=0;                       /* rang de ta lame, donné par le serveur */
 let VIE_MAX_S=30, CHARGE_MAX=60;
 let vie=30, mort=false;
 const PROFOND=20;
@@ -1209,7 +1199,6 @@ const PLAN=[
 ];
 const POSTES=[
   {id:'four',   a:3, b:2,  nom:'Le four',    verbe:'Enfourner', sous:'FONDRE LE MINERAI'},
-  {id:'enclume',a:9, b:6,  nom:'L’enclume',  verbe:'Forger',    sous:'BATTRE LA LAME'},
   {id:'etabli', a:14,b:2,  nom:'L’établi',   verbe:'Fabriquer', sous:'TAILLER SES OUTILS'}
 ];
 const DECORS=[
@@ -1758,23 +1747,8 @@ function corpsEtabli(){
         deja?null:'Fabriquer','etabli:'+f.id,!deja&&assez(f.cout));
     }).join('');
 }
-/* ---- l'enclume : les lames, dans l'ordre ---- */
-function corpsEnclume(){
-  const rang=e.epee||0;
-  return '<div class="mot">Les lames se battent dans l’ordre : chacune demande la '+
-    'précédente au poing. Ce que tu remontes de la mine finit ici.</div>'+
-    EPEES.map((E,i)=>{
-      if(i===0)return '';
-      const deja=rang>=i, tour=(i===rang+1);
-      return ligne(icoEpee(E.coul[0]),E.nom,E.deg+' dégâts par coup',E.cout,
-        deja?null:(tour?'Forger':'Plus tard'),'lame:'+i,!deja&&tour&&assez(E.cout));
-    }).join('');
-}
-const icoEpee=(c)=>'<rect x="7" y="9" width="2" height="6" fill="#6b4a28"/>'+
-  '<rect x="5" y="8" width="6" height="2" fill="#c9a24a"/>'+
-  '<rect x="7" y="1" width="2" height="8" fill="'+c+'"/>';
 function ouvrirPoste(p){
-  const corps=p.id==='four'?corpsFour():p.id==='etabli'?corpsEtabli():corpsEnclume();
+  const corps=p.id==='four'?corpsFour():corpsEtabli();
   $('fond').innerHTML='<div class="rabat"><button class="x" id="p-x">✕</button>'+
     '<span class="t"><b>'+p.nom+'</b><i>'+p.sous+'</i></span></div>'+
     '<div class="corps">'+corps+'</div>';
@@ -1829,23 +1803,6 @@ async function faire(cle,poste){
     ETINCELLES=1;
     return ouvrirPoste(poste);
   }
-  if(quoi==='lame'){
-    const i=+id, E=EPEES[i];
-    if((e.epee||0)+1!==i||!assez(E.cout))return;
-    if(enLigne&&e.id){
-      const d=await appel('forger_epee',{p_joueur:e.id,p_rang:i});
-      if(d&&d.erreur)return dire(d.erreur);
-      e.epee=(typeof d.epee==='number')?d.epee:i;
-      if(d&&d.sac)SAC=d.sac;
-    }else{
-      Object.entries(E.cout).forEach(([k,n])=>{SAC[k]=combien(k)-n;});
-      e.epee=i;
-    }
-    e.sac=SAC;sauverTout();
-    dire(E.nom+' forgée');
-    ETINCELLES=1;
-    try{navigator.vibrate&&navigator.vibrate([10,30,18]);}catch(x){}
-    return ouvrirPoste(poste);
   }
 }
 function posteVise(){
@@ -1960,7 +1917,7 @@ function dessiner(){
   g.fillStyle=v;g.fillRect(0,0,VW,VH);
 }
 taille();
-chargerSac().then(()=>{if(e.epee===undefined)e.epee=0;});
+chargerSac();
 setTimeout(()=>{$('aide').style.opacity='0';},9000);
 requestAnimationFrame(boucle);
 </script>
