@@ -14,14 +14,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Expires" content="0">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-15-0800"></script>
+<script src="maintenance.js?v=2026-10-15-0900"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-15-0800';
+  var MA_VERSION='2026-10-15-0900';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -190,7 +190,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#f0e0c0}
   font:italic 11px Georgia,serif;color:#7a6350;line-height:1.5}
 #paie b{font-style:normal;color:#9a8266}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-15-0800">
+<link rel="stylesheet" href="responsive.css?v=2026-10-15-0900">
 </head>
 <body>
 <div id="tapis">
@@ -237,7 +237,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#f0e0c0}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-15-0800"></script>
+<script src="retour.js?v=2026-10-15-0900"></script>
 <script>
 /* =====================================================================
    LE CASINO
@@ -1492,9 +1492,10 @@ MOTEUR.grattage={
   nom:'Le Grattage de Luxe', sous:'NEUF CASES · TROIS PAREILS',
   L:102, H:108,
   mises:null, fixe:5000, fixeDit:'50 € LE TICKET · PRIX FIXE',
-  paie:'<b>Trois pareils</b> paient : casier ×1, cageot ×2, ancre ×5, grue ×10, '+
-       'perle ×50, <b>le Phare ×500</b>. Un ticket sur deux et demi paie quelque chose, '+
-       'et la maison garde environ dix euros sur cent.',
+  paie:'<b>Trois pareils</b> paient : casier ×1 <i>(le ticket est remboursé)</i>, '+
+       'cageot ×2, ancre ×5, grue ×10, perle ×50, <b>le Phare ×500</b>. '+
+       'Deux tickets sur cinq paient quelque chose, et la maison garde environ '+
+       'dix euros sur cent.',
   init:function(){return {phase:'pose',grille:[],usure:[0,0,0,0,0,0,0,0,0],
                           lot:0,res:null,t:0,clign:0};},
   pas:function(s,dt){
@@ -1587,9 +1588,15 @@ MOTEUR.grattage={
 };
 function finirGrattage(s){
   var r=s.res;if(!r)return;
-  if(r.gain>0)dire('Trois '+GR_DIT[s.lot-1]+' · ×'+GR_MUL[s.lot-1]+' · +'+
-                   enEuros(r.gain-r.mise),r.gain>=r.mise*50?'gros':'gagne');
-  else dire('Ticket perdant. −'+enEuros(r.mise),'perd');
+  var nom=GR_DIT[s.lot-1], f=GR_MUL[s.lot-1];
+  if(!r.gain){dire('Ticket perdant. −'+enEuros(r.mise),'perd');}
+  /* LE CASIER PAIE UNE FOIS LA MISE, donc il ne rapporte rien : il rend
+     le ticket. « Trois casiers · +0,00 € » en vert se lisait comme une
+     moquerie, ou comme un bug. On nomme la chose — c'est le meme cas que
+     l'egalite au vingt-et-un et la cave rendue au poker. */
+  else if(r.gain===r.mise)dire('Trois '+nom+' · le ticket est remboursé','');
+  else dire('Trois '+nom+' · ×'+f+' · +'+enEuros(r.gain-r.mise),
+            r.gain>=r.mise*50?'gros':'gagne');
   monterChoix();
 }
 /* les six symboles du ticket : quatre viennent de la criee, deux sont
