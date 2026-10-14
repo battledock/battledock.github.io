@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-15-0010"></script>
+<script src="maintenance.js?v=2026-10-15-0030"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-15-0010';
+var MA_VERSION='2026-10-15-0030';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il
@@ -2123,13 +2123,13 @@ white-space:nowrap}
 #tiroir.part .latte,#tiroir.part .tbas{animation:none}
 @keyframes ligneFin{from{opacity:0;transform:translateY(12px) scale(.92)}
 60%{opacity:1;transform:translateY(0) scale(1.04)}to{opacity:1;transform:none}}</style>
-<script src="retour.js?v=2026-10-15-0010"></script>
+<script src="retour.js?v=2026-10-15-0030"></script>
 <!-- LE DESSIN DU PERSONNAGE ET LES CARTES POKEDOCK. Classiques, donc
      joues avant le module : window.Perso doit exister quand une carte
      se grave, et window.Pokedock quand on ouvre le rayon du Bar. -->
-<script src="personnage.js?v=2026-10-15-0010"></script>
-<script src="pokedock.js?v=2026-10-15-0010"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-15-0010">
+<script src="personnage.js?v=2026-10-15-0030"></script>
+<script src="pokedock.js?v=2026-10-15-0030"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-15-0030">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -15839,13 +15839,6 @@ return a;
 }
 function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
 if(PERF.on)PERF.objets=0;
-/* TROIS COMPTEURS POUR TRANCHER. On sait que les 31 lanternes sont dans
-   DECOR et qu'aucune n'arrive a la fonction de dessin. Il reste trois
-   endroits ou elles peuvent se perdre : la boucle ne les atteint pas
-   (tri casse, sortie anticipee), le test de cadrage les ecarte, ou la
-   chaine de types ne tombe jamais sur leur cas. Un compteur a chaque
-   etape, et on garde le maximum vu sur une image. */
-let L_B=0,L_G=0;
 conesDeLaPlace(g,camX,camY,VW2);
 const gens=acteurs.slice().sort((a,b)=>a.y-b.y);
 let iG=0;
@@ -15864,9 +15857,7 @@ const x=o.x-camX, y=o.y-camY;
 const M=margesDe(o.t);
 const haut=M.haut;
 const demiL=M.demi;
-if(o.t==='lanterneP')L_B++;
 if(x<-demiL||y<-50-haut||x>VW2+demiL||y>VH2+haut)continue;
-if(o.t==='lanterneP')L_G++;
 /* LA RÉACTION AU COUP, pour les objets de la forêt.
    dessinerX n'est qu'un report de calque en cache : il ignore o.frappe,
    qui est pourtant bien posé à chaque coup. On tapait donc un érable, un
@@ -16087,7 +16078,6 @@ g.restore();
 }
 }
 poserGens(1e9);
-try{const M=window.__LANT||(window.__LANT={b:0,g:0});if(L_B>M.b)M.b=L_B;if(L_G>M.g)M.g=L_G;}catch(err){}
 }
 const CLE='bdl.pix.v2';
 var REG={vibre:true, secousses:true, ciel:'heure', finesse:'auto', avis:true, nettete:'auto',
@@ -16563,8 +16553,25 @@ ctx.fillStyle='rgba(30,22,12,.38)';ctx.fillRect(ex-4,ey+2,9,1);
 poserPlant(ctx,P.cult,st,ex,ey,2);
 }catch(x){}}});
 }}
+/* ================= LE MÊME PIÈGE QUE LE VERGER, UNE FOIS DE PLUS =======
+   CE CHEMIN DE DESSIN NE REJOINT JAMAIS dessinerDecor : il sort en return
+   quarante lignes plus bas. Or tout le décor passait ici par dessinerX,
+   qui ne connaît que les types en « x_ ». Les autres étaient posés dans
+   DECOR, triés avec le reste, et dessinés par une fonction qui ne savait
+   pas quoi en faire : rien ne s'affichait, et rien ne protestait.
+   C'est ce qui rendait les trente-et-une lanternes invisibles — la
+   remontée du joueur le disait mot pour mot : « lant 31/0 », trente-et-une
+   posées, zéro arrivées à leur fonction de dessin. Les deux bancs du
+   boulodrome étaient dans le même trou depuis plus longtemps encore.
+   On aiguille donc chaque type vers sa fonction, comme le fait la chaîne
+   de dessinerDecor pour les autres cartes. TOUT DÉCOR AJOUTÉ ICI QUI NE
+   COMMENCE PAS PAR « x_ » DOIT AVOIR SA LIGNE DANS CE SWITCH. */
+const poserDecorFerme=(o)=>{
+if(o.t==='lanterneP')return dessinerLaLanterneP(ctx,o.x-camX,o.y-camY,o.gr||0);
+if(o.t==='arbrePot'||o.t==='bancP')return dessinerDeco(ctx,o.t,o.x-camX,o.y-camY);
+return dessinerX(ctx,o,o.x-camX,o.y-camY);};
 const pile=acteursF.concat(pousses).concat(pousses_bete).concat(vergerArbres).concat(DECOR.map(o=>({y:o.y,f:()=>{
-try{dessinerX(ctx,o,o.x-camX,o.y-camY);}catch(x){}}})));
+try{poserDecorFerme(o);}catch(x){}}})));
 pile.sort((a,b)=>a.y-b.y);
 for(const p of pile)p.f();
 dessinerBulles(ctx,camX,camY,pxF,pyF);
@@ -28525,7 +28532,7 @@ const bout=' | lant '+d+'/'+(window.__LANT_DESS||0)
 +' vue:'+(typeof VW!=='undefined'?VW:'?')+'x'+(typeof VH!=='undefined'?VH:'?')
 +' ciel:'+((typeof REG!=='undefined'&&REG.ciel)||'?')
 +' fin:'+((function(){try{return FIN_OK()?1:0;}catch(err){return 'x';}})())
-+' dec:'+(typeof DECOR!=='undefined'?DECOR.length:'?')+' b:'+((window.__LANT||{}).b||0)+' g:'+((window.__LANT||{}).g||0);
++' dec:'+(typeof DECOR!=='undefined'?DECOR.length:'?');
 appelRPC('signaler_version',{p_joueur:e.id,p_version:window.MA_VERSION||'?',
 p_nav:((navigator.userAgent||'').slice(0,110)+bout).slice(0,240)});}catch(x){}}
 setTimeout(signalerEtat,12000);
