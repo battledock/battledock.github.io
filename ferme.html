@@ -1,7 +1,7 @@
 <!doctype html><html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Battle Dock</title>
-<script src="maintenance.js?v=2026-10-14-2100"></script>
+<script src="maintenance.js?v=2026-10-14-2300"></script>
 <script>
 /* PAS D'ÉCRAN D'ATTENTE : on part vers le jeu avant même d'avoir dessiné quoi
    que ce soit. La page ne montre rien, elle ne fait que passer la main.
@@ -16,22 +16,34 @@
   if(window.__MAINTENANCE)return;
   var p=new URLSearchParams(location.search);
   p.set('carte','ferme');
+  /* ON NE PART JAMAIS SANS NUMERO DE VERSION. C'etait le trou : quand
+     version.json n'avait pas repondu au bout de 1 200 ms — une seconde de
+     4G suffit — on partait vers « jeu.html » tout court. Le navigateur
+     ressortait alors sa copie en cache, vieille de plusieurs jours, et le
+     joueur jouait une ancienne version sans le savoir : ses nouveautes
+     n'etaient pas la, et rien ne le disait.
+     On retient donc le dernier numero connu dans localStorage et on s'en
+     sert comme filet. Au pire on charge la version d'hier, jamais celle
+     d'il y a une semaine — et jeu.html se rechargera tout seul. */
+  function vMemo(){try{return localStorage.getItem('bdl.v')||'';}catch(x){return '';}}
+  function vNoter(v){try{if(v)localStorage.setItem('bdl.v',v);}catch(x){}}
   function partir(v){
+    if(!v)v=vMemo();
     if(v)p.set('v',v);
     location.replace('jeu.html?'+p.toString());
   }
-  if(p.get('v'))return partir(null);
+  if(p.get('v'))return partir(p.get('v'));
   var fini=false;
-  var t=setTimeout(function(){if(!fini){fini=true;partir(null);}},1200);
+  var t=setTimeout(function(){if(!fini){fini=true;partir(null);}},2500);
   try{
     fetch('version.json',{cache:'no-store'})
       .then(function(r){return r.json();})
-      .then(function(d){if(fini)return;fini=true;clearTimeout(t);partir(d&&d.v);})
+      .then(function(d){if(fini)return;fini=true;clearTimeout(t);vNoter(d&&d.v);partir(d&&d.v);})
       .catch(function(){if(fini)return;fini=true;clearTimeout(t);partir(null);});
   }catch(x){if(!fini){fini=true;clearTimeout(t);partir(null);}}
 })();
 </script>
 <style>html,body{margin:0;height:100%;background:#151a12}</style>
-<script src="retour.js?v=2026-10-14-2100"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-14-2100">
+<script src="retour.js?v=2026-10-14-2300"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-14-2300">
 </head><body></body></html>
