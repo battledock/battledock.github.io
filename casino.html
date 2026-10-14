@@ -14,14 +14,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Expires" content="0">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-15-1500"></script>
+<script src="maintenance.js?v=2026-10-15-1600"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-15-1500';
+  var MA_VERSION='2026-10-15-1600';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -190,7 +190,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#f0e0c0}
   font:italic 11px Georgia,serif;color:#7a6350;line-height:1.5}
 #paie b{font-style:normal;color:#9a8266}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-15-1500">
+<link rel="stylesheet" href="responsive.css?v=2026-10-15-1600">
 </head>
 <body>
 <div id="tapis">
@@ -237,15 +237,25 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#f0e0c0}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-15-1500"></script>
+<script src="retour.js?v=2026-10-15-1600"></script>
 <script>
 /* =====================================================================
    LE CASINO
 
-   Sept tables : la roulette, le de, la criee, le bonneteau, la roue, le
-   vingt-et-un et le grattage de luxe. Six se reglent d'un seul appel ;
-   seul le vingt-et-un demande qu'une main dure entre deux appels, et
-   c'est pour lui qu'existe la table « casino_mains ».
+   Sept tables : la roulette, le de, la criee, le mur de clous, la roue,
+   le vingt-et-un et le grattage de luxe. Six se reglent d'un seul
+   appel ; seul le vingt-et-un demande qu'une main dure entre deux
+   appels, et c'est pour lui qu'existe la table « casino_mains ».
+
+   LE BONNETEAU A ETE RETIRE D'ICI, et il est maintenant a l'arcade.
+   Celui-ci posait la bille APRES le choix du joueur — trois fois sur
+   dix sous son gobelet — donc suivre la bille des yeux ne servait a
+   rien et le melange n'etait qu'une animation. On ne peut pas faire
+   autrement avec de l'argent au bout : pour jouer pour de vrai il faut
+   voir le melange, et voir le melange dans un navigateur c'est pouvoir
+   lire la reponse dans la console. L'information qu'il faut pour jouer
+   EST celle qu'il faut pour tricher. A l'arcade on joue pour un score,
+   donc la table peut enfin etre franche.
 
    IL Y A EU UN POKER FERME, retire depuis. Il marchait, mais il ne
    valait pas sa place : cinq cartes, un seul retrait, et la decision se
@@ -373,15 +383,6 @@ var EMBLEME={
     });
     R(20,8,2,6,BOIS);R(20,7,2,2,ROUGE);
   },
-  gobelets:function(g,R){
-    [1,8,15].forEach(function(x,i){
-      var h=i===1?9:8;
-      g.fillStyle=ROUGE;g.beginPath();
-      g.moveTo(x+0.5,18);g.lineTo(x+1.8,18-h);g.lineTo(x+4.2,18-h);g.lineTo(x+5.5,18);g.fill();
-      g.fillStyle=ROUGEC;g.fillRect(Math.round(x+1.8),Math.round(18-h),3,1);
-    });
-    R(10,19,3,1,'#2a1a1e');R(10.5,17.5,2,2,ORC);
-  },
   de:function(g,R){
     R(2,2,18,18,'#f2ece0');R(2,2,18,1,'#fff');R(2,19,18,1,'#c8bfae');
     R(3,3,1,17,'#fff');R(19,2,1,18,'#c8bfae');
@@ -427,9 +428,6 @@ var TABLES=[
   dit:'Plus haut, plus bas. Un dé, un pari, deux secondes.', mise:'1 € À 50 €'},
  {cle:'sous', emb:'rouleaux', nom:'La Criée', etat:'ouvert',
   dit:'Trois rouleaux : la sardine, le cageot, la grue, l’ancre. Et la perle.', mise:'2 € LE TOUR'},
- {cle:'bonneteau', emb:'gobelets', nom:'Le Bonneteau de Dédé', etat:'ouvert',
-  dit:'Trois gobelets, une bille. Il gagne plus souvent que toi, et il le sait.',
-  mise:'10 € LA PARTIE'},
  {cle:'roue', emb:'roue', nom:'La Roue de la Fortune', etat:'ouvert',
   dit:'Un tour offert par jour. Le deuxième se paie.', mise:'GRATUIT PUIS 20 €', grand:true},
  {cle:'vingtun', emb:'cartes', nom:'Le Vingt-et-un', etat:'ouvert', grand:true,
@@ -1011,146 +1009,6 @@ MOTEUR.sous={
 };
 
 /* ---------------------------------------------------------------------
-   4 — LE BONNETEAU DE DÉDÉ
-   Les gobelets se melangent, puis on en designe un. Le melange n'a
-   aucune influence : le serveur tire a 30 %, pas la peine de suivre la
-   bille des yeux. On le dit, d'ailleurs, dans le tableau des gains —
-   un bonneteau honnete sur ses chances reste un bonneteau.
-   ------------------------------------------------------------------ */
-MOTEUR.bonneteau={
-  nom:'Le Bonneteau de Dédé', sous:'TROIS GOBELETS · UNE BILLE',
-  L:112, H:58,
-  mises:null, fixe:1000, fixeDit:'10 € LA PARTIE · MISE FIXE',
-  paie:'<b>Le bon gobelet</b> ×3. Dédé la laisse sous le tien à peu près trois fois sur dix — '+
-       'c’est écrit au-dessus de sa table, et ça n’empêche personne d’essayer.',
-  init:function(){
-    return {pos:[0,1,2],phase:'pose',t:0,ech:[],ei:0,et:0,bille:0,
-            leve:[0,0,0],choisi:null,res:null,clign:0,montre:0};
-  },
-  /* l'etat « pos » dit, pour chaque emplacement, quel gobelet s'y trouve */
-  pas:function(s,dt){
-    if(s.phase==='montre'){
-      s.montre+=dt;
-      s.leve[s.bille]=Math.min(1,s.montre/260);
-      if(s.montre>1100){
-        s.phase='melange';s.ei=0;s.et=0;
-        dire('Dédé mélange. Suis-la si tu peux.');
-        s.ech=[];
-        for(var i=0;i<7;i++){
-          var a=Math.floor(Math.random()*3), b=Math.floor(Math.random()*3);
-          while(b===a)b=Math.floor(Math.random()*3);
-          s.ech.push([a,b]);
-        }
-      }
-      return;
-    }
-    if(s.phase==='melange'){
-      s.leve=[0,0,0];
-      s.et+=dt;
-      var D=240;
-      if(s.et>=D){
-        var p=s.ech[s.ei];
-        var t0=s.pos[p[0]];s.pos[p[0]]=s.pos[p[1]];s.pos[p[1]]=t0;
-        s.ei++;s.et=0;
-        if(s.ei>=s.ech.length){s.phase='choisis';dire('Tape le gobelet que tu désignes.');}
-      }
-      return;
-    }
-    if(s.phase==='leve'){
-      s.t+=dt;
-      s.leve[s.choisi]=Math.min(1,s.t/280);
-      if(s.t>520&&s.res)s.leve[s.res.tirage.gobelet]=Math.min(1,(s.t-520)/280);
-      if(s.t>1000){s.phase='fini';s.clign=0;}
-      return;
-    }
-    if(s.phase==='fini')s.clign+=dt;
-  },
-  dessine:function(s,L,H){
-    feutre(L,H);
-    var sol=H-16, pas=32, x0=L/2-pas;
-    /* le tapis de Dédé : un carton pose sur deux caisses */
-    R(6,sol+2,L-12,5,'#5a3c24');R(6,sol+2,L-12,1,'#8a5f30');
-    /* l'emplacement de chaque gobelet */
-    for(var i=0;i<3;i++)
-      for(var k=0;k<5;k++)R(x0+i*pas-9+k*4,sol+1,2,1,'rgba(240,232,216,.18)');
-    /* LA BILLE N'APPARAIT QUE QUAND ON SAIT OU ELLE EST. Pendant qu'on
-       souleve et que le serveur n'a pas encore repondu, s.bille porte
-       encore la position du debut : la montrer la ferait sauter d'un
-       gobelet a l'autre sous les yeux du joueur. */
-    var sait=(s.phase!=='leve')||!!s.res;
-    var hb=sait?(s.leve[s.bille]||0):0;
-    if(hb>0.22){
-      var e_=s.pos.indexOf(s.bille);
-      var bx=x0+e_*pas;
-      disque(bx,sol-1,3.4,'rgba(0,0,0,.4)');
-      disque(bx,sol-3,3.4,'#f0d78a');disque(bx-1,sol-4,1.4,'#fffaf0');
-    }
-    /* UN PETIT DECALAGE POUR L'ECHANGE EN COURS : les deux gobelets
-       concernes glissent l'un vers l'autre en passant par le haut, sinon
-       ils se traversent et on ne voit plus rien. */
-    var gl={};
-    if(s.phase==='melange'&&s.ei<s.ech.length){
-      var p=s.ech[s.ei], q=Math.min(1,s.et/240);
-      gl[p[0]]={d:(p[1]-p[0])*pas*q, h:-Math.sin(q*Math.PI)*8};
-      gl[p[1]]={d:(p[0]-p[1])*pas*q, h: Math.sin(q*Math.PI)*8};
-    }
-    /* on dessine de l'arriere vers l'avant pour que les croisements aient
-       l'air d'etre devant et derriere */
-    var ordre=[0,1,2].sort(function(a,b){return (gl[a]?gl[a].h:0)-(gl[b]?gl[b].h:0);});
-    ordre.forEach(function(em){
-      var g_=s.pos[em];
-      var dx=gl[em]?gl[em].d:0, dy=gl[em]?gl[em].h:0;
-      var lv=(s.leve[g_]||0)*17;
-      var cx=x0+em*pas+dx, cy=sol+dy-lv;
-      /* l'ombre */
-      G.fillStyle='rgba(0,0,0,'+(0.34-lv/90).toFixed(2)+')';
-      G.beginPath();G.ellipse(x0+em*pas+dx,sol+1,10-lv/8,2.8,0,0,7);G.fill();
-      /* le gobelet */
-      G.fillStyle='#a82824';G.beginPath();
-      G.moveTo(cx-9,cy);G.lineTo(cx-5.5,cy-24);G.lineTo(cx+5.5,cy-24);G.lineTo(cx+9,cy);
-      G.closePath();G.fill();
-      G.fillStyle='rgba(255,255,255,.16)';G.beginPath();
-      G.moveTo(cx-9,cy);G.lineTo(cx-5.5,cy-24);G.lineTo(cx-3,cy-24);G.lineTo(cx-5.5,cy);
-      G.closePath();G.fill();
-      R(cx-6,cy-25,12,2,'#d8584e');
-      R(cx-7.5,cy-12,15,2,'rgba(0,0,0,.2)');
-      R(cx-7,cy-1,14,1,'#7a1a18');
-      if(s.phase==='choisis'){
-        /* un liseré d'or : c'est ici qu'on tape */
-        R(cx-7,cy-27,14,1,'rgba(240,215,138,.7)');
-      }
-    });
-    /* LA CONSIGNE ET LE VERDICT SONT DANS LE BANDEAU DE MESSAGE, en
-       vrai texte : dessines ici, ils debordaient de la scene des que le
-       canvas etait agrandi. */
-  },
-  choix:function(){
-    return '<div class="lgn"><button class="pr" data-p="lance" style="padding:14px 6px;font-size:12px">POSER 10 € SUR LA TABLE</button></div>'+
-           '<div class="tt">PUIS TAPE LE GOBELET SUR LE TAPIS</div>';
-  },
-  /* pas de « avant » : le melange ne precede aucun appel. Le coup part
-     quand on tape un gobelet, et c'est « tape » qui s'en charge. */
-  tape:function(s,x,y){
-    if(s.phase!=='choisis')return;
-    var L=SL, sol=SH-16, pas=32, x0=L/2-pas;
-    for(var em=0;em<3;em++){
-      if(Math.abs(x-(x0+em*pas))<13&&y>sol-30&&y<sol+6){
-        choisirGobelet(em);return;
-      }
-    }
-  },
-  action:function(s){
-    /* le bouton ne fait que poser la mise sur le tapis et lancer le
-       melange ; rien ne part au serveur avant qu'un gobelet soit
-       designe, parce que c'est le gobelet qui EST le pari */
-    if(s.phase!=='pose'&&s.phase!=='fini')return;
-    s.phase='montre';s.montre=0;s.bille=Math.floor(Math.random()*3);
-    s.pos=[0,1,2];s.leve=[0,0,0];s.res=null;s.choisi=null;
-    dire('Regarde bien où elle se pose.');
-  }
-};
-
-/* ---------------------------------------------------------------------
    5 — LA ROUE DE LA FORTUNE
    Huit quartiers, un cliquet en haut qui frappe chaque passage. Trois
    quartiers a zero : c'est la roue la plus franche du casino, on voit
@@ -1672,7 +1530,7 @@ function ouvrirTable(T){
   document.getElementById('paie').innerHTML=JEU.paie;
   SALLE.hidden=false;
   majSolde();
-  dire(JEU.cle==='bonneteau'?'Pose ta mise, Dédé fera le reste.':'À toi de jouer.');
+  dire('À toi de jouer.');
   monterMises();monterChoix();
   cadrer(JEU.L,JEU.H);
   boucle.vu=0;
@@ -1764,10 +1622,9 @@ function verrou(v){
    appelle, on anime jusqu'au tirage recu, puis on paie a l'ecran. */
 async function jouer(pari,n){
   if(!JEU)return;
-  /* DEUX TABLES NE SE REGLENT PAS EN UN SEUL APPEL : le bonneteau
-     (la mise part avec le gobelet designe) et le vingt-et-un
-     (une main dure entre deux appels). Elles ont donc leur propre
-     « action », et ne passent pas par casino_coup ici. */
+  /* UNE TABLE NE SE REGLE PAS EN UN SEUL APPEL : le vingt-et-un, dont
+     la main dure entre deux appels. Elle a donc sa propre « action », et
+     ne passe pas par casino_coup ici. */
   if(JEU.action)return JEU.action(S,pari,n);
   var choix={};
   if(JEU.cle==='roulette'||JEU.cle==='de'){
@@ -1802,25 +1659,6 @@ function appliquer(res){
     if(JEU.cle==='roue')monterMises();     /* le tour offert est consomme */
     verrou(false);
   },attente+60);
-}
-
-/* le bonneteau : le gobelet designe est le pari, et il part maintenant */
-async function choisirGobelet(em){
-  var g=S.pos[em];
-  S.choisi=g;S.phase='leve';S.t=0;
-  verrou(true);dire('Dédé soulève…');
-  var res=await coup('bonneteau',1000,{n:g});
-  if(res.erreur){S.phase='pose';dire(res.erreur,'perd');verrou(false);return;}
-  S.res=res;
-  /* on fait coincider la bille avec ce que le serveur a decide */
-  S.bille=res.tirage.gobelet;
-  setTimeout(function(){
-    if(!JEU)return;
-    if(typeof res.euros==='number'){SOLDE=res.euros;noterEuros(res.euros);majSolde();}
-    if(res.gain>0)dire('+'+enEuros(res.gain-res.mise)+' · ×3','gagne');
-    else dire('−'+enEuros(res.mise)+' pour Dédé','perd');
-    verrou(false);
-  },1100);
 }
 
 window.addEventListener('resize',function(){if(JEU)cadrer(JEU.L,JEU.H);});

@@ -13,14 +13,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Expires" content="0">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-15-1500"></script>
+<script src="maintenance.js?v=2026-10-15-1600"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-15-1500';
+  var MA_VERSION='2026-10-15-1600';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -212,7 +212,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
 #jeu.plein #retourJeu{display:block}
 #retourJeu:active{background:rgba(90,216,255,.26)}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-15-1500">
+<link rel="stylesheet" href="responsive.css?v=2026-10-15-1600">
 </head>
 <body>
 <div id="salle">
@@ -257,7 +257,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-15-1500"></script>
+<script src="retour.js?v=2026-10-15-1600"></script>
 <script>
 /* =====================================================================
    LA SALLE D'ARCADE
@@ -363,6 +363,18 @@ var VIGNETTE={
     g.fillStyle='#6a6060';g.beginPath();g.ellipse(19,6,2.6,1.8,0,0,7);g.fill();
     R(2,19,20,3,'#2a6a8a');R(2,19,20,1,'#5ad8ff');
   },
+  bonneteau:function(g,R){
+    R(1,2,22,16,'#1a1420');R(1,2,22,1,'#2a2440');
+    R(2,14,20,2,'#6a4726');
+    [3,9.5,16].forEach(function(x,i){
+      var h=i===1?9:7;
+      g.fillStyle='#a82824';g.beginPath();
+      g.moveTo(x,14);g.lineTo(x+1.4,14-h);g.lineTo(x+4,14-h);g.lineTo(x+5.4,14);g.fill();
+      g.fillStyle='#d8584e';g.fillRect(Math.round(x+1.4),Math.round(14-h),3,1);
+    });
+    g.fillStyle='#f0cf7d';g.beginPath();g.arc(12,11.5,1.8,0,7);g.fill();
+    R(2,19,20,3,'#2a6a8a');R(2,19,20,1,'#5ad8ff');
+  },
   tri:function(g,R){
     R(1,2,22,16,'#141a24');R(1,2,22,1,'#2a3450');
     for(var v=0;v<3;v++){
@@ -391,6 +403,9 @@ var BORNES=[
  {cle:'prairie', vig:'prairie', nom:'Le Roi du Quai',
   dit:'Deux manches : la gauche marche, la droite tire. Ils arrivent par les bords, une touche et tu perds une vie. Marchand entre les zones, Rat-Roi toutes les quatre.',
   mise:'1 JETON · 4 VIES'},
+ {cle:'bonneteau', vig:'bonneteau', nom:'Le Bonneteau de Dédé',
+  dit:'La bille est vraiment sous un gobelet et les gobelets s’échangent pour de bon. Un échange de plus à chaque manche gagnée, et plus vite.',
+  mise:'1 JETON · 3 ERREURS'},
  {cle:'tri', vig:'tri', nom:'Le Tri',
   dit:'Les caisses descendent, tu tapes le camion de la bonne couleur. Chaque réussite monte le combo, une faute le remet à zéro. Ça n’arrête jamais d’accélérer.',
   mise:'1 JETON · 3 FAUTES'},
@@ -2262,6 +2277,307 @@ MOTEUR.tri={
       G.fillText(String(s.score),L/2,cy+4);
       G.font='700 7px ui-monospace,monospace';G.fillStyle='#6f93aa';
       G.fillText('MEILLEURE SÉRIE · '+s.meilleur,L/2,cy+20);
+      G.textAlign='left';
+    }
+  },
+  actions:function(s){
+    if(s.phase==='pret')
+      return '<button class="pr" data-a="commencer">COMMENCER</button>';
+    if(s.phase==='fini')
+      return '<button class="pr" data-a="rejouer">ENCORE · 1 €</button>';
+    return '';
+  },
+  action:function(){}
+};
+
+/* =====================================================================
+   5 — LE BONNETEAU DE DÉDÉ
+
+   LE VRAI. La bille est sous un gobelet, les gobelets s'echangent pour
+   de bon, et si tu la suis tu gagnes. Il n'y a pas de tirage au sort :
+   la reponse existe avant que tu choisisses, et elle depend uniquement
+   de ce qui s'est passe a l'ecran.
+
+   POURQUOI CETTE TABLE EST ICI ET PAS AU CASINO. Pour jouer il faut
+   voir le melange ; voir le melange dans un navigateur, c'est pouvoir
+   lire la position de la bille dans la console. L'information qu'il
+   faut pour jouer EST l'information qu'il faut pour tricher — un
+   bonneteau honnete est donc impossible des qu'il y a de l'argent au
+   bout. A l'arcade on joue pour un score : le pire qu'un tricheur
+   puisse faire est de truquer un classement, et la table peut enfin
+   etre franche. Celle du casino, qui posait la bille APRES ton choix,
+   a ete retiree.
+
+   LA DIFFICULTE MONTE A CHAQUE MANCHE GAGNEE : un echange de plus, et
+   plus vite. On finit toujours par la perdre de vue — c'est la que le
+   jeu commence, et c'est ce qui donne un score a battre plutot qu'une
+   partie qui s'eternise.
+   ===================================================================== */
+MOTEUR.bonneteau={
+  nom:'Le Bonneteau de Dédé', sous:'SUIS LA BILLE',
+  manches:false,
+  geo:function(L,H){
+    var haut=16;
+    var sol=Math.round(H*0.62);
+    /* L'ECART DOIT RESTER PLUS GRAND QUE LES GOBELETS. A 0,56 d'ecart de
+       demi-largeur ils se touchaient et se chevauchaient meme a l'arret :
+       on ne distinguait plus trois gobelets mais un bandeau rouge, et
+       suivre un echange devenait impossible. */
+    var ec=Math.min(Math.round(L/3.1),44);      /* l'ecart entre deux gobelets */
+    return {haut:haut, sol:sol, ec:ec,
+            lg:Math.round(ec*0.36), ht:Math.round(ec*0.64),
+            x0:Math.round(L/2-ec)};
+  },
+  init:function(){
+    return {phase:'pret', t:0, score:0, combo:0, meilleur:0, rates:0,
+            manche:0, pos:[0,1,2], bille:0, choisi:null, bon:null,
+            ech:[], ei:0, et:0, duree:420, nEch:3,
+            leve:[0,0,0], montre:0, attente:0, juge:[], secousse:0, fin:0};
+  },
+  demarrer:function(s){s.phase='jeu';MOTEUR.bonneteau.manche(s);},
+  /* une manche : on montre, on melange, on demande */
+  manche:function(s){
+    s.manche++;
+    /* LA MONTEE EN DIFFICULTE EST DANS LES DEUX SENS A LA FOIS : un
+       echange de plus ET plus vite. L'un sans l'autre se contre — on
+       compte les echanges, ou on suit un mouvement lent longtemps. */
+    s.nEch=Math.min(16,3+Math.floor((s.manche-1)*0.7));
+    s.duree=Math.max(105,420-(s.manche-1)*17);
+    s.pos=[0,1,2];
+    s.bille=Math.floor(Math.random()*3);
+    s.choisi=null;s.bon=null;
+    s.leve=[0,0,0];s.montre=0;
+    s.ech=[];
+    for(var i=0;i<s.nEch;i++){
+      var a=Math.floor(Math.random()*3), b=Math.floor(Math.random()*3);
+      while(b===a)b=Math.floor(Math.random()*3);
+      s.ech.push([a,b]);
+    }
+    s.ei=0;s.et=0;
+    s.sous='montre';
+  },
+  pas:function(s,dt){
+    if(s.phase!=='jeu'){if(s.phase==='fini')s.fin+=dt;return;}
+    s.t+=dt;
+    if(s.secousse>0)s.secousse=Math.max(0,s.secousse-dt/110);
+    for(var i=s.juge.length-1;i>=0;i--){s.juge[i].t+=dt;if(s.juge[i].t>800)s.juge.splice(i,1);}
+
+    if(s.sous==='montre'){
+      s.montre+=dt;
+      s.leve[s.bille]=Math.min(1,s.montre/220);
+      /* on montre moins longtemps a mesure qu'on progresse */
+      if(s.montre>Math.max(420,900-s.manche*22)){s.sous='melange';s.ei=0;s.et=0;}
+      return;
+    }
+    if(s.sous==='melange'){
+      s.leve=[0,0,0];
+      s.et+=dt;
+      if(s.et>=s.duree){
+        var p=s.ech[s.ei];
+        var t0=s.pos[p[0]];s.pos[p[0]]=s.pos[p[1]];s.pos[p[1]]=t0;
+        s.ei++;s.et=0;
+        if(s.ei>=s.ech.length){
+          s.sous='choisis';
+          /* LA REPONSE EXISTE DEJA : c'est l'emplacement ou se trouve le
+             gobelet qui porte la bille, et rien d'autre ne la decide. */
+          s.bon=s.pos.indexOf(s.bille);
+        }
+      }
+      return;
+    }
+    if(s.sous==='leve'){
+      s.attente+=dt;
+      s.leve[s.pos[s.choisi]]=Math.min(1,s.attente/200);
+      if(s.attente>420)s.leve[s.bille]=Math.min(1,(s.attente-420)/200);
+      if(s.attente>1150){
+        if(s.rates>=3){s.phase='fini';s.fin=0;finirPartie(s.score);return;}
+        MOTEUR.bonneteau.manche(s);
+      }
+      return;
+    }
+  },
+  tape:function(s,x,y){
+    if(s.phase!=='jeu'||s.sous!=='choisis')return;
+    var q=MOTEUR.bonneteau.geo(SL,SH);
+    for(var em=0;em<3;em++){
+      var cx=q.x0+em*q.ec;
+      if(Math.abs(x-cx)<q.lg+4&&y>q.sol-q.ht-16&&y<q.sol+12){
+        MOTEUR.bonneteau.choisir(s,em);return;
+      }
+    }
+  },
+  choisir:function(s,em){
+    s.choisi=em;s.sous='leve';s.attente=0;
+    if(em===s.bon){
+      s.combo++;
+      if(s.combo>s.meilleur)s.meilleur=s.combo;
+      /* le multiplicateur suit la serie, et la manche vaut d'autant plus
+         qu'elle comptait d'echanges : suivre seize echanges doit payer
+         plus que d'en suivre trois */
+      var mult=Math.min(10,1+Math.floor(s.combo/3));
+      var pts=(10+s.nEch*5)*mult;
+      s.score+=pts;
+      s.juge.push({t:0,txt:'+'+pts+(mult>1?(' ×'+mult):''),bon:true});
+      dire(s.combo>1?('SÉRIE DE '+s.combo):'Trouvée.','bon');
+    }else{
+      s.rates++;s.combo=0;s.secousse=1;
+      s.juge.push({t:0,txt:'PERDUE',bon:false});
+      dire(s.rates>=3?'Dédé ramasse tout.':('Raté · '+(3-s.rates)+' erreur'+(3-s.rates>1?'s':'')+' restante'+(3-s.rates>1?'s':'')),'mal');
+    }
+  },
+  dessine:function(s,L,H){
+    var q=MOTEUR.bonneteau.geo(L,H);
+    var sx=s.secousse>0?(al(s.t*0.8)-0.5)*3*s.secousse:0;
+    G.save();G.translate(Math.round(sx),0);
+    /* ---------- LA RUELLE ---------- */
+    for(var y=0;y<H;y++){
+      var k=y/H;
+      R(0,y,L,1,'rgb('+Math.round(24+k*10)+','+Math.round(20+k*8)+','+Math.round(26+k*10)+')');
+    }
+    /* le mur de briques du fond */
+    for(var r=0;r<Math.ceil(q.sol/7);r++)
+      for(var c=0;c<Math.ceil(L/13)+1;c++)
+        R(c*13+((r%2)?6:0),q.haut+r*7,12,6,(al(r*3.1+c*7.7)<0.5)?'rgba(255,255,255,.022)':'rgba(0,0,0,.05)');
+    /* l'ampoule qui pend : c'est elle qui eclaire la table */
+    var lx=Math.round(L*0.5), ly=q.haut+10;
+    R(lx-0.5,q.haut,1,10,'#3a3444');
+    disque(lx,ly+3,3.4,'#ffe8a8');
+    var h=G.createRadialGradient(lx,ly+3,3,lx,ly+3,Math.max(L,q.sol)*0.8);
+    h.addColorStop(0,'rgba(255,224,150,.16)');h.addColorStop(1,'rgba(255,224,150,0)');
+    G.fillStyle=h;G.fillRect(0,0,L,H);
+
+    /* ---------- LA TABLE ---------- */
+    R(6,q.sol+2,L-12,6,'#5a3c24');R(6,q.sol+2,L-12,2,'#7d5934');
+    R(6,q.sol+8,L-12,3,'rgba(0,0,0,.45)');
+    /* le carton pose dessus */
+    R(q.x0-q.ec*0.9,q.sol-3,q.ec*2.8,5,'#6a4726');
+    R(q.x0-q.ec*0.9,q.sol-3,q.ec*2.8,1,'#8a5f30');
+    /* les trois marques a la craie */
+    for(var i=0;i<3;i++)
+      for(var u=0;u<4;u++)R(q.x0+i*q.ec-6+u*4,q.sol+0.5,3,1,'rgba(240,232,216,.22)');
+
+    /* ---------- LA BILLE ----------
+       Elle n'apparait que quand on a le droit de la voir : sous le
+       gobelet leve au debut, et sous celui qu'on souleve a la fin. */
+    var em=s.pos.indexOf(s.bille);
+    if((s.leve[s.bille]||0)>0.25){
+      var bx=q.x0+em*q.ec;
+      disque(bx,q.sol-2,3.6,'rgba(0,0,0,.4)');
+      disque(bx,q.sol-4,3.6,'#f0cf7d');disque(bx-1.2,q.sol-5.2,1.4,'#fffaf0');
+    }
+
+    /* ---------- LES GOBELETS ---------- */
+    var gl={};
+    if(s.sous==='melange'&&s.ei<s.ech.length){
+      var p=s.ech[s.ei], pr=Math.min(1,s.et/s.duree);
+      /* ILS PASSENT L'UN DEVANT L'AUTRE, PAS L'UN A TRAVERS L'AUTRE :
+         celui qui va vers la droite passe devant, l'autre derriere. Sans
+         ca on perd le fil des qu'ils se croisent, et le jeu devient du
+         hasard au lieu d'etre de l'observation. */
+      gl[p[0]]={d:(p[1]-p[0])*q.ec*pr, h:-Math.sin(pr*Math.PI)*(p[1]>p[0]?10:3)};
+      gl[p[1]]={d:(p[0]-p[1])*q.ec*pr, h:-Math.sin(pr*Math.PI)*(p[0]>p[1]?10:3)};
+    }
+    var ordre=[0,1,2].sort(function(a,b){return (gl[a]?gl[a].h:0)-(gl[b]?gl[b].h:0);});
+    ordre.forEach(function(e){
+      var g_=s.pos[e];
+      var dx=gl[e]?gl[e].d:0, dy=gl[e]?gl[e].h:0;
+      var lv=(s.leve[g_]||0)*(q.ht*0.8);
+      var cx=q.x0+e*q.ec+dx, cy=q.sol+dy-lv;
+      G.fillStyle='rgba(0,0,0,'+(0.34-lv/120).toFixed(2)+')';
+      G.beginPath();G.ellipse(q.x0+e*q.ec+dx,q.sol+1,q.lg,q.lg*0.3,0,0,7);G.fill();
+      /* le gobelet */
+      G.fillStyle='#a82824';G.beginPath();
+      G.moveTo(cx-q.lg,cy);G.lineTo(cx-q.lg*0.62,cy-q.ht);
+      G.lineTo(cx+q.lg*0.62,cy-q.ht);G.lineTo(cx+q.lg,cy);
+      G.closePath();G.fill();
+      G.fillStyle='rgba(255,255,255,.17)';G.beginPath();
+      G.moveTo(cx-q.lg,cy);G.lineTo(cx-q.lg*0.62,cy-q.ht);
+      G.lineTo(cx-q.lg*0.3,cy-q.ht);G.lineTo(cx-q.lg*0.55,cy);
+      G.closePath();G.fill();
+      R(cx-q.lg*0.68,cy-q.ht-2,q.lg*1.36,2,'#d8584e');
+      R(cx-q.lg*0.85,cy-q.ht*0.45,q.lg*1.7,2,'rgba(0,0,0,.2)');
+      R(cx-q.lg*0.9,cy-1,q.lg*1.8,1,'#7a1a18');
+      /* la bonne reponse se signale quand on a repondu */
+      if(s.sous==='leve'&&s.choisi!==null){
+        if(e===s.bon)R(cx-q.lg-1,cy-q.ht-5,q.lg*2+2,1,'#7ce0a0');
+        else if(e===s.choisi)R(cx-q.lg-1,cy-q.ht-5,q.lg*2+2,1,'#e08a90');
+      }else if(s.sous==='choisis'){
+        R(cx-q.lg-1,cy-q.ht-5,q.lg*2+2,1,'rgba(240,215,138,.6)');
+      }
+    });
+    /* les mentions qui montent */
+    s.juge.forEach(function(j){
+      var k3=j.t/800;
+      G.globalAlpha=1-k3;
+      G.font='700 10px ui-monospace,monospace';G.textAlign='center';
+      G.fillStyle=j.bon?'#7ce0a0':'#e08a90';
+      G.fillText(j.txt,L/2,q.sol-q.ht-18-k3*20);
+      G.textAlign='left';G.globalAlpha=1;
+    });
+    G.restore();
+
+    /* ---------- LE BANDEAU ---------- */
+    R(0,0,L,q.haut,'rgba(5,7,12,.86)');R(0,q.haut,L,1,'rgba(90,216,255,.26)');
+    G.font='700 8px ui-monospace,monospace';
+    G.textAlign='left';G.textBaseline='middle';
+    G.fillStyle='#9ae8ff';G.fillText(String(s.score),Math.round(L*0.25),q.haut/2);
+    var mult=Math.min(10,1+Math.floor(s.combo/3));
+    G.textAlign='center';
+    G.font='700 '+(mult>1?11:9)+'px ui-monospace,monospace';
+    G.fillStyle=mult>=6?'#f0cf7d':(mult>1?'#7ce0a0':'#4a7a94');
+    G.fillText('×'+mult,L/2,q.haut/2);
+    G.textAlign='right';G.textBaseline='alphabetic';
+    for(i=0;i<3;i++){
+      var perdu=i<s.rates;
+      R(L-8-i*9,5,6,6,perdu?'#b8302e':'#2a3440');
+      R(L-8-i*9,5,6,1,perdu?'#d8584e':'#3a4450');
+    }
+    G.textAlign='left';
+
+    /* ce qu'il se passe, dit en toutes lettres sous la table */
+    var ty=q.sol+26;
+    G.font='700 7px ui-monospace,monospace';G.textAlign='center';
+    if(s.phase==='jeu'){
+      if(s.sous==='montre'){G.fillStyle='#f0cf7d';G.fillText('REGARDE BIEN',L/2,ty);}
+      else if(s.sous==='melange'){
+        G.fillStyle='#8a94a8';
+        G.fillText('ÉCHANGE '+Math.min(s.ei+1,s.nEch)+' / '+s.nEch,L/2,ty);
+      }
+      else if(s.sous==='choisis'){G.fillStyle='#7ce0a0';G.fillText('OÙ EST-ELLE ?',L/2,ty);}
+    }
+    /* la manche et le record */
+    G.font='700 6px ui-monospace,monospace';G.fillStyle='rgba(154,138,168,.75)';
+    G.fillText('MANCHE '+s.manche+' · '+s.nEch+' ÉCHANGES',L/2,ty+14);
+    if(REC.score>0){
+      G.fillStyle=REC_BATTU?'#7ce0a0':'rgba(154,138,168,.7)';
+      G.fillText(REC_BATTU?'RECORD BATTU':('RECORD '+REC.score.toLocaleString('fr-FR')),L/2,ty+26);
+    }
+    G.textAlign='left';
+
+    /* ---------- LES ECRANS ---------- */
+    var cy2=q.haut+(q.sol-q.haut)/2;
+    if(s.phase==='pret'){
+      R(0,cy2-34,L,68,'rgba(5,7,12,.9)');
+      R(0,cy2-34,L,1,'rgba(90,216,255,.45)');R(0,cy2+33,L,1,'rgba(90,216,255,.45)');
+      G.font='700 10px ui-monospace,monospace';G.textAlign='center';
+      G.fillStyle='#f0cf7d';G.fillText('LE BONNETEAU DE DÉDÉ',L/2,cy2-18);
+      G.font='700 7px ui-monospace,monospace';G.fillStyle='#9ae8ff';
+      G.fillText('LA BILLE EST VRAIMENT SOUS',L/2,cy2-4);
+      G.fillText('UN GOBELET. SUIS-LA.',L/2,cy2+6);
+      G.fillStyle='#6f93aa';
+      G.fillText('UN ÉCHANGE DE PLUS À CHAQUE',L/2,cy2+18);
+      G.fillText('MANCHE GAGNÉE. TROIS ERREURS.',L/2,cy2+28);
+      G.textAlign='left';
+    }
+    if(s.phase==='fini'){
+      R(0,cy2-32,L,64,'rgba(5,7,12,.92)');
+      R(0,cy2-32,L,1,'rgba(224,138,144,.6)');R(0,cy2+31,L,1,'rgba(224,138,144,.6)');
+      G.font='700 9px ui-monospace,monospace';G.textAlign='center';
+      G.fillStyle='#e08a90';G.fillText('DÉDÉ RAMASSE',L/2,cy2-16);
+      G.font='700 16px ui-monospace,monospace';G.fillStyle='#eaf6ff';
+      G.fillText(String(s.score),L/2,cy2+4);
+      G.font='700 7px ui-monospace,monospace';G.fillStyle='#6f93aa';
+      G.fillText('MEILLEURE SÉRIE · '+s.meilleur+' · MANCHE '+s.manche,L/2,cy2+20);
       G.textAlign='left';
     }
   },
