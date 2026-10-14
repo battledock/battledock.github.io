@@ -14,14 +14,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Expires" content="0">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-15-0700"></script>
+<script src="maintenance.js?v=2026-10-15-0800"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-15-0700';
+  var MA_VERSION='2026-10-15-0800';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -190,14 +190,14 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#f0e0c0}
   font:italic 11px Georgia,serif;color:#7a6350;line-height:1.5}
 #paie b{font-style:normal;color:#9a8266}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-15-0700">
+<link rel="stylesheet" href="responsive.css?v=2026-10-15-0800">
 </head>
 <body>
 <div id="tapis">
   <div id="hd">
     <small>LE COMPLEXE FESTIF · PORTE DE GAUCHE</small>
     <h1>Le Casino</h1>
-    <div class="sous">Huit tables, et la maison qui ne perd jamais longtemps.</div>
+    <div class="sous">Huit tables ouvertes, et la maison qui ne perd jamais longtemps.</div>
     <div id="jeton"><u></u><b id="sou">—</b><i>EN CAISSE</i></div>
   </div>
   <div id="corps">
@@ -211,7 +211,8 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#f0e0c0}
     </div>
     <div id="averti">
       <b>Ce que la maison garde.</b> Sur cent euros misés, elle en rend
-      entre quatre-vingt-huit et quatre-vingt-dix-sept selon la table.
+      entre quatre-vingt-sept et quatre-vingt-dix-neuf selon la table —
+      le vingt-et-un est la plus clémente, la criée la plus gourmande.
       Autrement dit : plus on joue longtemps, plus on perd. Le casino est
       là pour le quart d'heure, pas pour l'argent.
     </div>
@@ -236,7 +237,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#f0e0c0}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-15-0700"></script>
+<script src="retour.js?v=2026-10-15-0800"></script>
 <script>
 /* =====================================================================
    LE CASINO
@@ -307,7 +308,7 @@ function supa(){
 }
 supa();   /* on charge des l'ouverture du menu : la premiere mise ne doit pas attendre */
 
-async function coup(jeu,mise,choix){
+async function rpc(nom,args){
   await supa();
   if(!SB)return {erreur:'Le comptoir ne répond pas. Vérifie ta connexion.'};
   if(!SESSION){
@@ -315,10 +316,16 @@ async function coup(jeu,mise,choix){
   }
   if(!SESSION)return {erreur:'Connecte-toi dans le jeu pour pouvoir miser.'};
   try{
-    var r=await SB.rpc('casino_coup',{p_jeu:jeu,p_mise:mise,p_choix:choix||{}});
+    var r=await SB.rpc(nom,args||{});
     if(r.error)return {erreur:r.error.message||'La maison n’a pas répondu.'};
     return r.data||{erreur:'La maison n’a pas répondu.'};
   }catch(x){return {erreur:'La maison n’a pas répondu.'};}
+}
+/* les cinq tables qui se reglent en un seul appel passent par ici ; le
+   vingt-et-un et le poker ont besoin de deux appels, donc de leur propre
+   chemin, parce qu'une main dure entre les deux */
+function coup(jeu,mise,choix){
+  return rpc('casino_coup',{p_jeu:jeu,p_mise:mise,p_choix:choix||{}});
 }
 
 /* ---------------------------------------------------------------------
@@ -418,13 +425,14 @@ var TABLES=[
   mise:'10 € LA PARTIE'},
  {cle:'roue', emb:'roue', nom:'La Roue de la Fortune', etat:'ouvert',
   dit:'Un tour offert par jour. Le deuxième se paie.', mise:'GRATUIT PUIS 20 €', grand:true},
- {cle:'vingtun', emb:'cartes', nom:'Le Vingt-et-un',
-  dit:'Contre la banque. Fonfon donne, et Fonfon tire à seize.', mise:'5 € À 200 €'},
- {cle:'poker', emb:'jetons', nom:'Le Poker du Quai',
-  dit:'Cinq cartes, trois dockers en face, et personne ne montre rien.',
-  mise:'50 € LA CAVE'},
- {cle:'grattage', emb:'ticket', nom:'Le Grattage de Luxe',
-  dit:'Comme au bar, mais le ticket vaut dix fois plus — et le gros lot aussi.',
+ {cle:'vingtun', emb:'cartes', nom:'Le Vingt-et-un', etat:'ouvert', grand:true,
+  dit:'Contre la banque. Fonfon donne, Fonfon tire à seize — et c’est ici que la maison garde le moins.',
+  mise:'5 € À 200 €'},
+ {cle:'poker', emb:'jetons', nom:'Le Poker du Quai', etat:'ouvert',
+  dit:'Cinq cartes. Tu gardes ce qui t’arrange, tu retires le reste.',
+  mise:'10 € À 100 €'},
+ {cle:'grattage', emb:'ticket', nom:'Le Grattage de Luxe', etat:'ouvert',
+  dit:'Neuf cases, trois pareils. Et tout au fond du carnet, le Phare.',
   mise:'50 € LE TICKET'}
 ];
 
@@ -492,6 +500,65 @@ function feutre(L,H){
   for(var i=0;i<140;i++)R(al(i*3.3)*L,al(i*7.1)*H,1,1,'rgba(255,255,255,.035)');
   R(0,0,L,2,'#143024');R(0,H-3,L,3,'#102418');
   R(0,2,L,1,'rgba(201,162,74,.22)');
+}
+
+/* =====================================================================
+   LES CARTES, pour le vingt-et-un et le poker.
+
+   Une carte est un entier de 0 a 51, exactement comme dans la base :
+   rang = c % 13 (0 = as, 9 = dix, 10 = valet, 11 = dame, 12 = roi) et
+   couleur = c / 13 (0 pique, 1 coeur, 2 carreau, 3 trefle). Le client
+   et le serveur partagent ce codage, donc il n'y a rien a traduire —
+   une carte traverse le reseau comme un nombre.
+   ===================================================================== */
+var CL=16, CH=23;            /* la taille d'une carte, en pixels de scene */
+var NOMS=['A','2','3','4','5','6','7','8','9','10','V','D','R'];
+function enseigne(g,x,y,co,ech){
+  /* les quatre enseignes, dessinees a la main : une police d'emoji
+     jurerait avec le reste, et les caracteres ♠♥♦♣ ne se dessinent pas
+     pareil d'un telephone a l'autre */
+  var e=ech||1, c=(co===1||co===2)?'#b8302e':'#1a1014';
+  g.fillStyle=c;
+  if(co===0){                                     /* pique */
+    g.beginPath();g.moveTo(x,y-3*e);g.lineTo(x+2.6*e,y+0.6*e);g.lineTo(x-2.6*e,y+0.6*e);g.fill();
+    g.beginPath();g.arc(x-1.4*e,y+0.4*e,1.5*e,0,7);g.arc(x+1.4*e,y+0.4*e,1.5*e,0,7);g.fill();
+    g.fillRect(Math.round(x-0.5*e),Math.round(y+0.6*e),Math.max(1,e),Math.max(1,2.4*e));
+  }else if(co===1){                               /* coeur */
+    g.beginPath();g.arc(x-1.3*e,y-1.2*e,1.6*e,0,7);g.arc(x+1.3*e,y-1.2*e,1.6*e,0,7);g.fill();
+    g.beginPath();g.moveTo(x-2.8*e,y-0.6*e);g.lineTo(x+2.8*e,y-0.6*e);g.lineTo(x,y+3*e);g.fill();
+  }else if(co===2){                               /* carreau */
+    g.beginPath();g.moveTo(x,y-3.2*e);g.lineTo(x+2.3*e,y);g.lineTo(x,y+3.2*e);g.lineTo(x-2.3*e,y);g.fill();
+  }else{                                          /* trefle */
+    g.beginPath();g.arc(x,y-1.6*e,1.5*e,0,7);g.arc(x-1.7*e,y+0.6*e,1.5*e,0,7);
+    g.arc(x+1.7*e,y+0.6*e,1.5*e,0,7);g.fill();
+    g.fillRect(Math.round(x-0.5*e),Math.round(y+0.6*e),Math.max(1,e),Math.max(1,2.4*e));
+  }
+}
+function carte(x,y,c,face){
+  /* l'ombre portee : c'est elle qui decolle la carte du tapis */
+  R(x+1,y+2,CL,CH,'rgba(0,0,0,.32)');
+  if(!face){
+    /* LE DOS. Le croupier garde une carte couchee jusqu'au bout ; si le
+       dos ressemblait trop a une face on croirait a un bug. */
+    R(x,y,CL,CH,'#7a1a18');R(x,y,CL,CH-1,'#a82824');
+    R(x+1,y+1,CL-2,CH-3,'#8a2220');
+    for(var u=0;u<4;u++)for(var w=0;w<6;w++)
+      R(x+2.5+u*3,y+2.5+w*3,1,1,'rgba(240,215,138,.5)');
+    R(x+1,y+1,CL-2,1,'rgba(255,255,255,.18)');
+    return;
+  }
+  R(x,y,CL,CH,'#c8bfae');
+  R(x,y,CL,CH-1,'#f4efe4');
+  R(x+1,y+1,CL-2,1,'#fff');
+  var r=((c%13)+13)%13, co=Math.floor(c/13)%4;
+  var rouge=(co===1||co===2);
+  G.font='700 '+(r===9?6:8)+'px ui-monospace,monospace';
+  G.textAlign='left';G.textBaseline='top';
+  G.fillStyle=rouge?'#b8302e':'#1a1014';
+  G.fillText(NOMS[r],x+1.5,y+1.5);
+  G.textBaseline='alphabetic';
+  enseigne(G,x+CL-4,y+5,co,0.9);
+  enseigne(G,x+CL/2,y+CH-7,co,1.7);
 }
 
 /* =====================================================================
@@ -1064,6 +1131,15 @@ MOTEUR.bonneteau={
         choisirGobelet(em);return;
       }
     }
+  },
+  action:function(s){
+    /* le bouton ne fait que poser la mise sur le tapis et lancer le
+       melange ; rien ne part au serveur avant qu'un gobelet soit
+       designe, parce que c'est le gobelet qui EST le pari */
+    if(s.phase!=='pose'&&s.phase!=='fini')return;
+    s.phase='montre';s.montre=0;s.bille=Math.floor(Math.random()*3);
+    s.pos=[0,1,2];s.leve=[0,0,0];s.res=null;s.choisi=null;
+    dire('Regarde bien où elle se pose.');
   }
 };
 
@@ -1151,8 +1227,406 @@ MOTEUR.roue={
   }
 };
 
+/* ---------------------------------------------------------------------
+   6 — LE VINGT-ET-UN
+
+   La seule table qui demande deux appels : une main dure entre le
+   moment ou l'on donne et celui ou l'on reste. Le paquet est range dans
+   « casino_mains », une table dont la RLS est active et qui n'a AUCUNE
+   policy — donc personne ne la lit depuis le navigateur. Le client
+   envoie une intention (tirer, rester, doubler) ; il ne choisit jamais
+   une carte, et il ne sait pas ce qui vient.
+   ------------------------------------------------------------------ */
+MOTEUR.vingtun={
+  nom:'Le Vingt-et-un', sous:'FONFON TIRE À SEIZE',
+  L:124, H:98,
+  mises:[500,1000,2000,5000,10000,20000], mise:1000,
+  paie:'<b>Gagné</b> ×2, <b>égalité</b> la mise rendue, <b>vingt-et-un en deux cartes</b> ×2,5. '+
+       'Ni partage ni assurance. C’est la table où la maison garde le moins — '+
+       'environ un euro sur cent, et seulement si tu joues bien.',
+  init:function(){return {phase:'pose',j:[],c:[],tj:0,tc:0,mid:null,issue:null,
+                          cache:true,mise:0,t:0,pose:[],posec:[]};},
+  pas:function(s,dt){
+    s.t+=dt;
+    /* chaque carte a sa date d'arrivee : elle glisse en place depuis la
+       droite, et les cartes suivantes ne la bousculent pas */
+    for(var i=0;i<s.pose.length;i++)s.pose[i]=Math.min(1,s.pose[i]+dt/180);
+    for(i=0;i<s.posec.length;i++)s.posec[i]=Math.min(1,s.posec[i]+dt/180);
+  },
+  dessine:function(s,L,H){
+    feutre(L,H);
+    /* l'arc de la table, et la devise brodee dessus */
+    G.strokeStyle='rgba(240,215,138,.16)';G.lineWidth=1;
+    G.beginPath();G.arc(L/2,-26,78,0.52,Math.PI-0.52);G.stroke();
+    var mains=[[s.c,8,s.posec,true],[s.j,H-CH-12,s.pose,false]];
+    mains.forEach(function(m){
+      var cs=m[0]||[], y=m[1], po=m[2], estC=m[3];
+      /* le croupier a une carte couchee tant que la main n'est pas finie */
+      var n=cs.length+((estC&&s.cache&&s.phase!=='pose')?1:0);
+      if(!n)return;
+      var pas=Math.min(CL+4,(L-16)/n);
+      var x0=(L-((n-1)*pas+CL))/2;
+      for(var i=0;i<n;i++){
+        var k=po[i]===undefined?1:po[i];
+        var dx=(1-k)*26, al_=k;
+        G.globalAlpha=al_;
+        if(i<cs.length)carte(x0+i*pas+dx,y,cs[i],true);
+        else carte(x0+i*pas+dx,y,0,false);
+        G.globalAlpha=1;
+      }
+      /* le total, dans une pastille a cote de la main */
+      var tot=estC?s.tc:s.tj;
+      if(tot&&!(estC&&s.cache&&s.phase!=='pose')){
+        var l=String(tot).length*6+9;
+        R(L-l-5,y+CH/2-6,l,13,'rgba(8,5,7,.74)');
+        R(L-l-5,y+CH/2-6,l,1,'rgba(201,162,74,.4)');
+        G.font='700 9px ui-monospace,monospace';G.textAlign='center';
+        G.fillStyle=tot>21?'#e8938a':(tot===21?'#8ad07a':'#f6e9cc');
+        G.fillText(String(tot),L-l/2-5,y+CH/2+2.6);G.textAlign='left';
+      }
+    });
+    /* qui est qui : deux marques discretes, sinon on ne sait pas quelle
+       rangee est la sienne */
+    G.font='700 6px ui-monospace,monospace';G.fillStyle='rgba(154,130,102,.8)';
+    G.fillText('FONFON',6,13);G.fillText('TOI',6,H-6);
+  },
+  choix:function(s){
+    var p=(S&&S.phase)||'pose';
+    if(p==='joue'){
+      var g='<div class="lgn"><button data-p="tirer">TIRER</button>'+
+            '<button data-p="rester">RESTER</button></div>';
+      if(S.j.length===2)
+        g+='<div class="lgn"><button class="pr" data-p="doubler">DOUBLER ET S’ARRÊTER</button></div>';
+      return g;
+    }
+    if(p==='fini')
+      return '<div class="lgn"><button class="pr" data-p="donner" style="padding:14px 6px;font-size:12px">UNE AUTRE MAIN</button></div>';
+    return '<div class="lgn"><button class="pr" data-p="donner" style="padding:14px 6px;font-size:12px">DONNER</button></div>';
+  },
+  action:async function(s,pari){
+    if(pari==='donner'){
+      verrou(true);dire('Fonfon donne…');
+      s.phase='pose';s.j=[];s.c=[];s.tj=0;s.tc=0;s.cache=true;s.pose=[];s.posec=[];
+      var r=await rpc('casino_21_donner',{p_mise:MISE});
+      if(r.erreur){dire(r.erreur,'perd');verrou(false);return;}
+      s.mid=r.main;s.mise=r.mise;s.j=r.j||[];s.c=r.c||[];s.tj=r.tj||0;
+      s.pose=s.j.map(function(){return 0;});s.posec=s.c.map(function(){return 0;});
+      if(typeof r.euros==='number'){SOLDE=r.euros;noterEuros(r.euros);majSolde();}
+      if(r.fini){
+        s.cache=false;s.tc=r.tc||0;s.phase='fini';s.issue=r.issue;
+        reglerVingtun(r);
+      }else{
+        s.phase='joue';dire('Tire ou reste.');
+      }
+      monterChoix();verrou(false);return;
+    }
+    if(s.phase!=='joue')return;
+    verrou(true);
+    var r2=await rpc('casino_21_coup',{p_main:s.mid,p_action:pari});
+    if(r2.erreur){
+      /* « perdue » veut dire que le serveur n'a plus cette main : rester
+         sur TIRER / RESTER enverrait le joueur taper dans le vide. On
+         remet la table a zero. Les autres refus — doubler sans avoir de
+         quoi, par exemple — laissent la main vivante. */
+      if(r2.perdue){s.phase='pose';s.j=[];s.c=[];s.tj=0;s.tc=0;s.cache=true;}
+      dire(r2.erreur,'perd');verrou(false);monterChoix();return;
+    }
+    s.j=r2.j||s.j;s.tj=r2.tj||0;s.mise=r2.mise||s.mise;
+    while(s.pose.length<s.j.length)s.pose.push(0);
+    if(typeof r2.euros==='number'){SOLDE=r2.euros;noterEuros(r2.euros);majSolde();}
+    if(r2.fini){
+      s.c=r2.c||s.c;s.tc=r2.tc||0;s.cache=false;s.phase='fini';s.issue=r2.issue;
+      while(s.posec.length<s.c.length)s.posec.push(0);
+      reglerVingtun(r2);
+    }else{
+      dire(s.tj===21?'Vingt-et-un. À toi de voir.':'Tire ou reste.');
+    }
+    monterChoix();verrou(false);
+  }
+};
+function reglerVingtun(r){
+  var m={naturel:'Vingt-et-un en deux cartes.',
+         brule:'Tu brûles.',
+         croupier_brule:'Fonfon brûle.',
+         gagne:'Tu passes devant.',
+         perdu:'Fonfon passe devant.',
+         egalite:'Égalité, la mise revient.'}[r.issue]||'';
+  if(r.gain>r.mise)dire(m+' +'+enEuros(r.gain-r.mise),r.issue==='naturel'?'gros':'gagne');
+  else if(r.gain===r.mise)dire(m,'');
+  else dire(m+' −'+enEuros(r.mise),'perd');
+}
+
+/* ---------------------------------------------------------------------
+   7 — LE POKER DU QUAI
+
+   Poker ferme contre la table des gains : cinq cartes, on garde ce
+   qu'on veut, on retire le reste, et c'est la combinaison qui paie.
+   Pas de dockers en face, finalement — trois adversaires joues par la
+   maison, ca veut dire qu'un joueur qui lit bien leur facon de tirer
+   gagnerait plus que cent pour cent. Contre une table de gains fixe, le
+   rendu est connu d'avance et affiche.
+   ------------------------------------------------------------------ */
+var PK_NOM=['Rien','Paire de valets ou mieux','Deux paires','Brelan','Quinte',
+            'Couleur','Full','Carré','Quinte flush','Quinte flush royale'];
+var PK_GAIN=[0,1,2,3,4,5,7,25,50,500];
+MOTEUR.poker={
+  nom:'Le Poker du Quai', sous:'CINQ CARTES · ON RETIRE UNE FOIS',
+  L:118, H:72,
+  mises:[1000,2000,5000,10000], mise:2000,
+  paie:'<b>Royale ×500</b> · quinte flush ×50 · carré ×25 · full ×7 · couleur ×5 · '+
+       'quinte ×4 · brelan ×3 · deux paires ×2 · <b>paire de valets ou mieux</b> ×1 '+
+       '(la cave revient). Une paire plus basse ne paie rien.',
+  init:function(){return {phase:'pose',j:[],gardes:[],mid:null,rang:null,
+                          mise:0,change:[],t:0,pose:[]};},
+  pas:function(s,dt){
+    s.t+=dt;
+    for(var i=0;i<s.pose.length;i++)s.pose[i]=Math.min(1,s.pose[i]+dt/170);
+  },
+  dessine:function(s,L,H){
+    feutre(L,H);
+    var pas=(L-10)/5, x0=5+(pas-CL)/2, y=H-CH-12;
+    for(var i=0;i<5;i++){
+      var x=x0+i*pas;
+      if(!s.j.length){
+        /* cinq emplacements vides : on voit la table avant de miser */
+        G.strokeStyle='rgba(240,215,138,.2)';G.lineWidth=1;
+        G.strokeRect(Math.round(x)+0.5,Math.round(y)+0.5,CL,CH);
+        continue;
+      }
+      var k=s.pose[i]===undefined?1:s.pose[i];
+      var tenue=s.gardes.indexOf(i)>=0;
+      /* une carte gardee monte d'un cran : la difference doit se voir
+         d'un coup d'oeil, pas se lire */
+      var dy=tenue?-5:0;
+      G.globalAlpha=k;
+      carte(x+(1-k)*22,y+dy,s.j[i],true);
+      G.globalAlpha=1;
+      if(tenue){
+        /* UN CADRE ET UNE LANGUETTE, PAS LE MOT « GARDÉE ». Le mot
+           faisait trente-six pixels de scene pour une carte qui en fait
+           seize : sur cinq cartes voisines, les cinq etiquettes se
+           chevauchaient et devenaient illisibles. */
+        R(x-1,y+dy-1,CL+2,1,'#f0d78a');
+        R(x-1,y+dy+CH,CL+2,1,'#f0d78a');
+        R(x-1,y+dy-1,1,CH+2,'#f0d78a');R(x+CL,y+dy-1,1,CH+2,'#f0d78a');
+        R(x+CL/2-4,y+dy-5,8,3,'#f0d78a');
+      }
+    }
+    /* la combinaison obtenue, une fois le coup reglé */
+    if(s.phase==='fini'&&s.rang!==null){
+      var gagne=PK_GAIN[s.rang]>0;
+      R(6,5,L-12,13,gagne?'rgba(47,107,70,.5)':'rgba(8,5,7,.6)');
+      R(6,5,L-12,1,gagne?'#8ad07a':'rgba(201,162,74,.26)');
+      G.font='700 7px ui-monospace,monospace';G.textAlign='center';
+      G.fillStyle=gagne?'#c8f0b8':'#8a7a5a';
+      G.fillText(PK_NOM[s.rang].toUpperCase(),L/2,14);G.textAlign='left';
+    }
+  },
+  tape:function(s,x,y){
+    if(s.phase!=='garde')return;
+    var L=SL, pas=(L-10)/5, x0=5+(pas-CL)/2, y0=SH-CH-12;
+    for(var i=0;i<5;i++){
+      if(x>x0+i*pas-3&&x<x0+i*pas+CL+3&&y>y0-10&&y<y0+CH+4){
+        var k=s.gardes.indexOf(i);
+        if(k>=0)s.gardes.splice(k,1);else s.gardes.push(i);
+        return;
+      }
+    }
+  },
+  choix:function(){
+    var p=(S&&S.phase)||'pose';
+    if(p==='garde')
+      return '<div class="lgn"><button class="pr" data-p="tirer" style="padding:14px 6px;font-size:12px">RETIRER LE RESTE</button></div>';
+    if(p==='fini')
+      return '<div class="lgn"><button class="pr" data-p="donner" style="padding:14px 6px;font-size:12px">UNE AUTRE DONNE</button></div>';
+    return '<div class="lgn"><button class="pr" data-p="donner" style="padding:14px 6px;font-size:12px">DONNER</button></div>';
+  },
+  action:async function(s,pari){
+    if(pari==='donner'){
+      verrou(true);dire('On distribue…');
+      s.phase='pose';s.j=[];s.gardes=[];s.rang=null;s.pose=[];
+      var r=await rpc('casino_poker_donner',{p_mise:MISE});
+      if(r.erreur){dire(r.erreur,'perd');verrou(false);return;}
+      s.mid=r.main;s.mise=r.mise;s.j=r.j||[];s.pose=s.j.map(function(){return 0;});
+      s.phase='garde';
+      if(typeof r.euros==='number'){SOLDE=r.euros;noterEuros(r.euros);majSolde();}
+      dire('Garde ce qui t’arrange, retire le reste.');
+      monterChoix();verrou(false);return;
+    }
+    if(pari==='tirer'){
+      if(s.phase!=='garde')return;
+      verrou(true);dire('On retire…');
+      /* le serveur numerote les places de un a cinq */
+      var g=s.gardes.map(function(i){return i+1;});
+      var r2=await rpc('casino_poker_tirer',{p_main:s.mid,p_gardes:g});
+      if(r2.erreur){
+        if(r2.perdue){s.phase='pose';s.j=[];s.gardes=[];s.rang=null;}
+        dire(r2.erreur,'perd');verrou(false);monterChoix();return;
+      }
+      var neuves=(r2.change||[]).map(function(k){return k-1;});
+      s.j=r2.j||s.j;s.rang=r2.rang;s.phase='fini';
+      neuves.forEach(function(i){s.pose[i]=0;});
+      if(typeof r2.euros==='number'){SOLDE=r2.euros;noterEuros(r2.euros);majSolde();}
+      if(r2.gain>r2.mise)dire(PK_NOM[r2.rang]+' · +'+enEuros(r2.gain-r2.mise),
+                              r2.rang>=7?'gros':'gagne');
+      else if(r2.gain===r2.mise)dire(PK_NOM[r2.rang]+' · la cave revient','');
+      else dire('Rien. −'+enEuros(r2.mise),'perd');
+      monterChoix();verrou(false);
+    }
+  }
+};
+
+/* ---------------------------------------------------------------------
+   8 — LE GRATTAGE DE LUXE
+
+   Neuf cases, trois symboles pareils et le lot est a toi. Le serveur
+   tire D'ABORD le lot, puis construit une grille qui le raconte : si
+   l'on remplissait neuf cases au hasard avant de regarder ce qui sort,
+   le rendu serait celui que la combinatoire veut bien donner, pas celui
+   qu'on a decide. On gratte au doigt — la case s'use la ou l'on passe.
+   ------------------------------------------------------------------ */
+var GR_SYM=['casier','cageot','ancre','grue','perle','phare'];
+var GR_DIT=['casiers','cageots','ancres','grues','perles','Phares'];
+var GR_MUL=[1,2,5,10,50,500];
+MOTEUR.grattage={
+  nom:'Le Grattage de Luxe', sous:'NEUF CASES · TROIS PAREILS',
+  L:102, H:108,
+  mises:null, fixe:5000, fixeDit:'50 € LE TICKET · PRIX FIXE',
+  paie:'<b>Trois pareils</b> paient : casier ×1, cageot ×2, ancre ×5, grue ×10, '+
+       'perle ×50, <b>le Phare ×500</b>. Un ticket sur deux et demi paie quelque chose, '+
+       'et la maison garde environ dix euros sur cent.',
+  init:function(){return {phase:'pose',grille:[],usure:[0,0,0,0,0,0,0,0,0],
+                          lot:0,res:null,t:0,clign:0};},
+  pas:function(s,dt){
+    s.t+=dt;
+    if(s.phase==='gratte'){
+      var tout=true;
+      for(var i=0;i<9;i++)if(s.usure[i]<1)tout=false;
+      if(tout){s.phase='fini';s.clign=0;finirGrattage(s);}
+    }
+    if(s.phase==='fini')s.clign+=dt;
+  },
+  cases:function(L,H){
+    var c=30, g=2, x0=(L-(c*3+g*2))/2, y0=12;
+    return {c:c,g:g,x0:x0,y0:y0};
+  },
+  dessine:function(s,L,H){
+    feutre(L,H);
+    var q=MOTEUR.grattage.cases(L,H);
+    /* le carton du ticket */
+    R(q.x0-5,q.y0-10,q.c*3+q.g*2+10,q.c*3+q.g*2+20,'#2a4a8a');
+    R(q.x0-5,q.y0-10,q.c*3+q.g*2+10,2,'#5a7aba');
+    R(q.x0-5,q.y0+q.c*3+q.g*2+8,q.c*3+q.g*2+10,2,'#16284a');
+    G.font='700 7px ui-monospace,monospace';G.textAlign='center';
+    G.fillStyle='#a8c0e8';G.fillText('LE GRATTAGE DE LUXE',L/2,q.y0-3);
+    G.textAlign='left';
+    for(var i=0;i<9;i++){
+      var cx=q.x0+(i%3)*(q.c+q.g), cy=q.y0+Math.floor(i/3)*(q.c+q.g);
+      R(cx,cy,q.c,q.c,'#0e1620');
+      if(s.grille.length){
+        var sy=GR_SYM[s.grille[i]-1];
+        var d=DESSIN_GRAT[sy];
+        if(d)d(cx+(q.c-22)/2,cy+(q.c-22)/2);
+      }
+      /* LE LATEX : il ne part pas d'un coup, il s'use. Tant qu'il en
+         reste plus de la moitie, la case est opaque ; en dessous, on
+         voit a travers. */
+      var u=s.usure[i]||0;
+      if(u<1){
+        G.globalAlpha=Math.min(1,(1-u)*1.6);
+        R(cx,cy,q.c,q.c,'#9aa0a8');
+        R(cx,cy,q.c,2,'#b8bec6');R(cx,cy+q.c-2,q.c,2,'#7a8088');
+        for(var k=0;k<10;k++)
+          R(cx+2+al(i*7+k)*(q.c-5),cy+2+al(i*13+k*3)*(q.c-5),2,1,'rgba(255,255,255,.2)');
+        G.globalAlpha=1;
+      }
+    }
+    /* la consigne est dans le bandeau de message : ecrite ici en bas du
+       ticket, elle tombait par-dessus la derniere rangee de cases */
+    if(s.phase==='fini'&&s.res&&s.res.gain>0&&(Math.floor(s.clign/300)%2)===0){
+      /* on encadre les trois cases gagnantes */
+      for(i=0;i<9;i++){
+        if(s.grille[i]!==s.lot)continue;
+        var ax=q.x0+(i%3)*(q.c+q.g), ay=q.y0+Math.floor(i/3)*(q.c+q.g);
+        G.strokeStyle='#8ad07a';G.lineWidth=2;
+        G.strokeRect(Math.round(ax)+1,Math.round(ay)+1,q.c-2,q.c-2);
+      }
+    }
+  },
+  /* on gratte en glissant : chaque passage use un peu la case touchee */
+  glisse:function(s,x,y){
+    if(s.phase!=='gratte')return;
+    var q=MOTEUR.grattage.cases(SL,SH);
+    for(var i=0;i<9;i++){
+      var cx=q.x0+(i%3)*(q.c+q.g), cy=q.y0+Math.floor(i/3)*(q.c+q.g);
+      if(x>=cx&&x<cx+q.c&&y>=cy&&y<cy+q.c){s.usure[i]=Math.min(1,s.usure[i]+0.34);return;}
+    }
+  },
+  choix:function(){
+    var p=(S&&S.phase)||'pose';
+    if(p==='gratte')
+      return '<div class="lgn"><button data-p="tout">TOUT GRATTER D’UN COUP</button></div>';
+    if(p==='fini')
+      return '<div class="lgn"><button class="pr" data-p="acheter" style="padding:14px 6px;font-size:12px">UN AUTRE TICKET · 50 €</button></div>';
+    return '<div class="lgn"><button class="pr" data-p="acheter" style="padding:14px 6px;font-size:12px">ACHETER UN TICKET · 50 €</button></div>';
+  },
+  action:async function(s,pari){
+    if(pari==='tout'){
+      for(var i=0;i<9;i++)s.usure[i]=1;
+      return;
+    }
+    verrou(true);dire('On décolle un ticket du carnet…');
+    s.phase='pose';s.grille=[];s.usure=[0,0,0,0,0,0,0,0,0];s.res=null;s.lot=0;
+    var r=await coup('grattage',5000,{});
+    if(r.erreur){dire(r.erreur,'perd');verrou(false);return;}
+    s.grille=r.tirage.grille;s.lot=r.tirage.lot;s.res=r;s.phase='gratte';
+    if(typeof r.euros==='number'){SOLDE=r.euros;noterEuros(r.euros);majSolde();}
+    dire('Gratte les neuf cases.');
+    monterChoix();verrou(false);
+  }
+};
+function finirGrattage(s){
+  var r=s.res;if(!r)return;
+  if(r.gain>0)dire('Trois '+GR_DIT[s.lot-1]+' · ×'+GR_MUL[s.lot-1]+' · +'+
+                   enEuros(r.gain-r.mise),r.gain>=r.mise*50?'gros':'gagne');
+  else dire('Ticket perdant. −'+enEuros(r.mise),'perd');
+  monterChoix();
+}
+/* les six symboles du ticket : quatre viennent de la criee, deux sont
+   a lui — le casier du bas de l'echelle, et le Phare tout en haut */
+var DESSIN_GRAT={
+  casier:function(x,y){
+    G.save();G.translate(x,y);
+    R(3,7,16,11,'#6a5a3a');R(3,7,16,1,'#8a7a52');R(3,17,16,1,'#4a3e26');
+    for(var i=0;i<4;i++)R(5+i*3.6,9,1,7,'#4a3e26');
+    R(3,11,16,1,'#52462c');
+    G.strokeStyle='#8a7a52';G.lineWidth=1;
+    G.beginPath();G.arc(11,7,5,Math.PI,0);G.stroke();
+    G.restore();
+  },
+  cageot:function(x,y){DESSIN_SYM.cageot(x,y);},
+  ancre:function(x,y){DESSIN_SYM.ancre(x,y);},
+  grue:function(x,y){DESSIN_SYM.grue(x,y);},
+  perle:function(x,y){DESSIN_SYM.perle(x,y);},
+  phare:function(x,y){
+    G.save();G.translate(x,y);
+    R(7,19,8,2,'#3a4a3a');                                  /* le rocher */
+    R(8,9,6,10,'#f0e8d8');R(8,9,6,1,'#fff');                /* la tour */
+    R(8,12,6,2,'#b8302e');R(8,16,6,2,'#b8302e');
+    R(7,7,8,2,'#5a4a3a');                                   /* la galerie */
+    R(8.5,3,5,4,'#f6e0a4');R(8.5,3,5,1,'#fffaf0');          /* la lanterne */
+    R(9,1,4,2,'#5a4a3a');
+    /* le faisceau, des deux cotes : court et pale, sinon les deux cones
+       debordent de la case et le phare a l'air d'avoir des ailes */
+    G.fillStyle='rgba(246,224,164,.18)';
+    G.beginPath();G.moveTo(9,4);G.lineTo(3,2);G.lineTo(3,7);G.fill();
+    G.beginPath();G.moveTo(13,4);G.lineTo(19,2);G.lineTo(19,7);G.fill();
+    G.restore();
+  }
+};
+
 /* =====================================================================
-   LE PILOTE : ce qui est commun aux cinq tables
+   LE PILOTE : ce qui est commun aux huit tables
    ===================================================================== */
 var MISE=null, PARI=null;
 var SMSG=document.getElementById('smsg'), SMISE=document.getElementById('smise'),
@@ -1183,18 +1657,43 @@ function ouvrirTable(T){
   cadrer(JEU.L,JEU.H);
   boucle.vu=0;
   if(!RAF)RAF=requestAnimationFrame(boucle);
-  /* LE BONNETEAU DEMANDE QU'ON TAPE SUR LE TAPIS : on ecoute le canvas
-     et on ramene le point touche dans la grille de pixels. */
+  brancherLeTapis();
+}
+
+/* CERTAINES TABLES SE JOUENT SUR LE TAPIS, pas au bouton : on tape un
+   gobelet, on tape une carte a garder, on gratte en glissant le doigt.
+   On ramene donc le point touche dans la grille de pixels de la scene,
+   et on le passe au jeu — qui seul sait ce qu'il y a a cet endroit. */
+function pointScene(ev){
+  var b=CV.getBoundingClientRect();
+  return [(ev.clientX-b.left)/b.width*SL,(ev.clientY-b.top)/b.height*SH];
+}
+function brancherLeTapis(){
   CV.onclick=function(ev){
     if(!JEU||!JEU.tape||OCCUPE)return;
-    var b=CV.getBoundingClientRect();
-    JEU.tape(S,(ev.clientX-b.left)/b.width*SL,(ev.clientY-b.top)/b.height*SH);
+    var p=pointScene(ev);JEU.tape(S,p[0],p[1]);
   };
+  CV.onpointerdown=function(ev){
+    if(!JEU||!JEU.glisse||OCCUPE)return;
+    CV.setPointerCapture&&CV.setPointerCapture(ev.pointerId);
+    var p=pointScene(ev);JEU.glisse(S,p[0],p[1]);
+  };
+  CV.onpointermove=function(ev){
+    if(!JEU||!JEU.glisse||OCCUPE)return;
+    /* buttons vaut zero quand le doigt n'appuie pas : on ne gratte pas
+       en survolant, sinon une souris qui traverse l'ecran decape le
+       ticket entier sans qu'on ait rien demande */
+    if(!ev.buttons)return;
+    var p=pointScene(ev);JEU.glisse(S,p[0],p[1]);
+  };
+  /* le canvas ne doit pas faire defiler la page pendant qu'on gratte */
+  CV.style.touchAction=(JEU&&JEU.glisse)?'none':'';
 }
 function fermerTable(){
   SALLE.hidden=true;
   if(RAF){cancelAnimationFrame(RAF);RAF=null;}
-  JEU=null;S=null;CV.onclick=null;
+  JEU=null;S=null;
+  CV.onclick=null;CV.onpointerdown=null;CV.onpointermove=null;CV.style.touchAction='';
   majSolde();
 }
 document.getElementById('sortie').onclick=function(){
@@ -1223,7 +1722,11 @@ function monterMises(){
 }
 
 function monterChoix(){
-  SCHOIX.innerHTML=JEU.choix();
+  if(!JEU)return;
+  /* les tables a plusieurs temps changent de boutons en cours de main :
+     on redemande la liste a chaque etape plutot que de la poser une
+     fois pour toutes */
+  SCHOIX.innerHTML=JEU.choix(S);
   [].forEach.call(SCHOIX.querySelectorAll('button'),function(b){
     b.onclick=function(){
       if(OCCUPE)return;
@@ -1241,17 +1744,11 @@ function verrou(v){
    appelle, on anime jusqu'au tirage recu, puis on paie a l'ecran. */
 async function jouer(pari,n){
   if(!JEU)return;
-  /* LE BONNETEAU SE JOUE EN DEUX TEMPS, et c'est la seule table dans ce
-     cas : le bouton ne fait que poser la mise sur le tapis et lancer le
-     melange. Rien ne part au serveur avant qu'un gobelet soit designe —
-     c'est le gobelet qui EST le pari. */
-  if(JEU.cle==='bonneteau'){
-    if(S.phase!=='pose'&&S.phase!=='fini')return;
-    S.phase='montre';S.montre=0;S.bille=Math.floor(Math.random()*3);
-    S.pos=[0,1,2];S.leve=[0,0,0];S.res=null;S.choisi=null;
-    dire('Regarde bien où elle se pose.');
-    return;
-  }
+  /* TROIS TABLES NE SE REGLENT PAS EN UN SEUL APPEL : le bonneteau
+     (la mise part avec le gobelet designe), le vingt-et-un et le poker
+     (une main dure entre deux appels). Elles ont donc leur propre
+     « action », et ne passent pas par casino_coup ici. */
+  if(JEU.action)return JEU.action(S,pari,n);
   var choix={};
   if(JEU.cle==='roulette'||JEU.cle==='de'){
     choix.pari=pari;
