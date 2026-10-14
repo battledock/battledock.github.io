@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-14-1600"></script>
+<script src="maintenance.js?v=2026-10-14-1900"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-14-1600';
+var MA_VERSION='2026-10-14-1900';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 var cle='bdl.version.vue';
 function verifier(){
@@ -2115,13 +2115,13 @@ white-space:nowrap}
 #tiroir.part .latte,#tiroir.part .tbas{animation:none}
 @keyframes ligneFin{from{opacity:0;transform:translateY(12px) scale(.92)}
 60%{opacity:1;transform:translateY(0) scale(1.04)}to{opacity:1;transform:none}}</style>
-<script src="retour.js?v=2026-10-14-1600"></script>
+<script src="retour.js?v=2026-10-14-1900"></script>
 <!-- LE DESSIN DU PERSONNAGE ET LES CARTES POKEDOCK. Classiques, donc
      joues avant le module : window.Perso doit exister quand une carte
      se grave, et window.Pokedock quand on ouvre le rayon du Bar. -->
-<script src="personnage.js?v=2026-10-14-1600"></script>
-<script src="pokedock.js?v=2026-10-14-1600"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-14-1600">
+<script src="personnage.js?v=2026-10-14-1900"></script>
+<script src="pokedock.js?v=2026-10-14-1900"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-14-1900">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -10499,6 +10499,36 @@ SOL_CACHE.sol=await toile(v.sol);SOL_CACHE.fin=await toile(v.fin);SOL_CACHE.pret
 function rangerSolCache(){try{if(!SOL)return;const cle=cleSol(), fin=SOL_FIN;
 SOL.toBlob(async(b1)=>{const b2=fin?await new Promise(ok=>fin.toBlob(ok)):null;try{const db=await baseSol();const tx=db.transaction('s','readwrite');const st=tx.objectStore('s');
 st.clear();st.put({sol:b1,fin:b2},cle);}catch(x){}});}catch(x){}}
+/* ================= RANGER LE SOL SANS BLOQUER LA MARCHE =================
+   C'ÉTAIT LA SACCADE. rangerSolCache encode la toile du sol en PNG :
+   1 200 x 1 600, soit 1 920 000 pixels et 3,6 Mo de PNG. Mesuré 108 ms
+   sur un ordinateur de bureau ; un téléphone met cinq à dix fois plus, et
+   sur iOS l'encodage tient le fil principal. On le lançait quatre
+   secondes après l'arrivée sur la carte — c'est-à-dire pile pendant qu'on
+   marche. Le jeu se figeait une à deux secondes, puis repartait, sans
+   qu'aucun décor ni aucune clôture n'y soit pour quoi que ce soit.
+   ET ÇA REVENAIT SOUVENT : la clé du cache contient le numéro de version,
+   donc chaque mise à jour oblige à réencoder.
+
+   ON ATTEND MAINTENANT QUE LE JOUEUR SOIT ARRÊTÉ. On regarde sa position
+   toutes les 900 ms ; dès qu'elle n'a pas bougé d'une image à l'autre, on
+   encode — l'immobilité est le seul moment où une saccade ne se voit pas.
+   Au bout de quarante essais (36 s) on encode quand même, sinon un joueur
+   qui ne s'arrête jamais n'aurait jamais de cache. requestIdleCallback
+   place en plus le travail hors d'une image de rendu quand il existe. */
+let SOL_RANGE=false;
+function rangerSolQuandOnPeut(){
+if(SOL_RANGE)return;SOL_RANGE=true;
+let der=null, essais=0;
+const ou=()=>{try{return Math.round(+joueur.x||0)+','+Math.round(+joueur.y||0);}catch(x){return null;}};
+const tenter=()=>{
+const p=ou();
+essais++;
+if(p===null||p!==der){der=p;if(essais<40)return setTimeout(tenter,900);}
+const lancer=()=>{try{rangerSolCache();}catch(x){}};
+if(typeof requestIdleCallback==='function')requestIdleCallback(lancer,{timeout:4000});
+else setTimeout(lancer,0);};
+setTimeout(tenter,4000);}
 const SOL_CACHE_PROMESSE=chargerSolCache();
 function refaireLeSol(){
 /* LA FERME : son pré, rien d'autre — mais elle a droit au cache comme les
@@ -10509,10 +10539,10 @@ if(CHAMPS_SEULS&&CARTE==='village'){
 if(SOL_CACHE.pret){SOL=SOL_CACHE.sol;SOL_FIN=null;CHEMIN=null;LISIERE=null;LISIERE_SUD=null;
 SOL_CACHE.pret=false;return SOL;}
 SOL=construireSolPre();SOL_FIN=null;CHEMIN=null;LISIERE=null;LISIERE_SUD=null;
-setTimeout(rangerSolCache,4000);
+rangerSolQuandOnPeut();
 return SOL;}
 if(SOL_CACHE.pret){SOL=SOL_CACHE.sol;SOL_FIN=SOL_CACHE.fin;SOL_CACHE.pret=false;return SOL;}     /* déjà construit lors d'un lancement précédent */
-setTimeout(rangerSolCache,4000);                                                                              /* on le range, sans ralentir le jeu */
+rangerSolQuandOnPeut();                                                                              /* on le range quand le joueur est a l arret */
 if(CARTE==='foret'){SOL=construireSolForet();SOL_FIN=null;CHEMIN=null;return SOL;}
 if(CHAMPS_SEULS&&CARTE==='village'){        /* LA FERME : le pré nu, rien d'autre */
 SOL=construireSolPre();SOL_FIN=null;CHEMIN=null;return SOL;}
