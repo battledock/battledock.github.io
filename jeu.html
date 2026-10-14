@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-15-1700"></script>
+<script src="maintenance.js?v=2026-10-15-1800"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-15-1700';
+var MA_VERSION='2026-10-15-1800';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il
@@ -2123,13 +2123,13 @@ white-space:nowrap}
 #tiroir.part .latte,#tiroir.part .tbas{animation:none}
 @keyframes ligneFin{from{opacity:0;transform:translateY(12px) scale(.92)}
 60%{opacity:1;transform:translateY(0) scale(1.04)}to{opacity:1;transform:none}}</style>
-<script src="retour.js?v=2026-10-15-1700"></script>
+<script src="retour.js?v=2026-10-15-1800"></script>
 <!-- LE DESSIN DU PERSONNAGE ET LES CARTES POKEDOCK. Classiques, donc
      joues avant le module : window.Perso doit exister quand une carte
      se grave, et window.Pokedock quand on ouvre le rayon du Bar. -->
-<script src="personnage.js?v=2026-10-15-1700"></script>
-<script src="pokedock.js?v=2026-10-15-1700"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-15-1700">
+<script src="personnage.js?v=2026-10-15-1800"></script>
+<script src="pokedock.js?v=2026-10-15-1800"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-15-1800">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -10435,6 +10435,51 @@ const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la haute
 const VUE_L=196, VUE_H=400;       /* la vue de référence, en points de jeu */
 const ZOOM=2;                     /* ne sert plus que de repli */
 let SOL=null, SOL_FIN=null;
+/* ================= LA POUSSIÈRE A LA COULEUR DU SOL =================
+   En courant, chaque appui projetait quatre grains beiges — #b8a482 et
+   #c9b894 — quelle que soit la carte. Sur la terre du village cela passait
+   inaperçu ; sur la dalle bleue du quai, ce beige clair n'avait rien à voir
+   avec le sol et l'on voyait de petites taches pâles jaillir sous les pieds
+   et rester derrière soi : des éclaboussures.
+   On lit donc la couleur du sol foulé, un pixel dans SOL, et on en tire deux
+   tons un peu plus clairs : la poussière, c'est le sol soulevé et éclairé,
+   jamais du sable importé. Herbe, terre, sable, pavé, feuilles : chacun
+   projette sa propre matière. La lecture coûte un pixel deux fois par
+   seconde — seulement quand on court — et le contexte est gardé. */
+let SOL_LU=null, SOL_LU_G=null;
+function tonDuSol(x,y){
+try{
+if(!SOL||!SOL.getContext)return null;
+if(SOL_LU!==SOL){SOL_LU=SOL;SOL_LU_G=SOL.getContext('2d',{willReadFrequently:true});}
+if(!SOL_LU_G)return null;
+const X=Math.max(0,Math.min(SOL.width-1,Math.round(x))), Y=Math.max(0,Math.min(SOL.height-1,Math.round(y)));
+const d=SOL_LU_G.getImageData(X,Y,1,1).data;
+if(d[3]<8)return null;
+return [d[0],d[1],d[2]];
+}catch(err){return null;}
+}
+/* LA POUSSIÈRE SUIT AUSSI L'HEURE. SOL est la texture de plein jour : les
+   grains sont peints APRÈS le voile de lumière, donc ils en réchappaient et
+   brillaient dans le noir — du 181,178,158 sur un quai à 48,52,71. On leur
+   applique la même teinte ambiante que le voile pose sur le sol. */
+function lumiereAmbiante(){
+try{
+if(typeof REG!=='undefined'&&REG.ciel==='jour')return null;
+const C=cielDuMoment();
+return (C&&C.amb)?C.amb:null;
+}catch(err){return null;}
+}
+function teinteDePoussiere(x,y,clair){
+const t=tonDuSol(x,y);
+if(!t)return clair?'#c9b894':'#b8a482';     /* repli : l'ancien beige */
+const f=clair?1.42:1.22, a=clair?14:8;
+const amb=lumiereAmbiante();
+return 'rgb('+t.map((v,i)=>{
+let c=v*f+a;
+if(amb)c=c*amb[i]/255;
+return Math.max(0,Math.min(255,Math.round(c)));
+}).join(',')+')';
+}
 let CHEMIN=null;             /* la couche du sentier : entre le sol et le décor */
 /* le tracé du sentier de la forêt, partagé par le dessin et par le semis */
 /* la forêt est trois fois plus haute : il lui faut autant de ressources */
@@ -19618,11 +19663,12 @@ const F=Math.floor(joueur.pas*2)%16;
 if((F===0||F===8)&&F!==dernierAppui){
 dernierAppui=F;
 jouer('pas');
+const t0=teinteDePoussiere(joueur.x,joueur.y,0), t1=teinteDePoussiere(joueur.x,joueur.y,1);
 for(let i=0;i<4;i++){
 PARTS.push({x:joueur.x+(Math.random()-.5)*5,y:joueur.y,
 vx:(Math.random()-.5)*26-vx*0.09,vy:-8-Math.random()*14,
 vie:.45+Math.random()*.25,taille:2,rot:0,vrot:0,
-c:i%2?'#b8a482':'#c9b894',rebondi:false});
+c:i%2?t0:t1,rebondi:false});
 }
 }
 }else dernierAppui=-1;
