@@ -14,14 +14,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Expires" content="0">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-15-0900"></script>
+<script src="maintenance.js?v=2026-10-15-1000"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-15-0900';
+  var MA_VERSION='2026-10-15-1000';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -190,14 +190,14 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#f0e0c0}
   font:italic 11px Georgia,serif;color:#7a6350;line-height:1.5}
 #paie b{font-style:normal;color:#9a8266}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-15-0900">
+<link rel="stylesheet" href="responsive.css?v=2026-10-15-1000">
 </head>
 <body>
 <div id="tapis">
   <div id="hd">
     <small>LE COMPLEXE FESTIF · PORTE DE GAUCHE</small>
     <h1>Le Casino</h1>
-    <div class="sous">Huit tables ouvertes, et la maison qui ne perd jamais longtemps.</div>
+    <div class="sous">Sept tables ouvertes, et la maison qui ne perd jamais longtemps.</div>
     <div id="jeton"><u></u><b id="sou">—</b><i>EN CAISSE</i></div>
   </div>
   <div id="corps">
@@ -237,16 +237,21 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#f0e0c0}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-15-0900"></script>
+<script src="retour.js?v=2026-10-15-1000"></script>
 <script>
 /* =====================================================================
    LE CASINO
 
-   Cinq tables tournent vraiment : la roulette, le de, la criee, le
-   bonneteau et la roue. Trois attendent encore — le vingt-et-un, le
-   poker et le grattage de luxe — parce qu'elles ne se jouent pas en un
-   coup : il faut une main qui dure entre deux appels, donc une autre
-   forme cote serveur que celle qu'on a.
+   Sept tables : la roulette, le de, la criee, le bonneteau, la roue, le
+   vingt-et-un et le grattage de luxe. Six se reglent d'un seul appel ;
+   seul le vingt-et-un demande qu'une main dure entre deux appels, et
+   c'est pour lui qu'existe la table « casino_mains ».
+
+   IL Y A EU UN POKER FERME, retire depuis. Il marchait, mais il ne
+   valait pas sa place : cinq cartes, un seul retrait, et la decision se
+   resume a garder sa paire — on la prend sans y penser des la deuxieme
+   partie. Une table du casino doit soit se regarder, soit se decider ;
+   celle-la ne faisait ni l'un ni l'autre.
 
    OU SE DECIDE LE SORT. Pas ici. Chaque coup part dans
    « casino_coup », une fonction SECURITY DEFINER : c'est elle qui
@@ -321,9 +326,9 @@ async function rpc(nom,args){
     return r.data||{erreur:'La maison n’a pas répondu.'};
   }catch(x){return {erreur:'La maison n’a pas répondu.'};}
 }
-/* les cinq tables qui se reglent en un seul appel passent par ici ; le
-   vingt-et-un et le poker ont besoin de deux appels, donc de leur propre
-   chemin, parce qu'une main dure entre les deux */
+/* les six tables qui se reglent en un seul appel passent par ici ; le
+   vingt-et-un a besoin de deux appels, donc de son propre chemin,
+   parce qu'une main dure entre les deux */
 function coup(jeu,mise,choix){
   return rpc('casino_coup',{p_jeu:jeu,p_mise:mise,p_choix:choix||{}});
 }
@@ -390,14 +395,6 @@ var EMBLEME={
     g.fillStyle='#2a1a1e';g.beginPath();g.arc(11,12,2,0,7);g.fill();
     R(10,0,2,4,ORC);
   },
-  jetons:function(g,R){
-    [[4,15,'#2a4a8a'],[11,17,ROUGE],[8,12,'#2f6b46'],[13,13,OR]].forEach(function(p){
-      g.fillStyle=p[2];g.beginPath();g.ellipse(p[0]+3,p[1],6,2.6,0,0,7);g.fill();
-      g.fillStyle='rgba(255,255,255,.3)';g.beginPath();g.ellipse(p[0]+3,p[1]-0.8,6,2.6,0,0,7);g.fill();
-      g.fillStyle=p[2];g.beginPath();g.ellipse(p[0]+3,p[1]-1.4,6,2.6,0,0,7);g.fill();
-    });
-    R(2,4,8,5,BLANC);R(2,4,8,1,'#fff');R(4,6,4,1,ROUGE);
-  },
   ticket:function(g,R){
     R(2,4,18,14,'#2a4a8a');R(2,4,18,1,'#5a7aba');R(2,17,18,1,'#16284a');
     R(4,6,14,7,'#b8b0a0');R(4,6,14,1,'#d8d0c0');
@@ -428,9 +425,6 @@ var TABLES=[
  {cle:'vingtun', emb:'cartes', nom:'Le Vingt-et-un', etat:'ouvert', grand:true,
   dit:'Contre la banque. Fonfon donne, Fonfon tire à seize — et c’est ici que la maison garde le moins.',
   mise:'5 € À 200 €'},
- {cle:'poker', emb:'jetons', nom:'Le Poker du Quai', etat:'ouvert',
-  dit:'Cinq cartes. Tu gardes ce qui t’arrange, tu retires le reste.',
-  mise:'10 € À 100 €'},
  {cle:'grattage', emb:'ticket', nom:'Le Grattage de Luxe', etat:'ouvert',
   dit:'Neuf cases, trois pareils. Et tout au fond du carnet, le Phare.',
   mise:'50 € LE TICKET'}
@@ -503,7 +497,7 @@ function feutre(L,H){
 }
 
 /* =====================================================================
-   LES CARTES, pour le vingt-et-un et le poker.
+   LES CARTES, pour le vingt-et-un.
 
    Une carte est un entier de 0 a 51, exactement comme dans la base :
    rang = c % 13 (0 = as, 9 = dix, 10 = valet, 11 = dame, 12 = roi) et
@@ -1357,126 +1351,6 @@ function reglerVingtun(r){
 }
 
 /* ---------------------------------------------------------------------
-   7 — LE POKER DU QUAI
-
-   Poker ferme contre la table des gains : cinq cartes, on garde ce
-   qu'on veut, on retire le reste, et c'est la combinaison qui paie.
-   Pas de dockers en face, finalement — trois adversaires joues par la
-   maison, ca veut dire qu'un joueur qui lit bien leur facon de tirer
-   gagnerait plus que cent pour cent. Contre une table de gains fixe, le
-   rendu est connu d'avance et affiche.
-   ------------------------------------------------------------------ */
-var PK_NOM=['Rien','Paire de valets ou mieux','Deux paires','Brelan','Quinte',
-            'Couleur','Full','Carré','Quinte flush','Quinte flush royale'];
-var PK_GAIN=[0,1,2,3,4,5,7,25,50,500];
-MOTEUR.poker={
-  nom:'Le Poker du Quai', sous:'CINQ CARTES · ON RETIRE UNE FOIS',
-  L:118, H:72,
-  mises:[1000,2000,5000,10000], mise:2000,
-  paie:'<b>Royale ×500</b> · quinte flush ×50 · carré ×25 · full ×7 · couleur ×5 · '+
-       'quinte ×4 · brelan ×3 · deux paires ×2 · <b>paire de valets ou mieux</b> ×1 '+
-       '(la cave revient). Une paire plus basse ne paie rien.',
-  init:function(){return {phase:'pose',j:[],gardes:[],mid:null,rang:null,
-                          mise:0,change:[],t:0,pose:[]};},
-  pas:function(s,dt){
-    s.t+=dt;
-    for(var i=0;i<s.pose.length;i++)s.pose[i]=Math.min(1,s.pose[i]+dt/170);
-  },
-  dessine:function(s,L,H){
-    feutre(L,H);
-    var pas=(L-10)/5, x0=5+(pas-CL)/2, y=H-CH-12;
-    for(var i=0;i<5;i++){
-      var x=x0+i*pas;
-      if(!s.j.length){
-        /* cinq emplacements vides : on voit la table avant de miser */
-        G.strokeStyle='rgba(240,215,138,.2)';G.lineWidth=1;
-        G.strokeRect(Math.round(x)+0.5,Math.round(y)+0.5,CL,CH);
-        continue;
-      }
-      var k=s.pose[i]===undefined?1:s.pose[i];
-      var tenue=s.gardes.indexOf(i)>=0;
-      /* une carte gardee monte d'un cran : la difference doit se voir
-         d'un coup d'oeil, pas se lire */
-      var dy=tenue?-5:0;
-      G.globalAlpha=k;
-      carte(x+(1-k)*22,y+dy,s.j[i],true);
-      G.globalAlpha=1;
-      if(tenue){
-        /* UN CADRE ET UNE LANGUETTE, PAS LE MOT « GARDÉE ». Le mot
-           faisait trente-six pixels de scene pour une carte qui en fait
-           seize : sur cinq cartes voisines, les cinq etiquettes se
-           chevauchaient et devenaient illisibles. */
-        R(x-1,y+dy-1,CL+2,1,'#f0d78a');
-        R(x-1,y+dy+CH,CL+2,1,'#f0d78a');
-        R(x-1,y+dy-1,1,CH+2,'#f0d78a');R(x+CL,y+dy-1,1,CH+2,'#f0d78a');
-        R(x+CL/2-4,y+dy-5,8,3,'#f0d78a');
-      }
-    }
-    /* la combinaison obtenue, une fois le coup reglé */
-    if(s.phase==='fini'&&s.rang!==null){
-      var gagne=PK_GAIN[s.rang]>0;
-      R(6,5,L-12,13,gagne?'rgba(47,107,70,.5)':'rgba(8,5,7,.6)');
-      R(6,5,L-12,1,gagne?'#8ad07a':'rgba(201,162,74,.26)');
-      G.font='700 7px ui-monospace,monospace';G.textAlign='center';
-      G.fillStyle=gagne?'#c8f0b8':'#8a7a5a';
-      G.fillText(PK_NOM[s.rang].toUpperCase(),L/2,14);G.textAlign='left';
-    }
-  },
-  tape:function(s,x,y){
-    if(s.phase!=='garde')return;
-    var L=SL, pas=(L-10)/5, x0=5+(pas-CL)/2, y0=SH-CH-12;
-    for(var i=0;i<5;i++){
-      if(x>x0+i*pas-3&&x<x0+i*pas+CL+3&&y>y0-10&&y<y0+CH+4){
-        var k=s.gardes.indexOf(i);
-        if(k>=0)s.gardes.splice(k,1);else s.gardes.push(i);
-        return;
-      }
-    }
-  },
-  choix:function(){
-    var p=(S&&S.phase)||'pose';
-    if(p==='garde')
-      return '<div class="lgn"><button class="pr" data-p="tirer" style="padding:14px 6px;font-size:12px">RETIRER LE RESTE</button></div>';
-    if(p==='fini')
-      return '<div class="lgn"><button class="pr" data-p="donner" style="padding:14px 6px;font-size:12px">UNE AUTRE DONNE</button></div>';
-    return '<div class="lgn"><button class="pr" data-p="donner" style="padding:14px 6px;font-size:12px">DONNER</button></div>';
-  },
-  action:async function(s,pari){
-    if(pari==='donner'){
-      verrou(true);dire('On distribue…');
-      s.phase='pose';s.j=[];s.gardes=[];s.rang=null;s.pose=[];
-      var r=await rpc('casino_poker_donner',{p_mise:MISE});
-      if(r.erreur){dire(r.erreur,'perd');verrou(false);return;}
-      s.mid=r.main;s.mise=r.mise;s.j=r.j||[];s.pose=s.j.map(function(){return 0;});
-      s.phase='garde';
-      if(typeof r.euros==='number'){SOLDE=r.euros;noterEuros(r.euros);majSolde();}
-      dire('Garde ce qui t’arrange, retire le reste.');
-      monterChoix();verrou(false);return;
-    }
-    if(pari==='tirer'){
-      if(s.phase!=='garde')return;
-      verrou(true);dire('On retire…');
-      /* le serveur numerote les places de un a cinq */
-      var g=s.gardes.map(function(i){return i+1;});
-      var r2=await rpc('casino_poker_tirer',{p_main:s.mid,p_gardes:g});
-      if(r2.erreur){
-        if(r2.perdue){s.phase='pose';s.j=[];s.gardes=[];s.rang=null;}
-        dire(r2.erreur,'perd');verrou(false);monterChoix();return;
-      }
-      var neuves=(r2.change||[]).map(function(k){return k-1;});
-      s.j=r2.j||s.j;s.rang=r2.rang;s.phase='fini';
-      neuves.forEach(function(i){s.pose[i]=0;});
-      if(typeof r2.euros==='number'){SOLDE=r2.euros;noterEuros(r2.euros);majSolde();}
-      if(r2.gain>r2.mise)dire(PK_NOM[r2.rang]+' · +'+enEuros(r2.gain-r2.mise),
-                              r2.rang>=7?'gros':'gagne');
-      else if(r2.gain===r2.mise)dire(PK_NOM[r2.rang]+' · la cave revient','');
-      else dire('Rien. −'+enEuros(r2.mise),'perd');
-      monterChoix();verrou(false);
-    }
-  }
-};
-
-/* ---------------------------------------------------------------------
    8 — LE GRATTAGE DE LUXE
 
    Neuf cases, trois symboles pareils et le lot est a toi. Le serveur
@@ -1593,7 +1467,7 @@ function finirGrattage(s){
   /* LE CASIER PAIE UNE FOIS LA MISE, donc il ne rapporte rien : il rend
      le ticket. « Trois casiers · +0,00 € » en vert se lisait comme une
      moquerie, ou comme un bug. On nomme la chose — c'est le meme cas que
-     l'egalite au vingt-et-un et la cave rendue au poker. */
+     l'egalite au vingt-et-un. */
   else if(r.gain===r.mise)dire('Trois '+nom+' · le ticket est remboursé','');
   else dire('Trois '+nom+' · ×'+f+' · +'+enEuros(r.gain-r.mise),
             r.gain>=r.mise*50?'gros':'gagne');
@@ -1633,7 +1507,7 @@ var DESSIN_GRAT={
 };
 
 /* =====================================================================
-   LE PILOTE : ce qui est commun aux huit tables
+   LE PILOTE : ce qui est commun aux sept tables
    ===================================================================== */
 var MISE=null, PARI=null;
 var SMSG=document.getElementById('smsg'), SMISE=document.getElementById('smise'),
@@ -1751,8 +1625,8 @@ function verrou(v){
    appelle, on anime jusqu'au tirage recu, puis on paie a l'ecran. */
 async function jouer(pari,n){
   if(!JEU)return;
-  /* TROIS TABLES NE SE REGLENT PAS EN UN SEUL APPEL : le bonneteau
-     (la mise part avec le gobelet designe), le vingt-et-un et le poker
+  /* DEUX TABLES NE SE REGLENT PAS EN UN SEUL APPEL : le bonneteau
+     (la mise part avec le gobelet designe) et le vingt-et-un
      (une main dure entre deux appels). Elles ont donc leur propre
      « action », et ne passent pas par casino_coup ici. */
   if(JEU.action)return JEU.action(S,pari,n);
