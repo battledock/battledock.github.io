@@ -12,8 +12,8 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<script src="maintenance.js?v=2026-10-15-1100"></script>
-<script src="personnage.js?v=2026-10-15-1100"></script>
+<script src="maintenance.js?v=2026-10-15-1200"></script>
+<script src="personnage.js?v=2026-10-15-1200"></script>
 <script>
 /* LA VERSION, comme partout ailleurs : ajoutée au signet, une page reste en
    mémoire et ne se recharge jamais. On demande à chaque ouverture quelle est
@@ -27,7 +27,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    MA_VERSION de jeu.html, index.html, jeu_entree.html, complexe.html,
    forge.html et mine.html. Les autres pages n'en portent pas. */
 (function(){
-  var MA_VERSION='2026-10-15-1100';
+  var MA_VERSION='2026-10-15-1200';
   window.MA_VERSION=MA_VERSION;
   /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il
@@ -82,8 +82,8 @@ html,body{margin:0;height:100%;background:#0b0608;overflow:hidden;
   background:linear-gradient(to bottom,rgba(11,6,8,.8),rgba(11,6,8,0))}
 #haut small{display:block;font:700 8px ui-monospace,monospace;letter-spacing:3.4px;color:#c9a24a}
 </style>
-<script src="retour.js?v=2026-10-15-1100"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-15-1100">
+<script src="retour.js?v=2026-10-15-1200"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-15-1200">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -92,6 +92,7 @@ html,body{margin:0;height:100%;background:#0b0608;overflow:hidden;
      qui nomme deja le lieu bien mieux que lui. -->
 <div id="bas">
   <button id="casino" hidden>ENTRER AU CASINO</button>
+  <button id="arcade" hidden>ENTRER À L'ARCADE</button>
   <button id="quai">REDESCENDRE SUR LE QUAI</button>
 </div>
 <script>
@@ -278,8 +279,29 @@ let NEF=null, NEF_CLE='';
    attend ce qu'on y mettra. */
 const SCN={hw:86, prof:34};
 const BAR={g:()=>Math.round(CX-330), d:()=>Math.round(CX-150)};
-/* L'ENTREE DU CASINO, au bout gauche de la piste. */
+/* LES DEUX ENTREES, UNE A CHAQUE BOUT DE LA PISTE. Le casino tient le
+   bout gauche depuis le debut ; la salle d'arcade prend le bout droit.
+   Les mettre cote a cote aurait fait un couloir a deux portes — la
+   piste au milieu, c'est elle qui donne au hall sa raison d'etre, et on
+   la traverse pour aller d'un jeu a l'autre.
+   DEUX LIEUX, DEUX MONNAIES. Au casino on mise de l'argent et c'est le
+   serveur qui tire ; a l'arcade on achete un jeton et on joue avec ses
+   doigts. D'ou deux ambiances : le laiton chaud d'un cote, le neon
+   froid de l'autre. */
 const ENT={x:()=>BORD+86, hw:40, h:58};
+const ARC={x:()=>SALLE_L-BORD-86, hw:40, h:58};
+const PORTES=[
+ {ent:ENT, mot:'CASINO', ou:'casino.html', cordons:true,
+  fond:[14,10,7, 40,26,10], bandeau:'201,162,74', halo:'255,196,110',
+  tapis:['#6e1020','#420a14','#8a6a2a'],
+  neon:['#ff8f6a','#ffd9c0','#7a3028','#9a4a3a'], haloN:'255,120,90',
+  caisson:'#5a4e7a', parvis:'255,200,130'},
+ {ent:ARC, mot:'ARCADE', ou:'arcade.html', cordons:false,
+  fond:[7,9,16, 10,30,52], bandeau:'110,210,255', halo:'110,200,255',
+  tapis:['#17304a','#0e1c2e','#3a8ab0'],
+  neon:['#5ad8ff','#d8f4ff','#1a5a78','#2a8ab0'], haloN:'90,200,255',
+  caisson:'#2a5a7a', parvis:'130,210,255'}
+];
 /* LES PROJECTEURS. Un pont de lumiere court sous la charpente : des
    lyres qui balaient, et des boules a facettes entre elles. Leur place
    est fixe, leur mouvement ne l'est pas — c'est ce qui fait la boite. */
@@ -382,7 +404,7 @@ function nefGraver(){
   }
   graverScene();
   graverBar();
-  graverEntree();
+  PORTES.forEach(graverEntree);
 }
 /* ================= L'ENTREE DU CASINO =================
    Une baie ouverte dans le mur, et au-dessus son caisson d'ampoules.
@@ -398,19 +420,20 @@ function nefGraver(){
    plantes dans la seule chose qui devait rester lisible, la profondeur.
    Et un videur a la porte dit « on te regarde », quand tout le reste du
    lieu dit « entre ». Le couloir vide s'enfonce mieux, et invite plus. */
-function graverEntree(){
-  const cx=ENT.x(), hw=ENT.hw, haut=MUR-ENT.h, bas=MUR+2;
+function graverEntree(P){
+  const cx=P.ent.x(), hw=P.ent.hw, haut=MUR-P.ent.h, bas=MUR+2;
+  const F=P.fond;
   R(cx-hw,haut,hw*2,bas-haut,'#140e08');
   for(let y=haut;y<bas;y++){
     const k=(y-haut)/(bas-haut);
-    R(cx-hw,y,hw*2,1,'rgb('+Math.round(14+k*40)+','+Math.round(10+k*26)+','+Math.round(7+k*10)+')');
+    R(cx-hw,y,hw*2,1,'rgb('+Math.round(F[0]+k*F[3])+','+Math.round(F[1]+k*F[4])+','+Math.round(F[2]+k*F[5])+')');
   }
   /* les bandeaux du couloir, qui se resserrent : c'est eux qui creusent */
   for(let i=0;i<4;i++){
     const k=i/4, w=hw*2*(1-k*0.42);
-    R(cx-w/2,haut+8+i*11,w,2,'rgba(201,162,74,'+(0.10+0.12*k).toFixed(2)+')');
+    R(cx-w/2,haut+8+i*11,w,2,'rgba('+P.bandeau+','+(0.10+0.12*k).toFixed(2)+')');
   }
-  halo(cx,bas-8,62,0.42,'255,196,110');
+  halo(cx,bas-8,62,0.42,P.halo);
   /* le tableau d'ombre de la baie : l'epaisseur du mur, rien de plus */
   R(cx-hw,haut,hw*2,3,'rgba(0,0,0,.65)');
   R(cx-hw,haut,3,bas-haut,'rgba(0,0,0,.5)');
@@ -419,21 +442,27 @@ function graverEntree(){
   /* le caisson de l'enseigne */
   const by=haut-46;
   R(cx-62,by,124,34,'#0b0a10');
-  R(cx-63,by-1,126,2,'#5a4e7a');R(cx-63,by+33,126,2,'#5a4e7a');
-  R(cx-63,by-1,2,36,'#5a4e7a');R(cx+61,by-1,2,36,'#5a4e7a');
+  R(cx-63,by-1,126,2,P.caisson);R(cx-63,by+33,126,2,P.caisson);
+  R(cx-63,by-1,2,36,P.caisson);R(cx+61,by-1,2,36,P.caisson);
   /* le parvis : la lumiere qui deborde, puis le tapis */
   for(let i=0;i<64;i++){
     const k=i/64, d=hw+k*28;
-    g.fillStyle='rgba(255,200,130,'+(0.18*(1-k)*(1-k)).toFixed(3)+')';
+    g.fillStyle='rgba('+P.parvis+','+(0.18*(1-k)*(1-k)).toFixed(3)+')';
     g.fillRect(cx-d,MUR+i,d*2,1);
   }
   for(let i=0;i<60;i++){
     const k=i/60, d=Math.round(hw-10+k*18), y=MUR+i;
-    R(cx-d,y,d*2,1,'#6e1020');
-    R(cx-d,y,2,1,'#420a14');R(cx+d-2,y,2,1,'#420a14');
-    if(y%3===0){R(cx-d+4,y,1,2,'#8a6a2a');R(cx+d-5,y,1,2,'#8a6a2a');}
+    R(cx-d,y,d*2,1,P.tapis[0]);
+    R(cx-d,y,2,1,P.tapis[1]);R(cx+d-2,y,2,1,P.tapis[1]);
+    if(y%3===0){R(cx-d+4,y,1,2,P.tapis[2]);R(cx+d-5,y,1,2,P.tapis[2]);}
   }
-  cordon(cx-hw-8,cx-hw+2,MUR+34);cordon(cx+hw-2,cx+hw+8,MUR+34);
+  /* LE CORDON DE VELOURS EST AU CASINO, PAS A L'ARCADE. Deux poteaux de
+     laiton devant une salle de bornes diraient « on choisit qui entre »,
+     alors que tout l'interet de l'arcade est qu'on y entre avec une
+     piece. */
+  if(P.cordons){
+    cordon(cx-hw-8,cx-hw+2,MUR+34);cordon(cx+hw-2,cx+hw+8,MUR+34);
+  }
 }
 function cordon(x0,x1,y){
   [x0,x1].forEach(px=>{R(px-2,y-16,4,16,'#3a3450');R(px-2,y-16,1,16,'#8a7aba');
@@ -514,23 +543,31 @@ function cabine(T){
   halo(sx,MUR+10,46,0.24,'255,200,120');
 }
 /* les ampoules du caisson et le neon : le seul mouvement de l'entree */
-function entree(T){
-  const cx=ENT.x(), by=MUR-ENT.h-46;
+function entree(T,P){
+  const cx=P.ent.x(), by=MUR-P.ent.h-46;
+  /* LES AMPOULES DU CAISSON TOURNENT DANS L'AUTRE SENS D'UNE PORTE A
+     L'AUTRE : vues ensemble depuis le milieu de la piste, deux caissons
+     qui clignotent a l'identique auraient l'air d'un seul lieu
+     dedouble. */
+  const sens=P.cordons?1:-1;
   for(let i=0;i<13;i++){
-    const on=((i+Math.floor(T/110))%4)!==0, col=on?'#fff0a8':'#4a4020';
+    const on=((i*sens+Math.floor(T/110))%4+4)%4!==0;
+    const col=on?(P.cordons?'#fff0a8':'#c8f0ff'):(P.cordons?'#4a4020':'#1e3240');
     R(cx-58+i*10,by-4,3,3,col);R(cx-58+i*10,by+33,3,3,col);
-    if(on){halo(cx-57+i*10,by-3,7,0.24);halo(cx-57+i*10,by+34,7,0.24);}
+    if(on){halo(cx-57+i*10,by-3,7,0.24,P.haloN);halo(cx-57+i*10,by+34,7,0.24,P.haloN);}
   }
-  const bat=0.64+0.36*Math.abs(Math.sin(T/330));
+  const bat=0.64+0.36*Math.abs(Math.sin(T/330+(P.cordons?0:1.7)));
   const rate=(Math.floor(T/90)%41)===0?0.3:1;
-  halo(cx,by+16,46,0.44*bat*rate,'255,120,90');
-  halo(cx,by+16,22,0.34*bat*rate,'255,220,170');
-  ecrire('CASINO',cx,by+10,3,rate<1?'#7a3028':'#ff8f6a');
-  ecrire('CASINO',cx,by+9,3,rate<1?'#9a4a3a':'#ffd9c0');
+  halo(cx,by+16,46,0.44*bat*rate,P.haloN);
+  halo(cx,by+16,22,0.34*bat*rate,P.cordons?'255,220,170':'200,240,255');
+  ecrire(P.mot,cx,by+10,3,rate<1?P.neon[2]:P.neon[0]);
+  ecrire(P.mot,cx,by+9,3,rate<1?P.neon[3]:P.neon[1]);
 }
 function monde(T){
   const g0=camX-50, g1=camX+VUE_L+50;
-  if(ENT.x()>g0-80&&ENT.x()<g1+80)entree(T);
+  PORTES.forEach(function(P){
+    if(P.ent.x()>g0-80&&P.ent.x()<g1+80)entree(T,P);
+  });
   murDImages(T);
   /* LE DJ VIENT AVANT SA CABINE : dessine apres, il se tenait devant
      elle, en equilibre sur le rebord. */
@@ -688,6 +725,7 @@ function sortir(ou){
   sortie=true;fondu=0.001;
 }
 function auCasino(){sortir('casino.html');}
+function aLArcade(){sortir('arcade.html');}
 function majJoueur(dt){
   /* ON ENTRE EN BAS DU TAPIS, mais pas colle au bord : pose a 30 du bas,
      le personnage etait a demi cache par la barre d'action, et deux pas
@@ -727,7 +765,9 @@ function majJoueur(dt){
      declenche au ras du mur, dans la largeur de l'ouverture moins ses
      deux tableaux d'ombre. Pas de bouton a viser — le bouton existe
      quand meme, en bas, pour qui prefere appuyer. */
-  if(joueur.y<MUR+22&&Math.abs(joueur.x-ENT.x())<ENT.hw-10)auCasino();
+  PORTES.forEach(function(P){
+    if(joueur.y<MUR+22&&Math.abs(joueur.x-P.ent.x())<P.ent.hw-10)sortir(P.ou);
+  });
 }
 function dessinerJoueur(){
   const x=Math.round(joueur.x), y=Math.round(joueur.y);
@@ -912,17 +952,22 @@ let tPrec=0;
 
 document.getElementById('quai').onclick=function(){sortir('jeu.html');};
 document.getElementById('casino').onclick=auCasino;
-/* LE BOUTON DU CASINO NE S'AFFICHE QU'AU PIED DE SA PORTE. Pose en
+/* CHAQUE BOUTON NE S'AFFICHE QU'AU PIED DE SA PORTE. Pose en
    permanence, il partageait la barre avec la sortie et l'on quittait la
    salle en voulant entrer. On le montre a trois pas de la baie, et la
-   barre redevient simple partout ailleurs. */
+   barre redevient simple partout ailleurs. Avec deux portes aux deux
+   bouts de la piste, on n'en voit jamais deux a la fois. */
+document.getElementById('arcade').onclick=aLArcade;
 (function(){
-  const b=document.getElementById('casino');
-  let vu=false;
+  const B=[[document.getElementById('casino'),ENT],
+           [document.getElementById('arcade'),ARC]];
+  const vu=[false,false];
   setInterval(function(){
-    const pres=Math.abs(joueur.x-ENT.x())<ENT.hw+54 && joueur.y<MUR+96;
-    if(pres===vu)return;
-    vu=pres;b.hidden=!pres;
+    B.forEach(function(p,i){
+      const pres=Math.abs(joueur.x-p[1].x())<p[1].hw+54 && joueur.y<MUR+96;
+      if(pres===vu[i])return;
+      vu[i]=pres;p[0].hidden=!pres;
+    });
   },180);
 })();
 </script>

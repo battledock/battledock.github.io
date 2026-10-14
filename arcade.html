@@ -1,0 +1,916 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>La Salle d’Arcade — Battle Dock</title>
+<style id="pasDeSelection">*{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}</style>
+<script>(function(){var champ=function(t){return t&&t.closest&&t.closest('input,textarea,[contenteditable="true"]');};
+['selectstart','copy','cut','contextmenu','dragstart'].forEach(function(k){document.addEventListener(k,function(e){if(!champ(e.target))e.preventDefault();},{capture:true});});})();</script>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<link rel="preconnect" href="https://esm.sh" crossorigin>
+<link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
+<script src="maintenance.js?v=2026-10-15-1200"></script>
+<script>
+/* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
+   porte le chemin de la page : s'il ne le portait pas, une page deja
+   rechargee pour la version du jour empecherait celle-ci de se recharger
+   a son tour, et l'on jouerait une vieille copie sans le savoir. */
+(function(){
+  var MA_VERSION='2026-10-15-1200';
+  window.MA_VERSION=MA_VERSION;
+  var cle='bdl.version.vue:'+location.pathname.split('?')[0];
+  function verifier(){
+    fetch('version.json?t='+Date.now(),{cache:'no-store'})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(!d||!d.v)return;
+        try{localStorage.setItem('bdl.v',d.v);}catch(e){}
+        if(d.v===MA_VERSION)return;
+        var deja=null;try{deja=sessionStorage.getItem(cle);}catch(e){}
+        if(deja===d.v)return;
+        try{sessionStorage.setItem(cle,d.v);}catch(e){}
+        location.replace(location.pathname.split('?')[0]+'?v='+encodeURIComponent(d.v));
+      }).catch(function(){});
+  }
+  verifier();
+  var vu=Date.now();
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState!=='visible')return;
+    if(Date.now()-vu>120000)verifier();
+    vu=Date.now();
+  });
+})();
+</script>
+<style>
+html,body{margin:0;height:100%;background:#070a10;overflow:hidden}
+body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
+#salle{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;
+  background:
+    radial-gradient(ellipse 120% 60% at 50% -10%,rgba(90,216,255,.18),rgba(90,216,255,0) 70%),
+    linear-gradient(#0e1726,#070a10 60%,#05070c)}
+/* LA MOQUETTE FLUO : des losanges, comme toutes les salles d'arcade du
+   monde, et pour la meme raison — elle cache la poussiere et elle brille
+   sous le neon. */
+#salle::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:
+    repeating-linear-gradient(60deg,rgba(90,216,255,.03) 0 1px,transparent 1px 20px),
+    repeating-linear-gradient(-60deg,rgba(255,90,180,.03) 0 1px,transparent 1px 20px)}
+
+#hd{flex:none;position:relative;z-index:2;
+  padding:calc(env(safe-area-inset-top,0px) + 18px) 16px 0}
+#hd small{display:block;font:700 8px ui-monospace,monospace;letter-spacing:3.4px;color:#5ad8ff}
+#hd h1{margin:5px 0 0;font:700 30px 'Baloo 2',sans-serif;letter-spacing:.5px;color:#eaf6ff}
+#hd .sous{margin-top:3px;font:italic 13px Georgia,serif;color:#6f93aa}
+#jeton{display:flex;align-items:center;gap:9px;margin:14px 0 2px;
+  border:1px solid #2a5a7a;border-radius:13px;padding:9px 13px;background:rgba(0,0,0,.34)}
+#jeton u{flex:none;width:19px;height:19px;border-radius:50%;text-decoration:none;
+  background:radial-gradient(#9ae8ff,#2a7a9a);border:1px solid #c8f0ff}
+#jeton b{flex:1;font:700 17px ui-monospace,monospace;color:#9ae8ff}
+#jeton i{font:700 8px ui-monospace,monospace;letter-spacing:2px;color:#4a7a94;font-style:normal}
+
+#corps{flex:1;overflow-y:auto;position:relative;z-index:2;
+  padding:14px 16px calc(env(safe-area-inset-bottom,0px) + 96px);-webkit-overflow-scrolling:touch}
+.rub{font:700 8px ui-monospace,monospace;letter-spacing:3px;color:#4a7a94;margin:4px 0 10px}
+.grille{display:grid;grid-template-columns:1fr;gap:11px}
+.borne{position:relative;border:1px solid #1f4a66;border-radius:15px;overflow:hidden;
+  background:linear-gradient(#132436,#0c1724);padding:14px 13px 13px;text-align:left;
+  display:flex;align-items:center;gap:14px;width:100%}
+.borne canvas{display:block;width:60px;height:60px;image-rendering:pixelated;flex:none}
+.borne .tx{flex:1;min-width:0}
+.borne b{display:block;font:700 16px 'Baloo 2',sans-serif;color:#eaf6ff;line-height:1.15}
+.borne span{display:block;margin-top:5px;font:italic 12px Georgia,serif;color:#6f93aa;line-height:1.35}
+.borne em{display:block;margin-top:8px;font:700 9px ui-monospace,monospace;letter-spacing:1.4px;
+  color:#5ad8ff;font-style:normal}
+.borne .rec{display:block;margin-top:4px;font:700 9px ui-monospace,monospace;
+  letter-spacing:1px;color:#4a7a94;font-style:normal}
+.borne:active{background:linear-gradient(#1b3650,#0f1e30)}
+
+#mot{margin-top:18px;border-top:1px solid rgba(90,216,255,.16);padding-top:14px;
+  font:italic 12px Georgia,serif;color:#577a90;line-height:1.5}
+#mot b{font-style:normal;color:#6f93aa}
+
+#bas{position:absolute;left:0;right:0;bottom:0;z-index:3;
+  padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 12px);
+  display:flex;gap:9px;align-items:center;
+  background:linear-gradient(to top,rgba(5,7,12,.96),rgba(5,7,12,0))}
+#bas button{-webkit-appearance:none;appearance:none;flex:1;border:1px solid #2a6a8a;
+  border-radius:12px;padding:12px 8px;background:rgba(12,23,36,.9);color:#9ae8ff;
+  font:700 10px ui-monospace,monospace;letter-spacing:2px}
+#bas button:active{background:rgba(90,216,255,.22)}
+
+/* ---------- la borne ouverte ---------- */
+#jeu{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;
+  background:linear-gradient(#0c1420,#05070c 62%,#04060a)}
+#jeu[hidden]{display:none}
+#jb{flex:none;position:relative;z-index:2;display:flex;align-items:center;gap:11px;
+  padding:calc(env(safe-area-inset-top,0px) + 11px) 13px 11px;
+  border-bottom:1px solid rgba(90,216,255,.2);background:rgba(4,8,14,.7)}
+#sortie{-webkit-appearance:none;appearance:none;flex:none;width:36px;height:36px;
+  border:1px solid #2a5a7a;border-radius:11px;background:rgba(0,0,0,.4);color:#9ae8ff;
+  font:700 17px ui-monospace,monospace;line-height:1}
+#sortie:active{background:rgba(90,216,255,.22)}
+#jtitre{flex:1;min-width:0}
+#jtitre b{display:block;font:700 17px 'Baloo 2',sans-serif;color:#eaf6ff;line-height:1.1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#jtitre small{display:block;margin-top:2px;font:700 8px ui-monospace,monospace;
+  letter-spacing:1.8px;color:#4a7a94}
+#jsou{flex:none;display:flex;align-items:center;gap:7px;border:1px solid #2a5a7a;
+  border-radius:11px;padding:7px 10px;background:rgba(0,0,0,.4);
+  font:700 13px ui-monospace,monospace;color:#9ae8ff}
+#jsou u{flex:none;width:13px;height:13px;border-radius:50%;text-decoration:none;
+  background:radial-gradient(#9ae8ff,#2a7a9a);border:1px solid #c8f0ff}
+
+#scene{flex:1;position:relative;z-index:2;display:flex;align-items:center;
+  justify-content:center;min-height:0;overflow:hidden}
+#ecran{display:block;image-rendering:pixelated;image-rendering:-moz-crisp-edges;touch-action:none}
+
+#jbas{flex:none;position:relative;z-index:2;border-top:1px solid rgba(90,216,255,.2);
+  background:rgba(4,8,14,.84);
+  padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 11px)}
+#jmsg{min-height:19px;margin-bottom:9px;text-align:center;
+  font:700 12px ui-monospace,monospace;letter-spacing:.6px;color:#6f93aa}
+#jmsg.bon{color:#7ce0a0}
+#jmsg.mal{color:#e08a90}
+#jmsg.gros{color:#9ae8ff;font-size:14px}
+#jact{display:flex;gap:8px}
+#jact button{-webkit-appearance:none;appearance:none;flex:1;border:1px solid #2a6a8a;
+  border-radius:12px;padding:13px 6px;background:rgba(12,23,36,.88);color:#9ae8ff;
+  font:700 11px ui-monospace,monospace;letter-spacing:1.4px}
+#jact button:active{background:rgba(90,216,255,.26)}
+#jact button:disabled{opacity:.34}
+#jact button.pr{border-color:#5ad8ff;background:rgba(90,216,255,.18);color:#eaf6ff}
+
+/* le tableau des scores, sous la borne */
+#jcls{margin-top:10px;border-top:1px solid rgba(90,216,255,.14);padding-top:9px}
+#jcls .t{font:700 8px ui-monospace,monospace;letter-spacing:2.4px;color:#4a7a94;margin-bottom:6px}
+#jcls .l{display:flex;align-items:center;gap:8px;padding:3px 0;
+  font:700 11px ui-monospace,monospace;color:#8aa8bc}
+#jcls .l i{flex:none;width:16px;text-align:right;font-style:normal;color:#4a7a94}
+#jcls .l u{flex:1;min-width:0;text-decoration:none;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+#jcls .l b{flex:none;color:#9ae8ff}
+#jcls .l.moi{color:#eaf6ff}
+#jcls .l.moi u::after{content:' ·';color:#5ad8ff}
+</style>
+<link rel="stylesheet" href="responsive.css?v=2026-10-15-1200">
+</head>
+<body>
+<div id="salle">
+  <div id="hd">
+    <small>LE COMPLEXE FESTIF · PORTE DE DROITE</small>
+    <h1>La Salle d’Arcade</h1>
+    <div class="sous">Un jeton, trois vies, et un tableau que tout le port regarde.</div>
+    <div id="jeton"><u></u><b id="sou">—</b><i>EN CAISSE</i></div>
+  </div>
+  <div id="corps">
+    <div class="rub">LES BORNES · UN JETON LA PARTIE</div>
+    <div class="grille" id="grille"></div>
+    <div id="mot">
+      <b>Ici on ne mise pas, on joue.</b> Un jeton vaut un euro et c’est
+      tout ce qu’on y laisse : ce qu’on remporte n’est pas de l’argent,
+      c’est un score. C’est pour ça que les bornes tournent dans le
+      téléphone alors que les tables du casino se règlent au comptoir —
+      le pire qu’on puisse faire ici, c’est truquer un classement.
+    </div>
+  </div>
+  <div id="bas">
+    <button id="retour">RETOURNER DANS LA SALLE</button>
+  </div>
+</div>
+
+<div id="jeu" hidden>
+  <div id="jb">
+    <button id="sortie">←</button>
+    <div id="jtitre"><b></b><small></small></div>
+    <div id="jsou"><u></u><span>—</span></div>
+  </div>
+  <div id="scene"><canvas id="ecran"></canvas></div>
+  <div id="jbas">
+    <div id="jmsg"></div>
+    <div id="jact"></div>
+    <div id="jcls"></div>
+  </div>
+</div>
+
+<script src="retour.js?v=2026-10-15-1200"></script>
+<script>
+/* =====================================================================
+   LA SALLE D'ARCADE
+
+   POURQUOI ELLE N'EST PAS DANS LE CASINO. Une table de casino se regle
+   au serveur : le tirage, la mise et le gain sortent d'une fonction
+   SECURITY DEFINER, sinon il suffit d'ouvrir la console pour fabriquer
+   des euros. Une borne, non — on y paie un jeton, on joue avec ses
+   doigts, et ce qu'on emporte est un score. Le jeu peut donc tourner
+   entierement ici sans qu'un centime soit en jeu, et le pire qu'un
+   tricheur puisse faire est de truquer un classement.
+
+   C'est la meme difference que dans la vraie vie entre une machine a
+   sous et un flipper, et c'est elle qui decide de l'architecture :
+   casino_coup au comptoir, arcade_jeton a l'entree.
+   ===================================================================== */
+
+var URL_SB='https://zpfkekiavlfphialvphi.supabase.co';
+var CLE_SB='sb_publishable__dfR2lEOwKjhhtavvJEvGw_KVACZnHP';
+
+function lireSave(){try{return JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}')||{};}catch(x){return {};}}
+function noterEuros(c){
+  try{var s=lireSave();s.euros=c;localStorage.setItem('bdl.pix.v2',JSON.stringify(s));}catch(x){}
+}
+var e=lireSave();
+function enEuros(c){
+  return ((c||0)/100).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+}
+var SOLDE=(typeof e.euros==='number')?e.euros:null;
+function majSolde(){
+  var t=(SOLDE===null)?'—':enEuros(SOLDE);
+  document.getElementById('sou').textContent=t;
+  document.getElementById('jsou').querySelector('span').textContent=t;
+}
+majSolde();
+
+var SB=null, SESSION=null, SB_CHARGE=null, MOI=null;
+function supa(){
+  if(SB_CHARGE)return SB_CHARGE;
+  SB_CHARGE=(async function(){
+    var urls=['https://esm.sh/@supabase/supabase-js@2',
+              'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'];
+    for(var i=0;i<urls.length;i++){
+      try{
+        var m=await import(urls[i]);
+        SB=m.createClient(URL_SB,CLE_SB);
+        try{
+          var d=await SB.auth.getSession();
+          SESSION=d&&d.data&&d.data.session;
+          MOI=SESSION&&SESSION.user?SESSION.user.id:null;
+        }catch(x){}
+        return SB;
+      }catch(x){}
+    }
+    return null;
+  })();
+  return SB_CHARGE;
+}
+supa();
+
+async function rpc(nom,args){
+  await supa();
+  if(!SB)return {erreur:'La salle ne répond pas. Vérifie ta connexion.'};
+  if(!SESSION){
+    try{var d=await SB.auth.getSession();SESSION=d&&d.data&&d.data.session;
+        MOI=SESSION&&SESSION.user?SESSION.user.id:null;}catch(x){}
+  }
+  if(!SESSION)return {erreur:'Connecte-toi dans le jeu pour prendre un jeton.'};
+  try{
+    var r=await SB.rpc(nom,args||{});
+    if(r.error)return {erreur:r.error.message||'La salle n’a pas répondu.'};
+    return r.data;
+  }catch(x){return {erreur:'La salle n’a pas répondu.'};}
+}
+
+/* ---------------------------------------------------------------------
+   LES VIGNETTES DES BORNES, au pixel comme le reste du port
+   ------------------------------------------------------------------ */
+function toile(cv,f){
+  var D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  cv.width=24*D;cv.height=24*D;
+  var g=cv.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  f(g,function(x,y,w,h,c){g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));});
+}
+var VIGNETTE={
+  zombies:function(g,R){
+    R(1,2,22,16,'#0e1420');R(1,2,22,1,'#2a3450');R(1,17,22,1,'#070a10');
+    R(2,13,20,4,'#1e2a38');
+    R(7,7,5,6,'#7a9a52');R(7,7,5,1,'#5f7a40');
+    R(8,9,1,1,'#1a1a10');R(10,9,1,1,'#f0e0a0');
+    R(6,5,7,2,'#c8a22a');
+    R(15,8,5,5,'#b8302e');R(17,7,1,7,'#ff4a4a');R(14,10,7,1,'#ff4a4a');
+    R(2,19,20,3,'#2a6a8a');R(2,19,20,1,'#5ad8ff');
+  },
+  grappin:function(g,R){
+    R(1,2,22,16,'#0e1420');R(1,2,22,1,'#2a3450');R(1,17,22,1,'#070a10');
+    R(3,4,16,1,'#8a8a98');R(11,5,1,5,'#6a6a78');
+    R(9,10,5,4,'#c8a22a');R(9,10,5,1,'#f0d78a');
+    R(10,14,1,1,'#8a6a1a');R(13,14,1,1,'#8a6a1a');
+    R(3,14,5,3,'#b8302e');R(15,14,5,3,'#3a7a4a');
+    R(2,19,20,3,'#2a6a8a');R(2,19,20,1,'#5ad8ff');
+  }
+};
+
+var BORNES=[
+ {cle:'zombies', vig:'zombies', nom:'Les Dockers Morts-Vivants',
+  dit:'Le quai, la nuit. Ils sortent des conteneurs et ils avancent. Tape pour tirer, recharge avant qu’il soit trop tard.',
+  mise:'1 JETON · 3 VIES'},
+ {cle:'grappin', vig:'grappin', nom:'Le Grappin',
+  dit:'Le crochet balance au-dessus de la pile. Lâche au bon moment, remonte le conteneur. Ça accélère.',
+  mise:'1 JETON · 60 SECONDES'}
+];
+
+function poser(G,B){
+  var d=document.createElement('button');
+  d.className='borne';
+  d.innerHTML='<canvas></canvas><span class="tx"><b>'+B.nom+'</b>'+
+              '<span>'+B.dit+'</span><em>'+B.mise+'</em>'+
+              '<em class="rec" data-rec="'+B.cle+'">—</em></span>';
+  G.appendChild(d);
+  toile(d.querySelector('canvas'),VIGNETTE[B.vig]);
+  d.onclick=function(){ouvrirBorne(B);};
+}
+BORNES.forEach(function(B){poser(document.getElementById('grille'),B);});
+
+document.getElementById('retour').onclick=function(){
+  location.href='complexe.html?v='+(window.MA_VERSION||Date.now());
+};
+
+/* on va chercher le meilleur score de chaque borne pendant que le joueur
+   lit la salle : un tableau vide donne envie de partir */
+(async function(){
+  for(var i=0;i<BORNES.length;i++){
+    var B=BORNES[i];
+    var r=await rpc('arcade_classement',{p_borne:B.cle});
+    if(!r||r.erreur||!r.length)continue;
+    var el=document.querySelector('[data-rec="'+B.cle+'"]');
+    if(el)el.textContent='RECORD '+r[0].score.toLocaleString('fr-FR')+' · '+r[0].pseudo.toUpperCase();
+  }
+})();
+
+/* =====================================================================
+   L'ECRAN DE LA BORNE
+   ===================================================================== */
+var CV=document.getElementById('ecran'), G=CV.getContext('2d');
+var SL=0, SH=0, ECH=1;
+function cadrer(L,H){
+  SL=L;SH=H;
+  var b=document.getElementById('scene').getBoundingClientRect();
+  var dl=Math.max(60,b.width-12), dh=Math.max(60,b.height-10);
+  ECH=Math.max(1,Math.floor(Math.min(dl/L,dh/H)));
+  var D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  CV.width=L*ECH*D;CV.height=H*ECH*D;
+  CV.style.width=(L*ECH)+'px';CV.style.height=(H*ECH)+'px';
+  G.setTransform(ECH*D,0,0,ECH*D,0,0);G.imageSmoothingEnabled=false;
+}
+function R(x,y,w,h,c){G.fillStyle=c;G.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));}
+function disque(x,y,r,c){G.fillStyle=c;G.beginPath();G.arc(x,y,r,0,7);G.fill();}
+function al(n){var v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);}
+
+var BORNE=null, S=null, RAF=null, PARTIE=null, OCCUPE=false;
+var JMSG=document.getElementById('jmsg'), JACT=document.getElementById('jact'),
+    JCLS=document.getElementById('jcls'), JEU=document.getElementById('jeu');
+function dire(t,cl){JMSG.textContent=t||'';JMSG.className=cl||'';}
+
+var MOTEUR={};
+
+/* =====================================================================
+   1 — LES DOCKERS MORTS-VIVANTS
+
+   Vue depuis le quai, la nuit. Ils arrivent du fond et grandissent en
+   approchant ; on tape dessus pour tirer. Huit balles, puis il faut
+   recharger — et c'est le rechargement qui fait le jeu : tirer est
+   gratuit, mais le moment ou l'on choisit de recharger coute cher.
+   ===================================================================== */
+var ZL=120, ZH=168;
+MOTEUR.zombies={
+  nom:'Les Dockers Morts-Vivants', sous:'TAPE POUR TIRER',
+  L:ZL, H:ZH,
+  init:function(){
+    return {phase:'pret', t:0, score:0, vies:3, vague:1, chargeur:8,
+            recharge:0, gens:[], prochain:900, tues:0, impacts:[],
+            secousse:0, fin:0};
+  },
+  /* un docker monte depuis l'horizon : sa profondeur va de 0 (au fond)
+     a 1 (sur nous) */
+  naitre:function(s){
+    var v=0.055+Math.min(0.085,s.vague*0.009);
+    s.gens.push({p:0, x:14+al(s.t*0.013+s.gens.length)*(ZL-28),
+                 v:v*(0.8+al(s.t*0.007)*0.5), vie:1, mort:0, t:al(s.t)*6,
+                 col:Math.floor(al(s.t*0.019)*3)});
+  },
+  pas:function(s,dt){
+    if(s.phase==='pret')return;
+    if(s.phase==='fini'){s.fin+=dt;return;}
+    s.t+=dt;
+    if(s.secousse>0)s.secousse=Math.max(0,s.secousse-dt/90);
+    if(s.recharge>0){
+      s.recharge-=dt;
+      if(s.recharge<=0){s.chargeur=8;s.recharge=0;}
+    }
+    /* les vagues : toutes les dix mises a mort, ca va plus vite */
+    s.prochain-=dt;
+    if(s.prochain<=0){
+      this.naitre(s);
+      s.prochain=Math.max(260,980-s.vague*58)*(0.6+al(s.t*0.011)*0.8);
+    }
+    for(var i=s.gens.length-1;i>=0;i--){
+      var z=s.gens[i];
+      if(z.mort>0){z.mort+=dt;if(z.mort>420)s.gens.splice(i,1);continue;}
+      z.p+=z.v*dt/1000;
+      z.t+=dt/140;
+      if(z.p>=1){
+        /* il nous atteint */
+        s.gens.splice(i,1);
+        s.vies--;s.secousse=1;
+        if(s.vies<=0){s.phase='fini';s.fin=0;finirPartie(s.score);}
+        else dire('Il t’a touché. '+s.vies+(s.vies>1?' vies':' vie'),'mal');
+      }
+    }
+    for(i=s.impacts.length-1;i>=0;i--){
+      s.impacts[i].t+=dt;
+      if(s.impacts[i].t>260)s.impacts.splice(i,1);
+    }
+  },
+  /* la geometrie d'un docker a une profondeur donnee */
+  place:function(z){
+    var HOR=ZH*0.42;
+    var y=HOR+(ZH-24-HOR)*Math.pow(z.p,1.5);
+    var ech=0.5+Math.pow(z.p,1.3)*2.6;
+    var x=ZL/2+(z.x-ZL/2)*(0.4+Math.pow(z.p,1.2)*0.6);
+    return {x:x, y:y, e:ech};
+  },
+  tape:function(s,x,y){
+    if(s.phase!=='jeu')return;
+    if(s.recharge>0){dire('Tu recharges…','mal');return;}
+    if(s.chargeur<=0){dire('Chargeur vide — RECHARGER','mal');return;}
+    s.chargeur--;
+    s.secousse=0.5;
+    /* on cherche le plus proche de nous parmi ceux qu'on a touches :
+       deux dockers alignes, c'est celui de devant qui prend */
+    var vise=null;
+    for(var i=0;i<s.gens.length;i++){
+      var z=s.gens[i];if(z.mort>0)continue;
+      var q=MOTEUR.zombies.place(z);
+      var lg=7*q.e, ht=42*q.e;
+      if(x>q.x-lg&&x<q.x+lg&&y>q.y-ht&&y<q.y+2){
+        if(!vise||z.p>vise.p)vise=z;
+      }
+    }
+    if(!vise){s.impacts.push({x:x,y:y,t:0,rate:true});return;}
+    vise.mort=1;
+    var q2=MOTEUR.zombies.place(vise);
+    s.impacts.push({x:q2.x,y:q2.y-30*q2.e,t:0,rate:false});
+    /* plus il est loin, plus il rapporte : tirer au dernier moment est
+       facile et ne paie presque rien */
+    var pts=Math.round(140*(1.25-vise.p));
+    s.score+=pts;s.tues++;
+    if(s.tues%10===0){s.vague++;dire('Vague '+s.vague,'bon');}
+  },
+  dessine:function(s,L,H){
+    var HOR=H*0.42;
+    var sx=s.secousse>0?(al(s.t*0.7)-0.5)*3*s.secousse:0;
+    G.save();G.translate(Math.round(sx),0);
+    /* le ciel et la lune */
+    for(var y=0;y<HOR;y++){
+      var k=y/HOR;
+      R(-4,y,L+8,1,'rgb('+Math.round(10+k*26)+','+Math.round(9+k*22)+','+Math.round(24+k*40)+')');
+    }
+    for(var i=0;i<60;i++)R(al(i*3.1)*L,al(i*7.7)*(HOR-30),1,1,al(i)<0.3?'#fff':'#b8c4e0');
+    disque(L-26,22,9,'#e8ecf8');disque(L-31,18,8,'rgb(20,18,40)');
+    /* la mer */
+    for(y=HOR;y<HOR+20;y++){
+      k=(y-HOR)/20;
+      R(-4,y,L+8,1,'rgb('+Math.round(14+k*10)+','+Math.round(20+k*14)+','+Math.round(38+k*16)+')');
+    }
+    /* le portique au fond */
+    R(14,HOR-42,3,42,'#141624');R(44,HOR-42,3,42,'#141624');
+    R(8,HOR-45,45,3,'#141624');R(8,HOR-42,2,14,'#141624');
+    /* LE QUAI. Premiere version : un degrade de 26 a 46 de gris, donc du
+       noir sur du noir — le bas de l'ecran n'etait plus une surface sur
+       laquelle les dockers marchent, c'etait un trou. Du beton eclaire
+       par en haut, avec ses joints et sa laisse de mer, et la scene a de
+       nouveau un sol. */
+    for(y=HOR+20;y<H;y++){
+      k=(y-HOR-20)/(H-HOR-20);
+      R(-4,y,L+8,1,'rgb('+Math.round(46+k*36)+','+Math.round(42+k*32)+','+Math.round(46+k*30)+')');
+    }
+    R(-4,HOR+20,L+8,2,'#2a2630');            /* le bord du quai */
+    R(-4,HOR+22,L+8,1,'rgba(255,255,255,.1)');
+    for(i=0;i<7;i++){
+      var t=i/6, yy=HOR+22+Math.pow(t,1.7)*(H-HOR-26);
+      R(-4,yy,L+8,1,'rgba(16,14,20,.5)');
+    }
+    /* les joints en fuite : ils donnent la profondeur que les bandes
+       horizontales seules ne donnent pas */
+    for(i=-3;i<=3;i++){
+      G.strokeStyle='rgba(16,14,20,.4)';G.lineWidth=1;
+      G.beginPath();G.moveTo(L/2+i*13,HOR+22);G.lineTo(L/2+i*52,H);G.stroke();
+    }
+    /* la flaque de lumiere d'un projecteur, qui explique le reste */
+    var hal=G.createRadialGradient(L/2,HOR+14,4,L/2,HOR+14,L*0.8);
+    hal.addColorStop(0,'rgba(255,228,170,.10)');hal.addColorStop(1,'rgba(255,228,170,0)');
+    G.fillStyle=hal;G.fillRect(-4,HOR+20,L+8,H-HOR-20);
+    /* les conteneurs, d'ou ils sortent */
+    R(0,HOR+4,26,18,'#5a2a2e');R(0,HOR+4,26,2,'#7a3a3e');
+    for(i=0;i<3;i++)R(4+i*8,HOR+8,3,11,'rgba(0,0,0,.2)');
+    R(L-30,HOR+6,30,16,'#2a4a5a');R(L-30,HOR+6,30,2,'#3a6a7a');
+    for(i=0;i<3;i++)R(L-26+i*8,HOR+10,3,9,'rgba(0,0,0,.2)');
+    /* les dockers, du fond vers nous pour que le plus proche couvre */
+    var tri=s.gens.slice().sort(function(a,b){return a.p-b.p;});
+    tri.forEach(function(z){
+      var q=MOTEUR.zombies.place(z);
+      MOTEUR.zombies.docker(q.x,q.y,q.e,z);
+    });
+    /* les impacts */
+    s.impacts.forEach(function(im){
+      var k2=im.t/260;
+      if(im.rate){
+        G.strokeStyle='rgba(200,200,220,'+(0.5*(1-k2))+')';G.lineWidth=1;
+        G.beginPath();G.arc(im.x,im.y,3+k2*6,0,7);G.stroke();
+        return;
+      }
+      for(var j=0;j<7;j++){
+        var a=j*0.9+k2*2;
+        R(im.x+Math.cos(a)*(3+k2*12),im.y+Math.sin(a)*(2+k2*9),2,2,
+          'rgba(154,216,74,'+(1-k2).toFixed(2)+')');
+      }
+    });
+    G.restore();
+    /* LE HAUT : le score et les vies */
+    R(0,0,L,13,'rgba(5,7,12,.8)');R(0,13,L,1,'rgba(90,216,255,.26)');
+    G.font='700 8px ui-monospace,monospace';G.textAlign='left';
+    G.fillStyle='#9ae8ff';G.fillText(String(s.score),4,9.5);
+    G.textAlign='right';
+    G.fillStyle='#6f93aa';G.fillText('V'+s.vague,L-4,9.5);G.textAlign='left';
+    /* LES TROIS CASQUES, ESPACES. Colles l'un a l'autre ils faisaient un
+       seul lingot d'or au milieu du bandeau, et l'on ne voyait pas qu'on
+       venait d'en perdre un. */
+    for(i=0;i<3;i++){
+      var vif=i<s.vies, hx=L/2-19+i*14;
+      R(hx-4,3,8,3,vif?'#c8a22a':'#2a2a30');
+      R(hx-5,6,10,2,vif?'#a8821a':'#222228');
+      R(hx+1,1,3,2,vif?'#f0d78a':'#33333a');
+    }
+    /* LE BAS : le chargeur */
+    R(0,H-11,L,11,'rgba(5,7,12,.82)');R(0,H-12,L,1,'rgba(90,216,255,.26)');
+    for(i=0;i<8;i++){
+      var plein=i<s.chargeur;
+      R(4+i*8,H-9,6,7,plein?'#c8a22a':'#1e2630');
+      R(4+i*8,H-9,6,2,plein?'#f0d78a':'#2a3440');
+    }
+    if(s.recharge>0){
+      var p=1-s.recharge/900;
+      R(70,H-8,L-74,5,'rgba(0,0,0,.5)');
+      R(70,H-8,(L-74)*p,5,'#5ad8ff');
+    }
+    if(s.phase==='pret'){
+      R(0,H/2-14,L,28,'rgba(5,7,12,.84)');
+      G.font='700 9px ui-monospace,monospace';G.textAlign='center';
+      G.fillStyle='#9ae8ff';G.fillText('TAPE POUR TIRER',L/2,H/2-2);
+      G.font='700 7px ui-monospace,monospace';G.fillStyle='#6f93aa';
+      G.fillText('LES LOINTAINS PAIENT PLUS',L/2,H/2+9);
+      G.textAlign='left';
+    }
+    if(s.phase==='fini'){
+      R(0,H/2-16,L,32,'rgba(5,7,12,.88)');
+      R(0,H/2-16,L,1,'rgba(224,138,144,.5)');
+      G.font='700 10px ui-monospace,monospace';G.textAlign='center';
+      G.fillStyle='#e08a90';G.fillText('ILS T’ONT EU',L/2,H/2-3);
+      G.font='700 12px ui-monospace,monospace';G.fillStyle='#eaf6ff';
+      G.fillText(String(s.score),L/2,H/2+11);
+      G.textAlign='left';
+    }
+  },
+  /* un docker, a l'echelle voulue */
+  docker:function(px,py,ech,z){
+    var s_=function(x,y,w,h,col){R(px+x*ech,py+y*ech,w*ech,h*ech,col);};
+    var mort=z.mort>0;
+    var PEAU=mort?'#9ab86a':'#7a9a52', PEAU2=mort?'#7a9850':'#5f7a40';
+    var VESTE=['#2a4a6a','#6a3a2a','#4a4a2a'][z.col%3];
+    if(mort){
+      /* il s'effondre : on l'ecrase vers le sol */
+      var k=Math.min(1,z.mort/420);
+      G.save();G.translate(px,py);G.scale(1,1-k*0.86);G.translate(-px,-py);
+      G.globalAlpha=1-k*0.5;
+    }
+    G.fillStyle='rgba(0,0,0,.34)';
+    G.beginPath();G.ellipse(px,py+1,9*ech,3*ech,0,0,7);G.fill();
+    var bal=Math.sin(z.t)*1.2;
+    s_(-5+bal,-13,4,13,'#24242e');s_(1-bal,-13,4,11,'#1c1c26');
+    s_(-6,-27,12,15,VESTE);s_(-6,-27,12,2,'rgba(255,255,255,.1)');
+    s_(-2,-25,3,11,'rgba(0,0,0,.26)');
+    s_(-11,-25,5,10,VESTE);s_(-12,-16,4,4,PEAU);
+    s_(6,-24,4,9,VESTE);s_(6,-16,4,4,PEAU);
+    s_(-5,-37,10,10,PEAU);s_(-5,-37,10,2,PEAU2);
+    s_(-3,-34,2,2,'#1a1a10');s_(1,-34,2,2,'#f0e0a0');
+    s_(-3,-30,6,1,'#3a2a20');
+    s_(-6,-41,12,4,'#c8a22a');s_(-7,-38,14,2,'#a8821a');
+    if(mort){G.restore();G.globalAlpha=1;}
+  },
+  actions:function(s){
+    if(s.phase==='pret')
+      return '<button class="pr" data-a="commencer">COMMENCER</button>';
+    if(s.phase==='fini')
+      return '<button class="pr" data-a="rejouer">UN AUTRE JETON · 1 €</button>';
+    return '<button data-a="recharger">RECHARGER</button>';
+  },
+  action:function(s,a){
+    if(s.phase!=='jeu')return;
+    if(a==='recharger'){
+      if(s.recharge>0)return;
+      if(s.chargeur>=8){dire('Le chargeur est plein.');return;}
+      s.recharge=900;dire('');
+    }
+  }
+};
+
+/* =====================================================================
+   2 — LE GRAPPIN
+
+   Le crochet balance au bout de la grue. On tape, il descend ; ce qu'il
+   attrape depend d'ou il est au moment ou on lache. Soixante secondes,
+   et le balancier accelere a chaque prise — c'est la seule difficulte,
+   et elle suffit.
+   ===================================================================== */
+/* LE HANGAR TIENT EN 124 DE HAUT, PAS 150. A cent cinquante, il y avait
+   cent pixels de rien entre le crochet et la pile : le vide n'etait pas
+   une attente, c'etait un ecran mort. */
+var GL=128, GH=124;
+MOTEUR.grappin={
+  nom:'Le Grappin', sous:'LÂCHE AU BON MOMENT',
+  L:GL, H:GH,
+  init:function(){
+    return {phase:'pret', t:0, score:0, reste:60000, ang:0, vit:0.0016,
+            crochet:'balance', ty:0, prise:null, pile:[], flash:0, pris:0};
+  },
+  /* la pile de conteneurs : chacun vaut ce que sa couleur dit */
+  remplir:function(s){
+    s.pile=[];
+    var VAL=[[ '#b8302e',300],[ '#2a6a8a',150],[ '#c8a22a',500],
+             [ '#3a7a4a',150],[ '#8a5a2a',80]];
+    /* SEPT CONTENEURS DE QUINZE DE LARGE, ESPACES DE SEIZE. A dix-huit
+       de large pour seize d'ecart, deux voisins du meme etage se
+       chevauchaient d'un pixel et se lisaient comme un seul bloc long —
+       on ne savait plus ou viser. */
+    for(var i=0;i<7;i++){
+      var v=VAL[Math.floor(al(s.t*0.017+i*3.1)*VAL.length)];
+      s.pile.push({x:15+i*((GL-30)/6), y:GH-36-Math.floor(al(i*5.3)*2)*10,
+                   col:v[0], val:v[1], pris:false});
+    }
+  },
+  pas:function(s,dt){
+    if(s.phase==='pret')return;
+    if(s.phase==='fini'){s.flash+=dt;return;}
+    s.t+=dt;
+    s.reste-=dt;
+    if(s.flash>0)s.flash=Math.max(0,s.flash-dt);
+    if(s.reste<=0){s.reste=0;s.phase='fini';s.flash=0;finirPartie(s.score);return;}
+    if(s.crochet==='balance'){
+      s.ang+=s.vit*dt;
+    }else if(s.crochet==='descend'){
+      s.ty+=dt*0.16;
+      if(s.ty>=GH-76){
+        /* on regarde ce qui est sous le crochet */
+        var cx=MOTEUR.grappin.crochetX(s);
+        var touche=null;
+        for(var i=0;i<s.pile.length;i++){
+          var c=s.pile[i];
+          if(c.pris)continue;
+          if(Math.abs(cx-c.x)<8){touche=c;break;}
+        }
+        s.prise=touche;s.crochet='remonte';
+      }
+    }else if(s.crochet==='remonte'){
+      s.ty-=dt*0.2;
+      if(s.ty<=0){
+        s.ty=0;s.crochet='balance';
+        if(s.prise){
+          s.prise.pris=true;s.score+=s.prise.val;s.pris++;
+          s.flash=360;
+          dire('+'+s.prise.val,'bon');
+          /* la pile se recharge quand elle est vide, et ca balance plus
+             vite : c'est la seule montee en difficulte du jeu */
+          var reste=s.pile.filter(function(c){return !c.pris;}).length;
+          if(reste===0){MOTEUR.grappin.remplir(s);s.vit=Math.min(0.0042,s.vit*1.18);}
+        }else dire('Dans le vide.','mal');
+        s.prise=null;
+      }
+    }
+  },
+  crochetX:function(s){
+    return GL/2+Math.sin(s.ang)*(GL/2-18);
+  },
+  tape:function(s){
+    if(s.phase!=='jeu')return;
+    if(s.crochet!=='balance')return;
+    s.crochet='descend';
+  },
+  dessine:function(s,L,H){
+    /* le hangar : le bardage du fond, ses lampes et sa verriere */
+    for(var y=0;y<H;y++){
+      var k=y/H;
+      R(0,y,L,1,'rgb('+Math.round(26+k*14)+','+Math.round(31+k*16)+','+Math.round(40+k*16)+')');
+    }
+    for(var i=0;i<16;i++)R(i*(L/16),20,1,H-40,'rgba(255,255,255,.04)');
+    /* les baies vitrees du haut, par ou entre le jour */
+    for(i=0;i<4;i++){
+      var bx=10+i*((L-20)/4);
+      R(bx,22,(L-20)/4-6,9,'rgba(140,190,230,.09)');
+      R(bx,22,(L-20)/4-6,1,'rgba(180,220,250,.16)');
+    }
+    /* deux lampes d'atelier suspendues, qui expliquent la lumiere */
+    [L*0.22,L*0.78].forEach(function(lx){
+      R(lx-0.5,20,1,7,'#3a4150');
+      G.fillStyle='#7a8290';G.beginPath();
+      G.moveTo(lx-5,34);G.lineTo(lx-2.5,27);G.lineTo(lx+2.5,27);G.lineTo(lx+5,34);G.fill();
+      R(lx-3,33,6,2,'#ffe8a8');
+      var h=G.createRadialGradient(lx,35,2,lx,35,34);
+      h.addColorStop(0,'rgba(255,228,160,.14)');h.addColorStop(1,'rgba(255,228,160,0)');
+      G.fillStyle=h;G.beginPath();G.arc(lx,35,34,0,7);G.fill();
+    });
+    /* le rail de la grue */
+    R(0,14,L,4,'#3a3f4e');R(0,14,L,1,'#5a6070');R(0,18,L,1,'#1c2029');
+    /* le chariot et le cable */
+    var cx=MOTEUR.grappin.crochetX(s);
+    R(cx-7,10,14,7,'#6a7080');R(cx-7,10,14,1,'#8a90a0');
+    R(cx-1,17,2,18+s.ty,'#9aa0b0');
+    /* le crochet */
+    var gy=35+s.ty;
+    R(cx-7,gy,14,5,'#c8a22a');R(cx-7,gy,14,1,'#f0d78a');
+    R(cx-6,gy+5,3,5,'#a8821a');R(cx+3,gy+5,3,5,'#a8821a');
+    if(s.prise&&s.crochet==='remonte'){
+      R(cx-7.5,gy+9,15,11,s.prise.col);
+      R(cx-7.5,gy+9,15,1,'rgba(255,255,255,.3)');
+      for(var u=0;u<3;u++)R(cx-5+u*5,gy+11,2,7,'rgba(0,0,0,.2)');
+    }
+    /* le sol et la pile */
+    R(0,H-20,L,20,'#1e232e');R(0,H-20,L,1,'#434b5c');
+    R(0,H-19,L,1,'rgba(0,0,0,.4)');
+    s.pile.forEach(function(c){
+      if(c.pris)return;
+      R(c.x-7.5,c.y+11,15,2,'rgba(0,0,0,.3)');
+      R(c.x-7.5,c.y,15,11,c.col);
+      R(c.x-7.5,c.y,15,1,'rgba(255,255,255,.3)');
+      R(c.x-7.5,c.y+10,15,1,'rgba(0,0,0,.34)');
+      for(var u=0;u<3;u++)R(c.x-5+u*5,c.y+2,2,7,'rgba(0,0,0,.2)');
+    });
+    if(s.flash>0){
+      G.fillStyle='rgba(122,224,160,'+(s.flash/360*0.2).toFixed(2)+')';
+      G.fillRect(0,0,L,H);
+    }
+    /* le bandeau du haut : le score et le chrono */
+    R(0,0,L,10,'rgba(5,7,12,.82)');
+    G.font='700 8px ui-monospace,monospace';G.textAlign='left';
+    G.fillStyle='#9ae8ff';G.fillText(String(s.score),4,7.5);
+    G.textAlign='right';
+    var sec=Math.ceil(s.reste/1000);
+    G.fillStyle=sec<=10?'#e08a90':'#6f93aa';
+    G.fillText(sec+'s',L-4,7.5);G.textAlign='left';
+    /* la jauge de temps */
+    R(0,10,L*(s.reste/60000),1,sec<=10?'#e08a90':'#5ad8ff');
+    if(s.phase==='pret'){
+      R(0,H/2-14,L,28,'rgba(5,7,12,.84)');
+      G.font='700 9px ui-monospace,monospace';G.textAlign='center';
+      G.fillStyle='#9ae8ff';G.fillText('TAPE POUR LÂCHER',L/2,H/2-2);
+      G.font='700 7px ui-monospace,monospace';G.fillStyle='#6f93aa';
+      G.fillText('L’OR VAUT CINQ FOIS LE BOIS',L/2,H/2+9);
+      G.textAlign='left';
+    }
+    if(s.phase==='fini'){
+      R(0,H/2-16,L,32,'rgba(5,7,12,.88)');
+      R(0,H/2-16,L,1,'rgba(90,216,255,.5)');
+      G.font='700 10px ui-monospace,monospace';G.textAlign='center';
+      G.fillStyle='#9ae8ff';G.fillText('FIN DU QUART',L/2,H/2-3);
+      G.font='700 12px ui-monospace,monospace';G.fillStyle='#eaf6ff';
+      G.fillText(String(s.score),L/2,H/2+11);
+      G.textAlign='left';
+    }
+  },
+  actions:function(s){
+    if(s.phase==='pret')
+      return '<button class="pr" data-a="commencer">COMMENCER</button>';
+    if(s.phase==='fini')
+      return '<button class="pr" data-a="rejouer">UN AUTRE JETON · 1 €</button>';
+    return '<button class="pr" data-a="lacher">LÂCHER LE GRAPPIN</button>';
+  },
+  action:function(s,a){
+    if(a==='lacher')MOTEUR.grappin.tape(s);
+  }
+};
+
+/* =====================================================================
+   LE PILOTE
+   ===================================================================== */
+function boucle(ts){
+  if(!BORNE){RAF=null;return;}
+  var dt=Math.min(60,ts-(boucle.vu||ts));boucle.vu=ts;
+  BORNE.pas(S,dt);
+  BORNE.dessine(S,SL,SH);
+  RAF=requestAnimationFrame(boucle);
+}
+
+function ouvrirBorne(B){
+  BORNE=MOTEUR[B.cle];if(!BORNE)return;
+  BORNE.cle=B.cle;
+  S=BORNE.init();
+  PARTIE=null;OCCUPE=false;
+  document.getElementById('jtitre').querySelector('b').textContent=BORNE.nom;
+  document.getElementById('jtitre').querySelector('small').textContent=BORNE.sous;
+  JEU.hidden=false;
+  majSolde();
+  dire('Un jeton, et c’est parti.');
+  monterActions();
+  cadrer(BORNE.L,BORNE.H);
+  boucle.vu=0;
+  if(!RAF)RAF=requestAnimationFrame(boucle);
+  CV.onpointerdown=function(ev){
+    if(!BORNE||!S||S.phase!=='jeu')return;
+    ev.preventDefault();
+    if(!BORNE.tape)return;
+    var b=CV.getBoundingClientRect();
+    BORNE.tape(S,(ev.clientX-b.left)/b.width*SL,(ev.clientY-b.top)/b.height*SH);
+  };
+  chargerClassement(B.cle);
+}
+function fermerBorne(){
+  /* ON POSE LE SCORE AVANT DE PARTIR. Sans ca, quitter en cours de
+     partie serait le moyen le plus simple d'effacer une mauvaise
+     manche — le jeton serait paye pour rien, mais le tableau ne
+     retiendrait que les bonnes. */
+  if(S&&PARTIE&&S.phase==='jeu')finirPartie(S.score,true);
+  JEU.hidden=true;
+  if(RAF){cancelAnimationFrame(RAF);RAF=null;}
+  BORNE=null;S=null;CV.onpointerdown=null;
+  majSolde();
+}
+document.getElementById('sortie').onclick=function(){if(!OCCUPE)fermerBorne();};
+
+function monterActions(){
+  if(!BORNE)return;
+  JACT.innerHTML=BORNE.actions(S);
+  [].forEach.call(JACT.querySelectorAll('button'),function(b){
+    b.onclick=function(){
+      var a=b.getAttribute('data-a');
+      if(a==='commencer'||a==='rejouer')return prendreJeton();
+      if(BORNE.action)BORNE.action(S,a);
+    };
+  });
+}
+function verrou(v){
+  OCCUPE=v;
+  [].forEach.call(JACT.querySelectorAll('button'),function(b){b.disabled=v;});
+}
+
+async function prendreJeton(){
+  verrou(true);dire('On glisse le jeton…');
+  var r=await rpc('arcade_jeton',{p_borne:BORNE.cle});
+  if(r.erreur){dire(r.erreur,'mal');verrou(false);return;}
+  PARTIE=r.partie;
+  if(typeof r.euros==='number'){SOLDE=r.euros;noterEuros(r.euros);majSolde();}
+  S=BORNE.init();
+  if(BORNE.remplir)BORNE.remplir(S);
+  S.phase='jeu';
+  dire('');
+  monterActions();verrou(false);
+}
+
+async function finirPartie(score,silencieux){
+  var p=PARTIE;PARTIE=null;
+  if(!p)return;
+  monterActions();
+  var r=await rpc('arcade_score',{p_partie:p,p_score:Math.round(score)});
+  if(silencieux)return;
+  if(r&&r.erreur){dire(r.erreur,'mal');return;}
+  if(!r)return;
+  var m=score.toLocaleString('fr-FR')+' points · '+r.rang+(r.rang===1?'er':'e')+' au tableau';
+  dire(m,r.rang<=3?'gros':'bon');
+  chargerClassement(BORNE?BORNE.cle:null);
+}
+
+async function chargerClassement(cle){
+  if(!cle)return;
+  JCLS.innerHTML='<div class="t">LE TABLEAU DE LA BORNE</div>';
+  var r=await rpc('arcade_classement',{p_borne:cle});
+  if(!r||r.erreur||!r.length){
+    JCLS.innerHTML+='<div class="l"><u>Personne n’a encore posé de score.</u></div>';
+    return;
+  }
+  var h='';
+  r.slice(0,8).forEach(function(l,i){
+    h+='<div class="l'+(l.joueur===MOI?' moi':'')+'">'+
+       '<i>'+(i+1)+'</i><u>'+l.pseudo+'</u><b>'+l.score.toLocaleString('fr-FR')+'</b></div>';
+  });
+  JCLS.innerHTML='<div class="t">LE TABLEAU DE LA BORNE</div>'+h;
+}
+
+window.addEventListener('resize',function(){if(BORNE)cadrer(BORNE.L,BORNE.H);});
+window.addEventListener('orientationchange',function(){
+  setTimeout(function(){if(BORNE)cadrer(BORNE.L,BORNE.H);},180);
+});
+
+/* le solde au plus juste dès l'arrivée */
+(async function(){
+  await supa();
+  if(!SB||!SESSION||!SESSION.user)return;
+  try{
+    var r=await SB.from('comptes').select('euros_cents')
+            .eq('id',SESSION.user.id).limit(1);
+    if(!r.error&&r.data&&r.data.length&&typeof r.data[0].euros_cents==='number'){
+      SOLDE=r.data[0].euros_cents;noterEuros(SOLDE);majSolde();
+    }
+  }catch(x){}
+})();
+</script>
+</body>
+</html>
