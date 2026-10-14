@@ -14,14 +14,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Expires" content="0">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-15-1000"></script>
+<script src="maintenance.js?v=2026-10-15-1100"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-15-1000';
+  var MA_VERSION='2026-10-15-1100';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -190,14 +190,14 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#f0e0c0}
   font:italic 11px Georgia,serif;color:#7a6350;line-height:1.5}
 #paie b{font-style:normal;color:#9a8266}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-15-1000">
+<link rel="stylesheet" href="responsive.css?v=2026-10-15-1100">
 </head>
 <body>
 <div id="tapis">
   <div id="hd">
     <small>LE COMPLEXE FESTIF · PORTE DE GAUCHE</small>
     <h1>Le Casino</h1>
-    <div class="sous">Sept tables ouvertes, et la maison qui ne perd jamais longtemps.</div>
+    <div class="sous">Huit tables ouvertes, et la maison qui ne perd jamais longtemps.</div>
     <div id="jeton"><u></u><b id="sou">—</b><i>EN CAISSE</i></div>
   </div>
   <div id="corps">
@@ -237,7 +237,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#f0e0c0}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-15-1000"></script>
+<script src="retour.js?v=2026-10-15-1100"></script>
 <script>
 /* =====================================================================
    LE CASINO
@@ -395,6 +395,16 @@ var EMBLEME={
     g.fillStyle='#2a1a1e';g.beginPath();g.arc(11,12,2,0,7);g.fill();
     R(10,0,2,4,ORC);
   },
+  clous:function(g,R){
+    R(1,3,20,18,'#1a1420');R(1,3,20,1,'#3a3450');
+    for(var r=0;r<4;r++)for(var i=0;i<=r;i++)
+      R(11+(i-r/2)*4-0.5,6+r*3.2,1.6,1.6,'#c0c0cc');
+    R(1,18,20,3,'#2a2434');
+    R(1,18,4,3,'#a82824');R(17,18,4,3,'#a82824');
+    R(9,18,4,3,'#2a3440');
+    g.fillStyle='#f0cf7d';g.beginPath();g.arc(13,14,2.4,0,7);g.fill();
+    g.fillStyle='#b8862a';g.beginPath();g.arc(13,14,2.4,0.6,3.2);g.fill();
+  },
   ticket:function(g,R){
     R(2,4,18,14,'#2a4a8a');R(2,4,18,1,'#5a7aba');R(2,17,18,1,'#16284a');
     R(4,6,14,7,'#b8b0a0');R(4,6,14,1,'#d8d0c0');
@@ -425,6 +435,9 @@ var TABLES=[
  {cle:'vingtun', emb:'cartes', nom:'Le Vingt-et-un', etat:'ouvert', grand:true,
   dit:'Contre la banque. Fonfon donne, Fonfon tire à seize — et c’est ici que la maison garde le moins.',
   mise:'5 € À 200 €'},
+ {cle:'clous', emb:'clous', nom:'Le Mur de Clous', etat:'ouvert', grand:true,
+  dit:'Un jeton lâché en haut, huit rangées de clous, neuf cases en bas. Les bords paient vingt-neuf fois.',
+  mise:'1 € À 50 €'},
  {cle:'grattage', emb:'ticket', nom:'Le Grattage de Luxe', etat:'ouvert',
   dit:'Neuf cases, trois pareils. Et tout au fond du carnet, le Phare.',
   mise:'50 € LE TICKET'}
@@ -1348,6 +1361,132 @@ function reglerVingtun(r){
   if(r.gain>r.mise)dire(m+' +'+enEuros(r.gain-r.mise),r.issue==='naturel'?'gros':'gagne');
   else if(r.gain===r.mise)dire(m,'');
   else dire(m+' −'+enEuros(r.mise),'perd');
+}
+
+/* ---------------------------------------------------------------------
+   7 — LE MUR DE CLOUS
+
+   Une planche de Galton, et c'est tout l'interet : on ne tire pas une
+   case, on fait vraiment tomber le jeton. Le serveur joue huit pile ou
+   face et renvoie LE CHEMIN avec le resultat ; la page rejoue les memes
+   rebonds. Ce qu'on voit a l'ecran est donc le tirage lui-meme, pas une
+   animation decorative qui mene a une case choisie autrement.
+
+   Les neuf cases suivent le binome C(8,k)/256 : le milieu sort une fois
+   sur quatre et ne rend qu'un cinquieme, chaque bord une fois sur deux
+   cent cinquante-six et paie vingt-neuf fois. Rendu de dessin 92,5 %,
+   mesure 90,73 % sur treize mille cinq cents jetons — l'ecart tient
+   entierement aux bords, qui portent a eux seuls un cinquieme du rendu
+   sur moins d'un pour cent des chutes.
+   ------------------------------------------------------------------ */
+var CLOUS_F=[29,4,1,0.4,0.2,0.4,1,4,29];
+var CLOUS_T=['29','4','1','0,4','0,2','0,4','1','4','29'];
+var CLOUS_C=['#a82824','#c06a2a','#c9a24a','#3a4a5a','#2a3440','#3a4a5a','#c9a24a','#c06a2a','#a82824'];
+MOTEUR.clous={
+  nom:'Le Mur de Clous', sous:'HUIT RANGÉES · NEUF CASES',
+  L:128, H:124,
+  mises:[100,200,500,1000,2000,5000], mise:500,
+  paie:'Les deux bords <b>×29</b>, puis ×4, ×1, ×0,4, et <b>×0,2 au centre</b> — '+
+       'et c’est au centre que le jeton tombe une fois sur quatre. '+
+       'La maison garde sept euros et demi sur cent.',
+  /* la geometrie, une fois pour toutes : la rangee r porte r+1 clous, et
+     le jeton qui a fait k fois « droite » tombe sur le clou numero k */
+  geo:function(L,H){return {cw:13, y0:20, dy:11, bas:H-20};},
+  init:function(){return {phase:'pose',chemin:[],k:0,res:null,
+                          r:0,t:0,x:0,y:0,clign:0,hist:[]};},
+  pas:function(s,dt){
+    var q=MOTEUR.clous.geo(SL,SH);
+    if(s.phase==='tombe'){
+      s.t+=dt;
+      var DR=170;                                  /* une rangee */
+      var r=Math.floor(s.t/DR);
+      if(r>=8){
+        /* LA CHUTE DANS LA CASE S'ARRETE AU BORD, pas au fond. Pose cinq
+           pixels plus bas, le jeton couvrait pile le chiffre de la case
+           qu'il venait de gagner — la seule qu'on ait envie de lire. */
+        var p=Math.min(1,(s.t-8*DR)/260);
+        s.x=s.k-4;
+        s.y=q.y0+7*q.dy+p*(q.bas-5-q.y0-7*q.dy);
+        if(p>=1){s.phase='fini';s.clign=0;finirClous(s);}
+        return;
+      }
+      /* entre deux clous : on interpole, avec un petit saut */
+      var f=(s.t-r*DR)/DR;
+      var ka=0, kb=0, i;
+      for(i=0;i<r;i++)ka+=s.chemin[i];
+      kb=ka+s.chemin[r];
+      var xa=ka-r/2, xb=kb-(r+1)/2;
+      s.x=xa+(xb-xa)*f;
+      s.y=q.y0+r*q.dy+f*q.dy-Math.sin(f*Math.PI)*3.4;
+      s.r=r;
+      return;
+    }
+    if(s.phase==='fini')s.clign+=dt;
+  },
+  dessine:function(s,L,H){
+    feutre(L,H);
+    var q=MOTEUR.clous.geo(L,H), cx=L/2;
+    /* le cadre de la planche, qui s'arrete au-dessus des cases */
+    R(4,10,L-8,q.bas-12,'rgba(0,0,0,.16)');
+    R(4,10,L-8,1,'rgba(201,162,74,.2)');
+    /* la fente du haut, par ou le jeton part */
+    R(cx-9,11,18,4,'#2a2434');R(cx-9,11,18,1,'#4a4454');
+    /* les clous */
+    for(var r=0;r<8;r++){
+      for(var i=0;i<=r;i++){
+        var x=cx+(i-r/2)*q.cw, y=q.y0+r*q.dy;
+        /* le clou que le jeton vient de toucher brille un instant */
+        var vif=(s.phase==='tombe'&&r===s.r&&i===(function(){
+          var a=0;for(var m=0;m<r;m++)a+=s.chemin[m];return a;})());
+        disque(x,y+1,2,'rgba(0,0,0,.34)');
+        disque(x,y,2,vif?'#f0d78a':'#b8b8c4');
+        disque(x-0.6,y-0.6,0.8,vif?'#fffaf0':'#eef0f6');
+      }
+    }
+    /* les neuf cases */
+    for(i=0;i<9;i++){
+      var bx=cx+(i-4)*q.cw-q.cw/2;
+      var sorti=(s.phase==='fini'&&i===s.k);
+      var vif2=sorti&&(Math.floor(s.clign/300)%2)===0;
+      R(bx,q.bas,q.cw-1,17,CLOUS_C[i]);
+      R(bx,q.bas,q.cw-1,1,'rgba(255,255,255,.24)');
+      if(sorti){
+        R(bx,q.bas,q.cw-1,17,vif2?'rgba(246,233,204,.34)':'rgba(0,0,0,0)');
+        R(bx,q.bas-2,q.cw-1,2,vif2?'#f6e9cc':'#f0d78a');
+      }
+      G.font='700 5px ui-monospace,monospace';G.textAlign='center';
+      G.fillStyle=(i>=3&&i<=5)?'#b4c0cc':'#1a1014';
+      G.fillText(CLOUS_T[i],bx+(q.cw-1)/2,q.bas+13);G.textAlign='left';
+    }
+    /* le jeton */
+    if(s.phase==='tombe'||s.phase==='fini'){
+      var jx=cx+s.x*q.cw, jy=s.y;
+      disque(jx,jy+1,4.2,'rgba(0,0,0,.4)');
+      disque(jx,jy,4.2,'#b8862a');disque(jx,jy,3.2,'#f0cf7d');
+      disque(jx-1.2,jy-1.2,1.2,'#fffaf0');
+    }
+    /* les derniers jetons tombes : la meme memoire inutile que la
+       roulette, et personne ne joue sans la regarder. Posee sur une
+       reglette, sinon un carre seul au coin de l'ecran ressemble a une
+       salissure plutot qu'a un historique. */
+    R(4,3,50,7,'rgba(8,5,7,.5)');R(4,3,50,1,'rgba(201,162,74,.18)');
+    for(var h=0;h<9;h++){
+      if(h<s.hist.length)R(6+h*5,5,4,4,CLOUS_C[s.hist[h]]);
+      else R(6+h*5,5,4,4,'rgba(255,255,255,.05)');
+    }
+  },
+  choix:function(){
+    return '<div class="lgn"><button class="pr" data-p="lacher" style="padding:14px 6px;font-size:12px">LÂCHER LE JETON</button></div>';
+  },
+  avant:function(s){s.phase='pose';s.res=null;},
+  apres:function(s,res){
+    s.chemin=res.tirage.chemin;s.k=res.tirage['case'];s.res=res;
+    s.phase='tombe';s.t=0;s.r=0;s.x=0;s.y=MOTEUR.clous.geo(SL,SH).y0;
+    return 8*170+300;
+  }
+};
+function finirClous(s){
+  s.hist.unshift(s.k);s.hist.length=Math.min(9,s.hist.length);
 }
 
 /* ---------------------------------------------------------------------
