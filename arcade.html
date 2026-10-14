@@ -13,14 +13,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Expires" content="0">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-15-1200"></script>
+<script src="maintenance.js?v=2026-10-15-1300"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-15-1200';
+  var MA_VERSION='2026-10-15-1300';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -128,6 +128,26 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
   justify-content:center;min-height:0;overflow:hidden}
 #ecran{display:block;image-rendering:pixelated;image-rendering:-moz-crisp-edges;touch-action:none}
 
+/* LES DEUX MANCHES. Posees PAR-DESSUS l'ecran, aux deux coins du bas,
+   et pas dessinees dedans : le canvas est agrandi d'un facteur entier
+   qui depend du telephone, donc une manche dessinee dans la scene ferait
+   trois centimetres sur un grand ecran et un centimetre sur un petit.
+   En points d'ecran, elles font toujours la taille d'un pouce.
+   TRANSPARENTES ET BASSES : elles couvrent le bas de l'arene, la ou l'on
+   ne va pas souvent, et on voit a travers. */
+.manche{position:absolute;bottom:10px;width:106px;height:106px;border-radius:50%;
+  border:1px solid rgba(90,216,255,.26);background:rgba(8,16,26,.3);
+  touch-action:none;display:none}
+.manche.on{display:block}
+.manche.g{left:10px}
+.manche.d{right:10px}
+.manche u{position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px 0 0 -20px;
+  border-radius:50%;text-decoration:none;background:rgba(90,216,255,.2);
+  border:1px solid rgba(90,216,255,.45);transition:background .1s}
+.manche.tenue u{background:rgba(90,216,255,.42)}
+.manche i{position:absolute;left:0;right:0;bottom:-1px;text-align:center;font-style:normal;
+  font:700 7px ui-monospace,monospace;letter-spacing:1.6px;color:#4a7a94}
+
 #jbas{flex:none;position:relative;z-index:2;border-top:1px solid rgba(90,216,255,.2);
   background:rgba(4,8,14,.84);
   padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 11px)}
@@ -156,7 +176,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
 #jcls .l.moi{color:#eaf6ff}
 #jcls .l.moi u::after{content:' ·';color:#5ad8ff}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-15-1200">
+<link rel="stylesheet" href="responsive.css?v=2026-10-15-1300">
 </head>
 <body>
 <div id="salle">
@@ -188,7 +208,11 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
     <div id="jtitre"><b></b><small></small></div>
     <div id="jsou"><u></u><span>—</span></div>
   </div>
-  <div id="scene"><canvas id="ecran"></canvas></div>
+  <div id="scene">
+    <canvas id="ecran"></canvas>
+    <div class="manche g" id="mg"><u></u><i>MARCHER</i></div>
+    <div class="manche d" id="md"><u></u><i>TIRER</i></div>
+  </div>
   <div id="jbas">
     <div id="jmsg"></div>
     <div id="jact"></div>
@@ -196,7 +220,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-15-1200"></script>
+<script src="retour.js?v=2026-10-15-1300"></script>
 <script>
 /* =====================================================================
    LA SALLE D'ARCADE
@@ -291,6 +315,17 @@ var VIGNETTE={
     R(15,8,5,5,'#b8302e');R(17,7,1,7,'#ff4a4a');R(14,10,7,1,'#ff4a4a');
     R(2,19,20,3,'#2a6a8a');R(2,19,20,1,'#5ad8ff');
   },
+  prairie:function(g,R){
+    R(1,2,22,16,'#3a3640');R(1,2,22,1,'#5a5660');
+    for(var i=1;i<4;i++){R(1,2+i*4,22,1,'rgba(20,18,24,.4)');R(1+i*5.5,2,1,16,'rgba(20,18,24,.4)');}
+    /* le docker au milieu, deux rats autour */
+    R(10,8,4,5,'#17365a');R(11,5,3,3,'#e8c49a');R(10.5,4,4,1.5,'#c8a22a');
+    R(14,9,2,1,'#f6e9cc');R(17,9,2,1,'#f6e9cc');
+    g.fillStyle='#6a6060';g.beginPath();g.ellipse(5,13,3,2,0,0,7);g.fill();
+    R(7,11.6,1.6,1.4,'#8a8080');
+    g.fillStyle='#6a6060';g.beginPath();g.ellipse(19,6,2.6,1.8,0,0,7);g.fill();
+    R(2,19,20,3,'#2a6a8a');R(2,19,20,1,'#5ad8ff');
+  },
   grappin:function(g,R){
     R(1,2,22,16,'#0e1420');R(1,2,22,1,'#2a3450');R(1,17,22,1,'#070a10');
     R(3,4,16,1,'#8a8a98');R(11,5,1,5,'#6a6a78');
@@ -305,6 +340,9 @@ var BORNES=[
  {cle:'zombies', vig:'zombies', nom:'Les Dockers Morts-Vivants',
   dit:'Le quai, la nuit. Ils sortent des conteneurs et ils avancent. Tape pour tirer, recharge avant qu’il soit trop tard.',
   mise:'1 JETON · 3 VIES'},
+ {cle:'prairie', vig:'prairie', nom:'Le Roi du Quai',
+  dit:'Deux manches : la gauche marche, la droite tire. Ils arrivent par les bords, une touche et tu perds une vie. Marchand entre les zones, Rat-Roi toutes les quatre.',
+  mise:'1 JETON · 4 VIES'},
  {cle:'grappin', vig:'grappin', nom:'Le Grappin',
   dit:'Le crochet balance au-dessus de la pile. Lâche au bon moment, remonte le conteneur. Ça accélère.',
   mise:'1 JETON · 60 SECONDES'}
@@ -358,6 +396,45 @@ function disque(x,y,r,c){G.fillStyle=c;G.beginPath();G.arc(x,y,r,0,7);G.fill();}
 function al(n){var v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);}
 
 var BORNE=null, S=null, RAF=null, PARTIE=null, OCCUPE=false;
+
+/* =====================================================================
+   LES MANCHES. Chacune rend un vecteur de -1 a 1 ; une manche lachee
+   rend zero. On suit le doigt par son pointerId, sinon deux pouces sur
+   l'ecran se volent mutuellement leur manche.
+   ===================================================================== */
+function Manche(el){
+  var M={x:0,y:0,n:0,id:null,el:el,
+         bout:el.querySelector('u')};
+  function pose(ev){
+    var b=el.getBoundingClientRect();
+    var r=b.width/2-8;
+    var dx=ev.clientX-(b.left+b.width/2), dy=ev.clientY-(b.top+b.height/2);
+    var d=Math.hypot(dx,dy);
+    if(d>r){dx=dx/d*r;dy=dy/d*r;d=r;}
+    M.x=dx/r;M.y=dy/r;M.n=Math.min(1,d/r);
+    M.bout.style.transform='translate('+dx.toFixed(1)+'px,'+dy.toFixed(1)+'px)';
+  }
+  function lache(){
+    M.id=null;M.x=M.y=M.n=0;
+    M.bout.style.transform='';el.classList.remove('tenue');
+  }
+  el.addEventListener('pointerdown',function(ev){
+    if(M.id!==null)return;
+    ev.preventDefault();
+    M.id=ev.pointerId;el.setPointerCapture&&el.setPointerCapture(ev.pointerId);
+    el.classList.add('tenue');pose(ev);
+  });
+  el.addEventListener('pointermove',function(ev){
+    if(ev.pointerId!==M.id)return;
+    ev.preventDefault();pose(ev);
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(function(k){
+    el.addEventListener(k,function(ev){if(ev.pointerId===M.id)lache();});
+  });
+  M.lache=lache;
+  return M;
+}
+var MG=Manche(document.getElementById('mg')), MD=Manche(document.getElementById('md'));
 var JMSG=document.getElementById('jmsg'), JACT=document.getElementById('jact'),
     JCLS=document.getElementById('jcls'), JEU=document.getElementById('jeu');
 function dire(t,cl){JMSG.textContent=t||'';JMSG.className=cl||'';}
@@ -790,6 +867,706 @@ MOTEUR.grappin={
 };
 
 /* =====================================================================
+   3 — LE ROI DU QUAI
+
+   Un tir vue de dessus a deux manches : la gauche marche, la droite
+   tire. Les bestioles arrivent par les bords et foncent sur toi ; une
+   seule touche et tu perds une vie. Chaque zone a son chrono : tant
+   qu'il tourne il en sort, quand il est fini il faut nettoyer ce qui
+   reste. Les morts laissent des pieces et parfois un bonus, le marchand
+   passe entre deux zones, et le Rat-Roi vient toutes les quatre.
+
+   POURQUOI LES MANCHES SONT EN POINTS D'ECRAN ET PAS EN PIXELS DE SCENE.
+   Le canvas est agrandi d'un facteur entier qui depend du telephone : une
+   manche dessinee dans la scene ferait trois centimetres sur un grand
+   ecran et un sur un petit. Posees par-dessus, elles font toujours la
+   taille d'un pouce.
+
+   L'ARENE EST CARREE ET LE HAUT PORTE LE TABLEAU DE BORD. On ne scrolle
+   pas : tout le terrain tient a l'ecran, comme sur une vraie borne, et
+   c'est ce qui permet de lire d'un coup d'oeil d'ou arrive le danger.
+   ===================================================================== */
+/* L'ARENE FAIT 128, PAS 96. A quatre-vingt-seize de large elle ne rentrait
+   que QUATRE fois dans la largeur du telephone : un bandeau de quatorze
+   pixels de scene devenait cinquante-six points d'ecran, et le score
+   ecrasait le terrain. A cent vingt-huit elle rentre trois fois, le
+   bandeau reprend sa place, et il y a plus de quai pour se sauver.
+   Les vitesses suivent l'agrandissement, sinon on met deux fois plus de
+   temps a traverser et le jeu devient mou. */
+var PL=128, PH=140, ARE=128;
+var P_HAUT=12;                     /* le bandeau du haut */
+var P_BAS=P_HAUT+ARE;              /* le bas de l'arene */
+
+var BETES={
+  rat:      {pv:1, v:0.0173, r:3.4, pts:10,  col:'#6a6060', col2:'#8a8080'},
+  mouette:  {pv:1, v:0.0426, r:3.2, pts:20,  col:'#e8e8f0', col2:'#b8b8c8'},
+  ragondin: {pv:3, v:0.0140, r:4.6, pts:40,  col:'#6a4a2a', col2:'#8a6238'},
+  oursin:   {pv:2, v:0.0253, r:3.6, pts:30,  col:'#2a2434', col2:'#5a4a6a'}
+};
+var BONUS={
+  cafe:      {duree:16000, nom:'CAFÉ',        col:'#8a5a2a'},
+  mitraille: {duree:12000, nom:'MITRAILLETTE',col:'#9aa0a8'},
+  tromblon:  {duree:12000, nom:'TROMBLON',    col:'#c8a22a'},
+  roue:      {duree:12000, nom:'ROUE',        col:'#5ad8ff'},
+  fumigene:  {duree:4000,  nom:'FUMIGÈNE',    col:'#8ad07a'},
+  bombe:     {duree:0,     nom:'BOMBE',       col:'#b8302e'}
+};
+var BONUS_CLES=['cafe','mitraille','tromblon','roue','fumigene','bombe'];
+
+MOTEUR.prairie={
+  nom:'Le Roi du Quai', sous:'GAUCHE POUR MARCHER · DROITE POUR TIRER',
+  L:PL, H:PH, manches:true,
+  init:function(){
+    return {phase:'pret', t:0, score:0, vies:3, zone:1, piece:0,
+            x:ARE/2, y:P_HAUT+ARE/2, dir:'bas',
+            bottes:0, fusil:0, muni:0,
+            tenu:null, actif:null, actifT:0,
+            tir:0, balles:[], betes:[], butin:[], bouts:[],
+            chrono:26000, sort:0, caisses:[],
+            invul:1200, boss:null, marchand:null, fin:0, mort:0};
+  },
+  /* ------------------------------------------------------------------
+     LA MISE EN PLACE D'UNE ZONE
+     ------------------------------------------------------------------ */
+  poserZone:function(s){
+    s.betes=[];s.balles=[];s.butin=[];s.bouts=[];
+    s.chrono=Math.max(16000,27000-s.zone*400);
+    s.sort=0;s.invul=1000;
+    s.x=ARE/2;s.y=P_HAUT+ARE/2;
+    s.caisses=[];
+    /* des caisses au milieu : elles arretent les balles et les bestioles
+       qui marchent, mais pas les mouettes — c'est ce qui rend les
+       mouettes penibles, et c'est voulu */
+    var n=2+Math.floor(al(s.zone*7.3)*3);
+    for(var i=0;i<n;i++){
+      var cx=16+al(s.zone*3.1+i*5.7)*(ARE-32);
+      var cy=P_HAUT+16+al(s.zone*9.7+i*2.3)*(ARE-32);
+      if(Math.hypot(cx-s.x,cy-s.y)<22)continue;
+      s.caisses.push({x:cx,y:cy,w:11,h:11,pv:3});
+    }
+    s.boss=null;
+    if(s.zone%4===0){
+      /* LE RAT-ROI. Il ne sort pas des bords : il est deja la, au milieu,
+         et c'est a lui qu'on doit la zone. */
+      s.caisses=[];
+      s.chrono=0;
+      s.boss={x:ARE/2, y:P_HAUT+28, pv:40+s.zone*14, pvMax:40+s.zone*14,
+              vx:0.022, t:0, salve:1800, phase:0};
+    }
+  },
+  /* ------------------------------------------------------------------
+     CE QUE LE JOUEUR A ACHETE
+     ------------------------------------------------------------------ */
+  vitesse:function(s){
+    var v=0.0340+s.bottes*0.0073;
+    if(s.actif==='cafe')v*=1.42;
+    if(s.actif==='fumigene')v*=0.0;
+    return v;
+  },
+  cadence:function(s){
+    var c=[420,330,255,190][Math.min(3,s.fusil)];
+    if(s.actif==='mitraille')c*=0.34;
+    if(s.actif==='tromblon')c*=1.5;
+    return c;
+  },
+  degats:function(s){return 1+s.muni;},
+
+  /* ------------------------------------------------------------------
+     LA BOUCLE
+     ------------------------------------------------------------------ */
+  pas:function(s,dt){
+    if(s.phase==='pret')return;
+    if(s.phase==='fini'){s.fin+=dt;return;}
+    if(s.phase==='marchand')return;
+    s.t+=dt;
+    if(s.invul>0)s.invul-=dt;
+    if(s.mort>0){
+      /* on vient de mourir : on fige une seconde avant de repartir */
+      s.mort-=dt;
+      if(s.mort<=0){
+        if(s.vies<0){s.phase='fini';s.fin=0;finirPartie(s.score);return;}
+        s.x=ARE/2;s.y=P_HAUT+ARE/2;s.invul=1600;
+        s.betes=s.betes.filter(function(b){return Math.hypot(b.x-s.x,b.y-s.y)>26;});
+      }
+      return;
+    }
+    if(s.actifT>0){
+      s.actifT-=dt;
+      if(s.actifT<=0){s.actif=null;s.actifT=0;}
+    }
+
+    /* ---- le joueur ---- */
+    var vx=0, vy=0;
+    if(MG.n>0.18){
+      var v=MOTEUR.prairie.vitesse(s);
+      vx=MG.x*v*dt;vy=MG.y*v*dt;
+      if(Math.abs(MG.x)>Math.abs(MG.y))s.dir=MG.x>0?'droite':'gauche';
+      else s.dir=MG.y>0?'bas':'haut';
+    }
+    var nx=Math.max(4,Math.min(ARE-4,s.x+vx));
+    var ny=Math.max(P_HAUT+4,Math.min(P_BAS-4,s.y+vy));
+    if(!MOTEUR.prairie.dansCaisse(s,nx,s.y,3))s.x=nx;
+    if(!MOTEUR.prairie.dansCaisse(s,s.x,ny,3))s.y=ny;
+
+    /* ---- le tir ---- */
+    s.tir-=dt;
+    if(MD.n>0.3&&s.tir<=0&&s.actif!=='fumigene'){
+      s.tir=MOTEUR.prairie.cadence(s);
+      var a=Math.atan2(MD.y,MD.x);
+      var deg=MOTEUR.prairie.degats(s);
+      if(s.actif==='roue'){
+        for(var k=0;k<8;k++)MOTEUR.prairie.tirer(s,k*Math.PI/4,deg);
+      }else if(s.actif==='tromblon'){
+        [-0.26,0,0.26].forEach(function(o){MOTEUR.prairie.tirer(s,a+o,deg);});
+      }else MOTEUR.prairie.tirer(s,a,deg);
+    }
+
+    /* ---- les balles ---- */
+    for(var i=s.balles.length-1;i>=0;i--){
+      var b=s.balles[i];
+      b.x+=Math.cos(b.a)*0.153*dt;b.y+=Math.sin(b.a)*0.153*dt;
+      if(b.x<2||b.x>ARE-2||b.y<P_HAUT+2||b.y>P_BAS-2){s.balles.splice(i,1);continue;}
+      if(MOTEUR.prairie.dansCaisse(s,b.x,b.y,1,true)){s.balles.splice(i,1);continue;}
+      var pris=false;
+      for(var j=0;j<s.betes.length;j++){
+        var z=s.betes[j];
+        if(z.mort)continue;
+        var T=BETES[z.t];
+        var ray=(z.t==='oursin'&&z.deploye)?T.r+1:T.r;
+        if(Math.hypot(b.x-z.x,b.y-z.y)<ray+1){
+          z.pv-=b.d;
+          s.bouts.push({x:b.x,y:b.y,t:0,c:T.col2});
+          if(z.pv<=0)MOTEUR.prairie.tuer(s,z);
+          pris=true;break;
+        }
+      }
+      if(!pris&&s.boss&&Math.hypot(b.x-s.boss.x,b.y-s.boss.y)<9){
+        s.boss.pv-=b.d;
+        s.bouts.push({x:b.x,y:b.y,t:0,c:'#e8b454'});
+        if(s.boss.pv<=0){
+          s.score+=1200+s.zone*160;
+          s.butin.push({x:s.boss.x,y:s.boss.y,t:'vie',v:0});
+          s.boss=null;
+        }
+        pris=true;
+      }
+      if(pris)s.balles.splice(i,1);
+    }
+
+    /* ---- l'arrivee des bestioles ---- */
+    if(!s.boss){
+      if(s.chrono>0){
+        s.chrono-=dt;
+        s.sort-=dt;
+        if(s.sort<=0){
+          MOTEUR.prairie.sortir(s);
+          s.sort=Math.max(220,900-s.zone*52);
+        }
+      }else if(s.betes.length===0){
+        /* zone nettoyee */
+        s.score+=250+s.zone*60;
+        s.zone++;
+        /* LE MARCHAND PASSE AVANT LES ZONES PAIRES, donc avant chaque
+           Rat-Roi. Premiere version : avant les impaires, ce qui le
+           faisait arriver pour la premiere fois a la zone 3 et surtout
+           JAMAIS avant un boss — on entrait dans le combat avec ses
+           pieces en poche et rien a en faire. */
+        if(s.zone%2===0){
+          s.phase='marchand';s.marchand=MOTEUR.prairie.etal(s);
+          monterActions();
+          dire('Le marchand passe.');
+          return;
+        }
+        MOTEUR.prairie.poserZone(s);
+        dire('Zone '+s.zone,'bon');
+      }
+    }else if(s.boss.pv===undefined||s.boss===null){/* rien */}
+
+    /* ---- le boss ---- */
+    if(s.boss){
+      var B=s.boss;
+      B.t+=dt;
+      B.x+=Math.cos(B.t/700)*B.vx*1.33*dt;
+      B.x=Math.max(12,Math.min(ARE-12,B.x));
+      B.y=P_HAUT+28+Math.sin(B.t/1100)*12;
+      B.salve-=dt;
+      if(B.salve<=0){
+        B.salve=Math.max(700,1700-s.zone*40);
+        var ab=Math.atan2(s.y-B.y,s.x-B.x);
+        if(B.pv<B.pvMax*0.5){
+          for(k=0;k<8;k++)s.betes.push(MOTEUR.prairie.crachat(B,k*Math.PI/4));
+        }else{
+          [-0.2,0,0.2].forEach(function(o){s.betes.push(MOTEUR.prairie.crachat(B,ab+o));});
+        }
+      }
+    }
+
+    /* ---- les bestioles ---- */
+    for(i=s.betes.length-1;i>=0;i--){
+      z=s.betes[i];
+      if(z.mort){z.mort+=dt;if(z.mort>300)s.betes.splice(i,1);continue;}
+      MOTEUR.prairie.bouger(s,z,dt);
+      if(z.t==='crachat'&&(z.x<1||z.x>ARE-1||z.y<P_HAUT+1||z.y>P_BAS-1)){
+        s.betes.splice(i,1);continue;
+      }
+      /* la rencontre */
+      if(s.invul<=0&&s.mort<=0){
+        var T2=BETES[z.t]||{r:2};
+        if(Math.hypot(z.x-s.x,z.y-s.y)<T2.r+2.6){
+          if(s.actif==='bombe'){continue;}
+          s.vies--;s.mort=900;s.actif=null;s.actifT=0;
+          for(k=0;k<14;k++)s.bouts.push({x:s.x,y:s.y,t:0,c:'#e08a90'});
+          dire(s.vies>=0?('Touché. x'+s.vies):'','mal');
+        }
+      }
+    }
+
+    /* ---- le butin ---- */
+    for(i=s.butin.length-1;i>=0;i--){
+      var o=s.butin[i];
+      o.v+=dt;
+      if(o.v>12000){s.butin.splice(i,1);continue;}
+      if(Math.hypot(o.x-s.x,o.y-s.y)<6){
+        MOTEUR.prairie.ramasser(s,o);
+        s.butin.splice(i,1);
+      }
+    }
+    for(i=s.bouts.length-1;i>=0;i--){
+      s.bouts[i].t+=dt;if(s.bouts[i].t>260)s.bouts.splice(i,1);
+    }
+  },
+
+  tirer:function(s,a,d){
+    s.balles.push({x:s.x+Math.cos(a)*4,y:s.y+Math.sin(a)*4,a:a,d:d});
+  },
+  crachat:function(B,a){
+    return {t:'crachat',x:B.x,y:B.y+6,a:a,pv:99,mort:0,
+            vx:Math.cos(a)*0.069,vy:Math.sin(a)*0.069};
+  },
+  dansCaisse:function(s,x,y,r,balle){
+    for(var i=0;i<s.caisses.length;i++){
+      var c=s.caisses[i];
+      if(Math.abs(x-c.x)<c.w/2+r&&Math.abs(y-c.y)<c.h/2+r)return true;
+    }
+    return false;
+  },
+  sortir:function(s){
+    /* LES BESTIOLES ARRIVENT PAR LES BORDS, jamais au milieu : apparaitre
+       a cote du joueur serait une mort qu'on ne peut pas eviter. */
+    var cote=Math.floor(Math.random()*4), x, y;
+    if(cote===0){x=Math.random()*ARE;y=P_HAUT+1;}
+    else if(cote===1){x=Math.random()*ARE;y=P_BAS-1;}
+    else if(cote===2){x=1;y=P_HAUT+Math.random()*ARE;}
+    else {x=ARE-1;y=P_HAUT+Math.random()*ARE;}
+    /* le melange change avec la zone : d'abord des rats, puis le reste */
+    var sac=['rat','rat','rat'];
+    if(s.zone>=2)sac.push('mouette');
+    if(s.zone>=3)sac.push('oursin','mouette');
+    if(s.zone>=5)sac.push('ragondin','oursin');
+    if(s.zone>=7)sac.push('ragondin','mouette','oursin');
+    var t=sac[Math.floor(Math.random()*sac.length)];
+    var T=BETES[t];
+    var z={t:t,x:x,y:y,pv:T.pv,mort:0,tt:Math.random()*6};
+    if(t==='mouette'){var a=Math.atan2(s.y-y,s.x-x);z.vx=Math.cos(a);z.vy=Math.sin(a);}
+    if(t==='oursin'){z.cible={x:10+Math.random()*(ARE-20),y:P_HAUT+10+Math.random()*(ARE-20)};}
+    s.betes.push(z);
+  },
+  bouger:function(s,z,dt){
+    if(z.t==='crachat'){z.x+=z.vx*dt;z.y+=z.vy*dt;return;}
+    var T=BETES[z.t];
+    z.tt+=dt/160;
+    if(z.t==='mouette'){
+      /* elle file tout droit et traverse les caisses : c'est elle qui
+         empeche de camper derriere un tas */
+      z.x+=z.vx*T.v*dt;z.y+=z.vy*T.v*dt;
+      if(z.x<0||z.x>ARE||z.y<P_HAUT||z.y>P_BAS){z.mort=1;}
+      return;
+    }
+    if(z.t==='oursin'){
+      if(z.deploye)return;
+      var dx=z.cible.x-z.x, dy=z.cible.y-z.y, d=Math.hypot(dx,dy);
+      if(d<2){z.deploye=true;z.pv=Math.max(z.pv,5);return;}
+      z.x+=dx/d*T.v*dt;z.y+=dy/d*T.v*dt;
+      return;
+    }
+    var ax=s.x-z.x, ay=s.y-z.y, ad=Math.hypot(ax,ay)||1;
+    var ux=ax/ad*T.v*dt, uy=ay/ad*T.v*dt;
+    /* le ragondin passe a travers les caisses, et les casse */
+    if(z.t==='ragondin'){
+      for(var i=s.caisses.length-1;i>=0;i--){
+        var c=s.caisses[i];
+        if(Math.abs(z.x-c.x)<c.w/2+T.r&&Math.abs(z.y-c.y)<c.h/2+T.r)s.caisses.splice(i,1);
+      }
+      z.x+=ux;z.y+=uy;return;
+    }
+    if(!MOTEUR.prairie.dansCaisse(s,z.x+ux,z.y,T.r))z.x+=ux;
+    if(!MOTEUR.prairie.dansCaisse(s,z.x,z.y+uy,T.r))z.y+=uy;
+  },
+  tuer:function(s,z){
+    z.mort=1;
+    var T=BETES[z.t];
+    s.score+=T.pts+s.zone*2;
+    /* CE QU'ILS LAISSENT. Une bestiole sur quatre laisse une piece, une
+       sur douze un bonus : plus souvent, on joue avec un bonus en
+       permanence et ils ne veulent plus rien dire. */
+    var r=Math.random();
+    if(r<0.015)s.butin.push({x:z.x,y:z.y,t:'vie',v:0});
+    else if(r<0.095)s.butin.push({x:z.x,y:z.y,t:'bonus',
+      b:BONUS_CLES[Math.floor(Math.random()*BONUS_CLES.length)],v:0});
+    else if(r<0.145)s.butin.push({x:z.x,y:z.y,t:'piece5',v:0});
+    else if(r<0.42)s.butin.push({x:z.x,y:z.y,t:'piece',v:0});
+    for(var k=0;k<5;k++)s.bouts.push({x:z.x,y:z.y,t:0,c:T.col2});
+  },
+  ramasser:function(s,o){
+    if(o.t==='piece'){s.piece++;s.score+=5;return;}
+    if(o.t==='piece5'){s.piece+=5;s.score+=25;return;}
+    if(o.t==='vie'){s.vies++;dire('Une vie de plus.','bon');return;}
+    /* UN SEUL BONUS EN POCHE. En ramasser un deuxieme consomme le
+       premier sur-le-champ, exactement comme sur la borne d'origine :
+       sinon on empile et la fin de partie devient une formalite. */
+    if(s.tenu)MOTEUR.prairie.declencher(s,s.tenu);
+    s.tenu=o.b;
+    dire(BONUS[o.b].nom+' en poche');
+    monterActions();
+  },
+  declencher:function(s,b){
+    s.tenu=null;
+    if(b==='bombe'){
+      s.betes.forEach(function(z){if(!z.mort&&z.t!=='crachat'){z.mort=1;s.score+=5;}});
+      s.betes=s.betes.filter(function(z){return z.t!=='crachat';});
+      dire('Tout le quai y passe.','bon');
+      return;
+    }
+    s.actif=b;s.actifT=BONUS[b].duree;
+    if(b==='fumigene'){
+      s.x=10+Math.random()*(ARE-20);
+      s.y=P_HAUT+10+Math.random()*(ARE-20);
+    }
+    dire(BONUS[b].nom);
+  },
+  /* ------------------------------------------------------------------
+     LE MARCHAND, entre deux zones
+     ------------------------------------------------------------------ */
+  etal:function(s){
+    var E=[];
+    if(s.bottes<2)E.push({c:'bottes',n:'BOTTES',p:s.bottes===0?8:20,
+                          d:'Tu marches plus vite'});
+    if(s.fusil<3)E.push({c:'fusil',n:'FUSIL',p:[10,20,30][s.fusil],
+                         d:'Tu tires plus vite'});
+    if(s.muni<3)E.push({c:'muni',n:'MUNITIONS',p:[15,30,45][s.muni],
+                        d:'Tes balles font plus mal'});
+    E.push({c:'vie',n:'UNE VIE',p:10,d:'Une de plus, tout de suite'});
+    return E;
+  },
+  acheter:function(s,c){
+    var it=null;
+    s.marchand.forEach(function(x){if(x.c===c)it=x;});
+    if(!it)return;
+    if(s.piece<it.p){dire('Il te manque '+(it.p-s.piece)+' pièces.','mal');return;}
+    s.piece-=it.p;
+    if(c==='bottes')s.bottes++;
+    else if(c==='fusil')s.fusil++;
+    else if(c==='muni')s.muni++;
+    else if(c==='vie')s.vies++;
+    dire(it.n+' acheté.','bon');
+    s.marchand=MOTEUR.prairie.etal(s);
+    monterActions();
+  },
+  partir:function(s){
+    s.phase='jeu';s.marchand=null;
+    MOTEUR.prairie.poserZone(s);
+    dire('Zone '+s.zone,'bon');
+    monterActions();
+  },
+
+  /* ------------------------------------------------------------------
+     LE DESSIN
+     ------------------------------------------------------------------ */
+  dessine:function(s,L,H){
+    /* le sol du quai */
+    for(var y=P_HAUT;y<P_BAS;y++){
+      var k=(y-P_HAUT)/ARE;
+      R(0,y,L,1,'rgb('+Math.round(58+k*14)+','+Math.round(54+k*12)+','+Math.round(58+k*12)+')');
+    }
+    for(var i=1;i<8;i++){
+      R(0,P_HAUT+i*(ARE/8),L,1,'rgba(22,20,26,.3)');
+      R(i*(ARE/8),P_HAUT,1,ARE,'rgba(22,20,26,.3)');
+    }
+    /* la margelle : on voit ou s'arrete le terrain */
+    R(0,P_HAUT,L,2,'#2e2a34');R(0,P_BAS-2,L,2,'#2e2a34');
+    R(0,P_HAUT,2,ARE,'#2e2a34');R(L-2,P_HAUT,2,ARE,'#2e2a34');
+
+    /* les caisses */
+    s.caisses.forEach(function(c){
+      R(c.x-c.w/2,c.y-c.h/2+1,c.w,c.h,'rgba(0,0,0,.3)');
+      R(c.x-c.w/2,c.y-c.h/2,c.w,c.h,'#8a5a2a');
+      R(c.x-c.w/2,c.y-c.h/2,c.w,1,'#a87a42');
+      R(c.x-c.w/2,c.y+c.h/2-1,c.w,1,'#5a3a18');
+      R(c.x-c.w/2,c.y-1,c.w,1,'#6a4420');
+    });
+
+    /* le butin */
+    s.butin.forEach(function(o){
+      var cl=(o.v>9000&&(Math.floor(o.v/160)%2)===0);
+      if(cl)return;
+      if(o.t==='piece'||o.t==='piece5'){
+        var rr=o.t==='piece5'?3.4:2.4;
+        disque(o.x,o.y+1,rr,'rgba(0,0,0,.34)');
+        disque(o.x,o.y,rr,'#b8862a');disque(o.x,o.y,rr-0.9,'#f0cf7d');
+      }else if(o.t==='vie'){
+        R(o.x-3,o.y-2,6,2,'#c8a22a');R(o.x-4,o.y,8,2,'#a8821a');
+        R(o.x+1,o.y-4,2,2,'#f0d78a');
+      }else{
+        var B=BONUS[o.b];
+        R(o.x-3.5,o.y-3.5,7,7,'#0e1420');
+        R(o.x-2.5,o.y-2.5,5,5,B.col);
+        R(o.x-2.5,o.y-2.5,5,1,'rgba(255,255,255,.4)');
+      }
+    });
+
+    /* les bestioles */
+    s.betes.forEach(function(z){
+      MOTEUR.prairie.bete(z);
+    });
+    /* le boss */
+    if(s.boss)MOTEUR.prairie.ratRoi(s.boss,s);
+
+    /* les balles */
+    s.balles.forEach(function(b){
+      R(b.x-1,b.y-1,2,2,'#f6e9cc');
+      R(b.x-1.5,b.y-1.5,3,3,'rgba(246,233,204,.3)');
+    });
+
+    /* le joueur */
+    if(s.mort<=0||Math.floor(s.mort/90)%2===0){
+      var clig=(s.invul>0&&Math.floor(s.invul/110)%2===0);
+      if(!clig)MOTEUR.prairie.docker(s);
+    }
+
+    /* les eclats */
+    s.bouts.forEach(function(p){
+      var k2=p.t/260;
+      G.globalAlpha=1-k2;
+      R(p.x+(al(p.t+p.x)-0.5)*10*k2,p.y+(al(p.t+p.y)-0.5)*10*k2,2,2,p.c);
+      G.globalAlpha=1;
+    });
+
+    /* ---- LE BANDEAU DU HAUT ----
+       TOUT SUR UNE SEULE LIGNE, EN CINQ PIXELS. Sur deux lignes et en
+       sept, le score, les vies et les pieces se marchaient dessus et le
+       bandeau prenait autant de place que le terrain. */
+    R(0,0,L,P_HAUT,'rgba(5,7,12,.9)');
+    R(0,P_HAUT-1,L,1,'rgba(90,216,255,.3)');
+    G.font='700 6px ui-monospace,monospace';
+    G.textAlign='left';G.textBaseline='middle';
+    G.fillStyle='#9ae8ff';G.fillText(String(s.score),3,6);
+    /* les vies, puis les pieces */
+    G.fillStyle='#c8a22a';G.fillText('x'+Math.max(0,s.vies),34,6);
+    disque(52,6,2.2,'#f0cf7d');
+    G.fillStyle='#f0cf7d';G.fillText(String(s.piece),57,6);
+    /* le bonus en poche, au milieu */
+    if(s.tenu){
+      R(L/2-4,2,8,8,'#0e1420');
+      R(L/2-3,3,6,6,BONUS[s.tenu].col);
+      R(L/2-3,3,6,1,'rgba(255,255,255,.4)');
+    }
+    /* la zone, puis sa jauge : chrono, ou vie du boss */
+    G.textAlign='right';
+    G.fillStyle='#6f93aa';G.fillText('Z'+s.zone,L-3,6);
+    G.textBaseline='alphabetic';G.textAlign='left';
+    var jx=L-56, jl=38;
+    R(jx,4,jl,4,'rgba(0,0,0,.5)');
+    if(s.boss){
+      R(jx,4,jl*Math.max(0,s.boss.pv/s.boss.pvMax),4,'#b8302e');
+    }else{
+      R(jx,4,jl*Math.max(0,s.chrono/27000),4,'#5ad8ff');
+    }
+    R(jx,4,jl,1,'rgba(255,255,255,.14)');
+    /* le bonus qui tourne : sa jauge court sous tout le bandeau */
+    if(s.actif&&s.actifT>0){
+      var p=s.actifT/(BONUS[s.actif].duree||1);
+      R(0,P_HAUT-2,L*p,1,BONUS[s.actif].col);
+    }
+
+    /* ---- LES ECRANS ---- */
+    if(s.phase==='pret'){
+      R(0,P_HAUT+ARE/2-22,L,44,'rgba(5,7,12,.86)');
+      G.font='700 9px ui-monospace,monospace';G.textAlign='center';
+      G.fillStyle='#9ae8ff';G.fillText('LE ROI DU QUAI',L/2,P_HAUT+ARE/2-8);
+      G.font='700 6px ui-monospace,monospace';G.fillStyle='#6f93aa';
+      G.fillText('GAUCHE POUR MARCHER',L/2,P_HAUT+ARE/2+4);
+      G.fillText('DROITE POUR TIRER',L/2,P_HAUT+ARE/2+13);
+      G.textAlign='left';
+    }
+    if(s.phase==='marchand'){
+      R(0,P_HAUT,L,ARE,'rgba(5,7,12,.84)');
+      G.font='700 8px ui-monospace,monospace';G.textAlign='center';
+      G.fillStyle='#9ae8ff';G.fillText('LE MARCHAND',L/2,P_HAUT+16);
+      G.font='700 7px ui-monospace,monospace';G.fillStyle='#f0cf7d';
+      G.fillText(s.piece+' pièces en poche',L/2,P_HAUT+27);
+      G.textAlign='left';
+      /* sa carriole */
+      /* LA CARRIOLE DESCEND SOUS LE TEXTE. A quarante-quatre, la tete du
+         marchand passait derriere « x pieces en poche » et il n'avait
+         plus de visage. */
+      var my=P_HAUT+62;
+      R(L/2-22,my,44,16,'#6a4726');R(L/2-22,my,44,2,'#8a5f30');
+      R(L/2-20,my+3,40,10,'#4a3018');
+      for(var u=0;u<5;u++)R(L/2-18+u*8,my+5,5,6,'#8a5a2a');
+      disque(L/2-14,my+18,4,'#3a2a1a');disque(L/2+14,my+18,4,'#3a2a1a');
+      disque(L/2-14,my+18,1.6,'#6a4726');disque(L/2+14,my+18,1.6,'#6a4726');
+      R(L/2-6,my-12,12,12,'#4f7d5c');R(L/2-4,my-18,8,7,'#e8c49a');
+      R(L/2-5,my-20,10,3,'#5a3c24');
+      G.font='700 6px ui-monospace,monospace';G.textAlign='center';
+      G.fillStyle='#6f93aa';G.fillText('UN SEUL ARTICLE PAR PASSAGE',L/2,P_HAUT+ARE-8);
+      G.textAlign='left';
+    }
+    if(s.phase==='fini'){
+      R(0,P_HAUT+ARE/2-18,L,36,'rgba(5,7,12,.9)');
+      R(0,P_HAUT+ARE/2-18,L,1,'rgba(224,138,144,.5)');
+      G.font='700 9px ui-monospace,monospace';G.textAlign='center';
+      G.fillStyle='#e08a90';G.fillText('LE QUAI T’A EU',L/2,P_HAUT+ARE/2-4);
+      G.font='700 12px ui-monospace,monospace';G.fillStyle='#eaf6ff';
+      G.fillText(String(s.score),L/2,P_HAUT+ARE/2+11);
+      G.textAlign='left';
+    }
+  },
+
+  /* ---- les dessins ---- */
+  docker:function(s){
+    var x=s.x, y=s.y;
+    G.fillStyle='rgba(0,0,0,.3)';
+    G.beginPath();G.ellipse(x,y+4,4,1.6,0,0,7);G.fill();
+    var zomb=(s.actif==='bombe');
+    R(x-3,y-1,2,5,'#2b3340');R(x+1,y-1,2,5,'#2b3340');
+    R(x-3.5,y-7,7,7,zomb?'#4a7a4a':'#17365a');
+    R(x-3.5,y-7,7,1,'rgba(255,255,255,.16)');
+    R(x-2.5,y-11,5,4,'#e8c49a');
+    R(x-3,y-12.5,6,2,'#c8a22a');
+    /* le pistolet, dans la direction ou l'on tire */
+    if(MD.n>0.3){
+      var a=Math.atan2(MD.y,MD.x);
+      R(x+Math.cos(a)*4.4-1,y+Math.sin(a)*4.4-4,2,2,'#3a3a44');
+    }
+    if(s.actif==='cafe'){
+      for(var i=0;i<3;i++)
+        R(x-4+al(s.t*0.02+i)*8,y+2+al(s.t*0.03+i)*3,1,1,'rgba(246,224,164,.6)');
+    }
+  },
+  bete:function(z){
+    if(z.t==='crachat'){
+      disque(z.x,z.y,2,'#d8584e');disque(z.x,z.y,1.1,'#f6c0a8');
+      return;
+    }
+    var T=BETES[z.t], x=z.x, y=z.y;
+    if(z.mort){
+      G.globalAlpha=Math.max(0,1-z.mort/300);
+    }
+    G.fillStyle='rgba(0,0,0,.28)';
+    G.beginPath();G.ellipse(x,y+T.r*0.7,T.r*0.9,T.r*0.34,0,0,7);G.fill();
+    if(z.t==='rat'){
+      var b=Math.sin(z.tt)*0.7;
+      G.fillStyle=T.col;G.beginPath();G.ellipse(x,y,4,2.8,0,0,7);G.fill();
+      disque(x+2.6+b*0.3,y-1,2,T.col2);
+      R(x+3.4,y-2.6,1.4,1.4,T.col2);R(x+1.4,y-3,1.4,1.4,T.col2);
+      R(x+3.8,y-1.2,1,1,'#d84a4a');
+      R(x-5-b,y,2,1,T.col);
+    }else if(z.t==='mouette'){
+      var f=Math.sin(z.tt*1.6)*2.4;
+      G.fillStyle=T.col;G.beginPath();G.ellipse(x,y,3,2,0,0,7);G.fill();
+      G.fillStyle=T.col2;
+      G.beginPath();G.moveTo(x-1,y);G.lineTo(x-6,y-f);G.lineTo(x-1,y+1.4);G.fill();
+      G.beginPath();G.moveTo(x+1,y);G.lineTo(x+6,y-f);G.lineTo(x+1,y+1.4);G.fill();
+      R(x+2.4,y-1.4,1.6,1.4,'#e8a02a');
+      R(x+1,y-1.6,1,1,'#1a1a20');
+    }else if(z.t==='ragondin'){
+      G.fillStyle=T.col;G.beginPath();G.ellipse(x,y,5.4,4,0,0,7);G.fill();
+      G.fillStyle=T.col2;G.beginPath();G.ellipse(x,y-1.4,4.6,2.6,0,0,7);G.fill();
+      disque(x+3.6,y-1.6,2.6,T.col2);
+      R(x+4.8,y-2,1.6,2.4,'#e8e0c8');
+      R(x+4.6,y-3.2,1.2,1.2,'#1a1a20');
+      R(x-4.4,y-4.4,1.6,1.6,T.col);R(x-1.4,y-5,1.6,1.6,T.col);
+    }else{
+      /* l'oursin : il marche, puis il se cale et sort ses piquants */
+      if(z.deploye){
+        for(var i=0;i<10;i++){
+          var a=i*0.628+z.tt*0.1;
+          G.strokeStyle='#8a7aba';G.lineWidth=1.2;
+          G.beginPath();G.moveTo(x+Math.cos(a)*3,y+Math.sin(a)*3);
+          G.lineTo(x+Math.cos(a)*6.4,y+Math.sin(a)*6.4);G.stroke();
+        }
+        disque(x,y,4,'#3a3450');disque(x,y,2.6,T.col2);
+      }else{
+        disque(x,y,3.4,T.col);disque(x,y,2,T.col2);
+        for(i=0;i<6;i++){
+          var a2=i*1.047;
+          R(x+Math.cos(a2)*4-0.5,y+Math.sin(a2)*4-0.5,1,1,'#5a4a6a');
+        }
+      }
+    }
+    G.globalAlpha=1;
+  },
+  ratRoi:function(B,s){
+    var x=B.x, y=B.y;
+    G.fillStyle='rgba(0,0,0,.3)';
+    G.beginPath();G.ellipse(x,y+8,11,3.4,0,0,7);G.fill();
+    G.fillStyle='#5a5050';G.beginPath();G.ellipse(x,y,11,7.6,0,0,7);G.fill();
+    G.fillStyle='#7a7070';G.beginPath();G.ellipse(x,y-1.6,9,5.4,0,0,7);G.fill();
+    disque(x,y-6,5.4,'#7a7070');
+    R(x-4.4,y-11,3,3,'#8a8080');R(x+1.4,y-11,3,3,'#8a8080');
+    R(x-2.6,y-7,1.6,1.6,'#d84a4a');R(x+1,y-7,1.6,1.6,'#d84a4a');
+    R(x-1,y-4,2,1.4,'#e8d8c8');
+    /* la couronne : c'est elle qui en fait un roi */
+    R(x-6,y-15,12,2,'#c8a22a');
+    R(x-6,y-18,2,3,'#c8a22a');R(x-1,y-19,2,4,'#c8a22a');R(x+4,y-18,2,3,'#c8a22a');
+    R(x-0.5,y-20.4,1.4,1.4,'#d8584e');
+    G.strokeStyle='#5a5050';G.lineWidth=1.6;
+    G.beginPath();G.moveTo(x-10,y+2);G.quadraticCurveTo(x-20,y+8,x-16,y-2);G.stroke();
+  },
+
+  /* ------------------------------------------------------------------
+     LES BOUTONS
+     ------------------------------------------------------------------ */
+  actions:function(s){
+    if(s.phase==='pret')
+      return '<button class="pr" data-a="commencer">COMMENCER</button>';
+    if(s.phase==='fini')
+      return '<button class="pr" data-a="rejouer">UN AUTRE JETON · 1 €</button>';
+    if(s.phase==='marchand'){
+      var g='';
+      (s.marchand||[]).forEach(function(it){
+        g+='<button data-a="ach:'+it.c+'"'+(s.piece<it.p?' disabled':'')+'>'+
+           it.n+'<br>'+it.p+' ¤</button>';
+      });
+      g+='<button class="pr" data-a="partir">REPARTIR</button>';
+      return g;
+    }
+    return '<button class="pr" data-a="bonus"'+(s.tenu?'':' disabled')+'>'+
+           (s.tenu?('UTILISER '+BONUS[s.tenu].nom):'PAS DE BONUS')+'</button>';
+  },
+  action:function(s,a){
+    if(a==='partir')return MOTEUR.prairie.partir(s);
+    if(a&&a.indexOf('ach:')===0)return MOTEUR.prairie.acheter(s,a.slice(4));
+    if(a==='bonus'&&s.tenu&&s.phase==='jeu'){
+      MOTEUR.prairie.declencher(s,s.tenu);
+      monterActions();
+    }
+  },
+  /* le bonus se declenche aussi en tapant l'ecran : un bouton en bas,
+     avec deux pouces deja pris par les manches, ne se presse jamais */
+  tape:function(s){
+    if(s.phase==='jeu'&&s.tenu){
+      MOTEUR.prairie.declencher(s,s.tenu);
+      monterActions();
+    }
+  },
+  demarrer:function(s){
+    s.phase='jeu';
+    MOTEUR.prairie.poserZone(s);
+  }
+};
+
+/* =====================================================================
    LE PILOTE
    ===================================================================== */
 function boucle(ts){
@@ -811,6 +1588,9 @@ function ouvrirBorne(B){
   majSolde();
   dire('Un jeton, et c’est parti.');
   monterActions();
+  document.getElementById('mg').classList.toggle('on',!!BORNE.manches);
+  document.getElementById('md').classList.toggle('on',!!BORNE.manches);
+  MG.lache();MD.lache();
   cadrer(BORNE.L,BORNE.H);
   boucle.vu=0;
   if(!RAF)RAF=requestAnimationFrame(boucle);
@@ -828,10 +1608,13 @@ function fermerBorne(){
      partie serait le moyen le plus simple d'effacer une mauvaise
      manche — le jeton serait paye pour rien, mais le tableau ne
      retiendrait que les bonnes. */
-  if(S&&PARTIE&&S.phase==='jeu')finirPartie(S.score,true);
+  if(S&&PARTIE&&S.phase!=='pret'&&S.phase!=='fini')finirPartie(S.score,true);
   JEU.hidden=true;
   if(RAF){cancelAnimationFrame(RAF);RAF=null;}
   BORNE=null;S=null;CV.onpointerdown=null;
+  document.getElementById('mg').classList.remove('on');
+  document.getElementById('md').classList.remove('on');
+  MG.lache();MD.lache();
   majSolde();
 }
 document.getElementById('sortie').onclick=function(){if(!OCCUPE)fermerBorne();};
@@ -859,8 +1642,8 @@ async function prendreJeton(){
   PARTIE=r.partie;
   if(typeof r.euros==='number'){SOLDE=r.euros;noterEuros(r.euros);majSolde();}
   S=BORNE.init();
-  if(BORNE.remplir)BORNE.remplir(S);
-  S.phase='jeu';
+  if(BORNE.demarrer)BORNE.demarrer(S);
+  else{ if(BORNE.remplir)BORNE.remplir(S); S.phase='jeu'; }
   dire('');
   monterActions();verrou(false);
 }
