@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Le Casino — Battle Dock</title>
+<style id="pasDeSelection">*{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}</style>
+<script>/* pas de sélection ni de copier-coller, sauf dans les champs où l'on écrit */
+(function(){var champ=function(t){return t&&t.closest&&t.closest('input,textarea,[contenteditable="true"]');};
+['selectstart','copy','cut','contextmenu','dragstart'].forEach(function(k){document.addEventListener(k,function(e){if(!champ(e.target))e.preventDefault();},{capture:true});});})();</script>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<script src="maintenance.js?v=2026-10-15-0500"></script>
+<script>
+/* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
+   porte le chemin de la page : s'il ne le portait pas, une page deja
+   rechargee pour la version du jour empecherait celle-ci de se recharger
+   a son tour, et l'on jouerait une vieille copie sans le savoir. */
+(function(){
+  var MA_VERSION='2026-10-15-0500';
+  window.MA_VERSION=MA_VERSION;
+  var cle='bdl.version.vue:'+location.pathname.split('?')[0];
+  function verifier(){
+    fetch('version.json?t='+Date.now(),{cache:'no-store'})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(!d||!d.v)return;
+        try{localStorage.setItem('bdl.v',d.v);}catch(e){}
+        if(d.v===MA_VERSION)return;
+        var deja=null;try{deja=sessionStorage.getItem(cle);}catch(e){}
+        if(deja===d.v)return;
+        try{sessionStorage.setItem(cle,d.v);}catch(e){}
+        location.replace(location.pathname.split('?')[0]+'?v='+encodeURIComponent(d.v));
+      }).catch(function(){});
+  }
+  verifier();
+  var vu=Date.now();
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState!=='visible')return;
+    if(Date.now()-vu>120000)verifier();
+    vu=Date.now();
+  });
+})();
+</script>
+<style>
+html,body{margin:0;height:100%;background:#120a0c;overflow:hidden}
+body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#f0e0c0}
+#tapis{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;
+  background:
+    radial-gradient(ellipse 120% 60% at 50% -10%,rgba(201,162,74,.20),rgba(201,162,74,0) 70%),
+    linear-gradient(#1c0f12,#120a0c 60%,#0d0709)}
+/* LE FEUTRE : des losanges a peine visibles, comme un tapis de table. */
+#tapis::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:
+    repeating-linear-gradient(60deg,rgba(255,255,255,.022) 0 1px,transparent 1px 22px),
+    repeating-linear-gradient(-60deg,rgba(255,255,255,.022) 0 1px,transparent 1px 22px)}
+
+/* ---------- l'en-tete ---------- */
+#hd{flex:none;position:relative;z-index:2;
+  padding:calc(env(safe-area-inset-top,0px) + 18px) 16px 0}
+#hd small{display:block;font:700 8px ui-monospace,monospace;letter-spacing:3.4px;color:#c9a24a}
+#hd h1{margin:5px 0 0;font:700 30px 'Baloo 2',sans-serif;letter-spacing:.5px;color:#f6e9cc}
+#hd .sous{margin-top:3px;font:italic 13px Georgia,serif;color:#9a7f62}
+#jeton{display:flex;align-items:center;gap:9px;margin:14px 0 2px;
+  border:1px solid #6b4a2a;border-radius:13px;padding:9px 13px;background:rgba(0,0,0,.3)}
+#jeton u{flex:none;width:19px;height:19px;border-radius:50%;text-decoration:none;
+  background:radial-gradient(#f0cf7d,#b8862a);border:1px solid #f4e2a8}
+#jeton b{flex:1;font:700 17px ui-monospace,monospace;color:#f0cf7d}
+#jeton i{font:700 8px ui-monospace,monospace;letter-spacing:2px;color:#8a6a4a;font-style:normal}
+
+/* ---------- la grille des jeux ---------- */
+#corps{flex:1;overflow-y:auto;position:relative;z-index:2;
+  padding:14px 16px calc(env(safe-area-inset-bottom,0px) + 96px);-webkit-overflow-scrolling:touch}
+.rub{font:700 8px ui-monospace,monospace;letter-spacing:3px;color:#8a6a4a;margin:4px 0 10px}
+.grille{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.jeu{position:relative;border:1px solid #4a2c22;border-radius:15px;overflow:hidden;
+  background:linear-gradient(#2a1418,#1d0e12);padding:13px 12px 12px;text-align:left}
+.jeu canvas{display:block;width:44px;height:44px;image-rendering:pixelated;margin-bottom:9px}
+.jeu b{display:block;font:700 15px 'Baloo 2',sans-serif;color:#f6e9cc;line-height:1.15}
+.jeu span{display:block;margin-top:5px;font:italic 12px Georgia,serif;color:#9a7f62;line-height:1.35}
+.jeu em{display:block;margin-top:8px;font:700 9px ui-monospace,monospace;letter-spacing:1.4px;
+  color:#c9a24a;font-style:normal}
+.jeu .et{position:absolute;top:10px;right:10px;border:1px solid #6b4a2a;border-radius:9px;
+  padding:3px 7px;font:700 8px ui-monospace,monospace;letter-spacing:1.6px;color:#8a6a4a;
+  background:rgba(0,0,0,.35)}
+.jeu.grand{grid-column:1 / -1;display:flex;align-items:center;gap:14px;padding:15px 14px}
+.jeu.grand canvas{width:56px;height:56px;margin:0;flex:none}
+.jeu.grand .tx{flex:1;min-width:0}
+.jeu.ouvert{border-color:#c9a24a;background:linear-gradient(#3a1d1a,#241114)}
+.jeu.ouvert .et{color:#241204;background:#c9a24a;border-color:#f0d78a}
+
+/* ---------- la maison ---------- */
+#maison{margin-top:18px;border-top:1px solid rgba(201,162,74,.18);padding-top:14px;
+  font:italic 12px Georgia,serif;color:#7a6350;line-height:1.5}
+#maison b{font-style:normal;color:#9a7f62}
+
+/* ---------- la barre du bas ---------- */
+#bas{position:absolute;left:0;right:0;bottom:0;z-index:3;
+  padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 12px);
+  display:flex;gap:9px;align-items:center;
+  background:linear-gradient(to top,rgba(11,6,8,.96),rgba(11,6,8,0))}
+#bas button{-webkit-appearance:none;appearance:none;flex:1;border:1px solid #8a6a2a;
+  border-radius:12px;padding:12px 8px;background:rgba(26,12,14,.9);color:#f0d78a;
+  font:700 10px ui-monospace,monospace;letter-spacing:2px}
+#bas button:active{background:rgba(201,162,74,.26)}
+</style>
+<link rel="stylesheet" href="responsive.css?v=2026-10-15-0500">
+</head>
+<body>
+<div id="tapis">
+  <div id="hd">
+    <small>LE COMPLEXE FESTIF · PORTE DE GAUCHE</small>
+    <h1>Le Casino</h1>
+    <div class="sous">Huit tables, et la maison qui ne perd jamais longtemps.</div>
+    <div id="jeton"><u></u><b id="sou">—</b><i>EN CAISSE</i></div>
+  </div>
+  <div id="corps">
+    <div class="rub">LES TABLES</div>
+    <div class="grille" id="grille"></div>
+    <div id="maison">
+      <b>La règle de la maison.</b> On ne joue qu'avec l'argent du port, et
+      chaque coup se règle au comptoir : c'est le serveur qui tire, qui
+      paie et qui encaisse. Rien ne se gagne ici en touchant à son
+      téléphone.
+    </div>
+  </div>
+  <div id="bas">
+    <button id="retour">RETOURNER DANS LA SALLE</button>
+  </div>
+</div>
+<script src="retour.js?v=2026-10-15-0500"></script>
+<script>
+/* =====================================================================
+   LE CASINO — LE MENU
+
+   La page ne joue encore a rien : elle annonce les tables, et c'est
+   deja une decision. Un casino dont on decouvre les jeux un par un au
+   fil des mises n'a pas de salle ; on veut voir les huit portes des
+   l'entree, savoir ce qu'on pourra jouer, et avoir envie de revenir.
+
+   POURQUOI AUCUNE TABLE NE TOURNE ENCORE. Un jeu d'argent se regle au
+   serveur, jamais ici : le tirage, la mise et le gain doivent sortir
+   d'une fonction SECURITY DEFINER, comme pokedock_ouvrir ou
+   pot_recolter. Un casino qui tire au sort dans le telephone est une
+   machine a fabriquer des euros — il suffit d'ouvrir la console. Chaque
+   table demandera donc sa fonction cote base, et c'est ce travail-la
+   qui decide de l'ordre dans lequel elles ouvrent.
+   ===================================================================== */
+var e={};try{e=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}')||{};}catch(x){e={};}
+/* L'ARGENT EST AFFICHE, PAS AUTORITAIRE. La sauvegarde est sur
+   l'appareil : ce chiffre sert a savoir ou l'on en est, pas a valider
+   une mise. Quand les tables ouvriront, le solde qui compte sera celui
+   que le serveur renverra a chaque coup. */
+(function(){
+  var c=(typeof e.euros==='number')?e.euros:null;
+  document.getElementById('sou').textContent =
+    (c===null) ? '—' : (c/100).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+})();
+
+/* ---------------------------------------------------------------------
+   LES EMBLEMES. Chacun est dessine au pixel, dans la meme grille de 22
+   que le reste du jeu : une image chargee serait plus simple et jurerait
+   avec tout le port.
+   ------------------------------------------------------------------ */
+function toile(cv,f){
+  var D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  cv.width=22*D;cv.height=22*D;
+  var g=cv.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  f(g,function(x,y,w,h,c){g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));});
+}
+var OR='#e8c06a', ORC='#f6e0a4', ORO='#9a7430', NOIR='#1a1014', ROUGE='#b8302e', ROUGEC='#d8584e',
+    BLANC='#f0e8d8', VERT='#2f6b46', BOIS='#7d5934';
+var EMBLEME={
+  roulette:function(g,R){
+    g.fillStyle=BOIS;g.beginPath();g.arc(11,11,10,0,7);g.fill();
+    g.fillStyle=NOIR;g.beginPath();g.arc(11,11,8.5,0,7);g.fill();
+    for(var i=0;i<8;i++){var a=i*Math.PI/4;
+      g.fillStyle=(i%2)?ROUGE:'#2a1a1e';
+      g.beginPath();g.moveTo(11,11);g.arc(11,11,8.5,a,a+Math.PI/4);g.fill();}
+    g.fillStyle=OR;g.beginPath();g.arc(11,11,3,0,7);g.fill();
+    R(10,1,2,3,ORC);R(10,3,2,1,BLANC);
+  },
+  cartes:function(g,R){
+    R(3,6,10,14,'#d8cfc0');R(3,6,10,1,BLANC);
+    R(7,4,10,14,BLANC);R(7,4,10,1,'#fff');
+    R(9,6,2,2,ROUGE);R(13,14,2,2,ROUGE);
+    g.fillStyle=ROUGE;g.beginPath();g.moveTo(12,13);g.lineTo(9,9.5);g.lineTo(15,9.5);g.fill();
+    R(11,12,2,2,ROUGE);
+  },
+  rouleaux:function(g,R){
+    R(1,4,20,14,'#2a1a1e');R(1,4,20,1,ORO);R(1,17,20,1,'#140c10');
+    [2.5,8.5,14.5].forEach(function(x,i){
+      R(x,6,5,10,'#efe6d2');R(x,6,5,1,BLANC);
+      if(i===0){R(x+1,9,3,2,ROUGE);R(x+1,11,3,1,ROUGEC);}
+      if(i===1){R(x+1.5,8,2,6,'#4a6a8a');R(x+1,13,4,1,'#2a3a4a');}
+      if(i===2){R(x+1,9,3,4,OR);R(x+1,9,3,1,ORC);}
+    });
+    R(20,8,2,6,BOIS);R(20,7,2,2,ROUGE);
+  },
+  gobelets:function(g,R){
+    [1,8,15].forEach(function(x,i){
+      var h=i===1?9:8;
+      g.fillStyle=ROUGE;g.beginPath();
+      g.moveTo(x+0.5,18);g.lineTo(x+1.8,18-h);g.lineTo(x+4.2,18-h);g.lineTo(x+5.5,18);g.fill();
+      g.fillStyle=ROUGEC;g.fillRect(Math.round(x+1.8),Math.round(18-h),3,1);
+    });
+    R(10,19,3,1,'#2a1a1e');R(10.5,17.5,2,2,ORC);
+  },
+  de:function(g,R){
+    R(2,2,18,18,'#f2ece0');R(2,2,18,1,'#fff');R(2,19,18,1,'#c8bfae');
+    R(3,3,1,17,'#fff');R(19,2,1,18,'#c8bfae');
+    [[6,6],[11,11],[16,16],[16,6],[6,16]].forEach(function(p){R(p[0]-1.5,p[1]-1.5,3,3,NOIR);});
+  },
+  roue:function(g,R){
+    g.fillStyle=ORO;g.beginPath();g.arc(11,12,9.5,0,7);g.fill();
+    var C=[ROUGE,OR,VERT,'#3a5a8a',ROUGE,OR,VERT,'#3a5a8a'];
+    for(var i=0;i<8;i++){var a=i*Math.PI/4-1.57;
+      g.fillStyle=C[i];g.beginPath();g.moveTo(11,12);g.arc(11,12,8.5,a,a+Math.PI/4);g.fill();}
+    g.fillStyle='#2a1a1e';g.beginPath();g.arc(11,12,2,0,7);g.fill();
+    R(10,0,2,4,ORC);
+  },
+  jetons:function(g,R){
+    [[4,15,'#2a4a8a'],[11,17,ROUGE],[8,12,'#2f6b46'],[13,13,OR]].forEach(function(p){
+      g.fillStyle=p[2];g.beginPath();g.ellipse(p[0]+3,p[1],6,2.6,0,0,7);g.fill();
+      g.fillStyle='rgba(255,255,255,.3)';g.beginPath();g.ellipse(p[0]+3,p[1]-0.8,6,2.6,0,0,7);g.fill();
+      g.fillStyle=p[2];g.beginPath();g.ellipse(p[0]+3,p[1]-1.4,6,2.6,0,0,7);g.fill();
+    });
+    R(2,4,8,5,BLANC);R(2,4,8,1,'#fff');R(4,6,4,1,ROUGE);
+  },
+  ticket:function(g,R){
+    R(2,4,18,14,'#2a4a8a');R(2,4,18,1,'#5a7aba');R(2,17,18,1,'#16284a');
+    R(4,6,14,7,'#b8b0a0');R(4,6,14,1,'#d8d0c0');
+    for(var i=0;i<4;i++)R(5+i*3.4,8,2,3,'#8a8274');
+    R(4,14,9,2,ORC);R(14,14,4,2,'#5a7aba');
+    R(1,10,1,2,'#120a0c');R(20,10,1,2,'#120a0c');
+  }
+};
+
+/* ---------------------------------------------------------------------
+   LES TABLES. Le nom, ce qu'on y fait, la mise, et l'etat.
+   « etat » vaut 'bientot' tant que la fonction serveur n'existe pas.
+   ------------------------------------------------------------------ */
+var TABLES=[
+ {cle:'roulette', emb:'roulette', nom:'La Roulette du Port',
+  dit:'Trente-sept cases, le rouge, le noir, le pair, l’impair. Et le zéro qui mange tout.',
+  mise:'1 € À 500 €', grand:true},
+ {cle:'vingtun', emb:'cartes', nom:'Le Vingt-et-un',
+  dit:'Contre la banque. Fonfon donne, et Fonfon tire à seize.', mise:'5 € À 200 €'},
+ {cle:'sous', emb:'rouleaux', nom:'La Criée',
+  dit:'Trois rouleaux : la sardine, la grue, le cageot, l’ancre.', mise:'2 € LE TOUR'},
+ {cle:'bonneteau', emb:'gobelets', nom:'Le Bonneteau de Dédé',
+  dit:'Trois gobelets, une bille. Il gagne plus souvent que toi, et il le sait.',
+  mise:'10 € LA PARTIE'},
+ {cle:'de', emb:'de', nom:'Le Dé de Marius',
+  dit:'Plus haut, plus bas. Un dé, un pari, deux secondes.', mise:'1 € À 50 €'},
+ {cle:'roue', emb:'roue', nom:'La Roue de la Fortune',
+  dit:'Un tour offert par jour. Le deuxième se paie.', mise:'GRATUIT PUIS 20 €'},
+ {cle:'poker', emb:'jetons', nom:'Le Poker du Quai',
+  dit:'Cinq cartes, trois dockers en face, et personne ne montre rien.',
+  mise:'50 € LA CAVE'},
+ {cle:'grattage', emb:'ticket', nom:'Le Grattage de Luxe',
+  dit:'Comme au bar, mais le ticket vaut dix fois plus — et le gros lot aussi.',
+  mise:'50 € LE TICKET'}
+];
+
+var G=document.getElementById('grille');
+TABLES.forEach(function(T){
+  var d=document.createElement('button');
+  d.className='jeu'+(T.grand?' grand':'')+(T.etat==='ouvert'?' ouvert':'');
+  d.innerHTML =
+    '<span class="et">'+(T.etat==='ouvert'?'OUVERT':'BIENTÔT')+'</span>'+
+    '<canvas></canvas>'+(T.grand?'<span class="tx">':'')+
+    '<b>'+T.nom+'</b><span>'+T.dit+'</span><em>'+T.mise+'</em>'+(T.grand?'</span>':'');
+  G.appendChild(d);
+  toile(d.querySelector('canvas'),EMBLEME[T.emb]);
+  d.onclick=function(){
+    if(T.etat!=='ouvert'){
+      d.animate([{transform:'translateX(0)'},{transform:'translateX(-3px)'},
+                 {transform:'translateX(3px)'},{transform:'translateX(0)'}],
+                {duration:200});
+      return;
+    }
+  };
+});
+
+/* ON REVIENT DANS LA SALLE, pas sur le quai : le casino est une porte du
+   complexe, et ressortir deux crans d'un coup desoriente. */
+document.getElementById('retour').onclick=function(){
+  location.href='complexe.html?v='+(window.MA_VERSION||Date.now());
+};
+</script>
+</body>
+</html>

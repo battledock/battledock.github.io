@@ -12,8 +12,8 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<script src="maintenance.js?v=2026-10-15-0400"></script>
-<script src="personnage.js?v=2026-10-15-0400"></script>
+<script src="maintenance.js?v=2026-10-15-0500"></script>
+<script src="personnage.js?v=2026-10-15-0500"></script>
 <script>
 /* LA VERSION, comme partout ailleurs : ajoutée au signet, une page reste en
    mémoire et ne se recharge jamais. On demande à chaque ouverture quelle est
@@ -27,7 +27,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    MA_VERSION de jeu.html, index.html, jeu_entree.html, complexe.html,
    forge.html et mine.html. Les autres pages n'en portent pas. */
 (function(){
-  var MA_VERSION='2026-10-15-0400';
+  var MA_VERSION='2026-10-15-0500';
   window.MA_VERSION=MA_VERSION;
   /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il
@@ -82,8 +82,8 @@ html,body{margin:0;height:100%;background:#0b0608;overflow:hidden;
   background:linear-gradient(to bottom,rgba(11,6,8,.8),rgba(11,6,8,0))}
 #haut small{display:block;font:700 8px ui-monospace,monospace;letter-spacing:3.4px;color:#c9a24a}
 </style>
-<script src="retour.js?v=2026-10-15-0400"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-15-0400">
+<script src="retour.js?v=2026-10-15-0500"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-15-0500">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -91,6 +91,7 @@ html,body{margin:0;height:100%;background:#0b0608;overflow:hidden;
 <!-- PAS DE TITRE EN SURIMPRESSION : il se posait pile sur l'enseigne,
      qui nomme deja le lieu bien mieux que lui. -->
 <div id="bas">
+  <button id="casino" hidden>ENTRER AU CASINO</button>
   <button id="quai">REDESCENDRE SUR LE QUAI</button>
 </div>
 <script>
@@ -677,11 +678,16 @@ function majCam(dt){
 /* LA SORTIE : on redescend le tapis et l'on s'en va. Pas de bouton a
    viser — on marche vers le bas, comme on est entre. Le bouton reste
    quand meme, pour qui prefere appuyer. */
-let sortie=false, fondu=0;
-function sortir(){
+/* DEUX SORTIES, UNE SEULE MECANIQUE. Le fondu etait code en dur sur le
+   quai ; il porte maintenant sa destination, parce que la salle a
+   desormais une porte au fond a gauche — celle du casino. */
+let sortie=false, fondu=0, versOu='jeu.html';
+function sortir(ou){
   if(sortie)return;
+  versOu=ou||'jeu.html';
   sortie=true;fondu=0.001;
 }
+function auCasino(){sortir('casino.html');}
 function majJoueur(dt){
   /* ON ENTRE EN BAS DU TAPIS, mais pas colle au bord : pose a 30 du bas,
      le personnage etait a demi cache par la barre d'action, et deux pas
@@ -691,7 +697,7 @@ function majJoueur(dt){
     camY=Math.max(0,Math.min(SALLE_H-VUE_H,joueur.y-VUE_H*0.56));}
   if(sortie){
     fondu=Math.min(1,fondu+dt*2.6);
-    if(fondu>=1)location.href='jeu.html?v='+(window.MA_VERSION||Date.now());
+    if(fondu>=1)location.href=versOu+'?v='+(window.MA_VERSION||Date.now());
     return;
   }
   const n=Math.hypot(joyX,joyY), pousse=Math.min(1,n);
@@ -716,6 +722,12 @@ function majJoueur(dt){
   majCam(dt);
   /* LE BAS DE LA SALLE : on redescend sur le quai. */
   if(joueur.y>SALLE_H-12&&Math.abs(joueur.x-CX)<80)sortir();
+  /* LA BAIE DU CASINO : on y entre en marchant, comme on sort en bas.
+     bloque() arrete au mur, donc on ne franchit jamais le seuil : on
+     declenche au ras du mur, dans la largeur de l'ouverture moins ses
+     deux tableaux d'ombre. Pas de bouton a viser — le bouton existe
+     quand meme, en bas, pour qui prefere appuyer. */
+  if(joueur.y<MUR+22&&Math.abs(joueur.x-ENT.x())<ENT.hw-10)auCasino();
 }
 function dessinerJoueur(){
   const x=Math.round(joueur.x), y=Math.round(joueur.y);
@@ -898,7 +910,21 @@ let tPrec=0;
   requestAnimationFrame(boucle);
 })(0);
 
-document.getElementById('quai').onclick=sortir;
+document.getElementById('quai').onclick=function(){sortir('jeu.html');};
+document.getElementById('casino').onclick=auCasino;
+/* LE BOUTON DU CASINO NE S'AFFICHE QU'AU PIED DE SA PORTE. Pose en
+   permanence, il partageait la barre avec la sortie et l'on quittait la
+   salle en voulant entrer. On le montre a trois pas de la baie, et la
+   barre redevient simple partout ailleurs. */
+(function(){
+  const b=document.getElementById('casino');
+  let vu=false;
+  setInterval(function(){
+    const pres=Math.abs(joueur.x-ENT.x())<ENT.hw+54 && joueur.y<MUR+96;
+    if(pres===vu)return;
+    vu=pres;b.hidden=!pres;
+  },180);
+})();
 </script>
 </body>
 </html>
