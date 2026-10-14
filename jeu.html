@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-14-2330"></script>
+<script src="maintenance.js?v=2026-10-14-2345"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-14-2330';
+var MA_VERSION='2026-10-14-2345';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il
@@ -2123,13 +2123,13 @@ white-space:nowrap}
 #tiroir.part .latte,#tiroir.part .tbas{animation:none}
 @keyframes ligneFin{from{opacity:0;transform:translateY(12px) scale(.92)}
 60%{opacity:1;transform:translateY(0) scale(1.04)}to{opacity:1;transform:none}}</style>
-<script src="retour.js?v=2026-10-14-2330"></script>
+<script src="retour.js?v=2026-10-14-2345"></script>
 <!-- LE DESSIN DU PERSONNAGE ET LES CARTES POKEDOCK. Classiques, donc
      joues avant le module : window.Perso doit exister quand une carte
      se grave, et window.Pokedock quand on ouvre le rayon du Bar. -->
-<script src="personnage.js?v=2026-10-14-2330"></script>
-<script src="pokedock.js?v=2026-10-14-2330"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-14-2330">
+<script src="personnage.js?v=2026-10-14-2345"></script>
+<script src="pokedock.js?v=2026-10-14-2345"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-14-2345">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -28497,7 +28497,29 @@ setTimeout(precuireLeJoueur,1500);
 /* ON N'ATTEND PLUS NEUF CENTS MILLISECONDES le sol en cache : s'il n'est
    pas encore lu au bout de trois cents, on construit et on entre. */
 try{await Promise.race([SOL_CACHE_PROMESSE,new Promise(r=>setTimeout(r,300))]);}catch(x){}
-setTimeout(()=>{try{if(e&&e.id)appelRPC('signaler_version',{p_joueur:e.id,p_version:window.MA_VERSION||'?',p_nav:(navigator.userAgent||'').slice(0,240)});}catch(x){}},4000);
+/* ON FAIT REMONTER L'ÉTAT DU DÉCOR AVEC LA VERSION. Je ne peux pas
+   regarder l'écran d'un joueur, et lui demander d'aller lire un chiffre
+   dans les réglages, c'est déjà trop. Le jeu dit donc tout seul, dans le
+   champ navigateur, ce qu'il a réellement sème et dessiné : combien de
+   lanternes sont dans DECOR, combien sont passées par la fonction de
+   dessin, et les quelques réglages qui pourraient les escamoter.
+   Deux envois : un à quatre secondes, un à quarante, le temps d'avoir
+   marché un peu. */
+function signalerEtat(){
+try{if(!(e&&e.id))return;
+let d='?';try{d=DECOR.filter(o=>o.t==='lanterneP').length;}catch(err){}
+const bout=' | lant '+d+'/'+(window.__LANT_DESS||0)
++' c:'+(typeof CARTE!=='undefined'?CARTE:'?')
++' q:'+(typeof QUALITE!=='undefined'?QUALITE:'?')
++' ech:'+(typeof ECH!=='undefined'?ECH:'?')
++' vue:'+(typeof VW!=='undefined'?VW:'?')+'x'+(typeof VH!=='undefined'?VH:'?')
++' ciel:'+((typeof REG!=='undefined'&&REG.ciel)||'?')
++' fin:'+((function(){try{return FIN_OK()?1:0;}catch(err){return 'x';}})())
++' dec:'+(typeof DECOR!=='undefined'?DECOR.length:'?');
+appelRPC('signaler_version',{p_joueur:e.id,p_version:window.MA_VERSION||'?',
+p_nav:((navigator.userAgent||'').slice(0,110)+bout).slice(0,240)});}catch(x){}}
+setTimeout(signalerEtat,4000);
+setTimeout(signalerEtat,40000);
 verifierLaCarte();
 setTimeout(montrerLAnnonce,1200);
 majPastille();
