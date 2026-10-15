@@ -17,14 +17,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Cormorant+Garamond:ital,wght@0,600;1,500&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-16-0500"></script>
+<script src="maintenance.js?v=2026-10-16-0600"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-16-0500';
+  var MA_VERSION='2026-10-16-0600';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -151,6 +151,76 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
    chiffres respirent. C'est le compromis, et il n'est pas le meme d'un
    telephone a l'autre.
    ===================================================================== */
+/* =====================================================================
+   LE GRATTAGE — LE BILLET
+   Une carte blanche posee sur du gris clair. Les neuf cases suivent la
+   largeur de l'ecran : elles sont carrees par aspect-ratio, leur ecart
+   est en vw, et le latex est un canvas de la taille exacte de sa case,
+   donc on gratte toujours au bon endroit quel que soit le telephone.
+   ===================================================================== */
+#gra{position:fixed;inset:0;z-index:12;display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
+  background:linear-gradient(#eef2f6,#dde5ec);font-family:'Cormorant Garamond',Georgia,serif}
+#gra[hidden]{display:none}
+#gra .bar{flex:none;display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:#fff;box-shadow:0 1px 0 rgba(34,48,58,.08)}
+#gra .bar button#grasortie{-webkit-appearance:none;appearance:none;flex:none;
+  width:34px;height:34px;border:0;border-radius:50%;background:#22303a;color:#f5d98a;
+  font:700 16px 'Oswald',monospace}
+#gra .bar .ti{flex:1;min-width:0}
+#gra .bar .ti b{display:block;font:700 15px/1 'Playfair Display',Georgia,serif;color:#22303a}
+#gra .bar .ti i{display:block;margin-top:3px;font:700 7px 'Oswald',monospace;
+  letter-spacing:2.4px;font-style:normal;color:#9aa7b0}
+#gra .bar .inf{flex:none;width:30px;height:30px;border-radius:50%;border:0;
+  background:#eef1f4;color:#44565f;font:700 14px Georgia}
+#gra .bar .so{flex:none;display:flex;align-items:center;gap:6px;border-radius:999px;
+  padding:7px 11px;background:#22303a;color:#f5d98a;font:700 12px 'Oswald',monospace}
+#gra .bar .so u{width:10px;height:10px;border-radius:50%;text-decoration:none;
+  background:radial-gradient(#f5d98a,#c08f2a)}
+#gra .sc{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
+  padding:clamp(10px,2.2dvh,20px) 16px;overflow:hidden}
+#gra .tk{width:100%;max-width:min(94vw,430px);background:#fff;border-radius:22px;
+  padding:clamp(13px,3.4vw,20px);
+  box-shadow:0 2px 0 rgba(34,48,58,.05),0 18px 40px rgba(34,48,58,.18)}
+#gra .hd{display:flex;align-items:center;gap:10px;margin-bottom:clamp(11px,2.8vw,16px)}
+#gra .hd .ph{flex:none;width:40px;height:40px;border-radius:13px;background:#1d4e7a;
+  display:flex;align-items:center;justify-content:center;color:#f5d98a;font:700 17px 'Oswald'}
+#gra .hd b{flex:1;font:900 clamp(16px,4.8vw,21px)/1.1 'Playfair Display',Georgia,serif;color:#22303a}
+#gra .hd i{font:700 8px 'Oswald',monospace;letter-spacing:1.6px;font-style:normal;color:#fff;
+  background:#1f9d5a;border-radius:999px;padding:5px 9px}
+#gra .g9{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(6px,1.8vw,10px)}
+#gra .c9{position:relative;aspect-ratio:1/1;min-height:52px;border-radius:clamp(8px,2.4vw,13px);
+  background:#eef2f6;overflow:hidden;touch-action:none}
+#gra .c9 canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#gra .c9 .sym{image-rendering:pixelated}
+#gra .c9.gagnante{box-shadow:inset 0 0 0 3px #1f9d5a;animation:graVif 1s ease-in-out infinite}
+@keyframes graVif{0%,100%{box-shadow:inset 0 0 0 3px #1f9d5a}
+                  50%{box-shadow:inset 0 0 0 3px rgba(31,157,90,.35)}}
+#gra .pied{margin-top:clamp(11px,2.8vw,16px);display:flex;gap:6px;flex-wrap:wrap}
+#gra .pied b{border-radius:999px;padding:6px 9px;font:700 clamp(7px,2.2vw,9px) 'Oswald',monospace;
+  letter-spacing:.8px;background:#eef2f6;color:#5a6a76}
+#gra .pied b.or{background:#1d4e7a;color:#f5d98a}
+#gra .bas{flex:none;background:#fff;box-shadow:0 -1px 0 rgba(34,48,58,.08);
+  padding:clamp(14px,2.6dvh,22px) 16px clamp(16px,2.6dvh,24px)}
+#gra #smsg{min-height:19px;margin-bottom:clamp(12px,2.4dvh,20px);text-align:center;
+  font:700 clamp(11px,3.3vw,14px) 'Oswald',monospace;letter-spacing:1.2px;color:#5a6a76}
+#gra #smsg.gagne{color:#1f9d5a}
+#gra #smsg.perd{color:#d8453c}
+#gra #smsg.gros{color:#a8761a;font-size:clamp(13px,3.9vw,16px)}
+#gra #smise{display:flex;justify-content:center;margin-bottom:clamp(10px,2dvh,16px)}
+#gra #smise .fixe{border:1px dashed #cdd6de;border-radius:999px;padding:8px 14px;
+  font:700 9px 'Oswald',monospace;letter-spacing:1.4px;color:#8a97a0}
+#gra #schoix{display:block}
+#gra #schoix .lgn{display:flex}
+#gra #schoix button{-webkit-appearance:none;appearance:none;width:100%;border:0;
+  border-radius:16px;padding:clamp(16px,3dvh,26px) 6px;background:#1d4e7a;color:#fff;
+  font:700 clamp(11px,3.3vw,14px) 'Oswald',monospace;letter-spacing:2px;
+  box-shadow:0 2px 0 rgba(0,0,0,.1),0 7px 16px rgba(34,48,58,.14)}
+#gra #schoix button:active{filter:brightness(.9);transform:translateY(1px)}
+#gra #schoix button:disabled{opacity:.42}
+#gra button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#gra #paie{display:none}
+
 #rlt{position:fixed;inset:0;z-index:12;display:flex;flex-direction:column;
   padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
   background:radial-gradient(ellipse 120% 62% at 50% 34%,#a6cdaf,#74ab89 56%,#53886a);
@@ -283,9 +353,11 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
    procede de responsive.css, applique ici aux trois bandeaux du casino.
    Le carre est DANS le bouton : il n'avale la cible d'aucun voisin,
    puisque rien d'autre n'est touchable autour. */
-#sortie,#sinfo,#v21sortie,#v21info,#rltsortie,#rlt .bar .inf{position:relative}
+#sortie,#sinfo,#v21sortie,#v21info,#rltsortie,#rlt .bar .inf,
+#grasortie,#gra .bar .inf{position:relative}
 #sortie::after,#sinfo::after,#v21sortie::after,#v21info::after,
-#rltsortie::after,#rlt .bar .inf::after{
+#rltsortie::after,#rlt .bar .inf::after,
+#grasortie::after,#gra .bar .inf::after{
   content:'';position:absolute;left:50%;top:50%;width:44px;height:44px;
   transform:translate(-50%,-50%)}
 #sinfo,#v21info{-webkit-appearance:none;appearance:none;flex:none;
@@ -565,7 +637,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   font:italic 500 12px/1.5 'Cormorant Garamond',Georgia,serif;color:#6a7a70}
 #v21 #paie b{font-style:normal;color:#44565f}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-16-0500">
+<link rel="stylesheet" href="responsive.css?v=2026-10-16-0600">
 </head>
 <body>
 <div id="tapis">
@@ -637,6 +709,26 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   <div class="bas" id="v21bas"><div id="v21pr"></div></div>
 </div>
 
+<div id="gra" hidden>
+  <div class="bar">
+    <button id="grasortie">←</button>
+    <div class="ti"><b>Le Grattage de Luxe</b><i>NEUF CASES · TROIS PAREILS</i></div>
+    <button class="inf" id="grainfo">i</button>
+    <div class="so"><u></u><span id="grasou">—</span></div>
+  </div>
+  <div class="sc">
+    <div class="tk">
+      <div class="hd"><div class="ph">★</div><b>Grattage de Luxe</b><i>50 €</i></div>
+      <div class="g9" id="grag"></div>
+      <div class="pied">
+        <b class="or">LE PHARE ×500</b><b>PERLE ×50</b><b>GRUE ×10</b>
+        <b>ANCRE ×5</b><b>CAGEOT ×2</b><b>CASIER ×1</b>
+      </div>
+    </div>
+  </div>
+  <div class="bas" id="grabas"></div>
+</div>
+
 <div id="rlt" hidden>
   <div class="bar">
     <button id="rltsortie">←</button>
@@ -663,7 +755,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-16-0500"></script>
+<script src="retour.js?v=2026-10-16-0600"></script>
 <script>
 /* =====================================================================
    LE CASINO
@@ -724,6 +816,7 @@ var SOLDE=(typeof e.euros==='number')?e.euros:null;
 function majSolde(){
   try{if(typeof V21_ON!=='undefined'&&V21_ON)v21Solde();}catch(x){}
   try{if(typeof RLT_ON!=='undefined'&&RLT_ON)rltSolde();}catch(x){}
+  try{if(typeof GRA_ON!=='undefined'&&GRA_ON)graSolde();}catch(x){}
   var t=(SOLDE===null)?'—':enEuros(SOLDE);
   document.getElementById('sou').textContent=t;
   document.getElementById('ssou').querySelector('span').textContent=t;
@@ -1862,6 +1955,7 @@ var GR_SYM=['casier','cageot','ancre','grue','perle','phare'];
 var GR_DIT=['casiers','cageots','ancres','grues','perles','Phares'];
 var GR_MUL=[1,2,5,10,50,500];
 MOTEUR.grattage={
+  dom:'gra',
   nom:'Le Grattage de Luxe', sous:'NEUF CASES · TROIS PAREILS',
   L:102, H:108,
   mises:null, fixe:5000, fixeDit:'50 € LE TICKET · PRIX FIXE',
@@ -1947,13 +2041,16 @@ MOTEUR.grattage={
   action:async function(s,pari){
     if(pari==='tout'){
       for(var i=0;i<9;i++)s.usure[i]=1;
+      graPoser(s);
       return;
     }
     verrou(true);dire('On décolle un ticket du carnet…');
     s.phase='pose';s.grille=[];s.usure=[0,0,0,0,0,0,0,0,0];s.res=null;s.lot=0;
+    graNeuf(s);
     var r=await coup('grattage',5000,{});
     if(r.erreur){dire(r.erreur,'perd');verrou(false);return;}
     s.grille=r.tirage.grille;s.lot=r.tirage.lot;s.res=r;s.phase='gratte';
+    graPoser(s);
     if(typeof r.euros==='number'){SOLDE=r.euros;noterEuros(r.euros);majSolde();}
     dire('Gratte les neuf cases.');
     monterChoix();verrou(false);
@@ -1961,6 +2058,7 @@ MOTEUR.grattage={
 };
 function finirGrattage(s){
   var r=s.res;if(!r)return;
+  try{if(typeof GRA_ON!=='undefined'&&GRA_ON)graPoser(s);}catch(x){}
   var nom=GR_DIT[s.lot-1], f=GR_MUL[s.lot-1];
   if(!r.gain){dire('Ticket perdant. −'+enEuros(r.mise),'perd');}
   /* LE CASIER PAIE UNE FOIS LA MISE, donc il ne rapporte rien : il rend
@@ -2169,6 +2267,145 @@ document.getElementById('sinfo').onclick=ouvrirRegle;
 document.getElementById('v21info').onclick=ouvrirRegle;
 document.getElementById('rltinfo').onclick=ouvrirRegle;
 
+/* ================= LE GRATTAGE EN DOM =================
+   Neuf cases, et sous chacune deux toiles superposees : le symbole,
+   dessine avec la meme fonction pixel que partout ailleurs, et le latex
+   qu'on efface au doigt. La toile du latex fait exactement la taille de
+   sa case, donc on gratte toujours au bon endroit, sur n'importe quel
+   telephone, sans aucune conversion de coordonnees.
+
+   LA PART GRATTEE EST MESUREE, pas devinee : on relit un echantillon de
+   la toile et on compte les pixels devenus transparents. Au-dela de
+   soixante pour cent la case s'ouvre d'un coup — c'est ce que fait un
+   vrai ticket quand on a decolle l'essentiel. */
+var GRA=document.getElementById('gra');
+var GRA_ON=false;
+function graSolde(){var e=document.getElementById('grasou');
+  if(e)e.textContent=(typeof SOLDE==='number')?enEuros(SOLDE):'—';}
+function graPrendre(){var b=document.getElementById('grabas');
+  b.appendChild(SMSG);b.appendChild(SMISE);b.appendChild(SCHOIX);
+  b.appendChild(document.getElementById('paie'));}
+function graRendre(){var b=document.getElementById('sbas');
+  b.appendChild(SMSG);b.appendChild(SMISE);b.appendChild(SCHOIX);
+  b.appendChild(document.getElementById('paie'));}
+
+function graLatex(cv){
+  var g=cv.getContext('2d'), w=cv.width, h=cv.height;
+  g.setTransform(1,0,0,1,0,0);
+  g.globalCompositeOperation='source-over';
+  var d=g.createLinearGradient(0,0,w,h);
+  d.addColorStop(0,'#cfd3d8');d.addColorStop(.45,'#9aa2ab');
+  d.addColorStop(.6,'#c6ccd2');d.addColorStop(1,'#8d959e');
+  g.fillStyle=d;g.fillRect(0,0,w,h);
+  g.fillStyle='rgba(255,255,255,.22)';
+  for(var k=0;k<14;k++)
+    g.fillRect((k*37%w),(k*53%h),Math.max(2,w*0.06),Math.max(1,h*0.02));
+}
+/* LE SYMBOLE EST DESSINE AVEC LA MEME FONCTION QUE LE RESTE DU JEU.
+   DESSIN_GRAT ecrit dans la toile globale G : on la detourne le temps du
+   trace, puis on la rend. Un seul dessin, deux habillages. */
+function graSymbole(cv,id){
+  var g=cv.getContext('2d'), e=cv.width/26;
+  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,cv.width,cv.height);
+  g.setTransform(e,0,0,e,0,0);g.imageSmoothingEnabled=false;
+  var vieux=G;
+  try{ G=g; var d=DESSIN_GRAT[GR_SYM[id-1]]; if(d)d(2,2); }
+  catch(err){} finally{ G=vieux; }
+}
+function graNeuf(s){
+  var h=document.getElementById('grag');
+  h.innerHTML='';
+  for(var i=0;i<9;i++){
+    var c=document.createElement('div');c.className='c9';
+    c.innerHTML='<canvas class="sym"></canvas><canvas class="lat"></canvas>';
+    h.appendChild(c);
+  }
+  graPoser(s);
+}
+function graPoser(s){
+  var h=document.getElementById('grag');
+  var cells=h.querySelectorAll('.c9');
+  if(!cells.length)return;
+  var dpr=Math.min(3,window.devicePixelRatio||1);
+  for(var i=0;i<cells.length;i++){
+    var c=cells[i], r=c.getBoundingClientRect();
+    var W=Math.max(16,Math.round(r.width*dpr)), H=Math.max(16,Math.round(r.height*dpr));
+    var sym=c.querySelector('.sym'), lat=c.querySelector('.lat');
+    if(sym.width!==W||sym.height!==H){sym.width=W;sym.height=H;lat.width=W;lat.height=H;
+      if(s.grille.length)graSymbole(sym,s.grille[i]);
+      graLatex(lat);c.__use=0;}
+    else if(s.grille.length&&!c.__sym){graSymbole(sym,s.grille[i]);c.__sym=true;}
+    var u=s.usure[i]||0;
+    lat.style.display=(u>=1)?'none':'block';
+    c.classList.toggle('gagnante', s.phase==='fini'&&s.grille.length&&
+      s.res&&s.res.gain>0&&s.grille[i]===s.lot);
+  }
+}
+/* la part grattee, mesuree sur un echantillon de la toile */
+function graPart(lat){
+  try{
+    var g=lat.getContext('2d'), p=g.getImageData(0,0,lat.width,lat.height).data;
+    var vide=0, tot=0;
+    for(var k=3;k<p.length;k+=4*7){tot++;if(p[k]<140)vide++;}
+    return tot?vide/tot:0;
+  }catch(e){return 0;}
+}
+function graDoigt(s,ev,cell,i){
+  if(s.phase!=='gratte'||(s.usure[i]||0)>=1)return;
+  var lat=cell.querySelector('.lat'), r=cell.getBoundingClientRect();
+  var g=lat.getContext('2d');
+  var x=(ev.clientX-r.left)/r.width*lat.width;
+  var y=(ev.clientY-r.top)/r.height*lat.height;
+  g.setTransform(1,0,0,1,0,0);
+  /* LE PINCEAU DOIT ETRE OPAQUE. destination-out retire la part d'alpha
+     de la source : avec le blanc a 22% laisse par graLatex, un passage
+     n'effacait que 22% du latex et la case ne s'ouvrait jamais. */
+  g.fillStyle='#000';
+  g.globalCompositeOperation='destination-out';
+  g.beginPath();g.arc(x,y,lat.width*0.22,0,7);g.fill();
+  g.globalCompositeOperation='source-over';
+  cell.__n=(cell.__n||0)+1;
+  if(cell.__n%3===0||cell.__n<3){
+    if(graPart(lat)>0.6){
+      s.usure[i]=1;lat.style.display='none';
+      if(JEU&&JEU.pas)JEU.pas(s,0);
+      graPoser(s);
+    }
+  }
+}
+/* LES ECOUTEURS SONT POSES SUR LA GRILLE, PAS SUR LES CASES. Chaque
+   nouveau ticket refait les neuf cases : accrochees a chaque case, les
+   ecoutes partaient avec les anciennes et le ticket suivant ne se
+   grattait plus. Posees une fois sur le parent, elles survivent a tous
+   les tickets. */
+function graCase(ev){
+  var c=ev.target.closest?ev.target.closest('.c9'):null;
+  if(!c)return null;
+  var h=document.getElementById('grag');
+  return {cell:c, i:[].indexOf.call(h.children,c)};
+}
+function graBrancher(){
+  var h=document.getElementById('grag');
+  h.onpointerdown=function(ev){
+    var o=graCase(ev);if(!o||!S)return;
+    h.setPointerCapture&&h.setPointerCapture(ev.pointerId);
+    graDoigt(S,ev,o.cell,o.i);
+  };
+  h.onpointermove=function(ev){
+    if(!S)return;
+    if(ev.pointerType==='mouse'&&!ev.buttons)return;
+    /* avec la capture, le doigt qui glisse d'une case a l'autre continue
+       d'etre livre a la grille : on retrouve la case sous le point. */
+    var el=document.elementFromPoint(ev.clientX,ev.clientY);
+    var c=el&&el.closest?el.closest('.c9'):null;
+    if(!c)return;
+    graDoigt(S,ev,c,[].indexOf.call(h.children,c));
+  };
+}
+document.getElementById('grasortie').onclick=function(){if(OCCUPE)return;fermerTable();};
+document.getElementById('grainfo').onclick=function(){ouvrirRegle();};
+window.addEventListener('resize',function(){if(GRA_ON&&S)graPoser(S);});
+
 /* ================= LA ROULETTE EN DOM ================= */
 var RLT=document.getElementById('rlt');
 var RLT_ON=false, RLT_VU='';
@@ -2232,6 +2469,19 @@ function ouvrirTable(T){
   /* LA TABLE EN DOM : pas de canvas, pas de boucle de dessin. On montre
      son propre ecran, on lui prete les boites du bas, et on redessine
      seulement quand l'etat change. */
+  if(JEU.dom==='gra'){
+    GRA_ON=true;
+    graPrendre();
+    document.getElementById('paie').innerHTML=JEU.paie;
+    GRA.hidden=false;
+    majSolde();graSolde();
+    dire('Achète un ticket.');
+    monterMises();monterChoix();
+    graNeuf(S);graBrancher();
+    boucle.vu=0;
+    if(!RAF)RAF=requestAnimationFrame(boucle);
+    return;
+  }
   if(JEU.dom==='rlt'){
     RLT_ON=true;RLT_VU='';
     rltPrendre();
@@ -2301,6 +2551,13 @@ function brancherLeTapis(){
 }
 function fermerTable(){
   fermerRegle();
+  if(GRA_ON){
+    GRA.hidden=true;GRA_ON=false;
+    if(RAF){cancelAnimationFrame(RAF);RAF=null;}
+    graRendre();
+    JEU=null;S=null;majSolde();
+    return;
+  }
   if(RLT_ON){
     RLT.hidden=true;RLT_ON=false;RLT_VU='';
     if(RAF){cancelAnimationFrame(RAF);RAF=null;}
