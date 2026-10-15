@@ -13,14 +13,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Expires" content="0">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-16-2200"></script>
+<script src="maintenance.js?v=2026-10-16-2300"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-16-2200';
+  var MA_VERSION='2026-10-16-2300';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -238,7 +238,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
 #jeu.plein #retourJeu{display:block}
 #retourJeu:active{background:rgba(90,216,255,.26)}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-16-2200">
+<link rel="stylesheet" href="responsive.css?v=2026-10-16-2300">
 </head>
 <body>
 <div id="salle">
@@ -291,7 +291,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-16-2200"></script>
+<script src="retour.js?v=2026-10-16-2300"></script>
 <script>
 /* =====================================================================
    LA SALLE D'ARCADE
@@ -748,6 +748,18 @@ function hgArt(x,y,art,pal,mir){
     }
   }
 }
+/* LE MEME DESSIN, EN PLUS GROS. Chaque pixel devient un carre de z sur
+   z : on garde la grille et l'aspect pixel, au lieu d'etirer une image
+   et d'en faire de la bouillie. */
+function hgArtZ(x,y,art,pal,z){
+  for(var j=0;j<art.length;j++){
+    var l=art[j];
+    for(var i=0;i<l.length;i++){
+      var c=pal[l[i]];if(!c)continue;
+      R(x+i*z,y+j*z,z,z,c);
+    }
+  }
+}
 function hgOmbre(cx,cy,w){
   var rx=w/2, ry=Math.max(2,w*0.22);
   for(var i=-rx;i<=rx;i++)for(var j=-ry;j<=ry;j++){
@@ -797,6 +809,59 @@ var HG_REC=0;            /* le meilleur score du joueur, lu a l'ouverture */
    qui fait qu'une partie ne ressemble pas a la precedente — on ne joue
    pas la meme chose avec un chargeur double qu'avec des balles qui
    percent. */
+/* LES ICONES DES CARTES, seize sur seize, dessinees comme le reste :
+   une carte qui ne porte que du texte se lit comme un formulaire, et
+   l'on choisit alors la plus courte plutot que la meilleure. */
+var HGP_I={
+  'a':'#ff8a4a','b':'#ffbe7a','c':'#b04a10',          /* orange : l'attaque */
+  'd':'#5ad8ff','e':'#a8ecff','f':'#1f7fa8',          /* cyan : le confort */
+  'g':'#8ad07a','h':'#bdeeb0','i':'#3f8a35',          /* vert : la survie */
+  'j':'#4e545d','k':'#8d96a2','l':'#2b2f35',          /* le metal */
+  'm':'#f0d78a','n':'#8a6a2a',                        /* le laiton */
+  'o':'#e8e4dc','p':'#d8342a'                         /* le blanc et le rouge */
+};
+var HGA_I={
+  cad:['................','.....jjjjj......','....jkkkkkj.....','...jkkkkkkkj....',
+       '...jkllllkkj....','...jkl....kj....','...jkl..aaaa....','...jkl.aaaaa....',
+       '...jkkaaaaa.....','....jkaaa.......','.....jaa........','......a.........',
+       '................','................','................','................'],
+  deg:['......aaa.......','.....aabba......','....aabbbaa.....','....abbbbba.....',
+       '....abbbbba.....','....abbbbba.....','....caaaaac.....','....cmmmmmc.....',
+       '....cmmmmmc.....','....cmmmmmc.....','....cnnnnnc.....','....ccccccc.....',
+       '................','................','................','................'],
+  vit:['................','....dddd........','...deeeed.......','...deeeed.......',
+       '...deeeed.......','...deeeed.......','...deeeeddd.....','...deeeeeeed....',
+       '...deeeeeeeed...','...dffffffffd...','...dddddddddd...','................',
+       '................','................','................','................'],
+  chg:['.....jjjjjj.....','....jkkkkkkj....','....jkmmmmkj....','....jkmmmmkj....',
+       '....jkmmmmkj....','....jkmmmmkj....','....jkmmmmkj....','....jkmmmmkj....',
+       '....jkmmmmkj....','....jkmmmmkj....','....jkkkkkkj....','.....jllllj.....',
+       '......jjjj......','................','................','................'],
+  rech:['................','......dd........','.....deed.......','....deeeed......',
+        '...deeeeeed.....','..deeeeeeeed....','..dffffffffd....','..dd.dd.dd.dd...',
+        '...d..d..d..d...','................','................','................',
+        '................','................','................','................'],
+  perce:['................','................','..aaa...........','...aaa..........',
+         '....aaaaaaaaaaa.','...aaaaaaaaaaaa.','....aaaaaaaaaaa.','...aaa..........',
+         '..aaa...........','................','.....ccc...ccc..','.....c.c...c.c..',
+         '................','................','................','................'],
+  por:['................','................','................','...jjjjjjjjjjj..',
+       '...jkkkkkkkkkkj.','...jkllllllllkj.','...jkkkkkkkkkkj.','...jjjjjjjjjjj..',
+       '...nn...........','...nnn..........','....nn..........','................',
+       '................','................','................','................'],
+  soin:['................','....oooooooo....','...oooooooooo...','...oo..gg..oo...',
+        '...oo..gg..oo...','...oogggggg.oo..','...oogggggg.oo..','...oo..gg..oo...',
+        '...oo..gg..oo...','...oooooooooo...','....oooooooo....','................',
+        '................','................','................','................'],
+  aimant:['................','.....dddd.......','....deeeed......','...dee..eed.....',
+          '...de....ed.....','...de....ed.....','...de....ed.....','...pe....ep.....',
+          '...pp....pp.....','...pp....pp.....','................','................',
+          '................','................','................','................']
+};
+var HG_FAM={cad:'a',deg:'a',perce:'a',por:'a',vit:'d',chg:'d',rech:'d',aimant:'d',soin:'g'};
+var HG_FAMC={a:['#ff8a4a','rgba(255,138,74,.16)'],
+             d:['#5ad8ff','rgba(90,216,255,.14)'],
+             g:['#8ad07a','rgba(138,208,122,.15)']};
 var HG_CARTES=[
   {c:'cad',  nom:'G\u00c2CHETTE',    dit:'Cadence +18 %',          max:6},
   {c:'deg',  nom:'GROSSES BALLES',dit:'D\u00e9g\u00e2ts +1',          max:5},
@@ -1311,13 +1376,15 @@ MOTEUR.hangar={
   tape:function(s,x,y){
     if(!s.cartes)return;
     var L=SL, H=SH;
-    var hc=Math.round(H*0.17), y0=Math.round(H/2-hc*1.6);
-    /* LES BANDES SE TOUCHENT. Six pixels de blanc entre deux cartes,
-       c'est six pixels ou le doigt ne choisit rien et ou l'on croit que
-       l'ecran a plante : chaque bande deborde donc jusqu'a sa voisine. */
+    /* LA GEOMETRIE EST CELLE DU DESSIN, au pixel pres : deux formules
+       qui derivent l'une de l'autre finissent toujours par diverger, et
+       alors on tape a cote sans comprendre pourquoi. */
+    var hc=Math.round(H*0.155), ec=Math.round(H*0.022), y0=Math.round(H*0.26);
+    /* LES BANDES SE TOUCHENT : l'ecart entre deux cartes est un endroit
+       ou le doigt ne choisirait rien et ou l'on croirait l'ecran plante. */
     for(var i=0;i<3;i++){
-      var yy=y0+i*(hc+6);
-      if(x>4&&x<L-4&&y>yy-4&&y<yy+hc+4){this.prendreCarte(s,i);return;}
+      var yy=y0+i*(hc+ec);
+      if(x>4&&x<L-4&&y>yy-ec/2&&y<yy+hc+ec/2){this.prendreCarte(s,i);return;}
     }
   },
   abattre:function(s,z,i){
@@ -1644,28 +1711,96 @@ MOTEUR.hangar={
       G.fillStyle='rgba(200,40,30,'+((s.inv-900)/200*0.35).toFixed(3)+')';
       G.fillRect(0,0,L,H);
     }
-    /* ================= LES TROIS CARTES ================= */
+    /* ================= LES TROIS CARTES =================
+       LA CARTE SE LIT D'UN COUP D'OEIL, OU ELLE NE SE LIT PAS. Une
+       icone a gauche dit la famille avant qu'on ait lu un mot ; le nom
+       et l'effet tiennent sur deux lignes ; les cases a droite disent
+       combien de fois on l'a deja prise, sans chiffre a dechiffrer. Et
+       le bas rappelle ce qu'on a deja, parce qu'on choisit par rapport
+       a ce qu'on a, jamais dans le vide.
+       ================================================================= */
     if(s.cartes){
-      G.fillStyle='rgba(6,10,14,.88)';G.fillRect(0,0,L,H);
-      var hc=Math.round(H*0.17), y0=Math.round(H/2-hc*1.6);
+      /* le fond : un voile sombre, et une lueur derriere les cartes */
+      G.fillStyle='rgba(5,9,13,.9)';G.fillRect(0,0,L,H);
+      var lu=G.createRadialGradient(L/2,H*0.46,10,L/2,H*0.46,H*0.52);
+      lu.addColorStop(0,'rgba(40,96,122,.34)');
+      lu.addColorStop(1,'rgba(40,96,122,0)');
+      G.fillStyle=lu;G.fillRect(0,0,L,H);
+
+      var hc=Math.round(H*0.155), ec=Math.round(H*0.022);
+      var y0=Math.round(H*0.26);
       G.textAlign='center';
-      G.fillStyle='#5ad8ff';G.font='bold 8px ui-monospace,monospace';
-      G.fillText('CHOISIS UNE AMÉLIORATION',L/2,y0-12);
+      /* l'entete */
+      G.fillStyle='#8ad07a';G.font='bold 7px ui-monospace,monospace';
+      G.fillText('SALLE '+s.salle+' NETTOYÉE',L/2,y0-30);
+      G.fillStyle='#f4ecd8';G.font='bold 11px ui-monospace,monospace';
+      G.fillText('CHOISIS UNE AMÉLIORATION',L/2,y0-16);
+      R(L/2-30,y0-11,60,1,'rgba(90,216,255,.45)');
+
       for(var ic2=0;ic2<s.cartes.length;ic2++){
-        var ca=s.cartes[ic2], yy=y0+ic2*(hc+6);
+        var ca=s.cartes[ic2], yy=y0+ic2*(hc+ec);
         var pris=s.am[ca.c]||0;
-        R(8,yy,L-16,hc,'rgba(20,40,54,.96)');
-        R(8,yy,L-16,1,'rgba(90,216,255,.5)');
-        R(8,yy+hc-1,L-16,1,'rgba(90,216,255,.22)');
-        R(8,yy,2,hc,'#5ad8ff');
-        G.fillStyle='#f4ecd8';G.font='bold 10px ui-monospace,monospace';
-        G.fillText(ca.nom,L/2,yy+Math.round(hc*0.42));
-        G.fillStyle='#9fc0d2';G.font='bold 7px ui-monospace,monospace';
-        G.fillText(ca.dit,L/2,yy+Math.round(hc*0.68));
-        if(ca.c!=='soin'&&pris>0){
-          G.fillStyle='#5ad8ff';
-          G.fillText('DÉJÀ '+pris+' / '+ca.max,L/2,yy+Math.round(hc*0.88));
+        var fam=HG_FAMC[HG_FAM[ca.c]||'d'];
+        /* l'ombre portee, puis le corps de la carte */
+        R(10,yy+3,L-20,hc,'rgba(0,0,0,.45)');
+        R(8,yy,L-16,hc,'#14222c');
+        R(8,yy,L-16,Math.round(hc*0.5),'#182a36');
+        R(8,yy,L-16,1,fam[0]);
+        R(8,yy+hc-1,L-16,1,'rgba(0,0,0,.5)');
+        R(8,yy,3,hc,fam[0]);
+        R(11,yy,1,hc,'rgba(255,255,255,.08)');
+        /* LA PASTILLE DE L'ICONE, dessinee au double : seize pixels
+           perdus dans une carte de soixante avaient l'air d'une
+           vignette oubliee plutot que d'un embleme. */
+        var ix=20, iy=yy+Math.round(hc/2)-16;
+        R(ix-4,iy-4,40,40,fam[1]);
+        R(ix-4,iy-4,40,1,'rgba(255,255,255,.12)');
+        R(ix-4,iy-4,1,40,'rgba(255,255,255,.08)');
+        if(HGA_I[ca.c])hgArtZ(ix,iy,HGA_I[ca.c],HGP_I,2);
+        /* le nom et l'effet, cales a gauche apres l'icone */
+        G.textAlign='left';
+        G.fillStyle='#f4ecd8';G.font='bold 12px ui-monospace,monospace';
+        G.fillText(ca.nom,ix+44,yy+Math.round(hc*0.44));
+        G.fillStyle='#9fc0d2';G.font='bold 8px ui-monospace,monospace';
+        G.fillText(ca.dit,ix+44,yy+Math.round(hc*0.70));
+        /* LES CASES DE NIVEAU, a droite : on voit d'un coup ce qu'il
+           reste a prendre, sans lire « 2 / 6 ». */
+        if(ca.c!=='soin'&&ca.max<=8){
+          for(var ip4=0;ip4<ca.max;ip4++){
+            var px2=L-14-(ca.max-ip4)*6;
+            R(px2,yy+hc-9,4,4,
+              ip4<pris?fam[0]:'rgba(255,255,255,.14)');
+          }
         }
+        G.textAlign='center';
+      }
+
+      /* ================= CE QU'ON A DEJA ================= */
+      var yb=y0+3*(hc+ec)+10;
+      G.textAlign='left';
+      G.fillStyle='rgba(143,168,180,.6)';G.font='bold 6px ui-monospace,monospace';
+      G.fillText('TON ÉQUIPEMENT',10,yb);
+      R(10,yb+3,L-20,1,'rgba(255,255,255,.1)');
+      var A3=this.regle(s);
+      G.fillStyle='#f0d78a';G.font='bold 8px ui-monospace,monospace';
+      G.fillText(A3.nom,10,yb+15);
+      /* les ameliorations deja prises, en pastilles */
+      var cx2=10, cy2=yb+22;
+      for(var ik=0;ik<HG_CARTES.length;ik++){
+        var cc=HG_CARTES[ik], nb2=s.am[cc.c]||0;
+        if(!nb2)continue;
+        var f2=HG_FAMC[HG_FAM[cc.c]||'d'];
+        var lg=Math.round(cc.nom.length*4.6)+14;
+        if(cx2+lg>L-10){cx2=10;cy2+=13;}
+        R(cx2,cy2,lg,11,f2[1]);
+        R(cx2,cy2,1,11,f2[0]);
+        G.fillStyle=f2[0];G.font='bold 6px ui-monospace,monospace';
+        G.fillText(cc.nom+' ×'+nb2,cx2+4,cy2+8);
+        cx2+=lg+4;
+      }
+      if(cx2===10&&cy2===yb+22){
+        G.fillStyle='rgba(143,168,180,.45)';G.font='bold 6px ui-monospace,monospace';
+        G.fillText('RIEN ENCORE — C’EST TA PREMIÈRE',10,cy2+8);
       }
       G.textAlign='left';G.font='bold 8px ui-monospace,monospace';
       return;
