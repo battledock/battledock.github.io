@@ -33,18 +33,23 @@
      porte fermée à clé. Le jour où il y aura de l'argent derrière, la
      vérification devra se faire côté serveur. */
   try{window.__PASSE=PASSE;}catch(e){}
+  /* LES NOUVEAUTES DE LA 5.0. La liste precedente etait celle de la 3.0 —
+     la foret, la maison, le marche — et elle serait restee affichee sous un
+     titre « 4.0 » le jour ou l'on fermerait le jeu. On raconte donc ce qui a
+     vraiment ete bati depuis : le Complexe Festif et ses deux portes. */
   var NOUV=[
-    [null,'La forêt, en grand','Le pont est remonté, la rive est s’ouvre de l’autre côté de la rivière, et la forêt devient sa propre carte : elle charge plus vite et ne traîne plus les champs de la ferme derrière elle.','🌲'],
-    [null,'Ton terrain, ta maison','Au milieu de la rive est, un terrain piqueté qui n’attend que toi. Rassemble planches, pierres et tuiles, et bâtis ton mas — puis agrandis-le.','🏠'],
-    [null,'Le bûcheron fabrique','Sa scierie ne fait plus que des planches : elle cuit les tuiles (une bûche et deux pierres) et taille les poutres (quatre bûches). De quoi monter les murs.','🪚'],
-    [null,'Le marché à cours réel','Les prix sont les mêmes pour tout le monde et bougent avec ce que vous vendez. Les flèches à la criée disent si ça monte ou si ça tombe, et la Gazette publie les cours.','📈'],
-    [null,'Les œufs, enfin','Ils vont dans ton sac au lieu de se vendre tout seuls — et l’œuf d’or, un sur deux cents, aussi. Le blé récolté, lui, remplit la réserve du poulailler.','🥚'],
-    [null,'La cuisine chez Fonfon','Pain, confiture, conserve, soupe et tarte : l’ardoise du chef transforme tes récoltes pendant que tu vaques ailleurs.','🍲'],
-    [null,'Les commandes du marché','Trois commandes par jour à la boutique de la ferme, payées jusqu’à 80 % au-dessus du cours.','📋'],
-    [null,'Le menu s’étoffe','« En cours » te dit ce qui pousse, ce qui mijote et ce qu’il reste à livrer. « Comment jouer » explique le port en trois onglets illustrés.','📖'],
-    [null,'La batterie tient','Le jeu ne dessine plus soixante images par seconde pour rien : trente à l’arrêt, six derrière un menu, aucune en arrière-plan. Et un mode économe dans les réglages.','🔋'],
-    [null,'La Gazette illustrée','Trois gravures dessinées au pixel — la mine au petit matin, l’étal de la criée, le quai au crépuscule — avec leur trame d’impression.','📰'],
-    [null,'Trois tenues de collection','Le pirate, le smoking doré et l’épouvantail se cachent dans un ticket, un jackpot et une récolte. Huit à trouver en tout.','🎭'],
+    [null,'Le Complexe Festif','Au bout de la ruelle, une façade de néons et deux portes. À gauche le casino, à droite la salle d’arcade. Les deux sont ouvertes à tout le monde.','🎪'],
+    [null,'Le Casino, sept tables','La roulette du port, le dé de Marius, la criée, la roue de la fortune, le vingt-et-un, le mur de clous et le grattage de luxe. Toutes jouables, toutes payées au comptoir.','🎰'],
+    [null,'Le Vingt-et-un','Contre Fonfon, qui donne et qui tire à seize. On double sur les deux premières cartes, le naturel paie trois contre deux. C’est la table où la maison garde le moins.','🤵'],
+    [null,'Le Mur de Clous','Un jeton lâché en haut, huit rangées de clous, neuf cases en bas. Le chemin que tu regardes est celui que la maison a tiré, clou par clou. Les bords paient vingt-neuf fois.','📌'],
+    [null,'Le Grattage de Luxe','Neuf cases à gratter au doigt, trois pareils pour toucher. Et tout au fond du carnet, le Phare.','🎟️'],
+    [null,'La Salle d’Arcade','Un jeton à un euro, cinq bornes. Ici on ne gagne pas d’argent : on gagne un score, et une ligne au classement.','👾'],
+    [null,'Le Roi du Quai','Deux manches : la gauche marche, la droite tire. Ils arrivent par les quatre bords, une touche et tu perds une vie. Marchand entre les zones, Rat-Roi toutes les quatre.','🐀'],
+    [null,'Le Tri','Les caisses descendent, tu tapes le camion de la bonne couleur. Chaque réussite monte le combo, une faute le casse. Ça n’arrête jamais d’accélérer.','📦'],
+    [null,'Le Bonneteau de Dédé','La bille est vraiment sous un gobelet, et les gobelets s’échangent pour de bon. Un échange de plus à chaque manche gagnée, et plus vite.','🥤'],
+    [null,'Les records, pendant la partie','Le meilleur score de la borne reste affiché pendant que tu joues. À la seconde où tu le dépasses, l’écran te donne le nom de celui que tu viens de doubler.','🏆'],
+    [null,'Les bornes en plein écran','Pendant une partie, la borne prend tout l’écran du téléphone, quelle qu’en soit la taille, et les manches se posent sous les pouces.','📱'],
+    [null,'La maison ne triche pas','Chaque tirage sort du comptoir, jamais de ton écran. Les retours ont été mesurés table par table : de 87 % à la criée jusqu’à 99 % au vingt-et-un.','⚖️'],
     [null,'Des surprises…','On ne dit rien. Ouvre l’œil en te promenant.','🎁']];
   var CSS='#bd3{position:fixed;inset:0;z-index:2147483000;overflow-y:auto;background:radial-gradient(ellipse at 50% 0,#2a3e58,#0e1622 70%);color:#f4ecd8;font-family:Georgia,serif;-webkit-overflow-scrolling:touch}'+
     '#bd3 .in{max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 28px) 18px calc(env(safe-area-inset-bottom,0px) + 40px)}'+
@@ -68,8 +73,8 @@
     if(document.getElementById('bd3'))return;
     var st=document.createElement('style');st.textContent=CSS;document.head.appendChild(st);
     var d=document.createElement('div');d.id='bd3';
-    d.innerHTML='<div class="in"><span class="v">VERSION '+(v||'3.0')+'</span><h1>Battle Dock <b>'+(v||'3.0')+'</b> arrive</h1>'+
-      '<div class="mt">Le jeu est fermé le temps d’installer la mise à jour : la forêt s’agrandit, et chacun aura sa maison.</div>'+
+    d.innerHTML='<div class="in"><span class="v">VERSION '+(v||'5.0')+'</span><h1>Battle Dock <b>'+(v||'5.0')+'</b> arrive</h1>'+
+      '<div class="mt">Le jeu est fermé le temps d’installer la mise à jour : le Complexe Festif ouvre ses deux portes — le casino d’un côté, la salle d’arcade de l’autre.</div>'+
       (FIN_A?'<div class="roue"><i></i><span>Réouverture <b>ce soir à 20h00</b><br><small id="bd3r" style="font:700 13px ui-monospace,monospace;color:#f0c85a">'+reste()+'</small></span></div>'
             :'<div class="roue"><i></i>On installe tout ça… Reviens très vite !</div>')+'<div class="t2">LES NOUVEAUTÉS</div>'+
       NOUV.map(function(n){return '<div class="c">'+(n[0]?'<img loading="lazy" src="nouveautes/'+n[0]+'" alt="">':'<div class="e">'+n[3]+'</div>')+
