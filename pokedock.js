@@ -1567,7 +1567,8 @@ const TON={commune:'#cdbfa6',rare:'#9fd0e8',ultra:'#7fd2ff',epic:'#c79bff',
 /* ---------------- le style, posé une seule fois ---------------- */
 const CSS_PKD=`
 #pkd{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;
-  align-items:center;padding:16px 14px calc(22px + env(safe-area-inset-bottom,0px));
+  align-items:center;overflow-x:hidden;
+  padding:calc(14px + env(safe-area-inset-top,0px)) 12px calc(22px + env(safe-area-inset-bottom,0px));
   background:radial-gradient(80% 50% at 50% 2%,#2b2338 0%,rgba(43,35,56,0) 62%),
     radial-gradient(70% 38% at 50% 100%,#1b222e 0%,rgba(27,34,46,0) 72%),#13111a;
   color:#f2ece0;font-family:Georgia,serif;overflow-y:auto;-webkit-overflow-scrolling:touch}
@@ -1577,10 +1578,14 @@ const CSS_PKD=`
 #pkd .hp{position:absolute;top:12px;right:12px;z-index:50;width:34px;height:34px;
   border-radius:50%;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);
   color:rgba(242,236,224,.52);font-size:14px;line-height:1;display:grid;place-items:center}
-#pkd .sc{position:relative;width:100%;max-width:980px;flex:0 0 auto;min-height:min(560px,70vh);
-  display:flex;align-items:center;justify-content:center;perspective:1600px;margin-top:8px;
-  transition:min-height .8s cubic-bezier(.3,.6,.3,1)}
-#pkd .sc.plie{min-height:0}
+/* LA SCENE SE MESURE EN HAUTEUR D'ECRAN, PAS EN LARGEUR.
+   Sur un telephone tenu debout, la place qui manque est en bas, jamais sur
+   les cotes : c'est donc la hauteur restante qui doit decider de la taille
+   du sachet et des cartes. Tout ce qui est dedans se donne un pourcentage
+   de cette scene, plafonne par la largeur, et plus une taille fixe. */
+#pkd .sc{position:relative;width:100%;max-width:980px;flex:1 1 auto;z-index:2;min-height:250px;
+  display:flex;align-items:center;justify-content:center;perspective:1600px;margin-top:6px}
+#pkd .sc.plie{flex:0 0 0;min-height:0;height:0;margin-top:0}
 #pkd .pous{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 #pkd .pous i{position:absolute;width:2px;height:2px;border-radius:50%;
   background:rgba(255,240,210,.5);animation:pkdDerive linear infinite}
@@ -1589,12 +1594,16 @@ const CSS_PKD=`
 #pkd .sol{position:absolute;bottom:7%;left:50%;transform:translateX(-50%);
   width:min(480px,80vw);height:56px;border-radius:50%;
   background:radial-gradient(50% 50% at 50% 50%,rgba(0,0,0,.62),rgba(0,0,0,0));pointer-events:none}
-#pkd .rid{position:absolute;inset:-40vmax;pointer-events:none;opacity:0;
+/* LE NOIR QUI TOMBE SUR LES GROSSES CARTES. Il etait pose dans la scene en
+   debordant de quarante vmax de chaque cote : la page se baladait alors
+   lateralement sur tous les telephones. Fixe au cadre, il couvre l'ecran
+   sans rien ajouter a ce qu'il y a a faire defiler. */
+#pkd .rid{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0;
   background:radial-gradient(42% 42% at 50% 50%,rgba(6,5,9,0) 0%,rgba(6,5,9,.82) 72%);
   transition:opacity 1.1s ease}
 #pkd .rid.on{opacity:1}
 
-#pkd .sac{position:relative;width:min(240px,54vw);aspect-ratio:300/420;
+#pkd .sac{position:relative;height:min(76%,calc(62vw * 1.4),460px);width:auto;aspect-ratio:300/420;
   transform-style:preserve-3d;touch-action:none;will-change:transform}
 #pkd .sac .h,#pkd .sac .b{position:absolute;left:-6%;width:112%;overflow:hidden;
   filter:drop-shadow(0 18px 34px rgba(0,0,0,.62))}
@@ -1619,12 +1628,13 @@ const CSS_PKD=`
 @keyframes pkdOuvre{0%{transform:none}14%{transform:scaleY(1.03) rotateX(-7deg)}
   46%{transform:scaleY(1) rotateX(-4deg) translateY(4px)}
   100%{transform:translateY(240px) rotate(-6deg) scale(.95);opacity:0}}
-#pkd .ind{position:absolute;bottom:-44px;left:50%;transform:translateX(-50%);white-space:nowrap;
-  font:400 12.5px Arial,sans-serif;color:rgba(242,236,224,.5);letter-spacing:.04em;
+#pkd .ind{position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);white-space:nowrap;
+  font:400 clamp(11px,3vw,12.5px) Arial,sans-serif;color:rgba(242,236,224,.5);letter-spacing:.04em;
   animation:pkdResp 2.6s ease-in-out infinite;pointer-events:none}
 @keyframes pkdResp{0%,100%{opacity:.4}50%{opacity:.95}}
 
-#pkd .pile{position:absolute;width:min(180px,40vw);aspect-ratio:300/420;display:none}
+#pkd .pile{position:absolute;height:min(56%,calc(42vw * 1.4),330px);width:auto;aspect-ratio:300/420;
+  display:none}
 #pkd .pile.la{display:block}
 #pkd .pile .dc{position:absolute;inset:0;border-radius:7px;overflow:hidden;
   box-shadow:0 10px 24px rgba(0,0,0,.6);animation:pkdSort 1s cubic-bezier(.2,.66,.3,1) backwards}
@@ -1635,7 +1645,8 @@ const CSS_PKD=`
     rgba(255,255,255,0) 62%);background-size:300% 100%;animation:pkdBalaye 1.5s ease-in-out}
 @keyframes pkdBalaye{0%{background-position:170% 0}100%{background-position:-70% 0}}
 
-#pkd .rev{position:absolute;width:min(268px,60vw);aspect-ratio:300/420;display:none;
+#pkd .rev{position:absolute;height:min(80%,calc(74vw * 1.4),520px);width:auto;aspect-ratio:300/420;
+  display:none;
   transform-style:preserve-3d;touch-action:none;
   transition:transform 1.05s cubic-bezier(.22,.62,.26,1),opacity .5s}
 #pkd .rev.la{display:block}
@@ -1669,7 +1680,8 @@ const CSS_PKD=`
   background:radial-gradient(44% 44% at 50% 50%,rgba(255,245,215,.6),rgba(255,245,215,0) 74%)}
 #pkd .ec .fla.on{animation:pkdEclate 1.6s cubic-bezier(.2,.6,.3,1) forwards}
 @keyframes pkdEclate{0%{opacity:0;transform:scale(.74)}26%{opacity:1}100%{opacity:0;transform:scale(1.32)}}
-#pkd .ec .ra{position:absolute;left:50%;top:50%;width:1200px;height:1200px;margin:-600px 0 0 -600px;
+#pkd .ec .ra{position:absolute;left:50%;top:50%;--r:min(1200px,170vmax);
+  width:var(--r);height:var(--r);margin:calc(var(--r) / -2) 0 0 calc(var(--r) / -2);
   opacity:0;mix-blend-mode:screen;filter:blur(.7px);
   background:conic-gradient(from 0deg,rgba(255,232,170,.46) 0 1.2deg,rgba(255,232,170,0) 1.2deg 10deg);
   -webkit-mask-image:radial-gradient(closest-side,#000 5%,rgba(0,0,0,.6) 32%,transparent 68%);
@@ -1680,30 +1692,45 @@ const CSS_PKD=`
 #pkd .eti{position:absolute;width:5px;height:5px;border-radius:50%;background:#ffe9b0;
   box-shadow:0 0 13px 4px rgba(255,220,140,.5);pointer-events:none}
 
-#pkd .cri{position:absolute;top:6%;left:50%;transform:translateX(-50%);
-  font:900 15px Arial,sans-serif;letter-spacing:.34em;white-space:nowrap;opacity:0;
-  pointer-events:none;text-shadow:0 2px 18px rgba(0,0,0,.9)}
+/* LE NOM DE LA RARETE SE LIT AU-DESSUS DE LA SCENE, PLUS DEDANS. Pose en
+   absolu a six pour cent du haut, il atterrissait sur la carte des que
+   l'ecran etait court. Il prend maintenant sa ligne, toujours la meme
+   hauteur : rien ne saute quand il apparait. Le retrait compense
+   l'interlettrage, qui sinon pousse le mot vers la gauche. */
+#pkd .cri{flex:0 0 auto;z-index:3;height:19px;margin-top:9px;text-indent:.3em;
+  font:900 clamp(12px,3.3vw,16px)/19px Arial,sans-serif;letter-spacing:.3em;
+  white-space:nowrap;opacity:0;pointer-events:none;text-shadow:0 2px 18px rgba(0,0,0,.9)}
 #pkd .cri.on{animation:pkdCrie 3.8s cubic-bezier(.25,.6,.3,1) forwards}
-@keyframes pkdCrie{0%{opacity:0;transform:translateX(-50%) translateY(10px);letter-spacing:.14em}
-  24%{opacity:1;transform:translateX(-50%) translateY(0);letter-spacing:.34em}
-  74%{opacity:1;transform:translateX(-50%) translateY(0);letter-spacing:.34em}
-  100%{opacity:0;transform:translateX(-50%) translateY(-7px);letter-spacing:.4em}}
+@keyframes pkdCrie{0%{opacity:0;transform:translateY(9px);letter-spacing:.1em}
+  24%{opacity:1;transform:none;letter-spacing:.3em}
+  74%{opacity:1;transform:none;letter-spacing:.3em}
+  100%{opacity:0;transform:translateY(-6px);letter-spacing:.36em}}
 
+/* LE RAPPEL DE CE QU'IL FAUT FAIRE, MONTRE SUR LA PREMIERE CARTE SEULEMENT.
+   Les pastilles disent combien il en reste, elles ne disent pas comment
+   passer a la suivante. */
+#pkd .ast{position:absolute;bottom:calc(3% + 16px);left:50%;transform:translateX(-50%);
+  white-space:nowrap;font:400 clamp(10.5px,2.9vw,12.5px) Arial,sans-serif;
+  color:rgba(242,236,224,.42);pointer-events:none;opacity:0;transition:opacity .6s}
+#pkd .ast.la{opacity:1}
 #pkd .cpt{position:absolute;bottom:3%;left:50%;transform:translateX(-50%);display:none;gap:7px}
 #pkd .cpt.la{display:flex}
 #pkd .cpt i{width:6px;height:6px;border-radius:50%;background:rgba(242,236,224,.17);transition:.5s}
 #pkd .cpt i.vu{background:#e8c877;box-shadow:0 0 9px rgba(232,200,119,.6)}
 #pkd .cpt i.ici{transform:scale(1.6);background:#f2ece0}
 
-#pkd .tir{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:2px}
-#pkd .tir img{width:42px;border-radius:4px;box-shadow:0 5px 12px rgba(0,0,0,.5);
+/* LES CARTES DEJA VUES TIENNENT SUR UNE SEULE LIGNE. En passant a la ligne,
+   la rangee mangeait le bas de l'ecran et la carte en cours remontait. */
+#pkd .tir{display:flex;gap:min(6px,1.4vw);flex-wrap:nowrap;justify-content:center;
+  align-items:flex-start;width:100%;margin-top:4px;height:min(59px,11.2vw);flex:0 0 auto}
+#pkd .tir img{height:100%;width:auto;border-radius:4px;box-shadow:0 5px 12px rgba(0,0,0,.5);
   animation:pkdRange .9s cubic-bezier(.2,.62,.3,1) backwards}
 @keyframes pkdRange{0%{transform:translateY(-56px) scale(1.5) rotate(6deg);opacity:0}100%{opacity:1}}
 
-#pkd .eta{display:none;width:100%;max-width:700px;margin:0 auto;justify-content:center;
-  align-items:flex-end;flex-wrap:wrap;gap:9px}
+#pkd .eta{display:none;width:100%;max-width:700px;margin:6px auto 0;justify-content:center;
+  align-items:flex-end;flex-wrap:wrap;gap:min(9px,2vw)}
 #pkd .eta.la{display:flex}
-#pkd .eta .c{width:min(126px,28vw);aspect-ratio:300/420;position:relative;border-radius:7px;
+#pkd .eta .c{width:min(126px,30vw);aspect-ratio:300/420;position:relative;border-radius:7px;
   overflow:hidden;box-shadow:0 12px 26px rgba(0,0,0,.58);
   animation:pkdPousse 1s cubic-bezier(.2,.62,.3,1) backwards}
 @keyframes pkdPousse{0%{transform:translateY(30px) scale(.92);opacity:0}100%{opacity:1}}
@@ -1725,7 +1752,8 @@ const CSS_PKD=`
 #pkd .lp{position:fixed;inset:0;z-index:60;display:none;background:rgba(7,6,10,.92);
   align-items:center;justify-content:center;padding:22px}
 #pkd .lp.la{display:flex}
-#pkd .lp img{max-height:84vh;max-width:90vw;border-radius:12px;box-shadow:0 30px 70px rgba(0,0,0,.85)}
+#pkd .lp img{max-height:84vh;max-height:84dvh;max-width:92vw;width:auto;height:auto;
+  border-radius:12px;box-shadow:0 30px 70px rgba(0,0,0,.85)}
 #pkd .lp b{position:absolute;bottom:22px;left:0;right:0;text-align:center;
   font:400 12px Georgia,serif;color:rgba(242,236,224,.45)}
 
@@ -1766,9 +1794,11 @@ function ouvrirPaquet(cartes,neuves,fini){
   cal.id='pkd';
   cal.innerHTML=
     '<button class="hp" aria-label="Son">♪</button>'+
+    '<div class="rid"></div>'+
     '<div class="ent"><b>POKÉDOCK</b><i>Première édition · le port en cent cartes</i></div>'+
+    '<div class="cri"></div>'+
     '<div class="sc">'+
-      '<div class="pous"></div><div class="sol"></div><div class="rid"></div>'+
+      '<div class="pous"></div><div class="sol"></div>'+
       '<div class="sac"><div class="b"><img alt=""></div><div class="h"><img alt=""></div>'+
         '<div class="gr"></div><div class="lu"></div><div class="te"></div>'+
         '<div class="ind">Tire la languette vers le bas</div></div>'+
@@ -1777,7 +1807,7 @@ function ouvrirPaquet(cartes,neuves,fini){
         '<div class="in"><div class="d"><img alt=""></div>'+
         '<div class="f"><img alt=""><div class="ho"></div></div></div></div>'+
       '<div class="ec"><div class="fla"></div><div class="ra"></div></div>'+
-      '<div class="cri"></div><div class="cpt"></div>'+
+      '<div class="cpt"></div><div class="ast">Touche la carte pour la suivante</div>'+
     '</div>'+
     '<div class="tir"></div><div class="eta"></div>'+
     '<div class="act"><button class="v" data-f="1" hidden>RANGER DANS LE CLASSEUR</button></div>'+
@@ -1787,7 +1817,7 @@ function ouvrirPaquet(cartes,neuves,fini){
   const q=(s)=>cal.querySelector(s);
   const sac=q('.sac'), pile=q('.pile'), rev=q('.rev'), dedans=q('.rev .in');
   const sc=q('.sc'), rid=q('.rid'), ec=q('.ec'), fla=q('.fla'), ra=q('.ra');
-  const cri=q('.cri'), cpt=q('.cpt'), tir=q('.tir'), eta=q('.eta');
+  const cri=q('.cri'), cpt=q('.cpt'), tir=q('.tir'), eta=q('.eta'), ast=q('.ast');
   const holo=q('.ho'), neufEt=q('.neuf'), lp=q('.lp'), hp=q('.hp');
   const bFin=q('[data-f]');
 
@@ -1932,6 +1962,7 @@ function ouvrirPaquet(cartes,neuves,fini){
       cri.textContent=NOM_RAR[r];cri.style.color=TON[r];
       cri.classList.remove('on');void cri.offsetWidth;cri.classList.add('on');
       rev.classList.add('fl');
+      if(k===0)ast.classList.add('la');
       phase='lue';
     },1150*lent);
     phase='monte';
@@ -1983,6 +2014,7 @@ function ouvrirPaquet(cartes,neuves,fini){
     if(phase!=='lue')return;
     phase='range';
     rev.classList.remove('fl','ae');rev.style.transition='';rev.classList.add('pa');
+    ast.classList.remove('la');
     rid.classList.remove('on');q('.sol').style.opacity='';
     Son.glisser(1.1);
     const n=cartes[k];
@@ -1998,6 +2030,9 @@ function ouvrirPaquet(cartes,neuves,fini){
   function etaler(){
     tir.innerHTML='';
     rev.className='rev';pile.classList.remove('la');cpt.classList.remove('la');
+    /* LE NOM DE LA DERNIERE RARETE S'EFFACE AVEC LA SCENE : sa ligne restait
+       sinon ouverte en haut de l'etalage, avec SECRETE encore affiche. */
+    cri.classList.remove('on');cri.style.display='none';
     sc.classList.add('plie');
     eta.innerHTML='';eta.classList.add('la');
     cartes.forEach((n,j)=>{
