@@ -187,7 +187,7 @@ const COS_COMPLEXE=[
    face elle serait devant les jambes, donc devant le joueur. */
 {id:'perroquet_costume', nom:'Le costume de perroquet',
 mot:'vert, rouge et jaune — on te voit depuis le quai d\u2019en face',
-prix:300000, rar:'legendaire', hors:true, etiq:'COMPLEXE',
+prix:2000000, rar:'legendaire', hors:true, etiq:'COMPLEXE',
 gagne:'la boutique du Complexe Festif',
 dessin:(g,x,y,t,dir)=>{
 let Q=cosRepere(dir), bat=Math.round(Math.sin(t*5)*1.2);
@@ -210,7 +210,7 @@ let Q=cosRepere(dir), bat=Math.round(Math.sin(t*5)*1.2);
    devant : une peluche qui cache le visage n'est plus un cosmetique. */
 {id:'peluche_ours', nom:'La peluche géante',
 mot:'un ours plus gros que toi, et il ne te lâche plus',
-prix:95000, rar:'epique', hors:true, etiq:'COMPLEXE',
+prix:600000, rar:'epique', hors:true, etiq:'COMPLEXE',
 gagne:'la boutique du Complexe Festif',
 dessin:(g,x,y,t,dir)=>{
 let Q=cosRepere(dir), b=Math.round(Math.sin(t*1.9)*1);
@@ -228,7 +228,7 @@ let Q=cosRepere(dir), b=Math.round(Math.sin(t*1.9)*1);
    de chaque cote du visage sans jamais passer devant. */
 {id:'peluche_poulpe', nom:'Le poulpe géant',
 mot:'il tient tout seul sur ta tête, et ses bras suivent le rythme',
-prix:140000, rar:'epique', hors:true, etiq:'COMPLEXE',
+prix:900000, rar:'epique', hors:true, etiq:'COMPLEXE',
 gagne:'la boutique du Complexe Festif',
 dessin:(g,x,y,t,dir)=>{
 let Q=cosRepere(dir);
@@ -247,7 +247,7 @@ let Q=cosRepere(dir);
 /* LE BOA A PLUMES */
 {id:'boa_plumes', nom:'Le boa à plumes',
 mot:'rose, duveteux, et il perd des plumes partout',
-prix:26000, rar:'commune', hors:true, etiq:'COMPLEXE',
+prix:150000, rar:'commune', hors:true, etiq:'COMPLEXE',
 gagne:'la boutique du Complexe Festif',
 dessin:(g,x,y,t,dir)=>{
 const R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect(x+dx,y+dy,w,h);};
@@ -263,7 +263,7 @@ R(-10+k*2,-36+((k%3)?0:1)+a,2,2,(k%2)?FC:F);}
 /* LA VESTE A PAILLETTES — chaque paillette s'allume a son tour. */
 {id:'veste_paillettes', nom:'La veste à paillettes',
 mot:'elle renvoie toutes les lumières de la piste',
-prix:70000, rar:'rare', hors:true, etiq:'COMPLEXE',
+prix:420000, rar:'rare', hors:true, etiq:'COMPLEXE',
 gagne:'la boutique du Complexe Festif',
 dessin:(g,x,y,t,dir)=>{
 const R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect(x+dx,y+dy,w,h);};
@@ -279,7 +279,7 @@ R(px,py,1,1,br>0.84?'#ffffff':C[k%4]);}
 /* LE TUTU NEON */
 {id:'tutu_neon', nom:'Le tutu néon',
 mot:'il brille tout seul, même quand les lyres s\u2019éteignent',
-prix:38000, rar:'rare', hors:true, etiq:'COMPLEXE',
+prix:220000, rar:'rare', hors:true, etiq:'COMPLEXE',
 gagne:'la boutique du Complexe Festif',
 dessin:(g,x,y,t,dir)=>{
 const R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect(x+dx,y+dy,w,h);};
@@ -296,7 +296,7 @@ R(-7,-22,14,2,'#2a2030');R(-7,-22,14,1,'#4a3a58');
 /* LES LUNETTES A ETOILES — de dos, on n'en voit rien, et c'est juste. */
 {id:'lunettes_etoiles', nom:'Les lunettes à étoiles',
 mot:'deux étoiles roses, et le monde avec',
-prix:19000, rar:'commune', hors:true, etiq:'COMPLEXE',
+prix:110000, rar:'commune', hors:true, etiq:'COMPLEXE',
 gagne:'la boutique du Complexe Festif',
 dessin:(g,x,y,t,dir)=>{
 const R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect(x+dx,y+dy,w,h);};
@@ -314,7 +314,7 @@ etoile(-7,-42);etoile(2,-42);
 /* LE CHAPEAU A FRUITS */
 {id:'chapeau_fruits', nom:'Le chapeau à fruits',
 mot:'une banane, un ananas, trois cerises — et ça tient',
-prix:52000, rar:'rare', hors:true, etiq:'COMPLEXE',
+prix:300000, rar:'rare', hors:true, etiq:'COMPLEXE',
 gagne:'la boutique du Complexe Festif',
 dessin:(g,x,y,t,dir)=>{
 let b=Math.round(Math.sin(t*2.3)*0.8);
