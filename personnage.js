@@ -25,7 +25,298 @@ const CUEILLI=new Map();
 function ombreAuSol(){}
 function appliquerDeguisement(ap){return ap;}
 const SALON_PAR_ID={};
-const COSMETIQUES=[];
+/* ===================================================================
+   LES PIECES DU COMPLEXE FESTIF
+   Elles ne se trouvent qu'a la boutique du hall, a gauche du casino, et
+   nulle part ailleurs : c'est ce qui en fait des exclusivites.
+   ELLES SE PORTENT PAR-DESSUS LES HABITS. Aucune ne touche au corps,
+   donc aucune ne depend de la tenue qu'on a dessous — c'est la seule
+   facon d'en dessiner huit sans en recouvrir une seule de travers.
+   LE REPERE : (x,y) sont les pieds. Le crane est a -46, le menton a
+   -34, les epaules a -31, les hanches a -18, et le corps ne fait
+   jamais plus de sept points de demi-largeur. TOUT CE QUI DEBORDE SE
+   DESSINE AU-DELA DE CE SEPT : les plumes partent sur les cotes et
+   jamais devant le visage, sinon la piece mange la tete du joueur.
+   =================================================================== */
+function cosRepere(dir){
+const D=String(dir||'bas');
+return {dos:D.indexOf('haut')===0, cote:(D==='gauche'||D==='droite'),
+        s:D.indexOf('gauche')>=0?-1:1};
+}
+/* LE DESSIN PAR RANGEES. Les quatre grosses pieces sont de vraies
+   silhouettes : un caractere par point, une entree de palette par
+   caractere. Dessinees a coups de rectangles, elles n'etaient que des
+   blocs — une tete de mascotte doit s'arrondir en haut et se refermer
+   en bas, sinon c'est une boite posee sur les epaules. */
+function cosArt(g,x,y,rows,pal,mir){
+for(let j=0;j<rows.length;j++){const r=rows[j];
+for(let i=0;i<r.length;i++){const c=pal[r.charAt(i)];if(!c)continue;
+g.fillStyle=c;g.fillRect(x+(mir?r.length-1-i:i),y+j,1,1);}}
+}
+/* ---------- PERROQUET ---------- */
+const P_PER={'v':'#1f8f3e','c':'#44cf6a','o':'#0f5a24','n':'#0a3a16',
+ 'j':'#f2c230','J':'#fff0a0','b':'#f0a830','B':'#ffd070','d':'#c47a10',
+ 'w':'#f6f3ec','k':'#16161c','r':'#e03a28','R':'#ff6a52','z':'#2a6ad8','Z':'#5a9aff'};
+const P_PER_DOS=Object.assign({},P_PER,{w:'#1f8f3e',k:'#1f8f3e',
+ b:'#1f8f3e',B:'#44cf6a',d:'#0f5a24'});
+const PER_TETE=[
+'.......J.......',
+'....J..J..J....',
+'....j.jJj.j....',
+'...jj.jjj.jj...',
+'...jjjjjjjjj...',
+'...jJjjjjjJj...',
+'.....ccccc.....',
+'...cccvvvccc...',
+'..cvvvvvvvvvc..',
+'.cvvvvvvvvvvvc.',
+'cvvwwvvvvvwwvvc',
+'cvvwkvvvvvwkvvc',
+'cvvwwvvvvvwwvvc',
+'ovvvvBBBBBvvvvo',
+'.ovvvbbbbbvvvo.',
+'..oovbbbbbvoo..',
+'...nnddbbbdn...',
+'.....ddbdd.....',
+'......ddd......'];
+const PER_AILE=[
+'cvvvvv',
+'vvvvvv',
+'vvvvvo',
+'rrrrr.',
+'rRrrrr',
+'rrrrro',
+'jjjjj.',
+'jJjjjj',
+'jjjjjo',
+'zzzz..',
+'zZzzz.',
+'zzzzo.',
+'.zzo..',
+'..o...'];
+const PER_QUEUE_C=[
+'rrrrrrrrrr.',
+'rRrrrrrrrro',
+'rrrrrrrro..',
+'zzzzzzzzzz.',
+'zZzzzzzzzzo',
+'zzzzzzzzo..',
+'jjjjjjjjjj.',
+'jJjjjjjjjjo',
+'jjjjjjjjo..'];
+const PER_QUEUE=[
+'.rr..zz..jj.',
+'rRrr.zZz.jJj',
+'rrrr.zzz.jjj',
+'rrrr.zzz.jjj',
+'rrrr.zzz.jjj',
+'rrrr.zzz.jjj',
+'.rrr.zzz.jj.',
+'.rrr.zzz.jj.',
+'.rr..zzz..jj',
+'.rr..zz...jj',
+'..o...n...d.'];
+
+/* ---------- OURS ---------- */
+const P_OUR={'m':'#9a6a3a','c':'#bb8a56','o':'#5b3f21','u':'#e2c79a','U':'#f4e2c0',
+ 'n':'#2a1f16','p':'#d8928a','w':'#f6f3ec'};
+const OUR_TETE=[
+'.mm......mm.',
+'mccm....mccm',
+'mcpm....mcpm',
+'.mmmmmmmmmm.',
+'mccccccccccm',
+'mcmmmmmmmmcm',
+'mcmnwmmwnmcm',
+'mmmmmmmmmmmm',
+'mmmmuUUummmm',
+'mmmuuuuuuommm'.slice(0,12),
+'ommunnuuuomo'.slice(0,12),
+'.oommuuuoom.',
+'..ooommmoo..',
+'...oooooo...'];
+const OUR_PATTE=['mccm','mmmm','mumm','.oo.'];
+
+/* ---------- POULPE ---------- */
+const P_POU={'p':'#8a4ad8','c':'#b57af0','o':'#5a2aa0','w':'#f6f3ec','k':'#16161c',
+ 'y':'#ffe08a','n':'#3a1a70'};
+const POU_TETE=[
+'.....ccccc.....',
+'...cccpppccc...',
+'..cppppppppppc.'.slice(0,15),
+'.cppppppppppppc',
+'cpppppppppppppo',
+'cppwwwppwwwpppo',
+'cppwkwppwkwpppo',
+'cppwwwppwwwpppo',
+'opppppppppppppo',
+'.opppppppppppo.',
+'..onppppppno..'.slice(0,15),
+'...onnnnnno....'.slice(0,15)];
+const POU_BRAS=['p','c','p','o'];
+
+/* ---------- CHAPEAU A FRUITS ---------- */
+const P_FRU={'t':'#e8402a','T':'#ff7a5a','o':'#a8220f','g':'#f0a830','G':'#ffd070',
+ 'y':'#f2c230','Y':'#fff0a0','k':'#6b4a28',
+ 'a':'#e8a830','A':'#ffcf70','v':'#2e8f3e','V':'#5ad86a',
+ 'r':'#d8302a','R':'#ff6a52','d':'#8a1810','b':'#8a4ad8','B':'#c08af0'};
+const FRU=[
+'..........V....',
+'.......v.vVv...',
+'......vVvAAv...',
+'...k...vAAAv...',
+'..Yy....AAAA...',
+'..yyy..AAAAA...',
+'..Yyy..aAAAa...',
+'..yyy..aaAaa...',
+'..yyy.rRr.aa...',
+'..Vyy.rrd.a....',
+'.bBb.vrrd......',
+'.bbb..dd.......',
+'...ggggggggg...',
+'..GGGGGGGGGGG..',
+'.ggggggggggggg.',
+'.tttttttttttt..',
+'tTTTTTTTTTTTTTt',
+'ttttttttttttttt',
+'.ooooooooooooo.'];
+
+const COS_COMPLEXE=[
+/* LE COSTUME DE PERROQUET — une tete de mascotte, deux ailes le long
+   des bras, et une queue qu'on ne voit que de dos ou de profil : de
+   face elle serait devant les jambes, donc devant le joueur. */
+{id:'perroquet_costume', nom:'Le costume de perroquet',
+mot:'vert, rouge et jaune — on te voit depuis le quai d\u2019en face',
+prix:40000, rar:'legendaire', hors:true, etiq:'COMPLEXE',
+gagne:'la boutique du Complexe Festif',
+dessin:(g,x,y,t,dir)=>{
+let Q=cosRepere(dir), bat=Math.round(Math.sin(t*5)*1.2);
+ if(Q.dos){let bal=Math.sin(t*2.1)*1.4;
+   cosArt(g,x-6+bal,y-20,PER_QUEUE,P_PER,false);}
+ else if(Q.cote){let ba2=Math.round(Math.sin(t*2.1)*1.2);
+   cosArt(g,Q.s>0?x-13:x+2,y-22+ba2,PER_QUEUE_C,P_PER,Q.s>0);}
+ [-1,1].forEach(function(sd){
+   if(Q.cote&&sd!==Q.s)return;
+   cosArt(g,sd>0?x+5:x-11,y-31+bat,PER_AILE,P_PER,sd<0);});
+ /* DE DOS, ON NE VOIT NI LES YEUX NI LE BEC. On reprend le meme dessin
+    avec une palette ou l'oeil et le bec sont verts, et on coupe les
+    trois dernieres rangees — celles qui ne sont QUE du bec. Un bec
+    repeint en vert faisait un menton pointu. */
+ if(Q.dos)cosArt(g,x-7,y-52,PER_TETE.slice(0,16),P_PER_DOS,false);
+ else cosArt(g,x-7,y-52,PER_TETE,P_PER,Q.cote&&Q.s<0);
+}},
+/* LA PELUCHE GEANTE — un ours qu'on porte sur le dos et dont la tete
+   depasse par-dessus l'epaule. Elle est posee a cote de la sienne, pas
+   devant : une peluche qui cache le visage n'est plus un cosmetique. */
+{id:'peluche_ours', nom:'La peluche géante',
+mot:'un ours plus gros que toi, et il ne te lâche plus',
+prix:12000, rar:'epique', hors:true, etiq:'COMPLEXE',
+gagne:'la boutique du Complexe Festif',
+dessin:(g,x,y,t,dir)=>{
+let Q=cosRepere(dir), b=Math.round(Math.sin(t*1.9)*1);
+ let ox=Q.cote?(Q.s>0?x-19:x+7):(Q.dos?x-18:x+7);
+ cosArt(g,ox,y-48+b,OUR_TETE,P_OUR,false);
+ /* les deux pattes, qui lui font le tour du buste */
+ if(!Q.dos){cosArt(g,x-9,y-27,OUR_PATTE,P_OUR,false);cosArt(g,x+5,y-27,OUR_PATTE,P_OUR,true);}
+}},
+/* LE POULPE GEANT — il se porte sur le crane, et ses huit bras pendent
+   de chaque cote du visage sans jamais passer devant. */
+{id:'peluche_poulpe', nom:'Le poulpe géant',
+mot:'il tient tout seul sur ta tête, et ses bras suivent le rythme',
+prix:16000, rar:'epique', hors:true, etiq:'COMPLEXE',
+gagne:'la boutique du Complexe Festif',
+dessin:(g,x,y,t,dir)=>{
+let Q=cosRepere(dir);
+ /* LES BRAS PENDENT. Ils ne s'ecartent pas en descendant : un bras qui
+    s'ecarte fait une aile, et le poulpe avait l'air de s'envoler. */
+ for(let k=0;k<6;k++){
+   let sd=(k%2)?1:-1, c=Math.floor(k/2), dx=sd*(8+c*3), n=10-c*2;
+   for(let i=0;i<n;i++){
+     let on=Math.sin(t*2.3+k*1.2+i*0.38)*1.5*(i/n);
+     g.fillStyle=(i%3===0)?P_POU.c:((i%3===1)?P_POU.p:P_POU.o);
+     g.fillRect(x+dx+on,y-47+i*2,(i<n-2)?2:1,2);}
+   let fy=y-47+(n-1)*2, fo=Math.sin(t*2.3+k*1.2+(n-1)*0.38)*1.5;
+   g.fillStyle=P_POU.y;g.fillRect(x+dx+fo,fy,1,2);}
+ cosArt(g,x-7,y-58,POU_TETE,P_POU,false);
+}},
+/* LE BOA A PLUMES */
+{id:'boa_plumes', nom:'Le boa à plumes',
+mot:'rose, duveteux, et il perd des plumes partout',
+prix:3500, rar:'commune', hors:true, etiq:'COMPLEXE',
+gagne:'la boutique du Complexe Festif',
+dessin:(g,x,y,t,dir)=>{
+const R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect(x+dx,y+dy,w,h);};
+const Q=cosRepere(dir), dos=Q.dos;
+const F='#f28ab8', FC='#ffc8e0', FO='#c85a90';
+if(!dos){[[-8],[6]].forEach(([dx])=>{
+for(let i=0;i<7;i++){const on=Math.sin(t*2.6+i*0.6+dx)*1.3*(i/7);
+R(dx+on,-30+i*2,3,2,(i%2)?F:FO);}});}
+R(-9,-34,18,4,F);R(-9,-34,18,1,FC);R(-9,-31,18,1,FO);
+for(let k=0;k<11;k++){const a=Math.sin(t*2+k*1.4)*0.9;
+R(-10+k*2,-36+((k%3)?0:1)+a,2,2,(k%2)?FC:F);}
+}},
+/* LA VESTE A PAILLETTES — chaque paillette s'allume a son tour. */
+{id:'veste_paillettes', nom:'La veste à paillettes',
+mot:'elle renvoie toutes les lumières de la piste',
+prix:9000, rar:'rare', hors:true, etiq:'COMPLEXE',
+gagne:'la boutique du Complexe Festif',
+dessin:(g,x,y,t,dir)=>{
+const R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect(x+dx,y+dy,w,h);};
+const C=['#ffe08a','#f28ab8','#7ad8ff','#c8a0ff'];
+R(-7,-31,14,1,'#2a2030');R(-7,-19,14,1,'#2a2030');
+R(-7,-31,1,12,'#3a2f44');R(6,-31,1,12,'#1d1726');
+for(let k=0;k<26;k++){
+const px=-6+((k*5)%13), py=-30+((k*7)%12);
+const br=(Math.sin(t*6+k*1.7)+1)/2;
+if(br<0.42)continue;
+R(px,py,1,1,br>0.84?'#ffffff':C[k%4]);}
+}},
+/* LE TUTU NEON */
+{id:'tutu_neon', nom:'Le tutu néon',
+mot:'il brille tout seul, même quand les lyres s\u2019éteignent',
+prix:5000, rar:'rare', hors:true, etiq:'COMPLEXE',
+gagne:'la boutique du Complexe Festif',
+dessin:(g,x,y,t,dir)=>{
+const R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect(x+dx,y+dy,w,h);};
+const A='#ff3ca0', B='#3ce0ff';
+const dg=g.createRadialGradient(x,y-16,1,x,y-16,19);
+dg.addColorStop(0,'rgba(255,70,170,.30)');dg.addColorStop(1,'rgba(255,70,170,0)');
+g.fillStyle=dg;g.fillRect(x-19,y-35,38,38);
+const on=Math.sin(t*3)*0.9;
+for(let i=0;i<5;i++){
+const w=11+i*2.4+on*(i/5);
+R(-w/2,-21+i*1.7,w,2,(i%2)?A:B);}
+R(-7,-22,14,2,'#2a2030');R(-7,-22,14,1,'#4a3a58');
+}},
+/* LES LUNETTES A ETOILES — de dos, on n'en voit rien, et c'est juste. */
+{id:'lunettes_etoiles', nom:'Les lunettes à étoiles',
+mot:'deux étoiles roses, et le monde avec',
+prix:2500, rar:'commune', hors:true, etiq:'COMPLEXE',
+gagne:'la boutique du Complexe Festif',
+dessin:(g,x,y,t,dir)=>{
+const R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect(x+dx,y+dy,w,h);};
+const Q=cosRepere(dir), dos=Q.dos, cote=Q.cote, s=Q.s;
+if(dos)return;
+const M='#f2c230', V='#ff3ca0', VC='#ffb0d8';
+const etoile=(dx,dy)=>{
+R(dx,dy,5,5,V);R(dx+1,dy-1,3,1,V);R(dx+1,dy+5,3,1,V);
+R(dx-1,dy+1,1,3,V);R(dx+5,dy+1,1,3,V);
+R(dx+1,dy+1,3,2,VC);};
+if(cote){etoile(s>0?1:-6,-42);R(s>0?6:-8,-41,3,1,M);return;}
+R(-8,-41,16,1,M);
+etoile(-7,-42);etoile(2,-42);
+}},
+/* LE CHAPEAU A FRUITS */
+{id:'chapeau_fruits', nom:'Le chapeau à fruits',
+mot:'une banane, un ananas, trois cerises — et ça tient',
+prix:7000, rar:'rare', hors:true, etiq:'COMPLEXE',
+gagne:'la boutique du Complexe Festif',
+dessin:(g,x,y,t,dir)=>{
+let b=Math.round(Math.sin(t*2.3)*0.8);
+ cosArt(g,x-7,y-65+b,FRU,P_FRU,false);
+}}
+];
+const COSMETIQUES=COS_COMPLEXE;
 
 /* ---------- le hasard lissé ---------- */
 const alea=(n)=>{const v=Math.sin(n*127.1)*43758.5453;return v-Math.floor(v);};
@@ -208,9 +499,17 @@ if(!c){if(CACHE_FIN.size>220)CACHE_FIN.clear();
 const sauve=GESTE;if(ges)GESTE={t:1-Math.round((1-sauve.t)*11)/11,type:sauve.type||'pioche'};
 c=graverFin(Object.assign({},DEF_AP,ap0||{}),dir||'bas',pas||0,!!bouge);GESTE=sauve;CACHE_FIN.set(cle,c);}
 g.drawImage(c,Math.round(x-CASE_L/2),Math.round(y-CASE_H+10),CASE_L,CASE_H);
+cosDessus(g,x,y,ap0,dir);
 return;
 }
-return spriteClassique(g,x,y,ap0,dir,pas,bouge);
+spriteClassique(g,x,y,ap0,dir,pas,bouge);
+cosDessus(g,x,y,ap0,dir);
+}
+/* LA PIECE PORTEE SE DESSINE APRES LE CORPS, ET HORS DU CACHE : elle
+   bouge a chaque image alors que la pose, elle, est gravee une fois. */
+function cosDessus(g,x,y,ap,dir){
+const C=cosmetiqueDe(ap);if(!C)return;
+try{C.dessin(g,x,y,Date.now()/1000,dir||'bas');}catch(e){}
 }
 function spriteClassique(g,x,y,ap0,dir,pas,bouge){
 const p=Object.assign({},DEF_AP,ap0||{});
@@ -3588,5 +3887,6 @@ return c;
 try{window.Perso={sprite:sprite,poseDe:poseDe,graverFin:graverFin,
   DEF_AP:DEF_AP,PALETTES:PALETTES,CASE_L:CASE_L,CASE_H:CASE_H,
   COIFFES:COIFFES,BARBES:BARBES,CHAPEAUX:CHAPEAUX,
+  COS_COMPLEXE:COS_COMPLEXE,
   geste:(v)=>{GESTE=v||{t:0};}};}catch(x){}
 })();

@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-16-2400"></script>
+<script src="maintenance.js?v=2026-10-16-2500"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-16-2400';
+var MA_VERSION='2026-10-16-2500';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il
@@ -2123,13 +2123,13 @@ white-space:nowrap}
 #tiroir.part .latte,#tiroir.part .tbas{animation:none}
 @keyframes ligneFin{from{opacity:0;transform:translateY(12px) scale(.92)}
 60%{opacity:1;transform:translateY(0) scale(1.04)}to{opacity:1;transform:none}}</style>
-<script src="retour.js?v=2026-10-16-2400"></script>
+<script src="retour.js?v=2026-10-16-2500"></script>
 <!-- LE DESSIN DU PERSONNAGE ET LES CARTES POKEDOCK. Classiques, donc
      joues avant le module : window.Perso doit exister quand une carte
      se grave, et window.Pokedock quand on ouvre le rayon du Bar. -->
-<script src="personnage.js?v=2026-10-16-2400"></script>
-<script src="pokedock.js?v=2026-10-16-2400"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-16-2400">
+<script src="personnage.js?v=2026-10-16-2500"></script>
+<script src="pokedock.js?v=2026-10-16-2500"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-16-2500">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -26772,6 +26772,8 @@ const SALON=[
 {id:'coupe_comete',sorte:'coupe',nom:'La Comète',prix:150000,forme:'comete',col:'#e8ecf4',pointes:'#7ac8ff',collector:10}
 ];
 const SALON_PAR_ID=Object.fromEntries(SALON.map(x=>[x.id,x]));
+/* (l'injection des pieces du Complexe se fait apres la declaration de
+   COSMETIQUES, tout en bas de ce bloc) */
 const ANNIV={fete:'#f2c230',ruban:'#c8281e'};
 const FOURRURES={
 ours:{b:'#7d5934',o:'#5b3f21',museau:'#c9a878',pieds:'#5b3f21',oreilles:true,queue:true,echarpe:null}};
@@ -26831,6 +26833,10 @@ p.haut=0;p.veste='#f6f3ec';p.pantalon='#f0ece2';p.bas=0;p.souliers=0;p.chaussure
 p._poulet=true;p._doudoune=2;p._motif=null;p._bonnet=null;p._casque=null;p._masque=null;p._lunettes=null;p._echarpe=null;p._skis=null;p._pieds=null;
 p._gants={g:'#f6f3ec',g2:'#e8e2d4'};
 }
+/* LES PIECES DU COMPLEXE FESTIF viennent de personnage.js, qui les
+   dessine aussi bien ici que dans le hall : une seule definition, deux
+   crayons. Elles sont marquees hors:true — le vestiaire les montre et
+   dit ou les prendre, mais c'est la boutique du hall qui les vend. */
 const COSMETIQUES=[
 {id:'cape', nom:'La cape', mot:'elle ondule quand tu marches', prix:4000, rar:'rare',
 dessin:(g,x,y,t)=>{
@@ -26966,6 +26972,7 @@ R(dx,-1,5,2,'#241a12');
    remet au premier avis de la semaine honore, et c'est le seul moyen
    de l'avoir : prix_cosmetique() lui rend 0, donc acheter_cosmetique
    la refuse. Elle est la seule piece qui sait de quel cote on regarde. */
+/* ...suivies des huit du Complexe, injectees plus bas. */
 {id:'casquette_capitaine', nom:'La casquette du capitaine',
 mot:'remise par la Capitainerie, elle ne s’achète pas', prix:0, rar:'legendaire',
 hors:true, gagne:'un avis de la semaine honoré',
@@ -26998,6 +27005,13 @@ else if(prof){R(s>0?6:-10,ty+5,4,1,'#0d1f36');R(s>0?6:-10,ty+5,1,1,BL);
 else{R(-7,ty+5,14,1,BB);R(-6,ty+6,12,1,'#0d1f36');}
 }}
 ];
+/* LES HUIT DU COMPLEXE, ajoutees apres coup : elles vivent dans
+   personnage.js parce que le hall doit les dessiner aussi, et le hall
+   n'a pas ce fichier-ci. Si le script n'est pas encore la, on continue
+   sans : une piece manquante vaut mieux qu'un vestiaire qui ne s'ouvre
+   plus. */
+try{(window.Perso&&Perso.COS_COMPLEXE||[]).forEach(function(C){
+if(!COSMETIQUES.some(x=>x.id===C.id))COSMETIQUES.push(C);});}catch(x){}
 let rayonEch='equipement';
 const RARETES={
 commune:   {nom:'COMMUN',    c:'#8a7c5e'},
@@ -27390,7 +27404,7 @@ const L=[...COSMETIQUES].sort((a,b)=>(ordre[a.rar]-ordre[b.rar])||(b.prix-a.prix
 const sel=L.find(C=>C.id===ECH_SEL.vestiaire)||L[0];ECH_SEL.vestiaire=sel.id;
 c.innerHTML=etagere(L.map(C=>{const a=!!e.cos[C.id], mis=(e.ap&&e.ap.cos)===C.id;
 return {id:C.id,vign:true,nom:C.nom.replace(/^(La |Le |Les |L’)/,'').toLowerCase(),choisi:C.id===sel.id,
-etiq:mis?'PORTÉ':(a?'À TOI':(C.hors?'CAPITAINERIE':enEuros(C.prix).replace(',00',''))),
+etiq:mis?'PORTÉ':(a?'À TOI':(C.hors?(C.etiq||'CAPITAINERIE'):enEuros(C.prix).replace(',00',''))),
 etiqClasse:mis?'porte':(a?'atoi':'')};}));
 const RA=RARETES[sel.rar], a=!!e.cos[sel.id], mis=(e.ap&&e.ap.cos)===sel.id, peut=(e.euros||0)>=sel.prix;
 c.innerHTML+='<div class="echFiche"><span class="echRare" style="background:'+RA.c+'">'+RA.nom+(sel.unique?' · UNE SEULE AU MONDE':'')+'</span>'+
