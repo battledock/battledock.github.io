@@ -13,14 +13,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Expires" content="0">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-16-2000"></script>
+<script src="maintenance.js?v=2026-10-16-2100"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-16-2000';
+  var MA_VERSION='2026-10-16-2100';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -151,6 +151,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
    l'ecran marche, la moitie droite vise.
    ===================================================================== */
 .zone{position:absolute;top:0;bottom:0;width:50%;z-index:3;touch-action:none;display:none}
+#jeu.fige .zone,#jeu.fige .manche,#jeu.fige .sou{display:none}
 .zone.on{display:block}
 .zone.g{left:0}.zone.d{right:0}
 .manche{position:absolute;left:0;top:0;width:84px;height:84px;margin:-42px 0 0 -42px;
@@ -237,7 +238,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
 #jeu.plein #retourJeu{display:block}
 #retourJeu:active{background:rgba(90,216,255,.26)}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-16-2000">
+<link rel="stylesheet" href="responsive.css?v=2026-10-16-2100">
 </head>
 <body>
 <div id="salle">
@@ -290,7 +291,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-16-2000"></script>
+<script src="retour.js?v=2026-10-16-2100"></script>
 <script>
 /* =====================================================================
    LA SALLE D'ARCADE
@@ -441,7 +442,7 @@ var VIGNETTE={
 
 var BORNES=[
  {cle:'hangar', vig:'hangar', nom:'Le Hangar',
-  dit:'Un entrepôt du port, envahi. La manche gauche marche, la droite vise — ou laisse-la, ça vise tout seul. Nettoie la salle, la porte s’ouvre.',
+  dit:'Un entrepôt du port, envahi. Cinq zones, sept armes à débloquer, une amélioration à choisir à chaque salle. La manche gauche marche, la droite vise — ou laisse-la, ça vise tout seul.',
   mise:'1 JETON · 5 VIES'}
 ];
 
@@ -621,11 +622,33 @@ var MOTEUR={};
    ===================================================================== */
 var HG_L=306, HG_H=438;          /* l'arene, en pixels de scene */
 var HG_MUR=10;                   /* l'epaisseur des murs */
+/* =====================================================================
+   LES ZONES
+   Cinq salles par zone, puis on change de lieu — et pas seulement de
+   couleur. UNE ZONE QUI NE CHANGE QUE LA PALETTE N'EST QU'UN DECOR :
+   celle-ci change la facon de jouer. On glisse sur la glace, on ne voit
+   qu'a dix pas sur le quai de nuit, le sol brule a la fonderie. C'est ce
+   qui fait qu'on veut voir la suivante.
+   ===================================================================== */
+var HG_ZONES=[
+  {nom:'L\u2019ENTREP\u00d4T', sol:0, mur:['#b6a68e','#d5c4a8','#6f6354'],
+   dit:'B\u00e9ton et caisses. Rien ne te g\u00eane encore.'},
+  {nom:'LA CHAMBRE FROIDE', sol:4, mur:['#8fa8b8','#b4ccd8','#5c7686'],
+   glace:true, dit:'Le sol est pris. Tu glisses, eux aussi.'},
+  {nom:'LA CALE', sol:3, mur:['#5a6470','#78848e','#39434c'],
+   serre:true, dit:'\u00c9troit, bas de plafond. Ils arrivent vite.'},
+  {nom:'LE QUAI DE NUIT', sol:3, mur:['#3a4450','#566270','#222a33'],
+   nuit:true, dit:'Tu ne vois qu\u2019\u00e0 dix pas. Eux voient tout.'},
+  {nom:'LA FONDERIE', sol:5, mur:['#6e4a36','#92664a','#44291c'],
+   braises:true, dit:'Le sol brasille. Ne t\u2019arr\u00eate pas dessus.'}
+];
 var HG_SOLS=[
   ['#a8a396','#a19c90','#afaa9d','#8c877c'],   /* beton clair */
   ['#9aa0a2','#949a9c','#a2a8aa','#7e8486'],   /* beton gris-bleu */
   ['#a89c86','#a19580','#b0a490','#8a7f6c'],   /* beton sable */
-  ['#9a9690','#94908a','#a29e98','#7e7a74']    /* beton froid */
+  ['#9a9690','#94908a','#a29e98','#7e7a74'],   /* beton froid */
+  ['#8fa6b2','#89a0ac','#98aeba','#70848e'],   /* la glace */
+  ['#4e3a30','#473430','#56423a','#36251e']    /* la fonderie */
 ];
 
 /* ---------- les palettes et les dessins, pixel par pixel ---------- */
@@ -728,6 +751,33 @@ var HG_ARMES={
   flammes:     {nom:'LANCE-FLAMMES',cad:42,  plombs:1, ecart:0.34, deg:1, vit:0.14, chg:110,rech:1700, por:62,  c:'#ff9a2a', feu:true}
 };
 var HG_LOT=['pompe','mitraillette','harpon','revolver','clouteuse','flammes'];
+/* LES ARMES SE DEBLOQUENT D'UNE PARTIE A L'AUTRE, et le seuil est lu au
+   comptoir : c'est le meilleur score du joueur qui ouvre la suivante.
+   Une arme qu'on n'a jamais vue tomber est une raison de relancer. */
+var HG_DEBLOQUE=[
+  {a:'pompe',        s:0,     nom:'POMPE'},
+  {a:'mitraillette', s:1500,  nom:'MITRAILLETTE'},
+  {a:'clouteuse',    s:4000,  nom:'CLOUTEUSE'},
+  {a:'revolver',     s:9000,  nom:'REVOLVER'},
+  {a:'harpon',       s:18000, nom:'HARPON'},
+  {a:'flammes',      s:30000, nom:'LANCE-FLAMMES'}
+];
+var HG_REC=0;            /* le meilleur score du joueur, lu a l'ouverture */
+/* LES AMELIORATIONS : trois a chaque salle, on en garde une. C'est ce
+   qui fait qu'une partie ne ressemble pas a la precedente — on ne joue
+   pas la meme chose avec un chargeur double qu'avec des balles qui
+   percent. */
+var HG_CARTES=[
+  {c:'cad',  nom:'G\u00c2CHETTE',    dit:'Cadence +18 %',          max:6},
+  {c:'deg',  nom:'GROSSES BALLES',dit:'D\u00e9g\u00e2ts +1',          max:5},
+  {c:'vit',  nom:'BOTTES',        dit:'Vitesse +10 %',          max:5},
+  {c:'chg',  nom:'CHARGEUR',      dit:'Chargeur +40 %',         max:4},
+  {c:'rech', nom:'MAINS S\u00dbRES',  dit:'Rechargement −25 %',     max:4},
+  {c:'perce',nom:'PERFORANTES',   dit:'Les balles traversent +1',max:3},
+  {c:'por',  nom:'CANON LONG',    dit:'Port\u00e9e +25 %',          max:4},
+  {c:'soin', nom:'TROUSSE',       dit:'+2 vies',                max:99},
+  {c:'aimant',nom:'AIMANT',       dit:'Tu ramasses de plus loin',max:3}
+];
 
 MOTEUR.hangar={
   nom:'Le Hangar', sous:'GAUCHE POUR MARCHER · DROITE POUR VISER',
@@ -739,7 +789,8 @@ MOTEUR.hangar={
             z:[], b:[], part:[], tach:[], ram:[],
             obs:[], porte:{ouvert:false,x:HG_L/2,y:HG_MUR},
             reste:0, aNaitre:0, pause:0, cam:{x:0,y:0}, mot:'', motT:0,
-            patron:'eparpille', teinte:0, sec:0};
+            patron:'eparpille', teinte:0, sec:0,
+            zone:0, am:{}, cartes:null, braises:[], neuf:null};
   },
 
   /* ================= LA SALLE =================
@@ -815,8 +866,20 @@ MOTEUR.hangar={
     s.obs=[];
     /* la premiere salle est toujours la simple : on apprend a marcher
        avant d'apprendre a se placer */
+    s.zone=Math.floor((n-1)/5)%HG_ZONES.length;
+    var Z=HG_ZONES[s.zone];
     s.patron=(n===1)?'eparpille':this.PATRONS[Math.floor(Math.random()*this.PATRONS.length)];
-    s.teinte=Math.floor(Math.random()*4);
+    s.teinte=Z.sol;
+    /* LES BRAISES DE LA FONDERIE : des flaques qui brulent, posees une
+       fois pour toutes. On les voit, donc on peut les eviter — et c'est
+       le fait de devoir les contourner en reculant qui fait le sel. */
+    s.braises=[];
+    if(Z.braises){
+      for(var fb=0;fb<6+Math.floor(n/4);fb++)
+        s.braises.push({x:HG_MUR+20+Math.random()*(HG_L-2*HG_MUR-40),
+                        y:HG_MUR+36+Math.random()*(HG_H-2*HG_MUR-70),
+                        r:7+Math.random()*7});
+    }
     this.batir(s,s.patron);
     /* QUELQUES BIDONS EXPLOSIFS, repartis dans la salle : ils changent
        une salle encombree en salle qu'on peut ouvrir au bon moment. */
@@ -840,10 +903,29 @@ MOTEUR.hangar={
     s.pause=600;
     var NOMS={eparpille:'LE DEPOT',couloir:'LE COULOIR',piliers:'LES PILIERS',
               anneau:'L\u2019ANNEAU',travees:'LES TRAVEES',fosse:'LA FOSSE'};
-    s.mot='SALLE '+n+' \u00b7 '+(NOMS[s.patron]||'');s.motT=1700;
+    /* a l'entree d'une zone on annonce la zone, pas le patron : c'est
+       le changement de lieu qu'on vient chercher */
+    if((n-1)%5===0){s.mot=HG_ZONES[s.zone].nom;s.motT=2200;}
+    else{s.mot='SALLE '+n+' \u00b7 '+(NOMS[s.patron]||'');s.motT=1700;}
+  },
+  /* LES REGLAGES DE L'ARME, UNE FOIS LES AMELIORATIONS APPLIQUEES.
+     L'arme de base ne change jamais ; c'est ce qu'on a ramasse en
+     chemin qui la transforme, et la carte garde donc toute sa valeur
+     quand on change d'arme. */
+  regle:function(s){
+    var A=HG_ARMES[s.arme], a=s.am;
+    return {nom:A.nom, c:A.c, gros:A.gros, feu:A.feu, rec:A.rec, plombs:A.plombs,
+            ecart:A.ecart,
+            cad:A.cad*Math.pow(0.82,a.cad||0),
+            deg:A.deg+(a.deg||0),
+            chg:Math.round(A.chg*Math.pow(1.4,a.chg||0)),
+            rech:A.rech*Math.pow(0.75,a.rech||0),
+            por:A.por*Math.pow(1.25,a.por||0),
+            perce:(A.perce||0)+(a.perce||0),
+            vit:A.vit};
   },
   demarrer:function(s){
-    s.salle=1;s.score=0;s.vies=5;s.tach=[];
+    s.salle=1;s.score=0;s.vies=5;s.tach=[];s.am={};s.cartes=null;s.neuf=null;
     s.arme='pistolet';s.chg=HG_ARMES.pistolet.chg;s.rech=0;
     s.j.x=HG_L/2;s.j.y=HG_H-60;s.j.vx=s.j.vy=0;
     this.garnir(s);
@@ -853,30 +935,50 @@ MOTEUR.hangar={
   pas:function(s,dt){
     if(s.phase!=='jeu'){s.t+=dt;return;}
     s.t+=dt;
+    /* LE CHOIX D'AMELIORATION ARRETE TOUT. Choisir sous la pression
+       n'est pas choisir : c'est appuyer au hasard sur la carte du
+       milieu. On fige la salle, on lit les trois, on reprend. */
+    if(s.cartes){ if(s.motT>0)s.motT-=dt; return; }
     if(s.motT>0)s.motT-=dt;
     if(s.inv>0)s.inv-=dt;
     if(s.pause>0)s.pause-=dt;
-    var j=s.j, A=HG_ARMES[s.arme];
+    var j=s.j, A=this.regle(s);
 
     /* LE DEPLACEMENT EST LISSE, PAS COMMUTE. Poser la vitesse a la
        valeur de la manche donne une marche qui claque : on demarre et on
        s'arrete en une image. On vise donc la vitesse voulue et on s'en
        approche d'une fraction constante par milliseconde, ce qui donne
        un demarrage franc et un arret qui glisse d'un demi-pas. */
-    var VM=0.072;
+    var Z=HG_ZONES[s.zone];
+    var VM=0.072*Math.pow(1.10,s.am.vit||0);
     var cx=MG.x*VM, cy=MG.y*VM;
     /* LA CONSTANTE DE SOUPLESSE, et elle se lit. On rejoint la vitesse
        voulue avec un temps caracteristique de quatre-vingt-quinze
        millisecondes : la marche part franchement en deux images, et
        lacher la manche laisse glisser d'un demi-pas au lieu de planter
        le personnage sur place. */
-    var k=1-Math.exp(-dt/95);
+    /* SUR LA GLACE ON NE S'ARRETE PAS : le temps caracteristique passe
+       de quatre-vingt-quinze millisecondes a trois cent vingt, et il
+       faut anticiper ses virages une demi-seconde a l'avance. */
+    var k=1-Math.exp(-dt/(Z.glace?320:95));
     j.vx+=(cx-j.vx)*k; j.vy+=(cy-j.vy)*k;
     if(Math.abs(j.vx)<0.0012)j.vx=0;
     if(Math.abs(j.vy)<0.0012)j.vy=0;
     /* on glisse le long des obstacles : chaque axe est teste a part,
        sinon on se colle dans les angles */
     this.bouger(s,j,j.vx*dt,j.vy*dt,5);
+
+    /* LES BRAISES : on les traverse, on ne s'y installe pas */
+    if(s.braises.length&&s.inv<=0){
+      for(var fb2=0;fb2<s.braises.length;fb2++){
+        var br=s.braises[fb2];
+        if(Math.hypot(j.x-br.x,j.y-br.y)<br.r){
+          s.vies--;s.inv=1200;j.clign=600;
+          if(s.vies<=0){this.fin(s);return;}
+          break;
+        }
+      }
+    }
 
     /* L'ORIENTATION : la manche droite si on la tient, sinon le plus
        proche, sinon le sens de la marche. */
@@ -981,7 +1083,8 @@ MOTEUR.hangar={
         if(de>0.01&&de<z2.r+au.r+2){ax+=ex/de*1.5;ay+=ey/de*1.5;}
       }
       var na=Math.hypot(ax,ay)||1;
-      var vx=ax/na*z2.v, vy=ay/na*z2.v;
+      var vz=z2.v*(Z.glace?0.78:(Z.serre?1.22:1));
+      var vx=ax/na*vz, vy=ay/na*vz;
       if(z2.pouss>0){vx+=Math.cos(z2.pa)*z2.pouss*0.01;vy+=Math.sin(z2.pa)*z2.pouss*0.01;
                      z2.pouss=Math.max(0,z2.pouss-dt/26);}
       this.bouger(s,z2,vx*dt,vy*dt,z2.r);
@@ -998,7 +1101,8 @@ MOTEUR.hangar={
     for(var r2=s.ram.length-1;r2>=0;r2--){
       var ra=s.ram[r2];
       ra.t2=(ra.t2||0)+dt;
-      if(Math.hypot(ra.x-j.x,ra.y-j.y)<10){
+      var portee=10+(s.am.aimant||0)*14;
+      if(Math.hypot(ra.x-j.x,ra.y-j.y)<portee){
         if(ra.t==='vie'){s.vies=Math.min(5,s.vies+1);s.mot='+1 VIE';s.motT=900;}
         else if(ra.t==='mun'){s.chg=HG_ARMES[s.arme].chg;s.rech=0;s.mot='CHARGEUR PLEIN';s.motT=900;}
         else{s.arme=ra.t;s.chg=HG_ARMES[ra.t].chg;s.rech=0;
@@ -1024,6 +1128,7 @@ MOTEUR.hangar={
       s.porte.ouvert=true;
       s.mot='LA PORTE S’OUVRE';s.motT=1600;
       s.score+=60*s.salle;
+      this.tirerCartes(s);
       /* de quoi repartir : on choisit entre deux, et le choix compte */
       /* DEUX OBJETS, ET IL FAUT CHOISIR : on ne ramasse que ce qu'on va
          chercher, et l'arme qu'on laisse est l'arme qu'on n'aura pas. */
@@ -1031,10 +1136,13 @@ MOTEUR.hangar={
       if(s.vies<5)lot.push('vie');
       lot.push('mun');
       if(s.salle>=2){
-        var dispo=HG_LOT.filter(function(k){return k!==s.arme;});
-        /* les armes lourdes n'apparaissent pas des la deuxieme salle */
-        if(s.salle<5)dispo=dispo.filter(function(k){
-          return k==='pompe'||k==='mitraillette'||k==='clouteuse';});
+        /* ON NE FAIT TOMBER QUE CE QUI EST DEBLOQUE. Le seuil est le
+           meilleur score du joueur, lu au comptoir a l'ouverture de la
+           borne : une arme qu'on n'a jamais vue tomber est une raison
+           de relancer. */
+        var ouvert=HG_DEBLOQUE.filter(function(c){
+          return Math.max(HG_REC,s.score)>=c.s;}).map(function(c){return c.a;});
+        var dispo=ouvert.filter(function(k){return k!==s.arme;});
         var tire=dispo[Math.floor(Math.random()*dispo.length)];
         if(tire)lot.unshift(tire);
       }
@@ -1124,6 +1232,44 @@ MOTEUR.hangar={
       if(s.vies<=0)this.fin(s);
     }
   },
+  /* TROIS CARTES, JAMAIS DEUX FOIS LA MEME, et jamais une carte deja
+     poussee a son maximum : proposer « cadence +18 % » a quelqu'un qui
+     l'a prise six fois, c'est lui voler un choix. */
+  tirerCartes:function(s){
+    var pot=HG_CARTES.filter(function(c){
+      if(c.c==='soin')return s.vies<5;
+      return (s.am[c.c]||0)<c.max;
+    });
+    if(pot.length<3)pot=HG_CARTES.slice();
+    var tri=pot.slice();
+    for(var i=tri.length-1;i>0;i--){
+      var k=Math.floor(Math.random()*(i+1));var t=tri[i];tri[i]=tri[k];tri[k]=t;
+    }
+    s.cartes=tri.slice(0,3);
+  },
+  prendreCarte:function(s,i){
+    var c=s.cartes&&s.cartes[i];
+    if(!c)return;
+    if(c.c==='soin')s.vies=Math.min(5,s.vies+2);
+    else s.am[c.c]=(s.am[c.c]||0)+1;
+    if(c.c==='chg'){s.chg=this.regle(s).chg;s.rech=0;}
+    s.cartes=null;
+    s.mot=c.nom;s.motT=900;
+  },
+  /* LA BORNE EST TOUCHEE : on ne s'en sert que pour choisir une carte */
+  fige:function(s){ return !!(s&&s.cartes); },
+  tape:function(s,x,y){
+    if(!s.cartes)return;
+    var L=SL, H=SH;
+    var hc=Math.round(H*0.17), y0=Math.round(H/2-hc*1.6);
+    /* LES BANDES SE TOUCHENT. Six pixels de blanc entre deux cartes,
+       c'est six pixels ou le doigt ne choisit rien et ou l'on croit que
+       l'ecran a plante : chaque bande deborde donc jusqu'a sa voisine. */
+    for(var i=0;i<3;i++){
+      var yy=y0+i*(hc+6);
+      if(x>4&&x<L-4&&y>yy-4&&y<yy+hc+4){this.prendreCarte(s,i);return;}
+    }
+  },
   abattre:function(s,z,i){
     s.score+=z.pts;
     s.reste--;
@@ -1141,12 +1287,23 @@ MOTEUR.hangar={
   },
   fin:function(s){
     s.phase='fini';
-    s.mot='';s.motT=0;
+    s.mot='';s.motT=0;s.cartes=null;
+    /* AI-JE DEBLOQUE QUELQUE CHOSE ? On compare le score de la partie au
+       meilleur d'avant : si un seuil est franchi, on le dit. */
+    for(var i=0;i<HG_DEBLOQUE.length;i++){
+      var c=HG_DEBLOQUE[i];
+      if(c.s>0&&HG_REC<c.s&&s.score>=c.s)s.neuf=c.nom;
+    }
+    if(s.score>HG_REC)HG_REC=s.score;
     if(typeof finirPartie==='function')finirPartie(s.score);
   },
 
   /* ================= LE DESSIN ================= */
   dessine:function(s,L,H){
+    /* ON EFFACE D'ABORD. Sans cela, les pixels de la salle precedente
+       restent dans tout ce que le decor ne recouvre pas — on voyait le
+       beige de l'entrepot dans les coins du quai de nuit. */
+    R(0,0,L,H,'#0a0c0e');
     /* LA CAMERA SUIT AVEC UN PEU DE RETARD et s'arrete aux murs : un
        cadrage colle au joueur donne le mal de mer, un cadrage fixe
        cacherait la moitie de l'arene. */
@@ -1213,11 +1370,27 @@ MOTEUR.hangar={
         if(ti*ti/(ta.r*ta.r)+tj*tj/(ta.r*ta.r*0.36)<=1)
           R(ta.x+ti,ta.y+tj,1,1,'rgba(122,30,24,.72)');
     }
+    /* LES BRAISES, posees sur le sol et vues de loin : on doit pouvoir
+       les contourner en reculant, pas les decouvrir au dernier moment */
+    for(var ib3=0;ib3<s.braises.length;ib3++){
+      var br2=s.braises[ib3];
+      var pu=0.6+0.4*Math.sin(s.t/240+ib3);
+      for(var bi=-br2.r;bi<=br2.r;bi++)for(var bj=-br2.r*0.6;bj<=br2.r*0.6;bj++){
+        var q2=bi*bi/(br2.r*br2.r)+bj*bj/(br2.r*br2.r*0.36);
+        if(q2<=1)R(br2.x+bi,br2.y+bj,1,1,
+          q2<0.35?'rgba(255,'+Math.round(140+70*pu)+',40,.92)':
+          (q2<0.7?'rgba(220,80,20,.82)':'rgba(120,36,12,.7)'));
+      }
+      if(Math.random()<0.2)
+        s.part.push({x:br2.x+(Math.random()-0.5)*br2.r,y:br2.y,vie:300,t:'flam',
+                     vx:(Math.random()-0.5)*0.008,vy:-0.016});
+    }
     /* les murs */
-    R(0,0,HG_L,HG_MUR,'#b6a68e');R(0,0,HG_L,2,'#d5c4a8');R(0,HG_MUR-2,HG_L,2,'#6f6354');
-    R(0,HG_H-HG_MUR,HG_L,HG_MUR,'#b6a68e');R(0,HG_H-HG_MUR,HG_L,2,'#d5c4a8');
-    R(0,0,HG_MUR,HG_H,'#b6a68e');R(0,0,2,HG_H,'#d5c4a8');R(HG_MUR-2,0,2,HG_H,'#6f6354');
-    R(HG_L-HG_MUR,0,HG_MUR,HG_H,'#b6a68e');R(HG_L-2,0,2,HG_H,'#6f6354');
+    var ZM=HG_ZONES[s.zone||0].mur;
+    R(0,0,HG_L,HG_MUR,ZM[0]);R(0,0,HG_L,2,ZM[1]);R(0,HG_MUR-2,HG_L,2,ZM[2]);
+    R(0,HG_H-HG_MUR,HG_L,HG_MUR,ZM[0]);R(0,HG_H-HG_MUR,HG_L,2,ZM[1]);
+    R(0,0,HG_MUR,HG_H,ZM[0]);R(0,0,2,HG_H,ZM[1]);R(HG_MUR-2,0,2,HG_H,ZM[2]);
+    R(HG_L-HG_MUR,0,HG_MUR,HG_H,ZM[0]);R(HG_L-2,0,2,HG_H,ZM[2]);
     for(var mx=4;mx<HG_L;mx+=9){R(mx,2,2,HG_MUR-4,'rgba(0,0,0,.14)');}
     /* la porte du fond */
     var pd=s.porte;
@@ -1349,6 +1522,16 @@ MOTEUR.hangar={
         R(pa.x,pa.y,1,1,'rgba(240,230,200,.8)');
       }
     }
+    /* LA NUIT : on ne voit qu'a dix pas. Le halo suit le joueur, et
+       hors du halo on ne devine que des silhouettes. */
+    if(HG_ZONES[s.zone||0].nuit){
+      var hf=G.createRadialGradient(s.j.x,s.j.y,14,s.j.x,s.j.y,76);
+      hf.addColorStop(0,'rgba(4,6,12,0)');
+      hf.addColorStop(0.5,'rgba(4,6,12,.45)');
+      hf.addColorStop(1,'rgba(3,4,9,.93)');
+      G.fillStyle=hf;
+      G.fillRect(s.cam.x-6,s.cam.y-6,L+12,H+12);
+    }
     G.restore();
 
     /* ================= LE CHROME, PAR-DESSUS ================= */
@@ -1399,6 +1582,32 @@ MOTEUR.hangar={
       G.fillStyle='rgba(200,40,30,'+((s.inv-900)/200*0.35).toFixed(3)+')';
       G.fillRect(0,0,L,H);
     }
+    /* ================= LES TROIS CARTES ================= */
+    if(s.cartes){
+      G.fillStyle='rgba(6,10,14,.88)';G.fillRect(0,0,L,H);
+      var hc=Math.round(H*0.17), y0=Math.round(H/2-hc*1.6);
+      G.textAlign='center';
+      G.fillStyle='#5ad8ff';G.font='bold 8px ui-monospace,monospace';
+      G.fillText('CHOISIS UNE AMÉLIORATION',L/2,y0-12);
+      for(var ic2=0;ic2<s.cartes.length;ic2++){
+        var ca=s.cartes[ic2], yy=y0+ic2*(hc+6);
+        var pris=s.am[ca.c]||0;
+        R(8,yy,L-16,hc,'rgba(20,40,54,.96)');
+        R(8,yy,L-16,1,'rgba(90,216,255,.5)');
+        R(8,yy+hc-1,L-16,1,'rgba(90,216,255,.22)');
+        R(8,yy,2,hc,'#5ad8ff');
+        G.fillStyle='#f4ecd8';G.font='bold 10px ui-monospace,monospace';
+        G.fillText(ca.nom,L/2,yy+Math.round(hc*0.42));
+        G.fillStyle='#9fc0d2';G.font='bold 7px ui-monospace,monospace';
+        G.fillText(ca.dit,L/2,yy+Math.round(hc*0.68));
+        if(ca.c!=='soin'&&pris>0){
+          G.fillStyle='#5ad8ff';
+          G.fillText('DÉJÀ '+pris+' / '+ca.max,L/2,yy+Math.round(hc*0.88));
+        }
+      }
+      G.textAlign='left';G.font='bold 8px ui-monospace,monospace';
+      return;
+    }
     if(s.phase==='fini'){
       G.fillStyle='rgba(8,6,6,.76)';G.fillRect(0,0,L,H);
       G.textAlign='center';
@@ -1406,6 +1615,20 @@ MOTEUR.hangar={
       G.fillText('ILS T’ONT EU',L/2,H/2-14);
       G.fillStyle='#f4ecd8';G.font='bold 10px ui-monospace,monospace';
       G.fillText('SALLE '+s.salle+' · '+s.score.toLocaleString('fr-FR')+' POINTS',L/2,H/2+6);
+      G.fillStyle='#9fc0d2';G.font='bold 7px ui-monospace,monospace';
+      G.fillText(HG_ZONES[s.zone||0].nom,L/2,H/2+20);
+      if(s.neuf){
+        G.fillStyle='#5ad8ff';G.font='bold 9px ui-monospace,monospace';
+        G.fillText('ARME DÉBLOQUÉE · '+s.neuf,L/2,H/2+40);
+      }else{
+        var pro=null;
+        for(var ip3=0;ip3<HG_DEBLOQUE.length;ip3++)
+          if(HG_DEBLOQUE[ip3].s>Math.max(HG_REC,s.score)){pro=HG_DEBLOQUE[ip3];break;}
+        if(pro){
+          G.fillStyle='rgba(90,216,255,.8)';G.font='bold 7px ui-monospace,monospace';
+          G.fillText(pro.nom+' à '+pro.s.toLocaleString('fr-FR')+' POINTS',L/2,H/2+40);
+        }
+      }
       G.textAlign='left';
     }
   },
@@ -1427,6 +1650,15 @@ function boucle(ts){
   var dt=Math.min(60,ts-(boucle.vu||ts));boucle.vu=ts;
   var av=S.phase;
   BORNE.pas(S,dt);
+  /* UNE BORNE PEUT DEMANDER QU'ON RANGE LES MANCHES — un ecran de choix,
+     une pause. Les zones couvrent toute la scene : tant qu'elles sont
+     la, rien ne peut etre touche sur le canvas. */
+  var fige=!!(BORNE.fige&&BORNE.fige(S));
+  if(fige!==boucle.fige){
+    boucle.fige=fige;
+    JEU.classList.toggle('fige',fige);
+    if(fige){MG.lache();MD.lache();}
+  }
   /* une partie qui se termine toute seule — on meurt, le chrono tombe —
      doit rendre son chrome sans attendre un clic */
   if(S.phase!==av)majPlein();
@@ -1450,6 +1682,7 @@ function ouvrirBorne(B){
   majSolde();
   dire('Un jeton, et c’est parti.');
   monterActions();
+  JEU.classList.remove('fige');boucle.fige=false;
   ['mg','md','zg','zd','sg','sd'].forEach(function(k){
     document.getElementById(k).classList.toggle('on',!!BORNE.manches);
   });
@@ -1467,6 +1700,13 @@ function ouvrirBorne(B){
     BORNE.tape(S,(ev.clientX-b.left)/b.width*SL,(ev.clientY-b.top)/b.height*SH);
   };
   chargerClassement(B.cle);
+  /* LE RECORD DU JOUEUR, LU AU COMPTOIR : c'est lui qui dit quelles
+     armes sont deja debloquees. La page ne le calcule pas, elle le
+     demande. */
+  if(B.cle==='hangar')(async function(){
+    try{var r=await rpc('arcade_record',{p_borne:'hangar'});
+        if(r&&typeof r.score==='number')HG_REC=r.score;}catch(e){}
+  })();
 }
 function fermerBorne(){
   /* ON POSE LE SCORE AVANT DE PARTIR. Sans ca, quitter en cours de
