@@ -2140,6 +2140,7 @@ function rayon(hote,ctx){
           (occupe?'Fanny cherche un paquet…':'OUVRIR UN PAQUET · 6,00 €')+'</button>'+
         '<button id="pkdCla" class="v">LE CLASSEUR</button>'+
         '<button id="pkdMar" class="v">LE MARCHÉ</button>'+
+        '<button id="pkdEch" class="v">LA SALLE D\'ÉCHANGE</button>'+
       '</div>'+
       '<div class="pkd-msg" id="pkdMsg"></div>';
     const ach=hote.querySelector('#pkdAch');
@@ -2148,6 +2149,11 @@ function rayon(hote,ctx){
     if(cl)cl.onclick=()=>classeur(col||{cartes:[],total:0,paquets:0});
 /* LE MARCHE REND LA MAIN AU RAYON : une carte achetee ou vendue change
        la collection, donc on la relit en refermant. */
+    const ec=hote.querySelector('#pkdEch');
+    if(ec)ec.onclick=()=>echange(ctx,async()=>{
+      try{col=await ctx.collection();}catch(x){}
+      peindre();
+    });
     const mr=hote.querySelector('#pkdMar');
     if(mr)mr.onclick=()=>marche(ctx,async()=>{
       try{col=await ctx.collection();}catch(x){}
@@ -2564,8 +2570,132 @@ function marche(ctx,fermer){
   return cal;
 }
 
+/* LA SALLE D'ECHANGE : une carte contre une carte, entre joueurs. Aucun
+   euro ne bouge, donc rien ne se cree : la valeur reste dans les mains. */
+function echange(ctx,fermer){
+  poserStyle();
+  if(!document.getElementById('cssPkdMar')){
+    const st=document.createElement('style');
+    st.id='cssPkdMar';st.textContent=CSS_MAR;document.head.appendChild(st);
+  }
+  const cal=document.createElement('div');
+  cal.id='pkdm';
+  cal.innerHTML=
+    '<div class="ent"><b>LA SALLE D\'ÉCHANGE</b>'+
+      '<i>Une carte contre une carte · aucun argent ne change de main</i></div>'+
+    '<div class="co">'+
+      '<div class="mOng"><button data-g="liste" class="on">LES OFFRES</button>'+
+        '<button data-g="propose">PROPOSER</button></div>'+
+      '<div id="mVue"><div class="vide">On ouvre la salle…</div></div>'+
+      '<div class="msg" id="mMsg"></div>'+
+      '<div class="act"><button data-x="1">REFERMER</button></div>'+
+    '</div>'+
+    '<div class="lp"><img alt=""></div>';
+  document.body.appendChild(cal);
+
+  const q=(s)=>cal.querySelector(s);
+  const lp=q('.lp');
+  lp.onclick=()=>lp.classList.remove('la');
+  q('[data-x]').onclick=()=>{cal.remove();if(typeof fermer==='function')fermer();};
+
+  let D=null, COL=null, ONG='liste', CHOIX=null, DEM=null, occupe=false;
+  const dire=(t,bon)=>{const m=q('#mMsg');m.textContent=t||'';m.className='msg'+(bon?' ok':'');};
+  const loupe=(n)=>{lp.querySelector('img').src=faceURL(n);lp.classList.add('la');};
+
+  const aller=(o)=>{
+    ONG=o;
+    cal.querySelectorAll('[data-g]').forEach(x=>x.classList.toggle('on',x.dataset.g===ONG));
+    dire('');peindre();
+  };
+  cal.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>aller(b.dataset.g));
+
+  const agir=async(p,bon)=>{
+    if(occupe)return;occupe=true;dire('…');
+    let r=null;try{r=await p;}catch(x){}
+    occupe=false;
+    if(!r||r.erreur){dire((r&&r.erreur)||'La salle n\'a pas répondu. Réessaie.');return;}
+    await recharger();dire(bon(r),true);
+  };
+
+  async function recharger(){
+    try{[D,COL]=await Promise.all([ctx.echanges(),ctx.collection()]);}catch(x){}
+    peindre();
+  }
+
+  function peindre(){
+    const V=q('#mVue');
+    if(ONG==='liste'){
+      const L=(D&&D.ouvertes)||[];
+      if(!L.length){
+        V.innerHTML='<div class="vide">Aucune offre pour l\'instant. Propose la tienne.</div>';
+        return;
+      }
+      const dans=(n)=>!!((COL&&COL.cartes)||[]).find(c=>c.n===n&&c.q>=1);
+      V.innerHTML=L.map(o=>{
+        const ok=!o.mien&&dans(o.demande);
+        return '<div class="an"><img alt="" src="'+faceURL(o.offre)+'" data-z="'+o.offre+'">'+
+          '<div class="nf"><b>'+NOM_CARTE(o.offre)+'</b>'+
+          '<small>demande : '+NOM_CARTE(o.demande)+' (n° '+o.demande+')'+
+          (o.mien?' · ton offre':'')+'</small></div>'+
+          '<div class="px">'+
+          (o.mien
+            ?'<button class="v" data-annul="'+o.id+'">RETIRER</button>'
+            :'<button data-acc="'+o.id+'"'+(ok?'':' disabled')+'>'+
+               (ok?'ÉCHANGER':'IL TE MANQUE')+'</button>')+
+          '</div></div>';
+      }).join('');
+      V.querySelectorAll('[data-z]').forEach(i=>i.onclick=()=>loupe(+i.dataset.z));
+      V.querySelectorAll('[data-acc]').forEach(b=>b.onclick=()=>agir(
+        ctx.echangeAccepter(+b.dataset.acc),
+        r=>'Échange fait : tu reçois '+NOM_CARTE(r.recue)+' et tu donnes '+NOM_CARTE(r.donnee)+'.'));
+      V.querySelectorAll('[data-annul]').forEach(b=>b.onclick=()=>agir(
+        ctx.echangeAnnuler(+b.dataset.annul),
+        r=>NOM_CARTE(r.numero)+' est revenue dans ton classeur.'));
+      return;
+    }
+    /* PROPOSER : on ne donne que des doubles, il en reste toujours un */
+    const doubles=((COL&&COL.cartes)||[]).filter(c=>c.q>=2);
+    if(!doubles.length){
+      V.innerHTML='<div class="vide">Il te faut un double pour proposer un échange.</div>';
+      return;
+    }
+    V.innerHTML=
+      '<div class="vide">Ta carte à donner</div>'+
+      '<div class="mOng">'+doubles.map(c=>
+        '<button data-off="'+c.n+'"'+(CHOIX===c.n?' class="on"':'')+'>'+
+        NOM_CARTE(c.n)+' ×'+c.q+'</button>').join('')+'</div>'+
+      '<div class="vide">Le numéro de la carte que tu veux (1 à 100)</div>'+
+      '<div class="px"><input id="eDem" type="number" min="1" max="100" inputmode="numeric"'+
+        ' value="'+(DEM||'')+'" placeholder="ex. 42"></div>'+
+      '<small id="ePrev">'+(DEM?NOM_CARTE(DEM):'')+'</small>'+
+      '<div class="act"><button id="eOk" class="v" disabled>PROPOSER</button></div>';
+    const maj=()=>{
+      const ok=CHOIX&&DEM&&DEM>=1&&DEM<=100&&DEM!==CHOIX;
+      q('#eOk').disabled=!ok;
+    };
+    V.querySelectorAll('[data-off]').forEach(b=>b.onclick=()=>{
+      CHOIX=+b.dataset.off;
+      V.querySelectorAll('[data-off]').forEach(x=>x.classList.toggle('on',+x.dataset.off===CHOIX));
+      maj();
+    });
+    const dem=q('#eDem');
+    dem.oninput=()=>{
+      DEM=parseInt(dem.value,10)||null;
+      q('#ePrev').textContent=DEM&&DEM>=1&&DEM<=100?NOM_CARTE(DEM):'';
+      maj();
+    };
+    maj();
+    q('#eOk').onclick=()=>agir(
+      ctx.echangeProposer(CHOIX,DEM),
+      r=>'Offre publiée : '+NOM_CARTE(r.offre)+' contre '+NOM_CARTE(r.demande)+'.');
+  }
+
+  recharger();
+  return cal;
+}
+
 window.Pokedock={
-  rayon:rayon, classeur:classeur, ouvrirPaquet:ouvrirPaquet, marche:marche,
+  rayon:rayon, classeur:classeur, ouvrirPaquet:ouvrirPaquet, marche:marche, echange:echange,
   carte:faceURL, dos:dosURL, sachet:sacURL, css:CSS_RAYON,
   nom:NOM_CARTE, rarete:RARETE, total:100
 };
