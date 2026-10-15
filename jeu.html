@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-16-2900"></script>
+<script src="maintenance.js?v=2026-10-16-3000"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-16-2900';
+var MA_VERSION='2026-10-16-3000';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il
@@ -2123,13 +2123,14 @@ white-space:nowrap}
 #tiroir.part .latte,#tiroir.part .tbas{animation:none}
 @keyframes ligneFin{from{opacity:0;transform:translateY(12px) scale(.92)}
 60%{opacity:1;transform:translateY(0) scale(1.04)}to{opacity:1;transform:none}}</style>
-<script src="retour.js?v=2026-10-16-2900"></script>
+<script src="retour.js?v=2026-10-16-3000"></script>
 <!-- LE DESSIN DU PERSONNAGE ET LES CARTES POKEDOCK. Classiques, donc
      joues avant le module : window.Perso doit exister quand une carte
      se grave, et window.Pokedock quand on ouvre le rayon du Bar. -->
-<script src="personnage.js?v=2026-10-16-2900"></script>
-<script src="pokedock.js?v=2026-10-16-2900"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-16-2900">
+<script src="session.js?v=2026-10-16-3000"></script>
+<script src="personnage.js?v=2026-10-16-3000"></script>
+<script src="pokedock.js?v=2026-10-16-3000"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-16-3000">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -28431,10 +28432,22 @@ etape(1);
 await chargerSupabase();                     /* il faut le compte avant d'entrer */
 let session=null;
 if(SB_PRET&&sb){
-try{const {data}=await sb.auth.getSession();session=data&&data.session;}catch(x){}
+/* ON REVEILLE LA SESSION AVANT DE LA DECLARER MORTE. Un jeton d'acces
+   ne vit que quelques heures ; le jeton de rafraichissement, lui, dure
+   des semaines. Sans ce rattrapage, un joueur revenu le lendemain
+   entrait SANS session : tout le port marchait — le jeu dit qui il est
+   avec p_joueur — mais le casino et l'arcade, qui lisent auth.uid()
+   parce qu'il y a de l'argent derriere, le refoulaient. Il n'avait
+   aucun moyen de comprendre pourquoi, et croyait qu'on l'avait interdit
+   de salle. */
+try{session=await window.BD_SESSION.reveiller(sb);}catch(x){}
 }
 if(!session||!session.user){
-if(e.id&&e.pseudo){etape(4);if(!ANNEXE){joueur.x=+(e.x||joueur.x)||0;joueur.y=+(e.y||joueur.y)||0;}return entrer();}
+if(e.id&&e.pseudo){
+  /* ON ENTRE QUAND MEME — sa partie est a lui et il n'a rien demande —
+     mais on le PREVIENT, une fois, avec le bouton qui repare. */
+  try{window.BD_SESSION.prevenir('Le casino et l\u2019arcade');}catch(x){}
+  etape(4);if(!ANNEXE){joueur.x=+(e.x||joueur.x)||0;joueur.y=+(e.y||joueur.y)||0;}return entrer();}
 leverLeVoile();                            /* il faut créer un compte : on montre la porte */
 $('pCarte').style.display='';
 $('p-ok').onclick=()=>{location.href='index.html';};

@@ -13,14 +13,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Expires" content="0">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-16-2900"></script>
+<script src="maintenance.js?v=2026-10-16-3000"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-16-2900';
+  var MA_VERSION='2026-10-16-3000';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -316,7 +316,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
 #mnu .be span i{display:block;font-style:normal;font-size:9px;color:#4a7a94;
   letter-spacing:1.2px}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-16-2900">
+<link rel="stylesheet" href="responsive.css?v=2026-10-16-3000">
 </head>
 <body>
 <div id="salle">
@@ -379,7 +379,8 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-16-2900"></script>
+<script src="session.js?v=2026-10-16-3000"></script>
+<script src="retour.js?v=2026-10-16-3000"></script>
 <script>
 /* =====================================================================
    LA SALLE D'ARCADE
@@ -426,11 +427,11 @@ function supa(){
       try{
         var m=await import(urls[i]);
         SB=m.createClient(URL_SB,CLE_SB);
-        try{
-          var d=await SB.auth.getSession();
-          SESSION=d&&d.data&&d.data.session;
-          MOI=SESSION&&SESSION.user?SESSION.user.id:null;
-        }catch(x){}
+        /* MEME RATTRAPAGE QU'AU CASINO : arcade_jeton lit auth.uid(), donc
+           une session endormie valait « cette borne t'est interdite ». */
+        try{SESSION=await window.BD_SESSION.reveiller(SB);}catch(x){}
+        MOI=SESSION&&SESSION.user?SESSION.user.id:null;
+        if(!SESSION)try{window.BD_SESSION.prevenir('La salle d\u2019arcade');}catch(x){}
         return SB;
       }catch(x){}
     }
@@ -444,10 +445,13 @@ async function rpc(nom,args){
   await supa();
   if(!SB)return {erreur:'La salle ne répond pas. Vérifie ta connexion.'};
   if(!SESSION){
-    try{var d=await SB.auth.getSession();SESSION=d&&d.data&&d.data.session;
+    try{SESSION=await window.BD_SESSION.reveiller(SB);
         MOI=SESSION&&SESSION.user?SESSION.user.id:null;}catch(x){}
   }
-  if(!SESSION)return {erreur:'Connecte-toi dans le jeu pour prendre un jeton.'};
+  if(!SESSION){
+    try{window.BD_SESSION.prevenir('La salle d\u2019arcade');}catch(x){}
+    return {erreur:window.BD_SESSION.mot};
+  }
   try{
     var r=await SB.rpc(nom,args||{});
     if(r.error)return {erreur:r.error.message||'La salle n’a pas répondu.'};
@@ -2090,10 +2094,11 @@ MOTEUR.hangar={
       R(0,0,L,H,'#15181c');
       G.fillStyle='#8fa8b4';G.font='bold 9px ui-monospace,monospace';
       G.textAlign='center';
-      G.fillText('GAUCHE POUR MARCHER',L/2,H/2-14);
-      G.fillText('DROITE POUR VISER',L/2,H/2-2);
+      /* LE HANGAR NE SE JOUE PLUS QU'A UNE MANCHE : le rappel parlait
+         encore d'une droite qui n'existe plus. */
+      G.fillText('POSE LE POUCE ET MARCHE',L/2,H/2-8);
       G.fillStyle='#6f8694';
-      G.fillText('— ou laisse-la, ca vise tout seul —',L/2,H/2+14);
+      G.fillText('— ca tire tout seul —',L/2,H/2+10);
       G.textAlign='left';
       return;
     }
