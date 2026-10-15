@@ -12,8 +12,8 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<script src="maintenance.js?v=2026-10-16-1700"></script>
-<script src="personnage.js?v=2026-10-16-1700"></script>
+<script src="maintenance.js?v=2026-10-16-1800"></script>
+<script src="personnage.js?v=2026-10-16-1800"></script>
 <script>
 /* LA VERSION, comme partout ailleurs : ajoutée au signet, une page reste en
    mémoire et ne se recharge jamais. On demande à chaque ouverture quelle est
@@ -27,7 +27,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    MA_VERSION de jeu.html, index.html, jeu_entree.html, complexe.html,
    forge.html et mine.html. Les autres pages n'en portent pas. */
 (function(){
-  var MA_VERSION='2026-10-16-1700';
+  var MA_VERSION='2026-10-16-1800';
   window.MA_VERSION=MA_VERSION;
   /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il
@@ -64,7 +64,7 @@ if(d.v===MA_VERSION)return;
 html,body{margin:0;height:100%;background:#0b0608;overflow:hidden;
   font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif}
 #cv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;display:block}
-#joy{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+#joy{position:fixed;left:0;top:0;z-index:2;pointer-events:none;visibility:hidden;will-change:transform}
 /* LA BARRE DU BAS flotte au-dessus de la scène, dans le même or que les
    dorures de la salle : elle fait partie du lieu, elle ne s'y pose pas. */
 #bas{position:absolute;left:0;right:0;bottom:0;z-index:3;
@@ -82,8 +82,8 @@ html,body{margin:0;height:100%;background:#0b0608;overflow:hidden;
   background:linear-gradient(to bottom,rgba(11,6,8,.8),rgba(11,6,8,0))}
 #haut small{display:block;font:700 8px ui-monospace,monospace;letter-spacing:3.4px;color:#c9a24a}
 </style>
-<script src="retour.js?v=2026-10-16-1700"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-16-1700">
+<script src="retour.js?v=2026-10-16-1800"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-16-1800">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -804,24 +804,35 @@ function dessiner(T){
 
 
 /* ================= LE JOYSTICK =================
-   Repris de casino.html, avec une difference : la ou le casino avait
-   renonce a la marche (zoneMarche rendait toujours faux), le hall prend
-   le doigt partout sauf sur la barre du bas. */
+   C'EST CELUI DU JEU, AU PIXEL PRES. Le hall en avait un a lui, plus
+   gros — rayon cinquante-deux contre trente-quatre, pommeau vingt-deux
+   contre treize — et dessine en or sur une toile plein ecran. On
+   changeait donc de commande en passant la porte, et le pouce ne
+   trouvait plus le meme point mort. Ici on reprend celui du jeu : meme
+   rayon, meme pommeau, meme fleche, meme reperage de la course, et la
+   meme toile de cent points qu'on deplace par transform plutot que de
+   repeindre tout l'ecran a chaque image.
+
+   La seule difference avec le jeu reste la zone : le jeu interdit la
+   marche quand une page est ouverte, le hall n'a pas de pages — il
+   prend le doigt partout sauf sur la barre du bas et les boutons.
+   ===================================================================== */
 const jc=document.getElementById('joy'), jg=jc.getContext('2d');
 let JDPR=1;
+const JOY_C=100;            /* le cote de la toile : l'anneau, le pommeau et son ombre y tiennent */
 function tailleJoy(){
-  JDPR=Math.max(1,Math.min(2,window.devicePixelRatio||1));
-  jc.width=Math.round(innerWidth*JDPR);jc.height=Math.round(innerHeight*JDPR);
-  jg.setTransform(JDPR,0,0,JDPR,0,0);
+  JDPR=Math.max(1,Math.min(3,window.devicePixelRatio||1));
+  jc.width=Math.round(JOY_C*JDPR);jc.height=Math.round(JOY_C*JDPR);
+  jc.style.width=JOY_C+'px';jc.style.height=JOY_C+'px';
 }
 addEventListener('resize',tailleJoy);tailleJoy();
-const RAYON=52, POUCE=22;
+const RAYON=34, POUCE=13;   /* le joystick DISCRET du jeu */
 let J={actif:false,id:null,ox:0,oy:0,x:0,y:0,vie:0};
 function prendre(x,y){
-  const limite=innerHeight-86;
+  const limite=innerHeight-96;        /* la barre du bas */
   if(y>limite)y=limite;
   J.actif=true;J.ox=x;J.oy=y;J.x=x;J.y=y;J.vie=1;joyX=joyY=0;
-  try{navigator.vibrate&&navigator.vibrate(8);}catch(x2){}
+  try{navigator.vibrate&&navigator.vibrate(20);}catch(x2){}
 }
 function tirer(x,y){
   const dx=x-J.ox, dy=y-J.oy, d=Math.hypot(dx,dy), a=Math.atan2(dy,dx);
@@ -853,26 +864,43 @@ addEventListener('mouseup',()=>{if(J.actif)lacher();});
 addEventListener('keydown',ev=>{const k={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],
   ArrowRight:[1,0],z:[0,-1],s:[0,1],q:[-1,0],d:[1,0]}[ev.key];if(k){joyX=k[0];joyY=k[1];}});
 addEventListener('keyup',()=>{joyX=joyY=0;});
+let joySale=false;
 function dessinerJoy(dt){
   if(!J.actif&&J.vie>0)J.vie=Math.max(0,J.vie-dt*5);
-  jg.clearRect(0,0,innerWidth,innerHeight);
-  if(J.vie<=0)return;
-  jg.save();jg.globalAlpha=J.vie;
+  if(J.vie<=0){
+    if(joySale){jg.setTransform(1,0,0,1,0,0);jg.clearRect(0,0,jc.width,jc.height);
+      joySale=false;jc.style.visibility='hidden';}
+    return;
+  }
+  if(!joySale)jc.style.visibility='visible';
+  const jox=Math.round(J.ox), joy=Math.round(J.oy);
+  if(jox!==dessinerJoy.x||joy!==dessinerJoy.y){
+    dessinerJoy.x=jox;dessinerJoy.y=joy;
+    jc.style.transform='translate('+(jox-JOY_C/2)+'px,'+(joy-JOY_C/2)+'px)';
+  }
+  jg.setTransform(1,0,0,1,0,0);jg.clearRect(0,0,jc.width,jc.height);
+  /* on garde les coordonnees de l'ecran pour dessiner */
+  jg.setTransform(JDPR,0,0,JDPR,JDPR*(JOY_C/2-jox),JDPR*(JOY_C/2-joy));
+  joySale=true;
+  jg.save();
+  jg.globalAlpha=J.vie;
+  const d=Math.hypot(J.x-J.ox,J.y-J.oy), a=Math.atan2(J.y-J.oy,J.x-J.ox);
+  const course=Math.min(1,d/RAYON)>0.88;
   jg.beginPath();jg.arc(J.ox,J.oy,RAYON,0,7);
-  const f=jg.createRadialGradient(J.ox,J.oy-14,6,J.ox,J.oy,RAYON);
-  f.addColorStop(0,'rgba(246,239,220,.24)');f.addColorStop(1,'rgba(201,162,74,.12)');
-  jg.fillStyle=f;jg.fill();
-  jg.lineWidth=2.5;jg.strokeStyle='rgba(240,215,138,.38)';jg.stroke();
-  const d=Math.hypot(J.x-J.ox,J.y-J.oy);
-  if(d>6){const a=Math.atan2(J.y-J.oy,J.x-J.ox);
-    jg.beginPath();jg.arc(J.ox,J.oy,RAYON-2,a-0.5,a+0.5);
-    jg.lineWidth=4;jg.strokeStyle='rgba(240,215,138,.55)';jg.stroke();}
-  jg.beginPath();jg.arc(J.x,J.y+3,POUCE,0,7);jg.fillStyle='rgba(10,6,8,.22)';jg.fill();
-  const k=jg.createRadialGradient(J.x-5,J.y-8,3,J.x,J.y,POUCE+1);
-  if(d>6){k.addColorStop(0,'#f0d78a');k.addColorStop(1,'#8a6a2a');}
-  else{k.addColorStop(0,'#f6efdc');k.addColorStop(1,'#c9bda2');}
-  jg.beginPath();jg.arc(J.x,J.y,POUCE,0,7);jg.fillStyle=k;jg.fill();
-  jg.lineWidth=2.5;jg.strokeStyle=d>6?'#5a4418':'rgba(50,40,30,.4)';jg.stroke();
+  jg.fillStyle='rgba(20,14,8,.12)';jg.fill();
+  /* un lisere sombre : il se detache sur tous les decors */
+  jg.lineWidth=3;jg.strokeStyle='rgba(20,14,8,.25)';jg.stroke();
+  jg.lineWidth=1.5;jg.strokeStyle='rgba(250,244,228,.75)';jg.stroke();
+  if(d>6){jg.beginPath();jg.arc(J.ox,J.oy,RAYON,a-0.4,a+0.4);
+    jg.lineWidth=3;jg.strokeStyle=course?'#e8c06a':'#f4ecd8';jg.stroke();}
+  jg.beginPath();jg.arc(J.x,J.y+2.5,POUCE,0,7);jg.fillStyle='rgba(20,14,8,.3)';jg.fill();
+  jg.beginPath();jg.arc(J.x,J.y,POUCE,0,7);jg.fillStyle='#f4ecd8';jg.fill();
+  jg.save();jg.translate(J.x,J.y);
+  if(d>6){jg.rotate(a);jg.fillStyle=course?'#a8791f':'#7a1f2b';
+    jg.beginPath();jg.moveTo(5.5,0);jg.lineTo(-2.5,-4.5);jg.lineTo(-0.5,0);
+    jg.lineTo(-2.5,4.5);jg.closePath();jg.fill();}
+  else{jg.fillStyle='#7a1f2b';jg.beginPath();jg.arc(0,0,2,0,7);jg.fill();}
+  jg.restore();
   jg.restore();
 }
 

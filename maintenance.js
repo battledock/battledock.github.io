@@ -43,7 +43,7 @@
     [null,'Le Vingt-et-un','Contre Fonfon, qui donne et qui tire à seize. On double sur les deux premières cartes, le naturel paie trois contre deux. C’est la table où la maison garde le moins.','🤵'],
     [null,'Le Mur de Clous','Un jeton lâché en haut, huit rangées de clous, neuf cases en bas. Le chemin que tu regardes est celui que la maison a tiré, clou par clou. Les bords paient vingt-neuf fois.','📌'],
     [null,'Le Grattage de Luxe','Neuf cases à gratter au doigt, trois pareils pour toucher. Et tout au fond du carnet, le Phare.','🎟️'],
-    [null,'La Salle d’Arcade','Un jeton à un euro, cinq bornes. Ici on ne gagne pas d’argent : on gagne un score, et une ligne au classement.','👾'],
+    [null,'La Salle d’Arcade','Un jeton à un euro. Ici on ne gagne pas d’argent : on gagne un score, et une ligne au classement. Les bornes sont au réglage — la salle rouvrira avec les nouvelles.','👾'],
     [null,'Le Roi du Quai','Deux manches : la gauche marche, la droite tire. Ils arrivent par les quatre bords, une touche et tu perds une vie. Marchand entre les zones, Rat-Roi toutes les quatre.','🐀'],
     [null,'Le Tri','Les caisses descendent, tu tapes le camion de la bonne couleur. Chaque réussite monte le combo, une faute le casse. Ça n’arrête jamais d’accélérer.','📦'],
     [null,'Le Bonneteau de Dédé','La bille est vraiment sous un gobelet, et les gobelets s’échangent pour de bon. Un échange de plus à chaque manche gagnée, et plus vite.','🥤'],
