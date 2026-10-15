@@ -39,7 +39,7 @@
      vraiment ete bati depuis : le Complexe Festif et ses deux portes. */
   var NOUV=[
     [null,'Le Complexe Festif','Au bout de la ruelle, une façade de néons et deux portes. À gauche le casino, à droite la salle d’arcade. Les deux sont ouvertes à tout le monde.','🎪'],
-    [null,'Le Casino, sept tables','La roulette du port, le dé de Marius, la criée, la roue de la fortune, le vingt-et-un, le mur de clous et le grattage de luxe. Toutes jouables, toutes payées au comptoir.','🎰'],
+    [null,'Le Casino, cinq tables','La roulette du port, la criée, la roue de la fortune, le vingt-et-un et le grattage de luxe. Toutes jouables, toutes payées au comptoir, et une cagnotte commune que douze pour mille de chaque mise font monter.','🎰'],
     [null,'Le Vingt-et-un','Contre Fonfon, qui donne et qui tire à seize. On double sur les deux premières cartes, le naturel paie trois contre deux. C’est la table où la maison garde le moins.','🤵'],
     [null,'Le Mur de Clous','Un jeton lâché en haut, huit rangées de clous, neuf cases en bas. Le chemin que tu regardes est celui que la maison a tiré, clou par clou. Les bords paient vingt-neuf fois.','📌'],
     [null,'Le Grattage de Luxe','Neuf cases à gratter au doigt, trois pareils pour toucher. Et tout au fond du carnet, le Phare.','🎟️'],
