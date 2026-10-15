@@ -17,14 +17,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Cormorant+Garamond:ital,wght@0,600;1,500&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-15-2400"></script>
+<script src="maintenance.js?v=2026-10-16-0100"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-15-2400';
+  var MA_VERSION='2026-10-16-0100';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -135,6 +135,115 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   font:700 10px 'Oswald',ui-monospace,monospace;letter-spacing:2px;
   box-shadow:0 6px 16px rgba(34,48,58,.25)}
 #bas button:active{background:#2e4150}
+
+/* =====================================================================
+   LA ROULETTE — LE PLATEAU INCLINÉ, PLEIN ÉCRAN
+
+   Le canvas de taille fixe agrandi d'un facteur entier a la meme limite
+   qu'au vingt-et-un : a 116 points de large, une case fait trois pixels
+   et son numero un seul. On passe donc au dessin a l'echelle de l'ecran.
+
+   L'INCLINAISON DU PLATEAU EST ELLE-MEME RESPONSIVE. Un plateau tres
+   plat est beau mais ecrase les numeros des cotes ; un plateau tres rond
+   les degage mais ne ressemble plus a une table. On calcule donc
+   l'aplatissement d'apres la place reellement disponible : sur un ecran
+   court il s'aplatit pour tenir, sur un ecran haut il s'arrondit et les
+   chiffres respirent. C'est le compromis, et il n'est pas le meme d'un
+   telephone a l'autre.
+   ===================================================================== */
+#rlt{position:fixed;inset:0;z-index:12;display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
+  background:radial-gradient(ellipse 120% 62% at 50% 34%,#a6cdaf,#74ab89 56%,#53886a);
+  font-family:'Cormorant Garamond',Georgia,serif}
+#rlt[hidden]{display:none}
+#rlt .bar{flex:none;display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:#f3ecdb;border-bottom:1px solid rgba(34,48,58,.12)}
+#rlt .bar button#rltsortie{-webkit-appearance:none;appearance:none;flex:none;
+  width:34px;height:34px;border:0;border-radius:50%;background:#22303a;color:#f5d98a;
+  font:700 16px 'Oswald',monospace}
+#rlt .bar .ti{flex:1;min-width:0}
+#rlt .bar .ti b{display:block;font:700 15px/1 'Playfair Display',Georgia,serif;color:#22303a}
+#rlt .bar .ti i{display:block;margin-top:3px;font:700 7px 'Oswald',monospace;
+  letter-spacing:2.4px;font-style:normal;color:#8a9a84}
+#rlt .bar .so{flex:none;display:flex;align-items:center;gap:6px;border-radius:999px;
+  padding:7px 11px;background:#22303a;color:#f5d98a;font:700 12px 'Oswald',monospace}
+#rlt .bar .so u{width:10px;height:10px;border-radius:50%;text-decoration:none;
+  background:radial-gradient(#f5d98a,#c08f2a)}
+#rlt .scene{flex:1;min-height:0;position:relative;display:flex;align-items:center;
+  justify-content:center;overflow:hidden}
+#rlt .scene::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.26;
+  background-image:repeating-linear-gradient(60deg,rgba(255,255,255,.1) 0 1px,transparent 1px 20px),
+  repeating-linear-gradient(-60deg,rgba(255,255,255,.1) 0 1px,transparent 1px 20px)}
+#rltcv{display:block;position:relative}
+#rlt .sous{flex:none;display:flex;flex-direction:column;align-items:center;
+  gap:clamp(6px,1.2dvh,11px);padding:0 14px clamp(8px,1.6dvh,14px)}
+#rlt .plaque{display:flex;align-items:center;gap:clamp(10px,3vw,16px);
+  background:#f6efe0;border-radius:16px;padding:clamp(7px,1.4dvh,12px) clamp(13px,4vw,20px);
+  box-shadow:0 2px 0 rgba(0,0,0,.08),0 10px 24px rgba(20,40,28,.3);
+  animation:rltPlaque .28s ease-out both}
+#rlt .plaque[hidden]{display:none}
+@keyframes rltPlaque{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#rlt .plaque .n{flex:none;width:clamp(40px,11vw,54px);height:clamp(40px,11vw,54px);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;
+  font:700 clamp(19px,5.6vw,26px) 'Oswald',monospace;
+  box-shadow:inset 0 -3px 8px rgba(0,0,0,.25)}
+#rlt .plaque .z{min-width:0}
+#rlt .plaque .z b{display:block;font:700 clamp(13px,3.9vw,17px) 'Playfair Display',Georgia,serif;
+  color:#22303a}
+#rlt .plaque .z i{display:block;margin-top:2px;font:700 8px 'Oswald',monospace;
+  letter-spacing:2px;font-style:normal;color:#8a9a84}
+#rlt .derniers{display:flex;gap:6px;align-items:center}
+#rlt .derniers i{font:700 7px 'Oswald',monospace;letter-spacing:2.4px;font-style:normal;
+  margin-right:3px;color:#f0f7f0;text-shadow:0 1px 3px rgba(0,0,0,.35)}
+#rlt .derniers b{width:clamp(21px,5.8vw,27px);height:clamp(21px,5.8vw,27px);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font:700 clamp(10px,2.9vw,12px) 'Oswald',monospace;color:#fff;
+  box-shadow:0 2px 7px rgba(0,0,0,.28)}
+#rlt .derniers b.rg{background:#b8302e}
+#rlt .derniers b.nr{background:#22303a}
+#rlt .derniers b.vt{background:#2f6b46}
+
+#rlt .bas{flex:none;background:#f3ecdb;border-top:1px solid rgba(34,48,58,.12);
+  padding:clamp(12px,2.2dvh,20px) 16px clamp(14px,2.4dvh,22px);
+  max-height:50dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#rlt #smsg{min-height:19px;margin-bottom:clamp(10px,2dvh,16px);text-align:center;
+  font:700 clamp(11px,3.3vw,14px) 'Oswald',monospace;letter-spacing:1.2px;color:#4e6a56}
+#rlt #smsg.gagne{color:#2f6b46}
+#rlt #smsg.perd{color:#b8302e}
+#rlt #smsg.gros{color:#a8761a;font-size:clamp(13px,3.9vw,16px)}
+#rlt #smise{display:flex;gap:6px;justify-content:center;flex-wrap:nowrap;overflow-x:auto;
+  scrollbar-width:none;margin-bottom:clamp(10px,2dvh,16px)}
+#rlt #smise::-webkit-scrollbar{display:none}
+#rlt #smise .m{flex:none;border:0;border-radius:999px;padding:9px clamp(8px,2.8vw,14px);
+  background:rgba(34,48,58,.07);color:#5a6a60;font:700 11px 'Oswald',monospace}
+#rlt #smise .m.on{background:#22303a;color:#f5d98a}
+#rlt #schoix{display:block}
+#rlt .ong{display:flex;gap:5px;background:rgba(34,48,58,.07);border-radius:13px;padding:4px;
+  margin-bottom:clamp(10px,2dvh,16px)}
+#rlt .ong button{-webkit-appearance:none;appearance:none;flex:1;border:0;border-radius:10px;
+  padding:clamp(10px,1.8dvh,14px) 4px;background:transparent;color:#5a6a60;
+  font:700 clamp(8px,2.6vw,10px) 'Oswald',monospace;letter-spacing:1.4px}
+#rlt .ong button.on{background:#fff;color:#22303a;box-shadow:0 2px 7px rgba(34,48,58,.12)}
+#rlt .grp{display:grid;grid-template-columns:1fr 1fr;gap:clamp(8px,1.6dvh,12px)}
+#rlt .grp button{-webkit-appearance:none;appearance:none;border:0;border-radius:16px;
+  padding:clamp(14px,2.6dvh,24px) 6px;background:#2c3f49;color:#eee6d2;
+  font:700 clamp(11px,3.3vw,14px) 'Oswald',monospace;letter-spacing:1.6px;
+  box-shadow:0 2px 0 rgba(0,0,0,.1),0 7px 16px rgba(34,48,58,.14)}
+#rlt .grp button.rg{background:#b8302e;color:#fff}
+#rlt .grp button.lg{grid-column:1 / -1}
+#rlt .grp .co{display:block;margin-top:5px;font:700 9px 'Oswald',monospace;
+  letter-spacing:1.2px;opacity:.7}
+/* la grille du plein : six colonnes, des carres qu'un pouce atteint */
+#rlt #schoix .num{display:grid;grid-template-columns:repeat(6,1fr);gap:clamp(5px,1.4vw,8px)}
+#rlt #schoix .num button{-webkit-appearance:none;appearance:none;border:0;border-radius:10px;
+  aspect-ratio:1/1;color:#fff;font:700 clamp(12px,3.6vw,16px) 'Oswald',monospace;
+  box-shadow:0 2px 6px rgba(34,48,58,.18)}
+#rlt #schoix .num button.rg{background:#b8302e}
+#rlt #schoix .num button.nr{background:#2c3f49}
+#rlt #schoix .num button.z{grid-column:1 / -1;aspect-ratio:auto;padding:clamp(12px,2.2dvh,18px) 0;
+  background:#2f6b46;letter-spacing:2px}
+#rlt #schoix button:disabled{opacity:.42}
+#rlt #paie{display:none}
 
 /* =====================================================================
    CE QUE PAIE LA TABLE : derriere un bouton, plus sous le jeu
@@ -392,7 +501,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   font:italic 500 12px/1.5 'Cormorant Garamond',Georgia,serif;color:#6a7a70}
 #v21 #paie b{font-style:normal;color:#44565f}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-15-2400">
+<link rel="stylesheet" href="responsive.css?v=2026-10-16-0100">
 </head>
 <body>
 <div id="tapis">
@@ -464,6 +573,24 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   <div class="bas" id="v21bas"><div id="v21pr"></div></div>
 </div>
 
+<div id="rlt" hidden>
+  <div class="bar">
+    <button id="rltsortie">←</button>
+    <div class="ti"><b>La Roulette du Port</b><i>37 CASES · LE ZÉRO MANGE TOUT</i></div>
+    <button class="inf" id="rltinfo">i</button>
+    <div class="so"><u></u><span id="rltsou">—</span></div>
+  </div>
+  <div class="scene" id="rltscene"><canvas id="rltcv"></canvas></div>
+  <div class="sous">
+    <div class="plaque" id="rltplaque" hidden>
+      <div class="n" id="rltn">—</div>
+      <div class="z"><b id="rltdit"></b><i id="rltsub"></i></div>
+    </div>
+    <div class="derniers" id="rltder"></div>
+  </div>
+  <div class="bas" id="rltbas"></div>
+</div>
+
 <div id="regle" hidden>
   <div class="voile"></div>
   <div class="f">
@@ -472,7 +599,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-15-2400"></script>
+<script src="retour.js?v=2026-10-16-0100"></script>
 <script>
 /* =====================================================================
    LE CASINO
@@ -532,6 +659,7 @@ function enEuros(c){
 var SOLDE=(typeof e.euros==='number')?e.euros:null;
 function majSolde(){
   try{if(typeof V21_ON!=='undefined'&&V21_ON)v21Solde();}catch(x){}
+  try{if(typeof RLT_ON!=='undefined'&&RLT_ON)rltSolde();}catch(x){}
   var t=(SOLDE===null)?'—':enEuros(SOLDE);
   document.getElementById('sou').textContent=t;
   document.getElementById('ssou').querySelector('span').textContent=t;
@@ -839,7 +967,147 @@ var ROUGES=[1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
 function estRouge(n){return ROUGES.indexOf(n)>=0;}
 function couleurCase(n){return n===0?'#2f6b46':(estRouge(n)?'#a82824':'#241a20');}
 
+/* =====================================================================
+   LE DESSIN DU PLATEAU INCLINÉ
+   Une ellipse, et tout le reste s'en deduit : la paroi, le bois, la
+   piste de laiton et ses huit losanges, les trente-sept cases, le cone,
+   la tourelle, la bille et le marqueur.
+
+   LES NUMEROS NE SONT PAS DE TAILLE FIXE. Deux chiffres voisins ne se
+   chevauchent pas s'ils sont assez ecartes HORIZONTALEMENT ou assez
+   ecartes VERTICALEMENT — il suffit de l'un des deux. En haut du plateau
+   les cases s'ecartent en largeur, sur les cotes elles s'ecartent en
+   hauteur : on mesure les deux et on prend le meilleur. C'est ce qui
+   permet au plateau de rester lisible a n'importe quelle inclinaison et
+   sur n'importe quel ecran.
+   ===================================================================== */
+function dessinerLaCuve(g,w,h,k,s){
+  var n=37, pas=Math.PI*2/n;
+  var cx=w/2, rx=w*0.48, ry=rx*k, cy=h-ry-w*0.075;
+  var P=function(a,q){return [cx+Math.cos(a)*rx*q, cy+Math.sin(a)*ry*q];};
+  var ang=s.ang||0;
+  var aCase=function(i){return ang+i*pas+pas/2;};
+  /* l'ombre */
+  g.fillStyle='rgba(20,46,32,.3)';g.beginPath();
+  g.ellipse(cx,cy+ry*0.30,rx*1.04,ry*1.06,0,0,7);g.fill();
+  /* la paroi avant */
+  var paroi=w*0.075, i, a, p;
+  for(i=0;i<=240;i++){
+    a=Math.PI*i/240;p=P(a,1.0);
+    var om=0.55+0.45*Math.sin(a);
+    g.fillStyle='rgb('+Math.round(96*om+18)+','+Math.round(64*om+12)+','+Math.round(30*om+6)+')';
+    g.fillRect(p[0]-1,p[1],2,paroi);
+  }
+  /* le bois du rebord */
+  var bo=g.createLinearGradient(0,cy-ry,0,cy+ry);
+  bo.addColorStop(0,'#d9ab63');bo.addColorStop(.42,'#a9793a');bo.addColorStop(1,'#79512a');
+  g.fillStyle=bo;g.beginPath();g.ellipse(cx,cy,rx,ry,0,0,7);g.fill();
+  g.save();g.beginPath();g.ellipse(cx,cy,rx,ry,0,0,7);g.clip();
+  for(i=0;i<22;i++){
+    g.strokeStyle='rgba(60,36,12,'+(0.04+(i%3)*0.02)+')';g.lineWidth=1;
+    g.beginPath();g.ellipse(cx,cy,rx*(0.97-i*0.007),ry*(0.97-i*0.007),0,0,7);g.stroke();
+  }
+  g.restore();
+  g.strokeStyle='rgba(255,236,190,.45)';g.lineWidth=1.4;
+  g.beginPath();g.ellipse(cx,cy,rx*0.995,ry*0.995,0,Math.PI,0);g.stroke();
+  /* la piste de la bille */
+  g.strokeStyle='#8a6a2a';g.lineWidth=w*0.030;
+  g.beginPath();g.ellipse(cx,cy,rx*0.925,ry*0.925,0,0,7);g.stroke();
+  var pi=g.createLinearGradient(0,cy-ry,0,cy+ry);
+  pi.addColorStop(0,'#f2dba0');pi.addColorStop(.5,'#c19a45');pi.addColorStop(1,'#e2c178');
+  g.strokeStyle=pi;g.lineWidth=w*0.022;
+  g.beginPath();g.ellipse(cx,cy,rx*0.925,ry*0.925,0,0,7);g.stroke();
+  for(var d=0;d<8;d++){
+    a=d*Math.PI/4+Math.PI/8;p=P(a,0.925);var t=w*0.018;
+    g.save();g.translate(p[0],p[1]);
+    g.fillStyle='#f0dca8';g.beginPath();
+    g.moveTo(0,-t*0.9);g.lineTo(t*0.62,0);g.lineTo(0,t*0.9);g.lineTo(-t*0.62,0);g.closePath();g.fill();
+    g.fillStyle='rgba(90,60,16,.4)';g.beginPath();
+    g.moveTo(0,t*0.9);g.lineTo(t*0.62,0);g.lineTo(0,0);g.closePath();g.fill();
+    g.restore();
+  }
+  /* les cases */
+  var sorti=(s.phase==='fini'||s.phase==='pose')?s.n:null;
+  for(i=0;i<n;i++){
+    var num=ROUL[i], a0=ang+i*pas, a1=a0+pas, vif=(sorti!==null&&num===sorti);
+    g.beginPath();
+    for(var q=0;q<=8;q++){p=P(a0+(a1-a0)*q/8,0.855);if(q)g.lineTo(p[0],p[1]);else g.moveTo(p[0],p[1]);}
+    for(q=8;q>=0;q--){p=P(a0+(a1-a0)*q/8,0.44);g.lineTo(p[0],p[1]);}
+    g.closePath();
+    g.fillStyle=vif?'#e7bb54':couleurCase(num);g.fill();
+    var am=(a0+a1)/2, prof=(1-Math.sin(am))/2;
+    g.fillStyle='rgba(0,0,0,'+(0.34*prof)+')';g.fill();
+    g.strokeStyle='rgba(246,233,204,.36)';g.lineWidth=.7;g.stroke();
+  }
+  /* les numeros */
+  for(i=0;i<n;i++){
+    var nu=ROUL[i], b0=ang+i*pas, b1=b0+pas, bm=(b0+b1)/2;
+    var nd=String(nu).length;
+    var pA=P(b0,0.655), pB=P(b1,0.655);
+    var dx=Math.abs(pB[0]-pA[0]), dy=Math.abs(pB[1]-pA[1]);
+    var fs=Math.min(w*0.036, Math.max(dx/(0.62*nd), dy*0.98));
+    fs=Math.max(w*0.016, fs);
+    p=P(bm,0.655);
+    g.save();g.translate(p[0],p[1]);
+    g.font='700 '+fs.toFixed(1)+'px Oswald, ui-monospace, monospace';
+    g.textAlign='center';g.textBaseline='middle';
+    g.lineWidth=Math.max(1.1,fs*0.20);g.strokeStyle='rgba(0,0,0,.55)';g.lineJoin='round';
+    g.strokeText(String(nu),0,0);
+    g.fillStyle=(sorti!==null&&nu===sorti)?'#2a1d06':'#fff9ec';
+    g.fillText(String(nu),0,0);
+    g.restore();
+  }
+  /* le cone et la tourelle */
+  var co=g.createLinearGradient(0,cy-ry*0.44,0,cy+ry*0.44);
+  co.addColorStop(0,'#f6e3ab');co.addColorStop(.5,'#c9a24a');co.addColorStop(1,'#8d6a1c');
+  g.fillStyle=co;g.beginPath();g.ellipse(cx,cy,rx*0.44,ry*0.44,0,0,7);g.fill();
+  g.strokeStyle='rgba(70,46,8,.45)';g.lineWidth=1.2;g.stroke();
+  for(var b=0;b<4;b++){
+    a=ang*0.6+b*Math.PI/2+Math.PI/4;p=P(a,0.42);
+    g.strokeStyle='rgba(120,86,20,.42)';g.lineWidth=w*0.014;
+    g.beginPath();g.moveTo(cx,cy-ry*0.05);g.lineTo(p[0],p[1]-ry*0.05);g.stroke();
+  }
+  g.fillStyle='rgba(0,0,0,.2)';g.beginPath();
+  g.ellipse(cx,cy-ry*0.02,rx*0.10,ry*0.10,0,0,7);g.fill();
+  var to=g.createLinearGradient(cx-rx*0.1,cy-w*0.1,cx+rx*0.1,cy);
+  to.addColorStop(0,'#fdf3cf');to.addColorStop(1,'#c9a24a');
+  g.fillStyle=to;g.beginPath();
+  g.moveTo(cx-rx*0.085,cy-ry*0.03);g.lineTo(cx,cy-ry*0.03-w*0.085);
+  g.lineTo(cx+rx*0.085,cy-ry*0.03);g.closePath();g.fill();
+  g.fillStyle='rgba(90,62,12,.3)';g.beginPath();
+  g.moveTo(cx,cy-ry*0.03);g.lineTo(cx,cy-ry*0.03-w*0.085);
+  g.lineTo(cx+rx*0.085,cy-ry*0.03);g.closePath();g.fill();
+  /* la bille, a son propre angle */
+  /* s.bille EST deja un angle absolu : le moteur la fait finir a -PI/2,
+     sous le repere du haut. On ne lui ajoute rien. */
+  var pb=P(s.bille||0,0.925);
+  g.fillStyle='rgba(0,0,0,.35)';g.beginPath();
+  g.ellipse(pb[0],pb[1]+w*0.008,w*0.026,w*0.016,0,0,7);g.fill();
+  var bl=g.createRadialGradient(pb[0]-w*.009,pb[1]-w*.011,1,pb[0],pb[1],w*0.028);
+  bl.addColorStop(0,'#ffffff');bl.addColorStop(.6,'#f3ecdb');bl.addColorStop(1,'#c9c0ac');
+  g.fillStyle=bl;g.beginPath();g.arc(pb[0],pb[1],w*0.026,0,7);g.fill();
+  /* LE MARQUEUR, plante sur la case gagnante : sur une vraie table c'est
+     lui qui designe le numero sorti tant que les mises ne sont pas
+     ramassees. On ne grossit pas les chiffres, on montre du doigt. */
+  if(sorti!==null){
+    var im=ROUL.indexOf(sorti);
+    var pm=P(aCase(im),0.80), ht=w*0.085;
+    g.fillStyle='rgba(0,0,0,.3)';g.beginPath();
+    g.ellipse(pm[0],pm[1]+2,w*0.028,w*0.013,0,0,7);g.fill();
+    g.fillStyle='#f6e9cc';g.beginPath();
+    g.ellipse(pm[0],pm[1],w*0.026,w*0.012,0,0,7);g.fill();
+    g.fillStyle='#f3e7c8';g.beginPath();
+    g.moveTo(pm[0]-w*0.022,pm[1]-w*0.004);g.lineTo(pm[0],pm[1]-ht);
+    g.lineTo(pm[0]+w*0.022,pm[1]-w*0.004);g.closePath();g.fill();
+    g.fillStyle='rgba(120,96,40,.35)';g.beginPath();
+    g.moveTo(pm[0],pm[1]-w*0.004);g.lineTo(pm[0],pm[1]-ht);
+    g.lineTo(pm[0]+w*0.022,pm[1]-w*0.004);g.closePath();g.fill();
+    g.fillStyle='#b8302e';g.beginPath();g.arc(pm[0],pm[1]-ht,w*0.012,0,7);g.fill();
+  }
+}
+
 MOTEUR.roulette={
+  dom:'rlt',                       /* cette table se joue en DOM, pas au canvas */
   /* LA SCENE TIENT EN 116 DE HAUT, ET CE N'EST PAS UN DETAIL. Le canvas
      est agrandi d'un facteur ENTIER : a 134 de haut il ne rentrait que
      deux fois dans la place disponible, a 116 il rentre trois fois. La
@@ -955,28 +1223,60 @@ MOTEUR.roulette={
       G.fillStyle='#f0e8d8';G.fillText(String(v),hx+5,hy+6.6);G.textAlign='left';
     }
   },
+  /* LES MISES TIENNENT EN TROIS ONGLETS. Les trente-sept numeros du plein
+     et les six chances simples sur le meme ecran, cela faisait
+     quarante-six boutons empiles : on ne voyait plus la roue. Un seul
+     groupe a la fois, et chaque bouton peut enfin etre gros. */
+  onglet:'simples',
   choix:function(){
-    var g='';
-    g+='<div class="lgn">'+
-       '<button class="rg" data-p="rouge">ROUGE ×2</button>'+
-       '<button class="nr" data-p="noir">NOIR ×2</button></div>';
-    g+='<div class="lgn">'+
-       '<button data-p="pair">PAIR ×2</button>'+
-       '<button data-p="impair">IMPAIR ×2</button></div>';
-    g+='<div class="lgn">'+
-       '<button data-p="manque">1–18 ×2</button>'+
-       '<button data-p="passe">19–36 ×2</button></div>';
-    g+='<div class="tt">LES DOUZAINES · ×3</div>';
-    g+='<div class="lgn">'+
-       '<button data-p="douzaine" data-n="1">1–12</button>'+
-       '<button data-p="douzaine" data-n="2">13–24</button>'+
-       '<button data-p="douzaine" data-n="3">25–36</button></div>';
-    g+='<div class="tt">LE PLEIN · ×36</div><div class="num">';
-    g+='<button class="z" data-p="plein" data-n="0">0</button>';
-    for(var i=1;i<=36;i++)
-      g+='<button class="'+(estRouge(i)?'rg':'nr')+'" data-p="plein" data-n="'+i+'">'+i+'</button>';
-    g+='</div>';
+    var o=MOTEUR.roulette.onglet;
+    var g='<div class="ong">'+
+      '<button data-ong="simples"'+(o==='simples'?' class="on"':'')+'>LES SIMPLES</button>'+
+      '<button data-ong="douzaines"'+(o==='douzaines'?' class="on"':'')+'>LES DOUZAINES</button>'+
+      '<button data-ong="plein"'+(o==='plein'?' class="on"':'')+'>LE PLEIN</button></div>';
+    if(o==='simples'){
+      g+='<div class="grp">'+
+        '<button class="rg" data-p="rouge">ROUGE<span class="co">×2</span></button>'+
+        '<button data-p="noir">NOIR<span class="co">×2</span></button>'+
+        '<button data-p="pair">PAIR<span class="co">×2</span></button>'+
+        '<button data-p="impair">IMPAIR<span class="co">×2</span></button>'+
+        '<button data-p="manque">1 — 18<span class="co">×2</span></button>'+
+        '<button data-p="passe">19 — 36<span class="co">×2</span></button></div>';
+    }else if(o==='douzaines'){
+      g+='<div class="grp">'+
+        '<button class="lg" data-p="douzaine" data-n="1">PREMIÈRE · 1 — 12<span class="co">×3</span></button>'+
+        '<button class="lg" data-p="douzaine" data-n="2">DEUXIÈME · 13 — 24<span class="co">×3</span></button>'+
+        '<button class="lg" data-p="douzaine" data-n="3">TROISIÈME · 25 — 36<span class="co">×3</span></button></div>';
+    }else{
+      g+='<div class="num"><button class="z" data-p="plein" data-n="0">LE ZÉRO · ×36</button>';
+      for(var i=1;i<=36;i++)
+        g+='<button class="'+(estRouge(i)?'rg':'nr')+'" data-p="plein" data-n="'+i+'">'+i+'</button>';
+      g+='</div>';
+    }
     return g;
+  },
+  /* ================= LE PLATEAU INCLINÉ =================
+     Tout est deduit de la place disponible, rien n'est en dur.
+     L'aplatissement k suit la hauteur offerte : court, le plateau
+     s'aplatit pour tenir ; haut, il s'arrondit et les numeros des cotes
+     gagnent de la place. */
+  cuve:function(s){
+    var cv=document.getElementById('rltcv'), bo=document.getElementById('rltscene');
+    if(!cv||!bo)return;
+    var r=bo.getBoundingClientRect();
+    var dpr=Math.min(3,window.devicePixelRatio||1);
+    var w=Math.max(120,Math.min(r.width-16, 400));
+    var kmax=Math.max(0.34,Math.min(0.66,(r.height-18)/w-0.30));
+    var k=kmax;
+    var h=w*(0.30+k*0.95);
+    if(h>r.height-8){k=Math.max(0.30,((r.height-8)/w-0.30)/0.95);h=w*(0.30+k*0.95);}
+    if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){
+      cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
+      cv.style.width=w+'px';cv.style.height=h+'px';
+    }
+    var g=cv.getContext('2d');
+    g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
+    dessinerLaCuve(g,w,h,k,s);
   },
   /* on lance la roue AVANT la reponse : l'attente reseau se cache dans
      le premier tour, celui ou l'on ne lit rien de toute facon */
@@ -1783,7 +2083,8 @@ function boucle(ts){
   if(!JEU){RAF=null;return;}
   var dt=Math.min(60,ts-(boucle.vu||ts));boucle.vu=ts;
   JEU.pas(S,dt);
-  JEU.dessine(S,SL,SH);
+  if(JEU.dom==='rlt'){JEU.cuve(S);rltRendu(S);}
+  else JEU.dessine(S,SL,SH);
   RAF=requestAnimationFrame(boucle);
 }
 
@@ -1931,6 +2232,62 @@ document.getElementById('regleclos').onclick=fermerRegle;
 REGLE.querySelector('.voile').onclick=fermerRegle;
 document.getElementById('sinfo').onclick=ouvrirRegle;
 document.getElementById('v21info').onclick=ouvrirRegle;
+document.getElementById('rltinfo').onclick=ouvrirRegle;
+
+/* ================= LA ROULETTE EN DOM ================= */
+var RLT=document.getElementById('rlt');
+var RLT_ON=false, RLT_VU='';
+function rltSolde(){
+  var e=document.getElementById('rltsou');
+  if(e)e.textContent=(typeof SOLDE==='number')?enEuros(SOLDE):'—';
+}
+function rltPrendre(){
+  var bas=document.getElementById('rltbas');
+  bas.appendChild(SMSG);bas.appendChild(SMISE);bas.appendChild(SCHOIX);
+  bas.appendChild(document.getElementById('paie'));
+}
+function rltRendre(){
+  var sbas=document.getElementById('sbas');
+  sbas.appendChild(SMSG);sbas.appendChild(SMISE);sbas.appendChild(SCHOIX);
+  sbas.appendChild(document.getElementById('paie'));
+}
+function ditDeLaCase(n){
+  if(n===0)return ['Le zéro','IL PREND TOUT SAUF LUI-MÊME'];
+  return [(estRouge(n)?'Rouge':'Noir')+', '+(n%2?'impair':'pair')+', '+(n<=18?'manque':'passe'),
+          'SORTI SOUS LE REPÈRE'];
+}
+/* ON NE REFAIT QUE CE QUI A CHANGE : la plaque et le tableau des
+   derniers sont du DOM, les rebatir soixante fois par seconde relancerait
+   leur animation a chaque image. */
+function rltRendu(s){
+  if(!RLT_ON||!s)return;
+  var montre=(s.phase==='fini'&&s.n!==null&&s.n!==undefined);
+  var sig=JSON.stringify([montre?s.n:null,s.hist,s.gagne]);
+  if(sig===RLT_VU)return;
+  RLT_VU=sig;
+  var pl=document.getElementById('rltplaque');
+  if(montre){
+    var d=ditDeLaCase(s.n);
+    var nn=document.getElementById('rltn');
+    nn.textContent=String(s.n);
+    nn.className='n '+(s.n===0?'vt':(estRouge(s.n)?'rg':'nr'));
+    nn.style.background=couleurCase(s.n);
+    document.getElementById('rltdit').textContent=d[0];
+    document.getElementById('rltsub').textContent=s.gagne?'TU PASSES DEVANT':d[1];
+    pl.hidden=false;
+  }else pl.hidden=true;
+  var der=document.getElementById('rltder');
+  der.innerHTML='<i>DERNIERS</i>';
+  (s.hist||[]).slice(0,6).forEach(function(v){
+    var b=document.createElement('b');
+    b.className=v===0?'vt':(estRouge(v)?'rg':'nr');
+    b.textContent=v;der.appendChild(b);
+  });
+}
+document.getElementById('rltsortie').onclick=function(){
+  if(OCCUPE)return;
+  fermerTable();
+};
 
 function ouvrirTable(T){
   JEU=MOTEUR[T.cle];if(!JEU)return;
@@ -1940,6 +2297,19 @@ function ouvrirTable(T){
   /* LA TABLE EN DOM : pas de canvas, pas de boucle de dessin. On montre
      son propre ecran, on lui prete les boites du bas, et on redessine
      seulement quand l'etat change. */
+  if(JEU.dom==='rlt'){
+    RLT_ON=true;RLT_VU='';
+    rltPrendre();
+    document.getElementById('paie').innerHTML=JEU.paie;
+    RLT.hidden=false;
+    majSolde();rltSolde();
+    dire('À toi de jouer.');
+    monterMises();monterChoix();
+    rltRendu(S);
+    boucle.vu=0;
+    if(!RAF)RAF=requestAnimationFrame(boucle);
+    return;
+  }
   if(JEU.dom){
     V21_ON=true;V21_VU='';
     v21Prendre();
@@ -1996,6 +2366,13 @@ function brancherLeTapis(){
 }
 function fermerTable(){
   fermerRegle();
+  if(RLT_ON){
+    RLT.hidden=true;RLT_ON=false;RLT_VU='';
+    if(RAF){cancelAnimationFrame(RAF);RAF=null;}
+    rltRendre();
+    JEU=null;S=null;majSolde();
+    return;
+  }
   if(V21_ON){
     V21.hidden=true;V21_ON=false;V21_VU='';
     v21Rendre();
@@ -2043,6 +2420,10 @@ function monterChoix(){
   [].forEach.call(SCHOIX.querySelectorAll('button'),function(b){
     b.onclick=function(){
       if(OCCUPE)return;
+      /* UN ONGLET N'EST PAS UNE MISE : il change ce qu'on voit, pas ce
+         qu'on joue. On remonte la liste au lieu d'appeler le comptoir. */
+      var o=b.getAttribute('data-ong');
+      if(o){JEU.onglet=o;monterChoix();return;}
       jouer(b.getAttribute('data-p'),b.getAttribute('data-n'));
     };
   });
