@@ -13,14 +13,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Expires" content="0">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-16-1900"></script>
+<script src="maintenance.js?v=2026-10-16-2000"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-16-1900';
+  var MA_VERSION='2026-10-16-2000';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -140,18 +140,38 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
    En points d'ecran, elles font toujours la taille d'un pouce.
    TRANSPARENTES ET BASSES : elles couvrent le bas de l'arene, la ou l'on
    ne va pas souvent, et on voit a travers. */
-.manche{position:absolute;bottom:10px;width:106px;height:106px;border-radius:50%;
-  border:1px solid rgba(90,216,255,.26);background:rgba(8,16,26,.3);
-  touch-action:none;display:none}
+/* =====================================================================
+   LES MANCHES SONT FLOTTANTES, comme le joystick du jeu.
+   Fixees dans les coins, elles obligeaient a aller chercher un rond de
+   cent six pixels toujours au meme endroit, avec une course de
+   quarante-cinq : le pouce partait de loin et arrivait au bout avant
+   que le personnage n'ait pris sa vitesse. Maintenant la manche nait
+   SOUS LE POUCE, la ou il se pose, avec une course de trente-quatre —
+   la meme que partout ailleurs dans Battle Dock. La moitie gauche de
+   l'ecran marche, la moitie droite vise.
+   ===================================================================== */
+.zone{position:absolute;top:0;bottom:0;width:50%;z-index:3;touch-action:none;display:none}
+.zone.on{display:block}
+.zone.g{left:0}.zone.d{right:0}
+.manche{position:absolute;left:0;top:0;width:84px;height:84px;margin:-42px 0 0 -42px;
+  border-radius:50%;z-index:4;pointer-events:none;
+  border:1px solid rgba(90,216,255,.3);background:rgba(8,16,26,.26);
+  opacity:0;transition:opacity .16s ease;display:none}
 .manche.on{display:block}
-.manche.g{left:10px}
-.manche.d{right:10px}
-.manche u{position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px 0 0 -20px;
-  border-radius:50%;text-decoration:none;background:rgba(90,216,255,.2);
-  border:1px solid rgba(90,216,255,.45);transition:background .1s}
-.manche.tenue u{background:rgba(90,216,255,.42)}
-.manche i{position:absolute;left:0;right:0;bottom:-1px;text-align:center;font-style:normal;
-  font:700 7px ui-monospace,monospace;letter-spacing:1.6px;color:#4a7a94}
+.manche.tenue{opacity:1}
+.manche u{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;
+  border-radius:50%;text-decoration:none;background:rgba(90,216,255,.26);
+  border:1px solid rgba(90,216,255,.5)}
+.manche.tenue u{background:rgba(90,216,255,.46)}
+.manche i{display:none}
+/* le rappel de ce que fait chaque moitie, tant qu'on n'y a pas touche */
+.sou{position:absolute;bottom:14px;z-index:3;pointer-events:none;
+  font:700 7px ui-monospace,monospace;letter-spacing:2px;color:rgba(90,216,255,.34);
+  transition:opacity .25s ease;display:none}
+.sou.on{display:block}
+.sou.g{left:0;right:50%;text-align:center}
+.sou.d{left:50%;right:0;text-align:center}
+.sou.parti{opacity:0}
 
 #jbas{flex:none;position:relative;z-index:2;border-top:1px solid rgba(90,216,255,.2);
   background:rgba(4,8,14,.84);
@@ -217,7 +237,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
 #jeu.plein #retourJeu{display:block}
 #retourJeu:active{background:rgba(90,216,255,.26)}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-16-1900">
+<link rel="stylesheet" href="responsive.css?v=2026-10-16-2000">
 </head>
 <body>
 <div id="salle">
@@ -256,8 +276,12 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
   <button id="retourJeu">←</button>
   <div id="scene">
     <canvas id="ecran"></canvas>
-    <div class="manche g" id="mg"><u></u><i>MARCHER</i></div>
-    <div class="manche d" id="md"><u></u><i>TIRER</i></div>
+    <div class="zone g" id="zg"></div>
+    <div class="zone d" id="zd"></div>
+    <div class="manche g" id="mg"><u></u></div>
+    <div class="manche d" id="md"><u></u></div>
+    <div class="sou g" id="sg">MARCHER</div>
+    <div class="sou d" id="sd">VISER</div>
   </div>
   <div id="jbas">
     <div id="jmsg"></div>
@@ -266,7 +290,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-16-1900"></script>
+<script src="retour.js?v=2026-10-16-2000"></script>
 <script>
 /* =====================================================================
    LA SALLE D'ARCADE
@@ -511,39 +535,61 @@ var REC={score:0, pseudo:''}, REC_BATTU=false;
    rend zero. On suit le doigt par son pointerId, sinon deux pouces sur
    l'ecran se volent mutuellement leur manche.
    ===================================================================== */
-function Manche(el){
-  var M={x:0,y:0,n:0,id:null,el:el,
+var RAYON_M=34;         /* la course de la manche, la meme que dans le jeu */
+function Manche(el,zone,sou){
+  var M={x:0,y:0,n:0,id:null,el:el,ox:0,oy:0,
          bout:el.querySelector('u')};
-  function pose(ev){
-    var b=el.getBoundingClientRect();
-    var r=b.width/2-8;
-    var dx=ev.clientX-(b.left+b.width/2), dy=ev.clientY-(b.top+b.height/2);
-    var d=Math.hypot(dx,dy);
-    if(d>r){dx=dx/d*r;dy=dy/d*r;d=r;}
-    M.x=dx/r;M.y=dy/r;M.n=Math.min(1,d/r);
+  function poser(x,y){
+    /* L'ORIGINE SUIT LE POUCE QUAND IL DEPASSE LA COURSE. Sans cela, un
+       doigt qui glisse loin reste bloque a fond dans une direction et
+       l'on ne peut plus corriger sa trajectoire sans relacher. */
+    var dx=x-M.ox, dy=y-M.oy, d=Math.hypot(dx,dy);
+    if(d>RAYON_M){
+      var a=Math.atan2(dy,dx);
+      M.ox=x-Math.cos(a)*RAYON_M;M.oy=y-Math.sin(a)*RAYON_M;
+      dx=Math.cos(a)*RAYON_M;dy=Math.sin(a)*RAYON_M;d=RAYON_M;
+      el.style.transform='translate('+M.ox+'px,'+M.oy+'px)';
+    }
+    M.x=d<1?0:dx/RAYON_M;M.y=d<1?0:dy/RAYON_M;M.n=Math.min(1,d/RAYON_M);
+    if(M.n<0.14){M.x=M.y=0;M.n=0;}
     M.bout.style.transform='translate('+dx.toFixed(1)+'px,'+dy.toFixed(1)+'px)';
+  }
+  function naitre(x,y){
+    M.ox=x;M.oy=y;
+    el.style.transform='translate('+x+'px,'+y+'px)';
+    el.classList.add('tenue');
+    if(sou)sou.classList.add('parti');
+    poser(x,y);
   }
   function lache(){
     M.id=null;M.x=M.y=M.n=0;
     M.bout.style.transform='';el.classList.remove('tenue');
   }
-  el.addEventListener('pointerdown',function(ev){
+  zone.addEventListener('pointerdown',function(ev){
     if(M.id!==null)return;
     ev.preventDefault();
-    M.id=ev.pointerId;el.setPointerCapture&&el.setPointerCapture(ev.pointerId);
-    el.classList.add('tenue');pose(ev);
+    M.id=ev.pointerId;
+    /* LA CAPTURE PEUT LEVER — pointeur deja relache, evenement
+       synthetique — et une exception ici avortait la prise : la manche
+       ne naissait jamais sous le pouce. Elle est un confort, pas une
+       condition. */
+    try{zone.setPointerCapture&&zone.setPointerCapture(ev.pointerId);}catch(e){}
+    naitre(ev.clientX,ev.clientY);
   });
-  el.addEventListener('pointermove',function(ev){
+  zone.addEventListener('pointermove',function(ev){
     if(ev.pointerId!==M.id)return;
-    ev.preventDefault();pose(ev);
+    ev.preventDefault();poser(ev.clientX,ev.clientY);
   });
-  ['pointerup','pointercancel','pointerleave'].forEach(function(k){
-    el.addEventListener(k,function(ev){if(ev.pointerId===M.id)lache();});
+  ['pointerup','pointercancel'].forEach(function(k){
+    zone.addEventListener(k,function(ev){if(ev.pointerId===M.id)lache();});
   });
   M.lache=lache;
   return M;
 }
-var MG=Manche(document.getElementById('mg')), MD=Manche(document.getElementById('md'));
+var MG=Manche(document.getElementById('mg'),document.getElementById('zg'),
+              document.getElementById('sg')),
+    MD=Manche(document.getElementById('md'),document.getElementById('zd'),
+              document.getElementById('sd'));
 var JMSG=document.getElementById('jmsg'), JACT=document.getElementById('jact'),
     JCLS=document.getElementById('jcls'), JEU=document.getElementById('jeu');
 function dire(t,cl){JMSG.textContent=t||'';JMSG.className=cl||'';}
@@ -575,6 +621,12 @@ var MOTEUR={};
    ===================================================================== */
 var HG_L=306, HG_H=438;          /* l'arene, en pixels de scene */
 var HG_MUR=10;                   /* l'epaisseur des murs */
+var HG_SOLS=[
+  ['#a8a396','#a19c90','#afaa9d','#8c877c'],   /* beton clair */
+  ['#9aa0a2','#949a9c','#a2a8aa','#7e8486'],   /* beton gris-bleu */
+  ['#a89c86','#a19580','#b0a490','#8a7f6c'],   /* beton sable */
+  ['#9a9690','#94908a','#a29e98','#7e7a74']    /* beton froid */
+];
 
 /* ---------- les palettes et les dessins, pixel par pixel ---------- */
 var HGP_J={
@@ -660,11 +712,22 @@ var HG_Z=[
 var HG_GROS={v:0.022, pv:46, pts:240, r:10};
 
 /* ---------- les armes ---------- */
+/* SEPT ARMES, ET CHACUNE CHANGE LA FACON DE SE PLACER. Une arme qui ne
+   fait que taper plus fort ne change rien : ce qui compte, c'est la
+   portee, l'ecart, la cadence et ce qui arrive aux balles quand elles
+   touchent. Le harpon traverse la file, donc on cherche l'alignement ;
+   la pompe ne porte pas loin, donc on laisse venir ; le lance-flammes
+   arrose devant soi, donc on recule en tirant. */
 var HG_ARMES={
-  pistolet:   {nom:'PISTOLET',    cad:260, plombs:1, ecart:0.03, deg:1, vit:0.34, chg:12, rech:900,  por:170},
-  pompe:      {nom:'POMPE',       cad:620, plombs:6, ecart:0.26, deg:1, vit:0.30, chg:6,  rech:1150, por:92},
-  mitraillette:{nom:'MITRAILLETTE',cad:95, plombs:1, ecart:0.10, deg:1, vit:0.40, chg:34, rech:1250, por:150}
+  pistolet:    {nom:'PISTOLET',     cad:260, plombs:1, ecart:0.03, deg:1, vit:0.34, chg:12, rech:900,  por:170, c:'#fff6c8'},
+  pompe:       {nom:'POMPE',        cad:620, plombs:6, ecart:0.26, deg:1, vit:0.30, chg:6,  rech:1150, por:92,  c:'#ffe2a0', rec:3.2},
+  mitraillette:{nom:'MITRAILLETTE', cad:95,  plombs:1, ecart:0.11, deg:1, vit:0.40, chg:34, rech:1250, por:150, c:'#fff0b0'},
+  harpon:      {nom:'HARPON',       cad:700, plombs:1, ecart:0.0,  deg:3, vit:0.46, chg:5,  rech:1200, por:230, c:'#b8e8ff', perce:5, gros:true},
+  revolver:    {nom:'REVOLVER',     cad:520, plombs:1, ecart:0.01, deg:4, vit:0.38, chg:6,  rech:1050, por:200, c:'#ffd0a0', perce:2, rec:2.4},
+  clouteuse:   {nom:'CLOUTEUSE',    cad:62,  plombs:1, ecart:0.19, deg:1, vit:0.36, chg:60, rech:1500, por:120, c:'#dfe8f0'},
+  flammes:     {nom:'LANCE-FLAMMES',cad:42,  plombs:1, ecart:0.34, deg:1, vit:0.14, chg:110,rech:1700, por:62,  c:'#ff9a2a', feu:true}
 };
+var HG_LOT=['pompe','mitraillette','harpon','revolver','clouteuse','flammes'];
 
 MOTEUR.hangar={
   nom:'Le Hangar', sous:'GAUCHE POUR MARCHER · DROITE POUR VISER',
@@ -675,39 +738,109 @@ MOTEUR.hangar={
             arme:'pistolet', chg:HG_ARMES.pistolet.chg, rech:0, cad:0,
             z:[], b:[], part:[], tach:[], ram:[],
             obs:[], porte:{ouvert:false,x:HG_L/2,y:HG_MUR},
-            reste:0, aNaitre:0, pause:0, cam:{x:0,y:0}, mot:'', motT:0};
+            reste:0, aNaitre:0, pause:0, cam:{x:0,y:0}, mot:'', motT:0,
+            patron:'eparpille', teinte:0, sec:0};
   },
 
-  /* ================= LA SALLE ================= */
+  /* ================= LA SALLE =================
+     SIX PATRONS, ET ILS NE SE RESSEMBLENT PAS. Un tirage au sort pur
+     donne toujours la meme bouillie de caisses eparpillees : au bout de
+     trois salles on a l'impression de rejouer la premiere. Un patron
+     impose une FORME — un couloir, des piliers, un anneau — et c'est la
+     forme qui change la facon de se battre : on recule dans un couloir,
+     on tourne autour d'un pilier, on evite le centre d'un anneau.
+     ===================================================================== */
+  pose:function(s,x,y,w,h,t){
+    if(x<HG_MUR+4||y<HG_MUR+20||x+w>HG_L-HG_MUR-4||y+h>HG_H-HG_MUR-14)return;
+    if(Math.abs(x+w/2-s.j.x)<32&&Math.abs(y+h/2-s.j.y)<32)return;
+    if(Math.abs(x+w/2-s.porte.x)<28&&y<68)return;
+    for(var k=0;k<s.obs.length;k++){
+      var p=s.obs[k];
+      if(x<p.x+p.w+6&&x+w+6>p.x&&y<p.y+p.h+6&&y+h+6>p.y)return;
+    }
+    s.obs.push({x:x,y:y,w:w,h:h,t:t});
+  },
+  caisseAu:function(s,x,y){
+    var r=Math.random();
+    if(r<0.2)this.pose(s,x,y,14,16,'baril');
+    else if(r<0.34)this.pose(s,x,y,26,11,'palette');
+    else this.pose(s,x,y,20,19,'caisse');
+  },
+  PATRONS:['eparpille','couloir','piliers','anneau','travees','fosse'],
+  batir:function(s,p){
+    var i,j,cx=HG_L/2, cy=HG_H/2+16;
+    if(p==='couloir'){
+      /* deux murs de caisses qui laissent un couloir au milieu */
+      for(j=HG_MUR+34;j<HG_H-HG_MUR-40;j+=24){
+        this.caisseAu(s, cx-66, j);
+        this.caisseAu(s, cx+46, j+12);
+      }
+      for(i=0;i<3;i++)this.caisseAu(s, cx-24+i*24, HG_MUR+26);
+    }else if(p==='piliers'){
+      /* une grille de piliers : on tourne autour, ils tournent autour */
+      for(j=0;j<4;j++)for(i=0;i<3;i++)
+        this.pose(s, HG_MUR+34+i*86, HG_MUR+48+j*92, 20,19,'caisse');
+    }else if(p==='anneau'){
+      /* un anneau de bidons : le centre est un piege, le tour est sur */
+      for(i=0;i<12;i++){
+        var a=i/12*6.283;
+        this.pose(s, cx+Math.cos(a)*78-7, cy+Math.sin(a)*96-8, 14,16,'baril');
+      }
+      this.caisseAu(s, cx-10, cy-9);
+    }else if(p==='travees'){
+      /* des rayonnages, comme un vrai entrepot */
+      for(j=0;j<4;j++)for(i=0;i<4;i++)
+        this.pose(s, HG_MUR+26+i*66, HG_MUR+52+j*88, 26,11,'palette');
+    }else if(p==='fosse'){
+      /* le pourtour encombre, le milieu nu : tout se joue au centre */
+      for(i=0;i<9;i++){
+        this.caisseAu(s, HG_MUR+20+i*30, HG_MUR+30);
+        this.caisseAu(s, HG_MUR+20+i*30, HG_H-HG_MUR-42);
+      }
+      for(j=0;j<4;j++){
+        this.caisseAu(s, HG_MUR+14, HG_MUR+80+j*62);
+        this.caisseAu(s, HG_L-HG_MUR-36, HG_MUR+80+j*62);
+      }
+    }else{
+      var essais=0, voulus=10+Math.min(7,Math.floor(s.salle/2));
+      while(s.obs.length<voulus&&essais<500){
+        essais++;
+        this.caisseAu(s, HG_MUR+6+Math.random()*(HG_L-2*HG_MUR-34),
+                         HG_MUR+26+Math.random()*(HG_H-2*HG_MUR-70));
+      }
+    }
+  },
   garnir:function(s){
     var n=s.salle;
     s.obs=[];
-    /* LES OBSTACLES SONT TIRES AU SORT MAIS JAMAIS AU MILIEU NI SUR LA
-       PORTE : une pile qui bouche le passage transforme une salle en
-       impasse, et on meurt sans avoir eu tort. */
-    var essais=0, voulus=10+Math.min(7,Math.floor(n/2));
-    while(s.obs.length<voulus&&essais<500){
-      essais++;
-      var w=[20,20,14,26][Math.floor(Math.random()*4)];
-      var h=w===26?11:(w===14?16:19);
-      var x=HG_MUR+6+Math.random()*(HG_L-2*HG_MUR-12-w);
-      var y=HG_MUR+26+Math.random()*(HG_H-2*HG_MUR-70-h);
-      var o={x:x,y:y,w:w,h:h,t:w===14?'baril':(w===26?'palette':'caisse')};
-      if(Math.abs(x+w/2-s.j.x)<34&&Math.abs(y+h/2-s.j.y)<34)continue;
-      if(Math.abs(x+w/2-s.porte.x)<30&&y<70)continue;
-      var chevauche=false;
-      for(var k=0;k<s.obs.length;k++){
-        var p=s.obs[k];
-        if(x<p.x+p.w+8&&x+w+8>p.x&&y<p.y+p.h+8&&y+h+8>p.y){chevauche=true;break;}
-      }
-      if(!chevauche)s.obs.push(o);
+    /* la premiere salle est toujours la simple : on apprend a marcher
+       avant d'apprendre a se placer */
+    s.patron=(n===1)?'eparpille':this.PATRONS[Math.floor(Math.random()*this.PATRONS.length)];
+    s.teinte=Math.floor(Math.random()*4);
+    this.batir(s,s.patron);
+    /* QUELQUES BIDONS EXPLOSIFS, repartis dans la salle : ils changent
+       une salle encombree en salle qu'on peut ouvrir au bon moment. */
+    var nb=1+Math.min(4,Math.floor(n/3));
+    var bidons=[];
+    for(var e=0;e<s.obs.length;e++)if(s.obs[e].t==='baril')bidons.push(s.obs[e]);
+    /* UNE SALLE SANS BIDON N'AVAIT AUCUN EXPLOSIF : les travees et les
+       piliers n'en posent pas, et la salle perdait son seul moyen de
+       s'ouvrir. On en convertit alors. */
+    while(bidons.length<nb&&s.obs.length){
+      var c=s.obs[Math.floor(Math.random()*s.obs.length)];
+      if(bidons.indexOf(c)>=0)break;
+      c.t='baril';c.w=14;c.h=16;bidons.push(c);
     }
+    for(var e2=0;e2<s.obs.length;e2++)s.obs[e2].ex=false;
+    for(var e3=0;e3<nb&&e3<bidons.length;e3++)bidons[e3].ex=true;
     s.z=[];s.b=[];s.ram=[];
-    s.reste=Math.min(26, 5+n*2);
+    s.reste=Math.min(28, 5+n*2);
     s.aNaitre=s.reste;
     s.porte.ouvert=false;
     s.pause=600;
-    s.mot='SALLE '+n;s.motT=1500;
+    var NOMS={eparpille:'LE DEPOT',couloir:'LE COULOIR',piliers:'LES PILIERS',
+              anneau:'L\u2019ANNEAU',travees:'LES TRAVEES',fosse:'LA FOSSE'};
+    s.mot='SALLE '+n+' \u00b7 '+(NOMS[s.patron]||'');s.motT=1700;
   },
   demarrer:function(s){
     s.salle=1;s.score=0;s.vies=5;s.tach=[];
@@ -770,10 +903,16 @@ MOTEUR.hangar={
             var a=j.vise+(Math.random()-0.5)*A.ecart*(A.plombs>1?2:1);
             s.b.push({x:j.x+Math.cos(j.vise)*7, y:j.y+Math.sin(j.vise)*7-2,
                       vx:Math.cos(a)*A.vit, vy:Math.sin(a)*A.vit,
-                      vie:A.por/A.vit, deg:A.deg});
+                      vie:A.por/A.vit, deg:A.deg,
+                      perce:A.perce||0, dejaTouche:null,
+                      c:A.c, gros:!!A.gros, feu:!!A.feu});
           }
+          /* LE RECUL SE SENT. Une pompe qui ne pousse pas le tireur ne
+             pese rien dans la main ; celle-ci le repousse, et ce recul
+             devient une facon de se degager quand on est cerne. */
+          if(A.rec){j.vx-=Math.cos(j.vise)*A.rec*0.012;j.vy-=Math.sin(j.vise)*A.rec*0.012;}
           s.part.push({x:j.x+Math.cos(j.vise)*9,y:j.y+Math.sin(j.vise)*9-2,
-                       vie:70,t:'feu'});
+                       vie:A.feu?40:70,t:'feu'});
         }
       }
       if(s.chg<=0&&s.rech<=0)s.rech=A.rech;
@@ -788,17 +927,24 @@ MOTEUR.hangar={
         var ob=s.obs[o];
         if(b.x>ob.x&&b.x<ob.x+ob.w&&b.y>ob.y&&b.y<ob.y+ob.h){
           mort=true;
-          s.part.push({x:b.x,y:b.y,vie:200,t:'eclat',vx:-b.vx*0.1,vy:-b.vy*0.1});
+          if(ob.ex)this.sauter(s,ob,o);
+          else s.part.push({x:b.x,y:b.y,vie:200,t:'eclat',vx:-b.vx*0.1,vy:-b.vy*0.1});
           break;
         }
       }
       if(!mort)for(var m=0;m<s.z.length;m++){
         var z=s.z[m];
+        if(z===b.dejaTouche)continue;
         if(Math.hypot(b.x-z.x,b.y-z.y)<z.r+2){
-          mort=true;z.pv-=b.deg;z.pouss=6;z.pa=Math.atan2(b.vy,b.vx);z.clign=90;
+          /* LE PERCAGE : le harpon et le revolver traversent. On note la
+             derniere bete touchee pour ne pas lui mettre dix coups en
+             passant dessus pendant dix images. */
+          if(b.perce>0){b.perce--;b.dejaTouche=z;}else{mort=true;}
+          z.pv-=b.deg;z.pouss=b.gros?12:6;z.pa=Math.atan2(b.vy,b.vx);z.clign=90;
+          if(b.feu){z.brule=1400;z.brT=0;}
           for(var e=0;e<3;e++)s.part.push({x:b.x,y:b.y,vie:260,t:'sang',
             vx:b.vx*0.08+(Math.random()-0.5)*0.05,vy:b.vy*0.08+(Math.random()-0.5)*0.05});
-          if(z.pv<=0)this.abattre(s,z,m);
+          if(z.pv<=0){this.abattre(s,z,m);}
           break;
         }
       }
@@ -814,6 +960,16 @@ MOTEUR.hangar={
     for(var m2=s.z.length-1;m2>=0;m2--){
       var z2=s.z[m2];
       if(z2.clign>0)z2.clign-=dt;
+      /* CE QUI BRULE CONTINUE DE BRULER : le lance-flammes ne tue pas au
+         contact, il marque, et la bete s'effondre quelques pas plus loin. */
+      if(z2.brule>0){
+        z2.brule-=dt;z2.brT=(z2.brT||0)+dt;
+        if(z2.brT>240){z2.brT=0;z2.pv-=1;
+          s.part.push({x:z2.x+(Math.random()-0.5)*6,y:z2.y-4,vie:300,t:'flam',
+                       vx:(Math.random()-0.5)*0.01,vy:-0.02});
+          if(z2.pv<=0){this.abattre(s,z2,m2);continue;}
+        }
+      }
       var dx=j.x-z2.x, dy=j.y-z2.y, d=Math.hypot(dx,dy)||1;
       var ax=dx/d, ay=dy/d;
       /* LA SEPARATION : sans elle les zombies se superposent en une seule
@@ -869,13 +1025,21 @@ MOTEUR.hangar={
       s.mot='LA PORTE S’OUVRE';s.motT=1600;
       s.score+=60*s.salle;
       /* de quoi repartir : on choisit entre deux, et le choix compte */
+      /* DEUX OBJETS, ET IL FAUT CHOISIR : on ne ramasse que ce qu'on va
+         chercher, et l'arme qu'on laisse est l'arme qu'on n'aura pas. */
       var lot=[];
       if(s.vies<5)lot.push('vie');
       lot.push('mun');
-      if(s.salle>=3&&s.arme!=='pompe')lot.push('pompe');
-      if(s.salle>=6&&s.arme!=='mitraillette')lot.push('mitraillette');
+      if(s.salle>=2){
+        var dispo=HG_LOT.filter(function(k){return k!==s.arme;});
+        /* les armes lourdes n'apparaissent pas des la deuxieme salle */
+        if(s.salle<5)dispo=dispo.filter(function(k){
+          return k==='pompe'||k==='mitraillette'||k==='clouteuse';});
+        var tire=dispo[Math.floor(Math.random()*dispo.length)];
+        if(tire)lot.unshift(tire);
+      }
       for(var g2=0;g2<Math.min(2,lot.length);g2++){
-        s.ram.push({x:HG_L/2-18+g2*36, y:HG_H/2+30, t:lot[g2]});
+        s.ram.push({x:HG_L/2-20+g2*40, y:HG_H/2+30, t:lot[g2]});
       }
     }
     if(s.porte.ouvert&&s.j.y<HG_MUR+8&&Math.abs(s.j.x-s.porte.x)<16){
@@ -931,6 +1095,35 @@ MOTEUR.hangar={
               art:gros?-1:e.art,mir:Math.random()<0.5,pouss:0,pa:0,clign:0,pas:0,
               gros:gros});
   },
+  /* LE BIDON QUI SAUTE emporte ce qui est autour, zombies compris. Une
+     salle encombree devient une salle qu'on peut ouvrir, si l'on a su
+     attendre qu'ils soient trois autour du bidon. */
+  sauter:function(s,ob,i){
+    var cx=ob.x+ob.w/2, cy=ob.y+ob.h/2;
+    s.obs.splice(i,1);
+    for(var e=0;e<34;e++){
+      var a=Math.random()*6.283, v=0.04+Math.random()*0.17;
+      s.part.push({x:cx,y:cy,vie:260+Math.random()*320,t:'flam',
+                   vx:Math.cos(a)*v,vy:Math.sin(a)*v});
+    }
+    s.sec=240;
+    for(var m=s.z.length-1;m>=0;m--){
+      var z=s.z[m];
+      var d=Math.hypot(z.x-cx,z.y-cy);
+      if(d<46){
+        z.pv-=Math.round(9-d/6);z.pouss=16;z.pa=Math.atan2(z.y-cy,z.x-cx);z.clign=140;
+        z.brule=1200;z.brT=0;
+        if(z.pv<=0)this.abattre(s,z,m);
+      }
+    }
+    var dj=Math.hypot(s.j.x-cx,s.j.y-cy);
+    if(dj<38&&s.inv<=0){
+      s.vies--;s.inv=1100;s.j.clign=600;
+      var aj=Math.atan2(s.j.y-cy,s.j.x-cx);
+      s.j.vx=Math.cos(aj)*0.3;s.j.vy=Math.sin(aj)*0.3;
+      if(s.vies<=0)this.fin(s);
+    }
+  },
   abattre:function(s,z,i){
     s.score+=z.pts;
     s.reste--;
@@ -963,7 +1156,16 @@ MOTEUR.hangar={
     s.cam.y+=(vy-s.cam.y)*0.14;
     if(HG_L<=L)s.cam.x=(HG_L-L)/2;
     if(HG_H<=H)s.cam.y=(HG_H-H)/2;
-    var ox=Math.round(-s.cam.x), oy=Math.round(-s.cam.y);
+    /* LA SECOUSSE : deux cent quarante millisecondes apres une
+       explosion, et elle s'eteint toute seule. Sans elle le bidon ne
+       pese rien ; avec, on sursaute. */
+    var sx=0, sy=0;
+    if(s.sec>0){
+      s.sec-=16;
+      var am=Math.min(4,s.sec/60);
+      sx=(Math.random()-0.5)*am*2;sy=(Math.random()-0.5)*am*2;
+    }
+    var ox=Math.round(-s.cam.x+sx), oy=Math.round(-s.cam.y+sy);
     G.save();G.translate(ox,oy);
 
     if(s.phase==='pret'){
@@ -984,8 +1186,11 @@ MOTEUR.hangar={
     var y0=Math.max(0,Math.floor(s.cam.y/12)*12), y1=s.cam.y+H+12;
     for(var y=y0;y<y1;y+=12)for(var x=x0;x<x1;x+=12){
       var t=Math.floor(al(x*7.1+y*3.3)*3);
-      R(x,y,12,12,['#a8a396','#a19c90','#afaa9d'][t]);
-      R(x,y,12,1,'#8c877c');R(x,y,1,12,'#8c877c');
+      /* CHAQUE SALLE A SON GRIS. Quatre nuances suffisent : on ne se dit
+         pas « tiens, c'est plus vert », on sent seulement qu'on a change
+         d'endroit — et c'est exactement ce qu'on veut. */
+      R(x,y,12,12,HG_SOLS[s.teinte||0][t]);
+      R(x,y,12,1,HG_SOLS[s.teinte||0][3]);R(x,y,1,12,HG_SOLS[s.teinte||0][3]);
     }
     /* les bandes de securite */
     for(var bx=HG_MUR+4;bx<HG_L-HG_MUR-4;bx++){
@@ -1037,11 +1242,18 @@ MOTEUR.hangar={
         R(o.x+o.w/3,o.y,2,o.h,'#654420');R(o.x+o.w*2/3,o.y,2,o.h,'#654420');
         R(o.x+1,o.y+2,4,4,'rgba(255,255,255,.11)');
       }else if(o.t==='baril'){
-        R(o.x,o.y,o.w,o.h,'#9a3a2a');R(o.x,o.y,o.w,2,'#c4593e');
+        /* LE BIDON EXPLOSIF SE VOIT DE LOIN : rouge vif, bande jaune et
+           une flamme peinte. On ne doit jamais le decouvrir en sautant. */
+        var cb=o.ex?'#d8402a':'#9a3a2a', ch=o.ex?'#ff6a4a':'#c4593e';
+        R(o.x,o.y,o.w,o.h,cb);R(o.x,o.y,o.w,2,ch);
         R(o.x,o.y+o.h-2,o.w,2,'#5e2016');
-        R(o.x,o.y+5,o.w,2,'#5e2016');R(o.x,o.y+o.h-7,o.w,2,'#5e2016');
-        R(o.x+2,o.y+2,3,o.h-5,'rgba(255,255,255,.12)');
-        R(o.x+o.w/2-1,o.y+o.h/2-1,3,3,'#e8d040');
+        R(o.x,o.y+5,o.w,2,o.ex?'#f0c020':'#5e2016');
+        R(o.x,o.y+o.h-7,o.w,2,o.ex?'#f0c020':'#5e2016');
+        R(o.x+2,o.y+2,3,o.h-5,'rgba(255,255,255,.14)');
+        if(o.ex){
+          R(o.x+o.w/2-2,o.y+8,4,5,'#1a1008');
+          R(o.x+o.w/2-1,o.y+9,2,3,'#ff9a2a');R(o.x+o.w/2-1,o.y+9,1,1,'#ffe08a');
+        }else R(o.x+o.w/2-1,o.y+o.h/2-1,3,3,'#e8d040');
       }else{
         R(o.x,o.y,o.w,o.h,'#8f7047');
         for(var ip=0;ip<5;ip++)R(o.x+ip*5,o.y,3,o.h,'#ad8a52');
@@ -1091,6 +1303,12 @@ MOTEUR.hangar={
         hgOmbre(e2.x,e2.y+(e2.gros?13:10),e2.gros?19:13);
         if(e2.gros)hgArt(Math.round(e2.x-10),Math.round(e2.y-14)+bal,HGA_G,HGP_G,e2.mir);
         else hgArt(Math.round(e2.x-8),Math.round(e2.y-13)+bal,HGA_Z[e2.art],HGP_Z,e2.mir);
+        if(e2.brule>0&&(Math.floor(s.t/80)%2)===0){
+          G.save();G.globalCompositeOperation='lighter';
+          G.fillStyle='rgba(255,150,40,.42)';
+          G.fillRect(Math.round(e2.x-9),Math.round(e2.y-14),e2.gros?22:17,e2.gros?21:20);
+          G.restore();
+        }
         if(vif){
           G.save();G.globalCompositeOperation='lighter';
           G.fillStyle='rgba(255,120,110,.5)';
@@ -1107,7 +1325,15 @@ MOTEUR.hangar={
     /* les balles */
     for(var ib=0;ib<s.b.length;ib++){
       var b2=s.b[ib];
-      R(b2.x,b2.y,3,1,'#fff6c8');R(b2.x-3,b2.y,3,1,'rgba(255,230,140,.45)');
+      if(b2.feu){
+        R(b2.x-1,b2.y-1,3,3,'rgba(255,154,42,.8)');
+        R(b2.x,b2.y,1,1,'#ffe08a');
+      }else if(b2.gros){
+        R(b2.x-4,b2.y,7,2,b2.c);R(b2.x+3,b2.y,2,2,'#eef8ff');
+      }else{
+        R(b2.x,b2.y,3,1,b2.c||'#fff6c8');
+        R(b2.x-3,b2.y,3,1,'rgba(255,230,140,.45)');
+      }
     }
     /* les particules */
     for(var ip2=0;ip2<s.part.length;ip2++){
@@ -1117,6 +1343,8 @@ MOTEUR.hangar={
         R(pa.x,pa.y-1,4,3,'rgba(255,200,90,.85)');
       }else if(pa.t==='sang'){
         R(pa.x,pa.y,1,1,pa.vie>160?'#c03024':'#8a2018');
+      }else if(pa.t==='flam'){
+        R(pa.x,pa.y,2,2,pa.vie>400?'#fff0a0':(pa.vie>200?'#ff9a2a':'#8a3a10'));
       }else{
         R(pa.x,pa.y,1,1,'rgba(240,230,200,.8)');
       }
@@ -1222,8 +1450,11 @@ function ouvrirBorne(B){
   majSolde();
   dire('Un jeton, et c’est parti.');
   monterActions();
-  document.getElementById('mg').classList.toggle('on',!!BORNE.manches);
-  document.getElementById('md').classList.toggle('on',!!BORNE.manches);
+  ['mg','md','zg','zd','sg','sd'].forEach(function(k){
+    document.getElementById(k).classList.toggle('on',!!BORNE.manches);
+  });
+  document.getElementById('sg').classList.remove('parti');
+  document.getElementById('sd').classList.remove('parti');
   MG.lache();MD.lache();
   cadrer();
   boucle.vu=0;
