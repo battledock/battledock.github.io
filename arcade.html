@@ -13,14 +13,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Expires" content="0">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-16-2100"></script>
+<script src="maintenance.js?v=2026-10-16-2200"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-16-2100';
+  var MA_VERSION='2026-10-16-2200';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -170,7 +170,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
   font:700 7px ui-monospace,monospace;letter-spacing:2px;color:rgba(90,216,255,.34);
   transition:opacity .25s ease;display:none}
 .sou.on{display:block}
-.sou.g{left:0;right:50%;text-align:center}
+.sou.g{left:0;right:0;text-align:center}
 .sou.d{left:50%;right:0;text-align:center}
 .sou.parti{opacity:0}
 
@@ -238,7 +238,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
 #jeu.plein #retourJeu{display:block}
 #retourJeu:active{background:rgba(90,216,255,.26)}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-16-2100">
+<link rel="stylesheet" href="responsive.css?v=2026-10-16-2200">
 </head>
 <body>
 <div id="salle">
@@ -281,7 +281,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
     <div class="zone d" id="zd"></div>
     <div class="manche g" id="mg"><u></u></div>
     <div class="manche d" id="md"><u></u></div>
-    <div class="sou g" id="sg">MARCHER</div>
+    <div class="sou g" id="sg">POSE LE POUCE N’IMPORTE OÙ ET MARCHE</div>
     <div class="sou d" id="sd">VISER</div>
   </div>
   <div id="jbas">
@@ -291,7 +291,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-16-2100"></script>
+<script src="retour.js?v=2026-10-16-2200"></script>
 <script>
 /* =====================================================================
    LA SALLE D'ARCADE
@@ -661,14 +661,44 @@ var HGP_J={
   'r':'#1b1613','s':'#0d0b09',
   't':'#4e545d','u':'#767e89','v':'#2b2f35','w':'#7d5631'
 };
+/* LE BUSTE ET LES JAMBES SONT SEPARES, et c'est tout le secret du
+   cycle de marche : un personnage dessine d'un bloc ne peut que
+   sautiller, alors qu'un buste qui monte d'un pixel pendant que les
+   jambes s'ecartent donne une vraie foulee pour trois lignes de code.
+   Dix-huit lignes de buste, quatre de jambes en trois poses. */
 var HGA_J=[
   '....33333333....','...311111113....','..32111111123...','..32111111123...',
   '..3222222222.3..','.3333333333333..','.4444444444444..','...65555555 6...',
   '...65855855 6...','...655555556....','....6777776.....','..nllllllllln...',
   '.nlaaaaaaaaaln..','.nlakkkkkkkaln..','.nlaaaaaaaaaln..','.nlacccccccaln..',
-  '.nllllllllllln..','..n.ooooooo.n...','....oppppqo.....','....oppppqo.....',
-  '....oqqqqqo.....','....rrr.rrr.....','....rsr.rsr.....'
+  '.nllllllllllln..','..n.ooooooo.n...'
 ];
+var HGA_JAMBES=[
+  [ /* 0 — a l'arret, les deux pieds joints */
+   '....oppppqo.....','....oppppqo.....','....oqqqqqo.....',
+   '....rrr.rrr.....','....rsr.rsr.....','................'],
+  [ /* 1 — foulee : la jambe avant descend, l'arriere se leve.
+       LES CUISSES RESTENT SOUS LES HANCHES : ecartees d'un pixel de
+       plus, elles se detachaient du bassin et le personnage avait
+       l'air monte sur des echasses. */
+   '...oppq..oppq...','...oppq..oppq...','...oqqq..oqqq...',
+   '.........rrr....','...rrr...rsr....','...rsr..........'],
+  [ /* 2 — la foulee inverse */
+   '...oppq..oppq...','...oppq..oppq...','...oqqq..oqqq...',
+   '...rrr..........','...rsr...rrr....','.........rsr....']
+];
+/* LE PAS : quatre images, deux appuis et deux passages. Deux choses
+   font lire la marche, et aucune n'est les jambes. D'abord le buste
+   qui monte d'un pixel au passage ; ensuite le balancement lateral
+   d'un pixel, dephase d'un demi-pas. Les jambes ne font que confirmer
+   ce que le corps a deja dit. */
+function hgPasJoueur(x,y,ph,mir){
+  var f=[0,1,0,2][ph&3];
+  var bob=(f===0)?0:-1;
+  var sw=(f===1)?-1:(f===2?1:0);
+  hgArt(x+sw,y+bob,HGA_J,HGP_J,mir);
+  hgArt(x,y+18,HGA_JAMBES[f],HGP_J,mir);
+}
 var HGP_Z={
   '5':'#9fb086','6':'#80936a','7':'#5f7050','8':'#43523a','9':'#1a1a12',
   'j':'#e4f24a','o':'#e8e2cc',
@@ -780,11 +810,11 @@ var HG_CARTES=[
 ];
 
 MOTEUR.hangar={
-  nom:'Le Hangar', sous:'GAUCHE POUR MARCHER · DROITE POUR VISER',
-  manches:true, vise:190,
+  nom:'Le Hangar', sous:'POSE LE POUCE ET MARCHE · ÇA TIRE TOUT SEUL',
+  manches:'une', vise:190,
   init:function(){
     return {phase:'pret', t:0, score:0, salle:1, vies:5, inv:0,
-            j:{x:HG_L/2, y:HG_H-60, vx:0, vy:0, vise:0, r:5, clign:0},
+            j:{x:HG_L/2, y:HG_H-60, vx:0, vy:0, vise:0, r:5, clign:0, pas:0},
             arme:'pistolet', chg:HG_ARMES.pistolet.chg, rech:0, cad:0,
             z:[], b:[], part:[], tach:[], ram:[],
             obs:[], porte:{ouvert:false,x:HG_L/2,y:HG_MUR},
@@ -967,6 +997,19 @@ MOTEUR.hangar={
     /* on glisse le long des obstacles : chaque axe est teste a part,
        sinon on se colle dans les angles */
     this.bouger(s,j,j.vx*dt,j.vy*dt,5);
+    /* LE PAS SUIT LA VITESSE REELLE, pas la manche : ralenti par la
+       glace ou bloque contre une caisse, le personnage cesse de
+       pedaler dans le vide. */
+    var allure=Math.hypot(j.vx,j.vy);
+    if(allure>0.006){
+      j.pas=(j.pas||0)+dt*allure*0.052;
+      s.poussiere=(s.poussiere||0)+dt*allure;
+      if(s.poussiere>7){
+        s.poussiere=0;
+        s.part.push({x:j.x+(Math.random()-0.5)*5,y:j.y+9,vie:220,t:'pous',
+                     vx:-j.vx*0.1,vy:-0.004});
+      }
+    }else{ j.pas=0; }
 
     /* LES BRAISES : on les traverse, on ne s'y installe pas */
     if(s.braises.length&&s.inv<=0){
@@ -982,13 +1025,19 @@ MOTEUR.hangar={
 
     /* L'ORIENTATION : la manche droite si on la tient, sinon le plus
        proche, sinon le sens de la marche. */
-    var cible=null;
-    if(MD.n>0.2){ j.vise=Math.atan2(MD.y,MD.x); }
-    else{
-      cible=this.plusProche(s,j.x,j.y,A.por+40);
-      if(cible)j.vise=Math.atan2(cible.y-j.y,cible.x-j.x);
-      else if(j.vx||j.vy)j.vise=Math.atan2(j.vy,j.vx);
+    /* LE FUSIL CHERCHE TOUT SEUL. On ne vise jamais : le pouce sert a se
+       placer, et se placer EST la decision. L'orientation revient au sens
+       de la marche quand il n'y a rien a portee, pour que le personnage
+       ne reste pas fige de profil au milieu d'une salle vide. */
+    var cible=this.plusProche(s,j.x,j.y,A.por+40);
+    if(cible){
+      var vc=Math.atan2(cible.y-j.y,cible.x-j.x);
+      /* on tourne vers la cible au lieu d'y sauter : un canon qui se
+         teleporte d'un bord a l'autre fait sursauter l'oeil */
+      var dd=((vc-j.vise+Math.PI*3)%(Math.PI*2))-Math.PI;
+      j.vise+=dd*Math.min(1,dt/70);
     }
+    else if(j.vx||j.vy)j.vise=Math.atan2(j.vy,j.vx);
 
     /* ---------- le tir ---------- */
     if(s.rech>0){
@@ -996,14 +1045,14 @@ MOTEUR.hangar={
       if(s.rech<=0){s.chg=A.chg;}
     }else{
       if(s.cad>0)s.cad-=dt;
-      var tire=(MD.n>0.2)||(cible&&Math.hypot(cible.x-j.x,cible.y-j.y)<A.por);
+      var tire=(cible&&Math.hypot(cible.x-j.x,cible.y-j.y)<A.por);
       if(tire&&s.cad<=0&&s.pause<=0){
         if(s.chg<=0){ s.rech=A.rech; }
         else{
           s.chg--;s.cad=A.cad;
           for(var p=0;p<A.plombs;p++){
             var a=j.vise+(Math.random()-0.5)*A.ecart*(A.plombs>1?2:1);
-            s.b.push({x:j.x+Math.cos(j.vise)*7, y:j.y+Math.sin(j.vise)*7-2,
+            s.b.push({x:j.x+Math.cos(j.vise)*11, y:j.y+Math.sin(j.vise)*6-4,
                       vx:Math.cos(a)*A.vit, vy:Math.sin(a)*A.vit,
                       vie:A.por/A.vit, deg:A.deg,
                       perce:A.perce||0, dejaTouche:null,
@@ -1013,7 +1062,7 @@ MOTEUR.hangar={
              pese rien dans la main ; celle-ci le repousse, et ce recul
              devient une facon de se degager quand on est cerne. */
           if(A.rec){j.vx-=Math.cos(j.vise)*A.rec*0.012;j.vy-=Math.sin(j.vise)*A.rec*0.012;}
-          s.part.push({x:j.x+Math.cos(j.vise)*9,y:j.y+Math.sin(j.vise)*9-2,
+          s.part.push({x:j.x+Math.cos(j.vise)*12,y:j.y+Math.sin(j.vise)*6-4,
                        vie:A.feu?40:70,t:'feu'});
         }
       }
@@ -1088,6 +1137,7 @@ MOTEUR.hangar={
       if(z2.pouss>0){vx+=Math.cos(z2.pa)*z2.pouss*0.01;vy+=Math.sin(z2.pa)*z2.pouss*0.01;
                      z2.pouss=Math.max(0,z2.pouss-dt/26);}
       this.bouger(s,z2,vx*dt,vy*dt,z2.r);
+      z2.mir=(dx<0);           /* ils avancent toujours face a leur proie */
       z2.pas=(z2.pas||0)+dt*z2.v;
       /* la morsure */
       if(d<z2.r+j.r+1&&s.inv<=0){
@@ -1200,7 +1250,7 @@ MOTEUR.hangar={
     }while(essais<30&&(Math.hypot(x-s.j.x,y-s.j.y)<70||this.heurte(s,x,y,e.r)));
     s.z.push({x:x,y:y,v:e.v*(1+s.salle*0.018),pv:e.pv+Math.floor(s.salle/3),
               pvm:e.pv+Math.floor(s.salle/3),pts:e.pts,r:e.r,
-              art:gros?-1:e.art,mir:Math.random()<0.5,pouss:0,pa:0,clign:0,pas:0,
+              art:gros?-1:e.art,mir:false,pouss:0,pa:0,clign:0,pas:0,
               gros:gros});
   },
   /* LE BIDON QUI SAUTE emporte ce qui est autour, zombies compris. Une
@@ -1460,22 +1510,32 @@ MOTEUR.hangar={
       var e2=ordre[iz];
       if(e2.joueur){
         var j=s.j;
+        hgOmbre(j.x,j.y+10,13);
         if(j.clign>0&&(Math.floor(s.t/70)%2)===0){}
         else{
-          hgOmbre(j.x,j.y+10,13);
-          hgArt(Math.round(j.x-8),Math.round(j.y-13),HGA_J,HGP_J,false);
-          /* le fusil tourne autour du joueur */
+          /* IL REGARDE OU IL TIRE : le sprite se retourne selon le canon,
+             pas selon la marche. On recule en continuant de viser, et
+             c'est ce decalage qui donne l'air de se battre. */
           var ax=Math.cos(j.vise), ay=Math.sin(j.vise);
-          var gx=Math.round(j.x+ax*7), gy=Math.round(j.y+ay*7-1);
-          R(gx-1,gy-1,8,3,'#4e545d');R(gx-1,gy-1,8,1,'#767e89');
-          R(gx+6,gy,3,1,'#767e89');
+          hgPasJoueur(Math.round(j.x-8),Math.round(j.y-13),
+                      Math.floor(j.pas||0), ax<0);
+          var gx=Math.round(j.x+ax*7), gy=Math.round(j.y+ay*6-5);
+          if(ax<0){R(gx-7,gy,8,3,'#4e545d');R(gx-7,gy,8,1,'#767e89');
+                   R(gx-9,gy+1,3,1,'#767e89');R(gx+1,gy+2,3,2,'#7d5631');}
+          else{R(gx-1,gy,8,3,'#4e545d');R(gx-1,gy,8,1,'#767e89');
+               R(gx+7,gy+1,3,1,'#767e89');R(gx-3,gy+2,3,2,'#7d5631');}
         }
       }else{
         var vif=(e2.clign>0&&(Math.floor(s.t/50)%2)===0);
+        /* ILS BOITENT. Un simple rebond vertical fait sautiller ; un
+           balancement lateral dephase d'un quart de periode fait
+           tanguer, et c'est ce tangage qui se lit comme une demarche
+           de mort-vivant. */
         var bal=Math.round(Math.sin(e2.pas*0.9)*1);
+        var tang=Math.round(Math.sin(e2.pas*0.45+1.6)*1);
         hgOmbre(e2.x,e2.y+(e2.gros?13:10),e2.gros?19:13);
-        if(e2.gros)hgArt(Math.round(e2.x-10),Math.round(e2.y-14)+bal,HGA_G,HGP_G,e2.mir);
-        else hgArt(Math.round(e2.x-8),Math.round(e2.y-13)+bal,HGA_Z[e2.art],HGP_Z,e2.mir);
+        if(e2.gros)hgArt(Math.round(e2.x-10)+tang,Math.round(e2.y-14)+bal,HGA_G,HGP_G,e2.mir);
+        else hgArt(Math.round(e2.x-8)+tang,Math.round(e2.y-13)+bal,HGA_Z[e2.art],HGP_Z,e2.mir);
         if(e2.brule>0&&(Math.floor(s.t/80)%2)===0){
           G.save();G.globalCompositeOperation='lighter';
           G.fillStyle='rgba(255,150,40,.42)';
@@ -1516,6 +1576,8 @@ MOTEUR.hangar={
         R(pa.x,pa.y-1,4,3,'rgba(255,200,90,.85)');
       }else if(pa.t==='sang'){
         R(pa.x,pa.y,1,1,pa.vie>160?'#c03024':'#8a2018');
+      }else if(pa.t==='pous'){
+        R(pa.x,pa.y,1,1,pa.vie>120?'rgba(240,236,220,.5)':'rgba(200,194,176,.3)');
       }else if(pa.t==='flam'){
         R(pa.x,pa.y,2,2,pa.vie>400?'#fff0a0':(pa.vie>200?'#ff9a2a':'#8a3a10'));
       }else{
@@ -1683,9 +1745,17 @@ function ouvrirBorne(B){
   dire('Un jeton, et c’est parti.');
   monterActions();
   JEU.classList.remove('fige');boucle.fige=false;
-  ['mg','md','zg','zd','sg','sd'].forEach(function(k){
+  /* UNE BORNE PEUT N'EN VOULOIR QU'UNE. Le Hangar tire tout seul : une
+     manche droite qui ne sert a rien occupe un pouce et la moitie de
+     l'ecran pour rien. */
+  var deux=(BORNE.manches&&BORNE.manches!=='une');
+  ['mg','zg','sg'].forEach(function(k){
     document.getElementById(k).classList.toggle('on',!!BORNE.manches);
   });
+  ['md','zd','sd'].forEach(function(k){
+    document.getElementById(k).classList.toggle('on',deux);
+  });
+  document.getElementById('zg').style.width=deux?'50%':'100%';
   document.getElementById('sg').classList.remove('parti');
   document.getElementById('sd').classList.remove('parti');
   MG.lache();MD.lache();
