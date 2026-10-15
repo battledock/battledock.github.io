@@ -53,6 +53,7 @@
     [null,'Les records, pendant la partie','Le meilleur score de la borne reste affiché pendant que tu joues. À la seconde où tu le dépasses, l’écran te donne le nom de celui que tu viens de doubler.','🏆'],
     [null,'Les bornes en plein écran','Pendant une partie, la borne prend tout l’écran du téléphone, quelle qu’en soit la taille, et les manches se posent sous les pouces.','📱'],
     [null,'La maison ne triche pas','Chaque tirage sort du comptoir, jamais de ton écran. Les retours ont été mesurés table par table : de 87 % à la criée jusqu’à 99 % au vingt-et-un.','⚖️'],
+    [null,'La reprise des doubles','Au marché aux cartes, le marchand rachète tes doubles tout de suite. Les communes et les rares se soldent d’un bouton ; le reste se vend carte par carte, avec la cote sous les yeux. Il en reste toujours une au classeur.','🃏'],
     [null,'Des surprises…','On ne dit rien. Ouvre l’œil en te promenant.','🎁']];
   var CSS='#bd3{position:fixed;inset:0;z-index:2147483000;overflow-y:auto;background:radial-gradient(ellipse at 50% 0,#2a3e58,#0e1622 70%);color:#f4ecd8;font-family:Georgia,serif;-webkit-overflow-scrolling:touch}'+
     '#bd3 .in{max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 28px) 18px calc(env(safe-area-inset-bottom,0px) + 40px)}'+

@@ -2246,6 +2246,36 @@ const CSS_MAR=`
   background:rgba(0,0,0,.65);color:#e8c877;border-radius:999px;padding:2px 5px;
   text-decoration:none}
 
+/* ---- LA REPRISE ---- */
+#pkdm .rp{background:#0f2742;border:1px solid rgba(201,162,74,.3);border-radius:10px;
+  padding:11px 12px;margin-bottom:11px}
+#pkdm .rp p{margin:0;font-size:11.5px;line-height:1.6;color:#a8c4d8}
+#pkdm .rp p b{color:#f4ead2}
+#pkdm .rp .ja{display:flex;justify-content:space-between;align-items:baseline;
+  margin-top:9px;font:700 9px Arial,sans-serif;letter-spacing:1.4px;color:#c9a24a}
+#pkdm .rp .ja s{text-decoration:none;color:rgba(242,236,224,.45)}
+#pkdm .rp .bar{height:4px;border-radius:3px;background:rgba(255,255,255,.1);
+  margin-top:5px;overflow:hidden}
+#pkdm .rp .bar u{display:block;height:100%;background:#c9a24a}
+#pkdm .tv{width:100%;margin-top:10px;border:0;border-radius:9px;padding:13px;
+  background:#c9a24a;color:#1a1208;font:900 10.5px Arial,sans-serif;letter-spacing:1.4px}
+#pkdm .tv[disabled]{opacity:.4}
+#pkdm .rl{display:flex;gap:9px;align-items:center;padding:9px 0;
+  border-top:1px solid rgba(255,255,255,.055)}
+#pkdm .rl img{width:40px;border-radius:4px;flex:none;box-shadow:0 3px 9px rgba(0,0,0,.5)}
+#pkdm .rl .nf{flex:1;min-width:0}
+#pkdm .rl .nf b{display:block;font:400 12px Georgia,serif;color:#f4ead2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pkdm .rl .nf small{display:block;font-size:9.5px;color:rgba(242,236,224,.5);margin-top:2px}
+#pkdm .rl .nf u{font:900 7px Arial,sans-serif;letter-spacing:1px;text-decoration:none;
+  border-radius:999px;padding:2px 5px;margin-right:4px;color:#1a1208}
+#pkdm .rl .nf .av{display:block;font-size:9.5px;color:#e08a7a;margin-top:2px}
+#pkdm .rl .bt{flex:none;display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+#pkdm .rl .bt b{font:900 12.5px Georgia,serif;color:#e8c877}
+#pkdm .rl .bt span{display:flex;gap:4px}
+#pkdm .rl .bt button{border:0;border-radius:7px;padding:7px 9px;min-height:32px;
+  background:#c9a24a;color:#1a1208;font:900 8px Arial,sans-serif;letter-spacing:.8px}
+#pkdm .rl .bt button.s{background:rgba(255,255,255,.08);color:rgba(242,236,224,.7)}
 #pkdm .msg{text-align:center;font-size:11.5px;color:#e8a44a;min-height:16px;margin-top:9px}
 #pkdm .msg.ok{color:#7ad6a0}
 #pkdm .act{display:flex;gap:9px;justify-content:center;margin-top:16px}
@@ -2266,7 +2296,8 @@ const eur=(c)=>((c||0)/100).toLocaleString('fr-FR',
   {minimumFractionDigits:2,maximumFractionDigits:2})+' €';
 const eurCourt=(c)=>Math.round((c||0)/100).toLocaleString('fr-FR')+' €';
 
-/* ctx : { marche(), vendre(n,prix), retirer(id), acheterAnnonce(id), majEuros(c) }
+/* ctx : { marche(), vendre(n,prix), retirer(id), acheterAnnonce(id),
+           reprendre(n,k), reprendreTout(), majEuros(c) }
    ACHETER UNE ANNONCE N'EST PAS ACHETER UN PAQUET : le rayon et le
    marche partagent le meme ctx, et deux « acheter » dans le meme objet
    auraient fait ouvrir un paquet a chaque clic sur une carte. */
@@ -2284,7 +2315,8 @@ function marche(ctx,fermer){
     '<div class="co">'+
       '<div class="bo"><small>TA BOURSE</small><b id="mBo">—</b></div>'+
       '<div class="mOng"><button data-g="achat" class="on">ACHETER</button>'+
-        '<button data-g="vente">VENDRE</button></div>'+
+        '<button data-g="vente">VENDRE</button>'+
+        '<button data-g="reprise">LA REPRISE</button></div>'+
       '<div id="mVue"><div class="vide">On ouvre les vitrines…</div></div>'+
       '<div class="msg" id="mMsg"></div>'+
       '<div class="act"><button data-x="1">REFERMER</button></div>'+
@@ -2332,6 +2364,81 @@ function marche(ctx,fermer){
     const V=q('#mVue');
     q('#mBo').textContent=D?eur(D.euros):'—';
     if(!D){V.innerHTML='<div class="vide">On ouvre les vitrines…</div>';return;}
+
+    /* =================================================================
+       LA REPRISE
+       Le marche aux cartes ne marche que si quelqu'un veut CE double-la.
+       Les communes, personne n'en veut : chaque joueur en a douze. Elles
+       restaient donc au classeur pour toujours, et ouvrir un paquet
+       finissait par ne plus produire que des cartes mortes.
+       Le marchand, lui, reprend tout, tout de suite, au tarif de la
+       maison. Il paie BEAUCOUP moins que les joueurs — c'est le prix de
+       ne pas attendre, et c'est ce qui fait que le marche entre joueurs
+       reste le bon endroit pour une belle carte.
+       ================================================================= */
+    if(ONG==='reprise'){
+      const dbl=(D.doubles||[]);
+      const pla=D.reprise_plafond||5000, jou=D.reprise_jour||0;
+      const resteJour=Math.max(0,pla-jou);
+      /* ce que « tout vendre » rapporterait : communes et rares seulement */
+      let totTout=0, nbTout=0;
+      dbl.forEach(d=>{ if(d.n<=62){ totTout+=(d.reprise||0)*(d.q-1); nbTout+=d.q-1; } });
+      const totBorne=Math.min(totTout,resteJour);
+      let h='<div class="rp"><p><b>Les communes et les rares ne trouvent jamais '+
+        'preneur au march\u00e9 : tout le monde en a.</b> Le marchand, lui, les '+
+        'reprend quand m\u00eame \u2014 quelques centimes la carte. C\u2019est peu, '+
+        'et c\u2019est normal : un paquet co\u00fbte six euros, et le marchand ne '+
+        'peut pas rendre plus qu\u2019il n\u2019a \u00e9t\u00e9 mis. Pour une belle '+
+        'carte, passe par <b>VENDRE</b> : l\u00e0 c\u2019est un joueur qui paie, '+
+        'et il paie la cote.</p>'+
+        '<div class="ja"><span>SA CAISSE DU JOUR</span>'+
+          '<s>'+eur(jou)+' / '+eurCourt(pla)+'</s></div>'+
+        '<div class="bar"><u style="width:'+Math.round(jou/pla*100)+'%"></u></div>'+
+        '<button class="tv" id="rTout"'+((nbTout&&totBorne)?'':' disabled')+'>'+
+          (nbTout?('TOUT VENDRE \u00b7 '+nbTout+' CARTE'+(nbTout>1?'S':'')+' \u00b7 '+eur(totBorne))
+                 :'AUCUN DOUBLE COMMUN NI RARE')+
+        '</button>'+
+        '<p style="margin-top:7px;font-size:10.5px;color:rgba(242,236,224,.45)">'+
+        'Ce bouton ne touche QUE les communes et les rares. Le reste se vend '+
+        'carte par carte, en regardant la cote.</p></div>';
+      if(!dbl.length){
+        h+='<div class="vide">Tu n\u2019as aucun double.<br>'+
+           'Ouvre des paquets : les cartes en trop finissent ici.</div>';
+      }else{
+        h+='<h4>TES DOUBLES \u2014 '+dbl.length+' CARTE'+(dbl.length>1?'S':'')+'</h4>'+
+          dbl.map(d=>{
+            const r=RARETE(d.n), pe=d.reprise||0, tous=d.q-1;
+            /* L'AVERTISSEMENT NE SERT QU'EN HAUT DU CLASSEUR. Le tarif
+               est adosse au prix du paquet, la cote a ce qu'un
+               collectionneur accepte de payer : l'ecart est donc
+               enorme PARTOUT, y compris sur une commune. Affiche a
+               chaque ligne, le message devenait du bruit et donnait
+               l'impression qu'on se faisait avoir a tous les coups.
+               Or une commune ne se vendra jamais au marche : personne
+               n'en veut. On ne previent donc que la ou une vente
+               entre joueurs est vraiment possible — a partir de
+               l'ultra. */
+            const fois=(d.n>=63&&pe>0&&d.cote)?Math.round(d.cote/pe):0;
+            return '<div class="rl"><img alt="" src="'+faceURL(d.n)+'" data-z="'+d.n+'">'+
+              '<div class="nf"><b>'+NOM_CARTE(d.n)+'</b>'+
+              '<small><u style="background:'+TON_M[r]+'">'+NOM_M[r]+'</u>'+
+                '\u00d7'+d.q+' \u00b7 cote '+eurCourt(d.cote||0)+'</small>'+
+              (fois>=8?'<span class="av">un joueur t\u2019en donnerait '+fois+' fois '+
+                 'plus \u2014 mets-la plut\u00f4t en vitrine</span>':'')+
+              '</div>'+
+              '<div class="bt"><b>'+eur(pe)+'</b><span>'+
+                '<button class="s" data-r1="'+d.n+'">\u00d71</button>'+
+                (tous>1?'<button data-rt="'+d.n+'" data-k="'+tous+'">\u00d7'+tous+'</button>':'')+
+              '</span></div></div>';
+          }).join('');
+      }
+      V.innerHTML=h;
+      V.querySelectorAll('[data-z]').forEach(i=>i.onclick=()=>loupe(+i.dataset.z));
+      V.querySelectorAll('[data-r1]').forEach(b=>b.onclick=()=>reprendre(+b.dataset.r1,1));
+      V.querySelectorAll('[data-rt]').forEach(b=>b.onclick=()=>reprendre(+b.dataset.rt,+b.dataset.k));
+      const bt=q('#rTout');if(bt&&!bt.disabled)bt.onclick=()=>reprendreTout();
+      return;
+    }
 
     if(ONG==='achat'){
       const autres=(D.annonces||[]).filter(a=>!a.mien);
@@ -2412,6 +2519,11 @@ function marche(ctx,fermer){
     r=>NOM_CARTE(r.numero)+' est revenue dans ton classeur.');
   const vendre=(n,p)=>agir(ctx.vendre(n,p),
     r=>NOM_CARTE(r.numero)+' est en vitrine pour '+eur(r.prix)+'.');
+  const reprendre=(n,k)=>agir(ctx.reprendre(n,k),
+    r=>r.combien+' \u00d7 '+NOM_CARTE(r.numero)+' \u2014 le marchand te donne '+eur(r.gagne)+'.');
+  const reprendreTout=()=>agir(ctx.reprendreTout(),
+    r=>r.cartes+' carte'+(r.cartes>1?'s':'')+' reprise'+(r.cartes>1?'s':'')+
+       ' \u2014 '+eur(r.gagne)+' dans ta bourse.');
 
   recharger();
   return cal;
