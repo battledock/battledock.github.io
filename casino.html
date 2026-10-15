@@ -17,14 +17,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Cormorant+Garamond:ital,wght@0,600;1,500&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-16-0600"></script>
+<script src="maintenance.js?v=2026-10-16-0700"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-16-0600';
+  var MA_VERSION='2026-10-16-0700';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -221,6 +221,178 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
 #gra button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 #gra #paie{display:none}
 
+/* =====================================================================
+   LA CRIEE — LE NEON DU PORT
+   Une vraie machine a sous : un fronton a ampoules qui annonce le gros
+   lot, trois rouleaux qui defilent pour de bon et s'arretent un par un,
+   une ligne de paie qui s'allume, des rayons et des pieces quand ca
+   tombe. Tout est en DOM et en unites relatives : aucun pixel dur.
+
+   LE ROULEAU EST UNE BANDE, PAS UN DESSIN. Les cinq symboles sont
+   empiles dans une bande qu'on fait glisser en translateY, et la bande
+   porte deux exemplaires de la serie : quand le defilement depasse la
+   premiere, on retranche une serie entiere et l'oeil ne voit pas la
+   couture. Une seule image par symbole sert pour les deux.
+   ===================================================================== */
+#cri{position:fixed;inset:0;z-index:12;display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
+  background:radial-gradient(ellipse 110% 60% at 50% 22%,#2b1250,#160a2c 58%,#0a0518);
+  font-family:'Cormorant Garamond',Georgia,serif;overflow:hidden}
+#cri[hidden]{display:none}
+#cri .bar{flex:none;display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.08);
+  position:relative;z-index:3}
+#cri .bar button#crisortie{-webkit-appearance:none;appearance:none;flex:none;
+  width:34px;height:34px;border:0;border-radius:50%;background:#ff2e88;color:#fff;
+  font:700 16px 'Oswald',monospace}
+#cri .bar .ti{flex:1;min-width:0}
+#cri .bar .ti b{display:block;font:700 15px/1 'Playfair Display',Georgia,serif;color:#f2e8ff}
+#cri .bar .ti b,#cri .bar .ti i{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#cri .bar .ti i{display:block;margin-top:3px;font:700 7px 'Oswald',monospace;
+  letter-spacing:2.2px;font-style:normal;color:#9a7cc8}
+#cri .bar .inf,#cri .bar .ht{flex:none;width:30px;height:30px;border-radius:50%;border:0;
+  background:rgba(255,255,255,.12);color:#e0d0ff;font:700 14px Georgia}
+#cri .bar .ht{font:700 13px 'Oswald',monospace}
+#cri .bar .ht.mu{background:rgba(255,255,255,.06);color:#6a5a88}
+#cri .bar .so{flex:none;display:flex;align-items:center;gap:6px;border-radius:999px;
+  padding:7px 11px;background:rgba(0,0,0,.4);color:#3ef0d8;font:700 12px 'Oswald',monospace}
+#cri .bar .so u{width:10px;height:10px;border-radius:50%;text-decoration:none;
+  background:radial-gradient(#f5d98a,#c08f2a)}
+@media (max-width:372px){
+  #cri .bar{gap:7px;padding:9px 10px}
+  #cri .bar .ti i{display:none}
+  #cri .bar .so{padding:7px 9px;font-size:11px}
+  #cri .bar .inf,#cri .bar .ht{width:27px;height:27px}
+}
+#cri .sc{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
+  padding:clamp(8px,1.8dvh,16px) 14px;position:relative;overflow:hidden}
+/* les rayons, derriere la machine, allumes au gain */
+#cri .ray{position:absolute;left:50%;top:46%;width:190vmax;aspect-ratio:1/1;
+  transform:translate(-50%,-50%) rotate(0deg);z-index:0;border-radius:50%;
+  opacity:0;pointer-events:none;transition:opacity .45s ease;
+  background:conic-gradient(from 0deg,rgba(255,46,136,.5) 0 8deg,transparent 8deg 30deg,
+    rgba(62,240,216,.5) 30deg 38deg,transparent 38deg 60deg,
+    rgba(255,46,136,.5) 60deg 68deg,transparent 68deg 90deg,
+    rgba(62,240,216,.5) 90deg 98deg,transparent 98deg 120deg,
+    rgba(255,46,136,.5) 120deg 128deg,transparent 128deg 150deg,
+    rgba(62,240,216,.5) 150deg 158deg,transparent 158deg 180deg,
+    rgba(255,46,136,.5) 180deg 188deg,transparent 188deg 210deg,
+    rgba(62,240,216,.5) 210deg 218deg,transparent 218deg 240deg,
+    rgba(255,46,136,.5) 240deg 248deg,transparent 248deg 270deg,
+    rgba(62,240,216,.5) 270deg 278deg,transparent 278deg 300deg,
+    rgba(255,46,136,.5) 300deg 308deg,transparent 308deg 330deg,
+    rgba(62,240,216,.5) 330deg 338deg,transparent 338deg 360deg);
+  -webkit-mask:radial-gradient(circle,#000 16%,rgba(0,0,0,.5) 44%,transparent 70%);
+  mask:radial-gradient(circle,#000 16%,rgba(0,0,0,.5) 44%,transparent 70%)}
+#cri.gain .ray{opacity:1;animation:criTourne 22s linear infinite}
+@keyframes criTourne{to{transform:translate(-50%,-50%) rotate(360deg)}}
+#cri .mach{width:100%;max-width:min(94vw,400px);position:relative;z-index:1;
+  background:linear-gradient(#241046,#14082a);border-radius:20px;
+  padding:clamp(11px,2.8vw,16px);border:1px solid rgba(62,240,216,.35);
+  box-shadow:0 0 30px rgba(62,240,216,.2),0 20px 44px rgba(0,0,0,.6)}
+/* le fronton */
+#cri .jk{position:relative;text-align:center;border-radius:14px 14px 6px 6px;
+  padding:clamp(8px,2vw,12px) 14px clamp(9px,2.2vw,13px);
+  background:#0c0420;border:1px solid rgba(255,46,136,.5);
+  box-shadow:inset 0 0 26px rgba(255,46,136,.22)}
+#cri .jk i{display:block;font:700 clamp(7px,2.2vw,9px) 'Oswald',monospace;letter-spacing:3.4px;
+  font-style:normal;color:#3ef0d8;text-shadow:0 0 10px rgba(62,240,216,.8)}
+#cri .jk b{display:block;margin-top:4px;font:700 clamp(20px,6.6vw,31px)/1 'Oswald',monospace;
+  letter-spacing:2px;font-variant-numeric:tabular-nums;color:#fff;
+  text-shadow:0 0 10px #ff2e88,0 0 26px #ff2e88,0 0 44px rgba(255,46,136,.6)}
+#cri .amp{position:absolute;left:0;right:0;display:flex;justify-content:space-between;
+  padding:0 10px;pointer-events:none}
+#cri .amp.h{top:-5px}#cri .amp.b{bottom:-5px}
+#cri .amp u{width:9px;height:9px;border-radius:50%;text-decoration:none;
+  background:radial-gradient(#fff,#3ef0d8 50%,#0f8a7c);box-shadow:0 0 12px rgba(62,240,216,.95);
+  animation:criAmp 1.1s steps(1,end) infinite}
+#cri .amp u:nth-child(2n){background:radial-gradient(#fff,#ff2e88 50%,#8a0c44);
+  box-shadow:0 0 12px rgba(255,46,136,.95);animation-delay:.55s}
+@keyframes criAmp{0%,49%{opacity:1}50%,100%{opacity:.22}}
+/* le bloc des rouleaux */
+#cri .cx{position:relative;display:flex;gap:clamp(5px,1.6vw,9px);border-radius:12px;
+  padding:clamp(8px,2.4vw,12px);margin-top:clamp(9px,2.2vw,13px);background:#0c0420;
+  border:1px solid rgba(62,240,216,.4);box-shadow:inset 0 0 20px rgba(62,240,216,.15)}
+#cri .rw{flex:1;min-width:0;border-radius:9px;overflow:hidden;position:relative;
+  background:#140830;box-shadow:inset 0 0 0 1px rgba(62,240,216,.3)}
+#cri .fen{width:100%;aspect-ratio:3/4;position:relative;overflow:hidden}
+/* la bande : deux series de cinq symboles, hautes chacune d'une fenetre */
+#cri .bd{position:absolute;left:0;right:0;top:0;will-change:transform}
+#cri .bd .cel{width:100%;aspect-ratio:3/4;display:flex;align-items:center;
+  justify-content:center;background:linear-gradient(#1e0e42,#120626);
+  box-shadow:inset 0 -1px 0 rgba(62,240,216,.12)}
+#cri .bd .cel canvas{width:74%;height:auto;image-rendering:pixelated;display:block;
+  filter:drop-shadow(0 0 7px rgba(62,240,216,.6))}
+#cri .fen .vitre{position:absolute;inset:0;pointer-events:none;z-index:2;
+  background:linear-gradient(rgba(255,255,255,.14),rgba(255,255,255,0) 36%,rgba(0,0,0,.3))}
+/* le flou de vitesse, pose seulement pendant que le rouleau tourne */
+#cri .rw.tourne .bd{filter:blur(1.1px)}
+/* la ligne de paie */
+#cri .pay{position:absolute;left:-6px;right:-6px;top:50%;height:4px;margin-top:-2px;z-index:3;
+  border-radius:3px;pointer-events:none;opacity:.28;
+  background:linear-gradient(90deg,transparent,#3ef0d8,#fff,#3ef0d8,transparent);
+  transition:opacity .3s ease}
+#cri.gain .pay{opacity:1;box-shadow:0 0 16px rgba(62,240,216,.95);
+  animation:criPay .62s ease-in-out infinite}
+@keyframes criPay{0%,100%{opacity:1}50%{opacity:.4}}
+#cri .pay u{position:absolute;top:50%;width:11px;height:11px;margin-top:-5.5px;
+  border-radius:50%;text-decoration:none;background:radial-gradient(#fff,#3ef0d8)}
+#cri.gain .pay u{box-shadow:0 0 12px rgba(62,240,216,1)}
+#cri .pay u.g{left:-5px}#cri .pay u.d{right:-5px}
+/* la banniere du gain */
+#cri .ban{position:absolute;left:50%;top:calc(100% - 4px);z-index:4;padding:8px 16px;border-radius:8px;
+  text-align:center;white-space:nowrap;pointer-events:none;
+  background:linear-gradient(#ff2e88,#b20f5a);color:#fff;
+  box-shadow:0 0 24px rgba(255,46,136,.7),inset 0 1px 0 rgba(255,255,255,.4);
+  transform:translate(-50%,-50%) rotate(-3deg) scale(.6);opacity:0;
+  transition:transform .3s cubic-bezier(.2,1.5,.4,1),opacity .3s ease}
+#cri .ban.vu{transform:translate(-50%,-50%) rotate(-3deg) scale(1);opacity:1}
+#cri .ban i{display:block;font:700 8px 'Oswald',monospace;letter-spacing:3px;
+  font-style:normal;opacity:.78}
+#cri .ban b{display:block;margin-top:2px;font:700 clamp(17px,5.4vw,25px)/1 'Oswald',monospace;
+  letter-spacing:1.6px}
+/* la pluie de pieces */
+#cri .piece{position:absolute;top:0;width:13px;height:13px;border-radius:50%;z-index:2;
+  pointer-events:none;background:radial-gradient(circle at 34% 30%,#fff,#3ef0d8 46%,#0f8a7c);
+  box-shadow:0 0 8px rgba(62,240,216,.8);
+  animation:criTombe linear forwards}
+@keyframes criTombe{
+  0%{transform:translateY(-16vh) scale(var(--s,1)) rotate(0deg);opacity:0}
+  10%{opacity:1}
+  100%{transform:translateY(104vh) scale(var(--s,1)) rotate(300deg);opacity:0}}
+@media (prefers-reduced-motion: reduce){
+  #cri .amp u,#cri.gain .pay,#cri.gain .ray{animation:none}
+  #cri .piece{display:none}}
+#cri .pied{margin-top:clamp(9px,2.2vw,13px);display:flex;gap:5px;flex-wrap:wrap;
+  justify-content:center}
+#cri .pied b{border-radius:999px;padding:5px 9px;
+  font:700 clamp(7px,2.2vw,9px) 'Oswald',monospace;letter-spacing:.8px;
+  background:rgba(255,255,255,.08);color:#b9a4e0}
+#cri .pied b.or{background:#ff2e88;color:#fff}
+#cri .bas{flex:none;position:relative;z-index:3;background:rgba(10,5,24,.86);
+  box-shadow:0 -1px 0 rgba(255,255,255,.08);
+  padding:clamp(12px,2.2dvh,20px) 16px clamp(14px,2.4dvh,22px)}
+#cri #smsg{min-height:19px;margin-bottom:clamp(10px,2dvh,16px);text-align:center;
+  font:700 clamp(11px,3.4vw,15px) 'Oswald',monospace;letter-spacing:1.4px;color:#9a7cc8}
+#cri #smsg.gagne{color:#3ef0d8}
+#cri #smsg.perd{color:#c87aa8}
+#cri #smsg.gros{color:#ff2e88;font-size:clamp(13px,4.1vw,17px)}
+#cri #smise{display:flex;justify-content:center;margin-bottom:clamp(9px,1.8dvh,14px)}
+#cri #smise .fixe{border:1px dashed rgba(255,255,255,.2);border-radius:999px;padding:7px 13px;
+  font:700 9px 'Oswald',monospace;letter-spacing:1.6px;color:#9a7cc8}
+#cri #schoix{display:block}
+#cri #schoix .lgn{display:flex}
+#cri #schoix button{-webkit-appearance:none;appearance:none;width:100%;border:0;
+  border-radius:16px;padding:clamp(15px,2.8dvh,24px) 6px;color:#fff;
+  background:linear-gradient(#ff2e88,#c0105e);
+  font:700 clamp(11px,3.4vw,15px) 'Oswald',monospace;letter-spacing:2px;
+  box-shadow:0 4px 0 #7a0a3c,0 0 26px rgba(255,46,136,.5)}
+#cri #schoix button:active{filter:brightness(.92);transform:translateY(2px);
+  box-shadow:0 2px 0 #7a0a3c,0 0 20px rgba(255,46,136,.45)}
+#cri #schoix button:disabled{opacity:.42;box-shadow:0 4px 0 #7a0a3c}
+#cri button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#cri #paie{display:none}
+
 #rlt{position:fixed;inset:0;z-index:12;display:flex;flex-direction:column;
   padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
   background:radial-gradient(ellipse 120% 62% at 50% 34%,#a6cdaf,#74ab89 56%,#53886a);
@@ -355,9 +527,11 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
    puisque rien d'autre n'est touchable autour. */
 #sortie,#sinfo,#v21sortie,#v21info,#rltsortie,#rlt .bar .inf,
 #grasortie,#gra .bar .inf{position:relative}
+#crisortie,#cri .bar .inf,#cri .bar .ht{position:relative}
 #sortie::after,#sinfo::after,#v21sortie::after,#v21info::after,
 #rltsortie::after,#rlt .bar .inf::after,
-#grasortie::after,#gra .bar .inf::after{
+#grasortie::after,#gra .bar .inf::after,
+#crisortie::after,#cri .bar .inf::after,#cri .bar .ht::after{
   content:'';position:absolute;left:50%;top:50%;width:44px;height:44px;
   transform:translate(-50%,-50%)}
 #sinfo,#v21info{-webkit-appearance:none;appearance:none;flex:none;
@@ -417,6 +591,17 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   #v21 #schoix button{padding:clamp(16px,3vh,24px) 6px}
   #v21 .rang{margin:clamp(12px,2.2vh,18px) 0 8px}
   #v21 #v21pr .jet{margin-bottom:clamp(12px,2.2vh,18px)}
+  #cri .sc{padding:clamp(8px,1.8vh,16px) 14px}
+  #cri .bas{padding:clamp(12px,2.2vh,20px) 16px clamp(14px,2.4vh,22px);max-height:46vh}
+  #cri #smsg{margin-bottom:clamp(10px,2vh,16px)}
+  #cri #smise{margin-bottom:clamp(9px,1.8vh,14px)}
+  #cri #schoix button{padding:clamp(15px,2.8vh,24px) 6px}
+}
+/* LES VIEUX IOS N'ONT PAS aspect-ratio : sans plancher, la fenetre du
+   rouleau se replie a zero et la machine disparait. */
+@supports not (aspect-ratio: 3/4){
+  #cri .fen{min-height:92px}
+  #cri .bd .cel{min-height:92px}
 }
 /* =====================================================================
    LA SALLE DE JEU : l'ecran qui se pose par-dessus le menu quand on
@@ -637,7 +822,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   font:italic 500 12px/1.5 'Cormorant Garamond',Georgia,serif;color:#6a7a70}
 #v21 #paie b{font-style:normal;color:#44565f}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-16-0600">
+<link rel="stylesheet" href="responsive.css?v=2026-10-16-0700">
 </head>
 <body>
 <div id="tapis">
@@ -729,6 +914,35 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   <div class="bas" id="grabas"></div>
 </div>
 
+<div id="cri" hidden>
+  <div class="bar">
+    <button id="crisortie">←</button>
+    <div class="ti"><b>La Criée</b><i>TROIS ROULEAUX · 2 €</i></div>
+    <button class="ht" id="criht" aria-label="le son">♪</button>
+    <button class="inf" id="criinfo">i</button>
+    <div class="so"><u></u><span id="crisou">—</span></div>
+  </div>
+  <div class="sc" id="crisc">
+    <div class="ray"></div>
+    <div class="mach">
+      <div class="jk">
+        <div class="amp h"></div>
+        <i>LE GROS LOT</i><b id="crijk">—</b>
+        <div class="amp b"></div>
+      </div>
+      <div class="cx" id="cricx">
+        <div class="pay"><u class="g"></u><u class="d"></u></div>
+        <div class="ban" id="criban"><i></i><b></b></div>
+      </div>
+      <div class="pied">
+        <b class="or">PERLE ×120</b><b>ANCRE ×40</b><b>GRUE ×22</b>
+        <b>CAGEOT ×14</b><b>SARDINE ×8</b><b>DEUX PERLES ×2</b>
+      </div>
+    </div>
+  </div>
+  <div class="bas" id="cribas"></div>
+</div>
+
 <div id="rlt" hidden>
   <div class="bar">
     <button id="rltsortie">←</button>
@@ -755,7 +969,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-16-0600"></script>
+<script src="retour.js?v=2026-10-16-0700"></script>
 <script>
 /* =====================================================================
    LE CASINO
@@ -817,6 +1031,7 @@ function majSolde(){
   try{if(typeof V21_ON!=='undefined'&&V21_ON)v21Solde();}catch(x){}
   try{if(typeof RLT_ON!=='undefined'&&RLT_ON)rltSolde();}catch(x){}
   try{if(typeof GRA_ON!=='undefined'&&GRA_ON)graSolde();}catch(x){}
+  try{if(typeof CRI_ON!=='undefined'&&CRI_ON)criSolde();}catch(x){}
   var t=(SOLDE===null)?'—':enEuros(SOLDE);
   document.getElementById('sou').textContent=t;
   document.getElementById('ssou').querySelector('span').textContent=t;
@@ -1617,98 +1832,200 @@ var DESSIN_SYM={
     G.restore();
   }
 };
+/* =====================================================================
+   LE SON DU CASINO
+   Tout est synthetise a la volee : aucun fichier a telecharger, rien a
+   attendre, et le son s'adapte (la fanfare monte plus haut quand le lot
+   est gros). Le contexte audio n'est cree qu'au premier geste du joueur
+   — iOS refuse de jouer quoi que ce soit avant, et un contexte ouvert
+   pour rien tient le micro de l'appareil eveille.
+
+   LE JOUEUR DECIDE. Le bouton ♪ du bandeau coupe tout, et le choix est
+   garde d'une visite a l'autre. On part allume, parce qu'une machine a
+   sous muette n'est pas une machine a sous.
+   ===================================================================== */
+var SON={
+  ac:null, bus:null,
+  actif:(function(){try{return localStorage.getItem('bd.casino.son')!=='0';}
+                    catch(e){return true;}})(),
+  dit:function(v){this.actif=v;try{localStorage.setItem('bd.casino.son',v?'1':'0');}catch(e){}},
+  /* le contexte, ouvert au premier geste et pas avant */
+  c:function(){
+    if(!this.actif)return null;
+    if(!this.ac){
+      var A=window.AudioContext||window.webkitAudioContext;
+      if(!A)return null;
+      try{this.ac=new A();}catch(e){return null;}
+      var k=this.ac.createDynamicsCompressor();
+      k.threshold.value=-16;k.ratio.value=3;k.attack.value=.004;k.release.value=.18;
+      this.bus=this.ac.createGain();this.bus.gain.value=.5;
+      this.bus.connect(k);k.connect(this.ac.destination);
+    }
+    if(this.ac.state==='suspended')this.ac.resume();
+    return this.ac;
+  },
+  /* une note : forme, hauteur, duree, volume, et un glissando facultatif */
+  note:function(f,d,forme,vol,f2,t0){
+    var c=this.c();if(!c)return;
+    var t=t0||c.currentTime;
+    var o=c.createOscillator(),g=c.createGain();
+    o.type=forme||'triangle';
+    o.frequency.setValueAtTime(f,t);
+    if(f2)o.frequency.exponentialRampToValueAtTime(Math.max(20,f2),t+d);
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(vol===undefined?.3:vol,t+Math.min(.012,d*.3));
+    g.gain.exponentialRampToValueAtTime(.0008,t+d);
+    o.connect(g);g.connect(this.bus);
+    o.start(t);o.stop(t+d+.03);
+  },
+  /* un bruit filtre : le clic du rouleau, le clac du cran */
+  souffle:function(d,hz,q,vol,t0){
+    var c=this.c();if(!c)return;
+    var t=t0||c.currentTime;
+    var n=Math.max(1,Math.floor(c.sampleRate*d));
+    var b=c.createBuffer(1,n,c.sampleRate), x=b.getChannelData(0);
+    for(var i=0;i<n;i++)x[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.4);
+    var s=c.createBufferSource();s.buffer=b;
+    var f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=hz;f.Q.value=q||6;
+    var g=c.createGain();g.gain.value=vol===undefined?.3:vol;
+    s.connect(f);f.connect(g);g.connect(this.bus);
+    s.start(t);
+  },
+  /* LE LEVIER : un cran mecanique, puis le moteur qui prend sa vitesse */
+  levier:function(){
+    if(!this.c())return;
+    this.souffle(.07,1500,3,.28);
+    this.note(190,.1,'square',.16,90);
+    this.note(70,.22,'sine',.22,46);
+  },
+  /* LE CLIC DU ROULEAU : un par symbole qui passe. Tres court, tres sec,
+     sinon trois rouleaux qui defilent font une bouillie. */
+  tic:function(){ this.souffle(.022,2600,9,.1); },
+  /* LE CRAN D'ARRET : un clac plein, et plus haut a chaque rouleau — on
+     entend que ca se resserre. */
+  arret:function(i){
+    if(!this.c())return;
+    this.souffle(.055,900+i*260,5,.38);
+    this.note(150+i*45,.1,'square',.2,70+i*20);
+  },
+  /* LE GAIN : un arpege qui monte, d'autant plus long que le lot est gros */
+  paye:function(mult){
+    var c=this.c();if(!c)return;
+    var t=c.currentTime;
+    var g=[0,4,7,12,16,19,24,28];
+    var n=mult>=120?8:mult>=40?6:mult>=22?5:4;
+    for(var i=0;i<n;i++)
+      this.note(440*Math.pow(2,g[i]/12),.17,'triangle',.21,null,t+i*.075);
+    /* la basse qui pose le tout */
+    this.note(110,.3,'sine',.22,null,t);
+  },
+  /* LE GROS LOT : la fanfare, puis les pieces qui tombent dans le bac */
+  gros:function(){
+    var c=this.c();if(!c)return;
+    var t=c.currentTime;
+    this.paye(120);
+    var self=this;
+    [0,4,7,12].forEach(function(d,i){
+      self.note(523.25*Math.pow(2,d/12),.5,'sawtooth',.13,null,t+.62+i*.055);
+    });
+    for(var i=0;i<22;i++){
+      var tt=t+.7+Math.random()*1.5;
+      this.note(1600+Math.random()*1400,.07,'triangle',.1,null,tt);
+      this.souffle(.03,3200+Math.random()*1600,10,.07,tt);
+    }
+  },
+  /* LA PERTE : deux notes qui descendent, discretes. On ne se moque pas. */
+  perd:function(){
+    var c=this.c();if(!c)return;
+    var t=c.currentTime;
+    this.note(330,.12,'triangle',.13,null,t);
+    this.note(247,.2,'triangle',.13,null,t+.1);
+  }
+};
+
+/* =====================================================================
+   LA CRIEE — TROIS ROULEAUX EN DOM
+   Le rouleau est une bande de dix cases (les cinq symboles, deux fois)
+   qu'on fait glisser. Sa position est un nombre de cases, eventuellement
+   fractionnaire : zero montre la sardine, 2,5 montre la moitie de la
+   grue et la moitie de l'ancre. Au-dela de cinq on retranche cinq et
+   personne ne voit la couture, puisque la deuxieme serie est identique.
+
+   L'ARRIVEE EST CALCULEE, PAS RATTRAPEE. On sait des le depart sur quel
+   symbole le serveur a fait tomber le rouleau : on vise donc une
+   position exacte, atteinte par un amorti en fin de course. Rien n'est
+   recale a la derniere image, donc rien ne saute.
+   ===================================================================== */
 MOTEUR.sous={
   nom:'La Criée', sous:'TROIS ROULEAUX · 2 € LE TOUR',
+  dom:'cri',
   L:112, H:80,
   mises:null, fixe:200, fixeDit:'2 € LE TOUR · MISE FIXE',
   paie:'<b>Trois pareils</b> : sardine ×8, cageot ×14, grue ×22, ancre ×40, '+
        '<b>perle ×120</b>. <b>Deux perles</b> ×2. Le reste part dans la caisse de la criée.',
   init:function(){
-    var s={rl:[{},{},{}],phase:'pose',res:null,clign:0};
-    for(var i=0;i<3;i++){s.rl[i]={y:Math.random()*120,v:0,arret:0,fini:true,cible:null};}
+    var s={rl:[],phase:'pose',res:null};
+    for(var i=0;i<3;i++)
+      s.rl.push({p:Math.floor(Math.random()*5), v:0, lance:false, fini:true,
+                 p0:0, pt:0, t:0, T:1, reb:0, vu:-1});
     return s;
   },
   pas:function(s,dt){
     for(var i=0;i<3;i++){
       var r=s.rl[i];
+      if(r.reb>0)r.reb=Math.max(0,r.reb-dt/190);
       if(r.fini)continue;
-      if(r.arret>0){
-        r.arret-=dt;
-        if(r.arret<=0){
-          /* on se cale pile sur la case voulue, avec un petit depassement */
-          r.fini=true;r.y=r.cibleY;r.rebond=1;
-        }else{
-          r.y+=r.v*dt;
-        }
-      }else{r.y+=r.v*dt;}
-      if(r.y>24*5)r.y-=24*5;
-    }
-    if(s.phase==='fini')s.clign+=dt;
-    for(i=0;i<3;i++){var q=s.rl[i];if(q.rebond)q.rebond=Math.max(0,q.rebond-dt/160);}
-  },
-  dessine:function(s,L,H){
-    feutre(L,H);
-    var bl=28, bh=52, y0=(H-bh)/2+1, x0=(L-bl*3-8)/2;
-    /* la caisse de bois */
-    R(x0-6,y0-8,bl*3+20,bh+18,'#5a3c24');
-    R(x0-6,y0-8,bl*3+20,2,'#8a5f30');
-    R(x0-6,y0+bh+8,bl*3+20,2,'#3a2614');
-    R(x0-4,y0-5,bl*3+16,bh+12,'#1a1014');
-    for(var i=0;i<3;i++){
-      var x=x0+i*(bl+4);
-      R(x,y0,bl,bh,'#efe7d6');
-      /* les trois symboles visibles du rouleau, qui defilent */
-      var r=s.rl[i];
-      var off=((r.y%(24*5))+24*5)%(24*5);
-      var reb=r.rebond?Math.sin(r.rebond*Math.PI)*2.4:0;
-      G.save();
-      G.beginPath();G.rect(x,y0,bl,bh);G.clip();
-      for(var k=-1;k<=3;k++){
-        var idx=((Math.floor(off/24)+k)%5+5)%5;
-        var yy=y0+bh/2-12+((off%24)-24*k)*-1+reb;
-        /* la case et son symbole */
-        R(x,yy-1,bl,1,'rgba(0,0,0,.08)');
-        DESSIN_SYM[SYM[idx]](x+(bl-22)/2,yy);
+      if(!r.lance){
+        /* le serveur n'a pas encore repondu : on tourne a vitesse pleine */
+        r.p+=0.0062*dt*(1+i*0.07);
+      }else{
+        r.t+=dt;
+        var k=Math.min(1,r.t/r.T);
+        /* amorti en fin de course : vite d'abord, posé ensuite */
+        var e=1-Math.pow(1-k,3);
+        r.p=r.p0+(r.pt-r.p0)*e;
+        if(k>=1){r.fini=true;r.p=r.pt;r.reb=1;SON.arret(i);}
       }
-      G.restore();
-      /* la vitre : un reflet en haut, de l'ombre aux bords */
-      R(x,y0,bl,8,'rgba(255,255,255,.14)');
-      R(x,y0+bh-10,bl,10,'rgba(0,0,0,.14)');
-      R(x,y0,1,bh,'rgba(0,0,0,.18)');R(x+bl-1,y0,1,bh,'rgba(0,0,0,.18)');
-    }
-    /* la ligne de paie */
-    R(x0-4,y0+bh/2-0.5,bl*3+16,1,'rgba(201,162,74,.5)');
-    R(x0-8,y0+bh/2-2,3,4,'#c9a24a');R(x0+bl*3+13,y0+bh/2-2,3,4,'#c9a24a');
-    /* LE VERDICT EST SOUS LA SCENE : ecrit ici, en pixels de scene, il
-       debordait de la caisse des que le canvas etait agrandi. On se
-       contente d'allumer la ligne de paie. */
-    if(s.phase==='fini'&&s.res&&s.res.gain>0&&(Math.floor(s.clign/300)%2)===0){
-      R(x0-4,y0+bh/2-1.5,bl*3+16,3,'rgba(138,208,122,.6)');
-      R(x0-8,y0+bh/2-3,3,6,'#8ad07a');R(x0+bl*3+13,y0+bh/2-3,3,6,'#8ad07a');
+      /* un clic par symbole qui passe sous la vitre */
+      var c=Math.floor(r.p);
+      if(c!==r.vu){ if(r.vu>=0&&!r.fini&&i===0)SON.tic(); r.vu=c; }
     }
   },
   choix:function(){
-    return '<div class="lgn"><button class="pr" data-p="tour" style="padding:14px 6px;font-size:12px">LANCER LA CRIÉE · 2 €</button></div>';
+    return '<div class="lgn"><button class="pr" data-p="tour">LANCER LA CRIÉE · 2 €</button></div>';
   },
   avant:function(s){
     s.phase='attend';s.res=null;
-    for(var i=0;i<3;i++){var r=s.rl[i];r.fini=false;r.v=0.14+i*0.012;r.arret=0;r.rebond=0;}
+    criEffets(false);
+    SON.levier();
+    for(var i=0;i<3;i++){
+      var r=s.rl[i];
+      r.fini=false;r.lance=false;r.reb=0;r.t=0;
+    }
   },
   apres:function(s,res){
     s.res=res;
     var t=res.tirage||[];
-    /* chaque rouleau s'arrete 420 ms apres le precedent */
     for(var i=0;i<3;i++){
       var idx=SYM.indexOf(t[i]);if(idx<0)idx=0;
       var r=s.rl[i];
-      r.cible=idx;
-      /* la case voulue doit tomber au milieu : l'offset du rouleau est
-         directement l'indice fois 24 */
-      r.cibleY=idx*24;
-      r.arret=700+i*420;
+      /* on vise six tours pleins, puis la case exacte : la distance est
+         donc toujours la meme a un cinquieme de tour pres, et l'amorti
+         tombe pile sur le symbole annonce. */
+      var base=r.p+30;
+      r.p0=r.p;
+      r.pt=base+(((idx-base)%5)+5)%5;
+      r.t=0;r.T=900+i*460;
+      r.lance=true;
     }
-    setTimeout(function(){if(S===s){s.phase='fini';s.clign=0;}},700+2*420+30);
-    return 700+2*420+260;
+    var fin=900+2*460+40;
+    setTimeout(function(){
+      if(S!==s)return;
+      s.phase='fini';
+      var m=res.mise?res.gain/res.mise:0;
+      if(res.gain>0){criGagne(res,m);}else{SON.perd();}
+    },fin);
+    return fin+300;
   }
 };
 
@@ -2117,7 +2434,8 @@ function boucle(ts){
   var dt=Math.min(60,ts-(boucle.vu||ts));boucle.vu=ts;
   JEU.pas(S,dt);
   if(JEU.dom==='rlt'){JEU.cuve(S);rltRendu(S);}
-  else JEU.dessine(S,SL,SH);
+  else if(JEU.dom==='cri'){criRendu(S);}
+  else if(JEU.dessine)JEU.dessine(S,SL,SH);
   RAF=requestAnimationFrame(boucle);
 }
 
@@ -2266,6 +2584,7 @@ REGLE.querySelector('.voile').onclick=fermerRegle;
 document.getElementById('sinfo').onclick=ouvrirRegle;
 document.getElementById('v21info').onclick=ouvrirRegle;
 document.getElementById('rltinfo').onclick=ouvrirRegle;
+document.getElementById('criinfo').onclick=ouvrirRegle;
 
 /* ================= LE GRATTAGE EN DOM =================
    Neuf cases, et sous chacune deux toiles superposees : le symbole,
@@ -2278,6 +2597,146 @@ document.getElementById('rltinfo').onclick=ouvrirRegle;
    la toile et on compte les pixels devenus transparents. Au-dela de
    soixante pour cent la case s'ouvre d'un coup — c'est ce que fait un
    vrai ticket quand on a decolle l'essentiel. */
+/* ================= LA CRIEE EN DOM =================
+   Trois bandes qu'on fait glisser, et rien de mesure : la position du
+   rouleau se traduit en pourcentage de la bande, donc la machine tombe
+   juste sur n'importe quelle largeur d'ecran sans qu'on relise jamais
+   une taille en pixels. Le symbole, lui, est dessine par la fonction du
+   jeu — on detourne la toile globale le temps du trace, comme ailleurs. */
+var CRI=document.getElementById('cri');
+var CRI_ON=false;
+function criSolde(){var e=document.getElementById('crisou');
+  if(e)e.textContent=(typeof SOLDE==='number')?enEuros(SOLDE):'—';}
+function criPrendre(){var b=document.getElementById('cribas');
+  b.appendChild(SMSG);b.appendChild(SMISE);b.appendChild(SCHOIX);
+  b.appendChild(document.getElementById('paie'));}
+function criRendre(){var b=document.getElementById('sbas');
+  b.appendChild(SMSG);b.appendChild(SMISE);b.appendChild(SCHOIX);
+  b.appendChild(document.getElementById('paie'));}
+
+function criDessiner(cv,nom){
+  var g=cv.getContext('2d'), e=cv.width/22;
+  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,cv.width,cv.height);
+  g.setTransform(e,0,0,e,0,0);g.imageSmoothingEnabled=false;
+  var vieux=G;
+  try{ G=g; var d=DESSIN_SYM[nom]; if(d)d(0,1); }
+  catch(err){} finally{ G=vieux; }
+}
+/* LA BANDE PORTE DEUX SERIES. Une seule ne suffit pas : des que le
+   defilement entame la cinquieme case, la suivante doit deja etre la,
+   sinon on voit le vide au bas de la fenetre. */
+function criBandes(){
+  /* LES AMPOULES SONT POSEES ICI, PAS DANS LE HTML : leur nombre suit la
+     largeur du fronton, pour qu'elles restent regulierement espacees
+     d'un telephone a l'autre. */
+  var jk=document.querySelector('#cri .jk');
+  var n=Math.max(7,Math.min(15,Math.round(jk.getBoundingClientRect().width/26)));
+  [].forEach.call(jk.querySelectorAll('.amp'),function(a){
+    var h='';for(var k=0;k<n;k++)h+='<u></u>';a.innerHTML=h;});
+  var cx=document.getElementById('cricx');
+  [].forEach.call(cx.querySelectorAll('.rw'),function(n){n.remove();});
+  var pay=cx.querySelector('.pay');
+  for(var i=0;i<3;i++){
+    var rw=document.createElement('div');rw.className='rw';
+    var fen=document.createElement('div');fen.className='fen';
+    var bd=document.createElement('div');bd.className='bd';
+    for(var k=0;k<10;k++){
+      var cel=document.createElement('div');cel.className='cel';
+      var cv=document.createElement('canvas');
+      cel.appendChild(cv);bd.appendChild(cel);
+    }
+    var vi=document.createElement('div');vi.className='vitre';
+    fen.appendChild(bd);fen.appendChild(vi);rw.appendChild(fen);
+    cx.insertBefore(rw,pay);
+  }
+  criPoser();
+}
+/* on donne aux toiles leur taille reelle, puis on peint les symboles */
+function criPoser(){
+  var cels=document.querySelectorAll('#cricx .bd .cel');
+  if(!cels.length)return;
+  var dpr=Math.min(3,window.devicePixelRatio||1);
+  for(var i=0;i<cels.length;i++){
+    var cv=cels[i].querySelector('canvas');
+    var r=cv.getBoundingClientRect();
+    var W=Math.max(16,Math.round(r.width*dpr)), H=Math.round(W*24/22);
+    if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;cv.__s=null;}
+    var nom=SYM[i%5];
+    if(cv.__s!==nom){criDessiner(cv,nom);cv.__s=nom;}
+  }
+}
+function criRendu(s){
+  if(!CRI_ON||!s)return;
+  var bds=document.querySelectorAll('#cricx .bd');
+  for(var i=0;i<bds.length&&i<3;i++){
+    var r=s.rl[i];
+    var p=((r.p%5)+5)%5;
+    /* une case vaut un dixieme de la bande : aucune taille a relire */
+    var reb=r.reb?Math.sin(r.reb*Math.PI)*3.4:0;
+    bds[i].style.transform='translateY(calc('+(-p*10).toFixed(3)+'% + '+reb.toFixed(2)+'px))';
+    bds[i].parentNode.parentNode.classList.toggle('tourne',!r.fini);
+  }
+}
+/* LE FRONTON DIT LE VRAI. Pas de cagnotte qui gonfle toute seule : on
+   affiche le plus gros lot qu'on puisse reellement emporter au tour,
+   c'est-a-dire la mise fixe multipliee par la perle. */
+function criJackpot(){
+  var e=document.getElementById('crijk');
+  if(e&&JEU)e.textContent=enEuros((JEU.fixe||200)*SYM_GAIN.perle);
+}
+function criEffets(on){
+  CRI.classList.toggle('gain',!!on);
+  var b=document.getElementById('criban');
+  if(!on){b.classList.remove('vu');b.querySelector('i').textContent='';
+          b.querySelector('b').textContent='';
+          [].forEach.call(document.querySelectorAll('#crisc .piece'),
+                          function(p){p.remove();});}
+}
+function criPieces(n){
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  var sc=document.getElementById('crisc');
+  for(var i=0;i<n;i++){
+    var p=document.createElement('u');p.className='piece';
+    p.style.left=(5+Math.random()*90)+'%';
+    p.style.setProperty('--s',(0.55+Math.random()*0.85).toFixed(2));
+    p.style.animationDuration=(1.5+Math.random()*1.5).toFixed(2)+'s';
+    p.style.animationDelay=(Math.random()*0.9).toFixed(2)+'s';
+    sc.appendChild(p);
+    (function(n2){setTimeout(function(){n2.remove();},3600);})(p);
+  }
+}
+/* ce que la ligne annonce : trois pareils, ou les deux perles */
+function criDitLaLigne(t){
+  if(!t||t.length<3)return '';
+  var n=function(c){return (SYM_NOM[c]||c).toUpperCase();};
+  if(t[0]===t[1]&&t[1]===t[2])return 'TROIS '+n(t[0])+'S · ×'+SYM_GAIN[t[0]];
+  var p=t.filter(function(c){return c==='perle';}).length;
+  if(p>=2)return 'DEUX PERLES · ×2';
+  return '';
+}
+function criGagne(res,mult){
+  var b=document.getElementById('criban');
+  b.querySelector('i').textContent=criDitLaLigne(res.tirage)||('×'+Math.round(mult));
+  b.querySelector('b').textContent='+'+enEuros(res.gain-res.mise);
+  CRI.classList.add('gain');
+  requestAnimationFrame(function(){b.classList.add('vu');});
+  if(mult>=40){SON.gros();criPieces(22);}
+  else{SON.paye(mult);criPieces(mult>=14?12:6);}
+}
+document.getElementById('crisortie').onclick=function(){
+  if(OCCUPE)return;
+  fermerTable();
+};
+document.getElementById('criht').onclick=function(){
+  SON.dit(!SON.actif);
+  this.classList.toggle('mu',!SON.actif);
+  this.textContent=SON.actif?'♪':'✕';
+  if(SON.actif)SON.tic();
+};
+(function(){var h=document.getElementById('criht');
+  h.classList.toggle('mu',!SON.actif);h.textContent=SON.actif?'♪':'✕';})();
+window.addEventListener('resize',function(){if(CRI_ON)criPoser();});
+
 var GRA=document.getElementById('gra');
 var GRA_ON=false;
 function graSolde(){var e=document.getElementById('grasou');
@@ -2469,6 +2928,20 @@ function ouvrirTable(T){
   /* LA TABLE EN DOM : pas de canvas, pas de boucle de dessin. On montre
      son propre ecran, on lui prete les boites du bas, et on redessine
      seulement quand l'etat change. */
+  if(JEU.dom==='cri'){
+    CRI_ON=true;
+    criPrendre();
+    document.getElementById('paie').innerHTML=JEU.paie;
+    CRI.hidden=false;
+    criEffets(false);
+    majSolde();criSolde();criJackpot();
+    dire('Tire le levier.');
+    monterMises();monterChoix();
+    criBandes();
+    boucle.vu=0;
+    if(!RAF)RAF=requestAnimationFrame(boucle);
+    return;
+  }
   if(JEU.dom==='gra'){
     GRA_ON=true;
     graPrendre();
@@ -2551,6 +3024,14 @@ function brancherLeTapis(){
 }
 function fermerTable(){
   fermerRegle();
+  if(CRI_ON){
+    criEffets(false);
+    CRI.hidden=true;CRI_ON=false;
+    if(RAF){cancelAnimationFrame(RAF);RAF=null;}
+    criRendre();
+    JEU=null;S=null;majSolde();
+    return;
+  }
   if(GRA_ON){
     GRA.hidden=true;GRA_ON=false;
     if(RAF){cancelAnimationFrame(RAF);RAF=null;}
