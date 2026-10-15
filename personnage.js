@@ -187,7 +187,7 @@ const COS_COMPLEXE=[
    face elle serait devant les jambes, donc devant le joueur. */
 {id:'perroquet_costume', nom:'Le costume de perroquet',
 mot:'vert, rouge et jaune — on te voit depuis le quai d\u2019en face',
-prix:2000000, rar:'legendaire', hors:true, etiq:'COMPLEXE',
+prix:2000000, rar:'legendaire', hors:true, lieu:'loge', etiq:'COMPLEXE',
 gagne:'la boutique du Complexe Festif',
 dessin:(g,x,y,t,dir)=>{
 let Q=cosRepere(dir), bat=Math.round(Math.sin(t*5)*1.2);
@@ -210,7 +210,7 @@ let Q=cosRepere(dir), bat=Math.round(Math.sin(t*5)*1.2);
    devant : une peluche qui cache le visage n'est plus un cosmetique. */
 {id:'peluche_ours', nom:'La peluche géante',
 mot:'un ours plus gros que toi, et il ne te lâche plus',
-prix:600000, rar:'epique', hors:true, etiq:'COMPLEXE',
+prix:600000, rar:'epique', hors:true, lieu:'loge', etiq:'COMPLEXE',
 gagne:'la boutique du Complexe Festif',
 dessin:(g,x,y,t,dir)=>{
 let Q=cosRepere(dir), b=Math.round(Math.sin(t*1.9)*1);
@@ -228,7 +228,7 @@ let Q=cosRepere(dir), b=Math.round(Math.sin(t*1.9)*1);
    de chaque cote du visage sans jamais passer devant. */
 {id:'peluche_poulpe', nom:'Le poulpe géant',
 mot:'il tient tout seul sur ta tête, et ses bras suivent le rythme',
-prix:900000, rar:'epique', hors:true, etiq:'COMPLEXE',
+prix:900000, rar:'epique', hors:true, lieu:'loge', etiq:'COMPLEXE',
 gagne:'la boutique du Complexe Festif',
 dessin:(g,x,y,t,dir)=>{
 let Q=cosRepere(dir);
@@ -247,7 +247,7 @@ let Q=cosRepere(dir);
 /* LE BOA A PLUMES */
 {id:'boa_plumes', nom:'Le boa à plumes',
 mot:'rose, duveteux, et il perd des plumes partout',
-prix:150000, rar:'commune', hors:true, etiq:'COMPLEXE',
+prix:150000, rar:'commune', hors:true, lieu:'loge', etiq:'COMPLEXE',
 gagne:'la boutique du Complexe Festif',
 dessin:(g,x,y,t,dir)=>{
 const R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect(x+dx,y+dy,w,h);};
@@ -263,7 +263,7 @@ R(-10+k*2,-36+((k%3)?0:1)+a,2,2,(k%2)?FC:F);}
 /* LA VESTE A PAILLETTES — chaque paillette s'allume a son tour. */
 {id:'veste_paillettes', nom:'La veste à paillettes',
 mot:'elle renvoie toutes les lumières de la piste',
-prix:420000, rar:'rare', hors:true, etiq:'COMPLEXE',
+prix:420000, rar:'rare', hors:true, lieu:'loge', etiq:'COMPLEXE',
 gagne:'la boutique du Complexe Festif',
 dessin:(g,x,y,t,dir)=>{
 const R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect(x+dx,y+dy,w,h);};
@@ -279,7 +279,7 @@ R(px,py,1,1,br>0.84?'#ffffff':C[k%4]);}
 /* LE TUTU NEON */
 {id:'tutu_neon', nom:'Le tutu néon',
 mot:'il brille tout seul, même quand les lyres s\u2019éteignent',
-prix:220000, rar:'rare', hors:true, etiq:'COMPLEXE',
+prix:220000, rar:'rare', hors:true, lieu:'loge', etiq:'COMPLEXE',
 gagne:'la boutique du Complexe Festif',
 dessin:(g,x,y,t,dir)=>{
 const R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect(x+dx,y+dy,w,h);};
@@ -296,7 +296,7 @@ R(-7,-22,14,2,'#2a2030');R(-7,-22,14,1,'#4a3a58');
 /* LES LUNETTES A ETOILES — de dos, on n'en voit rien, et c'est juste. */
 {id:'lunettes_etoiles', nom:'Les lunettes à étoiles',
 mot:'deux étoiles roses, et le monde avec',
-prix:110000, rar:'commune', hors:true, etiq:'COMPLEXE',
+prix:110000, rar:'commune', hors:true, lieu:'loge', etiq:'COMPLEXE',
 gagne:'la boutique du Complexe Festif',
 dessin:(g,x,y,t,dir)=>{
 const R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect(x+dx,y+dy,w,h);};
@@ -314,11 +314,129 @@ etoile(-7,-42);etoile(2,-42);
 /* LE CHAPEAU A FRUITS */
 {id:'chapeau_fruits', nom:'Le chapeau à fruits',
 mot:'une banane, un ananas, trois cerises — et ça tient',
-prix:300000, rar:'rare', hors:true, etiq:'COMPLEXE',
+prix:300000, rar:'rare', hors:true, lieu:'loge', etiq:'COMPLEXE',
 gagne:'la boutique du Complexe Festif',
 dessin:(g,x,y,t,dir)=>{
 let b=Math.round(Math.sin(t*2.3)*0.8);
  cosArt(g,x-7,y-65+b,FRU,P_FRU,false);
+}},
+/* =====================================================================
+   LA MOUETTE DOREE
+   Elle ne se vend nulle part. On l'obtient en reunissant les CENT
+   cartes de la premiere edition du Pokedock, et c'est la seule piece du
+   port qu'aucune somme d'argent ne peut acheter.
+
+   C'EST UN COSTUME INTEGRAL, pas un accessoire. Il se dessine donc
+   PAR-DESSUS tout le personnage — habits, cheveux, chapeau — et il n'en
+   reste visible que le visage, dans l'ouverture de la capuche. C'est ce
+   trou qui fait la difference entre un deguisement et un animal : sans
+   lui, on ne se reconnait plus dedans.
+
+   TOUT EST EN MASSES ARRONDIES : une peluche n'a pas d'angle. Et le
+   costume suit la largeur du personnage en un peu plus gras — a vingt-
+   deux points de large pour un bonhomme qui en fait dix-huit, ce
+   n'etait plus un deguisement, c'etait une boule.
+   ===================================================================== */
+{id:'mouette_doree', nom:'La Mouette Dor\u00e9e',
+mot:'cent cartes sur cent \u2014 la peluche que personne ne peut acheter',
+prix:0, rar:'legendaire', hors:true, integral:true, lieu:'pokedock', etiq:'POK\u00c9DOCK',
+gagne:'les cent cartes de la 1re \u00e9dition',
+dessin:(g,x,y,t,dir,ap)=>{
+const P=(a,b2,w,h,c)=>{g.fillStyle=c;
+  g.fillRect(Math.round(x+a),Math.round(y+b2),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+/* une masse ronde : c'est elle qui fait la peluche */
+const O=(cx,cy,rx,ry,c)=>{for(let i=-rx;i<=rx;i++)for(let j=-ry;j<=ry;j++)
+  if(i*i/(rx*rx)+j*j/(ry*ry)<=1)P(cx+i,cy+j,1,1,c);};
+const Q=cosRepere(dir), dos=Q.dos, cote=Q.cote, s=Q.s;
+const J='#e8c24a', JC='#fff0b0', JO='#9a7a1e', V='#fffbe8';
+const B='#f0761a', BO='#b84a06', N='#1a1812';
+/* LA PEAU EST CELLE DU JOUEUR, lue dans son apparence. */
+const peau=(PALETTES.peau[(ap&&ap.peau)||2])||PALETTES.peau[2];
+const peauO=teint(peau,-34);
+/* LE COSTUME DOIT RECOUVRIR TOUT LE BONHOMME, bords compris. Trop
+   juste, on voyait depasser ses bras et le col de sa veste entre la
+   capuche et le ventre — et un costume qui laisse voir les habits
+   dessous n'est plus un costume. */
+const LB=cote?5:7, LT=cote?7:8;
+/* LA CAPUCHE DOIT MONTER PLUS HAUT QUE LES CHEVEUX. A trente-deux
+   points, la tignasse du joueur depassait par-dessus et le costume
+   avait l'air pose sur une perruque. Le crane du personnage s'arrete a
+   quarante-sept : la capuche monte donc a quarante-huit, et son bas
+   recouvre le haut du corps pour qu'il n'y ait pas de cou. */
+const SOL=0, TY=SOL-34;
+/* LA QUEUE EN EVENTAIL passe derriere le corps */
+if(dos||cote){
+  const dx=cote?(s>0?-9:9):0;
+  [[-3,J],[0,JO],[3,J]].forEach(([k,c])=>{
+    P(dx+(cote?0:k)-1,SOL-16+(cote?Math.abs(k):0),3,7,c);
+  });
+}
+/* LES CHAUSSONS */
+if(cote){O(s*2,SOL-2,4,2,B);P(s*2-4,SOL-3,8,1,BO);}
+else{[-4,3].forEach(dx=>{O(dx,SOL-2,3,2,B);P(dx-3,SOL-3,6,1,BO);});}
+/* LES JAMBES, courtes et grasses */
+if(cote)O(0,SOL-6,4,5,J);
+else{O(-4,SOL-6,3,5,J);O(3,SOL-6,3,5,J);}
+/* LE CORPS : une poire, large en bas */
+O(0,SOL-13,LB,8,J);
+O(0,SOL-20,LB,9,J);
+P(-LB+2,SOL-28,LB*2-4,2,JC);
+O(0,SOL-10,LB,5,JO);
+if(!dos&&!cote)O(0,SOL-12,LB-3,5,V);
+if(cote)O(-s*3,SOL-13,LB-3,7,JO);
+if(!cote)for(let k=0;k<9;k++)P(-1,SOL-25+k*2,2,1,JO);
+/* PAS DE BRAS : CHEZ ELLE, L'AILE EST LE BRAS. En gardant les deux, le
+   boudin du bras et la bande de l'aile se collaient en une seule dalle
+   et l'oiseau faisait deux fois sa largeur. */
+/* LA CAPUCHE */
+O(0,TY,LT,10,J);
+P(-LT+2,TY-10,LT*2-4,2,JC);
+O(0,TY+5,LT,5,JO);
+if(cote)O(-s*4,TY,LT-4,8,JO);
+/* LA HUPPE : trois petites plumes au sommet, la seule chose qui
+   depasse de la rondeur de la capuche. */
+[[-3,2],[0,3],[3,2]].forEach(([k,r])=>{
+  const dx=cote?(k*0.6+s):k;
+  O(dx,TY-10-r,r,r,J);O(dx,TY-11-r,r-1,1,JC);
+});
+if(dos){
+  /* DE DOS, UNE COUTURE ET UN COL : sans eux, le dos n'etait qu'une
+     tache jaune et l'on ne savait plus ou l'on regardait. */
+  P(-1,TY-9,2,18,JO);
+  P(-LT+1,TY+9,LT*2-2,2,JO);
+  P(-LT+1,TY+10,LT*2-2,1,JC);
+}else{
+  /* L'OUVERTURE, petite : large, elle ne montrait plus un visage dans
+     une capuche mais une tete nue posee sur un costume. C'est le BORD,
+     tout pres des sourcils, qui fait le deguisement. */
+  const fx=cote?s*2:0;
+  O(fx,TY-2,cote?3:4,4,peau);
+  P(fx-(cote?3:4),TY-5,cote?6:8,1,JO);
+  P(fx-(cote?3:4),TY-4,cote?6:8,1,'rgba(0,0,0,.18)');
+  if(cote){P(fx+s,TY-3,2,2,N);P(fx+s,TY,2,1,peauO);}
+  else{P(fx-3,TY-3,2,2,N);P(fx+2,TY-3,2,2,N);
+       P(fx-3,TY-3,1,1,'#ffffff');P(fx+2,TY-3,1,1,'#ffffff');
+       P(fx-1,TY,3,1,peauO);}
+  /* LE BEC, pose SOUS le visage : il ne couvre jamais les yeux. */
+  if(cote){P(fx+s*3,TY+1,s>0?8:-8,3,B);P(fx+s*7,TY+2,s>0?4:-4,2,BO);
+           P(fx+s*3,TY+1,s>0?8:-8,1,'#ffb060');}
+  else{P(fx-2,TY+1,4,4,B);P(fx-1,TY+4,2,2,BO);P(fx-2,TY+1,4,1,'#ffb060');}
+}
+/* LES AILES, PAR-DESSUS : elles pendent le long du corps, DEHORS.
+   Posees en travers du buste, elles faisaient des bandages ; et les
+   remiges sombres ne sont qu'au BOUT, parce que c'est la pointe d'une
+   aile qui est noire, pas l'epaule. */
+[-1,1].forEach(sd=>{
+  if(cote&&sd!==s)return;
+  const x0=sd*(cote?5:7)-(sd>0?0:3);
+  O(x0+1,SOL-23,2,4,J);
+  for(let k=0;k<4;k++)P(x0,SOL-22+k*4,3,4,J);
+  P(x0,SOL-22,3,1,JC);
+  P(x0,SOL-9,3,4,JO);
+  P(x0,SOL-5,3,4,'#5e4a14');
+  P(x0,SOL-6,3,1,'#8a6e1a');
+  P(x0+(sd>0?-1:3),SOL-23,1,22,'rgba(0,0,0,.16)');
+});
 }}
 ];
 const COSMETIQUES=COS_COMPLEXE;
@@ -495,6 +613,22 @@ verdict:n===0?'identiques':(n<12?'quasi identiques':'ÉCART')};}
 try{window.comparerPose=comparerPose;}catch(x){}
 const CACHE_FIN=new Map();
 function sprite(g,x,y,ap0,dir,pas,bouge){
+/* =====================================================================
+   UN COSTUME INTEGRAL REMPLACE LE DESSIN, IL NE SE POSE PAS DESSUS.
+   Premiere tentative : peindre la peluche PAR-DESSUS le personnage,
+   comme les huit pieces de la Loge. Il a fallu l'elargir, puis
+   l'elargir encore — et il restait toujours un coin de cheveux au
+   sommet de la capuche, deux pixels de col bleu a l'epaule, le bord
+   d'un bras de profil. Un costume qui laisse voir les habits dessous
+   n'est pas un costume, et le grossir jusqu'a tout recouvrir en fait
+   une boule.
+   On ne dessine donc PLUS le personnage du tout : la piece prend toute
+   la place, et elle n'a plus besoin d'etre enorme pour cacher quoi que
+   ce soit. Seule la carnation vient encore de lui, par l'ouverture de
+   la capuche.
+   ===================================================================== */
+const CI=cosmetiqueDe(ap0);
+if(CI&&CI.integral){cosDessus(g,x,y,ap0,dir);return;}
 let fin=false;try{fin=STYLE_FIN();}catch(x){fin=false;}          /* (au tout début du chargement, on reste classique) */
 if(fin){
 const ges=(typeof GESTE!=='undefined'&&GESTE&&GESTE.t>0)?(GESTE.type||'pioche')+':'+Math.round((1-GESTE.t)*11):'';
@@ -514,7 +648,10 @@ cosDessus(g,x,y,ap0,dir);
    bouge a chaque image alors que la pose, elle, est gravee une fois. */
 function cosDessus(g,x,y,ap,dir){
 const C=cosmetiqueDe(ap);if(!C)return;
-try{C.dessin(g,x,y,Date.now()/1000,dir||'bas');}catch(e){}
+/* L'APPARENCE VOYAGE AVEC LA PIECE. Un costume integral doit connaitre
+   la carnation du joueur : c'est le seul morceau de lui qui depasse de
+   la capuche, et une peau peinte au hasard ne serait plus la sienne. */
+try{C.dessin(g,x,y,Date.now()/1000,dir||'bas',ap);}catch(e){}
 }
 function spriteClassique(g,x,y,ap0,dir,pas,bouge){
 const p=Object.assign({},DEF_AP,ap0||{});

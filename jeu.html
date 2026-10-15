@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-16-3100"></script>
+<script src="maintenance.js?v=2026-10-16-3200"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-16-3100';
+var MA_VERSION='2026-10-16-3200';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il
@@ -2123,14 +2123,14 @@ white-space:nowrap}
 #tiroir.part .latte,#tiroir.part .tbas{animation:none}
 @keyframes ligneFin{from{opacity:0;transform:translateY(12px) scale(.92)}
 60%{opacity:1;transform:translateY(0) scale(1.04)}to{opacity:1;transform:none}}</style>
-<script src="retour.js?v=2026-10-16-3100"></script>
+<script src="retour.js?v=2026-10-16-3200"></script>
 <!-- LE DESSIN DU PERSONNAGE ET LES CARTES POKEDOCK. Classiques, donc
      joues avant le module : window.Perso doit exister quand une carte
      se grave, et window.Pokedock quand on ouvre le rayon du Bar. -->
-<script src="session.js?v=2026-10-16-3100"></script>
-<script src="personnage.js?v=2026-10-16-3100"></script>
-<script src="pokedock.js?v=2026-10-16-3100"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-16-3100">
+<script src="session.js?v=2026-10-16-3200"></script>
+<script src="personnage.js?v=2026-10-16-3200"></script>
+<script src="pokedock.js?v=2026-10-16-3200"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-16-3200">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -6168,8 +6168,19 @@ function pokedockRayon(){
     return d;
   };
   window.Pokedock.rayon(V,{
-    acheter:async()=>adopter(await rpcPkd('pokedock_ouvrir')),
-    collection:()=>rpcPkd('pokedock_ma_collection'),
+    /* LA CENTIEME CARTE : le serveur le dit dans la reponse du paquet,
+       et c'est la qu'il faut l'annoncer — au moment ou l'on retourne la
+       derniere carte, pas trois ecrans plus loin. */
+    acheter:async()=>{
+      const d=await rpcPkd('pokedock_ouvrir');
+      try{if(d&&d.integrale&&d.integrale.neuve)integraleGagnee();}catch(x){}
+      return adopter(d);
+    },
+    collection:async()=>{
+      const d=await rpcPkd('pokedock_ma_collection');
+      try{if(d&&d.integrale&&d.integrale.neuve)integraleGagnee();}catch(x){}
+      return d;
+    },
 /* LE MARCHE : le serveur renvoie le solde a chaque fois, on l'adopte
        sans jamais le calculer nous-memes. */
     marche:async()=>adopter(await rpcPkd('pokedock_marche')),
@@ -16898,7 +16909,7 @@ const C=cosmetiqueDe(ap);
 const tc=Date.now()/1000;
 const souffle=Math.sin(tc*1.5)*0.5;
 const hanche=y+souffle;
-if(C&&C.id==='cape'){try{C.dessin(g,x,hanche+8,tc,'bas');}catch(err){}}
+if(C&&C.id==='cape'){try{C.dessin(g,x,hanche+8,tc,'bas',ap);}catch(err){}}
 const c=poseDe(ap,'bas',0);
 g.save();
 g.beginPath();
@@ -16927,7 +16938,7 @@ Q(X+0.5,Y+2.5,3,5,jb);Q(X+0.5,Y+2.5,0.5,5,jo);Q(X+3,Y+3,0.5,3,court?teint(peau,1
 Q(X+1,Y+7.5,2,1,jb);                                                            /* la cheville */
 Q(X,Y+8.5,4.5,2,chau);Q(X,Y+8.5,4.5,0.5,teint(chau,20));Q(X,Y+10.5,4.5,0.5,sem);Q(X+3.5,Y+9,0.5,1.5,chauO);
 });
-if(C&&C.id!=='cape'){try{C.dessin(g,x,hanche+8,tc,'bas');}catch(err){}}
+if(C&&C.id!=='cape'){try{C.dessin(g,x,hanche+8,tc,'bas',ap);}catch(err){}}
 return;
 }
 [-5,1].forEach((dx,k)=>{
@@ -16937,7 +16948,7 @@ R(x+dx+1,hanche+4,4,7,pantO);
 R(x+dx,hanche+11,6,3,chau);
 R(x+dx,hanche+11,6,1,chauC);
 });
-if(C&&C.id!=='cape'){try{C.dessin(g,x,hanche+8,tc,'bas');}catch(err){}}
+if(C&&C.id!=='cape'){try{C.dessin(g,x,hanche+8,tc,'bas',ap);}catch(err){}}
 }
 /* ================= LES TRANSITIONS =================
    Entre l'arrêt et la course, il manquait les moments charnières : l'élan,
@@ -17086,6 +17097,17 @@ PAUSE.type=TIRAGE_PAUSE[Math.floor(Math.random()*TIRAGE_PAUSE.length)];
 PAUSE.a=t;
 return PAUSE.type==='appui'?600:620;}
 function personne(g,x,y,ap,dir,pas,marche,enCourse){
+/* UN COSTUME INTEGRAL REMPLACE LE DESSIN, IL NE SE POSE PAS DESSUS.
+   Peint par-dessus, il laissait toujours ressortir un coin de cheveux
+   au sommet de la capuche ou deux pixels de col a l'epaule — et un
+   costume qui laisse voir les habits dessous n'est pas un costume. La
+   meme regle vaut dans personnage.js, pour que le hall, le casino et
+   l'arcade le dessinent comme ici. */
+const CINT=cosmetiqueDe(ap);
+if(CINT&&CINT.integral&&!(ap&&ap._nage)){
+  try{CINT.dessin(g,x,y,Date.now()/1000,dir||'bas',ap);}catch(err){}
+  return;
+}
 if(ap&&ap._nage){                                                              /* dans l'eau : le haut du corps seulement */
 const ap2=Object.assign({},ap);delete ap2._nage;const t=Date.now()/1000;
 g.save();g.beginPath();g.rect(x-40,y-90,80,82);g.clip();personne(g,x,y+13+Math.sin(t*2.2)*0.8,ap2,dir,marche?(pas||0):t*0.8,true,false);g.restore();
@@ -17134,7 +17156,7 @@ const yV=y+7;                        /* le sol, sous les roues */
 const C=cosmetiqueDe(ap);
 if(enCourse)ap=Object.assign({},ap,{court:1});
 const tc=Date.now()/1000;
-if(C&&C.id==='cape'){try{C.dessin(g,x,y,tc,dir||'bas');}catch(err){}}
+if(C&&C.id==='cape'){try{C.dessin(g,x,y,tc,dir||'bas',ap);}catch(err){}}
 if(GESTE&&GESTE.t>0){
 if(STYLE_FIN()){
 const part=Math.max(0,Math.min(1,1-GESTE.t)), et=Math.round(part*11), d4=dir||'bas';
@@ -17204,7 +17226,7 @@ g.drawImage(c,0,H2*k,c.width,(H1-H2)*k,px0+lean*0.5,py0+H2,CASE_L,H1-H2);
 g.drawImage(c,0,0,c.width,H2*k,px0+lean,py0,CASE_L,H2);
 }
 }
-if(C&&C.id!=='cape'){try{C.dessin(g,x,y,tc,dir||'bas');}catch(err){}}
+if(C&&C.id!=='cape'){try{C.dessin(g,x,y,tc,dir||'bas',ap);}catch(err){}}
 /* DE FACE, le guidon, le panier et le phare repassent par-dessus : ils
    sont entre nous et le cycliste. */
 if(enTrot)dessinerUneTrottinette(g,x,yV,dir||'bas',(pas||0)*2.2,vTrot,1);
@@ -27446,9 +27468,14 @@ const avant=GESTE;GESTE={t:0};
 const solY=COS_H-5, t=Date.now()/1000;
 g.fillStyle='rgba(30,50,24,.22)';
 g.beginPath();g.ellipse(COS_L/2,solY,8,3,0,0,7);g.fill();
-if(C.id==='cape')C.dessin(g,COS_L/2,solY,t,'bas');
-sprite(g,COS_L/2,solY,e.ap,'bas',0,false);
-if(C.id!=='cape')C.dessin(g,COS_L/2,solY,t,'bas');
+/* UN COSTUME INTEGRAL se montre seul : le bonhomme en dessous n'a plus
+   a etre dessine, et le dessiner ferait ressortir ses cheveux. */
+if(C.integral)C.dessin(g,COS_L/2,solY,t,'bas',e.ap);
+else{
+  if(C.id==='cape')C.dessin(g,COS_L/2,solY,t,'bas',e.ap);
+  sprite(g,COS_L/2,solY,e.ap,'bas',0,false);
+  if(C.id!=='cape')C.dessin(g,COS_L/2,solY,t,'bas',e.ap);
+}
 GESTE=avant;
 }
 let VENTE={};                 /* combien de chaque objet on met sur le comptoir */
@@ -31305,6 +31332,45 @@ $('vsPorter').onclick=()=>{
 e.ap=Object.assign({},e.ap||DEF_AP);
 if(!sel.k||sel.k===porte)delete e.ap.deguisement;else e.ap.deguisement=sel.k;
 try{sauver();envoyerSauvegarde(true);monterEnLigne(true);}catch(x){}vibrer(18);ouvrirLeVestiaire();};
+}
+/* =====================================================================
+   L'INTEGRALE DU POKEDOCK
+   Cent cartes distinctes, et la Mouette Doree tombe. C'est la seule
+   piece du port qu'aucune somme d'argent n'achete : on ne peut que la
+   gagner, et il faut donc que le moment se voie.
+   ===================================================================== */
+function integraleGagnee(){
+  e.cos=e.cos||{};
+  if(e.cos.mouette_doree)return;
+  e.cos.mouette_doree=true;
+  try{lireMesCosmetiques();}catch(x){}
+  const C=COSMETIQUES.find(c=>c.id==='mouette_doree');
+  if(!C)return;
+  const d=document.createElement('div');
+  d.style.cssText='position:fixed;inset:0;z-index:60;display:flex;align-items:center;'+
+    'justify-content:center;background:rgba(20,10,0,.8);font-family:Georgia,serif';
+  d.innerHTML='<div style="width:84%;max-width:420px;border-radius:18px;padding:20px 18px;'+
+    'text-align:center;color:#3a2604;background:linear-gradient(135deg,#f8e08a,#d8a830 45%,'+
+    '#fff0b0 55%,#c89020);box-shadow:0 0 44px rgba(255,210,90,.75);animation:tktT .5s ease-out">'+
+    '<b style="display:block;font:900 20px Georgia;letter-spacing:2px">CENT SUR CENT</b>'+
+    '<p style="font:italic 14px Georgia;margin:9px 0">La premi\u00e8re \u00e9dition est compl\u00e8te.<br>'+
+    '<b>La Mouette Dor\u00e9e</b> est \u00e0 toi \u2014 et elle ne s\u2019ach\u00e8te nulle part.</p>'+
+    '<canvas id="intCv" style="width:120px;height:150px;image-rendering:pixelated"></canvas><br>'+
+    '<button id="intMet" style="border:0;border-radius:20px;padding:11px 20px;background:#3a2604;'+
+    'color:#ffe08a;font:700 15px Georgia;margin-top:6px">L\u2019enfiler tout de suite</button> '+
+    '<button id="intApres" style="border:0;border-radius:20px;padding:11px 16px;'+
+    'background:rgba(58,38,4,.15);color:#3a2604;font:700 14px Georgia;margin-top:6px">Plus tard</button></div>'+
+    '<style>@keyframes tktT{0%{transform:scale(.2) rotate(-18deg);opacity:0}'+
+    '60%{transform:scale(1.07) rotate(3deg);opacity:1}100%{transform:none}}</style>';
+  document.body.appendChild(d);
+  try{dessinerVignette(document.getElementById('intCv'),C);}catch(x){}
+  try{jouer('achat','moment');vibrer([20,60,20,60,40]);}catch(x){}
+  d.querySelector('#intApres').onclick=()=>d.remove();
+  d.querySelector('#intMet').onclick=()=>{
+    e.ap=Object.assign({},e.ap||DEF_AP,{cos:'mouette_doree'});
+    try{sauver();envoyerSauvegarde(true);monterEnLigne(true);}catch(x){}
+    d.remove();
+  };
 }
 function ticketDOrTenue(k){
 const T=TENUES.find(t=>t.k===k)||{nom:'Une tenue'};
