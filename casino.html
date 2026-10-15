@@ -17,14 +17,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Cormorant+Garamond:ital,wght@0,600;1,500&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-15-2200"></script>
+<script src="maintenance.js?v=2026-10-15-2300"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-15-2200';
+  var MA_VERSION='2026-10-15-2300';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -135,6 +135,43 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   font:700 10px 'Oswald',ui-monospace,monospace;letter-spacing:2px;
   box-shadow:0 6px 16px rgba(34,48,58,.25)}
 #bas button:active{background:#2e4150}
+
+/* =====================================================================
+   CE QUE PAIE LA TABLE : derriere un bouton, plus sous le jeu
+
+   Le bareme etait imprime en permanence sous chaque table. Il prenait le
+   tiers du bas de l'ecran, on le lisait une fois et plus jamais, et il
+   repoussait les boutons vers le bas. Il passe dans une feuille qu'un
+   « i » ouvre : hors de l'ecran de jeu, mais a un geste — on ne cache pas
+   ce que la maison garde, on arrete juste de le reciter.
+   ===================================================================== */
+#sinfo,#v21info{-webkit-appearance:none;appearance:none;flex:none;
+  width:30px;height:30px;border-radius:50%;font:700 14px Georgia,serif;line-height:1}
+#sinfo{border:1px solid #6b4a2a;background:rgba(0,0,0,.4);color:#f0d78a}
+#v21info{border:0;background:rgba(34,48,58,.1);color:#44565f}
+#sinfo:active,#v21info:active{opacity:.6}
+#paie{display:none}
+
+#regle{position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;justify-content:center}
+#regle[hidden]{display:none}
+#regle .voile{position:absolute;inset:0;background:rgba(6,10,14,.6)}
+#regle .f{position:relative;width:100%;max-width:560px;
+  background:#f7f1e2;border-radius:20px 20px 0 0;
+  max-height:76dvh;display:flex;flex-direction:column;
+  box-shadow:0 -10px 40px rgba(0,0,0,.45);
+  animation:regleHaut .22s ease-out both;
+  padding-bottom:env(safe-area-inset-bottom,0px)}
+@keyframes regleHaut{from{transform:translateY(22px);opacity:0}to{transform:none;opacity:1}}
+#regle .ft{flex:none;display:flex;align-items:center;gap:10px;
+  padding:16px 18px 12px;border-bottom:1px solid rgba(34,48,58,.14)}
+#regle .ft b{flex:1;font:700 18px 'Playfair Display',Georgia,serif;color:#22303a}
+#regle .ft button{-webkit-appearance:none;appearance:none;flex:none;width:32px;height:32px;
+  border:0;border-radius:50%;background:rgba(34,48,58,.08);color:#44565f;
+  font:700 19px ui-monospace,monospace;line-height:1}
+#regle .fc{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:14px 18px 22px;
+  font:italic 500 15px/1.6 'Cormorant Garamond',Georgia,serif;color:#5d6b63}
+#regle .fc b{font-style:normal;color:#22303a}
 
 /* =====================================================================
    LA SALLE DE JEU : l'ecran qui se pose par-dessus le menu quand on
@@ -345,7 +382,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   font:italic 500 12px/1.5 'Cormorant Garamond',Georgia,serif;color:#6a7a70}
 #v21 #paie b{font-style:normal;color:#44565f}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-15-2200">
+<link rel="stylesheet" href="responsive.css?v=2026-10-15-2300">
 </head>
 <body>
 <div id="tapis">
@@ -382,6 +419,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   <div id="sb">
     <button id="sortie">←</button>
     <div id="stitre"><b></b><small></small></div>
+    <button id="sinfo" title="Ce que paie la table">i</button>
     <div id="ssou"><u></u><span>—</span></div>
   </div>
   <div id="sscene"><canvas id="scene"></canvas></div>
@@ -397,6 +435,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   <div class="bar">
     <button id="v21sortie">←</button>
     <div class="ti"><b>Le Vingt-et-un</b><i>FONFON TIRE À SEIZE</i></div>
+    <button id="v21info" title="Ce que paie la table">i</button>
     <div class="so"><u></u><span id="v21sou">—</span></div>
   </div>
   <div class="tap">
@@ -415,7 +454,15 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   <div class="bas" id="v21bas"><div id="v21pr"></div></div>
 </div>
 
-<script src="retour.js?v=2026-10-15-2200"></script>
+<div id="regle" hidden>
+  <div class="voile"></div>
+  <div class="f">
+    <div class="ft"><b id="regletit">La table</b><button id="regleclos">×</button></div>
+    <div class="fc" id="reglecorps"></div>
+  </div>
+</div>
+
+<script src="retour.js?v=2026-10-15-2300"></script>
 <script>
 /* =====================================================================
    LE CASINO
@@ -1856,6 +1903,22 @@ document.getElementById('v21sortie').onclick=function(){
   fermerTable();
 };
 
+/* LA FEUILLE DU BAREME. Elle lit JEU.paie, le meme texte qu'avant : on
+   n'a rien retire du contenu, on a seulement cesse de l'imprimer sous
+   chaque table. */
+var REGLE=document.getElementById('regle');
+function ouvrirRegle(){
+  if(!JEU)return;
+  document.getElementById('regletit').textContent=JEU.nom;
+  document.getElementById('reglecorps').innerHTML=JEU.paie||'';
+  REGLE.hidden=false;
+}
+function fermerRegle(){REGLE.hidden=true;}
+document.getElementById('regleclos').onclick=fermerRegle;
+REGLE.querySelector('.voile').onclick=fermerRegle;
+document.getElementById('sinfo').onclick=ouvrirRegle;
+document.getElementById('v21info').onclick=ouvrirRegle;
+
 function ouvrirTable(T){
   JEU=MOTEUR[T.cle];if(!JEU)return;
   JEU.cle=T.cle;
@@ -1919,6 +1982,7 @@ function brancherLeTapis(){
   CV.style.touchAction=(JEU&&JEU.glisse)?'none':'';
 }
 function fermerTable(){
+  fermerRegle();
   if(V21_ON){
     V21.hidden=true;V21_ON=false;V21_VU='';
     v21Rendre();
