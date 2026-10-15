@@ -17,14 +17,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Cormorant+Garamond:ital,wght@0,600;1,500&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-16-0700"></script>
+<script src="maintenance.js?v=2026-10-16-0800"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-16-0700';
+  var MA_VERSION='2026-10-16-0800';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -822,7 +822,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   font:italic 500 12px/1.5 'Cormorant Garamond',Georgia,serif;color:#6a7a70}
 #v21 #paie b{font-style:normal;color:#44565f}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-16-0700">
+<link rel="stylesheet" href="responsive.css?v=2026-10-16-0800">
 </head>
 <body>
 <div id="tapis">
@@ -969,7 +969,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-16-0700"></script>
+<script src="retour.js?v=2026-10-16-0800"></script>
 <script>
 /* =====================================================================
    LE CASINO
@@ -1856,57 +1856,83 @@ var SON={
       var A=window.AudioContext||window.webkitAudioContext;
       if(!A)return null;
       try{this.ac=new A();}catch(e){return null;}
+      /* LE FILTRE DE SORTIE, ET IL N'EST PAS DECORATIF. Entre trois et
+         cinq mille hertz l'oreille est a son maximum de sensibilite :
+         c'est exactement la que tapaient les anciens clics, et au bout
+         de trois tours ca fatiguait. Tout passe maintenant par un
+         passe-bas a 2 600 Hz, qui enleve le mordant et laisse le bois. */
+      var b=this.ac.createBiquadFilter();
+      b.type='lowpass';b.frequency.value=2600;b.Q.value=.4;
+      var h=this.ac.createBiquadFilter();
+      h.type='highpass';h.frequency.value=55;h.Q.value=.5;
       var k=this.ac.createDynamicsCompressor();
-      k.threshold.value=-16;k.ratio.value=3;k.attack.value=.004;k.release.value=.18;
-      this.bus=this.ac.createGain();this.bus.gain.value=.5;
-      this.bus.connect(k);k.connect(this.ac.destination);
+      k.threshold.value=-20;k.knee.value=24;k.ratio.value=2.4;
+      k.attack.value=.008;k.release.value=.26;
+      this.bus=this.ac.createGain();this.bus.gain.value=.62;
+      this.bus.connect(b);b.connect(h);h.connect(k);k.connect(this.ac.destination);
     }
-    if(this.ac.state==='suspended')this.ac.resume();
+    try{if(this.ac.state==='suspended')this.ac.resume();}catch(e){}
     return this.ac;
   },
-  /* une note : forme, hauteur, duree, volume, et un glissando facultatif */
-  note:function(f,d,forme,vol,f2,t0){
+  /* UNE NOTE DOUCE. L'attaque n'est jamais instantanee — un gain qui
+     saute de zero a un en une image fait un clic parasite a chaque
+     note — et la queue descend en exponentielle, comme une lame de
+     bois qu'on laisse vibrer. */
+  note:function(f,d,vol,t0,forme,f2){
     var c=this.c();if(!c)return;
-    var t=t0||c.currentTime;
-    var o=c.createOscillator(),g=c.createGain();
-    o.type=forme||'triangle';
+    var t=t0||c.currentTime, v=(vol===undefined?.2:vol);
+    var o=c.createOscillator(), g=c.createGain();
+    o.type=forme||'sine';
     o.frequency.setValueAtTime(f,t);
     if(f2)o.frequency.exponentialRampToValueAtTime(Math.max(20,f2),t+d);
-    g.gain.setValueAtTime(0,t);
-    g.gain.linearRampToValueAtTime(vol===undefined?.3:vol,t+Math.min(.012,d*.3));
-    g.gain.exponentialRampToValueAtTime(.0008,t+d);
+    g.gain.setValueAtTime(.0001,t);
+    g.gain.exponentialRampToValueAtTime(v,t+Math.min(.018,d*.25));
+    g.gain.exponentialRampToValueAtTime(.0001,t+d);
     o.connect(g);g.connect(this.bus);
-    o.start(t);o.stop(t+d+.03);
+    o.start(t);o.stop(t+d+.04);
   },
-  /* un bruit filtre : le clic du rouleau, le clac du cran */
-  souffle:function(d,hz,q,vol,t0){
+  /* LE BOIS. Un souffle passe-bas, court : c'est le bruit d'une touche
+     qu'on pose, pas celui d'une bande qui claque. */
+  bois:function(d,hz,vol,t0){
     var c=this.c();if(!c)return;
     var t=t0||c.currentTime;
     var n=Math.max(1,Math.floor(c.sampleRate*d));
     var b=c.createBuffer(1,n,c.sampleRate), x=b.getChannelData(0);
-    for(var i=0;i<n;i++)x[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.4);
+    for(var i=0;i<n;i++)x[i]=(Math.random()*2-1)*Math.pow(1-i/n,3.2);
     var s=c.createBufferSource();s.buffer=b;
-    var f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=hz;f.Q.value=q||6;
-    var g=c.createGain();g.gain.value=vol===undefined?.3:vol;
+    var f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=hz;f.Q.value=.8;
+    var g=c.createGain();g.gain.value=vol===undefined?.12:vol;
     s.connect(f);f.connect(g);g.connect(this.bus);
     s.start(t);
   },
-  /* LE LEVIER : un cran mecanique, puis le moteur qui prend sa vitesse */
+  /* LE LEVIER : une respiration qui monte, puis la note basse du moteur
+     qui prend sa vitesse. Plus de cran metallique. */
   levier:function(){
-    if(!this.c())return;
-    this.souffle(.07,1500,3,.28);
-    this.note(190,.1,'square',.16,90);
-    this.note(70,.22,'sine',.22,46);
+    var c=this.c();if(!c)return;
+    var t=c.currentTime;
+    this.bois(.26,900,.18,t);
+    this.note(196,.36,.3,t,'sine',131);       /* sol qui descend en do */
+    this.note(392,.22,.12,t+.03,'sine',294);
   },
-  /* LE CLIC DU ROULEAU : un par symbole qui passe. Tres court, tres sec,
-     sinon trois rouleaux qui defilent font une bouillie. */
-  tic:function(){ this.souffle(.022,2600,9,.1); },
-  /* LE CRAN D'ARRET : un clac plein, et plus haut a chaque rouleau — on
-     entend que ca se resserre. */
+  /* LE SYMBOLE QUI PASSE : presque rien, juste de quoi sentir que ca
+     defile. Un seul rouleau le joue, sinon trois font une bouillie. */
+  tic:function(){
+    var c=this.c();if(!c)return;
+    var t=c.currentTime;
+    this.bois(.018,760,.1,t);
+    this.note(294,.06,.07,t);
+  },
+  /* LE ROULEAU QUI SE POSE : une lame de bois. Les trois montent le
+     long d'un accord — do, mi, sol — donc trois arrets d'affilee font
+     une phrase au lieu de trois coups. */
   arret:function(i){
-    if(!this.c())return;
-    this.souffle(.055,900+i*260,5,.38);
-    this.note(150+i*45,.1,'square',.2,70+i*20);
+    var c=this.c();if(!c)return;
+    var t=c.currentTime;
+    var f=[261.63,329.63,392.00][i]||392;
+    this.bois(.034,560,.2,t);
+    this.note(f,.4,.3,t);
+    this.note(f*2,.24,.1,t);                   /* la partielle, qui donne le bois */
+    this.note(f/2,.32,.13,t);                  /* le corps, en dessous */
   },
   /* LE GAIN : un arpege qui monte, d'autant plus long que le lot est gros */
   paye:function(mult){
@@ -1914,10 +1940,11 @@ var SON={
     var t=c.currentTime;
     var g=[0,4,7,12,16,19,24,28];
     var n=mult>=120?8:mult>=40?6:mult>=22?5:4;
-    for(var i=0;i<n;i++)
-      this.note(440*Math.pow(2,g[i]/12),.17,'triangle',.21,null,t+i*.075);
-    /* la basse qui pose le tout */
-    this.note(110,.3,'sine',.22,null,t);
+    for(var i=0;i<n;i++){
+      this.note(392*Math.pow(2,g[i]/12),.3,.17,t+i*.085);
+      this.note(392*Math.pow(2,g[i]/12)*2,.16,.045,t+i*.085);
+    }
+    this.note(98,.5,.16,t);                    /* la basse qui pose le tout */
   },
   /* LE GROS LOT : la fanfare, puis les pieces qui tombent dans le bac */
   gros:function(){
@@ -1926,20 +1953,23 @@ var SON={
     this.paye(120);
     var self=this;
     [0,4,7,12].forEach(function(d,i){
-      self.note(523.25*Math.pow(2,d/12),.5,'sawtooth',.13,null,t+.62+i*.055);
+      self.note(392*Math.pow(2,d/12),.8,.1,t+.74+i*.06,'triangle');
     });
-    for(var i=0;i<22;i++){
-      var tt=t+.7+Math.random()*1.5;
-      this.note(1600+Math.random()*1400,.07,'triangle',.1,null,tt);
-      this.souffle(.03,3200+Math.random()*1600,10,.07,tt);
+    /* les pieces : des notes de la gamme, jamais du hasard pur, sinon
+       quinze sons sans rapport tombent les uns sur les autres */
+    var ga=[0,2,4,7,9,12,14,16];
+    for(var i=0;i<14;i++){
+      var tt=t+.8+Math.random()*1.5;
+      this.note(784*Math.pow(2,ga[(Math.random()*ga.length)|0]/12),.13,.055,tt);
+      this.bois(.02,1400,.03,tt);
     }
   },
   /* LA PERTE : deux notes qui descendent, discretes. On ne se moque pas. */
   perd:function(){
     var c=this.c();if(!c)return;
     var t=c.currentTime;
-    this.note(330,.12,'triangle',.13,null,t);
-    this.note(247,.2,'triangle',.13,null,t+.1);
+    this.note(392,.18,.1,t);
+    this.note(294,.3,.1,t+.12);
   }
 };
 
@@ -1971,6 +2001,8 @@ MOTEUR.sous={
     return s;
   },
   pas:function(s,dt){
+    var tq=-1;
+    for(var k=0;k<3;k++)if(!s.rl[k].fini){tq=k;break;}
     for(var i=0;i<3;i++){
       var r=s.rl[i];
       if(r.reb>0)r.reb=Math.max(0,r.reb-dt/190);
@@ -1986,9 +2018,12 @@ MOTEUR.sous={
         r.p=r.p0+(r.pt-r.p0)*e;
         if(k>=1){r.fini=true;r.p=r.pt;r.reb=1;SON.arret(i);}
       }
-      /* un clic par symbole qui passe sous la vitre */
+      /* UN CLIC PAR SYMBOLE QUI PASSE, ET UN SEUL ROULEAU LE JOUE —
+         trois a la fois font une bouillie. C'est le premier encore en
+         course qui tient le tempo, sinon le defilement devient muet des
+         que le rouleau de gauche s'est pose. */
       var c=Math.floor(r.p);
-      if(c!==r.vu){ if(r.vu>=0&&!r.fini&&i===0)SON.tic(); r.vu=c; }
+      if(c!==r.vu){ if(r.vu>=0&&!r.fini&&i===tq)SON.tic(); r.vu=c; }
     }
   },
   choix:function(){
