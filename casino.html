@@ -17,14 +17,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Cormorant+Garamond:ital,wght@0,600;1,500&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-16-0300"></script>
+<script src="maintenance.js?v=2026-10-16-0400"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-16-0300';
+  var MA_VERSION='2026-10-16-0400';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -212,6 +212,13 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   min-height:40px;background:rgba(34,48,58,.07);color:#5a6a60;font:700 11px 'Oswald',monospace}
 #cls #smise .m.on{background:#22303a;color:#f5d98a}
 #cls #schoix{display:block}
+#cls #schoix .rlOng{display:flex;gap:5px;background:rgba(34,48,58,.07);border-radius:13px;padding:4px;
+  margin-bottom:clamp(10px,2dvh,16px)}
+#cls #schoix .rlOng button{-webkit-appearance:none;appearance:none;flex:1;border:0;border-radius:10px;
+  padding:12px 2px;min-height:44px;background:transparent;color:#5a6a60;
+  font:700 clamp(8px,2.4vw,10px) 'Oswald',monospace;letter-spacing:.8px;box-shadow:none}
+#cls #schoix .rlOng button.on{background:#fff;color:#22303a;box-shadow:0 2px 7px rgba(34,48,58,.12)}
+#cls #schoix .rlOng button:active{background:rgba(34,48,58,.14)}
 #cls #schoix .lgn{display:flex}
 #cls #schoix button{-webkit-appearance:none;appearance:none;width:100%;border:0;
   border-radius:16px;padding:clamp(16px,3dvh,26px) 6px;background:#2f6b46;color:#f1f8f2;
@@ -638,7 +645,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   font:italic 500 12px/1.5 'Cormorant Garamond',Georgia,serif;color:#6a7a70}
 #v21 #paie b{font-style:normal;color:#44565f}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-16-0300">
+<link rel="stylesheet" href="responsive.css?v=2026-10-16-0400">
 </head>
 <body>
 <div id="tapis">
@@ -713,7 +720,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
 <div id="cls" hidden>
   <div class="bar">
     <button id="clssortie">←</button>
-    <div class="ti"><b>Le Mur de Clous</b><i>HUIT RANGÉES · NEUF CASES</i></div>
+    <div class="ti"><b>Le Mur de Clous</b><i>DOUZE RANGÉES · TREIZE CASES</i></div>
     <button class="inf" id="clsinfo">i</button>
     <div class="so"><u></u><span id="clssou">—</span></div>
   </div>
@@ -754,7 +761,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-16-0300"></script>
+<script src="retour.js?v=2026-10-16-0400"></script>
 <script>
 /* =====================================================================
    LE CASINO
@@ -1960,28 +1967,64 @@ function reglerVingtun(r){
    entierement aux bords, qui portent a eux seuls un cinquieme du rendu
    sur moins d'un pour cent des chutes.
    ------------------------------------------------------------------ */
-var CLOUS_F=[29,4,1,0.4,0.2,0.4,1,4,29];
-var CLOUS_T=['29','4','1','0,4','0,2','0,4','1','4','29'];
-var CLOUS_C=['#a82824','#c06a2a','#c9a24a','#3a4a5a','#2a3440','#3a4a5a','#c9a24a','#c06a2a','#a82824'];
+/* ================= LES TROIS PLANCHES =================
+   Huit rangees, c'etait court et plat : le jeton tombait au centre une
+   fois sur quatre pour y rendre x0,2, et le gros lot, a une chute sur
+   deux cent cinquante-six, sortait assez souvent pour n'etre jamais un
+   evenement. Douze rangees maintenant, treize cases, et le bord tombe
+   une fois sur quatre mille quatre-vingt-seize.
+
+   ET LE JOUEUR CHOISIT SA PLANCHE. C'est la vraie reponse au « pas assez
+   fun » : ce n'est pas la maison qui decide du frisson, c'est lui. Les
+   trois rendent la meme chose — 92,9 %, 92,6 %, 92,3 % — ce qui change
+   est la forme de la courbe, pas la generosite.
+     doux  : on touche quelque chose deux fois sur cinq, gros lot x14
+     moyen : gros lot x190
+     fort  : gros lot x450, et le centre ne rend plus que x0,15
+   Calcule exactement sur les 4 096 chemins possibles, pas estime. */
+var CLOUS_TAB={
+  doux :[14,8,3.5,1.6,1.05,0.55,0.55,0.55,1.05,1.6,3.5,8,14],
+  moyen:[190,25,5.5,1.5,0.6,0.35,0.3,0.35,0.6,1.5,5.5,25,190],
+  fort :[450,28,5,1.4,0.4,0.25,0.15,0.25,0.4,1.4,5,28,450]
+};
+var CLOUS_NOM={doux:'DOUCE',moyen:'MOYENNE',fort:'FORTE'};
+function clousTxt(v){
+  return (v===Math.floor(v)?String(v):String(v).replace('.',','));
+}
+/* la couleur suit la cote : plus on paie, plus c'est chaud */
+function clousCoul(v){
+  if(v>=100)return '#a8201e';
+  if(v>=20) return '#b8302e';
+  if(v>=5)  return '#c0632a';
+  if(v>=1.3)return '#c9a24a';
+  if(v>=0.9)return '#7a9aa8';
+  if(v>=0.5)return '#6a8a9a';
+  return '#5a7a8a';
+}
 /* =====================================================================
    LA PLANCHE DE GALTON, A L'ECHELLE DE L'ECRAN
    L'ecart entre deux clous vient de la largeur disponible, la hauteur
    d'une rangee de la hauteur restante une fois les cases posees. Rien
-   n'est ecrit en dur, donc la planche remplit la place qu'on lui donne
-   sur n'importe quel telephone.
+   n'est ecrit en dur : douze rangees et treize cases remplissent la
+   place qu'on leur donne, sur n'importe quel telephone.
    ===================================================================== */
-var CLOUS_CLAIR=['#b8302e','#c0632a','#c9a24a','#6a8a9a','#8aa0ac','#6a8a9a','#c9a24a','#c0632a','#b8302e'];
+/* LA PLANCHE TIENT TOUJOURS DANS SA BOITE. L'ecart entre deux clous est
+   borne par la largeur ET par la hauteur : sur un ecran court, c'est la
+   hauteur qui commande, sinon les treize cases se dessinaient sous le
+   bas du canvas et disparaissaient. Les rangees s'etirent ensuite pour
+   occuper ce qui reste. */
 function geoPlanche(W,H){
-  var cw=W/9.6;
-  var cases=Math.max(34,Math.min(H*0.19,cw*1.5));
-  var y0=cw*1.15;
-  var dy=Math.max(cw*0.55,(H-cases-y0-cw*0.95)/7);
-  return {cw:cw, y0:y0, dy:dy, bas:y0+7*dy+cw*0.95, cases:cases, W:W, H:H};
+  var ENV=16.8;                       /* la hauteur totale, en ecarts de clou */
+  var cw=Math.min(W/13.6, H/ENV);
+  var y0=cw*1.6, dy=cw*1.05, cases=cw*2.2;
+  var bas=y0+11*dy+cw*1.1;
+  var reste=H-(bas+cases);
+  if(reste>0){dy+=reste/11;bas=y0+11*dy+cw*1.1;}
+  return {cw:cw, y0:y0, dy:dy, bas:bas, cases:cases, W:W, H:H};
 }
 function dessinerLaPlanche(g,W,H,s){
   var q=geoPlanche(W,H), cx=W/2, i, r;
   s.q=q;
-  /* le panneau */
   var pa=g.createLinearGradient(0,0,0,H);
   pa.addColorStop(0,'#f7f1e2');pa.addColorStop(1,'#e8dfc8');
   g.fillStyle=pa;
@@ -1993,23 +2036,25 @@ function dessinerLaPlanche(g,W,H,s){
   g.strokeStyle='rgba(34,48,58,.14)';g.lineWidth=1;g.stroke();
   /* la fente du haut */
   g.fillStyle='#22303a';
-  g.fillRect(cx-q.cw*0.9,q.y0*0.28,q.cw*1.8,Math.max(4,q.cw*0.22));
+  g.fillRect(cx-q.cw*1.1,q.y0*0.30,q.cw*2.2,Math.max(4,q.cw*0.28));
   /* les clous */
-  for(r=0;r<8;r++)for(i=0;i<=r;i++){
-    var x=cx+(i-r/2)*q.cw, y=q.y0+r*q.dy, ray=Math.max(2.4,q.cw*0.13);
-    var vif=(s.phase==='tombe'&&r===s.r&&i===(function(){var a=0;for(var m=0;m<r;m++)a+=s.chemin[m];return a;})());
+  for(r=0;r<12;r++)for(i=0;i<=r;i++){
+    var x=cx+(i-r/2)*q.cw, y=q.y0+r*q.dy, ray=Math.max(2,q.cw*0.17);
+    var vif=(s.phase==='tombe'&&r===s.r&&i===(function(){
+      var a=0;for(var m=0;m<r;m++)a+=s.chemin[m];return a;})());
     g.fillStyle='rgba(34,48,58,.18)';g.beginPath();g.arc(x,y+ray*0.45,ray,0,7);g.fill();
     var cl=g.createRadialGradient(x-ray*0.4,y-ray*0.4,ray*0.1,x,y,ray);
     if(vif){cl.addColorStop(0,'#fff6d8');cl.addColorStop(1,'#d8a93a');}
     else{cl.addColorStop(0,'#fdfaf2');cl.addColorStop(1,'#b2a68c');}
     g.fillStyle=cl;g.beginPath();g.arc(x,y,ray,0,7);g.fill();
   }
-  /* les neuf cases */
-  for(i=0;i<9;i++){
-    var bx=cx+(i-4.5)*q.cw+1, bw=q.cw-2, sorti=(s.phase==='fini'&&i===s.k);
+  /* les treize cases, de la couleur de leur cote */
+  var TAB=CLOUS_TAB[MOTEUR.clous.risque]||CLOUS_TAB.moyen;
+  for(i=0;i<13;i++){
+    var bx=cx+(i-6.5)*q.cw+0.8, bw=q.cw-1.6, sorti=(s.phase==='fini'&&i===s.k);
     var vif2=sorti&&(Math.floor(s.clign/280)%2)===0;
-    g.fillStyle=CLOUS_CLAIR[i];
-    var rr=Math.min(7,bw*0.22);
+    g.fillStyle=clousCoul(TAB[i]);
+    var rr=Math.min(6,bw*0.22);
     g.beginPath();
     g.moveTo(bx,q.bas);g.lineTo(bx+bw,q.bas);g.lineTo(bx+bw,q.bas+q.cases-rr);
     g.quadraticCurveTo(bx+bw,q.bas+q.cases,bx+bw-rr,q.bas+q.cases);
@@ -2022,15 +2067,32 @@ function dessinerLaPlanche(g,W,H,s){
       g.fillRect(bx,q.bas,bw,q.cases);
       g.fillStyle='#f0cf7d';g.fillRect(bx,q.bas-3,bw,3);
     }
+    /* LE CHIFFRE NE DEBORDE JAMAIS DE SA CASE : treize cases sur la
+       largeur d'un telephone, et « x190 » doit tenir dans vingt-six
+       pixels. La taille suit la longueur du texte. */
+    /* L'ETIQUETTE SE COUCHE QUAND LA CASE EST ETROITE. Treize cases sur
+       la largeur d'un petit telephone, cela fait onze pixels chacune :
+       « ×0,55 » n'y tient pas a plat. Couchee, elle dispose de toute la
+       hauteur de la case, et la largeur ne limite plus que le corps du
+       caractere. */
+    var et=clousTxt(TAB[i]);
     g.fillStyle='#fff9ec';
-    var fs=Math.max(8,Math.min(q.cw*0.40,q.cases*0.42));
-    g.font='700 '+fs.toFixed(1)+'px Oswald, ui-monospace, monospace';
     g.textAlign='center';g.textBaseline='middle';
-    g.fillText(CLOUS_T[i],bx+bw/2,q.bas+q.cases*0.52);
+    if(bw<20){
+      var fsv=Math.max(7,Math.min(bw*0.78,(q.cases*0.86)*1.75/et.length));
+      g.save();
+      g.translate(bx+bw/2,q.bas+q.cases*0.52);g.rotate(-Math.PI/2);
+      g.font='700 '+fsv.toFixed(1)+'px Oswald, ui-monospace, monospace';
+      g.fillText(et,0,0);g.restore();
+    }else{
+      var fs=Math.max(7,Math.min(q.cases*0.40,bw*1.7/(et.length+1)));
+      g.font='700 '+fs.toFixed(1)+'px Oswald, ui-monospace, monospace';
+      g.fillText('×'+et,bx+bw/2,q.bas+q.cases*0.52);
+    }
   }
   /* le jeton */
-  if(s.phase==='tombe'||s.phase==='fini'){
-    var jx=cx+s.x*q.cw, jy=s.y, jr=Math.max(5,q.cw*0.30);
+  if((s.phase==='tombe'||s.phase==='fini')&&isFinite(s.x)&&isFinite(s.y)){
+    var jx=cx+s.x*q.cw, jy=s.y, jr=Math.max(4,q.cw*0.38);
     g.fillStyle='rgba(34,48,58,.3)';g.beginPath();g.arc(jx,jy+jr*0.4,jr,0,7);g.fill();
     var jc=g.createRadialGradient(jx-jr*0.35,jy-jr*0.4,jr*0.1,jx,jy,jr);
     jc.addColorStop(0,'#fff3c8');jc.addColorStop(.55,'#f0cf7d');jc.addColorStop(1,'#b8862a');
@@ -2041,33 +2103,40 @@ function dessinerLaPlanche(g,W,H,s){
 
 MOTEUR.clous={
   dom:'cls',
-  nom:'Le Mur de Clous', sous:'HUIT RANGÉES · NEUF CASES',
+  nom:'Le Mur de Clous', sous:'DOUZE RANGÉES · TREIZE CASES',
   L:128, H:124,
   mises:[100,200,500,1000,2000,5000], mise:500,
-  paie:'Les deux bords <b>×29</b>, puis ×4, ×1, ×0,4, et <b>×0,2 au centre</b> — '+
-       'et c’est au centre que le jeton tombe une fois sur quatre. '+
-       'La maison garde sept euros et demi sur cent.',
+  risque:'moyen',
+  paie:'<b>Trois planches, le même retour.</b> Douze rangées, treize cases, '+
+       'et le jeton tombe sur un bord une fois sur <b>4 096</b>.<br><br>'+
+       '<b>Douce</b> — gros lot ×14, et l’on touche quelque chose deux chutes '+
+       'sur cinq. <b>Moyenne</b> — gros lot ×190. <b>Forte</b> — gros lot '+
+       '<b>×450</b>, mais le centre ne rend plus que ×0,15.<br><br>'+
+       'Les trois rendent entre quatre-vingt-douze et quatre-vingt-treize '+
+       'euros sur cent : ce qui change est la forme de la courbe, pas la '+
+       'générosité. La maison garde sept euros et demi, quelle que soit '+
+       'la planche que tu choisis.',
   /* la geometrie, une fois pour toutes : la rangee r porte r+1 clous, et
      le jeton qui a fait k fois « droite » tombe sur le clou numero k */
-  geo:function(L,H){return {cw:13, y0:20, dy:11, bas:H-20};},
+  geo:function(L,H){return {cw:9, y0:16, dy:8, bas:(H||124)-20};},
   init:function(){return {phase:'pose',chemin:[],k:0,res:null,
                           r:0,t:0,x:0,y:0,clign:0,hist:[]};},
   pas:function(s,dt){
     /* LA GEOMETRIE VIENT DE LA PLANCHE REELLEMENT DESSINEE. Elle etait
        lue dans SL/SH — les dimensions de l'ancienne scene fixe — donc la
        chute se calculait dans un repere qui n'existe plus. */
-    var q=s.q||MOTEUR.clous.geo(SL,SH);
+    var q=s.q||geoPlanche(300,420);
     if(s.phase==='tombe'){
       s.t+=dt;
-      var DR=170;                                  /* une rangee */
+      var DR=135;                                  /* une rangee */
       var r=Math.floor(s.t/DR);
-      if(r>=8){
+      if(r>=12){
         /* LA CHUTE DANS LA CASE S'ARRETE AU BORD, pas au fond. Pose cinq
            pixels plus bas, le jeton couvrait pile le chiffre de la case
            qu'il venait de gagner — la seule qu'on ait envie de lire. */
-        var p=Math.min(1,(s.t-8*DR)/260);
-        s.x=s.k-4;
-        s.y=q.y0+7*q.dy+p*(q.bas-5-q.y0-7*q.dy);
+        var p=Math.min(1,(s.t-12*DR)/260);
+        s.x=s.k-6;
+        s.y=q.y0+11*q.dy+p*(q.bas-5-q.y0-11*q.dy);
         if(p>=1){s.phase='fini';s.clign=0;finirClous(s);}
         return;
       }
@@ -2109,7 +2178,7 @@ MOTEUR.clous={
       var bx=cx+(i-4)*q.cw-q.cw/2;
       var sorti=(s.phase==='fini'&&i===s.k);
       var vif2=sorti&&(Math.floor(s.clign/300)%2)===0;
-      R(bx,q.bas,q.cw-1,17,CLOUS_C[i]);
+      R(bx,q.bas,q.cw-1,17,clousCoul((CLOUS_TAB[MOTEUR.clous.risque]||CLOUS_TAB.moyen)[i]));
       R(bx,q.bas,q.cw-1,1,'rgba(255,255,255,.24)');
       if(sorti){
         R(bx,q.bas,q.cw-1,17,vif2?'rgba(246,233,204,.34)':'rgba(0,0,0,0)');
@@ -2117,7 +2186,7 @@ MOTEUR.clous={
       }
       G.font='700 5px ui-monospace,monospace';G.textAlign='center';
       G.fillStyle=(i>=3&&i<=5)?'#b4c0cc':'#1a1014';
-      G.fillText(CLOUS_T[i],bx+(q.cw-1)/2,q.bas+13);G.textAlign='left';
+      G.fillText('×'+clousTxt((CLOUS_TAB[MOTEUR.clous.risque]||CLOUS_TAB.moyen)[i]),bx+(q.cw-1)/2,q.bas+13);G.textAlign='left';
     }
     /* le jeton */
     if(s.phase==='tombe'||s.phase==='fini'){
@@ -2132,13 +2201,21 @@ MOTEUR.clous={
        salissure plutot qu'a un historique. */
     R(4,3,50,7,'rgba(8,5,7,.5)');R(4,3,50,1,'rgba(201,162,74,.18)');
     for(var h=0;h<9;h++){
-      if(h<s.hist.length)R(6+h*5,5,4,4,CLOUS_C[s.hist[h]]);
+      if(h<s.hist.length)R(6+h*5,5,4,4,clousCoul((CLOUS_TAB[MOTEUR.clous.risque]||CLOUS_TAB.moyen)[s.hist[h]]));
       else R(6+h*5,5,4,4,'rgba(255,255,255,.05)');
     }
   },
   choix:function(){
-    return '<div class="lgn"><button data-p="lacher">LÂCHER LE JETON</button></div>';
+    var q=MOTEUR.clous.risque;
+    var g='<div class="rlOng">';
+    ['doux','moyen','fort'].forEach(function(k){
+      g+='<button data-ong="'+k+'"'+(q===k?' class="on"':'')+'>'+CLOUS_NOM[k]+
+         ' · ×'+clousTxt(CLOUS_TAB[k][0])+'</button>';
+    });
+    g+='</div><div class="lgn"><button data-p="lacher">LÂCHER LE JETON</button></div>';
+    return g;
   },
+  poserOnglet:function(o){MOTEUR.clous.risque=o;},
   planche:function(s){
     var cv=document.getElementById('clscv'), bo=document.getElementById('clsscene');
     if(!cv||!bo)return;
@@ -2155,11 +2232,22 @@ MOTEUR.clous={
     dessinerLaPlanche(g,W,H,s);
   },
   avant:function(s){s.phase='pose';s.res=null;},
+  /* CETTE TABLE A SON PROPRE GUICHET : casino_clous, qui prend la
+     planche choisie. casino_coup ne connait que l'ancienne a neuf
+     cases, et on ne touche pas a une fonction qui sert six tables. */
+  action:async function(s,pari){
+    if(pari!=='lacher')return;
+    verrou(true);dire('La maison lâche…');
+    MOTEUR.clous.avant(s);
+    var r=await rpc('casino_clous',{p_mise:MISE,p_risque:MOTEUR.clous.risque});
+    if(r.erreur){s.phase='pose';dire(r.erreur,'perd');verrou(false);return;}
+    appliquer(r);
+  },
   apres:function(s,res){
     s.chemin=res.tirage.chemin;s.k=res.tirage['case'];s.res=res;
     s.phase='tombe';s.t=0;s.r=0;s.x=0;
-    s.y=(s.q||MOTEUR.clous.geo(SL,SH)).y0;
-    return 8*170+300;
+    s.y=(s.q||geoPlanche(300,420)).y0;
+    return 12*135+300;
   }
 };
 function finirClous(s){
@@ -2501,24 +2589,27 @@ function clsRendre(){var b=document.getElementById('sbas');
 function clsRendu(s){
   if(!CLS_ON||!s)return;
   var montre=(s.phase==='fini');
-  var sig=JSON.stringify([montre?s.k:null,s.hist]);
+  var sig=JSON.stringify([montre?s.k:null,s.hist,MOTEUR.clous.risque]);
   if(sig===CLS_VU)return;
   CLS_VU=sig;
   var pl=document.getElementById('clsplaque');
   if(montre){
+    var T=CLOUS_TAB[MOTEUR.clous.risque]||CLOUS_TAB.moyen;
     var n=document.getElementById('clsn');
-    n.textContent='×'+CLOUS_T[s.k];
-    n.style.background=CLOUS_CLAIR[s.k];
+    n.textContent='×'+clousTxt(T[s.k]);
+    n.style.background=clousCoul(T[s.k]);
     document.getElementById('clsdit').textContent=
-      (s.k===0||s.k===8)?'Le bord !':(s.k===4?'Le plein centre':'Case '+(s.k+1)+' sur neuf');
+      (s.k===0||s.k===12)?'Le bord !':(s.k===6?'Le plein centre':'Case '+(s.k+1)+' sur treize');
     document.getElementById('clssub').textContent=
-      (s.k===0||s.k===8)?'UNE CHUTE SUR DEUX CENT CINQUANTE-SIX':'HUIT RANGÉES PLUS TARD';
+      (s.k===0||s.k===12)?'UNE CHUTE SUR QUATRE MILLE QUATRE-VINGT-SEIZE'
+                         :'PLANCHE '+CLOUS_NOM[MOTEUR.clous.risque];
     pl.hidden=false;
   }else pl.hidden=true;
   var der=document.getElementById('clsder');
   der.innerHTML='<i>DERNIERS</i>';
+  var TH=CLOUS_TAB[MOTEUR.clous.risque]||CLOUS_TAB.moyen;
   (s.hist||[]).slice(0,7).forEach(function(v){
-    var b=document.createElement('b');b.style.background=CLOUS_CLAIR[v];der.appendChild(b);});
+    var b=document.createElement('b');b.style.background=clousCoul(TH[v]);der.appendChild(b);});
 }
 document.getElementById('clssortie').onclick=function(){if(OCCUPE)return;fermerTable();};
 document.getElementById('clsinfo').onclick=function(){ouvrirRegle();};
@@ -2732,7 +2823,8 @@ function monterChoix(){
       /* UN ONGLET N'EST PAS UNE MISE : il change ce qu'on voit, pas ce
          qu'on joue. On remonte la liste au lieu d'appeler le comptoir. */
       var o=b.getAttribute('data-ong');
-      if(o){JEU.onglet=o;monterChoix();return;}
+      if(o){ if(JEU.poserOnglet)JEU.poserOnglet(o); else JEU.onglet=o;
+              monterChoix();return; }
       jouer(b.getAttribute('data-p'),b.getAttribute('data-n'));
     };
   });
