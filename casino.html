@@ -17,14 +17,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Cormorant+Garamond:ital,wght@0,600;1,500&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-16-0100"></script>
+<script src="maintenance.js?v=2026-10-16-0200"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-16-0100';
+  var MA_VERSION='2026-10-16-0200';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -165,6 +165,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
 #rlt .bar .ti b{display:block;font:700 15px/1 'Playfair Display',Georgia,serif;color:#22303a}
 #rlt .bar .ti i{display:block;margin-top:3px;font:700 7px 'Oswald',monospace;
   letter-spacing:2.4px;font-style:normal;color:#8a9a84}
+#rlt .bar .inf{flex:none}
 #rlt .bar .so{flex:none;display:flex;align-items:center;gap:6px;border-radius:999px;
   padding:7px 11px;background:#22303a;color:#f5d98a;font:700 12px 'Oswald',monospace}
 #rlt .bar .so u{width:10px;height:10px;border-radius:50%;text-decoration:none;
@@ -218,12 +219,19 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   background:rgba(34,48,58,.07);color:#5a6a60;font:700 11px 'Oswald',monospace}
 #rlt #smise .m.on{background:#22303a;color:#f5d98a}
 #rlt #schoix{display:block}
-#rlt .ong{display:flex;gap:5px;background:rgba(34,48,58,.07);border-radius:13px;padding:4px;
+/* LE NOM DE CETTE CLASSE N'EST PAS « ong ». responsive.css pose un
+   ::after transparent de 44 px sur tout ce qui s'appelle « .ong », pour
+   agrandir la zone sensible d'un onglet ailleurs dans le jeu. Pose sur
+   le CONTENEUR des trois onglets, ce voile recouvrait les trois boutons
+   et avalait chaque tap : mesure au doigt, elementFromPoint renvoyait
+   le conteneur et jamais le bouton. Un nom plus long, et le probleme
+   n'existe plus. */
+#rlt .rlOng{display:flex;gap:5px;background:rgba(34,48,58,.07);border-radius:13px;padding:4px;
   margin-bottom:clamp(10px,2dvh,16px)}
-#rlt .ong button{-webkit-appearance:none;appearance:none;flex:1;border:0;border-radius:10px;
-  padding:clamp(10px,1.8dvh,14px) 4px;background:transparent;color:#5a6a60;
+#rlt .rlOng button{-webkit-appearance:none;appearance:none;flex:1;border:0;border-radius:10px;
+  padding:12px 4px;min-height:44px;background:transparent;color:#5a6a60;
   font:700 clamp(8px,2.6vw,10px) 'Oswald',monospace;letter-spacing:1.4px}
-#rlt .ong button.on{background:#fff;color:#22303a;box-shadow:0 2px 7px rgba(34,48,58,.12)}
+#rlt .rlOng button.on{background:#fff;color:#22303a;box-shadow:0 2px 7px rgba(34,48,58,.12)}
 #rlt .grp{display:grid;grid-template-columns:1fr 1fr;gap:clamp(8px,1.6dvh,12px)}
 #rlt .grp button{-webkit-appearance:none;appearance:none;border:0;border-radius:16px;
   padding:clamp(14px,2.6dvh,24px) 6px;background:#2c3f49;color:#eee6d2;
@@ -235,13 +243,26 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   letter-spacing:1.2px;opacity:.7}
 /* la grille du plein : six colonnes, des carres qu'un pouce atteint */
 #rlt #schoix .num{display:grid;grid-template-columns:repeat(6,1fr);gap:clamp(5px,1.4vw,8px)}
+/* aspect-ratio n'existe pas avant iOS 15 : sans repli, les trente-six
+   cases du plein s'ecrasent a la hauteur de leur chiffre. */
 #rlt #schoix .num button{-webkit-appearance:none;appearance:none;border:0;border-radius:10px;
-  aspect-ratio:1/1;color:#fff;font:700 clamp(12px,3.6vw,16px) 'Oswald',monospace;
+  min-height:44px;aspect-ratio:1/1;color:#fff;font:700 clamp(12px,3.6vw,16px) 'Oswald',monospace;
   box-shadow:0 2px 6px rgba(34,48,58,.18)}
 #rlt #schoix .num button.rg{background:#b8302e}
 #rlt #schoix .num button.nr{background:#2c3f49}
 #rlt #schoix .num button.z{grid-column:1 / -1;aspect-ratio:auto;padding:clamp(12px,2.2dvh,18px) 0;
   background:#2f6b46;letter-spacing:2px}
+/* LE RETOUR AU DOIGT. Sur un telephone il n'y a pas de survol : si le
+   bouton ne bouge pas a l'appui, on ne sait pas si le tap a ete pris, et
+   on retape. Et le voile gris de Safari sur un bouton touche jure avec
+   tout le reste : on le coupe et on met le notre. */
+#rlt button,#v21 button,#rlt #smise .m,#v21 #smise .m,#rlt .num button{
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#rlt .rlOng button:active{background:rgba(34,48,58,.14)}
+#rlt .grp button:active,#rlt #schoix .num button:active,
+#v21 #schoix button:active{filter:brightness(.88);transform:translateY(1px)}
+#rlt #smise .m:active,#v21 #smise .m:active,#v21 #v21pr .m:active{filter:brightness(.92)}
+#rlt #smise .m,#v21 #smise .m,#v21 #v21pr .m{min-height:40px}
 #rlt #schoix button:disabled{opacity:.42}
 #rlt #paie{display:none}
 
@@ -254,6 +275,19 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
    « i » ouvre : hors de l'ecran de jeu, mais a un geste — on ne cache pas
    ce que la maison garde, on arrete juste de le reciter.
    ===================================================================== */
+/* LES PETITS BOUTONS DU BANDEAU GARDENT LEUR TAILLE, PAS LEUR CIBLE.
+   Mesure au doigt sur quatre telephones : la fleche de retour fait 34
+   points et le « i » dix-neuf. Le minimum tenable pour un pouce est 44.
+   On ne les grossit pas — un rond de 44 dans un bandeau de 54 ecrase
+   tout — on leur pose un carre transparent de 44 centre dessus. C'est le
+   procede de responsive.css, applique ici aux trois bandeaux du casino.
+   Le carre est DANS le bouton : il n'avale la cible d'aucun voisin,
+   puisque rien d'autre n'est touchable autour. */
+#sortie,#sinfo,#v21sortie,#v21info,#rltsortie,#rlt .bar .inf{position:relative}
+#sortie::after,#sinfo::after,#v21sortie::after,#v21info::after,
+#rltsortie::after,#rlt .bar .inf::after{
+  content:'';position:absolute;left:50%;top:50%;width:44px;height:44px;
+  transform:translate(-50%,-50%)}
 #sinfo,#v21info{-webkit-appearance:none;appearance:none;flex:none;
   width:30px;height:30px;border-radius:50%;font:700 14px Georgia,serif;line-height:1}
 #sinfo{border:1px solid #6b4a2a;background:rgba(0,0,0,.4);color:#f0d78a}
@@ -282,6 +316,36 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   font:italic 500 15px/1.6 'Cormorant Garamond',Georgia,serif;color:#5d6b63}
 #regle .fc b{font-style:normal;color:#22303a}
 
+
+/* ================= LE REPLI POUR LES VIEUX SAFARI =================
+   L'unite dvh — la hauteur de la fenetre une fois la barre du navigateur
+   repliee — n'existe qu'a partir d'iOS 15.4. Et une declaration qui
+   contient une unite inconnue n'est pas « a peu pres appliquee » : elle
+   est JETEE EN ENTIER. Un clamp(14px, 2.6dvh, 22px) de padding devient
+   donc zero padding, et tout le bas de la table se tasse contre les
+   bords. On redit la meme chose en vh, qui existe partout depuis
+   toujours : ce n'est exact qu'a la barre du navigateur pres, et c'est
+   infiniment mieux que rien. */
+@supports not (height: 1dvh){
+  #rlt .sous{gap:clamp(6px,1.2vh,11px);padding:0 14px clamp(8px,1.6vh,14px)}
+  #rlt .plaque{padding:clamp(7px,1.4vh,12px) clamp(13px,4vw,20px)}
+  #rlt .bas{padding:clamp(12px,2.2vh,20px) 16px clamp(14px,2.4vh,22px);max-height:50vh}
+  #rlt #smsg{margin-bottom:clamp(10px,2vh,16px)}
+  #rlt #smise{margin-bottom:clamp(10px,2vh,16px)}
+  #rlt .rlOng{margin-bottom:clamp(10px,2vh,16px)}
+  #rlt .grp{gap:clamp(8px,1.6vh,12px)}
+  #rlt .grp button{padding:clamp(14px,2.6vh,24px) 6px}
+  #rlt #schoix .num button.z{padding:clamp(12px,2.2vh,18px) 0}
+  #v21 .tap{padding:clamp(8px,2.2vh,20px) 16px}
+  #v21 .cote{gap:clamp(5px,1.1vh,10px)}
+  #v21 .bas{padding:clamp(14px,2.6vh,22px) 16px clamp(16px,2.6vh,24px);max-height:46vh}
+  #v21 #smsg{margin-bottom:clamp(12px,2.4vh,20px)}
+  #v21 #smise{margin-bottom:clamp(4px,.8vh,8px)}
+  #v21 #schoix{margin-top:clamp(10px,2vh,16px)}
+  #v21 #schoix button{padding:clamp(16px,3vh,24px) 6px}
+  #v21 .rang{margin:clamp(12px,2.2vh,18px) 0 8px}
+  #v21 #v21pr .jet{margin-bottom:clamp(12px,2.2vh,18px)}
+}
 /* =====================================================================
    LA SALLE DE JEU : l'ecran qui se pose par-dessus le menu quand on
    s'assoit a une table. Trois etages : le bandeau, la scene, les mises.
@@ -418,7 +482,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
 #v21 .tot.vide{visibility:hidden}
 
 /* LA CARTE. Aucune taille en dur : largeur en vw bornee, hauteur deduite. */
-#v21 .k{width:clamp(56px,21vw,104px);aspect-ratio:5/7;border-radius:clamp(5px,1.6vw,9px);
+#v21 .k{width:clamp(56px,21vw,104px);min-height:clamp(78px,29.4vw,146px);aspect-ratio:5/7;border-radius:clamp(5px,1.6vw,9px);
   background:#fdfbf4;position:relative;flex:none;
   box-shadow:0 1px 0 rgba(0,0,0,.08),0 clamp(3px,1vw,7px) clamp(8px,2.6vw,18px) rgba(0,0,0,.26);
   animation:v21pose .22s ease-out both}
@@ -501,7 +565,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   font:italic 500 12px/1.5 'Cormorant Garamond',Georgia,serif;color:#6a7a70}
 #v21 #paie b{font-style:normal;color:#44565f}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-16-0100">
+<link rel="stylesheet" href="responsive.css?v=2026-10-16-0200">
 </head>
 <body>
 <div id="tapis">
@@ -599,7 +663,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-16-0100"></script>
+<script src="retour.js?v=2026-10-16-0200"></script>
 <script>
 /* =====================================================================
    LE CASINO
@@ -1230,7 +1294,7 @@ MOTEUR.roulette={
   onglet:'simples',
   choix:function(){
     var o=MOTEUR.roulette.onglet;
-    var g='<div class="ong">'+
+    var g='<div class="rlOng">'+
       '<button data-ong="simples"'+(o==='simples'?' class="on"':'')+'>LES SIMPLES</button>'+
       '<button data-ong="douzaines"'+(o==='douzaines'?' class="on"':'')+'>LES DOUZAINES</button>'+
       '<button data-ong="plein"'+(o==='plein'?' class="on"':'')+'>LE PLEIN</button></div>';
