@@ -17,14 +17,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Cormorant+Garamond:ital,wght@0,600;1,500&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2">
-<script src="maintenance.js?v=2026-10-15-2000"></script>
+<script src="maintenance.js?v=2026-10-15-2100"></script>
 <script>
 /* LA VERSION, comme sur toutes les pages du jeu. Le drapeau anti-boucle
    porte le chemin de la page : s'il ne le portait pas, une page deja
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-15-2000';
+  var MA_VERSION='2026-10-15-2100';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -213,8 +213,115 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
 #paie{width:100%;margin-top:9px;border-top:1px solid rgba(201,162,74,.16);padding-top:8px;
   font:italic 11px Georgia,serif;color:#7a6350;line-height:1.5}
 #paie b{font-style:normal;color:#9a8266}
+
+/* =====================================================================
+   LE VINGT-ET-UN — LE TAPIS CLAIR, PLEIN ECRAN
+
+   Les six autres tables sont une scene dessinee au pixel dans un canvas
+   de taille fixe, agrandie d'un facteur entier. Pour des cartes, ce
+   procede ne tient pas : a 124 pixels de large, une carte en fait 14 et
+   son chiffre 8 — illisible des qu'on tient le telephone a bout de bras,
+   et on ne peut pas l'agrandir sans casser la grille.
+
+   Le vingt-et-un sort donc du canvas et devient du texte et des boites.
+   Rien n'y est en pixels fixes : la carte fait 17,5 % de la largeur de
+   l'ecran (bornee entre 50 et 86), sa hauteur suit son format 5/7, les
+   espaces sont en dvh. Un petit Android et une tablette affichent le
+   meme ecran, juste a deux echelles.
+
+   LES TROIS BOITES DU BAS SONT CELLES DE LA SALLE — #smsg, #smise et
+   #schoix sont DEPLACEES ici a l'ouverture et rendues a la salle a la
+   fermeture. C'est ce qui evite de dupliquer « dire », « monterMises »,
+   « monterChoix » et « verrou » : ils continuent de parler aux memes
+   noeuds, qui ont seulement change de parent.
+   ===================================================================== */
+#v21{position:fixed;inset:0;z-index:12;display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
+  background:radial-gradient(ellipse 120% 62% at 50% 44%,#9ec7a8,#6ea684 58%,#4e8366);
+  font-family:'Cormorant Garamond',Georgia,serif}
+#v21[hidden]{display:none}
+#v21 .bar{flex:none;display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:#f3ecdb;border-bottom:1px solid rgba(34,48,58,.12)}
+#v21 .bar button{-webkit-appearance:none;appearance:none;flex:none;width:34px;height:34px;
+  border:0;border-radius:50%;background:#22303a;color:#f5d98a;font:700 16px 'Oswald',monospace}
+#v21 .bar .ti{flex:1;min-width:0}
+#v21 .bar .ti b{display:block;font:700 15px/1 'Playfair Display',Georgia,serif;color:#22303a}
+#v21 .bar .ti i{display:block;margin-top:3px;font:700 7px 'Oswald',monospace;
+  letter-spacing:2.4px;font-style:normal;color:#8a9a84}
+#v21 .bar .so{flex:none;display:flex;align-items:center;gap:6px;border-radius:999px;
+  padding:7px 11px;background:#22303a;color:#f5d98a;font:700 12px 'Oswald',monospace}
+#v21 .bar .so u{width:10px;height:10px;border-radius:50%;text-decoration:none;
+  background:radial-gradient(#f5d98a,#c08f2a)}
+
+#v21 .tap{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-between;
+  padding:clamp(8px,2.2dvh,20px) 16px;position:relative;overflow:hidden}
+#v21 .tap::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.3;
+  background-image:repeating-linear-gradient(60deg,rgba(255,255,255,.1) 0 1px,transparent 1px 18px),
+  repeating-linear-gradient(-60deg,rgba(255,255,255,.1) 0 1px,transparent 1px 18px)}
+#v21 .tap::after{content:'';position:absolute;left:8%;right:8%;top:50%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent)}
+#v21 .cote{position:relative;display:flex;flex-direction:column;align-items:center;
+  gap:clamp(5px,1.1dvh,10px)}
+#v21 .qui{font:700 8px 'Oswald',monospace;letter-spacing:3px;color:#eaf4ea;
+  text-shadow:0 1px 3px rgba(0,0,0,.3)}
+#v21 .mains{display:flex;justify-content:center;align-items:flex-end;gap:clamp(4px,1.4vw,9px)}
+#v21 .tot{border-radius:999px;padding:4px 12px;font:700 13px 'Oswald',monospace;letter-spacing:1px;
+  background:#f3ecdb;color:#22303a;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+#v21 .tot.brule{background:#b8302e;color:#fff}
+#v21 .tot.vingtun{background:#2f6b46;color:#f1f8f2}
+#v21 .tot.vide{visibility:hidden}
+
+/* LA CARTE. Aucune taille en dur : largeur en vw bornee, hauteur deduite. */
+#v21 .k{width:clamp(50px,17.5vw,86px);aspect-ratio:5/7;border-radius:clamp(5px,1.6vw,9px);
+  background:#fdfbf4;position:relative;flex:none;
+  box-shadow:0 1px 0 rgba(0,0,0,.08),0 clamp(3px,1vw,7px) clamp(8px,2.6vw,18px) rgba(0,0,0,.26);
+  animation:v21pose .22s ease-out both}
+@keyframes v21pose{from{opacity:0;transform:translate(16px,-10px) rotate(8deg)}
+                   to{opacity:1;transform:none}}
+#v21 .mains .k:nth-child(1){transform:rotate(-3deg)}
+#v21 .mains .k:nth-child(3){transform:rotate(3deg)}
+#v21 .mains .k:nth-child(4){transform:rotate(5deg)}
+#v21 .mains .k:nth-child(5){transform:rotate(-6deg)}
+#v21 .k .r{position:absolute;left:clamp(4px,1.3vw,7px);top:clamp(2px,.8vw,5px);
+  font:700 clamp(14px,4.6vw,22px)/1.05 'Oswald',sans-serif}
+#v21 .k .s{position:absolute;left:clamp(4px,1.3vw,7px);top:clamp(17px,5.6vw,28px);
+  font:clamp(11px,3.4vw,16px)/1 serif}
+#v21 .k .g{position:absolute;right:clamp(5px,1.6vw,9px);bottom:clamp(4px,1.3vw,8px);
+  font:clamp(22px,7.4vw,36px)/1 serif;opacity:.92}
+#v21 .k.dos{background:repeating-linear-gradient(45deg,#8a2a28 0 5px,#731f1e 5px 10px)}
+#v21 .k.dos::after{content:'';position:absolute;inset:clamp(4px,1.4vw,8px);
+  border:1px solid rgba(246,233,204,.45);border-radius:3px}
+#v21 .rg{color:#b8302e}#v21 .nr{color:#22303a}
+
+#v21 .bas{flex:none;background:#f3ecdb;border-top:1px solid rgba(34,48,58,.12);
+  padding:clamp(8px,1.6dvh,14px) 14px clamp(10px,1.8dvh,16px);
+  max-height:46dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#v21 #smsg{min-height:20px;margin-bottom:clamp(6px,1.2dvh,11px);text-align:center;
+  font:700 clamp(11px,3.3vw,14px) 'Oswald',monospace;letter-spacing:1px;color:#4e6a56}
+#v21 #smsg.gagne{color:#2f6b46}
+#v21 #smsg.perd{color:#b8302e}
+#v21 #smsg.gros{color:#a8761a;font-size:clamp(13px,3.9vw,16px)}
+#v21 #smise{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;
+  margin-bottom:clamp(7px,1.4dvh,12px);overflow:visible}
+#v21 #smise .m{border:0;border-radius:999px;padding:7px 13px;
+  background:rgba(34,48,58,.07);color:#5a6a60;font:700 11px 'Oswald',monospace;letter-spacing:.6px}
+#v21 #smise .m.on{background:#22303a;color:#f5d98a}
+#v21 #schoix{display:flex;flex-direction:column;gap:9px}
+#v21 #schoix .lgn{display:flex;gap:9px;width:100%}
+#v21 #schoix button{-webkit-appearance:none;appearance:none;flex:1;border:0;border-radius:14px;
+  padding:clamp(12px,2.2dvh,18px) 6px;background:#2f6b46;color:#f1f8f2;
+  font:700 clamp(10px,3vw,12px) 'Oswald',monospace;letter-spacing:1.8px}
+/* TIRER est vert, RESTER est sombre, DOUBLER est en retrait. DONNER et
+   UNE AUTRE MAIN sont seuls sur leur ligne : ce sont des verts aussi,
+   et non des boutons en retrait comme le doublement. */
+#v21 #schoix .lgn:nth-child(1) button:nth-child(2){background:#22303a;color:#f5d98a}
+#v21 #schoix .lgn:nth-child(2) button{background:rgba(34,48,58,.12);color:#2c3f49}
+#v21 #schoix button:disabled{opacity:.4}
+#v21 #paie{margin-top:10px;border-top:1px solid rgba(34,48,58,.12);padding-top:9px;
+  font:italic 500 12px/1.5 'Cormorant Garamond',Georgia,serif;color:#6a7a70}
+#v21 #paie b{font-style:normal;color:#44565f}
 </style>
-<link rel="stylesheet" href="responsive.css?v=2026-10-15-2000">
+<link rel="stylesheet" href="responsive.css?v=2026-10-15-2100">
 </head>
 <body>
 <div id="tapis">
@@ -262,7 +369,28 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#22303a}
   </div>
 </div>
 
-<script src="retour.js?v=2026-10-15-2000"></script>
+<div id="v21" hidden>
+  <div class="bar">
+    <button id="v21sortie">←</button>
+    <div class="ti"><b>Le Vingt-et-un</b><i>FONFON TIRE À SEIZE</i></div>
+    <div class="so"><u></u><span id="v21sou">—</span></div>
+  </div>
+  <div class="tap">
+    <div class="cote">
+      <div class="qui">FONFON</div>
+      <div class="mains" id="v21c"></div>
+      <div class="tot" id="v21tc">—</div>
+    </div>
+    <div class="cote">
+      <div class="tot" id="v21tj">—</div>
+      <div class="mains" id="v21j"></div>
+      <div class="qui" id="v21moi">TOI</div>
+    </div>
+  </div>
+  <div class="bas" id="v21bas"></div>
+</div>
+
+<script src="retour.js?v=2026-10-15-2100"></script>
 <script>
 /* =====================================================================
    LE CASINO
@@ -321,6 +449,7 @@ function enEuros(c){
 }
 var SOLDE=(typeof e.euros==='number')?e.euros:null;
 function majSolde(){
+  try{if(typeof V21_ON!=='undefined'&&V21_ON)v21Solde();}catch(x){}
   var t=(SOLDE===null)?'—':enEuros(SOLDE);
   document.getElementById('sou').textContent=t;
   document.getElementById('ssou').querySelector('span').textContent=t;
@@ -1142,6 +1271,7 @@ MOTEUR.roue={
    une carte, et il ne sait pas ce qui vient.
    ------------------------------------------------------------------ */
 MOTEUR.vingtun={
+  dom:true,                         /* cette table se joue en DOM, pas au canvas */
   nom:'Le Vingt-et-un', sous:'FONFON TIRE À SEIZE',
   L:124, H:98,
   mises:[500,1000,2000,5000,10000,20000], mise:1000,
@@ -1559,11 +1689,93 @@ function boucle(ts){
   RAF=requestAnimationFrame(boucle);
 }
 
+/* =====================================================================
+   LE VINGT-ET-UN EN DOM
+   On emprunte les trois boites du bas de la salle — le message, les
+   mises et les boutons — au lieu d'en refaire des copies : « dire »,
+   « monterMises », « monterChoix » et « verrou » continuent de parler
+   aux memes noeuds, qui ont seulement change de parent le temps de la
+   partie. Un seul jeu de code, deux habillages.
+   ===================================================================== */
+var V21=document.getElementById('v21');
+var V21_ON=false;
+var ENS21=['\u2660','\u2665','\u2666','\u2663'];   /* pique, coeur, carreau, trefle */
+
+function v21Carte(c,face){
+  var e=document.createElement('div');
+  if(!face){e.className='k dos';return e;}
+  var r=((c%13)+13)%13, co=Math.floor(c/13)%4;
+  var cl=(co===1||co===2)?'rg':'nr', en=ENS21[co];
+  e.className='k';
+  e.innerHTML='<span class="r '+cl+'">'+NOMS[r]+'</span>'+
+              '<span class="s '+cl+'">'+en+'</span>'+
+              '<span class="g '+cl+'">'+en+'</span>';
+  return e;
+}
+function v21Pastille(el,tot,montre){
+  if(!montre){el.textContent='—';el.className='tot vide';return;}
+  el.textContent=String(tot);
+  el.className='tot'+(tot>21?' brule':(tot===21?' vingtun':''));
+}
+/* ON NE REFAIT QUE CE QUI A CHANGE : rebatir les deux mains a chaque
+   image relancerait l'animation de pose sur toutes les cartes, et elles
+   clignoteraient sans arret. On compare donc au rendu precedent. */
+var V21_VU='';
+function v21Rendu(s){
+  if(!V21_ON||!s)return;
+  var cacheC=(s.cache&&s.phase!=='pose');
+  var sig=JSON.stringify([s.j,s.c,cacheC,s.phase,s.tj,s.tc,s.mise]);
+  if(sig===V21_VU)return;
+  V21_VU=sig;
+  var mj=document.getElementById('v21j'), mc=document.getElementById('v21c');
+  mj.innerHTML='';mc.innerHTML='';
+  (s.c||[]).forEach(function(c){mc.appendChild(v21Carte(c,true));});
+  if(cacheC)mc.appendChild(v21Carte(0,false));
+  (s.j||[]).forEach(function(c){mj.appendChild(v21Carte(c,true));});
+  v21Pastille(document.getElementById('v21tc'),s.tc,!!s.c.length&&!cacheC);
+  v21Pastille(document.getElementById('v21tj'),s.tj,!!s.j.length);
+  document.getElementById('v21moi').textContent =
+    s.mise?('TOI \u00b7 MISE '+enEuros(s.mise)):'TOI';
+}
+function v21Solde(){
+  var e=document.getElementById('v21sou');
+  if(e)e.textContent=(typeof SOLDE==='number')?enEuros(SOLDE):'—';
+}
+/* les trois boites changent de parent, et reviennent telles quelles */
+function v21Prendre(){
+  var bas=document.getElementById('v21bas');
+  bas.appendChild(SMSG);bas.appendChild(SMISE);bas.appendChild(SCHOIX);
+  bas.appendChild(document.getElementById('paie'));
+}
+function v21Rendre(){
+  var sbas=document.getElementById('sbas');
+  sbas.appendChild(SMSG);sbas.appendChild(SMISE);sbas.appendChild(SCHOIX);
+  sbas.appendChild(document.getElementById('paie'));
+}
+document.getElementById('v21sortie').onclick=function(){
+  if(OCCUPE)return;
+  fermerTable();
+};
+
 function ouvrirTable(T){
   JEU=MOTEUR[T.cle];if(!JEU)return;
   JEU.cle=T.cle;
   S=JEU.init();
   MISE=JEU.fixe||JEU.mise;PARI=null;OCCUPE=false;
+  /* LA TABLE EN DOM : pas de canvas, pas de boucle de dessin. On montre
+     son propre ecran, on lui prete les boites du bas, et on redessine
+     seulement quand l'etat change. */
+  if(JEU.dom){
+    V21_ON=true;V21_VU='';
+    v21Prendre();
+    document.getElementById('paie').innerHTML=JEU.paie;
+    V21.hidden=false;
+    majSolde();v21Solde();
+    dire('À toi de jouer.');
+    monterMises();monterChoix();
+    v21Rendu(S);
+    return;
+  }
   document.getElementById('stitre').querySelector('b').textContent=JEU.nom;
   document.getElementById('stitre').querySelector('small').textContent=JEU.sous;
   document.getElementById('paie').innerHTML=JEU.paie;
@@ -1607,6 +1819,12 @@ function brancherLeTapis(){
   CV.style.touchAction=(JEU&&JEU.glisse)?'none':'';
 }
 function fermerTable(){
+  if(V21_ON){
+    V21.hidden=true;V21_ON=false;V21_VU='';
+    v21Rendre();
+    JEU=null;S=null;majSolde();
+    return;
+  }
   SALLE.hidden=true;
   if(RAF){cancelAnimationFrame(RAF);RAF=null;}
   JEU=null;S=null;
@@ -1640,6 +1858,7 @@ function monterMises(){
 
 function monterChoix(){
   if(!JEU)return;
+  if(V21_ON)v21Rendu(S);
   /* les tables a plusieurs temps changent de boutons en cours de main :
      on redemande la liste a chaque etape plutot que de la poser une
      fois pour toutes */
