@@ -268,10 +268,16 @@ async function ouvrirConcessionTokyo(ongletDepart){
   /* LE PLATEAU NÉON : plein écran, fond de nuit violet. La racine défile ; la
      barre d'onglets reste collée en bas, au-dessus de la zone du geste iOS. */
   if(!document.getElementById('cssCc')){const st=document.createElement('style');st.id='cssCc';st.textContent=
-`#ccRacine{position:absolute;inset:0;display:flex;flex-direction:column;color:#fff;
+`#ccRacine{position:absolute;inset:0;display:flex;flex-direction:column;color:#fff;overflow:hidden;
  background:radial-gradient(120% 60% at 50% 34%,#3a1550 0%,#160b26 55%,#0a0612 100%);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
 #ccRacine button{-webkit-appearance:none;appearance:none;font-family:inherit;cursor:pointer}
-#ccDefile{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 16px;position:relative}
+#ccDefile{flex:1;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 12px;position:relative}
+/* LE SHOWROOM NE DÉFILE PAS : tout tient dans l'écran, quelle que soit sa hauteur.
+   Le plateau prend la place qui reste, la voiture se règle sur lui. */
+#ccDefile.fixe{overflow:hidden;display:flex;flex-direction:column}
+#ccDefile.fixe #ccCorps{flex:1;min-height:0;display:flex;flex-direction:column}
+#ccDefile.fixe #ccBulle{min-height:0!important;margin-top:4px!important}
+#ccDefile.fixe .ccBtns{margin-top:auto;padding-top:clamp(10px,2vh,18px)}
 #ccHaut{display:flex;align-items:center;justify-content:space-between;gap:12px}
 #ccSur{display:block;font:700 10px ui-monospace,monospace;letter-spacing:3px;color:#ff6fb5}
 #ccTitre{display:block;font:800 26px/1.1 -apple-system,sans-serif;margin-top:5px}
@@ -282,33 +288,33 @@ async function ouvrirConcessionTokyo(ongletDepart){
  font:700 10px -apple-system,sans-serif;letter-spacing:.4px;color:rgba(255,255,255,.45)}
 #ccNav button.on{color:#ff6fb5}
 #ccNav svg{width:22px;height:22px}
-.ccScene{position:relative;height:250px;margin-top:10px;touch-action:pan-y}
-.ccNeon{position:absolute;left:-30px;right:-30px;top:6px;height:2px;background:linear-gradient(90deg,transparent,#ff4fb0,#7fe8ff,transparent);opacity:.55}
-.ccDisque{position:absolute;left:50%;bottom:20px;width:min(330px,88%);height:62px;transform:translateX(-50%);border-radius:50%;
+.ccScene{position:relative;flex:1 1 auto;min-height:110px;max-height:360px;margin-top:6px;touch-action:none}
+.ccNeon{position:absolute;left:0;right:0;top:6px;height:2px;background:linear-gradient(90deg,transparent,#ff4fb0,#7fe8ff,transparent);opacity:.55}
+.ccDisque{position:absolute;left:50%;bottom:12%;width:min(330px,86%);height:22%;max-height:62px;transform:translateX(-50%);border-radius:50%;
  background:radial-gradient(closest-side,rgba(255,79,176,.55),rgba(127,232,255,.18) 60%,transparent);box-shadow:0 0 60px rgba(255,79,176,.35)}
 .ccDisque:after{content:'';position:absolute;inset:8px 18px;border-radius:50%;border:2px solid rgba(255,255,255,.35)}
-.ccVoit{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);width:min(330px,88%);image-rendering:pixelated;transition:transform .25s,opacity .25s}
-.ccReflet{position:absolute;left:50%;bottom:-14px;transform:translateX(-50%) scaleY(-1);width:min(330px,88%);opacity:.15;image-rendering:pixelated;
+.ccVoit{position:absolute;left:50%;bottom:19%;transform:translateX(-50%);height:min(62%,160px);width:auto;max-width:84%;image-rendering:pixelated;transition:transform .25s,opacity .25s}
+.ccReflet{position:absolute;left:50%;bottom:-8%;transform:translateX(-50%) scaleY(-1);height:min(62%,160px);width:auto;max-width:84%;opacity:.15;image-rendering:pixelated;
  -webkit-mask:linear-gradient(0deg,#000,transparent 60%);mask:linear-gradient(0deg,#000,transparent 60%)}
-.ccFl{position:absolute;top:96px;width:46px;height:46px;border-radius:50%;border:0;background:rgba(255,255,255,.1);color:#fff;font:400 26px/1 sans-serif}
+.ccFl{position:absolute;top:42%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;border:0;background:rgba(255,255,255,.1);color:#fff;font:400 26px/1 sans-serif}
 .ccFl.g{left:0}.ccFl.d{right:0}
 .ccNom{text-align:center}
 .ccNom small{font:700 10px ui-monospace,monospace;letter-spacing:3px;color:#7fe8ff}
-.ccNom b{display:block;font:800 30px/1.05 -apple-system,sans-serif;margin-top:4px}
+.ccNom b{display:block;font:800 clamp(22px,3.6vh,30px)/1.05 -apple-system,sans-serif;margin-top:4px}
 .ccNom em{display:block;font-style:normal;color:rgba(255,255,255,.55);font-size:13px;margin-top:4px}
-.ccPts{display:flex;justify-content:center;gap:6px;margin-top:12px}
+.ccPts{display:flex;justify-content:center;gap:6px;margin-top:clamp(6px,1.2vh,12px)}
 .ccPts i{width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.25);transition:width .2s}
 .ccPts i.on{width:20px;background:#ff4fb0}
-.ccStats{margin:18px 6px 0;display:grid;gap:10px}
-.ccSt{display:grid;grid-template-columns:104px 1fr 34px;align-items:center;font-size:13px;color:rgba(255,255,255,.72)}
+.ccStats{margin:clamp(8px,2vh,18px) 2px 0;display:grid;gap:clamp(5px,1.1vh,10px)}
+.ccSt{display:grid;grid-template-columns:104px minmax(0,1fr) 38px;gap:0 8px;align-items:center;font-size:13px;color:rgba(255,255,255,.72)}
 .ccSt u{height:6px;border-radius:3px;background:rgba(255,255,255,.1);position:relative;overflow:hidden;text-decoration:none}
 .ccSt u:after{content:'';position:absolute;inset:0;width:var(--v);background:linear-gradient(90deg,#ff4fb0,#7fe8ff);border-radius:3px}
 .ccSt b{text-align:right;color:#fff}
-.ccRec{display:flex;justify-content:space-between;align-items:center;margin:16px 6px 0;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.06);
+.ccRec{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:clamp(8px,1.6vh,16px) 2px 0;padding:clamp(7px,1.2vh,10px) 14px;border-radius:14px;background:rgba(255,255,255,.06);
  font:700 12px ui-monospace,monospace;color:rgba(255,255,255,.6)}
 .ccRec b{color:#ffd98a;font-size:15px}
-.ccBtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
-.ccBtns button{height:56px;border-radius:16px;border:0;font:800 16px -apple-system,sans-serif;color:#fff}
+.ccBtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:clamp(10px,2vh,18px)}
+.ccBtns button{min-width:0;height:clamp(46px,6.5vh,56px);border-radius:16px;border:0;font:800 16px -apple-system,sans-serif;color:#fff}
 .ccGo{background:linear-gradient(180deg,#ff3fa4,#d4006f);box-shadow:0 4px 0 #8a0048,0 0 24px rgba(255,63,164,.4)}
 .ccGo:active{transform:translateY(2px);box-shadow:0 2px 0 #8a0048}
 .ccLock{background:rgba(255,255,255,.08)!important;color:rgba(255,255,255,.55)!important;border:1px solid rgba(255,255,255,.14)!important}
@@ -499,7 +505,7 @@ async function ouvrirConcessionTokyo(ongletDepart){
     $('ccRaz').onclick=()=>{for(const k of Object.keys(t))delete t[k];try{sauver();}catch(x){}rendre();};
     $('ccEssaiT').onclick=()=>{fermerConcessionTokyo();debutEssai(m||{marque:'Toyota'},selT.garage||null);};
   };
-  const rendre=()=>{nav();(onglet===3?records:onglet===2?tuning:onglet===1?garage:showroom)();$('ccDefile').scrollTop=0;};
+  const rendre=()=>{nav();$('ccDefile').classList.toggle('fixe',onglet===0);(onglet===3?records:onglet===2?tuning:onglet===1?garage:showroom)();$('ccDefile').scrollTop=0;};
   rendre();
 }
 
