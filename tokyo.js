@@ -23,6 +23,8 @@ const TK={
   ],
   /* la porte de l'armurerie, dans la façade ; on se place devant pour entrer */
   porte:{x:695,y0:418,y1:462,l:52},
+  /* la façade du concessionnaire, au-dessus de la rue (x de son bord gauche) */
+  concession:{x:700},
   /* la sortie, à l'ouest : le panneau vers le port */
   sortie:{x:60,y0:296,y1:420},
   arrivee:[84,360]
@@ -248,6 +250,11 @@ function construireSolTokyo(){
     g.drawImage(cv,x,TK.bati-h);
     x+=w+2;i++;
   }
+  /* LE CONCESSIONNAIRE, dans la rangée du fond, au-dessus de la rue : on le voit
+     de loin, comme les enseignes, mais on n'y entre pas (la rue s'arrête au pied) */
+  const concession=new Image();
+  concession.onload=()=>{g.drawImage(concession,TK.concession.x,TK.bati-concession.height+4);};
+  concession.src='assets/tokyo/concession.png';
   /* les câbles électriques, qui zigzaguent d'un immeuble à l'autre */
   g.strokeStyle='rgba(12,10,20,.85)';g.lineWidth=1;
   [[30,44],[52,62],[38,72]].forEach(([y1,y2],k)=>{g.beginPath();g.moveTo(0,y1);
