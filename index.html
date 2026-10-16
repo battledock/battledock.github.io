@@ -558,7 +558,19 @@ const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.ori
 afficher(error?('Échec : '+error.message):'Lien de réinitialisation envoyé.',error?'err':'ok');
 };
 document.addEventListener('keydown',ev=>{if(ev.key==='Enter')$('valider').click();});
-sb.auth.getSession().then(({data})=>{if(data&&data.session)allerAuJeu();});</script>
+/* LA RECONNEXION DEMANDEE PAR UNE SALLE. Le casino ou l'arcade envoyaient ici
+   un joueur dont la session ne passait plus ; mais l'accueil voyait encore
+   une session dans le téléphone et le renvoyait aussitôt sur le port. Le
+   joueur tournait en rond : « ça me remet sur le port ». Avec ?reco=1, on
+   efface la session locale, on montre le formulaire, et après la connexion
+   on le ramène dans la salle d'où il venait. */
+const Q=new URLSearchParams(location.search);
+const RECO=Q.get('reco')==='1';
+const RETOUR=(()=>{const r=Q.get('retour')||'';return /^[a-z_]+\.html$/.test(r)?r:'';})();
+if(RETOUR){window.allerAuJeu=function(){location.href=RETOUR+'?v='+encodeURIComponent(window.__VJEU||Date.now());};}
+if(RECO){try{sb.auth.signOut({scope:'local'});}catch(x){}
+  try{afficher('Reconnecte-toi : même adresse, même mot de passe. Tu reviens ensuite où tu étais.','ok');}catch(x){}}
+else sb.auth.getSession().then(({data})=>{if(data&&data.session)allerAuJeu();});</script>
 <script>const $=(i)=>document.getElementById(i);
 const cv=$('pre');
 let dir=0,PIX=0;

@@ -69,7 +69,10 @@
       '<button id="bdSessX" class="x">✕</button>';
     (document.body||document.documentElement).appendChild(d);
     document.getElementById('bdSessGo').onclick=function(){
-      location.href='index.html?v='+(window.MA_VERSION||Date.now());
+      /* reco=1 : l'accueil ne renvoie plus tout de suite sur le port, et
+         retour= ramène le joueur dans la salle après la connexion */
+      var ici=(location.pathname.split('/').pop()||'jeu.html');
+      location.href='index.html?reco=1&retour='+encodeURIComponent(ici)+'&v='+(window.MA_VERSION||Date.now());
     };
     document.getElementById('bdSessX').onclick=function(){
       try{sessionStorage.setItem('bd.sess.vu','1');}catch(e){}
