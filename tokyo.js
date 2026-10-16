@@ -262,6 +262,7 @@ function notesDe(marque,t){
   const p=perfDuModele(marque,t), r=x=>Math.max(1,Math.min(10,Math.round(x*10)/10));
   return {vit:r(p.vmax/50),acc:r(p.acc*6.6),tenue:r(p.grip/1.5),drift:r(7.6/p.drift*0.9)};
 }
+let caler2=null;
 async function ouvrirConcessionTokyo(ongletDepart){
   if(ouvrirConcessionTokyo.ouvert)return;
   ouvrirConcessionTokyo.ouvert=true;
@@ -293,8 +294,8 @@ async function ouvrirConcessionTokyo(ongletDepart){
 .ccDisque{position:absolute;left:50%;bottom:12%;width:min(330px,86%);height:22%;max-height:62px;transform:translateX(-50%);border-radius:50%;
  background:radial-gradient(closest-side,rgba(255,79,176,.55),rgba(127,232,255,.18) 60%,transparent);box-shadow:0 0 60px rgba(255,79,176,.35)}
 .ccDisque:after{content:'';position:absolute;inset:8px 18px;border-radius:50%;border:2px solid rgba(255,255,255,.35)}
-.ccVoit{position:absolute;left:50%;bottom:19%;transform:translateX(-50%);height:min(62%,160px);width:auto;max-width:84%;image-rendering:pixelated;transition:transform .25s,opacity .25s}
-.ccReflet{position:absolute;left:50%;bottom:-8%;transform:translateX(-50%) scaleY(-1);height:min(62%,160px);width:auto;max-width:84%;opacity:.15;image-rendering:pixelated;
+.ccVoit{position:absolute;left:50%;bottom:19%;transform:translateX(-50%);image-rendering:pixelated;image-rendering:crisp-edges;transition:opacity .2s}
+.ccReflet{position:absolute;left:50%;bottom:-8%;transform:translateX(-50%) scaleY(-1);opacity:.15;image-rendering:pixelated;
  -webkit-mask:linear-gradient(0deg,#000,transparent 60%);mask:linear-gradient(0deg,#000,transparent 60%)}
 .ccFl{position:absolute;top:42%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;border:0;background:rgba(255,255,255,.1);color:#fff;font:400 26px/1 sans-serif}
 .ccFl.g{left:0}.ccFl.d{right:0}
@@ -370,8 +371,19 @@ async function ouvrirConcessionTokyo(ongletDepart){
       '<div class="ccStats">'+st('Vitesse',N.vit)+st('Accélération',N.acc)+st('Tenue de route',N.tenue)+st('Drift',N.drift)+'</div>'+
       '<div class="ccRec"><span>★ TON RECORD AU CIRCUIT</span><b>'+fmtTour(rec)+'</b></div>'+
       '<div class="ccBtns"><button class="ccGo" id="ccEssai">Essayer</button><button class="ccLock" id="ccAchat">🔒 Bientôt</button></div>';
+    /* LA VOITURE À L'ÉCHELLE ENTIÈRE : chaque pixel du dessin devient un carré
+       d'un nombre ENTIER de pixels de l'écran, et la largeur suit la hauteur.
+       Étirée à une échelle quelconque (et un peu plus en haut qu'en large quand
+       la largeur butait), la voiture avait des pixels inégaux et une caisse
+       écrasée : elle était laide. */
+    const caler=()=>{const sc=$('ccScene'), c=$('ccVoit');if(!sc||!c||!c.width)return;
+      const dpr=window.devicePixelRatio||1, aw=sc.clientWidth*0.86, ah=Math.min(sc.clientHeight*0.62,170);
+      const k=Math.max(1,Math.floor(Math.min(aw*dpr/c.width,ah*dpr/c.height)));
+      for(const id of ['ccVoit','ccRefl']){const q=$(id);q.style.width=(c.width*k/dpr)+'px';q.style.height=(c.height*k/dpr)+'px';}};
     chargerImgTK(sprite(v)).then(img=>{if(!img||!$('ccVoit'))return;const r=repeindreProfil(img,t);
-      for(const id of ['ccVoit','ccRefl']){const c=$(id);c.width=r.width;c.height=r.height;c.getContext('2d').drawImage(r,0,0);}});
+      for(const id of ['ccVoit','ccRefl']){const c=$(id);c.width=r.width;c.height=r.height;c.getContext('2d').drawImage(r,0,0);}caler();});
+    if(!ouvrirConcessionTokyo.calage){ouvrirConcessionTokyo.calage=true;addEventListener('resize',()=>{try{caler2&&caler2();}catch(x){}});}
+    caler2=caler;
     const aller=d=>{idx+=d;bulle('');rendre();};
     $('ccPrec').onclick=()=>aller(-1);$('ccSuiv').onclick=()=>aller(1);
     /* glisser le doigt sur le plateau fait tourner la vitrine */
