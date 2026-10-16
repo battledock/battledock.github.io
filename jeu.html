@@ -9915,7 +9915,7 @@ prix:500,min:14,ouvert:true},
 {id:'vegas',nom:'Las Vegas',mot:'les tables, les néons, la nuit sans fin',
 prix:9500,min:31,ouvert:false},
 {id:'tokyo',nom:'Tokyo',mot:'la ville de tous les possibles, et son autoroute',
-prix:24000,min:52,ouvert:true}
+prix:0,min:52,ouvert:true}   /* TOKYO GRATUIT : le billet ne coûte rien (il valait 24000, soit 240 €) */
 ];
 let destChoisie=DESTS[0];
 function prochainDepart(min){
@@ -9937,7 +9937,7 @@ $('page2Fond').innerHTML=
 '<div class="gaLig'+(x===D?' on':'')+(x.ouvert?'':' ferme')+'" data-dest="'+x.id+'">'+
 '<span class="d"><b>'+x.nom+'</b><i>'+x.mot+'</i></span>'+
 '<span class="hh">'+(x.ouvert?prochainDepart(x.min):'--:--')+'</span>'+
-'<span class="px">'+(x.ouvert?enEuros(x.prix):'fermé')+'</span>'+
+'<span class="px">'+(x.ouvert?(x.prix?enEuros(x.prix):'gratuit'):'fermé')+'</span>'+
 '</div>').join('')+'</div>'+
 '<div class="gaBillet">'+
 '<div class="bT"><canvas id="gaMed"></canvas><b>'+(e.pseudo||'')+'</b>'+
@@ -9945,7 +9945,7 @@ $('page2Fond').innerHTML=
 '<div class="bL"><span>Du village</span><b>'+D.nom+'</b></div>'+
 '<div class="bL"><span>Départ</span><b>'+(D.ouvert?prochainDepart(D.min):'——')+'</b></div>'+
 '<div class="bL"><span>Durée</span><b>10 secondes · sans arrêt</b></div>'+
-'<div class="bL"><span>Prix</span><b>'+enEuros(D.prix)+'</b></div>'+
+'<div class="bL"><span>Prix</span><b>'+(D.prix?enEuros(D.prix):'gratuit')+'</b></div>'+
 '</div>'+
 '<button class="gaAch" id="gaAch"></button>'+
 '<div id="gaBulle"></div>'+
@@ -9976,7 +9976,7 @@ const peut=D.ouvert&&(e.euros||0)>=D.prix;
 const a=$('gaAch');
 a.className='gaAch'+(peut?'':' pas');
 a.textContent=!D.ouvert?'Ligne fermée'
-:(peut?('Prendre le billet · '+enEuros(D.prix))
+:(peut?('Prendre le billet · '+(D.prix?enEuros(D.prix):'gratuit'))
 :('Il te manque '+enEuros(D.prix-(e.euros||0))));
 a.onclick=prendreLeBillet;
 $('ga-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
@@ -9989,6 +9989,7 @@ async function prendreLeBillet(){
 const D=destChoisie;
 if(!D.ouvert)return;
 if((e.euros||0)<D.prix){gaBulle('Il te manque '+enEuros(D.prix-(e.euros||0)));return;}
+if(!D.prix){gaBulle('Billet gratuit · voie 1');setTimeout(()=>{fermeA=Date.now();$('page2').classList.remove('on');partirEnVoyage(D);},700);return;}
 const a=$('gaAch');a.textContent='…';a.className='gaAch pas';
 const d=await appelRPC('prendre_billet',{p_joueur:e.id,p_dest:D.id,p_cents:D.prix});
 if(!d||d.erreur){
@@ -25797,7 +25798,7 @@ if(o.ouvre==='course'){b.innerHTML='Monter sur le plot<small>LA COURSE DU 50 M �
 if(o.ouvre==='cabine'){b.innerHTML=(e.ap&&e.ap.maillot?'Se rhabiller':'Entrer dans la cabine')+'<small>'+(e.ap&&e.ap.maillot?'REMETTRE TES VÊTEMENTS':'SE METTRE EN MAILLOT')+'</small>';b.classList.add('on');return;}
 if(o.ouvre==='sortiePiscine'){b.innerHTML='Ressortir sur le quai<small>'+(e.ap&&e.ap.maillot?'ON TE RHABILLE EN SORTANT':'LE VIEUX-PORT')+'</small>';b.classList.add('on');return;}
 if(o.ouvre==='metroForet'){b.innerHTML='Prendre le métro<small>LIGNE 1 · '+autresStations()+'</small>';b.classList.add('on');return;}
-if(o.ouvre==='tokyo'){b.innerHTML='Prendre le train<small>LIGNE 2 · TOKYO · 240 €</small>';b.classList.add('on');return;}
+if(o.ouvre==='tokyo'){b.innerHTML='Prendre le train<small>LIGNE 2 · TOKYO · GRATUIT</small>';b.classList.add('on');return;}
 if(o.ouvre==='metroVallon'){b.innerHTML='Prendre le métro<small>LIGNE 2 · RETOUR AU PORT</small>';b.classList.add('on');return;}
 if(o.ouvre==='chantierVallon'){
 if(!ligne2Permise()){b.innerHTML='Le terrain<small>BÊTA · EN CONSTRUCTION</small>';b.classList.add('on');return;}
@@ -31473,7 +31474,7 @@ $('page2Fond').innerHTML=
 '<small style="display:block;font:700 9px ui-monospace,monospace;letter-spacing:3px;color:#7a6a4a">LE MÉTRO · LIGNE 2</small>'+
 '<b style="display:block;font:700 26px \'Baloo 2\',sans-serif;margin-top:4px">Direction Tokyo</b>'+
 '<p style="font:italic 14px Georgia,serif;color:#5a4a30;margin:8px 0 0;line-height:1.5">'+D.mot+'.</p>'+
-'<p style="font:700 13px ui-monospace,monospace;margin:16px 0 0">Billet · '+enEuros(D.prix)+' <span style="color:#7a6a4a">· ton solde · '+enEuros(solde)+'</span></p>'+
+'<p style="font:700 13px ui-monospace,monospace;margin:16px 0 0">Billet · '+(D.prix?enEuros(D.prix):'gratuit')+' <span style="color:#7a6a4a">· ton solde · '+enEuros(solde)+'</span></p>'+
 '<button id="tkGo" style="display:block;width:100%;margin-top:18px;min-height:50px;border-radius:14px;border:2px solid #2b2418;background:'+(peut?'#2b2418':'#d8ccb0')+';color:'+(peut?'#fbf6e8':'#7a6a4a')+';font:700 16px \'Baloo 2\',sans-serif">'+(peut?'Prendre le train · '+enEuros(D.prix):'Il te manque '+enEuros(D.prix-solde))+'</button>'+
 '<button id="tkNon" style="display:block;width:100%;margin-top:10px;min-height:44px;border-radius:14px;border:1px solid #b9a77f;background:transparent;color:#2b2418;font:700 14px \'Baloo 2\',sans-serif">Rester au port</button>'+
 '<div id="tkBulle" style="margin-top:10px;min-height:18px;font:700 12px ui-monospace,monospace;color:#8a3a2a"></div></div>';
@@ -31481,6 +31482,8 @@ $('page2').classList.add('on');
 $('tkNon').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
 $('tkGo').onclick=async()=>{
 if(!peut){$('tkBulle').textContent='Il te manque de quoi payer.';return;}
+/* LE BILLET GRATUIT : rien à encaisser, on ne passe pas par la caisse */
+if(!D.prix){fermeA=Date.now();$('page2').classList.remove('on');partirEnVoyage(D);return;}
 $('tkGo').disabled=true;$('tkBulle').textContent='Le guichet tamponne ton billet…';
 const d=await appelRPC('prendre_billet',{p_joueur:e.id,p_dest:D.id,p_cents:D.prix});
 if(!d||d.erreur){
