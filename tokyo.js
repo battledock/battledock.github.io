@@ -10,7 +10,9 @@ const TK={
   rangee:0, bas:900,              /* pas de rangée de boutiques */
   blocs:[],                       /* rien ne barre le passage */
   porte:null,                     /* pas d'armurerie */
-  concessionPorte:{x:126,y0:206,y1:300,l:20},   /* la porte du concessionnaire, en haut à gauche : on se place sur le trottoir */
+  concessionPorte:{x:86,y0:206,y1:250,l:76},    /* devant la vitrine du concessionnaire, sur le trottoir : nulle part ailleurs */
+  route:[238,338],                /* la route, sous le trottoir */
+  parking:{y0:350},               /* le parking, sous la route */
   sortie:{x:60,y0:296,y1:420},    /* la sortie, à l'ouest : vers le port */
   arrivee:[84,360]
 };
@@ -47,12 +49,37 @@ function construireSolTokyo(){
     }
     y+=h;
   }
-  /* la bordure du trottoir, puis la route, sombre et sans marquage */
+  /* la bordure du trottoir */
   g.fillStyle='#8a86a0';g.fillRect(0,t1,W,2);
-  g.fillStyle='#2a2936';g.fillRect(0,t1+2,W,H-t1-2);
-  g.fillStyle='rgba(255,255,255,.03)';
-  for(let x=0;x<W;x+=50)g.fillRect(x,t1+2,1,H-t1-2);
-  for(let yy=t1+2;yy<H;yy+=50)g.fillRect(0,yy,W,1);
+  /* LA ROUTE : asphalte, deux voies, ligne pointillée au milieu, reflets néon */
+  const [r0,r1]=TK.route;
+  g.fillStyle='#24232e';g.fillRect(0,r0,W,r1-r0);
+  for(let i=0;i<700;i++){g.fillStyle='rgba(255,255,255,.04)';g.fillRect(Math.floor(A(i+50)*W),r0+Math.floor(A(i+90)*(r1-r0)),2,1);}
+  const refl=['#ff4fb0','#7fe8ff','#ffd98a','#b08cff'];
+  g.globalAlpha=.12;for(let i=0;i<24;i++){g.fillStyle=refl[i%4];g.fillRect(Math.floor(A(i*1.9)*W),r0+6+Math.floor(A(i*3.3)*(r1-r0-12)),30+Math.floor(A(i*5.1)*80),1);}g.globalAlpha=1;
+  const ym=(r0+r1)/2|0;
+  g.fillStyle='rgba(235,230,200,.75)';for(let x=10;x<W;x+=40)g.fillRect(x,ym-1,22,3);
+  g.fillStyle='rgba(235,235,245,.35)';g.fillRect(0,r0+4,W,1);g.fillRect(0,r1-5,W,1);
+  /* le trottoir du bas, étroit, puis le parking */
+  g.fillStyle='#8a86a0';g.fillRect(0,r1,W,2);
+  g.fillStyle='#4a4660';g.fillRect(0,r1+2,W,TK.parking.y0-r1-2);
+  for(let x=0;x<W;x+=28){g.fillStyle='rgba(20,16,32,.35)';g.fillRect(x,r1+2,1,TK.parking.y0-r1-2);}
+  const Y0=TK.parking.y0;
+  g.fillStyle='#2c2b38';g.fillRect(0,Y0,W,H-Y0);
+  for(let i=0;i<900;i++){g.fillStyle='rgba(255,255,255,.035)';g.fillRect(Math.floor(A(i+300)*W),Y0+Math.floor(A(i+700)*(H-Y0)),2,1);}
+  /* les places : des rangées face à face, séparées par une allée */
+  g.fillStyle='rgba(235,235,245,.55)';
+  for(let y=Y0+30;y+110<H;y+=160){
+    for(let x=40;x<=W-40;x+=40)g.fillRect(x,y,2,50);      /* rangée du haut */
+    g.fillRect(40,y+50,W-78,2);
+    for(let x=40;x<=W-40;x+=40)g.fillRect(x,y+52,2,50);   /* rangée du bas, dos à dos */
+  }
+  /* les lampadaires du parking */
+  for(const x of [150,450,750])for(const y of [Y0+12,H-24]){
+    const l=g.createRadialGradient(x,y,2,x,y,60);l.addColorStop(0,'rgba(255,220,150,.22)');l.addColorStop(1,'rgba(255,220,150,0)');
+    g.fillStyle=l;g.fillRect(x-60,y-60,120,120);
+    g.fillStyle='#3a3848';g.fillRect(x-3,y-3,6,6);g.fillStyle='#ffe6b0';g.fillRect(x-1,y-1,3,3);
+  }
   /* la rangée du haut : ciel de nuit, façades japonaises collées et cerisiers */
   const haut=new Image();
   haut.onload=()=>{g.drawImage(haut,0,0);};
