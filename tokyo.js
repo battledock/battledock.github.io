@@ -566,6 +566,8 @@ function debutEssai(v,aMoi){
   joueur.x=ESSAI.x;joueur.y=ESSAI.y;
   ESSAI.recul=false;
   demarrerMoteur();
+  /* LA CAMÉRA RECULE quand on prend le volant : on voit loin devant */
+  try{taille();videCache();}catch(x){}
 }
 function finEssai(){
   ESSAI.actif=false;
@@ -573,6 +575,7 @@ function finEssai(){
   if(ESSAI.garage){const v=ESSAI.garage;v.km=(v.km||0)+ESSAI.dist*0.00025;v.drifts=(v.drifts||0)+ESSAI.drifts;v.sorties=(v.sorties||0)+1;try{sauver();}catch(x){}}
   ESSAI.garage=null;
   couperMoteur();
+  try{taille();videCache();}catch(x){}
   const r=ESSAI.retour||{x:86,y:224};
   const [dx,dy]=degager(r.x,r.y);joueur.x=dx;joueur.y=dy;
 }
@@ -592,7 +595,7 @@ function finEssai(){
 function majEssai(dt,jx,jy){
   dt=Math.min(dt,0.05);
   const PF=ESSAI.perf||perfDuTuning({});
-  const VMAX=PF.vmax*0.5, ACC=125*PF.acc, FREIN=280, RECUL=-60;
+  const VMAX=PF.vmax*0.55, ACC=175*PF.acc, FREIN=320, RECUL=-70;
   jx=jx||0;jy=jy||0;
   const n=Math.min(1,Math.hypot(jx,jy));
   const c0=Math.cos(ESSAI.ang), s0=Math.sin(ESSAI.ang);
@@ -610,19 +613,20 @@ function majEssai(dt,jx,jy){
     else{gaz=n*(Math.abs(d)<0.5?1:Math.max(0.45,Math.cos(Math.abs(d)*0.7)));vise=true;}
   }else ESSAI.recul=false;
   /* 1. LE VOLANT : on tourne vers le cap, plus vite en roulant */
-  const prise=Math.min(1,Math.abs(av0)/40);
-  if(vise){const taux=1.4+1.7*prise;ESSAI.ang+=Math.max(-1,Math.min(1,d*2))*taux*prise*dt;}
+  /* ARCADE : elle tourne même au pas (un peu), et franchement dès qu'elle roule */
+  const prise=Math.max(0.3,Math.min(1,Math.abs(av0)/30));
+  if(vise){const taux=2.3+1.9*prise;ESSAI.ang+=Math.max(-1,Math.min(1,d*2.6))*taux*prise*dt;}
   /* 2. LA VITESSE RESTE DANS LE MONDE, relue dans l'axe de la voiture */
   const nx=Math.cos(ESSAI.ang), ny=Math.sin(ESSAI.ang);
   let av=ESSAI.vx*nx+ESSAI.vy*ny;
   let tr=-ESSAI.vx*ny+ESSAI.vy*nx;
-  if(gaz>0)av+=ACC*gaz*Math.max(0.08,1-av/VMAX)*dt;
+  if(gaz>0)av+=ACC*gaz*Math.max(0.06,1-Math.pow(Math.max(0,av)/VMAX,2))*dt;
   else if(gaz<0)av=Math.max(RECUL,av-ACC*0.7*(-gaz)*dt);
   if(frein)av-=Math.sign(av)*Math.min(Math.abs(av),FREIN*dt);
   if(!gaz&&!frein){av*=Math.exp(-1.5*dt);if(Math.abs(av)<4)av=0;}
   av=Math.max(RECUL,Math.min(VMAX,av));
   /* 3. L'ADHÉRENCE : elle lâche dans un virage serré pris vite */
-  const derape=vise&&gaz>0&&Math.abs(d)>0.7&&av>VMAX*0.5;
+  const derape=vise&&gaz>0&&Math.abs(d)>0.6&&av>VMAX*0.45;
   const grip=derape?PF.drift*1.8:(frein?PF.grip*0.7:PF.grip);
   tr*=Math.exp(-grip*dt);
   ESSAI.vx=av*nx-tr*ny; ESSAI.vy=av*ny+tr*nx;
