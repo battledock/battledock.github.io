@@ -364,6 +364,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
     <div class="mo">
       <button data-o="jouer" class="on">JOUER</button>
       <button data-o="armes">ARSENAL</button>
+      <button data-o="boutique">BOUTIQUE</button>
       <button data-o="zones">LES ZONES</button>
       <button data-o="rec">TABLEAU</button>
     </div>
@@ -1189,7 +1190,14 @@ var HG_ARMES={
   foudroyeur:  {nom:'FOUDROYEUR',   cad:560, plombs:1, ecart:0.0,  deg:2, vit:1,    chg:9,  rech:1350, por:118, c:'#9ad8ff', arc:4, saut:54},
   mortier:     {nom:'LE MORTIER',   cad:950, plombs:1, ecart:0.05, deg:2, vit:0.17, chg:4,  rech:1550, por:210, c:'#c8d0a0', obus:30, rec:3.6},
   napalm:      {nom:'LE NAPALM',    cad:78,  plombs:1, ecart:0.30, deg:1, vit:0.16, chg:84, rech:1750, por:76,  c:'#ff6a1a', feu:true, flaque:9},
-  laser:       {nom:'LE LASER',     cad:165, plombs:1, ecart:0.0,  deg:2, vit:1,    chg:40, rech:1450, por:250, c:'#ff5a8a', rayon:true}
+  laser:       {nom:'LE LASER',     cad:165, plombs:1, ecart:0.0,  deg:2, vit:1,    chg:40, rech:1450, por:250, c:'#ff5a8a', rayon:true},
+  /* ---- LA BOUTIQUE : quatre armes qu'on achete, jamais tombees dans les caisses ----
+     Chacune a son propre trait : le fusil d'argent disperse, le minigun ne
+     s'arrete pas, le plasma rebondit deux fois, le railgun traverse tout. */
+  fusil:       {nom:'FUSIL D’ARGENT', cad:520, plombs:9, ecart:0.22, deg:2, vit:0.32, chg:8,  rech:1000, por:130, c:'#e8f4ff', rec:3.0, halo:true},
+  minigun:     {nom:'MINIGUN',       cad:42,  plombs:1, ecart:0.13, deg:2, vit:0.40, chg:160,rech:2400, por:190, c:'#ffd27a', halo:true},
+  plasma:      {nom:'PLASMA',        cad:150, plombs:1, ecart:0.03, deg:3, vit:0.52, chg:24, rech:1300, por:240, c:'#c08cff', ric:2, halo:true},
+  railgun:     {nom:'RAILGUN',       cad:880, plombs:1, ecart:0.0,  deg:6, vit:1,    chg:4,  rech:1600, por:440, c:'#9ff7ff', perce:4, gros:true, halo:true}
 };
 var HG_LOT=['pompe','mitraillette','harpon','revolver','clouteuse','flammes',
             'scie','foudroyeur','mortier','napalm','laser'];
@@ -1210,6 +1218,11 @@ var HG_DEBLOQUE=[
   {a:'laser',        s:160000, nom:'LE LASER'}
 ];
 var HG_REC=0, HG_PARTIES=0;   /* le record du joueur et son nombre de parties, lus a l'ouverture */
+var CARTES_PRETES=1100;       /* le temps de lire les trois cartes avant de pouvoir en prendre une */
+var ARME_DEPART='pistolet';   /* l'arme choisie au comptoir pour la partie en cours */
+var CHOIX_ARME='pistolet';    /* l'arme qu'on a cochee dans le menu, avant de glisser le jeton */
+var MES_ARMES=['pistolet'];   /* ce que le serveur dit qu'on possede */
+var BOUTIQUE=[];              /* les armes a vendre, avec leur prix, lues au comptoir */
 /* LES AMELIORATIONS : trois a chaque salle, on en garde une. C'est ce
    qui fait qu'une partie ne ressemble pas a la precedente — on ne joue
    pas la meme chose avec un chargeur double qu'avec des balles qui
@@ -1484,7 +1497,8 @@ MOTEUR.hangar={
   demarrer:function(s){
     s.salle=1;s.score=0;s.vies=5;s.tach=[];s.am={};s.cartes=null;s.neuf=null;
     s.arcs=[];s.feux=[];
-    s.arme='pistolet';s.chg=HG_ARMES.pistolet.chg;s.rech=0;
+    /* L'ARME DE DEPART EST CELLE QU'ON A CHOISIE AU COMPTOIR, validee par le serveur */
+    s.arme=ARME_DEPART||'pistolet';s.chg=HG_ARMES[s.arme].chg;s.rech=0;
     s.j.x=HG_L/2;s.j.y=HG_H-60;s.j.vx=s.j.vy=0;
     this.garnir(s);
   },
@@ -1496,7 +1510,7 @@ MOTEUR.hangar={
     /* LE CHOIX D'AMELIORATION ARRETE TOUT. Choisir sous la pression
        n'est pas choisir : c'est appuyer au hasard sur la carte du
        milieu. On fige la salle, on lit les trois, on reprend. */
-    if(s.cartes){ if(s.motT>0)s.motT-=dt; return; }
+    if(s.cartes){ s.cartesT=(s.cartesT||0)+dt; if(s.motT>0)s.motT-=dt; return; }
     if(s.motT>0)s.motT-=dt;
     if(s.inv>0)s.inv-=dt;
     if(s.pause>0)s.pause-=dt;
@@ -2003,6 +2017,10 @@ MOTEUR.hangar={
       var k=Math.floor(Math.random()*(i+1));var t=tri[i];tri[i]=tri[k];tri[k]=t;
     }
     s.cartes=tri.slice(0,3);
+    /* LE TEMPS DE LIRE : les cartes apparaissent en fondu, et on ne peut
+       en prendre aucune avant CARTES_PRETES millisecondes. Sinon le dernier
+       coup de feu, le doigt encore pose, choisissait a notre place. */
+    s.cartesT=0;
   },
   prendreCarte:function(s,i){
     var c=s.cartes&&s.cartes[i];
@@ -2016,7 +2034,7 @@ MOTEUR.hangar={
   /* LA BORNE EST TOUCHEE : on ne s'en sert que pour choisir une carte */
   fige:function(s){ return !!(s&&s.cartes); },
   tape:function(s,x,y){
-    if(!s.cartes)return;
+    if(!s.cartes||(s.cartesT||0)<CARTES_PRETES)return;
     var L=SL, H=SH;
     /* LA GEOMETRIE EST CELLE DU DESSIN, au pixel pres : deux formules
        qui derivent l'une de l'autre finissent toujours par diverger, et
@@ -2495,8 +2513,14 @@ MOTEUR.hangar={
       G.fillStyle='#8ad07a';G.font='bold 7px ui-monospace,monospace';
       G.fillText('SALLE '+s.salle+' NETTOYÉE',L/2,y0-30);
       G.fillStyle='#f4ecd8';G.font='bold 11px ui-monospace,monospace';
-      G.fillText('CHOISIS UNE AMÉLIORATION',L/2,y0-16);
+      var pretes=(s.cartesT||0)>=CARTES_PRETES;
+      /* LE FONDU ET LA BARRE : on voit que le choix arrive, puis qu'il est
+         ouvert. Rien ne se prend avant la barre pleine. */
+      var ap=Math.min(1,(s.cartesT||0)/450);
+      G.globalAlpha=ap;
+      G.fillText(pretes?'CHOISIS UNE AMÉLIORATION':'UNE SECONDE…',L/2,y0-16);
       R(L/2-30,y0-11,60,1,'rgba(90,216,255,.45)');
+      if(!pretes)R(L/2-30,y0-11,Math.round(60*(s.cartesT||0)/CARTES_PRETES),2,'#5ad8ff');
 
       for(var ic2=0;ic2<s.cartes.length;ic2++){
         var ca=s.cartes[ic2], yy=y0+ic2*(hc+ec);
@@ -2564,6 +2588,7 @@ MOTEUR.hangar={
         G.fillText('RIEN ENCORE — C’EST TA PREMIÈRE',10,cy2+8);
       }
       G.textAlign='left';G.font='bold 8px ui-monospace,monospace';
+      G.globalAlpha=1;
       return;
     }
     if(s.phase==='fini'){
@@ -2647,6 +2672,9 @@ function hgArmeIcone(g2,A,L2,H2){
         (ii*ii+jj*jj>10)?'#dfe8f0':'#9aa6b2');
   }
   else{P(bx,by,3,ep,A.c);P(bx,by,3,1,'#ffffff');}
+  /* LES ARMES DE LA BOUTIQUE ONT UNE LUEUR : un liseré de leur couleur
+     autour de la bouche, pour qu'on les reconnaisse du premier coup d'œil */
+  if(A.halo){P(bx-1,by-1,1,ep+2,A.c);P(bx+3,by-1,1,ep+2,A.c);P(bx,by-2,3,1,A.c);}
 }
 /* LA VIGNETTE D'UNE ZONE : sa dalle, ses murs, un reste de lumiere. On
    ne montre pas une capture — on montre la COULEUR du lieu, qui est la
@@ -2700,6 +2728,15 @@ function mnuMaj(){
          prochaine.nom+'</b> entre dans les caisses.</p>';
     }else h+='<p>Les douze armes sont \u00e0 toi. Il ne reste que le score.</p>';
     h+='</div>';
+    /* LE CHOIX DE DEPART : on ne prend que ce qu'on possede, et le serveur le verifie */
+    h+='<h3>TON ARME DE DÉPART</h3>';
+    MES_ARMES.forEach(function(a){
+      var A=HG_ARMES[a], on=(a===CHOIX_ARME);
+      h+='<div class="gr" data-pick="'+a+'" style="cursor:pointer;'+(on?'border-color:#5ad8ff;background:rgba(90,216,255,.12);':'')+'">'+
+         '<canvas data-a="'+a+'" width="32" height="15"></canvas>'+
+         '<span class="tx"><b>'+A.nom+'</b><em>'+hgArmeMot(a)+'</em></span>'+
+         '<span class="cle">'+(on?'<b>✓</b>CHOISIE':'<b>·</b>CHOISIR')+'</span></div>';
+    });
     h+='<h3>COMMENT ON JOUE</h3>'+
        '<div class="fich"><p><b>Un pouce, n\u2019importe o\u00f9 \u00e0 gauche</b> : tu marches. '+
        'Le tir part tout seul sur la b\u00eate la plus proche \u2014 c\u2019est le PLACEMENT '+
@@ -2729,6 +2766,22 @@ function mnuMaj(){
          '<span class="cle">'+(eue?'<b>\u2713</b>\u00c0 TOI':('<b>'+mnuChiffre(d.s)+'</b>POINTS'))+
          '</span></div>';
     }
+  }else if(MNU_ONG==='boutique'){
+    h+='<div class="fich"><small>TON SOLDE</small>'+
+       '<div class="gros">'+(SOLDE===null?'—':enEuros(SOLDE))+'</div>'+
+       '<p>Les armes de la boutique restent à toi. Elles ne tombent jamais dans les caisses : '+
+       'il faut les acheter, avec l’argent que tu rapportes des salles.</p></div>';
+    if(!BOUTIQUE.length)h+='<div class="fich"><p>Le comptoir de la boutique ne répond pas encore.</p></div>';
+    BOUTIQUE.forEach(function(b){
+      var A=HG_ARMES[b.arme], tirs=Math.round(60000/A.cad);
+      h+='<div class="gr'+(b.possede?' no':'')+'">'+
+         '<canvas data-a="'+b.arme+'" width="32" height="15"></canvas>'+
+         '<span class="tx"><b>'+A.nom+'</b><em>'+hgArmeMot(b.arme)+'</em>'+
+         mnuBarres(tirs,650,5)+mnuBarres(A.deg*A.plombs,8,5)+mnuBarres(A.por,460,5)+'</span>'+
+         '<span class="cle">'+(b.possede?'<b>✓</b>À TOI':
+           '<button data-buy="'+b.arme+'" style="font:700 13px \'Baloo 2\',sans-serif;padding:6px 10px;border-radius:10px;border:1px solid #5ad8ff;background:rgba(90,216,255,.16);color:#eaf6ff">'+enEuros(b.prix)+'</button>')+
+         '</span></div>';
+    });
   }else if(MNU_ONG==='zones'){
     for(var z=0;z<HG_ZONES.length;z++){
       var Z=HG_ZONES[z];
@@ -2784,7 +2837,11 @@ function hgArmeMot(a){
           foudroyeur:'un \u00e9clair, cinq b\u00eates \u2014 laisse-les se grouper',
           mortier:'il tombe DERRI\u00c8RE la caisse',
           napalm:'tu poses le feu sur leur chemin',
-          laser:'tout ce qui est dans l\u2019axe prend'}[a]||'';
+          laser:'tout ce qui est dans l\u2019axe prend',
+          fusil:'neuf plombs en \u00e9ventail \u2014 de pr\u00e8s, rien n\u2019y \u00e9chappe',
+          minigun:'une rafale qui ne s\u2019arr\u00eate jamais',
+          plasma:'rebondit deux fois sur les murs',
+          railgun:'un trait qui traverse tout, \u00e0 tr\u00e8s longue port\u00e9e'}[a]||'';
 }
 function mnuOuvrir(){
   if(!BORNE||BORNE.cle!=='hangar')return;
@@ -2807,8 +2864,36 @@ function mnuFermer(){
 });
 document.getElementById('mnuGo').onclick=function(){
   if(OCCUPE)return;
-  mnuFermer();prendreJeton();
+  mnuFermer();prendreJeton(CHOIX_ARME);
 };
+
+/* le menu : on coche son arme de depart, ou on en achete une */
+MNUC.addEventListener('click',function(ev){
+  var t=ev.target;
+  var p=t.closest&&t.closest('[data-pick]');
+  if(p){CHOIX_ARME=p.getAttribute('data-pick');mnuMaj();return;}
+  var b=t.closest&&t.closest('[data-buy]');
+  if(b&&!OCCUPE)acheterArme(b.getAttribute('data-buy'));
+});
+
+/* ce que le comptoir dit de notre arsenal et de la boutique */
+async function chargerArsenal(){
+  var r=await rpc('arcade_mon_arsenal',{});
+  if(!r||r.erreur||!r.possedees)return;
+  MES_ARMES=r.possedees;
+  BOUTIQUE=r.boutique||[];
+  if(MES_ARMES.indexOf(CHOIX_ARME)<0)CHOIX_ARME='pistolet';
+  if(MNU&&!MNU.hidden)mnuMaj();
+}
+async function acheterArme(a){
+  verrou(true);
+  var r=await rpc('arcade_acheter_arme',{p_arme:a});
+  verrou(false);
+  if(!r||r.erreur){dire((r&&r.erreur)||'La boutique ne répond pas.','mal');return;}
+  if(typeof r.euros==='number'){SOLDE=r.euros;noterEuros(r.euros);majSolde();}
+  dire(HG_ARMES[a].nom+' est à toi.','gros');
+  chargerArsenal();
+}
 
 /* =====================================================================
    LE PILOTE
@@ -2882,6 +2967,7 @@ function ouvrirBorne(B){
      demande. */
   if(B.cle==='hangar'){
     mnuOuvrir();
+    chargerArsenal();
     (async function(){
       try{var r=await rpc('arcade_record',{p_borne:'hangar'});
           if(r&&typeof r.score==='number'){HG_REC=r.score;
@@ -2937,11 +3023,13 @@ function verrou(v){
   [].forEach.call(JACT.querySelectorAll('button'),function(b){b.disabled=v;});
 }
 
-async function prendreJeton(){
+async function prendreJeton(arme){
   verrou(true);dire('On glisse le jeton…');
-  var r=await rpc('arcade_jeton',{p_borne:BORNE.cle});
-  if(r.erreur){dire(r.erreur,'mal');verrou(false);return;}
+  var choisie=arme||CHOIX_ARME||'pistolet';
+  var r=await rpc('arcade_demarrer',{p_borne:BORNE.cle,p_arme:choisie});
+  if(!r||r.erreur){dire((r&&r.erreur)||'La salle ne répond pas.','mal');verrou(false);return;}
   PARTIE=r.partie;
+  ARME_DEPART=r.arme||choisie;
   if(typeof r.euros==='number'){SOLDE=r.euros;noterEuros(r.euros);majSolde();}
   /* ON PASSE EN PLEIN ECRAN AVANT DE GARNIR LA SCENE. L'inverse posait
      les conteneurs du grappin avec les mesures de l'ecran reduit, puis
