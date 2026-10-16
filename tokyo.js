@@ -247,74 +247,147 @@ function repeindreProfil(img,t){
 const TEINTES_TK=['#d01426','#ff4fb0','#ff7a1a','#ffd21f','#5cc83a','#1fd6c3','#1a5fd0','#7a3cff','#f4f4f6','#8e939c','#2a2c33','#0b0b0f'];
 const NEONS_TK=['#ff4fb0','#7fe8ff','#b08cff','#5cff8a','#ffd98a','#ff3b3b'];
 
+/* ================= CHAQUE VOITURE A SON CARACTÈRE =================
+   Multiplicateurs appliqués aux performances de base (et au tuning) : la
+   Supra et la F40 glissent, la GT-R et la 911 collent à la route, la
+   Huracán pousse fort. Les barres du showroom se lisent dans ces chiffres :
+   ce qu'on voit au plateau, c'est ce qu'on sent sur le circuit. */
+const CARACTERE={Toyota:{v:1,a:1,g:0.95,d:1.15},BMW:{v:0.95,a:0.95,g:1,d:1.1},Lamborghini:{v:1.12,a:1.18,g:1.15,d:0.8},
+  Porsche:{v:1.08,a:1.1,g:1.25,d:0.85},Nissan:{v:1.1,a:1.2,g:1.2,d:0.8},Ferrari:{v:1.12,a:1.05,g:0.95,d:1.1}};
+function perfDuModele(marque,t){
+  const p=perfDuTuning(t), k=CARACTERE[marque]||{v:1,a:1,g:1,d:1};
+  return Object.assign({},p,{vmax:p.vmax*k.v,acc:p.acc*k.a,grip:p.grip*k.g,drift:p.drift/k.d});
+}
+function notesDe(marque,t){
+  const p=perfDuModele(marque,t), r=x=>Math.max(1,Math.min(10,Math.round(x*10)/10));
+  return {vit:r(p.vmax/50),acc:r(p.acc*6.6),tenue:r(p.grip/1.5),drift:r(7.6/p.drift*0.9)};
+}
 async function ouvrirConcessionTokyo(ongletDepart){
   if(ouvrirConcessionTokyo.ouvert)return;
   ouvrirConcessionTokyo.ouvert=true;
-  /* PLEIN ÉCRAN : la racine est posée en absolu sur toute la page2, et c'est elle
-     qui défile ; la barre du bas reste collée, au-dessus de la zone du geste iOS */
+  /* LE PLATEAU NÉON : plein écran, fond de nuit violet. La racine défile ; la
+     barre d'onglets reste collée en bas, au-dessus de la zone du geste iOS. */
+  if(!document.getElementById('cssCc')){const st=document.createElement('style');st.id='cssCc';st.textContent=
+`#ccRacine{position:absolute;inset:0;display:flex;flex-direction:column;color:#fff;
+ background:radial-gradient(120% 60% at 50% 34%,#3a1550 0%,#160b26 55%,#0a0612 100%);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+#ccRacine button{-webkit-appearance:none;appearance:none;font-family:inherit;cursor:pointer}
+#ccDefile{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 16px;position:relative}
+#ccHaut{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#ccSur{display:block;font:700 10px ui-monospace,monospace;letter-spacing:3px;color:#ff6fb5}
+#ccTitre{display:block;font:800 26px/1.1 -apple-system,sans-serif;margin-top:5px}
+#ccX{flex:none;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.1);color:#fff;font-size:18px}
+#ccNav{flex:none;display:flex;justify-content:space-around;background:rgba(10,6,18,.92);border-top:1px solid rgba(255,255,255,.08);
+ padding:8px 4px calc(env(safe-area-inset-bottom,0px) + 8px)}
+#ccNav button{flex:1;min-height:52px;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+ font:700 10px -apple-system,sans-serif;letter-spacing:.4px;color:rgba(255,255,255,.45)}
+#ccNav button.on{color:#ff6fb5}
+#ccNav svg{width:22px;height:22px}
+.ccScene{position:relative;height:250px;margin-top:10px;touch-action:pan-y}
+.ccNeon{position:absolute;left:-30px;right:-30px;top:6px;height:2px;background:linear-gradient(90deg,transparent,#ff4fb0,#7fe8ff,transparent);opacity:.55}
+.ccDisque{position:absolute;left:50%;bottom:20px;width:min(330px,88%);height:62px;transform:translateX(-50%);border-radius:50%;
+ background:radial-gradient(closest-side,rgba(255,79,176,.55),rgba(127,232,255,.18) 60%,transparent);box-shadow:0 0 60px rgba(255,79,176,.35)}
+.ccDisque:after{content:'';position:absolute;inset:8px 18px;border-radius:50%;border:2px solid rgba(255,255,255,.35)}
+.ccVoit{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);width:min(330px,88%);image-rendering:pixelated;transition:transform .25s,opacity .25s}
+.ccReflet{position:absolute;left:50%;bottom:-14px;transform:translateX(-50%) scaleY(-1);width:min(330px,88%);opacity:.15;image-rendering:pixelated;
+ -webkit-mask:linear-gradient(0deg,#000,transparent 60%);mask:linear-gradient(0deg,#000,transparent 60%)}
+.ccFl{position:absolute;top:96px;width:46px;height:46px;border-radius:50%;border:0;background:rgba(255,255,255,.1);color:#fff;font:400 26px/1 sans-serif}
+.ccFl.g{left:0}.ccFl.d{right:0}
+.ccNom{text-align:center}
+.ccNom small{font:700 10px ui-monospace,monospace;letter-spacing:3px;color:#7fe8ff}
+.ccNom b{display:block;font:800 30px/1.05 -apple-system,sans-serif;margin-top:4px}
+.ccNom em{display:block;font-style:normal;color:rgba(255,255,255,.55);font-size:13px;margin-top:4px}
+.ccPts{display:flex;justify-content:center;gap:6px;margin-top:12px}
+.ccPts i{width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.25);transition:width .2s}
+.ccPts i.on{width:20px;background:#ff4fb0}
+.ccStats{margin:18px 6px 0;display:grid;gap:10px}
+.ccSt{display:grid;grid-template-columns:104px 1fr 34px;align-items:center;font-size:13px;color:rgba(255,255,255,.72)}
+.ccSt u{height:6px;border-radius:3px;background:rgba(255,255,255,.1);position:relative;overflow:hidden;text-decoration:none}
+.ccSt u:after{content:'';position:absolute;inset:0;width:var(--v);background:linear-gradient(90deg,#ff4fb0,#7fe8ff);border-radius:3px}
+.ccSt b{text-align:right;color:#fff}
+.ccRec{display:flex;justify-content:space-between;align-items:center;margin:16px 6px 0;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.06);
+ font:700 12px ui-monospace,monospace;color:rgba(255,255,255,.6)}
+.ccRec b{color:#ffd98a;font-size:15px}
+.ccBtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.ccBtns button{height:56px;border-radius:16px;border:0;font:800 16px -apple-system,sans-serif;color:#fff}
+.ccGo{background:linear-gradient(180deg,#ff3fa4,#d4006f);box-shadow:0 4px 0 #8a0048,0 0 24px rgba(255,63,164,.4)}
+.ccGo:active{transform:translateY(2px);box-shadow:0 2px 0 #8a0048}
+.ccLock{background:rgba(255,255,255,.08)!important;color:rgba(255,255,255,.55)!important;border:1px solid rgba(255,255,255,.14)!important}
+.ccLigneRec{display:flex;align-items:center;gap:12px;padding:12px;border-radius:18px;background:rgba(255,255,255,.06);margin-top:10px}
+.ccLigneRec img{width:96px;image-rendering:pixelated;flex:none}
+.ccLigneRec div{flex:1;min-width:0}
+.ccLigneRec b{display:block;font-size:15px}
+.ccLigneRec small{display:block;font:700 11px ui-monospace,monospace;color:rgba(255,255,255,.5);margin-top:3px}
+.ccLigneRec i{font-style:normal;font:700 16px ui-monospace,monospace;color:#ffd98a}
+.ccLigneRec button{flex:none;height:40px;padding:0 14px;border-radius:12px;border:0;background:#ff4fb0;color:#fff;font:700 13px sans-serif}`;
+  document.head.appendChild(st);}
   $('page2Fond').className='';
   $('page2Fond').innerHTML=
-    '<div id="ccRacine" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#ffffff;color:#14141a;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif">'+
-    '<div id="ccDefile" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top,0px) + 18px) 16px 16px">'+
-      '<small id="ccSur" style="display:block;font:700 11px sans-serif;letter-spacing:3px;color:#ff4fb0"></small>'+
-      '<b id="ccTitre" style="display:block;font:800 30px sans-serif;margin:2px 0 12px"></b>'+
+    '<div id="ccRacine"><div id="ccDefile">'+
+      '<div id="ccHaut"><div><small id="ccSur"></small><b id="ccTitre"></b></div><button id="ccX" aria-label="Sortir">✕</button></div>'+
       '<div id="ccCorps"></div>'+
-      '<div id="ccBulle" style="min-height:20px;margin-top:12px;font:600 14px sans-serif;color:#d0306f;text-align:center"></div>'+
-    '</div>'+
-    '<nav id="ccNav" style="flex:none;display:flex;border-top:1px solid #ececf0;background:#fff;padding:6px 6px calc(env(safe-area-inset-bottom,0px) + 8px)"></nav></div>';
+      '<div id="ccBulle" style="min-height:20px;margin-top:12px;font:600 14px sans-serif;color:#ff8ac8;text-align:center"></div>'+
+    '</div><nav id="ccNav"></nav></div>';
   $('page2').classList.add('on');
+  $('ccX').onclick=fermerConcessionTokyo;
   const bulle=t=>{$('ccBulle').textContent=t||'';};
   const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   let vehicules=[];
   try{const r=await fetch('assets/voitures/catalogue.json');vehicules=((await r.json()).vehicules)||[];}catch(x){}
-  const ORIGINE={Toyota:'Japonaises',Nissan:'Japonaises',BMW:'Allemandes',Porsche:'Allemandes',Lamborghini:'Italiennes',Ferrari:'Italiennes'};
-  const TEINTE={Toyota:'#ffe3e6',Nissan:'#e9ebf1',BMW:'#e1eaff',Porsche:'#eff1f5',Lamborghini:'#e4f6db',Ferrari:'#ffe3e6'};
+  const ORIGINE={Toyota:'Japonaise',Nissan:'Japonaise',BMW:'Allemande',Porsche:'Allemande',Lamborghini:'Italienne',Ferrari:'Italienne'};
   const sprite=v=>{const p=(v&&v.photos||[]).find(q=>q.role==='sprite_pixel');return p?p.fichier:'';};
   const nom=v=>v?[v.marque,v.modele].filter(Boolean).join(' '):'Voiture';
   const modele=id=>vehicules.find(v=>v.id===id);
-  let onglet=ongletDepart||0, filtre='Toutes', ouverte=-1, choisie=0;
-  const NAV=['Showroom','Mon garage','Tuning','Sortir'];
+  let onglet=ongletDepart||0, idx=ouvrirConcessionTokyo.idx||0, choisie=0;
+  const IC={sh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13l2-5h14l2 5v5H3z"/><circle cx="7.5" cy="17" r="1.6"/><circle cx="16.5" cy="17" r="1.6"/></svg>',
+    ga:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10l9-6 9 6v10H3z"/><path d="M7 20v-6h10v6"/></svg>',
+    tu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 7l3-3 3 3-3 3M4 20l9-9M11 4a4 4 0 0 0 5 5"/></svg>',
+    re:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="7"/><path d="M12 13V9M10 3h4"/></svg>'};
+  const NAV=[['Showroom',IC.sh],['Garage',IC.ga],['Tuning',IC.tu],['Records',IC.re]];
   const nav=()=>{
-    $('ccNav').innerHTML=NAV.map((t,i)=>'<button data-nav="'+i+'" style="flex:1;min-height:48px;border:0;background:none;font:'+(i===onglet?'700':'500')+' 12px sans-serif;color:'+(i===onglet?'#ff4fb0':'#8a8a96')+'">'+(i===onglet?'● ':'')+t+'</button>').join('');
-    $('ccNav').querySelectorAll('button').forEach(b=>{b.onclick=()=>{
-      const i=+b.dataset.nav;
-      if(i===3){fermerConcessionTokyo();return;}
-      onglet=i;bulle('');rendre();};});
+    $('ccNav').innerHTML=NAV.map(([t,i],k)=>'<button data-nav="'+k+'" class="'+(k===onglet?'on':'')+'">'+i+t+'</button>').join('');
+    $('ccNav').querySelectorAll('button').forEach(b=>{b.onclick=()=>{onglet=+b.dataset.nav;bulle('');rendre();};});
   };
-  /* ---------- LE SHOWROOM ---------- */
-  const filtres=['Toutes','Japonaises','Allemandes','Italiennes'];
+  /* ---------- LE SHOWROOM : une voiture à la fois, sur le plateau ---------- */
   const showroom=()=>{
-    $('ccSur').textContent='TOKYO · CONCESSION';$('ccTitre').textContent='Showroom';
-    if(!vehicules.length){$('ccCorps').innerHTML='<p style="color:#d0306f">Le catalogue ne répond pas.</p>';return;}
-    $('ccCorps').innerHTML='<div id="ccFiltres" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none">'+
-      filtres.map(f=>'<button data-f="'+f+'" style="flex:none;min-height:40px;padding:0 16px;border-radius:20px;border:0;font:600 14px sans-serif;background:'+(f===filtre?'#14141a':'#f1f1f4')+';color:'+(f===filtre?'#fff':'#14141a')+'">'+f+'</button>').join('')+
-      '</div><div id="ccListe" style="display:flex;flex-direction:column;gap:12px">'+
-      vehicules.map((v,i)=>{
-        if(filtre!=='Toutes'&&ORIGINE[v.marque]!==filtre)return '';
-        const ouv=i===ouverte;
-        return '<div data-i="'+i+'" style="border-radius:22px;padding:14px;background:linear-gradient(135deg,'+(TEINTE[v.marque]||'#f1f1f4')+',#f8f8fa 75%);position:relative;cursor:pointer">'+
-          '<img src="'+sprite(v)+'" alt="'+esc(nom(v))+'" style="display:block;width:100%;height:auto;image-rendering:pixelated">'+
-          '<b style="display:block;font:800 18px sans-serif;margin-top:6px">'+esc(nom(v))+'</b>'+
-          '<small style="color:#6a6a76;font-size:13px">'+(ORIGINE[v.marque]||'').replace(/s$/,'')+(v.tuning?' · personnalisable':'')+(v.nom_garage?' · « '+esc(v.nom_garage)+' »':'')+'</small>'+
-          '<span style="position:absolute;right:14px;top:14px;background:#ffffffcc;padding:6px 10px;border-radius:12px;font:700 13px sans-serif">¥ —</span>'+
-          (ouv?'<div style="display:flex;gap:10px;margin-top:12px">'+
-            '<button data-a="essai" style="flex:1;min-height:50px;border-radius:14px;border:0;background:#14141a14;font:700 15px sans-serif;color:#14141a">Essai</button>'+
-            '<button data-a="achat" style="flex:1;min-height:50px;border-radius:14px;border:0;background:#ff4fb0;color:#fff;font:700 15px sans-serif">Acheter</button></div>':'')+
-          '</div>';
-      }).join('')+'</div>';
-    $('ccFiltres').querySelectorAll('button').forEach(b=>{b.onclick=()=>{filtre=b.dataset.f;ouverte=-1;rendre();};});
-    $('ccListe').querySelectorAll('div[data-i]').forEach(c=>{c.onclick=ev=>{
-      const a=ev.target.closest('button[data-a]');
-      if(a){ev.stopPropagation();
-        if(a.dataset.a==='essai'){fermerConcessionTokyo();debutEssai(vehicules[+c.dataset.i]);}
-        else bulle("La vente n'est pas encore ouverte : tu peux seulement l'essayer.");
-        return;}
-      const i=+c.dataset.i;ouverte=ouverte===i?-1:i;bulle('');rendre();
-    };});
+    $('ccSur').textContent='東京 · SHOWROOM';$('ccTitre').textContent='Concession';
+    if(!vehicules.length){$('ccCorps').innerHTML='<p style="color:#ff8ac8;margin-top:20px">Le catalogue ne répond pas.</p>';return;}
+    idx=(idx+vehicules.length)%vehicules.length;ouvrirConcessionTokyo.idx=idx;
+    const v=vehicules[idx], t=tuningDe(v,null), N=notesDe(v.marque,t), rec=chronoRecords()[nom(v)];
+    const st=(l,x)=>'<div class="ccSt">'+l+'<u style="--v:'+(x*10)+'%"></u><b>'+x.toFixed(1).replace('.',',')+'</b></div>';
+    $('ccCorps').innerHTML=
+      '<div class="ccScene" id="ccScene"><div class="ccNeon"></div><div class="ccDisque"></div>'+
+        '<canvas class="ccReflet" id="ccRefl"></canvas><canvas class="ccVoit" id="ccVoit"></canvas>'+
+        '<button class="ccFl g" id="ccPrec" aria-label="Précédente">‹</button><button class="ccFl d" id="ccSuiv" aria-label="Suivante">›</button></div>'+
+      '<div class="ccNom"><small>'+esc(v.marque.toUpperCase())+' · '+(idx+1)+' / '+vehicules.length+'</small><b>'+esc(v.modele)+'</b>'+
+        '<em>'+esc([v.carrosserie,ORIGINE[v.marque],v.tuning?'personnalisable':''].filter(Boolean).join(' · '))+'</em></div>'+
+      '<div class="ccPts">'+vehicules.map((_,i)=>'<i class="'+(i===idx?'on':'')+'"></i>').join('')+'</div>'+
+      '<div class="ccStats">'+st('Vitesse',N.vit)+st('Accélération',N.acc)+st('Tenue de route',N.tenue)+st('Drift',N.drift)+'</div>'+
+      '<div class="ccRec"><span>★ TON RECORD AU CIRCUIT</span><b>'+fmtTour(rec)+'</b></div>'+
+      '<div class="ccBtns"><button class="ccGo" id="ccEssai">Essayer</button><button class="ccLock" id="ccAchat">🔒 Bientôt</button></div>';
+    chargerImgTK(sprite(v)).then(img=>{if(!img||!$('ccVoit'))return;const r=repeindreProfil(img,t);
+      for(const id of ['ccVoit','ccRefl']){const c=$(id);c.width=r.width;c.height=r.height;c.getContext('2d').drawImage(r,0,0);}});
+    const aller=d=>{idx+=d;bulle('');rendre();};
+    $('ccPrec').onclick=()=>aller(-1);$('ccSuiv').onclick=()=>aller(1);
+    /* glisser le doigt sur le plateau fait tourner la vitrine */
+    let x0=null;const sc=$('ccScene');
+    sc.addEventListener('touchstart',ev=>{x0=ev.touches[0].clientX;},{passive:true});
+    sc.addEventListener('touchend',ev=>{if(x0==null)return;const dx=ev.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>40)aller(dx<0?1:-1);},{passive:true});
+    $('ccEssai').onclick=()=>{fermerConcessionTokyo();debutEssai(v);};
+    $('ccAchat').onclick=()=>bulle("La vente n'est pas encore ouverte : tu peux seulement l'essayer.");
+  };
+  /* ---------- LES RECORDS : le meilleur tour de chaque voiture ---------- */
+  const records=()=>{
+    $('ccSur').textContent='東京 · CIRCUIT';$('ccTitre').textContent='Records';
+    const R=chronoRecords();
+    const L=vehicules.map(v=>({v,t:R[nom(v)]})).sort((a,b)=>(a.t==null)-(b.t==null)||(a.t||0)-(b.t||0));
+    $('ccCorps').innerHTML='<p style="margin-top:12px;color:rgba(255,255,255,.6);font-size:13px;line-height:1.5">Ton meilleur tour du circuit de Tokyo, voiture par voiture. Le chrono part sur la ligne d’arrivée.</p>'+
+      L.map(({v,t},k)=>'<div class="ccLigneRec"><img src="'+sprite(v)+'" alt=""><div><b>'+esc(nom(v))+'</b><small>'+(t!=null?(k===0?'🏆 TA PLUS RAPIDE':'MEILLEUR TOUR'):'PAS ENCORE DE TOUR')+'</small></div>'+
+        (t!=null?'<i>'+fmtTour(t)+'</i>':'<button data-essai="'+esc(v.id)+'">Essayer</button>')+'</div>').join('');
+    $('ccCorps').querySelectorAll('button[data-essai]').forEach(b=>{b.onclick=()=>{fermerConcessionTokyo();debutEssai(modele(b.dataset.essai));};});
   };
   /* ---------- MON GARAGE : le plan des places, la voiture choisie en grand, ses compteurs ---------- */
   const garage=()=>{
-    $('ccSur').textContent='TOKYO · MON GARAGE';$('ccTitre').textContent='Mon garage';
+    $('ccSur').textContent='東京 · MON GARAGE';$('ccTitre').textContent='Mon garage';
     const G=garageDuJoueur();
     if(choisie>=G.length)choisie=0;
     const parPlace=[];for(const v of G)parPlace[v.place]=v;
@@ -327,23 +400,23 @@ async function ouvrirConcessionTokyo(ongletDepart){
     }
     h+='</div>';
     if(!G.length){
-      h+='<div style="margin-top:14px;border:2px dashed #d4d4dc;border-radius:22px;padding:20px;text-align:center;color:#6a6a76;font-size:14px;line-height:1.5">'+
-        '<b style="display:block;color:#14141a;font-size:17px;margin-bottom:4px">Ton garage est vide</b>'+
+      h+='<div style="margin-top:14px;border:2px dashed rgba(255,255,255,.2);border-radius:22px;padding:20px;text-align:center;color:rgba(255,255,255,.6);font-size:14px;line-height:1.5">'+
+        '<b style="display:block;color:#fff;font-size:17px;margin-bottom:4px">Ton garage est vide</b>'+
         'La vente n’est pas encore ouverte. En attendant, tu peux essayer toutes les voitures au showroom.'+
         '<button id="ccVersShowroom" style="display:block;width:100%;margin-top:14px;min-height:50px;border-radius:14px;border:0;background:#ff4fb0;color:#fff;font:700 15px sans-serif">Voir le showroom</button></div>';
     }else{
       const v=G[choisie], m=modele(v.modele);
-      h+='<div style="margin-top:14px;border-radius:24px;background:linear-gradient(#f3f3f6,#e2e3e8);padding:18px 10px 10px;position:relative">'+
-        '<span style="position:absolute;top:12px;left:14px;font:800 12px sans-serif;color:#8a8a96">'+(choisie+1)+' / '+G.length+' · PLACE '+(v.place+1)+'</span>'+
+      h+='<div style="margin-top:14px;border-radius:24px;background:linear-gradient(#2a1840,#120a20);padding:18px 10px 10px;position:relative">'+
+        '<span style="position:absolute;top:12px;left:14px;font:800 12px sans-serif;color:rgba(255,255,255,.5)">'+(choisie+1)+' / '+G.length+' · PLACE '+(v.place+1)+'</span>'+
         '<img src="'+sprite(m)+'" alt="'+esc(nom(m))+'" style="display:block;width:100%;height:auto;margin-top:16px;image-rendering:pixelated"></div>'+
         '<b style="display:block;font:800 22px sans-serif;margin-top:12px">'+esc(nom(m))+'</b>'+
-        '<small style="color:#6a6a76;font-size:13px">'+(v.nom?'« '+esc(v.nom)+' »':'Sans nom de garage')+'</small>'+
+        '<small style="color:rgba(255,255,255,.6);font-size:13px">'+(v.nom?'« '+esc(v.nom)+' »':'Sans nom de garage')+'</small>'+
         '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px">'+
-          [[(v.km||0).toFixed(1)+' km','parcourus'],[v.drifts||0,'drifts'],[v.sorties||0,'sorties']].map(([a,b])=>'<div style="background:#f4f4f7;border-radius:14px;padding:12px 4px;text-align:center;font-size:11px;color:#6a6a76"><b style="display:block;color:#14141a;font-size:17px">'+a+'</b>'+b+'</div>').join('')+
+          [[(v.km||0).toFixed(1)+' km','parcourus'],[v.drifts||0,'drifts'],[v.sorties||0,'sorties']].map(([a,b])=>'<div style="background:rgba(255,255,255,.06);border-radius:14px;padding:12px 4px;text-align:center;font-size:11px;color:rgba(255,255,255,.6)"><b style="display:block;color:#fff;font-size:17px">'+a+'</b>'+b+'</div>').join('')+
         '</div>'+
         '<div style="display:flex;gap:8px;margin-top:12px">'+
-          '<button id="ccRenommer" style="flex:1;min-height:50px;border-radius:14px;border:0;background:#f1f1f4;font:700 14px sans-serif;color:#14141a">Renommer</button>'+
-          '<button id="ccTuning" style="flex:1;min-height:50px;border-radius:14px;border:0;background:#f1f1f4;font:700 14px sans-serif;color:#14141a">Tuning</button></div>'+
+          '<button id="ccRenommer" style="flex:1;min-height:50px;border-radius:14px;border:0;background:rgba(255,255,255,.08);font:700 14px sans-serif;color:#fff">Renommer</button>'+
+          '<button id="ccTuning" style="flex:1;min-height:50px;border-radius:14px;border:0;background:rgba(255,255,255,.08);font:700 14px sans-serif;color:#fff">Tuning</button></div>'+
         '<button id="ccVolant" style="display:block;width:100%;margin-top:8px;min-height:56px;border-radius:16px;border:0;background:#ff4fb0;color:#fff;font:800 16px sans-serif">Prendre le volant</button>';
     }
     $('ccCorps').innerHTML=h;
@@ -368,29 +441,29 @@ async function ouvrirConcessionTokyo(ongletDepart){
   /* ---------- LE TUNING ---------- */
   let selT=null, sect=0;
   const tuning=()=>{
-    $('ccSur').textContent='TOKYO · ATELIER';$('ccTitre').textContent='Tuning';
+    $('ccSur').textContent='東京 · ATELIER';$('ccTitre').textContent='Tuning';
     const G=garageDuJoueur();
     if(!selT)selT=G.length?{garage:G[0]}:(vehicules[0]?{modele:vehicules[0].id}:null);
-    if(!selT){$('ccCorps').innerHTML='<p style="color:#d0306f">Le catalogue ne répond pas.</p>';return;}
+    if(!selT){$('ccCorps').innerHTML='<p style="color:#ff8ac8">Le catalogue ne répond pas.</p>';return;}
     const m=selT.garage?modele(selT.garage.modele):modele(selT.modele);
     const t=selT.garage?tuningDe(m||{},selT.garage):tuningDe(m,null);
-    const pf=perfDuTuning(t), base=perfDuTuning({});
-    const puce=(on,txt,data)=>'<button '+data+' style="flex:none;min-height:40px;padding:0 14px;border-radius:20px;border:0;font:600 13px sans-serif;background:'+(on?'#14141a':'#f1f1f4')+';color:'+(on?'#fff':'#14141a')+'">'+txt+'</button>';
-    const pastille=(on,col,data,txt)=>'<button '+data+' aria-label="'+(txt||col)+'" style="flex:none;width:40px;height:40px;border-radius:50%;border:'+(on?'3px solid #ff4fb0':'2px solid #e2e2e8')+';background:'+(col||'#fff')+';font:700 10px sans-serif;color:#6a6a76;box-shadow:'+(on?'0 0 0 2px #fff inset':'none')+'">'+(col?'':(txt||'∅'))+'</button>';
-    const ligne=(titre,contenu)=>'<div style="margin-top:14px"><small style="display:block;font:700 11px sans-serif;letter-spacing:2px;color:#8a8a96;margin-bottom:8px">'+titre+'</small><div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none">'+contenu+'</div></div>';
-    const barre=(titre,v,max)=>'<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font:600 12px sans-serif"><span>'+titre+'</span><span style="color:#8a8a96">'+Math.round(v)+' / '+max+'</span></div><div style="height:8px;border-radius:4px;background:#f1f1f4;margin-top:4px;overflow:hidden"><div style="height:100%;width:'+Math.min(100,v/max*100)+'%;background:linear-gradient(90deg,#ff4fb0,#7fe8ff);border-radius:4px"></div></div></div>';
+    const pf=perfDuModele(m&&m.marque,t), base=perfDuTuning({});
+    const puce=(on,txt,data)=>'<button '+data+' style="flex:none;min-height:40px;padding:0 14px;border-radius:20px;border:0;font:600 13px sans-serif;background:'+(on?'#ff4fb0':'rgba(255,255,255,.08)')+';color:#fff'+'">'+txt+'</button>';
+    const pastille=(on,col,data,txt)=>'<button '+data+' aria-label="'+(txt||col)+'" style="flex:none;width:40px;height:40px;border-radius:50%;border:'+(on?'3px solid #ff4fb0':'2px solid rgba(255,255,255,.2)')+';background:'+(col||'#fff')+';font:700 10px sans-serif;color:rgba(255,255,255,.6);box-shadow:'+(on?'0 0 0 2px #fff inset':'none')+'">'+(col?'':(txt||'∅'))+'</button>';
+    const ligne=(titre,contenu)=>'<div style="margin-top:14px"><small style="display:block;font:700 11px sans-serif;letter-spacing:2px;color:rgba(255,255,255,.5);margin-bottom:8px">'+titre+'</small><div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none">'+contenu+'</div></div>';
+    const barre=(titre,v,max)=>'<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font:600 12px sans-serif"><span>'+titre+'</span><span style="color:rgba(255,255,255,.5)">'+Math.round(v)+' / '+max+'</span></div><div style="height:8px;border-radius:4px;background:rgba(255,255,255,.08);margin-top:4px;overflow:hidden"><div style="height:100%;width:'+Math.min(100,v/max*100)+'%;background:linear-gradient(90deg,#ff4fb0,#7fe8ff);border-radius:4px"></div></div></div>';
     /* le choix de la voiture : les miennes d'abord, puis celles du showroom (à l'essai) */
     let h='<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none">'+
       G.map((v,i)=>puce(selT.garage===v,esc((v.nom||nom(modele(v.modele))).slice(0,18)),'data-selg="'+i+'"')).join('')+
       vehicules.map(v=>puce(!selT.garage&&selT.modele===v.id,esc(nom(v))+(G.length?' · essai':''),'data-selm="'+esc(v.id)+'"')).join('')+'</div>';
     /* l'aperçu : profil repeint, vue de dessus, néon */
-    h+='<div style="border-radius:24px;background:linear-gradient(#f3f3f6,#e2e3e8);padding:14px 10px 12px;position:relative;overflow:hidden">'+
+    h+='<div style="border-radius:24px;background:linear-gradient(#2a1840,#120a20);padding:14px 10px 12px;position:relative;overflow:hidden">'+
       (t.neon?'<div style="position:absolute;left:8%;right:8%;bottom:26px;height:26px;border-radius:50%;background:'+t.neon+';filter:blur(12px);opacity:.8"></div>':'')+
       '<canvas id="ccProfil" style="display:block;width:100%;height:auto;image-rendering:pixelated;position:relative"></canvas>'+
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;position:relative"><small style="font:700 11px sans-serif;color:#8a8a96">'+esc(nom(m))+(selT.garage?' · MA VOITURE':' · À L’ESSAI')+'</small><canvas id="ccDessus" width="68" height="32" style="width:102px;height:48px;image-rendering:pixelated"></canvas></div></div>';
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;position:relative"><small style="font:700 11px sans-serif;color:rgba(255,255,255,.5)">'+esc(nom(m))+(selT.garage?' · MA VOITURE':' · À L’ESSAI')+'</small><canvas id="ccDessus" width="68" height="32" style="width:102px;height:48px;image-rendering:pixelated"></canvas></div></div>';
     /* les trois ateliers */
-    h+='<div style="display:flex;gap:6px;margin-top:14px;background:#f1f1f4;border-radius:14px;padding:4px">'+
-      ['Carrosserie','Néons & vitres','Moteur'].map((x,i)=>'<button data-sect="'+i+'" style="flex:1;min-height:40px;border-radius:10px;border:0;font:700 13px sans-serif;background:'+(i===sect?'#fff':'transparent')+';color:#14141a;box-shadow:'+(i===sect?'0 1px 4px #0002':'none')+'">'+x+'</button>').join('')+'</div>';
+    h+='<div style="display:flex;gap:6px;margin-top:14px;background:rgba(255,255,255,.08);border-radius:14px;padding:4px">'+
+      ['Carrosserie','Néons & vitres','Moteur'].map((x,i)=>'<button data-sect="'+i+'" style="flex:1;min-height:40px;border-radius:10px;border:0;font:700 13px sans-serif;background:'+(i===sect?'#ff4fb0':'transparent')+';color:#fff;box-shadow:none">'+x+'</button>').join('')+'</div>';
     if(sect===0){
       h+=ligne('PEINTURE',pastille(!t.couleur,'','data-k="couleur" data-v=""','Orig.')+TEINTES_TK.map(c=>pastille(t.couleur===c,c,'data-k="couleur" data-v="'+c+'"')).join(''));
       h+=ligne('AILERON',[['origine','D’origine'],['aucun','Aucun'],['levre','Lèvre'],['haut','Haut'],['grand','GT géant']].map(([k,x])=>puce((t.aileron||'origine')===k,x,'data-k="aileron" data-v="'+k+'"')).join(''));
@@ -403,12 +476,12 @@ async function ouvrirConcessionTokyo(ongletDepart){
       h+=ligne('MOTEUR',[['0','Origine'],['1','Stage 1'],['2','Stage 2'],['3','Stage 3']].map(([k,x])=>puce(String(t.moteur||0)===k,x,'data-k="moteur" data-v="'+k+'" data-n="1"')).join(''));
       h+=ligne('TURBO',[['0','Aucun'],['1','Simple'],['2','Gros turbo']].map(([k,x])=>puce(String(t.turbo||0)===k,x,'data-k="turbo" data-v="'+k+'" data-n="1"')).join(''));
       h+=ligne('PNEUS',[['route','Route'],['sport','Sport'],['drift','Drift']].map(([k,x])=>puce((t.pneus||'route')===k,x,'data-k="pneus" data-v="'+k+'"')).join(''));
-      h+='<div style="margin-top:12px;background:#f8f8fa;border-radius:16px;padding:4px 12px 12px">'+
+      h+='<div style="margin-top:12px;background:rgba(255,255,255,.05);border-radius:16px;padding:4px 12px 12px">'+
         barre('Accélération',pf.acc*60,120)+barre('Vitesse max',pf.vmax/3.4,150)+barre('Adhérence',pf.grip*8,100)+barre('Glisse en drift',(1.5-pf.drift)*80,100)+'</div>';
     }
-    h+='<div style="display:flex;gap:8px;margin-top:16px"><button id="ccRaz" style="flex:1;min-height:52px;border-radius:14px;border:0;background:#f1f1f4;font:700 14px sans-serif;color:#14141a">Tout d’origine</button>'+
+    h+='<div style="display:flex;gap:8px;margin-top:16px"><button id="ccRaz" style="flex:1;min-height:52px;border-radius:14px;border:0;background:rgba(255,255,255,.08);font:700 14px sans-serif;color:#fff">Tout d’origine</button>'+
       '<button id="ccEssaiT" style="flex:1.6;min-height:52px;border-radius:14px;border:0;background:#ff4fb0;color:#fff;font:800 15px sans-serif">'+(selT.garage?'Prendre le volant':'Essayer ce tuning')+'</button></div>'+
-      '<p style="margin-top:10px;font-size:12px;color:#8a8a96;text-align:center">Gratuit pour l’instant · chaque réglage est enregistré tout de suite.</p>';
+      '<p style="margin-top:10px;font-size:12px;color:rgba(255,255,255,.5);text-align:center">Gratuit pour l’instant · chaque réglage est enregistré tout de suite.</p>';
     $('ccCorps').innerHTML=h;
     /* les aperçus */
     const pd=$('ccDessus').getContext('2d');pd.imageSmoothingEnabled=false;pd.drawImage(peindreVoitureDessus(m?m.marque:'Toyota',t),0,0);
@@ -426,7 +499,7 @@ async function ouvrirConcessionTokyo(ongletDepart){
     $('ccRaz').onclick=()=>{for(const k of Object.keys(t))delete t[k];try{sauver();}catch(x){}rendre();};
     $('ccEssaiT').onclick=()=>{fermerConcessionTokyo();debutEssai(m||{marque:'Toyota'},selT.garage||null);};
   };
-  const rendre=()=>{nav();(onglet===2?tuning:onglet===1?garage:showroom)();$('ccDefile').scrollTop=0;};
+  const rendre=()=>{nav();(onglet===3?records:onglet===2?tuning:onglet===1?garage:showroom)();$('ccDefile').scrollTop=0;};
   rendre();
 }
 
@@ -658,7 +731,7 @@ function couperMoteur(){const S=SON_TK;if(!S.ctx)return;try{S.vol.gain.setTarget
 function debutEssai(v,aMoi){
   ESSAI.actif=true;ESSAI.garage=aMoi||null;
   ESSAI.tuning=v&&v.id?tuningDe(v,aMoi):(aMoi&&aMoi.tuning)||{};
-  ESSAI.perf=perfDuTuning(ESSAI.tuning);
+  ESSAI.perf=perfDuModele(v&&v.marque,ESSAI.tuning);
   ESSAI.halo=null;ESSAI.dist=0;ESSAI.drifts=0;ESSAI.enDrift=false;ESSAI.nom=[v.marque,v.modele].filter(Boolean).join(' ');
   ESSAI.toile=peindreVoitureDessus(v.marque,ESSAI.tuning);
   ESSAI.retour={x:joueur.x,y:joueur.y};
