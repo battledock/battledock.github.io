@@ -21,6 +21,9 @@ const TK={
 function bloqueTokyo(x,y){
   if(x<6||x>MONDE_L-6)return true;
   if(y<TK.bati+6||y>MONDE_H-6)return true;
+  /* LE MÉTRO EN DUR : l'escalier et ses rambardes, et le poteau de la ligne */
+  if(x>26&&x<114&&y>372&&y<446)return true;
+  if(Math.abs(x-122)<5&&y>436&&y<450)return true;
   return false;
 }
 
@@ -29,12 +32,12 @@ function construireSolTokyo(){
   const W=MONDE_L,H=MONDE_H;
   const c=document.createElement('canvas');c.width=W;c.height=H;
   const g=c.getContext('2d');
-  g.fillStyle='#2a2936';g.fillRect(0,0,W,H);
+  g.fillStyle='#8c889c';g.fillRect(0,0,W,H);
   /* LE TROTTOIR, pavé comme celui du port : dalles irrégulières, joints, grain et usure */
   const A=(i)=>alea(i*1.37+0.5);
-  const pave=['#5d5a70','#55526a','#625e78','#534f66','#5a5672'];
+  const pave=['#b6b2c2','#aeaabc','#bcb8c8','#a9a5b8','#b2aec0'];
   const [t0,t1]=TK.trottoir;
-  g.fillStyle='#4a4660';g.fillRect(0,t0,W,t1-t0);
+  g.fillStyle='#a5a1b4';g.fillRect(0,t0,W,t1-t0);
   let y=t0;
   while(y<t1){
     const h=6+Math.floor(A(y*1.91)*4);
@@ -61,32 +64,31 @@ function construireSolTokyo(){
   const voie=(gg,dec,lw,col,dash)=>{gg.save();gg.strokeStyle=col;gg.lineWidth=lw;gg.lineJoin='round';gg.setLineDash(dash||[]);
     gg.beginPath();rondRect(gg,C.x0-dec,C.y0-dec,C.x1+dec,C.y1+dec,Math.max(1,C.r+dec));gg.stroke();gg.restore();};
   /* le dehors : un trottoir pavé tout autour de l'anneau */
-  g.fillStyle='#3a374c';g.fillRect(0,TK.route[1],W,H-TK.route[1]);
-  for(let yy=TK.route[1];yy<H;yy+=12)for(let xx=((yy/12)%2?0:10);xx<W;xx+=20){g.fillStyle=A(xx*0.37+yy*1.3)>.5?'#403d54':'#36334a';g.fillRect(xx,yy,19,11);}
+  g.fillStyle='#9894a8';g.fillRect(0,TK.route[1],W,H-TK.route[1]);
+  for(let yy=TK.route[1];yy<H;yy+=12)for(let xx=((yy/12)%2?0:10);xx<W;xx+=20){g.fillStyle=A(xx*0.37+yy*1.3)>.5?'#a29eb2':'#938fa4';g.fillRect(xx,yy,19,11);}
   /* le paddock, dans l'anneau : asphalte clair et places */
   g.save();g.beginPath();rondRect(g,C.x0+ep/2,C.y0+ep/2,C.x1-ep/2,C.y1-ep/2,C.r-ep/2);g.clip();
-  g.fillStyle='#1d3a26';g.fillRect(0,0,W,H);
+  g.fillStyle='#4f8a4a';g.fillRect(0,0,W,H);
   for(let i=0;i<2500;i++){g.fillStyle=A(i*2.3)>.5?'rgba(120,200,110,.10)':'rgba(0,0,0,.12)';g.fillRect(Math.floor(A(i+11)*W),Math.floor(A(i+29)*H),1,2);}
   g.beginPath();rondRect(g,C.x0+ep/2+18,C.y0+ep/2+18,C.x1-ep/2-18,C.y1-ep/2-18,C.r-ep/2-18);g.clip();
-  g.fillStyle='#2c2b38';g.fillRect(0,0,W,H);
+  g.fillStyle='#62616c';g.fillRect(0,0,W,H);
   for(let i=0;i<700;i++){g.fillStyle='rgba(255,255,255,.035)';g.fillRect(Math.floor(A(i+300)*W),Math.floor(A(i+700)*H),2,1);}
   g.fillStyle='rgba(235,235,245,.5)';
   for(const y0 of [420,600]){for(let x=330;x<=730;x+=36){g.fillRect(x,y0,2,46);g.fillRect(x,y0+48,2,46);}g.fillRect(330,y0+46,402,2);}
   /* le logo peint au sol */
   g.globalAlpha=.16;g.fillStyle='#ff4fb0';g.font='bold 40px sans-serif';g.textAlign='center';g.fillText('東京',530,585);
   g.font='bold 14px sans-serif';g.fillText('TOKYO CIRCUIT',530,560);g.textAlign='start';g.globalAlpha=1;
-  for(const [x,y] of [[340,400],[720,400],[340,770],[720,770]]){const l=g.createRadialGradient(x,y,2,x,y,70);l.addColorStop(0,'rgba(255,220,150,.2)');l.addColorStop(1,'rgba(255,220,150,0)');g.fillStyle=l;g.fillRect(x-70,y-70,140,140);g.fillStyle='#3a3848';g.fillRect(x-3,y-3,6,6);g.fillStyle='#ffe6b0';g.fillRect(x-1,y-1,3,3);}
   g.restore();
   /* LA PISTE : un calque à part, pour que le grain et les reflets restent dessus */
   const pc=document.createElement('canvas');pc.width=W;pc.height=H;const pg=pc.getContext('2d');
-  voie(pg,0,ep,'#24232e');
-  pg.fillStyle='#24232e';pg.fillRect(0,TK.route[0],C.x1-C.r,TK.route[1]-TK.route[0]);   /* la voie des stands, à gauche */
+  voie(pg,0,ep,'#46454f');
+  pg.fillStyle='#46454f';pg.fillRect(0,TK.route[0],C.x1-C.r,TK.route[1]-TK.route[0]);   /* la voie des stands, à gauche */
   pg.globalCompositeOperation='source-atop';
   for(let i=0;i<2600;i++){pg.fillStyle='rgba(255,255,255,.045)';pg.fillRect(Math.floor(A(i+50)*W),Math.floor(A(i+90)*H),2,1);}
   const refl=['#ff4fb0','#7fe8ff','#ffd98a','#b08cff'];
   pg.globalAlpha=.1;for(let i=0;i<60;i++){pg.fillStyle=refl[i%4];pg.fillRect(Math.floor(A(i*1.9)*W),Math.floor(A(i*3.3)*H),20+Math.floor(A(i*5.1)*60),1);}pg.globalAlpha=1;
   /* la trajectoire : une bande plus sombre où les pneus passent */
-  pg.globalAlpha=.35;voie(pg,0,26,'#1a1922');pg.globalAlpha=1;
+  pg.globalAlpha=.35;voie(pg,0,26,'#33323b');pg.globalAlpha=1;
   pg.globalCompositeOperation='source-over';
   /* les lignes blanches de bord, et la ligne pointillée de la voie des stands */
   voie(pg,ep/2-5,2,'rgba(235,235,245,.7)');voie(pg,-ep/2+5,2,'rgba(235,235,245,.7)');
@@ -119,8 +121,8 @@ function construireSolTokyo(){
   /* LA BOUCHE DE MÉTRO : un parvis, l'escalier qui descend, les rambardes, le poteau de la ligne 2 */
   (function(){
     const x0=8,y0=352,w=132,h=136;
-    g.fillStyle='#3e3b52';g.fillRect(x0,y0,w,h);
-    for(let yy=y0;yy<y0+h;yy+=10)for(let xx=x0+((yy/10)%2?0:8);xx<x0+w;xx+=16){g.fillStyle=A(xx*0.7+yy)>.5?'#46425c':'#3a374d';g.fillRect(xx,yy,15,9);}
+    g.fillStyle='#a8a4b8';g.fillRect(x0,y0,w,h);
+    for(let yy=y0;yy<y0+h;yy+=10)for(let xx=x0+((yy/10)%2?0:8);xx<x0+w;xx+=16){g.fillStyle=A(xx*0.7+yy)>.5?'#b2aec2':'#a09cb0';g.fillRect(xx,yy,15,9);}
     g.fillStyle='#8a86a0';g.fillRect(x0,y0+h,w,2);g.fillRect(x0+w,y0,2,h+2);
     const sx=34,sy=380,sw=72,sh=58;
     g.fillStyle='#14121c';g.fillRect(sx-2,sy-2,sw+4,sh+4);
@@ -148,11 +150,33 @@ function construireSolTokyo(){
   })();
   const haut=new Image();
   haut.onload=()=>{g.drawImage(haut,0,0);};
-  haut.src='assets/tokyo/rue_haut.png';
+  let nuit=false;try{const C0=cielDuMoment();nuit=!!(C0&&C0.lampes>0.5);}catch(x){}
+  haut.src=nuit?'assets/tokyo/rue_haut.png':'assets/tokyo/rue_haut_jour.png';
   return c;
 }
 
-function semerDecorTokyo(){}
+/* LES LAMPADAIRES : ceux du port (même mât, même vacillement), allumés au
+   crépuscule par le cycle du jeu. Le long du trottoir des façades, autour du
+   circuit, au paddock et au métro. Ils ne bloquent rien. */
+const LAMPES_TK=[[240,232],[390,232],[545,232],[700,232],[855,232],
+  [165,470],[165,640],[165,800],
+  [340,400],[720,400],[340,750],[720,750],[530,400],[530,750],[315,575],[745,575],
+  [20,480],[136,356]];
+function semerDecorTokyo(){
+  LAMPES_TK.forEach(([x,y],k)=>DECOR.push({t:'lanterneP',x,y,gr:k}));
+  DECOR.sort((a,b)=>a.y-b.y);try{invaliderGrille();}catch(x){}
+}
+/* LA VILLE S'ALLUME LA NUIT : les enseignes et les fenêtres des façades,
+   les néons du showroom, l'escalier du métro. Posé à chaque image dans la
+   carte des lumières du jeu ; rien ne s'allume de jour. */
+const FEUX_TK=[[85,185,'rgba(120,220,255,§)',60],[240,185,'rgba(255,200,120,§)',56],[385,185,'rgba(255,110,190,§)',56],
+  [540,185,'rgba(120,220,255,§)',56],[690,185,'rgba(255,200,120,§)',56],[825,185,'rgba(255,110,190,§)',60],
+  [85,110,'rgba(255,214,150,§)',44],[240,110,'rgba(255,214,150,§)',44],[385,110,'rgba(255,214,150,§)',44],
+  [540,110,'rgba(255,214,150,§)',44],[690,110,'rgba(255,214,150,§)',44],[825,110,'rgba(255,214,150,§)',44],
+  [70,420,'rgba(255,230,170,§)',40],[122,366,'rgba(255,90,170,§)',34],[543,288,'rgba(255,255,255,§)',40]];
+function lumieresTokyo(g,camX,camY){
+  for(const [x,y,c,r] of FEUX_TK)try{lueurNuit(g,x-camX,y-camY,r,c);}catch(x){}
+}
 
 /* arrivée : à l'entrée ouest, près du panneau du port. */
 function poserTokyo(){
@@ -805,4 +829,4 @@ function dessinerEssai(ctx,camX,camY){
   ctx.restore();
 }
 
-;({TK,bloqueTokyo,construireSolTokyo,semerDecorTokyo,poserTokyo,ouvrirConcessionTokyo,fermerConcessionTokyo,ESSAI,debutEssai,finEssai,majEssai,dessinerEssai})
+;({TK,lumieresTokyo,bloqueTokyo,construireSolTokyo,semerDecorTokyo,poserTokyo,ouvrirConcessionTokyo,fermerConcessionTokyo,ESSAI,debutEssai,finEssai,majEssai,dessinerEssai})
