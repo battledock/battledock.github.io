@@ -334,11 +334,9 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
       Les jetons que tu as gardés t’attendent : ils ne se perdent pas.
     </div>
     <div id="mot">
-      <b>Ici on ne mise pas, on joue.</b> Un jeton vaut un euro et c’est
-      tout ce qu’on y laisse : ce qu’on remporte n’est pas de l’argent,
-      c’est un score. C’est pour ça que les bornes tournent dans le
-      téléphone alors que les tables du casino se règlent au comptoir —
-      le pire qu’on puisse faire ici, c’est truquer un classement.
+      <b>Ici on ne mise pas, on joue.</b> Un jeton vaut un euro. Chaque
+      partie rapporte des euros selon le score, à dépenser au casino, et
+      des points au classement général.
     </div>
   </div>
   <div id="bas">
@@ -389,9 +387,9 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
    au serveur : le tirage, la mise et le gain sortent d'une fonction
    SECURITY DEFINER, sinon il suffit d'ouvrir la console pour fabriquer
    des euros. Une borne, non — on y paie un jeton, on joue avec ses
-   doigts, et ce qu'on emporte est un score. Le jeu peut donc tourner
-   entierement ici sans qu'un centime soit en jeu, et le pire qu'un
-   tricheur puisse faire est de truquer un classement.
+   doigts, et ce qu'on emporte est un score. Le score part du client :
+   arcade_score ne rapporte donc des euros et des points qu'à hauteur de
+   plafonds journaliers (2000 centimes, 300 points par 24 h).
 
    C'est la meme difference que dans la vraie vie entre une machine a
    sous et un flipper, et c'est elle qui decide de l'architecture :
@@ -2967,7 +2965,9 @@ async function finirPartie(score,silencieux){
   if(silencieux)return;
   if(r&&r.erreur){dire(r.erreur,'mal');return;}
   if(!r)return;
-  var m=score.toLocaleString('fr-FR')+' points · '+r.rang+(r.rang===1?'er':'e')+' au tableau';
+  if(typeof r.euros==='number'){SOLDE=r.euros;noterEuros(r.euros);majSolde();}
+  var m=score.toLocaleString('fr-FR')+' points · '+r.rang+(r.rang===1?'er':'e')+' au tableau'+
+        (r.gain>0?' · +'+(r.gain/100).toFixed(2).replace('.',',')+' € · +'+r.points+' au classement':'');
   dire(m,r.rang<=3?'gros':'bon');
   chargerClassement(BORNE?BORNE.cle:null);
 }
