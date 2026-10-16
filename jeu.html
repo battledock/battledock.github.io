@@ -16646,7 +16646,7 @@ if(QUALITE>=1)dessinerPapillons(ctx,camX,camY);
 ambiance(ctx);                          /* une lueur douce vers le centre */
 nettoyerBulles();
 const acteurs=[{y:joueur.y,
-f:()=>{try{const m=ctx.getTransform();JOUEUR_ECRAN={x:m.a*px+m.e,y:m.d*(py-18)+m.f,sc:m.a/3};}catch(x){}return personne(ctx,px,py,e.ap,(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche,court);}}];
+f:()=>{if(CARTE==='tokyo'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif){try{TKM.dessinerEssai(ctx,camX,camY);}catch(x){}return;}try{const m=ctx.getTransform();JOUEUR_ECRAN={x:m.a*px+m.e,y:m.d*(py-18)+m.f,sc:m.a/3};}catch(x){}return personne(ctx,px,py,e.ap,(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche,court);}}];
 for(const [,a] of AUTRES){
 const ax=a.x-camX, ay=a.y-camY;
 if(ax<-40||ay<-70||ax>VW+40||ay>VH+40)continue;
@@ -19636,6 +19636,8 @@ const d=(b-a+8)%8;
 joueur.dirVue=ORDRE8[(a+(d<=4?1:-1)+8)%8];
 }
 function majJoueur(dt){
+/* L'ESSAI D'UNE VOITURE À TOKYO : le joystick conduit, le piéton attend */
+if(CARTE==='tokyo'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif){TKM.majEssai(dt,joyX,joyY);vx=vy=0;joueur.marche=false;return;}
 tournerEnDouceur(dt);
 const n=Math.hypot(joyX,joyY);
 const pousse=Math.min(1,n);
@@ -25720,6 +25722,10 @@ b.onclick=()=>{
 };
 return;
 }
+if(CARTE==='tokyo'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif){
+  b.innerHTML='Rendre la voiture<small>ESSAI · '+TKM.ESSAI.nom.toUpperCase()+'</small>';b.classList.add('on');
+  b.onclick=()=>{TKM.finEssai();};
+  return;}
 if(CARTE==='tokyo'&&GESTE.t<=0){
   const C=TKM.TK.concessionPorte;
   if(C&&Math.abs(joueur.x-C.x)<C.l&&joueur.y>C.y0&&joueur.y<C.y1){

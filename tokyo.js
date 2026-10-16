@@ -159,11 +159,122 @@ async function ouvrirConcessionTokyo(){
     }).join('');
     $('ccListe').querySelectorAll('div[data-i]').forEach(c=>{c.onclick=ev=>{
       const a=ev.target.closest('button[data-a]');
-      if(a){ev.stopPropagation();bulle(a.dataset.a==='essai'?"L'essai n'est pas encore ouvert.":"Le prix de ce véhicule n'est pas encore fixé.");return;}
+      if(a){ev.stopPropagation();
+        if(a.dataset.a==='essai'){fermerConcessionTokyo();debutEssai(vehicules[+c.dataset.i]);}
+        else bulle("La vente n'est pas encore ouverte : tu peux seulement l'essayer.");
+        return;}
       const i=+c.dataset.i;ouverte=ouverte===i?-1:i;bulle('');dessiner();
     };});
   };
   dessiner();
 }
 
-;({TK,bloqueTokyo,construireSolTokyo,semerDecorTokyo,poserTokyo,ouvrirConcessionTokyo,fermerConcessionTokyo})
+/* ================= L'ESSAI : CONDUIRE UNE VOITURE DU SHOWROOM =================
+   Vue de dessus. Le joystick donne le CAP voulu : la voiture braque vers lui
+   et accélère selon la poussée ; on lâche, elle roule en roue libre et freine.
+   LE DRIFT : la vitesse se décompose en avant et en travers. L'adhérence en
+   travers est forte d'ordinaire ; à pleine vitesse, quand on braque fort,
+   elle s'effondre et l'arrière décroche. Traces de pneus et fumée au sol. */
+const ESSAI={actif:false,x:0,y:0,ang:0,vx:0,vy:0,toile:null,traces:[],fumee:[],nom:'',retour:null};
+const COULEUR_TK={Toyota:'#c8102e',BMW:'#1f5fbf',Lamborghini:'#56c23a',Porsche:'#e8eaee',Nissan:'#6a6e78',Ferrari:'#d0101c'};
+const AILERON_TK={Toyota:1,Porsche:1,Nissan:1,Ferrari:1};
+/* la voiture vue du dessus, peinte une fois : 34 x 16, l'avant vers la droite */
+function peindreVoitureDessus(marque){
+  const c=document.createElement('canvas');c.width=34;c.height=18;
+  const g=c.getContext('2d');
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
+  const coul=COULEUR_TK[marque]||'#c8102e';
+  const sombre=(h,f)=>{const n=[1,3,5].map(i=>parseInt(h.substr(i,2),16));return 'rgb('+n.map(v=>Math.round(v*(1-f))).join(',')+')';};
+  const clair=(h,f)=>{const n=[1,3,5].map(i=>parseInt(h.substr(i,2),16));return 'rgb('+n.map(v=>Math.round(v+(255-v)*f)).join(',')+')';};
+  /* les roues qui dépassent */
+  [[6,0],[6,15],[24,0],[24,15]].forEach(([x,y])=>R(x,y,6,3,'#111116'));
+  /* la caisse, son contour, ses reflets */
+  R(2,2,30,14,sombre(coul,.45));
+  R(3,3,28,12,coul);
+  R(1,4,1,10,sombre(coul,.45));R(32,4,1,10,sombre(coul,.45));
+  R(4,3,26,1,clair(coul,.35));
+  R(4,14,26,1,sombre(coul,.25));
+  /* capot (droite) et coffre (gauche) */
+  R(24,5,6,8,clair(coul,.12));
+  /* le pare-brise, le toit, la lunette */
+  R(19,4,4,10,'#1c2a3a');R(20,5,1,8,'#3a5068');
+  R(11,4,8,10,sombre(coul,.15));R(12,5,6,2,clair(coul,.25));
+  R(8,5,3,8,'#1c2a3a');
+  /* les phares et les feux */
+  R(31,4,1,3,'#fff3c4');R(31,11,1,3,'#fff3c4');
+  R(2,4,1,3,'#ff2a2a');R(2,11,1,3,'#ff2a2a');
+  if(AILERON_TK[marque]){R(1,3,3,12,sombre(coul,.55));R(1,3,3,1,clair(coul,.2));}
+  return c;
+}
+function debutEssai(v){
+  ESSAI.actif=true;ESSAI.nom=[v.marque,v.modele].filter(Boolean).join(' ');
+  ESSAI.toile=peindreVoitureDessus(v.marque);
+  ESSAI.retour={x:joueur.x,y:joueur.y};
+  ESSAI.x=200;ESSAI.y=(TK.route[0]+TK.route[1])/2+18;ESSAI.ang=0;ESSAI.vx=0;ESSAI.vy=0;
+  ESSAI.traces=[];ESSAI.fumee=[];
+  joueur.x=ESSAI.x;joueur.y=ESSAI.y;
+}
+function finEssai(){
+  ESSAI.actif=false;
+  const r=ESSAI.retour||{x:86,y:224};
+  const [dx,dy]=degager(r.x,r.y);joueur.x=dx;joueur.y=dy;
+}
+function majEssai(dt,jx,jy){
+  dt=Math.min(dt,0.05);
+  const n=Math.min(1,Math.hypot(jx,jy));
+  const vit=Math.hypot(ESSAI.vx,ESSAI.vy);
+  /* 1. LE VOLANT : on braque vers le cap du joystick ; on tourne d'autant mieux qu'on roule */
+  let braque=0, d=0;
+  const av0=ESSAI.vx*Math.cos(ESSAI.ang)+ESSAI.vy*Math.sin(ESSAI.ang);
+  if(n>0.2){
+    d=Math.atan2(jy,jx)-ESSAI.ang;
+    d=Math.atan2(Math.sin(d),Math.cos(d));
+    braque=Math.max(-1,Math.min(1,d*2.2));
+  }
+  ESSAI.ang+=braque*(1.2+Math.min(1,Math.abs(av0)/90)*2.4)*dt*(av0<-5?-1:1);
+  /* 2. LA VITESSE RESTE DANS LE MONDE : on la relit dans le repère de la voiture
+     après le coup de volant. Ce qui n'est plus dans l'axe devient du travers. */
+  const nx=Math.cos(ESSAI.ang), ny=Math.sin(ESSAI.ang);
+  let av=ESSAI.vx*nx+ESSAI.vy*ny;
+  let tr=-ESSAI.vx*ny+ESSAI.vy*nx;
+  if(n>0.2)av+=240*n*dt*(Math.abs(d)>2.4?0.35:1);
+  else av*=Math.exp(-1.6*dt);
+  av=Math.max(-60,Math.min(330,av));
+  av*=Math.exp(-0.25*dt);
+  /* 3. LE DRIFT : à haute vitesse et braquage fort, l'arrière décroche */
+  const derape=Math.abs(braque)>0.55&&vit>150;
+  tr*=Math.exp(-(derape?1.3:9)*dt);
+  ESSAI.vx=av*nx-tr*ny; ESSAI.vy=av*ny+tr*nx;
+  const X=ESSAI.x+ESSAI.vx*dt, Y=ESSAI.y+ESSAI.vy*dt;
+  if(bloqueTokyo(X,Y)||X<20||X>MONDE_L-20||Y<TK.bati+14||Y>MONDE_H-14){
+    ESSAI.vx*=-0.35;ESSAI.vy*=-0.35;      /* le choc : on rebondit, sans traverser */
+  }else{ESSAI.x=X;ESSAI.y=Y;}
+  /* les traces de pneus et la fumée quand ça glisse */
+  if(Math.abs(tr)>45){
+    for(const s of [-6,6]){
+      const px=ESSAI.x-nx*11-ny*s, py=ESSAI.y-ny*11+nx*s;
+      ESSAI.traces.push([px,py,0.55]);
+    }
+    if(Math.random()<0.6)ESSAI.fumee.push({x:ESSAI.x-nx*14,y:ESSAI.y-ny*14,r:3,vie:0.8});
+    if(ESSAI.traces.length>900)ESSAI.traces.splice(0,ESSAI.traces.length-900);
+  }
+  for(const f of ESSAI.fumee){f.vie-=dt;f.r+=14*dt;}
+  ESSAI.fumee=ESSAI.fumee.filter(f=>f.vie>0);
+  joueur.x=ESSAI.x;joueur.y=ESSAI.y;
+}
+function dessinerEssai(ctx,camX,camY){
+  ctx.save();
+  ctx.fillStyle='rgba(12,10,16,.55)';
+  for(const [x,y] of ESSAI.traces)ctx.fillRect(Math.round(x-camX)-1,Math.round(y-camY)-1,2,2);
+  ctx.translate(Math.round(ESSAI.x-camX),Math.round(ESSAI.y-camY));
+  ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(1,3,17,8,ESSAI.ang,0,7);ctx.fill();
+  ctx.rotate(ESSAI.ang);
+  ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(ESSAI.toile,-17,-9);
+  ctx.restore();
+  ctx.save();
+  for(const f of ESSAI.fumee){ctx.fillStyle='rgba(220,220,230,'+(f.vie*0.4)+')';ctx.beginPath();ctx.arc(f.x-camX,f.y-camY,f.r,0,7);ctx.fill();}
+  ctx.restore();
+}
+
+;({TK,bloqueTokyo,construireSolTokyo,semerDecorTokyo,poserTokyo,ouvrirConcessionTokyo,fermerConcessionTokyo,ESSAI,debutEssai,finEssai,majEssai,dessinerEssai})
