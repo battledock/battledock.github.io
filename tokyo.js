@@ -250,7 +250,7 @@ async function ouvrirConcessionTokyo(ongletDepart){
         '<b style="display:block;font:800 22px sans-serif;margin-top:12px">'+esc(nom(m))+'</b>'+
         '<small style="color:#6a6a76;font-size:13px">'+(v.nom?'« '+esc(v.nom)+' »':'Sans nom de garage')+'</small>'+
         '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px">'+
-          [[(v.km||0).toFixed(1)+' km','parcourus'],[v.zeroCent?v.zeroCent.toFixed(2)+' s':'—','meilleur 0 – 100'],[v.sorties||0,'sorties']].map(([a,b])=>'<div style="background:#f4f4f7;border-radius:14px;padding:12px 4px;text-align:center;font-size:11px;color:#6a6a76"><b style="display:block;color:#14141a;font-size:17px">'+a+'</b>'+b+'</div>').join('')+
+          [[(v.km||0).toFixed(1)+' km','parcourus'],[v.drifts||0,'drifts'],[v.sorties||0,'sorties']].map(([a,b])=>'<div style="background:#f4f4f7;border-radius:14px;padding:12px 4px;text-align:center;font-size:11px;color:#6a6a76"><b style="display:block;color:#14141a;font-size:17px">'+a+'</b>'+b+'</div>').join('')+
         '</div>'+
         '<div style="display:flex;gap:8px;margin-top:12px">'+
           '<button id="ccRenommer" style="flex:1;min-height:50px;border-radius:14px;border:0;background:#f1f1f4;font:700 14px sans-serif;color:#14141a">Renommer</button>'+
@@ -466,6 +466,40 @@ function peindreVoitureDessus(marque,t){
   return c;
 }
 
+/* ================= LES COMMANDES : VOLANT À GAUCHE, PÉDALES À DROITE =================
+   Chaque bouton suit son propre doigt (pointer events, capture) : on tient
+   l'accélérateur et on braque en même temps. Au clavier : flèches ou ZQSD,
+   espace pour le frein à main. */
+const CMD={g:false,d:false,gaz:false,frein:false,main:false};
+let COMMANDES=null, CLAVIER=null;
+function montrerCommandes(){
+  if(COMMANDES)return;
+  const z=document.createElement('div');z.id='tkConduite';
+  z.style.cssText='position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 104px);z-index:21;display:flex;justify-content:space-between;align-items:flex-end;padding:0 14px;pointer-events:none;-webkit-user-select:none;user-select:none;touch-action:none';
+  const bouton=(cle,txt,taille,fond)=>'<button data-c="'+cle+'" style="pointer-events:auto;touch-action:none;width:'+taille+'px;height:'+taille+'px;border-radius:'+(taille/2)+'px;border:2px solid rgba(255,255,255,.35);background:'+fond+';color:#fff;font:800 '+(taille>70?15:13)+'px sans-serif;-webkit-tap-highlight-color:transparent">'+txt+'</button>';
+  z.innerHTML='<div style="display:flex;gap:12px">'+bouton('g','◀',76,'rgba(20,18,30,.55)')+bouton('d','▶',76,'rgba(20,18,30,.55)')+'</div>'+
+    '<div style="display:flex;gap:10px;align-items:flex-end">'+
+      '<div style="display:flex;flex-direction:column;gap:10px;align-items:center">'+bouton('main','DRIFT',58,'rgba(255,79,176,.55)')+bouton('frein','FREIN',66,'rgba(20,18,30,.55)')+'</div>'+
+      bouton('gaz','GAZ',88,'rgba(127,232,255,.45)')+'</div>';
+  document.body.appendChild(z);
+  z.querySelectorAll('button[data-c]').forEach(b=>{
+    const k=b.dataset.c;
+    const on=ev=>{ev.preventDefault();ev.stopPropagation();CMD[k]=true;b.style.filter='brightness(1.6)';try{b.setPointerCapture(ev.pointerId);}catch(x){}};
+    const off=ev=>{if(ev){ev.preventDefault();ev.stopPropagation();}CMD[k]=false;b.style.filter='';};
+    b.addEventListener('pointerdown',on);
+    b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('lostpointercapture',()=>off());
+    b.addEventListener('contextmenu',ev=>ev.preventDefault());
+  });
+  const T={ArrowLeft:'g',q:'g',a:'g',ArrowRight:'d',d:'d',ArrowUp:'gaz',z:'gaz',w:'gaz',ArrowDown:'frein',s:'frein',' ':'main'};
+  CLAVIER=[ev=>{const k=T[ev.key];if(k){CMD[k]=true;ev.preventDefault();}},ev=>{const k=T[ev.key];if(k)CMD[k]=false;}];
+  addEventListener('keydown',CLAVIER[0]);addEventListener('keyup',CLAVIER[1]);
+  COMMANDES=z;
+}
+function cacherCommandes(){
+  if(COMMANDES){COMMANDES.remove();COMMANDES=null;}
+  if(CLAVIER){removeEventListener('keydown',CLAVIER[0]);removeEventListener('keyup',CLAVIER[1]);CLAVIER=null;}
+  for(const k in CMD)CMD[k]=false;
+}
 /* LES PERFORMANCES DU TUNING : moteur (0 à 3), turbo (0 à 2), pneus (route, sport, drift) */
 function perfDuTuning(t){
   t=t||{};const mo=t.moteur||0, tu=t.turbo||0, pn=t.pneus||'route';
@@ -477,216 +511,136 @@ function tuningDe(v,aMoi){
   if(!e.configs||typeof e.configs!=='object')e.configs={};
   return e.configs[v.id]||(e.configs[v.id]={});
 }
-/* ================= LA ROUTE, DE PROFIL =================
-   L'essai se joue sur l'autoroute de Tokyo, vue de côté, comme dans les jeux de
-   drag : la voiture de profil (avec son tuning), le décor qui défile en
-   parallaxe, et en bas un tableau de bord net (compte-tours, compteur, rapport,
-   boîte manuelle ou auto, frein et gaz).
-   LE DÉCOR DÉFILE LENTEMENT : le ciel ne bouge pas, le Fuji et les montagnes
-   presque pas, la ville au loin à peine, les façades doucement ; seules la
-   glissière et la route suivent la vitesse. L'œil se pose, rien ne file. */
-const ROUTE={el:null,cv:null,g:null,raf:0,tp:0,v:0,rap:1,rpm:900,auto:true,km:0,auto100:null,chrono:0,meilleur:null,
-  img:null,couches:null,off:[0,0,0,0,0],W:0,H:0,dpr:1};
-function rapportsMax(pf){const k=pf.vmax/340;return [0,62,104,146,190,234,280].map(v=>v*k);}
-/* les couches lointaines, peintes une fois, raccordables bout à bout */
-function peindreCouchesRoute(W,H,dpr){
-  const mk=(w,h)=>{const c=document.createElement('canvas');c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);const g=c.getContext('2d');g.scale(dpr,dpr);return [c,g];};
-  const A=i=>alea(i*1.37+0.77);
-  /* 0. le ciel : dégradé de nuit, étoiles, lune et son halo, brume rose à l'horizon */
-  const [ciel,gc]=mk(W,H);
-  const k=gc.createLinearGradient(0,0,0,H);k.addColorStop(0,'#070616');k.addColorStop(0.45,'#1a1036');k.addColorStop(0.75,'#3d1f55');k.addColorStop(1,'#6a2a5e');
-  gc.fillStyle=k;gc.fillRect(0,0,W,H);
-  for(let i=0;i<120;i++){gc.fillStyle='rgba(235,235,255,'+(0.25+A(i)*0.6)+')';const r=A(i+300)<0.1?1.4:0.8;gc.fillRect(A(i+100)*W,A(i+200)*H*0.55,r,r);}
-  const lx=W*0.78, ly=H*0.17, lr=Math.max(14,H*0.05);
-  const hl=gc.createRadialGradient(lx,ly,lr*0.6,lx,ly,lr*4);hl.addColorStop(0,'rgba(255,240,210,.35)');hl.addColorStop(1,'rgba(255,240,210,0)');gc.fillStyle=hl;gc.fillRect(0,0,W,H*0.6);
-  gc.fillStyle='#fff4dc';gc.beginPath();gc.arc(lx,ly,lr,0,7);gc.fill();
-  gc.fillStyle='rgba(220,205,170,.35)';gc.beginPath();gc.arc(lx-lr*0.3,ly-lr*0.2,lr*0.25,0,7);gc.arc(lx+lr*0.35,ly+lr*0.3,lr*0.18,0,7);gc.fill();
-  /* 1. le Fuji et les montagnes, bleutés, très loin (large : 2 écrans) */
-  const LW=W*2;
-  const [mont,gm]=mk(LW,H);
-  const base=H*0.62;
-  gm.fillStyle='#2a2150';gm.beginPath();gm.moveTo(0,base);
-  for(let x=0;x<=LW;x+=8){gm.lineTo(x,base-H*0.08-Math.sin(x/LW*Math.PI*6)*H*0.035-Math.sin(x/LW*Math.PI*14)*H*0.015);}
-  gm.lineTo(LW,H);gm.lineTo(0,H);gm.fill();
-  const fuji=(cx)=>{const fw=H*0.95,fh=H*0.36;
-    const fg=gm.createLinearGradient(0,base-fh,0,base);fg.addColorStop(0,'#4a3f78');fg.addColorStop(1,'#2e2556');
-    gm.fillStyle=fg;gm.beginPath();gm.moveTo(cx-fw/2,base);gm.quadraticCurveTo(cx-fw*0.18,base-fh*0.7,cx-fw*0.08,base-fh);gm.lineTo(cx+fw*0.08,base-fh);gm.quadraticCurveTo(cx+fw*0.18,base-fh*0.7,cx+fw/2,base);gm.fill();
-    gm.fillStyle='#e8e4f4';gm.beginPath();gm.moveTo(cx-fw*0.08,base-fh);gm.lineTo(cx+fw*0.08,base-fh);
-    gm.lineTo(cx+fw*0.12,base-fh*0.84);gm.lineTo(cx+fw*0.07,base-fh*0.88);gm.lineTo(cx+fw*0.03,base-fh*0.82);gm.lineTo(cx-fw*0.02,base-fh*0.89);gm.lineTo(cx-fw*0.07,base-fh*0.83);gm.lineTo(cx-fw*0.12,base-fh*0.86);gm.fill();
-    /* l'ombre du versant ouest, pour le relief */
-    gm.fillStyle='rgba(10,6,30,.28)';gm.beginPath();gm.moveTo(cx-fw/2,base);gm.quadraticCurveTo(cx-fw*0.18,base-fh*0.7,cx-fw*0.08,base-fh);gm.lineTo(cx-fw*0.02,base-fh);gm.lineTo(cx-fw*0.12,base);gm.fill();};
-  fuji(LW*0.3);
-  const brume=gm.createLinearGradient(0,base-H*0.12,0,base+H*0.05);brume.addColorStop(0,'rgba(106,42,94,0)');brume.addColorStop(1,'rgba(106,42,94,.55)');gm.fillStyle=brume;gm.fillRect(0,base-H*0.12,LW,H*0.2);
-  /* 2. la ville au loin : tours sombres, fenêtres éclairées, feux rouges au sommet */
-  const [ville,gv]=mk(LW,H);
-  let x=0,i=0;
-  while(x<LW){const w=18+A(i)*34,h=H*(0.1+A(i+50)*0.22);const y=base+H*0.06-h;
-    gv.fillStyle=i%3?'#1b1430':'#22193c';gv.fillRect(x,y,w,h+H);
-    for(let yy=y+4;yy<base+H*0.05;yy+=6)for(let xx=x+3;xx<x+w-3;xx+=5)if(A(xx*0.7+yy*1.3)<0.32){gv.fillStyle=['rgba(255,217,138,.75)','rgba(127,232,255,.6)','rgba(255,79,176,.55)'][Math.floor(A(xx+yy)*3)];gv.fillRect(xx,yy,2,2);}
-    if(A(i+90)<0.4){gv.fillStyle='#ff3b3b';gv.fillRect(x+w/2-1,y-2,2,2);}
-    x+=w+1+A(i+70)*8;i++;}
-  return {ciel,mont,ville,LW};
+/* ================= LE SON DU MOTEUR =================
+   Synthétisé, pas d'enregistrement : deux oscillateurs (dent de scie et carré
+   à l'octave du dessous) saturés puis filtrés. Le régime suit la vitesse à
+   travers une boîte à six rapports : il grimpe, retombe au passage du rapport,
+   regrimpe — le « vroum » qui monte. Le filtre s'ouvre sous l'accélérateur.
+   Les pneus crissent (bruit filtré) quand l'arrière glisse. Respecte le
+   réglage « Les sons » du jeu. */
+const SON_TK={ctx:null};
+function demarrerMoteur(){
+  try{
+    if(typeof REG!=='undefined'&&REG.sons===false)return;
+    const C=new (window.AudioContext||window.webkitAudioContext)();
+    const sat=C.createWaveShaper();const cu=new Float32Array(1024);for(let i=0;i<1024;i++){const x=i/511.5-1;cu[i]=Math.tanh(x*2.4);}sat.curve=cu;
+    const o1=C.createOscillator();o1.type='sawtooth';
+    const o2=C.createOscillator();o2.type='square';
+    const g2=C.createGain();g2.gain.value=0.5;
+    const filtre=C.createBiquadFilter();filtre.type='lowpass';filtre.frequency.value=600;filtre.Q.value=4;
+    const vol=C.createGain();vol.gain.value=0;
+    o1.connect(sat);o2.connect(g2);g2.connect(sat);sat.connect(filtre);filtre.connect(vol);vol.connect(C.destination);
+    /* le crissement : un bruit blanc passé dans un passe-bande aigu */
+    const nb=C.createBuffer(1,C.sampleRate,C.sampleRate),nd=nb.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
+    const bruit=C.createBufferSource();bruit.buffer=nb;bruit.loop=true;
+    const bande=C.createBiquadFilter();bande.type='bandpass';bande.frequency.value=2400;bande.Q.value=6;
+    const crisse=C.createGain();crisse.gain.value=0;
+    bruit.connect(bande);bande.connect(crisse);crisse.connect(C.destination);
+    o1.start();o2.start();bruit.start();
+    Object.assign(SON_TK,{ctx:C,o1,o2,filtre,vol,crisse,rpm:900});
+  }catch(x){SON_TK.ctx=null;}
 }
-function montrerRoute(){
-  const z=document.createElement('div');z.id='tkRoute';
-  z.style.cssText='position:fixed;inset:0;z-index:30;background:#070616;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;touch-action:none;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
-  const cadran=(id,max,pas,unit,rouge)=>{
-    let t='';for(let i=0;i<=max;i+=pas){const a=(-225+i/max*270)*Math.PI/180;const r1=46,r2=i%(pas*2)===0?39:42;
-      const red=rouge&&i>=rouge;t+='<line x1="'+(60+Math.cos(a)*r1).toFixed(1)+'" y1="'+(60+Math.sin(a)*r1).toFixed(1)+'" x2="'+(60+Math.cos(a)*r2).toFixed(1)+'" y2="'+(60+Math.sin(a)*r2).toFixed(1)+'" stroke="'+(red?'#ff3b5c':'#d8d6e6')+'" stroke-width="'+(i%(pas*2)===0?2:1)+'"/>';
-      if(i%(pas*2)===0)t+='<text x="'+(60+Math.cos(a)*31).toFixed(1)+'" y="'+(60+Math.sin(a)*31+3).toFixed(1)+'" fill="'+(red?'#ff6b84':'#9a98b0')+'" font-size="8" font-weight="700" text-anchor="middle">'+(unit==='RPM'?i/1000:i)+'</text>';}
-    if(rouge){const a0=(-225+rouge/max*270)*Math.PI/180,a1=45*Math.PI/180;t+='<path d="M'+(60+Math.cos(a0)*49)+' '+(60+Math.sin(a0)*49)+' A49 49 0 0 1 '+(60+Math.cos(a1)*49)+' '+(60+Math.sin(a1)*49)+'" stroke="#ff3b5c" stroke-width="3" fill="none"/>';}
-    return '<svg viewBox="0 0 120 120" style="width:100%;height:100%"><defs><radialGradient id="f'+id+'"><stop offset="0" stop-color="#22202f"/><stop offset="1" stop-color="#0d0c14"/></radialGradient></defs>'+
-      '<circle cx="60" cy="60" r="56" fill="url(#f'+id+')" stroke="#3a3850" stroke-width="2"/>'+t+
-      '<text x="60" y="88" fill="#7fe8ff" font-size="9" font-weight="800" text-anchor="middle" letter-spacing="1">'+unit+'</text>'+
-      '<g id="'+id+'" style="transform-origin:60px 60px;transform:rotate(-225deg)"><line x1="60" y1="60" x2="104" y2="60" stroke="#ff4fb0" stroke-width="3" stroke-linecap="round"/></g>'+
-      '<circle cx="60" cy="60" r="6" fill="#e8e8f0"/></svg>';};
-  const pedale=(k,txt,w,h,col)=>'<button data-c="'+k+'" style="width:'+w+'px;height:'+h+'px;border-radius:12px;border:0;padding:0;touch-action:none;background:linear-gradient(160deg,#9a9aa8,#4a4a56 55%,#2a2a32);box-shadow:0 6px 0 #111,inset 0 1px 0 #ffffff55;position:relative;transition:transform .05s,box-shadow .05s;-webkit-tap-highlight-color:transparent">'+
-    '<span style="position:absolute;inset:8px 8px 22px;border-radius:6px;background:repeating-linear-gradient(0deg,#2a2a32 0 4px,#6a6a78 4px 7px)"></span>'+
-    '<span style="position:absolute;left:0;right:0;bottom:5px;text-align:center;font:800 11px sans-serif;letter-spacing:1px;color:'+col+'">'+txt+'</span></button>';
-  const rond=(k,txt)=>'<button data-c="'+k+'" style="width:56px;height:56px;border-radius:16px;border:1px solid #3a3850;background:linear-gradient(#2a2838,#17161f);color:#fff;font:800 24px sans-serif;box-shadow:0 4px 0 #000;touch-action:none;-webkit-tap-highlight-color:transparent">'+txt+'</button>';
-  z.innerHTML=
-    '<div style="position:relative;flex:1;min-height:0"><canvas id="rtCiel" style="position:absolute;inset:0;width:100%;height:100%"></canvas>'+
-      '<div style="position:absolute;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 0;display:flex;align-items:center;gap:10px">'+
-        '<button id="rtQuitter" style="width:42px;height:42px;border-radius:50%;border:0;background:#ffffff1f;color:#fff;font:700 18px sans-serif">✕</button>'+
-        '<div style="flex:1;min-width:0"><small style="display:block;font:700 10px sans-serif;letter-spacing:3px;color:#ff4fb0">TOKYO · AUTOROUTE</small>'+
-        '<b id="rtNom" style="display:block;font:800 16px sans-serif;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></b></div>'+
-        '<div style="text-align:right;color:#fff"><small style="display:block;font:700 9px sans-serif;letter-spacing:2px;color:#9a98b0">0 – 100</small><b id="rt100" style="font:800 15px ui-monospace,monospace">—</b></div></div></div>'+
-    '<div style="flex:none;background:linear-gradient(#14131c,#08080c);border-top:1px solid #2a2838;padding:12px 12px calc(env(safe-area-inset-bottom,0px) + 14px)">'+
-      '<div style="display:flex;align-items:center;justify-content:center;gap:6px">'+
-        '<div style="width:min(38vw,160px);aspect-ratio:1">'+cadran('rtAigRpm',8000,500,'RPM',7000)+'</div>'+
-        '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;min-width:64px">'+
-          '<div style="width:58px;height:58px;border-radius:14px;background:#05050a;border:1px solid #2a2838;display:grid;place-items:center;font:800 34px ui-monospace,monospace;color:#ffd98a" id="rtRap">1</div>'+
-          '<div style="font:800 20px ui-monospace,monospace;color:#7fe8ff" id="rtVit">0</div><small style="font:700 9px sans-serif;color:#9a98b0;letter-spacing:2px">KM/H</small></div>'+
-        '<div style="width:min(38vw,160px);aspect-ratio:1">'+cadran('rtAigVit',280,20,'KM/H',0)+'</div></div>'+
-      '<div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:10px">'+
-        '<div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start"><div style="display:flex;gap:8px">'+rond('bas','−')+rond('haut','+')+'</div>'+
-          '<button id="rtAuto" style="height:32px;padding:0 12px;border-radius:10px;border:1px solid #3a3850;background:#17161f;color:#7fe8ff;font:800 11px sans-serif;letter-spacing:1px">BOÎTE AUTO</button></div>'+
-        '<div style="display:flex;gap:12px;align-items:flex-end">'+pedale('frein','FREIN',66,96,'#ff8a9a')+pedale('gaz','GAZ',82,124,'#7fe8ff')+'</div></div></div>';
-  document.body.appendChild(z);
-  ROUTE.el=z;ROUTE.cv=z.querySelector('#rtCiel');ROUTE.g=ROUTE.cv.getContext('2d');
-  $('rtNom').textContent=ESSAI.nom;
-  $('rtQuitter').onclick=()=>finEssai();
-  const majAuto=()=>{$('rtAuto').textContent=ROUTE.auto?'BOÎTE AUTO':'BOÎTE MANUELLE';$('rtAuto').style.color=ROUTE.auto?'#7fe8ff':'#ffd98a';};
-  $('rtAuto').onclick=()=>{ROUTE.auto=!ROUTE.auto;majAuto();};majAuto();
-  z.querySelectorAll('button[data-c]').forEach(b=>{
-    const k=b.dataset.c;
-    const on=ev=>{ev.preventDefault();ev.stopPropagation();try{b.setPointerCapture(ev.pointerId);}catch(x){}
-      if(k==='haut'||k==='bas'){changerRapport(k==='haut'?1:-1);}else CMD[k]=true;
-      b.style.transform='translateY(4px)';b.style.boxShadow=b.style.boxShadow.replace(/0 (6|4)px 0/,'0 1px 0');};
-    const off=ev=>{if(ev){ev.preventDefault();ev.stopPropagation();}if(k!=='haut'&&k!=='bas')CMD[k]=false;b.style.transform='';b.style.boxShadow=b.style.boxShadow.replace(/0 1px 0/,k==='haut'||k==='bas'?'0 4px 0':'0 6px 0');};
-    b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('lostpointercapture',()=>off());
-    b.addEventListener('contextmenu',ev=>ev.preventDefault());});
-  const T={ArrowUp:'gaz',z:'gaz',w:'gaz',ArrowDown:'frein',s:'frein'};
-  ROUTE.clavier=[ev=>{const k=T[ev.key];if(k){CMD[k]=true;ev.preventDefault();}else if(ev.key==='ArrowRight'||ev.key==='e')changerRapport(1);else if(ev.key==='ArrowLeft'||ev.key==='a')changerRapport(-1);},
-    ev=>{const k=T[ev.key];if(k)CMD[k]=false;}];
-  addEventListener('keydown',ROUTE.clavier[0]);addEventListener('keyup',ROUTE.clavier[1]);
-  ROUTE.taille=()=>{const r=ROUTE.cv.getBoundingClientRect(),dpr=Math.min(3,window.devicePixelRatio||1);
-    ROUTE.W=r.width;ROUTE.H=r.height;ROUTE.dpr=dpr;ROUTE.cv.width=Math.round(r.width*dpr);ROUTE.cv.height=Math.round(r.height*dpr);
-    ROUTE.couches=peindreCouchesRoute(r.width,r.height,dpr);};
-  addEventListener('resize',ROUTE.taille);ROUTE.taille();
+function majMoteur(dt,vit,gaz,glisse){
+  const S=SON_TK;if(!S.ctx)return;
+  /* six rapports sur la plage de vitesse : le régime monte dans chacun, puis retombe */
+  const pas=70, rap=Math.min(5,Math.floor(vit/pas)), p=(vit-rap*pas)/pas;
+  let cible=vit<4?(gaz?2600:900):1300+Math.min(1,p)*(rap===5?5200:5700);
+  S.rpm+=(cible-S.rpm)*Math.min(1,(gaz?9:5)*dt);
+  const f=S.rpm/30, t=S.ctx.currentTime;
+  S.o1.frequency.setTargetAtTime(f,t,0.03);S.o2.frequency.setTargetAtTime(f/2,t,0.03);
+  S.filtre.frequency.setTargetAtTime(gaz?500+S.rpm*0.55:300+S.rpm*0.2,t,0.05);
+  S.vol.gain.setTargetAtTime(gaz?0.16:0.07,t,0.08);
+  S.crisse.gain.setTargetAtTime(Math.min(0.12,Math.max(0,(glisse-45)/900)),t,0.05);
 }
-function cacherRoute(){
-  if(ROUTE.raf)cancelAnimationFrame(ROUTE.raf);ROUTE.raf=0;
-  if(ROUTE.clavier){removeEventListener('keydown',ROUTE.clavier[0]);removeEventListener('keyup',ROUTE.clavier[1]);ROUTE.clavier=null;}
-  if(ROUTE.taille)removeEventListener('resize',ROUTE.taille);
-  if(ROUTE.el){ROUTE.el.remove();ROUTE.el=null;}
-  for(const k in CMD)CMD[k]=false;
-}
-function changerRapport(d){ROUTE.rap=Math.max(1,Math.min(6,ROUTE.rap+d));try{if(navigator.vibrate)navigator.vibrate(12);}catch(x){}}
-const CMD={gaz:false,frein:false};
-/* LE MOTEUR : le régime suit la vitesse dans le rapport engagé ; le couple est
-   meilleur au milieu du compte-tours ; au rupteur, il coupe. */
-function majRoute(dt){
-  const PF=ESSAI.perf||perfDuTuning({}), RM=rapportsMax(PF);
-  let v=ROUTE.v;const r=ROUTE.rap, vm=RM[r];
-  let rpm=900+Math.max(0,Math.min(1.04,v/vm))*7100;
-  if(v<12&&CMD.gaz)rpm=Math.max(rpm,2800+Math.random()*120);        /* l'embrayage patine au départ */
-  const courbe=0.55+0.45*Math.sin(Math.max(0,Math.min(1,(rpm-1200)/6400))*Math.PI);
-  if(CMD.gaz&&rpm<7950){
-    const bas=v<RM[r-1]*0.55&&r>1?0.35:1;                            /* trop haut en rapport : ça ne tire pas */
-    v+=23*PF.acc*(1.38-0.14*r)*courbe*bas*dt;
-  }
-  if(CMD.gaz&&rpm>=7950)rpm=7700+Math.random()*350;                   /* le rupteur */
-  if(CMD.frein)v-=95*dt;
-  if(!CMD.gaz)v-=(2.4+v*0.009)*dt;
-  v=Math.max(0,Math.min(v,RM[6]*1.02));
-  /* la boîte automatique passe les rapports au bon moment */
-  if(ROUTE.auto){if(rpm>7300&&r<6&&CMD.gaz)ROUTE.rap++;else if(rpm<2600&&r>1)ROUTE.rap--;}
-  /* le 0 – 100 */
-  if(v<1)ROUTE.chrono=0;else if(ROUTE.chrono>=0){ROUTE.chrono+=dt;if(v>=100){const t=ROUTE.chrono;ROUTE.chrono=-1;if(!ROUTE.meilleur||t<ROUTE.meilleur)ROUTE.meilleur=t;$('rt100').textContent=t.toFixed(2)+' s';}}
-  ROUTE.v=v;ROUTE.rpm=ROUTE.rpm+(rpm-ROUTE.rpm)*Math.min(1,14*dt);
-  ROUTE.km+=v/3600*dt;
-  const px=v*2.2*dt;                                                  /* 100 km/h ≈ 220 px/s pour la route */
-  const vit=[0,0.025,0.07,0.2,0.65,1];
-  for(let i=1;i<6;i++)ROUTE.off[i-1]=(ROUTE.off[i-1]||0)+px*vit[i];
-}
-function dessinerRoute(t){
-  const g=ROUTE.g,W=ROUTE.W,H=ROUTE.H,d=ROUTE.dpr,C=ROUTE.couches;if(!C)return;
-  g.setTransform(1,0,0,1,0,0);
-  g.drawImage(C.ciel,0,0);
-  const tuile=(img,off,y)=>{const w=img.width;let x=-Math.round((off*d)%w);g.drawImage(img,x,y);g.drawImage(img,x+w,y);};
-  tuile(C.mont,ROUTE.off[0],0);tuile(C.ville,ROUTE.off[1],0);
-  g.setTransform(d,0,0,d,0,0);g.imageSmoothingEnabled=false;
-  const base=H*0.62;
-  /* les façades de Tokyo, pixel art, défilent doucement */
-  const rue=IMGS_TK.__rue;
-  if(rue){const s=Math.max(0.6,(H*0.3)/206), w=900*s, y=base+H*0.05-206*s;
-    let x=-((ROUTE.off[2])%w);g.drawImage(rue,0,0,900,206,Math.round(x),Math.round(y),Math.round(w),Math.round(206*s));g.drawImage(rue,0,0,900,206,Math.round(x+w),Math.round(y),Math.round(w),Math.round(206*s));}
-  /* la glissière, ses poteaux, et les lampadaires tous les deux cents pixels */
-  const yr=base+H*0.05;
-  g.fillStyle='#8a8a9a';g.fillRect(0,yr,W,5);g.fillStyle='#c9c9d6';g.fillRect(0,yr,W,1);
-  for(let x=-((ROUTE.off[3])%24);x<W;x+=24){g.fillStyle='#55556a';g.fillRect(Math.round(x),yr+5,3,10);}
-  for(let x=-((ROUTE.off[3])%260);x<W+40;x+=260){const X=Math.round(x);g.fillStyle='#3a3848';g.fillRect(X,yr-H*0.2,3,H*0.2);g.fillRect(X,yr-H*0.2,18,3);
-    const l=g.createRadialGradient(X+16,yr-H*0.2+4,1,X+16,yr-H*0.2+4,30);l.addColorStop(0,'rgba(255,225,160,.9)');l.addColorStop(1,'rgba(255,225,160,0)');g.fillStyle=l;g.fillRect(X-16,yr-H*0.2-26,64,60);}
-  /* la route */
-  const y0=yr+15, y1=H;
-  const rg=g.createLinearGradient(0,y0,0,y1);rg.addColorStop(0,'#2a2936');rg.addColorStop(1,'#14131c');g.fillStyle=rg;g.fillRect(0,y0,W,y1-y0);
-  g.fillStyle='rgba(255,255,255,.18)';g.fillRect(0,y0+3,W,1);
-  const ym=y0+(y1-y0)*0.42;
-  g.fillStyle='rgba(235,230,200,.85)';for(let x=-((ROUTE.off[4])%70);x<W;x+=70)g.fillRect(Math.round(x),Math.round(ym),36,3);
-  /* reflets néon sur l'asphalte */
-  g.globalAlpha=0.08;['#ff4fb0','#7fe8ff','#ffd98a'].forEach((c,i)=>{g.fillStyle=c;for(let x=-((ROUTE.off[4]*0.9+i*90)%240);x<W;x+=240)g.fillRect(Math.round(x),Math.round(y0+10+i*9),70,1);});g.globalAlpha=1;
-  /* la voiture : profil repeint, néon sous caisse, une vibration qui suit le régime */
-  const im=ROUTE.img;
-  if(im){const cw=Math.min(W*0.66,440), ch=cw*im.height/im.width;
-    const bx=Math.round(W*0.12), by=Math.round(ym+ (y1-ym)*0.55 - ch);
-    const vib=ROUTE.rpm>6800?Math.round(Math.sin(t/18)*1):0;
-    if(ESSAI.tuning&&ESSAI.tuning.neon){const n=g.createRadialGradient(bx+cw/2,by+ch,4,bx+cw/2,by+ch,cw*0.55);n.addColorStop(0,ESSAI.tuning.neon+'aa');n.addColorStop(1,ESSAI.tuning.neon+'00');
-      g.save();g.translate(bx+cw/2,by+ch);g.scale(1,0.18);g.translate(-(bx+cw/2),-(by+ch));g.fillStyle=n;g.beginPath();g.arc(bx+cw/2,by+ch,cw*0.55,0,7);g.fill();g.restore();}
-    g.fillStyle='rgba(0,0,0,.45)';g.beginPath();g.ellipse(bx+cw/2,by+ch-2,cw*0.46,5,0,0,7);g.fill();
-    g.drawImage(im,bx,by+vib,Math.round(cw),Math.round(ch));}
-  /* les aiguilles et l'affichage, en vrai vectoriel net */
-  const ar=-225+Math.min(8000,ROUTE.rpm)/8000*270, av=-225+Math.min(280,ROUTE.v)/280*270;
-  const A1=$('rtAigRpm'),A2=$('rtAigVit');if(A1)A1.style.transform='rotate('+ar+'deg)';if(A2)A2.style.transform='rotate('+av+'deg)';
-  if($('rtVit'))$('rtVit').textContent=Math.round(ROUTE.v);if($('rtRap'))$('rtRap').textContent=ROUTE.v<0.5&&!CMD.gaz?'N':ROUTE.rap;
-}
-function boucleRoute(t){
-  if(!ESSAI.actif)return;
-  const dt=Math.min(0.05,ROUTE.tp?(t-ROUTE.tp)/1000:0.016);ROUTE.tp=t;
-  majRoute(dt);dessinerRoute(t);
-  ROUTE.raf=requestAnimationFrame(boucleRoute);
-}
+function couperMoteur(){const S=SON_TK;if(!S.ctx)return;try{S.vol.gain.setTargetAtTime(0,S.ctx.currentTime,0.05);const C=S.ctx;setTimeout(()=>{try{C.close();}catch(x){}},300);}catch(x){}S.ctx=null;}
+
 function debutEssai(v,aMoi){
   ESSAI.actif=true;ESSAI.garage=aMoi||null;
   ESSAI.tuning=v&&v.id?tuningDe(v,aMoi):(aMoi&&aMoi.tuning)||{};
   ESSAI.perf=perfDuTuning(ESSAI.tuning);
-  ESSAI.nom=(aMoi&&aMoi.nom?'« '+aMoi.nom+' » · ':'')+[v.marque,v.modele].filter(Boolean).join(' ');
-  ROUTE.v=0;ROUTE.rap=1;ROUTE.rpm=900;ROUTE.km=0;ROUTE.chrono=0;ROUTE.meilleur=null;ROUTE.off=[0,0,0,0,0];ROUTE.tp=0;ROUTE.img=null;
-  montrerRoute();
-  const sp=(v.photos||[]).find(q=>q.role==='sprite_pixel');
-  if(sp)chargerImgTK(sp.fichier).then(img=>{if(img)ROUTE.img=repeindreProfil(img,ESSAI.tuning);});
-  if(!IMGS_TK.__rue)chargerImgTK('assets/tokyo/rue_haut.png').then(img=>{IMGS_TK.__rue=img;});
-  ROUTE.raf=requestAnimationFrame(boucleRoute);
+  ESSAI.halo=null;ESSAI.dist=0;ESSAI.drifts=0;ESSAI.enDrift=false;ESSAI.nom=[v.marque,v.modele].filter(Boolean).join(' ');
+  ESSAI.toile=peindreVoitureDessus(v.marque,ESSAI.tuning);
+  ESSAI.retour={x:joueur.x,y:joueur.y};
+  ESSAI.x=200;ESSAI.y=(TK.route[0]+TK.route[1])/2+18;ESSAI.ang=0;ESSAI.vx=0;ESSAI.vy=0;ESSAI.vol=0;
+  ESSAI.traces=[];ESSAI.fumee=[];
+  joueur.x=ESSAI.x;joueur.y=ESSAI.y;
+  montrerCommandes();
+  demarrerMoteur();
 }
 function finEssai(){
   ESSAI.actif=false;
-  /* SA PROPRE VOITURE : les compteurs du garage avancent */
-  if(ESSAI.garage){const v=ESSAI.garage;v.km=(v.km||0)+ROUTE.km;v.sorties=(v.sorties||0)+1;
-    if(ROUTE.meilleur&&(!v.zeroCent||ROUTE.meilleur<v.zeroCent))v.zeroCent=+ROUTE.meilleur.toFixed(2);try{sauver();}catch(x){}}
+  /* SA PROPRE VOITURE : les compteurs du garage avancent (1 px de carte = 25 cm) */
+  if(ESSAI.garage){const v=ESSAI.garage;v.km=(v.km||0)+ESSAI.dist*0.00025;v.drifts=(v.drifts||0)+ESSAI.drifts;v.sorties=(v.sorties||0)+1;try{sauver();}catch(x){}}
   ESSAI.garage=null;
-  cacherRoute();
+  cacherCommandes();
+  couperMoteur();
+  const r=ESSAI.retour||{x:86,y:224};
+  const [dx,dy]=degager(r.x,r.y);joueur.x=dx;joueur.y=dy;
 }
-/* le monde ne bouge pas pendant la route : le piéton attend devant le concessionnaire */
-function majEssai(){}
-function dessinerEssai(){}
+function majEssai(dt){
+  dt=Math.min(dt,0.05);
+  const vit=Math.hypot(ESSAI.vx,ESSAI.vy);
+  /* 1. LE VOLANT : il revient au centre quand on lâche, sans à-coup */
+  const cible=(CMD.d?1:0)-(CMD.g?1:0);
+  ESSAI.vol=(ESSAI.vol||0)+(cible-(ESSAI.vol||0))*Math.min(1,9*dt);
+  const av0=ESSAI.vx*Math.cos(ESSAI.ang)+ESSAI.vy*Math.sin(ESSAI.ang);
+  const prise=Math.min(1,Math.abs(av0)/70);                   /* à l'arrêt, les roues ne font pas tourner */
+  ESSAI.ang+=ESSAI.vol*(CMD.main?3.4:2.7)*prise*dt*(av0<-2?-1:1);
+  /* 2. LA VITESSE RESTE DANS LE MONDE, relue dans l'axe de la voiture */
+  const nx=Math.cos(ESSAI.ang), ny=Math.sin(ESSAI.ang);
+  let av=ESSAI.vx*nx+ESSAI.vy*ny;
+  let tr=-ESSAI.vx*ny+ESSAI.vy*nx;
+  const PF=ESSAI.perf||perfDuTuning({});
+  if(CMD.gaz)av+=(av<0?420:250*PF.acc)*dt;
+  if(CMD.frein)av-=(av>8?430:150)*dt;                         /* freine, puis recule */
+  if(!CMD.gaz&&!CMD.frein)av*=Math.exp(-1.1*dt);
+  if(CMD.main)av*=Math.exp(-0.9*dt);
+  av=Math.max(-95,Math.min(PF.vmax,av));
+  av*=Math.exp(-0.22*dt);
+  /* 3. L'ADHÉRENCE : le frein à main la casse, un grand coup de volant à fond aussi */
+  const grip=CMD.main?PF.drift:(Math.abs(ESSAI.vol)>0.85&&vit>PF.seuil?2.6:PF.grip);
+  tr*=Math.exp(-grip*dt);
+  ESSAI.vx=av*nx-tr*ny; ESSAI.vy=av*ny+tr*nx;
+  majMoteur(dt,Math.abs(av),CMD.gaz,Math.abs(tr));
+  const X=ESSAI.x+ESSAI.vx*dt, Y=ESSAI.y+ESSAI.vy*dt;
+  if(bloqueTokyo(X,Y)||X<20||X>MONDE_L-20||Y<TK.bati+18||Y>MONDE_H-18){
+    ESSAI.vx*=-0.35;ESSAI.vy*=-0.35;      /* le choc : on rebondit, sans traverser */
+  }else{ESSAI.dist=(ESSAI.dist||0)+Math.hypot(X-ESSAI.x,Y-ESSAI.y);ESSAI.x=X;ESSAI.y=Y;}
+  /* un drift compte une fois, quand l'arrière décroche */
+  if(!ESSAI.enDrift&&Math.abs(tr)>60){ESSAI.enDrift=true;ESSAI.drifts=(ESSAI.drifts||0)+1;}
+  else if(ESSAI.enDrift&&Math.abs(tr)<20)ESSAI.enDrift=false;
+  /* les traces de pneus et la fumée quand ça glisse */
+  if(Math.abs(tr)>45){
+    for(const s of [-10,10]){
+      const px=ESSAI.x-nx*18-ny*s, py=ESSAI.y-ny*18+nx*s;
+      /* LES TRACES SE PEIGNENT DANS LE SOL : rien à redessiner à chaque image */
+      try{const gs=SOL.getContext('2d');gs.fillStyle='rgba(12,10,16,.45)';gs.fillRect(Math.round(px)-1,Math.round(py)-1,2,2);}catch(x){ESSAI.traces.push([px,py,0.55]);}
+    }
+    if(ESSAI.fumee.length<36&&Math.random()<0.5)ESSAI.fumee.push({x:ESSAI.x-nx*24,y:ESSAI.y-ny*24,r:4,vie:0.8});
+    if(ESSAI.traces.length>900)ESSAI.traces.splice(0,ESSAI.traces.length-900);
+  }
+  for(const f of ESSAI.fumee){f.vie-=dt;f.r+=14*dt;}
+  ESSAI.fumee=ESSAI.fumee.filter(f=>f.vie>0);
+  joueur.x=ESSAI.x;joueur.y=ESSAI.y;
+}
+function dessinerEssai(ctx,camX,camY){
+  ctx.save();
+  ctx.fillStyle='rgba(12,10,16,.55)';
+  for(const [x,y] of ESSAI.traces)ctx.fillRect(Math.round(x-camX)-1,Math.round(y-camY)-1,2,2);
+  ctx.translate(Math.round(ESSAI.x-camX),Math.round(ESSAI.y-camY));
+  ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(1,3,32,14,ESSAI.ang,0,7);ctx.fill();
+  ctx.rotate(ESSAI.ang);
+  if(ESSAI.tuning&&ESSAI.tuning.neon){
+    if(!ESSAI.halo){const h=document.createElement('canvas');h.width=110;h.height=60;const hg=h.getContext('2d');
+      const r=hg.createRadialGradient(55,30,4,55,30,52);r.addColorStop(0,ESSAI.tuning.neon);r.addColorStop(0.45,ESSAI.tuning.neon+'88');r.addColorStop(1,ESSAI.tuning.neon+'00');
+      hg.fillStyle=r;hg.save();hg.translate(55,30);hg.scale(1,0.52);hg.translate(-55,-30);hg.beginPath();hg.arc(55,30,52,0,7);hg.fill();hg.restore();ESSAI.halo=h;}
+    ctx.globalAlpha=0.75;ctx.drawImage(ESSAI.halo,-55,-30);ctx.globalAlpha=1;}
+  ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(ESSAI.toile,-34,-16);
+  ctx.restore();
+  ctx.save();
+  for(const f of ESSAI.fumee){ctx.fillStyle='rgba(220,220,230,'+(f.vie*0.4)+')';ctx.beginPath();ctx.arc(f.x-camX,f.y-camY,f.r,0,7);ctx.fill();}
+  ctx.restore();
+}
+
 ;({TK,bloqueTokyo,construireSolTokyo,semerDecorTokyo,poserTokyo,ouvrirConcessionTokyo,fermerConcessionTokyo,ESSAI,debutEssai,finEssai,majEssai,dessinerEssai})
