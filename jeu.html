@@ -10553,7 +10553,7 @@ const SOL_CACHE={pret:false,sol:null,fin:null};
 const cleSol=()=>'sol:'+(typeof MA_VERSION!=='undefined'?MA_VERSION:'?')+':'+CARTE+':'+
 (typeof MODE_VIL!=='undefined'?MODE_VIL:'-')+':'+MONDE_L+'x'+MONDE_H;
 function baseSol(){return new Promise((ok,ko)=>{try{const r=indexedDB.open('bdl-sol',1);r.onupgradeneeded=()=>r.result.createObjectStore('s');r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error);}catch(x){ko(x);}});}
-async function chargerSolCache(){try{const db=await baseSol();const v=await new Promise(ok=>{const q=db.transaction('s').objectStore('s').get(cleSol());q.onsuccess=()=>ok(q.result);q.onerror=()=>ok(null);});
+async function chargerSolCache(){if(CARTE==='tokyo')return;try{const db=await baseSol();const v=await new Promise(ok=>{const q=db.transaction('s').objectStore('s').get(cleSol());q.onsuccess=()=>ok(q.result);q.onerror=()=>ok(null);});
 if(!v||!v.sol)return;/* createImageBitmap manque sur les vieux Safari : on repasse par une image. */
 const toile=async(b)=>{if(!b)return null;
 if(typeof createImageBitmap!=='function'){
@@ -10563,7 +10563,7 @@ c2.getContext('2d').drawImage(im2,0,0);URL.revokeObjectURL(u);ok(c2);};
 im2.onerror=()=>{URL.revokeObjectURL(u);ok(null);};im2.src=u;});}
 const im=await createImageBitmap(b);const c=document.createElement('canvas');c.width=im.width;c.height=im.height;c.getContext('2d').drawImage(im,0,0);return c;};
 SOL_CACHE.sol=await toile(v.sol);SOL_CACHE.fin=await toile(v.fin);SOL_CACHE.pret=!!SOL_CACHE.sol;}catch(x){}}
-function rangerSolCache(){try{if(!SOL)return;const cle=cleSol(), fin=SOL_FIN;
+function rangerSolCache(){try{if(!SOL||CARTE==='tokyo')return;const cle=cleSol(), fin=SOL_FIN;
 SOL.toBlob(async(b1)=>{const b2=fin?await new Promise(ok=>fin.toBlob(ok)):null;try{const db=await baseSol();const tx=db.transaction('s','readwrite');const st=tx.objectStore('s');
 st.clear();st.put({sol:b1,fin:b2},cle);}catch(x){}});}catch(x){}}
 /* ================= RANGER LE SOL SANS BLOQUER LA MARCHE =================
