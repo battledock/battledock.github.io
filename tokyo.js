@@ -334,9 +334,16 @@ function construireSolTokyo(){
   R(0,Y0,W,H-Y0,'#2b2c36');
   for(let i=0;i<500;i++)R(A(i*5.5)*W,Y0+A(i*7.1)*(H-Y0),2+A(i)*3,1,'rgba(0,0,0,.12)');
   R(0,Y0-2,W,6,'#8a8a95');R(0,Y0+4,W,1,'#55555f');
+  /* à gauche, des places perpendiculaires (horizontales) */
   for(let y=Y0+40;y+100<H-20;y+=120){
-    for(let x=20;x<W-20;x+=70)R(x,y,2,100,'rgba(235,235,245,.55)');
-    R(20,y+100,W-40,2,'rgba(235,235,245,.55)');}
+    for(let x=20;x<=660;x+=70)R(x,y,2,100,'rgba(235,235,245,.55)');
+    R(20,y+100,642,2,'rgba(235,235,245,.55)');}
+  /* à droite, des places en épi, en oblique */
+  g.save();g.strokeStyle='rgba(235,235,245,.55)';g.lineWidth=2;
+  for(let y=Y0+40;y+49<H-20;y+=120){
+    for(let x=700;x+89<W-20;x+=40){
+      g.beginPath();g.moveTo(x,y);g.lineTo(x+40,y);g.lineTo(x+89,y+49);g.lineTo(x+49,y+49);g.lineTo(x,y);g.stroke();}}
+  g.restore();
   for(const x of [150,500,850,1200])for(const y of [Y0+18,H-22])lampadaireTK(g,x,y);
   g.fillStyle='rgba(20,12,40,.10)';g.fillRect(0,Y0,W,H-Y0);
 
