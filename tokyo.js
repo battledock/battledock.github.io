@@ -349,9 +349,10 @@ async function ouvrirConcessionTokyo(ongletDepart){
     ga:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10l9-6 9 6v10H3z"/><path d="M7 20v-6h10v6"/></svg>',
     tu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 7l3-3 3 3-3 3M4 20l9-9M11 4a4 4 0 0 0 5 5"/></svg>',
     re:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="7"/><path d="M12 13V9M10 3h4"/></svg>'};
-  const NAV=[['Showroom',IC.sh],['Garage',IC.ga],['Tuning',IC.tu],['Records',IC.re]];
+  /* LE TUNING EST RETIRÉ DU CONCESSIONNAIRE : trois onglets. Les numéros restent ceux d'avant (0, 1, 3). */
+  const NAV=[['Showroom',IC.sh,0],['Garage',IC.ga,1],['Records',IC.re,3]];
   const nav=()=>{
-    $('ccNav').innerHTML=NAV.map(([t,i],k)=>'<button data-nav="'+k+'" class="'+(k===onglet?'on':'')+'">'+i+t+'</button>').join('');
+    $('ccNav').innerHTML=NAV.map(([t,i,k])=>'<button data-nav="'+k+'" class="'+(k===onglet?'on':'')+'">'+i+t+'</button>').join('');
     $('ccNav').querySelectorAll('button').forEach(b=>{b.onclick=()=>{onglet=+b.dataset.nav;bulle('');rendre();};});
   };
   /* ---------- LE SHOWROOM : une voiture à la fois, sur le plateau ---------- */
@@ -359,7 +360,7 @@ async function ouvrirConcessionTokyo(ongletDepart){
     $('ccSur').textContent='東京 · SHOWROOM';$('ccTitre').textContent='Concession';
     if(!vehicules.length){$('ccCorps').innerHTML='<p style="color:#ff8ac8;margin-top:20px">Le catalogue ne répond pas.</p>';return;}
     idx=(idx+vehicules.length)%vehicules.length;ouvrirConcessionTokyo.idx=idx;
-    const v=vehicules[idx], t=tuningDe(v,null), N=notesDe(v.marque,t), rec=chronoRecords()[nom(v)];
+    const v=vehicules[idx], t={}, N=notesDe(v.marque,t), rec=chronoRecords()[nom(v)];
     const st=(l,x)=>'<div class="ccSt">'+l+'<u style="--v:'+(x*10)+'%"></u><b>'+x.toFixed(1).replace('.',',')+'</b></div>';
     $('ccCorps').innerHTML=
       '<div class="ccScene" id="ccScene"><div class="ccNeon"></div><div class="ccDisque"></div>'+
@@ -433,8 +434,7 @@ async function ouvrirConcessionTokyo(ongletDepart){
           [[(v.km||0).toFixed(1)+' km','parcourus'],[v.drifts||0,'drifts'],[v.sorties||0,'sorties']].map(([a,b])=>'<div style="background:rgba(255,255,255,.06);border-radius:14px;padding:12px 4px;text-align:center;font-size:11px;color:rgba(255,255,255,.6)"><b style="display:block;color:#fff;font-size:17px">'+a+'</b>'+b+'</div>').join('')+
         '</div>'+
         '<div style="display:flex;gap:8px;margin-top:12px">'+
-          '<button id="ccRenommer" style="flex:1;min-height:50px;border-radius:14px;border:0;background:rgba(255,255,255,.08);font:700 14px sans-serif;color:#fff">Renommer</button>'+
-          '<button id="ccTuning" style="flex:1;min-height:50px;border-radius:14px;border:0;background:rgba(255,255,255,.08);font:700 14px sans-serif;color:#fff">Tuning</button></div>'+
+          '<button id="ccRenommer" style="flex:1;min-height:50px;border-radius:14px;border:0;background:rgba(255,255,255,.08);font:700 14px sans-serif;color:#fff">Renommer</button></div>'+
         '<button id="ccVolant" style="display:block;width:100%;margin-top:8px;min-height:56px;border-radius:16px;border:0;background:#ff4fb0;color:#fff;font:800 16px sans-serif">Prendre le volant</button>';
     }
     $('ccCorps').innerHTML=h;
@@ -449,7 +449,6 @@ async function ouvrirConcessionTokyo(ongletDepart){
     if(G.length){
       const v=G[choisie];
       $('ccVolant').onclick=()=>{fermerConcessionTokyo();debutEssai(modele(v.modele)||{marque:'Toyota',modele:''},v);};
-      $('ccTuning').onclick=()=>{selT={garage:v};onglet=2;rendre();};
       $('ccRenommer').onclick=()=>{
         const n=prompt('Le nom de ta voiture',v.nom||'');
         if(n===null)return;
@@ -517,7 +516,7 @@ async function ouvrirConcessionTokyo(ongletDepart){
     $('ccRaz').onclick=()=>{for(const k of Object.keys(t))delete t[k];try{sauver();}catch(x){}rendre();};
     $('ccEssaiT').onclick=()=>{fermerConcessionTokyo();debutEssai(m||{marque:'Toyota'},selT.garage||null);};
   };
-  const rendre=()=>{nav();$('ccDefile').classList.toggle('fixe',onglet===0);(onglet===3?records:onglet===2?tuning:onglet===1?garage:showroom)();$('ccDefile').scrollTop=0;};
+  const rendre=()=>{nav();$('ccDefile').classList.toggle('fixe',onglet===0);(onglet===3?records:onglet===1?garage:showroom)();$('ccDefile').scrollTop=0;};
   rendre();
 }
 
@@ -748,7 +747,7 @@ function couperMoteur(){const S=SON_TK;if(!S.ctx)return;try{S.vol.gain.setTarget
 
 function debutEssai(v,aMoi){
   ESSAI.actif=true;ESSAI.garage=aMoi||null;
-  ESSAI.tuning=v&&v.id?tuningDe(v,aMoi):(aMoi&&aMoi.tuning)||{};
+  ESSAI.tuning=(aMoi&&aMoi.tuning)||{};   /* pas de tuning au concessionnaire : la voiture d'origine */
   ESSAI.perf=perfDuModele(v&&v.marque,ESSAI.tuning);
   ESSAI.halo=null;ESSAI.dist=0;ESSAI.drifts=0;ESSAI.enDrift=false;ESSAI.nom=[v.marque,v.modele].filter(Boolean).join(' ');
   ESSAI.toile=peindreVoitureDessus(v.marque,ESSAI.tuning);
