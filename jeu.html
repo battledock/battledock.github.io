@@ -25741,6 +25741,11 @@ if(CARTE==='tokyo'&&GESTE.t<=0){
     b.innerHTML='Entrer au concessionnaire<small>SHOWROOM TOKYO · LE CATALOGUE</small>';b.classList.add('on');
     b.onclick=()=>{TKM.ouvrirConcessionTokyo();};
     return;}
+  const M=TKM.TK.metro;
+  if(M&&Math.abs(joueur.x-M.x)<M.l&&joueur.y>M.y0&&joueur.y<M.y1){
+    b.innerHTML='Prendre le métro<small>LIGNE 2 · RETOUR AU PORT · GRATUIT</small>';b.classList.add('on');
+    b.onclick=()=>{ouvrirLeQuaiTokyo(true);};
+    return;}
   const P=TKM.TK.porte;
   if(P&&Math.abs(joueur.x-P.x)<P.l&&joueur.y>P.y0&&joueur.y<P.y1){
     b.innerHTML='Entrer à l’armurerie<small>FUSIL · MINIGUN · PLASMA · RAILGUN</small>';b.classList.add('on');
@@ -31467,11 +31472,11 @@ return    {haut:'#16203c',bas:'#2a3152',sol:'#17142a',astre:'#fff6dc',lune:true,
 }
 /* LE QUAI DE TOKYO : la station sous le Pecheur Heureux. Le billet passe par
    prendre_billet (prix fixe au serveur), puis le train part vers Tokyo.html. */
-function ouvrirLeQuaiTokyo(){
+function ouvrirLeQuaiTokyo(retour){
 const D=DESTS.find(x=>x.id==='tokyo');
 if(!D)return;
 const solde=e.euros||0;
-const peut=solde>=D.prix;
+const peut=retour||solde>=D.prix;
 $('page2Fond').className='tkq';
 if(!document.getElementById('cssTkq')){const st=document.createElement('style');st.id='cssTkq';
 st.textContent=
@@ -31520,15 +31525,16 @@ document.head.appendChild(st);}
 let petales='';for(let i=0;i<16;i++)petales+='<i style="left:'+(Math.random()*110).toFixed(0)+'%;animation-duration:'+(6+Math.random()*7).toFixed(1)+'s;animation-delay:-'+(Math.random()*10).toFixed(1)+'s;transform:scale('+(0.6+Math.random()*0.7).toFixed(2)+')"></i>';
 $('page2Fond').innerHTML=
 '<div class="tq-ciel">'+petales+'</div><div class="tq-ville"></div>'+
-'<div class="tq-haut"><span class="tq-ligne">2</span><div><small>LE MÉTRO · LIGNE 2</small><b>Direction Tokyo</b></div><button class="tq-x" id="tkX" aria-label="Fermer">✕</button></div>'+
+'<div class="tq-haut"><span class="tq-ligne">2</span><div><small>LE MÉTRO · LIGNE 2</small><b>'+(retour?'Direction Le port':'Direction Tokyo')+'</b></div><button class="tq-x" id="tkX" aria-label="Fermer">✕</button></div>'+
 '<div class="tq-bas"><div class="tq-billet">'+
-'<div class="tq-trajet"><div><small>DÉPART</small><b>Le port</b><em>Marseille</em></div><span class="tq-fl">→</span><div><small>ARRIVÉE</small><b>Tokyo</b><em>東京</em></div></div>'+
-'<p class="tq-mot">'+D.mot+'.</p>'+
+(retour?'<div class="tq-trajet"><div><small>DÉPART</small><b>Tokyo</b><em>東京</em></div><span class="tq-fl">→</span><div><small>ARRIVÉE</small><b>Le port</b><em>Marseille</em></div></div>'
+:'<div class="tq-trajet"><div><small>DÉPART</small><b>Le port</b><em>Marseille</em></div><span class="tq-fl">→</span><div><small>ARRIVÉE</small><b>Tokyo</b><em>東京</em></div></div>')+
+'<p class="tq-mot">'+(retour?'Le Vieux-Port, ses quais et son Pêcheur Heureux':D.mot)+'.</p>'+
 '<div class="tq-tir"></div>'+
-'<div class="tq-prix"><span>BILLET<br>TON SOLDE · '+enEuros(solde)+'</span><b>'+(D.prix?enEuros(D.prix):'GRATUIT')+'</b></div>'+
+'<div class="tq-prix"><span>BILLET<br>TON SOLDE · '+enEuros(solde)+'</span><b>'+(!retour&&D.prix?enEuros(D.prix):'GRATUIT')+'</b></div>'+
 '</div>'+
 '<button class="tq-go" id="tkGo"'+(peut?'':' disabled')+'>'+(peut?'Monter dans le train':'Il te manque '+enEuros(D.prix-solde))+'</button>'+
-'<button class="tq-non" id="tkNon">Rester au port</button>'+
+'<button class="tq-non" id="tkNon">'+(retour?'Rester à Tokyo':'Rester au port')+'</button>'+
 '<div class="tq-bulle" id="tkBulle"></div></div>';
 $('page2').classList.add('on');
 $('tkNon').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
@@ -31536,6 +31542,7 @@ $('tkX').onclick=$('tkNon').onclick;
 $('tkGo').onclick=async()=>{
 if(!peut){$('tkBulle').textContent='Il te manque de quoi payer.';return;}
 /* LE BILLET GRATUIT : rien à encaisser, on ne passe pas par la caisse */
+if(retour){fermeA=Date.now();$('page2').classList.remove('on');voyagerVers('extramar','Direction Le port');return;}
 if(!D.prix){fermeA=Date.now();$('page2').classList.remove('on');partirEnVoyage(D);return;}
 $('tkGo').disabled=true;$('tkBulle').textContent='Le guichet tamponne ton billet…';
 const d=await appelRPC('prendre_billet',{p_joueur:e.id,p_dest:D.id,p_cents:D.prix});

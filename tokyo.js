@@ -13,8 +13,9 @@ const TK={
   concessionPorte:{x:86,y0:206,y1:250,l:76},    /* devant la vitrine du concessionnaire, sur le trottoir : nulle part ailleurs */
   route:[238,338],                /* la route, sous le trottoir */
   parking:{y0:350},               /* le parking, sous la route */
-  sortie:{x:60,y0:296,y1:420},    /* la sortie, à l'ouest : vers le port */
-  arrivee:[84,360]
+  sortie:{x:60,y0:296,y1:420},    /* (ancienne sortie ouest, retirée) */
+  metro:{x:70,y0:352,y1:452,l:62}, /* la bouche de métro, ligne 2 : retour au port */
+  arrivee:[70,364]
 };
 
 function bloqueTokyo(x,y){
@@ -81,6 +82,36 @@ function construireSolTokyo(){
     g.fillStyle='#3a3848';g.fillRect(x-3,y-3,6,6);g.fillStyle='#ffe6b0';g.fillRect(x-1,y-1,3,3);
   }
   /* la rangée du haut : ciel de nuit, façades japonaises collées et cerisiers */
+  /* LA BOUCHE DE MÉTRO : un parvis, l'escalier qui descend, les rambardes, le poteau de la ligne 2 */
+  (function(){
+    const x0=8,y0=352,w=132,h=136;
+    g.fillStyle='#3e3b52';g.fillRect(x0,y0,w,h);
+    for(let yy=y0;yy<y0+h;yy+=10)for(let xx=x0+((yy/10)%2?0:8);xx<x0+w;xx+=16){g.fillStyle=A(xx*0.7+yy)>.5?'#46425c':'#3a374d';g.fillRect(xx,yy,15,9);}
+    g.fillStyle='#8a86a0';g.fillRect(x0,y0+h,w,2);g.fillRect(x0+w,y0,2,h+2);
+    const sx=34,sy=380,sw=72,sh=58;
+    g.fillStyle='#14121c';g.fillRect(sx-2,sy-2,sw+4,sh+4);
+    for(let i=0;i<9;i++){const yy=sy+i*6.4;g.fillStyle='rgb('+(118-i*11)+','+(114-i*11)+','+(132-i*12)+')';g.fillRect(sx,yy|0,sw,5);g.fillStyle='rgba(255,255,255,.18)';g.fillRect(sx,yy|0,sw,1);g.fillStyle='#e8c94a';g.fillRect(sx,(yy|0)+1,sw,1);}
+    const fond=g.createLinearGradient(0,sy,0,sy+sh);fond.addColorStop(0,'rgba(0,0,0,0)');fond.addColorStop(1,'rgba(8,6,14,.75)');g.fillStyle=fond;g.fillRect(sx,sy,sw,sh);
+    const lum=g.createRadialGradient(sx+sw/2,sy+sh,4,sx+sw/2,sy+sh,40);lum.addColorStop(0,'rgba(255,230,170,.35)');lum.addColorStop(1,'rgba(255,230,170,0)');g.fillStyle=lum;g.fillRect(sx,sy,sw,sh);
+    /* les rambardes : à gauche, à droite et au fond — on entre par le haut */
+    const rb=(x,y,ww,hh)=>{g.fillStyle='#2a2838';g.fillRect(x+1,y+2,ww,hh);g.fillStyle='#c9cdd9';g.fillRect(x,y,ww,hh);g.fillStyle='#f4f6fb';g.fillRect(x,y,ww,1);};
+    rb(sx-5,sy-8,3,sh+12);rb(sx+sw+2,sy-8,3,sh+12);rb(sx-5,sy+sh+2,sw+10,3);
+    for(let yy=sy-8;yy<sy+sh;yy+=12){rb(sx-6,yy,5,2);rb(sx+sw+1,yy,5,2);}
+    g.fillStyle='rgba(0,0,0,.35)';g.fillRect(sx-4,sy+sh+6,sw+10,4);
+    /* le poteau et son panneau */
+    const px=122,pb=446;
+    g.fillStyle='rgba(0,0,0,.35)';g.beginPath();g.ellipse(px+2,pb+1,9,3,0,0,7);g.fill();
+    g.fillStyle='#6a6e7c';g.fillRect(px-2,y0+12,4,pb-y0-12);g.fillStyle='#a8adbb';g.fillRect(px-2,y0+12,1,pb-y0-12);
+    const halo=g.createRadialGradient(px,y0+16,2,px,y0+16,34);halo.addColorStop(0,'rgba(255,90,170,.45)');halo.addColorStop(1,'rgba(255,90,170,0)');g.fillStyle=halo;g.fillRect(px-34,y0-18,68,68);
+    g.fillStyle='#e4007f';g.beginPath();g.arc(px,y0+14,13,0,7);g.fill();
+    g.fillStyle='#ffffff';g.beginPath();g.arc(px,y0+14,9,0,7);g.fill();
+    g.fillStyle='#e4007f';g.font='bold 13px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('2',px,y0+15);
+    g.fillStyle='#1c2a5a';g.fillRect(px-22,y0+30,44,15);g.fillStyle='#ffffff';g.fillRect(px-22,y0+30,44,1);
+    g.font='bold 7px sans-serif';g.fillText('港 LE PORT',px,y0+38);
+    g.textAlign='start';g.textBaseline='alphabetic';
+    /* au sol, devant l'escalier */
+    g.fillStyle='rgba(228,0,127,.85)';g.font='bold 8px sans-serif';g.textAlign='center';g.fillText('地下鉄 · MÉTRO',sx+sw/2,sy-12);g.textAlign='start';
+  })();
   const haut=new Image();
   haut.onload=()=>{g.drawImage(haut,0,0);};
   haut.src='assets/tokyo/rue_haut.png';
