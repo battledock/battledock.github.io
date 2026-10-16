@@ -109,45 +109,61 @@ function fermerConcessionTokyo(){
 async function ouvrirConcessionTokyo(){
   if(ouvrirConcessionTokyo.ouvert)return;
   ouvrirConcessionTokyo.ouvert=true;
+  /* PLEIN ÉCRAN : la racine est posée en absolu sur toute la page2, et c'est elle
+     qui défile ; la barre du bas reste collée, au-dessus de la zone du geste iOS */
   $('page2Fond').className='';
   $('page2Fond').innerHTML=
-    '<div style="padding:calc(env(safe-area-inset-top,0px) + 18px) 16px 18px;min-height:100%;box-sizing:border-box;background:#f1e8d6;font-family:Georgia,\'Times New Roman\',serif;color:#2a2236">'+
-    '<div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid #c8413c;padding-bottom:10px">'+
-    '<span style="color:#c8413c;font-size:18px">東京展示室</span>'+
-    '<b style="font-weight:400;letter-spacing:3px;font-size:15px">SHOWROOM TOKYO</b></div>'+
-    '<div id="ccListe" style="display:flex;gap:8px;overflow-x:auto;padding:12px 0"><p style="font-style:italic;color:#7a6e60">Le vendeur sort les fiches…</p></div>'+
-    '<div id="ccFiche"></div>'+
-    '<button id="ccFermer" style="display:block;width:100%;margin-top:14px;min-height:46px;border:1px solid #2a2236;background:transparent;color:#2a2236;font:700 14px Georgia,serif;letter-spacing:1px">Sortir du showroom</button>'+
-    '<div id="ccBulle" style="margin-top:10px;min-height:18px;font-size:13px;color:#c8413c"></div></div>';
+    '<div id="ccRacine" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#ffffff;color:#14141a;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif">'+
+    '<div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top,0px) + 18px) 16px 16px">'+
+      '<small style="display:block;font:700 11px sans-serif;letter-spacing:3px;color:#ff4fb0">TOKYO · CONCESSION</small>'+
+      '<b style="display:block;font:800 30px sans-serif;margin:2px 0 12px">Showroom</b>'+
+      '<div id="ccFiltres" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none"></div>'+
+      '<div id="ccListe" style="display:flex;flex-direction:column;gap:12px"><p style="color:#888">Le vendeur sort les fiches…</p></div>'+
+      '<div id="ccBulle" style="min-height:20px;margin-top:12px;font:600 14px sans-serif;color:#d0306f;text-align:center"></div>'+
+    '</div>'+
+    '<nav style="flex:none;display:flex;border-top:1px solid #ececf0;background:#fff;padding:6px 6px calc(env(safe-area-inset-bottom,0px) + 8px)">'+
+      ['Showroom','Mon garage','Tuning','Sortir'].map((t,i)=>'<button data-nav="'+i+'" style="flex:1;min-height:48px;border:0;background:none;font:'+(i===0?'700':'500')+' 12px sans-serif;color:'+(i===0?'#ff4fb0':'#8a8a96')+'">'+(i===0?'● ':'')+t+'</button>').join('')+
+    '</nav></div>';
   $('page2').classList.add('on');
-  $('ccFermer').onclick=fermerConcessionTokyo;
+  const bulle=t=>{$('ccBulle').textContent=t;};
+  $('ccRacine').querySelectorAll('button[data-nav]').forEach(b=>{b.onclick=()=>{
+    const i=+b.dataset.nav;
+    if(i===3)fermerConcessionTokyo();
+    else if(i>0)bulle((i===1?'Ton garage':'Le tuning')+' arrive bientôt.');
+  };});
   let vehicules=[];
   try{const r=await fetch('assets/voitures/catalogue.json');vehicules=((await r.json()).vehicules)||[];}catch(x){}
-  if(!vehicules.length){$('ccListe').innerHTML='<p style="color:#c8413c">Le catalogue ne répond pas.</p>';return;}
+  if(!vehicules.length){$('ccListe').innerHTML='<p style="color:#d0306f">Le catalogue ne répond pas.</p>';return;}
+  const ORIGINE={Toyota:'Japonaises',Nissan:'Japonaises',BMW:'Allemandes',Porsche:'Allemandes',Lamborghini:'Italiennes',Ferrari:'Italiennes'};
+  const TEINTE={Toyota:'#ffe3e6',Nissan:'#e9ebf1',BMW:'#e1eaff',Porsche:'#eff1f5',Lamborghini:'#e4f6db',Ferrari:'#ffe3e6'};
   const sprite=v=>{const p=(v.photos||[]).find(q=>q.role==='sprite_pixel');return p?p.fichier:'';};
-  const nomComplet=v=>[v.marque,v.modele].filter(Boolean).join(' ');
-  $('ccListe').innerHTML=vehicules.map((v,i)=>
-    '<button data-i="'+i+'" style="flex:none;width:118px;padding:8px;border:1px solid #2a223633;background:#fff8ec;cursor:pointer;text-align:left;font:inherit;color:inherit">'+
-    '<img src="'+sprite(v)+'" alt="" style="display:block;width:100%;height:auto;image-rendering:pixelated">'+
-    '<b style="display:block;font-size:12px;margin-top:6px">'+nomComplet(v)+'</b></button>').join('');
-  const fiche=i=>{
-    const v=vehicules[i];
-    $('ccFiche').innerHTML=
-      '<div style="background:radial-gradient(circle,#fff8ec 40%,#e9dcc4 100%);border-radius:50%;padding:18px 0;margin-top:4px">'+
-      '<img src="'+sprite(v)+'" alt="'+nomComplet(v)+'" style="display:block;width:70%;max-width:300px;height:auto;margin:0 auto;image-rendering:pixelated"></div>'+
-      '<h2 style="margin:12px 0 2px;font-size:20px;font-weight:400">'+nomComplet(v)+'</h2>'+
-      '<p style="margin:0;font-size:12px;color:#7a6e60">'+(v.nom_garage?'Nom garage : '+v.nom_garage:'Sans nom de garage')+'</p>'+
-      '<p style="margin:8px 0;font-size:11px;letter-spacing:1px;color:#7a6e60">'+(v.tuning?'PEINTURE · ROUES · AILERONS':'BIENTÔT AU SHOWROOM')+'</p>'+
-      '<p style="margin:10px 0 0;font-size:18px">¥ ——— <small style="font-size:11px;color:#7a6e60">prix non fixé</small></p>'+
-      '<div style="display:flex;gap:10px;margin-top:12px">'+
-      '<button id="ccEssai" style="flex:1;min-height:44px;background:none;border:1px solid #2a2236;color:#2a2236;font:700 12px Georgia,serif;letter-spacing:2px">ESSAI</button>'+
-      '<button id="ccAcheter" style="flex:1;min-height:44px;background:#c8413c;border:0;color:#fff8ec;font:700 12px Georgia,serif;letter-spacing:2px">ACHETER</button></div>';
-    $('ccEssai').onclick=()=>{$('ccBulle').textContent="L'essai n'est pas encore ouvert.";};
-    $('ccAcheter').onclick=()=>{$('ccBulle').textContent="Le concessionnaire n'a pas encore fixé de prix pour ce véhicule.";};
+  const nom=v=>[v.marque,v.modele].filter(Boolean).join(' ');
+  const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  let filtre='Toutes', ouverte=-1;
+  const filtres=['Toutes','Japonaises','Allemandes','Italiennes'];
+  const dessiner=()=>{
+    $('ccFiltres').innerHTML=filtres.map(f=>'<button data-f="'+f+'" style="flex:none;min-height:40px;padding:0 16px;border-radius:20px;border:0;font:600 14px sans-serif;background:'+(f===filtre?'#14141a':'#f1f1f4')+';color:'+(f===filtre?'#fff':'#14141a')+'">'+f+'</button>').join('');
+    $('ccFiltres').querySelectorAll('button').forEach(b=>{b.onclick=()=>{filtre=b.dataset.f;ouverte=-1;dessiner();};});
+    $('ccListe').innerHTML=vehicules.map((v,i)=>{
+      if(filtre!=='Toutes'&&ORIGINE[v.marque]!==filtre)return '';
+      const ouv=i===ouverte;
+      return '<div data-i="'+i+'" style="border-radius:22px;padding:14px;background:linear-gradient(135deg,'+(TEINTE[v.marque]||'#f1f1f4')+',#f8f8fa 75%);position:relative;cursor:pointer">'+
+        '<img src="'+sprite(v)+'" alt="'+esc(nom(v))+'" style="display:block;width:100%;height:auto;image-rendering:pixelated">'+
+        '<b style="display:block;font:800 18px sans-serif;margin-top:6px">'+esc(nom(v))+'</b>'+
+        '<small style="color:#6a6a76;font-size:13px">'+(ORIGINE[v.marque]||'').replace(/s$/,'')+(v.tuning?' · personnalisable':'')+(v.nom_garage?' · « '+esc(v.nom_garage)+' »':'')+'</small>'+
+        '<span style="position:absolute;right:14px;top:14px;background:#ffffffcc;padding:6px 10px;border-radius:12px;font:700 13px sans-serif">¥ —</span>'+
+        (ouv?'<div style="display:flex;gap:10px;margin-top:12px">'+
+          '<button data-a="essai" style="flex:1;min-height:50px;border-radius:14px;border:0;background:#14141a14;font:700 15px sans-serif;color:#14141a">Essai</button>'+
+          '<button data-a="achat" style="flex:1;min-height:50px;border-radius:14px;border:0;background:#ff4fb0;color:#fff;font:700 15px sans-serif">Acheter</button></div>':'')+
+        '</div>';
+    }).join('');
+    $('ccListe').querySelectorAll('div[data-i]').forEach(c=>{c.onclick=ev=>{
+      const a=ev.target.closest('button[data-a]');
+      if(a){ev.stopPropagation();bulle(a.dataset.a==='essai'?"L'essai n'est pas encore ouvert.":"Le prix de ce véhicule n'est pas encore fixé.");return;}
+      const i=+c.dataset.i;ouverte=ouverte===i?-1:i;bulle('');dessiner();
+    };});
   };
-  $('ccListe').querySelectorAll('button[data-i]').forEach(b=>{b.onclick=()=>fiche(+b.dataset.i);});
-  fiche(0);
+  dessiner();
 }
-
 
 ;({TK,bloqueTokyo,construireSolTokyo,semerDecorTokyo,poserTokyo,ouvrirConcessionTokyo,fermerConcessionTokyo})
