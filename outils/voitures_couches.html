@@ -1,0 +1,103 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0">
+<script>
+/* génère les couches de la voiture de référence : peinture (teintable), vitres (teintables), fixe, roues, ailerons, pièces de carrosserie */
+const W=64,H=27;
+const FIXE={o:'#0c0c12',y:'#fff1b8',x:'#e5232d',e:'#353a46',k:'#17171d',n:'#0f0f14',Y:'#d8b04a',r:'#b8c2d2',R:'#e9edf3',c:'#9aa6b8',q:'#2a2e3a'};
+const GRIS={H:250,B:200,M:165,D:125};        /* peinture : rampe de luminosité, teintée au moment de l'affichage */
+const VIT={G:205,g:128,d:90};                /* vitres : rampe, teintée au moment de l'affichage */
+function inPoly(px,py,pts){let c=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const [xi,yi]=pts[i],[xj,yj]=pts[j];if(((yi>py)!==(yj>py))&&(px<(xj-xi)*(py-yi)/(yj-yi)+xi))c=!c;}return c;}
+const BODY=[[3,17],[8,15],[14,14],[30,13],[46,13],[55,14],[60,17],[62,20],[62,22],[59,23],[4,23],[2,21]];
+const CAB=[[12,14],[20,5],[37,5],[48,14]];
+const GLASS=[[14,13.5],[21,7],[36,7],[45,13.5]];
+const ROUES=[[14,21,5.2],[49,21,5.2]];
+const ARCHE=6.6;
+const grille=()=>Array.from({length:H},()=>Array(W).fill('.'));
+const pixels=(f)=>{const out=[];for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(f(x,y))out.push([x,y]);}return out;};
+/* la silhouette de la caisse, sans les passages de roues */
+const caisseSil=(x,y)=>{const px=x+0.5,py=y+0.5;if(!(inPoly(px,py,BODY)||inPoly(px,py,CAB)))return false;
+  for(const [cx,cy] of ROUES){if(Math.hypot(px-cx,py-cy)<=ARCHE)return false;}return true;};
+function canvasDe(G,pal){const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');const im=g.createImageData(W,H);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const ch=G[y][x];if(ch==='.')continue;const v=pal[ch];let r,gg,b;
+    if(typeof v==='number'){r=gg=b=v;}else{[r,gg,b]=[1,3,5].map(i=>parseInt(v.substr(i,2),16));}
+    const i=(y*W+x)*4;im.data[i]=r;im.data[i+1]=gg;im.data[i+2]=b;im.data[i+3]=255;}
+  g.putImageData(im,0,0);return cv.toDataURL('image/png');}
+/* une couche de rampe : luminosité pour la peinture */
+function peinture(){const G=grille();for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(!caisseSil(x,y))continue;
+  const above=(y>0)&&caisseSil(x,y-1);
+  G[y][x]=!above?'H':(y>=21?'D':(y>=19?'M':'B'));}
+  return G;}
+function vitres(){const G=grille();for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(!inPoly(x+0.5,y+0.5,GLASS))continue;G[y][x]=((x+y)%9===0)?'G':'g';}
+  /* on remplace le G par la luminosité, la rampe en fait le reste */
+  return G;}
+/* contour : tout pixel vide qui touche une pixel plein */
+function contour(G){const C=G.map(r=>r.slice());for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(G[y][x]!=='.')continue;
+  let near=false;for(let dy=-1;dy<=1&&!near;dy++)for(let dx=-1;dx<=1;dx++){const yy=y+dy,xx=x+dx;if(yy>=0&&yy<H&&xx>=0&&xx<W&&G[yy][xx]!=='.'){near=true;break;}}
+  if(near)C[y][x]='o';}return C;}
+function fixe(){const G=grille();
+  /* contour de la caisse et des vitres : foncé */
+  const sil=grille();for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(caisseSil(x,y))sil[y][x]='p';
+  const C=contour(sil);for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(C[y][x]==='o')G[y][x]='o';
+  /* phares, feu, bande noire du bas, poignée, rétroviseur, ligne de portière */
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    if(inPoly(x+0.5,y+0.5,[[57,15.5],[61,17.5],[59.5,18.5],[56.5,17]]))G[y][x]='y';
+    if(inPoly(x+0.5,y+0.5,[[2.5,17],[4.5,17],[4.5,19.5],[2.5,19.5]]))G[y][x]='x';
+    if(inPoly(x+0.5,y+0.5,[[3,21.6],[61,21.6],[61,22.9],[3,22.9]])&&sil[y][x]==='p')G[y][x]='e';
+  }
+  for(let y=14;y<=21;y++){if(sil[y][31]==='p')G[y][31]='e';}
+  G[13][45]='o';G[14][46]='o';G[15][46]='e';
+  return G;}
+/* roues : quatre styles, dessinés par distance au centre */
+function roues(style){const G=grille();
+  for(const [cx,cy,r] of ROUES){
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      const px=x+0.5,py=y+0.5,d=Math.hypot(px-cx,py-cy),a=Math.atan2(py-cy,px-cx);
+      if(d>r)continue;
+      let ch='k';                                  /* pneu */
+      if(style==='origine'){
+        if(d<=r-1.2)ch='r';
+        if(d<=r-2.2)ch='c';
+        if(d<=r-3.0)ch='R';
+        if(d<=1.3)ch='q';
+        for(let k=0;k<5;k++){const aa=k/5*2*Math.PI+0.3;const da=Math.abs(Math.atan2(Math.sin(a-aa),Math.cos(a-aa)));if(d>1.3&&d<=r-1.4&&da<0.22)ch='k';}
+      }else if(style==='sport'){
+        if(d<=r-1.2)ch='Y';
+        if(d<=r-2.4)ch='e';
+        if(d<=1.3)ch='q';
+        for(let k=0;k<10;k++){const aa=k/10*2*Math.PI;const da=Math.abs(Math.atan2(Math.sin(a-aa),Math.cos(a-aa)));if(d>1.3&&d<=r-1.2&&da<0.14)ch='r';}
+      }else if(style==='turbo'){
+        if(d<=r-0.9)ch='R';
+        if(d<=r-2.0)ch='e';
+        if(d<=1.5)ch='q';
+        for(let k=0;k<3;k++){const aa=k/3*2*Math.PI+0.5;const da=Math.abs(Math.atan2(Math.sin(a-aa),Math.cos(a-aa)));if(d>1.5&&d<=r-2.0&&da<0.16)ch='k';}
+      }else if(style==='retro'){
+        if(d<=r-1.0)ch='R';
+        if(d<=r-1.6)ch='k';
+        if(d<=1.2)ch='q';
+        for(let k=0;k<12;k++){const aa=k/12*2*Math.PI;const da=Math.abs(Math.atan2(Math.sin(a-aa),Math.cos(a-aa)));if(d>1.2&&d<=r-1.6&&da<0.09)ch='c';}
+      }
+      G[y][x]=ch;
+    }
+  }
+  return G;}
+function aileron(style){const G=grille();const set=(pts,ch)=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(inPoly(x+0.5,y+0.5,pts))G[y][x]=ch;};
+  if(style==='petit'){set([[2,12],[9,11],[9,12.5],[2,13.5]],'k');set([[3,13.5],[4,13.5],[4,14.4],[3,14.4]],'k');}
+  if(style==='gros'){set([[1,7.5],[12,7.5],[12,9.2],[1,9.2]],'e');set([[2.5,9.2],[3.7,9.2],[3.7,13],[2.5,13]],'k');set([[9.3,9.2],[10.5,9.2],[10.5,13],[9.3,13]],'k');
+    set([[1,7.5],[12,7.5],[12,7.9],[1,7.9]],'c');}
+  if(style==='levre'){set([[4,12.2],[16,12.2],[16,13.2],[4,13.2]],'k');}
+  return G;}
+/* pièces peintes : pare-chocs sport, capot à prise d'air, jupes sport */
+function pieces(nom){const G=grille();const set=(pts,ch)=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(inPoly(x+0.5,y+0.5,pts))G[y][x]=ch;};
+  if(nom==='pare-chocs_sport'){set([[55,21],[62,21],[62,23.6],[54,23.6]],'M');set([[57,22.3],[61,22.3],[61,23.6],[57,23.6]],'D');}
+  if(nom==='capot_prise'){set([[32,11.2],[38,11.2],[38,12.2],[33,12.2]],'B');set([[33,11],[37,11],[37,11.4],[33,11.4]],'H');}
+  if(nom==='jupes_sport'){set([[17,22.1],[45,22.1],[45,24.6],[17,24.6]],'M');}
+  return G;}
+const LAYERS={
+  peinture:()=>({g:peinture(),pal:GRIS}),
+  vitres:()=>({g:vitres(),pal:VIT}),
+  fixe:()=>({g:fixe(),pal:FIXE}),
+};
+for(const s of ['origine','sport','turbo','retro'])LAYERS['roues_'+s]=()=>({g:roues(s),pal:FIXE});
+for(const s of ['petit','gros','levre'])LAYERS['aileron_'+s]=()=>({g:aileron(s),pal:FIXE});
+for(const s of ['pare-chocs_sport','capot_prise','jupes_sport'])LAYERS[s]=()=>({g:pieces(s),pal:GRIS});
+window.__couches=()=>{const out={};for(const [nom,f] of Object.entries(LAYERS)){const {g,pal}=f();out[nom]=canvasDe(g,pal);}return out;};
+</script></body></html>
