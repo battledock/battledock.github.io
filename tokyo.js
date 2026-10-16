@@ -21,15 +21,107 @@ const TK={
   ],
   /* la porte de l'armurerie, dans la façade ; on se place devant pour entrer */
   porte:{x:695,y0:418,y1:462,l:52},
+  /* l'autoroute s'arrête au début du parking ; le pont piéton la traverse */
+  parking:{y0:606},
+  pont:{x0:985,x1:1015},
   /* la sortie, à l'ouest : le panneau vers le port */
   sortie:{x:60,y0:296,y1:420},
   arrivee:[84,360]
 };
 
+/* LE GRAND PARKING, sous l'autoroute. Trois rangées de voitures garées face
+   à une allée centrale, et un showroom au fond, avec trois voitures de
+   prestige sous les projecteurs. Un pont piéton traverse l'autoroute au
+   milieu, et tombe sur l'allée centrale. */
+const VOITURES_TK=[
+  {c:'#c8102e',s:'sport'},{c:'#f5c400',s:'supercar'},{c:'#eef1f4',s:'berline'},{c:'#17181c',s:'suv'},
+  {c:'#2aa198',s:'classique'},{c:'#1f5fbf',s:'sport'},{c:'#b8c0c8',s:'berline'},{c:'#e05aa0',s:'classique'}];
+const RANGEES_TK=[{cy:650,rot:Math.PI/2},{cy:770,rot:-Math.PI/2},{cy:880,rot:Math.PI/2}];
+const VITRINE_TK=[{x:300,c:'#f5c400',s:'supercar'},{x:700,c:'#c8102e',s:'sport'},{x:1100,c:'#2aa198',s:'classique'}];
+
+function melangerCouleur(hex,k){
+  const n=parseInt(hex.slice(1),16);
+  let r=(n>>16)&255,gg=(n>>8)&255,b=n&255;
+  const t=k>0?255:0, f=Math.abs(k);
+  r=Math.round(r+(t-r)*f);gg=Math.round(gg+(t-gg)*f);b=Math.round(b+(t-b)*f);
+  return 'rgb('+r+','+gg+','+b+')';
+}
+
+/* une voiture vue de dessus, longueur horizontale ; le pare-brise est à droite */
+function graverVoiture(L,W,col,style){
+  const P=5;
+  const cv=document.createElement('canvas');cv.width=L+P*2;cv.height=W+P*2;
+  const g=cv.getContext('2d');
+  const x0=P,y0=P;
+  const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const rr=(x,y,w,h,r,fill)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);
+    g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();g.fillStyle=fill;g.fill();};
+  /* l'ombre sous la voiture */
+  g.save();g.globalAlpha=0.4;g.fillStyle='#000';g.beginPath();g.ellipse(x0+L/2+2,y0+W/2+2,L/2,W/2,0,0,7);g.fill();g.restore();
+  /* les roues qui dépassent */
+  [L*0.16,L*0.7].forEach(wx=>{R(x0+wx,y0-2,L*0.14,3,'#15151a');R(x0+wx,y0+W-1,L*0.14,3,'#15151a');});
+  /* la carrosserie, brillante du haut au bas */
+  const gd=g.createLinearGradient(0,y0,0,y0+W);
+  gd.addColorStop(0,melangerCouleur(col,0.35));gd.addColorStop(0.5,col);gd.addColorStop(1,melangerCouleur(col,-0.35));
+  rr(x0,y0,L,W,W*0.36,gd);
+  /* le reflet long sur le capot */
+  R(x0+L*0.1,y0+W*0.2,L*0.8,2,'rgba(255,255,255,.35)');
+  /* le pare-brise (devant) et la lunette (derrière), le toit entre les deux */
+  const vitre=(xa,xb)=>{g.beginPath();g.moveTo(xa,y0+W*0.13);g.lineTo(xb,y0+W*0.05);g.lineTo(xb,y0+W*0.95);g.lineTo(xa,y0+W*0.87);g.closePath();
+    g.fillStyle='#1b2433';g.fill();
+    g.fillStyle='rgba(190,220,255,.35)';g.beginPath();g.moveTo(xa+2,y0+W*0.8);g.lineTo(xa+4,y0+W*0.2);g.lineTo(xa+7,y0+W*0.2);g.lineTo(xa+5,y0+W*0.8);g.fill();};
+  vitre(x0+L*0.6,x0+L*0.78);
+  vitre(x0+L*0.2,x0+L*0.34);
+  R(x0+L*0.36,y0+W*0.12,L*0.23,W*0.76,melangerCouleur(col,0.12));
+  R(x0+L*0.36,y0+1,1,W-2,'rgba(0,0,0,.35)');R(x0+L*0.59,y0+1,1,W-2,'rgba(0,0,0,.35)');
+  /* les phares, blancs à l'avant, et les feux rouges à l'arrière */
+  g.save();g.shadowColor='#fff6d0';g.shadowBlur=5;
+  R(x0+L-3,y0+W*0.16,2,4,'#fff6d0');R(x0+L-3,y0+W*0.68,2,4,'#fff6d0');g.restore();
+  R(x0,y0+W*0.15,2,4,'#ff2a2a');R(x0,y0+W*0.7,2,4,'#ff2a2a');
+  /* les détails selon le style */
+  if(style==='sport'){
+    R(x0+2,y0-1,4,W+2,'#111');
+    R(x0+L*0.3,y0+W*0.46,L*0.5,2,'rgba(255,255,255,.7)');
+  }
+  if(style==='supercar'){
+    R(x0+L*0.44,y0+2,L*0.12,2,'#0a0a0a');R(x0+L*0.44,y0+W-4,L*0.12,2,'#0a0a0a');
+    R(x0+L*0.1,y0+W*0.46,L*0.4,1,'rgba(0,0,0,.35)');
+  }
+  if(style==='suv'){
+    R(x0+L*0.28,y0+W*0.08,L*0.44,W*0.84,melangerCouleur(col,0.08));
+    R(x0+L*0.28,y0+W*0.5,L*0.44,1,'rgba(0,0,0,.4)');
+  }
+  if(style==='classique'){
+    R(x0+L*0.1,y0+W*0.5,L*0.8,1,'#e8e8f0');
+    R(x0+L*0.1,y0+W*0.2,L*0.8,1,'#e8e8f0');
+  }
+  if(style==='berline'){
+    R(x0+L*0.1,y0+W*0.5,L*0.8,1,'rgba(0,0,0,.25)');
+  }
+  return cv;
+}
+
+/* les rectangles qui barrent le passage : chaque voiture garée, et les vitrines */
+function voituresDuParking(){
+  const out=[];
+  RANGEES_TK.forEach((r,ri)=>{
+    for(let k=0;k<30;k++){
+      const cx=30+46*k;
+      if(Math.abs(cx-1000)<36)continue;
+      if(alea(k*3.1+ri*17.3)<0.2)continue;
+      out.push([cx-17,r.cy-36,cx+17,r.cy+36]);
+    }
+  });
+  VITRINE_TK.forEach(v=>out.push([v.x-55,962-25,v.x+55,962+25]));
+  return out;
+}
+TK.blocs=TK.blocs.concat(voituresDuParking());
+
 function bloqueTokyo(x,y){
   if(x<6||x>MONDE_L-6)return true;
   if(y<TK.bati+6)return true;
-  if(y>TK.bas-8)return true;
+  if(y>MONDE_H-6)return true;
+  if(y>TK.bas-8&&y<TK.parking.y0&&!(x>TK.pont.x0&&x<TK.pont.x1))return true;
   for(const [x0,y0,x1,y1] of TK.blocs){
     if(x>x0-6&&x<x1+6&&y>y0-6&&y<y1+6)return true;
   }
@@ -318,9 +410,46 @@ function construireSolTokyo(){
   /* 6. L'AUTOROUTE, en bas */
   R(0,TK.bas,W,6,'#5d6878');R(0,TK.bas,W,1,'#9fb0c4');
   for(let x=0;x<W;x+=30)R(x,TK.bas+5,3,10,'#4a5566');
-  R(0,TK.bas+15,W,H-TK.bas-15,'#23242e');
+  R(0,TK.bas+15,W,TK.parking.y0-TK.bas-15,'#23242e');
   for(const y of [TK.bas+38,TK.bas+70])for(let x=0;x<W;x+=60)R(x,y,34,3,'#e8dcc0');
-  for(let i=0;i<70;i++)R(A(i*2)*W,TK.bas+18+A(i*3)*(H-TK.bas-30),7,2,(i%2)?'rgba(255,70,70,.7)':'rgba(255,240,200,.6)');
+  for(let i=0;i<70;i++)R(A(i*2)*W,TK.bas+18+A(i*3)*(TK.parking.y0-TK.bas-30),7,2,(i%2)?'rgba(255,70,70,.7)':'rgba(255,240,200,.6)');
+
+  /* 6 bis. LE PONT PIÉTON au-dessus de l'autoroute, et le grand parking */
+  const pt=TK.pont;
+  R(pt.x0,TK.bas,pt.x1-pt.x0,TK.parking.y0-TK.bas,'#4a5566');
+  for(let y=TK.bas;y<TK.parking.y0;y+=6)R(pt.x0+2,y,pt.x1-pt.x0-4,1,'#2e3644');
+  R(pt.x0,TK.bas,2,TK.parking.y0-TK.bas,'#9fb0c4');R(pt.x1-2,TK.bas,2,TK.parking.y0-TK.bas,'#9fb0c4');
+  for(let y=TK.bas+2;y<TK.parking.y0;y+=20)R(pt.x0-1,y,1,2,'#ffd98a');
+
+  const Y0=TK.parking.y0;
+  R(0,Y0,W,H-Y0,'#2b2c36');
+  for(let i=0;i<500;i++)R(A(i*5.5)*W,Y0+A(i*7.1)*(H-Y0),2+A(i)*3,1,'rgba(0,0,0,.12)');
+  R(0,Y0-2,W,6,'#8a8a95');R(0,Y0+4,W,1,'#55555f');
+  /* les places : les lignes blanches de chaque rangée */
+  RANGEES_TK.forEach(r=>{for(let k=0;k<31;k++){const xb=30+46*k-23;R(xb,r.cy-40,1,80,'rgba(235,235,245,.35)');}});
+  /* les voitures, garées nez vers l'allée */
+  const cache={};
+  const voitureDe=(i)=>{if(!cache[i]){const d=VOITURES_TK[i];cache[i]=graverVoiture(70,34,d.c,d.s);}return cache[i];};
+  RANGEES_TK.forEach((r,ri)=>{
+    for(let k=0;k<30;k++){
+      const cx=30+46*k;
+      if(Math.abs(cx-1000)<36)continue;
+      if(alea(k*3.1+ri*17.3)<0.2)continue;
+      const cv=voitureDe(Math.floor(alea(k*7.7+ri*3.3)*VOITURES_TK.length));
+      g.save();g.translate(cx,r.cy);g.rotate(r.rot);g.drawImage(cv,-(cv.width/2),-(cv.height/2));g.restore();
+    }
+  });
+  /* le showroom, au fond : trois voitures de prestige sous les projecteurs */
+  R(160,928,1080,4,'#ff4fb0');R(160,928,1080,1,'rgba(255,255,255,.4)');
+  txt('GARAGE · SHOWROOM',170,932,'#ff4fb0',10);
+  VITRINE_TK.forEach(v=>{
+    const lum=g.createRadialGradient(v.x,962,6,v.x,962,90);
+    lum.addColorStop(0,'rgba(127,240,255,.22)');lum.addColorStop(1,'rgba(127,240,255,0)');
+    g.fillStyle=lum;g.fillRect(v.x-90,872,180,180);
+    const d=VOITURES_TK.find(q=>q.c===v.c)||VOITURES_TK[0];
+    const cv=graverVoiture(110,50,v.c,v.s);
+    g.drawImage(cv,v.x-cv.width/2,962-cv.height/2);
+  });
 
   /* 7. LE VERNIS DE PLUIE sur le bas de la carte */
   g.fillStyle='rgba(20,12,40,.10)';g.fillRect(0,TK.bati,W,H-TK.bati);
