@@ -10,7 +10,8 @@ const TK={
   rangee:0, bas:900,              /* pas de rangée de boutiques */
   blocs:[],                       /* rien ne barre le passage */
   porte:null,                     /* pas d'armurerie */
-  concessionPorte:{x:86,y0:206,y1:250,l:76},    /* devant la vitrine du concessionnaire, sur le trottoir : nulle part ailleurs */
+  concessionPorte:{x:86,y0:206,y1:250,l:76},
+  tuningPorte:{x:241,y0:206,y1:250,l:46},       /* devant le rideau de l'atelier de tuning, la façade en tôle */    /* devant la vitrine du concessionnaire, sur le trottoir : nulle part ailleurs */
   route:[238,338],                /* la route, sous le trottoir */
   parking:{y0:350},               /* le parking, sous la route */
   sortie:{x:60,y0:296,y1:420},    /* (ancienne sortie ouest, retirée) */
@@ -158,7 +159,7 @@ function construireSolTokyo(){
 /* LES LAMPADAIRES : ceux du port (même mât, même vacillement), allumés au
    crépuscule par le cycle du jeu. Le long du trottoir des façades, autour du
    circuit, au paddock et au métro. Ils ne bloquent rien. */
-const LAMPES_TK=[[240,232],[390,232],[545,232],[700,232],[855,232],
+const LAMPES_TK=[[198,232],[390,232],[545,232],[700,232],[855,232],
   [165,470],[165,640],[165,800],
   [340,400],[720,400],[340,750],[720,750],[530,400],[530,750],[315,575],[745,575],
   [20,480],[136,356]];
@@ -169,7 +170,7 @@ function semerDecorTokyo(){
 /* LA VILLE S'ALLUME LA NUIT : les enseignes et les fenêtres des façades,
    les néons du showroom, l'escalier du métro. Posé à chaque image dans la
    carte des lumières du jeu ; rien ne s'allume de jour. */
-const FEUX_TK=[[85,185,'rgba(120,220,255,§)',60],[240,185,'rgba(255,200,120,§)',56],[385,185,'rgba(255,110,190,§)',56],
+const FEUX_TK=[[85,185,'rgba(120,220,255,§)',60],[240,185,'rgba(255,150,60,§)',60],[280,110,'rgba(255,140,50,§)',40],[385,185,'rgba(255,110,190,§)',56],
   [540,185,'rgba(120,220,255,§)',56],[690,185,'rgba(255,200,120,§)',56],[825,185,'rgba(255,110,190,§)',60],
   [85,110,'rgba(255,214,150,§)',44],[240,110,'rgba(255,214,150,§)',44],[385,110,'rgba(255,214,150,§)',44],
   [540,110,'rgba(255,214,150,§)',44],[690,110,'rgba(255,214,150,§)',44],[825,110,'rgba(255,214,150,§)',44],
@@ -351,7 +352,10 @@ async function ouvrirConcessionTokyo(ongletDepart){
     re:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="7"/><path d="M12 13V9M10 3h4"/></svg>'};
   /* LE TUNING EST RETIRÉ DU CONCESSIONNAIRE : trois onglets. Les numéros restent ceux d'avant (0, 1, 3). */
   const NAV=[['Showroom',IC.sh,0],['Garage',IC.ga,1],['Records',IC.re,3]];
+  /* L'ATELIER DE TUNING a sa propre porte : on y entre droit dans l'atelier, sans les onglets du concessionnaire */
+  const ATELIER=(ongletDepart===2);
   const nav=()=>{
+    if(ATELIER){$('ccNav').style.display='none';return;}
     $('ccNav').innerHTML=NAV.map(([t,i,k])=>'<button data-nav="'+k+'" class="'+(k===onglet?'on':'')+'">'+i+t+'</button>').join('');
     $('ccNav').querySelectorAll('button').forEach(b=>{b.onclick=()=>{onglet=+b.dataset.nav;bulle('');rendre();};});
   };
@@ -514,9 +518,9 @@ async function ouvrirConcessionTokyo(ongletDepart){
       try{sauver();}catch(x){}
       const y=$('ccDefile').scrollTop;rendre();$('ccDefile').scrollTop=y;};});
     $('ccRaz').onclick=()=>{for(const k of Object.keys(t))delete t[k];try{sauver();}catch(x){}rendre();};
-    $('ccEssaiT').onclick=()=>{fermerConcessionTokyo();debutEssai(m||{marque:'Toyota'},selT.garage||null);};
+    $('ccEssaiT').onclick=()=>{fermerConcessionTokyo();debutEssai(m||{marque:'Toyota'},selT.garage||null,t);};
   };
-  const rendre=()=>{nav();$('ccDefile').classList.toggle('fixe',onglet===0);(onglet===3?records:onglet===1?garage:showroom)();$('ccDefile').scrollTop=0;};
+  const rendre=()=>{nav();$('ccDefile').classList.toggle('fixe',onglet===0);(onglet===3?records:onglet===2?tuning:onglet===1?garage:showroom)();$('ccDefile').scrollTop=0;};
   rendre();
 }
 
@@ -745,9 +749,9 @@ function majMoteur(dt,vit,gaz,glisse){
 }
 function couperMoteur(){const S=SON_TK;if(!S.ctx)return;try{S.vol.gain.setTargetAtTime(0,S.ctx.currentTime,0.05);const C=S.ctx;setTimeout(()=>{try{C.close();}catch(x){}},300);}catch(x){}S.ctx=null;}
 
-function debutEssai(v,aMoi){
+function debutEssai(v,aMoi,reglages){
   ESSAI.actif=true;ESSAI.garage=aMoi||null;
-  ESSAI.tuning=(aMoi&&aMoi.tuning)||{};   /* pas de tuning au concessionnaire : la voiture d'origine */
+  ESSAI.tuning=(aMoi&&aMoi.tuning)||reglages||{};   /* le showroom prête la voiture d'origine ; l'atelier, la voiture réglée */
   ESSAI.perf=perfDuModele(v&&v.marque,ESSAI.tuning);
   ESSAI.halo=null;ESSAI.dist=0;ESSAI.drifts=0;ESSAI.enDrift=false;ESSAI.nom=[v.marque,v.modele].filter(Boolean).join(' ');
   ESSAI.toile=peindreVoitureDessus(v.marque,ESSAI.tuning);
