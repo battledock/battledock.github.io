@@ -279,44 +279,77 @@ function peindreVoitureDessus(marque){
   return c;
 }
 
+/* ================= LES COMMANDES : VOLANT À GAUCHE, PÉDALES À DROITE =================
+   Chaque bouton suit son propre doigt (pointer events, capture) : on tient
+   l'accélérateur et on braque en même temps. Au clavier : flèches ou ZQSD,
+   espace pour le frein à main. */
+const CMD={g:false,d:false,gaz:false,frein:false,main:false};
+let COMMANDES=null, CLAVIER=null;
+function montrerCommandes(){
+  if(COMMANDES)return;
+  const z=document.createElement('div');z.id='tkConduite';
+  z.style.cssText='position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 104px);z-index:21;display:flex;justify-content:space-between;align-items:flex-end;padding:0 14px;pointer-events:none;-webkit-user-select:none;user-select:none;touch-action:none';
+  const bouton=(cle,txt,taille,fond)=>'<button data-c="'+cle+'" style="pointer-events:auto;touch-action:none;width:'+taille+'px;height:'+taille+'px;border-radius:'+(taille/2)+'px;border:2px solid rgba(255,255,255,.35);background:'+fond+';color:#fff;font:800 '+(taille>70?15:13)+'px sans-serif;-webkit-tap-highlight-color:transparent">'+txt+'</button>';
+  z.innerHTML='<div style="display:flex;gap:12px">'+bouton('g','◀',76,'rgba(20,18,30,.55)')+bouton('d','▶',76,'rgba(20,18,30,.55)')+'</div>'+
+    '<div style="display:flex;gap:10px;align-items:flex-end">'+
+      '<div style="display:flex;flex-direction:column;gap:10px;align-items:center">'+bouton('main','DRIFT',58,'rgba(255,79,176,.55)')+bouton('frein','FREIN',66,'rgba(20,18,30,.55)')+'</div>'+
+      bouton('gaz','GAZ',88,'rgba(127,232,255,.45)')+'</div>';
+  document.body.appendChild(z);
+  z.querySelectorAll('button[data-c]').forEach(b=>{
+    const k=b.dataset.c;
+    const on=ev=>{ev.preventDefault();ev.stopPropagation();CMD[k]=true;b.style.filter='brightness(1.6)';try{b.setPointerCapture(ev.pointerId);}catch(x){}};
+    const off=ev=>{if(ev){ev.preventDefault();ev.stopPropagation();}CMD[k]=false;b.style.filter='';};
+    b.addEventListener('pointerdown',on);
+    b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('lostpointercapture',()=>off());
+    b.addEventListener('contextmenu',ev=>ev.preventDefault());
+  });
+  const T={ArrowLeft:'g',q:'g',a:'g',ArrowRight:'d',d:'d',ArrowUp:'gaz',z:'gaz',w:'gaz',ArrowDown:'frein',s:'frein',' ':'main'};
+  CLAVIER=[ev=>{const k=T[ev.key];if(k){CMD[k]=true;ev.preventDefault();}},ev=>{const k=T[ev.key];if(k)CMD[k]=false;}];
+  addEventListener('keydown',CLAVIER[0]);addEventListener('keyup',CLAVIER[1]);
+  COMMANDES=z;
+}
+function cacherCommandes(){
+  if(COMMANDES){COMMANDES.remove();COMMANDES=null;}
+  if(CLAVIER){removeEventListener('keydown',CLAVIER[0]);removeEventListener('keyup',CLAVIER[1]);CLAVIER=null;}
+  for(const k in CMD)CMD[k]=false;
+}
 function debutEssai(v){
   ESSAI.actif=true;ESSAI.nom=[v.marque,v.modele].filter(Boolean).join(' ');
   ESSAI.toile=peindreVoitureDessus(v.marque);
   ESSAI.retour={x:joueur.x,y:joueur.y};
-  ESSAI.x=200;ESSAI.y=(TK.route[0]+TK.route[1])/2+18;ESSAI.ang=0;ESSAI.vx=0;ESSAI.vy=0;
+  ESSAI.x=200;ESSAI.y=(TK.route[0]+TK.route[1])/2+18;ESSAI.ang=0;ESSAI.vx=0;ESSAI.vy=0;ESSAI.vol=0;
   ESSAI.traces=[];ESSAI.fumee=[];
   joueur.x=ESSAI.x;joueur.y=ESSAI.y;
+  montrerCommandes();
 }
 function finEssai(){
   ESSAI.actif=false;
+  cacherCommandes();
   const r=ESSAI.retour||{x:86,y:224};
   const [dx,dy]=degager(r.x,r.y);joueur.x=dx;joueur.y=dy;
 }
-function majEssai(dt,jx,jy){
+function majEssai(dt){
   dt=Math.min(dt,0.05);
-  const n=Math.min(1,Math.hypot(jx,jy));
   const vit=Math.hypot(ESSAI.vx,ESSAI.vy);
-  /* 1. LE VOLANT : on braque vers le cap du joystick ; on tourne d'autant mieux qu'on roule */
-  let braque=0, d=0;
+  /* 1. LE VOLANT : il revient au centre quand on lâche, sans à-coup */
+  const cible=(CMD.d?1:0)-(CMD.g?1:0);
+  ESSAI.vol=(ESSAI.vol||0)+(cible-(ESSAI.vol||0))*Math.min(1,9*dt);
   const av0=ESSAI.vx*Math.cos(ESSAI.ang)+ESSAI.vy*Math.sin(ESSAI.ang);
-  if(n>0.2){
-    d=Math.atan2(jy,jx)-ESSAI.ang;
-    d=Math.atan2(Math.sin(d),Math.cos(d));
-    braque=Math.max(-1,Math.min(1,d*2.2));
-  }
-  ESSAI.ang+=braque*(1.2+Math.min(1,Math.abs(av0)/90)*2.4)*dt*(av0<-5?-1:1);
-  /* 2. LA VITESSE RESTE DANS LE MONDE : on la relit dans le repère de la voiture
-     après le coup de volant. Ce qui n'est plus dans l'axe devient du travers. */
+  const prise=Math.min(1,Math.abs(av0)/70);                   /* à l'arrêt, les roues ne font pas tourner */
+  ESSAI.ang+=ESSAI.vol*(CMD.main?3.4:2.7)*prise*dt*(av0<-2?-1:1);
+  /* 2. LA VITESSE RESTE DANS LE MONDE, relue dans l'axe de la voiture */
   const nx=Math.cos(ESSAI.ang), ny=Math.sin(ESSAI.ang);
   let av=ESSAI.vx*nx+ESSAI.vy*ny;
   let tr=-ESSAI.vx*ny+ESSAI.vy*nx;
-  if(n>0.2)av+=240*n*dt*(Math.abs(d)>2.4?0.35:1);
-  else av*=Math.exp(-1.6*dt);
-  av=Math.max(-60,Math.min(330,av));
-  av*=Math.exp(-0.25*dt);
-  /* 3. LE DRIFT : à haute vitesse et braquage fort, l'arrière décroche */
-  const derape=Math.abs(braque)>0.55&&vit>150;
-  tr*=Math.exp(-(derape?1.3:9)*dt);
+  if(CMD.gaz)av+=(av<0?420:250)*dt;
+  if(CMD.frein)av-=(av>8?430:150)*dt;                         /* freine, puis recule */
+  if(!CMD.gaz&&!CMD.frein)av*=Math.exp(-1.1*dt);
+  if(CMD.main)av*=Math.exp(-0.9*dt);
+  av=Math.max(-95,Math.min(340,av));
+  av*=Math.exp(-0.22*dt);
+  /* 3. L'ADHÉRENCE : le frein à main la casse, un grand coup de volant à fond aussi */
+  const grip=CMD.main?0.9:(Math.abs(ESSAI.vol)>0.85&&vit>210?2.6:9);
+  tr*=Math.exp(-grip*dt);
   ESSAI.vx=av*nx-tr*ny; ESSAI.vy=av*ny+tr*nx;
   const X=ESSAI.x+ESSAI.vx*dt, Y=ESSAI.y+ESSAI.vy*dt;
   if(bloqueTokyo(X,Y)||X<20||X>MONDE_L-20||Y<TK.bati+18||Y>MONDE_H-18){
