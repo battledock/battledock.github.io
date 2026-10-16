@@ -564,7 +564,7 @@ function debutEssai(v,aMoi){
   ESSAI.x=200;ESSAI.y=(TK.route[0]+TK.route[1])/2+18;ESSAI.ang=0;ESSAI.vx=0;ESSAI.vy=0;ESSAI.vol=0;
   ESSAI.traces=[];ESSAI.fumee=[];
   joueur.x=ESSAI.x;joueur.y=ESSAI.y;
-  montrerCommandes();
+  ESSAI.recul=false;
   demarrerMoteur();
 }
 function finEssai(){
@@ -572,45 +572,75 @@ function finEssai(){
   /* SA PROPRE VOITURE : les compteurs du garage avancent (1 px de carte = 25 cm) */
   if(ESSAI.garage){const v=ESSAI.garage;v.km=(v.km||0)+ESSAI.dist*0.00025;v.drifts=(v.drifts||0)+ESSAI.drifts;v.sorties=(v.sorties||0)+1;try{sauver();}catch(x){}}
   ESSAI.garage=null;
-  cacherCommandes();
   couperMoteur();
   const r=ESSAI.retour||{x:86,y:224};
   const [dx,dy]=degager(r.x,r.y);joueur.x=dx;joueur.y=dy;
 }
-function majEssai(dt){
+/* ================= LA CONDUITE AU JOYSTICK =================
+   Le joystick du jeu, celui de la marche : on le pousse vers où l'on veut aller.
+   — La voiture braque vers ce cap, d'autant mieux qu'elle roule (à l'arrêt,
+     elle ne pivote pas sur place).
+   — La poussée est l'accélérateur ; si le cap est loin de l'axe, on lève un
+     peu le pied le temps de tourner.
+   — Pousser derrière soi en roulant vite : on FREINE. Pousser derrière soi
+     presque à l'arrêt : on passe la MARCHE ARRIÈRE, l'arrière vise le pouce.
+   — Lâcher : roue libre et frein moteur.
+   — LE DRIFT : un virage serré (cap à plus de 40°) à bonne vitesse fait
+     décrocher l'arrière ; il glisse tant qu'on tient l'angle.
+   LES VITESSES SONT À L'ÉCHELLE DE L'ÉCRAN : la caméra zoome, une voiture à
+   340 px/s traversait l'écran en une demi-seconde. On roule à la moitié. */
+function majEssai(dt,jx,jy){
   dt=Math.min(dt,0.05);
-  const vit=Math.hypot(ESSAI.vx,ESSAI.vy);
-  /* 1. LE VOLANT : il revient au centre quand on lâche, sans à-coup */
-  const cible=(CMD.d?1:0)-(CMD.g?1:0);
-  ESSAI.vol=(ESSAI.vol||0)+(cible-(ESSAI.vol||0))*Math.min(1,9*dt);
-  const av0=ESSAI.vx*Math.cos(ESSAI.ang)+ESSAI.vy*Math.sin(ESSAI.ang);
-  const prise=Math.min(1,Math.abs(av0)/70);                   /* à l'arrêt, les roues ne font pas tourner */
-  ESSAI.ang+=ESSAI.vol*(CMD.main?3.4:2.7)*prise*dt*(av0<-2?-1:1);
+  const PF=ESSAI.perf||perfDuTuning({});
+  const VMAX=PF.vmax*0.5, ACC=125*PF.acc, FREIN=280, RECUL=-60;
+  jx=jx||0;jy=jy||0;
+  const n=Math.min(1,Math.hypot(jx,jy));
+  const c0=Math.cos(ESSAI.ang), s0=Math.sin(ESSAI.ang);
+  const av0=ESSAI.vx*c0+ESSAI.vy*s0;
+  let d=0, gaz=0, frein=false, vise=false;
+  if(n>0.2){
+    const a=Math.atan2(jy,jx);
+    d=Math.atan2(Math.sin(a-ESSAI.ang),Math.cos(a-ESSAI.ang));
+    if(!ESSAI.recul&&Math.abs(d)>2.4&&av0<35)ESSAI.recul=true;
+    if(ESSAI.recul&&Math.abs(d)<1.6)ESSAI.recul=false;
+    if(ESSAI.recul){
+      /* en marche arrière, c'est l'arrière qui vise le pouce */
+      const ar=a+Math.PI;d=Math.atan2(Math.sin(ar-ESSAI.ang),Math.cos(ar-ESSAI.ang));gaz=-n;vise=true;
+    }else if(Math.abs(d)>2.0&&av0>35){frein=true;}
+    else{gaz=n*(Math.abs(d)<0.5?1:Math.max(0.45,Math.cos(Math.abs(d)*0.7)));vise=true;}
+  }else ESSAI.recul=false;
+  /* 1. LE VOLANT : on tourne vers le cap, plus vite en roulant */
+  const prise=Math.min(1,Math.abs(av0)/40);
+  if(vise){const taux=1.4+1.7*prise;ESSAI.ang+=Math.max(-1,Math.min(1,d*2))*taux*prise*dt;}
   /* 2. LA VITESSE RESTE DANS LE MONDE, relue dans l'axe de la voiture */
   const nx=Math.cos(ESSAI.ang), ny=Math.sin(ESSAI.ang);
   let av=ESSAI.vx*nx+ESSAI.vy*ny;
   let tr=-ESSAI.vx*ny+ESSAI.vy*nx;
-  const PF=ESSAI.perf||perfDuTuning({});
-  if(CMD.gaz)av+=(av<0?420:250*PF.acc)*dt;
-  if(CMD.frein)av-=(av>8?430:150)*dt;                         /* freine, puis recule */
-  if(!CMD.gaz&&!CMD.frein)av*=Math.exp(-1.1*dt);
-  if(CMD.main)av*=Math.exp(-0.9*dt);
-  av=Math.max(-95,Math.min(PF.vmax,av));
-  av*=Math.exp(-0.22*dt);
-  /* 3. L'ADHÉRENCE : le frein à main la casse, un grand coup de volant à fond aussi */
-  const grip=CMD.main?PF.drift:(Math.abs(ESSAI.vol)>0.85&&vit>PF.seuil?2.6:PF.grip);
+  if(gaz>0)av+=ACC*gaz*Math.max(0.08,1-av/VMAX)*dt;
+  else if(gaz<0)av=Math.max(RECUL,av-ACC*0.7*(-gaz)*dt);
+  if(frein)av-=Math.sign(av)*Math.min(Math.abs(av),FREIN*dt);
+  if(!gaz&&!frein){av*=Math.exp(-1.5*dt);if(Math.abs(av)<4)av=0;}
+  av=Math.max(RECUL,Math.min(VMAX,av));
+  /* 3. L'ADHÉRENCE : elle lâche dans un virage serré pris vite */
+  const derape=vise&&gaz>0&&Math.abs(d)>0.7&&av>VMAX*0.5;
+  const grip=derape?PF.drift*1.8:(frein?PF.grip*0.7:PF.grip);
   tr*=Math.exp(-grip*dt);
   ESSAI.vx=av*nx-tr*ny; ESSAI.vy=av*ny+tr*nx;
-  majMoteur(dt,Math.abs(av),CMD.gaz,Math.abs(tr));
-  const X=ESSAI.x+ESSAI.vx*dt, Y=ESSAI.y+ESSAI.vy*dt;
-  if(bloqueTokyo(X,Y)||X<20||X>MONDE_L-20||Y<TK.bati+18||Y>MONDE_H-18){
-    ESSAI.vx*=-0.35;ESSAI.vy*=-0.35;      /* le choc : on rebondit, sans traverser */
-  }else{ESSAI.dist=(ESSAI.dist||0)+Math.hypot(X-ESSAI.x,Y-ESSAI.y);ESSAI.x=X;ESSAI.y=Y;}
+  majMoteur(dt,Math.abs(av)*340/VMAX,gaz>0,Math.abs(tr)*2);
+  /* LE MUR : on glisse le long au lieu de rebondir */
+  const libre=(X,Y)=>!(bloqueTokyo(X,Y)||X<20||X>MONDE_L-20||Y<TK.bati+18||Y>MONDE_H-18);
+  let X=ESSAI.x+ESSAI.vx*dt, Y=ESSAI.y+ESSAI.vy*dt;
+  if(!libre(X,Y)){
+    if(libre(X,ESSAI.y)){Y=ESSAI.y;ESSAI.vy*=-0.2;ESSAI.vx*=0.85;}
+    else if(libre(ESSAI.x,Y)){X=ESSAI.x;ESSAI.vx*=-0.2;ESSAI.vy*=0.85;}
+    else{X=ESSAI.x;Y=ESSAI.y;ESSAI.vx*=-0.25;ESSAI.vy*=-0.25;}
+  }
+  ESSAI.dist=(ESSAI.dist||0)+Math.hypot(X-ESSAI.x,Y-ESSAI.y);ESSAI.x=X;ESSAI.y=Y;
   /* un drift compte une fois, quand l'arrière décroche */
-  if(!ESSAI.enDrift&&Math.abs(tr)>60){ESSAI.enDrift=true;ESSAI.drifts=(ESSAI.drifts||0)+1;}
-  else if(ESSAI.enDrift&&Math.abs(tr)<20)ESSAI.enDrift=false;
+  if(!ESSAI.enDrift&&Math.abs(tr)>32){ESSAI.enDrift=true;ESSAI.drifts=(ESSAI.drifts||0)+1;}
+  else if(ESSAI.enDrift&&Math.abs(tr)<10)ESSAI.enDrift=false;
   /* les traces de pneus et la fumée quand ça glisse */
-  if(Math.abs(tr)>45){
+  if(Math.abs(tr)>24){
     for(const s of [-10,10]){
       const px=ESSAI.x-nx*18-ny*s, py=ESSAI.y-ny*18+nx*s;
       /* LES TRACES SE PEIGNENT DANS LE SOL : rien à redessiner à chaque image */
