@@ -16,15 +16,15 @@ const TK={
   pont:{x0:985,x1:1015},          /* le pont piéton au-dessus de l'autoroute */
   /* tout ce qui barre le passage : [x0, y0, x1, y1] */
   blocs:[
-    [40,452,210,500],[250,452,420,500],[470,452,590,500],
+    [40,452,210,500],[250,452,420,500],[420,452,592,500],
     [620,452,770,500],[810,452,980,500],[1020,452,1190,500],[1220,452,1340,500],
     [146,228,154,238],[446,228,454,238],[746,228,754,238],[1046,228,1054,238],[1296,228,1304,238],
     [556,300,572,316],[1096,300,1112,316]
   ],
   /* la porte de l'armurerie, dans la façade ; on se place devant pour entrer */
   porte:{x:695,y0:418,y1:462,l:52},
-  /* la façade du concessionnaire, au-dessus de la rue (x de son bord gauche) */
-  concession:{x:700},
+  /* la porte du concessionnaire, sur sa vitrine (la rangée du milieu) */
+  concessionPorte:{x:546,y0:418,y1:462,l:24},
   /* la sortie, à l'ouest : le panneau vers le port */
   sortie:{x:60,y0:296,y1:420},
   arrivee:[84,360]
@@ -250,11 +250,6 @@ function construireSolTokyo(){
     g.drawImage(cv,x,TK.bati-h);
     x+=w+2;i++;
   }
-  /* LE CONCESSIONNAIRE, dans la rangée du fond, au-dessus de la rue : on le voit
-     de loin, comme les enseignes, mais on n'y entre pas (la rue s'arrête au pied) */
-  const concession=new Image();
-  concession.onload=()=>{g.drawImage(concession,TK.concession.x,TK.bati-concession.height+4);};
-  concession.src='assets/tokyo/concession.png';
   /* les câbles électriques, qui zigzaguent d'un immeuble à l'autre */
   g.strokeStyle='rgba(12,10,20,.85)';g.lineWidth=1;
   [[30,44],[52,62],[38,72]].forEach(([y1,y2],k)=>{g.beginPath();g.moveTo(0,y1);
@@ -279,12 +274,19 @@ function construireSolTokyo(){
   const BOUT=[
     {x0:40,x1:210,sig:'RAMEN',neon:'#ff4fb0',v:1},
     {x0:250,x1:420,sig:'KARAOKE',neon:'#7fe8ff',v:2},
-    {x0:470,x1:590,sig:'DRINK',neon:'#ffd98a',v:0},
+    {x0:420,x1:592,concession:true},
     {x0:620,x1:770,sig:'武器屋',neon:'#7ff0ff',v:3,porte:true},
     {x0:810,x1:980,sig:'BAR',neon:'#ff4fb0',v:1},
     {x0:1020,x1:1190,sig:'PACHINKO',neon:'#b08cff',v:2},
     {x0:1220,x1:1340,sig:'KONBINI',neon:'#ffd98a',v:0}];
   for(const s of BOUT){
+    if(s.concession){
+      /* le concessionnaire : sa vitrine peinte à part (assets/tokyo/concession_rez.png) */
+      const im=new Image();
+      im.onload=()=>{g.drawImage(im,s.x0,TK.rangee);};
+      im.src='assets/tokyo/concession_rez.png';
+      continue;
+    }
     const cv=graverBatimentTokyo(s.v+7,s.x1-s.x0,48,{boutique:true,sig:s.sig,neon:s.neon,graine:s.x0});
     g.drawImage(cv,s.x0,TK.rangee);
     if(s.porte){
@@ -457,4 +459,58 @@ async function acheterTokyo(arme,bt){
   await chargerArmurerieTokyo();
 }
 
-;({TK,graverBatimentTokyo,bloqueTokyo,construireSolTokyo,semerDecorTokyo,poserTokyo,ouvrirArmurerieTokyo,rpcTokyo,fermerArmurerieTokyo})
+
+/* ---------- LE CONCESSIONNAIRE : le menu du showroom, en entrant ----------
+   Le catalogue vient de assets/voitures/catalogue.json. Pas encore de prix ni
+   d'essai : les boutons le disent, rien n'est vendu tant que le prix n'est pas fixé. */
+
+function fermerConcessionTokyo(){
+  ouvrirConcessionTokyo.ouvert=false;
+  fermeA=Date.now();
+  $('page2').classList.remove('on');
+}
+
+async function ouvrirConcessionTokyo(){
+  if(ouvrirConcessionTokyo.ouvert)return;
+  ouvrirConcessionTokyo.ouvert=true;
+  $('page2Fond').className='';
+  $('page2Fond').innerHTML=
+    '<div style="padding:calc(env(safe-area-inset-top,0px) + 18px) 16px 18px;min-height:100%;box-sizing:border-box;background:#f1e8d6;font-family:Georgia,\'Times New Roman\',serif;color:#2a2236">'+
+    '<div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid #c8413c;padding-bottom:10px">'+
+    '<span style="color:#c8413c;font-size:18px">東京展示室</span>'+
+    '<b style="font-weight:400;letter-spacing:3px;font-size:15px">SHOWROOM TOKYO</b></div>'+
+    '<div id="ccListe" style="display:flex;gap:8px;overflow-x:auto;padding:12px 0"><p style="font-style:italic;color:#7a6e60">Le vendeur sort les fiches…</p></div>'+
+    '<div id="ccFiche"></div>'+
+    '<button id="ccFermer" style="display:block;width:100%;margin-top:14px;min-height:46px;border:1px solid #2a2236;background:transparent;color:#2a2236;font:700 14px Georgia,serif;letter-spacing:1px">Sortir du showroom</button>'+
+    '<div id="ccBulle" style="margin-top:10px;min-height:18px;font-size:13px;color:#c8413c"></div></div>';
+  $('page2').classList.add('on');
+  $('ccFermer').onclick=fermerConcessionTokyo;
+  let vehicules=[];
+  try{const r=await fetch('assets/voitures/catalogue.json');vehicules=((await r.json()).vehicules)||[];}catch(x){}
+  if(!vehicules.length){$('ccListe').innerHTML='<p style="color:#c8413c">Le catalogue ne répond pas.</p>';return;}
+  const sprite=v=>{const p=(v.photos||[]).find(q=>q.role==='sprite_pixel');return p?p.fichier:'';};
+  const nomComplet=v=>[v.marque,v.modele].filter(Boolean).join(' ');
+  $('ccListe').innerHTML=vehicules.map((v,i)=>
+    '<button data-i="'+i+'" style="flex:none;width:118px;padding:8px;border:1px solid #2a223633;background:#fff8ec;cursor:pointer;text-align:left;font:inherit;color:inherit">'+
+    '<img src="'+sprite(v)+'" alt="" style="display:block;width:100%;height:auto;image-rendering:pixelated">'+
+    '<b style="display:block;font-size:12px;margin-top:6px">'+nomComplet(v)+'</b></button>').join('');
+  const fiche=i=>{
+    const v=vehicules[i];
+    $('ccFiche').innerHTML=
+      '<div style="background:radial-gradient(circle,#fff8ec 40%,#e9dcc4 100%);border-radius:50%;padding:18px 0;margin-top:4px">'+
+      '<img src="'+sprite(v)+'" alt="'+nomComplet(v)+'" style="display:block;width:70%;max-width:300px;height:auto;margin:0 auto;image-rendering:pixelated"></div>'+
+      '<h2 style="margin:12px 0 2px;font-size:20px;font-weight:400">'+nomComplet(v)+'</h2>'+
+      '<p style="margin:0;font-size:12px;color:#7a6e60">'+(v.nom_garage?'Nom garage : '+v.nom_garage:'Sans nom de garage')+'</p>'+
+      '<p style="margin:8px 0;font-size:11px;letter-spacing:1px;color:#7a6e60">'+(v.tuning?'PEINTURE · ROUES · AILERONS':'BIENTÔT AU SHOWROOM')+'</p>'+
+      '<p style="margin:10px 0 0;font-size:18px">¥ ——— <small style="font-size:11px;color:#7a6e60">prix non fixé</small></p>'+
+      '<div style="display:flex;gap:10px;margin-top:12px">'+
+      '<button id="ccEssai" style="flex:1;min-height:44px;background:none;border:1px solid #2a2236;color:#2a2236;font:700 12px Georgia,serif;letter-spacing:2px">ESSAI</button>'+
+      '<button id="ccAcheter" style="flex:1;min-height:44px;background:#c8413c;border:0;color:#fff8ec;font:700 12px Georgia,serif;letter-spacing:2px">ACHETER</button></div>';
+    $('ccEssai').onclick=()=>{$('ccBulle').textContent="L'essai n'est pas encore ouvert.";};
+    $('ccAcheter').onclick=()=>{$('ccBulle').textContent="Le concessionnaire n'a pas encore fixé de prix pour ce véhicule.";};
+  };
+  $('ccListe').querySelectorAll('button[data-i]').forEach(b=>{b.onclick=()=>fiche(+b.dataset.i);});
+  fiche(0);
+}
+
+;({TK,graverBatimentTokyo,bloqueTokyo,construireSolTokyo,semerDecorTokyo,poserTokyo,ouvrirArmurerieTokyo,rpcTokyo,fermerArmurerieTokyo,ouvrirConcessionTokyo,fermerConcessionTokyo})
