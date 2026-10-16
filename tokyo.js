@@ -176,36 +176,109 @@ async function ouvrirConcessionTokyo(){
    travers est forte d'ordinaire ; à pleine vitesse, quand on braque fort,
    elle s'effondre et l'arrière décroche. Traces de pneus et fumée au sol. */
 const ESSAI={actif:false,x:0,y:0,ang:0,vx:0,vy:0,toile:null,traces:[],fumee:[],nom:'',retour:null};
-const COULEUR_TK={Toyota:'#c8102e',BMW:'#1f5fbf',Lamborghini:'#56c23a',Porsche:'#e8eaee',Nissan:'#6a6e78',Ferrari:'#d0101c'};
-const AILERON_TK={Toyota:1,Porsche:1,Nissan:1,Ferrari:1};
-/* la voiture vue du dessus, peinte une fois : 34 x 16, l'avant vers la droite */
+/* VOITURES VUES DU DESSUS, pixel par pixel. L'avant vers la droite.
+   Chaque colonne a sa demi-largeur (le profil de la caisse) ; l'ombrage se fait
+   par bandes selon la distance à l'axe, comme une carrosserie bombée. */
+const MODELES_DESSUS={
+  Toyota:     {c:['#5a0610','#9a0c1a','#d01426','#ee4a58','#ff9aa2'],L:62,hw:13,nez:9,arr:4,cab:[22,41],ail:'haut',ph:'long',det:'bosse'},
+  BMW:        {c:['#0a2550','#123f8f','#1a5fd0','#4a86ea','#a4c4ff'],L:61,hw:13,nez:3,arr:3,cab:[17,41],ail:'levre',ph:'carre',det:'nervures'},
+  Lamborghini:{c:['#1d4a12','#2f7f22','#5cc83a','#8ee46a','#d4ffb8'],L:63,hw:14,nez:11,arr:3,cab:[26,43],ail:'levre',ph:'fleche',det:'lames',toit:'noir'},
+  Porsche:    {c:['#6c7078','#a7abb3','#dfe2e8','#f4f5f8','#ffffff'],L:58,hw:13,nez:9,arr:7,cab:[19,39],ail:'grand',ph:'rond',det:'grille'},
+  Nissan:     {c:['#24262c','#3c3f47','#61656f','#878b95','#b9bcc4'],L:63,hw:14,nez:7,arr:3,cab:[21,41],ail:'haut',ph:'long',det:'bosse'},
+  Ferrari:    {c:['#5a0608','#a00c14','#d8141e','#f04a50','#ffa0a0'],L:61,hw:14,nez:8,arr:3,cab:[25,40],ail:'grand',ph:'carre',det:'lames'}
+};
 function peindreVoitureDessus(marque){
-  const c=document.createElement('canvas');c.width=34;c.height=18;
+  const M=MODELES_DESSUS[marque]||MODELES_DESSUS.Toyota;
+  const WC=68,HC=32,cy=15.5,x0=Math.floor((WC-M.L)/2),x1=x0+M.L-1;
+  const c=document.createElement('canvas');c.width=WC;c.height=HC;
   const g=c.getContext('2d');
-  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
-  const coul=COULEUR_TK[marque]||'#c8102e';
-  const sombre=(h,f)=>{const n=[1,3,5].map(i=>parseInt(h.substr(i,2),16));return 'rgb('+n.map(v=>Math.round(v*(1-f))).join(',')+')';};
-  const clair=(h,f)=>{const n=[1,3,5].map(i=>parseInt(h.substr(i,2),16));return 'rgb('+n.map(v=>Math.round(v+(255-v)*f)).join(',')+')';};
-  /* les roues qui dépassent */
-  [[6,0],[6,15],[24,0],[24,15]].forEach(([x,y])=>R(x,y,6,3,'#111116'));
-  /* la caisse, son contour, ses reflets */
-  R(2,2,30,14,sombre(coul,.45));
-  R(3,3,28,12,coul);
-  R(1,4,1,10,sombre(coul,.45));R(32,4,1,10,sombre(coul,.45));
-  R(4,3,26,1,clair(coul,.35));
-  R(4,14,26,1,sombre(coul,.25));
-  /* capot (droite) et coffre (gauche) */
-  R(24,5,6,8,clair(coul,.12));
-  /* le pare-brise, le toit, la lunette */
-  R(19,4,4,10,'#1c2a3a');R(20,5,1,8,'#3a5068');
-  R(11,4,8,10,sombre(coul,.15));R(12,5,6,2,clair(coul,.25));
-  R(8,5,3,8,'#1c2a3a');
-  /* les phares et les feux */
-  R(31,4,1,3,'#fff3c4');R(31,11,1,3,'#fff3c4');
-  R(2,4,1,3,'#ff2a2a');R(2,11,1,3,'#ff2a2a');
-  if(AILERON_TK[marque]){R(1,3,3,12,sombre(coul,.55));R(1,3,3,1,clair(coul,.2));}
+  const P=(x,y,col)=>{g.fillStyle=col;g.fillRect(x,y,1,1);};
+  const ra=x0+Math.round(M.L*0.2), rv=x0+Math.round(M.L*0.77);
+  /* la demi-largeur de chaque colonne : arrière arrondi, ailes à peine gonflées, nez pincé */
+  const demi=x=>{
+    let h=M.hw-0.8;
+    for(const r of [ra,rv]){const d=Math.abs(x-r);if(d<9)h+=0.9*Math.cos(d/9*Math.PI/2);}
+    const ar=x-x0, av=x1-x;
+    if(ar<M.arr)h-=Math.pow((M.arr-ar)/M.arr,1.5)*2.4;
+    if(av<M.nez)h-=Math.pow((M.nez-av)/M.nez,1.7)*M.hw*0.5;
+    return h;};
+  /* les pneus, une rangée sous chaque aile */
+  for(const r of [ra,rv])for(let x=r-4;x<=r+4;x++)for(const s of [-1,1]){
+    const y=Math.round(cy+s*(demi(r)+0.4))-(s<0?1:0);P(x,y,'#0b0b0e');}
+  /* la caisse, bombée : bord sombre, flanc, dessus clair, et la lumière en haut à gauche */
+  const [c0,c1]=M.cab.map(v=>x0+v);
+  for(let x=x0;x<=x1;x++){
+    const h=demi(x);
+    for(let y=0;y<HC;y++){
+      const dy=y+0.5-cy, t=Math.abs(dy)/h;
+      if(t>1)continue;
+      let k=t>0.9?0:t>0.74?1:2;
+      if(k===2&&dy<0&&t>0.22&&t<0.52)k=3;
+      if(k===2&&dy>0&&t>0.55)k=1;
+      P(x,y,M.c[k]);
+    }
+  }
+  /* une arête claire au milieu du capot */
+  for(let x=c1+4;x<x1-3;x++)P(x,Math.floor(cy)-1,M.c[4]);
+  /* l'habitacle : pare-brise en trapèze, toit, lunette, vitres latérales */
+  const verre='#0d1520', verre2='#1c2a3c', ciel='#86b0d8';
+  const toit=M.toit==='noir'?['#0e0e12','#1b1b22','#2c2c36']:[M.c[1],M.c[2],M.c[3]];
+  const pb=7, lu=5;
+  const demiVitre=x=>{const base=demi(x)-2.6, haut=demi(x)-4.6;
+    if(x>c1-pb)return haut+(base-haut)*((x-(c1-pb))/pb);
+    if(x<c0+lu)return haut+(base-haut)*((c0+lu-x)/lu)*0.7;
+    return haut;};
+  for(let x=c0;x<=c1;x++){
+    const hv=demiVitre(x);
+    for(let y=0;y<HC;y++){
+      const dy=y+0.5-cy, ady=Math.abs(dy);
+      if(ady>hv)continue;
+      if(x>c1-pb||x<c0+lu){P(x,y,ady>hv-1?verre:verre2);continue;}
+      if(ady>hv-1.1){P(x,y,verre);continue;}
+      const t=ady/hv;P(x,y,t>0.72?toit[0]:dy<0&&t>0.2?toit[2]:toit[1]);
+    }
+  }
+  /* reflets du ciel sur le pare-brise */
+  for(let i=0;i<3;i++){P(c1-1-i,Math.round(cy)-4+i,ciel);}
+  P(c1-3,Math.round(cy)-5,ciel);
+  P(c0+1,Math.round(cy)-3,'#4a6688');
+  /* rétroviseurs */
+  for(const s of [-1,1]){const y=Math.round(cy+s*(demi(c1-3)+0.2))-(s<0?1:0);P(c1-3,y,M.c[1]);P(c1-2,y,M.c[2]);}
+  /* lignes de portes et de capot */
+  const mid=Math.round((c0+c1)/2)+1;
+  for(const s of [-1,1]){const y=Math.round(cy+s*(demi(mid)-1.2))-(s<0?1:0);P(mid,y,M.c[0]);P(mid,y+s,M.c[0]);}
+  for(let x=c1+3;x<x1-4;x++){for(const s of [-1,1])P(x,Math.round(cy+s*(demi(x)-3.2))-(s<0?1:0),M.c[1]);}
+  /* détails propres à chaque modèle */
+  if(M.det==='bosse'){for(let x=c1+5;x<c1+10;x++){P(x,Math.round(cy)-1,M.c[4]);P(x,Math.round(cy),M.c[3]);}P(c1+10,Math.round(cy)-1,'#141418');P(c1+10,Math.round(cy),'#141418');}
+  if(M.det==='nervures'){for(let x=c1+3;x<x1-3;x++){P(x,Math.round(cy)-3,M.c[3]);P(x,Math.round(cy)+2,M.c[3]);}}
+  if(M.det==='lames'){for(let k=0;k<5;k++){const x=x0+4+k*2;for(let y=Math.round(cy)-4;y<Math.round(cy)+4;y++)P(x,y,'#121216');}}
+  if(M.det==='grille'){for(let k=0;k<4;k++)for(let x=x0+3;x<x0+8;x++)P(x,Math.round(cy)-4+k*2,'#202026');}
+  /* phares */
+  const phare='#fff4c8', phare2='#ffd27a';
+  for(const s of [-1,1]){const y=Math.round(cy+s*(demi(x1-2)-1.6))-(s<0?1:0);
+    if(M.ph==='rond'){P(x1-3,y,phare);P(x1-2,y,phare);P(x1-3,y-s,phare2);P(x1-2,y-s,phare);}
+    else if(M.ph==='fleche'){P(x1-5,y,phare2);P(x1-4,y,phare);P(x1-3,y,phare);P(x1-2,y-s,phare);}
+    else if(M.ph==='carre'){P(x1-2,y,phare);P(x1-2,y-s,phare);P(x1-1,y,phare2);}
+    else{P(x1-4,y,phare2);P(x1-3,y,phare);P(x1-2,y,phare);P(x1-2,y-s,phare);}}
+  /* feux arrière */
+  for(const s of [-1,1]){const y=Math.round(cy+s*(demi(x0+1)-1.4))-(s<0?1:0);P(x0,y,'#ff3040');P(x0,y-s,'#c01020');P(x0+1,y,'#ff6070');}
+  if(marque==='Porsche'){for(let y=Math.round(cy)-3;y<Math.round(cy)+3;y++)P(x0,y,'#c01020');}
+  /* l'aileron */
+  if(M.ail!=='levre'){
+    const ax=x0+(M.ail==='grand'?1:2), aw=M.ail==='grand'?3:2, h=M.hw+(M.ail==='grand'?0.5:-0.5);
+    for(let x=ax;x<ax+aw;x++)for(let y=Math.round(cy-h);y<Math.round(cy+h);y++)P(x,y,x===ax?M.c[3]:M.c[1]);
+    for(let x=ax-1;x<ax+aw+1;x++){P(x,Math.round(cy-h)-1,M.c[0]);P(x,Math.round(cy+h),M.c[0]);}
+    for(let y=Math.round(cy-h);y<Math.round(cy+h);y+=3)P(ax+aw,y,M.c[0]);
+  }else{for(let y=Math.round(cy)-5;y<Math.round(cy)+5;y++)P(x0+1,y,M.c[0]);}
+  /* le contour, d'un pixel sombre autour de tout ce qui est peint */
+  const d=g.getImageData(0,0,WC,HC), a=(x,y)=>x>=0&&y>=0&&x<WC&&y<HC&&d.data[(y*WC+x)*4+3]>0;
+  const o=g.getImageData(0,0,WC,HC);
+  for(let y=0;y<HC;y++)for(let x=0;x<WC;x++){if(a(x,y))continue;
+    if(a(x-1,y)||a(x+1,y)||a(x,y-1)||a(x,y+1)){const i=(y*WC+x)*4;o.data[i]=12;o.data[i+1]=10;o.data[i+2]=16;o.data[i+3]=255;}}
+  g.putImageData(o,0,0);
   return c;
 }
+
 function debutEssai(v){
   ESSAI.actif=true;ESSAI.nom=[v.marque,v.modele].filter(Boolean).join(' ');
   ESSAI.toile=peindreVoitureDessus(v.marque);
@@ -246,16 +319,16 @@ function majEssai(dt,jx,jy){
   tr*=Math.exp(-(derape?1.3:9)*dt);
   ESSAI.vx=av*nx-tr*ny; ESSAI.vy=av*ny+tr*nx;
   const X=ESSAI.x+ESSAI.vx*dt, Y=ESSAI.y+ESSAI.vy*dt;
-  if(bloqueTokyo(X,Y)||X<20||X>MONDE_L-20||Y<TK.bati+14||Y>MONDE_H-14){
+  if(bloqueTokyo(X,Y)||X<20||X>MONDE_L-20||Y<TK.bati+18||Y>MONDE_H-18){
     ESSAI.vx*=-0.35;ESSAI.vy*=-0.35;      /* le choc : on rebondit, sans traverser */
   }else{ESSAI.x=X;ESSAI.y=Y;}
   /* les traces de pneus et la fumée quand ça glisse */
   if(Math.abs(tr)>45){
-    for(const s of [-6,6]){
-      const px=ESSAI.x-nx*11-ny*s, py=ESSAI.y-ny*11+nx*s;
+    for(const s of [-10,10]){
+      const px=ESSAI.x-nx*18-ny*s, py=ESSAI.y-ny*18+nx*s;
       ESSAI.traces.push([px,py,0.55]);
     }
-    if(Math.random()<0.6)ESSAI.fumee.push({x:ESSAI.x-nx*14,y:ESSAI.y-ny*14,r:3,vie:0.8});
+    if(Math.random()<0.6)ESSAI.fumee.push({x:ESSAI.x-nx*24,y:ESSAI.y-ny*24,r:4,vie:0.8});
     if(ESSAI.traces.length>900)ESSAI.traces.splice(0,ESSAI.traces.length-900);
   }
   for(const f of ESSAI.fumee){f.vie-=dt;f.r+=14*dt;}
@@ -267,10 +340,10 @@ function dessinerEssai(ctx,camX,camY){
   ctx.fillStyle='rgba(12,10,16,.55)';
   for(const [x,y] of ESSAI.traces)ctx.fillRect(Math.round(x-camX)-1,Math.round(y-camY)-1,2,2);
   ctx.translate(Math.round(ESSAI.x-camX),Math.round(ESSAI.y-camY));
-  ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(1,3,17,8,ESSAI.ang,0,7);ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(1,3,32,14,ESSAI.ang,0,7);ctx.fill();
   ctx.rotate(ESSAI.ang);
   ctx.imageSmoothingEnabled=false;
-  ctx.drawImage(ESSAI.toile,-17,-9);
+  ctx.drawImage(ESSAI.toile,-34,-16);
   ctx.restore();
   ctx.save();
   for(const f of ESSAI.fumee){ctx.fillStyle='rgba(220,220,230,'+(f.vie*0.4)+')';ctx.beginPath();ctx.arc(f.x-camX,f.y-camY,f.r,0,7);ctx.fill();}
