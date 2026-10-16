@@ -1,11 +1,11 @@
-/* ================= TOKYO, CARTE VIDE (900 x 900) =================
+/* ================= TOKYO, CARTE (900 x 900) =================
    Une carte blanche : un sol nu, les bords qui retiennent le joueur, la sortie
    vers le port à l'ouest. Rien d'autre : les immeubles, la rangée des boutiques
    et le concessionnaire sont dans l'historique (34e0ea0), à reposer ici.
    L'ancienne carte est gardée dans l'historique git. */
 
 const TK={
-  bati:0,                         /* pas de façades du fond */
+  bati:206,                       /* le pied des façades du haut : au-dessus, rien ne marche */
   rangee:0, bas:900,              /* pas de rangée de boutiques */
   blocs:[],                       /* rien ne barre le passage */
   porte:null,                     /* pas d'armurerie */
@@ -16,7 +16,7 @@ const TK={
 
 function bloqueTokyo(x,y){
   if(x<6||x>MONDE_L-6)return true;
-  if(y<6||y>MONDE_H-6)return true;
+  if(y<TK.bati+6||y>MONDE_H-6)return true;
   return false;
 }
 
@@ -29,6 +29,10 @@ function construireSolTokyo(){
   g.fillStyle='rgba(255,255,255,.03)';
   for(let x=0;x<W;x+=50)g.fillRect(x,0,1,H);
   for(let y=0;y<H;y+=50)g.fillRect(0,y,W,1);
+  /* la rangée du haut : ciel de nuit, façades japonaises collées et cerisiers */
+  const haut=new Image();
+  haut.onload=()=>{g.drawImage(haut,0,0);};
+  haut.src='assets/tokyo/rue_haut.png';
   return c;
 }
 
