@@ -16203,7 +16203,13 @@ const r=await fetch(URL_SB+'/rest/v1/joueurs?id=eq.'+encodeURIComponent(e.id)+'&
 const d=await r.json();
 if(Array.isArray(d)&&d[0]){
 const j=d[0];
-if(j.apparence&&Object.keys(j.apparence).length)e.ap=Object.assign({},DEF_AP,j.apparence);
+if(j.apparence&&Object.keys(j.apparence).length){
+/* UNE TENUE MISE AILLEURS (la loge du complexe) PLUS RÉCENTE que la fiche du
+   serveur : on la garde, et on la renvoie — sinon elle disparaissait au retour. */
+let apL=null;try{const l=JSON.parse(localStorage.getItem(CLE)||'{}');if(l.apMaj&&l.ap&&l.apMaj>(Date.parse(j.maj)||0))apL=l.ap;}catch(x){}
+e.ap=Object.assign({},DEF_AP,j.apparence);
+if(apL&&'cos' in apL&&apL.cos!==e.ap.cos){e.ap.cos=apL.cos;setTimeout(()=>{try{monterEnLigne(true);}catch(x){}},1500);}
+}
 if(j.pseudo)e.pseudo=j.pseudo;
 if(typeof j.x==='number'){e.x=j.x;e.y=j.y;}
 sauver();

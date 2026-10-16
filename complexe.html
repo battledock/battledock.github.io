@@ -1243,10 +1243,26 @@ function logePorter(id){
   e.ap=Object.assign({},e.ap||DEF_AP);
   if((e.ap.cos||null)===id)e.ap.cos=null;else e.ap.cos=id;
   try{const b=JSON.parse(localStorage.getItem(CLE_SAUV)||'{}')||{};
-    b.ap=Object.assign({},b.ap||{},{cos:e.ap.cos});
+    b.ap=Object.assign({},b.ap||{},{cos:e.ap.cos});b.apMaj=Date.now();
     localStorage.setItem(CLE_SAUV,JSON.stringify(b));}catch(x){}
   try{navigator.vibrate&&navigator.vibrate(18);}catch(x){}
   logeMaj();
+  logeMonterAp();
+}
+/* LA TENUE SUIT LE JOUEUR PARTOUT : en rentrant au port, le jeu relit
+   l'apparence sur le serveur (table joueurs). Ecrite seulement dans la
+   sauvegarde locale, la piece de la loge disparaissait a la sortie. */
+function logeEmpreinte(ap){const t=JSON.stringify(ap||{});let h=0;
+  for(let i=0;i<t.length;i++)h=((h<<5)-h+t.charCodeAt(i))|0;return Math.abs(h)%100000;}
+async function logeMonterAp(){
+  const id=monId();if(!id)return;
+  let ap=e.ap;
+  try{const b=JSON.parse(localStorage.getItem(CLE_SAUV)||'{}')||{};if(b.ap)ap=Object.assign({},b.ap,{cos:e.ap.cos});}catch(x){}
+  try{
+    await fetch(URL_SB+'/rest/v1/joueurs?id=eq.'+encodeURIComponent(id),{method:'PATCH',
+      headers:{'apikey':CLE_SB,'Authorization':'Bearer '+CLE_SB,'Content-Type':'application/json','x-cle':e.cle||''},
+      body:JSON.stringify({apparence:ap,ap_v:logeEmpreinte(ap),maj:new Date().toISOString()})});
+  }catch(x){}
 }
 async function logeAgir(sel){
   if(BTQ_EUES[sel.id]){logePorter(sel.id);return;}
