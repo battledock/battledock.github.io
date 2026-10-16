@@ -2273,6 +2273,8 @@ P('x_maison',XP.rangX0+k*140,XP.maisonsY,{v:k,col:[70,24]});
    quai, devant les facades, et non sur l'esplanade qui reste nue des deux
    cotes. */
 [390,1370].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+30,XP.maisonsY+72);});
+/* LA STATION DE TOKYO, sous le Pecheur Heureux (facade k=2) : c'est la que le train part. */
+P('x_metroM',XP.rangX0+2*140,XP.maisonsY+88,{col:[44,16],bati:true,demi:50,ouvre:'tokyo'});
 /* LE TABLEAU DU PORT, DEVANT LE CENTRE DES ESCALIERS. Il etait decale de
    58 px a l'ouest pour ne jamais gener la montee ; on le remet dans l'axe,
    face aux marches, ou le regard tombe dessus en arrivant.

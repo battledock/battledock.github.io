@@ -14341,7 +14341,7 @@ g.fillText('PRESSE',Math.round(x),Y0+C.sol-36.5,30);
 }
 if(o.t==='x_metroM'){                                        /* le nom de la station */
 g.font='700 5px ui-monospace,monospace';g.textAlign='center';g.fillStyle='#ffffff';
-g.fillText('VIEUX-PORT',Math.round(x)+34,Y0+C.sol-61,19);
+g.fillText(o.ouvre==='tokyo'?'TOKYO':'VIEUX-PORT',Math.round(x)+34,Y0+C.sol-61,19);
 }
 if(o.t==='x_voilier'&&C.haut){                               /* le feu de tête de mât */
 const CL=null;
@@ -25756,6 +25756,7 @@ if(o.ouvre==='course'){b.innerHTML='Monter sur le plot<small>LA COURSE DU 50 M �
 if(o.ouvre==='cabine'){b.innerHTML=(e.ap&&e.ap.maillot?'Se rhabiller':'Entrer dans la cabine')+'<small>'+(e.ap&&e.ap.maillot?'REMETTRE TES VÊTEMENTS':'SE METTRE EN MAILLOT')+'</small>';b.classList.add('on');return;}
 if(o.ouvre==='sortiePiscine'){b.innerHTML='Ressortir sur le quai<small>'+(e.ap&&e.ap.maillot?'ON TE RHABILLE EN SORTANT':'LE VIEUX-PORT')+'</small>';b.classList.add('on');return;}
 if(o.ouvre==='metroForet'){b.innerHTML='Prendre le métro<small>LIGNE 1 · '+autresStations()+'</small>';b.classList.add('on');return;}
+if(o.ouvre==='tokyo'){b.innerHTML='Prendre le train<small>LIGNE 2 · TOKYO · 240 €</small>';b.classList.add('on');return;}
 if(o.ouvre==='metroVallon'){b.innerHTML='Prendre le métro<small>LIGNE 2 · RETOUR AU PORT</small>';b.classList.add('on');return;}
 if(o.ouvre==='chantierVallon'){
 if(!ligne2Permise()){b.innerHTML='Le terrain<small>BÊTA · EN CONSTRUCTION</small>';b.classList.add('on');return;}
@@ -25915,6 +25916,7 @@ if(o.ouvre==='presse'){afficheCapitainerie();return;}
 if(o.ouvre==='bar'){ouvrirLeBar();return;}
 if(o.ouvre==='poissonnerie'){ouvrirLaCriee();return;}
 if(o.ouvre==='metroForet'){choisirLaDestination();return;}
+if(o.ouvre==='tokyo'){ouvrirLeQuaiTokyo();return;}
 if(o.ouvre==='metroVallon'){voyagerVers('extramar','Direction Le port');return;}
 if(o.ouvre==='chantierVallon'){
 if(!ligne2Permise()){ouvrirLeChantierFerme();return;}
@@ -31416,6 +31418,42 @@ if(h<17)  return {haut:'#8fc4e8',bas:'#cfe4ee',sol:'#3a3f44',astre:'#fffaea',lun
 if(h<20)  return {haut:'#f9d49a',bas:'#b8617f',sol:'#2f2638',astre:'#fff6dc',lune:false,mot:'AU COUCHANT'};
 if(h<22)  return {haut:'#8a5a7e',bas:'#4a3a62',sol:'#241f33',astre:'#ffe8c0',lune:false,mot:'À LA TOMBÉE DU JOUR'};
 return    {haut:'#16203c',bas:'#2a3152',sol:'#17142a',astre:'#fff6dc',lune:true, mot:'DERNIER MÉTRO'};
+}
+/* LE QUAI DE TOKYO : la station sous le Pecheur Heureux. Le billet passe par
+   prendre_billet (prix fixe au serveur), puis le train part vers Tokyo.html. */
+function ouvrirLeQuaiTokyo(){
+const D=DESTS.find(x=>x.id==='tokyo');
+if(!D)return;
+const solde=e.euros||0;
+const peut=solde>=D.prix;
+$('page2Fond').className='';
+$('page2Fond').innerHTML=
+'<div style="padding:calc(env(safe-area-inset-top,0px) + 18px) 18px 0;font-family:\'Baloo 2\',system-ui,sans-serif;color:#2b2418">'+
+'<small style="display:block;font:700 9px ui-monospace,monospace;letter-spacing:3px;color:#7a6a4a">LE MÉTRO · LIGNE 2</small>'+
+'<b style="display:block;font:700 26px \'Baloo 2\',sans-serif;margin-top:4px">Direction Tokyo</b>'+
+'<p style="font:italic 14px Georgia,serif;color:#5a4a30;margin:8px 0 0;line-height:1.5">'+D.mot+'.</p>'+
+'<p style="font:700 13px ui-monospace,monospace;margin:16px 0 0">Billet · '+enEuros(D.prix)+' <span style="color:#7a6a4a">· ton solde · '+enEuros(solde)+'</span></p>'+
+'<button id="tkGo" style="display:block;width:100%;margin-top:18px;min-height:50px;border-radius:14px;border:2px solid #2b2418;background:'+(peut?'#2b2418':'#d8ccb0')+';color:'+(peut?'#fbf6e8':'#7a6a4a')+';font:700 16px \'Baloo 2\',sans-serif">'+(peut?'Prendre le train · '+enEuros(D.prix):'Il te manque '+enEuros(D.prix-solde))+'</button>'+
+'<button id="tkNon" style="display:block;width:100%;margin-top:10px;min-height:44px;border-radius:14px;border:1px solid #b9a77f;background:transparent;color:#2b2418;font:700 14px \'Baloo 2\',sans-serif">Rester au port</button>'+
+'<div id="tkBulle" style="margin-top:10px;min-height:18px;font:700 12px ui-monospace,monospace;color:#8a3a2a"></div></div>';
+$('page2').classList.add('on');
+$('tkNon').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+$('tkGo').onclick=async()=>{
+if(!peut){$('tkBulle').textContent='Il te manque de quoi payer.';return;}
+$('tkGo').disabled=true;$('tkBulle').textContent='Le guichet tamponne ton billet…';
+const d=await appelRPC('prendre_billet',{p_joueur:e.id,p_dest:D.id,p_cents:D.prix});
+if(!d||d.erreur){
+$('tkGo').disabled=false;
+$('tkBulle').textContent=d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':'Le train n’a pas pu partir. Réessaie.';
+if(d&&typeof d.euros==='number')e.euros=d.euros;
+return;
+}
+if(typeof d.euros==='number')e.euros=d.euros;
+sauver();majHaut();
+jouer('achat','moment');
+fermeA=Date.now();$('page2').classList.remove('on');
+partirEnVoyage(D);
+};
 }
 function choisirLaDestination(){
 const D=STATIONS_L1.filter(([,,,q])=>q!==stationIci());
