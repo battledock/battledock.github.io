@@ -2402,6 +2402,13 @@ garde:{nom:'La Garde',dit:'La Bonne Mère veille',
   bande(H*0.84,H,[[18,38,54],[24,50,70],[16,34,48]]);
  }},
 /* ---------- LE REPLI, quand on ne sait pas où l'on va ---------- */
+tokyo:{nom:'Tokyo',dit:'La ville de tous les possibles',
+ f:'#0c0820',o:'#ff4fb0',t:'#f0e6ff',d:'#7fe8ff',
+ p:function(){
+  bande(0,H,[[14,8,34],[30,14,52],[46,22,70],[28,14,46]]);
+  for(var i=0;i<50;i++)R(al(i*1.7)*W,al(i*2.9)*H*0.6,1,1,'rgba(230,230,255,.5)');
+  for(var j=0;j<6;j++)R(al(j*4.3)*W,H*0.3+al(j*2.1)*H*0.3,W*0.12,2,j%2?'#ff4fb0':'#7fe8ff');
+ }},
 rien:{nom:'Battle Dock',dit:'On ouvre la porte',
  f:'#0d1410',o:'#c9a24a',t:'#f0e6cf',d:'#8a9a7a',
  p:function(){
@@ -2416,6 +2423,7 @@ if(!c){try{c=(JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}').carte)||'';}c
 var cle = c==='foret' ? 'foret'
         : (c==='ferme'||c==='village') ? 'ferme'
         : c==='garde' ? 'garde'
+        : c==='tokyo' ? 'tokyo'
         : c==='extramar' ? 'port'
         : 'rien';
 var L=LIEUX[cle]||LIEUX.rien;
@@ -2468,7 +2476,7 @@ const p=new URLSearchParams(location.search);p.delete('carte');p.delete('v');
 const q=p.toString();
 history.replaceState(null,'',cd+'.html'+(q?'?'+q:''));}
 }catch(x){}
-const CARTE=(()=>{const c=CARTE_DEMANDEE;return (c==='foret'?'foret':((c==='ferme'||c==='village')?'village':'extramar'));   /* la forêt est sa propre carte ; la ferme garde l'ancien village */})();
+const CARTE=(()=>{const c=CARTE_DEMANDEE;return (c==='foret'?'foret':((c==='ferme'||c==='village')?'village':(c==='tokyo'?'tokyo':'extramar')));   /* la forêt est sa propre carte ; la ferme garde l'ancien village */})();
 const ANIM_DECOR={};
 const ANNEXE=CARTE!=='village';     /* Extramar et Notre-Dame : des cartes à part, sans le monde partagé */
 let createClient=null, sb=null, SB_PRET=false;
@@ -5423,7 +5431,7 @@ async function arriver(dest){
 try{if(typeof cancelAnimationFrame==='function')cancelAnimationFrame(voyBoucle);}catch(x){}
 try{await appelRPC('rentrer',{p_joueur:e.id});}catch(x){}
 /* TOKYO A SA PROPRE PAGE : on y passe, le billet est consomme. */
-if(dest.id==='tokyo'){try{await envoyerSauvegarde(true);}catch(x){}window.location.href='Tokyo.html?v='+encodeURIComponent(window.MA_VERSION||Date.now());return;}
+if(dest.id==='tokyo'){await voyagerVers('tokyo');return;}
 $('voyage').classList.remove('on');
 joueur.x=GARE_FIXE[0];joueur.y=GARE_FIXE[1]+26;
 texteVolant(joueur.x,joueur.y-34,dest.nom+' : le quai est fermé','#e8a06a');
@@ -10448,7 +10456,7 @@ R(-4,-5,9,5,V.tronc);R(-4,-5,9,2,V.troncC);R(-2,-4,5,1,'#a5764a');R(-4,-2,9,2,V.
    fin de la ville — une derniere facade, une esplanade de platanes — et
    surtout les collines boisees qui apparaissent sur l'horizon : on marche
    vers quelque chose qu'on voit, pas vers un mur. */
-const MONDE_L=CARTE==='foret'?1500:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:1200):1760));   /* la ferme : 1200 x 1600 */
+const MONDE_L=CARTE==='foret'?1500:(CARTE==='tokyo'?1400:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:1200):1760)));   /* la ferme : 1200 x 1600 */
 const MONDE_H=CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?1600:600);   /* la ferme : 1200 x 1600 */
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 const VUE_L=196, VUE_H=400;       /* la vue de référence, en points de jeu */
@@ -13478,11 +13486,13 @@ const FINITIONS=[{id:'bleu',nom:'Bleu marine',prix:500,col:['#1f3f6f','#4f7fb8']
 {id:'abysse',nom:'Abysse',prix:12000,col:['#0a1420','#2a6a8a'],etoiles:true,nacre:true},
 {id:'phosphore',nom:'Phosphore',prix:20000,col:['#1a3a1a','#8fe060'],phospho:true}];
 let iconesPoissonsFaites=false;
+var TKM=null;   /* la carte de Tokyo (tokyo.js) : ses fonctions sont appelées par ce nom d'objet */
 let XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar;
 /* SI port.js NE CHARGE PAS, les cinquante-trois symboles ci-dessous
    restent indéfinis et le port ne se dessine pas, sans un mot. On le dit. */
 try{
 if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar}=eval(await chargerMorceau('port.js')));}
+if(CARTE==='tokyo'){TKM=eval(await chargerMorceau('tokyo.js'));}
 }catch(erPort){
 try{document.body.insertAdjacentHTML('beforeend',
 '<div style="position:fixed;left:12px;right:12px;top:12px;z-index:99;padding:12px 14px;'+
@@ -14564,6 +14574,7 @@ function construireChemin(){
   return c;}
 function construireSol(){
 if(CARTE==='extramar')return construireSolExtramar();
+if(CARTE==='tokyo')return TKM.construireSolTokyo();
 if(CARTE==='garde')return construireSolGarde();
 const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
 const g=c.getContext('2d');
@@ -15644,6 +15655,7 @@ DECOR.push({t:'x_fe_mondial',x:bx+Math.round(bw/2),y:by-16,v:0});}
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}
 if(CARTE==='foret')return semerLaForet();
 if(CARTE==='extramar')return semerDecorExtramar();
+if(CARTE==='tokyo')return TKM.semerDecorTokyo();
 if(CARTE==='garde')return semerDecorGarde();
 /* LE SEMEUR DU VILLAGE D'ORIGINE EST SUPPRIME (233 lignes). Il ne tournait que si CARTE valait 'village' SANS CHAMPS_SEULS — or CHAMPS_SEULS vaut CARTE_DEMANDEE!=='foret' et CARTE ne vaut 'village' que pour 'ferme' et 'village' : la condition etait impossible. Il semait la riviere, les ponts, le hameau, le camp, le coffre, la forge, l'echoppe, la place et ses tilleuls — rien de tout cela n'est sur la carte de la ferme. */
 }
@@ -15781,6 +15793,7 @@ if(!(nx>BORD&&nx<MONDE_L-BORD&&ny>BORD+14&&ny<MONDE_H-BORD))return true;
 if(verMuret(nx,ny))return true;
 return false;
 }
+if(CARTE==='tokyo')return TKM.bloqueTokyo(x,y);
 if(CARTE==='garde')return bloqueGarde(x,y);
 if(dansLisiere(x,y))return true;                     /* la forêt du pourtour */
 if(surLeSentier(x,y,0))return false;                 /* le sentier est toujours praticable */
@@ -16315,7 +16328,7 @@ const garde=Q.has('garde');
 const de=Q.get('de')||(e&&(e.extc||e.carte))||'';
 const parLouest=(de==='village'||de==='ferme');
 const E=parLouest?XP.chemin.arrivee:XP.sente.arrivee;
-const p0=garde?[XP.ruelle.x,XP.ruelle.haut+26]:(arrive?[E[0],E[1]]:[EXT_AU_DEPART.x,EXT_AU_DEPART.y]);
+const p0=garde?[XP.ruelle.x,XP.ruelle.haut+26]:(de==='tokyo'?[XP.rangX0+2*140,XP.maisonsY+122]:(arrive?[E[0],E[1]]:[EXT_AU_DEPART.x,EXT_AU_DEPART.y]));
 const [dx,dy]=degager(p0[0],p0[1]);
 joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.extc=CARTE;e.carte='extramar';
 try{sauver();}catch(x){}
@@ -16336,6 +16349,7 @@ joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.extc=CARTE;e.carte='garde';
 try{sauver();}catch(x){}
 return;
 }
+if(CARTE==='tokyo'){TKM.poserTokyo();return;}
 if(CARTE==='extramar'){poserAuPort();return;}
 const [dx,dy]=degager(joueur.x,joueur.y);   /* on ne démarre jamais dans un tronc */
 joueur.x=dx;joueur.y=dy;e.x=dx;e.y=dy;
@@ -21655,6 +21669,7 @@ return l;
 function coinDuJoueur(){
 if(CARTE==='extramar')return 'à Extramar';
 if(CARTE==='garde')return 'à Notre-Dame';
+if(CARTE==='tokyo')return 'à Tokyo';
 try{return joueur.x<rivX(joueur.y)?'en forêt':'au village';}catch(x){return 'au village';}
 }
 function maPresence(){
@@ -21690,6 +21705,7 @@ if(p&&p.id&&p.id!==e.id&&!gens.some(g2=>g2.id===p.id))gens.push(p);
 gens.sort((a,b)=>(a.depuis||0)-(b.depuis||0));
 EN_LIGNE=gens;
 const ici=(p)=>CARTE==='extramar'?p.lieu==='à Extramar'
+:CARTE==='tokyo'?p.lieu==='à Tokyo'
 :CARTE==='garde'?p.lieu==='à Notre-Dame'
 :(p.lieu!=='à Extramar'&&p.lieu!=='dans le métro'&&p.lieu!=='à Notre-Dame'&&p.lieu!=='à la montagne');
 const places=placesDesBancs();
@@ -25703,6 +25719,17 @@ b.onclick=()=>{
   location.href='complexe.html?v='+(window.MA_VERSION||Date.now());
 };
 return;
+}
+if(CARTE==='tokyo'&&GESTE.t<=0){
+  const P=TKM.TK.porte;
+  if(Math.abs(joueur.x-P.x)<P.l&&joueur.y>P.y0&&joueur.y<P.y1){
+    b.innerHTML='Entrer à l’armurerie<small>FUSIL · MINIGUN · PLASMA · RAILGUN</small>';b.classList.add('on');
+    b.onclick=()=>{TKM.ouvrirArmurerieTokyo();};
+    return;}
+  if(joueur.x<TKM.TK.sortie.x&&joueur.y>TKM.TK.sortie.y0&&joueur.y<TKM.TK.sortie.y1){
+    b.innerHTML='Retourner au port<small>LE VIEUX-PORT · LA STATION</small>';b.classList.add('on');
+    b.onclick=()=>{voyagerVers('extramar');};
+    return;}
 }
 if(CARTE==='garde'&&GESTE.t<=0){
 if(Math.abs(joueur.x-GX.descente.x)<GX.descente.l&&joueur.y>GX.plS-16){
