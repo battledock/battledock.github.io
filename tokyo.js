@@ -359,9 +359,10 @@ function majEssai(dt){
   if(Math.abs(tr)>45){
     for(const s of [-10,10]){
       const px=ESSAI.x-nx*18-ny*s, py=ESSAI.y-ny*18+nx*s;
-      ESSAI.traces.push([px,py,0.55]);
+      /* LES TRACES SE PEIGNENT DANS LE SOL : rien à redessiner à chaque image */
+      try{const gs=SOL.getContext('2d');gs.fillStyle='rgba(12,10,16,.45)';gs.fillRect(Math.round(px)-1,Math.round(py)-1,2,2);}catch(x){ESSAI.traces.push([px,py,0.55]);}
     }
-    if(Math.random()<0.6)ESSAI.fumee.push({x:ESSAI.x-nx*24,y:ESSAI.y-ny*24,r:4,vie:0.8});
+    if(ESSAI.fumee.length<36&&Math.random()<0.5)ESSAI.fumee.push({x:ESSAI.x-nx*24,y:ESSAI.y-ny*24,r:4,vie:0.8});
     if(ESSAI.traces.length>900)ESSAI.traces.splice(0,ESSAI.traces.length-900);
   }
   for(const f of ESSAI.fumee){f.vie-=dt;f.r+=14*dt;}
