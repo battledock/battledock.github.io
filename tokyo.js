@@ -10,7 +10,7 @@ const TK={
   rangee:0, bas:900,              /* pas de rangée de boutiques */
   blocs:[],                       /* rien ne barre le passage */
   porte:null,                     /* pas d'armurerie */
-  concessionPorte:{x:126,y0:206,y1:240,l:16},   /* la porte du concessionnaire, en haut à gauche : on se place sur le trottoir */
+  concessionPorte:{x:126,y0:206,y1:300,l:20},   /* la porte du concessionnaire, en haut à gauche : on se place sur le trottoir */
   sortie:{x:60,y0:296,y1:420},    /* la sortie, à l'ouest : vers le port */
   arrivee:[84,360]
 };
