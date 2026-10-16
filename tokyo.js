@@ -326,7 +326,47 @@ async function ouvrirConcessionTokyo(ongletDepart){
 .ccLigneRec b{display:block;font-size:15px}
 .ccLigneRec small{display:block;font:700 11px ui-monospace,monospace;color:rgba(255,255,255,.5);margin-top:3px}
 .ccLigneRec i{font-style:normal;font:700 16px ui-monospace,monospace;color:#ffd98a}
-.ccLigneRec button{flex:none;height:40px;padding:0 14px;border-radius:12px;border:0;background:#ff4fb0;color:#fff;font:700 13px sans-serif}`;
+.ccLigneRec button{flex:none;height:40px;padding:0 14px;border-radius:12px;border:0;background:#ff4fb0;color:#fff;font:700 13px sans-serif}
+#ccDefile.atelier{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 14px)}
+#ccRacine.atelierR{background:linear-gradient(180deg,#1b1d22 0%,#121317 60%,#0b0c0f 100%)}
+#ccRacine.atelierR #ccSur{color:#ff9a3c}
+.atScene{position:relative;flex:1 1 auto;min-height:120px;margin:8px -16px 0;overflow:hidden;touch-action:none}
+.atMur{position:absolute;inset:0;background:repeating-linear-gradient(90deg,#24272e 0 3px,#1e2026 3px 6px)}
+.atMur:after{content:'';position:absolute;inset:0;background:radial-gradient(60% 55% at 50% 62%,rgba(255,170,90,.28),transparent 70%)}
+.atNeon{position:absolute;left:16px;right:16px;top:8px;height:2px;background:#ff9a3c;box-shadow:0 0 14px #ff8a2a}
+.atOutils{position:absolute;left:28px;right:28px;top:20px;display:flex;justify-content:space-between;opacity:.45}
+.atOutils i{width:5px;height:24px;background:#6a707c;border-radius:2px}
+.atSol{position:absolute;left:0;right:0;bottom:0;height:16%;background:linear-gradient(#2a2c32,#16171b)}
+.atPont{position:absolute;left:50%;bottom:38%;transform:translateX(-50%);width:min(300px,80%);height:7px;background:#e0c020;border-radius:2px;box-shadow:0 0 0 2px #8a7410 inset}
+.atPont i{position:absolute;top:7px;width:9px;height:400px;background:#c8a818}
+.atPont i:first-child{left:16%}.atPont i:last-child{right:16%}
+.atVoit{position:absolute;left:50%;bottom:calc(38% + 7px);transform:translateX(-50%);image-rendering:pixelated}
+.atGlow{position:absolute;left:50%;bottom:calc(38% - 4px);transform:translateX(-50%);width:min(240px,62%);height:16px;border-radius:50%;filter:blur(10px);opacity:.8}
+.atFl{top:40%!important}
+.atNom{position:absolute;left:0;right:0;bottom:3%;text-align:center}
+.atNom b{display:block;font:800 15px -apple-system,sans-serif}
+.atNom small{font:700 9px ui-monospace,monospace;letter-spacing:2px;color:rgba(255,255,255,.5)}
+.atPan{flex:none;margin:0 -16px;background:#16171c;border-radius:22px 22px 0 0;padding:14px 16px 0;box-shadow:0 -10px 30px rgba(0,0,0,.4)}
+.atCats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.atCat{border:1px solid transparent;background:rgba(255,255,255,.05);border-radius:14px;padding:clamp(6px,1.1vh,10px) 0 clamp(5px,1vh,8px);text-align:center;font:700 11px -apple-system,sans-serif;color:rgba(255,255,255,.65)}
+.atCat svg{display:block;margin:0 auto 3px;width:21px;height:21px}
+.atCat.on{border-color:#ff9a3c;background:rgba(255,154,60,.12);color:#ffb070}
+.atT{margin:clamp(10px,1.8vh,16px) 2px 8px;font:700 10px ui-monospace,monospace;letter-spacing:2.4px;color:rgba(255,255,255,.45)}
+.atChoix{display:flex;gap:9px;overflow-x:auto;overflow-y:hidden;padding:4px 2px 6px;scrollbar-width:none;touch-action:pan-x}
+.atChoix::-webkit-scrollbar{display:none}
+.atRond{flex:none;width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,.15);font:700 10px sans-serif;color:rgba(255,255,255,.6)}
+.atRond.on{box-shadow:0 0 0 3px #16171c,0 0 0 5px #ff9a3c}
+.atPil{flex:none;height:40px;padding:0 15px;border-radius:20px;border:0;background:rgba(255,255,255,.07);color:#fff;font:700 13px -apple-system,sans-serif}
+.atPil.on{background:#ff9a3c;color:#1a0e04}
+.atDelta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:clamp(8px,1.4vh,12px)}
+.atDelta div{background:rgba(255,255,255,.04);border-radius:12px;padding:8px 10px}
+.atDelta small{font:700 9px ui-monospace,monospace;letter-spacing:1.5px;color:rgba(255,255,255,.45)}
+.atDelta b{display:block;font:800 17px -apple-system,sans-serif;margin-top:2px}
+.atDelta em{font-style:normal;font-size:12px;margin-left:4px}.atDelta em.up{color:#5cff8a}.atDelta em.dn{color:#ff6a5a}
+.atBas{display:grid;grid-template-columns:52px 1fr;gap:10px;margin-top:clamp(10px,1.8vh,16px)}
+.atRaz{height:clamp(48px,6.5vh,56px);border-radius:16px;border:0;background:rgba(255,255,255,.08);color:#fff;font-size:20px}
+.atGo{height:clamp(48px,6.5vh,56px);border-radius:16px;border:0;background:linear-gradient(180deg,#ffa24a,#e46a12);box-shadow:0 4px 0 #8a3a06;color:#1a0e04;font:800 16px -apple-system,sans-serif}
+.atGo:active{transform:translateY(2px);box-shadow:0 2px 0 #8a3a06}`;
   document.head.appendChild(st);}
   $('page2Fond').className='';
   $('page2Fond').innerHTML=
@@ -354,6 +394,7 @@ async function ouvrirConcessionTokyo(ongletDepart){
   const NAV=[['Showroom',IC.sh,0],['Garage',IC.ga,1],['Records',IC.re,3]];
   /* L'ATELIER DE TUNING a sa propre porte : on y entre droit dans l'atelier, sans les onglets du concessionnaire */
   const ATELIER=(ongletDepart===2);
+  if(ATELIER){$('ccRacine').classList.add('atelierR');try{const so=document.createElement('span');so.textContent=enEuros(e.euros||0);so.style.cssText='margin-left:auto;margin-right:8px;font:600 12px ui-monospace,monospace;background:rgba(255,154,60,.14);color:#ffb070;border:1px solid rgba(255,154,60,.35);padding:7px 10px;border-radius:10px;white-space:nowrap';$('ccHaut').insertBefore(so,$('ccX'));}catch(x){}}
   const nav=()=>{
     if(ATELIER){$('ccNav').style.display='none';return;}
     $('ccNav').innerHTML=NAV.map(([t,i,k])=>'<button data-nav="'+k+'" class="'+(k===onglet?'on':'')+'">'+i+t+'</button>').join('');
@@ -459,68 +500,84 @@ async function ouvrirConcessionTokyo(ongletDepart){
         v.nom=n.trim().slice(0,24);try{sauver();}catch(x){}rendre();};
     }
   };
-  /* ---------- LE TUNING ---------- */
-  let selT=null, sect=0;
+  /* ---------- LE TUNING : LE PONT ÉLÉVATEUR ----------
+     La voiture sur le pont, au fond de l'atelier en tôle ; en bas, huit tuiles
+     (une par partie du réglage), leurs choix, et ce que ça change en chiffres.
+     Tout tient dans l'écran : rien ne défile, sauf la rangée des choix. */
+  let selT=null, cat=0;
+  const CATS=[
+    {n:'Peinture',ic:'<path d="M4 20l6-6M14 4l6 6-8 8-6-6z"/>'},
+    {n:'Aileron',ic:'<path d="M3 8h18M6 8v8M18 8v8M4 16h16"/>'},
+    {n:'Déco',ic:'<path d="M9 4v16M15 4v16"/>'},
+    {n:'Néons',ic:'<path d="M3 18h18"/><path d="M6 14c3 2 9 2 12 0"/><path d="M8 10h8"/>'},
+    {n:'Vitres',ic:'<path d="M4 15l3-6h10l3 6z"/>'},
+    {n:'Moteur',ic:'<rect x="4" y="8" width="13" height="10" rx="1"/><path d="M17 11h3v4h-3M8 8V5h5v3"/>'},
+    {n:'Turbo',ic:'<circle cx="12" cy="12" r="7"/><path d="M12 5v4M12 15v4M5 12h4M15 12h4"/>'},
+    {n:'Pneus',ic:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>'}];
   const tuning=()=>{
-    $('ccSur').textContent='東京 · ATELIER';$('ccTitre').textContent='Tuning';
+    $('ccSur').textContent='チューン · ATELIER';$('ccTitre').textContent='Tuning';
+    $('ccDefile').classList.add('fixe','atelier');
     const G=garageDuJoueur();
-    if(!selT)selT=G.length?{garage:G[0]}:(vehicules[0]?{modele:vehicules[0].id}:null);
-    if(!selT){$('ccCorps').innerHTML='<p style="color:#ff8ac8">Le catalogue ne répond pas.</p>';return;}
-    const m=selT.garage?modele(selT.garage.modele):modele(selT.modele);
-    const t=selT.garage?tuningDe(m||{},selT.garage):tuningDe(m,null);
-    const pf=perfDuModele(m&&m.marque,t), base=perfDuTuning({});
-    const puce=(on,txt,data)=>'<button '+data+' style="flex:none;min-height:40px;padding:0 14px;border-radius:20px;border:0;font:600 13px sans-serif;background:'+(on?'#ff4fb0':'rgba(255,255,255,.08)')+';color:#fff'+'">'+txt+'</button>';
-    const pastille=(on,col,data,txt)=>'<button '+data+' aria-label="'+(txt||col)+'" style="flex:none;width:40px;height:40px;border-radius:50%;border:'+(on?'3px solid #ff4fb0':'2px solid rgba(255,255,255,.2)')+';background:'+(col||'#fff')+';font:700 10px sans-serif;color:rgba(255,255,255,.6);box-shadow:'+(on?'0 0 0 2px #fff inset':'none')+'">'+(col?'':(txt||'∅'))+'</button>';
-    const ligne=(titre,contenu)=>'<div style="margin-top:14px"><small style="display:block;font:700 11px sans-serif;letter-spacing:2px;color:rgba(255,255,255,.5);margin-bottom:8px">'+titre+'</small><div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none">'+contenu+'</div></div>';
-    const barre=(titre,v,max)=>'<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font:600 12px sans-serif"><span>'+titre+'</span><span style="color:rgba(255,255,255,.5)">'+Math.round(v)+' / '+max+'</span></div><div style="height:8px;border-radius:4px;background:rgba(255,255,255,.08);margin-top:4px;overflow:hidden"><div style="height:100%;width:'+Math.min(100,v/max*100)+'%;background:linear-gradient(90deg,#ff4fb0,#7fe8ff);border-radius:4px"></div></div></div>';
-    /* le choix de la voiture : les miennes d'abord, puis celles du showroom (à l'essai) */
-    let h='<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none">'+
-      G.map((v,i)=>puce(selT.garage===v,esc((v.nom||nom(modele(v.modele))).slice(0,18)),'data-selg="'+i+'"')).join('')+
-      vehicules.map(v=>puce(!selT.garage&&selT.modele===v.id,esc(nom(v))+(G.length?' · essai':''),'data-selm="'+esc(v.id)+'"')).join('')+'</div>';
-    /* l'aperçu : profil repeint, vue de dessus, néon */
-    h+='<div style="border-radius:24px;background:linear-gradient(#2a1840,#120a20);padding:14px 10px 12px;position:relative;overflow:hidden">'+
-      (t.neon?'<div style="position:absolute;left:8%;right:8%;bottom:26px;height:26px;border-radius:50%;background:'+t.neon+';filter:blur(12px);opacity:.8"></div>':'')+
-      '<canvas id="ccProfil" style="display:block;width:100%;height:auto;image-rendering:pixelated;position:relative"></canvas>'+
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;position:relative"><small style="font:700 11px sans-serif;color:rgba(255,255,255,.5)">'+esc(nom(m))+(selT.garage?' · MA VOITURE':' · À L’ESSAI')+'</small><canvas id="ccDessus" width="68" height="32" style="width:102px;height:48px;image-rendering:pixelated"></canvas></div></div>';
-    /* les trois ateliers */
-    h+='<div style="display:flex;gap:6px;margin-top:14px;background:rgba(255,255,255,.08);border-radius:14px;padding:4px">'+
-      ['Carrosserie','Néons & vitres','Moteur'].map((x,i)=>'<button data-sect="'+i+'" style="flex:1;min-height:40px;border-radius:10px;border:0;font:700 13px sans-serif;background:'+(i===sect?'#ff4fb0':'transparent')+';color:#fff;box-shadow:none">'+x+'</button>').join('')+'</div>';
-    if(sect===0){
-      h+=ligne('PEINTURE',pastille(!t.couleur,'','data-k="couleur" data-v=""','Orig.')+TEINTES_TK.map(c=>pastille(t.couleur===c,c,'data-k="couleur" data-v="'+c+'"')).join(''));
-      h+=ligne('AILERON',[['origine','D’origine'],['aucun','Aucun'],['levre','Lèvre'],['haut','Haut'],['grand','GT géant']].map(([k,x])=>puce((t.aileron||'origine')===k,x,'data-k="aileron" data-v="'+k+'"')).join(''));
-      h+=ligne('TOIT',[['origine','Caisse'],['noir','Noir'],['carbone','Carbone']].map(([k,x])=>puce((t.toit||'origine')===k,x,'data-k="toit" data-v="'+k+'"')).join(''));
-      h+=ligne('BANDES DE COURSE',pastille(!t.bandes,'','data-k="bandes" data-v=""','Non')+['#f4f4f6','#0b0b0f','#ffd21f','#ff4fb0','#1a5fd0','#d01426'].map(c=>pastille(t.bandes===c,c,'data-k="bandes" data-v="'+c+'"')).join(''));
-    }else if(sect===1){
-      h+=ligne('NÉON SOUS CAISSE',pastille(!t.neon,'','data-k="neon" data-v=""','Non')+NEONS_TK.map(c=>pastille(t.neon===c,c,'data-k="neon" data-v="'+c+'"')).join(''));
-      h+=ligne('VITRES TEINTÉES',[['0','Claires'],['1','Légères'],['2','Foncées'],['3','Limo']].map(([k,x])=>puce(String(t.vitres||0)===k,x,'data-k="vitres" data-v="'+k+'" data-n="1"')).join(''));
-    }else{
-      h+=ligne('MOTEUR',[['0','Origine'],['1','Stage 1'],['2','Stage 2'],['3','Stage 3']].map(([k,x])=>puce(String(t.moteur||0)===k,x,'data-k="moteur" data-v="'+k+'" data-n="1"')).join(''));
-      h+=ligne('TURBO',[['0','Aucun'],['1','Simple'],['2','Gros turbo']].map(([k,x])=>puce(String(t.turbo||0)===k,x,'data-k="turbo" data-v="'+k+'" data-n="1"')).join(''));
-      h+=ligne('PNEUS',[['route','Route'],['sport','Sport'],['drift','Drift']].map(([k,x])=>puce((t.pneus||'route')===k,x,'data-k="pneus" data-v="'+k+'"')).join(''));
-      h+='<div style="margin-top:12px;background:rgba(255,255,255,.05);border-radius:16px;padding:4px 12px 12px">'+
-        barre('Accélération',pf.acc*60,120)+barre('Vitesse max',pf.vmax/3.4,150)+barre('Adhérence',pf.grip*8,100)+barre('Glisse en drift',(1.5-pf.drift)*80,100)+'</div>';
-    }
-    h+='<div style="display:flex;gap:8px;margin-top:16px"><button id="ccRaz" style="flex:1;min-height:52px;border-radius:14px;border:0;background:rgba(255,255,255,.08);font:700 14px sans-serif;color:#fff">Tout d’origine</button>'+
-      '<button id="ccEssaiT" style="flex:1.6;min-height:52px;border-radius:14px;border:0;background:#ff4fb0;color:#fff;font:800 15px sans-serif">'+(selT.garage?'Prendre le volant':'Essayer ce tuning')+'</button></div>'+
-      '<p style="margin-top:10px;font-size:12px;color:rgba(255,255,255,.5);text-align:center">Gratuit pour l’instant · chaque réglage est enregistré tout de suite.</p>';
-    $('ccCorps').innerHTML=h;
-    /* les aperçus */
-    const pd=$('ccDessus').getContext('2d');pd.imageSmoothingEnabled=false;pd.drawImage(peindreVoitureDessus(m?m.marque:'Toyota',t),0,0);
-    chargerImgTK(sprite(m)).then(img=>{const cv=$('ccProfil');if(!img||!cv)return;const r=repeindreProfil(img,t);cv.width=r.width;cv.height=r.height;cv.getContext('2d').drawImage(r,0,0);});
-    /* les gestes */
-    $('ccCorps').querySelectorAll('button[data-selg]').forEach(b=>{b.onclick=()=>{selT={garage:G[+b.dataset.selg]};rendre();};});
-    $('ccCorps').querySelectorAll('button[data-selm]').forEach(b=>{b.onclick=()=>{selT={modele:b.dataset.selm};rendre();};});
-    $('ccCorps').querySelectorAll('button[data-sect]').forEach(b=>{b.onclick=()=>{sect=+b.dataset.sect;rendre();};});
+    const liste=G.map(v=>({garage:v})).concat(vehicules.map(v=>({modele:v.id})));
+    if(!liste.length){$('ccCorps').innerHTML='<p style="color:#ff8ac8;margin-top:20px">Le catalogue ne répond pas.</p>';return;}
+    if(selT==null||selT>=liste.length)selT=0;
+    const L=liste[selT];
+    const m=L.garage?modele(L.garage.modele):modele(L.modele);
+    const t=L.garage?tuningDe(m||{},L.garage):tuningDe(m,null);
+    const marque=m?m.marque:'Toyota';
+    const N=notesDe(marque,t), N0=notesDe(marque,{});
+    const rond=(on,col,attr,txt)=>'<button class="atRond'+(on?' on':'')+'" '+attr+' style="background:'+(col||'transparent')+'" aria-label="'+(txt||col)+'">'+(col?'':(txt||'∅'))+'</button>';
+    const pil=(on,txt,attr)=>'<button class="atPil'+(on?' on':'')+'" '+attr+'>'+txt+'</button>';
+    let choix='', titre='';
+    if(cat===0){titre='PEINTURE';choix=rond(!t.couleur,'','data-k="couleur" data-v=""','Orig.')+TEINTES_TK.map(c=>rond(t.couleur===c,c,'data-k="couleur" data-v="'+c+'"')).join('');}
+    else if(cat===1){titre='AILERON';choix=[['origine','D’origine'],['aucun','Aucun'],['levre','Lèvre'],['haut','Haut'],['grand','GT géant']].map(([k,x])=>pil((t.aileron||'origine')===k,x,'data-k="aileron" data-v="'+k+'"')).join('');}
+    else if(cat===2){titre='TOIT · BANDES';choix=[['origine','Toit caisse'],['noir','Toit noir'],['carbone','Carbone']].map(([k,x])=>pil((t.toit||'origine')===k,x,'data-k="toit" data-v="'+k+'"')).join('')+
+      rond(!t.bandes,'','data-k="bandes" data-v=""','Sans')+['#f4f4f6','#0b0b0f','#ffd21f','#ff4fb0','#1a5fd0','#d01426'].map(c=>rond(t.bandes===c,c,'data-k="bandes" data-v="'+c+'"')).join('');}
+    else if(cat===3){titre='NÉON SOUS CAISSE';choix=rond(!t.neon,'','data-k="neon" data-v=""','Non')+NEONS_TK.map(c=>rond(t.neon===c,c,'data-k="neon" data-v="'+c+'"')).join('');}
+    else if(cat===4){titre='VITRES TEINTÉES';choix=[['0','Claires'],['1','Légères'],['2','Foncées'],['3','Limo']].map(([k,x])=>pil(String(t.vitres||0)===k,x,'data-k="vitres" data-v="'+k+'" data-n="1"')).join('');}
+    else if(cat===5){titre='MOTEUR';choix=[['0','Origine'],['1','Stage 1'],['2','Stage 2'],['3','Stage 3']].map(([k,x])=>pil(String(t.moteur||0)===k,x,'data-k="moteur" data-v="'+k+'" data-n="1"')).join('');}
+    else if(cat===6){titre='TURBO';choix=[['0','Aucun'],['1','Simple'],['2','Gros turbo']].map(([k,x])=>pil(String(t.turbo||0)===k,x,'data-k="turbo" data-v="'+k+'" data-n="1"')).join('');}
+    else {titre='PNEUS';choix=[['route','Route'],['sport','Sport'],['drift','Drift']].map(([k,x])=>pil((t.pneus||'route')===k,x,'data-k="pneus" data-v="'+k+'"')).join('');}
+    const d=(a,b)=>{const x=Math.round((a-b)*10)/10;return x?'<em class="'+(x>0?'up':'dn')+'">'+(x>0?'+':'')+x.toFixed(1).replace('.',',')+'</em>':'';};
+    const f=x=>x.toFixed(1).replace('.',',');
+    $('ccCorps').innerHTML=
+      '<div class="atScene" id="atScene"><div class="atMur"></div><div class="atNeon"></div><div class="atOutils">'+'<i></i>'.repeat(9)+'</div>'+
+        (t.neon?'<div class="atGlow" style="background:'+t.neon+'"></div>':'')+
+        '<canvas class="atVoit" id="atVoit"></canvas><div class="atPont"><i></i><i></i></div><div class="atSol"></div>'+
+        '<button class="ccFl g atFl" id="atPrec" aria-label="Voiture précédente">‹</button><button class="ccFl d atFl" id="atSuiv" aria-label="Voiture suivante">›</button>'+
+        '<div class="atNom"><b>'+esc(L.garage&&L.garage.nom?L.garage.nom:nom(m))+'</b><small>'+(L.garage?'MA VOITURE':'À L’ESSAI')+' · '+(selT+1)+' / '+liste.length+'</small></div></div>'+
+      '<div class="atPan"><div class="atCats">'+CATS.map((c,i)=>'<button class="atCat'+(i===cat?' on':'')+'" data-cat="'+i+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+c.ic+'</svg>'+c.n+'</button>').join('')+'</div>'+
+        '<h4 class="atT">'+titre+'</h4><div class="atChoix">'+choix+'</div>'+
+        '<div class="atDelta"><div><small>VITESSE</small><b>'+f(N.vit)+d(N.vit,N0.vit)+'</b></div><div><small>ACCÉL.</small><b>'+f(N.acc)+d(N.acc,N0.acc)+'</b></div><div><small>DRIFT</small><b>'+f(N.drift)+d(N.drift,N0.drift)+'</b></div></div>'+
+        '<div class="atBas"><button class="atRaz" id="ccRaz" aria-label="Tout d’origine">↺</button><button class="atGo" id="ccEssaiT">Essayer sur le circuit</button></div></div>';
+    /* la voiture repeinte, à l'échelle entière, posée sur le pont */
+    const caler=()=>{const sc=$('atScene'), c=$('atVoit');if(!sc||!c||!c.width)return;
+      const dpr=window.devicePixelRatio||1, aw=sc.clientWidth*0.78, ah=Math.min(sc.clientHeight*0.42,150);
+      const k=Math.max(1,Math.floor(Math.min(aw*dpr/c.width,ah*dpr/c.height)));
+      c.style.width=(c.width*k/dpr)+'px';c.style.height=(c.height*k/dpr)+'px';
+      /* les roues sur le pont : on retire les lignes vides sous le dessin */
+      c.style.bottom='calc(38% + 7px - '+((c.dataset.vide|0)*k/dpr)+'px)';};
+    chargerImgTK(sprite(m)).then(img=>{const cv=$('atVoit');if(!img||!cv)return;const r=repeindreProfil(img,t);cv.width=r.width;cv.height=r.height;const g2=cv.getContext('2d');g2.drawImage(r,0,0);
+      try{const D=g2.getImageData(0,0,cv.width,cv.height).data;let v=0;for(let y=cv.height-1;y>=0;y--){let plein=false;for(let x=0;x<cv.width;x++)if(D[(y*cv.width+x)*4+3]>40){plein=true;break;}if(plein)break;v++;}cv.dataset.vide=v;}catch(x){}
+      caler();});
+    caler2=caler;
+    const aller=dd=>{selT=(selT+dd+liste.length)%liste.length;rendre();};
+    $('atPrec').onclick=()=>aller(-1);$('atSuiv').onclick=()=>aller(1);
+    let x0=null;const sc=$('atScene');
+    sc.addEventListener('touchstart',ev=>{x0=ev.touches[0].clientX;},{passive:true});
+    sc.addEventListener('touchend',ev=>{if(x0==null)return;const dx=ev.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>40)aller(dx<0?1:-1);},{passive:true});
+    $('ccCorps').querySelectorAll('button[data-cat]').forEach(b=>{b.onclick=()=>{cat=+b.dataset.cat;rendre();};});
     $('ccCorps').querySelectorAll('button[data-k]').forEach(b=>{b.onclick=()=>{
       const k=b.dataset.k, v=b.dataset.v;
       if(v===''||v==='origine')delete t[k];else t[k]=b.dataset.n?+v:v;
       if(t[k]===0)delete t[k];
       try{sauver();}catch(x){}
-      const y=$('ccDefile').scrollTop;rendre();$('ccDefile').scrollTop=y;};});
+      try{navigator.vibrate&&navigator.vibrate(8);}catch(x){}
+      const ch=document.querySelector('.atChoix'), sx=ch?ch.scrollLeft:0;rendre();const ch2=document.querySelector('.atChoix');if(ch2)ch2.scrollLeft=sx;};});
     $('ccRaz').onclick=()=>{for(const k of Object.keys(t))delete t[k];try{sauver();}catch(x){}rendre();};
-    $('ccEssaiT').onclick=()=>{fermerConcessionTokyo();debutEssai(m||{marque:'Toyota'},selT.garage||null,t);};
+    $('ccEssaiT').onclick=()=>{fermerConcessionTokyo();debutEssai(m||{marque:'Toyota'},L.garage||null,t);};
   };
-  const rendre=()=>{nav();$('ccDefile').classList.toggle('fixe',onglet===0);(onglet===3?records:onglet===2?tuning:onglet===1?garage:showroom)();$('ccDefile').scrollTop=0;};
+  const rendre=()=>{nav();$('ccDefile').classList.remove('atelier');$('ccDefile').classList.toggle('fixe',onglet===0);(onglet===3?records:onglet===2?tuning:onglet===1?garage:showroom)();$('ccDefile').scrollTop=0;};
   rendre();
 }
 
