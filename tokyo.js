@@ -566,7 +566,7 @@ function debutEssai(v,aMoi){
   joueur.x=ESSAI.x;joueur.y=ESSAI.y;
   ESSAI.recul=false;
   demarrerMoteur();
-  /* LA CAMÉRA RECULE quand on prend le volant : on voit loin devant */
+  /* la caméra garde son échelle : à Tokyo, rien ne zoome tout seul */
   try{taille();videCache();}catch(x){}
 }
 function finEssai(){
