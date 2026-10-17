@@ -998,52 +998,159 @@ function tuningDe(v,aMoi){
   if(!e.configs||typeof e.configs!=='object')e.configs={};
   return e.configs[v.id]||(e.configs[v.id]={});
 }
-/* ================= LE SON DU MOTEUR =================
-   Synthétisé, pas d'enregistrement : deux oscillateurs (dent de scie et carré
-   à l'octave du dessous) saturés puis filtrés. Le régime suit la vitesse à
-   travers une boîte à six rapports : il grimpe, retombe au passage du rapport,
-   regrimpe — le « vroum » qui monte. Le filtre s'ouvre sous l'accélérateur.
-   Les pneus crissent (bruit filtré) quand l'arrière glisse. Respecte le
-   réglage « Les sons » du jeu. */
-const SON_TK={ctx:null};
+/* ================= LE SON DES VOITURES =================
+   Toujours synthétisé (aucun fichier à charger), mais construit comme un vrai
+   moteur : on fabrique UN CYCLE MOTEUR (deux tours de vilebrequin) où chaque
+   cylindre envoie son coup d'échappement — six coups pour un 6 cylindres en
+   ligne, dix pour le V10 — avec de petites irrégularités, sur six cycles qui
+   bouclent. Ce cycle est rejoué à la vitesse du régime : le grondement suit
+   les tours/minute avec ses vraies harmoniques. Puis :
+   — l'ÉCHAPPEMENT : deux résonances fixes propres à chaque voiture (le grave
+     du pot, le rauque ou le hurlement), une saturation qui monte sous les gaz,
+     un filtre qui s'ouvre avec la charge ;
+   — l'ADMISSION et la mécanique : le même cycle une octave plus haut, dans
+     l'aigu, qui ressort à haut régime ;
+   — le TURBO : sifflement qui monte avec la pression, souffle, et la soupape
+     de décharge (« pschhh ») quand on lâche les gaz ;
+   — les PNEUS : crissement (bruit filtré, légèrement modulé) selon la glisse,
+     patinage au démarrage ;
+   — le VENT et la ROUTE avec la vitesse, le grondement des VIBREURS ;
+   — les PÉTARADES au lever de pied (plus fortes avec l'échappement du tuning),
+     le claquement au passage des rapports, le rupteur en haut du compte-tours,
+     le souffle de la NITRO, le choc des collisions, les bips du départ.
+   Un compresseur en sortie évite la saturation. Respecte le réglage « Les sons ». */
+const PROFILS_SON={
+  Toyota:     {cyl:6, ralenti:850,rouge:7000,f1:140,g1:9, f2:650, g2:5,q2:2,lp:1500,turbo:1,  jit:0.02,rauque:0.25},
+  BMW:        {cyl:6, ralenti:900,rouge:8000,f1:180,g1:8, f2:1100,g2:6,q2:3,lp:2200,turbo:0,  jit:0.03,rauque:0.45},
+  Lamborghini:{cyl:10,ralenti:950,rouge:8500,f1:220,g1:6, f2:1600,g2:8,q2:3,lp:3000,turbo:0,  jit:0.04,rauque:0.55},
+  Porsche:    {cyl:6, ralenti:950,rouge:9000,f1:200,g1:7, f2:2000,g2:9,q2:4,lp:3200,turbo:0,  jit:0.015,rauque:0.7},
+  Nissan:     {cyl:6, ralenti:800,rouge:7100,f1:120,g1:8, f2:500, g2:4,q2:2,lp:1200,turbo:1.3,jit:0.02,rauque:0.15},
+  Ferrari:    {cyl:8, ralenti:900,rouge:7800,f1:160,g1:10,f2:900, g2:7,q2:2,lp:1900,turbo:0.9,jit:0.05,rauque:0.5}};
+const SON_TK={ctx:null,rpm:900};
+const R0_SON=3000;
+function cycleMoteur(C,P){
+  const sr=C.sampleRate, cyc=Math.round(sr*120/R0_SON), nC=6, b=C.createBuffer(1,cyc*nC,sr), d=b.getChannelData(0);
+  let graine=P.cyl*7.3+P.f1;const rnd=()=>{graine=(graine*9301+49297)%233280;return graine/233280;};
+  for(let c=0;c<nC;c++)for(let k=0;k<P.cyl;k++){
+    const t0=Math.round(c*cyc+(k/P.cyl+(rnd()-0.5)*P.jit)*cyc), a=0.8+0.4*rnd();
+    const tau=sr*0.0032, fp=95+rnd()*20;
+    for(let i=0;i<cyc*0.6;i++){const j=(t0+i)%d.length, t=i/sr;
+      d[j]+=a*(Math.exp(-i/tau)*Math.sin(2*Math.PI*fp*t)+P.rauque*Math.exp(-i/(sr*0.0005))*(rnd()*2-1));}}
+  let m=0;for(let i=0;i<d.length;i++)m=Math.max(m,Math.abs(d[i]));for(let i=0;i<d.length;i++)d[i]/=m||1;
+  return b;
+}
+function bruitBlanc(C,sec){const b=C.createBuffer(1,Math.round(C.sampleRate*sec),C.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;return b;}
+/* le graphe sonore d'une voiture, dans n'importe quel contexte audio (aussi hors ligne, pour les essais) */
+function construireSon(C,marque,tuning){
+  const P=Object.assign({},PROFILS_SON[marque]||PROFILS_SON.Toyota);
+  tuning=tuning||{};if(tuning.turbo)P.turbo=Math.max(P.turbo,0.7+0.3*tuning.turbo);if(tuning.flammes)P.petarade=1;
+  const sortie=C.createDynamicsCompressor();sortie.threshold.value=-14;sortie.ratio.value=4;
+  const maitre=C.createGain();maitre.gain.value=0.75;sortie.connect(maitre);maitre.connect(C.destination);
+  const cyc=cycleMoteur(C,P);
+  /* échappement */
+  const ech=C.createBufferSource();ech.buffer=cyc;ech.loop=true;
+  const sat=C.createWaveShaper();{const cu=new Float32Array(2048);for(let i=0;i<2048;i++){const x=i/1023.5-1;cu[i]=Math.tanh(x*2.2);}sat.curve=cu;}
+  const pre=C.createGain();pre.gain.value=0.8;
+  const r1=C.createBiquadFilter();r1.type='peaking';r1.frequency.value=P.f1;r1.gain.value=P.g1;r1.Q.value=1.2;
+  const r2=C.createBiquadFilter();r2.type='peaking';r2.frequency.value=P.f2;r2.gain.value=P.g2;r2.Q.value=P.q2;
+  const lp=C.createBiquadFilter();lp.type='lowpass';lp.frequency.value=P.lp;lp.Q.value=0.8;
+  const vEch=C.createGain();vEch.gain.value=0;
+  ech.connect(pre);pre.connect(sat);sat.connect(r1);r1.connect(r2);r2.connect(lp);lp.connect(vEch);vEch.connect(sortie);
+  /* admission et mécanique : le cycle une octave plus haut, dans l'aigu */
+  const adm=C.createBufferSource();adm.buffer=cyc;adm.loop=true;
+  const hp=C.createBiquadFilter();hp.type='bandpass';hp.frequency.value=2600;hp.Q.value=1.4;
+  const vAdm=C.createGain();vAdm.gain.value=0;adm.connect(hp);hp.connect(vAdm);vAdm.connect(sortie);
+  /* bruits : turbo, pneus, vent, nitro */
+  const nb=bruitBlanc(C,2);
+  const src=()=>{const s=C.createBufferSource();s.buffer=nb;s.loop=true;s.loopStart=Math.random();return s;};
+  const tSif=C.createOscillator();tSif.type='sine';tSif.frequency.value=2500;const vSif=C.createGain();vSif.gain.value=0;tSif.connect(vSif);vSif.connect(sortie);
+  const tSou=src(), tSouF=C.createBiquadFilter();tSouF.type='bandpass';tSouF.frequency.value=3500;tSouF.Q.value=0.8;const vSou=C.createGain();vSou.gain.value=0;tSou.connect(tSouF);tSouF.connect(vSou);vSou.connect(sortie);
+  const pn=src(), pnF=C.createBiquadFilter();pnF.type='bandpass';pnF.frequency.value=2100;pnF.Q.value=7;const vPn=C.createGain();vPn.gain.value=0;pn.connect(pnF);pnF.connect(vPn);vPn.connect(sortie);
+  const pnT=C.createOscillator();pnT.type='triangle';pnT.frequency.value=1150;const vPnT=C.createGain();vPnT.gain.value=0;pnT.connect(vPnT);vPnT.connect(sortie);
+  const vt=src(), vtF=C.createBiquadFilter();vtF.type='lowpass';vtF.frequency.value=500;const vVt=C.createGain();vVt.gain.value=0;vt.connect(vtF);vtF.connect(vVt);vVt.connect(sortie);
+  const vib=C.createOscillator();vib.type='square';vib.frequency.value=32;const vVib=C.createGain();vVib.gain.value=0;const vibF=C.createBiquadFilter();vibF.type='lowpass';vibF.frequency.value=180;vib.connect(vibF);vibF.connect(vVib);vVib.connect(sortie);
+  const ni=src(), niF=C.createBiquadFilter();niF.type='highpass';niF.frequency.value=4000;const vNi=C.createGain();vNi.gain.value=0;ni.connect(niF);niF.connect(vNi);vNi.connect(sortie);
+  for(const n of [ech,adm,tSif,tSou,pn,pnT,vt,vib,ni])n.start();
+  return {C,P,sortie,maitre,ech,adm,pre,lp,vEch,vAdm,tSif,vSif,vSou,pnF,vPn,pnT,vPnT,vVt,vVib,vNi,nb,rpm:P.ralenti,boost:0,gazAvant:false,rapAvant:0,coupT:0};
+}
+/* une mise à jour : l'état du moteur → les paramètres audio, à l'instant t (secondes du contexte) */
+function regleSon(S,t,dt,e){
+  const P=S.P;
+  /* le régime : chaque rapport l'emmène du bas au rupteur ; patinage = régime qui s'envole */
+  const fr=Math.max(0,e.vit)/340, rap=Math.max(0,Math.min(5,e.rapport||0));
+  const lo=RAPPORTS[rap]||0, hi=RAPPORTS[rap+1]||1.05, p=Math.max(0,Math.min(1,(fr-lo)/(hi-lo)));
+  let cible=e.vit<4?(e.gaz?P.ralenti+(P.rouge*0.72-P.ralenti)*Math.min(1,(S.revT=(S.revT||0)+dt)*1.5):(S.revT=0,P.ralenti))
+    :(rap===0?P.ralenti+(P.rouge-P.ralenti)*p:P.rouge*(0.55+0.45*p));
+  if(e.patine)cible=Math.min(P.rouge,cible*1.25);
+  if(!e.gaz&&e.vit>=4)cible=Math.max(P.ralenti*1.2,cible*0.92);
+  if(rap!==S.rapAvant){if(rap>S.rapAvant&&e.gaz){S.coupT=0.09;passage(S,t);}S.rapAvant=rap;}
+  S.rpm+=(cible-S.rpm)*Math.min(1,(e.gaz?10:6)*dt);
+  /* le rupteur : en haut, le régime rebondit */
+  let rpm=S.rpm;if(e.gaz&&rpm>P.rouge*0.985)rpm=P.rouge*(0.965+0.035*Math.abs(Math.sin(t*38)));
+  const charge=e.gaz?(S.coupT>0?0.25:1):0.18;if(S.coupT>0)S.coupT-=dt;
+  const rate=rpm/R0_SON;
+  S.ech.playbackRate.setTargetAtTime(rate,t,0.02);S.adm.playbackRate.setTargetAtTime(rate*2,t,0.02);
+  S.pre.gain.setTargetAtTime(0.5+charge*1.1,t,0.04);
+  S.lp.frequency.setTargetAtTime(P.lp*(0.45+0.55*charge)+rpm*0.25,t,0.05);
+  const nr=rpm/P.rouge;
+  S.vEch.gain.setTargetAtTime((0.22+0.33*charge)*(0.55+0.45*nr),t,0.05);
+  S.vAdm.gain.setTargetAtTime(0.05*charge*nr*nr,t,0.05);
+  /* le turbo : la pression monte sous les gaz à régime moyen, retombe sinon ; décharge au lever de pied */
+  if(P.turbo){
+    const vise=e.gaz?Math.min(1,Math.max(0,(nr-0.35)/0.45)):0;
+    S.boost+=(vise-S.boost)*Math.min(1,(e.gaz?1.6:5)*dt);
+    S.tSif.frequency.setTargetAtTime(1800+S.boost*5200,t,0.05);
+    S.vSif.gain.setTargetAtTime(0.022*P.turbo*S.boost,t,0.05);
+    S.vSou.gain.setTargetAtTime(0.05*P.turbo*S.boost*S.boost,t,0.05);
+    if(S.gazAvant&&!e.gaz&&S.boost>0.45)souffle(S,t,0.08*P.turbo*S.boost,0.45,'highpass',1800);
+  }
+  /* les pétarades au lever de pied à haut régime */
+  if(S.gazAvant&&!e.gaz&&nr>0.6&&e.vit>40){const n=P.petarade?6:2;for(let k=0;k<n;k++)if(Math.random()<0.8)souffle(S,t+0.05+Math.random()*0.45,(P.petarade?0.35:0.18)*(0.6+Math.random()*0.4),0.05+Math.random()*0.04,'lowpass',700+Math.random()*500);}
+  S.gazAvant=e.gaz;
+  /* les pneus : crissement selon la glisse, un peu de ton modulé */
+  const g=Math.max(0,Math.min(1,(e.glisse-35)/160))*(e.vit>20?1:0);
+  S.pnF.frequency.setTargetAtTime(1900+Math.sin(t*9)*250+g*300,t,0.03);
+  S.vPn.gain.setTargetAtTime(0.22*g,t,0.04);
+  S.pnT.frequency.setTargetAtTime(1050+Math.sin(t*13)*60+g*120,t,0.03);S.vPnT.gain.setTargetAtTime(0.012*g,t,0.05);
+  /* vent, route, vibreurs, nitro */
+  const vv=Math.min(1,e.vit/340);
+  S.vVt.gain.setTargetAtTime(0.10*vv*vv,t,0.1);
+  S.vVib.gain.setTargetAtTime(e.vibreur?0.12:0,t,0.02);
+  S.vNi.gain.setTargetAtTime(e.nitro?0.06:0,t,0.08);
+}
+/* un souffle bref : décharge du turbo, pétarade, choc */
+function souffle(S,t,vol,dur,type,f){try{const C=S.C, s=C.createBufferSource();s.buffer=S.nb;const fl=C.createBiquadFilter();fl.type=type;fl.frequency.value=f;
+  const gg=C.createGain();gg.gain.setValueAtTime(0,t);gg.gain.linearRampToValueAtTime(vol,t+0.005);gg.gain.exponentialRampToValueAtTime(0.0008,t+dur);
+  s.connect(fl);fl.connect(gg);gg.connect(S.sortie);s.start(t,Math.random()*1.5,dur+0.05);}catch(x){}}
+function passage(S,t){try{const C=S.C,o=C.createOscillator();o.type='sine';o.frequency.setValueAtTime(90,t);o.frequency.exponentialRampToValueAtTime(45,t+0.08);
+  const gg=C.createGain();gg.gain.setValueAtTime(0.18,t);gg.gain.exponentialRampToValueAtTime(0.001,t+0.1);o.connect(gg);gg.connect(S.sortie);o.start(t);o.stop(t+0.12);}catch(x){}}
+/* ---- l'interface du jeu ---- */
 function demarrerMoteur(){
   try{
     if(typeof REG!=='undefined'&&REG.sons===false)return;
     const C=new (window.AudioContext||window.webkitAudioContext)();
-    const sat=C.createWaveShaper();const cu=new Float32Array(1024);for(let i=0;i<1024;i++){const x=i/511.5-1;cu[i]=Math.tanh(x*2.4);}sat.curve=cu;
-    const o1=C.createOscillator();o1.type='sawtooth';
-    const o2=C.createOscillator();o2.type='square';
-    const g2=C.createGain();g2.gain.value=0.5;
-    const filtre=C.createBiquadFilter();filtre.type='lowpass';filtre.frequency.value=600;filtre.Q.value=4;
-    const vol=C.createGain();vol.gain.value=0;
-    o1.connect(sat);o2.connect(g2);g2.connect(sat);sat.connect(filtre);filtre.connect(vol);vol.connect(C.destination);
-    /* le crissement : un bruit blanc passé dans un passe-bande aigu */
-    const nb=C.createBuffer(1,C.sampleRate,C.sampleRate),nd=nb.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
-    const bruit=C.createBufferSource();bruit.buffer=nb;bruit.loop=true;
-    const bande=C.createBiquadFilter();bande.type='bandpass';bande.frequency.value=2400;bande.Q.value=6;
-    const crisse=C.createGain();crisse.gain.value=0;
-    bruit.connect(bande);bande.connect(crisse);crisse.connect(C.destination);
-    o1.start();o2.start();bruit.start();
-    Object.assign(SON_TK,{ctx:C,o1,o2,filtre,vol,crisse,rpm:900});
+    const E=ESSAI, S=construireSon(C,(E.modele||{}).marque,E.tuning);
+    Object.assign(SON_TK,S,{ctx:C});
+    S.maitre.gain.setValueAtTime(0,C.currentTime);S.maitre.gain.linearRampToValueAtTime(0.75,C.currentTime+0.4);
+    /* le démarreur : un petit « vrrr » avant le ralenti */
+    souffle(SON_TK,C.currentTime,0.15,0.35,'bandpass',300);
   }catch(x){SON_TK.ctx=null;}
 }
 function majMoteur(dt,vit,gaz,glisse,rapport){
-  const S=SON_TK;
-  /* six rapports sur la plage de vitesse : le régime monte dans chacun, puis retombe */
-  const fr=vit/340;let rap=rapport!=null?rapport:Math.min(5,Math.floor(vit/70));
-  const lo=RAPPORTS[rap]||0, hi=RAPPORTS[rap+1]||1.05, p=Math.max(0,Math.min(1,(fr-lo)/(hi-lo)));
-  let cible=vit<4?(gaz?2600:900):1500+p*5600;
-  if(!S.ctx){S.rpm=(S.rpm||900)+(cible-(S.rpm||900))*Math.min(1,8*dt);return;}
-  S.rpm+=(cible-S.rpm)*Math.min(1,(gaz?9:5)*dt);
-  const f=S.rpm/30, t=S.ctx.currentTime;
-  S.o1.frequency.setTargetAtTime(f,t,0.03);S.o2.frequency.setTargetAtTime(f/2,t,0.03);
-  S.filtre.frequency.setTargetAtTime(gaz?500+S.rpm*0.55:300+S.rpm*0.2,t,0.05);
-  S.vol.gain.setTargetAtTime(gaz?0.16:0.07,t,0.08);
-  S.crisse.gain.setTargetAtTime(Math.min(0.12,Math.max(0,(glisse-45)/900)),t,0.05);
+  const S=SON_TK;if(!S.ctx)return;
+  const E=ESSAI;
+  S.acc=(S.acc||0)+dt;if(S.acc<1/60&&dt<0.02)return;   /* une mise à jour par image suffit */
+  const d=S.acc;S.acc=0;
+  regleSon(S,S.ctx.currentTime,d,{vit,gaz,glisse,rapport,patine:E.patine,vibreur:E.vibreur,nitro:E.nitroT>0});
 }
-function pop(){const S=SON_TK;if(!S.ctx)return;try{const C=S.ctx,t0=C.currentTime;const n=C.createBufferSource(),b=C.createBuffer(1,C.sampleRate*0.12,C.sampleRate),d=b.getChannelData(0);
-  for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);n.buffer=b;const g=C.createGain();g.gain.value=0.5;n.connect(g);g.connect(C.destination);n.start(t0);}catch(x){}}
-function couperMoteur(){const S=SON_TK;if(!S.ctx)return;try{S.vol.gain.setTargetAtTime(0,S.ctx.currentTime,0.05);const C=S.ctx;setTimeout(()=>{try{C.close();}catch(x){}},300);}catch(x){}S.ctx=null;}
+function pop(){const S=SON_TK;if(!S.ctx)return;souffle(S,S.ctx.currentTime,0.3,0.07,'lowpass',900);}
+function sonChoc(force){const S=SON_TK;if(!S.ctx)return;const t=S.ctx.currentTime, v=Math.min(0.6,force/500);
+  souffle(S,t,v,0.18,'lowpass',400);try{const C=S.C,o=C.createOscillator();o.frequency.setValueAtTime(70,t);o.frequency.exponentialRampToValueAtTime(30,t+0.15);const gg=C.createGain();gg.gain.setValueAtTime(v,t);gg.gain.exponentialRampToValueAtTime(0.001,t+0.2);o.connect(gg);gg.connect(S.sortie);o.start(t);o.stop(t+0.22);}catch(x){}}
+function sonBip(go){const S=SON_TK;if(!S.ctx)return;try{const C=S.C,t=C.currentTime,o=C.createOscillator();o.type='square';o.frequency.value=go?1320:660;
+  const f=C.createBiquadFilter();f.type='lowpass';f.frequency.value=2500;const gg=C.createGain();gg.gain.setValueAtTime(0.09,t);gg.gain.setValueAtTime(0.09,t+(go?0.45:0.18));gg.gain.exponentialRampToValueAtTime(0.001,t+(go?0.6:0.25));
+  o.connect(f);f.connect(gg);gg.connect(S.sortie);o.start(t);o.stop(t+0.65);}catch(x){}}
+function sonTurboDrift(){const S=SON_TK;if(!S.ctx)return;souffle(S,S.ctx.currentTime,0.12,0.5,'bandpass',1400);}
+function couperMoteur(){const S=SON_TK;if(!S.ctx)return;try{const C=S.ctx;S.maitre.gain.setTargetAtTime(0,C.currentTime,0.06);setTimeout(()=>{try{C.close();}catch(x){}},400);}catch(x){}S.ctx=null;}
 
 /* =====================================================================
    LA CONDUITE, VERSION 3 — PHYSIQUE ARCADE, DRIFT, COURSE
@@ -1094,6 +1201,7 @@ function debutEssai(v,aMoi,reglages,mode){
   ZONE.phase='';if(E.mode==='drift')preparerZone();
   joueur.x=E.x;joueur.y=E.y;
   couperMoteur();demarrerMoteur();
+  if(E.mode!=='libre')sonBip(false);                  /* le « 3 » du départ */
   document.body.classList.add('tk-volant');
   try{window.TK_SANS_JOY=true;}catch(x){}
   try{lacher();}catch(x){}                        /* un joystick resté sous le doigt se lâche */
@@ -1185,7 +1293,7 @@ function pasPhysique(dt,c){
   let u=E.vx*Math.cos(E.ang)+E.vy*Math.sin(E.ang), v=-E.vx*Math.sin(E.ang)+E.vy*Math.cos(E.ang), r=E.lacet||0;
   /* 1. LA BOÎTE */
   const fr=Math.max(0,u)/S.vmax;let rap=0;for(let i=0;i<RAPPORTS.length;i++)if(fr>=RAPPORTS[i])rap=i;
-  if(rap!==E.rapport){if(rap>E.rapport&&c.g>0){E.coupure=0.1;if((E.tuning||{}).flammes||rap>=3)pop();}E.rapport=rap;}
+  if(rap!==E.rapport){if(rap>E.rapport&&c.g>0){E.coupure=0.1;if((E.tuning||{}).flammes)pop();}E.rapport=rap;}
   if(E.coupure>0)E.coupure-=dt;
   const couple=[1.3,1.12,1,0.92,0.85,0.8][rap]*(E.coupure>0?0.35:1);
   /* 2. LE DRIFT : le coup de frein à main à l'appui, puis l'arrière libéré */
@@ -1319,6 +1427,7 @@ function heurter(force,x,y){
   const E=ESSAI;
   for(let i=0;i<Math.min(14,4+force/25);i++)E.etinc.push({x,y,vx:(Math.random()-0.5)*170,vy:(Math.random()-0.5)*170,vie:0.35,c:'#ffd27a'});
   try{secouer(Math.min(0.5,force/600));}catch(x){}
+  try{sonChoc(force);}catch(x){}
   if(E.glisse||E.points>0){E.propre=false;E.points=0;E.combo=1;E.finCombo=0;E.charge=0;if(E.glisse){E.glisse=false;}popDrift('DRIFT PERDU','#ff6a5a');}
   try{navigator.vibrate&&navigator.vibrate(Math.min(60,10+force/8));}catch(x){}
 }
@@ -1328,7 +1437,7 @@ function finDeGlisse(){
   const E=ESSAI, niv=niveauCharge();
   E.glisse=false;E.dernierNiv=E.propre?niv:0;
   if(E.propre&&niv>0){E.boostT=BOOST_T[niv];E.boostK=BOOST_K[niv];E.points+=[0,80,200,420][niv]*E.combo;
-    popDrift(['','TURBO','SUPER TURBO','ULTRA TURBO'][niv],COUL_NIV[niv]);pop();
+    popDrift(['','TURBO','SUPER TURBO','ULTRA TURBO'][niv],COUL_NIV[niv]);sonTurboDrift();
     try{navigator.vibrate&&navigator.vibrate([10,20,10*niv*3]);}catch(x){}}
   E.charge=0;
 }
@@ -1506,8 +1615,8 @@ function classement(){
 function majCourseHorsPas(dt){
   if(COURSE.phase==='decompte'){
     const avant=Math.ceil(COURSE.t);COURSE.t-=dt;const apres=Math.ceil(COURSE.t);
-    if(apres!==avant&&apres>0){decompteMontrer(apres);pop();}
-    if(COURSE.t<=0){COURSE.phase='course';COURSE.temps=0;decompteMontrer('GO');try{navigator.vibrate&&navigator.vibrate(60);}catch(x){}}
+    if(apres!==avant&&apres>0){decompteMontrer(apres);sonBip(false);}
+    if(COURSE.t<=0){COURSE.phase='course';COURSE.temps=0;decompteMontrer('GO');sonBip(true);try{navigator.vibrate&&navigator.vibrate(60);}catch(x){}}
   }
 }
 function decompteMontrer(t){
@@ -2041,8 +2150,8 @@ function pasZone(dt){
 function majZoneHorsPas(dt){
   if(ZONE.phase==='decompte'){
     const avant=Math.ceil(ZONE.t);ZONE.t-=dt;const apres=Math.ceil(ZONE.t);
-    if(apres!==avant&&apres>0){decompteMontrer(apres);pop();}
-    if(ZONE.t<=0){ZONE.phase='run';ZONE.t=ZD.duree;decompteMontrer('GO');try{navigator.vibrate&&navigator.vibrate(60);}catch(x){}}
+    if(apres!==avant&&apres>0){decompteMontrer(apres);sonBip(false);}
+    if(ZONE.t<=0){ZONE.phase='run';ZONE.t=ZD.duree;decompteMontrer('GO');sonBip(true);try{navigator.vibrate&&navigator.vibrate(60);}catch(x){}}
   }else if(ZONE.phase==='run'){
     ZONE.t-=dt;
     if(ZONE.t<=0){ZONE.t=0;ZONE.phase='fini';finZone();}
