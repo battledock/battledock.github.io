@@ -1097,7 +1097,8 @@ function finEssai(){
      poussée ; DRIFT et NITRO restent à droite. */
 function lireCommandes(jx,jy){
   const E=ESSAI;let s=0,g=0,b=0;
-  if(MODE_CMD==='boutons'){
+  /* les boutons ◀ ▶ GAZ restent actifs dans les deux modes : s'ils sont tenus, ils priment sur le joystick */
+  if(MODE_CMD==='boutons'||CMDS.g||CMDS.d||CMDS.gaz){
     s=(CMDS.d?1:0)-(CMDS.g?1:0);g=CMDS.gaz?1:0;b=CMDS.frein?1:0;
   }else{
     jx=jx||0;jy=jy||0;const n=Math.min(1,Math.hypot(jx,jy));
@@ -1445,10 +1446,11 @@ body.tk-volant{touch-action:none;overscroll-behavior:none;-webkit-user-select:no
 #tkPad .drift{right:calc(12px + clamp(66px,19vw,82px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px + clamp(58px,16vw,70px) + 10px);width:clamp(58px,16vw,70px);height:clamp(58px,16vw,70px);border-radius:50%;font-size:11px;box-shadow:inset 0 0 0 3px var(--c,rgba(255,255,255,.2))}
 #tkPad .nitro{right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px + clamp(104px,30vw,124px) + 10px);width:clamp(58px,16vw,70px);height:clamp(50px,14vw,58px);border-radius:16px;font-size:11px;
  background:conic-gradient(rgba(63,224,255,.55) var(--p,100%),rgba(14,10,24,.62) 0);box-shadow:inset 0 0 0 2px rgba(127,232,255,.5)}
-#tkPad.joy .dir,#tkPad.joy .gaz{display:none}
-#tkPad.joy .frein{right:12px}
-#tkPad.joy .drift{right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px + clamp(58px,16vw,70px) + 10px)}
-#tkPad.joy .nitro{right:calc(12px + clamp(58px,16vw,70px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
+/* Même en mode joystick, conserver les commandes de secours visibles : sur mobile, le HUD plein écran masque parfois le joystick global. */
+#tkPad.joy .dir,#tkPad.joy .gaz{display:block}
+#tkPad.joy .frein{right:calc(12px + clamp(66px,19vw,82px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
+#tkPad.joy .drift{right:calc(12px + clamp(66px,19vw,82px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px + clamp(58px,16vw,70px) + 10px)}
+#tkPad.joy .nitro{right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px + clamp(104px,30vw,124px) + 10px)}
 #tkAide{position:fixed;left:16px;right:16px;top:38%;z-index:22;pointer-events:none;margin:0 auto;max-width:330px;
  padding:12px 14px;border-radius:14px;background:rgba(10,8,18,.88);border:1px solid rgba(255,79,176,.4);color:#fff;font:600 13px/1.45 -apple-system,sans-serif;transition:opacity .6s}
 #tkAide b{color:#ff8ac8}
