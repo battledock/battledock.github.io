@@ -1186,7 +1186,7 @@ function lireCommandes(jx,jy){
    DRIFT tenu : un coup de frein à main à l'appui, puis l'antipatinage se
    coupe et l'arrière décroche sous les gaz ; on tient l'angle au volant et
    à l'accélérateur. On relâche : l'arrière raccroche. */
-const PH={L:40,g:450,h:11,sous:3};
+const PH={L:40,g:340,h:11,sous:3};
 function pneu(alpha,cap,B){return -cap*Math.sin(1.4*Math.atan(B*alpha));}
 function pasPhysique(dt,c){
   const E=ESSAI, S=E.stats||statsVoiture('Toyota',{});
@@ -1220,7 +1220,7 @@ function pasPhysique(dt,c){
        l'ANGLE voulu — vers l'intérieur pour plus d'angle, vers l'extérieur pour moins —
        et les roues avant contre-braquent pour le tenir. La maîtrise rend l'aide plus fine. */
     const sens=Math.sign(beta), s2=-(c.s||0)*sens;   /* l'intérieur du virage est du côté opposé à la dérive */
-    const bt=sens*(0.42+0.18*s2);
+    const bt=sens*(0.38+0.14*s2);
     const kp=1.1+0.4*(S.maitrise-1);
     dCible=Math.max(-0.7,Math.min(0.7,kp*(beta-bt)-0.08*r));
     /* trop d'angle : on lève un peu le pied pour ne pas partir en toupie */
@@ -1232,7 +1232,7 @@ function pasPhysique(dt,c){
   }
   dCible=Math.max(-0.75,Math.min(0.75,dCible));
   const vol=E.delta||0, retour=Math.abs(dCible)<Math.abs(vol)||dCible*vol<0;
-  const vitVol=((E.driftAide||driftTenu||frMain)?6:(retour?5:2.2))*dt;
+  const vitVol=((E.driftAide||driftTenu||frMain)?3.5:(retour?5:2.2))*dt;
   E.delta=vol+Math.max(-vitVol,Math.min(vitVol,dCible-vol));
   E.vol=E.delta/Math.max(0.05,dmax);                       /* pour l'affichage et le reste du jeu */
   const d=E.delta;
@@ -1252,7 +1252,7 @@ function pasPhysique(dt,c){
   /* l'antipatinage : sans DRIFT, la roue motrice ne dépasse pas ce que le pneu peut donner en virage */
   E.patine=false;
   /* en drift, l'arrière est libéré : la roue patine, mais garde de quoi tenir l'angle */
-  const kR=driftTenu?(0.56+0.05*(S.glisse-2.5))/Math.sqrt(S.tenue):(frMain?0.25:1);
+  const kR=driftTenu?(0.58+0.05*(S.glisse-2.5))/Math.sqrt(S.tenue):(frMain?0.3:1);
   const capXr=mu*Nr*(driftTenu?kR*0.55:1);
   if(Math.abs(Fxr)>capXr*0.98){E.patine=Fd>0;Fxr=Math.sign(Fxr)*capXr*0.98;}
   if(!driftTenu&&Fd>0){const lim=capXr*(0.9-0.3*Math.min(1,Math.abs(d)/0.35));if(Fxr>lim)Fxr=Math.max(0,lim);}
@@ -1273,8 +1273,10 @@ function pasPhysique(dt,c){
     dv=Fyr+Fyf*cd+Fxf*sd-u*r;
     dr=(a*(Fyf*cd+Fxf*sd)-b*Fyr)/Iz;
     /* le coup de frein à main en braquant lance l'arrière ; l'aide au drift ramène l'angle vers la consigne */
-    if(frMain&&u>40)dr+=(c.s||0)*7;
-    if(E.driftAide)dr+=(E.driftErr||0)*(8+4*(S.maitrise-1))+(E.dBeta||0)*1.6;
+    if(frMain&&u>40)dr+=(c.s||0)*4;
+    if(E.driftAide)dr+=(E.driftErr||0)*(5+2*(S.maitrise-1))+(E.dBeta||0)*1.4;
+    /* en drift, la caisse ne tourne pas plus vite qu'une vraie voiture en glisse (≈ 75°/s) */
+    if((driftTenu||frMain)&&Math.abs(r)>1.35)dr-=(Math.abs(r)-1.35)*Math.sign(r)*8;
     /* à basse vitesse ou en marche arrière : la géométrie pure, la voiture tourne autour de l'essieu arrière */
     const w=u<0?1:Math.max(0,Math.min(1,(45-u)/30));
     if(w>0){const rk=u*Math.tan(d)/L;
@@ -1456,7 +1458,7 @@ function pasCourse(dt){
     let cible=c.vmax;
     if(c.type==='adv'){
       /* la vitesse de passage de chaque virage devant (rayon de braquage du joueur), et la distance pour freiner */
-      for(let a=0;a<=360;a+=20){const k=pointPiste(c.s+a).k;if(k>0){const vv=Math.sqrt(330*(1/k));cible=Math.min(cible,Math.sqrt(vv*vv+2*345*a));}}
+      for(let a=0;a<=360;a+=20){const k=pointPiste(c.s+a).k;if(k>0){const vv=Math.sqrt(240*(1/k));cible=Math.min(cible,Math.sqrt(vv*vv+2*345*a));}}
       /* l'élastique : léger, et seulement s'il est loin */
       const ecart=(progression(c)-progressionJoueur());
       if(ecart>500)cible*=0.96;else if(ecart<-400)cible*=1.04;
@@ -1821,11 +1823,9 @@ function dessinerZoneDrift(ctx){
 }
 
 /* ================= LA CAMÉRA DE COURSE =================
-   Au volant, c'est tokyo.js qui dessine la scène : la route MONTE TOUJOURS vers le
-   haut de l'écran. La caméra suit la trajectoire (la direction de la vitesse,
-   un peu de la carrosserie) avec un léger retard : en drift, on voit la voiture
-   de travers. La voiture est posée aux deux tiers de la zone libre, au-dessus
-   des boutons : on voit loin devant. Le sol vient de la toile du jeu (SOL),
+   Au volant, c'est tokyo.js qui dessine la scène. La carte ne tourne pas (le nord
+   reste en haut : une caméra qui pivote donnait mal au cœur) ; la caméra regarde
+   devant la voiture et la suit en douceur, au-dessus des boutons. Le sol vient de la toile du jeu (SOL),
    les lampadaires sont redessinés vus du dessus, la nuit les phares éclairent. */
 const CAM_V={a:null,t:0,padH:0,padT:0};
 function dessinerVolant(ctx){
@@ -1835,21 +1835,18 @@ function dessinerVolant(ctx){
   if(!CAM_V.padT||now-CAM_V.padT>500){CAM_V.padT=now;try{const pr=document.getElementById('tkPad').getBoundingClientRect(), cr=ctx.canvas.getBoundingClientRect();
     CAM_V.padH=Math.max(0,(cr.bottom-pr.top+20)*(W/cr.width));}catch(x){CAM_V.padH=0;}}
   const zone=Math.max(H*0.5,H-CAM_V.padH);
-  /* l'angle visé : la vitesse en roulant, la carrosserie à l'arrêt ou en marche arrière */
-  const v=Math.hypot(E.vx,E.vy), av=E.vx*Math.cos(E.ang)+E.vy*Math.sin(E.ang);
-  let cible=E.ang;
-  if(v>50&&av>0){const va=Math.atan2(E.vy,E.vx);let d=Math.atan2(Math.sin(va-E.ang),Math.cos(va-E.ang));cible=E.ang+d*0.7;}
-  if(CAM_V.a==null)CAM_V.a=cible;
-  let d=Math.atan2(Math.sin(cible-CAM_V.a),Math.cos(cible-CAM_V.a));
-  CAM_V.a+=d*(1-Math.exp(-5*dt));
-  const e2=ECH, cx=W/2, cy=zone*0.68;
-  const sx=SECOUSSE>0.01?(Math.random()-.5)*SECOUSSE*4*e2:0, sy=SECOUSSE>0.01?(Math.random()-.5)*SECOUSSE*4*e2:0;
+  /* LA CAMÉRA NE TOURNE PAS (le nord reste en haut : pas de mal au cœur). Elle regarde
+     devant la voiture, dans le sens où elle va, et glisse vers ce point en douceur. */
+  const lxC=Math.max(-W*0.28/ECH,Math.min(W*0.28/ECH,E.vx*0.45)), lyC=Math.max(-zone*0.3/ECH,Math.min(zone*0.3/ECH,E.vy*0.45));
+  if(CAM_V.lx==null){CAM_V.lx=lxC;CAM_V.ly=lyC;}
+  const kc=1-Math.exp(-2.2*dt);CAM_V.lx+=(lxC-CAM_V.lx)*kc;CAM_V.ly+=(lyC-CAM_V.ly)*kc;
+  const e2=ECH, cx=W/2-CAM_V.lx*e2, cy=zone*0.5-CAM_V.ly*e2;
+  const sx=SECOUSSE>0.01?(Math.random()-.5)*SECOUSSE*3*e2:0, sy=SECOUSSE>0.01?(Math.random()-.5)*SECOUSSE*3*e2:0;
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#17151f';ctx.fillRect(0,0,W,H);
-  ctx.setTransform(1,0,0,1,0,0);ctx.translate(Math.round(cx+sx),Math.round(cy+sy));ctx.rotate(-CAM_V.a-Math.PI/2);ctx.scale(e2,e2);
-  const ox=Math.round(E.x*e2)/e2, oy=Math.round(E.y*e2)/e2;ctx.translate(-ox,-oy);
+  ctx.setTransform(e2,0,0,e2,Math.round(cx+sx-E.x*e2),Math.round(cy+sy-E.y*e2));
   /* le sol : un carré autour de la voiture, assez grand pour couvrir l'écran tourné */
-  const Rv=Math.ceil(Math.hypot(Math.max(cx,W-cx),Math.max(cy,H-cy))/e2)+4;
-  const x0=Math.max(0,Math.floor(E.x-Rv)), y0=Math.max(0,Math.floor(E.y-Rv)), x1=Math.min(MONDE_L,Math.ceil(E.x+Rv)), y1=Math.min(MONDE_H,Math.ceil(E.y+Rv));
+  const Rv=Math.ceil(Math.hypot(W,H)/e2)+4;
+  const x0=Math.max(0,Math.floor(E.x-cx/e2-2)), y0=Math.max(0,Math.floor(E.y-cy/e2-2)), x1=Math.min(MONDE_L,Math.ceil(E.x+(W-cx)/e2+2)), y1=Math.min(MONDE_H,Math.ceil(E.y+(H-cy)/e2+2));
   ctx.imageSmoothingEnabled=false;
   if(x1>x0&&y1>y0){const src=(typeof SOL_FIN!=='undefined'&&SOL_FIN)?SOL_FIN:SOL, k=src===SOL?1:2;
     ctx.drawImage(src,x0*k,y0*k,(x1-x0)*k,(y1-y0)*k,x0,y0,x1-x0,y1-y0);}
