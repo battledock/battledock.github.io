@@ -25,6 +25,7 @@ function bloqueTokyo(x,y){
   /* LE MÉTRO EN DUR : l'escalier et ses rambardes, et le poteau de la ligne */
   if(x>26&&x<114&&y>372&&y<446)return true;
   if(Math.abs(x-122)<5&&y>436&&y<450)return true;
+  for(const b of BATIS_TK)if(x>b.x0&&x<b.x1&&y>b.y0&&y<b.y1)return true;   /* les immeubles et la tribune du circuit */
   return false;
 }
 
@@ -131,6 +132,7 @@ function construireSolTokyo(){
   pg.fillStyle='rgba(235,235,245,.6)';
   for(let k=1;k<=3;k++){const gx=LX-k*65+20;pg.fillRect(gx,l0+16,2,24);pg.fillRect(gx-20,l0+16,22,2);pg.fillRect(gx,l1-40,2,24);pg.fillRect(gx-20,l1-40+22,22,2);}
   g.drawImage(pc,0,0);
+  try{decorerCircuit(g,A);}catch(x){console.warn(x);}
   /* la bordure du trottoir, sous la voie des stands */
   g.fillStyle='#8a86a0';g.fillRect(0,TK.route[1],CIRCUIT.depart-110,2);
   /* le portique de départ, au-dessus de la ligne */
@@ -1731,6 +1733,89 @@ function chronoPas(x0,y0,x1,y1,dt){
   }
 }
 
+/* ================= LE DÉCOR DU CIRCUIT =================
+   Autour de la piste, le quartier : on découpe la carte en cases de 24 et on
+   regarde, pour chaque case, à quelle distance elle est de la piste.
+   — tout près : les bas-côtés (déjà peints) et une glissière ;
+   — un peu plus loin : des arbres vus du dessus (cerisiers roses, pins) ;
+   — loin de la piste, les grands vides deviennent des immeubles vus du ciel :
+     toits plats, climatiseurs, réservoirs, néons sur l'arête du toit ;
+   — le long de la grande descente, à droite : une tribune pleine de monde.
+   Tout est peint une seule fois dans le sol : ça ne coûte rien en jeu.
+   Les immeubles et la tribune sont en dur (BATIS_TK). */
+const BATIS_TK=[];
+function decorerCircuit(g,A){
+  const W=MONDE_L,H=MONDE_H,P=PISTE.pts,ep=CIRCUIT.ep,C=24;
+  const nx=Math.ceil(W/C), ny=Math.ceil(H/C), dist=new Float32Array(nx*ny);
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const x=i*C+C/2,y=j*C+C/2;let m=1e9;
+    for(let k=0;k<P.length;k+=2){const dx=P[k].x-x,dy=P[k].y-y,d=dx*dx+dy*dy;if(d<m)m=d;}dist[j*nx+i]=Math.sqrt(m);}
+  const libre=(i,j)=>{if(i<0||j<0||i>=nx||j>=ny)return false;const x=i*C, y=j*C;
+    if(y<372)return false;                                              /* la ville du haut */
+    if(x<150&&y<500)return false;                                       /* le métro */
+    if(x+C>840&&y+C>420&&y<2210)return false;                            /* la tribune */
+    if(x+C>ZD.x0-30&&x<ZD.x1+30&&y+C>ZD.y0-30&&y<ZD.y1+30)return false;   /* la zone de drift */
+    return dist[j*nx+i]>ep/2+30;};
+  /* 1. LA TRIBUNE, le long de la grande descente (à droite de la piste) */
+  {const x0=848,x1=W-6,y0=430,y1=2200;
+    g.fillStyle='#2b2a33';g.fillRect(x0,y0,x1-x0,y1-y0);
+    const coul=['#ff4fb0','#7fe8ff','#ffd21f','#f4f4f6','#5cff8a','#ff7a1a','#b08cff','#e0263a'];
+    for(let y=y0+4;y<y1-4;y+=6){g.fillStyle='#4a4954';g.fillRect(x0+4,y,x1-x0-14,4);
+      for(let x=x0+5;x<x1-12;x+=3)if(A(x*3.1+y*1.7)<0.72){g.fillStyle=coul[Math.floor(A(x+y*2.3)*coul.length)];g.fillRect(x,y,2,2);}}
+    g.fillStyle='#1d1c24';g.fillRect(x1-9,y0,9,y1-y0);g.fillStyle='rgba(255,255,255,.12)';for(let y=y0;y<y1;y+=40)g.fillRect(x1-9,y,9,2);
+    /* les panneaux des sponsors, face à la piste */
+    const pubs=[['東京','#ff4fb0'],['TURBO','#7fe8ff'],['NEON','#ffd21f'],['DRIFT','#5cff8a'],['BATTLE DOCK','#ff7a1a']];
+    for(let y=y0+30,k=0;y<y1-60;y+=150,k++){const [t,c]=pubs[k%pubs.length];g.fillStyle='#14121c';g.fillRect(x0-2,y,8,70);g.fillStyle=c;g.fillRect(x0-1,y+2,6,66);
+      g.save();g.translate(x0+4,y+35);g.rotate(-Math.PI/2);g.fillStyle='#14121c';g.font='bold 6px sans-serif';g.textAlign='center';g.fillText(t,0,0);g.restore();}
+    BATIS_TK.push({x0:x0+2,y0,x1:W,y1});}
+  /* 2. LES IMMEUBLES : les cases loin de la piste, regroupées en toits */
+  const pris=new Uint8Array(nx*ny);
+  const toits=['#3a3846','#46424f','#34313d','#4b4656','#3f3b4a'];
+  const neons=['rgba(255,79,176,§)','rgba(127,232,255,§)','rgba(255,214,120,§)','rgba(176,140,255,§)'];
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){
+    if(pris[j*nx+i]||!libre(i,j)||dist[j*nx+i]<ep/2+95)continue;
+    /* un bloc : on s'étend à droite et en bas tant que c'est libre et loin, jusqu'à 4 × 4 cases */
+    let w=1,h=1;
+    while(w<4&&libre(i+w,j)&&!pris[j*nx+i+w]&&dist[j*nx+i+w]>=ep/2+95)w++;
+    let ok=true;while(h<4&&ok){for(let k=0;k<w;k++)if(!libre(i+k,j+h)||pris[(j+h)*nx+i+k]||dist[(j+h)*nx+i+k]<ep/2+95){ok=false;break;}if(ok)h++;}
+    for(let b=0;b<h;b++)for(let a=0;a<w;a++)pris[(j+b)*nx+i+a]=1;
+    if(w*h<2)continue;
+    const x=i*C+3,y=j*C+3,L=w*C-6,Hh=h*C-6, s=A(i*7.3+j*3.1);
+    /* l'ombre portée, le toit, son rebord, les détails */
+    g.fillStyle='rgba(0,0,0,.35)';g.fillRect(x+4,y+5,L,Hh);
+    g.fillStyle=toits[Math.floor(s*toits.length)];g.fillRect(x,y,L,Hh);
+    g.fillStyle='rgba(255,255,255,.10)';g.fillRect(x,y,L,2);g.fillRect(x,y,2,Hh);g.fillStyle='rgba(0,0,0,.25)';g.fillRect(x,y+Hh-2,L,2);g.fillRect(x+L-2,y,2,Hh);
+    for(let k=0;k<Math.floor(2+s*4);k++){const cx=x+4+Math.floor(A(i+k*1.9+j)*(L-14)), cy=y+4+Math.floor(A(j+k*2.7+i)*(Hh-12));
+      if(A(k+i*j)<0.5){g.fillStyle='#8f93a3';g.fillRect(cx,cy,8,6);g.fillStyle='#5d6070';g.fillRect(cx+1,cy+1,6,4);g.fillStyle='#b9bdcb';g.beginPath();g.arc(cx+4,cy+3,2,0,7);g.fill();}
+      else{g.fillStyle='#6b6f7e';g.beginPath();g.arc(cx+4,cy+4,4,0,7);g.fill();g.fillStyle='#878b99';g.beginPath();g.arc(cx+3,cy+3,2,0,7);g.fill();}}
+    if(s>0.82&&L>=40&&Hh>=40){g.strokeStyle='rgba(255,255,255,.5)';g.lineWidth=2;g.beginPath();g.arc(x+L/2,y+Hh/2,12,0,7);g.stroke();g.fillStyle='rgba(255,255,255,.6)';g.font='bold 14px sans-serif';g.textAlign='center';g.fillText('H',x+L/2,y+Hh/2+5);g.textAlign='start';}
+    /* un liseré de néon sur l'arête du toit, qui s'allume la nuit */
+    if(s<0.55){const n=neons[Math.floor(A(s*99)*neons.length)];g.fillStyle=n.replace('§','.9');g.fillRect(x,y,L,1);g.fillRect(x,y+Hh-1,L,1);
+      FEUX_TK.push([x+L/2,y+Hh/2,n,Math.max(L,Hh)*0.75]);}
+    BATIS_TK.push({x0:x,y0:y,x1:x+L,y1:y+Hh});
+  }
+  /* 3. LES ARBRES, dans les cases libres plus proches de la piste */
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){
+    if(pris[j*nx+i]||!libre(i,j))continue;
+    const s=A(i*5.7+j*9.1);if(s<0.35)continue;
+    const x=i*C+C/2+(A(i+j*1.3)-0.5)*10, y=j*C+C/2+(A(j+i*1.7)-0.5)*10, r=7+A(i*j+3)*5, rose=A(i*1.1+j*7.7)<0.32;
+    const c=rose?['#8a3f6a','#d36b9e','#f2a6c8','#ffd6e8']:['#1f4a2a','#2f6b3a','#4a9150','#7cc070'];
+    g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.arc(x+4,y+4,r,0,7);g.fill();
+    g.fillStyle=c[0];g.beginPath();g.arc(x,y,r,0,7);g.fill();
+    g.fillStyle=c[1];g.beginPath();g.arc(x-1,y-1,r-2,0,7);g.fill();
+    g.fillStyle=c[2];g.beginPath();g.arc(x-2,y-2,r*0.55,0,7);g.fill();
+    g.fillStyle=c[3];g.fillRect(Math.round(x-r*0.45),Math.round(y-r*0.45),2,2);
+  }
+  /* 4. LA GLISSIÈRE : un rail gris le long de la piste, côté extérieur des bas-côtés */
+  for(let k=0;k<P.length;k++){const p=P[k];if(p.y<345)continue;
+    for(const sd of [-1,1]){const o=ep/2+18, x=p.x-Math.sin(p.ang)*o*sd, y=p.y+Math.cos(p.ang)*o*sd;
+      if(x<4||x>W-4||y>H-4)continue;
+      /* pas de rail s'il passe sur une autre portion de piste ou dans la zone */
+      if(x>ZD.x0-16&&x<ZD.x1+16&&y>ZD.y0-16&&y<ZD.y1+16)continue;
+      const ii=Math.floor(x/C), jj=Math.floor(y/C);if(ii<0||jj<0||ii>=nx||jj>=ny||dist[jj*nx+ii]<ep/2+8)continue;
+      g.fillStyle='#c9ccd8';g.fillRect(Math.round(x)-1,Math.round(y)-1,2,2);
+      if(k%6===0){g.fillStyle='#6b6e7c';g.fillRect(Math.round(x)-1,Math.round(y)-1,3,3);}}}
+}
+
 /* ================= LA ZONE DE DRIFT =================
    Au milieu du serpentin, une aire fermée par des murs de pneus. Deux poteaux
    (des piles de pneus) à contourner en huit, entourés chacun d'un anneau de
@@ -1828,6 +1913,8 @@ function dessinerZoneDrift(ctx){
    devant la voiture et la suit en douceur, au-dessus des boutons. Le sol vient de la toile du jeu (SOL),
    les lampadaires sont redessinés vus du dessus, la nuit les phares éclairent. */
 const CAM_V={a:null,t:0,padH:0,padT:0};
+/* AU VOLANT, ON VOIT PLUS LOIN : une échelle fixe, plus large qu'à pied (jamais de zoom qui bouge) */
+const VUE_K=0.7;
 function dessinerVolant(ctx){
   const E=ESSAI, W=ctx.canvas.width, H=ctx.canvas.height;
   const now=performance.now(), dt=Math.min(0.05,CAM_V.t?(now-CAM_V.t)/1000:0);CAM_V.t=now;
@@ -1837,10 +1924,13 @@ function dessinerVolant(ctx){
   const zone=Math.max(H*0.5,H-CAM_V.padH);
   /* LA CAMÉRA NE TOURNE PAS (le nord reste en haut : pas de mal au cœur). Elle regarde
      devant la voiture, dans le sens où elle va, et glisse vers ce point en douceur. */
-  const lxC=Math.max(-W*0.28/ECH,Math.min(W*0.28/ECH,E.vx*0.45)), lyC=Math.max(-zone*0.3/ECH,Math.min(zone*0.3/ECH,E.vy*0.45));
+  const eV=ECH*(window.__vueK||VUE_K), lxC=Math.max(-W*0.28/eV,Math.min(W*0.28/eV,E.vx*0.45)), lyC=Math.max(-zone*0.3/eV,Math.min(zone*0.3/eV,E.vy*0.45));
   if(CAM_V.lx==null){CAM_V.lx=lxC;CAM_V.ly=lyC;}
   const kc=1-Math.exp(-2.2*dt);CAM_V.lx+=(lxC-CAM_V.lx)*kc;CAM_V.ly+=(lyC-CAM_V.ly)*kc;
-  const e2=ECH, cx=W/2-CAM_V.lx*e2, cy=zone*0.5-CAM_V.ly*e2;
+  const e2=ECH*(window.__vueK||VUE_K);
+  let cx=W/2-CAM_V.lx*e2, cy=zone*0.5-CAM_V.ly*e2;
+  /* la vue reste dans la carte : pas de bande noire sur les côtés */
+  {const vw=W/e2;if(vw<MONDE_L){const gauche=E.x-cx/e2;if(gauche<0)cx=E.x*e2;else if(gauche+vw>MONDE_L)cx=(E.x-(MONDE_L-vw))*e2;}}
   const sx=SECOUSSE>0.01?(Math.random()-.5)*SECOUSSE*3*e2:0, sy=SECOUSSE>0.01?(Math.random()-.5)*SECOUSSE*3*e2:0;
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#17151f';ctx.fillRect(0,0,W,H);
   ctx.setTransform(e2,0,0,e2,Math.round(cx+sx-E.x*e2),Math.round(cy+sy-E.y*e2));
