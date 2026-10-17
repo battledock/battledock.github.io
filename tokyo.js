@@ -313,14 +313,14 @@ const NEONS_TK=['#ff4fb0','#7fe8ff','#b08cff','#5cff8a','#ffd98a','#ff3b3b'];
    réécrire dans la conduite.
    Unités : pixels de carte par seconde (1 px ≈ 25 cm), rad/s pour la direction. */
 const VITESSE_K=1.5;
-const FICHE_BASE={vmax:186,acc:152,frein:330,grip:8.8,dir:3.0,stab:1,glisse:2.5,maitrise:1,tenue:1};
+const FICHE_BASE={vmax:186,acc:152,frein:330,grip:8.8,dir:3.0,stab:1,glisse:2.5,maitrise:1,tenue:1,trans:'P',wf:0.5};
 const FICHES={
-  Toyota:     {vmax:188,acc:150,grip:8.4, dir:3.05,stab:1.0, glisse:2.3,maitrise:1.15},
-  BMW:        {vmax:180,acc:142,grip:8.9, dir:3.15,stab:1.05,glisse:2.4,maitrise:1.1},
-  Lamborghini:{vmax:212,acc:195,grip:10.4,dir:2.85,stab:1.15,glisse:3.1,maitrise:0.88},
-  Porsche:    {vmax:205,acc:176,grip:11.2,dir:3.25,stab:1.25,glisse:3.0,maitrise:0.92},
-  Nissan:     {vmax:208,acc:197,grip:10.9,dir:2.95,stab:1.2, glisse:3.2,maitrise:0.88},
-  Ferrari:    {vmax:212,acc:166,grip:8.6, dir:3.0, stab:1.0, glisse:2.2,maitrise:1.15}};
+  Toyota:     {vmax:188,acc:150,grip:8.4, dir:3.05,stab:1.0, glisse:2.3,maitrise:1.15,trans:'P',wf:0.53},   /* propulsion, moteur avant */
+  BMW:        {vmax:180,acc:142,grip:8.9, dir:3.15,stab:1.05,glisse:2.4,maitrise:1.1,trans:'P',wf:0.51},
+  Lamborghini:{vmax:212,acc:195,grip:10.4,dir:2.85,stab:1.15,glisse:3.1,maitrise:0.88,trans:'4',wf:0.43},   /* intégrale, moteur central */
+  Porsche:    {vmax:205,acc:176,grip:11.2,dir:3.25,stab:1.25,glisse:3.0,maitrise:0.92,trans:'P',wf:0.39},   /* moteur en porte-à-faux arrière */
+  Nissan:     {vmax:208,acc:197,grip:10.9,dir:2.95,stab:1.2, glisse:3.2,maitrise:0.88,trans:'4',wf:0.54},
+  Ferrari:    {vmax:212,acc:166,grip:8.6, dir:3.0, stab:1.0, glisse:2.2,maitrise:1.15,trans:'P',wf:0.44}};
 /* les pièces : multiplicateurs (×) ajoutés à 1 — +0.1 = +10 % */
 const PIECES={
   moteur:      {1:{vmax:.08},2:{vmax:.16},3:{vmax:.25}},
@@ -1103,7 +1103,7 @@ function debutEssai(v,aMoi,reglages,mode){
   E.limite=(aMoi||E.mode!=='libre')?null:180;
   E.tour=null;E.tours=0;E.cp=0;E.dernier=null;E.trainee=[];E.flamme=0;E.gazAvant=0;
   E.traces=[];E.fumee=[];E.etinc=[];E.recul=false;E.reste=0;E.idx=null;
-  E.lacet=0;E.vol=0;E.idx=null;E.rapport=0;E.coupure=0;E.glisse=false;E.glisseT=0;E.charge=0;E.points=0;E.combo=1;E.finCombo=0;E.score=0;E.propre=true;
+  E.lacet=0;E.vol=0;E.delta=0;E.hbT=0;E.hAvant=false;E.idx=null;E.rapport=0;E.coupure=0;E.glisse=false;E.glisseT=0;E.charge=0;E.points=0;E.combo=1;E.finCombo=0;E.score=0;E.propre=true;
   E.boostT=0;E.boostK=1;E.nitroT=0;E.nitroCharge=1;E.choc=0;
   COURSE.actif=false;
   if(E.mode==='course')preparerCourse();
@@ -1161,6 +1161,33 @@ function lireCommandes(jx,jy){
 }
 
 /* ================= UN PAS DE PHYSIQUE ================= */
+/* ================= LA PHYSIQUE : UN VRAI MODÈLE « BICYCLETTE » =================
+   La voiture a deux essieux (empattement PH.L) et un centre de gravité entre
+   les deux (répartition des masses selon le modèle : moteur avant, central,
+   arrière). Chaque pas :
+   — LE VOLANT braque les roues AVANT d'un angle δ, à vitesse de volant réelle
+     (on ne passe pas de butée à butée d'un coup), et l'angle maximal diminue
+     avec la vitesse comme sur une vraie direction.
+   — LES PNEUS : chaque essieu a un angle de dérive (l'écart entre où il pointe
+     et où il va). La force latérale suit une courbe de pneu (forme « Pacejka ») :
+     elle grandit, plafonne vers 13°, puis retombe un peu — c'est ce qui fait
+     décrocher et glisser.
+   — LE POIDS : la charge de chaque essieu dépend de la répartition et du
+     transfert de masse (freiner charge l'avant, accélérer charge l'arrière).
+     Un pneu plus chargé accroche plus.
+   — LE CERCLE D'ADHÉRENCE : un pneu ne peut pas tout donner à la fois.
+     L'arrière d'une propulsion qui patine sous les gaz perd de son grip
+     latéral : la voiture survire. Le frein à main bloque l'arrière.
+   — À BASSE VITESSE, la voiture suit la géométrie pure (modèle cinématique) :
+     elle tourne autour de son essieu arrière, et ne pivote jamais à l'arrêt.
+   Aides (comme sur les vraies voitures et dans les jeux de course) :
+   antipatinage hors DRIFT, et un léger contre-braquage automatique qui
+   dépend de la maîtrise (kit drift, pneus).
+   DRIFT tenu : un coup de frein à main à l'appui, puis l'antipatinage se
+   coupe et l'arrière décroche sous les gaz ; on tient l'angle au volant et
+   à l'accélérateur. On relâche : l'arrière raccroche. */
+const PH={L:40,g:450,h:11,sous:3};
+function pneu(alpha,cap,B){return -cap*Math.sin(1.4*Math.atan(B*alpha));}
 function pasPhysique(dt,c){
   const E=ESSAI, S=E.stats||statsVoiture('Toyota',{});
   const hp=horsPiste(E.x,E.y)>4;
@@ -1169,78 +1196,121 @@ function pasPhysique(dt,c){
   if(E.boostT>0)E.boostT-=dt;
   const NB=E.nitroT>0?(S.nitro>1?1.5:1.35):1, BB=E.boostT>0?E.boostK:1, K=Math.max(NB,BB);
   const VMAX=S.vmax*(hp?0.5:1)*K, ACC=S.acc*0.8*(hp?0.65:1)*(K>1?1.8:1);
-  const fx=Math.cos(E.ang), fy=Math.sin(E.ang);
-  let av=E.vx*fx+E.vy*fy, tr=-E.vx*fy+E.vy*fx;
-  const v=Math.hypot(av,tr);
-  /* 1. LA BOÎTE ET LA POUSSÉE */
-  const fr=Math.max(0,av)/S.vmax;let rap=0;for(let i=0;i<RAPPORTS.length;i++)if(fr>=RAPPORTS[i])rap=i;
+  const L=PH.L, wf=S.wf||0.5, b=L*wf, a=L-b;          /* a : centre de gravité → essieu avant ; b : → essieu arrière */
+  const mu=(S.grip/9.5)*(hp?0.62:1);
+  let u=E.vx*Math.cos(E.ang)+E.vy*Math.sin(E.ang), v=-E.vx*Math.sin(E.ang)+E.vy*Math.cos(E.ang), r=E.lacet||0;
+  /* 1. LA BOÎTE */
+  const fr=Math.max(0,u)/S.vmax;let rap=0;for(let i=0;i<RAPPORTS.length;i++)if(fr>=RAPPORTS[i])rap=i;
   if(rap!==E.rapport){if(rap>E.rapport&&c.g>0){E.coupure=0.1;if((E.tuning||{}).flammes||rap>=3)pop();}E.rapport=rap;}
   if(E.coupure>0)E.coupure-=dt;
   const couple=[1.3,1.12,1,0.92,0.85,0.8][rap]*(E.coupure>0?0.35:1);
-  if(c.g>0){if(av<-5)av+=S.frein*dt;else av+=ACC*couple*c.g*Math.max(0.04,1-Math.pow(Math.max(0,av)/VMAX,2))*dt;}
-  if(c.b>0){if(av>8)av-=S.frein*c.b*dt;else av=Math.max(-90,av-ACC*0.55*c.b*dt);}   /* frein, puis marche arrière */
-  if(c.h)av*=Math.exp(-0.5*dt);                  /* le frein à main mord un peu */
-  if(!(c.g>0)&&!(c.b>0)){av*=Math.exp(-(hp?2.2:0.75)*dt);if(Math.abs(av)<3)av=0;}
-  if(av>VMAX)av+=(VMAX-av)*Math.min(1,2.5*dt);
-  {const ax=(av-(E.vx*fx+E.vy*fy))/dt;E.axL=(E.axL||0)+(ax-(E.axL||0))*Math.min(1,6*dt);}
-  E.vx=av*fx-tr*fy;E.vy=av*fy+tr*fx;           /* la poussée et le frein, rendus au vecteur vitesse */
-  /* 2. LE VOLANT : il ne saute pas en butée. Un appui bref donne une petite
-     correction, un appui tenu braque franchement (≈ 0,15 s). Il revient vite au centre. */
-  const visee=c.s||0, revient=Math.abs(visee)<Math.abs(E.vol||0)||visee*(E.vol||0)<0;
-  E.vol=(E.vol||0)+(visee-(E.vol||0))*Math.min(1,(revient?12:7)*dt);
-  /* 3. LE LACET. En adhérence, la voiture suit un RAYON DE BRAQUAGE qui grandit avec la
-     vitesse : serré à basse vitesse, large à fond (on freine avant une épingle).
-     La rotation suit la consigne avec une inertie courte : elle répond tout de suite. */
-  const va=Math.abs(av), sens=av<-2?-1:1;
-  const angG=Math.atan2(Math.abs(tr),Math.max(1,va));
-  const R=(45+0.28*va)*3/S.dir;
-  /* LE POIDS : au freinage, la masse passe sur l'avant — la voiture s'inscrit plus fort ;
-     sous les gaz, elle s'allège devant et tourne un peu moins. */
-  const tf=Math.max(0,Math.min(1,-(E.axL||0)/S.frein)), ta=Math.max(0,Math.min(1,(E.axL||0)/S.acc));
-  let cons=E.vol*sens*Math.min(va/R,3)*(1+0.25*tf-0.1*ta);
-  if(E.glisse){
-    /* en glisse, le volant dose l'angle ; au-delà de 50°, la voiture se rattrape d'elle-même */
-    /* la rotation en glisse dépend de la vitesse : lente, la voiture ne tourne pas sur elle-même */
-    const kv=Math.max(0.35,Math.min(1,v/(0.4*S.vmax)));
-    /* la maîtrise (kit drift, pneus) renforce le rattrapage : on tient l'angle sans partir en toupie */
-    cons=E.vol*S.dir*1.1*kv*(1+0.1*(S.maitrise-1))+Math.sign(tr||1)*(0.3*Math.min(1,angG/0.6)*(c.h?1:0.5)+Math.max(0,angG-0.85)*5*S.maitrise);
+  /* 2. LE DRIFT : le coup de frein à main à l'appui, puis l'arrière libéré */
+  if(c.h&&!E.hAvant)E.hbT=0.22;
+  E.hAvant=c.h;
+  if(E.hbT>0)E.hbT-=dt;
+  const frMain=E.hbT>0, driftTenu=c.h&&!frMain;
+  /* 3. LE VOLANT : la cible, l'aide au contre-braquage, la vitesse de rotation du volant */
+  const dmax=0.72*(S.dir/3)/(1+Math.max(0,u)/300);
+  const beta=Math.atan2(v,Math.max(10,Math.abs(u)));
+  E.dBeta=E.betaAvant==null?0:Math.max(-6,Math.min(6,(beta-E.betaAvant)/dt));E.betaAvant=beta;
+  let dCible=(c.s||0)*dmax, gazDrift=1;
+  E.driftAide=false;E.driftErr=0;
+  if(driftTenu&&u>40&&Math.abs(beta)>0.12){
+    /* L'AIDE AU DRIFT (comme un pilote qui contre-braque) : la touche de direction règle
+       l'ANGLE voulu — vers l'intérieur pour plus d'angle, vers l'extérieur pour moins —
+       et les roues avant contre-braquent pour le tenir. La maîtrise rend l'aide plus fine. */
+    const sens=Math.sign(beta), s2=-(c.s||0)*sens;   /* l'intérieur du virage est du côté opposé à la dérive */
+    const bt=sens*(0.42+0.18*s2);
+    const kp=1.1+0.4*(S.maitrise-1);
+    dCible=Math.max(-0.7,Math.min(0.7,kp*(beta-bt)-0.08*r));
+    /* trop d'angle : on lève un peu le pied pour ne pas partir en toupie */
+    gazDrift=Math.max(0.2,1-Math.max(0,Math.abs(beta)-Math.abs(bt)-0.06)*4);
+    E.driftAide=true;E.driftErr=beta-bt;
+  }else if(u>40&&Math.abs(beta)>0.12){
+    /* hors drift : un léger contre-braquage automatique rattrape l'arrière */
+    dCible+=Math.max(-0.3,Math.min(0.3,(beta-Math.sign(beta)*0.12)*(0.35+0.2*(S.maitrise-1))));
   }
-  const reactif=(E.glisse?4:10)*S.stab;
-  E.lacet+=(cons-E.lacet)*Math.min(1,reactif*dt);
-  E.ang+=E.lacet*dt;
-  /* 4. L'ADHÉRENCE LATÉRALE : forte d'ordinaire (la voiture suit son nez), effondrée au frein à main */
-  let grip=S.grip*(hp?0.75:1);
-  if(c.h&&v>30)grip=S.glisse*0.55/S.tenue;
-  else if(E.glisse)grip=(c.g>0.3?S.glisse:S.glisse*2.2)/S.tenue+(1-Math.min(1,angG/0.9))*1.2;
-  else if(c.b>0)grip=S.grip*(0.85-0.3*tf*Math.abs(E.vol));   /* freiner fort en braquant fait pivoter l'arrière */
-  const nx=Math.cos(E.ang), ny=Math.sin(E.ang);
-  av=E.vx*nx+E.vy*ny;tr=-E.vx*ny+E.vy*nx;      /* relue dans l'axe neuf : c'est l'inertie latérale */
-  const avantTr=tr;
-  tr*=Math.exp(-grip*dt);
-  if(E.glisse)av+=Math.abs(avantTr-tr)*(c.g>0.3?0.45:0.25);    /* sous les gaz, la glisse garde l'élan : on drifte vite */
-  if(!c.h&&!E.glisse)av=Math.min(av,VMAX*1.02);
-  E.vx=av*nx-tr*ny;E.vy=av*ny+tr*nx;
-  /* 5. LA GLISSE : DRIFT tenu en braquant, ou un vrai survirage ; on en sort sous 7° */
-  const vit=Math.hypot(av,tr), angG2=Math.atan2(Math.abs(tr),Math.max(1,Math.abs(av)));
-  if(!E.glisse&&vit>S.vmax*0.28&&((c.h&&Math.abs(E.vol)>0.25)||angG2>0.32)){
+  dCible=Math.max(-0.75,Math.min(0.75,dCible));
+  const vol=E.delta||0, retour=Math.abs(dCible)<Math.abs(vol)||dCible*vol<0;
+  const vitVol=((E.driftAide||driftTenu||frMain)?6:(retour?5:2.2))*dt;
+  E.delta=vol+Math.max(-vitVol,Math.min(vitVol,dCible-vol));
+  E.vol=E.delta/Math.max(0.05,dmax);                       /* pour l'affichage et le reste du jeu */
+  const d=E.delta;
+  /* 4. LES FORCES LONGITUDINALES (par unité de masse) */
+  let Fd=0, Fb=0;
+  if(c.g>0){if(u<-5)Fb=S.frein;else Fd=ACC*couple*c.g*gazDrift*Math.max(0.04,1-Math.pow(Math.max(0,u)/VMAX,2));}
+  if(c.b>0){if(u>8)Fb=Math.max(Fb,S.frein*c.b);else Fd=-ACC*0.55*c.b*(u>-90?1:0);}
+  if(!(c.g>0)&&!(c.b>0))Fb=Math.abs(u)>2?(0.55*Math.abs(u)+12)*(hp?2.5:1):0;   /* frein moteur et roulement */
+  const ax=E.axL||0;
+  let Nf=PH.g*b/L-PH.h/L*ax, Nr=PH.g*a/L+PH.h/L*ax;
+  Nf=Math.max(PH.g*0.15,Nf);Nr=Math.max(PH.g*0.15,Nr);
+  const sgn=u>=0?1:-1;
+  const awd=S.trans==='4';
+  let Fxf=(awd?(driftTenu?0.25:0.38)*Fd:0)-0.65*Fb*sgn, Fxr=(awd?(driftTenu?0.75:0.62)*Fd:Fd)-0.35*Fb*sgn;
+  /* le frein à main bloque l'arrière */
+  if(frMain&&Math.abs(u)>20)Fxr=-sgn*mu*Nr*0.55;
+  /* l'antipatinage : sans DRIFT, la roue motrice ne dépasse pas ce que le pneu peut donner en virage */
+  E.patine=false;
+  /* en drift, l'arrière est libéré : la roue patine, mais garde de quoi tenir l'angle */
+  const kR=driftTenu?(0.56+0.05*(S.glisse-2.5))/Math.sqrt(S.tenue):(frMain?0.25:1);
+  const capXr=mu*Nr*(driftTenu?kR*0.55:1);
+  if(Math.abs(Fxr)>capXr*0.98){E.patine=Fd>0;Fxr=Math.sign(Fxr)*capXr*0.98;}
+  if(!driftTenu&&Fd>0){const lim=capXr*(0.9-0.3*Math.min(1,Math.abs(d)/0.35));if(Fxr>lim)Fxr=Math.max(0,lim);}
+  if(Math.abs(Fxf)>mu*Nf)Fxf=Math.sign(Fxf)*mu*Nf;
+  /* 5. LA DYNAMIQUE, en sous-pas */
+  const Iz=a*b*1.15*S.stab;
+  const h2=dt/PH.sous;
+  let aYf=0,aYr=0;
+  for(let k=0;k<PH.sous;k++){
+    const capF=Math.sqrt(Math.max(0,(mu*Nf)**2-Fxf*Fxf)), capR=Math.sqrt(Math.max(0,(mu*Nr*kR)**2-Fxr*Fxr));
+    let du,dv,dr;
+    const ue=Math.max(Math.abs(u),12);
+    const af=Math.atan2(v+a*r,ue)-d*sgn, ar=Math.atan2(v-b*r,ue);
+    const Fyf=-capF*Math.tanh(7*af), Fyr=pneu(ar,capR,9.5);   /* l'avant plafonne sans retomber (sous-virage franc) ; l'arrière décroche */
+    aYf=Fyf;aYr=Fyr;
+    const cd=Math.cos(d), sd=Math.sin(d);
+    du=Fxr+Fxf*cd-Fyf*sd+v*r;
+    dv=Fyr+Fyf*cd+Fxf*sd-u*r;
+    dr=(a*(Fyf*cd+Fxf*sd)-b*Fyr)/Iz;
+    /* le coup de frein à main en braquant lance l'arrière ; l'aide au drift ramène l'angle vers la consigne */
+    if(frMain&&u>40)dr+=(c.s||0)*7;
+    if(E.driftAide)dr+=(E.driftErr||0)*(8+4*(S.maitrise-1))+(E.dBeta||0)*1.6;
+    /* à basse vitesse ou en marche arrière : la géométrie pure, la voiture tourne autour de l'essieu arrière */
+    const w=u<0?1:Math.max(0,Math.min(1,(45-u)/30));
+    if(w>0){const rk=u*Math.tan(d)/L;
+      dr=dr*(1-w)+((rk-r)*14)*w;
+      dv=dv*(1-w)+((rk*b-v)*14-u*r*0)*w;
+      du=du*(1-w)+(Fxr+Fxf)*w;}
+    u+=du*h2;v+=dv*h2;r+=dr*h2;
+    if(!(c.g>0)&&Math.abs(u)<3&&!(c.b>0))u=0;
+    if(u>VMAX*1.03)u+=(VMAX-u)*Math.min(1,3*h2);
+    E.ang+=r*h2;
+  }
+  {const axN=(Fxr+Fxf)-0;E.axL=(E.axL||0)+(axN-(E.axL||0))*Math.min(1,8*dt);}
+  E.lacet=r;
+  const ca=Math.cos(E.ang), sa=Math.sin(E.ang);
+  E.vx=u*ca-v*sa;E.vy=u*sa+v*ca;
+  /* la glisse se lit à l'essieu ARRIÈRE : en virage lent, la voiture pivote sans glisser */
+  const vr=v-b*r, nx=ca, ny=sa, av=u, tr=vr;
+  /* 6. LA GLISSE (pour les points) : l'angle entre la carrosserie et la trajectoire */
+  const vit=Math.hypot(u,v), angG2=Math.atan2(Math.abs(vr),Math.max(1,Math.abs(u)));
+  if(!E.glisse&&vit>S.vmax*0.25&&angG2>0.26){
     E.glisse=true;E.glisseT=0;E.propre=true;E.combo=(E.finCombo>0)?Math.min(5,(E.combo||1)+1):1;E.drifts++;
-    if(c.h)E.lacet+=E.vol*0.8;                      /* le coup de frein à main jette l'arrière */
-  }else if(E.glisse&&((angG2<0.12/S.tenue&&!c.h)||vit<S.vmax*0.18))finDeGlisse();
+  }else if(E.glisse&&(angG2<0.1/S.tenue||vit<S.vmax*0.15))finDeGlisse();
   if(E.glisse){
     E.glisseT+=dt;
     const deg=angG2*57.3, haut=45+12*(S.maitrise-1), maitrise=deg<12?0.6:deg<=haut?1.5:deg<=haut+20?1:0.5;  /* le bon angle rapporte plus que la toupie */
     E.charge=Math.min(3,E.charge+dt*(maitrise>=1?1:0.4)*S.tenue);
     E.points+=deg*(vit/60)*dt*maitrise*E.combo*(E.mode==='drift'&&ZONE.clip>0?ZONE.clip:1);E.finCombo=1.6;E.maitriseVue=maitrise;
   }else if(E.finCombo>0){E.finCombo-=dt;if(E.finCombo<=0)encaisserCombo();}
-  E.vitesse=vit;E.vmaxVue=S.vmax;E.angGlisse=angG2;E.horsPiste=hp;
-  /* le son suit le régime du rapport engagé */
-  majMoteur(dt,Math.abs(av)*340/S.vmax,c.g>0&&!(E.coupure>0),Math.abs(tr)*2,rap);
-  /* les flammes, la traînée */
+  E.vitesse=vit;E.vmaxVue=S.vmax;E.angGlisse=angG2;E.horsPiste=hp;E.latG=aYf+aYr;
+  /* le son suit le régime ; les pneus crissent quand ils travaillent au-delà du pic */
+  majMoteur(dt,Math.abs(u)*340/S.vmax*(E.patine?1.25:1),c.g>0&&!(E.coupure>0),Math.abs(v)*2+(E.patine?60:0),rap);
   const T0=E.tuning||{};
-  if(T0.flammes){if(E.gazAvant>0&&!(c.g>0)&&av>VMAX*0.45){E.flamme=0.35;pop();}E.gazAvant=c.g;}
+  if(T0.flammes){if(E.gazAvant>0&&!(c.g>0)&&u>VMAX*0.45){E.flamme=0.35;pop();}E.gazAvant=c.g;}
   if(E.flamme>0)E.flamme-=dt;
   if((E.nitroT>0||E.boostT>0)&&Math.random()<0.5)E.flamme=Math.max(E.flamme,0.06);
-  /* 5. LE DÉPLACEMENT ET LES MURS */
+  /* 7. LE DÉPLACEMENT ET LES MURS */
   const libre=(X,Y)=>!(bloqueTokyo(X,Y)||X<20||X>MONDE_L-20||Y<TK.bati+18||Y>MONDE_H-18
     ||(E.mode==='drift'&&!dansZone(X,Y,16))||ZD.poteaux.some(([px,py])=>Math.hypot(X-px,Y-py)<30));
   let X=E.x+E.vx*dt, Y=E.y+E.vy*dt;
@@ -1249,6 +1319,7 @@ function pasPhysique(dt,c){
     if(libre(X,E.y)){Y=E.y;E.vy*=-0.25;E.vx*=0.82;}
     else if(libre(E.x,Y)){X=E.x;E.vx*=-0.25;E.vy*=0.82;}
     else{X=E.x;Y=E.y;E.vx*=-0.3;E.vy*=-0.3;}
+    E.lacet*=0.5;
     if(choc>75)heurter(choc,E.x+nx*28,E.y+ny*28);
   }
   E.dist+=Math.hypot(X-E.x,Y-E.y);
@@ -1305,7 +1376,7 @@ function majEssai(dt,jx,jy){
   if(E.mode==='drift')majZoneHorsPas(dt);
   /* LES EFFETS, une fois par image */
   if(info){const {tr,nx,ny,hp,vit}=info;
-    if(Math.abs(tr)>30){
+    if(Math.abs(tr)>30||(E.patine&&vit>8)){
       for(const s of [-10,10]){const px=E.x-nx*18-ny*s, py=E.y-ny*18+nx*s;
         try{const gs=SOL.getContext('2d');gs.fillStyle='rgba(12,10,16,.42)';gs.fillRect(Math.round(px)-1,Math.round(py)-1,2,2);}catch(x){E.traces.push([px,py]);}}
       if(E.fumee.length<44&&Math.random()<0.6)E.fumee.push({x:E.x-nx*24+(Math.random()-0.5)*8,y:E.y-ny*24+(Math.random()-0.5)*8,r:4,vie:0.85,c:(E.tuning||{}).fumee||null});
@@ -1385,7 +1456,7 @@ function pasCourse(dt){
     let cible=c.vmax;
     if(c.type==='adv'){
       /* la vitesse de passage de chaque virage devant (rayon de braquage du joueur), et la distance pour freiner */
-      for(let a=0;a<=360;a+=20){const k=pointPiste(c.s+a).k;if(k>0){const vv=((1/k)*0.96-45)/0.28;cible=Math.min(cible,Math.sqrt(vv*vv+2*345*a));}}
+      for(let a=0;a<=360;a+=20){const k=pointPiste(c.s+a).k;if(k>0){const vv=Math.sqrt(330*(1/k));cible=Math.min(cible,Math.sqrt(vv*vv+2*345*a));}}
       /* l'élastique : léger, et seulement s'il est loin */
       const ecart=(progression(c)-progressionJoueur());
       if(ecart>500)cible*=0.96;else if(ecart<-400)cible*=1.04;
@@ -1826,6 +1897,9 @@ function dessinerEssai(ctx,camX,camY){
   {const vb=E.vibreur?(((performance.now()/45)|0)%2?0.7:-0.7):0;
     ctx.translate(-(E.pitch||0)+vb*0.5,(E.roll||0)+vb);}
   ctx.drawImage(E.toile,-34,-16);
+  /* LES ROUES AVANT BRAQUENT : on les voit tourner avec le volant */
+  for(const sy of [-15,15]){ctx.save();ctx.translate(18,sy);ctx.rotate(E.delta||0);
+    ctx.fillStyle='#0b0a10';ctx.fillRect(-5,-1.5,10,3);ctx.fillStyle='#4a4a56';ctx.fillRect(-4,sy<0?-1.5:0.5,8,1);ctx.restore();}
   ctx.restore();
   ctx.save();
   for(const p of E.etinc){ctx.globalAlpha=Math.min(1,p.vie*4);ctx.fillStyle=p.c;ctx.fillRect(Math.round(p.x-camX)-1,Math.round(p.y-camY)-1,2,2);}
