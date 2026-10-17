@@ -1295,7 +1295,7 @@ function pasPhysique(dt,c){
   /* 6. LA GLISSE (pour les points) : l'angle entre la carrosserie et la trajectoire */
   const vit=Math.hypot(u,v), angG2=Math.atan2(Math.abs(vr),Math.max(1,Math.abs(u)));
   if(!E.glisse&&vit>S.vmax*0.25&&angG2>0.26){
-    E.glisse=true;E.glisseT=0;E.propre=true;E.combo=(E.finCombo>0)?Math.min(5,(E.combo||1)+1):1;E.drifts++;
+    E.glisse=true;E.glisseT=0;E.propre=true;E.combo=(E.finCombo>0)?(E.dernierNiv>0?Math.min(5,(E.combo||1)+1):(E.combo||1)):1;E.drifts++;
   }else if(E.glisse&&(angG2<0.1/S.tenue||vit<S.vmax*0.15))finDeGlisse();
   if(E.glisse){
     E.glisseT+=dt;
@@ -1340,7 +1340,7 @@ function niveauCharge(){const c=ESSAI.charge||0;return c>=DRIFT_NIV[3]?3:c>=DRIF
 /* la glisse finit proprement : turbo selon la charge, et un bonus de maîtrise */
 function finDeGlisse(){
   const E=ESSAI, niv=niveauCharge();
-  E.glisse=false;
+  E.glisse=false;E.dernierNiv=E.propre?niv:0;
   if(E.propre&&niv>0){E.boostT=BOOST_T[niv];E.boostK=BOOST_K[niv];E.points+=[0,80,200,420][niv]*E.combo;
     popDrift(['','TURBO','SUPER TURBO','ULTRA TURBO'][niv],COUL_NIV[niv]);pop();
     try{navigator.vibrate&&navigator.vibrate([10,20,10*niv*3]);}catch(x){}}
@@ -1682,7 +1682,7 @@ function hudMontrer(on){
 function infoHaut(){
   const el=document.getElementById('tkInfo');if(!el)return;const E=ESSAI;
   if(E.mode==='drift'){const t=ZONE.phase==='decompte'?ZD.duree:Math.max(0,ZONE.t);
-    el.innerHTML='<b>'+Math.floor(t/60)+':'+String(Math.ceil(t%60)===60?0:Math.ceil(t%60)).padStart(2,'0')+'</b>'+(ZONE.clip>0?'CLIP ×'+ZONE.clip.toFixed(1):'ZONE DE DRIFT')+
+    el.innerHTML='<b>'+Math.floor(t/60)+':'+String(Math.ceil(t%60)===60?0:Math.ceil(t%60)).padStart(2,'0')+'</b>'+(ZONE.clip>0?'CLIP ×'+ZONE.clip.toFixed(1):ZONE.use?'FAIS LE HUIT →':'ZONE DE DRIFT')+
       '<small>'+Math.round((E.score||0)+(E.points||0)).toLocaleString('fr-FR')+' PTS · RECORD '+ZONE.record.toLocaleString('fr-FR')+'</small>';return;}
   if(COURSE.actif){
     const L=classement(), rang=L.findIndex(x=>x.joueur)+1;
@@ -1741,13 +1741,13 @@ function chronoPas(x0,y0,x1,y1,dt){
    À la fin : une note de juge (D à SS), le record, et une prime du serveur. */
 const ZD={x0:350,y0:400,x1:650,y1:1100,poteaux:[[500,610],[500,890]],duree:60};
 const ZONE={phase:'',t:0,cones:[],clip:0,record:0,fin:false};
-const NOTES_ZD=[[30000,'SS','#ff4fb0'],[18000,'S','#ffd98a'],[9000,'A','#5cff8a'],[4000,'B','#7fe8ff'],[1200,'C','#c9ccd8'],[0,'D','#8a8794']];
+const NOTES_ZD=[[90000,'SS','#ff4fb0'],[60000,'S','#ffd98a'],[35000,'A','#5cff8a'],[15000,'B','#7fe8ff'],[5000,'C','#c9ccd8'],[0,'D','#8a8794']];
 function noteZone(sc){for(const n of NOTES_ZD)if(sc>=n[0])return n;return NOTES_ZD[NOTES_ZD.length-1];}
 function zoneRecord(){try{return +localStorage.getItem('bdl.tk.zone')||0;}catch(x){return 0;}}
 function dansZone(x,y,m){return x>ZD.x0+m&&x<ZD.x1-m&&y>ZD.y0+m&&y<ZD.y1-m;}
 function preparerZone(){
   const E=ESSAI;
-  ZONE.phase='decompte';ZONE.t=3;ZONE.fin=false;ZONE.clip=0;ZONE.record=zoneRecord();ZONE.cones=[];
+  ZONE.phase='decompte';ZONE.t=3;ZONE.fin=false;ZONE.clip=0;ZONE.poteau=-1;ZONE.balaye=0;ZONE.record=zoneRecord();ZONE.cones=[];
   for(const [px,py] of ZD.poteaux)for(let k=0;k<6;k++){const a=k/6*Math.PI*2+0.26;ZONE.cones.push({x:px+Math.cos(a)*34,y:py+Math.sin(a)*34,vx:0,vy:0,a:0,va:0,tombe:false});}
   E.x=500;E.y=1058;E.ang=-Math.PI/2;E.vx=0;E.vy=0;
   decompteMontrer(3);
@@ -1756,7 +1756,14 @@ function preparerZone(){
 function pasZone(dt){
   const E=ESSAI;
   let dmin=1e9;for(const [px,py] of ZD.poteaux)dmin=Math.min(dmin,Math.hypot(E.x-px,E.y-py));
-  ZONE.clip=(E.glisse&&dmin>=40&&dmin<=110)?1+(110-dmin)/70:0;
+  let ip=0,dp=1e9;ZD.poteaux.forEach(([px,py],i)=>{const d=Math.hypot(E.x-px,E.y-py);if(d<dp){dp=d;ip=i;}});
+  /* l'angle balayé autour du poteau : un tour complet sur le même, et le clip s'éteint jusqu'à l'autre poteau */
+  if(dp<=130){const [px,py]=ZD.poteaux[ip], a=Math.atan2(E.y-py,E.x-px);
+    if(ZONE.poteau!==ip){ZONE.poteau=ip;ZONE.balaye=0;ZONE.aPrec=a;}
+    else{let da=a-ZONE.aPrec;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;ZONE.balaye+=Math.abs(da);ZONE.aPrec=a;}}
+  const usé=ZONE.balaye>Math.PI*2.2;
+  ZONE.clip=(E.glisse&&dmin>=40&&dmin<=110&&!usé)?1+(110-dmin)/70:0;
+  ZONE.use=usé&&E.glisse&&dmin<=110;
   for(const c of ZONE.cones){
     if(!c.tombe&&Math.hypot(E.x-c.x,E.y-c.y)<24){
       c.tombe=true;c.vx=E.vx*1.1+(Math.random()-0.5)*60;c.vy=E.vy*1.1+(Math.random()-0.5)*60;c.va=(Math.random()-0.5)*20;
@@ -1786,7 +1793,7 @@ async function finZone(){
   el=document.createElement('div');el.id='tkFin';
   el.innerHTML='<div class="c"><small>ZONE DE DRIFT · 60 S</small><div class="r" style="color:'+coul+'">'+lettre+'</div>'+
     '<div class="t">'+sc.toLocaleString('fr-FR')+' pts'+(nouveau?' · NOUVEAU RECORD':' · record '+rec.toLocaleString('fr-FR'))+'</div>'+
-    '<div class="cl" style="text-align:center;font:600 12px -apple-system,sans-serif;color:rgba(255,255,255,.6)">SS 30 000 · S 18 000 · A 9 000 · B 4 000 · C 1 200</div>'+
+    '<div class="cl" style="text-align:center;font:600 12px -apple-system,sans-serif;color:rgba(255,255,255,.6)">SS 90 000 · S 60 000 · A 35 000 · B 15 000 · C 5 000</div>'+
     '<div class="g" id="tkGain">Le juge envoie ta note…</div>'+
     '<div class="b"><button id="tkRejouer">Rejouer</button><button id="tkQuitter2">Quitter</button></div></div>';
   document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'));
@@ -1797,7 +1804,7 @@ async function finZone(){
   const gz=document.getElementById('tkGain');if(!gz)return;
   if(!r||r.erreur){gz.textContent=(r&&r.erreur)||'La prime n’a pas pu être versée.';return;}
   if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();sauver();}catch(x){}}
-  gz.innerHTML=r.gain>0?'<b>+'+enEuros(r.gain)+'</b> de prime'+(r.plafond?' · plafond du jour atteint':''):(r.plafond?'Plafond du jour atteint : 30 000 € de primes par jour.':'Pas de prime sous 1 200 points.');
+  gz.innerHTML=r.gain>0?'<b>+'+enEuros(r.gain)+'</b> de prime'+(r.plafond?' · plafond du jour atteint':''):(r.plafond?'Plafond du jour atteint : 30 000 € de primes par jour.':'Pas de prime sous 5 000 points.');
 }
 /* le dessin : l'anneau de clip qui s'allume, les cônes */
 function dessinerZoneDrift(ctx){
