@@ -1337,11 +1337,11 @@ const LICENCES=[
   {id:'C',nom:'Licence C',titre:'Débutant',prime:300000,coul:'#7fe8ff',ep:[
     {id:'C1',nom:'Premier tour',desc:'Un tour du Tokyo Circuit, seul en piste.',type:'chrono',circuit:'tokyo',voiture:'BMW',tours:1,seuils:[47,40.5,36.5]},
     {id:'C2',nom:'Premiers drifts',desc:'Une manche de 60 s dans la zone de drift.',type:'drift',voiture:'Toyota',seuils:[5000,15000,35000]},
-    {id:'C3',nom:'Course aux Docks',desc:'Deux tours contre cinq pilotes, entre les conteneurs.',type:'course',circuit:'docks',voiture:'BMW',tours:2,seuils:[3,2,1]}]},
+    {id:'C3',nom:'Course aux Docks',desc:'Deux tours contre cinq pilotes, entre les conteneurs.',type:'course',circuit:'docks',voiture:'BMW',tours:2,niv:0.9,seuils:[3,2,1]}]},
   {id:'B',nom:'Licence B',titre:'Pilote',prime:800000,coul:'#5cff8a',ep:[
     {id:'B1',nom:'Les lacets d’Haruna',desc:'Un tour du Mont Haruna, seul.',type:'chrono',circuit:'haruna',voiture:'Toyota',tours:1,seuils:[59.5,51.5,46.5]},
     {id:'B2',nom:'Précision aux Docks',desc:'Un tour des Docks en 911, seul.',type:'chrono',circuit:'docks',voiture:'Porsche',tours:1,seuils:[36,31,28.5]},
-    {id:'B3',nom:'Le grand prix de Tokyo',desc:'Trois tours contre cinq pilotes.',type:'course',circuit:'tokyo',voiture:'Toyota',tours:3,seuils:[3,2,1]}]},
+    {id:'B3',nom:'Le grand prix de Tokyo',desc:'Trois tours contre cinq pilotes.',type:'course',circuit:'tokyo',voiture:'Toyota',tours:3,niv:0.9,seuils:[3,2,1]}]},
   {id:'A',nom:'Licence A',titre:'Expert',prime:1500000,coul:'#ffd21f',ep:[
     {id:'A1',nom:'Wangan à fond',desc:'Un tour de l’autoroute en Huracán, seul.',type:'chrono',circuit:'wangan',voiture:'Lamborghini',tours:1,seuils:[38,33,30]},
     {id:'A2',nom:'Duel sur la montagne',desc:'Deux tours d’Haruna contre cinq pilotes.',type:'course',circuit:'haruna',voiture:'Porsche',tours:2,seuils:[3,2,1]},
@@ -1349,7 +1349,7 @@ const LICENCES=[
   {id:'S',nom:'Licence S',titre:'Légende',prime:4000000,coul:'#ff4fb0',ep:[
     {id:'S1',nom:'La nuit du Wangan',desc:'Deux tours d’autoroute en F40, dans le trafic.',type:'course',circuit:'wangan',voiture:'Ferrari',tours:2,seuils:[3,2,1]},
     {id:'S2',nom:'Haruna en F40',desc:'Un tour de montagne, gros turbos, seul.',type:'chrono',circuit:'haruna',voiture:'Ferrari',tours:1,seuils:[65,56,50.5]},
-    {id:'S3',nom:'La bête des Docks',desc:'Trois tours des Docks en GT-R contre cinq pilotes.',type:'course',circuit:'docks',voiture:'Nissan',tours:3,seuils:[3,2,1]}]}];
+    {id:'S3',nom:'La bête des Docks',desc:'Trois tours des Docks en GT-R contre cinq pilotes.',type:'course',circuit:'docks',voiture:'Nissan',tours:3,niv:1.04,seuils:[3,2,1]}]}];
 const MED=['—','BRONZE','ARGENT','OR'], MED_C=['#8a8794','#d08a4a','#d8dbe6','#ffd21f'], MED_E=['','🥉','🥈','🥇'];
 function carriere(){try{const c=JSON.parse(localStorage.getItem('bdl.tk.carriere')||'{}');c.med=c.med||{};c.best=c.best||{};c.lic=c.lic||{};return c;}catch(x){return {med:{},best:{},lic:{}};}}
 function sauverCarriere(c){try{localStorage.setItem('bdl.tk.carriere',JSON.stringify(c));}catch(x){}}
@@ -1362,7 +1362,7 @@ function medailleDe(ep,v){const s=ep.seuils;
 const fmtSeuil=(ep,v)=>ep.type==='chrono'?fmtTour(v):ep.type==='course'?(v===1?'1er':v+'e'):v.toLocaleString('fr-FR')+' pts';
 function lancerEpreuve(ep){
   const v=VOIT_PRET[ep.voiture];
-  debutEssai(v,null,{},ep.type==='drift'?'drift':'course',{circuit:ep.circuit||'tokyo',tours:ep.tours,adv:ep.type==='course',epreuve:ep});
+  debutEssai(v,null,{},ep.type==='drift'?'drift':'course',{circuit:ep.circuit||'tokyo',tours:ep.tours,adv:ep.type==='course',niv:ep.niv,epreuve:ep});
 }
 /* le résultat d'une épreuve : médaille, record, licence peut-être obtenue */
 async function resultatEpreuve(v){
@@ -1761,7 +1761,7 @@ function preparerCourse(){
     const m=marques[i%marques.length], S=statsVoiture(m,{}), coul=COUL_ADV[(i*3+Math.floor(Math.random()*7))%COUL_ADV.length];
     const s=P.ligneS+grille[i][0], lane=grille[i][1];
     COURSE.voitures.push({type:'adv',nom:['Kenji','Aya','Ryo','Mika','Takumi'][i]+' · '+m,marque:m,toile:peindreVoitureDessus(m,{couleur:coul}),
-      s,lane,laneCible:lane,v:0,vmax:Math.min(S.vmax,(E.stats||S).vmax)*(0.84+i*0.03),acc:Math.min(S.acc,(E.stats||S).acc)*0.9,   /* au niveau de TA voiture : c'est le tuning qui fait la différence */
+      s,lane,laneCible:lane,v:0,vmax:Math.min(S.vmax,(E.stats||S).vmax)*(0.84+i*0.03)*(O.niv||1),acc:Math.min(S.acc,(E.stats||S).acc)*0.9,   /* au niveau de TA voiture : c'est le tuning qui fait la différence */
       tours:0,tour0:false,fini:null,x:0,y:0,ang:0,r:13});
   }
   const nt=adv?CIR.trafic:0;
@@ -1801,7 +1801,7 @@ function pasCourse(dt){
       if(ecart>500)cible*=0.96;else if(ecart<-400)cible*=1.04;
       if(c.fini!=null)cible=Math.min(cible,c.vmax*0.7);   /* arrivé : il finit son tour en fantôme */
     }
-    if(c.type==='trafic'){const k=pointPiste(c.s+40).k;if(k>0)cible=Math.min(cible,80);}
+    if(c.type==='trafic'){const k=pointPiste(c.s+40).k;if(k>1e-4)cible=Math.min(cible,Math.max(80,Math.sqrt(160/k)));}   /* le trafic ralentit dans les virages serrés, pas dans les grandes courbes */
     c.v+=Math.max(-345*dt,Math.min(c.acc*dt,cible-c.v));
     /* LES COULOIRS : trois files (gauche, milieu, droite). Un adversaire regarde
        la place libre devant lui dans chaque file et prend la plus dégagée pour
@@ -2537,4 +2537,4 @@ function dessinerEssai(ctx,camX,camY){
     ctx.beginPath();ctx.arc(f.x-camX,f.y-camY,f.r,0,7);ctx.fill();}
   ctx.restore();
 }
-;({TK,lumieresTokyo,bloqueTokyo,construireSolTokyo,semerDecorTokyo,poserTokyo,ouvrirConcessionTokyo,fermerConcessionTokyo,ESSAI,debutEssai,finEssai,majEssai,dessinerEssai,COURSE,CMDS,PISTE,pointPiste,projeter,statsVoiture,dessinerVolant,ZONE,ZD,CIRCUITS,choisirCircuit,lancerEpreuve,LICENCES,carriere,choisirCourse,resultatEpreuve})
+;({TK,lumieresTokyo,bloqueTokyo,construireSolTokyo,semerDecorTokyo,poserTokyo,ouvrirConcessionTokyo,fermerConcessionTokyo,ESSAI,debutEssai,finEssai,majEssai,dessinerEssai,COURSE,CMDS,PISTE,pointPiste,projeter,statsVoiture,dessinerVolant,ZONE,ZD,CIRCUITS,choisirCircuit,lancerEpreuve,LICENCES,carriere,choisirCourse,resultatEpreuve,circuitActif:()=>CIR})
