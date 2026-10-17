@@ -67,14 +67,28 @@ function construireSolTokyo(){
   g.fillStyle='#9894a8';g.fillRect(0,TK.route[1],W,H-TK.route[1]);
   for(let yy=TK.route[1];yy<H;yy+=12)for(let xx=((yy/12)%2?0:10);xx<W;xx+=20){g.fillStyle=A(xx*0.37+yy*1.3)>.5?'#a29eb2':'#938fa4';g.fillRect(xx,yy,19,11);}
   /* le paddock, au milieu du serpentin : herbe, asphalte clair et places */
-  const PK={x0:360,y0:420,x1:640,y1:1080};
+  /* LA ZONE DE DRIFT, au milieu du serpentin : asphalte sombre, murs de pneus, deux poteaux et leurs anneaux */
+  const PK={x0:ZD.x0,y0:ZD.y0,x1:ZD.x1,y1:ZD.y1};
   g.fillStyle='#4f8a4a';g.fillRect(PK.x0-14,PK.y0-14,PK.x1-PK.x0+28,PK.y1-PK.y0+28);
-  g.fillStyle='#62616c';g.fillRect(PK.x0,PK.y0,PK.x1-PK.x0,PK.y1-PK.y0);
-  for(let i=0;i<900;i++){g.fillStyle='rgba(255,255,255,.035)';g.fillRect(PK.x0+Math.floor(A(i+300)*(PK.x1-PK.x0)),PK.y0+Math.floor(A(i+700)*(PK.y1-PK.y0)),2,1);}
-  g.fillStyle='rgba(235,235,245,.5)';
-  for(const y0 of [460,640,820]){for(let x=380;x<=620;x+=34){g.fillRect(x,y0,2,44);g.fillRect(x,y0+46,2,44);}g.fillRect(380,y0+44,242,2);}
-  g.globalAlpha=.16;g.fillStyle='#ff4fb0';g.font='bold 40px sans-serif';g.textAlign='center';g.fillText('東京',500,1030);
-  g.font='bold 14px sans-serif';g.fillText('TOKYO CIRCUIT',500,1000);g.textAlign='start';g.globalAlpha=1;
+  g.fillStyle='#3d3c47';g.fillRect(PK.x0,PK.y0,PK.x1-PK.x0,PK.y1-PK.y0);
+  for(let i=0;i<1400;i++){g.fillStyle='rgba(255,255,255,.04)';g.fillRect(PK.x0+Math.floor(A(i+300)*(PK.x1-PK.x0)),PK.y0+Math.floor(A(i+700)*(PK.y1-PK.y0)),2,1);}
+  /* des cercles de gomme des anciennes manches */
+  g.strokeStyle='rgba(10,8,14,.25)';g.lineWidth=3;
+  for(const [px,py] of ZD.poteaux)for(const r0 of [62,80,96]){g.beginPath();g.arc(px+(A(r0)-0.5)*10,py+(A(r0+1)-0.5)*10,r0,0,7);g.stroke();}
+  /* le marquage : la zone de clip en pointillés, le huit, le départ */
+  g.save();g.setLineDash([8,8]);g.strokeStyle='rgba(255,79,176,.55)';g.lineWidth=2;
+  for(const [px,py] of ZD.poteaux){g.beginPath();g.arc(px,py,40,0,7);g.stroke();g.beginPath();g.arc(px,py,110,0,7);g.stroke();}
+  g.restore();
+  g.fillStyle='rgba(235,235,245,.65)';g.fillRect(470,1040,60,3);
+  g.globalAlpha=.22;g.fillStyle='#ff4fb0';g.font='bold 34px sans-serif';g.textAlign='center';g.fillText('DRIFT',500,470);
+  g.font='bold 13px sans-serif';g.fillText('東京 · ZONE',500,490);g.textAlign='start';g.globalAlpha=1;
+  /* les poteaux : des piles de pneus */
+  for(const [px,py] of ZD.poteaux){g.fillStyle='rgba(0,0,0,.35)';g.beginPath();g.arc(px+3,py+3,17,0,7);g.fill();
+    for(const [r0,c0] of [[16,'#16141c'],[12,'#2a2833'],[8,'#16141c'],[4,'#e0263a']]){g.fillStyle=c0;g.beginPath();g.arc(px,py,r0,0,7);g.fill();}}
+  /* les murs de pneus tout autour */
+  const pneu=(x,y,k)=>{g.fillStyle='#16141c';g.beginPath();g.arc(x,y,5,0,7);g.fill();g.fillStyle=k%2?'#e0263a':'#f4f2f6';g.beginPath();g.arc(x,y,2.5,0,7);g.fill();};
+  let kk=0;for(let x=PK.x0;x<=PK.x1;x+=11){pneu(x,PK.y0-5,kk++);pneu(x,PK.y1+5,kk++);}
+  for(let y=PK.y0;y<=PK.y1;y+=11){pneu(PK.x0-5,y,kk++);pneu(PK.x1+5,y,kk++);}
   /* LA PISTE : un calque à part, pour que le grain et les reflets restent dessus */
   const pc=document.createElement('canvas');pc.width=W;pc.height=H;const pg=pc.getContext('2d');
   pg.lineJoin='round';pg.lineCap='round';
@@ -164,7 +178,7 @@ function construireSolTokyo(){
    crépuscule par le cycle du jeu. Le long du trottoir des façades, autour du
    circuit, au paddock et au métro. Ils ne bloquent rien. */
 const LAMPES_TK=[[198,232],[390,232],[545,232],[700,232],[855,232],
-  [360,420],[640,420],[360,1080],[640,1080],[500,750],
+  [330,380],[670,380],[330,1120],[670,1120],
   [20,480],[136,356]];
 /* et le long de la piste, des deux côtés, toutes les 260 unités : jamais sur une autre portion de piste */
 function lampesDuCircuit(){
@@ -173,7 +187,7 @@ function lampesDuCircuit(){
     for(const sd of [-1,1]){const o=ep/2+20, x=p.x-Math.sin(p.ang)*o*sd, y=p.y+Math.cos(p.ang)*o*sd;
       if(x<14||x>MONDE_L-14||y<TK.route[1]+20||y>MONDE_H-14)continue;
       if(projeter(x,y,null).d<ep/2+14)continue;
-      if(x>346&&x<654&&y>406&&y<1094)continue;
+      if(x>320&&x<680&&y>370&&y<1130)continue;
       L.push([Math.round(x),Math.round(y)]);}}
   return L;
 }
@@ -298,6 +312,7 @@ const NEONS_TK=['#ff4fb0','#7fe8ff','#b08cff','#5cff8a','#ffd98a','#ff3b3b'];
    à FICHES ; ajouter une pièce, c'est ajouter une entrée à PIECES. Rien à
    réécrire dans la conduite.
    Unités : pixels de carte par seconde (1 px ≈ 25 cm), rad/s pour la direction. */
+const VITESSE_K=1.5;
 const FICHE_BASE={vmax:186,acc:152,frein:330,grip:8.8,dir:3.0,stab:1,glisse:2.5,maitrise:1,tenue:1};
 const FICHES={
   Toyota:     {vmax:188,acc:150,grip:8.4, dir:3.05,stab:1.0, glisse:2.3,maitrise:1.15},
@@ -322,12 +337,14 @@ function statsVoiture(marque,t){
   for(const k of Object.keys(PIECES)){const p=PIECES[k][t[k]];if(!p)continue;for(const c of Object.keys(p))M[c]=(M[c]||0)+p[c];}
   for(const c of Object.keys(M))S[c]=S[c]*(1+M[c]);
   S.nitro=+t.nitro||0;
+  /* L'ÉCHELLE DE VITESSE : la carte est en pixels, et 250 km/h doivent se SENTIR — cinq longueurs de voiture par seconde, pas trois */
+  S.vmax*=VITESSE_K;S.acc*=VITESSE_K;S.frein*=VITESSE_K;
   return S;
 }
 /* les notes du showroom et de l'atelier, sur 10, lues dans la même fiche */
 function notesDe(marque,t){
   const S=statsVoiture(marque,t), r=x=>Math.max(1,Math.min(10,Math.round(x*10)/10));
-  return {vit:r(S.vmax/27.6),acc:r(S.acc/22.8),tenue:r(S.grip/1.5),drift:r(4.6+(S.maitrise-1)*9+(3.2-S.glisse)*1.6+(S.tenue-1)*2)};
+  return {vit:r(S.vmax/VITESSE_K/27.6),acc:r(S.acc/VITESSE_K/22.8),tenue:r(S.grip/1.5),drift:r(4.6+(S.maitrise-1)*9+(3.2-S.glisse)*1.6+(S.tenue-1)*2)};
 }
 let caler2=null;
 /* LES PRIX DES VOITURES (centimes) : le serveur a la même table, c'est lui qui débite */
@@ -582,6 +599,13 @@ async function ouvrirConcessionTokyo(ongletDepart){
     /* LE CLASSEMENT DES COURSES : les dix meilleurs temps de tous les joueurs (3 tours) */
     const bloc=document.createElement('div');bloc.innerHTML='<h3 style="margin:20px 0 8px;font:800 15px sans-serif;color:#fff">🏁 Classement des courses · 3 tours</h3><div id="ccClass" style="color:rgba(255,255,255,.55);font-size:13px">Chargement…</div>';
     $('ccCorps').appendChild(bloc);
+    const bloc2=document.createElement('div');bloc2.innerHTML='<h3 style="margin:20px 0 8px;font:800 15px sans-serif;color:#fff">🌀 Zone de drift · meilleures notes</h3><div id="ccClassZ" style="color:rgba(255,255,255,.55);font-size:13px">Chargement…</div>';
+    $('ccCorps').appendChild(bloc2);
+    rpcTK('tokyo_classement_drift',{}).then(r=>{const z=$('ccClassZ');if(!z)return;
+      const L2=Array.isArray(r)?r:null;
+      if(!L2){z.textContent=(r&&r.erreur)||'Classement indisponible.';return;}
+      if(!L2.length){z.textContent='Personne n’a encore de note. Lance « Zone de drift » depuis ton garage.';return;}
+      z.innerHTML=L2.map((x,i)=>{const m=modele(x.voiture), n=noteZone(x.score||0);return '<div class="ccLigneRec"><b style="width:26px;color:#7fe8ff">'+(i+1)+'</b><div><b>'+esc(x.pseudo||'?')+'</b><small>'+esc(m?nom(m):(x.voiture||''))+'</small></div><i style="color:'+n[2]+'">'+n[1]+' · '+(x.score||0).toLocaleString('fr-FR')+'</i></div>';}).join('');});
     rpcTK('tokyo_classement_course',{}).then(r=>{const z=$('ccClass');if(!z)return;
       const L2=Array.isArray(r)?r:(r&&Array.isArray(r.liste)?r.liste:null);
       if(!L2){z.textContent=(r&&r.erreur)||'Classement indisponible.';return;}
@@ -620,6 +644,7 @@ async function ouvrirConcessionTokyo(ongletDepart){
         '<div style="display:flex;gap:8px;margin-top:12px">'+
           '<button id="ccRenommer" style="flex:1;min-height:50px;border-radius:14px;border:0;background:rgba(255,255,255,.08);font:700 14px sans-serif;color:#fff">Renommer</button>'+
           '<button id="ccCourse" style="flex:1.4;min-height:50px;border-radius:14px;border:0;background:rgba(255,79,176,.18);box-shadow:inset 0 0 0 2px #ff4fb0;font:800 14px sans-serif;color:#fff">🏁 Course · 3 tours</button></div>'+
+        '<button id="ccZone" style="display:block;width:100%;margin-top:8px;min-height:50px;border-radius:14px;border:0;background:rgba(127,232,255,.14);box-shadow:inset 0 0 0 2px #7fe8ff;font:800 14px sans-serif;color:#fff">🌀 Zone de drift · 60 s notées</button>'+
         '<button id="ccVolant" style="display:block;width:100%;margin-top:8px;min-height:56px;border-radius:16px;border:0;background:#ff4fb0;color:#fff;font:800 16px sans-serif">Prendre le volant</button>';
     }
     $('ccCorps').innerHTML=h;
@@ -635,6 +660,7 @@ async function ouvrirConcessionTokyo(ongletDepart){
       const v=G[choisie];
       $('ccVolant').onclick=()=>{fermerConcessionTokyo();debutEssai(modele(v.modele)||{marque:'Toyota',modele:''},v);};
       $('ccCourse').onclick=()=>{fermerConcessionTokyo();debutEssai(modele(v.modele)||{marque:'Toyota',modele:''},v,null,'course');};
+      $('ccZone').onclick=()=>{fermerConcessionTokyo();debutEssai(modele(v.modele)||{marque:'Toyota',modele:''},v,null,'drift');};
       $('ccRenommer').onclick=()=>{
         const n=prompt('Le nom de ta voiture',v.nom||'');
         if(n===null)return;
@@ -857,6 +883,7 @@ function projeter(x,y,indice){
 }
 /* la distance au bord de la piste (0 sur la piste) ; la route du haut est la voie des stands */
 function horsPiste(x,y){
+  if(x>ZD.x0&&x<ZD.x1&&y>ZD.y0&&y<ZD.y1)return 0;
   if(y>TK.route[0]-4&&y<TK.route[1]+4&&x<CIRCUIT.depart+380)return 0;
   const p=projeter(x,y,horsPiste.i);horsPiste.i=p.i;
   return Math.max(0,p.d-CIRCUIT.ep/2);
@@ -1057,7 +1084,7 @@ const DRIFT_NIV=[0,0.7,1.5,2.4];                 /* secondes de glisse propre po
 const BOOST_T=[0,0.6,1.0,1.5], BOOST_K=[1,1.2,1.3,1.42];
 const COUL_NIV=['#ffffff','#5ad8ff','#ff9a3c','#ff4fb0'];
 const RAPPORTS=[0,0.16,0.31,0.47,0.63,0.8];
-const KMH=1.35;                                   /* px/s → km/h affichés */
+const KMH=0.9;                                   /* px/s → km/h affichés */
 const CMDS={g:false,d:false,gaz:false,frein:false,drift:false,nitro:false};
 /* AU VOLANT, ON CONDUIT AUX BOUTONS, et seulement aux boutons : le joystick du jeu est coupé tant qu'on conduit */
 const MODE_CMD='boutons';
@@ -1066,20 +1093,21 @@ try{localStorage.removeItem('bdl.tk.cmd');}catch(x){}
 /* ================= LE DÉBUT ET LA FIN D'UNE SORTIE ================= */
 function debutEssai(v,aMoi,reglages,mode){
   const E=ESSAI;
-  E.actif=true;E.garage=aMoi||null;E.modele=v||{};E.mode=mode==='course'?'course':'libre';
+  E.actif=true;E.garage=aMoi||null;E.modele=v||{};E.mode=mode==='course'||mode==='drift'?mode:'libre';
   E.tuning=(aMoi&&aMoi.tuning)||reglages||{};
   E.stats=statsVoiture(v&&v.marque,E.tuning);
   E.halo=null;E.dist=0;E.drifts=0;E.nom=[v.marque,v.modele].filter(Boolean).join(' ');
   E.toile=peindreVoitureDessus(v.marque,E.tuning);
   E.retour=E.retour&&E.actifAvant?E.retour:{x:joueur.x,y:joueur.y};
   E.x=CIRCUIT.ligne-150;E.y=(TK.route[0]+TK.route[1])/2+18;E.ang=0;E.vx=0;E.vy=0;
-  E.limite=(aMoi||E.mode==='course')?null:180;
+  E.limite=(aMoi||E.mode!=='libre')?null:180;
   E.tour=null;E.tours=0;E.cp=0;E.dernier=null;E.trainee=[];E.flamme=0;E.gazAvant=0;
   E.traces=[];E.fumee=[];E.etinc=[];E.recul=false;E.reste=0;E.idx=null;
   E.lacet=0;E.vol=0;E.idx=null;E.rapport=0;E.coupure=0;E.glisse=false;E.glisseT=0;E.charge=0;E.points=0;E.combo=1;E.finCombo=0;E.score=0;E.propre=true;
   E.boostT=0;E.boostK=1;E.nitroT=0;E.nitroCharge=1;E.choc=0;
   COURSE.actif=false;
   if(E.mode==='course')preparerCourse();
+  ZONE.phase='';if(E.mode==='drift')preparerZone();
   joueur.x=E.x;joueur.y=E.y;
   couperMoteur();demarrerMoteur();
   document.body.classList.add('tk-volant');
@@ -1091,7 +1119,7 @@ function debutEssai(v,aMoi,reglages,mode){
 function finEssai(){
   const E=ESSAI;
   E.actif=false;
-  if(E.garage){const v=E.garage;v.km=(v.km||0)+E.dist*0.00025;v.drifts=(v.drifts||0)+E.drifts;v.sorties=(v.sorties||0)+1;try{sauver();}catch(x){}}
+  if(E.garage){const v=E.garage;v.km=(v.km||0)+E.dist*0.00017;v.drifts=(v.drifts||0)+E.drifts;v.sorties=(v.sorties||0)+1;try{sauver();}catch(x){}}
   E.garage=null;COURSE.actif=false;COURSE.voitures=[];
   hudMontrer(false);
   couperMoteur();
@@ -1150,10 +1178,11 @@ function pasPhysique(dt,c){
   if(E.coupure>0)E.coupure-=dt;
   const couple=[1.3,1.12,1,0.92,0.85,0.8][rap]*(E.coupure>0?0.35:1);
   if(c.g>0){if(av<-5)av+=S.frein*dt;else av+=ACC*couple*c.g*Math.max(0.04,1-Math.pow(Math.max(0,av)/VMAX,2))*dt;}
-  if(c.b>0){if(av>8)av-=S.frein*c.b*dt;else av=Math.max(-62,av-ACC*0.55*c.b*dt);}   /* frein, puis marche arrière */
+  if(c.b>0){if(av>8)av-=S.frein*c.b*dt;else av=Math.max(-90,av-ACC*0.55*c.b*dt);}   /* frein, puis marche arrière */
   if(c.h)av*=Math.exp(-0.5*dt);                  /* le frein à main mord un peu */
   if(!(c.g>0)&&!(c.b>0)){av*=Math.exp(-(hp?2.2:0.75)*dt);if(Math.abs(av)<3)av=0;}
   if(av>VMAX)av+=(VMAX-av)*Math.min(1,2.5*dt);
+  {const ax=(av-(E.vx*fx+E.vy*fy))/dt;E.axL=(E.axL||0)+(ax-(E.axL||0))*Math.min(1,6*dt);}
   E.vx=av*fx-tr*fy;E.vy=av*fy+tr*fx;           /* la poussée et le frein, rendus au vecteur vitesse */
   /* 2. LE VOLANT : il ne saute pas en butée. Un appui bref donne une petite
      correction, un appui tenu braque franchement (≈ 0,15 s). Il revient vite au centre. */
@@ -1164,11 +1193,17 @@ function pasPhysique(dt,c){
      La rotation suit la consigne avec une inertie courte : elle répond tout de suite. */
   const va=Math.abs(av), sens=av<-2?-1:1;
   const angG=Math.atan2(Math.abs(tr),Math.max(1,va));
-  const R=(45+0.42*va)*3/S.dir;
-  let cons=E.vol*sens*Math.min(va/R,3);
+  const R=(45+0.28*va)*3/S.dir;
+  /* LE POIDS : au freinage, la masse passe sur l'avant — la voiture s'inscrit plus fort ;
+     sous les gaz, elle s'allège devant et tourne un peu moins. */
+  const tf=Math.max(0,Math.min(1,-(E.axL||0)/S.frein)), ta=Math.max(0,Math.min(1,(E.axL||0)/S.acc));
+  let cons=E.vol*sens*Math.min(va/R,3)*(1+0.25*tf-0.1*ta);
   if(E.glisse){
     /* en glisse, le volant dose l'angle ; au-delà de 50°, la voiture se rattrape d'elle-même */
-    cons=E.vol*S.dir*1.1*S.maitrise+Math.sign(tr||1)*(0.3*Math.min(1,angG/0.6)*(c.h?1:0.5)+Math.max(0,angG-0.85)*5/S.maitrise);
+    /* la rotation en glisse dépend de la vitesse : lente, la voiture ne tourne pas sur elle-même */
+    const kv=Math.max(0.35,Math.min(1,v/(0.4*S.vmax)));
+    /* la maîtrise (kit drift, pneus) renforce le rattrapage : on tient l'angle sans partir en toupie */
+    cons=E.vol*S.dir*1.1*kv*(1+0.1*(S.maitrise-1))+Math.sign(tr||1)*(0.3*Math.min(1,angG/0.6)*(c.h?1:0.5)+Math.max(0,angG-0.85)*5*S.maitrise);
   }
   const reactif=(E.glisse?4:10)*S.stab;
   E.lacet+=(cons-E.lacet)*Math.min(1,reactif*dt);
@@ -1177,12 +1212,12 @@ function pasPhysique(dt,c){
   let grip=S.grip*(hp?0.75:1);
   if(c.h&&v>30)grip=S.glisse*0.55/S.tenue;
   else if(E.glisse)grip=(c.g>0.3?S.glisse:S.glisse*2.2)/S.tenue+(1-Math.min(1,angG/0.9))*1.2;
-  else if(c.b>0)grip=S.grip*0.85;
+  else if(c.b>0)grip=S.grip*(0.85-0.3*tf*Math.abs(E.vol));   /* freiner fort en braquant fait pivoter l'arrière */
   const nx=Math.cos(E.ang), ny=Math.sin(E.ang);
   av=E.vx*nx+E.vy*ny;tr=-E.vx*ny+E.vy*nx;      /* relue dans l'axe neuf : c'est l'inertie latérale */
   const avantTr=tr;
   tr*=Math.exp(-grip*dt);
-  if(E.glisse)av+=Math.abs(avantTr-tr)*0.22;    /* la glisse rend un peu d'élan à l'avant */
+  if(E.glisse)av+=Math.abs(avantTr-tr)*(c.g>0.3?0.45:0.25);    /* sous les gaz, la glisse garde l'élan : on drifte vite */
   if(!c.h&&!E.glisse)av=Math.min(av,VMAX*1.02);
   E.vx=av*nx-tr*ny;E.vy=av*ny+tr*nx;
   /* 5. LA GLISSE : DRIFT tenu en braquant, ou un vrai survirage ; on en sort sous 7° */
@@ -1190,12 +1225,12 @@ function pasPhysique(dt,c){
   if(!E.glisse&&vit>S.vmax*0.28&&((c.h&&Math.abs(E.vol)>0.25)||angG2>0.32)){
     E.glisse=true;E.glisseT=0;E.propre=true;E.combo=(E.finCombo>0)?Math.min(5,(E.combo||1)+1):1;E.drifts++;
     if(c.h)E.lacet+=E.vol*0.8;                      /* le coup de frein à main jette l'arrière */
-  }else if(E.glisse&&((angG2<0.12&&!c.h)||vit<S.vmax*0.18))finDeGlisse();
+  }else if(E.glisse&&((angG2<0.12/S.tenue&&!c.h)||vit<S.vmax*0.18))finDeGlisse();
   if(E.glisse){
     E.glisseT+=dt;
-    const deg=angG2*57.3, maitrise=deg<12?0.6:deg<=45?1.5:deg<=65?1:0.5;  /* le bon angle rapporte plus que la toupie */
+    const deg=angG2*57.3, haut=45+12*(S.maitrise-1), maitrise=deg<12?0.6:deg<=haut?1.5:deg<=haut+20?1:0.5;  /* le bon angle rapporte plus que la toupie */
     E.charge=Math.min(3,E.charge+dt*(maitrise>=1?1:0.4)*S.tenue);
-    E.points+=deg*(vit/40)*dt*maitrise*E.combo;E.finCombo=1.6;E.maitriseVue=maitrise;
+    E.points+=deg*(vit/60)*dt*maitrise*E.combo*(E.mode==='drift'&&ZONE.clip>0?ZONE.clip:1);E.finCombo=1.6;E.maitriseVue=maitrise;
   }else if(E.finCombo>0){E.finCombo-=dt;if(E.finCombo<=0)encaisserCombo();}
   E.vitesse=vit;E.vmaxVue=S.vmax;E.angGlisse=angG2;E.horsPiste=hp;
   /* le son suit le régime du rapport engagé */
@@ -1206,14 +1241,15 @@ function pasPhysique(dt,c){
   if(E.flamme>0)E.flamme-=dt;
   if((E.nitroT>0||E.boostT>0)&&Math.random()<0.5)E.flamme=Math.max(E.flamme,0.06);
   /* 5. LE DÉPLACEMENT ET LES MURS */
-  const libre=(X,Y)=>!(bloqueTokyo(X,Y)||X<20||X>MONDE_L-20||Y<TK.bati+18||Y>MONDE_H-18);
+  const libre=(X,Y)=>!(bloqueTokyo(X,Y)||X<20||X>MONDE_L-20||Y<TK.bati+18||Y>MONDE_H-18
+    ||(E.mode==='drift'&&!dansZone(X,Y,16))||ZD.poteaux.some(([px,py])=>Math.hypot(X-px,Y-py)<30));
   let X=E.x+E.vx*dt, Y=E.y+E.vy*dt;
   if(!libre(X,Y)){
     const choc=Math.hypot(E.vx,E.vy);
     if(libre(X,E.y)){Y=E.y;E.vy*=-0.25;E.vx*=0.82;}
     else if(libre(E.x,Y)){X=E.x;E.vx*=-0.25;E.vy*=0.82;}
     else{X=E.x;Y=E.y;E.vx*=-0.3;E.vy*=-0.3;}
-    if(choc>50)heurter(choc,E.x+nx*28,E.y+ny*28);
+    if(choc>75)heurter(choc,E.x+nx*28,E.y+ny*28);
   }
   E.dist+=Math.hypot(X-E.x,Y-E.y);
   {const pr=projeter(X,Y,E.idx);E.idx=pr.i;E.sPiste=pr.s;E.lat=pr.lat;}
@@ -1225,7 +1261,7 @@ function pasPhysique(dt,c){
 function heurter(force,x,y){
   const E=ESSAI;
   for(let i=0;i<Math.min(14,4+force/25);i++)E.etinc.push({x,y,vx:(Math.random()-0.5)*170,vy:(Math.random()-0.5)*170,vie:0.35,c:'#ffd27a'});
-  try{secouer(Math.min(0.5,force/400));}catch(x){}
+  try{secouer(Math.min(0.5,force/600));}catch(x){}
   if(E.glisse||E.points>0){E.propre=false;E.points=0;E.combo=1;E.finCombo=0;E.charge=0;if(E.glisse){E.glisse=false;}popDrift('DRIFT PERDU','#ff6a5a');}
   try{navigator.vibrate&&navigator.vibrate(Math.min(60,10+force/8));}catch(x){}
 }
@@ -1254,7 +1290,7 @@ function majEssai(dt,jx,jy){
   dt=Math.min(dt||0,0.1);
   if(E.limite!=null){E.limite-=dt;if(E.limite<=0){E.limite=null;const nm=E.nom;finEssai();
     try{texteVolant(joueur.x,joueur.y-44,'Fin de l’essai — '+nm+' t’attend au showroom','#ffd98a');}catch(x){}return;}}
-  const gele=COURSE.actif&&COURSE.phase==='decompte';
+  const gele=(COURSE.actif&&COURSE.phase==='decompte')||(E.mode==='drift'&&(ZONE.phase==='decompte'||ZONE.phase==='fini'));
   E.reste+=dt;let n=0, info=null;
   while(E.reste>=PAS&&n<14){
     E.reste-=PAS;n++;
@@ -1263,21 +1299,33 @@ function majEssai(dt,jx,jy){
     if(CMDS.nitro&&E.nitroCharge>=1&&E.stats&&E.stats.nitro){E.nitroT=E.stats.nitro>1?2.6:2;E.nitroCharge=0;CMDS.nitro=false;try{navigator.vibrate&&navigator.vibrate([20,30,60]);}catch(x){}}
     info=pasPhysique(PAS,c);
     if(COURSE.actif)pasCourse(PAS);
+    if(E.mode==='drift')pasZone(PAS);
   }
   if(COURSE.actif)majCourseHorsPas(dt);
+  if(E.mode==='drift')majZoneHorsPas(dt);
   /* LES EFFETS, une fois par image */
   if(info){const {tr,nx,ny,hp,vit}=info;
-    if(Math.abs(tr)>22){
+    if(Math.abs(tr)>30){
       for(const s of [-10,10]){const px=E.x-nx*18-ny*s, py=E.y-ny*18+nx*s;
         try{const gs=SOL.getContext('2d');gs.fillStyle='rgba(12,10,16,.42)';gs.fillRect(Math.round(px)-1,Math.round(py)-1,2,2);}catch(x){E.traces.push([px,py]);}}
       if(E.fumee.length<44&&Math.random()<0.6)E.fumee.push({x:E.x-nx*24+(Math.random()-0.5)*8,y:E.y-ny*24+(Math.random()-0.5)*8,r:4,vie:0.85,c:(E.tuning||{}).fumee||null});
       if(E.traces.length>900)E.traces.splice(0,E.traces.length-900);}
     const niv=niveauCharge();
     if(E.glisse&&niv>0)for(const s of [-10,10])E.etinc.push({x:E.x-nx*20-ny*s,y:E.y-ny*20+nx*s,vx:-nx*40+(Math.random()-0.5)*90,vy:-ny*40+(Math.random()-0.5)*90,vie:0.25,c:COUL_NIV[niv]});
-    if(hp&&vit>40&&Math.random()<0.45)E.fumee.push({x:E.x-nx*20,y:E.y-ny*20,r:3,vie:0.5,c:'#8a7a5a'});
+    if(hp&&vit>60&&Math.random()<0.45)E.fumee.push({x:E.x-nx*20,y:E.y-ny*20,r:3,vie:0.5,c:'#8a7a5a'});
     if(E.nitroT>0&&Math.random()<0.7)E.fumee.push({x:E.x-nx*32,y:E.y-ny*32,r:3,vie:0.5,c:'#7fe8ff'});
     if((E.tuning||{}).trainee){E.trainee.push([E.x-nx*26,E.y-ny*26]);if(E.trainee.length>26)E.trainee.shift();}
   }
+  /* LA CAISSE VIT : roulis vers l'extérieur du virage, plongée au freinage, cabrage à
+     l'accélération — un ressort amorti, en pixels. Les vibreurs secouent la voiture. */
+  {const av2=E.vx*Math.cos(E.ang)+E.vy*Math.sin(E.ang), lat=av2*(E.lacet||0);
+    const rT=-Math.max(-1,Math.min(1,lat/900))*2.2, pT=-Math.max(-1,Math.min(1,(E.axL||0)/450))*1.8;
+    const kd=Math.min(dt,0.05);
+    E.rollV=(E.rollV||0)+(70*(rT-(E.roll||0))-10*(E.rollV||0))*kd;E.roll=(E.roll||0)+E.rollV*kd;
+    E.pitchV=(E.pitchV||0)+(70*(pT-(E.pitch||0))-10*(E.pitchV||0))*kd;E.pitch=(E.pitch||0)+E.pitchV*kd;
+    const pp=E.sPiste!=null?pointPiste(E.sPiste):null, bord=Math.abs(E.lat||0);
+    E.vibreur=!!(E.mode!=='drift'&&pp&&pp.k>0&&bord>CIRCUIT.ep/2-12&&bord<CIRCUIT.ep/2+6&&(E.vitesse||0)>60);
+    if(E.vibreur&&(E.vibreT=(E.vibreT||0)-dt)<=0){E.vibreT=0.11;try{navigator.vibrate&&navigator.vibrate(7);}catch(x){}}}
   for(const f of E.fumee){f.vie-=dt;f.r+=14*dt;}
   E.fumee=E.fumee.filter(f=>f.vie>0);
   for(const p of E.etinc){p.vie-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;}
@@ -1304,13 +1352,13 @@ function preparerCourse(){
     const m=marques[i%marques.length], S=statsVoiture(m,{}), coul=COUL_ADV[(i*3+Math.floor(Math.random()*7))%COUL_ADV.length];
     const s=P.ligneS+grille[i][0], lane=grille[i][1];
     COURSE.voitures.push({type:'adv',nom:['Kenji','Aya','Ryo','Mika','Takumi'][i]+' · '+m,marque:m,toile:peindreVoitureDessus(m,{couleur:coul}),
-      s,lane,laneCible:lane,v:0,vmax:Math.min(S.vmax,(E.stats||S).vmax)*(0.88+i*0.03),acc:Math.min(S.acc,(E.stats||S).acc)*0.9,   /* au niveau de TA voiture : c'est le tuning qui fait la différence */
+      s,lane,laneCible:lane,v:0,vmax:Math.min(S.vmax,(E.stats||S).vmax)*(0.84+i*0.03),acc:Math.min(S.acc,(E.stats||S).acc)*0.9,   /* au niveau de TA voiture : c'est le tuning qui fait la différence */
       tours:0,tour0:false,fini:null,x:0,y:0,ang:0,r:13});
   }
   for(let i=0;i<4;i++){
     const s=P.ligneS+P.L*(0.2+i*0.2), lane=i%2?28:-28;
     COURSE.voitures.push({type:'trafic',nom:'Trafic',marque:'Toyota',toile:petiteVoiture(['#f4f4f6','#ffd21f','#2a2c33','#1a5fd0'][i]),
-      s,lane,laneCible:lane,v:70+i*8,vmax:70+i*8,acc:60,tours:0,x:0,y:0,ang:0,r:11});
+      s,lane,laneCible:lane,v:105+i*12,vmax:105+i*12,acc:90,tours:0,x:0,y:0,ang:0,r:11});
   }
   for(const c of COURSE.voitures){const p=pointPiste(c.s);c.x=p.x-Math.sin(p.ang)*c.lane;c.y=p.y+Math.cos(p.ang)*c.lane;c.ang=p.ang;}
   /* le joueur : dernière place de la grille */
@@ -1337,14 +1385,14 @@ function pasCourse(dt){
     let cible=c.vmax;
     if(c.type==='adv'){
       /* la vitesse de passage de chaque virage devant (rayon de braquage du joueur), et la distance pour freiner */
-      for(let a=0;a<=260;a+=20){const k=pointPiste(c.s+a).k;if(k>0){const vv=((1/k)*1.02-45)/0.42;cible=Math.min(cible,Math.sqrt(vv*vv+2*230*a));}}
+      for(let a=0;a<=360;a+=20){const k=pointPiste(c.s+a).k;if(k>0){const vv=((1/k)*0.96-45)/0.28;cible=Math.min(cible,Math.sqrt(vv*vv+2*345*a));}}
       /* l'élastique : léger, et seulement s'il est loin */
       const ecart=(progression(c)-progressionJoueur());
       if(ecart>500)cible*=0.96;else if(ecart<-400)cible*=1.04;
       if(c.fini!=null)cible=Math.min(cible,c.vmax*0.7);   /* arrivé : il finit son tour en fantôme */
     }
-    if(c.type==='trafic'){const k=pointPiste(c.s+40).k;if(k>0)cible=Math.min(cible,55);}
-    c.v+=Math.max(-230*dt,Math.min(c.acc*dt,cible-c.v));
+    if(c.type==='trafic'){const k=pointPiste(c.s+40).k;if(k>0)cible=Math.min(cible,80);}
+    c.v+=Math.max(-345*dt,Math.min(c.acc*dt,cible-c.v));
     /* LES COULOIRS : trois files (gauche, milieu, droite). Un adversaire regarde
        la place libre devant lui dans chaque file et prend la plus dégagée pour
        doubler ; il ne change que si le gain est net (pas de zigzag). Derrière
@@ -1356,8 +1404,8 @@ function pasCourse(dt){
       const ici=libre(c.laneCible);
       if(ici<220){let best=c.laneCible,bm=ici;for(const l of [-28,0,28]){const m=libre(l);if(m>bm+60){bm=m;best=l;}}c.laneCible=best;}}
     if(c.fini==null)for(const o of autres){if(o===c)continue;const ds=((o.s-c.s)%P.L+P.L)%P.L;
-      if(ds>0&&ds<70&&Math.abs(o.lane-c.lane)<22)c.v=Math.min(c.v,Math.max(0,(o.v||0)-5));}
-    c.lane+=Math.max(-45*dt,Math.min(45*dt,c.laneCible-c.lane));
+      if(ds>0&&ds<80&&Math.abs(o.lane-c.lane)<22)c.v=Math.min(c.v,Math.max(0,(o.v||0)-5));}
+    c.lane+=Math.max(-60*dt,Math.min(60*dt,c.laneCible-c.lane));
     const s0=c.s;c.s+=c.v*dt;
     if(Math.floor((s0-P.ligneS)/P.L)<Math.floor((c.s-P.ligneS)/P.L)){
       if(c.tour0)c.tours++;else c.tour0=true;
@@ -1377,8 +1425,8 @@ function pasCourse(dt){
       const ux=dx/d, uy=dy/d, pen=min-d;
       E.x+=ux*pen*0.6;E.y+=uy*pen*0.6;c.lane=Math.max(-40,Math.min(40,c.lane-(ux*-Math.sin(c.ang)+uy*Math.cos(c.ang))*pen*0.4));c.laneCible=c.lane;
       const rel=(E.vx-c.vx)*ux+(E.vy-c.vy)*uy;
-      if(rel<0){E.vx-=rel*ux*1.3;E.vy-=rel*uy*1.3;E.vx*=0.9;E.vy*=0.9;if(-rel>12)c.v*=0.92;
-        if(-rel>25)heurter(-rel,E.x-ux*12,E.y-uy*12);}
+      if(rel<0){E.vx-=rel*ux*1.3;E.vy-=rel*uy*1.3;E.vx*=0.9;E.vy*=0.9;if(-rel>18)c.v*=0.92;
+        if(-rel>38)heurter(-rel,E.x-ux*12,E.y-uy*12);}
     }
   }
   for(let i=0;i<toutes.length;i++)for(let j=i+1;j<toutes.length;j++){
@@ -1516,7 +1564,7 @@ function hudMontrer(on){
   haut.innerHTML='<button id="tkQuit">✕ Quitter</button><div id="tkInfo"></div><span></span>';
   document.body.appendChild(haut);
   document.getElementById('tkQuit').onclick=()=>finEssai();
-  const carte=document.createElement('canvas');carte.id='tkCarte';carte.width=112;carte.height=280;document.body.appendChild(carte);
+  if(E.mode!=='drift'){const carte=document.createElement('canvas');carte.id='tkCarte';carte.width=112;carte.height=280;document.body.appendChild(carte);}
   const pp=document.createElement('div');pp.id='tkPop';document.body.appendChild(pp);
   /* LE PAVÉ DE COMMANDES */
   const pad=document.createElement('div');pad.id='tkPad';if(MODE_CMD!=='boutons')pad.classList.add('joy');
@@ -1562,6 +1610,9 @@ function hudMontrer(on){
 /* le bandeau du haut : en course, la place et le tour ; en libre, le chrono */
 function infoHaut(){
   const el=document.getElementById('tkInfo');if(!el)return;const E=ESSAI;
+  if(E.mode==='drift'){const t=ZONE.phase==='decompte'?ZD.duree:Math.max(0,ZONE.t);
+    el.innerHTML='<b>'+Math.floor(t/60)+':'+String(Math.ceil(t%60)===60?0:Math.ceil(t%60)).padStart(2,'0')+'</b>'+(ZONE.clip>0?'CLIP ×'+ZONE.clip.toFixed(1):'ZONE DE DRIFT')+
+      '<small>'+Math.round((E.score||0)+(E.points||0)).toLocaleString('fr-FR')+' PTS · RECORD '+ZONE.record.toLocaleString('fr-FR')+'</small>';return;}
   if(COURSE.actif){
     const L=classement(), rang=L.findIndex(x=>x.joueur)+1;
     const tourAff=Math.min(COURSE.tours,(E.tour==null?0:E.tours)+1);
@@ -1586,7 +1637,7 @@ function dessinerCarte(){
 }
 
 /* ================= LE CHRONO DU MODE LIBRE ================= */
-function chronoRecords(){try{return JSON.parse(localStorage.getItem('bdl.tk.records2')||'{}')||{};}catch(x){return {};}}
+function chronoRecords(){try{return JSON.parse(localStorage.getItem('bdl.tk.records3')||'{}')||{};}catch(x){return {};}}
 function fmtTour(t){if(t==null)return '–:––.––';const m=Math.floor(t/60), sec=t-m*60;return m+':'+(sec<10?'0':'')+sec.toFixed(2);}
 function chronoPas(x0,y0,x1,y1,dt){
   const E=ESSAI, P=PISTE;
@@ -1599,12 +1650,145 @@ function chronoPas(x0,y0,x1,y1,dt){
     if(E.tour!=null&&E.cp>=3){
       const t=E.tour;E.dernier=t;E.tours++;
       const R=chronoRecords();
-      if(R[E.nom]==null||t<R[E.nom]){R[E.nom]=t;try{localStorage.setItem('bdl.tk.records2',JSON.stringify(R));}catch(x){}
+      if(R[E.nom]==null||t<R[E.nom]){R[E.nom]=t;try{localStorage.setItem('bdl.tk.records3',JSON.stringify(R));}catch(x){}
         popDrift('RECORD · '+fmtTour(t),'#ffd98a');}
       else popDrift(fmtTour(t),'#9ae8ff');
     }
     if(E.tour==null||E.cp>=3){E.tour=0;E.cp=0;}
   }
+}
+
+/* ================= LA ZONE DE DRIFT =================
+   Au milieu du serpentin, une aire fermée par des murs de pneus. Deux poteaux
+   (des piles de pneus) à contourner en huit, entourés chacun d'un anneau de
+   six cônes. Une manche dure 60 secondes :
+   — les points de drift habituels (angle × vitesse × maîtrise × combo) ;
+   — CLIP : glisser près d'un poteau (entre 40 et 110 unités du centre)
+     multiplie les points, jusqu'à ×2 au ras des cônes ;
+   — un cône renversé coûte 250 points et casse le drift en cours ;
+   — toucher un mur perd le drift en cours (comme partout).
+   À la fin : une note de juge (D à SS), le record, et une prime du serveur. */
+const ZD={x0:350,y0:400,x1:650,y1:1100,poteaux:[[500,610],[500,890]],duree:60};
+const ZONE={phase:'',t:0,cones:[],clip:0,record:0,fin:false};
+const NOTES_ZD=[[30000,'SS','#ff4fb0'],[18000,'S','#ffd98a'],[9000,'A','#5cff8a'],[4000,'B','#7fe8ff'],[1200,'C','#c9ccd8'],[0,'D','#8a8794']];
+function noteZone(sc){for(const n of NOTES_ZD)if(sc>=n[0])return n;return NOTES_ZD[NOTES_ZD.length-1];}
+function zoneRecord(){try{return +localStorage.getItem('bdl.tk.zone')||0;}catch(x){return 0;}}
+function dansZone(x,y,m){return x>ZD.x0+m&&x<ZD.x1-m&&y>ZD.y0+m&&y<ZD.y1-m;}
+function preparerZone(){
+  const E=ESSAI;
+  ZONE.phase='decompte';ZONE.t=3;ZONE.fin=false;ZONE.clip=0;ZONE.record=zoneRecord();ZONE.cones=[];
+  for(const [px,py] of ZD.poteaux)for(let k=0;k<6;k++){const a=k/6*Math.PI*2+0.26;ZONE.cones.push({x:px+Math.cos(a)*34,y:py+Math.sin(a)*34,vx:0,vy:0,a:0,va:0,tombe:false});}
+  E.x=500;E.y=1058;E.ang=-Math.PI/2;E.vx=0;E.vy=0;
+  decompteMontrer(3);
+}
+/* un pas de la manche : les cônes, le clip */
+function pasZone(dt){
+  const E=ESSAI;
+  let dmin=1e9;for(const [px,py] of ZD.poteaux)dmin=Math.min(dmin,Math.hypot(E.x-px,E.y-py));
+  ZONE.clip=(E.glisse&&dmin>=40&&dmin<=110)?1+(110-dmin)/70:0;
+  for(const c of ZONE.cones){
+    if(!c.tombe&&Math.hypot(E.x-c.x,E.y-c.y)<24){
+      c.tombe=true;c.vx=E.vx*1.1+(Math.random()-0.5)*60;c.vy=E.vy*1.1+(Math.random()-0.5)*60;c.va=(Math.random()-0.5)*20;
+      if(ZONE.phase==='run'){E.score=Math.max(0,(E.score||0)-250);E.points=0;E.combo=1;E.finCombo=0;E.propre=false;popDrift('CÔNE −250','#ff9a3c');
+        try{navigator.vibrate&&navigator.vibrate(25);}catch(x){}}}
+    if(c.tombe){c.x+=c.vx*dt;c.y+=c.vy*dt;c.a+=c.va*dt;const f=Math.exp(-2.5*dt);c.vx*=f;c.vy*=f;c.va*=f;
+      c.x=Math.max(ZD.x0+6,Math.min(ZD.x1-6,c.x));c.y=Math.max(ZD.y0+6,Math.min(ZD.y1-6,c.y));}
+  }
+}
+function majZoneHorsPas(dt){
+  if(ZONE.phase==='decompte'){
+    const avant=Math.ceil(ZONE.t);ZONE.t-=dt;const apres=Math.ceil(ZONE.t);
+    if(apres!==avant&&apres>0){decompteMontrer(apres);pop();}
+    if(ZONE.t<=0){ZONE.phase='run';ZONE.t=ZD.duree;decompteMontrer('GO');try{navigator.vibrate&&navigator.vibrate(60);}catch(x){}}
+  }else if(ZONE.phase==='run'){
+    ZONE.t-=dt;
+    if(ZONE.t<=0){ZONE.t=0;ZONE.phase='fini';finZone();}
+  }
+}
+async function finZone(){
+  const E=ESSAI;
+  if(E.glisse)finDeGlisse();
+  encaisserCombo();
+  const sc=Math.round(E.score||0), [,lettre,coul]=noteZone(sc), rec=zoneRecord(), nouveau=sc>rec;
+  if(nouveau)try{localStorage.setItem('bdl.tk.zone',String(sc));}catch(x){}
+  let el=document.getElementById('tkFin');if(el)el.remove();
+  el=document.createElement('div');el.id='tkFin';
+  el.innerHTML='<div class="c"><small>ZONE DE DRIFT · 60 S</small><div class="r" style="color:'+coul+'">'+lettre+'</div>'+
+    '<div class="t">'+sc.toLocaleString('fr-FR')+' pts'+(nouveau?' · NOUVEAU RECORD':' · record '+rec.toLocaleString('fr-FR'))+'</div>'+
+    '<div class="cl" style="text-align:center;font:600 12px -apple-system,sans-serif;color:rgba(255,255,255,.6)">SS 30 000 · S 18 000 · A 9 000 · B 4 000 · C 1 200</div>'+
+    '<div class="g" id="tkGain">Le juge envoie ta note…</div>'+
+    '<div class="b"><button id="tkRejouer">Rejouer</button><button id="tkQuitter2">Quitter</button></div></div>';
+  document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'));
+  document.getElementById('tkRejouer').onclick=()=>{el.remove();const g=E.garage, m=E.modele;E.actifAvant=true;debutEssai(m,g,null,'drift');E.actifAvant=false;};
+  document.getElementById('tkQuitter2').onclick=()=>{el.remove();finEssai();};
+  if(!E.garage){document.getElementById('tkGain').textContent='Manche d’essai : pas de prime.';return;}
+  const r=await rpcTK('tokyo_drift_fin',{p_voiture:E.garage.modele,p_score:sc});
+  const gz=document.getElementById('tkGain');if(!gz)return;
+  if(!r||r.erreur){gz.textContent=(r&&r.erreur)||'La prime n’a pas pu être versée.';return;}
+  if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();sauver();}catch(x){}}
+  gz.innerHTML=r.gain>0?'<b>+'+enEuros(r.gain)+'</b> de prime'+(r.plafond?' · plafond du jour atteint':''):(r.plafond?'Plafond du jour atteint : 30 000 € de primes par jour.':'Pas de prime sous 1 200 points.');
+}
+/* le dessin : l'anneau de clip qui s'allume, les cônes */
+function dessinerZoneDrift(ctx){
+  const T=performance.now()/1000;
+  if(ZONE.clip>0){let b=null,bd=1e9;for(const p of ZD.poteaux){const d=Math.hypot(ESSAI.x-p[0],ESSAI.y-p[1]);if(d<bd){bd=d;b=p;}}
+    ctx.save();ctx.strokeStyle='rgba(255,79,176,'+(0.35+0.25*Math.sin(T*12))+')';ctx.lineWidth=4;ctx.setLineDash([10,8]);ctx.lineDashOffset=-T*60;
+    ctx.beginPath();ctx.arc(b[0],b[1],75,0,7);ctx.stroke();ctx.restore();}
+  for(const c of ZONE.cones){
+    ctx.save();ctx.translate(Math.round(c.x),Math.round(c.y));
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.arc(2,2,6,0,7);ctx.fill();
+    if(c.tombe){ctx.rotate(c.a);ctx.fillStyle='#ff7a1a';ctx.fillRect(-7,-3,14,6);ctx.fillStyle='#fff';ctx.fillRect(-1,-3,3,6);}
+    else{ctx.fillStyle='#ff7a1a';ctx.beginPath();ctx.arc(0,0,6,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(0,0,3.5,0,7);ctx.fill();ctx.fillStyle='#ff7a1a';ctx.beginPath();ctx.arc(0,0,1.8,0,7);ctx.fill();}
+    ctx.restore();}
+}
+
+/* ================= LA CAMÉRA DE COURSE =================
+   Au volant, c'est tokyo.js qui dessine la scène : la route MONTE TOUJOURS vers le
+   haut de l'écran. La caméra suit la trajectoire (la direction de la vitesse,
+   un peu de la carrosserie) avec un léger retard : en drift, on voit la voiture
+   de travers. La voiture est posée aux deux tiers de la zone libre, au-dessus
+   des boutons : on voit loin devant. Le sol vient de la toile du jeu (SOL),
+   les lampadaires sont redessinés vus du dessus, la nuit les phares éclairent. */
+const CAM_V={a:null,t:0,padH:0,padT:0};
+function dessinerVolant(ctx){
+  const E=ESSAI, W=ctx.canvas.width, H=ctx.canvas.height;
+  const now=performance.now(), dt=Math.min(0.05,CAM_V.t?(now-CAM_V.t)/1000:0);CAM_V.t=now;
+  /* le bas couvert par les boutons, mesuré de temps en temps */
+  if(!CAM_V.padT||now-CAM_V.padT>500){CAM_V.padT=now;try{const pr=document.getElementById('tkPad').getBoundingClientRect(), cr=ctx.canvas.getBoundingClientRect();
+    CAM_V.padH=Math.max(0,(cr.bottom-pr.top+20)*(W/cr.width));}catch(x){CAM_V.padH=0;}}
+  const zone=Math.max(H*0.5,H-CAM_V.padH);
+  /* l'angle visé : la vitesse en roulant, la carrosserie à l'arrêt ou en marche arrière */
+  const v=Math.hypot(E.vx,E.vy), av=E.vx*Math.cos(E.ang)+E.vy*Math.sin(E.ang);
+  let cible=E.ang;
+  if(v>50&&av>0){const va=Math.atan2(E.vy,E.vx);let d=Math.atan2(Math.sin(va-E.ang),Math.cos(va-E.ang));cible=E.ang+d*0.7;}
+  if(CAM_V.a==null)CAM_V.a=cible;
+  let d=Math.atan2(Math.sin(cible-CAM_V.a),Math.cos(cible-CAM_V.a));
+  CAM_V.a+=d*(1-Math.exp(-5*dt));
+  const e2=ECH, cx=W/2, cy=zone*0.68;
+  const sx=SECOUSSE>0.01?(Math.random()-.5)*SECOUSSE*4*e2:0, sy=SECOUSSE>0.01?(Math.random()-.5)*SECOUSSE*4*e2:0;
+  ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#17151f';ctx.fillRect(0,0,W,H);
+  ctx.setTransform(1,0,0,1,0,0);ctx.translate(Math.round(cx+sx),Math.round(cy+sy));ctx.rotate(-CAM_V.a-Math.PI/2);ctx.scale(e2,e2);
+  const ox=Math.round(E.x*e2)/e2, oy=Math.round(E.y*e2)/e2;ctx.translate(-ox,-oy);
+  /* le sol : un carré autour de la voiture, assez grand pour couvrir l'écran tourné */
+  const Rv=Math.ceil(Math.hypot(Math.max(cx,W-cx),Math.max(cy,H-cy))/e2)+4;
+  const x0=Math.max(0,Math.floor(E.x-Rv)), y0=Math.max(0,Math.floor(E.y-Rv)), x1=Math.min(MONDE_L,Math.ceil(E.x+Rv)), y1=Math.min(MONDE_H,Math.ceil(E.y+Rv));
+  ctx.imageSmoothingEnabled=false;
+  if(x1>x0&&y1>y0){const src=(typeof SOL_FIN!=='undefined'&&SOL_FIN)?SOL_FIN:SOL, k=src===SOL?1:2;
+    ctx.drawImage(src,x0*k,y0*k,(x1-x0)*k,(y1-y0)*k,x0,y0,x1-x0,y1-y0);}
+  /* les lampadaires, vus du dessus */
+  const nuit=(()=>{try{const C=cielDuMoment();return C?C.lampes:0;}catch(x){return 0;}})();
+  for(const o of DECOR){if(o.t!=='lanterneP')continue;if(Math.abs(o.x-E.x)>Rv||Math.abs(o.y-E.y)>Rv)continue;
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.arc(o.x+3,o.y+3,6,0,7);ctx.fill();
+    ctx.fillStyle='#3a3c48';ctx.beginPath();ctx.arc(o.x,o.y,5,0,7);ctx.fill();
+    ctx.fillStyle=nuit>0.3?'#fff2c8':'#c9ccd8';ctx.beginPath();ctx.arc(o.x,o.y,3,0,7);ctx.fill();
+    if(nuit>0.05)try{lueurNuit(ctx,o.x,o.y,52,'rgba(255,214,150,§)');}catch(x){}}
+  try{lumieresTokyo(ctx,0,0);}catch(x){}
+  dessinerEssai(ctx,0,0);
+  if(typeof dessinerZoneDrift==='function'&&E.mode==='drift')dessinerZoneDrift(ctx);
+  /* les phares, la nuit : deux taches devant la voiture */
+  if(nuit>0.05){const c=Math.cos(E.ang), s2=Math.sin(E.ang);
+    try{lueurNuit(ctx,E.x+c*60,E.y+s2*60,70,'rgba(255,240,205,§)');lueurNuit(ctx,E.x+c*120,E.y+s2*120,60,'rgba(255,240,205,§)');lueurNuit(ctx,E.x-c*34,E.y-s2*34,22,'rgba(255,40,50,§)');}catch(x){}
+    if(COURSE.actif)for(const o of COURSE.voitures){const c3=Math.cos(o.ang), s3=Math.sin(o.ang);try{lueurNuit(ctx,o.x+c3*55,o.y+s3*55,50,'rgba(255,240,205,§)');}catch(x){}}}
 }
 
 /* ================= LE DESSIN ================= */
@@ -1639,6 +1823,8 @@ function dessinerEssai(ctx,camX,camY){
   if(E.flamme>0){const L2=8+Math.random()*(E.nitroT>0?18:10);for(const s2 of [-5,5]){ctx.fillStyle=E.nitroT>0?'rgba(127,232,255,.9)':'rgba(255,160,40,.9)';ctx.beginPath();ctx.moveTo(-34,s2-2);ctx.lineTo(-34-L2,s2);ctx.lineTo(-34,s2+2);ctx.fill();
     ctx.fillStyle='rgba(255,255,255,.9)';ctx.fillRect(-36,s2-1,3,2);}}
   ctx.imageSmoothingEnabled=false;
+  {const vb=E.vibreur?(((performance.now()/45)|0)%2?0.7:-0.7):0;
+    ctx.translate(-(E.pitch||0)+vb*0.5,(E.roll||0)+vb);}
   ctx.drawImage(E.toile,-34,-16);
   ctx.restore();
   ctx.save();
@@ -1656,4 +1842,4 @@ function dessinerEssai(ctx,camX,camY){
     ctx.beginPath();ctx.arc(f.x-camX,f.y-camY,f.r,0,7);ctx.fill();}
   ctx.restore();
 }
-;({TK,lumieresTokyo,bloqueTokyo,construireSolTokyo,semerDecorTokyo,poserTokyo,ouvrirConcessionTokyo,fermerConcessionTokyo,ESSAI,debutEssai,finEssai,majEssai,dessinerEssai,COURSE,CMDS,PISTE,pointPiste,projeter,statsVoiture})
+;({TK,lumieresTokyo,bloqueTokyo,construireSolTokyo,semerDecorTokyo,poserTokyo,ouvrirConcessionTokyo,fermerConcessionTokyo,ESSAI,debutEssai,finEssai,majEssai,dessinerEssai,COURSE,CMDS,PISTE,pointPiste,projeter,statsVoiture,dessinerVolant,ZONE,ZD})
