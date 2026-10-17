@@ -1139,22 +1139,26 @@ function pasPhysique(dt,c){
   if(av>VMAX)av+=(VMAX-av)*Math.min(1,2.5*dt);
   E.vx=av*fx-tr*fy;E.vy=av*fy+tr*fx;           /* la poussée et le frein, rendus au vecteur vitesse */
   /* 2. LE LACET : vite à basse vitesse, plus posé à haute vitesse, inversé en marche arrière */
-  const prise=Math.min(1,Math.abs(av)/40), haut=1-0.32*Math.min(1,v/S.vmax), sens=av<-2?-1:1;
+  /* Direction plus immédiate à vitesse basse, sans rendre la voiture nerveuse à fond. */
+  const prise=Math.min(1,Math.abs(av)/28), haut=1-0.22*Math.min(1,v/S.vmax), sens=av<-2?-1:1;
   const angG=Math.atan2(Math.abs(tr),Math.max(1,Math.abs(av)));
   let cons=c.s*S.dir*prise*haut*sens;
   if(E.glisse){
-    /* en glisse, le volant dose l'angle : contre-braquer le ferme, braquer l'ouvre */
-    /* et au-delà de 50°, la voiture se rattrape d'elle-même : on ne part pas en toupie */
-    cons=c.s*S.dir*1.25*S.maitrise+Math.sign(tr||1)*(0.35*Math.min(1,angG/0.6)*(c.h?1:0.5)+Math.max(0,angG-0.85)*6/S.maitrise);
+    /* Le contre-braquage reprend progressivement la voiture ; l'auto-alignement
+       reste volontairement doux pour éviter la toupie incontrôlable. */
+    const correction=Math.max(0,angG-0.85)*4/S.maitrise;
+    cons=c.s*S.dir*1.15*S.maitrise+Math.sign(tr||1)*(0.18*Math.min(1,angG/0.6)*(c.h?1:0.4)+correction);
   }
-  const reactif=(E.glisse?3.6:9.5)*S.stab;
+  const reactif=(E.glisse?5.2:12)*S.stab;
   E.lacet+=(cons-E.lacet)*Math.min(1,reactif*dt);
   E.ang+=E.lacet*dt;
   /* 3. L'ADHÉRENCE LATÉRALE */
-  let grip=S.grip*(hp?0.8:1);
-  if(c.h&&v>30)grip=S.glisse*0.55/S.tenue;
-  else if(E.glisse)grip=(c.g>0.3?S.glisse:S.glisse*2.2)/S.tenue+(1-Math.min(1,angG/0.9))*1.2;
-  else if(c.b>0)grip=S.grip*0.8;
+  let grip=S.grip*(hp?0.8:1)*0.9;
+  /* Frein à main : déclenche un transfert de masse plus lisible. En drift,
+     les gaz entretiennent la glisse ; lever le pied aide à reprendre l'adhérence. */
+  if(c.h&&v>24)grip=S.glisse*0.42/S.tenue;
+  else if(E.glisse)grip=(c.g>0.3?S.glisse*0.68:S.glisse*1.45)/S.tenue+(1-Math.min(1,angG/0.9))*0.7;
+  else if(c.b>0)grip=S.grip*0.76;
   const nx=Math.cos(E.ang), ny=Math.sin(E.ang);
   av=E.vx*nx+E.vy*ny;tr=-E.vx*ny+E.vy*nx;      /* relue dans l'axe neuf : c'est l'inertie latérale */
   const avantTr=tr;
@@ -1164,10 +1168,10 @@ function pasPhysique(dt,c){
   E.vx=av*nx-tr*ny;E.vy=av*ny+tr*nx;
   /* 4. LA GLISSE : on y entre au frein à main en tournant, ou en survirage ; on en sort sous 7° */
   const vit=Math.hypot(av,tr), angG2=Math.atan2(Math.abs(tr),Math.max(1,Math.abs(av)));
-  if(!E.glisse&&vit>S.vmax*0.3&&((c.h&&Math.abs(c.s)>0.2)||angG2>0.3)){
+  if(!E.glisse&&vit>S.vmax*0.22&&((c.h&&Math.abs(c.s)>0.12)||angG2>0.32)){   /* sans DRIFT, un virage à fond reste un virage */
     E.glisse=true;E.glisseT=0;E.propre=true;E.combo=(E.finCombo>0)?Math.min(5,(E.combo||1)+1):1;E.drifts++;
-    if(c.h)E.lacet+=c.s*0.9;                       /* le coup de frein à main jette l'arrière */
-  }else if(E.glisse&&((angG2<0.12&&!c.h)||vit<S.vmax*0.18))finDeGlisse();
+    if(c.h)E.lacet+=c.s*0.72;                       /* le frein à main jette l'arrière, sans excès */
+  }else if(E.glisse&&((angG2<0.16&&!c.h)||vit<S.vmax*0.15))finDeGlisse();
   if(E.glisse){
     E.glisseT+=dt;
     const deg=angG2*57.3, maitrise=deg<12?0.6:deg<=45?1.5:deg<=65?1:0.5;  /* le bon angle rapporte plus que la toupie */
