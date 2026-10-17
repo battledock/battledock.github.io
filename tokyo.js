@@ -1059,7 +1059,9 @@ const COUL_NIV=['#ffffff','#5ad8ff','#ff9a3c','#ff4fb0'];
 const RAPPORTS=[0,0.16,0.31,0.47,0.63,0.8];
 const KMH=1.35;                                   /* px/s → km/h affichés */
 const CMDS={g:false,d:false,gaz:false,frein:false,drift:false,nitro:false};
-let MODE_CMD=(()=>{try{return localStorage.getItem('bdl.tk.cmd')||'boutons';}catch(x){return 'boutons';}})();
+/* AU VOLANT, ON CONDUIT AUX BOUTONS, et seulement aux boutons : le joystick du jeu est coupé tant qu'on conduit */
+const MODE_CMD='boutons';
+try{localStorage.removeItem('bdl.tk.cmd');}catch(x){}
 
 /* ================= LE DÉBUT ET LA FIN D'UNE SORTIE ================= */
 function debutEssai(v,aMoi,reglages,mode){
@@ -1081,7 +1083,8 @@ function debutEssai(v,aMoi,reglages,mode){
   joueur.x=E.x;joueur.y=E.y;
   couperMoteur();demarrerMoteur();
   document.body.classList.add('tk-volant');
-  try{window.TK_SANS_JOY=(MODE_CMD==='boutons');}catch(x){}
+  try{window.TK_SANS_JOY=true;}catch(x){}
+  try{lacher();}catch(x){}                        /* un joystick resté sous le doigt se lâche */
   hudMontrer(true);
   try{taille();videCache();}catch(x){}
 }
@@ -1510,11 +1513,9 @@ function hudMontrer(on){
     '<div class="c"><b id="tkC1"></b><b id="tkC2"></b><b id="tkC3"></b></div><span class="p" id="tkCombo"></span>';
   document.body.appendChild(hud);
   const haut=document.createElement('div');haut.id='tkHaut';
-  haut.innerHTML='<button id="tkQuit">✕ Quitter</button><div id="tkInfo"></div><button id="tkMode">'+(MODE_CMD==='boutons'?'🕹 Joystick':'⬅➡ Boutons')+'</button>';
+  haut.innerHTML='<button id="tkQuit">✕ Quitter</button><div id="tkInfo"></div><span></span>';
   document.body.appendChild(haut);
   document.getElementById('tkQuit').onclick=()=>finEssai();
-  document.getElementById('tkMode').onclick=()=>{MODE_CMD=MODE_CMD==='boutons'?'joystick':'boutons';try{localStorage.setItem('bdl.tk.cmd',MODE_CMD);}catch(x){}
-    window.TK_SANS_JOY=(MODE_CMD==='boutons');for(const k in CMDS)CMDS[k]=false;hudMontrer(true);};
   const carte=document.createElement('canvas');carte.id='tkCarte';carte.width=112;carte.height=280;document.body.appendChild(carte);
   const pp=document.createElement('div');pp.id='tkPop';document.body.appendChild(pp);
   /* LE PAVÉ DE COMMANDES */
