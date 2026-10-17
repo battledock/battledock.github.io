@@ -62,7 +62,7 @@ function construireSolTokyo(){
      quartier (voir PISTE). Dessinée en calques : le pavé du dehors, l'herbe des
      bas-côtés, l'asphalte, la trajectoire, les lignes de bord, les vibreurs
      dans chaque virage, les murs de pneus aux épingles. */
-  const P=PISTE, ep=CIRCUIT.ep, PT=P.pts;
+  const P=PISTE_TK, ep=CIRCUIT.ep, PT=P.pts;
   const chemin=(gg)=>{gg.beginPath();gg.moveTo(PT[0].x,PT[0].y);for(let i=1;i<PT.length;i++)gg.lineTo(PT[i].x,PT[i].y);gg.closePath();};
   /* le dehors : un pavé tout autour */
   g.fillStyle='#9894a8';g.fillRect(0,TK.route[1],W,H-TK.route[1]);
@@ -133,11 +133,11 @@ const LAMPES_TK=[[198,232],[390,232],[545,232],[700,232],[855,232],
   [20,480],[136,356]];
 /* et le long de la piste, des deux côtés, toutes les 260 unités : jamais sur une autre portion de piste */
 function lampesDuCircuit(){
-  const L=[], P=PISTE, ep=CIRCUIT.ep;
-  for(let s=130;s<P.L;s+=260){const p=pointPiste(s);
+  const L=[], P=PISTE_TK, ep=CIRCUIT.ep;
+  for(let s=130;s<P.L;s+=260){const p=pointPiste(s,PISTE_TK);
     for(const sd of [-1,1]){const o=ep/2+20, x=p.x-Math.sin(p.ang)*o*sd, y=p.y+Math.cos(p.ang)*o*sd;
       if(x<14||x>MONDE_L-14||y<TK.route[1]+20||y>MONDE_H-14)continue;
-      if(projeter(x,y,null).d<ep/2+14)continue;
+      if(projeter(x,y,null,PISTE_TK).d<ep/2+14)continue;
       if(x>320&&x<680&&y>370&&y<1130)continue;
       L.push([Math.round(x),Math.round(y)]);}}
   return L;
@@ -264,14 +264,17 @@ const NEONS_TK=['#ff4fb0','#7fe8ff','#b08cff','#5cff8a','#ffd98a','#ff3b3b'];
    réécrire dans la conduite.
    Unités : pixels de carte par seconde (1 px ≈ 25 cm), rad/s pour la direction. */
 const VITESSE_K=1.5;
-const FICHE_BASE={vmax:186,acc:152,frein:330,grip:8.8,dir:3.0,stab:1,glisse:2.5,maitrise:1,tenue:1,trans:'P',wf:0.5};
+/* CHAQUE VOITURE A SON CARACTÈRE. masse : lourde = plus lente à lancer et à faire tourner ;
+   turbo : 0 = atmosphérique (la poussée monte avec les tours), sinon la taille du turbo —
+   gros turbo = temps de réponse, puis coup de pied quand la pression arrive. */
+const FICHE_BASE={vmax:186,acc:152,frein:330,grip:8.8,dir:3.0,stab:1,glisse:2.5,maitrise:1,tenue:1,trans:'P',wf:0.5,masse:1,turbo:0};
 const FICHES={
-  Toyota:     {vmax:188,acc:150,grip:8.4, dir:3.05,stab:1.0, glisse:2.3,maitrise:1.15,trans:'P',wf:0.53},   /* propulsion, moteur avant */
-  BMW:        {vmax:180,acc:142,grip:8.9, dir:3.15,stab:1.05,glisse:2.4,maitrise:1.1,trans:'P',wf:0.51},
-  Lamborghini:{vmax:212,acc:195,grip:10.4,dir:2.85,stab:1.15,glisse:3.1,maitrise:0.88,trans:'4',wf:0.43},   /* intégrale, moteur central */
-  Porsche:    {vmax:205,acc:176,grip:11.2,dir:3.25,stab:1.25,glisse:3.0,maitrise:0.92,trans:'P',wf:0.39},   /* moteur en porte-à-faux arrière */
-  Nissan:     {vmax:208,acc:197,grip:10.9,dir:2.95,stab:1.2, glisse:3.2,maitrise:0.88,trans:'4',wf:0.54},
-  Ferrari:    {vmax:212,acc:166,grip:8.6, dir:3.0, stab:1.0, glisse:2.2,maitrise:1.15,trans:'P',wf:0.44}};
+  Toyota:     {vmax:195,acc:162,grip:8.4, dir:3.0, stab:1.0, glisse:2.3,maitrise:1.15,trans:'P',wf:0.53,masse:1.05,turbo:1.0},  /* Supra : 6 cylindres turbo, propulsion, joueuse */
+  BMW:        {vmax:180,acc:140,grip:9.4, dir:3.35,stab:1.05,glisse:2.4,maitrise:1.15,trans:'P',wf:0.51,masse:0.9, turbo:0},    /* M3 : légère, vive, équilibrée — l'école */
+  Lamborghini:{vmax:218,acc:200,grip:10.8,dir:2.95,stab:1.15,glisse:3.0,maitrise:0.9, trans:'4',wf:0.43,masse:1.1, turbo:0},    /* Huracán : V10 qui monte haut, quatre roues motrices, rassurante */
+  Porsche:    {vmax:208,acc:178,grip:11.8,dir:3.4, stab:1.2, glisse:2.9,maitrise:0.95,trans:'P',wf:0.39,masse:0.95,turbo:0,frein:390},  /* 911 GT3 RS : précise, freins énormes, l'arrière lourd */
+  Nissan:     {vmax:210,acc:215,grip:11.4,dir:2.75,stab:1.25,glisse:3.2,maitrise:0.85,trans:'4',wf:0.55,masse:1.25,turbo:0.8},  /* GT-R : fusée au départ, lourde, sous-vireuse */
+  Ferrari:    {vmax:222,acc:190,grip:8.2, dir:3.0, stab:0.95,glisse:2.1,maitrise:1.1, trans:'P',wf:0.44,masse:0.85,turbo:1.6}}; /* F40 : légère, gros turbos tardifs, sauvage */
 /* les pièces : multiplicateurs (×) ajoutés à 1 — +0.1 = +10 % */
 const PIECES={
   moteur:      {1:{vmax:.08},2:{vmax:.16},3:{vmax:.25}},
@@ -468,9 +471,10 @@ async function ouvrirConcessionTokyo(ongletDepart){
   const IC={sh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13l2-5h14l2 5v5H3z"/><circle cx="7.5" cy="17" r="1.6"/><circle cx="16.5" cy="17" r="1.6"/></svg>',
     ga:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10l9-6 9 6v10H3z"/><path d="M7 20v-6h10v6"/></svg>',
     tu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 7l3-3 3 3-3 3M4 20l9-9M11 4a4 4 0 0 0 5 5"/></svg>',
-    re:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="7"/><path d="M12 13V9M10 3h4"/></svg>'};
+    re:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="7"/><path d="M12 13V9M10 3h4"/></svg>',
+    ca:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.5"/><path d="M14 10h4M14 14h4M6 16c1-2 5-2 6 0"/></svg>'};
   /* LE TUNING EST RETIRÉ DU CONCESSIONNAIRE : trois onglets. Les numéros restent ceux d'avant (0, 1, 3). */
-  const NAV=[['Showroom',IC.sh,0],['Garage',IC.ga,1],['Records',IC.re,3]];
+  const NAV=[['Showroom',IC.sh,0],['Garage',IC.ga,1],['Carrière',IC.ca,4],['Records',IC.re,3]];
   /* L'ATELIER DE TUNING a sa propre porte : on y entre droit dans l'atelier, sans les onglets du concessionnaire */
   const ATELIER=(ongletDepart===2);
   if(ATELIER){$('ccRacine').classList.add('atelierR');try{const so=document.createElement('span');so.id='atSolde';so.textContent=enEuros(e.euros||0);so.style.cssText='margin-left:auto;margin-right:8px;font:600 12px ui-monospace,monospace;background:rgba(255,154,60,.14);color:#ffb070;border:1px solid rgba(255,154,60,.35);padding:7px 10px;border-radius:10px;white-space:nowrap';$('ccHaut').insertBefore(so,$('ccX'));}catch(x){}}
@@ -520,7 +524,7 @@ async function ouvrirConcessionTokyo(ongletDepart){
     sc.addEventListener('touchstart',ev=>{x0=ev.touches[0].clientX;},{passive:true});
     sc.addEventListener('touchend',ev=>{if(x0==null)return;const dx=ev.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>40)aller(dx<0?1:-1);},{passive:true});
     if($('ccEssai'))$('ccEssai').onclick=()=>{fermerConcessionTokyo();debutEssai(v);};
-    if($('ccCourse'))$('ccCourse').onclick=()=>{const mien=garageDuJoueur().find(x=>x.modele===v.id);fermerConcessionTokyo();debutEssai(v,mien,null,'course');};
+    if($('ccCourse'))$('ccCourse').onclick=()=>{const mien=garageDuJoueur().find(x=>x.modele===v.id);choisirCourse(v,mien);};
     if($('ccVolant2'))$('ccVolant2').onclick=()=>{const mien=garageDuJoueur().find(x=>x.modele===v.id);fermerConcessionTokyo();debutEssai(v,mien);};
     if($('ccAchat'))$('ccAchat').onclick=async()=>{
       const prix=PRIX_VOITURE[v.id];
@@ -539,6 +543,27 @@ async function ouvrirConcessionTokyo(ongletDepart){
       rendre();};
   };
   /* ---------- LES RECORDS : le meilleur tour de chaque voiture ---------- */
+  /* ---------- LA CARRIÈRE : les licences, leurs épreuves, les médailles ---------- */
+  const carriereOnglet=()=>{
+    $('ccSur').textContent='東京 · CARRIÈRE';$('ccTitre').textContent='Carrière';
+    const c=carriere();
+    let h='<p style="margin-top:10px;color:rgba(255,255,255,.62);font-size:13px;line-height:1.5">Quatre licences, trois épreuves chacune, une voiture prêtée. Toutes en bronze au moins : la licence est à toi, avec sa prime, et ouvre de nouveaux circuits pour tes courses.</p>';
+    for(const L of LICENCES){const ouverte=licenceOuverte(L.id), eue=!!c.lic[L.id];
+      h+='<div style="margin-top:14px;border-radius:20px;padding:14px;background:'+(ouverte?'rgba(255,255,255,.05)':'rgba(255,255,255,.02)')+';box-shadow:inset 0 0 0 2px '+(eue?L.coul:'rgba(255,255,255,.08)')+';opacity:'+(ouverte?1:0.55)+'">'+
+        '<div style="display:flex;align-items:center;gap:12px"><div style="width:46px;height:46px;border-radius:12px;background:'+L.coul+';color:#14121c;display:grid;place-items:center;font:900 24px sans-serif">'+L.id+'</div>'+
+        '<div style="flex:1"><b style="font:800 17px sans-serif">'+L.nom+' · '+L.titre+'</b><small style="display:block;color:rgba(255,255,255,.55);font-size:12px">'+(eue?'✓ Obtenue':ouverte?'Prime : '+enEuros(L.prime):'🔒 Obtiens d’abord la licence précédente')+
+        (L.id!=='S'?' · ouvre '+Object.values(CIRCUITS).filter(C=>C.licence===L.id).map(C=>C.court).join(', '):'')+'</small></div></div>';
+      for(const ep of L.ep){const m=c.med[ep.id]||0, b=c.best[ep.id];
+        h+='<div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px;border-radius:14px;background:rgba(0,0,0,.22)">'+
+          '<div style="width:34px;text-align:center;font-size:22px">'+(m?MED_E[m]:'·')+'</div>'+
+          '<div style="flex:1;min-width:0"><b style="font:700 14px sans-serif">'+ep.nom+'</b><small style="display:block;color:rgba(255,255,255,.55);font-size:11.5px;line-height:1.35">'+ep.desc+' '+VOIT_PRET[ep.voiture].marque+' prêtée.'+(b!=null?' Meilleur : '+fmtSeuil(ep,b)+'.':'')+'</small></div>'+
+          '<button data-ep="'+ep.id+'" '+(ouverte?'':'disabled')+' style="min-height:42px;padding:0 14px;border-radius:12px;border:0;background:'+(ouverte?'#ff4fb0':'rgba(255,255,255,.1)')+';color:#fff;font:800 13px sans-serif">'+(m?'Refaire':'Passer')+'</button></div>';}
+      h+='</div>';}
+    $('ccCorps').innerHTML=h;
+    $('ccCorps').querySelectorAll('button[data-ep]').forEach(bt=>bt.onclick=()=>{const ep=LICENCES.flatMap(l=>l.ep).find(x=>x.id===bt.dataset.ep);fermerConcessionTokyo();lancerEpreuve(ep);});
+    /* les licences déjà validées sur le serveur (si la partie a été jouée ailleurs) */
+    rpcTK('tokyo_mes_licences',{}).then(r=>{if(!Array.isArray(r))return;const c2=carriere();let chg=false;for(const id of r)if(!c2.lic[id]){c2.lic[id]=true;chg=true;}if(chg){sauverCarriere(c2);if(onglet===4)rendre();}});
+  };
   const records=()=>{
     $('ccSur').textContent='東京 · CIRCUIT';$('ccTitre').textContent='Records';
     const R=chronoRecords();
@@ -548,7 +573,7 @@ async function ouvrirConcessionTokyo(ongletDepart){
         (t!=null?'<i>'+fmtTour(t)+'</i>':'<button data-essai="'+esc(v.id)+'">Essayer</button>')+'</div>').join('');
     $('ccCorps').querySelectorAll('button[data-essai]').forEach(b=>{b.onclick=()=>{fermerConcessionTokyo();debutEssai(modele(b.dataset.essai));};});
     /* LE CLASSEMENT DES COURSES : les dix meilleurs temps de tous les joueurs (3 tours) */
-    const bloc=document.createElement('div');bloc.innerHTML='<h3 style="margin:20px 0 8px;font:800 15px sans-serif;color:#fff">🏁 Classement des courses · 3 tours</h3><div id="ccClass" style="color:rgba(255,255,255,.55);font-size:13px">Chargement…</div>';
+    const bloc=document.createElement('div');bloc.innerHTML=Object.values(CIRCUITS).map(C=>'<h3 style="margin:20px 0 8px;font:800 15px sans-serif;color:#fff">🏁 '+C.nom+' · '+C.tours+' tours</h3><div id="ccClass_'+C.id+'" style="color:rgba(255,255,255,.55);font-size:13px">Chargement…</div>').join('');
     $('ccCorps').appendChild(bloc);
     const bloc2=document.createElement('div');bloc2.innerHTML='<h3 style="margin:20px 0 8px;font:800 15px sans-serif;color:#fff">🌀 Zone de drift · meilleures notes</h3><div id="ccClassZ" style="color:rgba(255,255,255,.55);font-size:13px">Chargement…</div>';
     $('ccCorps').appendChild(bloc2);
@@ -557,10 +582,10 @@ async function ouvrirConcessionTokyo(ongletDepart){
       if(!L2){z.textContent=(r&&r.erreur)||'Classement indisponible.';return;}
       if(!L2.length){z.textContent='Personne n’a encore de note. Lance « Zone de drift » depuis ton garage.';return;}
       z.innerHTML=L2.map((x,i)=>{const m=modele(x.voiture), n=noteZone(x.score||0);return '<div class="ccLigneRec"><b style="width:26px;color:#7fe8ff">'+(i+1)+'</b><div><b>'+esc(x.pseudo||'?')+'</b><small>'+esc(m?nom(m):(x.voiture||''))+'</small></div><i style="color:'+n[2]+'">'+n[1]+' · '+(x.score||0).toLocaleString('fr-FR')+'</i></div>';}).join('');});
-    rpcTK('tokyo_classement_course',{}).then(r=>{const z=$('ccClass');if(!z)return;
-      const L2=Array.isArray(r)?r:(r&&Array.isArray(r.liste)?r.liste:null);
+    for(const C of Object.values(CIRCUITS))rpcTK('tokyo_classement_course',{p_circuit:C.cle}).then(r=>{const z=$('ccClass_'+C.id);if(!z)return;
+      const L2=Array.isArray(r)?r:null;
       if(!L2){z.textContent=(r&&r.erreur)||'Classement indisponible.';return;}
-      if(!L2.length){z.textContent='Personne n’a encore fini de course. Achète une voiture et lance « Course » depuis ton garage.';return;}
+      if(!L2.length){z.textContent='Personne n’a encore fini de course ici.';return;}
       z.innerHTML=L2.map((x,i)=>{const m=modele(x.voiture);return '<div class="ccLigneRec"><b style="width:26px;color:#ff8ac8">'+(i+1)+'</b><div><b>'+esc(x.pseudo||'?')+'</b><small>'+esc(m?nom(m):(x.voiture||''))+'</small></div><i>'+fmtTour((x.temps||0)/1000)+'</i></div>';}).join('');});
   };
   /* ---------- MON GARAGE : le plan des places, la voiture choisie en grand, ses compteurs ---------- */
@@ -594,7 +619,7 @@ async function ouvrirConcessionTokyo(ongletDepart){
         '</div>'+
         '<div style="display:flex;gap:8px;margin-top:12px">'+
           '<button id="ccRenommer" style="flex:1;min-height:50px;border-radius:14px;border:0;background:rgba(255,255,255,.08);font:700 14px sans-serif;color:#fff">Renommer</button>'+
-          '<button id="ccCourse" style="flex:1.4;min-height:50px;border-radius:14px;border:0;background:rgba(255,79,176,.18);box-shadow:inset 0 0 0 2px #ff4fb0;font:800 14px sans-serif;color:#fff">🏁 Course · 3 tours</button></div>'+
+          '<button id="ccCourse" style="flex:1.4;min-height:50px;border-radius:14px;border:0;background:rgba(255,79,176,.18);box-shadow:inset 0 0 0 2px #ff4fb0;font:800 14px sans-serif;color:#fff">🏁 Course</button></div>'+
         '<button id="ccZone" style="display:block;width:100%;margin-top:8px;min-height:50px;border-radius:14px;border:0;background:rgba(127,232,255,.14);box-shadow:inset 0 0 0 2px #7fe8ff;font:800 14px sans-serif;color:#fff">🌀 Zone de drift · 60 s notées</button>'+
         '<button id="ccVolant" style="display:block;width:100%;margin-top:8px;min-height:56px;border-radius:16px;border:0;background:#ff4fb0;color:#fff;font:800 16px sans-serif">Prendre le volant</button>';
     }
@@ -610,7 +635,7 @@ async function ouvrirConcessionTokyo(ongletDepart){
     if(G.length){
       const v=G[choisie];
       $('ccVolant').onclick=()=>{fermerConcessionTokyo();debutEssai(modele(v.modele)||{marque:'Toyota',modele:''},v);};
-      $('ccCourse').onclick=()=>{fermerConcessionTokyo();debutEssai(modele(v.modele)||{marque:'Toyota',modele:''},v,null,'course');};
+      $('ccCourse').onclick=()=>choisirCourse(modele(v.modele)||{marque:'Toyota',modele:''},v);
       $('ccZone').onclick=()=>{fermerConcessionTokyo();debutEssai(modele(v.modele)||{marque:'Toyota',modele:''},v,null,'drift');};
       $('ccRenommer').onclick=()=>{
         const n=prompt('Le nom de ta voiture',v.nom||'');
@@ -778,7 +803,7 @@ async function ouvrirConcessionTokyo(ongletDepart){
       garderDefil(rendre);};
   };
   ouvrirConcessionTokyo.redessiner=()=>rendre();
-  const rendre=()=>{nav();$('ccDefile').classList.remove('atelier');$('ccDefile').classList.toggle('fixe',onglet===0);(onglet===3?records:onglet===2?tuning:onglet===1?garage:showroom)();$('ccDefile').scrollTop=0;};
+  const rendre=()=>{nav();$('ccDefile').classList.remove('atelier');$('ccDefile').classList.toggle('fixe',onglet===0);(onglet===4?carriereOnglet:onglet===3?records:onglet===2?tuning:onglet===1?garage:showroom)();$('ccDefile').scrollTop=0;};
   rendre();
 }
 
@@ -795,7 +820,7 @@ async function ouvrirConcessionTokyo(ongletDepart){
    rayon connu, ce qui donne des virages francs et des vibreurs exacts.
    ep : la largeur de piste. ligne : l'abscisse de la ligne d'arrivée. */
 const CIRCUIT={ep:100,ligne:540,y:288,depart:300};
-const PISTE=(function(){
+const PISTE_TK=(function(){
   const seg=[];let x=CIRCUIT.depart,y=CIRCUIT.y,h=0;
   const D=L=>{seg.push({t:'d',x0:x,y0:y,h,L});x+=Math.cos(h)*L;y+=Math.sin(h)*L;};
   const A=(r,deg)=>{const th=deg*Math.PI/180, s=Math.sign(th), cx=x-s*Math.sin(h)*r, cy=y+s*Math.cos(h)*r;
@@ -818,27 +843,176 @@ const PISTE=(function(){
     else{const f=g.f0+g.s*u/g.r;px=g.cx+Math.cos(f)*g.r;py=g.cy+Math.sin(f)*g.r;ang=g.h0+g.s*u/g.r;k=1/g.r;}
     pts.push({s,x:px,y:py,ang,k,sg:g.t==='a'?g.s:0});
   }
-  return {L,N,pts,seg,ligneS:CIRCUIT.ligne-CIRCUIT.depart,ferme:Math.hypot(x-CIRCUIT.depart,y-CIRCUIT.y)};
+  return {L,N,pts,seg,ligneS:CIRCUIT.ligne-CIRCUIT.depart,ferme:Math.hypot(x-CIRCUIT.depart,y-CIRCUIT.y),bornes:[0,200,MONDE_L,MONDE_H]};
 })();
-function pointPiste(s){const P=PISTE;s=((s%P.L)+P.L)%P.L;const f=s/P.L*P.N, i=Math.floor(f)%P.N, j=(i+1)%P.N, u=f-Math.floor(f);
+let PISTE=PISTE_TK;
+/* LA TORTUE : un tracé fait de droites et d'arcs, échantillonné tous les 5 points */
+function echantillonner(seg,extra){
+  let L=0;for(const s of seg){s.s0=L;L+=s.L;}
+  const N=Math.round(L/5), pts=[];let j=0;
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(let i=0;i<N;i++){
+    const s=i/N*L;while(j<seg.length-1&&s>=seg[j+1].s0)j++;
+    const g=seg[j], u=s-g.s0;let px,py,ang,k;
+    if(g.t==='d'){px=g.x0+Math.cos(g.h)*u;py=g.y0+Math.sin(g.h)*u;ang=g.h;k=0;}
+    else{const f=g.f0+g.s*u/g.r;px=g.cx+Math.cos(f)*g.r;py=g.cy+Math.sin(f)*g.r;ang=g.h0+g.s*u/g.r;k=1/g.r;}
+    pts.push({s,x:px,y:py,ang,k,sg:g.t==='a'?g.s:0});
+    x0=Math.min(x0,px);y0=Math.min(y0,py);x1=Math.max(x1,px);y1=Math.max(y1,py);
+  }
+  return Object.assign({L,N,pts,seg,bornes:[x0,y0,x1,y1]},extra||{});
+}
+function tortue(x,y,h){
+  const seg=[], T={x,y,h};
+  T.D=L=>{if(L<=0.01)return;seg.push({t:'d',x0:T.x,y0:T.y,h:T.h,L});T.x+=Math.cos(T.h)*L;T.y+=Math.sin(T.h)*L;};
+  T.A=(r,deg)=>{const th=deg*Math.PI/180, s=Math.sign(th), cx=T.x-s*Math.sin(T.h)*r, cy=T.y+s*Math.cos(T.h)*r;
+    seg.push({t:'a',cx,cy,r,s,f0:Math.atan2(T.y-cy,T.x-cx),h0:T.h,L:r*Math.abs(th)});
+    const f=Math.atan2(T.y-cy,T.x-cx)+th;T.x=cx+Math.cos(f)*r;T.y=cy+Math.sin(f)*r;T.h+=th;};
+  T.seg=seg;return T;
+}
+/* un tracé fermé à partir d'un polygone : chaque sommet est arrondi par un arc de son rayon,
+   les droites se calculent toutes seules — la boucle se referme forcément */
+function tracerPolygone(V,extra){
+  const n=V.length, ang=(a,b)=>Math.atan2(b[1]-a[1],b[0]-a[0]);
+  const tour=[];for(let i=0;i<n;i++){const a=V[(i-1+n)%n],b=V[i],c=V[(i+1)%n];let th=ang(b,c)-ang(a,b);while(th>Math.PI)th-=2*Math.PI;while(th<-Math.PI)th+=2*Math.PI;
+    tour.push({th,t:b[2]*Math.tan(Math.abs(th)/2)});}
+  const m=[(V[0][0]+V[1][0])/2,(V[0][1]+V[1][1])/2];
+  const T=tortue(m[0],m[1],ang(V[0],V[1]));
+  for(let k=1;k<=n;k++){const i=k%n, prev=(k-1)%n, a=V[prev], b=V[i];
+    const e=Math.hypot(b[0]-a[0],b[1]-a[1]);
+    T.D((k===1?e/2:e-tour[prev].t)-tour[i].t);
+    T.A(b[2],tour[i].th*180/Math.PI);
+    if(k===n){/* retour au milieu du premier côté */const e0=Math.hypot(V[1][0]-V[0][0],V[1][1]-V[0][1]);T.D(e0/2-tour[0].t);}}
+  return echantillonner(T.seg,Object.assign({ferme:Math.hypot(T.x-m[0],T.y-m[1])},extra));
+}
+
+function pointPiste(s,P0){const P=P0||PISTE;s=((s%P.L)+P.L)%P.L;const f=s/P.L*P.N, i=Math.floor(f)%P.N, j=(i+1)%P.N, u=f-Math.floor(f);
   const a=P.pts[i], b=P.pts[j];let da=b.ang-a.ang;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;
   return {x:a.x+(b.x-a.x)*u,y:a.y+(b.y-a.y)*u,ang:a.ang+da*u,k:Math.max(a.k,b.k)};}
 /* où en est-on sur la piste : le point le plus proche, cherché autour du précédent */
-function projeter(x,y,indice){
-  const P=PISTE;let best=indice==null?0:indice, bd=1e9;
+function projeter(x,y,indice,P0){
+  const P=P0||PISTE;let best=indice==null?0:indice, bd=1e9;
   const tous=indice==null, de=tous?0:indice-40, a=tous?P.N:indice+40;
   for(let q=de;q<a;q++){const i=((q%P.N)+P.N)%P.N, p=P.pts[i], d=(p.x-x)*(p.x-x)+(p.y-y)*(p.y-y);if(d<bd){bd=d;best=i;}}
-  if(!tous&&bd>140*140)return projeter(x,y,null);   /* trop loin du dernier point : on cherche partout */
+  if(!tous&&bd>140*140)return projeter(x,y,null,P0);   /* trop loin du dernier point : on cherche partout */
   const p=P.pts[best];const lat=-(x-p.x)*Math.sin(p.ang)+(y-p.y)*Math.cos(p.ang);
   return {i:best,s:p.s,lat,d:Math.sqrt(bd)};
 }
 /* la distance au bord de la piste (0 sur la piste) ; la route du haut est la voie des stands */
 function horsPiste(x,y){
+  if(!enVille()){const p=projeter(x,y,horsPiste.i);horsPiste.i=p.i;return Math.max(0,p.d-CIR.ep/2);}
   if(x>ZD.x0&&x<ZD.x1&&y>ZD.y0&&y<ZD.y1)return 0;
   if(y>TK.route[0]-4&&y<TK.route[1]+4&&x<CIRCUIT.depart+380)return 0;
   const p=projeter(x,y,horsPiste.i);horsPiste.i=p.i;
   return Math.max(0,p.d-CIRCUIT.ep/2);
 }
+/* ================= LES CIRCUITS =================
+   Tokyo Circuit est peint dans la carte de la ville. Les trois autres sont des
+   mondes à part, dessinés à la volée autour de la voiture (aucune grande image
+   à charger) :
+   — LES DOCKS : un circuit de rue nocturne entre les conteneurs du port,
+     virages à angle droit, murs tout près — technique et nerveux ;
+   — MONT HARUNA : une route de montagne étroite, épingles en lacets entre les
+     glissières et les pins, puis de longues courbes rapides — le touge ;
+   — WANGAN : l'autoroute de nuit, trois voies, d'immenses courbes à fond,
+     du trafic, les lampadaires orange qui défilent — la vitesse pure.
+   Chaque tracé est un polygone aux coins arrondis (tracerPolygone) : la boucle
+   se referme d'elle-même. ep : largeur de piste ; marge : l'espace avant le mur. */
+const echelle=(V,k)=>V.map(([x,y,r])=>[x*k,y*k,r*k]);
+const CIRCUITS={
+  tokyo:{id:'tokyo',cle:'xl',nom:'Tokyo Circuit',court:'Tokyo',desc:'Le serpentin du quartier : chicane, trois épingles, un S.',style:'tokyo',piste:PISTE_TK,ep:100,trafic:4,tours:3,licence:null},
+  docks:{id:'docks',cle:'docks',nom:'Les Docks',court:'Docks',desc:'Circuit de rue entre les conteneurs. Angles droits, murs tout près.',style:'docks',ep:80,marge:16,trafic:0,tours:3,licence:'C',
+    V:[[200,200,40],[1200,200,40],[1200,520,35],[900,520,35],[900,720,35],[1250,720,60],[1250,1050,40],[650,1050,35],[650,840,35],[420,840,35],[420,1050,40],[150,1050,40],[150,640,35],[350,640,35],[350,430,35],[150,430,35]]},
+  haruna:{id:'haruna',cle:'haruna',nom:'Mont Haruna',court:'Haruna',desc:'Route de montagne : lacets serrés entre les glissières, puis courbes rapides.',style:'touge',ep:72,marge:9,trafic:0,tours:2,licence:'B',
+    V:[[300,200,140],[1500,200,220],[1750,520,160],[1450,760,45],[420,760,45],[420,920,45],[1450,920,45],[1450,1080,45],[420,1080,45],[420,1240,45],[1500,1240,160],[1850,1500,220],[1750,1900,260],[1100,2000,300],[500,1850,200],[180,1350,160],[150,600,200]]},
+  wangan:{id:'wangan',cle:'wangan',nom:'Wangan',court:'Wangan',desc:'L’autoroute de nuit : trois voies, courbes immenses, trafic.',style:'wangan',ep:150,marge:12,trafic:9,tours:2,licence:'A',
+    V:echelle([[300,300,500],[2600,300,650],[2800,1400,550],[2100,1850,800],[900,1750,650],[250,1250,450]],1.4)}};
+for(const C of Object.values(CIRCUITS)){if(!C.piste){C.piste=tracerPolygone(C.V,{ligneS:100});}
+  C.ligneS=C.piste.ligneS;}
+let CIR=CIRCUITS.tokyo;
+function choisirCircuit(id){CIR=CIRCUITS[id]||CIRCUITS.tokyo;PISTE=CIR.piste;horsPiste.i=null;try{dessinerCarte.fond=null;}catch(x){}CIR_RENDU.pret=null;}
+const enVille=()=>CIR.id==='tokyo';
+/* ---------- le décor des circuits à part : calculé une fois par circuit, dessiné à la volée ---------- */
+const CIR_RENDU={pret:null,motifs:{},morceaux:null,deco:null};
+function preparerRenduCircuit(ctx){
+  const C=CIR, P=C.piste.pts, N=P.length, A=i=>alea(i*1.37+0.5);
+  /* des paquets de 24 points avec leur boîte : on ne dessine que ceux qui sont à l'écran */
+  const morceaux=[];for(let i=0;i<N;i+=24){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;const idx=[];
+    for(let k=i;k<=Math.min(N,i+24);k++){const p=P[k%N];idx.push(k%N);x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x);y1=Math.max(y1,p.y);}
+    morceaux.push({idx,x0,y0,x1,y1});}
+  const mk=(T,f)=>{const c=document.createElement('canvas');c.width=c.height=T;f(c.getContext('2d'),T);return ctx.createPattern(c,'repeat');};
+  const M={};
+  if(C.style==='docks'){
+    M.sol=mk(128,(q,T)=>{q.fillStyle='#4b4a53';q.fillRect(0,0,T,T);for(let y=0;y<T;y+=32)for(let x=0;x<T;x+=32){q.fillStyle=A(x+y*3)<0.5?'#504f58':'#46454e';q.fillRect(x+1,y+1,30,30);}
+      for(let i=0;i<40;i++){q.fillStyle='rgba(0,0,0,.12)';q.beginPath();q.arc(A(i*3.1)*T,A(i*5.7)*T,1+A(i)*4,0,7);q.fill();}});
+  }else if(C.style==='touge'){
+    M.sol=mk(96,(q,T)=>{q.fillStyle='#1d3a24';q.fillRect(0,0,T,T);for(let i=0;i<46;i++){const x=A(i*3.3)*T,y=A(i*7.7)*T,r=5+A(i)*7;
+      q.fillStyle='rgba(0,0,0,.35)';q.beginPath();q.arc(x+3,y+3,r,0,7);q.fill();q.fillStyle=A(i*2.1)<0.5?'#24502f':'#2c5d36';q.beginPath();q.arc(x,y,r,0,7);q.fill();
+      q.fillStyle='#3d7a45';q.beginPath();q.arc(x-r*0.3,y-r*0.3,r*0.45,0,7);q.fill();}});
+    M.roche=mk(48,(q,T)=>{q.fillStyle='#6d6a64';q.fillRect(0,0,T,T);for(let i=0;i<30;i++){q.fillStyle=A(i)<0.5?'#7d7a73':'#5a5751';q.fillRect(A(i*2.3)*T,A(i*4.1)*T,3+A(i*5)*8,2+A(i*7)*4);}});
+  }else{
+    M.sol=mk(160,(q,T)=>{q.fillStyle='#161923';q.fillRect(0,0,T,T);for(let i=0;i<10;i++){const x=Math.floor(A(i*3.3)*T),y=Math.floor(A(i*7.7)*T),w=24+A(i)*40,h=20+A(i*2)*40;
+      q.fillStyle='#22263a';q.fillRect(x,y,w,h);q.fillStyle='#2b3048';q.fillRect(x,y,w,2);
+      for(let k=0;k<12;k++)if(A(i*13+k)<0.5){q.fillStyle=['#ffd98a','#7fe8ff','#ff8ac8'][k%3];q.fillRect(x+3+A(k+i)*(w-6),y+4+A(k*2+i)*(h-8),1.5,1.5);}}});
+  }
+  /* le décor posé le long de la piste : conteneurs, pins, lampadaires */
+  const deco=[];
+  const surPiste=(x,y,m)=>{for(let i=0;i<N;i+=3){const p=P[i];if((p.x-x)**2+(p.y-y)**2<m*m)return true;}return false;};
+  if(C.style==='docks'){const cols=['#9a3b2e','#2e5b9a','#2f7a4a','#c7731f','#6b6f7a','#8a2f6b'];
+    for(let i=0;i<N;i+=6){const p=P[i];for(const sd of [-1,1]){const o=C.ep/2+C.marge+7, x=p.x-Math.sin(p.ang)*o*sd, y=p.y+Math.cos(p.ang)*o*sd;
+      if(surPiste(x,y,C.ep/2+C.marge+2))continue;deco.push({t:'cont',x,y,a:p.ang,c:cols[Math.floor(A(i*sd+3)*cols.length)]});}}
+    for(let k=0;k<7;k++){const p=P[Math.floor(A(k*9.1)*N)], sd=A(k)<0.5?-1:1, o=C.ep/2+90, x=p.x-Math.sin(p.ang)*o*sd, y=p.y+Math.cos(p.ang)*o*sd;if(!surPiste(x,y,C.ep/2+60))deco.push({t:'grue',x,y,a:p.ang});}
+    for(let i=0;i<N;i+=40){const p=P[i], sd=(i/40)%2?1:-1, o=C.ep/2+C.marge+2;deco.push({t:'lampe',x:p.x-Math.sin(p.ang)*o*sd,y:p.y+Math.cos(p.ang)*o*sd,c:'rgba(255,240,200,§)'});}
+  }else if(C.style==='touge'){
+    for(let i=0;i<N;i+=5){const p=P[i];for(const sd of [-1,1]){const o=C.ep/2+14+A(i*sd)*16, x=p.x-Math.sin(p.ang)*o*sd, y=p.y+Math.cos(p.ang)*o*sd;
+      if(surPiste(x,y,C.ep/2+10))continue;deco.push({t:'pin',x,y,r:6+A(i+sd)*5,v:A(i*3+sd)});}}
+    for(let i=0;i<N;i+=90){const p=P[i], sd=(i/90)%2?1:-1, o=C.ep/2+C.marge+3;deco.push({t:'lampe',x:p.x-Math.sin(p.ang)*o*sd,y:p.y+Math.cos(p.ang)*o*sd,c:'rgba(255,214,150,§)'});}
+  }else{
+    for(let i=0;i<N;i+=24){const p=P[i];for(const sd of [-1,1]){const o=C.ep/2+C.marge+4;deco.push({t:'lampe',x:p.x-Math.sin(p.ang)*o*sd,y:p.y+Math.cos(p.ang)*o*sd,c:'rgba(255,170,70,§)',bras:sd,a:p.ang});}}
+  }
+  CIR_RENDU.morceaux=morceaux;CIR_RENDU.motifs=M;CIR_RENDU.deco=deco;CIR_RENDU.pret=C.id;
+}
+function dessinerCircuitVect(ctx,x0,y0,x1,y1,nuit){
+  const C=CIR;if(CIR_RENDU.pret!==C.id)preparerRenduCircuit(ctx);
+  const P=C.piste.pts, M=CIR_RENDU.motifs, ep=C.ep, m=ep+C.marge*2+60;
+  ctx.fillStyle=M.sol;ctx.fillRect(x0,y0,x1-x0,y1-y0);
+  const vis=CIR_RENDU.morceaux.filter(b=>b.x1>x0-m&&b.x0<x1+m&&b.y1>y0-m&&b.y0<y1+m);
+  const trace=(o,w,st,dash)=>{ctx.strokeStyle=st;ctx.lineWidth=w;ctx.setLineDash(dash||[]);
+    for(const b of vis){ctx.beginPath();b.idx.forEach((i,k)=>{const p=P[i];const x=p.x-Math.sin(p.ang)*o, y=p.y+Math.cos(p.ang)*o;k?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();}ctx.setLineDash([]);};
+  ctx.lineJoin='round';ctx.lineCap='round';
+  if(C.style==='docks'){
+    trace(0,ep+C.marge*2,'#5a5962');trace(0,ep,'#34333c');
+    trace(ep/2-4,1.5,'rgba(240,240,248,.85)');trace(-ep/2+4,1.5,'rgba(240,240,248,.85)');
+    /* vibreurs aux virages */
+    for(const b of vis)for(const i of b.idx){const p=P[i];if(!p.k)continue;const rouge=Math.floor(p.s/8)%2;ctx.fillStyle=rouge?'#d8213a':'#f2f0f6';
+      for(const sd of [-1,1]){const o=sd*(ep/2-3);ctx.fillRect(p.x-Math.sin(p.ang)*o-2.5,p.y+Math.cos(p.ang)*o-2.5,5,5);}}
+    trace(0,1.2,'rgba(255,210,60,.5)',[10,14]);
+  }else if(C.style==='touge'){
+    trace(0,ep+C.marge*2+16,M.roche);trace(0,ep+C.marge*2,'#4a4a4f');trace(0,ep,'#38383e');
+    trace(ep/2-3,1.4,'rgba(240,240,248,.8)');trace(-ep/2+3,1.4,'rgba(240,240,248,.8)');
+    trace(0,1.6,'rgba(255,200,40,.85)',[12,10]);
+    /* les glissières */
+    for(const sd of [-1,1]){trace(sd*(ep/2+C.marge),2.2,'#c9ccd6');trace(sd*(ep/2+C.marge)+1.2*sd,1,'rgba(0,0,0,.35)');}
+  }else{
+    trace(0,ep+C.marge*2+10,'#8b8e98');trace(0,ep+C.marge*2,'#41434d');trace(0,ep,'#2e2f37');
+    trace(ep/2-5,1.6,'rgba(240,240,248,.85)');trace(-ep/2+5,1.6,'rgba(240,240,248,.85)');
+    trace(ep/6,1.3,'rgba(240,240,248,.65)',[14,16]);trace(-ep/6,1.3,'rgba(240,240,248,.65)',[14,16]);
+  }
+  /* la ligne d'arrivée, en damier */
+  {const p=pointPiste(C.ligneS);ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.ang);for(let y=-ep/2;y<ep/2;y+=4)for(let k=0;k<3;k++){ctx.fillStyle=(Math.floor((y+ep/2)/4)+k)%2?'#14121c':'#f4f2f6';ctx.fillRect(k*4-6,y,4,4);}ctx.restore();}
+  /* le décor visible */
+  for(const o of CIR_RENDU.deco){if(o.x<x0-60||o.x>x1+60||o.y<y0-60||o.y>y1+60)continue;
+    if(o.t==='cont'){ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.a);ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(-11,-4,24,12);ctx.fillStyle=o.c;ctx.fillRect(-12,-6,24,12);
+      ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(-12,-6,24,1.5);ctx.fillStyle='rgba(0,0,0,.25)';for(let k=-10;k<12;k+=3)ctx.fillRect(k,-6,0.8,12);ctx.restore();}
+    else if(o.t==='grue'){ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.a);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(-30,-50,64,104);ctx.fillStyle='#e0b020';ctx.fillRect(-34,-54,8,108);ctx.fillRect(26,-54,8,108);ctx.fillRect(-34,-54,68,8);ctx.fillRect(-34,46,68,8);
+      ctx.strokeStyle='#a07a10';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-26,-46);ctx.lineTo(26,46);ctx.moveTo(26,-46);ctx.lineTo(-26,46);ctx.stroke();ctx.restore();}
+    else if(o.t==='pin'){const r=o.r;ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.arc(o.x+3,o.y+3,r,0,7);ctx.fill();
+      ctx.fillStyle=o.v<0.5?'#1f4a2a':'#265a32';ctx.beginPath();ctx.arc(o.x,o.y,r,0,7);ctx.fill();ctx.fillStyle='#347a42';ctx.beginPath();ctx.arc(o.x-r*0.25,o.y-r*0.25,r*0.55,0,7);ctx.fill();
+      ctx.fillStyle='#4f9a55';ctx.fillRect(o.x-r*0.35,o.y-r*0.35,1.5,1.5);}
+    else if(o.t==='lampe'){ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.arc(o.x+2,o.y+2,3.5,0,7);ctx.fill();ctx.fillStyle='#3a3c48';ctx.beginPath();ctx.arc(o.x,o.y,3,0,7);ctx.fill();
+      ctx.fillStyle=nuit>0.3?'#fff2c8':'#c9ccd8';ctx.beginPath();ctx.arc(o.x,o.y,1.8,0,7);ctx.fill();
+      if(nuit>0.05)try{lueurNuit(ctx,o.x,o.y,C.style==='wangan'?70:55,o.c);}catch(x){}}}
+}
+
 const ESSAI={actif:false,x:0,y:0,ang:0,vx:0,vy:0,toile:null,traces:[],fumee:[],nom:'',retour:null};
 /* VOITURES VUES DU DESSUS, pixel par pixel. L'avant vers la droite.
    Chaque colonne a sa demi-largeur (le profil de la caisse) ; l'ombrage se fait
@@ -1148,16 +1322,103 @@ const CMDS={g:false,d:false,gaz:false,frein:false,drift:false,nitro:false};
 const MODE_CMD='boutons';
 try{localStorage.removeItem('bdl.tk.cmd');}catch(x){}
 
+/* ================= LA CARRIÈRE : LES LICENCES C, B, A, S =================
+   Chaque licence = trois épreuves, chacune avec une voiture prêtée et trois
+   médailles (bronze, argent, or). Toutes les épreuves en bronze au moins : la
+   licence est obtenue, le serveur verse sa prime une seule fois (dans l'ordre :
+   C, puis B, puis A, puis S). Les licences ouvrent les circuits pour les
+   courses avec sa propre voiture : Docks (C), Haruna (B), Wangan (A).
+   Types : chrono (un tour, seul en piste), course (contre cinq pilotes),
+   drift (une manche de 60 s dans la zone). */
+const VOIT_PRET={BMW:{marque:'BMW',modele:'M3 E46',id:'bmw-m3-e46'},Toyota:{marque:'Toyota',modele:'Supra MK4',id:'toyota-supra-mk4'},
+  Nissan:{marque:'Nissan',modele:'GT-R R35',id:'nissan-gtr-r35'},Porsche:{marque:'Porsche',modele:'911 GT3 RS',id:'porsche-911-gt3-rs'},
+  Lamborghini:{marque:'Lamborghini',modele:'Huracán',id:'lamborghini-huracan'},Ferrari:{marque:'Ferrari',modele:'F40',id:'ferrari-f40'}};
+const LICENCES=[
+  {id:'C',nom:'Licence C',titre:'Débutant',prime:300000,coul:'#7fe8ff',ep:[
+    {id:'C1',nom:'Premier tour',desc:'Un tour du Tokyo Circuit, seul en piste.',type:'chrono',circuit:'tokyo',voiture:'BMW',tours:1,seuils:[47,40.5,36.5]},
+    {id:'C2',nom:'Premiers drifts',desc:'Une manche de 60 s dans la zone de drift.',type:'drift',voiture:'Toyota',seuils:[5000,15000,35000]},
+    {id:'C3',nom:'Course aux Docks',desc:'Deux tours contre cinq pilotes, entre les conteneurs.',type:'course',circuit:'docks',voiture:'BMW',tours:2,seuils:[3,2,1]}]},
+  {id:'B',nom:'Licence B',titre:'Pilote',prime:800000,coul:'#5cff8a',ep:[
+    {id:'B1',nom:'Les lacets d’Haruna',desc:'Un tour du Mont Haruna, seul.',type:'chrono',circuit:'haruna',voiture:'Toyota',tours:1,seuils:[59.5,51.5,46.5]},
+    {id:'B2',nom:'Précision aux Docks',desc:'Un tour des Docks en 911, seul.',type:'chrono',circuit:'docks',voiture:'Porsche',tours:1,seuils:[36,31,28.5]},
+    {id:'B3',nom:'Le grand prix de Tokyo',desc:'Trois tours contre cinq pilotes.',type:'course',circuit:'tokyo',voiture:'Toyota',tours:3,seuils:[3,2,1]}]},
+  {id:'A',nom:'Licence A',titre:'Expert',prime:1500000,coul:'#ffd21f',ep:[
+    {id:'A1',nom:'Wangan à fond',desc:'Un tour de l’autoroute en Huracán, seul.',type:'chrono',circuit:'wangan',voiture:'Lamborghini',tours:1,seuils:[38,33,30]},
+    {id:'A2',nom:'Duel sur la montagne',desc:'Deux tours d’Haruna contre cinq pilotes.',type:'course',circuit:'haruna',voiture:'Porsche',tours:2,seuils:[3,2,1]},
+    {id:'A3',nom:'Maître du drift',desc:'Une manche de drift en 911.',type:'drift',voiture:'Porsche',seuils:[15000,35000,60000]}]},
+  {id:'S',nom:'Licence S',titre:'Légende',prime:4000000,coul:'#ff4fb0',ep:[
+    {id:'S1',nom:'La nuit du Wangan',desc:'Deux tours d’autoroute en F40, dans le trafic.',type:'course',circuit:'wangan',voiture:'Ferrari',tours:2,seuils:[3,2,1]},
+    {id:'S2',nom:'Haruna en F40',desc:'Un tour de montagne, gros turbos, seul.',type:'chrono',circuit:'haruna',voiture:'Ferrari',tours:1,seuils:[65,56,50.5]},
+    {id:'S3',nom:'La bête des Docks',desc:'Trois tours des Docks en GT-R contre cinq pilotes.',type:'course',circuit:'docks',voiture:'Nissan',tours:3,seuils:[3,2,1]}]}];
+const MED=['—','BRONZE','ARGENT','OR'], MED_C=['#8a8794','#d08a4a','#d8dbe6','#ffd21f'], MED_E=['','🥉','🥈','🥇'];
+function carriere(){try{const c=JSON.parse(localStorage.getItem('bdl.tk.carriere')||'{}');c.med=c.med||{};c.best=c.best||{};c.lic=c.lic||{};return c;}catch(x){return {med:{},best:{},lic:{}};}}
+function sauverCarriere(c){try{localStorage.setItem('bdl.tk.carriere',JSON.stringify(c));}catch(x){}}
+function licenceOuverte(id){const c=carriere(), i=LICENCES.findIndex(l=>l.id===id);return i<=0||!!c.lic[LICENCES[i-1].id];}
+function circuitOuvert(cid){const C=CIRCUITS[cid];return !C.licence||!!carriere().lic[C.licence];}
+function medailleDe(ep,v){const s=ep.seuils;
+  if(ep.type==='chrono')return v<=s[2]?3:v<=s[1]?2:v<=s[0]?1:0;
+  if(ep.type==='course')return v<=s[2]?3:v<=s[1]?2:v<=s[0]?1:0;
+  return v>=s[2]?3:v>=s[1]?2:v>=s[0]?1:0;}
+const fmtSeuil=(ep,v)=>ep.type==='chrono'?fmtTour(v):ep.type==='course'?(v===1?'1er':v+'e'):v.toLocaleString('fr-FR')+' pts';
+function lancerEpreuve(ep){
+  const v=VOIT_PRET[ep.voiture];
+  debutEssai(v,null,{},ep.type==='drift'?'drift':'course',{circuit:ep.circuit||'tokyo',tours:ep.tours,adv:ep.type==='course',epreuve:ep});
+}
+/* le résultat d'une épreuve : médaille, record, licence peut-être obtenue */
+async function resultatEpreuve(v){
+  const E=ESSAI, ep=E.epreuve;if(!ep)return;
+  const m=medailleDe(ep,v), c=carriere(), avant=c.med[ep.id]||0;
+  const mieux=ep.type==='drift'?(c.best[ep.id]==null||v>c.best[ep.id]):(c.best[ep.id]==null||v<c.best[ep.id]);
+  if(mieux)c.best[ep.id]=v;if(m>avant)c.med[ep.id]=m;sauverCarriere(c);
+  const lic=LICENCES.find(l=>l.ep.some(x=>x.id===ep.id));
+  const complete=lic.ep.every(x=>(c.med[x.id]||0)>=1), nouvelle=complete&&!c.lic[lic.id];
+  let el=document.getElementById('tkFin');if(el)el.remove();
+  el=document.createElement('div');el.id='tkFin';
+  const s=ep.seuils;
+  el.innerHTML='<div class="c"><small>'+lic.nom.toUpperCase()+' · '+ep.nom.toUpperCase()+'</small>'+
+    '<div class="r" style="color:'+MED_C[m]+';font-size:54px">'+(m?MED_E[m]+' '+MED[m]:'RATÉ')+'</div>'+
+    '<div class="t">'+fmtSeuil(ep,v)+(mieux&&avant?' · nouveau record':'')+'</div>'+
+    '<div class="cl" style="text-align:center;font:600 12px -apple-system,sans-serif;color:rgba(255,255,255,.65);line-height:1.7">🥉 '+fmtSeuil(ep,s[0])+' · 🥈 '+fmtSeuil(ep,s[1])+' · 🥇 '+fmtSeuil(ep,s[2])+'</div>'+
+    '<div class="g" id="tkGain">'+(nouvelle?'Licence en cours de validation…':(complete?lic.nom+' déjà obtenue.':'Encore '+lic.ep.filter(x=>!(c.med[x.id]>=1)).length+' épreuve(s) pour la '+lic.nom+'.'))+'</div>'+
+    '<div class="b"><button id="tkRejouer">Réessayer</button><button id="tkQuitter2">Carrière</button></div></div>';
+  document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'));
+  if(m)try{navigator.vibrate&&navigator.vibrate([30,40,30,40,80]);}catch(x){}
+  document.getElementById('tkRejouer').onclick=()=>{el.remove();E.actifAvant=true;lancerEpreuve(ep);E.actifAvant=false;};
+  document.getElementById('tkQuitter2').onclick=()=>{el.remove();finEssai();setTimeout(()=>{try{ouvrirConcessionTokyo(4);}catch(x){}},60);};
+  if(nouvelle){
+    const r=await rpcTK('tokyo_licence',{p_licence:lic.id});const gz=document.getElementById('tkGain');
+    if(r&&r.ok){const c2=carriere();c2.lic[lic.id]=true;sauverCarriere(c2);
+      if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();sauver();}catch(x){}}
+      if(gz)gz.innerHTML='🎉 <b>'+lic.nom+' obtenue !</b>'+(r.gain>0?' +'+enEuros(r.gain):'');}
+    else if(gz){/* sans connexion, la licence est gardée sur ce téléphone ; la prime attendra */
+      const c2=carriere();c2.lic[lic.id]=true;sauverCarriere(c2);gz.innerHTML='🎉 <b>'+lic.nom+' obtenue !</b> '+((r&&r.erreur)?'('+r.erreur+')':'');}
+  }
+}
+/* le choix du circuit pour une course avec sa voiture */
+function choisirCourse(v,aMoi){
+  let el=document.getElementById('tkChoix');if(el)el.remove();
+  cssVolant();el=document.createElement('div');el.id='tkChoix';
+  el.innerHTML='<div class="c"><small>COURSE · CHOISIS TON CIRCUIT</small>'+Object.values(CIRCUITS).map(C=>{const ok=circuitOuvert(C.id);
+    return '<button data-c="'+C.id+'" '+(ok?'':'disabled')+'><b>'+C.nom+'</b><span>'+(ok?C.desc+' · '+C.tours+' tours':'🔒 Il faut la licence '+C.licence+' (Carrière)')+'</span></button>';}).join('')+
+    '<button class="x">Annuler</button></div>';
+  document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'));
+  el.querySelector('.x').onclick=()=>el.remove();
+  el.querySelectorAll('button[data-c]').forEach(b=>b.onclick=()=>{el.remove();try{fermerConcessionTokyo();}catch(x){}debutEssai(v,aMoi,null,'course',{circuit:b.dataset.c});});
+}
+
 /* ================= LE DÉBUT ET LA FIN D'UNE SORTIE ================= */
-function debutEssai(v,aMoi,reglages,mode){
-  const E=ESSAI;
+function debutEssai(v,aMoi,reglages,mode,opts){
+  const E=ESSAI;E.opts=opts||{};E.epreuve=E.opts.epreuve||null;
   E.actif=true;E.garage=aMoi||null;E.modele=v||{};E.mode=mode==='course'||mode==='drift'?mode:'libre';
   E.tuning=(aMoi&&aMoi.tuning)||reglages||{};
   E.stats=statsVoiture(v&&v.marque,E.tuning);
   E.halo=null;E.dist=0;E.drifts=0;E.nom=[v.marque,v.modele].filter(Boolean).join(' ');
   E.toile=peindreVoitureDessus(v.marque,E.tuning);
   E.retour=E.retour&&E.actifAvant?E.retour:{x:joueur.x,y:joueur.y};
-  E.x=CIRCUIT.ligne-150;E.y=(TK.route[0]+TK.route[1])/2+18;E.ang=0;E.vx=0;E.vy=0;
+  choisirCircuit(E.mode==='drift'?'tokyo':(E.opts.circuit||'tokyo'));CAM_V.lx=null;
+  if(enVille()){E.x=CIRCUIT.ligne-150;E.y=(TK.route[0]+TK.route[1])/2+18;E.ang=0;}
+  else{const p=pointPiste(CIR.ligneS-120);E.x=p.x;E.y=p.y;E.ang=p.ang;}
+  E.vx=0;E.vy=0;
   E.limite=(aMoi||E.mode!=='libre')?null:180;
   E.tour=null;E.tours=0;E.cp=0;E.dernier=null;E.trainee=[];E.flamme=0;E.gazAvant=0;
   E.traces=[];E.fumee=[];E.etinc=[];E.recul=false;E.reste=0;E.idx=null;
@@ -1166,7 +1427,7 @@ function debutEssai(v,aMoi,reglages,mode){
   COURSE.actif=false;
   if(E.mode==='course')preparerCourse();
   ZONE.phase='';if(E.mode==='drift')preparerZone();
-  joueur.x=E.x;joueur.y=E.y;
+  if(enVille()){joueur.x=E.x;joueur.y=E.y;}
   couperMoteur();demarrerMoteur();
   if(E.mode!=='libre')sonBip(false);                  /* le « 3 » du départ */
   document.body.classList.add('tk-volant');
@@ -1179,7 +1440,7 @@ function finEssai(){
   const E=ESSAI;
   E.actif=false;
   if(E.garage){const v=E.garage;v.km=(v.km||0)+E.dist*0.00017;v.drifts=(v.drifts||0)+E.drifts;v.sorties=(v.sorties||0)+1;try{sauver();}catch(x){}}
-  E.garage=null;COURSE.actif=false;COURSE.voitures=[];
+  E.garage=null;E.epreuve=null;COURSE.actif=false;COURSE.voitures=[];choisirCircuit('tokyo');
   hudMontrer(false);
   couperMoteur();
   document.body.classList.remove('tk-volant');
@@ -1203,7 +1464,9 @@ function lireCommandes(jx,jy){
   const E=ESSAI;let s=0,g=0,b=0;
   /* les boutons ◀ ▶ GAZ restent actifs dans les deux modes : s'ils sont tenus, ils priment sur le joystick */
   if(MODE_CMD==='boutons'||CMDS.g||CMDS.d||CMDS.gaz){
-    s=(CMDS.d?1:0)-(CMDS.g?1:0);g=CMDS.gaz?1:0;b=CMDS.frein?1:0;
+    /* LES COMMANDES SE DOSENT : le volant glisse de -1 à 1, l'accélérateur et le frein de 0,35 à 1 */
+    s=Math.max(-1,Math.min(1,(+CMDS.volant||0)+(CMDS.d?1:0)-(CMDS.g?1:0)));
+    g=typeof CMDS.gaz==='number'?CMDS.gaz:(CMDS.gaz?1:0);b=typeof CMDS.frein==='number'?CMDS.frein:(CMDS.frein?1:0);
   }else{
     jx=jx||0;jy=jy||0;const n=Math.min(1,Math.hypot(jx,jy));
     const av0=E.vx*Math.cos(E.ang)+E.vy*Math.sin(E.ang);
@@ -1263,6 +1526,13 @@ function pasPhysique(dt,c){
   if(rap!==E.rapport){if(rap>E.rapport&&c.g>0){E.coupure=0.1;if((E.tuning||{}).flammes)pop();}E.rapport=rap;}
   if(E.coupure>0)E.coupure-=dt;
   const couple=[1.3,1.12,1,0.92,0.85,0.8][rap]*(E.coupure>0?0.35:1);
+  /* LE MOTEUR : un atmosphérique pousse plus fort en haut des tours ; un turbo attend sa pression, puis donne tout */
+  const lo=RAPPORTS[rap]||0, hi=RAPPORTS[rap+1]||1.05, pRap=Math.max(0,Math.min(1,(fr-lo)/(hi-lo)));
+  let mot=1;
+  if(S.turbo>0){const vise=(c.g||0)*Math.max(0,Math.min(1,(pRap-0.2)/0.45+(rap>=2?0.35:0)));
+    E.pression=(E.pression||0)+(vise-(E.pression||0))*Math.min(1,(vise>(E.pression||0)?1.5/S.turbo:0.9)*dt);
+    mot=1-0.3*S.turbo+0.55*S.turbo*E.pression;}
+  else mot=0.86+0.28*pRap;
   /* 2. LE DRIFT : le coup de frein à main à l'appui, puis l'arrière libéré */
   if(c.h&&!E.hAvant)E.hbT=0.22;
   E.hAvant=c.h;
@@ -1297,7 +1567,7 @@ function pasPhysique(dt,c){
   const d=E.delta;
   /* 4. LES FORCES LONGITUDINALES (par unité de masse) */
   let Fd=0, Fb=0;
-  if(c.g>0){if(u<-5)Fb=S.frein;else Fd=ACC*couple*c.g*gazDrift*Math.max(0.04,1-Math.pow(Math.max(0,u)/VMAX,2));}
+  if(c.g>0){if(u<-5)Fb=S.frein;else Fd=ACC*couple*mot/(S.masse||1)*c.g*gazDrift*Math.max(0.04,1-Math.pow(Math.max(0,u)/VMAX,2));}
   if(c.b>0){if(u>8)Fb=Math.max(Fb,S.frein*c.b);else Fd=-ACC*0.55*c.b*(u>-90?1:0);}
   if(!(c.g>0)&&!(c.b>0))Fb=Math.abs(u)>2?(0.55*Math.abs(u)+12)*(hp?2.5:1):0;   /* frein moteur et roulement */
   const ax=E.axL||0;
@@ -1315,9 +1585,11 @@ function pasPhysique(dt,c){
   const capXr=mu*Nr*(driftTenu?kR*0.55:1);
   if(Math.abs(Fxr)>capXr*0.98){E.patine=Fd>0;Fxr=Math.sign(Fxr)*capXr*0.98;}
   if(!driftTenu&&Fd>0){const lim=capXr*(0.9-0.3*Math.min(1,Math.abs(d)/0.35));if(Fxr>lim)Fxr=Math.max(0,lim);}
-  if(Math.abs(Fxf)>mu*Nf)Fxf=Math.sign(Fxf)*mu*Nf;
+  /* L'ABS : au freinage, les roues avant ne bloquent jamais ; elles gardent de quoi tourner (sinon la voiture file tout droit, ou pire) */
+  if(Math.abs(Fxf)>mu*Nf*0.75)Fxf=Math.sign(Fxf)*mu*Nf*0.75;
+  if(Fb>0&&!frMain&&Math.abs(Fxr)>mu*Nr*kR*0.75)Fxr=Math.sign(Fxr)*mu*Nr*kR*0.75;
   /* 5. LA DYNAMIQUE, en sous-pas */
-  const Iz=a*b*1.15*S.stab;
+  const Iz=a*b*1.15*S.stab*(S.masse||1);
   const h2=dt/PH.sous;
   let aYf=0,aYr=0;
   for(let k=0;k<PH.sous;k++){
@@ -1372,8 +1644,9 @@ function pasPhysique(dt,c){
   if(E.flamme>0)E.flamme-=dt;
   if((E.nitroT>0||E.boostT>0)&&Math.random()<0.5)E.flamme=Math.max(E.flamme,0.06);
   /* 7. LE DÉPLACEMENT ET LES MURS */
-  const libre=(X,Y)=>!(bloqueTokyo(X,Y)||X<20||X>MONDE_L-20||Y<TK.bati+18||Y>MONDE_H-18
-    ||(E.mode==='drift'&&!dansZone(X,Y,16))||ZD.poteaux.some(([px,py])=>Math.hypot(X-px,Y-py)<30));
+  const libre=enVille()?((X,Y)=>!(bloqueTokyo(X,Y)||X<20||X>MONDE_L-20||Y<TK.bati+18||Y>MONDE_H-18
+    ||(E.mode==='drift'&&!dansZone(X,Y,16))||ZD.poteaux.some(([px,py])=>Math.hypot(X-px,Y-py)<30)))
+    :((X,Y)=>projeter(X,Y,E.idx).d<CIR.ep/2+CIR.marge);   /* hors de la ville : le mur suit la piste */
   let X=E.x+E.vx*dt, Y=E.y+E.vy*dt;
   if(!libre(X,Y)){
     const choc=Math.hypot(E.vx,E.vy);
@@ -1384,8 +1657,8 @@ function pasPhysique(dt,c){
     if(choc>75)heurter(choc,E.x+nx*28,E.y+ny*28);
   }
   E.dist+=Math.hypot(X-E.x,Y-E.y);
-  {const pr=projeter(X,Y,E.idx);E.idx=pr.i;E.sPiste=pr.s;E.lat=pr.lat;}
-  chronoPas(E.x,E.y,X,Y,dt);
+  const sAv=E.sPiste;{const pr=projeter(X,Y,E.idx);E.idx=pr.i;E.sPiste=pr.s;E.lat=pr.lat;}
+  chronoPas(sAv,E.sPiste,dt);
   E.x=X;E.y=Y;
   return {av,tr,nx,ny,hp,vit,VMAX};
 }
@@ -1457,13 +1730,13 @@ function majEssai(dt,jx,jy){
     E.rollV=(E.rollV||0)+(70*(rT-(E.roll||0))-10*(E.rollV||0))*kd;E.roll=(E.roll||0)+E.rollV*kd;
     E.pitchV=(E.pitchV||0)+(70*(pT-(E.pitch||0))-10*(E.pitchV||0))*kd;E.pitch=(E.pitch||0)+E.pitchV*kd;
     const pp=E.sPiste!=null?pointPiste(E.sPiste):null, bord=Math.abs(E.lat||0);
-    E.vibreur=!!(E.mode!=='drift'&&pp&&pp.k>0&&bord>CIRCUIT.ep/2-12&&bord<CIRCUIT.ep/2+6&&(E.vitesse||0)>60);
+    E.vibreur=!!(E.mode!=='drift'&&(CIR.style==='tokyo'||CIR.style==='docks')&&pp&&pp.k>0&&bord>CIR.ep/2-12&&bord<CIR.ep/2+6&&(E.vitesse||0)>60);
     if(E.vibreur&&(E.vibreT=(E.vibreT||0)-dt)<=0){E.vibreT=0.11;try{navigator.vibrate&&navigator.vibrate(7);}catch(x){}}}
   for(const f of E.fumee){f.vie-=dt;f.r+=14*dt;}
   E.fumee=E.fumee.filter(f=>f.vie>0);
   for(const p of E.etinc){p.vie-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;}
   E.etinc=E.etinc.filter(p=>p.vie>0);if(E.etinc.length>140)E.etinc.splice(0,E.etinc.length-140);
-  joueur.x=E.x;joueur.y=E.y;
+  if(enVille()){joueur.x=E.x;joueur.y=E.y;}
 }
 
 /* ================= LA COURSE =================
@@ -1477,20 +1750,24 @@ const COURSE={actif:false,phase:'',t:0,tours:3,voitures:[],dep:0,fin:null};
 const COUL_ADV=['#1a5fd0','#5cc83a','#ffd21f','#f4f4f6','#ff7a1a','#7a3cff','#1fd6c3'];
 function preparerCourse(){
   const E=ESSAI, P=PISTE;
+  const O=E.opts||{}, lw=Math.round(CIR.ep*0.28), adv=O.adv!==false;
   COURSE.actif=true;COURSE.phase='decompte';COURSE.t=3;COURSE.voitures=[];COURSE.fin=null;COURSE.temps=0;COURSE.resultat=null;
+  COURSE.tours=O.tours||CIR.tours;COURSE.seul=!adv;
   const marques=['Toyota','BMW','Lamborghini','Porsche','Nissan','Ferrari'].filter(m=>m!==(E.modele||{}).marque);
   /* la grille : le joueur en dernière ligne, à gauche */
-  const grille=[[-45,-28],[-45,28],[-110,-28],[-110,28],[-175,-28],[-175,28]];
-  for(let i=0;i<5;i++){
+  const grille=[[-45,-lw],[-45,lw],[-110,-lw],[-110,lw],[-175,-lw],[-175,lw]];
+  if(!adv){grille[5]=[-60,0];}
+  for(let i=0;i<(adv?5:0);i++){
     const m=marques[i%marques.length], S=statsVoiture(m,{}), coul=COUL_ADV[(i*3+Math.floor(Math.random()*7))%COUL_ADV.length];
     const s=P.ligneS+grille[i][0], lane=grille[i][1];
     COURSE.voitures.push({type:'adv',nom:['Kenji','Aya','Ryo','Mika','Takumi'][i]+' · '+m,marque:m,toile:peindreVoitureDessus(m,{couleur:coul}),
       s,lane,laneCible:lane,v:0,vmax:Math.min(S.vmax,(E.stats||S).vmax)*(0.84+i*0.03),acc:Math.min(S.acc,(E.stats||S).acc)*0.9,   /* au niveau de TA voiture : c'est le tuning qui fait la différence */
       tours:0,tour0:false,fini:null,x:0,y:0,ang:0,r:13});
   }
-  for(let i=0;i<4;i++){
-    const s=P.ligneS+P.L*(0.2+i*0.2), lane=i%2?28:-28;
-    COURSE.voitures.push({type:'trafic',nom:'Trafic',marque:'Toyota',toile:petiteVoiture(['#f4f4f6','#ffd21f','#2a2c33','#1a5fd0'][i]),
+  const nt=adv?CIR.trafic:0;
+  for(let i=0;i<nt;i++){
+    const s=P.ligneS+P.L*((i+1)/(nt+1)), lane=CIR.style==='wangan'?[-1,0,1][i%3]*CIR.ep/3:(i%2?lw:-lw);
+    COURSE.voitures.push({type:'trafic',nom:'Trafic',marque:'Toyota',toile:petiteVoiture(['#f4f4f6','#ffd21f','#2a2c33','#1a5fd0','#c0392b','#7f8c8d'][i%6]),
       s,lane,laneCible:lane,v:105+i*12,vmax:105+i*12,acc:90,tours:0,x:0,y:0,ang:0,r:11});
   }
   for(const c of COURSE.voitures){const p=pointPiste(c.s);c.x=p.x-Math.sin(p.ang)*c.lane;c.y=p.y+Math.cos(p.ang)*c.lane;c.ang=p.ang;}
@@ -1535,7 +1812,7 @@ function pasCourse(dt){
       if(ds>0&&ds<420&&Math.abs(o.lane-lane)<24&&(o.v||0)<c.v+8)m=Math.min(m,ds);}return m;};
     if(c.type==='adv'&&(c.choix=(c.choix||0)-dt)<=0){c.choix=0.25;
       const ici=libre(c.laneCible);
-      if(ici<220){let best=c.laneCible,bm=ici;for(const l of [-28,0,28]){const m=libre(l);if(m>bm+60){bm=m;best=l;}}c.laneCible=best;}}
+      if(ici<220){let best=c.laneCible,bm=ici;for(const l of [-Math.round(CIR.ep*0.28),0,Math.round(CIR.ep*0.28)]){const m=libre(l);if(m>bm+60){bm=m;best=l;}}c.laneCible=best;}}
     if(c.fini==null)for(const o of autres){if(o===c)continue;const ds=((o.s-c.s)%P.L+P.L)%P.L;
       if(ds>0&&ds<80&&Math.abs(o.lane-c.lane)<22)c.v=Math.min(c.v,Math.max(0,(o.v||0)-5));}
     c.lane+=Math.max(-60*dt,Math.min(60*dt,c.laneCible-c.lane));
@@ -1556,7 +1833,7 @@ function pasCourse(dt){
     const dx=E.x-c.x, dy=E.y-c.y, d=Math.hypot(dx,dy), min=c.r+14;
     if(d>0&&d<min){
       const ux=dx/d, uy=dy/d, pen=min-d;
-      E.x+=ux*pen*0.6;E.y+=uy*pen*0.6;c.lane=Math.max(-40,Math.min(40,c.lane-(ux*-Math.sin(c.ang)+uy*Math.cos(c.ang))*pen*0.4));c.laneCible=c.lane;
+      E.x+=ux*pen*0.6;E.y+=uy*pen*0.6;c.lane=Math.max(-CIR.ep*0.4,Math.min(CIR.ep*0.4,c.lane-(ux*-Math.sin(c.ang)+uy*Math.cos(c.ang))*pen*0.4));c.laneCible=c.lane;
       const rel=(E.vx-c.vx)*ux+(E.vy-c.vy)*uy;
       if(rel<0){E.vx-=rel*ux*1.3;E.vy-=rel*uy*1.3;E.vx*=0.9;E.vy*=0.9;if(-rel>18)c.v*=0.92;
         if(-rel>38)heurter(-rel,E.x-ux*12,E.y-uy*12);}
@@ -1565,7 +1842,7 @@ function pasCourse(dt){
   for(let i=0;i<toutes.length;i++)for(let j=i+1;j<toutes.length;j++){
     const a=toutes[i],b=toutes[j];if(a.fini!=null||b.fini!=null)continue;let ds=((b.s-a.s)%P.L+P.L)%P.L;if(ds>P.L/2)ds-=P.L;
     const dl=a.lane-b.lane;
-    if(Math.abs(ds)<72&&Math.abs(dl)<28){const k=(28-Math.abs(dl))*0.06, sg=dl>=0?1:-1;a.lane=Math.max(-40,Math.min(40,a.lane+sg*k));b.lane=Math.max(-40,Math.min(40,b.lane-sg*k));
+    if(Math.abs(ds)<72&&Math.abs(dl)<28){const k=(28-Math.abs(dl))*0.06, sg=dl>=0?1:-1;a.lane=Math.max(-CIR.ep*0.4,Math.min(CIR.ep*0.4,a.lane+sg*k));b.lane=Math.max(-CIR.ep*0.4,Math.min(CIR.ep*0.4,b.lane-sg*k));
       if(ds>0)a.v=Math.min(a.v,b.v*0.98);else b.v=Math.min(b.v,a.v*0.98);}
   }
   /* l'arrivée du joueur */
@@ -1594,19 +1871,20 @@ function decompteMontrer(t){
 async function arriveeCourse(){
   const E=ESSAI, L=classement(), rang=L.findIndex(x=>x.joueur)+1, temps=COURSE.fin;
   encaisserCombo();
+  if(E.epreuve){resultatEpreuve(E.epreuve.type==='chrono'?Math.round(temps*100)/100:rang);return;}
   let el=document.getElementById('tkFin');if(el)el.remove();
   el=document.createElement('div');el.id='tkFin';
   const ligne=(x,i)=>'<div class="l'+(x.joueur?' moi':'')+'"><b>'+(i+1)+'</b><span>'+(x.joueur?'Toi · '+E.nom:x.nom)+'</span></div>';
-  el.innerHTML='<div class="c"><small>ARRIVÉE · '+COURSE.tours+' TOURS</small><div class="r">'+rang+'<sup>'+(rang===1?'er':'e')+'</sup></div>'+
+  el.innerHTML='<div class="c"><small>'+CIR.nom.toUpperCase()+' · '+COURSE.tours+' TOURS</small><div class="r">'+rang+'<sup>'+(rang===1?'er':'e')+'</sup></div>'+
     '<div class="t">'+fmtTour(temps)+' · drift '+(E.score||0).toLocaleString('fr-FR')+' pts</div>'+
     '<div class="cl">'+L.map(ligne).join('')+'</div><div class="g" id="tkGain">Le comptoir calcule ta prime…</div>'+
     '<div class="b"><button id="tkRejouer">Rejouer</button><button id="tkQuitter2">Quitter</button></div></div>';
   document.body.appendChild(el);
   requestAnimationFrame(()=>el.classList.add('on'));
-  document.getElementById('tkRejouer').onclick=()=>{el.remove();const g=E.garage, m=E.modele;E.actifAvant=true;debutEssai(m,g,null,'course');E.actifAvant=false;};
+  document.getElementById('tkRejouer').onclick=()=>{el.remove();const g=E.garage, m=E.modele, o=E.opts;E.actifAvant=true;debutEssai(m,g,null,'course',o);E.actifAvant=false;};
   document.getElementById('tkQuitter2').onclick=()=>{el.remove();finEssai();};
   if(!E.garage){document.getElementById('tkGain').textContent='Course d’essai : pas de prime.';return;}
-  const r=await rpcTK('tokyo_course_fin',{p_voiture:E.garage.modele,p_rang:rang,p_temps_ms:Math.round(temps*1000)});
+  const r=await rpcTK('tokyo_course_fin',{p_voiture:E.garage.modele,p_rang:rang,p_temps_ms:Math.round(temps*1000),p_circuit:CIR.cle});
   const gz=document.getElementById('tkGain');if(!gz)return;
   if(!r||r.erreur){gz.textContent=(r&&r.erreur)||'La prime n’a pas pu être versée.';return;}
   if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();sauver();}catch(x){}}
@@ -1661,6 +1939,17 @@ body.tk-volant{touch-action:none;overscroll-behavior:none;-webkit-user-select:no
 #tkPad .nitro{right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px + clamp(104px,30vw,124px) + 10px);width:clamp(58px,16vw,70px);height:clamp(50px,14vw,58px);border-radius:16px;font-size:11px;
  background:conic-gradient(rgba(63,224,255,.55) var(--p,100%),rgba(14,10,24,.62) 0);box-shadow:inset 0 0 0 2px rgba(127,232,255,.5)}
 /* Même en mode joystick, conserver les commandes de secours visibles : sur mobile, le HUD plein écran masque parfois le joystick global. */
+#tkPad .vol{position:absolute;pointer-events:auto;left:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:calc(2 * clamp(62px,18vw,80px) + 26px);height:clamp(62px,18vw,80px);
+ border-radius:22px;background:rgba(14,10,24,.62);box-shadow:inset 0 0 0 2px rgba(255,255,255,.16);touch-action:none;user-select:none;-webkit-user-select:none;display:flex;align-items:center;justify-content:space-between;padding:0 14px;color:#fff;font-size:22px;--v:0}
+#tkPad .vol i{font-style:normal;opacity:.75;pointer-events:none}
+#tkPad .vol .curseur{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.4);pointer-events:none;
+ transform:translateX(calc(var(--v) * (clamp(62px,18vw,80px) - 6px)));transition:transform .04s}
+#tkPad .vol.on{box-shadow:inset 0 0 0 2px #ff8ac8;background:rgba(40,14,40,.62)}
+#tkPad .vol::before{content:'';position:absolute;left:50%;top:14px;bottom:14px;width:2px;margin-left:-1px;background:rgba(255,255,255,.18)}
+#tkPad .gaz,#tkPad .frein{overflow:hidden}
+#tkPad .gaz::before,#tkPad .frein::before{content:'';position:absolute;left:0;right:0;bottom:0;height:var(--p,0%);background:rgba(92,255,138,.35);transition:height .05s}
+#tkPad .frein::before{background:rgba(255,90,90,.35)}
+#tkPad .gaz span,#tkPad .frein span{position:relative}
 #tkPad.joy .dir,#tkPad.joy .gaz{display:block}
 #tkPad.joy .frein{right:calc(12px + clamp(66px,19vw,82px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
 #tkPad.joy .drift{right:calc(12px + clamp(66px,19vw,82px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px + clamp(58px,16vw,70px) + 10px)}
@@ -1668,6 +1957,15 @@ body.tk-volant{touch-action:none;overscroll-behavior:none;-webkit-user-select:no
 #tkAide{position:fixed;left:16px;right:16px;top:38%;z-index:22;pointer-events:none;margin:0 auto;max-width:330px;
  padding:12px 14px;border-radius:14px;background:rgba(10,8,18,.88);border:1px solid rgba(255,79,176,.4);color:#fff;font:600 13px/1.45 -apple-system,sans-serif;transition:opacity .6s}
 #tkAide b{color:#ff8ac8}
+#tkChoix{position:fixed;inset:0;z-index:9000;display:grid;place-items:center;background:rgba(6,4,12,0);transition:background .3s;padding:16px}
+#tkChoix.on{background:rgba(6,4,12,.78)}
+#tkChoix .c{width:100%;max-width:360px;border-radius:22px;background:#160b26;border:1px solid rgba(255,79,176,.45);color:#fff;padding:16px;display:flex;flex-direction:column;gap:8px}
+#tkChoix small{font:700 10px ui-monospace,monospace;letter-spacing:3px;color:#ff8ac8;text-align:center;margin-bottom:4px}
+#tkChoix button{-webkit-appearance:none;appearance:none;text-align:left;border:0;border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.07);color:#fff;font-family:-apple-system,sans-serif;cursor:pointer}
+#tkChoix button b{display:block;font:800 15px -apple-system,sans-serif}
+#tkChoix button span{display:block;margin-top:3px;font-size:12px;line-height:1.35;color:rgba(255,255,255,.6)}
+#tkChoix button:disabled{opacity:.45}
+#tkChoix button.x{text-align:center;background:none;color:rgba(255,255,255,.6);font-weight:700}
 #tkFin{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(6,4,12,0);transition:background .4s;padding:20px}
 #tkFin.on{background:rgba(6,4,12,.72)}
 #tkFin .c{width:100%;max-width:340px;border-radius:22px;background:#160b26;border:1px solid rgba(255,79,176,.45);color:#fff;padding:18px;text-align:center;transform:translateY(20px);opacity:0;transition:all .4s}
@@ -1701,14 +1999,32 @@ function hudMontrer(on){
   const pp=document.createElement('div');pp.id='tkPop';document.body.appendChild(pp);
   /* LE PAVÉ DE COMMANDES */
   const pad=document.createElement('div');pad.id='tkPad';if(MODE_CMD!=='boutons')pad.classList.add('joy');
-  const B=[['g','dir g','◀'],['d','dir d','▶'],['gaz','gaz','GAZ'],['frein','frein','FREIN'],['drift','drift','DRIFT']];
+  /* LE VOLANT : une bande à gauche. Le doigt s'y pose et glisse : plus il va loin du centre,
+     plus on braque — on dose. Il peut passer de gauche à droite sans se lever.
+     GAZ et FREIN se dosent aussi : appuyer en bas du bouton = un filet, en haut = à fond ;
+     le doigt peut glisser sur le bouton pendant qu'on roule. */
+  const vol=document.createElement('div');vol.className='vol';vol.innerHTML='<i>◀</i><span class="curseur"></span><i>▶</i>';
+  let volId=null;
+  const majVol=ev=>{const r=vol.getBoundingClientRect(), c=r.left+r.width/2;let v=(ev.clientX-c)/(r.width*0.42);
+    v=Math.max(-1,Math.min(1,v));if(Math.abs(v)<0.07)v=0;CMDS.volant=v;vol.style.setProperty('--v',v.toFixed(3));vol.classList.toggle('on',v!==0);};
+  vol.addEventListener('pointerdown',ev=>{ev.preventDefault();ev.stopPropagation();try{vol.setPointerCapture(ev.pointerId);}catch(x){}volId=ev.pointerId;majVol(ev);});
+  vol.addEventListener('pointermove',ev=>{if(ev.pointerId===volId)majVol(ev);});
+  const lacherVol=ev=>{if(ev.pointerId===volId){volId=null;CMDS.volant=0;vol.style.setProperty('--v','0');vol.classList.remove('on');}};
+  vol.addEventListener('pointerup',lacherVol);vol.addEventListener('pointercancel',lacherVol);vol.addEventListener('lostpointercapture',lacherVol);
+  vol.addEventListener('touchstart',ev=>ev.preventDefault(),{passive:false});vol.addEventListener('contextmenu',ev=>ev.preventDefault());
+  pad.appendChild(vol);
+  const B=[['gaz','gaz','GAZ'],['frein','frein','FREIN'],['drift','drift','DRIFT']];
   if(E.stats&&E.stats.nitro)B.push(['nitro','nitro','N₂O']);
   const enfonces=new Map();      /* pointerId → commande */
-  const maj=()=>{for(const k of ['g','d','gaz','frein','drift'])CMDS[k]=false;for(const k of enfonces.values())if(k!=='nitro')CMDS[k]=true;
-    pad.querySelectorAll('button').forEach(b=>b.classList.toggle('on',[...enfonces.values()].includes(b.dataset.k)));};
+  const dose=(b,ev)=>{const r=b.getBoundingClientRect();return Math.max(0.35,Math.min(1,0.35+0.65*(r.bottom-ev.clientY)/r.height));};
+  const maj=()=>{CMDS.drift=false;let gz=0,fr=0;for(const [id,k] of enfonces){if(k.k==='drift')CMDS.drift=true;if(k.k==='gaz')gz=Math.max(gz,k.v);if(k.k==='frein')fr=Math.max(fr,k.v);}
+    CMDS.gaz=gz;CMDS.frein=fr;
+    pad.querySelectorAll('button').forEach(b=>{const on=[...enfonces.values()].some(k=>k.k===b.dataset.k);b.classList.toggle('on',on);
+      if(b.dataset.k==='gaz')b.style.setProperty('--p',Math.round(gz*100)+'%');if(b.dataset.k==='frein')b.style.setProperty('--p',Math.round(fr*100)+'%');});};
   for(const [k,cl,txt] of B){
-    const b=document.createElement('button');b.className=cl;b.dataset.k=k;b.textContent=txt;b.setAttribute('aria-label',txt);
-    b.addEventListener('pointerdown',ev=>{ev.preventDefault();ev.stopPropagation();try{b.setPointerCapture(ev.pointerId);}catch(x){}enfonces.set(ev.pointerId,k);if(k==='nitro')CMDS.nitro=true;maj();});
+    const b=document.createElement('button');b.className=cl;b.dataset.k=k;b.innerHTML='<span>'+txt+'</span>';b.setAttribute('aria-label',txt);
+    b.addEventListener('pointerdown',ev=>{ev.preventDefault();ev.stopPropagation();try{b.setPointerCapture(ev.pointerId);}catch(x){}enfonces.set(ev.pointerId,{k,v:dose(b,ev)});if(k==='nitro')CMDS.nitro=true;maj();});
+    b.addEventListener('pointermove',ev=>{const o=enfonces.get(ev.pointerId);if(o&&(k==='gaz'||k==='frein')){o.v=dose(b,ev);maj();}});
     const lacher=ev=>{if(enfonces.has(ev.pointerId)){enfonces.delete(ev.pointerId);maj();}};
     b.addEventListener('pointerup',lacher);b.addEventListener('pointercancel',lacher);b.addEventListener('lostpointercapture',lacher);
     b.addEventListener('contextmenu',ev=>ev.preventDefault());
@@ -1722,11 +2038,11 @@ function hudMontrer(on){
       if(m){CMDS[m]=true;if(MODE_CMD==='boutons')ev.preventDefault();}});
     addEventListener('keyup',ev=>{const m={ArrowLeft:'g',ArrowRight:'d',ArrowUp:'gaz',ArrowDown:'frein',' ':'drift',Shift:'nitro'}[ev.key];if(m)CMDS[m]=false;});}
   /* la première fois : comment on conduit */
-  let vu=false;try{vu=localStorage.getItem('bdl.tk.aide3')==='1';}catch(x){}
+  let vu=false;try{vu=localStorage.getItem('bdl.tk.aide4')==='1';}catch(x){}
   if(!vu){const a=document.createElement('div');a.id='tkAide';
-    a.innerHTML=MODE_CMD==='boutons'?'<b>◀ ▶</b> pour tourner, <b>GAZ</b> et <b>FREIN</b> à droite.<br><b>DRIFT</b> : maintiens-le en tournant, la voiture glisse et se charge (bleu → orange → rose).<br>Finis le drift <b>sans toucher</b> : turbo et points !'
+    a.innerHTML=MODE_CMD==='boutons'?'<b>Glisse le doigt</b> sur la bande de gauche pour tourner : plus loin = plus fort.<br><b>GAZ</b> et <b>FREIN</b> se dosent : bas = doux, haut = à fond.<br><b>DRIFT</b> : maintiens-le en tournant, la voiture glisse et se charge (bleu → orange → rose).<br>Finis le drift <b>sans toucher</b> : turbo et points !'
       :'<b>Pouce gauche</b> : la direction, la voiture accélère toute seule.<br><b>DRIFT</b> : maintiens-le en tournant.<br>Finis le drift <b>sans toucher</b> : turbo et points !';
-    document.body.appendChild(a);setTimeout(()=>{a.style.opacity='0';setTimeout(()=>a.remove(),700);},6500);try{localStorage.setItem('bdl.tk.aide3','1');}catch(x){}}
+    document.body.appendChild(a);setTimeout(()=>{a.style.opacity='0';setTimeout(()=>a.remove(),700);},6500);try{localStorage.setItem('bdl.tk.aide4','1');}catch(x){}}
   (function boucle(){
     if(!document.getElementById('tkHud')||!ESSAI.actif)return;
     const E2=ESSAI, niv=niveauCharge();
@@ -1749,7 +2065,7 @@ function infoHaut(){
   if(COURSE.actif){
     const L=classement(), rang=L.findIndex(x=>x.joueur)+1;
     const tourAff=Math.min(COURSE.tours,(E.tour==null?0:E.tours)+1);
-    el.innerHTML='<b>P'+rang+'</b>/'+L.length+' · TOUR '+(COURSE.phase==='decompte'?1:tourAff)+'/'+COURSE.tours+'<small>'+fmtTour(COURSE.phase==='decompte'?0:(COURSE.fin!=null?COURSE.fin:COURSE.temps))+'</small>';
+    el.innerHTML=(COURSE.seul?'<b>CHRONO</b>':'<b>P'+rang+'</b>/'+L.length)+' · TOUR '+(COURSE.phase==='decompte'?1:tourAff)+'/'+COURSE.tours+'<small>'+fmtTour(COURSE.phase==='decompte'?0:(COURSE.fin!=null?COURSE.fin:COURSE.temps))+'</small>';
   }else{
     const rec=chronoRecords()[E.nom];
     el.innerHTML='<b>'+(E.tour!=null?'T'+(E.tours+1):'—')+'</b>'+fmtTour(E.tour)+'<small>★ '+fmtTour(rec)+(E.dernier!=null?' · DERNIER '+fmtTour(E.dernier):'')+(E.limite!=null?' · ESSAI '+Math.floor(E.limite/60)+':'+String(Math.floor(E.limite%60)).padStart(2,'0'):'')+'</small>';
@@ -1759,11 +2075,11 @@ function infoHaut(){
 function dessinerCarte(){
   const cv=document.getElementById('tkCarte');if(!cv)return;
   const now=performance.now();if(dessinerCarte.t&&now-dessinerCarte.t<90)return;dessinerCarte.t=now;
-  const g=cv.getContext('2d'), Wc=cv.width, Hc=cv.height, k=Math.min((Wc-16)/MONDE_L,(Hc-16)/(MONDE_H-200)), ox=8, oy=8-200*k;
+  const B=PISTE.bornes, bw=B[2]-B[0]+60, bh=B[3]-B[1]+60, g=cv.getContext('2d'), Wc=cv.width, Hc=cv.height, k=Math.min((Wc-16)/bw,(Hc-16)/bh), ox=8+(Wc-16-bw*k)/2-(B[0]-30)*k, oy=8+(Hc-16-bh*k)/2-(B[1]-30)*k;
   if(!dessinerCarte.fond){const f=document.createElement('canvas');f.width=Wc;f.height=Hc;const fg=f.getContext('2d');
     fg.strokeStyle='rgba(255,255,255,.32)';fg.lineWidth=7;fg.lineJoin='round';fg.beginPath();
     PISTE.pts.forEach((p,i)=>{const X=ox+p.x*k, Y=oy+p.y*k;i?fg.lineTo(X,Y):fg.moveTo(X,Y);});fg.closePath();fg.stroke();
-    fg.fillStyle='#fff';fg.fillRect(ox+CIRCUIT.ligne*k-2,oy+CIRCUIT.y*k-7,4,14);dessinerCarte.fond=f;}
+    {const q=pointPiste(PISTE.ligneS);fg.fillStyle='#fff';fg.beginPath();fg.arc(ox+q.x*k,oy+q.y*k,5,0,7);fg.fill();}dessinerCarte.fond=f;}
   g.clearRect(0,0,Wc,Hc);g.drawImage(dessinerCarte.fond,0,0);
   if(COURSE.actif)for(const c of COURSE.voitures){g.fillStyle=c.type==='trafic'?'rgba(200,200,210,.6)':'#7fe8ff';g.beginPath();g.arc(ox+c.x*k,oy+c.y*k,c.type==='trafic'?4:6,0,7);g.fill();}
   const E=ESSAI;g.fillStyle='#ff4fb0';g.strokeStyle='#fff';g.lineWidth=2;g.beginPath();g.arc(ox+E.x*k,oy+E.y*k,8,0,7);g.fill();g.stroke();
@@ -1772,18 +2088,19 @@ function dessinerCarte(){
 /* ================= LE CHRONO DU MODE LIBRE ================= */
 function chronoRecords(){try{return JSON.parse(localStorage.getItem('bdl.tk.records3')||'{}')||{};}catch(x){return {};}}
 function fmtTour(t){if(t==null)return '–:––.––';const m=Math.floor(t/60), sec=t-m*60;return m+':'+(sec<10?'0':'')+sec.toFixed(2);}
-function chronoPas(x0,y0,x1,y1,dt){
+function chronoPas(sAv,sAp,dt){
   const E=ESSAI, P=PISTE;
   if(E.tour!=null)E.tour+=dt;
+  if(sAv==null||sAp==null)return;
+  const rel=s=>(((s-P.ligneS)%P.L)+P.L)%P.L, r0=rel(sAv), r1=rel(sAp);
   /* trois points de passage, au quart, à la moitié et aux trois quarts du tour */
-  const rel=(((E.sPiste||0)-P.ligneS)%P.L+P.L)%P.L;
-  if(E.cp<3&&rel>(E.cp+1)*P.L/4&&rel<(E.cp+1)*P.L/4+900){E.cp++;}
-  const surLigne=y1>TK.route[0]&&y1<TK.route[1]&&x0<CIRCUIT.ligne&&x1>=CIRCUIT.ligne;
-  if(surLigne){
+  if(E.cp<3&&r1>(E.cp+1)*P.L/4&&r1<(E.cp+1)*P.L/4+900)E.cp++;
+  /* la ligne : on passe de la fin du tour au début, en avançant */
+  if(r0>P.L-250&&r1<250){
     if(E.tour!=null&&E.cp>=3){
       const t=E.tour;E.dernier=t;E.tours++;
-      const R=chronoRecords();
-      if(R[E.nom]==null||t<R[E.nom]){R[E.nom]=t;try{localStorage.setItem('bdl.tk.records3',JSON.stringify(R));}catch(x){}
+      const R=chronoRecords(), cle=E.nom+(enVille()?'':' @'+CIR.id);
+      if(R[cle]==null||t<R[cle]){R[cle]=t;try{localStorage.setItem('bdl.tk.records3',JSON.stringify(R));}catch(x){}
         popDrift('RECORD · '+fmtTour(t),'#ffd98a');}
       else popDrift(fmtTour(t),'#9ae8ff');
     }
@@ -1836,7 +2153,7 @@ const BATIS_TK=[];
 let DISPO=null;
 function disposerCircuit(){
   if(DISPO)return DISPO;
-  const W=MONDE_L,H=MONDE_H,P=PISTE.pts,ep=CIRCUIT.ep,C=24, A=i=>alea(i*1.37+0.5);
+  const W=MONDE_L,H=MONDE_H,P=PISTE_TK.pts,ep=CIRCUIT.ep,C=24, A=i=>alea(i*1.37+0.5);
   const nx=Math.ceil(W/C), ny=Math.ceil(H/C), dist=new Float32Array(nx*ny);
   for(let j=0;j<ny;j++){const y=j*C+C/2;if(y<340){dist.fill(0,j*nx,(j+1)*nx);continue;}
     for(let i=0;i<nx;i++){const x=i*C+C/2;let m=1e9;
@@ -1894,7 +2211,7 @@ function spritesArbres(){
 let HD_EN_COURS=false;
 function construireHD(fini){
   if(TK_HD||HD_EN_COURS)return;HD_EN_COURS=true;
-  const W=MONDE_L,H=MONDE_H,P=PISTE.pts,ep=CIRCUIT.ep,N=P.length, A=i=>alea(i*1.37+0.5);
+  const W=MONDE_L,H=MONDE_H,P=PISTE_TK.pts,ep=CIRCUIT.ep,N=P.length, A=i=>alea(i*1.37+0.5);
   const c=document.createElement('canvas');c.width=W*HD_K;c.height=(H-HD_Y0)*HD_K;
   const g=c.getContext('2d');
   const D=disposerCircuit();
@@ -1939,7 +2256,7 @@ function construireHD(fini){
       for(let k=1;k<=3;k++)for(const [yy,dx] of [[l0+22,0],[l1-22,-32]]){const gx=LX-k*65+20+dx;g.beginPath();g.moveTo(gx-22,yy-8);g.lineTo(gx,yy-8);g.lineTo(gx,yy+8);g.lineTo(gx-22,yy+8);g.stroke();
         g.fillStyle='rgba(240,240,248,.6)';g.font='bold 7px sans-serif';g.fillText(String(k*2-(dx?0:1)),gx-16,yy+3);}
       try{dessinerZoneSol(g,A);}catch(x){}
-      for(const pt of PORTIQUES){const s=pt.s==null?PISTE.ligneS+6:pt.s, p=pointPiste(s);
+      for(const pt of PORTIQUES){const s=pt.s==null?PISTE_TK.ligneS+6:pt.s, p=pointPiste(s,PISTE_TK);
         const [ax,ay]=decalPiste(p,-ep/2-16),[bx,by]=decalPiste(p,ep/2+16);
         g.strokeStyle='rgba(0,0,0,.28)';g.lineWidth=9;g.beginPath();g.moveTo(ax+10,ay+12);g.lineTo(bx+10,by+12);g.stroke();}},
     /* la tribune */
@@ -1998,7 +2315,7 @@ function construireHD(fini){
 /* les portiques au-dessus de la piste : la poutre, la banderole, les piliers (après les voitures) */
 function dessinerPortiques(ctx,x0,y0,x1,y1){
   const ep=CIRCUIT.ep, T=performance.now()/1000;
-  for(const pt of PORTIQUES){const s=pt.s==null?PISTE.ligneS+6:pt.s, p=pointPiste(s);
+  for(const pt of PORTIQUES){const s=pt.s==null?PISTE_TK.ligneS+6:pt.s, p=pointPiste(s,PISTE_TK);
     if(p.x<x0-80||p.x>x1+80||p.y<y0-80||p.y>y1+80)continue;
     const [ax,ay]=decalPiste(p,-ep/2-16),[bx,by]=decalPiste(p,ep/2+16);
     ctx.save();
@@ -2072,6 +2389,7 @@ async function finZone(){
   if(E.glisse)finDeGlisse();
   encaisserCombo();
   const sc=Math.round(E.score||0), [,lettre,coul]=noteZone(sc), rec=zoneRecord(), nouveau=sc>rec;
+  if(E.epreuve){resultatEpreuve(sc);return;}
   if(nouveau)try{localStorage.setItem('bdl.tk.zone',String(sc));}catch(x){}
   let el=document.getElementById('tkFin');if(el)el.remove();
   el=document.createElement('div');el.id='tkFin';
@@ -2127,19 +2445,29 @@ function dessinerVolant(ctx){
   const e2=ECH*(window.__vueK||VUE_K);
   let cx=W/2-CAM_V.lx*e2, cy=zone*0.5-CAM_V.ly*e2;
   /* la vue reste dans la carte : pas de bande noire sur les côtés */
-  {const vw=W/e2;if(vw<MONDE_L){const gauche=E.x-cx/e2;if(gauche<0)cx=E.x*e2;else if(gauche+vw>MONDE_L)cx=(E.x-(MONDE_L-vw))*e2;}}
+  if(enVille()){const vw=W/e2;if(vw<MONDE_L){const gauche=E.x-cx/e2;if(gauche<0)cx=E.x*e2;else if(gauche+vw>MONDE_L)cx=(E.x-(MONDE_L-vw))*e2;}}
   const sx=SECOUSSE>0.01?(Math.random()-.5)*SECOUSSE*3*e2:0, sy=SECOUSSE>0.01?(Math.random()-.5)*SECOUSSE*3*e2:0;
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#17151f';ctx.fillRect(0,0,W,H);
   ctx.setTransform(e2,0,0,e2,Math.round(cx+sx-E.x*e2),Math.round(cy+sy-E.y*e2));
   /* le sol : un carré autour de la voiture, assez grand pour couvrir l'écran tourné */
   const Rv=Math.ceil(Math.hypot(W,H)/e2)+4;
+  const nuit=(()=>{try{const C=cielDuMoment();return C?C.lampes:0;}catch(x){return 0;}})();
+  if(!enVille()){
+    /* LES CIRCUITS À PART : dessinés à la volée autour de la voiture */
+    const vx0=Math.floor(E.x-cx/e2-2), vy0=Math.floor(E.y-cy/e2-2), vx1=Math.ceil(E.x+(W-cx)/e2+2), vy1=Math.ceil(E.y+(H-cy)/e2+2);
+    try{dessinerCircuitVect(ctx,vx0,vy0,vx1,vy1,nuit);}catch(x){console.warn(x);}
+    dessinerEssai(ctx,0,0);
+    if(nuit>0.05){const c=Math.cos(E.ang), s2=Math.sin(E.ang);
+      try{lueurNuit(ctx,E.x+c*60,E.y+s2*60,70,'rgba(255,240,205,§)');lueurNuit(ctx,E.x+c*120,E.y+s2*120,60,'rgba(255,240,205,§)');lueurNuit(ctx,E.x-c*34,E.y-s2*34,22,'rgba(255,40,50,§)');}catch(x){}
+      if(COURSE.actif)for(const o of COURSE.voitures){const c3=Math.cos(o.ang), s3=Math.sin(o.ang);try{lueurNuit(ctx,o.x+c3*55,o.y+s3*55,50,'rgba(255,240,205,§)');}catch(x){}}}
+    return;
+  }
   const x0=Math.max(0,Math.floor(E.x-cx/e2-2)), y0=Math.max(0,Math.floor(E.y-cy/e2-2)), x1=Math.min(MONDE_L,Math.ceil(E.x+(W-cx)/e2+2)), y1=Math.min(MONDE_H,Math.ceil(E.y+(H-cy)/e2+2));
   ctx.imageSmoothingEnabled=false;
   if(x1>x0&&y1>y0){const src=(typeof SOL_FIN!=='undefined'&&SOL_FIN)?SOL_FIN:SOL, k=src===SOL?1:2;
     ctx.drawImage(src,x0*k,y0*k,(x1-x0)*k,(y1-y0)*k,x0,y0,x1-x0,y1-y0);
     if(TK_HD){const ya=Math.max(y0,HD_Y0);if(y1>ya){ctx.imageSmoothingEnabled=true;ctx.drawImage(TK_HD,x0*HD_K,(ya-HD_Y0)*HD_K,(x1-x0)*HD_K,(y1-ya)*HD_K,x0,ya,x1-x0,y1-ya);ctx.imageSmoothingEnabled=false;}}}
   /* les lampadaires, vus du dessus */
-  const nuit=(()=>{try{const C=cielDuMoment();return C?C.lampes:0;}catch(x){return 0;}})();
   for(const o of DECOR){if(o.t!=='lanterneP')continue;if(Math.abs(o.x-E.x)>Rv||Math.abs(o.y-E.y)>Rv)continue;
     ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.arc(o.x+3,o.y+3,6,0,7);ctx.fill();
     ctx.fillStyle='#3a3c48';ctx.beginPath();ctx.arc(o.x,o.y,5,0,7);ctx.fill();
@@ -2209,4 +2537,4 @@ function dessinerEssai(ctx,camX,camY){
     ctx.beginPath();ctx.arc(f.x-camX,f.y-camY,f.r,0,7);ctx.fill();}
   ctx.restore();
 }
-;({TK,lumieresTokyo,bloqueTokyo,construireSolTokyo,semerDecorTokyo,poserTokyo,ouvrirConcessionTokyo,fermerConcessionTokyo,ESSAI,debutEssai,finEssai,majEssai,dessinerEssai,COURSE,CMDS,PISTE,pointPiste,projeter,statsVoiture,dessinerVolant,ZONE,ZD})
+;({TK,lumieresTokyo,bloqueTokyo,construireSolTokyo,semerDecorTokyo,poserTokyo,ouvrirConcessionTokyo,fermerConcessionTokyo,ESSAI,debutEssai,finEssai,majEssai,dessinerEssai,COURSE,CMDS,PISTE,pointPiste,projeter,statsVoiture,dessinerVolant,ZONE,ZD,CIRCUITS,choisirCircuit,lancerEpreuve,LICENCES,carriere,choisirCourse,resultatEpreuve})
