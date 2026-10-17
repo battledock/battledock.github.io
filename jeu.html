@@ -1783,7 +1783,7 @@ text-shadow:0 1px 4px rgba(0,0,0,.8)}
 #voile .vRail i{display:block;height:100%;width:4%;border-radius:2px;
   background:linear-gradient(90deg,#c9a24a,#fff0c0);
   transition:width .45s cubic-bezier(.2,.8,.3,1)}
-#voile.tk #vPre{top:0;height:100%;width:100%;object-fit:cover}
+#voile.tk #vPre{top:0;height:100%;width:100%;image-rendering:auto}
 #voile.tk .vFondu,#voile.tk .vRail{display:none}
 #voile.tk .vHaut{top:calc(env(safe-area-inset-top,0px) + 11%)}
 #voile.tk .tkT{font:900 italic clamp(46px,15vw,66px)/0.95 -apple-system,'Arial Black',sans-serif;color:#fff;letter-spacing:-2px;text-shadow:0 4px 18px rgba(0,0,0,.55)}
@@ -2431,7 +2431,15 @@ tokyo:{nom:'Tokyo',dit:'La ville du fun',
   g.strokeStyle='rgba(0,0,0,.6)';g.lineWidth=1;[-4,4].forEach(function(o){g.beginPath();g.moveTo(20,256+o);g.quadraticCurveTo(80,250+o,96,200+o*0.4);g.stroke();});
   for(var k=0;k<26;k++){var t=k/26;g.fillStyle='rgba(220,220,230,'+(0.25*(1-t))+')';g.beginPath();g.arc(70+t*30+al(k)*6,246-t*40+al(k*2)*6,4+t*8,0,7);g.fill();}
   g.fillStyle='rgba(255,246,192,.12)';g.beginPath();g.moveTo(104,184);g.lineTo(96,120);g.lineTo(130,140);g.fill();
-  g.save();g.translate(100,196);g.rotate(-1.2);R(-12,-6,24,12,'#ff4fb0');R(-12,-6,24,1,'#ff8ac8');R(-8,-5,9,10,'#2a2c33');R(10,-5,2,3,'#fff6c0');R(10,2,2,3,'#fff6c0');R(-12,-5,1,3,'#ff3030');R(-12,2,1,3,'#ff3030');g.restore();
+  g.save();g.translate(100,196);g.rotate(-1.2);
+  [[-9,-7],[5,-7],[-9,5.6],[5,5.6]].forEach(function(r){R(r[0],r[1],4.5,1.6,'#0b0b10');});    /* les pneus */
+  g.fillStyle='#ff4fb0';g.beginPath();g.moveTo(-12,-5.4);g.lineTo(9,-5.8);g.quadraticCurveTo(13,-5,13,0);g.quadraticCurveTo(13,5,9,5.8);g.lineTo(-12,5.4);g.closePath();g.fill();
+  g.fillStyle='#ff8ac8';g.fillRect(-11,-5.4,19,1.2);g.fillStyle='#c0257a';g.fillRect(-11,4.3,19,1.1);   /* lumière et ombre de la caisse */
+  g.fillStyle='#1c1e26';g.beginPath();g.moveTo(-5,-4.2);g.lineTo(3,-4.4);g.lineTo(5.5,-3.4);g.lineTo(5.5,3.4);g.lineTo(3,4.4);g.lineTo(-5,4.2);g.closePath();g.fill();
+  g.fillStyle='#4a6a8a';g.fillRect(3.4,-3.2,1.6,6.4);g.fillStyle='#ff4fb0';g.fillRect(-3,-3.4,5,6.8);       /* pare-brise et toit */
+  R(-14,-6,2,12,'#2a2c33');R(-14,-6,2,1,'#ff8ac8');                                                   /* l'aileron */
+  R(11.5,-4.6,1.4,2.4,'#fff6c0');R(11.5,2.2,1.4,2.4,'#fff6c0');R(-12.4,-4.6,1,2.2,'#ff3030');R(-12.4,2.4,1,2.2,'#ff3030');
+  g.restore();
  }},
 rien:{nom:'Battle Dock',dit:'On ouvre la porte',
  f:'#0d1410',o:'#c9a24a',t:'#f0e6cf',d:'#8a9a7a',
@@ -2452,7 +2460,14 @@ var cle = c==='foret' ? 'foret'
         : 'rien';
 var L=LIEUX[cle]||LIEUX.rien;
 /* TOKYO PREND TOUT L'ÉCRAN : une toile en hauteur au lieu de la bande du milieu */
-if(cle==='tokyo'){cv.width=130;cv.height=281;H=281;g.imageSmoothingEnabled=false;}
+/* ET NETTE : la scène est dessinée à la résolution de l'écran (pixels réels du
+   téléphone), pas dans une petite toile étirée — l'étirement rendait la piste,
+   la fumée et la voiture floues. Les coordonnées restent celles de 130 × 281. */
+if(cle==='tokyo'){var dpr=Math.min(3,window.devicePixelRatio||1),VW=innerWidth,VH=innerHeight;
+ cv.width=Math.round(VW*dpr);cv.height=Math.round(VH*dpr);H=281;
+ var sc=Math.max(cv.width/130,cv.height/281);
+ g.setTransform(sc,0,0,sc,(cv.width-130*sc)/2,(cv.height-281*sc)/2);g.imageSmoothingEnabled=true;
+ R=function(x,y,w,h,c){g.fillStyle=c;g.fillRect(x,y,Math.max(1/sc,w),Math.max(1/sc,h));};}
 try{L.p();}catch(e){}
 var v=document.getElementById('voile');
 if(v){v.style.setProperty('--vf',L.f);v.style.setProperty('--vo',L.o);
