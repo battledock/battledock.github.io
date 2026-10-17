@@ -292,9 +292,25 @@ function notesDe(marque,t){
   return {vit:r(p.vmax/50),acc:r(p.acc*6.6),tenue:r(p.grip/1.5),drift:r(7.6/p.drift*0.9)};
 }
 let caler2=null;
+/* LES PRIX DES VOITURES (centimes) : le serveur a la même table, c'est lui qui débite */
+const PRIX_VOITURE={'bmw-m3-e46':3800000,'toyota-supra-mk4':4500000,'nissan-gtr-r35':8500000,'porsche-911-gt3-rs':12000000,'lamborghini-huracan':18000000,'ferrari-f40':25000000};
+async function rpcTK(nom,args){try{if(typeof sb==='undefined'||!sb)return {erreur:'Le comptoir ne répond pas.'};const r=await sb.rpc(nom,args||{});if(r.error)return {erreur:r.error.message};return r.data||{erreur:'Pas de réponse.'};}catch(x){return {erreur:'Le comptoir ne répond pas.'};}}
+/* LE GARAGE VIENT DU SERVEUR : ce qu'on y a acheté. La sauvegarde garde le reste
+   (le nom donné, les kilomètres, les réglages), rangé sous la voiture. */
+async function synchroniserGarage(){
+  const d=await rpcTK('tokyo_mon_garage');
+  if(!d||d.erreur||!Array.isArray(d.voitures))return false;
+  const G=garageDuJoueur(), garde={};for(const v of G)garde[v.modele]=v;
+  G.length=0;
+  for(const r of d.voitures){const v=garde[r.v]||{id:r.v,modele:r.v,km:0,drifts:0,sorties:0};v.place=r.place;v.id=r.v;v.modele=r.v;G.push(v);}
+  if(typeof d.euros==='number'){e.euros=d.euros;try{majHaut();}catch(x){}}
+  try{sauver();}catch(x){}
+  return true;
+}
 async function ouvrirConcessionTokyo(ongletDepart){
   if(ouvrirConcessionTokyo.ouvert)return;
   ouvrirConcessionTokyo.ouvert=true;
+  synchroniserGarage().then(ok=>{if(ok&&ouvrirConcessionTokyo.ouvert&&ouvrirConcessionTokyo.redessiner)ouvrirConcessionTokyo.redessiner();});
   /* LE PLATEAU NÉON : plein écran, fond de nuit violet. La racine défile ; la
      barre d'onglets reste collée en bas, au-dessus de la zone du geste iOS. */
   if(!document.getElementById('cssCc')){const st=document.createElement('style');st.id='cssCc';st.textContent=
@@ -347,6 +363,8 @@ async function ouvrirConcessionTokyo(ongletDepart){
 .ccBtns button{min-width:0;height:clamp(46px,6.5vh,56px);border-radius:16px;border:0;font:800 16px -apple-system,sans-serif;color:#fff}
 .ccGo{background:linear-gradient(180deg,#ff3fa4,#d4006f);box-shadow:0 4px 0 #8a0048,0 0 24px rgba(255,63,164,.4)}
 .ccGo:active{transform:translateY(2px);box-shadow:0 2px 0 #8a0048}
+.ccAch{background:linear-gradient(180deg,#5cff8a,#1fae4a);box-shadow:0 4px 0 #0a5a22;color:#04140a!important}
+.ccAch:active{transform:translateY(2px);box-shadow:0 2px 0 #0a5a22}
 .ccLock{background:rgba(255,255,255,.08)!important;color:rgba(255,255,255,.55)!important;border:1px solid rgba(255,255,255,.14)!important}
 .ccLigneRec{display:flex;align-items:center;gap:12px;padding:12px;border-radius:18px;background:rgba(255,255,255,.06);margin-top:10px}
 .ccLigneRec img{width:96px;image-rendering:pixelated;flex:none}
@@ -470,8 +488,12 @@ async function ouvrirConcessionTokyo(ongletDepart){
         '<em>'+esc([v.carrosserie,ORIGINE[v.marque],v.tuning?'personnalisable':''].filter(Boolean).join(' · '))+'</em></div>'+
       '<div class="ccPts">'+vehicules.map((_,i)=>'<i class="'+(i===idx?'on':'')+'"></i>').join('')+'</div>'+
       '<div class="ccStats">'+st('Vitesse',N.vit)+st('Accélération',N.acc)+st('Tenue de route',N.tenue)+st('Drift',N.drift)+'</div>'+
-      '<div class="ccRec"><span>★ TON RECORD AU CIRCUIT</span><b>'+fmtTour(rec)+'</b></div>'+
-      '<div class="ccBtns"><button class="ccGo" id="ccEssai">Essayer</button><button class="ccLock" id="ccAchat">🔒 Bientôt</button></div>';
+      '<div class="ccRec"><span>★ RECORD · DRIFT '+((driftRecords()[nom(v)]||0).toLocaleString('fr-FR'))+'</span><b>'+fmtTour(rec)+'</b></div>'+
+      (()=>{const mien=garageDuJoueur().find(x=>x.modele===v.id), prix=PRIX_VOITURE[v.id];
+        if(mien)return '<div class="ccBtns"><button class="ccLock" id="ccEssai" style="color:#fff!important">Essai libre</button><button class="ccGo" id="ccVolant2">Prendre le volant</button></div>';
+        const conf=ouvrirConcessionTokyo.confirme===v.id, manque=(e.euros||0)<prix;
+        return '<div class="ccBtns"><button class="ccGo" id="ccEssai">Essayer</button><button class="'+(manque?'ccLock':'ccAch')+'" id="ccAchat">'+
+          (manque?'Il te manque '+enEuros(prix-(e.euros||0)):(conf?'Confirmer · '+enEuros(prix):'Acheter · '+enEuros(prix)))+'</button></div>';})();
     /* LA VOITURE À L'ÉCHELLE ENTIÈRE : chaque pixel du dessin devient un carré
        d'un nombre ENTIER de pixels de l'écran, et la largeur suit la hauteur.
        Étirée à une échelle quelconque (et un peu plus en haut qu'en large quand
@@ -492,7 +514,22 @@ async function ouvrirConcessionTokyo(ongletDepart){
     sc.addEventListener('touchstart',ev=>{x0=ev.touches[0].clientX;},{passive:true});
     sc.addEventListener('touchend',ev=>{if(x0==null)return;const dx=ev.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>40)aller(dx<0?1:-1);},{passive:true});
     $('ccEssai').onclick=()=>{fermerConcessionTokyo();debutEssai(v);};
-    $('ccAchat').onclick=()=>bulle("La vente n'est pas encore ouverte : tu peux seulement l'essayer.");
+    if($('ccVolant2'))$('ccVolant2').onclick=()=>{const mien=garageDuJoueur().find(x=>x.modele===v.id);fermerConcessionTokyo();debutEssai(v,mien);};
+    if($('ccAchat'))$('ccAchat').onclick=async()=>{
+      const prix=PRIX_VOITURE[v.id];
+      if((e.euros||0)<prix){bulle('Il te manque '+enEuros(prix-(e.euros||0))+' pour celle-ci.');return;}
+      if(garageDuJoueur().length>=PLACES_GARAGE){bulle('Ton garage est plein : quatre places.');return;}
+      /* deux temps : on ne dépense pas des dizaines de milliers d'euros d'un seul doigt */
+      if(ouvrirConcessionTokyo.confirme!==v.id){ouvrirConcessionTokyo.confirme=v.id;rendre();setTimeout(()=>{if(ouvrirConcessionTokyo.confirme===v.id){ouvrirConcessionTokyo.confirme=null;if(ouvrirConcessionTokyo.ouvert&&onglet===0)rendre();}},4000);return;}
+      ouvrirConcessionTokyo.confirme=null;
+      const bt=$('ccAchat');bt.disabled=true;bt.textContent='Le vendeur prépare les papiers…';
+      const r=await rpcTK('tokyo_acheter_voiture',{p_voiture:v.id});
+      if(!r||r.erreur){bulle(r&&r.erreur==='pas_assez'?'Il te manque de quoi payer.':(r&&r.erreur)||'La vente n’a pas abouti.');if(r&&typeof r.euros==='number')e.euros=r.euros;rendre();return;}
+      if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}
+      garageDuJoueur().push({id:v.id,modele:v.id,place:r.place,km:0,drifts:0,sorties:0});try{sauver();}catch(x){}
+      try{navigator.vibrate&&navigator.vibrate([20,40,20,40,80]);jouer&&jouer('achat','moment');}catch(x){}
+      bulle('🔑 '+nom(v)+' est à toi ! Elle t’attend place '+(r.place+1)+' du garage.');
+      rendre();};
   };
   /* ---------- LES RECORDS : le meilleur tour de chaque voiture ---------- */
   const records=()=>{
@@ -521,7 +558,7 @@ async function ouvrirConcessionTokyo(ongletDepart){
     if(!G.length){
       h+='<div style="margin-top:14px;border:2px dashed rgba(255,255,255,.2);border-radius:22px;padding:20px;text-align:center;color:rgba(255,255,255,.6);font-size:14px;line-height:1.5">'+
         '<b style="display:block;color:#fff;font-size:17px;margin-bottom:4px">Ton garage est vide</b>'+
-        'La vente n’est pas encore ouverte. En attendant, tu peux essayer toutes les voitures au showroom.'+
+        'Achète ta première voiture au showroom : elle sera à toi pour de bon, sans limite de temps sur le circuit, et l’atelier pourra la préparer.'+
         '<button id="ccVersShowroom" style="display:block;width:100%;margin-top:14px;min-height:50px;border-radius:14px;border:0;background:#ff4fb0;color:#fff;font:700 15px sans-serif">Voir le showroom</button></div>';
     }else{
       const v=G[choisie], m=modele(v.modele);
@@ -543,7 +580,7 @@ async function ouvrirConcessionTokyo(ongletDepart){
       g.imageSmoothingEnabled=false;g.translate(16,34);g.rotate(-Math.PI/2);g.drawImage(t,-34,-16);});
     $('ccCorps').querySelectorAll('button[data-place]').forEach(b=>{b.onclick=()=>{
       const v=parPlace[+b.dataset.place];
-      if(!v){bulle('Place libre : la vente ouvrira bientôt.');return;}
+      if(!v){bulle('Place libre : achète une voiture au showroom.');return;}
       choisie=G.indexOf(v);bulle('');rendre();};});
     if($('ccVersShowroom'))$('ccVersShowroom').onclick=()=>{onglet=0;rendre();};
     if(G.length){
@@ -608,7 +645,8 @@ async function ouvrirConcessionTokyo(ongletDepart){
     if(!d||d.erreur){POSS=new Set();POSS_ERR=d&&d.erreur==='session'?'Connecte-toi pour acheter des pièces.':'L’atelier ne répond pas.';}
     else{POSS=new Set((d.pieces||[]).map(p=>cleP(p.v,p.k,p.x)));POSS_ERR=null;if(typeof d.euros==='number'){e.euros=d.euros;try{majHaut();}catch(x){}}
       /* ON NE GARDE MONTÉ QUE CE QU'ON A PAYÉ */
-      try{const C=e.configs||{};for(const vid of Object.keys(C)){const t=C[vid];for(const k of Object.keys(t)){const o=(OPT[k]||[]).find(o=>String(o.v)===String(t[k]));if(!o||!possede(vid,k,o))delete t[k];}}sauver();}catch(x){}}
+      try{for(const gv of garageDuJoueur()){const t=gv.tuning||{};for(const k of Object.keys(t)){const o=(OPT[k]||[]).find(o=>String(o.v)===String(t[k]));if(!o||!possede(gv.modele,k,o))delete t[k];}}
+        const C=e.configs||{};for(const vid of Object.keys(C)){const t=C[vid];for(const k of Object.keys(t)){const o=(OPT[k]||[]).find(o=>String(o.v)===String(t[k]));if(!o||!possede(vid,k,o))delete t[k];}}sauver();}catch(x){}}
     if(onglet===2&&ouvrirConcessionTokyo.ouvert)rendre();
   };
   const tuning=()=>{
@@ -616,7 +654,14 @@ async function ouvrirConcessionTokyo(ongletDepart){
     $('ccDefile').classList.add('fixe','atelier');
     if(POSS===null){POSS=new Set();POSS.vide=true;chargerPoss();}
     const G=garageDuJoueur();
-    const liste=G.map(v=>({garage:v})).concat(vehicules.map(v=>({modele:v.id})));
+    const liste=G.slice().sort((a,b)=>a.place-b.place).map(v=>({garage:v}));
+    if(!liste.length){
+      $('ccCorps').innerHTML='<div style="margin:auto 0;text-align:center;padding:24px 8px">'+
+        '<div style="font-size:54px">🔧</div><b style="display:block;font-size:20px;margin-top:8px">Pas de voiture sur le pont</b>'+
+        '<p style="color:rgba(255,255,255,.6);font-size:14px;line-height:1.5;margin-top:8px">L’atelier prépare les voitures de ton garage. Achète-en une au concessionnaire, juste à côté, et reviens la transformer.</p>'+
+        '<button id="atVersConc" style="margin-top:18px;width:100%;height:54px;border:0;border-radius:16px;background:linear-gradient(180deg,#ffa24a,#e46a12);color:#1a0e04;font:800 16px sans-serif">Aller au concessionnaire</button></div>';
+      $('atVersConc').onclick=()=>{fermerConcessionTokyo();setTimeout(()=>ouvrirConcessionTokyo(0),80);};
+      return;}
     if(!liste.length){$('ccCorps').innerHTML='<p style="color:#ff8ac8;margin-top:20px">Le catalogue ne répond pas.</p>';return;}
     if(selT==null||selT>=liste.length)selT=0;
     const L=liste[selT];
@@ -703,6 +748,7 @@ async function ouvrirConcessionTokyo(ongletDepart){
       bulle('Pièce montée ! '+(LIB[A.k]||'')+' · '+(A.o.txt||'')+' — à toi pour de bon.');
       garderDefil(rendre);};
   };
+  ouvrirConcessionTokyo.redessiner=()=>rendre();
   const rendre=()=>{nav();$('ccDefile').classList.remove('atelier');$('ccDefile').classList.toggle('fixe',onglet===0);(onglet===3?records:onglet===2?tuning:onglet===1?garage:showroom)();$('ccDefile').scrollTop=0;};
   rendre();
 }
@@ -921,11 +967,13 @@ function demarrerMoteur(){
     Object.assign(SON_TK,{ctx:C,o1,o2,filtre,vol,crisse,rpm:900});
   }catch(x){SON_TK.ctx=null;}
 }
-function majMoteur(dt,vit,gaz,glisse){
-  const S=SON_TK;if(!S.ctx)return;
+function majMoteur(dt,vit,gaz,glisse,rapport){
+  const S=SON_TK;
   /* six rapports sur la plage de vitesse : le régime monte dans chacun, puis retombe */
-  const pas=70, rap=Math.min(5,Math.floor(vit/pas)), p=(vit-rap*pas)/pas;
-  let cible=vit<4?(gaz?2600:900):1300+Math.min(1,p)*(rap===5?5200:5700);
+  const fr=vit/340;let rap=rapport!=null?rapport:Math.min(5,Math.floor(vit/70));
+  const lo=RAPPORTS[rap]||0, hi=RAPPORTS[rap+1]||1.05, p=Math.max(0,Math.min(1,(fr-lo)/(hi-lo)));
+  let cible=vit<4?(gaz?2600:900):1500+p*5600;
+  if(!S.ctx){S.rpm=(S.rpm||900)+(cible-(S.rpm||900))*Math.min(1,8*dt);return;}
   S.rpm+=(cible-S.rpm)*Math.min(1,(gaz?9:5)*dt);
   const f=S.rpm/30, t=S.ctx.currentTime;
   S.o1.frequency.setTargetAtTime(f,t,0.03);S.o2.frequency.setTargetAtTime(f/2,t,0.03);
@@ -945,6 +993,7 @@ function debutEssai(v,aMoi,reglages){
   ESSAI.toile=peindreVoitureDessus(v.marque,ESSAI.tuning);
   ESSAI.retour={x:joueur.x,y:joueur.y};
   ESSAI.x=CIRCUIT.ligne-160;ESSAI.y=(TK.route[0]+TK.route[1])/2+18;ESSAI.ang=0;
+  ESSAI.limite=aMoi?null:180;
   ESSAI.tour=null;ESSAI.tours=0;ESSAI.cp=0;ESSAI.dernier=null;ESSAI.trainee=[];ESSAI.flamme=0;ESSAI.gazAvant=0;chronoMontrer(true);ESSAI.vx=0;ESSAI.vy=0;ESSAI.vol=0;
   ESSAI.traces=[];ESSAI.fumee=[];
   joueur.x=ESSAI.x;joueur.y=ESSAI.y;
@@ -964,96 +1013,225 @@ function finEssai(){
   const r=ESSAI.retour||{x:86,y:224};
   const [dx,dy]=degager(r.x,r.y);joueur.x=dx;joueur.y=dy;
 }
-/* ================= LA CONDUITE AU JOYSTICK =================
-   Le joystick du jeu, celui de la marche : on le pousse vers où l'on veut aller.
-   — La voiture braque vers ce cap, d'autant mieux qu'elle roule (à l'arrêt,
-     elle ne pivote pas sur place).
-   — La poussée est l'accélérateur ; si le cap est loin de l'axe, on lève un
-     peu le pied le temps de tourner.
-   — Pousser derrière soi en roulant vite : on FREINE. Pousser derrière soi
-     presque à l'arrêt : on passe la MARCHE ARRIÈRE, l'arrière vise le pouce.
-   — Lâcher : roue libre et frein moteur.
-   — LE DRIFT : un virage serré (cap à plus de 40°) à bonne vitesse fait
-     décrocher l'arrière ; il glisse tant qu'on tient l'angle.
-   LES VITESSES SONT À L'ÉCHELLE DE L'ÉCRAN : la caméra zoome, une voiture à
-   340 px/s traversait l'écran en une demi-seconde. On roule à la moitié. */
+/* ================= LA CONDUITE, VERSION 2 =================
+   LE POUCE GAUCHE (le joystick du jeu) donne la DIRECTION : la voiture tourne
+   vers où il pointe, l'accélérateur est la poussée. Tirer derrière soi freine,
+   puis passe la marche arrière.
+   LE POUCE DROIT tient le bouton DRIFT (le frein à main). L'arrière décroche,
+   la voiture pivote, et tant qu'on glisse :
+   — LA CHARGE monte : étincelles bleues, puis orange, puis roses. En lâchant,
+     un TURBO proportionnel (0,6 s, 1 s, 1,5 s) : le cœur du jeu.
+   — LES POINTS de drift tombent (angle × vitesse) ; enchaîner les drifts
+     multiplie (×2 … ×5) ; toucher un mur perd le combo.
+   LA PHYSIQUE : la vitesse se lit dans l'axe (avant/travers). Le travers est
+   tué par l'adhérence — forte en temps normal, effondrée au frein à main. La
+   rotation (lacet) suit la consigne avec inertie : c'est elle qui donne le
+   poids de la voiture, et le contre-braquage tient la glisse.
+   UNE BOÎTE À SIX RAPPORTS : le régime monte et retombe, chaque passage
+   coupe un instant la poussée et claque à l'échappement. */
+const DRIFT_NIV=[0,0.7,1.5,2.4];                 /* secondes de glisse pour chaque niveau de charge */
+const BOOST_T=[0,0.6,1.0,1.5], BOOST_K=[1,1.22,1.32,1.45];
+const COUL_NIV=['#ffffff','#5ad8ff','#ff9a3c','#ff4fb0'];
+const RAPPORTS=[0,0.16,0.31,0.47,0.63,0.8];
+const KMH=1.35;                                   /* px/s → km/h affichés */
 function majEssai(dt,jx,jy){
   dt=Math.min(dt,0.05);
-  const PF=ESSAI.perf||perfDuTuning({});
-  /* HORS PISTE : sur le paddock ou le trottoir, on roule au ralenti */
-  const hp=horsPiste(ESSAI.x,ESSAI.y)>4;
-  /* LA NITRO : quelques secondes de poussée, puis elle se recharge */
-  if(ESSAI.nitroT>0)ESSAI.nitroT-=dt;else if(PF.nitro&&ESSAI.nitroCharge<1)ESSAI.nitroCharge=Math.min(1,(ESSAI.nitroCharge||0)+dt/(PF.nitro>1?5:8));
-  const NB=ESSAI.nitroT>0?(PF.nitro>1?1.5:1.35):1;
-  const VMAX=PF.vmax*0.55*(hp?0.5:1)*NB, ACC=175*PF.acc*(hp?0.7:1)*(NB>1?1.9:1), FREIN=320*(PF.frein||1), RECUL=-70;
+  const E=ESSAI, PF=E.perf||perfDuTuning({});
+  /* L'ESSAI DURE TROIS MINUTES : la voiture du showroom se rend toute seule */
+  if(E.limite!=null){E.limite-=dt;if(E.limite<=0){E.limite=null;const nm=E.nom;finEssai();
+    try{texteVolant(joueur.x,joueur.y-44,'Fin de l’essai — '+nm+' t’attend au showroom','#ffd98a');}catch(x){}return;}}
+  const hp=horsPiste(E.x,E.y)>4;
+  /* LA NITRO et LE TURBO DE DRIFT */
+  if(E.nitroT>0)E.nitroT-=dt;else if(PF.nitro&&E.nitroCharge<1)E.nitroCharge=Math.min(1,(E.nitroCharge||0)+dt/(PF.nitro>1?5:8));
+  if(E.boostT>0)E.boostT-=dt;
+  const NB=E.nitroT>0?(PF.nitro>1?1.5:1.35):1, BB=E.boostT>0?E.boostK:1, K=Math.max(NB,BB);
+  const VMAX=PF.vmax*0.55*(hp?0.5:1)*K, ACC0=175*PF.acc*(hp?0.7:1)*(K>1?1.9:1), FREIN=330*(PF.frein||1), RECUL=-70;
   jx=jx||0;jy=jy||0;
-  const n=Math.min(1,Math.hypot(jx,jy));
-  const c0=Math.cos(ESSAI.ang), s0=Math.sin(ESSAI.ang);
-  const av0=ESSAI.vx*c0+ESSAI.vy*s0;
+  const n=Math.min(1,Math.hypot(jx,jy)), main=!!E.frein_main;
+  const f0=[Math.cos(E.ang),Math.sin(E.ang)];
+  const av0=E.vx*f0[0]+E.vy*f0[1];
   let d=0, gaz=0, frein=false, vise=false;
   if(n>0.2){
     const a=Math.atan2(jy,jx);
-    d=Math.atan2(Math.sin(a-ESSAI.ang),Math.cos(a-ESSAI.ang));
-    if(!ESSAI.recul&&Math.abs(d)>2.4&&av0<35)ESSAI.recul=true;
-    if(ESSAI.recul&&Math.abs(d)<1.6)ESSAI.recul=false;
-    if(ESSAI.recul){
-      /* en marche arrière, c'est l'arrière qui vise le pouce */
-      const ar=a+Math.PI;d=Math.atan2(Math.sin(ar-ESSAI.ang),Math.cos(ar-ESSAI.ang));gaz=-n;vise=true;
-    }else if(Math.abs(d)>2.0&&av0>35){frein=true;}
-    else{gaz=n*(Math.abs(d)<0.5?1:Math.max(0.45,Math.cos(Math.abs(d)*0.7)));vise=true;}
-  }else ESSAI.recul=false;
-  /* 1. LE VOLANT : on tourne vers le cap, plus vite en roulant */
-  /* ARCADE : elle tourne même au pas (un peu), et franchement dès qu'elle roule */
-  const prise=Math.max(0.3,Math.min(1,Math.abs(av0)/30));
-  if(vise){const taux=2.3+1.9*prise;ESSAI.ang+=Math.max(-1,Math.min(1,d*2.6))*taux*prise*dt;}
-  /* 2. LA VITESSE RESTE DANS LE MONDE, relue dans l'axe de la voiture */
-  const nx=Math.cos(ESSAI.ang), ny=Math.sin(ESSAI.ang);
-  let av=ESSAI.vx*nx+ESSAI.vy*ny;
-  let tr=-ESSAI.vx*ny+ESSAI.vy*nx;
-  if(gaz>0)av+=ACC*gaz*Math.max(0.06,1-Math.pow(Math.max(0,av)/VMAX,2))*dt;
-  else if(gaz<0)av=Math.max(RECUL,av-ACC*0.7*(-gaz)*dt);
+    d=Math.atan2(Math.sin(a-E.ang),Math.cos(a-E.ang));
+    if(!E.recul&&Math.abs(d)>2.4&&av0<30&&!main)E.recul=true;
+    if(E.recul&&Math.abs(d)<1.6)E.recul=false;
+    if(E.recul){const ar=a+Math.PI;d=Math.atan2(Math.sin(ar-E.ang),Math.cos(ar-E.ang));gaz=-n;vise=true;}
+    else if(Math.abs(d)>2.1&&av0>30&&!main){frein=true;}
+    else{gaz=n*(main?0.85:(Math.abs(d)<0.6?1:Math.max(0.5,Math.cos(Math.abs(d)*0.6))));vise=true;}
+  }else E.recul=false;
+  /* 1. LE LACET : la consigne de rotation, puis l'inertie */
+  const v=Math.hypot(E.vx,E.vy);
+  const prise=Math.min(1,Math.abs(av0)/55);
+  let cons=0;
+  if(vise){const s=Math.max(-1,Math.min(1,d*1.7));
+    cons=s*(2.9+1.2*prise)*Math.max(0.25,prise)*(1-0.3*Math.min(1,v/VMAX));
+    if(E.recul)cons*=0.8;
+    if(main||E.glisse)cons*=1.55;}                 /* en glisse, la voiture pivote plus fort */
+  if(main&&v>45&&!vise)cons=E.lacet;               /* frein à main sans direction : elle garde son élan de rotation */
+  const reactif=E.glisse?3.2:7.5;
+  E.lacet+=(cons-E.lacet)*Math.min(1,reactif*dt);
+  E.ang+=E.lacet*dt;
+  /* 2. LA VITESSE, relue dans l'axe neuf */
+  const nx=Math.cos(E.ang), ny=Math.sin(E.ang);
+  let av=E.vx*nx+E.vy*ny, tr=-E.vx*ny+E.vy*nx;
+  /* LA BOÎTE : le rapport engagé selon la vitesse, la poussée s'essouffle en haut de chaque rapport */
+  const fr=Math.max(0,av)/Math.max(1,PF.vmax*0.55);
+  let rap=0;for(let i=0;i<RAPPORTS.length;i++)if(fr>=RAPPORTS[i])rap=i;
+  if(rap!==E.rapport){if(rap>E.rapport&&gaz>0){E.coupure=0.12;if((E.tuning||{}).flammes||rap>=3)pop();}E.rapport=rap;}
+  if(E.coupure>0)E.coupure-=dt;
+  const couple=[1.25,1.1,1,0.92,0.85,0.8][rap]*(E.coupure>0?0.35:1);
+  if(gaz>0)av+=ACC0*couple*gaz*Math.max(0.05,1-Math.pow(Math.max(0,av)/VMAX,2))*dt;
+  else if(gaz<0)av=Math.max(RECUL,av-ACC0*0.7*(-gaz)*dt);
   if(frein)av-=Math.sign(av)*Math.min(Math.abs(av),FREIN*dt);
-  if(!gaz&&!frein){av*=Math.exp(-1.5*dt);if(Math.abs(av)<4)av=0;}
+  if(main)av*=Math.exp(-0.45*dt);                  /* le frein à main mord un peu */
+  if(!gaz&&!frein&&!main){av*=Math.exp(-1.2*dt);if(Math.abs(av)<4)av=0;}
   av=Math.max(RECUL,Math.min(VMAX,av));
-  /* 3. L'ADHÉRENCE : elle lâche dans un virage serré pris vite */
-  const derape=vise&&gaz>0&&Math.abs(d)>0.6&&av>VMAX*0.45;
-  const grip=derape?PF.drift*1.8:(frein?PF.grip*0.7:PF.grip);
+  if(av>VMAX)av+=(VMAX-av)*Math.min(1,3*dt);
+  /* 3. L'ADHÉRENCE : le frein à main l'effondre ; en glisse, l'accélérateur entretient */
+  const angGlisse=Math.atan2(Math.abs(tr),Math.max(1,Math.abs(av)));
+  let grip=PF.grip;
+  if(main)grip=PF.drift*1.1;
+  else if(E.glisse&&gaz>0.4)grip=PF.drift*2.4+(1-Math.min(1,angGlisse/0.9))*1.5;  /* le contre-braquage et les gaz tiennent la glisse */
+  else if(frein)grip=PF.grip*0.75;
   tr*=Math.exp(-grip*dt);
-  ESSAI.vx=av*nx-tr*ny; ESSAI.vy=av*ny+tr*nx;
-  majMoteur(dt,Math.abs(av)*340/VMAX,gaz>0,Math.abs(tr)*2);
-  /* LES FLAMMES : au lever de pied à haut régime, l'échappement crache */
-  const T0=ESSAI.tuning||{};
-  if(T0.flammes){if(ESSAI.gazAvant>0&&!(gaz>0)&&av>VMAX*0.45){ESSAI.flamme=0.35;pop();}ESSAI.gazAvant=gaz;if(ESSAI.flamme>0)ESSAI.flamme-=dt;}
-  if(ESSAI.nitroT>0&&Math.random()<0.8)ESSAI.flamme=Math.max(ESSAI.flamme||0,0.06);
-  /* LA TRAÎNÉE : les feux arrière laissent une ligne de lumière */
-  if(T0.trainee){ESSAI.trainee=ESSAI.trainee||[];ESSAI.trainee.push([ESSAI.x-nx*26,ESSAI.y-ny*26]);if(ESSAI.trainee.length>26)ESSAI.trainee.shift();}
-  /* LE MUR : on glisse le long au lieu de rebondir */
+  /* le travers qu'on perd en glisse nourrit un peu la vitesse avant : la glisse ne tue pas l'élan */
+  if(E.glisse)av+=Math.abs(tr)*(1-Math.exp(-grip*dt))*0.18;
+  E.vx=av*nx-tr*ny; E.vy=av*ny+tr*nx;
+  /* 4. LA GLISSE : on y entre au-delà de 14°, on en sort sous 7° */
+  const vit=Math.hypot(av,tr);
+  if(!E.glisse&&angGlisse>0.24&&vit>VMAX*0.3){E.glisse=true;E.glisseT=0;
+    E.combo=(E.finCombo>0)?Math.min(5,(E.combo||1)+1):1;E.drifts=(E.drifts||0)+1;}
+  else if(E.glisse&&(angGlisse<0.12||vit<VMAX*0.18)){E.glisse=false;finDeGlisse();}
+  if(E.glisse){E.glisseT+=dt;E.charge=Math.min(3,(E.charge||0)+dt*(main?1:0.8));
+    const pts=(angGlisse*57)*(vit/40)*dt*(E.combo||1);E.points=(E.points||0)+pts;E.finCombo=1.6;}
+  else if(E.finCombo>0){E.finCombo-=dt;if(E.finCombo<=0)encaisserCombo();}
+  if(!main&&E.mainAvant&&E.charge>0&&!E.glisse)finDeGlisse();
+  E.mainAvant=main;
+  majMoteur(dt,Math.abs(av)*340/Math.max(1,PF.vmax*0.55),gaz>0&&!(E.coupure>0),Math.abs(tr)*2,rap);
+  /* LES FLAMMES ET LA TRAÎNÉE */
+  const T0=E.tuning||{};
+  if(T0.flammes){if(E.gazAvant>0&&!(gaz>0)&&av>VMAX*0.45){E.flamme=0.35;pop();}E.gazAvant=gaz;}
+  if(E.flamme>0)E.flamme-=dt;
+  if((E.nitroT>0||E.boostT>0)&&Math.random()<0.8)E.flamme=Math.max(E.flamme||0,0.06);
+  if(T0.trainee){E.trainee=E.trainee||[];E.trainee.push([E.x-nx*26,E.y-ny*26]);if(E.trainee.length>26)E.trainee.shift();}
+  /* 5. LE MUR : on glisse le long, des étincelles, et le combo saute */
   const libre=(X,Y)=>!(bloqueTokyo(X,Y)||X<20||X>MONDE_L-20||Y<TK.bati+18||Y>MONDE_H-18);
-  let X=ESSAI.x+ESSAI.vx*dt, Y=ESSAI.y+ESSAI.vy*dt;
+  let X=E.x+E.vx*dt, Y=E.y+E.vy*dt;
   if(!libre(X,Y)){
-    if(libre(X,ESSAI.y)){Y=ESSAI.y;ESSAI.vy*=-0.2;ESSAI.vx*=0.85;}
-    else if(libre(ESSAI.x,Y)){X=ESSAI.x;ESSAI.vx*=-0.2;ESSAI.vy*=0.85;}
-    else{X=ESSAI.x;Y=ESSAI.y;ESSAI.vx*=-0.25;ESSAI.vy*=-0.25;}
+    const choc=Math.hypot(E.vx,E.vy);
+    if(libre(X,E.y)){Y=E.y;E.vy*=-0.2;E.vx*=0.85;}
+    else if(libre(E.x,Y)){X=E.x;E.vx*=-0.2;E.vy*=0.85;}
+    else{X=E.x;Y=E.y;E.vx*=-0.25;E.vy*=-0.25;}
+    if(choc>60){for(let i=0;i<8;i++)E.etinc.push({x:E.x+nx*30,y:E.y+ny*30,vx:(Math.random()-0.5)*160,vy:(Math.random()-0.5)*160,vie:0.4,c:'#ffd27a'});
+      if(E.points>0){E.points=0;E.combo=1;E.finCombo=0;E.charge=0;popDrift('COMBO PERDU','#ff6a5a');}
+      try{navigator.vibrate&&navigator.vibrate(30);}catch(x){}}
   }
-  ESSAI.dist=(ESSAI.dist||0)+Math.hypot(X-ESSAI.x,Y-ESSAI.y);
-  chronoPas(ESSAI.x,ESSAI.y,X,Y,dt);
-  ESSAI.x=X;ESSAI.y=Y;
-  /* un drift compte une fois, quand l'arrière décroche */
-  if(!ESSAI.enDrift&&Math.abs(tr)>32){ESSAI.enDrift=true;ESSAI.drifts=(ESSAI.drifts||0)+1;}
-  else if(ESSAI.enDrift&&Math.abs(tr)<10)ESSAI.enDrift=false;
-  /* les traces de pneus et la fumée quand ça glisse */
+  E.dist=(E.dist||0)+Math.hypot(X-E.x,Y-E.y);
+  chronoPas(E.x,E.y,X,Y,dt);
+  E.x=X;E.y=Y;
+  /* 6. LES TRACES, LA FUMÉE, LES ÉTINCELLES DE CHARGE */
   if(Math.abs(tr)>24){
     for(const s of [-10,10]){
-      const px=ESSAI.x-nx*18-ny*s, py=ESSAI.y-ny*18+nx*s;
-      /* LES TRACES SE PEIGNENT DANS LE SOL : rien à redessiner à chaque image */
-      try{const gs=SOL.getContext('2d');gs.fillStyle='rgba(12,10,16,.45)';gs.fillRect(Math.round(px)-1,Math.round(py)-1,2,2);}catch(x){ESSAI.traces.push([px,py,0.55]);}
+      const px=E.x-nx*18-ny*s, py=E.y-ny*18+nx*s;
+      try{const gs=SOL.getContext('2d');gs.fillStyle='rgba(12,10,16,.45)';gs.fillRect(Math.round(px)-1,Math.round(py)-1,2,2);}catch(x){E.traces.push([px,py,0.55]);}
     }
-    if(ESSAI.fumee.length<36&&Math.random()<0.5)ESSAI.fumee.push({x:ESSAI.x-nx*24,y:ESSAI.y-ny*24,r:4,vie:0.8,c:(ESSAI.tuning&&ESSAI.tuning.fumee)||null});
-    if(ESSAI.traces.length>900)ESSAI.traces.splice(0,ESSAI.traces.length-900);
+    if(E.fumee.length<40&&Math.random()<0.55)E.fumee.push({x:E.x-nx*24,y:E.y-ny*24,r:4,vie:0.8,c:T0.fumee||null});
+    if(E.traces.length>900)E.traces.splice(0,E.traces.length-900);
   }
-  for(const f of ESSAI.fumee){f.vie-=dt;f.r+=14*dt;}
-  ESSAI.fumee=ESSAI.fumee.filter(f=>f.vie>0);
-  joueur.x=ESSAI.x;joueur.y=ESSAI.y;
+  const niv=niveauCharge();
+  if(E.glisse&&niv>0&&Math.random()<0.9)for(const s of [-10,10])E.etinc.push({x:E.x-nx*20-ny*s,y:E.y-ny*20+nx*s,vx:-nx*40+(Math.random()-0.5)*90,vy:-ny*40+(Math.random()-0.5)*90,vie:0.25,c:COUL_NIV[niv]});
+  if(hp&&v>40&&Math.random()<0.4)E.fumee.push({x:E.x-nx*20,y:E.y-ny*20,r:3,vie:0.5,c:'#8a7a5a'});
+  for(const f of E.fumee){f.vie-=dt;f.r+=14*dt;}
+  E.fumee=E.fumee.filter(f=>f.vie>0);
+  for(const p of E.etinc){p.vie-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;}
+  E.etinc=E.etinc.filter(p=>p.vie>0);if(E.etinc.length>120)E.etinc.splice(0,E.etinc.length-120);
+  E.vitesse=vit;E.vmaxVue=PF.vmax*0.55;
+  joueur.x=E.x;joueur.y=E.y;
+}
+function niveauCharge(){const c=ESSAI.charge||0;return c>=DRIFT_NIV[3]?3:c>=DRIFT_NIV[2]?2:c>=DRIFT_NIV[1]?1:0;}
+/* la glisse finit : la charge part en turbo */
+function finDeGlisse(){
+  const E=ESSAI, niv=niveauCharge();
+  if(niv>0){E.boostT=BOOST_T[niv];E.boostK=BOOST_K[niv];popDrift(['','TURBO','SUPER TURBO','ULTRA TURBO'][niv],COUL_NIV[niv]);pop();
+    try{navigator.vibrate&&navigator.vibrate([10,20,10*niv*3]);}catch(x){}}
+  E.charge=0;
+}
+/* le combo retombe : ses points rentrent au score de la sortie */
+function encaisserCombo(){
+  const E=ESSAI;const p=Math.round(E.points||0);
+  if(p>0){E.score=(E.score||0)+p;popDrift('+'+p.toLocaleString('fr-FR')+' pts','#ffd98a');
+    const R=driftRecords();if(R[E.nom]==null||E.score>R[E.nom]){R[E.nom]=E.score;try{localStorage.setItem('bdl.tk.drift',JSON.stringify(R));}catch(x){}}}
+  E.points=0;E.combo=1;
+}
+function driftRecords(){try{return JSON.parse(localStorage.getItem('bdl.tk.drift')||'{}')||{};}catch(x){return {};}}
+/* ================= LE TABLEAU DE BORD =================
+   Le compteur en haut à gauche (km/h, rapport, régime, charge), le bouton DRIFT
+   et la nitro sous le pouce droit, les points au centre. */
+function popDrift(txt,col){
+  const el=document.getElementById('tkPop');if(!el)return;
+  el.textContent=txt;el.style.color=col||'#fff';el.classList.remove('va');void el.offsetWidth;el.classList.add('va');
+}
+function hudMontrer(on){
+  const ids=['tkHud','tkDrift','tkNitro','tkPop','tkAide'];
+  if(!on){ids.forEach(i=>{const x=document.getElementById(i);if(x)x.remove();});return;}
+  const E=ESSAI;E.nitroCharge=1;E.nitroT=0;E.boostT=0;E.charge=0;E.points=0;E.combo=1;E.finCombo=0;E.score=0;E.glisse=false;E.lacet=0;E.rapport=0;E.coupure=0;E.etinc=[];E.frein_main=false;
+  if(!document.getElementById('cssHud')){const st=document.createElement('style');st.id='cssHud';st.textContent=
+`#tkHud{position:fixed;left:14px;top:calc(env(safe-area-inset-top,0px) + 96px);z-index:21;pointer-events:none;padding:8px 12px 9px;border-radius:16px;
+ background:rgba(10,8,18,.72);border:1px solid rgba(255,255,255,.1);font-family:-apple-system,sans-serif;color:#fff;min-width:118px}
+#tkHud .v{font:900 italic 34px/1 -apple-system,sans-serif;letter-spacing:-1px}
+#tkHud .u{font:700 9px ui-monospace,monospace;letter-spacing:2px;color:rgba(255,255,255,.5);margin-left:4px}
+#tkHud .r{display:flex;align-items:center;gap:8px;margin-top:6px}
+#tkHud .g{width:24px;height:24px;border-radius:7px;background:#ff4fb0;display:grid;place-items:center;font:900 14px -apple-system,sans-serif}
+#tkHud .t{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}
+#tkHud .t i{display:block;height:100%;width:0;background:linear-gradient(90deg,#5cff8a,#ffd21f 70%,#ff3b3b)}
+#tkHud .c{display:flex;gap:4px;margin-top:6px}
+#tkHud .c b{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.12)}
+#tkDrift{position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 104px);z-index:21;width:96px;height:96px;border-radius:50%;border:0;
+ background:radial-gradient(circle at 50% 40%,#2a1838,#120a1c);color:#fff;font:900 15px -apple-system,sans-serif;letter-spacing:1.5px;
+ box-shadow:0 0 0 4px var(--c,rgba(255,255,255,.18)),0 8px 22px rgba(0,0,0,.45);-webkit-tap-highlight-color:transparent;touch-action:none;user-select:none;-webkit-user-select:none}
+#tkDrift.on{transform:scale(.94);background:radial-gradient(circle at 50% 40%,#4a2060,#20102c)}
+#tkDrift small{display:block;font:700 8px ui-monospace,monospace;letter-spacing:1.5px;color:rgba(255,255,255,.55);margin-top:2px}
+#tkNitro{bottom:calc(env(safe-area-inset-bottom,0px) + 214px)!important;right:27px!important}
+#tkPop{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 112px);z-index:21;pointer-events:none;text-align:center;
+ font:900 italic 26px -apple-system,sans-serif;text-shadow:0 2px 10px rgba(0,0,0,.6);opacity:0}
+#tkPop.va{animation:tkPop 1.1s ease-out}
+@keyframes tkPop{0%{opacity:0;transform:scale(.6)}15%{opacity:1;transform:scale(1.15)}30%{transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:translateY(-14px)}}
+#tkCombo{display:block;font:800 13px -apple-system,sans-serif;color:#ffd98a;margin-top:4px;min-height:16px}
+#tkAide{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 214px);z-index:21;pointer-events:none;margin:0 auto;max-width:330px;
+ padding:12px 14px;border-radius:14px;background:rgba(10,8,18,.85);border:1px solid rgba(255,79,176,.4);color:#fff;font:600 13px/1.45 -apple-system,sans-serif;transition:opacity .6s}
+#tkAide b{color:#ff8ac8}`;document.head.appendChild(st);}
+  const hud=document.createElement('div');hud.id='tkHud';
+  hud.innerHTML='<div><span class="v" id="tkV">0</span><span class="u">KM/H</span></div><div class="r"><span class="g" id="tkG">1</span><span class="t"><i id="tkT"></i></span></div>'+
+    '<div class="c"><b id="tkC1"></b><b id="tkC2"></b><b id="tkC3"></b></div><span id="tkCombo"></span>';
+  document.body.appendChild(hud);
+  const pp=document.createElement('div');pp.id='tkPop';document.body.appendChild(pp);
+  const dr=document.createElement('button');dr.id='tkDrift';dr.innerHTML='DRIFT<small>MAINTENIR</small>';
+  const ap=ev=>{ev.preventDefault();ev.stopPropagation();E.frein_main=true;dr.classList.add('on');};
+  const re=ev=>{ev.preventDefault();ev.stopPropagation();E.frein_main=false;dr.classList.remove('on');};
+  dr.addEventListener('touchstart',ap,{passive:false});dr.addEventListener('touchend',re,{passive:false});dr.addEventListener('touchcancel',re,{passive:false});
+  dr.addEventListener('mousedown',ap);addEventListener('mouseup',()=>{if(E.frein_main){E.frein_main=false;dr.classList.remove('on');}});
+  document.body.appendChild(dr);
+  if(!hudMontrer.clavier){hudMontrer.clavier=true;
+    addEventListener('keydown',ev=>{if(!ESSAI.actif)return;if(ev.code==='Space'){ESSAI.frein_main=true;ev.preventDefault();}
+      if(ev.key==='Shift'&&ESSAI.nitroCharge>=1&&ESSAI.perf&&ESSAI.perf.nitro){ESSAI.nitroT=PF_NITRO();ESSAI.nitroCharge=0;}});
+    addEventListener('keyup',ev=>{if(ev.code==='Space')ESSAI.frein_main=false;});}
+  nitroMontrer(true);
+  /* la première fois : trois lignes pour comprendre */
+  let vu=false;try{vu=localStorage.getItem('bdl.tk.aide')==='1';}catch(x){}
+  if(!vu){const a=document.createElement('div');a.id='tkAide';
+    a.innerHTML='<b>Pouce gauche</b> : la direction, la voiture accélère toute seule.<br><b>DRIFT</b> : maintiens-le dans les virages, la voiture glisse et se charge (bleu → orange → rose).<br><b>Lâche</b> : turbo ! Enchaîne les drifts pour multiplier les points.';
+    document.body.appendChild(a);setTimeout(()=>{a.style.opacity='0';setTimeout(()=>a.remove(),700);},7000);try{localStorage.setItem('bdl.tk.aide','1');}catch(x){}}
+  (function maj(){
+    if(!document.getElementById('tkHud')||!ESSAI.actif)return;
+    const E2=ESSAI, niv=niveauCharge();
+    document.getElementById('tkV').textContent=Math.round((E2.vitesse||0)*KMH);
+    document.getElementById('tkG').textContent=E2.recul?'R':(E2.rapport+1);
+    const S=SON_TK;document.getElementById('tkT').style.width=Math.min(100,((S.rpm||900)-800)/62)+'%';
+    for(let i=1;i<=3;i++)document.getElementById('tkC'+i).style.background=niv>=i?COUL_NIV[i]:'rgba(255,255,255,.12)';
+    document.getElementById('tkCombo').textContent=E2.points>0?((E2.combo>1?'×'+E2.combo+' · ':'')+Math.round(E2.points).toLocaleString('fr-FR')+' pts'):(E2.score?'SCORE '+E2.score.toLocaleString('fr-FR'):'');
+    const d2=document.getElementById('tkDrift');if(d2)d2.style.setProperty('--c',niv>0?COUL_NIV[niv]:(E2.boostT>0?'#5cff8a':'rgba(255,255,255,.18)'));
+    requestAnimationFrame(maj);})();
 }
 /* ================= LE CHRONO DU CIRCUIT =================
    Le tour part quand on franchit la ligne vers la droite. Pour qu'il compte,
@@ -1076,7 +1254,8 @@ function nitroMontrer(on){
 }
 const PF_NITRO=()=>(ESSAI.perf&&ESSAI.perf.nitro>1)?2.6:2;
 function chronoMontrer(on){
-  nitroMontrer(on);
+  if(!on)nitroMontrer(false);
+  hudMontrer(on);
   let el=document.getElementById('tkChrono');
   if(!on){if(el)el.remove();return;}
   if(!el){el=document.createElement('div');el.id='tkChrono';
@@ -1093,7 +1272,8 @@ function chronoAfficher(){
   el.innerHTML='<span style="color:#ff8ac8;font-size:9px;letter-spacing:2px">'+(enCours?'TOUR '+(ESSAI.tours+1):'PASSE LA LIGNE')+'</span>'+
     '<b style="font-size:16px">'+fmtTour(enCours?ESSAI.tour:null)+'</b>'+
     (ESSAI.dernier!=null?'<span style="color:#9ae8ff">'+fmtTour(ESSAI.dernier)+'</span>':'')+
-    '<span style="color:#ffd98a">★ '+fmtTour(rec)+'</span>';
+    '<span style="color:#ffd98a">★ '+fmtTour(rec)+'</span>'+
+    (ESSAI.limite!=null?'<span style="color:'+(ESSAI.limite<30?'#ff6a5a':'#9ae8ff')+';font-size:10px">ESSAI '+Math.floor(ESSAI.limite/60)+':'+String(Math.floor(ESSAI.limite%60)).padStart(2,'0')+'</span>':'');
 }
 function chronoPas(x0,y0,x1,y1,dt){
   const C=CIRCUIT;
@@ -1138,6 +1318,12 @@ function dessinerEssai(ctx,camX,camY){
   ctx.drawImage(ESSAI.toile,-34,-16);
   ctx.restore();
   ctx.save();
+  for(const p of (ESSAI.etinc||[])){ctx.globalAlpha=Math.min(1,p.vie*4);ctx.fillStyle=p.c;ctx.fillRect(Math.round(p.x-camX)-1,Math.round(p.y-camY)-1,2,2);}
+  ctx.globalAlpha=1;
+  /* LES LIGNES DE VITESSE au turbo et à la nitro */
+  if(ESSAI.boostT>0||ESSAI.nitroT>0){const a=ESSAI.ang, c=Math.cos(a), s2=Math.sin(a);ctx.strokeStyle=ESSAI.nitroT>0?'rgba(127,232,255,.55)':'rgba(255,255,255,.45)';ctx.lineWidth=1;
+    for(let i=0;i<10;i++){const o=(Math.random()-0.5)*90, b=40+Math.random()*60, L=20+Math.random()*30;
+      const x0=ESSAI.x-camX-c*b-s2*o, y0=ESSAI.y-camY-s2*b+c*o;ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x0-c*L,y0-s2*L);ctx.stroke();}}
   for(const f of ESSAI.fumee){
     if(f.c){const n=[1,3,5].map(k=>parseInt(f.c.substr(k,2),16));ctx.fillStyle='rgba('+n.join(',')+','+(f.vie*0.5)+')';}
     else ctx.fillStyle='rgba(220,220,230,'+(f.vie*0.4)+')';
