@@ -1839,20 +1839,33 @@ function majEssai(dt,jx,jy){
     if(gele){majMoteur(PAS,0,c.g>0,0,0);continue;}
     if(CMDS.nitro&&E.nitroCharge>=1&&E.stats&&E.stats.nitro){E.nitroT=E.stats.nitro>1?2.6:2;E.nitroCharge=0;CMDS.nitro=false;try{navigator.vibrate&&navigator.vibrate([20,30,60]);}catch(x){}}
     driftAuto(c,PAS);c.h=false;
+    E.ix=E.x;E.iy=E.y;E.ia=E.ang;
     info=pasPhysique(PAS,c);
     if(COURSE.actif)pasCourse(PAS);
     if(E.mode==='drift')pasZone(PAS);
   }
   if(COURSE.actif)majCourseHorsPas(dt);
   if(E.mode==='drift')majZoneHorsPas(dt);
+  /* LE DESSIN ENTRE DEUX PAS : la physique avance par pas de 1/120 s, l'écran à son propre rythme
+     (60, 90, 120 images/s). On dessine la voiture là où elle est ENTRE les deux derniers pas : plus de saccade. */
+  {const a=Math.max(0,Math.min(1,E.reste/PAS));
+    if(E.ix==null){E.ix=E.x;E.iy=E.y;E.ia=E.ang;}
+    let da=E.ang-E.ia;da=Math.atan2(Math.sin(da),Math.cos(da));
+    E.rx=E.ix+(E.x-E.ix)*a;E.ry=E.iy+(E.y-E.iy)*a;E.ra=E.ia+da*a;}
   /* LES EFFETS, une fois par image */
   {const fb=majEssai.fb&&majEssai.fb.isConnected?majEssai.fb:(majEssai.fb=document.querySelector('#tkPad .pedale'));if(fb)fb.classList.toggle('drifte',E.drA===1);}
   if(info){const {tr,nx,ny,hp,vit}=info;
     if(Math.abs(tr)>30||(E.patine&&vit>8)){
-      for(const s of [-10,10]){const px=E.x-nx*18-ny*s, py=E.y-ny*18+nx*s;
-        try{const gs=SOL.getContext('2d');gs.fillStyle='rgba(12,10,16,.42)';gs.fillRect(Math.round(px)-1,Math.round(py)-1,2,2);if(TK_HD&&py>HD_Y0){const hg=TK_HD.getContext('2d');hg.fillStyle='rgba(12,10,16,.35)';hg.fillRect(px-0.9,py-0.9,1.8,1.8);}}catch(x){E.traces.push([px,py]);}}
+      /* DES TRACES CONTINUES : un trait de la position d'avant à celle d'aujourd'hui, par roue arrière */
+      if(!E.marq)E.marq=[null,null];
+      [-10,10].forEach((s,i)=>{const px=E.x-nx*18-ny*s, py=E.y-ny*18+nx*s, pr=E.marq[i];E.marq[i]=[px,py];
+        if(!pr||Math.hypot(px-pr[0],py-pr[1])>40)return;
+        if(!enVille()){E.traces.push([pr[0],pr[1],px,py]);return;}
+        try{const gs=SOL.getContext('2d');gs.save();gs.strokeStyle='rgba(12,10,16,.30)';gs.lineWidth=2.2;gs.lineCap='butt';gs.beginPath();gs.moveTo(pr[0],pr[1]);gs.lineTo(px,py);gs.stroke();gs.restore();
+          if(TK_HD&&py>HD_Y0){const hg=TK_HD.getContext('2d');hg.save();hg.strokeStyle='rgba(12,10,16,.26)';hg.lineWidth=2;hg.lineCap='butt';hg.beginPath();hg.moveTo(pr[0],pr[1]);hg.lineTo(px,py);hg.stroke();hg.restore();}}catch(x){}});
       if(E.fumee.length<44&&Math.random()<0.6)E.fumee.push({x:E.x-nx*24+(Math.random()-0.5)*8,y:E.y-ny*24+(Math.random()-0.5)*8,r:4,vie:0.85,c:(E.tuning||{}).fumee||null});
-      if(E.traces.length>900)E.traces.splice(0,E.traces.length-900);}
+      if(E.traces.length>1400)E.traces.splice(0,E.traces.length-1400);}
+    else E.marq=null;
     const niv=niveauCharge();
     if(E.glisse&&niv>0)for(const s of [-10,10])E.etinc.push({x:E.x-nx*20-ny*s,y:E.y-ny*20+nx*s,vx:-nx*40+(Math.random()-0.5)*90,vy:-ny*40+(Math.random()-0.5)*90,vie:0.25,c:COUL_NIV[niv]});
     if(hp&&vit>60&&Math.random()<0.45)E.fumee.push({x:E.x-nx*20,y:E.y-ny*20,r:3,vie:0.5,c:'#8a7a5a'});
@@ -1862,7 +1875,8 @@ function majEssai(dt,jx,jy){
   /* LA CAISSE VIT : roulis vers l'extérieur du virage, plongée au freinage, cabrage à
      l'accélération — un ressort amorti, en pixels. Les vibreurs secouent la voiture. */
   {const av2=E.vx*Math.cos(E.ang)+E.vy*Math.sin(E.ang), lat=av2*(E.lacet||0);
-    const rT=-Math.max(-1,Math.min(1,lat/900))*2.2, pT=-Math.max(-1,Math.min(1,(E.axL||0)/450))*1.8;
+    const rT=-Math.max(-1,Math.min(1,lat/800))*3, pT=-Math.max(-1,Math.min(1,(E.axL||0)/300))*2.4;
+    if(E.rapport!==E.rapVu){if(E.rapport>(E.rapVu||0))E.pitchV=(E.pitchV||0)+26;E.rapVu=E.rapport;}   /* le passage de vitesse : la caisse pique du nez une fraction de seconde */
     const kd=Math.min(dt,0.05);
     E.rollV=(E.rollV||0)+(70*(rT-(E.roll||0))-10*(E.rollV||0))*kd;E.roll=(E.roll||0)+E.rollV*kd;
     E.pitchV=(E.pitchV||0)+(70*(pT-(E.pitch||0))-10*(E.pitchV||0))*kd;E.pitch=(E.pitch||0)+E.pitchV*kd;
@@ -2606,7 +2620,8 @@ function dessinerVolant(ctx){
   if(enVille()){const vw=W/e2;if(vw<MONDE_L){const gauche=E.x-cx/e2;if(gauche<0)cx=E.x*e2;else if(gauche+vw>MONDE_L)cx=(E.x-(MONDE_L-vw))*e2;}}
   const sx=SECOUSSE>0.01?(Math.random()-.5)*SECOUSSE*3*e2:0, sy=SECOUSSE>0.01?(Math.random()-.5)*SECOUSSE*3*e2:0;
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#17151f';ctx.fillRect(0,0,W,H);
-  ctx.setTransform(e2,0,0,e2,Math.round(cx+sx-E.x*e2),Math.round(cy+sy-E.y*e2));
+  const RX=(E.rx!=null?E.rx:E.x), RY=(E.ry!=null?E.ry:E.y);
+  ctx.setTransform(e2,0,0,e2,Math.round(cx+sx-RX*e2),Math.round(cy+sy-RY*e2));
   /* le sol : un carré autour de la voiture, assez grand pour couvrir l'écran tourné */
   const Rv=Math.ceil(Math.hypot(W,H)/e2)+4;
   const nuit=(()=>{try{const C=cielDuMoment();return C?C.lampes:0;}catch(x){return 0;}})();
@@ -2642,26 +2657,33 @@ function dessinerVolant(ctx){
 }
 
 /* ================= LE DESSIN ================= */
+/* UNE VOITURE QUI TOURNE SANS CRÉNEAUX : la toile pixel est agrandie ×4 au plus proche (les pixels restent
+   des carrés nets), puis dessinée réduite et lissée à n'importe quel angle — fini l'escalier qui scintille */
+const TOILES_FINES=new WeakMap();
+function toileFine(t){if(!t)return t;let f=TOILES_FINES.get(t);if(f)return f;
+  f=document.createElement('canvas');f.width=t.width*4;f.height=t.height*4;const g=f.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(t,0,0,f.width,f.height);
+  TOILES_FINES.set(t,f);return f;}
 function dessinerUneVoiture(ctx,camX,camY,x,y,ang,toile){
-  ctx.save();ctx.translate(Math.round(x-camX),Math.round(y-camY));
+  ctx.save();ctx.translate(x-camX,y-camY);
   ctx.fillStyle='rgba(0,0,0,.32)';ctx.beginPath();ctx.ellipse(1,3,30,13,ang,0,7);ctx.fill();
-  ctx.rotate(ang);ctx.imageSmoothingEnabled=false;ctx.drawImage(toile,-34,-16);ctx.restore();
+  ctx.rotate(ang);ctx.imageSmoothingEnabled=true;ctx.drawImage(toileFine(toile),-34,-16,toile.width,toile.height);ctx.restore();
 }
 function dessinerEssai(ctx,camX,camY){
   const E=ESSAI;
   if(E.trainee&&E.trainee.length>2){const c=(E.tuning&&E.tuning.neon)||'#ff4fb0';ctx.save();ctx.lineCap='round';
     for(let k=1;k<E.trainee.length;k++){const [a,b]=E.trainee[k-1],[x2,y2]=E.trainee[k];ctx.strokeStyle=c;ctx.globalAlpha=k/E.trainee.length*0.7;ctx.lineWidth=2+k/E.trainee.length*3;
       ctx.beginPath();ctx.moveTo(a-camX,b-camY);ctx.lineTo(x2-camX,y2-camY);ctx.stroke();}ctx.restore();}
-  ctx.save();ctx.fillStyle='rgba(12,10,16,.55)';
-  for(const [x,y] of E.traces)ctx.fillRect(Math.round(x-camX)-1,Math.round(y-camY)-1,2,2);ctx.restore();
+  if(E.traces.length){ctx.save();ctx.strokeStyle='rgba(12,10,16,.34)';ctx.lineWidth=2.2;ctx.beginPath();
+    for(const t of E.traces){if(t.length<4)continue;ctx.moveTo(t[0]-camX,t[1]-camY);ctx.lineTo(t[2]-camX,t[3]-camY);}ctx.stroke();ctx.restore();}
   /* les autres voitures */
   if(COURSE.actif)for(const c of COURSE.voitures){ctx.globalAlpha=c.fini!=null?0.35:1;dessinerUneVoiture(ctx,camX,camY,c.x,c.y,c.ang,c.toile);}
   ctx.globalAlpha=1;
-  /* la mienne : halo néon, flammes, nitro */
+  /* la mienne : halo néon, flammes, nitro — dessinée là où elle est ENTRE deux pas, au sous-pixel */
+  const X=(E.rx!=null?E.rx:E.x), Y=(E.ry!=null?E.ry:E.y), A=(E.ra!=null?E.ra:E.ang);
   ctx.save();
-  ctx.translate(Math.round(E.x-camX),Math.round(E.y-camY));
-  ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(1,3,32,14,E.ang,0,7);ctx.fill();
-  ctx.rotate(E.ang);
+  ctx.translate(X-camX,Y-camY);
+  ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(1,3,32,14,A,0,7);ctx.fill();
+  ctx.rotate(A);
   if(E.nitroT>0){const r=ctx.createRadialGradient(-30,0,2,-30,0,40);r.addColorStop(0,'rgba(127,232,255,.55)');r.addColorStop(1,'rgba(127,232,255,0)');ctx.fillStyle=r;ctx.fillRect(-72,-40,84,80);}
   if(E.tuning&&E.tuning.neon){
     if(!E.halo){const h=document.createElement('canvas');h.width=110;h.height=60;const hg=h.getContext('2d');
@@ -2672,13 +2694,25 @@ function dessinerEssai(ctx,camX,camY){
     else{ctx.globalAlpha=fx==='pulse'?0.35+0.5*(0.5+0.5*Math.sin(T*6)):0.75;ctx.drawImage(E.halo,-55,-30);ctx.globalAlpha=1;}}
   if(E.flamme>0){const L2=8+Math.random()*(E.nitroT>0?18:10);for(const s2 of [-5,5]){ctx.fillStyle=E.nitroT>0?'rgba(127,232,255,.9)':'rgba(255,160,40,.9)';ctx.beginPath();ctx.moveTo(-34,s2-2);ctx.lineTo(-34-L2,s2);ctx.lineTo(-34,s2+2);ctx.fill();
     ctx.fillStyle='rgba(255,255,255,.9)';ctx.fillRect(-36,s2-1,3,2);}}
-  ctx.imageSmoothingEnabled=false;
+  /* LES QUATRE ROUES restent au sol ; la caisse, posée sur ses ressorts, bouge au-dessus d'elles */
+  const M=MODELES_DESSUS[(E.modele&&E.modele.marque)]||MODELES_DESSUS.Toyota, xr=-34+Math.floor((68-M.L)/2)+Math.round(M.L*0.2), xv=-34+Math.floor((68-M.L)/2)+Math.round(M.L*0.77), yw=M.hw+0.2;
+  const tour=((E.dist||0)/3)%4;
+  for(const [wx,av] of [[xr,0],[xv,1]])for(const sy of [-yw,yw]){ctx.save();ctx.translate(wx+0.5,sy);if(av)ctx.rotate(E.delta||0);
+    ctx.fillStyle='#0b0a10';ctx.beginPath();ctx.roundRect?ctx.roundRect(-5,-2.2,10,4.4,1.6):ctx.rect(-5,-2.2,10,4.4);ctx.fill();
+    ctx.fillStyle='rgba(120,120,135,.55)';for(let k=0;k<3;k++){const xx=-4.5+((k*3.4+tour*0.85)%10);ctx.fillRect(xx,-2,0.8,4);}   /* la bande de roulement qui défile */
+    ctx.restore();}
+  /* la caisse : roulis, plongée, cabrage, vibreurs, et le moteur qui tremble au ralenti */
   {const vb=E.vibreur?(((performance.now()/45)|0)%2?0.7:-0.7):0;
-    ctx.translate(-(E.pitch||0)+vb*0.5,(E.roll||0)+vb);}
-  ctx.drawImage(E.toile,-34,-16);
-  /* LES ROUES AVANT BRAQUENT : on les voit tourner avec le volant */
-  for(const sy of [-15,15]){ctx.save();ctx.translate(18,sy);ctx.rotate(E.delta||0);
-    ctx.fillStyle='#0b0a10';ctx.fillRect(-5,-1.5,10,3);ctx.fillStyle='#4a4a56';ctx.fillRect(-4,sy<0?-1.5:0.5,8,1);ctx.restore();}
+    const ral=(E.vitesse||0)<8?Math.sin(performance.now()/22)*0.25:0;
+    ctx.translate(-(E.pitch||0)+vb*0.5+ral*0.4,(E.roll||0)+vb+ral);
+    const k=1+Math.max(-0.02,Math.min(0.02,(E.pitch||0)*0.006));ctx.scale(k,1/k);}
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  ctx.drawImage(toileFine(E.toile),-34,-16,68,32);
+  /* les feux stop quand on freine, blancs en marche arrière */
+  {const fr=(+CMDS.frein||0)>0||CMDS.frein===true, ar=(E.vx*Math.cos(A)+E.vy*Math.sin(A))<-3, xa=-34+Math.floor((68-M.L)/2)+1;
+    if(fr||ar){ctx.fillStyle=ar?'rgba(255,255,240,.95)':'rgba(255,40,40,.95)';for(const sy of [-M.hw*0.62,M.hw*0.62])ctx.fillRect(xa-1,sy-1.6,2,3.2);
+      ctx.globalCompositeOperation='lighter';const g2=ctx.createRadialGradient(xa-2,0,1,xa-2,0,18);g2.addColorStop(0,ar?'rgba(255,255,230,.35)':'rgba(255,30,40,.45)');g2.addColorStop(1,'rgba(255,30,40,0)');
+      ctx.fillStyle=g2;ctx.fillRect(xa-22,-20,24,40);ctx.globalCompositeOperation='source-over';}}
   ctx.restore();
   ctx.save();
   for(const p of E.etinc){ctx.globalAlpha=Math.min(1,p.vie*4);ctx.fillStyle=p.c;ctx.fillRect(Math.round(p.x-camX)-1,Math.round(p.y-camY)-1,2,2);}
