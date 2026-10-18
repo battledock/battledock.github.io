@@ -2383,6 +2383,16 @@ function disposerCircuit(){
   BATIS_TK.push({x0:850,y0:430,x1:W,y1:2200});            /* la tribune */
   DISPO={dist,nx,ny,C,batis,arbres};return DISPO;
 }
+const EQUIPES=[['#d01426','#f4f4f6'],['#1a5fd0','#ffd21f'],['#ff4fb0','#14121c'],['#5cc83a','#f4f4f6'],['#ff7a1a','#2a2c33'],['#7a3cff','#7fe8ff']];
+function dessinerTente(g,x,y,s){const [c1,c2]=EQUIPES[Math.floor(s*61)%EQUIPES.length];g.fillStyle='rgba(0,0,0,.3)';g.fillRect(x-5,y-4,16,16);
+  g.fillStyle=c1;g.fillRect(x-8,y-8,16,16);g.fillStyle=c2;for(let k=-8;k<8;k+=4)g.fillRect(x+k,y-8,2,16);
+  g.fillStyle='rgba(255,255,255,.25)';g.beginPath();g.moveTo(x-8,y-8);g.lineTo(x,y);g.lineTo(x+8,y-8);g.fill();g.fillStyle='rgba(0,0,0,.15)';g.beginPath();g.moveTo(x-8,y+8);g.lineTo(x,y);g.lineTo(x+8,y+8);g.fill();}
+function dessinerParasol(g,x,y,s){const [c1,c2]=EQUIPES[Math.floor(s*37)%EQUIPES.length];g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.arc(x+3,y+3,7,0,7);g.fill();
+  for(let k=0;k<8;k++){g.fillStyle=k%2?c1:c2;g.beginPath();g.moveTo(x,y);g.arc(x,y,7,k*Math.PI/4,(k+1)*Math.PI/4);g.fill();}g.fillStyle='#14121c';g.beginPath();g.arc(x,y,1,0,7);g.fill();
+  g.fillStyle='#8a8896';for(const [dx,dy] of [[9,0],[-9,0],[0,9],[0,-9]])g.fillRect(x+dx-1,y+dy-1,2,2);}   /* les chaises */
+function dessinerCamion(g,x,y,s){const [c1,c2]=EQUIPES[Math.floor(s*53)%EQUIPES.length];g.save();g.translate(x,y);if(s>0.3)g.rotate(Math.PI/2);
+  g.fillStyle='rgba(0,0,0,.35)';g.fillRect(-14,-3,32,10);g.fillStyle='#e8e8ee';g.fillRect(-16,-5,24,10);g.fillStyle=c1;g.fillRect(-16,-1.2,24,2.4);
+  g.fillStyle=c2;g.fillRect(-16,-5,24,1);g.fillStyle=c1;g.fillRect(9,-4.5,7,9);g.fillStyle='rgba(20,30,50,.75)';g.fillRect(13,-3.5,2,7);g.restore();}
 /* LES QUARTIERS DU SERPENTIN : la ville néon en haut, le parc aux cerisiers, le paddock, puis le port */
 function quartierTK(y){return y<900?'neon':y<1500?'parc':y<2000?'paddock':'port';}
 function dessinerEtang(g,b,A){const {x,y,L,H:Hh,s}=b, cx=x+L/2, cy=y+Hh/2, rx=L/2-2, ry=Hh/2-2;
@@ -2392,8 +2402,10 @@ function dessinerEtang(g,b,A){const {x,y,L,H:Hh,s}=b, cx=x+L/2, cy=y+Hh/2, rx=L/
     g.fillStyle='rgba(255,255,255,.16)';for(let k=0;k<6;k++)g.fillRect(x+4+A(k+s)*(L-10),y+4+A(k*2+s)*(Hh-10),5,0.7);
     for(let k=0;k<4;k++){g.fillStyle='#3f8a46';g.beginPath();g.arc(x+5+A(k*11+s)*(L-10),y+5+A(k*13+s)*(Hh-10),2.4,0,7);g.fill();}
     for(let k=0;k<3;k++){g.fillStyle=A(k+s*4)<0.5?'#ff8a3c':'#f4f2f6';g.beginPath();g.ellipse(x+6+A(k*7+s*9)*(L-12),y+6+A(k*5+s*3)*(Hh-12),2.2,1,A(k*2)*3,0,7);g.fill();}
-    const vert=Hh>L;if(vert){const py=y+Hh*0.5-4;g.fillStyle='rgba(0,0,0,.3)';g.fillRect(x+2,py+3,L,9);g.fillStyle='#c8202e';g.fillRect(x,py,L,8);g.fillStyle='#e8404c';g.fillRect(x,py,L,1.4);}
-    else{const px=x+L*0.5-4;g.fillStyle='rgba(0,0,0,.3)';g.fillRect(px+3,y+2,9,Hh);g.fillStyle='#c8202e';g.fillRect(px,y,8,Hh);g.fillStyle='#e8404c';g.fillRect(px,y,1.4,Hh);}
+    const vert=Hh>L, lg=vert?Hh:L, np=Math.max(1,Math.round(lg/90));
+    for(let k=0;k<np;k++){const f=(k+0.5)/np;
+      if(vert){const py=y+Hh*f-4;g.fillStyle='rgba(0,0,0,.3)';g.fillRect(x+2,py+3,L,9);g.fillStyle='#c8202e';g.fillRect(x,py,L,8);g.fillStyle='#e8404c';g.fillRect(x,py,L,1.4);}
+      else{const px=x+L*f-4;g.fillStyle='rgba(0,0,0,.3)';g.fillRect(px+3,y+2,9,Hh);g.fillStyle='#c8202e';g.fillRect(px,y,8,Hh);g.fillStyle='#e8404c';g.fillRect(px,y,1.4,Hh);}}
     return;}
   g.fillStyle='#8f8b9e';g.fillRect(x,y,L,Hh);                           /* le dallage autour */
   g.fillStyle='#4f9a4c';g.beginPath();g.ellipse(cx,cy,rx,ry,0,0,7);g.fill();
@@ -2540,9 +2552,14 @@ function construireHD(fini){
     /* les immeubles */
     ()=>{const toits=[['#4a4757','#5a5768','#3b3946'],['#55505f','#676171','#433f4c'],['#3f4552','#4f5664','#323844'],['#5b5148','#6d6258','#47403a']];
       const gravier=motif(g,48,(q,T)=>{for(let i=0;i<160;i++){q.fillStyle=A(i*1.9)<0.5?'rgba(255,255,255,.06)':'rgba(0,0,0,.09)';q.fillRect(A(i*1.3)*T,A(i*2.1)*T,1,1);}});
+      /* au parc, les bassins qui se touchent ne font qu'un canal */
+      const parcs=D.batis.filter(b=>quartierTK(b.y+b.H/2)==='parc').sort((a,b)=>a.x-b.x||a.y-b.y), canaux=[];
+      for(const b of parcs){const c=canaux.find(c=>Math.abs(c.x-b.x)<10&&Math.abs(c.L-b.L)<14&&b.y<=c.y+c.H+10&&b.y>=c.y-10);
+        if(c){const y1=Math.max(c.y+c.H,b.y+b.H);c.y=Math.min(c.y,b.y);c.H=y1-c.y;c.L=Math.max(c.L,b.L);}else canaux.push({x:b.x,y:b.y,L:b.L,H:b.H,s:b.s});}
+      for(const c of canaux)dessinerEtang(g,c,A);
       for(const b of D.batis){const {x,y,L,H:Hh,s,i,j}=b, T=toits[Math.floor(s*toits.length)];
         const z=quartierTK(y+Hh/2);
-        if(z==='parc'){dessinerEtang(g,b,A);continue;}
+        if(z==='parc')continue;
         if(z==='paddock'){dessinerParking(g,b,A);continue;}
         if(z==='port'){dessinerEntrepot(g,b,A);continue;}
         g.fillStyle='rgba(0,0,0,.38)';g.fillRect(x+5,y+6,L,Hh);
@@ -2561,7 +2578,8 @@ function construireHD(fini){
     ()=>{const SP=spritesArbres();
       for(const a of D.arbres){const z=quartierTK(a.y);
         if(z==='port'&&a.s<0.62){const rot=a.s<0.35?0:Math.PI/2;dessinerConteneur(g,a.x,a.y,a.s,A,rot);if(a.s<0.5)dessinerConteneur(g,a.x+(rot?9:0),a.y+(rot?0:9),a.s*1.37%1,A,rot);continue;}
-        if(z==='paddock'&&a.s<0.6){dessinerPilePneus(g,a.x,a.y,a.s);continue;}
+        if(z==='paddock'&&a.s<0.66){const t=a.s/0.66;
+          if(t<0.3)dessinerTente(g,a.x,a.y,a.s);else if(t<0.55)dessinerParasol(g,a.x,a.y,a.s);else if(t<0.8)dessinerCamion(g,a.x,a.y,a.s);else dessinerPilePneus(g,a.x,a.y,a.s);continue;}
         const rose=z==='parc'?a.s<0.75:a.rose;
         const cand=SP.filter(v=>v.rose===rose);const v=cand[Math.floor(a.s*97)%cand.length];
         g.drawImage(v.c,a.x+v.dx,a.y+v.dy,v.T,v.T);
@@ -2573,6 +2591,18 @@ function construireHD(fini){
         if(p.k>1/170&&p.s-dernier>40){dernier=p.s;const ext=p.sg>0?-1:1;const [x,y]=decalPiste(p,ext*(ep/2+22));
           if(!(x>ZD.x0-20&&x<ZD.x1+20&&y>ZD.y0-20&&y<ZD.y1+20)&&x>8&&x<842)dessinerPilePneus(g,x,y,A(i*1.7));}
         if(p.s-poste>700&&!p.k){poste=p.s;const [x,y]=decalPiste(p,(A(i)<0.5?-1:1)*(ep/2+26));if(x>10&&x<840&&!(x>ZD.x0-20&&x<ZD.x1+20&&y>ZD.y0-20&&y<ZD.y1+20))dessinerPoste(g,x,y,p.ang);}}
+      /* les panneaux publicitaires contre la glissière, dans les lignes droites du paddock */
+      const pubs=[['BATTLE DOCK','#ff4fb0'],['東京','#7fe8ff'],['NEON','#ffd21f'],['DRIFT','#5cff8a'],['TURBO','#ff7a1a'],['MAREE','#b08cff']];let kp=0, dp=-1e9;
+      for(let i=0;i<N;i++){const p=P[i];if(p.k||p.y<400||p.s-dp<34)continue;const z=quartierTK(p.y);if(z!=='paddock'&&z!=='parc')continue;dp=p.s;
+        for(const sd of [-1,1]){const [x,y]=decalPiste(p,sd*(ep/2+31));if(x<10||x>840||(x>ZD.x0-20&&x<ZD.x1+20&&y>ZD.y0-20&&y<ZD.y1+20))continue;
+          const [t,c]=pubs[(kp++)%pubs.length];g.save();g.translate(x,y);g.rotate(p.ang);g.fillStyle='rgba(0,0,0,.3)';g.fillRect(-13,-0.5,28,5);
+          g.fillStyle=c;g.fillRect(-14,-2,28,4);g.fillStyle='#14121c';g.font='bold 3.4px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(t,0,0.2);g.restore();}}
+      /* des lettres tondues dans l'herbe, le long des grandes lignes droites */
+      {let dl=-1e9, kl=0;const mots=['TOKYO','DRIFT CITY','東京','BATTLE DOCK'];
+        for(let i=0;i<N;i++){const p=P[i];if(p.y<420||p.s-dl<520)continue;let droit=true;for(let q=0;q<=200;q+=20)if(pointPiste(p.s+q,PISTE_TK).k){droit=false;break;}if(!droit)continue;
+          dl=p.s;const sd=A(i*3.1)<0.5?-1:1, r=pointPiste(p.s+100,PISTE_TK), [x,y]=decalPiste(r,sd*(ep/2+17));
+          if(x<20||x>830||(x>ZD.x0-30&&x<ZD.x1+30&&y>ZD.y0-30&&y<ZD.y1+30))continue;
+          g.save();g.translate(x,y);g.rotate(r.ang);g.fillStyle='rgba(225,255,210,.32)';g.font='900 19px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(mots[(kl++)%mots.length],0,1);g.restore();}}
       /* les panneaux de freinage, avant chaque virage serré */
       for(let i=0;i<N;i++){const p=P[i], q=P[(i+N-1)%N];if(!(p.k>1/120&&!(q.k>1/120))||p.y<420)continue;
         const ext=p.sg>0?-1:1;
