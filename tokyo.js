@@ -1423,7 +1423,7 @@ function debutEssai(v,aMoi,reglages,mode,opts){
   E.tour=null;E.tours=0;E.cp=0;E.dernier=null;E.trainee=[];E.flamme=0;E.gazAvant=0;
   E.traces=[];E.fumee=[];E.etinc=[];E.recul=false;E.reste=0;E.idx=null;
   E.lacet=0;E.vol=0;E.delta=0;E.hbT=0;E.hAvant=false;E.idx=null;E.rapport=0;E.coupure=0;E.glisse=false;E.glisseT=0;E.charge=0;E.points=0;E.combo=1;E.finCombo=0;E.score=0;E.propre=true;
-  E.boostT=0;E.boostK=1;E.nitroT=0;E.nitroCharge=1;E.choc=0;
+  E.boostT=0;E.boostK=1;E.nitroT=0;E.nitroCharge=1;E.choc=0;E.dAuto=false;E.frT=0;E.frVol=false;
   COURSE.actif=false;
   if(E.mode==='course')preparerCourse();
   ZONE.phase='';if(E.mode==='drift')preparerZone();
@@ -1480,6 +1480,28 @@ function lireCommandes(jx,jy){
     if(CMDS.frein){b=1;g=0;}
   }
   return {s,g,b,h:!!CMDS.drift};
+}
+
+/* LE DRIFT AU FREIN (deux pouces suffisent) : en virage, un COUP DE FREIN BREF
+   puis les gaz lancent le drift ; il tient tant qu'on garde les gaz et qu'on
+   tourne. On en sort en lâchant les gaz, en freinant franchement, ou en
+   redressant. Un freinage long reste un freinage. */
+function driftAuto(c,dt){
+  const E=ESSAI, S=E.stats||{vmax:200}, v=E.vitesse||0, tourne=Math.abs(c.s||0)>0.5;
+  if(c.b>0){E.frT=(E.frT||0)+dt;E.frVol=E.frVol||tourne;}
+  else if(E.frT>0){
+    if(E.frT<0.3&&(E.frVol||tourne)&&v>S.vmax*0.28&&!E.dAuto){E.dAuto=true;E.dAutoT=0;E.dAutoGaz=0;E.dAutoParti=false;}
+    E.frT=0;E.frVol=false;}
+  if(!E.dAuto)return false;
+  E.dAutoT+=dt;
+  if(c.g>0.15){E.dAutoGaz=0;E.dAutoParti=true;}else E.dAutoGaz=(E.dAutoGaz||0)+dt;
+  if(!E.dAutoParti){if(E.dAutoT>0.4)E.dAuto=false;return false;}   /* le coup de frein n'est suivi des gaz : c'était juste un freinage */
+  const fini=(c.b>0&&E.frT>0.25)                            /* on freine pour de bon */
+    ||E.dAutoGaz>0.3                                         /* on a lâché les gaz */
+    ||v<S.vmax*0.12                                         /* trop lent */
+    ||(E.dAutoT>0.7&&!E.glisse&&Math.abs(c.s||0)<0.2);      /* redressé */
+  if(fini){E.dAuto=false;return false;}
+  return true;
 }
 
 /* ================= UN PAS DE PHYSIQUE ================= */
@@ -1544,11 +1566,12 @@ function pasPhysique(dt,c){
   E.dBeta=E.betaAvant==null?0:Math.max(-6,Math.min(6,(beta-E.betaAvant)/dt));E.betaAvant=beta;
   let dCible=(c.s||0)*dmax, gazDrift=1;
   E.driftAide=false;E.driftErr=0;
-  if(driftTenu&&u>40&&Math.abs(beta)>0.12){
+  /* en drift demandé, l'aide s'enclenche dès qu'on tourne : la voiture se met en travers même si elle accroche (4 roues motrices) */
+  if(driftTenu&&u>40&&(Math.abs(beta)>0.12||(Math.abs(c.s||0)>0.3&&u>S.vmax*0.25))){
     /* L'AIDE AU DRIFT (comme un pilote qui contre-braque) : la touche de direction règle
        l'ANGLE voulu — vers l'intérieur pour plus d'angle, vers l'extérieur pour moins —
        et les roues avant contre-braquent pour le tenir. La maîtrise rend l'aide plus fine. */
-    const sens=Math.sign(beta), s2=-(c.s||0)*sens;   /* l'intérieur du virage est du côté opposé à la dérive */
+    const sens=Math.abs(beta)>0.05?Math.sign(beta):-Math.sign(c.s||0), s2=-(c.s||0)*sens;   /* l'intérieur du virage est du côté opposé à la dérive */
     const bt=sens*(0.38+0.14*s2);
     const kp=1.1+0.4*(S.maitrise-1);
     dCible=Math.max(-0.7,Math.min(0.7,kp*(beta-bt)-0.08*r));
@@ -1703,6 +1726,7 @@ function majEssai(dt,jx,jy){
     const c=gele?{s:0,g:CMDS.gaz?1:0,b:1,h:false}:lireCommandes(jx,jy);
     if(gele){majMoteur(PAS,0,c.g>0,0,0);continue;}
     if(CMDS.nitro&&E.nitroCharge>=1&&E.stats&&E.stats.nitro){E.nitroT=E.stats.nitro>1?2.6:2;E.nitroCharge=0;CMDS.nitro=false;try{navigator.vibrate&&navigator.vibrate([20,30,60]);}catch(x){}}
+    if(!c.h)c.h=driftAuto(c,PAS);
     info=pasPhysique(PAS,c);
     if(COURSE.actif)pasCourse(PAS);
     if(E.mode==='drift')pasZone(PAS);
@@ -1710,6 +1734,7 @@ function majEssai(dt,jx,jy){
   if(COURSE.actif)majCourseHorsPas(dt);
   if(E.mode==='drift')majZoneHorsPas(dt);
   /* LES EFFETS, une fois par image */
+  {const fb=majEssai.fb&&majEssai.fb.isConnected?majEssai.fb:(majEssai.fb=document.querySelector('#tkPad .frein'));if(fb)fb.classList.toggle('drifte',!!(E.dAuto&&E.dAutoParti));}
   if(info){const {tr,nx,ny,hp,vit}=info;
     if(Math.abs(tr)>30||(E.patine&&vit>8)){
       for(const s of [-10,10]){const px=E.x-nx*18-ny*s, py=E.y-ny*18+nx*s;
@@ -1934,7 +1959,9 @@ body.tk-volant{touch-action:none;overscroll-behavior:none;-webkit-user-select:no
 #tkPad .dir.g{left:12px}#tkPad .dir.d{left:calc(12px + clamp(62px,18vw,80px) + 10px)}
 #tkPad .gaz{right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:clamp(66px,19vw,82px);height:clamp(104px,30vw,124px);background:rgba(20,60,32,.6);box-shadow:inset 0 0 0 2px rgba(92,255,138,.45)}
 #tkPad .gaz.on{background:rgba(92,255,138,.42);box-shadow:inset 0 0 0 2px #5cff8a}
-#tkPad .frein{right:calc(12px + clamp(66px,19vw,82px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:clamp(58px,16vw,70px);height:clamp(58px,16vw,70px);font-size:11px}
+#tkPad .frein{right:calc(12px + clamp(66px,19vw,82px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:clamp(62px,17vw,74px);height:clamp(104px,30vw,124px);font-size:12px;line-height:1.1;text-align:center}
+#tkPad .frein small{display:block;margin-top:5px;font:700 9px -apple-system,sans-serif;letter-spacing:0;opacity:.75;text-transform:uppercase;white-space:nowrap}
+#tkPad .frein.drifte{box-shadow:inset 0 0 0 2px #ff8ac8;background:rgba(255,79,176,.3)}
 #tkPad .drift{right:calc(12px + clamp(66px,19vw,82px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px + clamp(58px,16vw,70px) + 10px);width:clamp(58px,16vw,70px);height:clamp(58px,16vw,70px);border-radius:50%;font-size:11px;box-shadow:inset 0 0 0 3px var(--c,rgba(255,255,255,.2))}
 #tkPad .nitro{right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px + clamp(104px,30vw,124px) + 10px);width:clamp(58px,16vw,70px);height:clamp(50px,14vw,58px);border-radius:16px;font-size:11px;
  background:conic-gradient(rgba(63,224,255,.55) var(--p,100%),rgba(14,10,24,.62) 0);box-shadow:inset 0 0 0 2px rgba(127,232,255,.5)}
@@ -2013,7 +2040,7 @@ function hudMontrer(on){
   vol.addEventListener('pointerup',lacherVol);vol.addEventListener('pointercancel',lacherVol);vol.addEventListener('lostpointercapture',lacherVol);
   vol.addEventListener('touchstart',ev=>ev.preventDefault(),{passive:false});vol.addEventListener('contextmenu',ev=>ev.preventDefault());
   pad.appendChild(vol);
-  const B=[['gaz','gaz','GAZ'],['frein','frein','FREIN'],['drift','drift','DRIFT']];
+  const B=[['gaz','gaz','GAZ'],['frein','frein','FREIN<small>tap : drift</small>']];
   if(E.stats&&E.stats.nitro)B.push(['nitro','nitro','N₂O']);
   const enfonces=new Map();      /* pointerId → commande */
   const dose=(b,ev)=>{const r=b.getBoundingClientRect();return Math.max(0.35,Math.min(1,0.35+0.65*(r.bottom-ev.clientY)/r.height));};
@@ -2038,11 +2065,11 @@ function hudMontrer(on){
       if(m){CMDS[m]=true;if(MODE_CMD==='boutons')ev.preventDefault();}});
     addEventListener('keyup',ev=>{const m={ArrowLeft:'g',ArrowRight:'d',ArrowUp:'gaz',ArrowDown:'frein',' ':'drift',Shift:'nitro'}[ev.key];if(m)CMDS[m]=false;});}
   /* la première fois : comment on conduit */
-  let vu=false;try{vu=localStorage.getItem('bdl.tk.aide4')==='1';}catch(x){}
+  let vu=false;try{vu=localStorage.getItem('bdl.tk.aide5')==='1';}catch(x){}
   if(!vu){const a=document.createElement('div');a.id='tkAide';
-    a.innerHTML=MODE_CMD==='boutons'?'<b>Glisse le doigt</b> sur la bande de gauche pour tourner : plus loin = plus fort.<br><b>GAZ</b> et <b>FREIN</b> se dosent : bas = doux, haut = à fond.<br><b>DRIFT</b> : maintiens-le en tournant, la voiture glisse et se charge (bleu → orange → rose).<br>Finis le drift <b>sans toucher</b> : turbo et points !'
+    a.innerHTML=MODE_CMD==='boutons'?'<b>Glisse le doigt</b> sur la bande de gauche pour tourner : plus loin = plus fort.<br><b>GAZ</b> et <b>FREIN</b> se dosent : bas = doux, haut = à fond.<br><b>DRIFT</b> : en virage, <b>un petit coup de FREIN</b> puis remets les GAZ. Garde les gaz : ça glisse et se charge (bleu → orange → rose).<br>Lâche les gaz pour reprendre l’adhérence. Finis <b>sans toucher</b> : turbo et points !'
       :'<b>Pouce gauche</b> : la direction, la voiture accélère toute seule.<br><b>DRIFT</b> : maintiens-le en tournant.<br>Finis le drift <b>sans toucher</b> : turbo et points !';
-    document.body.appendChild(a);setTimeout(()=>{a.style.opacity='0';setTimeout(()=>a.remove(),700);},6500);try{localStorage.setItem('bdl.tk.aide4','1');}catch(x){}}
+    document.body.appendChild(a);setTimeout(()=>{a.style.opacity='0';setTimeout(()=>a.remove(),700);},6500);try{localStorage.setItem('bdl.tk.aide5','1');}catch(x){}}
   (function boucle(){
     if(!document.getElementById('tkHud')||!ESSAI.actif)return;
     const E2=ESSAI, niv=niveauCharge();
