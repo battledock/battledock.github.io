@@ -1613,6 +1613,22 @@ var HG_BOSS={
   nuit:     {nom:'L\u2019OMBRE DU QUAI',type:'invoc',pal:{z:'#101820',y:'#203040',g:'#101820',h:'#1a2a3a',i:'#0a1018',j:'#ff3b3b'}},
   braises:  {nom:'LE FORGERON',type:'salve',c:'#ff9a2a',pal:{z:'#2b2522',y:'#ff6a1a',g:'#2b2522',h:'#473c35',i:'#1a1412','5':'#c87850','6':'#a85a38','7':'#7a3a20',j:'#ffb24a'}}
 };
+/* LES BOSS EN TROIS PHASES : chacun a son repertoire, et chaque phase ajoute une attaque.
+   charge = vise puis fonce (s'il heurte un mur, il est sonne : point faible, degats x2)
+   onde = frappe le sol, un cercle rouge grandit puis explose (on roule a travers, ou on s'eloigne)
+   pluie = des cercles marques au sol autour de toi, ils explosent une seconde plus tard
+   salve = un anneau de projectiles, avec des trous ; jet = une rafale en eventail vers toi
+   invoc = il appelle des renforts */
+var HG_BOSS_ATQ={
+  entrepot:[['charge'],['charge','onde'],['charge','onde','charge']],
+  marche:[['charge'],['charge','jet'],['jet','charge','invoc']],
+  glace:[['salve'],['salve','pluie'],['pluie','salve','jet']],
+  neon:[['jet'],['jet','salve'],['salve','pluie','jet']],
+  cale:[['charge'],['charge','invoc'],['onde','charge','invoc']],
+  cimetiere:[['invoc'],['invoc','pluie'],['pluie','onde','invoc']],
+  nuit:[['charge'],['charge','invoc'],['jet','charge','invoc']],
+  braises:[['salve'],['salve','onde'],['onde','pluie','salve']]
+};
 function hgPalBoss(B){var P={};for(var k in HGP_G)P[k]=HGP_G[k];for(var k2 in (B&&B.pal||{}))P[k2]=B.pal[k2];return P;}
 
 MOTEUR.hangar={
@@ -1830,7 +1846,7 @@ MOTEUR.hangar={
     }
     for(var e2=0;e2<s.obs.length;e2++)s.obs[e2].ex=false;
     for(var e3=0;e3<nb&&e3<bidons.length;e3++)bidons[e3].ex=true;
-    s.z=[];s.b=[];s.arcs=[];s.feux=[];s.morts=[];s.eb=[];s.explos=[];
+    s.z=[];s.b=[];s.arcs=[];s.feux=[];s.morts=[];s.eb=[];s.explos=[];s.zd=[];
     s.bouclier=((PERSO.niveaux||{}).armure||0)+(s.am.bouclier||0);
     s.reste=Math.min(28, 5+n*2);
     s.aNaitre=s.reste;
@@ -1847,6 +1863,7 @@ MOTEUR.hangar={
         if(s.ram.some(function(r){return r.t==='carbu'&&Math.hypot(r.x-cx2,r.y-cy2)<90;}))continue;
         s.ram.push({x:cx2,y:cy2,t:'carbu'});kc++;}}
     if(tO==='cle')s.obj.cleT=1800;                 /* le porteur sort un peu apres les autres */
+    if(n%5===0){s.obj={t:'boss',fait:false,n:0};s.reste=1;s.aNaitre=0;s.bossA=1400;s.zd=[];}
     if(tO==='evasion'){s.obj.T=10000;s.obj.gaz=0;s.obj.de=s.entree;}
     /* LE MODIFICATEUR : une salle sur trois, a partir de la quatrieme, change une regle */
     s.mod=(n>=4&&n%5!==0&&Math.random()<0.34)?['rapides','butin','ricochet','noir','blindes'][Math.floor(Math.random()*5)]:null;
@@ -2102,6 +2119,8 @@ MOTEUR.hangar={
              plus : une arme a un seul gros coup ne vaut pas mieux
              qu'une cadence contre lui, et c'est tout le propos. */
           var dgB=Math.max(1,b.deg-(z.blinde||0));
+          if(z.gros&&z.stun>0){dgB*=2;if(Math.random()<0.4)s.part.push({x:z.x,y:z.y-14,vie:400,t:'crit',vx:0,vy:-0.02});}
+          if(z.gros&&z.inv>0)dgB=0;
           if((s.am.crit||0)&&Math.random()<0.12*s.am.crit){dgB*=3;s.part.push({x:z.x,y:z.y-12,vie:520,t:'crit',vx:0,vy:-0.02});}
           if(s.am.gel)z.gel=1200*s.am.gel;
           for(var et=0;et<3;et++)s.part.push({x:b.x,y:b.y,vie:160+Math.random()*80,t:'etincelle',vx:-b.vx*0.15+(Math.random()-0.5)*0.12,vy:-b.vy*0.15+(Math.random()-0.5)*0.12});
@@ -2145,6 +2164,7 @@ MOTEUR.hangar={
     }
 
     /* ---------- la naissance ---------- */
+    if(s.bossA>0&&s.pause<=0){s.bossA-=dt;if(s.bossA<=0)this.naitreBoss(s);}
     var rythme=s.obj&&s.obj.t==='survivre'?300:(s.obj&&s.obj.t!=='nettoyer'?520:420);
     if(s.aNaitre>0&&s.pause<=0&&s.z.length<11&&Math.random()<dt/rythme){
       this.naitre(s);
@@ -2240,29 +2260,7 @@ MOTEUR.hangar={
       var vz=z2.v*(Z.glace?0.78:(Z.serre?1.22:1))*(z2.gel>0?0.5:1)*(z2.rage>0?1.4:1);
       /* ---------- LE BOSS ---------- */
       z2.horsPas=!!((z2.cmp==='kami'&&z2.arme>0)||(z2.cmp==='defonce'&&z2.cogne>0));
-      if(z2.gros&&z2.boss){
-        var Bo=z2.boss;z2.bt=(z2.bt||0)+dt;
-        if(Bo.type==='charge'){
-          if(!z2.ch&&z2.bt>2600){z2.ch='vise';z2.bt=0;}
-          else if(z2.ch==='vise'){z2.horsPas=true;z2.clign=50;z2.cdir=Math.atan2(j.y-z2.y,j.x-z2.x);
-            if(z2.bt>600){z2.ch='fonce';z2.bt=0;s.sec=Math.max(s.sec,60);}}
-          else if(z2.ch==='fonce'){z2.horsPas=true;
-            this.bouger(s,z2,Math.cos(z2.cdir)*0.21*dt,Math.sin(z2.cdir)*0.21*dt,z2.r);
-            if(Math.random()<0.6)s.part.push({x:z2.x+(Math.random()-0.5)*14,y:z2.y+8,vie:260,t:'pous',vx:-Math.cos(z2.cdir)*0.04,vy:-0.01});
-            if(z2.bt>700){z2.ch=null;z2.bt=0;}}
-        }else if(Bo.type==='salve'&&z2.bt>2300){
-          z2.bt=0;s.sec=Math.max(s.sec,50);
-          var nS=12, dec=Math.random()*0.5;
-          for(var ks=0;ks<nS;ks++){var as=ks/nS*6.283+dec;
-            s.eb.push({x:z2.x,y:z2.y-6,vx:Math.cos(as)*0.075,vy:Math.sin(as)*0.075,c:Bo.c||'#ff9a2a',vie:4200});}
-        }else if(Bo.type==='invoc'&&z2.bt>3800&&s.z.length<14){
-          z2.bt=0;
-          for(var ki=0;ki<2;ki++){var ai=Math.random()*6.283;
-            var xi=Math.max(HG_MUR+12,Math.min(HG_L-HG_MUR-12,z2.x+Math.cos(ai)*28)), yi=Math.max(HG_MUR+24,Math.min(HG_H-HG_MUR-14,z2.y+Math.sin(ai)*22));
-            if(!this.heurte(s,xi,yi,5))s.z.push({x:xi,y:yi,v:HG_Z[0].v*1.1,pv:2+Math.floor(s.salle/4),pvm:2,pts:4,r:5,art:Math.random()<0.5?0:4,
-              mir:false,pouss:0,pa:0,clign:0,pas:0,feu:false,blinde:0,gros:false,nait:700,proche:false,dj:999,sbire:true});}
-        }
-      }
+      if(z2.gros&&z2.boss){if(this.bossPas(s,z2,dt,j))z2.horsPas=true;}
       if(z2.porteur){/* il fuit : a l'oppose du joueur quand on approche, sinon il erre */
         if(d<150){ax=-dx/d;ay=-dy/d;}else{z2.err=(z2.err||Math.random()*6.283)+(Math.random()-0.5)*0.2;ax=Math.cos(z2.err);ay=Math.sin(z2.err);}
         if(z2.x<HG_MUR+20||z2.x>HG_L-HG_MUR-20)ax+=(HG_L/2-z2.x)/60;if(z2.y<HG_MUR+30||z2.y>HG_H-HG_MUR-20)ay+=(HG_H/2-z2.y)/80;
@@ -2279,6 +2277,13 @@ MOTEUR.hangar={
       }
     }
 
+    /* ---------- les zones marquees au sol (onde, pluie) ---------- */
+    for(var izd=(s.zd||[]).length-1;izd>=0;izd--){var Zd=s.zd[izd];Zd.t+=dt;
+      if(Zd.t>=Zd.T){s.zd.splice(izd,1);
+        for(var e7=0;e7<(Zd.c==='onde'?26:10);e7++){var a7=Math.random()*6.283, v7=0.03+Math.random()*0.1;s.part.push({x:Zd.x+Math.cos(a7)*Zd.r*0.5,y:Zd.y+Math.sin(a7)*Zd.r*0.5,vie:260,t:Zd.c==='glace'?'eclat':'flam',vx:Math.cos(a7)*v7,vy:Math.sin(a7)*v7});}
+        s.sec=Math.max(s.sec,Zd.c==='onde'?160:60);
+        if(Zd.c==='feu')this.poserFeu(s,Zd.x,Zd.y,9);
+        if(Math.hypot(j.x-Zd.x,j.y-Zd.y)<Zd.r&&s.inv<=0){var a8=Math.atan2(j.y-Zd.y,j.x-Zd.x);if(this.blesser(s,-Math.cos(a8),-Math.sin(a8)))return;}}}
     /* ---------- les cadavres pieges sautent, une image apres leur chute ---------- */
     for(var ix=(s.explos||[]).length-1;ix>=0;ix--){var xp=s.explos[ix];xp.t-=dt;
       if(xp.t<=0){s.explos.splice(ix,1);this.boum(s,xp.x,xp.y,xp.r,xp.deg);}}
@@ -2621,6 +2626,70 @@ MOTEUR.hangar={
   /* L'EXPLOSION DU KAMIKAZE : elle blesse le joueur s'il est trop pres, et les autres zombies */
   kaboum:function(s,z){var cx=z.x, cy=z.y;this.boum(s,cx,cy,36,5);
     var dj=Math.hypot(s.j.x-cx,s.j.y-cy);if(dj<30&&s.inv<=0){var aj=Math.atan2(s.j.y-cy,s.j.x-cx);if(this.blesser(s,-Math.cos(aj),-Math.sin(aj)))return true;}return false;},
+  naitreBoss:function(s){
+    var B=HG_BOSS[s.cle]||HG_BOSS.entrepot, grand=(s.salle%10===0);
+    var P=s.porte, x=HG_L/2, y=HG_H*0.35;
+    if(Math.hypot(x-s.j.x,y-s.j.y)<110)y=HG_H*0.65;
+    var pv=Math.round((70+s.salle*7)*(grand?1.5:1));
+    s.z.push({x:x,y:y,v:HG_GROS.v*(grand?1.15:1),pv:pv,pvm:pv,pts:grand?600:300,r:grand?12:10,art:-1,mir:false,pouss:0,pa:0,clign:0,pas:0,
+              feu:false,blinde:0,gros:true,grand:grand,nait:900,proche:false,dj:999,boss:B,pal:hgPalBoss(B),
+              phase:0,atq:null,at:0,repos:1800,file:0,stun:0});
+    s.mot=(grand?'GRAND BOSS · ':'BOSS · ')+B.nom;s.motT=2200;s.sec=Math.max(s.sec,200);
+  },
+  /* LE CERVEAU DU BOSS : un repos, puis une attaque annoncee, puis un repos — de plus en plus court */
+  bossPas:function(s,z,dt,j){
+    var tab=HG_BOSS_ATQ[s.cle]||HG_BOSS_ATQ.entrepot, ph=z.phase, vit=[1,1.25,1.5][ph]*(z.grand?1.1:1);
+    /* le changement de phase : un rugissement, une onde qui repousse, des renforts */
+    var seuil=ph===0?0.66:ph===1?0.33:-1;
+    if(ph<2&&z.pv/z.pvm<seuil){z.phase++;z.atq=null;z.repos=1100;z.stun=0;z.inv=1000;s.mot='PHASE '+(z.phase+1);s.motT=1200;s.sec=Math.max(s.sec,260);
+      var aj=Math.atan2(j.y-z.y,j.x-z.x);if(Math.hypot(j.x-z.x,j.y-z.y)<70){j.vx+=Math.cos(aj)*0.3;j.vy+=Math.sin(aj)*0.3;}
+      this.renforts(s,z,z.grand?3:2);
+      if(z.grand&&z.phase===1){/* l'arene change : des bidons tombent du plafond */
+        for(var kb=0;kb<3;kb++){var bx=HG_MUR+30+Math.random()*(HG_L-2*HG_MUR-60), by=HG_MUR+40+Math.random()*(HG_H-2*HG_MUR-80);
+          if(Math.hypot(bx-j.x,by-j.y)>50){var ob=this.pose(s,bx,by,14,16,'baril');if(ob)ob.ex=true;}}}
+      if(z.grand&&z.phase===2){for(var kf=0;kf<10;kf++)this.poserFeu(s,HG_MUR+20+Math.random()*(HG_L-2*HG_MUR-40),HG_MUR+30+Math.random()*(HG_H-2*HG_MUR-60),10);}
+      return true;}
+    if(z.inv>0){z.inv-=dt;return true;}
+    if(z.stun>0){z.stun-=dt;z.clign=40;return true;}
+    if(!z.atq){z.repos-=dt*vit;if(z.repos>0)return false;
+      var L=tab[Math.min(2,ph)];z.atq=L[z.file%L.length];z.file++;z.at=0;z.cdir=Math.atan2(j.y-z.y,j.x-z.x);return true;}
+    z.at+=dt*vit;var A=z.atq, fin=false;
+    if(A==='charge'){
+      if(z.at<700){z.cdir=Math.atan2(j.y-z.y,j.x-z.x);z.ch='vise';}
+      else{z.ch='fonce';var px=z.x, py=z.y;this.bouger(s,z,Math.cos(z.cdir)*0.24*dt,Math.sin(z.cdir)*0.24*dt,z.r);
+        if(Math.random()<0.6)s.part.push({x:z.x+(Math.random()-0.5)*14,y:z.y+8,vie:260,t:'pous',vx:-Math.cos(z.cdir)*0.04,vy:-0.01});
+        var bloque=Math.hypot(z.x-px,z.y-py)<0.24*dt*0.4;
+        if(bloque){z.stun=1400;s.sec=Math.max(s.sec,180);s.mot='SONNÉ · POINT FAIBLE';s.motT=900;fin=true;}
+        if(z.at>1500)fin=true;}}
+    else if(A==='onde'){
+      if(z.at<10){s.zd.push({x:z.x,y:z.y,r:70,t:0,T:750,c:'onde'});}
+      if(z.at>950){z.stun=700;fin=true;}}
+    else if(A==='pluie'){
+      if(z.at<10){var n=4+ph*2;for(var k=0;k<n;k++){var a=Math.random()*6.283, dd=k===0?0:20+Math.random()*60;
+        s.zd.push({x:Math.max(HG_MUR+8,Math.min(HG_L-HG_MUR-8,j.x+Math.cos(a)*dd)),y:Math.max(HG_MUR+10,Math.min(HG_H-HG_MUR-8,j.y+Math.sin(a)*dd)),r:16,t:-k*90,T:950,c:s.cle==='braises'?'feu':(s.cle==='glace'?'glace':'pluie')});}}
+      if(z.at>1300)fin=true;}
+    else if(A==='salve'){
+      if(z.at>600&&!z.tire){z.tire=1;s.sec=Math.max(s.sec,60);var nS=14+ph*4, dec=Math.random()*6.283, trou=Math.floor(Math.random()*nS);
+        for(var ks=0;ks<nS;ks++){if(Math.abs(ks-trou)<=1)continue;var as=ks/nS*6.283+dec;
+          s.eb.push({x:z.x,y:z.y-6,vx:Math.cos(as)*0.075,vy:Math.sin(as)*0.075,c:z.boss.c||'#ff9a2a',vie:4200});}}
+      if(z.at>900){z.tire=0;fin=true;}}
+    else if(A==='jet'){
+      var nJ=3+ph*2;
+      if(z.at>500&&(z.jt=(z.jt||0)+dt)>110&&(z.nj||0)<nJ){z.jt=0;z.nj=(z.nj||0)+1;var aj2=Math.atan2(j.y-z.y,j.x-z.x)+(Math.random()-0.5)*0.35;
+        s.eb.push({x:z.x,y:z.y-8,vx:Math.cos(aj2)*0.12,vy:Math.sin(aj2)*0.12,c:z.boss.c||'#ffd21f',vie:3000});}
+      if(z.at>500+nJ*120+300){z.nj=0;fin=true;}}
+    else if(A==='invoc'){
+      if(z.at>500&&!z.tire){z.tire=1;this.renforts(s,z,2+ph);}
+      if(z.at>900){z.tire=0;fin=true;}}
+    if(fin){z.atq=null;z.ch=null;z.repos=[2200,1700,1300][ph];}
+    return A==='charge'||(A!=='invoc'&&z.at<600)||A==='onde';
+  },
+  renforts:function(s,z,n){
+    for(var ki=0;ki<n&&s.z.length<16;ki++){var ai=Math.random()*6.283;
+      var xi=Math.max(HG_MUR+12,Math.min(HG_L-HG_MUR-12,z.x+Math.cos(ai)*30)), yi=Math.max(HG_MUR+24,Math.min(HG_H-HG_MUR-14,z.y+Math.sin(ai)*24));
+      if(!this.heurte(s,xi,yi,5))s.z.push({x:xi,y:yi,v:HG_Z[0].v*1.1,pv:2+Math.floor(s.salle/4),pvm:2,pts:4,r:5,art:Math.random()<0.5?0:4,
+        mir:false,pouss:0,pa:0,clign:0,pas:0,feu:false,blinde:0,gros:false,nait:600,proche:false,dj:999,sbire:true});}
+  },
   /* LE PORTEUR DE CLE : rapide, il fuit quand on approche, et lache la cle en tombant */
   naitrePorteur:function(s){
     var x,y,ess=0;do{x=HG_MUR+20+Math.random()*(HG_L-2*HG_MUR-40);y=HG_MUR+30+Math.random()*(HG_H-2*HG_MUR-60);ess++;}
@@ -2734,6 +2803,10 @@ MOTEUR.hangar={
     if(s.morts.length>24)s.morts.shift();
     s.morts.push({x:z.x,y:z.y,art:z.art,gros:z.gros,mir:z.mir,t:0,pal:z.pal,
                   dir:(Math.cos(z.pa||0)>=0)?1:-1});
+    if(z.gros&&z.boss&&s.obj&&s.obj.t==='boss'){s.obj.fait=true;s.zd=[];s.eb=[];s.mot=(z.grand?'GRAND BOSS':'BOSS')+' ABATTU';s.motT=1600;s.sec=Math.max(s.sec,300);
+      for(var ks2=s.z.length-1;ks2>=0;ks2--){if(s.z[ks2]!==z&&s.z[ks2].sbire){var zs=s.z[ks2];s.morts=s.morts||[];s.morts.push({x:zs.x,y:zs.y,art:zs.art,gros:false,mir:zs.mir,t:0,dir:1});s.z.splice(ks2,1);}}
+      var ouv=HG_DEBLOQUE.filter(function(c){return Math.max(HG_REC,s.score)>=c.s;}).map(function(c){return c.a;}).filter(function(k){return k!==s.arme;});
+      if(ouv.length)s.ram.push({x:z.x+12,y:z.y,t:ouv[Math.floor(Math.random()*ouv.length)]});}
     if(z.cmp==='kami'&&!z.saute){z.saute=true;s.explos=s.explos||[];s.explos.push({x:z.x,y:z.y,r:34,deg:4,t:90});}
     if(z.elite&&Math.random()<0.6)s.ram.push({x:z.x+6,y:z.y,t:Math.random()<0.4?'vie':'mun'});
     if(z.porteur){s.ram.push({x:z.x,y:z.y,t:'cle'});s.mot='LA CLÉ EST TOMBÉE';s.motT=1100;}
@@ -3054,6 +3127,12 @@ MOTEUR.hangar={
         R(ra.x-8,ra.y-6+fl,16,1,'rgba(240,196,90,.5)');
       }
     }
+    /* LES ATTAQUES ANNONCEES : un disque qui se remplit, puis ca saute */
+    for(var izd2=0;izd2<(s.zd||[]).length;izd2++){var Zd2=s.zd[izd2];if(Zd2.t<0)continue;var f9=Math.min(1,Zd2.t/Zd2.T);
+      var col=Zd2.c==='glace'?'127,232,255':(Zd2.c==='feu'?'255,140,40':'255,60,40');
+      G.save();G.fillStyle='rgba('+col+','+(0.12+0.18*f9)+')';G.beginPath();G.arc(Zd2.x,Zd2.y,Zd2.r,0,7);G.fill();
+      G.fillStyle='rgba('+col+','+(0.35*f9)+')';G.beginPath();G.arc(Zd2.x,Zd2.y,Zd2.r*f9,0,7);G.fill();
+      G.strokeStyle='rgba('+col+',.85)';G.lineWidth=1;G.setLineDash(Zd2.c==='onde'?[]:[3,2]);G.beginPath();G.arc(Zd2.x,Zd2.y,Zd2.r,0,7);G.stroke();G.restore();}
     /* LES CADAVRES, sous les vivants */
     for(var im=0;im<(s.morts||[]).length;im++)hgCadavre(s.morts[im],s.t);
     /* LES ZOMBIES, TRIES PAR PROFONDEUR : celui qui est plus bas est plus
@@ -3113,7 +3192,11 @@ MOTEUR.hangar={
         /* il se jette sur sa proie : un petit elan, a contretemps */
         var elan=(e2.proche&&e2.dj<e2.r+14)?Math.round(Math.abs(Math.sin(s.t/90))*2)*(e2.mir?-1:1):0;
         if(e2.gros){
+          if(e2.grand){G.save();G.globalAlpha=0.3+0.15*Math.sin(s.t/200);G.fillStyle=(e2.boss&&e2.boss.c)||'#ff4040';G.beginPath();G.ellipse(e2.x,e2.y+12,18,7,0,0,7);G.fill();G.restore();}
           hgZombie(e2,HGA_G,e2.pal||HGP_G,Math.round(e2.x-10)+tang+elan,Math.round(e2.y+6-HGA_G.length)+bal,s.t);
+          if(e2.stun>0){for(var st=0;st<3;st++){var as2=s.t/200+st*2.09;R(Math.round(e2.x+Math.cos(as2)*9-1),Math.round(e2.y-24+Math.sin(as2)*3),2,2,'#ffe060');}}
+          if(e2.inv>0){G.save();G.strokeStyle='rgba(255,255,255,'+(0.4+0.3*Math.sin(s.t/60))+')';G.lineWidth=2;G.beginPath();G.arc(e2.x,e2.y-6,16,0,7);G.stroke();G.restore();}
+          if(e2.atq&&e2.atq!=='charge'&&e2.at<600){G.save();G.globalCompositeOperation='lighter';G.fillStyle='rgba(255,80,40,'+(e2.at/600*0.35)+')';G.beginPath();G.arc(e2.x,e2.y-6,14,0,7);G.fill();G.restore();}
           /* la charge s'annonce : un cercle rouge au sol, la ligne de sa course */
           if(e2.ch==='vise'){G.save();G.strokeStyle='rgba(255,60,50,.7)';G.setLineDash([3,3]);G.beginPath();G.moveTo(e2.x,e2.y);
             G.lineTo(e2.x+Math.cos(e2.cdir)*120,e2.y+Math.sin(e2.cdir)*120);G.stroke();G.restore();}
@@ -3313,11 +3396,7 @@ MOTEUR.hangar={
       R(HX+iv*9,5,7,6,on?'#d8342a':'rgba(255,255,255,.14)');
       if(on){R(HX+iv*9,5,7,1,'#ff6a5a');R(HX+iv*9+2,7,3,2,'#ff9a8a');}
     }
-    /* LA BARRE DU BOSS, en haut de l'ecran, avec son nom */
-    for(var ibz=0;ibz<s.z.length;ibz++){var zb=s.z[ibz];if(!zb.gros||!zb.boss)continue;
-      var yb2=H-16;R(10,yb2,L-20,8,'rgba(0,0,0,.65)');
-      R(11,yb2+1,(L-22)*Math.max(0,zb.pv/zb.pvm),6,'#d8342a');R(11,yb2+1,(L-22)*Math.max(0,zb.pv/zb.pvm),1,'#ff8a7a');
-      G.fillStyle='#f4ecd8';G.font='bold 6px ui-monospace,monospace';G.textAlign='center';G.fillText(zb.boss.nom,L/2,yb2-2);G.textAlign='left';break;}
+    /* (la barre du boss est dessinee plus bas, sous le tableau, avec ses phases) */
     G.fillStyle='#f0d78a';G.font='bold 8px ui-monospace,monospace';
     G.textAlign='right';
     G.fillText(s.score.toLocaleString('fr-FR'),L-5,11);
@@ -3349,8 +3428,14 @@ MOTEUR.hangar={
     else if(Ob.t==='carbu')txO='BIDONS '+Ob.n+'/3';
     else if(Ob.t==='cle')txO=(Ob.cleT>0?'LE PORTEUR ARRIVE':'LA CLÉ');
     else if(Ob.t==='evasion')txO='PORTE DANS '+Math.ceil(Math.max(0,Ob.T)/1000)+' S';
+    else if(Ob.t==='boss')txO='LE BOSS';
     else txO='RESTE '+s.reste;
     G.fillText(txO,L-5,21);
+    var BOSSZ=null;for(var ib2=0;ib2<s.z.length;ib2++)if(s.z[ib2].gros&&s.z[ib2].boss){BOSSZ=s.z[ib2];break;}
+    if(BOSSZ){var bw=L-60, bx2=30, by2=46;R(bx2-1,by2-1,bw+2,6,'rgba(0,0,0,.7)');
+      R(bx2,by2,bw*Math.max(0,BOSSZ.pv/BOSSZ.pvm),4,BOSSZ.stun>0?'#ffe060':'#d8342a');
+      R(bx2+bw*0.66,by2-1,1,6,'#fff');R(bx2+bw*0.33,by2-1,1,6,'#fff');
+      G.textAlign='center';G.fillStyle='#ffd0c0';G.font='bold 6px ui-monospace,monospace';G.fillText((BOSSZ.grand?'★ ':'')+BOSSZ.boss.nom+' · PHASE '+(BOSSZ.phase+1),L/2,by2-3);G.textAlign='right';G.font='bold 7px ui-monospace,monospace';}
     if(s.mod){G.fillStyle='#b8a0ff';G.font='bold 6px ui-monospace,monospace';G.fillText({rapides:'RAPIDES ×1,5',butin:'DOUBLE BUTIN',ricochet:'RICOCHETS',noir:'COUPURE',blindes:'BLINDÉS ×1,5'}[s.mod],L-5,29);G.font='bold 7px ui-monospace,monospace';}
     G.textAlign='left';
     G.font='bold 8px ui-monospace,monospace';
