@@ -274,7 +274,7 @@ const FICHES={
   Lamborghini:{vmax:218,acc:200,grip:10.8,dir:2.95,stab:1.15,glisse:3.0,maitrise:0.9, trans:'4',wf:0.43,masse:1.1, turbo:0},    /* Huracán : V10 qui monte haut, quatre roues motrices, rassurante */
   Porsche:    {vmax:208,acc:178,grip:11.8,dir:3.4, stab:1.2, glisse:2.9,maitrise:0.95,trans:'P',wf:0.39,masse:0.95,turbo:0,frein:390},  /* 911 GT3 RS : précise, freins énormes, l'arrière lourd */
   Nissan:     {vmax:210,acc:215,grip:11.4,dir:2.75,stab:1.25,glisse:3.2,maitrise:0.85,trans:'4',wf:0.55,masse:1.25,turbo:0.8},  /* GT-R : fusée au départ, lourde, sous-vireuse */
-  Ferrari:    {vmax:222,acc:190,grip:8.2, dir:3.0, stab:0.95,glisse:2.1,maitrise:1.1, trans:'P',wf:0.44,masse:0.85,turbo:1.6}}; /* F40 : légère, gros turbos tardifs, sauvage */
+  Ferrari:    {vmax:222,acc:165,grip:8.2, dir:3.0, stab:0.95,glisse:2.1,maitrise:1.1, trans:'P',wf:0.44,masse:0.85,turbo:1.6}}; /* F40 : légère, gros turbos tardifs, sauvage */
 /* les pièces : multiplicateurs (×) ajoutés à 1 — +0.1 = +10 % */
 const PIECES={
   moteur:      {1:{vmax:.08},2:{vmax:.16},3:{vmax:.25}},
@@ -292,7 +292,9 @@ function statsVoiture(marque,t){
   for(const c of Object.keys(M))S[c]=S[c]*(1+M[c]);
   S.nitro=+t.nitro||0;
   /* L'ÉCHELLE DE VITESSE : la carte est en pixels, et 250 km/h doivent se SENTIR — cinq longueurs de voiture par seconde, pas trois */
-  S.vmax*=VITESSE_K;S.acc*=VITESSE_K;S.frein*=VITESSE_K;
+  S.vmax*=VITESSE_K;S.frein*=VITESSE_K*0.8;
+  /* L'ACCÉLÉRATION RÉALISTE (compressée pour le jeu) : 0-100 en 1,3 à 2 s selon la voiture, 0-200 en 4 à 6 s */
+  S.acc*=VITESSE_K*0.42;
   return S;
 }
 /* les notes du showroom et de l'atelier, sur 10, lues dans la même fiche */
@@ -1335,20 +1337,20 @@ const VOIT_PRET={BMW:{marque:'BMW',modele:'M3 E46',id:'bmw-m3-e46'},Toyota:{marq
   Lamborghini:{marque:'Lamborghini',modele:'Huracán',id:'lamborghini-huracan'},Ferrari:{marque:'Ferrari',modele:'F40',id:'ferrari-f40'}};
 const LICENCES=[
   {id:'C',nom:'Licence C',titre:'Débutant',prime:300000,coul:'#7fe8ff',ep:[
-    {id:'C1',nom:'Premier tour',desc:'Un tour du Tokyo Circuit, seul en piste.',type:'chrono',circuit:'tokyo',voiture:'BMW',tours:1,seuils:[48,43,39.5]},
+    {id:'C1',nom:'Premier tour',desc:'Un tour du Tokyo Circuit, seul en piste.',type:'chrono',circuit:'tokyo',voiture:'BMW',tours:1,seuils:[47.5,42.5,39.5]},
     {id:'C2',nom:'Premiers drifts',desc:'Une manche de 60 s dans la zone de drift.',type:'drift',voiture:'Toyota',seuils:[5000,15000,35000]},
     {id:'C3',nom:'Course aux Docks',desc:'Deux tours contre cinq pilotes, entre les conteneurs.',type:'course',circuit:'docks',voiture:'BMW',tours:2,niv:0.9,seuils:[3,2,1]}]},
   {id:'B',nom:'Licence B',titre:'Pilote',prime:800000,coul:'#5cff8a',ep:[
-    {id:'B1',nom:'Les lacets d’Haruna',desc:'Un tour du Mont Haruna, seul.',type:'chrono',circuit:'haruna',voiture:'Toyota',tours:1,seuils:[62.5,56,51.5]},
-    {id:'B2',nom:'Précision aux Docks',desc:'Un tour des Docks en 911, seul.',type:'chrono',circuit:'docks',voiture:'Porsche',tours:1,seuils:[39,35,32.5]},
-    {id:'B3',nom:'Le grand prix de Tokyo',desc:'Trois tours contre cinq pilotes.',type:'course',circuit:'tokyo',voiture:'Toyota',tours:3,niv:0.9,seuils:[3,2,1]}]},
+    {id:'B1',nom:'Les lacets d’Haruna',desc:'Un tour du Mont Haruna, seul.',type:'chrono',circuit:'haruna',voiture:'Toyota',tours:1,seuils:[65,58,54.5]},
+    {id:'B2',nom:'Précision aux Docks',desc:'Un tour des Docks en 911, seul.',type:'chrono',circuit:'docks',voiture:'Porsche',tours:1,seuils:[40,35.5,33]},
+    {id:'B3',nom:'Le grand prix de Tokyo',desc:'Trois tours contre cinq pilotes.',type:'course',circuit:'tokyo',voiture:'Toyota',tours:3,niv:0.85,seuils:[3,2,1]}]},
   {id:'A',nom:'Licence A',titre:'Expert',prime:1500000,coul:'#ffd21f',ep:[
-    {id:'A1',nom:'Wangan à fond',desc:'Un tour de l’autoroute en Huracán, seul.',type:'chrono',circuit:'wangan',voiture:'Lamborghini',tours:1,seuils:[38,33,30]},
-    {id:'A2',nom:'Duel sur la montagne',desc:'Deux tours d’Haruna contre cinq pilotes.',type:'course',circuit:'haruna',voiture:'Porsche',tours:2,seuils:[3,2,1]},
+    {id:'A1',nom:'Wangan à fond',desc:'Un tour de l’autoroute en Huracán, seul.',type:'chrono',circuit:'wangan',voiture:'Lamborghini',tours:1,seuils:[36,32.5,30.5]},
+    {id:'A2',nom:'Duel sur la montagne',desc:'Deux tours d’Haruna contre cinq pilotes.',type:'course',circuit:'haruna',voiture:'Porsche',tours:2,niv:0.92,seuils:[3,2,1]},
     {id:'A3',nom:'Maître du drift',desc:'Une manche de drift en 911.',type:'drift',voiture:'Porsche',seuils:[15000,35000,60000]}]},
   {id:'S',nom:'Licence S',titre:'Légende',prime:4000000,coul:'#ff4fb0',ep:[
     {id:'S1',nom:'La nuit du Wangan',desc:'Deux tours d’autoroute en F40, dans le trafic.',type:'course',circuit:'wangan',voiture:'Ferrari',tours:2,seuils:[3,2,1]},
-    {id:'S2',nom:'Haruna en F40',desc:'Un tour de montagne, gros turbos, seul.',type:'chrono',circuit:'haruna',voiture:'Ferrari',tours:1,seuils:[60,54,50]},
+    {id:'S2',nom:'Haruna en F40',desc:'Un tour de montagne, gros turbos, seul.',type:'chrono',circuit:'haruna',voiture:'Ferrari',tours:1,seuils:[65,58.5,54.5]},
     {id:'S3',nom:'La bête des Docks',desc:'Trois tours des Docks en GT-R contre cinq pilotes.',type:'course',circuit:'docks',voiture:'Nissan',tours:3,niv:1.04,seuils:[3,2,1]}]}];
 const MED=['—','BRONZE','ARGENT','OR'], MED_C=['#8a8794','#d08a4a','#d8dbe6','#ffd21f'], MED_E=['','🥉','🥈','🥇'];
 function carriere(){try{const c=JSON.parse(localStorage.getItem('bdl.tk.carriere')||'{}');c.med=c.med||{};c.best=c.best||{};c.lic=c.lic||{};return c;}catch(x){return {med:{},best:{},lic:{}};}}
@@ -1487,14 +1489,14 @@ function lireCommandes(jx,jy){
    sur le téléphone ; « Copier » les met dans le presse-papier pour les envoyer et les rendre définitives. */
 const RG_DEF=[
   ['Drift',[
-    ['dAngle','Angle de base',0.42,0.15,0.75,0.01,'rad'],
-    ['dAngleMax','Angle en plus (volant dedans)',0.33,0,0.6,0.01,'rad'],
-    ['dRot','Rotation (courbe plus ou moins serrée)',1,0.4,1.8,0.05,'×'],
+    ['dAngle','Angle donné par les gaz',0.52,0.2,0.8,0.01,'rad'],
+    ['dAngleMax','Angle en plus (volant dedans)',0.25,0,0.5,0.01,'rad'],
+    ['dRot','Accroche en drift (courbe serrée)',1,0.5,1.6,0.05,'×'],
     ['dReponse','Vitesse de mise en travers',4,1.5,9,0.1,''],
     ['dFrottement','Perte de vitesse en drift',1,0.2,2.5,0.05,'×'],
     ['dSortie','Vitesse de redressement',5.5,2,12,0.1,''],
     ['dDeclenche','Durée max du tap frein (s)',0.3,0.12,0.5,0.01,'s'],
-    ['dAFond','Drift en braquant à fond (0 = non)',1,0,1,1,'']]],
+    ['dAFond','Rattraper les glisses en drift (0 = non)',1,0,1,1,'']]],
   ['Virage',[
     ['vBraquage','Braquage max',1,0.5,1.7,0.05,'×'],
     ['vVolant','Vitesse du volant',1,0.4,2.5,0.05,'×'],
@@ -1508,7 +1510,7 @@ const RG_DEF=[
     ['aMoteur','Frein moteur (pied levé)',1,0,2.5,0.05,'×'],
     ['aTransfert','Transfert de poids',1,0,2.5,0.05,'×']]]];
 const RG={};for(const [,L] of RG_DEF)for(const [k,,v] of L)RG[k]=v;
-try{const o=JSON.parse(localStorage.getItem('bdl.tk.regl')||'{}');for(const k in o)if(k in RG&&typeof o[k]==='number')RG[k]=o[k];}catch(x){}
+try{const o=JSON.parse(localStorage.getItem('bdl.tk.regl2')||'{}');for(const k in o)if(k in RG&&typeof o[k]==='number')RG[k]=o[k];}catch(x){}
 try{const q=new URLSearchParams(location.search).get('labo');if(q==='1')localStorage.setItem('bdl.tk.labo','1');if(q==='0')localStorage.removeItem('bdl.tk.labo');}catch(x){}
 const laboActif=()=>{try{return localStorage.getItem('bdl.tk.labo')==='1';}catch(x){return false;}};
 function ouvrirLabo(){
@@ -1520,7 +1522,7 @@ function ouvrirLabo(){
     for(const [k,lab,def,mi,ma,st] of L)h+='<label><span>'+lab+'<i id="rgv_'+k+'">'+fmt(RG[k],st)+(RG[k]!==def?' <s>('+fmt(def,st)+')</s>':'')+'</i></span><input type="range" data-k="'+k+'" min="'+mi+'" max="'+ma+'" step="'+st+'" value="'+RG[k]+'"></label>';}
   h+='</div><div class="b"><button data-a="defaut">Défaut</button><button data-a="copier">Copier</button><button data-a="ok">Rouler ▶</button></div>';
   el.innerHTML=h;document.body.appendChild(el);
-  const sauverRG=()=>{try{localStorage.setItem('bdl.tk.regl',JSON.stringify(RG));}catch(x){}};
+  const sauverRG=()=>{try{localStorage.setItem('bdl.tk.regl2',JSON.stringify(RG));}catch(x){}};
   el.querySelectorAll('input[type=range]').forEach(r=>{r.addEventListener('input',()=>{const k=r.dataset.k;RG[k]=+r.value;
     const d=RG_DEF.flatMap(x=>x[1]).find(x=>x[0]===k);document.getElementById('rgv_'+k).innerHTML=fmt(RG[k],d[5])+(RG[k]!==d[2]?' <s>('+fmt(d[2],d[5])+')</s>':'');sauverRG();});});
   el.querySelector('[data-a=ok]').onclick=()=>{el.remove();E.pauseLabo=false;};
@@ -1545,21 +1547,22 @@ function driftAuto(c,dt){
   if(c.b>0)E.frT=(E.frT||0)+dt;
   else{if(E.frT>0&&E.frT<RG.dDeclenche)E.drArme=0.4;E.frT=0;}
   if(c.h&&!E.hClav)E.drArme=0.4;E.hClav=!!c.h;
-  /* braquer À FOND à bonne vitesse, gaz ouverts : l'arrière décroche tout seul */
-  E.aFond=(Math.abs(st)>0.88&&(c.g||0)>0.3&&v>S.vmax*0.45&&E.drA!==1)?(E.aFond||0)+dt:0;
-  if(E.aFond>0.3&&RG.dAFond>0.5){E.aFond=0;E.drArme=0.05;}
   if(E.drArme>0){E.drArme-=dt;
-    if(Math.abs(st)>0.3&&v>S.vmax*0.22){
-      const sens=Math.sign(st);E.drArme=0;
-      if(E.drA!==1){const phi=Math.atan2(E.vy,E.vx);let th=E.ang-phi;th=Math.atan2(Math.sin(th),Math.cos(th));E.drTh=v>10?th:0;
-        try{navigator.vibrate&&navigator.vibrate(12);}catch(x){}}
-      E.drA=1;E.drSens=sens;E.drCentre=0;E.drContre=0;return;}}
+    if(Math.abs(st)>0.3&&v>S.vmax*0.22){E.drArme=0;lancerDrift(Math.sign(st));return;}}
   if(E.drA!==1)return;
   const dedans=st*E.drSens;
-  E.drCentre=Math.abs(st)<0.15?(E.drCentre||0)+dt:0;
+  /* on lâche les gaz : la voiture reprend de l'adhérence et se redresse */
+  E.drLeve=(c.g||0)<0.12?(E.drLeve||0)+dt:0;
+  E.drCentre=Math.abs(st)<0.12?(E.drCentre||0)+dt:0;     /* volant droit un moment : on veut aller tout droit */
   E.drContre=dedans<-0.55?(E.drContre||0)+dt:0;
-  if(E.drCentre>0.3||(c.b>0&&E.frT>0.35))E.drA=2;
+  if(E.drLeve>0.3||E.drCentre>0.5||(c.b>0&&E.frT>0.35))E.drA=2;
   else if(E.drContre>0.2){if((c.g||0)>0.4){E.drSens=-E.drSens;E.drContre=0;}else E.drA=2;}
+}
+function lancerDrift(sens){
+  const E=ESSAI;
+  if(E.drA!==1){const phi=Math.atan2(E.vy,E.vx);let th=E.ang-phi;th=Math.atan2(Math.sin(th),Math.cos(th));E.drTh=(E.vitesse||0)>10?th:0;
+    try{navigator.vibrate&&navigator.vibrate(12);}catch(x){}}
+  E.drA=1;E.drSens=sens;E.drLeve=0;E.drContre=0;E.drCentre=0;
 }
 
 /* ================= UN PAS DE PHYSIQUE ================= */
@@ -1674,28 +1677,36 @@ function pasPhysique(dt,c){
   const h2=dt/PH.sous;
   let aYf=0,aYr=0;
   if(E.drA){
-    /* LE DRIFT PILOTÉ : la trajectoire décrit un arc, la caisse garde un angle stable par rapport à elle.
-       L'angle et le rayon viennent du volant ; chaque voiture a son caractère (glisse, direction, maîtrise). */
+    /* LE DRIFT, COMME EN VRAI, MAIS TENABLE AU POUCE :
+       — les GAZ font l'angle : plus on accélère, plus l'arrière sort ; on lève le pied, la voiture se redresse ;
+       — le VOLANT fait la trajectoire : vers l'intérieur la courbe se serre, vers l'extérieur elle s'ouvre ;
+       — les pneus qui glissent tirent la voiture sur son arc avec ce qu'ils ont d'adhérence (plus on va vite,
+         plus l'arc est large), et freinent d'autant plus que l'angle est grand : une voiture puissante tient
+         de grands angles, une moins puissante doit choisir entre l'angle et la vitesse. */
     const V0=Math.hypot(E.vx,E.vy);let phi=Math.atan2(E.vy,E.vx);
-    const sens=E.drSens||1, sv=c.s||0, dedans=sv*sens, gz=c.g||0;
-    const kA=Math.max(0.8,Math.min(1.25,1+0.14*(S.glisse-2.5)));
-    let thT, om;
-    if(E.drA===1){
-      thT=sens*kA*(dedans>=0?RG.dAngle+RG.dAngleMax*dedans+0.08*gz:RG.dAngle*(1+0.75*dedans));
-      om=sens*(0.5+0.85*Math.max(0,dedans)+0.25*gz)*(S.dir/3)*RG.dRot*Math.min(1,V0/(S.vmax*0.3));
-      if(dedans<0)om*=Math.max(0.15,1+0.7*dedans);
-      om=Math.sign(om)*Math.min(Math.abs(om),V0/65*RG.dRot);
-    }else{thT=0;om=(E.lacet||0)*Math.exp(-4*dt);}
+    const sens=E.drSens||1, sv=c.s||0, dedans=sv*sens, gz=c.g||0, awd=S.trans==='4';
+    const kA=Math.max(0.8,Math.min(1.25,1+0.14*(S.glisse-2.5)))*(awd?0.85:1);
+    let thT=0;
+    if(E.drA===1)thT=sens*kA*Math.max(0.04,0.1+RG.dAngle*gz+RG.dAngleMax*Math.max(0,dedans)*(0.4+0.6*gz)-0.2*Math.max(0,-dedans));
     let th=E.drTh||0;
-    th+=(thT-th)*Math.min(1,(E.drA===1?RG.dReponse:RG.dSortie)*(0.85+0.15*S.maitrise)*dt);
-    E.drTh=th;phi+=om*dt;
-    let V=V0+gz*ACC*0.42*couple*mot/(S.masse||1)*Math.max(0,1-V0/(VMAX*0.9))*dt;
-    V-=((16+0.14*V0*Math.abs(Math.sin(th)))*RG.dFrottement+(gz>0?0:50)+(c.b>0?S.frein*0.55*c.b:0))*dt;
+    th+=(thT-th)*Math.min(1,(E.drA===1?RG.dReponse:RG.dSortie)*(0.85+0.15*S.maitrise)/Math.sqrt(S.masse||1)*dt);
+    E.drTh=th;
+    const G=mu*PH.g*0.9*RG.dRot;
+    let aLat=G*(0.5+0.5*Math.min(1,Math.abs(th)/0.55))*(0.62+0.38*Math.max(0,dedans));
+    if(dedans<0)aLat*=Math.max(0.12,1+1.1*dedans);
+    if(E.drA===2)aLat*=0.7;
+    const om=sens*Math.min(2.2,aLat/Math.max(V0,50));
+    phi+=om*dt;
+    /* les roues motrices patinent : elles donnent toute la PUISSANCE du moteur (force = puissance / vitesse), dans la limite de l'adhérence */
+    const pousse=gz*Math.min(mu*PH.g*0.5,ACC*mot*VMAX*0.5/Math.max(V0,60)/(S.masse||1))*Math.max(0.05,1-Math.pow(V0/VMAX,3))*Math.cos(th)*(awd?1:0.92);
+    const frotte=G*0.25*Math.abs(Math.sin(th))*RG.dFrottement;
+    let V=V0+(pousse-frotte-16-(gz>0?0:40)-(c.b>0?S.frein*RG.aFrein*0.6*c.b:0))*dt;
     V=Math.max(0,V);
-    E.ang=phi+th;u=V*Math.cos(th);v=-V*Math.sin(th);r=om;
+    E.ang=phi+th;u=V*Math.cos(th);v=-V*Math.sin(th);r=om+(thT-th)*0;
     aYf=V*om*0.5;aYr=V*om*0.5;Fxf=0;Fxr=0;
-    E.delta=Math.max(-0.6,Math.min(0.6,-th*0.6+sv*0.12));E.vol=E.delta/Math.max(0.05,dmax);
-    if(E.drA===2&&Math.abs(th)<0.06)E.drA=0;
+    /* les roues avant contre-braquent, comme un pilote */
+    E.delta=Math.max(-0.6,Math.min(0.6,-th*0.7+sv*0.15));E.vol=E.delta/Math.max(0.05,dmax);
+    if(E.drA===2&&Math.abs(th)<0.08)E.drA=0;
     if(V<S.vmax*0.12)E.drA=0;
   }else for(let k=0;k<PH.sous;k++){
     const capF=Math.sqrt(Math.max(0,(mu*Nf)**2-Fxf*Fxf)), capR=Math.sqrt(Math.max(0,(mu*Nr*kR)**2-Fxr*Fxr));
@@ -1742,6 +1753,9 @@ function pasPhysique(dt,c){
     E.points+=deg*(vit/60)*dt*maitrise*E.combo*(E.mode==='drift'&&ZONE.clip>0?ZONE.clip:1);E.finCombo=1.6;E.maitriseVue=maitrise;
   }else if(E.finCombo>0){E.finCombo-=dt;if(E.finCombo<=0)encaisserCombo();}
   E.vitesse=vit;E.vmaxVue=S.vmax;E.angGlisse=angG2;E.horsPiste=hp;E.latG=aYf+aYr;
+  /* L'ARRIÈRE DÉCROCHE TOUT SEUL (trop de gaz en virage pour une propulsion, lever de pied, bosse) :
+     au lieu de partir en toupie, la voiture passe en drift, que les gaz et le volant tiennent ou arrêtent. */
+  if(!E.drA&&RG.dAFond>0.5&&vit>S.vmax*0.25&&angG2>0.3&&Math.abs(r)>0.3)lancerDrift(Math.sign(r));
   /* le son suit le régime ; les pneus crissent quand ils travaillent au-delà du pic */
   majMoteur(dt,Math.abs(u)*340/S.vmax*(E.patine?1.25:1),c.g>0&&!(E.coupure>0),Math.abs(v)*2+(E.patine?60:0),rap);
   const T0=E.tuning||{};
@@ -1751,7 +1765,7 @@ function pasPhysique(dt,c){
   /* 7. LE DÉPLACEMENT ET LES MURS */
   const libre=enVille()?((X,Y)=>!(bloqueTokyo(X,Y)||X<20||X>MONDE_L-20||Y<TK.bati+18||Y>MONDE_H-18
     ||(E.mode==='drift'&&!dansZone(X,Y,16))||ZD.poteaux.some(([px,py])=>Math.hypot(X-px,Y-py)<30)))
-    :((X,Y)=>projeter(X,Y,E.idx).d<CIR.ep/2+CIR.marge);   /* hors de la ville : le mur suit la piste */
+    :((X,Y)=>{const d=projeter(X,Y,E.idx).d;return d<CIR.ep/2+CIR.marge||d<projeter(E.x,E.y,E.idx).d-0.05;});   /* hors de la ville : le mur suit la piste ; poussée dehors (un choc), la voiture peut toujours y rentrer */
   let X=E.x+E.vx*dt, Y=E.y+E.vy*dt;
   if(!libre(X,Y)){
     const choc=Math.hypot(E.vx,E.vy);
@@ -1818,7 +1832,7 @@ function majEssai(dt,jx,jy){
   if(COURSE.actif)majCourseHorsPas(dt);
   if(E.mode==='drift')majZoneHorsPas(dt);
   /* LES EFFETS, une fois par image */
-  {const fb=majEssai.fb&&majEssai.fb.isConnected?majEssai.fb:(majEssai.fb=document.querySelector('#tkPad .frein'));if(fb)fb.classList.toggle('drifte',E.drA===1);}
+  {const fb=majEssai.fb&&majEssai.fb.isConnected?majEssai.fb:(majEssai.fb=document.querySelector('#tkPad .pedale'));if(fb)fb.classList.toggle('drifte',E.drA===1);}
   if(info){const {tr,nx,ny,hp,vit}=info;
     if(Math.abs(tr)>30||(E.patine&&vit>8)){
       for(const s of [-10,10]){const px=E.x-nx*18-ny*s, py=E.y-ny*18+nx*s;
@@ -1870,7 +1884,7 @@ function preparerCourse(){
     const m=marques[i%marques.length], S=statsVoiture(m,{}), coul=COUL_ADV[(i*3+Math.floor(Math.random()*7))%COUL_ADV.length];
     const s=P.ligneS+grille[i][0], lane=grille[i][1];
     COURSE.voitures.push({type:'adv',nom:['Kenji','Aya','Ryo','Mika','Takumi'][i]+' · '+m,marque:m,toile:peindreVoitureDessus(m,{couleur:coul}),
-      s,lane,laneCible:lane,v:0,vmax:Math.min(S.vmax,(E.stats||S).vmax)*(0.84+i*0.03)*(O.niv||1),acc:Math.min(S.acc,(E.stats||S).acc)*0.9,   /* au niveau de TA voiture : c'est le tuning qui fait la différence */
+      s,lane,laneCible:lane,v:0,vmax:Math.min(S.vmax,(E.stats||S).vmax)*(0.84+i*0.03)*(O.niv||1),acc:Math.min(S.acc,(E.stats||S).acc)*0.85,niv:O.niv||1,   /* au niveau de TA voiture : c'est le tuning qui fait la différence */
       tours:0,tour0:false,fini:null,x:0,y:0,ang:0,r:13});
   }
   const nt=adv?CIR.trafic:0;
@@ -1904,14 +1918,14 @@ function pasCourse(dt){
     let cible=c.vmax;
     if(c.type==='adv'){
       /* la vitesse de passage de chaque virage devant (rayon de braquage du joueur), et la distance pour freiner */
-      for(let a=0;a<=360;a+=20){const k=pointPiste(c.s+a).k;if(k>0){const vv=Math.sqrt(240*(1/k));cible=Math.min(cible,Math.sqrt(vv*vv+2*345*a));}}
+      for(let a=0;a<=360;a+=20){const k=pointPiste(c.s+a).k;if(k>0){const vv=Math.sqrt(185*(c.niv||1)/k);cible=Math.min(cible,Math.sqrt(vv*vv+2*260*a));}}
       /* l'élastique : léger, et seulement s'il est loin */
       const ecart=(progression(c)-progressionJoueur());
       if(ecart>500)cible*=0.96;else if(ecart<-400)cible*=1.04;
       if(c.fini!=null)cible=Math.min(cible,c.vmax*0.7);   /* arrivé : il finit son tour en fantôme */
     }
     if(c.type==='trafic'){const k=pointPiste(c.s+40).k;if(k>1e-4)cible=Math.min(cible,Math.max(80,Math.sqrt(160/k)));}   /* le trafic ralentit dans les virages serrés, pas dans les grandes courbes */
-    c.v+=Math.max(-345*dt,Math.min(c.acc*dt,cible-c.v));
+    c.v+=Math.max(-280*dt,Math.min(c.acc*dt,cible-c.v));
     /* LES COULOIRS : trois files (gauche, milieu, droite). Un adversaire regarde
        la place libre devant lui dans chaque file et prend la plus dégagée pour
        doubler ; il ne change que si le gain est net (pas de zigzag). Derrière
@@ -2044,37 +2058,31 @@ body.tk-volant{touch-action:none;overscroll-behavior:none;-webkit-user-select:no
 #tkDec{position:fixed;left:0;right:0;top:34%;z-index:23;text-align:center;pointer-events:none;font:900 italic 96px/1 -apple-system,sans-serif;color:#fff;text-shadow:0 6px 30px rgba(255,79,176,.6);opacity:0}
 #tkDec.va{animation:tkDec .9s ease-out}#tkDec.go{color:#5cff8a;text-shadow:0 6px 30px rgba(92,255,138,.6)}
 @keyframes tkDec{0%{opacity:0;transform:scale(1.8)}20%{opacity:1;transform:scale(1)}75%{opacity:1}100%{opacity:0;transform:scale(.8)}}
-#tkPad{position:fixed;left:0;right:0;bottom:0;z-index:21;pointer-events:none;height:calc(env(safe-area-inset-bottom,0px) + 190px)}
+#tkPad{position:fixed;left:0;right:0;bottom:0;z-index:21;pointer-events:none;height:calc(env(safe-area-inset-bottom,0px) + 290px)}
 #tkPad button{position:absolute;pointer-events:auto;border:0;border-radius:20px;color:#fff;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
  -webkit-tap-highlight-color:transparent;font:900 13px -apple-system,sans-serif;letter-spacing:1px;background:rgba(14,10,24,.62);box-shadow:inset 0 0 0 2px rgba(255,255,255,.16);
  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);transition:transform .06s,background .06s}
 #tkPad button.on{transform:scale(.93);background:rgba(255,79,176,.42);box-shadow:inset 0 0 0 2px #ff8ac8}
-#tkPad .dir{width:clamp(62px,18vw,80px);height:clamp(62px,18vw,80px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);font-size:26px}
-#tkPad .dir.g{left:12px}#tkPad .dir.d{left:calc(12px + clamp(62px,18vw,80px) + 10px)}
-#tkPad .gaz{right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:clamp(66px,19vw,82px);height:clamp(104px,30vw,124px);background:rgba(20,60,32,.6);box-shadow:inset 0 0 0 2px rgba(92,255,138,.45)}
-#tkPad .gaz.on{background:rgba(92,255,138,.42);box-shadow:inset 0 0 0 2px #5cff8a}
-#tkPad .frein{right:calc(12px + clamp(66px,19vw,82px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:clamp(62px,17vw,74px);height:clamp(104px,30vw,124px);font-size:12px;line-height:1.1;text-align:center}
-#tkPad .frein small{display:block;margin-top:5px;font:700 9px -apple-system,sans-serif;letter-spacing:0;opacity:.75;text-transform:uppercase;white-space:nowrap}
-#tkPad .frein.drifte{box-shadow:inset 0 0 0 2px #ff8ac8;background:rgba(255,79,176,.3)}
-#tkPad .drift{right:calc(12px + clamp(66px,19vw,82px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px + clamp(58px,16vw,70px) + 10px);width:clamp(58px,16vw,70px);height:clamp(58px,16vw,70px);border-radius:50%;font-size:11px;box-shadow:inset 0 0 0 3px var(--c,rgba(255,255,255,.2))}
-#tkPad .nitro{right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px + clamp(104px,30vw,124px) + 10px);width:clamp(58px,16vw,70px);height:clamp(50px,14vw,58px);border-radius:16px;font-size:11px;
- background:conic-gradient(rgba(63,224,255,.55) var(--p,100%),rgba(14,10,24,.62) 0);box-shadow:inset 0 0 0 2px rgba(127,232,255,.5)}
+#tkPad .zv{position:absolute;left:0;bottom:0;width:50%;height:100%;pointer-events:auto;touch-action:none}
+#tkPad .zp{position:absolute;right:0;bottom:0;width:50%;height:100%;pointer-events:auto;touch-action:none}
+#tkPad .vol{position:absolute;left:96px;top:calc(100% - env(safe-area-inset-bottom,0px) - 58px);width:172px;height:64px;margin-left:-86px;margin-top:-32px;border-radius:32px;
+ background:rgba(10,8,18,.5);box-shadow:inset 0 0 0 2px rgba(255,255,255,.14);display:flex;align-items:center;justify-content:space-between;padding:0 16px;color:#fff;font-size:20px;pointer-events:none;transition:opacity .2s}
+#tkPad .vol i{font-style:normal;opacity:.7}
+#tkPad .vol .base{position:absolute;left:50%;top:50%;width:2px;height:34px;margin:-17px 0 0 -1px;background:rgba(255,255,255,.25)}
+#tkPad .vol .curseur{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.45);transform:translateX(calc(var(--v,0) * 62px))}
+#tkPad .vol.on{background:rgba(40,14,40,.55);box-shadow:inset 0 0 0 2px #ff8ac8}
+#tkPad .pedale{position:absolute;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);width:92px;height:214px;border-radius:26px;overflow:hidden;pointer-events:none;
+ background:linear-gradient(rgba(20,60,32,.62) 0 50%,rgba(70,16,20,.62) 50% 100%);box-shadow:inset 0 0 0 2px rgba(255,255,255,.16);color:#fff;font:800 13px -apple-system,sans-serif}
+#tkPad .pedale b{position:absolute;left:0;right:0;text-align:center;z-index:2;letter-spacing:1px}#tkPad .pedale b.g{top:34px}#tkPad .pedale b.f{bottom:34px}
+#tkPad .pedale .mi{position:absolute;left:8px;right:8px;top:50%;height:2px;margin-top:-1px;background:rgba(255,255,255,.55);z-index:2}
+#tkPad .pedale .mi i{position:absolute;left:0;right:0;top:-17px;text-align:center;font:700 9px -apple-system,sans-serif;font-style:normal;opacity:.6;letter-spacing:.5px}
+#tkPad .pedale em{position:absolute;left:0;right:0;z-index:1}
+#tkPad .pedale .jg{bottom:50%;height:calc(var(--g,0%) / 2);background:rgba(92,255,138,.5)}
+#tkPad .pedale .jf{top:50%;height:calc(var(--f,0%) / 2);background:rgba(255,90,90,.55)}
+#tkPad .pedale.gz{box-shadow:inset 0 0 0 2px #5cff8a}#tkPad .pedale.fr{box-shadow:inset 0 0 0 2px #ff6a6a}
+#tkPad .pedale.drifte{box-shadow:inset 0 0 0 3px #ff4fb0,0 0 22px rgba(255,79,176,.55)}
+#tkPad .nitro{right:120px;bottom:calc(env(safe-area-inset-bottom,0px) + 170px);width:62px;height:52px;border-radius:16px;font:800 12px -apple-system,sans-serif;background:rgba(20,40,70,.65);box-shadow:inset 0 0 0 2px rgba(127,232,255,.5)}
 /* Même en mode joystick, conserver les commandes de secours visibles : sur mobile, le HUD plein écran masque parfois le joystick global. */
-#tkPad .vol{position:absolute;pointer-events:auto;left:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:calc(2 * clamp(62px,18vw,80px) + 26px);height:clamp(62px,18vw,80px);
- border-radius:22px;background:rgba(14,10,24,.62);box-shadow:inset 0 0 0 2px rgba(255,255,255,.16);touch-action:none;user-select:none;-webkit-user-select:none;display:flex;align-items:center;justify-content:space-between;padding:0 14px;color:#fff;font-size:22px;--v:0}
-#tkPad .vol i{font-style:normal;opacity:.75;pointer-events:none}
-#tkPad .vol .curseur{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.4);pointer-events:none;
- transform:translateX(calc(var(--v) * (clamp(62px,18vw,80px) - 6px)));transition:transform .04s}
-#tkPad .vol.on{box-shadow:inset 0 0 0 2px #ff8ac8;background:rgba(40,14,40,.62)}
-#tkPad .vol::before{content:'';position:absolute;left:50%;top:14px;bottom:14px;width:2px;margin-left:-1px;background:rgba(255,255,255,.18)}
-#tkPad .gaz,#tkPad .frein{overflow:hidden}
-#tkPad .gaz::before,#tkPad .frein::before{content:'';position:absolute;left:0;right:0;bottom:0;height:var(--p,0%);background:rgba(92,255,138,.35);transition:height .05s}
-#tkPad .frein::before{background:rgba(255,90,90,.35)}
-#tkPad .gaz span,#tkPad .frein span{position:relative}
-#tkPad.joy .dir,#tkPad.joy .gaz{display:block}
-#tkPad.joy .frein{right:calc(12px + clamp(66px,19vw,82px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
-#tkPad.joy .drift{right:calc(12px + clamp(66px,19vw,82px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px + clamp(58px,16vw,70px) + 10px)}
-#tkPad.joy .nitro{right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px + clamp(104px,30vw,124px) + 10px)}
 #tkAide{position:fixed;left:16px;right:16px;top:38%;z-index:22;pointer-events:none;margin:0 auto;max-width:330px;
  padding:12px 14px;border-radius:14px;background:rgba(10,8,18,.88);border:1px solid rgba(255,79,176,.4);color:#fff;font:600 13px/1.45 -apple-system,sans-serif;transition:opacity .6s}
 #tkAide b{color:#ff8ac8}
@@ -2122,38 +2130,46 @@ function hudMontrer(on){
   const pp=document.createElement('div');pp.id='tkPop';document.body.appendChild(pp);
   /* LE PAVÉ DE COMMANDES */
   const pad=document.createElement('div');pad.id='tkPad';if(MODE_CMD!=='boutons')pad.classList.add('joy');
-  /* LE VOLANT : une bande à gauche. Le doigt s'y pose et glisse : plus il va loin du centre,
-     plus on braque — on dose. Il peut passer de gauche à droite sans se lever.
-     GAZ et FREIN se dosent aussi : appuyer en bas du bouton = un filet, en haut = à fond ;
-     le doigt peut glisser sur le bouton pendant qu'on roule. */
-  const vol=document.createElement('div');vol.className='vol';vol.innerHTML='<i>◀</i><span class="curseur"></span><i>▶</i>';
-  let volId=null;
-  const majVol=ev=>{const r=vol.getBoundingClientRect(), c=r.left+r.width/2;let v=(ev.clientX-c)/(r.width*0.42);
-    v=Math.max(-1,Math.min(1,v));if(Math.abs(v)<0.07)v=0;CMDS.volant=v;vol.style.setProperty('--v',v.toFixed(3));vol.classList.toggle('on',v!==0);};
-  vol.addEventListener('pointerdown',ev=>{ev.preventDefault();ev.stopPropagation();try{vol.setPointerCapture(ev.pointerId);}catch(x){}volId=ev.pointerId;majVol(ev);});
-  vol.addEventListener('pointermove',ev=>{if(ev.pointerId===volId)majVol(ev);});
-  const lacherVol=ev=>{if(ev.pointerId===volId){volId=null;CMDS.volant=0;vol.style.setProperty('--v','0');vol.classList.remove('on');}};
-  vol.addEventListener('pointerup',lacherVol);vol.addEventListener('pointercancel',lacherVol);vol.addEventListener('lostpointercapture',lacherVol);
-  vol.addEventListener('touchstart',ev=>ev.preventDefault(),{passive:false});vol.addEventListener('contextmenu',ev=>ev.preventDefault());
-  pad.appendChild(vol);
-  const B=[['gaz','gaz','GAZ'],['frein','frein','FREIN<small>tap : drift</small>']];
-  if(E.stats&&E.stats.nitro)B.push(['nitro','nitro','N₂O']);
-  const enfonces=new Map();      /* pointerId → commande */
-  const dose=(b,ev)=>{const r=b.getBoundingClientRect();return Math.max(0.35,Math.min(1,0.35+0.65*(r.bottom-ev.clientY)/r.height));};
-  const maj=()=>{CMDS.drift=false;let gz=0,fr=0;for(const [id,k] of enfonces){if(k.k==='drift')CMDS.drift=true;if(k.k==='gaz')gz=Math.max(gz,k.v);if(k.k==='frein')fr=Math.max(fr,k.v);}
-    CMDS.gaz=gz;CMDS.frein=fr;
-    pad.querySelectorAll('button').forEach(b=>{const on=[...enfonces.values()].some(k=>k.k===b.dataset.k);b.classList.toggle('on',on);
-      if(b.dataset.k==='gaz')b.style.setProperty('--p',Math.round(gz*100)+'%');if(b.dataset.k==='frein')b.style.setProperty('--p',Math.round(fr*100)+'%');});};
-  for(const [k,cl,txt] of B){
-    const b=document.createElement('button');b.className=cl;b.dataset.k=k;b.innerHTML='<span>'+txt+'</span>';b.setAttribute('aria-label',txt);
-    b.addEventListener('pointerdown',ev=>{ev.preventDefault();ev.stopPropagation();try{b.setPointerCapture(ev.pointerId);}catch(x){}enfonces.set(ev.pointerId,{k,v:dose(b,ev)});if(k==='nitro')CMDS.nitro=true;maj();});
-    b.addEventListener('pointermove',ev=>{const o=enfonces.get(ev.pointerId);if(o&&(k==='gaz'||k==='frein')){o.v=dose(b,ev);maj();}});
-    const lacher=ev=>{if(enfonces.has(ev.pointerId)){enfonces.delete(ev.pointerId);maj();}};
-    b.addEventListener('pointerup',lacher);b.addEventListener('pointercancel',lacher);b.addEventListener('lostpointercapture',lacher);
-    b.addEventListener('contextmenu',ev=>ev.preventDefault());
-    b.addEventListener('touchstart',ev=>ev.preventDefault(),{passive:false});
-    pad.appendChild(b);
-  }
+  /* LES COMMANDES, DEUX POUCES :
+     — À GAUCHE, LE VOLANT FLOTTANT : le pouce se pose n'importe où dans la moitié gauche, c'est le
+       centre ; il glisse à droite ou à gauche pour braquer, dosé (55 px = braquage complet). S'il
+       dépasse, le centre le suit : on repart dans l'autre sens sans délai.
+     — À DROITE, LA PÉDALE : au-dessus du trait = GAZ, en dessous = FREIN, dosés par la distance au
+       trait. Le pouce y reste posé et glisse de l'un à l'autre.
+     — LE DRIFT : en tournant, un petit coup de frein (le pouce descend et remonte) ; ensuite les gaz
+       font l'angle et le volant la trajectoire. On lâche les gaz pour se redresser. */
+  const zv=document.createElement('div');zv.className='zv';
+  zv.innerHTML='<div class="vol"><i>◀</i><span class="base"></span><span class="curseur"></span><i>▶</i></div>';
+  const vol=zv.firstChild;
+  let volId=null, x0=0;
+  const R=55;
+  const montrerVol=(v,px,py)=>{vol.style.setProperty('--v',v.toFixed(3));vol.classList.toggle('on',volId!=null);
+    if(volId!=null){const zr=zv.getBoundingClientRect();vol.style.left=(x0-zr.left)+'px';vol.style.top=(py-zr.top)+'px';}else{vol.style.left='';vol.style.top='';}};
+  const majVol=ev=>{let d=ev.clientX-x0;if(Math.abs(d)>R){x0=ev.clientX-Math.sign(d)*R;d=Math.sign(d)*R;}
+    let v=d/R;v=Math.sign(v)*Math.pow(Math.abs(v),1.25);if(Math.abs(v)<0.04)v=0;CMDS.volant=v;montrerVol(v,ev.clientX,ev.clientY);};
+  zv.addEventListener('pointerdown',ev=>{ev.preventDefault();ev.stopPropagation();if(volId!=null)return;try{zv.setPointerCapture(ev.pointerId);}catch(x){}volId=ev.pointerId;x0=ev.clientX;majVol(ev);});
+  zv.addEventListener('pointermove',ev=>{if(ev.pointerId===volId)majVol(ev);});
+  const lacherVol=ev=>{if(ev.pointerId===volId){volId=null;CMDS.volant=0;montrerVol(0);}};
+  zv.addEventListener('pointerup',lacherVol);zv.addEventListener('pointercancel',lacherVol);zv.addEventListener('lostpointercapture',lacherVol);
+  zv.addEventListener('touchstart',ev=>ev.preventDefault(),{passive:false});zv.addEventListener('contextmenu',ev=>ev.preventDefault());
+  pad.appendChild(zv);
+  const zp=document.createElement('div');zp.className='zp';
+  zp.innerHTML='<div class="pedale"><b class="g">GAZ</b><span class="mi"><i>↓↑ DRIFT</i></span><b class="f">FREIN</b><em class="jg"></em><em class="jf"></em></div>';
+  const ped=zp.firstChild;
+  let pedId=null;
+  const majPed=ev=>{const r=ped.getBoundingClientRect(), cy=r.top+r.height/2, h=r.height/2-14, d=(cy-ev.clientY);
+    let g=0,f=0;if(d>8)g=Math.min(1,0.35+0.65*(d-8)/(h-8));else if(d<-8)f=Math.min(1,0.35+0.65*(-d-8)/(h-8));
+    CMDS.gaz=g;CMDS.frein=f;ped.style.setProperty('--g',(g*100).toFixed(0)+'%');ped.style.setProperty('--f',(f*100).toFixed(0)+'%');
+    ped.classList.toggle('gz',g>0);ped.classList.toggle('fr',f>0);};
+  zp.addEventListener('pointerdown',ev=>{if(ev.target.closest('.nitro'))return;ev.preventDefault();ev.stopPropagation();if(pedId!=null)return;try{zp.setPointerCapture(ev.pointerId);}catch(x){}pedId=ev.pointerId;majPed(ev);});
+  zp.addEventListener('pointermove',ev=>{if(ev.pointerId===pedId)majPed(ev);});
+  const lacherPed=ev=>{if(ev.pointerId===pedId){pedId=null;CMDS.gaz=0;CMDS.frein=0;ped.style.setProperty('--g','0%');ped.style.setProperty('--f','0%');ped.classList.remove('gz','fr');}};
+  zp.addEventListener('pointerup',lacherPed);zp.addEventListener('pointercancel',lacherPed);zp.addEventListener('lostpointercapture',lacherPed);
+  zp.addEventListener('touchstart',ev=>ev.preventDefault(),{passive:false});zp.addEventListener('contextmenu',ev=>ev.preventDefault());
+  if(E.stats&&E.stats.nitro){const n=document.createElement('button');n.className='nitro';n.innerHTML='<span>N₂O</span>';
+    n.addEventListener('pointerdown',ev=>{ev.preventDefault();ev.stopPropagation();CMDS.nitro=true;n.classList.add('on');setTimeout(()=>n.classList.remove('on'),200);});
+    n.addEventListener('touchstart',ev=>ev.preventDefault(),{passive:false});zp.appendChild(n);}
+  pad.appendChild(zp);
   document.body.appendChild(pad);
   if(!hudMontrer.global){hudMontrer.global=true;
     addEventListener('blur',()=>{for(const k in CMDS)CMDS[k]=false;});
@@ -2161,11 +2177,11 @@ function hudMontrer(on){
       if(m){CMDS[m]=true;if(MODE_CMD==='boutons')ev.preventDefault();}});
     addEventListener('keyup',ev=>{const m={ArrowLeft:'g',ArrowRight:'d',ArrowUp:'gaz',ArrowDown:'frein',' ':'drift',Shift:'nitro'}[ev.key];if(m)CMDS[m]=false;});}
   /* la première fois : comment on conduit */
-  let vu=false;try{vu=localStorage.getItem('bdl.tk.aide6')==='1';}catch(x){}
+  let vu=false;try{vu=localStorage.getItem('bdl.tk.aide7')==='1';}catch(x){}
   if(!vu){const a=document.createElement('div');a.id='tkAide';
-    a.innerHTML=MODE_CMD==='boutons'?'<b>Glisse le doigt</b> sur la bande de gauche pour tourner : plus loin = plus fort.<br><b>GAZ</b> et <b>FREIN</b> se dosent : bas = doux, haut = à fond.<br><b>DRIFT</b> : en tournant, <b>un petit coup de FREIN</b> (ou braque à fond, vite). Ensuite le volant règle l’angle : vers l’intérieur = plus serré. Les gaz gardent la vitesse.<br><b>Volant au centre</b> pour sortir. Finis <b>sans toucher</b> : turbo et points !'
+    a.innerHTML=MODE_CMD==='boutons'?'<b>Pouce gauche</b> n’importe où à gauche : glisse-le pour tourner.<br><b>Pouce droit</b> sur la pédale : au-dessus du trait = GAZ, en dessous = FREIN.<br><b>DRIFT</b> : en tournant, descends et remonte vite le pouce (petit coup de frein). Ensuite <b>les gaz font l’angle</b>, le volant la trajectoire. Lâche les gaz pour te redresser.'
       :'<b>Pouce gauche</b> : la direction, la voiture accélère toute seule.<br><b>DRIFT</b> : maintiens-le en tournant.<br>Finis le drift <b>sans toucher</b> : turbo et points !';
-    document.body.appendChild(a);setTimeout(()=>{a.style.opacity='0';setTimeout(()=>a.remove(),700);},6500);try{localStorage.setItem('bdl.tk.aide6','1');}catch(x){}}
+    document.body.appendChild(a);setTimeout(()=>{a.style.opacity='0';setTimeout(()=>a.remove(),700);},6500);try{localStorage.setItem('bdl.tk.aide7','1');}catch(x){}}
   (function boucle(){
     if(!document.getElementById('tkHud')||!ESSAI.actif)return;
     const E2=ESSAI, niv=niveauCharge();
