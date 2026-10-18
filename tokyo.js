@@ -1335,12 +1335,12 @@ const VOIT_PRET={BMW:{marque:'BMW',modele:'M3 E46',id:'bmw-m3-e46'},Toyota:{marq
   Lamborghini:{marque:'Lamborghini',modele:'Huracán',id:'lamborghini-huracan'},Ferrari:{marque:'Ferrari',modele:'F40',id:'ferrari-f40'}};
 const LICENCES=[
   {id:'C',nom:'Licence C',titre:'Débutant',prime:300000,coul:'#7fe8ff',ep:[
-    {id:'C1',nom:'Premier tour',desc:'Un tour du Tokyo Circuit, seul en piste.',type:'chrono',circuit:'tokyo',voiture:'BMW',tours:1,seuils:[47,40.5,36.5]},
+    {id:'C1',nom:'Premier tour',desc:'Un tour du Tokyo Circuit, seul en piste.',type:'chrono',circuit:'tokyo',voiture:'BMW',tours:1,seuils:[48,43,39.5]},
     {id:'C2',nom:'Premiers drifts',desc:'Une manche de 60 s dans la zone de drift.',type:'drift',voiture:'Toyota',seuils:[5000,15000,35000]},
     {id:'C3',nom:'Course aux Docks',desc:'Deux tours contre cinq pilotes, entre les conteneurs.',type:'course',circuit:'docks',voiture:'BMW',tours:2,niv:0.9,seuils:[3,2,1]}]},
   {id:'B',nom:'Licence B',titre:'Pilote',prime:800000,coul:'#5cff8a',ep:[
-    {id:'B1',nom:'Les lacets d’Haruna',desc:'Un tour du Mont Haruna, seul.',type:'chrono',circuit:'haruna',voiture:'Toyota',tours:1,seuils:[59.5,51.5,46.5]},
-    {id:'B2',nom:'Précision aux Docks',desc:'Un tour des Docks en 911, seul.',type:'chrono',circuit:'docks',voiture:'Porsche',tours:1,seuils:[36,31,28.5]},
+    {id:'B1',nom:'Les lacets d’Haruna',desc:'Un tour du Mont Haruna, seul.',type:'chrono',circuit:'haruna',voiture:'Toyota',tours:1,seuils:[62.5,56,51.5]},
+    {id:'B2',nom:'Précision aux Docks',desc:'Un tour des Docks en 911, seul.',type:'chrono',circuit:'docks',voiture:'Porsche',tours:1,seuils:[39,35,32.5]},
     {id:'B3',nom:'Le grand prix de Tokyo',desc:'Trois tours contre cinq pilotes.',type:'course',circuit:'tokyo',voiture:'Toyota',tours:3,niv:0.9,seuils:[3,2,1]}]},
   {id:'A',nom:'Licence A',titre:'Expert',prime:1500000,coul:'#ffd21f',ep:[
     {id:'A1',nom:'Wangan à fond',desc:'Un tour de l’autoroute en Huracán, seul.',type:'chrono',circuit:'wangan',voiture:'Lamborghini',tours:1,seuils:[38,33,30]},
@@ -1348,7 +1348,7 @@ const LICENCES=[
     {id:'A3',nom:'Maître du drift',desc:'Une manche de drift en 911.',type:'drift',voiture:'Porsche',seuils:[15000,35000,60000]}]},
   {id:'S',nom:'Licence S',titre:'Légende',prime:4000000,coul:'#ff4fb0',ep:[
     {id:'S1',nom:'La nuit du Wangan',desc:'Deux tours d’autoroute en F40, dans le trafic.',type:'course',circuit:'wangan',voiture:'Ferrari',tours:2,seuils:[3,2,1]},
-    {id:'S2',nom:'Haruna en F40',desc:'Un tour de montagne, gros turbos, seul.',type:'chrono',circuit:'haruna',voiture:'Ferrari',tours:1,seuils:[65,56,50.5]},
+    {id:'S2',nom:'Haruna en F40',desc:'Un tour de montagne, gros turbos, seul.',type:'chrono',circuit:'haruna',voiture:'Ferrari',tours:1,seuils:[60,54,50]},
     {id:'S3',nom:'La bête des Docks',desc:'Trois tours des Docks en GT-R contre cinq pilotes.',type:'course',circuit:'docks',voiture:'Nissan',tours:3,niv:1.04,seuils:[3,2,1]}]}];
 const MED=['—','BRONZE','ARGENT','OR'], MED_C=['#8a8794','#d08a4a','#d8dbe6','#ffd21f'], MED_E=['','🥉','🥈','🥇'];
 function carriere(){try{const c=JSON.parse(localStorage.getItem('bdl.tk.carriere')||'{}');c.med=c.med||{};c.best=c.best||{};c.lic=c.lic||{};return c;}catch(x){return {med:{},best:{},lic:{}};}}
@@ -1423,7 +1423,7 @@ function debutEssai(v,aMoi,reglages,mode,opts){
   E.tour=null;E.tours=0;E.cp=0;E.dernier=null;E.trainee=[];E.flamme=0;E.gazAvant=0;
   E.traces=[];E.fumee=[];E.etinc=[];E.recul=false;E.reste=0;E.idx=null;
   E.lacet=0;E.vol=0;E.delta=0;E.hbT=0;E.hAvant=false;E.idx=null;E.rapport=0;E.coupure=0;E.glisse=false;E.glisseT=0;E.charge=0;E.points=0;E.combo=1;E.finCombo=0;E.score=0;E.propre=true;
-  E.boostT=0;E.boostK=1;E.nitroT=0;E.nitroCharge=1;E.choc=0;E.dAuto=false;E.frT=0;E.frVol=false;
+  E.boostT=0;E.boostK=1;E.nitroT=0;E.nitroCharge=1;E.choc=0;E.drA=0;E.drTh=0;E.drArme=0;E.frT=0;E.hClav=false;
   COURSE.actif=false;
   if(E.mode==='course')preparerCourse();
   ZONE.phase='';if(E.mode==='drift')preparerZone();
@@ -1482,26 +1482,34 @@ function lireCommandes(jx,jy){
   return {s,g,b,h:!!CMDS.drift};
 }
 
-/* LE DRIFT AU FREIN (deux pouces suffisent) : en virage, un COUP DE FREIN BREF
-   puis les gaz lancent le drift ; il tient tant qu'on garde les gaz et qu'on
-   tourne. On en sort en lâchant les gaz, en freinant franchement, ou en
-   redressant. Un freinage long reste un freinage. */
+/* LE DRIFT PILOTÉ — on le lance, puis on le CONDUIT.
+   LANCER : en tournant, un petit coup de FREIN (ou Espace au clavier). On peut
+   aussi taper le frein d'abord et tourner juste après.
+   CONDUIRE : le volant vers l'intérieur = plus d'angle et une courbe plus
+   serrée ; vers l'extérieur = moins d'angle, la courbe s'ouvre. Les gaz
+   tiennent la vitesse (sans gaz, on ralentit). Pas besoin de garder un bouton.
+   SORTIR : volant au centre, ou freiner franchement : la voiture se redresse
+   en douceur. Contre-braquer fort avec les gaz = changement de côté (le S). */
 function driftAuto(c,dt){
-  const E=ESSAI, S=E.stats||{vmax:200}, v=E.vitesse||0, tourne=Math.abs(c.s||0)>0.5;
-  if(c.b>0){E.frT=(E.frT||0)+dt;E.frVol=E.frVol||tourne;}
-  else if(E.frT>0){
-    if(E.frT<0.3&&(E.frVol||tourne)&&v>S.vmax*0.28&&!E.dAuto){E.dAuto=true;E.dAutoT=0;E.dAutoGaz=0;E.dAutoParti=false;}
-    E.frT=0;E.frVol=false;}
-  if(!E.dAuto)return false;
-  E.dAutoT+=dt;
-  if(c.g>0.15){E.dAutoGaz=0;E.dAutoParti=true;}else E.dAutoGaz=(E.dAutoGaz||0)+dt;
-  if(!E.dAutoParti){if(E.dAutoT>0.4)E.dAuto=false;return false;}   /* le coup de frein n'est suivi des gaz : c'était juste un freinage */
-  const fini=(c.b>0&&E.frT>0.25)                            /* on freine pour de bon */
-    ||E.dAutoGaz>0.3                                         /* on a lâché les gaz */
-    ||v<S.vmax*0.12                                         /* trop lent */
-    ||(E.dAutoT>0.7&&!E.glisse&&Math.abs(c.s||0)<0.2);      /* redressé */
-  if(fini){E.dAuto=false;return false;}
-  return true;
+  const E=ESSAI, S=E.stats||{vmax:200}, v=E.vitesse||0, st=c.s||0;
+  if(c.b>0)E.frT=(E.frT||0)+dt;
+  else{if(E.frT>0&&E.frT<0.3)E.drArme=0.4;E.frT=0;}
+  if(c.h&&!E.hClav)E.drArme=0.4;E.hClav=!!c.h;
+  /* braquer À FOND à bonne vitesse, gaz ouverts : l'arrière décroche tout seul */
+  E.aFond=(Math.abs(st)>0.88&&(c.g||0)>0.3&&v>S.vmax*0.45&&E.drA!==1)?(E.aFond||0)+dt:0;
+  if(E.aFond>0.3){E.aFond=0;E.drArme=0.05;}
+  if(E.drArme>0){E.drArme-=dt;
+    if(Math.abs(st)>0.3&&v>S.vmax*0.22){
+      const sens=Math.sign(st);E.drArme=0;
+      if(E.drA!==1){const phi=Math.atan2(E.vy,E.vx);let th=E.ang-phi;th=Math.atan2(Math.sin(th),Math.cos(th));E.drTh=v>10?th:0;
+        try{navigator.vibrate&&navigator.vibrate(12);}catch(x){}}
+      E.drA=1;E.drSens=sens;E.drCentre=0;E.drContre=0;return;}}
+  if(E.drA!==1)return;
+  const dedans=st*E.drSens;
+  E.drCentre=Math.abs(st)<0.15?(E.drCentre||0)+dt:0;
+  E.drContre=dedans<-0.55?(E.drContre||0)+dt:0;
+  if(E.drCentre>0.3||(c.b>0&&E.frT>0.35))E.drA=2;
+  else if(E.drContre>0.2){if((c.g||0)>0.4){E.drSens=-E.drSens;E.drContre=0;}else E.drA=2;}
 }
 
 /* ================= UN PAS DE PHYSIQUE ================= */
@@ -1615,7 +1623,31 @@ function pasPhysique(dt,c){
   const Iz=a*b*1.15*S.stab*(S.masse||1);
   const h2=dt/PH.sous;
   let aYf=0,aYr=0;
-  for(let k=0;k<PH.sous;k++){
+  if(E.drA){
+    /* LE DRIFT PILOTÉ : la trajectoire décrit un arc, la caisse garde un angle stable par rapport à elle.
+       L'angle et le rayon viennent du volant ; chaque voiture a son caractère (glisse, direction, maîtrise). */
+    const V0=Math.hypot(E.vx,E.vy);let phi=Math.atan2(E.vy,E.vx);
+    const sens=E.drSens||1, sv=c.s||0, dedans=sv*sens, gz=c.g||0;
+    const kA=Math.max(0.8,Math.min(1.25,1+0.14*(S.glisse-2.5)));
+    let thT, om;
+    if(E.drA===1){
+      thT=sens*kA*(dedans>=0?0.42+0.33*dedans+0.08*gz:0.42*(1+0.75*dedans));
+      om=sens*(0.5+0.85*Math.max(0,dedans)+0.25*gz)*(S.dir/3)*Math.min(1,V0/(S.vmax*0.3));
+      if(dedans<0)om*=Math.max(0.15,1+0.7*dedans);
+      om=Math.sign(om)*Math.min(Math.abs(om),V0/65);
+    }else{thT=0;om=(E.lacet||0)*Math.exp(-4*dt);}
+    let th=E.drTh||0;
+    th+=(thT-th)*Math.min(1,(E.drA===1?4:5.5)*(0.85+0.15*S.maitrise)*dt);
+    E.drTh=th;phi+=om*dt;
+    let V=V0+gz*ACC*0.42*couple*mot/(S.masse||1)*Math.max(0,1-V0/(VMAX*0.9))*dt;
+    V-=(16+0.14*V0*Math.abs(Math.sin(th))+(gz>0?0:50)+(c.b>0?S.frein*0.55*c.b:0))*dt;
+    V=Math.max(0,V);
+    E.ang=phi+th;u=V*Math.cos(th);v=-V*Math.sin(th);r=om;
+    aYf=V*om*0.5;aYr=V*om*0.5;Fxf=0;Fxr=0;
+    E.delta=Math.max(-0.6,Math.min(0.6,-th*0.6+sv*0.12));E.vol=E.delta/Math.max(0.05,dmax);
+    if(E.drA===2&&Math.abs(th)<0.06)E.drA=0;
+    if(V<S.vmax*0.12)E.drA=0;
+  }else for(let k=0;k<PH.sous;k++){
     const capF=Math.sqrt(Math.max(0,(mu*Nf)**2-Fxf*Fxf)), capR=Math.sqrt(Math.max(0,(mu*Nr*kR)**2-Fxr*Fxr));
     let du,dv,dr;
     const ue=Math.max(Math.abs(u),12);
@@ -1691,6 +1723,7 @@ function heurter(force,x,y){
   for(let i=0;i<Math.min(14,4+force/25);i++)E.etinc.push({x,y,vx:(Math.random()-0.5)*170,vy:(Math.random()-0.5)*170,vie:0.35,c:'#ffd27a'});
   try{secouer(Math.min(0.5,force/600));}catch(x){}
   try{sonChoc(force);}catch(x){}
+  if(force>75)E.drA=0;
   if(E.glisse||E.points>0){E.propre=false;E.points=0;E.combo=1;E.finCombo=0;E.charge=0;if(E.glisse){E.glisse=false;}popDrift('DRIFT PERDU','#ff6a5a');}
   try{navigator.vibrate&&navigator.vibrate(Math.min(60,10+force/8));}catch(x){}
 }
@@ -1726,7 +1759,7 @@ function majEssai(dt,jx,jy){
     const c=gele?{s:0,g:CMDS.gaz?1:0,b:1,h:false}:lireCommandes(jx,jy);
     if(gele){majMoteur(PAS,0,c.g>0,0,0);continue;}
     if(CMDS.nitro&&E.nitroCharge>=1&&E.stats&&E.stats.nitro){E.nitroT=E.stats.nitro>1?2.6:2;E.nitroCharge=0;CMDS.nitro=false;try{navigator.vibrate&&navigator.vibrate([20,30,60]);}catch(x){}}
-    if(!c.h)c.h=driftAuto(c,PAS);
+    driftAuto(c,PAS);c.h=false;
     info=pasPhysique(PAS,c);
     if(COURSE.actif)pasCourse(PAS);
     if(E.mode==='drift')pasZone(PAS);
@@ -1734,7 +1767,7 @@ function majEssai(dt,jx,jy){
   if(COURSE.actif)majCourseHorsPas(dt);
   if(E.mode==='drift')majZoneHorsPas(dt);
   /* LES EFFETS, une fois par image */
-  {const fb=majEssai.fb&&majEssai.fb.isConnected?majEssai.fb:(majEssai.fb=document.querySelector('#tkPad .frein'));if(fb)fb.classList.toggle('drifte',!!(E.dAuto&&E.dAutoParti));}
+  {const fb=majEssai.fb&&majEssai.fb.isConnected?majEssai.fb:(majEssai.fb=document.querySelector('#tkPad .frein'));if(fb)fb.classList.toggle('drifte',E.drA===1);}
   if(info){const {tr,nx,ny,hp,vit}=info;
     if(Math.abs(tr)>30||(E.patine&&vit>8)){
       for(const s of [-10,10]){const px=E.x-nx*18-ny*s, py=E.y-ny*18+nx*s;
@@ -2065,11 +2098,11 @@ function hudMontrer(on){
       if(m){CMDS[m]=true;if(MODE_CMD==='boutons')ev.preventDefault();}});
     addEventListener('keyup',ev=>{const m={ArrowLeft:'g',ArrowRight:'d',ArrowUp:'gaz',ArrowDown:'frein',' ':'drift',Shift:'nitro'}[ev.key];if(m)CMDS[m]=false;});}
   /* la première fois : comment on conduit */
-  let vu=false;try{vu=localStorage.getItem('bdl.tk.aide5')==='1';}catch(x){}
+  let vu=false;try{vu=localStorage.getItem('bdl.tk.aide6')==='1';}catch(x){}
   if(!vu){const a=document.createElement('div');a.id='tkAide';
-    a.innerHTML=MODE_CMD==='boutons'?'<b>Glisse le doigt</b> sur la bande de gauche pour tourner : plus loin = plus fort.<br><b>GAZ</b> et <b>FREIN</b> se dosent : bas = doux, haut = à fond.<br><b>DRIFT</b> : en virage, <b>un petit coup de FREIN</b> puis remets les GAZ. Garde les gaz : ça glisse et se charge (bleu → orange → rose).<br>Lâche les gaz pour reprendre l’adhérence. Finis <b>sans toucher</b> : turbo et points !'
+    a.innerHTML=MODE_CMD==='boutons'?'<b>Glisse le doigt</b> sur la bande de gauche pour tourner : plus loin = plus fort.<br><b>GAZ</b> et <b>FREIN</b> se dosent : bas = doux, haut = à fond.<br><b>DRIFT</b> : en tournant, <b>un petit coup de FREIN</b> (ou braque à fond, vite). Ensuite le volant règle l’angle : vers l’intérieur = plus serré. Les gaz gardent la vitesse.<br><b>Volant au centre</b> pour sortir. Finis <b>sans toucher</b> : turbo et points !'
       :'<b>Pouce gauche</b> : la direction, la voiture accélère toute seule.<br><b>DRIFT</b> : maintiens-le en tournant.<br>Finis le drift <b>sans toucher</b> : turbo et points !';
-    document.body.appendChild(a);setTimeout(()=>{a.style.opacity='0';setTimeout(()=>a.remove(),700);},6500);try{localStorage.setItem('bdl.tk.aide5','1');}catch(x){}}
+    document.body.appendChild(a);setTimeout(()=>{a.style.opacity='0';setTimeout(()=>a.remove(),700);},6500);try{localStorage.setItem('bdl.tk.aide6','1');}catch(x){}}
   (function boucle(){
     if(!document.getElementById('tkHud')||!ESSAI.actif)return;
     const E2=ESSAI, niv=niveauCharge();
