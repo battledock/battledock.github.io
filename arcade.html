@@ -151,6 +151,14 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
    l'ecran marche, la moitie droite vise.
    ===================================================================== */
 .zone{position:absolute;top:0;bottom:0;width:50%;z-index:3;touch-action:none;display:none}
+#hgAct{position:absolute;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);z-index:6;display:none;flex-direction:column;align-items:flex-end;gap:12px;pointer-events:none}
+#hgAct.on{display:flex}
+#hgAct button{pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent;position:relative;border:0;border-radius:50%;color:#fff;font:800 9px ui-monospace,monospace;letter-spacing:.5px;
+ background:conic-gradient(rgba(255,255,255,.08) calc(var(--p,1) * 360deg),rgba(0,0,0,.55) 0);box-shadow:inset 0 0 0 2px rgba(255,255,255,.25);display:grid;place-items:center;user-select:none;-webkit-user-select:none}
+#hgAct #hgRoule{width:76px;height:76px;background-color:rgba(40,120,200,.45)}
+#hgAct #hgGren{width:58px;height:58px;margin-right:46px;background-color:rgba(200,90,30,.45)}
+#hgAct button.pret{box-shadow:inset 0 0 0 2px #fff,0 0 14px rgba(255,255,255,.35)}
+#hgAct button:active{transform:scale(.93)}
 #jeu.fige .zone,#jeu.fige .manche,#jeu.fige .sou{display:none}
 .zone.on{display:block}
 .zone.g{left:0}.zone.d{right:0}
@@ -460,6 +468,7 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
     <div class="manche d" id="md"><u></u></div>
     <div class="sou g" id="sg">POSE LE POUCE N’IMPORTE OÙ ET MARCHE</div>
     <div class="sou d" id="sd">VISER</div>
+    <div id="hgAct"><button id="hgGren" aria-label="Grenade"><i></i><span>GRENADE</span></button><button id="hgRoule" aria-label="Roulade"><i></i><span>ROULADE</span></button></div>
   </div>
   <div id="mnu" hidden>
     <div class="mo">
@@ -633,7 +642,7 @@ var VIGNETTE={
 
 var BORNES=[
  {cle:'hangar', vig:'hangar', nom:'Le Hangar',
-  dit:'Le port envahi : huit zones, des boss, seize armes. Tu bouges, ça tire tout seul. 10 000 € toutes les 10 salles.',
+  dit:'Le port envahi : huit zones, des boss, seize armes. Ça tire tout seul — toi tu bouges, tu roules, tu lances la grenade. La sortie change de mur à chaque salle. 10 000 € toutes les 10 salles.',
   mise:'1 JETON · 5 VIES'}
 ];
 
@@ -793,6 +802,17 @@ function dire(t,cl){JMSG.textContent=t||'';JMSG.className=cl||'';}
    restent en place — il ne manque que des moteurs a brancher.
    ===================================================================== */
 var MOTEUR={};
+/* LES DEUX GESTES DU HANGAR : on appuie, le moteur le lit au pas suivant */
+var HG_ACT={roule:false,gren:false};
+(function(){function lier(id,k){var b=document.getElementById(id);if(!b)return;
+  b.addEventListener('pointerdown',function(ev){ev.preventDefault();ev.stopPropagation();HG_ACT[k]=true;try{navigator.vibrate&&navigator.vibrate(8);}catch(x){}});
+  b.addEventListener('touchstart',function(ev){ev.preventDefault();},{passive:false});}
+  lier('hgRoule','roule');lier('hgGren','gren');})();
+function hgMajBoutons(s){var t=performance.now();if(hgMajBoutons.t&&t-hgMajBoutons.t<80)return;hgMajBoutons.t=t;
+  var r=document.getElementById('hgRoule'), g=document.getElementById('hgGren');if(!r||!g)return;
+  var pr=1-Math.max(0,s.rouleCD||0)/1100, pg=1-Math.max(0,s.grenCD||0)/8000;
+  r.style.setProperty('--p',pr.toFixed(2));g.style.setProperty('--p',pg.toFixed(2));
+  r.classList.toggle('pret',pr>=1);g.classList.toggle('pret',pg>=1);}
 
 /* =====================================================================
    LE HANGAR
@@ -1591,7 +1611,7 @@ MOTEUR.hangar={
             j:{x:HG_L/2, y:HG_H-60, vx:0, vy:0, vise:0, r:5, clign:0, pas:0},
             arme:'pistolet', chg:HG_ARMES.pistolet.chg, rech:0, cad:0,
             z:[], b:[], part:[], tach:[], ram:[],
-            obs:[], porte:{ouvert:false,x:HG_L/2,y:HG_MUR},
+            obs:[], porte:{ouvert:false,x:HG_L/2,y:HG_MUR,cote:'h'}, entree:'b',
             reste:0, aNaitre:0, pause:0, cam:{x:0,y:0}, mot:'', motT:0,
             patron:'eparpille', teinte:0, sec:0,
             zone:0, am:{}, cartes:null, braises:[], neuf:null,
@@ -1609,7 +1629,7 @@ MOTEUR.hangar={
   pose:function(s,x,y,w,h,t){
     if(x<HG_MUR+4||y<HG_MUR+20||x+w>HG_L-HG_MUR-4||y+h>HG_H-HG_MUR-14)return;
     if(Math.abs(x+w/2-s.j.x)<32&&Math.abs(y+h/2-s.j.y)<32)return;
-    if(Math.abs(x+w/2-s.porte.x)<28&&y<68)return;
+    if(Math.hypot(x+w/2-s.porte.x,y+h/2-s.porte.y)<46)return;   /* le passage devant la porte reste libre */
     for(var k=0;k<s.obs.length;k++){
       var p=s.obs[k];
       if(x<p.x+p.w+6&&x+w+6>p.x&&y<p.y+p.h+6&&y+h+6>p.y)return;
@@ -1775,6 +1795,13 @@ MOTEUR.hangar={
                        cl:Math.random()<0.18, ph:Math.random()*6.283});
       }
     }
+    /* LA PORTE CHANGE DE MUR A CHAQUE SALLE, jamais celui par lequel on entre :
+       on ne sait pas d'avance ou il faudra aller, donc on ne campe plus devant. */
+    var cotes=['h','b','g','d'].filter(function(c){return c!==s.entree;});
+    var cp=(n===1)?'h':cotes[Math.floor(Math.random()*cotes.length)], P=s.porte;P.cote=cp;
+    if(cp==='h'||cp==='b'){P.x=Math.round(HG_L*(0.25+Math.random()*0.5));P.y=cp==='h'?HG_MUR:HG_H-HG_MUR;}
+    else{P.y=Math.round(HG_H*(0.25+Math.random()*0.5));P.x=cp==='g'?HG_MUR:HG_L-HG_MUR;}
+    s.campT=0;s.ancre={x:s.j.x,y:s.j.y};
     this.batir(s,s.patron);
     /* QUELQUES BIDONS EXPLOSIFS, repartis dans la salle : ils changent
        une salle encombree en salle qu'on peut ouvrir au bon moment. */
@@ -1831,7 +1858,8 @@ MOTEUR.hangar={
     s.arcs=[];s.feux=[];
     /* L'ARME DE DEPART EST CELLE QU'ON A CHOISIE AU COMPTOIR, validee par le serveur */
     s.arme=ARME_DEPART||'pistolet';s.chg=HG_ARMES[s.arme].chg;s.rech=0;
-    s.j.x=HG_L/2;s.j.y=HG_H-60;s.j.vx=s.j.vy=0;
+    s.j.x=HG_L/2;s.j.y=HG_H-60;s.j.vx=s.j.vy=0;s.entree='b';
+    s.roule=0;s.rouleCD=0;s.grenCD=0;s.gren=[];
     this.garnir(s);
   },
 
@@ -1865,7 +1893,7 @@ MOTEUR.hangar={
        de quatre-vingt-quinze millisecondes a trois cent vingt, et il
        faut anticiper ses virages une demi-seconde a l'avance. */
     var k=1-Math.exp(-dt/(Z.glace?320:95));
-    j.vx+=(cx-j.vx)*k; j.vy+=(cy-j.vy)*k;
+    if(!(s.roule>0)){j.vx+=(cx-j.vx)*k; j.vy+=(cy-j.vy)*k;}
     if(Math.abs(j.vx)<0.0012)j.vx=0;
     if(Math.abs(j.vy)<0.0012)j.vy=0;
     /* on glisse le long des obstacles : chaque axe est teste a part,
@@ -1884,6 +1912,29 @@ MOTEUR.hangar={
                      vx:-j.vx*0.1,vy:-0.004});
       }
     }else{ j.pas=0; }
+
+    /* LE CAMPEUR : rester dans un rayon de 40 px plus de 4 s, c'est se faire repérer */
+    if(!s.ancre||Math.hypot(j.x-s.ancre.x,j.y-s.ancre.y)>40){s.ancre={x:j.x,y:j.y};if(s.campT>4000){s.mot='';s.motT=0;}s.campT=0;}
+    else{s.campT=(s.campT||0)+dt;if(s.campT>4000&&s.campT-dt<=4000&&s.aNaitre>0){s.mot='ILS T’ONT REPÉRÉ — BOUGE';s.motT=1400;}}
+    /* LA ROULADE : un bond dans le sens de la marche, intouchable le temps du bond */
+    if(s.rouleCD>0)s.rouleCD-=dt;
+    if(HG_ACT.roule){HG_ACT.roule=false;
+      if(s.rouleCD<=0&&!s.roule){var dx=j.vx, dy=j.vy, nn=Math.hypot(dx,dy);
+        if(nn<0.01){dx=MG.x;dy=MG.y;nn=Math.hypot(dx,dy);}
+        if(nn<0.01){dx=Math.cos(j.vise||-1.5708);dy=Math.sin(j.vise||-1.5708);nn=1;}
+        s.roule=210;s.rouleD={x:dx/nn,y:dy/nn};s.rouleCD=1100;s.inv=Math.max(s.inv,280);}}
+    if(s.roule>0){s.roule-=dt;j.vx=s.rouleD.x*0.27;j.vy=s.rouleD.y*0.27;
+      if(Math.random()<0.6)s.part.push({x:j.x+(Math.random()-0.5)*6,y:j.y+6,vie:260,t:'pous',vx:-s.rouleD.x*0.03,vy:-s.rouleD.y*0.03});
+      if(s.roule<=0){s.roule=0;j.vx*=0.4;j.vy*=0.4;}}
+    /* LA GRENADE : lancée vers le gros du troupeau, elle tombe en une demi-seconde */
+    if(s.grenCD>0)s.grenCD-=dt;
+    if(HG_ACT.gren){HG_ACT.gren=false;
+      if(s.grenCD<=0){var tg=this.plusProche(s,j.x,j.y,170), tx, ty;
+        if(tg){var mx=0,my=0,nm=0;for(var gq=0;gq<s.z.length;gq++){var zq=s.z[gq];if(Math.hypot(zq.x-tg.x,zq.y-tg.y)<50){mx+=zq.x;my+=zq.y;nm++;}}tx=mx/nm;ty=my/nm;}
+        else{tx=j.x+Math.cos(j.vise||-1.5708)*80;ty=j.y+Math.sin(j.vise||-1.5708)*80;}
+        s.gren.push({x0:j.x,y0:j.y-6,x:tx,y:ty,t:0,T:520});s.grenCD=8000;}}
+    for(var gi=s.gren.length-1;gi>=0;gi--){var gr=s.gren[gi];gr.t+=dt;if(gr.t>=gr.T){s.gren.splice(gi,1);this.eclater(s,gr.x,gr.y);}}
+    hgMajBoutons(s);
 
     /* LES BRAISES : on les traverse, on ne s'y installe pas */
     if(s.braises.length&&s.inv<=0){
@@ -2234,9 +2285,19 @@ MOTEUR.hangar={
         s.ram.push({x:HG_L/2-20+g2*40, y:HG_H/2+30, t:lot[g2]});
       }
     }
-    if(s.porte.ouvert&&s.j.y<HG_MUR+8&&Math.abs(s.j.x-s.porte.x)<16){
+    var Po=s.porte, dedans=false;
+    if(Po.ouvert){
+      if(Po.cote==='h')dedans=s.j.y<HG_MUR+8&&Math.abs(s.j.x-Po.x)<16;
+      else if(Po.cote==='b')dedans=s.j.y>HG_H-HG_MUR-8&&Math.abs(s.j.x-Po.x)<16;
+      else if(Po.cote==='g')dedans=s.j.x<HG_MUR+8&&Math.abs(s.j.y-Po.y)<16;
+      else dedans=s.j.x>HG_L-HG_MUR-8&&Math.abs(s.j.y-Po.y)<16;}
+    if(dedans){
       s.salle++;s.score+=40;
-      s.j.x=HG_L/2;s.j.y=HG_H-50;s.j.vx=s.j.vy=0;
+      /* on entre dans la salle suivante par le mur d'en face */
+      var opp={h:'b',b:'h',g:'d',d:'g'}[Po.cote];s.entree=opp;
+      if(opp==='b'){s.j.x=HG_L/2;s.j.y=HG_H-50;}else if(opp==='h'){s.j.x=HG_L/2;s.j.y=50;}
+      else if(opp==='g'){s.j.x=50;s.j.y=HG_H/2;}else{s.j.x=HG_L-50;s.j.y=HG_H/2;}
+      s.j.vx=s.j.vy=0;
       s.tach=[];s.part=[];
       this.garnir(s);
     }
@@ -2265,9 +2326,10 @@ MOTEUR.hangar={
     if(!this.heurte(s,nx,e.y,r))e.x=nx;
     var ny=e.y+dy;
     if(!this.heurte(s,e.x,ny,r))e.y=ny;
-    e.x=Math.max(HG_MUR+r,Math.min(HG_L-HG_MUR-r,e.x));
-    var hautLibre=(s.porte.ouvert&&Math.abs(e.x-s.porte.x)<16&&e===s.j);
-    e.y=Math.max(hautLibre?2:HG_MUR+r,Math.min(HG_H-HG_MUR-r,e.y));
+    var P=s.porte, ouv=(P.ouvert&&e===s.j);
+    var libX=ouv&&(P.cote==='g'||P.cote==='d')&&Math.abs(e.y-P.y)<16, libY=ouv&&(P.cote==='h'||P.cote==='b')&&Math.abs(e.x-P.x)<16;
+    e.x=Math.max(libX&&P.cote==='g'?2:HG_MUR+r,Math.min(libX&&P.cote==='d'?HG_L-2:HG_L-HG_MUR-r,e.x));
+    e.y=Math.max(libY&&P.cote==='h'?2:HG_MUR+r,Math.min(libY&&P.cote==='b'?HG_H-2:HG_H-HG_MUR-r,e.y));
   },
   heurte:function(s,x,y,r){
     for(var i=0;i<s.obs.length;i++){
@@ -2291,14 +2353,23 @@ MOTEUR.hangar={
     var e=gros?HG_GROS:HG_Z[Math.floor(Math.random()*ouvertes)];
     /* ils entrent par un bord, jamais sur le joueur */
     var x,y,essais=0, terre=!!HG_ZONES[s.zone||0].terre&&!gros;
+    /* ILS ENTRENT PAR LES QUATRE MURS, et aussi par la porte de sortie : elle n'est
+       plus un abri. Celui qui reste planté au même endroit est repéré : ils sortent
+       alors tout près de lui (à 55-90 px), il faut bouger. */
+    var traque=(s.campT||0)>4000&&!gros;
     do{
-      var c=terre?3:Math.floor(Math.random()*3);
-      if(c===3){x=HG_MUR+16+Math.random()*(HG_L-2*HG_MUR-32);y=HG_MUR+30+Math.random()*(HG_H-2*HG_MUR-60);}else
-      if(c===0){x=HG_MUR+8+Math.random()*(HG_L-2*HG_MUR-16);y=HG_MUR+10;}
-      else if(c===1){x=HG_MUR+10;y=HG_MUR+30+Math.random()*(HG_H-2*HG_MUR-60);}
-      else{x=HG_L-HG_MUR-10;y=HG_MUR+30+Math.random()*(HG_H-2*HG_MUR-60);}
+      var c=terre?3:(traque?5:(Math.random()<0.18?4:6+Math.floor(Math.random()*4)));
+      if(c===3){x=HG_MUR+16+Math.random()*(HG_L-2*HG_MUR-32);y=HG_MUR+30+Math.random()*(HG_H-2*HG_MUR-60);}
+      else if(c===5){var aT=Math.random()*6.283, dT=55+Math.random()*35;x=s.j.x+Math.cos(aT)*dT;y=s.j.y+Math.sin(aT)*dT;
+        x=Math.max(HG_MUR+10,Math.min(HG_L-HG_MUR-10,x));y=Math.max(HG_MUR+12,Math.min(HG_H-HG_MUR-12,y));}
+      else if(c===4){var P=s.porte;x=Math.max(HG_MUR+10,Math.min(HG_L-HG_MUR-10,P.x+(P.cote==='g'?12:P.cote==='d'?-12:(Math.random()-0.5)*20)));
+        y=Math.max(HG_MUR+12,Math.min(HG_H-HG_MUR-12,P.y+(P.cote==='h'?12:P.cote==='b'?-12:(Math.random()-0.5)*20)));}
+      else if(c===6){x=HG_MUR+8+Math.random()*(HG_L-2*HG_MUR-16);y=HG_MUR+10;}
+      else if(c===7){x=HG_MUR+10;y=HG_MUR+30+Math.random()*(HG_H-2*HG_MUR-60);}
+      else if(c===8){x=HG_L-HG_MUR-10;y=HG_MUR+30+Math.random()*(HG_H-2*HG_MUR-60);}
+      else{x=HG_MUR+8+Math.random()*(HG_L-2*HG_MUR-16);y=HG_H-HG_MUR-10;}
       essais++;
-    }while(essais<30&&(Math.hypot(x-s.j.x,y-s.j.y)<70||this.heurte(s,x,y,e.r)));
+    }while(essais<30&&(Math.hypot(x-s.j.x,y-s.j.y)<(traque?50:70)||this.heurte(s,x,y,e.r)));
     s.z.push({x:x,y:y,v:e.v*(1+s.salle*0.018),pv:e.pv+Math.floor(s.salle/3),
               pvm:e.pv+Math.floor(s.salle/3),pts:e.pts,r:e.r,
               art:gros?-1:e.art,mir:false,pouss:0,pa:0,clign:0,pas:0,
@@ -2415,6 +2486,15 @@ MOTEUR.hangar={
   poserFeu:function(s,x,y,r){
     if(s.feux.length>26)s.feux.shift();
     s.feux.push({x:x,y:y,r:r,vie:3400+Math.random()*900,T:0});
+  },
+  eclater:function(s,cx,cy){
+    for(var e=0;e<30;e++){var a=Math.random()*6.283, v=0.04+Math.random()*0.16;
+      s.part.push({x:cx,y:cy,vie:240+Math.random()*300,t:'flam',vx:Math.cos(a)*v,vy:Math.sin(a)*v});}
+    s.sec=Math.max(s.sec,200);
+    var dg=8+Math.floor(s.salle/2)+((PERSO.niveaux||{}).degats||0);
+    for(var m=s.z.length-1;m>=0;m--){var z=s.z[m], d=Math.hypot(z.x-cx,z.y-cy);
+      if(d<42){z.pv-=Math.max(1,Math.round(dg*(1-d/70)));z.pouss=18;z.pa=Math.atan2(z.y-cy,z.x-cx);z.clign=140;if(z.pv<=0)this.abattre(s,z,m);}}
+    for(var o=s.obs.length-1;o>=0;o--){var ob=s.obs[o];if(ob.ex&&Math.hypot(ob.x+ob.w/2-cx,ob.y+ob.h/2-cy)<30){this.sauter(s,ob,o);break;}}
   },
   sauter:function(s,ob,i){
     var cx=ob.x+ob.w/2, cy=ob.y+ob.h/2;
@@ -2640,17 +2720,28 @@ MOTEUR.hangar={
     }
     /* la porte du fond */
     var pd=s.porte;
+    /* LA PORTE PEUT ETRE SUR N'IMPORTE QUEL MUR : on la dessine debout (haut/bas) ou couchee (gauche/droite) */
+    G.save();
+    if(pd.cote==='b'){G.translate(pd.x,HG_H);G.rotate(Math.PI);G.translate(-pd.x,0);}
+    else if(pd.cote==='g'){G.translate(0,pd.y);G.rotate(-Math.PI/2);G.translate(-pd.y,0);}
+    else if(pd.cote==='d'){G.translate(HG_L,pd.y);G.rotate(Math.PI/2);G.translate(-pd.y,0);}
+    else G.translate(0,0);
+    var px0=(pd.cote==='g'||pd.cote==='d')?pd.y:pd.x;
     if(pd.ouvert){
-      R(pd.x-15,0,30,HG_MUR,'#c6e8f4');
-      R(pd.x-15,HG_MUR-5,30,5,'#5ea8c4');
-      R(pd.x-15,0,2,HG_MUR,'#6f6354');R(pd.x+13,0,2,HG_MUR,'#6f6354');
+      R(px0-15,0,30,HG_MUR,'#c6e8f4');
+      R(px0-15,HG_MUR-5,30,5,'#5ea8c4');
+      R(px0-15,0,2,HG_MUR,'#6f6354');R(px0+13,0,2,HG_MUR,'#6f6354');
       var cl=(Math.floor(s.t/320)%2)===0;
-      R(pd.x-15,HG_MUR,30,1,cl?'#8ad07a':'rgba(138,208,122,.4)');
+      R(px0-15,HG_MUR,30,1,cl?'#8ad07a':'rgba(138,208,122,.4)');
+      /* une fleche au sol qui pulse vers la sortie */
+      var fa=0.35+0.35*Math.sin(s.t/180);G.fillStyle='rgba(138,208,122,'+fa+')';G.beginPath();G.moveTo(px0,HG_MUR+4);G.lineTo(px0-8,HG_MUR+14);G.lineTo(px0+8,HG_MUR+14);G.fill();
     }else{
-      R(pd.x-15,0,30,HG_MUR,'#6a5a46');
-      for(var pk=0;pk<5;pk++)R(pd.x-13+pk*6,1,4,HG_MUR-2,'#51442f');
-      R(pd.x-15,HG_MUR-2,30,2,'#3a3024');
+      R(px0-15,0,30,HG_MUR,'#6a5a46');
+      for(var pk=0;pk<5;pk++)R(px0-13+pk*6,1,4,HG_MUR-2,'#51442f');
+      R(px0-15,HG_MUR-2,30,2,'#3a3024');
+      R(px0-2,HG_MUR-4,4,3,'#d8a030');   /* le cadenas */
     }
+    G.restore();
     /* les obstacles */
     for(var io=0;io<s.obs.length;io++){
       var o=s.obs[io];
@@ -2999,6 +3090,11 @@ MOTEUR.hangar={
         R(pa.x,pa.y,1,1,'rgba(240,230,200,.8)');
       }
     }
+    /* les grenades en vol : une cloche, et leur ombre au sol */
+    for(var gi2=0;gi2<(s.gren||[]).length;gi2++){var gr2=s.gren[gi2], f2=gr2.t/gr2.T, gx=gr2.x0+(gr2.x-gr2.x0)*f2, gy=gr2.y0+(gr2.y-gr2.y0)*f2, hz=Math.sin(f2*Math.PI)*26;
+      G.fillStyle='rgba(0,0,0,.35)';G.beginPath();G.ellipse(gx,gy+2,3,1.6,0,0,7);G.fill();
+      R(gx-2,gy-hz-2,4,4,'#3a4a2a');R(gx-1,gy-hz-3,2,1,'#c8c860');
+      if(f2>0.6){G.strokeStyle='rgba(255,90,40,'+(f2-0.5)+')';G.lineWidth=1;G.beginPath();G.arc(gr2.x,gr2.y,42*(1.2-f2*0.4),0,7);G.stroke();}}
     /* LA BRUME DU CIMETIERE : trois nappes qui derivent lentement, on y
        perd les silhouettes sans perdre la salle */
     if(HG_ZONES[s.zone||0].brume){
@@ -3023,6 +3119,11 @@ MOTEUR.hangar={
     G.restore();
 
     /* ================= LE CHROME, PAR-DESSUS ================= */
+    if(s.porte.ouvert){var PX=s.porte.x-s.cam.x, PY=s.porte.y-s.cam.y;
+      if(PX<0||PX>L||PY<0||PY>H){var cxs=L/2, cys=H/2, ang=Math.atan2(PY-cys,PX-cxs), k2=Math.min((L/2-14)/Math.max(0.01,Math.abs(Math.cos(ang))),(H/2-20)/Math.max(0.01,Math.abs(Math.sin(ang))));
+        var ax=cxs+Math.cos(ang)*k2, ay=cys+Math.sin(ang)*k2, pul=0.6+0.4*Math.sin(s.t/160);
+        G.save();G.translate(ax,ay);G.rotate(ang);G.fillStyle='rgba(138,208,122,'+pul+')';G.beginPath();G.moveTo(9,0);G.lineTo(-6,-7);G.lineTo(-3,0);G.lineTo(-6,7);G.fill();G.restore();
+        G.fillStyle='rgba(200,240,190,'+pul+')';G.font='bold 6px ui-monospace,monospace';G.textAlign='center';G.fillText('SORTIE',Math.max(20,Math.min(L-20,ax-Math.cos(ang)*14)),Math.max(10,Math.min(H-4,ay-Math.sin(ang)*14+2)));}}
     /* les vies */
     var HX=24;                 /* apres la fleche de retour */
     for(var iv=0;iv<(s.viesMax||5);iv++){
@@ -3595,6 +3696,7 @@ function ouvrirBorne(B){
     document.getElementById(k).classList.toggle('on',deux);
   });
   document.getElementById('zg').style.width=deux?'50%':'100%';
+  document.getElementById('hgAct').classList.toggle('on',BORNE===MOTEUR.hangar);
   document.getElementById('sg').classList.remove('parti');
   document.getElementById('sd').classList.remove('parti');
   MG.lache();MD.lache();
@@ -3633,7 +3735,7 @@ function fermerBorne(){
   if(S&&PARTIE&&S.phase!=='pret'&&S.phase!=='fini')finirPartie(S.score,true);
   JEU.hidden=true;JEU.classList.remove('plein');
   if(RAF){cancelAnimationFrame(RAF);RAF=null;}
-  BORNE=null;S=null;CV.onpointerdown=null;
+  BORNE=null;S=null;CV.onpointerdown=null;try{document.getElementById('hgAct').classList.remove('on');}catch(x){}
   document.getElementById('mg').classList.remove('on');
   document.getElementById('md').classList.remove('on');
   MG.lache();MD.lache();
