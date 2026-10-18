@@ -1342,20 +1342,20 @@ const VOIT_PRET={BMW:{marque:'BMW',modele:'M3 E46',id:'bmw-m3-e46'},Toyota:{marq
   Lamborghini:{marque:'Lamborghini',modele:'Huracán',id:'lamborghini-huracan'},Ferrari:{marque:'Ferrari',modele:'F40',id:'ferrari-f40'}};
 const LICENCES=[
   {id:'C',nom:'Licence C',titre:'Débutant',prime:300000,coul:'#7fe8ff',ep:[
-    {id:'C1',nom:'Premier tour',desc:'Un tour du Tokyo Circuit, seul en piste.',type:'chrono',circuit:'tokyo',voiture:'BMW',tours:1,seuils:[47.5,42.5,39.5]},
+    {id:'C1',nom:'Premier tour',desc:'Un tour du Tokyo Circuit, seul en piste.',type:'chrono',circuit:'tokyo',voiture:'BMW',tours:1,seuils:[50,44.5,41.5]},
     {id:'C2',nom:'Premiers drifts',desc:'Une manche de 60 s dans la zone de drift.',type:'drift',voiture:'Toyota',seuils:[5000,15000,35000]},
     {id:'C3',nom:'Course aux Docks',desc:'Deux tours contre cinq pilotes, entre les conteneurs.',type:'course',circuit:'docks',voiture:'BMW',tours:2,niv:0.9,seuils:[3,2,1]}]},
   {id:'B',nom:'Licence B',titre:'Pilote',prime:800000,coul:'#5cff8a',ep:[
-    {id:'B1',nom:'Les lacets d’Haruna',desc:'Un tour du Mont Haruna, seul.',type:'chrono',circuit:'haruna',voiture:'Toyota',tours:1,seuils:[65,58,54.5]},
-    {id:'B2',nom:'Précision aux Docks',desc:'Un tour des Docks en 911, seul.',type:'chrono',circuit:'docks',voiture:'Porsche',tours:1,seuils:[40,35.5,33]},
+    {id:'B1',nom:'Les lacets d’Haruna',desc:'Un tour du Mont Haruna, seul.',type:'chrono',circuit:'haruna',voiture:'Toyota',tours:1,seuils:[70,62.5,58.5]},
+    {id:'B2',nom:'Précision aux Docks',desc:'Un tour des Docks en 911, seul.',type:'chrono',circuit:'docks',voiture:'Porsche',tours:1,seuils:[42.5,38,35.5]},
     {id:'B3',nom:'Le grand prix de Tokyo',desc:'Trois tours contre cinq pilotes.',type:'course',circuit:'tokyo',voiture:'Toyota',tours:3,niv:0.85,seuils:[3,2,1]}]},
   {id:'A',nom:'Licence A',titre:'Expert',prime:1500000,coul:'#ffd21f',ep:[
-    {id:'A1',nom:'Wangan à fond',desc:'Un tour de l’autoroute en Huracán, seul.',type:'chrono',circuit:'wangan',voiture:'Lamborghini',tours:1,seuils:[36,32.5,30.5]},
+    {id:'A1',nom:'Wangan à fond',desc:'Un tour de l’autoroute en Huracán, seul.',type:'chrono',circuit:'wangan',voiture:'Lamborghini',tours:1,seuils:[37,33,31]},
     {id:'A2',nom:'Duel sur la montagne',desc:'Deux tours d’Haruna contre cinq pilotes.',type:'course',circuit:'haruna',voiture:'Porsche',tours:2,niv:0.92,seuils:[3,2,1]},
     {id:'A3',nom:'Maître du drift',desc:'Une manche de drift en 911.',type:'drift',voiture:'Porsche',seuils:[15000,35000,60000]}]},
   {id:'S',nom:'Licence S',titre:'Légende',prime:4000000,coul:'#ff4fb0',ep:[
     {id:'S1',nom:'La nuit du Wangan',desc:'Deux tours d’autoroute en F40, dans le trafic.',type:'course',circuit:'wangan',voiture:'Ferrari',tours:2,seuils:[3,2,1]},
-    {id:'S2',nom:'Haruna en F40',desc:'Un tour de montagne, gros turbos, seul.',type:'chrono',circuit:'haruna',voiture:'Ferrari',tours:1,seuils:[65,58.5,54.5]},
+    {id:'S2',nom:'Haruna en F40',desc:'Un tour de montagne, gros turbos, seul.',type:'chrono',circuit:'haruna',voiture:'Ferrari',tours:1,seuils:[72,64,60]},
     {id:'S3',nom:'La bête des Docks',desc:'Trois tours des Docks en GT-R contre cinq pilotes.',type:'course',circuit:'docks',voiture:'Nissan',tours:3,niv:1.04,seuils:[3,2,1]}]}];
 const MED=['—','BRONZE','ARGENT','OR'], MED_C=['#8a8794','#d08a4a','#d8dbe6','#ffd21f'], MED_E=['','🥉','🥈','🥇'];
 function carriere(){try{const c=JSON.parse(localStorage.getItem('bdl.tk.carriere')||'{}');c.med=c.med||{};c.best=c.best||{};c.lic=c.lic||{};return c;}catch(x){return {med:{},best:{},lic:{}};}}
@@ -1480,11 +1480,15 @@ function lireCommandes(jx,jy){
       const ref=(E.drA===1&&vv>20)?Math.atan2(E.vy,E.vx):E.ang;
       let d=Math.atan2(dY,dX)-ref;d=Math.atan2(Math.sin(d),Math.cos(d));
       const k=Math.min(1,(m-0.22)/0.45+0.35);
-      s=Math.max(-1,Math.min(1,d*2.4))*k;
+      s=Math.max(-1,Math.min(1,d*PH.joyG-(E.lacet||0)*PH.joyD))*k;
       if(Math.abs(d)>2.5)s=Math.sign(d||1)*k;}
     /* le volant suit le pouce avec un brin de douceur (≈ 80 ms) : pas de coups secs */
-    if(m>0.01||E.sJoy){E.sJoy=(E.sJoy||0)+(s-(E.sJoy||0))*(1-Math.exp(-PAS*12));if(m>0.01||Math.abs(E.sJoy)>0.02)s=E.sJoy;else E.sJoy=0;}
+    if(m>0.01||E.sJoy){E.sJoy=(E.sJoy||0)+(s-(E.sJoy||0))*(1-Math.exp(-PAS*PH.joyF));if(m>0.01||Math.abs(E.sJoy)>0.02)s=E.sJoy;else E.sJoy=0;}
     g=typeof CMDS.gaz==='number'?CMDS.gaz:(CMDS.gaz?1:0);b=typeof CMDS.frein==='number'?CMDS.frein:(CMDS.frein?1:0);
+    /* LES PÉDALES SE POSENT, elles ne claquent pas : l'accélérateur monte et descend en ≈ 0,12 s,
+       le frein mord en ≈ 0,08 s (et se relâche tout de suite, pour garder le petit coup de frein du drift) */
+    E.gF=(E.gF||0)+(g-(E.gF||0))*(1-Math.exp(-PAS*8));if(g===0&&E.gF<0.02)E.gF=0;g=E.gF;
+    E.bF=b>0?(E.bF||0)+(b-(E.bF||0))*(1-Math.exp(-PAS*12)):0;b=b>0?Math.max(0.05,E.bF):0;
   }else{
     jx=jx||0;jy=jy||0;const n=Math.min(1,Math.hypot(jx,jy));
     const av0=E.vx*Math.cos(E.ang)+E.vy*Math.sin(E.ang);
@@ -1508,9 +1512,9 @@ const RG_DEF=[
     ['dAngle','Angle donné par les gaz',0.52,0.2,0.8,0.01,'rad'],
     ['dAngleMax','Angle en plus (volant dedans)',0.25,0,0.5,0.01,'rad'],
     ['dRot','Accroche en drift (courbe serrée)',1,0.5,1.6,0.05,'×'],
-    ['dReponse','Vitesse de mise en travers',4,1.5,9,0.1,''],
+    ['dReponse','Vitesse de mise en travers',3,1.5,9,0.1,''],
     ['dFrottement','Perte de vitesse en drift',1,0.2,2.5,0.05,'×'],
-    ['dSortie','Vitesse de redressement',5.5,2,12,0.1,''],
+    ['dSortie','Vitesse de redressement',3.5,2,12,0.1,''],
     ['dDeclenche','Durée max du tap frein (s)',0.3,0.12,0.5,0.01,'s'],
     ['dAFond','Rattraper les glisses en drift (0 = non)',1,0,1,1,'']]],
   ['Virage',[
@@ -1607,7 +1611,10 @@ function lancerDrift(sens){
    DRIFT tenu : un coup de frein à main à l'appui, puis l'antipatinage se
    coupe et l'arrière décroche sous les gaz ; on tient l'angle au volant et
    à l'accélérateur. On relâche : l'arrière raccroche. */
-const PH={L:40,g:340,h:11,sous:3,kF:7,kR:9.5,iz:1.2};
+/* LE CARACTÈRE GÉNÉRAL : une vraie voiture a du poids. Elle met du temps à se mettre en virage (inertie, pneus
+   qui se déforment), le volant ne tourne pas d'un coup, le braquage diminue avec la vitesse, et l'adhérence a
+   une limite qui oblige à freiner avant les virages. Le pouce indique un cap ; la voiture y va sans à-coup. */
+const PH={L:40,g:340,h:11,sous:3,kF:5.5,kR:8,iz:1.45,mu:0.85,vol:0.7,joyG:1.6,joyF:8,joyD:0.2,vv:0.7};
 function pneu(alpha,cap,B){return -cap*Math.sin(1.4*Math.atan(B*alpha));}
 function pasPhysique(dt,c){
   const E=ESSAI, S=E.stats||statsVoiture('Toyota',{});
@@ -1618,7 +1625,7 @@ function pasPhysique(dt,c){
   const NB=E.nitroT>0?(S.nitro>1?1.5:1.35):1, BB=E.boostT>0?E.boostK:1, K=Math.max(NB,BB);
   const VMAX=S.vmax*RG.aVmax*(hp?0.5:1)*K, ACC=S.acc*RG.aPuissance*0.8*(hp?0.65:1)*(K>1?1.8:1);
   const L=PH.L, wf=S.wf||0.5, b=L*wf, a=L-b;          /* a : centre de gravité → essieu avant ; b : → essieu arrière */
-  const mu=(S.grip/9.5)*RG.vAdherence*(hp?0.62:1);
+  const mu=(S.grip/9.5)*PH.mu*RG.vAdherence*(hp?0.62:1);
   let u=E.vx*Math.cos(E.ang)+E.vy*Math.sin(E.ang), v=-E.vx*Math.sin(E.ang)+E.vy*Math.cos(E.ang), r=E.lacet||0;
   /* 1. LA BOÎTE */
   const fr=Math.max(0,u)/S.vmax;let rap=0;for(let i=0;i<RAPPORTS.length;i++)if(fr>=RAPPORTS[i])rap=i;
@@ -1638,7 +1645,7 @@ function pasPhysique(dt,c){
   if(E.hbT>0)E.hbT-=dt;
   const frMain=E.hbT>0, driftTenu=c.h&&!frMain;
   /* 3. LE VOLANT : la cible, l'aide au contre-braquage, la vitesse de rotation du volant */
-  const dmax=0.72*(S.dir/3)*RG.vBraquage/(1+Math.max(0,u)/RG.vVitesse);
+  const dmax=0.72*(S.dir/3)*RG.vBraquage/(1+Math.max(0,u)/(RG.vVitesse*PH.vv));
   const beta=Math.atan2(v,Math.max(10,Math.abs(u)));
   E.dBeta=E.betaAvant==null?0:Math.max(-6,Math.min(6,(beta-E.betaAvant)/dt));E.betaAvant=beta;
   let dCible=(c.s||0)*dmax, gazDrift=1;
@@ -1661,7 +1668,7 @@ function pasPhysique(dt,c){
   }
   dCible=Math.max(-0.75,Math.min(0.75,dCible));
   const vol=E.delta||0, retour=Math.abs(dCible)<Math.abs(vol)||dCible*vol<0;
-  const vitVol=((E.driftAide||driftTenu||frMain)?3.5:(retour?5:2.2))*RG.vVolant*dt;
+  const vitVol=((E.driftAide||driftTenu||frMain)?3.5:(retour?5:2.2))*PH.vol*RG.vVolant*dt;
   E.delta=vol+Math.max(-vitVol,Math.min(vitVol,dCible-vol));
   E.vol=E.delta/Math.max(0.05,dmax);                       /* pour l'affichage et le reste du jeu */
   const d=E.delta;
@@ -1881,12 +1888,12 @@ function majEssai(dt,jx,jy){
      l'accélération — un ressort amorti, en pixels. Les vibreurs secouent la voiture. */
   {const av2=E.vx*Math.cos(E.ang)+E.vy*Math.sin(E.ang), lat=av2*(E.lacet||0);
     const rT=-Math.max(-1,Math.min(1,lat/800))*3, pT=-Math.max(-1,Math.min(1,(E.axL||0)/300))*2.4;
-    if(E.rapport!==E.rapVu){if(E.rapport>(E.rapVu||0))E.pitchV=(E.pitchV||0)+26;E.rapVu=E.rapport;}   /* le passage de vitesse : la caisse pique du nez une fraction de seconde */
+    if(E.rapport!==E.rapVu){if(E.rapport>(E.rapVu||0))E.pitchV=(E.pitchV||0)+16;E.rapVu=E.rapport;}   /* le passage de vitesse : la caisse pique du nez une fraction de seconde */
     const kd=Math.min(dt,0.05);
-    E.rollV=(E.rollV||0)+(70*(rT-(E.roll||0))-10*(E.rollV||0))*kd;E.roll=(E.roll||0)+E.rollV*kd;
-    E.pitchV=(E.pitchV||0)+(70*(pT-(E.pitch||0))-10*(E.pitchV||0))*kd;E.pitch=(E.pitch||0)+E.pitchV*kd;
+    E.rollV=(E.rollV||0)+(38*(rT-(E.roll||0))-8.5*(E.rollV||0))*kd;E.roll=(E.roll||0)+E.rollV*kd;
+    E.pitchV=(E.pitchV||0)+(38*(pT-(E.pitch||0))-8.5*(E.pitchV||0))*kd;E.pitch=(E.pitch||0)+E.pitchV*kd;
     {const tg=E.drA?0:Math.max(-1,Math.min(1,lat/(PH.g*0.85)))*0.10;
-      E.yawV=(E.yawV||0)+(60*(tg-(E.yawVis||0))-8*(E.yawV||0))*kd;E.yawVis=(E.yawVis||0)+E.yawV*kd;}
+      E.yawV=(E.yawV||0)+(30*(tg-(E.yawVis||0))-9*(E.yawV||0))*kd;E.yawVis=(E.yawVis||0)+E.yawV*kd;}
     const pp=E.sPiste!=null?pointPiste(E.sPiste):null, bord=Math.abs(E.lat||0);
     E.vibreur=!!(E.mode!=='drift'&&(CIR.style==='tokyo'||CIR.style==='docks')&&pp&&pp.k>0&&bord>CIR.ep/2-12&&bord<CIR.ep/2+6&&(E.vitesse||0)>60);
     if(E.vibreur&&(E.vibreT=(E.vibreT||0)-dt)<=0){E.vibreT=0.11;try{navigator.vibrate&&navigator.vibrate(7);}catch(x){}}}
@@ -1953,7 +1960,7 @@ function pasCourse(dt){
     let cible=c.vmax;
     if(c.type==='adv'){
       /* la vitesse de passage de chaque virage devant (rayon de braquage du joueur), et la distance pour freiner */
-      for(let a=0;a<=360;a+=20){const k=pointPiste(c.s+a).k;if(k>0){const vv=Math.sqrt(185*(c.niv||1)/k);cible=Math.min(cible,Math.sqrt(vv*vv+2*260*a));}}
+      for(let a=0;a<=360;a+=20){const k=pointPiste(c.s+a).k;if(k>0){const vv=Math.sqrt(160*(c.niv||1)/k);cible=Math.min(cible,Math.sqrt(vv*vv+2*260*a));}}
       /* l'élastique : léger, et seulement s'il est loin */
       const ecart=(progression(c)-progressionJoueur());
       if(ecart>500)cible*=0.96;else if(ecart<-400)cible*=1.04;
