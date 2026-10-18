@@ -160,9 +160,14 @@ function lumieresTokyo(g,camX,camY){
 
 /* arrivée : à l'entrée ouest, près du panneau du port. */
 function poserTokyo(){
-  const [dx,dy]=degager(TK.arrivee[0],TK.arrivee[1]);
+  /* on arrive par le train : sur le quai ; on rouvre le jeu : là où on était */
+  let p0=[TK.arrivee[0],TK.arrivee[1]];
+  try{if(!new URLSearchParams(location.search).has('arrivee')&&e.ext&&e.extc==='tokyo'&&isFinite(+e.ext.x)&&isFinite(+e.ext.y))p0=[+e.ext.x,+e.ext.y];}catch(x){}
+  const [dx,dy]=degager(p0[0],p0[1]);
   joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.extc='tokyo';e.carte='tokyo';
   try{sauver();}catch(x){}
+  /* l'adresse redevient « Tokyo » tout court : recharger la page garde la place, pas le quai */
+  try{history.replaceState(null,'',location.pathname+'?carte=tokyo');}catch(x){}
 }
 
 /* ---------- LE CONCESSIONNAIRE : le menu du showroom, en entrant ----------
