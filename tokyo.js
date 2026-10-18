@@ -1438,6 +1438,7 @@ function debutEssai(v,aMoi,reglages,mode,opts){
   COURSE.actif=false;
   if(E.mode==='course')preparerCourse();
   ZONE.phase='';if(E.mode==='drift')preparerZone();
+  E.ix=E.x;E.iy=E.y;E.ia=E.ang;E.rx=E.x;E.ry=E.y;E.ra=E.ang;E.yawVis=0;E.yawV=0;E.roll=0;E.pitch=0;E.rollV=0;E.pitchV=0;E.airs=[];E.marq=null;E.gF=0;E.bF=0;E.sJoy=0;E.vitesse=0;E.lacet=0;E.drA=0;
   if(enVille()){joueur.x=E.x;joueur.y=E.y;}
   couperMoteur();demarrerMoteur();
   if(E.mode!=='libre')sonBip(false);                  /* le « 3 » du départ */
@@ -1850,7 +1851,7 @@ function majEssai(dt,jx,jy){
   while(E.reste>=PAS&&n<14){
     E.reste-=PAS;n++;
     const c=gele?{s:0,g:CMDS.gaz?1:0,b:1,h:false}:lireCommandes(jx,jy);
-    if(gele){majMoteur(PAS,0,c.g>0,0,0);continue;}
+    if(gele){E.ix=E.x;E.iy=E.y;E.ia=E.ang;majMoteur(PAS,0,c.g>0,0,0);continue;}
     if(CMDS.nitro&&E.nitroCharge>=1&&E.stats&&E.stats.nitro){E.nitroT=E.stats.nitro>1?2.6:2;E.nitroCharge=0;CMDS.nitro=false;try{navigator.vibrate&&navigator.vibrate([20,30,60]);}catch(x){}}
     driftAuto(c,PAS);c.h=false;
     E.ix=E.x;E.iy=E.y;E.ia=E.ang;
@@ -1863,7 +1864,8 @@ function majEssai(dt,jx,jy){
   /* LE DESSIN ENTRE DEUX PAS : la physique avance par pas de 1/120 s, l'écran à son propre rythme
      (60, 90, 120 images/s). On dessine la voiture là où elle est ENTRE les deux derniers pas : plus de saccade. */
   {const a=Math.max(0,Math.min(1,E.reste/PAS));
-    if(E.ix==null){E.ix=E.x;E.iy=E.y;E.ia=E.ang;}
+    /* la voiture a été posée ailleurs (départ, grille, remise en piste) : pas de glissade depuis l'ancienne place */
+    if(E.ix==null||Math.hypot(E.x-E.ix,E.y-E.iy)>60){E.ix=E.x;E.iy=E.y;E.ia=E.ang;}
     let da=E.ang-E.ia;da=Math.atan2(Math.sin(da),Math.cos(da));
     E.rx=E.ix+(E.x-E.ix)*a;E.ry=E.iy+(E.y-E.iy)*a;E.ra=E.ia+da*a;}
   /* LES EFFETS, une fois par image */
@@ -1925,7 +1927,8 @@ function preparerCourse(){
   COURSE.tours=O.tours||CIR.tours;COURSE.seul=!adv;
   const marques=['Toyota','BMW','Lamborghini','Porsche','Nissan','Ferrari'].filter(m=>m!==(E.modele||{}).marque);
   /* la grille : le joueur en dernière ligne, à gauche */
-  const grille=[[-45,-lw],[-45,lw],[-110,-lw],[-110,lw],[-175,-lw],[-175,lw]];
+  /* une grille en quinconce, comme en vrai : une voiture tous les 50 px, alternée gauche/droite (plus de voitures qui se chevauchent) */
+  const grille=[[-50,-lw],[-100,lw],[-150,-lw],[-200,lw],[-250,-lw],[-300,lw]];
   if(!adv){grille[5]=[-60,0];}
   for(let i=0;i<(adv?5:0);i++){
     const m=marques[i%marques.length], S=statsVoiture(m,{}), coul=COUL_ADV[(i*3+Math.floor(Math.random()*7))%COUL_ADV.length];
@@ -2785,7 +2788,7 @@ function dessinerVolant(ctx){
   const nuit=(()=>{try{const C=cielDuMoment();return C?C.lampes:0;}catch(x){return 0;}})();
   if(!enVille()){
     /* LES CIRCUITS À PART : dessinés à la volée autour de la voiture */
-    const vx0=Math.floor(E.x-cx/e2-2), vy0=Math.floor(E.y-cy/e2-2), vx1=Math.ceil(E.x+(W-cx)/e2+2), vy1=Math.ceil(E.y+(H-cy)/e2+2);
+    const vx0=Math.floor(RX-cx/e2-6), vy0=Math.floor(RY-cy/e2-6), vx1=Math.ceil(RX+(W-cx)/e2+6), vy1=Math.ceil(RY+(H-cy)/e2+6);
     try{dessinerCircuitVect(ctx,vx0,vy0,vx1,vy1,nuit);}catch(x){console.warn(x);}
     dessinerEssai(ctx,0,0);
     if(nuit>0.05){const c=Math.cos(E.ang), s2=Math.sin(E.ang);
@@ -2793,7 +2796,7 @@ function dessinerVolant(ctx){
       if(COURSE.actif)for(const o of COURSE.voitures){const c3=Math.cos(o.ang), s3=Math.sin(o.ang);try{lueurNuit(ctx,o.x+c3*55,o.y+s3*55,50,'rgba(255,240,205,§)');}catch(x){}}}
     return;
   }
-  const x0=Math.max(0,Math.floor(E.x-cx/e2-2)), y0=Math.max(0,Math.floor(E.y-cy/e2-2)), x1=Math.min(MONDE_L,Math.ceil(E.x+(W-cx)/e2+2)), y1=Math.min(MONDE_H,Math.ceil(E.y+(H-cy)/e2+2));
+  const x0=Math.max(0,Math.floor(RX-cx/e2-6)), y0=Math.max(0,Math.floor(RY-cy/e2-6)), x1=Math.min(MONDE_L,Math.ceil(RX+(W-cx)/e2+6)), y1=Math.min(MONDE_H,Math.ceil(RY+(H-cy)/e2+6));
   ctx.imageSmoothingEnabled=false;
   if(x1>x0&&y1>y0){const src=(typeof SOL_FIN!=='undefined'&&SOL_FIN)?SOL_FIN:SOL, k=src===SOL?1:2;
     ctx.drawImage(src,x0*k,y0*k,(x1-x0)*k,(y1-y0)*k,x0,y0,x1-x0,y1-y0);
