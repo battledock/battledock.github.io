@@ -1482,6 +1482,56 @@ function lireCommandes(jx,jy){
   return {s,g,b,h:!!CMDS.drift};
 }
 
+/* ================= LE LABO DE CONDUITE : des curseurs pour régler la voiture en roulant =================
+   Ouvert avec ?labo=1 dans l'adresse (une fois suffit, ?labo=0 le retire). Les valeurs sont gardées
+   sur le téléphone ; « Copier » les met dans le presse-papier pour les envoyer et les rendre définitives. */
+const RG_DEF=[
+  ['Drift',[
+    ['dAngle','Angle de base',0.42,0.15,0.75,0.01,'rad'],
+    ['dAngleMax','Angle en plus (volant dedans)',0.33,0,0.6,0.01,'rad'],
+    ['dRot','Rotation (courbe plus ou moins serrée)',1,0.4,1.8,0.05,'×'],
+    ['dReponse','Vitesse de mise en travers',4,1.5,9,0.1,''],
+    ['dFrottement','Perte de vitesse en drift',1,0.2,2.5,0.05,'×'],
+    ['dSortie','Vitesse de redressement',5.5,2,12,0.1,''],
+    ['dDeclenche','Durée max du tap frein (s)',0.3,0.12,0.5,0.01,'s'],
+    ['dAFond','Drift en braquant à fond (0 = non)',1,0,1,1,'']]],
+  ['Virage',[
+    ['vBraquage','Braquage max',1,0.5,1.7,0.05,'×'],
+    ['vVolant','Vitesse du volant',1,0.4,2.5,0.05,'×'],
+    ['vAdherence','Adhérence',1,0.6,1.7,0.05,'×'],
+    ['vStabilite','Inertie (rotation lente/rapide)',1,0.4,2.2,0.05,'×'],
+    ['vVitesse','Braquage qui baisse avec la vitesse',300,120,900,10,'']]],
+  ['Accélération et freinage',[
+    ['aPuissance','Puissance',1,0.5,2,0.05,'×'],
+    ['aVmax','Vitesse max',1,0.7,1.4,0.05,'×'],
+    ['aFrein','Freins',1,0.4,2,0.05,'×'],
+    ['aMoteur','Frein moteur (pied levé)',1,0,2.5,0.05,'×'],
+    ['aTransfert','Transfert de poids',1,0,2.5,0.05,'×']]]];
+const RG={};for(const [,L] of RG_DEF)for(const [k,,v] of L)RG[k]=v;
+try{const o=JSON.parse(localStorage.getItem('bdl.tk.regl')||'{}');for(const k in o)if(k in RG&&typeof o[k]==='number')RG[k]=o[k];}catch(x){}
+try{const q=new URLSearchParams(location.search).get('labo');if(q==='1')localStorage.setItem('bdl.tk.labo','1');if(q==='0')localStorage.removeItem('bdl.tk.labo');}catch(x){}
+const laboActif=()=>{try{return localStorage.getItem('bdl.tk.labo')==='1';}catch(x){return false;}};
+function ouvrirLabo(){
+  const E=ESSAI;let el=document.getElementById('tkLaboP');if(el){el.remove();E.pauseLabo=false;return;}
+  E.pauseLabo=true;{const ai=document.getElementById('tkAide');if(ai)ai.remove();}el=document.createElement('div');el.id='tkLaboP';
+  const fmt=(v,st)=>st>=1?String(Math.round(v)):v.toFixed(st<0.1?2:1);
+  let h='<div class="t"><b>LABO DE CONDUITE</b><span>'+esc0(E.nom||'')+' · jeu en pause</span></div><div class="z">';
+  for(const [g,L] of RG_DEF){h+='<h4>'+g+'</h4>';
+    for(const [k,lab,def,mi,ma,st] of L)h+='<label><span>'+lab+'<i id="rgv_'+k+'">'+fmt(RG[k],st)+(RG[k]!==def?' <s>('+fmt(def,st)+')</s>':'')+'</i></span><input type="range" data-k="'+k+'" min="'+mi+'" max="'+ma+'" step="'+st+'" value="'+RG[k]+'"></label>';}
+  h+='</div><div class="b"><button data-a="defaut">Défaut</button><button data-a="copier">Copier</button><button data-a="ok">Rouler ▶</button></div>';
+  el.innerHTML=h;document.body.appendChild(el);
+  const sauverRG=()=>{try{localStorage.setItem('bdl.tk.regl',JSON.stringify(RG));}catch(x){}};
+  el.querySelectorAll('input[type=range]').forEach(r=>{r.addEventListener('input',()=>{const k=r.dataset.k;RG[k]=+r.value;
+    const d=RG_DEF.flatMap(x=>x[1]).find(x=>x[0]===k);document.getElementById('rgv_'+k).innerHTML=fmt(RG[k],d[5])+(RG[k]!==d[2]?' <s>('+fmt(d[2],d[5])+')</s>':'');sauverRG();});});
+  el.querySelector('[data-a=ok]').onclick=()=>{el.remove();E.pauseLabo=false;};
+  el.querySelector('[data-a=defaut]').onclick=()=>{for(const [,L] of RG_DEF)for(const [k,,v] of L)RG[k]=v;sauverRG();el.remove();E.pauseLabo=false;ouvrirLabo();};
+  el.querySelector('[data-a=copier]').onclick=async ev=>{const diff={};for(const [,L] of RG_DEF)for(const [k,,v] of L)if(RG[k]!==v)diff[k]=RG[k];
+    const txt='Réglages Tokyo ('+(E.nom||'')+') : '+JSON.stringify(diff);
+    try{await navigator.clipboard.writeText(txt);ev.target.textContent='Copié ✓';}catch(x){prompt('Copie ce texte :',txt);}
+    setTimeout(()=>{ev.target.textContent='Copier';},1500);};
+}
+const esc0=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
 /* LE DRIFT PILOTÉ — on le lance, puis on le CONDUIT.
    LANCER : en tournant, un petit coup de FREIN (ou Espace au clavier). On peut
    aussi taper le frein d'abord et tourner juste après.
@@ -1493,11 +1543,11 @@ function lireCommandes(jx,jy){
 function driftAuto(c,dt){
   const E=ESSAI, S=E.stats||{vmax:200}, v=E.vitesse||0, st=c.s||0;
   if(c.b>0)E.frT=(E.frT||0)+dt;
-  else{if(E.frT>0&&E.frT<0.3)E.drArme=0.4;E.frT=0;}
+  else{if(E.frT>0&&E.frT<RG.dDeclenche)E.drArme=0.4;E.frT=0;}
   if(c.h&&!E.hClav)E.drArme=0.4;E.hClav=!!c.h;
   /* braquer À FOND à bonne vitesse, gaz ouverts : l'arrière décroche tout seul */
   E.aFond=(Math.abs(st)>0.88&&(c.g||0)>0.3&&v>S.vmax*0.45&&E.drA!==1)?(E.aFond||0)+dt:0;
-  if(E.aFond>0.3){E.aFond=0;E.drArme=0.05;}
+  if(E.aFond>0.3&&RG.dAFond>0.5){E.aFond=0;E.drArme=0.05;}
   if(E.drArme>0){E.drArme-=dt;
     if(Math.abs(st)>0.3&&v>S.vmax*0.22){
       const sens=Math.sign(st);E.drArme=0;
@@ -1547,9 +1597,9 @@ function pasPhysique(dt,c){
   if(E.nitroT>0)E.nitroT-=dt;else if(S.nitro&&E.nitroCharge<1)E.nitroCharge=Math.min(1,E.nitroCharge+dt/(S.nitro>1?5:8));
   if(E.boostT>0)E.boostT-=dt;
   const NB=E.nitroT>0?(S.nitro>1?1.5:1.35):1, BB=E.boostT>0?E.boostK:1, K=Math.max(NB,BB);
-  const VMAX=S.vmax*(hp?0.5:1)*K, ACC=S.acc*0.8*(hp?0.65:1)*(K>1?1.8:1);
+  const VMAX=S.vmax*RG.aVmax*(hp?0.5:1)*K, ACC=S.acc*RG.aPuissance*0.8*(hp?0.65:1)*(K>1?1.8:1);
   const L=PH.L, wf=S.wf||0.5, b=L*wf, a=L-b;          /* a : centre de gravité → essieu avant ; b : → essieu arrière */
-  const mu=(S.grip/9.5)*(hp?0.62:1);
+  const mu=(S.grip/9.5)*RG.vAdherence*(hp?0.62:1);
   let u=E.vx*Math.cos(E.ang)+E.vy*Math.sin(E.ang), v=-E.vx*Math.sin(E.ang)+E.vy*Math.cos(E.ang), r=E.lacet||0;
   /* 1. LA BOÎTE */
   const fr=Math.max(0,u)/S.vmax;let rap=0;for(let i=0;i<RAPPORTS.length;i++)if(fr>=RAPPORTS[i])rap=i;
@@ -1569,7 +1619,7 @@ function pasPhysique(dt,c){
   if(E.hbT>0)E.hbT-=dt;
   const frMain=E.hbT>0, driftTenu=c.h&&!frMain;
   /* 3. LE VOLANT : la cible, l'aide au contre-braquage, la vitesse de rotation du volant */
-  const dmax=0.72*(S.dir/3)/(1+Math.max(0,u)/300);
+  const dmax=0.72*(S.dir/3)*RG.vBraquage/(1+Math.max(0,u)/RG.vVitesse);
   const beta=Math.atan2(v,Math.max(10,Math.abs(u)));
   E.dBeta=E.betaAvant==null?0:Math.max(-6,Math.min(6,(beta-E.betaAvant)/dt));E.betaAvant=beta;
   let dCible=(c.s||0)*dmax, gazDrift=1;
@@ -1592,17 +1642,17 @@ function pasPhysique(dt,c){
   }
   dCible=Math.max(-0.75,Math.min(0.75,dCible));
   const vol=E.delta||0, retour=Math.abs(dCible)<Math.abs(vol)||dCible*vol<0;
-  const vitVol=((E.driftAide||driftTenu||frMain)?3.5:(retour?5:2.2))*dt;
+  const vitVol=((E.driftAide||driftTenu||frMain)?3.5:(retour?5:2.2))*RG.vVolant*dt;
   E.delta=vol+Math.max(-vitVol,Math.min(vitVol,dCible-vol));
   E.vol=E.delta/Math.max(0.05,dmax);                       /* pour l'affichage et le reste du jeu */
   const d=E.delta;
   /* 4. LES FORCES LONGITUDINALES (par unité de masse) */
   let Fd=0, Fb=0;
   if(c.g>0){if(u<-5)Fb=S.frein;else Fd=ACC*couple*mot/(S.masse||1)*c.g*gazDrift*Math.max(0.04,1-Math.pow(Math.max(0,u)/VMAX,2));}
-  if(c.b>0){if(u>8)Fb=Math.max(Fb,S.frein*c.b);else Fd=-ACC*0.55*c.b*(u>-90?1:0);}
-  if(!(c.g>0)&&!(c.b>0))Fb=Math.abs(u)>2?(0.55*Math.abs(u)+12)*(hp?2.5:1):0;   /* frein moteur et roulement */
+  if(c.b>0){if(u>8)Fb=Math.max(Fb,S.frein*RG.aFrein*c.b);else Fd=-ACC*0.55*c.b*(u>-90?1:0);}
+  if(!(c.g>0)&&!(c.b>0))Fb=Math.abs(u)>2?(0.55*Math.abs(u)+12)*RG.aMoteur*(hp?2.5:1):0;   /* frein moteur et roulement */
   const ax=E.axL||0;
-  let Nf=PH.g*b/L-PH.h/L*ax, Nr=PH.g*a/L+PH.h/L*ax;
+  let Nf=PH.g*b/L-PH.h*RG.aTransfert/L*ax, Nr=PH.g*a/L+PH.h*RG.aTransfert/L*ax;
   Nf=Math.max(PH.g*0.15,Nf);Nr=Math.max(PH.g*0.15,Nr);
   const sgn=u>=0?1:-1;
   const awd=S.trans==='4';
@@ -1620,7 +1670,7 @@ function pasPhysique(dt,c){
   if(Math.abs(Fxf)>mu*Nf*0.75)Fxf=Math.sign(Fxf)*mu*Nf*0.75;
   if(Fb>0&&!frMain&&Math.abs(Fxr)>mu*Nr*kR*0.75)Fxr=Math.sign(Fxr)*mu*Nr*kR*0.75;
   /* 5. LA DYNAMIQUE, en sous-pas */
-  const Iz=a*b*1.15*S.stab*(S.masse||1);
+  const Iz=a*b*1.15*S.stab*(S.masse||1)*RG.vStabilite;
   const h2=dt/PH.sous;
   let aYf=0,aYr=0;
   if(E.drA){
@@ -1631,16 +1681,16 @@ function pasPhysique(dt,c){
     const kA=Math.max(0.8,Math.min(1.25,1+0.14*(S.glisse-2.5)));
     let thT, om;
     if(E.drA===1){
-      thT=sens*kA*(dedans>=0?0.42+0.33*dedans+0.08*gz:0.42*(1+0.75*dedans));
-      om=sens*(0.5+0.85*Math.max(0,dedans)+0.25*gz)*(S.dir/3)*Math.min(1,V0/(S.vmax*0.3));
+      thT=sens*kA*(dedans>=0?RG.dAngle+RG.dAngleMax*dedans+0.08*gz:RG.dAngle*(1+0.75*dedans));
+      om=sens*(0.5+0.85*Math.max(0,dedans)+0.25*gz)*(S.dir/3)*RG.dRot*Math.min(1,V0/(S.vmax*0.3));
       if(dedans<0)om*=Math.max(0.15,1+0.7*dedans);
-      om=Math.sign(om)*Math.min(Math.abs(om),V0/65);
+      om=Math.sign(om)*Math.min(Math.abs(om),V0/65*RG.dRot);
     }else{thT=0;om=(E.lacet||0)*Math.exp(-4*dt);}
     let th=E.drTh||0;
-    th+=(thT-th)*Math.min(1,(E.drA===1?4:5.5)*(0.85+0.15*S.maitrise)*dt);
+    th+=(thT-th)*Math.min(1,(E.drA===1?RG.dReponse:RG.dSortie)*(0.85+0.15*S.maitrise)*dt);
     E.drTh=th;phi+=om*dt;
     let V=V0+gz*ACC*0.42*couple*mot/(S.masse||1)*Math.max(0,1-V0/(VMAX*0.9))*dt;
-    V-=(16+0.14*V0*Math.abs(Math.sin(th))+(gz>0?0:50)+(c.b>0?S.frein*0.55*c.b:0))*dt;
+    V-=((16+0.14*V0*Math.abs(Math.sin(th)))*RG.dFrottement+(gz>0?0:50)+(c.b>0?S.frein*0.55*c.b:0))*dt;
     V=Math.max(0,V);
     E.ang=phi+th;u=V*Math.cos(th);v=-V*Math.sin(th);r=om;
     aYf=V*om*0.5;aYr=V*om*0.5;Fxf=0;Fxr=0;
@@ -1749,6 +1799,7 @@ function driftRecords(){try{return JSON.parse(localStorage.getItem('bdl.tk.drift
 /* ================= LA BOUCLE : PAS FIXES ================= */
 function majEssai(dt,jx,jy){
   const E=ESSAI;
+  if(E.pauseLabo)return;
   dt=Math.min(dt||0,0.1);
   if(E.limite!=null){E.limite-=dt;if(E.limite<=0){E.limite=null;const nm=E.nom;finEssai();
     try{texteVolant(joueur.x,joueur.y-44,'Fin de l’essai — '+nm+' t’attend au showroom','#ffd98a');}catch(x){}return;}}
@@ -1971,6 +2022,16 @@ body.tk-volant{touch-action:none;overscroll-behavior:none;-webkit-user-select:no
 #tkHud .c b{flex:1;height:4px;border-radius:3px;background:rgba(255,255,255,.12)}
 #tkHud .p{display:block;font:800 12px -apple-system,sans-serif;color:#ffd98a;margin-top:4px;min-height:15px}
 #tkHaut{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:22;display:flex;align-items:flex-start;justify-content:space-between;padding:0 12px;pointer-events:none}
+#tkLaboP{position:fixed;left:0;right:0;bottom:0;z-index:40;max-height:78%;display:flex;flex-direction:column;background:rgba(14,9,24,.96);border-top:1px solid rgba(255,79,176,.5);border-radius:22px 22px 0 0;color:#fff;font-family:-apple-system,sans-serif;padding-bottom:env(safe-area-inset-bottom,0px)}
+#tkLaboP .t{padding:14px 18px 6px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}#tkLaboP .t b{font:800 12px ui-monospace,monospace;letter-spacing:2px;color:#ff8ac8}#tkLaboP .t span{font-size:11px;color:rgba(255,255,255,.5)}
+#tkLaboP .z{overflow-y:auto;padding:0 18px 8px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#tkLaboP h4{margin:14px 0 4px;font:800 13px -apple-system,sans-serif;color:#7fe8ff}
+#tkLaboP label{display:block;margin:8px 0}#tkLaboP label span{display:flex;justify-content:space-between;font-size:13px;color:rgba(255,255,255,.85)}
+#tkLaboP label i{font:700 12px ui-monospace,monospace;font-style:normal;color:#ffd98a}#tkLaboP label s{color:rgba(255,255,255,.4);text-decoration:none;font-weight:400}
+#tkLaboP input[type=range]{width:100%;height:30px;accent-color:#ff4fb0;margin:2px 0 0}
+#tkLaboP .b{display:flex;gap:8px;padding:10px 18px 14px;border-top:1px solid rgba(255,255,255,.08)}
+#tkLaboP .b button{flex:1;min-height:46px;border:0;border-radius:14px;background:rgba(255,255,255,.1);color:#fff;font:800 14px -apple-system,sans-serif}
+#tkLaboP .b button[data-a=ok]{background:#ff4fb0}
 #tkHaut button{pointer-events:auto;height:36px;padding:0 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(10,8,18,.72);color:#fff;font:700 12px -apple-system,sans-serif}
 #tkInfo{pointer-events:none;text-align:center;padding:6px 12px;border-radius:14px;background:rgba(10,8,18,.72);border:1px solid rgba(255,79,176,.4);color:#fff;font:700 12px ui-monospace,monospace;white-space:nowrap}
 #tkInfo b{font:900 italic 20px -apple-system,sans-serif;color:#ff8ac8;margin-right:6px}
@@ -2043,7 +2104,8 @@ body.tk-volant{touch-action:none;overscroll-behavior:none;-webkit-user-select:no
   document.head.appendChild(st);
 }
 function hudMontrer(on){
-  for(const i of ['tkHud','tkPad','tkPop','tkAide','tkHaut','tkCarte','tkDec','tkFin']){const x=document.getElementById(i);if(x)x.remove();}
+  ESSAI.pauseLabo=false;
+  for(const i of ['tkHud','tkPad','tkPop','tkAide','tkHaut','tkCarte','tkDec','tkFin','tkLaboP']){const x=document.getElementById(i);if(x)x.remove();}
   if(!on)return;
   cssVolant();
   const E=ESSAI;
@@ -2052,9 +2114,10 @@ function hudMontrer(on){
     '<div class="c"><b id="tkC1"></b><b id="tkC2"></b><b id="tkC3"></b></div><span class="p" id="tkCombo"></span>';
   document.body.appendChild(hud);
   const haut=document.createElement('div');haut.id='tkHaut';
-  haut.innerHTML='<button id="tkQuit">✕ Quitter</button><div id="tkInfo"></div><span></span>';
+  haut.innerHTML='<button id="tkQuit">✕ Quitter</button><div id="tkInfo"></div><span>'+(laboActif()?'<button id="tkLabo">⚙ Labo</button>':'')+'</span>';
   document.body.appendChild(haut);
   document.getElementById('tkQuit').onclick=()=>finEssai();
+  if(document.getElementById('tkLabo'))document.getElementById('tkLabo').onclick=()=>ouvrirLabo();
   if(E.mode!=='drift'){const carte=document.createElement('canvas');carte.id='tkCarte';carte.width=112;carte.height=280;document.body.appendChild(carte);}
   const pp=document.createElement('div');pp.id='tkPop';document.body.appendChild(pp);
   /* LE PAVÉ DE COMMANDES */
