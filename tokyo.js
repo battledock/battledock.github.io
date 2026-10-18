@@ -1482,6 +1482,8 @@ function lireCommandes(jx,jy){
       const k=Math.min(1,(m-0.22)/0.45+0.35);
       s=Math.max(-1,Math.min(1,d*2.4))*k;
       if(Math.abs(d)>2.5)s=Math.sign(d||1)*k;}
+    /* le volant suit le pouce avec un brin de douceur (≈ 80 ms) : pas de coups secs */
+    if(m>0.01||E.sJoy){E.sJoy=(E.sJoy||0)+(s-(E.sJoy||0))*(1-Math.exp(-PAS*12));if(m>0.01||Math.abs(E.sJoy)>0.02)s=E.sJoy;else E.sJoy=0;}
     g=typeof CMDS.gaz==='number'?CMDS.gaz:(CMDS.gaz?1:0);b=typeof CMDS.frein==='number'?CMDS.frein:(CMDS.frein?1:0);
   }else{
     jx=jx||0;jy=jy||0;const n=Math.min(1,Math.hypot(jx,jy));
@@ -1605,7 +1607,7 @@ function lancerDrift(sens){
    DRIFT tenu : un coup de frein à main à l'appui, puis l'antipatinage se
    coupe et l'arrière décroche sous les gaz ; on tient l'angle au volant et
    à l'accélérateur. On relâche : l'arrière raccroche. */
-const PH={L:40,g:340,h:11,sous:3};
+const PH={L:40,g:340,h:11,sous:3,kF:7,kR:9.5,iz:1.2};
 function pneu(alpha,cap,B){return -cap*Math.sin(1.4*Math.atan(B*alpha));}
 function pasPhysique(dt,c){
   const E=ESSAI, S=E.stats||statsVoiture('Toyota',{});
@@ -1687,7 +1689,7 @@ function pasPhysique(dt,c){
   if(Math.abs(Fxf)>mu*Nf*0.75)Fxf=Math.sign(Fxf)*mu*Nf*0.75;
   if(Fb>0&&!frMain&&Math.abs(Fxr)>mu*Nr*kR*0.75)Fxr=Math.sign(Fxr)*mu*Nr*kR*0.75;
   /* 5. LA DYNAMIQUE, en sous-pas */
-  const Iz=a*b*1.15*S.stab*(S.masse||1)*RG.vStabilite;
+  const Iz=a*b*1.15*PH.iz*S.stab*(S.masse||1)*RG.vStabilite;
   const h2=dt/PH.sous;
   let aYf=0,aYr=0;
   if(E.drA){
@@ -1727,7 +1729,7 @@ function pasPhysique(dt,c){
     let du,dv,dr;
     const ue=Math.max(Math.abs(u),12);
     const af=Math.atan2(v+a*r,ue)-d*sgn, ar=Math.atan2(v-b*r,ue);
-    const Fyf=-capF*Math.tanh(7*af), Fyr=pneu(ar,capR,9.5);   /* l'avant plafonne sans retomber (sous-virage franc) ; l'arrière décroche */
+    const Fyf=-capF*Math.tanh(PH.kF*af), Fyr=pneu(ar,capR,PH.kR);   /* l'avant plafonne sans retomber (sous-virage franc) ; l'arrière décroche */
     aYf=Fyf;aYr=Fyr;
     const cd=Math.cos(d), sd=Math.sin(d);
     du=Fxr+Fxf*cd-Fyf*sd+v*r;
@@ -1866,6 +1868,9 @@ function majEssai(dt,jx,jy){
       if(E.fumee.length<44&&Math.random()<0.6)E.fumee.push({x:E.x-nx*24+(Math.random()-0.5)*8,y:E.y-ny*24+(Math.random()-0.5)*8,r:4,vie:0.85,c:(E.tuning||{}).fumee||null});
       if(E.traces.length>1400)E.traces.splice(0,E.traces.length-1400);}
     else E.marq=null;
+    /* à la limite d'adhérence, sans drift : les pneus fument un peu et crient */
+    if(!E.drA&&Math.abs((E.vitesse||0)*(E.lacet||0))>PH.g*0.7&&E.fumee.length<30&&Math.random()<0.3)
+      for(const s of [-10,10])E.fumee.push({x:E.x-nx*20-ny*s,y:E.y-ny*20+nx*s,r:2.5,vie:0.45,c:null});
     const niv=niveauCharge();
     if(E.glisse&&niv>0)for(const s of [-10,10])E.etinc.push({x:E.x-nx*20-ny*s,y:E.y-ny*20+nx*s,vx:-nx*40+(Math.random()-0.5)*90,vy:-ny*40+(Math.random()-0.5)*90,vie:0.25,c:COUL_NIV[niv]});
     if(hp&&vit>60&&Math.random()<0.45)E.fumee.push({x:E.x-nx*20,y:E.y-ny*20,r:3,vie:0.5,c:'#8a7a5a'});
@@ -1880,6 +1885,8 @@ function majEssai(dt,jx,jy){
     const kd=Math.min(dt,0.05);
     E.rollV=(E.rollV||0)+(70*(rT-(E.roll||0))-10*(E.rollV||0))*kd;E.roll=(E.roll||0)+E.rollV*kd;
     E.pitchV=(E.pitchV||0)+(70*(pT-(E.pitch||0))-10*(E.pitchV||0))*kd;E.pitch=(E.pitch||0)+E.pitchV*kd;
+    {const tg=E.drA?0:Math.max(-1,Math.min(1,lat/(PH.g*0.85)))*0.10;
+      E.yawV=(E.yawV||0)+(60*(tg-(E.yawVis||0))-8*(E.yawV||0))*kd;E.yawVis=(E.yawVis||0)+E.yawV*kd;}
     const pp=E.sPiste!=null?pointPiste(E.sPiste):null, bord=Math.abs(E.lat||0);
     E.vibreur=!!(E.mode!=='drift'&&(CIR.style==='tokyo'||CIR.style==='docks')&&pp&&pp.k>0&&bord>CIR.ep/2-12&&bord<CIR.ep/2+6&&(E.vitesse||0)>60);
     if(E.vibreur&&(E.vibreT=(E.vibreT||0)-dt)<=0){E.vibreT=0.11;try{navigator.vibrate&&navigator.vibrate(7);}catch(x){}}}
@@ -1967,6 +1974,7 @@ function pasCourse(dt){
     if(c.fini==null)for(const o of autres){if(o===c)continue;const ds=((o.s-c.s)%P.L+P.L)%P.L;
       if(ds>0&&ds<80&&Math.abs(o.lane-c.lane)<22)c.v=Math.min(c.v,Math.max(0,(o.v||0)-5));}
     c.lane+=Math.max(-60*dt,Math.min(60*dt,c.laneCible-c.lane));
+    c.px=c.x;c.py=c.y;
     const s0=c.s;c.s+=c.v*dt;
     if(Math.floor((s0-P.ligneS)/P.L)<Math.floor((c.s-P.ligneS)/P.L)){
       if(c.tour0)c.tours++;else c.tour0=true;
@@ -1976,6 +1984,12 @@ function pasCourse(dt){
     c.x=p.x+nxp*c.lane;c.y=p.y+nyp*c.lane;
     c.ang=p.ang+(c.laneCible-c.lane)*0.004;
     c.vx=Math.cos(c.ang)*c.v;c.vy=Math.sin(c.ang)*c.v;
+    /* L'ATTITUDE : en virage, le nez rentre un peu vers l'intérieur et l'arrière glisse — pas une voiture sur un rail */
+    {let da=pointPiste(c.s+25).ang-p.ang;da=Math.atan2(Math.sin(da),Math.cos(da));
+      const t=Math.sign(da)*Math.min(1,c.v*c.v*Math.abs(p.k||0)/(PH.g*0.8))*0.11;
+      c.att=(c.att||0)+(t-(c.att||0))*Math.min(1,6*dt);
+      let dv=c.ang+c.att-(c.angVis==null?c.ang:c.angVis);dv=Math.atan2(Math.sin(dv),Math.cos(dv));
+      c.angVis=(c.angVis==null?c.ang:c.angVis)+dv*Math.min(1,14*dt);}
   }
   /* les chocs entre voitures : on se sépare, on échange un peu de vitesse, on ralentit */
   const toutes=COURSE.voitures;
@@ -2676,10 +2690,12 @@ function dessinerEssai(ctx,camX,camY){
   if(E.traces.length){ctx.save();ctx.strokeStyle='rgba(12,10,16,.34)';ctx.lineWidth=2.2;ctx.beginPath();
     for(const t of E.traces){if(t.length<4)continue;ctx.moveTo(t[0]-camX,t[1]-camY);ctx.lineTo(t[2]-camX,t[3]-camY);}ctx.stroke();ctx.restore();}
   /* les autres voitures */
-  if(COURSE.actif)for(const c of COURSE.voitures){ctx.globalAlpha=c.fini!=null?0.35:1;dessinerUneVoiture(ctx,camX,camY,c.x,c.y,c.ang,c.toile);}
+  if(COURSE.actif){const al=Math.max(0,Math.min(1,(E.reste||0)/PAS));
+    for(const c of COURSE.voitures){ctx.globalAlpha=c.fini!=null?0.35:1;const ix=c.px==null?c.x:c.px+(c.x-c.px)*al, iy=c.py==null?c.y:c.py+(c.y-c.py)*al;
+      dessinerUneVoiture(ctx,camX,camY,ix,iy,c.angVis==null?c.ang:c.angVis,c.toile);}}
   ctx.globalAlpha=1;
   /* la mienne : halo néon, flammes, nitro — dessinée là où elle est ENTRE deux pas, au sous-pixel */
-  const X=(E.rx!=null?E.rx:E.x), Y=(E.ry!=null?E.ry:E.y), A=(E.ra!=null?E.ra:E.ang);
+  const X=(E.rx!=null?E.rx:E.x), Y=(E.ry!=null?E.ry:E.y), A=(E.ra!=null?E.ra:E.ang)+(E.yawVis||0);
   ctx.save();
   ctx.translate(X-camX,Y-camY);
   ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(1,3,32,14,A,0,7);ctx.fill();
