@@ -1324,7 +1324,7 @@ const BOOST_T=[0,0.6,1.0,1.5], BOOST_K=[1,1.2,1.3,1.42];
 const COUL_NIV=['#ffffff','#5ad8ff','#ff9a3c','#ff4fb0'];
 const RAPPORTS=[0,0.16,0.31,0.47,0.63,0.8];
 const KMH=0.9;                                   /* px/s → km/h affichés */
-const CMDS={g:false,d:false,gaz:false,frein:false,drift:false,nitro:false};
+const CMDS={g:false,d:false,gaz:false,frein:false,drift:false,nitro:false,dirX:0,dirY:0};
 /* AU VOLANT, ON CONDUIT AUX BOUTONS, et seulement aux boutons : le joystick du jeu est coupé tant qu'on conduit */
 const MODE_CMD='boutons';
 try{localStorage.removeItem('bdl.tk.cmd');}catch(x){}
@@ -1473,6 +1473,15 @@ function lireCommandes(jx,jy){
   if(MODE_CMD==='boutons'||CMDS.g||CMDS.d||CMDS.gaz){
     /* LES COMMANDES SE DOSENT : le volant glisse de -1 à 1, l'accélérateur et le frein de 0,35 à 1 */
     s=Math.max(-1,Math.min(1,(+CMDS.volant||0)+(CMDS.d?1:0)-(CMDS.g?1:0)));
+    /* le pouce montre une direction de l'écran : on braque vers elle, depuis l'axe de la voiture
+       (ou, en drift, depuis la trajectoire), plus ou moins selon l'écart et l'appui du pouce */
+    const dX=+CMDS.dirX||0, dY=+CMDS.dirY||0, m=Math.hypot(dX,dY);
+    if(m>0.01){const vv=Math.hypot(E.vx,E.vy);
+      const ref=(E.drA===1&&vv>20)?Math.atan2(E.vy,E.vx):E.ang;
+      let d=Math.atan2(dY,dX)-ref;d=Math.atan2(Math.sin(d),Math.cos(d));
+      const k=Math.min(1,(m-0.22)/0.45+0.35);
+      s=Math.max(-1,Math.min(1,d*2.4))*k;
+      if(Math.abs(d)>2.5)s=Math.sign(d||1)*k;}
     g=typeof CMDS.gaz==='number'?CMDS.gaz:(CMDS.gaz?1:0);b=typeof CMDS.frein==='number'?CMDS.frein:(CMDS.frein?1:0);
   }else{
     jx=jx||0;jy=jy||0;const n=Math.min(1,Math.hypot(jx,jy));
@@ -2070,12 +2079,11 @@ body.tk-volant{touch-action:none;overscroll-behavior:none;-webkit-user-select:no
 #tkPad button.on{transform:scale(.93);background:rgba(255,79,176,.42);box-shadow:inset 0 0 0 2px #ff8ac8}
 #tkPad .zv{position:absolute;left:0;bottom:0;width:50%;height:100%;pointer-events:auto;touch-action:none}
 #tkPad .zp{position:absolute;right:0;bottom:0;width:50%;height:100%;pointer-events:auto;touch-action:none}
-#tkPad .vol{position:absolute;left:96px;top:calc(100% - env(safe-area-inset-bottom,0px) - 58px);width:172px;height:64px;margin-left:-86px;margin-top:-32px;border-radius:32px;
- background:rgba(10,8,18,.5);box-shadow:inset 0 0 0 2px rgba(255,255,255,.14);display:flex;align-items:center;justify-content:space-between;padding:0 16px;color:#fff;font-size:20px;pointer-events:none;transition:opacity .2s}
-#tkPad .vol i{font-style:normal;opacity:.7}
-#tkPad .vol .base{position:absolute;left:50%;top:50%;width:2px;height:34px;margin:-17px 0 0 -1px;background:rgba(255,255,255,.25)}
-#tkPad .vol .curseur{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.45);transform:translateX(calc(var(--v,0) * 62px))}
-#tkPad .vol.on{background:rgba(40,14,40,.55);box-shadow:inset 0 0 0 2px #ff8ac8}
+#tkPad .vol{position:absolute;left:100px;top:calc(100% - env(safe-area-inset-bottom,0px) - 96px);width:124px;height:124px;margin:-62px 0 0 -62px;border-radius:50%;
+ background:rgba(10,8,18,.42);box-shadow:inset 0 0 0 2px rgba(255,255,255,.16);pointer-events:none}
+#tkPad .vol .base{position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:rgba(255,255,255,.35)}
+#tkPad .vol .curseur{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.45);transform:translate(var(--dx,0px),var(--dy,0px))}
+#tkPad .vol.on{background:rgba(40,14,40,.5);box-shadow:inset 0 0 0 2px #ff8ac8}
 #tkPad .pedale{position:absolute;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);width:92px;height:214px;border-radius:26px;overflow:hidden;pointer-events:none;
  background:linear-gradient(rgba(20,60,32,.62) 0 50%,rgba(70,16,20,.62) 50% 100%);box-shadow:inset 0 0 0 2px rgba(255,255,255,.16);color:#fff;font:800 13px -apple-system,sans-serif}
 #tkPad .pedale b{position:absolute;left:0;right:0;text-align:center;z-index:2;letter-spacing:1px}#tkPad .pedale b.g{top:34px}#tkPad .pedale b.f{bottom:34px}
@@ -2143,18 +2151,24 @@ function hudMontrer(on){
        trait. Le pouce y reste posé et glisse de l'un à l'autre.
      — LE DRIFT : en tournant, un petit coup de frein (le pouce descend et remonte) ; ensuite les gaz
        font l'angle et le volant la trajectoire. On lâche les gaz pour se redresser. */
+  /* LE POUCE GAUCHE MONTRE OÙ ALLER, À L'ÉCRAN : la caméra ne tourne pas, alors « droite » veut
+     toujours dire la droite de l'écran, même quand la voiture descend. Le pouce se pose n'importe où
+     (c'est le centre) et glisse dans la direction voulue ; la voiture braque pour s'y tourner. */
   const zv=document.createElement('div');zv.className='zv';
-  zv.innerHTML='<div class="vol"><i>◀</i><span class="base"></span><span class="curseur"></span><i>▶</i></div>';
+  zv.innerHTML='<div class="vol"><span class="base"></span><span class="curseur"></span></div>';
   const vol=zv.firstChild;
-  let volId=null, x0=0;
-  const R=55;
-  const montrerVol=(v,px,py)=>{vol.style.setProperty('--v',v.toFixed(3));vol.classList.toggle('on',volId!=null);
-    if(volId!=null){const zr=zv.getBoundingClientRect();vol.style.left=(x0-zr.left)+'px';vol.style.top=(py-zr.top)+'px';}else{vol.style.left='';vol.style.top='';}};
-  const majVol=ev=>{let d=ev.clientX-x0;if(Math.abs(d)>R){x0=ev.clientX-Math.sign(d)*R;d=Math.sign(d)*R;}
-    let v=d/R;v=Math.sign(v)*Math.pow(Math.abs(v),1.25);if(Math.abs(v)<0.04)v=0;CMDS.volant=v;montrerVol(v,ev.clientX,ev.clientY);};
-  zv.addEventListener('pointerdown',ev=>{ev.preventDefault();ev.stopPropagation();if(volId!=null)return;try{zv.setPointerCapture(ev.pointerId);}catch(x){}volId=ev.pointerId;x0=ev.clientX;majVol(ev);});
+  let volId=null, x0=0, y0=0;
+  const R=52;
+  const montrerVol=(dx,dy)=>{vol.style.setProperty('--dx',dx.toFixed(1)+'px');vol.style.setProperty('--dy',dy.toFixed(1)+'px');vol.classList.toggle('on',volId!=null);
+    if(volId!=null){const zr=zv.getBoundingClientRect();vol.style.left=(x0-zr.left)+'px';vol.style.top=(y0-zr.top)+'px';}else{vol.style.left='';vol.style.top='';}};
+  const majVol=ev=>{let dx=ev.clientX-x0, dy=ev.clientY-y0;const n=Math.hypot(dx,dy);
+    if(n>R){x0=ev.clientX-dx/n*R;y0=ev.clientY-dy/n*R;dx=dx/n*R;dy=dy/n*R;}
+    const m=Math.min(1,Math.hypot(dx,dy)/R);
+    if(m<0.22){CMDS.dirX=0;CMDS.dirY=0;}else{CMDS.dirX=dx/R;CMDS.dirY=dy/R;}
+    montrerVol(dx,dy);};
+  zv.addEventListener('pointerdown',ev=>{ev.preventDefault();ev.stopPropagation();if(volId!=null)return;try{zv.setPointerCapture(ev.pointerId);}catch(x){}volId=ev.pointerId;x0=ev.clientX;y0=ev.clientY;majVol(ev);});
   zv.addEventListener('pointermove',ev=>{if(ev.pointerId===volId)majVol(ev);});
-  const lacherVol=ev=>{if(ev.pointerId===volId){volId=null;CMDS.volant=0;montrerVol(0);}};
+  const lacherVol=ev=>{if(ev.pointerId===volId){volId=null;CMDS.dirX=0;CMDS.dirY=0;montrerVol(0,0);}};
   zv.addEventListener('pointerup',lacherVol);zv.addEventListener('pointercancel',lacherVol);zv.addEventListener('lostpointercapture',lacherVol);
   zv.addEventListener('touchstart',ev=>ev.preventDefault(),{passive:false});zv.addEventListener('contextmenu',ev=>ev.preventDefault());
   pad.appendChild(zv);
@@ -2182,11 +2196,11 @@ function hudMontrer(on){
       if(m){CMDS[m]=true;if(MODE_CMD==='boutons')ev.preventDefault();}});
     addEventListener('keyup',ev=>{const m={ArrowLeft:'g',ArrowRight:'d',ArrowUp:'gaz',ArrowDown:'frein',' ':'drift',Shift:'nitro'}[ev.key];if(m)CMDS[m]=false;});}
   /* la première fois : comment on conduit */
-  let vu=false;try{vu=localStorage.getItem('bdl.tk.aide7')==='1';}catch(x){}
+  let vu=false;try{vu=localStorage.getItem('bdl.tk.aide8')==='1';}catch(x){}
   if(!vu){const a=document.createElement('div');a.id='tkAide';
-    a.innerHTML=MODE_CMD==='boutons'?'<b>Pouce gauche</b> n’importe où à gauche : glisse-le pour tourner.<br><b>Pouce droit</b> sur la pédale : au-dessus du trait = GAZ, en dessous = FREIN.<br><b>DRIFT</b> : en tournant, descends et remonte vite le pouce (petit coup de frein). Ensuite <b>les gaz font l’angle</b>, le volant la trajectoire. Lâche les gaz pour te redresser.'
+    a.innerHTML=MODE_CMD==='boutons'?'<b>Pouce gauche</b> n’importe où à gauche : glisse-le <b>vers où tu veux aller</b> sur l’écran.<br><b>Pouce droit</b> sur la pédale : au-dessus du trait = GAZ, en dessous = FREIN.<br><b>DRIFT</b> : en tournant, descends et remonte vite le pouce (petit coup de frein). Ensuite <b>les gaz font l’angle</b>, le volant la trajectoire. Lâche les gaz pour te redresser.'
       :'<b>Pouce gauche</b> : la direction, la voiture accélère toute seule.<br><b>DRIFT</b> : maintiens-le en tournant.<br>Finis le drift <b>sans toucher</b> : turbo et points !';
-    document.body.appendChild(a);setTimeout(()=>{a.style.opacity='0';setTimeout(()=>a.remove(),700);},6500);try{localStorage.setItem('bdl.tk.aide7','1');}catch(x){}}
+    document.body.appendChild(a);setTimeout(()=>{a.style.opacity='0';setTimeout(()=>a.remove(),700);},6500);try{localStorage.setItem('bdl.tk.aide8','1');}catch(x){}}
   (function boucle(){
     if(!document.getElementById('tkHud')||!ESSAI.actif)return;
     const E2=ESSAI, niv=niveauCharge();
