@@ -1657,7 +1657,7 @@ MOTEUR.hangar={
   pose:function(s,x,y,w,h,t){
     if(x<HG_MUR+4||y<HG_MUR+20||x+w>HG_L-HG_MUR-4||y+h>HG_H-HG_MUR-14)return;
     if(Math.abs(x+w/2-s.j.x)<32&&Math.abs(y+h/2-s.j.y)<32)return;
-    if(Math.hypot(x+w/2-s.porte.x,y+h/2-s.porte.y)<46)return;   /* le passage devant la porte reste libre */
+    for(var kp=0;kp<(s.portes||[s.porte]).length;kp++){var Pp=(s.portes||[s.porte])[kp];if(Math.hypot(x+w/2-Pp.x,y+h/2-Pp.y)<46)return;}   /* le passage devant chaque porte reste libre */
     for(var k=0;k<s.obs.length;k++){
       var p=s.obs[k];
       if(x<p.x+p.w+6&&x+w+6>p.x&&y<p.y+p.h+6&&y+h+6>p.y)return;
@@ -1825,12 +1825,44 @@ MOTEUR.hangar={
     }
     /* LA PORTE CHANGE DE MUR A CHAQUE SALLE, jamais celui par lequel on entre :
        on ne sait pas d'avance ou il faudra aller, donc on ne campe plus devant. */
+    /* LE PARCOURS : chaque salle propose 2 ou 3 portes, une par mur, et chacune
+       annonce ce que paiera la salle d'apres. Avant un boss une seule porte ;
+       apres le boss, le marchand. */
+    var REC=s.rec||null, marche=(REC==='marchand');
+    s.calme=marche;s.ev=null;s.surv=null;s.coffre=null;s.bonusC=false;s.eliteB=(REC==='elite');
     var cotes=['h','b','g','d'].filter(function(c){return c!==s.entree;});
-    var cp=(n===1)?'h':cotes[Math.floor(Math.random()*cotes.length)], P=s.porte;P.cote=cp;
-    if(cp==='h'||cp==='b'){P.x=Math.round(HG_L*(0.25+Math.random()*0.5));P.y=cp==='h'?HG_MUR:HG_H-HG_MUR;}
-    else{P.y=Math.round(HG_H*(0.25+Math.random()*0.5));P.x=cp==='g'?HG_MUR:HG_L-HG_MUR;}
+    for(var ic0=cotes.length-1;ic0>0;ic0--){var jc0=Math.floor(Math.random()*(ic0+1)),tc0=cotes[ic0];cotes[ic0]=cotes[jc0];cotes[jc0]=tc0;}
+    if(n===1)cotes.sort(function(a,b){return (b==='h')-(a==='h');});
+    var recs;
+    if(!marche&&n%5===0)recs=['marchand'];
+    else if(!marche&&(n+1)%5===0)recs=['boss'];
+    else{
+      var pool=['carte','soin','or','elite'];
+      if(n>=2)pool.push('arme');
+      if(n>=3)pool.push('evenement');
+      if(n<3)pool=pool.filter(function(r){return r!=='elite';});
+      for(var ip0=pool.length-1;ip0>0;ip0--){var jp0=Math.floor(Math.random()*(ip0+1)),tp0=pool[ip0];pool[ip0]=pool[jp0];pool[jp0]=tp0;}
+      /* un blesse voit plus souvent la porte du soin */
+      if(s.vies<=2&&pool.indexOf('soin')>1){pool.splice(pool.indexOf('soin'),1);pool.unshift('soin');}
+      recs=pool.slice(0,(n>=6&&Math.random()<0.4)?3:2);
+    }
+    s.portes=[];
+    for(var ir0=0;ir0<recs.length;ir0++){
+      var cp=cotes[ir0], P={ouvert:false,cote:cp,rec:recs[ir0]};
+      if(cp==='h'||cp==='b'){P.x=Math.round(HG_L*(0.25+Math.random()*0.5));P.y=cp==='h'?HG_MUR:HG_H-HG_MUR;}
+      else{P.y=Math.round(HG_H*(marche?(Math.random()<0.5?0.2:0.68)+Math.random()*0.12:0.25+Math.random()*0.5));P.x=cp==='g'?HG_MUR:HG_L-HG_MUR;}
+      s.portes.push(P);
+    }
+    s.porte=s.portes[0];
     s.campT=0;s.ancre={x:s.j.x,y:s.j.y};
-    this.batir(s,s.patron);
+    if(marche){s.obs=[];
+      /* LE MARCHAND : pas un zombie, trois etals, on paie en points */
+      var px=[HG_L/2-62,HG_L/2,HG_L/2+62], arts=['vie','arme','carte'];
+      if(s.vies>=(s.viesMax||5))arts[0]='vieMax';
+      var PRIX={vie:40,vieMax:80,arme:60,carte:90};
+      for(var ia0=0;ia0<3;ia0++)s.ram.push({x:px[ia0],y:HG_H/2+10,t:'achat',a:arts[ia0],prix:PRIX[arts[ia0]]*n,c:0});
+    }
+    else this.batir(s,s.patron);
     /* QUELQUES BIDONS EXPLOSIFS, repartis dans la salle : ils changent
        une salle encombree en salle qu'on peut ouvrir au bon moment. */
     var nb=1+Math.min(4,Math.floor(n/3));
@@ -1846,7 +1878,7 @@ MOTEUR.hangar={
     }
     for(var e2=0;e2<s.obs.length;e2++)s.obs[e2].ex=false;
     for(var e3=0;e3<nb&&e3<bidons.length;e3++)bidons[e3].ex=true;
-    s.z=[];s.b=[];s.arcs=[];s.feux=[];s.morts=[];s.eb=[];s.explos=[];s.zd=[];
+    s.z=[];s.b=[];s.arcs=[];s.feux=[];s.morts=[];s.eb=[];s.explos=[];s.zd=[];s.ff=null;
     s.bouclier=((PERSO.niveaux||{}).armure||0)+(s.am.bouclier||0);
     s.reste=Math.min(28, 5+n*2);
     s.aNaitre=s.reste;
@@ -1867,6 +1899,20 @@ MOTEUR.hangar={
     if(tO==='evasion'){s.obj.T=10000;s.obj.gaz=0;s.obj.de=s.entree;}
     /* LE MODIFICATEUR : une salle sur trois, a partir de la quatrieme, change une regle */
     s.mod=(n>=4&&n%5!==0&&Math.random()<0.34)?['rapides','butin','ricochet','noir','blindes'][Math.floor(Math.random()*5)]:null;
+    /* CE QUE LA PORTE AVAIT PROMIS change la salle elle-meme */
+    if(s.eliteB&&n%5!==0){s.mod=Math.random()<0.5?'rapides':'blindes';if(tO==='nettoyer'){s.reste=Math.round(s.reste*1.3);s.aNaitre=s.reste;}}
+    if(REC==='evenement'&&n%5!==0){
+      s.mod=null;s.ev=Math.random()<0.5?'coffre':'survivant';
+      /* on degage le centre ou l'on pose le coffre ou la cage */
+      var ex0=HG_L/2, ey0=HG_H/2-20;
+      if(s.ev==='survivant'){for(var es=0;es<200;es++){var sx=HG_MUR+30+Math.random()*(HG_L-2*HG_MUR-60), sy=HG_MUR+40+Math.random()*(HG_H-2*HG_MUR-80);
+        if(Math.hypot(sx-s.j.x,sy-s.j.y)>170){ex0=sx;ey0=sy;break;}}}
+      s.obs=s.obs.filter(function(o){return Math.hypot(o.x+o.w/2-ex0,o.y+o.h/2-ey0)>34;});
+      if(s.ev==='coffre'){s.obj={t:'coffre',fait:false,n:0};s.coffre={x:ex0,y:ey0,c:0,ouvert:false};s.reste=999;s.aNaitre=0;}
+      else{s.obj={t:'survivant',fait:false,n:0};s.surv={x:ex0,y:ey0,pv:3,libre:false,c:0,inv:0,mort:false};s.reste=999;s.aNaitre=999;}
+      s.ff=null;
+    }
+    if(marche){s.obj={t:'marchand',fait:true,n:0};s.reste=0;s.aNaitre=0;s.mod=null;s.bossA=0;s.z=[];}
     s.pause=600;
     var NOMS={eparpille:'LE DEPOT',couloir:'LE COULOIR',piliers:'LES PILIERS',
               anneau:'L\u2019ANNEAU',travees:'LES TRAVEES',fosse:'LA FOSSE',
@@ -1877,6 +1923,10 @@ MOTEUR.hangar={
     var MODS={rapides:'ILS SONT RAPIDES · POINTS ×1,5',butin:'DOUBLE BUTIN',ricochet:'TES BALLES RICOCHENT',noir:'COUPURE DE COURANT',blindes:'ILS SONT BLINDÉS · POINTS ×1,5'};
     if((n-1)%5===0){s.mot=HG_ZONES[s.zone].nom;s.motT=2200;}
     else{s.mot=OBJ[tO]||('SALLE '+n+' \u00b7 '+(NOMS[s.patron]||''));s.motT=2000;}
+    if(s.ev==='coffre'){s.mot='UN COFFRE… PIÉGÉ ?';s.motT=2000;}
+    if(s.ev==='survivant'){s.mot='UN SURVIVANT · LIBÈRE-LE';s.motT=2000;}
+    if(marche){s.mot='LE MARCHAND';s.motT=2000;s.motSuite=null;}
+    if(s.eliteB&&s.mod)s.motSuite='SALLE ÉLITE · '+MODS[s.mod];
     s.motSuite=s.mod?MODS[s.mod]:null;     /* le modificateur s'annonce juste apres */
     s.tach=s.tach||[];
     hgCuire(s);
@@ -1899,7 +1949,7 @@ MOTEUR.hangar={
             vit:A.vit};
   },
   demarrer:function(s){
-    s.salle=1;s.score=0;s.tach=[];s.am={};s.cartes=null;s.neuf=null;
+    s.salle=1;s.score=0;s.tach=[];s.am={};s.cartes=null;s.neuf=null;s.rec=null;s.traqueT=0;s.cartesBis=false;
     var NV=PERSO.niveaux||{};
     s.viesMax=5+(NV.vie||0);s.vies=s.viesMax;s.tues=0;s.nbTirs=0;s.orbA=0;s.drones=[];s.eb=[];s.explos=[];
     s.arcs=[];s.feux=[];
@@ -2164,6 +2214,7 @@ MOTEUR.hangar={
     }
 
     /* ---------- la naissance ---------- */
+    if(s.traqueT>0)s.traqueT-=dt;
     if(s.bossA>0&&s.pause<=0){s.bossA-=dt;if(s.bossA<=0)this.naitreBoss(s);}
     var rythme=s.obj&&s.obj.t==='survivre'?300:(s.obj&&s.obj.t!=='nettoyer'?520:420);
     if(s.aNaitre>0&&s.pause<=0&&s.z.length<11&&Math.random()<dt/rythme){
@@ -2182,7 +2233,30 @@ MOTEUR.hangar={
         if(O.T<=0)O.fait=true;
         /* le gaz : une nappe qui avance depuis le mur d'entree */
         if(this.dansGaz(s,j.x,j.y)&&s.inv<=0){if(this.blesser(s))return;}}
+      else if(O.t==='coffre'){var Cf=s.coffre;
+        /* on reste une seconde dessus pour forcer la serrure */
+        if(Math.hypot(j.x-Cf.x,j.y-Cf.y)<18){Cf.c+=dt;if(Cf.c>=1000){Cf.ouvert=true;s.bonusC=true;
+          for(var ec=0;ec<18;ec++){var ae=ec/18*6.283;s.part.push({x:Cf.x,y:Cf.y-4,vie:420,t:'eclat',vx:Math.cos(ae)*0.08,vy:Math.sin(ae)*0.08});}
+          if(Math.random()<0.55){O.fait=true;s.score+=150*s.salle;s.mot='LE GROS LOT !';s.motT=1400;
+            var ouvC=HG_DEBLOQUE.filter(function(c){return Math.max(HG_REC,s.score)>=c.s;}).map(function(c){return c.a;}).filter(function(k){return k!==s.arme;});
+            if(ouvC.length)s.ram.push({x:Cf.x,y:Cf.y+18,t:ouvC[Math.floor(Math.random()*ouvC.length)]});}
+          else{O.t='nettoyer';s.reste=s.aNaitre=Math.min(26,8+s.salle);s.traqueT=2600;for(var nn=0;nn<4;nn++)this.naitre(s);s.mot='C’ÉTAIT UN PIÈGE !';s.motT=1400;s.sec=Math.max(s.sec,220);}}}
+        else Cf.c=Math.max(0,Cf.c-dt*2);}
+      else if(O.t==='survivant'){var Sv=s.surv;
+        if(Math.hypot(j.x-Sv.x,j.y-Sv.y)<20){Sv.c+=dt;if(Sv.c>=1200){Sv.libre=true;O.fait=true;s.mot='IL TE SUIT · RAMÈNE-LE À LA PORTE';s.motT=1600;}}
+        else Sv.c=Math.max(0,Sv.c-dt);}
       if(O.fait){s.reste=0;s.aNaitre=0;}
+    }
+    var Sv2=s.surv;
+    if(Sv2&&Sv2.libre&&!Sv2.mort){
+      var ds=Math.hypot(j.x-Sv2.x,j.y-Sv2.y);
+      if(ds>22){var dir=(ds>40&&this.pente(s,Sv2))||{x:(j.x-Sv2.x)/ds,y:(j.y-Sv2.y)/ds}, vs=Math.min(0.075,0.04+ds*0.0006);
+        this.bouger(s,Sv2,dir.x*vs*dt,dir.y*vs*dt,4);Sv2.pas=(Sv2.pas||0)+dt*0.01;}
+      if(Sv2.inv>0)Sv2.inv-=dt;
+      for(var iz9=0;iz9<s.z.length&&Sv2.inv<=0;iz9++){var zz=s.z[iz9];if(zz.nait>0)continue;
+        if(Math.hypot(zz.x-Sv2.x,zz.y-Sv2.y)<zz.r+5){Sv2.pv--;Sv2.inv=900;s.mot=Sv2.pv>0?'LE SURVIVANT EST TOUCHÉ':'LE SURVIVANT EST MORT';s.motT=1100;
+          for(var eb9=0;eb9<6;eb9++)s.part.push({x:Sv2.x,y:Sv2.y-4,vie:300,t:'sang',vx:(Math.random()-0.5)*0.08,vy:(Math.random()-0.5)*0.08});
+          if(Sv2.pv<=0){Sv2.mort=true;s.morts=s.morts||[];}}}
     }
     if(O&&O.t==='evasion'&&O.fait){O.gaz=Math.min(1,(O.gaz||0)+dt/34000);if(this.dansGaz(s,j.x,j.y)&&s.inv<=0){if(this.blesser(s))return;}}
 
@@ -2328,6 +2402,20 @@ MOTEUR.hangar={
       var ra=s.ram[r2];
       ra.t2=(ra.t2||0)+dt;
       var portee=10+(s.am.aimant||0)*14+((PERSO.niveaux||{}).aimant||0)*10;
+      /* L'ETAL DU MARCHAND : on reste dessus pour payer, en points */
+      if(ra.t==='achat'){
+        if(Math.hypot(ra.x-j.x,ra.y-j.y)<14){
+          if(s.score<ra.prix){if(!ra.non){ra.non=true;s.mot='PAS ASSEZ DE POINTS';s.motT=900;}}
+          else{ra.c+=dt;if(ra.c>=700){s.score-=ra.prix;s.ram.splice(r2,1);
+            if(ra.a==='vie'){s.vies=Math.min(s.viesMax||5,s.vies+2);s.mot='+2 VIES';}
+            else if(ra.a==='vieMax'){s.viesMax=Math.min(9,(s.viesMax||5)+1);s.vies=s.viesMax;s.mot='+1 VIE MAX';}
+            else if(ra.a==='carte'){this.tirerCartes(s,true);s.cartesTitre='ACHAT CHEZ LE MARCHAND';s.mot='CARTE RARE';}
+            else{var ouvA=HG_DEBLOQUE.filter(function(c){return Math.max(HG_REC,s.score+ra.prix)>=c.s;}).map(function(c){return c.a;}).filter(function(k){return k!==s.arme;});
+              var na=ouvA.length?ouvA[Math.floor(Math.random()*ouvA.length)]:s.arme;s.arme=na;s.chg=HG_ARMES[na].chg;s.rech=0;s.mot=HG_ARMES[na].nom;}
+            s.motT=1100;for(var ea=0;ea<12;ea++){var aa=ea/12*6.283;s.part.push({x:ra.x,y:ra.y-6,vie:360,t:'eclat',vx:Math.cos(aa)*0.07,vy:Math.sin(aa)*0.07});}}}
+        }else{ra.c=0;ra.non=false;}
+        continue;
+      }
       if(Math.hypot(ra.x-j.x,ra.y-j.y)<portee){
         if(ra.t==='carbu'){s.obj.n++;s.score+=30*s.salle;s.mot='BIDON '+s.obj.n+'/3';s.motT=900;}
         else if(ra.t==='cle'){s.obj.n=1;s.score+=50*s.salle;s.mot='LA CLÉ !';s.motT=900;}
@@ -2356,19 +2444,30 @@ MOTEUR.hangar={
 
     /* ---------- la salle est nettoyee ---------- */
     if(s.reste<=0&&!s.porte.ouvert){
-      s.porte.ouvert=true;
-      s.mot='LA PORTE S’OUVRE';s.motT=1600;
+      for(var ip1=0;ip1<s.portes.length;ip1++)s.portes[ip1].ouvert=true;
+      if(!s.calme){
+      s.mot=s.portes.length>1?'CHOISIS TA PORTE':'LA PORTE S’OUVRE';s.motT=1600;
+      /* CE QUE LA PORTE AVAIT PROMIS */
+      var RC=s.rec;
+      if(RC==='or'){s.score+=150*s.salle;s.motSuite='+'+(150*s.salle)+' POINTS';}
+      if(RC==='elite'){s.score+=300*s.salle;s.bonusC=true;s.motSuite='SALLE ÉLITE · +'+(300*s.salle)+' POINTS';}
+      if(RC==='carte')s.bonusC=true;
+      if(RC==='soin'){if(s.vies>=(s.viesMax||5)&&(s.viesMax||5)<9){s.viesMax=(s.viesMax||5)+1;s.vies=s.viesMax;s.motSuite='+1 VIE MAX';}
+        else{s.vies=Math.min(s.viesMax||5,s.vies+2);s.motSuite='+2 VIES';}}
       /* LE PALIER : toutes les dix salles, le serveur verse 10 000 EUR (une fois par palier) */
       if(s.salle%10===0&&PARTIE)hgPalier(s,s.salle);
       s.score+=60*s.salle;
-      this.tirerCartes(s);
+      this.tirerCartes(s,s.bonusC);
+      if(RC==='carte'){s.cartesBis=true;s.cartesTitre='PORTE DES CARTES · PRENDS-EN DEUX';}
+      else if(RC==='elite')s.cartesTitre='SALLE ÉLITE NETTOYÉE · BONUS RARE';
+      else if(s.ev==='coffre')s.cartesTitre='LE COFFRE · BONUS RARE';
       /* de quoi repartir : on choisit entre deux, et le choix compte */
       /* DEUX OBJETS, ET IL FAUT CHOISIR : on ne ramasse que ce qu'on va
          chercher, et l'arme qu'on laisse est l'arme qu'on n'aura pas. */
       var lot=[];
       if(s.vies<(s.viesMax||5))lot.push('vie');
       lot.push('mun');
-      if(s.salle>=2){
+      if(s.salle>=2&&(RC==='arme'||Math.random()<0.3)){
         /* ON NE FAIT TOMBER QUE CE QUI EST DEBLOQUE. Le seuil est le
            meilleur score du joueur, lu au comptoir a l'ouverture de la
            borne : une arme qu'on n'a jamais vue tomber est une raison
@@ -2376,21 +2475,30 @@ MOTEUR.hangar={
         var ouvert=HG_DEBLOQUE.filter(function(c){
           return Math.max(HG_REC,s.score)>=c.s;}).map(function(c){return c.a;});
         var dispo=ouvert.filter(function(k){return k!==s.arme;});
-        var tire=dispo[Math.floor(Math.random()*dispo.length)];
+        var tire=dispo.splice(Math.floor(Math.random()*dispo.length),1)[0];
         if(tire)lot.unshift(tire);
+        /* LA PORTE DE L'ARMERIE : deux armes au choix */
+        if(RC==='arme'&&dispo.length)lot.splice(1,0,dispo[Math.floor(Math.random()*dispo.length)]);
       }
       for(var g2=0;g2<Math.min(2,lot.length);g2++){
         s.ram.push({x:HG_L/2-20+g2*40, y:HG_H/2+30, t:lot[g2]});
       }
+      }
     }
-    var Po=s.porte, dedans=false;
-    if(Po.ouvert){
+    var Po=null, dedans=false;
+    for(var ip2=0;ip2<s.portes.length&&!dedans;ip2++){Po=s.portes[ip2];if(!Po.ouvert)continue;
       if(Po.cote==='h')dedans=s.j.y<HG_MUR+8&&Math.abs(s.j.x-Po.x)<16;
       else if(Po.cote==='b')dedans=s.j.y>HG_H-HG_MUR-8&&Math.abs(s.j.x-Po.x)<16;
       else if(Po.cote==='g')dedans=s.j.x<HG_MUR+8&&Math.abs(s.j.y-Po.y)<16;
       else dedans=s.j.x>HG_L-HG_MUR-8&&Math.abs(s.j.y-Po.y)<16;}
     if(dedans){
-      s.salle++;s.score+=40;
+      /* LE SURVIVANT RAMENE : il paie sa dette */
+      var Sd=s.surv, merci=null;
+      if(Sd&&Sd.libre&&!Sd.mort&&Math.hypot(Sd.x-s.j.x,Sd.y-s.j.y)<70){s.viesMax=Math.min(9,(s.viesMax||5)+1);s.vies=Math.min(s.viesMax,s.vies+1);s.score+=200*s.salle;merci='SURVIVANT SAUVÉ · +1 VIE MAX';}
+      s.rec=Po.rec;
+      /* le marchand est une halte : il ne compte pas comme une salle */
+      if(Po.rec!=='marchand')s.salle++;
+      s.score+=40;
       /* on entre dans la salle suivante par le mur d'en face */
       var opp={h:'b',b:'h',g:'d',d:'g'}[Po.cote];s.entree=opp;
       if(opp==='b'){s.j.x=HG_L/2;s.j.y=HG_H-50;}else if(opp==='h'){s.j.x=HG_L/2;s.j.y=50;}
@@ -2398,6 +2506,7 @@ MOTEUR.hangar={
       s.j.vx=s.j.vy=0;
       s.tach=[];s.part=[];
       this.garnir(s);
+      if(merci){s.motSuite=s.mot;s.mot=merci;s.motT=1500;}
     }
 
     /* ---------- la camera ---------- */
@@ -2424,10 +2533,13 @@ MOTEUR.hangar={
     if(!this.heurte(s,nx,e.y,r))e.x=nx;
     var ny=e.y+dy;
     if(!this.heurte(s,e.x,ny,r))e.y=ny;
-    var P=s.porte, ouv=(P.ouvert&&e===s.j);
-    var libX=ouv&&(P.cote==='g'||P.cote==='d')&&Math.abs(e.y-P.y)<16, libY=ouv&&(P.cote==='h'||P.cote==='b')&&Math.abs(e.x-P.x)<16;
-    e.x=Math.max(libX&&P.cote==='g'?2:HG_MUR+r,Math.min(libX&&P.cote==='d'?HG_L-2:HG_L-HG_MUR-r,e.x));
-    e.y=Math.max(libY&&P.cote==='h'?2:HG_MUR+r,Math.min(libY&&P.cote==='b'?HG_H-2:HG_H-HG_MUR-r,e.y));
+    /* les portes ouvertes laissent passer le joueur, et lui seul */
+    var lg=false,ld=false,lh=false,lb=false, PS=s.portes||[s.porte];
+    if(e===s.j)for(var ip=0;ip<PS.length;ip++){var P=PS[ip];if(!P.ouvert)continue;
+      if((P.cote==='g'||P.cote==='d')&&Math.abs(e.y-P.y)<16){if(P.cote==='g')lg=true;else ld=true;}
+      if((P.cote==='h'||P.cote==='b')&&Math.abs(e.x-P.x)<16){if(P.cote==='h')lh=true;else lb=true;}}
+    e.x=Math.max(lg?2:HG_MUR+r,Math.min(ld?HG_L-2:HG_L-HG_MUR-r,e.x));
+    e.y=Math.max(lh?2:HG_MUR+r,Math.min(lb?HG_H-2:HG_H-HG_MUR-r,e.y));
   },
   heurte:function(s,x,y,r){
     for(var i=0;i<s.obs.length;i++){
@@ -2457,13 +2569,13 @@ MOTEUR.hangar={
     /* ILS ENTRENT PAR LES QUATRE MURS, et aussi par la porte de sortie : elle n'est
        plus un abri. Celui qui reste planté au même endroit est repéré : ils sortent
        alors tout près de lui (à 55-90 px), il faut bouger. */
-    var traque=(s.campT||0)>4000&&!gros;
+    var traque=((s.campT||0)>4000||(s.traqueT||0)>0)&&!gros;
     do{
       var c=terre?3:(traque?5:(Math.random()<0.18?4:6+Math.floor(Math.random()*4)));
       if(c===3){x=HG_MUR+16+Math.random()*(HG_L-2*HG_MUR-32);y=HG_MUR+30+Math.random()*(HG_H-2*HG_MUR-60);}
       else if(c===5){var aT=Math.random()*6.283, dT=55+Math.random()*35;x=s.j.x+Math.cos(aT)*dT;y=s.j.y+Math.sin(aT)*dT;
         x=Math.max(HG_MUR+10,Math.min(HG_L-HG_MUR-10,x));y=Math.max(HG_MUR+12,Math.min(HG_H-HG_MUR-12,y));}
-      else if(c===4){var P=s.porte;x=Math.max(HG_MUR+10,Math.min(HG_L-HG_MUR-10,P.x+(P.cote==='g'?12:P.cote==='d'?-12:(Math.random()-0.5)*20)));
+      else if(c===4){var P=s.portes?s.portes[Math.floor(Math.random()*s.portes.length)]:s.porte;x=Math.max(HG_MUR+10,Math.min(HG_L-HG_MUR-10,P.x+(P.cote==='g'?12:P.cote==='d'?-12:(Math.random()-0.5)*20)));
         y=Math.max(HG_MUR+12,Math.min(HG_H-HG_MUR-12,P.y+(P.cote==='h'?12:P.cote==='b'?-12:(Math.random()-0.5)*20)));}
       else if(c===6){x=HG_MUR+8+Math.random()*(HG_L-2*HG_MUR-16);y=HG_MUR+10;}
       else if(c===7){x=HG_MUR+10;y=HG_MUR+30+Math.random()*(HG_H-2*HG_MUR-60);}
@@ -2483,7 +2595,7 @@ MOTEUR.hangar={
     var zN=s.z[s.z.length-1];
     if(zN.cmp==='bouclier')zN.face=Math.atan2(s.j.y-zN.y,s.j.x-zN.x);
     /* L'ELITE : une aura de couleur, plus solide, et un meilleur butin */
-    if(!gros&&s.salle>=6&&Math.random()<0.12){var ks=Object.keys(HG_ELITES), el=ks[Math.floor(Math.random()*ks.length)];
+    if(!gros&&(s.eliteB?Math.random()<0.4:(s.salle>=6&&Math.random()<0.12))){var ks=Object.keys(HG_ELITES), el=ks[Math.floor(Math.random()*ks.length)];
       zN.elite=el;zN.pv=Math.round(zN.pv*1.6)+1;zN.pvm=zN.pv;zN.pts*=2;if(el==='rapide')zN.v*=1.4;if(el==='blinde')zN.blinde=(zN.blinde||0)+1;}
     if(gros){s.mot='BOSS \u00b7 '+(HG_BOSS[s.cle]||HG_BOSS.entrepot).nom;s.motT=2000;s.sec=Math.max(s.sec,120);}
   },
@@ -2738,7 +2850,7 @@ MOTEUR.hangar={
   /* TROIS CARTES, JAMAIS DEUX FOIS LA MEME, et jamais une carte deja
      poussee a son maximum : proposer « cadence +18 % » a quelqu'un qui
      l'a prise six fois, c'est lui voler un choix. */
-  tirerCartes:function(s){
+  tirerCartes:function(s,bonus){
     var pot=HG_CARTES.filter(function(c){
       if(c.c==='soin')return s.vies<(s.viesMax||5);
       return (s.am[c.c]||0)<c.max;
@@ -2748,14 +2860,17 @@ MOTEUR.hangar={
        salles environ, et c'est ce qui fait battre le coeur quand elle sort */
     var tri=pot.map(function(c){var w=(HG_RAR[c.rar||'commune']||HG_RAR.commune).p;return {c:c,k:Math.pow(Math.random(),1/w)};})
                .sort(function(a,b){return b.k-a.k;}).map(function(o){return o.c;});
-    s.cartes=tri.slice(0,3);
+    /* LE BONUS (porte des cartes, salle elite, coffre) : la premiere est au moins rare */
+    if(bonus){var rr=tri.filter(function(c){return c.rar==='legendaire';}).concat(tri.filter(function(c){return c.rar==='rare';}));
+      if(rr.length){var b0=rr[0];tri=[b0].concat(tri.filter(function(c){return c!==b0;}));}}
+    s.cartes=tri.slice(0,3);s.cartesTitre=null;
     /* LE TEMPS DE LIRE : les cartes apparaissent en fondu, et on ne peut
        en prendre aucune avant CARTES_PRETES millisecondes. Sinon le dernier
        coup de feu, le doigt encore pose, choisissait a notre place. */
     s.cartesT=0;
   },
   prendreCarte:function(s,i){
-    var c=s.cartes&&s.cartes[i];
+    var c=s.cartes&&s.cartes[i], tout=s.cartes;
     if(!c)return;
     if(c.c==='soin')s.vies=Math.min(s.viesMax||5,s.vies+2);
     else s.am[c.c]=(s.am[c.c]||0)+1;
@@ -2764,6 +2879,9 @@ MOTEUR.hangar={
     if(c.c==='chg'){s.chg=this.regle(s).chg;s.rech=0;}
     s.cartes=null;
     s.mot=c.nom;s.motT=900;
+    /* LA PORTE DES CARTES : on en prend deux sur les trois */
+    if(s.cartesBis){s.cartesBis=false;var reste=(tout||[]).filter(function(x){return x!==c;});
+      if(reste.length){s.cartes=reste;s.cartesT=0;s.cartesTitre='ET UNE DEUXIÈME';}}
   },
   /* LA BORNE EST TOUCHEE : on ne s'en sert que pour choisir une carte */
   fige:function(s){ return !!(s&&s.cartes); },
@@ -2942,7 +3060,8 @@ MOTEUR.hangar={
       G.restore();
     }
     /* la porte du fond */
-    var pd=s.porte;
+    for(var ipd=0;ipd<(s.portes||[s.porte]).length;ipd++){
+    var pd=(s.portes||[s.porte])[ipd];
     /* LA PORTE PEUT ETRE SUR N'IMPORTE QUEL MUR : on la dessine debout (haut/bas) ou couchee (gauche/droite) */
     G.save();
     if(pd.cote==='b'){G.translate(pd.x,HG_H);G.rotate(Math.PI);G.translate(-pd.x,0);}
@@ -2965,6 +3084,10 @@ MOTEUR.hangar={
       R(px0-2,HG_MUR-4,4,3,'#d8a030');   /* le cadenas */
     }
     G.restore();
+    /* CE QUE PROMET LA PORTE : une bulle devant elle, visible des l'entree */
+    if(pd.rec){var ix=pd.x+(pd.cote==='g'?26:pd.cote==='d'?-26:0), iy=pd.y+(pd.cote==='h'?44:pd.cote==='b'?-30:0);
+      hgBullePorte(G,ix,iy,pd.rec,s.t,pd.ouvert);}
+    }
     /* les obstacles */
     for(var io=0;io<s.obs.length;io++){
       var o=s.obs[io];
@@ -3104,6 +3227,20 @@ MOTEUR.hangar={
     for(var ir=0;ir<s.ram.length;ir++){
       var ra=s.ram[ir];
       var fl=Math.sin((ra.t2||0)/260)*1.6;
+      if(ra.t==='achat'){
+        /* l'etal : un socle, l'objet qui flotte, le prix dessous */
+        hgOmbre(ra.x,ra.y+9,16);
+        R(ra.x-11,ra.y+1,22,8,'#4a3a2a');R(ra.x-11,ra.y+1,22,2,'#7a6448');R(ra.x-11,ra.y+7,22,2,'#2e2418');
+        var peut=s.score>=ra.prix;
+        G.save();G.globalAlpha=0.25+0.15*Math.sin(s.t/220);G.fillStyle=peut?'#8ad07a':'#ff5a5a';G.beginPath();G.arc(ra.x,ra.y-8+fl,11,0,7);G.fill();G.restore();
+        hgDessinRec(G,ra.x,ra.y-8+fl,ra.a==='vie'||ra.a==='vieMax'?'soin':ra.a);
+        if(ra.c>0){G.strokeStyle='#ffe060';G.lineWidth=2;G.beginPath();G.arc(ra.x,ra.y-8,13,-1.57,-1.57+6.283*Math.min(1,ra.c/700));G.stroke();}
+        G.font='bold 5px ui-monospace,monospace';G.textAlign='center';
+        G.fillStyle='rgba(8,10,14,.8)';G.fillRect(Math.round(ra.x-22),Math.round(ra.y+11),44,14);
+        G.fillStyle='#e8dcc8';G.fillText({vie:'+2 VIES',vieMax:'+1 VIE MAX',arme:'ARME',carte:'CARTE RARE'}[ra.a],ra.x,ra.y+16);
+        G.fillStyle=peut?'#ffd21f':'#ff5a5a';G.fillText(ra.prix+' PTS',ra.x,ra.y+23);G.textAlign='left';
+        continue;
+      }
       hgOmbre(ra.x,ra.y+7,9);
       if(ra.t==='carbu'){
         /* le jerrican jaune, qui clignote pour qu'on le trouve */
@@ -3127,6 +3264,29 @@ MOTEUR.hangar={
         R(ra.x-8,ra.y-6+fl,16,1,'rgba(240,196,90,.5)');
       }
     }
+    /* LE MARCHAND, derriere ses etals */
+    if(s.calme){var mkx=HG_L/2, mky=HG_H/2-34, mkb=Math.sin(s.t/400)*1;
+      hgOmbre(mkx,mky+12,14);R(mkx-6,mky-2+mkb,12,12,'#5a3a6a');R(mkx-6,mky-2+mkb,12,2,'#7a5a8a');R(mkx-4,mky-9+mkb,8,7,'#e0b090');
+      R(mkx-7,mky-11+mkb,14,3,'#2a2030');R(mkx-4,mky-15+mkb,8,4,'#2a2030');R(mkx-3,mky-6+mkb,2,1,'#2a1a10');R(mkx+1,mky-6+mkb,2,1,'#2a1a10');
+      R(mkx-9,mky+1+mkb,3,6,'#5a3a6a');R(mkx+6,mky+1+mkb,3,6,'#5a3a6a');
+      G.font='bold 5px ui-monospace,monospace';G.textAlign='center';G.fillStyle='rgba(8,10,14,.75)';G.fillRect(Math.round(mkx-54),Math.round(mky-25),108,8);G.fillStyle='#e0d0ff';G.fillText('RESTE SUR UN ÉTAL POUR ACHETER',mkx,mky-19);}
+    /* LE COFFRE */
+    if(s.coffre){var Cf9=s.coffre, cfx=Cf9.x, cfy=Cf9.y;hgOmbre(cfx,cfy+7,16);
+      if(Cf9.ouvert){R(cfx-9,cfy-2,18,9,'#6a4420');R(cfx-9,cfy-8,18,3,'#8a5a2a');R(cfx-7,cfy-1,14,3,'#2a1a08');}
+      else{var cft=Cf9.c>0?(Math.random()-0.5)*Cf9.c/400:0;
+        G.save();G.globalAlpha=0.22+0.12*Math.sin(s.t/200);G.fillStyle='#ffd21f';G.beginPath();G.arc(cfx,cfy,16,0,7);G.fill();G.restore();
+        R(cfx-9+cft,cfy-6,18,13,'#8a5a2a');R(cfx-9+cft,cfy-6,18,5,'#a8743a');R(cfx-9+cft,cfy-2,18,1,'#4a2a10');R(cfx-9+cft,cfy-6,2,13,'#c8a040');R(cfx+7+cft,cfy-6,2,13,'#c8a040');R(cfx-2+cft,cfy-3,4,4,'#ffd21f');
+        if(Cf9.c>0){G.strokeStyle='#ffe060';G.lineWidth=2;G.beginPath();G.arc(cfx,cfy,15,-1.57,-1.57+6.283*Math.min(1,Cf9.c/1000));G.stroke();}}}
+    /* LE SURVIVANT : dans sa cage, puis derriere toi */
+    if(s.surv&&!s.surv.mort){var Sv9=s.surv, svx=Sv9.x, svy=Sv9.y, svp=Math.sin(Sv9.pas||0)*1.2, svc=(Sv9.inv>0&&Math.floor(s.t/80)%2===0);
+      hgOmbre(svx,svy+8,10);
+      if(!svc){R(svx-3,svy+3,2,5+svp,'#3a3a4a');R(svx+1,svy+3,2,5-svp,'#3a3a4a');R(svx-4,svy-4,8,8,'#3a7ad0');R(svx-4,svy-4,8,1,'#5a9af0');R(svx-3,svy-10,6,6,'#f0c8a0');R(svx-3,svy-11,6,2,'#6a4020');}
+      if(!Sv9.libre){G.strokeStyle='#8a8a8a';G.lineWidth=1;for(var svb=-10;svb<=10;svb+=4){G.beginPath();G.moveTo(svx+svb+0.5,svy-16);G.lineTo(svx+svb+0.5,svy+9);G.stroke();}
+        R(svx-11,svy-17,22,2,'#6a6a6a');R(svx-11,svy+8,22,2,'#6a6a6a');
+        G.fillStyle='rgba(90,216,255,'+(0.6+0.4*Math.sin(s.t/200))+')';G.font='bold 5px ui-monospace,monospace';G.textAlign='center';G.fillText('À L’AIDE !',svx,svy-20);
+        if(Sv9.c>0){G.strokeStyle='#5ad8ff';G.lineWidth=2;G.beginPath();G.arc(svx,svy-4,15,-1.57,-1.57+6.283*Math.min(1,Sv9.c/1200));G.stroke();}}
+      else{for(var svh=0;svh<3;svh++)R(svx-5+svh*4,svy-15,3,2,svh<Sv9.pv?'#ff5a6a':'rgba(255,255,255,.2)');}}
+    G.textAlign='left';
     /* LES ATTAQUES ANNONCEES : un disque qui se remplit, puis ca saute */
     for(var izd2=0;izd2<(s.zd||[]).length;izd2++){var Zd2=s.zd[izd2];if(Zd2.t<0)continue;var f9=Math.min(1,Zd2.t/Zd2.T);
       var col=Zd2.c==='glace'?'127,232,255':(Zd2.c==='feu'?'255,140,40':'255,60,40');
@@ -3384,11 +3544,11 @@ MOTEUR.hangar={
     G.restore();
 
     /* ================= LE CHROME, PAR-DESSUS ================= */
-    if(s.porte.ouvert){var PX=s.porte.x-s.cam.x, PY=s.porte.y-s.cam.y;
+    for(var ipa=0;ipa<(s.portes||[s.porte]).length;ipa++){var Pa=(s.portes||[s.porte])[ipa];if(!Pa.ouvert)continue;var PX=Pa.x-s.cam.x, PY=Pa.y-s.cam.y;
       if(PX<0||PX>L||PY<0||PY>H){var cxs=L/2, cys=H/2, ang=Math.atan2(PY-cys,PX-cxs), k2=Math.min((L/2-14)/Math.max(0.01,Math.abs(Math.cos(ang))),(H/2-20)/Math.max(0.01,Math.abs(Math.sin(ang))));
         var ax=cxs+Math.cos(ang)*k2, ay=cys+Math.sin(ang)*k2, pul=0.6+0.4*Math.sin(s.t/160);
         G.save();G.translate(ax,ay);G.rotate(ang);G.fillStyle='rgba(138,208,122,'+pul+')';G.beginPath();G.moveTo(9,0);G.lineTo(-6,-7);G.lineTo(-3,0);G.lineTo(-6,7);G.fill();G.restore();
-        G.fillStyle='rgba(200,240,190,'+pul+')';G.font='bold 6px ui-monospace,monospace';G.textAlign='center';G.fillText('SORTIE',Math.max(20,Math.min(L-20,ax-Math.cos(ang)*14)),Math.max(10,Math.min(H-4,ay-Math.sin(ang)*14+2)));}}
+        G.fillStyle='rgba(200,240,190,'+pul+')';G.font='bold 6px ui-monospace,monospace';G.textAlign='center';var RP=HG_REC_P[Pa.rec]||{n:'SORTIE',c:'#8ad07a'};G.fillStyle=RP.c;G.globalAlpha=pul;G.fillText(RP.n,Math.max(20,Math.min(L-20,ax-Math.cos(ang)*14)),Math.max(10,Math.min(H-4,ay-Math.sin(ang)*14+2)));G.globalAlpha=1;}}
     /* les vies */
     var HX=24;                 /* apres la fleche de retour */
     for(var iv=0;iv<(s.viesMax||5);iv++){
@@ -3423,12 +3583,15 @@ MOTEUR.hangar={
     G.textAlign='right';
     G.fillStyle=s.reste<=0?'#8ad07a':'#ffb04a';
     var Ob=s.obj||{t:'nettoyer'}, txO;
-    if(s.reste<=0)txO='PORTE OUVERTE';
+    if(s.calme)txO='LE MARCHAND';
+    else if(s.reste<=0)txO=(s.portes&&s.portes.length>1)?'CHOISIS TA PORTE':'PORTE OUVERTE';
     else if(Ob.t==='survivre')txO='TIENS '+Math.ceil(Math.max(0,Ob.T)/1000)+' S';
     else if(Ob.t==='carbu')txO='BIDONS '+Ob.n+'/3';
     else if(Ob.t==='cle')txO=(Ob.cleT>0?'LE PORTEUR ARRIVE':'LA CLÉ');
     else if(Ob.t==='evasion')txO='PORTE DANS '+Math.ceil(Math.max(0,Ob.T)/1000)+' S';
     else if(Ob.t==='boss')txO='LE BOSS';
+    else if(Ob.t==='coffre')txO='OUVRE LE COFFRE';
+    else if(Ob.t==='survivant')txO='LIBÈRE LE SURVIVANT';
     else txO='RESTE '+s.reste;
     G.fillText(txO,L-5,21);
     var BOSSZ=null;for(var ib2=0;ib2<s.z.length;ib2++)if(s.z[ib2].gros&&s.z[ib2].boss){BOSSZ=s.z[ib2];break;}
@@ -3436,6 +3599,7 @@ MOTEUR.hangar={
       R(bx2,by2,bw*Math.max(0,BOSSZ.pv/BOSSZ.pvm),4,BOSSZ.stun>0?'#ffe060':'#d8342a');
       R(bx2+bw*0.66,by2-1,1,6,'#fff');R(bx2+bw*0.33,by2-1,1,6,'#fff');
       G.textAlign='center';G.fillStyle='#ffd0c0';G.font='bold 6px ui-monospace,monospace';G.fillText((BOSSZ.grand?'★ ':'')+BOSSZ.boss.nom+' · PHASE '+(BOSSZ.phase+1),L/2,by2-3);G.textAlign='right';G.font='bold 7px ui-monospace,monospace';}
+    if(s.rec&&HG_REC_P[s.rec]&&!s.calme&&['boss','marchand','evenement'].indexOf(s.rec)<0&&s.reste>0){G.fillStyle=HG_REC_P[s.rec].c;G.font='bold 6px ui-monospace,monospace';G.fillText('PRIME : '+HG_REC_P[s.rec].n,L-5,s.mod?36:29);G.font='bold 7px ui-monospace,monospace';}
     if(s.mod){G.fillStyle='#b8a0ff';G.font='bold 6px ui-monospace,monospace';G.fillText({rapides:'RAPIDES ×1,5',butin:'DOUBLE BUTIN',ricochet:'RICOCHETS',noir:'COUPURE',blindes:'BLINDÉS ×1,5'}[s.mod],L-5,29);G.font='bold 7px ui-monospace,monospace';}
     G.textAlign='left';
     G.font='bold 8px ui-monospace,monospace';
@@ -3513,6 +3677,31 @@ MOTEUR.hangar={
   action:function(s,a){ if(a==='menu'&&typeof mnuOuvrir==='function')mnuOuvrir(); }
 };
 
+/* LES PROMESSES DES PORTES : une couleur, un dessin, un mot */
+var HG_REC_P={arme:{c:'#ff8a4a',n:'ARME'},carte:{c:'#c08cff',n:'2 CARTES'},soin:{c:'#ff5a6a',n:'SOIN'},or:{c:'#ffd21f',n:'POINTS'},
+  elite:{c:'#ff3b3b',n:'ÉLITE'},evenement:{c:'#5ad8ff',n:'???'},boss:{c:'#ff3b3b',n:'BOSS'},marchand:{c:'#8ad07a',n:'MARCHAND'}};
+function hgDessinRec(G,x,y,rec){
+  function R(a,b,w,h,c){G.fillStyle=c;G.fillRect(Math.round(a),Math.round(b),w,h);}
+  if(rec==='arme'){R(x-6,y-2,12,3,'#d8dde4');R(x-6,y-2,12,1,'#fff');R(x-4,y+1,3,3,'#a0703a');R(x+4,y-3,2,1,'#d8dde4');}
+  else if(rec==='carte'){R(x-5,y-5,7,9,'#3a2a5a');R(x-5,y-5,7,9,'#c08cff');R(x-4,y-4,5,7,'#2a1a44');R(x-2,y-3,9,9,'#e8d8ff');R(x-1,y-2,7,7,'#9a6ae0');R(x+1,y,3,3,'#ffd21f');}
+  else if(rec==='soin'){R(x-2,y-5,4,10,'#fff');R(x-5,y-2,10,4,'#fff');}
+  else if(rec==='or'){G.fillStyle='#ffd21f';G.beginPath();G.arc(x,y,5,0,7);G.fill();R(x-1,y-3,2,6,'#a87a10');R(x-3,y-3,1,1,'#fff6c0');}
+  else if(rec==='elite'||rec==='boss'){R(x-4,y-5,8,7,'#f4ece0');R(x-3,y+2,6,2,'#f4ece0');R(x-3,y-3,2,2,'#2a0a0a');R(x+1,y-3,2,2,'#2a0a0a');R(x-1,y,2,1,'#2a0a0a');
+    if(rec==='elite'){R(x-4,y-8,8,2,'#ffd21f');R(x-4,y-10,2,2,'#ffd21f');R(x-1,y-10,2,2,'#ffd21f');R(x+2,y-10,2,2,'#ffd21f');}}
+  else if(rec==='marchand'){R(x-4,y-3,8,7,'#c8a060');R(x-4,y-3,8,1,'#e8c890');R(x-2,y-6,4,3,'#8a6a3a');G.fillStyle='#2a1a08';G.font='bold 6px ui-monospace,monospace';G.textAlign='center';G.fillText('$',x,y+3);}
+  else{G.fillStyle='#fff';G.font='bold 9px ui-monospace,monospace';G.textAlign='center';G.fillText('?',x,y+3);}
+}
+function hgBullePorte(G,x,y,rec,t,ouv){
+  var P=HG_REC_P[rec]||HG_REC_P.evenement, f=ouv?(0.8+0.2*Math.sin(t/200)):0.55, gy=ouv?Math.sin(t/260)*1.5:0;
+  G.save();G.globalAlpha=f;
+  G.fillStyle='rgba(8,10,14,.78)';G.beginPath();G.arc(x,y+gy,10,0,7);G.fill();
+  G.strokeStyle=P.c;G.lineWidth=1.5;G.beginPath();G.arc(x,y+gy,10,0,7);G.stroke();
+  hgDessinRec(G,x,y+gy,rec);
+  G.font='bold 5px ui-monospace,monospace';G.textAlign='center';
+  var w=G.measureText(P.n).width+4;G.fillStyle='rgba(8,10,14,.78)';G.fillRect(Math.round(x-w/2),Math.round(y+gy+12),Math.round(w),7);
+  G.fillStyle=P.c;G.fillText(P.n,x,y+gy+17.5);
+  G.restore();
+}
 function hgPalier(s,salle){
   rpc('arcade_palier',{p_partie:PARTIE,p_salle:salle}).then(function(r){
     if(r&&r.ok){
@@ -3602,7 +3791,7 @@ function hgCartesDOM(s,M){
   if(!el||el._jeu!==s.cartes){
     if(el)el.remove();
     el=document.createElement('div');el.id='hgCartes';el._jeu=s.cartes;
-    var h='<div class="hc-tete"><small>SALLE '+s.salle+' NETTOYÉE</small><b>Choisis ton bonus</b><i class="hc-barre"><u></u></i></div>';
+    var h='<div class="hc-tete"><small>'+(s.cartesTitre||('SALLE '+s.salle+' NETTOYÉE'))+'</small><b>Choisis ton bonus</b><i class="hc-barre"><u></u></i></div>';
     s.cartes.forEach(function(c,i){
       var Rr=HG_RAR[c.rar||'commune'], pris=s.am[c.c]||0, pips='';
       if(c.c!=='soin'&&c.max<=8)for(var k=0;k<c.max;k++)pips+='<i class="'+(k<pris?'on':'')+'"></i>';
