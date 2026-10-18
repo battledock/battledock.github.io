@@ -1743,7 +1743,7 @@ MOTEUR.hangar={
   },
   garnir:function(s){
     var n=s.salle;
-    s.obs=[];
+    s.obs=[];s.ram=[];
     /* la premiere salle est toujours la simple : on apprend a marcher
        avant d'apprendre a se placer */
     s.zone=Math.floor((n-1)/5)%HG_ZONES.length;
@@ -1818,19 +1818,37 @@ MOTEUR.hangar={
     }
     for(var e2=0;e2<s.obs.length;e2++)s.obs[e2].ex=false;
     for(var e3=0;e3<nb&&e3<bidons.length;e3++)bidons[e3].ex=true;
-    s.z=[];s.b=[];s.ram=[];s.arcs=[];s.feux=[];s.morts=[];s.eb=[];s.explos=[];
+    s.z=[];s.b=[];s.arcs=[];s.feux=[];s.morts=[];s.eb=[];s.explos=[];
     s.bouclier=((PERSO.niveaux||{}).armure||0)+(s.am.bouclier||0);
     s.reste=Math.min(28, 5+n*2);
     s.aNaitre=s.reste;
     s.porte.ouvert=false;
+    /* L'OBJECTIF DE LA SALLE : nettoyer n'est plus la seule facon d'ouvrir la porte.
+       Les deux premieres salles et les salles de boss restent des nettoyages. */
+    var tO=(n<=2||n%5===0)?'nettoyer':(function(){var r=Math.random();return r<0.32?'nettoyer':r<0.52?'survivre':r<0.72?'carbu':r<0.88?'cle':'evasion';})();
+    s.obj={t:tO,n:0,T:0,fait:false};
+    if(tO!=='nettoyer'){s.reste=999;s.aNaitre=999;}
+    if(tO==='survivre')s.obj.T=Math.min(45000,30000+n*600);
+    if(tO==='carbu'){/* trois bidons d'essence, loin les uns des autres et loin de l'entree */
+      for(var kc=0,ess=0;kc<3&&ess<300;ess++){var cx2=HG_MUR+20+Math.random()*(HG_L-2*HG_MUR-40), cy2=HG_MUR+30+Math.random()*(HG_H-2*HG_MUR-60);
+        if(this.heurte(s,cx2,cy2,8)||Math.hypot(cx2-s.j.x,cy2-s.j.y)<110)continue;
+        if(s.ram.some(function(r){return r.t==='carbu'&&Math.hypot(r.x-cx2,r.y-cy2)<90;}))continue;
+        s.ram.push({x:cx2,y:cy2,t:'carbu'});kc++;}}
+    if(tO==='cle')s.obj.cleT=1800;                 /* le porteur sort un peu apres les autres */
+    if(tO==='evasion'){s.obj.T=10000;s.obj.gaz=0;s.obj.de=s.entree;}
+    /* LE MODIFICATEUR : une salle sur trois, a partir de la quatrieme, change une regle */
+    s.mod=(n>=4&&n%5!==0&&Math.random()<0.34)?['rapides','butin','ricochet','noir','blindes'][Math.floor(Math.random()*5)]:null;
     s.pause=600;
     var NOMS={eparpille:'LE DEPOT',couloir:'LE COULOIR',piliers:'LES PILIERS',
               anneau:'L\u2019ANNEAU',travees:'LES TRAVEES',fosse:'LA FOSSE',
               allees:'LES \u00c9TALS',parking:'LE PARKING',tombes:'LES TOMBES'};
     /* a l'entree d'une zone on annonce la zone, pas le patron : c'est
        le changement de lieu qu'on vient chercher */
+    var OBJ={nettoyer:'',survivre:'TIENS BON',carbu:'TROIS BIDONS POUR LA PORTE',cle:'ABATS LE PORTEUR DE CLÉ',evasion:'LE GAZ MONTE · FILE'};
+    var MODS={rapides:'ILS SONT RAPIDES · POINTS ×1,5',butin:'DOUBLE BUTIN',ricochet:'TES BALLES RICOCHENT',noir:'COUPURE DE COURANT',blindes:'ILS SONT BLINDÉS · POINTS ×1,5'};
     if((n-1)%5===0){s.mot=HG_ZONES[s.zone].nom;s.motT=2200;}
-    else{s.mot='SALLE '+n+' \u00b7 '+(NOMS[s.patron]||'');s.motT=1700;}
+    else{s.mot=OBJ[tO]||('SALLE '+n+' \u00b7 '+(NOMS[s.patron]||''));s.motT=2000;}
+    s.motSuite=s.mod?MODS[s.mod]:null;     /* le modificateur s'annonce juste apres */
     s.tach=s.tach||[];
     hgCuire(s);
   },
@@ -1841,7 +1859,7 @@ MOTEUR.hangar={
   regle:function(s){
     var A=HG_ARMES[s.arme], a=s.am;
     return {nom:A.nom, c:A.c, gros:A.gros, feu:A.feu, rec:A.rec, plombs:A.plombs,
-            ecart:A.ecart, ric:A.ric, arc:A.arc, saut:A.saut, obus:A.obus,
+            ecart:A.ecart, ric:(A.ric||0)+(s.mod==='ricochet'?1:0), arc:A.arc, saut:A.saut, obus:A.obus,
             flaque:A.flaque, rayon:A.rayon,
             cad:A.cad*Math.pow(0.82,a.cad||0),
             deg:A.deg+(a.deg||0)+((PERSO.niveaux||{}).degats||0),
@@ -1872,6 +1890,7 @@ MOTEUR.hangar={
        milieu. On fige la salle, on lit les trois, on reprend. */
     if(s.cartes){ s.cartesT=(s.cartesT||0)+dt; if(s.motT>0)s.motT-=dt; return; }
     if(s.motT>0)s.motT-=dt;
+    if(s.motT<=0&&s.motSuite){s.mot=s.motSuite;s.motT=1700;s.motSuite=null;}
     if(s.inv>0)s.inv-=dt;
     if(s.pause>0)s.pause-=dt;
     var j=s.j, A=this.regle(s);
@@ -2112,9 +2131,26 @@ MOTEUR.hangar={
     }
 
     /* ---------- la naissance ---------- */
-    if(s.aNaitre>0&&s.pause<=0&&s.z.length<11&&Math.random()<dt/420){
+    var rythme=s.obj&&s.obj.t==='survivre'?300:(s.obj&&s.obj.t!=='nettoyer'?520:420);
+    if(s.aNaitre>0&&s.pause<=0&&s.z.length<11&&Math.random()<dt/rythme){
       this.naitre(s);
     }
+    /* ---------- l'objectif de la salle ---------- */
+    var O=s.obj;
+    if(O&&!O.fait&&s.pause<=0){
+      if(O.t==='survivre'){O.T-=dt;if(O.T<=0)O.fait=true;}
+      else if(O.t==='carbu'){if(O.n>=3)O.fait=true;}
+      else if(O.t==='cle'){
+        if(O.cleT>0){O.cleT-=dt;if(O.cleT<=0)this.naitrePorteur(s);}
+        if(O.n>=1)O.fait=true;}
+      else if(O.t==='evasion'){
+        O.T-=dt;O.gaz=Math.min(1,(O.gaz||0)+dt/34000);
+        if(O.T<=0)O.fait=true;
+        /* le gaz : une nappe qui avance depuis le mur d'entree */
+        if(this.dansGaz(s,j.x,j.y)&&s.inv<=0){if(this.blesser(s))return;}}
+      if(O.fait){s.reste=0;s.aNaitre=0;}
+    }
+    if(O&&O.t==='evasion'&&O.fait){O.gaz=Math.min(1,(O.gaz||0)+dt/34000);if(this.dansGaz(s,j.x,j.y)&&s.inv<=0){if(this.blesser(s))return;}}
 
     /* ---------- les zombies ---------- */
     for(var m2=s.z.length-1;m2>=0;m2--){
@@ -2176,6 +2212,10 @@ MOTEUR.hangar={
               mir:false,pouss:0,pa:0,clign:0,pas:0,feu:false,blinde:0,gros:false,nait:700,proche:false,dj:999,sbire:true});}
         }
       }
+      if(z2.porteur){/* il fuit : a l'oppose du joueur quand on approche, sinon il erre */
+        if(d<150){ax=-dx/d;ay=-dy/d;}else{z2.err=(z2.err||Math.random()*6.283)+(Math.random()-0.5)*0.2;ax=Math.cos(z2.err);ay=Math.sin(z2.err);}
+        if(z2.x<HG_MUR+20||z2.x>HG_L-HG_MUR-20)ax+=(HG_L/2-z2.x)/60;if(z2.y<HG_MUR+30||z2.y>HG_H-HG_MUR-20)ay+=(HG_H/2-z2.y)/80;
+        na=Math.hypot(ax,ay)||1;}
       var vx=ax/na*vz, vy=ay/na*vz;
       if(z2.pouss>0){vx+=Math.cos(z2.pa)*z2.pouss*0.01;vy+=Math.sin(z2.pa)*z2.pouss*0.01;
                      z2.pouss=Math.max(0,z2.pouss-dt/26);}
@@ -2183,7 +2223,7 @@ MOTEUR.hangar={
       z2.mir=(dx<0);           /* ils avancent toujours face a leur proie */
       z2.pas=(z2.pas||0)+dt*z2.v;
       /* la morsure */
-      if(d<z2.r+j.r+1&&s.inv<=0){
+      if(!z2.porteur&&d<z2.r+j.r+1&&s.inv<=0){
         if(this.blesser(s,ax/(Math.hypot(ax,ay)||1),ay/(Math.hypot(ax,ay)||1)))return;
       }
     }
@@ -2233,7 +2273,9 @@ MOTEUR.hangar={
       ra.t2=(ra.t2||0)+dt;
       var portee=10+(s.am.aimant||0)*14+((PERSO.niveaux||{}).aimant||0)*10;
       if(Math.hypot(ra.x-j.x,ra.y-j.y)<portee){
-        if(ra.t==='vie'){s.vies=Math.min(s.viesMax||5,s.vies+1);s.mot='+1 VIE';s.motT=900;}
+        if(ra.t==='carbu'){s.obj.n++;s.score+=30*s.salle;s.mot='BIDON '+s.obj.n+'/3';s.motT=900;}
+        else if(ra.t==='cle'){s.obj.n=1;s.score+=50*s.salle;s.mot='LA CLÉ !';s.motT=900;}
+        else if(ra.t==='vie'){s.vies=Math.min(s.viesMax||5,s.vies+1);s.mot='+1 VIE';s.motT=900;}
         else if(ra.t==='mun'){s.chg=HG_ARMES[s.arme].chg;s.rech=0;s.mot='CHARGEUR PLEIN';s.motT=900;}
         else{s.arme=ra.t;s.chg=HG_ARMES[ra.t].chg;s.rech=0;
              s.mot=HG_ARMES[ra.t].nom;s.motT=1100;}
@@ -2370,8 +2412,9 @@ MOTEUR.hangar={
       else{x=HG_MUR+8+Math.random()*(HG_L-2*HG_MUR-16);y=HG_H-HG_MUR-10;}
       essais++;
     }while(essais<30&&(Math.hypot(x-s.j.x,y-s.j.y)<(traque?50:70)||this.heurte(s,x,y,e.r)));
-    s.z.push({x:x,y:y,v:e.v*(1+s.salle*0.018),pv:e.pv+Math.floor(s.salle/3),
-              pvm:e.pv+Math.floor(s.salle/3),pts:e.pts,r:e.r,
+    var mR=(s.mod==='rapides')?1.35:1, mB=(s.mod==='blindes')?2:0, mP=(s.mod==='rapides'||s.mod==='blindes')?1.5:1;
+    s.z.push({x:x,y:y,v:e.v*(1+s.salle*0.018)*mR,pv:e.pv+Math.floor(s.salle/3)+mB,
+              pvm:e.pv+Math.floor(s.salle/3)+mB,pts:Math.round(e.pts*mP),r:e.r,
               art:gros?-1:e.art,mir:false,pouss:0,pa:0,clign:0,pas:0,
               feu:!gros&&!!e.feu, blinde:gros?0:(e.blinde||0),
               gros:gros, nait:700, proche:false, dj:999,
@@ -2487,6 +2530,18 @@ MOTEUR.hangar={
     if(s.feux.length>26)s.feux.shift();
     s.feux.push({x:x,y:y,r:r,vie:3400+Math.random()*900,T:0});
   },
+  /* LE PORTEUR DE CLE : rapide, il fuit quand on approche, et lache la cle en tombant */
+  naitrePorteur:function(s){
+    var x,y,ess=0;do{x=HG_MUR+20+Math.random()*(HG_L-2*HG_MUR-40);y=HG_MUR+30+Math.random()*(HG_H-2*HG_MUR-60);ess++;}
+    while(ess<60&&(Math.hypot(x-s.j.x,y-s.j.y)<130||this.heurte(s,x,y,6)));
+    var pv=6+Math.floor(s.salle/2);
+    s.z.push({x:x,y:y,v:0.075,pv:pv,pvm:pv,pts:80,r:5,art:3,mir:false,pouss:0,pa:0,clign:0,pas:0,feu:false,blinde:0,
+              gros:false,nait:500,proche:false,dj:999,porteur:true,sbire:true});
+    s.mot='LE PORTEUR DE CLÉ EST LÀ';s.motT=1300;
+  },
+  /* le gaz avance depuis le mur d'entree vers la porte : la part de salle couverte, c'est O.gaz */
+  dansGaz:function(s,x,y){var O=s.obj;if(!O||O.t!=='evasion')return false;var f=(O.gaz||0)*0.85;
+    if(O.de==='b')return y>HG_H-f*HG_H;if(O.de==='h')return y<f*HG_H;if(O.de==='g')return x<f*HG_L;return x>HG_L-f*HG_L;},
   eclater:function(s,cx,cy){
     for(var e=0;e<30;e++){var a=Math.random()*6.283, v=0.04+Math.random()*0.16;
       s.part.push({x:cx,y:cy,vie:240+Math.random()*300,t:'flam',vx:Math.cos(a)*v,vy:Math.sin(a)*v});}
@@ -2588,8 +2643,10 @@ MOTEUR.hangar={
     if(s.morts.length>24)s.morts.shift();
     s.morts.push({x:z.x,y:z.y,art:z.art,gros:z.gros,mir:z.mir,t:0,pal:z.pal,
                   dir:(Math.cos(z.pa||0)>=0)?1:-1});
+    if(z.porteur){s.ram.push({x:z.x,y:z.y,t:'cle'});s.mot='LA CLÉ EST TOMBÉE';s.motT=1100;}
     if(z.gros)s.ram.push({x:z.x,y:z.y,t:'vie'});
-    else if(Math.random()<0.1)s.ram.push({x:z.x,y:z.y,t:'mun'});
+    else if(Math.random()<(s.mod==='butin'?0.2:0.1))s.ram.push({x:z.x,y:z.y,t:'mun'});
+    if(s.mod==='butin')s.score+=z.pts;
     s.z.splice(i,1);
   },
   fin:function(s){
@@ -2882,7 +2939,16 @@ MOTEUR.hangar={
       var ra=s.ram[ir];
       var fl=Math.sin((ra.t2||0)/260)*1.6;
       hgOmbre(ra.x,ra.y+7,9);
-      if(ra.t==='vie'){
+      if(ra.t==='carbu'){
+        /* le jerrican jaune, qui clignote pour qu'on le trouve */
+        var on3=(Math.floor(s.t/400)%2)===0;
+        if(on3){G.fillStyle='rgba(255,210,60,.25)';G.beginPath();G.arc(ra.x,ra.y+fl,12,0,7);G.fill();}
+        R(ra.x-5,ra.y-6+fl,10,12,'#e8b818');R(ra.x-5,ra.y-6+fl,10,2,'#ffe060');R(ra.x+1,ra.y-9+fl,3,3,'#b08a10');
+        R(ra.x-3,ra.y-3+fl,6,1,'#9a7a10');R(ra.x-3,ra.y+fl,6,1,'#9a7a10');
+      }else if(ra.t==='cle'){
+        G.fillStyle='rgba(255,230,120,.3)';G.beginPath();G.arc(ra.x,ra.y+fl,11,0,7);G.fill();
+        R(ra.x-6,ra.y-3+fl,5,5,'#ffd84a');R(ra.x-5,ra.y-2+fl,3,3,'#8a6a10');R(ra.x-1,ra.y-1+fl,8,2,'#ffd84a');R(ra.x+4,ra.y+1+fl,2,2,'#ffd84a');R(ra.x+6,ra.y+1+fl,1,3,'#ffd84a');
+      }else if(ra.t==='vie'){
         R(ra.x-5,ra.y-5+fl,10,8,'#f0f0f0');R(ra.x-5,ra.y-5+fl,10,1,'#fff');
         R(ra.x-1,ra.y-3+fl,2,4,'#d8342a');R(ra.x-3,ra.y-1+fl,6,2,'#d8342a');
       }else if(ra.t==='mun'){
@@ -3090,11 +3156,22 @@ MOTEUR.hangar={
         R(pa.x,pa.y,1,1,'rgba(240,230,200,.8)');
       }
     }
+    /* le porteur de cle : une cle doree qui flotte au-dessus de lui */
+    for(var ip=0;ip<s.z.length;ip++){var zp=s.z[ip];if(!zp.porteur)continue;var fp=Math.sin(s.t/200)*1.5;
+      R(zp.x-4,zp.y-22+fp,4,4,'#ffd84a');R(zp.x-3,zp.y-21+fp,2,2,'#8a6a10');R(zp.x,zp.y-21+fp,6,2,'#ffd84a');R(zp.x+4,zp.y-19+fp,1,2,'#ffd84a');}
     /* les grenades en vol : une cloche, et leur ombre au sol */
     for(var gi2=0;gi2<(s.gren||[]).length;gi2++){var gr2=s.gren[gi2], f2=gr2.t/gr2.T, gx=gr2.x0+(gr2.x-gr2.x0)*f2, gy=gr2.y0+(gr2.y-gr2.y0)*f2, hz=Math.sin(f2*Math.PI)*26;
       G.fillStyle='rgba(0,0,0,.35)';G.beginPath();G.ellipse(gx,gy+2,3,1.6,0,0,7);G.fill();
       R(gx-2,gy-hz-2,4,4,'#3a4a2a');R(gx-1,gy-hz-3,2,1,'#c8c860');
       if(f2>0.6){G.strokeStyle='rgba(255,90,40,'+(f2-0.5)+')';G.lineWidth=1;G.beginPath();G.arc(gr2.x,gr2.y,42*(1.2-f2*0.4),0,7);G.stroke();}}
+    /* LE GAZ DE L'EVASION : une nappe verte qui avance depuis l'entree, au bord qui ondule */
+    if(s.obj&&s.obj.t==='evasion'&&(s.obj.gaz||0)>0){var f3=s.obj.gaz*0.85, de=s.obj.de;G.save();G.fillStyle='rgba(120,200,60,.38)';
+      for(var gk=0;gk<=40;gk++){var u=gk/40, on4=Math.sin(u*18+s.t/300)*5;
+        if(de==='b'){var yy=HG_H-f3*HG_H+on4;G.fillRect(u*HG_L,yy,HG_L/40+1,HG_H-yy);}
+        else if(de==='h'){var yy2=f3*HG_H+on4;G.fillRect(u*HG_L,0,HG_L/40+1,yy2);}
+        else if(de==='g'){var xx=f3*HG_L+on4;G.fillRect(0,u*HG_H,xx,HG_H/40+1);}
+        else{var xx2=HG_L-f3*HG_L+on4;G.fillRect(xx2,u*HG_H,HG_L-xx2,HG_H/40+1);}}
+      G.restore();}
     /* LA BRUME DU CIMETIERE : trois nappes qui derivent lentement, on y
        perd les silhouettes sans perdre la salle */
     if(HG_ZONES[s.zone||0].brume){
@@ -3108,7 +3185,7 @@ MOTEUR.hangar={
     }
     /* LA NUIT : on ne voit qu'a dix pas. Le halo suit le joueur, et
        hors du halo on ne devine que des silhouettes. */
-    if(HG_ZONES[s.zone||0].nuit){
+    if(HG_ZONES[s.zone||0].nuit||s.mod==='noir'){
       var hf=G.createRadialGradient(s.j.x,s.j.y,14,s.j.x,s.j.y,76);
       hf.addColorStop(0,'rgba(4,6,12,0)');
       hf.addColorStop(0.5,'rgba(4,6,12,.45)');
@@ -3161,7 +3238,15 @@ MOTEUR.hangar={
     /* ce qu'il reste */
     G.textAlign='right';
     G.fillStyle=s.reste<=0?'#8ad07a':'#ffb04a';
-    G.fillText(s.reste<=0?'PORTE OUVERTE':('RESTE '+s.reste),L-5,21);
+    var Ob=s.obj||{t:'nettoyer'}, txO;
+    if(s.reste<=0)txO='PORTE OUVERTE';
+    else if(Ob.t==='survivre')txO='TIENS '+Math.ceil(Math.max(0,Ob.T)/1000)+' S';
+    else if(Ob.t==='carbu')txO='BIDONS '+Ob.n+'/3';
+    else if(Ob.t==='cle')txO=(Ob.cleT>0?'LE PORTEUR ARRIVE':'LA CLÉ');
+    else if(Ob.t==='evasion')txO='PORTE DANS '+Math.ceil(Math.max(0,Ob.T)/1000)+' S';
+    else txO='RESTE '+s.reste;
+    G.fillText(txO,L-5,21);
+    if(s.mod){G.fillStyle='#b8a0ff';G.font='bold 6px ui-monospace,monospace';G.fillText({rapides:'RAPIDES ×1,5',butin:'DOUBLE BUTIN',ricochet:'RICOCHETS',noir:'COUPURE',blindes:'BLINDÉS ×1,5'}[s.mod],L-5,29);G.font='bold 7px ui-monospace,monospace';}
     G.textAlign='left';
     G.font='bold 8px ui-monospace,monospace';
     /* le mot de la salle */
