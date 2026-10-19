@@ -1,0 +1,3 @@
+-- La Ferme du Quai : ferme_niveaux, ferme_prix, ferme_mon_champ(), ferme_ameliorer(p_cle),
+-- arcade_jeton accepte 'ferme', arcade_score plafonne la ferme à 80 pts/s (max 100 000).
+-- Appliqué via migrations Supabase « ferme_du_quai » et « ferme_score_cap ».
