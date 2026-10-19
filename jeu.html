@@ -16519,6 +16519,7 @@ try{if(CHAMP_LIBRE)chDessinFerme(ctx,camX,camY,VW,VH,pileV);}catch(x){}
 try{fmDessinerMaison(ctx,camX,camY,pileV);}catch(x){}
 try{fmDessinerEtal(ctx,camX,camY,pileV);}catch(x){}
 try{fmDessinerLampes(ctx,camX,camY,pileV);}catch(x){}
+try{fmDessinerDeco(ctx,camX,camY,pileV);}catch(x){}
 pileV.sort((a,b)=>a.y-b.y);for(const p of pileV)p.f();
 dessinerBulles(ctx,camX,camY,pxV,pyV);dessinerTextes(ctx,camX,camY);ambiance(ctx);ctx.setTransform(1,0,0,1,0,0);return;}
 /* ================= LE VERGER =================
@@ -34338,6 +34339,8 @@ if(x>X+26*FM_K-6&&x<X+266*FM_K+6&&y>B-60&&y<B+4)return true;
 if(fmDansEtal(x,y))return true;
 /* le pied des lampadaires */
 if(fmDansLampe(x,y))return true;
+/* les chênes et les bancs */
+if(fmDansDeco(x,y))return true;
 /* la boîte aux lettres, sur son poteau : on la contourne */
 return x>X+300*FM_K-5&&x<X+320*FM_K+5&&y>B-8&&y<B+5;}
 function peindreClotureFerme(g,W,Hm){
@@ -34715,6 +34718,45 @@ P(-3.5,-1,7,2,'rgba(0,0,0,.25)');P(-2.5,-3,5,3,'#1e1e22');P(-1,-44,2.5,41,'#2424
 P(-3,-46,6.5,2,'#24242a');P(-3,-54,6.5,8,'#24242a');P(-2,-53,4.5,6,'#ffe090');P(-0.5,-53,1,6,'#24242a');P(-4,-56,8.5,2,'#24242a');P(-1,-58,2.5,2,'#24242a');
 try{const ci=cielDuMoment();if(ci&&ci.lampes>0.05){ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=Math.min(1,ci.lampes);const g=ctx.createRadialGradient(x,y-50,0,x,y-50,9);g.addColorStop(0,'rgba(255,230,150,.9)');g.addColorStop(1,'rgba(255,170,60,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y-50,9,0,7);ctx.fill();ctx.restore();
 lueurNuit(ctx,x,y-6,64,'rgba(255,190,105,1)');}}catch(x){}}});}}
+
+/* =====================================================================
+   LES CHÊNES ET LES BANCS DE PARC, en points fins comme la longère
+   (dessinés une fois, posés à 0,61). Au croisement, devant la maison,
+   près de l'étal et le long des chemins.
+   ===================================================================== */
+const FM_CHENES=[[806,948],[690,330],[1120,320],[540,905],[990,1310],[1290,935],[812,1520]];
+const FM_BANCS=[[848,952],[958,372],[505,952],[956,1318],[1248,952]];
+function fmDansDeco(x,y){for(const [cx,cy] of [[806,948],[690,330],[1120,320],[540,905],[990,1310],[1290,935],[812,1520]])if(Math.abs(x-cx)<7&&y>cy-4&&y<cy+3)return true;
+for(const [bx,by] of [[848,952],[958,372],[505,952],[956,1318],[1248,952]])if(Math.abs(x-bx)<21&&y>by-7&&y<by+3)return true;return false;}
+let FM_CHENE_IMG=null, FM_BANC_IMG=null;
+function fmDecoLib(){const H=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
+function feuillage(g,cx,cy,rx,ry,pal,seed,n){const [d0,d1,m0,m1,l0,l1]=pal;
+for(let k=0;k<n;k++){const a=H(seed,k,1)*6.283,r=Math.sqrt(H(k,seed,2)),x=cx+Math.cos(a)*r*rx,y=cy+Math.sin(a)*r*ry,s=rx*0.22+H(seed+k,k,3)*rx*0.16;g.fillStyle=k%2?d0:d1;g.beginPath();g.arc(x,y+s*0.25,s,0,7);g.fill();}
+for(let k=0;k<n;k++){const a=H(seed,k,4)*6.283,r=Math.sqrt(H(k,seed,5))*0.85,x=cx+Math.cos(a)*r*rx-rx*0.06,y=cy+Math.sin(a)*r*ry-ry*0.1,s=rx*0.18+H(seed+k,k,6)*rx*0.12;g.fillStyle=k%2?m0:m1;g.beginPath();g.arc(x,y,s,0,7);g.fill();}
+for(let k=0;k<n*0.8;k++){const a=H(seed,k,7)*6.283,r=Math.sqrt(H(k,seed,8))*0.7,x=cx+Math.cos(a)*r*rx-rx*0.14,y=cy+Math.sin(a)*r*ry-ry*0.22,s=rx*0.1+H(seed+k,k,9)*rx*0.08;if(y>cy+ry*0.2)continue;g.fillStyle=k%2?l0:l1;g.beginPath();g.arc(x,y,s,0,7);g.fill();}
+for(let k=0;k<n*3;k++){const a=H(seed,k,10)*6.283,x=cx+Math.cos(a)*rx*(0.9+H(k,1,11)*0.2),y=cy+Math.sin(a)*ry*(0.9+H(k,2,12)*0.2);g.fillStyle=y<cy?m1:d0;g.fillRect(Math.round(x),Math.round(y),2,2);}}
+function chene(){const c=document.createElement('canvas');c.width=170;c.height=200;const g=c.getContext('2d');const x=85,y=192;
+g.fillStyle='rgba(20,40,10,.3)';g.beginPath();g.ellipse(x+9,y,62,16,0,0,7);g.fill();
+const w=16,h=70;g.fillStyle='#5e4128';g.beginPath();g.moveTo(x-w*0.8,y);g.quadraticCurveTo(x-w*0.45,y-h*0.3,x-w*0.4,y-h);g.lineTo(x+w*0.4,y-h);g.quadraticCurveTo(x+w*0.45,y-h*0.3,x+w*0.8,y);g.fill();
+for(let k=0;k<h;k+=3){g.fillStyle=k%6?'#6f4f33':'#4a3220';g.fillRect(Math.round(x-w*0.3+H(k,x,1)*w*0.5),Math.round(y-k),2,2);}
+g.fillStyle='rgba(255,255,255,.12)';g.fillRect(Math.round(x-w*0.35),y-h,2,h-2);g.fillStyle='rgba(0,0,0,.18)';g.fillRect(Math.round(x+w*0.15),y-h,4,h);
+g.strokeStyle='#5e4128';g.lineWidth=5;g.beginPath();g.moveTo(x,y-60);g.lineTo(x-26,y-90);g.moveTo(x+2,y-58);g.lineTo(x+28,y-92);g.stroke();
+feuillage(g,x,y-118,66,52,['#24461c','#2c5222','#3a6a2c','#467a34','#62983e','#7aac4c'],11,60);return c;}
+function banc(){const c=document.createElement('canvas');c.width=80;c.height=52;const g=c.getContext('2d');const x=40,y=48;
+g.fillStyle='rgba(20,40,10,.3)';g.beginPath();g.ellipse(x,y+1,36,4,0,0,7);g.fill();
+for(const px of [x-26,x+22]){g.fillStyle='#1c1c20';g.fillRect(px,y-22,4,22);g.fillRect(px-2,y-1,8,2);g.fillRect(px,y-40,4,18);g.fillStyle='#3a3a42';g.fillRect(px,y-40,1,40);
+g.strokeStyle='#1c1c20';g.lineWidth=2;g.beginPath();g.arc(px+2,y-24,5,Math.PI,Math.PI*1.5);g.stroke();}
+for(let k=0;k<3;k++){const yy=y-24+k*3;g.fillStyle=['#a8743e','#9a6a38','#b07c46'][k];g.fillRect(x-32,yy,64,3);g.fillStyle='#d8a46a';g.fillRect(x-32,yy,64,1);g.fillStyle='rgba(0,0,0,.25)';g.fillRect(x-32,yy+2.5,64,0.5);}
+for(let k=0;k<4;k++){const yy=y-42+k*4;g.fillStyle=['#a8743e','#9a6a38','#b07c46','#a06c3a'][k];g.fillRect(x-32,yy,64,3);g.fillStyle='#d8a46a';g.fillRect(x-32,yy,64,1);}
+for(let k=0;k<12;k++){g.fillStyle='rgba(60,30,10,.35)';g.fillRect(Math.round(x-30+H(k,1,3)*60),Math.round(y-42+H(k,2,4)*20),3,0.8);}return c;}
+return {chene,banc};}
+function fmDessinerDeco(ctx,camX,camY,pile){
+if(!FM_CHENE_IMG){try{const L=fmDecoLib();FM_CHENE_IMG=L.chene();FM_BANC_IMG=L.banc();}catch(x){return;}}
+const K=0.61;
+for(const [x0,y0] of FM_CHENES){const w=170*K,h=200*K, X=x0-85*K, Y=y0-192*K;if(X+w-camX<-10||X-camX>VW+10||Y+h-camY<-10||Y-camY>VH+10)continue;
+pile.push({y:y0,f:()=>ctx.drawImage(FM_CHENE_IMG,Math.round(X-camX),Math.round(Y-camY),w,h)});}
+for(const [x0,y0] of FM_BANCS){const w=80*K,h=52*K, X=x0-40*K, Y=y0-48*K;if(X+w-camX<-10||X-camX>VW+10||Y+h-camY<-10||Y-camY>VH+10)continue;
+pile.push({y:y0,f:()=>ctx.drawImage(FM_BANC_IMG,Math.round(X-camX),Math.round(Y-camY),w,h)});}}
 </script>
 </body>
 </html>
