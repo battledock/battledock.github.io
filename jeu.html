@@ -15215,7 +15215,7 @@ if(CHAMPS_SEULS&&CARTE==='village'){
 /* LA FERME : deux bâtiments, et rien d'autre. Le métro plein nord, la
    graineterie au centre, le potager au sud : l'axe de la ferme. */
 DECOR=[];
-if(FERME_VIERGE){invaliderGrille();return;}
+if(FERME_VIERGE){DECOR.push({t:'x_madeleine',bati:true,ouvre:'bqFerme',x:330,y:948,demi:60});invaliderGrille();return;}   /* l'étal de Madeleine : sa porte, pour la plaque jaune */
 /* (l'ancienne gare du nord laisse la place à la halte, près de La Récolte) */
 /* ================= LE GRAND POULAILLER =================
    Le vocabulaire de l'ancien — pilotis, bardage vertical à trois tons,
@@ -16517,6 +16517,7 @@ for(const [,a] of AUTRES){const ax2=a.x-camX, ay2=a.y-camY;if(ax2<-40||ay2<-70||
 try{const m=ctx.getTransform();window.FM_VUE={a:m.a,d:m.d,e:m.e,f:m.f,camX,camY};}catch(x){}
 try{if(CHAMP_LIBRE)chDessinFerme(ctx,camX,camY,VW,VH,pileV);}catch(x){}
 try{fmDessinerMaison(ctx,camX,camY,pileV);}catch(x){}
+try{fmDessinerEtal(ctx,camX,camY,pileV);}catch(x){}
 pileV.sort((a,b)=>a.y-b.y);for(const p of pileV)p.f();
 dessinerBulles(ctx,camX,camY,pxV,pyV);dessinerTextes(ctx,camX,camY);ambiance(ctx);ctx.setTransform(1,0,0,1,0,0);return;}
 /* ================= LE VERGER =================
@@ -34332,6 +34333,8 @@ function fmMaison(){if(!FM_MAISON){try{FM_MAISON=FM_LIB.longere(0);}catch(x){FM_
 /* l'emprise de la maison, en pixels monde : on n'y entre pas */
 function fmDansMaison(x,y){const X=FM_MX(), B=FM_BASE();
 if(x>X+26*FM_K-6&&x<X+266*FM_K+6&&y>B-60&&y<B+4)return true;
+/* l'étal de Madeleine, plus bas à l'ouest */
+if(fmDansEtal(x,y))return true;
 /* la boîte aux lettres, sur son poteau : on la contourne */
 return x>X+300*FM_K-5&&x<X+320*FM_K+5&&y>B-8&&y<B+5;}
 function peindreClotureFerme(g,W,Hm){
@@ -34586,6 +34589,41 @@ if(E.soif){POT_ARROSE=Date.now();await fpAgir(P,'eau');FP.vus={};return;}
 texteVolant(joueur.x,joueur.y-56,'Ça pousse… patience','#fff3d0');
 }finally{FP.vus={};FP_OCC=false;try{majAction();}catch(x){}}}
 $('action').addEventListener('click',(ev)=>{const P=fpVise();if(!P)return;ev.stopImmediatePropagation();ev.preventDefault();fpAction(P);},true);
+
+/* =====================================================================
+   L'ÉTAL DE MADELEINE : une halle ouverte, toit de tuiles, auvent rayé,
+   étals remplis, ardoise des prix. À l'ouest, juste au-dessus du chemin
+   qui croise ; on y vend la récolte (plaque « Entrer chez Madeleine »).
+   Dessiné en points fins (330 x 300), posé à 0,61.
+   ===================================================================== */
+let FM_ETAL=null;
+const fmEtalX=()=>330-Math.round(330*0.61/2), fmEtalBase=()=>948, fmEtalY=()=>948-Math.round(270*0.61);
+function fmDansEtal(x,y){const X=330-Math.round(330*0.61/2), B=948;return x>X+30*0.61-4&&x<X+316*0.61+4&&y>B-30&&y<B+3;}
+function fmEtalDessin(){const W=330,Hh=300,c=document.createElement('canvas');c.width=W;c.height=Hh;const g=c.getContext('2d');
+const H=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
+const r=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};
+const a=(x,y,w,h,col,al)=>{g.globalAlpha=al;g.fillStyle=col;g.fillRect(x,y,w,h);g.globalAlpha=1;};
+const FR={tom:['#e03a2a','#c82a1a'],car:['#f08a2a','#e07a1a'],sal:['#6ab84a','#8ad86a'],pom:['#d83a3a','#f0d040'],ble:['#e8c860','#d8b040']};
+const cageot=(x,y,fr)=>{r(x,y,22,12,'#b8884a');r(x,y,22,2,'#d8a86a');r(x,y+5,22,1,'#8a5a30');r(x,y+11,22,1,'#6a4220');
+for(let k=0;k<6;k++){g.fillStyle=fr[k%fr.length];g.beginPath();g.arc(x+3+k*3.3,y-1+H(k,x,3)*2,2.6,0,7);g.fill();}};
+const sol=270,fx=40,fw=250;
+g.fillStyle='rgba(20,40,10,.26)';g.beginPath();g.ellipse(165,sol+6,150,14,0,0,7);g.fill();
+r(fx+10,sol-110,fw-20,92,'#9a9282');for(let y=sol-110;y<sol-18;y+=8)for(let x=fx+10-((y/8|0)%2)*7;x<fx+fw-10;x+=14){r(Math.max(fx+10,x)+1,y+1,12,6,['#b8b0a0','#a8a090','#c4bcac'][Math.abs(x+y)%3]);}
+a(fx+10,sol-110,fw-20,92,'#000',0.25);
+const ty=sol-150;g.fillStyle='#b4542e';g.beginPath();g.moveTo(fx-12,sol-104);g.lineTo(fx+30,ty);g.lineTo(fx+fw-30,ty);g.lineTo(fx+fw+12,sol-104);g.fill();
+g.save();g.clip();for(let y=ty;y<sol-102;y+=6)for(let x=fx-14;x<fx+fw+14;x+=6){r(x,y,5,6,(x/6|0)%2?'#c8643a':'#a8542e');r(x,y+5,5,1,'#7a2e14');}g.restore();r(fx-14,sol-106,fw+28,4,'#7a2e14');r(fx+30,ty-3,fw-60,4,'#8a3e1e');
+for(const px of [fx,fx+fw/2-3,fx+fw-6]){r(px,sol-104,7,104,'#8a5a30');r(px,sol-104,2,104,'#b8804a');}
+for(let x=fx-6;x<fx+fw+6;x+=12){const blanc=((x-fx+6)/12|0)%2;r(x,sol-102,12,18,blanc?'#f4ecdc':'#3a8a5a');g.fillStyle=blanc?'#f4ecdc':'#3a8a5a';g.beginPath();g.arc(x+6,sol-84,6,0,Math.PI);g.fill();}
+for(const [ex,list] of [[fx+12,[FR.tom,FR.car,FR.sal]],[fx+fw/2+8,[FR.pom,FR.ble,FR.tom]]]){r(ex,sol-36,104,6,'#a8743e');r(ex,sol-36,104,1,'#d8a46a');r(ex+4,sol-30,4,30,'#8a5a30');r(ex+96,sol-30,4,30,'#8a5a30');
+list.forEach((fr,k)=>cageot(ex+4+k*34,sol-50,fr));}
+r(fx+fw/2-16,sol-70,32,26,'#2e3428');r(fx+fw/2-16,sol-70,32,2,'#8a5a30');for(let k=0;k<4;k++)r(fx+fw/2-11,sol-64+k*5,16+H(k,1,2)*6,1,'#e8e8e0');
+{const x=fx+fw/2-50,y=ty-22,w=100;r(x,y,w,16,'#5a3418');r(x+2,y+2,w-4,12,'#a8542e');g.fillStyle='#fff8e4';g.font='bold 9px sans-serif';g.textAlign='center';g.fillText('CHEZ MADELEINE',x+w/2,y+11.5);}
+r(fx+fw+6,sol-26,18,26,'#8a5a30');r(fx+fw+6,sol-22,18,2,'#4a4a4a');r(fx+fw+6,sol-8,18,2,'#4a4a4a');r(fx+fw+6,sol-26,18,2,'#a8743e');
+return c;}
+function fmDessinerEtal(ctx,camX,camY,pile){if(!FM_ETAL){try{FM_ETAL=fmEtalDessin();}catch(x){return;}}
+const X=fmEtalX(), Y=fmEtalY(), w=330*0.61, h=300*0.61;if(X+w-camX<-20||X-camX>VW+20||Y+h-camY<-20||Y-camY>VH+80)return;
+pile.push({y:fmEtalBase(),f:()=>{ctx.drawImage(FM_ETAL,Math.round(X-camX),Math.round(Y-camY),w,h);
+try{const ci=cielDuMoment();if(ci&&ci.lampes>0.4){ctx.save();ctx.globalAlpha=Math.min(1,ci.lampes)*0.5;ctx.globalCompositeOperation='lighter';const gr=ctx.createRadialGradient(X+165*0.61-camX,Y+230*0.61-camY,4,X+165*0.61-camX,Y+230*0.61-camY,70);gr.addColorStop(0,'rgba(255,190,90,.6)');gr.addColorStop(1,'rgba(255,190,90,0)');ctx.fillStyle=gr;ctx.fillRect(X-camX,Y-camY,w,h);ctx.restore();}}catch(x){}}});}
 </script>
 </body>
 </html>
