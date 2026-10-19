@@ -10612,7 +10612,7 @@ function surLeSentier(x,y,marge){
   return false;}
 const SOL_CACHE={pret:false,sol:null,fin:null};
 const cleSol=()=>'sol:'+(typeof MA_VERSION!=='undefined'?MA_VERSION:'?')+':'+CARTE+':'+
-(typeof MODE_VIL!=='undefined'?MODE_VIL:'-')+':'+MONDE_L+'x'+MONDE_H+((typeof FERME_VIERGE!=='undefined'&&FERME_VIERGE)?':champ1':'');
+(typeof MODE_VIL!=='undefined'?MODE_VIL:'-')+':'+MONDE_L+'x'+MONDE_H+((typeof FERME_VIERGE!=='undefined'&&FERME_VIERGE)?':champ2':'');
 function baseSol(){return new Promise((ok,ko)=>{try{const r=indexedDB.open('bdl-sol',1);r.onupgradeneeded=()=>r.result.createObjectStore('s');r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error);}catch(x){ko(x);}});}
 async function chargerSolCache(){if(CARTE==='tokyo')return;try{const db=await baseSol();const v=await new Promise(ok=>{const q=db.transaction('s').objectStore('s').get(cleSol());q.onsuccess=()=>ok(q.result);q.onerror=()=>ok(null);});
 if(!v||!v.sol)return;/* createImageBitmap manque sur les vieux Safari : on repasse par une image. */
@@ -34068,7 +34068,7 @@ if(cle!==VER_CLE){VER_CLE=cle;VER_SALE=true;}},3000);
    de vingt-quatre planches, au même endroit : chaque ancienne planche
    est devenue trois cases plantées de la même chose.
    ===================================================================== */
-const CH_T=20, CH_X0=FERME_VIERGE?230:138, CH_Y0=FERME_VIERGE?440:511, CH_C=FERME_VIERGE?30:45, CH_R=FERME_VIERGE?20:9;   /* la nouvelle ferme : un carré de 30 x 20 cases, à gauche du chemin */
+const CH_T=20, CH_X0=FERME_VIERGE?590:138, CH_Y0=FERME_VIERGE?440:511, CH_C=FERME_VIERGE?12:45, CH_R=FERME_VIERGE?16:9;   /* la nouvelle ferme : un carré de 30 x 20 cases, à gauche du chemin */
 let CH={t:{},max:40,meteo:null,decal:0,charge:false,sale:true,sol:null}, CH_OUTIL='houe', CH_GRAINE='radis', CH_ENVOL=false, CH_DERN=null, CH_TENIR=null;
 const chCle=(c,r)=>c+','+r;
 const chNow=()=>Date.now()+CH.decal;
@@ -34387,7 +34387,7 @@ terre(cx-22,312,cx+22,1700);                 /* de la porte vers le bas */
 terre(150,960,W-150,1000);                   /* le chemin qui croise */
 terre(cx-34,300,cx+34,330);                  /* le seuil devant la porte */
 /* la bordure du champ : planches basses, piquets aux angles */
-const X0=230-5,Y0=440-5,X1=230+600+5,Y1=440+400+5;
+const X0=590-5,Y0=440-5,X1=590+240+5,Y1=440+320+5;
 const planche=(x,y,w,hh)=>{g.fillStyle='#7a5232';g.fillRect(x,y,w,hh);g.fillStyle='#a8784a';if(w>hh)g.fillRect(x,y,w,1);else g.fillRect(x,y,1,hh);g.fillStyle='rgba(0,0,0,.18)';if(w>hh)g.fillRect(x,y+hh,w,1);else g.fillRect(x+w,y,1,hh);};
 planche(X0,Y0,X1-X0,4);planche(X0,Y1-4,X1-X0,4);planche(X0,Y0,4,Y1-Y0);planche(X1-4,Y0,4,Y1-Y0);
 for(const[x,y] of [[X0,Y0],[X1-4,Y0],[X0,Y1-4],[X1-4,Y1-4]]){g.fillStyle='#5a3a22';g.fillRect(x-1,y-4,6,8);g.fillStyle='#c89a62';g.fillRect(x-1,y-4,6,1);}
@@ -34406,9 +34406,9 @@ const px=X1-60,py=Y0-26;g.fillStyle='#6a4a2a';g.fillRect(px+18,py+10,3,16);g.fil
    - ce qui a soif : on touche et on glisse, ça arrose ;
    - la parcelle en pointillés « + » : une nouvelle parcelle.
    ===================================================================== */
-const FP_L=40, FP_COLS=15, FP_ROWS=10;
-const fpOrdre=(k)=>({i:(k%6)+6*Math.floor(k/60), j:Math.floor(k/6)%10});   /* on remplit par blocs de 6 de large */
-const fpX=(i)=>230+i*FP_L, fpY=(j)=>440+j*FP_L;
+const FP_L=40, FP_COLS=6, FP_ROWS=8;   /* 48 parcelles : l'enclos a juste la taille de ce qu'on peut planter */
+const fpOrdre=(k)=>({i:k%6, j:Math.floor(k/6)});   /* on remplit par blocs de 6 de large */
+const fpX=(i)=>590+i*FP_L, fpY=(j)=>440+j*FP_L;
 const fpSpots=(i,j)=>[[2*i,2*j],[2*i+1,2*j],[2*i,2*j+1],[2*i+1,2*j+1]];
 const fpTuiles=(i,j)=>fpSpots(i,j).map(([c,r])=>CH.t[c+','+r]||null);
 const fpExiste=(i,j)=>fpTuiles(i,j).some(Boolean);
@@ -34416,7 +34416,7 @@ function fpEtat(i,j){const T=fpTuiles(i,j);let mur=0,soif=0,vide=0,pousse=0,fin=
 T.forEach(t=>{if(!t||!t.cult){vide++;return;}const st=chStade(t);if(st===3)mur++;else{pousse++;if(!t.eau)soif++;fin=Math.max(fin,new Date(t.mur_a).getTime());}});
 return {mur,soif,vide,pousse,fin};}
 function fpProchaine(){for(let k=0;k<FP_COLS*FP_ROWS;k++){const o=fpOrdre(k);if(!fpExiste(o.i,o.j))return o;}return null;}
-function fpSous(wx,wy){const i=Math.floor((wx-230)/FP_L), j=Math.floor((wy-440)/FP_L);if(i<0||j<0||i>=FP_COLS||j>=FP_ROWS)return null;
+function fpSous(wx,wy){const i=Math.floor((wx-590)/FP_L), j=Math.floor((wy-440)/FP_L);if(i<0||j<0||i>=FP_COLS||j>=FP_ROWS)return null;
 const lx=wx-fpX(i), ly=wy-fpY(j);if(lx<1||ly<1||lx>FP_L-1||ly>FP_L-1)return null;return {i,j};}
 function fpMonde(cx,cy){const V=window.FM_VUE, cv=$('cv');if(!V||!cv)return null;const r=cv.getBoundingClientRect(), k=cv.width/r.width;
 return {x:((cx-r.left)*k-V.e)/V.a+V.camX, y:((cy-r.top)*k-V.f)/V.d+V.camY};}
