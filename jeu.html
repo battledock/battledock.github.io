@@ -30395,8 +30395,8 @@ h+=liste.map(([k,[nom,px,min,v]])=>{
 const libre=potLibre(k);
 return '<div class="outil"><canvas data-p="'+k+'"></canvas>'+
 '<span class="t"><b>'+nom+'</b><small>'+potDuree(min)+
-(libre?' · la graine '+fmt(px)+', la récolte '+fmt(v):' · encore à débloquer')+'</small></span>'+
-(libre?'<span class="marge">+'+fmt(v-px)+'</span>'
+(libre?(FERME_VIERGE?' · '+fmt(Math.ceil(px/3)*4)+' la parcelle':' · la graine '+fmt(px)+', la récolte '+fmt(v)):' · encore à débloquer')+'</small></span>'+
+(libre?(FERME_VIERGE?'<span class="marge">'+(chDeSaison(k)?'SAISON':'✓')+'</span>':'<span class="marge">+'+fmt(v-px)+'</span>')
 :'<button data-deb="'+k+'">'+fmt(POT_VERROU[k])+'</button>')+'</div>';}).join('');
 return h;}
 function ouvrirLaBoutiqueFerme(mot){
@@ -30408,47 +30408,41 @@ lireChantiers().then(()=>{if($('page2').classList.contains('on'))ouvrirLaBoutiqu
 if(!CMD.commandes.length)lireLesCommandes().then(()=>{if($('page2').classList.contains('on'))ouvrirLaBoutiqueFerme(mot);});
 /* on demande les cours du jour pour tout ce qui est dans le sac */
 {const aLire=Object.keys(e.sac||{}).filter(k=>!COURS[k]);
- if(aLire.length)lireLesCours(aLire).then(()=>{if($('page2').classList.contains('on')&&$('page2Fond').className==='bq')ouvrirLaBoutiqueFerme(mot);});}
+ if(aLire.length)lireLesCours(aLire).then(()=>{if($('page2').classList.contains('on')&&$('page2Fond').classList.contains('bq'))ouvrirLaBoutiqueFerme(mot);});}
 /* LE CARNET PASSE EN PREMIER : CSS_BQ ne garde plus que ses morceaux à
    elle, qui doivent pouvoir affiner ce que la coque pose. */
-if(!document.getElementById('cssBq')){const st=document.createElement('style');st.id='cssBq';st.textContent=CARNET('bq')+CSS_BQ;document.head.appendChild(st);}
+if(!document.getElementById('cssBq')){const st=document.createElement('style');st.id='cssBq';st.textContent=CARNET('bq')+CSS_BQ+CSS_BQ_A;document.head.appendChild(st);}
 const L=bqLignes(), total=L.reduce((t,[,n,p])=>t+n*p,0);
 const charge=Object.values(e.sac||{}).reduce((t,n)=>t+(n||0),0);
-$('page2Fond').className='bq';$('page2').classList.add('on');
+$('page2Fond').className='bq mA';$('page2').classList.add('on');
 const ong=BQ_ONG||'vendre';
 let corps='';
 if(ong==='vendre'){
 corps='<div class="mot">'+(mot||'Madeleine reprend tout ce qui vient de la ferme, au cours du jour — le même qu’à la criée du port.')+'</div>'+
-(L.length?L.map(([k,n,p])=>'<button class="lg" data-v="'+k+'">'+
+(L.length?'<div class="aGrid">'+L.map(([k,n,p])=>'<button class="lg" data-v="'+k+'">'+
 (ICONES[k]?'<svg viewBox="0 0 16 16">'+ICONES[k]+'</svg>':'<svg viewBox="0 0 16 16"></svg>')+
 '<span class="n"><b>'+(POT_CULT[k]?POT_CULT[k][0]:(OBJETS[k]?OBJETS[k].nom:k))+'</b>'+
 '<em>'+enEuros(p)+' pièce</em></span><span class="q">×'+n+'</span>'+
-'<span class="p">'+enEuros(n*p)+'</span></button>').join('')
+'<span class="p">'+enEuros(n*p)+'</span></button>').join('')+'</div>'
 :'<div class="vide">Ton inventaire est vide.<br>Va récolter ton champ, et reviens me voir.</div>');
 }
 if(ong==='commandes')corps='<div class="mot">« Voilà ce qu’il me faut pour aujourd’hui. '+
 'Ce que tu m’apportes, je te le paie mieux qu’au marché. »</div>'+cmdHTML();
 if(ong==='graines')corps=bqGraines();
-if(ong==='outils')corps=bqOutils();
+if(ong==='outils')corps=FERME_VIERGE?bqAtelierChamp():bqOutils();
 /* LE BANDEAU PORTAIT LE TITRE, LE SAC ET LA CROIX EN SURIMPRESSION, sur
    une image qui change de clarté d'un bout à l'autre. Le chapeau commun
    prend le nom et l'argent, la grange descend en image encadrée, le sac
    va près du total — là où il sert — et on sort par le rail du bas. */
 $('page2Fond').innerHTML=
-'<div class="tete"><small>LA FERME · LA BOUTIQUE</small><b>Chez Madeleine</b>'+
-'<span class="bourse">EN POCHE<b>'+enEuros(e.euros||0)+'</b></span></div>'+
-'<div class="bqOng">'+
-'<button data-bo="vendre" class="'+(ong==='vendre'?'on':'')+'">Vendre</button>'+
-'<button data-bo="commandes" class="'+(ong==='commandes'?'on':'')+'">Commandes</button>'+
-'<button data-bo="graines" class="'+(ong==='graines'?'on':'')+'">Graines</button>'+
-'<button data-bo="outils" class="'+(ong==='outils'?'on':'')+'">L\u2019atelier</button></div>'+
-'<div class="corps">'+
-'<div class="bande"><canvas id="bqBandeau"></canvas></div>'+
-corps+'</div>'+
+'<div class="aTop"><div class="aTtl"><small>LA FERME</small>Chez Madeleine</div>'+
+'<span class="aBourse">● '+enEuros(e.euros||0).replace(',00','')+'</span><button class="aX" id="bqX">✕</button></div>'+
+'<div class="bqOng">'+[['vendre','🧺','Vendre'],['commandes','📋','Commandes'],['graines','🌱','Graines'],['outils','🔨','Atelier']].map(([k,i,t])=>
+'<button data-bo="'+k+'" class="'+(ong===k?'on':'')+'"><i>'+i+'</i>'+t+'</button>').join('')+'</div>'+
+'<div class="aCarte"><div class="corps">'+corps+'</div>'+
 (ong==='vendre'?'<div class="caisse"><div class="tot">'+
-'<span>TON SAC '+charge+' / '+(e.sacMax||200)+'</span><b>'+enEuros(total)+'</b></div>'+
-'<button class="go" id="bqTout"'+(L.length?'':' disabled')+'>TOUT VENDRE</button></div>':'')+
-'<div class="bas"><button id="bqX">RETOUR À LA FERME</button></div>';
+'<span>Ton sac · '+charge+' / '+(e.sacMax||200)+'</span><b>'+enEuros(total)+'</b></div>'+
+'<button class="go" id="bqTout"'+(L.length?'':' disabled')+'>TOUT VENDRE</button></div>':'')+'</div>';
 $('page2Fond').querySelectorAll('[data-bo]').forEach(b=>b.onclick=()=>{
 BQ_ONG=b.dataset.bo;vibrer(10);ouvrirLaBoutiqueFerme();});
 $('page2Fond').querySelectorAll('[data-fen]').forEach(b=>b.onclick=()=>{
@@ -30519,6 +30513,10 @@ if(!d||d.erreur){b.disabled=false;
 motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':'Madeleine n’a pas pu.');return;}
 potAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);
 ouvrirLaBoutiqueFerme();});}
+$('page2Fond').querySelectorAll('[data-agch]').forEach(b=>b.onclick=async()=>{b.disabled=true;
+const d=await appelRPC('champ_agrandir',{p_joueur:e.id});
+if(d&&!d.erreur){CH.max=d.max;if(typeof d.euros==='number')e.euros=d.euros;try{majHaut();}catch(x){}jouer('vente','moment');vibrer([15,40,15]);ouvrirLaBoutiqueFerme('« Et voilà, cinq parcelles de plus ! »');}
+else{b.disabled=false;motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':'Madeleine n’a pas pu.');}});
 $('page2Fond').querySelectorAll('[data-cmd]').forEach(b=>b.onclick=async()=>{
 b.disabled=true;b.textContent='…';
 const d=await appelRPC('commande_livrer',{p_joueur:e.id,p_i:+b.dataset.cmd});
@@ -30532,7 +30530,7 @@ ouvrirLaBoutiqueFerme('« Marché conclu : '+enEuros(d.gain)+' pour la commande.
 await lireLesCommandes();
 ouvrirLaBoutiqueFerme(d&&d.erreur==='deja'?'« Celle-là, tu me l’as déjà livrée. »':'« Il te manque encore de quoi. »');
 }});
-$('bqX').onclick=()=>{fermeA=Date.now();vibrer(8);ouvrirLaFerme();};
+$('bqX').onclick=()=>{fermeA=Date.now();vibrer(8);if(FERME_VIERGE){$('page2').classList.remove('on');return;}ouvrirLaFerme();};
 const vendre=async(liste)=>{let gain=0;
 for(const k of liste){const d=await appelRPC('vendre_au_comptoir',{p_joueur:e.id,p_type:k});
 if(d&&!d.erreur){gain+=d.gain||0;if(typeof d.euros==='number')e.euros=d.euros;if(d.sac)e.sac=d.sac;}}
@@ -34624,6 +34622,79 @@ function fmDessinerEtal(ctx,camX,camY,pile){if(!FM_ETAL){try{FM_ETAL=fmEtalDessi
 const X=fmEtalX(), Y=fmEtalY(), w=330*0.61, h=300*0.61;if(X+w-camX<-20||X-camX>VW+20||Y+h-camY<-20||Y-camY>VH+80)return;
 pile.push({y:fmEtalBase(),f:()=>{ctx.drawImage(FM_ETAL,Math.round(X-camX),Math.round(Y-camY),w,h);
 try{const ci=cielDuMoment();if(ci&&ci.lampes>0.4){ctx.save();ctx.globalAlpha=Math.min(1,ci.lampes)*0.5;ctx.globalCompositeOperation='lighter';const gr=ctx.createRadialGradient(X+165*0.61-camX,Y+230*0.61-camY,4,X+165*0.61-camX,Y+230*0.61-camY,70);gr.addColorStop(0,'rgba(255,190,90,.6)');gr.addColorStop(1,'rgba(255,190,90,0)');ctx.fillStyle=gr;ctx.fillRect(X-camX,Y-camY,w,h);ctx.restore();}}catch(x){}}});}
+
+/* =====================================================================
+   CHEZ MADELEINE, STYLE « JEU MOBILE » (comme le menu du Hangar)
+   Rayures vertes, gros onglets à icônes, Madeleine qui parle dans une
+   bulle, les produits en cartes, le gros bouton jaune.
+   ===================================================================== */
+const MAD_SVG=(()=>{const M=["....kkkkkk....","...kGGGGGGk...","..kGGGGGGGGk..","..kGSSSSSSGk..","..kSSkSSkSSk..","..kSSSSSSSSk..","..kSSSrrSSSk..","...kSSSSSSk...","..kkwwwwwwkk..",".kwwwwrwwwwwk.",".kwwwrrrwwwwk.",".kwwwwrwwwwwk.","..kwwwwwwwwk..","..kkkkkkkkkk.."];
+const P={k:'#2e1a0a',G:'#b8b0a8',S:'#f0c8a0',r:'#d84a5a',w:'#4a7aa8'};let r='';M.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.')r+='<rect x="'+x+'" y="'+y+'" width="1.02" height="1.02" fill="'+P[c]+'"/>';}));
+return 'url("data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" shape-rendering="crispEdges">'+r+'</svg>')+'")';})();
+const CSS_BQ_A=`
+@font-face{font-family:'Lilita One';src:url(assets/fonts/lilita-one-latin-400-normal.woff2) format('woff2');font-display:swap}
+#page2Fond.bq.mA{display:flex;flex-direction:column;height:100%;overflow:hidden;background:repeating-linear-gradient(135deg,#8fc85a 0 22px,#84bd50 22px 44px);color:#3a2408}
+#page2Fond.bq.mA .aTop{flex:none;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 16px) 14px 10px}
+#page2Fond.bq.mA .aTtl{font:400 29px/1 'Lilita One','Baloo 2',sans-serif;color:#fff;-webkit-text-stroke:6px #2e5a1a;paint-order:stroke}
+#page2Fond.bq.mA .aTtl small{display:block;font:400 13px 'Lilita One','Baloo 2',sans-serif;color:#ffe88a;-webkit-text-stroke:4px #2e5a1a;letter-spacing:.5px}
+#page2Fond.bq.mA .aBourse{margin-left:auto;background:#2e5a1a;color:#fff;border-radius:16px;padding:5px 12px;font:400 16px 'Lilita One','Baloo 2',sans-serif;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25);white-space:nowrap}
+#page2Fond.bq.mA .aBourse:first-letter{color:#f0c040}
+#page2Fond.bq.mA .aX{flex:none;width:40px;height:40px;border:0;border-radius:12px;background:#e8503a;box-shadow:0 0 0 3px #fff,0 4px 0 3px #8a2a1a;color:#fff;font:400 20px 'Lilita One',sans-serif;margin-right:3px}
+#page2Fond.bq.mA .bqOng{flex:none;display:flex;gap:6px;padding:2px 12px 12px}
+#page2Fond.bq.mA .bqOng button{flex:1;border:0;background:#fff8e4;border-radius:14px;box-shadow:0 4px 0 #2e5a1a;padding:6px 0 4px;display:flex;flex-direction:column;align-items:center;font:400 13px 'Lilita One','Baloo 2',sans-serif;color:#2e5a1a;letter-spacing:0}
+#page2Fond.bq.mA .bqOng button.on{background:#ffd84a;box-shadow:0 4px 0 #a87010,0 0 0 3px #fff;color:#3a2408}
+#page2Fond.bq.mA .bqOng button i{font-style:normal;font-size:20px;line-height:1.15}
+#page2Fond.bq.mA .aCarte{flex:1;min-height:0;margin:0 12px;background:#fff8e4;border-radius:22px 22px 0 0;box-shadow:0 -3px 0 #2e5a1a;display:flex;flex-direction:column;overflow:hidden}
+#page2Fond.bq.mA .corps{flex:1;min-height:0;overflow-y:auto;padding:12px 12px 16px;background:none}
+#page2Fond.bq.mA .mot{position:relative;min-height:52px;padding:7px 11px;margin:0 0 12px 62px;background:#f3e2b8;border-radius:14px;font:700 13px/1.3 'Baloo 2','Trebuchet MS',sans-serif;color:#5a4428;font-style:normal}
+#page2Fond.bq.mA .mot:before{content:'';position:absolute;left:-62px;top:0;width:50px;height:50px;border-radius:50%;background:#f3d8a8 ${MAD_SVG} center/42px 42px no-repeat;box-shadow:0 0 0 3px #2e5a1a;image-rendering:pixelated}
+#page2Fond.bq.mA .aGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+#page2Fond.bq.mA .lg{position:relative;display:grid;grid-template-columns:40px 1fr;grid-template-rows:auto auto;column-gap:8px;align-items:center;margin:0;padding:9px;border:0;border-radius:16px;background:#f3e2b8;color:#3a2408;text-align:left;box-shadow:0 3px 0 #dcc694}
+#page2Fond.bq.mA .lg:active{transform:translateY(2px);box-shadow:0 1px 0 #dcc694}
+#page2Fond.bq.mA .lg svg{grid-row:1/3;width:40px;height:40px;background:none;border-radius:0;image-rendering:pixelated}
+#page2Fond.bq.mA .lg .n{min-width:0}
+#page2Fond.bq.mA .lg b{font:400 15.5px/1.1 'Lilita One','Baloo 2',sans-serif;color:#3a2408;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#page2Fond.bq.mA .lg em{font:800 11px 'Baloo 2',sans-serif;font-style:normal;color:#7a5a38}
+#page2Fond.bq.mA .lg .q{position:absolute;top:-7px;right:-4px;background:#2e5a1a;color:#fff;font:400 13px 'Lilita One',sans-serif;border-radius:10px;padding:1px 7px}
+#page2Fond.bq.mA .lg .p{grid-column:2;width:auto;text-align:left;font:400 15px 'Lilita One','Baloo 2',sans-serif;color:#2e7a2a}
+#page2Fond.bq.mA .vide{font:700 14px/1.5 'Baloo 2',sans-serif;color:#7a5a38;padding:30px 16px}
+#page2Fond.bq.mA .caisse{flex:none;padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 16px);background:#fff8e4;border-top:2px dashed #e6d2a4}
+#page2Fond.bq.mA .tot{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px;font:400 15px 'Lilita One','Baloo 2',sans-serif;letter-spacing:0;color:#7a5a38}
+#page2Fond.bq.mA .tot b{font:400 24px 'Lilita One','Baloo 2',sans-serif;color:#2e5a1a}
+#page2Fond.bq.mA .go{width:100%;border:0;border-radius:18px;padding:12px;background:linear-gradient(#ffe88a,#f0b838);box-shadow:0 0 0 3px #3a2408,0 6px 0 3px #3a2408;font:400 22px 'Lilita One','Baloo 2',sans-serif;letter-spacing:.5px;color:#3a2408;margin-bottom:6px}
+#page2Fond.bq.mA .go:disabled{background:#e6d8b8;color:#a08868;box-shadow:0 0 0 3px #c8b48c,0 6px 0 3px #c8b48c}
+#page2Fond.bq.mA .rub{font:400 14px 'Lilita One','Baloo 2',sans-serif;letter-spacing:.3px;color:#2e5a1a;padding:12px 2px 8px}
+#page2Fond.bq.mA .outil{border:0;border-radius:16px;background:#f3e2b8;box-shadow:0 3px 0 #dcc694;padding:10px 11px;margin-bottom:9px}
+#page2Fond.bq.mA .outil canvas{background:#fff8e4;border-radius:12px}
+#page2Fond.bq.mA .outil .t b{font:400 16px 'Lilita One','Baloo 2',sans-serif;color:#3a2408}
+#page2Fond.bq.mA .outil .t small{font:800 11.5px 'Baloo 2',sans-serif;font-style:normal;color:#7a5a38}
+#page2Fond.bq.mA .outil button{border-radius:13px;padding:9px 13px;background:linear-gradient(#ffe88a,#f0b838);box-shadow:0 0 0 2px #3a2408,0 3px 0 2px #3a2408;color:#3a2408;font:400 15px 'Lilita One','Baloo 2',sans-serif;letter-spacing:0}
+#page2Fond.bq.mA .outil button.pris,#page2Fond.bq.mA .outil button:disabled{background:#e6d8b8;color:#a08868;box-shadow:0 0 0 2px #c8b48c}
+#page2Fond.bq.mA .outil .marge{font:400 13px 'Lilita One','Baloo 2',sans-serif;color:#fff;background:#4e9a3a;border-radius:9px;padding:2px 8px}
+#page2Fond.bq.mA .bqFen button{border:0;border-radius:13px;background:#f3e2b8;box-shadow:0 3px 0 #dcc694;color:#5a4428;font:400 14px 'Lilita One','Baloo 2',sans-serif}
+#page2Fond.bq.mA .bqFen button.on{background:#ffd84a;box-shadow:0 3px 0 #a87010;color:#3a2408}
+#page2Fond.bq.mA .ard{background:none;padding:0;border:0;box-shadow:none}
+#page2Fond.bq.mA .ard h3{font:400 17px 'Lilita One','Baloo 2',sans-serif;color:#2e5a1a;margin:4px 2px 10px}
+#page2Fond.bq.mA .cmd{border:0;border-radius:16px;background:#f3e2b8;box-shadow:0 3px 0 #dcc694;padding:12px}
+#page2Fond.bq.mA .cmdT{font:400 17px 'Lilita One','Baloo 2',sans-serif;color:#3a2408}
+#page2Fond.bq.mA .cmdT em{font:800 11.5px 'Baloo 2',sans-serif;font-style:normal;color:#7a5a38}
+#page2Fond.bq.mA .cmdL{background:#fff8e4;color:#5a4428;font:800 12px 'Baloo 2',sans-serif;letter-spacing:0;border-radius:10px}
+#page2Fond.bq.mA .cmdL.ok{background:#4e9a3a;color:#fff}
+#page2Fond.bq.mA .cmdGo{border-radius:14px;padding:10px;background:linear-gradient(#ffe88a,#f0b838);box-shadow:0 0 0 2px #3a2408,0 4px 0 2px #3a2408;color:#3a2408;font:400 17px 'Lilita One','Baloo 2',sans-serif;letter-spacing:0}
+#page2Fond.bq.mA .cmdGo:disabled{background:#e6d8b8;color:#a08868;box-shadow:0 0 0 2px #c8b48c}
+#page2Fond.bq.mA .cmdF{background:#4e9a3a;color:#fff;font:400 14px 'Lilita One','Baloo 2',sans-serif;letter-spacing:0}
+#page2Fond.bq.mA .aChamp{border-radius:18px;background:#f3e2b8;box-shadow:0 3px 0 #dcc694;padding:14px;text-align:center}
+#page2Fond.bq.mA .aChamp b{display:block;font:400 34px 'Lilita One','Baloo 2',sans-serif;color:#2e5a1a;line-height:1.1}
+#page2Fond.bq.mA .aChamp small{display:block;font:800 12.5px 'Baloo 2',sans-serif;color:#7a5a38;margin-bottom:12px}
+#page2Fond.bq.mA .aChamp .jauge{height:12px;border-radius:6px;background:#fff8e4;box-shadow:inset 0 0 0 2px #dcc694;overflow:hidden;margin:0 0 14px}
+#page2Fond.bq.mA .aChamp .jauge i{display:block;height:100%;background:#6ab84a}
+#page2Fond.bq.mA .aChamp button{width:100%;border:0;border-radius:16px;padding:11px;background:linear-gradient(#ffe88a,#f0b838);box-shadow:0 0 0 3px #3a2408,0 5px 0 3px #3a2408;font:400 19px 'Lilita One','Baloo 2',sans-serif;color:#3a2408}
+#page2Fond.bq.mA .aChamp button small{display:block;margin:0;font:800 12px 'Baloo 2',sans-serif;color:#5a3a10}`;
+function bqAtelierChamp(){const max=(CH&&CH.max)||40, nbP=Math.floor(max/4), pris=Math.ceil(((typeof chNb==='function')?chNb():0)/4);
+const i=Math.max(1,Math.floor((max-40)/20)+1), PX=[150000,400000,900000,1800000,3000000,5000000], prix=PX[i-1];
+return '<div class="mot">« Ton champ est trop petit ? Je t’arrange ça, contre un petit quelque chose. »</div>'+
+'<div class="aChamp"><b>'+pris+' / '+nbP+'</b><small>parcelles utilisées dans ton champ</small><div class="jauge"><i style="width:'+Math.min(100,Math.round(pris/Math.max(1,nbP)*100))+'%"></i></div>'+
+(prix?'<button data-agch="1">Agrandir le champ<small>+5 parcelles · '+enEuros(prix).replace(',00','')+'</small></button>':'<small style="margin:0">Ton champ est au plus grand. Bravo !</small>')+'</div>';}
 </script>
 </body>
 </html>
