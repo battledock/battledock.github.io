@@ -16518,6 +16518,7 @@ try{const m=ctx.getTransform();window.FM_VUE={a:m.a,d:m.d,e:m.e,f:m.f,camX,camY}
 try{if(CHAMP_LIBRE)chDessinFerme(ctx,camX,camY,VW,VH,pileV);}catch(x){}
 try{fmDessinerMaison(ctx,camX,camY,pileV);}catch(x){}
 try{fmDessinerEtal(ctx,camX,camY,pileV);}catch(x){}
+try{fmDessinerLampes(ctx,camX,camY,pileV);}catch(x){}
 pileV.sort((a,b)=>a.y-b.y);for(const p of pileV)p.f();
 dessinerBulles(ctx,camX,camY,pxV,pyV);dessinerTextes(ctx,camX,camY);ambiance(ctx);ctx.setTransform(1,0,0,1,0,0);return;}
 /* ================= LE VERGER =================
@@ -21057,6 +21058,8 @@ amb:[0,1,2].map(i=>Math.round(255+(C0.amb[i]-255)*k)),
 f:C0.f*k, c:C0.c, lampes:C0.lampes,
 soleil:C0.soleil?{cote:C0.soleil.cote,c:C0.soleil.c,f:C0.soleil.f*k}:null};
 if(!C){LUMIERES.length=0;return;}
+/* LA FERME : un clair de lune. La nuit n'y est jamais noire, on voit où l'on va ; les lampadaires font le reste. */
+let Cm=C;try{if(FERME_VIERGE&&CARTE==='village'){const M=[54,68,122];{const am=C.amb.map((v,i)=>Math.max(v,M[i]));Cm=Object.assign({},C,{amb:am,c:[22,30,70],f:Math.min(C.f,0.42)});}}}catch(x){}
 /* la nuit simple ne sert plus qu'en dernier recours : c'est elle qui donnait
    cet éclairage pâle pendant les premières secondes, avant la vraie lumière. */
 /* LE VOILE DE LUMIERE EST CE QUI COUTE LE PLUS CHER DE TOUT LE JEU :
@@ -21070,12 +21073,12 @@ if(!C){LUMIERES.length=0;return;}
    Maintenant, seul le plein éclairage garde la carte des lumières ;
    dès le premier cran, c'est la nuit simple, qui garde les halos des
    lampes sans repeindre l'écran. */
-if(typeof QUALITE!=='undefined'&&QUALITE<1){ancienPoserLeCiel(g,C);
-if(LUMIERES.length&&C.lampes>0.1){g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='lighter';
+if(typeof QUALITE!=='undefined'&&QUALITE<1){ancienPoserLeCiel(g,Cm);
+if(LUMIERES.length&&Cm.lampes>0.1){g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='lighter';
 for(const l of LUMIERES){const T=tacheTeinte(l.c[0],l.c[1],l.c[2]);g.globalAlpha=0.3*l.a;g.drawImage(T,l.x-l.r*0.6,l.y-l.r*0.6,l.r*1.2,l.r*1.2);}g.restore();}
 LUMIERES.length=0;return;}
-const W=cv.width, H=cv.height, a=C.amb;
-const plein=a[0]>=250&&a[1]>=250&&a[2]>=246&&(!C.soleil||C.soleil.f<0.02);
+const W=cv.width, H=cv.height, a=Cm.amb;
+const plein=a[0]>=250&&a[1]>=250&&a[2]>=246&&(!Cm.soleil||Cm.soleil.f<0.02);
 g.save();g.setTransform(1,0,0,1,0,0);
 if(!plein){
 const R=Math.min(0.5,220/Math.max(1,W));                             /* la carte des lumières, en petit : c'est doux, et léger */
@@ -21083,18 +21086,18 @@ if(!CARTE_LUM)CARTE_LUM=document.createElement('canvas');
 const Lw=Math.ceil(W*R), Lh=Math.ceil(H*R);if(CARTE_LUM.width!==Lw||CARTE_LUM.height!==Lh){CARTE_LUM.width=Lw;CARTE_LUM.height=Lh;}
 const L=CARTE_LUM.getContext('2d');L.setTransform(1,0,0,1,0,0);L.globalCompositeOperation='source-over';
 L.fillStyle='rgb('+a[0]+','+a[1]+','+a[2]+')';L.fillRect(0,0,Lw,Lh);
-if(C.f>0.2){const v=L.createRadialGradient(Lw/2,Lh*0.48,Math.min(Lw,Lh)*0.3,Lw/2,Lh*0.5,Math.max(Lw,Lh)*0.75);
-v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,10,'+((C.f-0.2)*0.9).toFixed(3)+')');L.fillStyle=v;L.fillRect(0,0,Lw,Lh);}
+if(Cm.f>0.2){const v=L.createRadialGradient(Lw/2,Lh*0.48,Math.min(Lw,Lh)*0.3,Lw/2,Lh*0.5,Math.max(Lw,Lh)*0.75);
+v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,10,'+((Cm.f-0.2)*0.9).toFixed(3)+')');L.fillStyle=v;L.fillRect(0,0,Lw,Lh);}
 L.globalCompositeOperation='lighter';
 for(const l of LUMIERES){const T=tacheTeinte(l.c[0],l.c[1],l.c[2]), rr=l.r*R;if(rr<1)continue;L.globalAlpha=Math.min(0.72,l.a*0.72);L.drawImage(T,l.x*R-rr,l.y*R-rr,rr*2,rr*2);}
-if(C.f>0.18&&typeof joueur!=='undefined'){const m=ctxJoueurEcran();if(m){const T=tacheTeinte(170,170,190), rr=64*R*(m.sc||1);L.globalAlpha=Math.min(0.55,(C.f-0.18)*1.4);L.drawImage(T,m.x*R-rr,m.y*R-rr,rr*2,rr*2);}}
+if(Cm.f>0.18&&typeof joueur!=='undefined'){const m=ctxJoueurEcran();if(m){const T=tacheTeinte(170,170,190), rr=64*R*(m.sc||1);L.globalAlpha=Math.min(0.55,(Cm.f-0.18)*1.4);L.drawImage(T,m.x*R-rr,m.y*R-rr,rr*2,rr*2);}}
 L.globalAlpha=1;L.globalCompositeOperation='source-over';
 g.globalCompositeOperation='multiply';g.imageSmoothingEnabled=true;g.drawImage(CARTE_LUM,0,0,W,H);
 }
-if(C.soleil&&C.soleil.f>0.02){const s=C.soleil, x0=s.cote<0?0:W, x1=s.cote<0?W:0;
+if(Cm.soleil&&Cm.soleil.f>0.02){const s=Cm.soleil, x0=s.cote<0?0:W, x1=s.cote<0?W:0;
 const d=g.createLinearGradient(x0,0,x1,H*0.4);d.addColorStop(0,'rgba('+s.c[0]+','+s.c[1]+','+s.c[2]+','+s.f.toFixed(3)+')');d.addColorStop(0.55,'rgba('+s.c[0]+','+s.c[1]+','+s.c[2]+','+(s.f*0.25).toFixed(3)+')');d.addColorStop(1,'rgba(0,0,0,0)');
 g.globalCompositeOperation='screen';g.fillStyle=d;g.fillRect(0,0,W,H);}
-if(LUMIERES.length&&C.lampes>0.1){g.globalCompositeOperation='lighter';
+if(LUMIERES.length&&Cm.lampes>0.1){g.globalCompositeOperation='lighter';
 for(const l of LUMIERES){if(l.x<-l.r||l.y<-l.r||l.x>W+l.r||l.y>H+l.r)continue;const T=tacheTeinte(l.c[0],l.c[1],l.c[2]), rr=l.r*0.28;g.globalAlpha=0.35*l.a;g.drawImage(T,l.x-rr,l.y-rr,rr*2,rr*2);}}
 g.globalAlpha=1;g.globalCompositeOperation='source-over';g.restore();
 LUMIERES.length=0;
@@ -34333,6 +34336,8 @@ function fmDansMaison(x,y){const X=FM_MX(), B=FM_BASE();
 if(x>X+26*FM_K-6&&x<X+266*FM_K+6&&y>B-60&&y<B+4)return true;
 /* l'étal de Madeleine, plus bas à l'ouest */
 if(fmDansEtal(x,y))return true;
+/* le pied des lampadaires */
+if(fmDansLampe(x,y))return true;
 /* la boîte aux lettres, sur son poteau : on la contourne */
 return x>X+300*FM_K-5&&x<X+320*FM_K+5&&y>B-8&&y<B+5;}
 function peindreClotureFerme(g,W,Hm){
@@ -34695,6 +34700,21 @@ const i=Math.max(1,Math.floor((max-40)/20)+1), PX=[150000,400000,900000,1800000,
 return '<div class="mot">« Ton champ est trop petit ? Je t’arrange ça, contre un petit quelque chose. »</div>'+
 '<div class="aChamp"><b>'+pris+' / '+nbP+'</b><small>parcelles utilisées dans ton champ</small><div class="jauge"><i style="width:'+Math.min(100,Math.round(pris/Math.max(1,nbP)*100))+'%"></i></div>'+
 (prix?'<button data-agch="1">Agrandir le champ<small>+5 parcelles · '+enEuros(prix).replace(',00','')+'</small></button>':'<small style="margin:0">Ton champ est au plus grand. Bravo !</small>')+'</div>';}
+
+/* =====================================================================
+   LES LAMPADAIRES : peu, aux endroits clés (la porte, l'entrée du champ,
+   le croisement, l'étal). Fonte noire, lanterne à quatre vitres. La nuit,
+   ils s'allument et éclairent large ; ailleurs, c'est le clair de lune.
+   ===================================================================== */
+const FM_LAMPES=[[868,342],[866,612],[936,952],[866,1012],[452,952]];
+function fmDansLampe(x,y){for(const [lx,ly] of [[868,342],[866,612],[936,952],[866,1012],[452,952]])if(Math.abs(x-lx)<4&&y>ly-3&&y<ly+3)return true;return false;}
+function fmDessinerLampes(ctx,camX,camY,pile){
+for(const [lx,ly] of FM_LAMPES){const x=lx-camX, y=ly-camY;if(x<-120||y<-120||x>VW+120||y>VH+160)continue;
+pile.push({y:ly,f:()=>{const P=(a,b,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(Math.round((x+a)*2)/2,Math.round((y+b)*2)/2,w,h);};
+P(-3.5,-1,7,2,'rgba(0,0,0,.25)');P(-2.5,-3,5,3,'#1e1e22');P(-1,-44,2.5,41,'#24242a');P(-0.5,-44,1,41,'#4a4a52');P(-2,-22,4.5,1.5,'#24242a');
+P(-3,-46,6.5,2,'#24242a');P(-3,-54,6.5,8,'#24242a');P(-2,-53,4.5,6,'#ffe090');P(-0.5,-53,1,6,'#24242a');P(-4,-56,8.5,2,'#24242a');P(-1,-58,2.5,2,'#24242a');
+try{const ci=cielDuMoment();if(ci&&ci.lampes>0.05){ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=Math.min(1,ci.lampes);const g=ctx.createRadialGradient(x,y-50,0,x,y-50,9);g.addColorStop(0,'rgba(255,230,150,.9)');g.addColorStop(1,'rgba(255,170,60,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y-50,9,0,7);ctx.fill();ctx.restore();
+lueurNuit(ctx,x,y-6,64,'rgba(255,190,105,1)');}}catch(x){}}});}}
 </script>
 </body>
 </html>
