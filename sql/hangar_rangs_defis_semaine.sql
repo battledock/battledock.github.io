@@ -1,0 +1,3 @@
+-- Hangar : fin du plafond 400 000 (plafond de vraisemblance 400 pts/s), rangs payés une fois,
+-- défis du jour (arcade_defis), la semaine à graine (arcade_demarrer_semaine, arcade_semaine).
+-- Appliqué via migrations Supabase « hangar_rangs_defis_semaine » et « hangar_rangs_droits ».
