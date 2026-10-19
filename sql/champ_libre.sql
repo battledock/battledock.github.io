@@ -1,0 +1,4 @@
+-- Ferme : le champ libre case par case (tables champ, champ_joueur ; champ_etat, champ_geste,
+-- champ_agrandir, champ_recolter_tout, champ_meteo, champ_saison, champ_de_saison).
+-- Les anciennes parcelles du potager sont migrées en 3 cases chacune au premier champ_etat.
+-- Appliqué via migrations Supabase champ_libre, champ_geste_fix, champ_migration_marge, champ_recolter_tout.
