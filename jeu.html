@@ -20168,7 +20168,7 @@ const pageOuverte=()=>$('pan').classList.contains('on')
 ||$('petanque').classList.contains('on')||$('panorama').classList.contains('on')||$('carnetP').classList.contains('on')
 ||$('catalogue').classList.contains('on');   /* la liste en ligne bloquait le tap de fermeture */
 addEventListener('pointerdown',reveillerLeSon,{once:false});
-const surUnBouton=(cible)=>!!(cible&&cible.closest&&cible.closest('#barre,button,#action,#hublot,#pan,#page2,#porte,#bandeau,#repond'));
+const surUnBouton=(cible)=>!!(cible&&cible.closest&&cible.closest('#barre,button,#fpPop,#action,#hublot,#pan,#page2,#porte,#bandeau,#repond'));
 const zoneMarche=(x,y,cible)=>!pageOuverte()&&!surUnBouton(cible)&&!window.TK_SANS_JOY;   /* au volant, mode boutons : pas de joystick */
 document.addEventListener('touchstart',ev=>{
 for(const t of ev.changedTouches){
@@ -34447,12 +34447,15 @@ if(E.mur){const b=Math.sin(now/300+i+j)*0.8, cx=xx+20, cy=yy-1+b;g.fillStyle='rg
 else if(E.soif){const b=Math.sin(now/400+i)*0.8;g.fillStyle='rgba(255,255,255,.9)';g.beginPath();g.arc(xx+20,yy-1+b,4,0,7);g.fill();g.fillStyle='#4a9ae0';g.beginPath();g.moveTo(xx+20,yy-4+b);g.lineTo(xx+22,yy+b);g.arc(xx+20,yy+b,2,0,Math.PI);g.closePath();g.fill();}
 if(E.pousse&&!E.mur){const T=fpTuiles(i,j).filter(t=>t&&t.cult);let k=0;T.forEach(t=>{const a=new Date(t.t0).getTime(), m=new Date(t.mur_a).getTime();k+=Math.min(1,Math.max(0,(chNow()-a)/Math.max(1,m-a)));});k/=Math.max(1,T.length);
 PX(g,xx+8,yy+37.5,24,2,'rgba(0,0,0,.4)');PX(g,xx+8,yy+37.5,24*k,2,'#9be05a');}}});}
+if(window.FP_VISE){const x=fpX(window.FP_VISE.i)-camX, y=fpY(window.FP_VISE.j)-camY, L=6, c='rgba(255,236,140,.95)';
+[[2,2,1,1],[38,2,-1,1],[2,37,1,-1],[38,37,-1,-1]].forEach(([a,b,sx,sy])=>{PX(g,x+a-(sx<0?1:0),y+b-(sy<0?1:0),sx>0?L:1,1,c);if(sx<0)PX(g,x+a-L,y+b-(sy<0?1:0),L,1,c);PX(g,x+a-(sx<0?1:0),y+b-(sy<0?L:0),1,L,c);});}
 /* la prochaine parcelle, en pointillés */
 const n=fpProchaine();if(n){const x=fpX(n.i)-camX, y=fpY(n.j)-camY;if(x>-50&&y>-50&&x<VW2+10&&y<VH2+10){
 const plein=chNb()+4>CH.max, a=0.55+0.25*Math.sin(now/500);g.save();g.globalAlpha=a;g.strokeStyle='#fff6d8';g.lineWidth=1;g.setLineDash([2.5,2]);g.strokeRect(x+3.5,y+3.5,33,32);g.setLineDash([]);
 g.fillStyle='rgba(255,246,216,.18)';g.fillRect(x+4,y+4,32,31);PX(g,x+18.5,y+13,3,14,'#fff6d8');PX(g,x+13,y+18.5,14,3,'#fff6d8');
 if(plein){PX(g,x+25,y+7,7,6,'#f0c040');}g.restore();}}}
 /* ---------- les gestes ---------- */
+const FP_DOIGT=false;
 const FP={id:null,mode:null,graine:null,vus:{},origine:null,bouge:false};
 function fpOutilVoir(ic,x,y){let o=$('fpOutil');if(!o){o=document.createElement('div');o.id='fpOutil';document.body.appendChild(o);}
 if(ic==null){o.classList.remove('on');return;}if(o.dataset.ic!==ic){o.innerHTML=ic;o.dataset.ic=ic;}o.classList.add('on');o.style.transform='translate('+(x-34)+'px,'+(y-96)+'px)';}
@@ -34489,7 +34492,7 @@ function fpStyle(){if($('fpSt'))return;const st=document.createElement('style');
 #fpPop .tt b{flex:1;font:800 16px 'Baloo 2','Trebuchet MS',sans-serif;color:#3a2408}
 #fpPop .ls{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:2px 2px 2px;max-height:46vh;overflow-y:auto}
 #fpPop .ls::-webkit-scrollbar{display:none}
-#fpPop .g{display:flex;flex-direction:column;align-items:center;border-radius:14px;background:#f3e2b8;padding:6px 0 4px;position:relative;touch-action:none}
+#fpPop .g{border:0;font-family:inherit;color:#3a2408;display:flex;flex-direction:column;align-items:center;border-radius:14px;background:#f3e2b8;padding:6px 0 4px;position:relative;touch-action:none}
 #fpPop .g b{font:800 12.5px/1.1 'Baloo 2','Trebuchet MS',sans-serif;white-space:nowrap}#fpPop .g small{font:800 10px/1.15 'Baloo 2','Trebuchet MS',sans-serif;color:#8a6a48;white-space:nowrap}
 #fpPop .g.lock{opacity:.45}
 #fpPop .g i{position:absolute;top:-5px;right:-3px;font:800 8.5px 'Baloo 2','Trebuchet MS',sans-serif;font-style:normal;background:#5ac86a;color:#fff;border-radius:7px;padding:0 4px}
@@ -34503,8 +34506,9 @@ function fpGraines(P){fpStyle();let p=$('fpPop');if(!p){p=document.createElement
 const sa=CH.meteo?CH.meteo.saison:null, L=Object.keys(POT_CULT).sort((a,b)=>(potLibre(b)-potLibre(a))||(chDeSaison(b)-chDeSaison(a))||(POT_CULT[a][2]-POT_CULT[b][2]));
 const vides=fpTuiles(P.i,P.j).filter(t=>!t||!t.cult).length;
 const nb=L.filter(k=>!potLibre(k)).length;p.innerHTML='<div class="tt"><b>Que planter ?</b>'+(sa?CH_SAISON_NOM[sa]:'')+'</div><div class="ls">'+L.filter(potLibre).map(k=>{const C=POT_CULT[k],libre=potLibre(k);
-return '<div class="g'+(libre?'':' lock')+'" data-k="'+k+'">'+(libre&&chDeSaison(k)?'<i>SAISON</i>':'')+fpIcone(k,34)+'<b>'+C[0].replace(/\s*\(.*\)/,'')+'</b><small>'+(libre?enEuros(chPrix(k)*vides).replace(',00','')+' · '+potDuree(Math.round(C[2]*(chDeSaison(k)?0.75:1))):'🔒 Madeleine')+'</small></div>';}).join('')+'</div>'+(nb?'<div class="tt" style="padding:6px 4px 0">🔒 '+nb+' autres graines à débloquer chez Madeleine</div>':'');
-FP.pop=P;p.classList.add('on');fpPopPlacer(p,P);}
+return '<button class="g'+(libre?'':' lock')+'" data-k="'+k+'">'+(libre&&chDeSaison(k)?'<i>SAISON</i>':'')+fpIcone(k,34)+'<b>'+C[0].replace(/\s*\(.*\)/,'')+'</b><small>'+(libre?enEuros(chPrix(k)*vides).replace(',00','')+' · '+potDuree(Math.round(C[2]*(chDeSaison(k)?0.75:1))):'🔒 Madeleine')+'</small></button>';}).join('')+'</div>'+(nb?'<div class="tt" style="padding:6px 4px 0">🔒 '+nb+' autres graines à débloquer chez Madeleine</div>':'');
+FP.pop=P;p.classList.add('on');fpPopPlacer(p,P);
+p.querySelectorAll('.g').forEach(bt=>bt.onclick=(ev)=>{ev.stopPropagation();if(bt.classList.contains('lock')){texteVolant(joueur.x,joueur.y-56,'À débloquer chez Madeleine','#ffe8a0');return;}FP.vus={};FP.graine=bt.dataset.k;fpPopFermer();vibrer(8);try{potGeste('houe');}catch(x){}fpAgir(P,'graine').then(()=>{try{majAction();}catch(x){}});});}
 const FP_AGR=[150000,400000,900000,1800000,3000000,5000000];
 function fpAgrandir(P){fpStyle();let p=$('fpPop');if(!p){p=document.createElement('div');p.id='fpPop';document.body.appendChild(p);}
 const i=Math.max(1,Math.floor((CH.max-40)/20)+1), prix=FP_AGR[i-1];
@@ -34515,7 +34519,7 @@ if(d&&!d.erreur){CH.max=d.max;if(typeof d.euros==='number'){e.euros=d.euros;try{
 else texteVolant(fpX(P.i)+20,fpY(P.j)-4,d&&d.erreur==='pas_assez'?'Pas assez d’argent':'Réessaie dans un instant','#ffd0a0');};}
 /* ---------- le doigt ---------- */
 function fpBloque(){try{return pageOuverte();}catch(x){return false;}}
-function fpDebut(t,ev){const tg=ev.target;
+function fpDebut(t,ev){if(!FP_DOIGT)return false;const tg=ev.target;
 const g=tg&&tg.closest&&tg.closest('#fpPop .g');
 if(g){if(g.classList.contains('lock')){texteVolant(fpX(FP.pop.i)+20,fpY(FP.pop.j)-4,'À débloquer chez Madeleine','#ffe8a0');return true;}
 FP.id=t.identifier;FP.mode='graine';FP.graine=g.dataset.k;FP.vus={};FP.origine=FP.pop;FP.bouge=false;FP.x0=t.clientX;FP.y0=t.clientY;
@@ -34547,6 +34551,41 @@ addEventListener('touchstart',ev=>{if(FP.id!==null)return;for(const t of ev.chan
 addEventListener('touchmove',ev=>{for(const t of ev.changedTouches)if(fpBouge(t)){ev.preventDefault();ev.stopPropagation();}},{capture:true,passive:false});
 ['touchend','touchcancel'].forEach(k=>addEventListener(k,ev=>{for(const t of ev.changedTouches)if(fpFin(t)){ev.preventDefault();ev.stopPropagation();}},{capture:true,passive:false}));
 setInterval(()=>{if(FP.pop&&$('fpPop')&&$('fpPop').classList.contains('on'))fpPopPlacer($('fpPop'),FP.pop);},120);
+
+/* =====================================================================
+   LA PLAQUE JAUNE, COMME AVANT
+   On marche jusqu'à une parcelle : la plaque d'action en bas de l'écran
+   dit quoi faire (Semer, Récolter, Arroser, ou le temps qu'il reste), on
+   la touche. Semer ouvre la liste des graines juste au-dessus.
+   ===================================================================== */
+function fpVise(){if(!FERME_VIERGE||!CHAMP_LIBRE||!CH.charge)return null;
+const d=joueur.dir||'bas', dx=d==='gauche'?-16:(d==='droite'?16:0), dy=d==='haut'?-18:(d==='bas'?10:0);
+const P=fpSous(joueur.x+dx,joueur.y+dy-4)||fpSous(joueur.x,joueur.y-4);if(!P)return null;
+if(fpExiste(P.i,P.j))return P;const n=fpProchaine();return n&&n.i===P.i&&n.j===P.j?Object.assign({neuve:true},P):null;}
+function fpTexte(P){if(P.neuve)return chNb()+4>CH.max?['Agrandir le champ','PLUS DE PLACE POUR UNE PARCELLE']:['Nouvelle parcelle','GRATUIT · ON BÊCHE ICI'];
+const E=fpEtat(P.i,P.j), T=fpTuiles(P.i,P.j).filter(t=>t&&t.cult), nom=T.length&&POT_CULT[T[0].cult]?POT_CULT[T[0].cult][0]:'';
+if(E.mur){const nm=fpTuiles(P.i,P.j).filter(t=>t&&t.cult&&chStade(t)===3)[0];return ['Récolter',(nm&&POT_CULT[nm.cult]?POT_CULT[nm.cult][0].toUpperCase():'')+' DANS TON SAC'];}
+if(E.vide)return ['Semer','CHOISIR UNE GRAINE'];
+if(E.soif)return ['Arroser','ÇA POUSSERA DEUX FOIS PLUS VITE'];
+const m=Math.max(1,Math.ceil((E.fin-chNow())/60000));return [nom+' · ça pousse','PRÊT DANS '+(m>=60?Math.floor(m/60)+' H '+String(m%60).padStart(2,'0'):m+' MIN')];}
+const fpMajVrai=majAction;
+majAction=function(){const P=fpVise();window.FP_VISE=P;
+if(!P){if(FP.pop&&$('fpPop')&&$('fpPop').classList.contains('on'))fpPopFermer();return fpMajVrai();}
+try{const b2=cible();if(b2&&(b2.ouvre||b2.t==='comptoir')){const demi=b2.demi||40;const ec=Math.max(0,Math.abs(b2.x-joueur.x)-demi), dd=Math.hypot(ec,(joueur.y-b2.y)*0.8);if(dd<26)return fpMajVrai();}}catch(x){}
+if(FP.pop&&(FP.pop.i!==P.i||FP.pop.j!==P.j))fpPopFermer();
+plaqueVrai=$('action');const t=fpTexte(P);plaqueFeinte.innerHTML=t[0]+'<small>'+t[1]+'</small>';plaqueFeinte.classList.add('on');};
+let FP_OCC=false;
+async function fpAction(P){if(FP_OCC)return;FP_OCC=true;try{
+if(P.neuve){if(chNb()+4>CH.max){fpAgrandir(P);return;}
+try{potGeste('houe');}catch(x){}vibrer([10,30,10]);CH_ICI={x:fpX(P.i)+20,y:fpY(P.j)+30};
+await Promise.all(fpSpots(P.i,P.j).map(([c,r])=>chEnvoyer(c,r,'houe')));CH_ICI=null;if(fpExiste(P.i,P.j))setTimeout(()=>fpGraines(P),200);return;}
+const E=fpEtat(P.i,P.j);
+if(E.mur){try{potGeste('cueille');}catch(x){}await fpAgir(P,'faux');FP.vus={};return;}
+if(E.vide){if(FP.pop&&$('fpPop').classList.contains('on'))fpPopFermer();else fpGraines(P);return;}
+if(E.soif){POT_ARROSE=Date.now();await fpAgir(P,'eau');FP.vus={};return;}
+texteVolant(joueur.x,joueur.y-56,'Ça pousse… patience','#fff3d0');
+}finally{FP.vus={};FP_OCC=false;try{majAction();}catch(x){}}}
+$('action').addEventListener('click',(ev)=>{const P=fpVise();if(!P)return;ev.stopImmediatePropagation();ev.preventDefault();fpAction(P);},true);
 </script>
 </body>
 </html>
