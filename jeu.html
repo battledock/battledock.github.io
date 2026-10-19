@@ -19850,13 +19850,8 @@ if(v>1.2){
 const nx=(+joueur.x||0)+vxMoy*dt, ny=(+joueur.y||0)+vyMoy*dt;
 let ax=+joueur.x||0, ay=+joueur.y||0;
 if(FERME_VIERGE&&CARTE==='village'){
-/* LA FERME VIERGE : on marche partout dans la prairie. Le bord droit, à mi-hauteur,
-   mène toujours au port. */
-const versPort=(ny>MONDE_H/2-60&&ny<MONDE_H/2+60);
-ax=Math.max(16,Math.min(versPort?MONDE_L+40:MONDE_L-16,nx));ay=Math.max(26,Math.min(MONDE_H-10,ny));
-if(versPort&&ax>MONDE_L-6&&!PARTIR_AU_PORT){PARTIR_AU_PORT=true;
-try{texteVolant(joueur.x,joueur.y-40,'Direction le port…','#f0cf7d');}catch(x){}try{sauver();}catch(x){}
-setTimeout(()=>{const v=(window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'');location.href='jeu.html?carte=extramar&arrivee=1&de=village'+v;},620);}
+/* LA FERME VIERGE : on marche partout dans la prairie, jusqu'aux bords. */
+ax=Math.max(16,Math.min(MONDE_L-16,nx));ay=Math.max(26,Math.min(MONDE_H-10,ny));
 }else if(CHAMPS_SEULS&&CARTE==='village'){
 /* À LA FERME, ON MARCHE. Pas de décor, pas de grille, pas de collision :
    on se contente de rester dans le carré de la carte. */
@@ -20851,7 +20846,7 @@ setTimeout(()=>{try{demanderLaBeta();}catch(x){}},200);
 /* LES ANNONCES DU JOUR. Elles attendaient que le didacticiel ait rendu
    la main ; il a ete retire, elles partent donc seules. */
 setTimeout(()=>{try{
-  if(!annoncePokedock()&&!annonceChantier())annonceMondial();
+  if(!(FERME_VIERGE&&CARTE==='village')&&!annoncePokedock()&&!annonceChantier())annonceMondial();   /* la ferme : aucune annonce */
 }catch(x){}},1600);
 setInterval(()=>{if(document.hidden)return;try{verifierLaFete();}catch(x){}},600000);
 $('b-vestiaire').onclick=()=>{VEST_SEL=null;try{$('tiroir').classList.remove('on');$('barre').classList.remove('on');}catch(x){}ouvrirLeVestiaire();};
@@ -29151,6 +29146,7 @@ lireReglages();
 setTimeout(()=>{
 try{
 if(localStorage.getItem('bdl.tuto.vu'))return;
+if(FERME_VIERGE&&CARTE==='village')return;   /* la ferme : rien ne s'ouvre seul */
 /* LE PANNEAU S'OUVRE SEUL SUR UNE PREMIERE PARTIE. Il cedait le pas au
    didacticiel, qui a ete retire : il est maintenant la seule chose qui
    accueille un joueur neuf. Il reste aussi accessible par Aide et par
@@ -34267,88 +34263,6 @@ return chMajVrai();};
 if(typeof CHAMPS_SEULS!=='undefined'&&CHAMPS_SEULS&&CARTE==='village'&&!FERME_VIERGE){CHAMP_LIBRE=true;
 const go=()=>{if(e.id)chCharger();else setTimeout(go,1500);};go();
 setInterval(()=>{if(document.visibilityState==='visible')chCharger();},90000);}
-/* =====================================================================
-   L'AFFICHAGE « PORTRAIT » DE LA FERME : ton perso dans un médaillon en
-   haut à gauche, l'argent, l'heure et la saison à côté ; le sac en gros
-   bouton en bas à droite. Cadres et icônes en vrais pixels. Toucher le
-   médaillon ouvre le menu, toucher le sac montre ce qu'il contient.
-   ===================================================================== */
-if(typeof FERME_VIERGE!=='undefined'&&FERME_VIERGE&&CARTE==='village'){(()=>{
-const cadre=(fond,bord,clair,ombre)=>{const c=document.createElement('canvas');c.width=18;c.height=18;const g=c.getContext('2d');
-const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
-R(2,0,14,18,bord);R(0,2,18,14,bord);R(1,1,16,16,bord);R(2,1,14,16,clair);R(1,2,16,14,clair);R(2,2,14,14,ombre);R(3,2,12,13,clair);
-R(3,3,12,11,fond);R(3,3,12,1,'rgba(255,255,255,.55)');R(3,13,12,1,'rgba(0,0,0,.08)');R(2,15,14,1,ombre);R(2,16,14,1,bord);return c.toDataURL();};
-const BOIS=cadre('#fbf0d2','#4a2410','#c8884a','#8a5226');
-const IC={panier:['............','...bbbbbb...','..b......b..','.b........b.','pppppppppppp','pyyyyyyyyyyp','pyppyppyppyp','pyyyyyyyyyyp','.pyppyppypp.','.pyyyyyyyyp.','..pppppppp..','............'],
-piece:['............','....oooo....','..oOOOOOOo..','.oOOyyyyOOo.','.oOyOOOOyOo.','.oOyOyyOyOo.','.oOyOyyOyOo.','.oOyOOOOyOo.','.oOOyyyyOOo.','..oOOOOOOo..','....oooo....','............'],
-soleil:['.....y......','..y..y..y...','...yyyyy....','..yyOOOyy...','yyyOOOOOyyy.','..yOOOOOy...','..yyOOOyy...','...yyyyy....','..y..y..y...','.....y......','............','............'],
-lune:['............','....wwww....','...ww.......','..ww........','..ww........','..ww........','..ww........','..ww........','...ww.......','....wwww....','............','............']};
-const icone=(n,sz)=>{const c=document.createElement('canvas');c.width=12;c.height=12;c.style.cssText='width:'+sz+'px;height:'+sz+'px;image-rendering:pixelated;display:block;flex:none';
-const g=c.getContext('2d'), C={b:'#7a4a22',p:'#8a5226',y:n==='soleil'?'#ffb020':(n==='piece'?'#c88a10':'#e8c060'),o:'#a86a10',O:n==='soleil'?'#ffe060':'#ffd23a',w:'#f4e8b0'};
-IC[n].forEach((r,y)=>[...r].forEach((ch,x)=>{if(ch!=='.'){g.fillStyle=C[ch];g.fillRect(x,y,1,1);}}));return c;};
-const st=document.createElement('style');st.textContent=`
-@font-face{font-family:'Lilita One';src:url(assets/fonts/lilita-one-latin-400-normal.woff2) format('woff2');font-display:swap}
-body.fermeG #haut{display:none!important}
-body.fermeG #b-plus{opacity:0!important;pointer-events:none!important}
-#gBadge,#gSac{position:fixed;z-index:6;border:12px solid transparent;border-image:url(${BOIS}) 6 fill/12px stretch;image-rendering:pixelated;-webkit-tap-highlight-color:transparent;cursor:pointer;user-select:none;-webkit-user-select:none}
-#gBadge{left:10px;top:calc(10px + env(safe-area-inset-top));display:flex;align-items:center;gap:9px;padding:0 10px 0 0}
-#gBadge .por{width:60px;height:60px;background:linear-gradient(#cfe8f4,#a8d0e8);box-shadow:inset 0 0 0 2px #8a5226,inset 0 0 0 4px #e8b860;position:relative;overflow:hidden;flex:none}
-#gBadge .por canvas{position:absolute;left:0;top:0;width:60px;height:60px;image-rendering:pixelated}
-#gBadge .lig{display:flex;flex-direction:column;gap:1px;font:400 16px/1.15 'Lilita One','Baloo 2',sans-serif;color:#5a2e12}
-#gBadge .lig div{display:flex;align-items:center;gap:6px;white-space:nowrap}
-#gBadge .lig .nom{font-size:13px;color:#9a6a3a;letter-spacing:.5px}
-#gBadge .lig small{font-size:11.5px;color:#9a6a3a}
-#gBadge .flash{animation:gFlash 1s ease-out}
-@keyframes gFlash{0%{color:#2a8a2a;transform:scale(1.08)}100%{color:#5a2e12;transform:none}}
-#gBadge:active{transform:scale(.97)}
-#gSac{right:12px;bottom:calc(18px + env(safe-area-inset-bottom));width:70px;height:70px;display:grid;place-items:center}
-#gSac:active{transform:scale(.95)}
-#gSac b{position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);background:#5a2e12;color:#fff4d8;font:400 12px 'Lilita One',sans-serif;padding:1px 7px;border-radius:7px;white-space:nowrap}
-#gSac b.plein{background:#c0392b}
-#gSacP{position:fixed;right:12px;bottom:calc(104px + env(safe-area-inset-bottom));z-index:7;width:230px;max-height:52vh;overflow:auto;display:none;
-border:12px solid transparent;border-image:url(${BOIS}) 6 fill/12px stretch;font:400 15px 'Lilita One',sans-serif;color:#5a2e12}
-#gSacP.on{display:block}
-#gSacP h4{font:400 17px 'Lilita One';margin:2px 2px 6px;display:flex;justify-content:space-between}
-#gSacP .l{display:flex;align-items:center;gap:8px;padding:4px 2px;border-top:1px solid rgba(138,82,38,.2)}
-#gSacP .l svg{width:22px;height:22px;flex:none}
-#gSacP .l span{flex:1}
-#gSacP .vide{font:700 13px 'Baloo 2';color:#9a6a3a;padding:4px 2px}`;
-document.head.appendChild(st);document.body.classList.add('fermeG');
-const B=document.createElement('div');B.id='gBadge';
-B.innerHTML='<div class="por"><canvas width="60" height="60"></canvas></div><div class="lig"><div class="nom" id="gNom"></div><div id="gEu"></div><div id="gHe"></div></div>';
-document.body.appendChild(B);
-B.querySelector('#gEu').prepend(icone('piece',18));B.querySelector('#gEu').appendChild(document.createElement('span'));
-const S=document.createElement('div');S.id='gSac';S.appendChild(icone('panier',38));const nb=document.createElement('b');S.appendChild(nb);document.body.appendChild(S);
-const P=document.createElement('div');P.id='gSacP';document.body.appendChild(P);
-const stop=ev=>{ev.stopPropagation();};
-['touchstart','pointerdown'].forEach(k=>{B.addEventListener(k,stop);S.addEventListener(k,stop);P.addEventListener(k,stop);});
-B.addEventListener('click',ev=>{ev.stopPropagation();P.classList.remove('on');try{$('b-plus').click();}catch(x){}});
-S.addEventListener('click',ev=>{ev.stopPropagation();
-if(P.classList.contains('on')){P.classList.remove('on');return;}
-const L=Object.entries(e.sac||{}).filter(([k,n])=>+n>0).sort((a,b)=>b[1]-a[1]);
-const tot=L.reduce((t,[,n])=>t+(+n),0);
-P.innerHTML='<h4><span>Mon sac</span><span>'+tot+'/'+(e.sacMax||60)+'</span></h4>'+(L.length?L.map(([k,n])=>'<div class="l">'+(ICONES[k]?'<svg viewBox="0 0 16 16" shape-rendering="crispEdges">'+ICONES[k]+'</svg>':'')+'<span>'+((OBJETS[k]&&OBJETS[k].nom)||k)+'</span><b>×'+n+'</b></div>').join(''):'<div class="vide">Ton sac est vide.</div>');
-P.classList.add('on');});
-document.addEventListener('click',()=>P.classList.remove('on'));
-/* le portrait : ton perso, dessiné en grand, coupé à la taille */
-const pc=B.querySelector('canvas'), pg=pc.getContext('2d');
-const peindrePortrait=()=>{try{pg.setTransform(1,0,0,1,0,0);pg.clearRect(0,0,60,60);pg.imageSmoothingEnabled=false;
-pg.setTransform(2.2,0,0,2.2,0,0);personne(pg,13.6,46,e.ap,'bas',0,false);}catch(x){}};
-const SAISON=()=>{const m=new Date().getMonth()+1;return m>=3&&m<=5?'PRINTEMPS':(m>=6&&m<=8?'ÉTÉ':(m>=9&&m<=11?'AUTOMNE':'HIVER'));};
-let vu={eu:null,he:null,sac:null,nom:null}, nPort=0;
-const maj=()=>{try{
-const nom=(e.pseudo||'Fermier').toUpperCase();if(nom!==vu.nom){$('gNom').textContent=nom;vu.nom=nom;}
-const eu=e.euros||0;if(eu!==vu.eu){const sp=$('gEu').lastChild;sp.textContent=enEuros(eu).replace(',00','');if(vu.eu!==null){sp.classList.remove('flash');void sp.offsetWidth;sp.classList.add('flash');}vu.eu=eu;}
-const m=(typeof minuteDuJour==='function'?minuteDuJour():null);const hm=m===null?'':String(Math.floor(m/60)).padStart(2,'0')+':'+String(Math.floor(m%60)).padStart(2,'0');
-const jour=m===null||(m>=6.5*60&&m<20.5*60);const he=hm+'|'+jour;
-if(he!==vu.he){const H=$('gHe');H.innerHTML='';H.appendChild(icone(jour?'soleil':'lune',16));const t=document.createElement('span');t.innerHTML=hm+' <small>· '+SAISON()+'</small>';H.appendChild(t);vu.he=he;}
-const charge=Object.values(e.sac||{}).reduce((t,n)=>t+(+n>0?+n:0),0), mx=e.sacMax||60;const sc=charge+'/'+mx;
-if(sc!==vu.sac){nb.textContent=sc;nb.classList.toggle('plein',charge>=mx);vu.sac=sc;}
-const tir=document.getElementById('tiroir'), ouv=!!(tir&&tir.classList.contains('on')&&!tir.classList.contains('part'));S.style.visibility=ouv?'hidden':'';if(ouv)P.classList.remove('on');
-if(nPort++%20===0)peindrePortrait();
-}catch(x){}};
-maj();setInterval(maj,250);
-})();}
 </script>
 </body>
 </html>
