@@ -1598,6 +1598,9 @@ var HG_CARTES=[
   {c:'orbite',  nom:'LAMES ORBITALES', dit:'Des lames tournent autour de toi',        max:3, rar:'legendaire'},
   {c:'drone',   nom:'DRONE DE COMBAT', dit:'Un drone tire \u00e0 tes c\u00f4t\u00e9s',          max:2, rar:'legendaire'}
 ];
+var HG_SALLES={"LES SCIES": [".........", "XX.....XX", ".........", ".sssssss.", ".........", "...XXX...", ".........", ".sssssss.", ".........", "...XXX...", ".........", ".sssssss.", ".........", "XX.....XX", "........."], "LE DAMIER": ["X.C.X.C.X", ".........", "C.X.C.X.C", ".........", "X.C.X.C.X", ".........", "C.X.P.X.C", ".........", "X.C.X.C.X", ".........", "C.X.C.X.C", ".........", "X.C.X.C.X", ".........", "B.......B"], "LA CROIX": [".........", "....X....", "....X....", ".P..C..P.", "....X....", "....X....", "XXCXBXCXX", "....X....", "....X....", ".P..C..P.", "....X....", "....X....", ".........", "..C...C..", "........."], "L’ARÈNE": ["CC.....CC", "C.......C", ".........", "...PPP...", "..P...P..", "..P.B.P..", "..P...P..", "...PPP...", ".........", "C.......C", "CC.....CC", ".........", "..XX.XX..", ".........", "........."], "LES CONTENEURS": [".........", "XXXCXXXX.", ".........", ".XXXXCXXX", ".........", "XXXCXXXX.", "....P....", ".XXXXCXXX", ".........", "XXXCXXXX.", ".........", ".XXXXCXXX", ".........", "....B....", "........."], "LE BUNKER": [".........", "..CCCCC..", "..C...C..", "..C.B.C..", "..C...C..", "..CC.CC..", ".........", "X.......X", "Xssssssss", ".........", "..CC.CC..", "..C...C..", "..C.P.C..", "..CCCCC..", "........."]};
+/* CE QUI SE CASSE : les caisses legeres encaissent quelques balles puis volent en eclats */
+var HG_CASSE={caisse:5,palette:3,caisseP:3,sacs:6,etal:4,croix:3};
 var HG_RAR={commune:{nom:'COMMUNE',c:'#5ad8ff',p:1},rare:{nom:'RARE',c:'#c08cff',p:0.62},legendaire:{nom:'L\u00c9GENDAIRE',c:'#ffd21f',p:0.32}};
 /* LES BOSS : un par lieu, chacun avec sa facon de se battre.
    CHARGE : il s'arrete, vise, puis fonce en ligne droite — on l'esquive de cote.
@@ -1643,7 +1646,7 @@ MOTEUR.hangar={
             reste:0, aNaitre:0, pause:0, cam:{x:0,y:0}, mot:'', motT:0,
             patron:'eparpille', teinte:0, sec:0,
             zone:0, am:{}, cartes:null, braises:[], neuf:null,
-            arcs:[], feux:[], deco:[], lampes:[], cle:'entrepot'};
+            arcs:[], feux:[], deco:[], lampes:[], cle:'entrepot', pieges:[]};
   },
 
   /* ================= LA SALLE =================
@@ -1663,6 +1666,7 @@ MOTEUR.hangar={
       if(x<p.x+p.w+6&&x+w+6>p.x&&y<p.y+p.h+6&&y+h+6>p.y)return;
     }
     var o={x:x,y:y,w:w,h:h,t:t};
+    if(HG_CASSE[t])o.pv=o.pvm=HG_CASSE[t];
     s.obs.push(o);
     return o;
   },
@@ -1702,6 +1706,48 @@ MOTEUR.hangar={
   },
   PATRONS:['eparpille','couloir','piliers','anneau','travees','fosse'],
   /* LES PATRONS PROPRES A UN LIEU : des allees d'etals, un parking, des rangs de tombes */
+  /* LES SALLES FAITES A LA MAIN : un plan dessine case par case (22 px),
+     retourne au hasard, avec ses pieges a sa place. On garde toujours deux
+     cases libres le long des murs : les portes restent joignables. */
+  batirMain:function(s,nom){
+    var P=HG_SALLES[nom], fx=Math.random()<0.5, fy=Math.random()<0.5, C=22, X0=HG_MUR+(HG_L-2*HG_MUR-13*C)/2, Y0=HG_MUR+(HG_H-2*HG_MUR-19*C)/2;
+    var rails={};
+    for(var r=0;r<15;r++)for(var c=0;c<9;c++){
+      var ch=P[fy?14-r:r][fx?8-c:c], gx=X0+(c+2)*C, gy=Y0+(r+2)*C;
+      if(ch==='.')continue;
+      if(ch==='s'){(rails[r]=rails[r]||[]).push(gx+C/2);continue;}
+      if(ch==='P'){s.pieges.push({t:'piques',x:gx+C/2,y:gy+C/2,ph:Math.random()*3300});continue;}
+      var w=ch==='X'?C:ch==='C'?20:14, h=ch==='X'?C:ch==='C'?19:16, ox=gx+(C-w)/2, oy=gy+(C-h)/2;
+      if(Math.abs(ox+w/2-s.j.x)<30&&Math.abs(oy+h/2-s.j.y)<30)continue;
+      var libre=true;for(var kp=0;kp<s.portes.length;kp++)if(Math.hypot(ox+w/2-s.portes[kp].x,oy+h/2-s.portes[kp].y)<46)libre=false;
+      if(!libre)continue;
+      var o={x:ox,y:oy,w:w,h:h,t:ch==='X'?'beton':ch==='C'?'caisse':'baril'};
+      if(o.t==='caisse')o.pv=o.pvm=HG_CASSE.caisse;
+      if(o.t==='baril')o.ex=true;
+      s.obs.push(o);
+    }
+    for(var rk in rails){var xs=rails[rk];if(xs.length<2)continue;var y=Y0+((+rk)+2)*C+C/2;
+      s.pieges.push({t:'scie',x1:Math.min.apply(null,xs),x2:Math.max.apply(null,xs),y:y,x:xs[0],v:0.07,sens:1,a:0});}
+  },
+  /* LES PIEGES SEMES dans une salle ordinaire : une scie sur rail, des piques, un jet de flammes */
+  semerPieges:function(s){
+    var n=s.salle, nb=(n>=3&&Math.random()<0.55)?1+(n>=8&&Math.random()<0.5?1:0)+(n>=15&&Math.random()<0.4?1:0):0;
+    for(var k=0;k<nb;k++){
+      var t=['scie','piques','flamme'][Math.floor(Math.random()*3)];
+      for(var e=0;e<40;e++){
+        if(t==='scie'){var L2=80+Math.random()*60, x1=HG_MUR+20+Math.random()*(HG_L-2*HG_MUR-40-L2), y=HG_MUR+60+Math.random()*(HG_H-2*HG_MUR-120), ok=true;
+          for(var q=0;q<=10;q++)if(this.heurte(s,x1+L2*q/10,y,9))ok=false;
+          if(!ok||Math.abs(y-s.j.y)<50)continue;
+          s.pieges.push({t:'scie',x1:x1,x2:x1+L2,y:y,x:x1,v:0.06+Math.random()*0.03,sens:1,a:0});break;}
+        if(t==='piques'){var px=HG_MUR+30+Math.random()*(HG_L-2*HG_MUR-60), py=HG_MUR+50+Math.random()*(HG_H-2*HG_MUR-100);
+          if(Math.hypot(px-s.j.x,py-s.j.y)<70||this.heurte(s,px,py,14))continue;
+          s.pieges.push({t:'piques',x:px,y:py,ph:Math.random()*3300});break;}
+        if(t==='flamme'){var cg=Math.random()<0.5?'g':'d', fy2=HG_MUR+60+Math.random()*(HG_H-2*HG_MUR-120);
+          if(s.entree===cg||s.portes.some(function(P){return P.cote===cg&&Math.abs(P.y-fy2)<40;})||Math.abs(fy2-s.j.y)<40)continue;
+          s.pieges.push({t:'flamme',cote:cg,y:fy2,L:90,ph:Math.random()*4000});break;}
+      }
+    }
+  },
   batir:function(s,p){
     var i,j,cx=HG_L/2, cy=HG_H/2+16;
     if(p==='couloir'){
@@ -1771,7 +1817,7 @@ MOTEUR.hangar={
   },
   garnir:function(s){
     var n=s.salle;
-    s.obs=[];s.ram=[];
+    s.obs=[];s.ram=[];s.bossA=0;
     /* la premiere salle est toujours la simple : on apprend a marcher
        avant d'apprendre a se placer */
     s.zone=Math.floor((n-1)/5)%HG_ZONES.length;
@@ -1862,7 +1908,13 @@ MOTEUR.hangar={
       var PRIX={vie:40,vieMax:80,arme:60,carte:90};
       for(var ia0=0;ia0<3;ia0++)s.ram.push({x:px[ia0],y:HG_H/2+10,t:'achat',a:arts[ia0],prix:PRIX[arts[ia0]]*n,c:0});
     }
-    else this.batir(s,s.patron);
+    else{
+      s.pieges=[];s.faite=null;
+      /* une salle sur trois, a partir de la deuxieme, est dessinee a la main */
+      if(n>=2&&n%5!==0&&Math.random()<0.33){var NS=Object.keys(HG_SALLES);s.faite=NS[Math.floor(Math.random()*NS.length)];this.batirMain(s,s.faite);}
+      else{this.batir(s,s.patron);if(n%5!==0)this.semerPieges(s);}
+    }
+    if(marche)s.pieges=[];
     /* QUELQUES BIDONS EXPLOSIFS, repartis dans la salle : ils changent
        une salle encombree en salle qu'on peut ouvrir au bon moment. */
     var nb=1+Math.min(4,Math.floor(n/3));
@@ -1873,8 +1925,8 @@ MOTEUR.hangar={
        s'ouvrir. On en convertit alors. */
     while(bidons.length<nb&&s.obs.length){
       var c=s.obs[Math.floor(Math.random()*s.obs.length)];
-      if(bidons.indexOf(c)>=0)break;
-      c.t='baril';c.w=14;c.h=16;bidons.push(c);
+      if(bidons.indexOf(c)>=0||c.t==='beton')break;
+      c.t='baril';c.w=14;c.h=16;delete c.pv;bidons.push(c);
     }
     for(var e2=0;e2<s.obs.length;e2++)s.obs[e2].ex=false;
     for(var e3=0;e3<nb&&e3<bidons.length;e3++)bidons[e3].ex=true;
@@ -1923,6 +1975,8 @@ MOTEUR.hangar={
     var MODS={rapides:'ILS SONT RAPIDES · POINTS ×1,5',butin:'DOUBLE BUTIN',ricochet:'TES BALLES RICOCHENT',noir:'COUPURE DE COURANT',blindes:'ILS SONT BLINDÉS · POINTS ×1,5'};
     if((n-1)%5===0){s.mot=HG_ZONES[s.zone].nom;s.motT=2200;}
     else{s.mot=OBJ[tO]||('SALLE '+n+' \u00b7 '+(NOMS[s.patron]||''));s.motT=2000;}
+    if(s.faite&&(n-1)%5!==0&&tO==='nettoyer'){s.mot=s.faite;s.motT=2000;}
+    else if(s.faite&&(n-1)%5!==0&&!s.motSuite)s.motSuite=s.faite;
     if(s.ev==='coffre'){s.mot='UN COFFRE… PIÉGÉ ?';s.motT=2000;}
     if(s.ev==='survivant'){s.mot='UN SURVIVANT · LIBÈRE-LE';s.motT=2000;}
     if(marche){s.mot='LE MARCHAND';s.motT=2000;s.motSuite=null;}
@@ -2034,6 +2088,24 @@ MOTEUR.hangar={
     for(var gi=s.gren.length-1;gi>=0;gi--){var gr=s.gren[gi];gr.t+=dt;if(gr.t>=gr.T){s.gren.splice(gi,1);this.eclater(s,gr.x,gr.y);}}
     hgMajBoutons(s);
 
+    /* LES PIEGES : ils blessent tout le monde, toi compris — attire-les dedans */
+    for(var ipg=0;ipg<(s.pieges||[]).length;ipg++){var Pg=s.pieges[ipg], actif=s.pause<=0;
+      if(Pg.t==='scie'){Pg.x+=Pg.v*Pg.sens*dt;if(Pg.x>Pg.x2){Pg.x=Pg.x2;Pg.sens=-1;}if(Pg.x<Pg.x1){Pg.x=Pg.x1;Pg.sens=1;}Pg.a+=dt*0.03;
+        if(!actif)continue;
+        if(s.inv<=0&&Math.hypot(j.x-Pg.x,j.y-Pg.y)<11){if(this.blesser(s,(Pg.x-j.x)/11,(Pg.y-j.y)/11))return;}
+        for(var zp=s.z.length-1;zp>=0;zp--){var zq=s.z[zp];if(zq.nait>0||(zq.pgT||0)>s.t)continue;if(Math.hypot(zq.x-Pg.x,zq.y-Pg.y)<zq.r+7){zq.pgT=s.t+450;zq.pv-=3;zq.clign=120;zq.pouss=10;zq.pa=Math.atan2(zq.y-Pg.y,zq.x-Pg.x);
+          for(var es2=0;es2<5;es2++)s.part.push({x:zq.x,y:zq.y,vie:260,t:'sang',vx:(Math.random()-0.5)*0.1,vy:(Math.random()-0.5)*0.1});
+          if(zq.pv<=0)this.abattre(s,zq,zp);}}}
+      else if(Pg.t==='piques'){Pg.ph=(Pg.ph+dt)%3300;var sort=Pg.ph>2400, act=Pg.ph>2400&&Pg.ph-dt<=2400;
+        if(!actif||!sort)continue;
+        if(s.inv<=0&&Math.abs(j.x-Pg.x)<12&&Math.abs(j.y-Pg.y)<12){if(this.blesser(s))return;}
+        if(act)for(var zp2=s.z.length-1;zp2>=0;zp2--){var zr=s.z[zp2];if(zr.nait>0)continue;if(Math.abs(zr.x-Pg.x)<12&&Math.abs(zr.y-Pg.y)<12){zr.pv-=zr.gros?4:3;zr.clign=120;if(zr.pv<=0)this.abattre(s,zr,zp2);}}}
+      else if(Pg.t==='flamme'){Pg.ph=(Pg.ph+dt)%4000;if(!actif||Pg.ph<3200)continue;
+        var x0=Pg.cote==='g'?HG_MUR:HG_L-HG_MUR-Pg.L, x1=x0+Pg.L;
+        if(Math.random()<0.6)s.part.push({x:Pg.cote==='g'?HG_MUR+4:HG_L-HG_MUR-4,y:Pg.y+(Math.random()-0.5)*6,vie:420,t:'flam',vx:(Pg.cote==='g'?1:-1)*(0.18+Math.random()*0.06),vy:(Math.random()-0.5)*0.03});
+        if(s.inv<=0&&j.x>x0&&j.x<x1&&Math.abs(j.y-Pg.y)<9){if(this.blesser(s,0,0))return;}
+        for(var zp3=0;zp3<s.z.length;zp3++){var zf3=s.z[zp3];if(zf3.x>x0&&zf3.x<x1&&Math.abs(zf3.y-Pg.y)<10&&!(zf3.brule>0)){zf3.brule=1500;zf3.brT=0;}}}
+    }
     /* LES BRAISES : on les traverse, on ne s'y installe pas */
     if(s.braises.length&&s.inv<=0){
       for(var fb2=0;fb2<s.braises.length;fb2++){
@@ -2136,6 +2208,7 @@ MOTEUR.hangar={
         var ob=s.obs[o];
         if(b.x>ob.x&&b.x<ob.x+ob.w&&b.y>ob.y&&b.y<ob.y+ob.h){
           if(ob.ex){mort=true;this.sauter(s,ob,o);break;}
+          if(ob.pv>0){ob.pv-=Math.max(1,b.deg||1);ob.tape=s.t+90;if(ob.pv<=0){this.casser(s,ob,o);mort=true;break;}}
           if(b.ric>0){
             /* ON REBONDIT SUR LA FACE LA PLUS PROCHE : le plus petit
                enfoncement dit par ou la lame est entree. */
@@ -2654,6 +2727,7 @@ MOTEUR.hangar={
         var ob=s.obs[o];
         if(x>ob.x&&x<ob.x+ob.w&&y>ob.y&&y<ob.y+ob.h){
           if(ob.ex)this.sauter(s,ob,o);
+          else if(ob.pv>0){ob.pv-=Math.max(1,A.deg);ob.tape=s.t+90;if(ob.pv<=0)this.casser(s,ob,o);}
           bloque=true;break;
         }
       }
@@ -2677,6 +2751,7 @@ MOTEUR.hangar={
      detruit pas le couvert — sinon le mortier demonterait la salle en
      trois coups et il n'y aurait plus ou se mettre. */
   boum:function(s,cx,cy,r,deg){
+    this.casserAutour(s,cx,cy,r);
     for(var e=0;e<24;e++){
       var a=Math.random()*6.283, v=0.03+Math.random()*0.13;
       s.part.push({x:cx,y:cy,vie:200+Math.random()*260,t:'flam',
@@ -2696,7 +2771,7 @@ MOTEUR.hangar={
        du mortier */
     for(var o=s.obs.length-1;o>=0;o--){
       var ob=s.obs[o];
-      if(!ob.ex)continue;
+      if(!ob||!ob.ex)continue;
       if(Math.hypot(ob.x+ob.w/2-cx,ob.y+ob.h/2-cy)<r)this.sauter(s,ob,o);
     }
   },
@@ -2814,7 +2889,17 @@ MOTEUR.hangar={
   /* le gaz avance depuis le mur d'entree vers la porte : la part de salle couverte, c'est O.gaz */
   dansGaz:function(s,x,y){var O=s.obj;if(!O||O.t!=='evasion')return false;var f=(O.gaz||0)*0.85;
     if(O.de==='b')return y>HG_H-f*HG_H;if(O.de==='h')return y<f*HG_H;if(O.de==='g')return x<f*HG_L;return x>HG_L-f*HG_L;},
+  /* LA CAISSE CEDE : des eclats, parfois un chargeur ou une vie dedans */
+  casser:function(s,ob,i){
+    var cx=ob.x+ob.w/2, cy=ob.y+ob.h/2;s.obs.splice(i,1);s.sec=Math.max(s.sec,70);s.score+=3;
+    for(var e=0;e<16;e++){var a=Math.random()*6.283, v=0.03+Math.random()*0.12;s.part.push({x:cx+(Math.random()-0.5)*ob.w,y:cy+(Math.random()-0.5)*ob.h,vie:300+Math.random()*200,t:'eclat',vx:Math.cos(a)*v,vy:Math.sin(a)*v});}
+    (s.tach=s.tach||[]).push({x:cx,y:cy+ob.h/2-2,r:3});
+    var r=Math.random();if(r<0.12)s.ram.push({x:cx,y:cy,t:'mun'});else if(r<0.17)s.ram.push({x:cx,y:cy,t:'vie'});
+  },
+  /* tout ce qui se casse dans un rayon */
+  casserAutour:function(s,cx,cy,r){for(var o=s.obs.length-1;o>=0;o--){var ob=s.obs[o];if(ob.pv>0&&Math.hypot(ob.x+ob.w/2-cx,ob.y+ob.h/2-cy)<r+ob.w/2)this.casser(s,ob,o);}},
   eclater:function(s,cx,cy){
+    this.casserAutour(s,cx,cy,42);
     for(var e=0;e<30;e++){var a=Math.random()*6.283, v=0.04+Math.random()*0.16;
       s.part.push({x:cx,y:cy,vie:240+Math.random()*300,t:'flam',vx:Math.cos(a)*v,vy:Math.sin(a)*v});}
     s.sec=Math.max(s.sec,200);
@@ -2826,6 +2911,7 @@ MOTEUR.hangar={
   sauter:function(s,ob,i){
     var cx=ob.x+ob.w/2, cy=ob.y+ob.h/2;
     s.obs.splice(i,1);
+    this.casserAutour(s,cx,cy,40);
     for(var e=0;e<34;e++){
       var a=Math.random()*6.283, v=0.04+Math.random()*0.17;
       s.part.push({x:cx,y:cy,vie:260+Math.random()*320,t:'flam',
@@ -3088,11 +3174,32 @@ MOTEUR.hangar={
     if(pd.rec){var ix=pd.x+(pd.cote==='g'?26:pd.cote==='d'?-26:0), iy=pd.y+(pd.cote==='h'?44:pd.cote==='b'?-30:0);
       hgBullePorte(G,ix,iy,pd.rec,s.t,pd.ouvert);}
     }
+    /* LES PIEGES, au sol */
+    for(var ipd2=0;ipd2<(s.pieges||[]).length;ipd2++){var Pd=s.pieges[ipd2];
+      if(Pd.t==='scie'){R(Pd.x1-4,Pd.y-2,Pd.x2-Pd.x1+8,4,'#2a2622');R(Pd.x1-4,Pd.y-2,Pd.x2-Pd.x1+8,1,'#5a544c');
+        R(Pd.x1-6,Pd.y-4,5,8,'#4a4440');R(Pd.x2+1,Pd.y-4,5,8,'#4a4440');
+        for(var pq_tr2=Pd.x1;pq_tr2<Pd.x2;pq_tr2+=8)R(pq_tr2,Pd.y+1,2,1,'#e8b818');}
+      else if(Pd.t==='piques'){var pq_ph2=Pd.ph, pq_al=pq_ph2>1800&&pq_ph2<=2400, pq_so=pq_ph2>2400;
+        R(Pd.x-12,Pd.y-12,24,24,'#3e3a36');R(Pd.x-12,Pd.y-12,24,1,'#5e5852');R(Pd.x-12,Pd.y+11,24,1,'#24201c');
+        for(var pq_py2=0;pq_py2<4;pq_py2++)for(var pq_px2=0;pq_px2<4;pq_px2++){var pq_hx=Pd.x-9+pq_px2*6, pq_hy=Pd.y-9+pq_py2*6;
+          if(pq_so){R(pq_hx,pq_hy-3,2,5,'#d8dce0');R(pq_hx,pq_hy-3,1,5,'#fff');R(pq_hx-1,pq_hy+1,4,1,'#6a6460');}
+          else R(pq_hx,pq_hy,2,2,pq_al&&(Math.floor(s.t/90)%2===0)?'#ff4a3a':'#1a1612');}}
+      else if(Pd.t==='flamme'){var pq_gx2=Pd.cote==='g'?HG_MUR:HG_L-HG_MUR-6, pq_chauffe=Pd.ph>2600&&Pd.ph<=3200, pq_feu=Pd.ph>3200;
+        R(pq_gx2,Pd.y-5,6,10,'#4a4440');R(pq_gx2,Pd.y-5,6,2,'#6a645e');R(Pd.cote==='g'?pq_gx2+6:pq_gx2-2,Pd.y-2,2,4,pq_chauffe||pq_feu?'#ff8a2a':'#2a2622');
+        if(pq_chauffe&&Math.random()<0.5)s.part.push({x:Pd.cote==='g'?pq_gx2+8:pq_gx2-2,y:Pd.y,vie:200,t:'flam',vx:(Pd.cote==='g'?1:-1)*0.03,vy:-0.01});
+        if(pq_feu){var pq_fx0=Pd.cote==='g'?HG_MUR+6:HG_L-HG_MUR-6-Pd.L+6;G.save();G.globalAlpha=0.35+0.15*Math.sin(s.t/40);G.fillStyle='#ff7a1a';G.fillRect(Math.round(pq_fx0),Math.round(Pd.y-6),Pd.L-6,12);G.globalAlpha=0.5;G.fillStyle='#ffd060';G.fillRect(Math.round(pq_fx0),Math.round(Pd.y-3),Pd.L-6,6);G.restore();}
+        else{G.save();G.globalAlpha=pq_chauffe?0.25:0.08;G.strokeStyle='#ff6a2a';G.setLineDash([3,3]);var pq_fx1=Pd.cote==='g'?HG_MUR+6:HG_L-HG_MUR-Pd.L;G.strokeRect(Math.round(pq_fx1)+0.5,Math.round(Pd.y-6)+0.5,Pd.L-6,12);G.restore();}}
+    }
     /* les obstacles */
     for(var io=0;io<s.obs.length;io++){
       var o=s.obs[io];
       hgOmbre(o.x+o.w/2,o.y+o.h,o.w);
-      if(o.t==='caisse'){
+      if(o.t==='beton'){
+        /* LE BLOC DE BETON : il ne bouge pas, il ne casse pas */
+        var MZ=(HG_ZONES[s.zone]||HG_ZONES[0]).mur||['#6a6a6a','#8a8a8a','#4a4a4a'];
+        R(o.x,o.y,o.w,o.h,MZ[0]);R(o.x,o.y,o.w,3,MZ[1]);R(o.x,o.y+o.h-3,o.w,3,MZ[2]);R(o.x,o.y,1,o.h,MZ[1]);
+        R(o.x+4,o.y+7,2,2,MZ[2]);R(o.x+o.w-7,o.y+o.h-9,2,2,MZ[2]);
+      }else if(o.t==='caisse'){
         R(o.x,o.y,o.w,o.h,'#a87a42');R(o.x,o.y,o.w,2,'#cf9e62');
         R(o.x,o.y+o.h-2,o.w,2,'#654420');R(o.x,o.y+o.h/2-1,o.w,2,'#654420');
         R(o.x+o.w/3,o.y,2,o.h,'#654420');R(o.x+o.w*2/3,o.y,2,o.h,'#654420');
@@ -3222,7 +3329,17 @@ MOTEUR.hangar={
         for(var ip=0;ip<5;ip++)R(o.x+ip*5,o.y,3,o.h,'#ad8a52');
         R(o.x,o.y+o.h-2,o.w,2,'#5f4628');
       }
+      /* ce qui se casse montre ses fentes, et blanchit sous la balle */
+      if(o.pvm&&o.pv<o.pvm){var f5=1-o.pv/o.pvm;G.save();G.strokeStyle='rgba(20,12,4,.85)';G.lineWidth=1;G.beginPath();
+        G.moveTo(o.x+o.w*0.3,o.y);G.lineTo(o.x+o.w*0.45,o.y+o.h*0.4*f5+2);G.lineTo(o.x+o.w*0.35,o.y+o.h*0.8*f5+2);
+        if(f5>0.4){G.moveTo(o.x+o.w,o.y+o.h*0.6);G.lineTo(o.x+o.w*0.65,o.y+o.h*0.5);G.lineTo(o.x+o.w*0.6,o.y+o.h);}G.stroke();G.restore();}
+      if(o.tape>s.t)R(o.x,o.y,o.w,o.h,'rgba(255,255,255,.35)');
     }
+    /* LES SCIES passent par-dessus tout */
+    for(var ips=0;ips<(s.pieges||[]).length;ips++){var Ps=s.pieges[ips];if(Ps.t!=='scie')continue;
+      hgOmbre(Ps.x,Ps.y+6,14);G.save();G.translate(Math.round(Ps.x),Math.round(Ps.y-3));G.rotate(Ps.a);
+      G.fillStyle='#b8bec6';G.beginPath();for(var pq_dt2=0;pq_dt2<12;pq_dt2++){var pq_aa2=pq_dt2/12*6.283;G.lineTo(Math.cos(pq_aa2)*9,Math.sin(pq_aa2)*9);G.lineTo(Math.cos(pq_aa2+0.26)*6.5,Math.sin(pq_aa2+0.26)*6.5);}G.fill();
+      G.fillStyle='#e8ecf0';G.beginPath();G.arc(0,0,5,0,7);G.fill();G.fillStyle='#4a4440';G.beginPath();G.arc(0,0,2,0,7);G.fill();G.restore();}
     /* ce qu'on ramasse, qui respire */
     for(var ir=0;ir<s.ram.length;ir++){
       var ra=s.ram[ir];
@@ -3564,7 +3681,8 @@ MOTEUR.hangar={
     G.fillStyle='#8fa8b4';
     G.fillText('SALLE '+s.salle,L/2,11);
     G.save();G.fillStyle='#d8b84a';G.font='bold 5px ui-monospace,monospace';G.textAlign='right';
-    G.fillText('10 000 \u20ac \u00b7 SALLE '+(Math.ceil(s.salle/10)*10),L-4,36);G.restore();
+    var primeV=!!(s.rec&&HG_REC_P[s.rec]&&!s.calme&&['boss','marchand','evenement'].indexOf(s.rec)<0&&s.reste>0);
+    G.fillText('10 000 \u20ac \u00b7 SALLE '+(Math.ceil(s.salle/10)*10),L-4,(s.mod&&primeV)?43:36);G.restore();
     /* l'arme et le chargeur, sur la deuxieme ligne du haut */
     var A2=HG_ARMES[s.arme];
     G.textAlign='left';
@@ -3599,7 +3717,7 @@ MOTEUR.hangar={
       R(bx2,by2,bw*Math.max(0,BOSSZ.pv/BOSSZ.pvm),4,BOSSZ.stun>0?'#ffe060':'#d8342a');
       R(bx2+bw*0.66,by2-1,1,6,'#fff');R(bx2+bw*0.33,by2-1,1,6,'#fff');
       G.textAlign='center';G.fillStyle='#ffd0c0';G.font='bold 6px ui-monospace,monospace';G.fillText((BOSSZ.grand?'★ ':'')+BOSSZ.boss.nom+' · PHASE '+(BOSSZ.phase+1),L/2,by2-3);G.textAlign='right';G.font='bold 7px ui-monospace,monospace';}
-    if(s.rec&&HG_REC_P[s.rec]&&!s.calme&&['boss','marchand','evenement'].indexOf(s.rec)<0&&s.reste>0){G.fillStyle=HG_REC_P[s.rec].c;G.font='bold 6px ui-monospace,monospace';G.fillText('PRIME : '+HG_REC_P[s.rec].n,L-5,s.mod?36:29);G.font='bold 7px ui-monospace,monospace';}
+    if(primeV){G.fillStyle=HG_REC_P[s.rec].c;G.font='bold 6px ui-monospace,monospace';G.fillText('PRIME : '+HG_REC_P[s.rec].n,L-5,s.mod?36:29);G.font='bold 7px ui-monospace,monospace';}
     if(s.mod){G.fillStyle='#b8a0ff';G.font='bold 6px ui-monospace,monospace';G.fillText({rapides:'RAPIDES ×1,5',butin:'DOUBLE BUTIN',ricochet:'RICOCHETS',noir:'COUPURE',blindes:'BLINDÉS ×1,5'}[s.mod],L-5,29);G.font='bold 7px ui-monospace,monospace';}
     G.textAlign='left';
     G.font='bold 8px ui-monospace,monospace';
