@@ -4076,6 +4076,7 @@ const FERME_X0=612;                          /* la ferme commence ici : plus de 
 const PARAM_CARTE=CARTE_DEMANDEE;
 const MODE_VIL=(CARTE_DEMANDEE==='foret')?'foret':'ferme';
 const CHAMPS_SEULS=MODE_VIL==='ferme';      /* la ferme : les champs seuls */
+const FERME_VIERGE=CHAMPS_SEULS;            /* LA FERME REPART DE ZÉRO : une prairie de 1800 x 1800, rien dessus */
 const FORET_SEULE=MODE_VIL==='foret';       /* la forêt : le bois de l'ancien village, sa rivière et sa clairière */
 const FZ={x0:56,x1:668,y0:40,y1:1560};      /* les bornes de la forêt : elle descend maintenant jusqu'en bas */
 const FB={x0:760,x1:1564,y0:96,y1:444};       /* (à gauche : la gare du métro) */       /* (en haut : l'étal des graines) */       /* les bornes de la carte des champs */
@@ -10516,8 +10517,8 @@ R(-4,-5,9,5,V.tronc);R(-4,-5,9,2,V.troncC);R(-2,-4,5,1,'#a5764a');R(-4,-2,9,2,V.
    fin de la ville — une derniere facade, une esplanade de platanes — et
    surtout les collines boisees qui apparaissent sur l'horizon : on marche
    vers quelque chose qu'on voit, pas vers un mur. */
-const MONDE_L=CARTE==='foret'?1500:(CARTE==='tokyo'?900:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:1200):1760)));   /* la ferme : 1200 x 1600 */
-const MONDE_H=CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?1600:(CARTE==='tokyo'?2560:600));   /* Tokyo : la ville en haut, le grand circuit dessous */   /* la ferme : 1200 x 1600 */
+const MONDE_L=CARTE==='foret'?1500:(CARTE==='tokyo'?900:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:(FERME_VIERGE?1800:1200)):1760)));   /* la ferme : 1200 x 1600 */
+const MONDE_H=CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?(FERME_VIERGE?1800:1600):(CARTE==='tokyo'?2560:600));   /* Tokyo : la ville en haut, le grand circuit dessous */   /* la ferme : 1200 x 1600 */
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 const VUE_L=196, VUE_H=400;       /* la vue de référence, en points de jeu */
 const ZOOM=2;                     /* ne sert plus que de repli */
@@ -10663,7 +10664,7 @@ function refaireLeSol(){
    une bonne demi-seconde où l'écran titre reste figé. La clé du cache
    contient le numéro de version, donc une mise à jour le renouvelle. */
 if(CHAMPS_SEULS&&CARTE==='village'){
-if(SOL_CACHE.pret){SOL=SOL_CACHE.sol;SOL_FIN=null;CHEMIN=null;LISIERE=null;LISIERE_SUD=null;
+if(SOL_CACHE.pret&&SOL_CACHE.sol&&SOL_CACHE.sol.width===MONDE_L&&SOL_CACHE.sol.height===MONDE_H){SOL=SOL_CACHE.sol;SOL_FIN=null;CHEMIN=null;LISIERE=null;LISIERE_SUD=null;
 SOL_CACHE.pret=false;return SOL;}
 SOL=construireSolPre();SOL_FIN=null;CHEMIN=null;LISIERE=null;LISIERE_SUD=null;
 rangerSolQuandOnPeut();
@@ -10742,7 +10743,40 @@ y:VER.y0+Math.floor(n/VER.c)*(VER.ch+VER.al), w:VER.cw, h:VER.ch});
 const verPied=(n)=>{const C=verCase(n);return {x:C.x+C.w/2, y:C.y+C.h-10};};
 const PR_h=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;
 n=(n^(n>>>13))*1274126177;return ((n^(n>>>16))>>>0)/4294967296;};
+/* ================= LA PRAIRIE DE LA NOUVELLE FERME =================
+   Une herbe verte, d'un seul tenant : des clairs et des ombres très larges
+   pour qu'elle ne fasse pas moquette, des touffes, des brins, des reflets,
+   un peu de trèfle et des fleurettes en petites colonies. Ni trou, ni
+   terre, ni caillou : c'est le joueur qui y posera tout. */
+function construirePreVierge(){
+const W=MONDE_L, H=MONDE_H, c=document.createElement('canvas');c.width=W;c.height=H;
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+const img=g.createImageData(W,H), d=img.data;
+const hh=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
+const vn=(x,y,s,k)=>{const X=Math.floor(x/s),Y=Math.floor(y/s),fx=x/s-X,fy=y/s-Y,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);
+const a=hh(X,Y,k),b=hh(X+1,Y,k),c2=hh(X,Y+1,k),e2=hh(X+1,Y+1,k);return a+(b-a)*u+(c2-a)*v+(a-b-c2+e2)*u*v;};
+const cl=v=>v<0?0:(v>255?255:v);
+const pose=(x,y,r,v,b)=>{if(x<0||y<0||x>=W||y>=H)return;const i=(y*W+x)*4;d[i]=r;d[i+1]=v;d[i+2]=b;d[i+3]=255;};
+const V=[[104,150,66],[116,162,74],[96,140,60]];
+for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+const big=vn(x,y,90,5), mid=vn(x,y,26,8), n=hh(x,y,10), c2=V[n<.4?0:(n<.78?1:2)];
+const sh=(big-0.5)*20+(mid-0.5)*9;
+const i=(y*W+x)*4;d[i]=cl(c2[0]+sh|0);d[i+1]=cl(c2[1]+sh|0);d[i+2]=cl(c2[2]+sh*0.6|0);d[i+3]=255;}
+for(let y=2;y<H-1;y++)for(let x=1;x<W-1;x++){const t=hh(x,y,12);if(t>=0.057)continue;
+const i=(y*W+x)*4, R=d[i], G2=d[i+1], B=d[i+2];
+if(t<0.03){for(let k=0;k<4;k++)pose(x,y-k,cl(R+(k===3?18:k?4:-26)),cl(G2+(k===3?26:k?8:-22)),cl(B+(k===3?6:-16)));
+pose(x-1,y-1,cl(R-8),cl(G2),cl(B-8));pose(x+1,y-2,cl(R+6),cl(G2+14),cl(B));}
+else if(t<0.045){pose(x,y,cl(R+14),cl(G2+22),cl(B+6));pose(x+1,y,cl(R+8),cl(G2+12),cl(B+3));}
+else if(t<0.055)pose(x,y,cl(R-22),cl(G2-18),cl(B-18));
+else if(vn(x,y,30,16)>0.6){pose(x,y,86,140,62);pose(x+1,y,86,140,62);pose(x,y-1,106,164,72);pose(x+1,y+1,86,140,62);}}
+g.putImageData(img,0,0);
+const FL=[[240,236,220],[236,214,90],[220,120,130],[170,160,220],[90,130,210]];
+for(let y=4;y<H-4;y++)for(let x=4;x<W-4;x++){const co=vn(x,y,60,18);if(hh(x,y,20)>=0.0016+co*0.006)continue;
+const f=FL[Math.floor(hh(x,y,22)*FL.length)];g.fillStyle='rgb(70,110,50)';g.fillRect(x,y,1,2);g.fillStyle='rgb('+f[0]+','+f[1]+','+f[2]+')';
+if(hh(x,y,24)<0.3){g.fillRect(x-1,y-2,3,1);g.fillRect(x,y-3,1,3);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x,y-2,1,1);}else g.fillRect(x,y-2,1,1);}
+return c;}
 function construireSolPre(){
+if(FERME_VIERGE)return construirePreVierge();
 const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
 const g=c.getContext('2d');g.imageSmoothingEnabled=false;
 const img=g.createImageData(MONDE_L,MONDE_H), d=img.data;
@@ -15179,6 +15213,7 @@ if(CHAMPS_SEULS&&CARTE==='village'){
 /* LA FERME : deux bâtiments, et rien d'autre. Le métro plein nord, la
    graineterie au centre, le potager au sud : l'axe de la ferme. */
 DECOR=[];
+if(FERME_VIERGE){invaliderGrille();return;}
 /* (l'ancienne gare du nord laisse la place à la halte, près de La Récolte) */
 /* ================= LE GRAND POULAILLER =================
    Le vocabulaire de l'ancien — pilotis, bardage vertical à trois tons,
@@ -15849,6 +15884,7 @@ if(CARTE==='extramar')return bloqueExtramar(x,y);
 if(CHAMPS_SEULS&&CARTE==='village'){
 /* LA FERME EST NUE : seuls les bords du monde, et la restanque du verger. */
 const nx=+x, ny=+y;
+if(FERME_VIERGE)return !(nx>16&&nx<MONDE_L-16&&ny>26&&ny<MONDE_H-10);
 if(!(nx>BORD&&nx<MONDE_L-BORD&&ny>BORD+14&&ny<MONDE_H-BORD))return true;
 if(verMuret(nx,ny))return true;
 return false;
@@ -16471,6 +16507,13 @@ if(lw<VW+2||lh<VH+2){ctx.fillStyle='#2b3a26';ctx.fillRect(0,0,VW+2,VH+2);}   /* 
 if(CHAMPS_SEULS&&CARTE==='village'){
 if(!SOL)return;
 ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
+/* LA FERME VIERGE : la prairie, le joueur, et la lumière de l'heure. Rien d'autre. */
+if(FERME_VIERGE){const pxV=Math.round((joueur.x-camX)*ECH)/ECH, pyV=Math.round((joueur.y-camY)*ECH)/ECH;nettoyerBulles();
+const pileV=[{y:joueur.y,f:()=>{try{const m=ctx.getTransform();JOUEUR_ECRAN={x:m.a*pxV+m.e,y:m.d*(pyV-18)+m.f,sc:m.a/3};}catch(x){}
+return personne(ctx,pxV,pyV,e.ap,(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche);}}];
+for(const [,a] of AUTRES){const ax2=a.x-camX, ay2=a.y-camY;if(ax2<-40||ay2<-70||ax2>VW+40||ay2>VH+40)continue;pileV.push({y:a.y,f:()=>dessinerUnAutre(ctx,a,camX,camY)});}
+pileV.sort((a,b)=>a.y-b.y);for(const p of pileV)p.f();
+dessinerBulles(ctx,camX,camY,pxV,pyV);dessinerTextes(ctx,camX,camY);ambiance(ctx);ctx.setTransform(1,0,0,1,0,0);return;}
 /* ================= LE VERGER =================
    IL SE DESSINE ICI, ET NULLE PART AILLEURS. Il était accroché à
    dessinerDecor — comme le potager l'était pour ses planches — alors que
@@ -19806,7 +19849,15 @@ const v=Math.hypot(vx,vy);
 if(v>1.2){
 const nx=(+joueur.x||0)+vxMoy*dt, ny=(+joueur.y||0)+vyMoy*dt;
 let ax=+joueur.x||0, ay=+joueur.y||0;
-if(CHAMPS_SEULS&&CARTE==='village'){
+if(FERME_VIERGE&&CARTE==='village'){
+/* LA FERME VIERGE : on marche partout dans la prairie. Le bord droit, à mi-hauteur,
+   mène toujours au port. */
+const versPort=(ny>MONDE_H/2-60&&ny<MONDE_H/2+60);
+ax=Math.max(16,Math.min(versPort?MONDE_L+40:MONDE_L-16,nx));ay=Math.max(26,Math.min(MONDE_H-10,ny));
+if(versPort&&ax>MONDE_L-6&&!PARTIR_AU_PORT){PARTIR_AU_PORT=true;
+try{texteVolant(joueur.x,joueur.y-40,'Direction le port…','#f0cf7d');}catch(x){}try{sauver();}catch(x){}
+setTimeout(()=>{const v=(window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'');location.href='jeu.html?carte=extramar&arrivee=1&de=village'+v;},620);}
+}else if(CHAMPS_SEULS&&CARTE==='village'){
 /* À LA FERME, ON MARCHE. Pas de décor, pas de grille, pas de collision :
    on se contente de rester dans le carré de la carte. */
 /* LE PASSAGE : sur la trouée, la limite de droite est levée. Au-delà, on
@@ -23135,6 +23186,7 @@ let PET=null;
    contre Marius, le jeu entre amis par canal, l'Edge Function — tournait
    dans le vide depuis. Elle regarde maintenant les deux terrains. */
 function dansLeBoulodrome(){
+if(typeof FERME_VIERGE!=='undefined'&&FERME_VIERGE&&CARTE==='village')return false;
 const B=(CARTE==='extramar')?XP.boulo
 :((typeof CHAMPS_SEULS!=='undefined'&&CHAMPS_SEULS&&CARTE==='village'
    &&typeof BOULO!=='undefined')?BOULO:null);
@@ -28853,7 +28905,7 @@ if(CARTE==='foret'){joueur.x=F_SENT_ARRIVEE[0];joueur.y=F_SENT_ARRIVEE[1];joueur
    texte : « 600 » + 12 donnait « 60012 », et la collision barrait tout. */
 joueur.x=+joueur.x||0;joueur.y=+joueur.y||0;
 if(CHAMPS_SEULS&&CARTE==='village'&&!(joueur.x>BORD+6&&joueur.x<MONDE_L-BORD-6&&joueur.y>BORD+20&&joueur.y<MONDE_H-BORD-6)){
-joueur.x=600;joueur.y=600;e.x=600;e.y=600;e.ext=null;e.extc=null;try{sauver();}catch(x){}}
+joueur.x=FERME_VIERGE?MONDE_L/2:600;joueur.y=FERME_VIERGE?MONDE_H/2:600;e.x=joueur.x;e.y=joueur.y;e.ext=null;e.extc=null;try{sauver();}catch(x){}}
 if(FORET_SEULE&&CARTE==='village'){
 const deMetro=new URLSearchParams(location.search).has('arrivee');
 if(deMetro||joueur.x<FZ.x0+12||joueur.x>rivX(joueur.y)-30||joueur.y<FZ.y0+14||joueur.y>FZ.y1-10){joueur.x=214;joueur.y=372;}   /* on sort de la gare de la forêt */
@@ -29365,7 +29417,7 @@ async function potCharger(){if(PLACE_SEULE||CARTE!=='village'||!e.id)return;
 if(POT_ENVOL)return;POT_ENVOL=true;
 try{potAdopter(await appelRPC('pot_etat',{p_joueur:e.id}));}catch(x){}
 finally{POT_ENVOL=false;}}
-function potProche(){if(CARTE!=='village'||PLACE_SEULE||CHAMP_LIBRE)return null;
+function potProche(){if(CARTE!=='village'||PLACE_SEULE||CHAMP_LIBRE||FERME_VIERGE)return null;
 /* ON VÉRIFIE D'ABORD LE CARRÉ ENTIER. Sans ce garde-fou, une erreur de
    coordonnées fait apparaître « Semer » en plein pré, loin du potager. */
 if(POT_NEUF()){
@@ -33586,6 +33638,7 @@ return false;}
    la case : une case fait 112 × 98, la cuvette 52 × 20. Sans ça, « Planter »
    s'allumerait sur la moitié du verger à la fois. */
 function verProche(){
+if(FERME_VIERGE)return null;
 if(CARTE!=='village'||PLACE_SEULE||typeof CHAMPS_SEULS==='undefined'||!CHAMPS_SEULS)return null;
 if(joueur.x<VER.x0-30||joueur.x>VER.x0+VER.L+30)return null;
 if(joueur.y<VER.y0-30||joueur.y>VER.y0+VER.H+30)return null;
@@ -34211,7 +34264,7 @@ majAction=function(){if(CHAMP_LIBRE&&chPres()){try{const b2=cible();if(b2&&(b2.o
 const ec=Math.max(0,Math.abs(b2.x-joueur.x)-demi), dd=Math.hypot(ec,(joueur.y-b2.y)*0.8);if(dd<26)return chMajVrai();}}catch(x){}
 try{plaqueVrai=$('action');plaqueFeinte.classList.remove('on');}catch(x){}return;}
 return chMajVrai();};
-if(typeof CHAMPS_SEULS!=='undefined'&&CHAMPS_SEULS&&CARTE==='village'){CHAMP_LIBRE=true;
+if(typeof CHAMPS_SEULS!=='undefined'&&CHAMPS_SEULS&&CARTE==='village'&&!FERME_VIERGE){CHAMP_LIBRE=true;
 const go=()=>{if(e.id)chCharger();else setTimeout(go,1500);};go();
 setInterval(()=>{if(document.visibilityState==='visible')chCharger();},90000);}
 </script>
