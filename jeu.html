@@ -10612,7 +10612,7 @@ function surLeSentier(x,y,marge){
   return false;}
 const SOL_CACHE={pret:false,sol:null,fin:null};
 const cleSol=()=>'sol:'+(typeof MA_VERSION!=='undefined'?MA_VERSION:'?')+':'+CARTE+':'+
-(typeof MODE_VIL!=='undefined'?MODE_VIL:'-')+':'+MONDE_L+'x'+MONDE_H+((typeof FERME_VIERGE!=='undefined'&&FERME_VIERGE)?':cloture1':'');
+(typeof MODE_VIL!=='undefined'?MODE_VIL:'-')+':'+MONDE_L+'x'+MONDE_H+((typeof FERME_VIERGE!=='undefined'&&FERME_VIERGE)?':champ1':'');
 function baseSol(){return new Promise((ok,ko)=>{try{const r=indexedDB.open('bdl-sol',1);r.onupgradeneeded=()=>r.result.createObjectStore('s');r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error);}catch(x){ko(x);}});}
 async function chargerSolCache(){if(CARTE==='tokyo')return;try{const db=await baseSol();const v=await new Promise(ok=>{const q=db.transaction('s').objectStore('s').get(cleSol());q.onsuccess=()=>ok(q.result);q.onerror=()=>ok(null);});
 if(!v||!v.sol)return;/* createImageBitmap manque sur les vieux Safari : on repasse par une image. */
@@ -10774,6 +10774,7 @@ const FL=[[240,236,220],[236,214,90],[220,120,130],[170,160,220],[90,130,210]];
 for(let y=4;y<H-4;y++)for(let x=4;x<W-4;x++){const co=vn(x,y,60,18);if(hh(x,y,20)>=0.0016+co*0.006)continue;
 const f=FL[Math.floor(hh(x,y,22)*FL.length)];g.fillStyle='rgb(70,110,50)';g.fillRect(x,y,1,2);g.fillStyle='rgb('+f[0]+','+f[1]+','+f[2]+')';
 if(hh(x,y,24)<0.3){g.fillRect(x-1,y-2,3,1);g.fillRect(x,y-3,1,3);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x,y-2,1,1);}else g.fillRect(x,y-2,1,1);}
+try{peindreCheminsFerme(g,W,H);}catch(x){}
 try{peindreClotureFerme(g,W,H);}catch(x){}
 return c;}
 function construireSolPre(){
@@ -16513,6 +16514,7 @@ if(FERME_VIERGE){const pxV=Math.round((joueur.x-camX)*ECH)/ECH, pyV=Math.round((
 const pileV=[{y:joueur.y,f:()=>{try{const m=ctx.getTransform();JOUEUR_ECRAN={x:m.a*pxV+m.e,y:m.d*(pyV-18)+m.f,sc:m.a/3};}catch(x){}
 return personne(ctx,pxV,pyV,e.ap,(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche);}}];
 for(const [,a] of AUTRES){const ax2=a.x-camX, ay2=a.y-camY;if(ax2<-40||ay2<-70||ax2>VW+40||ay2>VH+40)continue;pileV.push({y:a.y,f:()=>dessinerUnAutre(ctx,a,camX,camY)});}
+try{if(CHAMP_LIBRE)chDessinFerme(ctx,camX,camY,VW,VH,pileV);}catch(x){}
 try{fmDessinerMaison(ctx,camX,camY,pileV);}catch(x){}
 pileV.sort((a,b)=>a.y-b.y);for(const p of pileV)p.f();
 dessinerBulles(ctx,camX,camY,pxV,pyV);dessinerTextes(ctx,camX,camY);ambiance(ctx);ctx.setTransform(1,0,0,1,0,0);return;}
@@ -34065,7 +34067,7 @@ if(cle!==VER_CLE){VER_CLE=cle;VER_SALE=true;}},3000);
    de vingt-quatre planches, au même endroit : chaque ancienne planche
    est devenue trois cases plantées de la même chose.
    ===================================================================== */
-const CH_T=20, CH_X0=138, CH_Y0=511, CH_C=45, CH_R=9;
+const CH_T=20, CH_X0=FERME_VIERGE?230:138, CH_Y0=FERME_VIERGE?440:511, CH_C=FERME_VIERGE?30:45, CH_R=FERME_VIERGE?20:9;   /* la nouvelle ferme : un carré de 30 x 20 cases, à gauche du chemin */
 let CH={t:{},max:40,meteo:null,decal:0,charge:false,sale:true,sol:null}, CH_OUTIL='houe', CH_GRAINE='radis', CH_ENVOL=false, CH_DERN=null, CH_TENIR=null;
 const chCle=(c,r)=>c+','+r;
 const chNow=()=>Date.now()+CH.decal;
@@ -34180,7 +34182,7 @@ if(CHAMP_LIBRE&&CH.charge){const now=Date.now(), dt=Math.min(60,now-(CH_PREC||no
 const W=CH_C*CH_T, H=CH_R*CH_T;
 if(CH_X0+W-camX>-10&&CH_X0-camX<VW2+10&&CH_Y0+H-camY>-30&&CH_Y0-camY<VH2+30){
 if(CH.sale||!CH.sol){CH.sol=chGraverSol();CH.sale=false;}
-g.drawImage(CH.sol,Math.round(CH_X0-camX),Math.round(CH_Y0-camY),W,H);chPiquets(g,camX,camY);
+g.drawImage(CH.sol,Math.round(CH_X0-camX),Math.round(CH_Y0-camY),W,H);if(!FERME_VIERGE)chPiquets(g,camX,camY);
 const ci=chPres()?chCible():null;
 if(ci){const x=CH_X0+ci.c*CH_T-camX, y=CH_Y0+ci.r*CH_T-camY, T=CH.t[chCle(ci.c,ci.r)], ok=!(CH_OUTIL==='houe'&&T)||(T&&chStade(T)===3);
 const co=ok?'rgba(255,246,190,.95)':'rgba(255,255,255,.4)', L=4;
@@ -34263,7 +34265,7 @@ majAction=function(){if(CHAMP_LIBRE&&chPres()){try{const b2=cible();if(b2&&(b2.o
 const ec=Math.max(0,Math.abs(b2.x-joueur.x)-demi), dd=Math.hypot(ec,(joueur.y-b2.y)*0.8);if(dd<26)return chMajVrai();}}catch(x){}
 try{plaqueVrai=$('action');plaqueFeinte.classList.remove('on');}catch(x){}return;}
 return chMajVrai();};
-if(typeof CHAMPS_SEULS!=='undefined'&&CHAMPS_SEULS&&CARTE==='village'&&!FERME_VIERGE){CHAMP_LIBRE=true;
+if(typeof CHAMPS_SEULS!=='undefined'&&CHAMPS_SEULS&&CARTE==='village'){CHAMP_LIBRE=true;
 const go=()=>{if(e.id)chCharger();else setTimeout(go,1500);};go();
 setInterval(()=>{if(document.visibilityState==='visible')chCharger();},90000);}
 /* =====================================================================
@@ -34361,6 +34363,35 @@ ctx.globalAlpha=1;
 /* la nuit, les fenêtres s'allument */
 try{const ci=cielDuMoment();if(ci&&ci.lampes>0.4){ctx.save();ctx.globalAlpha=Math.min(1,ci.lampes)*0.85;ctx.globalCompositeOperation='lighter';
 for(const [fx,fy] of FM_FENETRES){ctx.fillStyle='rgba(255,190,90,.75)';ctx.fillRect(X+fx*FM_K-camX,Y+fy*FM_K-camY,28*FM_K,36*FM_K);}ctx.restore();}}catch(x){}}});}
+
+/* =====================================================================
+   LES CHEMINS DE TERRE ET LA BORDURE DU CHAMP (peints dans le sol)
+   Un chemin part de la porte de la longère et descend tout droit ; un
+   second le croise plus bas. Le champ (30 x 20 cases) est à gauche du
+   chemin, juste sous la maison, entouré de planches basses.
+   ===================================================================== */
+function peindreCheminsFerme(g,W,Hm){
+const h=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
+const terre=(x0,y0,x1,y1)=>{for(let y=y0-3;y<y1+3;y++)for(let x=x0-3;x<x1+3;x++){
+const bord=Math.min(x-x0,x1-1-x,y-y0,y1-1-y);if(bord<0&&h(x,y,61)<0.55)continue;if(bord<2&&h(x,y,62)<0.25)continue;
+const n=h(x,y,63);g.fillStyle=n<.3?'#b89868':(n<.75?'#c4a474':(n<.93?'#d0b282':'#a88858'));g.fillRect(x,y,1,1);}
+for(let i=0;i<(x1-x0)*(y1-y0)/90;i++){const x=x0+h(i,1,64)*(x1-x0),y=y0+h(i,2,65)*(y1-y0);g.fillStyle=h(i,3,66)<.5?'#8a7a68':'#e0d0b0';g.fillRect(x|0,y|0,h(i,4,67)<.3?2:1,1);}
+/* des touffes d'herbe qui débordent sur les bords */
+for(let i=0;i<(x1-x0+y1-y0)/3;i++){const t=h(i,5,68);let x,y;if(t<.5){x=x0+h(i,6,69)*(x1-x0);y=h(i,7,70)<.5?y0+1:y1-2;}else{y=y0+h(i,6,71)*(y1-y0);x=h(i,7,72)<.5?x0+1:x1-2;}
+g.fillStyle='#5f8a3c';g.fillRect(x|0,(y|0)-2,1,3);g.fillStyle='#7aa84e';g.fillRect((x|0)+1,(y|0)-1,1,2);}};
+const cx=Math.round(W/2);
+terre(cx-22,312,cx+22,1700);                 /* de la porte vers le bas */
+terre(150,960,W-150,1000);                   /* le chemin qui croise */
+terre(cx-34,300,cx+34,330);                  /* le seuil devant la porte */
+/* la bordure du champ : planches basses, piquets aux angles */
+const X0=230-5,Y0=440-5,X1=230+600+5,Y1=440+400+5;
+const planche=(x,y,w,hh)=>{g.fillStyle='#7a5232';g.fillRect(x,y,w,hh);g.fillStyle='#a8784a';if(w>hh)g.fillRect(x,y,w,1);else g.fillRect(x,y,1,hh);g.fillStyle='rgba(0,0,0,.18)';if(w>hh)g.fillRect(x,y+hh,w,1);else g.fillRect(x+w,y,1,hh);};
+planche(X0,Y0,X1-X0,4);planche(X0,Y1-4,X1-X0,4);planche(X0,Y0,4,Y1-Y0);planche(X1-4,Y0,4,Y1-Y0);
+for(const[x,y] of [[X0,Y0],[X1-4,Y0],[X0,Y1-4],[X1-4,Y1-4]]){g.fillStyle='#5a3a22';g.fillRect(x-1,y-4,6,8);g.fillStyle='#c89a62';g.fillRect(x-1,y-4,6,1);}
+/* le passage entre le chemin et le champ */
+terre(X1-2,620,cx-22,660);
+/* le panneau « Le champ » */
+const px=X1-60,py=Y0-26;g.fillStyle='#6a4a2a';g.fillRect(px+18,py+10,3,16);g.fillStyle='#b8804a';g.fillRect(px,py,40,13);g.fillStyle='#d8a46a';g.fillRect(px,py,40,1);g.fillStyle='#5a3418';g.fillRect(px+5,py+4,30,1);g.fillRect(px+5,py+8,20,1);}
 </script>
 </body>
 </html>
