@@ -15215,7 +15215,7 @@ if(CHAMPS_SEULS&&CARTE==='village'){
 /* LA FERME : deux bâtiments, et rien d'autre. Le métro plein nord, la
    graineterie au centre, le potager au sud : l'axe de la ferme. */
 DECOR=[];
-if(FERME_VIERGE){DECOR.push({t:'x_madeleine',bati:true,ouvre:'bqFerme',x:330,y:948,demi:60});invaliderGrille();return;}   /* l'étal de Madeleine : sa porte, pour la plaque jaune */
+if(FERME_VIERGE){DECOR.push({t:'x_madeleine',bati:true,ouvre:'bqFerme',x:330,y:948,demi:60});DECOR.push({t:'metro',x:1585,y:950,demi:28});invaliderGrille();return;}   /* l'étal de Madeleine : sa porte, pour la plaque jaune */
 /* (l'ancienne gare du nord laisse la place à la halte, près de La Récolte) */
 /* ================= LE GRAND POULAILLER =================
    Le vocabulaire de l'ancien — pilotis, bardage vertical à trois tons,
@@ -16520,6 +16520,7 @@ try{fmDessinerMaison(ctx,camX,camY,pileV);}catch(x){}
 try{fmDessinerEtal(ctx,camX,camY,pileV);}catch(x){}
 try{fmDessinerLampes(ctx,camX,camY,pileV);}catch(x){}
 try{fmDessinerDeco(ctx,camX,camY,pileV);}catch(x){}
+try{fmDessinerMetro(ctx,camX,camY,pileV);}catch(x){}
 pileV.sort((a,b)=>a.y-b.y);for(const p of pileV)p.f();
 dessinerBulles(ctx,camX,camY,pxV,pyV);dessinerTextes(ctx,camX,camY);ambiance(ctx);ctx.setTransform(1,0,0,1,0,0);return;}
 /* ================= LE VERGER =================
@@ -34341,6 +34342,8 @@ if(fmDansEtal(x,y))return true;
 if(fmDansLampe(x,y))return true;
 /* les chênes et les bancs */
 if(fmDansDeco(x,y))return true;
+/* la bouche de métro et son totem */
+if((x>1585-30&&x<1585+30&&y>950-32&&y<950+3)||(Math.abs(x-1545)<4&&y>947&&y<953))return true;
 /* la boîte aux lettres, sur son poteau : on la contourne */
 return x>X+300*FM_K-5&&x<X+320*FM_K+5&&y>B-8&&y<B+5;}
 function peindreClotureFerme(g,W,Hm){
@@ -34757,6 +34760,26 @@ for(const [x0,y0] of FM_CHENES){const w=170*K,h=200*K, X=x0-85*K, Y=y0-192*K;if(
 pile.push({y:y0,f:()=>ctx.drawImage(FM_CHENE_IMG,Math.round(X-camX),Math.round(Y-camY),w,h)});}
 for(const [x0,y0] of FM_BANCS){const w=80*K,h=52*K, X=x0-40*K, Y=y0-48*K;if(X+w-camX<-10||X-camX>VW+10||Y+h-camY<-10||Y-camY>VH+10)continue;
 pile.push({y:y0,f:()=>ctx.drawImage(FM_BANC_IMG,Math.round(X-camX),Math.round(Y-camY),w,h)});}}
+
+/* =====================================================================
+   LA STATION DE MÉTRO « FERME » : bouche moderne (muret de pierre claire,
+   rampe inox, escalier, totem M bleu), au-dessus du chemin qui croise,
+   côté est — posée comme l'étal de Madeleine. La plaque jaune « Prendre
+   le métro » vient de l'objet metro posé dans DECOR.
+   ===================================================================== */
+function fmDessinerMetro(ctx,camX,camY,pile){const cx=1585, sol=950, x0=cx-camX, y0=sol-camY;if(x0<-80||x0>VW+80||y0<-110||y0>VH+20)return;
+pile.push({y:sol,f:()=>{const R=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(Math.round((x0+x)*2)/2,Math.round((y0+y)*2)/2,w,h);};
+R(-30,-1,62,3,'rgba(0,0,0,.22)');
+R(-28,-30,56,30,'#c9c3b4');R(-24,-28,48,28,'#3a3832');
+for(let k=0;k<7;k++){const yy=-28+k*4;R(-24,yy,48,4,k%2?'#4a4844':'#5a5852');R(-24,yy,48,1,'#7a7872');}
+try{const gr=ctx.createLinearGradient(0,y0-28,0,y0);gr.addColorStop(0,'rgba(10,12,20,0)');gr.addColorStop(1,'rgba(10,12,20,.7)');ctx.fillStyle=gr;ctx.fillRect(x0-24,y0-28,48,28);}catch(x){}
+R(-28,-30,56,3,'#e2dccd');R(-28,-30,3,30,'#e2dccd');R(25,-30,3,30,'#b0aa9c');
+R(-28,-38,56,1.2,'#f4f6f8');R(-28,-36.8,56,0.8,'#9aa3aa');for(let k=0;k<=56;k+=7)R(-28+k,-38,1,8,'#b9c1c7');R(-29,-38,1,38,'#b9c1c7');R(28,-38,1,38,'#b9c1c7');
+const t=-40;R(t-1.5,-74,3,74,'#5d6770');R(t-1,-74,1,74,'#8a949c');R(t-9,-92,18,18,'#1d4f9a');R(t-9,-92,18,1,'#4d7fc8');R(t-9,-75,18,1,'#12356a');
+R(t-6,-88,2,11,'#fff');R(t+4,-88,2,11,'#fff');R(t-4,-87,2,2,'#fff');R(t-3,-85,2,2,'#fff');R(t+1,-85,2,2,'#fff');R(t+2,-87,2,2,'#fff');
+R(t-13,-71,26,8,'#12356a');ctx.fillStyle='#fff';ctx.font='bold 5px sans-serif';ctx.textAlign='center';ctx.fillText('FERME',x0+t,y0-65.5);
+R(t-4,-61,9,4,'#1d4f9a');R(t-3,-60,3,2,'#fff');R(t+1,-60,3,2,'#e8c06a');
+try{const ci=cielDuMoment();if(ci&&ci.lampes>0.05){ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=Math.min(1,ci.lampes)*0.6;ctx.fillStyle='rgba(120,170,255,.8)';ctx.fillRect(x0+t-9,y0-92,18,18);ctx.restore();lueurNuit(ctx,x0+t,y0-40,52,'rgba(170,200,255,1)');}}catch(x){}}});}
 </script>
 </body>
 </html>
