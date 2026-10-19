@@ -16514,6 +16514,7 @@ if(FERME_VIERGE){const pxV=Math.round((joueur.x-camX)*ECH)/ECH, pyV=Math.round((
 const pileV=[{y:joueur.y,f:()=>{try{const m=ctx.getTransform();JOUEUR_ECRAN={x:m.a*pxV+m.e,y:m.d*(pyV-18)+m.f,sc:m.a/3};}catch(x){}
 return personne(ctx,pxV,pyV,e.ap,(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche);}}];
 for(const [,a] of AUTRES){const ax2=a.x-camX, ay2=a.y-camY;if(ax2<-40||ay2<-70||ax2>VW+40||ay2>VH+40)continue;pileV.push({y:a.y,f:()=>dessinerUnAutre(ctx,a,camX,camY)});}
+try{const m=ctx.getTransform();window.FM_VUE={a:m.a,d:m.d,e:m.e,f:m.f,camX,camY};}catch(x){}
 try{if(CHAMP_LIBRE)chDessinFerme(ctx,camX,camY,VW,VH,pileV);}catch(x){}
 try{fmDessinerMaison(ctx,camX,camY,pileV);}catch(x){}
 pileV.sort((a,b)=>a.y-b.y);for(const p of pileV)p.f();
@@ -34088,6 +34089,7 @@ automne:['citrouille','pommes_terre','oignons','ble','safran','carottes'],hiver:
 const chDeSaison=(k)=>!!(CH.meteo&&(chSaisons[CH.meteo.saison]||[]).includes(k));
 const CH_SAISON_NOM={printemps:'🌸 Printemps',ete:'☀️ Été',automne:'🍂 Automne',hiver:'❄️ Hiver'};
 /* LE GESTE, sur une case. Optimiste : la case change tout de suite, le serveur confirme. */
+let CH_ICI=null, CH_MUET=false, CH_CUMUL=0;const chTx=()=>CH_ICI?CH_ICI.x:joueur.x, chTy=()=>CH_ICI?CH_ICI.y:joueur.y;
 async function chGeste(c,r){
 const k=chCle(c,r), T=CH.t[k], s=chStade(T);let outil=CH_OUTIL;
 if(T&&T.cult&&s===3)outil='faux';                       /* ce qui est mûr se récolte, quel que soit l'outil */
@@ -34096,14 +34098,14 @@ const T2=CH.t[k];
 if(outil==='houe'&&T2)return;
 if(outil==='graine'&&(!T2||T2.cult))return;
 if(outil==='eau'&&(!T2||T2.eau))return;
-if(outil==='faux'&&(!T2||(T2.cult&&chStade(T2)<3))){if(T2&&T2.cult)texteVolant(joueur.x,joueur.y-56,'Pas encore mûr','#fff3d0');return;}
-if(outil==='graine'){if(!potLibre(CH_GRAINE)){texteVolant(joueur.x,joueur.y-56,'Graine à débloquer chez Madeleine','#ffe8a0');return;}
-if((e.euros||0)<chPrix(CH_GRAINE)){texteVolant(joueur.x,joueur.y-56,'Pas assez d’argent','#ffe8a0');return;}}
+if(outil==='faux'&&(!T2||(T2.cult&&chStade(T2)<3))){if(T2&&T2.cult)texteVolant(chTx(),chTy()-56,'Pas encore mûr','#fff3d0');return;}
+if(outil==='graine'){if(!potLibre(CH_GRAINE)){texteVolant(chTx(),chTy()-56,'Graine à débloquer chez Madeleine','#ffe8a0');return;}
+if((e.euros||0)<chPrix(CH_GRAINE)){texteVolant(chTx(),chTy()-56,'Pas assez d’argent','#ffe8a0');return;}}
 await chEnvoyer(c,r,outil==='faux'&&T2&&!T2.cult?'arracher':outil);}
 async function chEnvoyer(c,r,outil){
 const k=chCle(c,r), avant=CH.t[k]?Object.assign({},CH.t[k]):null, now=new Date(chNow()).toISOString();
 /* l'effet tout de suite */
-if(outil==='houe'){if(chNb()>=CH.max){texteVolant(joueur.x,joueur.y-56,'Champ plein ('+CH.max+' cases) · agrandis-le','#ffe8a0');chOuvrirGraines();return;}
+if(outil==='houe'){if(chNb()>=CH.max){texteVolant(chTx(),chTy()-56,'Champ plein ('+CH.max+' cases) · agrandis-le','#ffe8a0');chOuvrirGraines();return;}
 CH.t[k]={c,r,cult:null,eau:!!(CH.meteo&&CH.meteo.pluie)};potGeste('houe');vibrer(10);chPoussiere(c,r,'#8e7550');}
 else if(outil==='graine'){const m=POT_CULT[CH_GRAINE][2]*60000*(chDeSaison(CH_GRAINE)?0.75:1)*(CH.t[k].eau?1:2);
 CH.t[k]=Object.assign({},CH.t[k],{cult:CH_GRAINE,t0:now,mur_a:new Date(chNow()+m).toISOString()});e.euros=(e.euros||0)-chPrix(CH_GRAINE);try{majHaut();}catch(x){}vibrer(8);chPoussiere(c,r,'#6a9a3a');}
@@ -34114,13 +34116,13 @@ else if(outil==='arracher'){delete CH.t[k];vibrer(8);chPoussiere(c,r,'#7d9450');
 CH.sale=true;chMajBarre();
 const d=await appelRPC('champ_geste',{p_joueur:e.id,p_c:c,p_r:r,p_outil:outil,p_cult:outil==='graine'?CH_GRAINE:null});
 if(!d||d.erreur){if(avant)CH.t[k]=avant;else delete CH.t[k];CH.sale=true;chMajBarre();
-const er=d&&d.erreur;texteVolant(joueur.x,joueur.y-58,er==='pas_assez'?'Pas assez d’argent':er==='sac_plein'?'Inventaire plein : va vendre à la boutique':er==='max'?'Champ plein · agrandis-le':er==='verrou'?'Graine à débloquer':er==='pas_mur'?'Pas encore mûr':'Réessaie dans un instant','#ffd0a0');
+const er=d&&d.erreur;texteVolant(chTx(),chTy()-58,er==='pas_assez'?'Pas assez d’argent':er==='sac_plein'?'Inventaire plein : va vendre à la boutique':er==='max'?'Champ plein · agrandis-le':er==='verrou'?'Graine à débloquer':er==='pas_mur'?'Pas encore mûr':'Réessaie dans un instant','#ffd0a0');
 if(er==='pas_assez'||er==='graine'||er==='verrou')try{lireSacServeur();}catch(x){}return;}
 if(d.tuile)CH.t[k]=d.tuile;else delete CH.t[k];
 if(typeof d.euros==='number'){e.euros=d.euros;try{majHaut();}catch(x){}}
-if(outil==='faux'){const nom=avant&&POT_CULT[avant.cult]?POT_CULT[avant.cult][0]:'';
+if(outil==='faux'){if(d.nb)CH_CUMUL+=d.nb;const nom=avant&&POT_CULT[avant.cult]?POT_CULT[avant.cult][0]:'';
 if(d.sac){e.sac=d.sac;try{sauver();majHaut();}catch(x){}}
-texteVolant(joueur.x,joueur.y-58,d.nb?('+'+d.nb+' '+nom):(d.gerbe?'+1 gerbe pour tes poules':'Blé fauché'),'#ffe070');try{jouer('vente','moment');}catch(x){}}
+if(!CH_MUET)texteVolant(chTx(),chTy()-58,d.nb?('+'+d.nb+' '+nom):(d.gerbe?'+1 gerbe pour tes poules':'Blé fauché'),'#ffe070');try{jouer('vente','moment');}catch(x){}}
 CH.sale=true;chMajBarre();}
 /* ================= LE DESSIN ================= */
 function chGraverSol(){const W=CH_C*CH_T, H=CH_R*CH_T, D=2, c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');
@@ -34178,6 +34180,7 @@ PX(g,sx,sy,1.5,1,['#d8782a','#e8a83a','#b8502a'][i%3]);}}
 else if(sa==='printemps'){for(let i=0;i<7;i++){const sx=(PR_h(i,7,91)*VW2+t*0.01+Math.sin(t/700+i)*6)%(VW2+20)-10, sy=(PR_h(i,8,93)*VH2+t*0.014)%(VH2+10)-5;PX(g,sx,sy,1,1,'#ffd0e0');}}}
 let CH_PREC=0;
 function chDessinFerme(g,camX,camY,VW2,VH2,acteurs){
+if(FERME_VIERGE){if(CHAMP_LIBRE&&CH.charge){const now=Date.now(), dt=Math.min(60,now-(CH_PREC||now));CH_PREC=now;chAmbiance(dt);fmDessinerParcelles(g,camX,camY,VW2,VH2,acteurs);acteurs.push({y:1e9,f:()=>chDessinAmbiance(g,camX,camY,VW2,VH2)});}return;}
 if(CHAMP_LIBRE&&CH.charge){const now=Date.now(), dt=Math.min(60,now-(CH_PREC||now));CH_PREC=now;chAmbiance(dt);
 const W=CH_C*CH_T, H=CH_R*CH_T;
 if(CH_X0+W-camX>-10&&CH_X0-camX<VW2+10&&CH_Y0+H-camY>-30&&CH_Y0-camY<VH2+30){
@@ -34258,7 +34261,7 @@ if(bt.dataset.o==='graine'){bt.querySelector('span').innerHTML=chIconeGraine(CH_
 const o=CH_OUTILS.find(x=>x[0]===CH_OUTIL);$('chGo').querySelector('span').innerHTML=CH_OUTIL==='graine'?chIconeGraine(CH_GRAINE):o[1];
 const M=CH.meteo, inf=$('chInfo');inf.textContent=(M?CH_SAISON_NOM[M.saison]+(M.pluie?' · 🌧️ Il pleut : tout est arrosé':' · ☀️ Beau temps'):'')+' · '+chNb()+'/'+CH.max+' cases';}
 /* la barre n'apparaît qu'au bord du champ, et la plaque d'action s'efface */
-setInterval(()=>{if(!CHAMP_LIBRE)return;chMonterBarre();const on=chPres()&&CH.charge&&!document.querySelector('#pan.on,#page2.on');$('chBarre').classList.toggle('on',on);
+setInterval(()=>{if(!CHAMP_LIBRE||FERME_VIERGE)return;chMonterBarre();const on=chPres()&&CH.charge&&!document.querySelector('#pan.on,#page2.on');$('chBarre').classList.toggle('on',on);
 if(on){try{plaqueVrai=$('action');plaqueFeinte.classList.remove('on');}catch(x){}}},200);
 const chMajVrai=majAction;
 majAction=function(){if(CHAMP_LIBRE&&chPres()){try{const b2=cible();if(b2&&(b2.ouvre||b2.t==='comptoir')){const demi=b2.demi||40;
@@ -34392,6 +34395,158 @@ for(const[x,y] of [[X0,Y0],[X1-4,Y0],[X0,Y1-4],[X1-4,Y1-4]]){g.fillStyle='#5a3a2
 terre(X1-2,620,cx-22,660);
 /* le panneau « Le champ » */
 const px=X1-60,py=Y0-26;g.fillStyle='#6a4a2a';g.fillRect(px+18,py+10,3,16);g.fillStyle='#b8804a';g.fillRect(px,py,40,13);g.fillStyle='#d8a46a';g.fillRect(px,py,40,1);g.fillStyle='#5a3418';g.fillRect(px+5,py+4,30,1);g.fillRect(px+5,py+8,20,1);}
+
+/* =====================================================================
+   LES PARCELLES, AU DOIGT
+   Une parcelle = un carré de 2 x 2 cases du champ (le serveur ne change
+   pas : chaque geste part case par case). Plus de barre d'outils :
+   - on touche une parcelle vide : les graines s'ouvrent au-dessus, on
+     en touche une (ou on la fait glisser sur plusieurs parcelles) ;
+   - ce qui est mûr : on touche et on glisse, ça récolte ;
+   - ce qui a soif : on touche et on glisse, ça arrose ;
+   - la parcelle en pointillés « + » : une nouvelle parcelle.
+   ===================================================================== */
+const FP_L=40, FP_COLS=15, FP_ROWS=10;
+const fpOrdre=(k)=>({i:(k%6)+6*Math.floor(k/60), j:Math.floor(k/6)%10});   /* on remplit par blocs de 6 de large */
+const fpX=(i)=>230+i*FP_L, fpY=(j)=>440+j*FP_L;
+const fpSpots=(i,j)=>[[2*i,2*j],[2*i+1,2*j],[2*i,2*j+1],[2*i+1,2*j+1]];
+const fpTuiles=(i,j)=>fpSpots(i,j).map(([c,r])=>CH.t[c+','+r]||null);
+const fpExiste=(i,j)=>fpTuiles(i,j).some(Boolean);
+function fpEtat(i,j){const T=fpTuiles(i,j);let mur=0,soif=0,vide=0,pousse=0,fin=0;
+T.forEach(t=>{if(!t||!t.cult){vide++;return;}const st=chStade(t);if(st===3)mur++;else{pousse++;if(!t.eau)soif++;fin=Math.max(fin,new Date(t.mur_a).getTime());}});
+return {mur,soif,vide,pousse,fin};}
+function fpProchaine(){for(let k=0;k<FP_COLS*FP_ROWS;k++){const o=fpOrdre(k);if(!fpExiste(o.i,o.j))return o;}return null;}
+function fpSous(wx,wy){const i=Math.floor((wx-230)/FP_L), j=Math.floor((wy-440)/FP_L);if(i<0||j<0||i>=FP_COLS||j>=FP_ROWS)return null;
+const lx=wx-fpX(i), ly=wy-fpY(j);if(lx<1||ly<1||lx>FP_L-1||ly>FP_L-1)return null;return {i,j};}
+function fpMonde(cx,cy){const V=window.FM_VUE, cv=$('cv');if(!V||!cv)return null;const r=cv.getBoundingClientRect(), k=cv.width/r.width;
+return {x:((cx-r.left)*k-V.e)/V.a+V.camX, y:((cy-r.top)*k-V.f)/V.d+V.camY};}
+function fpEcran(wx,wy){const V=window.FM_VUE, cv=$('cv');if(!V||!cv)return null;const r=cv.getBoundingClientRect(), k=cv.width/r.width;
+return {x:((wx-V.camX)*V.a+V.e)/k+r.left, y:((wy-V.camY)*V.d+V.f)/k+r.top};}
+/* ---------- le dessin ---------- */
+function fpCadre(g,x,y,w,h){PX(g,x-0.5,y+h,w+1,2,'rgba(0,0,0,.2)');PX(g,x,y,w,h,'#7a5232');PX(g,x,y,w,1,'#b8885a');PX(g,x,y+h-1.5,w,1.5,'#583820');PX(g,x,y,1,h,'#9a6a3e');PX(g,x+w-1,y,1,h,'#5e3c20');}
+function fpTerre(g,x,y,w,h,t){const eau=t&&t.eau, la=!t;
+const base=la?'#7f9a50':(eau?'#4e3622':'#76563a'), sil=la?'#6f8a44':(eau?'#3e2a1a':'#5e4430'), hi=la?'#90aa60':(eau?'#664a32':'#93714e');
+PX(g,x,y,w,h,base);if(!la)for(let k=0;k<3;k++){PX(g,x,y+2+k*5,w,1.5,sil);PX(g,x,y+1.5+k*5,w,0.5,hi);}
+if(eau){g.fillStyle='rgba(160,210,240,.35)';g.fillRect(x+2,y+3,1,0.5);g.fillRect(x+w-4,y+9,1,0.5);}}
+function fmDessinerParcelles(g,camX,camY,VW2,VH2,acteurs){
+const now=Date.now();
+for(let j=0;j<FP_ROWS;j++)for(let i=0;i<FP_COLS;i++){if(!fpExiste(i,j))continue;
+const x0=fpX(i), y0=fpY(j), x=x0-camX, y=y0-camY;if(x<-50||y<-60||x>VW2+10||y>VH2+10)continue;
+fpCadre(g,x+3,y+3,34,33);
+fpSpots(i,j).forEach(([c,r],q)=>{const t=CH.t[c+','+r]||null;fpTerre(g,x+5+(q%2)*15,y+5+(q>>1)*14.5,15,14.5,t);});
+PX(g,x+19.75,y+5,0.5,29,'rgba(0,0,0,.18)');PX(g,x+5,y+19.25,30,0.5,'rgba(0,0,0,.18)');
+const E=fpEtat(i,j);
+/* les plantes, triées avec le joueur */
+fpSpots(i,j).forEach(([c,r],q)=>{const t=CH.t[c+','+r];if(!t||!t.cult||!PLANTES[t.cult])return;const st=chStade(t);
+const px=x0+12.5+(q%2)*15, py=y0+5+(q>>1)*14.5+12;const bal=st>=2?Math.round(Math.sin(now/700+c*0.7+r)*0.6*2)/2:0;
+acteurs.push({y:py,f:()=>{poserPlant(g,t.cult,st,px-camX+bal,py-camY,2);
+if(st===3&&Math.sin(now/260+c+r)>0.3){PX(g,px-camX+5,py-camY-14,1,1,'#fff6c0');PX(g,px-camX+4.5,py-camY-13.75,2,0.5,'#fff6c0');}}});});
+/* ce qui reste à faire, en un coup d'œil */
+acteurs.push({y:y0+38,f:()=>{const xx=x0-camX, yy=y0-camY;
+if(E.mur){const b=Math.sin(now/300+i+j)*0.8, cx=xx+20, cy=yy-1+b;g.fillStyle='rgba(255,255,255,.92)';g.beginPath();g.arc(cx,cy,4.5,0,7);g.fill();g.fillStyle='#f0b020';g.beginPath();for(let k=0;k<8;k++){const r=k%2?1.1:3.2, an=k*Math.PI/4-Math.PI/2;g.lineTo(cx+Math.cos(an)*r,cy+Math.sin(an)*r);}g.closePath();g.fill();}
+else if(E.soif){const b=Math.sin(now/400+i)*0.8;g.fillStyle='rgba(255,255,255,.9)';g.beginPath();g.arc(xx+20,yy-1+b,4,0,7);g.fill();g.fillStyle='#4a9ae0';g.beginPath();g.moveTo(xx+20,yy-4+b);g.lineTo(xx+22,yy+b);g.arc(xx+20,yy+b,2,0,Math.PI);g.closePath();g.fill();}
+if(E.pousse&&!E.mur){const T=fpTuiles(i,j).filter(t=>t&&t.cult);let k=0;T.forEach(t=>{const a=new Date(t.t0).getTime(), m=new Date(t.mur_a).getTime();k+=Math.min(1,Math.max(0,(chNow()-a)/Math.max(1,m-a)));});k/=Math.max(1,T.length);
+PX(g,xx+8,yy+37.5,24,2,'rgba(0,0,0,.4)');PX(g,xx+8,yy+37.5,24*k,2,'#9be05a');}}});}
+/* la prochaine parcelle, en pointillés */
+const n=fpProchaine();if(n){const x=fpX(n.i)-camX, y=fpY(n.j)-camY;if(x>-50&&y>-50&&x<VW2+10&&y<VH2+10){
+const plein=chNb()+4>CH.max, a=0.55+0.25*Math.sin(now/500);g.save();g.globalAlpha=a;g.strokeStyle='#fff6d8';g.lineWidth=1;g.setLineDash([2.5,2]);g.strokeRect(x+3.5,y+3.5,33,32);g.setLineDash([]);
+g.fillStyle='rgba(255,246,216,.18)';g.fillRect(x+4,y+4,32,31);PX(g,x+18.5,y+13,3,14,'#fff6d8');PX(g,x+13,y+18.5,14,3,'#fff6d8');
+if(plein){PX(g,x+25,y+7,7,6,'#f0c040');}g.restore();}}}
+/* ---------- les gestes ---------- */
+const FP={id:null,mode:null,graine:null,vus:{},origine:null,bouge:false};
+function fpOutilVoir(ic,x,y){let o=$('fpOutil');if(!o){o=document.createElement('div');o.id='fpOutil';document.body.appendChild(o);}
+if(ic==null){o.classList.remove('on');return;}if(o.dataset.ic!==ic){o.innerHTML=ic;o.dataset.ic=ic;}o.classList.add('on');o.style.transform='translate('+(x-34)+'px,'+(y-96)+'px)';}
+function fpIcone(k,s){return ICONES[k]?'<svg viewBox="0 0 16 16" width="'+s+'" height="'+s+'" shape-rendering="crispEdges">'+ICONES[k]+'</svg>':'🌱';}
+const FP_PIX={k:'#2e1a0a',b:'#8a5a30',g:'#9aa4ae',G:'#dfe6ec',w:'#5aa8e8',W:'#bfe6ff'};
+const FP_IC={faux:["................","....kkkkkk......","..kkGGGGGGkk....",".kGGgggggGGGk...","kGgk.....kkGk...","kk.........kGk..","...........kbk..","..........kbk...",".........kbk....","........kbk.....",".......kbk......","......kbk.......",".....kbk........","....kkk.........","................","................"],
+eau:["................","................","......kkkk......",".....k....k.....","...kkkkkkkkk....","..kwwWwwwwwwk.kk","..kwWWwwwwwwkkWk","..kwwwwwwwwwkWk.","..kwwwwwwwwwWk..","..kwwwwwwwwwk...","..kwwwwwwwwwk...","..kkwwwwwwwkk...","...kkkkkkkkk....","................","................","................"]};
+function fpSvg(n,s){let r='';FP_IC[n].forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.')r+='<rect x="'+x+'" y="'+y+'" width="1.02" height="1.02" fill="'+FP_PIX[c]+'"/>';}));return '<svg viewBox="0 0 16 16" width="'+s+'" height="'+s+'" shape-rendering="crispEdges">'+r+'</svg>';}
+async function fpAgir(P,mode){const k=P.i+','+P.j;if(FP.vus[k])return;FP.vus[k]=1;
+CH_ICI={x:fpX(P.i)+20,y:fpY(P.j)+30};const ici=CH_ICI;const sp=fpSpots(P.i,P.j);
+if(mode==='faux'){CH_MUET=true;CH_CUMUL=0;const nom={};
+await Promise.all(sp.map(async([c,r])=>{const t=CH.t[c+','+r];if(t&&t.cult&&chStade(t)===3){nom[t.cult]=1;await chEnvoyer(c,r,'faux');}}));
+CH_MUET=false;const ks=Object.keys(nom);if(CH_CUMUL&&ks.length)texteVolant(ici.x,ici.y-34,'+'+CH_CUMUL+' '+(ks.length===1&&POT_CULT[ks[0]]?POT_CULT[ks[0]][0]:''),'#ffe070');}
+else if(mode==='eau'){await Promise.all(sp.map(async([c,r])=>{const t=CH.t[c+','+r];if(t&&t.cult&&!t.eau&&chStade(t)<3)await chEnvoyer(c,r,'eau');}));}
+else if(mode==='graine'){CH_GRAINE=FP.graine;
+if(!potLibre(CH_GRAINE)){texteVolant(ici.x,ici.y-34,'Graine à débloquer','#ffe8a0');return;}
+await Promise.all(sp.map(async([c,r])=>{let t=CH.t[c+','+r];
+if(!t){if(chNb()>=CH.max)return;await chEnvoyer(c,r,'houe');t=CH.t[c+','+r];if(!t)return;}
+if(!t.cult){if((e.euros||0)<chPrix(CH_GRAINE)){texteVolant(ici.x,ici.y-34,'Pas assez d’argent','#ffe8a0');return;}await chEnvoyer(c,r,'graine');}}));}
+CH_ICI=null;}
+function fpInfo(P){const E=fpEtat(P.i,P.j), T=fpTuiles(P.i,P.j).filter(t=>t&&t.cult), x=fpX(P.i)+20, y=fpY(P.j)-4;if(!T.length)return;
+const reste=Math.max(1,Math.ceil((E.fin-chNow())/60000)), nom=POT_CULT[T[0].cult]?POT_CULT[T[0].cult][0]:'';
+texteVolant(x,y,nom+' · encore '+potDuree(reste),'#fff3d0');}
+/* ---------- la fenêtre des graines, au-dessus de la parcelle ---------- */
+function fpStyle(){if($('fpSt'))return;const st=document.createElement('style');st.id='fpSt';st.textContent=`
+#fpOutil{position:fixed;left:0;top:0;z-index:30;width:68px;height:68px;border-radius:50%;background:#fff8e4;box-shadow:0 0 0 3px #3a2408,0 5px 0 3px #3a2408,0 10px 18px rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;pointer-events:none}
+#fpOutil.on{display:flex}
+#fpPop{position:fixed;z-index:31;left:10px;right:10px;display:none;background:#fff8e4;border-radius:20px;box-shadow:0 0 0 3px #3a2408,0 6px 0 3px #3a2408,0 14px 28px rgba(0,0,0,.35);padding:9px 8px 8px;font-family:'Baloo 2','Trebuchet MS',sans-serif;color:#3a2408}
+#fpPop.on{display:block;animation:fpIn .16s ease-out}
+@keyframes fpIn{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+#fpPop:after{content:'';position:absolute;left:var(--q,50%);bottom:-12px;margin-left:-11px;border:11px solid transparent;border-top-color:#3a2408;border-bottom:0}
+#fpPop.bas:after{bottom:auto;top:-12px;border:11px solid transparent;border-bottom-color:#3a2408;border-top:0}
+#fpPop .tt{display:flex;align-items:center;gap:6px;padding:0 4px 6px;font:800 13px 'Baloo 2','Trebuchet MS',sans-serif;color:#8a6a48}
+#fpPop .tt b{flex:1;font:800 16px 'Baloo 2','Trebuchet MS',sans-serif;color:#3a2408}
+#fpPop .ls{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:2px 2px 2px;max-height:46vh;overflow-y:auto}
+#fpPop .ls::-webkit-scrollbar{display:none}
+#fpPop .g{display:flex;flex-direction:column;align-items:center;border-radius:14px;background:#f3e2b8;padding:6px 0 4px;position:relative;touch-action:none}
+#fpPop .g b{font:800 12.5px/1.1 'Baloo 2','Trebuchet MS',sans-serif;white-space:nowrap}#fpPop .g small{font:800 10px/1.15 'Baloo 2','Trebuchet MS',sans-serif;color:#8a6a48;white-space:nowrap}
+#fpPop .g.lock{opacity:.45}
+#fpPop .g i{position:absolute;top:-5px;right:-3px;font:800 8.5px 'Baloo 2','Trebuchet MS',sans-serif;font-style:normal;background:#5ac86a;color:#fff;border-radius:7px;padding:0 4px}
+#fpPop .ag{display:block;width:100%;border:0;border-radius:14px;padding:11px;background:linear-gradient(#ffe88a,#f0b838);box-shadow:0 3px 0 #a87010;font:800 15px 'Baloo 2','Trebuchet MS',sans-serif;color:#4a2a08}
+#fpPop .ag small{display:block;font:700 11px 'Baloo 2','Trebuchet MS',sans-serif;opacity:.8}`;document.head.appendChild(st);}
+function fpPopFermer(){const p=$('fpPop');if(p)p.classList.remove('on');FP.pop=null;}
+function fpPopPlacer(p,P){const a=fpEcran(fpX(P.i)+20,fpY(P.j)+3), b=fpEcran(fpX(P.i)+20,fpY(P.j)+38);if(!a)return;
+const h=p.offsetHeight||140, haut=a.y-h-16>60;p.classList.toggle('bas',!haut);p.style.top=(haut?a.y-h-16:b.y+16)+'px';
+const r=p.getBoundingClientRect();p.style.setProperty('--q',Math.max(24,Math.min(r.width-24,a.x-r.left))+'px');}
+function fpGraines(P){fpStyle();let p=$('fpPop');if(!p){p=document.createElement('div');p.id='fpPop';document.body.appendChild(p);}
+const sa=CH.meteo?CH.meteo.saison:null, L=Object.keys(POT_CULT).sort((a,b)=>(potLibre(b)-potLibre(a))||(chDeSaison(b)-chDeSaison(a))||(POT_CULT[a][2]-POT_CULT[b][2]));
+const vides=fpTuiles(P.i,P.j).filter(t=>!t||!t.cult).length;
+const nb=L.filter(k=>!potLibre(k)).length;p.innerHTML='<div class="tt"><b>Que planter ?</b>'+(sa?CH_SAISON_NOM[sa]:'')+'</div><div class="ls">'+L.filter(potLibre).map(k=>{const C=POT_CULT[k],libre=potLibre(k);
+return '<div class="g'+(libre?'':' lock')+'" data-k="'+k+'">'+(libre&&chDeSaison(k)?'<i>SAISON</i>':'')+fpIcone(k,34)+'<b>'+C[0].replace(/\s*\(.*\)/,'')+'</b><small>'+(libre?enEuros(chPrix(k)*vides).replace(',00','')+' · '+potDuree(Math.round(C[2]*(chDeSaison(k)?0.75:1))):'🔒 Madeleine')+'</small></div>';}).join('')+'</div>'+(nb?'<div class="tt" style="padding:6px 4px 0">🔒 '+nb+' autres graines à débloquer chez Madeleine</div>':'');
+FP.pop=P;p.classList.add('on');fpPopPlacer(p,P);}
+const FP_AGR=[150000,400000,900000,1800000,3000000,5000000];
+function fpAgrandir(P){fpStyle();let p=$('fpPop');if(!p){p=document.createElement('div');p.id='fpPop';document.body.appendChild(p);}
+const i=Math.max(1,Math.floor((CH.max-40)/20)+1), prix=FP_AGR[i-1];
+p.innerHTML='<div class="tt"><b>Plus de place</b>'+Math.floor(CH.max/4)+' parcelles</div>'+(prix?'<button class="ag" id="fpAg">Agrandir le champ · +5 parcelles<small>'+enEuros(prix).replace(',00','')+'</small></button>':'<div class="tt">Ton champ est au maximum.</div>');
+FP.pop=P;p.classList.add('on');fpPopPlacer(p,P);
+const b=$('fpAg');if(b)b.onclick=async(ev)=>{ev.stopPropagation();const d=await appelRPC('champ_agrandir',{p_joueur:e.id});
+if(d&&!d.erreur){CH.max=d.max;if(typeof d.euros==='number'){e.euros=d.euros;try{majHaut();}catch(x){}}fpPopFermer();texteVolant(fpX(P.i)+20,fpY(P.j)-4,'+5 parcelles','#ffe070');try{jouer('vente','moment');}catch(x){}}
+else texteVolant(fpX(P.i)+20,fpY(P.j)-4,d&&d.erreur==='pas_assez'?'Pas assez d’argent':'Réessaie dans un instant','#ffd0a0');};}
+/* ---------- le doigt ---------- */
+function fpBloque(){try{return pageOuverte();}catch(x){return false;}}
+function fpDebut(t,ev){const tg=ev.target;
+const g=tg&&tg.closest&&tg.closest('#fpPop .g');
+if(g){if(g.classList.contains('lock')){texteVolant(fpX(FP.pop.i)+20,fpY(FP.pop.j)-4,'À débloquer chez Madeleine','#ffe8a0');return true;}
+FP.id=t.identifier;FP.mode='graine';FP.graine=g.dataset.k;FP.vus={};FP.origine=FP.pop;FP.bouge=false;FP.x0=t.clientX;FP.y0=t.clientY;
+fpOutilVoir(fpIcone(FP.graine,40),t.clientX,t.clientY);vibrer(8);return true;}
+if(tg&&tg.closest&&tg.closest('#fpPop'))return false;           /* le reste de la fenêtre : laisser faire (défilement, bouton) */
+if(!FERME_VIERGE||!CHAMP_LIBRE||!CH.charge||fpBloque())return false;
+if(tg&&tg.closest&&tg.closest('button,#barre,#haut,#pan,#page2,#porte,#bandeau,#repond,#hublot,#action'))return false;
+const w=fpMonde(t.clientX,t.clientY);if(!w)return false;const P=fpSous(w.x,w.y);
+if(!P){if($('fpPop')&&$('fpPop').classList.contains('on')){fpPopFermer();return true;}return false;}
+fpPopFermer();
+if(!fpExiste(P.i,P.j)){const n=fpProchaine();if(!n||n.i!==P.i||n.j!==P.j)return false;
+if(chNb()+4>CH.max){fpAgrandir(P);return true;}
+FP.vus={};CH_ICI={x:fpX(P.i)+20,y:fpY(P.j)+30};Promise.all(fpSpots(P.i,P.j).map(([c,r])=>chEnvoyer(c,r,'houe'))).then(()=>{CH_ICI=null;if(fpExiste(P.i,P.j))fpGraines(P);});vibrer([10,30,10]);return true;}
+const E=fpEtat(P.i,P.j);
+const mode=E.mur?'faux':(E.vide?null:(E.soif?'eau':null));
+if(!mode){if(E.vide){fpGraines(P);vibrer(6);}else fpInfo(P);return true;}
+FP.id=t.identifier;FP.mode=mode;FP.vus={};FP.bouge=true;fpOutilVoir(fpSvg(mode,42),t.clientX,t.clientY);fpAgir(P,mode);return true;}
+function fpBouge(t){if(FP.id===null||t.identifier!==FP.id)return false;
+fpOutilVoir(FP.mode==='graine'?fpIcone(FP.graine,40):fpSvg(FP.mode,42),t.clientX,t.clientY);
+if(FP.mode==='graine'&&!FP.bouge&&Math.hypot(t.clientX-FP.x0,t.clientY-FP.y0)>14){FP.bouge=true;fpPopFermer();}
+if(FP.bouge){const w=fpMonde(t.clientX,t.clientY);if(w){const P=fpSous(w.x,w.y);
+if(P&&fpExiste(P.i,P.j)&&!FP.vus[P.i+','+P.j]){const E=fpEtat(P.i,P.j);
+if((FP.mode==='faux'&&E.mur)||(FP.mode==='eau'&&E.soif)||(FP.mode==='graine'&&E.vide)){fpAgir(P,FP.mode);vibrer(8);}}}}
+return true;}
+function fpFin(t){if(FP.id===null||t.identifier!==FP.id)return false;
+if(FP.mode==='graine'&&!FP.bouge&&FP.origine){fpPopFermer();fpAgir(FP.origine,'graine');}
+FP.id=null;FP.mode=null;fpOutilVoir(null);return true;}
+addEventListener('touchstart',ev=>{if(FP.id!==null)return;for(const t of ev.changedTouches){if(fpDebut(t,ev)){ev.preventDefault();ev.stopPropagation();return;}}},{capture:true,passive:false});
+addEventListener('touchmove',ev=>{for(const t of ev.changedTouches)if(fpBouge(t)){ev.preventDefault();ev.stopPropagation();}},{capture:true,passive:false});
+['touchend','touchcancel'].forEach(k=>addEventListener(k,ev=>{for(const t of ev.changedTouches)if(fpFin(t)){ev.preventDefault();ev.stopPropagation();}},{capture:true,passive:false}));
+setInterval(()=>{if(FP.pop&&$('fpPop')&&$('fpPop').classList.contains('on'))fpPopPlacer($('fpPop'),FP.pop);},120);
 </script>
 </body>
 </html>
