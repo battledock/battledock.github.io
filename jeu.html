@@ -19423,6 +19423,7 @@ R(h.x-3,h.y-1,6,2,toileO);R(h.x-3,h.y-1,6,1,'#6b5330');      /* le col, serre a 
 R(h.x-2,h.y+4,2,1,'#b9a37a');R(h.x+1,h.y+6,1,1,'#b9a37a');   /* deux grains sous la toile */
 return;}
 if(typeG==='arrose'){
+if(window.FP_ANIM&&Date.now()-window.FP_ANIM.t0<1500)return;   /* l'arrosoir de la ferme est dessiné à part, dans le bon sens */
 const zinc='#9aa6ae', zincC='#d8e2e8', zincO='#5e6a72';
 const s2=dos?-1:1;                                           /* le bec part devant soi */
 R(h.x-5,h.y,10,8,zinc);R(h.x-5,h.y,10,1,zincC);R(h.x+4,h.y+1,1,7,zincO);   /* le corps */
@@ -19771,6 +19772,7 @@ joueur.dirVue=ORDRE8[(a+(d<=4?1:-1)+8)%8];
 function majJoueur(dt){
 /* L'ESSAI D'UNE VOITURE À TOKYO : le joystick conduit, le piéton attend */
 if(CARTE==='tokyo'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif){TKM.majEssai(dt,joyX,joyY);vx=vy=0;joueur.marche=false;return;}
+if(window.FP_GEL&&Date.now()<window.FP_GEL){vx=0;vy=0;joueur.marche=false;tournerEnDouceur(dt);return;}   /* on arrose : on reste planté jusqu'à la fin */
 tournerEnDouceur(dt);
 const n=Math.hypot(joyX,joyY);
 const pousse=Math.min(1,n);
@@ -29574,7 +29576,7 @@ R(-4,-23,9,2,'#c9a24a');                                   /* le bord, mord la c
 R(-4,-22,9,1,'#a8853a');}                                  /* son dessous, dans l'ombre */
 const potBullesVrai=dessinerBulles;
 dessinerBulles=function(g,camX,camY,px,py){const d=Date.now()-POT_ARROSE;
-if(d<1100){try{fpDessinerArrosoir(g,camX,camY,d/1100);}catch(x){}}
+{const A=window.FP_ANIM;if(A){const e2=Date.now()-A.t0;if(e2<1400){try{fpDessinerArrosoir(g,camX,camY,e2/1400,A);}catch(x){}}}}
 return potBullesVrai(g,camX,camY,px,py);};
 const potMajVrai=majAction;
 majAction=function(){const i=potProche();if(i===null||!POT.charge)return potMajVrai();
@@ -34660,20 +34662,20 @@ if(E.vide)return ['Semer','CHOISIR UNE GRAINE'];
 if(E.soif)return ['Arroser','ÇA POUSSERA DEUX FOIS PLUS VITE'];
 const m=Math.max(1,Math.ceil((E.fin-chNow())/60000));return [nom+' · ça pousse','PRÊT DANS '+(m>=60?Math.floor(m/60)+' H '+String(m%60).padStart(2,'0'):m+' MIN')];}
 const fpMajVrai=majAction;
-majAction=function(){const P=fpVise();window.FP_VISE=P;
+majAction=function(){if(window.FP_GEL&&Date.now()<window.FP_GEL){try{plaqueVrai=$('action');plaqueFeinte.classList.remove('on');}catch(x){}return;}const P=fpVise();window.FP_VISE=P;
 if(!P){if(FP.pop&&$('fpPop')&&$('fpPop').classList.contains('on'))fpPopFermer();return fpMajVrai();}
 try{const b2=cible();if(b2&&(b2.ouvre||b2.t==='comptoir')){const demi=b2.demi||40;const ec=Math.max(0,Math.abs(b2.x-joueur.x)-demi), dd=Math.hypot(ec,(joueur.y-b2.y)*0.8);if(dd<26)return fpMajVrai();}}catch(x){}
 if(FP.pop&&(FP.pop.i!==P.i||FP.pop.j!==P.j))fpPopFermer();
 plaqueVrai=$('action');const t=fpTexte(P);plaqueFeinte.innerHTML=t[0]+'<small>'+t[1]+'</small>';plaqueFeinte.classList.add('on');};
 let FP_OCC=false;
-async function fpAction(P){if(FP_OCC)return;FP_OCC=true;try{
+async function fpAction(P){if(FP_OCC||(window.FP_GEL&&Date.now()<window.FP_GEL))return;FP_OCC=true;try{
 if(P.neuve){if(chNb()+4>CH.max){fpAgrandir(P);return;}
 try{potGeste('houe');}catch(x){}vibrer([10,30,10]);CH_ICI={x:fpX(P.i)+20,y:fpY(P.j)+30};
 await Promise.all(fpSpots(P.i,P.j).map(([c,r])=>chEnvoyer(c,r,'houe')));CH_ICI=null;if(fpExiste(P.i,P.j))setTimeout(()=>fpGraines(P),200);return;}
 const E=fpEtat(P.i,P.j);
 if(E.mur){try{potGeste('cueille');}catch(x){}await fpAgir(P,'faux');FP.vus={};return;}
 if(E.vide){if(FP.pop&&$('fpPop').classList.contains('on'))fpPopFermer();else fpGraines(P);return;}
-if(E.soif){POT_ARROSE=Date.now();window.FP_ARROSE={x:fpX(P.i)+20,y:fpY(P.j)+20,t:Date.now()};await fpAgir(P,'eau');FP.vus={};return;}
+if(E.soif){fpArroserAnime(P);return;}
 texteVolant(joueur.x,joueur.y-56,'Ça pousse… patience','#fff3d0');
 }finally{FP.vus={};FP_OCC=false;try{majAction();}catch(x){}}}
 $('action').addEventListener('click',(ev)=>{const P=fpVise();if(!P)return;ev.stopImmediatePropagation();ev.preventDefault();fpAction(P);},true);
@@ -34865,32 +34867,48 @@ try{const ci=cielDuMoment();if(ci&&ci.lampes>0.05){ctx.save();ctx.globalComposit
    regarde, le bec tourné vers la parcelle visée ; il se penche, l'eau
    coule en arc jusqu'à la terre et éclabousse, puis il se redresse.
    ===================================================================== */
-function fpDessinerArrosoir(g,camX,camY,f){
-const dir=joueur.dir||'bas', x=joueur.x-camX, y=joueur.y-camY;
-/* la main, le sens du bec, l'échelle */
-const M={droite:[7,-19,1,1],gauche:[-7,-19,-1,1],haut:[9,-24,1,0.85],bas:[8,-14,1,0.9]}[dir]||[7,-19,1,1];
+function fpArroserAnime(P){if(window.FP_GEL&&Date.now()<window.FP_GEL)return;
+const tx=fpX(P.i)+20, ty=fpY(P.j)+20, dx=tx-joueur.x, dy=ty-(joueur.y-10);
+const dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'droite':'gauche'):(dy>0?'bas':'haut');
+joueur.dir=dir;joueur.dir8=dir;window.FP_GEL=Date.now()+1450;window.FP_ANIM={t0:Date.now(),x:tx,y:ty,dir};
+try{potGeste('arrose');}catch(x){}vibrer(10);try{plaqueFeinte.classList.remove('on');}catch(x){}
+setTimeout(()=>{POT_ARROSE=0;FP.vus={};fpAgir(P,'eau').then(()=>{FP.vus={};});},560);
+setTimeout(()=>{try{majAction();}catch(x){}},1480);}
+/* L'ARROSOIR EN ZINC : dans la main, du côté où l'on regarde ; il se lève,
+   se penche, la pomme laisse tomber une pluie fine sur la parcelle (les
+   gouttes partent de la pomme et retombent dans la terre, avec de petits
+   ronds), puis il se redresse. Le joueur est figé pendant ce temps. */
+function fpDessinerArrosoir(g,camX,camY,f,A){
+const dir=A.dir, x=joueur.x-camX, y=joueur.y-camY;
+const M={droite:[6,-17,1,0.7],gauche:[-6,-17,-1,0.7],haut:[5,-24,1,0.62],bas:[5,-11,1,0.66]}[dir];
 const hx=x+M[0], hy=y+M[1], s=M[2], sc=M[3];
-/* l'inclinaison : on penche (0 → 1), on tient, on se redresse */
-const k=f<0.18?f/0.18:(f>0.86?Math.max(0,(1-f)/0.14):1);
-const base=dir==='haut'?-0.9:(dir==='bas'?0.5:0), ang=base+k*(dir==='haut'?-0.15:0.65);
-g.save();g.translate(hx,hy);g.scale(s*sc,sc);g.rotate(ang);
-const P=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(a,b,w,h);};
-P(-4,-3,8,7,'#4f8aa8');P(-4,-3,8,1.2,'#8ac0d8');P(-4,3,8,1,'#2f5a70');P(3,-2,1,5,'#3a6a84');P(-3,-1,1,3,'rgba(255,255,255,.25)');
-g.strokeStyle='#2f5a70';g.lineWidth=1.2;g.beginPath();g.arc(-0.5,-3,3,Math.PI,0);g.stroke();
-g.fillStyle='#4f8aa8';g.beginPath();g.moveTo(3.5,1);g.lineTo(10,-4);g.lineTo(10.8,-3);g.lineTo(4,3);g.fill();P(9.6,-5,2.4,2.4,'#2f5a70');
+const lev=f<0.16?f/0.16:(f>0.84?Math.max(0,(1-f)/0.16):1);
+const ease=lev*lev*(3-2*lev);
+const base=dir==='haut'?-1.25:(dir==='bas'?0.95:0), tilt=dir==='haut'?-0.25:(dir==='bas'?0.3:0.62);
+const ang=base+ease*tilt, lift=-ease*2;
+g.save();g.translate(hx,hy+lift);g.scale(s*sc,sc);g.rotate(ang);
+const c=['#a8b4bc','#d4dde2','#7a8890','#5a666e'];
+g.fillStyle=c[0];g.beginPath();g.moveTo(-6,-5);g.lineTo(5,-5);g.quadraticCurveTo(7,0,5,5);g.lineTo(-6,5);g.quadraticCurveTo(-8,0,-6,-5);g.fill();
+g.fillStyle=c[1];g.fillRect(-5,-4,2,8);g.fillStyle=c[2];g.fillRect(-6,3.6,11,1.4);g.fillRect(-6,-1,11,0.8);
+g.strokeStyle=c[2];g.lineWidth=1.3;g.beginPath();g.arc(-0.5,-5,4.2,Math.PI*1.05,Math.PI*1.95);g.stroke();
+g.strokeStyle=c[0];g.lineWidth=1.8;g.beginPath();g.moveTo(4,2);g.lineTo(14,-5);g.stroke();g.strokeStyle=c[1];g.lineWidth=0.5;g.beginPath();g.moveTo(4,1.4);g.lineTo(14,-5.6);g.stroke();
+g.fillStyle=c[2];g.beginPath();g.ellipse(15,-6,2,3,-0.6,0,7);g.fill();g.fillStyle=c[3];for(let k=0;k<5;k++)g.fillRect(15.4+(k%2)*0.6,-8+k,0.5,0.5);
 g.restore();
-/* le bout du bec, dans l'écran */
-const c=Math.cos(ang), sn=Math.sin(ang), bx=10.8*sc, by=-3.8*sc, ex=hx+s*(bx*c-by*sn), ey=hy+(bx*sn+by*c);
-if(k<0.6)return;
-/* où tombe l'eau : la parcelle visée si on l'a, sinon un pas devant */
-let tx,ty;const C=window.FP_ARROSE;
-if(C&&Date.now()-C.t<1500&&Math.hypot(C.x-camX-x,C.y-camY-y)<70){tx=C.x-camX+(dir==='gauche'?6:dir==='droite'?-6:0);ty=C.y-camY+(dir==='haut'?6:dir==='bas'?-4:0);}
-else{tx=x+(dir==='droite'?22:dir==='gauche'?-22:4);ty=y+(dir==='haut'?-30:dir==='bas'?14:-2);}
-const t=Date.now()/1000;
-g.save();g.strokeStyle='rgba(150,205,245,.85)';g.lineWidth=0.8;g.beginPath();g.moveTo(ex,ey);g.quadraticCurveTo((ex+tx)/2,Math.min(ey,ty)-3,tx,ty);g.stroke();
-for(let q=0;q<6;q++){const u=((t*1.6+q/6)%1), mx=(ex+tx)/2, my=Math.min(ey,ty)-3;const xx=(1-u)*(1-u)*ex+2*(1-u)*u*mx+u*u*tx, yy=(1-u)*(1-u)*ey+2*(1-u)*u*my+u*u*ty;g.fillStyle='rgba(200,236,255,.95)';g.fillRect(xx-0.4,yy-0.4,0.9,0.9);}
-for(let q=0;q<6;q++){const a=q*1.05+t*7, r=1.5+((t*3+q*0.3)%1)*2.5;g.fillStyle='rgba(205,238,255,'+(0.9-((t*3+q*0.3)%1)*0.7).toFixed(2)+')';g.fillRect(tx+Math.cos(a)*r-0.4,ty-Math.abs(Math.sin(a))*r*0.8-0.4,0.8,0.8);}
-g.fillStyle='rgba(60,40,25,.25)';g.beginPath();g.ellipse(tx,ty+0.5,3.5,1.4,0,0,7);g.fill();g.restore();}
+/* la pomme, dans l'écran */
+const ca=Math.cos(ang), sa=Math.sin(ang), px=15*sc, py=-6*sc;const rx=hx+s*(px*ca-py*sa), ry=hy+lift+(px*sa+py*ca);
+if(f<0.2||f>0.86)return;
+const flux=Math.min(1,(f-0.2)/0.08)*Math.min(1,(0.86-f)/0.06);
+const tx=A.x-camX, ty=A.y-camY, now=Date.now();
+const H=(n)=>{n=(n*374761393)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
+g.save();
+for(let i=0;i<34;i++){const ph=((now/620)+i/34)%1;if(ph*1>flux+0.05&&f>0.8)continue;
+const ex=tx+(H(i*7+1)-0.5)*26, ey=ty+(H(i*13+5)-0.5)*20;
+const mx=(rx+ex)/2+(ex-rx)*0.1, my=Math.min(ry,ey)-4;
+const u=ph, xx=(1-u)*(1-u)*rx+2*(1-u)*u*mx+u*u*ex, yy=(1-u)*(1-u)*ry+2*(1-u)*u*my+u*u*ey;
+g.globalAlpha=flux*(0.55+0.45*(1-u));g.fillStyle='#bfe4ff';g.fillRect(xx-0.35,yy-0.6,0.7,1.2);
+if(u>0.92){g.globalAlpha=flux*0.6;g.strokeStyle='rgba(220,240,255,.9)';g.lineWidth=0.35;g.beginPath();g.ellipse(ex,ey,1+((u-0.92)*30),0.5+((u-0.92)*12),0,0,7);g.stroke();}}
+g.globalAlpha=flux*0.18;g.fillStyle='#d8f0ff';g.beginPath();g.ellipse(tx,ty,14,10,0,0,7);g.fill();
+g.restore();}
 </script>
 </body>
 </html>
