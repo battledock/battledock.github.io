@@ -29574,9 +29574,7 @@ R(-4,-23,9,2,'#c9a24a');                                   /* le bord, mord la c
 R(-4,-22,9,1,'#a8853a');}                                  /* son dessous, dans l'ombre */
 const potBullesVrai=dessinerBulles;
 dessinerBulles=function(g,camX,camY,px,py){const d=Date.now()-POT_ARROSE;
-if(d<900){const f=d/900, R=(a,b,w,h,c)=>PX(g,a,b,w,h,c), x=joueur.x-camX, y=joueur.y-camY;
-g.save();g.translate(x+7,y-18);g.rotate(Math.min(1,f*3)*0.7);R(-3,-3,7,6,'#5f8f7a');R(-3,-3,7,1,'#8fc0aa');R(-4,-5,5,1,'#4f7a66');R(4,-1,6,1.2,'#5f8f7a');R(9.5,-2,1.5,2.5,'#4f7a66');g.restore();
-if(f>0.2)for(let q=0;q<10;q++){const t=((f*4+q*0.11)%1);R(x+17+t*2,y-17+t*14,0.5,1.5,'rgba(160,210,240,.9)');}}
+if(d<1100){try{fpDessinerArrosoir(g,camX,camY,d/1100);}catch(x){}}
 return potBullesVrai(g,camX,camY,px,py);};
 const potMajVrai=majAction;
 majAction=function(){const i=potProche();if(i===null||!POT.charge)return potMajVrai();
@@ -34675,7 +34673,7 @@ await Promise.all(fpSpots(P.i,P.j).map(([c,r])=>chEnvoyer(c,r,'houe')));CH_ICI=n
 const E=fpEtat(P.i,P.j);
 if(E.mur){try{potGeste('cueille');}catch(x){}await fpAgir(P,'faux');FP.vus={};return;}
 if(E.vide){if(FP.pop&&$('fpPop').classList.contains('on'))fpPopFermer();else fpGraines(P);return;}
-if(E.soif){POT_ARROSE=Date.now();await fpAgir(P,'eau');FP.vus={};return;}
+if(E.soif){POT_ARROSE=Date.now();window.FP_ARROSE={x:fpX(P.i)+20,y:fpY(P.j)+20,t:Date.now()};await fpAgir(P,'eau');FP.vus={};return;}
 texteVolant(joueur.x,joueur.y-56,'Ça pousse… patience','#fff3d0');
 }finally{FP.vus={};FP_OCC=false;try{majAction();}catch(x){}}}
 $('action').addEventListener('click',(ev)=>{const P=fpVise();if(!P)return;ev.stopImmediatePropagation();ev.preventDefault();fpAction(P);},true);
@@ -34861,6 +34859,38 @@ R(t-6,-88,2,11,'#fff');R(t+4,-88,2,11,'#fff');R(t-4,-87,2,2,'#fff');R(t-3,-85,2,
 R(t-13,-71,26,8,'#12356a');ctx.fillStyle='#fff';ctx.font='bold 5px sans-serif';ctx.textAlign='center';ctx.fillText('FERME',x0+t,y0-65.5);
 R(t-4,-61,9,4,'#1d4f9a');R(t-3,-60,3,2,'#fff');R(t+1,-60,3,2,'#e8c06a');
 try{const ci=cielDuMoment();if(ci&&ci.lampes>0.05){ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=Math.min(1,ci.lampes)*0.6;ctx.fillStyle='rgba(120,170,255,.8)';ctx.fillRect(x0+t-9,y0-92,18,18);ctx.restore();lueurNuit(ctx,x0+t,y0-40,52,'rgba(170,200,255,1)');}}catch(x){}}});}
+
+/* =====================================================================
+   L'ARROSOIR, DANS LE BON SENS. Il est dans la main du côté où l'on
+   regarde, le bec tourné vers la parcelle visée ; il se penche, l'eau
+   coule en arc jusqu'à la terre et éclabousse, puis il se redresse.
+   ===================================================================== */
+function fpDessinerArrosoir(g,camX,camY,f){
+const dir=joueur.dir||'bas', x=joueur.x-camX, y=joueur.y-camY;
+/* la main, le sens du bec, l'échelle */
+const M={droite:[7,-19,1,1],gauche:[-7,-19,-1,1],haut:[9,-24,1,0.85],bas:[8,-14,1,0.9]}[dir]||[7,-19,1,1];
+const hx=x+M[0], hy=y+M[1], s=M[2], sc=M[3];
+/* l'inclinaison : on penche (0 → 1), on tient, on se redresse */
+const k=f<0.18?f/0.18:(f>0.86?Math.max(0,(1-f)/0.14):1);
+const base=dir==='haut'?-0.9:(dir==='bas'?0.5:0), ang=base+k*(dir==='haut'?-0.15:0.65);
+g.save();g.translate(hx,hy);g.scale(s*sc,sc);g.rotate(ang);
+const P=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(a,b,w,h);};
+P(-4,-3,8,7,'#4f8aa8');P(-4,-3,8,1.2,'#8ac0d8');P(-4,3,8,1,'#2f5a70');P(3,-2,1,5,'#3a6a84');P(-3,-1,1,3,'rgba(255,255,255,.25)');
+g.strokeStyle='#2f5a70';g.lineWidth=1.2;g.beginPath();g.arc(-0.5,-3,3,Math.PI,0);g.stroke();
+g.fillStyle='#4f8aa8';g.beginPath();g.moveTo(3.5,1);g.lineTo(10,-4);g.lineTo(10.8,-3);g.lineTo(4,3);g.fill();P(9.6,-5,2.4,2.4,'#2f5a70');
+g.restore();
+/* le bout du bec, dans l'écran */
+const c=Math.cos(ang), sn=Math.sin(ang), bx=10.8*sc, by=-3.8*sc, ex=hx+s*(bx*c-by*sn), ey=hy+(bx*sn+by*c);
+if(k<0.6)return;
+/* où tombe l'eau : la parcelle visée si on l'a, sinon un pas devant */
+let tx,ty;const C=window.FP_ARROSE;
+if(C&&Date.now()-C.t<1500&&Math.hypot(C.x-camX-x,C.y-camY-y)<70){tx=C.x-camX+(dir==='gauche'?6:dir==='droite'?-6:0);ty=C.y-camY+(dir==='haut'?6:dir==='bas'?-4:0);}
+else{tx=x+(dir==='droite'?22:dir==='gauche'?-22:4);ty=y+(dir==='haut'?-30:dir==='bas'?14:-2);}
+const t=Date.now()/1000;
+g.save();g.strokeStyle='rgba(150,205,245,.85)';g.lineWidth=0.8;g.beginPath();g.moveTo(ex,ey);g.quadraticCurveTo((ex+tx)/2,Math.min(ey,ty)-3,tx,ty);g.stroke();
+for(let q=0;q<6;q++){const u=((t*1.6+q/6)%1), mx=(ex+tx)/2, my=Math.min(ey,ty)-3;const xx=(1-u)*(1-u)*ex+2*(1-u)*u*mx+u*u*tx, yy=(1-u)*(1-u)*ey+2*(1-u)*u*my+u*u*ty;g.fillStyle='rgba(200,236,255,.95)';g.fillRect(xx-0.4,yy-0.4,0.9,0.9);}
+for(let q=0;q<6;q++){const a=q*1.05+t*7, r=1.5+((t*3+q*0.3)%1)*2.5;g.fillStyle='rgba(205,238,255,'+(0.9-((t*3+q*0.3)%1)*0.7).toFixed(2)+')';g.fillRect(tx+Math.cos(a)*r-0.4,ty-Math.abs(Math.sin(a))*r*0.8-0.4,0.8,0.8);}
+g.fillStyle='rgba(60,40,25,.25)';g.beginPath();g.ellipse(tx,ty+0.5,3.5,1.4,0,0,7);g.fill();g.restore();}
 </script>
 </body>
 </html>
