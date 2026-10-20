@@ -1442,9 +1442,12 @@ else if(id==='hamecon'){
 }
 else R(W/2-8,H/2-8,16,16,'#b8a888');
 }
+function pcmPatron(cv){if(!cv)return;const g=cv.getContext('2d');g.imageSmoothingEnabled=false;const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};g.clearRect(0,0,46,52);
+ R(10,4,26,6,'#1f4a6a');R(8,9,30,2,'#1f4a6a');R(12,11,22,14,'#e8b890');R(16,15,3,3,'#1a1a1a');R(27,15,3,3,'#1a1a1a');R(14,20,18,6,'#e8e8e8');R(19,21,8,2,'#a84a3a');R(9,27,28,21,'#f4c030');R(13,27,20,21,'#e8e0c8');R(4,29,6,13,'#f4c030');R(36,29,6,13,'#f4c030');R(3,41,7,4,'#e8b890');R(36,41,7,4,'#e8b890');}
 async function ouvrirLaBoutiqueDePeche(){
 $('catalogue').classList.add('on');
-$('catPages').innerHTML='<div class="catVide">Fanny cherche ses clés…</div>';
+try{pcmPatron($('pcmPatron'));$('pcmBulle').textContent='« Attends, je cherche mes clés… »';}catch(x){}
+$('catPages').innerHTML='';
 await chargerLEquipement();
 afficherPecheMarine();
 }
@@ -1487,43 +1490,27 @@ const SECTIONS=[
       etat:fin.includes(id)?'possede':'achat',choisi:q.finition===id,choix:'f'}))}
 ];
 const S=SECTIONS.find(x=>x.id===window.PECHE_ONGLET)||SECTIONS[0];
-/* les onglets */
-const ongl='<div class="pOng">'+SECTIONS.map(x=>
-  '<button class="pOngB'+(x.id===S.id?' on':'')+'" data-o="'+x.id+'">'+
-  '<canvas data-img="'+x.ic+'" width="68" height="40"></canvas>'+x.t.replace('LES ','')+'</button>').join('')+'</div>';
-/* les cartes */
+const ICO={cannes:['🎣','Cannes'],access:['⚙️','Accessoires'],appats:['🪱','Appâts'],finitions:['🎨','Finitions']};
+const ongl='<div class="pcmOng">'+SECTIONS.map(x=>'<button class="'+(x.id===S.id?'on':'')+'" data-o="'+x.id+'"><i>'+ICO[x.id][0]+'</i>'+ICO[x.id][1]+'</button>').join('')+'</div>';
+let suivante=false;
 const carte=(a)=>{
-  const bouton =
-    a.etat==='equipee' ? '<button class="pB eq" disabled>ÉQUIPÉE</button>' :
-    a.etat==='possede' ? (a.choix
-        ? '<button class="pB '+(a.choisi?'eq':'ch')+'" data-'+a.choix+'="'+(a.cval!==undefined?a.cval:a.id)+'">'+(a.choisi?'CHOISI':'CHOISIR')+'</button>'
-        : '<button class="pB eq" disabled>✓ À TOI</button>') :
-    a.etat==='verrou'  ? '<button class="pB off" disabled>VERROUILLÉ</button>' :
-    '<button class="pB" data-a="'+a.id+'">ACHETER</button>';
-  const extra = (typeof a.n==='number'&&a.n>0) ? '<span class="pQte">×'+a.n+'</span>' : '';
-  return '<div class="pC'+(a.etat==='verrou'?' gris':'')+'">'+extra+
-    '<canvas data-img="'+a.id+'" width="144" height="80"></canvas>'+
-    '<b>'+a.nom+'</b><span class="pPx"><u></u>'+enEuros(a.prix)+'</span>'+
-    (a.d?'<em>'+a.d+'</em>':'<em></em>')+bouton+'</div>';
-};
-/* les appâts s'affichent en lignes : on voit d'un coup la boîte et celui qui est accroché */
-const ligneAppat=(a)=>{
-  const vide=a.n<=0;
-  return '<div class="pL'+(a.choisi?' act':'')+(vide?' vide':'')+'">'+
-    '<canvas data-img="'+a.id+'" width="144" height="80"></canvas>'+
-    '<div class="pLt"><b>'+a.nom+'</b>'+
-      '<span class="pLs">'+(vide?'boîte vide':'il t’en reste '+a.n)+'</span>'+
-      '<em>'+a.d+'</em></div>'+
-    '<div class="pLb">'+
-      (a.choisi?'<span class="pTag">ACCROCHÉ</span>'
-              :(vide?'':'<button class="pB ch" data-m="'+a.id+'">CHOISIR</button>'))+
-      '<button class="pB" data-a="'+a.id+'">'+enEuros(a.prix)+' <small>×10</small></button>'+
-    '</div></div>';};
-$('catPages').innerHTML = ongl +
-  '<div class="pCorps"><h3 class="pT">'+S.t+'</h3><i class="pS">'+S.s+'</i>'+
-  (S.liste ? '<div class="pLs2">'+S.l.map(ligneAppat).join('')+'</div>'
-           : '<div class="pGr">'+S.l.map(carte).join('')+'</div>')+
-  (mot?'<div class="pMot">'+mot+'</div>':'')+'</div>';
+  let tag='',cls='',bouton;
+  if(a.etat==='equipee'){tag='<div class="pcmTag">ÉQUIPÉE</div>';cls=' eq';bouton='<button class="pcmB ok" disabled>✓ En main</button>';}
+  else if(a.etat==='possede'){
+    if(a.choix){if(a.choisi){tag='<div class="pcmTag">CHOISIE</div>';cls=' eq';}
+      bouton='<button class="pcmB '+(a.choisi?'ok':'ch')+'" data-'+a.choix+'="'+(a.cval!==undefined?a.cval:a.id)+'">'+(a.choisi?'✓ Choisie':'Choisir')+'</button>';}
+    else bouton='<button class="pcmB ok" disabled>✓ À toi</button>';}
+  else if(a.etat==='verrou'){cls=' lock';bouton='<button class="pcmB lk" disabled>🔒 '+enEuros(a.prix)+'</button>';}
+  else{if(S.id==='cannes'&&!suivante){suivante=true;tag='<div class="pcmTag n">SUIVANTE</div>';}
+    bouton='<button class="pcmB ach" data-a="'+a.id+'">Acheter · '+enEuros(a.prix)+'</button>';}
+  return '<div class="pcmCa'+cls+'">'+tag+'<div class="pcmIll"><canvas data-img="'+a.id+'" width="144" height="80"></canvas></div><b>'+a.nom.charAt(0).toUpperCase()+a.nom.slice(1)+'</b>'+(a.d?'<p>'+a.d+'</p>':'<p></p>')+bouton+'</div>';};
+const ligneAppat=(a)=>{const vide=a.n<=0;
+  return '<div class="pcmCa'+(a.choisi?' eq':'')+(vide?' vide':'')+'">'+(a.choisi?'<div class="pcmTag">ACCROCHÉ</div>':'')+
+   '<div class="pcmIll"><canvas data-img="'+a.id+'" width="144" height="80"></canvas></div><b>'+a.nom+'</b><div class="pcmQ">'+(vide?'Boîte vide':'Il t’en reste '+a.n)+'</div><p>'+a.d+'</p>'+
+   '<div class="pcmB2">'+((a.choisi||vide)?'':'<button class="pcmB ch" data-m="'+a.id+'">Accrocher</button>')+'<button class="pcmB ach" data-a="'+a.id+'">'+enEuros(a.prix)+' ×10</button></div></div>';};
+const MOTS={cannes:'« Une canne plus fine, c’est un cercle plus lent : tu ferres mieux, petit. »',access:'« De petits détails, de grosses prises. »',appats:'« Choisis ce que tu accroches. Quand la boîte est vide, je t’en remets dix. »',finitions:'« Un bon pêcheur reconnaît sa canne au premier coup d’œil. »'};
+try{$('pcmBulle').textContent=mot||MOTS[S.id]||'';}catch(x){}
+$('catPages').innerHTML = ongl+'<div class="pcmCorps"><div class="pcmSous">'+S.s+'</div><div class="pcmGr">'+S.l.map(S.liste?ligneAppat:carte).join('')+'</div></div>';
 /* les dessins */
 $('catPages').querySelectorAll('canvas[data-img]').forEach(cv=>illustrerArticle(cv,cv.dataset.img));
 /* les gestes */
