@@ -16342,8 +16342,7 @@ const cv=$('cv'), ctx=cv.getContext('2d',{alpha:false});   /* toile opaque : le 
 let VW=0,VH=0;
 let ECH=ZOOM;
 let ECH_CSS=ZOOM;                 /* combien de points d'écran pour un point de jeu */
-var ECO=false;                 /* l'ultra économie d'énergie : lue avant tout le reste */
-try{ECO=localStorage.getItem('bdl.eco')==='1';}catch(e){}
+var ECO=false;                 /* l'économie d'énergie est retirée : un seul mode pour tous */
 let QUALITE_TOILE=ECO?0:1;     /* 1 : toile en 2×, sinon 1,5× (réglé une fois, si ça rame) */
 function taille(){
 const w=window.innerWidth, h=window.innerHeight;
@@ -20953,7 +20952,7 @@ let QUALITE=1;                 /* 1 = tout, 0.5 = allégé, 0 = l'essentiel */
    annoncent 4 cœurs ou 4 Go alors qu'ils tiennent très bien le plein éclairage.
    La mesure d'images redescend toute seule en deux secondes si ça rame vraiment. */
 const TELEPHONE_MODESTE=((navigator.deviceMemory||8)<=2)&&((navigator.hardwareConcurrency||8)<=4);
-if(TELEPHONE_MODESTE){QUALITE=0.5;QUALITE_TOILE=0.5;}
+/* un seul mode : plus de départ en qualité réduite */
 function appliquerEconomie(){
 if(!TELEPHONE_MODESTE){QUALITE=1;QUALITE_TOILE=1;}
 try{if(typeof videCache==='function')videCache();if(typeof taille==='function')taille();}catch(x){}
@@ -21185,7 +21184,7 @@ netSuivre(ms);
 if(typeof REG!=='undefined'&&REG.finesse&&REG.finesse!=='auto')return;
 /* LES PREMIÈRES SECONDES NE COMPTENT PAS : le chargement (le sol, les dessins) fait ramer quelques images,
    et la qualité tombait au cran « allégé » — la nuit pâle — puis remontait trente secondes plus tard, d'un coup. */
-if(performance.now()<MESURE_DES)return;
+return;   /* UN SEUL MODE : la qualité ne change plus jamais toute seule */
 msMoyen=msMoyen*0.9+ms*0.1;
 if(msMoyen>26){
 imagesLentes++;imagesRapides=0;
@@ -28023,6 +28022,9 @@ try{
 const d=JSON.parse(localStorage.getItem('bdl.reglages')||'{}');
 Object.assign(REG,d);
 }catch(x){}
+/* UN SEUL MODE D'IMAGE POUR TOUT LE MONDE : plus d'allégé, plus d'économie, plus de choix. */
+REG.finesse='haute';REG.nettete='auto';REG.eco=false;
+try{ECO=false;localStorage.removeItem('bdl.eco');localStorage.removeItem('bdl.nettete');NET_AUTO='nette';QUALITE_TOILE=1;}catch(x){}
 appliquerReglages();
 }
 function appliquerReglages(){
@@ -28140,7 +28142,6 @@ rang('↻','Mettre à jour','<i id="rgMaj">on regarde…</i>','<span class="ch">
 rang('?','Comment jouer','','<span class="ch">›</span>','aide')+
 '</div>'+
 '<div class="rub">L’IMAGE</div><div class="grp">'+
-rang('◧','Performance','',val(PERF_NOM[perfChoisie()]),'perf')+
 rang('☺','Le personnage','',val(STYLE_FIN()?'Pixel fin':'Classique'),'perso')+
 rang('☾','Jour et nuit','',val(REG.ciel==='jour'?'Plein jour':'Suivre l’heure'),'ciel')+
 rang('≈','Secouer aux impacts','',inter('secousses',REG.secousses!==false),'')+
