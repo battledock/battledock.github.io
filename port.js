@@ -1,7 +1,7 @@
 const XP={
 maisonsY:152,            /* le pied des façades */
 quaiY:340,               /* le bord du quai, au-dessus du bassin */
-bassinO:0, bassinE:MONDE_L,     /* LA MER SORT DU CADRE DES DEUX COTES.
+bassinO:296, bassinE:1464,     /* UN QUAI DE CHAQUE COTE, comme avant : le bassin s'arrete a 120 px des bouts de la ville */     /* LA MER SORT DU CADRE DES DEUX COTES.
                                    Elle s'arretait a 170 pour laisser une
                                    langue de terre au boulodrome ; le quai
                                    s'ouvrant aussi a l'ouest, cette terre
@@ -430,7 +430,9 @@ const margelle=(x,y,w,h)=>{R(x,y,w,h,'#bfae88');R(x,y,w,1,'#efe3c4');};
 margelle(XP.bassinO-4,XP.quaiY-4,XP.bassinE-XP.bassinO+8,5);
 R(XP.bassinO,XP.quaiY+1,XP.bassinE-XP.bassinO,6,'#8f8468');
 R(XP.bassinO,XP.quaiY+7,XP.bassinE-XP.bassinO,2,'rgba(10,40,60,.35)');
-/* (plus de margelle ni a l'ouest ni a l'est : l'eau continue hors du cadre) */
+/* LES DEUX QUAIS LATERAUX : la margelle redescend le long de l'eau */
+margelle(XP.bassinO-4,XP.quaiY-4,5,MONDE_H-XP.quaiY+4);R(XP.bassinO+1,XP.quaiY+1,2,MONDE_H,'#8f8468');R(XP.bassinO+3,XP.quaiY+1,2,MONDE_H,'rgba(10,40,60,.35)');
+margelle(XP.bassinE-1,XP.quaiY-4,5,MONDE_H-XP.quaiY+4);R(XP.bassinE-3,XP.quaiY+1,2,MONDE_H,'#8f8468');R(XP.bassinE-5,XP.quaiY+1,2,MONDE_H,'rgba(10,40,60,.35)');
 XP.pontons.forEach(px=>{
 const x0=px-XP.pontonL, w=XP.pontonL*2;
 R(x0+2,XP.quaiY+2,w,XP.pontonFin-XP.quaiY+2,'rgba(10,40,60,.35)');   /* l'ombre */
@@ -2302,9 +2304,10 @@ nv++;
    sont retires. C'est la grande affiche, derriere le garde-corps, qui dit
    ou mene le bout du quai. */
 for(let x=24;x<MONDE_L-24;x+=74){
-if(XP.pontons.some(p=>Math.abs(p-x)<26))continue;
+if(XP.pontons.some(p=>Math.abs(p-x)<26)||x<XP.bassinO||x>XP.bassinE)continue;
 P('x_bitte',x,XP.quaiY-3,{col:[4,3]});
 }
+for(let y=XP.quaiY+40;y<MONDE_H-10;y+=74){P('x_bitte',XP.bassinO-9,y,{col:[4,3]});P('x_bitte',XP.bassinE+9,y,{col:[4,3]});}
 /* LA LANGUE DE TERRE DU SUD-OUEST EST SOUS L'EAU : avec elle partent les
    quatre platanes, les deux bancs et les quatre boulistes qui s'y
    tenaient. Les boulistes de Notre-Dame-de-la-Garde, eux, ne bougent pas. */
@@ -2340,7 +2343,7 @@ const A=(i)=>alea(i*1.37+0.5);
    se serait vu comme une dalle posee la. */
 /* ---- LE PAVÉ : des joints d'un demi-pixel, un grain plus fin ---- */
 dallesDuQuai((x,y,w,h)=>{
-  if(y>=XP.quaiY-4)return;                       /* au-dela c'est l'eau */
+  if(y>=XP.quaiY-4&&!(x+w<=XP.bassinO-4||x>=XP.bassinE+4))return;   /* au-dela c'est l'eau, sauf sur les quais des cotes */
   R(x,y,w,0.5,'rgba(158,140,106,.24)');
   R(x,y,0.5,h,'rgba(158,140,106,.24)');
   R(x+w-0.5,y+0.5,0.5,h-0.5,'rgba(126,110,82,.10)');
@@ -2443,6 +2446,8 @@ g.fillStyle=fond;g.fillRect(XP.bassinO,XP.quaiY,XP.bassinE-XP.bassinO,eauH);
 }
 /* la margelle reprend sa lumière par-dessus l'eau */
 R(XP.bassinO-4,XP.quaiY-4,XP.bassinE-XP.bassinO+8,0.5,'rgba(255,248,226,.40)');
+R(XP.bassinO-4,XP.quaiY-4,0.5,MONDE_H,'rgba(255,248,226,.40)');R(XP.bassinE+3.5,XP.quaiY-4,0.5,MONDE_H,'rgba(255,248,226,.40)');
+for(let i=0;i<9000;i++){const cote=i%2,x=cote?XP.bassinE+5+A(i*1.3)*(MONDE_L-XP.bassinE-5):A(i*1.3)*(XP.bassinO-5),y=XP.quaiY+A(i*2.1)*(MONDE_H-XP.quaiY);R(x,y,0.5,0.5,(i%3)?'rgba(255,252,240,.10)':'rgba(120,104,78,.10)');}
 g.setTransform(1,0,0,1,0,0);
 return c;
 }
