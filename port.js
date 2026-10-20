@@ -307,11 +307,10 @@ function dallesDuQuai(cb){
        l'appareil de briques quoi qu'on fasse aux proportions : l'oeil lit
        la regularite avant de lire la forme. Entre 8 et 15, il lit des
        dalles posees. */
-    const h=8+Math.floor(A(y*1.91)*8);
+    const h=22;                                /* LE GRANIT DU VIEUX-PORT : des bandes regulieres */
     let x=-Math.floor(A(y*0.77)*60);
     while(x<MONDE_L){
-      let w=30+Math.floor(A(x*0.31+y)*26);
-      if(A(x*0.53+y*1.7)<0.16)w+=26;         /* une longue dalle, de loin en loin */
+      const w=44+Math.floor(A(x*0.31+y)*3)*11;   /* 44, 55 ou 66 : de grandes dalles polies */
       cb(x,y,w,h);
       x+=w;
     }
@@ -328,14 +327,14 @@ R(0,0,MONDE_L,160,'#b8a888');
    dalle se detachait de sa voisine, et un damier contraste se lit comme un
    parement, jamais comme un sol. Resserres, le pavage redevient une
    SURFACE sur laquelle le grain et l'usure font le relief. */
-const pierre=['#ddcca4','#d9c7a0','#dfcfa8','#d7c59e','#dbc9a2'];
-R(0,70,MONDE_L,MONDE_H-70,'#d9c7a0');
+const pierre=['#d6d2ca','#d2cec5','#dad6ce','#cfcbc2','#d4d0c8','#ccc8bf'];   /* granit clair, poli */
+R(0,70,MONDE_L,MONDE_H-70,'#d4d0c8');
 dallesDuQuai((x,y,w,h)=>{
 R(x,y,w,h,pierre[Math.floor(A(x+y*3.1)*pierre.length)]);
-R(x,y,w,1,'rgba(158,140,106,.20)');R(x,y,1,h,'rgba(158,140,106,.20)');   /* le joint, pareil des quatre cotes et presque efface */
+R(x,y,w,1,'rgba(118,114,106,.30)');R(x,y,1,h,'rgba(118,114,106,.30)');   /* le joint, pareil des quatre cotes et presque efface */
 for(let i=0;i<3;i++)                                                    /* le grain, DEDANS la dalle et non sur son arete */
-R(x+3+A(x*1.9+y+i)*(w-7),y+2+A(x*2.3+y*1.1+i)*7,2,1,'rgba(255,250,236,.09)');
-if(A(x*1.7+y)<.12)R(x+3+A(x)*(w-9),y+3+A(y)*5,3,1,'#b9a37a');           /* une usure */
+R(x+3+A(x*1.9+y+i)*(w-7),y+2+A(x*2.3+y*1.1+i)*17,2,1,'rgba(255,255,255,.12)');
+if(A(x*1.7+y)<.10)R(x+3+A(x)*(w-9),y+3+A(y)*15,3,1,'rgba(110,108,104,.35)');           /* une usure */
 })
 /* LES COLLINES, AU BOUT DE LA VILLE. Elles se posent avant les toits :
    elles sont au fond, les toits passent devant. C'est elles qu'on voit en
@@ -2342,19 +2341,20 @@ const A=(i)=>alea(i*1.37+0.5);
 /* ---- LE PAVÉ : des joints d'un demi-pixel, un grain plus fin ---- */
 dallesDuQuai((x,y,w,h)=>{
   if(y>=XP.quaiY-4)return;                       /* au-dela c'est l'eau */
-  R(x,y,w,0.5,'rgba(158,140,106,.24)');
-  R(x,y,0.5,h,'rgba(158,140,106,.24)');
-  R(x+w-0.5,y+0.5,0.5,h-0.5,'rgba(126,110,82,.10)');
+  R(x,y,w,0.5,'rgba(112,108,100,.42)');
+  R(x,y,0.5,h,'rgba(112,108,100,.42)');
+  R(x,y+0.5,w,0.5,'rgba(255,255,255,.30)');   /* l'arete polie */
+  R(x+w-0.5,y+0.5,0.5,h-0.5,'rgba(90,88,84,.12)');
   /* PLUS DE FILET CLAIR SOUS LE JOINT : c'etait le dessus eclaire d'une
      brique, et c'est lui qui dressait le quai en mur. */
 });
 for(let i=0;i<26000;i++){
   const x=A(i*1.7)*MONDE_L, y=70+A(i*2.9)*(XP.quaiY-74);
-  R(x,y,0.5,0.5,(i%3)?'rgba(255,252,240,.10)':'rgba(120,104,78,.10)');
+  R(x,y,0.5,0.5,(i%3)?'rgba(255,255,255,.16)':'rgba(90,90,100,.12)');
 }
 for(let i=0;i<900;i++){
   const x=A(i*3.3+7)*MONDE_L, y=70+A(i*4.1+2)*(XP.quaiY-74);
-  R(x,y,1+A(i)*2,0.5,'rgba(126,110,80,.13)');
+  R(x,y,1+A(i)*2,0.5,'rgba(100,98,94,.10)');
 }
 
 /* ================= L'OMBRE DES FAÇADES SUR LE QUAI =================
