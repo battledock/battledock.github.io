@@ -26009,8 +26009,9 @@ if(o.ouvre==='cheneOuverture'){b.innerHTML='Le grand chêne<small>CEUX QUI ÉTAI
 if(o.t==='x_fo_ponton')return;   /* le moteur de pêche s'en occupe */
 if(o.ouvre==='laRecolte'){b.innerHTML='La Récolte<small>VENDRE TA RÉCOLTE</small>';b.classList.add('on');return;}
 if(o.ouvre==='etalGraines'){b.innerHTML='Les graines<small>SEMENCES · OUTILS · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
+if(o.ouvre==='maree'){b.innerHTML='Entrer à La Marée<small>POISSONNERIE · VENDS TA PÊCHE</small>';b.classList.add('on');return;}
 if(o.ouvre==='bouillabaisse'){b.innerHTML='Entrer Chez Fonfon<small>RESTAURANT · CUISINE TA BOUILLABAISSE</small>';b.classList.add('on');return;}
-if(o.ouvre==='poissonnerie'){b.innerHTML='Vendre ta pêche<small>LA CRIÉE · POISSONNERIE</small>';b.classList.add('on');return;}
+if(o.ouvre==='poissonnerie'){b.innerHTML='La Criée<small>LE COMPTOIR DU PORT</small>';b.classList.add('on');return;}
 if(o.ouvre==='peche'){b.innerHTML='Le Pêcheur Heureux<small>CANNES, MOULINETS, APPÂTS</small>';b.classList.add('on');return;}
 if(o.ouvre==='salon'){b.innerHTML='Entrer à La Marinière<small>VÊTEMENTS DU PORT</small>';b.classList.add('on');return;}
 if(o.ouvre==='presse'){b.innerHTML='Ouvrir mon livret<small>LA CAPITAINERIE DU PORT</small>';b.classList.add('on');return;}
@@ -26124,7 +26125,7 @@ return;
 if(o.t==='panneauV'){ouvrirLeTuto();return;}
 if(o.t==='x_tableau'){ouvrirLeTableau();return;}
 if(o.t==='metro'){choisirLaDestination();return;}
-if(o.t==='x_etal'||o.t==='x_pavPoisson'){ouvrirLeComptoir(MODE_POISSON);return;}
+if(o.t==='x_etal'||o.t==='x_pavPoisson'){ouvrirLaMaree();return;}
 if(o.t==='x_pavPeche'){ouvrirLaBoutiqueDePeche();return;}
 if(o.t==='x_chantier'){texteVolant(o.x,o.y-78,'Construction en cours…','#ffd040');
 setTimeout(()=>texteVolant(o.x,o.y-66,'Vous allez bientôt pouvoir découvrir','#fff3d0'),350);
@@ -26134,7 +26135,7 @@ if(o.ouvre==='crousti'){ouvrirCrousti();return;}
 if(o.ouvre==='salon'){ouvrirLaMariniere();return;}
 if(o.ouvre==='presse'){afficheCapitainerie();return;}
 if(o.ouvre==='bar'){ouvrirLeBar();return;}
-if(o.ouvre==='poissonnerie'){ouvrirLaCriee();return;}
+if(o.ouvre==='poissonnerie'){ouvrirLaCriee('comptoir');return;}   /* la pêche se vend désormais à La Marée */
 if(o.ouvre==='metroForet'){choisirLaDestination();return;}
 if(o.ouvre==='tokyo'){ouvrirLeQuaiTokyo();return;}
 if(o.ouvre==='metroVallon'){voyagerVers('extramar','Direction Le port');return;}
@@ -26171,6 +26172,7 @@ if(o.ouvre==='cheneOuverture'){ouvrirLeGrandChene();return;}
 
 if(o.ouvre==='laRecolte'){ouvrirLaBoutiqueFerme();return;}
 if(o.ouvre==='etalGraines'){ouvrirLeGrainetier('graines');return;}
+if(o.ouvre==='maree'){ouvrirLaMaree();return;}
 if(o.ouvre==='bouillabaisse'){ouvrirChezFonfon();return;}
 if(o.ouvre==='peche'){ouvrirLaBoutiqueDePeche();return;}
 if(o.ouvre==='sortieStade'){sortirDuStade();return;}
@@ -27771,6 +27773,124 @@ function graverLesIconesDuLac(){
 try{Object.keys(LAC_P||{}).forEach(k=>{if(!ICONES[k]){const i=iconeDuLac(k);if(i)ICONES[k]=i;}});}catch(x){}
 }
 
+
+/* =====================================================================
+   LA MARÉE — la poissonnerie du Vieux-Port, à la place de Chez Fonfon.
+   C'est désormais le seul endroit où l'on vend sa pêche. L'étal de glace :
+   une carte par espèce, − / + / Tout, le prix du jour et sa tendance, le
+   ticket en bas sur téléphone et dans une colonne à droite sur tablette.
+   ===================================================================== */
+const MAR_LAC=['gardon','perche','truite','anguilledouce','carpe','brochet','silure','ecrevisse'];
+const MAR_TRESORS=['chaussette','canard','savonnette','cabas','oursou','parapluie','pneu','boule','cadenas','santon','dentier','panneau','bouteille','maillot','chariot','telephone','cagole','scaphandrier','sirene','botte'];
+let MAR_ONG='mer', MAR_SEL={}, MAR_EN_COURS=false;
+const marRayon=(k)=>MAR_TRESORS.includes(k)?'tresors':((MAR_LAC.includes(k)||(typeof LAC_P!=='undefined'&&LAC_P&&LAC_P[k]))?'lac':'mer');
+const marPrix=(k)=>prixDuJour(k,PRIX_POISSON[k]||0);
+const marTend=(k)=>{const f=COURS[k]&&COURS[k].f;if(!f)return ['eq','='];const p=Math.round((f-1)*100);if(p>=4)return ['up','▲ '+p+' %'];if(p<=-4)return ['dn','▼ '+(-p)+' %'];return ['eq','='];};
+const CSS_MAR=`#mar{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#0d2238;color:#14263a;font-family:'Baloo 2',system-ui,sans-serif}
+#mar *{box-sizing:border-box}
+#mar .tete{flex:none;position:relative;padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 12px;background:#f4f7fa;background-image:linear-gradient(rgba(120,150,180,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(120,150,180,.18) 1px,transparent 1px);background-size:14px 14px}
+#mar .l1{display:flex;align-items:center;gap:8px}
+#mar .ens{flex:1;min-width:0;display:flex;align-items:center;gap:8px}
+#mar .plaque{white-space:nowrap;background:#1f4f8a;border:3px solid #fff;outline:2px solid #1f4f8a;border-radius:6px;padding:1px 10px;color:#fff;font-weight:800;font-size:20px;letter-spacing:2px;line-height:1.25}
+#mar .ens small{display:block;font-size:10px;font-weight:800;color:#1f4f8a;letter-spacing:1px;line-height:1.1;min-width:0}
+#mar .bourse{flex:none;background:#14263a;color:#ffd970;border-radius:14px;padding:4px 10px;font-weight:800;font-size:13px;white-space:nowrap}
+#mar .x{flex:none;width:38px;height:38px;border-radius:12px;border:0;background:#e2564a;color:#fff;font-weight:800;font-size:18px;box-shadow:0 3px 0 #9a2a22}
+#mar .poiss{display:flex;gap:10px;align-items:flex-end;margin-top:8px}
+#mar .poiss canvas{flex:none;width:46px;height:52px;image-rendering:pixelated}
+#mar .bulle{position:relative;flex:1;min-width:0;background:#fff;border:2px solid #1f4f8a;border-radius:14px;padding:5px 10px;font-weight:700;font-size:13px;line-height:1.3;color:#14263a}
+#mar .bulle:before{content:'';position:absolute;left:-9px;bottom:10px;border:8px solid transparent;border-right-color:#1f4f8a;border-left:0}
+#mar .store{flex:none;height:14px;background:repeating-linear-gradient(90deg,#1f4f8a 0 18px,#fff 18px 36px);position:relative}
+#mar .store:after{content:'';position:absolute;left:0;right:0;top:14px;height:8px;background:radial-gradient(circle at 9px 0,#1f4f8a 8.5px,transparent 9px) 0 0/36px 8px repeat-x,radial-gradient(circle at 27px 0,#fff 8.5px,transparent 9px) 0 0/36px 8px repeat-x;z-index:2}
+#mar .onglets{flex:none;display:flex;gap:6px;padding:16px 12px 8px}
+#mar .onglets button{flex:1;border:0;border-radius:12px;padding:8px 0;font:800 13px 'Baloo 2',sans-serif;background:#1b3a5c;color:#bcd2e6}
+#mar .onglets button.on{background:#ffd970;color:#14263a;box-shadow:0 3px 0 #b08a2a}
+#mar .corps{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:10px 12px 12px}
+#mar .glace{background:linear-gradient(180deg,#e6f3fa,#cfe6f2);border-radius:18px;padding:10px;box-shadow:inset 0 0 0 2px #fff,0 4px 0 #0a1a2c}
+#mar .grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:8px}
+#mar .carte{position:relative;background:#fff;border-radius:14px;padding:8px 8px 7px;box-shadow:0 2px 0 #9ec0d4;border:2px solid transparent;min-width:0}
+#mar .carte.sel{border-color:#1f4f8a;box-shadow:0 2px 0 #1f4f8a}
+#mar .ic{height:52px;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 60%,#eaf6fc,#d4eaf4);border-radius:10px}
+#mar .ic svg{width:44px;height:44px;shape-rendering:crispEdges}
+#mar .carte b{display:block;font-size:14.5px;margin-top:4px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mar .prix{display:flex;align-items:center;gap:4px;font-weight:800;font-size:13px;color:#1f4f8a;flex-wrap:wrap}
+#mar .t{font-size:11px;padding:0 5px;border-radius:6px}#mar .t.up{background:#dff4e2;color:#2a8a3a}#mar .t.dn{background:#fbe3df;color:#c0392b}#mar .t.eq{background:#eef1f4;color:#8a96a2}
+#mar .dispo{font-size:11px;color:#6a7a88;font-weight:700}
+#mar .badge{position:absolute;top:-6px;right:-6px;min-width:26px;height:26px;border-radius:13px;background:#1f4f8a;color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;padding:0 6px;border:2px solid #fff}
+#mar .pm{display:flex;gap:4px;margin-top:5px}#mar .pm button{flex:1;height:32px;border:0;border-radius:9px;font:800 16px 'Baloo 2',sans-serif;background:#e8f1f7;color:#1f4f8a;padding:0}#mar .pm button.tout{flex:1.6;font-size:12px;background:#1f4f8a;color:#fff}
+#mar .vide{margin:30px 10px;text-align:center;font:700 15px 'Baloo 2',sans-serif;color:#cfe0ef;line-height:1.45}
+#mar .pied{flex:none;background:#0d2238;border-top:3px solid #ffd970;padding:10px 12px calc(12px + env(safe-area-inset-bottom,0px))}
+#mar .ticket{display:flex;justify-content:space-between;align-items:center;background:#fffaf0;border-radius:10px;padding:6px 12px;font:13px 'Courier New',monospace;color:#3a2a1a;margin-bottom:8px}
+#mar .ticket b{font:800 22px 'Baloo 2',sans-serif;color:#14263a}
+#mar .btns{display:flex;gap:8px}
+#mar .vendre{flex:1;border:0;border-radius:14px;height:52px;font:800 18px 'Baloo 2',sans-serif;background:linear-gradient(#ffd970,#f0b830);color:#14263a;box-shadow:0 4px 0 #a07a1a}
+#mar .vendre.rien{background:#4a5a6a;color:#a8b4c0;box-shadow:0 4px 0 #2a3a4a}
+#mar .tousv{flex:none;border:0;border-radius:14px;height:52px;padding:0 14px;font:800 14px 'Baloo 2',sans-serif;background:#1b3a5c;color:#fff;box-shadow:0 4px 0 #0a1a2c}
+#mar .cote{display:none}
+#mar .vendu{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) rotate(-12deg) scale(.4);opacity:0;font:900 44px Georgia,serif;color:#1f4f8a;border:5px solid #1f4f8a;border-radius:10px;padding:4px 18px;pointer-events:none;z-index:4;background:rgba(255,255,255,.85)}
+#mar .vendu.on{animation:marV 1.3s ease-out}@keyframes marV{0%{opacity:0;transform:translate(-50%,-50%) rotate(-12deg) scale(2)}20%{opacity:1;transform:translate(-50%,-50%) rotate(-12deg) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) rotate(-12deg) scale(1)}}
+@media (min-width:700px){#mar .tete{padding-left:24px;padding-right:24px}#mar .plaque{font-size:26px}#mar .ens small{font-size:11px}
+ #mar .onglets{padding:14px 24px 8px}#mar .onglets button{flex:none;width:180px}
+ #mar .corps{display:grid;grid-template-columns:1fr 300px;gap:16px;padding:14px 24px;align-items:start}#mar .pied{display:none}
+ #mar .cote{display:block;background:#0d2238;border-radius:18px;padding:14px;color:#fff;position:sticky;top:0;border:2px solid #2a4a6c}
+ #mar .cote h4{margin:0 0 8px;color:#ffd970;font-size:15px;letter-spacing:1px}#mar .cote .row{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:3px 0;border-bottom:1px dashed rgba(255,255,255,.15)}
+ #mar .cote .vendre,#mar .cote .tousv{width:100%;margin-top:10px}#mar .cote .tousv{height:44px}
+ #mar .grille{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}}`;
+function marPoissonniere(cv){if(!cv)return;const g=cv.getContext('2d');cv.width=46;cv.height=52;g.imageSmoothingEnabled=false;const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+ R(12,6,22,4,'#3a2a20');R(11,9,24,16,'#e8c0a0');R(10,8,4,14,'#5a3a2a');R(32,8,4,14,'#5a3a2a');R(17,15,3,3,'#1a1a1a');R(27,15,3,3,'#1a1a1a');R(19,21,8,2,'#a84a3a');R(14,19,3,2,'#f0a0a0');R(30,19,3,2,'#f0a0a0');
+ R(8,26,30,22,'#2a5a9a');R(12,28,22,20,'#f4f4f4');R(12,28,22,2,'#1f4f8a');R(4,28,6,14,'#2a5a9a');R(36,28,6,14,'#2a5a9a');R(3,40,7,5,'#e8c0a0');R(36,40,7,5,'#e8c0a0');R(10,6,26,3,'#1f4f8a');}
+function marMot(ks){const hausse=ks.filter(k=>marTend(k)[0]==='up').sort((a,b)=>marPrix(b)-marPrix(a))[0];
+ if(hausse)return '« '+((OBJETS[hausse]&&OBJETS[hausse].nom)||hausse)+' : ça monte aujourd’hui ! Pose-moi ça sur la glace, mon petit. »';
+ return ks.length?'« Montre-moi ta pêche, je te fais le prix du jour. »':'« Rien sur toi ? Va lancer ta ligne au bout des pontons. »';}
+function ouvrirLaMaree(){try{
+ if(typeof LAC_CHARGE!=='undefined'&&!LAC_CHARGE&&typeof chargerLesEspecesDuLac==='function')chargerLesEspecesDuLac().then(ok=>{if(ok&&$('mar'))marMaj();});
+ MAR_SEL={};if(!$('cssMar')){const s=document.createElement('style');s.id='cssMar';s.textContent=CSS_MAR;document.head.appendChild(s);}
+ $('page2Fond').className='';$('page2').classList.add('on');
+ $('page2Fond').innerHTML='<div id="mar" lang="fr"><div class="tete"><div class="l1"><div class="ens"><div class="plaque">LA MARÉE</div><small>POISSONNERIE<br>DU VIEUX-PORT</small></div><div class="bourse" id="marArgent">—</div><button class="x" id="marFermer" aria-label="Fermer">✕</button></div>'+
+ '<div class="poiss"><canvas id="marPoiss"></canvas><div class="bulle" id="marBulle">—</div></div></div><div class="store"></div>'+
+ '<div class="onglets"><button data-o="mer">La mer</button><button data-o="lac">Le lac</button><button data-o="tresors">Trésors</button></div>'+
+ '<div class="corps" id="marCorps"></div>'+
+ '<div class="pied"><div class="ticket"><span id="marCombien">—</span><b id="marTotal">0 €</b></div><div class="btns"><button class="vendre" id="marVendre">Vendre</button><button class="tousv" id="marTout">Tout</button></div></div>'+
+ '<div class="vendu" id="marVendu">VENDU</div></div>';
+ marPoissonniere($('marPoiss'));
+ $('marFermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+ $('marVendre').onclick=()=>marVendre(false);$('marTout').onclick=()=>marVendre(true);
+ $('page2Fond').querySelectorAll('.onglets button').forEach(b=>b.onclick=()=>{MAR_ONG=b.dataset.o;MAR_SEL={};vibrer(12);marMaj();});
+ marMaj();
+}catch(x){try{$('page2').classList.remove('on');}catch(y){}try{motOuverture('La Marée a eu un souci : '+(x&&x.message?x.message:x));}catch(y){}}}
+function marMaj(){if(!$('marCorps'))return;SAC_PEUT_BAISSER=Date.now();
+ const tous=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&PRIX_POISSON[k]);
+ {marMaj.lus=marMaj.lus||new Set();const neufs=tous.filter(k=>!marMaj.lus.has(k));if(neufs.length&&!marMaj.enCours){marMaj.enCours=true;neufs.forEach(k=>marMaj.lus.add(k));lireLesCours(neufs).then(()=>{marMaj.enCours=false;if($('marCorps'))marMaj();}).catch(()=>{marMaj.enCours=false;});}}
+ const compte={mer:0,lac:0,tresors:0};tous.forEach(k=>compte[marRayon(k)]++);
+ $('page2Fond').querySelectorAll('.onglets button').forEach(b=>{const o=b.dataset.o;b.classList.toggle('on',o===MAR_ONG);b.textContent=({mer:'La mer',lac:'Le lac',tresors:'Trésors'})[o]+(compte[o]?' · '+compte[o]:'');});
+ const ks=tous.filter(k=>marRayon(k)===MAR_ONG).sort((a,b)=>marPrix(b)*e.sac[b]-marPrix(a)*e.sac[a]);
+ const n=(k)=>MAR_SEL[k]||0;
+ const html=ks.length?'<div class="glace"><div class="grille">'+ks.map(k=>{const [tc,tt]=marTend(k),s=n(k);return '<div class="carte'+(s?' sel':'')+'" data-k="'+k+'">'+(s?'<div class="badge">'+s+'</div>':'')+
+  '<div class="ic"><svg viewBox="0 0 16 16">'+(ICONES[k]||'')+'</svg></div><b>'+((OBJETS[k]&&OBJETS[k].nom)||k)+'</b><div class="prix">'+cptSou(marPrix(k))+'<span class="t '+tc+'">'+tt+'</span></div>'+
+  '<div class="dispo">'+e.sac[k]+' dans le sac</div><div class="pm"><button data-m="-1">−</button><button data-m="1">+</button><button class="tout" data-m="tout">Tout</button></div></div>';}).join('')+'</div></div>'
+  :'<div class="vide">'+(MAR_ONG==='mer'?'Pas un poisson de mer dans ton sac.<br>Va lancer ta ligne au bout des pontons.':MAR_ONG==='lac'?'Rien du lac dans ton sac.<br>Le lac est dans la forêt.':'Pas de trésor repêché pour l’instant.<br>Ça mord parfois des choses bizarres…')+'</div>';
+ const sel=ks.filter(k=>n(k)>0), total=sel.reduce((t,k)=>t+marPrix(k)*n(k),0), nb=sel.reduce((t,k)=>t+n(k),0), toutVal=ks.reduce((t,k)=>t+marPrix(k)*e.sac[k],0);
+ const cote='<div class="cote"><h4>TON TICKET</h4>'+(sel.length?sel.map(k=>'<div class="row"><span>'+n(k)+' × '+((OBJETS[k]&&OBJETS[k].nom)||k)+'</span><b>'+cptSou(marPrix(k)*n(k))+'</b></div>').join(''):'<div class="row" style="opacity:.6"><span>Touche + ou Tout sur une carte</span></div>')+
+  '<div class="row" style="border:0;margin-top:6px;font-size:18px"><span>Total</span><b style="color:#ffd970">'+cptSou(total)+'</b></div>'+
+  '<button class="vendre'+(total?'':' rien')+'" data-v="sel">'+(total?'Vendre '+nb+' pièce'+(nb>1?'s':''):'Rien de choisi')+'</button><button class="tousv" data-v="tout">Tout vendre · '+cptSou(toutVal)+'</button></div>';
+ $('marCorps').innerHTML=html+cote;
+ $('marCorps').querySelectorAll('.carte').forEach(el=>{const k=el.dataset.k;el.onclick=(ev)=>{const b=ev.target.closest('[data-m]');const m=b?b.dataset.m:(n(k)?'0':'tout');
+  MAR_SEL[k]=m==='tout'?e.sac[k]:m==='0'?0:Math.max(0,Math.min(e.sac[k],n(k)+(+m)));vibrer(12);marMaj();};});
+ $('marCorps').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>marVendre(b.dataset.v==='tout'));
+ $('marCombien').textContent=nb?(nb+' pièce'+(nb>1?'s':'')+' sur la glace'):'Touche une carte pour choisir';$('marTotal').textContent=cptSou(total);
+ const v=$('marVendre');v.classList.toggle('rien',!total);v.textContent=total?('Vendre · '+cptSou(total)):'Rien de choisi';$('marTout').textContent=ks.length?'Tout':'—';
+ $('marArgent').textContent='🪙 '+enEuros(e.euros||0);if(!marMaj.parle){$('marBulle').textContent=marMot(tous);}}
+function marBulle(t){const b=$('marBulle');if(!b)return;b.textContent=t;marMaj.parle=true;clearTimeout(marBulle.t);marBulle.t=setTimeout(()=>{marMaj.parle=false;},3200);}
+async function marVendre(tout){if(MAR_EN_COURS)return;try{
+ const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&PRIX_POISSON[k]&&marRayon(k)===MAR_ONG);const q=(k)=>tout?e.sac[k]:(MAR_SEL[k]||0);
+ if(!ks.some(k=>q(k)>0))return;MAR_EN_COURS=true;let gagne=0;
+ for(const k of ks){const nb=q(k);if(!nb)continue;SAC_PEUT_BAISSER=Date.now();const d=await appelRPC('vendre_poisson',{p_joueur:e.id,p_type:k,p_nb:nb});
+  if(d&&d.erreur==='plafond'){marBulle('« Oh, doucement ! Je ne peux plus rien t’acheter aujourd’hui. »');break;}if(!d||d.erreur)continue;
+  gagne+=d.gain||0;if(typeof d.euros==='number')e.euros=d.euros;if(d.sac)adopterSac({sac:d.sac},++numAppelSac);}
+ MAR_EN_COURS=false;MAR_SEL={};sauver();majHaut();majPastille();
+ if(gagne){jouer('vente','moment');vibrer([30,50,30]);const s=$('marVendu');if(s){s.classList.remove('on');void s.offsetWidth;s.classList.add('on');}marBulle('« Et voilà '+cptSou(gagne)+' ! Belle pêche. »');}
+ else marBulle('« La vente n’a pas pu se faire. Réessaie. »');marMaj();
+}catch(x){MAR_EN_COURS=false;marBulle('La vente a eu un souci : '+(x&&x.message?x.message:x));}}
+
 let CRI_VENTE={}, CRI_EN_COURS=false;
 let COURS={};                       /* LE MARCHÉ : les prix bougent pour tout le monde */
 async function lireLesCours(types){
@@ -27794,7 +27914,7 @@ function ouvrirLaCrieeReelle(etal){
    elles n'apparaissent pas dans la liste de ce qu'on peut vendre. */
 if(!LAC_CHARGE)chargerLesEspecesDuLac().then(ok=>{
 if(ok&&$('page2').classList.contains('on'))ouvrirLaCrieeReelle(CRI_ETAL);});
-CRI_ETAL=etal||'poisson';CPT=MODE_POISSON;CRI_VENTE={};$('page2Fond').className='';$('page2').classList.add('on');
+CRI_ETAL='comptoir';CPT=MODE_POISSON;CRI_VENTE={};$('page2Fond').className='';$('page2').classList.add('on');
 $('page2Fond').innerHTML=`<style>#cri{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#10263c;color:#f4ecd8;font-family:Georgia,serif}
 #cri .cri-tete{flex:none;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 12px;background:repeating-linear-gradient(90deg,#1f3a5a 0 5px,#1a3350 5px 6px,#24466a 6px 11px);border-bottom:3px solid #d8b050;position:relative}
 #cri .cri-etals{flex:none;display:flex;gap:8px;padding:8px 14px 10px;background:#0c1e30}
@@ -27829,7 +27949,7 @@ $('page2Fond').innerHTML=`<style>#cri{position:fixed;inset:0;z-index:5;display:f
 #cri .cri-bulle.on{opacity:1;transform:none}
 #cri .cri-vendu{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%) rotate(-12deg) scale(.4);opacity:0;font:900 44px Georgia,serif;color:#c8402a;border:5px solid #c8402a;border-radius:10px;padding:4px 18px;pointer-events:none;z-index:4}
 #cri .cri-vendu.on{animation:criV 1.3s ease-out}@keyframes criV{0%{opacity:0;transform:translate(-50%,-50%) rotate(-12deg) scale(2)}20%{opacity:1;transform:translate(-50%,-50%) rotate(-12deg) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) rotate(-12deg) scale(1)}}</style>
-<div id="cri" lang="fr"><div class="cri-tete"><h2>LA CRIÉE</h2><i>« Montre-moi ta pêche, petit. »</i><div class="cri-bourse">TA BOURSE<b id="criArgent">—</b></div></div><div class="cri-store"></div>
+<div id="cri" lang="fr"><div class="cri-tete"><h2>LA CRIÉE</h2><i>« Ta pêche, c’est à La Marée. Ici, je prends le reste. »</i><div class="cri-bourse">TA BOURSE<b id="criArgent">—</b></div></div><div class="cri-store"></div>
 <div class="cri-page" id="criCorps"></div>
 <div class="cri-pied"><div class="cri-bulle" id="criBulle"></div>
 <div class="cri-ticket"><span id="criCombien">—</span><b id="criTotal">0 €</b></div>
@@ -27841,7 +27961,7 @@ $('criVendre').onclick=criVendre;
 const majEtals=()=>{$('criEtal1').classList.toggle('on',CRI_ETAL==='poisson');$('criEtal2').classList.toggle('on',CRI_ETAL!=='poisson');};
 $('criEtal1').onclick=()=>{CRI_ETAL='poisson';CRI_VENTE={};majEtals();criMaj();vibrer(12);};
 $('criEtal2').onclick=()=>{CRI_ETAL='comptoir';CRI_VENTE={};majEtals();criMaj();vibrer(12);};
-majEtals();criMaj();}
+majEtals();try{$('criEtal1').style.display='none';$('criEtal2').style.flex='1';}catch(x){}criMaj();}
 function criBulle(t){const b=$('criBulle');if(!b)return;b.textContent=t;b.classList.add('on');clearTimeout(criBulle.t);criBulle.t=setTimeout(()=>b.classList.remove('on'),2600);}
 function criMaj(){if(!$('criCorps'))return;SAC_PEUT_BAISSER=Date.now();
 const P0=criPrix()||{};

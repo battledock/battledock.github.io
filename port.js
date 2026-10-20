@@ -1975,6 +1975,25 @@ caisse(x0+16,sol-10,14,8,null);
  l.addColorStop(0,nuit?'rgba(255,200,120,.5)':'rgba(255,214,150,.16)');
  l.addColorStop(1,'rgba(255,200,120,0)');g.fillStyle=l;g.fillRect(cx-80,sol-86,160,88);}
 });}
+/* ================= LA MARÉE : la poissonnerie qui rachète la pêche, à la place de Chez Fonfon ================= */
+function mPoisson(g,R,x,y,lg,c1,c2,dir){dir=dir||1;g.fillStyle=c1;g.beginPath();g.ellipse(x,y,lg/2,lg*0.17,0,0,7);g.fill();g.fillStyle=c2;g.beginPath();g.ellipse(x,y+lg*0.06,lg/2-0.5,lg*0.08,0,0,7);g.fill();
+ g.fillStyle=c1;g.beginPath();g.moveTo(x-dir*lg/2+dir*0.5,y);g.lineTo(x-dir*(lg/2+lg*0.2),y-lg*0.16);g.lineTo(x-dir*(lg/2+lg*0.2),y+lg*0.16);g.fill();R(x+dir*(lg/2-2),y-1,1,1,'#101010');}
+function graverLaMaree(){return devanture(1,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+ /* LA MARÉE : faïence blanche et bleue, grand étal de glace en pente, enseigne en émail */
+ R(x0-2,yR-4,BL+4,rez+4,'#f2f4f6');for(let y=yR-4;y<sol;y+=4)for(let x=x0-2;x<x0+BL+2;x+=4)R(x,y,4,0.5,'rgba(120,150,180,.25)'),R(x,y,0.5,4,'rgba(120,150,180,.25)');
+ R(x0-2,yR-4,BL+4,3,'#1f4f8a');R(x0-2,sol-6,BL+4,6,'#1f4f8a');R(x0-2,sol-6,BL+4,1,'#3a72b8');
+ /* l'intérieur ouvert, frais */R(x0+6,yR+2,BL-12,rez-12,nuit?'#e8f4ff':'#a8c8dc');R(x0+6,yR+2,BL-12,3,'#7aa0b8');
+ for(let i=0;i<5;i++){R(x0+14+i*26,yR+5,1,7,'#5a6a7a');mPoisson(g,R,x0+14+i*26,yR+15,9,'#8a9aa8','#d8e0e8',1);}   /* poissons suspendus au fond */
+ /* l'étal de glace en pente, plein */const ey=sol-18;R(x0+4,ey,BL-8,12,'#dfeef6');for(let i=0;i<12;i++)R(x0+4,ey+i,BL-8,0.5,i%3?'#f4fbff':'#c8e0ec');R(x0+4,ey+11,BL-8,3,'#2a5a8a');
+ const F=[['#9aa8b8','#e8eef4',10],['#d8603a','#f4c0a0',9],['#b8c4cc','#f0f4f8',12],['#5a6a8a','#c8d4e0',8],['#c8a040','#f0e0a0',9]];
+ for(let r=0;r<2;r++)for(let i=0;i<11;i++){const f=F[(i+r*2)%5];mPoisson(g,R,x0+12+i*11.5+(r?5:0),ey+3+r*5,f[2],f[0],f[1],(i+r)%2?1:-1);}
+ for(let i=0;i<5;i++)R(x0+10+i*27,ey+1,6,3,'#2a2a2a'),R(x0+11+i*27,ey+1.5,4,1,'#fff');   /* les étiquettes de prix */
+ /* store bleu et blanc */const sy=yR-10;for(let k=0;k<BL+8;k++)R(x0-4+k,sy,1,9,k%12<6?'#1f4f8a':'#f4f4f4');for(let k=0;k<BL+8;k+=12){g.fillStyle='#1f4f8a';g.beginPath();g.arc(x0-4+k+6,sy+9,6,0,Math.PI);g.fill();}
+ /* l'enseigne émaillée */const ey2=yR-27;R(x0+18,ey2,BL-36,15,'#1f4f8a');R(x0+19,ey2+1,BL-38,13,'#f4f4f4');R(x0+21,ey2+3,BL-42,9,'#1f4f8a');
+ g.font='900 8.5px Arial,sans-serif';g.textAlign='center';g.fillStyle='#ffffff';g.fillText('LA MARÉE',cx,ey2+10.6,BL-50);g.textAlign='left';
+ mPoisson(g,R,x0+12,ey2+7,10,'#1f4f8a','#5a8ac8',1);mPoisson(g,R,x0+BL-12,ey2+7,10,'#1f4f8a','#5a8ac8',-1);
+ /* l'ardoise */R(x0+BL+0,sol-22,1,16,'#5a3a20');R(x0+BL-12,sol-30,14,16,'#2a2a2a');R(x0+BL-12,sol-30,14,1,'#8a6a40');for(let q=0;q<4;q++)R(x0+BL-10,sol-27+q*3.4,8,0.7,'#e8e8e8');
+ if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,85);l.addColorStop(0,'rgba(200,235,255,.5)');l.addColorStop(1,'rgba(200,235,255,0)');g.fillStyle=l;g.fillRect(cx-85,sol-85,170,92);}});}
 function restoFonfon(teinte){const T=teinte==='marine'?{b:'#1f3452',bh:'#2c4a72',bs:'#122238',store:['#1f3a6a','#2a4a80'],or:'#e2c070'}:{b:'#5a1a1e',bh:'#7a2a2e',bs:'#3a0c10',store:['#8a1a22','#a8262e'],or:'#e8c46a'};
 return devanture(1,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
 R(x0-2,yR-4,BL+4,rez+4,T.b);R(x0-2,yR-4,BL+4,1.5,T.or);R(x0-2,sol-6,BL+4,6,T.bs);R(x0-2,sol-6,BL+4,1,T.bh);
@@ -2255,7 +2274,7 @@ DECOR=[];
 const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
 for(let k=0;k<10;k++){
 if(k===4)continue;                                                  /* la ruelle du casino (plus de panneau en bois) */
-if(k===0){XCAL['x_fonfon0']=restoFonfon('bordeaux');CALQUES_DECO['x_fonfon']=XCAL['x_fonfon0'];P('x_fonfon',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'bouillabaisse'});continue;}   /* Chez Fonfon, le restaurant de bouillabaisse. IL TIENT LE BOUT OUEST DU QUAI (k=0, ancien k=1) : l'est est tenu par la Capitainerie, les deux esplanades sont donc bordees d'une devanture et les deux immeubles vides sont rentres dans la rangee. */
+if(k===0){XCAL['x_fonfon0']=graverLaMaree();CALQUES_DECO['x_fonfon']=XCAL['x_fonfon0'];P('x_fonfon',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'maree'});continue;}   /* Chez Fonfon, le restaurant de bouillabaisse. IL TIENT LE BOUT OUEST DU QUAI (k=0, ancien k=1) : l'est est tenu par la Capitainerie, les deux esplanades sont donc bordees d'une devanture et les deux immeubles vides sont rentres dans la rangee. */
 if(k===9){XCAL['x_presse0']=graverLaPresse();CALQUES_DECO['x_presse']=XCAL['x_presse0'];P('x_presse',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'presse'});continue;}   /* la maison de la presse */
 if(k===2){XCAL['x_facPeche0']=graverLaBoutiquePeche();CALQUES_DECO['x_facPeche']=XCAL['x_facPeche0'];P('x_facPeche',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'peche'});continue;}   /* Pêche & Marine */
 if(k===6){XCAL['x_facPoisson0']=graverLaPoissonnerie();CALQUES_DECO['x_facPoisson']=XCAL['x_facPoisson0'];P('x_facPoisson',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'poissonnerie'});continue;}   /* la poissonnerie */
