@@ -5115,7 +5115,7 @@ g.fillStyle='#e8cf8a';g.font='9px Georgia,serif';g.fillText('ENTREPÔT',w*0.66,h
 }},
 {titre:'Le classement',sous:'CE QUI SE COMPTE',
 txt:['Le premier est celui qui a <b>le plus récolté</b> — un objet ramassé, un '+
-'point, quel qu’il soit.',
+'point, quel qu’il soit. Au champ, une récolte rapporte <b>plus de points quand elle a mis longtemps à pousser</b>.',
 'Tu y retrouves aussi qui est en ligne. Et quand un autre joueur est hors '+
 'de ton écran, son <b>médaillon</b> apparaît sur le bord, avec son visage.'],
 img:(g,w,h)=>{
@@ -30400,7 +30400,7 @@ h+=liste.map(([k,[nom,px,min,v]])=>{
 const libre=potLibre(k);
 return '<div class="outil"><canvas data-p="'+k+'"></canvas>'+
 '<span class="t"><b>'+nom+'</b><small>'+potDuree(min)+
-(libre?(FERME_VIERGE?' · '+fmt(Math.ceil(px/3)*4)+' la parcelle':' · la graine '+fmt(px)+', la récolte '+fmt(v)):' · encore à débloquer')+'</small></span>'+
+(libre?(FERME_VIERGE?' · '+fmt(Math.ceil(px/3)*4)+' la parcelle · '+(chPoints(k)*4)+' pts':' · la graine '+fmt(px)+', la récolte '+fmt(v)):' · encore à débloquer')+'</small></span>'+
 (libre?(FERME_VIERGE?'<span class="marge">'+(chDeSaison(k)?'SAISON':'✓')+'</span>':'<span class="marge">+'+fmt(v-px)+'</span>')
 :'<button data-deb="'+k+'">'+fmt(POT_VERROU[k])+'</button>')+'</div>';}).join('');
 return h;}
@@ -34093,7 +34093,8 @@ automne:['citrouille','pommes_terre','oignons','ble','safran','carottes'],hiver:
 const chDeSaison=(k)=>!!(CH.meteo&&(chSaisons[CH.meteo.saison]||[]).includes(k));
 const CH_SAISON_NOM={printemps:'🌸 Printemps',ete:'☀️ Été',automne:'🍂 Automne',hiver:'❄️ Hiver'};
 /* LE GESTE, sur une case. Optimiste : la case change tout de suite, le serveur confirme. */
-let CH_ICI=null, CH_MUET=false, CH_CUMUL=0;const chTx=()=>CH_ICI?CH_ICI.x:joueur.x, chTy=()=>CH_ICI?CH_ICI.y:joueur.y;
+let CH_ICI=null, CH_MUET=false, CH_CUMUL=0, CH_PTS=0;
+const chPoints=(k)=>Math.max(1,Math.round(Math.sqrt(POT_CULT[k][2])*1.5));   /* radis 3 · carottes 8 · tomates 12 · 9 h → 35, par case */const chTx=()=>CH_ICI?CH_ICI.x:joueur.x, chTy=()=>CH_ICI?CH_ICI.y:joueur.y;
 async function chGeste(c,r){
 const k=chCle(c,r), T=CH.t[k], s=chStade(T);let outil=CH_OUTIL;
 if(T&&T.cult&&s===3)outil='faux';                       /* ce qui est mûr se récolte, quel que soit l'outil */
@@ -34125,8 +34126,10 @@ if(er==='pas_assez'||er==='graine'||er==='verrou')try{lireSacServeur();}catch(x)
 if(d.tuile)CH.t[k]=d.tuile;else delete CH.t[k];
 if(typeof d.euros==='number'){e.euros=d.euros;try{majHaut();}catch(x){}}
 if(outil==='faux'){if(d.nb)CH_CUMUL+=d.nb;const nom=avant&&POT_CULT[avant.cult]?POT_CULT[avant.cult][0]:'';
+/* LES POINTS DU CLASSEMENT : plus la culture a mis longtemps à pousser, plus elle rapporte (racine du temps, pour rester juste) */
+let pts=0;try{if(avant&&POT_CULT[avant.cult]){pts=chPoints(avant.cult);marquer('champ',pts);CH_PTS+=pts;sauver();}}catch(x){}
 if(d.sac){e.sac=d.sac;try{sauver();majHaut();}catch(x){}}
-if(!CH_MUET)texteVolant(chTx(),chTy()-58,d.nb?('+'+d.nb+' '+nom):(d.gerbe?'+1 gerbe pour tes poules':'Blé fauché'),'#ffe070');try{jouer('vente','moment');}catch(x){}}
+if(!CH_MUET)texteVolant(chTx(),chTy()-58,d.nb?('+'+d.nb+' '+nom+(pts?' · +'+pts+' pts':'')):(d.gerbe?'+1 gerbe pour tes poules':'Blé fauché'),'#ffe070');try{jouer('vente','moment');}catch(x){}}
 CH.sale=true;chMajBarre();}
 /* ================= LE DESSIN ================= */
 function chGraverSol(){const W=CH_C*CH_T, H=CH_R*CH_T, D=2, c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');
@@ -34478,9 +34481,9 @@ eau:["................","................","......kkkk......",".....k....k....."
 function fpSvg(n,s){let r='';FP_IC[n].forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.')r+='<rect x="'+x+'" y="'+y+'" width="1.02" height="1.02" fill="'+FP_PIX[c]+'"/>';}));return '<svg viewBox="0 0 16 16" width="'+s+'" height="'+s+'" shape-rendering="crispEdges">'+r+'</svg>';}
 async function fpAgir(P,mode){const k=P.i+','+P.j;if(FP.vus[k])return;FP.vus[k]=1;
 CH_ICI={x:fpX(P.i)+20,y:fpY(P.j)+30};const ici=CH_ICI;const sp=fpSpots(P.i,P.j);
-if(mode==='faux'){CH_MUET=true;CH_CUMUL=0;const nom={};
+if(mode==='faux'){CH_MUET=true;CH_CUMUL=0;CH_PTS=0;const nom={};
 await Promise.all(sp.map(async([c,r])=>{const t=CH.t[c+','+r];if(t&&t.cult&&chStade(t)===3){nom[t.cult]=1;await chEnvoyer(c,r,'faux');}}));
-CH_MUET=false;const ks=Object.keys(nom);if(CH_CUMUL&&ks.length)texteVolant(ici.x,ici.y-34,'+'+CH_CUMUL+' '+(ks.length===1&&POT_CULT[ks[0]]?POT_CULT[ks[0]][0]:''),'#ffe070');}
+CH_MUET=false;const ks=Object.keys(nom);if(CH_CUMUL&&ks.length){texteVolant(ici.x,ici.y-34,'+'+CH_CUMUL+' '+(ks.length===1&&POT_CULT[ks[0]]?POT_CULT[ks[0]][0]:''),'#ffe070');if(CH_PTS)setTimeout(()=>texteVolant(ici.x,ici.y-46,'+'+CH_PTS+' pts au classement','#bfe8ff'),350);}}
 else if(mode==='eau'){await Promise.all(sp.map(async([c,r])=>{const t=CH.t[c+','+r];if(t&&t.cult&&!t.eau&&chStade(t)<3)await chEnvoyer(c,r,'eau');}));}
 else if(mode==='graine'){CH_GRAINE=FP.graine;
 if(!potLibre(CH_GRAINE)){texteVolant(ici.x,ici.y-34,'Graine à débloquer','#ffe8a0');return;}
