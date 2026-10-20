@@ -16792,7 +16792,7 @@ const ax=a.x-camX, ay=a.y-camY;
 if(ax<-40||ay<-70||ax>VW+40||ay>VH+40)continue;
 acteurs.push({y:a.y,f:()=>dessinerUnAutre(ctx,a,camX,camY)});
 }
-if(LISIERE&&!(CHAMPS_SEULS&&CARTE==='village'))ctx.drawImage(LISIERE,camX,camY,lw,lh,0,0,lw,lh);
+try{hwMareeDessiner(ctx,camX,camY,acteurs);}catch(x){}if(LISIERE&&!(CHAMPS_SEULS&&CARTE==='village'))ctx.drawImage(LISIERE,camX,camY,lw,lh,0,0,lw,lh);
 try{dessinerLesTraces(ctx,camX,camY);}catch(x){}   /* les pas dans les feuilles, sous tout le reste */
 dessinerLesRides(ctx,camX,camY,VW,VH);   /* l'eau du lac remue */
 if(CARTE==='foret'){
@@ -36536,6 +36536,14 @@ if(O.D){const bx=1030,by=880;
  if(nuit)P(by+40,()=>{const X=bx+Math.sin(t/1400)*26-camX,Y=by-30+Math.sin(t/500)*3-camY;g.fillStyle='rgba(240,244,255,.82)';g.beginPath();g.arc(X,Y,7,Math.PI,0);g.lineTo(X+7,Y+10);
    for(let k=0;k<4;k++)g.lineTo(X+7-(k+0.5)*3.5,Y+(k%2?10:7)+Math.sin(t/120+k));g.lineTo(X-7,Y+10);g.fill();g.fillStyle='#1a1a22';g.fillRect(X-3.5,Y-2,2,3);g.fillRect(X+1.5,Y-2,2,3);g.fillRect(X-1,Y+3,2,2);lueurNuit(g,X,Y+2,16,'rgba(200,220,255,1)');});}}
 
+/* HALLOWEEN À LA MARÉE : citrouilles-lanternes sous le store, chauves-souris aux bouts de l'enseigne, toiles aux coins de la vitrine */
+function mhCit(g,x,y,r,nuit){const c=hwCit(r*2,nuit);g.drawImage(c,Math.round(x-c.width/4),Math.round(y-c.height/4),c.width/2,c.height/2);if(nuit)lueurNuit(g,x,y,r*2+10,'rgba(255,150,50,1)');}
+function mhStore(g,X,Y,t,nuit){/* lanternes-citrouilles sous le store, chauves-souris en papier, toiles aux coins */
+ for(let i=0;i<6;i++){const x=X-60+i*24,y=Y-48+Math.sin(t/700+i)*0.8;g.strokeStyle='#2a1a10';g.lineWidth=.5;g.beginPath();g.moveTo(x,Y-54);g.lineTo(x,y-3);g.stroke();mhCit(g,x,y,4.5,nuit);}
+ for(let i=0;i<4;i++){const x=X+[-72,-62,62,72][i],y=Y-62+(i%2)*6,w=Math.sin(t/180+i)*1.5;g.fillStyle='#1a1222';g.beginPath();g.ellipse(x,y,1.8,2.4,0,0,7);g.fill();g.beginPath();g.moveTo(x-1,y-1);g.lineTo(x-6,y-3+w);g.lineTo(x-5,y+1);g.lineTo(x-1,y+2);g.fill();g.beginPath();g.moveTo(x+1,y-1);g.lineTo(x+6,y-3+w);g.lineTo(x+5,y+1);g.lineTo(x+1,y+2);g.fill();g.fillStyle='#ffd860';g.fillRect(x-1.2,y-1,.9,.9);g.fillRect(x+.4,y-1,.9,.9);}
+ g.strokeStyle='rgba(245,245,255,.85)';g.lineWidth=.5;for(const [cx,d] of [[X-69,1],[X+69,-1]]){for(let k=0;k<5;k++){const a=k/4*Math.PI/2;g.beginPath();g.moveTo(cx,Y-40);g.lineTo(cx+d*Math.cos(a)*12,Y-40+Math.sin(a)*12);g.stroke();}for(const r of [4,8,11]){g.beginPath();for(let k=0;k<=4;k++){const a=k/4*Math.PI/2;const px=cx+d*Math.cos(a)*r,py=Y-40+Math.sin(a)*r;k?g.lineTo(px,py):g.moveTo(px,py);}g.stroke();}}}
+function hwMareeDessiner(ctx,camX,camY,pile){if(CARTE!=='extramar'||!hwActif()||typeof XP==='undefined'||!XP)return;const cx=XP.rangX0-camX,M=XP.maisonsY;if(cx<-100||cx>VW+100)return;
+ let ci=null;try{ci=cielDuMoment();}catch(x){}const nuit=!!(ci&&ci.lampes>0.3),t=Date.now();pile.push({y:M+1,f:()=>{try{mhStore(ctx,cx,M-camY,t,nuit);}catch(x){}}});}
 function fmDessinerHalloween(ctx,camX,camY,pile){if(!FERME_VIERGE||CARTE!=='village'||!hwActif())return;try{hwDecoDessiner(ctx,camX,camY,pile);}catch(x){}
 const X=HW_EPV.x-camX,Y=HW_EPV.y-camY;if(X<-120||X>VW+120||Y<-120||Y>VH+160)return;
 let ci=null;try{ci=cielDuMoment();}catch(x){}const nuit=!!(ci&&ci.lampes>0.3);
