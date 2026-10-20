@@ -1834,7 +1834,7 @@ text-shadow:0 1px 4px rgba(0,0,0,.8)}
 #voile.fm .vBas{bottom:calc(env(safe-area-inset-bottom,0px) + 22px);padding:0 18px;display:flex;justify-content:center}
 #voile.fm .fmC{width:100%;max-width:440px;background:rgba(255,248,230,.93);border-radius:20px;padding:12px 16px 14px;box-shadow:0 8px 24px rgba(40,20,0,.35);text-align:left;font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif}
 #voile.fm .fmP{display:flex;justify-content:space-between;align-items:flex-end;height:32px;margin-bottom:6px}
-#voile.fm .fmP span{background:none!important;box-shadow:none!important;border:0!important;padding:0!important;margin:0!important;width:auto!important;height:auto!important;border-radius:0!important;line-height:1;font-size:22px;filter:grayscale(1) opacity(.35);transition:filter .3s}#voile.fm .fmP span.ok{filter:none}
+#voile.fm .fmP span{background:none!important;box-shadow:none!important;border:0!important;padding:0!important;margin:0!important;width:32px!important;flex:none;text-align:center;height:auto!important;border-radius:0!important;line-height:1;font-size:22px;filter:grayscale(1) opacity(.35);transition:filter .3s}#voile.fm .fmP span.ok{filter:none}
 #voile.fm .fmR{height:10px;border-radius:6px;background:#e6d8b4;overflow:hidden}
 #voile.fm .fmR #vJauge{display:block;height:100%;width:4%;border-radius:6px;background:linear-gradient(90deg,#7aa83a,#c8b440,#e8a830);transition:width .45s cubic-bezier(.2,.8,.3,1)}
 #voile.fm .fmM span,#voile.fm .fmA{background:none!important;box-shadow:none!important}#voile.fm .fmM{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-weight:800;font-size:13px;color:#5a4428}
@@ -28956,17 +28956,51 @@ const ETAPES=window.__voileMarseille!=null?[
 ['Te voilà',                  1.00]
 ];
 let etapeVue=-1, voileNe=Date.now();
+/* LA FERME CHARGE POUR DE VRAI DERRIÈRE SON ÉCRAN. La jauge n'y saute plus
+   d'une étape à l'autre : elle avance doucement vers ce qui est réellement
+   chargé, attend le champ, les poules et les cochons, puis — dès que tout
+   est prêt — elle accélère jusqu'au bout et le voile se lève sur une ferme
+   déjà complète. */
+const VF={on:document.getElementById('voile')&&document.getElementById('voile').classList.contains('fm'),aff:4,cible:4,vite:16,t:0,pret:false};
+const VF_MOTS=['On sème les graines…','On retrouve ton compte','On ouvre la barrière','On compte ce qu’il y a dans ton panier','On réveille la ferme','Te voilà'];
+function vfBoucle(now){const v=document.getElementById('voile');if(!v||v.classList.contains('parti'))return;
+ const dt=Math.min(0.1,((now||0)-(VF.t||now||0))/1000);VF.t=now||0;
+ if(VF.aff<VF.cible)VF.aff=Math.min(VF.cible,VF.aff+VF.vite*dt);
+ const j=document.getElementById('vJauge');if(j)j.style.width=VF.aff.toFixed(1)+'%';
+ requestAnimationFrame(vfBoucle);}
+if(VF.on){try{const j=document.getElementById('vJauge');if(j)j.style.transition='none';}catch(x){}requestAnimationFrame(vfBoucle);}
+function vfMot(t){const m=document.getElementById('vMot');if(m)m.textContent=t;}
 function etape(i){
 if(i<=etapeVue)return;
 etapeVue=i;
 const [mot,part]=ETAPES[Math.min(ETAPES.length-1,i)];
+if(VF.on){VF.cible=Math.max(VF.cible,Math.min(i>=ETAPES.length-1?100:78,part*100*0.8));vfMot(VF_MOTS[Math.min(VF_MOTS.length-1,i)]);return;}
 const j=document.getElementById('vJauge'), m=document.getElementById('vMot');
 if(j)j.style.width=Math.round(part*100)+'%';
 if(m)m.textContent=mot;
 }
-function leverLeVoile(){
+/* LA FERME EST-ELLE PRÊTE ? Le champ, les poules et les cochons sont arrivés
+   du serveur, et le monde a été dessiné au moins deux fois derrière le voile. */
+async function fermePrete(){
+const t0=Date.now(), PLAF=8000;
+const ok=()=>{try{return (typeof CH==='undefined'||!CHAMP_LIBRE||CH.charge)&&(typeof PG==='undefined'||PG.charge)&&(typeof PC==='undefined'||PC.charge);}catch(x){return true;}};
+try{if(typeof PG!=='undefined'&&!PG.charge)pgCharger();}catch(x){}
+try{if(typeof PC!=='undefined'&&!PC.charge)pcCharger();}catch(x){}
+try{if(CHAMP_LIBRE&&!CH.charge)chCharger();}catch(x){}
+VF.cible=Math.max(VF.cible,82);vfMot('On ouvre l’enclos des bêtes');
+let mi=false;
+while(!ok()&&Date.now()-t0<PLAF){await new Promise(r=>setTimeout(r,120));
+ if(!mi&&Date.now()-t0>900){mi=true;VF.cible=Math.max(VF.cible,90);vfMot('On arrose le champ');}}
+await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+VF.pret=true;
+}
+function leverLeVoile(force){
 const v=document.getElementById('voile');
 if(!v||v.classList.contains('parti'))return;
+/* À LA FERME, DÈS QUE TOUT EST PRÊT, LA JAUGE ACCÉLÈRE JUSQU'AU BOUT, puis on lève */
+if(VF.on&&force!==true&&VF.aff<99.5){VF.cible=100;VF.vite=Math.max(VF.vite,95);vfMot(VF_MOTS[VF_MOTS.length-1]);
+ if(!leverLeVoile.att){leverLeVoile.att=true;const ttl=Date.now();(function att(){if(VF.aff>=99.5||Date.now()-ttl>2500){leverLeVoile.att=false;leverLeVoile(true);}else setTimeout(att,40);})();}
+ return;}
 etape(ETAPES.length-1);
 /* LE VOILE NE S'ATTARDE PLUS. Il restait une seconde pleine même quand
    tout était prêt en deux cents millisecondes : c'était du décor. On garde
@@ -28977,7 +29011,7 @@ v.classList.add('parti');
 setTimeout(()=>{if(v.parentNode)v.parentNode.removeChild(v);},320);
 },reste);
 }
-setTimeout(leverLeVoile,12000);
+setTimeout(()=>leverLeVoile(true),14000);
 async function ouvrirPorte(){
 etape(1);
 await chargerSupabase();                     /* il faut le compte avant d'entrer */
@@ -29249,7 +29283,8 @@ e.ext={x:joueur.x,y:joueur.y};e.extc=CARTE;try{sauver();}catch(x){}
 try{if(CARTE==='extramar'&&dansLeBassin(joueur.x,joueur.y)&&!surPonton(joueur.x,joueur.y))joueur.y=XP.quaiY-14;}catch(x){}
 taille();garderAllume();
 fondu=1;                                   /* le jeu apparaît en fondu */
-requestAnimationFrame(()=>requestAnimationFrame(leverLeVoile));
+if(VF.on){try{await fermePrete();}catch(x){}leverLeVoile();}
+else requestAnimationFrame(()=>requestAnimationFrame(leverLeVoile));
 }
 ouvrirPorte();
 let veilleur=null;
