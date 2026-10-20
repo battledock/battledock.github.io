@@ -1,7 +1,7 @@
 const XP={
 maisonsY:152,            /* le pied des façades */
 quaiY:340,               /* le bord du quai, au-dessus du bassin */
-bassinO:296, bassinE:1464,     /* UN QUAI DE CHAQUE COTE, comme avant : le bassin s'arrete a 120 px des bouts de la ville */     /* LA MER SORT DU CADRE DES DEUX COTES.
+bassinO:410, bassinE:1350,     /* UN QUAI DE CHAQUE COTE, comme avant : le bassin s'arrete a 120 px des bouts de la ville */     /* LA MER SORT DU CADRE DES DEUX COTES.
                                    Elle s'arretait a 170 pour laisser une
                                    langue de terre au boulodrome ; le quai
                                    s'ouvrant aussi a l'ouest, cette terre
@@ -19,7 +19,7 @@ finVille:1584,                  /* la face est de la derniere facade : la
                                    aux collines */
 debutVille:176,                 /* sa face ouest, le pendant exact : les deux
                                    esplanades font 176 px au meme pixel */
-pontons:[360,880], pontonL:13,           /* le ponton du milieu (620) est retiré, avec ses voiliers */ pontonFin:470,
+pontons:[480,880], pontonL:13,           /* le ponton du milieu (620) est retiré, avec ses voiliers */ pontonFin:470,
 metro:[1316,496],      /* le métro reprend la place de l'ancienne gare */
 /* LA SORTIE DES BOIS, au bout est de la promenade. Rien n'est bati : un
    panneau dit ou l'on va, et on s'en va en marchant vers l'est, entre la
@@ -1569,7 +1569,7 @@ if(t<2*FERRY.pause+FERRY.trajet)return {x:FERRY.xe,sens:-1,v:0};
 const k=(t-2*FERRY.pause-FERRY.trajet)/FERRY.trajet;
 return {x:FERRY.xe-(FERRY.xe-FERRY.xo)*lisse(k),sens:-1,v:Math.sin(Math.PI*k)};
 }
-const BANCS=[[360,506],[620,508],[880,506],[250,378],[760,376],[1000,378],[500,380]];
+const BANCS=[[480,506],[680,508],[880,506],[560,400],[760,376],[1000,378],[1200,420]];
 function eauVivante(g,camX,camY){
 const T=Date.now()/1000;
 g.save();
@@ -2286,7 +2286,7 @@ P('x_metroM',XP.rangX0+2*140,XP.maisonsY+88,{col:[44,16],bati:true,demi:50,ouvre
    commence qu'au-dessus de maisonsY+6, le tableau est 46 px plus bas. */
 P('x_tableau',XP.ruelle.x,XP.maisonsY+52,{col:[16,12]});
 let nv=0;
-[360,620,880].forEach(px=>{                     /* on compte aussi l'ancien ponton du milieu : les autres voiliers gardent leur allure */
+[480,620,880].forEach(px=>{                     /* on compte aussi l'ancien ponton du milieu : les autres voiliers gardent leur allure */
 const la=XP.pontons.includes(px);
 for(let y=XP.quaiY+24;y<=XP.pontonFin-6;y+=16){
 if(la&&alea(px*0.37+y*1.13)>0.27)P('x_voilier',px-XP.pontonL-27,y,{v:(nv)*7%11});
