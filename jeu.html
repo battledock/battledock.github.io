@@ -16520,6 +16520,7 @@ try{fmDessinerEtal(ctx,camX,camY,pileV);}catch(x){}
 try{fmDessinerLampes(ctx,camX,camY,pileV);}catch(x){}
 try{fmDessinerDeco(ctx,camX,camY,pileV);}catch(x){}
 try{fmDessinerMetro(ctx,camX,camY,pileV);}catch(x){}
+try{fmDessinerLanternes(ctx,camX,camY,pileV);}catch(x){}
 pileV.sort((a,b)=>a.y-b.y);for(const p of pileV)p.f();
 dessinerBulles(ctx,camX,camY,pxV,pyV);dessinerTextes(ctx,camX,camY);ambiance(ctx);ctx.setTransform(1,0,0,1,0,0);return;}
 /* ================= LE VERGER =================
@@ -34353,6 +34354,8 @@ if(fmDansEtal(x,y))return true;
 if(fmDansLampe(x,y))return true;
 /* les chênes et les bancs */
 if(fmDansDeco(x,y))return true;
+/* les lanternes tempête autour du champ */
+for(const [lx,ly] of [[710,426],[710,778],[574,600],[846,600]])if(Math.abs(x-lx)<4&&y>ly-3&&y<ly+3)return true;
 /* la bouche de métro et son totem */
 if((x>1585-30&&x<1585+30&&y>950-32&&y<950+3)||(Math.abs(x-1545)<4&&y>947&&y<953))return true;
 /* la boîte aux lettres, sur son poteau : on la contourne */
@@ -34949,6 +34952,21 @@ P(bx-1,by-1,2,2,'#a8862e');P(bx-1,by-1,2,0.6,'#e8c868');
 /* les gouttes : seulement juste après un semis (ou la pose), puis il se tait */
 const t0=(window.FP_ARR_ANIM||{})[i+','+j]||0, age=now-t0;if(age>2600)return;const fond=age<200?age/200:(age>2000?(2600-age)/600:1);
 const ph=(t*1.8+k*0.25)%1;for(let q=0;q<4;q++){const u=(ph+q/4)%1, d=1.5+u*8;g.fillStyle='rgba(200,232,255,'+((0.95-u*0.7)*fond).toFixed(2)+')';g.fillRect(bx+sx*d-0.5,by+sy*d*0.85-Math.sin(u*Math.PI)*2-0.5,1.1,1.1);}});}
+
+/* =====================================================================
+   LES LANTERNES TEMPÊTE DU CHAMP : une de chaque côté de l'enclos, sur
+   une potence de bois, le bras tourné vers le champ. Solides au pied.
+   ===================================================================== */
+const FM_LANTERNES=[[710,426,1],[710,778,1],[574,600,1],[846,600,-1]];
+function fmDessinerLanternes(ctx,camX,camY,pile){
+for(const [lx,ly,d] of FM_LANTERNES){const x=lx-camX, y=ly-camY;if(x<-120||y<-120||x>VW+120||y>VH+160)continue;
+pile.push({y:ly,f:()=>{const P=(a,b,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(Math.round((x+a)*2)/2,Math.round((y+b)*2)/2,w,h);};
+P(-3.5,-1,7,2,'rgba(0,0,0,.25)');P(-1.2,-32,2.4,32,'#6a4a2a');P(-0.4,-32,0.8,32,'#8a6238');P(-2,-2,4,2,'#5a3a20');
+P(d>0?-1:-10.5,-32,11.5,2,'#6a4a2a');P(d>0?-1:-10.5,-32,11.5,0.6,'#8a6238');
+ctx.strokeStyle='#6a4a2a';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,y-23);ctx.lineTo(x+d*7,y-31);ctx.stroke();
+const lx2=d*9;P(lx2-0.3,-30,0.6,3,'#2a2a2a');P(lx2-2.5,-27,5,1.2,'#8a2a1a');P(lx2-2,-26,4,5,'#ffdc8c');P(lx2-0.4,-26,0.8,5,'rgba(120,60,20,.5)');P(lx2-2.5,-21,5,1.2,'#8a2a1a');P(lx2-1.5,-28.5,3,1.5,'#8a2a1a');
+try{const ci=cielDuMoment();if(ci&&ci.lampes>0.05){ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=Math.min(1,ci.lampes);const g2=ctx.createRadialGradient(x+lx2,y-23.5,0,x+lx2,y-23.5,9);g2.addColorStop(0,'rgba(255,215,140,.9)');g2.addColorStop(1,'rgba(255,160,60,0)');ctx.fillStyle=g2;ctx.beginPath();ctx.arc(x+lx2,y-23.5,9,0,7);ctx.fill();ctx.restore();
+lueurNuit(ctx,x+lx2*3,y+(ly<500?30:ly>700?-30:0),92,'rgba(255,195,110,1)');}}catch(x){}}});}}
 </script>
 </body>
 </html>
