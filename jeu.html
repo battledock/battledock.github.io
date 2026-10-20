@@ -6337,6 +6337,16 @@ const BT_DESS={
  plume:(R)=>{for(let i=0;i<15;i++){const w=6-i*0.3;
      R(16-i,4+i,w,2,i%2?'#f4f0e4':'#d8dce0');}R(3,18,4,3,'#f4f0e4');}};
 
+
+function bdDessinerBar(){const bm=document.getElementById('bdBarman');if(bm){const g=bm.getContext('2d');const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+ R(12,4,20,5,'#2a1a14');R(11,8,22,15,'#e0b088');R(16,13,3,3,'#1a1a1a');R(25,13,3,3,'#1a1a1a');R(14,18,16,2,'#3a2a20');R(18,19,8,2,'#a84a3a');R(8,25,28,22,'#f4f4f0');R(19,25,6,22,'#1c1e22');R(20,26,4,3,'#c83a2a');R(4,27,6,14,'#f4f4f0');R(34,27,6,14,'#f4f4f0');R(3,40,7,4,'#e0b088');R(34,40,7,4,'#e0b088');R(38,30,3,8,'#4aa86a');}
+ const cv=document.getElementById('bdCpt');if(!cv)return;const W=cv.width,H=cv.height,g=cv.getContext('2d');
+ const l=g.createLinearGradient(0,0,0,H);l.addColorStop(0,'#2a1a12');l.addColorStop(.55,'#4a2c1a');l.addColorStop(1,'#1a100a');g.fillStyle=l;g.fillRect(0,0,W,H);
+ for(let r=0;r<2;r++){const y=H*(0.22+r*0.2);g.fillStyle='#d8b878';g.fillRect(0,y,W,2);for(let i=0;i<40;i++){g.fillStyle=['#2f6a3a','#7a2a1a','#c89a3a','#3a5a8a','#d8d8d8'][i%5];const hh=10+(i*7)%8;g.fillRect(6+i*(W/40),y-hh,W/60,hh);g.fillStyle='rgba(255,255,255,.3)';g.fillRect(7+i*(W/40),y-hh+2,1.5,hh-4);}
+  const gl=g.createLinearGradient(0,y-20,0,y);gl.addColorStop(0,'rgba(255,210,140,0)');gl.addColorStop(1,'rgba(255,210,140,.3)');g.fillStyle=gl;g.fillRect(0,y-20,W,20);}
+ for(let i=0;i<4;i++){const x=W*(0.15+i*0.23);g.fillStyle='#1a1a1a';g.fillRect(x-.5,0,1,H*0.06);g.fillStyle='#ffe2a0';g.beginPath();g.arc(x,H*0.08,5,0,7);g.fill();const rg=g.createRadialGradient(x,H*0.08,0,x,H*0.08,40);rg.addColorStop(0,'rgba(255,220,150,.5)');rg.addColorStop(1,'rgba(255,220,150,0)');g.fillStyle=rg;g.fillRect(x-40,0,80,80);}
+ const cy=H*0.58;g.fillStyle='#e8e2d4';g.fillRect(0,cy,W,H*0.42);for(let i=0;i<14;i++){g.strokeStyle='rgba(150,140,120,.25)';g.beginPath();g.moveTo((i*53)%W,cy);g.quadraticCurveTo((i*53+30)%W,cy+H*0.2,(i*53+10)%W,H);g.stroke();}
+ g.fillStyle='rgba(0,0,0,.25)';g.fillRect(0,cy,W,4);g.fillStyle='#c9a24a';g.fillRect(0,cy-2,W,2);}
 async function ouvrirLeBar(){
 $('page2Fond').className='';$('page2').classList.add('on');
 const d0=await appelRPC('mes_grattages',{p_joueur:e.id});let faits=(d0&&typeof d0.aujourdhui==='number')?d0.aujourdhui:0;
@@ -6346,7 +6356,7 @@ const MAX={poisson:100,filet:300,cargo:500,bouteille:150};
 const FOND_MINI={poisson:'radial-gradient(circle at 20% 15%,#7fd4e8,transparent 45%),linear-gradient(160deg,#4ab8d8,#1a6a98)',filet:'linear-gradient(135deg,#fbf0cf,#f0dca0 45%,#fff6dc 60%,#e8cc88)',cargo:'linear-gradient(180deg,#0e1a33,#16284a 60%,#0e1a33)',bouteille:'radial-gradient(circle at 26% 18%,#7fd0ec,transparent 42%),linear-gradient(170deg,#2f6a8a,#17313f 62%,#0e2230)'};
 const COUL_MINI={poisson:'#fff',filet:'#4a3410',cargo:'#fff',bouteille:'#eaf4fb'};
 const mini=(nom,k)=>'<span class="bar-mini" style="background:'+FOND_MINI[k]+';color:'+COUL_MINI[k]+'"><small>BAR DES DOCKS</small><b>'+nom+'</b><i></i></span>';
-let ONG='gratter', SEL=[], CH=0, LOTO_T=0, ETAT=null;
+let ONG='gratter', SEL=[], CH=0, LOTO_T=0, ETAT=null, TKSEL=null;
 /* ================= LE RAYON POKÉDOCK =================
    Les cartes se dessinent dans pokedock.js, chargé à part. On ne lui
    donne que deux promesses : acheter un paquet et relire la collection.
@@ -6840,16 +6850,48 @@ body.gratte #bar .bt-pied{display:none!important}
 #bar .t3 .z.gg .dessous{background:#ffe070;border-radius:inherit}
 #bar .gt-res{font:400 22px Georgia,serif;color:#fff;min-height:30px;text-align:center}#bar .gt-res span{color:#e8c46a}#bar .gt-res small{display:block;font:italic 13px Georgia,serif;color:#e8dcc8;margin-top:4px}
 #bar .t2 .tresor.rate .dessous{opacity:.45}#bar .t2 .tresor.rate .dessous b{text-decoration:line-through}
-#bar .gt-ok{flex:none;border:0;border-radius:22px;padding:12px 28px;font:700 14px Arial,sans-serif;background:#fff;color:#16336a;visibility:hidden}</style>
-<div id="bar" lang="fr"><div class="bt-ec"><div class="bt-tete">
-<div class="bt-plaque"><canvas class="g" width="52" height="52"></canvas><b>LOTO / JEUX / PRESSE</b><i>Ici, tout se joue&nbsp;!</i><canvas class="d" width="52" height="52"></canvas></div>
-<div class="bt-jauges"><div class="bt-jg"><canvas width="44" height="44" data-i="piece"></canvas><div><small>TON ARGENT</small><b>${enEuros(e.euros||0)}</b></div></div><div class="bt-jg"><canvas width="44" height="44" data-i="trefle"></canvas><div><small>TICKETS DU JOUR</small><b>${faits} / 20</b></div></div></div>
-</div><div class="bt-corps"><div class="bt-rail">${[["gratter","Gratter","ticketor"],["pokedock","Pokédock","carte"],["loto","Loto","trefle"],["presse","Presse","journal"]].map(([id,nom,ic])=>`<button data-o="${id}" class="${ONG===id?'on':''}"><canvas width="52" height="52" data-i="${ic}"></canvas>${nom}</button>`).join('')}</div><div class="bt-page">
+#bar .gt-ok{flex:none;border:0;border-radius:22px;padding:12px 28px;font:700 14px Arial,sans-serif;background:#fff;color:#16336a;visibility:hidden}
+#bar.bdm{background:#141518!important;color:#f4ecd8;font-family:'Baloo 2',system-ui,sans-serif;background-image:none!important}
+#bar .bdH{flex:none;padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 10px;background:repeating-linear-gradient(90deg,#26282c 0 3px,#1c1e22 3px 4px,#2c2e33 4px 6px);border-top:2px solid #d8b468}
+#bar .bdL1{display:flex;align-items:center;gap:8px}
+#bar .bdEns{flex:1;min-width:0}#bar .bdEns b{display:block;font-family:Georgia,serif;font-weight:700;font-size:20px;letter-spacing:2px;color:#e8c47a;text-shadow:0 0 10px rgba(255,200,120,.55);white-space:nowrap}
+#bar .bdEns small{display:block;font-size:9.5px;font-weight:800;letter-spacing:2px;color:#a8946a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#bar .bdBo{flex:none;border:1px solid #d8b468;color:#e8c47a;border-radius:14px;padding:3px 10px;font-weight:800;font-size:13px;white-space:nowrap}
+#bar .bdX{flex:none;width:38px;height:38px;border-radius:12px;border:1px solid #d8b468;background:#1a1b1e;color:#e8c47a;font:800 17px 'Baloo 2',sans-serif}
+#bar .bdPat{display:flex;gap:10px;align-items:flex-end;margin-top:8px}#bar .bdPat canvas{flex:none;width:44px;height:50px;image-rendering:pixelated}
+#bar .bdBul{flex:1;min-width:0;position:relative;background:#f4ecd8;color:#1c1e22;border-radius:14px;padding:5px 10px;font-weight:700;font-size:13px;line-height:1.3;opacity:1;transform:none;visibility:visible}
+#bar .bdBul:before{content:'';position:absolute;left:-8px;bottom:10px;border:8px solid transparent;border-right-color:#f4ecd8;border-left:0}
+#bar .bdStore{flex:none;height:12px;background:linear-gradient(#2e5a46,#1c3a2c);border-bottom:2px solid #4a8a6a;box-shadow:0 5px 8px rgba(0,0,0,.45)}
+#bar .bdOng{flex:none;display:flex;gap:6px;padding:12px 12px 8px}
+#bar .bdOng button{flex:1;min-width:0;border:1px solid #3a3c42;border-radius:12px;padding:6px 2px 5px;font:800 12px 'Baloo 2',sans-serif;background:#1e2024;color:#c8bca0;display:flex;flex-direction:column;align-items:center;gap:1px}
+#bar .bdOng button i{font-style:normal;font-size:18px;line-height:1}#bar .bdOng button.on{background:linear-gradient(#e8c47a,#c9a24a);color:#1c1e22;border-color:transparent}
+#bar .bdPage{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:4px 12px calc(16px + env(safe-area-inset-bottom,0px))}
+#bar .bdPage:not(.sc)>*{background:#efe8da;color:#1a2a4a;border-radius:14px}
+#bar .bdPage:not(.sc){padding-top:6px}
+#bar .bdScene{position:relative;border-radius:16px;overflow:hidden;border:1px solid #3a3c42}
+#bar .bdCpt{display:block;width:100%;aspect-ratio:16/10}
+#bar .bdTks{position:absolute;left:0;right:0;bottom:5%;display:flex;justify-content:center;gap:3%;padding:0 3%}
+#bar .bdTk{flex:1;max-width:130px;border:0;padding:0;background:#f4ecd8;transform:rotate(var(--r));border-radius:7px;overflow:hidden;box-shadow:0 6px 10px rgba(0,0,0,.55);transition:transform .2s}
+#bar .bdTk canvas{width:100%;aspect-ratio:16/10;display:block;image-rendering:pixelated}
+#bar .bdTk span{display:block;font:800 9.5px 'Baloo 2',sans-serif;color:#1c1e22;padding:2px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#bar .bdTk.sel{transform:translateY(-14px) rotate(0);outline:3px solid #e8c47a}
+#bar .bdFiche{margin-top:10px;display:flex;gap:10px;align-items:center;background:#1e2024;border:1px solid #34363c;border-radius:14px;padding:10px 12px}
+#bar .bdFiche .t{flex:1;min-width:0}#bar .bdFiche b{display:block;font-size:17px;color:#fff;line-height:1.1}#bar .bdFiche span{display:block;font-size:12.5px;color:#a8a090;font-weight:700}
+#bar .bdFiche .j{margin-top:3px;font-size:11.5px}#bar .bdFiche em{font-style:normal;color:#e8c47a}
+#bar .bdGo{flex:none;border:0;border-radius:11px;height:42px;padding:0 14px;font:800 15px 'Baloo 2',sans-serif;background:linear-gradient(#e8c47a,#c9a24a);color:#1c1e22;box-shadow:0 3px 0 #7a5a1a}
+#bar .bdGo.cher{filter:grayscale(.6) opacity(.7)}
+@media (max-width:400px){#bar .bdEns b{font-size:17px}}
+@media (min-width:700px){#bar .bdH{padding-left:24px;padding-right:24px}#bar .bdEns b{font-size:28px}#bar .bdOng{padding:12px 24px 8px}#bar .bdOng button{flex:none;width:150px;flex-direction:row;justify-content:center;gap:6px;font-size:14px;padding:9px}
+ #bar .bdPage{padding:6px 24px 20px}#bar .bdPage.sc{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}#bar .bdFiche{margin-top:0;flex-direction:column;align-items:stretch}#bar .bdTk span{font-size:12px}}
+</style>
+<div id="bar" class="bdm" lang="fr"><div class="bdH"><div class="bdL1"><div class="bdEns"><b>LE BAR DES DOCKS</b><small>BAR · COCKTAILS · TABAC · DEPUIS 1931</small></div><div class="bdBo">🪙 ${enEuros(e.euros||0)}</div><button class="bdX" id="barFermer" aria-label="Fermer">✕</button></div>
+<div class="bdPat"><canvas id="bdBarman" width="44" height="50"></canvas><div class="bdBul" id="barBulle">${({gratter:'« Ils sont tous sur le comptoir. Prends celui qui te parle. »',pokedock:'« Les cartes du Pokédock, fraîches du carton. »',loto:'« Le tirage du port, tous les soirs. Coche tes numéros. »',presse:'« Les journaux du jour. Lis, tu sauras tout. »'})[ONG]||'« Qu’est-ce que je te sers ? »'}</div></div></div><div class="bdStore"></div>
+<div class="bdOng">${[["gratter","Gratter","🎟️"],["pokedock","Pokédock","🃏"],["loto","Loto","🎱"],["presse","Presse","📰"]].map(([id,nom,ic])=>`<button data-o="${id}" class="${ONG===id?'on':''}"><i>${ic}</i>${nom}</button>`).join('')}</div><div class="bdPage${ONG==='gratter'?' sc':''}">
 ${ONG==='presse'?presseHTML()
   :ONG==='pokedock'?'<div id="pkdVue"><div class="bar-jour">Fanny sort le carton…</div></div>':!['gratter','loto'].includes(ONG)?'<div class="bt-vide">Fanny n’a pas encore sorti ce rayon.<br>Reviens bientôt.</div>':ONG==='loto'?'<div id="lotoVue"><div class="bar-jour">On ouvre le tirage…</div></div>':`
-<div class="bar-t"><canvas width="36" height="36" data-i="ticketor"></canvas>JEUX À GRATTER<small>Tentez votre chance, ça peut tout changer&nbsp;!</small></div><div class="bt-gr">${TICKETS.map(([k,n,px])=>`<div class="bt-it"><div class="bt-viz"><canvas width="192" height="120" data-tk="${k}"></canvas></div><b>${n}</b><small>jusqu’à ${MAX[k]} €</small><button class="bt-px${(e.euros||0)<px?' cher':''}" data-t="${k}"><u></u>${enEuros(px)}</button></div>`).join('')}</div>
-<div class="bar-jour">Chaque ticket a sa règle : elle est écrite dessus.<br><b>${faits} / 20</b> tickets aujourd'hui · remise à zéro à minuit.</div>`}</div>
-</div></div><div class="bt-pied"><div class="bar-bulle" id="barBulle"></div><span>« Des paris, des rêves… »</span><button class="bt-fermer" id="barFermer">RETOUR</button></div></div>`;
+${(()=>{const S0=TICKETS.find(x=>x[0]===TKSEL)||TICKETS[1]||TICKETS[0];TKSEL=S0[0];return `<div class="bdScene"><canvas class="bdCpt" id="bdCpt" width="480" height="300"></canvas><div class="bdTks">${TICKETS.map(([k,n,px],i)=>`<button class="bdTk${k===TKSEL?' sel':''}" data-sel="${k}" style="--r:${[-6,2,6,-3,4][i%5]}deg"><canvas width="128" height="80" data-tk="${k}"></canvas><span>${n}</span></button>`).join('')}</div></div>
+<div class="bdFiche"><div class="t"><b>${S0[1]}</b><span>jusqu’à ${MAX[S0[0]]} € · trois pareils pour gagner</span><span class="j">Tickets du jour · <em>${faits} / 20</em> · remise à zéro à minuit</span></div><button class="bdGo${(e.euros||0)<S0[2]?' cher':''}" data-t="${S0[0]}">Gratter · ${enEuros(S0[2])}</button></div>`;})()}`}</div></div>`;
+try{bdDessinerBar();}catch(x){}
 btDessiner();
 if(ONG==='presse')presse();
 if(ONG==='pokedock')pokedockRayon();
@@ -6901,6 +6943,7 @@ $('page2Fond').querySelectorAll('canvas[data-lv]').forEach(cv=>{
   f((x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));});});
 $('barFermer').onclick=()=>{fermeA=Date.now();clearInterval(LOTO_T);$('page2').classList.remove('on');};
 $('page2Fond').querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{ONG=b.dataset.o;vibrer(8);rendre();});
+$('page2Fond').querySelectorAll('[data-sel]').forEach(b=>b.onclick=()=>{TKSEL=b.dataset.sel;vibrer(8);rendre();});
 if(ONG==='loto')loto();
 $('page2Fond').querySelectorAll('[data-t]').forEach(b=>b.onclick=async()=>{const T=TICKETS.find(x=>x[0]===b.dataset.t);
 if(faits>=20){motOuverture('Vingt tickets aujourd’hui : reviens demain !');return;}
