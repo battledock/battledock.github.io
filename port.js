@@ -1994,6 +1994,27 @@ function graverLaMaree(){return devanture(1,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
  mPoisson(g,R,x0+12,ey2+7,10,'#1f4f8a','#5a8ac8',1);mPoisson(g,R,x0+BL-12,ey2+7,10,'#1f4f8a','#5a8ac8',-1);
  /* l'ardoise */R(x0+BL+0,sol-22,1,16,'#5a3a20');R(x0+BL-12,sol-30,14,16,'#2a2a2a');R(x0+BL-12,sol-30,14,1,'#8a6a40');for(let q=0;q<4;q++)R(x0+BL-10,sol-27+q*3.4,8,0.7,'#e8e8e8');
  if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,85);l.addColorStop(0,'rgba(200,235,255,.5)');l.addColorStop(1,'rgba(200,235,255,0)');g.fillStyle=l;g.fillRect(cx-85,sol-85,170,92);}});}
+/* ================= LE PÊCHEUR HEUREUX, LA CABANE : bardage rouge, porte à hublot, filet et flotteurs ================= */
+function pfCanne(R,g,x,y,h,c){R(x,y,1,h,c||'#c8b890');R(x-.4,y+h-7,1.8,7,'#3a3a40');R(x-1,y+h-11,3,3,'#8a8a90');R(x+1,y+h-10,1.5,1.5,'#c8c8d0');}
+function pfPoissonHeureux(g,x,y,s,c1,c2){/* un poisson qui sourit, en enseigne */g.save();g.translate(x,y);g.scale(s,s);g.fillStyle=c1;g.beginPath();g.ellipse(0,0,10,6,0,0,7);g.fill();g.beginPath();g.moveTo(-9,0);g.lineTo(-16,-6);g.lineTo(-15,0);g.lineTo(-16,6);g.fill();g.beginPath();g.moveTo(-2,-5);g.lineTo(3,-10);g.lineTo(5,-5);g.fill();
+ g.fillStyle=c2;g.beginPath();g.ellipse(1,2.5,7,2.6,0,0,7);g.fill();g.fillStyle='#fff';g.beginPath();g.arc(5,-1.5,2.4,0,7);g.fill();g.fillStyle='#101010';g.beginPath();g.arc(5.6,-1.5,1.2,0,7);g.fill();
+ g.strokeStyle='#101010';g.lineWidth=.9;g.beginPath();g.arc(6.5,2,2.4,0.1,Math.PI*0.75);g.stroke();g.restore();}
+function graverLaCabanePeche(){return devanture(5,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+ /* B · LA CABANE DU PÊCHEUR : bardage rouge, porte à hublot, casiers, filets et flotteurs */
+ R(x0-2,yR-6,BL+4,rez+6,'#a83228');for(let x=x0-2;x<x0+BL+2;x+=5){R(x,yR-6,0.8,rez+6,'rgba(0,0,0,.25)');R(x+1,yR-6,0.5,rez+6,'rgba(255,255,255,.12)');}
+ R(x0-2,yR-6,BL+4,2,'#f4ecd8');R(x0-2,sol-5,BL+4,5,'#5a2a1a');
+ /* la porte à hublot */R(cx-11,yR+2,22,rez-2,'#1f4a6a');R(cx-11,yR+2,22,1.5,'#f4ecd8');g.fillStyle='#c9a24a';g.beginPath();g.arc(cx,yR+12,6,0,7);g.fill();g.fillStyle=nuit?'#ffe8a8':'#8ab8d8';g.beginPath();g.arc(cx,yR+12,4.5,0,7);g.fill();R(cx+7,sol-18,1.5,3,'#c9a24a');
+ /* deux fenêtres à petits carreaux */for(const x of [x0+10,x0+BL-40]){R(x,yR+4,30,20,'#f4ecd8');R(x+1.5,yR+5.5,27,17,nuit?'#ffe0a0':'#6a8aa0');R(x+15,yR+5.5,1,17,'#f4ecd8');R(x+1.5,yR+13.5,27,1,'#f4ecd8');R(x-1,yR+24,32,2,'#f4ecd8');
+  for(let i=0;i<4;i++)pfCanne(R,g,x+4+i*7,yR+6,15,['#c8b890','#3a6a9a','#c83a2a','#2a2a2a'][i]);}
+ /* casiers et caisse devant */for(const [x,y] of [[x0+4,sol-12],[x0+4,sol-22],[x0+18,sol-12]]){R(x,y,13,10,'#8a6a40');for(let i=0;i<13;i+=3)R(x+i,y,1,10,'#5a3a20');R(x,y,13,1,'#a88a58');}
+ R(x0+BL-22,sol-12,18,10,'#c8a070');R(x0+BL-22,sol-12,18,1.5,'#e8c890');g.font='700 2.8px Arial';g.fillStyle='#5a3a20';g.fillText('APPÂTS',x0+BL-20,sol-6);
+ /* le filet tendu avec ses flotteurs, sous l'enseigne */g.strokeStyle='rgba(230,220,190,.75)';g.lineWidth=.45;for(let i=0;i<=22;i++){g.beginPath();g.moveTo(x0+4+i*6,yR-4);g.lineTo(x0+4+i*6+3,yR+1);g.stroke();g.beginPath();g.moveTo(x0+7+i*6,yR-4);g.lineTo(x0+4+i*6,yR+1);g.stroke();}
+ for(let i=0;i<8;i++){g.fillStyle=i%2?'#e8b030':'#d8323a';g.beginPath();g.arc(x0+10+i*17,yR+1.5,2,0,7);g.fill();}
+ /* l'enseigne peinte en planche, avec une grande canne en travers */const ey=yR-24;R(x0+6,ey,BL-12,16,'#f4ecd8');R(x0+6,ey,BL-12,1,'#ffffff');R(x0+6,ey+15,BL-12,1,'#c8b890');
+ g.font='900 8.6px Georgia,serif';g.textAlign='center';g.fillStyle='#1f4a6a';g.fillText('PÊCHEUR HEUREUX',cx,ey+9.2,BL-30);g.font='700 3.6px Arial';g.fillStyle='#a83228';g.fillText('CANNES · MOULINETS · APPÂTS · DEPUIS 1952',cx,ey+13.8,BL-30);g.textAlign='left';
+ g.strokeStyle='#c8b890';g.lineWidth=1.2;g.beginPath();g.moveTo(x0+BL-30,ey-1);g.lineTo(x0+BL+4,ey-6);g.stroke();g.strokeStyle='rgba(230,230,230,.8)';g.lineWidth=.4;g.beginPath();g.moveTo(x0+BL+4,ey-6);g.quadraticCurveTo(x0+BL+8,ey+4,x0+BL+6,ey+12);g.stroke();pfPoissonHeureux(g,x0+BL+6,ey+16,0.35,'#5ab0d8','#d8f0ff');
+ for(const x of [x0+1,x0+BL-3]){R(x,yR-4,2,3,'#2a2a2a');R(x-1.5,yR-1,5,6,'#2a2a2a');R(x-.5,yR,3,4,nuit?'#ffe080':'#c8b890');}
+ if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,85);l.addColorStop(0,'rgba(255,215,150,.55)');l.addColorStop(1,'rgba(255,215,150,0)');g.fillStyle=l;g.fillRect(cx-85,sol-85,170,92);}});}
 function restoFonfon(teinte){const T=teinte==='marine'?{b:'#1f3452',bh:'#2c4a72',bs:'#122238',store:['#1f3a6a','#2a4a80'],or:'#e2c070'}:{b:'#5a1a1e',bh:'#7a2a2e',bs:'#3a0c10',store:['#8a1a22','#a8262e'],or:'#e8c46a'};
 return devanture(1,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
 R(x0-2,yR-4,BL+4,rez+4,T.b);R(x0-2,yR-4,BL+4,1.5,T.or);R(x0-2,sol-6,BL+4,6,T.bs);R(x0-2,sol-6,BL+4,1,T.bh);
@@ -2276,7 +2297,7 @@ for(let k=0;k<10;k++){
 if(k===4)continue;                                                  /* la ruelle du casino (plus de panneau en bois) */
 if(k===0){XCAL['x_fonfon0']=graverLaMaree();CALQUES_DECO['x_fonfon']=XCAL['x_fonfon0'];P('x_fonfon',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'maree'});continue;}   /* Chez Fonfon, le restaurant de bouillabaisse. IL TIENT LE BOUT OUEST DU QUAI (k=0, ancien k=1) : l'est est tenu par la Capitainerie, les deux esplanades sont donc bordees d'une devanture et les deux immeubles vides sont rentres dans la rangee. */
 if(k===9){XCAL['x_presse0']=graverLaPresse();CALQUES_DECO['x_presse']=XCAL['x_presse0'];P('x_presse',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'presse'});continue;}   /* la maison de la presse */
-if(k===2){XCAL['x_facPeche0']=graverLaBoutiquePeche();CALQUES_DECO['x_facPeche']=XCAL['x_facPeche0'];P('x_facPeche',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'peche'});continue;}   /* Pêche & Marine */
+if(k===2){XCAL['x_facPeche0']=graverLaCabanePeche();CALQUES_DECO['x_facPeche']=XCAL['x_facPeche0'];P('x_facPeche',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'peche'});continue;}   /* Pêche & Marine */
 if(k===6){XCAL['x_facPoisson0']=graverLaPoissonnerie();CALQUES_DECO['x_facPoisson']=XCAL['x_facPoisson0'];P('x_facPoisson',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'poissonnerie'});continue;}   /* la poissonnerie */
 if(k===3){XCAL['x_bar0']=graverLeBar();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'bar'});
 continue;}   /* le bar-tabac PMU (sans terrasse) */
