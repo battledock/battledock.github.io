@@ -16522,6 +16522,7 @@ try{fmDessinerDeco(ctx,camX,camY,pileV);}catch(x){}
 try{fmDessinerMetro(ctx,camX,camY,pileV);}catch(x){}
 try{fmDessinerLanternes(ctx,camX,camY,pileV);}catch(x){}
 try{pgDessiner(ctx,camX,camY,pileV);}catch(x){}
+try{pcDessiner(ctx,camX,camY,pileV);}catch(x){}
 pileV.sort((a,b)=>a.y-b.y);for(const p of pileV)p.f();
 dessinerBulles(ctx,camX,camY,pxV,pyV);dessinerTextes(ctx,camX,camY);ambiance(ctx);ctx.setTransform(1,0,0,1,0,0);return;}
 /* ================= LE VERGER =================
@@ -34361,6 +34362,8 @@ if(fmDansDeco(x,y))return true;
 /* les lanternes tempête autour du champ */
 /* le poulailler et son parcours */
 if(pgDansPoulailler(x,y))return true;
+/* la porcherie et sa cour */
+if(pcDansPorcherie(x,y))return true;
 /* la bouche de métro et son totem */
 if((x>1585-30&&x<1585+30&&y>950-32&&y<950+3)||(Math.abs(x-1545)<4&&y>947&&y<953))return true;
 /* la boîte aux lettres, sur son poteau : on la contourne */
@@ -35093,6 +35096,156 @@ for(const q of PG.poules){const qx=q.x, qy=q.y;pile.push({y:pgH(qy),f:()=>{ctx.s
 const c=q.c==='r'?PG_LIB.ROUSSE:(q.c==='n'?PG_LIB.NOIRE:null);PG_LIB.pouleF(ctx,qx,qy,q.d,c,q.pique>0&&Math.floor(now/180)%2===0);ctx.restore();}});}
 pile.push({y:pgH(352),f:()=>ctx.drawImage(PG.img.dev,Math.round(X),Math.round(Y),W2,H2)});}
 setInterval(()=>{if(FERME_VIERGE&&CARTE==='village'&&e.id&&document.visibilityState==='visible')pgCharger();},90000);
+
+/* =====================================================================
+   LA PORCHERIE — étable à cochons en bois, cour en terre battue paillée,
+   une vraie souille, une auge. Mêmes données que l'étable du serveur
+   (betes_etat / etable_nourrir / betes_truffe / betes_vendre_cochon /
+   betes_acheter). Repère « fin » comme le poulailler.
+   ===================================================================== */
+const PC_OX=540, PC_OY=1040, PC_K=0.75;
+const pcW=(u)=>PC_OX+u*PC_K, pcH=(v)=>PC_OY+v*PC_K;
+let PC={etat:null,charge:false,cochons:[],img:null,quand:0,mange:0};
+function pcDansPorcherie(x,y){if(!FERME_VIERGE)return false;
+return x>pcW(14)&&x<pcW(406)&&y>pcH(128)&&y<pcH(352);}
+const pcPres=()=>FERME_VIERGE&&CARTE==='village'&&joueur.x>pcW(0)&&joueur.x<pcW(420)&&joueur.y>pcH(352)&&joueur.y<pcH(440);
+const PC_LIB=(()=>{
+function H(x,y,k){let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;}
+function vn(x,y,s,k){const X=Math.floor(x/s),Y=Math.floor(y/s),fx=x/s-X,fy=y/s-Y,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);const a=H(X,Y,k),b=H(X+1,Y,k),c=H(X,Y+1,k),e2=H(X+1,Y+1,k);return a+(b-a)*u+(c-a)*v+(a-b-c+e2)*u*v;}
+const R=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),w,h);};
+function hex(c){return [parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];}
+function mix(a,b,t){const A=hex(a),B=hex(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join('');}
+function Pi(g){return {r:(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));},
+ grad:(x,y,w,h,c1,c2)=>{for(let j=0;j<h;j++){g.fillStyle=mix(c1,c2,j/Math.max(1,h-1));g.fillRect(x,y+j,w,1);}}};}
+const X0=20,Y0=150,X1=400,Y1=350, SX=322,SY=240,SRX=56,SRY=24;
+/* LA COUR : terre battue piétinée, paille éparse (plus épaisse devant l'étable), herbe rase qui mord les bords */
+function terre(g){const W=420,HH=400,im=g.createImageData(W,HH),d=im.data;
+const TB=[[132,100,64],[146,112,72],[120,90,56],[156,124,82]];
+for(let y=Y0-14;y<Y1+12;y++)for(let x=X0-12;x<X1+12;x++){
+ const bord=Math.min(x-X0,X1-x,y-Y0,Y1-y), n=vn(x,y,7,41);if(bord+n*12-6<0)continue;
+ const c=TB[(H(x,y,42)*4)|0], big=(vn(x,y,40,43)-.5)*26, m=Math.hypot((x-SX)/(SRX+26),(y-SY)/(SRY+18))<1?-14:0, a=Math.hypot((x-118)/40,(y-318)/16)<1?-10:0;
+ const i=(y*W+x)*4;d[i]=Math.max(0,c[0]+big+m+a);d[i+1]=Math.max(0,c[1]+big+m+a);d[i+2]=Math.max(0,c[2]+big*0.7+m+a);d[i+3]=255;}
+g.putImageData(im,0,0);
+/* herbe rase qui reste par plaques sur les bords */
+for(let k=0;k<420;k++){const t=H(k,1,44);let x,y;if(t<.5){x=X0+H(k,2,45)*(X1-X0);y=H(k,3,46)<.5?Y0+H(k,4,47)*10:Y1-H(k,4,47)*10;}else{y=Y0+H(k,2,48)*(Y1-Y0);x=H(k,3,49)<.5?X0+H(k,4,50)*10:X1-H(k,4,50)*10;}
+ R(g,x,y-2,1,3,'#5f8a3c');R(g,x+1,y-1,1,2,'#7aa84e');}
+/* paille : brins clairs, plus denses vers l'étable et en litière près des boxes */
+for(let k=0;k<1500;k++){const x=X0+6+H(k,5,51)*(X1-X0-12), y=Y0+4+Math.pow(H(k,6,52),1.7)*(Y1-Y0-8);if(Math.hypot((x-SX)/SRX,(y-SY)/SRY)<1.15)continue;
+ g.fillStyle=['#e8c868','#d8b050','#f0d88a','#c49a48'][(H(k,7,53)*4)|0];g.save();g.translate(x,y);g.rotate((H(k,8,54)-.5)*2.6);g.fillRect(-2,0,4+H(k,9,55)*3,1);g.restore();}
+/* empreintes de sabots (paires de petits creux) */
+for(let k=0;k<70;k++){const x=X0+16+H(k,10,56)*(X1-X0-32), y=Y0+20+H(k,11,57)*(Y1-Y0-30);if(Math.hypot((x-SX)/SRX,(y-SY)/SRY)<1.3)continue;R(g,x,y,1.4,1,'rgba(70,46,24,.55)');R(g,x+1.8,y,1.4,1,'rgba(70,46,24,.55)');}
+/* petits cailloux */
+for(let k=0;k<40;k++){const x=X0+10+H(k,12,58)*(X1-X0-20), y=Y0+10+H(k,13,59)*(Y1-Y0-20);R(g,x,y,2,1,'#b8aa94');R(g,x,y+1,2,1,'#7a6a58');}}
+/* LA SOUILLE : boue épaisse, bords mouillés, reflets, éclaboussures */
+function souille(g,x,y,rx,ry){g.fillStyle='rgba(90,64,34,.55)';g.beginPath();g.ellipse(x,y+1,rx+6,ry+4,0,0,7);g.fill();
+const gr=g.createRadialGradient(x-rx*0.2,y-ry*0.2,2,x,y,rx);gr.addColorStop(0,'#7a5430');gr.addColorStop(.7,'#5e3e20');gr.addColorStop(1,'#4a2e16');g.fillStyle=gr;g.beginPath();
+for(let a=0;a<6.3;a+=0.3){const r=1+Math.sin(a*3+1)*0.06+Math.sin(a*5)*0.04;g.lineTo(x+Math.cos(a)*rx*r,y+Math.sin(a)*ry*r);}g.closePath();g.fill();
+g.fillStyle='rgba(40,24,10,.35)';for(let k=0;k<14;k++){g.beginPath();g.ellipse(x+(H(k,1,4)-0.5)*rx*1.5,y+(H(k,2,4)-0.5)*ry*1.4,3+H(k,3,4)*4,1.2,0,0,7);g.fill();}
+g.fillStyle='rgba(200,225,240,.55)';for(const [a,b,w] of [[-0.4,-0.3,14],[0.1,0.1,9],[0.35,-0.15,6]]){g.beginPath();g.ellipse(x+a*rx,y+b*ry,w,1.4,0,0,7);g.fill();}
+for(let k=0;k<12;k++){const a=H(k,7,2)*6.28;g.fillStyle='#6a4a28';g.beginPath();g.arc(x+Math.cos(a)*(rx+6+H(k,8,1)*8),y+Math.sin(a)*(ry+4+H(k,9,1)*5),1+H(k,1,9)*1.4,0,7);g.fill();}}
+function auge(g,P,x,y,plein){g.fillStyle='rgba(30,20,10,.3)';g.beginPath();g.ellipse(x,y+1,22,3,0,0,7);g.fill();
+P.r(x-20,y-10,40,10,'#7a5232');P.r(x-20,y-10,40,2,'#a8784a');P.r(x-17,y-8,34,4,plein?'#d8b860':'#3e2a18');
+if(plein)for(let k=0;k<16;k++)P.r(x-16+k*2,y-9-(k%3?0:1),2,1,['#f0d070','#c8a040','#e8c860'][k%3]);P.r(x-22,y-4,4,4,'#5a3a20');P.r(x+18,y-4,4,4,'#5a3a20');}
+function abreuvoir(g,P,x,y){P.r(x-12,y-9,24,9,'#9aa2aa');P.r(x-12,y-9,24,2,'#d8dce0');P.r(x-10,y-7,20,3,'#4a90c8');P.r(x-8,y-7,6,1,'#9ad0f0');}
+/* clôture de planches : poteaux + deux lisses */
+function cloture(g,P,devant){const C='#8a5a30',L='#b8885a',T='#5e3c22';
+const lisse=(ax,ay,bx,by)=>{for(const o of [-20,-10]){g.strokeStyle=C;g.lineWidth=3.4;g.beginPath();g.moveTo(ax,ay+o);g.lineTo(bx,by+o);g.stroke();g.strokeStyle=L;g.lineWidth=1;g.beginPath();g.moveTo(ax,ay+o-1.2);g.lineTo(bx,by+o-1.2);g.stroke();}};
+const post=(x,y)=>{g.fillStyle='rgba(30,20,10,.25)';g.fillRect(x-3,y,7,2);P.r(x-2.5,y-26,5,27,T);P.r(x-2.5,y-26,1.2,26,'rgba(255,255,255,.18)');P.r(x-3,y-27,6,2,'#7a5232');};
+if(!devant){lisse(268,Y0,X1,Y0);for(let x=268;x<=X1;x+=44)post(x,Y0);lisse(X0,Y0,X0,Y1);lisse(X1,Y0,X1,Y1);for(let y=Y0;y<Y1;y+=50){post(X0,y);post(X1,y);}return;}
+/* devant : un portillon au milieu */
+lisse(X0,Y1,186,Y1);lisse(234,Y1,X1,Y1);for(const x of [X0,64,108,152,186,234,268,312,356,X1])post(x,Y1);
+g.strokeStyle='#9a6a3e';g.lineWidth=2.6;for(const o of [-20,-10]){g.beginPath();g.moveTo(188,Y1+o);g.lineTo(232,Y1+o);g.stroke();}
+g.beginPath();g.moveTo(190,Y1-20);g.lineTo(230,Y1-10);g.stroke();for(const x of [196,210,224])R(g,x,Y1-22,2,14,'#7a5232');R(g,227,Y1-17,3,3,'#3a3a3a');}
+/* L'ÉTABLE : planches claires, toit de tuiles, boxes paillés ouverts sur la cour */
+function etable(g,P,x,sol,w){const h=58;g.fillStyle='rgba(20,40,10,.3)';g.beginPath();g.ellipse(x+w/2,sol+3,w*0.54,8,0,0,7);g.fill();
+for(let k=0;k<w;k+=8){P.r(x+k,sol-h,8,h,H(k,5,3)<.5?'#c8a070':'#b89060');P.r(x+k,sol-h,1,h,'rgba(0,0,0,.15)');}
+g.fillStyle='#b4542e';g.beginPath();g.moveTo(x-12,sol-h+6);g.lineTo(x+20,sol-h-28);g.lineTo(x+w-20,sol-h-28);g.lineTo(x+w+12,sol-h+6);g.fill();g.save();g.clip();
+for(let yy=sol-h-28;yy<sol-h+8;yy+=5)for(let xx=x-14;xx<x+w+14;xx+=6){P.r(xx+((yy/5|0)%2)*3,yy,5,5,H(xx,yy,9)<.5?'#c8643a':'#a8542e');P.r(xx+((yy/5|0)%2)*3,yy+4,5,1,'#7a2e14');}g.restore();P.r(x-13,sol-h+4,w+26,3,'#7a2e14');
+/* lucarne à foin */ P.r(x+w/2-10,sol-h-20,20,14,'#5a3a20');P.r(x+w/2-8,sol-h-18,16,12,'#2a1a10');for(let k=0;k<8;k++)P.r(x+w/2-8+k*2,sol-h-9+(k%2),3,3,'#e8c860');
+const nb=2, bw=(w-24-12)/2;for(let b=0;b<nb;b++){const bx=x+12+b*(bw+12);P.r(bx,sol-44,bw,44,'#3a2414');P.grad(bx,sol-44,bw,12,'#1e1208','#3a2414');
+for(let k=0;k<60;k++)P.r(bx+2+H(k,b,1)*(bw-6),sol-14+H(b,k,2)*13,4,1,['#e8c860','#d8b040','#f0d878'][k%3]);
+P.r(bx-3,sol-46,4,46,'#7a5232');P.r(bx+bw,sol-46,4,46,'#7a5232');P.r(bx-3,sol-47,bw+7,3,'#6a4428');}
+}
+/* LE BEAU COCHON */
+function beau(g,x,y,d,c,o){o=o||{};c=c||{p:'#f6b8b2',l:'#ffd4cc',s:'#d88a86',k:'#9a5450',t:null};const s=o.s||1;g.save();g.translate(x,y);g.scale(d*s,s);
+g.fillStyle='rgba(30,20,10,.28)';g.beginPath();g.ellipse(0,1,19,4,0,0,7);g.fill();
+const corps=(f)=>{g.beginPath();g.moveTo(-17,-10);g.bezierCurveTo(-18,-22,10,-24,14,-15);g.bezierCurveTo(16,-10,16,-4,11,-3);g.lineTo(-14,-3);g.bezierCurveTo(-18,-4,-19,-7,-17,-10);g.closePath();f();};
+if(!o.dort){const ph=o.pas||0;for(const [lx,b,q] of [[-12,0,0],[-6,1,1],[5,0,1],[10,1,0]]){const up=(q?ph:-ph)>0?1:0;g.fillStyle=b?c.s:c.p;g.fillRect(lx-1.6,-5-up,3.4,6);g.fillStyle=c.k;g.fillRect(lx-1.6,0-up,3.4,1.6);}}
+g.save();if(o.dort)g.translate(0,4);
+corps(()=>{g.fillStyle=c.k;g.save();g.scale(1.06,1.08);g.fill();g.restore();});
+corps(()=>{const gr=g.createLinearGradient(0,-24,0,-3);gr.addColorStop(0,c.l);gr.addColorStop(.45,c.p);gr.addColorStop(1,c.s);g.fillStyle=gr;g.fill();});
+if(c.t){g.fillStyle=c.t;for(const [a,b,r] of [[-8,-15,4],[2,-18,3],[6,-10,3.4],[-12,-8,2.4]]){g.beginPath();g.ellipse(a,b,r,r*0.75,0,0,7);g.fill();}}
+if(o.boue){g.fillStyle='rgba(98,66,36,.9)';for(const [a,b,r] of [[-10,-6,4],[-3,-5,3],[4,-6,3.5],[-14,-9,2.4],[8,-12,2.4]]){g.beginPath();g.ellipse(a,b,r,r*0.6,0,0,7);g.fill();}g.fillStyle='rgba(255,255,255,.25)';g.fillRect(-9,-7,2,0.8);}
+g.strokeStyle=c.s;g.lineWidth=1.4;g.beginPath();g.moveTo(-17,-12);g.bezierCurveTo(-22,-14,-22,-8,-19,-9);g.bezierCurveTo(-17,-10,-20,-13,-21,-11);g.stroke();
+const fo=o.fouille?2.5:0;g.save();g.translate(0,fo);
+g.fillStyle=c.k;g.beginPath();g.ellipse(14,-13,8.4,7.6,0,0,7);g.fill();g.fillStyle=c.p;g.beginPath();g.ellipse(14,-13,7.6,6.8,0,0,7);g.fill();g.fillStyle=c.l;g.beginPath();g.ellipse(13,-16,4,2.4,0,0,7);g.fill();
+g.fillStyle=c.s;g.beginPath();g.moveTo(10,-19);g.quadraticCurveTo(16,-26,19,-19);g.quadraticCurveTo(16,-15,12,-15);g.fill();g.fillStyle=c.k;g.beginPath();g.moveTo(12,-18);g.quadraticCurveTo(16,-22,17,-19);g.lineTo(14,-17);g.fill();
+g.fillStyle=c.k;g.beginPath();g.ellipse(21,-11,4,3.6,0,0,7);g.fill();g.fillStyle='#ffc4bc';g.beginPath();g.ellipse(21,-11,3.3,2.9,0,0,7);g.fill();g.fillStyle='#a85a58';g.fillRect(19.6,-11.6,1.1,1.6);g.fillRect(21.8,-11.6,1.1,1.6);g.fillStyle='#fff';g.fillRect(20,-13.4,1.4,0.8);
+if(o.dort){g.fillStyle='#5a3030';g.fillRect(14.4,-15,3,0.9);}else{g.fillStyle='#1a1208';g.fillRect(15,-16,2,2);g.fillStyle='#fff';g.fillRect(15.4,-15.8,0.7,0.7);}
+g.fillStyle='rgba(255,120,120,.35)';g.beginPath();g.ellipse(16,-10.5,2.2,1.3,0,0,7);g.fill();
+if(o.fouille&&o.t%2){g.fillStyle='#6a4a28';g.fillRect(24,-6,1.4,1.4);g.fillRect(26,-8,1,1);}
+g.restore();g.restore();g.restore();
+if(o.dort){const z=o.t%3;g.fillStyle='rgba(255,255,255,.9)';g.font='bold 7px sans-serif';g.fillText('z',x+d*18*s,y-22*s-z);g.font='bold 5px sans-serif';g.fillText('z',x+d*23*s,y-29*s-z);}}
+const PAL=[null,{p:'#f8d4cc',l:'#fff0ea',s:'#d8a8a0',k:'#9a6a64',t:'#4a3434'},{p:'#b8805c',l:'#d8a07a',s:'#8a5a3c',k:'#5a3a24'},null,{p:'#4a4448',l:'#6a6268',s:'#2e2a2e',k:'#1a1618'},{p:'#f8d4cc',l:'#fff0ea',s:'#d8a8a0',k:'#9a6a64',t:'#4a3434'}];
+function calques(plein){const mk=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;};
+const W=420,HH=400, fond=mk(W,HH), etab=mk(W,HH), dev=mk(W,HH);
+{const g=fond.getContext('2d'),P=Pi(g);terre(g);souille(g,SX,SY,SRX,SRY);cloture(g,P,0);auge(g,P,118,318,plein);abreuvoir(g,P,64,322);}
+{const g=etab.getContext('2d'),P=Pi(g);etable(g,P,24,152,244);}
+{const g=dev.getContext('2d'),P=Pi(g);cloture(g,P,1);}
+return {fond,etab,dev};}
+return {calques,beau,PAL,SX,SY,SRX,SRY};})();
+async function pcCharger(){if(!e.id)return;try{const d=await appelRPC('betes_etat',{p_joueur:e.id});if(d&&d.cochons!=null){const pl=PC.etat&&PC.etat.foin>0;PC.etat=d;PC.charge=true;PC.recu=Date.now();if(pl!==(d.foin>0))PC.img=null;pcPeupler();}}catch(x){}}
+function pcFoin(){const E=PC.etat;return !!E&&E.foin-(Date.now()-(PC.recu||0))/1000>0;}
+function pcPeupler(){const n=PC.etat?Math.min(6,PC.etat.cochons||0):0;
+while(PC.cochons.length<n){const k=PC.cochons.length;PC.cochons.push({k,x:60+((k*67)%300),y:200+((k*41)%120),tx:0,ty:0,d:k%2?1:-1,pause:Math.random()*3000,etat:'',boue:0,t:0});}
+PC.cochons.length=n;}
+function pcTaille(){const pb=PC.etat?PC.etat.poids_bete||0:0;return 0.82+0.4*Math.min(1,pb/120);}
+function pcTexte(){if(!PC.charge)return ['La porcherie','UN INSTANT…'];const E=PC.etat;
+if(!E.cochons)return ['Acheter un cochon',enEuros(E.prix_cochon).replace(',00','')+' · IL TROUVE DES TRUFFES'];
+if(E.truffe_prete)return ['Chercher la truffe','LES COCHONS FOUILLENT LA TERRE'];
+if(!pcFoin())return ['Donner le foin','2 BLÉ DU SAC, SINON 3 € · 3 H'];
+if((E.poids_bete||0)>=120)return ['Vendre un cochon gras',enEuros((E.poids_bete||0)*42).replace(',00','')+' · '+E.poids_bete+' KG'];
+const h=Math.ceil((E.truffe_dans||0)/3600);return ['Les cochons engraissent',E.poids_bete+' KG CHACUN · TRUFFE DANS '+(h>1?h+' H':'1 H')];}
+let PC_OCC=false;
+async function pcAction(){if(PC_OCC||!PC.charge)return;PC_OCC=true;try{const E=PC.etat;let d,et=null;
+const msg=(t,c)=>texteVolant(joueur.x,joueur.y-56,t,c||'#fff3d0');
+if(!E.cochons){d=await appelRPC('betes_acheter',{p_joueur:e.id,p_espece:'cochon'});if(d&&!d.erreur){et=d;try{e.euros=(e.euros||0)-E.prix_cochon;sauver();majHaut();}catch(x){}msg('Un cochon de plus !','#ffe070');vibrer([10,30,10]);try{jouer('achat');}catch(x){}}else msg(d&&d.erreur==='pas_assez'?'Pas assez d’argent':'Pas possible pour l’instant','#ffd0a0');}
+else if(E.truffe_prete){PC.fouille=Date.now();d=await appelRPC('betes_truffe',{p_joueur:e.id});
+if(d&&!d.erreur){et=d.etat;if(d.trouve){msg('Une truffe ! (dans ton sac)','#f0cf7d');try{jouer('vente','moment');}catch(x){}vibrer([14,30,14]);try{await recalerLeSac(true);majHaut();}catch(x){}}else msg('Pas de truffe cette fois…','#fff3d0');}else msg('Pas encore','#ffd0a0');}
+else if(!pcFoin()){d=await appelRPC('etable_nourrir',{p_joueur:e.id});if(d&&!d.erreur){PC.mange=Date.now();msg('Les cochons mangent : ils engraissent','#ffe070');vibrer(10);}else msg(d&&d.erreur==='pas_assez'?'Pas assez d’argent':'Ils n’ont pas faim','#ffd0a0');}
+else if((E.poids_bete||0)>=120){d=await appelRPC('betes_vendre_cochon',{p_joueur:e.id});if(d&&!d.erreur){et=d.etat;msg('+'+enEuros(d.gain),'#ffe070');try{jouer('vente','moment');}catch(x){}vibrer([14,30,14]);try{e.euros=(e.euros||0)+d.gain;sauver();majHaut();}catch(x){}}else msg('Pas possible pour l’instant','#ffd0a0');}
+else msg('Ils se roulent dans la boue…','#fff3d0');
+if(et&&et.cochons!=null){PC.etat=et;PC.recu=Date.now();PC.img=null;pcPeupler();}else await pcCharger();PC.img=null;
+}finally{PC_OCC=false;try{majAction();}catch(x){}}}
+function pcBouger(dt){const L=PC_LIB, now=Date.now(), mange=PC.mange&&now-PC.mange<9000, fouille=PC.fouille&&now-PC.fouille<5000;
+const nuit=typeof MINUTE==='number'&&(MINUTE<6*60||MINUTE>21*60+30);
+for(const q of PC.cochons){q.t+=dt;if(q.boue>0)q.boue-=dt;
+if(q.pause>0){q.pause-=dt;if(q.etat==='souille')q.boue=60000;if((mange||fouille)&&q.etat!=='fouille'&&q.etat!=='mange'){q.pause=0;q.etat='';}else continue;}
+if(!q.tx||Math.hypot(q.tx-q.x,q.ty-q.y)<2){if(q.tx){q.tx=0;q.pause=q.etat==='souille'?8000+Math.random()*10000:q.etat==='dodo'?12000+Math.random()*16000:q.etat==='mange'?5000:1500+Math.random()*3500;if(q.etat==='marche')q.etat=Math.random()<0.5?'fouille':'';continue;}
+ const r=Math.random();
+ if(mange){q.etat='mange';q.tx=84+q.k*13+Math.random()*4;q.ty=326+(q.k%2)*8;}
+ else if(fouille){q.etat='fouille';q.tx=40+Math.random()*340;q.ty=200+Math.random()*130;}
+ else if(r<(nuit?0.7:0.16)){q.etat='dodo';const b=q.k%2;q.tx=60+b*124+Math.random()*60;q.ty=156+Math.random()*6;}
+ else if(r<(nuit?0.8:0.36)){q.etat='souille';const a=Math.random()*6.28;q.tx=L.SX+Math.cos(a)*L.SRX*0.5;q.ty=L.SY+Math.sin(a)*L.SRY*0.5;}
+ else{q.etat='marche';q.tx=40+Math.random()*340;q.ty=176+Math.random()*156;}}
+const a=Math.atan2(q.ty-q.y,q.tx-q.x), v=0.022*dt;q.x+=Math.cos(a)*v;q.y+=Math.sin(a)*v;if(Math.abs(Math.cos(a))>0.25)q.d=Math.cos(a)>0?1:-1;}}
+let PC_PREC=0;
+function pcDessiner(ctx,camX,camY,pile){if(!FERME_VIERGE||CARTE!=='village')return;
+const X=pcW(0)-camX, Y=pcH(0)-camY;if(X>VW+40||X+320<-40||Y>VH+40||Y+300<-60)return;
+if(!PC.charge&&Date.now()-PC.quand>8000){PC.quand=Date.now();pcCharger();}
+if(!PC.img)PC.img=PC_LIB.calques(pcFoin());
+const now=Date.now(), dt=Math.min(60,now-(PC_PREC||now));PC_PREC=now;pcBouger(dt);
+const W2=420*PC_K, H2=400*PC_K, s=pcTaille();
+ctx.drawImage(PC.img.fond,Math.round(X),Math.round(Y),W2,H2);
+pile.push({y:pcH(152),f:()=>ctx.drawImage(PC.img.etab,Math.round(X),Math.round(Y),W2,H2)});
+for(const q of PC.cochons){const qx=q.x,qy=q.y,arret=!q.tx||q.pause>0;
+ const o={s,t:Math.floor(now/260),boue:q.boue>0,dort:arret&&(q.etat==='dodo'||q.etat==='souille'),fouille:arret&&(q.etat==='fouille'||q.etat==='mange'),pas:arret?0:(Math.floor(q.t/140)%2?1:-1)};
+ pile.push({y:pcH(qy),f:()=>{ctx.save();ctx.translate(X,Y);ctx.scale(PC_K,PC_K);PC_LIB.beau(ctx,qx,qy,q.d,PC_LIB.PAL[q.k%6],o);ctx.restore();}});}
+pile.push({y:pcH(350),f:()=>ctx.drawImage(PC.img.dev,Math.round(X),Math.round(Y),W2,H2)});}
+setInterval(()=>{if(FERME_VIERGE&&CARTE==='village'&&e.id&&document.visibilityState==='visible')pcCharger();},90000);
+{const pcMajPrec=majAction;
+majAction=function(){if(pcPres()){try{const b2=cible();if(b2&&(b2.ouvre||b2.t==='comptoir'||b2.t==='metro'))return pcMajPrec();}catch(x){}plaqueVrai=$('action');const t=pcTexte();plaqueFeinte.classList.remove('inerte');plaqueFeinte.innerHTML=t[0]+'<small>'+t[1]+'</small>';plaqueFeinte.classList.add('on');return;}return pcMajPrec();};
+$('action').addEventListener('click',(ev)=>{if(pcPres()){ev.stopImmediatePropagation();ev.preventDefault();pcAction();}},true);}
 </script>
 </body>
 </html>
