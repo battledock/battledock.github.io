@@ -30518,7 +30518,7 @@ if(!d||d.erreur){b.disabled=false;
 motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':'Madeleine n’a pas pu.');return;}
 potAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);
 ouvrirLaBoutiqueFerme();});}
-try{const cv=$('bqArr');if(cv){const g=cv.getContext('2d');g.setTransform(2,0,0,2,0,0);g.clearRect(0,0,44,40);fpCadre(g,3,3,34,33);for(let q=0;q<4;q++)fpTerre(g,5+(q%2)*15,5+(q>>1)*14.5,15,14.5,{eau:true});fpDessinerArroseur(g,0,0,Date.now(),0,0);}}catch(x){}
+try{const cv=$('bqArr');if(cv){const g=cv.getContext('2d');g.setTransform(2,0,0,2,0,0);g.clearRect(0,0,44,40);fpCadre(g,3,3,34,33);for(let q=0;q<4;q++)fpTerre(g,5+(q%2)*15,5+(q>>1)*14.5,15,14.5,{eau:true});window.FP_ARR_ANIM=window.FP_ARR_ANIM||{};window.FP_ARR_ANIM['-1,-1']=Date.now()-600;fpDessinerArroseur(g,0,0,Date.now(),-1,-1);}}catch(x){}
 $('page2Fond').querySelectorAll('[data-arr]').forEach(b=>b.onclick=async()=>{b.disabled=true;const d=await appelRPC('champ_arroseur_acheter',{p_joueur:e.id});
 if(d&&!d.erreur){CH.stockArr=d.stock||((CH.stockArr||0)+1);if(typeof d.euros==='number')e.euros=d.euros;try{majHaut();}catch(x){}jouer('vente','moment');vibrer([15,40,15]);ouvrirLaBoutiqueFerme('« Le voilà ! Va le poser sur une parcelle. »');}
 else{b.disabled=false;motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':'Madeleine n’a pas pu.');}});
@@ -34536,6 +34536,7 @@ function fpNom(k){return POT_CULT[k][0].replace(/\s*\(.*\)/,'').replace('Citroui
 function fpFavoris(libres){let u={};try{u=JSON.parse(localStorage.getItem('bdl.semis')||'{}')||{};}catch(x){}
 return libres.slice().sort((a,b)=>((u[b]||0)-(u[a]||0))||(chDeSaison(b)-chDeSaison(a))||(POT_CULT[a][2]-POT_CULT[b][2]));}
 function fpSemer(P,k){FP.vus={};FP.graine=k;fpPopFermer();vibrer(8);
+if(CH.arr&&CH.arr[P.i+','+P.j])setTimeout(()=>{window.FP_ARR_ANIM=window.FP_ARR_ANIM||{};window.FP_ARR_ANIM[P.i+','+P.j]=Date.now();},350);
 try{const u=JSON.parse(localStorage.getItem('bdl.semis')||'{}')||{};u[k]=(u[k]||0)+1;localStorage.setItem('bdl.semis',JSON.stringify(u));}catch(x){}
 try{potGeste('houe');}catch(x){}fpAgir(P,'graine').then(()=>{try{majAction();}catch(x){}});}
 function fpListe(P){fpStyle2();let L=$('fpListe');if(!L){L=document.createElement('div');L.id='fpListe';document.body.appendChild(L);}
@@ -34681,7 +34682,7 @@ await Promise.all(fpSpots(P.i,P.j).map(([c,r])=>chEnvoyer(c,r,'houe')));CH_ICI=n
 const E=fpEtat(P.i,P.j);
 if(E.mur){try{potGeste('cueille');}catch(x){}await fpAgir(P,'faux');FP.vus={};return;}
 if((CH.stockArr||0)>0&&!(CH.arr&&CH.arr[P.i+','+P.j])){try{potGeste('semer');}catch(x){}vibrer([12,30,12]);const d=await appelRPC('champ_arroseur_poser',{p_joueur:e.id,p_i:P.i,p_j:P.j});
-if(d&&!d.erreur){CH.arr=CH.arr||{};CH.arr[P.i+','+P.j]=1;CH.stockArr=d.stock||0;(d.tuiles||[]).forEach(T=>CH.t[chCle(T.c,T.r)]=T);CH.sale=true;texteVolant(fpX(P.i)+20,fpY(P.j)-4,'Arroseur posé : arrosée pour toujours','#bfe8ff');try{jouer('vente','moment');}catch(x){}}
+if(d&&!d.erreur){CH.arr=CH.arr||{};CH.arr[P.i+','+P.j]=1;window.FP_ARR_ANIM=window.FP_ARR_ANIM||{};window.FP_ARR_ANIM[P.i+','+P.j]=Date.now();CH.stockArr=d.stock||0;(d.tuiles||[]).forEach(T=>CH.t[chCle(T.c,T.r)]=T);CH.sale=true;texteVolant(fpX(P.i)+20,fpY(P.j)-4,'Arroseur posé : arrosée pour toujours','#bfe8ff');try{jouer('vente','moment');}catch(x){}}
 else texteVolant(joueur.x,joueur.y-56,'Réessaie dans un instant','#ffd0a0');return;}
 if(E.vide){if(FP.pop&&$('fpPop').classList.contains('on'))fpPopFermer();else fpGraines(P);return;}
 if(E.soif){fpArroserAnime(P);return;}
@@ -34941,8 +34942,9 @@ P(X+4.5,Y+4.5,31,0.9,'#8e979e');P(X+4.5,Y+34.6,31,0.9,'#8e979e');P(X+4.5,Y+4.5,0
 P(X+4.5,Y+4.5,31,0.4,'#c8d0d6');P(X+4.5,Y+4.5,0.4,31,'#c8d0d6');
 [[X+5,Y+5,1,1],[X+35,Y+5,-1,1],[X+5,Y+35,1,-1],[X+35,Y+35,-1,-1]].forEach(([bx,by,sx,sy],k)=>{
 P(bx-1,by-1,2,2,'#a8862e');P(bx-1,by-1,2,0.6,'#e8c868');
-/* trois gouttes qui partent vers le milieu, en battant */
-const ph=(t*1.8+k*0.25)%1;for(let q=0;q<3;q++){const u=(ph+q/3)%1, d=1.5+u*7;g.fillStyle='rgba(200,232,255,'+(0.9-u*0.7).toFixed(2)+')';g.fillRect(bx+sx*d-0.35,by+sy*d*0.85-Math.sin(u*Math.PI)*1.6-0.35,0.8,0.8);}});}
+/* les gouttes : seulement juste après un semis (ou la pose), puis il se tait */
+const t0=(window.FP_ARR_ANIM||{})[i+','+j]||0, age=now-t0;if(age>2600)return;const fond=age<200?age/200:(age>2000?(2600-age)/600:1);
+const ph=(t*1.8+k*0.25)%1;for(let q=0;q<4;q++){const u=(ph+q/4)%1, d=1.5+u*8;g.fillStyle='rgba(200,232,255,'+((0.95-u*0.7)*fond).toFixed(2)+')';g.fillRect(bx+sx*d-0.5,by+sy*d*0.85-Math.sin(u*Math.PI)*2-0.5,1.1,1.1);}});}
 </script>
 </body>
 </html>
