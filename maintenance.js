@@ -37,55 +37,59 @@
      la foret, la maison, le marche — et elle serait restee affichee sous un
      titre « 4.0 » le jour ou l'on fermerait le jeu. On raconte donc ce qui a
      vraiment ete bati depuis : le Complexe Festif et ses deux portes. */
+  /* LES NOUVEAUTÉS DE LA 5.1 — Halloween s'invite dans le jeu */
   var NOUV=[
-    [null,'Le Complexe Festif','Au bout de la ruelle, une façade de néons et deux portes. À gauche le casino, à droite la salle d’arcade. Les deux sont ouvertes à tout le monde.','🎪'],
-    [null,'Le Casino, cinq tables','La roulette du port, le treuil, la criée, le vingt-et-un et le grattage de luxe. Toutes jouables, toutes payées au comptoir, et une cagnotte commune que douze pour mille de chaque mise font monter.','🎰'],
-    [null,'Le Vingt-et-un','Contre Fonfon, qui donne et qui tire à seize. On double sur les deux premières cartes, le naturel paie trois contre deux. C’est la table où la maison garde le moins.','🤵'],
-    [null,'Le Mur de Clous','Un jeton lâché en haut, huit rangées de clous, neuf cases en bas. Le chemin que tu regardes est celui que la maison a tiré, clou par clou. Les bords paient vingt-neuf fois.','📌'],
-    [null,'Le Grattage de Luxe','Neuf cases à gratter au doigt, trois pareils pour toucher. Et tout au fond du carnet, le Phare.','🎟️'],
-    [null,'Le Comptoir','Le bar du hall a été refait : un miroir, trois étagères de bouteilles alignées, les tireuses sur le zinc et le barman derrière son comptoir.','🍹'],
-    [null,'La Loge','À gauche du casino, une vitrine. Huit pièces qui ne se vendent nulle part ailleurs : le costume de perroquet, la peluche géante, le poulpe, le boa à plumes, la veste à paillettes, le tutu néon, les lunettes à étoiles et le chapeau à fruits. Tu les essaies avant d’acheter, et les autres les verront sur toi partout.','🦜'],
-    [null,'La Salle d’Arcade','Un jeton à un euro. Ici on ne gagne pas d’argent : on gagne un score, et une ligne au classement. Première borne : <b>Le Hangar</b>.','👾'],
-    [null,'Le Hangar, en grand','La borne a maintenant un <b>menu</b> : l’arsenal avec ses douze armes et ce qu’il faut marquer pour les ouvrir, les cinq zones et ce qu’elles changent, et le tableau. On sait enfin ce qu’on joue avant d’y aller.','🎮'],
-    [null,'Cinq armes de plus','La <b>scie</b> rebondit sur les murs et ne s’arrête pas. Le <b>foudroyeur</b> saute d’une bête à cinq. Le <b>mortier</b> tombe derrière la caisse. Le <b>napalm</b> pose le feu sur leur chemin. Le <b>laser</b> touche tout ce qui est dans l’axe. Douze armes en tout.','🔥'],
-    [null,'Trois espèces de plus','Le <b>chien</b> court deux fois plus vite que toi et se perd derrière une palette. Le <b>soudeur</b> a un tablier qui mange un point à chaque coup. Le <b>brûlé</b> laisse le sol en feu là où il tombe. Neuf en tout, et elles s’ouvrent une toutes les deux salles.','🧟'],
-    [null,'Les salles sont habillées','Des lampes au plafond qui creusent la salle, des coulées d’huile, des rails, des bandes peintes, du givre, des coulées de fonte — et huit sortes d’encombrants au lieu de trois. Chaque zone a ses taches à elle.','💡'],
-    [null,'Les records, pendant la partie','Le meilleur score de la borne reste affiché pendant que tu joues. À la seconde où tu le dépasses, l’écran te donne le nom de celui que tu viens de doubler.','🏆'],
-    [null,'Les bornes en plein écran','Pendant une partie, la borne prend tout l’écran du téléphone, quelle qu’en soit la taille, et les manches se posent sous les pouces.','📱'],
-    [null,'La maison ne triche pas','Chaque tirage sort du comptoir, jamais de ton écran. Les retours ont été mesurés table par table : de 87 % à la criée jusqu’à 99 % au vingt-et-un.','⚖️'],
-    [null,'La reprise des doubles','Au marché aux cartes, le marchand rachète tes doubles tout de suite. Les communes et les rares se soldent d’un bouton ; le reste se vend carte par carte, avec la cote sous les yeux. Il en reste toujours une au classeur.','🃏'],
-    [null,'La Mouette Dorée','Les cent cartes de la première édition du Pokédock, et la peluche tombe : une mouette d’or de la tête aux pieds, ton visage dans la capuche. La seule pièce du port qu’aucune somme d’argent n’achète.','🐦'],
-    [null,'Des surprises…','On ne dit rien. Ouvre l’œil en te promenant.','🎁']];
-  var CSS='#bd3{position:fixed;inset:0;z-index:2147483000;overflow-y:auto;background:radial-gradient(ellipse at 50% 0,#2a3e58,#0e1622 70%);color:#f4ecd8;font-family:Georgia,serif;-webkit-overflow-scrolling:touch}'+
-    '#bd3 .in{max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 28px) 18px calc(env(safe-area-inset-bottom,0px) + 40px)}'+
-    '#bd3 .v{display:inline-block;border:1px solid #f0c85a;color:#f0c85a;border-radius:20px;padding:4px 12px;font:700 12px ui-monospace,monospace;letter-spacing:3px}'+
-    '#bd3 h1{margin:14px 0 6px;font:900 32px Georgia;letter-spacing:1px;line-height:1.1}#bd3 h1 b{color:#f0c85a}'+
-    '#bd3 .mt{font:italic 15px Georgia;opacity:.9;margin-bottom:6px}#bd3 .roue{display:flex;align-items:center;gap:10px;margin:16px 0 22px;padding:12px 14px;border-radius:14px;background:rgba(240,200,90,.12);font:14px Georgia}'+
-    '#bd3 .roue i{width:22px;height:22px;border:3px solid rgba(240,200,90,.3);border-top-color:#f0c85a;border-radius:50%;animation:bd3r 1s linear infinite;flex:none}@keyframes bd3r{to{transform:rotate(360deg)}}'+
-    '#bd3 .t2{font:700 12px ui-monospace,monospace;letter-spacing:3px;color:#f0c85a;margin:6px 0 12px}'+
-    '#bd3 .c{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:18px;overflow:hidden;margin-bottom:14px}'+
-    '#bd3 .c img{display:block;width:100%;height:auto;image-rendering:pixelated}#bd3 .c .e{font-size:54px;text-align:center;padding:22px 0 6px}'+
-    '#bd3 .c .tx{padding:12px 16px 16px}#bd3 .c b{display:block;font:700 19px Georgia;margin-bottom:4px}#bd3 .c span{font:15px Georgia;opacity:.85;line-height:1.4}'+
-    '#bd3 .fin{text-align:center;font:italic 14px Georgia;opacity:.8;margin-top:18px}';
+    ['🎃','Halloween à la ferme','Un épouvantail-sorcier au bord du champ et son corbeau, des citrouilles-lanternes le long de toutes les allées, la façade de Madeleine décorée, et un cimetière des légumes où rôde un petit fantôme la nuit.'],
+    ['🧺','Les citrouilles de Madeleine','Plante des citrouilles, puis choisis : les vendre, ou les donner à Madeleine. À 200, 500 et 800 dons, trois tenues collector qui ne reviendront jamais : le Seigneur des citrouilles, Tête de citrouille et le Roi de la récolte.'],
+    ['👻','50 espèces d’Halloween','Jusqu’au 2 novembre, des poissons étranges mordent au port et au lac : sardine fantôme, rouget vampire, bébé kraken, objets maudits… et, la nuit seulement, deux légendaires : le Léviathan des Ténèbres et le Capitaine Fantôme.'],
+    ['🐟','La Marée','Une nouvelle poissonnerie au bout du quai, seul endroit où vendre ta pêche. L’étal de glace, le prix du jour et sa tendance, et un onglet Halloween rien que pour les prises maudites.'],
+    ['🎣','Le Pêcheur Heureux refait','Une vraie cabane de pêcheur sur le quai, et une boutique toute neuve : cannes, accessoires, appâts et finitions en cartes claires.'],
+    ['🐷','La nouvelle ferme','Une porcherie et ses cochons, un pré à moutons et sa bergerie, et un boulodrome pour jouer à la pétanque contre le village.'],
+    ['🏆','La pétanque, en grand','Un nouveau gameplay tactique : poser sa donnée, choisir sa portée, viser au bon moment. Des terrains vivants avec leur public, un Mondial à disputer et ta fiche de joueur.'],
+    ['⚓','Le port fait peau neuve','Un quai en granit clair comme le vrai Vieux-Port, une station de métro moderne qui mène à la ferme, à la forêt et à Tokyo.'],
+    ['📱','Des menus plus beaux','Des boutiques redessinées, plus claires et plus faciles au doigt, qui s’adaptent à ton téléphone comme à ta tablette.'],
+    ['🎁','Et des surprises…','On ne dit rien. Promène-toi la nuit.']];
+  var CSS='#bd3{position:fixed;inset:0;z-index:2147483000;overflow-y:auto;overflow-x:hidden;background:radial-gradient(ellipse 120% 60% at 50% 0,#4a2a6a 0,#22123a 45%,#0c0816 100%);color:#f4ecd8;font-family:"Baloo 2","Trebuchet MS",system-ui,sans-serif;-webkit-overflow-scrolling:touch}'+
+    '#bd3 .ciel{position:absolute;left:0;right:0;top:0;height:300px;pointer-events:none;overflow:hidden}'+
+    '#bd3 .lune{position:absolute;right:8%;top:28px;width:82px;height:82px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#fff6d8,#f0d890 60%,#c8a850);box-shadow:0 0 50px 14px rgba(255,220,140,.35)}'+
+    '#bd3 .cs{position:absolute;font-size:20px;animation:bd3v 6s ease-in-out infinite}@keyframes bd3v{0%,100%{transform:translate(0,0)}50%{transform:translate(18px,-10px)}}'+
+    '#bd3 .et{position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;opacity:.7}'+
+    '#bd3 .in{position:relative;max-width:580px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 34px) 18px calc(env(safe-area-inset-bottom,0px) + 40px)}'+
+    '#bd3 .v{display:inline-block;background:#e07a22;color:#2a1004;border-radius:20px;padding:3px 13px;font-weight:800;font-size:12px;letter-spacing:3px;box-shadow:0 3px 0 #7a3a10}'+
+    '#bd3 h1{margin:14px 0 4px;font-weight:800;font-size:44px;line-height:1;letter-spacing:1px;color:#fff}#bd3 h1 b{color:#ffb040;text-shadow:0 0 18px rgba(255,140,40,.6)}'+
+    '#bd3 h2{margin:0 0 10px;font-weight:800;font-size:21px;line-height:1.15;color:#ffb040}'+
+    '#bd3 .mt{font-weight:700;font-size:15px;line-height:1.45;color:#e8dcf4;margin-bottom:6px}'+
+    '#bd3 .roue{display:flex;align-items:center;gap:12px;margin:18px 0 24px;padding:14px 16px;border-radius:18px;background:linear-gradient(135deg,rgba(224,122,34,.22),rgba(122,58,184,.22));border:2px solid #e07a22}'+
+    '#bd3 .roue .p{flex:none;font-size:34px;animation:bd3p 1.6s ease-in-out infinite}@keyframes bd3p{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg) scale(1.08)}}'+
+    '#bd3 .roue b{display:block;font-size:12px;letter-spacing:2px;color:#ffb040}#bd3 .roue strong{display:block;font-size:19px;color:#fff;line-height:1.15}'+
+    '#bd3 .roue small{display:block;font:800 14px ui-monospace,monospace;color:#ffd970;margin-top:3px}'+
+    '#bd3 .t2{font-weight:800;font-size:12px;letter-spacing:3px;color:#c8a8e8;margin:4px 0 12px}'+
+    '#bd3 .g{display:grid;grid-template-columns:1fr;gap:10px}@media (min-width:560px){#bd3 .g{grid-template-columns:1fr 1fr}}'+
+    '#bd3 .c{display:flex;gap:12px;background:rgba(255,255,255,.06);border:1px solid rgba(200,168,232,.25);border-radius:16px;padding:12px 14px}'+
+    '#bd3 .c .e{flex:none;width:46px;height:46px;border-radius:12px;background:rgba(224,122,34,.18);display:flex;align-items:center;justify-content:center;font-size:26px}'+
+    '#bd3 .c b{display:block;font-weight:800;font-size:16.5px;color:#fff;margin-bottom:2px;line-height:1.15}#bd3 .c span{display:block;font-weight:700;font-size:13.5px;color:#d8cce8;line-height:1.4}'+
+    '#bd3 .fin{text-align:center;font-weight:700;font-size:14px;color:#c8a8e8;margin-top:22px}';
   /* LA RÉOUVERTURE : le serveur donne l'heure ; on affiche le compte à rebours, et on recharge à l'heure dite */
   var FIN_A=0;
   function reste(){var r=Math.max(0,Math.round((FIN_A-Date.now())/1000));var h=Math.floor(r/3600),m=Math.floor(r%3600/60),x=r%60;
-    return r<=0?'C’est l’heure ! On ouvre…':(h>0?h+' h '+(m<10?'0':'')+m+' min':m+' min '+(x<10?'0':'')+x+' s');}
+    return r<=0?'C’est l’heure ! On ouvre…':'encore '+(h>0?h+' h '+(m<10?'0':'')+m+' min '+(x<10?'0':'')+x+' s':m+' min '+(x<10?'0':'')+x+' s');}
   function tic(){var el=document.getElementById('bd3r');if(!el)return;el.textContent=reste();
     if(FIN_A&&Date.now()>=FIN_A+3000){location.reload();return;}setTimeout(tic,1000);}
   function montrer(v,d){
     if(d&&typeof d.reste==='number')FIN_A=Date.now()+d.reste*1000;
     if(document.getElementById('bd3'))return;
     var st=document.createElement('style');st.textContent=CSS;document.head.appendChild(st);
-    var d=document.createElement('div');d.id='bd3';
-    d.innerHTML='<div class="in"><span class="v">VERSION '+(v||'5.0')+'</span><h1>Battle Dock <b>'+(v||'5.0')+'</b> arrive</h1>'+
-      '<div class="mt">Le jeu est fermé le temps d’installer la mise à jour : le Complexe Festif ouvre ses deux portes — le casino d’un côté, la salle d’arcade de l’autre.</div>'+
-      (FIN_A?'<div class="roue"><i></i><span>Réouverture <b>ce soir à 20h00</b><br><small id="bd3r" style="font:700 13px ui-monospace,monospace;color:#f0c85a">'+reste()+'</small></span></div>'
-            :'<div class="roue"><i></i>On installe tout ça… Reviens très vite !</div>')+'<div class="t2">LES NOUVEAUTÉS</div>'+
-      NOUV.map(function(n){return '<div class="c">'+(n[0]?'<img loading="lazy" src="nouveautes/'+n[0]+'" alt="">':'<div class="e">'+n[3]+'</div>')+
-        '<div class="tx"><b>'+n[1]+'</b><span>'+n[2]+'</span></div></div>';}).join('')+
-      '<div class="fin">Merci de ta patience — rendez-vous ce soir sur le port.</div></div>';
-    (document.body||document.documentElement).appendChild(d);
+    var el=document.createElement('div');el.id='bd3';
+    var et='';for(var k=0;k<40;k++)et+='<i class="et" style="left:'+((k*37)%100)+'%;top:'+((k*53)%260)+'px;opacity:'+(0.3+(k%5)/8)+'"></i>';
+    var cs='';for(var q=0;q<4;q++)cs+='<span class="cs" style="left:'+[12,30,62,78][q]+'%;top:'+[60,120,150,40][q]+'px;animation-delay:-'+q*1.4+'s">🦇</span>';
+    el.innerHTML='<div class="ciel">'+et+'<div class="lune"></div>'+cs+'</div><div class="in"><span class="v">MAINTENANCE · VERSION '+(v||'5.1')+'</span><h1>Battle Dock <b>'+(v||'5.1')+'</b></h1>'+
+      '<h2>Halloween s’invite dans le jeu 🎃</h2>'+
+      '<div class="mt">Le port, la ferme, la forêt et Tokyo sont fermés le temps d’installer la mise à jour : une nouvelle ferme, des menus plus beaux et plus pratiques, et tout un mois d’Halloween.</div>'+
+      '<div class="roue"><span class="p">🎃</span><span><b>RÉOUVERTURE</b><strong>Mardi 20 octobre 2026 à 22h00</strong>'+(FIN_A?'<small id="bd3r">'+reste()+'</small>':'')+'</span></div>'+
+      '<div class="t2">LES NOUVEAUTÉS</div><div class="g">'+
+      NOUV.map(function(n){return '<div class="c"><div class="e">'+n[0]+'</div><div><b>'+n[1]+'</b><span>'+n[2]+'</span></div></div>';}).join('')+
+      '</div><div class="fin">Merci de ta patience — rendez-vous à 22h00 sur le port. 🦇</div></div>';
+    (document.body||document.documentElement).appendChild(el);
     try{document.documentElement.style.overflow='hidden';}catch(e){}
     window.__MAINTENANCE=true;
     tic();
