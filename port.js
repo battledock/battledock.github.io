@@ -1,7 +1,7 @@
 const XP={
 maisonsY:152,            /* le pied des façades */
 quaiY:340,               /* le bord du quai, au-dessus du bassin */
-bassinO:410, bassinE:1350,     /* UN QUAI DE CHAQUE COTE, comme avant : le bassin s'arrete a 120 px des bouts de la ville */     /* LA MER SORT DU CADRE DES DEUX COTES.
+bassinO:0, bassinE:MONDE_L,     /* LA MER SORT DU CADRE DES DEUX COTES.
                                    Elle s'arretait a 170 pour laisser une
                                    langue de terre au boulodrome ; le quai
                                    s'ouvrant aussi a l'ouest, cette terre
@@ -19,7 +19,7 @@ finVille:1584,                  /* la face est de la derniere facade : la
                                    aux collines */
 debutVille:176,                 /* sa face ouest, le pendant exact : les deux
                                    esplanades font 176 px au meme pixel */
-pontons:[480,880], pontonL:13,           /* le ponton du milieu (620) est retiré, avec ses voiliers */ pontonFin:470,
+pontons:[360,880], pontonL:13,           /* le ponton du milieu (620) est retiré, avec ses voiliers */ pontonFin:470,
 metro:[1316,496],      /* le métro reprend la place de l'ancienne gare */
 /* LA SORTIE DES BOIS, au bout est de la promenade. Rien n'est bati : un
    panneau dit ou l'on va, et on s'en va en marchant vers l'est, entre la
@@ -430,9 +430,7 @@ const margelle=(x,y,w,h)=>{R(x,y,w,h,'#bfae88');R(x,y,w,1,'#efe3c4');};
 margelle(XP.bassinO-4,XP.quaiY-4,XP.bassinE-XP.bassinO+8,5);
 R(XP.bassinO,XP.quaiY+1,XP.bassinE-XP.bassinO,6,'#8f8468');
 R(XP.bassinO,XP.quaiY+7,XP.bassinE-XP.bassinO,2,'rgba(10,40,60,.35)');
-/* LES DEUX QUAIS LATERAUX : la margelle redescend le long de l'eau */
-margelle(XP.bassinO-4,XP.quaiY-4,5,MONDE_H-XP.quaiY+4);R(XP.bassinO+1,XP.quaiY+1,2,MONDE_H,'#8f8468');R(XP.bassinO+3,XP.quaiY+1,2,MONDE_H,'rgba(10,40,60,.35)');
-margelle(XP.bassinE-1,XP.quaiY-4,5,MONDE_H-XP.quaiY+4);R(XP.bassinE-3,XP.quaiY+1,2,MONDE_H,'#8f8468');R(XP.bassinE-5,XP.quaiY+1,2,MONDE_H,'rgba(10,40,60,.35)');
+/* (plus de margelle ni a l'ouest ni a l'est : l'eau continue hors du cadre) */
 XP.pontons.forEach(px=>{
 const x0=px-XP.pontonL, w=XP.pontonL*2;
 R(x0+2,XP.quaiY+2,w,XP.pontonFin-XP.quaiY+2,'rgba(10,40,60,.35)');   /* l'ombre */
@@ -1569,7 +1567,7 @@ if(t<2*FERRY.pause+FERRY.trajet)return {x:FERRY.xe,sens:-1,v:0};
 const k=(t-2*FERRY.pause-FERRY.trajet)/FERRY.trajet;
 return {x:FERRY.xe-(FERRY.xe-FERRY.xo)*lisse(k),sens:-1,v:Math.sin(Math.PI*k)};
 }
-const BANCS=[[480,506],[680,508],[880,506],[560,400],[760,376],[1000,378],[1200,420]];
+const BANCS=[[360,506],[620,508],[880,506],[250,378],[760,376],[1000,378],[500,380]];
 function eauVivante(g,camX,camY){
 const T=Date.now()/1000;
 g.save();
@@ -2286,7 +2284,7 @@ P('x_metroM',XP.rangX0+2*140,XP.maisonsY+88,{col:[44,16],bati:true,demi:50,ouvre
    commence qu'au-dessus de maisonsY+6, le tableau est 46 px plus bas. */
 P('x_tableau',XP.ruelle.x,XP.maisonsY+52,{col:[16,12]});
 let nv=0;
-[480,620,880].forEach(px=>{                     /* on compte aussi l'ancien ponton du milieu : les autres voiliers gardent leur allure */
+[360,620,880].forEach(px=>{                     /* on compte aussi l'ancien ponton du milieu : les autres voiliers gardent leur allure */
 const la=XP.pontons.includes(px);
 for(let y=XP.quaiY+24;y<=XP.pontonFin-6;y+=16){
 if(la&&alea(px*0.37+y*1.13)>0.27)P('x_voilier',px-XP.pontonL-27,y,{v:(nv)*7%11});
@@ -2305,10 +2303,9 @@ nv++;
    sont retires. C'est la grande affiche, derriere le garde-corps, qui dit
    ou mene le bout du quai. */
 for(let x=24;x<MONDE_L-24;x+=74){
-if(XP.pontons.some(p=>Math.abs(p-x)<26)||x<XP.bassinO||x>XP.bassinE)continue;
+if(XP.pontons.some(p=>Math.abs(p-x)<26))continue;
 P('x_bitte',x,XP.quaiY-3,{col:[4,3]});
 }
-for(let y=XP.quaiY+40;y<MONDE_H-10;y+=74){P('x_bitte',XP.bassinO-9,y,{col:[4,3]});P('x_bitte',XP.bassinE+9,y,{col:[4,3]});}
 /* LA LANGUE DE TERRE DU SUD-OUEST EST SOUS L'EAU : avec elle partent les
    quatre platanes, les deux bancs et les quatre boulistes qui s'y
    tenaient. Les boulistes de Notre-Dame-de-la-Garde, eux, ne bougent pas. */
@@ -2344,7 +2341,7 @@ const A=(i)=>alea(i*1.37+0.5);
    se serait vu comme une dalle posee la. */
 /* ---- LE PAVÉ : des joints d'un demi-pixel, un grain plus fin ---- */
 dallesDuQuai((x,y,w,h)=>{
-  if(y>=XP.quaiY-4&&!(x+w<=XP.bassinO-4||x>=XP.bassinE+4))return;   /* au-dela c'est l'eau, sauf sur les quais des cotes */
+  if(y>=XP.quaiY-4)return;                       /* au-dela c'est l'eau */
   R(x,y,w,0.5,'rgba(158,140,106,.24)');
   R(x,y,0.5,h,'rgba(158,140,106,.24)');
   R(x+w-0.5,y+0.5,0.5,h-0.5,'rgba(126,110,82,.10)');
@@ -2447,8 +2444,6 @@ g.fillStyle=fond;g.fillRect(XP.bassinO,XP.quaiY,XP.bassinE-XP.bassinO,eauH);
 }
 /* la margelle reprend sa lumière par-dessus l'eau */
 R(XP.bassinO-4,XP.quaiY-4,XP.bassinE-XP.bassinO+8,0.5,'rgba(255,248,226,.40)');
-R(XP.bassinO-4,XP.quaiY-4,0.5,MONDE_H,'rgba(255,248,226,.40)');R(XP.bassinE+3.5,XP.quaiY-4,0.5,MONDE_H,'rgba(255,248,226,.40)');
-for(let i=0;i<9000;i++){const cote=i%2,x=cote?XP.bassinE+5+A(i*1.3)*(MONDE_L-XP.bassinE-5):A(i*1.3)*(XP.bassinO-5),y=XP.quaiY+A(i*2.1)*(MONDE_H-XP.quaiY);R(x,y,0.5,0.5,(i%3)?'rgba(255,252,240,.10)':'rgba(120,104,78,.10)');}
 g.setTransform(1,0,0,1,0,0);
 return c;
 }
