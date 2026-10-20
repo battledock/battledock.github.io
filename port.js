@@ -60,7 +60,7 @@ const dansRuelle=Math.abs(x-XP.ruelle.x)<XP.ruelle.l&&y>=XP.ruelle.haut;   /* la
 /* LE BAS DE LA CARTE RETIENT TOUT LE MONDE. On s'arrete au bord du quai,
    on continue de pousser vers le sud, et c'est la demi-seconde de poussee
    qui emmene au bois — pas un pas de plus hors du cadre. */
-if(x<BORD-12||x>MONDE_L-BORD+12||(y<XP.maisonsY+6&&!dansRuelle)||y>MONDE_H-6)return true;
+if(x<XP.debutVille+8||x>XP.finVille-8||(y<XP.maisonsY+6&&!dansRuelle)||y>MONDE_H-6)return true;
 if(dansLeBassin(x-3,y)||dansLeBassin(x+3,y)||dansLeBassin(x,y+2)){
 if(!surPonton(x,y))return true;              /* l'eau : on ne nage pas */
 }
