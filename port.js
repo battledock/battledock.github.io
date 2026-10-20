@@ -2274,7 +2274,7 @@ P('x_maison',XP.rangX0+k*140,XP.maisonsY,{v:k,col:[70,24]});
    exact de celui de l'est autour de l'axe de la rangee (880) — donc sur le
    quai, devant les facades, et non sur l'esplanade qui reste nue des deux
    cotes. */
-[390,1370].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+30,XP.maisonsY+72);});
+[390,1370].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+30,XP.maisonsY+72,{col:[23,7]});});
 /* LA STATION DE TOKYO, sous le Pecheur Heureux (facade k=2) : c'est la que le train part. */
 P('x_metroM',XP.rangX0+2*140,XP.maisonsY+88,{col:[44,16],bati:true,demi:50,ouvre:'tokyo'});
 /* LE TABLEAU DU PORT, DEVANT LE CENTRE DES ESCALIERS. Il etait decale de
@@ -2297,9 +2297,10 @@ nv++;
 });
 /* LE METRO EST DEPOSE. On ne prend plus la ligne 1 pour aller au bois :
    on y va a pied, par le bas du quai droit. */
-[280,420,840,980,1120,1248,1510,1710].forEach((x,i)=>P('lanterneP',x,324,{gr:i}));
-[[88,316],[390,316],[670,316],[950,316],[1230,316],[1370,316],[1496,316],[1672,316]]
-.forEach(([x,y])=>P('bancP',x,y));
+/* les réverbères et les bancs du quai sont en dur ; ceux des deux bouts (280, 390, 1496, 1510) sont retirés */
+[420,840,980,1120,1248,1710].forEach((x,i)=>P('lanterneP',x,324,{gr:i+1,col:[4,3]}));
+[[88,316],[670,316],[950,316],[1230,316],[1370,316],[1672,316]]
+.forEach(([x,y])=>P('bancP',x,y,{col:[23,7]}));
 /* L'ESPLANADE DU BOUT reste nue : les deux platanes et la petite pancarte
    sont retires. C'est la grande affiche, derriere le garde-corps, qui dit
    ou mene le bout du quai. */
