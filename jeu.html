@@ -16521,6 +16521,7 @@ try{fmDessinerLampes(ctx,camX,camY,pileV);}catch(x){}
 try{fmDessinerDeco(ctx,camX,camY,pileV);}catch(x){}
 try{fmDessinerMetro(ctx,camX,camY,pileV);}catch(x){}
 try{fmDessinerLanternes(ctx,camX,camY,pileV);}catch(x){}
+try{fmDessinerHalloween(ctx,camX,camY,pileV);}catch(x){}
 try{pgDessiner(ctx,camX,camY,pileV);}catch(x){}
 try{pcDessiner(ctx,camX,camY,pileV);}catch(x){}
 try{moDessiner(ctx,camX,camY,pileV);}catch(x){}
@@ -34370,6 +34371,8 @@ if(pcDansPorcherie(x,y))return true;
 if(moDansPre(x,y))return true;
 /* les platanes, le banc et l'ardoise du boulodrome */
 if(ptDansBoulodrome(x,y))return true;
+/* l'épouvantail d'Halloween */
+if(hwDansDecor(x,y))return true;
 /* la bouche de métro et son totem */
 if((x>1585-30&&x<1585+30&&y>950-32&&y<950+3)||(Math.abs(x-1545)<4&&y>947&&y<953))return true;
 /* la boîte aux lettres, sur son poteau : on la contourne */
@@ -36242,6 +36245,59 @@ if(BQ2.phase==='intro')bqIntro(g,W,H,now);}
 majAction=function(){if(BQ2.ouvert){try{plaqueFeinte.classList.remove('on');}catch(x){}return;}
 if(ptPres()){try{const b2=cible();if(b2&&(b2.ouvre||b2.t==='comptoir'||b2.t==='metro'))return ptMajPrec();}catch(x){}plaqueVrai=$('action');plaqueFeinte.classList.remove('inerte');plaqueFeinte.innerHTML='Le boulodrome<small>LE MONDIAL · PARTIE AMICALE</small>';plaqueFeinte.classList.add('on');return;}return ptMajPrec();};
 $('action').addEventListener('click',(ev)=>{if(ptPres()){ev.stopImmediatePropagation();ev.preventDefault();vibrer(10);bqOuvrir();}},true);}
+
+/* =====================================================================
+   HALLOWEEN À LA FERME (du 20 octobre au 2 novembre, heure de Paris)
+   L'épouvantail-sorcier au bord du champ, ses citrouilles, son corbeau
+   qui s'envole quand on approche. La nuit, ses yeux et les citrouilles
+   luisent — le visage reste lisible.
+   ===================================================================== */
+function hwActif(){try{const d=new Date(new Date().toLocaleString('en-US',{timeZone:'Europe/Paris'})),m=d.getMonth()+1,j=d.getDate();return (m===10&&j>=20)||(m===11&&j<=2);}catch(x){return false;}}
+const HW_EPV={x:710,y:426}, HW_CIT=[[690,429,1],[731,431,0.8],[743,433,0.55]], HW_K=0.27;
+let HW={spr:{},cit:{},corb:{etat:'pose',t:0,x:0,y:0}};
+function hwRnd(seed){let s=seed;return ()=>{s=(s*16807)%2147483647;return s/2147483647;};}
+function hwPaille(g,x,y,dir,n,R){for(let k=0;k<n;k++){g.strokeStyle=['#e8c860','#d8b040','#f0d878'][k%3];g.lineWidth=1.2;g.beginPath();g.moveTo(x,y);g.lineTo(x+dir*(4+R()*6),y+(R()-.3)*8);g.stroke();}}
+function hwCitrouille(g,x,y,r,nuit){g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(x,y+r*0.75,r*1.2,r*0.35,0,0,7);g.fill();
+for(const [dx,c] of [[-0.55,'#c8641a'],[0.55,'#c8641a'],[-0.25,'#e07a22'],[0.25,'#e07a22'],[0,'#f08a2a']]){g.fillStyle=c;g.beginPath();g.ellipse(x+dx*r,y,r*0.55,r*0.82,0,0,7);g.fill();}
+g.fillStyle='rgba(255,220,150,.35)';g.beginPath();g.ellipse(x-r*0.25,y-r*0.45,r*0.15,r*0.25,-0.3,0,7);g.fill();g.fillStyle='#4a6a2a';g.fillRect(x-1.5,y-r*0.95,3,r*0.35);
+const c=nuit?'#ffd860':'#3a1a08';g.fillStyle=c;g.beginPath();g.moveTo(x-r*0.45,y-r*0.15);g.lineTo(x-r*0.2,y-r*0.38);g.lineTo(x-r*0.12,y-r*0.1);g.fill();g.beginPath();g.moveTo(x+r*0.45,y-r*0.15);g.lineTo(x+r*0.2,y-r*0.38);g.lineTo(x+r*0.12,y-r*0.1);g.fill();
+g.beginPath();g.moveTo(x-r*0.5,y+r*0.15);for(let k=0;k<=6;k++)g.lineTo(x-r*0.5+k*r/6,y+r*0.15+(k%2?r*0.12:0)+Math.sin(k/6*Math.PI)*r*0.2);for(let k=6;k>=0;k--)g.lineTo(x-r*0.5+k*r/6,y+r*0.32+Math.sin(k/6*Math.PI)*r*0.25-(k%2?r*0.1:0));g.fill();}
+function hwCorbeau(g,x,y,d,aile){g.fillStyle='#1a1a22';g.beginPath();g.ellipse(x,y,6,4.5,0,0,7);g.fill();g.beginPath();g.arc(x+d*5,y-4,3.2,0,7);g.fill();g.beginPath();g.moveTo(x-d*5,y);g.lineTo(x-d*11,y+3);g.lineTo(x-d*5,y+3);g.fill();
+if(aile!=null){g.beginPath();g.moveTo(x-3,y-1);g.lineTo(x-2-d*4,y-9*aile);g.lineTo(x+4,y-1);g.fill();}
+g.fillStyle='#d8a020';g.beginPath();g.moveTo(x+d*7.5,y-4.5);g.lineTo(x+d*11,y-3.5);g.lineTo(x+d*7.5,y-2.5);g.fill();g.fillStyle='#ffe060';g.fillRect(x+d*5.5,y-5.5,1.4,1.4);if(aile==null){g.fillStyle='#2a2a34';g.fillRect(x-2,y+3,1,3);g.fillRect(x+1,y+3,1,3);}}
+/* l'épouvantail, dessiné en unités puis réduit (0,27) — la nuit, seuls les yeux s'allument */
+function hwSprite(nuit){const k=nuit?'n':'j';if(HW.spr[k])return HW.spr[k];const S=HW_K*2,W=Math.ceil(170*S),H=Math.ceil(232*S),c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
+g.scale(S,S);g.translate(-(205-85),-(250-222));const x=205,y=250,R=hwRnd(7);
+g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(x+8,y+2,22,5,0,0,7);g.fill();g.fillStyle='#6a4426';g.fillRect(x-3,y-150,6,150);g.fillStyle='#8a5c34';g.fillRect(x-3,y-150,2,150);g.fillStyle='#6a4426';g.fillRect(x-62,y-118,124,6);
+for(const d of [-1,1]){g.fillStyle='#b8322a';g.fillRect(d<0?x-60:x+14,y-122,46,16);g.fillStyle='#6a1a14';for(let q=0;q<46;q+=8)g.fillRect((d<0?x-60:x+14)+q,y-122,2,16);g.fillRect(d<0?x-60:x+14,y-115,46,2);hwPaille(g,d<0?x-60:x+60,y-114,d,7,R);}
+g.fillStyle='#b8322a';g.beginPath();g.moveTo(x-20,y-126);g.lineTo(x+20,y-126);g.lineTo(x+26,y-62);g.lineTo(x-26,y-62);g.fill();g.fillStyle='#6a1a14';for(let q=-20;q<24;q+=8)g.fillRect(x+q,y-126,2,64);for(let q=0;q<64;q+=10)g.fillRect(x-24,y-126+q,48,2);
+g.fillStyle='#3a6a8a';g.fillRect(x-8,y-100,12,12);g.fillStyle='#e8d8a0';for(let q=0;q<4;q++)g.fillRect(x-8+q*3,y-101,1,2);g.fillStyle='#3a2a1a';g.fillRect(x-24,y-70,48,5);g.fillStyle='#c8a040';g.fillRect(x-3,y-70,6,5);hwPaille(g,x-20,y-62,-1,6,R);hwPaille(g,x+20,y-62,1,6,R);hwPaille(g,x,y-60,0.2,6,R);
+g.fillStyle='#c8a878';g.beginPath();g.ellipse(x,y-146,19,21,0,0,7);g.fill();g.fillStyle='#b09060';for(let q=0;q<30;q++)g.fillRect(x-16+R()*32,y-162+R()*32,2,1);
+g.fillStyle='#8a6a40';g.fillRect(x-14,y-128,28,4);hwPaille(g,x-12,y-126,-1,4,R);hwPaille(g,x+12,y-126,1,4,R);
+const yc=nuit?'#ffd860':'#2a1a10';g.fillStyle=yc;g.beginPath();g.moveTo(x-11,y-148);g.lineTo(x-5,y-156);g.lineTo(x-3,y-146);g.fill();g.beginPath();g.moveTo(x+11,y-148);g.lineTo(x+5,y-156);g.lineTo(x+3,y-146);g.fill();
+g.strokeStyle='#2a1a10';g.lineWidth=2;g.beginPath();g.moveTo(x-11,y-138);g.quadraticCurveTo(x,y-130,x+11,y-138);g.stroke();for(let q=-8;q<=8;q+=4){g.beginPath();g.moveTo(x+q,y-137+Math.abs(q)*0.15);g.lineTo(x+q,y-133);g.stroke();}
+g.strokeStyle='#5a3a20';g.lineWidth=1;g.beginPath();g.moveTo(x+12,y-160);g.lineTo(x+17,y-150);g.stroke();for(let q=0;q<4;q++){g.beginPath();g.moveTo(x+11+q*1.6,y-157+q*2.4);g.lineTo(x+16+q*1.6,y-159+q*2.4);g.stroke();}
+g.fillStyle='#2a1a3a';g.beginPath();g.ellipse(x,y-164,30,7,0,0,7);g.fill();g.beginPath();g.moveTo(x-17,y-166);g.quadraticCurveTo(x-6,y-200,x+22,y-214);g.quadraticCurveTo(x+4,y-196,x+17,y-166);g.fill();
+g.fillStyle='#e07a22';g.fillRect(x-17,y-172,34,5);g.fillStyle='#ffd860';g.fillRect(x-3,y-173,6,7);g.fillStyle='#2a1a3a';g.fillRect(x-1.5,y-171.5,3,4);
+return HW.spr[k]=c;}
+function hwCit(r,nuit){const k=r+(nuit?'n':'j');if(HW.cit[k])return HW.cit[k];const S=HW_K*2*1.3,u=r*2.6,c=document.createElement('canvas');c.width=Math.ceil(u*2*S);c.height=Math.ceil(u*2*S);const g=c.getContext('2d');g.scale(S,S);hwCitrouille(g,u,u,r,nuit);return HW.cit[k]=c;}
+function hwDansDecor(x,y){if(!FERME_VIERGE||!hwActif())return false;return Math.abs(x-HW_EPV.x)<4&&y>HW_EPV.y-3&&y<HW_EPV.y+2;}
+function fmDessinerHalloween(ctx,camX,camY,pile){if(!FERME_VIERGE||CARTE!=='village'||!hwActif())return;
+const X=HW_EPV.x-camX,Y=HW_EPV.y-camY;if(X<-120||X>VW+120||Y<-120||Y>VH+160)return;
+let ci=null;try{ci=cielDuMoment();}catch(x){}const nuit=!!(ci&&ci.lampes>0.3);
+const spr=hwSprite(nuit),w=spr.width/2,h=spr.height/2;
+/* le corbeau : posé sur le bras, il s'envole quand on approche, revient quand on part */
+const C=HW.corb,now=Date.now(),dJ=Math.hypot(joueur.x-HW_EPV.x,joueur.y-HW_EPV.y);
+if(C.etat==='pose'&&dJ<46){C.etat='part';C.t=now;}else if(C.etat==='loin'&&dJ>90&&now-C.t>6000){C.etat='revient';C.t=now;}
+pile.push({y:HW_EPV.y,f:()=>{ctx.drawImage(spr,Math.round(X-w/2),Math.round(Y-h+2),w,h);
+ if(nuit){lueurNuit(ctx,X,Y-37,12,'rgba(255,200,80,1)');}
+ const bx=X+52*HW_K,by=Y-128*HW_K-1;ctx.save();
+ if(C.etat==='pose'){ctx.translate(bx,by);ctx.scale(HW_K*1.3,HW_K*1.3);hwCorbeau(ctx,0,0,-1,null);}
+ else{const k=Math.min(1,(now-C.t)/1800),aile=Math.sin(now/60);let px,py;if(C.etat==='part'){px=bx+k*90;py=by-k*70-Math.sin(k*Math.PI)*10;if(k>=1){C.etat='loin';C.t=now;}}else if(C.etat==='revient'){px=bx+(1-k)*90;py=by-(1-k)*70;if(k>=1){C.etat='pose';}}else{px=-999;py=-999;}
+  if(px>-900){ctx.translate(px,py);ctx.scale(HW_K*1.3,HW_K*1.3);hwCorbeau(ctx,0,0,C.etat==='part'?1:-1,aile);}}
+ ctx.restore();}});
+for(const [cx,cy,f] of HW_CIT){const r=14*f,c=hwCit(r,nuit),W2=c.width/2,H2=c.height/2,x=cx-camX,y=cy-camY;
+ pile.push({y:cy,f:()=>{ctx.drawImage(c,Math.round(x-W2/2),Math.round(y-H2/2),W2,H2);if(nuit)lueurNuit(ctx,x,y,22*f+10,'rgba(255,160,60,1)');}});}}
 
 </script>
 </body>
