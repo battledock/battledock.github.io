@@ -31707,45 +31707,48 @@ fermeA=Date.now();$('page2').classList.remove('on');
 partirEnVoyage(D);
 };
 }
-function choisirLaDestination(){
-const D=STATIONS_L1.filter(([,,,q])=>q!==stationIci());
-const C=cielDuVoyage();
-if(!document.getElementById('cssVoy')){const st=document.createElement('style');st.id='cssVoy';
-st.textContent=
-`#page2Fond.voy{position:absolute;inset:0;overflow:hidden;
-font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#fff6dc}
-#page2Fond.voy canvas.ciel{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
-#page2Fond.voy .tete{position:absolute;left:0;right:0;top:0;
-padding:calc(env(safe-area-inset-top,0px) + 18px) 18px 0;display:flex;align-items:flex-start;gap:10px}
-#page2Fond.voy .tete .tx{flex:1;min-width:0}
-#page2Fond.voy .tete small{display:block;font:700 9px ui-monospace,monospace;letter-spacing:3px;
-color:rgba(255,246,220,.75)}
-#page2Fond.voy .tete b{display:block;font:700 25px 'Baloo 2',sans-serif;margin-top:4px;
-text-shadow:0 2px 6px rgba(30,20,40,.45)}
-#page2Fond.voy .tete button{flex:none;width:34px;height:34px;border-radius:50%;border:0;
-background:rgba(255,246,220,.9);color:#2f2638;font:700 15px 'Baloo 2',sans-serif}
-#page2Fond.voy .liste{position:absolute;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
-#page2Fond.voy .d{display:flex;align-items:center;gap:12px;width:100%;margin-top:9px;
-border:2px solid rgba(255,246,220,.85);background:rgba(30,22,40,.18);border-radius:15px;
-padding:12px 14px;text-align:left;color:#fff6dc}
-#page2Fond.voy .d:active{background:rgba(255,246,220,.2)}
-#page2Fond.voy .d b{display:block;font:700 17px 'Baloo 2',sans-serif}
-#page2Fond.voy .d em{display:block;font:italic 12px Georgia,serif;color:rgba(255,246,220,.72);
-font-style:italic;margin-top:1px}
-#page2Fond.voy .d i{font:700 10px ui-monospace,monospace;color:rgba(255,246,220,.8);font-style:normal}`;
-document.head.appendChild(st);}
-$('page2Fond').className='voy';$('page2').classList.add('on');
-$('page2Fond').innerHTML='<canvas class="ciel" id="voyCiel"></canvas>'+
-'<div class="tete"><span class="tx"><small>'+C.mot+' · LIGNE 1</small><b>Où vas-tu ?</b></span>'+
-'<button id="voyX">✕</button></div>'+
-'<div class="liste">'+D.map(([c,nom,sous])=>
-'<button class="d" data-c="'+c+'"><span style="flex:1"><b>'+nom+'</b><em>'+sous+'</em></span>'+
-'<i>'+(c==='extramar'?'2 MIN':'5 MIN')+'</i></button>').join('')+'</div>';
-dessinerLeCiel($('voyCiel'),C);
+function choisirLaDestination(sel){
+const ICI=stationIci();
+const INFO={port:['⚓','2 minutes de trajet',['🐟 La criée : vendre ta pêche','⛴ Les docks et le caboteur','🎉 Le Complexe Festif']],
+ferme:['🌾','3 minutes de trajet',['🌱 Ton champ et tes parcelles','🧺 L’étal de Madeleine','🏡 Ta longère']],
+foret:['🌲','5 minutes de trajet',['🪓 Le bois à couper','🎣 Le lac et la pêche','🌾 Les roseaux et la cueillette']]};
+const autres=STATIONS_L1.filter(([,,,q])=>q!==ICI);
+const S=STATIONS_L1.find(x=>x[3]===sel)||autres[0];
+if(!document.getElementById('cssMet')){const st=document.createElement('style');st.id='cssMet';st.textContent=`
+@font-face{font-family:'Lilita One';src:url(assets/fonts/lilita-one-latin-400-normal.woff2) format('woff2');font-display:swap}
+#page2Fond.met{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;background:repeating-linear-gradient(135deg,#2a6ab8 0 22px,#2462aa 22px 44px);font-family:'Baloo 2','Trebuchet MS',sans-serif;color:#3a2408}
+#page2Fond.met .hd{flex:none;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 16px) 14px 12px}
+#page2Fond.met .m{flex:none;width:44px;height:44px;border-radius:12px;background:#fff;color:#1d4f9a;font:400 28px 'Lilita One',sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 0 #12356a}
+#page2Fond.met .tt{flex:1;min-width:0;font:400 27px/1 'Lilita One','Baloo 2',sans-serif;color:#fff;-webkit-text-stroke:5px #12356a;paint-order:stroke}
+#page2Fond.met .tt small{display:block;font:400 12.5px 'Lilita One','Baloo 2',sans-serif;color:#ffe066;-webkit-text-stroke:3px #12356a;letter-spacing:.5px;margin-bottom:2px}
+#page2Fond.met .x{flex:none;width:40px;height:40px;border:0;border-radius:12px;background:#e8503a;box-shadow:0 0 0 3px #fff,0 4px 0 3px #8a2a1a;color:#fff;font:400 20px 'Lilita One',sans-serif;margin-right:3px}
+#page2Fond.met .card{flex:none;min-height:0;max-height:calc(100% - 100px);margin:4px 12px 0;background:#fff8e4;border-radius:24px;box-shadow:0 0 0 3px #12356a,0 6px 0 3px #12356a;display:flex;flex-direction:column;padding:16px 14px 16px;max-width:560px;width:calc(100% - 24px);align-self:center}
+#page2Fond.met .lh{flex:none;position:relative;height:96px;margin:4px 8px 12px}
+#page2Fond.met .lh .tr{position:absolute;left:12%;right:12%;top:20px;height:10px;border-radius:5px;background:#e8c040}
+#page2Fond.met .lh .s{position:absolute;top:4px;width:33%;transform:translateX(-50%);text-align:center;border:0;background:none;padding:0;-webkit-tap-highlight-color:transparent}
+#page2Fond.met .lh .s i{display:block;width:38px;height:38px;margin:0 auto 6px;border-radius:50%;background:#fff;border:6px solid #e8c040;transition:transform .15s}
+#page2Fond.met .lh .s.ici i{background:#e8c040;box-shadow:0 0 0 4px #fff8e4,0 0 0 7px #2a6ab8}
+#page2Fond.met .lh .s.on i{background:#2a6ab8;border-color:#2a6ab8;transform:scale(1.12)}
+#page2Fond.met .lh .s b{display:block;font:400 15px/1 'Lilita One','Baloo 2',sans-serif;color:#3a2408}
+#page2Fond.met .lh .s small{display:block;font:800 10.5px 'Baloo 2',sans-serif;color:#7a5a38}
+#page2Fond.met .sel{flex:none;max-height:52vh;overflow-y:auto;border-radius:20px;background:#f3e2b8;box-shadow:0 4px 0 #dcc694;padding:16px}
+#page2Fond.met .sel b{display:block;font:400 26px 'Lilita One','Baloo 2',sans-serif;color:#3a2408}
+#page2Fond.met .sel small{display:block;font:800 13px 'Baloo 2',sans-serif;color:#7a5a38;margin:2px 0 10px}
+#page2Fond.met .sel em{display:block;font:800 15px 'Baloo 2',sans-serif;font-style:normal;color:#5a4428;background:#fff8e4;border-radius:12px;padding:8px 11px;margin:0 0 7px}
+#page2Fond.met .bg{flex:none;margin-top:14px;border:0;width:100%;background:linear-gradient(#ffe88a,#f0b838);box-shadow:0 0 0 3px #3a2408,0 6px 0 3px #3a2408;border-radius:18px;padding:12px;font:400 22px 'Lilita One','Baloo 2',sans-serif;color:#3a2408;margin-bottom:6px}
+#page2Fond.met .bg small{display:block;font:800 12px 'Baloo 2',sans-serif;color:#5a3a10}
+#page2Fond.met .bg:active{transform:translateY(3px);box-shadow:0 0 0 3px #3a2408,0 3px 0 3px #3a2408}`;document.head.appendChild(st);}
+$('page2Fond').className='met';$('page2').classList.add('on');
+const nomIci=(STATIONS_L1.find(x=>x[3]===ICI)||['','La ferme'])[1];
+const I=INFO[S[3]]||['🚇','',[]];
+$('page2Fond').innerHTML='<div class="hd"><div class="m">M</div><div class="tt"><small>LIGNE 1 · STATION '+nomIci.replace(/^(Le|La) /,'').toUpperCase()+'</small>Où vas-tu ?</div><button class="x" id="voyX">✕</button></div>'+
+'<div class="card"><div class="lh"><div class="tr"></div>'+STATIONS_L1.map(([c,n,,q],k)=>{const l=[12,50,88][k]||50, ici=q===ICI, on=q===S[3];
+return '<button class="s'+(ici?' ici':'')+(on?' on':'')+'" data-q="'+q+'" style="left:'+l+'%"><i></i><b>'+n+'</b><small>'+(ici?'tu es ici':(INFO[q]?INFO[q][1].replace(' de trajet','').replace('utes',''):''))+'</small></button>';}).join('')+'</div>'+
+'<div class="sel"><b>'+I[0]+' '+S[1]+'</b><small>'+I[1]+'</small>'+I[2].map(t=>'<em>'+t+'</em>').join('')+'</div>'+
+'<button class="bg" id="metGo">Partir pour '+S[1].replace(/^Le /,'le ').replace(/^La /,'la ')+'<small>LIGNE 1 · '+I[1].replace(' de trajet','').replace('minutes','MIN').toUpperCase()+'</small></button></div>';
 $('voyX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-$('page2Fond').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
-const d=D.find(x=>x[0]===b.dataset.c);
-$('page2').classList.remove('on');voyagerVers(d[0],'Direction '+d[1]);});
+$('page2Fond').querySelectorAll('.lh .s').forEach(b=>b.onclick=()=>{if(b.classList.contains('ici'))return;vibrer(6);choisirLaDestination(b.dataset.q);});
+$('metGo').onclick=()=>{vibrer(10);$('page2').classList.remove('on');voyagerVers(S[0],'Direction '+S[1]);};
 }
 function dessinerLeCiel(cv,C){
 if(!cv)return;
