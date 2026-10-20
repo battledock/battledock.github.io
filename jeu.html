@@ -30518,6 +30518,10 @@ if(!d||d.erreur){b.disabled=false;
 motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':'Madeleine n’a pas pu.');return;}
 potAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);
 ouvrirLaBoutiqueFerme();});}
+try{const cv=$('bqArr');if(cv){const g=cv.getContext('2d');g.setTransform(2,0,0,2,0,0);g.fillStyle='#76563a';g.fillRect(6,3,36,30);fpDessinerArroseur(g,3,0,Date.now(),0,0);}}catch(x){}
+$('page2Fond').querySelectorAll('[data-arr]').forEach(b=>b.onclick=async()=>{b.disabled=true;const d=await appelRPC('champ_arroseur_acheter',{p_joueur:e.id});
+if(d&&!d.erreur){CH.stockArr=d.stock||((CH.stockArr||0)+1);if(typeof d.euros==='number')e.euros=d.euros;try{majHaut();}catch(x){}jouer('vente','moment');vibrer([15,40,15]);ouvrirLaBoutiqueFerme('« Le voilà ! Va le poser sur une parcelle. »');}
+else{b.disabled=false;motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':'Madeleine n’a pas pu.');}});
 $('page2Fond').querySelectorAll('[data-agch]').forEach(b=>b.onclick=async()=>{b.disabled=true;
 const d=await appelRPC('champ_agrandir',{p_joueur:e.id});
 if(d&&!d.erreur){CH.max=d.max;if(typeof d.euros==='number')e.euros=d.euros;try{majHaut();}catch(x){}jouer('vente','moment');vibrer([15,40,15]);ouvrirLaBoutiqueFerme('« Et voilà, cinq parcelles de plus ! »');}
@@ -34083,7 +34087,7 @@ function chStade(T){if(!T||!T.cult)return -1;const t0=new Date(T.t0).getTime(), 
 function chCible(){const d=joueur.dir||'bas', dx=d==='gauche'?-14:(d==='droite'?14:0), dy=d==='haut'?-16:(d==='bas'?12:0);
 const x=joueur.x+dx, y=joueur.y+dy-4;if(!chDans(x,y))return null;
 return {c:Math.floor((x-CH_X0)/CH_T),r:Math.floor((y-CH_Y0)/CH_T)};}
-function chAdopter(d){if(!d||d.erreur)return false;CH.t={};(d.tuiles||[]).forEach(T=>CH.t[chCle(T.c,T.r)]=T);CH.max=d.max||40;CH.meteo=d.meteo||null;
+function chAdopter(d){if(!d||d.erreur)return false;CH.t={};(d.tuiles||[]).forEach(T=>CH.t[chCle(T.c,T.r)]=T);CH.max=d.max||40;CH.meteo=d.meteo||null;CH.arr={};(d.arroseurs||[]).forEach(a=>CH.arr[a[0]+','+a[1]]=1);CH.stockArr=d.stock_arroseurs||0;
 if(d.now)CH.decal=new Date(d.now).getTime()-Date.now();if(d.debloque)POT.debloque=d.debloque;CH.charge=true;CH.sale=true;chMajBarre();return true;}
 async function chCharger(){if(!CHAMP_LIBRE||!e.id||CH_ENVOL)return;CH_ENVOL=true;try{chAdopter(await appelRPC('champ_etat',{p_joueur:e.id}));}catch(x){}finally{CH_ENVOL=false;}}
 const chNb=()=>Object.keys(CH.t).length;
@@ -34450,6 +34454,7 @@ const x0=fpX(i), y0=fpY(j), x=x0-camX, y=y0-camY;if(x<-50||y<-60||x>VW2+10||y>VH
 fpCadre(g,x+3,y+3,34,33);
 fpSpots(i,j).forEach(([c,r],q)=>{const t=CH.t[c+','+r]||null;fpTerre(g,x+5+(q%2)*15,y+5+(q>>1)*14.5,15,14.5,t);});
 PX(g,x+19.75,y+5,0.5,29,'rgba(0,0,0,.18)');PX(g,x+5,y+19.25,30,0.5,'rgba(0,0,0,.18)');
+if(CH.arr&&CH.arr[i+','+j])acteurs.push({y:fpY(j)+37,f:()=>fpDessinerArroseur(g,fpX(i)-camX,fpY(j)-camY,now,i,j)});
 const E=fpEtat(i,j);
 /* les plantes, triées avec le joueur */
 fpSpots(i,j).forEach(([c,r],q)=>{const t=CH.t[c+','+r];if(!t||!t.cult||!PLANTES[t.cult])return;const st=chStade(t);
@@ -34658,6 +34663,7 @@ if(fpExiste(P.i,P.j))return P;const n=fpProchaine();return n&&n.i===P.i&&n.j===P
 function fpTexte(P){if(P.neuve)return chNb()+4>CH.max?['Agrandir le champ','PLUS DE PLACE POUR UNE PARCELLE']:['Nouvelle parcelle','GRATUIT · ON BÊCHE ICI'];
 const E=fpEtat(P.i,P.j), T=fpTuiles(P.i,P.j).filter(t=>t&&t.cult), nom=T.length&&POT_CULT[T[0].cult]?POT_CULT[T[0].cult][0]:'';
 if(E.mur){const nm=fpTuiles(P.i,P.j).filter(t=>t&&t.cult&&chStade(t)===3)[0];return ['Récolter',(nm&&POT_CULT[nm.cult]?POT_CULT[nm.cult][0].toUpperCase():'')+' DANS TON SAC'];}
+if((CH.stockArr||0)>0&&!(CH.arr&&CH.arr[P.i+','+P.j]))return ['Poser l’arroseur','ARROSÉE POUR TOUJOURS · IL T’EN RESTE '+CH.stockArr];
 if(E.vide)return ['Semer','CHOISIR UNE GRAINE'];
 if(E.soif)return ['Arroser','ÇA POUSSERA DEUX FOIS PLUS VITE'];
 const m=Math.max(1,Math.ceil((E.fin-chNow())/60000));return [nom+' · ça pousse','PRÊT DANS '+(m>=60?Math.floor(m/60)+' H '+String(m%60).padStart(2,'0'):m+' MIN')];}
@@ -34674,6 +34680,9 @@ try{potGeste('houe');}catch(x){}vibrer([10,30,10]);CH_ICI={x:fpX(P.i)+20,y:fpY(P
 await Promise.all(fpSpots(P.i,P.j).map(([c,r])=>chEnvoyer(c,r,'houe')));CH_ICI=null;if(fpExiste(P.i,P.j))setTimeout(()=>fpGraines(P),200);return;}
 const E=fpEtat(P.i,P.j);
 if(E.mur){try{potGeste('cueille');}catch(x){}await fpAgir(P,'faux');FP.vus={};return;}
+if((CH.stockArr||0)>0&&!(CH.arr&&CH.arr[P.i+','+P.j])){try{potGeste('semer');}catch(x){}vibrer([12,30,12]);const d=await appelRPC('champ_arroseur_poser',{p_joueur:e.id,p_i:P.i,p_j:P.j});
+if(d&&!d.erreur){CH.arr=CH.arr||{};CH.arr[P.i+','+P.j]=1;CH.stockArr=d.stock||0;(d.tuiles||[]).forEach(T=>CH.t[chCle(T.c,T.r)]=T);CH.sale=true;texteVolant(fpX(P.i)+20,fpY(P.j)-4,'Arroseur posé : arrosée pour toujours','#bfe8ff');try{jouer('vente','moment');}catch(x){}}
+else texteVolant(joueur.x,joueur.y-56,'Réessaie dans un instant','#ffd0a0');return;}
 if(E.vide){if(FP.pop&&$('fpPop').classList.contains('on'))fpPopFermer();else fpGraines(P);return;}
 if(E.soif){fpArroserAnime(P);return;}
 texteVolant(joueur.x,joueur.y-56,'Ça pousse… patience','#fff3d0');
@@ -34786,7 +34795,8 @@ function bqAtelierChamp(){const max=(CH&&CH.max)||40, nbP=Math.floor(max/4), pri
 const i=Math.max(1,Math.floor((max-40)/20)+1), PX=[150000,400000,900000,1800000,3000000,5000000], prix=PX[i-1];
 return '<div class="mot">« Ton champ est trop petit ? Je t’arrange ça, contre un petit quelque chose. »</div>'+
 '<div class="aChamp"><b>'+pris+' / '+nbP+'</b><small>parcelles utilisées dans ton champ</small><div class="jauge"><i style="width:'+Math.min(100,Math.round(pris/Math.max(1,nbP)*100))+'%"></i></div>'+
-(prix?'<button data-agch="1">Agrandir le champ<small>+5 parcelles · '+enEuros(prix).replace(',00','')+'</small></button>':'<small style="margin:0">Ton champ est au plus grand. Bravo !</small>')+'</div>';}
+(prix?'<button data-agch="1">Agrandir le champ<small>+5 parcelles · '+enEuros(prix).replace(',00','')+'</small></button>':'<small style="margin:0">Ton champ est au plus grand. Bravo !</small>')+'</div>'+
+'<div class="aChamp" style="margin-top:12px"><canvas id="bqArr" width="96" height="72" style="width:96px;height:72px;image-rendering:pixelated;display:block;margin:0 auto 4px"></canvas><b style="font-size:22px">L’arroseur automatique</b><small>posé sur une parcelle, il l’arrose pour toujours : tout y pousse deux fois plus vite.<br>'+Object.keys(CH.arr||{}).length+' posé(s) · '+(CH.stockArr||0)+' à poser</small><button data-arr="1">Acheter un arroseur<small>250 € · à poser ensuite sur une parcelle</small></button></div>';}
 
 /* =====================================================================
    LES LAMPADAIRES : peu, aux endroits clés (la porte, l'entrée du champ,
@@ -34909,6 +34919,17 @@ g.globalAlpha=flux*(0.55+0.45*(1-u));g.fillStyle='#bfe4ff';g.fillRect(xx-0.35,yy
 if(u>0.92){g.globalAlpha=flux*0.6;g.strokeStyle='rgba(220,240,255,.9)';g.lineWidth=0.35;g.beginPath();g.ellipse(ex,ey,1+((u-0.92)*30),0.5+((u-0.92)*12),0,0,7);g.stroke();}}
 g.globalAlpha=flux*0.18;g.fillStyle='#d8f0ff';g.beginPath();g.ellipse(tx,ty,14,10,0,0,7);g.fill();
 g.restore();}
+
+/* L'ARROSEUR AUTOMATIQUE, comme celui de l'ancien potager : un tuyau gris
+   fait le tour du cadre, quatre buses en laiton aux coins arrosent vers le
+   milieu, en battant doucement. */
+function fpDessinerArroseur(g,X,Y,now,i,j){const t=now/1000, P=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(a,b,w,h);};
+P(X+4,Y+4,32,1.4,'#7f878e');P(X+4,Y+34,32,1.4,'#7f878e');P(X+4,Y+4,1.4,31,'#7f878e');P(X+34.6,Y+4,1.4,31,'#7f878e');
+P(X+4,Y+4,32,0.5,'#b8c0c6');P(X+4,Y+4,0.5,31,'#b8c0c6');
+const B=[[X+5,Y+5,1,1],[X+35,Y+5,-1,1],[X+5,Y+35,1,-1],[X+35,Y+35,-1,-1]];
+B.forEach(([bx,by,sx,sy],k)=>{P(bx-1.5,by-1.5,3,3,'#a8862e');P(bx-1,by-2,2,1,'#e0c060');
+const bat=Math.sin(t*2.2+k*1.6+i+j)*0.5+0.5;
+for(let q=0;q<6;q++){g.fillStyle='rgba(200,232,255,'+((0.95-q*0.12)*(0.6+bat*0.4)).toFixed(2)+')';const d=2.2+q*2.3+bat*1.4;g.fillRect(bx+sx*d-0.2,by+sy*(d*0.9)-q*0.45,1.5,1.2);}g.fillStyle='rgba(200,232,255,.18)';g.beginPath();g.arc(bx+sx*7,by+sy*6,4,0,7);g.fill();});}
 </script>
 </body>
 </html>
