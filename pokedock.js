@@ -2156,6 +2156,10 @@ function rayon(hote,ctx){
     let dbl=0;Object.values(avoir).forEach(q=>{if(q>1)dbl+=q-1;});
     const der=(col&&Array.isArray(col.derniers))?col.derniers:[];
     const reste=TOT-n, ton=hw?'#ff9a2a':'#e8c47a';
+    /* HALLOWEEN : la date de fin, et la reprise des doubles au marchand */
+    const finiHW=hw&&col&&col.en_vente===false;
+    const RPH=(k)=>k<=118?10:k<=130?25:k<=137?60:k<=142?150:k<=145?400:k<=147?900:k<=149?2500:8000;
+    let dblVal=0;if(hw)Object.entries(avoir).forEach(([k,q])=>{if(q>1)dblVal+=RPH(+k)*(q-1);});
     const bu=document.getElementById('barBulle');
     if(bu&&col&&typeof col.total==='number')bu.textContent=hw
       ?(reste<=0?'« Les cinquante monstres. Même moi, ils me font peur. »'
@@ -2174,13 +2178,14 @@ function rayon(hote,ctx){
       '</div></div>'+
       '<div class="pkb-pk'+(hw?' hw':'')+'"><img alt="" src="'+sac()+'"><div><b>'+(hw?'Paquet Halloween · 10 cartes':'Un paquet de 10 cartes')+'</b>'+
         '<span>'+(hw?'50 monstres neufs. La Citrouille d’Or : 1 sur 250.':'6 communes et 4 tirages. Les secrètes : 1 sur 250.')+'</span>'+
-        '<button id="pkdAch" class="pkb-gold'+(hw?' hw':'')+'"'+(occupe?' disabled':'')+'>'+
-          (occupe?'Fanny cherche un paquet…':(hw?'Ouvrir · 8,00 €':'Ouvrir · 6,00 €'))+'</button></div></div>'+
+        (hw?'<em class="pkb-fin">'+(finiHW?'🎃 Plus en vente depuis le 2 novembre':'🎃 En vente jusqu’au 2 novembre seulement')+'</em>':'')+
+        '<button id="pkdAch" class="pkb-gold'+(hw?' hw':'')+'"'+((occupe||(hw&&finiHW))?' disabled':'')+'>'+
+          (occupe?'Dédé cherche un paquet…':(hw?(finiHW?'Paquets épuisés':'Ouvrir · 8,00 €'):'Ouvrir · 6,00 €'))+'</button></div></div>'+
       '<div class="pkd-msg" id="pkdMsg"></div>'+
       (der.length?'<h4 class="pkb-h">TES DERNIÈRES CARTES</h4><div class="pkb-rec">'+
         der.map(k=>'<img alt="" data-z="'+k+'" src="'+faceURL(k)+'">').join('')+'</div>':'')+
       '<div class="pkb-row"><button id="pkdCla"><i>📒</i>Classeur</button>'+
-        (hw?'<button disabled class="pkb-nm"><i>🏷️</i>Marché<small>après Halloween</small></button>'
+        (hw?'<button id="pkdRep"'+(dblVal?'':' disabled class="pkb-nm"')+'><i>🏷️</i>'+(dblVal?'Doubles · '+(dblVal/100).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €':'Aucun double')+'</button>'
            :'<button id="pkdMar"><i>🏷️</i>Marché'+(dbl?' <small>'+dbl+'</small>':'')+'</button>')+'</div>';
     hote.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>{
       if(occupe||b.dataset.ed===ED)return;ED=b.dataset.ed;
@@ -2188,6 +2193,14 @@ function rayon(hote,ctx){
       peindre();relire();});
     const ach=hote.querySelector('#pkdAch');
     if(ach)ach.onclick=acheter;
+    const rep=hote.querySelector('#pkdRep');
+    if(rep&&!rep.disabled)rep.onclick=async()=>{
+      if(occupe||!ctx.hw||!ctx.hw.reprendreTout)return;occupe=true;rep.disabled=true;dire('');
+      let r=null;try{r=await ctx.hw.reprendreTout();}catch(x){}
+      occupe=false;
+      if(!r||r.erreur){peindre();dire((r&&r.erreur)||'Le marchand n’a pas répondu. Réessaie.');return;}
+      try{COL.hw=await ctx.hw.collection();}catch(x){}
+      peindre();dire(r.cartes+' double'+(r.cartes>1?'s':'')+' repris — '+(r.gagne/100).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' € dans ta bourse.');};
     const ouvrirCl=()=>classeur(COL[ED]||{cartes:[],total:0,paquets:0},null,ED);
     hote.querySelectorAll('[data-z]').forEach(i=>i.onclick=ouvrirCl);
     const cl=hote.querySelector('#pkdCla');
@@ -2252,6 +2265,7 @@ const CSS_RAYON=`
 #bar .pkb-pk.hw{background:linear-gradient(110deg,#2a1030,#1e2024);border-color:#7a3a8a}
 #bar .pkb-gold.hw{background:linear-gradient(#ffb04a,#e8761e);box-shadow:0 4px 0 #8a3a0a}
 #bar .pkb-row button.pkb-nm{opacity:.5;flex-direction:row}#bar .pkb-row button.pkb-nm small{color:#a8a090;font-size:10.5px}
+#bar .pkb-fin{display:block;font-style:normal;font-weight:800;font-size:12px;color:#ff9a2a;margin:-4px 0 8px}
 #bar .pkd-msg{margin-top:8px;font:700 12px 'Baloo 2',system-ui,sans-serif;color:#e8a44a;text-align:center;min-height:0}
 #bar .pkd-msg:empty{display:none}
 @media(min-width:720px){#bar .pkb-rec img{height:150px}}
