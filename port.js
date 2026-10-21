@@ -1808,6 +1808,47 @@ if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,70);l.addColorStop(0,'rg
 function poissonPx(g,x,y,c1,c2,sens){sens=sens||1;g.fillStyle=c1;g.beginPath();g.ellipse(x,y,4.4,1.7,0,0,7);g.fill();g.fillStyle=c2;g.fillRect(x-3,y-1.2,6,0.8);
 g.fillStyle=c1;g.beginPath();g.moveTo(x-4*sens,y);g.lineTo(x-6.5*sens,y-2.2);g.lineTo(x-6.5*sens,y+2.2);g.fill();g.fillStyle='#1a1a1a';g.fillRect(x+2.6*sens-0.4,y-0.6,0.8,0.8);}
 const PX_P=[['#8aa0b0','#c8d4dc'],['#c86a4a','#e89a7a'],['#6a8aa0','#a8c0d0'],['#d8b060','#f0d890'],['#b04a3a','#e07a5a']];
+/* ================= LE GLACIER DU PORT (l'ancienne Criée) ================= */
+function cfStore(g,R,x0,BL,sy,c1,c2,ombre){for(let k=0;k<BL+8;k++){const c=(k%12<6)?c1:c2;R(x0-4+k,sy,1,8,c);R(x0-4+k,sy+8,1,2,(k%12<6)?ombre:'rgba(0,0,0,.15)');}
+ for(let k=0;k<Math.floor((BL+8)/12);k++){const c=(k%2)?c1:c2;for(let i=0;i<5;i++)R(x0-4+k*12+i,sy+10,12-i*2.4,1,c);}R(x0-4,sy-2,BL+8,2,ombre);}
+function cfVitre(g,R,x,y,w,h,nuit,teinte){R(x,y,w,h,nuit?'#ffe6b8':(teinte||'#cfe2ea'));
+ g.fillStyle='rgba(255,255,255,.22)';g.beginPath();g.moveTo(x+4,y+h);g.lineTo(x+12,y);g.lineTo(x+17,y);g.lineTo(x+9,y+h);g.fill();
+ if(nuit){const l=g.createLinearGradient(x,y,x,y+h);l.addColorStop(0,'rgba(255,190,90,.35)');l.addColorStop(1,'rgba(255,190,90,0)');g.fillStyle=l;g.fillRect(x,y,w,h);}}
+function cfLueur(g,cx,sol,nuit,col){if(!nuit)return;const l=g.createRadialGradient(cx,sol,4,cx,sol,80);l.addColorStop(0,'rgba('+(col||'255,190,110')+',.42)');l.addColorStop(1,'rgba('+(col||'255,190,110')+',0)');g.fillStyle=l;g.fillRect(cx-80,sol-80,160,86);}
+function cfCornet(g,R,x,y,s,boules){/* un cornet : biscuit + boules */
+ g.fillStyle='#d8a050';g.beginPath();g.moveTo(x-4*s,y);g.lineTo(x+4*s,y);g.lineTo(x,y+11*s);g.fill();
+ g.strokeStyle='#a87030';g.lineWidth=.5*s;for(let i=-2;i<=2;i++){g.beginPath();g.moveTo(x+i*1.6*s-2*s,y);g.lineTo(x+i*1.6*s+2*s,y+6*s);g.stroke();}
+ boules.forEach((c,i)=>{g.fillStyle=c;g.beginPath();g.arc(x+(i===1?2*s:i===2?-2*s:0),y-(i===0?2.5*s:6*s),4.2*s,0,7);g.fill();g.fillStyle='rgba(255,255,255,.4)';g.beginPath();g.arc(x+(i===1?2*s:i===2?-2*s:0)-1.4*s,y-(i===0?3.6*s:7*s),1.2*s,0,7);g.fill();});}
+
+/* ===== A · LE GLACIER DU VIEUX-PORT : rose et menthe, gros cornet, bacs de glace ===== */
+function graverLeGlacier(){return devanture(1,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+ const RO='#f4a6c0',RC='#ffd0e0',MT='#8ad8c0',MC='#c8f4e4',BR='#6a3a3a';
+ R(x0-2,yR-4,BL+4,rez+4,RO);R(x0-2,yR-4,BL+4,1.5,'#fff');R(x0-2,sol-6,BL+4,6,MT);R(x0-2,sol-6,BL+4,1,MC);
+ for(const x of [x0,x0+44,x0+BL-50,x0+BL-6]){R(x,yR,6,rez-6,RC);R(x+5,yR,1,rez-6,'#d880a0');}
+ /* la vitrine des bacs */
+ [[x0+6,38],[x0+BL-44,38]].forEach(([x,w],k)=>{cfVitre(g,R,x,yR+2,w,rez-10,nuit,'#e8f6f8');
+  R(x+2,sol-20,w-4,9,'#dfe8ec');R(x+2,sol-20,w-4,1,'#fff');
+  const B=['#f4e8c8','#7a4a2a','#f48aa8','#9ae0a0','#ffe070','#c8a0ff'];
+  for(let i=0;i<5;i++){const c=B[(i+k*3)%6];R(x+4+i*6.6,sol-19,5.6,6,'#b8c8d0');g.fillStyle=c;g.beginPath();g.ellipse(x+6.8+i*6.6,sol-19,2.8,1.8,0,0,7);g.fill();}
+  R(x,yR+2,w,1.5,RO);R(x,sol-9,w,1.5,RO);R(x+w/2-.5,yR+2,1,9,RO);
+  g.font='italic 700 4.4px Georgia';g.textAlign='center';g.fillStyle='#c8406a';g.fillText(k?'Sorbets maison':'Glaces artisanales',x+w/2,yR+9,w-6);g.textAlign='left';});
+ /* la porte */
+ R(cx-8,yR+2,16,rez-8,'#d880a0');cfVitre(g,R,cx-7,yR+3,14,rez-10,nuit,'#e8f6f8');R(cx-.5,yR+3,1,rez-10,'#d880a0');R(cx+3,sol-18,1.4,4,'#fff');
+ /* le store rose et blanc */
+ const sy=yR-10;cfStore(g,R,x0,BL,sy,'#f48aa8','#fff4f8','#c85a80');
+ /* l'enseigne en vague */
+ const ey=sy-16;R(x0-6,ey,BL+12,15,MT);R(x0-4,ey+2,BL+8,11,'#fff8fa');
+ for(let i=0;i<BL+8;i+=6){g.fillStyle=MT;g.beginPath();g.arc(x0-4+i+3,ey+13,3,0,Math.PI);g.fill();}
+ g.font='italic 900 9px Georgia';g.textAlign='center';g.fillStyle='#e0507a';g.fillText('Le Glacier du Port',cx,ey+10,BL-30);g.textAlign='left';
+ /* le cornet géant sur le toit */
+ cfCornet(g,R,x0+BL-6,ey-6,1.5,['#f48aa8','#9ae0a0','#ffe070']);
+ cfCornet(g,R,x0+6,ey-6,1.3,['#7a4a2a','#f4e8c8']);
+ /* devant : chariot à glaces et petite table */
+ R(x0+4,sol-14,26,10,'#fff');R(x0+4,sol-14,26,2,MT);R(x0+8,sol-4,4,4,'#3a3a3a');R(x0+22,sol-4,4,4,'#3a3a3a');
+ R(x0+15,sol-30,1,16,'#ccc');g.fillStyle='#f48aa8';g.beginPath();g.moveTo(x0+3,sol-28);g.quadraticCurveTo(x0+16,sol-38,x0+29,sol-28);g.fill();
+ R(x0+BL-22,sol-10,10,1.4,'#fff');R(x0+BL-17.5,sol-10,1,8,'#ccc');R(x0+BL-20,sol-12,5,2,'#f48aa8');
+ cfLueur(g,cx,sol,nuit,'255,170,200');});}
+
 function graverLaPoissonnerie(){return devanture(1,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
 /* ================= LA CRIÉE =================
    L'architecture validée, en vert bouteille : deux étals de glace garnis,
@@ -2336,7 +2377,7 @@ if(k===4)continue;                                                  /* la ruelle
 if(k===0){XCAL['x_fonfon0']=graverLaMaree();CALQUES_DECO['x_fonfon']=XCAL['x_fonfon0'];P('x_fonfon',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'maree'});continue;}   /* Chez Fonfon, le restaurant de bouillabaisse. IL TIENT LE BOUT OUEST DU QUAI (k=0, ancien k=1) : l'est est tenu par la Capitainerie, les deux esplanades sont donc bordees d'une devanture et les deux immeubles vides sont rentres dans la rangee. */
 if(k===9){XCAL['x_presse0']=graverLaPresse();CALQUES_DECO['x_presse']=XCAL['x_presse0'];P('x_presse',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'presse'});continue;}   /* la maison de la presse */
 if(k===2){XCAL['x_facPeche0']=graverLaCabanePeche();CALQUES_DECO['x_facPeche']=XCAL['x_facPeche0'];P('x_facPeche',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'peche'});continue;}   /* Pêche & Marine */
-if(k===6){XCAL['x_facPoisson0']=graverLaPoissonnerie();CALQUES_DECO['x_facPoisson']=XCAL['x_facPoisson0'];P('x_facPoisson',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'poissonnerie'});continue;}   /* la poissonnerie */
+if(k===6){XCAL['x_facPoisson0']=graverLeGlacier();CALQUES_DECO['x_facPoisson']=XCAL['x_facPoisson0'];P('x_facPoisson',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'glacier'});continue;}   /* le glacier, ancienne Criée */
 if(k===3){XCAL['x_bar0']=graverLeBarModerne();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'bar'});
 continue;}   /* le bar-tabac PMU (sans terrasse) */
 if(k===5){XCAL['x_peigne0']=graverLePeigne();CALQUES_DECO['x_peigne']=XCAL['x_peigne0'];P('x_peigne',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'salon'});continue;}   /* le salon de coiffure */
