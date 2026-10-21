@@ -49,3 +49,14 @@ create table if not exists public.graines_offertes(joueur text not null, cult te
 --   légendaire : sac +5 pour toujours · trésor 10 000–20 000 € ×f · 10 fragments
 -- pokedock_paquet_offert(uid) : un paquet sans le payer (réservé au serveur).
 -- ============================================================
+
+-- ============================================================
+-- ÉTAPE 5 : LE RATTRAPAGE DES ANCIENS (21/10/2026)
+-- niveaux_rattrapage(joueur, niveau, coffres, pris) : photo du niveau de
+-- chaque joueur au lancement ; un coffre par tranche de 5 niveaux
+-- (tranche impaire = caisse en bois, paire = malle du marin).
+-- niveau_rattrapage() : donne ces coffres une seule fois.
+-- mon_niveau() renvoie 'rattrapage' tant qu'il n'est pas pris.
+-- Le jeu affiche « Cadeau des anciens » et TOUT RÉCUPÉRER réclame en plus
+-- toutes les récompenses de niveau déjà gagnées.
+-- ============================================================
