@@ -1540,11 +1540,18 @@ function graverSachet(){
    ===================================================================== */
 const JEU=construireSerie();
 let DOS_CACHE=null, SAC_CACHE=null;
-const dosURL=()=>DOS_CACHE||(DOS_CACHE=graverDos());
-const sacURL=()=>SAC_CACHE||(SAC_CACHE=graverSachet());
+/* L'EDITION HALLOWEEN : ses cartes portent ici les numeros 101 a 150,
+   ses dessins vivent dans pokedock_hw.js. HW dit quelle edition on
+   ouvre, pour le dos et le sachet. */
+let HW=false;
+const PHW=()=>window.PokedockHW||null;
+const dosURL=()=>(HW&&PHW())?PHW().dos():(DOS_CACHE||(DOS_CACHE=graverDos()));
+const sacURL=()=>(HW&&PHW())?PHW().sachet():(SAC_CACHE||(SAC_CACHE=graverSachet()));
+const NUMC=(n)=>(n>100&&PHW())?PHW().num(n-100):('00'+n).slice(-3)+'/100';
 
 const faces={};
-function faceURL(n){                      /* n de 1 a 100 */
+function faceURL(n){                      /* n de 1 a 100, 101 a 150 pour Halloween */
+  if(n>100)return PHW()?PHW().face(n-100):dosURL();
   if(faces[n])return faces[n];
   const i=n-1, C=JEU[i];
   if(!C)return dosURL();
@@ -1554,8 +1561,8 @@ function faceURL(n){                      /* n de 1 a 100 */
   dessinerCarte(g,C,1200+i*137);
   return faces[n]=c.toDataURL('image/png');
 }
-const RARETE=(n)=>(JEU[n-1]||{}).rarete||'commune';
-const NOM_CARTE=(n)=>(JEU[n-1]||{}).nom||'?';
+const RARETE=(n)=>n>100?(PHW()?PHW().rarete(n-100):'commune'):((JEU[n-1]||{}).rarete||'commune');
+const NOM_CARTE=(n)=>n>100?(PHW()?PHW().nom(n-100):'?'):((JEU[n-1]||{}).nom||'?');
 
 const FINE={ultra:1,epic:1,legend:1,ex:1,fullart:1,secrete:1};
 const GROSSE={legend:1,ex:1,fullart:1,secrete:1};
@@ -1787,15 +1794,16 @@ function poserStyle(){
    cartes : les dix numéros rendus par le serveur, déjà dans l'ordre.
    neuves : celles que le joueur n'avait pas encore.
    ===================================================================== */
-function ouvrirPaquet(cartes,neuves,fini){
+function ouvrirPaquet(cartes,neuves,fini,ed){
   poserStyle();
+  HW=(ed==='hw');
   const nouv=new Set(neuves||[]);
   const cal=document.createElement('div');
   cal.id='pkd';
   cal.innerHTML=
     '<button class="hp" aria-label="Son">♪</button>'+
     '<div class="rid"></div>'+
-    '<div class="ent"><b>POKÉDOCK</b><i>Première édition · le port en cent cartes</i></div>'+
+    '<div class="ent"><b>POKÉDOCK</b><i>'+(HW?'Halloween 2026 · cinquante monstres sur le port':'Première édition · le port en cent cartes')+'</i></div>'+
     '<div class="cri"></div>'+
     '<div class="sc">'+
       '<div class="pous"></div><div class="sol"></div>'+
@@ -2052,7 +2060,7 @@ function ouvrirPaquet(cartes,neuves,fini){
   function loupe(n){
     lp.querySelector('img').src=faceURL(n);
     lp.querySelector('b').textContent=NOM_CARTE(n)+' · '+
-      ('00'+n).slice(-3)+'/100 — touche pour fermer';
+      NUMC(n)+' — touche pour fermer';
     lp.classList.add('la');
   }
   lp.onclick=()=>lp.classList.remove('la');
@@ -2062,7 +2070,7 @@ function ouvrirPaquet(cartes,neuves,fini){
     const m=!Son.estMuet();Son.muet(m);hp.textContent=m?'✕':'♪';
   };
   bFin.onclick=()=>{
-    vivant=false;
+    vivant=false;HW=false;
     try{Son.detendre();}catch(x){}
     cal.remove();
     if(typeof fini==='function')fini();
@@ -2077,25 +2085,27 @@ const SECTIONS=[['LES COMMUNES',1,40],['LES RARES',41,62],['LES ULTRA RARES',63,
   ['LES EPIC',77,85],['LES LÉGENDAIRES',86,91],['LES EX',92,95],
   ['LES FULL ART',96,98],['LES SECRÈTES',99,100]];
 
-function classeur(col,fermer){
+function classeur(col,fermer,ed){
   poserStyle();
+  const hw=(ed==='hw'&&PHW()), TOT=hw?50:100;
+  const SECS=hw?PHW().SECTIONS.map(([t,a,b])=>[t,a+100,b+100]):SECTIONS;
   const avoir={};(col&&col.cartes||[]).forEach(c=>avoir[c.n]=c.q);
   const n=Object.keys(avoir).length;
   const cal=document.createElement('div');
   cal.id='pkd';
   cal.innerHTML=
-    '<div class="ent"><b>LE CLASSEUR</b><i>Première édition</i></div>'+
-    '<div class="cl"><div class="ba"><span><b>'+n+'</b> / 100 cartes</span>'+
+    '<div class="ent"><b>LE CLASSEUR</b><i>'+(hw?'Halloween 2026':'Première édition')+'</i></div>'+
+    '<div class="cl"><div class="ba"><span><b>'+n+'</b> / '+TOT+' cartes</span>'+
       '<span>'+((col&&col.paquets)||0)+' paquet'+(((col&&col.paquets)||0)>1?'s':'')+' ouvert'+
       (((col&&col.paquets)||0)>1?'s':'')+'</span></div>'+
-      '<div class="ja"><i style="width:'+n+'%"></i></div>'+
-      SECTIONS.map(([t,a,b])=>{
+      '<div class="ja"><i style="width:'+(n/TOT*100)+'%"></i></div>'+
+      SECS.map(([t,a,b])=>{
         let h='<h4>'+t+'</h4><div class="gr">';
         for(let i=a;i<=b;i++){
           h+=avoir[i]
             ? '<div class="ca" data-n="'+i+'"><img alt="" src="'+faceURL(i)+'">'+
               (avoir[i]>1?'<u>×'+avoir[i]+'</u>':'')+'</div>'
-            : '<div class="ca no"><span>'+('00'+i).slice(-3)+'</span></div>';
+            : '<div class="ca no"><span>'+NUMC(i).split('/')[0]+'</span></div>';
         }
         return h+'</div>';
       }).join('')+
@@ -2107,7 +2117,7 @@ function classeur(col,fermer){
   cal.querySelectorAll('.ca[data-n]').forEach(d=>d.onclick=()=>{
     const i=+d.dataset.n;
     lp.querySelector('img').src=faceURL(i);
-    lp.querySelector('b').textContent=NOM_CARTE(i)+' · '+('00'+i).slice(-3)+'/100';
+    lp.querySelector('b').textContent=NOM_CARTE(i)+' · '+NUMC(i);
     lp.classList.add('la');
   });
   lp.onclick=()=>lp.classList.remove('la');
@@ -2121,66 +2131,92 @@ function classeur(col,fermer){
    ===================================================================== */
 function rayon(hote,ctx){
   poserStyle();
-  let col=null, occupe=false;
+  /* DEUX EDITIONS SUR LE MEME RAYON : la premiere et Halloween 2026.
+     Chacune a sa collection, son paquet et son classeur ; on ne les
+     melange jamais. */
+  const aHW=!!(ctx.hw&&PHW());
+  let ED='1re';try{ED=localStorage.getItem('bdl.pkd.ed')||(aHW?'hw':'1re');}catch(x){ED=aHW?'hw':'1re';}
+  if(!aHW)ED='1re';
+  const COL={'1re':null,hw:null};
+  let occupe=false;
   /* MENU B : la collection d'abord. Un grand cercle, une barre par
      rarete, le paquet, puis les cartes du dernier paquet ouvert. */
-  const SEC_B=[['Communes',1,40,'#cdbfa6'],['Rares',41,62,'#9fd0e8'],['Ultra',63,76,'#7fd2ff'],
+  const SEC_1=[['Communes',1,40,'#cdbfa6'],['Rares',41,62,'#9fd0e8'],['Ultra',63,76,'#7fd2ff'],
     ['Epic',77,85,'#c79bff'],['Légend.',86,91,'#ffb070'],['EX',92,95,'#ff8a8a'],
     ['Full Art',96,98,'#f0d48a'],['Secrètes',99,100,'#ffffff']];
+  const SEC_H=[['Communes',101,118,'#ff9a2a'],['Rares',119,130,'#e8f0ff'],['Ultra',131,137,'#5ae8ff'],
+    ['Epic',138,142,'#c08aff'],['Légend.',143,145,'#ffcf5a'],['EX',146,147,'#ff3a3a'],
+    ['Full Art',148,149,'#ff8ae8'],['Secrète',150,150,'#ffe08a']];
+  const src=()=>ED==='hw'?ctx.hw:ctx;
+  const sac=()=>ED==='hw'?PHW().sachet():(SAC_CACHE||(SAC_CACHE=graverSachet()));
   const peindre=()=>{
+    const hw=ED==='hw', col=COL[ED], TOT=hw?50:100, SEC=hw?SEC_H:SEC_1;
     const avoir={};(col&&col.cartes||[]).forEach(c=>avoir[c.n]=c.q);
     const n=(col&&typeof col.total==='number')?col.total:0;
     let dbl=0;Object.values(avoir).forEach(q=>{if(q>1)dbl+=q-1;});
     const der=(col&&Array.isArray(col.derniers))?col.derniers:[];
-    const reste=100-n;
+    const reste=TOT-n, ton=hw?'#ff9a2a':'#e8c47a';
     const bu=document.getElementById('barBulle');
-    if(bu&&col&&typeof col.total==='number')bu.textContent=reste<=0?'« L’album complet. Respect, mon grand. »'
-      :n===0?'« Ton premier paquet ? Six euros, et l’album commence. »'
-      :'« Plus que '+reste+' carte'+(reste>1?'s':'')+' et t’as tout l’album, mon grand. »';
+    if(bu&&col&&typeof col.total==='number')bu.textContent=hw
+      ?(reste<=0?'« Les cinquante monstres. Même moi, ils me font peur. »'
+        :n===0?'« Le carton d’Halloween vient d’arriver. Huit euros, et gare à toi. »'
+        :'« Encore '+reste+' monstre'+(reste>1?'s':'')+' à attraper. Ferme bien ton classeur la nuit. »')
+      :(reste<=0?'« L’album complet. Respect, mon grand. »'
+        :n===0?'« Ton premier paquet ? Six euros, et l’album commence. »'
+        :'« Plus que '+reste+' carte'+(reste>1?'s':'')+' et t’as tout l’album, mon grand. »');
     hote.innerHTML=
-      '<div class="pkb-hero"><div class="pkb-big" style="background:conic-gradient(#e8c47a '+(n*3.6)+'deg,#2e3036 0)">'+
-        '<div><b>'+n+'</b><small>/ 100</small></div></div><div class="pkb-secs">'+
-        SEC_B.map(([t,a2,b2,co])=>{let k=0;for(let i=a2;i<=b2;i++)if(avoir[i])k++;const tt=b2-a2+1;
+      (aHW?'<div class="pkb-ed"><button data-ed="hw" class="'+(hw?'on hw':'')+'">🎃 Halloween 2026</button>'+
+        '<button data-ed="1re" class="'+(hw?'':'on')+'">Première édition</button></div>':'')+
+      '<div class="pkb-hero'+(hw?' hw':'')+'"><div class="pkb-big" style="background:conic-gradient('+ton+' '+(n/TOT*360)+'deg,#2e3036 0)">'+
+        '<div><b>'+n+'</b><small>/ '+TOT+'</small></div></div><div class="pkb-secs">'+
+        SEC.map(([t,a2,b2,co])=>{let k=0;for(let i=a2;i<=b2;i++)if(avoir[i])k++;const tt=b2-a2+1;
           return '<div class="pkb-sr"><em>'+t+'</em><u><i style="width:'+(k/tt*100)+'%;background:'+co+'"></i></u><s>'+k+'/'+tt+'</s></div>';}).join('')+
       '</div></div>'+
-      '<div class="pkb-pk"><img alt="" src="'+sacURL()+'"><div><b>Un paquet de 10 cartes</b>'+
-        '<span>6 communes et 4 tirages. Les secrètes : 1 sur 250.</span>'+
-        '<button id="pkdAch" class="pkb-gold"'+(occupe?' disabled':'')+'>'+
-          (occupe?'Fanny cherche un paquet…':'Ouvrir · 6,00 €')+'</button></div></div>'+
+      '<div class="pkb-pk'+(hw?' hw':'')+'"><img alt="" src="'+sac()+'"><div><b>'+(hw?'Paquet Halloween · 10 cartes':'Un paquet de 10 cartes')+'</b>'+
+        '<span>'+(hw?'50 monstres neufs. La Citrouille d’Or : 1 sur 250.':'6 communes et 4 tirages. Les secrètes : 1 sur 250.')+'</span>'+
+        '<button id="pkdAch" class="pkb-gold'+(hw?' hw':'')+'"'+(occupe?' disabled':'')+'>'+
+          (occupe?'Fanny cherche un paquet…':(hw?'Ouvrir · 8,00 €':'Ouvrir · 6,00 €'))+'</button></div></div>'+
       '<div class="pkd-msg" id="pkdMsg"></div>'+
       (der.length?'<h4 class="pkb-h">TES DERNIÈRES CARTES</h4><div class="pkb-rec">'+
         der.map(k=>'<img alt="" data-z="'+k+'" src="'+faceURL(k)+'">').join('')+'</div>':'')+
       '<div class="pkb-row"><button id="pkdCla"><i>📒</i>Classeur</button>'+
-        '<button id="pkdMar"><i>🏷️</i>Marché'+(dbl?' <small>'+dbl+'</small>':'')+'</button></div>';
+        (hw?'<button disabled class="pkb-nm"><i>🏷️</i>Marché<small>après Halloween</small></button>'
+           :'<button id="pkdMar"><i>🏷️</i>Marché'+(dbl?' <small>'+dbl+'</small>':'')+'</button>')+'</div>';
+    hote.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>{
+      if(occupe||b.dataset.ed===ED)return;ED=b.dataset.ed;
+      try{localStorage.setItem('bdl.pkd.ed',ED);}catch(x){}
+      peindre();relire();});
     const ach=hote.querySelector('#pkdAch');
     if(ach)ach.onclick=acheter;
-    hote.querySelectorAll('[data-z]').forEach(i=>i.onclick=()=>classeur(col||{cartes:[],total:0,paquets:0}));
+    const ouvrirCl=()=>classeur(COL[ED]||{cartes:[],total:0,paquets:0},null,ED);
+    hote.querySelectorAll('[data-z]').forEach(i=>i.onclick=ouvrirCl);
     const cl=hote.querySelector('#pkdCla');
-    if(cl)cl.onclick=()=>classeur(col||{cartes:[],total:0,paquets:0});
+    if(cl)cl.onclick=ouvrirCl;
 /* LE MARCHE REND LA MAIN AU RAYON : une carte achetee ou vendue change
        la collection, donc on la relit en refermant. */
     const mr=hote.querySelector('#pkdMar');
     if(mr)mr.onclick=()=>marche(ctx,async()=>{
-      try{col=await ctx.collection();}catch(x){}
+      try{COL['1re']=await ctx.collection();}catch(x){}
       peindre();
     });
   };
   const dire=(t)=>{const m=hote.querySelector('#pkdMsg');if(m)m.textContent=t||'';};
+  const relire=async()=>{const ed=ED;try{COL[ed]=await src().collection();}catch(x){}if(ed===ED)peindre();};
   async function acheter(){
     if(occupe)return;
+    const ed=ED;
     occupe=true;peindre();dire('');
     let r=null;
-    try{r=await ctx.acheter();}catch(x){}
+    try{r=await src().acheter();}catch(x){}
     occupe=false;
     if(!r||r.erreur){peindre();dire((r&&r.erreur)||'Le paquet n’a pas pu s’ouvrir. Réessaie.');return;}
     peindre();
     ouvrirPaquet(r.cartes||[],r.nouvelles||[],async()=>{
-      try{col=await ctx.collection();}catch(x){}
+      try{COL[ed]=await (ed==='hw'?ctx.hw:ctx).collection();}catch(x){}
       peindre();
-    });
+    },ed);
   }
-  peindre();
-  ctx.collection().then(c=>{col=c;peindre();}).catch(()=>{});
+  peindre();relire();
 }
 
 /* le CSS du rayon vit avec celui du bar, il est donc rendu à part */
@@ -2209,6 +2245,13 @@ const CSS_RAYON=`
 #bar .pkb-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 #bar .pkb-row button{border:1px solid #3a3c42;background:#1e2024;color:#f4ecd8;border-radius:14px;padding:10px;font:800 14px 'Baloo 2',system-ui,sans-serif;display:flex;align-items:center;gap:8px;justify-content:center}
 #bar .pkb-row button i{font-style:normal;font-size:20px}#bar .pkb-row button small{color:#e8c47a;font-size:12px}
+#bar .pkb-ed{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;background:#1a1b1e;border:1px solid #2e3036;border-radius:14px;padding:4px}
+#bar .pkb-ed button{border:0;border-radius:10px;padding:7px 4px;font:800 13px 'Baloo 2',system-ui,sans-serif;background:none;color:#a8a090}
+#bar .pkb-ed button.on{background:#2e3036;color:#f4ecd8}#bar .pkb-ed button.on.hw{background:linear-gradient(#3a1a4a,#2a1030);color:#ffb04a;box-shadow:0 0 12px rgba(255,138,26,.25)}
+#bar .pkb-hero.hw{border-color:#5a2a6a;background:linear-gradient(160deg,#241430,#1e2024)}#bar .pkb-hero.hw .pkb-big b{color:#ff9a2a}
+#bar .pkb-pk.hw{background:linear-gradient(110deg,#2a1030,#1e2024);border-color:#7a3a8a}
+#bar .pkb-gold.hw{background:linear-gradient(#ffb04a,#e8761e);box-shadow:0 4px 0 #8a3a0a}
+#bar .pkb-row button.pkb-nm{opacity:.5;flex-direction:row}#bar .pkb-row button.pkb-nm small{color:#a8a090;font-size:10.5px}
 #bar .pkd-msg{margin-top:8px;font:700 12px 'Baloo 2',system-ui,sans-serif;color:#e8a44a;text-align:center;min-height:0}
 #bar .pkd-msg:empty{display:none}
 @media(min-width:720px){#bar .pkb-rec img{height:150px}}
