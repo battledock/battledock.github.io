@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-22-1000"></script>
+<script src="maintenance.js?v=2026-10-22-1100"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-22-1000';
+var MA_VERSION='2026-10-22-1100';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il
@@ -2212,16 +2212,16 @@ white-space:nowrap}
 #tiroir.part .latte,#tiroir.part .tbas{animation:none}
 @keyframes ligneFin{from{opacity:0;transform:translateY(12px) scale(.92)}
 60%{opacity:1;transform:translateY(0) scale(1.04)}to{opacity:1;transform:none}}</style>
-<script src="retour.js?v=2026-10-22-1000"></script>
+<script src="retour.js?v=2026-10-22-1100"></script>
 <!-- LE DESSIN DU PERSONNAGE ET LES CARTES POKEDOCK. Classiques, donc
      joues avant le module : window.Perso doit exister quand une carte
      se grave, et window.Pokedock quand on ouvre le rayon du Bar. -->
-<script src="session.js?v=2026-10-22-1000"></script>
-<script src="personnage.js?v=2026-10-22-1000"></script>
-<script src="pokedock_hw.js?v=2026-10-22-1000"></script>
-<script src="pokedock.js?v=2026-10-22-1000"></script>
-<script src="courses.js?v=2026-10-22-1000"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-22-1000">
+<script src="session.js?v=2026-10-22-1100"></script>
+<script src="personnage.js?v=2026-10-22-1100"></script>
+<script src="pokedock_hw.js?v=2026-10-22-1100"></script>
+<script src="pokedock.js?v=2026-10-22-1100"></script>
+<script src="courses.js?v=2026-10-22-1100"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-22-1100">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -25747,14 +25747,18 @@ st.id='cssCls';st.textContent=CSS_CLS;document.head.appendChild(st);}
 $('page2Fond').className='';$('page2').classList.add('on');
 if(CLS_VUE==='peche')return clsLeMur();
 if(CLS_VUE==='pokedock')return clsPokedock();
-clsCadre('Classement','BATTLE DOCK · DEPUIS TOUJOURS');
+clsCadre('Classement','FORÊT · FERME · VERGER · PÊCHE');
 try{sauver();envoyerSauvegarde(true);}catch(x){}   /* on se compte avec un score à jour */
 let liste=[];
-try{
+/* LE CLASSEMENT GÉNÉRAL vient du serveur, avec le détail de chaque
+   score : forêt, ferme, verger, pêche. Chaque activité y pèse selon
+   l'effort qu'elle demande, pas selon ce qu'elle rapporte en euros. */
+try{const d=await appelRPC('classement_general',{});if(Array.isArray(d))liste=d.filter(j=>j&&j.pseudo&&j.pseudo!=='sans nom');}catch(x){}
+if(!liste.length){try{
 const r=await fetch(URL_SB+'/rest/v1/joueurs?select=id,pseudo,apparence,score,recolte,maj&order=score.desc,maj.desc&limit=40',{headers:sbEntetes});
 const d=await r.json();
 liste=(Array.isArray(d)?d:[]).filter(j=>j&&j.pseudo&&j.pseudo!=='sans nom');
-}catch(x){}
+}catch(x){}}
 const C=$('page2Fond').querySelector('#cls .corps');if(!C)return;
 if(!liste.length){C.innerHTML='<div class="vide">Personne n’est encore au registre.</div>';return;}
 const record=Math.max(1,liste[0].score||0);
@@ -25766,15 +25770,20 @@ return '<div class="lg'+(k===0?' prem':'')+(moi?' moi':'')+'">'+
 '<span class="r">'+(k+1)+'</span>'+
 '<img src="'+clsTete(j)+'" alt="">'+
 '<span class="g"><b>'+echapperT(j.pseudo)+(moi?' <i>· toi</i>':'')+'</b>'+
-'<small>'+(clsVu(j.maj)||'—')+'</small></span>'+
+'<small>'+(j.foret!=null?clsParts(j):(clsVu(j.maj)||'—'))+'</small></span>'+
 '<span class="s">'+clsPts(j.score)+'</span></div></div>';}).join('');
 const iMoi=liste.findIndex(j=>j.id===e.id);
 if(iMoi>0){
 const ecart=(liste[iMoi-1].score||0)-(liste[iMoi].score||0)+1;
-h+='<div class="ecart">Il te manque <b>'+clsPts(ecart)+' objet'+(ecart>1?'s':'')+'</b> pour passer '+iMoi+(iMoi===1?'ᵉʳ':'ᵉ')+'</div>';
+h+='<div class="ecart">Il te manque <b>'+clsPts(ecart)+' point'+(ecart>1?'s':'')+'</b> pour passer '+iMoi+(iMoi===1?'ᵉʳ':'ᵉ')+'</div>';
 }else if(iMoi===0){h+='<div class="ecart">Tu es <b>premier du port</b>. Tiens bon.</div>';}
+h+='<div class="ecart" style="opacity:.75">🌲 1 pt par objet ramassé · 🥕 2 à 9 pts par parcelle récoltée · 🍒 1 pt par fruit · 🐟 10 à 60 pts par poisson, selon sa rareté</div>';
 C.innerHTML=h;
 }
+/* le détail d'un score : seulement les activités où l'on a des points */
+function clsParts(j){const f=n=>(+n||0).toLocaleString('fr-FR');
+const p=[['🌲',j.foret],['🥕',j.legumes],['🍒',j.fruits],['🐟',j.peche]].filter(([,n])=>+n>0);
+return p.length?p.map(([i,n])=>i+' '+f(n)).join(' · '):(clsVu(j.maj)||'—');}
 /* ================= LE CLASSEMENT POKÉDOCK =================
    CENT CARTES, ET DEUX SECRÈTES HORS SÉRIE. On classe sur le nombre de
    cartes DIFFÉRENTES, pas sur le nombre de cartes : ouvrir cent paquets
