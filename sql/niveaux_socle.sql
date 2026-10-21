@@ -60,3 +60,17 @@ create table if not exists public.graines_offertes(joueur text not null, cult te
 -- Le jeu affiche « Cadeau des anciens » et TOUT RÉCUPÉRER réclame en plus
 -- toutes les récompenses de niveau déjà gagnées.
 -- ============================================================
+
+-- ============================================================
+-- ÉTAPE 6 (1re partie) : LES RÉCOMPENSES QUI MARCHENT (21/10/2026)
+-- niv_bonus(uid, cle) lit inventaire_niveau. mon_niveau renvoie 'inv' et 'glaces'.
+-- Actives : ventes +3 % (vendre_au_comptoir, vendre_poisson) · verger +1 fruit
+-- (verger_cueillir) · enclos +1 (betes_acheter, betes_etat) · parcelles
+-- (+4 cases par parcelle sur champ_joueur.max, dès la réclamation) · glaces
+-- offertes (glacier_acheter, glacier_etat 'offertes') · côté jeu : hache -1 coup,
+-- pêche qui mord 3 % plus vite, kart Bleu nuit, turbo de départ +0,2 s en
+-- course libre, cadre Cordage sur la plaque.
+-- fragments_echanger('sac'|'tresor'|'bonne') : 10 fragments = un légendaire.
+-- Restent pour plus tard : vitrines, ruche, cabanon, recettes, emote, circuit
+-- Le Panier, pêche de nuit / au large, bateau, tenue, VIP, aquarium, étoile, statue.
+-- ============================================================

@@ -161,6 +161,7 @@ const CSS=`
 #crsMenu .podium{display:block;width:240px;height:128px;margin:6px auto 4px;image-rendering:pixelated}
 #crsMenu .garage{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 #crsMenu .kc{border:1px solid rgba(216,191,106,.25);border-radius:16px;background:rgba(14,21,16,.85);padding:10px 4px;color:#eef3e4;font:700 10px Arial;letter-spacing:1.4px}
+#crsMenu .kc.ferme{opacity:.55}#crsMenu .kc.ferme img{filter:grayscale(.7) brightness(.7)}
 #crsMenu .kc.on{border:2px solid #d8bf6a;background:rgba(216,191,106,.14)}
 #crsMenu .kc img{display:block;width:60px;height:60px;margin:0 auto 6px;image-rendering:pixelated}
 #crsMenu .onglets{display:flex;gap:8px;margin-bottom:10px}
@@ -273,7 +274,10 @@ const PILOTES=[
   {nom:'Escartefigue',coul:'Violet',b:'#c83ad8',B:'#e070f0',d:'#8a2098',h:'#202024',H:'#4a4a52'},
   {nom:'Panisse',coul:'Jaune',b:'#ffd21a',B:'#ffe870',d:'#b08a10',h:'#2a4ad8',H:'#5a7af0'},
   {nom:'César',coul:'Blanc',b:'#f2f2ee',B:'#ffffff',d:'#a8a8a0',h:'#e82a2a',H:'#ff6a5a'},
+  {nom:'Toi',coul:'Bleu nuit',b:'#1e2c62',B:'#3a52a8',d:'#0e1638',h:'#e8c06a',H:'#fff0b0',niv:'kart:bleu_nuit',nivN:4},
 ];
+/* les récompenses de niveau (jeu.html les lit sur le serveur) */
+const aLeNiv=k=>{try{return !!(window.nivInv&&window.nivInv(k));}catch(x){return false;}};
 const KPAL=p=>({d:p.d,b:p.b,B:p.B,w:'#f4f4f0',k:'#141418',K:'#4a4a52',s:'#24242a',h:p.h,H:p.H,g:'#6a6e76',G:'#a8acb4',e:'#8a8e96'});
 const NDIR=32;
 let SPR_KART=null;
@@ -430,6 +434,7 @@ function karting(ctx){
     toile.width=AW;toile.height=AH;toile.style.width=AW*S+'px';toile.style.height=AH*S+'px';g.imageSmoothingEnabled=false;}
   cadrer();addEventListener('resize',cadrer);
   const pref=Object.assign({circuit:'quai',diff:'minot',coul:0,cmd:'pouce'},PREFK());
+  if(PILOTES[pref.coul|0]&&PILOTES[pref.coul|0].niv&&!aLeNiv(PILOTES[pref.coul|0].niv))pref.coul=0;
   let M=monde(pref.circuit),P=M.P,N=M.N;
   const marques=document.createElement('canvas');marques.width=KW;marques.height=KH;const gm=marques.getContext('2d');
   const TOURS=3,VMAX=140;
@@ -461,7 +466,7 @@ function karting(ctx){
         const a=depart.appui,moi=K[0];if(a>=2.75)depart.canon=1;else if(a>=1.2)depart.cale=1;}
       son.moteur(IN.drift?.45:.15);return;}
     if(ETAT==='course'&&depart.canon!==2){const r=maintenant()/1000,moi=K[0];
-      if(depart.canon===1){moi.boost=1.3;depart.canon=2;cri('Départ canon !','tu as lâché au bon moment',' or',1.3);son.bip(520,.3,'sawtooth',.06);vibrer(25);}
+      if(depart.canon===1){moi.boost=1.3+(MODE!=='paye'&&aLeNiv('bonus:kart_depart')?.2:0);depart.canon=2;cri('Départ canon !','tu as lâché au bon moment',' or',1.3);son.bip(520,.3,'sawtooth',.06);vibrer(25);}
       else if(depart.appui<0&&IN.drift&&r<.3){depart.canon=1;}
       else if(depart.cale===1){moi.spin=.55;moi.v=0;depart.cale=2;depart.canon=2;cri('Calé !','trop tôt sur DRIFT : attends le vert','b',1.4);son.bip(120,.3,'sawtooth',.06);}
       else if(r>=.3)depart.canon=2;}
@@ -751,11 +756,11 @@ function karting(ctx){
   function ecranLibre(){fenetre('COURSE LIBRE · '+M.C.court,'La cylindrée','<p class="so">Gratuit, sans gain ni record. Les autres pilotes vont plus ou moins vite selon la cylindrée.</p>'+
       Object.keys(DIFFS).map(k=>'<button class="ved '+(k===pref.diff?'':'gris')+'" data-d="'+k+'"><small>'+(k==='pitchoun'?'★':k==='minot'?'★★':'★★★')+'</small><b>'+DIFFS[k].nom+'</b><em>'+DIFFS[k].sous+'</em><span class="go">ROULER</span></button>').join(''));
     Rt.menu.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{pref.diff=b.dataset.d;SAUVEK({diff:pref.diff});lancer('libre');});}
-  function ecranGarage(){const cs=PILOTES.map((p,i)=>'<button class="kc '+(i===(pref.coul|0)?'on':'')+'" data-c="'+i+'"><img src="'+(()=>{const c=document.createElement('canvas');c.width=30;c.height=30;const q=c.getContext('2d');const sp=SK[i][0];q.drawImage(sp,15-sp.r,15-sp.r);return c.toDataURL();})()+'" alt=""><span>'+p.coul+'</span></button>').join('');
+  function ecranGarage(){const cs=PILOTES.map((p,i)=>'<button class="kc '+(i===(pref.coul|0)?'on':'')+(p.niv&&!aLeNiv(p.niv)?' ferme':'')+'" data-c="'+i+'"'+(p.niv&&!aLeNiv(p.niv)?' data-nv="'+p.nivN+'"':'')+'><img src="'+(()=>{const c=document.createElement('canvas');c.width=30;c.height=30;const q=c.getContext('2d');const sp=SK[i][0];q.drawImage(sp,15-sp.r,15-sp.r);return c.toDataURL();})()+'" alt=""><span>'+(p.niv&&!aLeNiv(p.niv)?'🔒 Niv. '+p.nivN:p.coul)+'</span></button>').join('');
     fenetre('LE GARAGE','Ton kart','<div class="garage">'+cs+'</div><div class="rub">LA CONDUITE</div>'+
       '<button class="ved '+(pref.cmd!=='boutons'?'':'gris')+'" data-m="pouce"><small>RECOMMANDÉ</small><b>Au pouce</b><em>pose le pouce n’importe où à gauche et montre la direction : le kart y va. La gauche reste la gauche, même en descendant.</em></button>'+
       '<button class="ved '+(pref.cmd==='boutons'?'':'gris')+'" data-m="boutons"><small>CLASSIQUE</small><b>Aux boutons ◀ ▶</b><em>tourner à gauche ou à droite du kart, comme un volant</em></button>');
-    Rt.menu.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{pref.coul=+b.dataset.c;SAUVEK({coul:pref.coul});placerGrille(false);ecranGarage();});
+    Rt.menu.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{if(b.dataset.nv){vibrer([20,40,20]);return;}pref.coul=+b.dataset.c;SAUVEK({coul:pref.coul});placerGrille(false);ecranGarage();});
     Rt.menu.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{pref.cmd=b.dataset.m;SAUVEK({cmd:pref.cmd});ecranGarage();});}
   async function ecranClassement(){const id=M.id;
     fenetre('LES MEILLEURS TEMPS','Classement','<div class="onglets">'+ORDRE_C.map(c=>'<button data-c="'+c+'" class="'+(c===id?'on':'')+'">'+CIRCUITS[c].nom+'</button>').join('')+'</div><div class="cl"><div class="vide">Chargement…</div></div><p class="so" style="margin-top:10px">Trois tours en Grand Prix à 5 €. Ton record compte dès la ligne franchie.</p>');
