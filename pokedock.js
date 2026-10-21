@@ -2122,28 +2122,39 @@ function classeur(col,fermer){
 function rayon(hote,ctx){
   poserStyle();
   let col=null, occupe=false;
+  /* MENU B : la collection d'abord. Un grand cercle, une barre par
+     rarete, le paquet, puis les cartes du dernier paquet ouvert. */
+  const SEC_B=[['Communes',1,40,'#cdbfa6'],['Rares',41,62,'#9fd0e8'],['Ultra',63,76,'#7fd2ff'],
+    ['Epic',77,85,'#c79bff'],['Légend.',86,91,'#ffb070'],['EX',92,95,'#ff8a8a'],
+    ['Full Art',96,98,'#f0d48a'],['Secrètes',99,100,'#ffffff']];
   const peindre=()=>{
-    const n=col?col.total:0;
+    const avoir={};(col&&col.cartes||[]).forEach(c=>avoir[c.n]=c.q);
+    const n=(col&&typeof col.total==='number')?col.total:0;
+    let dbl=0;Object.values(avoir).forEach(q=>{if(q>1)dbl+=q-1;});
+    const der=(col&&Array.isArray(col.derniers))?col.derniers:[];
+    const reste=100-n;
+    const bu=document.getElementById('barBulle');
+    if(bu&&col&&typeof col.total==='number')bu.textContent=reste<=0?'« L’album complet. Respect, mon grand. »'
+      :n===0?'« Ton premier paquet ? Six euros, et l’album commence. »'
+      :'« Plus que '+reste+' carte'+(reste>1?'s':'')+' et t’as tout l’album, mon grand. »';
     hote.innerHTML=
-      '<div class="bar-t">POKÉDOCK<small>Cartes à collectionner · première édition</small></div>'+
-      '<div class="pkd-r">'+
-        '<div class="pkd-sac"><img alt="" src="'+sacURL()+'"></div>'+
-        '<div class="pkd-tx"><b>Un paquet de 10 cartes</b>'+
-          '<p>Six communes et quatre tirages. Les secrètes sortent une fois '+
-          'sur deux cent cinquante — c’est fait exprès.</p>'+
-          '<div class="pkd-ja"><i style="width:'+n+'%"></i></div>'+
-          '<small>'+n+' / 100 cartes dans ton classeur</small>'+
-        '</div>'+
-      '</div>'+
-      '<div class="pkd-bt">'+
-        '<button id="pkdAch"'+(occupe?' disabled':'')+'>'+
-          (occupe?'Fanny cherche un paquet…':'OUVRIR UN PAQUET · 6,00 €')+'</button>'+
-        '<button id="pkdCla" class="v">LE CLASSEUR</button>'+
-        '<button id="pkdMar" class="v">LE MARCHÉ</button>'+
-      '</div>'+
-      '<div class="pkd-msg" id="pkdMsg"></div>';
+      '<div class="pkb-hero"><div class="pkb-big" style="background:conic-gradient(#e8c47a '+(n*3.6)+'deg,#2e3036 0)">'+
+        '<div><b>'+n+'</b><small>/ 100</small></div></div><div class="pkb-secs">'+
+        SEC_B.map(([t,a2,b2,co])=>{let k=0;for(let i=a2;i<=b2;i++)if(avoir[i])k++;const tt=b2-a2+1;
+          return '<div class="pkb-sr"><em>'+t+'</em><u><i style="width:'+(k/tt*100)+'%;background:'+co+'"></i></u><s>'+k+'/'+tt+'</s></div>';}).join('')+
+      '</div></div>'+
+      '<div class="pkb-pk"><img alt="" src="'+sacURL()+'"><div><b>Un paquet de 10 cartes</b>'+
+        '<span>6 communes et 4 tirages. Les secrètes : 1 sur 250.</span>'+
+        '<button id="pkdAch" class="pkb-gold"'+(occupe?' disabled':'')+'>'+
+          (occupe?'Fanny cherche un paquet…':'Ouvrir · 6,00 €')+'</button></div></div>'+
+      '<div class="pkd-msg" id="pkdMsg"></div>'+
+      (der.length?'<h4 class="pkb-h">TES DERNIÈRES CARTES</h4><div class="pkb-rec">'+
+        der.map(k=>'<img alt="" data-z="'+k+'" src="'+faceURL(k)+'">').join('')+'</div>':'')+
+      '<div class="pkb-row"><button id="pkdCla"><i>📒</i>Classeur</button>'+
+        '<button id="pkdMar"><i>🏷️</i>Marché'+(dbl?' <small>'+dbl+'</small>':'')+'</button></div>';
     const ach=hote.querySelector('#pkdAch');
     if(ach)ach.onclick=acheter;
+    hote.querySelectorAll('[data-z]').forEach(i=>i.onclick=()=>classeur(col||{cartes:[],total:0,paquets:0}));
     const cl=hote.querySelector('#pkdCla');
     if(cl)cl.onclick=()=>classeur(col||{cartes:[],total:0,paquets:0});
 /* LE MARCHE REND LA MAIN AU RAYON : une carte achetee ou vendue change
@@ -2174,24 +2185,33 @@ function rayon(hote,ctx){
 
 /* le CSS du rayon vit avec celui du bar, il est donc rendu à part */
 const CSS_RAYON=`
-#bar .pkd-r{display:flex;gap:12px;align-items:center;background:#0f2742;border-radius:12px;
-  padding:12px;border:1px solid rgba(201,162,74,.3)}
-#bar .pkd-sac{flex:none;width:74px}
-#bar .pkd-sac img{width:100%;display:block;border-radius:4px;
-  box-shadow:0 6px 16px rgba(0,0,0,.5)}
-#bar .pkd-tx b{display:block;font:900 13px Georgia,serif;color:#f4ead2}
-#bar .pkd-tx p{margin:4px 0 8px;font:400 11.5px Georgia,serif;color:#a8c4d8;line-height:1.45}
-#bar .pkd-ja{height:4px;border-radius:2px;background:rgba(255,255,255,.1);overflow:hidden}
-#bar .pkd-ja i{display:block;height:100%;background:linear-gradient(90deg,#c9a24a,#f0dca0)}
-#bar .pkd-tx small{display:block;margin-top:5px;font:700 9px Arial,sans-serif;
-  letter-spacing:1.2px;color:#c9a24a}
-#bar .pkd-bt{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
-#bar .pkd-bt button{flex:1 1 150px;font:900 11px Arial,sans-serif;letter-spacing:1.3px;
-  border:0;border-radius:9px;padding:13px 10px;background:#c9a24a;color:#1a1208}
-#bar .pkd-bt button.v{background:#143352;color:#f4ead2;border:1px solid rgba(201,162,74,.45)}
-#bar .pkd-bt button[disabled]{opacity:.5}
-#bar .pkd-msg{margin-top:9px;font:400 11.5px Georgia,serif;color:#e8a44a;text-align:center;
-  min-height:16px}
+#bar .bdPage>#pkdVue{background:none;color:#f4ecd8;border-radius:0}
+#bar .pkb-hero{display:flex;gap:14px;align-items:center;background:#1e2024;border:1px solid #34363c;border-radius:18px;padding:12px}
+#bar .pkb-big{flex:none;width:104px;height:104px;border-radius:50%;display:grid;place-items:center}
+#bar .pkb-big div{width:84px;height:84px;border-radius:50%;background:#1e2024;display:grid;place-items:center;align-content:center;text-align:center}
+#bar .pkb-big b{font-size:28px;line-height:1;color:#e8c47a}#bar .pkb-big small{font-size:11px;font-weight:700;color:#a8a090}
+#bar .pkb-secs{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+#bar .pkb-sr{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#c8bca0}
+#bar .pkb-sr em{font-style:normal;width:62px;white-space:nowrap}
+#bar .pkb-sr u{flex:1;height:5px;border-radius:3px;background:#2e3036;overflow:hidden;text-decoration:none}
+#bar .pkb-sr u i{display:block;height:100%}
+#bar .pkb-sr s{text-decoration:none;width:32px;text-align:right;color:#8a8478}
+#bar .pkb-pk{display:flex;gap:12px;align-items:center;margin-top:12px;background:linear-gradient(110deg,#2a2016,#1e2024);border:1px solid #5a4628;border-radius:18px;padding:10px 12px}
+#bar .pkb-pk img{flex:none;width:72px;border-radius:5px;transform:rotate(-5deg);box-shadow:0 6px 12px rgba(0,0,0,.5)}
+#bar .pkb-pk>div{flex:1;min-width:0}#bar .pkb-pk b{font-size:16px;display:block;line-height:1.1;color:#f4ecd8}
+#bar .pkb-pk span{font-size:12px;color:#a8a090;font-weight:700;display:block;margin:2px 0 8px;line-height:1.25}
+#bar .pkb-gold{display:block;width:100%;border:0;border-radius:14px;padding:9px 8px;font:800 15px 'Baloo 2',system-ui,sans-serif;color:#1c1e22;background:linear-gradient(#f0d48a,#c9a24a);box-shadow:0 4px 0 #8a6a2a}
+#bar .pkb-gold:active{transform:translateY(3px);box-shadow:0 1px 0 #8a6a2a}
+#bar .pkb-gold[disabled]{opacity:.55}
+#bar .pkb-h{margin:12px 2px 6px;font-size:12px;letter-spacing:1.5px;color:#a8946a}
+#bar .pkb-rec{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+#bar .pkb-rec img{flex:none;height:118px;border-radius:6px;box-shadow:0 4px 10px rgba(0,0,0,.5)}
+#bar .pkb-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+#bar .pkb-row button{border:1px solid #3a3c42;background:#1e2024;color:#f4ecd8;border-radius:14px;padding:10px;font:800 14px 'Baloo 2',system-ui,sans-serif;display:flex;align-items:center;gap:8px;justify-content:center}
+#bar .pkb-row button i{font-style:normal;font-size:20px}#bar .pkb-row button small{color:#e8c47a;font-size:12px}
+#bar .pkd-msg{margin-top:8px;font:700 12px 'Baloo 2',system-ui,sans-serif;color:#e8a44a;text-align:center;min-height:0}
+#bar .pkd-msg:empty{display:none}
+@media(min-width:720px){#bar .pkb-rec img{height:150px}}
 `;
 
 
