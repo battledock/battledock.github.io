@@ -583,7 +583,7 @@ function kayak(ctx){
     ARR=260;for(let y=0;y<ARR;y++){const t=y/ARR;berges[y*2]-=(1-t)*(1-t)*80;berges[y*2+1]+=(1-t)*(1-t)*80;}
     const bG=y=>berges[Math.max(0,Math.min(MH-1,y|0))*2],bD=y=>berges[Math.max(0,Math.min(MH-1,y|0))*2+1];
     /* les portes : une paire de bouées tous les 260 px, décalées gauche/droite */
-    portes=[];let k=0;for(let y=MH-420;y>ARR+140;y-=250){const a=bG(y)+12,b=bD(y)-12,w=b-a;const larg=Math.min(44,w*.55);const c=a+larg/2+rnd()*(w-larg);
+    portes=[];let k=0;for(let y=MH-420;y>ARR+140;y-=250){const a=bG(y)+12,b=bD(y)-12,w=b-a;const larg=Math.min(56,w*.62);const c=a+larg/2+rnd()*(w-larg);
       portes.push({y,x1:c-larg/2,x2:c+larg/2,n:k++,passe:0,col:k%2?'#ff6a1a':'#ffd21a'});}
     /* les rochers : jamais dans une porte */
     rochers=[];for(let y=MH-520;y>ARR+80;y-=70+rnd()*80){const a=bG(y)+10,b=bD(y)-10;const x=a+rnd()*(b-a),r=3+Math.floor(rnd()*4);
@@ -611,30 +611,32 @@ function kayak(ctx){
   let B=null;
   /* ---------------- les kayaks ---------------- */
   let KY=[],ETAT='menu',t0=0,dernier=0,anim=0,msgT=0,parts=[],course=null,cam=0,tFin=0,resultat=null;
-  const ACC=22,TRAINE=.5,RY={ideal:.42,min:.26,max:.62};
+  /* LA NOUVELLE FAÇON D'AVANCER : le kayak garde le cap, toujours vers la mer.
+     Un coup de pagaie pousse en avant et fait GLISSER de côté (à gauche, on
+     part à droite) — il ne fait plus pivoter la coque. Alterner = tout droit ;
+     deux coups du même côté = un écart franc pour passer une porte. Le
+     rythme est large et indulgent : il récompense, il ne punit presque pas. */
+  const ACC=24,TRAINE=.5,RY={ideal:.42,min:.17,max:.9,fen:.13};
   function placer(){KY=KPILOTES.map((pl,n)=>{const y=MH-135-(n%2)*14,a=B.bG(y)+14,b=B.bD(y)-14;const x=a+(b-a)*(n+.5)/KPILOTES.length;
-    return {n,pl,x,y,ang:0,v:0,rot:0,cote:0,dernier:-9,coup:0,coupT:0,energie:1,combo:0,pen:0,porte:0,fini:0,tFini:0,choc:0,
-      skill:n?[0,.93,.96,.9,.95][n]:1,phase:Math.random(),lane:(Math.random()-.5)*.5};});}
+    return {n,pl,x,y,ang:0,v:0,vl:0,cote:0,dernier:-9,coup:0,coupT:0,energie:1,combo:0,pen:0,porte:0,fini:0,tFini:0,choc:0,
+      skill:n?[0,.86,.9,.83,.88][n]:1,phase:Math.random(),lane:(Math.random()-.5)*.5};});}
   function cri(b,em,cl,dur){Rt.cri.className=cl||'';Rt.cri.querySelector('b').textContent=b;Rt.cri.querySelector('em').textContent=em||'';msgT=dur||1.4;}
-  /* un coup de pagaie : du côté gauche, la pointe part à droite, et inversement */
   function pagayer(k,cote,now){if(k.fini||ETAT!=='course')return;
     const dtc=(now-k.dernier)/1000;let q;
-    if(cote===k.cote&&dtc<1.2){q='meme';}else if(dtc<RY.min){q='vite';}else if(dtc<=RY.max){q=Math.abs(dtc-RY.ideal)<.07?'parfait':'bien';}else q='lent';
-    let imp=q==='parfait'?1.3:q==='bien'?1:q==='lent'?.85:q==='meme'?.55:.45;
-    imp*=.45+.55*k.energie;if(k.n>0)imp*=k.skill;
-    k.energie=Math.max(0,k.energie-(q==='vite'?.12:q==='meme'?.03:.035));
-    if(q==='parfait')k.combo++;else if(q!=='bien')k.combo=0;
-    imp*=1+Math.min(5,k.combo)*.03;
-    k.v=Math.min(130,k.v+ACC*imp);
-    /* le cap : un coup à gauche pousse la pointe à droite */
-    k.rot+=(cote<0?1:-1)*(q==='meme'?.95:.5);
+    if(cote===k.cote&&dtc<.9)q='meme';else if(dtc<RY.min)q='vite';else if(dtc<=RY.max)q=Math.abs(dtc-RY.ideal)<RY.fen?'parfait':'bien';else q='lent';
+    let imp=q==='parfait'?1.25:q==='bien'?1:q==='lent'?.9:q==='meme'?.8:.6;
+    imp*=.7+.3*k.energie;if(k.n>0)imp*=k.skill;
+    k.energie=Math.max(0,k.energie-(q==='vite'?.06:.012));
+    if(q==='parfait')k.combo++;else if(q!=='bien'&&q!=='meme')k.combo=0;
+    imp*=1+Math.min(6,k.combo)*.025;
+    k.v=Math.min(125,k.v+ACC*imp);
+    /* l'écart : un coup à gauche fait glisser vers la droite */
+    k.vl+=(cote<0?1:-1)*(q==='meme'?30:11);
     k.cote=cote;k.dernier=now;k.coup=cote;k.coupT=.28;
-    /* éclaboussure du côté de la pale */
-    const sx=k.x+Math.cos(k.ang)*cote*14,sy=k.y+Math.sin(k.ang)*cote*14;for(let i=0;i<6;i++)parts.push({x:sx,y:sy,vx:(Math.random()-.5)*30,vy:(Math.random()-.5)*30+20,vie:.3+Math.random()*.2,col:'#ffffff'});
-    if(k.n===0){son.plouf();vibrer(q==='vite'?[10,30,10]:8);
-      if(q==='parfait'&&k.combo>=2)cri('Parfait ×'+k.combo,'garde ce rythme','a',.9);
-      else if(q==='vite')cri('Trop vite !','tu t’épuises : laisse glisser','b',1);
-      else if(q==='meme')cri('Double coup','pour tourner : deux fois du même côté','',.8);
+    const sx=k.x+cote*14,sy=k.y;for(let i=0;i<6;i++)parts.push({x:sx,y:sy,vx:(Math.random()-.5)*30,vy:(Math.random()-.5)*30+20,vie:.3+Math.random()*.2,col:'#ffffff'});
+    if(k.n===0){son.plouf();vibrer(8);
+      if(q==='parfait'&&k.combo>=3)cri('Parfait ×'+k.combo,'garde ce rythme','a',.8);
+      else if(q==='vite')cri('Doucement !','laisse glisser entre deux coups','b',.9);
       majRythme();}}
   /* ---------------- la boucle ---------------- */
   function boucle(t){if(!Rt.d.classList.contains('on')){son.stop();return;}anim=requestAnimationFrame(boucle);let dt=Math.min(.05,(t-(dernier||t))/1000);dernier=t;
@@ -652,28 +654,30 @@ function kayak(ctx){
     const moi=KY[0];if(ETAT==='course'&&moi.fini){ETAT='fin2';tFin=performance.now();finir();}
     if(ETAT==='fin2'&&performance.now()-tFin>2400)montrerResultat();}
   function ramer(k,dt,now){
-    if((k.n>0||window.__AUTO_K)&&!k.fini){/* le pagayeur : il vise la porte suivante, rame en rythme, double quand il faut tourner */
-      const p=portes.find(q=>q.y<k.y-6);const tx=p?(p.x1+p.x2)/2+(p.x2-p.x1)*k.lane*.5:(B.bG(ARR)+B.bD(ARR))/2,ty=p?p.y:ARR;
-      const want=Math.atan2(tx-k.x,-(ty-k.y));let da=want-k.ang;while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;
-      k.ang+=Math.max(-1,Math.min(1,da*1.5))*dt*1.4;const per=RY.ideal/k.skill+(Math.sin(now/900+k.phase*6)*.03);
-      if((now-k.dernier)/1000>per){let cote=-k.cote||1;if(da>.5)cote=-1;else if(da<-.5)cote=1;
-        /* les pilotes ramènent toujours un peu d'imperfection */if(Math.random()<.04)cote=-cote;pagayer(k,cote,now);}}
-    /* le bateau : il glisse, ralentit, et tourne selon les coups */
+    if((k.n>0||window.__AUTO_K)&&!k.fini){/* le pagayeur : il vise la porte suivante et choisit son côté */
+      const p=portes.find(q=>q.y<k.y-6);const tx=p?(p.x1+p.x2)/2+(p.x2-p.x1)*k.lane*.4:(B.bG(ARR)+B.bD(ARR))/2;
+      const per=RY.ideal/k.skill+(Math.sin(now/900+k.phase*6)*.03);
+      if((now-k.dernier)/1000>per){const dx=tx-(k.x+k.vl*.6);let cote=-k.cote||1;if(dx>7)cote=-1;else if(dx<-7)cote=1;
+        if(Math.random()<.03)cote=-cote;pagayer(k,cote,now);}}
+    /* le bateau glisse, ralentit ; l'écart s'amortit */
     k.v*=Math.pow(TRAINE,dt);if(k.v<3)k.v=0;
-    k.ang+=k.rot*dt*2.6;k.rot*=Math.pow(.08,dt);
-    k.ang=Math.max(-1.25,Math.min(1.25,k.ang));
-    if(!k.fini)k.energie=Math.min(1,k.energie+dt*.1);
-    k.x+=Math.sin(k.ang)*k.v*dt;k.y-=Math.cos(k.ang)*k.v*dt;
+    k.vl*=Math.pow(.12,dt);
+    /* un léger courant éloigne des falaises : on ne s'y colle plus sans le vouloir */
+    const a0=B.bG(k.y),b0=B.bD(k.y);if(k.x-a0<22)k.vl+=(22-(k.x-a0))*2.2*dt;if(b0-k.x<22)k.vl-=(22-(b0-k.x))*2.2*dt;
+    if(!k.fini)k.energie=Math.min(1,k.energie+dt*.15);
+    k.x+=k.vl*dt;k.y-=k.v*dt;
+    /* la coque s'incline dans le sens de l'écart, sans jamais tourner */
+    const cible=Math.max(-.45,Math.min(.45,k.vl/70));k.ang+=(cible-k.ang)*Math.min(1,dt*8);
     if(k.coupT>0)k.coupT-=dt;
-    /* les falaises, les rochers */
-    const a=B.bG(k.y)+5,b=B.bD(k.y)-5;
-    if(k.x<a||k.x>b){k.x=Math.max(a,Math.min(b,k.x));if(k.v>25){k.v*=.45;k.rot+=(k.x<=a?.6:-.6);if(k.n===0){vibrer(25);son.bip(110,.18,'square',.06);cri('Aïe, la falaise !','','b',.9);}
+    const a=a0+5,b=b0-5;
+    if(k.x<a||k.x>b){k.x=Math.max(a,Math.min(b,k.x));k.vl=(k.x<=a?1:-1)*Math.abs(k.vl)*.4+(k.x<=a?12:-12);
+      if(k.v>40){k.v*=.75;if(k.n===0){vibrer(20);son.bip(110,.15,'square',.05);cri('Attention, la falaise !','','b',.8);}
       for(let i=0;i<8;i++)parts.push({x:k.x,y:k.y,vx:(Math.random()-.5)*40,vy:(Math.random()-.5)*40,vie:.4,col:'#f2fbf6'});}}
-    for(const r of rochers){const d=Math.hypot(k.x-r.x,k.y-r.y);if(d<r.r+5){const ux=(k.x-r.x)/(d||1),uy=(k.y-r.y)/(d||1);k.x=r.x+ux*(r.r+5);k.y=r.y+uy*(r.r+5);
-      if(k.v>25){k.v*=.4;k.rot+=ux*.7;if(k.n===0){vibrer(25);son.bip(120,.18,'square',.06);cri('Un rocher !','','b',.9);}}}}
-    /* les portes : on passe entre les deux bouées, sinon cinq secondes */
-    const p=portes[k.porte];if(p&&k.y<p.y){if(k.x>p.x1&&k.x<p.x2){if(k.n===0){p.passe=1;son.bip(1046,.1,'square',.05);}}
-      else{k.pen+=5000;if(k.n===0){p.passe=-1;cri('Porte ratée !','+5 secondes','b',1.2);vibrer([20,40,20]);son.bip(200,.3,'sawtooth',.06);}}k.porte++;}
+    for(const r of rochers){const d=Math.hypot(k.x-r.x,k.y-r.y);if(d<r.r+5){const ux=(k.x-r.x)/(d||1),uy=(k.y-r.y)/(d||1);k.x=r.x+ux*(r.r+5);k.y=r.y+uy*(r.r+5);k.vl+=ux*25;
+      if(k.v>40){k.v*=.7;if(k.n===0){vibrer(20);son.bip(120,.15,'square',.05);cri('Un rocher !','','b',.8);}}}}
+    /* les portes : entre les deux bouées, sinon trois secondes */
+    const p=portes[k.porte];if(p&&k.y<p.y){if(k.x>p.x1-2&&k.x<p.x2+2){if(k.n===0){p.passe=1;son.bip(1046,.1,'square',.05);}}
+      else{k.pen+=3000;if(k.n===0){p.passe=-1;cri('Porte ratée !','+3 secondes','b',1.1);vibrer([20,40,20]);son.bip(200,.3,'sawtooth',.06);}}k.porte++;}
     if(!k.fini&&k.y<ARR){k.fini=1;k.tFini=now;}
     if(k.fini){k.v=Math.max(k.v,30);}
     if(k.v>20&&Math.random()<k.v/140){parts.push({x:k.x-Math.sin(k.ang)*18+Math.cos(k.ang)*(Math.random()<.5?-4:4),y:k.y+Math.cos(k.ang)*18,vx:0,vy:0,vie:.9,col:'#e8fbf6',sil:1});}}
@@ -713,7 +717,7 @@ function kayak(ctx){
   function habiller(){Rt.haut.style.display='';Rt.pied.style.display='';
     Rt.haut.innerHTML='<div class="d"><div class="j"><b>PLACE</b><i style="font-size:13px;font-family:Arial;color:#cfd8c6">'+echap(ctx.pseudo||'Toi')+'</i></div><div class="c"><div class="s">1<u>/</u>5</div></div>'+
       '<div class="j r"><b>PORTES</b><i>0 / '+portes.length+'</i></div></div><span class="t">LES CALANQUES · LA DESCENTE'+(course&&course.id?' · COURSE À 5 €':' · ENTRAÎNEMENT')+'</span><span class="m">0:00.00</span>';
-    const zg=(RY.ideal-.07)/.8*100,zw=.14/.8*100;
+    const zg=(RY.ideal-RY.fen)/.8*100,zw=RY.fen*2/.8*100;
     Rt.pied.innerHTML='<div class="bas"><span>RYTHME</span><div class="jg"><span class="zone" style="left:'+zg+'%;width:'+zw+'%"></span><span class="cur"></span></div><span class="w">ÉNERGIE 100 %</span></div>'+
       '<div class="cmd"><button data-k="g">PAGAIE<br>GAUCHE</button><button data-k="d">PAGAIE<br>DROITE</button></div>';
     tenir(Rt.pied.querySelector('[data-k=g]'),()=>pagayer(KY[0],-1,performance.now()-t0),null);tenir(Rt.pied.querySelector('[data-k=d]'),()=>pagayer(KY[0],1,performance.now()-t0),null);
@@ -750,7 +754,7 @@ function kayak(ctx){
       '<button class="ved gris" data-a="entr"><small>GRATUIT</small><b>Entraînement</b><em>une autre calanque, sans gain ni record</em><span class="go">RAMER</span></button><div class="msg"></div>'+
       '<div class="rub">LES MEILLEURS TEMPS</div><div class="cl"><div class="vide">Chargement…</div></div>'+
       '<div class="rub">LES COMMANDES</div><div class="regle"><b>Gauche, droite, gauche…</b> : chaque coup pousse le kayak. Tape quand le curseur passe dans la <b style="color:#9fdfb8">zone verte</b> : c’est un coup <b>parfait</b>, et les parfaits s’enchaînent.<br>'+
-      '<b>Pour tourner</b> : deux coups du même côté — à gauche, la pointe part à droite. <b>Trop vite</b>, tu t’épuises. <b>Porte ratée</b> : +5 secondes.</div>';
+      '<b>Pour te décaler</b> : deux coups du même côté — pagaie à gauche, tu glisses à droite. Le kayak garde toujours le cap. <b>Porte ratée</b> : +3 secondes.</div>';
     Rt.menu.classList.add('on');Rt.menu.querySelector('[data-a=paye]').onclick=()=>depart(true);Rt.menu.querySelector('[data-a=entr]').onclick=()=>depart(false);
     const [cl,mr]=await Promise.all([ctx.rpc('course_classement',{p_jeu:'kayak'}),ctx.rpc('course_mes_records',{})]);const box=Rt.menu.querySelector('.cl');if(!box||ETAT!=='menu')return;
     if(Array.isArray(cl)&&cl.length)box.innerHTML=cl.map((r,i)=>'<div class="'+(r.moi?'moi':'')+'"><i>'+(i+1)+'</i><span>'+echap(r.pseudo)+'</span><em>'+chrono(r.ms)+'</em></div>').join('');
