@@ -12,8 +12,8 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<script src="maintenance.js?v=2026-10-22-0200"></script>
-<script src="personnage.js?v=2026-10-22-0200"></script>
+<script src="maintenance.js?v=2026-10-22-0300"></script>
+<script src="personnage.js?v=2026-10-22-0300"></script>
 <script>
 /* LA VERSION, comme partout ailleurs : ajoutée au signet, une page reste en
    mémoire et ne se recharge jamais. On demande à chaque ouverture quelle est
@@ -27,7 +27,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    MA_VERSION de jeu.html, index.html, jeu_entree.html, complexe.html,
    forge.html et mine.html. Les autres pages n'en portent pas. */
 (function(){
-  var MA_VERSION='2026-10-22-0200';
+  var MA_VERSION='2026-10-22-0300';
   window.MA_VERSION=MA_VERSION;
   /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il
@@ -134,9 +134,9 @@ html,body{margin:0;height:100%;background:#0b0608;overflow:hidden;
   z-index:7;background:rgba(20,10,18,.94);border:1px solid rgba(255,138,200,.5);border-radius:12px;
   padding:10px 16px;font:700 12px ui-monospace,monospace;color:#ff8ac8;letter-spacing:1px}
 </style>
-<script src="session.js?v=2026-10-22-0200"></script>
-<script src="retour.js?v=2026-10-22-0200"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-22-0200">
+<script src="session.js?v=2026-10-22-0300"></script>
+<script src="retour.js?v=2026-10-22-0300"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-22-0300">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -235,6 +235,9 @@ function danseur(x,y,i,T){
   const dir=(i%5===0)?'bas':'haut';
   const pas=(Math.floor(T/170+ph)%4)*2;
   habitant(x,y-bond,i,dir,pas,true);
+  /* LA SOIRÉE EST COSTUMÉE : un danseur sur trois porte une tête de citrouille */
+  if(i%3===0){const hy=Math.round(y-bond-38);R(x-7,hy,14,12,'#e8761e');R(x-7,hy,2,12,'#c85a10');R(x+5,hy,2,12,'#c85a10');R(x-6,hy-1,12,1,'#e8761e');
+    R(x-1,hy-3,2,3,'#3a6a2a');if(dir==='bas'){R(x-4,hy+3,3,2,'#ffd84a');R(x+1,hy+3,3,2,'#ffd84a');R(x-3,hy+7,6,2,'#ffd84a');}}
 }
 /* L'APPARENCE VIENT DE LA SAUVEGARDE : c'est le personnage du joueur qui
    entre, pas un figurant. Si la sauvegarde manque, DEF_AP donne un
@@ -377,7 +380,8 @@ const PORTES=[
 /* LES PROJECTEURS. Un pont de lumiere court sous la charpente : des
    lyres qui balaient, et des boules a facettes entre elles. Leur place
    est fixe, leur mouvement ne l'est pas — c'est ce qui fait la boite. */
-const COULEURS=[[255,60,120],[80,220,255],[160,110,255],[80,255,170],[255,190,60],[255,100,60]];
+/* HALLOWEEN : orange citrouille, violet sorcière, vert potion */
+const COULEURS=[[255,120,20],[170,70,255],[90,255,120],[255,70,40],[255,170,40],[200,90,255]];
 function lyres(){
   /* HUIT LYRES SUR CINQ ECRANS, c'etait une et demie par ecran : on
      marchait dans le noir entre deux faisceaux. */
@@ -474,10 +478,54 @@ function nefGraver(){
     g.fillStyle='rgba(180,170,220,'+(0.055*prof*prof).toFixed(3)+')';
     g.fillRect(0,y,SALLE_L,1);
   }
+  graverHalloween(F);
   graverScene();
   graverBar();
   graverBoutique();
   PORTES.forEach(graverEntree);
+}
+/* =====================================================================
+   HALLOWEEN AU COMPLEXE
+   Le mur passe au violet, des toiles d'araignée dans les travées, des
+   guirlandes de fanions orange et noir, une rangée de citrouilles au pied
+   du mur, et du brouillard vert qui traîne sur la piste.
+   ===================================================================== */
+function toileAraignee(x,y,r){
+  g.strokeStyle='rgba(220,220,240,.32)';g.lineWidth=1;
+  for(let k=0;k<6;k++){const a=k*Math.PI/10;g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r);g.stroke();}
+  for(let q=r*0.25;q<=r;q+=r*0.25){g.beginPath();for(let k=0;k<6;k++){const a=k*Math.PI/10,px=x+Math.cos(a)*q,py=y+Math.sin(a)*q;k?g.quadraticCurveTo(x+Math.cos(a-0.16)*q*0.86,y+Math.sin(a-0.16)*q*0.86,px,py):g.moveTo(px,py);}g.stroke();}
+}
+function citrouillePix(x,y,s){
+  const c=['#b8500e','#e8761e','#f08a2a','#e8761e','#b8500e'];
+  for(let i=0;i<5;i++)R(x+(i-2.5)*s*2,y-s*4,s*2,s*5,c[i]);
+  R(x-s*4,y-s*4.5,s*8,s,'#d8661a');R(x-s*4.5,y,s*9,s*0.8,'#8a3a0a');
+  R(x-s*0.5,y-s*6,s,s*1.6,'#3a6a2a');
+}
+function graverHalloween(F){
+  /* le mur prend la teinte d'une nuit de sorcière */
+  g.fillStyle='rgba(90,30,120,.22)';g.fillRect(0,0,SALLE_L,MUR);
+  /* des toiles d'araignée en haut des travées, une sur trois */
+  for(let x=20,i=0;x<SALLE_L;x+=39,i++){if(i%3)continue;toileAraignee(x+1,96*F+4,22+(i%2)*10);}
+  /* les guirlandes de fanions, entre le pont de lumière et la corniche */
+  const gy=86*F;
+  for(let x0=0;x0<SALLE_L;x0+=120){
+    g.strokeStyle='rgba(30,20,30,.9)';g.lineWidth=1;g.beginPath();g.moveTo(x0,gy);g.quadraticCurveTo(x0+60,gy+16,x0+120,gy);g.stroke();
+    for(let k=1;k<10;k++){const t=k/10,px=x0+120*t,py=gy+16*2*t*(1-t)*2;
+      g.fillStyle=k%2?'#ff8a1a':'#1a1020';g.beginPath();g.moveTo(px-3,py);g.lineTo(px+3,py);g.lineTo(px,py+7);g.fill();}
+  }
+  /* une rangée de citrouilles au pied du mur, en laissant libres les portes */
+  const libre=(x)=>PORTES.every(P=>Math.abs(x-P.ent.x())>P.ent.hw+14)&&Math.abs(x-BTQ.x())>BTQ.hw+12&&Math.abs(x-CX)>SCN.hw+10&&(x<BAR.g()-8||x>BAR.d()+8);
+  for(let x=14,i=0;x<SALLE_L-10;x+=46,i++){if(!libre(x))continue;citrouillePix(x,MUR+8,1+(i%3===0?0.4:0));}
+  /* des pierres tombales le long du mur, entre les citrouilles */
+  for(let x=37,i=0;x<SALLE_L-10;x+=92,i++){if(!libre(x))continue;
+    R(x-6,MUR-6,12,14,'#4a4a58');R(x-5,MUR-9,10,3,'#4a4a58');R(x-4,MUR-10,8,1,'#4a4a58');R(x-6,MUR-6,1,14,'#6a6a7a');
+    R(x-1,MUR-5,2,7,'#2a2a34');R(x-3,MUR-3,6,2,'#2a2a34');R(x-7,MUR+7,14,2,'#1a1a22');}
+  /* le brouillard vert posé sur la piste, plus épais vers le fond */
+  for(let y=MUR;y<SALLE_H;y++){const k=1-(y-MUR)/(SALLE_H-MUR);g.fillStyle='rgba(120,255,170,'+(0.05*k*k).toFixed(3)+')';g.fillRect(0,y,SALLE_L,1);}
+  /* l'enseigne HALLOWEEN PARTY, deux fois sur le mur */
+  for(const fx of [0.62,0.78]){const x=Math.round(SALLE_L*fx),sy=Math.round(118*F);
+    R(x-58,sy-2,116,18,'rgba(10,6,14,.9)');R(x-58,sy-2,116,1,'#ff8a1a');R(x-58,sy+15,116,1,'#ff8a1a');
+    ecrire('HALLOWEEN PARTY',x,sy+2,2,'#ffb04a');}
 }
 /* =====================================================================
    LA BOUTIQUE — « LA LOGE »
@@ -906,6 +954,30 @@ function monde(T){
   gens.push({y:joueur.y,f:dessinerJoueur});
   gens.sort((a,b)=>a.y-b.y);
   for(const o of gens)o.f();
+  halloweenVivant(T,g0,g1);
+}
+function chauveVole(x,y,s,ail){g.fillStyle='rgba(8,4,12,.92)';
+  R(x-1,y-1,3,3,'#120818');
+  const h=ail?-3:1;for(let i=1;i<=4;i++){R(x-1-i*s,y+(i<3?h*i/3:h),s,1+(i===4?0:1),'#120818');R(x+1+(i-1)*s+1,y+(i<3?h*i/3:h),s,1+(i===4?0:1),'#120818');}}
+function fantome(x,y,T,i){const fl=Math.sin(T/600+i)*3;g.save();g.translate(x,y);g.scale(1.8,1.8);g.translate(-x,-y);
+  g.globalAlpha=0.55+0.2*Math.sin(T/900+i);
+  R(x-6,y-14+fl,12,12,'#eef0ff');R(x-5,y-16+fl,10,2,'#eef0ff');R(x-3,y-17+fl,6,1,'#eef0ff');
+  for(let k=0;k<4;k++)R(x-6+k*3,y-2+fl+((Math.floor(T/200)+k)%2),3,2,'#eef0ff');
+  R(x-3,y-11+fl,2,2,'#1a1430');R(x+1,y-11+fl,2,2,'#1a1430');R(x-1,y-7+fl,2,2,'#1a1430');
+  g.globalAlpha=1;g.restore();}
+function halloweenVivant(T,g0,g1){
+  /* la lueur tremblante des citrouilles du mur */
+  for(let x=14,i=0;x<SALLE_L-10;x+=46,i++){if(x<g0||x>g1)continue;
+    if(!(PORTES.every(P=>Math.abs(x-P.ent.x())>P.ent.hw+14)&&Math.abs(x-BTQ.x())>BTQ.hw+12&&Math.abs(x-CX)>SCN.hw+10&&(x<BAR.g()-8||x>BAR.d()+8)))continue;
+    const f=0.5+0.5*Math.abs(Math.sin(T/(140+i*13)+i));
+    R(x-3,MUR+4,2,2,'rgba(255,220,90,'+(0.6+0.4*f).toFixed(2)+')');R(x+1,MUR+4,2,2,'rgba(255,220,90,'+(0.6+0.4*f).toFixed(2)+')');R(x-2,MUR+6,4,1,'rgba(255,220,90,'+(0.6+0.4*f).toFixed(2)+')');
+    halo(x,MUR+5,14,0.22*f,'255,150,40');}
+  /* des chauves-souris qui traversent sous la charpente */
+  for(let i=0;i<10;i++){const v=40+i*9,L=SALLE_L+200;const x=((T/1000*v+i*317)%L)-100;if(x<g0||x>g1)continue;
+    const y=MUR*0.25+((i*53)%Math.round(MUR*0.45))+Math.sin(T/300+i)*6;chauveVole(Math.round(x),Math.round(y),2,(Math.floor(T/120)+i)%2);}
+  /* des fantômes qui flottent au-dessus de la piste */
+  for(let i=0;i<6;i++){const L=SALLE_L;const x=(i*L/6+Math.sin(T/5000+i)*80+L)%L;if(x<g0-20||x>g1+20)continue;
+    const y=MUR+30+((i*97)%Math.max(40,SALLE_H-MUR-80));fantome(Math.round(x),Math.round(y),T,i);}
 }
 
 /* ================= CE QUI DANSE =================
@@ -1456,7 +1528,8 @@ function cadrer(){
      et demie de haut. A deux virgule huit par un, on avait fait le tour
      en quinze secondes — ce n'etait pas une salle, c'etait un couloir
      un peu large. */
-  SALLE_L=Math.round(VUE_L*5);
+  /* PLUS GRANDE : huit écrans de large, et une piste plus profonde que l'écran */
+  SALLE_L=Math.round(VUE_L*8);
   /* LA HAUTEUR RESTE CELLE DE L'ECRAN. Huit pour cent de plus suffisaient
      a faire sortir l'enseigne par le haut des qu'on descendait : on lisait
      « FESTIF » au lieu du nom du lieu. La salle est large, pas haute —
@@ -1467,7 +1540,7 @@ function cadrer(){
      le haut, et l'on voyait des faisceaux sans projecteurs — les lumieres
      de boite ne valent que si l'on voit d'ou elles tombent. La hauteur
      tient donc dans l'ecran, et c'est en largeur qu'on marche. */
-  SALLE_H=VUE_H;
+  SALLE_H=Math.round(VUE_H*1.45);
   /* LA LIGNE DU SOL, a un peu plus de la moitie : assez de mur pour
      accrocher le pont et les boules, assez de piste pour danser. */
   MUR=Math.max(150,Math.min(300,Math.round(VUE_H*0.52)));
