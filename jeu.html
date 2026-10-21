@@ -2275,6 +2275,7 @@ white-space:nowrap}
 </div>
 
 
+<div id="hGlace" hidden></div>
 <div id="fil"></div>
 <div id="repond"></div>
 <div class="onde" id="onde"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
@@ -20012,7 +20013,7 @@ const POUSSE_BASSE=0.60, POUSSE_HAUTE=1.00;
 /* L'HYSTÉRÉSIS : la foulée s'ouvre à 0,88 et ne se referme qu'à 0,80.
    Sans cet écart, le pouce qui tremble fait clignoter la course. */
 const COURSE_ENTREE=0.88, COURSE_SORTIE=0.80;
-const vitesseDuJoueur=()=>PAS_VITESSE[Math.min(e.nivPied||0,PAS_VITESSE.length-1)]*(glaceA('vanille')?1.15:1);
+const vitesseDuJoueur=()=>PAS_VITESSE[Math.min(e.nivPied||0,PAS_VITESSE.length-1)];
 let vx=0, vy=0;                   /* vitesse actuelle, pour l'inertie */
 let court=false;                  /* l'allure du moment */
 let bloqueBord=false;
@@ -20046,7 +20047,7 @@ const max=vitesseDuJoueur();
    marche, au-dessus de POUSSE_HAUTE on est à la pointe des souliers. */
 const r=Math.max(0,Math.min(1,(pousse-POUSSE_BASSE)/(POUSSE_HAUTE-POUSSE_BASSE)));
 const allureBase=VITESSE+(max-VITESSE)*r;
-const allure=allureBase*(VELO&&CARTE==='extramar'?1.75:1)*(REPU_FIN>Date.now()?1.15:1);
+const allure=allureBase*(VELO&&CARTE==='extramar'?1.75:1)*(REPU_FIN>Date.now()?1.15:1)*(glaceA('vanille')?1.15:1);   /* la glace à la vanille : toute l'allure, marche comprise */
 /* La foulée a deux seuils, un pour s'ouvrir, un plus bas pour se
    refermer : le pouce qui tremble au bord ne la fait plus clignoter. */
 court=(pousse>(court?COURSE_SORTIE:COURSE_ENTREE))&&max>=SEUIL_COURSE;
@@ -21173,7 +21174,7 @@ const s=$('hSac'), a=$('hArgent'), j=$('hJetons');
 if(!s)return;
 const charge=Object.entries(e.sac||{}).reduce((t,[k,n])=>t+(+n>0?+n:0),0);
 if(charge>0&&charge>=(e.sacMax||60)*0.9){try{recalerLeSac();}catch(x){}}
-const max=e.sacMax||60;
+const max=(e.sacMax||60)+(glaceA('citron')?5:0);   /* le citron : cinq places de plus */
 const part=Math.max(0,Math.min(1,charge/Math.max(1,max)));
 const enc=$('hEnc');
 const pc=Math.round(part*100);
@@ -22574,8 +22575,8 @@ fermerTiroir();
 },true);
 function actionDeSecours(){
 const charge=Object.entries(e.sac||{}).reduce((t,[k,n])=>t+n*1  /* le sac compte les OBJETS, plus leur poids */,0);
-const max=e.sacMax||60;
-if(charge>=max+(glaceA('citron')?5:0))
+const max=(e.sacMax||60)+(glaceA('citron')?5:0);
+if(charge>=max)
 return {mot:'Inventaire plein',sous:'vends ta pêche à La Marée',f:null};
 const prive=[...FILS_PRIVES.entries()].find(([,f])=>f.some(m=>m.nonLu));
 if(prive)
@@ -28078,7 +28079,7 @@ const MAR_LAC=['gardon','perche','truite','anguilledouce','carpe','brochet','sil
 const MAR_TRESORS=['chaussette','canard','savonnette','cabas','oursou','parapluie','pneu','boule','cadenas','santon','dentier','panneau','bouteille','maillot','chariot','telephone','cagole','scaphandrier','sirene','botte'];
 let MAR_ONG='mer', MAR_SEL={}, MAR_EN_COURS=false;
 const marRayon=(k)=>k.startsWith('hw_')?'halloween':MAR_TRESORS.includes(k)?'tresors':((MAR_LAC.includes(k)||(typeof LAC_P!=='undefined'&&LAC_P&&LAC_P[k]))?'lac':'mer');
-const marPrix=(k)=>prixDuJour(k,PRIX_POISSON[k]||0);
+const marPrix=(k)=>{const p=prixDuJour(k,PRIX_POISSON[k]||0);return glaceA('fraise')?Math.floor(p*1.05):p;};   /* la fraise : +5 %, comme au serveur */
 const marTend=(k)=>{const f=COURS[k]&&COURS[k].f;if(!f)return ['eq','='];const p=Math.round((f-1)*100);if(p>=4)return ['up','▲ '+p+' %'];if(p<=-4)return ['dn','▼ '+(-p)+' %'];return ['eq','='];};
 /* ================= LE GLACIER DU PORT =================
    L'ancienne Criée. On compose un cornet de une à trois boules ; chaque
@@ -28099,6 +28100,15 @@ const glReste=()=>GLACE?Math.max(0,new Date(GLACE.jusqua).getTime()+GL_DEC-Date.
 const glPrix=(n)=>[0,200,350,500][n]||0;
 async function glLire(){try{const d=await appelRPC('glacier_etat',{p_joueur:e.id});if(d&&!d.erreur){if(d.now)GL_DEC=Date.now()-new Date(d.now).getTime();GLACE=d.glace||null;GL_HW=d.halloween!==false;}}catch(x){}}
 setTimeout(glLire,4000);
+/* LA PASTILLE DE LA GLACE, sous le bandeau du haut : on voit ce qui agit
+   et ce qu'il reste. Sans elle, un effet qui marche ne se sent pas. */
+(function(){const st=document.createElement('style');st.textContent='#hGlace{position:fixed;left:10px;top:calc(env(safe-area-inset-top,0px) + 50px);z-index:4;display:flex;align-items:center;gap:6px;background:rgba(255,246,249,.95);color:#4a2a36;border:1.5px solid #f48aa8;border-radius:14px;padding:3px 10px 3px 6px;font:800 12px \'Baloo 2\',system-ui,sans-serif;box-shadow:0 3px 10px rgba(0,0,0,.25);pointer-events:none}#hGlace[hidden]{display:none}#hGlace i{font-style:normal;font-size:16px}#hGlace u{text-decoration:none;color:#c8406a}';document.head.appendChild(st);})();
+const GL_ICO={vanille:'⚡',chocolat:'🎣',fraise:'💰',pistache:'⏱',citron:'🎒',citrouille:'🎃'};
+setInterval(()=>{const h=document.getElementById('hGlace');if(!h)return;const r=glReste();
+ if(!GLACE||r<=0){if(!h.hidden){h.hidden=true;try{majHaut();}catch(x){}}return;}
+ const m=Math.floor(r/60000),sc=Math.floor(r%60000/1000);
+ h.innerHTML='<i>🍦</i>'+GLACE.parfums.map(k=>GL_ICO[k]||'').join('')+' <u>'+m+':'+String(sc).padStart(2,'0')+'</u>';
+ if(h.hidden){h.hidden=false;try{majHaut();}catch(x){}}},1000);
 const CSS_GL=`#gl{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#fff6f9;color:#4a2a36;font-family:'Baloo 2',system-ui,sans-serif}
 #gl .hd{flex:none;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 10px;background:linear-gradient(#ffd0e0,#ffb8d0);border-bottom:3px solid #8ad8c0}
 #gl .l1{display:flex;align-items:center;gap:8px}#gl .ens{flex:1;min-width:0}#gl .ens b{display:block;font-family:Georgia,serif;font-style:italic;font-weight:900;font-size:23px;color:#c8406a;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
