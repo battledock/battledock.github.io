@@ -38,3 +38,17 @@ Après 30 : prestige (étoiles).
 - Écran « Mes coffres » (c1.png) + ouverture plein écran (c2.png), style Chez Madeleine en bleu mer.
 - Révélation : **un par un (B, c4.png) pour la Malle du marin et le Coffre de la Bonne Mère** ; **tout d'un coup (A, c3.png) pour la Caisse en bois**.
 - Coffres en pixel art : coffres.js ; styles : cof.css ; capture : cf_t.js.
+
+### Catalogue des récompenses (k1.png, k2.png) — géré par le serveur
+Types : euros · ressources (graines, appâts, bois, jetons, engrais) · consommables à effet (glace, arrosage du champ, grand sac 24 h, café forêt ×2, appât doré) · Pokédock · cosmétiques (tenue, couleur de kart, cadre, emote) · bonus permanents (légendaires seulement) · fragments.
+- Commun 70 % : euros 200–800 × facteur de niveau, graines 5–15, appâts 10–30, bois 20–60, jetons 5–20, engrais.
+- Rare 25 % : glace (10 min), paquet Pokédock, graines rares, arrosage complet, grand sac +10 (24 h), café (forêt ×2, 15 min).
+- Épique 4,5 % : tenue, couleur de kart, cadre, emote, appât doré (30 min), 3 fragments.
+- Légendaire 0,5 % : canne dorée (mord +10 %), hache d'or, tenue unique, pointu au ponton, sac +5, 10 fragments.
+Règles :
+- Quantités × facteur de niveau : 1 + niveau/10 (niv. 1 = ×1,1 ; niv. 20 = ×3).
+- Bonus de rareté avec le niveau : +0,1 point de légendaire et +0,5 d'épique tous les 10 niveaux (pris sur le commun).
+- Seulement ce qui sert : rien de verrouillé (graines non débloquées, objets d'une activité jamais pratiquée → remplacés par l'équivalent utile).
+- Doublon cosmétique ou légendaire déjà possédé → fragments (épique 3, légendaire 10).
+- Garanties : un épique au plus tard tous les 10 objets, un légendaire tous les 30 coffres.
+- Tirage uniquement côté serveur, journalisé (table des ouvertures) ; consommables à durée gérés par le serveur.
