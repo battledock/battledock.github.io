@@ -409,6 +409,40 @@ for(let k=0;k<17;k++){R(cx-33+k*4,ey-1,2,2,k%2?'#fff4b0':'#ffd24a');R(cx-33+k*4,
        R(px+c,ey+1+n*6+r+0.5,1,1,'#7a0a10');
        R(px+c,ey+1+n*6+r,1,1,'#ffe49a');}
      px+=G[0].length+1;}});}
+/* =========== L'ENTRÉE DU COMPLEXE, EN HALLOWEEN ===========
+   Des citrouilles sur chaque palier de l'escalier, l'enseigne aux ampoules
+   orange et violettes, des toiles d'araignée dans l'arche, des chauves-
+   souris dessus, une banderole « HALLOWEEN PARTY » et deux grosses
+   citrouilles au pied du tapis rouge. */
+{const cit=(x,y,s2)=>{const c=['#b8500e','#e8761e','#f08a2a','#e8761e','#b8500e'];
+   for(let i=0;i<5;i++)R(x+(i-2.5)*s2,y-s2*2.6,s2,s2*2.8,c[i]);R(x-s2*2.2,y-s2*2.9,s2*4.4,s2*0.6,'#d8661a');
+   R(x-s2*0.3,y-s2*3.6,s2*0.7,s2,'#3a6a2a');
+   R(x-s2*1.5,y-s2*1.9,s2*0.8,s2*0.7,'#ffd84a');R(x+s2*0.7,y-s2*1.9,s2*0.8,s2*0.7,'#ffd84a');R(x-s2*1.2,y-s2*0.9,s2*2.4,s2*0.5,'#ffd84a');};
+ /* les paliers : une citrouille de chaque côté */
+ for(let y=XP.maisonsY+6,k=0;y>XP.ruelle.haut-14;k++){const palier=k%6===5,h=palier?10:6;
+   if(palier){cit(x0+12,y-1,2.3);cit(x0+w-13,y-1,2.3);}y-=h;}
+ /* deux grosses citrouilles au pied du tapis */
+ cit(x0-10,XP.maisonsY+6,3.4);cit(x0+w+10,XP.maisonsY+6,3.4);
+ /* l'enseigne : ampoules orange et violettes */
+ for(let k=0;k<17;k++){R(cx-33+k*4,ey-1,2,2,k%2?'#ff8a1a':'#b05aff');R(cx-33+k*4,ey+14,2,2,k%2?'#b05aff':'#ff8a1a');}
+ /* la banderole sous l'enseigne */
+ R(cx-30,ey+18,60,8,'#1a1020');R(cx-30,ey+18,60,1,'#ff8a1a');R(cx-30,ey+25,60,1,'#ff8a1a');
+ {const A3={H:[[1,0,1],[1,0,1],[1,1,1],[1,0,1],[1,0,1]],A:[[0,1,0],[1,0,1],[1,1,1],[1,0,1],[1,0,1]],L:[[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,1,1]],
+   O:[[1,1,1],[1,0,1],[1,0,1],[1,0,1],[1,1,1]],W:[[1,0,1],[1,0,1],[1,0,1],[1,1,1],[1,0,1]],E:[[1,1,1],[1,0,0],[1,1,0],[1,0,0],[1,1,1]],N:[[1,0,1],[1,1,1],[1,1,1],[1,0,1],[1,0,1]]};
+  const mot='HALLOWEEN';let px=cx-(mot.length*4-1)/2;for(const ch of mot){const G=A3[ch];for(let r=0;r<5;r++)for(let c=0;c<3;c++)if(G[r][c])R(px+c,ey+19.5+r,1,1,'#ffb04a');px+=4;}}
+ /* des toiles d'araignée dans les coins de l'arche */
+ g.strokeStyle='rgba(235,235,250,.55)';g.lineWidth=.6;
+ for(const [ox,sens] of [[x0,1],[x0+w,-1]]){const oy=hy-8;for(let k=0;k<5;k++){const a=-Math.PI/2+sens*(k*Math.PI/10)*(sens>0?1:1);
+   g.beginPath();g.moveTo(ox,oy);g.lineTo(ox+sens*Math.cos(k*Math.PI/10)*16,oy-Math.sin(k*Math.PI/10)*16+16);g.stroke();}
+   for(const q of [5,10,15]){g.beginPath();for(let k=0;k<5;k++){const px2=ox+sens*Math.cos(k*Math.PI/10)*q,py2=oy-Math.sin(k*Math.PI/10)*q+q;k?g.lineTo(px2,py2):g.moveTo(px2,py2);}g.stroke();}}
+ /* le fond de l'arche, violet */
+ g.fillStyle='rgba(110,40,160,.28)';g.fillRect(x0,hy-30,w,30);
+ /* des chauves-souris au-dessus de l'arche */
+ g.fillStyle='rgba(16,8,20,.9)';
+ for(const [bx,by,sc] of [[cx-40,ey-14,1],[cx+38,ey-20,.8],[cx+8,ey-26,.7],[cx-18,ey-30,.6]]){
+   g.save();g.translate(bx,by);g.scale(sc,sc);g.beginPath();g.moveTo(0,0);g.quadraticCurveTo(-4,-4,-10,-2);g.quadraticCurveTo(-7,0,-7,2);g.quadraticCurveTo(-4,0,-3,2);
+   g.quadraticCurveTo(0,1,3,2);g.quadraticCurveTo(4,0,7,2);g.quadraticCurveTo(7,0,10,-2);g.quadraticCurveTo(4,-4,0,0);g.fill();g.restore();}
+}
 }
 for(let y=XP.quaiY;y<MONDE_H;y++){
 const k=(y-XP.quaiY)/(MONDE_H-XP.quaiY);
