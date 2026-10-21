@@ -33,3 +33,19 @@ create table if not exists public.graines_offertes(joueur text not null, cult te
 -- mon_niveau()            : niveau, titre, niveaux réclamés, coffres, paliers (auth.uid())
 -- niveau_reclamer(niveau) : donne la récompense une seule fois, si le niveau est atteint
 -- champ_geste            : prend d'abord une graine offerte avant de faire payer la graine
+
+-- ============================================================
+-- ÉTAPE 4 : LES COFFRES (21/10/2026)
+-- coffre_ouvrir(coffre) : tirage serveur. bois 3 objets, malle 4 (un rare
+-- garanti), bonne 5 (un légendaire garanti), legendaire 5 (deux légendaires).
+-- Raretés par objet : légendaire 0,5 % (+0,1 tous les 10 niveaux), épique
+-- 4,5 % (+0,5), rare 25 %, le reste commun. Quantités × (1 + niveau/10).
+-- Garanties : un épique au plus tard tous les 10 objets, un légendaire au
+-- plus tard tous les 30 coffres (table coffres_pitie). Journal : coffres_ouverts.
+-- coffre_objet(uid, rareté, facteur) donne vraiment l'objet :
+--   commun     : euros 200–800 € ×f · graines offertes (cultures débloquées)
+--   rare       : glace 10 min · paquet Pokédock · engrais · graines rares (lavande, safran)
+--   épique     : bourse 2 000–5 000 € ×f · 3 paquets Pokédock · 3 fragments
+--   légendaire : sac +5 pour toujours · trésor 10 000–20 000 € ×f · 10 fragments
+-- pokedock_paquet_offert(uid) : un paquet sans le payer (réservé au serveur).
+-- ============================================================
