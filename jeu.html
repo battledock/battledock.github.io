@@ -6472,29 +6472,36 @@ const loPrix=()=>{
 let DEJA_CADRE=false;
 const dessinerLoto=()=>{const V=$('lotoVue'),d=ETAT;if(!V||!d)return;const mes=d.mes_grilles||[],D=d.dernier;
 const vu=(()=>{try{return localStorage.getItem('loto_vu')}catch(x){return null}})(), animer=D&&vu!==D.jour;
-V.innerHTML='<div class="bar-t"><canvas width="36" height="36" data-i="trefle"></canvas>LOTO DU PORT'+
-'<small>Tentez votre chance, ça peut tout changer&nbsp;!</small></div>'+
-'<div class="lo-cag"><small>CAGNOTTE À GAGNER</small><b>'+enEuros(d.cagnotte||0)+'</b><span id="loCompte">—</span><i title="Empreinte publiée avant le tirage">Sceau du tirage · '+String(d.empreinte||'').slice(0,16)+'…</i></div>'+
-/* LES JEUX DU LOTO, en vignettes comme le reste de la boutique */
-'<div class="bt-gr" style="margin-top:12px">'+
- [['simple','Jouer une grille','dès 2 €','loto'],['abo','Abonnement · 7 jours','12 €','calendrier']]
- .map(([id,nom,px,ic])=>'<div class="bt-it"><div class="bt-lv"><canvas width="112" height="64" data-lv="'+ic+'"></canvas></div>'+
-   '<b>'+nom+'</b><small>'+({simple:'De 5 à 8 numéros, 1 à 5 chances',
-     abo:'Une grille offerte chaque jour'}[id])+'</small>'+
-   '<button class="bt-px" data-lo="'+id+'"><u></u>'+px+'</button></div>').join('')+'</div>'+
-'<div id="loJeu" style="display:none">'+
-'<div class="bt-sh">TA GRILLE<i>'+mes.length+' / 10 aujourd’hui</i></div>'+
-'<div class="lo-g">'+Array.from({length:25},(_,i)=>'<button data-n="'+(i+1)+'" class="'+(SEL.includes(i+1)?'on':'')+'">'+(i+1)+'</button>').join('')+'</div>'+
-'<div class="lo-cl">NUMÉROS CHANCE</div><div class="lo-ch">'+[1,2,3,4,5].map(n=>'<button data-c="'+n+'" class="'+(CHS.includes(n)?'on':'')+'">'+n+'</button>').join('')+'</div>'+
-'<div class="lo-prix">'+loPrix()+'</div>'+
-'<div class="lo-act"><button class="lo-ok'+(loValide()?'':' pas')+'" id="loOk">'+
-  (loValide()?('VALIDER · '+enEuros(loCout())):'Choisis 5 à 8 numéros et au moins 1 chance')+'</button></div>'+
-(mes.length?'<div class="lo-cl" style="margin-top:14px">TES GRILLES POUR CE TIRAGE</div>'+mes.map(g=>'<div class="lo-mg">'+g.numeros.map(n=>'<span>'+n+'</span>').join('')+
+/* LE LOTO, MENU C : la machine à boules. Les boules du dernier tirage
+   flottent dans la sphère, la cagnotte et le compte à rebours à côté,
+   puis la grille, toujours ouverte. */
+const BCOL=['#ffd04a','#5ae8ff','#ff8ae8','#9aff6a','#ff9a2a'];
+const POS=[[16,20],[56,12],[80,42],[26,62],[60,72],[44,40]];
+const dn=(D&&D.numeros)||[], dch=D&&D.chance;
+const dJour=D?new Date(D.jour+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}):'';
+const dGagne=D&&(D.mes_grilles||[]).some(g=>g.gain>0||g.rang);
+V.innerHTML=
+'<div class="lc-ma"><div class="lc-glo">'+
+  (dn.length?dn.concat(dch?[dch]:[]).map((n,k)=>'<i style="left:'+POS[k][0]+'%;top:'+POS[k][1]+'%;background:'+(k===5?'#ff5a4a':BCOL[k])+';animation-delay:-'+(k*0.7)+'s">'+n+'</i>').join('')
+    :'<i style="left:38%;top:38%;background:#ffd04a">?</i>')+
+'</div><div class="lc-tx"><small>CAGNOTTE</small><b>'+enEuros(d.cagnotte||0)+'</b><div class="lc-cnt" id="loCompte"></div></div></div>'+
+(D?'<div class="lc-res"><span>'+dJour.charAt(0).toUpperCase()+dJour.slice(1)+' :</span>'+dn.map(n=>'<i>'+n+'</i>').join('')+(dch?'<i class="c">'+dch+'</i>':'')+
+  '<span>· '+(D.gagnants_cagnotte?D.gagnants_cagnotte+' gagnant'+(D.gagnants_cagnotte>1?'s':''):'personne')+'</span></div>':'')+
+'<div class="lc-cards"><div class="lc-cd on"><b>Ma grille</b><span>5 à 8 numéros, 1 à 5 chances</span><u>dès 2 €</u></div>'+
+ '<button class="lc-cd" data-lo="abo"><b>Abonnement</b><span>Une grille jouée chaque soir, 7 jours</span><u>12 €</u></button></div>'+
+'<div id="loJeu">'+
+'<div class="lc-lb">TES NUMÉROS · '+SEL.length+' / 8<i>'+mes.length+' / 10 grilles aujourd’hui</i></div>'+
+'<div class="lc-bl">'+Array.from({length:25},(_,i)=>'<button data-n="'+(i+1)+'" class="'+(SEL.includes(i+1)?'on':'')+'">'+(i+1)+'</button>').join('')+'</div>'+
+'<div class="lc-lb">CHANCE<i>1 à 5</i></div><div class="lc-bl c">'+[1,2,3,4,5].map(n=>'<button data-c="'+n+'" class="'+(CHS.includes(n)?'on':'')+'">'+n+'</button>').join('')+'</div>'+
+'<div class="lc-act"><button class="lc-fl" id="loFlash">⚡ Flash</button>'+
+ '<button class="lc-ok'+(loValide()?'':' pas')+'" id="loOk">'+(loValide()?'Valider · '+enEuros(loCout()):'Valider')+
+ '<small>'+(loValide()?loPrix():'5 à 8 numéros et au moins 1 chance')+'</small></button></div>'+
+(mes.length?'<div class="lc-lb">TES GRILLES POUR CE SOIR</div>'+mes.map(g=>'<div class="lc-mg">'+g.numeros.map(n=>'<span>'+n+'</span>').join('')+
  '<span class="c">'+g.chance+'</span>'+
- (g.chance2?'<span class="c">'+g.chance2+'</span>':'<button class="lo-fl" data-fl="'+g.id+'">+ CHANCE · 1 €</button>')+
+ (g.chance2?'<span class="c">'+g.chance2+'</span>':'<button class="lo-fl" data-fl="'+g.id+'">+ chance · 1 €</button>')+
  '</div>').join(''):'')+
-'</div>'+
-'<button class="lo-flash" id="loFlash">⚡ FLASH · 5 NUMÉROS ET 1 CHANCE AU HASARD</button>';
+'<div class="lc-sceau">Sceau du tirage · '+String(d.empreinte||'').slice(0,16)+'…</div>'+
+'</div>';
 if(animer)try{localStorage.setItem('loto_vu',D.jour);}catch(x){}
 /* LES QUATRE VIGNETTES DU LOTO : branchées ici, où elles existent vraiment */
 V.querySelectorAll('canvas[data-lv]').forEach(cv=>{
@@ -6512,11 +6519,7 @@ V.querySelectorAll('[data-lo]').forEach(b=>b.onclick=async()=>{
     else{if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}
       motOuverture('Abonné 7 jours : une grille déposée chaque jour.');loto();}}
 });
-if(OUVRE_JEU){const j3=V.querySelector('#loJeu');
-  if(j3){j3.style.display='';
-    /* on ne recadre qu'à l'ouverture : sinon l'écran glissait à chaque
-       numéro coché et le doigt tombait sur la case du dessous. */
-    if(!DEJA_CADRE){DEJA_CADRE=true;j3.scrollIntoView({behavior:'smooth',block:'start'});}}}
+
 V.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{
   const n=+b.dataset.n;
   if(SEL.includes(n))SEL=SEL.filter(x=>x!==n);
@@ -6542,22 +6545,6 @@ $('loFlash').onclick=()=>{
   SEL.sort((x,y)=>x-y);
   CH=1+Math.floor(Math.random()*5);CHS=[CH];      /* la grille multiple lit CHS */
   OUVRE_JEU=true;vibrer(10);dessinerLoto();};
-{const bo=$('loOk');
- if(bo&&!$('loAbo')){const ab=document.createElement('button');
-  ab.id='loAbo';ab.className=bo.className;ab.style.cssText='margin-top:8px;background:#2f5a3a';
-  ab.innerHTML='S’ABONNER 7 JOURS · 12 €';
-  bo.parentNode.insertBefore(ab,bo.nextSibling);
-  ab.onclick=async()=>{
-    if(SEL.length!==5||!CH){motOuverture('Choisis d’abord 5 numéros et 1 Chance');return;}
-    if((e.euros||0)<1200){motOuverture('Il te manque '+enEuros(1200-(e.euros||0)));return;}
-    ab.disabled=true;ab.textContent='…';
-    const r=await appelRPC('loto_abonner',{p_joueur:e.id,p_numeros:SEL,p_chance:CH});
-    ab.disabled=false;ab.innerHTML='S’ABONNER 7 JOURS · 12 €';
-    if(!r||r.erreur){motOuverture(r&&r.erreur==='deja'?'Tu es déjà abonné cette semaine':
-      (r&&r.erreur==='pas_assez'?'Il te manque de quoi payer':'Grille invalide'));return;}
-    ETAT=r;if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}
-    SEL=[];CH=0;jouer('vente','moment');vibrer([20,40,20]);
-    motOuverture('Abonné ! Ta grille est jouée chaque soir pendant sept jours.');dessinerLoto();};}}
 $('loOk').onclick=async()=>{
   if(!loValide()){motOuverture('Choisis 5 à 8 numéros et au moins un numéro chance.');return;}
   const b=$('loOk');b.disabled=true;b.textContent='…';
@@ -6568,8 +6555,8 @@ $('loOk').onclick=async()=>{
   motOuverture(r.grilles+' grille'+(r.grilles>1?'s':'')+' validée'+(r.grilles>1?'s':'')+' · '+enEuros(r.prix));
   SEL=[];CHS=[];CH=null;vibrer([16,30,16]);loto();};
 const maj=()=>{const el=$('loCompte');if(!el||!ETAT){clearInterval(LOTO_T);return;}const ms=new Date(ETAT.tirage_a)-Date.now();
-if(ms<=0){el.textContent='Tirage en cours…';clearInterval(LOTO_T);setTimeout(loto,20000);return;}const h=Math.floor(ms/36e5),m=Math.floor(ms%36e5/6e4),sc=Math.floor(ms%6e4/1e3);
-el.textContent='Tirage dans '+(h?h+' h ':'')+String(m).padStart(2,'0')+' min '+String(sc).padStart(2,'0')+' s';};
+if(ms<=0){el.innerHTML='<em>Tirage en cours…</em>';clearInterval(LOTO_T);setTimeout(loto,20000);return;}const h=Math.floor(ms/36e5),m=Math.floor(ms%36e5/6e4),sc=Math.floor(ms%6e4/1e3);
+el.innerHTML='<span>'+String(h).padStart(2,'0')+'<small>h</small></span><span>'+String(m).padStart(2,'0')+'<small>min</small></span><span>'+String(sc).padStart(2,'0')+'<small>s</small></span>';};
 clearInterval(LOTO_T);maj();LOTO_T=setInterval(maj,1000);};
 const rendre=()=>{
 /* les pictogrammes du bar, dessinés en pixel */
@@ -6866,6 +6853,36 @@ body.gratte #bar .bt-pied{display:none!important}
 #bar .gt-res{font:400 22px Georgia,serif;color:#fff;min-height:30px;text-align:center}#bar .gt-res span{color:#e8c46a}#bar .gt-res small{display:block;font:italic 13px Georgia,serif;color:#e8dcc8;margin-top:4px}
 #bar .t2 .tresor.rate .dessous{opacity:.45}#bar .t2 .tresor.rate .dessous b{text-decoration:line-through}
 #bar .gt-ok{flex:none;border:0;border-radius:22px;padding:12px 28px;font:700 14px Arial,sans-serif;background:#fff;color:#16336a;visibility:hidden}
+#bar .bdPage>#lotoVue{background:none;color:#f4ecd8;border-radius:0}
+#bar .lc-ma{display:flex;gap:12px;align-items:center;background:#1e2024;border:1px solid #34363c;border-radius:18px;padding:10px 12px}
+#bar .lc-glo{flex:none;width:118px;height:118px;border-radius:50%;position:relative;background:radial-gradient(circle at 35% 28%,rgba(255,255,255,.35),rgba(255,255,255,.04) 45%,rgba(120,180,255,.08));border:2px solid rgba(200,220,255,.35);overflow:hidden}
+#bar .lc-glo i{position:absolute;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font:800 11px 'Baloo 2',system-ui,sans-serif;font-style:normal;color:#1a1a1a;box-shadow:inset -3px -3px 5px rgba(0,0,0,.25),inset 2px 2px 4px rgba(255,255,255,.5);animation:lcFlot 4.2s ease-in-out infinite}
+@keyframes lcFlot{0%,100%{transform:translate(0,0)}25%{transform:translate(5px,-6px)}50%{transform:translate(-3px,4px)}75%{transform:translate(-6px,-3px)}}
+#bar .lc-tx{flex:1;min-width:0}#bar .lc-tx small{font-size:11px;letter-spacing:2px;color:#a8946a;font-weight:800}
+#bar .lc-tx b{display:block;font:800 30px 'Baloo 2',system-ui,sans-serif;line-height:1.05;color:#e8c47a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#bar .lc-cnt{display:flex;gap:6px;margin-top:4px}#bar .lc-cnt span{background:#0e0f12;border:1px solid #3a3c42;border-radius:8px;padding:2px 7px;font-weight:800;font-size:15px;color:#e8c47a;min-width:38px;text-align:center}
+#bar .lc-cnt span small{display:block;font-size:9px;color:#8a8478;margin-top:-4px}#bar .lc-cnt em{font-size:13px;color:#e8c47a}
+#bar .lc-res{margin-top:10px;background:#1a1b1e;border:1px dashed #3a3c42;border-radius:14px;padding:8px 10px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-weight:800;font-size:12px;color:#a8a090}
+#bar .lc-res i{font-style:normal;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#e8c47a;color:#1c1e22;font-size:12px}#bar .lc-res i.c{background:#d84a3a;color:#fff}
+#bar .lc-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+#bar .lc-cd{border-radius:16px;padding:10px;text-align:left;border:1px solid #34363c;background:#1e2024;color:#f4ecd8;font-family:'Baloo 2',system-ui,sans-serif}
+#bar .lc-cd.on{border-color:#e8c47a;background:linear-gradient(160deg,#2a2416,#1e2024)}
+#bar .lc-cd b{display:block;font-size:15px;line-height:1.1}#bar .lc-cd span{display:block;font-size:11.5px;color:#a8a090;font-weight:700;line-height:1.2;margin:2px 0 6px}#bar .lc-cd u{text-decoration:none;font-weight:800;color:#e8c47a;font-size:14px}
+#bar .lc-lb{display:flex;justify-content:space-between;font-size:11px;font-weight:800;letter-spacing:2px;color:#a8946a;margin:12px 2px 6px}#bar .lc-lb i{font-style:normal;letter-spacing:0;color:#8a8478}
+#bar .lc-bl{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+#bar .lc-bl button{aspect-ratio:1.4;border-radius:10px;display:grid;place-items:center;font:800 16px 'Baloo 2',system-ui,sans-serif;background:#1e2024;border:1px solid #34363c;color:#c8bca0;padding:0}
+#bar .lc-bl button.on{background:#e8c47a;color:#1c1e22;border-color:#e8c47a}
+#bar .lc-bl.c button{aspect-ratio:1.6}#bar .lc-bl.c button.on{background:#d84a3a;border-color:#d84a3a;color:#fff}
+#bar .lc-act{display:flex;gap:8px;margin-top:12px}
+#bar .lc-fl{flex:none;border:1px solid #5a4a8a;background:#241e3a;color:#d8c8ff;border-radius:14px;padding:10px 14px;font:800 14px 'Baloo 2',system-ui,sans-serif}
+#bar .lc-ok{flex:1;border:0;border-radius:14px;padding:8px;font:800 16px 'Baloo 2',system-ui,sans-serif;color:#1c1e22;background:linear-gradient(#f0d48a,#c9a24a);box-shadow:0 4px 0 #8a6a2a;line-height:1.1}
+#bar .lc-ok small{display:block;font-size:11px;font-weight:700;opacity:.7}#bar .lc-ok.pas{background:#2e3036;color:#8a8478;box-shadow:none}
+#bar .lc-ok:active{transform:translateY(3px);box-shadow:0 1px 0 #8a6a2a}
+#bar .lc-mg{display:flex;align-items:center;gap:5px;flex-wrap:wrap;background:#1e2024;border:1px solid #34363c;border-radius:12px;padding:7px 8px;margin-bottom:6px}
+#bar .lc-mg span{width:27px;height:27px;border-radius:50%;background:#2e3036;color:#f4ecd8;display:grid;place-items:center;font:800 12px 'Baloo 2',system-ui,sans-serif}#bar .lc-mg span.c{background:#d84a3a;color:#fff}
+#bar .lc-mg .lo-fl{margin-left:auto;border:1px solid #4a8a6a;border-radius:9px;background:#1c3a2c;color:#9ae8b8;padding:5px 9px;font:800 12px 'Baloo 2',system-ui,sans-serif}
+#bar .lc-sceau{margin-top:12px;text-align:center;font:600 10px 'Courier New',monospace;color:#6a6458;overflow-wrap:anywhere}
+@media(min-width:720px){#bar #lotoVue{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto 1fr;gap:0 18px;align-items:start}#bar #lotoVue>#loJeu{grid-column:2;grid-row:1/span 3}#bar #lotoVue>#loJeu>.lc-lb:first-child{margin-top:0}}
 #bar.bdm{background:#141518!important;color:#f4ecd8;font-family:'Baloo 2',system-ui,sans-serif;background-image:none!important}
 #bar .bdH{flex:none;padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 10px;background:repeating-linear-gradient(90deg,#26282c 0 3px,#1c1e22 3px 4px,#2c2e33 4px 6px);border-top:2px solid #d8b468}
 #bar .bdL1{display:flex;align-items:center;gap:8px}
