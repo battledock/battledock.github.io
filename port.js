@@ -1854,6 +1854,58 @@ function cfCornet(g,R,x,y,s,boules){/* un cornet : biscuit + boules */
  g.strokeStyle='#a87030';g.lineWidth=.5*s;for(let i=-2;i<=2;i++){g.beginPath();g.moveTo(x+i*1.6*s-2*s,y);g.lineTo(x+i*1.6*s+2*s,y+6*s);g.stroke();}
  boules.forEach((c,i)=>{g.fillStyle=c;g.beginPath();g.arc(x+(i===1?2*s:i===2?-2*s:0),y-(i===0?2.5*s:6*s),4.2*s,0,7);g.fill();g.fillStyle='rgba(255,255,255,.4)';g.beginPath();g.arc(x+(i===1?2*s:i===2?-2*s:0)-1.4*s,y-(i===0?3.6*s:7*s),1.2*s,0,7);g.fill();});}
 
+
+/* ===== LE KARTING DU QUAI : un garage vert profond, laiton, damier, pneus ===== */
+function graverLeKarting(){return devanture(8,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+ const V='#17211a',VC='#2f4433',OR='#d8bf6a';
+ R(x0-2,yR-4,BL+4,rez+4,V);R(x0-2,yR-4,BL+4,1.5,OR);R(x0-2,sol-6,BL+4,6,'#0e1510');R(x0-2,sol-6,BL+4,1,VC);
+ /* le damier sous l'enseigne */
+ for(let i=0;i<BL+4;i+=3)for(let j=0;j<2;j++)R(x0-2+i,yR-4+1.5+j*1.5,1.5,1.5,((i/3|0)+j)%2?'#f4f4f0':'#1a1a1e');
+ /* la grande porte de garage ouverte : un kart orange dedans */
+ const px=cx-30,pw=60,py=yR+6,ph=rez-12;R(px-2,py-2,pw+4,ph+2,OR);R(px,py,pw,ph,nuit?'#3a2e1e':'#20201e');
+ for(let k=0;k<4;k++)R(px,py+k*2,pw,1,'#3a3a36');                       /* le rideau relevé */
+ R(px+4,sol-14,pw-8,1,'rgba(255,255,255,.08)');
+ const kx=cx-13,ky=sol-13;R(kx,ky+4,26,5,'#e8761e');R(kx+2,ky+3,22,1,'#ff9a44');R(kx-2,ky+7,6,5,'#141418');R(kx+22,ky+7,6,5,'#141418');R(kx+8,ky,10,4,'#24242a');
+ g.fillStyle='#ffd04a';g.beginPath();g.arc(kx+13,ky-1,3.2,0,7);g.fill();R(kx+11,ky-2,4,1.2,'#1e2a38');R(kx+24,ky+1,1,7,'#8a8e96');
+ /* les piles de pneus de chaque côté */
+ for(const bx of [x0+8,x0+BL-22])for(let k=0;k<4;k++){R(bx,sol-8-k*5,14,4.4,'#141418');R(bx+1,sol-8-k*5,12,1,'#4a4a52');R(bx+5,sol-7-k*5,4,2,k%2?'#c8322a':'#f2eee4');}
+ /* les vitrines : les coupes et les casques */
+ [[x0+4,26],[x0+BL-30,26]].forEach(([x,w],k)=>{cfVitre(g,R,x,yR+3,w,13,nuit,'#d8e4e0');
+   if(k===0){g.fillStyle=OR;for(let i=0;i<3;i++){R(x+4+i*7,yR+10,4,4,OR);R(x+5+i*7,yR+14,2,2,OR);}}
+   else{for(let i=0;i<3;i++){g.fillStyle=['#e82a2a','#2a6ad8','#2ac84a'][i];g.beginPath();g.arc(x+6+i*7,yR+11,2.8,0,7);g.fill();R(x+4.4+i*7,yR+10,3,1,'#1e2a38');}}});
+ /* l'enseigne */
+ const ey=yR-22;R(x0-6,ey,BL+12,16,V);R(x0-6,ey,BL+12,1.5,OR);R(x0-6,ey+14.5,BL+12,1.5,OR);
+ for(const xx of [x0-3,x0+BL-5])for(let i=0;i<4;i++)for(let j=0;j<4;j++)R(xx+i*2,ey+4+j*2,2,2,(i+j)%2?'#f4f4f0':'#1a1a1e');
+ g.font='italic 900 9px Georgia';g.textAlign='center';g.fillStyle=OR;g.fillText('Karting du Quai',cx,ey+11,BL-30);
+ g.font='700 3.6px Arial';g.fillStyle='#93a68c';g.fillText('GRAND PRIX · TROIS TOURS',cx,yR-1.2);g.textAlign='left';
+ /* le drapeau à damier qui flotte sur le toit */
+ R(x0+BL-12,ey-16,1,16,'#c8c8c0');for(let i=0;i<5;i++)for(let j=0;j<3;j++)R(x0+BL-11+i*2,ey-16+j*2+Math.sin(i)*.6,2,2,(i+j)%2?'#f4f4f0':'#1a1a1e');
+ cfLueur(g,cx,sol,nuit,'255,200,120');});}
+/* ===== LA LOCATION DE KAYAKS : turquoise et blanc, kayaks au râtelier ===== */
+function graverLesKayaks(){return devanture(2,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
+ const T='#1e9aa6',TC='#6ad0c4',TS='#0e5a72',BL2='#f4f2e8';
+ R(x0-2,yR-4,BL+4,rez+4,BL2);R(x0-2,yR-4,BL+4,1.5,T);R(x0-2,sol-6,BL+4,6,TS);R(x0-2,sol-6,BL+4,1,T);
+ for(let i=0;i<BL+4;i+=8)R(x0-2+i,yR-2,4,rez-4,'rgba(30,154,166,.08)');
+ /* la porte vitrée */
+ R(cx-9,yR+4,18,rez-10,T);cfVitre(g,R,cx-8,yR+5,16,rez-12,nuit,'#d8f0f0');R(cx-.5,yR+5,1,rez-12,T);
+ /* le râtelier : trois kayaks posés de chant de chaque côté */
+ const kay=(x,y,c,c2)=>{g.fillStyle=c;g.beginPath();g.ellipse(x,y,22,2.6,0,0,7);g.fill();g.fillStyle=c2;g.fillRect(x-20,y-1.4,40,.8);g.fillStyle='#1a1a1e';g.beginPath();g.ellipse(x+2,y-.6,4,1.2,0,0,7);g.fill();};
+ for(const [bx,s] of [[x0+26,1],[x0+BL-26,-1]]){R(bx-20,sol-30,1.5,24,'#8a6a4a');R(bx+18,sol-30,1.5,24,'#8a6a4a');
+   kay(bx,sol-26,'#e8761e','#ffa050');kay(bx,sol-19,'#2a6ad8','#5a8af0');kay(bx,sol-12,'#2ac84a','#6ae07a');}
+ /* pagaies croisées et gilets */
+ g.strokeStyle='#2a2b30';g.lineWidth=1;g.beginPath();g.moveTo(cx-20,yR+4);g.lineTo(cx-12,yR+20);g.moveTo(cx+20,yR+4);g.lineTo(cx+12,yR+20);g.stroke();
+ R(cx-22,yR+2,4,5,BL2);R(cx+18,yR+2,4,5,BL2);
+ R(x0+52,yR+4,7,8,'#ffd21a');R(x0+54,yR+4,3,2,'#e8761e');R(x0+BL-59,yR+4,7,8,'#e8344a');R(x0+BL-57,yR+4,3,2,'#ffd21a');
+ /* le store turquoise */
+ cfStore(g,R,x0,BL,yR-10,T,BL2,TS);
+ /* l'enseigne en vague */
+ const ey=yR-26;R(x0-6,ey,BL+12,15,T);R(x0-4,ey+2,BL+8,11,'#f4fbfa');
+ for(let i=0;i<BL+8;i+=6){g.fillStyle=T;g.beginPath();g.arc(x0-4+i+3,ey+13,3,0,Math.PI);g.fill();}
+ g.font='italic 900 9px Georgia';g.textAlign='center';g.fillStyle=TS;g.fillText('Kayaks des Calanques',cx,ey+10,BL-14);g.textAlign='left';
+ /* une bouée orange sur le toit */
+ g.fillStyle='#ff6a1a';g.beginPath();g.arc(x0+10,ey-5,5,0,7);g.fill();g.fillStyle='#f4f2e8';g.beginPath();g.arc(x0+10,ey-5,2.4,0,7);g.fill();
+ cfLueur(g,cx,sol,nuit,'150,230,230');});}
+
 /* ===== A · LE GLACIER DU VIEUX-PORT : rose et menthe, gros cornet, bacs de glace ===== */
 function graverLeGlacier(){return devanture(1,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
  const RO='#f4a6c0',RC='#ffd0e0',MT='#8ad8c0',MC='#c8f4e4',BR='#6a3a3a';
@@ -2416,6 +2468,8 @@ if(k===3){XCAL['x_bar0']=graverLeBarModerne();CALQUES_DECO['x_bar']=XCAL['x_bar0
 continue;}   /* le bar-tabac PMU (sans terrasse) */
 if(k===5){XCAL['x_peigne0']=graverLePeigne();CALQUES_DECO['x_peigne']=XCAL['x_peigne0'];P('x_peigne',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'salon'});continue;}   /* le salon de coiffure */
 if(k===7){XCAL['x_crousti0']=graverCroustiPort();CALQUES_DECO['x_crousti']=XCAL['x_crousti0'];P('x_crousti',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'crousti'});continue;}   /* le fast-food du quai */
+if(k===8){XCAL['x_karting0']=graverLeKarting();CALQUES_DECO['x_karting']=XCAL['x_karting0'];P('x_karting',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'karting'});continue;}   /* le karting du quai */
+if(k===1){XCAL['x_kayak0']=graverLesKayaks();CALQUES_DECO['x_kayak']=XCAL['x_kayak0'];P('x_kayak',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'kayak'});continue;}   /* la location de kayaks */
 P('x_maison',XP.rangX0+k*140,XP.maisonsY,{v:k,col:[70,24]});
 }
 /* LES DEUX PLATANES DU QUAI, chacun avec son banc. Celui de l'ouest avait
@@ -2424,7 +2478,8 @@ P('x_maison',XP.rangX0+k*140,XP.maisonsY,{v:k,col:[70,24]});
    exact de celui de l'est autour de l'axe de la rangee (880) — donc sur le
    quai, devant les facades, et non sur l'esplanade qui reste nue des deux
    cotes. */
-[390,1370].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+30,XP.maisonsY+72,{col:[23,7]});});
+/* LES PLATANES S'ECARTENT D'UN DEMI-IMMEUBLE : ils cachaient les vitrines du kayak (k=1) et du karting (k=8). Ils poussent maintenant entre deux facades. */
+[316,1444].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+(k?-30:30),XP.maisonsY+72,{col:[23,7]});});
 /* LA STATION DE TOKYO, sous le Pecheur Heureux (facade k=2) : c'est la que le train part. */
 P('x_metroM',XP.rangX0+2*140,XP.maisonsY+88,{col:[44,16],bati:true,demi:50,ouvre:'tokyo'});
 /* LE TABLEAU DU PORT, DEVANT LE CENTRE DES ESCALIERS. Il etait decale de
