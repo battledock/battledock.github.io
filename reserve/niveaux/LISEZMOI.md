@@ -33,3 +33,8 @@ Après 30 : prestige (étoiles).
 - Commun : 200–800 €, graines, appâts, bois. Rare : glace, paquet Pokédock, graines rares, engrais. Épique : pièce de tenue, couleur de kart, 3 fragments. Légendaire : objet rare au choix, 10 fragments.
 - Fragments : doubles recyclés ; 10 fragments = un légendaire au choix (boutique). Garantie : un légendaire au plus tard tous les 30 coffres.
 - Tirage côté serveur uniquement ; ouverture animée comme les paquets Pokédock.
+
+### Coffres : choix validé (21/10/2026)
+- Écran « Mes coffres » (c1.png) + ouverture plein écran (c2.png), style Chez Madeleine en bleu mer.
+- Révélation : **un par un (B, c4.png) pour la Malle du marin et le Coffre de la Bonne Mère** ; **tout d'un coup (A, c3.png) pour la Caisse en bois**.
+- Coffres en pixel art : coffres.js ; styles : cof.css ; capture : cf_t.js.
