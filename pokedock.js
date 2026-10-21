@@ -2180,7 +2180,8 @@ function rayon(hote,ctx){
         '<span>'+(hw?'50 monstres neufs. La Citrouille d’Or : 1 sur 250.':'6 communes et 4 tirages. Les secrètes : 1 sur 250.')+'</span>'+
         (hw?'<em class="pkb-fin">'+(finiHW?'🎃 Plus en vente depuis le 2 novembre':'🎃 En vente jusqu’au 2 novembre seulement')+'</em>':'')+
         '<button id="pkdAch" class="pkb-gold'+(hw?' hw':'')+'"'+((occupe||(hw&&finiHW))?' disabled':'')+'>'+
-          (occupe?'Dédé cherche un paquet…':(hw?(finiHW?'Paquets épuisés':'Ouvrir · 8,00 €'):'Ouvrir · 6,00 €'))+'</button></div></div>'+
+          (occupe?'Dédé cherche un paquet…':(hw?(finiHW?'Paquets épuisés':'Ouvrir · 8,00 €'):(col&&col.offerts>0?'🎁 Ouvrir · offert ('+col.offerts+')':'Ouvrir · 6,00 €')))+'</button>'+
+          (!hw&&col&&col.offerts>0?'<em class="pkb-fin" style="color:#ffd970">🎁 '+col.offerts+' paquet'+(col.offerts>1?'s':'')+' gagné'+(col.offerts>1?'s':'')+' avec tes niveaux : gratuit'+(col.offerts>1?'s':'')+'</em>':'')+'</div></div>'+
       '<div class="pkd-msg" id="pkdMsg"></div>'+
       (der.length?'<h4 class="pkb-h">TES DERNIÈRES CARTES</h4><div class="pkb-rec">'+
         der.map(k=>'<img alt="" data-z="'+k+'" src="'+faceURL(k)+'">').join('')+'</div>':'')+

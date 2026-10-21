@@ -74,3 +74,13 @@ create table if not exists public.graines_offertes(joueur text not null, cult te
 -- Restent pour plus tard : vitrines, ruche, cabanon, recettes, emote, circuit
 -- Le Panier, pêche de nuit / au large, bateau, tenue, VIP, aquarium, étoile, statue.
 -- ============================================================
+
+-- ============================================================
+-- PAQUETS POKÉDOCK GAGNÉS ET GRAINES OFFERTES VISIBLES (21/10/2026)
+-- pokedock_paquet_offert(uid) ajoute un paquet fermé (inventaire_niveau
+-- 'pokedock_offert') ; pokedock_ouvrir le prend avant de faire payer (hors
+-- limite de 30/jour) et renvoie 'offerts' ; pokedock_ma_collection aussi.
+-- Les 3 paquets d'Eliasse ouverts tout seuls ont été repris (cartes retirées,
+-- paquets 232-234 renommés 'annule:…') et rendus fermés.
+-- champ_etat renvoie 'offertes' (graines offertes par culture).
+-- ============================================================
