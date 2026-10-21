@@ -84,3 +84,14 @@ create table if not exists public.graines_offertes(joueur text not null, cult te
 -- paquets 232-234 renommés 'annule:…') et rendus fermés.
 -- champ_etat renvoie 'offertes' (graines offertes par culture).
 -- ============================================================
+
+-- ============================================================
+-- ÉTAPE 6 (2e partie, début) : LE RUCHER ET LE CABANON (21/10/2026)
+-- ruche_joueur · ruche_etat() / ruche_recolter() : 3 ruches, 3 pots de miel
+--   toutes les 4 h (6 au plus), +3 pts « fruits » par pot ; miel 15 € chez
+--   Madeleine (prix_ferme). Ouvert si inventaire 'deblocage:ruche' (niveau 8).
+-- cabanon_quai · cabanon_quai_etat() / cabanon_quai_ranger(type, nb, 'poser'|'prendre') :
+--   60 places à l'abri, sur le quai devant le glacier. Ouvert avec
+--   'deblocage:cabanon' (niveau 10). (L'ancien cabanon du Vallon, table
+--   cabanon / cabanon_etat(p_joueur), n'est pas touché.)
+-- ============================================================
