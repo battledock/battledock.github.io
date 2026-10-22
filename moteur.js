@@ -23543,7 +23543,9 @@ text-shadow:0 2px 8px rgba(0,0,0,.85);white-space:nowrap;overflow:hidden;text-ov
 .clA .scPod .pn span{display:block;font:800 9.5px 'Baloo 2',sans-serif;text-shadow:0 2px 6px rgba(0,0,0,.85)}
 .clA .scPod .pn.p0{left:50%}.clA .scPod .pn.p0 b{font-size:17px}
 .clA .scPod .pn.p1{left:20%}.clA .scPod .pn.p2{left:80%}
-.clA .scPod .pn.moi b{color:#ffd84a}`;
+.clA .scPod .pn.moi b{color:#ffd84a}
+.clA .eto{color:#f0c13a;margin-right:3px;text-shadow:0 1px 0 rgba(120,80,0,.35)}
+.clA .scPod .pn .eto{text-shadow:0 2px 6px rgba(0,0,0,.8)}`;
 function clsNiv(xp){let n=1,d=0;while(n<200&&d+nivCout(n)<=xp){d+=nivCout(n);n++;}return {n,dans:xp-d,pour:nivCout(n)};}
 function clsEnLigne(j){if(j.id===e.id)return true;try{if(EN_LIGNE.some(p=>p.id===j.id))return true;}catch(x){}return clsVu(j.maj)==='en ligne';}
 function clsStatut(j){if(clsEnLigne(j))return '<span class="on"></span><span class="vuOn">en ligne</span>';const v=clsVu(j.maj);return v?echapperT(v):'';}
@@ -23571,7 +23573,7 @@ CLS_POD={L:L.slice(0,3),v:v,sous:sous};
 requestAnimationFrame(()=>{try{clsPodiumPeindre();}catch(x){}});
 const M=['#f0c13a','#c3ccd4','#d08a4a'];
 const nom=(i)=>{const j=L[i];if(!j)return '';
- return '<div class="pn p'+i+(j.id===e.id?' moi':'')+'"><b>'+echapperT(j.pseudo)+'</b>'+
+ return '<div class="pn p'+i+(j.id===e.id?' moi':'')+'"><b>'+clsEtoile(j)+echapperT(j.pseudo)+'</b>'+
  '<span style="color:'+M[i]+'">'+v(j)+' · '+sous(j)+'</span></div>';};
 return '<div class="scPod"><canvas id="clsPod"></canvas>'+nom(1)+nom(0)+nom(2)+'</div>';}
 function clsPodiumPeindre(){
@@ -23646,7 +23648,10 @@ g.fillStyle=lg;g.fillRect(0,0,W,H);
 let CLS_POD_T=0;
 addEventListener('resize',()=>{clearTimeout(CLS_POD_T);
  CLS_POD_T=setTimeout(()=>{try{clsPodiumPeindre();}catch(x){}},140);});
-function clsLigne(j,rang,sous,jauge,droite,petit){return '<div class="l'+(j.id===e.id?' moi':'')+'"><span class="rg">'+rang+'</span><span class="po"><img src="'+clsTete(j)+'" alt=""></span><span class="tx"><b>'+echapperT(j.pseudo)+(j.id===e.id?' · toi':'')+'</b><small>'+sous+(clsStatut(j)?' · '+clsStatut(j):'')+'</small>'+(jauge!=null?'<div class="jg"><i style="width:'+Math.max(0,Math.min(100,jauge))+'%"></i></div>':'')+'</span><span class="xp">'+droite+'<small>'+petit+'</small></span></div>';}
+/* L'ÉTOILE DU NIVEAU 29 : elle se porte devant le nom, partout où le
+   nom s'affiche au registre. Le serveur la donne avec le classement. */
+const clsEtoile=(j)=>j&&j.etoile?'<span class="eto">\u2605</span>':'';
+function clsLigne(j,rang,sous,jauge,droite,petit){return '<div class="l'+(j.id===e.id?' moi':'')+'"><span class="rg">'+rang+'</span><span class="po"><img src="'+clsTete(j)+'" alt=""></span><span class="tx"><b>'+clsEtoile(j)+echapperT(j.pseudo)+(j.id===e.id?' · toi':'')+'</b><small>'+sous+(clsStatut(j)?' · '+clsStatut(j):'')+'</small>'+(jauge!=null?'<div class="jg"><i style="width:'+Math.max(0,Math.min(100,jauge))+'%"></i></div>':'')+'</span><span class="xp">'+droite+'<small>'+petit+'</small></span></div>';}
 async function clsNiveaux(){
  clsPrepA();const mN=NIV&&NIV.niveau?NIV.niveau.niveau:null, badge=mN?'★ Toi : niv. '+mN:'';
  clsCadreA('recolte','<div class="nvVide">On ouvre le registre…</div>',badge);

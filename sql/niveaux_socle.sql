@@ -149,3 +149,38 @@ begin
   if neuf = src then raise exception 'motif introuvable'; end if;
   execute neuf;
 end $d$;
+
+-- ============================================================
+-- 2026-10-22 · ÉTAPE 6, SUITE : LES RÉCOMPENSES QUI DORMAIENT
+-- ============================================================
+-- Deux paliers rendaient « BIENTÔT » : le client lit simplement le
+-- drapeau actif que renvoie niveau_reclamer.
+
+-- PALIER 18 · LA PÊCHE DE NUIT
+-- Elle existait déjà pour tout le monde — pecher_touche a ses espèces de
+-- nuit depuis toujours. La verrouiller aurait retiré quelque chose. Le
+-- palier donne donc un avantage : la nuit, ce qui est rare mord bien
+-- plus. L'ancienne clé « deblocage:peche_nuit » est acceptée, pour ceux
+-- qui ont réclamé le palier avant ce changement.
+update niveaux_paliers
+set nom = 'La pêche de nuit',
+    recompenses = '[{"t":"bonus","k":"peche_nuit","n":1,"nom":"La nuit, le rare mord bien plus"}]'::jsonb
+where niveau = 18;
+
+-- dans pecher_touche, juste avant la glace au chocolat :
+--   if h = 'nuit' and (niv_bonus(p_joueur,'bonus:peche_nuit')
+--                    + niv_bonus(p_joueur,'deblocage:peche_nuit')) > 0 then
+--     update _esp set poids = poids*2.2 where poids < 3 and id not in (<les détritus>);
+--   end if;
+
+-- PALIER 29 · L'ÉTOILE DORÉE
+update niveaux_paliers
+set recompenses = '[{"t":"etoile","nom":"Étoile dorée à côté de ton nom"}]'::jsonb
+where niveau = 29;
+
+-- niveau_reclamer : 'etoile' rejoint les types actifs
+--   in ('bonus','kart','cadre','glace','parcelles','emote','etoile')
+
+-- et le classement l'expose, pour que les autres la voient :
+--   exists(select 1 from inventaire_niveau iv
+--          where iv.joueur=j.id and iv.cle='etoile:' and iv.n>0) etoile
