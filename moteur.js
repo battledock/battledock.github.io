@@ -8096,9 +8096,11 @@ R(-4,-5,9,5,V.tronc);R(-4,-5,9,2,V.troncC);R(-2,-4,5,1,'#a5764a');R(-4,-2,9,2,V.
    fin de la ville — une derniere facade, une esplanade de platanes — et
    surtout les collines boisees qui apparaissent sur l'horizon : on marche
    vers quelque chose qu'on voit, pas vers un mur. */
-const MONDE_L=CARTE==='large'?760:(CARTE==='foret'?1500:(CARTE==='tokyo'?900:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:(FERME_VIERGE?1800:1200)):1760))));   /* la ferme : 1200 x 1600 */
-const MONDE_H=CARTE==='large'?1180:(CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?(FERME_VIERGE?1800:1600):(CARTE==='tokyo'?2560:600)));   /* Tokyo : la ville en haut, le grand circuit dessous */   /* la ferme : 1200 x 1600 */
+const MONDE_L=CARTE==='large'?2400:(CARTE==='foret'?1500:(CARTE==='tokyo'?900:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:(FERME_VIERGE?1800:1200)):1760))));   /* la ferme : 1200 x 1600 */
+const MONDE_H=CARTE==='large'?2400:(CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?(FERME_VIERGE?1800:1600):(CARTE==='tokyo'?2560:600)));   /* Tokyo : la ville en haut, le grand circuit dessous */   /* la ferme : 1200 x 1600 */
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
+/* AU LARGE, LA CAMÉRA RECULE : le bateau fait à lui seul 252 points de
+   long, et naviguer sans voir devant soi n'a aucun sens. */
 const VUE_L=196, VUE_H=400;       /* la vue de référence, en points de jeu */
 const ZOOM=2;                     /* ne sert plus que de repli */
 let SOL=null, SOL_FIN=null;
@@ -14003,6 +14005,10 @@ if(!ECO)e=Math.max(1.2,Math.round(e*ZOOM_PALIER*8)/8);
 /* AU VOLANT À TOKYO, LA CAMÉRA RECULE : la voiture va vite, il faut voir devant */
 const dpr=ECO?1:Math.max(1,Math.min(3,window.devicePixelRatio||1));
 ECH=Math.max(1,Math.round(e*dpr));
+/* AU LARGE, LA CAMÉRA RECULE : le bateau fait 252 points de long et l'on
+   navigue — il faut voir devant soi. Un point de jeu vaut un point
+   d'écran, on montre donc toute la largeur du téléphone. */
+if(CARTE==='large')ECH=Math.max(1,Math.min(ECH,Math.round(dpr)));
 e=ECH/dpr;ECH_CSS=e;
 VW=Math.ceil(w/e)+1;VH=Math.ceil(h/e)+1;
 cv.width=Math.round(VW*ECH);cv.height=Math.round(VH*ECH);
@@ -14436,6 +14442,7 @@ if(CARTE==='foret'){
   }
 }
 if(CARTE==='extramar'){try{dessinerLesSauts(ctx,camX,camY);}catch(x){}}   /* les poissons du bassin, sous les barques */
+if(CARTE==='large'){try{dessinerLeBateau(ctx,camX,camY);}catch(x){}}      /* la coque, sous le marin */
 dessinerDecor(ctx,camX,camY,VW,VH,acteurs);
 /* LES LUCIOLES FLOTTENT : elles passent par-dessus le décor, jamais
    derrière un tronc — elles sont entre les arbres et nous. */
@@ -17455,6 +17462,9 @@ joueur.dirVue=ORDRE8[(a+(d<=4?1:-1)+8)%8];
 function majJoueur(dt){
 /* L'ESSAI D'UNE VOITURE À TOKYO : le joystick conduit, le piéton attend */
 if(CARTE==='tokyo'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif){TKM.majEssai(dt,joyX,joyY);vx=vy=0;joueur.marche=false;return;}
+/* À LA BARRE : le joystick tient le cap, le marin ne marche pas */
+if(CARTE==='large'&&BARRE){majNavigation(dt,joyX,joyY);vx=vy=0;joueur.marche=false;return;}
+if(CARTE==='large')majDerive(dt);
 if(window.FP_GEL&&Date.now()<window.FP_GEL){vx=0;vy=0;joueur.marche=false;tournerEnDouceur(dt);return;}   /* on arrose : on reste planté jusqu'à la fin */
 tournerEnDouceur(dt);
 const n=Math.hypot(joyX,joyY);
@@ -20646,98 +20656,224 @@ let SERIE_VUE=0;
 let PECHE=null, TIENT_PECHE=false, CARNET_PECHE=null;
 let DERNIERE_PECHE=null;
 /* ======================= LE LARGE =======================
-   Une carte minuscule : le pont de ton bateau, et la mer tout autour.
-   On n'y marche que sur le pont ; on y pêche par-dessus bord, et le
-   coin choisi dans la rade décide de ce qui mord. */
+   Une mer ouverte, et ton bateau dessus. On prend la barre, on met le
+   cap, on lâche la barre pour pêcher. Quatre coins y vivent — la digue
+   du large, le Frioul, les calanques et le sec du Planier — et c'est
+   celui où l'on mouille qui décide de ce qui mord. */
+const COINS_L={
+  digue:    {nom:'La digue du large', x:1860,y:2010,r:330,dep:[1860,1900]},
+  frioul:   {nom:'Les îles du Frioul',x:560, y:660, r:360,dep:[560, 1000]},
+  calanques:{nom:'Les calanques',     x:2080,y:1060,r:340,dep:[1850,1060]},
+  planier:  {nom:'Le sec du Planier', x:420, y:1860,r:320,dep:[580, 1900]}};
+const COIN_NOM={digue:'La digue du large',frioul:'Les îles du Frioul',
+  calanques:'Les calanques',planier:'Le sec du Planier'};
 const COIN_LARGE=(()=>{try{const c=new URLSearchParams(location.search).get('coin');
-  return ['digue','frioul','calanques','planier'].includes(c)?c:'digue';}catch(x){return 'digue';}})();
-const COIN_NOM={digue:'La digue du large',frioul:'Les îles du Frioul',calanques:'Les calanques',planier:'Le sec du Planier'};
-const PONT_L={x:380,y:740,L:252,HW:46};
-const demiPont=(y)=>{const t=(y-(PONT_L.y-PONT_L.L/2))/PONT_L.L;
-  if(t<0||t>1)return -1;return Math.max(.9,PONT_L.HW*Math.pow(Math.sin(Math.pow(t,.80)*Math.PI),.95));};
-function bloqueLarge(x,y){const w=demiPont(y);return !(w>6&&Math.abs(x-PONT_L.x)<w-9);}
-function construireSolLarge(){
-  const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
-  const s=c.getContext('2d');s.imageSmoothingEnabled=false;
-  const R=(x,y,w,h,col)=>{s.fillStyle=col;s.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
-  const hs2=(x,y,g)=>{let n=Math.sin(x*12.9898+y*78.233+g*37.719)*43758.5453;return n-Math.floor(n);};
-  /* LA MER, écrite une fois en petit puis étirée : 760x820 fillRect de 1x1
-     gèlent le téléphone, la demi-résolution ne se voit pas sur de l'eau. */
-  const LW=Math.ceil(MONDE_L/2),LH=Math.ceil(MONDE_H/2);
-  const pt=document.createElement('canvas');pt.width=LW;pt.height=LH;
-  const pg=pt.getContext('2d');const img=pg.createImageData(LW,LH),px=new Uint32Array(img.data.buffer);
-  const ent=(h)=>{const n=parseInt(h.slice(1),16);return (255<<24)|((n&255)<<16)|(((n>>8)&255)<<8)|((n>>16)&255);};
-  const PAL={digue:['#12414f','#176073','#1d7a8e','#2794a6'],frioul:['#0f5068','#16708c','#1d8aa6','#27a6bc'],
-    calanques:['#0d5a6e','#149086','#1aa89a','#24c2ac'],planier:['#082c48','#0f4466','#165c86','#1f74a4']}[COIN_LARGE];
-  const EAU=PAL.map(ent), MOU=ent(COIN_LARGE==='planier'?'#bfe0e4':'#d8f2ee');
-  for(let y=0;y<LH;y++){const l=y*LW;
-    for(let x=0;x<LW;x++){
-      let v=Math.sin(y*.21+Math.sin(x*.05)*2.4)*.4+hs2(x,y,3)*.4+hs2(x>>1,y>>1,7)*.3;
-      px[l+x]=v>.86?MOU:EAU[Math.min(3,Math.max(0,Math.floor(v*4)))];}}
-  pg.putImageData(img,0,0);s.drawImage(pt,0,0,LW,LH,0,0,LW*2,LH*2);
-  /* LE COIN : ce qu'on a sous les yeux depuis le pont — l'écran d'un
-     téléphone ne montre qu'une quarantaine de pas autour du bateau, le
-     décor vient donc jusqu'au bord de la coque, pas à l'horizon. */
-  const roche=(x,y,rx,ry,g0)=>{for(let j=-ry;j<=ry;j++){const w=rx*Math.sqrt(Math.max(0,1-(j/ry)*(j/ry)))*(1+Math.sin(j*.3+g0)*.14);
-      for(let i=-w;i<=w;i++){const v=hs2(x+i,y+j,g0);R(x+i,y+j,1,1,v>.72?'#c4b388':(v>.38?'#a89772':'#8c7c5c'));}
-      R(x-w,y+j,1,1,'#f2f8f2');R(x+w,y+j,1,1,'#eef6f2');}};
-  const ecume=(x,y,n,g0)=>{for(let i=0;i<n;i++)R(x+hs2(i,g0,21)*70-35,y+hs2(i,g0,22)*10,2+hs2(i,g0,23)*4,2,'#e4f2ee');};
-  const bouee=(x,y,c)=>{s.fillStyle='rgba(6,30,44,.3)';s.beginPath();s.ellipse(x+4,y+4,9,9,0,0,7);s.fill();
-    s.fillStyle=c;s.beginPath();s.arc(x,y,9,0,7);s.fill();
-    s.fillStyle='#f2eee4';s.beginPath();s.arc(x,y,4.5,0,7);s.fill();
-    R(x-2,y-22,4,14,'#2a2c30');R(x-4,y-26,8,5,c);ecume(x,y+10,8,x);};
-  if(COIN_LARGE==='digue'){
-    for(let y=300;y<MONDE_H;y++){const b=300+Math.sin(y*.012)*14;
-      for(let x=0;x<b;x++){const v=hs2(x>>1,y>>1,11);R(x,y,1,1,v>.72?'#b8b2a4':(v>.4?'#9a948a':'#7e786e'));}
-      R(Math.round(b),y,1,1,'#f2f8f2');R(Math.round(b)-1,y,1,1,'#cfe2dd');}
-    for(let y=304;y<MONDE_H;y+=9)R(0,y,Math.round(300+Math.sin(y*.012)*14)-2,1,'#6a655c');
-    R(258,560,16,52,'#f2ece0');R(254,548,24,13,'#c8322a');R(258,586,16,6,'#c8322a');
-    for(let y=320;y<MONDE_H;y+=64)ecume(300,y,10,y);
-  }else if(COIN_LARGE==='frioul'){
-    roche(300,556,46,30,1.3);roche(466,842,38,26,2.6);roche(272,1010,34,22,3.9);
-    ecume(300,586,14,1);ecume(466,868,10,2);
-    for(let i=0;i<14;i++)R(272+hs2(i,4,9)*200,526+hs2(i,5,9)*40,3,2,'#f2ece0');
-    bouee(452,650,'#2a7a5a');
-  }else if(COIN_LARGE==='calanques'){
-    for(let y=300;y<MONDE_H;y++){const b=MONDE_L-298+Math.sin(y*.015)*20+Math.sin(y*.041)*8;
-      for(let x=Math.round(b);x<MONDE_L;x++){const v=hs2(x>>1,y>>1,11);
-        R(x,y,1,1,v>.7?'#e6dcc2':(v>.36?'#cfc3a4':'#b0a386'));}
-      R(Math.round(b),y,1,1,'#f8fcf6');R(Math.round(b)+1,y,1,1,'#d4e8e2');}
-    for(let i=0;i<60;i++)R(MONDE_L-290+hs2(i,6,9)*250,300+hs2(i,7,9)*860,5+hs2(i,8,9)*6,5,'#3a6a34');
-    for(let y=330;y<MONDE_H;y+=70)ecume(MONDE_L-294,y,10,y);
-  }else{
-    roche(380,546,40,22,0.6);R(374,516,12,32,'#f2ece0');R(371,506,18,11,'#c8322a');R(374,528,12,5,'#c8322a');
-    for(let a=0;a<4;a++){s.strokeStyle='rgba(232,192,106,'+(.16-a*.035)+')';s.lineWidth=2;
-      s.beginPath();s.arc(380,522,30+a*28,0,7);s.stroke();}
-    ecume(380,568,16,5);bouee(458,700,'#c8322a');bouee(300,900,'#1b2a2e');
-  }
-  /* LA COQUE, vue d'en haut : la lisse peinte, le pont en bois */
-  const y0=PONT_L.y-PONT_L.L/2;
-  s.fillStyle='rgba(6,30,44,.34)';s.beginPath();s.ellipse(PONT_L.x+8,PONT_L.y+8,PONT_L.HW+6,PONT_L.L/2+4,0,0,7);s.fill();
-  for(let j=0;j<PONT_L.L;j++){const y=y0+j,w=demiPont(y);
+  return COINS_L[c]?c:'digue';}catch(x){return 'digue';}})();
+/* la coque : 0 à l'étrave, 1 au tableau arrière */
+const PONT_L={L:252,HW:46};
+const demiPont=(t)=>{if(t<0||t>1)return -1;
+  return Math.max(.9,PONT_L.HW*Math.pow(Math.sin(Math.pow(t,.80)*Math.PI),.95));};
+const BARRE_Y=PONT_L.L*0.5-58;            /* la barre, vers l'arrière */
+let BAT=(()=>{const C=COINS_L[COIN_LARGE],[dx,dy]=C.dep;
+  return {x:dx,y:dy,a:Math.atan2(C.x-dx,-(C.y-dy)),v:0,sillage:[],touche:0};})();
+let BARRE=false, COIN_VU=null, COQUE=null;
+const batLocal=(x,y)=>{const dx=x-BAT.x,dy=y-BAT.y,c=Math.cos(BAT.a),s=Math.sin(BAT.a);
+  return [dx*c+dy*s, -dx*s+dy*c];};
+const batMonde=(lx,ly)=>{const c=Math.cos(BAT.a),s=Math.sin(BAT.a);
+  return [BAT.x+lx*c-ly*s, BAT.y+lx*s+ly*c];};
+function bloqueLarge(x,y){
+  const [lx,ly]=batLocal(x,y);
+  const w=demiPont((ly+PONT_L.L/2)/PONT_L.L);
+  return !(w>6&&Math.abs(lx)<w-9);
+}
+/* LA TERRE : on ne passe pas à travers les îles. Les formes sont les
+   mêmes que celles peintes dans le sol — on les teste, on ne relit pas
+   les pixels. */
+function terreLarge(x,y){
+  if(x<120||y<120||x>MONDE_L-120||y>MONDE_H-120)return true;
+  const ell=(cx,cy,rx,ry)=>((x-cx)*(x-cx))/(rx*rx)+((y-cy)*(y-cy))/(ry*ry)<1;
+  if(ell(520,620,164,110)||ell(690,760,110,78)||ell(380,840,84,60))return true;   /* le Frioul */
+  if(ell(420,1880,74,48))return true;                                             /* le Planier */
+  if(y>=600&&y<1560){if(x>=2118+Math.sin(y*.009)*52+Math.sin(y*.027)*20)return true;}  /* les calanques */
+  else if(x>=2210)return true;
+  if(x>=1480&&y>=2046&&y<=2108)return true;                                       /* la digue */
+  if(x>=1946&&y>=2196)return true;                                                /* le quai */
+  return false;
+}
+function coinDuBateau(){let k=null,d0=1e9;
+  for(const c in COINS_L){const C=COINS_L[c],d=Math.hypot(BAT.x-C.x,BAT.y-C.y);
+    if(d<C.r&&d<d0){d0=d;k=c;}}
+  return k;}
+/* ---------------- la coque, gravée une fois ---------------- */
+function graverLaCoque(){
+  const W=PONT_L.HW*2+12, H=PONT_L.L+12, cx=W/2, y0=6;
+  const c=document.createElement('canvas');c.width=W;c.height=H;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const hs2=(x,y,q)=>{let n=Math.sin(x*12.9898+y*78.233+q*37.719)*43758.5453;return n-Math.floor(n);};
+  for(let j=0;j<PONT_L.L;j++){const w=demiPont(j/PONT_L.L),y=y0+j;
     for(let i=-w;i<=w;i++){let col='#f2ece0';
       if(i>w-6)col='#d8ceba';
       if(Math.abs(i)>w-5)col='#2f6a9e';
       if(Math.abs(i)>w-2.4)col='#1d4066';
       if(Math.abs(i)>w-1.1)col='#12293f';
-      R(PONT_L.x+i,y,1,1,col);}}
-  for(let j=12;j<PONT_L.L-12;j++){const y=y0+j,w=demiPont(y)-7;if(w<2)continue;
-    for(let i=-w;i<=w;i++){const n=hs2(PONT_L.x+i,y,13),b=Math.floor((PONT_L.x+i)/8);
+      R(cx+i,y,1,1,col);}}
+  for(let j=12;j<PONT_L.L-12;j++){const w=demiPont(j/PONT_L.L)-7,y=y0+j;if(w<2)continue;
+    for(let i=-w;i<=w;i++){const n=hs2(cx+i,y,13),b=Math.floor((cx+i)/8);
       let col=(b%2)?'#a4845a':'#98784e';
       if(n>.78)col='#b49268';if(n<.16)col='#86683f';
-      if(((PONT_L.x+i)%8)===0)col='#6e5232';
-      R(PONT_L.x+i,y,1,1,col);}}
-  const banc=(t)=>{const y=y0+PONT_L.L*t,w=demiPont(y)-5;R(PONT_L.x-w,y,w*2,6,'#6a4a2a');R(PONT_L.x-w,y,w*2,2,'#8a6a44');};
+      if(((cx+i)%8)===0)col='#6e5232';
+      R(cx+i,y,1,1,col);}}
+  const banc=(t)=>{const y=y0+PONT_L.L*t,w=demiPont(t)-5;R(cx-w,y,w*2,6,'#6a4a2a');R(cx-w,y,w*2,2,'#8a6a44');};
   banc(.3);banc(.56);
-  R(PONT_L.x-10,y0+PONT_L.L-22,20,15,'#1b2a2e');R(PONT_L.x-7,y0+PONT_L.L-19,7,5,'#4a5a62');   /* le moteur */
-  R(PONT_L.x-4,y0+14,8,22,'#8a6a44');                                                        /* le taquet */
-  R(PONT_L.x-34,y0+74,22,25,'#b8762a');R(PONT_L.x-34,y0+74,22,4,'#d49a4a');                   /* la caisse */
-  R(PONT_L.x+18,y0+104,17,12,'#9aa6ac');R(PONT_L.x+18,y0+104,17,3,'#c4ccd0');                 /* le seau */
-  s.fillStyle='#c8322a';s.beginPath();s.arc(PONT_L.x-40,y0+140,8,0,7);s.fill();
-  s.fillStyle='#f2eee4';s.beginPath();s.arc(PONT_L.x-40,y0+140,4,0,7);s.fill();              /* la bouée */
-  /* LA BARRE : c'est elle qui ramène au port */
-  R(PONT_L.x-3,y0+PONT_L.L-54,6,14,'#6a4a2a');
-  s.strokeStyle='#8a6a44';s.lineWidth=3;s.beginPath();s.arc(PONT_L.x,y0+PONT_L.L-58,11,0,7);s.stroke();
+  R(cx-10,y0+PONT_L.L-22,20,15,'#1b2a2e');R(cx-7,y0+PONT_L.L-19,7,5,'#4a5a62');     /* le moteur */
+  R(cx-4,y0+14,8,22,'#8a6a44');                                                      /* le taquet */
+  R(cx-34,y0+74,22,25,'#b8762a');R(cx-34,y0+74,22,4,'#d49a4a');                      /* la caisse */
+  R(cx+18,y0+104,17,12,'#9aa6ac');R(cx+18,y0+104,17,3,'#c4ccd0');                    /* le seau */
+  g.fillStyle='#c8322a';g.beginPath();g.arc(cx-40,y0+140,8,0,7);g.fill();
+  g.fillStyle='#f2eee4';g.beginPath();g.arc(cx-40,y0+140,4,0,7);g.fill();            /* la bouée */
+  const by=y0+PONT_L.L/2+BARRE_Y;
+  R(cx-3,by+4,6,14,'#6a4a2a');
+  g.strokeStyle='#8a6a44';g.lineWidth=3;g.beginPath();g.arc(cx,by,11,0,7);g.stroke();/* la barre */
+  return {toile:c,cx,cy:y0+PONT_L.L/2};
+}
+function dessinerLeBateau(g,camX,camY){
+  if(!COQUE)COQUE=graverLaCoque();
+  const x=BAT.x-camX, y=BAT.y-camY;
+  /* le sillage, derrière */
+  for(let i=0;i<BAT.sillage.length;i++){const s=BAT.sillage[i],k=1-s.t/1.8;
+    if(k<=0)continue;
+    g.fillStyle='rgba(214,240,238,'+(k*0.5).toFixed(3)+')';
+    const r=2+(1-k)*7;
+    g.beginPath();g.ellipse(s.x-camX,s.y-camY,r,r*0.7,0,0,7);g.fill();}
+  g.save();
+  g.translate(x,y);g.rotate(BAT.a);
+  g.globalAlpha=.3;g.fillStyle='#062430';
+  g.beginPath();g.ellipse(5,6,PONT_L.HW+5,PONT_L.L/2+3,0,0,7);g.fill();g.globalAlpha=1;
+  g.drawImage(COQUE.toile,-COQUE.cx,-COQUE.cy);
+  g.restore();
+}
+/* ---------------- la navigation ---------------- */
+const BAT_VMAX=108, BAT_VIR=1.9;
+function majNavigation(dt,jx,jy){
+  const n=Math.hypot(jx,jy);
+  const ax=BAT.x, ay=BAT.y, aa=BAT.a;
+  if(n>0.2){
+    const vise=Math.atan2(jx,-jy);
+    let d=vise-BAT.a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;
+    const pas=BAT_VIR*dt*(0.45+0.55*Math.min(1,BAT.v/BAT_VMAX+0.4));
+    BAT.a+=Math.max(-pas,Math.min(pas,d));
+    const cible=BAT_VMAX*Math.min(1,n)*(1-Math.min(.55,Math.abs(d)/Math.PI));
+    BAT.v+=(cible-BAT.v)*(1-Math.exp(-1.8*dt));
+  }else BAT.v*=Math.exp(-1.1*dt);
+  if(BAT.v<1.2)BAT.v=0;
+  const nx=BAT.x+Math.sin(BAT.a)*BAT.v*dt, ny=BAT.y-Math.cos(BAT.a)*BAT.v*dt;
+  if(coqueÀTerre(nx,ny,BAT.a)){
+    BAT.v=0;
+    if(!BAT.touche||Date.now()-BAT.touche>1400){BAT.touche=Date.now();
+      try{vibrer([18,50,18]);texteVolant(joueur.x,joueur.y-52,'on racle !','#ffd040');}catch(x){}}
+  }else{BAT.x=nx;BAT.y=ny;}
+  /* le joueur reste collé à la barre */
+  const [bx,by]=batMonde(0,BARRE_Y+16);
+  joueur.x=bx;joueur.y=by;joueur.dir='haut';joueur.dirVue='haut';
+  /* le sillage */
+  if(BAT.v>14){const [sx,sy]=batMonde((Math.random()-.5)*26,PONT_L.L/2+6);
+    BAT.sillage.push({x:sx,y:sy,t:0});}
+  for(let i=BAT.sillage.length-1;i>=0;i--){BAT.sillage[i].t+=dt;if(BAT.sillage[i].t>1.8)BAT.sillage.splice(i,1);}
+  if(BAT.sillage.length>90)BAT.sillage.splice(0,BAT.sillage.length-90);
+  majLeCoin();
+  void ax;void ay;void aa;
+}
+/* hors barre, le bateau dérive doucement et emmène le joueur avec lui */
+function majDerive(dt){
+  if(BAT.v<=0.01){majLeCoin();return;}
+  const [lx,ly]=batLocal(joueur.x,joueur.y);
+  BAT.v*=Math.exp(-1.6*dt);if(BAT.v<1.2)BAT.v=0;
+  const dx=BAT.x+Math.sin(BAT.a)*BAT.v*dt, dy=BAT.y-Math.cos(BAT.a)*BAT.v*dt;
+  if(coqueÀTerre(dx,dy,BAT.a))BAT.v=0;else{BAT.x=dx;BAT.y=dy;}
+  const [nx,ny]=batMonde(lx,ly);joueur.x=nx;joueur.y=ny;
+  for(let i=BAT.sillage.length-1;i>=0;i--){BAT.sillage[i].t+=dt;if(BAT.sillage[i].t>1.8)BAT.sillage.splice(i,1);}
+  majLeCoin();
+}
+function majLeCoin(){
+  const k=coinDuBateau();
+  if(k===COIN_VU)return;
+  COIN_VU=k;
+  const b=$('bLarge');if(b){const s=b.querySelector('small');
+    if(s)s.textContent=k?COIN_NOM[k]:'en route — aucun coin';}
+  if(k)try{texteVolant(joueur.x,joueur.y-52,COIN_NOM[k],'#9fe1cb');}catch(x){}
+  try{majAction();}catch(x){}
+}
+/* l'étrave, les deux joues et le tableau : quatre points suffisent */
+function coqueÀTerre(x,y,a){
+  const c=Math.cos(a),s=Math.sin(a);
+  const P=[[0,-PONT_L.L/2+6],[-PONT_L.HW+6,-28],[PONT_L.HW-6,-28],[0,PONT_L.L/2-6]];
+  for(const [lx,ly] of P)if(terreLarge(x+lx*c-ly*s, y+lx*s+ly*c))return true;
+  return false;
+}
+function prochedeLaBarre(){const [lx,ly]=batLocal(joueur.x,joueur.y);
+  return Math.abs(lx)<24&&Math.abs(ly-BARRE_Y)<34;}
+/* ---------------- la mer et ses quatre coins ---------------- */
+function construireSolLarge(){
+  const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
+  const s=c.getContext('2d');s.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{s.fillStyle=col;s.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const hs2=(x,y,q)=>{let n=Math.sin(x*12.9898+y*78.233+q*37.719)*43758.5453;return n-Math.floor(n);};
+  const LW=Math.ceil(MONDE_L/2),LH=Math.ceil(MONDE_H/2);
+  const pt=document.createElement('canvas');pt.width=LW;pt.height=LH;
+  const pg=pt.getContext('2d');const img=pg.createImageData(LW,LH),px=new Uint32Array(img.data.buffer);
+  const ent=(h)=>{const n=parseInt(h.slice(1),16);return (255<<24)|((n&255)<<16)|(((n>>8)&255)<<8)|((n>>16)&255);};
+  const PROF=['#082c48','#0f4466','#165c86','#1f74a4'].map(ent);      /* le grand fond */
+  const MOYEN=['#0f5068','#16708c','#1d8aa6','#27a6bc'].map(ent);     /* la rade */
+  const CLAIR=['#0d5a6e','#149086','#1aa89a','#24c2ac'].map(ent);     /* l'eau claire */
+  const MOU=ent('#d2eeea');
+  const CP=COINS_L.calanques, FR=COINS_L.frioul, DG=COINS_L.digue, PL=COINS_L.planier;
+  for(let y=0;y<LH;y++){const wy=y*2;
+    for(let x=0;x<LW;x++){const wx=x*2;
+      let v=Math.sin(wy*.022+Math.sin(wx*.009)*2.2)*.34
+           +Math.sin(wy*.058+wx*.013)*.12
+           +hs2(x>>1,y>>1,3)*.34+hs2(x>>2,y>>2,7)*.26;
+      let P=MOYEN;
+      const dC=Math.min(Math.hypot(wx-CP.x,wy-CP.y),Math.hypot(wx-FR.x,wy-FR.y));
+      const dP=Math.hypot(wx-PL.x,wy-PL.y);
+      if(dC<460)P=CLAIR;else if(dP<520)P=PROF;
+      px[y*LW+x]=(v>.80&&hs2(x,y,17)>.72)?MOU:P[Math.min(3,Math.max(0,Math.floor(v*4.2)))];}}
+  pg.putImageData(img,0,0);s.drawImage(pt,0,0,LW,LH,0,0,LW*2,LH*2);
+  const ecume=(x,y,n,q)=>{for(let i=0;i<n;i++)R(x+hs2(i,q,21)*70-35,y+hs2(i,q,22)*12,2+hs2(i,q,23)*5,2,'#e4f2ee');};
+  const roche=(x,y,rx,ry,g0)=>{for(let j=-ry;j<=ry;j++){const w=rx*Math.sqrt(Math.max(0,1-(j/ry)*(j/ry)))*(1+Math.sin(j*.3+g0)*.14);
+      for(let i=-w;i<=w;i++){const v=hs2(x+i,y+j,g0);R(x+i,y+j,1,1,v>.72?'#c4b388':(v>.38?'#a89772':'#8c7c5c'));}
+      R(x-w,y+j,1,1,'#f2f8f2');R(x+w,y+j,1,1,'#eef6f2');}
+    for(let i=0;i<10;i++)R(x+hs2(i,g0,31)*rx*1.6-rx*.8,y+ry+2+hs2(i,g0,32)*8,3,2,'#e4f2ee');};
+  /* LE PORT ET SA DIGUE, en bas à droite : c'est par là qu'on rentre */
+  R(1500,2060,MONDE_L-1500,34,'#8e897c');R(1500,2060,MONDE_L-1500,5,'#c2bcae');R(1500,2090,MONDE_L-1500,5,'#5e5a50');
+  for(let x=1500;x<MONDE_L;x+=8)R(x,2066,1,24,'#726d62');
+  R(1492,2016,16,52,'#f2ece0');R(1487,2004,26,13,'#c8322a');R(1492,2042,16,6,'#c8322a');
+  for(let x=1520;x<MONDE_L;x+=120)ecume(x,2098,12,x);
+  R(1960,2210,MONDE_L-1960,MONDE_H-2210,'#a8a08c');R(1960,2210,MONDE_L-1960,6,'#cfc7b2');
+  for(let i=0;i<14;i++){R(1990+i*28,2236,18,46,'#f2ece0');R(1994+i*28,2232,10,5,'#c8322a');}
+  /* LES ÎLES DU FRIOUL, en haut à gauche */
+  roche(520,620,150,96,1.3);roche(690,760,96,64,2.6);roche(380,840,70,46,3.9);
+  for(let i=0;i<40;i++)R(380+hs2(i,4,9)*380,520+hs2(i,5,9)*120,4,3,'#f2ece0');
+  /* LES CALANQUES, la falaise du bord est */
+  for(let y=600;y<1560;y++){const b=2130+Math.sin(y*.009)*52+Math.sin(y*.027)*20;
+    for(let x=Math.round(b);x<MONDE_L;x++){const v=hs2(x>>1,y>>1,11);
+      R(x,y,1,1,v>.7?'#e6dcc2':(v>.36?'#cfc3a4':'#b0a386'));}
+    R(Math.round(b),y,1,1,'#f8fcf6');R(Math.round(b)+1,y,1,1,'#d4e8e2');}
+  for(let i=0;i<150;i++)R(2150+hs2(i,6,9)*240,600+hs2(i,7,9)*950,6+hs2(i,8,9)*7,5,'#3a6a34');
+  for(let y=620;y<1560;y+=90)ecume(2140,y,12,y);
+  /* LE SEC DU PLANIER, seul en bas à gauche */
+  roche(420,1880,60,34,0.6);R(412,1826,14,54,'#f2ece0');R(407,1812,24,15,'#c8322a');R(412,1850,14,7,'#c8322a');
+  for(let a=0;a<4;a++){s.strokeStyle='rgba(232,192,106,'+(.14-a*.03)+')';s.lineWidth=3;
+    s.beginPath();s.arc(420,1836,44+a*40,0,7);s.stroke();}
+  /* les bouées des quatre coins */
+  const bouee=(x,y,col)=>{s.fillStyle='rgba(6,30,44,.3)';s.beginPath();s.ellipse(x+5,y+5,11,11,0,0,7);s.fill();
+    s.fillStyle=col;s.beginPath();s.arc(x,y,11,0,7);s.fill();
+    s.fillStyle='#f2eee4';s.beginPath();s.arc(x,y,5,0,7);s.fill();
+    R(x-2,y-28,5,18,'#2a2c30');R(x-5,y-33,11,6,col);ecume(x,y+13,8,x);};
+  bouee(COINS_L.digue.x-120,COINS_L.digue.y+40,'#2a7a5a');
+  bouee(COINS_L.frioul.x+180,COINS_L.frioul.y+210,'#2a7a5a');
+  bouee(COINS_L.calanques.x-170,COINS_L.calanques.y+120,'#e8c06a');
+  bouee(COINS_L.planier.x+150,COINS_L.planier.y+140,'#c8322a');
   return c;
 }
 function rentrerAuPort(){try{envoyerSauvegarde();}catch(x){}
@@ -20755,10 +20891,13 @@ function poserLeBoutonDuLarge(){
 }
 function lieuDePeche(){
 if(CARTE==='large'){
-  const w=demiPont(joueur.y);if(w<=6)return null;
+  if(BARRE||BAT.v>6)return null;              /* on ne pêche pas en route */
+  const k=coinDuBateau();if(!k)return null;   /* en pleine eau, rien ne mord */
+  const [lx,ly]=batLocal(joueur.x,joueur.y);
+  const w=demiPont((ly+PONT_L.L/2)/PONT_L.L);if(w<=6)return null;
   const cote=joueur.dir==='gauche'?-1:1;
-  const bx=PONT_L.x+cote*(w+38);
-  return {bx:Math.max(18,Math.min(MONDE_L-18,bx)),by:Math.min(joueur.y+14,MONDE_H-26),lieu:COIN_LARGE,bout:true};
+  const [bx,by]=batMonde(cote*(w+38),ly);
+  return {bx:Math.max(18,Math.min(MONDE_L-18,bx)),by:Math.max(18,Math.min(MONDE_H-18,by)),lieu:k,bout:true};
 }
 /* LE LAC : on pêche depuis n'importe quel point du tablier d'un ponton,
    et depuis n'importe quel point de la berge. La berge, c'est la bande de
@@ -24337,6 +24476,12 @@ b.classList.add('on');b.onclick=laverLArgile;return;
    n'était récoltable depuis que la pêche y est ouverte.
    Quand une ligne est déjà à l'eau, la pêche reprend la main : il faut
    bien pouvoir ferrer. */
+if(CARTE==='large'){
+  if(BARRE){b.innerHTML='Lâcher la barre<small>'+(COIN_VU?COIN_NOM[COIN_VU].toUpperCase():'AU LARGE')+'</small>';
+    b.classList.add('on');b.onclick=()=>{BARRE=false;jouer('clic');vibrer(10);majAction();};return;}
+  if(!PECHE&&prochedeLaBarre()){b.innerHTML='Prendre la barre<small>METTRE LE CAP</small>';
+    b.classList.add('on');b.onclick=()=>{BARRE=true;jouer('clic');vibrer([10,30,10]);majAction();};return;}
+}
 if(!recolteSousLaMain()&&actionDePeche(b))return;
 if(CARTE==='extramar'&&Math.abs(joueur.x-XP.ruelle.x)<XP.ruelle.l&&joueur.y<XP.ruelle.haut+22&&GESTE.t<=0){
 /* ================= LE HAUT DE LA RUELLE =================
@@ -26634,7 +26779,7 @@ function radePeindre(){
         '<span class="rpx">'+(c[2]?(c[2]/100)+' € DE GASOIL':'GRATUIT')+'</span><b>'+c[1]+'</b><em>'+c[3]+'</em></button>').join('')+
       '<button class="rgo" id="radeGo"'+((!bat||!lar||cher||RADE_PART)?' disabled':'')+'>'+
         (RADE_PART?'On largue…':(!bat?'Niveau 19':(!lar?'Niveau 20':(cher?'Pas assez pour le gasoil':'Mettre le cap'))))+'</button>'+
-      '<p class="rnote">'+sous+'</p>'+
+      '<p class="rnote">'+sous+(lar?' Une fois en mer, tu navigues d’un coin à l’autre sans repasser par le port.':'')+'</p>'+
     '</div></div>';
   radeDessin($('radeC'));
   f.querySelectorAll('.rpin').forEach(b=>{const q=RADE_POS[b.dataset.c];if(q)b.style.top=(q[1]/RADE_H*100)+'%';});
@@ -27997,7 +28142,8 @@ try{if(CARTE==='extramar'&&new URLSearchParams(location.search).has('arrivee'))p
    donc dans le bois à la position qu'on avait à Extramar, parfois à
    l'intérieur d'un arbre. Le sentier est l'entrée, et la seule. */
 if(CARTE==='foret'){joueur.x=F_SENT_ARRIVEE[0];joueur.y=F_SENT_ARRIVEE[1];joueur.dir='droite';}
-if(CARTE==='large'){joueur.x=PONT_L.x;joueur.y=PONT_L.y+40;joueur.dir='droite';try{poserLeBoutonDuLarge();}catch(x){}}
+if(CARTE==='large'){const p=batMonde(0,BARRE_Y+16);joueur.x=p[0];joueur.y=p[1];joueur.dir='haut';
+  COIN_VU=null;try{majLeCoin();}catch(x){}try{poserLeBoutonDuLarge();}catch(x){}}
 /* LA NOUVELLE CARTE : on arrive devant la gare, et plus rien ne pousse
    le joueur vers l'ancienne cour, qui n'existe plus. */
 /* UNE SEULE FOIS, AU CHARGEMENT : si la position vient de l'ancienne carte,

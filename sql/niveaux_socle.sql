@@ -267,3 +267,25 @@ where niveau = 29;
    comme le font déjà les courses. En plus, tant que le serveur n'a pas
    répondu, l'écran se fie aux clés de palier déjà chargées par
    mon_niveau — le départ reste gardé côté serveur. */
+
+/* ===== 2026-10-22 · le large devient navigable (côté jeu seulement) =====
+   Le bateau ne mouille plus à un point fixe : la carte 'large' fait
+   2400 x 2400, le pointu y est un objet qui tourne et avance, et les
+   quatre coins y vivent ensemble — la digue et le port en bas à droite,
+   le Frioul en haut à gauche, les calanques le long du bord est, le sec
+   du Planier seul en bas à gauche.
+
+   - majNavigation(dt,joyX,joyY) prend la main comme le fait l'essai de
+     voiture à Tokyo : à la barre, le joystick tient le cap (il vise un
+     cap, le bateau y vient à 1,9 rad/s) et le marin ne marche pas.
+   - Hors barre, majDerive continue le mouvement et emmène le joueur avec
+     la coque : il garde ses coordonnées locales, pas les mondiales.
+   - terreLarge(x,y) rejoue en géométrie les formes peintes dans le sol ;
+     coqueÀTerre teste l'étrave, les deux joues et le tableau. On racle,
+     on ne traverse pas.
+   - lieuDePeche rend le coin où l'on mouille, et rien du tout en pleine
+     eau ou en route : c'est le coin qui décide de ce qui mord.
+   - La caméra recule au large (ECH plafonné à dpr) : un point de jeu
+     vaut un point d'écran, sinon on navigue sans voir devant soi.
+   Rien ne change côté serveur : pecher_touche reçoit toujours le coin.
+*/
