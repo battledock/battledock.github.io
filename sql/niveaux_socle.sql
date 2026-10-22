@@ -95,3 +95,4 @@ create table if not exists public.graines_offertes(joueur text not null, cult te
 --   'deblocage:cabanon' (niveau 10). (L'ancien cabanon du Vallon, table
 --   cabanon / cabanon_etat(p_joueur), n'est pas touché.)
 -- ============================================================
+-- Niveau 12 (22/10/2026) : la recette de bouillabaisse est remplacée par 10 doses d'engrais (niveau_reclamer, type 'engrais').
