@@ -258,3 +258,12 @@ where niveau = 29;
    - Retour au port par la barre : jeu.html?carte=extramar&de=large,
      et poserAuPort débarque au bout du ponton.
 */
+
+/* 2026-10-22 · correctif : la rade restait bloquée sur « Niveau 20 ».
+   large_etat et large_partir s'appuient sur auth.uid(), mais le jeu les
+   appelait par appelRPC, qui n'envoie que la clé anonyme : auth.uid()
+   y est vide et les deux répondaient « Connecte-toi ». Elles passent
+   maintenant par le client Supabase (rpcRade), qui porte la session,
+   comme le font déjà les courses. En plus, tant que le serveur n'a pas
+   répondu, l'écran se fie aux clés de palier déjà chargées par
+   mon_niveau — le départ reste gardé côté serveur. */

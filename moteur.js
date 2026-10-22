@@ -26543,6 +26543,17 @@ const COINS_RADE=[
  ['planier','Le sec du Planier',1000,'Grand fond, courant fort. Thon, palamide, coryphène, espadon.']];
 const RADE_POS={frioul:[44,62],calanques:[108,26],digue:[130,120],planier:[32,158]};
 let RADE_SEL='digue', RADE_ETAT=null, RADE_PART=false, RADE_H=264;
+/* LA RADE PARLE AU SERVEUR EN TANT QUE JOUEUR CONNECTÉ.
+   appelRPC n'envoie que la clé anonyme : auth.uid() y est vide, et
+   large_etat répondait « Connecte-toi » — d'où le bouton bloqué sur
+   « Niveau 20 » alors que le palier était bien pris. On passe donc par
+   le client Supabase, qui porte la session, comme le font les courses. */
+async function rpcRade(nom,args){
+  try{if(typeof sb!=='undefined'&&sb){const r=await sb.rpc(nom,args||{});
+    if(r.error)return {erreur:'Le serveur n’a pas répondu. Réessaie.'};
+    return r.data==null?{}:r.data;}}catch(x){}
+  return await appelRPC(nom,args||{});
+}
 function radeDessin(cv){
   /* la toile prend EXACTEMENT la forme de son cadre : sans quoi la carte
      s'étire et les épingles ne tombent plus sur leur rocher. */
@@ -26602,10 +26613,16 @@ function radeDessin(cv){
 }
 function radePeindre(){
   const f=$('page2Fond');if(!f||!$('page2').classList.contains('on'))return;
-  const E=RADE_ETAT||{},bat=E.bateau!==false,lar=!!E.large;
+  /* CE QUE LE JEU SAIT DÉJÀ FAIT FOI tant que le serveur n'a pas parlé :
+     mon_niveau a chargé les clés de palier au démarrage. Le serveur garde
+     le départ de toute façon, l'écran n'a pas à rester bloqué pour ça. */
+  const E=RADE_ETAT||{};
+  const bat=(E.bateau===undefined)?!!nivInv('deblocage:bateau'):!!E.bateau;
+  const lar=(E.large===undefined)?!!nivInv('deblocage:peche_large'):!!E.large;
+  const sous_=typeof E.euros==='number'?E.euros:(e.euros||0);
   const sous=!bat?'Il t’attend au niveau 19.':(lar?'Choisis ton coin, et mets le cap.':'La pêche au large ouvre au niveau 20.');
   const C=COINS_RADE.find(c=>c[0]===RADE_SEL)||COINS_RADE[0];
-  const cher=typeof E.euros==='number'&&E.euros<C[2];
+  const cher=sous_<C[2];
   f.innerHTML='<div id="rade" lang="fr"><div class="rhd"><div class="rti">TON BATEAU · LA RADE</div>'+
     '<h1>La rade <i>de Marseille</i></h1><button class="rx" id="radeX" aria-label="Fermer">✕</button></div>'+
     '<div class="rmap"><canvas id="radeC"></canvas>'+
@@ -26625,7 +26642,7 @@ function radePeindre(){
   f.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{RADE_SEL=b.dataset.c;jouer('clic');vibrer(8);radePeindre();});
   $('radeGo').onclick=async()=>{
     if(RADE_PART)return;RADE_PART=true;radePeindre();
-    const d=await appelRPC('large_partir',{p_coin:RADE_SEL});
+    const d=await rpcRade('large_partir',{p_coin:RADE_SEL});
     if(!d||d.erreur){RADE_PART=false;radePeindre();motOuverture((d&&d.erreur)||'La mer n’a pas répondu. Réessaie.');return;}
     if(typeof d.euros==='number'){e.euros=d.euros;sauver();majHaut();}
     try{envoyerSauvegarde();}catch(x){}
@@ -26637,7 +26654,7 @@ async function ouvrirLaRade(){try{
   RADE_PART=false;
   $('page2Fond').className='rade';$('page2').classList.add('on');
   radePeindre();
-  const d=await appelRPC('large_etat',{});
+  const d=await rpcRade('large_etat',{});
   if(d&&!d.erreur)RADE_ETAT=d;
   radePeindre();
 }catch(x){try{$('page2').classList.remove('on');}catch(y){}try{motOuverture('La rade a eu un souci : '+(x&&x.message?x.message:x));}catch(y){}}}
