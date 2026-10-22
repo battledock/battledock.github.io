@@ -104,3 +104,27 @@ create table if not exists public.graines_offertes(joueur text not null, cult te
 -- le cabanon est à la ferme (1430, 640), plus sur le quai.
 -- Classement (22/10/2026) : classement_general renvoie le score = progres.recolte (l'XP) et le titre choisi ; trié par XP. Écran « modèle A » (podium + cartes, en ligne / vu il y a…).
 -- Classements Pêche et Pokédock au style du carnet (22/10/2026) : records_peche renvoie id, apparence et maj des pêcheurs (40 au plus).
+
+-- ============================================================
+-- 2026-10-22 · VÉRIFICATION CHEZ MADELEINE
+-- ============================================================
+-- Le facteur de marché sortait de power(0.5, h/2) sans arrondi : il était
+-- stocké tel quel dans marche.facteur et renvoyé dans chaque vente. Une
+-- réponse de vendre_au_comptoir faisait 18 Ko de décimales. Six décimales
+-- suffisent, et cela vaut pour tous ses appelants (comptoir, étal, criée).
+create or replace function public.marche_facteur(p_type text)
+returns numeric language plpgsql security definer set search_path to 'public'
+as $$
+declare f numeric; m timestamptz; h numeric;
+begin
+  insert into marche(produit) values (p_type) on conflict do nothing;
+  select facteur, maj into f, m from marche where produit=p_type;
+  h := extract(epoch from (now()-m))/3600.0;
+  /* retour à la normale : moitié du chemin toutes les deux heures */
+  f := 1 + (f-1) * power(0.5, h/2.0);
+  f := round(greatest(0.45, least(1.60, f)), 6);   /* six décimales suffisent */
+  update marche set facteur=f, maj=now() where produit=p_type;
+  return f;
+end $$;
+
+update public.marche set facteur = round(facteur,6) where scale(facteur) > 6;

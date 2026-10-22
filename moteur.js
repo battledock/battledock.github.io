@@ -28335,10 +28335,16 @@ setInterval(()=>{if(CARTE==='village'&&document.visibilityState==='visible')potC
 /* LA MÊME COURSE QUE LE VERGER : chargerLeChampVite abandonne au bout de
    quatre secondes, alors que e.id n'arrive qu'avec la session. On insiste
    jusqu'à ce que le champ soit là, et on recharge si l'identité change. */
-let POT_ID=null;
+/* ET ON N'INSISTE PAS SANS FIN : quand pot_etat ne répond pas, ou répond
+   à vide, POT.charge reste faux et cette veille rappelait le serveur
+   toutes les deux secondes, pour toujours. Dix essais suffisent ; après,
+   le rafraîchissement de deux minutes prend le relais. */
+let POT_ID=null, POT_ESSAIS=0;
 setInterval(()=>{if(CARTE!=='village'||PLACE_SEULE||document.hidden||!e.id)return;
-if(POT.charge&&e.id===POT_ID)return;
-POT_ID=e.id;potCharger();},2000);
+if(POT.charge&&e.id===POT_ID){POT_ESSAIS=0;return;}
+if(e.id!==POT_ID)POT_ESSAIS=0;
+if(POT_ESSAIS>=10)return;
+POT_ESSAIS++;POT_ID=e.id;potCharger();},2000);
 const PQL=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
 /* LE POULAILLER, SES POUSSINS ET SON MOTEUR DE BASSE-COUR SONT SUPPRIMÉS. */
 /* L'ANCIENNE ZONE DU POULAILLER N'EXISTE PLUS. */
@@ -32526,12 +32532,14 @@ return r;};
    On surveille aussi le changement d'identité : au démarrage e.id vaut
    d'abord un identifiant provisoire, puis celui du compte. Sans ça, on
    chargeait le verger d'un joueur qui n'existe pas. */
-let VER_ID=null;
+let VER_ID=null, VER_ESSAIS=0;
 setInterval(()=>{
 if(CARTE!=='village'||PLACE_SEULE||typeof CHAMPS_SEULS==='undefined'||!CHAMPS_SEULS)return;
 if(document.hidden||!e.id)return;
-if(VERG.charge&&e.id===VER_ID)return;
-VER_ID=e.id;verCharger();},2000);
+if(VERG.charge&&e.id===VER_ID){VER_ESSAIS=0;return;}
+if(e.id!==VER_ID)VER_ESSAIS=0;
+if(VER_ESSAIS>=10)return;      /* même garde-fou que le potager */
+VER_ESSAIS++;VER_ID=e.id;verCharger();},2000);
 /* LA PLAQUE DOIT AUSSI S'EFFACER quand on s'éloigne d'un arbre : sans ce
    rappel, « Cueillir » resterait affiché pendant qu'on marche ailleurs. */
 setInterval(()=>{if(document.hidden)return;
