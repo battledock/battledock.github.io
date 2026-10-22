@@ -24899,6 +24899,77 @@ baies:'<rect x="4" y="7" width="4" height="4" fill="#c94a4a"/><rect x="4" y="7" 
 '<rect x="8" y="9" width="4" height="4" fill="#a83a3a"/><rect x="8" y="9" width="2" height="2" fill="#c94a4a"/>'+
 '<rect x="6" y="4" width="4" height="3" fill="#5e8a47"/><rect x="7" y="3" width="2" height="2" fill="#7db35d"/>'
 };
+/* =====================================================================
+   LES ICÔNES QUI MANQUAIENT
+   Trente-cinq objets vendables n'avaient pas d'icône : la liste de
+   Madeleine, le sac, le cabanon et la criée affichaient un carré vide.
+   Les légumes, eux, ont déjà leur dessin dans PLANTES : on le rend une
+   fois dans un carré de seize sur seize et on en relève les pixels. Le
+   reste — la laine, le lait, les fruits du verger, les matériaux — est
+   dessiné ici, en grilles.
+   ===================================================================== */
+let ICONES_FAITES=false;
+function icoGrille(L,P){let r='';
+L.forEach((ln,y)=>[...ln].forEach((c,x)=>{if(c!=='.')r+='<rect x="'+x+'" y="'+y+'" width="1.02" height="1.02" fill="'+P[c]+'"/>';}));
+return r;}
+/* RENDU EN GRAND, PUIS RÉDUIT : à seize pixels sur seize, le dessin de la
+   plante s'écrasait en un sachet informe. On le rend quatre fois plus
+   gros et on le pose comme une image dans le carré de seize. */
+function icoDepuisPlante(k){try{
+const S=4,c=document.createElement('canvas');c.width=16*S;c.height=16*S;
+const g=c.getContext('2d');if(!g)return null;g.imageSmoothingEnabled=false;
+g.setTransform(S,0,0,S,0,0);PLANTES[k](g,8,15.4,3);
+const d=g.getImageData(0,0,16*S,16*S).data;let plein=false;
+for(let q=3;q<d.length;q+=4)if(d[q]>40){plein=true;break;}
+if(!plein)return null;
+return '<image href="'+c.toDataURL('image/png')+'" x="0" y="0" width="16" height="16" style="image-rendering:pixelated"/>';
+}catch(x){return null;}}
+/* QUATRE SILHOUETTES, pour que deux fruits ne se ressemblent pas :
+   la ronde, la paire sur sa queue, la goutte, la grappe. */
+const ICO_FORME={
+ ronde:['................','.......t........','......tF........','....ccccc.......','...cooooocF.....','..coooooooc.....','..coooooooc.....','..coooooooc.....','...cooooooc.....','....ccccc.......','................','................','................','................','................','................'],
+ paire:['................','......tt........','.....t..t.......','....tF..Ft......','...ccc..ccc.....','..coooccooooc...','..coooccooooc...','...ccc..ccc.....','................','................','................','................','................','................','................','................'],
+ goutte:['................','.....t..........','....tF..........','.....cc.........','....cooc........','...cooooc.......','..cooooooc......','..cooooooc......','...cooooc.......','....cccc........','................','................','................','................','................','................'],
+ grappe:['................','....tttt........','...tF..Ft.......','...cc..cc.......','..cooc.cooc.....','..cooc.cooc.....','...cc...cc......','.....cc.........','....cooc........','....cooc........','.....cc.........','................','................','................','................','................']};
+function icoFruit(clair,fonce,forme){
+return icoGrille(ICO_FORME[forme]||ICO_FORME.ronde,
+ {t:'#6a4a22',F:'#4f9434',f:'#3f7a2a',c:clair,o:fonce});}
+function completerLesIcones(){
+if(ICONES_FAITES)return;ICONES_FAITES=true;
+/* ON REMPLACE, on ne complète pas : chaque culture avait déjà une icône,
+   mais c'était le sachet générique posé par défaut — le même pour les
+   dix-huit, à la couleur près. Le vrai dessin de la plante vaut mieux. */
+try{
+ if(typeof PLANTES!=='undefined')for(const k of Object.keys(PLANTES)){
+   const i=icoDepuisPlante(k);if(i)ICONES[k]=i;}
+}catch(x){}
+const F={
+ cerises:['#f0697c','#c0303f','paire'],  pommes:['#e05a52','#9e2a2c','ronde'],
+ abricots:['#f6b155','#c87216','ronde'], figues:['#9a6cb8','#5e3478','goutte'],
+ amandes:['#f0e2b8','#bfa471','goutte'], grenades:['#e05056','#8e1f28','ronde'],
+ oranges:['#f8a03c','#c45e0c','ronde'],  citrons:['#f8e45e','#c8a814','goutte'],
+ olives:['#86a24a','#45611e','grappe'],  prunes:['#8a68b8','#4e3478','paire']};
+for(const k in F)ICONES[k]=icoFruit(F[k][0],F[k][1],F[k][2]);   /* idem : le verger posait le même sachet pour ses dix fruits */
+const G={
+ mimosa:[['................','......tt........','.....ttt........','....jJjJj.......','...jJJjJJj......','..jJjJJjJjJ.....','...jJJjJJj..t...','....jJjJj..tt...','.......jJjJjJj..','......jJJjJJjJj.','.......jJjJjJj..','........ttt.....','........tt......','................','................','................'],
+  {t:'#5a7a2a',j:'#f2d64a',J:'#fbee9a'}],
+ laine:[['................','................','....wwwwww......','..wwWWWWWWww....','.wWWwwWWwwWWw...','.wWwWWwwWWwWw...','.wWWwwWWwwWWw...','.wWwWWwwWWwWw...','..wwWWWWWWww....','....wwwwww......','................','................','................','................','................','................'],
+  {w:'#c9c0ae',W:'#f2ece0'}],
+ lait:[['................','.....kkkk.......','.....kmmk.......','.....kmmk.......','....kkmmkk......','...kmmmmmmk.....','...kmMmmmMmk....','...kmmmmmmmk....','...kmMmmmMmk....','...kmmmmmmmk....','...kmmmmmmmk....','...kkkkkkkkk....','................','................','................','................'],
+  {k:'#b8b0a0',m:'#fbf6ec',M:'#e4dccc'}],
+ fromage:[['................','................','....jjjjjjjj....','...jJJJJJJJJj...','..jJJoJJJJoJJj..','.jJJJJJoJJJJJJj.','.jJoJJJJJJoJJJj.','.jJJJJJoJJJJJJj.','.jJJoJJJJJJJJJj.','.jjjjjjjjjjjjjj.','..oooooooooooo..','................','................','................','................','................'],
+  {j:'#e8c04a',J:'#f6dc82',o:'#c89a1e'}],
+ truffe:[['................','................','.....nnnn.......','...nnNNNNnn.....','..nNNnNNnNNn....','..nNNNNnNNNn....','..nNnNNNNnNn....','..nNNNNnNNNn....','...nnNNNNnn.....','.....nnnn.......','................','................','................','................','................','................'],
+  {n:'#241a14',N:'#4a382c'}],
+ planche:[['................','................','................','..bbbbbbbbbbbb..','..bBBBBBBBBBBb..','..bBbBBBBbBBBb..','..bBBBBBBBBBBb..','..bbbbbbbbbbbb..','................','..bbbbbbbbbbbb..','..bBBbBBBBBBBb..','..bBBBBBBBbBBb..','..bBBBBBBBBBBb..','..bbbbbbbbbbbb..','................','................'],
+  {b:'#7a5230',B:'#a5764a'}],
+ poutre:[['................','................','...bbbbbbbbbb...','..bBBBBBBBBBBb..','..bBBbBBBBbBBb..','..bBBBBBBBBBBb..','..bBBBBbBBBBBb..','..bBBBBBBBBBBb..','..bBBbBBBBbBBb..','..bBBBBBBBBBBb..','...bbbbbbbbbb...','................','................','................','................','................'],
+  {b:'#5e3c20',B:'#8a5a30'}],
+ tuile:[['................','................','...rrrrrrrrrr...','..rRRrRRrRRrRr..','..rRRrRRrRRrRr..','..rRRrRRrRRrRr..','..rRRrRRrRRrRr..','..rrrrrrrrrrrr..','...rrrrrrrrrr...','..rRRrRRrRRrRr..','..rRRrRRrRRrRr..','..rrrrrrrrrrrr..','................','................','................','................'],
+  {r:'#9e4428',R:'#c86e46'}]};
+for(const k in G)ICONES[k]=icoGrille(G[k][0],G[k][1]);
+}
+
 
 /* ================= LES ICÔNES ET LES NOMS QUI MANQUAIENT =================
    Les poissons du lac et de la mer reçoivent une icône dessinée d'après
@@ -28907,6 +28978,7 @@ await Promise.all([
 if(!$('page2').classList.contains('on')||!$('page2Fond').classList.contains('bq'))return;
 peindreMadeleine(mot);}
 let peindreMadeleine=function(mot){
+try{completerLesIcones();}catch(erIco){}
 /* LE CARNET PASSE EN PREMIER : CSS_BQ ne garde plus que ses morceaux à
    elle, qui doivent pouvoir affiner ce que la coque pose. */
 if(!document.getElementById('cssBq')){const st=document.createElement('style');st.id='cssBq';st.textContent=CARNET('bq')+CSS_BQ+CSS_BQ_A;document.head.appendChild(st);}
@@ -29012,7 +29084,24 @@ if(!d||d.erreur){b.disabled=false;
 motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':'Madeleine n’a pas pu.');return;}
 potAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);
 peindreMadeleine();});}
-try{const cv=$('bqArr');if(cv){const g=cv.getContext('2d');g.setTransform(2,0,0,2,0,0);g.clearRect(0,0,44,40);fpCadre(g,3,3,34,33);for(let q=0;q<4;q++)fpTerre(g,5+(q%2)*15,5+(q>>1)*14.5,15,14.5,{eau:true});window.FP_ARR_ANIM=window.FP_ARR_ANIM||{};window.FP_ARR_ANIM['-1,-1']=Date.now()-600;fpDessinerArroseur(g,0,0,Date.now(),-1,-1);}}catch(x){}
+/* L'ARROSEUR DU JEU est un tuyau fin posé sur le cadre : à 44 pixels il
+   ne restait qu'une caisse sombre. L'icône montre maintenant l'arroseur
+   lui-même, gros, au milieu de sa parcelle. */
+try{const cv=$('bqArr');if(cv){const g=cv.getContext('2d');g.setTransform(2,0,0,2,0,0);g.clearRect(0,0,44,40);
+fpCadre(g,3,3,34,33);for(let q=0;q<4;q++)fpTerre(g,5+(q%2)*15,5+(q>>1)*14.5,15,14.5,{eau:true});
+const P=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(a,b,w,h);};
+P(4,4,32,32,'rgba(255,238,196,.22)');                       /* la terre s'éclaircit, le laiton ressort */
+P(13.4,27.4,13.2,3.2,'#2b1f0d');                            /* l'ombre portée fait l'écart */
+P(17.9,14.4,4.2,14,'#2b1f0d');P(15.4,10.4,9.2,5.7,'#2b1f0d');P(18.4,7.9,3.2,2.8,'#2b1f0d');
+P(14,28,12,2,'#5a4423');P(14,28,12,0.8,'#7a5e33');          /* le socle */
+P(18.5,15,3,13,'#8e6c22');P(18.5,15,1,13,'#e0bc5e');        /* le fût */
+P(16,11,8,4.5,'#c8a23e');P(16,11,8,1.2,'#f0d47e');P(16,14.2,8,1.3,'#7e5f16');
+P(19,8.5,2,2.5,'#e8c868');P(18.4,8,3.2,1,'#fff0b8');        /* la buse */
+for(const s of [-1,1])for(let q=0;q<5;q++){const u=q/4, d=3+u*11,
+  x=20+s*d, y=10+u*u*9.5-Math.sin(u*Math.PI)*3.2;
+  g.fillStyle='rgba(20,36,52,'+(0.5-u*0.3).toFixed(2)+')';g.fillRect(x-1.1,y-1.1,2.3,2.3);
+  g.fillStyle='rgba(222,242,255,'+(0.98-u*0.4).toFixed(2)+')';g.fillRect(x-0.8,y-0.8,1.7,1.7);}
+P(10,24,1.6,1.6,'rgba(188,226,255,.75)');P(29,25,1.6,1.6,'rgba(188,226,255,.75)');}}catch(x){}
 $('page2Fond').querySelectorAll('[data-arr]').forEach(b=>b.onclick=async()=>{b.disabled=true;const d=await appelRPC('champ_arroseur_acheter',{p_joueur:e.id});
 if(d&&!d.erreur){CH.stockArr=d.stock||((CH.stockArr||0)+1);if(typeof d.euros==='number')e.euros=d.euros;try{majHaut();}catch(x){}jouer('vente','moment');vibrer([15,40,15]);peindreMadeleine('« Le voilà ! Va le poser sur une parcelle. »');}
 else{b.disabled=false;motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':'Madeleine n’a pas pu.');}});
@@ -32589,7 +32678,7 @@ const CSS_BQ_A=`
 #page2Fond.bq.mA .aCarte{flex:1;min-height:0;margin:0 12px;background:#fff8e4;border-radius:22px 22px 0 0;box-shadow:0 -3px 0 #2e5a1a;display:flex;flex-direction:column;overflow:hidden}
 #page2Fond.bq.mA .corps{flex:1;min-height:0;overflow-y:auto;padding:12px 12px 16px;background:none}
 #page2Fond.bq.mA .mot{position:relative;min-height:52px;padding:7px 11px;margin:0 0 12px 62px;background:#f3e2b8;border-radius:14px;font:700 13px/1.3 'Baloo 2','Trebuchet MS',sans-serif;color:#5a4428;font-style:normal}
-#page2Fond.bq.mA .mot:before{content:'';position:absolute;left:-62px;top:0;width:50px;height:50px;border-radius:50%;background:#f3d8a8 ${MAD_SVG} center/42px 42px no-repeat;box-shadow:0 0 0 3px #2e5a1a;image-rendering:pixelated}
+#page2Fond.bq.mA .mot:before{content:'';position:absolute;left:-62px;top:0;width:50px;height:50px;border-radius:50%;background:#f3d8a8 var(--mad,none) center/42px 42px no-repeat;box-shadow:0 0 0 3px #2e5a1a;image-rendering:pixelated}
 #page2Fond.bq.mA .aGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 #page2Fond.bq.mA .lg{position:relative;display:grid;grid-template-columns:40px 1fr;grid-template-rows:auto auto;column-gap:8px;align-items:center;margin:0;padding:9px;border:0;border-radius:16px;background:#f3e2b8;color:#3a2408;text-align:left;box-shadow:0 3px 0 #dcc694}
 #page2Fond.bq.mA .lg:active{transform:translateY(2px);box-shadow:0 1px 0 #dcc694}
@@ -32650,7 +32739,11 @@ const CSS_BQ_A=`
    voit tout le jeu. Son texte a été cherché plus haut, pendant que rien
    ne tournait encore ; cette évaluation-ci ne fait donc pas attendre.
    ================= */
+/* LE PORTRAIT DE MADELEINE VIENT DE ferme.js, écrit bien après CSS_BQ_A :
+   le `${MAD_SVG}` d'alors valait « undefined » et la pastille restait
+   vide. Le CSS lit maintenant une variable, qu'on pose ici. */
 if(TXT_FERME){({CH_X0,CH_Y0,CH,chStade,chAdopter,chCharger,chDeSaison,chPoints,chDessinFerme,fmDansMaison,peindreClotureFerme,fmDessinerMaison,peindreCheminsFerme,fpCadre,fpTerre,fmDessinerEtal,MAD_SVG,bqAtelierChamp,fmDessinerLampes,fmDessinerDeco,fmDessinerMetro,fpDessinerArrosoir,fpDessinerArroseur,fmDessinerLanternes,PG,pgCharger,pgDessiner,PC,pcCharger,pcDessiner,moDessiner,ptDessiner,cbfDessiner,ruDessiner,ouvrirMonCabanon}=eval(TXT_FERME));}
+try{if(typeof MAD_SVG==='string')document.documentElement.style.setProperty('--mad',MAD_SVG);}catch(erMad){}
 
 
 

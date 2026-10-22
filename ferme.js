@@ -707,7 +707,14 @@ return 'url("data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://ww
    repasser par l'ouverture, qui redemanderait tout le reste. */
 function bqAtelierChamp(){if(!CH||!CH.charge){try{if(Date.now()-(window.BQ_CH_LU||0)>20000){window.BQ_CH_LU=Date.now();chCharger().then(()=>{if($('page2').classList.contains('on')&&$('page2Fond').classList.contains('bq'))peindreMadeleine();});}}catch(x){}return '<div class="mot">« Un instant, je regarde ton champ… »</div>';}
 const max=CH.max||40, nbP=Math.floor(max/4), pris=Math.ceil(chNb()/4);
-const i=Math.max(1,Math.floor((max-40)/20)+1), PX=[150000,400000,900000,1800000,3000000,5000000], prix=PX[i-1];
+/* L'ÉCHELLE S'ARRÊTAIT À SIX PALIERS, soit quarante parcelles. Les
+   récompenses de niveau poussent le champ plus loin : passé là, la
+   boutique affichait « Au max » devant un champ qui n'était pas plein.
+   Douze paliers, et le vrai maximum est au bout. */
+const i=Math.max(1,Math.floor((max-40)/20)+1),
+      PX=[150000,400000,900000,1800000,3000000,5000000,
+          8000000,12000000,18000000,26000000,36000000,50000000],
+      prix=PX[i-1];
 return '<div class="mot">« Ton champ est trop petit ? Je t’arrange ça, contre un petit quelque chose. »</div>'+
 '<div class="aLi"><span class="ic">🌱</span><span class="tx"><b>Ton champ · '+pris+' / '+nbP+' parcelles</b><span class="jauge"><i style="width:'+Math.min(100,Math.round(pris/Math.max(1,nbP)*100))+'%"></i></span></span>'+
 (prix?'<button data-agch="1">+5<small>'+enEuros(prix).replace(',00','')+'</small></button>':'<em>Au max</em>')+'</div>'+

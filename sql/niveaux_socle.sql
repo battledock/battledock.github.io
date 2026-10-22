@@ -128,3 +128,24 @@ begin
 end $$;
 
 update public.marche set facteur = round(facteur,6) where scale(facteur) > 6;
+
+-- ============================================================
+-- 2026-10-22 · LE CHAMP AU-DELÀ DE QUARANTE PARCELLES
+-- ============================================================
+-- champ_agrandir n'avait que six paliers (jusqu'à 160 tuiles, soit
+-- quarante parcelles). Les récompenses de niveau poussent le champ plus
+-- loin : passé là, la boutique affichait « Au max » devant un champ qui
+-- n'était pas plein. Douze paliers, et le vrai maximum au bout (280
+-- tuiles, soixante-dix parcelles).
+do $d$
+declare src text; neuf text;
+begin
+  select pg_get_functiondef(p.oid) into src from pg_proc p
+    join pg_namespace n on n.oid=p.pronamespace
+   where n.nspname='public' and p.proname='champ_agrandir';
+  neuf := replace(src,
+    'PRIX bigint[] := array[150000,400000,900000,1800000,3000000,5000000];',
+    'PRIX bigint[] := array[150000,400000,900000,1800000,3000000,5000000,8000000,12000000,18000000,26000000,36000000,50000000];');
+  if neuf = src then raise exception 'motif introuvable'; end if;
+  execute neuf;
+end $d$;
