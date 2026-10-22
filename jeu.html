@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<script src="maintenance.js?v=2026-10-22-2200"></script>
+<script src="maintenance.js?v=2026-10-22-2300"></script>
 
 
 
@@ -126,7 +126,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-10-22-2200';
+var MA_VERSION='2026-10-22-2300';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il
@@ -2437,16 +2437,16 @@ white-space:nowrap}
 #tiroir.part .latte,#tiroir.part .tbas{animation:none}
 @keyframes ligneFin{from{opacity:0;transform:translateY(12px) scale(.92)}
 60%{opacity:1;transform:translateY(0) scale(1.04)}to{opacity:1;transform:none}}</style>
-<script src="retour.js?v=2026-10-22-2200"></script>
+<script src="retour.js?v=2026-10-22-2300"></script>
 <!-- LE DESSIN DU PERSONNAGE ET LES CARTES POKEDOCK. Classiques, donc
      joues avant le module : window.Perso doit exister quand une carte
      se grave, et window.Pokedock quand on ouvre le rayon du Bar. -->
-<script src="session.js?v=2026-10-22-2200"></script>
-<script src="personnage.js?v=2026-10-22-2200"></script>
-<script src="pokedock_hw.js?v=2026-10-22-2200"></script>
-<script src="pokedock.js?v=2026-10-22-2200"></script>
-<script src="courses.js?v=2026-10-22-2200"></script>
-<link rel="stylesheet" href="responsive.css?v=2026-10-22-2200">
+<script src="session.js?v=2026-10-22-2300"></script>
+<script src="personnage.js?v=2026-10-22-2300"></script>
+<script src="pokedock_hw.js?v=2026-10-22-2300"></script>
+<script src="pokedock.js?v=2026-10-22-2300"></script>
+<script src="courses.js?v=2026-10-22-2300"></script>
+<link rel="stylesheet" href="responsive.css?v=2026-10-22-2300">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -26309,39 +26309,66 @@ st.id='cssCls';st.textContent=CSS_CLS;document.head.appendChild(st);}
 $('page2Fond').className='';$('page2').classList.add('on');
 if(CLS_VUE==='peche')return clsLeMur();
 if(CLS_VUE==='pokedock')return clsPokedock();
-clsCadre('Classement','FORÊT · FERME · VERGER · PÊCHE');
-try{sauver();envoyerSauvegarde(true);}catch(x){}   /* on se compte avec un score à jour */
-let liste=[];
-/* LE CLASSEMENT GÉNÉRAL vient du serveur, avec le détail de chaque
-   score : forêt, ferme, verger, pêche. Chaque activité y pèse selon
-   l'effort qu'elle demande, pas selon ce qu'elle rapporte en euros. */
-try{const d=await appelRPC('classement_general',{});if(Array.isArray(d))liste=d.filter(j=>j&&j.pseudo&&j.pseudo!=='sans nom');}catch(x){}
-if(!liste.length){try{
-const r=await fetch(URL_SB+'/rest/v1/joueurs?select=id,pseudo,apparence,score,recolte,maj&order=score.desc,maj.desc&limit=40',{headers:sbEntetes});
-const d=await r.json();
-liste=(Array.isArray(d)?d:[]).filter(j=>j&&j.pseudo&&j.pseudo!=='sans nom');
-}catch(x){}}
-const C=$('page2Fond').querySelector('#cls .corps');if(!C)return;
-if(!liste.length){C.innerHTML='<div class="vide">Personne n’est encore au registre.</div>';return;}
-const record=Math.max(1,liste[0].score||0);
-let h='<div class="ech"><span>0</span><span>'+clsPts(record)+' · LE RECORD</span></div>';
-h+=liste.map((j,k)=>{
-const moi=j.id===e.id, part=Math.max(2.5,Math.round((j.score||0)/record*1000)/10);
-return '<div class="lg'+(k===0?' prem':'')+(moi?' moi':'')+'">'+
-'<div class="ba" style="width:'+part+'%"></div><div class="dd">'+
-'<span class="r">'+(k+1)+'</span>'+
-'<img src="'+clsTete(j)+'" alt="">'+
-'<span class="g"><b>'+echapperT(j.pseudo)+(moi?' <i>· toi</i>':'')+'</b>'+
-'<small>'+(j.foret!=null?clsParts(j):(clsVu(j.maj)||'—'))+'</small></span>'+
-'<span class="s">'+clsPts(j.score)+'</span></div></div>';}).join('');
-const iMoi=liste.findIndex(j=>j.id===e.id);
-if(iMoi>0){
-const ecart=(liste[iMoi-1].score||0)-(liste[iMoi].score||0)+1;
-h+='<div class="ecart">Il te manque <b>'+clsPts(ecart)+' point'+(ecart>1?'s':'')+'</b> pour passer '+iMoi+(iMoi===1?'ᵉʳ':'ᵉ')+'</div>';
-}else if(iMoi===0){h+='<div class="ecart">Tu es <b>premier du port</b>. Tiens bon.</div>';}
-h+='<div class="ecart" style="opacity:.75">🌲 1 pt par objet ramassé · 🥕 2 à 9 pts par parcelle récoltée · 🍒 1 pt par fruit · 🐟 10 à 60 pts par poisson, selon sa rareté</div>';
-C.innerHTML=h;
+return clsNiveaux();
 }
+/* ================= LE CLASSEMENT DES NIVEAUX (modèle A) =================
+   Au style du carnet : un podium pour les trois premiers (portrait et
+   médaille de niveau), puis une carte par joueur, son grade, sa barre
+   d'XP et s'il est en ligne. L'XP, c'est le score juste (progres). */
+const CLS_GRADES=[[30,'Roi du Vieux-Port'],[25,'Capitaine'],[20,'Patron de pêche'],[15,'Bosco'],[10,'Second'],[5,'Matelot'],[1,'Mousse']];
+const CSS_CLA=`.clA .podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:6px 0 12px}
+.clA .pod{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center}
+.clA .pod .med{position:relative;border-radius:50%;background:radial-gradient(circle at 50% 35%,#4a6a8a,#1a2a3a);box-shadow:0 0 0 3px #3a2408,0 4px 0 3px #3a2408}
+.clA .pod .med img{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);image-rendering:pixelated}
+.clA .pod .med b{position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);min-width:30px;height:22px;border-radius:11px;background:#f4c23a;box-shadow:0 0 0 2.5px #3a2408;font:400 15px/22px 'Lilita One',sans-serif;color:#3a2408;text-align:center;padding:0 5px}
+.clA .pod .nm{margin-top:14px;font:400 14px 'Lilita One',sans-serif;color:#3a2408;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.clA .pod .ti{font:800 10px 'Baloo 2',sans-serif;color:#8a6a48;white-space:nowrap}
+.clA .pod .vu{font:800 9.5px 'Baloo 2',sans-serif;color:#8a6a48;display:flex;align-items:center;gap:3px}
+.clA .pod .soc{margin-top:5px;width:100%;border-radius:12px 12px 4px 4px;display:flex;align-items:flex-start;justify-content:center;font:400 22px 'Lilita One',sans-serif;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35);padding-top:4px}
+.clA .pod.moi .nm{color:#c8501a}
+.clA .l{display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:7px;border-radius:16px;background:#fffaf0;box-shadow:0 3px 0 #dcc694}
+.clA .l.moi{background:#fff2b8;box-shadow:0 0 0 2.5px #f0b838,0 3px 0 #c8a040}
+.clA .l .rg{width:22px;font:400 16px 'Lilita One',sans-serif;color:#8a6a48;text-align:center;flex:none}
+.clA .l .po{flex:none;width:40px;height:40px;border-radius:12px;background:#f3e2b8;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.clA .l .po img{width:34px;height:34px;image-rendering:pixelated}
+.clA .l .tx{flex:1;min-width:0}.clA .l .tx b{display:block;font:400 15px 'Lilita One',sans-serif;color:#3a2408;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clA .l .tx small{display:flex;align-items:center;gap:4px;font:800 10px 'Baloo 2',sans-serif;color:#8a6a48;letter-spacing:.3px;white-space:nowrap;overflow:hidden}
+.clA .on{display:inline-block;width:7px;height:7px;border-radius:50%;background:#3ac85a;box-shadow:0 0 0 2px rgba(58,200,90,.25)}
+.clA .vuOn{color:#2a8a3a}
+.clA .l .jg{height:7px;margin-top:4px;border-radius:4px;background:#efe2c0;overflow:hidden}.clA .l .jg i{display:block;height:100%;background:linear-gradient(90deg,#7ac0f0,#3a8ad0)}
+.clA .l .xp{flex:none;text-align:right;font:400 15px 'Lilita One',sans-serif;color:#3a2408}.clA .l .xp small{display:block;font:800 9px 'Baloo 2',sans-serif;color:#8a6a48}
+.clA .cible{margin:4px 0 9px;padding:10px 12px;border-radius:16px;background:linear-gradient(#ffe9a8,#f6cf6a);box-shadow:0 0 0 2.5px #7a4a10,0 4px 0 2.5px #7a4a10;font:800 12.5px/1.35 'Baloo 2',sans-serif;color:#5a3408}
+.clA .regle{margin:10px 2px 4px;font:700 10.5px/1.4 'Baloo 2',sans-serif;color:#8a6a48;text-align:center}`;
+function clsNiv(xp){let n=1,d=0;while(n<200&&d+nivCout(n)<=xp){d+=nivCout(n);n++;}return {n,dans:xp-d,pour:nivCout(n)};}
+function clsEnLigne(j){if(j.id===e.id)return true;try{if(EN_LIGNE.some(p=>p.id===j.id))return true;}catch(x){}return clsVu(j.maj)==='en ligne';}
+function clsStatut(j){if(clsEnLigne(j))return '<span class="on"></span><span class="vuOn">en ligne</span>';const v=clsVu(j.maj);return v?echapperT(v):'';}
+async function clsNiveaux(){
+ if(!document.getElementById('cssBq')){const st=document.createElement('style');st.id='cssBq';st.textContent=CARNET('bq')+CSS_BQ+CSS_BQ_A;document.head.appendChild(st);}
+ if(!document.getElementById('cssClA')){const st=document.createElement('style');st.id='cssClA';st.textContent=CSS_CLA;document.head.appendChild(st);}
+ const F=$('page2Fond');F.className='bq mA niv clA';
+ const mN=NIV&&NIV.niveau?NIV.niveau.niveau:null;
+ const cadre=(corps)=>{F.innerHTML='<div class="aTop"><div class="aTtl"><small>LE REGISTRE DU PORT</small>Classement</div>'+(mN?'<span class="aBourse">★ Toi : niv. '+mN+'</span>':'')+'<button class="aX" id="clsXA">✕</button></div>'+
+  '<div class="bqOng">'+[['recolte','🏅','Niveaux'],['peche','🐟','Pêche'],['pokedock','🃏','Pokédock']].map(([k,i,t])=>'<button data-cva="'+k+'" class="'+(k==='recolte'?'on':'')+'"><i>'+i+'</i>'+t+'</button>').join('')+'</div>'+
+  '<div class="aCarte"><div class="corps">'+corps+'</div></div>';
+  $('clsXA').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+  F.querySelectorAll('[data-cva]').forEach(b=>b.onclick=()=>{if(b.dataset.cva==='recolte')return;CLS_VUE=b.dataset.cva;vibrer(8);ouvrirLeClassement();});};
+ cadre('<div class="nvVide">On ouvre le registre…</div>');
+ try{sauver();envoyerSauvegarde(true);}catch(x){}
+ let L=[];try{const d=await appelRPC('classement_general',{});if(Array.isArray(d))L=d.filter(j=>j&&j.pseudo&&j.pseudo!=='sans nom');}catch(x){}
+ if(!($('page2').classList.contains('on')&&F.classList.contains('clA')))return;
+ if(!L.length){cadre('<div class="nvVide">Personne n’est encore au registre.</div>');return;}
+ const f=n=>(+n||0).toLocaleString('fr-FR');
+ L.forEach(j=>{j.N=clsNiv(+j.score||0);j.T=j.titre||CLS_GRADES.find(t=>j.N.n>=t[0])[1];});
+ const moi=L.findIndex(j=>j.id===e.id);
+ const pod=(j,k)=>{if(!j)return '<div class="pod"></div>';const H=[96,74,62][k],C=['#e8b020','#a8b4bc','#c8804a'][k],S=[86,70,60][k];
+  return '<div class="pod'+(j.id===e.id?' moi':'')+'"><div class="med" style="width:'+S+'px;height:'+S+'px"><img src="'+clsTete(j)+'" alt="" style="width:'+(S-10)+'px;height:'+(S-10)+'px"><b>'+j.N.n+'</b></div><div class="nm">'+echapperT(j.pseudo)+'</div><div class="ti">'+echapperT(j.T).toUpperCase()+'</div><div class="vu">'+clsStatut(j)+'</div><div class="soc" style="height:'+H+'px;background:linear-gradient('+C+','+teint(C,-30)+')">'+(k+1)+'</div></div>';};
+ let h='<div class="podium">'+pod(L[1],1)+pod(L[0],0)+pod(L[2],2)+'</div>';
+ if(moi>0){const a=L[moi-1],m=L[moi];h+='<div class="cible">⚓ Il te manque <b>'+f(a.score-m.score+1)+' XP</b> pour passer devant <b>'+echapperT(a.pseudo)+'</b>'+(moi===1?' et prendre la tête':'')+'.</div>';}
+ else if(moi===0)h+='<div class="cible">⚓ Tu es <b>premier du port</b>. Tiens bon.</div>';
+ h+=L.slice(3).map((j,i)=>{const pc=Math.round(j.N.dans/Math.max(1,j.N.pour)*100);
+  return '<div class="l'+(j.id===e.id?' moi':'')+'"><span class="rg">'+(i+4)+'</span><span class="po"><img src="'+clsTete(j)+'" alt=""></span><span class="tx"><b>'+echapperT(j.pseudo)+(j.id===e.id?' · toi':'')+'</b><small>'+echapperT(j.T).toUpperCase()+(clsStatut(j)?' · '+clsStatut(j):'')+'</small><div class="jg"><i style="width:'+pc+'%"></i></div></span><span class="xp">Niv. '+j.N.n+'<small>'+f(j.score)+' XP</small></span></div>';}).join('');
+ h+='<div class="regle">L’XP vient de la forêt, des légumes, des fruits et de la pêche.</div>';
+ cadre(h);}
 /* le détail d'un score : seulement les activités où l'on a des points */
 function clsParts(j){const f=n=>(+n||0).toLocaleString('fr-FR');
 const p=[['🌲',j.foret],['🥕',j.legumes],['🍒',j.fruits],['🐟',j.peche]].filter(([,n])=>+n>0);
