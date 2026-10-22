@@ -107,9 +107,6 @@ document.body.insertAdjacentHTML('afterbegin',`
 <button class="latte" id="b-emotes">
     <svg viewBox="0 0 20 18" shape-rendering="crispEdges" width="30"><rect x="4" y="2" width="12" height="14" fill="#e8c06a"/><rect x="3" y="4" width="14" height="10" fill="#e8c06a"/><rect x="6" y="6" width="2" height="2" fill="#3a2408"/><rect x="12" y="6" width="2" height="2" fill="#3a2408"/><rect x="6" y="10" width="8" height="2" fill="#3a2408"/><rect x="7" y="12" width="6" height="1" fill="#c8503a"/><rect x="5" y="3" width="4" height="2" fill="#fff4c0"/></svg><span class="b">Émotes</span>
     <i class="clou g"></i><i class="clou d"></i></button>
-<button class="latte" id="b-aide">
-    <svg viewBox="0 0 20 18" shape-rendering="crispEdges" width="30"><rect x="9" y="10" width="2" height="7" fill="#6b4a2c"/><rect x="3" y="1" width="14" height="10" fill="#efe6cc"/><rect x="3" y="1" width="14" height="1" fill="#fbf5e4"/><rect x="3" y="10" width="14" height="1" fill="#b9a57c"/><rect x="8" y="3" width="4" height="1" fill="#b4302c"/><rect x="11" y="4" width="1" height="2" fill="#b4302c"/><rect x="9" y="6" width="2" height="1" fill="#b4302c"/><rect x="9" y="7" width="1" height="1" fill="#b4302c"/><rect x="9" y="9" width="1" height="1" fill="#b4302c"/></svg><span class="b">Aide</span>
-    <i class="clou g"></i><i class="clou d"></i></button>
 <div class="tbas"><button class="latte" id="b-reglages">
     <svg viewBox="0 0 20 18" shape-rendering="crispEdges" width="30"><rect x="2" y="4" width="16" height="2" fill="#c9a24a"/><rect x="2" y="12" width="16" height="2" fill="#c9a24a"/><rect x="12" y="2" width="3" height="6" fill="#e8c06a"/><rect x="12" y="2" width="3" height="1" fill="#f4d98a"/><rect x="5" y="10" width="3" height="6" fill="#e8c06a"/><rect x="5" y="10" width="3" height="1" fill="#f4d98a"/></svg><span class="b">Réglages</span></button></div>
   <button class="latte" id="b-sac">

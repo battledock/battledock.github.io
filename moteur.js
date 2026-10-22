@@ -18193,7 +18193,7 @@ $('page2Fond').querySelectorAll('[data-ai-ong]').forEach(b=>b.onclick=()=>{vibre
 const peindre=()=>{$('page2Fond').querySelectorAll('canvas[data-sc]').forEach(c=>{try{aideScene(c,c.dataset.sc);}catch(x){}});};
 requestAnimationFrame(peindre);setTimeout(peindre,120);
 }
-$('b-aide').onclick=()=>ouvrirLAide('debuter');
+/* L'AIDE A QUITTÉ LE MENU : elle reste dans Réglages, onglet Aide. */
 
 /* =====================================================================
    LE TABLEAU DU PORT, en bas des escaliers du complexe festif
@@ -23533,7 +23533,17 @@ const CSS_CLA=`.clA .podium{display:flex;align-items:flex-end;justify-content:ce
 .clA .l .xp{flex:none;text-align:right;font:400 15px 'Lilita One',sans-serif;color:#3a2408}.clA .l .xp small{display:block;font:800 9px 'Baloo 2',sans-serif;color:#8a6a48}
 .clA .cible{margin:4px 0 9px;padding:10px 12px;border-radius:16px;background:linear-gradient(#ffe9a8,#f6cf6a);box-shadow:0 0 0 2.5px #7a4a10,0 4px 0 2.5px #7a4a10;font:800 12.5px/1.35 'Baloo 2',sans-serif;color:#5a3408}
 .clA .l.pq .pc{flex:none;width:66px;height:30px;border-radius:10px;background:#dceaf4;display:flex;align-items:center;justify-content:center}.clA .l.pq canvas{width:62px;height:26px;image-rendering:pixelated}
-.clA .regle{margin:10px 2px 4px;font:700 10.5px/1.4 'Baloo 2',sans-serif;color:#8a6a48;text-align:center}`;
+.clA .regle{margin:10px 2px 4px;font:700 10.5px/1.4 'Baloo 2',sans-serif;color:#8a6a48;text-align:center}
+.clA .scPod{position:relative;overflow:hidden;margin:-12px -12px 12px;height:clamp(176px,33vh,248px);
+border-radius:22px 22px 0 0;background:#2f4f84}
+.clA .scPod canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+.clA .scPod .pn{position:absolute;bottom:4px;transform:translateX(-50%);width:33%;text-align:center}
+.clA .scPod .pn b{display:block;font:400 15px 'Lilita One',sans-serif;color:#fff;
+text-shadow:0 2px 8px rgba(0,0,0,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clA .scPod .pn span{display:block;font:800 9.5px 'Baloo 2',sans-serif;text-shadow:0 2px 6px rgba(0,0,0,.85)}
+.clA .scPod .pn.p0{left:50%}.clA .scPod .pn.p0 b{font-size:17px}
+.clA .scPod .pn.p1{left:20%}.clA .scPod .pn.p2{left:80%}
+.clA .scPod .pn.moi b{color:#ffd84a}`;
 function clsNiv(xp){let n=1,d=0;while(n<200&&d+nivCout(n)<=xp){d+=nivCout(n);n++;}return {n,dans:xp-d,pour:nivCout(n)};}
 function clsEnLigne(j){if(j.id===e.id)return true;try{if(EN_LIGNE.some(p=>p.id===j.id))return true;}catch(x){}return clsVu(j.maj)==='en ligne';}
 function clsStatut(j){if(clsEnLigne(j))return '<span class="on"></span><span class="vuOn">en ligne</span>';const v=clsVu(j.maj);return v?echapperT(v):'';}
@@ -23550,10 +23560,92 @@ function clsCadreA(vue,corps,badge){const F=$('page2Fond');F.className='bq mA ni
  F.querySelectorAll('[data-cva]').forEach(b=>b.onclick=()=>{if(b.dataset.cva===vue)return;CLS_VUE=b.dataset.cva;vibrer(8);ouvrirLeClassement();});
  return F.querySelector('.aCarte .corps');}
 const clsActif=(vue)=>$('page2').classList.contains('on')&&$('page2Fond').classList.contains('clA')&&$('page2Fond').dataset.vue===vue;
-/* le podium : seuls les trois premiers ont la médaille ; v(j) est ce qu'on inscrit dessus */
-function clsPodium(L,v,sous){const pod=(j,k)=>{if(!j)return '<div class="pod"></div>';const H=[96,74,62][k],C=['#e8b020','#a8b4bc','#c8804a'][k],S=[86,70,60][k];
-  return '<div class="pod'+(j.id===e.id?' moi':'')+'"><div class="med" style="width:'+S+'px;height:'+S+'px"><img src="'+clsTete(j)+'" alt="" style="width:'+(S-10)+'px;height:'+(S-10)+'px"><b>'+v(j)+'</b></div><div class="nm">'+echapperT(j.pseudo)+'</div><div class="ti">'+sous(j)+'</div><div class="vu">'+clsStatut(j)+'</div><div class="soc" style="height:'+H+'px;background:linear-gradient('+C+','+teint(C,-30)+')">'+(k+1)+'</div></div>';};
- return '<div class="podium">'+pod(L[1],1)+pod(L[0],0)+pod(L[2],2)+'</div>';}
+/* ================= LE PODIUM DU PORT =================
+   Les trois premiers ne sont plus trois pastilles : ils montent sur un
+   podium de bois, au coucher du soleil, avec leur vraie tenue. Le décor
+   est dessiné à la grille comme les écrans de chargement ; les noms
+   restent en HTML, pour les polices et les noms trop longs. */
+let CLS_POD=null;
+function clsPodium(L,v,sous){
+CLS_POD={L:L.slice(0,3),v:v,sous:sous};
+requestAnimationFrame(()=>{try{clsPodiumPeindre();}catch(x){}});
+const M=['#f0c13a','#c3ccd4','#d08a4a'];
+const nom=(i)=>{const j=L[i];if(!j)return '';
+ return '<div class="pn p'+i+(j.id===e.id?' moi':'')+'"><b>'+echapperT(j.pseudo)+'</b>'+
+ '<span style="color:'+M[i]+'">'+v(j)+' · '+sous(j)+'</span></div>';};
+return '<div class="scPod"><canvas id="clsPod"></canvas>'+nom(1)+nom(0)+nom(2)+'</div>';}
+function clsPodiumPeindre(){
+if(!CLS_POD)return;
+const cv=document.getElementById('clsPod');if(!cv)return;
+const r=cv.getBoundingClientRect(),W=Math.round(r.width),H=Math.round(r.height);
+if(!W||!H)return;
+const dpr=Math.min(2,window.devicePixelRatio||1);
+cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+const g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.imageSmoothingEnabled=false;
+const U=Math.max(2,Math.round(Math.min(W,H)/90)),Wu=Math.ceil(W/U),Hu=Math.ceil(H/U);
+const P=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x)*U,Math.round(y)*U,
+ Math.max(1,Math.round(w))*U,Math.max(1,Math.round(h))*U);};
+const az=(n)=>{const q=Math.sin(n*12.9898)*43758.5453;return q-Math.floor(q);};
+const L=CLS_POD.L, OR=['#f0c13a','#c3ccd4','#d08a4a'];
+const hz=Math.round(Hu*0.46), bas=Math.round(Hu*0.70);
+const B=['#2f4f84','#5b63a0','#8d6fa4','#c0749a','#e08a76','#f0a868','#ffc484'];
+for(let i=0;i<B.length;i++){const y0=Math.round(hz*i/B.length),y1=Math.round(hz*(i+1)/B.length);
+ P(0,y0,Wu,y1-y0,B[i]);
+ if(i)for(let x=0;x<Wu;x++)if(az(x*3.1+i*7)<0.4)P(x,y0,1,1,B[i-1]);}
+/* le soleil bas sur l'eau */
+for(let k=3;k>=1;k--){const rr=Math.round(Hu*0.07)+k*2, cx=Math.round(Wu*0.80), cy=hz-Math.round(Hu*0.07);
+ for(let y=-rr;y<=rr;y++){const w=Math.round(Math.sqrt(Math.max(0,rr*rr-y*y)));
+  if(w>0)P(cx-w,cy+y,w*2,1,'rgba(255,214,140,'+[0.10,0.18,0.30][k-1]+')');}}
+/* la mer, puis le quai */
+const MB=['#4e7fa8','#44749c','#3b6890','#325c84'];
+for(let i=0;i<MB.length;i++){const y0=hz+Math.round((bas-hz)*i/MB.length),y1=hz+Math.round((bas-hz)*(i+1)/MB.length);
+ P(0,y0,Wu,y1-y0,MB[i]);}
+P(0,hz,Wu,1,'#9ec8e0');
+for(let k=0;k<50;k++){const t=az(k*7.3),y=hz+Math.round(t*(bas-hz));
+ P(Math.round(az(k*2.1)*Wu),y,Math.max(1,Math.round(1+t*3)),1,'rgba(220,240,255,.4)');}
+P(0,bas,Wu,Hu-bas,'#8a8276');
+for(let q=0;q<Math.ceil((Hu-bas)/2);q++)for(let x=(q%2?-1:0);x<Wu;x+=4)
+ P(x,bas+q*2,3,1,q%2?'#938b7e':'#89806f');
+P(0,bas,Wu,1,'#b3a996');
+/* la guirlande de fanions */
+{const n=Math.max(6,Math.round(Wu/5)), y=Math.round(Hu*0.14);
+ for(let k=0;k<n;k++){const x=Math.round(k*Wu/(n-1));
+  const d=Math.round(Math.sin(k/(n-1)*Math.PI)*Math.max(2,Hu*0.045));
+  P(x,y+d,Math.ceil(Wu/(n-1))+1,1,'#6b4a2a');
+  const c=['#d8402f','#f0c13a','#4f9434','#2f7ab4','#8a5aa8'][k%5];
+  for(let q=0;q<3;q++)P(x+q,y+d+1+q,Math.max(1,3-q),1,c);}}
+/* le podium : deuxième, premier, troisième */
+const lp=Math.round(Wu*0.24), hs=[Math.round(Hu*0.22),Math.round(Hu*0.14),Math.round(Hu*0.10)];
+const cxs=[Math.round(Wu*0.50),Math.round(Wu*0.20),Math.round(Wu*0.80)];
+const ordre=[1,0,2];
+ordre.forEach(i=>{if(!L[i])return;const hb=hs[i],cx=cxs[i];
+ P(cx-lp/2,bas-hb,lp,hb,'#a5764a');P(cx-lp/2,bas-hb,lp,2,'#c8a06a');
+ P(cx-lp/2,bas-2,lp,2,'#6b4a2a');
+ for(let q=1;q<3;q++)P(cx-lp/2,bas-hb+q*Math.round(hb/3),lp,1,'#8a5f38');});
+/* les trois, avec leur tenue */
+ordre.forEach(i=>{const j=L[i];if(!j)return;
+ try{g.save();g.translate(cxs[i]*U,(bas-hs[i])*U);
+  const hpx=Math.round(H*(i===0?0.38:0.32)), k=hpx/54;g.scale(k,k);
+  const ap=Object.assign({},DEF_AP,j.apparence||{});delete ap.maillot;delete ap.ski;
+  sprite(g,0,0,ap,'bas',0,false);g.restore();}catch(x){}});
+/* le chiffre gravé dans la marche */
+g.save();g.textAlign='center';g.textBaseline='middle';
+ordre.forEach(i=>{if(!L[i])return;const cx=cxs[i]*U,hb=hs[i];
+ const my=(bas-Math.round(hb*0.52))*U, t=String(i+1);
+ g.font='400 '+Math.round(hb*U*0.72)+"px 'Lilita One','Baloo 2',sans-serif";
+ g.fillStyle='rgba(60,36,12,.55)';g.fillText(t,cx,my+2);
+ g.fillStyle=OR[i];g.fillText(t,cx,my);});
+g.restore();
+/* la lumière, puis les confettis */
+const lg=g.createLinearGradient(0,0,0,H);
+lg.addColorStop(0,'rgba(8,16,40,.30)');lg.addColorStop(.35,'rgba(0,0,0,0)');lg.addColorStop(1,'rgba(10,16,30,.22)');
+g.fillStyle=lg;g.fillRect(0,0,W,H);
+{const C=['#d8402f','#f0c13a','#4f9434','#2f7ab4','#8a5aa8','#fbf6ec'];
+ for(let k=0;k<70;k++)P(Math.round(az(k*5.1)*Wu),Math.round(az(k*2.7)*Hu*0.78),1,2,C[k%C.length]);}
+}
+let CLS_POD_T=0;
+addEventListener('resize',()=>{clearTimeout(CLS_POD_T);
+ CLS_POD_T=setTimeout(()=>{try{clsPodiumPeindre();}catch(x){}},140);});
 function clsLigne(j,rang,sous,jauge,droite,petit){return '<div class="l'+(j.id===e.id?' moi':'')+'"><span class="rg">'+rang+'</span><span class="po"><img src="'+clsTete(j)+'" alt=""></span><span class="tx"><b>'+echapperT(j.pseudo)+(j.id===e.id?' · toi':'')+'</b><small>'+sous+(clsStatut(j)?' · '+clsStatut(j):'')+'</small>'+(jauge!=null?'<div class="jg"><i style="width:'+Math.max(0,Math.min(100,jauge))+'%"></i></div>':'')+'</span><span class="xp">'+droite+'<small>'+petit+'</small></span></div>';}
 async function clsNiveaux(){
  clsPrepA();const mN=NIV&&NIV.niveau?NIV.niveau.niveau:null, badge=mN?'★ Toi : niv. '+mN:'';
