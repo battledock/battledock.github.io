@@ -5,7 +5,7 @@
 (function(){var champ=function(t){return t&&t.closest&&t.closest('input,textarea,[contenteditable="true"]');};
 ['selectstart','copy','cut','contextmenu','dragstart'].forEach(function(k){document.addEventListener(k,function(e){if(!champ(e.target))e.preventDefault();},{capture:true});});})();
 (function(){
-var MA_VERSION='2026-10-23-1900';
+var MA_VERSION='2026-10-23-2000';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il

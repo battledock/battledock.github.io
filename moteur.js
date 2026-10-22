@@ -17462,9 +17462,10 @@ joueur.dirVue=ORDRE8[(a+(d<=4?1:-1)+8)%8];
 function majJoueur(dt){
 /* L'ESSAI D'UNE VOITURE À TOKYO : le joystick conduit, le piéton attend */
 if(CARTE==='tokyo'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif){TKM.majEssai(dt,joyX,joyY);vx=vy=0;joueur.marche=false;return;}
-/* À LA BARRE : le joystick tient le cap, le marin ne marche pas */
-if(CARTE==='large'&&BARRE){majNavigation(dt,joyX,joyY);vx=vy=0;joueur.marche=false;return;}
-if(CARTE==='large')majDerive(dt);
+/* AU LARGE, LE JOYSTICK EST LA BARRE. On ne marche pas sur le pont :
+   il n'y a rien à y faire, et deux modes à comprendre pour un bateau
+   vide, c'était un mode de trop. Ligne à l'eau, le bateau s'arrête. */
+if(CARTE==='large'){majNavigation(dt,PECHE?0:joyX,PECHE?0:joyY);vx=vy=0;joueur.marche=false;return;}
 if(window.FP_GEL&&Date.now()<window.FP_GEL){vx=0;vy=0;joueur.marche=false;tournerEnDouceur(dt);return;}   /* on arrose : on reste planté jusqu'à la fin */
 tournerEnDouceur(dt);
 const n=Math.hypot(joyX,joyY);
@@ -20676,7 +20677,7 @@ const demiPont=(t)=>{if(t<0||t>1)return -1;
 const BARRE_Y=PONT_L.L*0.5-58;            /* la barre, vers l'arrière */
 let BAT=(()=>{const C=COINS_L[COIN_LARGE],[dx,dy]=C.dep;
   return {x:dx,y:dy,a:Math.atan2(C.x-dx,-(C.y-dy)),v:0,sillage:[],touche:0};})();
-let BARRE=false, COIN_VU=null, COQUE=null;
+let COIN_VU=null, COQUE=null;
 const batLocal=(x,y)=>{const dx=x-BAT.x,dy=y-BAT.y,c=Math.cos(BAT.a),s=Math.sin(BAT.a);
   return [dx*c+dy*s, -dx*s+dy*c];};
 const batMonde=(lx,ly)=>{const c=Math.cos(BAT.a),s=Math.sin(BAT.a);
@@ -20768,7 +20769,7 @@ function majNavigation(dt,jx,jy){
   }else BAT.v*=Math.exp(-1.1*dt);
   if(BAT.v<1.2)BAT.v=0;
   const nx=BAT.x+Math.sin(BAT.a)*BAT.v*dt, ny=BAT.y-Math.cos(BAT.a)*BAT.v*dt;
-  if(coqueÀTerre(nx,ny,BAT.a)){
+  if(coqueAterre(nx,ny,BAT.a)){
     BAT.v=0;
     if(!BAT.touche||Date.now()-BAT.touche>1400){BAT.touche=Date.now();
       try{vibrer([18,50,18]);texteVolant(joueur.x,joueur.y-52,'on racle !','#ffd040');}catch(x){}}
@@ -20784,17 +20785,6 @@ function majNavigation(dt,jx,jy){
   majLeCoin();
   void ax;void ay;void aa;
 }
-/* hors barre, le bateau dérive doucement et emmène le joueur avec lui */
-function majDerive(dt){
-  if(BAT.v<=0.01){majLeCoin();return;}
-  const [lx,ly]=batLocal(joueur.x,joueur.y);
-  BAT.v*=Math.exp(-1.6*dt);if(BAT.v<1.2)BAT.v=0;
-  const dx=BAT.x+Math.sin(BAT.a)*BAT.v*dt, dy=BAT.y-Math.cos(BAT.a)*BAT.v*dt;
-  if(coqueÀTerre(dx,dy,BAT.a))BAT.v=0;else{BAT.x=dx;BAT.y=dy;}
-  const [nx,ny]=batMonde(lx,ly);joueur.x=nx;joueur.y=ny;
-  for(let i=BAT.sillage.length-1;i>=0;i--){BAT.sillage[i].t+=dt;if(BAT.sillage[i].t>1.8)BAT.sillage.splice(i,1);}
-  majLeCoin();
-}
 function majLeCoin(){
   const k=coinDuBateau();
   if(k===COIN_VU)return;
@@ -20805,14 +20795,12 @@ function majLeCoin(){
   try{majAction();}catch(x){}
 }
 /* l'étrave, les deux joues et le tableau : quatre points suffisent */
-function coqueÀTerre(x,y,a){
+function coqueAterre(x,y,a){
   const c=Math.cos(a),s=Math.sin(a);
   const P=[[0,-PONT_L.L/2+6],[-PONT_L.HW+6,-28],[PONT_L.HW-6,-28],[0,PONT_L.L/2-6]];
   for(const [lx,ly] of P)if(terreLarge(x+lx*c-ly*s, y+lx*s+ly*c))return true;
   return false;
 }
-function prochedeLaBarre(){const [lx,ly]=batLocal(joueur.x,joueur.y);
-  return Math.abs(lx)<24&&Math.abs(ly-BARRE_Y)<34;}
 /* ---------------- la mer et ses quatre coins ---------------- */
 function construireSolLarge(){
   const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
@@ -20891,7 +20879,6 @@ function poserLeBoutonDuLarge(){
 }
 function lieuDePeche(){
 if(CARTE==='large'){
-  if(BARRE||BAT.v>6)return null;              /* on ne pêche pas en route */
   const k=coinDuBateau();if(!k)return null;   /* en pleine eau, rien ne mord */
   const [lx,ly]=batLocal(joueur.x,joueur.y);
   const w=demiPont((ly+PONT_L.L/2)/PONT_L.L);if(w<=6)return null;
@@ -20945,6 +20932,7 @@ return {bx:x,by:XP.quaiY+30,lieu:'quai'};
 return null;
 }
 async function lancerLaLigne(){
+if(CARTE==='large'){BAT.v=0;}   /* on jette la ligne : on coupe le moteur */
 const L=lieuDePeche();
 if(!L||PECHE)return;
 PECHE={etat:'lance',lieu:L.lieu,t0:performance.now(),bx:L.bx,by:L.by,px:joueur.x,py:joueur.y,
@@ -24476,12 +24464,9 @@ b.classList.add('on');b.onclick=laverLArgile;return;
    n'était récoltable depuis que la pêche y est ouverte.
    Quand une ligne est déjà à l'eau, la pêche reprend la main : il faut
    bien pouvoir ferrer. */
-if(CARTE==='large'){
-  if(BARRE){b.innerHTML='Lâcher la barre<small>'+(COIN_VU?COIN_NOM[COIN_VU].toUpperCase():'AU LARGE')+'</small>';
-    b.classList.add('on');b.onclick=()=>{BARRE=false;jouer('clic');vibrer(10);majAction();};return;}
-  if(!PECHE&&prochedeLaBarre()){b.innerHTML='Prendre la barre<small>METTRE LE CAP</small>';
-    b.classList.add('on');b.onclick=()=>{BARRE=true;jouer('clic');vibrer([10,30,10]);majAction();};return;}
-}
+if(CARTE==='large'&&!PECHE&&!coinDuBateau()){
+  b.innerHTML='Mets le cap<small>APPROCHE D’UN COIN POUR PÊCHER</small>';
+  b.classList.add('on');b.classList.add('inerte');b.onclick=null;return;}
 if(!recolteSousLaMain()&&actionDePeche(b))return;
 if(CARTE==='extramar'&&Math.abs(joueur.x-XP.ruelle.x)<XP.ruelle.l&&joueur.y<XP.ruelle.haut+22&&GESTE.t<=0){
 /* ================= LE HAUT DE LA RUELLE =================

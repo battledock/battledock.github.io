@@ -289,3 +289,11 @@ where niveau = 29;
      vaut un point d'écran, sinon on navigue sans voir devant soi.
    Rien ne change côté serveur : pecher_touche reçoit toujours le coin.
 */
+
+/* 2026-10-22 · le large, commandes simplifiées (côté jeu seulement).
+   Deux modes pour un bateau vide, c'était un de trop : on ne marche
+   plus sur le pont. Le joystick EST la barre, en permanence, et la
+   plaque d'action ne sert qu'à lancer la ligne. Elle dit « Mets le
+   cap » (inerte) tant qu'on n'est sur aucun coin, « Lancer la ligne ·
+   LE COIN » dès qu'on y mouille. Jeter la ligne coupe le moteur, et
+   tant que la ligne est à l'eau le joystick ne pilote plus. */
