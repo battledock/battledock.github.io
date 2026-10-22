@@ -97,3 +97,4 @@ create table if not exists public.graines_offertes(joueur text not null, cult te
 -- ============================================================
 -- Niveau 12 (22/10/2026) : la recette de bouillabaisse est remplacée par 10 doses d'engrais (niveau_reclamer, type 'engrais').
 -- Niveau 13 (22/10/2026) : l'emote « Pétanque » marche (niveau_reclamer active le type 'emote'). Côté jeu : bouton boule à côté du menu, geste 'petanque' (jeu.html + personnage.js), la boule vole et roule.
+-- Émotes (22/10/2026) : niveau 22 = emote « Santé ! » ; coffre_objet (rare, 15 %) donne une émote manquante parmi danse, bravo, rire, salut, disco. Coucou est offerte à tous. Menu « Émotes » dans le menu du jeu.
