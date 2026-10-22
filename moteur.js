@@ -28208,9 +28208,18 @@ if(!potAdopter(d))potRefus(d);else texteVolant(joueur.x,joueur.y-56,nom+' semé'
 let GR_FEN='h1';
 /* jusqu'ou porte le prochain semis : 'une' planche, ou le 'rang' de six */
 let POT_ETENDUE='une';
-async function ouvrirLeGrainetier(onglet){onglet=onglet||'graines';
+/* MÊME PARTAGE QUE CHEZ MADELEINE : on demande en entrant, on ne demande
+   plus en redessinant. Avant, chaque onglet et chaque achat repassait par
+   ici, donc par un aller-retour chantier_etat : l'écran ne pouvait pas se
+   redessiner sans le réseau. */
+async function ouvrirLeGrainetier(onglet){
+peindreGrainetier(onglet);
+await Promise.all([POT.charge?null:potCharger().catch(()=>null),
+ (CHANTIERS&&Object.keys(CHANTIERS).length)?null:lireChantiers().catch(()=>null)]);
+if(!$('page2').classList.contains('on')||$('page2Fond').className!=='gr')return;
+peindreGrainetier(onglet);}
+function peindreGrainetier(onglet){onglet=onglet||'graines';
 if(!document.getElementById('cssGr')){const st=document.createElement('style');st.id='cssGr';st.textContent=CSS_GR;document.head.appendChild(st);}
-if(!POT.charge)await potCharger();await lireChantiers();
 $('page2Fond').className='gr';$('page2').classList.add('on');
 const J=POT.j||{nb:6,houe:true,arrosoir:false,engrais:0,arroseurs:[]};
 const fmt=(c)=>enEuros(c).replace(',00','');const temps=potDuree;
@@ -28286,22 +28295,22 @@ $('page2Fond').innerHTML='<div class="haut"><span class="tx"><small>LA FERME</sm
 '<div class="grOng"><button data-o="graines" class="'+(onglet==='graines'?'on':'')+'">Graines</button><button data-o="outils" class="'+(onglet==='outils'?'on':'')+'">Outils</button><button data-o="champ" class="'+(onglet==='champ'?'on':'')+'">Champ</button></div>'+
 '<div class="corps">'+corps+'</div><div class="bulle" id="quaiBulle" style="position:absolute;left:14px;right:14px;bottom:76px;background:#1d4f8a;color:#fff;border-radius:12px;padding:10px 12px;font:italic 14px Georgia,serif;opacity:0;transition:.25s;pointer-events:none"></div><button class="sortir" id="grSortir">Ressortir</button>';
 $('grSortir').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-$('page2Fond').querySelectorAll('[data-o]').forEach(b=>{if(b.tagName==='BUTTON')b.onclick=()=>ouvrirLeGrainetier(b.dataset.o);});
-$('page2Fond').querySelectorAll('[data-fen]').forEach(b=>b.onclick=()=>{GR_FEN=b.dataset.fen;vibrer(10);ouvrirLeGrainetier('graines');});
+$('page2Fond').querySelectorAll('[data-o]').forEach(b=>{if(b.tagName==='BUTTON')b.onclick=()=>peindreGrainetier(b.dataset.o);});
+$('page2Fond').querySelectorAll('[data-fen]').forEach(b=>b.onclick=()=>{GR_FEN=b.dataset.fen;vibrer(10);peindreGrainetier('graines');});
 const bulle=(t)=>{const b=$('quaiBulle');b.textContent=t;b.style.opacity=1;clearTimeout(b._t);b._t=setTimeout(()=>b.style.opacity=0,2600);};
-brancherDepots(()=>ouvrirLeGrainetier(onglet),bulle);
+brancherDepots(()=>peindreGrainetier(onglet),bulle);
 $('page2Fond').querySelectorAll('[data-deb]').forEach(b=>b.onclick=async()=>{const k=b.dataset.deb;
 if(!b.dataset.sur){b.dataset.sur='1';b.textContent='Sûr ? Touche encore';setTimeout(()=>{if(b.isConnected){delete b.dataset.sur;b.textContent='Débloquer · '+enEuros(POT_VERROU[k]).replace(',00','');}},2500);return;}
 b.disabled=true;const d=await appelRPC('pot_debloquer',{p_joueur:e.id,p_cult:k});
 if(!d||d.erreur){b.disabled=false;motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':'Madeleine n’a pas pu.');return;}
-potAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);ouvrirLeGrainetier('graines');setTimeout(()=>motOuverture(POT_CULT[k][0]+' débloqué ! Tu peux en semer.'),60);});
+potAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);peindreGrainetier('graines');setTimeout(()=>motOuverture(POT_CULT[k][0]+' débloqué ! Tu peux en semer.'),60);});
 $('page2Fond').querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{let art=b.dataset.a;if(art==='agrandir'&&b.classList.contains('pris')){motOuverture('Livre d’abord tous les matériaux au chantier.');return;}
 if(art==='arroseur'){const libres=[];for(const i of POT_ORDRE.slice(0,J.nb))if(!(J.arroseurs||[]).includes(i))libres.push(i);
 if(!libres.length){motOuverture('Toutes tes parcelles ont déjà leur arroseur.');return;}art='arroseur:'+libres[0];}
 b.disabled=true;const d=await appelRPC('pot_acheter',{p_joueur:e.id,p_article:art});
 if(d&&d.erreur==='materiaux'){b.disabled=false;motOuverture(matManque(d.manque));return;}
 if(!d||d.erreur){b.disabled=false;motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':(d&&d.erreur==='deja'?'Tu l’as déjà.':(d&&d.erreur==='max'?'Tes trois rangs sont déjà gardés.':'Madeleine n’a pas pu.')));return;}
-try{lireSacServeur();}catch(x){}potAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);ouvrirLeGrainetier(onglet);
+try{lireSacServeur();}catch(x){}potAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);peindreGrainetier(onglet);
 setTimeout(()=>motOuverture(art==='agrandir'?'Six parcelles de plus ! Va les bêcher.':(art.startsWith('arroseur')?'Arroseur installé.':(art==='epouvantail'?'Ton épouvantail est planté au bout du rang.':'Merci ! Bon jardinage.'))),60);});
 /* LA VIGNETTE D'UNE ESPÈCE : une seule plante, centrée, dans un carré de 40.
    Les anciennes en montraient deux sur une bande large, qui n'existe plus. */
