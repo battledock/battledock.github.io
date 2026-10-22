@@ -30094,41 +30094,86 @@ const TENUES=[{k:'',nom:'Tes habits',lieu:'toujours à toi',rare:''},
 {k:'hw_roi',nom:'Le Roi de la récolte',lieu:'Chez Madeleine · 800 citrouilles données',rare:'HALLOWEEN 2026 · COLLECTOR'},
 {k:'anniv',nom:'La tenue d’anniversaire',lieu:'Offerte pour ton anniversaire',rare:'AUJOURD’HUI SEULEMENT',fete:true}];
 let VEST_SEL=null;
-const CSS_VEST=`#page2Fond.vest{background:#f2ede1;color:#2b2419;display:flex;flex-direction:column;height:100%;
-font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif}
-#page2Fond.vest .hd{padding:calc(env(safe-area-inset-top,0px) + 18px) 18px 6px;text-align:center;position:relative;flex:none}
-#page2Fond.vest .hd small{display:block;font:700 9px ui-monospace,monospace;letter-spacing:3px;color:#b4302c}
-#page2Fond.vest .hd b{display:block;font:700 25px 'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#2b2419;margin-top:3px}
-#page2Fond.vest .hd button{position:absolute;right:16px;top:calc(env(safe-area-inset-top,0px) + 18px);
-width:32px;height:32px;border-radius:50%;border:0;background:#2b2419;color:#f2ede1;font:700 14px Arial}
-#page2Fond.vest .coll{text-align:center;font:italic 13px Georgia,serif;color:#8a7c5e;padding:0 18px 14px;flex:none}
-/* LA PLANCHE : des vignettes de papier, légèrement de travers */
-#page2Fond.vest .gr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;
-padding:4px 18px 18px;overflow-y:auto;flex:1;align-content:start}
-#page2Fond.vest .c{background:#fff;border:0;border-radius:0;padding:9px 7px 8px;text-align:center;
-box-shadow:0 3px 7px rgba(43,36,25,.18);color:inherit;position:relative}
-#page2Fond.vest .c:nth-child(3n+1){transform:rotate(-1.5deg)}
-#page2Fond.vest .c:nth-child(3n+2){transform:rotate(1deg)}
-#page2Fond.vest .c:nth-child(3n){transform:rotate(-.5deg)}
-#page2Fond.vest .c canvas{width:100%;height:62px;image-rendering:pixelated;background:#f6f1e6;display:block}
-#page2Fond.vest .c b{display:block;font:700 10px/1.25 'Baloo 2','Trebuchet MS',system-ui,sans-serif;
-color:#2b2419;margin-top:6px;letter-spacing:.3px;text-transform:uppercase;min-height:25px}
-#page2Fond.vest .c.on{box-shadow:0 3px 7px rgba(43,36,25,.18),inset 0 0 0 2px #b4302c}
-#page2Fond.vest .c.no{background:none;box-shadow:none;border:2px dashed rgba(43,36,25,.22);
-padding:9px 5px 8px;transform:none}
-#page2Fond.vest .c.no canvas{display:none}
-#page2Fond.vest .c.no b{color:#a89c84;font-size:9px;margin:0;display:flex;align-items:center;
-justify-content:center;min-height:76px;white-space:normal;line-height:1.4}
-/* LE PIED : la vignette choisie */
-#page2Fond.vest .bas{background:#e9e2d2;padding:14px 18px calc(env(safe-area-inset-bottom,0px) + 16px);
-flex:none;display:flex;flex-direction:column;gap:2px}
-#page2Fond.vest .bas b{font:700 19px 'Baloo 2','Trebuchet MS',system-ui,sans-serif;display:block;color:#2b2419}
-#page2Fond.vest .bas em{font:italic 12px Georgia,serif;color:#8a7c5e}
-#page2Fond.vest .bas button{width:100%;margin-top:11px;border:0;border-radius:14px;padding:13px;
-font:700 15px 'Baloo 2','Trebuchet MS',system-ui,sans-serif;background:#b4302c;color:#fff}
-#page2Fond.vest .bas button:disabled{background:#d8cfbb;color:#9a9284}
-#page2Fond.vest #vsRetour{margin-top:8px;background:none;color:#8a7c5e;
-font:700 10px ui-monospace,monospace;letter-spacing:2px;padding:11px}`;
+const CSS_VEST=`
+/* ================= LA CABINE =================
+   Le vestiaire n'était qu'une vitrine : on y regardait sa collection de
+   déguisements. Il devient la pièce où l'on s'habille — les habits de la
+   garde-robe, le visage, les cheveux, le corps, et les tenues complètes.
+   Chaque vignette est le vrai personnage, dessiné avec le réglage qu'elle
+   propose : on voit avant de choisir. */
+#page2Fond.vest{position:absolute;inset:0;height:100%;overflow:hidden;background:#efe6d2;
+color:#3a2e1c;font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif}
+#page2Fond.vest .sc{position:absolute;inset:0;overflow:hidden;background:linear-gradient(#53728c,#2b4660)}
+#page2Fond.vest .mur{position:absolute;inset:0;
+background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 3px,transparent 3px 36px)}
+#page2Fond.vest .casiers{position:absolute;left:4%;top:9%;width:23%;height:22%;border-radius:4px;
+background:#3f6a84;box-shadow:inset 0 0 0 3px #2d5168}
+#page2Fond.vest .casiers:after{content:'';position:absolute;left:0;right:0;top:50%;height:3px;background:#2d5168}
+#page2Fond.vest .banc{position:absolute;right:5%;top:26%;width:25%;height:4%;border-radius:4px;
+background:#a5764a;box-shadow:0 5px 0 #6b4a2a}
+#page2Fond.vest .sol{position:absolute;left:0;right:0;top:33%;bottom:0;background:#6b4a2a;
+background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.14) 0 2px,rgba(255,255,255,.05) 2px 30px)}
+#page2Fond.vest .ombre{position:absolute;left:50%;top:40%;transform:translateX(-50%);width:34%;height:12px;
+border-radius:50%;background:rgba(0,0,0,.42);filter:blur(5px)}
+#page2Fond.vest .moi{position:absolute;left:50%;top:41%;transform:translate(-50%,-100%);
+width:132px;height:160px;image-rendering:pixelated;z-index:2}
+#page2Fond.vest .vhd{position:absolute;left:0;right:0;top:0;z-index:3;text-align:center;
+padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 0}
+#page2Fond.vest .vhd small{display:block;font:800 10px 'Baloo 2',sans-serif;letter-spacing:4px;
+color:#ffd98a;text-shadow:0 2px 8px rgba(0,0,0,.75)}
+#page2Fond.vest .vhd b{display:block;font:400 25px 'Lilita One','Baloo 2',sans-serif;color:#fff;
+text-shadow:0 3px 12px rgba(0,0,0,.75)}
+#page2Fond.vest .vhd .x{position:absolute;right:12px;top:calc(env(safe-area-inset-top,0px) + 12px);
+width:36px;height:36px;border:0;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;font:700 16px 'Baloo 2',sans-serif}
+#page2Fond.vest .outils{position:absolute;left:12px;top:41%;display:flex;gap:7px;z-index:3}
+#page2Fond.vest .outils button{width:38px;height:38px;border:0;border-radius:12px;
+background:rgba(251,246,234,.92);color:#3a2e1c;font-size:17px;box-shadow:0 3px 0 rgba(0,0,0,.28)}
+#page2Fond.vest .outils button:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.28)}
+#page2Fond.vest .sauve{position:absolute;right:12px;top:42%;z-index:3;font:800 10px 'Baloo 2',sans-serif;
+letter-spacing:1.5px;color:#2e5a1a;background:#eaf6c8;border-radius:9px;padding:4px 9px;
+box-shadow:0 2px 0 rgba(0,0,0,.2);opacity:0;transition:.2s}
+#page2Fond.vest .sauve.on{opacity:1}
+#page2Fond.vest .pan{position:absolute;left:0;right:0;bottom:0;height:54%;z-index:4;
+background:#fbf6ea;border-radius:22px 22px 0 0;box-shadow:0 -4px 22px rgba(0,0,0,.4);
+display:flex;flex-direction:column;min-height:0}
+#page2Fond.vest .poignee{flex:none;width:44px;height:5px;border-radius:3px;background:#d8cbb0;margin:7px auto 1px}
+#page2Fond.vest .rays{flex:none;display:flex;gap:5px;padding:7px 10px 6px}
+#page2Fond.vest .rays button{flex:1;border:0;border-radius:13px;background:#efe6d2;padding:6px 0 5px;
+font:800 10px 'Baloo 2',sans-serif;color:#8a7a5e;display:flex;flex-direction:column;align-items:center;gap:1px}
+#page2Fond.vest .rays button i{font-style:normal;font-size:16px;line-height:1}
+#page2Fond.vest .rays button.on{background:#ffd84a;color:#3a2408;box-shadow:0 3px 0 #c8920e}
+#page2Fond.vest .dedans{flex:1;min-height:0;overflow-y:auto;
+padding:0 10px calc(env(safe-area-inset-bottom,0px) + 12px)}
+#page2Fond.vest .sous{display:flex;gap:5px;margin:2px 0 8px}
+#page2Fond.vest .sous button{flex:1;border:0;border-radius:10px;background:#efe6d2;padding:7px 0;
+font:800 11px 'Baloo 2',sans-serif;color:#8a7a5e}
+#page2Fond.vest .sous button.on{background:#3a2e1c;color:#fbf6ea}
+#page2Fond.vest .tt{display:flex;align-items:center;font:400 16px 'Lilita One','Baloo 2',sans-serif;
+color:#3a2e1c;margin:2px 2px 7px}
+#page2Fond.vest .tt span{margin-left:auto;font:800 10px 'Baloo 2',sans-serif;color:#9a8a6a;letter-spacing:1px}
+#page2Fond.vest .gr{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+#page2Fond.vest .c{position:relative;border:0;background:#efe6d2;border-radius:13px;padding:4px 3px 5px}
+#page2Fond.vest .c canvas{width:100%;height:56px;image-rendering:pixelated;display:block;background:none}
+#page2Fond.vest .c b{display:block;font:800 8px/1.1 'Baloo 2',sans-serif;color:#3a2e1c;margin-top:2px;min-height:18px}
+#page2Fond.vest .c.on{background:#ffd84a;box-shadow:0 0 0 3px #e8a81e}
+#page2Fond.vest .c.no canvas{filter:brightness(0) opacity(.24)}
+#page2Fond.vest .c.no b{color:#a2947a}
+#page2Fond.vest .c .cad{position:absolute;right:4px;top:3px;font-style:normal;font-size:9px;color:#b8ab93}
+#page2Fond.vest .rg{margin-bottom:11px}
+#page2Fond.vest .rg>b{display:block;font:800 10px 'Baloo 2',sans-serif;letter-spacing:1.6px;
+text-transform:uppercase;color:#9a8a6a;margin:0 2px 5px}
+#page2Fond.vest .rg .fil{display:flex;gap:7px;overflow-x:auto;padding-bottom:3px}
+#page2Fond.vest .rg .fil .c{flex:none;width:62px}
+#page2Fond.vest .rg .fil .c canvas{height:50px}
+#page2Fond.vest .pal{display:flex;gap:7px;flex-wrap:wrap}
+#page2Fond.vest .pal .p{width:30px;height:30px;border:0;border-radius:50%;
+box-shadow:0 2px 0 rgba(0,0,0,.18),inset 0 -3px 0 rgba(0,0,0,.14)}
+#page2Fond.vest .pal .p.on{box-shadow:0 0 0 3px #ffd84a,0 2px 0 rgba(0,0,0,.18)}
+#page2Fond.vest .vide{font:700 13px/1.6 'Baloo 2',sans-serif;color:#9a8a6a;text-align:center;padding:22px 10px}
+#page2Fond.vest .bulleV{position:absolute;left:14px;right:14px;bottom:calc(54% + 12px);z-index:5;
+background:#3a2e1c;color:#fbf6ea;border-radius:13px;padding:10px 12px;font:700 13px 'Baloo 2',sans-serif;
+text-align:center;opacity:0;transform:translateY(6px);transition:.22s;pointer-events:none}
+#page2Fond.vest .bulleV.on{opacity:1;transform:none}`;
 function vignetteTenue(cv,k){
 const D=Math.min(2,window.devicePixelRatio||1),W=cv.clientWidth||70,H=cv.clientHeight||78;
 cv.width=Math.round(W*D);cv.height=Math.round(H*D);
@@ -30163,37 +30208,153 @@ try{sauver();envoyerSauvegarde(true);monterEnLigne(true);}catch(x){}
 }
 }
 }
-function ouvrirLeVestiaire(){
-if(!document.getElementById('cssVest')){const st=document.createElement('style');st.id='cssVest';st.textContent=CSS_VEST;document.head.appendChild(st);}
-const a=(e.cos||{}), ai=(k)=>!k||a['costume_'+k];
-const porte=(e.ap&&e.ap.deguisement)||'';
-if(VEST_SEL===null)VEST_SEL=porte;   /* au premier coup d'oeil : la tenue portee */
-const LISTE=TENUES.filter(t=>!t.fete||FETE_AUJOURDHUI);
-const eues=LISTE.filter(t=>t.k&&ai(t.k)).length, tot=LISTE.filter(t=>t.k).length;
-const sel=LISTE.find(t=>t.k===VEST_SEL)||LISTE[0];
-$('page2Fond').className='vest';$('page2').classList.add('on');
-const lieuCourt=(t)=>String(t.lieu||'').split('·')[0].trim().toUpperCase();
-$('page2Fond').innerHTML=
-'<div class="hd"><small>COLLECTION DU PORT</small><b>Vestiaire</b><button id="vsX">✕</button></div>'+
-'<div class="coll">'+eues+' vignette'+(eues>1?'s':'')+' sur '+tot+'</div>'+
-'<div class="gr">'+LISTE.map(t=>'<button class="c'+(t.k===porte?' on':'')+(ai(t.k)?'':' no')+'" data-t="'+t.k+'">'+
-'<canvas data-v="'+t.k+'"></canvas><b>'+(ai(t.k)?t.nom:lieuCourt(t))+'</b></button>').join('')+'</div>'+
-'<div class="bas"><b>'+sel.nom+'</b><em>'+sel.lieu+(sel.rare?' · '+sel.rare.toLowerCase():'')+'</em>'+
-'<button id="vsPorter"'+((ai(sel.k)&&!(sel.k===porte&&!sel.k))?'':' disabled')+'>'+
-(!ai(sel.k)?'Pas encore trouvée'
-:(!sel.k?(porte?'Remettre tes habits':'Tu les portes déjà')
-:(sel.k===porte?'Retirer la tenue':'Porter '+sel.nom.toLowerCase())))+'</button>'+
-'<button id="vsRetour">RETOUR AU JEU</button></div>';
-$('page2Fond').querySelectorAll('canvas[data-v]').forEach(c=>vignetteTenue(c,c.dataset.v));
-$('vsX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-/* le même retour en bas : sur Safari, la croix du haut passe sous la barre */
-const vr=$('vsRetour');if(vr)vr.onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-$('page2Fond').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{VEST_SEL=b.dataset.t;ouvrirLeVestiaire();});
-$('vsPorter').onclick=()=>{
-e.ap=Object.assign({},e.ap||DEF_AP);
-if(!sel.k||sel.k===porte)delete e.ap.deguisement;else e.ap.deguisement=sel.k;
-try{sauver();envoyerSauvegarde(true);monterEnLigne(true);}catch(x){}vibrer(18);ouvrirLeVestiaire();};
+/* ================= LA CABINE : DEMANDER, PUIS PEINDRE =================
+   Les rayons sont une donnée : en ajouter un, plus tard, ne demande
+   qu'une ligne ici et de quoi le remplir. */
+const VS_RAYONS=[['tenues','Tenues','\u{1F3AD}'],['habits','Habits','\u{1F9E5}'],
+ ['visage','Visage','\u{1F642}'],['cheveux','Cheveux','✂️'],['corps','Corps','\u{1F9CD}']];
+const VS_FAM=[['haut','Haut'],['bas','Bas'],['pieds','Souliers'],['tete','Chapeau']];
+let VS={ray:'habits',sous:'haut'}, VS_AVANT=null, VS_LST=[];
+/* les champs que touche une famille : pour le bouton « Rien » */
+function vsChamps(f){const C={};
+VETEMENTS.filter(v=>v.fam===f||(f==='haut'&&v.fam==='auto')).forEach(v=>Object.keys(v.ap).forEach(k=>C[k]=1));
+return Object.keys(C);}
+const vsFamille=(f)=>VETEMENTS.filter(v=>v.fam===f||(f==='haut'&&v.fam==='auto'));
+function vsBulle(t){const b=$('vsBulle');if(!b)return;b.textContent=t;b.classList.add('on');
+clearTimeout(vsBulle.t);vsBulle.t=setTimeout(()=>b.classList.remove('on'),2200);}
+function vsGarder(){try{sauver();envoyerSauvegarde(true);monterEnLigne(true);}catch(x){}
+const s=$('vsSauve');if(s){s.classList.add('on');clearTimeout(vsGarder.t);
+vsGarder.t=setTimeout(()=>s.classList.remove('on'),1600);}}
+/* le personnage, entier ou de la tête aux épaules */
+function vsPeindrePerso(cv,ap,tete){try{
+const D=Math.min(2,window.devicePixelRatio||1),W=cv.clientWidth||60,H=cv.clientHeight||60;
+if(!W||!H)return;
+cv.width=Math.round(W*D);cv.height=Math.round(H*D);
+const g=cv.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;g.save();
+if(tete){const k=H/15;g.translate(W/2,H+35*k);g.scale(k,k);}
+else{const k=Math.min(W/38,H/54);g.translate(W/2,H-3);g.scale(k,k);}
+sprite(g,0,0,ap,'bas',0,false);g.restore();}catch(x){}}
+const vsBase=()=>{const p=Object.assign({},DEF_AP,e.ap||{});delete p.maillot;delete p.ski;return p;};
+const vsNu=()=>{const p=vsBase();delete p.deguisement;return p;};
+
+async function ouvrirLeVestiaire(){
+if(!document.getElementById('cssVest')){const st=document.createElement('style');
+st.id='cssVest';st.textContent=CSS_VEST;document.head.appendChild(st);}
+e.ap=Object.assign({},DEF_AP,e.ap||{});
+if(!VS_AVANT)VS_AVANT=Object.assign({},e.ap);
+peindreVestiaire();
+/* la garde-robe une fois, en entrant ; repeindre n'appelle plus rien */
+if(!VET_SAC.length){try{const g=await appelRPC('ma_garde_robe',{p_joueur:e.id});
+ if(Array.isArray(g))VET_SAC=g;}catch(x){}
+ if($('page2Fond').classList.contains('vest'))peindreVestiaire();}
 }
+
+function peindreVestiaire(){
+const F=$('page2Fond');
+const ai=(k)=>!k||(e.cos||{})['costume_'+k];
+const porte=(e.ap&&e.ap.deguisement)||'';
+const vetPorte=(v)=>Object.keys(v.ap).every(k=>(e.ap[k]||0)===v.ap[k]);
+VS_LST=[];
+const pousser=(o)=>{VS_LST.push(o);return VS_LST.length-1;};
+const carte=(o,q)=>'<button class="c'+(o.on?' on':'')+(o.ok===false?' no':'')+'" data-vs="'+q+'">'+
+ '<canvas data-vk="'+q+'"></canvas><b>'+echapperT(o.nom)+'</b>'+
+ (o.ok===false?'<i class="cad">◊</i>':'')+'</button>';
+let corps='';
+
+if(VS.ray==='tenues'){
+ const L=TENUES.filter(t=>!t.fete);
+ corps='<div class="tt">Les tenues complètes<span>'+
+  L.filter(t=>t.k&&ai(t.k)).length+' / '+L.filter(t=>t.k).length+'</span></div><div class="gr">'+
+  L.map(t=>{const p=vsNu();if(t.k)p.deguisement=t.k;
+   return carte({nom:t.nom,ok:ai(t.k),on:(t.k||'')===porte,ap:p,
+     tete:false,g:'tenue',k:t.k||'',lieu:t.lieu},
+    pousser({nom:t.nom,ok:ai(t.k),on:(t.k||'')===porte,ap:p,tete:false,g:'tenue',k:t.k||'',lieu:t.lieu}));
+  }).join('')+'</div>';
+}
+
+if(VS.ray==='habits'){
+ const L=vsFamille(VS.sous);
+ const rien=!L.some(v=>VET_SAC.includes(v.id)&&vetPorte(v));
+ let h='<div class="sous">'+VS_FAM.map(([k,n])=>
+  '<button class="'+(VS.sous===k?'on':'')+'" data-vf="'+k+'">'+n+'</button>').join('')+'</div>'+
+  '<div class="tt">'+(VS_FAM.find(x=>x[0]===VS.sous)||VS_FAM[0])[1]+
+  '<span>'+L.filter(v=>VET_SAC.includes(v.id)).length+' à toi</span></div><div class="gr">';
+ h+=carte({nom:'Rien',ok:true,on:rien},pousser({nom:'Rien',ok:true,on:rien,ap:vsNu(),tete:false,g:'rien',k:VS.sous}));
+ L.forEach(v=>{const p=vsNu();Object.assign(p,v.ap);
+  const o={nom:v.nom,ok:VET_SAC.includes(v.id),on:VET_SAC.includes(v.id)&&vetPorte(v),
+   ap:p,tete:false,g:'vet',k:v.id};
+  h+=carte(o,pousser(o));});
+ corps=h+'</div>';
+}
+
+if(VS.ray==='visage'||VS.ray==='cheveux'||VS.ray==='corps'){
+ const R=AT_RUB.find(r=>r[0]===VS.ray);
+ if(!R)corps='<div class="vide">Rien à régler ici.</div>';
+ else R[2].forEach(ch=>{
+  if(ch.t==='pal'){const P=PALETTES[ch.c]||[];
+   corps+='<div class="rg"><b>'+ch.n+'</b><div class="pal">'+P.map((c,q)=>
+    '<button class="p'+((e.ap[ch.c]||0)===q?' on':'')+'" style="background:'+c+'" '+
+    'data-vp="'+ch.c+'" data-vq="'+q+'"></button>').join('')+'</div></div>';}
+  else{const L=atListe(ch.l)||[], tete=(VS.ray!=='corps');
+   corps+='<div class="rg"><b>'+ch.n+'</b><div class="fil">'+L.map((n,q)=>{
+    const p=vsNu();p[ch.c]=q;
+    const o={nom:n,ok:true,on:(e.ap[ch.c]||0)===q,ap:p,tete:tete,g:'reg',k:ch.c,v:q};
+    return carte(o,pousser(o));}).join('')+'</div></div>';}});
+}
+
+F.className='vest';$('page2').classList.add('on');
+F.innerHTML='<div class="sc"><div class="mur"></div><div class="casiers"></div><div class="banc"></div>'+
+ '<div class="sol"></div><div class="ombre"></div><canvas class="moi" id="vsMoi"></canvas>'+
+ '<div class="vhd"><small>TA CABINE</small><b>Vestiaire</b><button class="x" id="vsX">✕</button></div>'+
+ '<div class="outils"><button id="vsAnnuler" title="Comme en entrant">↺</button>'+
+ '<button id="vsHasard" title="Au hasard">\u{1F3B2}</button></div>'+
+ '<span class="sauve" id="vsSauve">✓ ENREGISTRÉ</span></div>'+
+ '<div class="pan"><div class="poignee"></div><div class="rays">'+
+ VS_RAYONS.map(([k,n,i])=>'<button class="'+(VS.ray===k?'on':'')+'" data-vr="'+k+'"><i>'+i+'</i>'+n+'</button>').join('')+
+ '</div><div class="dedans">'+corps+'</div></div>'+
+ '<div class="bulleV" id="vsBulle"></div>';
+
+vsPeindrePerso($('vsMoi'),vsBase(),false);
+F.querySelectorAll('canvas[data-vk]').forEach(c=>{const o=VS_LST[+c.dataset.vk];
+ if(o)vsPeindrePerso(c,o.ap,o.tete);});
+
+$('vsX').onclick=()=>{fermeA=Date.now();VS_AVANT=null;$('page2').classList.remove('on');};
+F.querySelectorAll('[data-vr]').forEach(b=>b.onclick=()=>{VS.ray=b.dataset.vr;vibrer(8);peindreVestiaire();});
+F.querySelectorAll('[data-vf]').forEach(b=>b.onclick=()=>{VS.sous=b.dataset.vf;vibrer(8);peindreVestiaire();});
+/* ON REPEINT D'ABORD : la pastille « enregistré » et la bulle vivent dans
+   l'écran, qu'un repeint remplace. Posées avant, elles disparaissaient
+   aussitôt. */
+F.querySelectorAll('[data-vp]').forEach(b=>b.onclick=()=>{
+ e.ap=Object.assign({},e.ap);delete e.ap.deguisement;e.ap[b.dataset.vp]=+b.dataset.vq;
+ vibrer(10);peindreVestiaire();vsGarder();});
+F.querySelectorAll('[data-vs]').forEach(b=>b.onclick=()=>{
+ const o=VS_LST[+b.dataset.vs];if(!o)return;
+ if(o.ok===false){vsBulle(o.g==='tenue'?('À trouver : '+o.lieu):'Celle-là s’achète à La Marinière.');vibrer(6);return;}
+ e.ap=Object.assign({},e.ap);let mot='';
+ if(o.g==='tenue'){if(!o.k||o.k===porte)delete e.ap.deguisement;else e.ap.deguisement=o.k;}
+ else{
+  const avait=!!e.ap.deguisement;delete e.ap.deguisement;
+  if(o.g==='rien')vsChamps(o.k).forEach(c=>{e.ap[c]=DEF_AP[c]||0;});
+  if(o.g==='vet'){const v=VETEMENTS.find(x=>x.id===o.k);if(v)Object.assign(e.ap,v.ap);}
+  if(o.g==='reg')e.ap[o.k]=o.v;
+  if(avait)mot='Tu as retiré ta tenue pour voir.';}
+ vibrer(12);peindreVestiaire();vsGarder();if(mot)vsBulle(mot);});
+$('vsAnnuler').onclick=()=>{if(!VS_AVANT)return;e.ap=Object.assign({},VS_AVANT);
+ vibrer(14);peindreVestiaire();vsGarder();vsBulle('Te revoilà comme en entrant.');};
+$('vsHasard').onclick=()=>{
+ e.ap=Object.assign({},e.ap);delete e.ap.deguisement;
+ /* on ne tire que dans ce qui est à toi : les habits achetés, et tous les
+    réglages du visage, qui n'ont jamais besoin d'être gagnés */
+ VS_FAM.forEach(([f])=>{const mien=vsFamille(f).filter(v=>VET_SAC.includes(v.id));
+  if(!mien.length)return;
+  const v=mien[Math.floor(Math.random()*(mien.length+1))];
+  if(v)Object.assign(e.ap,v.ap);else vsChamps(f).forEach(c=>{e.ap[c]=DEF_AP[c]||0;});});
+ ['visage','cheveux','corps'].forEach(r=>{const R=AT_RUB.find(x=>x[0]===r);if(!R)return;
+  R[2].forEach(ch=>{const n=(ch.t==='pal')?(PALETTES[ch.c]||[]).length:(atListe(ch.l)||[]).length;
+   if(n)e.ap[ch.c]=Math.floor(Math.random()*n);});});
+ vibrer([12,40,12]);peindreVestiaire();vsGarder();vsBulle('Tiré au sort. ↺ pour revenir.');};
+}
+
 /* =====================================================================
    L'INTEGRALE DU POKEDOCK
    Cent cartes distinctes, et la Mouette Doree tombe. C'est la seule
