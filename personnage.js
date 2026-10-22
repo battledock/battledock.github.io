@@ -728,6 +728,11 @@ else{const t=1-fr/0.42;arc=1.4*(1-sortRap(t));penche=3.2*(1-sortRap(t));tasse=-1
 if(fr>0.62){const t=(1-fr)/0.38;arc=-0.5*doux(t);penche=doux(t)*1.2;tasse=doux(t)*0.6;phase=1;}
 else if(fr>0.42){const t=(0.62-fr)/0.2;arc=-0.5+entreRap(t)*1.1;penche=1.2+t*0.8;tasse=0.6;phase=2;}
 else{const t=1-fr/0.42;arc=0.6*(1-sortRap(t));penche=2*(1-sortRap(t));tasse=0.6*(1-sortRap(t));phase=3;}
+}else if(fr>0&&typeGeste==='petanque'){
+/* LA PÉTANQUE (emote du niveau 13) : on se baisse, le bras part en arrière, puis la boule s'envole par en dessous */
+if(fr>0.55){const t=(1-fr)/0.45;tasse=doux(t)*2.8;penche=doux(t)*1.8;arc=doux(t)*1.9;phase=1;}
+else if(fr>0.3){const t=(0.55-fr)/0.25;tasse=2.8-t*1.2;penche=1.8+t*0.8;arc=1.9-entreRap(t)*3.7;phase=2;}
+else{const t=1-fr/0.3;tasse=1.6*(1-sortRap(t));penche=2.6*(1-sortRap(t));arc=-1.8*(1-sortRap(t));phase=3;}
 }else if(fr>0&&typeGeste==='tamis'){
 const sec=Math.sin((1-fr)*Math.PI*6);
 penche=3.2;tasse=2.6;arc=sec*0.3;phase=2;
@@ -1093,6 +1098,8 @@ const brasC=MANCHE>6?veste:peau, brasT=MANCHE>6?vesteT:peauO;
 const poserOutil=()=>{
 if(em)return;                       /* une émote ne tient rien */
 if(typeGeste==='cueille')return;
+if(typeGeste==='petanque'){if(fr<=0.36)return;   /* la boule dans la main, jusqu'au lâcher */
+g.fillStyle='#5a6068';g.beginPath();g.arc(x+mA[0],y+mA[1]+1,2.6,0,7);g.fill();g.fillStyle='#c8ccd2';g.beginPath();g.arc(x+mA[0]-0.5,y+mA[1]+0.5,2,0,7);g.fill();g.fillStyle='#fff';g.fillRect(x+mA[0]-1.2,y+mA[1]-0.4,1,1);return;}
 g.save();
 g.translate(x+mA[0],y+mA[1]);
 g.rotate(angO+(prof?Math.PI:0));
@@ -1111,7 +1118,7 @@ const brasDevant=()=>{segment(epD,cD,4,brasC,vesteC);segment(cD,mA,3,peau,peauC)
 laMain(mA,true,typeGeste!=='cueille'||fr<0.45,
 (typeGeste==='cueille'&&fr<0.45)?'#b93327':null);};
 if(prof){
-if(typeGeste!=='cueille'&&arc<-0.2){
+if(typeGeste!=='cueille'&&typeGeste!=='petanque'&&arc<-0.2){
 g.save();
 g.translate(x,y+yT-14-Math.round((1+arc)*6));
 g.scale(1.05,0.55);
@@ -1917,6 +1924,11 @@ else if(typeG==='tamis'){arcG=Math.sin((1-fr)*Math.PI*6)*0.3;pencheG=3.2;tasseG=
    en arrière avant de fouetter vers l'avant.
 
    fr va de 1 (début du geste) à 0 (fin). */
+else if(typeG==='petanque'){
+/* LA PÉTANQUE : on se baisse, le bras part en arrière, puis il remonte devant, paume ouverte */
+if(fr>0.55){const t=(1-fr)/0.45;pencheG=doux(t)*2.2;tasseG=doux(t)*3;phaseG=1;}
+else if(fr>0.3){const t=(0.55-fr)/0.25;pencheG=2.2+t*0.6;tasseG=3-t*1.4;phaseG=2;}
+else{const t=1-fr/0.3;pencheG=2.8*(1-sortRap(t));tasseG=1.6*(1-sortRap(t));phaseG=3;}}
 else if(typeG==='houe'){
 /* LA HOUE : on lève haut, on abat court, on racle vers soi. Plus ample
    que la pioche et plus basse. */
@@ -3665,6 +3677,10 @@ const angleBras=()=>{
 let a, L=15;
 const REPOS=1.25;                                       /* le bras qui pend, un peu en avant */
 if(typeG==='cueille')a=REPOS-arcG*0.45;
+else if(typeG==='petanque'){const f2=frG;
+ if(f2>0.55)a=REPOS+(2.35-REPOS)*doux((1-f2)/0.45);
+ else if(f2>0.3)a=2.35+(-0.35-2.35)*sortRap((0.55-f2)/0.25);
+ else a=-0.35+(REPOS+0.35)*doux(1-f2/0.3);}
 else if(typeG==='gouge'){a=0.55+arcG*0.8;L=13;}
 else if(typeG==='tamis'){a=0.95+arcG*0.4;L=13;}
 else{
@@ -3698,6 +3714,8 @@ return {x:hx,y:hy,a};
 const outil=(h)=>{
 const bois='#8a6238', boisC='#b08858', acier='#9aa2a8', acierC='#e6ecf0', acierO='#5a6268';
 if(typeG==='cueille')return;
+if(typeG==='petanque'){if(frG<=0.36)return;const bx=Math.round(h.x), by=Math.round(h.y)+1;   /* la boule dans la main, jusqu'au lâcher */
+ R(bx-3,by-2,6,6,'#5a6068');R(bx-3,by-3,6,1,'#5a6068');R(bx-2,by-3,4,6,'#9aa2aa');R(bx-2,by-2,3,3,'#d8dde2');R(bx-1,by-2,1,1,'#ffffff');R(bx-3,by+1,6,1,'#3a4048');return;}
 /* LE LANCER NE MET RIEN DANS LA MAIN. La canne est deja dessinee, et bien
    mieux : dessinerLaPeche la trace depuis la main jusqu'au scion, avec sa
    finition, ses motifs et son pliage. Sans ce retour, le geste tombait

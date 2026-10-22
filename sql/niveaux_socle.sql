@@ -96,3 +96,4 @@ create table if not exists public.graines_offertes(joueur text not null, cult te
 --   cabanon / cabanon_etat(p_joueur), n'est pas touché.)
 -- ============================================================
 -- Niveau 12 (22/10/2026) : la recette de bouillabaisse est remplacée par 10 doses d'engrais (niveau_reclamer, type 'engrais').
+-- Niveau 13 (22/10/2026) : l'emote « Pétanque » marche (niveau_reclamer active le type 'emote'). Côté jeu : bouton boule à côté du menu, geste 'petanque' (jeu.html + personnage.js), la boule vole et roule.
