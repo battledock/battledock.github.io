@@ -23374,66 +23374,129 @@ CLS_VUE=b.dataset.cv;ouvrirLeClassement();});
 /* ================= LE SAC =================
    On portait ses prises sans jamais pouvoir les regarder : la jauge du
    haut disait qu'il était plein, rien ne disait de quoi. */
-const CSS_SAC=`#sacE{position:absolute;inset:0;background:#15212e;display:flex;flex-direction:column;
-font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;overflow:hidden}
-#sacE .hd{flex:none;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 12px;display:flex;align-items:flex-start;gap:10px}
+const CSS_SAC=`
+/* ================= LE SAC =================
+   Il n'avait pas une icône, alors qu'elles existent toutes, et tout
+   arrivait en vrac. On range par provenance — la ferme, la mer, la
+   forêt, la mine, la cuisine, les outils — et le titre du rayon reste
+   collé en haut pendant qu'on fait défiler. */
+#sacE{position:absolute;inset:0;background:#efe6d2;display:flex;flex-direction:column;
+font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;overflow:hidden;color:#2f3f50}
+#sacE .hd{flex:none;display:flex;align-items:flex-start;gap:10px;background:#2f5a7a;
+padding:calc(env(safe-area-inset-top,0px) + 15px) 14px 10px}
 #sacE .hd .tx{flex:1;min-width:0}
-#sacE .hd small{display:block;font:700 9px ui-monospace,monospace;letter-spacing:3px;color:#c9a24a}
-#sacE .hd b{display:block;font:700 23px 'Baloo 2',sans-serif;color:#f0e4c6;margin-top:4px}
-#sacE .hd button{flex:none;border:0;background:none;color:#e8c06a;font:700 20px 'Baloo 2',sans-serif;padding:0 2px}
-#sacE .jg{flex:none;padding:0 16px 14px}
-#sacE .jg u{display:block;height:10px;border-radius:5px;background:rgba(255,255,255,.1);
+#sacE .hd small{display:block;font:800 10px 'Baloo 2',sans-serif;letter-spacing:4px;color:#bcd8ea}
+#sacE .hd b{display:block;font:400 27px 'Lilita One','Baloo 2',sans-serif;color:#fff;line-height:1.1}
+#sacE .hd button{flex:none;border:0;border-radius:50%;width:34px;height:34px;background:rgba(0,0,0,.3);
+color:#fff;font:700 15px 'Baloo 2',sans-serif}
+#sacE .jg{flex:none;background:#2f5a7a;padding:0 14px 12px}
+#sacE .jg u{display:block;height:13px;border-radius:8px;background:rgba(0,0,0,.28);
 text-decoration:none;overflow:hidden}
-#sacE .jg u i{display:block;height:100%;border-radius:5px;background:#7fb463}
-#sacE .jg u i.plein{background:#d0623f}
-#sacE .jg span{display:flex;justify-content:space-between;margin-top:7px;
-font:700 10px ui-monospace,monospace;letter-spacing:1.4px;color:#8fa6b8}
-#sacE .jg span b{color:#f0e4c6}
-#sacE .corps{flex:1;overflow-y:auto;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 16px)}
-#sacE .rub{font:700 9px ui-monospace,monospace;letter-spacing:3px;color:#c9a24a;padding:16px 16px 8px}
-#sacE .out{display:flex;flex-wrap:wrap;gap:7px;padding:0 16px}
-#sacE .out span{border:1px solid rgba(232,192,106,.4);border-radius:14px;padding:6px 12px;
-font:700 12px 'Baloo 2',sans-serif;color:#e8c06a;background:rgba(232,192,106,.1)}
-#sacE .l{display:flex;align-items:center;gap:12px;padding:12px 16px;
-border-bottom:1px solid rgba(255,255,255,.07)}
+#sacE .jg u i{display:block;height:100%;border-radius:8px;background:linear-gradient(#8fd45a,#4f9434)}
+#sacE .jg u i.plein{background:linear-gradient(#ff8a5a,#d8402f)}
+#sacE .jg span{display:flex;justify-content:space-between;margin-top:6px;
+font:800 10px 'Baloo 2',sans-serif;letter-spacing:1.4px;color:#bcd8ea}
+#sacE .jg span b{color:#fff}
+#sacE .jg span em{font-style:normal}
+#sacE .corps{flex:1;min-height:0;overflow-y:auto;padding:0 0 calc(env(safe-area-inset-bottom,0px) + 16px)}
+#sacE .rub{position:sticky;top:0;z-index:2;background:#efe6d2;display:flex;align-items:center;gap:7px;
+font:800 10px 'Baloo 2',sans-serif;letter-spacing:2.5px;color:#8d9aa8;padding:13px 14px 7px}
+#sacE .rub i{font-style:normal;font-size:14px}
+#sacE .rub span{margin-left:auto;letter-spacing:1px;color:#aab4c0}
+#sacE .l{display:flex;align-items:center;gap:12px;padding:9px 14px;background:#fbf6ea;
+border-bottom:1.5px solid #efe6d2}
+#sacE .l .ic{flex:none;width:44px;height:44px;border-radius:13px;background:#efe6d2;
+display:flex;align-items:center;justify-content:center;font-size:22px}
+#sacE .l .ic svg{image-rendering:pixelated}
 #sacE .l .n{flex:1;min-width:0}
-#sacE .l b{display:block;font:700 15px 'Baloo 2',sans-serif;color:#f0e4c6}
-#sacE .l em{display:block;font:italic 12px Georgia,serif;color:#8fa6b8;line-height:1.35;margin-top:2px}
-#sacE .l u{flex:none;text-decoration:none;font:700 19px 'Baloo 2',sans-serif;color:#e8c06a;min-width:34px;text-align:right}
-#sacE .l u small{font:700 9px ui-monospace,monospace;color:#5f7489;display:block;letter-spacing:1px}
-#sacE .vide{padding:50px 26px;text-align:center;font:italic 15px Georgia,serif;color:#8fa6b8;line-height:1.6}`;
+#sacE .l b{display:block;font:800 14.5px 'Baloo 2',sans-serif;color:#2f3f50}
+#sacE .l em{display:block;font:700 11px/1.35 'Baloo 2',sans-serif;font-style:normal;color:#8d9aa8}
+#sacE .l u{flex:none;text-decoration:none;font:400 21px 'Lilita One','Baloo 2',sans-serif;
+color:#2f7ab4;min-width:36px;text-align:right}
+#sacE .l u small{display:block;font:800 8px 'Baloo 2',sans-serif;color:#aab4c0;letter-spacing:1px}
+#sacE .out{display:flex;flex-wrap:wrap;gap:7px;padding:0 14px}
+#sacE .out span{display:flex;align-items:center;gap:6px;background:#fbf6ea;border-radius:13px;
+padding:6px 11px 6px 7px;font:800 12px 'Baloo 2',sans-serif;color:#2f3f50;box-shadow:0 2px 0 #d8cbb0}
+#sacE .out span svg{image-rendering:pixelated}
+#sacE .vide{padding:46px 26px;text-align:center;font:700 14px/1.7 'Baloo 2',sans-serif;color:#8d9aa8}`;
+
+/* LES RAYONS DU SAC : on range par provenance, c'est ainsi qu'on cherche
+   — « j'avais bien une truffe » se trouve à la ferme, pas à la lettre T.
+   Les poissons se reconnaissent aux tables du jeu, le reste à ces
+   listes ; ce qui n'entre nulle part finit dans « Autres ». */
+const SAC_FERME=['laine','truffe','lait','fromage','oeufs','oeufdor','miel','foin',
+ 'cerises','pommes','abricots','figues','amandes','grenades','oranges','citrons','olives','mimosa','prunes'];
+const SAC_FORET=['bois','resine','roseaux','baies','herbes','champignons','planche','poutre','fibre','manche','bogue','santon'];
+const SAC_MINE=['pierre','argile','charbon','cuivre','fer','ambre','argent','brique','tuile'];
+const SAC_CUISINE=['pain','confiture','conserve','soupe','tarte'];
+let SAC_POISSONS=null;
+function sacPoissons(){
+if(SAC_POISSONS)return SAC_POISSONS;
+const S={};
+try{Object.keys(ESP_PECHE||{}).forEach(k=>{S[k]=1;S['lac_'+k]=1;});}catch(x){}
+try{Object.keys(LAC_P||{}).forEach(k=>{S[k]=1;S['lac_'+k]=1;});}catch(x){}
+try{(HW_POISSONS||[]).forEach(h=>{S[h.k]=1;});}catch(x){}
+SAC_POISSONS=S;return S;}
+function sacRayon(k){
+if(OBJETS[k]&&OBJETS[k].outil)return 'outils';
+/* LA CUISINE D'ABORD : on repêche parfois une conserve ou un pot de
+   confiture, qui portent le même nom que ceux de Madeleine. */
+if(SAC_CUISINE.indexOf(k)>=0)return 'cuisine';
+if(sacPoissons()[k])return 'peche';
+if(SAC_FORET.indexOf(k)>=0)return 'foret';
+if(SAC_MINE.indexOf(k)>=0)return 'mine';
+if(SAC_FERME.indexOf(k)>=0)return 'ferme';
+try{if(POT_CULT&&POT_CULT[k])return 'ferme';}catch(x){}
+return 'autres';}
+const SAC_RAY=[['ferme','De la ferme','\u{1F33E}'],['peche','De la mer','\u{1F41F}'],
+ ['foret','De la forêt','\u{1FAB5}'],['mine','De la mine','⛏️'],
+ ['cuisine','Cuisine','\u{1F35E}'],['autres','Autres','✨'],['outils','Tes outils','\u{1F527}']];
+/* un nom présentable même pour ce qui n'est pas encore dans la table */
+const sacNom=(k)=>{const n=NOM_OBJ(k);if(n!==k)return n;
+const t=String(k).replace(/_/g,' ');return t.charAt(0).toUpperCase()+t.slice(1);};
+const sacIcone=(k,t)=>ICONES[k]
+ ?'<svg viewBox="0 0 16 16" width="'+t+'" height="'+t+'" shape-rendering="crispEdges">'+ICONES[k]+'</svg>'
+ :'\u{1F4E6}';
+
 function ouvrirLeSac(){
 if(!document.getElementById('cssSacE')){const st=document.createElement('style');
 st.id='cssSacE';st.textContent=CSS_SAC;document.head.appendChild(st);}
+try{completerLesIcones();}catch(x){}
 $('page2Fond').className='';$('page2').classList.add('on');
 const tout=Object.entries(e.sac||{}).filter(([k,v])=>+v>0);
 /* LA MÊME CHARGE QUE LA JAUGE DU HAUT, calculée pareil : deux comptes
    qui ne tombent pas juste, c'est un bogue qu'on cherche longtemps. */
 const charge=tout.reduce((t,kv)=>t+(+kv[1]>0?+kv[1]:0),0), max=e.sacMax||60;
 const part=Math.max(0,Math.min(1,charge/Math.max(1,max)));
-const outils=tout.filter(kv=>OBJETS[kv[0]]&&OBJETS[kv[0]].outil);
-const reste=tout.filter(kv=>!(OBJETS[kv[0]]&&OBJETS[kv[0]].outil))
-.sort((a,b)=>(b[1]-a[1])||NOM_OBJ(a[0]).localeCompare(NOM_OBJ(b[0])));
+const grp={};
+tout.forEach(kv=>{const r=sacRayon(kv[0]);(grp[r]=grp[r]||[]).push(kv);});
+Object.keys(grp).forEach(r=>grp[r].sort((a,b)=>(b[1]-a[1])||sacNom(a[0]).localeCompare(sacNom(b[0]))));
+const sortes=tout.filter(kv=>!(OBJETS[kv[0]]&&OBJETS[kv[0]].outil)).length;
 let h='<div id="sacE"><div class="hd"><span class="tx"><small>CE QUE TU PORTES</small><b>Le sac</b></span>'+
 '<button id="sacX">✕</button></div>'+
 '<div class="jg"><u><i class="'+(part>=.9?'plein':'')+'" style="width:'+Math.round(part*100)+'%"></i></u>'+
 '<span><b>'+charge+' sur '+max+'</b><em>'+(part>=1?'il est plein':(part>=.9?'il va déborder':
-reste.length+' sorte'+(reste.length>1?'s':'')+' d’objet'+(reste.length>1?'s':'')))+'</em></span></div>'+
+sortes+' sorte'+(sortes>1?'s':'')+' d’objet'+(sortes>1?'s':'')))+'</em></span></div>'+
 '<div class="corps">';
-if(outils.length)h+='<div class="rub">TES OUTILS</div><div class="out">'+
-outils.map(kv=>'<span>'+echapperT(NOM_OBJ(kv[0]))+'</span>').join('')+'</div>';
-if(!reste.length)h+='<div class="vide">'+(outils.length
+if(!sortes)h+='<div class="vide">'+((grp.outils&&grp.outils.length)
 ?'Rien que tes outils pour l’instant.<br>Va pêcher, ramasser, couper, creuser —<br>le sac se remplira tout seul.'
 :'Ton sac est vide.<br>Va pêcher, ramasser, couper, creuser —<br>il se remplira tout seul.')+'</div>';
-else{h+='<div class="rub">DANS LE SAC</div>';
-h+=reste.map(kv=>{const O=OBJETS[kv[0]]||{};
-return '<div class="l"><span class="n"><b>'+echapperT(NOM_OBJ(kv[0]))+'</b>'+
-(O.d?'<em>'+echapperT(O.d)+'</em>':'')+'</span>'+
-'<u>'+kv[1]+(O.poids>1?'<small>'+(O.poids*kv[1])+' KG</small>':'')+'</u></div>';}).join('');}
+h+=SAC_RAY.map(([r,nom,ic])=>{
+const L=grp[r];if(!L||!L.length)return '';
+if(r==='outils')return '<div class="rub"><i>'+ic+'</i>'+nom.toUpperCase()+'</div><div class="out">'+
+ L.map(kv=>'<span>'+sacIcone(kv[0],22)+echapperT(sacNom(kv[0]))+'</span>').join('')+'</div>';
+return '<div class="rub"><i>'+ic+'</i>'+nom.toUpperCase()+
+ '<span>'+L.reduce((t,kv)=>t+(+kv[1]),0)+'</span></div>'+
+ L.map(kv=>{const O=OBJETS[kv[0]]||{};
+  return '<div class="l"><span class="ic">'+sacIcone(kv[0],34)+'</span>'+
+  '<span class="n"><b>'+echapperT(sacNom(kv[0]))+'</b>'+
+  (O.d?'<em>'+echapperT(O.d)+'</em>':'')+'</span>'+
+  '<u>'+kv[1]+(O.poids>1?'<small>'+(O.poids*kv[1])+' KG</small>':'')+'</u></div>';}).join('');}).join('');
 h+='</div></div>';
 $('page2Fond').innerHTML=h;
 $('sacX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
 }
+
 async function ouvrirLeClassement(){
 if(!document.getElementById('cssCls')){const st=document.createElement('style');
 st.id='cssCls';st.textContent=CSS_CLS;document.head.appendChild(st);}
