@@ -340,3 +340,23 @@ where niveau = 29;
      se plantait dans la roche et le bateau refusait tout cap. On arrive
      désormais face à l'eau libre, le coin dans le dos.
 */
+
+/* ====== 2026-10-22 · LA MARÉE NE VENDAIT PLUS LES PRISES DU LARGE ======
+   Cause : PRIX_POISSON, côté téléphone, était une liste écrite à la
+   main. Les 50 espèces ajoutées en base n'y étaient pas, donc elles
+   valaient 0 € : elles ne s'affichaient pas à La Marée et le bouton
+   « Vendre » restait sur « Rien de choisi ».
+
+   Correction de fond, pour que ça ne puisse plus arriver :
+   - prix_des_prises(text[]) : le serveur rend le cours de n'importe
+     quelle clé. À l'ouverture de La Marée, le téléphone demande le prix
+     de ce qu'il a dans le sac et ne connaît pas, puis redessine.
+   - icoDepuisPoisson() : l'icône se tire de la silhouette du poisson.
+     completerLesIcones en fabrique une pour toute entrée de
+     FORMES_POISSON qui n'en a pas. Plus de liste d'icônes à tenir.
+   Une espèce ajoutée en base arrive désormais seule dans la boutique.
+
+   Et un filet : outils/ronde.js ouvre les 37 écrans des trois cartes
+   dans un téléphone simulé et vérifie qu'ils répondent. À lancer avant
+   chaque déploiement.
+*/

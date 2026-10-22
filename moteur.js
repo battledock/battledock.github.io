@@ -25909,8 +25909,21 @@ const ICO_FORME={
 function icoFruit(clair,fonce,forme){
 return icoGrille(ICO_FORME[forme]||ICO_FORME.ronde,
  {t:'#6a4a22',F:'#4f9434',f:'#3f7a2a',c:clair,o:fonce});}
+/* L'ICÔNE D'UN POISSON SE TIRE DE SA SILHOUETTE : plus de liste à tenir
+   à jour, toute espèce ajoutée à FORMES_POISSON a la sienne. */
+function icoDepuisPoisson(k){try{
+  const F=FORMES_POISSON[k];if(!F)return '';
+  const T=64, cv=document.createElement('canvas');cv.width=T;cv.height=T;
+  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+  const ec=Math.min(T*0.92/(F.L+(F.f==='epee'||F.f==='voile'?14:4)), T*0.92/(F.H+(F.f==='voile'?14:4)));
+  g.save();g.translate(T/2,T/2);g.scale(ec,ec);
+  dessinerPoisson(g,0,0,k,1,0,false);g.restore();
+  return '<image href="'+cv.toDataURL()+'" x="0" y="0" width="16" height="16" style="image-rendering:pixelated"/>';
+}catch(x){return '';}}
 function completerLesIcones(){
 if(ICONES_FAITES)return;ICONES_FAITES=true;
+try{if(typeof FORMES_POISSON!=='undefined')for(const k of Object.keys(FORMES_POISSON)){
+  if(ICONES[k])continue;const i=icoDepuisPoisson(k);if(i)ICONES[k]=i;}}catch(x){}
 /* ON REMPLACE, on ne complète pas : chaque culture avait déjà une icône,
    mais c'était le sachet générique posé par défaut — le même pour les
    dix-huit, à la couleur près. Le vrai dessin de la plante vaut mieux. */
@@ -27007,6 +27020,22 @@ try{Object.keys(LAC_P||{}).forEach(k=>{if(!ICONES[k]){const i=iconeDuLac(k);if(i
 const MAR_LAC=['gardon','perche','truite','anguilledouce','carpe','brochet','silure','ecrevisse'];
 const MAR_TRESORS=['chaussette','canard','savonnette','cabas','oursou','parapluie','pneu','boule','cadenas','santon','dentier','panneau','bouteille','maillot','chariot','telephone','cagole','scaphandrier','sirene','botte'];
 let MAR_ONG='mer', MAR_SEL={}, MAR_EN_COURS=false;
+/* ================= LE TARIF VIENT DU SERVEUR =================
+   PRIX_POISSON était une liste écrite à la main : chaque espèce ajoutée
+   en base et oubliée ici valait 0 € — elle ne s'affichait pas à La Marée
+   et ne se vendait pas. Le téléphone demande maintenant le prix de ce
+   qu'il a dans le sac et ne connaît pas. Une espèce ajoutée en base
+   arrive toute seule dans la boutique. */
+const PRIX_DEMANDES=new Set();
+async function chargerLesPrixManquants(){try{
+  const manquants=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&!PRIX_POISSON[k]&&!PRIX_DEMANDES.has(k));
+  if(!manquants.length)return false;
+  manquants.forEach(k=>PRIX_DEMANDES.add(k));
+  const d=await appelRPC('prix_des_prises',{p_types:manquants});
+  if(!d||d.erreur||typeof d!=='object')return false;
+  let n=0;for(const k in d){const p=+d[k];if(p>0&&!PRIX_POISSON[k]){PRIX_POISSON[k]=p;n++;}}
+  return n>0;
+}catch(x){return false;}}
 const marRayon=(k)=>k.startsWith('hw_')?'halloween':MAR_TRESORS.includes(k)?'tresors':((MAR_LAC.includes(k)||(typeof LAC_P!=='undefined'&&LAC_P&&LAC_P[k]))?'lac':'mer');
 const marPrix=(k)=>{const p=prixDuJour(k,PRIX_POISSON[k]||0);return glaceA('fraise')?Math.floor(p*1.05):p;};   /* la fraise : +5 %, comme au serveur */
 const marTend=(k)=>{const f=COURS[k]&&COURS[k].f;if(!f)return ['eq','='];const p=Math.round((f-1)*100);if(p>=4)return ['up','▲ '+p+' %'];if(p<=-4)return ['dn','▼ '+(-p)+' %'];return ['eq','='];};
@@ -27342,6 +27371,8 @@ function ouvrirLaMaree(){try{
  $('marVendre').onclick=()=>marVendre(false);$('marTout').onclick=()=>marVendre(true);
  $('page2Fond').querySelectorAll('.onglets button').forEach(b=>b.onclick=()=>{MAR_ONG=b.dataset.o;MAR_SEL={};vibrer(12);marMaj();});
  marMaj();
+ /* on demande à l'ouverture, on redessine quand ça revient */
+ chargerLesPrixManquants().then(ok=>{if(ok&&$('marCorps')){try{completerLesIcones();}catch(x){}marMaj();}});
 }catch(x){try{$('page2').classList.remove('on');}catch(y){}try{motOuverture('La Marée a eu un souci : '+(x&&x.message?x.message:x));}catch(y){}}}
 function marMaj(){if(!$('marCorps'))return;SAC_PEUT_BAISSER=Date.now();
  const tous=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&PRIX_POISSON[k]);
