@@ -702,7 +702,10 @@ const P={k:'#2e1a0a',G:'#b8b0a8',S:'#f0c8a0',r:'#d84a5a',w:'#4a7aa8'};let r='';M
 return 'url("data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" shape-rendering="crispEdges">'+r+'</svg>')+'")';})();
 
 
-function bqAtelierChamp(){if(!CH||!CH.charge){try{if(Date.now()-(window.BQ_CH_LU||0)>20000){window.BQ_CH_LU=Date.now();chCharger().then(()=>{if($('page2').classList.contains('on'))ouvrirLaBoutiqueFerme();});}}catch(x){}return '<div class="mot">« Un instant, je regarde ton champ… »</div>';}
+/* LE CHAMP SE CHARGE EN ENTRANT, avec les chantiers et les commandes. Si
+   malgré tout il manque, on le demande une fois et on redessine — sans
+   repasser par l'ouverture, qui redemanderait tout le reste. */
+function bqAtelierChamp(){if(!CH||!CH.charge){try{if(Date.now()-(window.BQ_CH_LU||0)>20000){window.BQ_CH_LU=Date.now();chCharger().then(()=>{if($('page2').classList.contains('on')&&$('page2Fond').classList.contains('bq'))peindreMadeleine();});}}catch(x){}return '<div class="mot">« Un instant, je regarde ton champ… »</div>';}
 const max=CH.max||40, nbP=Math.floor(max/4), pris=Math.ceil(chNb()/4);
 const i=Math.max(1,Math.floor((max-40)/20)+1), PX=[150000,400000,900000,1800000,3000000,5000000], prix=PX[i-1];
 return '<div class="mot">« Ton champ est trop petit ? Je t’arrange ça, contre un petit quelque chose. »</div>'+

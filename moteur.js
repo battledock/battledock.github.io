@@ -28873,22 +28873,31 @@ return '<div class="outil"><canvas data-p="'+k+'"></canvas>'+
 (libre?(FERME_VIERGE?'<span class="marge">'+(chDeSaison(k)?'SAISON':'✓')+'</span>':'<span class="marge">+'+fmt(v-px)+'</span>')
 :'<button data-deb="'+k+'">'+fmt(POT_VERROU[k])+'</button>')+'</div>';}).join('');
 return h;}
-const BQ_LU={}, BQ_COURS_LUS={};
-function ouvrirLaBoutiqueFerme(mot){
-/* L'ÉTAT DES CHANTIERS : sans lui, les matériaux déjà livrés comptent pour
-   zéro et la location de parcelles reste bloquée. Le grainetier et le
-   poulailler le lisaient, pas cette boutique. */
-/* UNE SEULE LECTURE PAR SUJET, PUIS ON REPEINT : un joueur sans chantier,
-   sans commande, ou avec un objet qui n'a pas de cours (un manche, une
-   grenouille) recevait une réponse vide, l'écran se repeignait, relisait,
-   se repeignait… des milliers de fois par minute, et le téléphone figeait. */
-const bqVu=(k)=>{BQ_LU[k]=BQ_LU[k]||0;if(Date.now()-BQ_LU[k]<20000)return false;BQ_LU[k]=Date.now();return true;};
-const bqRepeindre=()=>{if($('page2').classList.contains('on')&&$('page2Fond').classList.contains('bq'))ouvrirLaBoutiqueFerme(mot);};
-if((!CHANTIERS||!Object.keys(CHANTIERS).length)&&bqVu('chantiers'))lireChantiers().then(bqRepeindre);
-if(!CMD.commandes.length&&bqVu('commandes'))lireLesCommandes().then(bqRepeindre);
-/* on demande les cours du jour pour tout ce qui est dans le sac */
-{const aLire=Object.keys(e.sac||{}).filter(k=>!COURS[k]&&!BQ_COURS_LUS[k]);
- if(aLire.length){aLire.forEach(k=>BQ_COURS_LUS[k]=1);lireLesCours(aLire).then(bqRepeindre);}}
+/* ================= CHEZ MADELEINE =================
+   DEMANDER ET DESSINER SONT DEUX GESTES DIFFÉRENTS. Une seule fonction
+   faisait les deux : en dessinant, elle voyait qu'il lui manquait les
+   chantiers et les demandait ; la réponse arrivait, elle redessinait ; en
+   redessinant elle revoyait qu'il lui manquait les chantiers… Une réponse
+   vide est une vraie réponse, mais le code ne distinguait pas « je n'ai
+   pas demandé » de « j'ai demandé, c'est vide ». Trois tours par seconde,
+   des heures durant, et le téléphone figeait.
+
+   Maintenant on demande UNE FOIS, en entrant (ouvrirLaBoutiqueFerme) ;
+   tout le reste — changer d'onglet, vendre, acheter, livrer — ne fait que
+   redessiner (peindreMadeleine), et redessiner ne demande plus rien. */
+async function ouvrirLaBoutiqueFerme(mot){
+/* on ouvre tout de suite sur ce qu'on a déjà, puis on complète */
+peindreMadeleine(mot);
+const aLire=Object.keys(e.sac||{}).filter(k=>!COURS[k]);
+await Promise.all([
+  (CHANTIERS&&Object.keys(CHANTIERS).length)?null:lireChantiers().catch(()=>null),
+  CMD.commandes.length?null:lireLesCommandes().catch(()=>null),
+  aLire.length?lireLesCours(aLire).catch(()=>null):null,
+  VERG.charge?null:verCharger().catch(()=>null),
+  (typeof chCharger==='function'&&!(CH&&CH.charge))?chCharger().catch(()=>null):null]);
+if(!$('page2').classList.contains('on')||!$('page2Fond').classList.contains('bq'))return;
+peindreMadeleine(mot);}
+let peindreMadeleine=function(mot){
 /* LE CARNET PASSE EN PREMIER : CSS_BQ ne garde plus que ses morceaux à
    elle, qui doivent pouvoir affiner ce que la coque pose. */
 if(!document.getElementById('cssBq')){const st=document.createElement('style');st.id='cssBq';st.textContent=CARNET('bq')+CSS_BQ+CSS_BQ_A;document.head.appendChild(st);}
@@ -28898,7 +28907,7 @@ $('page2Fond').className='bq mA';$('page2').classList.add('on');
 const ong=BQ_ONG||'vendre';
 let corps='';
 if(ong==='vendre'){
-const hwOn=(typeof hwActif==='function')&&hwActif();if(hwOn){hwCss();if(!HW_ETAT||Date.now()-HW_LU>30000)hwLire(true).then(()=>{if(HW_ETAT&&$('page2').classList.contains('on')&&$('page2Fond').classList.contains('bq')&&BQ_ONG==='vendre')ouvrirLaBoutiqueFerme(mot);});}
+const hwOn=(typeof hwActif==='function')&&hwActif();if(hwOn){hwCss();if(!HW_ETAT||Date.now()-HW_LU>30000)hwLire(true).then(()=>{if(HW_ETAT&&$('page2').classList.contains('on')&&$('page2Fond').classList.contains('bq')&&BQ_ONG==='vendre')peindreMadeleine(mot);});}
 corps=(hwOn?hwCarteHTML():'')+'<div class="mot">'+(mot||'Madeleine reprend tout ce qui vient de la ferme, au cours du jour — comme La Marée au port.')+'</div>'+
 (L.length?'<div class="aGrid">'+L.map(([k,n,p])=>'<button class="lg" data-v="'+k+'">'+
 (ICONES[k]?'<svg viewBox="0 0 16 16">'+ICONES[k]+'</svg>':'<svg viewBox="0 0 16 16"></svg>')+
@@ -28925,9 +28934,9 @@ $('page2Fond').innerHTML=
 '<span>Ton sac · '+charge+' / '+(e.sacMax||200)+'</span><b>'+enEuros(total)+'</b></div>'+
 '<button class="go" id="bqTout"'+(L.length?'':' disabled')+'>TOUT VENDRE</button></div>':'')+'</div>';
 $('page2Fond').querySelectorAll('[data-bo]').forEach(b=>b.onclick=()=>{
-BQ_ONG=b.dataset.bo;vibrer(10);ouvrirLaBoutiqueFerme();});
+BQ_ONG=b.dataset.bo;vibrer(10);peindreMadeleine();});
 $('page2Fond').querySelectorAll('[data-fen]').forEach(b=>b.onclick=()=>{
-GR_FEN=b.dataset.fen;vibrer(8);ouvrirLaBoutiqueFerme();});
+GR_FEN=b.dataset.fen;vibrer(8);peindreMadeleine();});
 $('page2Fond').querySelectorAll('canvas[data-p]').forEach(cv=>{
 try{const D=2,T=46;cv.width=T*D;cv.height=T*D;
 const g=cv.getContext('2d');g.setTransform(D*2.9,0,0,D*2.9,0,0);g.imageSmoothingEnabled=false;
@@ -28941,7 +28950,7 @@ const d=await appelRPC('pot_debloquer',{p_joueur:e.id,p_cult:k});
 if(!d||d.erreur){b.disabled=false;
 motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':'Madeleine n’a pas pu.');return;}
 potAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);
-ouvrirLaBoutiqueFerme(POT_CULT[k][0]+' débloqué ! Tu peux le semer.');});
+peindreMadeleine(POT_CULT[k][0]+' débloqué ! Tu peux le semer.');});
 /* LE BANDEAU : la grange de Madeleine au petit matin. */
 try{const bd=$('bqBandeau');
 if(bd){const D=2, W=Math.round(bd.clientWidth||340), H=116;
@@ -28979,7 +28988,7 @@ if(typeof dessinerOutilPotager==='function')dessinerOutilPotager(g,cv.dataset.o)
    poulailler, mais pas ici — alors que Chez Madeleine est devenu le seul
    endroit où l'on loue des parcelles. Sans ça, les boutons « Déposer » et
    « Louer » s'affichaient sans rien faire. */
-try{brancherDepots(()=>ouvrirLaBoutiqueFerme(),
+try{brancherDepots(()=>peindreMadeleine(),
 (t)=>{try{texteVolant(joueur.x,joueur.y-34,t,'#d8c9a0');}catch(x){}});}catch(x){}
 $('page2Fond').querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{
 let art=b.dataset.a;
@@ -28993,14 +29002,14 @@ const d=await appelRPC('pot_acheter',{p_joueur:e.id,p_article:art});
 if(!d||d.erreur){b.disabled=false;
 motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':'Madeleine n’a pas pu.');return;}
 potAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);
-ouvrirLaBoutiqueFerme();});}
+peindreMadeleine();});}
 try{const cv=$('bqArr');if(cv){const g=cv.getContext('2d');g.setTransform(2,0,0,2,0,0);g.clearRect(0,0,44,40);fpCadre(g,3,3,34,33);for(let q=0;q<4;q++)fpTerre(g,5+(q%2)*15,5+(q>>1)*14.5,15,14.5,{eau:true});window.FP_ARR_ANIM=window.FP_ARR_ANIM||{};window.FP_ARR_ANIM['-1,-1']=Date.now()-600;fpDessinerArroseur(g,0,0,Date.now(),-1,-1);}}catch(x){}
 $('page2Fond').querySelectorAll('[data-arr]').forEach(b=>b.onclick=async()=>{b.disabled=true;const d=await appelRPC('champ_arroseur_acheter',{p_joueur:e.id});
-if(d&&!d.erreur){CH.stockArr=d.stock||((CH.stockArr||0)+1);if(typeof d.euros==='number')e.euros=d.euros;try{majHaut();}catch(x){}jouer('vente','moment');vibrer([15,40,15]);ouvrirLaBoutiqueFerme('« Le voilà ! Va le poser sur une parcelle. »');}
+if(d&&!d.erreur){CH.stockArr=d.stock||((CH.stockArr||0)+1);if(typeof d.euros==='number')e.euros=d.euros;try{majHaut();}catch(x){}jouer('vente','moment');vibrer([15,40,15]);peindreMadeleine('« Le voilà ! Va le poser sur une parcelle. »');}
 else{b.disabled=false;motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':'Madeleine n’a pas pu.');}});
 $('page2Fond').querySelectorAll('[data-agch]').forEach(b=>b.onclick=async()=>{b.disabled=true;
 const d=await appelRPC('champ_agrandir',{p_joueur:e.id});
-if(d&&!d.erreur){CH.max=d.max;if(typeof d.euros==='number')e.euros=d.euros;try{majHaut();}catch(x){}jouer('vente','moment');vibrer([15,40,15]);ouvrirLaBoutiqueFerme('« Et voilà, cinq parcelles de plus ! »');}
+if(d&&!d.erreur){CH.max=d.max;if(typeof d.euros==='number')e.euros=d.euros;try{majHaut();}catch(x){}jouer('vente','moment');vibrer([15,40,15]);peindreMadeleine('« Et voilà, cinq parcelles de plus ! »');}
 else{b.disabled=false;motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':'Madeleine n’a pas pu.');}});
 $('page2Fond').querySelectorAll('[data-cmd]').forEach(b=>b.onclick=async()=>{
 b.disabled=true;b.textContent='…';
@@ -29010,10 +29019,10 @@ if(typeof d.euros==='number')e.euros=d.euros;if(d.sac)e.sac=d.sac;
 try{sauver();majHaut();lireSacServeur();}catch(x){}
 jouer('vente','moment');vibrer([20,50,20]);
 await lireLesCommandes();
-ouvrirLaBoutiqueFerme('« Marché conclu : '+enEuros(d.gain)+' pour la commande. »');
+peindreMadeleine('« Marché conclu : '+enEuros(d.gain)+' pour la commande. »');
 }else{
 await lireLesCommandes();
-ouvrirLaBoutiqueFerme(d&&d.erreur==='deja'?'« Celle-là, tu me l’as déjà livrée. »':'« Il te manque encore de quoi. »');
+peindreMadeleine(d&&d.erreur==='deja'?'« Celle-là, tu me l’as déjà livrée. »':'« Il te manque encore de quoi. »');
 }});
 $('bqX').onclick=()=>{fermeA=Date.now();vibrer(8);if(FERME_VIERGE){$('page2').classList.remove('on');return;}ouvrirLaFerme();};
 const vendre=async(liste)=>{let gain=0;
@@ -29021,7 +29030,7 @@ for(const k of liste){const d=await appelRPC('vendre_au_comptoir',{p_joueur:e.id
 if(d&&!d.erreur){gain+=d.gain||0;if(typeof d.euros==='number')e.euros=d.euros;if(d.sac)e.sac=d.sac;}}
 try{sauver();majHaut();lireSacServeur();}catch(x){}
 if(gain){jouer('vente','moment');vibrer([15,40,15]);}
-ouvrirLaBoutiqueFerme(gain?('Vendu ! '+enEuros(gain)+' dans ta poche.'):'Le primeur n’a rien pris.');};
+peindreMadeleine(gain?('Vendu ! '+enEuros(gain)+' dans ta poche.'):'Le primeur n’a rien pris.');};
 $('page2Fond').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{b.disabled=true;vendre([b.dataset.v]);});
 const bt=$('bqTout');                    /* il n'existe que dans l'onglet Vendre */
 if(bt)bt.onclick=()=>{bt.disabled=true;vendre(L.map(([k])=>k).filter(k=>!(k==='citrouille'&&typeof hwActif==='function'&&hwActif())));};
@@ -32492,9 +32501,10 @@ const verBqOutilsVrai=bqOutils;
 bqOutils=function(){return verBqOutilsVrai()+verBqSection();};
 /* LES BOUTONS : la boutique câble [data-a] sur pot_acheter, pas les nôtres.
    On repasse derrière elle une fois la page écrite. */
-const verBqVrai=ouvrirLaBoutiqueFerme;
-ouvrirLaBoutiqueFerme=function(mot){const r=verBqVrai.apply(this,arguments);
-if(!VERG.charge)verCharger();        /* si l'état n'est pas encore là, c'est le moment */
+/* ON HABILLE LE DESSIN, PAS L'ENTRÉE : le verger se charge une seule fois,
+   en entrant, avec les chantiers et les commandes. */
+const verBqVrai=peindreMadeleine;
+peindreMadeleine=function(mot){const r=verBqVrai.apply(this,arguments);
 try{
 const fond=$('page2Fond');if(!fond||fond.className!=='bq')return r;
 fond.querySelectorAll('canvas[data-ov]').forEach(cv=>{try{
@@ -32516,7 +32526,7 @@ if(!d||d.erreur){b.disabled=false;
 motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':
 (d&&d.erreur==='deja'?'Tu l’as déjà.':'Madeleine n’a pas pu.'));return;}
 verAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);
-ouvrirLaBoutiqueFerme();
+peindreMadeleine();
 setTimeout(()=>motOuverture(b.dataset.av==='agrandir'?'Trois fosses de plus ! Va les creuser.'
 :(b.dataset.av==='beche'?'Une bonne bêche. Le verger t’attend.':'Un sécateur bien aiguisé.')),60);});
 }catch(x){}
@@ -32766,10 +32776,10 @@ for(const [k,nom,s] of HW_TENUES){const ok=n>=s;h+='<div class="'+(ok?'ok':'')+'
 h+='</div><div class="hwN">Tu as donné <b>'+n+'</b> citrouille'+(n>1?'s':'')+' · tout le village : <b>'+(E.village||0)+'</b></div>';
 h+='<button id="hwDon"'+(mien?'':' disabled')+'>'+(mien?'Donner mes '+mien+' citrouille'+(mien>1?'s':'')+' 🎃':'Plante des citrouilles (automne)')+'</button></div>';return h;}
 async function hwDonner(b){b.disabled=true;b.textContent='…';let d=null;try{d=await appelRPC('halloween_donner',{p_joueur:e.id,p_nb:null});}catch(x){}
-if(!d||d.erreur){ouvrirLaBoutiqueFerme(d&&d.erreur==='fini'?'« L’événement est terminé, mon petit. »':'« Tu n’as pas de citrouille sur toi. »');return;}
+if(!d||d.erreur){peindreMadeleine(d&&d.erreur==='fini'?'« L’événement est terminé, mon petit. »':'« Tu n’as pas de citrouille sur toi. »');return;}
 if(d.sac)e.sac=d.sac;HW_ETAT=Object.assign({},HW_ETAT||{},{n:d.n,village:d.village});HW_LU=Date.now();try{sauver();majHaut();lireSacServeur();}catch(x){}
 jouer('vente','moment');vibrer([15,40,15]);
 const nv=d.nouvelles||[];for(const k of nv){e.cos=e.cos||{};e.cos['costume_'+k]=true;}
 nv.forEach((k,i)=>setTimeout(()=>{try{ticketDOrTenue(k,'HALLOWEEN 2026','Madeleine te l’a cousue !');}catch(x){console.error('hwT',x);}},500+i*400));
-try{ouvrirLaBoutiqueFerme('« Merci pour tes '+d.donne+' citrouille'+(d.donne>1?'s':'')+' ! Ça fait '+d.n+' en tout. »');}catch(x){console.error('hwO',x);}}
+try{peindreMadeleine('« Merci pour tes '+d.donne+' citrouille'+(d.donne>1?'s':'')+' ! Ça fait '+d.n+' en tout. »');}catch(x){console.error('hwO',x);}}
 
