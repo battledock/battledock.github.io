@@ -17465,7 +17465,11 @@ if(CARTE==='tokyo'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif){TKM.majEssai(dt,joyX,joyY);
 /* AU LARGE, LE JOYSTICK EST LA BARRE. On ne marche pas sur le pont :
    il n'y a rien à y faire, et deux modes à comprendre pour un bateau
    vide, c'était un mode de trop. Ligne à l'eau, le bateau s'arrête. */
-if(CARTE==='large'){majNavigation(dt,PECHE?0:joyX,PECHE?0:joyY);vx=vy=0;joueur.marche=false;return;}
+if(CARTE==='large'){
+  /* UNE LIGNE OUBLIÉE À L'EAU NE CLOUE PLUS LE BATEAU : dès qu'on
+     repousse le joystick, on remonte et on repart. */
+  if(PECHE&&PECHE.etat!=='combat'&&Math.hypot(joyX,joyY)>0.4)try{annulerLaPeche('on remonte la ligne');}catch(x){}
+  majNavigation(dt,PECHE?0:joyX,PECHE?0:joyY);vx=vy=0;joueur.marche=false;return;}
 if(window.FP_GEL&&Date.now()<window.FP_GEL){vx=0;vy=0;joueur.marche=false;tournerEnDouceur(dt);return;}   /* on arrose : on reste planté jusqu'à la fin */
 tournerEnDouceur(dt);
 const n=Math.hypot(joyX,joyY);
@@ -20271,7 +20275,7 @@ function cible(){
      a la priorité absolue ici. Collé à la coque, c'est le bateau qu'on
      vise, pas le tablier. */
   {const B=(CARTE==='extramar')?DECOR.find(o=>o.t==='x_bateau'):null;
-   if(B&&Math.abs(B.x-joueur.x)<30&&Math.abs(B.y-joueur.y)<36)return B;}
+   if(B&&Math.abs(B.x-joueur.x)<34&&joueur.y>B.y-78&&joueur.y<B.y+30)return B;}
   {const p=surLePonton();if(p)return p;}
 let d0=48,res=null;
 const autour=autourDe(joueur.x,joueur.y);
@@ -20755,19 +20759,24 @@ function dessinerLeBateau(g,camX,camY){
   g.restore();
 }
 /* ---------------- la navigation ---------------- */
-const BAT_VMAX=108, BAT_VIR=1.9;
+const BAT_VMAX=186, BAT_VIR=3.6;
 function majNavigation(dt,jx,jy){
   const n=Math.hypot(jx,jy);
   const ax=BAT.x, ay=BAT.y, aa=BAT.a;
-  if(n>0.2){
+  if(n>0.18){
+    /* LE BATEAU VA OÙ LE POUCE MONTRE. Le cap rejoint la direction du
+       joystick à 3,6 rad/s — un demi-tour en moins d'une seconde — et
+       l'allure suit la poussée. Pas de marche arrière, pas de gouvernail
+       à doser : on pointe, il y va. */
     const vise=Math.atan2(jx,-jy);
     let d=vise-BAT.a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;
-    const pas=BAT_VIR*dt*(0.45+0.55*Math.min(1,BAT.v/BAT_VMAX+0.4));
+    const pas=BAT_VIR*dt;
     BAT.a+=Math.max(-pas,Math.min(pas,d));
-    const cible=BAT_VMAX*Math.min(1,n)*(1-Math.min(.55,Math.abs(d)/Math.PI));
-    BAT.v+=(cible-BAT.v)*(1-Math.exp(-1.8*dt));
-  }else BAT.v*=Math.exp(-1.1*dt);
-  if(BAT.v<1.2)BAT.v=0;
+    /* on ralentit seulement dans les virages serrés, et jamais sous 45 % */
+    const cible=BAT_VMAX*Math.min(1,n)*(1-Math.min(.55,Math.abs(d)/Math.PI*1.1));
+    BAT.v+=(cible-BAT.v)*(1-Math.exp(-3.4*dt));
+  }else BAT.v*=Math.exp(-2.6*dt);
+  if(BAT.v<2)BAT.v=0;
   const nx=BAT.x+Math.sin(BAT.a)*BAT.v*dt, ny=BAT.y-Math.cos(BAT.a)*BAT.v*dt;
   if(coqueAterre(nx,ny,BAT.a)){
     BAT.v=0;
@@ -20783,6 +20792,7 @@ function majNavigation(dt,jx,jy){
   for(let i=BAT.sillage.length-1;i>=0;i--){BAT.sillage[i].t+=dt;if(BAT.sillage[i].t>1.8)BAT.sillage.splice(i,1);}
   if(BAT.sillage.length>90)BAT.sillage.splice(0,BAT.sillage.length-90);
   majLeCoin();
+  try{miniPeindre();}catch(x){}
   void ax;void ay;void aa;
 }
 function majLeCoin(){
@@ -20866,6 +20876,52 @@ function construireSolLarge(){
 }
 function rentrerAuPort(){try{envoyerSauvegarde();}catch(x){}
   setTimeout(()=>{location.href='jeu.html?carte=extramar&arrivee=1&de=large&v='+(window.MA_VERSION||Date.now());},200);}
+/* ================= LA CARTE DE NAVIGATION =================
+   Une mer de 2400 sur 2400 et un écran qui en montre 390 : sans carte,
+   on tourne en rond. Elle se pose en haut à droite, montre les quatre
+   coins, la terre, et le bateau avec son cap. */
+let MINI_C=null, MINI_FOND=null;
+const MINI_T=108;
+function miniFond(){
+  const c=document.createElement('canvas');c.width=MINI_T;c.height=MINI_T;
+  const g=c.getContext('2d');const k=MINI_T/MONDE_L;
+  g.fillStyle='#0d3a52';g.fillRect(0,0,MINI_T,MINI_T);
+  g.fillStyle='#16607e';
+  for(let y=0;y<MINI_T;y+=3)g.fillRect(0,y,MINI_T,1);
+  /* la terre, à gros traits */
+  g.fillStyle='#b4a378';
+  const ell=(cx,cy,rx,ry)=>{g.beginPath();g.ellipse(cx*k,cy*k,rx*k,ry*k,0,0,7);g.fill();};
+  ell(520,620,164,110);ell(690,760,110,78);ell(380,840,84,60);ell(420,1880,74,48);
+  g.fillRect(2118*k,600*k,MINI_T-2118*k,960*k);
+  g.fillRect(1480*k,2046*k,MINI_T-1480*k,62*k);
+  g.fillRect(1946*k,2196*k,MINI_T-1946*k,MINI_T-2196*k);
+  g.strokeStyle='rgba(232,192,106,.35)';g.lineWidth=1;g.strokeRect(.5,.5,MINI_T-1,MINI_T-1);
+  return c;
+}
+function miniPeindre(){
+  if(!MINI_C)return;
+  if(!MINI_FOND)MINI_FOND=miniFond();
+  const g=MINI_C.getContext('2d'),k=MINI_T/MONDE_L;
+  g.clearRect(0,0,MINI_T,MINI_T);g.drawImage(MINI_FOND,0,0);
+  for(const c in COINS_L){const C=COINS_L[c],on=(COIN_VU===c);
+    g.fillStyle=on?'rgba(232,192,106,.22)':'rgba(143,211,192,.14)';
+    g.beginPath();g.arc(C.x*k,C.y*k,C.r*k,0,7);g.fill();
+    g.fillStyle=on?'#e8c06a':'#8fd3c0';
+    g.beginPath();g.arc(C.x*k,C.y*k,on?3.4:2.4,0,7);g.fill();}
+  g.save();g.translate(BAT.x*k,BAT.y*k);g.rotate(BAT.a);
+  g.fillStyle='#f4efe2';g.beginPath();g.moveTo(0,-6);g.lineTo(3.6,5);g.lineTo(0,3);g.lineTo(-3.6,5);g.closePath();g.fill();
+  g.restore();
+}
+function poserLaCarteDuLarge(){
+  if(CARTE!=='large'||$('miniL'))return;
+  const d=document.createElement('div');d.id='miniL';
+  d.style.cssText='position:fixed;right:10px;top:calc(96px + env(safe-area-inset-top));z-index:25;'+
+    'padding:4px;border-radius:10px;background:rgba(8,20,26,.72);border:1px solid rgba(232,192,106,.4);pointer-events:none';
+  MINI_C=document.createElement('canvas');MINI_C.width=MINI_T;MINI_C.height=MINI_T;
+  MINI_C.style.cssText='display:block;width:'+MINI_T+'px;height:'+MINI_T+'px;image-rendering:pixelated;border-radius:7px';
+  d.appendChild(MINI_C);document.body.appendChild(d);
+  miniPeindre();
+}
 function poserLeBoutonDuLarge(){
   if(CARTE!=='large'||$('bLarge'))return;
   const b=document.createElement('button');b.id='bLarge';
@@ -21260,6 +21316,9 @@ g.strokeStyle='rgba(240,240,240,.8)';g.lineWidth=.5;g.beginPath();g.moveTo(sx,sy
 if(LEGENDES.includes(P.fin.espece)){const r=g.createRadialGradient(x,y,1,x,y,18);r.addColorStop(0,'rgba(255,220,120,.7)');r.addColorStop(1,'rgba(255,220,120,0)');g.fillStyle=r;g.fillRect(x-18,y-18,36,36);}
 /* IL TOURNE EN MONTANT, un tour et demi, dans le sens de la canne. */
 g.save();g.translate(Math.round(x),Math.round(y));g.rotate(c*(-0.9+k*7.2));
+/* AU LARGE ON VOIT LA MOITIÉ MOINS GRAND : le poisson y sortait minuscule
+   et l'on ne reconnaissait rien. On le remonte à la taille du port. */
+if(CARTE==='large')g.scale(2,2);
 dessinerPoisson(g,0,0,P.fin.espece,c,Math.sin(t/40)>0?1:-1,false);
 g.restore();
 return;
@@ -21338,7 +21397,7 @@ b.classList.remove('mord');b.classList.remove('mince');
    en plein dans la zone de pêche : collé à lui, c'est « monter à bord »
    qu'on attend, pas « lancer la ligne ». */
 if(CARTE==='extramar'){try{const B=DECOR.find(o=>o.t==='x_bateau');
-  if(B&&Math.abs(B.x-joueur.x)<30&&Math.abs(B.y-joueur.y)<36)return false;}catch(x){}}
+  if(B&&Math.abs(B.x-joueur.x)<34&&joueur.y>B.y-78&&joueur.y<B.y+30)return false;}catch(x){}}
 {const LP=lieuDePeche();
 /* LA PLAQUE DE PÊCHE reste disponible pendant les gestes qui ne sont pas
    un travail en cours : sinon, le bouton disparaît pendant une seconde
@@ -28128,7 +28187,7 @@ try{if(CARTE==='extramar'&&new URLSearchParams(location.search).has('arrivee'))p
    l'intérieur d'un arbre. Le sentier est l'entrée, et la seule. */
 if(CARTE==='foret'){joueur.x=F_SENT_ARRIVEE[0];joueur.y=F_SENT_ARRIVEE[1];joueur.dir='droite';}
 if(CARTE==='large'){const p=batMonde(0,BARRE_Y+16);joueur.x=p[0];joueur.y=p[1];joueur.dir='haut';
-  COIN_VU=null;try{majLeCoin();}catch(x){}try{poserLeBoutonDuLarge();}catch(x){}}
+  COIN_VU=null;try{majLeCoin();}catch(x){}try{poserLeBoutonDuLarge();poserLaCarteDuLarge();}catch(x){}}
 /* LA NOUVELLE CARTE : on arrive devant la gare, et plus rien ne pousse
    le joueur vers l'ancienne cour, qui n'existe plus. */
 /* UNE SEULE FOIS, AU CHARGEMENT : si la position vient de l'ancienne carte,

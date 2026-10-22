@@ -2546,7 +2546,7 @@ P('x_bitte',x,XP.quaiY-3,{col:[4,3]});
    quatre platanes, les deux bancs et les quatre boulistes qui s'y
    tenaient. Les boulistes de Notre-Dame-de-la-Garde, eux, ne bougent pas. */
 STATIONS_VELO.forEach(([x,y])=>P('x_stationVelo',x,y,{col:[40,5]}));
-P('x_bateau',XP.pontons[1]+30,XP.pontonFin-18,{col:[26,8],bati:true,ouvre:'bateau'});   /* ton bateau, au bout du ponton de l'est */
+P('x_bateau',XP.pontons[1],XP.pontonFin+40,{col:[26,8],bati:true,ouvre:'bateau'});   /* ton bateau, amarré DANS L'AXE, au bout du ponton de l'est : le long du tablier il chevauchait les voiliers */
 
 DECOR.forEach(o=>{if(o.t.slice(0,2)==='x_')graverX(o.t,o.v);});
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
