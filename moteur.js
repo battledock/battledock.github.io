@@ -12543,7 +12543,7 @@ const LES_PONTS=()=>PONTS.map(py=>[Math.round(rivX(py)),py]).concat(CARTE==='vil
 function dansRiviere(x,y){return Math.abs(x-rivX(y))<RIV_LARGE||riviereEst(x,y);}                                  /* la lisière, infranchissable */
 let DECOR=[];                                   /* {t,x,y,gr,cx,cy,cw,ch} */
 const TAILLES={
-x_bateau:[{w:26,h:40}], x_fe_gare:[{w:66,h:14}], x_fe_mas:[{w:118,h:26}], x_fe_poulailler:[{w:42,h:14}],
+x_bateau:[{w:26,h:90}], x_fe_gare:[{w:66,h:14}], x_fe_mas:[{w:118,h:26}], x_fe_poulailler:[{w:42,h:14}],
 arbre:  [{w:10,h:7},{w:12,h:8},{w:12,h:8}],   /* seulement le pied du tronc */
 rocher: [{w:22,h:9},{w:26,h:10},{w:30,h:11}],
 fer:    [{w:22,h:9},{w:26,h:10},{w:30,h:11}],
@@ -17465,11 +17465,7 @@ if(CARTE==='tokyo'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif){TKM.majEssai(dt,joyX,joyY);
 /* AU LARGE, LE JOYSTICK EST LA BARRE. On ne marche pas sur le pont :
    il n'y a rien à y faire, et deux modes à comprendre pour un bateau
    vide, c'était un mode de trop. Ligne à l'eau, le bateau s'arrête. */
-if(CARTE==='large'){
-  /* UNE LIGNE OUBLIÉE À L'EAU NE CLOUE PLUS LE BATEAU : dès qu'on
-     repousse le joystick, on remonte et on repart. */
-  if(PECHE&&PECHE.etat!=='combat'&&Math.hypot(joyX,joyY)>0.4)try{annulerLaPeche('on remonte la ligne');}catch(x){}
-  majNavigation(dt,PECHE?0:joyX,PECHE?0:joyY);vx=vy=0;joueur.marche=false;return;}
+if(CARTE==='large'){majNavigation(dt);vx=vy=0;joueur.marche=false;return;}
 if(window.FP_GEL&&Date.now()<window.FP_GEL){vx=0;vy=0;joueur.marche=false;tournerEnDouceur(dt);return;}   /* on arrose : on reste planté jusqu'à la fin */
 tournerEnDouceur(dt);
 const n=Math.hypot(joyX,joyY);
@@ -20275,7 +20271,7 @@ function cible(){
      a la priorité absolue ici. Collé à la coque, c'est le bateau qu'on
      vise, pas le tablier. */
   {const B=(CARTE==='extramar')?DECOR.find(o=>o.t==='x_bateau'):null;
-   if(B&&Math.abs(B.x-joueur.x)<34&&joueur.y>B.y-78&&joueur.y<B.y+30)return B;}
+   if(B&&Math.abs(B.x-joueur.x)<36&&joueur.y>B.y-150&&joueur.y<B.y+30)return B;}
   {const p=surLePonton();if(p)return p;}
 let d0=48,res=null;
 const autour=autourDe(joueur.x,joueur.y);
@@ -20847,10 +20843,10 @@ let DERNIERE_PECHE=null;
    du large, le Frioul, les calanques et le sec du Planier — et c'est
    celui où l'on mouille qui décide de ce qui mord. */
 const COINS_L={
-  digue:    {nom:'La digue du large', x:1860,y:2010,r:330,dep:[1860,1900]},
-  frioul:   {nom:'Les îles du Frioul',x:560, y:660, r:360,dep:[560, 1000]},
-  calanques:{nom:'Les calanques',     x:2080,y:1060,r:340,dep:[1850,1060]},
-  planier:  {nom:'Le sec du Planier', x:420, y:1860,r:320,dep:[580, 1900]}};
+  digue:    {nom:'La digue du large', x:1860,y:2010,r:330,dep:[1860,1810]},
+  frioul:   {nom:'Les îles du Frioul',x:560, y:660, r:360,dep:[575, 980]},
+  calanques:{nom:'Les calanques',     x:2080,y:1060,r:340,dep:[1790,1060]},
+  planier:  {nom:'Le sec du Planier', x:420, y:1860,r:320,dep:[660, 1990]}};
 const COIN_NOM={digue:'La digue du large',frioul:'Les îles du Frioul',
   calanques:'Les calanques',planier:'Le sec du Planier'};
 const COIN_LARGE=(()=>{try{const c=new URLSearchParams(location.search).get('coin');
@@ -20860,8 +20856,11 @@ const PONT_L={L:252,HW:46};
 const demiPont=(t)=>{if(t<0||t>1)return -1;
   return Math.max(.9,PONT_L.HW*Math.pow(Math.sin(Math.pow(t,.80)*Math.PI),.95));};
 const BARRE_Y=PONT_L.L*0.5-58;            /* la barre, vers l'arrière */
+/* ON MOUILLE L'ÉTRAVE AU LARGE : pointée vers le coin, elle se plantait
+   dans le rocher dès l'arrivée — et le bateau, collé à la terre, refusait
+   tout cap. On arrive donc face à l'eau libre, le coin dans le dos. */
 let BAT=(()=>{const C=COINS_L[COIN_LARGE],[dx,dy]=C.dep;
-  return {x:dx,y:dy,a:Math.atan2(C.x-dx,-(C.y-dy)),v:0,sillage:[],touche:0};})();
+  return {x:dx,y:dy,a:Math.atan2(dx-C.x,-(dy-C.y)),v:0,sillage:[],touche:0};})();
 let COIN_VU=null, COQUE=null;
 const batLocal=(x,y)=>{const dx=x-BAT.x,dy=y-BAT.y,c=Math.cos(BAT.a),s=Math.sin(BAT.a);
   return [dx*c+dy*s, -dx*s+dy*c];};
@@ -20891,41 +20890,94 @@ function coinDuBateau(){let k=null,d0=1e9;
     if(d<C.r&&d<d0){d0=d;k=c;}}
   return k;}
 /* ---------------- la coque, gravée une fois ---------------- */
+/* LE POINTU, peint une fois pour toutes. On le grave la proue en haut ;
+   la même peinture sert au port (posée) et au large (tournée). */
+function peindreCoque(g,cx,y0,L,HW){
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const hs2=(x,y,q)=>{let n=Math.sin(x*12.9898+y*78.233+q*37.719)*43758.5453;return n-Math.floor(n);};
+  const demi=(t)=>{if(t<0||t>1)return -1;return Math.max(.9,HW*Math.pow(Math.sin(Math.pow(t,.80)*Math.PI),.95));};
+  const BORD='#16304a', LISSE='#2f6a9e', CLAIR='#4e8fc4', BLANC='#f6f1e6', OMBRE='#d8cfbc';
+  const BOIS=['#8a6a40','#9a7a4e','#a98a5c','#b89a6c'], VERNI='#6d5231';
+  /* l'ombre portée sur l'eau */
+  g.save();g.globalAlpha=.22;g.fillStyle='#06202e';
+  g.beginPath();g.ellipse(cx+4,y0+L/2+4,HW+3,L/2+2,0,0,7);g.fill();g.restore();
+  for(let j=0;j<L;j++){
+    const t=j/L, w=demi(t), y=y0+j;
+    for(let i=-w;i<=w;i++){
+      const d=Math.abs(i)/w;
+      let col=BLANC;
+      if(i>w*0.34)col=OMBRE;                       /* le flanc tribord à l'ombre */
+      if(d>0.72)col=CLAIR;
+      if(d>0.80)col=LISSE;                         /* le liseré peint */
+      if(d>0.93)col=BORD;                          /* la lisse, trait net */
+      R(cx+i,y,1,1,col);}
+  }
+  /* LE PONT, en bois verni : des bordés dans la longueur et des membrures */
+  for(let j=0;j<L;j++){
+    const t=j/L, w=demi(t)-Math.max(3,HW*0.22), y=y0+j;
+    if(w<1.2)continue;
+    for(let i=-w;i<=w;i++){
+      const b=Math.floor((cx+i)/5), n=hs2(cx+i,y,13);
+      let col=BOIS[(b%2)?1:2];
+      if(n>.82)col=BOIS[3];else if(n<.14)col=BOIS[0];
+      if(((cx+i)%5)===0)col=VERNI;                 /* le joint des bordés */
+      R(cx+i,y,1,1,col);}
+    if(j%Math.max(7,Math.round(L/12))===0)R(cx-w,y,w*2+1,1,VERNI);   /* les membrures */
+  }
+  /* L'ÉTRAVE : une pièce claire qui monte, et le bout-dehors */
+  const bw=Math.max(2,Math.round(HW*0.22));
+  for(let j=0;j<Math.round(L*0.14);j++){const w=Math.max(1,demi(j/L)-1);
+    R(cx-Math.min(bw,w),y0+j,Math.min(bw,w)*2,1,'#fbf7ee');}
+  R(cx-1,y0-Math.round(L*0.05),2,Math.round(L*0.07),'#c9a86e');
+  /* LES BANCS */
+  const banc=(t)=>{const y=y0+L*t,w=demi(t)-Math.max(2,HW*0.12);
+    R(cx-w,y,w*2,Math.max(2,HW*0.09),'#6a4a2a');R(cx-w,y,w*2,1,'#9a7a52');
+    R(cx-w,y+Math.max(2,HW*0.09)-1,w*2,1,'#4a3220');};
+  banc(.30);banc(.56);
+  /* LE MOTEUR, SA BARRE FRANCHE, et le tableau arrière */
+  const sy=y0+L-Math.round(L*0.12);
+  R(cx-Math.round(HW*0.26),sy,Math.round(HW*0.52),Math.round(L*0.07),'#1e2d36');
+  R(cx-Math.round(HW*0.26),sy,Math.round(HW*0.52),1,'#3e5664');
+  R(cx-1,sy-Math.round(L*0.10),2,Math.round(L*0.10),'#8a6a44');
+  R(cx-Math.round(HW*0.10),sy-Math.round(L*0.11),Math.round(HW*0.20),2,'#6a4a2a');
+  /* LES ACCESSOIRES : caisse, seau, cordage lové, bouée, fanaux */
+  const cw=Math.max(5,Math.round(HW*0.42)), ch=Math.max(5,Math.round(L*0.09));
+  R(cx-Math.round(HW*0.62),y0+Math.round(L*0.33),cw,ch,'#b8762a');
+  R(cx-Math.round(HW*0.62),y0+Math.round(L*0.33),cw,2,'#d8a055');
+  for(let k=1;k<3;k++)R(cx-Math.round(HW*0.62),y0+Math.round(L*0.33)+Math.round(ch*k/3),cw,1,'#8a5418');
+  R(cx+Math.round(HW*0.28),y0+Math.round(L*0.44),Math.max(4,Math.round(HW*0.3)),Math.max(4,Math.round(L*0.055)),'#9aa6ac');
+  R(cx+Math.round(HW*0.28),y0+Math.round(L*0.44),Math.max(4,Math.round(HW*0.3)),1,'#c8d0d4');
+  /* le cordage lové à l'avant */
+  for(let a=0;a<3;a++){g.strokeStyle=a?'#cdbc94':'#e4d7b4';g.lineWidth=1;
+    g.beginPath();g.arc(cx+Math.round(HW*0.3),y0+Math.round(L*0.18),2+a*2,0,7);g.stroke();}
+  /* la bouée couronne, à bâbord */
+  g.fillStyle='#c8322a';g.beginPath();g.arc(cx-HW*0.72,y0+L*0.62,Math.max(4,HW*0.17),0,7);g.fill();
+  g.fillStyle='#f6f1e6';g.beginPath();g.arc(cx-HW*0.72,y0+L*0.62,Math.max(2,HW*0.09),0,7);g.fill();
+  /* deux pare-battages dehors, à tribord */
+  for(const t of [0.36,0.60]){const w=demi(t);
+    R(cx+w-1,y0+L*t,3,Math.max(3,L*0.045),'#d8d2c2');R(cx+w-1,y0+L*t,3,1,'#9a948a');}
+  /* le fanal de proue */
+  R(cx-1,y0+Math.round(L*0.08),2,3,'#2a2c30');R(cx-1,y0+Math.round(L*0.08),2,1,'#ffe8a8');
+}
 function graverLaCoque(){
-  const W=PONT_L.HW*2+12, H=PONT_L.L+12, cx=W/2, y0=6;
+  const W=PONT_L.HW*2+16, H=PONT_L.L+24, cx=W/2, y0=12;
   const c=document.createElement('canvas');c.width=W;c.height=H;
   const g=c.getContext('2d');g.imageSmoothingEnabled=false;
-  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
-  const hs2=(x,y,q)=>{let n=Math.sin(x*12.9898+y*78.233+q*37.719)*43758.5453;return n-Math.floor(n);};
-  for(let j=0;j<PONT_L.L;j++){const w=demiPont(j/PONT_L.L),y=y0+j;
-    for(let i=-w;i<=w;i++){let col='#f2ece0';
-      if(i>w-6)col='#d8ceba';
-      if(Math.abs(i)>w-5)col='#2f6a9e';
-      if(Math.abs(i)>w-2.4)col='#1d4066';
-      if(Math.abs(i)>w-1.1)col='#12293f';
-      R(cx+i,y,1,1,col);}}
-  for(let j=12;j<PONT_L.L-12;j++){const w=demiPont(j/PONT_L.L)-7,y=y0+j;if(w<2)continue;
-    for(let i=-w;i<=w;i++){const n=hs2(cx+i,y,13),b=Math.floor((cx+i)/8);
-      let col=(b%2)?'#a4845a':'#98784e';
-      if(n>.78)col='#b49268';if(n<.16)col='#86683f';
-      if(((cx+i)%8)===0)col='#6e5232';
-      R(cx+i,y,1,1,col);}}
-  const banc=(t)=>{const y=y0+PONT_L.L*t,w=demiPont(t)-5;R(cx-w,y,w*2,6,'#6a4a2a');R(cx-w,y,w*2,2,'#8a6a44');};
-  banc(.3);banc(.56);
-  R(cx-10,y0+PONT_L.L-22,20,15,'#1b2a2e');R(cx-7,y0+PONT_L.L-19,7,5,'#4a5a62');     /* le moteur */
-  R(cx-4,y0+14,8,22,'#8a6a44');                                                      /* le taquet */
-  R(cx-34,y0+74,22,25,'#b8762a');R(cx-34,y0+74,22,4,'#d49a4a');                      /* la caisse */
-  R(cx+18,y0+104,17,12,'#9aa6ac');R(cx+18,y0+104,17,3,'#c4ccd0');                    /* le seau */
-  g.fillStyle='#c8322a';g.beginPath();g.arc(cx-40,y0+140,8,0,7);g.fill();
-  g.fillStyle='#f2eee4';g.beginPath();g.arc(cx-40,y0+140,4,0,7);g.fill();            /* la bouée */
-  const by=y0+PONT_L.L/2+BARRE_Y;
-  R(cx-3,by+4,6,14,'#6a4a2a');
-  g.strokeStyle='#8a6a44';g.lineWidth=3;g.beginPath();g.arc(cx,by,11,0,7);g.stroke();/* la barre */
+  peindreCoque(g,cx,y0,PONT_L.L,PONT_L.HW);
   return {toile:c,cx,cy:y0+PONT_L.L/2};
 }
 function dessinerLeBateau(g,camX,camY){
   if(!COQUE)COQUE=graverLaCoque();
   const x=BAT.x-camX, y=BAT.y-camY;
+  /* LE CAP : un trait pointillé jusqu'au point visé, et sa couronne */
+  if(CAP_BAT){const cx=CAP_BAT.x-camX, cy=CAP_BAT.y-camY;
+    g.save();g.strokeStyle='rgba(232,192,106,.55)';g.lineWidth=1;g.setLineDash([3,4]);
+    g.beginPath();g.moveTo(x,y);g.lineTo(cx,cy);g.stroke();g.setLineDash([]);
+    const q=(CAP_BAT.t%0.9)/0.9;
+    g.strokeStyle='rgba(232,192,106,'+(0.85-q*0.8).toFixed(2)+')';g.lineWidth=1.4;
+    g.beginPath();g.arc(cx,cy,3+q*9,0,7);g.stroke();
+    g.fillStyle='#e8c06a';g.fillRect(Math.round(cx)-1,Math.round(cy)-1,3,3);
+    g.restore();}
   /* le sillage, derrière */
   for(let i=0;i<BAT.sillage.length;i++){const s=BAT.sillage[i],k=1-s.t/1.8;
     if(k<=0)continue;
@@ -20941,26 +20993,34 @@ function dessinerLeBateau(g,camX,camY){
 }
 /* ---------------- la navigation ---------------- */
 const BAT_VMAX=186, BAT_VIR=3.6;
-function majNavigation(dt,jx,jy){
-  const n=Math.hypot(jx,jy);
-  const ax=BAT.x, ay=BAT.y, aa=BAT.a;
-  if(n>0.18){
-    /* LE BATEAU VA OÙ LE POUCE MONTRE. Le cap rejoint la direction du
-       joystick à 3,6 rad/s — un demi-tour en moins d'une seconde — et
-       l'allure suit la poussée. Pas de marche arrière, pas de gouvernail
-       à doser : on pointe, il y va. */
-    const vise=Math.atan2(jx,-jy);
+let CAP_BAT=null;                       /* le point où l'on a dit d'aller */
+function mettreLeCap(x,y){
+  if(terreLarge(x,y)){try{texteVolant(joueur.x,joueur.y-52,'pas par là','#ffd040');}catch(e){}return false;}
+  CAP_BAT={x,y,t:0};
+  if(PECHE&&PECHE.etat!=='combat')try{annulerLaPeche('on remonte la ligne');}catch(e){}
+  try{jouer('clic');vibrer(8);}catch(e){}
+  return true;
+}
+function stopperLeBateau(){CAP_BAT=null;BAT.v*=0.25;try{vibrer(12);}catch(e){}}
+function majNavigation(dt){
+  /* L'AUTOPILOTE : on touche l'eau, le bateau met le cap dessus, ralentit
+     en arrivant et s'arrête tout seul. Rien à maintenir sous le pouce. */
+  if(CAP_BAT){
+    CAP_BAT.t+=dt;
+    const dx=CAP_BAT.x-BAT.x, dy=CAP_BAT.y-BAT.y, dist=Math.hypot(dx,dy);
+    const vise=Math.atan2(dx,-dy);
     let d=vise-BAT.a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;
     const pas=BAT_VIR*dt;
     BAT.a+=Math.max(-pas,Math.min(pas,d));
-    /* on ralentit seulement dans les virages serrés, et jamais sous 45 % */
-    const cible=BAT_VMAX*Math.min(1,n)*(1-Math.min(.55,Math.abs(d)/Math.PI*1.1));
+    const frein=Math.min(1,Math.max(.12,(dist-20)/170));
+    const cible=BAT_VMAX*frein*(1-Math.min(.6,Math.abs(d)/Math.PI*1.2));
     BAT.v+=(cible-BAT.v)*(1-Math.exp(-3.4*dt));
+    if(dist<24){CAP_BAT=null;BAT.v*=0.25;}
   }else BAT.v*=Math.exp(-2.6*dt);
   if(BAT.v<2)BAT.v=0;
   const nx=BAT.x+Math.sin(BAT.a)*BAT.v*dt, ny=BAT.y-Math.cos(BAT.a)*BAT.v*dt;
   if(coqueAterre(nx,ny,BAT.a)){
-    BAT.v=0;
+    BAT.v=0;CAP_BAT=null;
     if(!BAT.touche||Date.now()-BAT.touche>1400){BAT.touche=Date.now();
       try{vibrer([18,50,18]);texteVolant(joueur.x,joueur.y-52,'on racle !','#ffd040');}catch(x){}}
   }else{BAT.x=nx;BAT.y=ny;}
@@ -20974,7 +21034,6 @@ function majNavigation(dt,jx,jy){
   if(BAT.sillage.length>90)BAT.sillage.splice(0,BAT.sillage.length-90);
   majLeCoin();
   try{miniPeindre();}catch(x){}
-  void ax;void ay;void aa;
 }
 function majLeCoin(){
   const k=coinDuBateau();
@@ -21102,6 +21161,49 @@ function poserLaCarteDuLarge(){
   MINI_C.style.cssText='display:block;width:'+MINI_T+'px;height:'+MINI_T+'px;image-rendering:pixelated;border-radius:7px';
   d.appendChild(MINI_C);document.body.appendChild(d);
   miniPeindre();
+}
+/* ================= ON MONTRE, IL Y VA =================
+   Pas de joystick au large : on touche l'eau et le bateau met le cap
+   dessus. On touche la coque, il s'arrête. On touche un coin sur la
+   carte, il y file. */
+let BARRE_BRANCHEE=false;
+function pointDuMonde(ev){
+  const r=cv.getBoundingClientRect();
+  if(!r.width||!r.height)return null;
+  const x=CAM.x+(ev.clientX-r.left)*(VW/r.width);
+  const y=CAM.y+(ev.clientY-r.top)*(VH/r.height);
+  return [x,y];
+}
+function brancherLaBarre(){
+  if(BARRE_BRANCHEE||CARTE!=='large')return;BARRE_BRANCHEE=true;
+  const surUI=(c)=>!!(c&&c.closest&&c.closest('#barre,#emPan,button,#action,#hublot,#pan,#page2,#porte,#bandeau,#miniL,#bLarge,#nivPop,#carnetP,#catalogue'));
+  const toucher=(ev)=>{
+    if(pageOuverte()||surUI(ev.target))return;
+    if(PECHE&&PECHE.etat==='combat')return;        /* on est en train de ferrer */
+    const p=pointDuMonde(ev);if(!p)return;
+    const [lx,ly]=batLocal(p[0],p[1]);
+    const w=demiPont((ly+PONT_L.L/2)/PONT_L.L);
+    if(w>0&&Math.abs(lx)<w+6){stopperLeBateau();return;}   /* la coque : on stoppe */
+    mettreLeCap(p[0],p[1]);
+  };
+  addEventListener('pointerdown',toucher,{passive:true});
+  /* la carte : un coin d'un doigt */
+  const d=$('miniL');
+  if(d){d.style.pointerEvents='auto';
+    d.addEventListener('pointerdown',(ev)=>{
+      ev.stopPropagation();
+      const r=MINI_C.getBoundingClientRect();
+      const wx=(ev.clientX-r.left)/r.width*MONDE_L, wy=(ev.clientY-r.top)/r.height*MONDE_H;
+      let k=null,d0=1e9;
+      for(const c in COINS_L){const C=COINS_L[c],dd=Math.hypot(wx-C.x,wy-C.y);if(dd<d0){d0=dd;k=c;}}
+      if(k&&d0<COINS_L[k].r*1.25){const C=COINS_L[k];
+        /* on se range à l'entrée du coin, pas sur le rocher */
+        const a=Math.atan2(BAT.y-C.y,BAT.x-C.x);
+        let px=C.x+Math.cos(a)*C.r*0.45, py=C.y+Math.sin(a)*C.r*0.45;
+        for(let q=0;q<10&&terreLarge(px,py);q++){px=C.x+Math.cos(a+q)*C.r*0.6;py=C.y+Math.sin(a+q)*C.r*0.6;}
+        if(mettreLeCap(px,py))try{texteVolant(joueur.x,joueur.y-52,'cap sur '+COIN_NOM[k],'#e8c06a');}catch(e){}
+      }else mettreLeCap(wx,wy);
+    },{passive:true});}
 }
 function poserLeBoutonDuLarge(){
   if(CARTE!=='large'||$('bLarge'))return;
@@ -21589,7 +21691,7 @@ b.classList.remove('mord');b.classList.remove('mince');
    en plein dans la zone de pêche : collé à lui, c'est « monter à bord »
    qu'on attend, pas « lancer la ligne ». */
 if(CARTE==='extramar'){try{const B=DECOR.find(o=>o.t==='x_bateau');
-  if(B&&Math.abs(B.x-joueur.x)<34&&joueur.y>B.y-78&&joueur.y<B.y+30)return false;}catch(x){}}
+  if(B&&Math.abs(B.x-joueur.x)<36&&joueur.y>B.y-150&&joueur.y<B.y+30)return false;}catch(x){}}
 {const LP=lieuDePeche();
 /* LA PLAQUE DE PÊCHE reste disponible pendant les gestes qui ne sont pas
    un travail en cours : sinon, le bouton disparaît pendant une seconde
@@ -28460,7 +28562,8 @@ try{if(CARTE==='extramar'&&new URLSearchParams(location.search).has('arrivee'))p
    l'intérieur d'un arbre. Le sentier est l'entrée, et la seule. */
 if(CARTE==='foret'){joueur.x=F_SENT_ARRIVEE[0];joueur.y=F_SENT_ARRIVEE[1];joueur.dir='droite';}
 if(CARTE==='large'){const p=batMonde(0,BARRE_Y+16);joueur.x=p[0];joueur.y=p[1];joueur.dir='haut';
-  COIN_VU=null;try{majLeCoin();}catch(x){}try{poserLeBoutonDuLarge();poserLaCarteDuLarge();}catch(x){}}
+  COIN_VU=null;window.TK_SANS_JOY=true;   /* au large, on ne marche pas : pas de joystick */
+  try{majLeCoin();}catch(x){}try{poserLeBoutonDuLarge();poserLaCarteDuLarge();brancherLaBarre();}catch(x){}}
 /* LA NOUVELLE CARTE : on arrive devant la gare, et plus rien ne pousse
    le joueur vers l'ancienne cour, qui n'existe plus. */
 /* UNE SEULE FOIS, AU CHARGEMENT : si la position vient de l'ancienne carte,

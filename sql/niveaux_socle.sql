@@ -323,3 +323,20 @@ where niveau = 29;
    - Le poisson qui jaillit est dessiné à sa vraie silhouette, deux fois
      plus grand au large pour compenser l'échelle de la carte.
 */
+
+/* ===== 2026-10-22 · l'embarcation, l'amarrage et la barre (jeu seul) =====
+   - peindreCoque() : une seule peinture pour le port et le large. Bordé
+     blanc, liseré bleu, lisse foncée, pont de bois verni à membrures,
+     étrave claire, deux bancs, moteur et barre franche, caisse, seau,
+     cordage lové, bouée couronne et deux pare-battages.
+   - Le pointu était posé SUR le ponton : sa vignette monte depuis son
+     point d'ancrage, et l'ancre était à peine au-delà du tablier. Il est
+     maintenant à 118 px du bout, dans l'eau libre, avec ses amarres.
+   - PLUS DE JOYSTICK AU LARGE (window.TK_SANS_JOY). On touche l'eau, le
+     bateau met le cap dessus, ralentit en arrivant et s'arrête seul ; on
+     touche la coque, il stoppe ; on touche un coin sur la carte, il y
+     file en se rangeant à l'entrée de la zone, pas sur le rocher.
+   - Les quatre points d'arrivée pointaient l'étrave vers le coin : elle
+     se plantait dans la roche et le bateau refusait tout cap. On arrive
+     désormais face à l'eau libre, le coin dans le dos.
+*/
