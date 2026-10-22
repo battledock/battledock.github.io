@@ -30251,14 +30251,17 @@ if(!VET_SAC.length){try{const g=await appelRPC('ma_garde_robe',{p_joueur:e.id});
 
 function peindreVestiaire(){
 const F=$('page2Fond');
-const ai=(k)=>!k||(e.cos||{})['costume_'+k];
+/* UN VRAI OUI OU NON : e.cos['costume_x'] vaut « undefined » quand on ne
+   l'a pas, jamais false. Les tests qui comparaient à false laissaient
+   donc toutes les tenues ouvertes. */
+const ai=(k)=>!k||!!(e.cos||{})['costume_'+k];
 const porte=(e.ap&&e.ap.deguisement)||'';
 const vetPorte=(v)=>Object.keys(v.ap).every(k=>(e.ap[k]||0)===v.ap[k]);
 VS_LST=[];
 const pousser=(o)=>{VS_LST.push(o);return VS_LST.length-1;};
-const carte=(o,q)=>'<button class="c'+(o.on?' on':'')+(o.ok===false?' no':'')+'" data-vs="'+q+'">'+
+const carte=(o,q)=>'<button class="c'+(o.on?' on':'')+(o.ok?'':' no')+'" data-vs="'+q+'">'+
  '<canvas data-vk="'+q+'"></canvas><b>'+echapperT(o.nom)+'</b>'+
- (o.ok===false?'<i class="cad">◊</i>':'')+'</button>';
+ (o.ok?'':'<i class="cad">◊</i>')+'</button>';
 let corps='';
 
 if(VS.ray==='tenues'){
@@ -30329,7 +30332,7 @@ F.querySelectorAll('[data-vp]').forEach(b=>b.onclick=()=>{
  vibrer(10);peindreVestiaire();vsGarder();});
 F.querySelectorAll('[data-vs]').forEach(b=>b.onclick=()=>{
  const o=VS_LST[+b.dataset.vs];if(!o)return;
- if(o.ok===false){vsBulle(o.g==='tenue'?('À trouver : '+o.lieu):'Celle-là s’achète à La Marinière.');vibrer(6);return;}
+ if(!o.ok){vsBulle(o.g==='tenue'?('À trouver : '+o.lieu):'Celle-là s’achète à La Marinière.');vibrer(6);return;}
  e.ap=Object.assign({},e.ap);let mot='';
  if(o.g==='tenue'){if(!o.k||o.k===porte)delete e.ap.deguisement;else e.ap.deguisement=o.k;}
  else{
