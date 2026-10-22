@@ -184,3 +184,33 @@ where niveau = 29;
 -- et le classement l'expose, pour que les autres la voient :
 --   exists(select 1 from inventaire_niveau iv
 --          where iv.joueur=j.id and iv.cle='etoile:' and iv.n>0) etoile
+
+/* ============ 2026-10-22 · étape 6, suite : le palier 15 ============
+   « Le Panier » — le troisième circuit de karting.
+
+   Serveur
+   -------
+   - niveau_reclamer : la clé 'circuit_panier' rejoint ('ruche','cabanon'),
+     le palier 15 rend donc actif:true et pose
+     inventaire_niveau(joueur,'deblocage:circuit_panier',1).
+   - course_debut : accepte le jeu 'karting_panier' et refuse
+     {"erreur":"Ce circuit ouvre au niveau 15."} tant que
+     niv_bonus(uid,'deblocage:circuit_panier') vaut 0.
+   - course_fin et course_classement sont génériques (ils prennent le jeu
+     en texte) : rien à y changer.
+
+   Vérifié le 2026-10-22, joueur d'essai, le tout annulé par rollback :
+     bonus avant : 0  → course_debut = {"erreur":"Ce circuit ouvre au niveau 15."}
+     bonus après : 1  → course_debut = {"id":…,"euros":…,"restant":11}
+
+   Client (courses.js)
+   -------------------
+   - CIRCUITS.panier : jeu 'karting_panier', eau:0, niv 'deblocage:circuit_panier',
+     31 points de contrôle ; ORDRE_C = quai, corniche, panier.
+   - eau:0 appris au générateur : riveDe rend -9999, dansLEau rend faux,
+     le sol devient une calade (un éventail de pavés par placette), les
+     maisons du Panier (toit de tuiles, mur ocre, volets, linge tendu),
+     les escaliers, les lanternes le long de la piste.
+   - Circuit fermé : une carte « NIV. 15 » remplace les trois boutons de
+     course tant que le palier n'est pas pris.
+*/

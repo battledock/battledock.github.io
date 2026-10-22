@@ -162,6 +162,10 @@ const CSS=`
 #crsMenu .garage{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 #crsMenu .kc{border:1px solid rgba(216,191,106,.25);border-radius:16px;background:rgba(14,21,16,.85);padding:10px 4px;color:#eef3e4;font:700 10px Arial;letter-spacing:1.4px}
 #crsMenu .kc.ferme{opacity:.55}#crsMenu .kc.ferme img{filter:grayscale(.7) brightness(.7)}
+#crsMenu .ved.ferme{background:linear-gradient(#3a3228,#262018);border-color:#6a5a3a;color:#c3a881}
+#crsMenu .ved.ferme b{color:#e8d8b4}
+#crsMenu .ved.ferme .go{background:#6a5a3a;color:#f4ead0}
+#crsMenu .circ .cc.ferme img{filter:grayscale(.75) brightness(.65)}
 #crsMenu .kc.on{border:2px solid #d8bf6a;background:rgba(216,191,106,.14)}
 #crsMenu .kc img{display:block;width:60px;height:60px;margin:0 auto 6px;image-rendering:pixelated}
 #crsMenu .onglets{display:flex;gap:8px;margin-bottom:10px}
@@ -241,7 +245,7 @@ function Son(){let ac=null,mot=null,gm=null,on=true;try{const r=JSON.parse(local
 
 /* =====================================================================
    LE GRAND PRIX DU QUAI
-   Deux circuits (le Quai, la Corniche), trois modes (Grand Prix à 5 €,
+   Trois circuits (le Quai, la Corniche, le Panier), trois modes (Grand Prix à 5 €,
    course libre en trois cylindrées, contre-la-montre avec fantôme), un
    garage, le classement. On conduit au pouce : on montre la direction,
    le kart y va — la caméra ne tourne pas, la gauche reste la gauche.
@@ -296,11 +300,16 @@ const CIRCUITS={
   quai:{nom:'Le Quai',jeu:'karting',eau:-1,court:'LE QUAI',
     desc:'Le long des bateaux : une longue ligne droite, deux épingles et la chicane des palmiers.',
     ctrl:[[118,830],[116,640],[118,450],[124,250],[146,150],[200,100],[270,96],[330,132],[350,210],[330,290],[290,340],[292,420],[338,480],[354,570],[330,650],[272,700],[262,770],[276,840],[240,900],[170,918],[128,884]]},
+  panier:{nom:'Le Panier',jeu:'karting_panier',eau:0,court:'LE PANIER',niv:'deblocage:circuit_panier',nivN:15,
+    desc:'Dans les ruelles du vieux quartier : des angles serrés, deux placettes et la descente des escaliers.',
+    ctrl:[[120,880],[112,790],[148,730],[214,716],[246,660],[228,596],[164,572],[118,520],[130,452],[196,424],
+          [252,448],[300,420],[300,352],[246,312],[180,318],[134,276],[150,206],[214,168],[286,178],[330,232],
+          [336,300],[352,372],[348,452],[318,520],[338,586],[336,664],[300,728],[318,800],[292,876],[216,912],[150,920]]},
   corniche:{nom:'La Corniche',jeu:'karting_corniche',eau:1,court:'LA CORNICHE',
     desc:'Face à la mer, à flanc de colline : des courbes rapides et le grand S des villas.',
     ctrl:[[300,860],[318,700],[306,540],[322,380],[310,230],[270,130],[200,92],[132,120],[100,190],[136,262],[204,300],[214,372],[160,430],[100,480],[92,560],[140,620],[200,650],[206,720],[150,780],[112,850],[150,912],[230,926]]},
 };
-const ORDRE_C=['quai','corniche'];
+const ORDRE_C=['quai','corniche','panier'];
 const DIFFS={pitchoun:{nom:'Pitchoun',sous:'pour apprendre',f:.84},minot:{nom:'Minot',sous:'la course normale',f:.95},cador:{nom:'Cador',sous:'pour les vrais',f:1.04}};
 const OBJETS={sardine:{ic:'🐟',nom:'Sardine'},boule:{ic:'⚫',nom:'Boule'},savon:{ic:'🧼',nom:'Savon'},mistral:{ic:'🌬️',nom:'Mistral'}};
 const PREFK=()=>{try{return JSON.parse(localStorage.getItem('bdl.kart')||'{}')||{};}catch(x){return {};}};
@@ -322,8 +331,11 @@ function construireCircuit(CTRL){
 function plusProche(P,x,y,i0,fen){const N=P.length;let bi=i0,bd=1e9;
   if(i0==null){for(let i=0;i<N;i++){const d=(P[i].x-x)**2+(P[i].y-y)**2;if(d<bd){bd=d;bi=i;}}return bi;}
   for(let j=-fen;j<=fen;j++){const i=(i0+j+N)%N;const d=(P[i].x-x)**2+(P[i].y-y)**2;if(d<bd){bd=d;bi=i;}}return bi;}
-const riveDe=(C,y)=>C.eau<0?70+6*Math.sin(y/90):KW-62+6*Math.sin(y/80)+4*Math.sin(y/23);
-const dansLEau=(C,x,y)=>C.eau<0?x<riveDe(C,y):x>riveDe(C,y);
+/* LE PANIER N'A PAS DE MER : eau vaut zéro, et tout ce qui parle de rive
+   s'efface. La rive part très loin pour que les gardes « à tant de la
+   rive » ne gênent jamais. */
+const riveDe=(C,y)=>C.eau<0?70+6*Math.sin(y/90):(C.eau>0?KW-62+6*Math.sin(y/80)+4*Math.sin(y/23):-9999);
+const dansLEau=(C,x,y)=>C.eau<0?x<riveDe(C,y):(C.eau>0?x>riveDe(C,y):false);
 
 function graverCircuit(P,C){
   const T=Toile(KW,KH),N=P.length;
@@ -333,6 +345,7 @@ function graverCircuit(P,C){
   const EAU=C.eau<0?['#1d4e54','#22575d','#265c62','#2b6568']:['#0e4a6a','#145c80','#1a6e92','#2482a4'];
   const QUAI=['#a8946c','#bca480','#cbb488','#d8c49a'],GARR=['#7a7a4a','#8e8a56','#a29a66','#b6aa78'];
   const AS=['#3a3b40','#44454a','#4e4f55','#5a5b60'],GRAV=['#9a8a6e','#ae9e80','#c2b292','#d2c4a6'];
+  const PAVE=['#8a8076','#9a9086','#a89e92','#b6aca0'];
   for(let y=0;y<KH;y++){for(let x=0;x<KW;x++){const k=y*KW+x,d=DIST[k];
     if(dansLEau(C,x,y)){let v=.5+(marbre(x,y,11)-.5)*.9;const dr=Math.abs(x-riveDe(C,y));
       if(C.eau>0&&dr<14)v+=.35*(1-dr/14);
@@ -347,9 +360,17 @@ function graverCircuit(P,C){
     if(d<HW+6){T.P(x,y,tone(x,y,.4+(hs(x,y,18)-.5)*.7+(marbre(x,y,19)-.5)*.4,GRAV));continue;}
     if(C.eau<0){const r=Math.floor(y/12),off=(r%2)*12,cc=Math.floor((x+off)/24);const j=(y%12===0)||((x+off)%24===0);
       T.P(x,y,j?'#8f7a58':tone(x,y,.45+(hs(cc,r,14)-.5)*.35+(marbre(x,y,15)-.5)*.5,QUAI));}
-    else{/* la garrigue : terre claire, touffes */let v=.5+(marbre(x,y,25)-.5)*1.1;if(lisse(x,y,4,26)>.68)v-=.45;T.P(x,y,tone(x,y,v,GARR));}}}
-  /* le bord de l'eau */
-  for(let y=0;y<KH;y++){const b=Math.round(riveDe(C,y)),s=C.eau<0?1:-1;
+    else if(C.eau>0){/* la garrigue : terre claire, touffes */let v=.5+(marbre(x,y,25)-.5)*1.1;if(lisse(x,y,4,26)>.68)v-=.45;T.P(x,y,tone(x,y,v,GARR));}
+    else{/* LE PANIER : la calade, un éventail de pavés par placette */
+      const gx=Math.floor(x/96),gy=Math.floor(y/96);
+      const cx=(gx+.5)*96+(hs(gx,gy,38)-.5)*30,cy=(gy+.5)*96+(hs(gx,gy,39)-.5)*30;
+      const a2=Math.atan2(y-cy,x-cx)+hs(gx,gy,43)*3,rr=Math.hypot(x-cx,y-cy)+6;
+      const u=Math.floor(rr/5),vv=Math.floor(a2*rr/6);
+      const joint=(Math.abs(rr/5-u-.5)>.40)||(Math.abs(a2*rr/6-vv-.5)>.40);
+      let va=.5+(hs(u,vv,14)-.5)*.2+(marbre(x,y,15)-.5)*.14;
+      T.P(x,y,joint?'#857a6c':tone(x,y,va,PAVE));}}}
+  /* le bord de l'eau — Le Panier n'en a pas */
+  if(C.eau)for(let y=0;y<KH;y++){const b=Math.round(riveDe(C,y)),s=C.eau<0?1:-1;
     if(C.eau<0){T.P(b,y,'#e8d8b4');T.P(b+1,y,'#f2e6c8');T.P(b-1,y,'#705733');T.P(b-2,y,'#2a2117');}
     else{for(let k=0;k<5;k++){const x=b+k;T.P(x,y,tone(x,y,.4+(hs(x,y,27)-.5),['#8a8478','#a8a294','#c4beb0','#dcd6c8']));}
       if(bay(b+5,y)<.8)T.P(b+5,y,'#f2fbf6');if(bay(b+6,y)<.4)T.P(b+6,y,'#e0f6f0');if(bay(b+7,y)<.15)T.P(b+7,y,'#e0f6f0');}}
@@ -361,7 +382,7 @@ function graverCircuit(P,C){
       for(let jj=0;jj<5;jj++)for(let ii=0;ii<L;ii++)if(bay(x+ii,y+7+jj)<.5-jj*.1)T.dk(x+ii+2,y+7+jj,.25);
       T.L(x+28,y-1,x+28,y-12,'#e8e4da');T.P(x+28,y-13,'#c8322a');}
     for(let y=14;y<KH;y+=28){const b=Math.round(riveDe(C,y))+4;T.R(b,y,3,3,'#2a2a2e');T.P(b+1,y,'#5a5a62');T.dk(b+3,y+2,.35);}}
-  else{/* rochers en mer, voiliers au large */
+  else if(C.eau>0){/* rochers en mer, voiliers au large */
     for(let i=0;i<26;i++){const y=Math.round(hs(i,60)*KH),x=Math.round(riveDe(C,y)+10+hs(i,61)*30),r=2+Math.floor(hs(i,62)*3);
       T.C(x,y,r,'#8a8478');T.C(x-1,y-1,Math.max(1,r-1),'#b4aea0');for(let a=0;a<16;a++)T.Pa(x+Math.cos(a/16*6.28)*(r+1.6),y+Math.sin(a/16*6.28)*(r+1.2),'#f2fbf6',.6);}
     for(let i=0;i<4;i++){const y=120+i*230,x=KW-22;T.R(x-6,y,13,3,'#f4f2e8');T.R(x-5,y+3,11,1,'#1d2c3a');for(let j=0;j<10;j++)T.R(x,y-10+j,Math.max(1,6-j*.6),1,'#fbf6ec');T.L(x,y-11,x,y,'#c8c8c0');}}
@@ -388,8 +409,45 @@ function graverCircuit(P,C){
   const villa=(x,y,w,h,s)=>{for(let k=0;k<6;k++)for(let j=0;j<h;j++)if(bay(x+w+k,y+j+k)<.6)T.dk(x+w+k,y+j+k+2,.3);for(let j=0;j<h;j++)for(let i=0;i<w;i++){const col=(i+((j/4|0)%2)*2)%4;let v=.55+(col===0?.3:col===3?-.22:0)-(j%4===3?.25:0)+(j<h/2?.1:-.1);
       T.P(x+i,y+j,tone(x+i,y+j,v,['#6e3020','#8e4028','#a85234','#c06a44','#d4845a']));}T.R(x,y+(h>>1),w,1,'#5a2418');
     if(s<.5){T.R(x+w-6,y+2,4,4,'#d8c8a8');T.P(x+w-5,y+3,'#3a3028');}else{T.R(x-6,y+h-8,6,8,'#4aa8c8');T.R(x-6,y+h-8,6,1,'#9ae2f0');}};
+  /* LES MAISONS DU PANIER : façades ocre serrées, volets fermés, linge
+     tendu d'une fenêtre à l'autre, et quelques volées de marches. */
+  const facade=(x,y,w,h,s0)=>{
+    for(let k=0;k<5;k++)for(let j=0;j<h;j++)if(bay(x+w+k,y+j+k)<.6)T.dk(x+w+k,y+j+k+2,.32);
+    const OCRE=[['#9a5a30','#b06c3c','#c47e4c','#d4925e'],['#8a6a3a','#a07c48','#b48e58','#c6a06a'],
+                ['#a85a4a','#bc6e5c','#cc826e','#dc9682'],['#8a7a5a','#9e8e6c','#b2a27e','#c4b490']][Math.floor(s0*4)%4];
+    const th=Math.max(7,Math.round(h*.42));                   /* le toit vu d'en haut */
+    for(let j=0;j<h;j++)for(let i=0;i<w;i++){
+      if(j<th){const r=Math.floor(j/3),o=(r%2)*2;
+        const tv=.5+(hs(Math.floor((i+o)/4),r,36)-.5)*.5+(marbre(x+i,y+j,37)-.5)*.3-(j%3===2?.3:0)-(((i+o)%4===0)?.25:0);
+        T.P(x+i,y+j,tone(x+i,y+j,tv,['#7a3620','#9a4a28','#b45c34','#c87044']));continue;}
+      let v=.5+(marbre(x+i,y+j,30)-.5)*.55+(hs(x+i,y+j,31)-.5)*.25;
+      if(j<th+2)v+=.2;T.P(x+i,y+j,tone(x+i,y+j,v,OCRE));}
+    T.R(x,y+th-1,w,1,'#5a2418');T.R(x,y+th,w,1,'#f2e6cc');    /* l'égout du toit, la corniche */
+    T.R(x,y,w,1,'#d4a07a');
+    for(let j=th+3;j<h-4;j+=7)for(let i=3;i<w-4;i+=8){
+      const vo=hs(x+i,y+j,32);
+      T.R(x+i,y+j,3,5,vo<.5?'#2a4a5a':'#3a6a4a');             /* le volet */
+      T.P(x+i+1,y+j+1,vo<.5?'#4a7a92':'#5a9a6a');
+      T.R(x+i,y+j+5,3,1,'#5a4a38');}
+    /* le linge, d'une fenêtre à la suivante */
+    if(s0>.45){const ly=y+th+3+Math.floor(hs(x,y,33)*Math.max(2,h-th-8));
+      for(let i=0;i<w+10;i++){const dy=Math.round(Math.sin(i/(w+10)*Math.PI)*2);
+        T.P(x+i,ly+dy,'#d8d2c4');
+        if(i%7<4&&i>3)T.R(x+i,ly+dy+1,1,3,['#e8e4da','#8ab8d8','#e8c86a','#d87a6a'][Math.floor(hs(x+i,ly,34)*4)]);}}};
+  const escalier=(x,y,n)=>{for(let k=0;k<n;k++){T.R(x,y+k*3,13,2,'#b6aca0');T.R(x,y+k*3+2,13,1,'#6e6256');
+    T.P(x,y+k*3,'#cec4b8');T.P(x+12,y+k*3,'#8a8076');}};
+  const lampadaireP=(x,y)=>{T.R(x,y,2,9,'#2a2c30');T.R(x-2,y-3,6,3,'#2a2c30');T.P(x,y-2,'#ffe8a8');};
   for(let i=0;i<220;i++){const x=Math.round(hs(i,70)*KW),y=Math.round(hs(i,71)*KH);
-    if(C.eau<0){if(i<14&&libre(x,y,12))(i%3?pot:palmier)(x,y);}
+    if(!C.eau){
+      if(i<86&&libre(x,y,13)&&libre(x+20,y+24,11)){
+        const w0=16+Math.floor(hs(i,72)*12),h0=22+Math.floor(hs(i,73)*16);
+        facade(x,y,w0,h0,hs(i,74));                                   /* la maison */
+        if(hs(i,79)<.62&&libre(x+w0+2,y+3,11)&&libre(x+w0+18,y+22,10)) /* sa voisine, mitoyenne */
+          facade(x+w0+1,y+2+Math.floor(hs(i,80)*5),14+Math.floor(hs(i,81)*10),20+Math.floor(hs(i,82)*14),hs(i,83));}
+      else if(i<130&&libre(x,y,9)&&hs(i,75)<.34)escalier(x,y,3+Math.floor(hs(i,76)*4));
+      else if(i<170&&libre(x,y,8)&&hs(i,77)<.3)pot(x,y);
+      else if(i<210&&libre(x,y,9)&&hs(i,78)<.26)lampadaireP(x,y);}
+    else if(C.eau<0){if(i<14&&libre(x,y,12))(i%3?pot:palmier)(x,y);}
     else{if(i<22&&libre(x,y,20)&&libre(x+26,y+20,16))villa(x,y,22+Math.floor(hs(i,72)*10),16+Math.floor(hs(i,73)*6),hs(i,74));
       else if(libre(x,y,10))(hs(i,75)<.15?palmier:(xx,yy)=>pin(xx,yy,3+Math.floor(hs(i,76)*3)))(x,y);}}
   /* les tribunes, autour de la ligne de départ */
@@ -398,7 +456,10 @@ function graverCircuit(P,C){
       if(w%3===1&&hs(x,y,77)>.25){T.P(x,y,['#f4d0a8','#c89070','#8a5a3a','#e8b890'][Math.floor(hs(x,y,78)*4)]);}
       if(w%3===2&&hs(x,y,79)>.3)T.P(x,y,['#e8445a','#3d8be8','#f4c23a','#f4f4f0','#7ad06a','#ff8a3a'][Math.floor(hs(x,y,80)*6)]);}}}
   const lampes=[];
-  for(let y=60;y<KH;y+=110){const x=Math.round(riveDe(C,y))+(C.eau<0?12:-12);if(DIST[y*KW+x]>HW+6){T.R(x,y-1,3,3,'#2a2c30');lampes.push([x+1,y]);}}
+  if(C.eau)for(let y=60;y<KH;y+=110){const x=Math.round(riveDe(C,y))+(C.eau<0?12:-12);if(DIST[y*KW+x]>HW+6){T.R(x,y-1,3,3,'#2a2c30');lampes.push([x+1,y]);}}
+  else for(let i=0;i<N;i+=Math.round(N/9)){/* au Panier, les lanternes bordent la piste */
+    const p=P[i],x=Math.round(p.x-p.ty*(HW+11)),y=Math.round(p.y+p.tx*(HW+11));
+    if(x>3&&y>3&&x<KW-3&&y<KH-3&&DIST[y*KW+x]>HW+9){T.R(x,y-1,3,3,'#2a2c30');lampes.push([x+1,y]);}}
   const c=T.fin();
   return {c,DIST,IDX,lampes};}
 function graverDessus(P,lampes,C){const c=document.createElement('canvas');c.width=KW;c.height=KH;const g=c.getContext('2d');
@@ -407,7 +468,7 @@ function graverDessus(P,lampes,C){const c=document.createElement('canvas');c.wid
   R(xa-1,ya-26,3,28,'#d8bf6a');R(xb-1,yb-26,3,28,'#d8bf6a');
   const x0=Math.min(xa,xb)-2,w=Math.abs(xb-xa)+5;R(x0,ya-30,w,8,'#15201a');R(x0,ya-30,w,1,'#d8bf6a');R(x0,ya-23,w,1,'#d8bf6a');
   g.fillStyle='rgba(0,0,0,.22)';g.fillRect(x0+8,ya-14,w,6);
-  g.font='italic 700 6px Georgia';g.textAlign='center';g.fillStyle='#d8bf6a';g.fillText(C.eau<0?'GRAND PRIX DU QUAI':'GRAND PRIX DE LA CORNICHE',x0+w/2,ya-24.6);
+  g.font='italic 700 6px Georgia';g.textAlign='center';g.fillStyle='#d8bf6a';g.fillText(C.eau<0?'GRAND PRIX DU QUAI':(C.eau>0?'GRAND PRIX DE LA CORNICHE':'GRAND PRIX DU PANIER'),x0+w/2,ya-24.6);
   c.feux=[x0+w/2-14,ya-27];
   const COUL=['#e8445a','#3d8be8','#f4c23a','#f4f4f0','#7ad06a','#ff8a3a'];
   for(const i of [Math.floor(P.length*.3),Math.floor(P.length*.62)]){const p=P[i],nx=-p.ty,ny=p.tx;const a=[p.x-nx*(HW+9),p.y-ny*(HW+9)],b=[p.x+nx*(HW+9),p.y+ny*(HW+9)];
@@ -420,7 +481,11 @@ function monde(id){if(MONDES[id])return MONDES[id];const C=CIRCUITS[id],P=constr
   const M={id,C,P,N:P.length,c:m.c,dessus:graverDessus(P,m.lampes,C)};
   /* la vignette du menu : le tracé en laiton sur vert profond */
   const v=document.createElement('canvas');v.width=88;v.height=150;const g=v.getContext('2d');g.fillStyle='#0e1510';g.fillRect(0,0,88,150);
-  const sx=78/KW,sy=140/KH;g.fillStyle=C.eau<0?'#1d4e54':'#145c80';for(let y=0;y<150;y++){const r=riveDe(C,y/sy)*sx+5;if(C.eau<0)g.fillRect(0,y,r,1);else g.fillRect(r,y,88-r,1);}
+  const sx=78/KW,sy=140/KH;
+  if(C.eau){g.fillStyle=C.eau<0?'#1d4e54':'#145c80';
+    for(let y=0;y<150;y++){const r=riveDe(C,y/sy)*sx+5;if(C.eau<0)g.fillRect(0,y,r,1);else g.fillRect(r,y,88-r,1);}}
+  else{g.fillStyle='#2a2218';g.fillRect(0,0,88,150);          /* le vieux quartier, sans mer */
+    g.fillStyle='#3a3026';for(let i=0;i<70;i++){const x=(hs(i,90)*88)|0,y=(hs(i,91)*150)|0;g.fillRect(x,y,5+(hs(i,92)*6|0),6+(hs(i,93)*7|0));}}
   g.strokeStyle='#d8bf6a';g.lineWidth=3;g.lineJoin='round';g.beginPath();P.forEach((p,i)=>{const x=5+p.x*sx,y=5+p.y*sy;i?g.lineTo(x,y):g.moveTo(x,y);});g.closePath();g.stroke();
   g.strokeStyle='#15201a';g.lineWidth=1;g.stroke();g.fillStyle='#f4f4f0';g.fillRect(5+P[0].x*sx-4,5+P[0].y*sy-1,8,2);
   M.vignette=v.toDataURL();MONDES[id]=M;return M;}
@@ -733,24 +798,33 @@ function karting(ctx){
     Rt.d.classList.remove('course');Rt.pad.style.display='none';Rt.haut.style.display='none';Rt.pied.style.display='none';Rt.cri.classList.add('cache');son.moteur(0);son.crisse(0);}
   let RECS={records:{},restant_karting:null},CLAS={};
   async function chargerRecords(){const r=await ctx.rpc('course_mes_records',{});if(r&&!r.erreur){RECS=Object.assign(r,{charge:1});if(!RECS.records)RECS.records={};}}
+  /* UN CIRCUIT PEUT ÊTRE FERMÉ : il s'ouvre à un palier de niveau. On le
+     montre quand même — on ne cache pas ce qui se mérite. */
+  const circuitFerme=()=>!!(M.C.niv&&!aLeNiv(M.C.niv));
   function carteCircuit(){const C=M.C,rec=RECS.records&&RECS.records[C.jeu],loc=(PREFK().meilleurs||{});
     const lb=Object.keys(loc).filter(k=>k.startsWith(M.id+'_')).map(k=>loc[k]);
-    return '<div class="circ"><button class="fl" data-a="cprev" aria-label="Circuit précédent">‹</button><div class="cc"><img src="'+M.vignette+'" alt=""><div class="ci"><small>CIRCUIT '+(ORDRE_C.indexOf(M.id)+1)+' / '+ORDRE_C.length+'</small><b>'+C.nom+'</b><em>'+C.desc+'</em>'+
+    return '<div class="circ"><button class="fl" data-a="cprev" aria-label="Circuit précédent">‹</button><div class="cc'+(circuitFerme()?' ferme':'')+'"><img src="'+M.vignette+'" alt=""><div class="ci"><small>CIRCUIT '+(ORDRE_C.indexOf(M.id)+1)+' / '+ORDRE_C.length+'</small><b>'+C.nom+'</b><em>'+C.desc+'</em>'+
       '<span class="rec">'+(rec?'TON RECORD · '+chrono(rec):'PAS ENCORE DE RECORD')+'</span></div></div><button class="fl" data-a="cnext" aria-label="Circuit suivant">›</button></div>';}
   function accueil(){demarrerDemo(true);
     const rest=RECS.restant_karting;
-    Rt.menu.innerHTML='<div class="accueil"><div class="titre"><div class="ti">LE VIEUX-PORT · KARTING</div><h1>Grand Prix<br><i>du Quai</i></h1></div>'+carteCircuit()+
-      '<button class="ved" data-a="paye"><small>GRAND PRIX · 5 €</small><b>La course aux euros</b><em>1er : 20 € · 2e : 12 € · 3e : 7 € · 4e : 3 €'+(typeof rest==='number'?' · '+Math.max(0,rest)+' aujourd’hui':'')+'</em><span class="go">5 €</span></button>'+
+    Rt.menu.innerHTML='<div class="accueil"><div class="titre"><div class="ti">LE VIEUX-PORT · KARTING</div><h1>Grand Prix<br><i>'+(M.C.court==='LE PANIER'?'du Panier':(M.C.eau>0?'de la Corniche':'du Quai'))+'</i></h1></div>'+carteCircuit()+
+      (circuitFerme()
+        ?'<button class="ved ferme" data-a="ferme"><small>CIRCUIT FERMÉ</small><b>'+M.C.nom+'</b>'+
+          '<em>Il ouvre au niveau '+M.C.nivN+'. Récolte, pêche, coupe : l’XP vient vite.</em>'+
+          '<span class="go">NIV. '+M.C.nivN+'</span></button>'
+        :      '<button class="ved" data-a="paye"><small>GRAND PRIX · 5 €</small><b>La course aux euros</b><em>1er : 20 € · 2e : 12 € · 3e : 7 € · 4e : 3 €'+(typeof rest==='number'?' · '+Math.max(0,rest)+' aujourd’hui':'')+'</em><span class="go">5 €</span></button>'+
       '<div class="duo"><button class="ved gris" data-a="libre"><small>GRATUIT</small><b>Course libre</b><em>'+DIFFS[pref.diff].nom+' · '+DIFFS[pref.diff].sous+'</em></button>'+
-      '<button class="ved gris" data-a="chrono"><small>SEUL EN PISTE</small><b>Contre-la-montre</b><em>bats ton fantôme</em></button></div><div class="msg"></div>'+
-      '<div class="trio"><button data-a="garage"><span>🏎️</span>GARAGE</button><button data-a="clas"><span>🏆</span>CLASSEMENT</button><button data-a="aide"><span>❔</span>COMMENT JOUER</button></div></div>';
+      '<button class="ved gris" data-a="chrono"><small>SEUL EN PISTE</small><b>Contre-la-montre</b><em>bats ton fantôme</em></button></div><div class="msg"></div>')+'<div class="trio"><button data-a="garage"><span>🏎️</span>GARAGE</button><button data-a="clas"><span>🏆</span>CLASSEMENT</button><button data-a="aide"><span>❔</span>COMMENT JOUER</button></div></div>';
     Rt.menu.classList.add('on');brancherAccueil();
     if(!RECS.charge){RECS.charge=1;chargerRecords().then(()=>{if(ETAT==='demo'&&Rt.menu.querySelector('.accueil'))accueil();});}}
   function brancherAccueil(){const q=s=>Rt.menu.querySelector(s),msg=q('.msg');
+    const fe=q('[data-a=ferme]');
+    if(fe)fe.onclick=()=>{vibrer([18,50,18]);if(msg)msg.textContent='Le Panier ouvre au niveau '+M.C.nivN+'.';};
     q('[data-a=cprev]').onclick=()=>{const i=(ORDRE_C.indexOf(M.id)+ORDRE_C.length-1)%ORDRE_C.length;pref.circuit=ORDRE_C[i];SAUVEK({circuit:pref.circuit});changerCircuit(pref.circuit);accueil();};
     q('[data-a=cnext]').onclick=()=>{const i=(ORDRE_C.indexOf(M.id)+1)%ORDRE_C.length;pref.circuit=ORDRE_C[i];SAUVEK({circuit:pref.circuit});changerCircuit(pref.circuit);accueil();};
-    q('[data-a=paye]').onclick=()=>lancer('paye',msg);q('[data-a=chrono]').onclick=()=>lancer('chrono',msg);
-    q('[data-a=libre]').onclick=()=>ecranLibre();q('[data-a=garage]').onclick=()=>ecranGarage();q('[data-a=clas]').onclick=()=>ecranClassement();q('[data-a=aide]').onclick=()=>ecranAide();}
+    if(q('[data-a=paye]'))q('[data-a=paye]').onclick=()=>lancer('paye',msg);
+    if(q('[data-a=chrono]'))q('[data-a=chrono]').onclick=()=>lancer('chrono',msg);
+    if(q('[data-a=libre]'))q('[data-a=libre]').onclick=()=>ecranLibre();q('[data-a=garage]').onclick=()=>ecranGarage();q('[data-a=clas]').onclick=()=>ecranClassement();q('[data-a=aide]').onclick=()=>ecranAide();}
   function fenetre(titre,sous,corps){Rt.menu.innerHTML='<div class="fenetre"><button class="retour" data-a="ret">‹ RETOUR</button><div class="ti">'+titre+'</div><h2>'+sous+'</h2>'+corps+'</div>';Rt.menu.classList.add('on');
     Rt.menu.querySelector('[data-a=ret]').onclick=accueil;Rt.menu.scrollTop=0;}
   function ecranLibre(){fenetre('COURSE LIBRE · '+M.C.court,'La cylindrée','<p class="so">Gratuit, sans gain ni record. Les autres pilotes vont plus ou moins vite selon la cylindrée.</p>'+
