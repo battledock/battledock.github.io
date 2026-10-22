@@ -20404,6 +20404,46 @@ rascassedor:{f:'haut',L:14,H:8,dos:'#d8a02a',ventre:'#fff0a0',nag:'#f0c040',moti
 botte:{f:'botte',L:10,H:8,dos:'#3a2a1c',ventre:'#5a3f21',nag:'#5a3f21',motif:'aucun',acc:'#8a6238'},
 sar:{f:'haut',L:14,H:7,dos:'#9aa2a8',ventre:'#eef2f4',nag:'#b0b8be',motif:'rayures',acc:'#2a2c2e'},
 /* ===== LES ESPÈCES DU LARGE (palier 20) ===== */
+mendole:{f:'haut',L:11,H:5,dos:'#7a8a9a',ventre:'#e4ecf2',nag:'#9aa8b4',motif:'points',acc:'#3a4a58'},
+gobie:{f:'fuseau',L:8,H:4,dos:'#6a5a42',ventre:'#d8cdb4',nag:'#8a7a5c',motif:'taches',acc:'#3a2e1e'},
+blennie:{f:'fuseau',L:9,H:4,dos:'#5a6a3a',ventre:'#d8dcb8',nag:'#7a8a52',motif:'marbre',acc:'#2e3a1e'},
+oblade:{f:'haut',L:13,H:6,dos:'#8a949c',ventre:'#eef2f6',nag:'#a8b2ba',motif:'bande',acc:'#1a1a1e'},
+chinchard:{f:'fuseau',L:14,H:5,dos:'#4a6a80',ventre:'#e2ecf2',nag:'#7a8e9c',motif:'lignes',acc:'#2a3a48'},
+marbre:{f:'haut',L:14,H:6,dos:'#9aa4ac',ventre:'#f0f4f8',nag:'#b4bcc4',motif:'rayures',acc:'#4a5058'},
+canthare:{f:'haut',L:14,H:7,dos:'#4a4a56',ventre:'#c8ccd4',nag:'#5a5a68',motif:'lignes',acc:'#2a2a32'},
+orphie:{f:'anguille',L:22,H:4,dos:'#3a6a5a',ventre:'#e8f2ee',nag:'#5a8a74',motif:'lignes',acc:'#2a9a7a'},
+oursin:{f:'oursin',L:10,H:10,dos:'#2a1a2e',ventre:'#6a3a52',nag:'#3a2440',motif:'aucun',acc:'#8a4a6a'},
+meduse:{f:'meduse',L:13,H:15,dos:'#b06a9a',ventre:'#e8b4d2',nag:'#c88ab4',motif:'points',acc:'#f0d8e8'},
+sole:{f:'plat',L:17,H:11,dos:'#9a8560',ventre:'#e4dcc0',nag:'#7a6a44',motif:'taches',acc:'#3a2e1a'},
+turbot:{f:'plat',L:19,H:15,dos:'#8a8a70',ventre:'#ddd8c0',nag:'#62624e',motif:'marbre',acc:'#2e2e24'},
+encornet:{f:'calamar',L:24,H:8,dos:'#c05a5a',ventre:'#f0bcb4',nag:'#d87a7a',motif:'points',acc:'#ffe0d8'},
+ombrine:{f:'haut',L:18,H:8,dos:'#9a9a8a',ventre:'#eef0e8',nag:'#b4b4a4',motif:'lignes',acc:'#d8c060'},
+araignee:{f:'crabe',L:14,H:11,dos:'#a8603a',ventre:'#e8b48a',nag:'#c07a52',motif:'points',acc:'#f0d0a8'},
+cigale:{f:'crabe',L:15,H:10,dos:'#8a6a4a',ventre:'#d8b890',nag:'#a8865c',motif:'lignes',acc:'#e8d0a8'},
+homard:{f:'crabe',L:17,H:11,dos:'#2a3a6a',ventre:'#7a94c8',nag:'#3a4e8a',motif:'points',acc:'#d85a3a'},
+tassergal:{f:'fuseau',L:19,H:6,dos:'#4a6a7a',ventre:'#e4eef2',nag:'#7a94a2',motif:'lignes',acc:'#2a3a46'},
+maigre:{f:'haut',L:24,H:9,dos:'#8a8a74',ventre:'#e8e8d8',nag:'#a4a490',motif:'lignes',acc:'#d8c060'},
+sabre:{f:'anguille',L:28,H:4,dos:'#b8c0c8',ventre:'#eef2f6',nag:'#8a9298',motif:'aucun',acc:'#1a1a1e'},
+seriole:{f:'fuseau',L:22,H:7,dos:'#4a5a74',ventre:'#eef0ee',nag:'#d8c060',motif:'bande',acc:'#2a3444'},
+badeche:{f:'haut',L:23,H:10,dos:'#6a5438',ventre:'#cdb48a',nag:'#8a6e4a',motif:'taches',acc:'#3a2a18'},
+raietorpille:{f:'raie',L:18,H:14,dos:'#6a6a5a',ventre:'#c8c4b0',nag:'#4a4a3e',motif:'points',acc:'#e8d860'},
+pastenague:{f:'raie',L:22,H:16,dos:'#7a6a52',ventre:'#d8ccb4',nag:'#5a4e3a',motif:'taches',acc:'#2e2418'},
+germon:{f:'fuseau',L:24,H:8,dos:'#2a4a6a',ventre:'#dde6ee',nag:'#3a6a9a',motif:'pinnules',acc:'#6aa0d0'},
+thonobese:{f:'fuseau',L:27,H:10,dos:'#1a2a44',ventre:'#d8e2ea',nag:'#e8c040',motif:'pinnules',acc:'#e8c040'},
+beryx:{f:'haut',L:16,H:9,dos:'#c03a3a',ventre:'#f0a090',nag:'#d85a52',motif:'points',acc:'#ffd0c0'},
+requingris:{f:'requin',L:28,H:8,dos:'#5a6a74',ventre:'#e8eef2',nag:'#44535c',motif:'aucun',acc:'#2a343a'},
+requinrenard:{f:'requin',L:32,H:8,dos:'#3a4a6a',ventre:'#e4ecf4',nag:'#2a3850',motif:'aucun',acc:'#1a2434'},
+requinmarteau:{f:'requin',L:30,H:9,dos:'#6a7a84',ventre:'#eef2f6',nag:'#52626c',motif:'aucun',acc:'#2a343a'},
+requinpelerin:{f:'requin',L:36,H:11,dos:'#4a5a62',ventre:'#dee6ea',nag:'#36444c',motif:'aucun',acc:'#1e262c'},
+voilier:{f:'voile',L:30,H:7,dos:'#1f3f7a',ventre:'#e8eef8',nag:'#2a5aa8',motif:'lignes',acc:'#3a8ad8'},
+marlin:{f:'voile',L:32,H:8,dos:'#16305c',ventre:'#e4ecf8',nag:'#2a4a8a',motif:'lignes',acc:'#4a9ad8'},
+lampris:{f:'haut',L:20,H:17,dos:'#8a3a5a',ventre:'#e8a0b4',nag:'#d85a6a',motif:'points',acc:'#ffe0e8'},
+dauphin:{f:'dauphin',L:26,H:8,dos:'#5a6a76',ventre:'#eef2f4',nag:'#44525c',motif:'aucun',acc:'#2a343a'},
+globicephale:{f:'baleine',L:30,H:12,dos:'#2a2a32',ventre:'#5a5a66',nag:'#3a3a46',motif:'aucun',acc:'#8a8a96',aileron:true},
+tortueluth:{f:'tortue',L:20,H:17,dos:'#2a3440',ventre:'#6a7a8a',nag:'#3a4a58',motif:'points',acc:'#8a9aaa'},
+cachalot:{f:'baleine',L:40,H:14,dos:'#4a4a48',ventre:'#9a9a94',nag:'#5e5e5a',motif:'aucun',acc:'#2e2e2c'},
+rorqual:{f:'baleine',L:44,H:14,dos:'#3a4a56',ventre:'#b8c4cc',nag:'#4a5e6a',motif:'lignes',acc:'#2a3640',aileron:true},
+baleinebleue:{f:'baleine',L:48,H:16,dos:'#2a4a6a',ventre:'#a8c0d4',nag:'#3a5e80',motif:'taches',acc:'#1e3448',aileron:true},
 castagnole:{f:'haut',L:10,H:7,dos:'#3a3a52',ventre:'#8a8ab0',nag:'#2a2a3e',motif:'aucun',acc:'#6a6a92'},
 serran:{f:'fuseau',L:12,H:5,dos:'#8a6a3a',ventre:'#e8dcb8',nag:'#a88a52',motif:'rayures',acc:'#4a3a1a'},
 pageot:{f:'haut',L:15,H:7,dos:'#d8a0a0',ventre:'#f8e8e4',nag:'#e0b4b4',motif:'points',acc:'#c04a5a'},
@@ -20460,6 +20500,103 @@ for(let i=0;i<L*0.6;i++)R(-L/2-i,Math.round(Math.sin(i*0.4+b)),1,1,col(F.nag));
 if(!O){for(let k=0;k<6;k++)R(-L/3+k*3,-3+(k%3)*2,1,1,F.acc);R(L/2-4,-2,1,1,'#10161a');R(L/2-4,1,1,1,'#10161a');}
 g.restore();return;
 }
+if(F.f==='baleine'){
+/* LE GÉANT : un corps plein, la tête massive devant, les nageoires
+   caudales à plat derrière — c'est à ça qu'on reconnaît un cétacé. */
+for(let i=0;i<L;i++){const u=i/L;
+  const hh=Math.round(H/2*Math.pow(Math.sin(Math.PI*(0.06+u*0.9)),0.55)*(u>0.86?(1-(u-0.86)/0.14*0.55):1));
+  const x0=-L/2+i;
+  for(let j=-hh;j<=hh;j++){
+    const d=(j+hh)/(2*hh||1);
+    R(x0,j,1,1,col(d<0.42?F.dos:(d<0.62?F.nag:F.ventre)));}
+  if(u>0.1&&u<0.5&&i%4===0)R(x0,hh-1,1,1,col(F.acc));          /* les sillons du ventre */
+}
+/* la caudale, deux palmes à plat */
+for(let k=0;k<L*0.2;k++){const w=Math.round(1+k*0.9);
+  R(-L/2-k,-w,1,1,col(F.nag));R(-L/2-k,w-1,1,1,col(F.nag));
+  R(-L/2-k,-w+1,1,Math.max(1,2*w-2),col(k<2?F.dos:F.nag));}
+/* la nageoire pectorale et le petit aileron */
+R(-L*0.02,H/2-2,Math.round(L*0.16),2,col(F.nag));
+if(F.aileron)R(-L*0.18,-H/2+1,Math.round(L*0.07),2,col(F.dos));
+if(!O){R(L/2-5,-1,2,2,'#fff');R(L/2-4,-1,1,1,'#10161a');
+  R(L*0.22,-H/2,2,1,F.acc);                                     /* l'évent */
+  for(let k=0;k<5;k++)R(L*0.22,-H/2-2-k,1,1,'rgba(226,244,252,.75)');}
+g.restore();return;
+}
+if(F.f==='dauphin'){
+for(let i=0;i<L;i++){const u=i/L;
+  const hh=Math.round(H/2*Math.pow(Math.sin(Math.PI*(0.1+u*0.86)),0.75));
+  const x0=-L/2+i, ond=Math.round(Math.sin(u*3+b*1.2)*1.1);
+  for(let j=-hh;j<=hh;j++)R(x0,j+ond,1,1,col((j+hh)/(2*hh||1)<0.5?F.dos:F.ventre));}
+R(L/2-2,-1,5,2,col(F.dos));R(L/2-2,0,5,1,col(F.ventre));         /* le bec */
+for(let k=0;k<5;k++)R(-L*0.02+k,-H/2-4+k,4-k*0.4,1,col(F.dos)); /* l'aileron, en faux */
+R(-L*0.2,H/2-2,Math.round(L*0.2),2,col(F.nag));
+for(let k=0;k<L*0.16;k++){const w=Math.round(1+k*0.8);
+  R(-L/2-k,-w,1,2*w,col(F.nag));}
+if(!O){R(L/2-5,-2,2,2,'#fff');R(L/2-4,-2,1,1,'#10161a');}
+g.restore();return;
+}
+if(F.f==='tortue'){
+/* LES PALMES D'ABORD, elles passent derrière la carapace */
+for(const [sx,sy] of [[1,-1],[1,1],[-1,-1],[-1,1]]){
+  const av=sx>0;
+  for(let k=0;k<L*0.34;k++){
+    const t=k/(L*0.34), w=Math.round(2+t*3.4);
+    const px=sx*(L*0.2+k*0.72), py=sy*(H*0.26+k*(av?0.52:0.64));
+    R(px-w/2,py-1,w,2,col(k<2?F.dos:F.nag));}}
+/* la carapace : un ovale à nervures */
+for(let j=-H/2;j<=H/2;j++){const w=Math.round(L/2*Math.sqrt(Math.max(0,1-(j/(H/2))**2)));
+  for(let i=-w;i<=w;i++){
+    const bord=(Math.abs(i)>w-2);
+    const nerv=(Math.abs(i)%6===2)&&!bord;
+    R(i,j,1,1,col(bord?F.acc:(nerv?F.nag:((j<-H/6)?F.dos:F.ventre))));}}
+/* la tête, devant */
+R(L/2-1,-3,5,6,col(F.nag));R(L/2+3,-2,3,4,col(F.nag));R(L/2+3,-2,3,1,col(F.dos));
+if(!O){R(L/2+4,-1,1,1,'#10161a');for(let k=0;k<4;k++)R(-L/4+k*4,-H/3,1,1,'rgba(255,255,255,.3)');}
+g.restore();return;
+}
+if(F.f==='meduse'){
+for(let j=-H/2;j<=0;j++){const w=Math.round(L/2*Math.sqrt(Math.max(0,1-(j/(H/2))**2)));
+  for(let i=-w;i<=w;i++)R(i,j,1,1,col(j<-H/4?F.dos:F.nag));}
+R(-L/2+1,0,L-2,1,col(F.acc));
+for(let a=0;a<7;a++){const x0=-L/2+2+a*((L-4)/6);
+  for(let k=0;k<H*0.8;k++)R(x0+Math.round(Math.sin(k*0.5+a+b)*1.6),k,1,1,col(k%3?F.ventre:F.acc));}
+if(!O){for(let k=0;k<5;k++)R(-L/4+k*3,-H/3,1,1,'rgba(255,255,255,.65)');}
+g.restore();return;
+}
+if(F.f==='crabe'){
+for(let j=-H/2;j<=H/2*0.7;j++){const w=Math.round(L/2*Math.sqrt(Math.max(0,1-(j/(H/2))**2)));
+  for(let i=-w;i<=w;i++)R(i,j,1,1,col((i+j)%3?F.dos:F.nag));}
+for(const s of [-1,1])for(let k=0;k<4;k++)R(L*0.1+k*2,s*(H*0.34+k),2,2,col(F.nag));   /* les pattes */
+for(const s of [-1,1]){R(L/2-1,s*(H*0.2),4,2,col(F.dos));R(L/2+2,s*(H*0.2)-1,3,4,col(F.acc));R(L/2+3,s*(H*0.2),2,1,col(F.ventre));}
+if(!O){R(L*0.22,-2,1,1,'#10161a');R(L*0.22,1,1,1,'#10161a');}
+g.restore();return;
+}
+if(F.f==='oursin'){
+for(let a=0;a<18;a++){const an=a/18*Math.PI*2, r=L/2+2+((a%3)?1:3);
+  for(let k=L/2-1;k<r;k++)R(Math.cos(an)*k,Math.sin(an)*k,1,1,col(F.acc));}
+for(let j=-L/2;j<=L/2;j++){const w=Math.round(L/2*Math.sqrt(Math.max(0,1-(j/(L/2))**2)));
+  for(let i=-w;i<=w;i++)R(i,j,1,1,col((i*i+j*j)<4?F.ventre:((i+j)%2?F.dos:F.nag)));}
+g.restore();return;
+}
+if(F.f==='plat'){
+/* LE POISSON PLAT, vu du dessus : un ovale, la frange des nageoires tout
+   autour, et les deux yeux du même côté. */
+for(let j=-H/2;j<=H/2;j++){const w=Math.round(L/2*Math.sqrt(Math.max(0,1-(j/(H/2))**2)));
+  for(let i=-w;i<=w;i++){
+    const d=Math.abs(i)/Math.max(1,w);
+    let c=F.dos;
+    if(((i*3+j*5)%9)===0)c=F.acc;
+    if(((i*7+j*3)%13)===0)c=F.ventre;
+    if(d>0.82)c=F.nag;
+    R(i,j,1,1,col(c));}
+  /* la frange, un pixel plus clair qui dépasse */
+  if(w>1&&(j%2===0)){R(-w-1,j,1,1,col(F.ventre));R(w+1,j,1,1,col(F.ventre));}}
+R(-L/2-2,-1,3,2,col(F.nag));                       /* la queue */
+if(!O){R(L/2-7,-3,3,3,'#f6f8f8');R(L/2-6,-3,2,2,'#10161a');
+       R(L/2-7,1,3,3,'#f6f8f8');R(L/2-6,2,2,2,'#10161a');}
+g.restore();return;
+}
 if(F.f==='lune'){
 for(let j=-H/2;j<=H/2;j++){const w=Math.round(L/2*Math.sqrt(1-(j/(H/2))**2));R(-w,j,w*2,1,col(j<0?F.dos:F.ventre));}
 R(-2,-H/2-6,4,7,col(F.nag));R(-2,H/2-1,4,7,col(F.nag));R(-L/2-2,-3,3,6,col(F.nag));
@@ -20492,6 +20629,10 @@ if(F.epines)for(let k=0;k<5;k++)R(x0+L*0.4+k*2,-hm-3,1,3,col(F.acc));
 if(F.ailes){for(let k=0;k<6;k++)R(x0+L*0.55-k,1+k,4,1,col(k%2?F.nag:'#6ab0f0'));}
 if(F.corne)R(x0+L*0.65,-hm-3,1,4,col(F.acc));
 if(F.front)R(x0+L-3,-hm,3,hm,col(F.dos));
+if(F.f==='voile'){R(L/2,-1,13,2,col(F.acc));R(L/2,0,13,1,col('#8a9298'));
+  for(let i=0;i<L*0.5;i++){const u=i/(L*0.5),hv=Math.round(H*1.25*Math.sin(Math.PI*Math.min(1,u*1.1)));
+    R(x0+mid-L*0.1+i,-hm-hv,1,hv,col((i%3)?F.nag:F.acc));}
+  for(let k=0;k<6;k++)R(x0+mid-6+k,hm-1,5-k,1,col(F.nag));}
 if(F.f==='epee'){R(L/2,-1,11,2,col(F.acc));R(L/2,0,11,1,col('#8a9298'));for(let k=0;k<6;k++)R(x0+mid-2+k,-hm-4+k,5-k,1,col(F.nag));}
 if(F.f==='coela'){[[0.3,1],[0.55,-1],[0.7,1]].forEach(([u,s])=>R(x0+L*u,s>0?hm-1:-hm-3,3,4,col(F.nag)));}
 if(F.machoire&&!O)R(L/2-4,1,4,1,'#f2efe4');
@@ -20598,6 +20739,46 @@ sardine:{nom:'sardine',  col:['#9fb3c4','#c9d6e0'],L:9, touches:3,vit:1.5},
 anchois:{nom:'anchois',  col:['#8aa8c0','#e4eef4'],L:8, touches:2,vit:1.7},
 merou:  {nom:'mérou',    col:['#6a5a44','#b8a070'],L:24,touches:7,vit:0.8},
 castagnole:{nom:'castagnole',col:['#3a3a52','#8a8ab0'],L:8, touches:2,vit:1.6},
+mendole:{nom:'mendole',col:['#7a8a9a','#e4ecf2'],L:9,touches:2,vit:1.5},
+gobie:{nom:'gobie',col:['#6a5a42','#d8cdb4'],L:6,touches:2,vit:1.4},
+blennie:{nom:'blennie',col:['#5a6a3a','#d8dcb8'],L:7,touches:2,vit:1.5},
+oblade:{nom:'oblade',col:['#8a949c','#eef2f6'],L:11,touches:3,vit:1.4},
+chinchard:{nom:'chinchard',col:['#4a6a80','#e2ecf2'],L:12,touches:4,vit:1.5},
+marbre:{nom:'marbré',col:['#9aa4ac','#f0f4f8'],L:12,touches:4,vit:1.25},
+canthare:{nom:'canthare',col:['#4a4a56','#c8ccd4'],L:12,touches:4,vit:1.2},
+orphie:{nom:'orphie',col:['#3a6a5a','#e8f2ee'],L:18,touches:5,vit:1.6},
+oursin:{nom:'oursin',col:['#2a1a2e','#6a3a52'],L:8,touches:3,vit:0.4},
+meduse:{nom:'méduse pélagie',col:['#b06a9a','#e8b4d2'],L:11,touches:3,vit:0.5},
+sole:{nom:'sole',col:['#6a5a3a','#e4dcc0'],L:14,touches:4,vit:0.75},
+turbot:{nom:'turbot',col:['#5a5a48','#ddd8c0'],L:16,touches:5,vit:0.7},
+encornet:{nom:'encornet',col:['#c05a5a','#f0bcb4'],L:18,touches:5,vit:1.1},
+ombrine:{nom:'ombrine',col:['#9a9a8a','#eef0e8'],L:15,touches:5,vit:1.05},
+araignee:{nom:'araignée de mer',col:['#a8603a','#e8b48a'],L:12,touches:5,vit:0.5},
+cigale:{nom:'cigale de mer',col:['#8a6a4a','#d8b890'],L:13,touches:5,vit:0.5},
+homard:{nom:'homard',col:['#2a3a6a','#7a94c8'],L:16,touches:6,vit:0.6},
+tassergal:{nom:'tassergal',col:['#4a6a7a','#e4eef2'],L:16,touches:5,vit:1.5},
+maigre:{nom:'maigre',col:['#8a8a74','#e8e8d8'],L:22,touches:7,vit:1.0},
+sabre:{nom:'poisson-sabre',col:['#b8c0c8','#eef2f6'],L:22,touches:6,vit:1.3},
+seriole:{nom:'sériole',col:['#4a5a74','#eef0ee'],L:20,touches:6,vit:1.45},
+badeche:{nom:'badèche',col:['#6a5438','#cdb48a'],L:22,touches:7,vit:0.85},
+raietorpille:{nom:'torpille',col:['#6a6a5a','#c8c4b0'],L:17,touches:6,vit:0.6},
+pastenague:{nom:'pastenague',col:['#7a6a52','#d8ccb4'],L:20,touches:7,vit:0.7},
+germon:{nom:'germon',col:['#2a4a6a','#dde6ee'],L:22,touches:7,vit:1.5},
+thonobese:{nom:'thon obèse',col:['#1a2a44','#d8e2ea'],L:26,touches:8,vit:1.4},
+beryx:{nom:'béryx',col:['#c03a3a','#f0a090'],L:15,touches:5,vit:0.9},
+requingris:{nom:'requin gris',col:['#5a6a74','#e8eef2'],L:26,touches:8,vit:1.25},
+requinrenard:{nom:'requin-renard',col:['#3a4a6a','#e4ecf4'],L:28,touches:9,vit:1.3},
+requinmarteau:{nom:'requin-marteau',col:['#6a7a84','#eef2f6'],L:29,touches:9,vit:1.3},
+requinpelerin:{nom:'requin pèlerin',col:['#4a5a62','#dee6ea'],L:32,touches:10,vit:0.9},
+voilier:{nom:'voilier',col:['#1f3f7a','#e8eef8'],L:28,touches:9,vit:1.6},
+marlin:{nom:'marlin bleu',col:['#16305c','#e4ecf8'],L:30,touches:10,vit:1.55},
+lampris:{nom:'lampris',col:['#8a3a5a','#e8a0b4'],L:19,touches:7,vit:0.8},
+dauphin:{nom:'dauphin',col:['#5a6a76','#eef2f4'],L:24,touches:7,vit:1.6},
+globicephale:{nom:'globicéphale',col:['#2a2a32','#5a5a66'],L:28,touches:9,vit:0.9},
+tortueluth:{nom:'tortue luth',col:['#2a3440','#6a7a8a'],L:18,touches:7,vit:0.55},
+cachalot:{nom:'cachalot',col:['#4a4a48','#9a9a94'],L:34,touches:11,vit:0.75},
+rorqual:{nom:'rorqual commun',col:['#3a4a56','#b8c4cc'],L:36,touches:12,vit:0.8},
+baleinebleue:{nom:'baleine bleue',col:['#2a4a6a','#a8c0d4'],L:40,touches:12,vit:0.75},
 serran:   {nom:'serran',    col:['#8a6a3a','#e8dcb8'],L:9, touches:3,vit:1.4},
 pageot:   {nom:'pageot',    col:['#d8a0a0','#f8e8e4'],L:12,touches:4,vit:1.2},
 mostelle: {nom:'mostelle',  col:['#8a6a52','#e0cdb8'],L:17,touches:5,vit:0.85},
@@ -21116,7 +21297,18 @@ const ALLURE={
   raie:'sournois',saintpierre:'sournois',
   /* les fuyants : la vitesse change d'un cercle à l'autre */
   loup:'fuyant',barracuda:'fuyant',denti:'fuyant',liche:'fuyant',espadon:'fuyant',
-  requin:'fuyant',brochet:'fuyant',coryphene:'fuyant',legende:'fuyant',rascassedor:'fuyant'
+  requin:'fuyant',brochet:'fuyant',coryphene:'fuyant',legende:'fuyant',rascassedor:'fuyant',
+  /* le large */
+  mendole:'nerveux',gobie:'nerveux',blennie:'nerveux',chinchard:'nerveux',castagnole:'nerveux',
+  serran:'nerveux',oblade:'nerveux',orphie:'nerveux',
+  cachalot:'tetu',rorqual:'tetu',baleinebleue:'tetu',globicephale:'tetu',cernier:'tetu',
+  badeche:'tetu',homard:'tetu',araignee:'tetu',cigale:'tetu',tortueluth:'tetu',langouste:'tetu',
+  meduse:'sournois',oursin:'sournois',sole:'sournois',turbot:'sournois',encornet:'sournois',
+  pastenague:'sournois',raietorpille:'sournois',beryx:'sournois',lampris:'sournois',
+  palamide:'fuyant',seriole:'fuyant',tassergal:'fuyant',germon:'fuyant',thonobese:'fuyant',
+  voilier:'fuyant',marlin:'fuyant',dauphin:'fuyant',sabre:'fuyant',
+  requinbleu:'fuyant',requingris:'fuyant',requinrenard:'fuyant',requinmarteau:'fuyant',
+  requinpelerin:'tetu',mante:'tetu'
 };
 function dureeDuCercle(P,S){
   const base=1000/S.vit;
@@ -23488,7 +23680,8 @@ g.setTransform(1,0,0,1,0,0);
 dessinerLeFeu(g,t,dt);
 requestAnimationFrame(bouclePetanque);
 }
-const ESP_LARGE=['castagnole','serran','pageot','mostelle','corb','palamide','langouste','cernier','requinbleu','mante'];
+const ESP_LARGE=['castagnole','serran','pageot','mostelle','corb','palamide','langouste','cernier','requinbleu','mante',
+  'mendole','gobie','blennie','oblade','chinchard','marbre','canthare','orphie','oursin','meduse','sole','turbot','encornet','ombrine','araignee','cigale','homard','tassergal','maigre','sabre','seriole','badeche','raietorpille','pastenague','germon','thonobese','beryx','requingris','requinrenard','requinmarteau','requinpelerin','voilier','marlin','lampris','dauphin','globicephale','tortueluth','cachalot','rorqual','baleinebleue'];
 const CARNET_ORDRE=[
 ['sardine','COMMUNE','partout, à toute heure'],['bogue','COMMUNE','partout, le jour et à l’aube'],
 ['girelle','COMMUNE','le long du quai, en plein jour'],['rouget','COMMUNE','partout'],['mulet','COMMUNE','partout, à toute heure'],
@@ -23500,6 +23693,46 @@ const CARNET_ORDRE=[
 ['congre','TRÈS RARE','seulement la nuit, au bout des pontons'],['saintpierre','TRÈS RARE','seulement la nuit, au bout des pontons'],
 /* LE LARGE : on n'y va qu'en bateau, à partir du niveau 20 */
 ['castagnole','COMMUNE','au large, à la digue et au Frioul'],['serran','COMMUNE','au large, à la digue et au Frioul'],
+['mendole','COMMUNE','au large, à la digue'],
+['gobie','COMMUNE','au large, à la digue et au Frioul'],
+['blennie','COMMUNE','au large, à la digue et au Frioul'],
+['oblade','COMMUNE','au large, à la digue et aux calanques'],
+['chinchard','COMMUNE','au large, à la digue et au Planier'],
+['marbre','PEU COMMUNE','au large, à la digue, au Frioul et aux calanques'],
+['canthare','PEU COMMUNE','au large, à la digue, au Frioul et aux calanques'],
+['orphie','PEU COMMUNE','au large, à la digue'],
+['oursin','COMMUNE','au large, partout sauf au Planier'],
+['meduse','COMMUNE','au large, partout'],
+['sole','PEU COMMUNE','au large, à la digue et au Frioul'],
+['turbot','RARE','au large, au Frioul'],
+['encornet','PEU COMMUNE','au large, au Frioul'],
+['ombrine','PEU COMMUNE','au large, à la digue'],
+['araignee','PEU COMMUNE','au large, au Frioul'],
+['cigale','RARE','au large, au Frioul'],
+['homard','TRÈS RARE','au large, au Frioul, avec la canne en carbone'],
+['tassergal','RARE','au large, à la digue et aux calanques'],
+['maigre','RARE','au large, à la digue et aux calanques'],
+['sabre','RARE','au large, la nuit'],
+['seriole','RARE','au large, aux calanques et au Planier'],
+['badeche','TRÈS RARE','au large, avec la canne en carbone'],
+['raietorpille','RARE','au large, aux calanques et au Planier'],
+['pastenague','RARE','au large, aux calanques et au Planier'],
+['germon','RARE','au large, au Planier'],
+['thonobese','TRÈS RARE','au large, au Planier, canne en carbone'],
+['beryx','TRÈS RARE','au large, au Planier, canne en carbone'],
+['requingris','TRÈS RARE','au large, au Planier, canne en carbone'],
+['requinrenard','LÉGENDAIRE','au large, au Planier, canne de maître'],
+['requinmarteau','LÉGENDAIRE','au large, au Planier, canne de maître'],
+['requinpelerin','LÉGENDAIRE','au large, au Planier, canne du Roi René'],
+['voilier','LÉGENDAIRE','au large, au Planier, canne de maître'],
+['marlin','LÉGENDAIRE','au large, au Planier, canne du Roi René'],
+['lampris','LÉGENDAIRE','au large, au Planier, canne de maître'],
+['dauphin','TRÈS RARE','au large, aux calanques et au Planier'],
+['globicephale','LÉGENDAIRE','au large, au Planier, canne de maître'],
+['tortueluth','LÉGENDAIRE','au large, aux calanques et au Planier'],
+['cachalot','LÉGENDAIRE','au large, au Planier, canne du Roi René'],
+['rorqual','LÉGENDAIRE','au large, au Planier, canne du Roi René'],
+['baleinebleue','LÉGENDAIRE','au large, au Planier, canne du Roi René'],
 ['pageot','PEU COMMUNE','au large, à la digue et aux calanques'],
 ['mostelle','RARE','au large, avec la canne en fibre'],['corb','RARE','au large, aux calanques'],
 ['palamide','RARE','au large, au Planier — et aux calanques à l’aube'],
@@ -25268,6 +25501,46 @@ tarte:    {nom:'Tarte',      d:'Tout juste sortie du four.',         poids:1},
 anchois:{nom:'Anchois',d:'Pêché au port. Il vient par bancs serrés, et file vite.',poids:1},
 merou:  {nom:'Mérou',  d:'Pêché au port. Massif, méfiant, il se cache dans les roches.',poids:1},
 castagnole:{nom:'Castagnole',d:'Pêchée au large. Un petit disque bleu nuit, par bancs entiers.',poids:1},
+mendole:{nom:'Mendole',d:'Pêchée au large. La monnaie courante du bord : elle mord à tout.',poids:1},
+gobie:{nom:'Gobie',d:'Pêché au large. Petit, trapu, il tient le fond entre deux pierres.',poids:1},
+blennie:{nom:'Blennie',d:'Pêchée au large. Deux yeux ronds et une houppe sur le front.',poids:1},
+oblade:{nom:'Oblade',d:'Pêchée au large. La tache noire sur la queue ne trompe pas.',poids:1},
+chinchard:{nom:'Chinchard',d:'Pêché au large. Il file en banc serré, le flanc en lame.',poids:1},
+marbre:{nom:'Marbré',d:'Pêché au large. Des barres grises sur un flanc d\u2019argent.',poids:1},
+canthare:{nom:'Canthare',d:'Pêché au large. Sombre, le dos haut, les lèvres épaisses.',poids:1},
+orphie:{nom:'Orphie',d:'Pêchée au large. Un bec d\u2019aiguille, et des arêtes vertes.',poids:1},
+oursin:{nom:'Oursin',d:'Remonté au large. On le mange sur place, avec du pain.',poids:1},
+meduse:{nom:'Méduse pélagie',d:'Remontée au large. Ne la touche pas à main nue.',poids:1},
+sole:{nom:'Sole',d:'Pêchée au large. Couchée sur le sable, elle attend la nuit.',poids:1},
+turbot:{nom:'Turbot',d:'Pêché au large. Large comme une assiette, et aussi plat.',poids:1},
+encornet:{nom:'Encornet',d:'Pêché au large. La pêche au jig, quand le jour tombe.',poids:1},
+ombrine:{nom:'Ombrine',d:'Pêchée au large. Elle grogne quand on la sort de l\u2019eau.',poids:1},
+araignee:{nom:'Araignée de mer',d:'Remontée au large. Toute en pattes, et pleine de corail.',poids:1},
+cigale:{nom:'Cigale de mer',d:'Remontée au large. Une armure plate, et rien qui dépasse.',poids:1},
+homard:{nom:'Homard',d:'Remonté au large. Bleu nuit, deux pinces, et un prix.',poids:1},
+tassergal:{nom:'Tassergal',d:'Pêché au large. Il coupe le fil, et il recommence.',poids:1},
+maigre:{nom:'Maigre',d:'Pêché au large. Il tambourine dans la coque, on l\u2019entend venir.',poids:3},
+sabre:{nom:'Poisson-sabre',d:'Pêché au large, la nuit. Une lame d\u2019argent, et des dents.',poids:3},
+seriole:{nom:'Sériole',d:'Pêchée au large. Elle tire droit vers le fond, sans prévenir.',poids:3},
+badeche:{nom:'Badèche',d:'Pêchée au large. La cousine du mérou, en plus pâle.',poids:3},
+raietorpille:{nom:'Torpille',d:'Remontée au large. Elle pique les doigts, pour de vrai.',poids:1},
+pastenague:{nom:'Pastenague',d:'Remontée au large. Le dard de la queue, on l\u2019évite.',poids:3},
+germon:{nom:'Germon',d:'Pêché au large. Le thon blanc, celui des grandes nageoires.',poids:3},
+thonobese:{nom:'Thon obèse',d:'Pêché au large. L\u2019œil énorme, le dos presque noir.',poids:3},
+beryx:{nom:'Béryx',d:'Pêché au large. Rouge vif : il vient de très loin en dessous.',poids:1},
+requingris:{nom:'Requin gris',d:'Pêché au large. On le mesure, on le photographie, on le rend.',poids:3},
+requinrenard:{nom:'Requin-renard',d:'Pêché au large. La queue fait la moitié de la bête.',poids:6},
+requinmarteau:{nom:'Requin-marteau',d:'Pêché au large. La tête en T, les yeux aux deux bouts.',poids:6},
+requinpelerin:{nom:'Requin pèlerin',d:'Croisé au large. Il passe la bouche ouverte, sans rien demander.',poids:6},
+voilier:{nom:'Voilier',d:'Pêché au large. La voile se déploie, et l\u2019eau s\u2019ouvre.',poids:6},
+marlin:{nom:'Marlin bleu',d:'Pêché au large. Une heure de combat pour un quart d\u2019heure de photo.',poids:6},
+lampris:{nom:'Lampris',d:'Pêché au large. Rond, rouge, piqué de blanc : le saumon des dieux.',poids:1},
+dauphin:{nom:'Dauphin',d:'Croisé au large. Il suit l\u2019étrave un moment, puis s\u2019en va.',poids:3},
+globicephale:{nom:'Globicéphale',d:'Croisé au large. Le melon rond, la troupe entière autour.',poids:6},
+tortueluth:{nom:'Tortue luth',d:'Croisée au large. On coupe le fil et on la regarde partir.',poids:1},
+cachalot:{nom:'Cachalot',d:'Croisé au large. La tête carrée sort, souffle, et replonge.',poids:6},
+rorqual:{nom:'Rorqual commun',d:'Croisé au large. Vingt mètres de dos qui n\u2019en finissent pas.',poids:6},
+baleinebleue:{nom:'Baleine bleue',d:'Croisée au large. La plus grosse bête qui ait jamais vécu.',poids:6},
 serran:   {nom:'Serran',    d:'Pêché au large. Vorace et sans manières : il mord à tout.',poids:1},
 pageot:   {nom:'Pageot',    d:'Pêché au large. Rose, l’œil énorme, la chair fine.',poids:1},
 mostelle: {nom:'Mostelle',  d:'Pêchée au large. Elle dort dans les trous et sort la nuit.',poids:1},

@@ -297,3 +297,29 @@ where niveau = 29;
    cap » (inerte) tant qu'on n'est sur aucun coin, « Lancer la ligne ·
    LE COIN » dès qu'on y mouille. Jeter la ligne coupe le moteur, et
    tant que la ligne est à l'eau le joystick ne pilote plus. */
+
+/* ============ 2026-10-22 · les cinquante espèces du large ============
+   Serveur
+   -------
+   - Nouvelle table large_especes(cle, coin, poids, mn, mx, canne, moment).
+     pecher_touche ne contient plus une ligne par poisson : au large, il
+     lit cette table. On règle l'abondance sans toucher à la fonction.
+     114 lignes pour 50 espèces réparties sur les quatre coins.
+   - cours_poisson_large et points_poisson_large : prix et XP des 50,
+     chaînés dans cours_poisson et points_poisson. De la mendole à 1,10 €
+     à la baleine bleue à 2 600 €.
+   - Les espèces du port ne débordent plus au large : dorade, bogue, sar,
+     lotte et mérou étaient ajoutés sans garde de lieu. La ferraille et
+     les citrouilles d'Halloween y pèsent 0,3 et 0,22 fois leur poids du
+     port — on ne paie pas dix euros de gasoil pour une chaussette.
+
+   Jeu
+   ---
+   - Huit silhouettes neuves dans dessinerPoisson : baleine (corps plein,
+     caudale à plat, évent qui souffle), dauphin, tortue, méduse, crabe,
+     oursin, poisson plat et voilier (rostre + grande voile dorsale).
+   - Les 50 ont leur entrée dans FORMES_POISSON, ESP_PECHE, OBJETS et
+     CARNET_ORDRE, et leur allure de combat dans ALLURE.
+   - Le poisson qui jaillit est dessiné à sa vraie silhouette, deux fois
+     plus grand au large pour compenser l'échelle de la carte.
+*/
