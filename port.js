@@ -2456,59 +2456,6 @@ R(x+6,y-14-bob,6,6,'#b07a40');R(x+11,y-12-bob,2,2,'#2a1a10');R(x+8,y-12-bob,1,1,
 g.save();g.translate(x-7,y-8-bob);g.rotate(-0.6+q*0.15);R(-5,-1,5,2,'#b07a40');g.restore();                                                   /* la queue qui remue */
 if((t%5)<0.8){g.font='italic 700 6px Georgia';g.fillStyle='#ffffff';g.fillText('Ouaf !',x+8,y-19);}};
 
-/* LE CABANON (récompense du niveau 10) : la petite maison de pêcheur des
-   Marseillais, murs chaulés, tuiles rondes, volets bleus. Chacun y a SA
-   remise : on y range ce qu'on veut garder hors du sac (cabanon_etat). */
-function graverMonCabanon(){const W=124,H=104,sol=H-8;
-const mk=()=>{const c=document.createElement('canvas');c.width=W*2;c.height=H*2;return c;};
-const go=(cv,nuit)=>{const g=cv.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
-const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
-const h=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
-const cx=W/2-6, L=40, MUR=34;
-/* l'ombre */
-g.fillStyle='rgba(30,22,12,.30)';g.beginPath();g.ellipse(cx+6,sol+1,L+14,7,0,0,7);g.fill();
-/* le muret de la terrasse, à droite */
-for(let x=cx+L-2;x<cx+L+22;x++)for(let y=sol-9;y<sol;y++)R(x,y,1,1,h(x,y,7)<.5?'#e2d6bc':'#d4c6a8');
-R(cx+L-2,sol-10,24,2,'#c8b48c');
-/* le mur chaulé, la lumière vient d'en haut à gauche */
-for(let y=0;y<MUR;y++)for(let x=cx-L;x<cx+L;x++){const n=h(x,y,3);const b=y<4?'#f6efe0':(x<cx-L+3?'#fbf6ea':'#efe6d2');R(x,sol-MUR+y,1,1,n<.12?'#e2d7bf':(n>.95?'#fffaf0':b));}
-/* les pierres qui percent l'enduit */
-[[cx-34,sol-12],[cx-20,sol-28],[cx+22,sol-8],[cx+30,sol-24]].forEach(([x,y])=>{R(x,y,6,3,'#d8c8a8');R(x,y,6,1,'#e8dcc4');});
-/* le soubassement ocre */
-for(let x=cx-L;x<cx+L;x++)for(let y=0;y<5;y++)R(x,sol-5+y,1,1,h(x,y,4)<.5?'#c89a5a':'#b8884a');
-/* la porte bleue, avec son imposte */
-const px=cx-6;R(px-1,sol-27,16,27,'#c8b48c');R(px,sol-26,14,26,'#2f6fa8');
-for(let k=0;k<4;k++)R(px+1+k*3.4,sol-25,0.8,24,'#245a8a');R(px,sol-26,14,1.2,'#5a96c8');R(px+11,sol-13,1.6,1.6,'#e8c86a');
-/* la fenêtre et ses volets */
-const fx=cx-30;R(fx,sol-25,14,12,'#c8b48c');R(fx+1,sol-24,12,10,nuit?'#ffd98a':'#2a3a44');
-if(!nuit){R(fx+1,sol-24,12,3,'#7aa8c0');R(fx+1,sol-24,5,1,'#c8e0ea');}else{g.fillStyle='rgba(255,200,110,.35)';g.fillRect(fx-4,sol-28,22,18);}
-R(fx+6.5,sol-24,0.8,10,'#c8b48c');R(fx+1,sol-19.5,12,0.8,'#c8b48c');
-R(fx-6,sol-25,6,12,'#3a7ab4');R(fx+14,sol-25,6,12,'#3a7ab4');for(let k=0;k<4;k++){R(fx-6,sol-24+k*3,6,0.7,'#2a5a8a');R(fx+14,sol-24+k*3,6,0.7,'#2a5a8a');}
-R(fx-1,sol-12,16,2,'#d8c8a8');                                      /* l'appui */
-R(fx+1,sol-15,3,3,'#c8503a');R(fx+5,sol-16,3,4,'#d8603a');R(fx+9,sol-15,3,3,'#c8503a');R(fx,sol-13,13,1.4,'#8a5a30');   /* les géraniums */
-R(fx+1,sol-17,2,2,'#4a8a3a');R(fx+6,sol-18,2,2,'#5a9a4a');R(fx+10,sol-17,2,2,'#4a8a3a');
-/* la treille au-dessus de la porte */
-R(px-8,sol-33,30,1.4,'#7a5232');for(let k=0;k<8;k++){const x=px-7+k*4;R(x,sol-36+h(k,1,9)*2,3,3,h(k,2,9)<.5?'#5a9a3a':'#4a8a32');}
-/* le toit de tuiles rondes */
-const T0=sol-MUR;for(let r=0;r<10;r++){const w=L+5-r*0.6;for(let x=cx-w;x<cx+w;x+=4){const n=h(Math.round(x),r,11);const base=n<.3?'#c86e46':(n<.65?'#b8643e':'#a85836');
-R(x,T0-r,2.6,1,base);R(x+2.6,T0-r,1.4,1,'#7e3e24');}}
-R(cx-L-6,T0,(L+6)*2,2,'#7e3e24');R(cx-L-6,T0+2,(L+6)*2,1,'rgba(40,20,10,.35)');
-for(let k=0;k<6;k++){g.fillStyle='rgba(30,20,10,'+(0.26-k*0.04).toFixed(2)+')';g.fillRect(cx-L,T0+3+k,L*2,1);}
-/* la cheminée */
-R(cx+20,T0-16,8,9,'#e8dcc4');R(cx+19,T0-17,10,2,'#b8643e');
-/* l'enseigne en bois */
-R(cx-22,T0+5,44,9,'#3a2616');R(cx-21,T0+6,42,7,'#5a3a22');g.fillStyle='#f6e8c0';g.font='700 6px Georgia';g.textAlign='center';g.fillText('LE CABANON',cx,T0+11.6);g.textAlign='left';
-/* la terrasse : une chaise, une table, une nasse */
-const tx=cx+L+6;R(tx,sol-14,10,1.5,'#a8743e');R(tx+1,sol-13,1,9,'#7a5232');R(tx+8,sol-13,1,9,'#7a5232');
-R(tx+2,sol-18,4,4,'#e8e0d0');R(tx+3,sol-21,2,3,'#3a7ab4');                                       /* le pastis et sa carafe */
-R(tx+13,sol-12,6,1.2,'#3a7ab4');R(tx+13,sol-12,1,8,'#2a5a8a');R(tx+18,sol-12,1,8,'#2a5a8a');R(tx+18,sol-20,1,8,'#2a5a8a');R(tx+18,sol-20,1.6,1,'#2a5a8a');
-g.strokeStyle='#8a6a40';g.lineWidth=0.7;for(let k=0;k<4;k++){g.beginPath();g.ellipse(cx-L-6,sol-5,5-k*0.6,4,0,0,7);g.stroke();}   /* la nasse contre le mur */
-R(cx-L-11,sol-1,10,1.2,'rgba(30,20,10,.3)');
-/* la lanterne */
-R(px+18,sol-27,1,3,'#2a2a2a');R(px+16.5,sol-24,4,5,nuit?'#ffe6a0':'#e8d8a8');R(px+16,sol-25,5,1.2,'#2a2a2a');R(px+16,sol-19,5,1,'#2a2a2a');
-if(nuit){const gl=g.createRadialGradient(px+18.5,sol-21,0,px+18.5,sol-21,16);gl.addColorStop(0,'rgba(255,214,140,.55)');gl.addColorStop(1,'rgba(255,170,70,0)');g.fillStyle=gl;g.fillRect(px+2,sol-37,34,32);}
-};
-const toile=mk(), nuit=mk();go(toile,false);go(nuit,true);return {toile,W,H,sol,nuit};}
 function semerDecorExtramar(){
 DECOR=[];
 const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
@@ -2534,7 +2481,6 @@ P('x_maison',XP.rangX0+k*140,XP.maisonsY,{v:k,col:[70,24]});
    cotes. */
 /* LES PLATANES S'ECARTENT D'UN DEMI-IMMEUBLE : ils cachaient les vitrines du kayak (k=1) et du karting (k=8). Ils poussent maintenant entre deux facades. */
 [316,1444].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+(k?-30:30),XP.maisonsY+72,{col:[23,7]});});
-XCAL['x_cabNiv0']=graverMonCabanon();CALQUES_DECO['x_cabNiv']=XCAL['x_cabNiv0'];P('x_cabNiv',1050,270,{col:[44,10],bati:true,demi:52,ouvre:'cabanon'});   /* le cabanon du niveau 10, sur le quai devant le glacier, entre deux réverbères */
 /* LA STATION DE TOKYO, sous le Pecheur Heureux (facade k=2) : c'est la que le train part. */
 P('x_metroM',XP.rangX0+2*140,XP.maisonsY+88,{col:[44,16],bati:true,demi:50,ouvre:'tokyo'});
 /* LE TABLEAU DU PORT, DEVANT LE CENTRE DES ESCALIERS. Il etait decale de

@@ -98,3 +98,7 @@ create table if not exists public.graines_offertes(joueur text not null, cult te
 -- Niveau 12 (22/10/2026) : la recette de bouillabaisse est remplacée par 10 doses d'engrais (niveau_reclamer, type 'engrais').
 -- Niveau 13 (22/10/2026) : l'emote « Pétanque » marche (niveau_reclamer active le type 'emote'). Côté jeu : bouton boule à côté du menu, geste 'petanque' (jeu.html + personnage.js), la boule vole et roule.
 -- Émotes (22/10/2026) : niveau 22 = emote « Santé ! » ; coffre_objet (rare, 15 %) donne une émote manquante parmi danse, bravo, rire, salut, disco. Coucou est offerte à tous. Menu « Émotes » dans le menu du jeu.
+-- Corrections (22/10/2026) : noter_points(text,text,double precision) (la récolte du champ plantait) ; champ_geste (graines offertes, colonne ambiguë) ;
+-- sac_bonus_niv(uid) ajouté au palier dans agrandir_sac et acheter_amelioration (les +places des niveaux et coffres ne sont plus rabotées) ;
+-- prix_ferme : laine 3 €, truffe 38 € (vendues chez Madeleine) ; niveau 5 : 3 paquets Pokédock à la place des vitrines ;
+-- le cabanon est à la ferme (1430, 640), plus sur le quai.
