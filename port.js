@@ -1143,6 +1143,34 @@ for(let k=0;k<4;k++)dessinerUneTrottinette(g,26+k*15,sol-1,'droite',k*0.8,0,0);
 for(let k=0;k<4;k++)dessinerUneTrottinette(g,26+k*15,sol-1,'droite',k*0.8,0,1);
 return {toile:c,W,H:Ht,sol};
 }
+/* TON BATEAU : le pointu amarré au bout du ponton de l'est.
+   Vu d'en haut, la proue vers le large, le moteur vers le quai. */
+function graverTonBateau(){
+const W=56,Ht=112,cx=28,sol=108;
+const c=document.createElement('canvas');
+const D=Math.max(2,Math.min(3,Math.ceil(window.devicePixelRatio||2)));
+c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+const L=98,HW=11;
+const demi=(t)=>Math.max(.9,HW*Math.pow(Math.sin(Math.pow(t,.72)*Math.PI),.62));
+g.fillStyle='rgba(10,40,60,.3)';g.beginPath();g.ellipse(cx+3,sol-L/2+4,HW+3,L/2,0,0,7);g.fill();
+for(let j=0;j<L;j++){const w=demi(j/L),y=sol-L+j;
+  for(let i=-w;i<=w;i++){let col='#f2ece0';
+    if(i>w-2.4)col='#d6ccba';
+    if(Math.abs(i)>w-1.1)col='#2a5a8a';
+    R(cx+i,y,1,1,col);}}
+for(let j=Math.round(L*.2);j<L*.84;j++){const w=demi(j/L)-2.6,y=sol-L+j;if(w<1)continue;
+  for(let i=-w;i<=w;i++)R(cx+i,y,1,1,((i+j)%5===0)?'#8a6a44':'#9a7a52');}
+const banc=(t)=>{const w=demi(t)-1.8,y=sol-L+L*t;R(cx-w,y,w*2,2,'#6a4a2a');R(cx-w,y,w*2,1,'#8a6a44');};
+banc(.32);banc(.58);
+R(cx-2,sol-7,5,5,'#1b2a2e');R(cx-1,sol-6,2,2,'#4a5a62');        /* le moteur */
+R(cx-7,sol-L+18,3,3,'#c8322a');R(cx+5,sol-L+18,3,3,'#c8322a');  /* les deux pare-battages */
+R(cx-1,sol-L+6,2,10,'#8a6a44');                                  /* le taquet de proue */
+g.strokeStyle='#c9bda2';g.lineWidth=1;g.beginPath();g.moveTo(cx,sol-L+8);g.lineTo(cx-13,sol-L+2);g.stroke();
+R(cx+3,sol-30,7,9,'#b8762a');R(cx+3,sol-30,7,1,'#d49a4a');       /* la caisse */
+R(cx-10,sol-24,6,4,'#9aa6ac');                                    /* le seau */
+return {toile:c,W,H:Ht,sol};
+}
 const POISSONS_MARMITE=['sardine','bogue','girelle','rouget','mulet','saupe','seiche','maquereau','dorade','rascasse','loup','denti','murene','congre','poulpe','saintpierre','thon',
 'sar','vieille','grondin','pagre','barracuda','liche','chapon','baliste','raie','coryphene'];
 let RECETTE={};
@@ -2518,6 +2546,7 @@ P('x_bitte',x,XP.quaiY-3,{col:[4,3]});
    quatre platanes, les deux bancs et les quatre boulistes qui s'y
    tenaient. Les boulistes de Notre-Dame-de-la-Garde, eux, ne bougent pas. */
 STATIONS_VELO.forEach(([x,y])=>P('x_stationVelo',x,y,{col:[40,5]}));
+P('x_bateau',XP.pontons[1]+30,XP.pontonFin-18,{col:[26,8],bati:true,ouvre:'bateau'});   /* ton bateau, au bout du ponton de l'est */
 
 DECOR.forEach(o=>{if(o.t.slice(0,2)==='x_')graverX(o.t,o.v);});
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
@@ -2656,4 +2685,4 @@ R(XP.bassinO-4,XP.quaiY-4,XP.bassinE-XP.bassinO+8,0.5,'rgba(255,248,226,.40)');
 g.setTransform(1,0,0,1,0,0);
 return c;
 }
-;({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar});
+;({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar});

@@ -214,3 +214,47 @@ where niveau = 29;
    - Circuit fermé : une carte « NIV. 15 » remplace les trois boutons de
      course tant que le palier n'est pas pris.
 */
+
+/* ========= 2026-10-22 · étape 6, suite : les paliers 19 et 20 =========
+   « Ton bateau » (19) et « La pêche au large » (20) vont ensemble :
+   le bateau ouvre la rade, la rade ouvre quatre coins de pêche.
+
+   Serveur
+   -------
+   - niveau_reclamer : les clés 'bateau' et 'peche_large' rejoignent
+     ('ruche','cabanon','circuit_panier'). Les paliers 19 et 20 rendent
+     donc actif:true et posent inventaire_niveau(joueur,'deblocage:…',1).
+   - pecher_touche accepte quatre lieux de plus — 'digue', 'frioul',
+     'calanques', 'planier' — gardés par niv_bonus('deblocage:peche_large').
+     Chacun a sa table d'espèces ; les tables du port ne s'y mêlent plus
+     (la ligne dorade/bogue n'était gardée par aucun lieu), et Halloween
+     y pèse 0,35 fois son poids du port.
+   - large_etat() : {bateau, large, euros} pour l'écran de la rade.
+   - large_partir(coin) : vérifie les deux paliers et encaisse le gasoil
+     — digue 0 €, Frioul 3 €, calanques 6 €, Planier 10 €.
+   - cours_poisson_large(cle) et points_poisson : les dix espèces neuves
+     (castagnole 1,20 € … raie manta 260 €), ajoutées aussi à
+     especes_comptees pour qu'elles comptent au carnet.
+
+   Vérifié le 2026-10-22 sur le joueur d'essai, le tout annulé :
+     sans palier  → {"erreur":"Ton bateau arrive au niveau 19."}
+                    {"erreur":"La pêche au large ouvre au niveau 20."}
+     avec palier  → large_partir rend {"ok":true,"cout":1000,…}
+     14 touches au Planier : liche, palamide, thon, denti, coryphène…
+      8 touches à la digue : sar, pageot, dorade, serran…
+
+   Client
+   ------
+   - port.js : graverTonBateau() — le pointu amarré au bout du ponton de
+     l'est (ouvre:'bateau'). Il se voit même sans le palier : la plaque
+     dit alors « il arrive au niveau 19 ».
+   - moteur.js : l'écran de la rade (carte marine, quatre épingles, le
+     gasoil, « Mettre le cap »), puis la carte 'large' — un monde de
+     760 x 1180 où l'on ne marche que sur le pont du bateau, la mer
+     partout, la couleur de l'eau et le décor changeant avec le coin.
+     On y pêche par-dessus bord ; lieuDePeche rend le coin comme lieu.
+   - Les dix espèces du large : silhouette, combat, sac, carnet, et une
+     troisième jauge « LE LARGE » à la page de garde du carnet.
+   - Retour au port par la barre : jeu.html?carte=extramar&de=large,
+     et poserAuPort débarque au bout du ponton.
+*/
