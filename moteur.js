@@ -23667,76 +23667,141 @@ setTimeout(()=>lireLeCourrier(),3000);/* Elles tournaient même écran éteint :
 setInterval(()=>{if(!document.hidden)lireLeCourrier();},180000);
 
 const NOM_OBJ=(k)=>{try{const o=OBJETS&&OBJETS[k];if(o&&o.nom)return o.nom;}catch(x){}return k;};
-const CSS_MSG=`#msg{position:absolute;inset:0;background:#15212e;display:flex;flex-direction:column;
-box-shadow:inset 0 0 0 3px #e8c06a;font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif}
-#msg .hd{flex:none;padding:calc(env(safe-area-inset-top,0px) + 15px) 16px 12px;
-border-bottom:1px solid rgba(232,192,106,.3);display:flex;align-items:center;gap:11px}
-#msg .hd .ret{border:0;background:none;color:#e8c06a;font:700 22px 'Baloo 2',sans-serif;padding:0 2px}
+const CSS_MSG=`#msg{position:absolute;inset:0;background:#efe6d2;display:flex;flex-direction:column;
+font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif}
+/* LE BANDEAU : le quai du port et sa boîte aux lettres, dessinés en pixels.
+   Le bas s'assombrit pour que le titre reste lisible par-dessus. */
+#msg .ban{flex:none;position:relative;height:calc(env(safe-area-inset-top,0px) + 148px);overflow:hidden}
+#msg .ban.court{height:calc(env(safe-area-inset-top,0px) + 112px)}
+#msg .ban canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+#msg .hd{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:11px;
+padding:26px 14px 11px;
+background:linear-gradient(rgba(8,16,32,0),rgba(8,16,32,.30) 34%,rgba(6,12,26,.74))}
+#msg .hd .ret{border:0;background:none;color:#fff;font:700 26px 'Baloo 2',sans-serif;padding:0 4px;
+text-shadow:0 2px 8px rgba(8,18,38,.8)}
 #msg .hd .tx{flex:1;min-width:0}
-#msg .hd small{display:block;font:700 9px ui-monospace,monospace;letter-spacing:3px;color:#c9a24a}
-#msg .hd b{display:block;font:700 21px 'Baloo 2',sans-serif;color:#f6efdc;overflow:hidden;
-text-overflow:ellipsis;white-space:nowrap}
-#msg .hd i{font-style:normal;font:italic 13px Georgia,serif;color:#8fa6bd}
-#msg .hd .enligne{font:700 9px ui-monospace,monospace;letter-spacing:2px;color:#9fd47e}
-#msg .hd .x{border:0;background:none;color:#e8c06a;font:700 20px 'Baloo 2',sans-serif;padding:0 2px}
-#msg .corps{flex:1;overflow-y:auto}
-/* LES FILS : un filet entre eux, pas de blocs empiles */
-#msg .f{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;text-align:left;
-padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
-#msg .f:active{background:rgba(255,255,255,.05)}
-#msg .av{width:36px;height:36px;flex:none;border-radius:50%;background:#2f4a66;display:flex;
-align-items:center;justify-content:center;font:700 15px 'Baloo 2',sans-serif;color:#cfe0ee}
-#msg .f.neuf .av{background:#1d4f8a}
+#msg .hd small{display:block;font:800 10px 'Baloo 2',sans-serif;letter-spacing:4px;color:#ffe6a8;
+text-shadow:0 2px 8px rgba(8,18,38,.8)}
+#msg .hd b{display:block;font:400 26px 'Lilita One','Baloo 2',sans-serif;color:#fff;line-height:1.08;
+overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 3px 10px rgba(8,18,38,.85)}
+#msg .hd i{font-style:normal;font:700 12px 'Baloo 2',sans-serif;color:#cfe0ee}
+#msg .hd .enligne{display:block;font:800 9px 'Baloo 2',sans-serif;letter-spacing:2.5px;color:#a8e888;
+text-shadow:0 2px 8px rgba(8,18,38,.8)}
+#msg .hd .x{border:0;background:none;color:#fff;font:700 22px 'Baloo 2',sans-serif;padding:0 4px;
+text-shadow:0 2px 8px rgba(8,18,38,.8)}
+#msg .hd .av{box-shadow:0 0 0 3px rgba(255,255,255,.85)}
+#msg .corps{flex:1;min-height:0;overflow-y:auto;padding:10px 12px 12px}
+/* LA LISTE : une carte par personne, le bleu de la poste pour les non lus */
+#msg .f{display:flex;align-items:center;gap:11px;width:100%;text-align:left;border:0;background:#fbf6ea;
+border-radius:14px;padding:11px 12px;margin-bottom:8px;box-shadow:0 2px 0 #d8cbb0}
+#msg .f:active{transform:translateY(1px);box-shadow:0 1px 0 #d8cbb0}
+#msg .f.neuf{background:#fff;box-shadow:0 2px 0 #d8cbb0,inset 4px 0 0 #2f7ab4}
+#msg .av{width:42px;height:42px;flex:none;border-radius:50%;display:flex;align-items:center;
+justify-content:center;font:400 19px 'Lilita One','Baloo 2',sans-serif;color:#fff;
+box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
 #msg .f .tx{flex:1;min-width:0}
-#msg .f b{display:block;font:700 15px 'Baloo 2',sans-serif;color:#8fa6bd}
-#msg .f.neuf b{color:#f6efdc}
-#msg .f span.ap{display:block;font:italic 13px Georgia,serif;color:#5f7489;overflow:hidden;
+#msg .f b{display:block;font:800 15px 'Baloo 2',sans-serif;color:#2f3f50}
+#msg .f span.ap{display:block;font:700 13px 'Baloo 2',sans-serif;color:#8d9aa8;overflow:hidden;
 text-overflow:ellipsis;white-space:nowrap}
-#msg .f.neuf span.ap{color:#cfd9e2}
-#msg .f .h{font:11px ui-monospace,monospace;color:#5f7489;flex:none}
-#msg .f em{font-style:normal;font:700 11px 'Baloo 2',sans-serif;background:#c0392b;color:#fff;
-border-radius:9px;padding:1px 7px;flex:none}
-#msg .ecrire{margin:14px 16px calc(env(safe-area-inset-bottom,0px) + 16px);width:calc(100% - 32px);
-border:0;border-radius:16px;padding:13px;background:#e8c06a;color:#2a2016;font:700 14px 'Baloo 2',sans-serif}
+#msg .f.neuf span.ap{color:#4a5c6e}
+#msg .f .h{font:800 11px 'Baloo 2',sans-serif;color:#aab4c0;flex:none}
+#msg .f em{font-style:normal;font:800 12px 'Baloo 2',sans-serif;background:#2f7ab4;color:#fff;
+border-radius:10px;padding:2px 8px;flex:none}
+#msg .ecrire{width:100%;border:0;border-radius:14px;padding:13px;margin-top:4px;background:#2f7ab4;
+box-shadow:0 4px 0 #1d5280;font:400 19px 'Lilita One','Baloo 2',sans-serif;color:#fff}
+#msg .ecrire:active{transform:translateY(2px);box-shadow:0 2px 0 #1d5280}
 /* LA CONVERSATION */
-#msg .jour{text-align:center;font:700 9px ui-monospace,monospace;letter-spacing:2px;color:#5f7489;
-margin:14px 0 12px}
-#msg .b{display:flex;margin:0 16px 8px}
+#msg .jour{text-align:center;font:800 10px 'Baloo 2',sans-serif;letter-spacing:3px;color:#a2aebb;margin:14px 0 10px}
+#msg .b{display:flex;margin:0 0 9px}
 #msg .b.mien{justify-content:flex-end}
-#msg .b p{max-width:80%;margin:0;padding:10px 13px;border-radius:16px 16px 16px 5px;background:#223447;
-font:14px/1.55 Georgia,serif;color:#f6efdc;word-break:break-word}
-#msg .b.mien p{border-radius:16px 16px 5px 16px;background:#1d4f8a}
-#msg .b p u{display:block;text-decoration:none;font:10px ui-monospace,monospace;color:#6d8296;margin-top:5px}
-#msg .b.mien p u{color:#9bbcd9;text-align:right}
-#msg .colis{display:flex;align-items:center;gap:11px;margin:0 16px 8px;padding:11px 13px;border-radius:16px;
-background:rgba(232,192,106,.14);box-shadow:inset 0 0 0 1px rgba(232,192,106,.4)}
-#msg .colis .ic{width:32px;height:30px;flex:none;background:#efe6cc;display:flex;align-items:center;justify-content:center}
+#msg .b p{max-width:80%;margin:0;padding:10px 13px;border-radius:16px 16px 16px 5px;background:#fbf6ea;
+font:700 14px/1.5 'Baloo 2',sans-serif;color:#2f3f50;word-break:break-word;box-shadow:0 2px 0 #d8cbb0}
+#msg .b.mien p{border-radius:16px 16px 5px 16px;background:#2f7ab4;color:#fff;box-shadow:0 2px 0 #1d5280}
+#msg .b p u{display:block;text-decoration:none;font:800 10px 'Baloo 2',sans-serif;opacity:.55;margin-top:4px}
+#msg .b.mien p u{text-align:right}
+#msg .colis{display:flex;align-items:center;gap:10px;margin:0 0 9px;padding:10px 12px;border-radius:14px;
+background:#fff;box-shadow:0 2px 0 #d8cbb0,inset 0 0 0 2px #f0c05a}
+#msg .colis .ic{width:34px;height:34px;flex:none;background:#fdf3d8;border-radius:10px;display:flex;
+align-items:center;justify-content:center}
 #msg .colis .ic svg{image-rendering:pixelated}
 #msg .colis .tx{flex:1;min-width:0}
-#msg .colis b{display:block;font:700 13px 'Baloo 2',sans-serif;color:#e8c06a}
-#msg .colis span{font:italic 11px Georgia,serif;color:#b99f6a}
-#msg .colis button{flex:none;border:0;border-radius:10px;padding:7px 13px;background:#e8c06a;
-color:#2a2016;font:700 12px 'Baloo 2',sans-serif}
+#msg .colis b{display:block;font:800 13px 'Baloo 2',sans-serif;color:#7a5a12}
+#msg .colis span{font:700 11px 'Baloo 2',sans-serif;color:#a89050}
+#msg .colis button{flex:none;border:0;border-radius:11px;padding:8px 13px;background:#f0c05a;
+box-shadow:0 3px 0 #a87a12;color:#3a2408;font:800 12px 'Baloo 2',sans-serif}
 /* LE PIED : le plus ouvre le tiroir objet et argent */
-#msg .pied{flex:none;border-top:1px solid rgba(255,255,255,.07);
-padding:10px 14px calc(env(safe-area-inset-bottom,0px) + 12px);display:flex;gap:8px;align-items:center}
-#msg .pied .plus{width:36px;height:36px;flex:none;border:0;border-radius:50%;background:rgba(255,255,255,.08);
-color:#e8c06a;font:700 18px 'Baloo 2',sans-serif}
-#msg .pied .plus.on{background:#e8c06a;color:#2a2016}
-#msg .pied input{flex:1;min-width:0;border:0;border-radius:18px;padding:11px 14px;
-background:rgba(255,255,255,.08);color:#f6efdc;font:14px Georgia,serif}
-#msg .pied input::placeholder{color:#5f7489;font-style:italic}
-#msg .pied .go{width:38px;height:38px;flex:none;border:0;border-radius:50%;background:#e8c06a;
-color:#2a2016;font:700 16px 'Baloo 2',sans-serif}
-#msg .tiroirM{flex:none;display:none;gap:8px;padding:0 14px 10px;flex-wrap:wrap}
+#msg .pied{flex:none;background:#fbf6ea;box-shadow:0 -2px 0 #d8cbb0;
+padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 12px);display:flex;gap:8px;align-items:center}
+#msg .pied .plus{width:40px;height:40px;flex:none;border:0;border-radius:50%;background:#efe6d2;
+color:#6a7a8a;font:700 20px 'Baloo 2',sans-serif}
+#msg .pied .plus.on{background:#2f7ab4;color:#fff}
+#msg .pied input{flex:1;min-width:0;border:0;border-radius:16px;padding:12px 14px;background:#efe6d2;
+color:#2f3f50;font:700 14px 'Baloo 2',sans-serif}
+#msg .pied input::placeholder{color:#a2aebb;font-weight:700}
+#msg .pied .go{width:40px;height:40px;flex:none;border:0;border-radius:50%;background:#2f7ab4;
+color:#fff;font:700 18px 'Baloo 2',sans-serif;box-shadow:0 3px 0 #1d5280}
+#msg .tiroirM{flex:none;display:none;gap:8px;padding:0 12px 10px;flex-wrap:wrap;background:#fbf6ea}
 #msg .tiroirM.on{display:flex}
-#msg .tiroirM select,#msg .tiroirM input{border:0;border-radius:12px;padding:9px 11px;
-background:rgba(255,255,255,.08);color:#f6efdc;font:13px Georgia,serif;min-width:0}
-#msg .vide{font:italic 14px/1.7 Georgia,serif;color:#8fa6bd;text-align:center;padding:40px 16px}
-#msg .bulleM{position:absolute;left:14px;right:14px;bottom:80px;background:#1d4f8a;color:#fff;
-border-radius:12px;padding:10px 12px;font:italic 14px Georgia,serif;opacity:0;transform:translateY(8px);
-transition:.25s;pointer-events:none}
+#msg .tiroirM select,#msg .tiroirM input{border:0;border-radius:12px;padding:10px 11px;background:#efe6d2;
+color:#2f3f50;font:700 13px 'Baloo 2',sans-serif;min-width:0}
+#msg .vide{font:700 14px/1.7 'Baloo 2',sans-serif;color:#8d9aa8;text-align:center;padding:40px 16px}
+#msg .bulleM{position:absolute;left:14px;right:14px;bottom:84px;background:#2f7ab4;color:#fff;
+border-radius:14px;padding:11px 13px;font:700 14px 'Baloo 2',sans-serif;opacity:0;transform:translateY(8px);
+transition:.25s;pointer-events:none;box-shadow:0 4px 0 #1d5280}
 #msg .bulleM.on{opacity:1;transform:none}`;
+
+/* LE BANDEAU DU COURRIER : le quai au petit matin, la boîte aux lettres
+   jaune, trois maisons et des mouettes. Dessiné à la grille, comme les
+   écrans de chargement, et repeint au changement de taille. */
+const MSG_COUL=['#d8402f','#2f7ab4','#4f9434','#8a5aa8','#e8871e','#2a9a8a','#b0397a','#1d6f8a'];
+const msgCoul=(p)=>{const t=String(p||'?');let n=t.length*7;
+for(let q=0;q<t.length;q++)n=(n*131+t.charCodeAt(q)*(q+3))|0;
+return MSG_COUL[Math.abs(n)%MSG_COUL.length];};
+const msgAv=(p)=>'<span class="av" style="background:'+msgCoul(p)+'">'+
+echapperT(String(p||'?').slice(0,1).toUpperCase())+'</span>';
+function msgBandeau(){try{
+const cv=document.getElementById('msgBan');if(!cv)return;
+const r=cv.getBoundingClientRect(),W=Math.round(r.width),H=Math.round(r.height);
+if(!W||!H)return;
+const dpr=Math.min(2,window.devicePixelRatio||1);
+cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+const g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.imageSmoothingEnabled=false;
+const U=Math.max(2,Math.round(Math.min(W,H)/40)),Wu=Math.ceil(W/U),Hu=Math.ceil(H/U);
+const P=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x)*U,Math.round(y)*U,
+  Math.max(1,Math.round(w))*U,Math.max(1,Math.round(h))*U);};
+const az=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+const B=['#2f4f84','#3f6194','#5f74a4','#8a7ea8','#c08a92','#e8a070','#f6bc82'];
+const hz=Math.round(Hu*0.50);
+for(let i=0;i<B.length;i++){const y0=Math.round(hz*i/B.length),y1=Math.round(hz*(i+1)/B.length);
+ P(0,y0,Wu,y1-y0,B[i]);
+ if(i)for(let x=0;x<Wu;x++)if(az(x*3.1+i*7)<0.4)P(x,y0,1,1,B[i-1]);}
+P(0,hz,Wu,Hu-hz,'#3b6890');
+for(let k=0;k<44;k++){const t=az(k*7.3),y=hz+Math.round(t*(Hu-hz));
+ P(Math.round(az(k*2.1)*Wu),y,Math.max(1,Math.round(1+t*3)),1,'rgba(220,240,255,.35)');}
+/* LE QUAI MONTE : le titre se pose dessus, pas sur les maisons. */
+const qy=hz+Math.round((Hu-hz)*0.20);
+P(0,qy,Wu,Hu-qy,'#8a8276');
+for(let q=0;q<Math.ceil((Hu-qy)/2);q++)for(let x=(q%2?-1:0);x<Wu;x+=4)
+ P(x,qy+q*2,3,1,q%2?'#938b7e':'#89806f');
+P(0,qy,Wu,1,'#b3a996');
+const s=Math.max(1,Math.round(Hu/22));
+[[0.10,5],[0.23,7],[0.36,4],[0.52,6]].forEach(([u,hh],i)=>{const x=Math.round(Wu*u);
+ P(x-3*s,qy-hh*s,6*s,hh*s,i%2?'#efe6d2':'#e2d7bf');
+ P(x-4*s,qy-(hh+1)*s,8*s,s,i%2?'#b85e3a':'#9e4428');
+ P(x-2*s,qy-(hh-1)*s,1.5*s,1.5*s,'#3a7ab4');P(x+s,qy-(hh-1)*s,1.5*s,1.5*s,'#3a7ab4');});
+const bx=Math.round(Wu*0.80);
+P(bx-s,qy-2*s,2*s,2*s,'#4a4f55');
+P(bx-3*s,qy-8*s,6*s,6*s,'#e8b02a');P(bx-3*s,qy-8*s,2*s,6*s,'#f6cc5e');
+P(bx-3*s,qy-9*s,6*s,s,'#c08e10');P(bx-2*s,qy-7*s,4*s,s,'#5a4410');
+for(let b=0;b<3;b++){const x=Math.round(Wu*(0.62+b*0.08)),y=Math.round(Hu*(0.12+az(b)*0.08));
+ P(x-2,y,1,1,'#fbf6ec');P(x-1,y-1,1,1,'#fbf6ec');P(x,y,1,1,'#fbf6ec');
+ P(x+1,y-1,1,1,'#fbf6ec');P(x+2,y,1,1,'#fbf6ec');}
+const lg=g.createLinearGradient(0,0,0,H);
+lg.addColorStop(0,'rgba(8,16,40,.26)');lg.addColorStop(.36,'rgba(0,0,0,0)');
+lg.addColorStop(.64,'rgba(10,18,34,.28)');lg.addColorStop(1,'rgba(8,14,28,.58)');
+g.fillStyle=lg;g.fillRect(0,0,W,H);}catch(x){}}
+let MSG_BAN_T=0;
+addEventListener('resize',()=>{clearTimeout(MSG_BAN_T);MSG_BAN_T=setTimeout(msgBandeau,140);});
 
 let MSG={vue:'fils',avec:null,pseudo:'',brouillon:'',obj:'',qte:'',arg:''};
 function msgBulle(t){const b=document.getElementById('msgBulle');if(!b)return;
@@ -23763,10 +23828,12 @@ const msgQuand=(q)=>{try{return new Date(q).toLocaleTimeString('fr-FR',{hour:'2-
 async function msgRendre(){
 const F=$('page2Fond');
 if(MSG.vue==='fils'){
-F.innerHTML='<div id="msg"><div class="hd"><span class="tx"><small>BOÎTE AUX LETTRES</small>'+
-'<b>Courrier</b></span><button class="x" id="msgX">✕</button></div>'+
+F.innerHTML='<div id="msg"><div class="ban"><canvas id="msgBan"></canvas>'+
+'<div class="hd"><span class="tx"><small>BOÎTE AUX LETTRES</small>'+
+'<b>Courrier</b></span><button class="x" id="msgX">✕</button></div></div>'+
 '<div class="corps"><div class="vide">On relève la boîte…</div></div>'+
 '<div class="bulleM" id="msgBulle"></div></div>';
+msgBandeau();
 $('msgX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
 const fils=await appelRPC('messagerie_fils',{p_joueur:e.id});
 const L=Array.isArray(fils)?fils:[];
@@ -23781,7 +23848,7 @@ const colis=(+f.colis>0)?'<span style="color:#e8c06a">◆</span> ':'';
 const apercu=f.mot?(f.recu?'':'Toi : ')+echapperT(f.mot)
 :(colis?'un colis t’attend':'…');
 return '<button class="f'+(+f.nonlus>0?' neuf':'')+'" data-fil="'+echapperT(f.avec)+'" data-pseudo="'+echapperT(f.pseudo)+'">'+
-'<span class="av">'+echapperT(String(f.pseudo||'?').slice(0,1).toUpperCase())+'</span>'+
+msgAv(f.pseudo)+
 '<span class="tx"><b>'+echapperT(f.pseudo)+'</b><span class="ap">'+colis+apercu+'</span></span>'+
 (+f.nonlus>0?'<em>'+f.nonlus+'</em>':'<span class="h">'+msgHeure(f.quand)+'</span>')+
 '</button>';}).join('')
@@ -23794,10 +23861,11 @@ return;
 }
 /* LE FIL : la conversation avec une personne */
 const objets=Object.entries(e.sac||{}).filter(([k,v])=>v>0);
-F.innerHTML='<div id="msg"><div class="hd"><button class="ret" id="msgRetour">‹</button>'+
-'<span class="av">'+echapperT(String(MSG.pseudo||'?').slice(0,1).toUpperCase())+'</span>'+
+F.innerHTML='<div id="msg"><div class="ban court"><canvas id="msgBan"></canvas>'+
+'<div class="hd"><button class="ret" id="msgRetour">‹</button>'+
+msgAv(MSG.pseudo)+
 '<span class="tx"><b>'+echapperT(MSG.pseudo)+'</b></span>'+
-'<button class="x" id="msgX">✕</button></div>'+
+'<button class="x" id="msgX">✕</button></div></div>'+
 '<div class="corps"><div class="vide">On ouvre le paquet de lettres…</div></div>'+
 '<div class="tiroirM" id="msgTiroir">'+
 (objets.length?'<select id="msgObj"><option value="">joindre un objet…</option>'+
@@ -23810,6 +23878,7 @@ objets.map(([k,v])=>'<option value="'+k+'">'+echapperT(NOM_OBJ(k))+' · '+v+'</o
 '<button class="go" id="msgGo">↑</button></div>'+
 '<div class="bulleM" id="msgBulle"></div></div>';
 $('msgX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+msgBandeau();
 $('msgRetour').onclick=()=>{MSG.vue='fils';msgRendre();};
 $('msgGo').onclick=msgEnvoyer;
 $('msgPlus').onclick=()=>{const t=$('msgTiroir');t.classList.toggle('on');
@@ -23846,12 +23915,14 @@ msgBulle(r.partiel?'Une partie seulement : ton inventaire est plein.':'Reçu !')
 }
 async function msgChoisir(){
 const F=$('page2Fond');
-F.innerHTML='<div id="msg"><div class="hd"><button class="ret" id="msgRetour">‹</button>'+
+F.innerHTML='<div id="msg"><div class="ban court"><canvas id="msgBan"></canvas>'+
+'<div class="hd"><button class="ret" id="msgRetour">‹</button>'+
 '<span class="tx"><small>NOUVEAU MESSAGE</small><b>À qui ?</b></span>'+
-'<button class="x" id="msgX">✕</button></div>'+
+'<button class="x" id="msgX">✕</button></div></div>'+
 '<div class="corps"><div class="vide">On regarde qui est sur le port…</div></div>'+
 '<div class="bulleM" id="msgBulle"></div></div>';
 $('msgX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+msgBandeau();
 $('msgRetour').onclick=()=>{MSG.vue='fils';msgRendre();};
 let liste=[];
 try{liste=await appelRPC('liste_joueurs',{})||[];}catch(x){}
@@ -23860,7 +23931,7 @@ const autres=liste.filter(j=>j&&j.id&&j.id!==e.id);
 const C=F.querySelector('.corps');if(!C)return;
 C.innerHTML=autres.length?autres.map(j=>
 '<button class="f" data-fil="'+echapperT(j.id)+'" data-pseudo="'+echapperT(j.pseudo||'sans nom')+'">'+
-'<span class="av">'+echapperT(String(j.pseudo||'?').slice(0,1).toUpperCase())+'</span>'+
+msgAv(j.pseudo)+
 '<span class="tx"><b>'+echapperT(j.pseudo||'sans nom')+'</b></span></button>').join('')
 :'<div class="vide">Personne d’autre sur le port pour l’instant.</div>';
 C.querySelectorAll('[data-fil]').forEach(b=>b.onclick=()=>{
@@ -24960,7 +25031,7 @@ const G={
  fromage:[['................','................','....jjjjjjjj....','...jJJJJJJJJj...','..jJJoJJJJoJJj..','.jJJJJJoJJJJJJj.','.jJoJJJJJJoJJJj.','.jJJJJJoJJJJJJj.','.jJJoJJJJJJJJJj.','.jjjjjjjjjjjjjj.','..oooooooooooo..','................','................','................','................','................'],
   {j:'#e8c04a',J:'#f6dc82',o:'#c89a1e'}],
  truffe:[['................','................','.....nnnn.......','...nnNNNNnn.....','..nNNnNNnNNn....','..nNNNNnNNNn....','..nNnNNNNnNn....','..nNNNNnNNNn....','...nnNNNNnn.....','.....nnnn.......','................','................','................','................','................','................'],
-  {n:'#241a14',N:'#4a382c'}],
+  {n:'#33251a',N:'#5e4836'}],
  planche:[['................','................','................','..bbbbbbbbbbbb..','..bBBBBBBBBBBb..','..bBbBBBBbBBBb..','..bBBBBBBBBBBb..','..bbbbbbbbbbbb..','................','..bbbbbbbbbbbb..','..bBBbBBBBBBBb..','..bBBBBBBBbBBb..','..bBBBBBBBBBBb..','..bbbbbbbbbbbb..','................','................'],
   {b:'#7a5230',B:'#a5764a'}],
  poutre:[['................','................','...bbbbbbbbbb...','..bBBBBBBBBBBb..','..bBBbBBBBbBBb..','..bBBBBBBBBBBb..','..bBBBBbBBBBBb..','..bBBBBBBBBBBb..','..bBBbBBBBbBBb..','..bBBBBBBBBBBb..','...bbbbbbbbbb...','................','................','................','................','................'],
@@ -28978,7 +29049,6 @@ await Promise.all([
 if(!$('page2').classList.contains('on')||!$('page2Fond').classList.contains('bq'))return;
 peindreMadeleine(mot);}
 let peindreMadeleine=function(mot){
-try{completerLesIcones();}catch(erIco){}
 /* LE CARNET PASSE EN PREMIER : CSS_BQ ne garde plus que ses morceaux à
    elle, qui doivent pouvoir affiner ce que la coque pose. */
 if(!document.getElementById('cssBq')){const st=document.createElement('style');st.id='cssBq';st.textContent=CARNET('bq')+CSS_BQ+CSS_BQ_A;document.head.appendChild(st);}
@@ -29950,6 +30020,11 @@ $('bucDeb').onclick=()=>agir(async()=>{
     try{await lireSacServeur();}catch(x){}ticketDOrTenue('ours');return;}
   await apres(d2,d2&&d2.planches?('« Et voilà '+d2.planches+' planche'+(d2.planches>1?'s':'')+', bien droites. »'):null);
 });
+/* LES VRAIES ICÔNES TOUT DE SUITE : la boucle ci-dessus ne pose qu'un
+   sachet de dépannage. On le remplace dès maintenant, pour que le sac,
+   le courrier et la criée en profitent sans attendre Chez Madeleine. */
+try{completerLesIcones();}catch(erIco){}
+
 /* LA VENTE. On ne jette plus les échecs : « if(ok) » sans « else » faisait
    qu'une vente refusée au milieu de la liste passait inaperçue — le gain
    des bûches suffisait à annoncer « Marché conclu » pendant que les
