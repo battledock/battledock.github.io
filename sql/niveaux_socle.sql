@@ -103,3 +103,4 @@ create table if not exists public.graines_offertes(joueur text not null, cult te
 -- prix_ferme : laine 3 €, truffe 38 € (vendues chez Madeleine) ; niveau 5 : 3 paquets Pokédock à la place des vitrines ;
 -- le cabanon est à la ferme (1430, 640), plus sur le quai.
 -- Classement (22/10/2026) : classement_general renvoie le score = progres.recolte (l'XP) et le titre choisi ; trié par XP. Écran « modèle A » (podium + cartes, en ligne / vu il y a…).
+-- Classements Pêche et Pokédock au style du carnet (22/10/2026) : records_peche renvoie id, apparence et maj des pêcheurs (40 au plus).
