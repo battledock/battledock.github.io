@@ -405,3 +405,26 @@ where niveau = 29;
    (hauteur calculée au moment de peindre) pour ne pas étirer les pixels.
    Bande grisée et « au complet » quand l'enclos est plein ; « fermé »
    et « il faut d'abord bâtir le poulailler » tant qu'il n'est pas là. */
+
+/* ============ 2026-10-23 · LE FUMIER : l'enclos nourrit le champ ============
+   L'élevage et la culture étaient deux boucles qui ne se parlaient pas.
+   Elles se tiennent maintenant par le fumier.
+
+   - etable_joueur.fumier_maj ; fumier_pret(joueur) : une bête donne un
+     seau toutes les six heures, les poules comptent pour un tiers,
+     plafonné à 24 seaux (deux jours d'avance).
+   - betes_curer(joueur)  : ramasse les seaux dans le sac (2 XP « bêtes »
+     par seau), remet le compteur à zéro.
+   - composter(joueur,nb) : quatre seaux = une dose d'engrais dans
+     potager_joueur.engrais (3 XP « légumes » par dose). L'engrais
+     existait déjà : une dose sur trois fait pousser une parcelle
+     moitié plus vite (champ_geste).
+   - betes_etat rend fumier_pret et engrais, l'écran de l'enclos n'a
+     donc rien d'autre à demander.
+   Vérifié : 2 vaches + 5 moutons + 3 cochons + 6 poules sur 26 h =
+   24 seaux → 6 doses, XP bêtes +48 et légumes +18.
+
+   Côté jeu : section « LE TAS DE FUMIER » dans l'enclos (curer,
+   composter, le compte de doses), le fumier au sac avec son icône, et
+   « Tout ramasser » le prend aussi. Le fumier ne se vend pas : il sert.
+*/

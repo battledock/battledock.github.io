@@ -25592,6 +25592,7 @@ gemme:  {nom:'Gemme',  d:'Le trésor des derniers niveaux. Rien ne vaut plus che
 lingotFer:{nom:'Lingot de fer',   d:'Sorti du four. De quoi forger du solide.', poids:2},
 lingotCuivre:{nom:'Lingot de cuivre',d:'Sorti du four. Souple et brillant.',     poids:2},
 brique: {nom:'Brique', d:'Argile cuite. Pour bâtir en dur.',                     poids:2},
+fumier: {nom:'Fumier', d:'Curé à l’enclos. Quatre seaux font une dose d’engrais, à l’étable.', poids:1},
 torche: {nom:'Torche', d:'Résine et bois. Éclaire la nuit.',                     poids:1},
 sardine:{nom:'Sardine',d:'Pêchée au port. La plus commune du bassin.',          poids:1},
 /* ces six-là étaient dans la table des prises mais pas dans le catalogue :
@@ -25933,6 +25934,13 @@ try{
  if(typeof PLANTES!=='undefined')for(const k of Object.keys(PLANTES)){
    const i=icoDepuisPlante(k);if(i)ICONES[k]=i;}
 }catch(x){}
+try{if(!ICONES.fumier)ICONES.fumier=(()=>{const cv=document.createElement('canvas');cv.width=64;cv.height=64;
+ const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+ const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x*4,y*4,w*4,h*4);};
+ R(2,9,12,5,'#5a4428');R(3,7,10,3,'#6a5230');R(5,5,6,3,'#7a5e38');R(6,4,4,2,'#8a6a40');
+ R(3,13,10,1,'#3e2e1a');R(4,8,2,1,'#8a6a40');R(9,6,2,1,'#9a7a4c');R(7,10,2,1,'#4a381f');
+ R(12,3,1,4,'#9a8a6a');R(11,2,3,2,'#b8a880');                       /* la fourche */
+ return '<image href="'+cv.toDataURL()+'" x="0" y="0" width="16" height="16" style="image-rendering:pixelated"/>';})();}catch(x){}
 const F={
  cerises:['#f0697c','#c0303f','paire'],  pommes:['#e05a52','#9e2a2c','ronde'],
  abricots:['#f6b155','#c87216','ronde'], figues:['#9a6cb8','#5e3478','goutte'],
@@ -31897,7 +31905,7 @@ const page=(carte==='foret')?'foret.html':((carte==='ferme')?'ferme.html':'jeu.h
    à l'autre bout du quai. */
 location.href=page+(page.indexOf('?')<0?'?':'&')+'arrivee=1&de='+CARTE+'&v='+Date.now();
 }
-let ETB=null;
+let ETB=null, FUMIER_DOSES=0;
 const CSS_ETB=`
 /* ================= L'ENCLOS, VU DU DESSUS =================
    Pas de liste : le pré lui-même, avec les bêtes dessus et une étiquette
@@ -32734,6 +32742,7 @@ if(nid>0)pris.push(nid+' œuf'+(nid>1?'s':''));
 if((E.lait||0)>0)pris.push(E.lait+' L de lait');
 if((E.laine_prete||0)>0)pris.push(E.laine_prete+' toison'+(E.laine_prete>1?'s':''));
 if(E.truffe_prete)pris.push('des truffes');
+if((E.fumier_pret||0)>0)pris.push(E.fumier_pret+' seau'+(E.fumier_pret>1?'x':'')+' de fumier');
 /* L'ABRI À POULES : le chantier, le grain, l'agrandissement. */
 const nourri=P.nourri_jusqua?new Date(P.nourri_jusqua).getTime()-poulNow():-1;
 const hh=Math.floor(Math.max(0,nourri)/3600000), mm=Math.floor(Math.max(0,nourri)%3600000/60000);
@@ -32782,6 +32791,26 @@ const betes=(E.vaches||0)+(E.moutons||0)+(E.cochons||0);
    2 blé pris au sac, ou 3 € s'il n'y a pas de blé. On peut en remettre tant
    qu'il reste moins de 9 h d'avance, ce qui monte au plus haut à 12 h — la
    jauge se lit donc sur 12 h, et non sur 4 h comme avant. */
+/* ---------- LE TAS DE FUMIER ----------
+   Ce que les bêtes laissent derrière elles n'allait nulle part. Quatre
+   seaux font une dose d'engrais, et l'engrais accélère le champ : c'est
+   ce qui relie enfin l'enclos aux cultures. */
+const fSeaux=(E.fumier_pret||0), fSac=((e.sac&&e.sac.fumier)||0), fLots=Math.floor(fSac/4);
+const fDoses=(typeof E.engrais==='number')?E.engrais:FUMIER_DOSES;
+const tasFumier=(betes||(P.poules||0))?(
+ '<h3>LE TAS DE FUMIER</h3>'+
+ '<button class="l act" data-g="curer"'+(fSeaux>0?'':' disabled')+'>'+
+ '<span class="n"><b>'+(fSeaux>0?'Curer l’enclos':'L’enclos est propre')+'</b>'+
+ '<em>'+(fSeaux>0?(fSeaux+' seau'+(fSeaux>1?'x':'')+' à ramasser')
+  :'une bête en donne un seau toutes les six heures')+'</em></span>'+
+ '<i>'+(fSeaux>0?'Curer':'Rien')+'</i></button>'+
+ '<button class="l act" data-g="composter"'+(fLots>0?'':' disabled')+'>'+
+ '<span class="n"><b>Composter</b>'+
+ '<em>'+(fLots>0?('quatre seaux font une dose · '+fLots+' dose'+(fLots>1?'s':'')+' à faire')
+  :(fSac+' seau'+(fSac>1?'x':'')+' au sac · il en faut quatre'))+'</em></span>'+
+ '<i>'+(fLots>0?'Composter':'—')+'</i></button>'+
+ '<div class="l"><span class="n"><b>'+fDoses+' dose'+(fDoses>1?'s':'')+' d’engrais</b>'+
+ '<em>une dose sur trois fait pousser une parcelle moitié plus vite</em></span></div>'):'';
 const FOIN_MAX=12*3600, FOIN_PLAFOND=9*3600;
 const foinPc=Math.min(100,Math.round((E.foin||0)/FOIN_MAX*100));
 const mangeoirePleine=(E.foin||0)>=FOIN_PLAFOND;
@@ -32805,6 +32834,7 @@ $('page2Fond').innerHTML=
 '<em>'+(mangeoirePleine?'la mangeoire est pleine · laisse-les entamer'
 :('trois heures de plus · '+(bleAuSac>=2?'2 blé pris au sac':'3 €')))+'</em></span>'+
 '<i>'+(mangeoirePleine?'Pleine':'Donner')+'</i></button>'+
+tasFumier+
 '<h3>LE TROUPEAU</h3>'+
 fiches+abri+
 (mot?'<div class="pied">'+mot+'</div>':'')+
@@ -32884,7 +32914,8 @@ else if(d&&d.erreur==='sac_plein')dit.push('sac plein');}
 if(!seulementLesOeufs){
 if((E.lait||0)>0)await gesteDesBetes('traire');
 if((E.laine_prete||0)>0)await gesteDesBetes('tondre');
-if(ETB&&ETB.truffe_prete)await gesteDesBetes('truffe');}
+if(ETB&&ETB.truffe_prete)await gesteDesBetes('truffe');
+if((E.fumier_pret||0)>0)await gesteDesBetes('curer');}
 peindreLEcranDesBetes();
 if(dit.length)setTimeout(()=>motOuverture(dit.join(' · ')),60);}
 /* ================= LES GESTES ================= */
@@ -32924,6 +32955,22 @@ const d=await appelRPC('betes_tondre',{p_joueur:e.id});
 if(d&&d.erreur){dire(d.erreur==='pas_prete'?'la laine n’est pas prête':'pas de mouton','#e8a06a');}
 else{ETB=Object.assign({},ETB,(d&&d.etat)||{});
 jouer('cueille');dire('+'+((d&&d.laine)||0)+' toison'+(((d&&d.laine)||0)>1?'s':''));
+try{await recalerLeSac(true);majHaut();}catch(x){}
+peindreLEcranDesBetes();}
+return;}
+if(quoi==='curer'){
+const d=await appelRPC('betes_curer',{p_joueur:e.id});
+if(d&&d.erreur){dire(d.erreur==='sac_plein'?'ton sac est plein':'l’enclos est propre','#e8a06a');}
+else{ETB=Object.assign({},ETB,(d&&d.etat)||{});
+jouer('cueille');dire('+'+((d&&d.fumier)||0)+' seau'+(((d&&d.fumier)||0)>1?'x':'')+' de fumier');
+try{await recalerLeSac(true);majHaut();}catch(x){}
+peindreLEcranDesBetes();}
+return;}
+if(quoi==='composter'){
+const d=await appelRPC('composter',{p_joueur:e.id});
+if(d&&d.erreur){dire('il faut quatre seaux','#e8a06a');}
+else{if(typeof d.engrais==='number'){FUMIER_DOSES=d.engrais;ETB=Object.assign({},ETB,{engrais:d.engrais});}
+jouer('achat');dire('+'+((d&&d.doses)||0)+' dose'+(((d&&d.doses)||0)>1?'s':'')+' d’engrais','#f0cf7d');
 try{await recalerLeSac(true);majHaut();}catch(x){}
 peindreLEcranDesBetes();}
 return;}
