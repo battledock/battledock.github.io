@@ -4781,7 +4781,12 @@ async function finirPartie(score,silencieux){
   if(r&&r.erreur){dire(r.erreur,'mal');return;}
   if(!r)return;
   if(typeof r.euros==='number'){SOLDE=r.euros;noterEuros(r.euros);majSolde();}
-  var m=score.toLocaleString('fr-FR')+' points · '+r.rang+(r.rang===1?'er':'e')+' au tableau'+
+  /* LA CONQUETE SE RACONTE EN TEMPS, pas en points : c'est ce chiffre-la
+     qu'on vient chercher a cette borne. */
+  var tete=(BORNE&&BORNE.cle==='france'&&typeof frScoreTexte==='function')
+    ? (score>=FR_MINI?('LA FRANCE EN '+frScoreTexte(score)):(frScoreTexte(score)+' tenues'))
+    : (score.toLocaleString('fr-FR')+' points');
+  var m=tete+' · '+r.rang+(r.rang===1?'er':'e')+' au tableau'+
         (r.gain>0?' · +'+(r.gain/100).toFixed(2).replace('.',',')+' € · +'+r.points+' au classement':'');
   /* LE RANG FRANCHI et LES DEFIS REUSSIS passent avant tout le reste */
   if(r.grade_gain>0)m='NOUVEAU RANG : '+HG_GRADES[r.grade].n+' · +'+enEuros(r.grade_gain)+' · '+m;
@@ -4953,14 +4958,30 @@ MOTEUR.france={
   nom:'La Conquête', sous:'13 RÉGIONS · PRENDS TOUT LE PLUS VITE',
   manches:null, vise:150,
   init:function(){
-    return {phase:'pret',t:0,ms:0,score:0,r:[],e:[],as:[],part:[],
-            pct:1,mi:0,viseMi:false,pacte:null,mot:'',motT:0,sel:-1,
-            gagne:false,L:150,H:300,mx:0,my:0,ms0:1,fin:0};
+    var s={phase:'pret',t:0,ms:0,score:0,r:[],e:[],as:[],part:[],
+           pct:1,mi:0,viseMi:false,pacte:null,mot:'',motT:0,sel:-1,
+           gagne:false,L:150,H:300,mx:0,my:0,ms0:1,fin:0,pactT:18000};
+    /* LA CARTE EXISTE AVANT LE JETON. Sans ca l'ecran d'accueil n'avait
+       rien a dessiner — et le dessin s'arretait sur un tableau vide,
+       ce qui emportait la boucle avec lui. */
+    this.mise(s);
+    return s;
+  },
+  /* le plateau au repos : treize regions neutres, quatre empires a vide */
+  mise:function(s){
+    var vq=[];
+    for(var v=0;v<FR_REG.length;v++)vq.push((s.r[v]&&s.r[v].q)||[]);
+    s.r=[];
+    for(var i=0;i<FR_REG.length;i++)
+      s.r.push({o:-1,d:Math.round(14+FR_REG[i].pop*6),q:vq[i],cx:0,cy:0,fl:0});
+    s.e=[];
+    for(var e=0;e<4;e++)s.e.push({tr:0,pense:0,allie:0,hum:0});
+    return s;
   },
   /* la carte tient toujours en entier : on la recadre a chaque mesure */
   cadre:function(s,L,H){
     s.L=L;s.H=H;
-    var haut=34, bas=30;
+    var haut=34, bas=50;   /* 50 : le bandeau des rivaux ET les pavés sous le pouce */
     /* LA FRANCE EST CARREE, L'ECRAN NE L'EST PAS. On l'etire un peu en
        hauteur plutot que de laisser deux bandes de mer : les regions
        deviennent plus grandes sous le pouce, et l'Hexagone se reconnait
@@ -4980,9 +5001,8 @@ MOTEUR.france={
     s.pacte=null;s.gagne=false;s.fin=0;s.sel=-1;s.pactT=18000;
     /* les garnisons neutres sortent de la population reelle : l'Ile-de-France
        est un mur, la Corse une promenade */
-    s.r=[];for(var i=0;i<FR_REG.length;i++)
-      s.r.push({o:-1,d:Math.round(14+FR_REG[i].pop*6),q:(s.r[i]&&s.r[i].q)||[],cx:0,cy:0,fl:0});
-    s.e=[];for(var e=0;e<4;e++)s.e.push({tr:e===0?92:56,pense:3000+e*1400,allie:0,hum:0});
+    this.mise(s);
+    for(var e=0;e<4;e++){s.e[e].tr=(e===0?92:56);s.e[e].pense=3000+e*1400;}
     /* quatre coins pour quatre empires : personne ne demarre collé */
     var deps=['bre','ges','pac','naq'];
     var o=Math.floor(Math.random()*4);
@@ -5162,6 +5182,10 @@ MOTEUR.france={
     /* la mer */
     R(0,0,L,H,'#0b1f33');
     for(var v=0;v<6;v++){var yy=(s.t*0.004+v*17)%(H+10);R(0,yy,L,1,'#102a44');}
+    /* CEINTURE : une borne qui leve une exception emporte la boucle
+       d'animation avec elle, et l'ecran reste noir jusqu'a ce qu'on
+       ressorte. On ne dessine que ce qui existe. */
+    if(!s.r.length||!s.e.length)return;
     /* les regions */
     for(var i=0;i<s.r.length;i++){
       var Rg=s.r[i], C=Rg.o<0?FR_NEUTRE:FR_CO[Rg.o];
@@ -5203,13 +5227,24 @@ MOTEUR.france={
     }
     /* les etincelles */
     for(var p=0;p<s.part.length;p++){var P=s.part[p];R(P.x,P.y,1,1,P.c);}
+    /* AVANT LE JETON : la carte au repos, et ce qu'on vient chercher. */
+    if(s.phase!=='jeu'&&!s.fin){
+      G.textAlign='center';
+      G.font='400 11px "Lilita One", system-ui, sans-serif';
+      G.fillStyle='#ffd21f';G.fillText('13 RÉGIONS',L/2,20);
+      G.font='700 7px "Baloo 2", system-ui, sans-serif';
+      G.fillStyle='#9ec4e4';G.fillText('un jeton, une partie',L/2,30);
+      if(FR_REC_MS){G.fillStyle='#8ad07a';G.fillText('ton record : '+frChrono(FR_REC_MS),L/2,H-14);}
+      G.textAlign='left';G.textBaseline='alphabetic';
+      return;
+    }
     /* ---- le bandeau du haut ---- */
     R(0,0,L,32,'rgba(4,10,18,.82)');R(0,32,L,1,'rgba(90,216,255,.25)');
     G.textAlign='left';
     G.font='400 11px "Lilita One", system-ui, sans-serif';
-    G.fillStyle='#fff';G.fillText(frChrono(s.ms),5,9);
+    G.fillStyle='#fff';G.fillText(frChrono(s.ms),21,9);
     G.font='700 7px "Baloo 2", system-ui, sans-serif';
-    G.fillStyle='#9ec4e4';G.fillText('CHRONO',5,19);
+    G.fillStyle='#9ec4e4';G.fillText('CHRONO',21,19);
     G.textAlign='center';
     G.font='400 11px "Lilita One", system-ui, sans-serif';
     G.fillStyle='#fff';G.fillText(frTiens(s,0)+'/13',L/2,9);
@@ -5227,17 +5262,17 @@ MOTEUR.france={
       G.fillText('TON RECORD '+frChrono(FR_REC_MS),L/2,27);
     }
     /* ---- les rivaux, en bas ---- */
-    var by=H-26;
-    R(0,by,L,26,'rgba(4,10,18,.82)');
+    var by=H-48;
+    R(0,by,L,24,'rgba(4,10,18,.82)');
     for(var e=1;e<4;e++){
       var x0=4+(e-1)*Math.floor((L-8)/3), w0=Math.floor((L-8)/3)-4;
-      R(x0,by+4,w0,18,'rgba(255,255,255,.06)');
-      R(x0,by+4,3,18,FR_CO[e].c);
+      R(x0,by+3,w0,18,'rgba(255,255,255,.06)');
+      R(x0,by+3,3,18,FR_CO[e].c);
       G.textAlign='left';G.font='700 6px "Baloo 2", system-ui, sans-serif';
       G.fillStyle=s.e[e].allie>0&&s.e[e].hum?'#8ad07a':'#c8dcee';
-      G.fillText((s.e[e].allie>0&&s.e[e].hum?'PACTE':FR_CO[e].n.replace('LES ','')),x0+6,by+10);
+      G.fillText((s.e[e].allie>0&&s.e[e].hum?'PACTE':FR_CO[e].n.replace('LES ','')),x0+6,by+9);
       G.font='400 9px "Lilita One", system-ui, sans-serif';G.fillStyle='#fff';
-      G.fillText(frTiens(s,e)+' rég. · '+Math.round(s.e[e].tr),x0+6,by+18);
+      G.fillText(frTiens(s,e)+' rég. · '+Math.round(s.e[e].tr),x0+6,by+17);
     }
     /* ---- la proposition de pacte ---- */
     if(s.pacte){
@@ -5260,7 +5295,7 @@ MOTEUR.france={
     /* ---- le mot du moment ---- */
     if(s.motT>0&&s.mot){
       G.textAlign='center';
-      var ty=Math.round(H*0.26);
+      var ty=42;
       G.font='400 10px "Lilita One", system-ui, sans-serif';
       G.fillStyle='rgba(0,0,0,.6)';G.fillText(s.mot,L/2+1,ty+1);
       G.fillStyle='#ffd21f';G.fillText(s.mot,L/2,ty);
