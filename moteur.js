@@ -25027,7 +25027,7 @@ if(o.ouvre==='etalGraines'){b.innerHTML='Les graines<small>SEMENCES · OUTILS ·
 if(o.ouvre==='maree'){b.innerHTML='Entrer à La Marée<small>POISSONNERIE · VENDS TA PÊCHE</small>';b.classList.add('on');return;}
 if(o.ouvre==='glacier'){b.innerHTML='Le Glacier du Port<small>GLACES ARTISANALES</small>';b.classList.add('on');return;}
 if(o.ouvre==='karting'){b.innerHTML='Le Karting du Quai<small>GRAND PRIX · COURSE À 5 €</small>';b.classList.add('on');return;}
-if(o.ouvre==='kayak'){b.innerHTML='Kayaks des Calanques<small>LA DESCENTE · COURSE À 5 €</small>';b.classList.add('on');return;}
+if(o.ouvre==='kayak'){b.innerHTML='Location de kayaks<small>'+(nivInv('deblocage:kayak_frioul')?'DEUX DESCENTES':'LA DESCENTE')+' · COURSE À 5 €</small>';b.classList.add('on');return;}
 if(o.ouvre==='cabanon'){b.innerHTML='Ton cabanon<small>'+(nivInv('deblocage:cabanon')?'RANGER · 60 PLACES À L’ABRI':'LA RÉCOMPENSE DU NIVEAU 10')+'</small>';b.classList.add('on');return;}
 if(o.ouvre==='peche'){b.innerHTML='Le Pêcheur Heureux<small>CANNES, MOULINETS, APPÂTS</small>';b.classList.add('on');return;}
 if(o.ouvre==='salon'){b.innerHTML='Entrer à La Marinière<small>VÊTEMENTS DU PORT</small>';b.classList.add('on');return;}

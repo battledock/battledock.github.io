@@ -888,6 +888,50 @@ function pagayeur(g,cx,cy,ang,coup,pl){const R=(x,y,c)=>{g.fillStyle=c;g.fillRec
   for(const sd of [-1,1]){const gx=cx+pc*6*sd+sa,gy=cy+ps*6*sd-ca;const x0=bx+ca*3*sd,y0=by+sa*3*sd;for(let t=0;t<=1;t+=.12)R(x0+(gx-x0)*t,y0+(gy-y0)*t,'#e6b48c');R(gx,gy,'#1a1a1e');}
   for(let y=-3;y<=3;y++)for(let x=-3;x<=3;x++)if(x*x+y*y<=6.5){const u=ca*x+sa*y,v=-sa*x+ca*y;R(bx+x,by+y,v<-1.4?'#1e2a38':(u<-.5&&v<.5?pl.H:pl.h));}}
 
+/* ===================================================================
+   LES DEUX DESCENTES
+   Le kayak a maintenant deux parcours, comme le karting a trois
+   circuits. Tout ce qui change d'un parcours à l'autre est ici :
+   la longueur, la largeur du chenal, les palettes, la végétation,
+   l'espacement des portes et la houle. « batir » ne connaît plus
+   un seul décor, il lit P.
+   =================================================================== */
+const PK={
+ calanques:{id:'calanques',nom:'Les Calanques',ti:'LES CALANQUES · KAYAK',court:'LES CALANQUES · LA DESCENTE',
+  jeu:'kayak',h2:'La Descente des Calanques',
+  desc:'Une calanque étroite entre deux falaises, jusqu’à la mer ouverte.',
+  so:'Cinq kayaks, une calanque jusqu’à la mer. Pagaie <b>gauche, droite, gauche…</b> en rythme, passe entre les bouées, et garde de l’énergie pour la fin.',
+  long:3400,larg:[58,22,10],pas:250,houle:0,vegD:12,vegR:[3,3],fond:'#167a8e',mw:195,scint:.06,
+  eau:['#0e5a72','#167a8e','#1e9aa6','#38b8b8','#6ad0c4','#9ae2d0'],
+  roc:['#8a8478','#a8a294','#c4beb0','#dcd6c8','#eeeae0'],
+  veg:['#1e3a1a','#2a4e22','#3a6a2c','#4e8236']},
+ frioul:{id:'frioul',nom:'Le Frioul',ti:'LE FRIOUL · KAYAK',court:'LE FRIOUL · LE CHENAL',
+  jeu:'kayak_frioul',h2:'La Descente du Frioul',niv:'deblocage:kayak_frioul',nivN:25,
+  desc:'Le chenal entre Ratonneau et Pomègues : du calcaire blanc, pas un arbre, et la houle du large.',
+  so:'Plus long, plus large, et la <b>houle</b> qui te pousse de travers sans arrêt. Le rythme ne suffit plus : il faut corriger.',
+  long:4400,larg:[74,26,12],pas:300,houle:42,vegD:9,vegR:[1,2],fond:'#11588c',mw:250,scint:.022,
+  eau:['#0b3f6a','#11588c','#1a79ad','#2f9cc4','#63c2d8','#9fdfe8'],
+  roc:['#9a9284','#bcb4a2','#d8d2c2','#eeeade','#fbf8f0'],
+  veg:['#4a5a32','#5e7040','#78864e','#94a062']}
+};
+const ORDRE_K=['calanques','frioul'];
+/* la vignette du parcours : le chenal vu de haut, dans ses vraies couleurs */
+function vignetteK(P){const W=132,H=78,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
+ let gr=97;const rn=()=>{gr=(gr*16807)%2147483647;return (gr-1)/2147483646;};const ph=[rn()*9,rn()*9];
+ for(let y=0;y<H;y++){const l=(P.larg[0]+P.larg[1]*Math.sin(y/9+ph[0])+P.larg[2]*Math.sin(y/4+ph[1]))/2.4;
+  const m=W/2+6*Math.sin(y/13+ph[1]);
+  for(let x=0;x<W;x++){const d=Math.min(x-(m-l),(m+l)-x);
+   if(d>0){const t=Math.max(0,Math.min(1,d/22));g.fillStyle=P.eau[Math.min(P.eau.length-1,1+Math.floor(t*(P.eau.length-1)))];}
+   else{const t=Math.max(0,Math.min(1,(-d)/16));g.fillStyle=P.roc[Math.min(P.roc.length-1,1+Math.floor(t*(P.roc.length-1)))];}
+   g.fillRect(x,y,1,1);}}
+ for(let i=0;i<Math.round(H/P.vegD*2.2);i++){const y=Math.floor(rn()*H),g2=rn()<.5;
+  const l=(P.larg[0]+P.larg[1]*Math.sin(y/9+ph[0])+P.larg[2]*Math.sin(y/4+ph[1]))/2.4,m=W/2+6*Math.sin(y/13+ph[1]);
+  const x=Math.round(g2?m-l-4-rn()*14:m+l+4+rn()*14),r=P.vegR[0]+Math.floor(rn()*P.vegR[1]);
+  g.fillStyle=P.veg[1+Math.floor(rn()*(P.veg.length-1))];g.beginPath();g.arc(x,y,r,0,6.3);g.fill();}
+ for(let k=0;k<4;k++){const y=10+k*18;const l=(P.larg[0]+P.larg[1]*Math.sin(y/9+ph[0])+P.larg[2]*Math.sin(y/4+ph[1]))/2.4,m=W/2+6*Math.sin(y/13+ph[1]);
+  g.fillStyle=k%2?'#ff6a1a':'#ffd21a';g.fillRect(Math.round(m-l*.5)-1,y-1,3,3);g.fillRect(Math.round(m+l*.5)-1,y-1,3,3);}
+ return c.toDataURL();}
+let VIGK={};
 function kayak(ctx){
   const Rt=racine(),son=Son();
   const toile=Rt.toile,g=toile.getContext('2d');
@@ -896,36 +940,41 @@ function kayak(ctx){
     toile.width=AW;toile.height=AH;toile.style.width=AW*S+'px';toile.style.height=AH*S+'px';g.imageSmoothingEnabled=false;}
   cadrer();
   const SKY=spritesKayak();
-  const LONG=3400;            /* la longueur de la descente, en pixels de dessin */
-  let MW=0,MH=LONG+520,monde=null,graine=1,berges=null,rochers=[],portes=[],ARR=0;
+  let P=PK[PREFK().kayak]||PK.calanques;
+  let LONG=P.long;
+  let MW=0,MH=LONG+520,monde=null,graine=1,berges=null,rochers=[],portes=[],ARR=0,hph=[0,0];
+  /* LA HOULE DU LARGE : un courant de travers qui change le long du
+     chenal. Zéro dans la calanque, bien présent au Frioul. */
+  const houle=y=>P.houle?P.houle*(Math.sin(y/195+hph[0])+.55*Math.sin(y/73+hph[1])):0;
   /* ---------------- la calanque, tirée de la graine ---------------- */
   function rnd(){graine=(graine*16807)%2147483647;return (graine-1)/2147483646;}
-  function batir(seed){graine=(seed%2147483646)+1;MW=Math.max(AW,195);const cxm=MW/2;
-    const ph=[rnd()*9,rnd()*9,rnd()*9,rnd()*9];
+  function batir(seed){graine=(seed%2147483646)+1;MW=Math.max(AW,P.mw||195);const cxm=MW/2;
+    LONG=P.long;MH=LONG+520;
+    const ph=[rnd()*9,rnd()*9,rnd()*9,rnd()*9];hph=[rnd()*9,rnd()*9];
     berges=new Float32Array(MH*2);
-    for(let y=0;y<MH;y++){const p=y/MH;const larg=58+22*Math.sin(y/260+ph[0])+10*Math.sin(y/97+ph[1])+(y<300?18:0)+(y>MH-260?-8:0);
+    for(let y=0;y<MH;y++){const p=y/MH;const larg=P.larg[0]+P.larg[1]*Math.sin(y/260+ph[0])+P.larg[2]*Math.sin(y/97+ph[1])+(y<300?18:0)+(y>MH-260?-8:0);
       const mil=cxm+22*Math.sin(y/330+ph[2])+9*Math.sin(y/130+ph[3]);berges[y*2]=mil-larg+6*Math.sin(y/17+ph[0]);berges[y*2+1]=mil+larg+5*Math.sin(y/13+ph[1]);}
     /* l'arrivée en haut : la calanque s'ouvre sur la mer */
     ARR=260;for(let y=0;y<ARR;y++){const t=y/ARR;berges[y*2]-=(1-t)*(1-t)*80;berges[y*2+1]+=(1-t)*(1-t)*80;}
     const bG=y=>berges[Math.max(0,Math.min(MH-1,y|0))*2],bD=y=>berges[Math.max(0,Math.min(MH-1,y|0))*2+1];
     /* les portes : une paire de bouées tous les 260 px, décalées gauche/droite */
-    portes=[];let k=0;for(let y=MH-420;y>ARR+140;y-=250){const a=bG(y)+12,b=bD(y)-12,w=b-a;const larg=Math.min(56,w*.62);const c=a+larg/2+rnd()*(w-larg);
+    portes=[];let k=0;for(let y=MH-420;y>ARR+140;y-=P.pas){const a=bG(y)+12,b=bD(y)-12,w=b-a;const larg=Math.min(56,w*.62);const c=a+larg/2+rnd()*(w-larg);
       portes.push({y,x1:c-larg/2,x2:c+larg/2,n:k++,passe:0,col:k%2?'#ff6a1a':'#ffd21a'});}
     /* les rochers : jamais dans une porte */
     rochers=[];for(let y=MH-520;y>ARR+80;y-=70+rnd()*80){const a=bG(y)+10,b=bD(y)-10;const x=a+rnd()*(b-a),r=3+Math.floor(rnd()*4);
       if(portes.some(p=>Math.abs(p.y-y)<30))continue;rochers.push({x,y,r});}
     /* le dessin */
     const T=Toile(MW,MH);
-    const TURQ=['#0e5a72','#167a8e','#1e9aa6','#38b8b8','#6ad0c4','#9ae2d0'],ROC=['#8a8478','#a8a294','#c4beb0','#dcd6c8','#eeeae0'],PIN=['#1e3a1a','#2a4e22','#3a6a2c','#4e8236'];
+    const TURQ=P.eau,ROC=P.roc,PIN=P.veg;
     for(let y=0;y<MH;y++){const a=bG(y),b=bD(y);for(let x=0;x<MW;x++){
       if(x>a&&x<b){const d=Math.min(x-a,b-x);let v=1-Math.min(1,d/34)+(marbre(x,y,30)-.5)*.35;if(y<ARR)v-= (1-y/ARR)*.5;if(lisse(x,y,9,31)>.66&&d<30)v+=.18;
-        if(hs(Math.floor(x/6),Math.floor(y/3),32)<.06&&x%6<4&&y%3===0)v=1;T.P(x,y,tone(x,y,v,TURQ));}
+        if(hs(Math.floor(x/6),Math.floor(y/3),32)<(P.scint==null?.06:P.scint)&&x%6<4&&y%3===0)v=1;T.P(x,y,tone(x,y,v,TURQ));}
       else{const d=x<=a?a-x:x-b;let v=.55+(marbre(x,y,33)-.5)*.9-(d<3?.35:0);if(Math.abs(lisse(x,y,7,34)-.5)<.03)v=.05;T.P(x,y,tone(x,y,v,ROC));}}}
     for(let y=0;y<MH;y++){for(const [e,s] of [[bG(y),1],[bD(y),-1]]){const x=Math.round(e)+s;if(bay(x,y)<.8)T.P(x,y,'#f2fbf6');if(bay(x+s,y)<.4)T.Pa(x+s,y,'#e0f6f0',.7);if(bay(x+2*s,y)<.15)T.Pa(x+2*s,y,'#e0f6f0',.5);}
       const a=Math.round(bG(y));for(let k=1;k<10;k++)if(bay(a+k,y)<.85-k*.08)T.dk(a+k,y,.22);}
     const pin=(x,y,r)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++){const dd=i*i+j*j;if(dd>r*r+r)continue;if(hs(x+i,y+j,40)<.12&&dd>r*r*.5)continue;T.P(x+i,y+j,tone(x+i,y+j,.75-(i+j)/(r*2.6)+(hs(x+i,y+j,41)-.5)*.4,PIN));}
       for(let k=0;k<r+2;k++)for(let j=-r+1;j<r;j++)if(bay(x+r+k,y+j+k)<.5)T.dk(x+r+k-1,y+j+k+1,.3);};
-    for(let i=0;i<MH/12;i++){const y=Math.round(rnd()*MH),left=rnd()<.5;const e=left?bG(y):bD(y);const x=left?Math.round(e-12-rnd()*30):Math.round(e+12+rnd()*30);if(x>2&&x<MW-2)pin(x,y,3+Math.floor(rnd()*3));}
+    for(let i=0;i<MH/P.vegD;i++){const y=Math.round(rnd()*MH),left=rnd()<.5;const e=left?bG(y):bD(y);const x=left?Math.round(e-12-rnd()*30):Math.round(e+12+rnd()*30);if(x>2&&x<MW-2)pin(x,y,P.vegR[0]+Math.floor(rnd()*P.vegR[1]));}
     for(const r of rochers){T.C(r.x|0,r.y|0,r.r,'#8a8478');T.C((r.x|0)-1,(r.y|0)-1,r.r-1,'#b4aea0');T.P((r.x|0)-1,(r.y|0)-r.r+1,'#eeeae0');
       for(let a=0;a<24;a++)T.Pa(r.x+Math.cos(a/24*6.28)*(r.r+2),r.y+Math.sin(a/24*6.28)*(r.r+1.4),'#f2fbf6',.65);}
     /* la ligne d'arrivée : un damier flottant entre deux grosses bouées */
@@ -936,7 +985,7 @@ function kayak(ctx){
     return {bG,bD};}
   let B=null;
   /* ---------------- les kayaks ---------------- */
-  let KY=[],ETAT='menu',t0=0,dernier=0,anim=0,msgT=0,parts=[],course=null,cam=0,tFin=0,resultat=null;
+  let KY=[],ETAT='menu',t0=0,dernier=0,anim=0,msgT=0,parts=[],course=null,cam=0,camX=0,tFin=0,resultat=null,KREC={};
   /* LA NOUVELLE FAÇON D'AVANCER : le kayak garde le cap, toujours vers la mer.
      Un coup de pagaie pousse en avant et fait GLISSER de côté (à gauche, on
      part à droite) — il ne fait plus pivoter la coque. Alterner = tout droit ;
@@ -983,13 +1032,14 @@ function kayak(ctx){
     if((k.n>0||window.__AUTO_K)&&!k.fini){/* le pagayeur : il vise la porte suivante et choisit son côté */
       const p=portes.find(q=>q.y<k.y-6);const tx=p?(p.x1+p.x2)/2+(p.x2-p.x1)*k.lane*.4:(B.bG(ARR)+B.bD(ARR))/2;
       const per=RY.ideal/k.skill+(Math.sin(now/900+k.phase*6)*.03);
-      if((now-k.dernier)/1000>per){const dx=tx-(k.x+k.vl*.6);let cote=-k.cote||1;if(dx>7)cote=-1;else if(dx<-7)cote=1;
+      if((now-k.dernier)/1000>per){const dx=tx-(k.x+k.vl*.6+houle(k.y)*.5*k.skill);let cote=-k.cote||1;if(dx>7)cote=-1;else if(dx<-7)cote=1;
         if(Math.random()<.03)cote=-cote;pagayer(k,cote,now);}}
     /* le bateau glisse, ralentit ; l'écart s'amortit */
     k.v*=Math.pow(TRAINE,dt);if(k.v<3)k.v=0;
     k.vl*=Math.pow(.12,dt);
     /* un léger courant éloigne des falaises : on ne s'y colle plus sans le vouloir */
     const a0=B.bG(k.y),b0=B.bD(k.y);if(k.x-a0<22)k.vl+=(22-(k.x-a0))*2.2*dt;if(b0-k.x<22)k.vl-=(22-(b0-k.x))*2.2*dt;
+    if(P.houle)k.vl+=houle(k.y)*dt;        /* le large pousse tout le monde pareil */
     if(!k.fini)k.energie=Math.min(1,k.energie+dt*.15);
     k.x+=k.vl*dt;k.y-=k.v*dt;
     /* la coque s'incline dans le sens de l'écart, sans jamais tourner */
@@ -1009,8 +1059,11 @@ function kayak(ctx){
     if(k.v>20&&Math.random()<k.v/140){parts.push({x:k.x-Math.sin(k.ang)*18+Math.cos(k.ang)*(Math.random()<.5?-4:4),y:k.y+Math.cos(k.ang)*18,vx:0,vy:0,vie:.9,col:'#e8fbf6',sil:1});}}
   /* ---------------- le dessin ---------------- */
   function dessiner(ts){const moi=KY[0];if(!moi||!monde)return;
-    const vise=moi.y-AH*.62;cam+=(vise-cam)*.14;cam=Math.max(0,Math.min(MH-AH,cam));const cy=Math.round(cam),cx=Math.round((MW-AW)/2);
-    g.fillStyle='#167a8e';g.fillRect(0,0,AW,AH);g.drawImage(monde,-cx,-cy);
+    const vise=moi.y-AH*.62;cam+=(vise-cam)*.14;cam=Math.max(0,Math.min(MH-AH,cam));const cy=Math.round(cam);
+    /* au Frioul le chenal est plus large que l'écran : la vue suit le
+       kayak de côté, sans jamais sortir du monde dessiné. */
+    const viseX=Math.max(0,Math.min(MW-AW,moi.x-AW/2));camX+=(viseX-camX)*.14;const cx=Math.round(camX);
+    g.fillStyle=P.fond;g.fillRect(0,0,AW,AH);g.drawImage(monde,-cx,-cy);
     /* les vaguelettes qui bougent */
     g.fillStyle='rgba(220,250,240,.55)';for(let i=0;i<60;i++){const y=((hs(i,3)*MH+ts*14)%MH)|0;if(y<cy-4||y>cy+AH+4)continue;const x=(B.bG(y)+(B.bD(y)-B.bG(y))*hs(i,4))|0;g.fillRect(x-cx,y-cy,3,1);}
     /* les bouées */
@@ -1042,7 +1095,7 @@ function kayak(ctx){
     const b=Rt.pied.querySelectorAll('.cmd button');const att=-moi.cote||0;b[0].classList.toggle('vert',att<0||att===0);b[1].classList.toggle('vert',att>0||att===0);}
   function habiller(){Rt.haut.style.display='';Rt.pied.style.display='';
     Rt.haut.innerHTML='<div class="d"><div class="j"><b>PLACE</b><i style="font-size:13px;font-family:Arial;color:#cfd8c6">'+echap(ctx.pseudo||'Toi')+'</i></div><div class="c"><div class="s">1<u>/</u>5</div></div>'+
-      '<div class="j r"><b>PORTES</b><i>0 / '+portes.length+'</i></div></div><span class="t">LES CALANQUES · LA DESCENTE'+(course&&course.id?' · COURSE À 5 €':' · ENTRAÎNEMENT')+'</span><span class="m">0:00.00</span>';
+      '<div class="j r"><b>PORTES</b><i>0 / '+portes.length+'</i></div></div><span class="t">'+P.court+(course&&course.id?' · COURSE À 5 €':' · ENTRAÎNEMENT')+'</span><span class="m">0:00.00</span>';
     const zg=(RY.ideal-RY.fen)/.8*100,zw=RY.fen*2/.8*100;
     Rt.pied.innerHTML='<div class="bas"><span>RYTHME</span><div class="jg"><span class="zone" style="left:'+zg+'%;width:'+zw+'%"></span><span class="cur"></span></div><span class="w">ÉNERGIE 100 %</span></div>'+
       '<div class="cmd"><button data-k="g">PAGAIE<br>GAUCHE</button><button data-k="d">PAGAIE<br>DROITE</button></div>';
@@ -1052,10 +1105,10 @@ function kayak(ctx){
   addEventListener('keydown',kd);
   /* ---------------- départ, arrivée ---------------- */
   async function depart(payant){const m=Rt.menu.querySelector('.msg');course={id:null};let seed=Math.floor(Math.random()*2147483646);
-    if(payant){if(m)m.textContent='On paie l’engagement…';const r=await ctx.rpc('course_debut',{p_jeu:'kayak'});if(!r||r.erreur){if(m)m.textContent=(r&&r.erreur)||'La caisse ne répond pas. Réessaie.';return;}
+    if(payant){if(m)m.textContent='On paie l’engagement…';const r=await ctx.rpc('course_debut',{p_jeu:P.jeu});if(!r||r.erreur){if(m)m.textContent=(r&&r.erreur)||'La caisse ne répond pas. Réessaie.';return;}
       course={id:r.id};seed=r.graine;if(typeof r.euros==='number')ctx.majEuros(r.euros);}
     if(m)m.textContent='On met les kayaks à l’eau…';await new Promise(r=>setTimeout(r,30));
-    cadrer();B=batir(seed);placer();parts=[];pas.cd=0;Rt.menu.classList.remove('on');habiller();cam=KY[0].y-AH*.62;ETAT='grille';t0=performance.now();}
+    cadrer();B=batir(seed);placer();parts=[];pas.cd=0;Rt.menu.classList.remove('on');habiller();cam=KY[0].y-AH*.62;camX=Math.max(0,Math.min(MW-AW,KY[0].x-AW/2));ETAT='grille';t0=performance.now();}
   async function finir(){const moi=KY[0];const temps=Math.round(moi.tFini+moi.pen);
     /* les autres finissent à leur allure : on projette leur temps */
     const now=performance.now()-t0;for(const k of KY)if(!k.fini){const reste=(k.y-ARR)/Math.max(40,k.v||60);k.tProj=now+reste*1000+k.pen;}else k.tProj=k.tFini+k.pen;
@@ -1065,7 +1118,7 @@ function kayak(ctx){
     if(course&&course.id){resultat.srv=await ctx.rpc('course_fin',{p_id:course.id,p_place:place,p_temps_ms:temps,p_pseudo:ctx.pseudo||''});if(resultat.srv&&typeof resultat.srv.euros==='number')ctx.majEuros(resultat.srv.euros);}}
   function montrerResultat(){if(ETAT==='resultat')return;ETAT='resultat';const moi=KY[0];const s=resultat&&resultat.srv;
     const ordre=KY.slice().sort((a,b)=>a.tProj-b.tProj);
-    let h='<div class="ti">LES CALANQUES · LA DESCENTE</div><h2>'+(resultat.place===1?'Victoire !':ordinal(resultat.place)+' place')+'</h2><p class="so">'+chrono(resultat.temps)+(moi.pen?' · dont '+(moi.pen/1000)+' s de pénalités':' · aucune porte ratée')+'</p>';
+    let h='<div class="ti">'+P.court+'</div><h2>'+(resultat.place===1?'Victoire !':ordinal(resultat.place)+' place')+'</h2><p class="so">'+chrono(resultat.temps)+(moi.pen?' · dont '+(moi.pen/1000)+' s de pénalités':' · aucune porte ratée')+'</p>';
     if(course&&course.id){if(s&&!s.erreur)h+='<div class="gain">'+(s.gain?'+ '+fr(s.gain):'0 €')+'</div><p class="so">'+(s.gain?'versés sur ton compte':'pas de gain : il faut finir dans les trois premiers')+(s.record?'<br><b style="color:#d8bf6a">Nouveau record personnel !</b>':'')+'</p>';
       else h+='<p class="so" style="color:#ffb0a0">'+echap((s&&s.erreur)||'Le résultat n’a pas pu être enregistré.')+'</p>';}
     else h+='<p class="so">Entraînement : pas de gain, pas de record.</p>';
@@ -1073,19 +1126,44 @@ function kayak(ctx){
     h+='<div class="deux"><button data-a="menu">LE MENU</button><button class="or" data-a="re">'+(course&&course.id?'REJOUER · 5 €':'REJOUER')+'</button></div>';
     Rt.menu.innerHTML=h+'<div class="msg"></div>';Rt.menu.classList.add('on');Rt.haut.style.display='none';Rt.pied.style.display='none';Rt.cri.classList.add('cache');Rt.d.classList.remove('course');
     Rt.menu.querySelector('[data-a=menu]').onclick=()=>menu();Rt.menu.querySelector('[data-a=re]').onclick=()=>depart(!!(course&&course.id));}
+  /* UN PARCOURS PEUT ÊTRE FERMÉ : il s'ouvre à un palier. On le montre
+     quand même, comme le Panier au karting — on ne cache pas ce qui se
+     mérite. Changer de parcours rebâtit le décor tout de suite. */
+  const parcoursFerme=()=>!!(P.niv&&!aLeNiv(P.niv));
+  function changerParcours(id){P=PK[id]||PK.calanques;SAUVEK({kayak:P.id});
+    B=batir(12345);placer();cam=KY[0].y-AH*.62;camX=Math.max(0,Math.min(MW-AW,KY[0].x-AW/2));menu();}
+  function carteParcours(){if(!VIGK[P.id])VIGK[P.id]=vignetteK(P);
+    return '<div class="circ"><button class="fl" data-a="kprev" aria-label="Parcours précédent">‹</button>'+
+      '<div class="cc'+(parcoursFerme()?' ferme':'')+'"><img src="'+VIGK[P.id]+'" alt=""><div class="ci">'+
+      '<small>PARCOURS '+(ORDRE_K.indexOf(P.id)+1)+' / '+ORDRE_K.length+'</small><b>'+P.nom+'</b><em>'+P.desc+'</em>'+
+      '<span class="rec">'+(KREC[P.jeu]?'TON RECORD · '+chrono(KREC[P.jeu]):'PAS ENCORE DE RECORD')+'</span>'+
+      '</div></div><button class="fl" data-a="knext" aria-label="Parcours suivant">›</button></div>';}
   async function menu(){ETAT='menu';Rt.d.classList.remove('course');Rt.haut.style.display='none';Rt.pied.style.display='none';Rt.cri.classList.add('cache');
-    if(!B){B=batir(12345);placer();cam=KY[0].y-AH*.62;}
-    Rt.menu.innerHTML='<div class="ti">LES CALANQUES · KAYAK</div><h2>La Descente des Calanques</h2><p class="so">Cinq kayaks, une calanque jusqu’à la mer. Pagaie <b>gauche, droite, gauche…</b> en rythme, passe entre les bouées, et garde de l’énergie pour la fin.</p>'+
-      '<button class="ved" data-a="paye"><small>COURSE À 5 €</small><b>La Descente</b><em>1er : 20 € · 2e : 12 € · 3e : 7 €</em><span class="go">5 €</span></button>'+
-      '<button class="ved gris" data-a="entr"><small>GRATUIT</small><b>Entraînement</b><em>une autre calanque, sans gain ni record</em><span class="go">RAMER</span></button><div class="msg"></div>'+
+    if(!B){B=batir(12345);placer();cam=KY[0].y-AH*.62;camX=Math.max(0,Math.min(MW-AW,KY[0].x-AW/2));}
+    Rt.menu.innerHTML='<div class="ti">'+P.ti+'</div><h2>'+P.h2+'</h2>'+carteParcours()+'<p class="so">'+P.so+'</p>'+
+      (parcoursFerme()
+        ?'<button class="ved ferme" data-a="ferme"><small>PARCOURS FERMÉ</small><b>'+P.nom+'</b>'+
+          '<em>Il ouvre au niveau '+P.nivN+'. Récolte, pêche, coupe : l’XP vient vite.</em>'+
+          '<span class="go">NIV. '+P.nivN+'</span></button>'
+        :'<button class="ved" data-a="paye"><small>COURSE À 5 €</small><b>'+P.nom+'</b><em>1er : 20 € · 2e : 12 € · 3e : 7 €</em><span class="go">5 €</span></button>'+
+      '<button class="ved gris" data-a="entr"><small>GRATUIT</small><b>Entraînement</b><em>un autre tirage, sans gain ni record</em><span class="go">RAMER</span></button>')+'<div class="msg"></div>'+
       '<div class="rub">LES MEILLEURS TEMPS</div><div class="cl"><div class="vide">Chargement…</div></div>'+
       '<div class="rub">LES COMMANDES</div><div class="regle"><b>Gauche, droite, gauche…</b> : chaque coup pousse le kayak. Tape quand le curseur passe dans la <b style="color:#9fdfb8">zone verte</b> : c’est un coup <b>parfait</b>, et les parfaits s’enchaînent.<br>'+
-      '<b>Pour te décaler</b> : deux coups du même côté — pagaie à gauche, tu glisses à droite. Le kayak garde toujours le cap. <b>Porte ratée</b> : +3 secondes.</div>';
-    Rt.menu.classList.add('on');Rt.menu.querySelector('[data-a=paye]').onclick=()=>depart(true);Rt.menu.querySelector('[data-a=entr]').onclick=()=>depart(false);
-    const [cl,mr]=await Promise.all([ctx.rpc('course_classement',{p_jeu:'kayak'}),ctx.rpc('course_mes_records',{})]);const box=Rt.menu.querySelector('.cl');if(!box||ETAT!=='menu')return;
+      '<b>Pour te décaler</b> : deux coups du même côté — pagaie à gauche, tu glisses à droite. Le kayak garde toujours le cap. <b>Porte ratée</b> : +3 secondes.'+
+      (P.houle?'<br><b>La houle</b> du large te déporte en permanence : regarde de quel côté elle pousse et pagaie du même côté pour la contrer.':'')+'</div>';
+    Rt.menu.classList.add('on');
+    const qa=s2=>Rt.menu.querySelector(s2),msgk=qa('.msg');
+    qa('[data-a=kprev]').onclick=()=>changerParcours(ORDRE_K[(ORDRE_K.indexOf(P.id)+ORDRE_K.length-1)%ORDRE_K.length]);
+    qa('[data-a=knext]').onclick=()=>changerParcours(ORDRE_K[(ORDRE_K.indexOf(P.id)+1)%ORDRE_K.length]);
+    if(qa('[data-a=ferme]'))qa('[data-a=ferme]').onclick=()=>{vibrer([18,50,18]);if(msgk)msgk.textContent='Le Frioul ouvre au niveau '+P.nivN+'.';};
+    if(qa('[data-a=paye]'))qa('[data-a=paye]').onclick=()=>depart(true);
+    if(qa('[data-a=entr]'))qa('[data-a=entr]').onclick=()=>depart(false);
+    const [cl,mr]=await Promise.all([ctx.rpc('course_classement',{p_jeu:P.jeu}),ctx.rpc('course_mes_records',{})]);const box=Rt.menu.querySelector('.cl');if(!box||ETAT!=='menu')return;
     if(Array.isArray(cl)&&cl.length)box.innerHTML=cl.map((r,i)=>'<div class="'+(r.moi?'moi':'')+'"><i>'+(i+1)+'</i><span>'+echap(r.pseudo)+'</span><em>'+chrono(r.ms)+'</em></div>').join('');
     else box.innerHTML='<div class="vide">Personne n’a encore descendu. La première place est libre.</div>';
-    if(mr&&!mr.erreur){const v=Rt.menu.querySelector('[data-a=paye] em');if(v&&typeof mr.restant_kayak==='number')v.textContent+=' · '+Math.max(0,mr.restant_kayak)+' course'+(mr.restant_kayak>1?'s':'')+' aujourd’hui';}}
+    if(mr&&!mr.erreur){if(mr.records)KREC=mr.records;
+      const v=Rt.menu.querySelector('[data-a=paye] em');if(v&&typeof mr.restant_kayak==='number')v.textContent+=' · '+Math.max(0,mr.restant_kayak)+' course'+(mr.restant_kayak>1?'s':'')+' aujourd’hui';
+      const rc=Rt.menu.querySelector('.circ .rec');if(rc)rc.textContent=KREC[P.jeu]?'TON RECORD · '+chrono(KREC[P.jeu]):'PAS ENCORE DE RECORD';}}
   function fermer(){cancelAnimationFrame(anim);son.stop();Rt.d.classList.remove('on');removeEventListener('keydown',kd);Rt.fer.onclick=null;try{ctx.fermer&&ctx.fermer();}catch(x){}}
   Rt.fer.onclick=fermer;Rt.d.classList.remove('kart');Rt.d.classList.add('on');menu();dernier=0;anim=requestAnimationFrame(boucle);
   return {fermer,_dbg:()=>({KY,portes,ETAT,ARR,MH,course,pagayer:(c)=>pagayer(KY[0],c,performance.now()-t0)})};

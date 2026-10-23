@@ -510,3 +510,65 @@ where niveau = 29;
    Reste inerte après 23 : 25 (kayak du Frioul), 27 (table VIP),
    28 (aquarium du cabanon), 30 (la statue sur le quai).
 */
+
+/* ============================================================
+   PALIER 25 — LA DESCENTE DU FRIOUL                23/10/2026
+   ============================================================
+   Pas de nouvelle boutique : le kayak du Frioul s'ajoute DANS
+   la location de kayaks qui existe déjà sur le quai. Le menu
+   du kayak prend le carrousel du karting — ‹ parcours 1 / 2 ›
+   avec vignette, record, et la carte grisée « NIV. 25 » tant
+   que le palier n'est pas pris.
+
+   SERVEUR
+   - course_debut accepte 'kayak_frioul' et le refuse tant que
+     niv_bonus(uid,'deblocage:kayak_frioul')=0 — même garde que
+     karting_panier au niveau 15. Vérifié : sans le palier
+     « Ce parcours ouvre au niveau 25. », avec le palier la
+     course démarre et les 5 € sont débités.
+   - course_mes_records : restant_kayak compte maintenant
+     jeu like 'kayak%' — les deux descentes partagent le même
+     quota de 12 courses payantes par jour (course_debut les
+     regroupait déjà par split_part(jeu,'_',1)).
+   - niveau_reclamer : 'kayak_frioul' ajouté à la liste des
+     déblocages actifs, sinon la récompense arrivait inerte.
+     Vérifié : palier 25 donne titre Capitaine + déblocage
+     actif + coffre malle.
+   - course_fin et course_classement étaient déjà génériques
+     (ils lisent c.jeu / p_jeu) : rien à toucher.
+
+   CLIENT — courses.js
+   Tout ce qui distingue un parcours est rassemblé dans PK :
+   longueur, largeur du chenal, palettes (eau, roche, végétal),
+   densité et taille de la végétation, espacement des portes,
+   scintillement de l'eau, largeur du monde et houle. « batir »
+   ne connaît plus un décor unique, il lit P.
+
+     Les Calanques  3400 px · chenal 58±32 · portes /250 ·
+                    turquoise, pins, pas de houle · monde 195
+     Le Frioul      4400 px · chenal 74±38 · portes /300 ·
+                    bleu profond, calcaire blanc, garrigue
+                    rase · houle 42 · monde 250
+
+   LA HOULE est la vraie différence de jeu : un courant de
+   travers qui change le long du chenal
+     houle(y)=42*(sin(y/195+a)+0,55*sin(y/73+b))
+   ajouté à k.vl à chaque image. Le rythme ne suffit plus, il
+   faut corriger. Les pagayeurs machine l'anticipent à hauteur
+   de leur skill, sinon ils finissaient tous dans la falaise.
+
+   LA CAMÉRA SUIT DE CÔTÉ quand le monde est plus large que
+   l'écran (camX), sinon le Frioul dépassait du cadre à droite.
+   Sur les Calanques MW=AW : camX reste à 0, rien ne change.
+
+   Le parcours choisi est gardé dans localStorage bdl.kart
+   (clé 'kayak'), comme le circuit du karting.
+
+   Vérifié en tactile : les Calanques se descendent exactement
+   comme avant (13 portes, turquoise, pas de houle), le Frioul
+   se descend avec ses 14 portes et sa houle, aucune erreur JS,
+   la ronde des 38 écrans passe sur les trois cartes.
+
+   Reste inerte après 25 : 27 (table VIP), 28 (aquarium du
+   cabanon), 30 (la statue sur le quai).
+*/
