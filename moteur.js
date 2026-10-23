@@ -12833,7 +12833,7 @@ if(CHAMPS_SEULS&&CARTE==='village'){
 /* LA FERME : deux bâtiments, et rien d'autre. Le métro plein nord, la
    graineterie au centre, le potager au sud : l'axe de la ferme. */
 DECOR=[];
-if(FERME_VIERGE){DECOR.push({t:'x_madeleine',bati:true,ouvre:'bqFerme',x:330,y:948,demi:60});DECOR.push({t:'metro',x:1585,y:950,demi:28});DECOR.push({t:'x_cabNiv',bati:true,ouvre:'cabanon',x:1430,y:640,demi:40});invaliderGrille();return;}   /* l'étal de Madeleine : sa porte, pour la plaque jaune */
+if(FERME_VIERGE){DECOR.push({t:'x_madeleine',bati:true,ouvre:'bqFerme',x:330,y:948,demi:60});DECOR.push({t:'metro',x:1585,y:950,demi:28});DECOR.push({t:'x_cabNiv',bati:true,ouvre:'cabanon',x:1430,y:640,demi:40});try{/* LA PORTE DE LA LONGÈRE. On ne peut pas se reposer sur ferme.js : le semeur tourne avant qu'il soit chargé. On refait son calcul (FM_K=0,61, façade de 330 points centrée, pied à 150+270*K) et on s'en remet à lui s'il est là. */const K=0.61,MX=(typeof FM_MX==='function')?FM_MX():Math.round(MONDE_L/2-330*K/2),BY=(typeof FM_BASE==='function')?FM_BASE():150+Math.round(270*K);DECOR.push({t:'x_fePorte',bati:true,ouvre:'bassecour',x:Math.round(MX+146*K),y:BY,demi:34});}catch(x){}invaliderGrille();return;}   /* la porte de la longère : on y achète les bêtes */   /* l'étal de Madeleine : sa porte, pour la plaque jaune */
 /* (l'ancienne gare du nord laisse la place à la halte, près de La Récolte) */
 /* ================= LE GRAND POULAILLER =================
    Le vocabulaire de l'ancien — pilotis, bardage vertical à trois tons,
@@ -24985,6 +24985,7 @@ if(o.ouvre==='epicerie'){b.innerHTML='L’épicerie fine<small>ON Y ACHÈTE LE M
 if(o.ouvre==='laFerme'){b.innerHTML='Entrer à la ferme<small>TOUT CE QUI TOUCHE À LA FERME</small>';b.classList.add('on');return;}
 if(o.ouvre==='bqFerme'){b.innerHTML='Entrer chez Madeleine<small>VENDRE TA RÉCOLTE · LES COMMANDES · L’ATELIER</small>';b.classList.add('on');return;}
 if(o.ouvre==='marcheBetes'){b.innerHTML='Le marché aux bêtes<small>LAIT · LAINE · TRUFFES · ACHETER UNE BÊTE</small>';b.classList.add('on');return;}
+if(o.ouvre==='bassecour'){b.innerHTML='Entrer dans la maison<small>POULES · MOUTONS · COCHONS</small>';b.classList.add('on');return;}
 if(o.ouvre==='etable'){b.innerHTML='Entrer à l’étable<small>LAIT · FOIN · BÊTES</small>';b.classList.add('on');return;}
 if(o.ouvre==='fromagerie'){b.innerHTML='Entrer à la fromagerie<small>LE LAIT S’AFFINE EN FROMAGE</small>';b.classList.add('on');return;}
 if(o.ouvre==='metroFerme'){b.innerHTML='Prendre le métro<small>LIGNE 1 · '+autresStations()+'</small>';b.classList.add('on');return;}
@@ -25151,6 +25152,7 @@ if(o.ouvre==='laFerme'){ouvrirLaFerme();return;}
 if(o.ouvre==='bqFerme'){ouvrirLaBoutiqueFerme();return;}
 /* LE MARCHÉ SE POSE PAR-DESSUS L'ÉCRAN DES BÊTES : il cherche .mk dans
    page2Fond, donc l'étable doit être peinte avant lui. */
+if(o.ouvre==='bassecour'){ouvrirLaBasseCour();return;}
 if(o.ouvre==='marcheBetes'){ETB=null;ouvrirLEtable();
 setTimeout(()=>{try{ouvrirLeMarcheAuxBetes();}catch(x){}},70);return;}
 if(o.ouvre==='etable'){ETB=null;ouvrirLEtable();return;}
@@ -27251,6 +27253,128 @@ async function ouvrirLaRade(){try{
   if(d&&!d.erreur)RADE_ETAT=d;
   radePeindre();
 }catch(x){try{$('page2').classList.remove('on');}catch(y){}try{motOuverture('La rade a eu un souci : '+(x&&x.message?x.message:x));}catch(y){}}}
+/* ================= LA BASSE-COUR =================
+   La porte de la longère ouvre l'étable de la maison : on y achète les
+   poules, les moutons et les cochons au même endroit. L'écran demande
+   son état lui-même (bassecour_etat) et ne dépend d'aucun autre. */
+const CSS_BC=`
+#bc{position:absolute;inset:0;display:flex;flex-direction:column;background:#17200f;color:#f0f4e4;font-family:Georgia,serif;overflow:hidden}
+#bc .bhd{position:relative;padding:14px 14px 10px;flex:0 0 auto;background:linear-gradient(180deg,#223018,#17200f)}
+#bc .bti{font:700 10px/1 Georgia;letter-spacing:.22em;color:#a8c878;text-transform:uppercase}
+#bc h1{margin:6px 0 0;font:400 27px/1.05 Georgia;color:#f4efe2}
+#bc h1 i{color:#e8c06a;font-style:italic}
+#bc .bx{position:absolute;right:12px;top:12px;width:40px;height:40px;border-radius:50%;background:rgba(10,18,8,.75);
+ border:1px solid rgba(232,192,106,.5);color:#e8c06a;font-size:17px;line-height:38px;text-align:center;padding:0}
+#bc .bour{display:block;margin-top:8px;font:700 11px/1 Georgia;letter-spacing:.14em;color:#d8e4c0}
+#bc .bour b{color:#ffd970;font-size:15px;letter-spacing:0;margin-left:7px}
+#bc .bdit{margin:0 14px;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,.05);
+ font:italic 400 13px/1.45 Georgia;color:#cfe0b4}
+#bc .bcorps{flex:1 1 auto;overflow:auto;padding:12px 14px calc(18px + env(safe-area-inset-bottom))}
+#bc .bl{display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;text-align:left;
+ background:rgba(255,255,255,.055);border:1px solid rgba(168,200,120,.26);border-radius:13px;
+ padding:11px 13px;margin-top:10px;color:inherit;font:inherit}
+#bc .bl canvas{width:56px;height:56px;flex:0 0 56px;image-rendering:pixelated}
+#bc .bl .bn{flex:1 1 auto;min-width:0}
+#bc .bl .bn b{display:block;font:400 19px/1.15 Georgia;color:#f4efe2}
+#bc .bl .bn em{display:block;font:italic 400 12px/1.4 Georgia;color:#a8bc8c;margin-top:2px}
+#bc .bl .bp{flex:0 0 auto;font:700 13px/1 Georgia;color:#ffd970;letter-spacing:.04em}
+#bc .bl.on{border-color:#e8c06a;background:rgba(232,192,106,.11)}
+#bc .bl.plein{opacity:.55}
+#bc .bl.plein .bp{color:#a8bc8c}
+#bc .bach{display:block;width:100%;box-sizing:border-box;margin-top:12px;padding:13px;border:0;border-radius:12px;
+ background:#a8c878;color:#1b2a10;font:700 14px/1 Georgia;letter-spacing:.1em;text-transform:uppercase}
+#bc .bach[disabled]{background:rgba(207,224,180,.16);color:#9fb08a}
+#bc .bnote{margin:10px 2px 0;font:italic 400 12px/1.45 Georgia;color:#a8bc8c;text-align:center}`;
+let BC_ETAT=null, BC_SEL='poule', BC_OCC=false;
+const BC_LOTS=[
+ ['poule','Une poule','poules','poules_max','prix_poule','elle pond tous les jours, si elle est nourrie'],
+ ['mouton','Un mouton','moutons','moutons_max','prix_mouton','sa toison se tond toutes les quarante-huit heures'],
+ ['cochon','Un cochon','cochons','cochons_max','prix_cochon','il fouille sous les chênes et trouve des truffes']];
+function bcBete(cv,quoi){const g=cv.getContext('2d');cv.width=56;cv.height=56;g.imageSmoothingEnabled=false;
+ const U=2, R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*U),Math.round(y*U),Math.max(1,Math.round(w*U)),Math.max(1,Math.round(h*U)));};
+ g.clearRect(0,0,56,56);
+ g.fillStyle='rgba(20,40,10,.22)';g.beginPath();g.ellipse(28,50,16,3.5,0,0,7);g.fill();
+ if(quoi==='poule'){
+  R(5,11,12,8,'#f6f2e6');R(4,13,2,5,'#e8e2d2');R(6,10,9,2,'#fbf8ee');   /* le corps */
+  R(3,11,3,4,'#e0d8c4');R(2,12,2,2,'#d4ccb6');                          /* la queue */
+  R(15,7,5,6,'#f8f4e8');R(14,9,2,4,'#f8f4e8');                          /* le cou et la tête */
+  R(19,10,3,2,'#e8a030');R(21,10,1,1,'#d88a1a');                        /* le bec */
+  R(17,8,1,1,'#1a1a1a');
+  R(16,4,2,3,'#c8352a');R(15,5,1,2,'#c8352a');R(18,5,1,2,'#c8352a');     /* la crête */
+  R(16,12,2,2,'#c8352a');                                               /* les barbillons */
+  R(8,19,2,4,'#e8a030');R(13,19,2,4,'#e8a030');R(7,22,4,1,'#d88a1a');R(12,22,4,1,'#d88a1a');
+  for(let k=0;k<7;k++)R(6+k*1.4,13+((k%2)?1:0),1,1,'#e4dccb');          /* le plumage */
+ }else if(quoi==='mouton'){
+  for(let k=0;k<9;k++)R(4+k*1.5,8+((k%2)?0:-1),3,3,'#f8f5ec');          /* la laine, bosse à bosse */
+  R(4,10,14,9,'#f4f0e4');R(3,12,2,5,'#e6e1d2');
+  for(let k=0;k<10;k++)R(5+(k*2.7)%12,11+((k*5)%7),2,2,'#eae5d6');
+  R(16,8,5,6,'#32323a');R(20,10,2,2,'#2a2a30');                          /* la tête */
+  R(19,10,1,1,'#f4f4f4');R(15,7,2,2,'#2a2a30');R(20,7,1,2,'#2a2a30');
+  R(6,19,2,4,'#32323a');R(14,19,2,4,'#32323a');R(10,19,2,4,'#3a3a44');
+ }else{
+  R(4,10,15,9,'#eaa0ae');R(3,12,2,5,'#dc8e9e');                          /* le corps */
+  for(let k=0;k<8;k++)R(6+(k*2.3)%12,12+((k*3)%6),1,1,'#f0b0bc');
+  R(17,8,6,7,'#eaa0ae');                                                 /* la tête */
+  R(22,10,3,3,'#d8808e');R(23,11,1,1,'#b06070');R(24,11,1,1,'#b06070');  /* le groin */
+  R(20,10,1,1,'#1a1a1a');
+  R(17,6,2,3,'#e090a0');R(21,6,2,3,'#e090a0');                           /* les oreilles */
+  R(2,10,1,2,'#dc8e9e');R(1,11,1,2,'#dc8e9e');R(2,13,1,1,'#dc8e9e');     /* la queue en tire-bouchon */
+  R(6,19,3,4,'#dc8e9e');R(14,19,3,4,'#dc8e9e');
+  R(6,22,3,1,'#9a5a68');R(14,22,3,1,'#9a5a68');
+ }}
+function bcPeindre(){
+ const f=$('page2Fond');if(!f||!$('page2').classList.contains('on'))return;
+ const E=BC_ETAT||{};
+ const sous=E.poulailler===0?'« Ton poulailler n’est pas bâti : va voir au chantier avant de prendre des poules. »'
+  :'« Entre donc. J’ai de la volaille, du mouton et du cochon. »';
+ const L=BC_LOTS.find(l=>l[0]===BC_SEL)||BC_LOTS[0];
+ const prix=E[L[4]], nb=E[L[2]]||0, max=E[L[3]]||0;
+ const bloque=BC_OCC||prix==null||(BC_SEL==='poule'&&!E.poulailler)||(typeof E.euros==='number'&&E.euros<prix);
+ f.innerHTML='<div id="bc" lang="fr"><div class="bhd"><div class="bti">LA FERME · LA MAISON</div>'+
+  '<h1>La <i>basse-cour</i></h1><button class="bx" id="bcX" aria-label="Fermer">✕</button>'+
+  '<span class="bour">EN POCHE<b>'+enEuros(E.euros||0)+'</b></span></div>'+
+  '<div class="bdit">'+sous+'</div><div class="bcorps">'+
+  BC_LOTS.map(([k,nom,cn,cm,cp,mot])=>{const p=E[cp],n=E[cn]||0,m=E[cm]||0,
+    plein=(p==null)||(k==='poule'&&!E.poulailler&&E.poulailler!==undefined);
+   return '<button class="bl'+(plein?' plein':'')+(k===BC_SEL?' on':'')+'" data-bc="'+k+'">'+
+    '<canvas data-be="'+k+'"></canvas><span class="bn"><b>'+nom+'</b>'+
+    '<em>'+n+' sur '+m+' · '+mot+'</em></span>'+
+    '<span class="bp">'+(p==null?'au complet':enEuros(p))+'</span></button>';}).join('')+
+  '<button class="bach" id="bcAch"'+(bloque?' disabled':'')+'>'+
+   (BC_OCC?'On s’arrange…':(prix==null?'Au complet':
+    ((BC_SEL==='poule'&&!E.poulailler)?'Il faut d’abord le poulailler':
+     ((typeof E.euros==='number'&&E.euros<prix)?'Pas assez en poche':'Acheter '+({poule:'une poule',mouton:'un mouton',cochon:'un cochon'})[BC_SEL]+' · '+enEuros(prix)))))+
+  '</button>'+
+  '<p class="bnote">Les poules pondent au poulailler, les moutons et les cochons vivent à l’enclos.</p>'+
+  '</div></div>';
+ f.querySelectorAll('[data-be]').forEach(c=>{try{bcBete(c,c.dataset.be);}catch(x){}});
+ $('bcX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+ f.querySelectorAll('[data-bc]').forEach(b=>b.onclick=()=>{BC_SEL=b.dataset.bc;jouer('clic');vibrer(8);bcPeindre();});
+ $('bcAch').onclick=async()=>{
+  if(BC_OCC)return;BC_OCC=true;bcPeindre();
+  const d=BC_SEL==='poule'
+   ? await appelRPC('poul_acheter',{p_joueur:e.id,p_article:'poule'})
+   : await appelRPC('betes_acheter',{p_joueur:e.id,p_espece:BC_SEL});
+  BC_OCC=false;
+  if(!d||d.erreur){bcPeindre();try{motOuverture(({plein:'Le poulailler est plein.',max:'L’enclos est au complet.',
+    pas_assez:'Il te manque des sous.',poulailler:'Il faut d’abord bâtir le poulailler.'})[d&&d.erreur]||
+    'L’achat n’a pas pu se faire. Réessaie.');}catch(x){}return;}
+  jouer('achat');vibrer([20,40,20]);
+  const n=await appelRPC('bassecour_etat',{p_joueur:e.id});
+  if(n&&!n.erreur){BC_ETAT=n;if(typeof n.euros==='number'){e.euros=n.euros;sauver();majHaut();}}
+  try{ETB=null;}catch(x){}
+  bcPeindre();
+ };
+}
+async function ouvrirLaBasseCour(){try{
+ if(!$('cssBc')){const s=document.createElement('style');s.id='cssBc';s.textContent=CSS_BC;document.head.appendChild(s);}
+ BC_OCC=false;
+ $('page2Fond').className='bc';$('page2').classList.add('on');
+ bcPeindre();
+ const d=await appelRPC('bassecour_etat',{p_joueur:e.id});
+ if(d&&!d.erreur){BC_ETAT=d;if(typeof d.euros==='number')e.euros=d.euros;}
+ bcPeindre();
+}catch(x){try{$('page2').classList.remove('on');}catch(y){}try{motOuverture('La basse-cour a eu un souci : '+(x&&x.message?x.message:x));}catch(y){}}}
 /* LES COURSES DU PORT : le karting et le kayak vivent dans courses.js.
    On leur prête la caisse (le serveur) et le solde, rien d'autre. */
 function ouvrirUneCourse(jeu){

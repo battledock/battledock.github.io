@@ -380,3 +380,19 @@ where niveau = 29;
       complet ». L'étal demande maintenant betes_etat lui-même, en même
       temps que betes_cours, avant de se dessiner.
 */
+
+/* ============ 2026-10-23 · LA BASSE-COUR, DANS LA MAISON ============
+   La longère de la ferme n'était que du décor. Sa porte ouvre maintenant
+   un seul endroit où l'on achète les trois bêtes : poules, moutons,
+   cochons. Le marché de Lucien garde la vente (lait, laine, truffes).
+
+   - bassecour_etat(joueur) : un seul appel rend tout ce dont l'écran a
+     besoin — l'argent, le niveau du poulailler, le nombre de poules et
+     leur plafond, les moutons et les cochons avec leurs prix du moment
+     (null = au complet). L'écran ne dépend d'aucun autre.
+   - L'achat passe par les fonctions qui existaient déjà :
+     poul_acheter(joueur,'poule') et betes_acheter(joueur,'mouton'|'cochon').
+   - Côté jeu : DECOR x_fePorte posé sur la porte de la longère
+     (ouvre:'bassecour'). Le semeur tourne avant le chargement de
+     ferme.js, il refait donc son calcul de position au lieu de s'y fier.
+*/

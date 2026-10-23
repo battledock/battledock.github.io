@@ -30,7 +30,7 @@ const ECRANS={
   ['Vestiaire','ouvrirLeVestiaire()'],['Courrier','ouvrirLaPoste()'],['Émotes','ouvrirEmotes(true)'],
   ['Mon niveau','ouvrirMonNiveau()'],['Réglages','ouvrirReglages()'],['Gazette','ouvrirLaGazette()'],
   ['Comptoir','ouvrirLeComptoir()'],['Cuisine de Fonfon','ouvrirLaCuisineDeFonfon()'],['Pétanque','ouvrirLaPetanque()']],
- village:[['Chez Madeleine','ouvrirLaBoutiqueFerme()'],['Grainetier','ouvrirLeGrainetier()'],
+ village:[['Chez Madeleine','ouvrirLaBoutiqueFerme()'],['Basse-cour','ouvrirLaBasseCour()'],['Grainetier','ouvrirLeGrainetier()'],
   ['Marché aux bêtes',"$('page2').classList.add('on');ouvrirLeMarcheAuxBetes()"],['Étable','ouvrirLEtable()'],['Fromagerie','ouvrirLaFromagerie()'],
   ['Four','ouvrirFour()'],['Établi','ouvrirEtabli()'],['Atelier','ouvrirLAtelier()'],['Sac','ouvrirLeSac()'],
   ['Carnet','ouvrirLeCarnet()'],['Classement','ouvrirLeClassement()'],['Vestiaire','ouvrirLeVestiaire()']],
