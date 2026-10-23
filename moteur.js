@@ -27258,96 +27258,134 @@ async function ouvrirLaRade(){try{
    poules, les moutons et les cochons au même endroit. L'écran demande
    son état lui-même (bassecour_etat) et ne dépend d'aucun autre. */
 const CSS_BC=`
-#bc{position:absolute;inset:0;display:flex;flex-direction:column;background:#17200f;color:#f0f4e4;font-family:Georgia,serif;overflow:hidden}
-#bc .bhd{position:relative;padding:14px 14px 10px;flex:0 0 auto;background:linear-gradient(180deg,#223018,#17200f)}
+#bc{position:absolute;inset:0;display:flex;flex-direction:column;background:#141a10;color:#f2f6e8;font-family:Georgia,serif;overflow:hidden}
+#bc .bhd{position:relative;flex:0 0 auto;padding:16px 60px 12px 16px}
 #bc .bti{font:700 10px/1 Georgia;letter-spacing:.22em;color:#a8c878;text-transform:uppercase}
-#bc h1{margin:6px 0 0;font:400 27px/1.05 Georgia;color:#f4efe2}
+#bc h1{margin:6px 0 0;font:400 27px/1 Georgia}
 #bc h1 i{color:#e8c06a;font-style:italic}
-#bc .bx{position:absolute;right:12px;top:12px;width:40px;height:40px;border-radius:50%;background:rgba(10,18,8,.75);
+#bc .bx{position:absolute;right:14px;top:14px;width:40px;height:40px;border-radius:50%;background:rgba(10,16,8,.7);
  border:1px solid rgba(232,192,106,.5);color:#e8c06a;font-size:17px;line-height:38px;text-align:center;padding:0}
-#bc .bour{display:block;margin-top:8px;font:700 11px/1 Georgia;letter-spacing:.14em;color:#d8e4c0}
-#bc .bour b{color:#ffd970;font-size:15px;letter-spacing:0;margin-left:7px}
-#bc .bdit{margin:0 14px;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,.05);
- font:italic 400 13px/1.45 Georgia;color:#cfe0b4}
-#bc .bcorps{flex:1 1 auto;overflow:auto;padding:12px 14px calc(18px + env(safe-area-inset-bottom))}
-#bc .bl{display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;text-align:left;
- background:rgba(255,255,255,.055);border:1px solid rgba(168,200,120,.26);border-radius:13px;
- padding:11px 13px;margin-top:10px;color:inherit;font:inherit}
-#bc .bl canvas{width:56px;height:56px;flex:0 0 56px;image-rendering:pixelated}
-#bc .bl .bn{flex:1 1 auto;min-width:0}
-#bc .bl .bn b{display:block;font:400 19px/1.15 Georgia;color:#f4efe2}
-#bc .bl .bn em{display:block;font:italic 400 12px/1.4 Georgia;color:#a8bc8c;margin-top:2px}
-#bc .bl .bp{flex:0 0 auto;font:700 13px/1 Georgia;color:#ffd970;letter-spacing:.04em}
-#bc .bl.on{border-color:#e8c06a;background:rgba(232,192,106,.11)}
-#bc .bl.plein{opacity:.55}
-#bc .bl.plein .bp{color:#a8bc8c}
-#bc .bach{display:block;width:100%;box-sizing:border-box;margin-top:12px;padding:13px;border:0;border-radius:12px;
- background:#a8c878;color:#1b2a10;font:700 14px/1 Georgia;letter-spacing:.1em;text-transform:uppercase}
-#bc .bach[disabled]{background:rgba(207,224,180,.16);color:#9fb08a}
-#bc .bnote{margin:10px 2px 0;font:italic 400 12px/1.45 Georgia;color:#a8bc8c;text-align:center}`;
-let BC_ETAT=null, BC_SEL='poule', BC_OCC=false;
+#bc .bour{position:absolute;right:62px;top:20px;font:700 9px/1 Georgia;letter-spacing:.16em;color:#a8bc8c;text-align:right}
+#bc .bour b{display:block;color:#ffd970;font-size:16px;letter-spacing:0;margin-top:4px}
+#bc .benc{flex:1 1 0;min-height:118px;position:relative;overflow:hidden;margin-bottom:3px;
+ background:#0e1409;border:0;padding:0;display:block;width:100%;text-align:left;color:inherit;font:inherit}
+#bc .benc canvas{position:absolute;left:0;top:0;width:100%;height:100%;image-rendering:pixelated}
+#bc .bvoile{position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,12,6,.92) 0%,rgba(8,12,6,.74) 44%,rgba(8,12,6,.12) 86%,rgba(8,12,6,0) 100%)}
+#bc .benc.on{box-shadow:inset 0 0 0 3px #e8c06a}
+#bc .benc.on .btxt b{color:#ffd970}
+#bc .benc.on .bcpt{border-color:rgba(232,192,106,.75);color:#ffd970}
+#bc .benc.on .bvoile{background:linear-gradient(90deg,rgba(8,12,6,.94) 0%,rgba(8,12,6,.78) 46%,rgba(26,18,4,.2) 88%,rgba(8,12,6,0) 100%)}
+#bc .benc.plein{filter:grayscale(.55) brightness(.72)}
+#bc .btxt{position:absolute;left:16px;top:20px;max-width:214px}
+#bc .btxt b{display:block;font:400 23px/1.05 Georgia;text-shadow:0 2px 4px rgba(0,0,0,.7)}
+#bc .btxt em{display:block;font:italic 400 11.5px/1.35 Georgia;color:#bcd0a4;margin-top:5px;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+#bc .bcpt{display:inline-block;margin-top:9px;padding:4px 9px;border-radius:999px;border:1px solid rgba(168,200,120,.5);
+ font:700 10px/1 Georgia;letter-spacing:.1em;color:#cfe0b4;background:rgba(8,12,6,.4)}
+#bc .bpx{position:absolute;left:16px;bottom:13px;font:700 15px/1 Georgia;color:#ffd970;text-shadow:0 1px 3px rgba(0,0,0,.85)}
+#bc .bpx.gris{color:#b8c8a4}
+#bc .bpied{flex:0 0 auto;padding:12px 14px calc(14px + env(safe-area-inset-bottom))}
+#bc .bach{display:block;width:100%;box-sizing:border-box;padding:15px;border:0;border-radius:13px;
+ background:#a8c878;color:#1b2a10;font:700 14px/1 Georgia;letter-spacing:.11em;text-transform:uppercase;box-shadow:0 3px 0 #6f8c4a}
+#bc .bach[disabled]{background:rgba(207,224,180,.16);color:#9fb08a;box-shadow:none}`;
+let BC_ETAT=null, BC_SEL='cochon', BC_OCC=false;
 const BC_LOTS=[
- ['poule','Une poule','poules','poules_max','prix_poule','elle pond tous les jours, si elle est nourrie'],
- ['mouton','Un mouton','moutons','moutons_max','prix_mouton','sa toison se tond toutes les quarante-huit heures'],
- ['cochon','Un cochon','cochons','cochons_max','prix_cochon','il fouille sous les chênes et trouve des truffes']];
-function bcBete(cv,quoi){const g=cv.getContext('2d');cv.width=56;cv.height=56;g.imageSmoothingEnabled=false;
- const U=2, R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*U),Math.round(y*U),Math.max(1,Math.round(w*U)),Math.max(1,Math.round(h*U)));};
- g.clearRect(0,0,56,56);
- g.fillStyle='rgba(20,40,10,.22)';g.beginPath();g.ellipse(28,50,16,3.5,0,0,7);g.fill();
+ ['poule','Le poulailler','poules','poules_max','prix_poule','elle pond tous les jours, si elle est nourrie','POULE'],
+ ['mouton','Le pré','moutons','moutons_max','prix_mouton','sa toison se tond toutes les quarante-huit heures','MOUTON'],
+ ['cochon','La soue','cochons','cochons_max','prix_cochon','il fouille sous les chênes et trouve des truffes','COCHON']];
+/* LA BÊTE, sur une grille de 26 : la même à l'enclos et dans un bouton. */
+function bcBete(g,U,quoi){
+ const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*U),Math.round(y*U),Math.max(1,Math.round(w*U)),Math.max(1,Math.round(h*U)));};
+ g.fillStyle='rgba(20,40,10,.2)';g.beginPath();g.ellipse(13*U,24*U,8*U,1.8*U,0,0,7);g.fill();
  if(quoi==='poule'){
-  R(5,11,12,8,'#f6f2e6');R(4,13,2,5,'#e8e2d2');R(6,10,9,2,'#fbf8ee');   /* le corps */
-  R(3,11,3,4,'#e0d8c4');R(2,12,2,2,'#d4ccb6');                          /* la queue */
-  R(15,7,5,6,'#f8f4e8');R(14,9,2,4,'#f8f4e8');                          /* le cou et la tête */
-  R(19,10,3,2,'#e8a030');R(21,10,1,1,'#d88a1a');                        /* le bec */
-  R(17,8,1,1,'#1a1a1a');
-  R(16,4,2,3,'#c8352a');R(15,5,1,2,'#c8352a');R(18,5,1,2,'#c8352a');     /* la crête */
-  R(16,12,2,2,'#c8352a');                                               /* les barbillons */
+  R(5,11,12,8,'#f6f2e6');R(4,13,2,5,'#e8e2d2');R(6,10,9,2,'#fbf8ee');
+  R(3,11,3,4,'#e0d8c4');R(2,12,2,2,'#d4ccb6');
+  R(15,7,5,6,'#f8f4e8');R(14,9,2,4,'#f8f4e8');
+  R(19,10,3,2,'#e8a030');R(21,10,1,1,'#d88a1a');R(17,8,1,1,'#1a1a1a');
+  R(16,4,2,3,'#c8352a');R(15,5,1,2,'#c8352a');R(18,5,1,2,'#c8352a');R(16,12,2,2,'#c8352a');
   R(8,19,2,4,'#e8a030');R(13,19,2,4,'#e8a030');R(7,22,4,1,'#d88a1a');R(12,22,4,1,'#d88a1a');
-  for(let k=0;k<7;k++)R(6+k*1.4,13+((k%2)?1:0),1,1,'#e4dccb');          /* le plumage */
+  for(let k=0;k<7;k++)R(6+k*1.4,13+((k%2)?1:0),1,1,'#e4dccb');
  }else if(quoi==='mouton'){
-  for(let k=0;k<9;k++)R(4+k*1.5,8+((k%2)?0:-1),3,3,'#f8f5ec');          /* la laine, bosse à bosse */
+  for(let k=0;k<9;k++)R(4+k*1.5,8+((k%2)?0:-1),3,3,'#f8f5ec');
   R(4,10,14,9,'#f4f0e4');R(3,12,2,5,'#e6e1d2');
   for(let k=0;k<10;k++)R(5+(k*2.7)%12,11+((k*5)%7),2,2,'#eae5d6');
-  R(16,8,5,6,'#32323a');R(20,10,2,2,'#2a2a30');                          /* la tête */
-  R(19,10,1,1,'#f4f4f4');R(15,7,2,2,'#2a2a30');R(20,7,1,2,'#2a2a30');
+  R(16,8,5,6,'#32323a');R(20,10,2,2,'#2a2a30');R(19,10,1,1,'#f4f4f4');
+  R(15,7,2,2,'#2a2a30');R(20,7,1,2,'#2a2a30');
   R(6,19,2,4,'#32323a');R(14,19,2,4,'#32323a');R(10,19,2,4,'#3a3a44');
  }else{
-  R(4,10,15,9,'#eaa0ae');R(3,12,2,5,'#dc8e9e');                          /* le corps */
+  R(4,10,15,9,'#eaa0ae');R(3,12,2,5,'#dc8e9e');
   for(let k=0;k<8;k++)R(6+(k*2.3)%12,12+((k*3)%6),1,1,'#f0b0bc');
-  R(17,8,6,7,'#eaa0ae');                                                 /* la tête */
-  R(22,10,3,3,'#d8808e');R(23,11,1,1,'#b06070');R(24,11,1,1,'#b06070');  /* le groin */
-  R(20,10,1,1,'#1a1a1a');
-  R(17,6,2,3,'#e090a0');R(21,6,2,3,'#e090a0');                           /* les oreilles */
-  R(2,10,1,2,'#dc8e9e');R(1,11,1,2,'#dc8e9e');R(2,13,1,1,'#dc8e9e');     /* la queue en tire-bouchon */
-  R(6,19,3,4,'#dc8e9e');R(14,19,3,4,'#dc8e9e');
-  R(6,22,3,1,'#9a5a68');R(14,22,3,1,'#9a5a68');
+  R(17,8,6,7,'#eaa0ae');R(22,10,3,3,'#d8808e');R(23,11,1,1,'#b06070');R(24,11,1,1,'#b06070');
+  R(20,10,1,1,'#1a1a1a');R(17,6,2,3,'#e090a0');R(21,6,2,3,'#e090a0');
+  R(2,10,1,2,'#dc8e9e');R(1,11,1,2,'#dc8e9e');R(2,13,1,1,'#dc8e9e');
+  R(6,19,3,4,'#dc8e9e');R(14,19,3,4,'#dc8e9e');R(6,22,3,1,'#9a5a68');R(14,22,3,1,'#9a5a68');
  }}
+/* L'ENCLOS : son décor, et les bêtes qu'on y a vraiment. */
+function bcEnclos(cv,quoi,nb){
+ const W=195, H=Math.max(74,Math.min(150,Math.round(W*(cv.clientHeight||100)/Math.max(1,cv.clientWidth||390))));
+ cv.width=W;cv.height=H;
+ const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+ const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+ const h2=(x,y,s)=>{let n=Math.sin(x*12.9898+y*78.233+s*37.7)*43758.5453;return n-Math.floor(n);};
+ const sol=Math.round(H*0.42);
+ if(quoi==='poule'){
+  for(let y=0;y<sol;y++)for(let x=0;x<W;x++){const b=Math.floor(x/11),n=h2(x>>1,y>>1,3);
+   let c=(b%2)?'#7a5836':'#6a4a2c';if(n>.8)c='#8a6640';if(x%11===0)c='#3a2616';R(x,y,1,1,c);}
+  R(W-80,Math.round(H*0.1),34,Math.round(H*0.3),'#3a2616');
+  R(W-76,Math.round(H*0.14),26,Math.round(H*0.22),'#1e1812');R(W-76,Math.round(H*0.14),26,3,'#5a4228');
+  R(0,sol,W,H-sol,'#c8a254');
+  for(let i=0;i<260;i++){const x=h2(i,1,7)*W,y=sol+h2(i,2,7)*(H-sol);R(x,y,2+h2(i,3,7)*3,1,h2(i,4,7)>.5?'#d8b468':'#b08c42');}
+  for(let i=0;i<Math.min(7,nb+1);i++)R(W-52+i*4,H-11+((i%2)?2:0),3,3,'#f0ead8');
+ }else if(quoi==='mouton'){
+  const ciel=Math.round(H*0.34);
+  for(let y=0;y<ciel;y++)for(let x=0;x<W;x++)R(x,y,1,1,y<ciel*0.4?'#a8cde0':(y<ciel*0.76?'#c4dce8':'#d8e6ea'));
+  for(let i=0;i<10;i++){const x=h2(i,1,9)*W;R(x,ciel*0.5+h2(i,2,9)*8,10+h2(i,3,9)*16,5,'#8aa86a');}
+  for(let y=ciel;y<H;y++)for(let x=0;x<W;x++){const n=h2(x>>1,y>>1,5);R(x,y,1,1,n>.72?'#86a84e':(n>.4?'#729442':'#5f7f38'));}
+  R(0,ciel-1,W,2,'#4a6a2e');
+  for(let x=6;x<W;x+=24)R(x,ciel-14,3,16,'#8a6a40');
+  R(0,ciel-11,W,3,'#9a7a50');R(0,ciel-3,W,3,'#9a7a50');
+ }else{
+  const haut=Math.round(H*0.28);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const n=h2(x>>1,y>>1,11);
+   R(x,y,1,1,y<haut?(n>.6?'#4e3a22':'#3e2e1a'):(n>.7?'#8a6a44':(n>.4?'#7a5c38':'#6a4e2e')));}
+  for(let i=0;i<46;i++){const x=h2(i,2,4)*W,y=haut+6+h2(i,3,4)*(H-haut-10);R(x,y,5+h2(i,4,4)*7,2,'#5a4228');}
+  for(let i=0;i<9;i++){const x=10+i*22;R(x,4,4,haut-4,'#6a4a2a');R(x,4,4,2,'#8a6a40');}
+  R(0,haut*0.4,W,3,'#7a5a34');R(0,haut*0.8,W,3,'#7a5a34');
+  for(let i=0;i<8;i++)R(W-46+h2(i,5,3)*34,H-30+h2(i,6,3)*24,4,3,'#2a1a12');
+ }
+ /* LES BÊTES QU'ON A : jusqu'à quatre, de la plus proche à la plus loin */
+ const n=Math.max(0,Math.min(3,nb|0));
+ /* elles vivent dans la moitié droite : la gauche appartient au texte */
+ const POS=[[0.80,0.80,1.30],[0.60,0.66,1.00],[0.93,0.62,0.80]];
+ for(let i=n-1;i>=0;i--){const [px,py,s]=POS[i];
+  g.save();g.translate(W*px-13*1.4*s, H*py-22*1.4*s);g.globalAlpha=i>1?0.82:1;
+  bcBete(g,1.4*s,quoi);g.restore();}
+ if(!n){g.fillStyle='rgba(8,12,6,.35)';g.fillRect(0,0,W,H);}
+}
 function bcPeindre(){
  const f=$('page2Fond');if(!f||!$('page2').classList.contains('on'))return;
  const E=BC_ETAT||{};
- const sous=E.poulailler===0?'« Ton poulailler n’est pas bâti : va voir au chantier avant de prendre des poules. »'
-  :'« Entre donc. J’ai de la volaille, du mouton et du cochon. »';
- const L=BC_LOTS.find(l=>l[0]===BC_SEL)||BC_LOTS[0];
- const prix=E[L[4]], nb=E[L[2]]||0, max=E[L[3]]||0;
- const bloque=BC_OCC||prix==null||(BC_SEL==='poule'&&!E.poulailler)||(typeof E.euros==='number'&&E.euros<prix);
+ const L=BC_LOTS.find(l=>l[0]===BC_SEL)||BC_LOTS[2];
+ const prix=E[L[4]], sansPoul=(BC_SEL==='poule'&&E.poulailler===0);
+ const cher=(typeof E.euros==='number'&&prix!=null&&E.euros<prix);
+ const bloque=BC_OCC||prix==null||sansPoul||cher||BC_ETAT===null;
  f.innerHTML='<div id="bc" lang="fr"><div class="bhd"><div class="bti">LA FERME · LA MAISON</div>'+
   '<h1>La <i>basse-cour</i></h1><button class="bx" id="bcX" aria-label="Fermer">✕</button>'+
-  '<span class="bour">EN POCHE<b>'+enEuros(E.euros||0)+'</b></span></div>'+
-  '<div class="bdit">'+sous+'</div><div class="bcorps">'+
-  BC_LOTS.map(([k,nom,cn,cm,cp,mot])=>{const p=E[cp],n=E[cn]||0,m=E[cm]||0,
-    plein=(p==null)||(k==='poule'&&!E.poulailler&&E.poulailler!==undefined);
-   return '<button class="bl'+(plein?' plein':'')+(k===BC_SEL?' on':'')+'" data-bc="'+k+'">'+
-    '<canvas data-be="'+k+'"></canvas><span class="bn"><b>'+nom+'</b>'+
-    '<em>'+n+' sur '+m+' · '+mot+'</em></span>'+
-    '<span class="bp">'+(p==null?'au complet':enEuros(p))+'</span></button>';}).join('')+
-  '<button class="bach" id="bcAch"'+(bloque?' disabled':'')+'>'+
-   (BC_OCC?'On s’arrange…':(prix==null?'Au complet':
-    ((BC_SEL==='poule'&&!E.poulailler)?'Il faut d’abord le poulailler':
-     ((typeof E.euros==='number'&&E.euros<prix)?'Pas assez en poche':'Acheter '+({poule:'une poule',mouton:'un mouton',cochon:'un cochon'})[BC_SEL]+' · '+enEuros(prix)))))+
-  '</button>'+
-  '<p class="bnote">Les poules pondent au poulailler, les moutons et les cochons vivent à l’enclos.</p>'+
-  '</div></div>';
- f.querySelectorAll('[data-be]').forEach(c=>{try{bcBete(c,c.dataset.be);}catch(x){}});
+  '<div class="bour">EN POCHE<b>'+enEuros(E.euros||0)+'</b></div></div>'+
+  BC_LOTS.map(([k,nom,cn,cm,cp,mot,maj])=>{
+   const p=E[cp], n=E[cn]||0, m=E[cm]||0, vide=(k==='poule'&&E.poulailler===0);
+   return '<button class="benc'+(k===BC_SEL?' on':'')+((p==null||vide)?' plein':'')+'" data-bc="'+k+'">'+
+    '<canvas data-be="'+k+'"></canvas><span class="bvoile"></span>'+
+    '<span class="btxt"><b>'+nom+'</b><em>'+(vide?'il faut d’abord bâtir le poulailler':mot)+'</em>'+
+    '<span class="bcpt">'+n+' '+maj+(n>1?'S':'')+' SUR '+m+'</span></span>'+
+    '<span class="bpx'+((p==null||vide)?' gris':'')+'">'+(vide?'fermé':(p==null?'au complet':enEuros(p)))+'</span>'+
+   '</button>';}).join('')+
+  '<div class="bpied"><button class="bach" id="bcAch"'+(bloque?' disabled':'')+'>'+
+   (BC_OCC?'On s’arrange…':(BC_ETAT===null?'…':(sansPoul?'Il faut d’abord le poulailler':
+    (prix==null?'Au complet':(cher?'Pas assez en poche':
+     'Acheter '+({poule:'une poule',mouton:'un mouton',cochon:'un cochon'})[BC_SEL]+' · '+enEuros(prix))))))+
+  '</button></div></div>';
+ f.querySelectorAll('[data-be]').forEach(c=>{const l=BC_LOTS.find(x=>x[0]===c.dataset.be);
+  try{bcEnclos(c,c.dataset.be,E[l[2]]||0);}catch(x){}});
  $('bcX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
  f.querySelectorAll('[data-bc]').forEach(b=>b.onclick=()=>{BC_SEL=b.dataset.bc;jouer('clic');vibrer(8);bcPeindre();});
  $('bcAch').onclick=async()=>{

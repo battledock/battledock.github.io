@@ -396,3 +396,12 @@ where niveau = 29;
      (ouvre:'bassecour'). Le semeur tourne avant le chargement de
      ferme.js, il refait donc son calcul de position au lieu de s'y fier.
 */
+
+/* 2026-10-23 · la basse-cour, deuxième version (jeu seulement).
+   Trois bandes illustrées plein écran — le poulailler, le pré, la soue —
+   au lieu de trois lignes de liste. Chaque bande peint son décor et
+   JUSQU'À TROIS BÊTES RÉELLES, tirées du compte du joueur : on voit son
+   cheptel, pas une vignette. La toile prend la forme exacte de sa bande
+   (hauteur calculée au moment de peindre) pour ne pas étirer les pixels.
+   Bande grisée et « au complet » quand l'enclos est plein ; « fermé »
+   et « il faut d'abord bâtir le poulailler » tant qu'il n'est pas là. */
