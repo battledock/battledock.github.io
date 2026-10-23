@@ -144,6 +144,19 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
 #fmAct button span{font-size:26px;line-height:1}
 #fmAct button small{font:400 10px 'Lilita One',sans-serif;color:#24406a}
 #fmAct button.pris{opacity:1;background:linear-gradient(#fff6b0,#ffd84a);box-shadow:0 4px 0 #b08a10,0 0 0 3px #fff;transform:scale(1.06)}
+#frAct{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);z-index:6;display:none;flex-direction:row;justify-content:center;gap:7px;pointer-events:none}
+#frAct.on{display:flex}
+#jeu.fige #frAct{display:none}
+#frAct button{pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent;width:52px;height:46px;border:0;border-radius:15px;
+  background:linear-gradient(#fff,#d8e4f2);box-shadow:0 4px 0 #7a8ea8;display:grid;place-items:center;opacity:.8;
+  font:400 15px 'Lilita One',sans-serif;color:#24406a;user-select:none;-webkit-user-select:none}
+#frAct button:active{transform:translateY(2px);box-shadow:0 2px 0 #7a8ea8}
+#frAct button.pris{opacity:1;background:linear-gradient(#bfe4ff,#3aa8ff);color:#06243c;box-shadow:0 4px 0 #1d6ad0,0 0 0 3px #fff}
+#frAct button.mi{width:58px;background:conic-gradient(rgba(255,255,255,.85) calc(var(--p,0) * 360deg),rgba(20,40,60,.9) 0);color:#fff;box-shadow:0 4px 0 #3a4a60}
+#frAct button.mi span{font-size:21px;line-height:1;filter:grayscale(1) opacity(.55)}
+#frAct button.mi.pret span{filter:none}
+#frAct button.mi.pret{box-shadow:0 4px 0 #b06a00,0 0 0 3px #ffd21f}
+#frAct button.mi.pris{background:linear-gradient(#ffe24a,#ffb000)}
 #hgAct button{pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent;position:relative;border:0;border-radius:50%;color:#fff;font:800 9px ui-monospace,monospace;letter-spacing:.5px;
  background:conic-gradient(rgba(255,255,255,.08) calc(var(--p,1) * 360deg),rgba(0,0,0,.55) 0);box-shadow:inset 0 0 0 2px rgba(255,255,255,.25);display:grid;place-items:center;user-select:none;-webkit-user-select:none}
 #hgAct #hgRoule{width:76px;height:76px;background-color:rgba(40,120,200,.45)}
@@ -656,6 +669,10 @@ var VIGNETTE={
 };
 
 var BORNES=[
+ {cle:'france', vig:'france', nom:'La Conquête',
+  dit:'La France en treize régions, et trois rivaux dessus. Tu ne déplaces rien : tu choisis quelle part de tes troupes tu envoies, et sur qui. Pactes, débarquements, une fusée. Record : le temps pour tout prendre.',
+  court:'Prends les 13 régions le plus vite possible.',
+  mise:'1 JETON · AU CHRONO', tag:'★ NOUVEAU'},
  {cle:'hangar', vig:'hangar', nom:'Le Hangar',
   dit:'Le port envahi : huit zones, des boss, seize armes. Ça tire tout seul — toi tu bouges, tu roules, tu lances la grenade. La sortie change de mur à chaque salle. 10 000 € toutes les 10 salles.',
   court:'Survis aux zombies du port. 10 000 € toutes les 10 salles.',
@@ -712,7 +729,8 @@ document.getElementById('retour').onclick=function(){
     var r=await rpc('arcade_classement',{p_borne:B.cle});
     if(!r||r.erreur||!r.length)continue;
     var el=document.querySelector('[data-rec="'+B.cle+'"]');
-    if(el)el.textContent='RECORD '+r[0].score.toLocaleString('fr-FR')+' · '+r[0].pseudo.toUpperCase();
+    var sc0=(B.cle==='france'&&typeof frScoreTexte==='function')?frScoreTexte(r[0].score):r[0].score.toLocaleString('fr-FR');
+    if(el)el.textContent='RECORD '+sc0+' · '+r[0].pseudo.toUpperCase();
   }
   /* TON RANG ET TES DEFIS, sous la carte du Hangar et en haut de la salle */
   try{var me=await rpc('arcade_record',{p_borne:'hangar'});if(me&&typeof me.score==='number'){var em=document.querySelector('[data-moi="hangar"]');
@@ -4659,6 +4677,13 @@ function ouvrirBorne(B){
      armes sont deja debloquees. La page ne le calcule pas, elle le
      demande. */
   fmBoutons();
+  if(B.cle==='france'){
+    frBoutons();
+    (async function(){
+      try{var rf=await rpc('arcade_record',{p_borne:'france'});
+          if(rf&&typeof rf.score==='number'&&rf.score>0)FR_REC_MS=FR_PLAFOND-rf.score*10;}catch(e){}
+    })();
+  }
   if(B.cle==='ferme'){MNU_ONG='jouer';mnuOuvrir();fmCharger();}
   if(B.cle==='hangar'){
     mnuOuvrir();
@@ -4778,8 +4803,11 @@ async function chargerClassement(cle){
   REC={score:r[0].score, pseudo:r[0].pseudo};
   var h='';
   r.slice(0,8).forEach(function(l,i){
+    /* LA CONQUETE SE COMPTE EN TEMPS : le score stocke est le temps qui
+       restait, on le remet a l'endroit pour l'afficher. */
+    var sc=(cle==='france'&&typeof frScoreTexte==='function')?frScoreTexte(l.score):l.score.toLocaleString('fr-FR');
     h+='<div class="l'+(l.joueur===MOI?' moi':'')+'">'+
-       '<i>'+(i+1)+'</i><u>'+l.pseudo+'</u><b>'+l.score.toLocaleString('fr-FR')+'</b></div>';
+       '<i>'+(i+1)+'</i><u>'+l.pseudo+'</u><b>'+sc+'</b></div>';
   });
   JCLS.innerHTML='<div class="t">LE TABLEAU DE LA BORNE</div>'+h;
 }
@@ -4801,6 +4829,499 @@ window.addEventListener('orientationchange',function(){
     }
   }catch(x){}
 })();
+
+/* =====================================================================
+   LA CONQUÊTE — la France en treize régions
+   Une borne de conquête au doigt, dans l'esprit d'OpenFront. On ne
+   deplace rien : on choisit QUELLE PART de ses troupes on envoie, et sur
+   QUI. Tout le jeu est dans ce dosage — trop peu et l'assaut casse, trop
+   et l'on se retrouve a nu derriere.
+
+   LE BUT EST LE CHRONO. Prendre les treize regions le plus vite
+   possible ; le score est le temps qui restait. Une partie perdue ou
+   abandonnee ne rapporte que les regions tenues, donc toujours moins
+   qu'une victoire.
+
+   TROIS RIVAUX. Ils proposent des pactes, les tiennent un moment, puis
+   te plantent — c'est ce qui fait le sel du jeu d'origine.
+   ===================================================================== */
+var FR_CO=[
+  {n:'TOI',       c:'#3aa8ff', c2:'#1d6ad0'},
+  {n:'LES ROUGES',c:'#ff4f5a', c2:'#b02030'},
+  {n:'LES JAUNES',c:'#ffc83a', c2:'#b07a00'},
+  {n:'LES VIOLETS',c:'#9a6ad0',c2:'#5a3a8a'}
+];
+var FR_NEUTRE={c:'#7c8a9c', c2:'#46525f'};
+/* Les treize regions, dessinees dans un carre de 100 sur 100.
+   v : les voisines par terre. mer : on peut y debarquer en bateau. */
+var FR_REG=[
+ {k:'hdf',n:'HAUTS-DE-FRANCE',ct:'H-DE-F',pop:6.0,mer:1,v:['nor','idf','ges'],
+  p:[[34,14],[48,2],[70,4],[70,20],[54,16]]},
+ {k:'nor',n:'NORMANDIE',ct:'NORMANDIE',pop:3.3,mer:1,v:['hdf','idf','cvl','pdl','bre'],
+  p:[[26,22],[34,14],[54,16],[46,26],[40,36],[28,34]]},
+ {k:'idf',n:'ÎLE-DE-FRANCE',ct:'Î-DE-F',pop:12.3,mer:0,v:['hdf','nor','ges','cvl','bfc'],
+  p:[[54,16],[70,20],[58,30],[46,26]]},
+ {k:'ges',n:'GRAND EST',ct:'GRAND EST',pop:5.6,mer:0,v:['hdf','idf','bfc'],
+  p:[[70,4],[90,20],[86,42],[72,36],[70,20]]},
+ {k:'bre',n:'BRETAGNE',ct:'BRETAGNE',pop:3.4,mer:1,v:['nor','pdl'],
+  p:[[2,38],[10,26],[26,22],[28,34],[18,44]]},
+ {k:'pdl',n:'PAYS DE LA LOIRE',ct:'P. LOIRE',pop:3.9,mer:1,v:['bre','nor','cvl','naq'],
+  p:[[28,34],[40,36],[30,48],[14,50],[18,44]]},
+ {k:'cvl',n:'CENTRE-VAL DE LOIRE',ct:'CENTRE',pop:2.6,mer:0,v:['nor','idf','pdl','naq','ara','bfc'],
+  p:[[40,36],[46,26],[58,30],[48,44],[44,56],[30,48]]},
+ {k:'bfc',n:'BOURGOGNE-FRANCHE-COMTÉ',ct:'BOURGOGNE',pop:2.8,mer:0,v:['idf','ges','cvl','ara'],
+  p:[[58,30],[72,36],[86,42],[84,50],[62,52],[48,44]]},
+ {k:'naq',n:'NOUVELLE-AQUITAINE',ct:'AQUITAINE',pop:6.1,mer:1,v:['pdl','cvl','ara','occ'],
+  p:[[30,48],[44,56],[52,72],[28,88],[22,84],[14,64],[14,50]]},
+ {k:'ara',n:'AUVERGNE-RHÔNE-ALPES',ct:'RHÔNE-ALPES',pop:8.1,mer:0,v:['cvl','bfc','naq','occ','pac'],
+  p:[[48,44],[62,52],[84,50],[84,62],[66,74],[52,72],[44,56]]},
+ {k:'occ',n:'OCCITANIE',ct:'OCCITANIE',pop:6.0,mer:1,v:['naq','ara','pac'],
+  p:[[52,72],[66,74],[60,82],[48,94],[34,92],[28,88]]},
+ {k:'pac',n:"PROVENCE-ALPES-CÔTE D'AZUR",ct:'PROVENCE',pop:5.1,mer:1,v:['ara','occ'],
+  p:[[66,74],[84,62],[86,74],[78,86],[62,90],[60,82]]},
+ {k:'cor',n:'CORSE',ct:'CORSE',pop:0.35,mer:1,v:[],
+  p:[[86,84],[95,87],[96,99],[88,100]]}
+];
+var FR_IX={};FR_REG.forEach(function(R,i){FR_IX[R.k]=i;});
+var FR_PCT=[25,50,75,100];
+var FR_REC_MS=0;            /* le meilleur temps du joueur, lu au comptoir */
+
+/* le point est-il dans le polygone ? (lancer de rayon) */
+function frDedans(P,x,y){
+  var d=false;
+  for(var i=0,j=P.length-1;i<P.length;j=i++){
+    if(((P[i][1]>y)!==(P[j][1]>y))&&
+       (x<(P[j][0]-P[i][0])*(y-P[i][1])/(P[j][1]-P[i][1])+P[i][0]))d=!d;
+  }
+  return d;
+}
+function frCentre(P){
+  var x=0,y=0;for(var i=0;i<P.length;i++){x+=P[i][0];y+=P[i][1];}
+  return [x/P.length,y/P.length];
+}
+function frChrono(ms){
+  var s=Math.max(0,Math.floor(ms/1000));
+  return Math.floor(s/60)+':'+('0'+(s%60)).slice(-2);
+}
+/* LE SCORE EST UN TEMPS. On garde le tableau des scores tel qu'il est
+   (le plus grand gagne) en posant le temps qui restait sur sept
+   minutes, en dixiemes. Une victoire en 3:00 vaut donc 24 000. */
+var FR_PLAFOND=420000, FR_MINI=10000;
+function frScore(s){
+  /* UNE VICTOIRE VAUT TOUJOURS PLUS QU'UNE PARTIE LACHEE, et se lit
+     comme un temps : au-dessus de FR_MINI, le score EST un chrono. En
+     dessous, ce sont des regions tenues. Les deux ne peuvent donc pas
+     se confondre dans le tableau. */
+  if(!s.gagne)return Math.min(FR_MINI-1,Math.round(frTiens(s,0)*250));
+  return Math.round((FR_PLAFOND-Math.min(320000,s.ms))/10);
+}
+function frScoreTexte(sc){
+  if(sc<=0)return '—';
+  if(sc<FR_MINI)return Math.round(sc/250)+' rég.';
+  return frChrono(FR_PLAFOND-sc*10);
+}
+function frTiens(s,e){var n=0;for(var i=0;i<s.r.length;i++)if(s.r[i].o===e)n++;return n;}
+function frPop(s,e){var p=0;for(var i=0;i<s.r.length;i++)if(s.r[i].o===e)p+=FR_REG[i].pop;return p;}
+function frPlein(s,e){return 45+24*frPop(s,e);}
+/* CE QU'IL FAUT POUR PRENDRE UNE REGION : sa garnison, plus le quart du
+   tresor de celui qui la tient. C'est ce quart qui punit le joueur qui
+   vide tout dans un seul assaut. */
+function frBesoin(s,i){
+  var R=s.r[i], b=R.d;
+  if(R.o>=0)b+=0.2*s.e[R.o].tr;
+  return Math.max(1,Math.round(b));
+}
+function frVoisine(s,e,i){
+  var R=FR_REG[i];
+  for(var k=0;k<R.v.length;k++)if(s.r[FR_IX[R.v[k]]].o===e)return true;
+  return false;
+}
+/* par bateau : il faut une cote a soi et une cote en face */
+function frBateau(s,e,i){
+  if(!FR_REG[i].mer)return false;
+  for(var j=0;j<s.r.length;j++)if(s.r[j].o===e&&FR_REG[j].mer)return true;
+  return false;
+}
+function frCible(s,e,i){
+  if(s.r[i].o===e)return 0;
+  if(frVoisine(s,e,i))return 1;
+  if(frBateau(s,e,i))return 2;
+  return 0;
+}
+
+MOTEUR.france={
+  nom:'La Conquête', sous:'13 RÉGIONS · PRENDS TOUT LE PLUS VITE',
+  manches:null, vise:150,
+  init:function(){
+    return {phase:'pret',t:0,ms:0,score:0,r:[],e:[],as:[],part:[],
+            pct:1,mi:0,viseMi:false,pacte:null,mot:'',motT:0,sel:-1,
+            gagne:false,L:150,H:300,mx:0,my:0,ms0:1,fin:0};
+  },
+  /* la carte tient toujours en entier : on la recadre a chaque mesure */
+  cadre:function(s,L,H){
+    s.L=L;s.H=H;
+    var haut=34, bas=30;
+    /* LA FRANCE EST CARREE, L'ECRAN NE L'EST PAS. On l'etire un peu en
+       hauteur plutot que de laisser deux bandes de mer : les regions
+       deviennent plus grandes sous le pouce, et l'Hexagone se reconnait
+       toujours. */
+    var dispo=H-haut-bas, kx=(L-8)/100, ky=Math.min(dispo/100,kx*1.34);
+    s.ms0=kx;s.mx=Math.round((L-100*kx)/2);s.my=Math.round(haut+(dispo-100*ky)/2);
+    for(var i=0;i<FR_REG.length;i++){
+      var P=FR_REG[i].p, q=[];
+      for(var j=0;j<P.length;j++)q.push([s.mx+P[j][0]*kx,s.my+P[j][1]*ky]);
+      if(!s.r[i])s.r[i]={};
+      s.r[i].q=q;
+      var c=frCentre(q);s.r[i].cx=c[0];s.r[i].cy=c[1];
+    }
+  },
+  demarrer:function(s){
+    s.ms=0;s.t=0;s.as=[];s.part=[];s.pct=1;s.mi=0;s.viseMi=false;
+    s.pacte=null;s.gagne=false;s.fin=0;s.sel=-1;s.pactT=18000;
+    /* les garnisons neutres sortent de la population reelle : l'Ile-de-France
+       est un mur, la Corse une promenade */
+    s.r=[];for(var i=0;i<FR_REG.length;i++)
+      s.r.push({o:-1,d:Math.round(14+FR_REG[i].pop*6),q:(s.r[i]&&s.r[i].q)||[],cx:0,cy:0,fl:0});
+    s.e=[];for(var e=0;e<4;e++)s.e.push({tr:e===0?92:56,pense:3000+e*1400,allie:0,hum:0});
+    /* quatre coins pour quatre empires : personne ne demarre collé */
+    var deps=['bre','ges','pac','naq'];
+    var o=Math.floor(Math.random()*4);
+    for(var k=0;k<4;k++){
+      var i2=FR_IX[deps[(o+k)%4]];
+      s.r[i2].o=k;s.r[i2].d=Math.round(10+FR_REG[i2].pop*2.2);
+    }
+    this.cadre(s,s.L||SL||150,s.H||SH||300);
+    s.mot='PRENDS LES 13 RÉGIONS';s.motT=2200;
+    frBoutons();
+  },
+  fige:function(s){return !!(s&&s.pacte);},
+
+  /* ================= LE JEU ================= */
+  pas:function(s,dt){
+    if(s.phase!=='jeu'){s.t+=dt;return;}
+    s.t+=dt;s.ms+=dt;
+    if(s.motT>0)s.motT-=dt;
+    if(s.pacte){s.pacte.t+=dt;if(s.pacte.t>9000)this.repondre(s,false);return;}
+    /* les tresors montent avec le territoire */
+    for(var e=0;e<4;e++){
+      var E=s.e[e], pp=frPop(s,e);
+      if(frTiens(s,e)===0){E.tr=0;continue;}
+      E.tr=Math.min(frPlein(s,e),E.tr+dt*0.001*(1.0+0.8*pp)*(e?0.98:1));
+      if(E.allie>0)E.allie-=dt;
+    }
+    /* les garnisons se reconstituent doucement */
+    for(var i=0;i<s.r.length;i++){
+      var R=s.r[i];if(R.fl>0)R.fl-=dt;
+      if(R.o<0)continue;
+      var dm=10+FR_REG[i].pop*3;
+      if(R.d<dm)R.d=Math.min(dm,R.d+dt*0.0011*(1+FR_REG[i].pop));
+    }
+    /* la fusée se charge */
+    if(s.mi<1)s.mi=Math.min(1,s.mi+dt/52000);
+    /* les assauts en route */
+    for(var a=s.as.length-1;a>=0;a--){
+      var A=s.as[a];A.t+=dt;
+      if(A.t>=A.duree){this.resoudre(s,A);s.as.splice(a,1);}
+    }
+    /* les cerveaux rivaux */
+    for(var e2=1;e2<4;e2++){
+      var E2=s.e[e2];E2.pense-=dt;
+      if(E2.pense<=0){E2.pense=1500+Math.random()*1200;this.penser(s,e2);}
+    }
+    /* les propositions de pacte */
+    s.pactT-=dt;
+    if(s.pactT<=0){
+      s.pactT=26000+Math.random()*14000;
+      var libres=[];
+      for(var e3=1;e3<4;e3++)if(frTiens(s,e3)>0&&s.e[e3].allie<=0&&!s.e[e3].hum)libres.push(e3);
+      if(libres.length&&frTiens(s,0)>0&&!s.gagne)
+        s.pacte={e:libres[Math.floor(Math.random()*libres.length)],t:0};
+    }
+    frMajBoutons();
+    /* les étincelles */
+    for(var p=s.part.length-1;p>=0;p--){var P=s.part[p];P.t+=dt;P.x+=P.vx*dt;P.y+=P.vy*dt;if(P.t>P.vie)s.part.splice(p,1);}
+    /* a-t-on fini ? */
+    if(!s.fin){
+      if(frTiens(s,0)===s.r.length){s.gagne=true;this.terminer(s);}
+      else if(frTiens(s,0)===0&&!s.as.some(function(A){return A.e===0;}))this.terminer(s);
+    }
+  },
+  terminer:function(s){
+    s.fin=1;s.phase='fini';s.score=frScore(s);
+    s.mot=s.gagne?('LA FRANCE EST À TOI · '+frChrono(s.ms)):'TU N’AS PLUS RIEN';
+    s.motT=4000;
+    if(s.gagne&&(!FR_REC_MS||s.ms<FR_REC_MS))FR_REC_MS=s.ms;
+    frBoutons();
+    if(typeof finirPartie==='function')finirPartie(s.score);
+  },
+  /* un assaut part : on sort les troupes tout de suite, elles mettent le
+     temps du voyage a arriver */
+  lancer:function(s,e,i,env,mer){
+    if(env<1)return;
+    s.e[e].tr=Math.max(0,s.e[e].tr-env);
+    var de=null;
+    for(var j=0;j<s.r.length;j++)if(s.r[j].o===e){
+      if(!de||Math.hypot(s.r[j].cx-s.r[i].cx,s.r[j].cy-s.r[i].cy)<Math.hypot(de.cx-s.r[i].cx,de.cy-s.r[i].cy))de=s.r[j];
+    }
+    s.as.push({e:e,i:i,n:Math.round(env),t:0,duree:mer?1500:800,mer:!!mer,
+               x0:de?de.cx:s.r[i].cx,y0:de?de.cy:s.r[i].cy});
+  },
+  resoudre:function(s,A){
+    var R=s.r[A.i], bes=frBesoin(s,A.i), force=A.mer?A.n*0.8:A.n;
+    var vic=s.r[A.i].o!==A.e&&force>bes;
+    if(R.o>=0)s.e[R.o].tr=Math.max(0,s.e[R.o].tr-Math.min(s.e[R.o].tr,A.n*0.3));
+    if(vic){
+      var av=R.o;
+      R.o=A.e;R.d=Math.max(6,Math.round((force-bes)*0.5+8));R.fl=600;
+      if(A.e===0){
+        s.mot=FR_REG[A.i].ct+' EST À TOI';s.motT=1200;
+        try{navigator.vibrate&&navigator.vibrate(14);}catch(x){}
+      }else if(av===0){s.mot=FR_CO[A.e].n+' TE PRENNENT '+FR_REG[A.i].ct;s.motT=1600;}
+      for(var k=0;k<10;k++)s.part.push({x:R.cx,y:R.cy,vx:(Math.random()-0.5)*0.07,vy:(Math.random()-0.5)*0.07,t:0,vie:420,c:FR_CO[A.e].c});
+    }else{
+      R.d=Math.max(1,R.d-force*0.62);R.fl=400;
+      if(A.e===0){s.mot='ASSAUT CASSÉ · IL FALLAIT '+bes;s.motT=1500;}
+    }
+  },
+  /* ============ LES RIVAUX ============ */
+  penser:function(s,e){
+    if(frTiens(s,e)===0)return;
+    var E=s.e[e], best=-1, bb=1e9;
+    for(var i=0;i<s.r.length;i++){
+      var t=frCible(s,e,i);if(!t)continue;
+      if(s.r[i].o===0&&E.allie>0)continue;            /* un pacte tient */
+      if(s.r[i].o===0&&s.ms<25000)continue;           /* LES PREMIERES SECONDES SONT A TOI : un jeton qui
+                                                         meurt en dix secondes ne donne pas envie de rejouer */
+      var bes=frBesoin(s,i)*(t===2?1.3:1);
+      /* ils preferent le faible, et le joueur s'il mene */
+      if(s.r[i].o===0&&frTiens(s,0)>=frTiens(s,e))bes*=0.75;
+      if(s.r[i].o<0)bes*=0.9;
+      if(bes<bb){bb=bes;best=i;}
+    }
+    if(best<0)return;
+    var t1=frCible(s,e,best), bes1=frBesoin(s,best)*(t1===2?1.3:1);
+    if(E.tr<bes1*1.18)return;
+    var env=Math.min(E.tr*0.82,bes1*(1.28+Math.random()*0.3));
+    /* LA TRAHISON : on previent, c'est ce qui la rend supportable */
+    if(s.r[best].o===0&&E.allie>0)return;
+    if(s.r[best].o===0&&E.hum){E.hum=0;s.mot=FR_CO[e].n+' TE TRAHISSENT';s.motT=2000;}
+    this.lancer(s,e,best,env,t1===2);
+  },
+  /* ============ LE DOIGT ============ */
+  tape:function(s,x,y){
+    if(s.pacte){
+      var b=this.boutonsPacte(s);
+      if(x>=b.o.x&&x<=b.o.x+b.o.w&&y>=b.o.y&&y<=b.o.y+b.o.h)return this.repondre(s,true);
+      if(x>=b.n.x&&x<=b.n.x+b.n.w&&y>=b.n.y&&y<=b.n.y+b.n.h)return this.repondre(s,false);
+      return;
+    }
+    var i=-1;
+    for(var k=0;k<s.r.length;k++)if(frDedans(s.r[k].q,x,y)){i=k;break;}
+    if(i<0){s.sel=-1;return;}
+    if(s.viseMi){
+      if(s.mi<1)return;
+      s.mi=0;s.viseMi=false;
+      var R=s.r[i];R.d=Math.max(1,Math.round(R.d*0.25));R.fl=800;
+      if(R.o>0)s.e[R.o].tr=Math.max(0,s.e[R.o].tr*0.85);
+      s.mot='FRAPPE SUR '+FR_REG[i].ct;s.motT=1500;
+      for(var p=0;p<16;p++)s.part.push({x:R.cx,y:R.cy,vx:(Math.random()-0.5)*0.12,vy:(Math.random()-0.5)*0.12,t:0,vie:600,c:'#ffd21f'});
+      frBoutons();return;
+    }
+    var t=frCible(s,0,i);
+    if(!t){s.sel=i;s.mot=FR_REG[i].ct+' · '+Math.round(s.r[i].d)+' DE GARNISON';s.motT=1200;return;}
+    if(s.r[i].o>0&&s.e[s.r[i].o].allie>0&&s.e[s.r[i].o].hum){
+      s.e[s.r[i].o].allie=0;s.e[s.r[i].o].hum=0;
+      s.mot='PACTE ROMPU PAR TOI';s.motT=1400;
+    }
+    var env=Math.floor(s.e[0].tr*s.pct);
+    if(env<1){s.mot='PLUS DE TROUPES';s.motT=900;return;}
+    s.sel=i;
+    this.lancer(s,0,i,env,t===2);
+    try{navigator.vibrate&&navigator.vibrate(8);}catch(x2){}
+  },
+  boutonsPacte:function(s){
+    var L=s.L,w=Math.floor((L-26)/2),y=Math.round(s.H*0.56);
+    return {o:{x:9,y:y,w:w,h:22},n:{x:9+w+8,y:y,w:w,h:22}};
+  },
+  repondre:function(s,oui){
+    if(!s.pacte)return;
+    var e=s.pacte.e;s.pacte=null;
+    if(oui){s.e[e].allie=40000+Math.random()*18000;s.e[e].hum=1;s.mot='PACTE AVEC '+FR_CO[e].n;s.motT=1600;}
+    else{s.mot='PACTE REFUSÉ';s.motT=1200;}
+  },
+  actions:function(s){
+    if(!s||s.phase==='pret')return '<button class="pr" data-a="commencer">COMMENCER</button>';
+    if(s.phase==='fini')return '<button data-a="menu">LE MENU</button><button class="pr" data-a="rejouer">ENCORE · 1 €</button>';
+    return '';
+  },
+  action:function(s,a){if(a==='menu'&&typeof mnuOuvrir==='function')mnuOuvrir();},
+
+  /* ================= LE DESSIN ================= */
+  dessine:function(s,L,H){
+    if(!s.r.length||!s.r[0].q||!s.r[0].q.length)this.cadre(s,L,H);
+    /* la mer */
+    R(0,0,L,H,'#0b1f33');
+    for(var v=0;v<6;v++){var yy=(s.t*0.004+v*17)%(H+10);R(0,yy,L,1,'#102a44');}
+    /* les regions */
+    for(var i=0;i<s.r.length;i++){
+      var Rg=s.r[i], C=Rg.o<0?FR_NEUTRE:FR_CO[Rg.o];
+      var q=Rg.q;if(!q||!q.length)continue;
+      G.beginPath();G.moveTo(q[0][0],q[0][1]);
+      for(var j=1;j<q.length;j++)G.lineTo(q[j][0],q[j][1]);
+      G.closePath();
+      G.fillStyle=Rg.fl>0?'#ffffff':C.c;G.fill();
+      G.lineWidth=1;G.strokeStyle=C.c2;G.stroke();
+      if(s.sel===i){G.lineWidth=1;G.strokeStyle='#ffffff';G.stroke();}
+    }
+    /* les garnisons, en chiffres */
+    G.textAlign='center';G.textBaseline='middle';
+    for(var i2=0;i2<s.r.length;i2++){
+      var Rg2=s.r[i2], q2=Rg2.q;
+      var tx=''+Math.round(Rg2.o===0?Rg2.d:frBesoin(s,i2));
+      /* LE NOM AU-DESSUS DU CHIFFRE quand la region est assez large pour
+         le porter : sans lui, on attaque une tache de couleur. */
+      var x1=1e9,x2=-1e9,y1=1e9,y2=-1e9;
+      for(var v=0;v<q2.length;v++){x1=Math.min(x1,q2[v][0]);x2=Math.max(x2,q2[v][0]);y1=Math.min(y1,q2[v][1]);y2=Math.max(y2,q2[v][1]);}
+      if(x2-x1>24&&y2-y1>17){
+        G.font='700 5px "Baloo 2", system-ui, sans-serif';
+        G.fillStyle='rgba(0,0,0,.5)';G.fillText(FR_REG[i2].ct,Rg2.cx,Rg2.cy-5);
+        G.fillStyle='rgba(255,255,255,.8)';G.fillText(FR_REG[i2].ct,Rg2.cx,Rg2.cy-6);
+      }
+      G.font='700 8px "Baloo 2", system-ui, sans-serif';
+      G.fillStyle='rgba(0,0,0,.45)';G.fillText(tx,Rg2.cx,Rg2.cy+2);
+      G.fillStyle='#fff';G.fillText(tx,Rg2.cx,Rg2.cy+1);
+    }
+    /* les assauts en vol */
+    for(var a=0;a<s.as.length;a++){
+      var A=s.as[a], k=A.t/A.duree, R2=s.r[A.i];
+      var x=A.x0+(R2.cx-A.x0)*k, y=A.y0+(R2.cy-A.y0)*k;
+      G.strokeStyle=FR_CO[A.e].c;G.lineWidth=1;
+      G.beginPath();G.moveTo(A.x0,A.y0);G.lineTo(x,y);G.stroke();
+      disque(x,y,A.mer?2.5:2,FR_CO[A.e].c);
+      disque(x,y,1,'#fff');
+      if(A.e===0){G.font='700 6px "Baloo 2", system-ui, sans-serif';G.fillStyle='#fff';G.fillText(A.n,x,y-5);}
+    }
+    /* les etincelles */
+    for(var p=0;p<s.part.length;p++){var P=s.part[p];R(P.x,P.y,1,1,P.c);}
+    /* ---- le bandeau du haut ---- */
+    R(0,0,L,32,'rgba(4,10,18,.82)');R(0,32,L,1,'rgba(90,216,255,.25)');
+    G.textAlign='left';
+    G.font='400 11px "Lilita One", system-ui, sans-serif';
+    G.fillStyle='#fff';G.fillText(frChrono(s.ms),5,9);
+    G.font='700 7px "Baloo 2", system-ui, sans-serif';
+    G.fillStyle='#9ec4e4';G.fillText('CHRONO',5,19);
+    G.textAlign='center';
+    G.font='400 11px "Lilita One", system-ui, sans-serif';
+    G.fillStyle='#fff';G.fillText(frTiens(s,0)+'/13',L/2,9);
+    G.font='700 7px "Baloo 2", system-ui, sans-serif';
+    G.fillStyle='#9ec4e4';G.fillText('RÉGIONS',L/2,19);
+    G.textAlign='right';
+    G.font='400 11px "Lilita One", system-ui, sans-serif';
+    G.fillStyle='#8ad8ff';G.fillText(Math.round(s.e[0].tr)+'',L-5,9);
+    G.font='700 7px "Baloo 2", system-ui, sans-serif';
+    G.fillStyle='#9ec4e4';G.fillText('TROUPES',L-5,19);
+    /* le record a battre, s'il y en a un */
+    if(FR_REC_MS){
+      G.textAlign='center';G.font='700 6px "Baloo 2", system-ui, sans-serif';
+      G.fillStyle=(s.ms<FR_REC_MS)?'#8ad07a':'#ff8a8a';
+      G.fillText('TON RECORD '+frChrono(FR_REC_MS),L/2,27);
+    }
+    /* ---- les rivaux, en bas ---- */
+    var by=H-26;
+    R(0,by,L,26,'rgba(4,10,18,.82)');
+    for(var e=1;e<4;e++){
+      var x0=4+(e-1)*Math.floor((L-8)/3), w0=Math.floor((L-8)/3)-4;
+      R(x0,by+4,w0,18,'rgba(255,255,255,.06)');
+      R(x0,by+4,3,18,FR_CO[e].c);
+      G.textAlign='left';G.font='700 6px "Baloo 2", system-ui, sans-serif';
+      G.fillStyle=s.e[e].allie>0&&s.e[e].hum?'#8ad07a':'#c8dcee';
+      G.fillText((s.e[e].allie>0&&s.e[e].hum?'PACTE':FR_CO[e].n.replace('LES ','')),x0+6,by+10);
+      G.font='400 9px "Lilita One", system-ui, sans-serif';G.fillStyle='#fff';
+      G.fillText(frTiens(s,e)+' rég. · '+Math.round(s.e[e].tr),x0+6,by+18);
+    }
+    /* ---- la proposition de pacte ---- */
+    if(s.pacte){
+      R(0,0,L,H,'rgba(4,8,14,.72)');
+      var yy2=Math.round(H*0.36);
+      R(8,yy2-4,L-16,Math.round(H*0.28),'#13263c');
+      G.textAlign='center';
+      G.font='400 11px "Lilita One", system-ui, sans-serif';G.fillStyle=FR_CO[s.pacte.e].c;
+      G.fillText(FR_CO[s.pacte.e].n,L/2,yy2+8);
+      G.font='700 7px "Baloo 2", system-ui, sans-serif';G.fillStyle='#d8ecf8';
+      G.fillText('te proposent un pacte.',L/2,yy2+22);
+      G.fillText('Ils ne t’attaqueront plus…',L/2,yy2+32);
+      G.fillText('un moment.',L/2,yy2+42);
+      var b=this.boutonsPacte(s);
+      R(b.o.x,b.o.y,b.o.w,b.o.h,'#2e8a40');R(b.n.x,b.n.y,b.n.w,b.n.h,'#8a2e3a');
+      G.font='400 11px "Lilita One", system-ui, sans-serif';G.fillStyle='#fff';
+      G.fillText('OUI',b.o.x+b.o.w/2,b.o.y+b.o.h/2);
+      G.fillText('NON',b.n.x+b.n.w/2,b.n.y+b.n.h/2);
+    }
+    /* ---- le mot du moment ---- */
+    if(s.motT>0&&s.mot){
+      G.textAlign='center';
+      var ty=Math.round(H*0.26);
+      G.font='400 10px "Lilita One", system-ui, sans-serif';
+      G.fillStyle='rgba(0,0,0,.6)';G.fillText(s.mot,L/2+1,ty+1);
+      G.fillStyle='#ffd21f';G.fillText(s.mot,L/2,ty);
+    }
+    G.textAlign='left';G.textBaseline='alphabetic';
+  },
+  banniere:function(g,w,h){
+    g.fillStyle='#0b1f33';g.fillRect(0,0,w,h);
+    var k=Math.min(w/112,h/104), ox=(w-100*k)/2, oy=(h-100*k)/2;
+    var cs=['#3aa8ff','#ff4f5a','#ffc83a','#9a6ad0','#7c8a9c','#7c8a9c','#3aa8ff','#9a6ad0','#ff4f5a','#ffc83a','#7c8a9c','#3aa8ff','#ffc83a'];
+    for(var i=0;i<FR_REG.length;i++){
+      var P=FR_REG[i].p;
+      g.beginPath();g.moveTo(ox+P[0][0]*k,oy+P[0][1]*k);
+      for(var j=1;j<P.length;j++)g.lineTo(ox+P[j][0]*k,oy+P[j][1]*k);
+      g.closePath();g.fillStyle=cs[i];g.fill();
+      g.strokeStyle='rgba(0,0,0,.35)';g.lineWidth=1;g.stroke();
+    }
+  }
+};
+
+/* =====================================================================
+   LA BARRE DU BAS : le dosage et la fusée.
+   Le dosage est tout le jeu, il ne peut pas vivre dans un menu : quatre
+   gros pavés sous le pouce, et la fusée a côté avec sa jauge.
+   ===================================================================== */
+function frBoutons(){
+  var el=document.getElementById('frAct');
+  var on=!!(BORNE===MOTEUR.france&&S&&S.phase==='jeu');
+  if(!el){
+    el=document.createElement('div');el.id='frAct';
+    el.innerHTML=FR_PCT.map(function(p){return '<button data-p="'+p+'">'+p+'%</button>';}).join('')+
+                 '<button data-mi="1" class="mi"><span>🚀</span></button>';
+    document.getElementById('scene').appendChild(el);
+    [].forEach.call(el.querySelectorAll('button'),function(b){
+      b.addEventListener('touchstart',function(ev){ev.preventDefault();},{passive:false});
+      b.addEventListener('pointerdown',function(ev){
+        ev.preventDefault();ev.stopPropagation();
+        if(!S)return;
+        if(b.dataset.mi){
+          if(S.mi<1){S.mot='LA FUSÉE N’EST PAS PRÊTE';S.motT=900;return;}
+          S.viseMi=!S.viseMi;
+          S.mot=S.viseMi?'CHOISIS LA RÉGION À FRAPPER':'';S.motT=1400;
+        }else{S.pct=parseInt(b.dataset.p,10)/100;S.viseMi=false;}
+        try{navigator.vibrate&&navigator.vibrate(8);}catch(x){}
+        frMajBoutons(true);
+      });
+    });
+  }
+  el.classList.toggle('on',on);frMajBoutons(true);
+}
+function frMajBoutons(force){
+  var t=performance.now();
+  if(!force&&frMajBoutons.t&&t-frMajBoutons.t<120)return;frMajBoutons.t=t;
+  var el=document.getElementById('frAct');if(!el||!S)return;
+  [].forEach.call(el.querySelectorAll('button[data-p]'),function(b){
+    b.classList.toggle('pris',Math.round(S.pct*100)===parseInt(b.dataset.p,10));});
+  var mi=el.querySelector('button[data-mi]');
+  if(mi){mi.style.setProperty('--p',(S.mi||0).toFixed(2));
+    mi.classList.toggle('pret',S.mi>=1);mi.classList.toggle('pris',!!S.viseMi);}
+}
+
 </script>
 </body>
 </html>
