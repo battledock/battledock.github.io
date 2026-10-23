@@ -24400,7 +24400,7 @@ async function clsPokedockA(){
 
 /* le détail d'un score : seulement les activités où l'on a des points */
 function clsParts(j){const f=n=>(+n||0).toLocaleString('fr-FR');
-const p=[['🌲',j.foret],['🥕',j.legumes],['🍒',j.fruits],['🐟',j.peche]].filter(([,n])=>+n>0);
+const p=[['🌲',j.foret],['🥕',j.legumes],['🍒',j.fruits],['🐑',j.betes],['🐟',j.peche]].filter(([,n])=>+n>0);
 return p.length?p.map(([i,n])=>i+' '+f(n)).join(' · '):(clsVu(j.maj)||'—');}
 /* ================= LE CLASSEMENT POKÉDOCK =================
    CENT CARTES, ET DEUX SECRÈTES HORS SÉRIE. On classe sur le nombre de
@@ -33074,7 +33074,15 @@ else if(c==='v'){R(x+i*4+1,y,1,5,'#e4dcc8');R(x+i*4,y+3,3,1,'#e4dcc8');}
 else R(x+i*4,y+2,3,1,'#e4dcc8');}};
 craie(66,37,'-|-.');craie(66,43,'-^-.');craie(90,37,'|-.-');craie(90,43,'-v|.');}
 async function ouvrirLeMarcheAuxBetes(){
-const C=await appelRPC('betes_cours',{}).catch(()=>null);
+/* L'ÉTAL DEMANDE SON PROPRE ÉTAT. Il se fiait à ETB, que l'étable
+   chargeait de son côté — et on l'ouvrait 70 ms après elle. Sur un
+   téléphone, la réponse n'était jamais revenue : ETB valait null, donc
+   aucun prix, donc toutes les pancartes affichaient « au complet » et
+   l'on ne pouvait plus acheter une seule bête. */
+const [C,A]=await Promise.all([
+  appelRPC('betes_cours',{}).catch(()=>null),
+  appelRPC('betes_etat',{p_joueur:e.id}).catch(()=>null)]);
+if(A&&!A.erreur)ETB=Object.assign({},ETB||{},A);
 const E=ETB||{};
 const fond=$('page2Fond');if(!fond)return;
 const vieux=fond.querySelector('.mk');if(vieux)vieux.remove();

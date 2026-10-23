@@ -360,3 +360,23 @@ where niveau = 29;
    dans un téléphone simulé et vérifie qu'ils répondent. À lancer avant
    chaque déploiement.
 */
+
+/* ======= 2026-10-23 · l'XP des bêtes, et l'étal qui ne vendait plus =======
+   1. RÉCOLTER UNE BÊTE RAPPORTE DE L'XP. Le champ, le verger, la ruche et
+      la pêche en donnaient ; les œufs, la laine, les truffes et le lait
+      n'en donnaient aucun. score_parts gagne une colonne « betes »,
+      noter_points la connaît, classement_general la renvoie, et la fiche
+      du joueur l'affiche (🐑) à côté des quatre autres.
+        - poul_ramasser : 2 points par œuf, 20 par œuf d'or
+        - betes_tondre  : 4 points par toison
+        - betes_truffe  : 10 points par truffe trouvée
+        - etable_traire : 2 points par litre
+      Vérifié : tonte de 5 + une truffe + 7 œufs + 4 L = 52 points.
+
+   2. ON NE POUVAIT PLUS ACHETER DE BÊTE. ouvrirLeMarcheAuxBetes se fiait
+      à ETB, que l'étable chargeait de son côté — et l'étal s'ouvrait
+      70 ms après elle. Sur un téléphone la réponse n'était pas revenue :
+      ETB valait null, aucun prix, toutes les pancartes sur « au
+      complet ». L'étal demande maintenant betes_etat lui-même, en même
+      temps que betes_cours, avant de se dessiner.
+*/
