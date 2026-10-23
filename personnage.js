@@ -2396,6 +2396,17 @@ R(xc-TA,yHan-3,TA*2,3,vestT);R(xc-TA,yHan-3,TA*2,1,vestO);R(xc+TA-4,yHan-1,3,6,v
 }
 }
 if(p._doudoune||p._motif){const xc2=cote?0:(diag?vis:0), L2=cote?Math.round(TA*0.75):TA;
+if(p._motif==='capitaine'){                     /* LA VAREUSE DU CAPITAINE */
+  R(xc2-L2,yEp+2,L2*2,2.4,'#f2efe6');           /* le col blanc */
+  R(xc2-L2,yEp+2,L2*2,1,'#ffffff');
+  R(xc2-L2,yEp+1,3,3,'#c9a24a');R(xc2+L2-3,yEp+1,3,3,'#c9a24a');   /* les épaulettes */
+  R(xc2-1,yEp+5,2,bas-yEp-6,'#101a2c');         /* la couture du milieu */
+  for(let k=0;k<4;k++){                          /* le double boutonnage doré */
+    R(xc2-3.4,yEp+7+k*4,1.6,1.6,'#c9a24a');R(xc2-3.4,yEp+7+k*4,1,1,'#f6dd8c');
+    R(xc2+1.8,yEp+7+k*4,1.6,1.6,'#c9a24a');R(xc2+1.8,yEp+7+k*4,1,1,'#f6dd8c');}
+  R(xc2-L2,bas-5,L2*2,1.4,'#c9a24a');           /* le galon du bas */
+  R(xc2-L2,bas-3.4,L2*2,2,'#101a2c');
+}
 if(p._motif==='forestier'){                     /* LE MANTEAU DU GARDE FORESTIER */
   R(xc2-L2,yEp+2,L2*2,3,'#5a4428');             /* le col de cuir */
   R(xc2-L2,yEp+2,L2*2,1,'#7a6038');
@@ -3506,6 +3517,18 @@ R(cx0+4,hy-17,1.4,5,'#3a6ab4');R(cx0+4.6,hy-18,1.4,2.4,'#6a9ae4');   /* la plume
 if(!dos){R(cx0-4,hy-2,2,2,'#1a1a1e');R(cx0+2,hy-2,2,2,'#1a1a1e');
 R(cx0-3,hy+3,6,1,'#5a3a24');}
 return;}   /* comme les autres chapeaux de la chaîne : on s'arrête ici */
+if(p._casquette){const cx0=cote?-1:dx;                             /* LA CASQUETTE DU CAPITAINE */
+R(cx0-11,hy-7,22,2.4,'#141c2c');                       /* la visière, bien plate */
+R(cx0-11,hy-7,22,1,'#27334a');
+R(cx0-6,hy-4.8,12,1,'#c9a24a');                        /* le galon doré sous la visière */
+R(cx0-8,hy-13,16,6,'#f2efe6');                         /* la coiffe blanche */
+R(cx0-8,hy-13,16,1,'#ffffff');
+R(cx0-8,hy-9.4,16,2.4,'#101826');                      /* le bandeau noir */
+if(!dos){R(cx0-2.5,hy-9.4,5,2.4,'#c9a24a');            /* l'écusson : l'ancre dorée, de face */
+R(cx0-0.6,hy-9,1.2,2,'#f6dd8c');R(cx0-1.8,hy-8,3.6,0.8,'#f6dd8c');}
+if(!dos){R(cx0-4,hy-2,2,2,'#1a1a1e');R(cx0+2,hy-2,2,2,'#1a1a1e');
+R(cx0-3,hy+3,6,1,'#9a5a4a');}
+return;}
 if(p._paille){const cx0=cote?-1:dx;                                  /* LE CHAPEAU DE PAILLE DE L'ÉPOUVANTAIL */
 /* LA PAILLE QUI DÉPASSE DU COL : trois brins sous le bord du chapeau */
 for(let k=0;k<3;k++){const a=2.1+k*0.5;

@@ -15728,6 +15728,17 @@ R(xc-TA,yHan-3,TA*2,3,vestT);R(xc-TA,yHan-3,TA*2,1,vestO);R(xc+TA-4,yHan-1,3,6,v
 }
 }
 if(p._doudoune||p._motif){const xc2=cote?0:(diag?vis:0), L2=cote?Math.round(TA*0.75):TA;
+if(p._motif==='capitaine'){                     /* LA VAREUSE DU CAPITAINE */
+  R(xc2-L2,yEp+2,L2*2,2.4,'#f2efe6');           /* le col blanc */
+  R(xc2-L2,yEp+2,L2*2,1,'#ffffff');
+  R(xc2-L2,yEp+1,3,3,'#c9a24a');R(xc2+L2-3,yEp+1,3,3,'#c9a24a');   /* les épaulettes */
+  R(xc2-1,yEp+5,2,bas-yEp-6,'#101a2c');         /* la couture du milieu */
+  for(let k=0;k<4;k++){                          /* le double boutonnage doré */
+    R(xc2-3.4,yEp+7+k*4,1.6,1.6,'#c9a24a');R(xc2-3.4,yEp+7+k*4,1,1,'#f6dd8c');
+    R(xc2+1.8,yEp+7+k*4,1.6,1.6,'#c9a24a');R(xc2+1.8,yEp+7+k*4,1,1,'#f6dd8c');}
+  R(xc2-L2,bas-5,L2*2,1.4,'#c9a24a');           /* le galon du bas */
+  R(xc2-L2,bas-3.4,L2*2,2,'#101a2c');
+}
 if(p._motif==='forestier'){                     /* LE MANTEAU DU GARDE FORESTIER */
   R(xc2-L2,yEp+2,L2*2,3,'#5a4428');             /* le col de cuir */
   R(xc2-L2,yEp+2,L2*2,1,'#7a6038');
@@ -16838,6 +16849,18 @@ R(cx0+4,hy-17,1.4,5,'#3a6ab4');R(cx0+4.6,hy-18,1.4,2.4,'#6a9ae4');   /* la plume
 if(!dos){R(cx0-4,hy-2,2,2,'#1a1a1e');R(cx0+2,hy-2,2,2,'#1a1a1e');
 R(cx0-3,hy+3,6,1,'#5a3a24');}
 return;}   /* comme les autres chapeaux de la chaîne : on s'arrête ici */
+if(p._casquette){const cx0=cote?-1:dx;                             /* LA CASQUETTE DU CAPITAINE */
+R(cx0-11,hy-7,22,2.4,'#141c2c');                       /* la visière, bien plate */
+R(cx0-11,hy-7,22,1,'#27334a');
+R(cx0-6,hy-4.8,12,1,'#c9a24a');                        /* le galon doré sous la visière */
+R(cx0-8,hy-13,16,6,'#f2efe6');                         /* la coiffe blanche */
+R(cx0-8,hy-13,16,1,'#ffffff');
+R(cx0-8,hy-9.4,16,2.4,'#101826');                      /* le bandeau noir */
+if(!dos){R(cx0-2.5,hy-9.4,5,2.4,'#c9a24a');            /* l'écusson : l'ancre dorée, de face */
+R(cx0-0.6,hy-9,1.2,2,'#f6dd8c');R(cx0-1.8,hy-8,3.6,0.8,'#f6dd8c');}
+if(!dos){R(cx0-4,hy-2,2,2,'#1a1a1e');R(cx0+2,hy-2,2,2,'#1a1a1e');
+R(cx0-3,hy+3,6,1,'#9a5a4a');}
+return;}
 if(p._paille){const cx0=cote?-1:dx;                                  /* LE CHAPEAU DE PAILLE DE L'ÉPOUVANTAIL */
 /* LA PAILLE QUI DÉPASSE DU COL : trois brins sous le bord du chapeau */
 for(let k=0;k<3;k++){const a=2.1+k*0.5;
@@ -18780,6 +18803,9 @@ async function reclamerNiveaux(liste){
   if(rat){const d=await rpcNiv('niveau_rattrapage',{});if(d&&!d.erreur){(d.donne||[]).forEach(r=>recu.push(r));if(d.etat&&d.etat.niveau)NIV=d.etat;}else if(d&&d.erreur==='Rien à rattraper.'&&NIV)NIV.rattrapage=null;}
   for(const n of liste){const d=await rpcNiv('niveau_reclamer',{p_niveau:n});if(!d||d.erreur){err=(d&&d.erreur)||'Le serveur n’a pas répondu.';break;}der=d;(d.donne||[]).forEach(r=>recu.push(r));}
   NIV_OCCUPE=false;
+  /* une tenue gagnée s'enfile sans recharger la page : on ouvre le cadenas
+     ici, le serveur l'a déjà écrite dans cosmetiques */
+  recu.filter(r=>r&&r.t==='tenue'&&r.k).forEach(r=>{e.cos=e.cos||{};e.cos['costume_'+r.k]=true;});
   if(der){if(typeof der.euros==='number'){e.euros=der.euros;}if(der.sac&&der.sac.max){window.SAC_SRV=e.sacMax=der.sac.max;}sauver();majHaut();try{recalerLeSac(true);}catch(x){}
     if(der.etat&&der.etat.niveau)NIV=der.etat;majPlaque(null);}
   peindreMonNiveau();
@@ -26227,7 +26253,7 @@ ours:{b:'#7d5934',o:'#5b3f21',museau:'#c9a878',pieds:'#5b3f21',oreilles:true,que
 function appliquerDeguisement(p){
 if(p.maillot)return;                                                    /* en maillot, on n'a rien d'autre sur soi */
 p.gilet=false;                                                          /* le gilet orange de la manif n'existe plus */
-p._fourrure=null;p._cape=null;
+p._fourrure=null;p._cape=null;p._casquette=null;
 const F=FOURRURES[p.deguisement];
 if(F){
 p.haut=0;p.veste=F.b;p.pantalon=F.b;p.bas=0;p.souliers=0;p.chaussures=F.pieds;p.chapeau=3;p.sac=0;
@@ -26242,13 +26268,19 @@ p._fete={gateau:true,bougies:['#ffe08a','#ffb04a','#ff7a5a'],noeud:'#e8402a'};
 p._doudoune=0;p._motif='pois';p._poulet=false;p._casque=null;p._masque=null;p._lunettes=null;p._echarpe=null;p._skis=null;p._gants=null;
 return;
 }
-const RAZ=()=>{p._doudoune=0;p._poulet=false;p._casque=null;p._masque=null;p._lunettes=null;p._echarpe=null;p._skis=null;p._gants=null;p._fete=null;p._fourrure=null;p._paille=null;p._rapiece=false;p._chapeauVert=false;p._bandeau=null;p._noeudOr=false;p._sorcier=null;p._tetecit=null;p._couronne=null;};
+const RAZ=()=>{p._doudoune=0;p._poulet=false;p._casque=null;p._masque=null;p._lunettes=null;p._echarpe=null;p._skis=null;p._gants=null;p._fete=null;p._fourrure=null;p._paille=null;p._rapiece=false;p._chapeauVert=false;p._bandeau=null;p._noeudOr=false;p._sorcier=null;p._tetecit=null;p._couronne=null;p._casquette=null;};
 if(p.deguisement==='hw_seigneur'){RAZ();p.haut=1;p.veste='#3a1f52';p.bas=1;p.pantalon='#1b1b22';p.souliers=1;p.chaussures='#2a1a10';p.sac=0;p.chapeau=3;
 p._bonnet=null;p._cape={c:'#1e1a26',c2:'#120f18',clair:'#e07a22'};p._motif=null;p._sorcier={c:'#3a1f52',f:'#241434',clair:'#5a3a7a'};p._gants={g:'#e07a22',g2:'#c8641a'};return;}
 if(p.deguisement==='hw_tetecit'){RAZ();p.haut=1;p.veste='#1b1b22';p.bas=1;p.pantalon='#1b1b22';p.souliers=1;p.chaussures='#0f0f14';p.sac=0;p.chapeau=3;
 p._bonnet=null;p._cape={c:'#141018',c2:'#0a080c',clair:'#e07a22'};p._motif=null;p._tetecit=true;p._noeudOr=false;p._gants={g:'#1b1b22',g2:'#0f0f14'};return;}
 if(p.deguisement==='hw_roi'){RAZ();p.haut=1;p.veste='#7a2a1a';p.bas=1;p.pantalon='#3a2a1a';p.souliers=1;p.chaussures='#2a1a10';p.sac=0;p.chapeau=3;
 p._bonnet=null;p._cape={c:'#a8401e',c2:'#7a2a14',clair:'#c9a24a'};p._motif='carreaux';p._couronne=true;p._gants={g:'#c9a24a',g2:'#a8842a'};return;}
+if(p.deguisement==='capitaine'){                                       /* LE CAPITAINE — RÉCOMPENSE DU NIVEAU 23 */
+RAZ();
+p.haut=1;p.veste='#17233a';p.bas=0;p.pantalon='#e6ecf2';p.souliers=1;p.chaussures='#141414';p.sac=0;p.chapeau=3;
+p._bonnet=null;p._cape=null;p._motif='capitaine';p._casquette=true;
+return;
+}
 if(p.deguisement==='pirate'){                                          /* LE PIRATE DU BAR DES DOCKS */
 p.haut=1;p.veste='#8a2f2f';p.bas=1;p.pantalon='#2a2a33';p.souliers=1;p.chaussures='#3a2a18';p.sac=0;p.chapeau=3;
 p._bonnet={b:['#1b1b22','#2a2a33']};p._cape={c:'#2a2a33',c2:'#17171d',clair:'#3d3d48'};
@@ -31343,6 +31375,7 @@ $('bucOut').onclick=()=>agir(async()=>{
 }
 const TENUES=[{k:'',nom:'Tes habits',lieu:'toujours à toi',rare:''},
 {k:'forestier',nom:'Le garde forestier',lieu:'Le grand chêne · ouverture de la forêt',rare:'OCTOBRE 2026'},
+{k:'capitaine',nom:'Le capitaine',lieu:'Récompense du niveau 23',rare:'PALIER'},
 {k:'poulet',nom:'Le poulet',lieu:'Crousti’Port · ticket d’or',rare:'1 MENU SUR 120'},
 {k:'marcel',nom:'Le super-marcel',lieu:'Boulodrome · ticket d’or',rare:'1 MÈNE SUR 100'},
 {k:'ours',nom:'L’ours',lieu:'Cabane du bûcheron · ticket d’or',rare:'1 BÛCHE SUR 150'},

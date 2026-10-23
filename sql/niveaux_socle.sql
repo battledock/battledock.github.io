@@ -456,3 +456,57 @@ where niveau = 29;
    tomberait à 544 Ko : on garde les commentaires, ils sont la mémoire
    du projet, et le cache règle le vrai problème.
 */
+
+/* ============================================================
+   PALIER 23 — LA TENUE « CAPITAINE »                23/10/2026
+   ============================================================
+   Le palier 23 donnait {"t":"tenue","k":"capitaine"} mais
+   niveau_reclamer n'avait aucune branche « tenue » : la
+   récompense tombait dans le « else » fourre-tout, rangée dans
+   l'inventaire avec actif=false, et le joueur ne pouvait jamais
+   la porter.
+
+   Les costumes vivent dans cosmetiques(joueur,piece,paye) sous
+   la clé 'costume_<k>' — c'est ce que lit mes_tenues() et ce
+   qu'écrit déjà tenue_jackpot pour le smoking du casino. La
+   branche ajoutée fait la même chose, et garde en plus une
+   trace dans inventaire_niveau pour l'historique des paliers.
+
+   Patch appliqué sur la fonction en place (pas de migration :
+   on relit pg_get_functiondef, on insère la branche avant la
+   ligne des 'bonus/kart/cadre/...', on réexécute) :
+
+     elsif r->>'t'='tenue' then
+       insert into cosmetiques(joueur,piece,paye)
+         values (uid,'costume_'||(r->>'k'),0)
+         on conflict (joueur,piece) do nothing;
+       insert into inventaire_niveau(joueur,cle,n)
+         values (uid,'tenue:'||(r->>'k'),1)
+         on conflict (joueur,cle) do update
+           set n=inventaire_niveau.n+1, maj=now();
+
+   Vérifié sur le joueur de test : donne=[{capitaine,tenue,
+   actif:true}], cosmetiques=1 ligne, inv['tenue:capitaine']=1.
+
+   CÔTÉ CLIENT
+   - appliquerDeguisement : cas 'capitaine' — vareuse #17233a,
+     pantalon blanc #e6ecf2 (bas=0, pantalon long : avec bas=1
+     c'est un short et les mollets restaient nus), souliers
+     noirs, _motif='capitaine', _casquette=true.
+   - _casquette remis à null en tête de appliquerDeguisement ET
+     dans RAZ(), pour qu'aucune autre tenue ne l'hérite.
+   - La casquette est dessinée dans la chaîne des chapeaux, à
+     côté de _chapeauVert et _paille — DANS LES DEUX CRAYONS :
+     moteur.js et personnage.js. L'écusson doré n'est dessiné
+     que de face (if(!dos)).
+   - La vareuse est un _motif, à côté de 'forestier', là aussi
+     dans les deux fichiers.
+   - TENUES : {k:'capitaine', lieu:'Récompense du niveau 23'}.
+   - reclamerNiveaux ouvre le cadenas tout de suite :
+     recu.filter(r=>r.t==='tenue').forEach(...e.cos['costume_'+k]=true)
+     — sans ça il fallait recharger la page pour pouvoir
+     l'enfiler.
+
+   Reste inerte après 23 : 25 (kayak du Frioul), 27 (table VIP),
+   28 (aquarium du cabanon), 30 (la statue sur le quai).
+*/
