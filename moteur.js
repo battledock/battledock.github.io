@@ -10,7 +10,10 @@
 window.__JEU_DEMARRE=true;               /* le jeu a bien démarré : pas de message « navigateur trop ancien » */
 async function chargerMorceau(nom){
 for(let essai=0;essai<4;essai++){
-try{const r=await fetch(nom+'?v='+encodeURIComponent(window.MA_VERSION||Date.now()),{cache:'no-cache'});if(r.ok)return await r.text();}catch(x){}
+/* L'EMPREINTE DU MORCEAU, pas le numéro de la livraison : un morceau
+   qui n'a pas changé garde son adresse, donc son cache. */
+try{const v=(window.EMPREINTES&&window.EMPREINTES[nom])||window.MA_VERSION||Date.now();
+const r=await fetch(nom+'?v='+encodeURIComponent(v),{cache:'force-cache'});if(r.ok)return await r.text();}catch(x){}
 await new Promise(r=>setTimeout(r,600*(essai+1)));
 }
 alert('Le chargement de la carte a échoué. Vérifie ta connexion, puis recharge la page.');throw new Error('morceau '+nom);

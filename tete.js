@@ -1,3 +1,6 @@
+/* ===== EMPREINTES (posées par outils/empreintes.js) ===== */
+window.EMPREINTES={"coquille.js":"6cb3ae61","courses.js":"9fcf6626","ferme.js":"1cb0fed8","maintenance.js":"d28efd07","moteur.css":"1d74a8a8","moteur.js":"87a2b14e","personnage.js":"a176d8cd","pokedock.js":"fee9c87d","pokedock_hw.js":"f7b629c6","port.js":"4deec6ec","responsive.css":"caca6b41","retour.js":"6c72c050","session.js":"b36fa1f2","surprise.js":"c6737cb1","sw.js":"4b426b28","tokyo.js":"c6dade53","voitures.js":"fa3b8d68"};
+/* ===== fin des empreintes ===== */
 /* LA TÊTE DE PAGE, commune à toutes les pages du jeu : la version et
    le cache, puis les gestes du navigateur qu'on neutralise (sélection,
    menu contextuel, pincement, zoom clavier). Ces trois morceaux
@@ -5,7 +8,7 @@
 (function(){var champ=function(t){return t&&t.closest&&t.closest('input,textarea,[contenteditable="true"]');};
 ['selectstart','copy','cut','contextmenu','dragstart'].forEach(function(k){document.addEventListener(k,function(e){if(!champ(e.target))e.preventDefault();},{capture:true});});})();
 (function(){
-var MA_VERSION='2026-10-24-0400';
+var MA_VERSION='2026-10-24-0500';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il

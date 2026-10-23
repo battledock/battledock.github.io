@@ -428,3 +428,31 @@ where niveau = 29;
    composter, le compte de doses), le fumier au sac avec son icône, et
    « Tout ramasser » le prend aussi. Le fumier ne se vend pas : il sert.
 */
+
+/* ====== 2026-10-23 · UNE EMPREINTE PAR FICHIER (déploiement) ======
+   Toutes les adresses portaient le même numéro de version : corriger
+   une ligne de courses.js le changeait partout, et le téléphone
+   retéléchargeait le jeu entier — 1 176 Ko compressés.
+
+   outils/empreintes.js calcule une empreinte de huit caractères sur le
+   CONTENU de chaque .js et .css, la pose dans les ?v= de toutes les
+   pages, et dépose la table dans tete.js (window.EMPREINTES) pour que
+   chargerMorceau s'en serve aussi. Un fichier inchangé garde son
+   adresse, donc son cache.
+
+   À LANCER APRÈS LE CHANGEMENT DE VERSION, AVANT LE COMMIT :
+     sed -i "s/<ancienne>/<nouvelle>/g" tete.js version.json *.html
+     node outils/empreintes.js
+   Le numéro de version ne vit plus QUE dans tete.js, version.json et
+   les pages autonomes — ne jamais le réécrire dans les .js, sinon
+   toutes les empreintes changent et le gain disparaît.
+
+   Mesuré : en ne touchant que courses.js, 16 fichiers sur 18 restent en
+   cache ; on retélécharge 37 Ko au lieu de 1 176.
+
+   POIDS RÉELS (gzip) : moteur.js 697 Ko, ferme.js 91, tokyo.js 82,
+   personnage.js 77, port.js 60, pokedock.js 43, courses.js 37,
+   moteur.css 35 — 1 176 Ko en tout. Sans les commentaires, moteur.js
+   tomberait à 544 Ko : on garde les commentaires, ils sont la mémoire
+   du projet, et le cache règle le vrai problème.
+*/
