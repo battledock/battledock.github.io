@@ -631,3 +631,71 @@ where niveau = 29;
    intouchable ; une section à découvert paie. C'est la leçon
    que le jeu doit apprendre, et il l'apprend tout seul.
 */
+
+/* ============================================================
+   LA SALLE D'ARCADE : LA CONQUÊTE RETIRÉE,
+   LE DÉBARQUEMENT RENDU LISIBLE                     24/10/2026
+   ============================================================
+   LA CONQUÊTE est retirée : la borne, son moteur (environ 800
+   lignes), ses trois branchements dans la salle, et 'france'
+   sorti de la liste des bornes branchées dans arcade_jeton.
+   Les scores déjà posés restent en base, ils ne gênent rien.
+
+   LE DÉBARQUEMENT — première passe : on n'y comprenait rien.
+   Le diagnostic n'était pas le game design, c'était la taille
+   et le vocabulaire visuel.
+
+   1. TOUT EST PLUS GROS. vise passe de 190 à 128 : sur un
+      téléphone de 390 px, l'échelle passe de 2 à 3, donc la
+      carte fait 130 unités de large au lieu de 195 et chaque
+      chose est dessinée une fois et demie plus grande. Toutes
+      les distances ont suivi (portée 86→58, vitesse, rayon du
+      mortier, de la fumée, de la garde) et la carte est passée
+      de cinq rangs d'abris à quatre, sinon elle ne tenait plus.
+
+   2. ON DISTINGUE ENFIN LES SIENS DES AUTRES. Chaque homme a
+      un cerne noir — sans lui tout se noyait dans le gris du
+      quai. L'ennemi a sa propre silhouette et un losange rouge
+      sous les pieds.
+
+   3. ON VOIT OÙ L'ON PEUT ALLER. Chaque abri porte un cercle
+      pointillé discret en permanence ; ceux à un bond de la
+      section tenue en main s'allument en jaune, pulsent, et
+      portent un chevron. Avant, rien ne disait qu'il y avait
+      des places.
+
+   4. ON LIT L'EFFECTIF SANS COMPTER : six encoches autour de
+      l'anneau de chaque section, éteintes au fur et à mesure.
+
+   5. « CLOUÉE » EST ÉCRIT EN TOUTES LETTRES, en rouge, sur la
+      section. C'est l'information qui explique pourquoi elle
+      ne répond plus aux ordres.
+
+   6. LA CONSIGNE. Une ligne, toujours présente au-dessus des
+      pastilles, qui ne dit qu'une chose et change avec la
+      situation : « TAPE UNE SECTION EN BAS », « TAPE UN CERCLE
+      JAUNE », « CLOUÉE · FUME LE NID », « RESTE LÀ, ÇA SE
+      PREND ». C'est elle qui manquait le plus.
+
+   7. LE COMBAT SE VOIT : traçantes deux fois plus épaisses et
+      deux fois plus longues, départ de coup lumineux à la
+      bouche, et l'écran qui tremble quand un homme tombe.
+
+   8. L'OBJECTIF est désigné en permanence par une étiquette
+      rouge, et la barre de prise dit « ON TIENT… ».
+
+   Les bandeaux ont été refaits pour la nouvelle largeur : les
+   textes se chevauchaient. Ordres raccourcis en FUMÉE et OBUS,
+   secteurs renommés court (LA JOLIETTE, SAINT-JEAN).
+
+   Équilibrage : à la nouvelle échelle la carte est plus
+   ramassée, donc on reste plus longtemps au contact. Cadence
+   de l'infanterie ennemie 2 s → 2,4 s, létalité à découvert
+   1,6 → 1,45, deux ennemis de moins aux secteurs 2 et 3, et
+   trois fumigènes et trois obus au départ au lieu de deux,
+   plus deux fumigènes et un obus à chaque secteur pris.
+
+   Reste à faire, dans les passes suivantes : un vrai tutoriel
+   au premier secteur, le son, et des cartes qui ne soient pas
+   seulement quatre rangs d'abris tirés au hasard.
+*/
