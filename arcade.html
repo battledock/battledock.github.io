@@ -20,7 +20,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-24-0700';
+  var MA_VERSION='2026-10-24-0800';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -690,10 +690,15 @@ var BORNES=[
  {cle:'hangar', vig:'hangar', nom:'Le Hangar',
   dit:'Le port envahi : huit zones, des boss, seize armes. Ça tire tout seul — toi tu bouges, tu roules, tu lances la grenade. La sortie change de mur à chaque salle. 10 000 € toutes les 10 salles.',
   court:'Survis aux zombies du port. 10 000 € toutes les 10 salles.',
-  mise:'1 JETON · 5 VIES', tag:'★ LA SEMAINE'}
+  mise:'1 JETON · 5 VIES', tag:'★ LA SEMAINE'},
+ {cle:'debarquement', vig:'debarquement', nom:'Le Débarquement',
+  dit:'Quatre sections de six hommes, trois secteurs du port à reprendre. Tu tapes une section, tu tapes un abri : elle y va et se met à couvert. Le tir est automatique — tu choisis où et quand, jamais vers quoi. Tes hommes ont des noms, et ils ne reviennent pas.',
+  court:'Commande tes sections. Trois secteurs. Pas de résurrection.',
+  mise:'1 JETON · 24 HOMMES', tag:'NOUVEAU'}
 ];
 
 /* LES BORNES A VENIR : on les montre, grisees, pour donner envie de revenir */
+ /* LE DEBARQUEMENT : on commande des sections, pas des hommes */
 var BORNES_BIENTOT=[{cle:'grue',nom:'Le Grutier',dit:'Empile les conteneurs sans tout faire tomber.'}];
 /* LA BANNIERE D'UNE BORNE, dessinee en pixels a la largeur de la carte */
 function banniere(cv,cle){
@@ -701,6 +706,29 @@ function banniere(cv,cle){
   if(cle==='hangar'){
     try{var t=document.createElement('canvas');t.width=108;t.height=34;hgZoneVignette(t.getContext('2d'),HG_ZONES[3],108,34);g.drawImage(t,0,0,w,h);}catch(e){g.fillStyle='#2a2440';g.fillRect(0,0,w,h);}
     var old=G;try{G=g;g.save();g.translate(16,h-34);hgPasJoueur(0,0,1,false,0,0);hgArmeMain(7,6,false,'pistolet',0);g.restore();}catch(e){}G=old;
+    return;
+  }
+  if(cle==='debarquement'){
+    /* le quai vu de dessus : la mer, le blockhaus, les sections */
+    var gr=7,rn=function(){gr=(gr*16807)%2147483647;return (gr-1)/2147483646;};
+    for(var y=0;y<h;y++)for(var x=0;x<w;x++){
+      if(y<h*0.26){g.fillStyle=['#16303e','#1d4052','#265268','#31667e'][Math.min(3,Math.floor(y/(h*0.26)*4))];}
+      else{var v=rn();g.fillStyle=['#4e5054','#5e6166','#6e7278','#80848a'][Math.min(3,Math.floor(v*4))];}
+      g.fillRect(x,y,1,1);}
+    g.fillStyle='#2e3034';g.fillRect(0,Math.round(h*0.26),w,2);
+    g.fillStyle='#5e6058';g.fillRect(w*0.38,h*0.30,w*0.24,h*0.17);
+    g.fillStyle='#7a7c72';g.fillRect(w*0.38,h*0.30,w*0.24,2);
+    g.fillStyle='#141614';g.fillRect(w*0.42,h*0.38,w*0.16,3);
+    var S=[['#3a78c8',0.18],['#3a9a5a',0.40],['#c87a2a',0.62],['#a85ac8',0.84]];
+    for(var i=0;i<S.length;i++){var cx=w*S[i][1],cy=h*0.78;
+      g.strokeStyle=S[i][0];g.lineWidth=1.5;g.beginPath();g.arc(cx,cy,7,0,7);g.stroke();
+      var P=[[0,-4],[-4,0],[4,0],[-2,3],[2,3],[0,0]];
+      for(var k=0;k<6;k++){g.fillStyle=S[i][0];g.fillRect(cx+P[k][0]-1,cy+P[k][1]-1,3,2);
+        g.fillStyle='#3e4238';g.fillRect(cx+P[k][0],cy+P[k][1]-3,2,2);}}
+    for(var e=0;e<9;e++){var ex=6+rn()*(w-12),ey=h*0.50+rn()*h*0.14;
+      g.fillStyle='#3f4850';g.fillRect(ex-1,ey-1,3,2);g.fillStyle='#3e4238';g.fillRect(ex,ey-3,2,2);}
+    g.strokeStyle='rgba(255,233,168,.55)';g.lineWidth=1;
+    g.beginPath();g.moveTo(w*0.40,h*0.76);g.lineTo(w*0.46,h*0.52);g.stroke();
     return;
   }
   if(MOTEUR[cle]&&MOTEUR[cle].banniere){MOTEUR[cle].banniere(g,w,h);return;}
@@ -4172,13 +4200,19 @@ function mnuMaj(){
   if(GO){var sem=MODE_HG==='semaine';GO.classList.toggle('sem',sem);
     GO.innerHTML='<b>'+(sem?'LA SEMAINE':'JOUER')+'</b><small>'+(sem?'1 € · même parcours pour tous':'1 € · 10 000 € toutes les 10 salles')+'</small>';}
   var FE=!!(BORNE&&BORNE.cle==='ferme');
+  var DBN=!!(BORNE&&BORNE.cle==='debarquement');
   if(FE&&GO){GO.classList.remove('sem');GO.innerHTML='<b>JOUER</b><small>1 € · 2 min 30 · avant l’orage</small>';}
+  if(DBN&&GO){GO.classList.remove('sem');GO.innerHTML='<b>DÉBARQUER</b><small>1 € · 24 hommes · trois secteurs</small>';}
   var tp=MNU.querySelector('.mo button[data-o="perso"]'), ta=MNU.querySelector('.mo button[data-o="armes"] span');
-  if(tp)tp.style.display=FE?'none':'';if(ta)ta.textContent=FE?'OUTILS':'ARMES';
-  if(FE&&MNU_ONG==='perso')MNU_ONG='jouer';
+  if(tp)tp.style.display=(FE||DBN)?'none':'';if(ta)ta.textContent=FE?'OUTILS':'ARMES';
+  var ta2=MNU.querySelector('.mo button[data-o="armes"]');
+  if(ta2)ta2.style.display=DBN?'none':'';
+  if((FE||DBN)&&MNU_ONG==='perso')MNU_ONG='jouer';
+  if(DBN&&MNU_ONG==='armes')MNU_ONG='jouer';
   mnuHaut();
   var h='';
-  if(FE)h=fmMenu();
+  if(DBN)h=dbMenu();
+  else if(FE)h=fmMenu();
   else if(MNU_ONG==='jouer'){
     var AC=HG_ARMES[CHOIX_ARME]||HG_ARMES.pistolet;
     h+='<div class="stage"><div class="rec">'+(MODE_HG==='semaine'?'CETTE SEMAINE':'RECORD')+'<b>'+mnuChiffre(MODE_HG==='semaine'?((HG_SEM&&HG_SEM.moi)||0):HG_REC)+'</b></div>'+
@@ -4364,6 +4398,604 @@ var FM_OUTILS=[
 ];
 var FM_NV={}, FM_REC=0, FM_PARTIES=0, FM_GRAINE='ble', FM_DUREE=150000;
 function fmNv(k){return FM_NV[k]||0;}
+/* =====================================================================
+   LE DÉBARQUEMENT — on ne commande pas des hommes, on commande des
+   sections, et elles ne vont que d'un abri à un autre.
+
+   Trois règles tiennent tout le jeu :
+     1. Cinq cibles grosses comme un pouce, jamais trente.
+     2. Pas de chemin libre : on va d'un abri marqué à un autre. Rien
+        ne se coince dans un mur, et chaque mouvement a l'air décidé.
+     3. Le tir est automatique. Le joueur choisit OÙ et QUAND, jamais
+        VERS QUOI — c'est la seule façon que ça soit agréable au pouce.
+
+   Et ce qui fait revenir n'est pas le score : les hommes ont des noms,
+   ils montent en grade, et quand ils tombent ils ne reviennent pas.
+   ===================================================================== */
+var DB_NOMS=['PAGNOL','ZÉZÉ','FONFON','TONIN','MOMO','LOUISET','MARIUS','PANISSE','CÉSAR',
+ 'ESCARTEFIGUE','TOINE','MIUS','BATISTIN','NÉNESSE','DÉDOU','POLYTE','LOULOU','PAPET',
+ 'TITIN','BÉBERT','JOSÉ','LUCIEN','MARIUS CADET','FÉLIX'];
+var DB_COUL=[{n:'BLEUE',c:'#3a78c8',c2:'#5a98e8'},{n:'VERTE',c:'#3a9a5a',c2:'#5aba7a'},
+ {n:'ORANGE',c:'#c87a2a',c2:'#e89a4a'},{n:'VIOLETTE',c:'#a85ac8',c2:'#c87ae8'}];
+var DB_SECT=[
+ {nom:'LE QUAI DE LA JOLIETTE',obj:'PRENDRE LE BLOCKHAUS',inf:7,mg:1,duree:170000},
+ {nom:'LE FORT SAINT-JEAN',   obj:'TENIR LA PORTE',      inf:10,mg:2,duree:180000},
+ {nom:'LA BONNE MÈRE',        obj:'HISSER LE DRAPEAU',   inf:13,mg:3,duree:190000}];
+var DB_GRADES=['Soldat','Caporal','Sergent','Adjudant'];
+/* les postures, les portées, les protections : tout le réglage est ici */
+var DB={vit:0.0155, portee:86, porteeMG:132, cad:620, cadMG:560,
+  prot:{sacs:0.62,cratere:0.55,caisses:0.5,bitte:0.42,mur:0.68,aucun:0.06},
+  fumDuree:17000, mortDelai:2400, mortRayon:19, tenirBonus:0.34};
+
+function dbAl(s){s.gr=(s.gr*16807)%2147483647;return (s.gr-1)/2147483646;}
+function dbDist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+/* LA FUMÉE COUPE LA VUE : on échantillonne le trait, c'est bien assez. */
+function dbVoit(s,a,b){
+  if(!s.fum.length)return true;
+  for(var k=1;k<7;k++){var t=k/7,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t;
+    for(var i=0;i<s.fum.length;i++){var f=s.fum[i];
+      if((x-f.x)*(x-f.x)+(y-f.y)*(y-f.y)<f.r*f.r)return false;}}
+  return true;
+}
+function dbVivants(sec){var n=0;for(var i=0;i<sec.h.length;i++)if(sec.h[i].vie)n++;return n;}
+function dbProt(s,sec){
+  if(sec.ax!==null)return DB.prot.aucun;                 /* à découvert, en mouvement */
+  var a=sec.abri!==null?s.ab[sec.abri]:null;
+  var p=a?DB.prot[a.typ]:DB.prot.aucun;
+  if(sec.ordre==='tenir')p=Math.min(0.88,p+DB.tenirBonus*0.5);
+  return p;
+}
+function dbMot(s,m,gros){s.mot=m;s.motT=gros?2200:1500;s.motGros=!!gros;}
+/* ---------- LA CARTE D'UN SECTEUR ----------
+   Les abris sont posés en quinconce du bas vers le haut : il y a
+   toujours un bond possible vers l'avant, jamais une ligne droite. */
+function dbBatir(s,n){
+  var C=DB_SECT[n], L=s.L, H=s.H;
+  s.cfg=C;
+  s.haut=46; s.bas=H-80;                      /* la bande de jeu */
+  s.ab=[];s.enn=[];s.fum=[];s.tr=[];s.part=[];s.morts=[];s.obus=[];
+  /* l'objectif, en haut */
+  s.obj={x:Math.round(L/2),y:s.haut+22,pris:false,garde:0};
+  /* les abris : cinq rangs, deux ou trois par rang */
+  var typs=['sacs','cratere','caisses','bitte','mur'];
+  var rangs=5, y0=s.haut+54, y1=s.bas-26;
+  for(var r=0;r<rangs;r++){
+    var nb=(r%2)?2:3, yy=y0+(y1-y0)*r/(rangs-1);
+    for(var k=0;k<nb;k++){
+      var xx=16+(L-32)*(k+0.5)/nb+(dbAl(s)-0.5)*14;
+      s.ab.push({x:Math.round(xx),y:Math.round(yy+(dbAl(s)-0.5)*9),
+        typ:typs[Math.floor(dbAl(s)*typs.length)],occ:null,r:11});
+    }
+  }
+  /* LES DEUX POSITIONS D'ASSAUT, contre le blockhaus : sans elles,
+     aucune section ne pouvait tenir l'objectif et le secteur ne se
+     prenait jamais. */
+  s.ab.push({x:Math.round(L/2-16),y:s.obj.y+14,typ:'sacs',occ:null,r:11});
+  s.ab.push({x:Math.round(L/2+16),y:s.obj.y+14,typ:'sacs',occ:null,r:11});
+  /* les abris du fond, d'où l'on part */
+  for(var k2=0;k2<4;k2++)
+    s.ab.push({x:Math.round(18+(L-36)*k2/3),y:s.bas-18,typ:'caisses',occ:null,r:11});
+  /* les nids de mitrailleuse, bien en vue : c'est eux qu'il faut taire */
+  for(var m=0;m<C.mg;m++){
+    s.enn.push({x:Math.round(28+(L-56)*(m+0.5)/C.mg),y:s.haut+34+Math.round(dbAl(s)*10),
+      hp:4,typ:'mg',sup:0,feu:0,mort:false,prot:0.58});
+  }
+  /* l'infanterie, devant le blockhaus */
+  for(var i=0;i<C.inf;i++){
+    s.enn.push({x:Math.round(14+(s.L-28)*dbAl(s)),
+      y:Math.round(s.haut+46+dbAl(s)*62),
+      hp:2,typ:'inf',sup:0,feu:0,mort:false,prot:0.3+dbAl(s)*0.15});
+  }
+  /* les sections repartent du fond, dans les abris du bas */
+  var libres=s.ab.length-4;
+  for(var q=0;q<s.sec.length;q++){
+    var sc=s.sec[q];if(sc.mort)continue;
+    var ia=libres+Math.min(3,q);
+    sc.x=s.ab[ia].x;sc.y=s.ab[ia].y;sc.ax=null;sc.ay=null;sc.abri=ia;s.ab[ia].occ=q;
+    sc.sup=0;sc.ordre='avancer';sc.feu=0;
+  }
+  dbSol(s);
+  s.sel=-1;for(var q2=0;q2<s.sec.length;q2++)if(!s.sec[q2].mort){s.sel=q2;break;}
+  s.mode=null;s.reste=C.duree;s.pris=false;
+  dbMot(s,C.obj,true);
+}
+/* LE SOL DU QUAI, GRAVÉ UNE SEULE FOIS. Peint à chaque image, c'étaient
+   cinquante mille rectangles par frame : le téléphone chauffait pour
+   dessiner un pavé qui ne bouge pas. */
+function dbSol(s){
+  var L=s.L,h=Math.max(10,s.bas+12-46);
+  var cv=document.createElement('canvas');cv.width=L;cv.height=h;
+  var g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+  var PAL=['#4e5054','#5e6166','#6e7278','#80848a','#8e949a'];
+  /* un bruit doux : trois octaves interpolées, pas de neige télé */
+  var hh=function(x,y){var n=Math.sin(x*127.1+y*311.7)*43758.5453;return n-Math.floor(n);};
+  var vv=function(x,y,e){var X=x/e,Y=y/e,i=Math.floor(X),j=Math.floor(Y),fx=X-i,fy=Y-j;
+    var u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);
+    return hh(i,j)*(1-u)*(1-v)+hh(i+1,j)*u*(1-v)+hh(i,j+1)*(1-u)*v+hh(i+1,j+1)*u*v;};
+  for(var y=0;y<h;y++)for(var x=0;x<L;x++){
+    var v2=vv(x,y,26)*0.5+vv(x,y,9)*0.3+vv(x,y,3)*0.2;
+    g.fillStyle=PAL[Math.max(0,Math.min(4,Math.floor(v2*5)))];g.fillRect(x,y,1,1);}
+  /* les joints des dalles */
+  g.fillStyle='rgba(0,0,0,.12)';
+  for(var gy=6;gy<h;gy+=13)g.fillRect(0,gy,L,1);
+  for(var gx=0;gx<L;gx+=17)g.fillRect(gx,0,1,h);
+  /* quelques flaques et des traces de chenilles */
+  for(var k=0;k<16;k++){var px=hh(k,3)*L,py=hh(k,7)*h,r=3+hh(k,11)*7;
+    g.fillStyle='rgba(60,76,86,.28)';g.beginPath();g.ellipse(px,py,r*1.6,r*0.7,0,0,7);g.fill();}
+  s.sol=cv;
+}
+/* ---------- LA COMPAGNIE ---------- */
+function dbCompagnie(s){
+  s.sec=[];var k=0;
+  for(var i=0;i<4;i++){
+    var h=[];
+    for(var j=0;j<6;j++)h.push({nom:DB_NOMS[k++%DB_NOMS.length],vie:true,missions:0,grade:j===0?1:0});
+    s.sec.push({id:i,n:DB_COUL[i].n,c:DB_COUL[i].c,c2:DB_COUL[i].c2,h:h,
+      x:0,y:0,ax:null,ay:null,abri:null,feu:0,sup:0,ordre:'avancer',mort:false,ang:-1.57});
+  }
+}
+/* ---------- LE PAS DU JEU ---------- */
+function dbPas(s,dt){
+  var i,j,k,sc,en;
+  /* les traçantes, la fumée, les éclats, les obus en vol */
+  for(i=s.tr.length-1;i>=0;i--){s.tr[i].t-=dt;if(s.tr[i].t<=0)s.tr.splice(i,1);}
+  for(i=s.part.length-1;i>=0;i--){var p=s.part[i];p.t-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;
+    p.vx*=0.92;p.vy*=0.92;if(p.t<=0)s.part.splice(i,1);}
+  for(i=s.fum.length-1;i>=0;i--){var f=s.fum[i];f.t-=dt;
+    f.r=f.rmax*Math.min(1,(f.vie-f.t)/2200)*Math.min(1,f.t/2600+0.35);
+    if(f.t<=0)s.fum.splice(i,1);}
+  for(i=s.obus.length-1;i>=0;i--){var ob=s.obus[i];ob.t-=dt;
+    if(ob.t<=0){dbImpact(s,ob.x,ob.y);s.obus.splice(i,1);}}
+  if(s.motT>0)s.motT-=dt;
+  if(s.phase!=='jeu')return;
+  if(s.inter>0){s.inter-=dt;if(s.inter<=0)dbSecteurSuivant(s);return;}
+
+  s.reste-=dt;
+  if(s.reste<=0){dbFin(s,'Le temps est écoulé.');return;}
+
+  /* ---- LES SECTIONS ---- */
+  var vivantes=0;
+  for(i=0;i<s.sec.length;i++){
+    sc=s.sec[i];if(sc.mort)continue;
+    if(dbVivants(sc)===0){sc.mort=true;if(sc.abri!==null&&s.ab[sc.abri])s.ab[sc.abri].occ=null;
+      dbMot(s,'SECTION '+sc.n+' ANÉANTIE',true);continue;}
+    vivantes++;
+    sc.sup=Math.max(0,sc.sup-dt*0.00030);
+    /* le déplacement : en file, vers l'abri désigné */
+    if(sc.ax!==null){
+      var dx=sc.ax-sc.x, dy=sc.ay-sc.y, d=Math.hypot(dx,dy);
+      var v=DB.vit*(1-sc.sup*0.6)*dt;
+      if(d<=v){sc.x=sc.ax;sc.y=sc.ay;sc.ax=null;sc.ay=null;}
+      else{sc.x+=dx/d*v;sc.y+=dy/d*v;sc.ang=Math.atan2(dy,dx);}
+      if(Math.random()<dt*0.004)s.part.push({x:sc.x+(Math.random()-0.5)*14,y:sc.y+6,
+        vx:0,vy:0,t:260,c:'rgba(180,176,160,.5)'});
+    }
+    /* le tir : automatique, vers le plus proche qu'on voit */
+    var cible=null,best=1e9;
+    for(j=0;j<s.enn.length;j++){en=s.enn[j];if(en.mort)continue;
+      var dd=dbDist(sc,en);if(dd>DB.portee||dd>=best)continue;
+      if(!dbVoit(s,sc,en))continue;best=dd;cible=en;}
+    sc.cible=cible;
+    sc.feu-=dt;
+    if(cible&&sc.feu<=0&&sc.sup<0.82){
+      sc.feu=DB.cad*(sc.ax!==null?1.5:1);
+      s.tr.push({x1:sc.x,y1:sc.y,x2:cible.x,y2:cible.y,t:90,c:'#ffe9a8'});
+      var ch=0.50*(1-cible.prot)*(1-sc.sup*0.7)*(sc.ax!==null?0.65:1)*
+             (sc.ordre==='tenir'?1.3:1)*(dbVivants(sc)/6);
+      if(Math.random()<ch){
+        cible.hp--;cible.sup=Math.min(1,cible.sup+0.4);
+        for(k=0;k<4;k++)s.part.push({x:cible.x,y:cible.y,vx:(Math.random()-0.5)*0.06,
+          vy:(Math.random()-0.5)*0.06,t:300,c:'#c8c0b0'});
+        if(cible.hp<=0){cible.mort=true;s.tues++;s.score+=cible.typ==='mg'?400:120;
+          s.morts.push({x:cible.x,y:cible.y,ami:false});
+          if(cible.typ==='mg')dbMot(s,'NID RÉDUIT AU SILENCE',true);}
+      }else cible.sup=Math.min(1,cible.sup+0.12);
+    }
+  }
+  if(!vivantes){dbFin(s,'Plus un homme debout.');return;}
+
+  /* ---- L'ENNEMI ---- */
+  for(j=0;j<s.enn.length;j++){
+    en=s.enn[j];if(en.mort)continue;
+    en.sup=Math.max(0,en.sup-dt*0.00032);
+    var por=en.typ==='mg'?DB.porteeMG:DB.portee*0.92;
+    var vis=null,bb=1e9;
+    for(i=0;i<s.sec.length;i++){sc=s.sec[i];if(sc.mort)continue;
+      var d2=dbDist(en,sc);if(d2>por||d2>=bb)continue;
+      if(!dbVoit(s,en,sc))continue;bb=d2;vis=sc;}
+    en.cible=vis;
+    en.feu-=dt;
+    if(vis&&en.feu<=0&&en.sup<0.8){
+      en.feu=(en.typ==='mg'?DB.cadMG:2000)*(1+en.sup);
+      s.tr.push({x1:en.x,y1:en.y,x2:vis.x,y2:vis.y,t:90,c:en.typ==='mg'?'#ff9a6a':'#ffd0a0'});
+      var prot=dbProt(s,vis);
+      /* LA MITRAILLEUSE CLOUE PLUS QU'ELLE NE TUE : c'est elle qui
+         oblige à manœuvrer, pas à encaisser. */
+      vis.sup=Math.min(1,vis.sup+(en.typ==='mg'?0.22:0.05)*(1-prot*0.55));
+      /* LA MITRAILLEUSE CLOUE, L'INFANTERIE TUE : une section à couvert
+         qui tient est presque intouchable, une section à découvert paie. */
+      var cht=(en.typ==='mg'?0.045:0.05)*(1-prot)*(vis.ax!==null?1.6:1);
+      if(Math.random()<cht)dbTombe(s,vis);
+    }
+  }
+
+  /* ---- L'OBJECTIF ---- */
+  var tenu=false,menace=false;
+  for(i=0;i<s.sec.length;i++){sc=s.sec[i];if(sc.mort)continue;
+    if(dbDist(sc,s.obj)<26&&sc.ax===null)tenu=true;}
+  for(j=0;j<s.enn.length;j++){en=s.enn[j];if(!en.mort&&dbDist(en,s.obj)<42)menace=true;}
+  if(tenu&&!menace){s.obj.garde+=dt;
+    if(s.obj.garde>=3800&&!s.pris){s.pris=true;dbSecteurPris(s);}}
+  else s.obj.garde=Math.max(0,s.obj.garde-dt*0.6);
+}
+/* un homme tombe — et il ne revient pas */
+function dbTombe(s,sc){
+  for(var i=0;i<sc.h.length;i++){
+    if(!sc.h[i].vie)continue;
+    sc.h[i].vie=false;
+    s.morts.push({x:sc.x+(Math.random()-0.5)*12,y:sc.y+(Math.random()-0.5)*12,ami:true,c:sc.c});
+    s.tombes.push({nom:sc.h[i].nom,sec:sc.n,ou:s.cfg.nom});
+    sc.sup=Math.min(1,sc.sup+0.22);
+    for(var k=0;k<5;k++)s.part.push({x:sc.x,y:sc.y,vx:(Math.random()-0.5)*0.07,
+      vy:(Math.random()-0.5)*0.07,t:420,c:'#6a2218'});
+    if(dbVivants(sc)===2)dbMot(s,'SECTION '+sc.n+' : PLUS QUE DEUX');
+    return;
+  }
+}
+function dbImpact(s,x,y){
+  for(var k=0;k<22;k++)s.part.push({x:x,y:y,vx:(Math.random()-0.5)*0.17,
+    vy:(Math.random()-0.5)*0.17,t:380+Math.random()*260,
+    c:['#ffe9a8','#ffb43a','#e8702a','#9a9488'][Math.floor(Math.random()*4)]});
+  s.ab.push({x:Math.round(x),y:Math.round(y),typ:'cratere',occ:null,r:11,neuf:true});
+  for(var j=0;j<s.enn.length;j++){var en=s.enn[j];if(en.mort)continue;
+    var d=Math.hypot(en.x-x,en.y-y);if(d>DB.mortRayon*1.7)continue;
+    en.sup=1;
+    if(d<DB.mortRayon){en.hp-=2;
+      if(en.hp<=0){en.mort=true;s.tues++;s.score+=en.typ==='mg'?400:120;
+        s.morts.push({x:en.x,y:en.y,ami:false});}}}
+  for(var i=0;i<s.sec.length;i++){var sc=s.sec[i];if(sc.mort)continue;
+    if(Math.hypot(sc.x-x,sc.y-y)<DB.mortRayon*0.8){sc.sup=1;dbTombe(s,sc);}}
+  dbMot(s,'OBUS AU BUT');
+}
+/* ---------- LE SECTEUR PRIS, LE SUIVANT, LA FIN ---------- */
+function dbSecteurPris(s){
+  s.score+=2200+Math.max(0,Math.round(s.reste/1000)*8);
+  var reste=0;for(var i=0;i<s.sec.length;i++)if(!s.sec[i].mort)reste+=dbVivants(s.sec[i]);
+  s.score+=reste*140;
+  for(var q=0;q<s.sec.length;q++){var sc=s.sec[q];if(sc.mort)continue;
+    for(var j=0;j<sc.h.length;j++)if(sc.h[j].vie){sc.h[j].missions++;
+      if(sc.h[j].missions>=2&&sc.h[j].grade<3&&Math.random()<0.4)sc.h[j].grade++;}}
+  s.inter=4200;s.bilan={nom:s.cfg.nom,reste:reste,tues:s.tues};
+  dbMot(s,'SECTEUR PRIS',true);
+}
+function dbSecteurSuivant(s){
+  s.bilan=null;s.inter=0;
+  if(s.secteur>=DB_SECT.length-1){dbFin(s,'LA COMPAGNIE A TOUT PRIS');return;}
+  s.secteur++;dbBatir(s,s.secteur);
+}
+function dbFin(s,mot){
+  var reste=0;for(var i=0;i<s.sec.length;i++)if(!s.sec[i].mort)reste+=dbVivants(s.sec[i]);
+  s.score+=reste*220;
+  s.phase='fini';s.finMot=mot;s.finReste=reste;
+  if(typeof finirPartie==='function')finirPartie(Math.round(s.score));
+}
+/* ---------- LA BARRE D'ORDRES : un seul endroit qui dit où sont les boutons ---------- */
+function dbBarre(s){
+  var H=s.H,L=s.L,y0=H-80;
+  var bw=(L-10-9)/4, by=y0+26, bh=28;
+  var b=[];
+  var noms=[['AVANCER','avancer'],['TENIR','tenir'],['FUMIGÈNE','fumigene'],['MORTIER','mortier']];
+  for(var i=0;i<4;i++)b.push({x:5+i*(bw+3),y:by,w:bw,h:bh,n:noms[i][0],k:noms[i][1]});
+  var pw=(L-10)/4, py=H-22;
+  var p=[];for(var j=0;j<4;j++)p.push({x:5+j*pw,y:py,w:pw,h:18,i:j});
+  return {y0:y0,b:b,p:p};
+}
+function dbTape(s,x,y){
+  if(s.phase!=='jeu'||s.inter>0)return;
+  var B=dbBarre(s),i;
+  /* la barre du bas */
+  if(y>=B.y0){
+    for(i=0;i<B.b.length;i++){var r=B.b[i];
+      if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h){dbOrdre(s,r.k);return;}}
+    for(i=0;i<B.p.length;i++){var q=B.p[i];
+      if(x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h){
+        if(!s.sec[q.i].mort){s.sel=q.i;s.mode=null;}return;}}
+    return;
+  }
+  /* un fumigène, un obus : on désigne un point */
+  if(s.mode==='fumigene'){
+    if(s.fumN<=0){dbMot(s,'PLUS DE FUMIGÈNE');s.mode=null;return;}
+    s.fumN--;s.fum.push({x:x,y:y,r:1,rmax:26,t:DB.fumDuree,vie:DB.fumDuree});
+    s.mode=null;dbMot(s,'FUMIGÈNE');return;
+  }
+  if(s.mode==='mortier'){
+    if(s.mortN<=0){dbMot(s,'PLUS D’OBUS');s.mode=null;return;}
+    s.mortN--;s.obus.push({x:x,y:y,t:DB.mortDelai});
+    s.mode=null;dbMot(s,'OBUS DEMANDÉ');return;
+  }
+  /* une section ? */
+  for(i=0;i<s.sec.length;i++){var sc=s.sec[i];if(sc.mort)continue;
+    if(Math.hypot(sc.x-x,sc.y-y)<15){s.sel=i;s.mode=null;return;}}
+  /* un abri ? alors on y va */
+  if(s.sel<0||!s.sec[s.sel]||s.sec[s.sel].mort)return;
+  var sel=s.sec[s.sel],mieux=-1,dm=1e9;
+  for(i=0;i<s.ab.length;i++){var a=s.ab[i];
+    if(a.occ!==null&&a.occ!==s.sel)continue;
+    var d=Math.hypot(a.x-x,a.y-y);if(d<16&&d<dm){dm=d;mieux=i;}}
+  if(mieux<0)return;
+  if(sel.sup>0.85){dbMot(s,'SECTION CLOUÉE · FAIS TAIRE LE FEU');return;}
+  if(sel.abri!==null&&s.ab[sel.abri])s.ab[sel.abri].occ=null;
+  s.ab[mieux].occ=s.sel;sel.abri=mieux;sel.ax=s.ab[mieux].x;sel.ay=s.ab[mieux].y;
+  sel.ordre='avancer';
+}
+function dbOrdre(s,k){
+  var sel=(s.sel>=0)?s.sec[s.sel]:null;
+  if(k==='fumigene'||k==='mortier'){s.mode=(s.mode===k)?null:k;
+    dbMot(s,k==='fumigene'?'DÉSIGNE OÙ POSER LA FUMÉE':'DÉSIGNE OÙ TOMBE L’OBUS');return;}
+  if(!sel||sel.mort)return;
+  s.mode=null;
+  if(k==='tenir'){sel.ordre='tenir';sel.ax=null;sel.ay=null;dbMot(s,'SECTION '+sel.n+' : ON TIENT');}
+  else{sel.ordre='avancer';dbMot(s,'TAPE UN ABRI POUR Y ALLER');}
+}
+/* ---------- LE DESSIN ---------- */
+function dbHomme(x,y,c,c2){
+  R(x-1,y+1,3,1,'rgba(0,0,0,.3)');
+  R(x-1,y-1,3,2,c);R(x-1,y-1,3,1,c2);
+  R(x,y-3,2,2,'#3e4238');R(x,y-3,2,1,'#565c4c');
+}
+function dbCorps(x,y,ami,c){
+  R(x-2,y,4,2,ami?(c||'#4a4a40'):'#3f4850');R(x-2,y,4,1,'rgba(255,255,255,.14)');
+  R(x-1,y+2,2,1,'#6a2218');
+}
+function dbAbri(a,vise){
+  var x=a.x,y=a.y;
+  if(a.typ==='sacs'){for(var k=0;k<3;k++){R(x-10+k*7,y-3,7,5,'#5e5236');R(x-10+k*7,y-3,7,2,'#86774e');}
+    R(x-11,y+2,22,1,'rgba(0,0,0,.3)');}
+  else if(a.typ==='cratere'){for(var j=-4;j<=4;j++)for(var i=-8;i<=8;i++){
+      var d=Math.sqrt((i*i)/64+(j*j)/16);if(d>1)continue;
+      R(x+i,y+j,1,1,d>0.78?(j>0?'#9a9288':'#6a665e'):(j<0?'#242220':'#38342e'));}}
+  else if(a.typ==='caisses'){R(x-9,y-5,9,8,'#6a5436');R(x-9,y-5,9,2,'#8a7048');
+    R(x+1,y-3,8,6,'#6a5436');R(x+1,y-3,8,2,'#8a7048');R(x-9,y+3,18,1,'rgba(0,0,0,.3)');}
+  else if(a.typ==='bitte'){R(x-3,y-5,6,8,'#3e4248');R(x-3,y-5,6,2,'#5e646c');
+    R(x-5,y+3,10,2,'#2e3238');}
+  else{R(x-11,y-4,22,7,'#565e56');R(x-11,y-4,22,2,'#79816f');R(x-11,y+3,22,1,'#343a34');}
+  if(vise){G.strokeStyle='rgba(255,216,106,.85)';G.lineWidth=1;
+    G.beginPath();G.arc(x,y,13,0,7);G.stroke();}
+}
+function dbSection(s,sc,choisi){
+  var n=dbVivants(sc),i;
+  /* l'anneau : la cible du pouce */
+  G.strokeStyle=sc.c;G.lineWidth=choisi?2:1;
+  G.beginPath();G.arc(sc.x,sc.y,10,0,7);G.stroke();
+  if(choisi){G.strokeStyle='rgba(255,255,255,.75)';G.lineWidth=1;
+    G.beginPath();G.arc(sc.x,sc.y,13,0,7);G.stroke();}
+  var pos=[[0,-5],[-5,-1],[5,-1],[-3,4],[3,4],[0,1]];
+  for(i=0;i<n;i++)dbHomme(sc.x+pos[i][0],sc.y+pos[i][1],sc.c,sc.c2);
+  /* le fanion, et la jauge de clouage */
+  R(sc.x-1,sc.y-18,1,7,'#2a2a24');R(sc.x,sc.y-18,6,4,sc.c);
+  if(sc.sup>0.08){R(sc.x-8,sc.y+13,16,2,'rgba(0,0,0,.5)');
+    R(sc.x-8,sc.y+13,16*Math.min(1,sc.sup),2,sc.sup>0.8?'#e8402a':'#e8a04a');}
+  if(sc.ordre==='tenir'&&sc.ax===null){G.strokeStyle='rgba(143,216,154,.7)';G.lineWidth=1;
+    G.beginPath();G.arc(sc.x,sc.y,15,0,7);G.stroke();}
+}
+function dbDessine(s,L,H){
+  var i,j,sc,en;
+  /* la mer, les barges */
+  for(var y=16;y<46;y++)R(0,y,L,1,['#16303e','#1d4052','#265268','#31667e'][Math.min(3,Math.floor((y-16)/8))]);
+  for(i=0;i<22;i++)R(al(i*3.1)*L,18+al(i*7.7)*26,2+al(i)*4,1,'rgba(210,235,245,.3)');
+  var bl=[0.14,0.38,0.64,0.88];
+  for(i=0;i<4;i++){var bx=Math.round(L*bl[i]);
+    R(bx-10,36,20,9,'#3a4038');R(bx-10,36,20,2,'#515848');R(bx-8,45,16,3,'#2a2e26');}
+  /* le quai : gravé une fois dans dbSol, jamais repeint pixel par pixel */
+  if(s.sol)G.drawImage(s.sol,0,46);
+  R(0,46,L,2,'#2e3034');R(0,44,L,2,'#79818a');
+  /* le blockhaus */
+  var o=s.obj;
+  R(o.x-26,o.y-11,52,22,'#5e6058');R(o.x-26,o.y-11,52,3,'#7a7c72');R(o.x-26,o.y+8,52,3,'#3a3c36');
+  R(o.x-18,o.y-2,36,5,'#1e201c');
+  for(i=0;i<3;i++)R(o.x-14+i*12,o.y-1,5,3,s.pris?'#5aba7a':'#141614');
+  if(s.obj.garde>0&&!s.pris){var t=Math.min(1,s.obj.garde/3800);
+    R(o.x-22,o.y+14,44,3,'rgba(0,0,0,.55)');R(o.x-22,o.y+14,44*t,3,'#8fd89a');}
+  /* les abris */
+  var sl=(s.sel>=0)?s.sec[s.sel]:null;
+  var montre=(sl&&!sl.mort&&!s.mode);
+  for(i=0;i<s.ab.length;i++){var ab=s.ab[i];
+    /* on ne montre que les abris à un bond : trente cercles jaunes, ce
+       n'est plus une aide, c'est du bruit */
+    var vise=montre&&ab.occ===null&&Math.hypot(ab.x-sl.x,ab.y-sl.y)<78;
+    dbAbri(ab,vise);}
+  /* les morts restent */
+  for(i=0;i<s.morts.length;i++)dbCorps(s.morts[i].x,s.morts[i].y,s.morts[i].ami,s.morts[i].c);
+  /* l'ennemi */
+  for(j=0;j<s.enn.length;j++){en=s.enn[j];if(en.mort)continue;
+    if(en.typ==='mg'){R(en.x-7,en.y-3,14,5,'#39414a');R(en.x-7,en.y-3,14,2,'#4e5862');
+      R(en.x+6,en.y-1,6,1,'#22282e');R(en.x-9,en.y-5,19,10,'rgba(10,12,14,.35)');
+      R(en.x-7,en.y-3,14,5,'#39414a');R(en.x-7,en.y-3,14,2,'#5e6a76');
+      dbHomme(en.x-2,en.y+4,'#3f4850','#6e7b86');
+      /* on montre son champ de tir, pas un halo qui mange la carte */
+      G.strokeStyle='rgba(216,80,60,.30)';G.lineWidth=1;G.setLineDash([3,4]);
+      G.beginPath();G.arc(en.x,en.y,DB.porteeMG*0.26,0.35,2.79);G.stroke();G.setLineDash([]);}
+    else{R(en.x-2,en.y-4,5,6,'rgba(10,12,14,.5)');dbHomme(en.x,en.y,'#3f4850','#6e7b86');}
+    if(en.sup>0.3){R(en.x-5,en.y-8,10,2,'rgba(0,0,0,.5)');R(en.x-5,en.y-8,10*en.sup,2,'#d8d0b0');}}
+  /* les traçantes */
+  for(i=0;i<s.tr.length;i++){var tr=s.tr[i];
+    G.strokeStyle=tr.c;G.globalAlpha=Math.min(1,tr.t/90);G.lineWidth=1;
+    G.beginPath();G.moveTo(tr.x1,tr.y1);G.lineTo(tr.x2,tr.y2);G.stroke();G.globalAlpha=1;}
+  /* les sections */
+  for(i=0;i<s.sec.length;i++){sc=s.sec[i];if(sc.mort)continue;
+    if(sc.ax!==null){G.strokeStyle='rgba(255,255,255,.35)';G.lineWidth=1;
+      G.setLineDash([3,3]);G.beginPath();G.moveTo(sc.x,sc.y);G.lineTo(sc.ax,sc.ay);G.stroke();G.setLineDash([]);}
+    dbSection(s,sc,i===s.sel);}
+  /* la fumée */
+  for(i=0;i<s.fum.length;i++){var f=s.fum[i];
+    for(var k=0;k<9;k++){var a=k/9*6.28;
+      disque(f.x+Math.cos(a)*f.r*0.55,f.y+Math.sin(a)*f.r*0.45,f.r*0.55,'rgba(206,204,196,.42)');}
+    disque(f.x,f.y,f.r*0.6,'rgba(228,226,218,.5)');}
+  /* l'obus qui va tomber */
+  for(i=0;i<s.obus.length;i++){var ob=s.obus[i],tt=1-ob.t/DB.mortDelai;
+    G.strokeStyle='rgba(232,160,74,'+(0.4+0.5*Math.abs(Math.sin(tt*14)))+')';G.lineWidth=1;
+    G.beginPath();G.arc(ob.x,ob.y,16-tt*9,0,7);G.stroke();
+    R(ob.x-1,ob.y-1,3,3,'#e8a04a');}
+  /* les éclats */
+  for(i=0;i<s.part.length;i++)R(s.part[i].x,s.part[i].y,1,1,s.part[i].c);
+  /* le viseur du fumigène / du mortier */
+  if(s.mode){G.strokeStyle=s.mode==='mortier'?'#e8a04a':'#c0c8c0';G.lineWidth=1;
+    G.beginPath();G.arc(L/2,(46+s.bas)/2,0,0,7);G.stroke();}
+}
+/* ---------- LES BANDEAUX ---------- */
+function dbChrono(ms){var t=Math.max(0,Math.round(ms/1000));
+  return Math.floor(t/60)+':'+('0'+(t%60)).slice(-2);}
+function dbHaut(s,L){
+  R(0,0,L,16,'rgba(14,14,12,.9)');
+  G.font='bold 6px Trebuchet MS';G.textAlign='left';G.fillStyle='#9aa0a6';
+  G.fillText('SECTEUR '+(s.secteur+1)+'/3 · '+(s.cfg?s.cfg.nom:''),4,7);
+  G.font='bold 8px Trebuchet MS';G.fillStyle='#ffd86a';
+  G.fillText(s.cfg?s.cfg.obj:'',4,15);
+  var h=0;for(var i=0;i<s.sec.length;i++)if(!s.sec[i].mort)h+=dbVivants(s.sec[i]);
+  G.textAlign='right';G.font='bold 6px Trebuchet MS';G.fillStyle='#9aa0a6';
+  G.fillText('HOMMES '+h+'/24',L-4,7);
+  G.font='bold 8px Trebuchet MS';G.fillStyle=s.reste<30000?'#e8704a':'#c0aa80';
+  G.fillText(dbChrono(s.reste),L-4,15);G.textAlign='left';
+}
+function dbBas(s,L,H){
+  var B=dbBarre(s),i;
+  R(0,B.y0,L,H-B.y0,'rgba(14,14,12,.94)');R(0,B.y0,L,1,'rgba(216,198,156,.3)');
+  var sel=(s.sel>=0)?s.sec[s.sel]:null;
+  if(sel&&!sel.mort){
+    R(4,B.y0+5,2,13,sel.c);
+    G.font='bold 8px Trebuchet MS';G.fillStyle='#fff';G.textAlign='left';
+    G.fillText('SECTION '+sel.n,9,B.y0+12);
+    G.font='6px Trebuchet MS';G.fillStyle='#9aa0a6';
+    G.fillText(dbVivants(sel)+' hommes · '+(sel.sup>0.8?'clouée':sel.sup>0.35?'sous le feu':'bon moral'),9,B.y0+20);
+  }
+  G.textAlign='right';G.font='bold 6px Trebuchet MS';G.fillStyle='#8fd89a';
+  G.fillText(s.mode?'DÉSIGNE UN POINT':'TAPE UN ABRI POUR Y ALLER',L-4,B.y0+12);G.textAlign='left';
+  for(i=0;i<B.b.length;i++){var r=B.b[i];
+    var on=(r.k==='fumigene'||r.k==='mortier')?(s.mode===r.k)
+          :(sel&&!sel.mort&&sel.ordre===r.k);
+    R(r.x,r.y,r.w,r.h,on?'#3e5a3a':'#201e18');
+    R(r.x,r.y,r.w,1,on?'#8fd89a':'rgba(255,255,255,.12)');
+    R(r.x,r.y+r.h-1,r.w,1,'rgba(0,0,0,.45)');
+    G.font='bold 6px Trebuchet MS';G.textAlign='center';G.fillStyle=on?'#fff':'#9aa0a6';
+    G.fillText(r.n,r.x+r.w/2,r.y+13);
+    var n2=r.k==='fumigene'?('× '+s.fumN):r.k==='mortier'?('× '+s.mortN):'';
+    if(n2){G.font='5px Trebuchet MS';G.fillStyle='rgba(255,255,255,.45)';
+      G.fillText(n2,r.x+r.w/2,r.y+22);}}
+  for(i=0;i<B.p.length;i++){var q=B.p[i],sc=s.sec[q.i];
+    var cx=q.x+q.w/2,cy=q.y+7;
+    disque(cx,cy,6,sc.mort?'#2a2a24':sc.c);disque(cx,cy,4,sc.mort?'#1a1812':sc.c2);
+    if(i===s.sel&&!sc.mort){G.strokeStyle='#fff';G.lineWidth=1;
+      G.beginPath();G.arc(cx,cy,8,0,7);G.stroke();}
+    G.font='bold 5px Trebuchet MS';G.textAlign='center';
+    G.fillStyle=sc.mort?'#8a3a2a':'#9aa0a6';
+    G.fillText(sc.mort?'ANÉANTIE':String(dbVivants(sc)),cx,q.y+17);}
+  G.textAlign='left';
+}
+/* l'écran entre deux secteurs : c'est lui qui porte l'attachement */
+function dbEntreDeux(s,L,H){
+  R(0,0,L,H,'rgba(10,10,8,.9)');
+  G.textAlign='center';
+  G.font='bold 6px Trebuchet MS';G.fillStyle='#9aa0a6';
+  G.fillText('SECTEUR PRIS',L/2,34);
+  G.font='bold 11px Trebuchet MS';G.fillStyle='#ffd86a';
+  G.fillText(s.bilan?s.bilan.nom:'',L/2,48);
+  G.font='7px Trebuchet MS';G.fillStyle='#c0aa80';
+  G.fillText((s.bilan?s.bilan.reste:0)+' hommes debout · '+(s.bilan?s.bilan.tues:0)+' ennemis abattus',L/2,62);
+  var y=84;
+  G.font='bold 6px Trebuchet MS';G.fillStyle='#8a3a2a';
+  G.fillText(s.tombes.length?'ILS NE REVIENDRONT PAS':'PERSONNE N’EST TOMBÉ',L/2,y);y+=12;
+  G.textAlign='left';
+  var n=Math.min(7,s.tombes.length);
+  for(var i=s.tombes.length-n;i<s.tombes.length;i++){var m=s.tombes[i];
+    R(10,y-6,L-20,9,'rgba(40,20,16,.75)');R(10,y-6,1,9,'#8a3a2a');
+    G.font='bold 6px Trebuchet MS';G.fillStyle='#b4a89c';G.fillText(m.nom,15,y+1);
+    G.font='5px Trebuchet MS';G.fillStyle='#6a5a52';G.textAlign='right';
+    G.fillText('section '+m.sec,L-15,y+1);G.textAlign='left';y+=11;}
+  G.textAlign='center';G.font='bold 8px Trebuchet MS';G.fillStyle='#8fd89a';
+  G.fillText('SECTEUR SUIVANT : '+(DB_SECT[Math.min(DB_SECT.length-1,s.secteur+1)].nom),L/2,H-40);
+  G.font='6px Trebuchet MS';G.fillStyle='#9aa0a6';
+  G.fillText('on repart dans '+Math.ceil(s.inter/1000)+'…',L/2,H-28);
+  G.textAlign='left';
+}
+/* ---------- LA BORNE ---------- */
+MOTEUR.debarquement={
+  nom:'Le Débarquement', sous:'QUATRE SECTIONS · TROIS SECTEURS · ILS NE REVIENNENT PAS',
+  manches:null, vise:190,
+  init:function(){
+    return {phase:'pret',t:0,score:0,secteur:0,L:195,H:390,gr:1,
+      sec:[],enn:[],ab:[],obj:null,fum:[],tr:[],part:[],morts:[],obus:[],tombes:[],
+      sel:-1,mode:null,fumN:2,mortN:2,reste:0,pris:false,inter:0,bilan:null,
+      tues:0,mot:'',motT:0,motGros:false,cfg:null,haut:46,bas:310,finMot:'',finReste:0,sol:null};
+  },
+  cadre:function(s,L,H){
+    s.L=L;s.H=H;s.haut=46;s.bas=H-80;
+    /* la carte se replie sur le nouvel écran sans rien perdre */
+    for(var i=0;i<s.ab.length;i++){s.ab[i].x=Math.max(12,Math.min(L-12,s.ab[i].x));
+      s.ab[i].y=Math.max(s.haut+20,Math.min(s.bas,s.ab[i].y));}
+    if(s.obj){s.obj.x=Math.round(L/2);s.obj.y=s.haut+22;}
+    if(s.sol&&(s.sol.width!==L||s.sol.height!==Math.max(10,s.bas+12-46)))dbSol(s);
+    for(var j=0;j<s.enn.length;j++){s.enn[j].x=Math.max(8,Math.min(L-8,s.enn[j].x));}
+    for(var k=0;k<s.sec.length;k++){var sc=s.sec[k];
+      sc.x=Math.max(10,Math.min(L-10,sc.x));sc.y=Math.max(s.haut+10,Math.min(s.bas,sc.y));}
+  },
+  demarrer:function(s){
+    s.gr=1+Math.floor(Math.random()*2147483000);
+    s.score=0;s.secteur=0;s.tues=0;s.tombes=[];s.fumN=2;s.mortN=2;
+    this.cadre(s,SL||195,SH||390);
+    dbCompagnie(s);
+    dbBatir(s,0);
+  },
+  pas:function(s,dt){s.t+=dt;dbPas(s,dt);},
+  tape:function(s,x,y){dbTape(s,x,y);},
+  dessine:function(s,L,H){
+    if(s.phase==='pret'){
+      R(0,0,L,H,'#15181c');
+      G.textAlign='center';
+      G.fillStyle='#c0aa80';G.font='bold 9px Trebuchet MS';
+      G.fillText('TAPE UNE SECTION, PUIS UN ABRI',L/2,H/2-16);
+      G.fillStyle='#8fa8b4';G.font='7px Trebuchet MS';
+      G.fillText('elle y va et se met à couvert toute seule',L/2,H/2-2);
+      G.fillText('le tir est automatique',L/2,H/2+10);
+      G.fillStyle='#8a6a52';G.font='bold 7px Trebuchet MS';
+      G.fillText('tes hommes ne reviennent pas',L/2,H/2+28);
+      G.textAlign='left';return;
+    }
+    if(s.bas!==H-80)this.cadre(s,L,H);
+    dbDessine(s,L,H);
+    dbHaut(s,L);
+    dbBas(s,L,H);
+    if(s.inter>0&&s.phase==='jeu'){dbEntreDeux(s,L,H);return;}
+    if(s.motT>0){
+      var a=Math.min(1,s.motT/300);
+      G.globalAlpha=a;
+      R(0,H*0.30,L,s.motGros?20:14,'rgba(158,126,62,.9)');
+      G.textAlign='center';G.fillStyle='#fff';
+      G.font='bold '+(s.motGros?10:8)+'px Trebuchet MS';
+      G.fillText(s.mot,L/2,H*0.30+(s.motGros?14:10));
+      G.textAlign='left';G.globalAlpha=1;
+    }
+    if(s.phase==='fini'){
+      R(0,0,L,H,'rgba(10,10,8,.86)');
+      G.textAlign='center';
+      G.fillStyle='#ffd86a';G.font='bold 12px Trebuchet MS';
+      G.fillText(s.finMot,L/2,H/2-26);
+      G.fillStyle='#c0aa80';G.font='8px Trebuchet MS';
+      G.fillText(s.secteur+(s.pris?1:0)+' secteur(s) pris · '+s.tues+' ennemis abattus',L/2,H/2-8);
+      G.fillText(s.finReste+' hommes debout · '+s.tombes.length+' tombés',L/2,H/2+6);
+      G.fillStyle='#ffd86a';G.font='bold 14px Trebuchet MS';
+      G.fillText(Math.round(s.score).toLocaleString('fr-FR')+' points',L/2,H/2+30);
+      G.textAlign='left';
+    }
+  },
+  fige:function(s){return !!(s&&s.inter>0);},
+  actions:function(s){
+    if(!s||s.phase==='pret')return '<button class="pr" data-a="commencer">COMMENCER</button>';
+    if(s.phase==='fini')return '<button data-a="menu">LE MENU</button><button class="pr" data-a="rejouer">ENCORE · 1 €</button>';
+    return '';
+  },
+  action:function(s,a){if(a==='menu'&&typeof mnuOuvrir==='function')mnuOuvrir();}
+};
+
 MOTEUR.ferme={
   nom:'La Ferme du Quai', sous:'PLANTE · ARROSE · RÉCOLTE · LIVRE',
   manches:'une', vise:190,
@@ -4597,6 +5229,27 @@ async function fmAmeliorer(k){
   try{navigator.vibrate&&navigator.vibrate(20);}catch(x){}
   mnuMaj();
 }
+/* LE MENU DU DEBARQUEMENT : on explique le geste, pas les touches */
+var DB_REC=0, DB_PARTIES=0;
+function dbMenu(){
+  var h='';
+  if(MNU_ONG==='jouer'){
+    h+='<div class="stage"><div class="rec">RECORD<b>'+mnuChiffre(DB_REC)+'</b></div>'+
+       '<canvas id="persoApercu" width="48" height="40"></canvas>'+
+       '<div class="gauche"><button class="sb" data-go="rec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M8 21h8M12 17v4M6 4h12v4a6 6 0 0 1-12 0zM6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3"/></svg>SCORES</button></div></div>';
+    h+='<div class="chest"><h4>COMMENT ON JOUE<span>3 secteurs</span></h4><div class="r3">'+
+       '<div class="d" style="--a:#5a98e8;--b:#2a5a9a"><i>1</i>Tape une section, puis un abri : elle y va et se met à couvert<em>⚑</em></div>'+
+       '<div class="d" style="--a:#8fd89a;--b:#3e7a4a"><i>2</i>Le tir est automatique. Tu choisis où et quand, jamais vers quoi<em>✚</em></div>'+
+       '<div class="d" style="--a:#e8a04a;--b:#a85a18"><i>3</i>La mitrailleuse cloue plus qu’elle ne tue : fume-la, ou contourne<em>☁</em></div></div></div>';
+    h+='<div class="semp" style="border-color:rgba(255,255,255,.2)"><p>Une section clouée ne peut plus bouger : fais taire le feu qui la tient, ou pose un fumigène devant elle. '+
+       'Tiens l’objectif quatre secondes, sans ennemi autour, et le secteur est pris.</p></div>';
+    h+='<div class="semp" style="border-color:rgba(138,58,42,.6)"><p><b>Tes hommes ont des noms.</b> Ils montent en grade d’un secteur à l’autre — et quand l’un tombe, il ne revient pas.</p></div>';
+  }else{
+    h+='<div class="fiche"><span class="shield" style="--c:#8fd89a">⚑</span><span><small>TON RECORD AU DÉBARQUEMENT</small><b>'+mnuChiffre(DB_REC)+'</b><em>'+(DB_PARTIES?mnuChiffre(DB_PARTIES)+' partie'+(DB_PARTIES>1?'s':''):'Pas encore de partie')+'</em></span></div>';
+    h+='<div class="liste" id="jclsHote"></div>';
+  }
+  return h;
+}
 /* LE MENU DE LA FERME, dans le meme habit que celui du Hangar */
 function fmMenu(){
   var h='';
@@ -4699,6 +5352,13 @@ function ouvrirBorne(B){
     })();
   }
   if(B.cle==='ferme'){MNU_ONG='jouer';mnuOuvrir();fmCharger();}
+  if(B.cle==='debarquement'){MNU_ONG='jouer';mnuOuvrir();
+    (async function(){
+      try{var r=await rpc('arcade_record',{p_borne:'debarquement'});
+          if(r&&typeof r.score==='number'){DB_REC=r.score;DB_PARTIES=r.parties||0;
+            if(!MNU.hidden)mnuMaj();}}catch(e){}
+    })();
+  }
   if(B.cle==='hangar'){
     mnuOuvrir();
     chargerArsenal();
