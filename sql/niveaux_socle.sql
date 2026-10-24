@@ -699,3 +699,65 @@ where niveau = 29;
    au premier secteur, le son, et des cartes qui ne soient pas
    seulement quatre rangs d'abris tirés au hasard.
 */
+
+/* ============================================================
+   LE DÉBARQUEMENT — DE VRAIES TROUPES ET TROIS CARTES
+                                                     25/10/2026
+   ============================================================
+   LES TROUPES. Première tentative : définir le soldat comme un
+   assemblage d'ellipses et l'échantillonner sous l'angle voulu,
+   comme le kayak des Calanques. Résultat : de la bouillie. À
+   cette taille, un casque fait six pixels — il n'a plus de
+   forme à faire tourner.
+
+   Ce qui marche : on DESSINE le soldat à la main, pixel par
+   pixel, vu de dessus, dans une matrice de caractères (onze sur
+   onze). Une image vers le nord, une vers le nord-est, et les
+   six autres directions par rotations d'un quart de tour, qui
+   ne perdent aucun pixel. Casque, vareuse à la couleur de la
+   section, sac, fusil pointé devant, et son ombre.
+
+   L'ENNEMI a ses propres matrices : casque plus large à bord
+   plat, vareuse terre. On le reconnaît à la silhouette avant
+   même de voir la couleur, et il garde son losange rouge.
+
+   TROIS FIGURANTS PAR SECTION, pas six : six soldats de onze
+   pixels dans un anneau de quinze, c'était un tas. L'effectif
+   exact se lit aux six encoches autour de l'anneau. L'anneau a
+   grandi (11 → 15) et la zone de tape avec (15 → 19).
+
+   LES TROIS CARTES, une par secteur, et la campagne raconte
+   enfin quelque chose :
+     1. LES CATALANS — on débarque. Sable, galets, traces de
+        chenilles qui montent de l'eau, frange d'écume qui
+        bouge, barges échouées. Abris : hérissons tchèques,
+        pieux minés, rouleaux de barbelés, trous d'obus.
+     2. LA JOLIETTE — on remonte le port. Dalles, deux voies
+        ferrées en travers, flaques de mazout. Abris :
+        conteneurs, caisses, bittes, cratères.
+     3. LA BONNE MÈRE — on monte au plateau. Terre retournée,
+        souches calcinées, deux lignes de tranchée gravées avec
+        leur parapet, et la basilique en silhouette sur la
+        crête. Abris : tranchées, sacs, souches, cratères.
+
+   Chaque sorte d'abri a sa protection : conteneur 0,66,
+   tranchée 0,70, hérisson 0,30, barbelé 0,18. Le décor n'est
+   plus un papier peint, il décide où l'on survit.
+
+   Tout le décor propre à une carte est GRAVÉ dans le sol une
+   fois par secteur (rails, tranchées, galets, traces), jamais
+   repeint par image.
+
+   UN VRAI DÉFAUT TROUVÉ PAR LA PARTIE AUTOMATIQUE : secteur
+   nettoyé, huit ennemis abattus, vingt-deux hommes debout — et
+   partie perdue au chrono, parce que personne n'était monté
+   tenir l'objectif. Désormais, quand il ne reste plus un
+   ennemi, l'objectif se prend de plus loin (38 au lieu de 22)
+   et presque trois fois plus vite (1,4 s au lieu de 3,8), et le
+   jeu le dit : « SECTEUR NETTOYÉ · MONTE À L'OBJECTIF ».
+
+   Mesuré après : la partie automatique, qui n'utilise ni
+   fumigène ni mortier, prend les deux premiers secteurs et
+   tombe au plateau. 13 836 points, 22 ennemis abattus,
+   60 images par seconde.
+*/
