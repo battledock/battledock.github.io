@@ -572,3 +572,62 @@ where niveau = 29;
    Reste inerte après 25 : 27 (table VIP), 28 (aquarium du
    cabanon), 30 (la statue sur le quai).
 */
+
+/* ============================================================
+   LA BORNE « LE DÉBARQUEMENT »                      24/10/2026
+   ============================================================
+   Une borne d'arcade de tactique, en solo. Elle ne coûte rien
+   au serveur : tout tourne sur le téléphone, et Supabase ne
+   voit que deux appels, le jeton au départ et le score à
+   l'arrivée (arcade_demarrer / arcade_score, comme le Hangar).
+
+   SERVEUR
+   - arcade_jeton : 'debarquement' ajouté à la liste des bornes
+     branchées. Vérifié : le jeton passe, le score se pose, le
+     classement répond.
+   - Rien d'autre. Pas de table, pas de Realtime.
+
+   LE PARTI PRIS DE JEU, en trois règles
+   1. On ne commande pas des hommes, on commande des SECTIONS :
+      cinq cibles grosses comme un pouce, jamais trente.
+   2. Pas de chemin libre : une section ne va que d'un ABRI
+      marqué à un autre. Rien ne se coince dans un mur, et
+      chaque mouvement a l'air décidé. C'est ce qui rend un jeu
+      de troupes jouable au pouce.
+   3. Le tir est AUTOMATIQUE. Le joueur choisit où et quand,
+      jamais vers quoi.
+
+   Quatre ordres, pas un de plus : AVANCER · TENIR · FUMIGÈNE ·
+   MORTIER. La mitrailleuse CLOUE plus qu'elle ne tue (elle
+   monte la jauge de clouage ; au-delà de 0,85 la section ne
+   peut plus bouger) : c'est elle qui oblige à fumer ou à
+   contourner au lieu d'encaisser.
+
+   TROIS SECTEURS d'affilée — la Joliette, le fort Saint-Jean,
+   la Bonne Mère — et les hommes PERSISTENT d'un secteur à
+   l'autre. Ils ont des noms d'ici, ils montent en grade, et
+   quand ils tombent ils ne reviennent pas. L'écran entre deux
+   secteurs ne montre pas un score : il montre la liste de ceux
+   qui sont restés.
+
+   DEUX PIÈGES ÉVITÉS
+   - Le sol du quai était repeint pixel par pixel à chaque
+     image : cinquante mille rectangles par frame. Il est
+     maintenant gravé une fois par secteur dans un canvas
+     (dbSol) et seulement recollé. 60 images/s, p95 à 16,7 ms.
+   - Sans position d'assaut contre le blockhaus, aucune section
+     ne pouvait tenir l'objectif : le secteur ne se prenait
+     jamais. Deux abris de sacs sont posés à ±16 px devant lui,
+     et le rayon de garde est passé à 26.
+
+   ÉQUILIBRAGE, mesuré et pas deviné
+   Première version : 24 hommes perdus en 30 secondes pour 3
+   ennemis abattus — injouable. Après réglage (infanterie
+   ennemie à 2 s de cadence et 5 % de létalité, protection des
+   abris qui compte vraiment, cadence amie à 620 ms), une
+   partie pilotée automatiquement, qui n'utilise ni fumigène ni
+   mortier, prend DEUX secteurs sur trois et finit à 12 928
+   points. Une section à couvert qui tient est presque
+   intouchable ; une section à découvert paie. C'est la leçon
+   que le jeu doit apprendre, et il l'apprend tout seul.
+*/
