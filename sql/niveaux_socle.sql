@@ -1216,3 +1216,23 @@ where niveau = 29;
    Le dégradé du cône remettait globalAlpha à une valeur fixe et
    écrasait l'extinction générale posée avant la boucle.
    ===================================================================== */
+
+/* =====================================================================
+   LE DÉBARQUEMENT EST RETIRÉ (2026-10-26)
+
+   La borne sort de la salle : moteur, sprites, cartes, menu, vignette,
+   crochets du shell — soixante-cinq mille octets en moins dans
+   arcade.html — et 'debarquement' quitte le tableau BORNES de
+   arcade_jeton côté serveur. Les scores déjà posés restent en base ;
+   rien ne les lit plus.
+
+   UN PIÈGE EN RETIRANT UN BLOC : coMenu() vivait juste avant dbMenu()
+   et a été emporté avec lui. L'assertion vérifiait que le bloc
+   contenait bien dbMenu et pas fmMenu — elle ne disait rien de ce
+   qu'il contenait D'AUTRE. Récupéré depuis git. Pour la prochaine
+   fois : une suppression de bloc se vérifie sur ce qu'elle emporte,
+   pas seulement sur ses bornes.
+
+   LA SUITE : on reprend Le Cordon de zéro, petit à petit, en
+   commençant par le menu de la borne.
+   ===================================================================== */
