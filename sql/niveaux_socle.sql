@@ -869,3 +869,52 @@ where niveau = 29;
    moins cher : c'est exactement ce qu'une couche de stratégie
    doit produire. 60 images par seconde, ronde verte.
 */
+
+/* =====================================================================
+   LA BORNE « LE CORDON » — le maintien de l'ordre comme jeu de calme
+   (2026-10-25)
+
+   LE PARI. On joue les CRS, et le jeu ne récompense pas la force. Une
+   jauge de TENSION tient toute la borne : chaque geste brutal marche
+   tout de suite et se paie trois minutes plus tard, parce que c'est la
+   tension — et rien d'autre — qui fabrique les casseurs. Le joueur
+   découvre ça en perdant une première partie au gaz.
+
+     GAZ     +24 % de tension, disperse, fait lâcher les cibles
+     NASSE   +14 % (+1 % par interpellé), retire les casseurs,
+             et fait basculer les passants pris dedans
+     REPLI   −7 %   un pas en arrière
+     PARLER  −19 %  un officier se détache 9 s et calme 26 personnes
+     TENIR   ne coûte rien devant une vitrine, cher en travers de la rue
+             (la tension monte avec le NOMBRE de gens bloqués)
+
+   LES TROIS MOYENS RECHARGENT (34 s / 26 s / 21 s) au lieu d'être un
+   stock : trois clics puis deux minutes sans rien à décider, ce n'était
+   pas un jeu.
+
+   CE QUI A ÉTÉ CORRIGÉ EN CHEMIN, et qui vaut pour les prochaines bornes
+   - TENIR annulait le déplacement en cours : un cordon envoyé devant une
+     vitrine n'y allait jamais. Un ORDRE D'ATTITUDE ne doit pas toucher à
+     la destination.
+   - Souple freinait presque autant que tenir : la rue bouchait toute
+     seule et ne rien faire perdait la partie. Souple laisse passer.
+   - Sans casseurs de fond, ne rien faire GAGNAIT. Il faut une menace qui
+     ne dépend pas du joueur, sinon il n'y a pas de jeu.
+   - Onze vitrines pour cinq cordons n'était pas un choix difficile,
+     c'était une défaite écrite. Sept commerces, cinq cordons.
+   - Le nombre de casseurs est PLAFONNÉ (2 + tension×7) : le joueur doit
+     pouvoir les compter des yeux et savoir s'il perd la rue.
+
+   ON PERD quand la tension atteint 100 % ou quand la PHARMACIE tombe.
+   ON GAGNE quand le cortège est passé. Les autres commerces sont du
+   score, pas une condition : 400 points la devanture debout, 18 points
+   par personne passée tranquille, 2 500 × le calme final, 3 000 de
+   bonus. Une rue finie à 10 % de tension vaut plus qu'une rue finie
+   à 80 %.
+
+   CÔTÉ SERVEUR : 'cordon' ajouté au tableau BORNES de arcade_jeton.
+   Le reste (arcade_demarrer / arcade_score / arcade_classement /
+   arcade_record) marche sans rien changer.
+
+   À SUIVRE : le côté manifestants, qui jouera la même rue à l'envers.
+   ===================================================================== */

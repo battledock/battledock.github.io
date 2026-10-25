@@ -20,7 +20,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-25-1700';
+  var MA_VERSION='2026-10-25-2130';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -690,7 +690,12 @@ var BORNES=[
  {cle:'debarquement', vig:'debarquement', nom:'Le Débarquement',
   dit:'Quatre sections de six hommes, trois secteurs du port à reprendre. Tu tapes une section, tu tapes un abri : elle y va et se met à couvert. Le tir est automatique — tu choisis où et quand, jamais vers quoi. Tes hommes ont des noms, et ils ne reviennent pas.',
   court:'Commande tes sections. Trois secteurs. Pas de résurrection.',
-  mise:'1 JETON · 24 HOMMES', tag:'NOUVEAU'}
+  mise:'1 JETON · 24 HOMMES', tag:'NOUVEAU'},
+ /* LE CORDON : la seule borne où la bonne réponse est de ne rien faire */
+ {cle:'cordon', vig:'cordon', nom:'Le Cordon',
+  dit:'Un cortège descend la rue, tu tiens le maintien de l’ordre. Le gaz et la nasse marchent tout de suite — et ils font monter la tension, et c’est la tension qui fabrique les casseurs. Reculer d’un pas, envoyer un officier parler : ça ne paie pas sur le moment, et c’est pourtant ça qui gagne.',
+  court:'Laisse passer le cortège sans que le quartier parte en vrille.',
+  mise:'1 JETON · 5 CORDONS', tag:'NOUVEAU'}
 ];
 
 /* LES BORNES A VENIR : on les montre, grisees, pour donner envie de revenir */
@@ -725,6 +730,34 @@ function banniere(cv,cle){
       g.fillStyle='#3f4850';g.fillRect(ex-1,ey-1,3,2);g.fillStyle='#3e4238';g.fillRect(ex,ey-3,2,2);}
     g.strokeStyle='rgba(255,233,168,.55)';g.lineWidth=1;
     g.beginPath();g.moveTo(w*0.40,h*0.76);g.lineTo(w*0.46,h*0.52);g.stroke();
+    return;
+  }
+  if(cle==='cordon'){
+    /* la rue vue de dessus : le bitume, les vitrines, la foule, la ligne bleue */
+    var gc=11,rc=function(){gc=(gc*16807)%2147483647;return (gc-1)/2147483646;};
+    for(var y2=0;y2<h;y2++)for(var x2=0;x2<w;x2++){
+      var v2=0.45+Math.sin((x2+y2*0.6)/23)*0.08+(rc()-0.5)*0.2;
+      g.fillStyle=['#2e3136','#383c42','#43484f','#4e545c'][Math.max(0,Math.min(3,Math.floor(v2*4)))];
+      g.fillRect(x2,y2,1,1);}
+    g.fillStyle='#5a5f66';g.fillRect(0,0,9,h);g.fillRect(w-9,0,9,h);
+    for(var v3=0;v3<3;v3++){var vy=6+v3*(h-14)/2;
+      g.fillStyle='#8fb8e8';g.fillRect(1,vy,7,8);
+      g.fillStyle='#8fd8b0';g.fillRect(w-8,vy+5,7,8);}
+    /* la foule qui descend */
+    for(var m2=0;m2<70;m2++){var mx=11+rc()*(w-22),my=2+rc()*h*0.62;
+      var hh=rc();g.fillStyle=hh<0.14?'#b8402a':hh<0.36?'#c89a2a':'#3a9a5a';
+      g.fillRect(mx,my,2,3);g.fillStyle='#c89a74';g.fillRect(mx,my-2,2,2);}
+    /* le cordon, en bas, net */
+    var cy2=Math.round(h*0.80);
+    for(var c3=0;c3<22;c3++){var cxx=10+c3*((w-20)/21);
+      g.fillStyle='#1c2230';g.fillRect(cxx,cy2-3,2,2);
+      g.fillStyle='#2a3a6a';g.fillRect(cxx,cy2,2,4);
+      g.fillStyle='#8ab0d8';g.fillRect(cxx,cy2+1,2,2);}
+    g.fillStyle='rgba(140,180,240,.45)';g.fillRect(8,cy2-7,w-16,1);
+    /* la jauge de tension, en haut : c'est la signature du jeu */
+    g.fillStyle='rgba(14,14,12,.75)';g.fillRect(0,0,w,7);
+    g.fillStyle='#1a1d22';g.fillRect(2,2,w-4,3);
+    g.fillStyle='#c8a03a';g.fillRect(3,3,(w-6)*0.42,1);
     return;
   }
   if(MOTEUR[cle]&&MOTEUR[cle].banniere){MOTEUR[cle].banniere(g,w,h);return;}
@@ -4197,17 +4230,20 @@ function mnuMaj(){
     GO.innerHTML='<b>'+(sem?'LA SEMAINE':'JOUER')+'</b><small>'+(sem?'1 € · même parcours pour tous':'1 € · 10 000 € toutes les 10 salles')+'</small>';}
   var FE=!!(BORNE&&BORNE.cle==='ferme');
   var DBN=!!(BORNE&&BORNE.cle==='debarquement');
+  var CDN=!!(BORNE&&BORNE.cle==='cordon');
   if(FE&&GO){GO.classList.remove('sem');GO.innerHTML='<b>JOUER</b><small>1 € · 2 min 30 · avant l’orage</small>';}
   if(DBN&&GO){GO.classList.remove('sem');GO.innerHTML='<b>DÉBARQUER</b><small>1 € · 24 hommes · trois secteurs</small>';}
+  if(CDN&&GO){GO.classList.remove('sem');GO.innerHTML='<b>PRENDRE LA RUE</b><small>1 € · 5 cordons · 2 min 30</small>';}
   var tp=MNU.querySelector('.mo button[data-o="perso"]'), ta=MNU.querySelector('.mo button[data-o="armes"] span');
-  if(tp)tp.style.display=(FE||DBN)?'none':'';if(ta)ta.textContent=FE?'OUTILS':'ARMES';
+  if(tp)tp.style.display=(FE||DBN||CDN)?'none':'';if(ta)ta.textContent=FE?'OUTILS':'ARMES';
   var ta2=MNU.querySelector('.mo button[data-o="armes"]');
-  if(ta2)ta2.style.display=DBN?'none':'';
-  if((FE||DBN)&&MNU_ONG==='perso')MNU_ONG='jouer';
-  if(DBN&&MNU_ONG==='armes')MNU_ONG='jouer';
+  if(ta2)ta2.style.display=(DBN||CDN)?'none':'';
+  if((FE||DBN||CDN)&&MNU_ONG==='perso')MNU_ONG='jouer';
+  if((DBN||CDN)&&MNU_ONG==='armes')MNU_ONG='jouer';
   mnuHaut();
   var h='';
-  if(DBN)h=dbMenu();
+  if(CDN)h=coMenu();
+  else if(DBN)h=dbMenu();
   else if(FE)h=fmMenu();
   else if(MNU_ONG==='jouer'){
     var AC=HG_ARMES[CHOIX_ARME]||HG_ARMES.pistolet;
@@ -4305,7 +4341,7 @@ function hgArmeMot(a){
           railgun:'un trait qui traverse tout, \u00e0 tr\u00e8s longue port\u00e9e'}[a]||'';
 }
 function mnuOuvrir(){
-  if(!BORNE||(BORNE.cle!=='hangar'&&BORNE.cle!=='ferme'))return;
+  if(!BORNE||['hangar','ferme','debarquement','cordon'].indexOf(BORNE.cle)<0)return;
   MNU.hidden=false;JEU.classList.add('menu');
   mnuMaj();
 }
@@ -5675,6 +5711,603 @@ MOTEUR.debarquement={
   action:function(s,a){if(a==='menu'&&typeof mnuOuvrir==='function')mnuOuvrir();}
 };
 
+/* =====================================================================
+   LE CORDON — on joue le maintien de l'ordre, pas la bagarre.
+
+   Le jeu ne récompense pas la force : il récompense le CALME. Chaque
+   geste brutal fait monter la TENSION, et c'est la tension qui fait
+   apparaître les casseurs, pas le hasard. Nasser, gazer : ça marche sur
+   le coup et ça te coûte très cher trois minutes plus tard. Laisser
+   passer, reculer d'un pas, envoyer un officier parler : ça ne paie pas
+   tout de suite, et c'est pourtant ça qui gagne la partie.
+
+   Tu as gagné quand le cortège est passé en entier, que les vitrines
+   tiennent encore debout et que personne n'est à l'hôpital.
+   ===================================================================== */
+var CO_RECH={gaz:34000, nasse:26000, dial:21000};
+var CO={
+  vit:0.055,            /* la vitesse d'une unité qui se repositionne */
+  flot:0.026,           /* la vitesse de marche du cortège, en px/ms */
+  pousse:13,            /* à quelle distance un cordon repousse la foule */
+  pas:5,                /* l'écart entre deux hommes d'un cordon */
+  portGaz:36, portNasse:32,
+  plancher:0.05,        /* la tension ne retombe jamais complètement */
+  duree:150000};
+var CO_UN=[
+ {n:'ALPHA',  c:'#2a3a6a',c2:'#46609a'},
+ {n:'BRAVO',  c:'#2f4a7a',c2:'#4e72aa'},
+ {n:'CHARLIE',c:'#25456a',c2:'#3f6a96'},
+ {n:'DELTA',  c:'#2a3f5e',c2:'#466a8e'},
+ {n:'ÉCHO',   c:'#334a72',c2:'#5478a6'}];
+/* les trois humeurs d'un cortège */
+var CO_HUM={calme:{c:'#3a9a5a',c2:'#6ad08a'},tendu:{c:'#c89a2a',c2:'#f0c45a'},
+            casseur:{c:'#b8402a',c2:'#e8704a'}};
+/* ---- les silhouettes, petites : il y en a des centaines ---- */
+var CO_MAT_CRS=[
+ '..ooo..','.okkko.','.okvko.','.oddddo','bbvvvbb','bbvvvbb','.ovvvo.','..o.o..','..w.w..','..h.h..'];
+var CO_MAT_MAN=[
+ '..ooo..','.okkko.','.okkko.','..ooo..','.ovvvo.','ovVvvvo','.ovvvo.','..o.o..','..w.w..','..h.h..'];
+var CO_PAL_CRS={o:'#0b0e12',k:'#1c2230',v:'#8ab0d8',d:'#141a26',b:'#6a7a8e',w:'#1c2230',h:'#0f1218'};
+var CO_PAL_MAN={o:'#15181c',k:'#c89a74',d:'#15181c',w:'#3a3f46',h:'#20242a'};
+function coPeindre(M,P,c,c2){
+  var t=document.createElement('canvas');t.width=7;t.height=10;
+  var q=t.getContext('2d');q.imageSmoothingEnabled=false;
+  for(var y=0;y<M.length;y++)for(var x=0;x<M[y].length;x++){
+    var k=M[y][x];if(k==='.')continue;
+    var col=(k==='v'&&P===CO_PAL_MAN)?c:(k==='V')?c2:P[k];
+    if(k==='v'&&P===CO_PAL_CRS)col=P.v;
+    if(!col)continue;q.fillStyle=col;q.fillRect(x,y,1,1);}
+  return t;
+}
+var CO_SPR=null;
+function coSprites(){
+  if(CO_SPR)return CO_SPR;
+  CO_SPR={crs:[],man:{}};
+  for(var i=0;i<CO_UN.length;i++)CO_SPR.crs.push(coPeindre(CO_MAT_CRS,CO_PAL_CRS,CO_UN[i].c,CO_UN[i].c2));
+  for(var k in CO_HUM)CO_SPR.man[k]=coPeindre(CO_MAT_MAN,CO_PAL_MAN,CO_HUM[k].c,CO_HUM[k].c2);
+  return CO_SPR;
+}
+function coAl(s){s.gr=(s.gr*16807)%2147483647;return (s.gr-1)/2147483646;}
+/* ---------- LA RUE ---------- */
+function coBatir(s){
+  var L=s.L,H=s.H;
+  s.haut=28; s.bas=H-92;
+  s.un=[];s.foule=[];s.vit=[];s.gaz=[];s.part=[];s.mot='';s.motT=0;
+  s.tension=0.10; s.passe=0; s.casse=0; s.blesses=0; s.reste=CO.duree;
+  s.arrives=0; s.total=460; s.sortis=0; s.nbloq=0; s.tete=0; s.tetes=[0,0,0];
+  /* les vitrines à protéger : des deux côtés de la rue */
+  var n=3, NOMS=[['BOULANGERIE','#e8b45a'],['TABAC','#e85a5a'],['BANQUE','#6a9ae8'],
+                 ['OPTIQUE','#8fd8d8'],['PRESSE','#c8a0e8'],['FLEURS','#8fd89a']];
+  for(var i=0;i<n;i++){
+    var y=s.haut+54+i*((s.bas-s.haut-104)/(n-1));
+    var A=NOMS[i*2], B2=NOMS[i*2+1];
+    s.vit.push({x:9, y:Math.round(y), hp:9,hpm:9, nom:A[0], c:A[1]});
+    s.vit.push({x:L-9,y:Math.round(y+22),hp:9,hpm:9, nom:B2[0],c:B2[1]});
+  }
+  /* la pharmacie, au milieu : celle-là, si elle tombe, c'est la partie */
+  s.vit.push({x:L-9,y:Math.round(s.bas-56),hp:24,hpm:24,nom:'PHARMACIE',c:'#3ec87a',cle:true});
+  /* les unités, en bas, prêtes à monter */
+  for(var u=0;u<CO_UN.length;u++){
+    var POS=[[0.22,0],[0.50,0],[0.78,0],[0.36,1],[0.64,1]][u];
+    s.un.push({id:u,x:Math.round(L*POS[0]),y:s.bas-16-POS[1]*17,
+      ax:null,ay:null,n:10,ordre:'souple',occupe:0,larg:10*CO.pas/2,fat:0});
+  }
+  s.sel=0;s.mode=null;s.gazN=2;s.nasseN=2;s.dialN=2;
+  s.gazT=0;s.nasseT=0;s.dialT=0;
+  coMot(s,'LAISSE PASSER LE CORTÈGE · PROTÈGE LES VITRINES',true);
+}
+function coMot(s,m,gros){s.mot=m;s.motT=gros?2600:1700;s.motGros=!!gros;}
+/* un manifestant entre dans la rue */
+function coEntrer(s){
+  var h='calme';
+  var r=coAl(s);
+  var vivants=0;
+  for(var q=0;q<s.foule.length;q++)if(s.foule[q].hum==='casseur')vivants++;
+  var plafond=2+Math.round(s.tension*7)+(s.tete>0?2:0);
+  var pc=(vivants<plafond)?0.16:0;
+  if(r<pc)h='casseur';
+  else if(r<pc+0.14+s.tension*0.45)h='tendu';
+  s.foule.push({x:12+coAl(s)*(s.L-24), y:s.haut+2+coAl(s)*8,
+    vx:0,vy:CO.flot, ix:0,iy:0, hum:h, cible:null, frappe:0, ond:coAl(s)*6.3});
+  s.sortis++;
+}
+/* ---------- LE PAS ---------- */
+function coPas(s,dt){
+  var i,j,u,m;
+  if(s.motT>0)s.motT-=dt;
+  for(i=s.part.length-1;i>=0;i--){var p=s.part[i];p.t-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;
+    p.vx*=0.93;p.vy*=0.93;if(p.t<=0)s.part.splice(i,1);}
+  for(i=s.gaz.length-1;i>=0;i--){var g2=s.gaz[i];g2.t-=dt;
+    g2.r=g2.rmax*Math.min(1,(g2.vie-g2.t)/1800)*Math.min(1,g2.t/2200+0.3);
+    if(g2.t<=0)s.gaz.splice(i,1);}
+  if(s.phase!=='jeu')return;
+  s.reste-=dt;
+  /* LES TROIS MOYENS REVIENNENT. Un stock fixe, c'était trois clics
+     puis plus rien à décider pendant deux minutes. */
+  if(s.gazN<2){s.gazT-=dt;if(s.gazT<=0){s.gazN++;s.gazT=CO_RECH.gaz;coMot(s,'GRENADE PRÊTE');}}
+  if(s.nasseN<2){s.nasseT-=dt;if(s.nasseT<=0){s.nasseN++;s.nasseT=CO_RECH.nasse;coMot(s,'EFFECTIF DISPONIBLE POUR NASSER');}}
+  if(s.dialN<2){s.dialT-=dt;if(s.dialT<=0){s.dialN++;s.dialT=CO_RECH.dial;coMot(s,'UN OFFICIER EST LIBRE');}}
+
+  /* LA TENSION redescend toute seule, lentement — jamais jusqu'à zéro.
+     Le temps travaille pour toi si tu ne fais rien de brutal, mais la
+     rue ne redevient jamais tout à fait calme. */
+  s.tension=Math.max(CO.plancher,Math.min(1,s.tension-dt*0.0000065));
+
+  /* LE CORTÈGE S'ÉCHAUFFE EN DURANT : une manif de deux heures n'est
+     pas une manif de dix minutes. */
+  s.tension=Math.min(1,s.tension+dt*0.0000013);
+  /* LES TÊTES DE CORTÈGE : trois paquets très tendus, annoncés. */
+  if(s.tete>0)s.tete-=dt;
+  var av=s.sortis/s.total;
+  for(var v=0;v<3;v++){
+    if(!s.tetes[v]&&av>=[0.16,0.46,0.74][v]){s.tetes[v]=1;s.tete=11000;
+      s.tension=Math.min(1,s.tension+0.06);
+      coMot(s,['LA TÊTE DE CORTÈGE ARRIVE','DEUXIÈME COUP DE CHAUD',
+               'LE DERNIER CARRÉ, LE PLUS DUR'][v],true);}}
+  /* le cortège arrive par le haut, au rythme */
+  s.flux=(s.flux||0)+dt;
+  var cadence=(s.tete>0)?90:150;
+  while(s.flux>cadence&&s.sortis<s.total){s.flux-=cadence;coEntrer(s);}
+
+  /* ---- LES UNITÉS ---- */
+  for(u=0;u<s.un.length;u++){
+    var U=s.un[u];
+    if(U.occupe>0){U.occupe-=dt;if(U.occupe<=0)coMot(s,'L’OFFICIER EST REVENU');}
+    if(U.ax!==null){
+      var dx=U.ax-U.x,dy=U.ay-U.y,d=Math.hypot(dx,dy),v=CO.vit*dt;
+      if(d<=v){U.x=U.ax;U.y=U.ay;U.ax=null;U.ay=null;}
+      else{U.x+=dx/d*v;U.y+=dy/d*v;}
+    }
+  }
+
+  /* ---- LA FOULE ---- */
+  s.nbloq=0;
+  var sortie=s.bas-6;
+  for(i=s.foule.length-1;i>=0;i--){
+    m=s.foule[i];
+    /* le casseur s'en prend à la vitrine la plus proche encore debout */
+    if(m.hum==='casseur'&&m.y>s.haut+34){
+      if(!m.cible||m.cible.hp<=0){m.cible=null;var bb=1e9;
+        for(j=0;j<s.vit.length;j++){var V=s.vit[j];if(V.hp<=0)continue;
+          if(V.tabou&&V.tabou>s.t)continue;
+          var dd=Math.hypot(V.x-m.x,V.y-m.y);if(dd<bb){bb=dd;m.cible=V;}}}
+      if(m.cible){
+        var cx=m.cible.x-m.x, cy=m.cible.y-m.y, cd=Math.hypot(cx,cy);
+        if(cd<9){m.frappe-=dt;
+          if(m.frappe<=0){m.frappe=2600;m.cible.hp-=1;s.tension=Math.min(1,s.tension+0.0015);
+            for(var k=0;k<6;k++)s.part.push({x:m.cible.x,y:m.cible.y,
+              vx:(Math.random()-0.5)*0.12,vy:(Math.random()-0.5)*0.12,t:420,c:'#bcd8e8'});
+            if(m.cible.hp<=0){s.casse++;coMot(s,m.cible.cle?'LA PHARMACIE !':'UNE VITRINE DE PLUS',true);
+              s.tension=Math.min(1,s.tension+0.05);}}
+        }else{m.vx=cx/cd*CO.flot*1.25;m.vy=cy/cd*CO.flot*1.25;}
+      }
+    }else{
+      /* le cortège descend la rue */
+      m.vy+=CO.flot*0.00006*dt;
+      m.vx+=(Math.sin((m.y+s.t*0.02)/23)*0.4-m.vx*0.4)*0.0006*dt;
+    }
+    /* LE CORDON REPOUSSE, il ne frappe pas : la foule glisse le long
+       et s'accumule devant. Un cordon qui TIENT renvoie vers le haut ;
+       un cordon SOUPLE ne fait que freiner. */
+    var vcy=(m.hum==='casseur'&&m.cible)?m.vy:CO.flot;
+    if(m.hum==='casseur'&&!m.cible&&Math.abs(m.vy)<CO.flot*0.2)m.vy=CO.flot*0.5;
+    var vcx=Math.sin((m.y+m.ond*40)/23)*CO.flot*0.35;
+    var bloque=false;
+    for(u=0;u<s.un.length;u++){
+      var U2=s.un[u];
+      if(Math.abs(m.x-U2.x)>U2.larg+7)continue;
+      var ddy=m.y-U2.y;
+      if(ddy>-CO.pousse&&ddy<5){
+        if(U2.ordre==='tenir'){bloque=true;vcy=-CO.flot*0.85;vcx+=(m.x<U2.x?-1:1)*CO.flot*1.4;
+          /* UN CORDON DEVANT UNE VITRINE LA PROTÈGE VRAIMENT : le
+             casseur repoussé renonce et va voir ailleurs. */
+          if(m.hum==='casseur'&&m.cible){m.rep=(m.rep||0)+dt;
+            if(m.rep>1600){m.rep=0;m.cible.tabou=s.t+9000;m.cible=null;}}}
+        else{vcy=CO.flot*0.72;vcx+=(m.x<U2.x?-1:1)*CO.flot*0.5;}
+      }
+    }
+    if(bloque)s.nbloq++;
+    /* le gaz : ça disperse, et ça écœure tout le monde */
+    for(j=0;j<s.gaz.length;j++){var GZ=s.gaz[j];
+      var gd=Math.hypot(m.x-GZ.x,m.y-GZ.y);
+      if(gd<GZ.r){var gx=(m.x-GZ.x)/(gd||1),gy=(m.y-GZ.y)/(gd||1);
+        m.ix+=gx*0.00028*dt;m.iy+=gy*0.00028*dt;
+        if(m.cible){m.cible=null;m.frappe=2600;}   /* le gaz fait lâcher prise */
+        if(m.hum==='calme'&&Math.random()<dt*0.0004)m.hum='tendu';}}
+    /* la vitesse rejoint la cible : on marche, on n'accélère pas */
+    var k2=Math.min(1,dt*0.006);
+    m.vx+=(vcx-m.vx)*k2; m.vy+=(vcy-m.vy)*k2;
+    m.ix*=Math.pow(0.02,dt/1000); m.iy*=Math.pow(0.02,dt/1000);
+    m.x+=(m.vx+m.ix)*dt; m.y+=(m.vy+m.iy)*dt;
+    m.x=Math.max(6,Math.min(s.L-6,m.x));
+    if(m.y<s.haut+1){m.y=s.haut+1;if(m.vy<0)m.vy=0;}
+    /* arrivé en bas : il est passé, tout va bien */
+    if(m.y>sortie){s.foule.splice(i,1);s.passe++;s.arrives++;continue;}
+  }
+
+  /* UN CORTÈGE BLOQUÉ, ÇA MONTE. C'est la vraie dépense du jeu :
+     tenir la rue coûte en continu, proportionnellement au nombre de
+     gens qui butent sur les boucliers. */
+  if(s.nbloq)s.tension=Math.min(1,s.tension+dt*0.0000007*Math.min(70,s.nbloq));
+
+  if(s.sortis>=s.total&&s.foule.length<4){coFin(s,true);return;}
+  if(s.reste<=0){coFin(s,s.tension<0.80);return;}
+  for(j=0;j<s.vit.length;j++)if(s.vit[j].cle&&s.vit[j].hp<=0){coFin(s,false);return;}
+  if(s.tension>=1){coFin(s,false);return;}
+}
+/* ---------- LES ORDRES ---------- */
+function coBarre(s){
+  var H=s.H,L=s.L,y0=H-92;
+  var bw=(L-8-12)/5, by=y0+26, bh=28, b=[];
+  var noms=[['TENIR','tenir'],['REPLI','repli'],['NASSE','nasse'],['GAZ','gaz'],['PARLER','dial']];
+  for(var i=0;i<5;i++)b.push({x:4+i*(bw+3),y:by,w:bw,h:bh,n:noms[i][0],k:noms[i][1]});
+  var pw=(L-8)/5,py=H-26,p=[];
+  for(var j=0;j<5;j++)p.push({x:4+j*pw,y:py,w:pw,h:22,i:j});
+  return {y0:y0,b:b,p:p};
+}
+function coOrdre(s,k){
+  var U=(s.sel>=0)?s.un[s.sel]:null;
+  if(k==='nasse'||k==='gaz'){s.mode=(s.mode===k)?null:k;
+    coMot(s,k==='gaz'?'DÉSIGNE OÙ LANCER — ÇA FERA MONTER LA TENSION'
+                     :'DÉSIGNE QUI NASSER — ÇA FERA MONTER LA TENSION');return;}
+  if(!U)return;
+  s.mode=null;
+  if(k==='tenir'){U.ordre='tenir';coMot(s,'CORDON '+CO_UN[U.id].n+' : EN LIGNE');}
+  else if(k==='repli'){
+    U.ordre='souple';U.ax=(U.ax===null?U.x:U.ax);U.ay=Math.min(s.bas-14,(U.ay===null?U.y:U.ay)+22);
+    /* RECULER D'UN PAS FAIT RETOMBER LA PRESSION. C'est le geste le plus
+       utile du jeu, et c'est celui qu'on a le moins envie de faire. */
+    s.tension=Math.max(0,s.tension-0.07);
+    coMot(s,'UN PAS EN ARRIÈRE · LA PRESSION RETOMBE',true);
+  }
+  else if(k==='dial'){
+    if(s.dialN<=0){coMot(s,'PLUS D’OFFICIER DISPONIBLE');return;}
+    if(U.occupe>0){coMot(s,'CETTE UNITÉ A DÉJÀ DÉTACHÉ QUELQU’UN');return;}
+    s.dialN--;if(s.dialT<=0)s.dialT=CO_RECH.dial;U.occupe=9000;U.n=Math.max(6,U.n-1);
+    s.tension=Math.max(0,s.tension-0.19);
+    /* et les plus énervés se calment */
+    var n=0;
+    for(var i=0;i<s.foule.length&&n<26;i++){var m=s.foule[i];
+      if(Math.hypot(m.x-U.x,m.y-U.y)<46&&m.hum!=='calme'){m.hum='calme';m.cible=null;n++;}}
+    coMot(s,'UN OFFICIER PARLE AU SERVICE D’ORDRE',true);
+  }
+}
+function coTape(s,x,y){
+  if(s.phase!=='jeu')return;
+  var B=coBarre(s),i;
+  if(y>=B.y0){
+    for(i=0;i<B.b.length;i++){var r=B.b[i];
+      if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h){coOrdre(s,r.k);return;}}
+    for(i=0;i<B.p.length;i++){var q=B.p[i];
+      if(x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h){s.sel=q.i;s.mode=null;return;}}
+    return;
+  }
+  if(s.mode==='gaz'){
+    if(s.gazN<=0){coMot(s,'PLUS DE GRENADE');s.mode=null;return;}
+    s.gazN--;if(s.gazT<=0)s.gazT=CO_RECH.gaz;s.gaz.push({x:x,y:y,r:1,rmax:CO.portGaz,t:9000,vie:9000});
+    /* LE GAZ MARCHE, ET IL COÛTE CHER. Il disperse tout de suite et il
+       fait basculer des gens qui ne demandaient rien. */
+    s.tension=Math.min(1,s.tension+0.24);
+    for(var k=0;k<s.foule.length;k++){var m2=s.foule[k];
+      if(Math.hypot(m2.x-x,m2.y-y)<CO.portGaz*1.3&&m2.hum==='calme'&&Math.random()<0.34)m2.hum='tendu';}
+    s.mode=null;coMot(s,'GAZ LANCÉ · LA TENSION MONTE',true);return;
+  }
+  if(s.mode==='nasse'){
+    if(s.nasseN<=0){coMot(s,'PLUS D’EFFECTIF POUR NASSER');s.mode=null;return;}
+    var pris=0;
+    for(var j=s.foule.length-1;j>=0;j--){var m3=s.foule[j];
+      if(Math.hypot(m3.x-x,m3.y-y)>CO.portNasse)continue;
+      if(m3.hum==='casseur'){s.foule.splice(j,1);pris++;}
+      else if(m3.hum==='calme'&&Math.random()<0.5)m3.hum='tendu';
+    }
+    s.nasseN--;if(s.nasseT<=0)s.nasseT=CO_RECH.nasse;
+    /* LA NASSE PREND LES CASSEURS — et enferme aussi des gens qui
+       n'avaient rien fait. C'est pour ça qu'elle coûte si cher. */
+    s.tension=Math.min(1,s.tension+0.14+pris*0.01);
+    s.mode=null;coMot(s,pris?('NASSE · '+pris+' INTERPELLÉS'):'NASSE POUR RIEN · LA TENSION MONTE',true);
+    return;
+  }
+  /* on choisit une unité, ou on l'envoie quelque part */
+  for(i=0;i<s.un.length;i++){var U2=s.un[i];
+    if(Math.hypot(U2.x-x,U2.y-y)<22){s.sel=i;s.mode=null;return;}}
+  if(s.sel<0)return;
+  var U3=s.un[s.sel];
+  U3.ax=Math.max(14,Math.min(s.L-14,x));
+  U3.ay=Math.max(s.haut+16,Math.min(s.bas-14,y));
+  coMot(s,'CORDON '+CO_UN[U3.id].n+' SE DÉPLACE');
+}
+function coFin(s,gagne){
+  s.phase='fini';s.gagne=gagne;
+  var pts=0;
+  pts+=s.passe*18;                                  /* chacun qui passe tranquille */
+  pts+=Math.max(0,(s.vit.length-s.casse))*400;      /* chaque vitrine debout */
+  pts+=Math.round((1-s.tension)*2500);              /* le calme, surtout */
+  if(gagne)pts+=3000;
+  s.score=Math.max(0,Math.round(pts));
+  var pha=null;for(var v=0;v<s.vit.length;v++)if(s.vit[v].cle)pha=s.vit[v];
+  s.finMot=gagne?(s.casse?'LE CORTÈGE EST PASSÉ':'PAS UNE VITRE CASSÉE')
+                :(s.tension>=1?'LE QUARTIER PART EN VRILLE'
+                 :(pha&&pha.hp<=0)?'LA PHARMACIE EST TOMBÉE':'LA RUE T’A ÉCHAPPÉ');
+  if(typeof finirPartie==='function')finirPartie(s.score);
+}
+/* ---------- LE DESSIN ---------- */
+function coSol(s){
+  var L=s.L,h=s.bas-s.haut+12;
+  var cv=document.createElement('canvas');cv.width=L;cv.height=h;
+  var g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+  var hs2=function(x,y){var n=Math.sin(x*127.1+y*311.7)*43758.5453;return n-Math.floor(n);};
+  /* le bitume */
+  for(var y=0;y<h;y++)for(var x=0;x<L;x++){
+    var v=0.45+Math.sin((x+y*0.6)/31)*0.08+(hs2(x,y)-0.5)*0.22;
+    g.fillStyle=['#2e3136','#383c42','#43484f','#4e545c'][Math.max(0,Math.min(3,Math.floor(v*4)))];
+    g.fillRect(x,y,1,1);}
+  /* les trottoirs */
+  g.fillStyle='#5a5f66';g.fillRect(0,0,16,h);g.fillRect(L-16,0,16,h);
+  g.fillStyle='#71777f';g.fillRect(15,0,1,h);g.fillRect(L-16,0,1,h);
+  for(var ty=0;ty<h;ty+=9){g.fillStyle='rgba(0,0,0,.14)';g.fillRect(0,ty,16,1);g.fillRect(L-16,ty,16,1);}
+  /* la bande blanche au milieu */
+  for(var by=4;by<h;by+=16){g.fillStyle='rgba(222,226,230,.5)';g.fillRect(L/2-1,by,2,8);}
+  /* deux passages cloutés : des repères pour l'œil qui descend */
+  for(var pz=0;pz<2;pz++){var py2=Math.round(h*(0.32+pz*0.34));
+    for(var bx2=18;bx2<L-18;bx2+=9){g.fillStyle='rgba(226,230,234,.42)';g.fillRect(bx2,py2,5,10);}}
+  /* des grilles d'égout le long des trottoirs */
+  for(var eg=0;eg<6;eg++){var ex2=(eg%2)?18:L-23, ey2=20+eg*(h/6);
+    g.fillStyle='#24272b';g.fillRect(ex2,ey2,5,7);
+    for(var gl=1;gl<7;gl+=2){g.fillStyle='#14171a';g.fillRect(ex2,ey2+gl,5,1);}}
+  /* les platanes, de place en place */
+  for(var k=0;k<8;k++){var px=(k%2)?8:L-8, py=14+k*(h/8);
+    g.fillStyle='#2a2a26';g.beginPath();g.arc(px,py,5,0,7);g.fill();
+    g.fillStyle='#3e4a32';g.beginPath();g.arc(px-1,py-1,4,0,7);g.fill();}
+  s.sol=cv;
+}
+function coHomme(sp,x,y){
+  G.globalAlpha=.24;G.fillStyle='#000';
+  G.beginPath();G.ellipse(x,y+1,2.4,1,0,0,7);G.fill();G.globalAlpha=1;
+  G.drawImage(sp,Math.round(x-3),Math.round(y-8));
+}
+function coDessine(s,L,H){
+  var i,j,u;
+  if(!s.sol||s.sol.width!==L||s.sol.height!==s.bas-s.haut+12)coSol(s);
+  R(0,0,L,H,'#1b1e22');
+  if(s.sol)G.drawImage(s.sol,0,s.haut);
+  /* les vitrines */
+  for(i=0;i<s.vit.length;i++){var V=s.vit[i], g3=V.x<L/2;
+    var vx=g3?1:L-15, vw=14, vh=V.cle?26:22, vy=V.y-vh/2;
+    var vive=V.hp>0, ph=Math.max(0,V.hp/V.hpm);
+    /* quelqu'un est en train de taper : la devanture pulse */
+    var tape=0;
+    if(vive)for(j=0;j<s.foule.length;j++){var mm=s.foule[j];
+      if(mm.cible===V&&Math.hypot(mm.x-V.x,mm.y-V.y)<9){tape=1;break;}}
+    if(tape){var pu=0.35+0.3*Math.sin(s.t/110);
+      R(vx-1,vy-1,vw+2,vh+2,'rgba(232,64,42,'+pu.toFixed(2)+')');}
+    /* le mur, le store, la vitre */
+    R(vx,vy,vw,vh,vive?'#2a2f38':'#191b1e');
+    R(vx,vy,vw,3,vive?V.c:'#3a2a26');
+    R(vx+2,vy+5,vw-4,vh-9,vive?'#8fb8e8':'#14161a');
+    if(vive){
+      R(vx+3,vy+6,2,vh-11,'rgba(255,255,255,.28)');
+      var fi=Math.round((1-ph)*5);
+      for(var c2=0;c2<fi;c2++){
+        R(vx+2+((c2*5)%(vw-4)),vy+5,1,vh-9,'#1a1a1c');
+        R(vx+2,vy+6+((c2*7)%(vh-11)),vw-4,1,'#1a1a1c');}
+    }else{
+      for(var e=0;e<9;e++)R(vx+2+(e%4)*3,vy+5+(e%4)*4,2,2,'#4a4a4e');
+      R(vx+2,vy+vh-5,vw-4,2,'#5a5a5e');
+    }
+    G.font='bold 5px Trebuchet MS';G.fillStyle=vive?V.c:'#7a4a42';
+    G.textAlign=g3?'left':'right';
+    G.fillText(V.nom,g3?vx+1:vx+vw-1,vy-3);G.textAlign='left';
+    if(V.cle){
+      var kc=vive?'#3ec87a':'#5a2a22';
+      R(vx+4,vy+vh/2-1,6,2,kc);R(vx+6,vy+vh/2-3,2,6,kc);
+      G.strokeStyle=vive?'rgba(62,200,122,.6)':'rgba(232,112,74,.6)';
+      G.lineWidth=1;G.strokeRect(vx-1.5,vy-1.5,vw+3,vh+3);
+    }
+    if(vive&&ph<1){R(vx,vy+vh+1,vw,3,'#1a1d22');
+      R(vx+1,vy+vh+2,Math.max(1,(vw-2)*ph),1,ph>0.5?'#8fd89a':ph>0.25?'#e8a04a':'#e8402a');}
+  }
+  var SP=coSprites();
+  /* la foule, triée pour que ceux de devant passent devant */
+  var tri=s.foule.slice().sort(function(a,b){return a.y-b.y;});
+  for(i=0;i<tri.length;i++)coHomme(SP.man[tri[i].hum],tri[i].x,tri[i].y);
+  /* le gaz */
+  for(i=0;i<s.gaz.length;i++){var GZ=s.gaz[i];
+    for(var k2=0;k2<10;k2++){var a=k2/10*6.28;
+      disque(GZ.x+Math.cos(a)*GZ.r*0.55,GZ.y+Math.sin(a)*GZ.r*0.5,GZ.r*0.5,'rgba(206,214,196,.34)');}
+    disque(GZ.x,GZ.y,GZ.r*0.5,'rgba(226,232,214,.4)');}
+  /* les unités : une ligne de boucliers */
+  for(u=0;u<s.un.length;u++){
+    var U=s.un[u],choisi=(u===s.sel);
+    if(choisi){G.strokeStyle='rgba(255,255,255,.8)';G.lineWidth=1;
+      G.beginPath();G.ellipse(U.x,U.y+3,U.larg+6,11,0,0,7);G.stroke();}
+    /* le liseré au sol qui dit jusqu'où le cordon pousse */
+    if(U.ordre==='tenir'){G.strokeStyle='rgba(140,180,240,.5)';G.lineWidth=2;
+      G.setLineDash([4,3]);G.beginPath();
+      G.moveTo(U.x-U.larg,U.y-CO.pousse);G.lineTo(U.x+U.larg,U.y-CO.pousse);
+      G.stroke();G.setLineDash([]);}
+    /* ligne nette : écart constant, centrée sur l'unité. Un cordon
+       doit se lire d'un coup d'œil comme un MUR, pas comme un tas. */
+    var dep=U.x-(U.n-1)*CO.pas/2, tient=(U.ordre==='tenir');
+    if(tient)R(Math.round(dep-4),Math.round(U.y-10),Math.round((U.n-1)*CO.pas+8),1,'rgba(170,210,255,.7)');
+    for(i=0;i<U.n;i++)coHomme(SP.crs[U.id],dep+i*CO.pas,U.y);
+    if(U.occupe>0){R(U.x-16,U.y-22,32,8,'rgba(62,122,74,.9)');
+      G.font='bold 5px Trebuchet MS';G.fillStyle='#dff6e4';G.textAlign='center';
+      G.fillText('IL PARLE…',U.x,U.y-16);G.textAlign='left';}
+    if(U.ax!==null){G.strokeStyle='rgba(255,255,255,.3)';G.lineWidth=1;G.setLineDash([3,3]);
+      G.beginPath();G.moveTo(U.x,U.y);G.lineTo(U.ax,U.ay);G.stroke();G.setLineDash([]);}
+  }
+  for(i=0;i<s.part.length;i++)R(s.part[i].x,s.part[i].y,1,1,s.part[i].c);
+}
+/* ---------- LE BANDEAU DU HAUT : LA TENSION, ET RIEN D'AUTRE ---------- */
+function coChrono(ms){var t=Math.max(0,Math.ceil(ms/1000));
+  return Math.floor(t/60)+':'+String(t%60).padStart(2,'0');}
+function coHaut(s,L){
+  R(0,0,L,28,'rgba(14,14,12,.94)');R(0,28,L,1,'rgba(216,198,156,.22)');
+  var X0=30; /* la flèche de retour du navigateur mord sur le coin */
+  var cass=0;
+  for(var q=0;q<s.foule.length;q++)if(s.foule[q].hum==='casseur')cass++;
+  G.font='bold 8px Trebuchet MS';G.textAlign='left';G.fillStyle='#9aa0a6';
+  G.fillText(s.passe+' / '+s.total+' passés',X0,10);
+  if(cass){G.fillStyle='#e8704a';
+    G.fillText('· '+cass+' casseur'+(cass>1?'s':''),X0+G.measureText(s.passe+' / '+s.total+' passés').width+5,10);}
+  G.textAlign='right';G.fillStyle=s.reste<30000?'#e8704a':'#9aa0a6';
+  G.fillText(coChrono(s.reste),L-6,10);
+  /* LA JAUGE. Elle est grosse exprès : c'est elle, le jeu. */
+  var bx=X0,bw=L-X0-6,by=15,bh=9;
+  R(bx,by,bw,bh,'#1a1d22');
+  var t=Math.max(0,Math.min(1,s.tension));
+  var col=t<0.35?'#4aa86a':t<0.62?'#c8a03a':t<0.85?'#e8763a':'#e8402a';
+  R(bx+1,by+1,Math.max(1,(bw-2)*t),bh-2,col);
+  for(var g2=0;g2<4;g2++)R(bx+1+(bw-2)*(0.35+g2*0.17),by+1,1,bh-2,'rgba(0,0,0,.4)');
+  G.font='bold 7px Trebuchet MS';G.textAlign='left';G.fillStyle='#e8ecf0';
+  G.fillText('TENSION',bx+3,by+7);
+  G.textAlign='right';G.fillStyle=t>0.75?'#ffd0c0':'rgba(255,255,255,.75)';
+  G.fillText(Math.round(t*100)+'%',bx+bw-3,by+7);
+  G.textAlign='left';
+}
+/* LA CONSIGNE. Une seule phrase, toujours là, qui change avec l'état. */
+function coConsigne(s){
+  if(s.mode==='gaz')  return ['TAPE OÙ LANCER · +24% DE TENSION','#e8763a'];
+  if(s.mode==='nasse')return ['TAPE LE GROUPE À NASSER · +14%','#e8763a'];
+  if(s.tension>0.82)  return ['ÇA VA PARTIR · RECULE OU FAIS PARLER','#e8402a'];
+  if(s.sortis>=s.total&&s.foule.length)
+    return ['LES DERNIERS · REMETS TES CORDONS EN SOUPLE','#8fd89a'];
+  var cass=0;for(var i=0;i<s.foule.length;i++)if(s.foule[i].hum==='casseur')cass++;
+  if(cass>4)          return [cass+' CASSEURS DANS LA RUE · NASSE-LES','#e8a04a'];
+  if(cass>0)          return [cass+' CASSEUR(S) · VA LE COUVRIR DE TA VITRINE','#e8a04a'];
+  var U=(s.sel>=0)?s.un[s.sel]:null;
+  if(!U)              return ['CHOISIS UN CORDON EN BAS','#8fb8e8'];
+  if(U.ax!==null)     return ['LE CORDON SE DÉPLACE…','#c0aa80'];
+  if(s.tension>0.55)  return ['TROP DE PRESSION · UN PAS EN ARRIÈRE','#e8a04a'];
+  return ['LAISSE COULER · TAPE LA RUE POUR TE PLACER','#8fd89a'];
+}
+function coBas(s,L,H){
+  var B=coBarre(s),i;
+  R(0,B.y0,L,H-B.y0,'rgba(14,14,12,.95)');R(0,B.y0,L,1,'rgba(216,198,156,.3)');
+  var U=(s.sel>=0)?s.un[s.sel]:null;
+  if(U){R(4,B.y0+5,3,11,CO_UN[U.id].c2);
+    G.font='bold 10px Trebuchet MS';G.fillStyle='#fff';G.textAlign='left';
+    G.fillText('CORDON '+CO_UN[U.id].n,11,B.y0+15);
+    G.font='7px Trebuchet MS';G.fillStyle='#8fb8e8';
+    G.fillText(U.ordre==='tenir'?'EN LIGNE · IL REPOUSSE':'SOUPLE · IL LAISSE PASSER',11,B.y0+23);
+    G.textAlign='right';G.font='bold 9px Trebuchet MS';G.fillStyle='#c0aa80';
+    G.fillText(U.n+' hommes',L-6,B.y0+15);G.textAlign='left';
+  }else{G.font='bold 10px Trebuchet MS';G.fillStyle='#9aa0a6';G.textAlign='left';
+    G.fillText('AUCUN CORDON CHOISI',11,B.y0+15);}
+  for(i=0;i<B.b.length;i++){var r=B.b[i];
+    var on=(r.k==='gaz'||r.k==='nasse')?(s.mode===r.k)
+          :(r.k==='dial')?(U&&U.occupe>0):(U&&U.ordre===(r.k==='repli'?'souple':'tenir'));
+    var dur=(r.k==='gaz'||r.k==='nasse');
+    R(r.x,r.y,r.w,r.h,on?(dur?'#5a3222':'#26405e'):'#201e18');
+    R(r.x,r.y,r.w,1,on?(dur?'#e8a04a':'#8fb8e8'):'rgba(255,255,255,.12)');
+    R(r.x,r.y+r.h-1,r.w,1,'rgba(0,0,0,.45)');
+    G.font='bold 8px Trebuchet MS';G.textAlign='center';
+    G.fillStyle=on?'#fff':(dur?'#c8864a':'#9aa0a6');
+    G.fillText(r.n,r.x+r.w/2,r.y+13);
+    var st=r.k==='gaz'?s.gazN:r.k==='nasse'?s.nasseN:r.k==='dial'?s.dialN:-1;
+    if(st>=0){G.font='bold 7px Trebuchet MS';
+      G.fillStyle=st>0?'rgba(255,255,255,.7)':'#8a3a2a';
+      G.fillText('× '+st,r.x+r.w/2,r.y+23);}
+    else{G.font='7px Trebuchet MS';G.fillStyle='rgba(255,255,255,.4)';
+      G.fillText(r.k==='repli'?'−7%':'0%',r.x+r.w/2,r.y+23);}}
+  var C2=coConsigne(s);
+  G.font='bold 8px Trebuchet MS';G.textAlign='center';G.fillStyle=C2[1];
+  G.fillText(C2[0],L/2,B.y0+63);G.textAlign='left';
+  for(i=0;i<B.p.length;i++){var q=B.p[i],UU=s.un[q.i];
+    var cx=q.x+10,cy=q.y+11;
+    if(i===s.sel){R(q.x,q.y,q.w-2,21,'rgba(255,255,255,.1)');R(q.x,q.y,q.w-2,1,'#fff');}
+    disque(cx,cy,7,CO_UN[q.i].c);disque(cx,cy,5,CO_UN[q.i].c2);
+    if(UU.occupe>0)disque(cx,cy,2,'#8fd89a');
+    G.font='bold 7px Trebuchet MS';G.textAlign='left';G.fillStyle='#c0c6cc';
+    G.fillText(CO_UN[q.i].n.slice(0,3),q.x+19,cy+3);}
+  G.textAlign='left';
+}
+/* ---------- LA BORNE ---------- */
+MOTEUR.cordon={
+  nom:'Le Cordon', sous:'MAINTIEN DE L’ORDRE · LA FORCE TE COÛTE PLUS QU’ELLE NE TE RAPPORTE',
+  manches:null, vise:200,
+  init:function(){
+    return {phase:'pret',t:0,score:0,gr:1,L:195,H:390,haut:28,bas:298,
+      un:[],foule:[],vit:[],gaz:[],part:[],sel:0,mode:null,
+      tension:0.10,passe:0,casse:0,sortis:0,total:320,arrives:0,blesses:0,
+      gazN:2,nasseN:2,dialN:2,gazT:0,nasseT:0,dialT:0,
+      reste:CO.duree,flux:0,nbloq:0,tete:0,tetes:[0,0,0],
+      mot:'',motT:0,motGros:false,sol:null,gagne:false,finMot:''};
+  },
+  cadre:function(s,L,H){
+    var av=s.bas;
+    s.L=L;s.H=H;s.haut=28;s.bas=H-92;
+    if(s.sol&&(s.sol.width!==L||s.sol.height!==s.bas-s.haut+12))s.sol=null;
+    if(av!==s.bas&&s.un.length){var d=s.bas-av;
+      for(var u=0;u<s.un.length;u++){var U=s.un[u];
+        U.y=Math.max(s.haut+16,Math.min(s.bas-14,U.y+d));
+        U.x=Math.max(14,Math.min(L-14,U.x));
+        if(U.ay!==null)U.ay=Math.max(s.haut+16,Math.min(s.bas-14,U.ay+d));}
+      for(var i=0;i<s.foule.length;i++){s.foule[i].x=Math.max(6,Math.min(L-6,s.foule[i].x));}}
+  },
+  demarrer:function(s){
+    s.gr=1+Math.floor(Math.random()*2147483000);
+    s.L=SL||195;s.H=SH||390;
+    coBatir(s);
+  },
+  pas:function(s,dt){s.t+=dt;coPas(s,dt);},
+  tape:function(s,x,y){coTape(s,x,y);},
+  dessine:function(s,L,H){
+    if(s.phase==='pret'){
+      R(0,0,L,H,'#15181c');
+      G.textAlign='center';
+      G.fillStyle='#8fb8e8';G.font='bold 11px Trebuchet MS';
+      G.fillText('TU TIENS LA RUE.',L/2,H/2-56);
+      G.fillText('LE CORTÈGE DOIT PASSER.',L/2,H/2-42);
+      G.fillStyle='#9aa0a6';G.font='9px Trebuchet MS';
+      G.fillText('tape un cordon, puis la rue : il s’y place',L/2,H/2-22);
+      G.fillText('un cordon qui TIENT repousse, il ne frappe pas',L/2,H/2-9);
+      G.fillStyle='#e8763a';G.font='bold 9px Trebuchet MS';
+      G.fillText('GAZ et NASSE marchent tout de suite',L/2,H/2+14);
+      G.fillText('et font monter la TENSION',L/2,H/2+26);
+      G.fillStyle='#8fd89a';G.font='bold 9px Trebuchet MS';
+      G.fillText('c’est la tension qui crée les casseurs',L/2,H/2+46);
+      G.fillText('RECULER et PARLER la font retomber',L/2,H/2+58);
+      G.fillStyle='#c0aa80';G.font='bold 9px Trebuchet MS';
+      G.fillText('finis la rue au calme : c’est là qu’est le score',L/2,H/2+82);
+      G.textAlign='left';return;
+    }
+    if(s.bas!==H-92)this.cadre(s,L,H);
+    coDessine(s,L,H);
+    coHaut(s,L);
+    coBas(s,L,H);
+    if(s.motT>0){
+      G.globalAlpha=Math.min(1,s.motT/300);
+      R(0,H*0.30,L,s.motGros?20:14,'rgba(42,62,106,.92)');
+      G.textAlign='center';G.fillStyle='#fff';
+      var tp=s.motGros?10:8;
+      G.font='bold '+tp+'px Trebuchet MS';
+      while(tp>6&&G.measureText(s.mot).width>L-10){tp--;G.font='bold '+tp+'px Trebuchet MS';}
+      G.fillText(s.mot,L/2,H*0.30+(s.motGros?14:10));
+      G.textAlign='left';G.globalAlpha=1;
+    }
+    if(s.phase==='fini'){
+      R(0,0,L,H,'rgba(10,10,8,.86)');
+      G.textAlign='center';
+      G.fillStyle=s.gagne?'#8fd89a':'#e8704a';G.font='bold 12px Trebuchet MS';
+      G.fillText(s.finMot,L/2,H/2-26);
+      G.fillStyle='#c0aa80';G.font='8px Trebuchet MS';
+      G.fillText(s.passe+' personnes passées · '+s.casse+' vitrine(s) brisée(s)',L/2,H/2-8);
+      G.fillText('tension finale '+Math.round(s.tension*100)+'%',L/2,H/2+6);
+      G.fillStyle='#ffd86a';G.font='bold 14px Trebuchet MS';
+      G.fillText(Math.round(s.score).toLocaleString('fr-FR')+' points',L/2,H/2+30);
+      G.textAlign='left';
+    }
+  },
+  fige:function(s){return false;},
+  actions:function(s){
+    if(!s||s.phase==='pret')return '<button class="pr" data-a="commencer">COMMENCER</button>';
+    if(s.phase==='fini')return '<button data-a="menu">LE MENU</button><button class="pr" data-a="rejouer">ENCORE · 1 €</button>';
+    return '';
+  },
+  action:function(s,a){if(a==='menu'&&typeof mnuOuvrir==='function')mnuOuvrir();}
+};
+
 MOTEUR.ferme={
   nom:'La Ferme du Quai', sous:'PLANTE · ARROSE · RÉCOLTE · LIVRE',
   manches:'une', vise:190,
@@ -5910,6 +6543,30 @@ async function fmAmeliorer(k){
 }
 /* LE MENU DU DEBARQUEMENT : on explique le geste, pas les touches */
 var DB_REC=0, DB_PARTIES=0;
+var CO_REC=0, CO_PARTIES=0;
+/* LE MENU DU CORDON. Il doit dire une seule chose avant la partie :
+   la force marche, et elle te coûte. Sans ça le joueur gaze d'entrée
+   et perd sans comprendre pourquoi. */
+function coMenu(){
+  var h='';
+  if(MNU_ONG==='jouer'){
+    h+='<div class="stage"><div class="rec">RECORD<b>'+mnuChiffre(CO_REC)+'</b></div>'+
+       '<canvas id="persoApercu" width="48" height="40"></canvas>'+
+       '<div class="gauche"><button class="sb" data-go="rec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M8 21h8M12 17v4M6 4h12v4a6 6 0 0 1-12 0zM6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3"/></svg>SCORES</button></div></div>';
+    h+='<div class="chest"><h4>COMMENT ON JOUE<span>une seule rue</span></h4><div class="r3">'+
+       '<div class="d" style="--a:#8fb8e8;--b:#2a3a6a"><i>1</i>Tape un cordon, puis la rue : il s’y place et repousse, il ne frappe pas<em>▬</em></div>'+
+       '<div class="d" style="--a:#e8a04a;--b:#a85a18"><i>2</i>GAZ et NASSE marchent tout de suite — et font monter la tension<em>☁</em></div>'+
+       '<div class="d" style="--a:#8fd89a;--b:#3e7a4a"><i>3</i>RECULER et PARLER la font retomber. C’est ça qui gagne<em>✚</em></div></div></div>';
+    h+='<div class="semp" style="border-color:rgba(232,118,58,.6)"><p><b>La tension fabrique les casseurs.</b> Ce n’est pas le hasard : plus la jauge est haute, plus il entre de gens prêts à briser une vitrine. '+
+       'Un gaz lancé à la minute 1 te revient en pleine figure à la minute 3.</p></div>';
+    h+='<div class="semp" style="border-color:rgba(255,255,255,.2)"><p>Tu gagnes quand le cortège est passé en entier. Le score compte les gens passés tranquilles, les vitrines encore debout, et surtout le calme : '+
+       '<b>une rue finie à 10 % de tension vaut plus qu’une rue finie à 80 %.</b></p></div>';
+  }else{
+    h+='<div class="fiche"><span class="shield" style="--c:#8fb8e8">▬</span><span><small>TON RECORD AU CORDON</small><b>'+mnuChiffre(CO_REC)+'</b><em>'+(CO_PARTIES?mnuChiffre(CO_PARTIES)+' partie'+(CO_PARTIES>1?'s':''):'Pas encore de partie')+'</em></span></div>';
+    h+='<div class="liste" id="jclsHote"></div>';
+  }
+  return h;
+}
 function dbMenu(){
   var h='';
   if(MNU_ONG==='jouer'){
@@ -6028,6 +6685,13 @@ function ouvrirBorne(B){
     (async function(){
       try{var r=await rpc('arcade_record',{p_borne:'debarquement'});
           if(r&&typeof r.score==='number'){DB_REC=r.score;DB_PARTIES=r.parties||0;
+            if(!MNU.hidden)mnuMaj();}}catch(e){}
+    })();
+  }
+  if(B.cle==='cordon'){MNU_ONG='jouer';mnuOuvrir();
+    (async function(){
+      try{var r=await rpc('arcade_record',{p_borne:'cordon'});
+          if(r&&typeof r.score==='number'){CO_REC=r.score;CO_PARTIES=r.parties||0;
             if(!MNU.hidden)mnuMaj();}}catch(e){}
     })();
   }
