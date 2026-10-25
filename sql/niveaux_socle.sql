@@ -1149,3 +1149,30 @@ where niveau = 29;
    la place qui reste jusqu'aux jetons et rétrécit si besoin, au lieu
    de passer dessous.
    ===================================================================== */
+
+/* =====================================================================
+   LE CORDON — l'heure de la manif (2026-10-26)
+
+   Une manif de 14 h n'a pas la tête d'une manif de 22 h. Trois moments,
+   tirés au sort à chaque partie et annoncés sur la note de service :
+
+     14 H 00 · plein jour      ciel bleu et nuages hauts, façades
+                               claires avec un côté dans l'ombre
+                               (le soleil vient de la droite), fenêtres
+                               éteintes et vitrées, lampadaires éteints,
+                               bitume clair, voile presque nul
+     19 H 30 · fin de journée  ciel violet-orangé, murs chauds,
+                               lampadaires à mi-régime
+     22 H 10 · nuit noire      ce qu'on avait
+
+   Tout bascule ensemble : ciel, lueur au bout de la rue, palette des
+   murs et des toits, densité et couleur des fenêtres, trottoir,
+   chaussée, intensité des lampadaires et de leurs cônes, halo des
+   enseignes, voile d'ambiance, et jusqu'à l'ombre portée des gens —
+   plus dure à midi, plus diffuse la nuit — et l'assombrissement des
+   rangs du fond, qui n'a aucune raison d'être le même en plein jour.
+
+   L'heure est écrite sur la note de service à côté de la date, et sa
+   ligne dit ce qu'elle change pour celui qui tient la rue : « En plein
+   jour : tout se voit, et tout se filme. »
+   ===================================================================== */

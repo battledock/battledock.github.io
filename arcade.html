@@ -20,7 +20,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-26-1140';
+  var MA_VERSION='2026-10-26-1520';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -749,8 +749,9 @@ function banniere(cv,cle){
     return;
   }
   if(cle==='cordon'){
-    /* la rue de nuit, vue de profil : deux masses qui se font face */
+    /* la rue vue de profil : deux masses qui se font face */
     var gc=23,rc=function(){gc=(gc*16807)%2147483647;return (gc-1)/2147483646;};
+    var HV=(typeof CO_HEURE!=='undefined')?CO_HEURE[2]:null;
     var sol=Math.round(h*0.80), pr=Math.round(h*0.14);
     var cg=g.createLinearGradient(0,0,0,sol-pr);
     cg.addColorStop(0,'#0b111b');cg.addColorStop(1,'#2d2a2c');
@@ -5898,6 +5899,28 @@ function coChrono(ms){var t=Math.max(0,Math.ceil(ms/1000));
    on dote en conséquence. Doter lourd pour une manif calme, c'est déjà
    une faute : les moyens embarqués pèsent sur le rapport.
    ===================================================================== */
+var CO_HEURE=[
+ {c:'jour', n:'14 H 00', d:'plein jour',
+  ciel:['#8aa8c8','#a8c0d8','#c0cedc'], lueur:0,
+  murs:['#6a6258','#746a5e','#625c56','#7a6e60'],
+  toit:'#8a8278', fen:0.03, fenC:'#2a3340',
+  sol:['#6e7079','#7a7c85','#64666e'], trot:'#8a8c93',
+  lamp:0, voile:['rgba(190,205,225,.10)','rgba(120,110,100,0)','rgba(70,66,62,.12)'],
+  halo:0.14, ombre:0.34},
+ {c:'soir', n:'19 H 30', d:'fin de journée',
+  ciel:['#2e3a56','#6a5a68','#c08a60'], lueur:0.45,
+  murs:['#4a4038','#524640','#443c3a','#584a40'],
+  toit:'#6a5a4c', fen:0.14, fenC:'#1c2028',
+  sol:['#4a4852','#56545e','#423f4a'], trot:'#5e5c64',
+  lamp:0.55, voile:['rgba(60,50,70,.26)','rgba(120,80,60,.03)','rgba(30,26,34,.26)'],
+  halo:0.6, ombre:0.3},
+ {c:'nuit', n:'22 H 10', d:'nuit noire',
+  ciel:['#0b111b','#1a202e','#2d2a2c'], lueur:1,
+  murs:['#262a31','#2c2a2c','#22262d','#302c2a'],
+  toit:'#3a3f46', fen:0.26, fenC:'#11141a',
+  sol:['#2b303a','#343a46','#232833'], trot:'#3a3e45',
+  lamp:1, voile:['rgba(10,14,26,.40)','rgba(20,16,20,0)','rgba(8,10,18,.14)'],
+  halo:0.9, ombre:0.24}];
 var CO_CLIMAT=[
  {n:'CALME',        d:'Cortège syndical annoncé, service d’ordre en place.',
   c:'#4aa86a', men:0.80, budget:7,  tens:0.06},
@@ -6030,7 +6053,7 @@ function coDotLignes(s){
   var go={x:12,y:H-80,w:L-24,h:36};
   /* on mesure la description avant de poser la dotation */
   G.save();G.font='7px Trebuchet MS';
-  var nl=1, mots=(s.clim.d||'').split(' '), l1='';
+  var nl=1, mots=((s.clim.d||'')+' '+coHeureMot(s.heure)).split(' '), l1='';
   for(var q=0;q<mots.length;q++){
     var e=l1?l1+' '+mots[q]:mots[q];
     if(G.measureText(e).width>L-44&&l1){nl++;l1=mots[q];}else l1=e;}
@@ -6063,6 +6086,12 @@ function coTexte(t,cx,y,larg,inter){
     else l=e;}
   if(l)G.fillText(l,cx,y+n*inter);
 }
+/* ce que l'heure change pour celui qui tient la rue */
+function coHeureMot(HR){
+  if(HR.c==='jour')return 'En plein jour : tout se voit, et tout se filme.';
+  if(HR.c==='soir')return 'Fin de journée : la nuit tombera pendant le cortège.';
+  return 'De nuit : on ne voit que ce que les lampadaires éclairent.';
+}
 function coPrepDessine(s,L,H){
   var C=s.clim,i,B=coDotLignes(s);
   coFondPrep(s,L,H);
@@ -6086,7 +6115,7 @@ function coPrepDessine(s,L,H){
   G.textAlign='left';G.font='bold 6px Trebuchet MS';G.fillStyle='#69727d';
   G.fillText('PRÉFECTURE DE POLICE',dx+11,dy+18);
   G.textAlign='right';G.fillStyle='#4e5760';
-  G.fillText(s.jour,dx+dw-11,dy+18);
+  G.fillText(s.jour+' · '+s.heure.n,dx+dw-11,dy+18);
   G.textAlign='center';
   G.font='bold 8px Trebuchet MS';G.fillStyle='#78818c';
   G.fillText('M A N I F E S T A T I O N',L/2,dy+34);
@@ -6103,7 +6132,7 @@ function coPrepDessine(s,L,H){
     if(i<=niv)coPan(px,dy+59,9,1.6,0.8,'rgba(255,255,255,.35)');
   }
   G.font='7px Trebuchet MS';G.fillStyle='#9aa3ad';
-  coTexte(C.d,L/2,dy+77,L-44,11);
+  coTexte(C.d+' '+coHeureMot(s.heure),L/2,dy+77,L-44,11);
   /* ---- LA DOTATION ---- */
   var pts=coPrepPoints(s), reste=s.clim.budget-pts;
   var y0=B.l[0].y;
@@ -6203,36 +6232,53 @@ var CO_BOUT=[
  ['OPTIQUE','#8fd8d8'],['FLEURS','#8fd89a'],['BISTROT','#e8c86a'],
  ['BANQUE','#6a9ae8'],['PHARMACIE','#3ec87a']];
 function coDecor(s){
-  var W=CO.MW, H=s.scH, SOL=s.sol, PR=s.prof;
+  var W=CO.MW, H=s.scH, SOL=s.sol, PR=s.prof, HR=s.heure||CO_HEURE[2];
   var cv=document.createElement('canvas');cv.width=W;cv.height=H;
   var g=cv.getContext('2d');g.imageSmoothingEnabled=false;
   var gr=4242,rn=function(){gr=(gr*16807)%2147483647;return (gr-1)/2147483646;};
   /* le ciel, et la lueur d'incendie au bout de la rue */
   var cg=g.createLinearGradient(0,0,0,SOL-PR);
-  cg.addColorStop(0,'#0b111b');cg.addColorStop(0.55,'#1a202e');cg.addColorStop(1,'#2d2a2c');
+  cg.addColorStop(0,HR.ciel[0]);cg.addColorStop(0.55,HR.ciel[1]);cg.addColorStop(1,HR.ciel[2]);
   g.fillStyle=cg;g.fillRect(0,0,W,SOL-PR+2);
-  var lg=g.createRadialGradient(W*0.86,SOL-PR-14,0,W*0.86,SOL-PR-14,120);
-  lg.addColorStop(0,'rgba(232,120,50,.32)');lg.addColorStop(1,'rgba(232,120,50,0)');
-  g.fillStyle=lg;g.fillRect(0,0,W,SOL);
+  if(HR.c==='jour'){
+    /* des nuages hauts : sans eux, un ciel de jour est un aplat */
+    for(var nu=0;nu<10;nu++){
+      var nx=rn()*W, ny=rn()*(SOL-PR)*0.5, nw=34+rn()*70;
+      g.globalAlpha=0.10+rn()*0.14;g.fillStyle='#ffffff';
+      for(var np=0;np<8;np++){
+        g.beginPath();g.arc(nx+np*nw/8,ny+Math.sin(np*1.3)*4,4+rn()*8,0,7);g.fill();}
+      g.globalAlpha=1;}
+  }
+  if(HR.lueur>0){
+    var lg=g.createRadialGradient(W*0.86,SOL-PR-14,0,W*0.86,SOL-PR-14,120);
+    lg.addColorStop(0,'rgba(232,120,50,'+(0.32*HR.lueur).toFixed(2)+')');
+    lg.addColorStop(1,'rgba(232,120,50,0)');
+    g.fillStyle=lg;g.fillRect(0,0,W,SOL);}
   /* LES FAÇADES */
-  var bx=-8, murs=['#262a31','#2c2a2c','#22262d','#302c2a'];
+  var bx=-8, murs=HR.murs;
   var graffC=['#c84a3a','#e8c04a','#4ac8a0','#c84ac8','#5a9ae8'];
   while(bx<W+10){
     var dispo=SOL-PR-s.haut;
     var w=26+((rn()*26)|0), ht=Math.round(dispo*(0.52+rn()*0.42)), y=SOL-PR-ht;
     if(y<s.haut-14){ht=SOL-PR-(s.haut-14);y=s.haut-14;}
-    g.fillStyle=murs[(rn()*4)|0];g.fillRect(bx,y,w,ht);
-    g.fillStyle='#3a3f46';g.fillRect(bx,y,w,2);
+    g.fillStyle=murs[(rn()*murs.length)|0];g.fillRect(bx,y,w,ht);
+    g.fillStyle=HR.toit;g.fillRect(bx,y,w,2);
+    if(HR.c==='jour'){
+      /* le soleil vient de la droite : un côté reste dans l'ombre */
+      g.fillStyle='rgba(30,26,22,.16)';g.fillRect(bx,y,Math.round(w*0.35),ht);
+      g.fillStyle='rgba(255,246,220,.07)';g.fillRect(bx+Math.round(w*0.7),y,Math.round(w*0.3),ht);}
     g.fillStyle='#0f1115';g.fillRect(bx,y+ht-1,w,1);
     for(var fy=y+8;fy<y+ht-11;fy+=11){
       for(var fx=bx+4;fx<bx+w-6;fx+=10){
-        var on=rn()<0.26;
-        g.fillStyle=on?'#e8c87a':'#11141a';g.fillRect(fx,fy,6,7);
+        var on=rn()<HR.fen;
+        g.fillStyle=on?'#e8c87a':HR.fenC;g.fillRect(fx,fy,6,7);
         if(on){g.fillStyle='#f8e8b0';g.fillRect(fx,fy,6,1);
           var q=g.createRadialGradient(fx+3,fy+3,0,fx+3,fy+3,13);
-          q.addColorStop(0,'rgba(232,200,122,.20)');q.addColorStop(1,'rgba(232,200,122,0)');
+          q.addColorStop(0,'rgba(232,200,122,'+(0.2*HR.lamp).toFixed(2)+')');
+          q.addColorStop(1,'rgba(232,200,122,0)');
           g.fillStyle=q;g.fillRect(fx-10,fy-10,26,26);}
-        g.fillStyle='#191c21';g.fillRect(fx-1,fy-1,8,1);
+        else if(HR.c==='jour'){g.fillStyle='rgba(150,180,210,.22)';g.fillRect(fx+1,fy+1,4,3);}
+        g.fillStyle=HR.c==='jour'?'rgba(40,34,28,.4)':'#191c21';g.fillRect(fx-1,fy-1,8,1);
         if(rn()<0.3){g.fillStyle='#3a3f46';g.fillRect(fx-1,fy+7,8,1);
           for(var bxx=fx;bxx<fx+7;bxx+=2)g.fillRect(bxx,fy+5,1,2);}
       }
@@ -6254,11 +6300,11 @@ function coDecor(s){
     bx+=w;
   }
   /* LE TROTTOIR ET LA CHAUSSÉE */
-  g.fillStyle='#3a3e45';g.fillRect(0,SOL-PR,W,6);
-  g.fillStyle='#4e535c';g.fillRect(0,SOL-PR,W,1);
-  g.fillStyle='#1c1f24';g.fillRect(0,SOL-PR+5,W,1);
+  g.fillStyle=HR.trot;g.fillRect(0,SOL-PR,W,6);
+  g.fillStyle='rgba(255,255,255,.14)';g.fillRect(0,SOL-PR,W,1);
+  g.fillStyle='rgba(0,0,0,.3)';g.fillRect(0,SOL-PR+5,W,1);
   var rg2=g.createLinearGradient(0,SOL-PR+6,0,H);
-  rg2.addColorStop(0,'#2b303a');rg2.addColorStop(0.45,'#343a46');rg2.addColorStop(1,'#232833');
+  rg2.addColorStop(0,HR.sol[0]);rg2.addColorStop(0.45,HR.sol[1]);rg2.addColorStop(1,HR.sol[2]);
   g.fillStyle=rg2;g.fillRect(0,SOL-PR+6,W,H-(SOL-PR));
   for(var i=0;i<W*5;i++){
     var dx=rn()*W, dy=SOL-PR+6+rn()*(H-SOL+PR-6);
@@ -6275,7 +6321,7 @@ function coDecor(s){
     var ly=SOL-PR+7;
     g.fillStyle='#1a1d22';g.fillRect(lx,ly-46,2,46);g.fillRect(lx-1,ly-47,8,2);
     g.fillStyle='#3a3f46';g.fillRect(lx+5,ly-46,4,2);
-    g.fillStyle='#ffe8a8';g.fillRect(lx+5,ly-44,4,1);
+    g.fillStyle=HR.lamp>0.2?'#ffe8a8':'#555a62';g.fillRect(lx+5,ly-44,4,1);
   }
   /* quelques barrières et poubelles oubliées */
   for(var bq=0;bq<W/150;bq++){
@@ -6290,6 +6336,7 @@ function coDecor(s){
      pour pouvoir les repasser PAR-DESSUS la foule. */
   var lv=document.createElement('canvas');lv.width=W;lv.height=H;
   var q3=lv.getContext('2d');
+  q3.globalAlpha=HR.lamp;
   for(i=0;i<s.lampes.length;i++){
     var px=s.lampes[i].x+7, py=SOL-PR+7-43;
     var hh=q3.createRadialGradient(px,py,0,px,py,17);
@@ -6314,18 +6361,20 @@ function coDecor(s){
     nn.addColorStop(1,'rgba(255,198,130,.03)');
     q3.fillStyle=nn;q3.fillRect(px-40,SOL-PR,80,H-SOL+PR);
   }
+  q3.globalAlpha=1;
   s.lumiere=lv;
   /* LE VOILE : il tombe sur l'écran, pas sur le monde */
   var vl=document.createElement('canvas');vl.width=s.L;vl.height=s.scH;
   var q4=vl.getContext('2d');
   var vv=q4.createLinearGradient(0,0,0,s.scH);
-  vv.addColorStop(0,'rgba(10,14,26,.40)');
-  vv.addColorStop(0.70,'rgba(20,16,20,0)');
-  vv.addColorStop(1,'rgba(8,10,18,.14)');
+  vv.addColorStop(0,HR.voile[0]);
+  vv.addColorStop(0.70,HR.voile[1]);
+  vv.addColorStop(1,HR.voile[2]);
   q4.fillStyle=vv;q4.fillRect(0,0,s.L,s.scH);
+  var bo=(HR.c==='jour')?'.16':'.42';
   var hv=q4.createLinearGradient(0,0,s.L,0);
-  hv.addColorStop(0,'rgba(4,6,12,.42)');hv.addColorStop(0.16,'rgba(4,6,12,0)');
-  hv.addColorStop(0.84,'rgba(4,6,12,0)');hv.addColorStop(1,'rgba(4,6,12,.42)');
+  hv.addColorStop(0,'rgba(4,6,12,'+bo+')');hv.addColorStop(0.16,'rgba(4,6,12,0)');
+  hv.addColorStop(0.84,'rgba(4,6,12,0)');hv.addColorStop(1,'rgba(4,6,12,'+bo+')');
   q4.fillStyle=hv;q4.fillRect(0,0,s.L,s.scH);
   s.voile=vl;
 }
@@ -6816,8 +6865,9 @@ function coPartir(s){
 /* =====================================================================
    LE DESSIN
    ===================================================================== */
+var CO_OMB=0.34, CO_SOM=0.26;
 function coHomme(SP,sp,x,y,sombre,dx){
-  G.globalAlpha=0.34;G.drawImage(SP.ombre,Math.round(x-7),Math.round(y-2));G.globalAlpha=1;
+  G.globalAlpha=CO_OMB;G.drawImage(SP.ombre,Math.round(x-7),Math.round(y-2));G.globalAlpha=1;
   var ox=Math.round(x-(dx||6));
   G.drawImage(sp,ox,Math.round(y-17));
   if(sombre>0.02){G.globalAlpha=sombre;G.fillStyle='#070c16';
@@ -6840,7 +6890,7 @@ function coBoutique(s,V){
     var fi=Math.round((1-ph)*5);
     for(var c2=0;c2<fi;c2++)R(x+2+((c2*4)%14),y+4,1,6,'#141820');
     if(!V.halo)V.halo=coHalo(V.c);
-    G.globalAlpha=0.9*ph;
+    G.globalAlpha=0.9*ph*((s.heure&&s.heure.halo)||0.9);
     G.drawImage(V.halo,Math.round(V.x-26),Math.round(y-18));
     G.globalAlpha=1;
   }else{
@@ -6886,6 +6936,8 @@ function coNuage(){
 }
 function coScene(s,L,H){
   var i,j,SP=rSprites();
+  CO_OMB=(s.heure&&s.heure.ombre)||0.34;
+  CO_SOM=(s.heure&&s.heure.c==='jour')?0.14:(s.heure&&s.heure.c==='soir')?0.20:0.26;
   G.save();
   G.beginPath();G.rect(0,s.haut,L,s.scH-12-s.haut);G.clip();
   var sx=0,sy=0;
@@ -6933,14 +6985,14 @@ function coScene(s,L,H){
   for(i=0;i<tout.length;i++){
     var e=tout[i];
     if(e.k===0){
-      var o=e.o, y=s.sol-o.z*s.prof, ph=((o.pas|0)&1), som=o.z*0.26;
+      var o=e.o, y=s.sol-o.z*s.prof, ph=((o.pas|0)&1), som=o.z*CO_SOM;
       if(o.hum==='casseur')coHomme(SP,SP.cas[o.t%SP.cas.length][ph],o.x,y,som);
       else if(o.cri)coHomme(SP,SP.cri[o.v%SP.cri.length],o.x,y,som);
       else coHomme(SP,SP.man[o.v%SP.man.length][ph],o.x,y,som);
     }else{
       var U2=e.o, hy=s.sol-e.hz*s.prof;
       var sp=(U2.ordre==='charge')?SP.crs[2]:SP.crs[(e.hi+((s.t/260)|0))%2];
-      coHomme(SP,sp,e.hx,hy,e.hz*0.18,5);
+      coHomme(SP,sp,e.hx,hy,e.hz*CO_SOM*0.7,5);
     }
   }
   /* LES CAMIONS, vus de profil */
@@ -7289,10 +7341,11 @@ MOTEUR.cordon={
   manches:null, vise:200,
   init:function(){
     var cl=CO_CLIMAT[Math.floor(Math.random()*CO_CLIMAT.length)];
+    var hr=CO_HEURE[Math.floor(Math.random()*CO_HEURE.length)];
     var J=['LUNDI 14 MARS','JEUDI 2 AVRIL','MARDI 18 MAI','SAMEDI 7 JUIN','JEUDI 23 OCTOBRE'];
     return {phase:'prep',t:0,score:0,gr:1+Math.floor(Math.random()*2147483000),
       L:195,H:390,haut:30,scH:286,sol:264,prof:54,cam:0,camCible:0,obj:CO.MW-70,
-      clim:cl, jour:J[Math.floor(Math.random()*J.length)],
+      clim:cl, heure:hr, jour:J[Math.floor(Math.random()*J.length)],
       dot:{gaz:1,camion:1,eff:0,dial:1},
       foule:[],lignes:[],vit:[],gaz:[],part:[],cam3:[],cris:[],proj:[],feux:[],lampes:[],
       sel:0,selCam:-1,mode:null,tension:cl.tens,doct:0.75,pres:0,presMax:1,
