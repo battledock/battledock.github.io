@@ -1236,3 +1236,42 @@ where niveau = 29;
    LA SUITE : on reprend Le Cordon de zéro, petit à petit, en
    commençant par le menu de la borne.
    ===================================================================== */
+
+-- ============================================================
+-- LE CORDON — LE MENU DE LA BORNE, REFAIT (2026-10-26-2320)
+-- ============================================================
+-- Le menu precedent etait noir, gris, en Courier, avec des tampons :
+-- j'avais copie l'ambiance du JEU (une rue de nuit) dans le MENU, puis
+-- derive vers le « document de prefecture ». Un menu n'a aucune raison
+-- d'etre sombre : il doit s'inscrire dans la direction artistique de
+-- Battle Dock, pas dans celle de la partie qu'il annonce.
+--
+-- QUATRE DIRECTIONS ont ete montrees : BLEU MAISON (le langage du
+-- Hangar a l'identique), L'AFFICHE (rouge, titre enorme, medaillon
+-- encadre d'or), LE JOUR (fond clair, cartes blanches), LE NEON
+-- (noir mais vif). Choix : L'AFFICHE.
+--
+-- CE QUE CA DONNE (#mnu.cdn dans arcade.html)
+--   - fond rouge raye horizontal, en place du bleu raye de la salle
+--   - surtitre « SALLE D'ARCADE », titre LE CORDON en 54px Lilita One
+--   - medaillon de la rue, borde de 4px d'or, ombre portee de 8px
+--   - trois cartes creme I/II/III : PRESSION, TENSION, RAPPORT
+--   - un encadre en pointilles : ce qu'on demande au joueur
+--   - bouton JOUER jaune, carre (rayon 12) et non plus arrondi
+--
+-- DEUX PIEGES RENCONTRES
+--   1. banniere() dessinait sa « jauge de tension » decorative en haut
+--      de la vignette. Pensee pour la petite vignette de la salle
+--      (180x59), elle devenait une barre noire en travers du grand
+--      medaillon. banniere(cv,cle,grand) : la jauge ne sort plus que
+--      sur la petite. Le grand medaillon recoit en echange une foule
+--      de 260 (au lieu de 140) et 55 boucliers (au lieu de 34).
+--   2. Le canvas du medaillon est en 175x88 etire x2, pas en 350x176 :
+--      a resolution native les silhouettes faisaient 2px de large et
+--      se noyaient dans la nuit.
+--
+-- REGRESSION EVITEE : l'onglet SCORES reutilise .fiche, dont le texte
+-- est bleu fonce — illisible sur le rouge. Repeint en creme sur
+-- #mnu.cdn. Une classe posee sur le conteneur repeint tout ce qu'il
+-- contient : il faut regarder CHAQUE onglet, pas seulement celui
+-- qu'on dessinait.
