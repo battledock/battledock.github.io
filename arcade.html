@@ -20,7 +20,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-25-0900';
+  var MA_VERSION='2026-10-25-1100';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -4414,117 +4414,247 @@ var DB_NOMS=['PAGNOL','ZÉZÉ','FONFON','TONIN','MOMO','LOUISET','MARIUS','PANIS
 var DB_COUL=[{n:'BLEUE',c:'#3a78c8',c2:'#5a98e8'},{n:'VERTE',c:'#3a9a5a',c2:'#5aba7a'},
  {n:'ORANGE',c:'#c87a2a',c2:'#e89a4a'},{n:'VIOLETTE',c:'#a85ac8',c2:'#c87ae8'}];
 /* =====================================================================
-   LES TROUPES, EN VRAI PIXEL ART
-   À cette taille, faire tourner une forme mathématique ne donne que de
-   la bouillie : un casque de six pixels n'a plus de forme. On dessine
-   donc le soldat à la main, pixel par pixel, vu de dessus — une image
-   vers le nord, une vers le nord-est — et on obtient les six autres
-   directions par rotations d'un quart de tour, qui ne perdent aucun
-   pixel. Huit directions, gravées une seule fois.
+   LES SOLDATS, EN VUE TROIS-QUARTS
+   Vu strictement du dessus, un homme n'est qu'un casque et deux
+   épaules : il n'y a rien à dessiner, et ça ne ressemble à rien. Les
+   jeux de tactique en pixel art — Advance Wars, Door Kickers — gardent
+   un terrain vu de dessus mais dessinent les hommes DEBOUT, de trois
+   quarts. C'est ce qu'on fait ici.
 
-   . rien   o cerne   h casque   H reflet du casque
-   v vareuse (couleur de la section)   V vareuse éclairée
-   s sac    a arme    p mains
+   Cinq poses dessinées à la main en treize sur seize : de dos, de dos
+   trois-quarts, de profil, de face trois-quarts, de face. Les trois
+   directions qui manquent sont les miroirs des trois obliques.
+   L'ennemi a ses dix propres matrices : casque plus large à bord plat,
+   on le reconnaît à la silhouette avant la couleur. Tout est gravé une
+   fois au chargement, miroirs compris.
+
+   . rien      o cerne        k casque   K reflet du casque   d bord
+   f visage    F joue claire  e oeil
+   v vareuse (couleur de la section)   V reflet   w pantalon
+   b ceinturon et bretelles            s sac     S reflet du sac
+   a canon     A bois de la crosse     h bottes
    ===================================================================== */
-var DB_N=[
- '.......a...',
- '.......a...',
- '...oooo.a..',
- '..ohHHho.a.',
- '..ohhhho.a.',
- '...ohho..p.',
- '.ovvvvvvo..',
- 'ovVVvvvvvo.',
- 'ovVvvvvvvo.',
- '.ossssso...',
- '..ossso....'];
-var DB_NE=[
- '.........a.',
- '........a..',
- '.....ooo.a.',
- '....ohHho..',
- '...ohhhhop.',
- '..ovvhho...',
- '.ovVVvvo...',
- 'ovVVvvo....',
- '.ossvo.....',
- '..osso.....',
- '...oo......'];
-/* L'ENNEMI a son propre casque : plus large, à bord plat. On le
-   reconnaît à la silhouette avant même de voir la couleur. */
-var DB_EN=[
- '.......a...',
- '.......a...',
- '..oooooo.a.',
- '.ohHHHhho.a',
- '.ohhhhhho..',
- '..ohhhho.p.',
- '.ovvvvvvo..',
- 'ovVvvvvvvo.',
- '.ovvvvvvo..',
- '..osssso...',
- '...oooo....'];
-var DB_ENE=[
- '.........a.',
- '........a..',
- '....oooo.a.',
- '...ohHHho..',
- '..ohhhhhop.',
- '..ovhhho...',
- '.ovVvvvo...',
- 'ovVvvvo....',
- '.ossvo.....',
- '..osso.....',
- '...oo......'];
-var DB_PAL_AMI={o:'#14181c',h:'#5c6352',H:'#8b9479',s:'#6a5a40',a:'#2a2620',p:'#c89a74'};
-var DB_PAL_ENN={o:'#0e1216',h:'#39414a',H:'#68727e',s:'#4a4236',a:'#1e1a16',p:'#b88a64',
-                v:'#6b5f4e',V:'#8a7e66'};
-/* une matrice de caractères devient une image */
-function dbPeindre(M,P,c,c2){
-  var S=M.length,T=document.createElement('canvas');T.width=S;T.height=S;
+var SO_FACE=[
+ '....ooooo....',
+ '...okKKkko...',
+ '...okkkkko...',
+ '..oddddddo...',
+ '...offfffo...',
+ '...ofefefo...',
+ '...offFffo...',
+ '..oVvvvvxxo..',
+ '.oVVvvvvvxxo.',
+ '.oVvvbbbvxxoa',
+ '.oVvvbbbvxxoa',
+ '..oVvvvvxxoa.',
+ '..oppo.oppo.A',
+ '..oppo.oppo..',
+ '..oppo.oppo..',
+ '..ohho.ohho..'];
+var SO_DOS=[
+ '....ooooo....',
+ '...okkkkko...',
+ '...okkKkko...',
+ '..oddddddo...',
+ '...okkkkko...',
+ '...oVvvvxo...',
+ '..oVvvvvvxo..',
+ '.oVvsssssxvo.',
+ '.oVvsSSsssxo.',
+ '.oVvsSSsssxoa',
+ '.oVvsssssxxoa',
+ '..oVvvvvvxoa.',
+ '..oppo.oppo.A',
+ '..oppo.oppo..',
+ '..oppo.oppo..',
+ '..ohho.ohho..'];
+var SO_PROF=[
+ '...ooooo.....',
+ '..okKkkko....',
+ '..okkkkko....',
+ '.oddddddddo..',
+ '..okkffFo....',
+ '..okkefFo....',
+ '..okkfffo....',
+ '..osVvvvxo...',
+ '.osVvvvvvoaaa',
+ '.osVbbbvvoAaa',
+ '.osVvvvvxo...',
+ '..osVvvvxo...',
+ '..opppppo....',
+ '..oppoppo....',
+ '..oppoppo....',
+ '..ohhohho....'];
+var SO_DOS34=[
+ '...ooooo.....',
+ '..okkkkko....',
+ '..okkKkko....',
+ '.oddddddo....',
+ '..okkkkko....',
+ '..oVvvvxo....',
+ '.oVvvvvvxo...',
+ '.oVvsssvxo...',
+ '.oVvsSSvxoa..',
+ '.oVvsSSvxoa..',
+ '.oVvsssvxoa..',
+ '..oVvvvxoA...',
+ '..oppoppo....',
+ '..oppoppo....',
+ '..oppoppo....',
+ '..ohhohho....'];
+var SO_FACE34=[
+ '...ooooo.....',
+ '..okKKkko....',
+ '..okkkkko....',
+ '.oddddddo....',
+ '..offfffo....',
+ '..ofefefo....',
+ '..offFffo....',
+ '.oVvvvvvxo...',
+ '.oVVvvvvvxoa.',
+ '.oVvbbbvvxAa.',
+ '.oVvvvvvvxo..',
+ '..oVvvvvxo...',
+ '..oppoppo....',
+ '..oppoppo....',
+ '..oppoppo....',
+ '..ohhohho....'];
+var SO_FACE_E=[
+ '...ooooooo...',
+ '..okkkkkkko..',
+ '..okkKKKkko..',
+ '.oddddddddddo',
+ '...offfffo...',
+ '...ofefefo...',
+ '...offFffo...',
+ '..oVvvvvxxo..',
+ '.oVVvvvvvxxo.',
+ '.oVvvbbbvxxoa',
+ '.oVvvbbbvxxoa',
+ '..oVvvvvxxoa.',
+ '..oppo.oppo.A',
+ '..oppo.oppo..',
+ '..oppo.oppo..',
+ '..ohho.ohho..'];
+var SO_DOS_E=[
+ '...ooooooo...',
+ '..okkkkkkko..',
+ '..okkKKKkko..',
+ '.oddddddddddo',
+ '...okkkkko...',
+ '...oVvvvxo...',
+ '..oVvvvvvxo..',
+ '.oVvsssssxvo.',
+ '.oVvsSSsssxo.',
+ '.oVvsSSsssxoa',
+ '.oVvsssssxxoa',
+ '..oVvvvvvxoa.',
+ '..oppo.oppo.A',
+ '..oppo.oppo..',
+ '..oppo.oppo..',
+ '..ohho.ohho..'];
+var SO_PROF_E=[
+ '..ooooooo....',
+ '.okkkkkkko...',
+ '.okkKKkkko...',
+ 'oddddddddddo.',
+ '..okkffFo....',
+ '..okkefFo....',
+ '..okkfffo....',
+ '..osVvvvxo...',
+ '.osVvvvvvoaaa',
+ '.osVbbbvvoAaa',
+ '.osVvvvvxo...',
+ '..osVvvvxo...',
+ '..opppppo....',
+ '..oppoppo....',
+ '..oppoppo....',
+ '..ohhohho....'];
+var SO_DOS34_E=[
+ '..ooooooo....',
+ '.okkkkkkko...',
+ '.okkKKkkko...',
+ 'oddddddddddo.',
+ '..okkkkko....',
+ '..oVvvvxo....',
+ '.oVvvvvvxo...',
+ '.oVvsssvxo...',
+ '.oVvsSSvxoa..',
+ '.oVvsSSvxoa..',
+ '.oVvsssvxoa..',
+ '..oVvvvxoA...',
+ '..oppoppo....',
+ '..oppoppo....',
+ '..oppoppo....',
+ '..ohhohho....'];
+var SO_FACE34_E=[
+ '..ooooooo....',
+ '.okKKkkkko...',
+ '.okkkkkkko...',
+ 'oddddddddddo.',
+ '..offfffo....',
+ '..ofefefo....',
+ '..offFffo....',
+ '.oVvvvvvxo...',
+ '.oVVvvvvvxoa.',
+ '.oVvbbbvvxAa.',
+ '.oVvvvvvvxo..',
+ '..oVvvvvxo...',
+ '..oppoppo....',
+ '..oppoppo....',
+ '..oppoppo....',
+ '..ohhohho....'];
+var SO_PAL_AMI={o:'#101316',k:'#5c6352',K:'#8b9479',d:'#3b4036',
+  f:'#c89a74',F:'#e0ba94',e:'#2a2018',b:'#3e3328',s:'#6a5a40',S:'#8a7858',
+  a:'#2a2620',A:'#6a4e30',h:'#1f1a14',p:'#4e5a42'};
+var SO_PAL_ENN={o:'#0c0f12',k:'#39414a',K:'#6a7682',d:'#262c33',
+  f:'#b88a64',F:'#d0a480',e:'#231a12',b:'#332b22',s:'#4a4236',S:'#665c4a',
+  a:'#241f1a',A:'#54402a',h:'#191511',p:'#5a5040'};
+var SO_W=13, SO_H=16;
+/* le côté à l'ombre d'une vareuse : la même couleur, en plus sombre */
+function dbOmbrer(c){
+  var n=parseInt(c.slice(1),16);
+  var r=Math.round(((n>>16)&255)*0.58),v=Math.round(((n>>8)&255)*0.58),b=Math.round((n&255)*0.58);
+  return 'rgb('+r+','+v+','+b+')';
+}
+function soPeindre(M,P,c,c2,cx){
+  var T=document.createElement('canvas');T.width=SO_W;T.height=SO_H;
   var g2=T.getContext('2d');g2.imageSmoothingEnabled=false;
-  for(var y=0;y<S;y++)for(var x=0;x<M[y].length;x++){
-    var k=M[y][x];if(k==='.')continue;
-    var col=(k==='v')?c:(k==='V')?c2:P[k];
+  for(var y=0;y<M.length;y++)for(var x=0;x<M[y].length;x++){
+    var q=M[y][x];if(q==='.')continue;
+    var col=(q==='v')?c:(q==='V')?c2:(q==='x')?cx:P[q];
     if(!col)continue;
     g2.fillStyle=col;g2.fillRect(x,y,1,1);
   }
   return T;
 }
-/* un quart de tour, sans perdre un pixel */
-function dbTourner(M){
-  var S=M.length,out=[];
-  for(var y=0;y<S;y++){var l='';
-    for(var x=0;x<S;x++)l+=M[S-1-x][y];
-    out.push(l);}
-  return out;
+function soMiroir(T){
+  var M=document.createElement('canvas');M.width=SO_W;M.height=SO_H;
+  var g2=M.getContext('2d');g2.imageSmoothingEnabled=false;
+  g2.translate(SO_W,0);g2.scale(-1,1);g2.drawImage(T,0,0);
+  return M;
 }
-var DB_SPR=null, DB_DIRS=8;
+var SO_SPR=null, DB_DIRS=8;
 function dbSprites(){
-  if(DB_SPR)return DB_SPR;
-  /* on prépare les huit matrices : nord, nord-est, puis les rotations */
-  var N=[DB_N],E=[DB_NE],XN=[DB_EN],XE=[DB_ENE];
-  for(var k=0;k<3;k++){N.push(dbTourner(N[k]));E.push(dbTourner(E[k]));
-    XN.push(dbTourner(XN[k]));XE.push(dbTourner(XE[k]));}
-  /* l'ordre des directions : 0 nord, 1 nord-est, 2 est, … */
-  var ORD=[N[0],E[0],N[1],E[1],N[2],E[2],N[3],E[3]];
-  var ORX=[XN[0],XE[0],XN[1],XE[1],XN[2],XE[2],XN[3],XE[3]];
-  DB_SPR={sec:[],enn:[],ombre:[],M:ORD};
-  for(var i=0;i<DB_COUL.length;i++){
-    var a=[];
-    for(var d=0;d<DB_DIRS;d++)a.push(dbPeindre(ORD[d],DB_PAL_AMI,DB_COUL[i].c,DB_COUL[i].c2));
-    DB_SPR.sec.push(a);
+  if(SO_SPR)return SO_SPR;
+  SO_SPR={sec:[],enn:[],ombre:[]};
+  var AMI=[SO_DOS,SO_DOS34,SO_PROF,SO_FACE34,SO_FACE];
+  var ENN=[SO_DOS_E,SO_DOS34_E,SO_PROF_E,SO_FACE34_E,SO_FACE_E];
+  function jeu(POSES,P,c,c2,cx){
+    var p=POSES.map(function(M){return soPeindre(M,P,c,c2,cx);});
+    /* 0 nord, 1 nord-est, 2 est, 3 sud-est, 4 sud, puis les miroirs */
+    return [p[0],p[1],p[2],p[3],p[4],soMiroir(p[3]),soMiroir(p[2]),soMiroir(p[1])];
   }
-  for(var d2=0;d2<DB_DIRS;d2++)
-    DB_SPR.enn.push(dbPeindre(ORX[d2],DB_PAL_ENN,DB_PAL_ENN.v,DB_PAL_ENN.V));
-  var PO={o:'#000',h:'#000',H:'#000',s:'#000',a:'#000',p:'#000'};
-  for(var d3=0;d3<DB_DIRS;d3++)DB_SPR.ombre.push(dbPeindre(ORD[d3],PO,'#000','#000'));
-  return DB_SPR;
+  for(var i=0;i<DB_COUL.length;i++)
+    SO_SPR.sec.push(jeu(AMI,SO_PAL_AMI,DB_COUL[i].c,DB_COUL[i].c2,dbOmbrer(DB_COUL[i].c)));
+  SO_SPR.enn=jeu(ENN,SO_PAL_ENN,'#6b5f4e','#8a7e66','#49402f');
+  var PO={};['o','k','K','d','f','F','e','b','s','S','a','A','h','p'].forEach(function(q){PO[q]='#000';});
+  SO_SPR.ombre=jeu(AMI,PO,'#000','#000','#000');
+  return SO_SPR;
 }
-var DB_SPR_C=5;   /* le centre de l'image, en pixels */
+/* l'homme est debout : son point d'ancrage, ce sont ses pieds */
+var SO_AX=6, SO_AY=13;
 function dbDir(ang){
-  /* l'angle du jeu : 0 vers la droite, et il croît vers le bas.
-     La direction 0 est le nord, d'où le quart de tour d'écart. */
   var d=Math.round((ang+Math.PI/2)/(Math.PI*2)*DB_DIRS);
   return ((d%DB_DIRS)+DB_DIRS)%DB_DIRS;
 }
@@ -4608,7 +4738,7 @@ function dbBatir(s,n){
   s.ab.push({x:Math.round(L/2+13),y:s.obj.y+12,typ:'sacs',occ:null,r:11});
   /* les abris du fond, d'où l'on part */
   for(var k2=0;k2<4;k2++)
-    s.ab.push({x:Math.round(14+(L-28)*k2/3),y:s.bas-22,typ:DB_CARTES[C.carte].fond,occ:null,r:11});
+    s.ab.push({x:Math.round(14+(L-28)*k2/3),y:s.bas-26,typ:DB_CARTES[C.carte].fond,occ:null,r:11});
   /* les nids de mitrailleuse, bien en vue : c'est eux qu'il faut taire */
   for(var m=0;m<C.mg;m++){
     s.enn.push({x:Math.round(22+(L-44)*(m+0.5)/C.mg),y:s.haut+26+Math.round(dbAl(s)*7),
@@ -4904,7 +5034,7 @@ function dbTape(s,x,y){
   }
   /* une section ? */
   for(i=0;i<s.sec.length;i++){var sc=s.sec[i];if(sc.mort)continue;
-    if(Math.hypot(sc.x-x,sc.y-y)<19){s.sel=i;s.mode=null;return;}}
+    if(Math.hypot(sc.x-x,sc.y-y)<21){s.sel=i;s.mode=null;return;}}
   /* un abri ? alors on y va */
   if(s.sel<0||!s.sec[s.sel]||s.sec[s.sel].mort)return;
   var sel=s.sec[s.sel],mieux=-1,dm=1e9;
@@ -4927,19 +5057,21 @@ function dbOrdre(s,k){
   else{sel.ordre='avancer';dbMot(s,'TAPE UN ABRI POUR Y ALLER');}
 }
 /* ---------- LE DESSIN ---------- */
-/* ON POSE UN SOLDAT : son ombre d'abord, lui ensuite. */
+/* ON POSE UN SOLDAT : l'ombre portée au sol d'abord, lui ensuite. */
 function dbHomme(x,y,isec,dir){
-  var S=dbSprites(),c=DB_SPR_C;
-  G.globalAlpha=0.3;G.drawImage(S.ombre[dir],Math.round(x-c+1),Math.round(y-c+2));
-  G.globalAlpha=1;G.drawImage(S.sec[isec][dir],Math.round(x-c),Math.round(y-c));
+  var S=dbSprites();
+  G.globalAlpha=0.26;G.fillStyle='#000';
+  G.beginPath();G.ellipse(x,y+1.5,4.5,1.8,0,0,7);G.fill();G.globalAlpha=1;
+  G.drawImage(S.sec[isec][dir],Math.round(x-SO_AX),Math.round(y-SO_AY));
 }
 /* L'ENNEMI : casque plus large à bord plat, vareuse terre, et un
-   losange rouge sous les pieds. On ne confond plus les siens. */
+   losange rouge à ses pieds. On ne confond plus les siens. */
 function dbEnnemi(x,y,dir){
-  var S=dbSprites(),c=DB_SPR_C;
-  G.globalAlpha=0.3;G.drawImage(S.ombre[dir],Math.round(x-c+1),Math.round(y-c+2));
-  G.globalAlpha=1;G.drawImage(S.enn[dir],Math.round(x-c),Math.round(y-c));
-  R(x,y+5,1,1,'#c8402a');R(x-1,y+6,3,1,'#e8503a');R(x,y+7,1,1,'#c8402a');
+  var S=dbSprites();
+  G.globalAlpha=0.26;G.fillStyle='#000';
+  G.beginPath();G.ellipse(x,y+1.5,4.5,1.8,0,0,7);G.fill();G.globalAlpha=1;
+  G.drawImage(S.enn[dir],Math.round(x-SO_AX),Math.round(y-SO_AY));
+  R(x,y+2,1,1,'#c8402a');R(x-1,y+3,3,1,'#e8503a');R(x,y+4,1,1,'#c8402a');
 }
 function dbCorps(x,y,ami,c){
   R(x-2,y,5,2,ami?(c||'#4a4a40'):'#4a3a36');R(x-2,y,5,1,'rgba(255,255,255,.12)');
@@ -5008,41 +5140,41 @@ function dbAbri(a,vise,t){
     G.beginPath();G.moveTo(x,y-17);G.lineTo(x-3,y-21);G.lineTo(x+3,y-21);G.closePath();G.fill();
   }
 }
-/* TROIS FIGURANTS, PAS SIX. Six soldats de onze pixels dans un anneau
-   de treize, c'était un tas. Trois se lisent, et les six encoches
-   autour de l'anneau donnent l'effectif exact. */
-var DB_POS3=[[0,-5],[-7,4],[7,4]];
+/* DEUX FIGURANTS, PAS SIX. Un soldat fait treize pixels sur seize :
+   six dans un anneau, c'était un tas. Deux se lisent, et les six
+   encoches autour de l'anneau donnent l'effectif exact. */
+var DB_POS3=[[-7,1],[7,0],[0,6]];
 function dbSection(s,sc,choisi,t){
   var n=dbVivants(sc),i;
   var dir=dbDir(sc.ang);
-  disque(sc.x,sc.y,15,'rgba(10,12,14,.30)');
+  disque(sc.x,sc.y,17,'rgba(10,12,14,.28)');
   G.strokeStyle=sc.c;G.lineWidth=choisi?3:2;
-  G.beginPath();G.arc(sc.x,sc.y,15,0,7);G.stroke();
+  G.beginPath();G.arc(sc.x,sc.y,17,0,7);G.stroke();
   if(choisi){var p=0.55+0.45*Math.sin(t/220);
     G.strokeStyle='rgba(255,255,255,'+p.toFixed(2)+')';G.lineWidth=1;
-    G.beginPath();G.arc(sc.x,sc.y,19,0,7);G.stroke();}
+    G.beginPath();G.arc(sc.x,sc.y,21,0,7);G.stroke();}
   /* on pose le fond du groupe d'abord, les hommes de devant ensuite */
-  var vus=Math.max(1,Math.min(3,Math.ceil(n/2)));
+  var vus=(n>=5)?3:(n>=2)?2:1;
   var ordre=[0,1,2].slice(0,vus).sort(function(u,w){return DB_POS3[u][1]-DB_POS3[w][1];});
   for(i=0;i<ordre.length;i++){var P3=DB_POS3[ordre[i]];
-    dbHomme(sc.x+P3[0],sc.y+P3[1],sc.id,(dir+(ordre[i]===1?7:ordre[i]===2?1:0))%8);}
+    dbHomme(sc.x+P3[0],sc.y+P3[1],sc.id,(dir+(ordre[i]===0?7:ordre[i]===1?1:0)+8)%8);}
   /* SIX ENCOCHES AUTOUR DE L'ANNEAU : on lit l'effectif sans compter */
   for(i=0;i<6;i++){var a2=-1.571+i*1.047;
-    R(sc.x+Math.cos(a2)*18-1,sc.y+Math.sin(a2)*18-1,2,2,i<n?sc.c2:'rgba(0,0,0,.5)');}
+    R(sc.x+Math.cos(a2)*20-1,sc.y+Math.sin(a2)*20-1,2,2,i<n?sc.c2:'rgba(0,0,0,.5)');}
   /* le fanion */
-  R(sc.x-1,sc.y-25,1,9,'#2a2a24');R(sc.x,sc.y-25,8,5,sc.c);R(sc.x,sc.y-25,8,2,sc.c2);
+  R(sc.x-1,sc.y-28,1,10,'#2a2a24');R(sc.x,sc.y-28,8,5,sc.c);R(sc.x,sc.y-28,8,2,sc.c2);
   /* CLOUÉE : écrit en toutes lettres, parce que c'est l'information qui
      explique pourquoi la section ne répond plus */
   if(sc.sup>0.85){
-    R(sc.x-14,sc.y+18,28,8,'rgba(170,30,20,.92)');
+    R(sc.x-14,sc.y+20,28,8,'rgba(170,30,20,.92)');
     G.font='bold 6px Trebuchet MS';G.fillStyle='#fff';G.textAlign='center';
-    G.fillText('CLOUÉE',sc.x,sc.y+24);G.textAlign='left';
+    G.fillText('CLOUÉE',sc.x,sc.y+26);G.textAlign='left';
   }else if(sc.sup>0.08){
-    R(sc.x-9,sc.y+18,18,2,'rgba(0,0,0,.55)');
-    R(sc.x-9,sc.y+18,18*Math.min(1,sc.sup),2,'#e8a04a');}
+    R(sc.x-9,sc.y+20,18,2,'rgba(0,0,0,.55)');
+    R(sc.x-9,sc.y+20,18*Math.min(1,sc.sup),2,'#e8a04a');}
   if(sc.ordre==='tenir'&&sc.ax===null&&sc.sup<=0.85){
     G.strokeStyle='rgba(143,216,154,.6)';G.lineWidth=1;G.setLineDash([2,3]);
-    G.beginPath();G.arc(sc.x,sc.y,21,0,7);G.stroke();G.setLineDash([]);}
+    G.beginPath();G.arc(sc.x,sc.y,23,0,7);G.stroke();G.setLineDash([]);}
 }
 function dbDessine(s,L,H){
   var i,j,sc,en,t=s.t;

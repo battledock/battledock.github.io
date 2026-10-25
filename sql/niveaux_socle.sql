@@ -761,3 +761,51 @@ where niveau = 29;
    tombe au plateau. 13 836 points, 22 ennemis abattus,
    60 images par seconde.
 */
+
+/* ============================================================
+   LE DÉBARQUEMENT — LES SOLDATS PASSENT EN VUE TROIS-QUARTS
+                                                     25/10/2026
+   ============================================================
+   Le problème n'était pas le niveau de détail, c'était la VUE.
+   Vu strictement du dessus, un homme n'est qu'un casque et deux
+   épaules : il n'y a rien à dessiner, et aucun détail n'y
+   changera quoi que ce soit. Les jeux de tactique en pixel art
+   — Advance Wars, Door Kickers — gardent un terrain vu de
+   dessus et dessinent les hommes DEBOUT, de trois quarts.
+
+   Les soldats font maintenant 13 pixels sur 16. Cinq poses
+   dessinées à la main dans des matrices de caractères : de dos,
+   de dos trois-quarts, de profil, de face trois-quarts, de
+   face. Les trois directions qui manquent sont les miroirs des
+   trois obliques — huit directions pour cinq dessins.
+
+   Chaque homme a : un casque avec son reflet et son bord, un
+   visage avec les yeux, une vareuse à la couleur de sa section
+   dont le côté à l'ombre est calculé depuis cette couleur
+   (dbOmbrer, 58 %), un ceinturon et ses bretelles, un sac à dos
+   sur les poses de dos, un fusil avec son canon et le bois de
+   la crosse, un pantalon, des bottes, et une ombre portée au
+   sol.
+
+   L'ENNEMI a ses dix propres matrices, pas une teinte
+   différente : casque nettement plus large à bord plat. On le
+   reconnaît à la silhouette avant d'avoir vu la couleur, et il
+   garde son losange rouge aux pieds.
+
+   TROIS FIGURANTS par section (deux de deux à quatre hommes, un
+   seul à la fin), l'anneau est passé de 15 à 17 pour les
+   contenir, la zone de tape de 19 à 21, et les encoches
+   d'effectif de 18 à 20.
+
+   Ce qui a été jeté en chemin : une première version qui
+   échantillonnait une forme mathématique sous l'angle voulu,
+   comme le kayak des Calanques. À six pixels, un casque n'a
+   plus de forme à faire tourner — ça ne donnait que de la
+   bouillie. Les matrices à la main, tournées par quarts et
+   miroitées, ne perdent pas un pixel.
+
+   Mesuré : la partie automatique atteint le troisième secteur
+   avec onze hommes debout, 29 ennemis abattus, 16 900 points —
+   la meilleure manche depuis le début — à 60 images par
+   seconde. Ronde verte sur les trois cartes.
+*/
