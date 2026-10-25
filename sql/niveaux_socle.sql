@@ -1176,3 +1176,43 @@ where niveau = 29;
    ligne dit ce qu'elle change pour celui qui tient la rue : « En plein
    jour : tout se voit, et tout se filme. »
    ===================================================================== */
+
+/* =====================================================================
+   LE CORDON — sprites, décor et menus d'actions (2026-10-26)
+
+   LES SILHOUETTES, deuxième génération. De 12×18 à 14×22 pour la foule,
+   16×22 pour les cordons. Tête plus petite, épaules plus étroites,
+   jambes plus longues : une foule de grosses têtes rondes ne fait pas
+   une manifestation. Chaque vêtement a trois tons (clair, base, ombre)
+   et il y a dix couvre-chefs, donc la foule ne se répète pas.
+
+   ET DES RÔLES DANS LE CORTÈGE : un sur dix porte une pancarte, un sur
+   quinze filme avec son téléphone, un sur dix crie bras levé. C'est ça
+   qui fait qu'une foule n'est pas un bloc.
+
+   LE CRS a sa propre palette, en dur : il n'emprunte plus les couleurs
+   de la foule (il héritait d'un casque bordeaux ou vert selon le
+   tirage). Casque à visière, épaulières, ceinturon, jambières,
+   matraque, et le bouclier en trois colonnes.
+
+   LE DÉCOR a gagné ce qui lui manquait pour ressembler à une rue :
+   antennes, cheminées et climatiseurs sur les toits ; enseignes
+   verticales lumineuses sur une façade sur trois ; platanes avec leur
+   grille au pied ; feux tricolores ; et des flaques qui attrapent la
+   couleur du ciel — une chaussée sans reflet est un aplat gris.
+
+   LES MENUS D'ACTIONS ont des PICTOGRAMMES dessinés : bouclier de face
+   pour TENIR, trois chevrons pour CHARGE, un pas en arrière pour
+   REPLI, la grenade et ses volutes pour GAZ, le mégaphone pour PARLER,
+   le cercle qui se referme pour NASSE, le jet pour la LANCE, le
+   fourgon pour CAMION. Un bouton qui ne porte qu'un mot se lit en
+   entier à chaque fois ; un pictogramme se reconnaît du coin de l'œil,
+   et c'est exactement ce qu'on fait quand la ligne recule. Les
+   pourcentages ont quitté les boutons (ils sont dans le menu) ; il ne
+   reste que ce qui change : le stock et le compte à rebours, en
+   pastille dans le coin.
+
+   UN BUG DE L'HEURE : les lampadaires restaient allumés en plein jour.
+   Le dégradé du cône remettait globalAlpha à une valeur fixe et
+   écrasait l'extinction générale posée avant la boucle.
+   ===================================================================== */
