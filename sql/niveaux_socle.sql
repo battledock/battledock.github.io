@@ -1482,3 +1482,70 @@ where niveau = 29;
 -- enfermes dans une impasse a une seule issue : vingt sortis en onze
 -- secondes. Et la chaine complete se lit dans les transitions :
 -- RECULE→PANIQUE→FUIT→CALME→MARCHE.
+
+-- ============================================================
+-- LE CORDON — LE COMMANDEMENT (2026-10-27-0720)
+-- ============================================================
+-- LA REGLE : UN ORDRE N'EST PAS UN TEXTE. Chacun pose quelque chose que
+-- la simulation lit — un champ de navigation, un decalage de figure, une
+-- place tenue. Si on retirait tout l'affichage, les unites obeiraient
+-- pareil. Rien ici ne se contente de changer un libelle.
+--
+-- CE QU'ON PEUT FAIRE
+--   tape sur une pastille  : choisir une unite ; une seconde tape la
+--                            retire. C'est la seule multi-selection qui
+--                            tienne au pouce — pas de cadre a tracer,
+--                            pas de doigt a maintenir.
+--   TOUTES                 : les quatre d'un coup
+--   tape sur la carte      : y envoyer tout ce qui est choisi, en
+--                            eventail pour que deux unites ne visent pas
+--                            la meme case
+--   TENIR (priorite 4)     : annule tout, la place tenue devient celle
+--                            d'ou l'on tient — pas le point de depart
+--   AVANT / ARRIERE (2)    : decaler la figure vers la foule ou en
+--                            arriere
+--   FORME                  : ligne, coin, colonne, nasse
+--   GROUPE                 : les unites choisies convergent vers leur
+--                            barycentre, chemins calcules, ordres poses
+--   GAZ                    : un evenement devant chaque unite choisie
+--
+-- LA BARRE EST DESSINEE DANS LA SCENE, pas en HTML : un bouton HTML ne
+-- sait pas montrer l'effectif d'une unite, son etat et l'avancement de
+-- son ordre. Mais SA TAILLE EST PHYSIQUE : une rangee fait 42 points
+-- d'ECRAN divises par l'agrandissement de la borne, donc la cible sous
+-- le pouce fait toujours les memes millimetres. Deux rangees en
+-- portrait, une seule des que l'ecran est large : dans les deux cas la
+-- barre prend 10 a 11 % de la hauteur.
+--
+-- LES RETOURS : couleur propre a chaque unite, la meme sur la pastille,
+-- sous les pieds de ses hommes, sur son chemin et sur son marqueur de
+-- destination — c'est le seul moyen de savoir laquelle on vient
+-- d'envoyer quand on en commande trois a la fois. Une etiquette au-dessus
+-- du chef dit le nom et l'ordre en cours. La pastille se remplit a
+-- mesure que la route avance.
+--
+-- TROIS CORRECTIONS DE SIMULATION, trouvees en testant les ordres
+--  1. LA MASSE MANQUAIT DANS LA SEPARATION. Un homme en tenue
+--     d'intervention etait repousse autant qu'il repoussait : une ligne
+--     a qui on ordonnait d'avancer gagnait QUATORZE CENTIEMES de tuile
+--     en trois secondes, et l'ordre ne se voyait pas. Avec le rapport
+--     des masses, elle en gagne 1,12 — huit fois plus. C'est tout ce qui
+--     separe un cordon d'une file d'attente.
+--  2. SEPT PLACES DE FORMATION SUR TRENTE-SIX TOMBAIENT DANS UN MUR.
+--     Une ligne de dix hommes fait six tuiles et demie, l'avenue en fait
+--     six : les hommes des extremites poussaient contre une facade en
+--     permanence et on mesurait six tuiles d'ecart a la formation. Une
+--     place bloquee est maintenant ramenee sur la case libre la plus
+--     proche — la ligne se tasse au lieu de deborder. Zero sur
+--     trente-six, et l'ecart maximal tombe de 5,95 a 2,06 tuiles.
+--  3. LE REGROUPEMENT serrait les unites a 1,9 tuile : leurs figures se
+--     chevauchaient et un homme sur deux ne pouvait plus atteindre sa
+--     place. 2,6.
+--
+-- MESURE, chaque commande touchee au doigt dans un navigateur tactile :
+-- selection simple et multiple, quatre unites envoyees ensemble et
+-- arrivant par des chemins differents, TENIR qui annule un deplacement
+-- en cours, AVANT qui gagne 1,12 tuile et ARRIERE qui en rend 1,83,
+-- changement de figure (etendue mesuree differente), regroupement qui
+-- ramene l'ecart maximal de 10,4 a 7,1 tuiles, et le gaz qui fait
+-- paniquer. Les unites non choisies ne bougent pas : 0,05 tuile.

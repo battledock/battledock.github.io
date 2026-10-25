@@ -215,6 +215,7 @@ var ETATS={
   VERS:    {cat:'crs', allure:1.00, dit:'se déplace'},
   FORME:   {cat:'crs', allure:0.80, dit:'se forme'},
   AVANCE:  {cat:'crs', allure:0.75, dit:'avance'},
+  RECUL:   {cat:'crs', allure:0.85, dit:'recule'},
   CEDE:    {cat:'crs', allure:0.60, dit:'cède'}
 };
 FOULE.ETATS=ETATS;
@@ -354,7 +355,13 @@ function reglesCRS(S,a,G,dt){
   var E=a.etat;
   if(G.ordre==='vers'){ if(E!=='VERS'){pourquoi(a,'ordre de déplacement');etat(S,a,'VERS');} return; }
   if(G.ordre==='avance'){ if(E!=='AVANCE'){pourquoi(a,'ordre d’avancer');etat(S,a,'AVANCE');} return; }
-  if(E==='VERS'||E==='AVANCE'){pourquoi(a,'ordre terminé');etat(S,a,'FORME');return;}
+  if(G.ordre==='recule'){ if(E!=='RECUL'){pourquoi(a,'ordre de reculer');etat(S,a,'RECUL');} return; }
+  if(G.ordre==='tenir'){
+    if(E!=='FORME'&&E!=='TIENT'){pourquoi(a,'ordre de tenir');etat(S,a,'FORME');}
+    if(E==='FORME'&&a.distCible<0.46){pourquoi(a,'en place');etat(S,a,'TIENT');}
+    return;
+  }
+  if(E==='VERS'||E==='AVANCE'||E==='RECUL'){pourquoi(a,'ordre terminé');etat(S,a,'FORME');return;}
   if(E==='FORME'){
     if(a.distCible<0.46){pourquoi(a,'en place');etat(S,a,'TIENT');}
     return;
@@ -445,7 +452,7 @@ FOULE.poser=function(S,G,x,y,o){
    propre. Dans les deux cas elle est CALCULEE, jamais tiree au sort :
    une foule qui erre au hasard se voit tout de suite.
    --------------------------------------------------------------------- */
-function majCibles(S){
+function majCibles(S,dt){
   for(var k=0;k<S.groupes.length;k++){
     var G=S.groupes[k], n=G.membres.length;
     var c=Math.cos(G.cap), si=Math.sin(G.cap);
@@ -461,12 +468,13 @@ function majCibles(S){
        etaient retournees, et la grenade tombait derriere le cordon. */
     var dec=0;
     if(G.type==='crs'){
-      if(G.ordre==='avance')dec=-1.1;
+      if(G.ordre==='avance')dec=-1.9;
+      else if(G.ordre==='recule')dec=1.4;
       else{
         var cede=0; for(var q=0;q<n;q++)if(S.agents[G.membres[q]].etat==='CEDE')cede++;
         if(cede>n*0.4)dec=0.9;
       }
-      G.decal+=(dec-G.decal)*0.03;
+      G.decal+=(dec-G.decal)*Math.min(1,dt*0.0035);
     }
     for(var m=0;m<n;m++){
       var a=S.agents[G.membres[m]];
@@ -475,6 +483,17 @@ function majCibles(S){
         var v2=p.v - G.decal;
         a.cx=G.ax + p.u*c - v2*si;
         a.cy=G.ay + p.u*si + v2*c;
+        /* UNE PLACE DOIT ETRE ATTEIGNABLE. Une ligne de dix hommes fait
+           six tuiles et demie ; l'avenue en fait six. Sept places sur
+           trente-six tombaient donc dans un trottoir ou un mur, et les
+           hommes concernes poussaient contre une facade en permanence —
+           on mesurait six tuiles d'ecart a la formation. On ramene la
+           place sur la case libre la plus proche : la ligne se tasse au
+           lieu de deborder. */
+        if(muree(S,a.cx,a.cy)){
+          var lp=prochaineLibre(S,a.cx,a.cy);
+          if(lp){a.cx=lp[0];a.cy=lp[1];}
+        }
       }else{
         a.cx=G.ax + a.ex;
         a.cy=G.ay + a.ey;
@@ -543,7 +562,7 @@ FOULE.pas=function(S,dt){
     S.evenements.splice(ei,1);
   }
   majChamps(S,dt);
-  majCibles(S);
+  majCibles(S,dt);
   var A=S.agents, n=A.length, i, j, a, b;
   /* 1. le voisinage */
   S.grille.vider();
@@ -609,7 +628,14 @@ FOULE.pas=function(S,dt){
       var min=a.r+b.r;
       if(e2<min*min&&e2>1e-8){
         var e=Math.sqrt(e2), pen=(min-e)/min;
-        fx+=ex/e*pen*R.sepF; fy+=ey/e*pen*R.sepF;
+        /* LA MASSE COMPTE. Sans elle, un homme en tenue d'intervention
+           etait repousse autant qu'il repoussait : une ligne qui avance
+           gagnait quatorze centiemes de tuile en trois secondes, et
+           l'ordre d'avancer ne se voyait pas. Le rapport des masses dit
+           qui recule — c'est tout ce qui separe un cordon d'une file
+           d'attente. */
+        var rm=(b.masse*2)/(a.masse+b.masse);
+        fx+=ex/e*pen*R.sepF*rm; fy+=ey/e*pen*R.sepF*rm;
       }
       if(b.g===a.g&&e2<4){coh++;cx2+=b.x;cy2+=b.y;}
     }
@@ -723,6 +749,27 @@ FOULE.pas=function(S,dt){
     Gp.presse=c2/Math.max(1,Gp.membres.length);
   }
 };
+
+function muree(S,x,y){
+  var cx=x|0, cy=y|0;
+  if(cx<0||cy<0||cx>=S.GW||cy>=S.GH)return true;
+  return !!S.bloc[cy][cx];
+}
+function prochaineLibre(S,x,y){
+  var cx=x|0, cy=y|0;
+  for(var r=1;r<=3;r++){
+    var best=null, bd=1e9;
+    for(var oy=-r;oy<=r;oy++)for(var ox=-r;ox<=r;ox++){
+      if(Math.max(Math.abs(ox),Math.abs(oy))!==r)continue;
+      var nx=cx+ox, ny=cy+oy;
+      if(nx<0||ny<0||nx>=S.GW||ny>=S.GH||S.bloc[ny][nx])continue;
+      var dd=(nx+0.5-x)*(nx+0.5-x)+(ny+0.5-y)*(ny+0.5-y);
+      if(dd<bd){bd=dd;best=[nx+0.5,ny+0.5];}
+    }
+    if(best)return best;
+  }
+  return null;
+}
 
 /* la case libre la plus proche, en allant du cote de la cible */
 function caseLibre(S,x,y,cx,cy){

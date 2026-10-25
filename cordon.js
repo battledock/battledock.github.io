@@ -997,7 +997,7 @@ function peupler(s){
        −x, c'est-a-dire vers le cortege qui remonte l'avenue */
     var G=FOULE.groupe(sim,{type:'crs',form:'ligne',ax:u[0],ay:u[1],
                             cap:Math.PI/2,cohesion:0,seuil:2.6});
-    G.nom='LIGNE '+(ui+1); G.route=null; G.ri=0;
+    G.nom='LIGNE '+(ui+1); G.court='L'+(ui+1); G.route=null; G.ri=0; G.but=null; G.nRoute=0;
     G.champ=new FOULE.Champ(sim);
     for(var i=0;i<u[2];i++)
       FOULE.poser(sim,G,u[0]+1.2+(i%3)*0.5,u[1]+((i/3)|0)*0.6,
@@ -1008,7 +1008,7 @@ function peupler(s){
   });
   var GR=FOULE.groupe(sim,{type:'crs',form:'colonne',ax:bar+5,ay:midY+0.5,
                            cap:Math.PI/2,cohesion:0});
-  GR.nom='RÉSERVE'; GR.route=null; GR.ri=0;
+  GR.nom='RÉSERVE'; GR.court='RÉS'; GR.route=null; GR.ri=0; GR.but=null; GR.nRoute=0;
   GR.champ=new FOULE.Champ(sim);
   for(var i2=0;i2<8;i2++)
     FOULE.poser(sim,GR,bar+5+(i2%2)*0.6,midY+0.5+((i2/2)|0)*0.7,
@@ -1016,6 +1016,8 @@ function peupler(s){
   sim.agents[GR.membres[0]].type='officier';
   s.unites.push(GR);
   s.sel=0;
+  s.selN={0:true};          /* la selection : un ensemble, pas un index */
+  s.unites.forEach(function(U){U.tenu={x:U.ax,y:U.ay};});
   s.sim=sim;
   s.front=tete;
 }
@@ -1090,6 +1092,228 @@ function majUnites(s,dt){
   });
 }
 
+/* =====================================================================
+   LE COMMANDEMENT
+
+   UN ORDRE N'EST PAS UN TEXTE. Chacun de ceux qui suivent pose quelque
+   chose que la simulation lit : un champ de navigation, un decalage de
+   figure, une place tenue. Rien ici ne se contente de changer un
+   libelle — si on retire l'affichage, les unites obeissent pareil.
+
+   LES PRIORITES. TENIR (4) annule tout, car c'est le bouton de secours ;
+   un deplacement (3) chasse un AVANCE (2) ; la reaction a la densite (0)
+   ne s'exprime que si rien d'autre n'est en cours.
+   ===================================================================== */
+function selection(s){
+  var L=[];
+  for(var k in s.selN)if(s.selN[k]&&s.unites[k])L.push(s.unites[k]);
+  if(!L.length&&s.unites&&s.unites[0]){s.selN={0:true};L.push(s.unites[0]);}
+  return L;
+}
+function selNoms(s){
+  var L=selection(s);
+  if(L.length===1)return L[0].nom;
+  if(L.length===s.unites.length)return 'TOUTES LES UNITÉS';
+  return L.length+' UNITÉS';
+}
+/* ENVOYER. Plusieurs unites visant le meme point s'ecraseraient les unes
+   sur les autres : on les repartit en eventail autour du point vise,
+   perpendiculairement a leur marche. */
+function cmdAller(s,gx,gy){
+  var L=selection(s), n=L.length, ok=0;
+  for(var i=0;i<n;i++){
+    var U=L[i], dec=(i-(n-1)/2)*2.2;
+    var tx=gx, ty=Math.round(gy+dec);
+    var r=chemin(s.C,Math.floor(U.ax),Math.floor(U.ay),tx,ty);
+    if(!r){r=chemin(s.C,Math.floor(U.ax),Math.floor(U.ay),gx,gy);ty=gy;}
+    if(!r)continue;
+    U.route=r;U.ri=0;U.nRoute=r.length;
+    U.champ.calculer(s.sim,[[tx,ty]]);
+    U.but=[tx,ty];
+    FOULE.ordre(s.sim,U,'vers',0,3);
+    ok++;
+  }
+  if(ok){s.mot=selNoms(s)+' · EN MARCHE';s.motT=1500;}
+  else{s.mot='PAS DE PASSAGE PAR LA';s.motT=1400;}
+  return ok;
+}
+function cmdTenir(s){
+  var L=selection(s);
+  L.forEach(function(U){
+    U.route=null;U.but=null;
+    /* la place tenue devient celle d'ou l'on tient : on ne retourne pas
+       a son point de depart du debut de partie */
+    U.tenu={x:U.ax,y:U.ay};
+    U.ordre=null;U.ordrePrio=0;
+    FOULE.ordre(s.sim,U,'tenir',2200,4);
+  });
+  s.mot=selNoms(s)+' · TIENT LA POSITION';s.motT=1500;
+}
+function cmdPousser(s,sens){
+  var L=selection(s), ok=0;
+  L.forEach(function(U){
+    if(FOULE.ordre(s.sim,U,sens>0?'avance':'recule',3200,2))ok++;
+  });
+  s.mot=selNoms(s)+(sens>0?' · EN AVANT':' · ROMPEZ D’UN PAS');s.motT=1500;
+  return ok;
+}
+function cmdForme(s){
+  var L=selection(s), F=['ligne','coin','colonne','nasse'];
+  var cur=L[0].form, suiv=F[(F.indexOf(cur)+1)%F.length];
+  L.forEach(function(U){U.form=suiv;});
+  s.mot=selNoms(s)+' · '+suiv.toUpperCase();s.motT=1500;
+}
+/* REGROUPER : les unites choisies convergent vers leur barycentre, en
+   file, et s'y rangent. C'est un vrai deplacement — champs calcules,
+   ordres poses — pas un rapprochement d'icones. */
+function cmdGrouper(s){
+  var L=selection(s);
+  if(L.length<2){s.mot='CHOISIS AU MOINS DEUX UNITÉS';s.motT=1600;return 0;}
+  var cx=0, cy=0;
+  L.forEach(function(U){cx+=U.ax;cy+=U.ay;});
+  cx=Math.round(cx/L.length); cy=Math.round(cy/L.length);
+  var ok=0;
+  for(var i=0;i<L.length;i++){
+    /* 2,6 tuiles entre deux unites : a 1,9 leurs figures se
+       chevauchaient et un homme sur deux ne pouvait plus atteindre sa
+       place — on mesurait cinq tuiles d'ecart apres le regroupement. */
+    var U=L[i], ty=cy+(i-(L.length-1)/2)*2.6;
+    var tx=cx, t2=Math.round(ty);
+    if(!libre(s.C,tx,t2)){var c2=null;
+      for(var r=1;r<=6&&!c2;r++)for(var oy=-r;oy<=r&&!c2;oy++)for(var ox=-r;ox<=r;ox++){
+        if(Math.max(Math.abs(ox),Math.abs(oy))!==r)continue;
+        if(libre(s.C,tx+ox,t2+oy)){c2=[tx+ox,t2+oy];break;}}
+      if(c2){tx=c2[0];t2=c2[1];}
+    }
+    var rr=chemin(s.C,Math.floor(U.ax),Math.floor(U.ay),tx,t2);
+    if(!rr)continue;
+    U.route=rr;U.ri=0;U.nRoute=rr.length;
+    U.champ.calculer(s.sim,[[tx,t2]]);
+    U.but=[tx,t2];
+    FOULE.ordre(s.sim,U,'vers',0,3);
+    ok++;
+  }
+  s.mot=ok?('REGROUPEMENT · '+ok+' UNITÉS'):'REGROUPEMENT IMPOSSIBLE';s.motT=1600;
+  return ok;
+}
+function cmdGaz(s){
+  var L=selection(s);
+  L.forEach(function(U){
+    var dv=FOULE.devant(U);
+    FOULE.evenement(s.sim,U.ax+dv[0]*3.4,U.ay+dv[1]*3.4,4.6,1.0);
+  });
+  s.flash=[L[0].ax+FOULE.devant(L[0])[0]*3.4, L[0].ay+FOULE.devant(L[0])[1]*3.4, 0];
+  s.mot='GRENADE · '+selNoms(s);s.motT=1500;
+}
+
+/* =====================================================================
+   LA BARRE DE COMMANDEMENT
+
+   DESSINEE DANS LA SCENE, et pas en HTML, pour une raison : elle doit
+   montrer l'etat de chaque unite — son effectif, son ordre, ou il en
+   est. Un bouton HTML ne sait pas faire ca sans devenir une page.
+
+   LA TAILLE EST PHYSIQUE, PAS LOGIQUE. Une rangee fait 42 points
+   d'ECRAN, divises par l'agrandissement de la borne : a x2 cela fait 21
+   points de scene, a x4 cela en fait 10. La cible sous le pouce a donc
+   toujours la meme taille en millimetres, que le telephone soit petit
+   ou grand — c'est la meme raison qui fait que les manches du Hangar
+   sont posees par-dessus le canvas et non dessinees dedans.
+
+   DEUX RANGEES EN PORTRAIT, UNE SEULE COUCHE. Un ecran large a la place
+   de tout aligner ; un ecran etroit ne l'a pas, et deux rangees valent
+   mieux que douze timbres illisibles.
+   ===================================================================== */
+var UCOL=['#6ad8ff','#ffd24a','#7dff9a','#ff8ac8','#c8a0ff','#ff9a6a'];
+var ORDRES=[
+  {k:'tenir', t:'TENIR'},
+  {k:'avant', t:'AVANT'},
+  {k:'arriere', t:'ARRIÈRE'},
+  {k:'forme', t:'FORME'},
+  {k:'groupe',t:'GROUPE'},
+  {k:'gaz',   t:'GAZ'},
+  {k:'diag',  t:'DIAG'}
+];
+function barreMaj(s,L,H){
+  var E=(typeof ECH==='number'&&ECH>0)?ECH:2;
+  var hr=Math.max(13,Math.round(42/E));      /* 42 points d'ecran */
+  var une=(L>=360), B=[], i;
+  var nU=s.unites.length+1;                  /* les unites, plus TOUTES */
+  s.hbar=une?hr:hr*2;
+  var y1=H-s.hbar, y2=une?y1:(H-hr);
+  if(une){
+    var pdsU=1.35, tot=nU*pdsU+ORDRES.length;
+    var u=L/tot, x=0;
+    for(i=0;i<s.unites.length;i++){B.push({x:x,y:y1,w:u*pdsU-2,h:hr-2,k:'u'+i});x+=u*pdsU;}
+    B.push({x:x,y:y1,w:u*pdsU-2,h:hr-2,k:'tout'});x+=u*pdsU;
+    for(i=0;i<ORDRES.length;i++){B.push({x:x,y:y1,w:u-2,h:hr-2,k:ORDRES[i].k,t:ORDRES[i].t});x+=u;}
+  }else{
+    var uu=L/nU, x2=0;
+    for(i=0;i<s.unites.length;i++){B.push({x:x2,y:y1,w:uu-2,h:hr-2,k:'u'+i});x2+=uu;}
+    B.push({x:x2,y:y1,w:uu-2,h:hr-2,k:'tout'});
+    var uo=L/ORDRES.length, x3=0;
+    for(i=0;i<ORDRES.length;i++){B.push({x:x3,y:y2,w:uo-2,h:hr-2,k:ORDRES[i].k,t:ORDRES[i].t});x3+=uo;}
+  }
+  s.barre=B;
+}
+function barreDessine(s,L,H){
+  var g=G, i, b;
+  g.fillStyle='rgba(6,10,18,.80)';g.fillRect(0,H-s.hbar,L,s.hbar);
+  g.fillStyle='rgba(120,200,240,.22)';g.fillRect(0,H-s.hbar,L,1);
+  g.textBaseline='middle';
+  for(i=0;i<s.barre.length;i++){
+    b=s.barre[i];
+    var cy=b.y+b.h/2;
+    if(b.k.charAt(0)==='u'&&b.k!=='tout'){
+      var ui=+b.k.slice(1), U=s.unites[ui], on=!!s.selN[ui];
+      var c=UCOL[ui%UCOL.length];
+      g.fillStyle=on?c:'rgba(255,255,255,.10)';
+      coArr(g,b.x+1,b.y+1,b.w,b.h-2,3);g.fill();
+      /* l'avancement de l'ordre, en fond de pastille */
+      if(U.route&&U.nRoute){
+        g.fillStyle='rgba(255,255,255,'+(on?'.26':'.16')+')';
+        coArr(g,b.x+1,b.y+1,b.w*(U.ri/U.nRoute),b.h-2,3);g.fill();
+      }
+      g.fillStyle=on?'#06101c':c;
+      g.font='bold 7px ui-monospace,monospace';g.textAlign='center';
+      g.fillText(U.court,b.x+1+b.w/2,cy-4);
+      g.font='6px ui-monospace,monospace';
+      var sim=s.sim, et=sim?sim.agents[U.membres[0]].etat:'';
+      g.fillText(U.membres.length+'H '+(DIAG_AB[et]||et),b.x+1+b.w/2,cy+4);
+    }else if(b.k==='tout'){
+      var all=(Object.keys(s.selN).filter(function(k){return s.selN[k];}).length===s.unites.length);
+      g.fillStyle=all?'#dfe8f0':'rgba(255,255,255,.10)';
+      coArr(g,b.x+1,b.y+1,b.w,b.h-2,3);g.fill();
+      g.fillStyle=all?'#06101c':'#cfe4f2';
+      g.font='bold 7px ui-monospace,monospace';g.textAlign='center';
+      g.fillText('TOUTES',b.x+1+b.w/2,cy);
+    }else{
+      var act=(b.k==='diag'&&s.diag);
+      g.fillStyle=act?'#7ae8ff':'rgba(255,255,255,.10)';
+      coArr(g,b.x+1,b.y+1,b.w,b.h-2,3);g.fill();
+      if(s.presse1===b.k){g.fillStyle='rgba(255,255,255,.3)';coArr(g,b.x+1,b.y+1,b.w,b.h-2,3);g.fill();}
+      g.fillStyle=act?'#06101c':'#cfe4f2';
+      g.font='bold 7px ui-monospace,monospace';g.textAlign='center';
+      g.fillText(b.t,b.x+1+b.w/2,cy);
+    }
+  }
+  g.textAlign='left';g.textBaseline='alphabetic';
+}
+function coArr(g,x,y,w,h,r){
+  g.beginPath();
+  g.moveTo(x+r,y);g.lineTo(x+w-r,y);g.quadraticCurveTo(x+w,y,x+w,y+r);
+  g.lineTo(x+w,y+h-r);g.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  g.lineTo(x+r,y+h);g.quadraticCurveTo(x,y+h,x,y+h-r);
+  g.lineTo(x,y+r);g.quadraticCurveTo(x,y,x+r,y);g.closePath();
+}
+function barreTouche(s,x,y){
+  for(var i=0;i<s.barre.length;i++){
+    var b=s.barre[i];
+    if(x>=b.x&&x<=b.x+b.w+2&&y>=b.y-2&&y<=b.y+b.h+2)return b;
+  }
+  return null;
+}
+
 function dessineObjet(g,o,s){
   var S=OBJ[o.t]||VEH[o.t]; if(!S)return;
   var p=m2e(o.gx,o.gy);
@@ -1106,7 +1330,8 @@ var M={
             heure:'jour', graine:0, pret:false,
             C:null, bats:[], objs:[], statiques:[], sol:null, j:null,
             mot:'', motT:0, sim:null, unites:null, corteges:null,
-            sel:0, front:0, pression:0, tension:0, vus:[],
+            sel:0, selN:{0:true}, front:0, pression:0, tension:0, vus:[],
+            barre:[], hbar:0,
             diag:false, flash:null,
             /* LA DENSITE, mesuree : 190 corps a 58 images, 354 a 56,
                504 a 55, 654 a 54. Le cout est lineaire — la grille de
@@ -1115,7 +1340,7 @@ var M={
                sans rien sacrifier. */
             densite:2};
   },
-  cadre:function(s,L,H){s.L=L;s.H=H;if(s.pret)camBornes(s);},
+  cadre:function(s,L,H){s.L=L;s.H=H;if(s.pret){camBornes(s);barreMaj(s,L,H);}},
   demarrer:function(s){
     s.graine=(Math.random()*2000000)|0;
     s.heure=['jour','jour','soir','nuit'][(Math.random()*4)|0];
@@ -1156,28 +1381,45 @@ var M={
     var sx=Math.max(0,Math.floor(s.cam.x-vl/2-2)), sy=Math.max(0,Math.floor(s.cam.y-vh/2-2));
     var sw=Math.min(s.sol.width-sx,Math.ceil(vl+4)), sh=Math.min(s.sol.height-sy,Math.ceil(vh+4));
     if(sw>0&&sh>0)g.drawImage(s.sol,sx,sy,sw,sh,sx,sy,sw,sh);
-    /* L'UNITE CHOISIE, marquee AU SOL : sous les volumes, donc cachee
-       comme elle quand un immeuble passe devant. Posees apres le decor,
-       ces marques se voyaient sur les toits. */
-    var U0=s.unites&&s.unites[s.sel];
-    if(U0){
-      var pu=m2e(U0.ax,U0.ay);
-      g.strokeStyle='rgba(120,230,255,.85)';g.lineWidth=1;
-      g.beginPath();g.ellipse(pu.x,pu.y+TH/2,11,5.5,0,0,7);g.stroke();
-      g.strokeStyle='rgba(120,230,255,.42)';
+    /* LES UNITES CHOISIES, marquees AU SOL : sous les volumes, donc
+       cachees comme elles quand un immeuble passe devant. Posees apres
+       le decor, ces marques se voyaient sur les toits.
+       Chaque unite a SA couleur, la meme que sa pastille : c'est le seul
+       moyen de savoir laquelle on vient d'envoyer quand on en commande
+       trois en meme temps. */
+    g.lineWidth=1;
+    for(var su=0;su<s.unites.length;su++){
+      if(!s.selN[su])continue;
+      var U0=s.unites[su], uc=UCOL[su%UCOL.length];
       for(var mu=0;mu<U0.membres.length;mu++){
         var am=s.sim.agents[U0.membres[mu]], pm=m2e(am.x,am.y);
+        g.strokeStyle=uc;g.globalAlpha=0.55;
         g.beginPath();g.ellipse(pm.x,pm.y,5,2.5,0,0,7);g.stroke();
       }
-    }
-    if(U0&&U0.route&&U0.route.length){
-      g.strokeStyle='rgba(120,230,255,.45)';g.lineWidth=1;
-      g.beginPath();
-      for(var q=U0.ri;q<U0.route.length;q++){
-        var pq=m2e(U0.route[q][0],U0.route[q][1]);
-        if(q===U0.ri)g.moveTo(pq.x,pq.y+TH/2);else g.lineTo(pq.x,pq.y+TH/2);
+      g.globalAlpha=1;
+      /* le chemin qui reste a parcourir, et la destination au bout */
+      if(U0.route&&U0.ri<U0.route.length){
+        g.strokeStyle=uc;g.globalAlpha=0.5;
+        g.beginPath();
+        for(var q=U0.ri;q<U0.route.length;q++){
+          var pq=m2e(U0.route[q][0],U0.route[q][1]);
+          if(q===U0.ri)g.moveTo(pq.x,pq.y+TH/2);else g.lineTo(pq.x,pq.y+TH/2);
+        }
+        g.stroke();g.globalAlpha=1;
       }
-      g.stroke();
+      if(U0.but){
+        var pb2=m2e(U0.but[0]+0.5,U0.but[1]+0.5);
+        g.strokeStyle=uc;
+        g.beginPath();g.ellipse(pb2.x,pb2.y+TH/2,9,4.5,0,0,7);g.stroke();
+        g.beginPath();
+        g.moveTo(pb2.x-5,pb2.y+TH/2);g.lineTo(pb2.x+5,pb2.y+TH/2);
+        g.moveTo(pb2.x,pb2.y+TH/2-3);g.lineTo(pb2.x,pb2.y+TH/2+3);g.stroke();
+      }
+      /* l'anneau de ralliement : ou la figure se range */
+      var pu=m2e(U0.ax,U0.ay);
+      g.strokeStyle=uc;g.globalAlpha=0.85;
+      g.beginPath();g.ellipse(pu.x,pu.y+TH/2,11,5.5,0,0,7);g.stroke();
+      g.globalAlpha=1;
     }
     /* LES VOLUMES, du fond vers l'avant. Un objet dont le calque ne
        touche pas la fenetre n'est pas dessine du tout. */
@@ -1212,6 +1454,25 @@ var M={
       }
     }
     while(vi<nv){ACTEURS.dessine(g,vus[vi],vus[vi]._px,vus[vi]._py);vi++;}
+    /* L'ETIQUETTE D'UNE UNITE, au-dessus de son chef : son nom et ce
+       qu'elle est en train de faire. C'est le retour qui dit qu'un ordre
+       a bien ete pris, avant meme qu'on voie la ligne bouger. */
+    for(var eu=0;eu<s.unites.length;eu++){
+      var UE=s.unites[eu];
+      var ch=s.sim.agents[UE.membres[0]], pe=m2e(ch.x,ch.y);
+      if(pe.x<x0-40||pe.x>x1+40||pe.y<y0-40||pe.y>y1+40)continue;
+      var sel=!!s.selN[eu], ce=UCOL[eu%UCOL.length];
+      var ordre=UE.ordre?({vers:'VERS',avance:'AVANT',recule:'ARRIÈRE',tenir:'TENIR'}[UE.ordre]||UE.ordre.toUpperCase()):'';
+      var txt=UE.court+(ordre?(' · '+ordre):'');
+      g.font='bold 6px ui-monospace,monospace';g.textAlign='center';
+      var w2=g.measureText(txt).width+5;
+      g.fillStyle=sel?'rgba(6,16,28,.86)':'rgba(6,16,28,.52)';
+      g.fillRect(pe.x-w2/2,pe.y-38,w2,8);
+      if(sel){g.fillStyle=ce;g.fillRect(pe.x-w2/2,pe.y-38,w2,1);}
+      g.fillStyle=sel?ce:'rgba(200,225,240,.7)';
+      g.textBaseline='middle';g.fillText(txt,pe.x,pe.y-34);
+      g.textBaseline='alphabetic';g.textAlign='left';
+    }
     if(s.diag)diagnostic(g,s,vus);
     /* le point de chute de la derniere grenade, deux secondes */
     if(s.flash){
@@ -1229,26 +1490,56 @@ var M={
        pour que le texte reste lisible la nuit */
     if(s.nuit){g.fillStyle='rgba(12,18,34,.42)';g.fillRect(0,0,L,H);}
     else if(s.heure==='soir'){g.fillStyle='rgba(60,30,20,.16)';g.fillRect(0,0,L,H);}
+    if(!s.barre.length||s.barreL!==L||s.barreH!==H){barreMaj(s,L,H);s.barreL=L;s.barreH=H;}
     hud(s,L,H);
+    barreDessine(s,L,H);
+    if(s.presse1T>0){s.presse1T-=16;if(s.presse1T<=0)s.presse1=null;}
   },
   /* ------------------------------------------------- le doigt ------- */
   tape:function(s,x,y){
     if(!s.pret)return;
+    /* LA BARRE PASSE AVANT LA CARTE : sans cela, un doigt pose sur
+       TENIR envoyait aussi l'unite sous la barre. */
+    var b=barreTouche(s,x,y);
+    if(b){
+      s.presse1=b.k; s.presse1T=160;
+      if(b.k==='tout'){
+        var all=(Object.keys(s.selN).filter(function(k){return s.selN[k];}).length===s.unites.length);
+        s.selN={};
+        if(!all)for(var i=0;i<s.unites.length;i++)s.selN[i]=true; else s.selN[0]=true;
+        s.sel=+Object.keys(s.selN)[0]||0;
+        s.mot=selNoms(s)+' · SÉLECTIONNÉE'+(selection(s).length>1?'S':'');s.motT=1300;
+        return;
+      }
+      if(b.k.charAt(0)==='u'){
+        var ui=+b.k.slice(1);
+        /* UNE TAPE BASCULE. C'est la seule multi-selection qui tienne au
+           pouce : pas de cadre a tracer, pas de doigt a maintenir. */
+        s.selN[ui]=!s.selN[ui];
+        var reste=Object.keys(s.selN).filter(function(k){return s.selN[k];});
+        if(!reste.length){s.selN[ui]=true;reste=[String(ui)];}
+        s.sel=+reste[0];
+        s.mot=selNoms(s)+' · SÉLECTIONNÉE'+(reste.length>1?'S':'');s.motT=1300;
+        return;
+      }
+      if(b.k==='tenir')cmdTenir(s);
+      else if(b.k==='avant')cmdPousser(s,1);
+      else if(b.k==='arriere')cmdPousser(s,-1);
+      else if(b.k==='forme')cmdForme(s);
+      else if(b.k==='groupe')cmdGrouper(s);
+      else if(b.k==='gaz')cmdGaz(s);
+      else if(b.k==='diag'){s.diag=!s.diag;s.mot=s.diag?'DIAGNOSTIC ALLUMÉ':'DIAGNOSTIC ÉTEINT';s.motT=1200;}
+      return;
+    }
     var z=s.cam.z;
     var ex=(x-s.L/2)/z+s.cam.x, ey=(y-s.H/2)/z+s.cam.y;
     var gx=Math.floor(e2mx(ex,ey)), gy=Math.floor(e2my(ex,ey));
     if(gx<0||gy<0||gx>=GW||gy>=GH){s.mot='HORS DE LA CARTE';s.motT=1100;return;}
-    var U=s.unites&&s.unites[s.sel]; if(!U)return;
-    var r=chemin(s.C,Math.floor(U.ax),Math.floor(U.ay),gx,gy);
-    if(!r){s.mot='PAS DE PASSAGE PAR LA';s.motT=1300;return;}
-    U.route=r;U.ri=0;
-    U.champ.calculer(s.sim,[[gx,gy]]);
-    /* priorite 3 : un deplacement chasse une reaction a la densite */
-    FOULE.ordre(s.sim,U,'vers',0,3);
-    s.mot=U.nom+' · EN MARCHE';s.motT=1400;
+    cmdAller(s,gx,gy);
   },
   glisse:function(s,x,y,dx,dy){
     if(!s.pret||s.pince)return;
+    if(s.hbar&&y>s.H-s.hbar-2)return;   /* on ne panoramique pas sur la barre */
     s.camLibre=true;
     s.cam.x-=dx/s.cam.z; s.cam.y-=dy/s.cam.z;
     camBornes(s);
@@ -1267,16 +1558,16 @@ var M={
     s.cam.x+=mx/z0-mx/z; s.cam.y+=my/z0-my/z;
     s.cam.z=z; camBornes(s);
   },
+  /* LES ORDRES SONT DANS LA SCENE, pas ici : une barre HTML ne peut pas
+     montrer l'effectif d'une unite ni l'avancement de son ordre. */
   actions:function(s){
     if(s.phase!=='jeu')return '<button data-a="commencer">DESCENDRE DANS LA RUE · 1 €</button>';
-    return '<button data-a="unite">UNITÉ</button><button data-a="form">FORME</button>'+
-           '<button data-a="avance">AVANCE</button><button data-a="choc">GAZ</button>'+
-           '<button data-a="diag" class="'+(s.diag?'pr':'')+'">DIAG</button>';
+    return '';
   },
   action:function(s,a){
     if(!s.pret||!s.unites)return;
     var U=s.unites[s.sel];
-    if(a==='unite'){
+    if(a==='__inutilise'){
       s.sel=(s.sel+1)%s.unites.length;
       s.mot=s.unites[s.sel].nom+' · SÉLECTIONNÉE';s.motT=1400;
     }
@@ -1441,7 +1732,7 @@ function hud(s,L,H){
     }
     /* au-dessus des boutons flottants quand il y a la place, sous le
        bandeau sinon : jamais par-dessus l'un ou l'autre */
-    var bas=(H>150), y0=bas?H-(l2?72:62):(l2?27:27);
+    var bas=(H>150), y0=bas?(H-s.hbar-(l2?26:16)):(l2?27:27);
     g.fillStyle='rgba(8,12,20,.7)';
     g.fillRect((L-w)/2,y0,w,l2?22:12);
     g.fillStyle='#ffe28a';
