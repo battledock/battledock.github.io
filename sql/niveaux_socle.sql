@@ -1113,3 +1113,39 @@ where niveau = 29;
    remplacements de bloc vérifient maintenant que b > a et que la
    tranche a la taille attendue avant d'écrire.
    ===================================================================== */
+
+/* =====================================================================
+   LE CORDON — passe de douceur sur les écrans (2026-10-26)
+
+   « Plus beaux, plus doux ». Des angles droits partout et des traits
+   noirs d'un pixel : c'était net, ce n'était pas agréable.
+
+   QUATRE OUTILS, et tout le reste en découle :
+     coArrondi  un rectangle à coins arrondis
+     coPan/coPanG  un panneau plein ou en dégradé
+     coOmbre    une ombre qui FOND (quatre passes décroissantes) au lieu
+                d'un rectangle noir décalé
+     coLustre   un liseré de lumière en haut, qui décolle le panneau du
+                fond
+
+   Appliqué partout : le document de la note de service et le rapport
+   de fin (panneaux arrondis, bandeau de couleur clippé, lueur diffuse
+   du climat derrière le titre), les boutons + et − devenus ronds et
+   moelleux, les boutons d'ordre en jeu, les trois jauges devenues des
+   capsules avec un reflet sur la moitié haute, les pastilles de ligne,
+   la consigne posée sur une pastille teintée, le cadre du ruban.
+
+   La palette a été relevée : on passe du quasi-noir (#13171e) à des
+   bleus-gris plus doux (#1d2430) avec une lueur chaude diffuse, et les
+   séparations dures ont été remplacées par des fondus.
+
+   CÔTÉ CSS, le menu de la borne : rayons de 14 à 18 et de 20 à 24,
+   bordures de 2 px opaques remplacées par 1 px translucide, ombres
+   portées douces plutôt que les blocs pleins, et la vignette de la rue
+   en fond de bandeau avec un dégradé radial au lieu d'un voile plat.
+
+   ET UNE RÈGLE qui revient à chaque passe : un texte ne doit jamais
+   mordre sur ce qui est à côté. Le nom d'une ligne de dotation prend
+   la place qui reste jusqu'aux jetons et rétrécit si besoin, au lieu
+   de passer dessous.
+   ===================================================================== */
