@@ -1275,3 +1275,63 @@ where niveau = 29;
 -- #mnu.cdn. Une classe posee sur le conteneur repeint tout ce qu'il
 -- contient : il faut regarder CHAQUE onglet, pas seulement celui
 -- qu'on dessinait.
+
+-- ============================================================
+-- LE CORDON — LA RUE PASSE EN ISOMÉTRIQUE (2026-10-27-0120)
+-- ============================================================
+-- Tout le jeu est reparti de zero, dans cordon.js. arcade.html ne lui
+-- demande plus que MOTEUR.cordon : 88 Ko sont sortis du fichier
+-- monolithique, et une correction de rue ne peut plus casser une
+-- vitrine ailleurs.
+--
+-- LA PROJECTION. Tuile 32x16 (rapport 2:1, le seul qui donne des
+-- diagonales propres en pixel art) :
+--     ecran.x = (gx-gy)*16 + OX     ecran.y = (gx+gy)*8
+-- gx file vers la droite-bas, gy vers la gauche-bas. Un objet est
+-- devant un autre quand gx+gy est plus grand : c'est TOUTE la regle de
+-- tri. Un immeuble prend la profondeur de son coin avant (x1+1,y1+1).
+--
+-- CE QUI EST LA : chaussee, trottoirs avec bordure en relief, caniveaux,
+-- passages cloutes, une avenue est-ouest et une rue nord-sud avec une
+-- vraie intersection ; une trentaine d'immeubles mitoyens en volume
+-- (deux faces, toit, corniche, soubassement, travees de fenetres avec
+-- appui et reflet, balcons, vitrines, stores rayes, enseignes,
+-- cheminees, antennes, ombre portee) ; lampadaires, arbres, bancs,
+-- poubelles, feux, abribus, barrieres Vauban, plots, panneaux ;
+-- voitures, camionnettes et fourgons en stationnement ; un personnage
+-- en quatre directions qui marche a l'A*.
+--
+-- TROIS CHOSES APPRISES
+--
+-- 1. BORNER UNE CAMERA SUR UNE CARTE ISO N'EST PAS UN CLAMP EN X ET Y.
+--    La carte est un losange ; ses cotes sont a 45 degres. Clamper x
+--    puis y laisse voir le vide aux quatre coins. Ce qu'il faut
+--    clamper, ce sont la SOMME gx+gy et la DIFFERENCE gx-gy — les deux
+--    axes que la projection lit deja. Avec ca, le bord de carte n'est
+--    jamais a l'ecran.
+--
+-- 2. UNE VUE DE TELEPHONE EN PORTRAIT EST PLUS HAUTE QUE LARGE, donc
+--    elle mange beaucoup de tuiles en profondeur : 844 points a 16 de
+--    haut par tuile, cela fait 53 tuiles. La condition pour qu'un
+--    rectangle d'ecran tienne dans le losange est
+--        (demi-hauteur en tuiles) + (demi-largeur en tuiles) <= min(GW,GH)
+--    C'est elle qui a fixe la carte a 48x48 et le plancher de zoom a
+--    0,75 — pas un reglage a l'oeil.
+--
+-- 3. L'AIMANTATION DU ZOOM SE FAIT AU DEMI-PIXEL, pas au pixel. Au
+--    pixel entier, 0,75 n'etait sur aucun cran : le doigt descendait au
+--    plus large et l'aimant le renvoyait a 1. On ne pouvait jamais
+--    rester dezoome.
+--
+-- LE SHELL A GAGNE DEUX DOIGTS. arcade.html ne suivait qu'un pointeur :
+-- aucune borne ne pouvait zoomer. Il tient maintenant le registre des
+-- doigts poses et appelle BORNE.pince(rapport, milieu) quand la borne
+-- le declare. Les autres bornes ne voient aucune difference.
+--
+-- MESURE : 60 images par seconde, 40 tapes au hasard sans une seule
+-- traversee d'obstacle, camera stable apres 120 glissements, meme
+-- agrandissement (x2) en portrait et en paysage.
+--
+-- CE QUI N'EST PAS ENCORE LA, et ne doit pas etre raconte comme fait :
+-- la foule, le cordon de CRS, les ordres, les jauges, le rapport de fin.
+-- Cette etape livre une rue explorable, rien de plus.
