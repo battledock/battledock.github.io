@@ -977,3 +977,48 @@ where niveau = 29;
    À SUIVRE : le côté manifestants, qui jouera le même parcours à
    l'envers.
    ===================================================================== */
+
+/* =====================================================================
+   LE CORDON — la passe graphique (2026-10-25)
+
+   Le reproche était juste : on ne comprenait pas ce qui se passait.
+
+   LES SILHOUETTES sont passées de 7×10 à 9×12, avec DEUX POSES de
+   marche (la cadence suit la distance parcourue, pas l'horloge : un
+   manifestant qu'on bloque arrête de marcher) et TROIS TENUES par
+   humeur. Une foule d'un seul vert n'est pas une foule, c'est une
+   texture.
+
+   UN CASSEUR SE VOIT MAINTENANT : cagoule, barre à la main, cercle
+   rouge au sol et chevron au-dessus de la tête. Et quand il s'en prend
+   à une devanture hors écran, une FLÈCHE DE BORD le dit, avec le nom
+   du commerce.
+
+   LE CORDON EST UN MUR. Treize silhouettes côte à côte se mangeaient
+   entre elles ; on dessine maintenant la ligne de boucliers d'un seul
+   trait, avec les joints entre plaques (on compte les hommes d'un coup
+   d'œil), un reflet qui court sur le plexi, et les casques derrière.
+
+   LA LUMIÈRE : les enseignes s'allument et projettent leur couleur sur
+   le trottoir, un voile froid tombe sur la rue, les bords
+   s'assombrissent pour que l'œil aille au milieu.
+
+   DES EFFETS : secousse d'écran et éclats de verre à chaque coup,
+   flash et onde à la grenade, cercle qui se referme sur la nasse.
+   Jauges en relief avec graduations, boutons avec leur recharge
+   dessinée dessus, consigne sur une plaque.
+
+   LA PERFORMANCE, parce que tout ça coûte. Mesuré, puis corrigé :
+   - le SOL de 184×1500 était recopié EN ENTIER à chaque image pour
+     n'en montrer qu'un cinquième → on ne tire que la tranche visible ;
+   - les deux dégradés d'ambiance plein écran, recalculés 60 fois par
+     seconde → peints une fois dans un canevas ;
+   - 14 disques translucides par nuage de gaz et par image → un nuage
+     peint une fois, tourné et dilaté ;
+   - un dégradé radial par devanture et par image → un halo par couleur,
+     gardé en mémoire ;
+   - le fond de la bande de droite → peint une fois, et la couche des
+     casseurs rafraîchie une image sur trois.
+   De 51 fps (p95 29 ms) à 60 fps (p95 19,5 ms) avec 274 manifestants,
+   cinq cordons en ligne, trois camions et trois nuages de gaz.
+   ===================================================================== */
