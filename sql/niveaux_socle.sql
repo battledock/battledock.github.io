@@ -1078,3 +1078,38 @@ where niveau = 29;
    (relevé de ses fonctions), mais ne rien faire gagne encore trop
    souvent — il faut que la pression de fond morde davantage.
    ===================================================================== */
+
+/* =====================================================================
+   LE CORDON — les écrans (2026-10-26)
+
+   LA NOTE DE SERVICE est devenue un document de préfecture posé sur la
+   rue qu'on va descendre : fond d'immeubles en ombre chinoise et halos
+   de lampadaires, en-tête « PRÉFECTURE DE POLICE » avec la date, titre
+   du climat frappé d'une ombre, trois pastilles de menace, et quatre
+   lignes de dotation avec leurs ICÔNES dessinées en pixels (grenade,
+   camion à eau, casque à visière, mégaphone). Le budget se lit en
+   jetons, pas en chiffre.
+
+   L'ÉCRAN DE FIN est devenu un RAPPORT DE SERVICE : six lignes de
+   bilan avec points de conduite et barres de remplissage, un TAMPON en
+   biais (TENU / ÉCHEC) et la note finale en bas. Après trois minutes de
+   partie, un écran de fin doit raconter ce qui s'est passé, pas
+   afficher un nombre.
+
+   LA VIGNETTE DE LA BORNE montrait encore la vue de dessus : elle est
+   refaite de profil, et le menu de la borne la reprend en fond de
+   bandeau (tout canvas marqué data-ban reçoit la vignette de la borne
+   nommée — le crochet servira aux suivantes).
+
+   UNE MISE EN PAGE SE DÉDUIT DE L'ÉCRAN. Première version avec des
+   hauteurs en dur : l'avis tombait sur la dernière ligne dès que le
+   téléphone changeait de proportions. Les lignes se répartissent
+   maintenant entre l'en-tête et le bouton, et tout le reste se cale
+   sur elles.
+
+   ET UN PIÈGE ÉVITÉ DE JUSTESSE, le même qu'au kayak : un s[a:b] dont
+   les bornes étaient dans le désordre rend une chaîne vide, et
+   s.replace('', x) insère x ENTRE CHAQUE CARACTÈRE du fichier. Les
+   remplacements de bloc vérifient maintenant que b > a et que la
+   tranche a la taille attendue avant d'écrire.
+   ===================================================================== */

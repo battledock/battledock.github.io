@@ -20,7 +20,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-26-0450';
+  var MA_VERSION='2026-10-26-0820';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -361,6 +361,10 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
 #mnu .stage .rec{position:absolute;left:0;right:0;top:0;text-align:center;font:400 14px 'Lilita One';text-shadow:0 2px 0 rgba(0,0,0,.35);opacity:.92}
 #mnu .stage .rec b{display:block;font:400 36px 'Lilita One';line-height:1;opacity:1}
 #mnu .stage canvas#persoApercu{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);width:192px;height:160px;image-rendering:pixelated;z-index:1}
+#mnu .stage canvas.vgn{position:absolute;left:0;top:0;width:100%;height:100%;image-rendering:pixelated;z-index:0;opacity:.9;border-radius:inherit}
+#mnu .stage.rue::after{content:'';position:absolute;inset:0;z-index:1;border-radius:inherit;
+  background:linear-gradient(180deg,rgba(8,10,16,.1),rgba(8,10,16,.72))}
+#mnu .stage.rue .rec,#mnu .stage.rue .gauche{z-index:2}
 #mnu .stage .gauche,#mnu .stage .droite{position:absolute;top:58px;display:flex;flex-direction:column;gap:11px;z-index:2}
 #mnu .stage .gauche{left:12px}#mnu .stage .droite{right:12px}
 #mnu .sb{width:68px;height:68px;border-radius:18px;background:linear-gradient(#fff,#d8e4f2);box-shadow:0 5px 0 #7a8ea8;
@@ -733,31 +737,66 @@ function banniere(cv,cle){
     return;
   }
   if(cle==='cordon'){
-    /* la rue vue de dessus : le bitume, les vitrines, la foule, la ligne bleue */
-    var gc=11,rc=function(){gc=(gc*16807)%2147483647;return (gc-1)/2147483646;};
-    for(var y2=0;y2<h;y2++)for(var x2=0;x2<w;x2++){
-      var v2=0.45+Math.sin((x2+y2*0.6)/23)*0.08+(rc()-0.5)*0.2;
-      g.fillStyle=['#2e3136','#383c42','#43484f','#4e545c'][Math.max(0,Math.min(3,Math.floor(v2*4)))];
-      g.fillRect(x2,y2,1,1);}
-    g.fillStyle='#5a5f66';g.fillRect(0,0,9,h);g.fillRect(w-9,0,9,h);
-    for(var v3=0;v3<3;v3++){var vy=6+v3*(h-14)/2;
-      g.fillStyle='#8fb8e8';g.fillRect(1,vy,7,8);
-      g.fillStyle='#8fd8b0';g.fillRect(w-8,vy+5,7,8);}
-    /* la foule qui descend */
-    for(var m2=0;m2<70;m2++){var mx=11+rc()*(w-22),my=2+rc()*h*0.62;
-      var hh=rc();g.fillStyle=hh<0.14?'#b8402a':hh<0.36?'#c89a2a':'#3a9a5a';
-      g.fillRect(mx,my,2,3);g.fillStyle='#c89a74';g.fillRect(mx,my-2,2,2);}
-    /* le cordon, en bas, net */
-    var cy2=Math.round(h*0.80);
-    for(var c3=0;c3<22;c3++){var cxx=10+c3*((w-20)/21);
-      g.fillStyle='#1c2230';g.fillRect(cxx,cy2-3,2,2);
-      g.fillStyle='#2a3a6a';g.fillRect(cxx,cy2,2,4);
-      g.fillStyle='#8ab0d8';g.fillRect(cxx,cy2+1,2,2);}
-    g.fillStyle='rgba(140,180,240,.45)';g.fillRect(8,cy2-7,w-16,1);
-    /* la jauge de tension, en haut : c'est la signature du jeu */
-    g.fillStyle='rgba(14,14,12,.75)';g.fillRect(0,0,w,7);
-    g.fillStyle='#1a1d22';g.fillRect(2,2,w-4,3);
-    g.fillStyle='#c8a03a';g.fillRect(3,3,(w-6)*0.42,1);
+    /* la rue de nuit, vue de profil : deux masses qui se font face */
+    var gc=23,rc=function(){gc=(gc*16807)%2147483647;return (gc-1)/2147483646;};
+    var sol=Math.round(h*0.80), pr=Math.round(h*0.14);
+    var cg=g.createLinearGradient(0,0,0,sol-pr);
+    cg.addColorStop(0,'#0b111b');cg.addColorStop(1,'#2d2a2c');
+    g.fillStyle=cg;g.fillRect(0,0,w,sol-pr+1);
+    var lg=g.createRadialGradient(w*0.8,sol-pr-6,0,w*0.8,sol-pr-6,w*0.4);
+    lg.addColorStop(0,'rgba(232,120,50,.30)');lg.addColorStop(1,'rgba(232,120,50,0)');
+    g.fillStyle=lg;g.fillRect(0,0,w,sol);
+    /* les façades */
+    var bx2=-4;
+    while(bx2<w+6){var bw2=9+((rc()*12)|0), bh2=Math.round((sol-pr)*(0.45+rc()*0.5));
+      g.fillStyle=['#262a31','#2c2a2c','#22262d'][(rc()*3)|0];
+      g.fillRect(bx2,sol-pr-bh2,bw2,bh2);
+      g.fillStyle='#3a3f46';g.fillRect(bx2,sol-pr-bh2,bw2,1);
+      for(var fy2=sol-pr-bh2+3;fy2<sol-pr-4;fy2+=5)
+        for(var fx2=bx2+2;fx2<bx2+bw2-2;fx2+=4)
+          if(rc()<0.3){g.fillStyle='#e8c87a';g.fillRect(fx2,fy2,2,3);}
+      bx2+=bw2;}
+    /* le trottoir et la chaussée */
+    g.fillStyle='#3a3e45';g.fillRect(0,sol-pr,w,2);
+    var rg3=g.createLinearGradient(0,sol-pr+2,0,h);
+    rg3.addColorStop(0,'#2b303a');rg3.addColorStop(1,'#232833');
+    g.fillStyle=rg3;g.fillRect(0,sol-pr+2,w,h-sol+pr);
+    /* un lampadaire et son cône */
+    var lx2=Math.round(w*0.30), ly2=sol-pr-Math.round(h*0.30);
+    g.fillStyle='#1a1d22';g.fillRect(lx2,ly2,1,sol-pr-ly2);
+    g.fillStyle='#ffe8a8';g.fillRect(lx2+1,ly2,3,1);
+    var cn=g.createLinearGradient(0,ly2,0,sol+2);
+    cn.addColorStop(0,'rgba(255,226,160,.30)');cn.addColorStop(1,'rgba(255,206,130,0)');
+    g.fillStyle=cn;g.beginPath();g.moveTo(lx2,ly2);g.lineTo(lx2+3,ly2);
+    g.lineTo(lx2+13,sol+2);g.lineTo(lx2-10,sol+2);g.closePath();g.fill();
+    /* LA FOULE, à gauche, dense et colorée */
+    var TN=['#4a7ba4','#8c4a58','#4a8a64','#9a8846','#5f4a86','#8a6238','#a8a096'];
+    for(var m2=0;m2<140;m2++){
+      var mx2=1+rc()*(w*0.60), mz=rc(), my2=sol-mz*pr;
+      g.fillStyle='rgba(0,0,0,.3)';g.fillRect(mx2-1,my2,3,1);
+      var ht2=Math.round(h*0.17);
+      g.fillStyle=rc()<0.12?'#24242a':TN[(rc()*TN.length)|0];
+      g.fillRect(mx2,my2-ht2,2,ht2);
+      g.fillStyle=rc()<0.4?'#2e2622':'#c09070';g.fillRect(mx2,my2-ht2-2,2,2);}
+    /* LA LIGNE DE BOUCLIERS, à droite */
+    for(var c3=0;c3<34;c3++){
+      var rg4=(c3%5)/4.2, co2=(c3/5)|0;
+      var cx3=Math.round(w*0.63)+co2*3+rg4*4, cy3=sol-rg4*pr;
+      var hc=Math.round(h*0.17);
+      g.fillStyle='rgba(0,0,0,.3)';g.fillRect(cx3-1,cy3,3,1);
+      g.fillStyle='#2e3f5e';g.fillRect(cx3,cy3-hc,2,hc);
+      g.fillStyle='#1a2436';g.fillRect(cx3,cy3-hc-2,2,2);
+      g.fillStyle='rgba(150,196,238,.5)';g.fillRect(cx3-1,cy3-hc+1,1,hc-2);}
+    /* un nuage de lacrymo au contact */
+    for(var nz=0;nz<16;nz++){
+      var na=rc()*6.28, nd=rc()*w*0.07;
+      g.fillStyle='rgba(216,222,204,.16)';
+      g.beginPath();g.arc(w*0.615+Math.cos(na)*nd,sol-pr*0.6+Math.sin(na)*nd*0.6,
+        1.5+rc()*3,0,7);g.fill();}
+    /* la jauge de tension, signature du jeu */
+    g.fillStyle='rgba(10,12,16,.8)';g.fillRect(0,0,w,6);
+    g.fillStyle='#1a1d22';g.fillRect(2,2,w-4,2);
+    g.fillStyle='#c8a03a';g.fillRect(3,2,(w-6)*0.46,2);
     return;
   }
   if(MOTEUR[cle]&&MOTEUR[cle].banniere){MOTEUR[cle].banniere(g,w,h);return;}
@@ -4316,6 +4355,10 @@ function mnuMaj(){
     var g3=cv.getContext('2d');g3.imageSmoothingEnabled=false;
     hgArmeIcone(g3,HG_ARMES[cv.dataset.a],32,15);
   });
+  /* LA VIGNETTE DE LA BORNE, dans son propre menu */
+  [].forEach.call(MNUC.querySelectorAll('canvas[data-ban]'),function(cv){
+    try{banniere(cv,cv.dataset.ban);}catch(e){}
+  });
 }
 document.getElementById('mnuTop').addEventListener('click',function(ev){
   if(ev.target.closest&&ev.target.closest('[data-sortie]')){var so=document.getElementById('sortie');if(so)so.click();}
@@ -5851,10 +5894,10 @@ var CO_CLIMAT=[
  {n:'À HAUT RISQUE',d:'Cortège de tête annoncé en nombre. Vitrines visées.',
   c:'#e8402a', men:1.55, budget:13, tens:0.20}];
 var CO_DOT=[
- {c:'gaz',   n:'GRENADES LACRYMOGÈNES', d:'en réserve, 26 s de recharge', max:6, force:1.0},
- {c:'camion',n:'CAMIONS À EAU',         d:'barrage mobile et lance à eau',max:3, force:0.8},
- {c:'eff',   n:'EFFECTIFS PAR LIGNE',   d:'+2 hommes, +résistance',       max:4, force:0.35},
- {c:'dial',  n:'OFFICIERS DE LIAISON',  d:'ils parlent, ça fait retomber',max:4, force:-0.6}];
+ {c:'gaz',   n:'LACRYMOGÈNES', d:'26 s de recharge',  max:6, force:1.0},
+ {c:'camion',n:'CAMIONS À EAU', d:'barrage et lance',  max:3, force:0.8},
+ {c:'eff',   n:'EFFECTIFS',     d:'+2 par ligne',      max:4, force:0.35},
+ {c:'dial',  n:'OFFICIERS',     d:'ils font retomber', max:4, force:-0.6}];
 function coPoidsDot(s){
   var p=0;
   for(var i=0;i<CO_DOT.length;i++){var D=CO_DOT[i];p+=s.dot[D.c]*D.force;}
@@ -5864,11 +5907,84 @@ function coPrepPoints(s){
   var p=0;for(var i=0;i<CO_DOT.length;i++)p+=s.dot[CO_DOT[i].c];
   return p;
 }
+/* =====================================================================
+   LA NOTE DE SERVICE. C'est le premier écran du jeu : il doit donner
+   le ton avant qu'on ait posé un doigt. Un document de préfecture,
+   posé sur la rue qu'on va descendre.
+   ===================================================================== */
+var CO_ICO={};
+function coIcone(k){
+  if(CO_ICO[k])return CO_ICO[k];
+  var t=document.createElement('canvas');t.width=16;t.height=16;
+  var g=t.getContext('2d');g.imageSmoothingEnabled=false;
+  var P=function(x,y,w,h,c){g.fillStyle=c;g.fillRect(x,y,w,h);};
+  if(k==='gaz'){                       /* la grenade lacrymogène */
+    P(6,2,4,2,'#3a4048');P(5,4,6,9,'#5a6068');P(5,4,6,1,'#7a8088');
+    P(6,6,4,1,'#2a3038');P(6,9,4,1,'#2a3038');P(5,13,6,1,'#3a4048');
+    P(7,0,2,2,'#8a9098');
+    g.globalAlpha=0.55;P(2,1,2,2,'#c8d0c8');P(12,2,2,2,'#c8d0c8');
+    P(1,5,2,2,'#c8d0c8');P(13,6,2,2,'#c8d0c8');g.globalAlpha=1;
+  }else if(k==='camion'){              /* le camion à eau */
+    P(1,6,11,6,'#23324c');P(1,6,11,1,'#45608c');
+    P(12,7,3,5,'#1a2434');P(13,8,2,2,'#6a8ab4');
+    P(2,4,5,2,'#2e3a4a');P(0,5,3,1,'#4a5a6e');
+    P(2,12,12,1,'#12161e');
+    P(3,12,2,2,'#14181e');P(11,12,2,2,'#14181e');
+    P(8,4,2,1,'#5a9ae8');
+  }else if(k==='eff'){                 /* le casque à visière */
+    P(4,3,8,2,'#1a2436');P(3,5,10,4,'#1a2436');P(3,5,10,1,'#2e3f5e');
+    P(4,6,8,2,'#6a96c4');P(3,9,10,2,'#141c2a');
+    P(2,9,1,3,'#8fbce4');P(13,9,1,3,'#8fbce4');
+    P(5,11,6,2,'#c09070');
+  }else if(k==='dial'){                /* le mégaphone */
+    P(3,6,3,4,'#3a4048');P(6,4,2,8,'#5a6068');P(8,2,3,12,'#6a7078');
+    P(8,2,3,1,'#9aa0a8');P(2,7,1,2,'#2a3038');
+    g.globalAlpha=0.6;P(12,4,1,2,'#8fd89a');P(13,6,1,3,'#8fd89a');
+    P(12,10,1,2,'#8fd89a');g.globalAlpha=1;
+  }
+  return (CO_ICO[k]=t);
+}
+/* le fond : la rue en arrière-plan, assombrie, pour qu'on sache déjà
+   où l'on met les pieds */
+function coFondPrep(s,L,H){
+  var g=G.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#070a10');g.addColorStop(0.5,'#0d121b');g.addColorStop(1,'#080b12');
+  G.fillStyle=g;G.fillRect(0,0,L,H);
+  /* une rangée d'immeubles en ombre chinoise */
+  var gr=99,rn=function(){gr=(gr*16807)%2147483647;return (gr-1)/2147483646;};
+  var bx=-6, base=H*0.58;
+  while(bx<L+8){
+    var w=20+((rn()*22)|0), ht=40+((rn()*70)|0);
+    R(bx,base-ht,w,ht,'#10151f');
+    for(var fy=base-ht+6;fy<base-6;fy+=10)
+      for(var fx=bx+3;fx<bx+w-5;fx+=8)
+        if(rn()<0.22)R(fx,fy,4,5,'rgba(232,200,122,.16)');
+    bx+=w;
+  }
+  R(0,base,L,H-base,'#0a0e15');
+  R(0,base,L,1,'rgba(120,140,170,.12)');
+  /* deux halos de lampadaire, très bas, pour l'ambiance */
+  for(var i=0;i<2;i++){
+    var px=L*(0.22+i*0.56), py=base-26;
+    var h=G.createRadialGradient(px,py,0,px,py,54);
+    h.addColorStop(0,'rgba(255,224,150,.13)');h.addColorStop(1,'rgba(255,224,150,0)');
+    G.fillStyle=h;G.fillRect(px-56,py-56,112,112);
+  }
+  /* le voile qui pose le document devant */
+  G.fillStyle='rgba(6,8,13,.62)';G.fillRect(0,0,L,H);
+}
 function coDotLignes(s){
-  var H=s.H,L=s.L,o=[],y0=Math.round(H*0.34);
-  for(var i=0;i<CO_DOT.length;i++){var y=y0+i*34;
-    o.push({i:i,y:y,h:30,moins:{x:L-62,y:y+3,w:24,h:24},plus:{x:L-32,y:y+3,w:24,h:24}});}
-  return {l:o, go:{x:14,y:H-78,w:L-28,h:30}};
+  var H=s.H,L=s.L,o=[];
+  var go={x:12,y:H-80,w:L-24,h:36};
+  var yTop=Math.round(H*0.33);
+  var dispo=go.y-26-yTop;                 /* ce qui reste entre l'entête et le bouton */
+  var lh=Math.max(21,Math.min(29,Math.floor((dispo-12)/CO_DOT.length)-3));
+  var pas=lh+3;
+  for(var i=0;i<CO_DOT.length;i++){var y=yTop+i*pas;
+    o.push({i:i,y:y,h:lh,
+      moins:{x:L-60,y:y+Math.round((lh-25)/2),w:25,h:25},
+      plus: {x:L-31,y:y+Math.round((lh-25)/2),w:25,h:25}});}
+  return {l:o, go:go, bas:yTop+CO_DOT.length*pas};
 }
 function coPrepTape(s,x,y){
   var B=coDotLignes(s),i;
@@ -5889,62 +6005,139 @@ function coTexte(t,cx,y,larg,inter){
   if(l)G.fillText(l,cx,y+n*inter);
 }
 function coPrepDessine(s,L,H){
-  R(0,0,L,H,'#0e1116');
-  var C=s.clim,i;
-  R(0,0,L,3,C.c);
+  var C=s.clim,i,B=coDotLignes(s);
+  coFondPrep(s,L,H);
+  /* ---- LE DOCUMENT ---- */
+  var dx=8, dw=L-16, dy=8, dh=B.bas-dy+4;
+  R(dx+2,dy+3,dw,dh,'rgba(0,0,0,.45)');           /* l'ombre portée */
+  R(dx,dy,dw,dh,'#13171e');
+  R(dx,dy,dw,1,'#2c3340');R(dx,dy+dh-1,dw,1,'#070a0e');
+  R(dx,dy,1,dh,'#232934');R(dx+dw-1,dy,1,dh,'#070a0e');
+  /* l'en-tête, barre de couleur du climat */
+  R(dx,dy,dw,4,C.c);
+  R(dx,dy+4,dw,1,'rgba(0,0,0,.4)');
+  G.textAlign='left';
+  G.font='bold 6px Trebuchet MS';G.fillStyle='#5c646e';
+  G.fillText('PRÉFECTURE DE POLICE',dx+8,dy+15);
+  G.textAlign='right';G.fillStyle='#454d56';
+  G.fillText(s.jour,dx+dw-8,dy+15);
+  /* le titre */
   G.textAlign='center';
-  G.font='bold 7px Trebuchet MS';G.fillStyle='#6a727a';
-  G.fillText('NOTE DE SERVICE · '+s.jour,L/2,20);
-  var tt='MANIFESTATION '+C.n, tz=13;
-  G.font='bold '+tz+'px Trebuchet MS';
-  while(tz>8&&G.measureText(tt).width>L-16){tz--;G.font='bold '+tz+'px Trebuchet MS';}
-  G.fillStyle=C.c;G.fillText(tt,L/2,38);
-  G.font='8px Trebuchet MS';G.fillStyle='#9aa2aa';
-  coTexte(C.d,L/2,52,L-28,10);
-  var pts=coPrepPoints(s), reste=s.clim.budget-pts, y0=Math.round(H*0.34);
-  R(14,y0-30,L-28,20,'#171b21');
-  G.font='bold 8px Trebuchet MS';G.textAlign='left';G.fillStyle='#8a929a';
-  G.fillText('DOTATION',20,y0-16);
-  G.textAlign='right';G.fillStyle=reste>0?'#ffd86a':'#50565e';
-  G.fillText(reste+' point'+(reste>1?'s':'')+' à placer',L-20,y0-16);
-  var B=coDotLignes(s);
+  var tt='MANIFESTATION', tz=9;
+  G.font='bold '+tz+'px Trebuchet MS';G.fillStyle='#8a929c';
+  G.fillText(tt,L/2,dy+30);
+  var t2=C.n, z2=15;
+  G.font='bold '+z2+'px Trebuchet MS';
+  while(z2>9&&G.measureText(t2).width>dw-24){z2--;G.font='bold '+z2+'px Trebuchet MS';}
+  /* une ombre sous le titre : ça lui donne du poids */
+  G.fillStyle='rgba(0,0,0,.6)';G.fillText(t2,L/2+1,dy+48);
+  G.fillStyle=C.c;G.fillText(t2,L/2,dy+47);
+  /* les trois pastilles de menace */
+  var niv=CO_CLIMAT.indexOf(C);
+  for(i=0;i<3;i++){
+    var px=L/2-14+i*14;
+    R(px,dy+54,10,3,i<=niv?C.c:'#242a33');
+    if(i<=niv)R(px,dy+54,10,1,'rgba(255,255,255,.35)');
+  }
+  G.font='7px Trebuchet MS';G.fillStyle='#98a0aa';
+  coTexte(C.d,L/2,dy+70,dw-24,10);
+  R(dx+10,dy+84,dw-20,1,'rgba(255,255,255,.08)');
+  /* ---- LA DOTATION ---- */
+  var pts=coPrepPoints(s), reste=s.clim.budget-pts;
+  var y0=B.l[0].y;
+  G.textAlign='left';G.font='bold 8px Trebuchet MS';G.fillStyle='#c8d0d8';
+  G.fillText('DOTATION',dx+10,y0-14);
+  /* le budget, en jetons : un chiffre seul ne se lit pas d'un coup */
+  var ux=dx+dw-10-s.clim.budget*5;
+  for(i=0;i<s.clim.budget;i++)
+    R(ux+i*5,y0-21,3,9,i<pts?'#2a3340':'#ffd86a');
+  G.textAlign='right';G.font='bold 7px Trebuchet MS';
+  G.fillStyle=reste>0?'#ffd86a':'#4e5660';
+  G.fillText(reste+' à placer',dx+dw-10,y0-5);
   for(i=0;i<B.l.length;i++){
     var r=B.l[i],D=CO_DOT[i],v=s.dot[D.c];
-    R(14,r.y,L-28,r.h,'#161a20');
-    R(14,r.y,2,r.h,D.force<0?'#4aa86a':'#6a9ad8');
-    G.textAlign='left';G.font='bold 8px Trebuchet MS';G.fillStyle='#dde3e9';
-    G.fillText(D.n,21,r.y+12);
-    G.font='7px Trebuchet MS';G.fillStyle='#6a727a';
-    G.fillText(D.d,21,r.y+23);
+    var bon=(D.force<0), bm=r.moins, bp=r.plus;
+    R(dx+6,r.y,dw-12,r.h,v>0?'#191f28':'#151a21');
+    R(dx+6,r.y,dw-12,1,'rgba(255,255,255,.05)');
+    R(dx+6,r.y,2,r.h,bon?'#4aa86a':(v>0?'#6a9ad8':'#2a3340'));
+    /* l'icône : on reconnaît la ligne sans lire */
+    G.globalAlpha=v>0?1:0.42;
+    G.drawImage(coIcone(D.c),dx+12,r.y+Math.round((r.h-16)/2));
+    G.globalAlpha=1;
+    G.textAlign='left';G.font='bold 8px Trebuchet MS';
+    G.fillStyle=v>0?'#e4eaf0':'#79818b';
+    G.fillText(D.n,dx+32,r.y+Math.round(r.h*0.42));
+    G.font='6px Trebuchet MS';G.fillStyle='#636b75';
+    G.fillText(D.d,dx+32,r.y+r.h-6);
+    /* les jetons de la ligne */
+    /* les jetons, à droite du nom, sur sa ligne : ils ne mordent plus
+       sur le texte et on lit la dotation d'un coup d'œil */
+    var jx=bm.x-8-D.max*4;
     for(var k=0;k<D.max;k++)
-      R(L-70-D.max*5+k*5,r.y+11,3,8,k<v?(D.force<0?'#4aa86a':'#6a9ad8'):'#272c33');
-    var bm=r.moins,bp=r.plus;
-    R(bm.x,bm.y,bm.w,bm.h,v>0?'#272c33':'#1a1e23');
-    R(bp.x,bp.y,bp.w,bp.h,(v<D.max&&reste>0)?'#243a57':'#1a1e23');
-    G.textAlign='center';G.font='bold 12px Trebuchet MS';
-    G.fillStyle=v>0?'#bcc4cc':'#373c43';G.fillText('−',bm.x+bm.w/2,bm.y+17);
-    G.fillStyle=(v<D.max&&reste>0)?'#8fb8e8':'#373c43';G.fillText('+',bp.x+bp.w/2,bp.y+17);
+      R(jx+k*4,r.y+Math.round((r.h-10)/2),3,10,k<v?(bon?'#4aa86a':'#6a9ad8'):'#242a33');
+    coPetitBouton(s,bm,'−',v>0,false);
+    coPetitBouton(s,bp,'+',(v<D.max&&reste>0),true);
   }
-  var poids=coPoidsDot(s), yav=B.l[3].y+44;
-  G.textAlign='center';G.font='bold 8px Trebuchet MS';
-  if(poids>0.14){G.fillStyle='#e8763a';
+  /* ---- L'AVIS ---- */
+  var poids=coPoidsDot(s), yav=Math.round((B.bas+B.go.y)/2)+3;
+  G.textAlign='center';
+  if(poids>0.14){
+    R(dx+10,yav-9,dw-20,20,'rgba(90,40,22,.5)');
+    R(dx+10,yav-9,2,20,'#e8763a');R(dx+dw-12,yav-9,2,20,'#e8763a');
+    G.font='bold 7px Trebuchet MS';G.fillStyle='#f0a06a';
     G.fillText('DOTATION LOURDE POUR CE CLIMAT',L/2,yav);
-    G.font='7px Trebuchet MS';G.fillStyle='#8a929a';
-    G.fillText('tu commences avec moins de crédit au rapport',L/2,yav+12);}
-  else if(poids<-0.05){G.fillStyle='#8fd89a';
+    G.font='7px Trebuchet MS';G.fillStyle='#9aa2ac';
+    G.fillText('moins de crédit au rapport dès le départ',L/2,yav+9);
+  }else if(poids<-0.05){
+    R(dx+10,yav-9,dw-20,20,'rgba(30,70,45,.45)');
+    R(dx+10,yav-9,2,20,'#4aa86a');R(dx+dw-12,yav-9,2,20,'#4aa86a');
+    G.font='bold 7px Trebuchet MS';G.fillStyle='#8fd89a';
     G.fillText('DOTATION MESURÉE',L/2,yav);
-    G.font='7px Trebuchet MS';G.fillStyle='#8a929a';
-    G.fillText('la préfecture te laissera de la marge',L/2,yav+12);}
-  else{G.fillStyle='#6a727a';G.font='7px Trebuchet MS';
-    G.fillText('dotation conforme au climat annoncé',L/2,yav+6);}
-  var go=B.go;
-  R(go.x,go.y,go.w,go.h,'#27558f');R(go.x,go.y,go.w,1,'#8fb8e8');
-  G.textAlign='center';G.font='bold 11px Trebuchet MS';G.fillStyle='#fff';
-  G.fillText('PRENDRE LA RUE',L/2,go.y+20);
-  G.font='7px Trebuchet MS';G.fillStyle='#5a626a';
-  G.fillText('glisse pour suivre la rue · tape une ligne, puis un ordre',L/2,H-36);
+    G.font='7px Trebuchet MS';G.fillStyle='#9aa2ac';
+    G.fillText('la préfecture te laissera de la marge',L/2,yav+9);
+  }else{
+    G.font='7px Trebuchet MS';G.fillStyle='#636b75';
+    G.fillText('dotation conforme au climat annoncé',L/2,yav+4);
+  }
+  /* ---- LE BOUTON ---- */
+  var go=B.go, pul=0.5+0.5*Math.sin(s.t/420);
+  R(go.x+1,go.y+2,go.w,go.h,'rgba(0,0,0,.5)');
+  var bg=G.createLinearGradient(0,go.y,0,go.y+go.h);
+  bg.addColorStop(0,'#3a72b8');bg.addColorStop(1,'#1d3f6e');
+  G.fillStyle=bg;G.fillRect(go.x,go.y,go.w,go.h);
+  R(go.x,go.y,go.w,1,'#9fc8f8');
+  R(go.x,go.y+go.h-1,go.w,1,'rgba(0,0,0,.6)');
+  G.strokeStyle='rgba(159,200,248,'+(0.25+pul*0.3).toFixed(2)+')';
+  G.lineWidth=1;G.strokeRect(go.x+0.5,go.y+0.5,go.w-1,go.h-1);
+  G.textAlign='center';G.font='bold 12px Trebuchet MS';
+  G.fillStyle='rgba(0,0,0,.45)';G.fillText('PRENDRE LA RUE',L/2+1,go.y+22);
+  G.fillStyle='#fff';G.fillText('PRENDRE LA RUE',L/2,go.y+21);
+  /* les deux chevrons qui pointent le bouton */
+  for(i=0;i<2;i++){
+    var cx2=go.x+10+i*(go.w-20), dir=i?-1:1;
+    G.fillStyle='rgba(255,255,255,'+(0.2+pul*0.35).toFixed(2)+')';
+    G.beginPath();G.moveTo(cx2,go.y+go.h/2-4);
+    G.lineTo(cx2+dir*4,go.y+go.h/2);G.lineTo(cx2,go.y+go.h/2+4);
+    G.closePath();G.fill();
+  }
+  G.font='7px Trebuchet MS';G.fillStyle='#4e5660';
+  G.fillText('glisse pour suivre la rue · tape une ligne, puis un ordre',L/2,H-28);
   G.textAlign='left';
 }
+function coPetitBouton(s,r,txt,actif,plus){
+  var g=G.createLinearGradient(0,r.y,0,r.y+r.h);
+  if(actif){g.addColorStop(0,plus?'#2f4e78':'#343b45');
+            g.addColorStop(1,plus?'#19304c':'#1d222a');}
+  else{g.addColorStop(0,'#171c23');g.addColorStop(1,'#11151b');}
+  G.fillStyle=g;G.fillRect(r.x,r.y,r.w,r.h);
+  R(r.x,r.y,r.w,1,actif?(plus?'#7fb0e8':'#5a626c'):'rgba(255,255,255,.05)');
+  R(r.x,r.y+r.h-1,r.w,1,'rgba(0,0,0,.55)');
+  G.textAlign='center';G.font='bold 14px Trebuchet MS';
+  G.fillStyle=actif?(plus?'#bcdcff':'#c4ccd4'):'#333941';
+  G.fillText(txt,r.x+r.w/2,r.y+18);
+  G.textAlign='left';
+}
+
 /* =====================================================================
    LE DÉCOR. Une rue de nuit, peinte UNE FOIS dans un canevas plus
    large que l'écran : façades, rideaux de fer, graffitis, lampadaires.
@@ -6756,6 +6949,82 @@ function coScene(s,L,H){
   if(s.flash>0){G.fillStyle='rgba(255,252,240,'+(s.flash*0.5).toFixed(2)+')';
     G.fillRect(0,s.haut,L,s.scH-12-s.haut);}
 }
+/* =====================================================================
+   LE RAPPORT DE SERVICE. On vient de jouer trois minutes : l'écran de
+   fin doit raconter ce qui s'est passé, pas afficher un nombre.
+   ===================================================================== */
+function coLigneBilan(s,x,y,w,nom,val,col,barre){
+  G.textAlign='left';G.font='7px Trebuchet MS';G.fillStyle='#6a727c';
+  G.fillText(nom,x,y);
+  var x0=x+G.measureText(nom).width+3;
+  G.textAlign='right';G.font='bold 8px Trebuchet MS';G.fillStyle=col||'#d8dee4';
+  G.fillText(val,x+w,y);
+  var x1=x+w-G.measureText(val).width-4;
+  for(var px=x0;px<x1;px+=3)R(px,y-2,1,1,'rgba(120,130,142,.3)');
+  if(barre!==undefined){
+    R(x,y+3,w,2,'#1a1f26');
+    R(x,y+3,Math.max(1,w*Math.max(0,Math.min(1,barre))),2,col||'#6a9ad8');
+  }
+  G.textAlign='left';
+}
+function coRapport(s,L,H){
+  G.fillStyle='rgba(6,8,12,.88)';G.fillRect(0,0,L,H);
+  var dx=10, dw=L-20, dy=Math.round(H*0.11), dh=Math.round(H*0.72);
+  R(dx+2,dy+3,dw,dh,'rgba(0,0,0,.5)');
+  R(dx,dy,dw,dh,'#13171e');
+  R(dx,dy,dw,1,'#2c3340');R(dx,dy+dh-1,dw,1,'#070a0e');
+  var col=s.gagne?'#4aa86a':'#c8402a';
+  R(dx,dy,dw,4,col);
+  G.textAlign='left';G.font='bold 6px Trebuchet MS';G.fillStyle='#5c646e';
+  G.fillText('RAPPORT DE SERVICE',dx+8,dy+15);
+  G.textAlign='right';G.fillStyle='#454d56';
+  G.fillText(s.jour,dx+dw-8,dy+15);
+  G.textAlign='center';
+  var fm=s.finMot, fz=13;
+  G.font='bold '+fz+'px Trebuchet MS';
+  while(fz>8&&G.measureText(fm).width>dw-18){fz--;G.font='bold '+fz+'px Trebuchet MS';}
+  G.fillStyle='rgba(0,0,0,.6)';G.fillText(fm,L/2+1,dy+37);
+  G.fillStyle=col;G.fillText(fm,L/2,dy+36);
+  G.font='7px Trebuchet MS';G.fillStyle='#6a727c';
+  G.fillText('MANIFESTATION '+s.clim.n,L/2,dy+48);
+  R(dx+10,dy+56,dw-20,1,'rgba(255,255,255,.08)');
+  var bx=dx+12, bw=dw-24, by=dy+72;
+  var pas=Math.max(16,Math.floor((dh-84-(by-dy))/5));
+  var tenues=s.lignes.length-s.rompues;
+  coLigneBilan(s,bx,by,bw,'Lignes tenues',tenues+' / '+s.lignes.length,
+    tenues===s.lignes.length?'#8fd89a':tenues>1?'#e8c86a':'#e8704a',
+    tenues/Math.max(1,s.lignes.length));
+  coLigneBilan(s,bx,by+pas,bw,'Devantures debout',s.debout+' / '+s.vit.length,
+    s.debout===s.vit.length?'#8fd89a':s.debout>s.vit.length/2?'#e8c86a':'#e8704a',
+    s.debout/Math.max(1,s.vit.length));
+  coLigneBilan(s,bx,by+pas*2,bw,'Tension finale',Math.round(s.tension*100)+' %',
+    s.tension<0.4?'#8fd89a':s.tension<0.7?'#e8c86a':'#e8704a',1-s.tension);
+  coLigneBilan(s,bx,by+pas*3,bw,'Rapport hiérarchique',Math.round(s.doct*100)+' %',
+    s.doct>0.65?'#8fb8e8':s.doct>0.4?'#e8c86a':'#e8704a',s.doct);
+  coLigneBilan(s,bx,by+pas*4,bw,'Gestes ciblés / de trop',s.justes+' / '+s.fautes,
+    s.fautes===0?'#8fd89a':s.fautes<3?'#e8c86a':'#e8704a');
+  coLigneBilan(s,bx,by+pas*5,bw,'Interpellations · hommes touchés',
+    s.interpelles+' · '+s.blesses,'#aab2bc');
+  /* LE TAMPON, en biais : c'est lui qu'on regarde en premier */
+  G.save();G.translate(L-42,by+pas*3+Math.round(pas*0.5));G.rotate(-0.17);
+  var tc=s.gagne?'#4aa86a':'#c8402a', tx=s.gagne?'TENU':'ÉCHEC';
+  G.globalAlpha=0.42;
+  G.strokeStyle=tc;G.lineWidth=2;G.strokeRect(-26,-11,52,22);
+  G.strokeRect(-23,-8,46,16);
+  G.font='bold 11px Trebuchet MS';G.textAlign='center';G.fillStyle=tc;
+  G.fillText(tx,0,4);
+  G.globalAlpha=1;G.restore();
+  var sy=dy+dh-16;
+  R(dx+10,sy-18,dw-20,1,'rgba(255,255,255,.08)');
+  G.textAlign='left';G.font='7px Trebuchet MS';G.fillStyle='#6a727c';
+  G.fillText('NOTE FINALE',dx+12,sy-5);
+  G.textAlign='right';G.font='bold 17px Trebuchet MS';
+  G.fillStyle='rgba(0,0,0,.6)';
+  G.fillText(Math.round(s.score).toLocaleString('fr-FR'),dx+dw-11,sy+1);
+  G.fillStyle='#ffd86a';
+  G.fillText(Math.round(s.score).toLocaleString('fr-FR'),dx+dw-12,sy);
+  G.textAlign='left';
+}
 /* --- LE BANDEAU : trois jauges, et la rue en réduction --- */
 function coJauge(s,x,y,w,h,v,nom,col,col2,val,alerte){
   R(x,y,w,h,'#080a0e');R(x+1,y+1,w-2,h-2,'#1a1e24');
@@ -6962,7 +7231,8 @@ MOTEUR.cordon={
     s.cam=Math.max(0,Math.min(CO.MW-L,s.cam));
     s.camCible=Math.max(0,Math.min(CO.MW-L,s.camCible));
   },
-  demarrer:function(s){s.phase='prep';this.cadre(s,SL||195,SH||390);},
+  demarrer:function(s){s.phase='prep';if(typeof dire==='function')dire('');
+    this.cadre(s,SL||195,SH||390);},
   pas:function(s,dt){s.t+=dt;coPas(s,dt);},
   tape:function(s,x,y){coTape(s,x,y);},
   glisse:function(s,x,y,dx,dy){coGlisse(s,x,y,dx,dy);},
@@ -6984,25 +7254,7 @@ MOTEUR.cordon={
       G.fillText(s.mot,L/2,H*0.22+(s.motGros?14:10));
       G.textAlign='left';G.globalAlpha=1;
     }
-    if(s.phase==='fini'){
-      R(0,0,L,H,'rgba(8,10,14,.9)');
-      G.textAlign='center';
-      G.fillStyle=s.gagne?'#8fd89a':'#e8704a';G.font='bold 12px Trebuchet MS';
-      var fm=s.finMot, fz=12;
-      while(fz>8&&G.measureText(fm).width>L-14){fz--;G.font='bold '+fz+'px Trebuchet MS';}
-      G.fillText(fm,L/2,H/2-54);
-      G.font='7px Trebuchet MS';G.fillStyle='#6a727a';
-      G.fillText('MANIFESTATION '+s.clim.n,L/2,H/2-40);
-      G.fillStyle='#c0aa80';G.font='8px Trebuchet MS';
-      G.fillText((s.lignes.length-s.rompues)+'/'+s.lignes.length+' lignes tenues · '+
-                 s.debout+'/'+s.vit.length+' devantures debout',L/2,H/2-22);
-      G.fillText(s.interpelles+' interpellations · '+s.blesses+' hommes touchés',L/2,H/2-9);
-      G.fillStyle=s.doct>0.6?'#8fb8e8':'#e8763a';
-      G.fillText('rapport '+Math.round(s.doct*100)+'% · '+s.justes+' gestes ciblés, '+s.fautes+' de trop',L/2,H/2+4);
-      G.fillStyle='#ffd86a';G.font='bold 14px Trebuchet MS';
-      G.fillText(Math.round(s.score).toLocaleString('fr-FR')+' points',L/2,H/2+30);
-      G.textAlign='left';
-    }
+    if(s.phase==='fini')coRapport(s,L,H);
   },
   fige:function(s){return false;},
   actions:function(s){
@@ -7256,22 +7508,21 @@ var CO_REC=0, CO_PARTIES=0;
 function coMenu(){
   var h='';
   if(MNU_ONG==='jouer'){
-    h+='<div class="stage"><div class="rec">RECORD<b>'+mnuChiffre(CO_REC)+'</b></div>'+
-       '<canvas id="persoApercu" width="48" height="40"></canvas>'+
+    h+='<div class="stage rue"><canvas class="vgn" data-ban="cordon" width="360" height="150"></canvas>'+
+       '<div class="rec">RECORD<b>'+mnuChiffre(CO_REC)+'</b></div>'+
        '<div class="gauche"><button class="sb" data-go="rec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M8 21h8M12 17v4M6 4h12v4a6 6 0 0 1-12 0zM6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3"/></svg>SCORES</button></div></div>';
-    h+='<div class="chest"><h4>TROIS JAUGES, UNE SEULE RUE<span>4 lignes</span></h4><div class="r3">'+
-       '<div class="d" style="--a:#6aaef0;--b:#2a5a9a"><i>1</i>LA PRESSION, c’est ce que la foule pousse. Au-delà de ta résistance, la ligne recule<em>▬</em></div>'+
-       '<div class="d" style="--a:#e8763a;--b:#a83a18"><i>2</i>LA TENSION, c’est la rue. C’est elle qui fabrique les casseurs et les projectiles<em>☁</em></div>'+
-       '<div class="d" style="--a:#8fd89a;--b:#3e7a4a"><i>3</i>LE RAPPORT, c’est toi. On ne juge pas que tu emploies la force : on juge sur qui<em>§</em></div></div></div>';
+    h+='<div class="chest"><h4>TROIS JAUGES<span>4 lignes</span></h4><div class="r3">'+
+       '<div class="d" style="--a:#6aaef0;--b:#2a5a9a"><i>1</i>LA PRESSION<em>ce que la foule pousse</em></div>'+
+       '<div class="d" style="--a:#e8763a;--b:#a83a18"><i>2</i>LA TENSION<em>elle fait les casseurs</em></div>'+
+       '<div class="d" style="--a:#8fd89a;--b:#3e7a4a"><i>3</i>LE RAPPORT<em>on juge sur qui</em></div></div></div>';
     h+='<div class="semp" style="border-color:rgba(232,118,58,.6)"><p><b>Charger, gazer, arroser : ça marche tout de suite.</b> '+
-       'Ça fait retomber la pression, et ça monte la tension — donc ça fabrique les casseurs de la minute suivante. '+
-       'Reculer d’un pas et faire parler un officier ne paient pas sur le moment, et c’est pourtant ça qui tient une rue.</p></div>';
-    h+='<div class="semp" style="border-color:rgba(255,255,255,.2)"><p>Quatre lignes entre le cortège et la préfecture. Quand une cède, elle se replie sur la suivante et tu en as une de moins. '+
+       'Ça fait retomber la pression — et monter la tension, donc les casseurs de la minute suivante. '+
+       'Reculer d’un pas et faire parler un officier ne paient pas sur le moment, et c’est ça qui tient une rue.</p></div>';
+    h+='<div class="semp" style="border-color:rgba(255,255,255,.2)"><p>Quatre lignes entre le cortège et la préfecture. Quand une cède, elle se replie sur la suivante. '+
        'Quand la dernière est franchie, c’est fini.</p></div>';
-    h+='<div class="semp" style="border-color:rgba(140,180,240,.4)"><p>Avant de descendre, tu lis la note de service et tu dotes : grenades, camions à eau, effectifs, officiers de liaison. '+
-       '<b>Glisse pour suivre la rue</b>, le ruban sous la scène te dit où en est le cortège.</p></div>';
+    h+='<div class="semp" style="border-color:rgba(140,180,240,.4)"><p>Tu lis d’abord la note de service et tu dotes. <b>Glisse pour suivre la rue</b> : le ruban sous la scène dit où en est le cortège.</p></div>';
   }else{
-    h+='<div class="fiche"><span class="shield" style="--c:#8fb8e8">▬</span><span><small>TON RECORD AU CORDON</small><b>'+mnuChiffre(CO_REC)+'</b><em>'+(CO_PARTIES?mnuChiffre(CO_PARTIES)+' partie'+(CO_PARTIES>1?'s':''):'Pas encore de partie')+'</em></span></div>';
+    h+='<div class="fiche"><span class="shield" style="--c:#8fb8e8">\u25ac</span><span><small>TON RECORD AU CORDON</small><b>'+mnuChiffre(CO_REC)+'</b><em>'+(CO_PARTIES?mnuChiffre(CO_PARTIES)+' partie'+(CO_PARTIES>1?'s':''):'Pas encore de partie')+'</em></span></div>';
     h+='<div class="liste" id="jclsHote"></div>';
   }
   return h;
