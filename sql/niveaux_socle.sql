@@ -1335,3 +1335,74 @@ where niveau = 29;
 -- CE QUI N'EST PAS ENCORE LA, et ne doit pas etre raconte comme fait :
 -- la foule, le cordon de CRS, les ordres, les jauges, le rapport de fin.
 -- Cette etape livre une rue explorable, rien de plus.
+
+-- ============================================================
+-- LE CORDON — LA FOULE (2026-10-27-0320)
+-- ============================================================
+-- DEUX FICHIERS QUI NE SE PARLENT PAS.
+--   foule.js   : la simulation. Des nombres. Elle ignore qu'il existe
+--                des images. On peut la faire tourner mille pas dans
+--                une boucle pour l'equilibrer, sans ouvrir un canvas.
+--   acteurs.js : les images. Un atlas, et une fonction qui pose le bon
+--                dessin. Elle ignore qu'il existe des forces.
+-- Le seul pont est l'agent, qui porte x, y, dir et anim. Remplacer les
+-- sprites temporaires par de vrais ne touchera pas une ligne de
+-- simulation ; changer la simulation ne touchera pas un pixel.
+--
+-- LE MODELE. Pour chaque corps et a chaque pas : arrivee sur sa place
+-- (on freine en approchant, sinon on oscille comme un ressort),
+-- separation des voisins au contact, cohesion avec les siens,
+-- repulsion des murs, et un grain de bruit. Les forces sont TOUTES
+-- calculees sur les positions du debut du pas, puis tout le monde bouge
+-- ensemble : deplacer au fur et a mesure donne un avantage aux premiers
+-- de la liste et la foule derive vers un coin sans qu'on sache pourquoi.
+--
+-- LA GRILLE DE VOISINAGE. Comparer trois cents corps deux a deux, c'est
+-- quatre-vingt-dix mille distances par image. Range par case d'une
+-- tuile, chacun n'en regarde qu'une dizaine. MESURE : le cout est
+-- lineaire — 190 corps 0,10 ms par pas, 354 : 0,21, 504 : 0,36,
+-- 654 : 0,53. C'est le DESSIN qui pese, pas la simulation.
+--
+-- LES GROUPES. On ne place pas trois cents individus : on place quatre
+-- blocs de cortege, trois lignes, une reserve, une navette et la
+-- presse. Un agent organise vise SA PLACE dans la figure de son groupe
+-- (ligne, coin, colonne, nasse) ; un agent de foule vise la position de
+-- son bloc plus son ecart propre, fixe une fois pour toutes — c'est cet
+-- ecart fixe qui fait un cortege et non un essaim.
+--
+-- CE QUI EMPECHE LA PHOTOGRAPHIE. Une foule dont tout le monde a atteint
+-- sa place est immobile. Trois mecaniques, toutes deterministes :
+--   - des poussees : toutes les huit secondes la tete gagne une tuile
+--     d'un coup, puis reflue ;
+--   - une respiration : chaque bloc roule lentement d'un bord de la
+--     chaussee a l'autre ;
+--   - une navette : quatorze manifestants font l'aller-retour entre la
+--     queue et la tete. Un trajet, pas une errance : on peut dire a tout
+--     moment ou ils vont.
+-- Et le cordon repond : au-dela de vingt-quatre corps au contact, les
+-- lignes cedent du terrain, et le reprennent quand ca retombe.
+--
+-- QUATRE CHOSES APPRISES
+--  1. Une ligne doit BARRER la rue. Neuf hommes par rang a 0,78 d'ecart
+--     font trois tuiles ; l'avenue en fait six. Douze par rang a 0,66 :
+--     dix hommes tiennent six tuiles.
+--  2. Vingt-neuf points de haut, c'etait trop. Deux cents corps au coude
+--     a coude formaient une bouillie ou l'on ne distinguait plus une
+--     pancarte d'une tete. Vingt-deux : on lit la foule, et chaque
+--     sprite coute un tiers de surface en moins.
+--  3. Les marques de selection se posaient apres tout le decor : une
+--     unite derriere un immeuble montrait ses cercles sur le toit. Elles
+--     vont au sol, sous les volumes.
+--  4. La repulsion des murs suffit presque toujours. Presque, c'est ce
+--     qui fait qu'on voit un manifestant dans une vitrine une fois toutes
+--     les deux minutes. Il faut la sortie de secours : quand les quatre
+--     cases voisines sont prises, on renvoie le corps vers la case libre
+--     la plus proche. Sans elle il restait sur un toit pour la partie.
+--
+-- MESURE : 354 corps, 60 images par seconde en portrait, 55 en paysage,
+-- zero corps dans un mur sur trois passes, zero empilement, 347 corps en
+-- mouvement sur 354 (les sept arretes sont le cordon, qui tient).
+--
+-- PAS ENCORE LA : les ordres de maintien (gaz, eau, charge), les jauges,
+-- le rapport de fin, le score. Les deux boutons UNITE et FORMATION ne
+-- servent qu'a regarder les groupes manoeuvrer.

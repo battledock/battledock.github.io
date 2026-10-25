@@ -899,14 +899,185 @@ function preparer(s){
   s.bats.forEach(function(b){if(b.vu)s.statiques.push({k:'bat',b:b,prof:b.prof});});
   s.objs.forEach(function(o){s.statiques.push({k:'obj',o:o,prof:o.prof});});
   s.statiques.sort(function(a,b){return a.prof-b.prof;});
-  /* le joueur, pose sur le trottoir sud, a l'ouest de l'avenue */
-  var px=RU.x0-5, py=AV.y1+1;
-  while(px<GW&&!libre(s.C,px,py))px++;
-  s.j={gx:px+0.5, gy:py+0.5, dir:0, f:0, pas:0, route:null, ri:0, v:0.0046};
-  var p=m2e(s.j.gx,s.j.gy);
+  peupler(s);
+  var p=m2e((s.front+GW-16)/2, (AV.y0+AV.y1)/2+0.5);
   s.cam.x=p.x; s.cam.y=p.y;
   s.cam.z=s.cam.zmin;
   s.pret=true;
+}
+
+/* =====================================================================
+   LA RUE SE PEUPLE
+   Un cortege qui remonte l'avenue, un cordon qui la barre. Les deux
+   sont des GROUPES : on ne place pas trois cents individus, on place
+   quatre blocs et une ligne, et chacun y prend sa place.
+   ===================================================================== */
+var FOULE=null, ACTEURS=null;
+function peupler(s){
+  FOULE=window.CORDON_FOULE; ACTEURS=window.CORDON_ACTEURS;
+  if(!FOULE||!ACTEURS){s.sim=null;return;}
+  ACTEURS.preparer();
+  var d=new Dé((s.graine||7)+99);
+  var sim=FOULE.creer({GW:GW,GH:GH,bloc:s.C.bloc,AV:AV,RU:RU,graine:s.graine||7});
+  var midY=(AV.y0+AV.y1)/2+0.5;
+  var R=FOULE.R;
+
+  /* ---- LE CORTEGE : quatre blocs en file, du plus serre au plus lache */
+  s.corteges=[];
+  /* LA TETE DU CORTEGE part a onze tuiles du barrage : plus loin, le
+     cortege et le cordon ne tiennent pas ensemble dans l'ecran, et on
+     ouvre la partie sur un carrefour vide. */
+  var tete=GW-16-11;
+  var blocs=[
+    {n:s.densite?Math.round(34*s.densite):34, lx:3.4, ly:2.1, coh:1.4, dec:0},
+    {n:s.densite?Math.round(46*s.densite):46, lx:4.2, ly:2.3, coh:1.0, dec:5.4},
+    {n:s.densite?Math.round(40*s.densite):40, lx:4.0, ly:2.2, coh:0.9, dec:10.6},
+    {n:s.densite?Math.round(30*s.densite):30, lx:4.6, ly:2.3, coh:0.6, dec:16.0}
+  ];
+  blocs.forEach(function(B,bi){
+    var G=FOULE.groupe(sim,{type:'manif',ax:tete-B.dec,ay:midY,
+                            allure:'marche',cohesion:B.coh});
+    G.base=B.dec; G.lx=B.lx; G.ly=B.ly;
+    for(var i=0;i<B.n;i++){
+      /* l'ecart propre : reparti dans un rectangle, pas tire a chaque
+         pas — c'est ce qui donne un cortege et non un essaim */
+      var ex=(d.f()-0.5)*2*B.lx, ey=(d.f()-0.5)*2*B.ly;
+      var t='manif', va=d.e(0,11);
+      if(bi===0&&i<3){t='banderole';va=d.e(0,2);ex=-0.6+i*0.9;ey=(i-1)*1.1;}
+      else if(d.f()<0.09){t='pancarte';va=d.e(0,4);}
+      else if(d.f()<0.03){t='presse';va=d.e(0,1);}
+      FOULE.poser(sim,G,tete-B.dec+ex,midY+ey,{
+        ex:ex, ey:ey, varia:va,
+        vmax:R.vMarche*(0.86+d.f()*0.3)
+      });
+      sim.agents[sim.agents.length-1].type=t;
+    }
+    s.corteges.push(G);
+  });
+  /* la presse, en marge, qui longe le trottoir */
+  var GP=FOULE.groupe(sim,{type:'presse',ax:tete+2,ay:AV.y0-0.4,cohesion:0.4});
+  for(var k=0;k<4;k++){
+    var ex2=(d.f()-0.5)*5, ey2=(d.f()-0.5)*0.8;
+    FOULE.poser(sim,GP,tete+2+ex2,AV.y0-0.4+ey2,{ex:ex2,ey:ey2,varia:d.e(0,1),
+      vmax:R.vMarche*1.1});
+  }
+  s.presse=GP;
+  /* LE GROUPE MOBILE. Une foule dont tout le monde a atteint sa place
+     est une photographie. Celui-ci fait la navette entre la queue et la
+     tete du cortege : c'est un trajet, pas une errance — on peut dire a
+     tout moment ou il va et pourquoi. */
+  var GM=FOULE.groupe(sim,{type:'manif',ax:tete-8,ay:midY,cohesion:1.6});
+  GM.navette=-1; GM.base=8;
+  for(var q=0;q<14;q++){
+    var qx=(d.f()-0.5)*2.4, qy=(d.f()-0.5)*1.6;
+    FOULE.poser(sim,GM,tete-8+qx,midY+qy,{ex:qx,ey:qy,varia:d.e(0,11),
+      vmax:R.vMarche*(1.1+d.f()*0.25)});
+    var ag2=sim.agents[sim.agents.length-1];
+    if(d.f()<0.22)ag2.type='pancarte',ag2.varia=d.e(0,4);
+  }
+  s.mobile=GM;
+
+  /* ---- LE CORDON : trois unites en ligne, une en reserve */
+  s.unites=[];
+  var bar=GW-16;
+  [[bar,midY-2.4,10],[bar,midY+0.4,10],[bar,midY+3.2,8]].forEach(function(u,ui){
+    var G=FOULE.groupe(sim,{type:'crs',form:'ligne',ax:u[0],ay:u[1],
+                            cap:-Math.PI/2,cohesion:0});
+    G.nom='LIGNE '+(ui+1); G.route=null; G.ri=0;
+    for(var i=0;i<u[2];i++)
+      FOULE.poser(sim,G,u[0]+1.2+(i%3)*0.5,u[1]+((i/3)|0)*0.6,
+        {varia:i%3, vmax:R.vMarche*1.0, r:0.33, masse:1.8});
+    sim.agents[G.membres[0]].type='officier';
+    sim.agents[G.membres[0]].varia=0;
+    s.unites.push(G);
+  });
+  var GR=FOULE.groupe(sim,{type:'crs',form:'colonne',ax:bar+5,ay:midY+0.5,
+                           cap:-Math.PI/2,cohesion:0});
+  GR.nom='RÉSERVE'; GR.route=null; GR.ri=0;
+  for(var i2=0;i2<8;i2++)
+    FOULE.poser(sim,GR,bar+5+(i2%2)*0.6,midY+0.5+((i2/2)|0)*0.7,
+      {varia:i2%3, vmax:R.vMarche*1.05, r:0.33, masse:1.8});
+  sim.agents[GR.membres[0]].type='officier';
+  s.unites.push(GR);
+  s.sel=0;
+  s.sim=sim;
+  s.front=tete;
+}
+
+/* LE CORTEGE AVANCE TANT QU'IL PEUT. La tete monte vers le barrage et
+   s'arrete a l'endroit ou elle touche la premiere ligne : c'est ce
+   contact, et pas une minuterie, qui decide ou le cortege se fige. */
+function majCortege(s,dt){
+  if(!s.sim)return;
+  var mur=1e9;
+  s.unites.forEach(function(U){
+    U.membres.forEach(function(i){var a=s.sim.agents[i];if(a.x<mur)mur=a.x;});
+  });
+  var arret=mur-1.5;
+  /* LES POUSSEES. Un cortege au contact ne reste pas immobile : il
+     pousse par vagues, se relache, repousse. Toutes les huit secondes,
+     la tete gagne une tuite d'un coup puis reflue — c'est ce battement
+     qui fait qu'une foule arretee reste vivante. */
+  s.vague=(s.vague||0)+dt;
+  if(!(s.pousse>0))s.pousse=0;   /* sinon la premiere image multiplie par undefined */
+  if(s.vague>7600){s.vague=0;s.pousse=1;}
+  if(s.pousse>0)s.pousse=Math.max(0,s.pousse-dt*0.00042);
+  var elan=0.0016+0.0042*s.pousse;
+  var vise=Math.min(arret+1.1*s.pousse, s.front+elan*dt);
+  s.front=vise;
+  var resp=Math.sin(s.sim.t*0.00045);
+  s.corteges.forEach(function(G,gi){
+    G.ax=s.front-G.base;
+    /* la respiration laterale : le bloc roule doucement d'un bord de la
+       chaussee a l'autre, comme une foule qui se tasse et se detasse */
+    G.ay=((AV.y0+AV.y1)/2+0.5)+Math.sin(s.sim.t*0.00038+gi*1.7)*0.42;
+  });
+  s.presse.ax=Math.min(arret-1, s.front+1.5);
+  /* la navette : elle remonte a la tete, puis redescend a la queue */
+  var GM=s.mobile;
+  if(GM){
+    var but=(GM.navette<0)?(s.front-1.6):(s.front-15);
+    if(Math.abs(GM.ax-but)<0.7)GM.navette=-GM.navette;
+    GM.ax+=Math.sign(but-GM.ax)*0.00085*dt;
+    GM.ay=((AV.y0+AV.y1)/2+0.5)+resp*1.1;
+  }
+  /* LA PRESSION : combien de corps sont au contact de la premiere ligne.
+     Lue sur la simulation, pas comptee a part : une valeur calculee
+     deux fois finit toujours par differer d'elle-meme. */
+  var n=0, A=s.sim.agents;
+  for(var i=0;i<A.length;i++){
+    var a=A[i];
+    if(a.type==='crs'||a.type==='officier')continue;
+    if(a.x>mur-2.0&&a.y>AV.y0-1&&a.y<AV.y1+2)n++;
+  }
+  s.pression=n;
+  var trop=(n>24);
+  s.unites.forEach(function(U,ui){
+    if(U.route||ui===3)return;           /* la reserve ne bouge pas */
+    if(!U.tenu)U.tenu=U.ax;
+    var but=U.tenu+(trop?0.9:0);
+    U.ax+=(but-U.ax)*Math.min(1,dt*0.0012);
+  });
+}
+
+/* UN ORDRE DE DEPLACEMENT. L'unite ne telepporte pas son point de
+   ralliement : il suit le chemin case par case, et la figure se traine
+   derriere lui en se reorientant. */
+function majUnites(s,dt){
+  if(!s.sim)return;
+  s.unites.forEach(function(U){
+    if(!U.route||U.ri>=U.route.length)return;
+    var c=U.route[U.ri], dx=c[0]-U.ax, dy=c[1]-U.ay;
+    var di=Math.sqrt(dx*dx+dy*dy);
+    var pasm=0.0013*dt;
+    if(di<=pasm){U.ax=c[0];U.ay=c[1];U.ri++;if(U.ri>=U.route.length)U.route=null;}
+    else{U.ax+=dx/di*pasm;U.ay+=dy/di*pasm;
+      /* le cap de la figure suit la marche : une ligne qui se deplace de
+         profil n'est plus une ligne */
+      var but=Math.atan2(dy,dx)-Math.PI/2;
+      var ec=((but-U.cap+Math.PI*3)%(Math.PI*2))-Math.PI;
+      U.cap+=ec*Math.min(1,dt*0.004);}
+  });
 }
 
 function dessineObjet(g,o,s){
@@ -924,7 +1095,14 @@ var M={
             cam:{x:MW/2, y:MH/2, z:0.75, zmin:0.75, zmax:2},
             heure:'jour', graine:0, pret:false,
             C:null, bats:[], objs:[], statiques:[], sol:null, j:null,
-            mot:'', motT:0, fps:0, nFps:0, tFps:0};
+            mot:'', motT:0, sim:null, unites:null, corteges:null,
+            sel:0, front:0, pression:0, vus:[],
+            /* LA DENSITE, mesuree : 190 corps a 58 images, 354 a 56,
+               504 a 55, 654 a 54. Le cout est lineaire — la grille de
+               voisinage tient ses promesses — et c'est le dessin, pas
+               la simulation, qui pese. Deux, c'est une avenue pleine
+               sans rien sacrifier. */
+            densite:2};
   },
   cadre:function(s,L,H){s.L=L;s.H=H;if(s.pret)camBornes(s);},
   demarrer:function(s){
@@ -938,30 +1116,10 @@ var M={
     if(!s.pret)return;
     s.t+=dt;
     if(s.motT>0)s.motT-=dt;
-    var j=s.j; if(!j)return;
-    if(j.route&&j.ri<j.route.length){
-      var c=j.route[j.ri], dx=c[0]-j.gx, dy=c[1]-j.gy;
-      var di=Math.sqrt(dx*dx+dy*dy), pasm=j.v*dt;
-      if(di<=pasm){j.gx=c[0];j.gy=c[1];j.ri++;}
-      else{j.gx+=dx/di*pasm;j.gy+=dy/di*pasm;}
-      /* la direction regardee vient du deplacement projete, pas de la
-         grille : c'est ce qu'on voit bouger a l'ecran qui doit decider */
-      var ex=(dx-dy), ey=(dx+dy);
-      j.dir=(ey>0)?((ex>0)?0:1):((ex>0)?3:2);
-      j.pas+=pasm*7;
-      j.f=Math.floor(j.pas)%4;
-    }else{j.route=null;j.f=0;}
-    /* la camera suit de loin : elle ne recadre que si le joueur sort du
-       tiers central, sinon elle tremble a chaque pas */
-    if(j.route&&!s.camLibre){
-      var p=m2e(j.gx,j.gy);
-      var mx=s.L/s.cam.z*0.22, my=s.H/s.cam.z*0.20;
-      if(p.x<s.cam.x-mx)s.cam.x=p.x+mx;
-      if(p.x>s.cam.x+mx)s.cam.x=p.x-mx;
-      if(p.y<s.cam.y-my)s.cam.y=p.y+my;
-      if(p.y>s.cam.y+my)s.cam.y=p.y-my;
-      camBornes(s);
-    }
+    if(!s.sim)return;
+    majCortege(s,dt);
+    majUnites(s,dt);
+    FOULE.pas(s.sim,dt);
   },
   /* ------------------------------------------------- le rendu ------- */
   dessine:function(s,L,H){
@@ -987,19 +1145,50 @@ var M={
     var sx=Math.max(0,Math.floor(s.cam.x-vl/2-2)), sy=Math.max(0,Math.floor(s.cam.y-vh/2-2));
     var sw=Math.min(s.sol.width-sx,Math.ceil(vl+4)), sh=Math.min(s.sol.height-sy,Math.ceil(vh+4));
     if(sw>0&&sh>0)g.drawImage(s.sol,sx,sy,sw,sh,sx,sy,sw,sh);
-    if(s.j.route&&s.j.route.length){
-      var cb=s.j.route[s.j.route.length-1], pb=m2e(cb[0],cb[1]);
-      g.strokeStyle='rgba(255,226,130,.9)';g.lineWidth=1;
-      g.beginPath();g.ellipse(pb.x,pb.y+TH/2,9,4.5,0,0,7);g.stroke();
+    /* L'UNITE CHOISIE, marquee AU SOL : sous les volumes, donc cachee
+       comme elle quand un immeuble passe devant. Posees apres le decor,
+       ces marques se voyaient sur les toits. */
+    var U0=s.unites&&s.unites[s.sel];
+    if(U0){
+      var pu=m2e(U0.ax,U0.ay);
+      g.strokeStyle='rgba(120,230,255,.85)';g.lineWidth=1;
+      g.beginPath();g.ellipse(pu.x,pu.y+TH/2,11,5.5,0,0,7);g.stroke();
+      g.strokeStyle='rgba(120,230,255,.42)';
+      for(var mu=0;mu<U0.membres.length;mu++){
+        var am=s.sim.agents[U0.membres[mu]], pm=m2e(am.x,am.y);
+        g.beginPath();g.ellipse(pm.x,pm.y,5,2.5,0,0,7);g.stroke();
+      }
+    }
+    if(U0&&U0.route&&U0.route.length){
+      g.strokeStyle='rgba(120,230,255,.45)';g.lineWidth=1;
+      g.beginPath();
+      for(var q=U0.ri;q<U0.route.length;q++){
+        var pq=m2e(U0.route[q][0],U0.route[q][1]);
+        if(q===U0.ri)g.moveTo(pq.x,pq.y+TH/2);else g.lineTo(pq.x,pq.y+TH/2);
+      }
+      g.stroke();
     }
     /* LES VOLUMES, du fond vers l'avant. Un objet dont le calque ne
        touche pas la fenetre n'est pas dessine du tout. */
     var x0=s.cam.x-vl/2, x1=s.cam.x+vl/2, y0=s.cam.y-vh/2, y1=s.cam.y+vh/2;
-    var j=s.j, pj=m2e(j.gx,j.gy), profJ=j.gx+j.gy, posé=false;
+    /* LES ACTEURS VISIBLES, triés par profondeur, puis FUSIONNÉS avec le
+       décor déjà trié. Un tri de trois cents corps par image coûte moins
+       qu'un seul immeuble recopié pour rien, mais re-trier aussi le
+       décor à chaque image serait du gâchis : il ne bouge pas. */
+    var vus=s.vus; vus.length=0;
+    var A=s.sim?s.sim.agents:[], na=A.length, k;
+    for(k=0;k<na;k++){
+      var ag=A[k], pa=m2e(ag.x,ag.y);
+      if(pa.x<x0-30||pa.x>x1+30||pa.y<y0-60||pa.y>y1+30)continue;
+      ag._px=pa.x; ag._py=pa.y; ag._p=ag.x+ag.y;
+      vus.push(ag);
+    }
+    vus.sort(function(p,q){return p._p-q._p;});
+    var vi=0, nv=vus.length;
     var i,e;
     for(i=0;i<s.statiques.length;i++){
       e=s.statiques[i];
-      if(!posé&&e.prof>profJ){posé=true;dessineJoueur(g,j,pj);}
+      while(vi<nv&&vus[vi]._p<=e.prof){ACTEURS.dessine(g,vus[vi],vus[vi]._px,vus[vi]._py);vi++;}
       if(e.k==='bat'){
         var b=e.b;
         if(b.ox>x1||b.ox+b.cv.width<x0||b.oy>y1||b.oy+b.cv.height<y0)continue;
@@ -1011,7 +1200,7 @@ var M={
         g.drawImage(S2.cv,Math.round(ox),Math.round(oy));
       }
     }
-    if(!posé)dessineJoueur(g,j,pj);
+    while(vi<nv){ACTEURS.dessine(g,vus[vi],vus[vi]._px,vus[vi]._py);vi++;}
     g.restore();
     /* LE VOILE DE L'HEURE : pose apres la scene et avant le bandeau,
        pour que le texte reste lisible la nuit */
@@ -1026,9 +1215,11 @@ var M={
     var ex=(x-s.L/2)/z+s.cam.x, ey=(y-s.H/2)/z+s.cam.y;
     var gx=Math.floor(e2mx(ex,ey)), gy=Math.floor(e2my(ex,ey));
     if(gx<0||gy<0||gx>=GW||gy>=GH){s.mot='HORS DE LA CARTE';s.motT=1100;return;}
-    var r=chemin(s.C,Math.floor(s.j.gx),Math.floor(s.j.gy),gx,gy);
+    var U=s.unites&&s.unites[s.sel]; if(!U)return;
+    var r=chemin(s.C,Math.floor(U.ax),Math.floor(U.ay),gx,gy);
     if(!r){s.mot='PAS DE PASSAGE PAR LA';s.motT=1300;return;}
-    s.j.route=r;s.j.ri=0;s.camLibre=false;
+    U.route=r;U.ri=0;
+    s.mot=U.nom+' · EN MARCHE';s.motT=1400;
   },
   glisse:function(s,x,y,dx,dy){
     if(!s.pret||s.pince)return;
@@ -1052,14 +1243,18 @@ var M={
   },
   actions:function(s){
     if(s.phase!=='jeu')return '<button data-a="commencer">DESCENDRE DANS LA RUE · 1 €</button>';
-    return '<button data-a="zoom">ZOOM</button><button data-a="dez">DÉZOOM</button>';
+    return '<button data-a="unite">UNITÉ</button><button data-a="form">FORMATION</button>';
   },
   action:function(s,a){
-    if(!s.pret)return;
-    if(a==='zoom'||a==='dez'){
-      var E=(typeof ECH==='number'&&ECH>0)?ECH:2;
-      s.cam.z=Math.max(s.cam.zmin,Math.min(s.cam.zmax,s.cam.z*(a==='zoom'?1.34:1/1.34)));
-      camAimante(s);camBornes(s);s.camLibre=true;
+    if(!s.pret||!s.unites)return;
+    if(a==='unite'){
+      s.sel=(s.sel+1)%s.unites.length;
+      s.mot=s.unites[s.sel].nom+' · SÉLECTIONNÉE';s.motT=1400;
+    }
+    if(a==='form'){
+      var U=s.unites[s.sel], L=['ligne','coin','colonne','nasse'];
+      U.form=L[(L.indexOf(U.form)+1)%L.length];
+      s.mot=U.nom+' · '+U.form.toUpperCase();s.motT=1400;
     }
   },
   banniere:function(g,w,h,grand){vignette(g,w,h,grand);}
@@ -1110,16 +1305,6 @@ function fondLointain(s,L,H){
   g.restore();
 }
 
-function dessineJoueur(g,j,p){
-  var dos=(j.dir===2||j.dir===3);
-  var S=PERSO.img[dos?1:0][j.f];
-  var mir=(j.dir===1||j.dir===2);
-  if(mir){
-    g.save();g.translate(Math.round(p.x),Math.round(p.y));g.scale(-1,1);
-    g.drawImage(S.cv,-S.ox,-S.oy);g.restore();
-  }else g.drawImage(S.cv,Math.round(p.x-S.ox),Math.round(p.y-S.oy));
-}
-
 /* =====================================================================
    11. LE BANDEAU
    Trois lignes en haut, un mot en bas. Pas de panneau : la rue est le
@@ -1134,6 +1319,15 @@ function hud(s,L,H){
   g.fillText(L>250?'AV. DE LA RÉPUBLIQUE':'AV. RÉPUBLIQUE',22,7);
   g.textAlign='right';
   g.fillText({jour:'10 H 20',soir:'19 H 40',nuit:'23 H 10'}[s.heure]+'  ×'+(Math.round(s.cam.z*100)/100),L-4,7);
+  if(s.unites&&s.unites[s.sel]){
+    var U=s.unites[s.sel];
+    g.fillStyle='rgba(8,12,20,.62)';g.fillRect(0,13,L,11);
+    g.fillStyle='#7ae8ff';g.textAlign='left';
+    g.fillText(U.nom+' · '+U.form.toUpperCase()+' · '+U.membres.length+'H',22,19);
+    g.textAlign='right';g.fillStyle=s.pression>26?'#ff9a7a':'#9ae8ff';
+    g.fillText(L>250?('AU CONTACT '+s.pression+' · '+(s.sim?s.sim.agents.length:0)+' CORPS')
+                    :(s.pression+'/'+(s.sim?s.sim.agents.length:0)),L-4,19);
+  }
   if(s.motT>0){
     g.textAlign='center';
     var t=s.mot, w=g.measureText(t).width+10;
@@ -1147,7 +1341,7 @@ function hud(s,L,H){
     }
     /* au-dessus des boutons flottants quand il y a la place, sous le
        bandeau sinon : jamais par-dessus l'un ou l'autre */
-    var bas=(H>150), y0=bas?H-(l2?72:62):(l2?17:17);
+    var bas=(H>150), y0=bas?H-(l2?72:62):(l2?27:27);
     g.fillStyle='rgba(8,12,20,.7)';
     g.fillRect((L-w)/2,y0,w,l2?22:12);
     g.fillStyle='#ffe28a';
