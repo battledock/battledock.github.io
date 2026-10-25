@@ -918,3 +918,62 @@ where niveau = 29;
 
    À SUIVRE : le côté manifestants, qui jouera la même rue à l'envers.
    ===================================================================== */
+
+/* =====================================================================
+   LE CORDON v2 — un vrai parcours de manifestation (2026-10-25)
+
+   LA RUE EST DEVENUE UN ITINÉRAIRE. Sept tronçons bout à bout, 1 500
+   pixels de haut, cinq écrans : boulevard planté de platanes, place
+   avec fontaine et kiosque, rue étroite avec voitures garées,
+   carrefour à bouches latérales. Le bâti est peint dessus — toitures,
+   cours, lucarnes — parce qu'un trottoir sans immeuble est une bande
+   sans échelle. Quatorze commerces nommés (BOULANGERIE, TABAC,
+   OPTIQUE…) et deux sensibles, PHARMACIE et BANQUE, dont la perte
+   termine la partie.
+
+   LA CAMÉRA. Le doigt glisse pour suivre le cortège, la bande de
+   droite montre tout le parcours d'un coup d'œil — commerces, casseurs,
+   cordons, camions, et le cadre de ce qu'on regarde. Le shell des
+   bornes a gagné un crochet `glisse(s,x,y,dx,dy)` et distingue
+   maintenant une tape d'un glissement : toute borne qui tient dans un
+   monde plus grand que l'écran peut s'en servir.
+
+   LA NOTE DE SERVICE, avant la partie. Le climat est annoncé (CALME /
+   TENDUE / À HAUT RISQUE) et on dote dans un budget : grenades,
+   camions, effectifs, officiers de liaison. Doter lourd pour une manif
+   calme coûte du crédit au rapport AVANT d'avoir commencé — c'est la
+   première décision du jeu.
+
+   LES CAMIONS. Garés le long du trottoir, ils laissent passer ; posés
+   dans la rue, ils barrent pour de bon et réapprovisionnent en
+   lacrymogène le cordon qui vient s'y coller.
+
+   LA DOCTRINE, la deuxième jauge. Elle ne juge pas QUE tu emploies la
+   force, elle juge SUR QUI : à chaque gaz et à chaque nasse, on compte
+   la proportion de casseurs dans le rayon et le verdict s'affiche à
+   l'endroit du geste. Doctrine sous 22 %, la préfecture coupe le gaz et
+   la nasse ; à 5 %, relevé de tes fonctions. La note finale est
+   multipliée par elle.
+
+   TROIS BUGS DE FOND, trouvés en simulant des parties entières
+   - Le vecteur de marche des casseurs se figeait sous y=44 : tous
+     finissaient agglutinés dans le coin haut-gauche et PAS UNE vitre
+     n'était cassée de toute la partie. Le seuil ne devait porter que
+     sur le CHOIX de la cible, jamais sur la marche.
+   - Un camion garé au milieu de la chaussée barrait la sortie du
+     cortège dès le départ : la tension montait toute seule, sans que
+     le joueur ait rien fait.
+   - Un cordon posé contre une devanture comptait comme un barrage de
+     rue. Le jeu punissait exactement le geste qu'il réclame. Seul un
+     cordon au milieu de la chaussée (34 px des bords) barre vraiment.
+   - Et protéger sans faire passer payait comme une victoire : le score
+     des devantures est maintenant au prorata du cortège écoulé.
+
+   L'ÉQUILIBRE, mesuré sur neuf parties (3 styles × 3 climats) :
+     ne rien faire   → perd partout (la PHARMACIE tombe)
+     jouer mesuré    → gagne partout, ~17 000 points
+     tout gazer      → perd partout (relevé, ou la rue part en vrille)
+
+   À SUIVRE : le côté manifestants, qui jouera le même parcours à
+   l'envers.
+   ===================================================================== */
