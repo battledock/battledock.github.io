@@ -20,7 +20,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-25-1100';
+  var MA_VERSION='2026-10-25-1400';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -4685,11 +4685,11 @@ var DB_CARTES={
 };
 var DB_GRADES=['Soldat','Caporal','Sergent','Adjudant'];
 /* les postures, les portées, les protections : tout le réglage est ici */
-var DB={vit:0.0104, portee:58, porteeMG:88, cad:620, cadMG:560,
+var DB={vit:0.0163, portee:90, porteeMG:137, cad:620, cadMG:560,
   prot:{sacs:0.62,cratere:0.58,caisses:0.52,bitte:0.42,mur:0.68,
         conteneur:0.66,herisson:0.30,pieu:0.22,trou:0.55,barbele:0.18,
         souche:0.40,tranchee:0.70,aucun:0.06},
-  fumDuree:17000, mortDelai:2400, mortRayon:13, tenirBonus:0.34};
+  fumDuree:17000, mortDelai:2400, mortRayon:20, tenirBonus:0.34};
 
 function dbAl(s){s.gr=(s.gr*16807)%2147483647;return (s.gr-1)/2147483646;}
 function dbDist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
@@ -4702,12 +4702,31 @@ function dbVoit(s,a,b){
   return true;
 }
 function dbVivants(sec){var n=0;for(var i=0;i<sec.h.length;i++)if(sec.h[i].vie)n++;return n;}
-function dbProt(s,sec){
+/* UN ABRI NE PROTÈGE QUE D'UN CÔTÉ. Des sacs de sable arrêtent ce qui
+   vient d'en face, pas ce qui vient du flanc. C'est ce qui donne un
+   sens au fait de contourner : on ne tire pas plus fort, on tire d'où
+   il n'est pas protégé. */
+function dbAngleProt(face,ax,ay,bx,by){
+  var a=Math.atan2(by-ay,bx-ax);            /* du protégé vers le tireur */
+  var d=Math.abs(((a-face+Math.PI*3)%(Math.PI*2))-Math.PI);
+  if(d<1.15)return 1;        /* bien en face : l'abri joue à plein */
+  if(d<1.95)return 0.45;     /* de biais : il ne joue qu'à moitié */
+  return 0;                  /* de flanc ou de dos : il ne sert à rien */
+}
+function dbProt(s,sec,tx,ty){
   if(sec.ax!==null)return DB.prot.aucun;                 /* à découvert, en mouvement */
   var a=sec.abri!==null?s.ab[sec.abri]:null;
-  var p=a?DB.prot[a.typ]:DB.prot.aucun;
+  if(!a)return DB.prot.aucun;
+  var p=DB.prot[a.typ]||DB.prot.aucun;
   if(sec.ordre==='tenir')p=Math.min(0.88,p+DB.tenirBonus*0.5);
-  return p;
+  if(tx!==undefined)p*=dbAngleProt(a.face,sec.x,sec.y,tx,ty);
+  return Math.max(DB.prot.aucun,p);
+}
+/* la même chose pour l'ennemi : son trou le protège de face, pas de côté */
+function dbProtEnn(en,tx,ty){
+  var p=en.prot;
+  if(tx!==undefined)p*=dbAngleProt(en.face,en.x,en.y,tx,ty);
+  return Math.max(0.04,p);
 }
 function dbMot(s,m,gros){s.mot=m;s.motT=gros?2200:1500;s.motGros=!!gros;}
 /* ---------- LA CARTE D'UN SECTEUR ----------
@@ -4716,39 +4735,41 @@ function dbMot(s,m,gros){s.mot=m;s.motT=gros?2200:1500;s.motGros=!!gros;}
 function dbBatir(s,n){
   var C=DB_SECT[n], L=s.L, H=s.H;
   s.cfg=C;
-  s.haut=40; s.bas=H-84;                      /* la bande de jeu */
+  s.haut=34; s.bas=H-92;                      /* la bande de jeu */
   s.ab=[];s.enn=[];s.fum=[];s.tr=[];s.part=[];s.morts=[];s.obus=[];
   /* l'objectif, en haut */
-  s.obj={x:Math.round(L/2),y:s.haut+16,pris:false,garde:0};
+  s.obj={x:Math.round(L/2),y:s.haut+32,pris:false,garde:0};
   /* les abris : cinq rangs, deux ou trois par rang */
   var typs=DB_CARTES[C.carte].typs;
-  var rangs=4, y0=s.haut+40, y1=s.bas-24;
+  var rangs=5, y0=s.haut+62, y1=s.bas-42;
   for(var r=0;r<rangs;r++){
-    var nb=(r%2)?2:3, yy=y0+(y1-y0)*r/(rangs-1);
+    var nb=(r%2)?3:4, yy=y0+(y1-y0)*r/(rangs-1);
     for(var k=0;k<nb;k++){
-      var xx=14+(L-28)*(k+0.5)/nb+(dbAl(s)-0.5)*9;
-      s.ab.push({x:Math.round(xx),y:Math.round(yy+(dbAl(s)-0.5)*6),
-        typ:typs[Math.floor(dbAl(s)*typs.length)],occ:null,r:11});
+      var xx=20+(L-40)*(k+0.5)/nb+(dbAl(s)-0.5)*14;
+      s.ab.push({x:Math.round(xx),y:Math.round(yy+(dbAl(s)-0.5)*10),
+        typ:typs[Math.floor(dbAl(s)*typs.length)],occ:null,r:11,
+        face:-Math.PI/2+(dbAl(s)-0.5)*0.9});
     }
   }
   /* LES DEUX POSITIONS D'ASSAUT, contre le blockhaus : sans elles,
      aucune section ne pouvait tenir l'objectif et le secteur ne se
      prenait jamais. */
-  s.ab.push({x:Math.round(L/2-13),y:s.obj.y+12,typ:'sacs',occ:null,r:11});
-  s.ab.push({x:Math.round(L/2+13),y:s.obj.y+12,typ:'sacs',occ:null,r:11});
+  s.ab.push({x:Math.round(L/2-21),y:s.obj.y+20,typ:'sacs',occ:null,r:11,face:-Math.PI/2});
+  s.ab.push({x:Math.round(L/2+21),y:s.obj.y+20,typ:'sacs',occ:null,r:11,face:-Math.PI/2});
   /* les abris du fond, d'où l'on part */
   for(var k2=0;k2<4;k2++)
-    s.ab.push({x:Math.round(14+(L-28)*k2/3),y:s.bas-26,typ:DB_CARTES[C.carte].fond,occ:null,r:11});
+    s.ab.push({x:Math.round(22+(L-44)*k2/3),y:s.bas-30,typ:DB_CARTES[C.carte].fond,occ:null,r:11,face:-Math.PI/2});
   /* les nids de mitrailleuse, bien en vue : c'est eux qu'il faut taire */
   for(var m=0;m<C.mg;m++){
-    s.enn.push({x:Math.round(22+(L-44)*(m+0.5)/C.mg),y:s.haut+26+Math.round(dbAl(s)*7),
-      hp:4,typ:'mg',sup:0,feu:0,mort:false,prot:0.58});
+    s.enn.push({x:Math.round(32+(L-64)*(m+0.5)/C.mg),y:s.haut+42+Math.round(dbAl(s)*12),
+      hp:4,typ:'mg',sup:0,feu:0,mort:false,prot:0.58,face:Math.PI/2});
   }
   /* l'infanterie, devant le blockhaus */
   for(var i=0;i<C.inf;i++){
-    s.enn.push({x:Math.round(11+(s.L-22)*dbAl(s)),
-      y:Math.round(s.haut+34+dbAl(s)*44),
-      hp:2,typ:'inf',sup:0,feu:0,mort:false,prot:0.3+dbAl(s)*0.15});
+    s.enn.push({x:Math.round(16+(s.L-32)*dbAl(s)),
+      y:Math.round(s.haut+52+dbAl(s)*76),
+      hp:2,typ:'inf',sup:0,feu:0,mort:false,prot:0.3+dbAl(s)*0.15,
+      face:Math.PI/2+(dbAl(s)-0.5)*0.9});
   }
   /* les sections repartent du fond, dans les abris du bas */
   var libres=s.ab.length-4;
@@ -4888,17 +4909,27 @@ function dbPas(s,dt){
     sc.feu-=dt;
     if(cible&&sc.feu<=0&&sc.sup<0.82){
       sc.feu=DB.cad*(sc.ax!==null?1.5:1);
-      s.tr.push({x1:sc.x,y1:sc.y,x2:cible.x,y2:cible.y,t:90,c:'#ffe9a8'});
-      var ch=0.50*(1-cible.prot)*(1-sc.sup*0.7)*(sc.ax!==null?0.65:1)*
-             (sc.ordre==='tenir'?1.3:1)*(dbVivants(sc)/6);
+      /* CE QUE VAUT LE COUP dépend de l'angle : si l'abri de l'ennemi
+         ne le couvre pas de ce côté-là, il n'a plus rien pour lui. */
+      var pe=dbProtEnn(cible,sc.x,sc.y), flanc=(pe<cible.prot*0.6);
+      s.tr.push({x1:sc.x,y1:sc.y,x2:cible.x,y2:cible.y,t:170,
+        c:flanc?'#ffd05a':'#ffe9a8',flanc:flanc});
+      var tenir=(sc.ordre==='tenir'&&sc.ax===null);
+      var ch=0.50*(1-pe)*(1-sc.sup*0.7)*(sc.ax!==null?0.65:1)*
+             (tenir?1.3:1)*(dbVivants(sc)/6);
+      /* LE TIR CLOUE, TOUCHÉ OU NON. C'est ça, une base de feu : on ne
+         tue pas forcément, on empêche l'autre de lever la tête. */
+      var cl=(tenir?0.26:0.16)*(dbVivants(sc)/6)*(sc.ax!==null?0.4:1);
+      cible.sup=Math.min(1,cible.sup+cl);
       if(Math.random()<ch){
-        cible.hp--;cible.sup=Math.min(1,cible.sup+0.4);
+        cible.hp--;cible.sup=Math.min(1,cible.sup+0.3);
         for(k=0;k<4;k++)s.part.push({x:cible.x,y:cible.y,vx:(Math.random()-0.5)*0.06,
           vy:(Math.random()-0.5)*0.06,t:300,c:'#c8c0b0'});
+        if(flanc&&Math.random()<0.5)dbMot(s,'DE FLANC !');
         if(cible.hp<=0){cible.mort=true;s.tues++;s.score+=cible.typ==='mg'?400:120;
-          s.morts.push({x:cible.x,y:cible.y,ami:false});
-          if(cible.typ==='mg')dbMot(s,'NID RÉDUIT AU SILENCE',true);}
-      }else cible.sup=Math.min(1,cible.sup+0.12);
+          s.morts.push({x:cible.x,y:cible.y,ami:false,face:cible.face});
+          if(cible.typ==='mg'){dbMot(s,'NID RÉDUIT AU SILENCE',true);s.score+=300;}}
+      }
     }
   }
   if(!vivantes){dbFin(s,'Plus un homme debout.');return;}
@@ -4914,28 +4945,39 @@ function dbPas(s,dt){
       if(!dbVoit(s,en,sc))continue;bb=d2;vis=sc;}
     en.cible=vis;
     en.feu-=dt;
-    if(vis&&en.feu<=0&&en.sup<0.8){
-      en.feu=(en.typ==='mg'?DB.cadMG:2400)*(1+en.sup);
-      s.tr.push({x1:en.x,y1:en.y,x2:vis.x,y2:vis.y,t:90,c:en.typ==='mg'?'#ff9a6a':'#ffd0a0'});
-      var prot=dbProt(s,vis);
+    /* AU-DELÀ DE 0,75 IL EST COUCHÉ : il ne tire plus du tout. C'est
+       la récompense du tir de suppression, et c'est elle qui ouvre la
+       fenêtre pour faire bondir l'autre section. */
+    en.couche=(en.sup>=0.75);
+    if(vis&&en.feu<=0&&!en.couche){
+      en.feu=(en.typ==='mg'?DB.cadMG:2400)*(1+en.sup*1.6);
+      s.tr.push({x1:en.x,y1:en.y,x2:vis.x,y2:vis.y,t:150,c:en.typ==='mg'?'#ff9a6a':'#ffd0a0'});
+      var prot=dbProt(s,vis,en.x,en.y);
       /* LA MITRAILLEUSE CLOUE PLUS QU'ELLE NE TUE : c'est elle qui
          oblige à manœuvrer, pas à encaisser. */
       vis.sup=Math.min(1,vis.sup+(en.typ==='mg'?0.22:0.05)*(1-prot*0.55));
       /* LA MITRAILLEUSE CLOUE, L'INFANTERIE TUE : une section à couvert
          qui tient est presque intouchable, une section à découvert paie. */
-      var cht=(en.typ==='mg'?0.04:0.045)*(1-prot)*(vis.ax!==null?1.45:1);
+      var cht=(en.typ==='mg'?0.04:0.045)*(1-prot)*(vis.ax!==null?1.45:1)*(1-en.sup*0.8);
       if(Math.random()<cht)dbTombe(s,vis);
     }
   }
 
   /* ---- L'OBJECTIF ---- */
-  var tenu=false,menace=false,restants=0;
+  var tenu=false,menace=false,restants=0,nids=0;
   for(j=0;j<s.enn.length;j++){en=s.enn[j];if(en.mort)continue;restants++;
-    if(dbDist(en,s.obj)<30)menace=true;}
+    if(en.typ==='mg')nids++;
+    if(dbDist(en,s.obj)<47)menace=true;}
+  s.nids=nids;
+  /* LE SECTEUR SE PREND EN DEUX TEMPS : tant qu'un nid de mitrailleuse
+     tient, on ne peut pas s'installer sur l'objectif. Ça force à
+     apprendre le vrai geste — clouer, puis contourner — au lieu de
+     foncer tout droit. */
+  if(nids>0)menace=true;
   /* QUAND IL N'Y A PLUS PERSONNE EN FACE, L'OBJECTIF TOMBE VITE : on
      vient de nettoyer le secteur, ce serait absurde d'y perdre la
      partie au chrono. On approche de plus loin, et ça va plus vite. */
-  var ray=restants?22:38, duree=restants?3800:1400;
+  var ray=restants?34:58, duree=restants?3800:1400;
   for(i=0;i<s.sec.length;i++){sc=s.sec[i];if(sc.mort)continue;
     if(dbDist(sc,s.obj)<ray&&sc.ax===null)tenu=true;}
   s.objRay=ray;
@@ -4945,6 +4987,8 @@ function dbPas(s,dt){
   /* et on le dit : sans ça le joueur ne sait pas qu'il doit monter */
   if(!restants&&!s.pris&&!tenu&&s.motT<=0&&Math.random()<dt*0.002)
     dbMot(s,'SECTEUR NETTOYÉ · MONTE À L’OBJECTIF',true);
+  if(nids===0&&s.nidsAv>0)dbMot(s,'PLUS UN NID · L’OBJECTIF EST OUVERT',true);
+  s.nidsAv=nids;
 }
 /* un homme tombe — et il ne revient pas */
 function dbTombe(s,sc){
@@ -4964,7 +5008,7 @@ function dbImpact(s,x,y){
   for(var k=0;k<22;k++)s.part.push({x:x,y:y,vx:(Math.random()-0.5)*0.17,
     vy:(Math.random()-0.5)*0.17,t:380+Math.random()*260,
     c:['#ffe9a8','#ffb43a','#e8702a','#9a9488'][Math.floor(Math.random()*4)]});
-  s.ab.push({x:Math.round(x),y:Math.round(y),typ:'cratere',occ:null,r:11,neuf:true});
+  s.ab.push({x:Math.round(x),y:Math.round(y),typ:'cratere',occ:null,r:11,neuf:true,face:-Math.PI/2});
   for(var j=0;j<s.enn.length;j++){var en=s.enn[j];if(en.mort)continue;
     var d=Math.hypot(en.x-x,en.y-y);if(d>DB.mortRayon*1.7)continue;
     en.sup=1;
@@ -5000,13 +5044,13 @@ function dbFin(s,mot){
 }
 /* ---------- LA BARRE D'ORDRES : un seul endroit qui dit où sont les boutons ---------- */
 function dbBarre(s){
-  var H=s.H,L=s.L,y0=H-84;
-  var bw=(L-8-9)/4, by=y0+20, bh=26;
+  var H=s.H,L=s.L,y0=H-92;
+  var bw=(L-8-9)/4, by=y0+20, bh=28;
   var b=[];
   var noms=[['AVANCER','avancer'],['TENIR','tenir'],['FUMÉE','fumigene'],['OBUS','mortier']];
   for(var i=0;i<4;i++)b.push({x:4+i*(bw+3),y:by,w:bw,h:bh,n:noms[i][0],k:noms[i][1]});
-  var pw=(L-8)/4, py=H-22;
-  var p=[];for(var j=0;j<4;j++)p.push({x:4+j*pw,y:py,w:pw,h:20,i:j});
+  var pw=(L-8)/4, py=H-26;
+  var p=[];for(var j=0;j<4;j++)p.push({x:4+j*pw,y:py,w:pw,h:22,i:j});
   return {y0:y0,b:b,p:p};
 }
 function dbTape(s,x,y){
@@ -5024,7 +5068,7 @@ function dbTape(s,x,y){
   /* un fumigène, un obus : on désigne un point */
   if(s.mode==='fumigene'){
     if(s.fumN<=0){dbMot(s,'PLUS DE FUMIGÈNE');s.mode=null;return;}
-    s.fumN--;s.fum.push({x:x,y:y,r:1,rmax:18,t:DB.fumDuree,vie:DB.fumDuree});
+    s.fumN--;s.fum.push({x:x,y:y,r:1,rmax:28,t:DB.fumDuree,vie:DB.fumDuree});
     s.mode=null;dbMot(s,'FUMIGÈNE');return;
   }
   if(s.mode==='mortier'){
@@ -5034,13 +5078,13 @@ function dbTape(s,x,y){
   }
   /* une section ? */
   for(i=0;i<s.sec.length;i++){var sc=s.sec[i];if(sc.mort)continue;
-    if(Math.hypot(sc.x-x,sc.y-y)<21){s.sel=i;s.mode=null;return;}}
+    if(Math.hypot(sc.x-x,sc.y-y)<24){s.sel=i;s.mode=null;return;}}
   /* un abri ? alors on y va */
   if(s.sel<0||!s.sec[s.sel]||s.sec[s.sel].mort)return;
   var sel=s.sec[s.sel],mieux=-1,dm=1e9;
   for(i=0;i<s.ab.length;i++){var a=s.ab[i];
     if(a.occ!==null&&a.occ!==s.sel)continue;
-    var d=Math.hypot(a.x-x,a.y-y);if(d<16&&d<dm){dm=d;mieux=i;}}
+    var d=Math.hypot(a.x-x,a.y-y);if(d<22&&d<dm){dm=d;mieux=i;}}
   if(mieux<0)return;
   if(sel.sup>0.85){dbMot(s,'SECTION CLOUÉE · FAIS TAIRE LE FEU');return;}
   if(sel.abri!==null&&s.ab[sel.abri])s.ab[sel.abri].occ=null;
@@ -5053,7 +5097,8 @@ function dbOrdre(s,k){
     dbMot(s,k==='fumigene'?'DÉSIGNE OÙ POSER LA FUMÉE':'DÉSIGNE OÙ TOMBE L’OBUS');return;}
   if(!sel||sel.mort)return;
   s.mode=null;
-  if(k==='tenir'){sel.ordre='tenir';sel.ax=null;sel.ay=null;dbMot(s,'SECTION '+sel.n+' : ON TIENT');}
+  if(k==='tenir'){sel.ordre='tenir';sel.ax=null;sel.ay=null;
+    dbMot(s,'SECTION '+sel.n+' EN BASE DE FEU',true);}
   else{sel.ordre='avancer';dbMot(s,'TAPE UN ABRI POUR Y ALLER');}
 }
 /* ---------- LE DESSIN ---------- */
@@ -5066,11 +5111,15 @@ function dbHomme(x,y,isec,dir){
 }
 /* L'ENNEMI : casque plus large à bord plat, vareuse terre, et un
    losange rouge à ses pieds. On ne confond plus les siens. */
-function dbEnnemi(x,y,dir){
+function dbEnnemi(x,y,dir,couche){
   var S=dbSprites();
   G.globalAlpha=0.26;G.fillStyle='#000';
   G.beginPath();G.ellipse(x,y+1.5,4.5,1.8,0,0,7);G.fill();G.globalAlpha=1;
+  /* COUCHÉ : il s'est tassé derrière son abri et ne tire plus. On le
+     voit tout de suite — c'est ça qu'on cherche en le clouant. */
+  if(couche)G.globalAlpha=0.75;
   G.drawImage(S.enn[dir],Math.round(x-SO_AX),Math.round(y-SO_AY));
+  G.globalAlpha=1;
   R(x,y+2,1,1,'#c8402a');R(x-1,y+3,3,1,'#e8503a');R(x,y+4,1,1,'#c8402a');
 }
 function dbCorps(x,y,ami,c){
@@ -5174,7 +5223,10 @@ function dbSection(s,sc,choisi,t){
     R(sc.x-9,sc.y+20,18*Math.min(1,sc.sup),2,'#e8a04a');}
   if(sc.ordre==='tenir'&&sc.ax===null&&sc.sup<=0.85){
     G.strokeStyle='rgba(143,216,154,.6)';G.lineWidth=1;G.setLineDash([2,3]);
-    G.beginPath();G.arc(sc.x,sc.y,23,0,7);G.stroke();G.setLineDash([]);}
+    G.beginPath();G.arc(sc.x,sc.y,23,0,7);G.stroke();G.setLineDash([]);
+    if(sc.cible){R(sc.x-17,sc.y-38,34,7,'rgba(62,122,74,.9)');
+      G.font='bold 5px Trebuchet MS';G.fillStyle='#dff6e4';G.textAlign='center';
+      G.fillText('BASE DE FEU',sc.x,sc.y-32.5);G.textAlign='left';}}
 }
 function dbDessine(s,L,H){
   var i,j,sc,en,t=s.t;
@@ -5225,9 +5277,11 @@ function dbDessine(s,L,H){
   R(o.x-18,o.y-2,36,5,'#1e201c');
   for(i=0;i<3;i++)R(o.x-14+i*12,o.y-1,5,3,s.pris?'#5aba7a':'#141614');
   /* ON DIT CE QU'IL FAUT PRENDRE, en toutes lettres et en permanence */
-  R(o.x-23,o.y-19,46,7,'rgba(200,64,42,.88)');
+  var vrr=(s.nids>0)?'rgba(170,30,20,.92)':'rgba(62,122,74,.92)';
+  R(o.x-27,o.y-19,54,7,vrr);
   G.font='bold 5px Trebuchet MS';G.fillStyle='#fff';G.textAlign='center';
-  G.fillText('OBJECTIF',o.x,o.y-13.5);G.textAlign='left';
+  G.fillText(s.nids>0?('VERROUILLÉ · '+s.nids+' NID'+(s.nids>1?'S':'')):'OBJECTIF OUVERT',o.x,o.y-13.5);
+  G.textAlign='left';
   if(s.obj.garde>0&&!s.pris){var tg=Math.min(1,s.obj.garde/((s.objRay&&s.objRay>30)?1400:3800));
     R(o.x-22,o.y+13,44,4,'rgba(0,0,0,.6)');R(o.x-22,o.y+13,44*tg,4,'#8fd89a');
     G.font='bold 5px Trebuchet MS';G.fillStyle='#8fd89a';G.textAlign='center';
@@ -5238,7 +5292,7 @@ function dbDessine(s,L,H){
   for(i=0;i<s.ab.length;i++){var ab=s.ab[i];
     /* on n'allume que les abris à un bond : trente cercles jaunes, ce
        n'est plus une aide, c'est du bruit */
-    var vise=montre&&ab.occ===null&&Math.hypot(ab.x-sl.x,ab.y-sl.y)<54;
+    var vise=montre&&ab.occ===null&&Math.hypot(ab.x-sl.x,ab.y-sl.y)<84;
     dbAbri(ab,vise,t);}
   /* les morts restent */
   for(i=0;i<s.morts.length;i++)dbCorps(s.morts[i].x,s.morts[i].y,s.morts[i].ami,s.morts[i].c);
@@ -5252,12 +5306,13 @@ function dbDessine(s,L,H){
       /* on montre son champ de tir, pas un halo qui mange la carte */
       G.strokeStyle='rgba(216,80,60,.30)';G.lineWidth=1;G.setLineDash([3,4]);
       G.beginPath();G.arc(en.x,en.y,DB.porteeMG*0.26,0.35,2.79);G.stroke();G.setLineDash([]);}
-    else dbEnnemi(en.x,en.y,ed);
-    if(en.sup>0.3){R(en.x-5,en.y-8,10,2,'rgba(0,0,0,.5)');R(en.x-5,en.y-8,10*en.sup,2,'#d8d0b0');}}
+    else dbEnnemi(en.x,en.y+(en.couche?3:0),ed,en.couche);
+    if(en.sup>0.12){R(en.x-6,en.y-12,12,2,'rgba(0,0,0,.55)');
+      R(en.x-6,en.y-12,12*en.sup,2,en.couche?'#ff5a3a':'#d8d0b0');}}
   /* les traçantes */
   for(i=0;i<s.tr.length;i++){var tr=s.tr[i];
     var al2=Math.min(1,tr.t/170);
-    G.strokeStyle=tr.c;G.globalAlpha=al2*0.85;G.lineWidth=2;
+    G.strokeStyle=tr.c;G.globalAlpha=al2*(tr.flanc?1:0.85);G.lineWidth=tr.flanc?3:2;
     G.beginPath();G.moveTo(tr.x1,tr.y1);G.lineTo(tr.x2,tr.y2);G.stroke();
     G.globalAlpha=al2;G.lineWidth=1;G.strokeStyle='#fff8e0';
     G.beginPath();G.moveTo(tr.x1,tr.y1);G.lineTo(tr.x2,tr.y2);G.stroke();
@@ -5265,6 +5320,15 @@ function dbDessine(s,L,H){
     disque(tr.x1,tr.y1,2.4*al2,'rgba(255,233,168,'+(al2*0.9).toFixed(2)+')');
     G.globalAlpha=1;}
   /* les sections */
+  /* D'OÙ LA SECTION CHOISIE EST-ELLE COUVERTE ? On dessine l'arc que
+     son abri protège. Tout ce qui tire d'ailleurs la prend à nu. */
+  if(sl&&!sl.mort&&sl.ax===null&&sl.abri!==null&&s.ab[sl.abri]){
+    var fa=s.ab[sl.abri].face;
+    G.strokeStyle='rgba(143,216,154,.55)';G.lineWidth=2;
+    G.beginPath();G.arc(sl.x,sl.y,24,fa-1.15,fa+1.15);G.stroke();
+    G.strokeStyle='rgba(143,216,154,.2)';G.lineWidth=1;
+    G.beginPath();G.arc(sl.x,sl.y,27,fa-1.95,fa+1.95);G.stroke();
+  }
   for(i=0;i<s.sec.length;i++){sc=s.sec[i];if(sc.mort)continue;
     if(sc.ax!==null){G.strokeStyle='rgba(255,255,255,.35)';G.lineWidth=1;
       G.setLineDash([3,3]);G.beginPath();G.moveTo(sc.x,sc.y);G.lineTo(sc.ax,sc.ay);G.stroke();G.setLineDash([]);}
@@ -5287,19 +5351,22 @@ function dbDessine(s,L,H){
 function dbChrono(ms){var t=Math.max(0,Math.round(ms/1000));
   return Math.floor(t/60)+':'+('0'+(t%60)).slice(-2);}
 function dbHaut(s,L){
-  R(0,0,L,18,'rgba(14,14,12,.92)');R(0,18,L,1,'rgba(216,198,156,.22)');
+  R(0,0,L,26,'rgba(14,14,12,.94)');R(0,26,L,1,'rgba(216,198,156,.22)');
   var h=0;for(var i=0;i<s.sec.length;i++)if(!s.sec[i].mort)h+=dbVivants(s.sec[i]);
   /* première ligne, en petit : où l'on est, et ce qu'il te reste */
-  G.font='bold 6px Trebuchet MS';G.textAlign='left';G.fillStyle='#9aa0a6';
-  G.fillText((s.secteur+1)+'/3 · '+(s.cfg?s.cfg.nom:''),4,7);
+  /* LA FLÈCHE DE RETOUR DE LA PAGE mord sur le coin : on commence après. */
+  var X0=30;
+  G.font='bold 8px Trebuchet MS';G.textAlign='left';G.fillStyle='#9aa0a6';
+  G.fillText((s.secteur+1)+'/3 · '+(s.cfg?s.cfg.nom:''),X0,11);
   G.textAlign='right';G.fillStyle=h<=8?'#e8704a':'#9aa0a6';
-  G.fillText(h+' hommes',L-4,7);
+  G.fillText(h+' hommes',L-6,11);
   /* deuxième ligne, en gros : ce qu'il faut faire, et le temps */
-  G.textAlign='left';G.font='bold 8px Trebuchet MS';G.fillStyle='#ffd86a';
-  G.fillText(s.cfg?s.cfg.obj:'',4,16);
-  G.textAlign='right';G.font='bold 8px Trebuchet MS';
-  G.fillStyle=s.reste<30000?'#e8704a':'#c0aa80';G.fillText(dbChrono(s.reste),L-4,16);
+  G.textAlign='left';G.font='bold 11px Trebuchet MS';G.fillStyle='#ffd86a';
+  G.fillText(s.cfg?s.cfg.obj:'',X0,23);
+  G.textAlign='right';G.font='bold 11px Trebuchet MS';
+  G.fillStyle=s.reste<30000?'#e8704a':'#c0aa80';G.fillText(dbChrono(s.reste),L-6,23);
   G.textAlign='left';
+
 }
 /* LA CONSIGNE. C'est elle qui manquait : le joueur voyait des ronds et
    des couleurs sans savoir ce qu'on attendait de lui. Elle est toujours
@@ -5311,6 +5378,11 @@ function dbConsigne(s){
   if(!sel||sel.mort)       return ['TAPE UNE SECTION EN BAS','#8fd89a'];
   if(sel.sup>0.85)         return ['CLOUÉE · FUME LE NID','#e8402a'];
   if(sel.ax!==null)        return ['ELLE AVANCE…','#c0aa80'];
+  if(s.nids>0&&sel.cible&&sel.cible.typ==='mg'&&sel.ordre!=='tenir')
+    return ['TENIR POUR CLOUER LE NID','#ffd86a'];
+  if(s.nids>0&&sel.ordre==='tenir'&&sel.cible)
+    return ['ELLE CLOUE · FAIS BONDIR UNE AUTRE','#8fd89a'];
+  if(s.nids>0)             return ['FAIS TAIRE LE NID D’ABORD','#e8a04a'];
   if(!s.pris&&dbDist(sel,s.obj)<(s.objRay||22))return ['RESTE LÀ, ÇA SE PREND','#8fd89a'];
   if(sel.cible)            return ['ELLE TIRE · TAPE UN CERCLE JAUNE','#ffd86a'];
   return ['TAPE UN CERCLE JAUNE','#ffd86a'];
@@ -5321,42 +5393,42 @@ function dbBas(s,L,H){
   var sel=(s.sel>=0)?s.sec[s.sel]:null;
   if(sel&&!sel.mort){
     R(4,B.y0+5,3,11,sel.c);
-    G.font='bold 8px Trebuchet MS';G.fillStyle='#fff';G.textAlign='left';
-    G.fillText('SECTION '+sel.n,10,B.y0+14);
-    G.textAlign='right';G.font='bold 7px Trebuchet MS';
+    G.font='bold 10px Trebuchet MS';G.fillStyle='#fff';G.textAlign='left';
+    G.fillText('SECTION '+sel.n,11,B.y0+15);
+    G.textAlign='right';G.font='bold 9px Trebuchet MS';
     G.fillStyle=dbVivants(sel)<=2?'#e8704a':'#c0aa80';
-    G.fillText(dbVivants(sel)+' hommes',L-4,B.y0+14);G.textAlign='left';
+    G.fillText(dbVivants(sel)+' hommes',L-6,B.y0+15);G.textAlign='left';
   }else{
-    G.font='bold 8px Trebuchet MS';G.fillStyle='#9aa0a6';G.textAlign='left';
-    G.fillText('AUCUNE SECTION CHOISIE',10,B.y0+14);}
+    G.font='bold 10px Trebuchet MS';G.fillStyle='#9aa0a6';G.textAlign='left';
+    G.fillText('AUCUNE SECTION CHOISIE',11,B.y0+15);}
   for(i=0;i<B.b.length;i++){var r=B.b[i];
     var on=(r.k==='fumigene'||r.k==='mortier')?(s.mode===r.k)
           :(sel&&!sel.mort&&sel.ordre===r.k);
     R(r.x,r.y,r.w,r.h,on?'#3e5a3a':'#201e18');
     R(r.x,r.y,r.w,1,on?'#8fd89a':'rgba(255,255,255,.12)');
     R(r.x,r.y+r.h-1,r.w,1,'rgba(0,0,0,.45)');
-    G.font='bold 6px Trebuchet MS';G.textAlign='center';G.fillStyle=on?'#fff':'#9aa0a6';
-    G.fillText(r.n,r.x+r.w/2,r.y+13);
+    G.font='bold 8px Trebuchet MS';G.textAlign='center';G.fillStyle=on?'#fff':'#9aa0a6';
+    G.fillText(r.n,r.x+r.w/2,r.y+14);
     var n2=r.k==='fumigene'?('× '+s.fumN):r.k==='mortier'?('× '+s.mortN):'';
-    if(n2){G.font='bold 5px Trebuchet MS';G.fillStyle=((r.k==='fumigene'?s.fumN:s.mortN)>0)?'rgba(255,255,255,.6)':'#8a3a2a';
-      G.fillText(n2,r.x+r.w/2,r.y+21);}}
+    if(n2){G.font='bold 7px Trebuchet MS';G.fillStyle=((r.k==='fumigene'?s.fumN:s.mortN)>0)?'rgba(255,255,255,.7)':'#8a3a2a';
+      G.fillText(n2,r.x+r.w/2,r.y+23);}}
   /* LA CONSIGNE, entre les ordres et les pastilles */
   var C2=dbConsigne(s);
-  G.font='bold 6px Trebuchet MS';G.textAlign='center';G.fillStyle=C2[1];
-  G.fillText(C2[0],L/2,B.y0+58);G.textAlign='left';
+  G.font='bold 8px Trebuchet MS';G.textAlign='center';G.fillStyle=C2[1];
+  G.fillText(C2[0],L/2,B.y0+60);G.textAlign='left';
   for(i=0;i<B.p.length;i++){var q=B.p[i],sc=s.sec[q.i];
-    var cx=q.x+q.w/2,cy=q.y+7;
-    disque(cx,cy,6,sc.mort?'#2a2a24':sc.c);disque(cx,cy,4,sc.mort?'#1a1812':sc.c2);
-    if(i===s.sel&&!sc.mort){G.strokeStyle='#fff';G.lineWidth=1;
-      G.beginPath();G.arc(cx,cy,8,0,7);G.stroke();}
-    G.font='bold 5px Trebuchet MS';G.textAlign='center';
-    G.fillStyle=sc.mort?'#8a3a2a':(dbVivants(sc)<=2?'#e8704a':'#9aa0a6');
-    G.fillText(sc.mort?'✝':(sc.n.slice(0,3)+' '+dbVivants(sc)),cx,q.y+18);}
+    var cx=q.x+11,cy=q.y+11;
+    if(i===s.sel&&!sc.mort){R(q.x,q.y,q.w-2,21,'rgba(255,255,255,.1)');
+      R(q.x,q.y,q.w-2,1,'#fff');}
+    disque(cx,cy,7,sc.mort?'#2a2a24':sc.c);disque(cx,cy,5,sc.mort?'#1a1812':sc.c2);
+    G.font='bold 8px Trebuchet MS';G.textAlign='left';
+    G.fillStyle=sc.mort?'#8a3a2a':(dbVivants(sc)<=2?'#e8704a':'#c0c6cc');
+    G.fillText(sc.mort?'✝':String(dbVivants(sc)),q.x+21,cy+3);}
   G.textAlign='left';
 }
 /* l'écran entre deux secteurs : c'est lui qui porte l'attachement */
 function dbEntreDeux(s,L,H){
-  R(0,0,L,H,'rgba(10,10,8,.9)');
+  R(0,0,L,H,'rgba(10,10,8,.985)');
   G.textAlign='center';
   G.font='bold 6px Trebuchet MS';G.fillStyle='#9aa0a6';
   G.fillText('SECTEUR PRIS',L/2,34);
@@ -5383,15 +5455,16 @@ function dbEntreDeux(s,L,H){
 /* ---------- LA BORNE ---------- */
 MOTEUR.debarquement={
   nom:'Le Débarquement', sous:'QUATRE SECTIONS · TROIS SECTEURS · ILS NE REVIENNENT PAS',
-  manches:null, vise:128,
+  manches:null, vise:200,
   init:function(){
     return {phase:'pret',t:0,score:0,secteur:0,L:195,H:390,gr:1,
       sec:[],enn:[],ab:[],obj:null,fum:[],tr:[],part:[],morts:[],obus:[],tombes:[],secousse:0,
       sel:-1,mode:null,fumN:3,mortN:3,reste:0,pris:false,inter:0,bilan:null,
-      tues:0,mot:'',motT:0,motGros:false,cfg:null,haut:46,bas:310,finMot:'',finReste:0,sol:null};
+      tues:0,mot:'',motT:0,motGros:false,cfg:null,haut:46,bas:310,finMot:'',finReste:0,sol:null,
+      nids:0,nidsAv:0,objRay:22};
   },
   cadre:function(s,L,H){
-    s.L=L;s.H=H;s.haut=40;s.bas=H-84;
+    s.L=L;s.H=H;s.haut=34;s.bas=H-92;
     /* la carte se replie sur le nouvel écran sans rien perdre */
     for(var i=0;i<s.ab.length;i++){s.ab[i].x=Math.max(12,Math.min(L-12,s.ab[i].x));
       s.ab[i].y=Math.max(s.haut+20,Math.min(s.bas,s.ab[i].y));}
@@ -5414,13 +5487,17 @@ MOTEUR.debarquement={
     if(s.phase==='pret'){
       R(0,0,L,H,'#15181c');
       G.textAlign='center';
-      G.fillStyle='#c0aa80';G.font='bold 9px Trebuchet MS';
-      G.fillText('TAPE UNE SECTION, PUIS UN ABRI',L/2,H/2-16);
-      G.fillStyle='#8fa8b4';G.font='7px Trebuchet MS';
-      G.fillText('elle y va et se met à couvert toute seule',L/2,H/2-2);
-      G.fillText('le tir est automatique',L/2,H/2+10);
-      G.fillStyle='#8a6a52';G.font='bold 7px Trebuchet MS';
-      G.fillText('tes hommes ne reviennent pas',L/2,H/2+28);
+      G.fillStyle='#c0aa80';G.font='bold 11px Trebuchet MS';
+      G.fillText('TAPE UNE SECTION,',L/2,H/2-34);
+      G.fillText('PUIS UN ABRI',L/2,H/2-20);
+      G.fillStyle='#8fa8b4';G.font='9px Trebuchet MS';
+      G.fillText('elle y va et se met à couvert',L/2,H/2-2);
+      G.fillText('le tir est automatique',L/2,H/2+12);
+      G.fillStyle='#8fd89a';G.font='bold 9px Trebuchet MS';
+      G.fillText('une section qui TIENT cloue l’ennemi :',L/2,H/2+34);
+      G.fillText('pendant ce temps, fais bondir une autre',L/2,H/2+46);
+      G.fillStyle='#8a6a52';G.font='bold 9px Trebuchet MS';
+      G.fillText('tes hommes ne reviennent pas',L/2,H/2+68);
       G.textAlign='left';return;
     }
     if(s.bas!==H-80)this.cadre(s,L,H);

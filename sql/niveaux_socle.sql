@@ -809,3 +809,63 @@ where niveau = 29;
    la meilleure manche depuis le début — à 60 images par
    seconde. Ronde verte sur les trois cartes.
 */
+
+/* ============================================================
+   LE DÉBARQUEMENT — LE FEU ET LE MOUVEMENT    25/10/2026
+   ============================================================
+   DEUX PROBLÈMES VUS SUR LE VRAI TÉLÉPHONE, pas sur l'écran
+   simulé : c'était trop gros, et ce n'était pas clair.
+
+   TROP GROS. La carte ne comptait que 130 unités de large : un
+   soldat de 13 unités en faisait un dixième, quatre sections la
+   remplissaient d'un bord à l'autre, et la barre du bas (84
+   unités à l'échelle 3) mangeait un tiers de la hauteur. Il ne
+   restait plus de terrain, donc plus de manoeuvre. vise passe
+   de 128 à 200 : l'échelle tombe à 2, la carte compte 195
+   unités, et toutes les distances de jeu ont suivi (portée
+   58→90, vitesse, mortier, fumée, rayon de garde). Cinq rangs
+   d'abris au lieu de quatre, trois ou quatre par rang.
+
+   PAS CLAIR. Le « 1/3 » passait sous la flèche de retour du
+   navigateur : le bandeau commence maintenant à 30 unités. Le
+   compteur de nids doublait l'étiquette de l'objectif :
+   supprimé. L'écran d'attente débordait des deux côtés : il
+   tient sur deux lignes. L'écran entre deux secteurs laissait
+   voir la barre du dessous : il est passé opaque. Les
+   pastilles du bas étaient coupées : le rond et l'effectif sont
+   maintenant sur une ligne, loin du bord.
+
+   LE GAMEPLAY, LUI, A CHANGÉ DE NATURE.
+
+   1. LE TIR AMI CLOUE. Chaque coup, touché ou non, monte la
+      suppression de l'ennemi. Au-delà de 0,75 il se couche et
+      ne tire plus DU TOUT, et on le voit (sprite tassé, jauge
+      rouge). TENIR devient une vraie base de feu : +30 % de
+      suppression, et un bandeau « BASE DE FEU » au-dessus de la
+      section. C'est la fenêtre qui permet de faire bondir une
+      autre section. Le jeu n'est plus « avance et encaisse »,
+      c'est « cloue, puis contourne ».
+
+   2. LES ABRIS NE PROTÈGENT QUE D'UN CÔTÉ. Chaque abri et
+      chaque ennemi porte une orientation. De face l'abri joue à
+      plein, de biais à moitié (au-delà de 1,15 radian), de
+      flanc plus du tout (au-delà de 1,95). Des deux côtés : tes
+      sacs de sable ne te couvrent pas si on te prend de côté.
+      Un arc vert montre d'où la section choisie est couverte,
+      et la traçante devient dorée et épaisse quand le coup part
+      d'un angle où l'ennemi n'a rien pour lui.
+
+   3. L'OBJECTIF SE PREND EN DEUX TEMPS. Tant qu'un nid de
+      mitrailleuse tient, l'objectif est VERROUILLÉ. Ça oblige à
+      apprendre le vrai geste au lieu de foncer, et le jeu
+      annonce « PLUS UN NID · L'OBJECTIF EST OUVERT ».
+
+   MESURÉ. Une partie pilotée qui joue la manoeuvre — deux
+   sections en base de feu, deux qui bondissent — prend le
+   premier secteur en perdant UN SEUL HOMME pour huit ennemis,
+   puis le deuxième, et atteint le troisième avec douze hommes
+   debout et 25 ennemis abattus, 16 680 points. La même IA, en
+   fonçant, en perdait vingt-quatre. Jouer juste coûte deux fois
+   moins cher : c'est exactement ce qu'une couche de stratégie
+   doit produire. 60 images par seconde, ronde verte.
+*/
