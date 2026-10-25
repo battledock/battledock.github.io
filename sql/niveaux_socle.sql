@@ -1022,3 +1022,59 @@ where niveau = 29;
    De 51 fps (p95 29 ms) à 60 fps (p95 19,5 ms) avec 274 manifestants,
    cinq cordons en ligne, trois camions et trois nuages de gaz.
    ===================================================================== */
+
+/* =====================================================================
+   LE CORDON — passage en VUE DE PROFIL, façon RIOT (2026-10-26)
+
+   Changement de perspective complet. La vue de dessus ne montrait que
+   des points de couleur ; de profil, on voit deux masses se faire face,
+   et c'est ça le sujet.
+
+   LE DÉCOR. Une rue de nuit de 1 150 pixels, peinte une fois : façades
+   à fenêtres allumées, rideaux de fer, graffitis, lampadaires dont les
+   cônes repassent PAR-DESSUS la foule (c'est eux qui lui donnent du
+   relief), barrières, débris, et la préfecture au bout — ce qu'on
+   défend.
+
+   LES SILHOUETTES font 12×18, de profil, avec deux poses de marche,
+   douze tenues et dix couvre-chefs. Les casseurs ont la cagoule et une
+   pierre à la main ; les CRS, un bouclier de trois colonnes (bord
+   clair, plexi, cadre) qui fait lire un rang comme un mur.
+
+   LA PHYSIQUE DE FOULE. C'est le cœur :
+   - une DENSITÉ MAXIMALE par tranche de 4 pixels. On n'avance pas dans
+     quelqu'un : quand c'est plein devant, on s'arrête, et la masse
+     s'étire vers l'arrière. Sans cette règle, deux cent cinquante
+     personnes tenaient sur huit pixels — une file indienne écrasée.
+   - une BOUSCULADE latérale et en profondeur entre voisins.
+   - des POUSSÉES toutes les ~25 s : le cortège s'ébranle d'un coup,
+     la pression double, et c'est là qu'il faut décider.
+
+   TROIS JAUGES. LA PRESSION (ce qui pousse contre les boucliers, au
+   contact plus le cortège derrière, amplifié par la colère et par la
+   poussée en cours), LA TENSION (qui fabrique casseurs et projectiles),
+   LE RAPPORT (qui juge sur QUI, pas sur combien).
+
+   CE QUI A ÉTÉ CORRIGÉ EN CHEMIN
+   - Les boucliers étaient retournés : le mur faisait face à la
+     préfecture au lieu de la foule.
+   - Le recul de ligne se décidait sur le nombre de gens au contact et
+     non sur la pression calculée : on pouvait lire « 294 % » sur la
+     jauge sans perdre un pixel de terrain.
+   - La charge et la lance à eau étaient jugées comme le gaz. Repousser
+     une foule avec des boucliers, c'est le métier ; ce sont les armes
+     qui frappent sans choisir qu'on juge sur la proportion. Elles se
+     paient maintenant en TENSION, pas au rapport.
+   - Chaque coup de barre sur une vitrine ajoutait deux millièmes de
+     tension : avec dix casseurs, plus que tout le reste réuni, et la
+     rue basculait sans qu'on sache pourquoi.
+   - Il manquait la boucle centrale : UNE FOULE QU'ON BLOQUE S'ÉNERVE.
+     Sans elle, ne rien faire gardait la rue calme toute la soirée.
+   - Et une rue ne bascule pas en sept secondes : la montée de tension
+     est plafonnée, et à 100 % on a six secondes pour reculer ou faire
+     parler avant que ce soit perdu.
+
+   RESTE À FAIRE : l'équilibrage. Jouer brutalement perd à coup sûr
+   (relevé de ses fonctions), mais ne rien faire gagne encore trop
+   souvent — il faut que la pression de fond morde davantage.
+   ===================================================================== */
