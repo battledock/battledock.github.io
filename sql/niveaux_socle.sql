@@ -1406,3 +1406,79 @@ where niveau = 29;
 -- PAS ENCORE LA : les ordres de maintien (gaz, eau, charge), les jauges,
 -- le rapport de fin, le score. Les deux boutons UNITE et FORMATION ne
 -- servent qu'a regarder les groupes manoeuvrer.
+
+-- ============================================================
+-- LE CORDON — L'IA ET LES ETATS (2026-10-27-0520)
+-- ============================================================
+-- TREIZE ETATS NOMMES, et aucun changement qui ne vienne d'une regle.
+--   cortege : MARCHE ATTEND HESITE POUSSE RECULE PANIQUE FUIT CALME
+--   cordon  : TIENT VERS FORME AVANCE CEDE
+-- Un etat ne dit que deux choses — ou aller, et a quelle fraction de sa
+-- vitesse — et les transitions sont groupees dans UNE fonction par camp,
+-- pour qu'on les lise a la suite comme un reglement. On peut donc
+-- toujours repondre a « pourquoi celui-la recule ? » par une phrase :
+-- parce que son stress a passe 0,56 alors qu'il hesitait. Chaque agent
+-- garde d'ailleurs la cause de son dernier changement.
+--
+-- LA REGLE DE CONCEPTION DU STRESS : SANS EVENEMENT, PERSONNE NE PANIQUE.
+-- Quatre causes, toutes visibles a l'ecran — on est serre, on est au
+-- contact, un voisin craque, quelque chose explose a cote. Et deux
+-- PLAFONDS : la densite ne tend que jusqu'a 0,45, le face-a-face
+-- jusqu'a 0,62. De quoi pousser, hesiter, reculer, rien de plus.
+-- Au-dela il faut qu'il se soit passe quelque chose. Une foule qui
+-- craque toute seule parce qu'elle attend est un bogue.
+--
+-- QUATRE CALIBRAGES RATES, ET CE QU'ILS ONT APPRIS
+--  1. La densite comptait des quatre voisins, a 0,055 par voisin et par
+--     seconde. Un cortege serre en a douze — c'est ce qu'est un cortege.
+--     Toute la rue fuyait avant d'avoir vu un policier.
+--  2. La contagion a 0,30 par seconde : UN voisin paniqué suffisait a
+--     faire craquer le suivant. La panique prenait la rue entiere en
+--     vingt secondes et ne retombait jamais. A 0,12, il en faut TROIS au
+--     contact pour depasser la detente : ca se propage dans le coeur
+--     dense et ca s'arrete au bord.
+--  3. Pas de decharge apres la panique : on en sortait au meme stress
+--     qu'on y etait entre, on repassait le seuil a l'image suivante, on
+--     y retournait. Deux cent cinquante paniqués perpetuels. Courir
+--     evacue : le stress tombe de moitie en sortant de PANIQUE.
+--  4. On sortait d'une fuite quand le stress retombait sous 0,34. Les
+--     fuyards se massaient a la bouche de rue, la densite les maintenait
+--     tendus, et trois cents corps restaient en fuite pour toujours.
+--     ATTEINDRE la sortie est l'evenement qui termine la fuite.
+--
+-- DEUX BOGUES DE SIGNE. Une place (u,v) se pose en (ax+u·cos−v·sin,
+-- ay+u·sin+v·cos) : u court le long de la figure, v vers l'ARRIERE, et
+-- le vecteur « devant » vaut (−sin,+cos). Le decalage etant SOUSTRAIT a
+-- v, avancer demande un decalage NEGATIF. Les deux signes etaient
+-- inverses : les lignes etaient retournees et la grenade tombait
+-- derriere le cordon, si bien que le bouton ne faisait rien.
+--
+-- LA NAVIGATION : UN CHAMP, PAS DES CHEMINS. Un A* par individu, c'est
+-- trois cents chemins a entretenir, et le premier bouscule n'y revient
+-- jamais. On calcule UN champ par destination — une vague partie de
+-- l'arrivee qui remplit la carte en comptant les pas — et chaque corps
+-- descend vers sa plus petite voisine. Il ne peut pas perdre son chemin
+-- puisqu'il n'en a pas. Trois champs : la police (qui donne distMenace a
+-- tout le monde sans que personne ne cherche un policier), les sorties,
+-- et un par unite en deplacement. Recalcul quatre fois par seconde.
+--
+-- NE PAS RESTER BLOQUE, en trois temps : une seconde et demie
+-- d'insistance, puis une poussee laterale toujours du meme cote pour le
+-- meme corps (sinon deux corps face a face se decalent ensemble a
+-- l'infini), puis a quatre secondes on le pose sur la case libre la plus
+-- proche. Et une regle d'etat : MARCHE qui n'avance plus depuis une
+-- seconde et demie passe en ATTEND — ce que fait quelqu'un dans une
+-- foule quand il ne peut plus avancer. Mesure de l'intention, pas de la
+-- distance : un fuyard, dont la cible est restee au cortege, etait
+-- compte bloque en permanence — mille deux cents deblocages pour rien.
+--
+-- LE DIAGNOSTIC (bouton DIAG) : etat en trois lettres au-dessus de
+-- chaque corps, barre de stress, trait vers la destination, couleur par
+-- groupe, marque au sol pour chaque groupe. Temporaire et assume : il
+-- sert a repondre a « pourquoi celui-la fait ca ».
+--
+-- MESURE (1200 pas sans rendu, deux grenades) : 11 etats atteints, 23
+-- transitions distinctes observees, zero corps dans un mur. Vingt corps
+-- enfermes dans une impasse a une seule issue : vingt sortis en onze
+-- secondes. Et la chaine complete se lit dans les transitions :
+-- RECULE→PANIQUE→FUIT→CALME→MARCHE.

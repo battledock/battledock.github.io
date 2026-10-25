@@ -918,7 +918,14 @@ function peupler(s){
   if(!FOULE||!ACTEURS){s.sim=null;return;}
   ACTEURS.preparer();
   var d=new Dé((s.graine||7)+99);
-  var sim=FOULE.creer({GW:GW,GH:GH,bloc:s.C.bloc,AV:AV,RU:RU,graine:s.graine||7});
+  /* LES SORTIES. Une foule qui fuit va quelque part : les trois
+     bouches de rue, a l'ouest et aux deux bras de la transversale.
+     C'est d'elles que part le champ de fuite. */
+  var sorties=[];
+  for(var sy=AV.y0;sy<=AV.y1;sy++)sorties.push([1,sy]);
+  for(var sx=RU.x0;sx<=RU.x1;sx++){sorties.push([sx,1]);sorties.push([sx,GH-2]);}
+  var sim=FOULE.creer({GW:GW,GH:GH,bloc:s.C.bloc,AV:AV,RU:RU,
+                       graine:s.graine||7, sorties:sorties});
   var midY=(AV.y0+AV.y1)/2+0.5;
   var R=FOULE.R;
 
@@ -948,7 +955,12 @@ function peupler(s){
       else if(d.f()<0.03){t='presse';va=d.e(0,1);}
       FOULE.poser(sim,G,tete-B.dec+ex,midY+ey,{
         ex:ex, ey:ey, varia:va,
-        vmax:R.vMarche*(0.86+d.f()*0.3)
+        vmax:R.vMarche*(0.86+d.f()*0.3),
+        /* LE TEMPERAMENT, tire une fois. Les plus nerveux sont devant :
+           c'est de la tete du cortege que part la panique, comme dans
+           la rue. */
+        nerf:(0.55+d.f()*1.1)*(bi===0?1.25:1),
+        stress:d.f()*0.10
       });
       sim.agents[sim.agents.length-1].type=t;
     }
@@ -981,22 +993,26 @@ function peupler(s){
   s.unites=[];
   var bar=GW-16;
   [[bar,midY-2.4,10],[bar,midY+0.4,10],[bar,midY+3.2,8]].forEach(function(u,ui){
+    /* cap +π/2 : le « devant » de la figure, (−sin, +cos), pointe vers
+       −x, c'est-a-dire vers le cortege qui remonte l'avenue */
     var G=FOULE.groupe(sim,{type:'crs',form:'ligne',ax:u[0],ay:u[1],
-                            cap:-Math.PI/2,cohesion:0});
+                            cap:Math.PI/2,cohesion:0,seuil:2.6});
     G.nom='LIGNE '+(ui+1); G.route=null; G.ri=0;
+    G.champ=new FOULE.Champ(sim);
     for(var i=0;i<u[2];i++)
       FOULE.poser(sim,G,u[0]+1.2+(i%3)*0.5,u[1]+((i/3)|0)*0.6,
-        {varia:i%3, vmax:R.vMarche*1.0, r:0.33, masse:1.8});
+        {varia:i%3, vmax:R.vMarche*1.0, r:0.33, masse:1.8, nerf:0.4});
     sim.agents[G.membres[0]].type='officier';
     sim.agents[G.membres[0]].varia=0;
     s.unites.push(G);
   });
   var GR=FOULE.groupe(sim,{type:'crs',form:'colonne',ax:bar+5,ay:midY+0.5,
-                           cap:-Math.PI/2,cohesion:0});
+                           cap:Math.PI/2,cohesion:0});
   GR.nom='RÉSERVE'; GR.route=null; GR.ri=0;
+  GR.champ=new FOULE.Champ(sim);
   for(var i2=0;i2<8;i2++)
     FOULE.poser(sim,GR,bar+5+(i2%2)*0.6,midY+0.5+((i2/2)|0)*0.7,
-      {varia:i2%3, vmax:R.vMarche*1.05, r:0.33, masse:1.8});
+      {varia:i2%3, vmax:R.vMarche*1.05, r:0.33, masse:1.8, nerf:0.4});
   sim.agents[GR.membres[0]].type='officier';
   s.unites.push(GR);
   s.sel=0;
@@ -1041,23 +1057,13 @@ function majCortege(s,dt){
     GM.ax+=Math.sign(but-GM.ax)*0.00085*dt;
     GM.ay=((AV.y0+AV.y1)/2+0.5)+resp*1.1;
   }
-  /* LA PRESSION : combien de corps sont au contact de la premiere ligne.
-     Lue sur la simulation, pas comptee a part : une valeur calculee
-     deux fois finit toujours par differer d'elle-meme. */
-  var n=0, A=s.sim.agents;
-  for(var i=0;i<A.length;i++){
-    var a=A[i];
-    if(a.type==='crs'||a.type==='officier')continue;
-    if(a.x>mur-2.0&&a.y>AV.y0-1&&a.y<AV.y1+2)n++;
-  }
-  s.pression=n;
-  var trop=(n>24);
-  s.unites.forEach(function(U,ui){
-    if(U.route||ui===3)return;           /* la reserve ne bouge pas */
-    if(!U.tenu)U.tenu=U.ax;
-    var but=U.tenu+(trop?0.9:0);
-    U.ax+=(but-U.ax)*Math.min(1,dt*0.0012);
-  });
+  /* LA PRESSION ET LA TENSION sont lues sur la simulation : c'est elle
+     qui les produit, a partir de ce que vivent les corps. Les compter
+     une seconde fois ici donnerait deux chiffres qui finiraient par ne
+     plus dire la meme chose. Le recul des lignes, lui aussi, vient des
+     etats : une unite dont les hommes passent en CEDE recule d'elle-meme. */
+  s.pression=s.sim.pression;
+  s.tension=s.sim.tension;
 }
 
 /* UN ORDRE DE DEPLACEMENT. L'unite ne telepporte pas son point de
@@ -1066,7 +1072,10 @@ function majCortege(s,dt){
 function majUnites(s,dt){
   if(!s.sim)return;
   s.unites.forEach(function(U){
-    if(!U.route||U.ri>=U.route.length)return;
+    if(!U.route||U.ri>=U.route.length){
+      if(U.ordre==='vers'){U.ordre=null;U.ordrePrio=0;}
+      return;
+    }
     var c=U.route[U.ri], dx=c[0]-U.ax, dy=c[1]-U.ay;
     var di=Math.sqrt(dx*dx+dy*dy);
     var pasm=0.0013*dt;
@@ -1074,7 +1083,8 @@ function majUnites(s,dt){
     else{U.ax+=dx/di*pasm;U.ay+=dy/di*pasm;
       /* le cap de la figure suit la marche : une ligne qui se deplace de
          profil n'est plus une ligne */
-      var but=Math.atan2(dy,dx)-Math.PI/2;
+      /* le devant de la figure doit regarder la marche : (−sin,cos)=(dx,dy) */
+      var but=Math.atan2(-dx,dy);
       var ec=((but-U.cap+Math.PI*3)%(Math.PI*2))-Math.PI;
       U.cap+=ec*Math.min(1,dt*0.004);}
   });
@@ -1096,7 +1106,8 @@ var M={
             heure:'jour', graine:0, pret:false,
             C:null, bats:[], objs:[], statiques:[], sol:null, j:null,
             mot:'', motT:0, sim:null, unites:null, corteges:null,
-            sel:0, front:0, pression:0, vus:[],
+            sel:0, front:0, pression:0, tension:0, vus:[],
+            diag:false, flash:null,
             /* LA DENSITE, mesuree : 190 corps a 58 images, 354 a 56,
                504 a 55, 654 a 54. Le cout est lineaire — la grille de
                voisinage tient ses promesses — et c'est le dessin, pas
@@ -1201,6 +1212,18 @@ var M={
       }
     }
     while(vi<nv){ACTEURS.dessine(g,vus[vi],vus[vi]._px,vus[vi]._py);vi++;}
+    if(s.diag)diagnostic(g,s,vus);
+    /* le point de chute de la derniere grenade, deux secondes */
+    if(s.flash){
+      s.flash[2]+=16;
+      if(s.flash[2]>2000)s.flash=null;
+      else{
+        var pf=m2e(s.flash[0],s.flash[1]), al=1-s.flash[2]/2000;
+        g.strokeStyle='rgba(255,230,150,'+al.toFixed(2)+')';g.lineWidth=1;
+        g.beginPath();g.ellipse(pf.x,pf.y+TH/2,8+s.flash[2]*0.03,
+          (8+s.flash[2]*0.03)*0.5,0,0,7);g.stroke();
+      }
+    }
     g.restore();
     /* LE VOILE DE L'HEURE : pose apres la scene et avant le bandeau,
        pour que le texte reste lisible la nuit */
@@ -1219,6 +1242,9 @@ var M={
     var r=chemin(s.C,Math.floor(U.ax),Math.floor(U.ay),gx,gy);
     if(!r){s.mot='PAS DE PASSAGE PAR LA';s.motT=1300;return;}
     U.route=r;U.ri=0;
+    U.champ.calculer(s.sim,[[gx,gy]]);
+    /* priorite 3 : un deplacement chasse une reaction a la densite */
+    FOULE.ordre(s.sim,U,'vers',0,3);
     s.mot=U.nom+' · EN MARCHE';s.motT=1400;
   },
   glisse:function(s,x,y,dx,dy){
@@ -1243,18 +1269,43 @@ var M={
   },
   actions:function(s){
     if(s.phase!=='jeu')return '<button data-a="commencer">DESCENDRE DANS LA RUE · 1 €</button>';
-    return '<button data-a="unite">UNITÉ</button><button data-a="form">FORMATION</button>';
+    return '<button data-a="unite">UNITÉ</button><button data-a="form">FORME</button>'+
+           '<button data-a="avance">AVANCE</button><button data-a="choc">GAZ</button>'+
+           '<button data-a="diag" class="'+(s.diag?'pr':'')+'">DIAG</button>';
   },
   action:function(s,a){
     if(!s.pret||!s.unites)return;
+    var U=s.unites[s.sel];
     if(a==='unite'){
       s.sel=(s.sel+1)%s.unites.length;
       s.mot=s.unites[s.sel].nom+' · SÉLECTIONNÉE';s.motT=1400;
     }
-    if(a==='form'){
-      var U=s.unites[s.sel], L=['ligne','coin','colonne','nasse'];
+    else if(a==='form'){
+      var L=['ligne','coin','colonne','nasse'];
       U.form=L[(L.indexOf(U.form)+1)%L.length];
       s.mot=U.nom+' · '+U.form.toUpperCase();s.motT=1400;
+    }
+    else if(a==='avance'){
+      /* priorite 2 : l'ordre d'avancer passe devant la reaction a la
+         densite, mais un deplacement en cours le refuse */
+      if(FOULE.ordre(s.sim,U,'avance',3600,2)){s.mot=U.nom+' · EN AVANT';s.motT=1500;}
+      else{s.mot=U.nom+' · DÉJÀ EN MARCHE';s.motT=1300;}
+    }
+    else if(a==='choc'){
+      /* UN EVENEMENT, pas un reglage de jauge : une grenade tombe a six
+         tuiles devant la ligne, les corps a portee prennent un choc, et
+         tout ce qui suit — stress, panique, propagation, fuite — sort
+         des regles d'etat. Rien n'est ajoute a la tension a la main. */
+      var dv=FOULE.devant(U);
+      var ex=U.ax + dv[0]*3.4, ey=U.ay + dv[1]*3.4;
+      FOULE.evenement(s.sim,ex,ey,4.6,1.0);
+      s.flash=[ex,ey,0];
+      s.mot='GRENADE · '+U.nom;s.motT=1500;
+    }
+    else if(a==='diag'){
+      s.diag=!s.diag;
+      s.mot=s.diag?'DIAGNOSTIC ALLUMÉ':'DIAGNOSTIC ÉTEINT';s.motT=1300;
+      try{monterActions();}catch(e){}
     }
   },
   banniere:function(g,w,h,grand){vignette(g,w,h,grand);}
@@ -1306,6 +1357,51 @@ function fondLointain(s,L,H){
 }
 
 /* =====================================================================
+   LE DIAGNOSTIC
+   Temporaire, et c'est voulu : il sert a repondre a « pourquoi celui-la
+   fait ca ». Chaque corps porte son etat, un trait vers sa destination,
+   et une couleur par groupe. Au-dessus, le stress en barre. Un bouton
+   l'allume et l'eteint — il ne coute rien quand il est eteint.
+   ===================================================================== */
+var DIAG_C=['#6ad8ff','#ffd24a','#7dff9a','#ff8ac8','#c8a0ff','#ff9a6a','#9affe0','#ffffff'];
+var DIAG_AB={MARCHE:'MAR',ATTEND:'ATT',HESITE:'HES',POUSSE:'POU',RECULE:'REC',
+             PANIQUE:'PAN',FUIT:'FUI',CALME:'CAL',TIENT:'TIE',VERS:'VER',
+             FORME:'FOR',AVANCE:'AVA',CEDE:'CED'};
+function diagnostic(g,s,vus){
+  var i,a;
+  g.lineWidth=1;
+  for(i=0;i<vus.length;i++){
+    a=vus[i];
+    var c=DIAG_C[a.g%DIAG_C.length];
+    /* le trait vers la destination : on voit d'un coup d'oeil si un
+       groupe vise encore ce qu'on croit */
+    var pc=m2e(a.cx,a.cy);
+    g.strokeStyle=c;g.globalAlpha=0.35;
+    g.beginPath();g.moveTo(a._px,a._py);g.lineTo(pc.x,pc.y+TH/2);g.stroke();
+    g.globalAlpha=1;
+    /* la barre de stress, juste au-dessus de la tete */
+    if(a.camp==='manif'){
+      var w=10, h=2, bx=a._px-w/2, by=a._py-30;
+      g.fillStyle='rgba(0,0,0,.55)';g.fillRect(bx,by,w,h);
+      g.fillStyle=a.stress>0.8?'#ff4a4a':(a.stress>0.55?'#ffa83a':'#6ad8ff');
+      g.fillRect(bx,by,w*a.stress,h);
+    }
+    /* l'etat, en trois lettres */
+    g.fillStyle=(a.etat==='PANIQUE')?'#ff6a6a':c;
+    g.font='5px ui-monospace,monospace';g.textAlign='center';
+    g.fillText(DIAG_AB[a.etat]||a.etat,a._px,a._py-32);
+  }
+  /* la destination de chaque groupe, marquee au sol */
+  for(i=0;i<s.sim.groupes.length;i++){
+    var G=s.sim.groupes[i], pg=m2e(G.ax,G.ay);
+    g.strokeStyle=DIAG_C[i%DIAG_C.length];
+    g.beginPath();g.ellipse(pg.x,pg.y+TH/2,7,3.5,0,0,7);g.stroke();
+    g.beginPath();g.moveTo(pg.x-9,pg.y+TH/2);g.lineTo(pg.x+9,pg.y+TH/2);g.stroke();
+  }
+  g.textAlign='left';
+}
+
+/* =====================================================================
    11. LE BANDEAU
    Trois lignes en haut, un mot en bas. Pas de panneau : la rue est le
    sujet, et un cartouche de cent points de haut en cache le tiers.
@@ -1323,10 +1419,14 @@ function hud(s,L,H){
     var U=s.unites[s.sel];
     g.fillStyle='rgba(8,12,20,.62)';g.fillRect(0,13,L,11);
     g.fillStyle='#7ae8ff';g.textAlign='left';
-    g.fillText(U.nom+' · '+U.form.toUpperCase()+' · '+U.membres.length+'H',22,19);
-    g.textAlign='right';g.fillStyle=s.pression>26?'#ff9a7a':'#9ae8ff';
-    g.fillText(L>250?('AU CONTACT '+s.pression+' · '+(s.sim?s.sim.agents.length:0)+' CORPS')
-                    :(s.pression+'/'+(s.sim?s.sim.agents.length:0)),L-4,19);
+    var et=s.sim?(s.sim.agents[U.membres[0]].etat):'';
+    g.fillText(U.nom+' · '+U.form.toUpperCase()+' · '+(DIAG_AB[et]||et),22,19);
+    g.textAlign='right';
+    var T=s.sim?s.sim.tension:0;
+    g.fillStyle=T>0.55?'#ff9a7a':'#9ae8ff';
+    g.fillText(L>250?('TENSION '+(T*100|0)+'%  ·  AU CONTACT '+s.pression+
+                      '  ·  PANIQUE '+(s.sim?s.sim.paniques:0))
+                    :((T*100|0)+'% · '+s.pression+' · '+(s.sim?s.sim.paniques:0)),L-4,19);
   }
   if(s.motT>0){
     g.textAlign='center';
