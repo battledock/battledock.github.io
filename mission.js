@@ -148,14 +148,14 @@ MIS.creer=function(o){
        attaquent quatre bandes differentes : il filtre du monde en
        permanence au lieu de ne rien laisser passer pendant deux
        minutes. Mesure sur trois graines, personne aux commandes :
-       entre 35 et 57 passages. La police en tolere 45 — moins que le
+       entre 35 et 57 passages. La police en tolere 58 — moins que le
        flux passif, donc ne rien faire est perdant. Le cortege doit en
-       faire passer 24 — plus que ce que l'IA policiere laisse filtrer, donc le laisser
+       faire passer 22 — plus que ce que l'IA policiere laisse filtrer, donc le laisser
        couler tout seul ne suffit pas non plus.
        DEUX SEUILS, PAS UN : le meme chiffre des deux cotes rendait un
        des camps ingagnable, puisqu'il devait faire mieux que ce que
        l'autre avait le droit de laisser. */
-    tolere:45, objectif:24, toleBris:0,
+    tolere:58, objectif:22, toleBris:0,
     passes:0, brisees:0, tensionMax:0,
     gaz:0, charges:0, fauteCam:0,
     camp:(o.camp||'crs'),
@@ -246,6 +246,20 @@ MIS.pas=function(M,s,dt,api){
 
 /* UNE CHARGE DEVANT LES CAMERAS SE PAIE. C'est la conséquence : pas un
    message, une ligne de moins au rapport et des points en moins. */
+/* LES SECONDES DE ZONE TENUE. La rue les compte, la mission les
+   additionne : elle ne sait pas ou sont les zones, et c'est tres bien. */
+function zoneSec(M){
+  if(!M.zones)return 0;
+  return (M.zones.passage||0)+(M.zones.percee||0)+(M.zones.fontaine||0);
+}
+/* DEUX POINTS LA SECONDE DE TERRAIN TENU. Sur deux minutes trente, une
+   zone gardee du debut a la fin vaut 300 points : assez pour qu'on la
+   defende, pas assez pour gagner en l'ignorant le reste. */
+function zonePoints(M){return zoneSec(M)*2;}
+MIS.noterZone=function(M,k,mien){
+  if(!M.zones)M.zones={passage:0,percee:0,fontaine:0};
+  if(mien)M.zones[k]=(M.zones[k]||0)+1;
+};
 MIS.noter=function(M,k){
   if(k==='gaz')M.gaz++;
   if(k==='charge')M.charges++;
@@ -267,6 +281,7 @@ MIS.terminer=function(M,s,gagne){
        de douze a quarante-deux, et trente-quatre points l'un donnait
        quatorze cents points pour une partie quelconque. */
     sc+=M.passes*8;
+    sc+=zonePoints(M);
     sc+=(M.barricades||0)*150;
     sc+=M.brisees*90;
     if(gagne)sc+=400+Math.max(0,Math.round((M.duree-M.t)/1000))*4;
@@ -283,6 +298,7 @@ MIS.terminer=function(M,s,gagne){
     ];
     return;
   }
+  sc+=zonePoints(M);
   sc+=Math.round(Math.min(M.t,M.duree)/1000)*6;          /* le temps tenu */
   if(gagne)sc+=400;
   /* HUIT POINTS PAR PASSAGE, pas douze. Le seuil tolere est passe de
@@ -298,6 +314,7 @@ MIS.terminer=function(M,s,gagne){
   sc-=Math.round(M.tensionMax*320);
   M.score=Math.max(0,sc);
   M.detail=[
+    ['Terrain tenu ('+zoneSec(M)+' s)', '+'+zonePoints(M)],
     ['Temps tenu', '+'+Math.round(Math.min(M.t,M.duree)/1000)*6],
     ['Mission tenue', gagne?'+400':'0'],
     ['Manifestants passés ('+M.passes+')', '-'+M.passes*8],

@@ -26,7 +26,7 @@ lui ; l'autre camp est tenu par l'IA.
 
 | | La police | Le cortège |
 |---|---|---|
-| But | tenir le passage 2 min 30, 45 passages tolérés | faire passer 24 des siens |
+| But | tenir le passage 2 min 30, 58 passages tolérés | faire passer 22 des siens |
 | Ordres | TENIR, AVANT, ARRIÈRE, FORME, GROUPE, GAZ, EAU | POUSSER, RECULER, CASSER, BARRICADE, MOLOTOV, GROUPE, DISPERSER |
 
 Les ordres tiennent sur **une seule rangée** de gros pictogrammes ; un
@@ -85,6 +85,34 @@ les deux camps. Deux foyers voisins fusionnent ; au-delà de huit, le plus
 vieux s'éteint. L'événement `ÇA BRÛLE AU MILIEU` allume une benne sur
 l'esplanade, à l'écart de l'axe du cortège pour qu'elle gêne sans barrer
 le passage.
+
+## L'élan, et les trois zones
+
+**Chaque ordre coûte.** Une jauge commune — **L'ÉLAN** côté cortège, **LES
+MOYENS** côté police — remonte de 2,6 points la seconde jusqu'à 80. Un
+coup fort (cocktails, grenade : 34) se paie treize secondes ; deux
+d'affilée vident la réserve. Le prix est écrit sur chaque bouton, et la
+jauge est le liseré qui sépare la rue des boutons — rien de plus à
+regarder. On paie au tir, pas à l'armement : viser puis changer d'avis
+ne coûte rien.
+
+**Trois zones à tenir**, et elles ne se valent pas :
+
+| Zone | Où | Ce qu'elle donne |
+|---|---|---|
+| **LE PASSAGE** | entre les barrières | +2 d'élan la seconde |
+| **LA PERCÉE** | la rue nord-sud | deux renforts toutes les six secondes |
+| **LA FONTAINE** | le centre de la place | la tension retombe |
+
+Une zone est tenue par le camp qui y a **quatre corps de plus** que
+l'autre ; à moins, elle n'est à personne. Chaque seconde tenue vaut 2
+points au score.
+
+**La tension coupe des deux côtés.** Au-delà de 0,55 elle assouplit les
+lignes — toutes les lignes, y compris les vôtres. Au-delà de 0,85
+pendant quatre secondes, une bousculade part toute seule à l'endroit le
+plus tendu : personne ne l'a commandée et on ne l'empêche qu'en faisant
+retomber la tension avant.
 
 **La place est tactique, pas un bras de fer.** Le passage des barrières
 fait **treize tuiles** pour un cordon qui en couvre huit : la police

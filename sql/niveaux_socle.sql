@@ -2042,3 +2042,63 @@ where niveau = 29;
 --
 -- Et le glissement de camera s'arrete a la barrette, pas a la barre :
 -- un doigt pose sur un jeton commande, il ne deplace pas la rue.
+
+-- =====================================================================
+-- ETAPE : L'ELAN, LES TROIS ZONES, LA TENSION PARTAGEE  2026-10-27-2110
+-- =====================================================================
+--
+-- LE REPROCHE : « il n'y a aucune strategie ». Exact, et la raison est
+-- simple : toutes les actions etaient du meme type — pousser plus fort
+-- a un endroit — et aucune ne demandait d'arbitrage. Chaque ordre fort
+-- avait sa propre recharge, ou rien du tout. La seule question etait
+-- « quand le minuteur se termine-t-il ».
+--
+-- ---- UNE JAUGE COMMUNE ----
+-- L'ELAN cote cortege, LES MOYENS cote police : le meme chiffre, deux
+-- mots. Elle remonte de 2,6 points la seconde jusqu'a 80 ; un coup fort
+-- en coute 34, soit treize secondes, et deux d'affilee vident la
+-- reserve. Depenser pour une chose, c'est ne pas l'avoir pour une
+-- autre : gazer maintenant, c'est ne pas pouvoir arroser dans cinq
+-- secondes. C'est la premiere vraie decision du jeu.
+--   MESURE qui a fixe les chiffres : a 4,2 points la seconde et un
+-- plafond de cent, on repassait de quinze a plein en vingt secondes —
+-- autant dire que la jauge ne limitait rien.
+--   La recharge fixe des cocktails a disparu : vingt-deux secondes
+-- imposees ne demandaient aucun choix, trente-quatre points si.
+--   DEUX DETAILS : on paie au TIR et pas a l'armement, parce que viser
+-- puis changer d'avis ne doit rien couter ; et le prix est ecrit sur
+-- chaque bouton, sinon on apprend le cout en appuyant, c'est-a-dire en
+-- le payant.
+--   La jauge EST le lisere de la barre. Pas un cadran de plus a
+-- regarder : la ligne qui separe la rue des boutons se remplit.
+--
+-- ---- TROIS ZONES QUI NE SE VALENT PAS ----
+-- Un seul compteur de passages, c'etait une seule chose a faire. Trois
+-- zones en font trois, et comme elles donnent des avantages differents,
+-- en choisir une c'est renoncer aux autres :
+--   LE PASSAGE, entre les barrieres, rend l'elan plus vite — la zone
+--     qu'on se dispute vraiment, puisqu'elle finance tout le reste.
+--   LA PERCEE, la rue nord-sud, donne deux renforts toutes les six
+--     secondes. Loin du contact : il faut detacher du monde.
+--   LA FONTAINE, au centre, fait retomber la tension. La zone de ceux
+--     qui veulent calmer le jeu plutot que l'ouvrir.
+-- Une zone appartient au camp qui a QUATRE corps de plus, pas un : a
+-- egalite elle reste a personne, sinon elle changerait de main a chaque
+-- pas de chaque passant. Elles sont peintes au SOL, sous les corps : ce
+-- sont des marques de terrain, pas des panneaux.
+--
+-- ---- LA TENSION, PARTAGEE ----
+-- Au-dela de 0,55 elle assouplit les lignes — TOUTES les lignes, y
+-- compris celles de celui qui l'a fait monter. Au-dela de 0,85 pendant
+-- quatre secondes, une bousculade part toute seule a l'endroit le plus
+-- tendu : personne ne l'a commandee, et on ne l'empeche qu'en faisant
+-- retomber la tension AVANT. C'est la seule ressource du jeu qu'on
+-- partage avec l'adversaire.
+--
+-- ---- RECALIBRAGE ----
+-- Les zones donnent des renforts, la tension ouvre les lignes : le flux
+-- a double. Mesure sur trois graines et quatre scenarios, les seuils
+-- sont passes a 58 toleres et 22 a faire passer. Resultat : trois
+-- victoires de chaque cote sur douze parties, et surtout le score du
+-- joueur actif depasse nettement celui du joueur passif — ce qui
+-- n'etait pas le cas avant.

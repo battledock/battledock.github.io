@@ -1542,7 +1542,14 @@ function majLignes(s,dt){
        2,6 — a ce compte la ligne n'aurait jamais plie d'un pouce. Elle
        commence a reculer bien avant de rompre, ce qui est d'ailleurs ce
        que fait une vraie ligne. */
-    var seuil=(U.seuil||3.0)*0.55, p=U.presse||0;
+    /* LA TENSION A DOUBLE TRANCHANT. Une rue tendue, c'est une rue ou
+       les lignes tiennent moins bien — des deux cotes. Monter la
+       tension ouvre donc le cordon, mais elle ouvre aussi la porte aux
+       bousculades que plus personne ne commande. C'est la seule
+       ressource du jeu qu'on partage avec l'adversaire. */
+    var tn=s.sim.tension||0;
+    var mou=1-0.38*Math.max(0,Math.min(1,(tn-0.55)/0.35));
+    var seuil=(U.seuil||3.0)*0.55*mou, p=U.presse||0;
     if(p>seuil){
       /* elle plie, d'autant plus vite qu'on pousse fort */
       U.plie=Math.min(RECUL_MAX, U.plie+(p-seuil)*0.00055*dt);
@@ -1551,6 +1558,128 @@ function majLignes(s,dt){
       U.plie=Math.max(0, U.plie-0.00030*dt);
     }
     U.ax=U.ancre+U.plie;
+  }
+}
+/* =====================================================================
+   LES TROIS POINTS DE LA PLACE
+
+   Un seul compteur de passages, c'etait une seule chose a faire :
+   pousser au meme endroit. Trois zones a tenir en font trois, et elles
+   ne se valent pas — chacune donne un avantage different, donc en
+   choisir une c'est renoncer aux autres.
+
+     LE PASSAGE, entre les barrieres : celui qui le tient recupere son
+       elan plus vite. C'est la zone qu'on se dispute vraiment.
+     LA PERCEE, la rue nord-sud : elle donne des renforts reguliers.
+       Loin du contact, donc il faut detacher du monde pour la prendre.
+     LA FONTAINE, au centre : elle fait retomber la tension. C'est la
+       zone des joueurs qui veulent calmer le jeu plutot que l'ouvrir.
+
+   Une zone est tenue par le camp qui a le plus de corps dedans, avec
+   une marge de quatre : a egalite elle reste a personne, sinon elle
+   changerait de main a chaque pas de chaque passant.
+   ===================================================================== */
+function faireZones(s){
+  var midY=(AV.y0+AV.y1)/2+0.5;
+  var cxp=Math.round((RU.x0+RU.x1)/2), cyp=Math.round((AV.y0+AV.y1)/2);
+  s.zones=[
+    {k:'passage', n:'LE PASSAGE', x:GW-14, y:midY, r:4.6, a:null, t:0,
+     d:'élan plus vite'},
+    {k:'percee',  n:'LA PERCÉE',  x:cxp+0.5, y:AV.y0-2.5, r:4.0, a:null, t:0,
+     d:'des renforts'},
+    {k:'fontaine',n:'LA FONTAINE',x:cxp+0.5, y:cyp+0.5, r:3.8, a:null, t:0,
+     d:'la tension retombe'}
+  ];
+  s.zoneT=0;
+}
+/* QUAND LA RUE ECHAPPE AUX DEUX CAMPS. Au-dela de 0,85 de tension
+   pendant quatre secondes, une bousculade part toute seule a l'endroit
+   le plus dense. Personne ne l'a commandee et personne ne peut
+   l'empecher autrement qu'en faisant retomber la tension AVANT. C'est
+   le prix d'une partie ou l'on a trop poussé — dans un camp comme dans
+   l'autre. */
+function majEmballe(s,dt){
+  if(!s.sim)return;
+  if(s.embRech>0){s.embRech-=dt;return;}
+  if((s.sim.tension||0)<0.85){s.embT=0;return;}
+  s.embT=(s.embT||0)+dt;
+  if(s.embT<4000)return;
+  s.embT=0; s.embRech=26000;
+  /* l'endroit le plus dense : on prend le barycentre des manifestants
+     dont le stress depasse la moyenne, c'est la que ca part */
+  var A=s.sim.agents, sx=0, sy=0, n=0;
+  for(var i=0;i<A.length;i++){
+    var a=A[i];
+    if(a.camp!=='manif'||a.stress<0.6)continue;
+    sx+=a.x; sy+=a.y; n++;
+  }
+  if(n<8)return;
+  FOULE.evenement(s.sim,sx/n,sy/n,4.2,0.75);
+  s.sim.tension=Math.min(1,s.sim.tension+0.04);
+  s.mot='ÇA PART TOUT SEUL';s.motT=2000;
+  if(SON)SON.effet('sifflet');
+}
+function majZones(s,dt){
+  if(!s.zones||!s.sim)return;
+  var A=s.sim.agents, i, z, k;
+  for(i=0;i<s.zones.length;i++){
+    z=s.zones[i];
+    var nm=0, nc=0, r2=z.r*z.r;
+    for(k=0;k<A.length;k++){
+      var a=A[k];
+      var dx=a.x-z.x, dy=a.y-z.y;
+      if(dx*dx+dy*dy>r2)continue;
+      if(a.camp==='manif')nm++; else nc++;
+    }
+    var av=(nm-nc>4)?'manif':((nc-nm>4)?'crs':null);
+    if(av!==z.a){
+      z.a=av; z.t=0;
+      if(av&&s.M&&MISSION)s.mot=z.n+' · '+(av===s.camp?'À VOUS':'PERDUE');
+      if(av)s.motT=1400;
+      if(av&&SON)SON.effet('sifflet');
+    }else z.t+=dt;
+    z.nm=nm; z.nc=nc;
+  }
+  /* CE QUE CHAQUE ZONE RAPPORTE, une fois par seconde. Les effets sont
+     continus et modestes : une zone tenue n'est pas un bouton magique,
+     c'est un avantage qui se cumule tant qu'on la garde. */
+  s.zoneT+=dt;
+  if(s.zoneT<1000)return;
+  s.zoneT-=1000;
+  for(i=0;i<s.zones.length;i++){
+    z=s.zones[i];
+    if(!z.a)continue;
+    var mien=(z.a===s.camp);
+    if(z.k==='passage'){
+      /* le passage vaut presque une seconde de jauge en plus par
+         seconde : il double presque la cadence, sans la tripler */
+      if(mien)s.res=Math.min(RES_MAX,s.res+2.0);
+    }else if(z.k==='fontaine'){
+      s.sim.tension=Math.max(0,s.sim.tension-(mien?0.016:0.004));
+    }else if(z.k==='percee'){
+      /* des renforts reguliers, pour de vrai : deux corps par tranche
+         de six secondes, du cote qui la tient */
+      z.ren=(z.ren||0)+1;
+      if(z.ren>=6){z.ren=0;renfortZone(s,z);}
+    }
+    if(s.M&&MISSION&&MISSION.noterZone)MISSION.noterZone(s.M,z.k,mien);
+  }
+}
+function renfortZone(s,z){
+  var R=FOULE.R, d=new Dé((s.graine||7)+Math.round(s.sim.t));
+  if(z.a==='manif'){
+    var B=s.corteges[s.corteges.length-1]; if(!B)return;
+    for(var q=0;q<2;q++)
+      FOULE.poser(s.sim,B,z.x+(d.f()-0.5)*2,z.y+1.5+(d.f()-0.5)*2,
+        {varia:d.e(0,11), vmax:R.vMarche*(0.9+d.f()*0.3), nerf:0.8});
+  }else{
+    var RES=null;
+    for(var i=0;i<s.tous.length;i++)
+      if(s.tous[i].camp==='crs'&&!s.tous[i].camions)RES=s.tous[i];
+    if(!RES)return;
+    for(var w=0;w<2;w++)
+      FOULE.poser(s.sim,RES,z.x+(d.f()-0.5)*2,z.y+1.5+(d.f()-0.5)*2,
+        {varia:w%3, vmax:R.vMarche*1.05, r:0.45, masse:1.8, nerf:0.4});
   }
 }
 function majUnites(s,dt){
@@ -2048,6 +2177,49 @@ function borner(ox,oy,cx,cy,port,out){
   return false;
 }
 var PORT_MOLOTOV=7.5, PORT_GAZ=6.5, PORT_EAU=5.5;
+/* =====================================================================
+   LA JAUGE : CE QU'ON PEUT SE PERMETTRE
+
+   Avant, chaque ordre fort avait sa propre recharge — vingt-deux
+   secondes pour les cocktails, rien du tout pour le gaz — et le reste
+   etait gratuit. On pouvait donc tout faire tout le temps, et il n'y
+   avait rien a arbitrer : la seule question etait « quand le minuteur
+   se termine-t-il ».
+
+   Une jauge COMMUNE change la nature du jeu. Elle remonte lentement,
+   chaque coup fort y puise, et depenser pour une chose, c'est ne pas
+   l'avoir pour une autre. Gazer maintenant, c'est ne pas pouvoir
+   arroser dans cinq secondes. C'est la premiere vraie decision du jeu.
+
+   Elle s'appelle L'ELAN cote cortege et LES MOYENS cote police : le
+   meme chiffre, deux mots qui disent ce qu'il represente.
+   ===================================================================== */
+var COUT={
+  /* cortege */
+  molotov:34, barricade:26, casser:14, pousser:10, disperser:6, groupe:0,
+  /* police */
+  gaz:34, eau:24, avant:18, forme:4, tenir:0, arriere:0,
+  /* commun */
+  diag:0
+};
+/* MESURE : a 4,2 points la seconde et un plafond de cent, on repassait
+   de quinze a plein en vingt secondes — autant dire que la jauge ne
+   limitait rien. A 2,6 et un plafond de quatre-vingts, un coup fort se
+   paie treize secondes, et deux coups forts d'affilee vident la
+   reserve. C'est la que le choix apparait. */
+var RES_MAX=80, RES_DEP=50, RES_GAIN=0.0026;
+function resNom(s){return (s.camp==='manif')?'ÉLAN':'MOYENS';}
+function coute(s,k){
+  var c=COUT[k]||0;
+  if(!c)return true;
+  if(s.res<c){
+    s.mot=resNom(s)+' INSUFFISANT · '+Math.round(s.res)+'/'+c;s.motT=1500;
+    if(SON)SON.effet('clic');
+    return false;
+  }
+  s.res-=c;
+  return true;
+}
 var VISE_MOT={molotov:'VISE : TAPE OU GLISSE LE DOIGT',
               gaz:'VISE : TAPE OU GLISSE LE DOIGT',
               eau:'VISE : TAPE OU GLISSE LE DOIGT'};
@@ -2061,6 +2233,9 @@ function doigtMonde(s,x,y,out){
    glisse : deux gestes, un seul chemin. */
 function tirer(s,x,y){
   var q=s.vise; if(!q)return;
+  /* ON PAIE AU TIR, PAS A L'ARMEMENT : viser puis changer d'avis ne
+     doit rien couter. */
+  if(!coute(s,q)){s.vise=null;s.viseXY=null;return;}
   var w=[0,0]; doigtMonde(s,x,y,w);
   s.vise=null; s.viseXY=null; s.motT=1700;
   if(q==='molotov')cmdMolotov(s,w[0],w[1]);
@@ -2073,13 +2248,7 @@ function tirer(s,x,y){
 function armer(s,k){
   var L=selection(s);
   if(!L.length){s.mot='CHOISIS UNE UNITÉ';s.motT=1500;return false;}
-  if(k==='molotov'){
-    if(s.molotovRech>0){
-      s.mot='PAS DE BOUTEILLE · '+Math.ceil(s.molotovRech/1000)+' S';s.motT=1400;
-      return false;
-    }
-    return true;
-  }
+  if(k==='molotov')return true;
   if(k==='gaz'){
     if(!L.filter(function(U){return !U.camions;}).length){
       s.mot='LES CAMIONS NE LANCENT PAS DE GRENADE';s.motT=1600;return false;}
@@ -2096,10 +2265,9 @@ function portee(k){
 function cmdMolotov(s,cx,cy){
   var L=selection(s);
   if(!FUM||!s.fum)return 0;
-  if(s.molotovRech>0){
-    s.mot='PAS DE BOUTEILLE · '+Math.ceil(s.molotovRech/1000)+' S';s.motT=1400;
-    return 0;
-  }
+  /* LA RECHARGE FIXE A DISPARU : c'est la jauge qui limite, maintenant.
+     Vingt-deux secondes imposees ne demandaient aucun choix ; trente-
+     quatre points d'elan, si. */
   var mur=iaMur(s), n=0, loin=false, o=[0,0], c=[0,0];
   L.forEach(function(U){
     if(!foyerUnite(s,U,o))return;
@@ -2125,7 +2293,6 @@ function cmdMolotov(s,cx,cy){
     }
   });
   if(n){
-    s.molotovRech=22000;
     if(s.M&&MISSION)MISSION.noter(s.M,'molotov');
     if(SON)SON.effet('charge');
     s.mot=selNoms(s)+(loin?' · COCKTAILS (TROP LOIN, RACCOURCI)':' · COCKTAILS');
@@ -2402,7 +2569,7 @@ function dispo(s,k){
   if(!s.unites)return true;
   var L=selection(s);
   if(!L.length)return false;
-  if(k==='molotov')return s.molotovRech<=0;
+  if((COUT[k]||0)>s.res)return false;    /* pas les moyens */
   if(k==='gaz')return L.some(function(U){return !U.camions;});
   if(k==='eau')return L.some(function(U){return !!U.camions;});
   if(k==='forme')return L.some(function(U){return !!U.form;});
@@ -2413,7 +2580,13 @@ function dispo(s,k){
 function barreDessine(s,L,H){
   var g=G, i, b;
   g.fillStyle='rgba(6,10,18,.84)';g.fillRect(0,H-s.hbar,L,s.hbar);
-  g.fillStyle='rgba(120,200,240,.25)';g.fillRect(0,H-s.hbar,L,1);
+  /* LA JAUGE EST LE LISERE DE LA BARRE. Pas un cadran de plus a
+     regarder : la ligne qui separe la rue des boutons se remplit, on
+     la voit sans quitter l'action des yeux. */
+  g.fillStyle='rgba(120,200,240,.18)';g.fillRect(0,H-s.hbar,L,2);
+  var fr=Math.max(0,Math.min(1,(s.res||0)/RES_MAX));
+  g.fillStyle=(s.camp==='manif')?'#ff8a5a':'#6ad8ff';
+  g.fillRect(0,H-s.hbar,L*fr,2);
   /* LE SOCLE DES JETONS : une barrette sombre arrondie, juste assez
      large pour eux. Sans elle, des ronds poses sur la foule ne se
      detachent pas. */
@@ -2501,6 +2674,14 @@ function barreDessine(s,L,H){
         g.fillStyle=act?'#06101c':'#cfe4f2';
         g.font='bold 6px ui-monospace,monospace';g.textAlign='center';
         g.fillText(b.t,cxb,b.y+b.h-5);
+        /* LE PRIX, en haut a droite du bouton. Sans lui on apprend le
+           cout en appuyant, c'est-a-dire en le payant. */
+        var pr=COUT[b.k]||0;
+        if(pr){
+          g.font='bold 6px ui-monospace,monospace';g.textAlign='right';
+          g.fillStyle=(s.res>=pr)?'rgba(255,216,106,.9)':'rgba(255,120,90,.9)';
+          g.fillText(pr,b.x+b.w-2,b.y+6);
+        }
       }else{
         g.fillStyle=act?'#06101c':'#cfe4f2';
         g.font='bold 7px ui-monospace,monospace';g.textAlign='center';
@@ -2552,7 +2733,7 @@ var M={
             sel:0, selN:{0:true}, front:0, pression:0, tension:0, vus:[],
             barre:[], hbar:0,
             diag:false, flash:null, M:null, poussee:0, finEnvoyee:false, enPause:false,
-            camp:'crs', tous:[], ia:null, barricades:[], molotovRech:0,
+            camp:'crs', tous:[], ia:null, barricades:[], res:RES_DEP,
             fondu:0,
             casseurs:null, vitrines:[],
             /* LA DENSITE, mesuree : 190 corps a 58 images, 354 a 56,
@@ -2592,7 +2773,9 @@ var M={
        Mesure : le dernier rang tient a 36,6 ; la ligne est a 37. */
     s.M=MISSION?MISSION.creer({graine:s.graine, ligne:GW-11,
                                camp:s.camp, vitrines:s.vitrines}):null;
-    s.mot='';s.motT=0;s.feuxVus=0;s.molotovRech=0;s.vise=null;s.viseXY=null;s.camVise=null;
+    s.mot='';s.motT=0;s.feuxVus=0;s.vise=null;s.viseXY=null;s.camVise=null;
+    s.res=RES_DEP; s.embT=0; s.embRech=0;
+    faireZones(s);
     s.fondu=700;        /* la rue s'ouvre depuis le noir */
   },
   pas:function(s,dt){
@@ -2603,11 +2786,16 @@ var M={
     if(s.M&&s.M.fin)return;           /* la rue se fige quand c'est fini */
     if(s.poussee>0)s.poussee-=dt;
     majCortege(s,dt);
+    majEmballe(s,dt);
+    majZones(s,dt);
     majLignes(s,dt);
     majUnites(s,dt);
     FOULE.pas(s.sim,dt);
     if(FUM&&s.fum)FUM.pas(s.fum,dt,s.sim);
-    if(s.molotovRech>0)s.molotovRech-=dt;
+    /* L'ELAN REMONTE, lentement et sans a-coups. Trente-quatre points
+       pour un coup fort a 4,2 points la seconde : huit secondes entre
+       deux. C'est le tempo du jeu. */
+    s.res=Math.min(RES_MAX, s.res+RES_GAIN*dt);
     majBarricades(s,dt);
     /* UN FEU QUI BRULE TEND LA RUE, meme loin : tout le monde le voit.
        C'est la contrepartie des molotovs, et elle est automatique. */
@@ -2678,6 +2866,36 @@ var M={
     /* les halos de feu AVANT les corps : une flamme eclaire le sol
        autour d'elle, elle ne se pose pas devant les gens */
     if(FUM&&s.fum)FUM.dessineSol(s.fum,g,mx,my,x0,x1,y0,y1,s.nuit);
+    /* LES ZONES, peintes au SOL et sous les corps : ce sont des
+       marques de terrain, pas des panneaux. Un anneau pointille de la
+       couleur du camp qui la tient, gris tant qu'elle n'est a
+       personne, et le nom au centre. */
+    if(s.zones){
+      var a0z=g.globalAlpha;
+      g.setLineDash(DASH); g.lineDashOffset=-(s.t*0.008)%12;
+      for(var zi=0;zi<s.zones.length;zi++){
+        var Z=s.zones[zi];
+        var zx=mx(Z.x,Z.y), zy=my(Z.x,Z.y)+TH/2;
+        if(zx<x0-140||zx>x1+140||zy<y0-120||zy>y1+120)continue;
+        var zc=Z.a?((Z.a==='manif')?'#ff8a5a':'#6ad8ff'):'rgba(210,225,235,.55)';
+        g.beginPath();
+        g.ellipse(zx,zy,Z.r*TW/2,Z.r*TH/2,0,0,6.2832);
+        g.globalAlpha=a0z*0.85; g.lineWidth=2.6;
+        g.strokeStyle='rgba(4,8,14,.6)'; g.stroke();
+        g.lineWidth=1.2; g.strokeStyle=zc; g.stroke();
+        g.globalAlpha=a0z*(Z.a?0.16:0.08);
+        g.fillStyle=zc; g.fill();
+        g.globalAlpha=a0z*0.8;
+        g.setLineDash(VIDE);
+        g.font='bold 6px ui-monospace,monospace'; g.textAlign='center';
+        g.fillStyle='rgba(4,8,14,.75)';
+        g.fillText(Z.n,zx+1,zy+1);
+        g.fillStyle=zc; g.fillText(Z.n,zx,zy);
+        g.setLineDash(DASH);
+      }
+      g.setLineDash(VIDE); g.globalAlpha=a0z; g.lineWidth=1;
+      g.textAlign='left';
+    }
     jalon('sol');
     /* LES UNITES CHOISIES, marquees AU SOL : sous les volumes, donc
        cachees comme elles quand un immeuble passe devant. Posees apres
@@ -2925,6 +3143,9 @@ var M={
         }
         return;
       }
+      /* ON PAIE AVANT D'AGIR, et seulement si l'ordre aboutit : le
+         debit se fait ici, une seule fois, pour tous les ordres. */
+      if(!coute(s,b.k))return;
       if(b.k==='pousser')cmdPousser2(s);
       else if(b.k==='casser')cmdCasser(s);
       else if(b.k==='barricade')cmdBarricade(s);
@@ -3232,7 +3453,7 @@ function hud(s,L,H){
    secondes de moins a jouer. */
 function briefing(s,L,H,M){
   var g=G, al=Math.min(1,M.briefT/900);
-  var w=Math.min(L-16,230), x=(L-w)/2, y=H*0.30, h=66;
+  var w=Math.min(L-16,238), x=(L-w)/2, y=H*0.28, h=88;
   g.fillStyle='rgba(8,14,24,'+(0.88*al).toFixed(2)+')';
   coArr(g,x,y,w,h,5);g.fill();
   g.strokeStyle='rgba(255,210,74,'+(0.7*al).toFixed(2)+')';g.lineWidth=1;
@@ -3249,12 +3470,14 @@ function briefing(s,L,H,M){
   var lignes=(M.camp==='manif')?[
     'La préfecture est au fond, derrière le cordon.',
     'Faites passer '+M.objectif+' des vôtres avant '+chrono(M.duree)+'.',
-    'Poussez, barricadez, cassez ce qu’il faut.',
+    'Chaque ordre coûte de l’ÉLAN. Il remonte seul.',
+    'Tenez les 3 zones : élan, renforts, tension.',
     'Tape sur la carte : le bloc choisi y va.'
   ]:[
     'Le cortège traverse la place vers la préfecture.',
     'Tenez '+chrono(M.duree)+'. '+M.tolere+' passages tolérés.',
-    'Protégez les devantures.',
+    'Chaque ordre coûte des MOYENS. Ils remontent seuls.',
+    'Tenez les 3 zones : moyens, renforts, tension.',
     'Tape sur la carte : l’unité y va.'
   ];
   for(var i=0;i<lignes.length;i++)g.fillText(lignes[i],x+8,y+24+i*11);
