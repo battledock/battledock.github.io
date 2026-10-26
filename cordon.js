@@ -2535,6 +2535,152 @@ function borner(ox,oy,cx,cy,port,out){
 }
 var PORT_MOLOTOV=7.5, PORT_GAZ=6.5, PORT_EAU=5.5;
 /* =====================================================================
+   LA PREPARATION
+
+   « On s'ennuie. » Le jeu commencait par un briefing qu'on lit pendant
+   que la partie tourne deja : aucune decision avant le contact, et le
+   premier choix arrivait quand il etait trop tard pour qu'il compte.
+
+   Quarante secondes avant que le cortege arrive. On y fait deux choses,
+   et les deux pesent sur toute la partie :
+     - ON PLACE SES UNITES. Treize tuiles de passage pour trois lignes :
+       c'est la, et pas ailleurs, qu'on decide ou l'on va perdre du
+       terrain. Le geste est celui du jeu — on tape un jeton, on tape la
+       case — sauf qu'ici l'unite s'y trouve TOUT DE SUITE.
+     - ON S'EQUIPE. Un budget, quatre articles, et ce qu'on ne depense
+       pas devient de l'elan au coup d'envoi. Tout acheter, c'est
+       commencer a sec.
+   Et PRET lance tout de suite, avec un bonus proportionnel au temps
+   qu'on n'a pas pris : savoir ce qu'on veut doit payer.
+   ===================================================================== */
+var PREP_DUREE=40000, PREP_BUDGET=42;
+var ARTICLES={
+  crs:[
+    {k:'barrieres', n:'BARRIÈRES', d:'passage rétréci', p:12},
+    {k:'camion',    n:'CAMION',    d:'un 2ᵉ lance à eau', p:18},
+    {k:'reserve',   n:'RÉSERVE',   d:'+10 hommes', p:16},
+    {k:'casques',   n:'CASQUES',   d:'encaissent mieux', p:10}
+  ],
+  manif:[
+    {k:'cocktails', n:'COCKTAILS', d:'une salve offerte', p:12},
+    {k:'barricade', n:'BARRICADE', d:'déjà montée', p:16},
+    {k:'sono',      n:'SONO',      d:'on panique moins', p:10},
+    {k:'renfort',   n:'RENFORT',   d:'+30 des nôtres', p:18}
+  ]
+};
+function prepArticles(s){return ARTICLES[s.camp]||ARTICLES.crs;}
+function prepReste(s){
+  var b=PREP_BUDGET, L=prepArticles(s);
+  for(var i=0;i<L.length;i++)if(s.prep.achats[L[i].k])b-=L[i].p;
+  return b;
+}
+/* LE COUP D'ENVOI. On applique ici tout ce qui a ete choisi, une fois,
+   et la prepa disparait : le reste du jeu n'a jamais a savoir qu'elle a
+   existe. */
+function prepLancer(s){
+  if(!s.prep)return;
+  var A=s.prep.achats, R=FOULE.R;
+  var reste=prepReste(s);
+  /* CE QU'ON N'A PAS DEPENSE DEVIENT DE L'ELAN, et le temps qu'on n'a
+     pas pris aussi : deux facons de dire qu'on savait ce qu'on voulait. */
+  var bonusT=Math.round(Math.max(0,s.prep.t)/1000*0.9);
+  s.res=Math.min(RES_MAX, s.res+reste*0.55+bonusT);
+  if(A.casques){
+    for(var i=0;i<s.sim.agents.length;i++){
+      var a=s.sim.agents[i];
+      if(a.camp==='crs')a.nerf*=0.62;
+    }
+  }
+  if(A.sono){
+    for(var j=0;j<s.sim.agents.length;j++){
+      var b2=s.sim.agents[j];
+      if(b2.camp==='manif')b2.nerf*=0.68;
+    }
+  }
+  if(A.cocktails)s.res=Math.min(RES_MAX,s.res+34);
+  if(A.reserve||A.renfort||A.camion||A.barricade||A.barrieres)prepMatos(s,A);
+  s.prep=null; s.zoneT=-2200;      /* les zones se taisent deux secondes */
+  s.mot='LE CORTÈGE ARRIVE';s.motT=2200;
+  if(SON)SON.effet('sifflet');
+}
+function prepMatos(s,A){
+  var R=FOULE.R, d=new Dé((s.graine||11)+91), midY=(AV.y0+AV.y1)/2+0.5;
+  if(A.reserve){
+    var RES=null;
+    for(var i=0;i<s.tous.length;i++)
+      if(s.tous[i].camp==='crs'&&s.tous[i].reserve)RES=s.tous[i];
+    if(!RES)for(i=0;i<s.tous.length;i++)
+      if(s.tous[i].camp==='crs'&&!s.tous[i].camions)RES=s.tous[i];
+    if(RES)for(var k=0;k<10;k++)
+      FOULE.poser(s.sim,RES,RES.ax+(d.f()-0.5)*2,RES.ay+(d.f()-0.5)*2.4,
+        {varia:k%3, vmax:R.vMarche*1.05, r:0.45, masse:1.8, nerf:0.4});
+  }
+  if(A.renfort){
+    var B=s.corteges[s.corteges.length-1];
+    if(B)for(var q=0;q<30;q++)
+      FOULE.poser(s.sim,B,B.ax-(q%8)*0.55,B.ay+(d.f()-0.5)*4,
+        {varia:d.e(0,11), vmax:R.vMarche*(0.9+d.f()*0.3), nerf:0.8});
+  }
+  if(A.camion){
+    var EA=null;
+    for(i=0;i<s.tous.length;i++)if(s.tous[i].camions)EA=s.tous[i];
+    if(EA)FOULE.poser(s.sim,EA,EA.ax+0.8,EA.ay+1.6,
+      {varia:1, vmax:R.vMarche*0.8, r:0.9, masse:9, nerf:0.2});
+  }
+  if(A.barricade){
+    var bx2=Math.round(TER.bx-5), by2=Math.round(midY);
+    if(s.C.bloc[by2]&&!s.C.bloc[by2][bx2]){
+      var BB={x:bx2,y:by2,t:9999,faite:true,groupe:-1,pres:0};
+      s.barricades.push(BB);
+      s.C.bloc[by2][bx2]=1;
+      s.sim.champsPrets=false; s.sim.champFuitePret=false;
+      s.statiques.push({k:'obj',o:{t:'barricade',gx:bx2+0.5,gy:by2+0.5},
+        prof:bx2+by2+1, x:mx(bx2+0.5,by2+0.5)-OBJ.barricade.ox,
+        y:my(bx2+0.5,by2+0.5)-OBJ.barricade.oy,
+        w:OBJ.barricade.cv.width, h:OBJ.barricade.cv.height, cv:OBJ.barricade.cv});
+      s.statiques.sort(function(p2,q2){return p2.prof-q2.prof;});
+    }
+  }
+  if(A.barrieres){
+    /* DEUX RANGS DE PLUS aux deux bouts du passage : il passe de treize
+       tuiles a neuf, et c'est tout ce qu'on demande a une barriere. */
+    var midB=Math.round(midY), bb=TER.bx;
+    [midB-TER.demi, midB-TER.demi+1, midB+TER.demi, midB+TER.demi-1].forEach(function(y2){
+      if(!s.C.bloc[y2]||s.C.bloc[y2][bb])return;
+      s.C.bloc[y2][bb]=1; s.C.bloc[y2][bb+1]=1;
+      s.statiques.push({k:'obj',o:{t:'barriere',gx:bb+0.1,gy:y2+0.05},
+        prof:bb+y2+1, x:mx(bb+0.1,y2+0.05)-OBJ.barriere.ox,
+        y:my(bb+0.1,y2+0.05)-OBJ.barriere.oy,
+        w:OBJ.barriere.cv.width, h:OBJ.barriere.cv.height, cv:OBJ.barriere.cv});
+    });
+    s.statiques.sort(function(p2,q2){return p2.prof-q2.prof;});
+    s.sim.champsPrets=false; s.sim.champFuitePret=false;
+  }
+}
+/* PLACER UNE UNITE PENDANT LA PREPA : elle y est tout de suite, ses
+   hommes avec elle. Pas de marche, pas de chemin — on dispose, on ne
+   commande pas encore. */
+function prepPoser(s,gx,gy){
+  var L=selection(s);
+  if(!L.length)return 0;
+  var U=L[0];
+  if(s.C.bloc[gy]&&s.C.bloc[gy][gx])
+    {s.mot='PAS ICI';s.motT=1100;return 0;}
+  var dx=gx+0.5-U.ax, dy=gy+0.5-U.ay;
+  U.ax=gx+0.5; U.ay=gy+0.5;
+  if(U.ancre!==undefined){U.ancre=U.ax;U.plie=0;}
+  if(U.tenu){U.tenu.x=U.ax;U.tenu.y=U.ay;}
+  var A=s.sim.agents;
+  for(var i=0;i<U.membres.length;i++){
+    var a=A[U.membres[i]];
+    a.x+=dx; a.y+=dy; a.vx=0; a.vy=0;
+  }
+  s.mot=U.nom+' · EN POSITION';s.motT=1200;
+  if(SON)SON.effet('clic');
+  return 1;
+}
+
+/* =====================================================================
    LA JAUGE : CE QU'ON PEUT SE PERMETTRE
 
    Avant, chaque ordre fort avait sa propre recharge — vingt-deux
@@ -2969,6 +3115,165 @@ function dispo(s,k){
   if(k==='nasse'||k==='arrest')return L.some(function(U){return !U.camions;});
   return true;
 }
+/* =====================================================================
+   L'ECRAN DE PREPARATION
+
+   Il reutilise ce qui existe : les jetons d'unite, le liseré de jauge,
+   les arrondis. Ce qui s'ajoute, c'est un bandeau de chrono en haut, le
+   rayon d'equipement en bas, et le bouton PRET.
+   ===================================================================== */
+function prepMaj(s,L,H){
+  var E=(typeof ECH==='number'&&ECH>0)?ECH:2;
+  var hr=Math.max(15,Math.round(50/E));
+  var hp=Math.round(96/E);           /* le rayon d'equipement */
+  var hb=Math.round(26/E);           /* le bouton PRET */
+  s.hbar=hp+hb;
+  var py=H-s.hbar, B=[], i;
+  var L2=prepArticles(s), aw=(L-10)/L2.length;
+  for(i=0;i<L2.length;i++){
+    B.push({x:5+i*aw+1, y:py+Math.round(16/E), w:aw-3, h:hp-Math.round(26/E),
+            k:'art'+i, t:L2[i].n});
+  }
+  B.push({x:L*0.3, y:H-hb-2, w:L*0.4, h:hb, k:'pret', t:'PRÊT'});
+  /* LES JETONS, comme en jeu : c'est avec eux qu'on choisit qui on
+     place, et il n'y a aucune raison d'inventer un autre geste. */
+  var nU=s.unites.length, lTout=Math.round(34/E);
+  var dispoL=L-10-lTout-6;
+  var r=Math.min(Math.round(23/E), Math.floor((dispoL/nU-2)/2));
+  r=Math.max(Math.round(14/E), r);
+  var pas=r*2+2, tot=nU*pas+lTout+6;
+  var x0=Math.max(5,(L-tot)/2), yy=py-r-Math.round(12/E);
+  for(i=0;i<nU;i++)
+    B.push({rond:true, cx:x0+r+i*pas, cy:yy, r:r,
+            x:x0+i*pas, y:yy-r, w:r*2, h:r*2, k:'u'+i});
+  s.jetonHaut=yy-r-2;
+  s.barre=B;
+}
+function prepTape(s,x,y){
+  if(SON&&!SON.ok){try{SON.demarrer();}catch(e){}}
+  prepMaj(s,s.L,s.H);
+  var b=barreTouche(s,x,y);
+  if(b){
+    if(b.k==='pret'){prepLancer(s);return;}
+    if(b.k.charAt(0)==='u'&&b.k!=='tout'){
+      var ui=+b.k.slice(1);
+      s.selN={}; s.selN[ui]=true; s.sel=ui;
+      var UC=s.unites[ui], fo=[UC.ax,UC.ay];
+      foyerUnite(s,UC,fo);
+      s.camVise=[mx(fo[0],fo[1]), my(fo[0],fo[1])];
+      s.camLibre=true; s.camLibreT=6000;
+      s.mot=UC.nom+' · OÙ ?';s.motT=1400;
+      return;
+    }
+    if(b.k.slice(0,3)==='art'){
+      var A=prepArticles(s)[+b.k.slice(3)];
+      if(!A)return;
+      if(s.prep.achats[A.k]){
+        delete s.prep.achats[A.k];
+        s.mot=A.n+' · REPOSÉ';s.motT=1200;
+      }else if(prepReste(s)>=A.p){
+        s.prep.achats[A.k]=true;
+        s.mot=A.n+' · PRIS';s.motT=1200;
+        if(SON)SON.effet('clic');
+      }else{
+        s.mot='PAS ASSEZ DE BUDGET';s.motT=1400;
+      }
+      return;
+    }
+    return;
+  }
+  /* la carte : on y pose l'unite choisie */
+  var z=s.cam.z;
+  var ex=(x-s.L/2)/z+s.cam.x, ey=(y-s.H/2)/z+s.cam.y;
+  var gx=Math.floor(e2mx(ex,ey)), gy=Math.floor(e2my(ex,ey));
+  if(gx<0||gy<0||gx>=GW||gy>=GH){s.mot='HORS DE LA CARTE';s.motT=1100;return;}
+  prepPoser(s,gx,gy);
+}
+function prepDessine(s,L,H){
+  var g=G, i;
+  prepMaj(s,L,H);
+  /* ---- le bandeau du chrono ---- */
+  var hh=Math.round(30/((typeof ECH==='number'&&ECH>0)?ECH:2));
+  g.fillStyle='rgba(6,10,18,.88)';g.fillRect(0,0,L,hh);
+  g.textAlign='center';g.textBaseline='middle';
+  g.fillStyle='#ffd24a';g.font='bold 11px ui-monospace,monospace';
+  var se=Math.max(0,Math.ceil(s.prep.t/1000));
+  g.fillText('PRÉPARATION · 0:'+(se<10?'0':'')+se, L/2, hh*0.40);
+  g.font='bold 6px ui-monospace,monospace';g.fillStyle='#cfe4f2';
+  g.fillText(s.camp==='manif'?'Placez vos blocs · le cordon vous attend'
+                             :'Placez vos lignes · le cortège arrive', L/2, hh*0.78);
+  g.fillStyle='rgba(255,210,74,.22)';g.fillRect(0,hh-1,L,1.5);
+  g.fillStyle='#ffd24a';g.fillRect(0,hh-1,L*(s.prep.t/PREP_DUREE),1.5);
+  /* ---- les jetons et le rayon ---- */
+  g.fillStyle='rgba(6,10,18,.90)';g.fillRect(0,H-s.hbar,L,s.hbar);
+  g.fillStyle='rgba(120,200,240,.25)';g.fillRect(0,H-s.hbar,L,1);
+  if(s.jetonHaut!==undefined){
+    var j0=null,j1=null,jh=0;
+    for(i=0;i<s.barre.length;i++){
+      var bj=s.barre[i]; if(!bj.rond)continue;
+      if(j0===null||bj.x<j0)j0=bj.x;
+      if(j1===null||bj.x+bj.w>j1)j1=bj.x+bj.w;
+      jh=bj.r*2;
+    }
+    if(j0!==null){g.fillStyle='rgba(6,10,18,.62)';
+      coArr(g,j0-6,s.jetonHaut-2,(j1-j0)+12,jh+8,(jh+8)/2);g.fill();}
+  }
+  var py=H-s.hbar, L2=prepArticles(s), reste=prepReste(s);
+  g.textAlign='left';
+  g.fillStyle='#ffd24a';g.font='bold 7px ui-monospace,monospace';
+  g.fillText('ÉQUIPEMENT',5,py+7);
+  g.textAlign='right';
+  g.fillStyle=(reste>0)?'#cfe4f2':'rgba(207,228,242,.45)';
+  g.fillText('BUDGET '+reste,L-5,py+7);
+  g.textAlign='center';
+  for(i=0;i<s.barre.length;i++){
+    var b=s.barre[i];
+    if(b.rond){
+      var ui=+b.k.slice(1), U=s.unites[ui], on=!!s.selN[ui];
+      var c=UCOL[ui%UCOL.length];
+      g.beginPath();g.arc(b.cx,b.cy,b.r,0,6.2832);
+      g.fillStyle=on?c:'rgba(255,255,255,.13)';g.fill();
+      if(on){g.strokeStyle='#fff';g.lineWidth=1.4;g.stroke();}
+      g.fillStyle=on?'#06101c':c;
+      g.font='bold 7px ui-monospace,monospace';
+      g.fillText(U.court.slice(0,5),b.cx,b.cy-3);
+      g.font='6px ui-monospace,monospace';
+      g.fillText(U.membres.length+'H',b.cx,b.cy+5);
+      continue;
+    }
+    if(b.k==='pret'){
+      g.fillStyle='#ffd24a';coArr(g,b.x,b.y,b.w,b.h,b.h/2);g.fill();
+      g.fillStyle='#4a2c00';g.font='bold 10px ui-monospace,monospace';
+      g.fillText(b.t,b.x+b.w/2,b.y+b.h/2);
+      continue;
+    }
+    var A=L2[+b.k.slice(3)], pris=!!s.prep.achats[A.k];
+    var cher=(!pris&&reste<A.p);
+    g.fillStyle=pris?'rgba(106,216,255,.22)':'rgba(255,255,255,.07)';
+    coArr(g,b.x,b.y,b.w,b.h,5);g.fill();
+    g.strokeStyle=pris?'#6ad8ff':'rgba(255,255,255,.14)';g.lineWidth=1;
+    coArr(g,b.x,b.y,b.w,b.h,5);g.stroke();
+    g.globalAlpha=cher?0.4:1;
+    g.fillStyle=pris?'#fff':'#cfe4f2';g.font='bold 6px ui-monospace,monospace';
+    g.fillText(A.n,b.x+b.w/2,b.y+10);
+    g.fillStyle='rgba(207,228,242,.62)';
+    var td=5.5;
+    g.font=td+'px ui-monospace,monospace';
+    while(td>4&&g.measureText(A.d).width>b.w-3){
+      td-=0.5;g.font=td+'px ui-monospace,monospace';
+    }
+    g.fillText(A.d,b.x+b.w/2,b.y+19);
+    g.fillStyle='#6ad8ff';g.font='bold 9px ui-monospace,monospace';
+    g.fillText(A.p,b.x+b.w/2,b.y+32);
+    if(pris){g.fillStyle='#6ad8ff';g.font='bold 5.5px ui-monospace,monospace';
+      g.fillText('PRIS',b.x+b.w/2,b.y+42);}
+    g.globalAlpha=1;
+  }
+  /* PAS DE LIGNE DE PIED. Elle disait « ce qu'on garde devient de
+     l'elan » et passait derriere les cartes : l'ecran n'a pas la place,
+     et le briefing le dit deja. */
+  g.textAlign='left';g.textBaseline='alphabetic';
+}
 function barreDessine(s,L,H){
   var g=G, i, b;
   g.fillStyle='rgba(6,10,18,.84)';g.fillRect(0,H-s.hbar,L,s.hbar);
@@ -3185,6 +3490,7 @@ var M={
                                camp:s.camp, vitrines:s.vitrines}):null;
     s.mot='';s.motT=0;s.feuxVus=0;s.vise=null;s.viseXY=null;s.camVise=null;
     s.res=RES_DEP; s.resIA=RES_DEP; s.embT=0; s.embRech=0; s.somm=0;
+    s.prep={t:PREP_DUREE, achats:{}};
     faireZones(s);
     s.fondu=700;        /* la rue s'ouvre depuis le noir */
   },
@@ -3205,6 +3511,19 @@ var M={
        trente a la montre, et on voit enfin les mouvements.
        ================================================================= */
     dt*=ALLURE;
+    /* PENDANT LA PREPA, LA RUE VIT MAIS NE JOUE PAS. Au sixieme de
+       l'allure, les corps respirent et le cortege se tasse — on voit
+       que c'est vivant — mais rien n'avance : ni le front, ni la
+       mission, ni le chrono. */
+    if(s.prep){
+      s.prep.t-=dt;
+      s.t+=dt;
+      if(s.motT>0)s.motT-=dt;
+      if(s.sim)FOULE.pas(s.sim,dt*0.16);
+      camSuivi(s,dt);
+      if(s.prep.t<=0)prepLancer(s);
+      return;
+    }
     s.t+=dt;
     if(s.motT>0)s.motT-=dt;
     if(!s.sim)return;
@@ -3533,9 +3852,15 @@ var M={
     if(s.nuit){g.fillStyle='rgba(12,18,34,.42)';g.fillRect(0,0,L,H);}
     else if(s.heure==='soir'){g.fillStyle='rgba(60,30,20,.16)';g.fillRect(0,0,L,H);}
     jalon('voile');
-    if(!s.barre.length||s.barreL!==L||s.barreH!==H||s.barreFin!==!!(s.M&&s.M.fin)){
+    if(s.prep){
+      /* la prepa refait sa mise en page a chaque image : elle est
+         courte, et le budget change le rayon sous le doigt */
+      prepMaj(s,L,H);s.barreL=L;s.barreH=H;s.barreFin=false;
+    }else if(!s.barre.length||s.barreL!==L||s.barreH!==H||
+             s.barreFin!==!!(s.M&&s.M.fin)||s.barrePrep){
       barreMaj(s,L,H);s.barreL=L;s.barreH=H;s.barreFin=!!(s.M&&s.M.fin);
     }
+    s.barrePrep=!!s.prep;
     /* s.sansChrome : utilise par l'outil de mesure pour isoler le cout
        de la scene de celui du bandeau et de la barre. */
     /* LES TRANSITIONS. Une partie qui commence et un resultat qui
@@ -3550,7 +3875,8 @@ var M={
     if(!s.sansChrome){
       if(s.M&&s.M.fin)resultat(s,L,H);
       else hud(s,L,H);
-      barreDessine(s,L,H);
+      if(s.prep)prepDessine(s,L,H);
+      else barreDessine(s,L,H);
       if(s.enPause)voilePause(s,L,H);
     }
     if(PR){jalon('chrome');PR.n=(PR.n||0)+1;}
@@ -3558,6 +3884,7 @@ var M={
   },
   /* ------------------------------------------------- le doigt ------- */
   tape:function(s,x,y){
+    if(s.pret&&s.prep){prepTape(s,x,y);return;}
     if(!s.pret)return;
     /* LE PREMIER DOIGT REVEILLE LE SON : aucun navigateur mobile n'en
        laisse sortir avant un geste du joueur. */
@@ -3848,6 +4175,10 @@ function chrono(ms){
    servait a rien pendant qu'on commande.
    ===================================================================== */
 function hud(s,L,H){
+  /* PENDANT LA PREPA, LE BANDEAU DU CHRONO PREND LA PLACE DU HUD : deux
+     bandeaux superposes en haut de l'ecran, on ne lisait ni l'un ni
+     l'autre. */
+  if(s.prep)return;
   var g=G, M=s.M;
   var large=(L>250);
   /* ---- le bandeau : chrono, objectif principal, tension ---- */
@@ -3936,7 +4267,7 @@ function hud(s,L,H){
    secondes de moins a jouer. */
 function briefing(s,L,H,M){
   var g=G, al=Math.min(1,M.briefT/900);
-  var w=Math.min(L-16,238), x=(L-w)/2, y=H*0.28, h=88;
+  var w=Math.min(L-16,238), x=(L-w)/2, y=(s.prep?H*0.17:H*0.28), h=88;
   g.fillStyle='rgba(8,14,24,'+(0.88*al).toFixed(2)+')';
   coArr(g,x,y,w,h,5);g.fill();
   g.strokeStyle='rgba(255,210,74,'+(0.7*al).toFixed(2)+')';g.lineWidth=1;
@@ -3953,13 +4284,13 @@ function briefing(s,L,H,M){
   var lignes=(M.camp==='manif')?[
     'La préfecture est au fond, derrière le cordon.',
     'Faites passer '+M.objectif+' des vôtres avant '+chrono(M.duree)+'.',
-    'Chaque ordre coûte de l’ÉLAN. Il remonte seul.',
+    'Chaque ordre coûte de l’ÉLAN. Non dépensé = gardé.',
     'Tenez les 3 zones : élan, renforts, tension.',
     'Tape sur la carte : le bloc choisi y va.'
   ]:[
     'Le cortège traverse la place vers la préfecture.',
     'Tenez '+chrono(M.duree)+'. '+M.tolere+' passages tolérés.',
-    'Chaque ordre coûte des MOYENS. Ils remontent seuls.',
+    'Chaque ordre coûte des MOYENS. Non dépensés = gardés.',
     'Tenez les 3 zones : moyens, renforts, tension.',
     'Tape sur la carte : l’unité y va.'
   ];

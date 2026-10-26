@@ -214,6 +214,33 @@ arroser avant de gazer, se replier quand elle est percée, reprendre du
 terrain quand la place se dégage. Elle réévalue quatre fois par seconde,
 jamais à chaque image.
 
+## Les quarante secondes d'avant
+
+La partie ne commence plus au contact. **Quarante secondes de
+préparation**, pendant lesquelles la rue vit au ralenti mais rien
+n'avance : ni le front, ni la mission, ni le chrono.
+
+**On place ses unités.** On tape un jeton, on tape une case : l'unité
+s'y trouve tout de suite, ses hommes avec elle. Treize tuiles de
+passage pour trois lignes — c'est là, et pas ailleurs, qu'on décide où
+l'on va perdre du terrain. Par défaut les trois lignes sont empilées au
+même endroit ; les étaler est déjà une décision.
+
+**On s'équipe**, avec un budget de 42 :
+
+| Police | | Cortège | |
+|---|---|---|---|
+| BARRIÈRES | 12 — passage rétréci | COCKTAILS | 12 — une salve offerte |
+| CAMION | 18 — un 2ᵉ lance à eau | BARRICADE | 16 — déjà montée |
+| RÉSERVE | 16 — +10 hommes | SONO | 10 — on panique moins |
+| CASQUES | 10 — encaissent mieux | RENFORT | 18 — +30 des nôtres |
+
+**Ce qu'on ne dépense pas devient de l'élan** (55 %), **et le temps
+qu'on ne prend pas aussi** (0,9 point la seconde). Tout acheter, c'est
+commencer à sec ; `PRÊT` à la dixième seconde avec la moitié du budget,
+c'est entrer dans la partie la jauge pleine. Savoir ce qu'on veut doit
+payer.
+
 ## Ce qu'on voit
 
 **Un immeuble qui cache l'action devient translucide.** En isométrie, un

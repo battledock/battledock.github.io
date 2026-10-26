@@ -2284,3 +2284,43 @@ where niveau = 29;
 --    maintenant le texte et on retrecit la police jusqu'a ce qu'il
 --    rentre, avec un plancher a quatre points et demi — en-dessous ce
 --    n'est plus du texte.
+
+-- =====================================================================
+-- ETAPE : LES QUARANTE SECONDES D'AVANT               2026-10-28-0230
+-- =====================================================================
+--
+-- « On s'ennuie. » Le jeu commencait par un briefing qu'on lit pendant
+-- que la partie tourne deja : aucune decision avant le contact, et le
+-- premier choix arrivait quand il etait trop tard pour qu'il compte.
+--
+-- QUARANTE SECONDES AVANT QUE LE CORTEGE ARRIVE. La rue vit — les corps
+-- respirent au sixieme de l'allure, on voit que c'est vivant — mais
+-- rien n'avance : ni le front, ni la mission, ni le chrono.
+--
+-- ON PLACE SES UNITES, et le geste est celui du jeu : on tape un jeton,
+-- on tape une case. Pas de glisser-deposer a inventer, pas de second
+-- vocabulaire a apprendre — la seule difference est que l'unite s'y
+-- trouve TOUT DE SUITE, ses hommes avec elle, parce qu'on dispose, on
+-- ne commande pas encore.
+--   Mesure qui justifie l'etape : au depart, L1 est a 34, L2 a 35,3 et
+-- L3 a 36,6 — les trois lignes EMPILEES sur la meme tuile, pour treize
+-- tuiles de passage. Les etaler est deja une decision, et jusqu'ici le
+-- jeu ne la proposait pas.
+--
+-- ON S'EQUIPE, quatre articles par camp et un budget de quarante-deux.
+-- CE QU'ON NE DEPENSE PAS DEVIENT DE L'ELAN, et le temps qu'on ne prend
+-- pas aussi : tout acheter, c'est commencer a sec ; PRET a la dixieme
+-- seconde avec la moitie du budget, c'est entrer la jauge pleine.
+-- Savoir ce qu'on veut doit payer, et c'est la tout le dessin de cette
+-- phase : chaque ligne du rayon est un arbitrage contre la jauge.
+--
+-- DEUX DETAILS D'ECRAN. Le HUD du haut se tait pendant la prepa : deux
+-- bandeaux superposes et on ne lisait ni l'un ni l'autre. Et la ligne
+-- de pied « ce qu'on garde devient de l'elan » a ete retiree — elle
+-- passait derriere les cartes, l'ecran n'a pas la place, et le briefing
+-- le dit deja.
+--
+-- TRENTE-NEUF SCRIPTS DE TEST ONT DU SAUTER LA PREPA. Ils demarraient
+-- et tapaient un bouton d'ordre dans la foulee ; il a suffi d'une ligne
+-- apres chaque demarrage. C'est le prix d'une phase qui s'intercale, et
+-- il valait mieux le payer dans les tests que dans le jeu.
