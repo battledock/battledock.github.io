@@ -322,6 +322,10 @@ FUM.pas=function(F,dt,sim,R){
         var rep=(1-fl/port)*0.00052;
         ag.vx+=fx2/fl*rep*dt; ag.vy+=fy2/fl*rep*dt;
         ag.choc=Math.min(1.5, ag.choc + dt*0.00085*(1-fl/port));
+        /* ON NE TIENT PAS UNE LIGNE DANS LES FLAMMES. Le corps est
+           marque pour une seconde ; c'est la simulation qui decide
+           quoi en faire, pas le dessin. */
+        ag.brule=900;
         /* LE COEUR NE SE TRAVERSE PAS. Une poussee, meme forte, se
            laisse vaincre par deux cents corps qui avancent ; un mur,
            non. Sous le rayon du foyer on est repose sur le bord et la

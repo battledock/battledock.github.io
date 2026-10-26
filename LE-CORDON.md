@@ -26,8 +26,14 @@ lui ; l'autre camp est tenu par l'IA.
 
 | | La police | Le cortège |
 |---|---|---|
-| But | tenir le passage 2 min 30, 18 passages tolérés | faire passer 12 des siens |
+| But | tenir le passage 2 min 30, 45 passages tolérés | faire passer 24 des siens |
 | Ordres | TENIR, AVANT, ARRIÈRE, FORME, GROUPE, GAZ, EAU | POUSSER, RECULER, CASSER, BARRICADE, MOLOTOV, GROUPE, DISPERSER |
+
+Les ordres portent un **pictogramme** et tiennent sur deux rangées ; un
+ordre qu'on ne peut pas donner (cocktails en recharge, eau demandée à
+des hommes à pied) est grisé avant qu'on le touche. Taper une pastille
+d'unité **amène la caméra** dessus, et le suivi automatique reprend
+quatre secondes plus tard.
 | Unités | 3 lignes, une réserve, deux camions | 4 blocs de cortège, les casseurs, les mobiles |
 
 **Déplacer un bloc du cortège.** On tape sa pastille, puis la case visée :
@@ -77,6 +83,16 @@ les deux camps. Deux foyers voisins fusionnent ; au-delà de huit, le plus
 vieux s'éteint. L'événement `ÇA BRÛLE AU MILIEU` allume une benne sur
 l'esplanade, à l'écart de l'axe du cortège pour qu'elle gêne sans barrer
 le passage.
+
+**La place est tactique, pas un bras de fer.** Le passage des barrières
+fait **treize tuiles** pour un cordon qui en couvre huit : la police
+choisit où tenir, le cortège où pousser. Les quatre blocs du cortège
+attaquent quatre bandes différentes. Une ligne de police **plie** quand
+la pression dépasse son seuil — jusqu'à trois tuiles et demie — puis
+reprend son terrain quand la poussée retombe. Un cocktail peut tomber
+**sur** la ligne (jusqu'à une tuile au-delà du premier rang) : un homme
+dans les flammes cède, même si on lui a dit de tenir. C'est le seul
+moyen d'ouvrir une brèche à la demande.
 
 **Les barricades** : quatre corps sur place pendant six secondes. La police
 peut les déloger avant qu'elles tiennent ; une fois debout, la case est

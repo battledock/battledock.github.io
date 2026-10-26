@@ -978,10 +978,19 @@ function garnir(C,d,nuit){
      ESCALIER, et on passe entre deux marches. La ligne est maintenant
      DROITE, sur deux rangs, et ne laisse qu'un passage de neuf tuiles
      que le cordon tient vraiment. */
-  /* LE PASSAGE FAIT SEPT TUILES, pas neuf : un rang de onze hommes a
-     0,70 d'ecart couvre 7,7 tuiles. Un passage plus large que la ligne
-     qui le tient n'est pas un passage, c'est une breche. */
-  var bx=GW-14, midB=Math.round((AV.y0+AV.y1)/2), demi=3;
+  /* LE PASSAGE FAIT TREIZE TUILES, ET C'EST VOULU.
+     Il en faisait sept, exactement la largeur du cordon : tout passait
+     par la, le cordon couvrait tout, et plus rien ne pouvait se
+     produire. On a mesure cent quarante secondes sans qu'un seul
+     manifestant franchisse la ligne, puis la moitie du cortege d'un
+     coup quand un evenement de fin de partie forcait le verrou. Un
+     bras de fer frontal ou aucun des deux camps n'a de decision a
+     prendre.
+     Treize tuiles pour une ligne qui en couvre huit : la police doit
+     choisir OU tenir et le cortege OU pousser. Les deux camps ont
+     quelque chose a decider a chaque instant, et c'est tout ce qu'on
+     demande a une place. */
+  var bx=GW-14, midB=Math.round((AV.y0+AV.y1)/2), demi=6;
   for(y=AV.y0;y<=AV.y1;y++){
     if(y>=midB-demi&&y<=midB+demi)continue;      /* le passage reste ouvert */
     poser('barriere',bx+0.1,y+0.05,true);
@@ -1090,6 +1099,18 @@ function chemin(C,x0,y0,x1,y1){
    la main pendant qu'on regarde ailleurs est pire que pas de suivi. */
 function camSuivi(s,dt){
   if(!s.sim||!s.unites)return;
+  /* UN CADRAGE DEMANDE : on y glisse, on ne s'y teleporte pas. Un saut
+     de camera fait perdre le fil ; un glissement de trois dixiemes de
+     seconde se suit des yeux. */
+  if(s.camVise){
+    var kv=Math.min(1,dt*0.010);
+    s.cam.x+=(s.camVise[0]-s.cam.x)*kv;
+    s.cam.y+=(s.camVise[1]-s.cam.y)*kv;
+    camBornes(s);
+    if(Math.abs(s.camVise[0]-s.cam.x)<1.5&&Math.abs(s.camVise[1]-s.cam.y)<1.5)
+      s.camVise=null;
+    return;
+  }
   if(s.camLibre){
     s.camLibreT=(s.camLibreT||0)-dt;
     if(s.camLibreT>0)return;
@@ -1202,7 +1223,12 @@ function preparer(s){
   peupler(s);
   var p=m2e((s.front+GW-16)/2, (AV.y0+AV.y1)/2+0.5);
   s.cam.x=p.x; s.cam.y=p.y;
-  s.cam.z=s.cam.zmin;
+  /* ON COMMENCE PRES DE L'ACTION, pas au plus large. Au zoom minimum on
+     voyait la place entiere : des arbres, des trottoirs, et la foule en
+     petit tas au milieu. Le premier regard doit tomber sur le contact
+     entre le cortege et le cordon, c'est la que le jeu se joue. Le
+     joueur peut toujours s'ecarter d'un pincement. */
+  s.cam.z=Math.min(s.cam.zmax, Math.max(s.cam.zmin, 1.35));
   s.pret=true;
 }
 
@@ -1435,7 +1461,13 @@ function majCortege(s,dt){
      en sept secondes et la mission se jouait avant d'avoir commence.
      Un cortege avance au pas, pas au sprint. */
   var elan=0.00055+0.0030*s.pousse+((s.poussee>0)?0.00075:0);
-  var vise=Math.min(arret+1.1*s.pousse, s.front+elan*dt);
+  /* L'AMPLITUDE DE LA VAGUE. A 1,1 tuile le front montait a 36,3 et la
+     ligne a franchir est a 37 : les vagues n'aboutissaient jamais, et
+     le compteur ne bougeait qu'a l'effondrement. A 2,4 chaque vague
+     fait passer quelques personnes — c'est le filet regulier qui donne
+     au joueur quelque chose a faire toutes les huit secondes, dans un
+     camp comme dans l'autre. */
+  var vise=Math.min(arret+2.4*s.pousse, s.front+elan*dt);
   s.front=vise;
   var resp=Math.sin(s.sim.t*0.00045);
   s.corteges.forEach(function(G,gi){
@@ -1443,7 +1475,14 @@ function majCortege(s,dt){
     G.ax=s.front-G.base;
     /* la respiration laterale : le bloc roule doucement d'un bord de la
        chaussee a l'autre, comme une foule qui se tasse et se detasse */
-    G.ay=((AV.y0+AV.y1)/2+0.5)+Math.sin(s.sim.t*0.00038+gi*1.7)*0.42;
+    /* CHAQUE BLOC SA BANDE. Les quatre blocs visaient le meme axe :
+       ils arrivaient en file sur le meme point, celui que le cordon
+       tient le mieux, et se bousculaient entre eux. Etales sur la
+       largeur du passage, ils attaquent quatre endroits a la fois — la
+       police doit repartir ses lignes, le cortege voit lequel de ses
+       blocs perce. */
+    var bande=[-3.6,-1.2,1.2,3.6][gi%4];
+    G.ay=((AV.y0+AV.y1)/2+0.5)+bande+Math.sin(s.sim.t*0.00038+gi*1.7)*0.42;
   });
   if(!s.presse.colle)s.presse.ax=Math.min(arret-1, s.front+1.5);
   else s.presse.ax=Math.min(arret-0.6, s.front+0.4);
@@ -1468,6 +1507,52 @@ function majCortege(s,dt){
 /* UN ORDRE DE DEPLACEMENT. L'unite ne telepporte pas son point de
    ralliement : il suit le chemin case par case, et la figure se traine
    derriere lui en se reorientant. */
+/* =====================================================================
+   UNE LIGNE QUI PLIE
+
+   LE DEFAUT MESURE : pendant cent quarante secondes, PAS UN SEUL
+   manifestant ne depassait le cordon. Les trois rangs de police
+   gardaient leur abscisse a la decimale pres du debut a la fin. Pousser
+   ne servait a rien, et le cortege n'avait aucun moyen d'ouvrir une
+   breche : on attendait un evenement de fin de partie, et la moitie
+   passait d'un coup. C'etait la vraie raison pour laquelle le jeu
+   n'etait pas amusant.
+
+   LA REGLE, maintenant : une unite qui tient sa position RECULE quand
+   la pression sur elle depasse son seuil, et REVIENT quand la pression
+   retombe. Elle ne peut pas reculer indefiniment — trois tuiles et
+   demie, apres quoi elle est percee et c'est le jeu qui tranche.
+
+   C'est symetrique : la police voit sa ligne plier quand elle laisse
+   la foule s'accumuler, et le cortege voit la ligne ceder quand il
+   pousse. Les deux camps ont enfin un retour immediat sur ce qu'ils
+   font.
+   ===================================================================== */
+var RECUL_MAX=3.5;
+function majLignes(s,dt){
+  if(!s.sim)return;
+  for(var i=0;i<s.tous.length;i++){
+    var U=s.tous[i];
+    if(U.camp!=='crs'||U.camions)continue;
+    if(U.route&&U.ri<U.route.length)continue;      /* elle marche : pas ici */
+    if(U.ordre==='avance'||U.ordre==='recule'||U.ordre==='vers')continue;
+    if(U.ancre===undefined){U.ancre=U.ax; U.plie=0;}
+    /* LE SEUIL DE FLEXION EST PLUS BAS QUE CELUI DE LA PANIQUE. Mesure :
+       la pression plafonne vers 2,1 alors que le seuil de rupture vaut
+       2,6 — a ce compte la ligne n'aurait jamais plie d'un pouce. Elle
+       commence a reculer bien avant de rompre, ce qui est d'ailleurs ce
+       que fait une vraie ligne. */
+    var seuil=(U.seuil||3.0)*0.55, p=U.presse||0;
+    if(p>seuil){
+      /* elle plie, d'autant plus vite qu'on pousse fort */
+      U.plie=Math.min(RECUL_MAX, U.plie+(p-seuil)*0.00055*dt);
+    }else if(p<seuil*0.6){
+      /* la poussee retombe : elle reprend son terrain, lentement */
+      U.plie=Math.max(0, U.plie-0.00030*dt);
+    }
+    U.ax=U.ancre+U.plie;
+  }
+}
 function majUnites(s,dt){
   if(!s.sim)return;
   s.unites.forEach(function(U){
@@ -1785,6 +1870,7 @@ function cmdAller(s,gx,gy){
     U.champ.calculer(s.sim,[[tx,ty]]);
     U.but=[tx,ty];
     U.libre=true;
+    U.ancre=undefined;        /* elle repart d'ailleurs : nouvelle ancre */
     FOULE.ordre(s.sim,U,'vers',0,3);
     ok++;
   }
@@ -2024,7 +2110,12 @@ function cmdMolotov(s,cx,cy){
        ceux qui l'ont lance la seconde d'apres. */
     var vx=(cx===undefined)?(sx+4.2):cx, vy=(cy===undefined)?sy:cy;
     if(!borner(sx,sy,vx,vy,PORT_MOLOTOV,c))loin=true;
-    vx=Math.min(mur-1.3,c[0]); vy=c[1];
+    /* ON PEUT BRULER LA LIGNE, mais pas derriere. C'etait la piece
+       manquante : interdit a 1,3 tuile EN DECA du cordon, le cocktail
+       ne servait a rien — le cortege n'avait aucun moyen d'ouvrir une
+       breche, et on mesurait zero passage pendant deux minutes vingt.
+       Il porte maintenant jusqu'a une tuile AU-DELA du premier rang. */
+    vx=Math.min(mur+1.0,c[0]); vy=c[1];
     /* la salve s'etale perpendiculairement au tir */
     var ax=vx-sx, ay=vy-sy, al=Math.sqrt(ax*ax+ay*ay)||1;
     var px=-ay/al, py=ax/al;
@@ -2122,6 +2213,99 @@ var UCOL=['#6ad8ff','#ffd24a','#7dff9a','#ff8ac8','#c8a0ff','#ff9a6a'];
 /* deux tableaux constants : setLineDash en alloue un a chaque appel si
    on lui passe un litteral, soixante fois par seconde */
 var DASH=[5,7], VIDE=[];
+/* =====================================================================
+   LES ICONES DE LA BARRE
+
+   Sept ordres sur un telephone de 390 points, c'est vingt-sept points
+   par bouton. Un mot entier n'y tient pas : POUSSER et BARRICADE se
+   touchaient, et il fallait une troisieme rangee pour que ce soit
+   lisible — trois rangees qui mangeaient un sixieme de l'ecran.
+   Un pictogramme de seize pixels se lit du premier coup d'oeil et
+   laisse la place au libelle en tout petit dessous. Peints une fois au
+   premier affichage, recopies ensuite.
+   ===================================================================== */
+var ICO=null;
+function icones(){
+  if(ICO)return ICO;
+  ICO={};
+  var faire=function(k,f){
+    var c=document.createElement('canvas'); c.width=c.height=16;
+    var g=c.getContext('2d'); f(g); ICO[k]=c;
+  };
+  var fl=function(g,sens){            /* une fleche epaisse */
+    g.fillStyle='#fff';
+    var x0=sens>0?3:12;
+    g.fillRect(sens>0?3:6,6,7,4);
+    for(var i=0;i<5;i++)g.fillRect(x0+sens*(5+0),3+i, 1, 1);
+    g.beginPath();
+    g.moveTo(sens>0?10:6, 3); g.lineTo(sens>0?14:2, 8); g.lineTo(sens>0?10:6,13);
+    g.closePath(); g.fill();
+  };
+  faire('pousser',function(g){fl(g,1);});
+  faire('avant',  function(g){fl(g,1);});
+  faire('arriere',function(g){fl(g,-1);});
+  faire('tenir',  function(g){       /* un bouclier */
+    g.fillStyle='#fff';
+    g.beginPath();g.moveTo(8,2);g.lineTo(13,4);g.lineTo(13,9);
+    g.lineTo(8,14);g.lineTo(3,9);g.lineTo(3,4);g.closePath();g.fill();
+    g.fillStyle='#1a2430';g.fillRect(7,5,2,6);g.fillRect(5,7,6,2);
+  });
+  faire('forme',  function(g){       /* une ligne de six hommes */
+    g.fillStyle='#fff';
+    for(var i=0;i<6;i++)g.fillRect(2+i*2,6,1,5);
+    g.fillRect(1,12,13,1);
+  });
+  faire('groupe', function(g){       /* trois points qui convergent */
+    g.fillStyle='#fff';
+    g.fillRect(7,7,3,3);
+    g.fillRect(1,2,2,2);g.fillRect(13,2,2,2);g.fillRect(7,13,2,2);
+    g.globalAlpha=0.55;
+    g.fillRect(3,4,3,1);g.fillRect(11,4,3,1);g.fillRect(8,11,1,2);
+    g.globalAlpha=1;
+  });
+  faire('disperser',function(g){     /* les memes, qui s'ecartent */
+    g.fillStyle='#fff';
+    g.fillRect(7,7,2,2);
+    g.fillRect(0,0,3,3);g.fillRect(13,0,3,3);g.fillRect(6,13,3,3);
+    g.globalAlpha=0.55;
+    g.fillRect(4,4,2,1);g.fillRect(11,4,2,1);g.fillRect(8,10,1,2);
+    g.globalAlpha=1;
+  });
+  faire('casser', function(g){       /* une vitre qui se fend */
+    g.fillStyle='rgba(255,255,255,.28)';g.fillRect(2,2,12,12);
+    g.fillStyle='#fff';
+    g.fillRect(2,2,12,1);g.fillRect(2,13,12,1);
+    g.fillRect(2,2,1,12);g.fillRect(13,2,1,12);
+    g.fillRect(7,3,1,4);g.fillRect(8,7,1,2);g.fillRect(6,9,1,4);
+    g.fillRect(9,6,4,1);g.fillRect(3,8,3,1);
+  });
+  faire('barricade',function(g){     /* trois barres empilees de travers */
+    g.fillStyle='#fff';
+    g.fillRect(1,10,14,3);
+    g.save();g.translate(8,7);g.rotate(-0.22);g.fillRect(-7,-1,14,3);g.restore();
+    g.save();g.translate(8,4);g.rotate(0.18);g.fillRect(-5,-1,11,2);g.restore();
+  });
+  faire('molotov',function(g){       /* la bouteille, et sa meche */
+    g.fillStyle='#fff'; g.fillRect(6,5,4,9);
+    g.fillStyle='rgba(255,255,255,.45)'; g.fillRect(6,9,4,5);
+    g.fillStyle='#fff'; g.fillRect(7,2,2,3);
+    g.fillStyle='#ffb43a'; g.fillRect(7,0,2,2);
+  });
+  faire('gaz',    function(g){       /* une grenade et son nuage */
+    g.fillStyle='rgba(255,255,255,.42)';
+    g.beginPath();g.arc(10,5,4.2,0,6.2832);g.fill();
+    g.beginPath();g.arc(6,4,3,0,6.2832);g.fill();
+    g.fillStyle='#fff';g.fillRect(5,9,4,6);g.fillRect(6,7,2,2);
+  });
+  faire('eau',    function(g){       /* un jet qui part en biais */
+    g.fillStyle='#fff';g.fillRect(1,7,5,4);
+    g.fillStyle='rgba(255,255,255,.75)';
+    g.fillRect(6,8,3,2);g.fillRect(9,7,3,2);g.fillRect(12,5,3,2);
+    g.fillStyle='rgba(255,255,255,.45)';
+    g.fillRect(9,10,3,2);g.fillRect(12,11,3,2);
+  });
+  return ICO;
+}
 /* LES ANNEAUX DE SELECTION, PEINTS UNE FOIS PAR COULEUR.
    Un stroke d'ellipse sous une transformation d'echelle coute cher :
    douze hommes selectionnes, c'etait SIX MILLISECONDES par image, plus
@@ -2146,28 +2330,30 @@ function anneau(c,gros){
 var ORDRES_CRS=[
   {k:'tenir', t:'TENIR'},
   {k:'avant', t:'AVANT'},
-  {k:'arriere', t:'ARRIÈRE'},
+  {k:'arriere', t:'ARRIÈRE'},   /* cote police */
   {k:'forme', t:'FORME'},
   {k:'groupe',t:'GROUPE'},
   {k:'gaz',   t:'GAZ'},
-  {k:'eau',   t:'EAU'},
-  {k:'diag',  t:'DIAG'}
+  {k:'eau',   t:'EAU'}
 ];
 var ORDRES_MANIF=[
   {k:'pousser', t:'POUSSER'},
   {k:'arriere', t:'RECULER'},
   {k:'casser',  t:'CASSER'},
-  {k:'barricade',t:'BARRICADE'},
+  {k:'barricade',t:'BARRIC.'},
   {k:'molotov', t:'MOLOTOV'},
   {k:'groupe',  t:'GROUPE'},
-  {k:'disperser',t:'DISPERSER'},
-  {k:'diag',    t:'DIAG'}
+  {k:'disperser',t:'DISPER.'}
 ];
 var ORDRES=ORDRES_CRS;
 function barreMaj(s,L,H){
   ORDRES=(s.camp==='manif')?ORDRES_MANIF:ORDRES_CRS;
   var E=(typeof ECH==='number'&&ECH>0)?ECH:2;
-  var hr=Math.max(13,Math.round(42/E));      /* 42 points d'ecran */
+  /* CINQUANTE POINTS D'ECRAN. Quarante-deux suffisaient pour un mot ;
+     un pictogramme avec son libelle dessous en demande un peu plus. On
+     reste gagnant : deux rangees de cinquante valent mieux que trois de
+     quarante-deux, et le doigt a une cible plus grande. */
+  var hr=Math.max(15,Math.round(50/E));
   if(s.M&&s.M.fin){
     /* fini : une seule chose a faire, et elle prend toute la largeur */
     s.hbar=hr+4;
@@ -2180,9 +2366,12 @@ function barreMaj(s,L,H){
      deux rangees donnaient des boutons de vingt-quatre points dont les
      libelles se touchaient. On coupe des que la place manque : mieux
      vaut une rangee de plus que des timbres illisibles. */
+  /* DEUX RANGEES AU PLUS. La troisieme rangee existait parce qu'un
+     libelle de sept lettres ne tient pas dans vingt-sept points ; les
+     ordres portent maintenant un pictogramme, et vingt-sept points
+     suffisent. On a recupere un sixieme de la hauteur de la rue. */
   var une=(L>=360&&(L/(nU*1.35+ORDRES.length))>=30);
-  var deuxO=(!une&&(L/ORDRES.length)<30);
-  s.hbar=une?hr:(deuxO?hr*3:hr*2);
+  s.hbar=une?hr:hr*2;
   var y1=H-s.hbar, y2=une?y1:(H-s.hbar+hr);
   if(une){
     var pdsU=1.35, tot=nU*pdsU+ORDRES.length;
@@ -2194,18 +2383,25 @@ function barreMaj(s,L,H){
     var uu=L/nU, x2=0;
     for(i=0;i<s.unites.length;i++){B.push({x:x2,y:y1,w:uu-2,h:hr-2,k:'u'+i});x2+=uu;}
     B.push({x:x2,y:y1,w:uu-2,h:hr-2,k:'tout'});
-    if(deuxO){
-      var n1=Math.ceil(ORDRES.length/2);
-      var ua=L/n1, xa=0;
-      for(i=0;i<n1;i++){B.push({x:xa,y:y2,w:ua-2,h:hr-2,k:ORDRES[i].k,t:ORDRES[i].t});xa+=ua;}
-      var n2=ORDRES.length-n1, ub=L/n2, xb=0;
-      for(i=n1;i<ORDRES.length;i++){B.push({x:xb,y:y2+hr,w:ub-2,h:hr-2,k:ORDRES[i].k,t:ORDRES[i].t});xb+=ub;}
-    }else{
-      var uo=L/ORDRES.length, x3=0;
-      for(i=0;i<ORDRES.length;i++){B.push({x:x3,y:y2,w:uo-2,h:hr-2,k:ORDRES[i].k,t:ORDRES[i].t});x3+=uo;}
-    }
+    var uo=L/ORDRES.length, x3=0;
+    for(i=0;i<ORDRES.length;i++){B.push({x:x3,y:y2,w:uo-2,h:hr-2,k:ORDRES[i].k,t:ORDRES[i].t});x3+=uo;}
   }
   s.barre=B;
+}
+/* CE QU'ON PEUT FAIRE MAINTENANT, avec ce qui est selectionne. Sert a
+   griser le bouton : un ordre qu'on ne peut pas donner doit se voir
+   avant qu'on le touche. */
+function dispo(s,k){
+  if(!s.unites)return true;
+  var L=selection(s);
+  if(!L.length)return false;
+  if(k==='molotov')return s.molotovRech<=0;
+  if(k==='gaz')return L.some(function(U){return !U.camions;});
+  if(k==='eau')return L.some(function(U){return !!U.camions;});
+  if(k==='forme')return L.some(function(U){return !!U.form;});
+  if(k==='groupe')return L.length>1||L.some(function(U){return !!U.libre;});
+  if(k==='barricade')return s.camp==='manif';
+  return true;
 }
 function barreDessine(s,L,H){
   var g=G, i, b;
@@ -2246,12 +2442,35 @@ function barreDessine(s,L,H){
         continue;
       }
       var act=(b.k==='diag'&&s.diag)||(s.vise===b.k);
-      g.fillStyle=act?'#7ae8ff':'rgba(255,255,255,.10)';
+      /* UN ORDRE INDISPONIBLE SE VOIT. Lancer des cocktails en recharge
+         ou demander de l'eau a des hommes a pied : autant le dire avant
+         le doigt, pas apres. */
+      var gris=!dispo(s,b.k);
+      g.fillStyle=act?'#7ae8ff':(gris?'rgba(255,255,255,.04)':'rgba(255,255,255,.10)');
       coArr(g,b.x+1,b.y+1,b.w,b.h-2,3);g.fill();
       if(s.presse1===b.k){g.fillStyle='rgba(255,255,255,.3)';coArr(g,b.x+1,b.y+1,b.w,b.h-2,3);g.fill();}
-      g.fillStyle=act?'#06101c':'#cfe4f2';
-      g.font='bold 7px ui-monospace,monospace';g.textAlign='center';
-      g.fillText(b.t,b.x+1+b.w/2,cy);
+      var IC=icones()[b.k], cxb=b.x+1+b.w/2;
+      g.globalAlpha=gris?0.30:1;
+      if(IC){
+        /* le pictogramme en haut, le libelle dessous : on lit l'un de
+           loin et l'autre quand on hesite */
+        var ih=Math.min(15,b.h-9);
+        if(act){
+          /* sur fond clair, l'icone blanche disparait : on la retourne */
+          g.save();g.globalCompositeOperation='difference';
+          g.drawImage(IC,(cxb-ih/2)|0,(b.y+2)|0,ih|0,ih|0);g.restore();
+        }else{
+          g.drawImage(IC,(cxb-ih/2)|0,(b.y+2)|0,ih|0,ih|0);
+        }
+        g.fillStyle=act?'#06101c':'#cfe4f2';
+        g.font='bold 6px ui-monospace,monospace';g.textAlign='center';
+        g.fillText(b.t,cxb,b.y+b.h-4);
+      }else{
+        g.fillStyle=act?'#06101c':'#cfe4f2';
+        g.font='bold 7px ui-monospace,monospace';g.textAlign='center';
+        g.fillText(b.t,cxb,cy);
+      }
+      g.globalAlpha=1;
     }
   }
   g.textAlign='left';g.textBaseline='alphabetic';
@@ -2323,9 +2542,14 @@ var M={
     /* LA LIMITE EST A DEUX TUILES DE LA PREFECTURE, pas a cinq du
        cordon : trop pres, quelques corps ejectes d'une bousculade
        suffisaient a faire perdre la mission en vingt secondes. */
-    s.M=MISSION?MISSION.creer({graine:s.graine, ligne:GW-8,
+    /* LA LIGNE A FRANCHIR EST JUSTE DERRIERE LE TROISIEME RANG, pas six
+       tuiles plus loin. A GW-8 il fallait percer les trois rangs PUIS
+       traverser une esplanade vide : le compteur restait a zero cent
+       secondes durant, puis la moitie du cortege passait d'un coup.
+       Mesure : le dernier rang tient a 36,6 ; la ligne est a 37. */
+    s.M=MISSION?MISSION.creer({graine:s.graine, ligne:GW-11,
                                camp:s.camp, vitrines:s.vitrines}):null;
-    s.mot='';s.motT=0;s.feuxVus=0;s.molotovRech=0;s.vise=null;s.viseXY=null;
+    s.mot='';s.motT=0;s.feuxVus=0;s.molotovRech=0;s.vise=null;s.viseXY=null;s.camVise=null;
     s.fondu=700;        /* la rue s'ouvre depuis le noir */
   },
   pas:function(s,dt){
@@ -2336,6 +2560,7 @@ var M={
     if(s.M&&s.M.fin)return;           /* la rue se fige quand c'est fini */
     if(s.poussee>0)s.poussee-=dt;
     majCortege(s,dt);
+    majLignes(s,dt);
     majUnites(s,dt);
     FOULE.pas(s.sim,dt);
     if(FUM&&s.fum)FUM.pas(s.fum,dt,s.sim);
@@ -2622,6 +2847,16 @@ var M={
         var reste=Object.keys(s.selN).filter(function(k){return s.selN[k];});
         if(!reste.length){s.selN[ui]=true;reste=[String(ui)];}
         s.sel=+reste[0];
+        /* LA CAMERA VA VOIR CE QU'ON VIENT DE CHOISIR. Sur un telephone
+           la rue ne tient pas dans l'ecran : selectionner un bloc qu'on
+           ne voit pas, c'est commander a l'aveugle. On cadre dessus, et
+           le suivi automatique reprend quatre secondes plus tard. */
+        if(s.selN[ui]&&s.unites[ui]){
+          var UC=s.unites[ui], fo=[UC.ax,UC.ay];
+          foyerUnite(s,UC,fo);
+          s.camVise=[mx(fo[0],fo[1]), my(fo[0],fo[1])];
+          s.camLibre=true; s.camLibreT=4000;
+        }
         s.mot=selNoms(s)+' · SÉLECTIONNÉE'+(reste.length>1?'S':'');s.motT=1300;
         return;
       }
@@ -2674,7 +2909,7 @@ var M={
        panoramique reprend ses droits des que la visee est finie. */
     if(s.vise){s.viseXY=s.viseXY||[0,0];s.viseXY[0]=x;s.viseXY[1]=y;return;}
     if(s.hbar&&y>s.H-s.hbar-2)return;   /* on ne panoramique pas sur la barre */
-    s.camLibre=true; s.camLibreT=5000;
+    s.camLibre=true; s.camLibreT=5000; s.camVise=null;
     s.cam.x-=dx/s.cam.z; s.cam.y-=dy/s.cam.z;
     camBornes(s);
   },

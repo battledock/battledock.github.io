@@ -1958,3 +1958,62 @@ where niveau = 29;
 -- de dessin contre 8,8 sans feu — inchange par rapport a l'etape
 -- precedente, les nouvelles particules etant toutes breves. Le pic a
 -- l'impact dure une demi-seconde.
+
+-- =====================================================================
+-- ETAPE : LES CONTROLES, ET POURQUOI CE N'ETAIT PAS AMUSANT
+--                                                      2026-10-27-1930
+-- =====================================================================
+--
+-- LE REPROCHE : « pas assez fun, et les controles pas fonctionnels ».
+-- Deux choses differentes, mesurees separement.
+--
+-- ---- LES CONTROLES ----
+-- Mesure au depart : quatorze boutons sur TROIS rangees occupant un
+-- sixieme de la hauteur, et une camera au zoom MINIMUM qui montrait
+-- surtout des arbres et des trottoirs avec la foule en petit tas.
+--   - La camera commence a 1,35 au lieu du plancher. Le premier regard
+--     tombe sur le contact entre le cortege et le cordon.
+--   - Taper une pastille amene la camera sur l'unite, en glissant et
+--     non en sautant : selectionner un bloc qu'on ne voit pas, c'est
+--     commander a l'aveugle.
+--   - La troisieme rangee existait parce qu'un libelle de sept lettres
+--     ne tient pas dans vingt-sept points. Les ordres portent un
+--     pictogramme de seize pixels : deux rangees suffisent, et la
+--     cible sous le pouce est passee de 38 a 46 points CSS.
+--   - Un ordre indisponible est grise AVANT qu'on le touche.
+--   - DIAG, bouton de developpement, sort de la barre du joueur.
+--
+-- ---- POURQUOI CE N'ETAIT PAS AMUSANT ----
+-- La mesure qui a tout explique : PENDANT CENT QUARANTE SECONDES, PAS
+-- UN SEUL manifestant ne depassait le cordon. Les trois rangs gardaient
+-- leur abscisse a la decimale pres, 33,3, du debut a la fin. Le
+-- compteur restait a 0/12 pendant deux minutes vingt, puis un evenement
+-- de fin de partie forcait le verrou et la moitie passait d'un coup.
+-- Pousser ne servait a rien. Aucun des deux camps n'avait de decision a
+-- prendre.
+--
+-- QUATRE CAUSES, corrigees dans l'ordre ou on les a trouvees :
+--   1. Le passage des barrieres faisait SEPT tuiles, exactement la
+--      largeur du cordon. Tout passait par la et le cordon couvrait
+--      tout. Il en fait treize pour une ligne qui en couvre huit.
+--   2. Les quatre blocs visaient le MEME axe : ils arrivaient en file
+--      sur le point le mieux tenu et se bousculaient entre eux. Ils
+--      attaquent maintenant quatre bandes.
+--   3. Une ligne de police ne reculait jamais. Elle plie desormais
+--      sous la pression, jusqu'a 3,5 tuiles, et reprend son terrain.
+--      Le seuil de flexion est a 55 % du seuil de rupture : la mesure
+--      montrait une pression plafonnant a 2,1 pour un seuil de 2,6,
+--      autrement dit une ligne qui n'aurait jamais plie d'un pouce.
+--   4. Le cocktail etait interdit a 1,3 tuile EN DECA du cordon : la
+--      seule arme capable d'ouvrir une breche ne pouvait pas la
+--      toucher. Il porte jusqu'a une tuile au-dela du premier rang, et
+--      un homme dans les flammes cede meme s'il a ordre de tenir.
+--
+-- CE QUE CA DONNE, mesure. Premier passage : 16 s au lieu de 130 s.
+-- Flux passif sur trois graines : 35 a 57 passages repartis sur la
+-- partie, au lieu de 0 puis tout d'un coup. Les seuils ont ete
+-- recalibres SUR CETTE MESURE : la police en tolere 45 (moins que le
+-- flux passif, donc ne rien faire est perdant), le cortege doit en
+-- faire passer 24 (plus que ce que l'IA policiere laisse filtrer). Les
+-- points par passage sont passes de 12 a 8 des deux cotes, sinon une
+-- partie gagnee de justesse finissait sous zero.

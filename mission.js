@@ -142,19 +142,20 @@ MIS.creer=function(o){
     /* DOUZE PASSAGES TOLERES. A six, une poussee reussie suffisait a
        tout perdre d'un coup, sans qu'on ait eu le temps de reagir : une
        mission se perd sur une suite de fautes, pas sur une seconde. */
-    /* VINGT-CINQ PASSAGES TOLERES, pas douze. Sur une avenue de six
-       tuiles, douze etait le bon chiffre. Sur une place, quelques
-       dizaines de personnes filtrent forcement par le passage : ce
-       qu'on defend, ce n'est pas l'etancheite, c'est de ne pas etre
-       submerge. A douze, la mission etait perdue dans les huit graines
-       quoi qu'on fasse. */
-    /* cote police : combien on en laisse passer. Cote cortege : combien
-       il faut en faire passer. Le meme chiffre, lu dans les deux sens. */
-    /* DEUX SEUILS, PAS UN. La police tolere dix-huit passages ; le
-       cortege, lui, doit en faire passer DOUZE pour l'emporter. Le meme
-       chiffre des deux cotes rendait le cortege ingagnable : il fallait
-       faire mieux que ce que la police avait le droit de laisser. */
-    tolere:18, objectif:12, toleBris:0,
+    /* VINGT-SIX ET QUARANTE-DEUX, RECALIBRES SUR UNE MESURE.
+       Le passage des barrieres fait maintenant treize tuiles pour un
+       cordon qui en couvre huit, et les quatre blocs du cortege
+       attaquent quatre bandes differentes : il filtre du monde en
+       permanence au lieu de ne rien laisser passer pendant deux
+       minutes. Mesure sur trois graines, personne aux commandes :
+       entre 35 et 57 passages. La police en tolere 45 — moins que le
+       flux passif, donc ne rien faire est perdant. Le cortege doit en
+       faire passer 24 — plus que ce que l'IA policiere laisse filtrer, donc le laisser
+       couler tout seul ne suffit pas non plus.
+       DEUX SEUILS, PAS UN : le meme chiffre des deux cotes rendait un
+       des camps ingagnable, puisqu'il devait faire mieux que ce que
+       l'autre avait le droit de laisser. */
+    tolere:45, objectif:24, toleBris:0,
     passes:0, brisees:0, tensionMax:0,
     gaz:0, charges:0, fauteCam:0,
     camp:(o.camp||'crs'),
@@ -262,7 +263,10 @@ MIS.terminer=function(M,s,gagne){
   if(M.camp==='manif'){
     /* COTE CORTEGE : ce qu'on a fait passer, ce qu'on a marque, et le
        temps qu'on a mis — vite vaut mieux que tard. */
-    sc+=M.passes*34;
+    /* HUIT POINTS PAR PASSAGE cote cortege aussi : l'objectif est passe
+       de douze a quarante-deux, et trente-quatre points l'un donnait
+       quatorze cents points pour une partie quelconque. */
+    sc+=M.passes*8;
     sc+=(M.barricades||0)*150;
     sc+=M.brisees*90;
     if(gagne)sc+=400+Math.max(0,Math.round((M.duree-M.t)/1000))*4;
@@ -281,10 +285,10 @@ MIS.terminer=function(M,s,gagne){
   }
   sc+=Math.round(Math.min(M.t,M.duree)/1000)*6;          /* le temps tenu */
   if(gagne)sc+=400;
-  /* DOUZE POINTS PAR PASSAGE, pas quarante-cinq. Avec vingt-cinq
-     passages toleres, l'ancienne penalite retirait plus de mille points
-     a une partie gagnee : on tenait la place et on finissait a zero. */
-  sc-=M.passes*12;
+  /* HUIT POINTS PAR PASSAGE, pas douze. Le seuil tolere est passe de
+     dix-huit a vingt-six : a douze points, une partie gagnee de justesse
+     finissait sous zero. */
+  sc-=M.passes*8;
   sc-=M.brisees*180;
   sc-=M.gaz*35;
   sc-=M.charges*20;
@@ -296,7 +300,7 @@ MIS.terminer=function(M,s,gagne){
   M.detail=[
     ['Temps tenu', '+'+Math.round(Math.min(M.t,M.duree)/1000)*6],
     ['Mission tenue', gagne?'+400':'0'],
-    ['Manifestants passés ('+M.passes+')', '-'+M.passes*12],
+    ['Manifestants passés ('+M.passes+')', '-'+M.passes*8],
     ['Devantures brisées ('+M.brisees+')', '-'+M.brisees*180],
     ['Grenades ('+M.gaz+')', '-'+M.gaz*35],
     ['Charges ('+M.charges+')', '-'+M.charges*20],

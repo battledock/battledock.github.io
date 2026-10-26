@@ -280,6 +280,7 @@ function majStress(S,a,voisins,dt){
      seuls : c'est la contagion, ensuite, qui decide jusqu'ou ca va. */
   mont+=a.choc*0.0032;
   a.choc=Math.max(0,a.choc-dt*0.00075);
+  if(a.brule>0)a.brule-=dt;     /* la marque des flammes s'efface seule */
   /* la detente : franche quand rien ne pousse, lente sinon */
   var detente=(mont<=0.000010)?0.00014:0.000026;
   if(a.etat==='CALME')detente*=3.2;          /* on souffle */
@@ -353,6 +354,14 @@ function reglesManif(S,a,G,dt){
    a la densite ne s'exprime que si aucun ordre n'est en cours. */
 function reglesCRS(S,a,G,dt){
   var E=a.etat;
+  /* LES FLAMMES PASSENT AVANT LES ORDRES. Un homme dans le feu recule,
+     meme si on lui a dit de tenir — et c'est tout l'interet d'un
+     cocktail bien place : il ouvre une breche la ou la poussee seule
+     ne pouvait rien. */
+  if(a.brule>0){
+    if(E!=='CEDE'){pourquoi(a,'pris dans les flammes');etat(S,a,'CEDE');}
+    return;
+  }
   if(G.ordre==='vers'){ if(E!=='VERS'){pourquoi(a,'ordre de déplacement');etat(S,a,'VERS');} return; }
   if(G.ordre==='avance'){ if(E!=='AVANCE'){pourquoi(a,'ordre d’avancer');etat(S,a,'AVANCE');} return; }
   if(G.ordre==='recule'){ if(E!=='RECUL'){pourquoi(a,'ordre de reculer');etat(S,a,'RECUL');} return; }
@@ -369,6 +378,10 @@ function reglesCRS(S,a,G,dt){
   if(E==='CEDE'){
     if(G.presse<G.seuil*0.72){pourquoi(a,'la poussée retombe');etat(S,a,'TIENT');}
     return;
+  }
+  if(E==='TIENT'&&a.choc>0.85){
+    /* un homme qu'on vient de secouer ne tient plus tout de suite */
+    pourquoi(a,'encaissé un choc');etat(S,a,'CEDE');return;
   }
   if(G.presse>G.seuil){pourquoi(a,'débordé par la densité');etat(S,a,'CEDE');return;}
   if(a.distCible>1.25){pourquoi(a,'écarté de sa place');etat(S,a,'FORME');return;}
@@ -436,7 +449,7 @@ FOULE.poser=function(S,G,x,y,o){
        pas au meme moment : chacun porte un coefficient qui multiplie
        tout ce qui lui arrive. Le groupe reste lisible — ils vont tous
        dans le meme sens — mais la panique part d'un endroit precis. */
-    nerf:(o.nerf||1), stress:(o.stress||0), choc:0,
+    nerf:(o.nerf||1), stress:(o.stress||0), choc:0, brule:0,
     serres:0, contact:0, distMenace:99, distCible:0,
     bloque:0, biais:((G.membres.length%2)?1:-1)
   };
