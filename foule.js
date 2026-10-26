@@ -165,7 +165,7 @@ var FORM={
   ligne:function(n,i,ax,ay){
     var parRang=Math.ceil(n/Math.ceil(n/12)), rang=(i/parRang)|0, col=i%parRang;
     var dec=(parRang-1)/2;
-    return {u:(col-dec)*0.66, v:-rang*0.78};
+    return {u:(col-dec)*0.70, v:-rang*0.82};
   },
   /* un coin, pour fendre */
   coin:function(n,i,ax,ay){
@@ -620,7 +620,7 @@ FOULE.pas=function(S,dt){
       fx-=a.vx*R.frein/R.vMarche; fy-=a.vy*R.frein/R.vMarche;
     }
     /* --- la separation : un corps pousse ses voisins --- */
-    var coh=0, cx2=0, cy2=0;
+    var coh=0, cx2=0, cy2=0, spx=0, spy=0;
     for(j=0;j<vois.length;j++){
       if(vois[j]===i)continue;
       b=A[vois[j]];
@@ -634,11 +634,27 @@ FOULE.pas=function(S,dt){
            l'ordre d'avancer ne se voyait pas. Le rapport des masses dit
            qui recule — c'est tout ce qui separe un cordon d'une file
            d'attente. */
-        var rm=(b.masse*2)/(a.masse+b.masse);
-        fx+=ex/e*pen*R.sepF*rm; fy+=ey/e*pen*R.sepF*rm;
+        /* UN HOMME CAMPE RESISTE. Trente-huit hommes contre trois cent
+           cinquante, c'est le rapport d'un vrai cordon ; sans ancrage
+           ils etaient simplement balayes et la mission se perdait quoi
+           qu'on fasse. Tenir sa place, c'est peser deux fois et demie
+           son poids — et le perdre des qu'on se deplace. */
+        var ma=a.masse*((a.etat==='TIENT'||a.etat==='FORME')?2.5:1);
+        var mb=b.masse*((b.etat==='TIENT'||b.etat==='FORME')?2.5:1);
+        var rm=(mb*2)/(ma+mb);
+        spx+=ex/e*pen*R.sepF*rm; spy+=ey/e*pen*R.sepF*rm;
       }
       if(b.g===a.g&&e2<4){coh++;cx2+=b.x;cy2+=b.y;}
     }
+    /* LE PLAFOND DE POUSSEE. Sans lui, trois cent cinquante corps
+       alignes transmettent leur poussee sans aucune perte : la force
+       recue par le premier rang est la somme de tous ceux de derriere,
+       et AUCUN cordon ne peut tenir — on perdait la mission quoi qu'on
+       fasse. Dans une foule reelle, une poussee se dissipe de proche en
+       proche. On plafonne donc ce qu'un corps peut recevoir. */
+    var sl=Math.sqrt(spx*spx+spy*spy), plaf=R.sepF*2.6;
+    if(sl>plaf){spx=spx/sl*plaf; spy=spy/sl*plaf;}
+    fx+=spx; fy+=spy;
     /* --- la cohesion : rester avec les siens. Elle tombe quand on
            panique : c'est justement ce qui disloque un cortege. --- */
     var G=G2;

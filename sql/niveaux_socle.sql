@@ -1549,3 +1549,64 @@ where niveau = 29;
 -- changement de figure (etendue mesuree differente), regroupement qui
 -- ramene l'ecart maximal de 10,4 a 7,1 tuiles, et le gaz qui fait
 -- paniquer. Les unites non choisies ne bougent pas : 0,05 tuile.
+
+-- ============================================================
+-- LE CORDON — PREMIERE MISSION (2026-10-27-0920)
+-- ============================================================
+-- QUATRIEME FICHIER, mission.js, et il ne parle ni a la simulation ni
+-- au rendu : il LIT la rue. Aucun objectif n'est declare atteint par
+-- l'interface — chacun porte une fonction qui regarde l'etat des corps
+-- et renvoie un chiffre. Si on supprimait tout l'affichage, la partie se
+-- gagnerait ou se perdrait pareil.
+--
+-- « AVENUE DE LA REPUBLIQUE » : tenir 2 min 30. Objectif principal, 12
+-- passages toleres ; secondaires, les devantures intactes et la tension
+-- sous 80 %. Briefing en quatre lignes QUI LISENT LA MISSION, affiche
+-- pendant que la rue tourne deja et qu'une tape referme. Pas d'ecran de
+-- preparation : la partie commence a la seconde zero.
+--
+-- SIX EVENEMENTS tires par graine (ordre melange, minutes a plus ou
+-- moins huit secondes) : deux poussees, les casseurs sur une vitrine
+-- tiree parmi trois, la presse qui colle au cortege, un renfort de
+-- soixante manifestants, un renfort de six policiers. Meme graine, meme
+-- mission — on peut rejouer un bogue. Graine differente, autre mission.
+--
+-- DES CONSEQUENCES REELLES : la vitrine ne casse que si quatre casseurs
+-- restent dessus cinq secondes, et seulement si on ne les deloge pas ;
+-- gazer ou charger pendant que les cameras tournent coute 120 points par
+-- fois ; la tension maximale coute jusqu'a 320.
+--
+-- CINQ CHOSES QUI RENDAIENT LA MISSION INJOUABLE, trouvees en la jouant
+--  1. LE CORTEGE S'ARRETAIT A UNE TUILE ET DEMIE DU POLICIER LE PLUS
+--     AVANCE. Il ne pouvait donc PAS deborder le cordon, meme en
+--     retirant tous les hommes : on gagnait sans rien faire et la
+--     defaite etait injouable. Il vise maintenant la prefecture, et son
+--     front colle a sa propre tete : si le cordon tient, la tete
+--     n'avance pas, donc le front non plus.
+--  2. LES BARRIERES FERMAIENT LA CHAUSSEE ET LAISSAIENT LES TROTTOIRS
+--     OUVERTS — exactement l'inverse de ce qu'il faut. Le cortege
+--     contournait par les cotes.
+--  3. A 1,6 tuile par seconde, le cortege traversait l'avenue en sept
+--     secondes : la mission se jouait avant d'avoir commence. 0,55.
+--  4. LA POUSSEE SE TRANSMETTAIT SANS PERTE. Trois cent cinquante corps
+--     alignes, c'est la somme de tous ceux de derriere sur le premier
+--     rang : aucun cordon ne pouvait tenir. Une poussee se dissipe de
+--     proche en proche ; on plafonne ce qu'un corps peut recevoir.
+--  5. LE CORDON AVAIT DES TROUS. Rayon 0,33 pour 0,70 d'ecart entre deux
+--     places : des interstices larges comme un homme. A 0,45 ils se
+--     touchent. Et tenir sa place fait peser deux fois et demie son
+--     poids — qu'on perd des qu'on se deplace.
+--
+-- UN EVENEMENT RETIRE, ET POURQUOI C'EST BIEN : le contournement par la
+-- transversale. Sur cette carte elle croise l'avenue A L'OUEST du
+-- cordon : le bloc n'avait aucun debouche et tournait en rond. Un
+-- evenement qui ne peut pas aboutir est une fausse menace. Remplace par
+-- un renfort de cortege, qui lui se voit.
+--
+-- MESURE, huit graines jouees jusqu'au bout sans toucher a l'ecran :
+-- quatre defaites, quatre victoires — et dans TOUS les cas passifs la
+-- devanture est brisee. Avec des ordres, deux des trois graines perdues
+-- deviennent des victoires a plus de 900 points. La troisieme reste
+-- perdue parce que la strategie de test charge onze fois : charger sans
+-- discernement DOIT perdre. L'equilibrage n'est pas fini — ne rien faire
+-- gagne encore une fois sur deux — et c'est le prochain chantier.
