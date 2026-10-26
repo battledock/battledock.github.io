@@ -46,6 +46,49 @@ De.prototype.e=function(a,b){return a+Math.floor(this.f()*(b-a+1));};
    test(M,s) renvoie {v:valeur, c:cible, fait:bool, rate:bool}. Rien
    d'autre ne decide de leur etat.
    --------------------------------------------------------------------- */
+/* LES OBJECTIFS DU CORTEGE. Ce ne sont pas ceux de la police inverses :
+   un cortege ne « tient » rien, il veut PASSER, et ce qu'il laisse
+   derriere lui compte. */
+function objectifsManif(){
+  return [
+  { id:'passer', type:'principal',
+    t:'FRANCHIR LA LIGNE', court:'PASSÉS',
+    dit:function(o){return o.v+' passés sur '+o.c+' à faire passer';},
+    test:function(M,s){
+      var n=0, A=s.sim.agents;
+      for(var i=0;i<A.length;i++){
+        var a=A[i];
+        if(a.camp!=='manif')continue;
+        if(a.etat==='PANIQUE'||a.etat==='FUIT')continue;
+        if(a.x>M.ligne)n++;
+      }
+      M.passes=Math.max(M.passes,n);
+      return {v:M.passes, c:M.objectif, fait:(M.passes>=M.objectif), rate:false};
+    }},
+  { id:'tenirCortege', type:'secondaire',
+    t:'GARDER LE CORTÈGE', court:'CORTÈGE',
+    dit:function(o){return o.v+' en fuite · max '+o.c;},
+    test:function(M,s){
+      var n=0, A=s.sim.agents;
+      for(var i=0;i<A.length;i++){
+        var a=A[i];
+        if(a.camp!=='manif')continue;
+        if(a.etat==='FUIT'||a.etat==='CALME')n++;
+      }
+      M.enFuite=Math.max(M.enFuite||0,n);
+      return {v:M.enFuite, c:110, fait:(M.enFuite<=110), rate:(M.enFuite>110)};
+    }},
+  { id:'marquer', type:'secondaire',
+    t:'MARQUER LE COUP', court:'MARQUÉ',
+    dit:function(o){return (M_barr(o)||0)+' barricade(s) · '+o.v+' vitrine(s)';},
+    test:function(M,s){
+      return {v:M.brisees, c:1, barr:(M.barricades||0),
+              fait:((M.barricades||0)+M.brisees>=2), rate:false};
+    }}
+  ];
+}
+function M_barr(o){return o.barr;}
+
 function objectifs(){
   return [
   { id:'tenir', type:'principal',
@@ -101,11 +144,18 @@ MIS.creer=function(o){
        qu'on defend, ce n'est pas l'etancheite, c'est de ne pas etre
        submerge. A douze, la mission etait perdue dans les huit graines
        quoi qu'on fasse. */
-    tolere:18, toleBris:0,
+    /* cote police : combien on en laisse passer. Cote cortege : combien
+       il faut en faire passer. Le meme chiffre, lu dans les deux sens. */
+    /* DEUX SEUILS, PAS UN. La police tolere dix-huit passages ; le
+       cortege, lui, doit en faire passer DOUZE pour l'emporter. Le meme
+       chiffre des deux cotes rendait le cortege ingagnable : il fallait
+       faire mieux que ce que la police avait le droit de laisser. */
+    tolere:18, objectif:12, toleBris:0,
     passes:0, brisees:0, tensionMax:0,
     gaz:0, charges:0, fauteCam:0,
-    fin:null, score:0, journal:[],
-    obj:objectifs(), etats:{},
+    camp:(o.camp||'crs'),
+    fin:null, score:0, journal:[], enFuite:0, barricades:0,
+    obj:(o.camp==='manif')?objectifsManif():objectifs(), etats:{},
     file:[], courant:null, alerte:null, alerteT:0,
     vitrines:o.vitrines||[], ciblee:null, casseurs:null, contourSens:0,
     presseJusqu:0, briefT:7200
@@ -174,6 +224,13 @@ MIS.pas=function(M,s,dt,api){
   }
   /* LA TENSION A FOND EST UNE DEFAITE : la rue a basculé. */
   if(s.sim.tension>=0.97)rate=true;
+  if(M.camp==='manif'){
+    /* LE CORTEGE GAGNE DES QU'IL EST PASSE : il n'a pas a attendre la
+       fin du chrono pour que ce soit acquis. */
+    if(M.passes>=M.objectif){MIS.terminer(M,s,true);return;}
+    if(M.t>=M.duree){MIS.terminer(M,s,false);return;}
+    return;
+  }
   if(rate){MIS.terminer(M,s,false);return;}
   if(M.t>=M.duree){MIS.terminer(M,s,true);return;}
 };
@@ -192,6 +249,24 @@ MIS.terminer=function(M,s,gagne){
   M.fin=gagne?'gagne':'perdu';
   /* LE SCORE : ce qu'on a tenu, moins ce qu'on a coûté. */
   var sc=0;
+  if(M.camp==='manif'){
+    /* COTE CORTEGE : ce qu'on a fait passer, ce qu'on a marque, et le
+       temps qu'on a mis — vite vaut mieux que tard. */
+    sc+=M.passes*34;
+    sc+=(M.barricades||0)*150;
+    sc+=M.brisees*90;
+    if(gagne)sc+=400+Math.max(0,Math.round((M.duree-M.t)/1000))*4;
+    sc-=Math.round((M.enFuite||0)*2.2);
+    M.score=Math.max(0,sc);
+    M.detail=[
+      ['Passés ('+M.passes+')', '+'+M.passes*34],
+      ['Barricades ('+(M.barricades||0)+')', '+'+(M.barricades||0)*150],
+      ['Devantures ('+M.brisees+')', '+'+M.brisees*90],
+      ['Ligne franchie', gagne?('+'+(400+Math.max(0,Math.round((M.duree-M.t)/1000))*4)):'0'],
+      ['Cortège dispersé ('+(M.enFuite||0)+')', '-'+Math.round((M.enFuite||0)*2.2)]
+    ];
+    return;
+  }
   sc+=Math.round(Math.min(M.t,M.duree)/1000)*6;          /* le temps tenu */
   if(gagne)sc+=400;
   /* DOUZE POINTS PAR PASSAGE, pas quarante-cinq. Avec vingt-cinq

@@ -626,6 +626,28 @@ function faireObjets(nuit){
     mur(g,A[0],A[1],B2[0],B2[1],11,12.6,'#9aa0a8');
     mur(g,A[0],A[1],B2[0],B2[1],2,3.4,'#7a8088');
   });
+  /* LA BARRICADE MONTEE : ce qui traine sur une place, empile en
+     travers — barrieres renversees, un banc, une poubelle, des
+     planches. Elle doit se lire comme un tas, pas comme un mur. */
+  OBJ.barricade=calque(58,52,22,44,function(g,x,y){
+    ombreSol(g,x+8,y+2,22,9);
+    /* le socle : des barrieres couchees */
+    pave(g,x-6,y-8,1.05,0.5,5,'#7a8088','#6a7078','#5c6268');
+    pave(g,x-2,y-4,0.9,0.45,9,'#8a9098','#78808a','#68707a');
+    /* un banc renverse, en biais */
+    mur(g,x-4,y-2,x+16,y+8,5,13,'#8a6a44');
+    mur(g,x-4,y-2,x+16,y+8,13,14.4,'#a0805a');
+    /* une poubelle couchee */
+    pave(g,x+10,y+2,0.4,0.34,8,'#3e4a52','#2e3840','#263038');
+    /* des planches en travers, le desordre */
+    mur(g,x-8,y+2,x+10,y+11,10,12,'#6a5a3e');
+    mur(g,x-5,y-6,x+13,y+3,16,18,'#7a6a4a');
+    mur(g,x-1,y-9,x+15,y-1,21,22.6,'#5e5038');
+    /* un drapeau plante dessus */
+    g.fillStyle='#2e2a24';g.fillRect((x+2)|0,(y-36)|0,1,16);
+    g.fillStyle='#c03a30';g.fillRect((x+3)|0,(y-36)|0,9,6);
+    g.fillStyle='#e05a46';g.fillRect((x+3)|0,(y-36)|0,9,1);
+  });
   OBJ.plot=calque(20,26,10,22,function(g,x,y){
     ombreSol(g,x,y,6,3);
     pave(g,x-3,y-4,0.2,0.2,12,'#8a8e96','#7a7e86','#6e727a');
@@ -1242,6 +1264,11 @@ function peupler(s){
       });
       sim.agents[sim.agents.length-1].type=t;
     }
+    G.camp='manif';
+    G.nom=['LA TÊTE','LE CORPS','LA QUEUE','L’ARRIÈRE'][bi]||('BLOC '+(bi+1));
+    G.court=['TÊTE','CORPS','QUEUE','ARR.'][bi]||('B'+(bi+1));
+    G.route=null; G.ri=0; G.but=null; G.nRoute=0;
+    G.champ=new FOULE.Champ(sim);
     s.corteges.push(G);
   });
   /* la presse, en marge, qui longe le trottoir */
@@ -1265,6 +1292,9 @@ function peupler(s){
     var ag2=sim.agents[sim.agents.length-1];
     if(d.f()<0.22)ag2.type='pancarte',ag2.varia=d.e(0,4);
   }
+  GM.camp='manif'; GM.nom='LES MOBILES'; GM.court='MOB';
+  GM.route=null; GM.ri=0; GM.but=null; GM.nRoute=0;
+  GM.champ=new FOULE.Champ(sim);
   s.mobile=GM;
   /* LE GROUPE QUI SE DETACHERA. Il existe des le depart, melé au
      cortege : un groupe qui apparait d'un coup au milieu de la rue se
@@ -1278,6 +1308,9 @@ function peupler(s){
     var ac=sim.agents[sim.agents.length-1];
     if(d.f()<0.3)ac.type='pancarte',ac.varia=d.e(0,4);
   }
+  GC.camp='manif'; GC.nom='LES CASSEURS'; GC.court='CASS';
+  GC.route=null; GC.ri=0; GC.but=null; GC.nRoute=0;
+  GC.champ=new FOULE.Champ(sim);
   s.casseurs=GC;
   /* LES DEVANTURES SURVEILLEES : trois vitrines sur l'avenue, a l'ouest
      du barrage. Ce sont des points de la carte, pas des decors : une
@@ -1300,6 +1333,7 @@ function peupler(s){
        −x, c'est-a-dire vers le cortege qui remonte l'avenue */
     var G=FOULE.groupe(sim,{type:'crs',form:'ligne',ax:u[0],ay:u[1],
                             cap:Math.PI/2,cohesion:0,seuil:2.6});
+    G.camp='crs';
     G.nom='LIGNE '+(ui+1); G.court='L'+(ui+1); G.route=null; G.ri=0; G.but=null; G.nRoute=0;
     G.champ=new FOULE.Champ(sim);
     for(var i=0;i<u[2];i++)
@@ -1316,6 +1350,7 @@ function peupler(s){
   });
   var GR=FOULE.groupe(sim,{type:'crs',form:'colonne',ax:bar+5,ay:midY+0.5,
                            cap:Math.PI/2,cohesion:0});
+  GR.camp='crs'; GR.reserve=true;
   GR.nom='RÉSERVE'; GR.court='RÉS'; GR.route=null; GR.ri=0; GR.but=null; GR.nRoute=0;
   GR.champ=new FOULE.Champ(sim);
   for(var i2=0;i2<10;i2++)
@@ -1331,6 +1366,7 @@ function peupler(s){
      tete des lignes sans atteindre personne. */
   var GE=FOULE.groupe(sim,{type:'crs',form:'ligne',ax:bar+1,ay:midY,
                            cap:Math.PI/2,cohesion:0,seuil:9});
+  GE.camp='crs';
   GE.nom='CAMIONS'; GE.court='EAU'; GE.typeActeur='camion'; GE.ecart=13; GE.route=null; GE.ri=0; GE.but=null;
   GE.nRoute=0; GE.camions=true; GE.champ=new FOULE.Champ(sim);
   for(var ce=0;ce<2;ce++)
@@ -1339,6 +1375,17 @@ function peupler(s){
   GE.membres.forEach(function(i){sim.agents[i].type='camion';});
   s.unites.push(GE);
   s.camions=GE;
+  /* TOUTES LES UNITES D'UN COTE ET DE L'AUTRE. s.tous sert a l'IA, qui
+     tient le camp que le joueur ne joue pas ; s.unites ne contient que
+     ce que le doigt peut commander. */
+  s.tous=s.unites.slice();
+  s.corteges.forEach(function(G){s.tous.push(G);});
+  s.tous.push(s.mobile); s.tous.push(s.casseurs);
+  if(s.camp==='manif'){
+    s.unites=s.corteges.slice();
+    s.unites.push(s.casseurs);
+    s.unites.push(s.mobile);
+  }
   s.sel=0;
   s.selN={0:true};          /* la selection : un ensemble, pas un index */
   s.unites.forEach(function(U){U.tenu={x:U.ax,y:U.ay};});
@@ -1446,7 +1493,97 @@ function majUnites(s,dt){
    La mission dit QUAND ; c'est ici qu'on dit QUOI. Rien de decoratif :
    chaque branche deplace des groupes ou en cree.
    ===================================================================== */
-var MISSION=null, SON=null, FUM=null;
+var MISSION=null, SON=null, FUM=null, IA=null;
+
+/* =====================================================================
+   CE QUE L'IA PEUT FAIRE, ET CE QU'ELLE PEUT VOIR
+   Elle ne touche pas aux groupes directement : elle passe par les memes
+   commandes que le joueur. Si un ordre marche pour l'un, il marche pour
+   l'autre — et un bogue d'ordre se voit deux fois plus vite.
+   ===================================================================== */
+function iaApi(s){
+  return {
+    aller:function(U,gx,gy){
+      var r=chemin(s.C,Math.floor(U.ax),Math.floor(U.ay),Math.floor(gx),Math.floor(gy));
+      if(!r)return false;
+      U.route=r;U.ri=0;U.nRoute=r.length;U.but=[Math.floor(gx),Math.floor(gy)];
+      U.champ.calculer(s.sim,[[Math.floor(gx),Math.floor(gy)]]);
+      FOULE.ordre(s.sim,U,'vers',0,3);
+      return true;
+    },
+    tenir:function(U){U.route=null;U.but=null;U.tenu={x:U.ax,y:U.ay};
+      U.ordre=null;U.ordrePrio=0;FOULE.ordre(s.sim,U,'tenir',2200,4);},
+    avancer:function(U){FOULE.ordre(s.sim,U,'avance',3200,2);},
+    reculer:function(U){FOULE.ordre(s.sim,U,'recule',3200,2);},
+    pousser:function(U){FOULE.ordre(s.sim,U,'avance',3200,2);},
+    formation:function(U,f){U.form=f;},
+    gaz:function(U){
+      var dv=FOULE.devant(U), gx=U.ax+dv[0]*3.8, gy=U.ay+dv[1]*3.8;
+      FOULE.evenement(s.sim,gx,gy,3.0,0.5);
+      if(FUM&&s.fum)FUM.grenade(s.fum,gx,gy,1);
+      if(s.M&&MISSION)MISSION.noter(s.M,'gaz');
+      if(SON)SON.effet('grenade');
+    },
+    eau:function(U){
+      var dv=FOULE.devant(U);
+      U.membres.forEach(function(i){
+        var a=s.sim.agents[i];
+        if(FUM&&s.fum)FUM.jet(s.fum,a.x+dv[0]*0.9,a.y+dv[1]*0.9,dv[0],dv[1],2600);
+      });
+      if(s.M&&MISSION)MISSION.noter(s.M,'eau');
+      if(SON)SON.effet('eau');
+    },
+    /* ---- ce qu'elle voit, lu sur la simulation ---- */
+    corpsDevant:function(d){
+      var n=0, A=s.sim.agents, mur=iaMur(s);
+      for(var i=0;i<A.length;i++){
+        var a=A[i]; if(a.camp!=='manif')continue;
+        if(a.etat==='PANIQUE'||a.etat==='FUIT')continue;
+        if(a.x>mur-d&&a.x<mur+1)n++;
+      }
+      return n;
+    },
+    perces:function(){
+      var n=0, A=s.sim.agents, mur=iaMur(s);
+      for(var i=0;i<A.length;i++){
+        var a=A[i]; if(a.camp!=='manif')continue;
+        if(a.x>mur+1.2)n++;
+      }
+      return n;
+    },
+    casseEnCours:function(){
+      if(!s.M||!s.M.ciblee)return null;
+      var V=s.M.ciblee;
+      return (!V.brisee&&V.pres>=3)?V:null;
+    },
+    barricadeEnCours:function(){
+      for(var i=0;i<s.barricades.length;i++)
+        if(!s.barricades[i].faite)return s.barricades[i];
+      return null;
+    },
+    plusProche:function(L,gx,gy){
+      var b=null, bd=1e9;
+      for(var i=0;i<L.length;i++){
+        var d=(L[i].ax-gx)*(L[i].ax-gx)+(L[i].ay-gy)*(L[i].ay-gy);
+        if(d<bd){bd=d;b=L[i];}
+      }
+      return b;
+    },
+    plusPresse:function(L){
+      var b=null, bp=-1;
+      for(var i=0;i<L.length;i++)if(L[i].presse>bp){bp=L[i].presse;b=L[i];}
+      return b;
+    }
+  };
+}
+function iaMur(s){
+  var mur=1e9, A=s.sim.agents;
+  for(var i=0;i<s.tous.length;i++){
+    var U=s.tous[i]; if(U.camp!=='crs'||U.camions)continue;
+    for(var m=0;m<U.membres.length;m++){var a=A[U.membres[m]];if(a.x<mur)mur=a.x;}
+  }
+  return (mur>1e8)?(GW-14):mur;
+}
 function missionApi(s){
   return {evenement:function(k,M){
     if(k==='poussee'){
@@ -1495,6 +1632,75 @@ function missionApi(s){
       }
     }
   }};
+}
+
+/* =====================================================================
+   LES BARRICADES
+
+   Un bloc de manifestants peut en monter une la ou il se trouve. Elle
+   n'apparait pas d'un coup : il faut QUATRE CORPS dessus pendant SIX
+   SECONDES, et le cordon peut les deloger entre-temps. Une fois debout
+   elle bloque la case — et il faudra la contourner, des deux cotes.
+
+   Elle est faite de ce qui traine sur une place : barrieres renversees,
+   bancs, poubelles. Le dessin se construit en trois etats pour qu'on
+   voie le travail avancer.
+   ===================================================================== */
+/* ON MONTE LA BARRICADE LA OU SONT LES CORPS, pas sur le point de
+   ralliement du groupe : celui-ci peut etre a dix tuiles devant, et on
+   posait un chantier que personne n'atteignait jamais. */
+function barricadeNouvelle(s,U){
+  var sx=0, sy=0, n=0, A=s.sim.agents;
+  for(var k=0;k<U.membres.length;k++){
+    var a=A[U.membres[k]];
+    if(a.etat==='PANIQUE'||a.etat==='FUIT')continue;
+    sx+=a.x; sy+=a.y; n++;
+  }
+  if(!n)return null;
+  var gx=Math.round(sx/n-0.5), gy=Math.round(sy/n-0.5);
+  if(gx<1||gy<1||gx>=GW-1||gy>=GH-1)return null;
+  if(s.C.bloc[gy][gx])return null;
+  for(var i=0;i<s.barricades.length;i++){
+    var b=s.barricades[i];
+    if(Math.abs(b.x-gx)<2&&Math.abs(b.y-gy)<2)return null;
+  }
+  var B={x:gx, y:gy, t:0, faite:false, groupe:U.id, pres:0};
+  s.barricades.push(B);
+  return B;
+}
+function majBarricades(s,dt){
+  if(!s.barricades)return;
+  var A=s.sim.agents;
+  for(var i=0;i<s.barricades.length;i++){
+    var B=s.barricades[i];
+    if(B.faite)continue;
+    var n=0;
+    for(var k=0;k<A.length;k++){
+      var a=A[k];
+      if(a.camp!=='manif')continue;
+      if(a.etat==='PANIQUE'||a.etat==='FUIT')continue;
+      var dx=a.x-(B.x+0.5), dy=a.y-(B.y+0.5);
+      if(dx*dx+dy*dy<2.6)n++;
+    }
+    B.pres=n;
+    if(n>=4){
+      B.t+=dt*(n/5);
+      if(B.t>6000){
+        B.faite=true;
+        s.C.bloc[B.y][B.x]=1;
+        s.sim.champsPrets=false; s.sim.champFuitePret=false;
+        /* le decor change : les champs de navigation doivent le savoir */
+        s.statiques.push({k:'obj',o:{t:'barricade',gx:B.x+0.5,gy:B.y+0.5},
+          prof:B.x+B.y+1, x:mx(B.x+0.5,B.y+0.5)-OBJ.barricade.ox,
+          y:my(B.x+0.5,B.y+0.5)-OBJ.barricade.oy,
+          w:OBJ.barricade.cv.width, h:OBJ.barricade.cv.height, cv:OBJ.barricade.cv});
+        s.statiques.sort(function(p,q){return p.prof-q.prof;});
+        if(SON)SON.effet('charge');
+        if(s.M)s.M.barricades=(s.M.barricades||0)+1;
+        s.mot='BARRICADE DEBOUT';s.motT=1700;
+      }
+    }else B.t=Math.max(0,B.t-dt*0.9);
+  }
 }
 
 /* =====================================================================
@@ -1565,7 +1771,8 @@ function cmdPousser(s,sens){
   return ok;
 }
 function cmdForme(s){
-  var L=selection(s), F=['ligne','coin','colonne','nasse'];
+  var L=selection(s).filter(function(U){return !!U.form;}), F=['ligne','coin','colonne','nasse'];
+  if(!L.length){s.mot='CES GROUPES N’ONT PAS DE FORMATION';s.motT=1600;return;}
   var cur=L[0].form, suiv=F[(F.indexOf(cur)+1)%F.length];
   L.forEach(function(U){U.form=suiv;});
   s.mot=selNoms(s)+' · '+suiv.toUpperCase();s.motT=1500;
@@ -1608,6 +1815,65 @@ function cmdGrouper(s){
    nuage tient neuf secondes, derive, et prend tous ceux qui entrent
    dedans tant qu'il est la — c'est ce qui fait qu'il TIENT du terrain
    et que le degager coute quelque chose. */
+/* POUSSER : le bloc choisi force sur la ligne. Il avance plus vite et
+   se serre : c'est l'ordre qui fait reculer un cordon, et celui qui
+   fait monter la tension le plus vite. */
+function cmdPousser2(s){
+  var L=selection(s), n=0;
+  L.forEach(function(U){
+    U.pousse=6000;
+    FOULE.ordre(s.sim,U,'avance',4200,2);
+    n++;
+  });
+  if(SON)SON.effet('charge');
+  s.mot=selNoms(s)+' · ON POUSSE';s.motT=1600;
+  return n;
+}
+/* CASSER : le bloc se porte sur la devanture la plus proche. Elle tombe
+   si quatre d'entre eux y restent — exactement la regle des casseurs. */
+function cmdCasser(s){
+  var L=selection(s);
+  if(!s.vitrines.length){s.mot='RIEN À CASSER PAR ICI';s.motT=1500;return 0;}
+  var n=0;
+  L.forEach(function(U){
+    var V=null, bd=1e9;
+    for(var i=0;i<s.vitrines.length;i++){
+      var w=s.vitrines[i]; if(w.brisee)continue;
+      var d=(w.x-U.ax)*(w.x-U.ax)+(w.y-U.ay)*(w.y-U.ay);
+      if(d<bd){bd=d;V=w;}
+    }
+    if(!V)return;
+    if(s.M)s.M.ciblee=V;
+    if(s.M)s.M.casseurs=U;
+    var r=chemin(s.C,Math.floor(U.ax),Math.floor(U.ay),Math.floor(V.x),Math.floor(V.y));
+    if(!r)return;
+    U.route=r;U.ri=0;U.nRoute=r.length;U.but=[Math.floor(V.x),Math.floor(V.y)];
+    U.champ.calculer(s.sim,[[Math.floor(V.x),Math.floor(V.y)]]);
+    FOULE.ordre(s.sim,U,'vers',0,3);
+    n++;
+  });
+  s.mot=n?(selNoms(s)+' · SUR LA DEVANTURE'):'PAS DE PASSAGE';s.motT=1600;
+  return n;
+}
+/* BARRICADE : on monte sur place. Quatre corps, six secondes. */
+function cmdBarricade(s){
+  var L=selection(s), n=0;
+  L.forEach(function(U){ if(barricadeNouvelle(s,U))n++; });
+  s.mot=n?('ON MONTE '+(n>1?(n+' BARRICADES'):'UNE BARRICADE')):'IMPOSSIBLE ICI';
+  s.motT=1700;
+  return n;
+}
+/* DISPERSER : le bloc rompt et file vers les sorties. */
+function cmdDisperser(s){
+  var L=selection(s);
+  L.forEach(function(U){
+    U.ordre='disperse'; U.ordreT=5000; U.ordrePrio=3;
+    U.route=null; U.but=null;
+  });
+  if(SON)SON.effet('sifflet');
+  s.mot=selNoms(s)+' · ON SE DISPERSE';s.motT=1600;
+}
+
 function cmdGaz(s){
   var L=selection(s).filter(function(U){return !U.camions;});
   if(!L.length){s.mot='LES CAMIONS NE LANCENT PAS DE GRENADE';s.motT=1600;return;}
@@ -1691,7 +1957,10 @@ function anneau(c,gros){
   ANN[k]={cv:cv,ox:cv.width/2,oy:cv.height/2};
   return ANN[k];
 }
-var ORDRES=[
+/* CHAQUE CAMP A SES ORDRES. Un manifestant ne lance pas de grenade et
+   un policier ne monte pas de barricade : afficher un bouton qui ne
+   fait rien serait exactement la fausse fonctionnalite qu'on s'interdit. */
+var ORDRES_CRS=[
   {k:'tenir', t:'TENIR'},
   {k:'avant', t:'AVANT'},
   {k:'arriere', t:'ARRIÈRE'},
@@ -1701,7 +1970,18 @@ var ORDRES=[
   {k:'eau',   t:'EAU'},
   {k:'diag',  t:'DIAG'}
 ];
+var ORDRES_MANIF=[
+  {k:'pousser', t:'POUSSER'},
+  {k:'arriere', t:'RECULER'},
+  {k:'casser',  t:'CASSER'},
+  {k:'barricade',t:'BARRICADE'},
+  {k:'groupe',  t:'GROUPE'},
+  {k:'disperser',t:'DISPERSER'},
+  {k:'diag',    t:'DIAG'}
+];
+var ORDRES=ORDRES_CRS;
 function barreMaj(s,L,H){
+  ORDRES=(s.camp==='manif')?ORDRES_MANIF:ORDRES_CRS;
   var E=(typeof ECH==='number'&&ECH>0)?ECH:2;
   var hr=Math.max(13,Math.round(42/E));      /* 42 points d'ecran */
   if(s.M&&s.M.fin){
@@ -1826,6 +2106,7 @@ var M={
             sel:0, selN:{0:true}, front:0, pression:0, tension:0, vus:[],
             barre:[], hbar:0,
             diag:false, flash:null, M:null, poussee:0, finEnvoyee:false, enPause:false,
+            camp:'crs', tous:[], ia:null, barricades:[],
             fondu:0,
             casseurs:null, vitrines:[],
             /* LA DENSITE, mesuree : 190 corps a 58 images, 354 a 56,
@@ -1837,19 +2118,24 @@ var M={
   },
   cadre:function(s,L,H){s.L=L;s.H=H;if(s.pret){camBornes(s);barreMaj(s,L,H);}},
   demarrer:function(s){
+    /* LE CAMP VIENT DU MENU. La borne ne le choisit pas : elle le lit. */
+    s.camp=(window.CO_CAMP==='manif')?'manif':'crs';
     s.graine=(Math.random()*2000000)|0;
+    s.barricades=[];
+    s.ia=window.CORDON_IA?window.CORDON_IA.creer(s.camp==='manif'?'crs':'manif'):null;
     s.heure=['jour','jour','soir','nuit'][(Math.random()*4)|0];
     preparer(s);
     /* LA MISSION, calculee a part : elle ne fait que LIRE la rue. */
     MISSION=window.CORDON_MISSION;
     SON=window.CORDON_SON||null;
+    IA=window.CORDON_IA||null;
     FUM=window.CORDON_FUMEE||null;
     s.fum=FUM?FUM.creer():null;
     /* LA LIMITE EST A DEUX TUILES DE LA PREFECTURE, pas a cinq du
        cordon : trop pres, quelques corps ejectes d'une bousculade
        suffisaient a faire perdre la mission en vingt secondes. */
     s.M=MISSION?MISSION.creer({graine:s.graine, ligne:GW-8,
-                               vitrines:s.vitrines}):null;
+                               camp:s.camp, vitrines:s.vitrines}):null;
     s.mot='';s.motT=0;
     s.fondu=700;        /* la rue s'ouvre depuis le noir */
   },
@@ -1864,6 +2150,13 @@ var M={
     majUnites(s,dt);
     FOULE.pas(s.sim,dt);
     if(FUM&&s.fum)FUM.pas(s.fum,dt,s.sim);
+    majBarricades(s,dt);
+    /* L'IA TIENT LE CAMP QU'ON NE JOUE PAS, et elle passe par les memes
+       commandes que le doigt. */
+    if(IA&&s.ia){
+      if(s.camp==='manif')IA.pasCRS(s.ia,s,dt,iaApi(s));
+      else IA.pasManif(s.ia,s,dt,iaApi(s));
+    }
     camSuivi(s,dt);
     if(s.M&&MISSION){
       MISSION.pas(s.M,s,dt,missionApi(s));
@@ -1966,6 +2259,21 @@ var M={
       if(pax<x0-30||pax>x1+30||pay<y0-60||pay>y1+30)continue;
       ag._px=pax; ag._py=pay; ag._p=ag.x+ag.y;
       vus.push(ag);
+    }
+    /* LES BARRICADES EN COURS, marquees au sol : on doit voir qu'il se
+       passe quelque chose la, et combien de monde il y faut encore. */
+    for(var bi2=0;bi2<s.barricades.length;bi2++){
+      var BB=s.barricades[bi2]; if(BB.faite)continue;
+      var pbx=mx(BB.x+0.5,BB.y+0.5), pby=my(BB.x+0.5,BB.y+0.5);
+      if(pbx<x0-30||pbx>x1+30||pby<y0-30||pby>y1+30)continue;
+      var av=Math.min(1,BB.t/6000);
+      g.strokeStyle=(BB.pres>=4)?'rgba(255,210,74,.9)':'rgba(255,210,74,.35)';
+      g.lineWidth=1;
+      g.beginPath();g.ellipse(pbx,pby+TH/2,12,6,0,0,7);g.stroke();
+      if(av>0){
+        g.strokeStyle='#ffd24a';
+        g.beginPath();g.ellipse(pbx,pby+TH/2,12,6,0,-1.57,-1.57+av*6.283);g.stroke();
+      }
     }
     jalon('selection');
     vus.sort(function(p,q){return p._p-q._p;});
@@ -2080,7 +2388,11 @@ var M={
         return;
       }
       if(s.M&&s.M.fin)return;       /* plus d'ordres une fois fini */
-      if(b.k==='tenir')cmdTenir(s);
+      if(b.k==='pousser')cmdPousser2(s);
+      else if(b.k==='casser')cmdCasser(s);
+      else if(b.k==='barricade')cmdBarricade(s);
+      else if(b.k==='disperser')cmdDisperser(s);
+      else if(b.k==='tenir')cmdTenir(s);
       else if(b.k==='avant')cmdPousser(s,1);
       else if(b.k==='arriere')cmdPousser(s,-1);
       else if(b.k==='forme')cmdForme(s);
@@ -2134,7 +2446,7 @@ var M={
     else if(a==='form'){
       var L=['ligne','coin','colonne','nasse'];
       U.form=L[(L.indexOf(U.form)+1)%L.length];
-      s.mot=U.nom+' · '+U.form.toUpperCase();s.motT=1400;
+      s.mot=U.nom+' · '+(U.form?U.form.toUpperCase():(U.membres.length+'H'));s.motT=1400;
     }
     else if(a==='avance'){
       /* priorite 2 : l'ordre d'avancer passe devant la reaction a la
@@ -2294,10 +2606,11 @@ function hud(s,L,H){
     var reste=Math.max(0,M.duree-M.t);
     g.fillStyle=(reste<20000)?'#ffd24a':'#eaf6ff';
     g.fillText(chrono(reste),22,8);
-    var P=M.etats.tenir;
+    var P=M.etats.tenir||M.etats.passer;
     if(P){
       g.font='7px ui-monospace,monospace';
-      g.fillStyle=(P.v>=P.c)?'#ff8a7a':'#9ae8ff';
+      /* cote cortege, atteindre le compte est une BONNE nouvelle */
+      g.fillStyle=(P.v>=P.c)?((M.camp==='manif')?'#8aff9a':'#ff8a7a'):'#9ae8ff';
       g.textAlign='center';
       g.fillText((large?'PASSÉS ':'')+P.v+'/'+P.c,L*0.52,8);
     }
@@ -2332,8 +2645,8 @@ function hud(s,L,H){
     var U=s.unites[s.sel], et=s.sim?s.sim.agents[U.membres[0]].etat:'';
     g.font='bold 6px ui-monospace,monospace';
     g.fillStyle=UCOL[s.sel%UCOL.length];
-    if(large){g.textAlign='right';g.fillText(selNoms(s)+' · '+U.form.toUpperCase()+' · '+(DIAG_AB[et]||et),L-4,20);}
-    else{g.textAlign='left';g.fillText(selNoms(s)+' · '+U.form.toUpperCase()+' · '+(DIAG_AB[et]||et),4,y);}
+    if(large){g.textAlign='right';g.fillText(selNoms(s)+' · '+(U.form?U.form.toUpperCase():(U.membres.length+'H'))+' · '+(DIAG_AB[et]||et),L-4,20);}
+    else{g.textAlign='left';g.fillText(selNoms(s)+' · '+(U.form?U.form.toUpperCase():(U.membres.length+'H'))+' · '+(DIAG_AB[et]||et),4,y);}
   }
   /* ---- l'alerte d'evenement ---- */
   if(M&&M.alerteT>0&&M.alerte){
@@ -2379,13 +2692,18 @@ function briefing(s,L,H,M){
   g.textAlign='left';g.textBaseline='middle';
   g.font='bold 8px ui-monospace,monospace';
   g.fillStyle='rgba(255,226,138,'+al.toFixed(2)+')';
-  g.fillText('PLACE DE LA RÉPUBLIQUE',x+8,y+11);
+  g.fillText(M.camp==='manif'?'PLACE · LE CORTÈGE':'PLACE · LE CORDON',x+8,y+11);
   g.font='6px ui-monospace,monospace';
   g.fillStyle='rgba(205,228,242,'+al.toFixed(2)+')';
   /* LE BRIEFING LIT LA MISSION. Ecrit en dur, il annoncait encore
      « six passages toleres » apres qu'on soit passe a douze : un texte
      qui ment sur la regle est pire que pas de texte. */
-  var lignes=[
+  var lignes=(M.camp==='manif')?[
+    'La préfecture est au fond, derrière le cordon.',
+    'Faites passer '+M.objectif+' des vôtres avant '+chrono(M.duree)+'.',
+    'Poussez, barricadez, cassez ce qu’il faut.',
+    'Tape sur la carte : le bloc choisi y va.'
+  ]:[
     'Le cortège traverse la place vers la préfecture.',
     'Tenez '+chrono(M.duree)+'. '+M.tolere+' passages tolérés.',
     'Protégez les devantures.',
@@ -2429,11 +2747,16 @@ function resultat(s,L,H){
   g.textAlign='center';g.textBaseline='middle';
   g.font='bold 13px ui-monospace,monospace';
   g.fillStyle=M.fin==='gagne'?'#7dff9a':'#ff6a6a';
-  g.fillText(M.fin==='gagne'?'PLACE TENUE':'PLACE PERDUE',L/2,y+15);
+  g.fillText(M.camp==='manif'
+    ? (M.fin==='gagne'?'LA LIGNE EST PASSÉE':'LE CORTÈGE A ÉTÉ TENU')
+    : (M.fin==='gagne'?'PLACE TENUE':'PLACE PERDUE'),L/2,y+15);
   g.font='6px ui-monospace,monospace';g.fillStyle='#8fb8cc';
-  var pq=M.fin==='gagne'?('Le cortège n’est pas passé.')
-        :(M.passes>M.tolere?('Ils sont '+M.passes+' à être passés.')
-         :'La rue a basculé.');
+  var pq=(M.camp==='manif')
+    ? (M.fin==='gagne'?(M.passes+' des vôtres sont passés.')
+                      :('Vous n’étiez que '+M.passes+' à passer.'))
+    : (M.fin==='gagne'?'Le cortège n’est pas passé.'
+       :(M.passes>M.tolere?('Ils sont '+M.passes+' à être passés.')
+        :'La rue a basculé.'));
   g.fillText(pq,L/2,y+27);
   /* le detail, ligne par ligne */
   g.font='6px ui-monospace,monospace';

@@ -1735,3 +1735,55 @@ where niveau = 29;
 -- MESURE : 380 corps, simulation 0,55 ms, dessin 11,6, image 13,6.
 -- Six graines jouees sans toucher a l'ecran : deux victoires, quatre
 -- defaites tombant entre 79 et 148 secondes sur une mission de 150.
+
+-- ============================================================
+-- LE CORDON — LES DEUX CAMPS (2026-10-27-1520)
+-- ============================================================
+-- ON CHOISIT SON CAMP AU MENU : deux cartes qu'on bascule d'une tape,
+-- et tout suit — les objectifs, le briefing, les ordres, le bouton de
+-- depart, et l'IA qui prend l'autre bord. Le choix est garde d'une
+-- partie a l'autre : on rejoue rarement l'autre cote juste apres.
+--
+-- CHAQUE CAMP A SES ORDRES, et c'est voulu : un manifestant ne lance pas
+-- de grenade, un policier ne monte pas de barricade. Afficher un bouton
+-- qui ne fait rien serait exactement la fausse fonctionnalite qu'on
+-- s'interdit depuis le debut.
+--   police  : TENIR AVANT ARRIERE FORME GROUPE GAZ EAU
+--   cortege : POUSSER RECULER CASSER BARRICADE GROUPE DISPERSER
+--
+-- LES BARRICADES ne sortent pas de terre : quatre corps sur place
+-- pendant six secondes, et le cordon peut les deloger entre-temps. Une
+-- fois debout, la case est bloquee POUR TOUT LE MONDE — et les champs
+-- de navigation sont recalcules, donc la foule et la police la
+-- contournent vraiment.
+--
+-- L'IA : DES REGLES, PAS DES SCRIPTS. Chaque decision se lit a voix
+-- haute : « une barricade se monte et la charge est rechargee, on charge
+-- dessus » ; « une devanture tombe, la reserve y va, elle ne tient aucun
+-- front » ; « l'eau avant le gaz, elle disperse sans enflammer » ; « le
+-- gaz seulement si la pression tient ET que la tension n'est pas deja au
+-- plafond — gazer une rue au bord de l'emeute, c'est l'emeute ». Elle
+-- passe par LES MEMES COMMANDES que le joueur : si un ordre marche pour
+-- l'un il marche pour l'autre, et un bogue d'ordre se voit deux fois
+-- plus vite.
+-- Elle ne decide que quatre fois par seconde. Une IA qui reevalue a
+-- chaque image donne des ordres contradictoires et ses unites tremblent
+-- sur place.
+--
+-- TROIS CHOSES APPRISES
+--  1. DEUX SEUILS, PAS UN. La police tolere dix-huit passages ; au
+--     debut le cortege devait en faire passer dix-huit aussi, donc il
+--     lui fallait faire MIEUX que ce que la police avait le droit de
+--     laisser : ingagnable. Douze.
+--  2. UNE BARRICADE SE MONTE LA OU SONT LES CORPS, pas sur le point de
+--     ralliement du groupe : celui-ci peut etre a dix tuiles devant, et
+--     on posait un chantier que personne n'atteignait jamais.
+--  3. UN BLOC DE CORTEGE N'A PAS DE FIGURE. Le bandeau lisait
+--     U.form.toUpperCase() a chaque image : du cote manifestant, il
+--     levait une exception soixante fois par seconde et tuait la boucle.
+--
+-- MESURE, trois graines de chaque cote. Cortege : sans rien faire,
+-- perdu 3 fois sur 3 (six a onze passes sur douze) ; en jouant, gagne 2
+-- fois sur 3 avec des scores de 348 a 1098 — l'ecart entre les deux est
+-- exactement ce qu'on cherchait. Police : l'equilibrage reste flou, ne
+-- rien faire gagne encore environ une fois sur trois.

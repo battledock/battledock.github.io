@@ -20,7 +20,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-27-1320';
+  var MA_VERSION='2026-10-27-1520';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -358,6 +358,32 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
 #mnu.cdn .amd canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
 #mnu.cdn .amd .hr{position:absolute;left:9px;bottom:8px;background:rgba(6,12,24,.68);color:#fff;
   font:400 12px 'Lilita One';padding:3px 10px;border-radius:11px;z-index:2}
+/* ===== LE CHOIX DU CAMP : deux cartes, celle qu'on tient ressort ===== */
+#mnu.cdn .acamp{display:flex;gap:9px;margin:14px 4px 0}
+#mnu.cdn .cc{flex:1;min-width:0;position:relative;border-radius:16px;padding:9px 8px 10px;
+  text-align:left;background:rgba(0,0,0,.26);border:2px solid rgba(255,255,255,.14);
+  color:#ffe9c8;transition:transform .12s,box-shadow .12s;overflow:hidden}
+#mnu.cdn .cc:active{transform:scale(.97)}
+#mnu.cdn .cc .ci{display:block;height:34px;margin-bottom:4px}
+#mnu.cdn .cc canvas{width:46px;height:34px;image-rendering:pixelated;
+  filter:grayscale(1) opacity(.55)}
+#mnu.cdn .cc b{display:block;font:400 17px 'Lilita One';line-height:1.05}
+#mnu.cdn .cc em{display:block;font-style:normal;font:700 10.5px 'Baloo 2';opacity:.8;
+  margin-top:1px}
+#mnu.cdn .cc u{display:block;text-decoration:none;margin-top:6px;padding-top:6px;
+  border-top:1px solid rgba(255,255,255,.14);font:700 9.5px 'Baloo 2';opacity:.66;
+  line-height:1.3}
+#mnu.cdn .cc.on{border-color:#ffd86a;background:#ffe9c8;color:#8a2114;
+  box-shadow:0 5px 0 #a8762e}
+#mnu.cdn .cc.on canvas{filter:none}
+#mnu.cdn .cc.on em{opacity:.9}
+#mnu.cdn .cc.on u{border-top-color:rgba(138,33,20,.22);opacity:.78}
+#mnu.cdn .cc.on::after{content:'✓';position:absolute;top:5px;right:8px;
+  font:400 15px 'Lilita One';color:#c0462c}
+#mnu.cdn .cc.manif.on{background:#2e3a4a;color:#dfe8f2;border-color:#7ab8e8;
+  box-shadow:0 5px 0 #16222e}
+#mnu.cdn .cc.manif.on::after{color:#7ab8e8}
+#mnu.cdn .cc.manif.on u{border-top-color:rgba(255,255,255,.16)}
 #mnu.cdn .a3{display:flex;gap:9px;margin:15px 4px 0}
 #mnu.cdn .a3 div{flex:1;min-width:0;background:#ffe9c8;border-radius:14px;padding:9px 6px;text-align:center;
   box-shadow:0 5px 0 #a82e1c;color:#8a2114}
@@ -4245,7 +4271,9 @@ function mnuMaj(){
   MNU.classList.toggle('cdn',CDN);
   JEU.classList.toggle('cdnj',CDN);
   if(FE&&GO){GO.classList.remove('sem');GO.innerHTML='<b>JOUER</b><small>1 € · 2 min 30 · avant l’orage</small>';}
-  if(CDN&&GO){GO.classList.remove('sem');GO.innerHTML='<b>JOUER</b><small>1 € · dote, puis descends dans la rue</small>';}
+  if(CDN&&GO){GO.classList.remove('sem');
+    GO.innerHTML='<b>'+(CO_CAMP==='manif'?'DANS LE CORTÈGE':'DANS LE CORDON')+'</b>'+
+      '<small>1 € · '+(CO_CAMP==='manif'?'faire passer les tiens':'tenir le passage')+'</small>';}
   var tp=MNU.querySelector('.mo button[data-o="perso"]'), ta=MNU.querySelector('.mo button[data-o="armes"] span');
   if(tp)tp.style.display=(FE||CDN)?'none':'';if(ta)ta.textContent=FE?'OUTILS':'ARMES';
   var ta2=MNU.querySelector('.mo button[data-o="armes"]');
@@ -4328,6 +4356,19 @@ function mnuMaj(){
     hgArmeIcone(g3,HG_ARMES[cv.dataset.a],32,15);
   });
   /* LA VIGNETTE DE LA BORNE, dans son propre menu */
+  /* LE CHOIX DU CAMP : on redessine le menu, pas la page */
+  [].forEach.call(MNUC.querySelectorAll('[data-camp]'),function(b){
+    b.onclick=function(){
+      var c=b.getAttribute('data-camp');
+      if(c===CO_CAMP)return;
+      CO_CAMP=c;
+      try{localStorage.setItem('bdl.cordon.camp',c);}catch(e){}
+      mnuMaj();
+    };
+  });
+  [].forEach.call(MNUC.querySelectorAll('canvas[data-camp-ico]'),function(cv){
+    try{campIcone(cv,cv.dataset.campIco);}catch(e){}
+  });
   [].forEach.call(MNUC.querySelectorAll('canvas[data-ban]'),function(cv){
     try{banniere(cv,cv.dataset.ban,cv.classList.contains('vgn'));}catch(e){}
   });
@@ -4701,23 +4742,63 @@ async function fmAmeliorer(k){
 }
 /* LE MENU DU DEBARQUEMENT : on explique le geste, pas les touches */
 var CO_REC=0, CO_PARTIES=0;
+/* LE CAMP CHOISI, garde d'une partie a l'autre : on rejoue rarement
+   l'autre bord juste apres. */
+var CO_CAMP=(function(){try{return localStorage.getItem('bdl.cordon.camp')||'crs';}catch(e){return 'crs';}})();
 /* LE MENU DU CORDON. Il doit dire une seule chose avant la partie :
    la force marche, et elle te coûte. Sans ça le joueur gaze d'entrée
    et perd sans comprendre pourquoi. */
+/* LES DEUX VIGNETTES DU CHOIX : trois silhouettes de chaque camp, en
+   pixel, pour qu'on reconnaisse d'un coup d'oeil ce qu'on va tenir. */
+function campIcone(cv,camp){
+  var g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+  g.clearRect(0,0,cv.width,cv.height);
+  var A=window.CORDON_ACTEURS;
+  if(A&&!A.pret){try{A.preparer();}catch(e){}}
+  if(A&&A.pret){
+    var t=(camp==='crs')?'crs':'manif', T=A.atlas[t];
+    for(var i=0;i<3;i++){
+      var V=T[(camp==='crs')?(i%3):(i*4+1)%T.length];
+      var S=V[0][0];
+      g.drawImage(S.cv, 6+i*11-S.ox+8, 32-S.oy+8);
+    }
+    return;
+  }
+  g.fillStyle=(camp==='crs')?'#2e333d':'#8c4a58';
+  for(var k=0;k<3;k++)g.fillRect(8+k*11,10,7,22);
+}
 function coMenu(){
   var h='';
   if(MNU_ONG==='jouer'){
-    h+='<div class="ah"><u>SALLE D’ARCADE</u><b>LE CORDON</b><em>tiens la rue · on te jugera sur qui</em></div>';
+    h+='<div class="ah"><u>SALLE D’ARCADE</u><b>LE CORDON</b><em>'+(CO_CAMP==='manif'?'une place · deux camps · passe si tu peux':'une place · deux camps · tiens le passage')+'</em></div>';
     h+='<div class="amd"><canvas class="vgn" data-ban="cordon" width="175" height="88"></canvas>'+
-       '<span class="hr">QUATRE LIGNES · DIX MINUTES</span></div>';
+       '<span class="hr">'+(CO_CAMP==='manif'?'LE CORTÈGE · 2 MIN 30':'LE CORDON · 2 MIN 30')+'</span></div>';
+    /* LE CHOIX DU CAMP. Deux cartes, une bascule : on voit du meme coup
+       ce qu'on joue, ce qu'on commande et ce qu'on doit obtenir. Le
+       camp choisi est ecrit dans CO_CAMP, que la borne lit au demarrage. */
+    h+='<div class="acamp">'+
+       '<button class="cc flic'+(CO_CAMP==='crs'?' on':'')+'" data-camp="crs">'+
+         '<span class="ci"><canvas data-camp-ico="crs" width="46" height="34"></canvas></span>'+
+         '<b>LA POLICE</b><em>tenir le passage</em>'+
+         '<u>gaz · lance à eau · formations</u></button>'+
+       '<button class="cc manif'+(CO_CAMP==='manif'?' on':'')+'" data-camp="manif">'+
+         '<span class="ci"><canvas data-camp-ico="manif" width="46" height="34"></canvas></span>'+
+         '<b>LE CORTÈGE</b><em>passer, coûte que coûte</em>'+
+         '<u>pousser · casser · barricades</u></button></div>';
     h+='<div class="a3">'+
-       '<div><i>I</i><small>PRESSION</small><em>la foule pousse</em></div>'+
-       '<div><i>II</i><small>TENSION</small><em>elle fait les casseurs</em></div>'+
-       '<div><i>III</i><small>RAPPORT</small><em>on juge sur qui</em></div></div>';
-    h+='<div class="apt"><b>Charger, gazer, arroser</b> marche tout de suite.<br>Reculer d’un pas, c’est ce qui gagne.</div>';
-    h+='<div class="aob"><u>CE QU’ON TE DEMANDE</u>'+
-       '<p>Tenir quatre lignes entre le cortège et la préfecture, <b>sans que ça dégénère</b>.<br>'+
-       'Quand une ligne cède, elle se replie sur la suivante. Quand la dernière est franchie, c’est fini.</p></div>';
+       (CO_CAMP==='crs'
+         ? '<div><i>I</i><small>PRESSION</small><em>la foule pousse</em></div>'+
+           '<div><i>II</i><small>TENSION</small><em>elle fait les casseurs</em></div>'+
+           '<div><i>III</i><small>RAPPORT</small><em>on juge sur qui</em></div>'
+         : '<div><i>I</i><small>PASSER</small><em>franchir la ligne</em></div>'+
+           '<div><i>II</i><small>TENIR</small><em>garder le cortège</em></div>'+
+           '<div><i>III</i><small>MARQUER</small><em>barricades et vitrines</em></div>')+
+       '</div>';
+    h+='<div class="aob"><u>CE QU’ON TE DEMANDE</u><p>'+
+       (CO_CAMP==='crs'
+         ? 'Tenir le passage de la place pendant 2 min 30, <b>sans que ça dégénère</b>. Dix-huit passages tolérés, les devantures intactes.'
+         : 'Faire franchir la ligne à <b>douze des tiens</b> avant la fin. Monter des barricades, casser ce qui doit l’être — et garder le cortège debout.')+
+       '</p></div>';
     h+='<div class="arc"><span>RECORD <b>'+mnuChiffre(CO_REC)+'</b></span>'+
        '<span>'+(CO_PARTIES?mnuChiffre(CO_PARTIES)+' PARTIE'+(CO_PARTIES>1?'S':''):'PREMIÈRE FOIS')+'</span></div>';
   }else{
@@ -5081,11 +5162,12 @@ window.addEventListener('orientationchange',function(){
    cinq à huit minutes — et le score est le temps qu'il restait.
    ===================================================================== */
 </script>
+<script src="ia.js?v=5a692bbd"></script>
 <script src="fumee.js?v=5ad97725"></script>
 <script src="sons.js?v=2d2ab63a"></script>
-<script src="mission.js?v=f405d127"></script>
+<script src="mission.js?v=e5a13a12"></script>
 <script src="foule.js?v=d9e4c132"></script>
 <script src="acteurs.js?v=ad5e9cf2"></script>
-<script src="cordon.js?v=b4e75ef7"></script>
+<script src="cordon.js?v=d8e33eb0"></script>
 </body>
 </html>

@@ -17,6 +17,29 @@ python3 -m http.server 8897
 puis `http://127.0.0.1:8897/arcade.html` dans un navigateur, de préférence
 en mode téléphone (390 × 844) avec le tactile activé.
 
+## Choisir son camp
+
+Le menu de la borne ouvre sur deux cartes — **LA POLICE** ou **LE CORTÈGE** —
+qu'on bascule d'une tape. Le camp choisi est gardé d'une partie à l'autre.
+Les objectifs, le briefing, les ordres et le bouton de départ changent avec
+lui ; l'autre camp est tenu par l'IA.
+
+| | La police | Le cortège |
+|---|---|---|
+| But | tenir le passage 2 min 30, 18 passages tolérés | faire passer 12 des siens |
+| Ordres | TENIR, AVANT, ARRIÈRE, FORME, GROUPE, GAZ, EAU | POUSSER, RECULER, CASSER, BARRICADE, GROUPE, DISPERSER |
+| Unités | 3 lignes, une réserve, deux camions | 4 blocs de cortège, les casseurs, les mobiles |
+
+**Les barricades** : quatre corps sur place pendant six secondes. La police
+peut les déloger avant qu'elles tiennent ; une fois debout, la case est
+bloquée pour tout le monde.
+
+**L'IA** décide sur des règles lisibles, pas sur un minuteur — charger une
+barricade en construction, envoyer la réserve sur une devanture qui tombe,
+arroser avant de gazer, se replier quand elle est percée, reprendre du
+terrain quand la place se dégage. Elle réévalue quatre fois par seconde,
+jamais à chaque image.
+
 ## Jouer
 
 | Geste | Effet |
@@ -45,6 +68,7 @@ Perdre le focus met le jeu en pause ; un doigt reprend.
 | `mission.js` | objectifs, événements, score | le rendu et la simulation (il *lit*) |
 | `sons.js` | son synthétisé, aucun fichier | le reste du jeu |
 | `fumee.js` | nuages de gaz et jets d'eau — zones qui agissent | la mission |
+| `ia.js` | le camp que le joueur ne joue pas | le rendu (il passe par les mêmes ordres) |
 | `cordon.js` | le décor, la caméra, le commandement, l'interface | — |
 
 Le seul pont entre la simulation et le rendu est l'agent, qui porte
@@ -74,9 +98,9 @@ pas une prévision.
 
 ## Ce qui n'est pas fini
 
-- **L'équilibrage.** Ne rien faire gagne environ une fois sur trois selon
-  la graine ; les défaites passives arrivent entre 79 s et 148 s sur une
-  mission de 150 s, donc ça se joue — mais ce n'est pas réglé finement.
+- **L'équilibrage.** Côté cortège c'est net : sans rien faire on perd 3 fois
+  sur 3, en jouant on gagne 2 fois sur 3. Côté police c'est plus flou — ne
+  rien faire gagne encore environ une fois sur trois selon la graine.
 - **Les ordres de maintien restants** : nasse effective, dialogue.
   `GAZ`, `EAU`, `AVANT` et `ARRIÈRE` agissent réellement sur la foule.
 - **Une seule mission.**
