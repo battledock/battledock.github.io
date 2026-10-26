@@ -1916,3 +1916,45 @@ where niveau = 29;
 -- serait absurde que la machine lance droit devant pendant que le
 -- joueur choisit : iaCible() lui donne le barycentre des manifestants a
 -- portee, et elle y envoie grenade et jet.
+
+-- =====================================================================
+-- ETAPE : LA QUALITE DES COCKTAILS                      2026-10-27-1840
+-- =====================================================================
+--
+-- CE QU'IL Y AVAIT. Trois fillRect empiles : on voyait un point orange
+-- traverser la place, sans savoir ce que c'etait ni ou ca tombait.
+--
+-- LA BOUTEILLE. Huit vignettes de 16x16 peintes au premier lancer et
+-- plus rien a calculer ensuite : lisere sombre — sans lui un objet de
+-- six pixels disparait au-dessus de deux cents personnes —, verre vert
+-- avec son reflet, essence ambree au fond, goulot, chiffon et flamme.
+-- Elle TOURNE en vol : un objet lance sur quinze metres qui garde la
+-- meme orientation ne vole pas, il glisse.
+--   UN BOGUE D'ARRONDI VU A LA CAPTURE : (rot/0.7854)|0 renvoyait 0 a
+-- l'angle exact de 45 degres, parce que le quotient vaut 0,99999. Deux
+-- angles sur huit etaient identiques. Math.round, pas de troncature.
+--
+-- L'OMBRE AU SOL, a la verticale de l'objet, qui retrecit quand il
+-- monte. C'est elle qui dit ou la bouteille va tomber — la hauteur du
+-- dessin ne le dit pas, en isometrie.
+--
+-- LA TRAINEE. Le chiffon brule pendant tout le vol : une braise toutes
+-- les 55 ms, une fumee une fois sur deux. C'est ce qui fait qu'on SUIT
+-- la bouteille des yeux au lieu de la retrouver a l'arrivee.
+--
+-- L'IMPACT, EN QUATRE COUCHES. Le flash d'abord, un dixieme de seconde
+-- en composition « lighter », dessine APRES les particules pour
+-- eclairer la gerbe et pas passer dessous : sans lui l'impact commence
+-- mollement. Puis la gerbe de flammes vers le haut, les eclats de verre
+-- — un trait clair oriente par la vitesse, pas une bouffee — qui filent
+-- a plat et retombent en une demi-seconde, et la nappe d'essence, large
+-- et ecrasee, qui colle au pave et s'eteint la premiere.
+--
+-- LA SALVE. Les trois bouteilles partent a 110 ms d'intervalle. A la
+-- milliseconde pres elles faisaient une figure geometrique ; decalees,
+-- elles font une salve.
+--
+-- CE QUE CA COUTE. Mesure sur sept series : 4 foyers etablis, 14,3 ms
+-- de dessin contre 8,8 sans feu — inchange par rapport a l'etape
+-- precedente, les nouvelles particules etant toutes breves. Le pic a
+-- l'impact dure une demi-seconde.

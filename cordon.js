@@ -2029,7 +2029,7 @@ function cmdMolotov(s,cx,cy){
     var ax=vx-sx, ay=vy-sy, al=Math.sqrt(ax*ax+ay*ay)||1;
     var px=-ay/al, py=ax/al;
     for(var j=0;j<3;j++){
-      FUM.projectile(s.fum,sx,sy,vx+px*(j-1)*1.5,vy+py*(j-1)*1.5,'molotov');
+      FUM.projectile(s.fum,sx,sy,vx+px*(j-1)*1.5,vy+py*(j-1)*1.5,'molotov',j*110);
       n++;
     }
   });
@@ -2346,6 +2346,7 @@ var M={
     if(FUM&&s.fum&&s.M&&MISSION&&s.fum.nes>(s.feuxVus||0)){
       while((s.feuxVus||0)<s.fum.nes){
         s.feuxVus=(s.feuxVus||0)+1; MISSION.noter(s.M,'feu');
+        if(SON)SON.effet('verre');   /* la bouteille se brise a l'impact */
       }
     }
     if(FUM&&s.fum&&s.fum.feux.length&&s.sim){

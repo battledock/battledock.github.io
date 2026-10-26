@@ -56,10 +56,19 @@ Re-taper le bouton annule. Pendant la visée le glissé vise au lieu de
 déplacer la caméra ; le panoramique revient dès que le tir est parti.
 Portées : cocktails 7,5 tuiles, grenade 6,5, lance à eau 5,5.
 
-**Les cocktails Molotov.** Un bloc sélectionné en lance trois d'un coup,
-en éventail autour de la direction visée, jamais au-delà du cordon.
-Chacun allume un foyer à l'impact. Vingt-deux secondes de recharge. Côté
-score : +60 par salve pour le cortège, −90 par incendie pour la police.
+**Les cocktails Molotov.** Un bloc sélectionné en lance trois, à cent
+millisecondes d'intervalle, en éventail autour de la direction visée et
+jamais au-delà du cordon. Vingt-deux secondes de recharge. Côté score :
++60 par salve pour le cortège, −90 par incendie pour la police.
+
+La bouteille est un sprite peint en huit angles — verre vert, essence au
+fond, chiffon enflammé — qui **tourne** en vol, sème des braises et une
+fumée derrière elle, et porte une ombre au sol qui rétrécit quand elle
+monte : c'est l'ombre, pas la hauteur du dessin, qui dit où elle va
+tomber. L'impact se joue en quatre couches : un flash d'un dixième de
+seconde en lumière ajoutée, une gerbe de flammes vers le haut, des
+éclats de verre qui filent à plat, et une nappe d'essence basse et large
+qui s'éteint la première. Plus un bris de verre au son.
 
 **Le feu.** Un foyer brûle trente-quatre secondes, repousse les corps
 dans un rayon d'une tuile et demie, et **ne se traverse pas** — ni par

@@ -80,7 +80,7 @@ function puffs(){
    LE MODELE
    --------------------------------------------------------------------- */
 FUM.creer=function(){
-  return {nuages:[], part:[], jets:[], feux:[], vols:[], nes:0, gr:4242, libres:[]};
+  return {nuages:[], part:[], jets:[], feux:[], vols:[], flash:[], nes:0, gr:4242, libres:[]};
 };
 
 /* ---------------------------------------------------------------------
@@ -110,10 +110,47 @@ FUM.feu=function(F,x,y,force,vie){
 };
 /* UN PROJECTILE : il part, il vole en arc, il tombe. Le feu ne nait
    qu'a l'impact — on voit donc la bouteille partir et on sait d'ou. */
-FUM.projectile=function(F,x,y,cx,cy,quoi){
-  F.vols.push({x:x,y:y,x0:x,y0:y,cx:cx,cy:cy,t:0,
-               vie:420+Math.hypot(cx-x,cy-y)*95, quoi:quoi||'molotov'});
+FUM.projectile=function(F,x,y,cx,cy,quoi,retard){
+  F.vols.push({x:x,y:y,x0:x,y0:y,cx:cx,cy:cy,t:-(retard||0),z:0,
+               vie:420+Math.hypot(cx-x,cy-y)*95, quoi:quoi||'molotov',
+               /* LA BOUTEILLE TOURNE. Un objet lance sur quinze metres
+                  qui garde la meme orientation ne vole pas, il glisse. */
+               rot:al(F)*6.283, vrot:0.006+al(F)*0.004, tr:0});
 };
+/* LA BOUTEILLE, PEINTE EN HUIT ANGLES. Trois rectangles empiles ne
+   ressemblaient a rien : on voyait un point orange traverser la place.
+   Ici c'est un vrai objet — verre vert, essence ambree au fond, goulot,
+   chiffon blanc et sa flamme — tourne une fois pour toutes dans les
+   huit directions qu'il prend en vol. Huit vignettes de 16x16 peintes
+   au premier lancer, et plus rien a calculer ensuite. */
+var BOUT=null;
+function bouteilles(){
+  if(BOUT)return BOUT;
+  BOUT=[];
+  for(var a=0;a<8;a++){
+    var c=document.createElement('canvas'); c.width=c.height=16;
+    var g=c.getContext('2d');
+    g.translate(8,8); g.rotate(a*Math.PI/4);
+    /* LE LISERE SOMBRE d'abord : au-dessus d'une foule de deux cents
+       personnes, un objet de six pixels sans contour disparait. */
+    g.fillStyle='#10210f'; g.fillRect(-2,-4,4,9);
+    /* le corps : verre vert, un reflet clair sur le flanc gauche */
+    g.fillStyle='#2f6b3a'; g.fillRect(-1,-3,2,7);
+    g.fillStyle='#5ab067'; g.fillRect(-1,-3,1,7);
+    /* l'essence, au fond, plus sombre que le verre pour qu'on la voie */
+    g.fillStyle='#a8701a'; g.fillRect(-1,1,2,3);
+    g.fillStyle='#d99c35'; g.fillRect(-1,1,1,3);
+    /* le goulot */
+    g.fillStyle='#10210f'; g.fillRect(-1,-5,2,2);
+    g.fillStyle='#3d7d45'; g.fillRect(-1,-5,1,2);
+    /* le chiffon, et sa flamme */
+    g.fillStyle='#e8e0cc'; g.fillRect(-1,-7,2,2);
+    g.fillStyle='#ff8a1e'; g.fillRect(-1,-9,2,2);
+    g.fillStyle='#ffe06a'; g.fillRect(-1,-10,1,2);
+    BOUT.push(c);
+  }
+  return BOUT;
+}
 function al(F){F.gr=(F.gr*16807)%2147483647;return (F.gr-1)/2147483646;}
 
 /* UNE GRENADE. Elle pose un nuage qui grossit, derive et se dissipe,
@@ -195,20 +232,59 @@ FUM.pas=function(F,dt,sim,R){
   /* ---- LES PROJECTILES ---- */
   for(i=F.vols.length-1;i>=0;i--){
     var V=F.vols[i]; V.t+=dt;
+    /* LE RETARD. Trois bouteilles parties a la milliseconde pres font
+       une figure geometrique ; a cent millisecondes d'ecart, elles font
+       une salve. */
+    if(V.t<0)continue;
     var u=Math.min(1,V.t/V.vie);
     V.x=V.x0+(V.cx-V.x0)*u;
     V.y=V.y0+(V.cy-V.y0)*u;
     V.z=Math.sin(u*Math.PI)*22;      /* l'arc */
+    V.rot+=V.vrot*dt;
+    /* LA TRAINEE. Le chiffon brule pendant tout le vol : il seme des
+       braises derriere lui. C'est ce qui fait qu'on SUIT la bouteille
+       des yeux au lieu de la retrouver a l'arrivee. */
+    V.tr+=dt;
+    if(V.tr>55){
+      V.tr=0;
+      var pt=naitre(F,V.x,V.y,0.0003,240+al(F)*180,3);
+      pt.z=V.z; pt.vz=-0.004; pt.r=0.20+al(F)*0.14;
+      if(al(F)<0.45){
+        var ps=naitre(F,V.x,V.y,0.0002,900+al(F)*500,4);
+        ps.z=V.z; ps.vz=0.004; ps.r=0.26+al(F)*0.18;
+      }
+    }
     if(u>=1){
       if(V.quoi==='molotov'){
         FUM.feu(F,V.x,V.y,1,34000);
-        for(var q3=0;q3<10;q3++){
-          var pe=naitre(F,V.x,V.y,0.0022,260+al(F)*220,3);
-          pe.vz=0.018+al(F)*0.030; pe.r=0.4+al(F)*0.5;
+        /* L'IMPACT, EN TROIS COUCHES.
+           La gerbe : des langues de feu projetees vers le haut et sur
+           les cotes, c'est le souffle.
+           Les eclats : du verre qui gicle a plat, vite et loin, qui
+           retombe en une demi-seconde.
+           La nappe : l'essence qui s'etale au sol autour du point de
+           chute, basse et large, et qui s'eteint la premiere.
+           Et le flash, une lumiere d'un dixieme de seconde : sans lui
+           l'impact commence mollement. */
+        for(var q3=0;q3<14;q3++){
+          var pe=naitre(F,V.x,V.y,0.0026,260+al(F)*260,3);
+          pe.vz=0.020+al(F)*0.034; pe.r=0.42+al(F)*0.55;
         }
+        for(var q4=0;q4<12;q4++){
+          var pv=naitre(F,V.x,V.y,0.0075,280+al(F)*220,5);
+          pv.vz=0.012+al(F)*0.022; pv.r=0.5+al(F)*0.5;
+        }
+        for(var q5=0;q5<8;q5++){
+          var pn=naitre(F,V.x,V.y,0.0040,420+al(F)*300,6);
+          pn.z=0; pn.vz=0; pn.r=0.6+al(F)*0.7;
+        }
+        F.flash.push({x:V.x,y:V.y,t:0,vie:170});
       }
       F.vols.splice(i,1);
     }
+  }
+  for(i=F.flash.length-1;i>=0;i--){
+    F.flash[i].t+=dt; if(F.flash[i].t>F.flash[i].vie)F.flash.splice(i,1);
   }
   for(i=F.jets.length-1;i>=0;i--){
     var j=F.jets[i]; j.t+=dt;
@@ -359,6 +435,29 @@ FUM.dessine=function(F,g,mx,my,x0,x1,y0,y1){
       g.drawImage(P[p.img],(px-e4)|0,(py-e4*0.62)|0,(e4*2)|0,(e4*1.24)|0);
       continue;
     }
+    if(p.type===5){
+      /* UN ECLAT DE VERRE : un trait clair, pas une bouffee. Il file
+         dans la direction de sa vitesse et retombe. */
+      var a5=1-vie;
+      if(a5<=0.03)continue;
+      var lv=Math.sqrt(p.vx*p.vx+p.vy*p.vy)||1e-6;
+      var lx=p.vx/lv*2.6, ly=p.vy/lv*1.6;
+      g.globalAlpha=a5;
+      g.strokeStyle=(p.img&1)?'#ffe9a8':'#bfe8d8';
+      g.lineWidth=1;
+      g.beginPath();g.moveTo(px-lx,py-ly);g.lineTo(px+lx,py+ly);g.stroke();
+      continue;
+    }
+    if(p.type===6){
+      /* LA NAPPE D'ESSENCE au sol : plate, large, breve. Ecrasee bien
+         plus qu'une bouffee de fumee — elle colle au pave. */
+      var a6=(1-vie)*0.75;
+      if(a6<=0.03)continue;
+      var e6=p.r*17*(0.55+vie*1.35);
+      g.globalAlpha=a6;
+      g.drawImage(P[p.img],(px-e6)|0,(py-e6*0.30)|0,(e6*2)|0,(e6*0.60)|0);
+      continue;
+    }
     var al2=(p.type===2)?(0.5*(1-vie)):(vie<0.12?(vie/0.12):(1-(vie-0.12)/0.88));
     if(al2<=0.02)continue;
     var ech=p.r*(p.type===2?7:13)*(0.5+vie*0.9);
@@ -366,15 +465,41 @@ FUM.dessine=function(F,g,mx,my,x0,x1,y0,y1){
     g.drawImage(P[p.img],(px-ech)|0,(py-ech*0.62)|0,(ech*2)|0,(ech*1.24)|0);
   }
   g.globalAlpha=1;
-  /* LES BOUTEILLES EN VOL : on doit voir d'ou elles partent. */
+  /* LE FLASH DE L'IMPACT. Un dixieme de seconde, en lumiere ajoutee :
+     c'est ce qui donne le COUP. Dessine apres les particules pour
+     eclairer la gerbe, et pas dessous. */
+  for(i=0;i<F.flash.length;i++){
+    var FS=F.flash[i], fu=FS.t/FS.vie;
+    var fx3=mx(FS.x,FS.y), fy3=my(FS.x,FS.y);
+    if(fx3<x0-60||fx3>x1+60)continue;
+    halos();
+    var fr=16+fu*46;
+    g.globalCompositeOperation='lighter';
+    g.globalAlpha=(1-fu)*0.75;
+    g.drawImage(HALO,(fx3-fr)|0,(fy3-fr*0.6)|0,(fr*2)|0,(fr*1.2)|0);
+    g.globalCompositeOperation='source-over';
+  }
+  g.globalAlpha=1;
+  /* LES BOUTEILLES EN VOL. L'ombre d'abord, posee au sol a la verticale
+     de l'objet : c'est elle, et pas la hauteur du dessin, qui dit ou la
+     bouteille va tomber. Elle retrecit quand la bouteille monte. */
+  var BT=bouteilles();
   for(i=0;i<F.vols.length;i++){
     var V=F.vols[i];
-    var vx=mx(V.x,V.y), vy=my(V.x,V.y)-(V.z||0);
-    if(vx<x0-40||vx>x1+40)continue;
-    g.fillStyle='#2a2018';g.fillRect((vx-1)|0,(vy-3)|0,3,4);
-    g.fillStyle='#ffb43a';g.fillRect((vx-1)|0,(vy-5)|0,3,2);
-    g.globalAlpha=0.5;g.fillStyle='#ff8a2a';
-    g.fillRect((vx-2)|0,(vy-6)|0,5,2);g.globalAlpha=1;
+    if(V.t<0)continue;
+    var sx3=mx(V.x,V.y), sy3=my(V.x,V.y);
+    var vx=sx3, vy=sy3-(V.z||0);
+    if(vx<x0-40||vx>x1+40||vy<y0-60||vy>y1+40)continue;
+    var h=(V.z||0)/22;                       /* 0 au sol, 1 au sommet */
+    g.globalAlpha=0.30*(1-h*0.65);
+    g.fillStyle='#0a0d12';
+    g.beginPath();g.ellipse(sx3,sy3+1,4.5*(1-h*0.4),2.2*(1-h*0.4),0,0,6.2832);g.fill();
+    g.globalAlpha=1;
+    /* ARRONDIR, PAS TRONQUER. A l'angle exact de 45 degres le quotient
+       vaut 0,99999 et la troncature renvoyait la vignette du dessous :
+       deux angles sur huit etaient identiques. */
+    var bi=((Math.round(V.rot/0.7854)%8)+8)%8;
+    g.drawImage(BT[bi],(vx-8)|0,(vy-8)|0);
   }
 };
 
