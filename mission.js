@@ -95,7 +95,13 @@ MIS.creer=function(o){
     /* DOUZE PASSAGES TOLERES. A six, une poussee reussie suffisait a
        tout perdre d'un coup, sans qu'on ait eu le temps de reagir : une
        mission se perd sur une suite de fautes, pas sur une seconde. */
-    tolere:12, toleBris:0,
+    /* VINGT-CINQ PASSAGES TOLERES, pas douze. Sur une avenue de six
+       tuiles, douze etait le bon chiffre. Sur une place, quelques
+       dizaines de personnes filtrent forcement par le passage : ce
+       qu'on defend, ce n'est pas l'etancheite, c'est de ne pas etre
+       submerge. A douze, la mission etait perdue dans les huit graines
+       quoi qu'on fasse. */
+    tolere:18, toleBris:0,
     passes:0, brisees:0, tensionMax:0,
     gaz:0, charges:0, fauteCam:0,
     fin:null, score:0, journal:[],
@@ -177,7 +183,8 @@ MIS.pas=function(M,s,dt,api){
 MIS.noter=function(M,k){
   if(k==='gaz')M.gaz++;
   if(k==='charge')M.charges++;
-  if((k==='gaz'||k==='charge')&&M.t<M.presseJusqu)M.fauteCam++;
+  if(k==='eau')M.eau=(M.eau||0)+1;
+  if((k==='gaz'||k==='charge'||k==='eau')&&M.t<M.presseJusqu)M.fauteCam++;
 };
 
 MIS.terminer=function(M,s,gagne){
@@ -187,20 +194,25 @@ MIS.terminer=function(M,s,gagne){
   var sc=0;
   sc+=Math.round(Math.min(M.t,M.duree)/1000)*6;          /* le temps tenu */
   if(gagne)sc+=400;
-  sc-=M.passes*45;
+  /* DOUZE POINTS PAR PASSAGE, pas quarante-cinq. Avec vingt-cinq
+     passages toleres, l'ancienne penalite retirait plus de mille points
+     a une partie gagnee : on tenait la place et on finissait a zero. */
+  sc-=M.passes*12;
   sc-=M.brisees*180;
   sc-=M.gaz*35;
   sc-=M.charges*20;
+  sc-=(M.eau||0)*12;        /* l'eau disperse sans enflammer : elle coute moins */
   sc-=M.fauteCam*120;
   sc-=Math.round(M.tensionMax*320);
   M.score=Math.max(0,sc);
   M.detail=[
     ['Temps tenu', '+'+Math.round(Math.min(M.t,M.duree)/1000)*6],
     ['Mission tenue', gagne?'+400':'0'],
-    ['Manifestants passés ('+M.passes+')', '-'+M.passes*45],
+    ['Manifestants passés ('+M.passes+')', '-'+M.passes*12],
     ['Devantures brisées ('+M.brisees+')', '-'+M.brisees*180],
     ['Grenades ('+M.gaz+')', '-'+M.gaz*35],
     ['Charges ('+M.charges+')', '-'+M.charges*20],
+    ['Lance à eau ('+(M.eau||0)+')', '-'+(M.eau||0)*12],
     ['Devant les caméras ('+M.fauteCam+')', '-'+M.fauteCam*120],
     ['Tension maximale ('+Math.round(M.tensionMax*100)+' %)', '-'+Math.round(M.tensionMax*320)]
   ];

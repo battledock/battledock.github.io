@@ -52,11 +52,25 @@ Dé.prototype.pick=function(t){return t[Math.floor(this.f()*t.length)|0];};
    jamais recalculees ailleurs : une rue qui se deplace se deplace dans
    une seule constante.
    ===================================================================== */
-var AV={y0:21,y1:26};        /* la chaussee de l'avenue */
-var RU={x0:21,x1:25};        /* la chaussee de la rue transversale */
-var TROT=2;                  /* largeur des trottoirs */
+/* =====================================================================
+   UNE PLACE, PAS UNE RUE.
 
-var SOL={CHAUS:0, TROT:1, CLOU:2, CANIV:3, ILOT:4, HERBE:5};
+   Premiere version : une avenue de six tuiles entre deux rangees
+   d'immeubles de cent points de haut. En isometrique, tout ce qui est
+   au sud et a l'est est DEVANT : les facades du premier plan mangeaient
+   la moitie de l'ecran et on ne voyait pas ce qu'on commandait.
+
+   L'esplanade fait maintenant vingt-quatre tuiles de large. Le bati est
+   repousse sur les bords, et surtout sa hauteur depend de sa place dans
+   la profondeur : BAS AU SUD, ou il est devant et masquerait, HAUT AU
+   NORD, ou il est derriere et fait le fond. C'est la seule regle a
+   retenir pour poser un decor en isometrique.
+   ===================================================================== */
+var AV={y0:12,y1:35};        /* l'esplanade, du nord au sud */
+var RU={x0:21,x1:25};        /* la percee nord-sud qui la traverse */
+var TROT=2;                  /* le pourtour dalle */
+
+var SOL={CHAUS:0, TROT:1, CLOU:2, CANIV:3, ILOT:4, HERBE:5, DALLE:6, PAVE:7};
 
 function faireCarte(d){
   var C={sol:[], bloc:[], haut:[]}, x, y;
@@ -75,18 +89,23 @@ function faireCarte(d){
       C.haut[y][x]=0;
     }
   }
-  /* les passages clous, aux quatre branches de l'intersection */
-  for(y=AV.y0;y<=AV.y1;y++){
-    C.sol[y][RU.x0-TROT-1]=SOL.CLOU; C.sol[y][RU.x1+TROT+1]=SOL.CLOU;
+  /* LE DALLAGE. Une place n'est pas une chaussee : le centre est dalle,
+     la percee reste goudronnee, et un anneau de pave marque le pourtour.
+     Trois matieres, c'est ce qu'il faut pour qu'on lise une place plutot
+     qu'un parking. */
+  for(y=AV.y0;y<=AV.y1;y++)for(x=0;x<GW;x++){
+    if(C.sol[y][x]!==SOL.CHAUS)continue;
+    var ru2=(x>=RU.x0&&x<=RU.x1);
+    if(ru2)continue;                        /* la percee garde l'asphalte */
+    var bord=(y<=AV.y0+1||y>=AV.y1-1||x<=2||x>=GW-3);
+    C.sol[y][x]=bord?SOL.PAVE:SOL.DALLE;
   }
+  /* les passages clous, la ou la percee coupe le pourtour */
   for(x=RU.x0;x<=RU.x1;x++){
-    C.sol[AV.y0-TROT-1][x]=SOL.CLOU; C.sol[AV.y1+TROT+1][x]=SOL.CLOU;
+    if(AV.y0-1>=0)C.sol[AV.y0-1][x]=SOL.CLOU;
+    if(AV.y1+1<GH)C.sol[AV.y1+1][x]=SOL.CLOU;
   }
-  /* le caniveau : la derniere rangee de chaussee contre le trottoir */
-  for(x=0;x<GW;x++){
-    if(C.sol[AV.y0][x]===SOL.CHAUS)C.sol[AV.y0][x]=SOL.CANIV;
-    if(C.sol[AV.y1][x]===SOL.CHAUS)C.sol[AV.y1][x]=SOL.CANIV;
-  }
+  /* le caniveau borde la percee, pas la place */
   for(y=0;y<GH;y++){
     if(C.sol[y][RU.x0]===SOL.CHAUS)C.sol[y][RU.x0]=SOL.CANIV;
     if(C.sol[y][RU.x1]===SOL.CHAUS)C.sol[y][RU.x1]=SOL.CANIV;
@@ -109,9 +128,20 @@ function decouper(d,x0,x1,y0,y1,sens){
 
 function faireBatiments(C,d){
   var B=[], prof;
+  /* LA HAUTEUR DEPEND DE LA PROFONDEUR, et c'est toute la regle d'un
+     decor isometrique : un batiment au sud est DEVANT la scene, il la
+     masque, donc il reste bas ; un batiment au nord est derriere, il
+     peut monter — c'est lui qui ferme l'horizon. Avant, tout montait a
+     cent points et le premier plan cachait la rue. */
+  function hauteurSelon(y0){
+    var t=y0/GH;                       /* 0 au nord, 1 au sud */
+    if(t>0.62)return d.e(20,40);       /* devant : des echoppes */
+    if(t>0.45)return d.e(34,62);
+    return d.e(62,132);                /* derriere : le fond de la place */
+  }
   function pose(x0,y0,x1,y1){
     if(x0<0||y0<0||x1>=GW||y1>=GH)return;
-    var h=d.e(48,116);
+    var h=hauteurSelon(y0);
     var st=d.pick(['pierre','brique','crepi','moderne','vieux','ocre','ardoise','pastel']);
     var b={x0:x0,y0:y0,x1:x1,y1:y1,h:h,style:st,
            /* la devanture regarde la rue la plus proche */
@@ -155,10 +185,23 @@ function faireBatiments(C,d){
     for(j=y;j<y+p2&&ok;j++)for(i=x;i<x+w;i++)
       if(C.sol[j][i]!==SOL.ILOT||C.haut[j][i]){ok=false;break;}
     if(!ok||d.f()<0.30)continue;
-    var hh=d.e(22,58), st2=d.pick(['vieux','brique','crepi','ocre','ardoise']);
+    var hh=Math.min(hauteurSelon(y), d.e(22,58));
+    var st2=d.pick(['vieux','brique','crepi','ocre','ardoise']);
     var b2={x0:x,y0:y,x1:x+w-1,y1:y+p2-1,h:hh,style:st2,g:d.e(1,2000000)};
     B.push(b2);
     for(j=y;j<y+p2;j++)for(i=x;i<x+w;i++){C.bloc[j][i]=1;C.haut[j][i]=hh;}
+  }
+  /* LA PREFECTURE, au nord et derriere : c'est ce que le cortege veut
+     atteindre, et il faut la voir depuis la place sans qu'elle cache
+     quoi que ce soit. Posee au fond, elle peut etre haute. */
+  var px0=RU.x1+4, px1=Math.min(GW-2,px0+11), py1=AV.y0-3, py0=Math.max(1,py1-6);
+  var libre2=true;
+  for(j=py0;j<=py1&&libre2;j++)for(i=px0;i<=px1;i++)if(C.haut[j]&&C.haut[j][i]>60){libre2=false;break;}
+  var PR={x0:px0,y0:py0,x1:px1,y1:py1,h:150,style:'pierre',g:7777,prefecture:true};
+  B.push(PR);
+  for(j=py0;j<=py1;j++)for(i=px0;i<=px1;i++){
+    if(!C.bloc[j])continue;
+    C.bloc[j][i]=1;C.haut[j][i]=150;
   }
   /* ce qui reste vraiment : des cours pavees, bloquees */
   for(y=0;y<GH;y++)for(x=0;x<GW;x++)
@@ -209,7 +252,12 @@ var PAL={
   trotB:'#6e6c67',
   clou: '#d8d6cc',
   herbe:['#4e5048','#484a44','#54564e'],
-  bandes:'#c8c4a8'
+  bandes:'#c8c4a8',
+  /* LA PLACE : une pierre claire et chaude, assez pale pour que les
+     corps s'y detachent — c'est le fond sur lequel on lira la foule. */
+  dalle:['#9a9388','#948d82','#a09990'],
+  pave: ['#827b72','#7c766d','#898279'],
+  joint:'#6e6860'
 };
 
 function peindreSol(C,d){
@@ -220,7 +268,9 @@ function peindreSol(C,d){
   for(y=0;y<GH;y++)for(x=0;x<GW;x++){
     p=m2e(x,y); t=C.sol[y][x];
     var v=((x*7+y*13)%3);
-    if(t===SOL.CHAUS)los(g,p.x,p.y,PAL.chaus[v]);
+    if(t===SOL.DALLE)los(g,p.x,p.y,PAL.dalle[v]);
+    else if(t===SOL.PAVE)los(g,p.x,p.y,PAL.pave[v]);
+    else if(t===SOL.CHAUS)los(g,p.x,p.y,PAL.chaus[v]);
     else if(t===SOL.CANIV)los(g,p.x,p.y,PAL.caniv);
     else if(t===SOL.CLOU)los(g,p.x,p.y,PAL.chaus[v]);
     else if(t===SOL.TROT)los(g,p.x,p.y,PAL.trot[v]);
@@ -243,15 +293,38 @@ function peindreSol(C,d){
       if(basY)quad(g,[p.x,p.y+TH-3, p.x-TW/2,p.y+TH/2-3, p.x-TW/2,p.y+TH/2-4, p.x,p.y+TH-4]);
     }
   }
-  /* les dalles du trottoir */
+  /* LE DALLAGE DE LA PLACE. Un aplat de vingt-quatre tuiles sur trente
+     est une nappe : il faut un motif pour que l'oeil accroche et mesure
+     les distances. Un damier large de quatre tuiles, et un joint clair
+     sur chaque dalle. */
   g.globalAlpha=0.16;
   for(y=0;y<GH;y++)for(x=0;x<GW;x++){
-    if(C.sol[y][x]!==SOL.TROT)continue;
+    var tt2=C.sol[y][x];
+    if(tt2!==SOL.TROT&&tt2!==SOL.DALLE&&tt2!==SOL.PAVE)continue;
     p=m2e(x,y); g.strokeStyle='#ffffff'; g.lineWidth=1;
     g.beginPath();g.moveTo(p.x,p.y);g.lineTo(p.x+TW/2,p.y+TH/2);
     g.moveTo(p.x,p.y);g.lineTo(p.x-TW/2,p.y+TH/2);g.stroke();
   }
   g.globalAlpha=1;
+  /* le damier, une dalle sur deux par carres de quatre */
+  g.globalAlpha=0.055;
+  for(y=AV.y0;y<=AV.y1;y++)for(x=0;x<GW;x++){
+    if(C.sol[y][x]!==SOL.DALLE)continue;
+    if(((x>>2)+(y>>2))%2)continue;
+    p=m2e(x,y); los(g,p.x,p.y,'#ffffff');
+  }
+  g.globalAlpha=1;
+  /* LA ROSE CENTRALE : un disque de pierre plus claire au milieu de la
+     place, avec deux anneaux. Elle donne un centre, et un repere pour
+     dire « ramene-les au milieu ». */
+  var cxp=(RU.x0+RU.x1)/2+0.5, cyp=(AV.y0+AV.y1)/2+0.5;
+  for(y=AV.y0;y<=AV.y1;y++)for(x=0;x<GW;x++){
+    if(C.sol[y][x]!==SOL.DALLE)continue;
+    var dxp=(x+0.5-cxp), dyp=(y+0.5-cyp), rr=Math.sqrt(dxp*dxp+dyp*dyp*2.0);
+    if(rr>7.2)continue;
+    p=m2e(x,y);
+    los(g,p.x,p.y,(rr<2.2)?'#b4ac9e':((rr>5.4&&rr<6.4)?'#8a8278':'#a49c90'));
+  }
   /* LA BANDE BLANCHE de l'axe, en pointilles, et les passages clous */
   var mid=Math.floor((AV.y0+AV.y1)/2);
   for(x=0;x<GW;x++){
@@ -594,6 +667,49 @@ function faireObjets(nuit){
     pave(g,x-2,y-3,0.14,0.14,10,'#c04a30','#a83a24','#8e301c');
     g.fillStyle='#d8d2c4';g.fillRect(x-1,y-12,3,1);
   });
+  /* LA FONTAINE, au centre de la place : un bassin octogonal, une vasque
+     et un jet. C'est le repere dont une place a besoin — sans lui, vingt
+     tuiles de dallage ne sont qu'une nappe. */
+  OBJ.fontaine=calque(96,74,48,64,function(g,x,y){
+    ombreSol(g,x+3,y+2,34,16);
+    /* le bassin : deux anneaux de pierre et l'eau au fond */
+    var A=['#8e867a','#9a9286','#7e766a'];
+    for(var i=0;i<3;i++){
+      g.fillStyle=A[i];g.beginPath();
+      g.ellipse(x,y-i*2,32-i*2,15.5-i,0,0,7);g.fill();
+    }
+    g.fillStyle='#3e6a7e';g.beginPath();g.ellipse(x,y-5,26,12.5,0,0,7);g.fill();
+    g.fillStyle='#4e8298';g.beginPath();g.ellipse(x,y-5.6,24,11.4,0,0,7);g.fill();
+    /* les reflets, deux arcs clairs */
+    g.strokeStyle='rgba(200,235,250,.5)';g.lineWidth=1;
+    g.beginPath();g.ellipse(x-5,y-7,13,5.5,0.3,3.6,5.6);g.stroke();
+    g.beginPath();g.ellipse(x+7,y-4,9,4,-0.2,3.3,5.0);g.stroke();
+    /* le pied et la vasque */
+    pave(g,x-3,y-14,0.2,0.2,13,'#a09888','#8e867a','#7e766a');
+    g.fillStyle='#9a9286';g.beginPath();g.ellipse(x,y-19,10,4.6,0,0,7);g.fill();
+    g.fillStyle='#4e8298';g.beginPath();g.ellipse(x,y-20,8,3.6,0,0,7);g.fill();
+    pave(g,x-2,y-24,0.14,0.14,9,'#a09888','#8e867a','#7e766a');
+    /* le jet et sa retombee */
+    g.fillStyle='rgba(205,240,255,.75)';g.fillRect(x-1,y-40,2,14);
+    g.fillStyle='rgba(205,240,255,.45)';
+    for(var j=0;j<14;j++){
+      var a2=(j/14)*6.283, r2=4+(j%4)*2.4;
+      g.fillRect((x+Math.cos(a2)*r2*1.7)|0,(y-30+Math.sin(a2)*r2*0.7)|0,1,2);
+    }
+  });
+  /* LE KIOSQUE : un pavillon de place, bas, pour casser le vide */
+  OBJ.kiosque=calque(84,80,42,70,function(g,x,y){
+    ombreSol(g,x+4,y+2,26,12);
+    pave(g,x-16,y-10,1.0,1.0,4,'#8e867a','#7e766a','#6e665a');
+    for(var i=0;i<4;i++){
+      var dx2=[-14,14,0,0][i], dy2=[0,0,-7,7][i];
+      pave(g,x+dx2,y-10+dy2,0.1,0.1,24,'#3e4a52','#36424a','#2e3a42');
+    }
+    pave(g,x-18,y-13,1.14,1.14,30,'#2e5a6a','#26505e','#1e4452');
+    quad(g,[x,y-56, x+20,y-46, x,y-36, x-20,y-46],'#2a6a7e');
+    quad(g,[x,y-58, x+20,y-48, x,y-38, x-20,y-48],'#3a7e92');
+    g.fillStyle='#d8c060';g.fillRect(x-1,y-64,2,7);
+  });
   OBJ.panneau=calque(24,60,12,54,function(g,x,y){
     ombreSol(g,x,y,5,3);
     mur(g,x,y-2,x+1.1,y-2,0,36,'#6a7078');
@@ -636,6 +752,50 @@ function faireVehicules(nuit){
   VEH.vy1=voiture('y','#3a6a4a','#2a3038',1.6);
   VEH.vy2=voiture('y','#8a8e96','#2a3038',1.6);
   VEH.cam=voiture('x','#2e3a4a','#20262e',2.4);
+  /* LE CAMION A EAU. Plus haut qu'une camionnette, avec une cuve, un
+     gyrophare et un canon oriente vers l'avant : il faut le reconnaitre
+     de loin, c'est la piece qu'on vient chercher des yeux quand la
+     pression monte. */
+  /* LE CAMION A EAU. Premiere version : un pave de deux tons sombres,
+     qui se lisait comme une tache noire de trois tuiles. Il faut le
+     reconnaitre de loin, c'est la piece qu'on cherche des yeux quand la
+     pression monte — donc une caisse claire, une cuve bombee qui
+     depasse, un canon qui pointe, et une bande reflechissante. */
+  VEH.eau=(function(){
+    var a=2.6, b=1.05;
+    var w=Math.ceil((a+b)*TW/2)+30, h=Math.ceil((a+b)*TH/2)+70;
+    var ax=Math.ceil(b*TW/2)+15, ay=h-Math.ceil((a+b)*TH/2)-10;
+    return calque(w,h,ax,ay,function(g,x,y){
+      g.globalAlpha=0.32;g.fillStyle='#000';
+      g.beginPath();g.ellipse(x+(a-b)*8+3,y+(a+b)*4+2,(a+b)*10,(a+b)*4.4,0,0,7);g.fill();
+      g.globalAlpha=1;
+      /* les roues */
+      pave(g,x+2,y+1,a-0.16,b-0.16,6,'#15171b','#111317','#0d0f13');
+      /* le chassis, bleu nuit clair pour se detacher du bitume */
+      pave(g,x,y,a,b,16,'#4a5e72','#3e5062','#344454');
+      pave(g,x,y,a,b,17.6,'#5e7488','#4a5e72','#3e5062');
+      /* la bande reflechissante, a hauteur d'oeil */
+      mur(g,x,y,x+a*16,y+a*8,9,12.5,'#e0e6ec');
+      mur(g,x,y,x+a*16,y+a*8,12.5,13.6,'#c03a30');
+      /* la cuve, bombee et plus claire */
+      pave(g,x+7,y+3.6,a*0.58,b*0.74,32,'#8e9aa6','#78848e','#66727c');
+      pave(g,x+7,y+3.6,a*0.58,b*0.74,33.8,'#a6b2be','#8e9aa6','#78848e');
+      mur(g,x+7,y+3.6,x+7+a*0.58*16,y+3.6+a*0.58*8,20,30,'rgba(255,255,255,.14)');
+      /* la cabine vitree */
+      pave(g,x-1,y-0.6,a*0.24,b*0.84,27,'#5a6e82','#4a5e70','#3e5060');
+      mur(g,x+1,y+0.6,x+1+a*0.24*16,y+0.6+a*0.24*8,18,26,'#1e2e3e');
+      mur(g,x+1,y+0.6,x+1+a*0.24*16,y+0.6+a*0.24*8,24,26,'rgba(190,220,245,.35)');
+      /* LE CANON, sur la cuve et pointe vers l'avant */
+      pave(g,x+5,y+3,0.34,0.34,12,'#39434d','#2f3942','#262e36');
+      mur(g,x+1,y+7,x-13,y+0,44,47.5,'#98a2aa');
+      mur(g,x+1,y+7,x-13,y+0,47.5,48.6,'#c4ccd4');
+      quad(g,[x-13,y-47,x-18,y-49.5,x-18,y-45.5,x-13,y-43],'#d8dee4');
+      /* le gyrophare */
+      g.fillStyle='#2a3038';g.fillRect((x+9)|0,(y-28)|0,6,2);
+      g.fillStyle='#4ab0f0';g.fillRect((x+10)|0,(y-30)|0,4,2);
+      g.fillStyle='rgba(74,176,240,.35)';g.fillRect((x+7)|0,(y-31)|0,10,4);
+    });
+  })();
   VEH.four=voiture('y','#c8c4b8','#20262e',2.1);
 }
 
@@ -733,6 +893,35 @@ function garnir(C,d,nuit){
       else if(r<0.12)poser('plot',gx+0.5,y+0.5,true);
     });
   }
+  /* LE MOBILIER DE LA PLACE. Le pourtour avait ses lampadaires ; c'est
+     le centre qui manquait. Une fontaine au milieu, deux alignements
+     d'arbres qui cadrent la perspective, des bancs tournes vers l'eau,
+     un kiosque dans un angle. Rien de decoratif : chaque piece bloque
+     une case et modifie le chemin de la foule. */
+  var cxp=Math.round((RU.x0+RU.x1)/2), cyp=Math.round((AV.y0+AV.y1)/2);
+  poser('fontaine',cxp+0.5,cyp+0.5,true);
+  for(var oy2=-1;oy2<=1;oy2++)for(var ox2=-2;ox2<=2;ox2++){
+    var fx2=cxp+ox2, fy2=cyp+oy2;
+    if(C.bloc[fy2]&&C.bloc[fy2][fx2]!==undefined)C.bloc[fy2][fx2]=1;
+  }
+  /* deux alignements d'arbres, nord et sud de la fontaine */
+  [cyp-7,cyp+7].forEach(function(ly){
+    for(var ax2=cxp-12;ax2<=cxp+12;ax2+=4){
+      if(ax2<2||ax2>GW-3)continue;
+      if(C.sol[ly]&&C.sol[ly][ax2]===SOL.DALLE)poser('arbre',ax2+0.5,ly+0.5,true);
+    }
+  });
+  /* des bancs tournes vers l'eau */
+  [[cxp-5,cyp-3],[cxp+4,cyp-3],[cxp-5,cyp+3],[cxp+4,cyp+3]].forEach(function(b2){
+    if(C.sol[b2[1]]&&C.sol[b2[1]][b2[0]]===SOL.DALLE)poser('banc',b2[0]+0.2,b2[1]+0.3,true);
+  });
+  /* le kiosque, a l'ecart */
+  var kx=cxp-13, ky=cyp+6;
+  if(C.sol[ky]&&C.sol[ky][kx]===SOL.DALLE){
+    poser('kiosque',kx+0.5,ky+0.5,true);
+    for(var qy=ky-1;qy<=ky+1;qy++)for(var qx=kx-1;qx<=kx+1;qx++)
+      if(C.bloc[qy]&&C.bloc[qy][qx]!==undefined)C.bloc[qy][qx]=1;
+  }
   /* les feux aux quatre coins de l'intersection */
   [[RU.x0-1,AV.y0-1],[RU.x1+1,AV.y0-1],[RU.x0-1,AV.y1+1],[RU.x1+1,AV.y1+1]].forEach(function(c){
     poser('feu',c[0]+0.5,c[1]+0.5,true);
@@ -757,12 +946,28 @@ function garnir(C,d,nuit){
      trottoirs ouverts — exactement l'inverse. Le cortege contournait le
      cordon par les cotes, sept hommes passaient en vingt secondes et la
      mission etait imperdable d'un cote, ingagnable de l'autre. */
-  var bx=GW-14;
-  [AV.y0-1,AV.y0-2,AV.y1+1,AV.y1+2].forEach(function(y2){
-    if(y2<0||y2>=GH)return;
-    poser('barriere',bx+0.1,y2+0.05,true);
-    if(C.bloc[y2])C.bloc[y2][bx]=1;
-  });
+  /* LES BARRIERES FERMENT LA PLACE, SAUF UN PASSAGE.
+     Sur une avenue de six tuiles, le cordon fermait la rue a lui seul.
+     Sur une place de vingt-quatre, trente-quatre hommes n'en couvrent
+     plus qu'un tiers : la foule passait par les cotes et la mission
+     etait perdue quoi qu'on fasse.
+     Premiere tentative : un entonnoir dont les ailes avancaient en
+     diagonale. Mauvaise idee — une diagonale de barrieres est un
+     ESCALIER, et on passe entre deux marches. La ligne est maintenant
+     DROITE, sur deux rangs, et ne laisse qu'un passage de neuf tuiles
+     que le cordon tient vraiment. */
+  /* LE PASSAGE FAIT SEPT TUILES, pas neuf : un rang de onze hommes a
+     0,70 d'ecart couvre 7,7 tuiles. Un passage plus large que la ligne
+     qui le tient n'est pas un passage, c'est une breche. */
+  var bx=GW-14, midB=Math.round((AV.y0+AV.y1)/2), demi=3;
+  for(y=AV.y0;y<=AV.y1;y++){
+    if(y>=midB-demi&&y<=midB+demi)continue;      /* le passage reste ouvert */
+    poser('barriere',bx+0.1,y+0.05,true);
+    if(C.bloc[y]){C.bloc[y][bx]=1;C.bloc[y][bx+1]=1;}
+  }
+  /* les deux bornes qui marquent le passage, pour qu'on le voie */
+  poser('plot',bx+0.5,midB-demi-0.5,true);
+  poser('plot',bx+0.5,midB+demi+1.5,true);
   /* les voitures en stationnement, le long du caniveau */
   var pris={};
   for(x=2;x<GW-3;x++){
@@ -853,6 +1058,35 @@ function chemin(C,x0,y0,x1,y1){
    du decor tombe sur un nombre entier de points d'ecran. On zoome donc
    de facon continue sous le doigt, et on s'aimante au relachement.
    ===================================================================== */
+/* LA CAMERA REVIENT SUR L'ACTION.
+   Elle etait posee une fois au depart, entre la tete du cortege et le
+   cordon, et n'en bougeait plus. Le cortege avance de dix tuiles en une
+   minute : au bout de trente secondes, le contact — et les nuages de
+   gaz qu'on y lance — etaient hors de l'ecran, et on commandait a
+   l'aveugle. Elle recentre maintenant d'elle-meme, mais seulement apres
+   cinq secondes sans que le doigt l'ait touchee : une camera qui reprend
+   la main pendant qu'on regarde ailleurs est pire que pas de suivi. */
+function camSuivi(s,dt){
+  if(!s.sim||!s.unites)return;
+  if(s.camLibre){
+    s.camLibreT=(s.camLibreT||0)-dt;
+    if(s.camLibreT>0)return;
+    s.camLibre=false;
+  }
+  /* le point a regarder : entre la tete du cortege et la premiere ligne */
+  var mur=1e9, A=s.sim.agents;
+  for(var u=0;u<s.unites.length;u++){
+    var U=s.unites[u]; if(U.camions)continue;
+    for(var m=0;m<U.membres.length;m++){var a=A[U.membres[m]];if(a.x<mur)mur=a.x;}
+  }
+  if(mur>1e8)return;
+  var cx=(s.front+mur)/2, cy=(AV.y0+AV.y1)/2+0.5;
+  var bx=mx(cx,cy), by=my(cx,cy);
+  var k=Math.min(1,dt*0.0013);
+  s.cam.x+=(bx-s.cam.x)*k; s.cam.y+=(by-s.cam.y)*k;
+  camBornes(s);
+}
+
 function camBornes(s){
   var vl=s.L/s.cam.z, vh=s.H/s.cam.z;
   /* la demi-vue, exprimee dans les deux axes du losange */
@@ -897,7 +1131,12 @@ function preparer(s){
     b.devD=(b.x1+2<GW&&s.C.sol[h2]&&s.C.sol[h2][Math.min(GW-1,b.x1+2)]!==SOL.ILOT);
     peindreBat(b,new Dé(b.g),s.nuit);
   });
-  if(!PRET){faireObjets(s.nuit);faireVehicules(s.nuit);fairePerso();PRET=true;}
+  if(!PRET){faireObjets(s.nuit);faireVehicules(s.nuit);fairePerso();
+    /* le camion a eau est un acteur : il se trie avec les corps.
+       (window.CORDON_ACTEURS et pas ACTEURS : la variable n'est reliee
+       qu'au moment de peupler, qui vient apres.) */
+    if(window.CORDON_ACTEURS)window.CORDON_ACTEURS.poserFixe('camion',VEH.eau);
+    PRET=true;}
   s.objs=garnir(s.C,d,s.nuit);
   /* LA LISTE DE RENDU, triee une fois. Le decor ne bouge pas : le trier
      a chaque image serait trois cents comparaisons pour rien. Les
@@ -1050,8 +1289,13 @@ function peupler(s){
 
   /* ---- LE CORDON : trois unites en ligne, une en reserve */
   s.unites=[];
-  var bar=GW-16;
-  [[bar,midY-2.4,12],[bar,midY+0.4,12],[bar,midY+3.2,10]].forEach(function(u,ui){
+  var bar=GW-14;      /* au niveau de l'entonnoir, pas derriere lui */
+  /* LES TROIS LIGNES TIENNENT LE GOULOT, l'une derriere l'autre.
+     Elles etaient cote a cote et posees DERRIERE les barrieres : elles
+     couvraient vingt tuiles de front en epaisseur de un, alors que
+     l'entonnoir n'en laisse que huit. Empilees dans le passage, chacune
+     le barre sur toute sa largeur et il y a trois rangs a franchir. */
+  [[bar,midY,12],[bar+1.3,midY,12],[bar+2.6,midY,10]].forEach(function(u,ui){
     /* cap +π/2 : le « devant » de la figure, (−sin, +cos), pointe vers
        −x, c'est-a-dire vers le cortege qui remonte l'avenue */
     var G=FOULE.groupe(sim,{type:'crs',form:'ligne',ax:u[0],ay:u[1],
@@ -1079,6 +1323,22 @@ function peupler(s){
       {varia:i2%3, vmax:R.vMarche*1.05, r:0.45, masse:1.8, nerf:0.4});
   sim.agents[GR.membres[0]].type='officier';
   s.unites.push(GR);
+  /* LES DEUX CAMIONS A EAU, derriere les lignes. Ce sont des UNITES :
+     on les selectionne, on les deplace, et leur ordre EAU arrose
+     vraiment — le jet pousse les corps qu'il touche. */
+  /* LES CAMIONS SE POSENT SUR LES AILES DU CORDON, pas derriere lui :
+     derriere, on ne les voyait pas et leur jet passait par-dessus la
+     tete des lignes sans atteindre personne. */
+  var GE=FOULE.groupe(sim,{type:'crs',form:'ligne',ax:bar+1,ay:midY,
+                           cap:Math.PI/2,cohesion:0,seuil:9});
+  GE.nom='CAMIONS'; GE.court='EAU'; GE.typeActeur='camion'; GE.ecart=13; GE.route=null; GE.ri=0; GE.but=null;
+  GE.nRoute=0; GE.camions=true; GE.champ=new FOULE.Champ(sim);
+  for(var ce=0;ce<2;ce++)
+    FOULE.poser(sim,GE,bar+1,midY+(ce?6.5:-6.5),
+      {varia:0, vmax:R.vMarche*0.8, r:0.85, masse:9, nerf:0.2, vehicule:true});
+  GE.membres.forEach(function(i){sim.agents[i].type='camion';});
+  s.unites.push(GE);
+  s.camions=GE;
   s.sel=0;
   s.selN={0:true};          /* la selection : un ensemble, pas un index */
   s.unites.forEach(function(U){U.tenu={x:U.ax,y:U.ay};});
@@ -1186,7 +1446,7 @@ function majUnites(s,dt){
    La mission dit QUAND ; c'est ici qu'on dit QUOI. Rien de decoratif :
    chaque branche deplace des groupes ou en cree.
    ===================================================================== */
-var MISSION=null, SON=null;
+var MISSION=null, SON=null, FUM=null;
 function missionApi(s){
   return {evenement:function(k,M){
     if(k==='poussee'){
@@ -1343,16 +1603,45 @@ function cmdGrouper(s){
   s.mot=ok?('REGROUPEMENT · '+ok+' UNITÉS'):'REGROUPEMENT IMPOSSIBLE';s.motT=1600;
   return ok;
 }
+/* LA GRENADE POSE UN NUAGE, elle ne lance plus un eclair. Avant :
+   un evenement instantane et un cercle jaune qui s'agrandissait. Le
+   nuage tient neuf secondes, derive, et prend tous ceux qui entrent
+   dedans tant qu'il est la — c'est ce qui fait qu'il TIENT du terrain
+   et que le degager coute quelque chose. */
 function cmdGaz(s){
-  var L=selection(s);
+  var L=selection(s).filter(function(U){return !U.camions;});
+  if(!L.length){s.mot='LES CAMIONS NE LANCENT PAS DE GRENADE';s.motT=1600;return;}
   if(s.M&&MISSION)MISSION.noter(s.M,'gaz');
   if(SON)SON.effet('grenade');
   L.forEach(function(U){
     var dv=FOULE.devant(U);
-    FOULE.evenement(s.sim,U.ax+dv[0]*3.4,U.ay+dv[1]*3.4,4.6,1.0);
+    var gx2=U.ax+dv[0]*3.8, gy2=U.ay+dv[1]*3.8;
+    FOULE.evenement(s.sim,gx2,gy2,3.0,0.5);     /* le souffle du depart */
+    if(FUM&&s.fum)FUM.grenade(s.fum,gx2,gy2,1);
   });
-  s.flash=[L[0].ax+FOULE.devant(L[0])[0]*3.4, L[0].ay+FOULE.devant(L[0])[1]*3.4, 0];
   s.mot='GRENADE · '+selNoms(s);s.motT=1500;
+}
+
+/* L'EAU. Le camion arrose devant lui : le jet pousse les corps qu'il
+   touche, pendant deux secondes et demie. Il tend moins qu'une
+   grenade — c'est tout son interet, et c'est pour ca qu'il compte
+   moins au rapport. */
+function cmdEau(s){
+  var L=selection(s).filter(function(U){return U.camions;});
+  if(!L.length){s.mot='CHOISIS LES CAMIONS';s.motT=1500;return;}
+  if(!FUM||!s.fum)return;
+  var n=0;
+  L.forEach(function(U){
+    var dv=FOULE.devant(U);
+    U.membres.forEach(function(i){
+      var a=s.sim.agents[i];
+      FUM.jet(s.fum,a.x+dv[0]*0.9,a.y+dv[1]*0.9,dv[0],dv[1],2600);
+      n++;
+    });
+  });
+  if(s.M&&MISSION)MISSION.noter(s.M,'eau');
+  if(SON)SON.effet('eau');
+  s.mot='LANCE À EAU · '+n+' CANON'+(n>1?'S':'');s.motT=1600;
 }
 
 /* LA FIN. On ne touche pas a s.phase tout de suite : le shell remettrait
@@ -1409,6 +1698,7 @@ var ORDRES=[
   {k:'forme', t:'FORME'},
   {k:'groupe',t:'GROUPE'},
   {k:'gaz',   t:'GAZ'},
+  {k:'eau',   t:'EAU'},
   {k:'diag',  t:'DIAG'}
 ];
 function barreMaj(s,L,H){
@@ -1420,10 +1710,16 @@ function barreMaj(s,L,H){
     s.barre=[{x:L*0.18,y:H-hr-2,w:L*0.64,h:hr,k:'rejouer',t:'REJOUER'}];
     return;
   }
-  var une=(L>=360), B=[], i;
+  var B=[], i;
   var nU=s.unites.length+1;                  /* les unites, plus TOUTES */
-  s.hbar=une?hr:hr*2;
-  var y1=H-s.hbar, y2=une?y1:(H-hr);
+  /* TROIS RANGEES QUAND IL LE FAUT. Avec huit ordres et cinq unites,
+     deux rangees donnaient des boutons de vingt-quatre points dont les
+     libelles se touchaient. On coupe des que la place manque : mieux
+     vaut une rangee de plus que des timbres illisibles. */
+  var une=(L>=360&&(L/(nU*1.35+ORDRES.length))>=30);
+  var deuxO=(!une&&(L/ORDRES.length)<30);
+  s.hbar=une?hr:(deuxO?hr*3:hr*2);
+  var y1=H-s.hbar, y2=une?y1:(H-s.hbar+hr);
   if(une){
     var pdsU=1.35, tot=nU*pdsU+ORDRES.length;
     var u=L/tot, x=0;
@@ -1434,8 +1730,16 @@ function barreMaj(s,L,H){
     var uu=L/nU, x2=0;
     for(i=0;i<s.unites.length;i++){B.push({x:x2,y:y1,w:uu-2,h:hr-2,k:'u'+i});x2+=uu;}
     B.push({x:x2,y:y1,w:uu-2,h:hr-2,k:'tout'});
-    var uo=L/ORDRES.length, x3=0;
-    for(i=0;i<ORDRES.length;i++){B.push({x:x3,y:y2,w:uo-2,h:hr-2,k:ORDRES[i].k,t:ORDRES[i].t});x3+=uo;}
+    if(deuxO){
+      var n1=Math.ceil(ORDRES.length/2);
+      var ua=L/n1, xa=0;
+      for(i=0;i<n1;i++){B.push({x:xa,y:y2,w:ua-2,h:hr-2,k:ORDRES[i].k,t:ORDRES[i].t});xa+=ua;}
+      var n2=ORDRES.length-n1, ub=L/n2, xb=0;
+      for(i=n1;i<ORDRES.length;i++){B.push({x:xb,y:y2+hr,w:ub-2,h:hr-2,k:ORDRES[i].k,t:ORDRES[i].t});xb+=ub;}
+    }else{
+      var uo=L/ORDRES.length, x3=0;
+      for(i=0;i<ORDRES.length;i++){B.push({x:x3,y:y2,w:uo-2,h:hr-2,k:ORDRES[i].k,t:ORDRES[i].t});x3+=uo;}
+    }
   }
   s.barre=B;
 }
@@ -1539,6 +1843,8 @@ var M={
     /* LA MISSION, calculee a part : elle ne fait que LIRE la rue. */
     MISSION=window.CORDON_MISSION;
     SON=window.CORDON_SON||null;
+    FUM=window.CORDON_FUMEE||null;
+    s.fum=FUM?FUM.creer():null;
     /* LA LIMITE EST A DEUX TUILES DE LA PREFECTURE, pas a cinq du
        cordon : trop pres, quelques corps ejectes d'une bousculade
        suffisaient a faire perdre la mission en vingt secondes. */
@@ -1557,6 +1863,8 @@ var M={
     majCortege(s,dt);
     majUnites(s,dt);
     FOULE.pas(s.sim,dt);
+    if(FUM&&s.fum)FUM.pas(s.fum,dt,s.sim);
+    camSuivi(s,dt);
     if(s.M&&MISSION){
       MISSION.pas(s.M,s,dt,missionApi(s));
       if(s.M.fin)finMission(s);
@@ -1695,19 +2003,11 @@ var M={
       g.textBaseline='middle';g.fillText(txt,pe.x,pe.y-34);
       g.textBaseline='alphabetic';g.textAlign='left';
     }
+    /* LA FUMEE PAR-DESSUS LES CORPS : un nuage de gaz flotte au-dessus
+       de la foule, il ne se range pas entre deux personnes. */
+    if(FUM&&s.fum)FUM.dessine(s.fum,g,mx,my,x0,x1,y0,y1);
     jalon('etiquettes');
     if(s.diag)diagnostic(g,s,vus);
-    /* le point de chute de la derniere grenade, deux secondes */
-    if(s.flash){
-      s.flash[2]+=16;
-      if(s.flash[2]>2000)s.flash=null;
-      else{
-        var pf=m2e(s.flash[0],s.flash[1]), al=1-s.flash[2]/2000;
-        g.strokeStyle='rgba(255,230,150,'+al.toFixed(2)+')';g.lineWidth=1;
-        g.beginPath();g.ellipse(pf.x,pf.y+TH/2,8+s.flash[2]*0.03,
-          (8+s.flash[2]*0.03)*0.5,0,0,7);g.stroke();
-      }
-    }
     g.restore();
     /* LE VOILE DE L'HEURE : pose apres la scene et avant le bandeau,
        pour que le texte reste lisible la nuit */
@@ -1786,6 +2086,7 @@ var M={
       else if(b.k==='forme')cmdForme(s);
       else if(b.k==='groupe')cmdGrouper(s);
       else if(b.k==='gaz')cmdGaz(s);
+      else if(b.k==='eau')cmdEau(s);
       else if(b.k==='diag'){s.diag=!s.diag;s.mot=s.diag?'DIAGNOSTIC ALLUMÉ':'DIAGNOSTIC ÉTEINT';s.motT=1200;}
       return;
     }
@@ -1799,7 +2100,7 @@ var M={
   glisse:function(s,x,y,dx,dy){
     if(!s.pret||s.pince)return;
     if(s.hbar&&y>s.H-s.hbar-2)return;   /* on ne panoramique pas sur la barre */
-    s.camLibre=true;
+    s.camLibre=true; s.camLibreT=5000;
     s.cam.x-=dx/s.cam.z; s.cam.y-=dy/s.cam.z;
     camBornes(s);
   },
@@ -1809,7 +2110,7 @@ var M={
   pince:function(s,fac,cx,cy,fini){
     if(!s.pret)return;
     if(fini){s.pince=false;camAimante(s);camBornes(s);return;}
-    s.pince=true;s.camLibre=true;
+    s.pince=true;s.camLibre=true;s.camLibreT=5000;
     var z0=s.cam.z;
     var z=Math.max(s.cam.zmin,Math.min(s.cam.zmax,z0*fac));
     /* le point du monde sous le milieu des doigts ne doit pas bouger */
@@ -2078,14 +2379,14 @@ function briefing(s,L,H,M){
   g.textAlign='left';g.textBaseline='middle';
   g.font='bold 8px ui-monospace,monospace';
   g.fillStyle='rgba(255,226,138,'+al.toFixed(2)+')';
-  g.fillText('AVENUE DE LA RÉPUBLIQUE',x+8,y+11);
+  g.fillText('PLACE DE LA RÉPUBLIQUE',x+8,y+11);
   g.font='6px ui-monospace,monospace';
   g.fillStyle='rgba(205,228,242,'+al.toFixed(2)+')';
   /* LE BRIEFING LIT LA MISSION. Ecrit en dur, il annoncait encore
      « six passages toleres » apres qu'on soit passe a douze : un texte
      qui ment sur la regle est pire que pas de texte. */
   var lignes=[
-    'Le cortège remonte vers la préfecture.',
+    'Le cortège traverse la place vers la préfecture.',
     'Tenez '+chrono(M.duree)+'. '+M.tolere+' passages tolérés.',
     'Protégez les devantures.',
     'Tape sur la carte : l’unité y va.'
@@ -2128,7 +2429,7 @@ function resultat(s,L,H){
   g.textAlign='center';g.textBaseline='middle';
   g.font='bold 13px ui-monospace,monospace';
   g.fillStyle=M.fin==='gagne'?'#7dff9a':'#ff6a6a';
-  g.fillText(M.fin==='gagne'?'AVENUE TENUE':'AVENUE PERDUE',L/2,y+15);
+  g.fillText(M.fin==='gagne'?'PLACE TENUE':'PLACE PERDUE',L/2,y+15);
   g.font='6px ui-monospace,monospace';g.fillStyle='#8fb8cc';
   var pq=M.fin==='gagne'?('Le cortège n’est pas passé.')
         :(M.passes>M.tolere?('Ils sont '+M.passes+' à être passés.')

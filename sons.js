@@ -108,6 +108,7 @@ SON.effet=function(k){
   else if(k==='ordre') {coup({onde:'square',freq:700,vers:900,vol:0.07,dur:0.08,type:'bandpass',q:4});}
   else if(k==='clic')  {coup({onde:'square',freq:420,vol:0.05,dur:0.04,type:'bandpass',q:3});}
   else if(k==='charge'){coup({freq:140,q:0.6,vol:0.3,dur:0.55,type:'lowpass'});}
+  else if(k==='eau')   {coup({freq:900,q:0.5,vol:0.22,dur:1.6,type:'bandpass'});}
   else if(k==='verre') {coup({freq:3200,q:0.9,vol:0.26,dur:0.45,type:'highpass'});}
   else if(k==='gagne') {coup({onde:'triangle',freq:520,vers:780,vol:0.14,dur:0.5,type:'lowpass',q:1});}
   else if(k==='perdu') {coup({onde:'triangle',freq:300,vers:120,vol:0.16,dur:0.9,type:'lowpass',q:1});}

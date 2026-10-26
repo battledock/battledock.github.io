@@ -30,7 +30,8 @@ en mode téléphone (390 × 844) avec le tactile activé.
 | `AVANT` / `ARRIÈRE` | décaler la figure vers la foule ou en arrière |
 | `FORME` | ligne → coin → colonne → nasse |
 | `GROUPE` | faire converger les unités sélectionnées |
-| `GAZ` | une grenade devant chaque unité sélectionnée |
+| `GAZ` | une grenade devant chaque unité sélectionnée : un nuage qui tient 9 s |
+| `EAU` | les camions arrosent : le jet pousse les corps qu'il touche |
 | `DIAG` | afficher l'état, la destination et le stress de chaque corps |
 
 Perdre le focus met le jeu en pause ; un doigt reprend.
@@ -43,6 +44,7 @@ Perdre le focus met le jeu en pause ; un doigt reprend.
 | `acteurs.js` | l'atlas de sprites et leur rendu | l'existence de forces |
 | `mission.js` | objectifs, événements, score | le rendu et la simulation (il *lit*) |
 | `sons.js` | son synthétisé, aucun fichier | le reste du jeu |
+| `fumee.js` | nuages de gaz et jets d'eau — zones qui agissent | la mission |
 | `cordon.js` | le décor, la caméra, le commandement, l'interface | — |
 
 Le seul pont entre la simulation et le rendu est l'agent, qui porte
@@ -72,9 +74,10 @@ pas une prévision.
 
 ## Ce qui n'est pas fini
 
-- **L'équilibrage.** Ne rien faire gagne encore environ une fois sur deux
-  selon la graine.
-- **Les ordres de maintien** : lance à eau, nasse effective, dialogue.
-  Seuls `GAZ`, `AVANT` et `ARRIÈRE` agissent sur la foule.
+- **L'équilibrage.** Ne rien faire gagne environ une fois sur trois selon
+  la graine ; les défaites passives arrivent entre 79 s et 148 s sur une
+  mission de 150 s, donc ça se joue — mais ce n'est pas réglé finement.
+- **Les ordres de maintien restants** : nasse effective, dialogue.
+  `GAZ`, `EAU`, `AVANT` et `ARRIÈRE` agissent réellement sur la foule.
 - **Une seule mission.**
 - **Le rendu sur un vrai téléphone** n'a pas été mesuré.

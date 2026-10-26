@@ -261,7 +261,18 @@ function corpsCRS(g,x,y,dos,f,p,off){
    dir 0..3 = vers +gx, +gy, -gx, -gy. Deux vues suffisent : on regarde
    le monde de face ou de dos, et le miroir fait les deux cotes.
    --------------------------------------------------------------------- */
+/* UN ACTEUR QUI N'EST PAS UN HOMME. Un camion a eau n'a ni pose de
+   marche ni vue de dos : c'est un seul dessin, mais il doit se trier
+   avec les corps comme tout le reste. On l'enregistre dans le meme
+   atlas, en marquant qu'il est fixe. */
+ACTEURS.poserFixe=function(type,sprite){
+  ACTEURS.fixes[type]=sprite;
+};
+ACTEURS.fixes={};
+
 ACTEURS.dessine=function(g,a,px,py){
+  var F=ACTEURS.fixes[a.type];
+  if(F){g.drawImage(F.cv,(px-F.ox)|0,(py-F.oy)|0);return;}
   var T=ACTEURS.atlas[a.type]; if(!T)return;
   var V=T[a.varia%T.length];
   var dos=(a.dir===2||a.dir===3), mir=(a.dir===1||a.dir===2);

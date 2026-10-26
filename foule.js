@@ -162,10 +162,10 @@ var FORM={
      rang a 0,78 d'ecart, soit trois tuiles — l'avenue en fait six, on
      passait a cote. Douze par rang a 0,66 : dix hommes tiennent six
      tuiles, et la ligne barre vraiment. */
-  ligne:function(n,i,ax,ay){
+  ligne:function(n,i,ax,ay,ecart){
     var parRang=Math.ceil(n/Math.ceil(n/12)), rang=(i/parRang)|0, col=i%parRang;
-    var dec=(parRang-1)/2;
-    return {u:(col-dec)*0.70, v:-rang*0.82};
+    var dec=(parRang-1)/2, e=ecart||0.70;
+    return {u:(col-dec)*e, v:-rang*(e+0.12)};
   },
   /* un coin, pour fendre */
   coin:function(n,i,ax,ay){
@@ -399,7 +399,7 @@ FOULE.groupe=function(S,o){
   var G={
     id:S.groupes.length, type:o.type, form:o.form||null,
     ax:o.ax, ay:o.ay,          /* la destination du groupe */
-    ordre:null, ordreT:0, ordrePrio:0, decal:0,
+    ordre:null, ordreT:0, ordrePrio:0, decal:0, ecart:(o.ecart||0),
     presse:0, seuil:(o.seuil||3.0), champ:null, champX:-999, champY:-999,
     cap:o.cap||0,              /* le cap de la figure, en radians ecran */
     allure:o.allure||'marche',
@@ -479,7 +479,7 @@ function majCibles(S,dt){
     for(var m=0;m<n;m++){
       var a=S.agents[G.membres[m]];
       if(G.form){
-        var p=FORM[G.form](n,a.slot,G.ax,G.ay);
+        var p=FORM[G.form](n,a.slot,G.ax,G.ay,G.ecart);
         var v2=p.v - G.decal;
         a.cx=G.ax + p.u*c - v2*si;
         a.cy=G.ay + p.u*si + v2*c;

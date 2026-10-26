@@ -1679,3 +1679,59 @@ where niveau = 29;
 --     603 corps         : 1,13 / 16,1 / 16,3
 -- La simulation reste sous 1,2 ms meme a six cents corps : c'est le
 -- dessin qui plafonne, et c'est lui qu'un GPU accelere.
+
+-- ============================================================
+-- LE CORDON — LA PLACE, L'EAU ET LA FUMEE (2026-10-27-1320)
+-- ============================================================
+-- UNE PLACE, PAS UNE RUE. En isometrique, tout ce qui est au sud et a
+-- l'est est DEVANT : une avenue de six tuiles entre deux rangees
+-- d'immeubles de cent points, c'etait un couloir dont le premier plan
+-- mangeait la moitie de l'ecran. L'esplanade fait vingt-quatre tuiles,
+-- le bati est repousse sur les bords, et SA HAUTEUR DEPEND DE SA
+-- PROFONDEUR : vingt a quarante points au sud ou il masquerait, jusqu'a
+-- cent trente au nord ou il fait le fond. C'est la seule regle a retenir
+-- pour poser un decor isometrique.
+-- Au centre : une fontaine, deux alignements d'arbres, des bancs, un
+-- kiosque, une rose de pierre. Chaque piece bloque une case.
+--
+-- LA FUMEE EST UNE ZONE, PAS UN EFFET. Le gaz etait un evenement
+-- instantane et un cercle jaune qui s'agrandissait. C'est maintenant un
+-- nuage qui tient neuf secondes, derive, et prend tous ceux qui entrent
+-- dedans tant qu'il est la : il TIENT du terrain, et le degager coute
+-- quelque chose. Les bouffees sont pre-peintes une fois et recopiees ;
+-- un degrade radial calcule par bouffee et par image, a quarante
+-- bouffees, couterait plus que toute la foule.
+--
+-- LES CAMIONS A EAU sont une unite comme une autre : on les choisit, on
+-- les deplace, et leur ordre EAU arrose vraiment — le jet pousse les
+-- corps qu'il touche, mesure a 1,4 a 2,3 tuiles de recul. Ils tendent
+-- moins qu'une grenade, et c'est tout leur interet : douze points au
+-- rapport contre trente-cinq.
+--
+-- CINQ CHOSES APPRISES, toutes par la mesure
+--  1. LA CAMERA NE SUIVAIT PAS. Posee une fois au depart, elle laissait
+--     le contact sortir de l'ecran au bout de trente secondes : les
+--     nuages de gaz tombaient hors champ et je les ai crus invisibles
+--     avant de compter les particules (32 dans le champ, 0 hors). Elle
+--     recentre maintenant d'elle-meme, mais cinq secondes apres le
+--     dernier geste — une camera qui reprend la main pendant qu'on
+--     regarde ailleurs est pire que pas de suivi.
+--  2. UNE DIAGONALE DE BARRIERES EST UN ESCALIER, et on passe entre deux
+--     marches. Le premier entonnoir fuyait de partout. Ligne droite,
+--     deux rangs, un seul passage.
+--  3. UN PASSAGE PLUS LARGE QUE LA LIGNE QUI LE TIENT N'EST PAS UN
+--     PASSAGE, C'EST UNE BRECHE. Neuf tuiles pour un rang de onze
+--     hommes a 0,70 d'ecart, soit 7,7 tuiles : sept.
+--  4. SUR UNE PLACE, L'ETANCHEITE N'EST PAS LE SUJET. A douze passages
+--     toleres la mission etait perdue dans les huit graines quoi qu'on
+--     fasse. Dix-huit, et la penalite ramenee de 45 a 12 points — sinon
+--     on tenait la place et on finissait a zero.
+--  5. MES SCRIPTS DE CORRECTION « TOUT OU RIEN » M'ONT FAIT PERDRE
+--     QUATRE PATCHS ENTIERS dans cette session : une assertion ratee en
+--     fin de script annulait tout ce qui precedait, sans que rien ne le
+--     signale. Les corrections s'appliquent maintenant une par une, et
+--     le script dit lesquelles ont rate.
+--
+-- MESURE : 380 corps, simulation 0,55 ms, dessin 11,6, image 13,6.
+-- Six graines jouees sans toucher a l'ecran : deux victoires, quatre
+-- defaites tombant entre 79 et 148 secondes sur une mission de 150.
