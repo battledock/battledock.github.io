@@ -2017,3 +2017,28 @@ where niveau = 29;
 -- faire passer 24 (plus que ce que l'IA policiere laisse filtrer). Les
 -- points par passage sont passes de 12 a 8 des deux cotes, sinon une
 -- partie gagnee de justesse finissait sous zero.
+
+-- =====================================================================
+-- ETAPE : LA BARRE, VERSION « JETONS »                  2026-10-27-2010
+-- =====================================================================
+--
+-- Quatre maquettes ont ete dessinees sur la MEME scene et comparees
+-- cote a cote avant de choisir. La retenue : une seule rangee d'ordres
+-- en gros pictogrammes, et les unites en jetons ronds qui FLOTTENT
+-- par-dessus la scene, sur une barrette sombre arrondie.
+--
+-- CE QUE CA CHANGE. Les jetons ne comptent plus dans s.hbar : la rue
+-- regagne toute leur hauteur (50 points d'ecran contre 30). Les ordres,
+-- ce qu'on touche le plus souvent, deviennent la plus grosse cible.
+--
+-- TROIS DETAILS QUI COMPTENT :
+--   - un jeton se touche EN ROND, avec trois points de marge : un carre
+--     autour d'un rond vole les taps de ses voisins ;
+--   - l'avancement d'un ordre fait le TOUR du jeton — un arc se lit sur
+--     un rond, une barre de progression non ;
+--   - le rayon se DEDUIT de la place disponible, jamais l'inverse : sur
+--     un ecran etroit les jetons retrecissent au lieu de se chevaucher,
+--     avec un plancher a quatorze points d'ecran.
+--
+-- Et le glissement de camera s'arrete a la barrette, pas a la barre :
+-- un doigt pose sur un jeton commande, il ne deplace pas la rue.

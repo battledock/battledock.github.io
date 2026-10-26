@@ -2356,36 +2356,43 @@ function barreMaj(s,L,H){
   var hr=Math.max(15,Math.round(50/E));
   if(s.M&&s.M.fin){
     /* fini : une seule chose a faire, et elle prend toute la largeur */
-    s.hbar=hr+4;
+    s.hbar=hr+4; s.jetonHaut=undefined;
     s.barre=[{x:L*0.18,y:H-hr-2,w:L*0.64,h:hr,k:'rejouer',t:'REJOUER'}];
     return;
   }
   var B=[], i;
-  var nU=s.unites.length+1;                  /* les unites, plus TOUTES */
-  /* TROIS RANGEES QUAND IL LE FAUT. Avec huit ordres et cinq unites,
-     deux rangees donnaient des boutons de vingt-quatre points dont les
-     libelles se touchaient. On coupe des que la place manque : mieux
-     vaut une rangee de plus que des timbres illisibles. */
-  /* DEUX RANGEES AU PLUS. La troisieme rangee existait parce qu'un
-     libelle de sept lettres ne tient pas dans vingt-sept points ; les
-     ordres portent maintenant un pictogramme, et vingt-sept points
-     suffisent. On a recupere un sixieme de la hauteur de la rue. */
-  var une=(L>=360&&(L/(nU*1.35+ORDRES.length))>=30);
-  s.hbar=une?hr:hr*2;
-  var y1=H-s.hbar, y2=une?y1:(H-s.hbar+hr);
-  if(une){
-    var pdsU=1.35, tot=nU*pdsU+ORDRES.length;
-    var u=L/tot, x=0;
-    for(i=0;i<s.unites.length;i++){B.push({x:x,y:y1,w:u*pdsU-2,h:hr-2,k:'u'+i});x+=u*pdsU;}
-    B.push({x:x,y:y1,w:u*pdsU-2,h:hr-2,k:'tout'});x+=u*pdsU;
-    for(i=0;i<ORDRES.length;i++){B.push({x:x,y:y1,w:u-2,h:hr-2,k:ORDRES[i].k,t:ORDRES[i].t});x+=u;}
-  }else{
-    var uu=L/nU, x2=0;
-    for(i=0;i<s.unites.length;i++){B.push({x:x2,y:y1,w:uu-2,h:hr-2,k:'u'+i});x2+=uu;}
-    B.push({x:x2,y:y1,w:uu-2,h:hr-2,k:'tout'});
-    var uo=L/ORDRES.length, x3=0;
-    for(i=0;i<ORDRES.length;i++){B.push({x:x3,y:y2,w:uo-2,h:hr-2,k:ORDRES[i].k,t:ORDRES[i].t});x3+=uo;}
+  /* ===================================================================
+     UNE SEULE RANGEE D'ORDRES, ET DES JETONS RONDS QUI FLOTTENT
+
+     Les unites ne sont plus une rangee de plus : ce sont des pastilles
+     rondes posees PAR-DESSUS la scene, au-dessus de la barre. Elles ne
+     comptent donc pas dans s.hbar, et la rue regagne toute leur
+     hauteur. Les ordres, eux, prennent la largeur entiere en gros
+     pictogrammes : c'est ce qu'on touche le plus souvent, autant que ce
+     soit la plus grosse cible.
+     =================================================================== */
+  var ho=Math.max(18,Math.round(60/E));       /* la rangee d'ordres */
+  s.hbar=ho;
+  var y1=H-ho;
+  var uo=L/ORDRES.length, x3=0;
+  for(i=0;i<ORDRES.length;i++){
+    B.push({x:x3,y:y1,w:uo-2,h:ho-3,k:ORDRES[i].k,t:ORDRES[i].t});
+    x3+=uo;
   }
+  /* LES JETONS. Leur rayon se DEDUIT de la place, jamais l'inverse :
+     sur un ecran etroit ils retrecissent au lieu de se chevaucher. */
+  var nU=s.unites.length, lTout=Math.round(34/E);
+  var dispoL=L-10-lTout-6;
+  var r=Math.min(Math.round(23/E), Math.floor((dispoL/nU-2)/2));
+  r=Math.max(Math.round(14/E), r);
+  var pas=r*2+2, tot=nU*pas+lTout+6;
+  var x0=Math.max(5,(L-tot)/2), yy=y1-r-Math.round(12/E);
+  for(i=0;i<nU;i++){
+    B.push({rond:true, cx:x0+r+i*pas, cy:yy, r:r,
+            x:x0+i*pas, y:yy-r, w:r*2, h:r*2, k:'u'+i});
+  }
+  B.push({x:x0+nU*pas+6, y:yy-r, w:lTout, h:r*2, k:'tout'});
+  s.jetonHaut=yy-r-2;
   s.barre=B;
 }
 /* CE QU'ON PEUT FAIRE MAINTENANT, avec ce qui est selectionne. Sert a
@@ -2405,8 +2412,28 @@ function dispo(s,k){
 }
 function barreDessine(s,L,H){
   var g=G, i, b;
-  g.fillStyle='rgba(6,10,18,.80)';g.fillRect(0,H-s.hbar,L,s.hbar);
-  g.fillStyle='rgba(120,200,240,.22)';g.fillRect(0,H-s.hbar,L,1);
+  g.fillStyle='rgba(6,10,18,.84)';g.fillRect(0,H-s.hbar,L,s.hbar);
+  g.fillStyle='rgba(120,200,240,.25)';g.fillRect(0,H-s.hbar,L,1);
+  /* LE SOCLE DES JETONS : une barrette sombre arrondie, juste assez
+     large pour eux. Sans elle, des ronds poses sur la foule ne se
+     detachent pas. */
+  if(s.jetonHaut!==undefined){
+    var j0=null, j1=null;
+    for(i=0;i<s.barre.length;i++){
+      var bj=s.barre[i];
+      if(bj.k!=='tout'&&bj.k.charAt(0)!=='u')continue;
+      if(j0===null||bj.x<j0)j0=bj.x;
+      if(j1===null||bj.x+bj.w>j1)j1=bj.x+bj.w;
+    }
+    if(j0!==null){
+      var hJ=s.barre[0]?0:0;
+      var bb=s.barre.find?null:null;
+      var jh=0;
+      for(i=0;i<s.barre.length;i++)if(s.barre[i].rond){jh=s.barre[i].r*2;break;}
+      g.fillStyle='rgba(6,10,18,.62)';
+      coArr(g,j0-6,s.jetonHaut-2,(j1-j0)+12,jh+8,(jh+8)/2);g.fill();
+    }
+  }
   g.textBaseline='middle';
   for(i=0;i<s.barre.length;i++){
     b=s.barre[i];
@@ -2414,27 +2441,36 @@ function barreDessine(s,L,H){
     if(b.k.charAt(0)==='u'&&b.k!=='tout'){
       var ui=+b.k.slice(1), U=s.unites[ui], on=!!s.selN[ui];
       var c=UCOL[ui%UCOL.length];
-      g.fillStyle=on?c:'rgba(255,255,255,.10)';
-      coArr(g,b.x+1,b.y+1,b.w,b.h-2,3);g.fill();
-      /* l'avancement de l'ordre, en fond de pastille */
+      var jx=b.cx, jy=b.cy, jr=b.r;
+      g.beginPath();g.arc(jx,jy,jr,0,6.2832);
+      g.fillStyle=on?c:'rgba(255,255,255,.13)';g.fill();
+      /* L'AVANCEMENT DE L'ORDRE fait le tour du jeton : un arc se lit
+         sur un rond, une barre de progression non. */
       if(U.route&&U.nRoute){
-        g.fillStyle='rgba(255,255,255,'+(on?'.26':'.16')+')';
-        coArr(g,b.x+1,b.y+1,b.w*(U.ri/U.nRoute),b.h-2,3);g.fill();
+        g.beginPath();
+        g.arc(jx,jy,jr-1.5,-1.5708,-1.5708+6.2832*(U.ri/U.nRoute));
+        g.strokeStyle=on?'rgba(6,16,28,.65)':'rgba(255,255,255,.55)';
+        g.lineWidth=2.2;g.stroke();
       }
+      if(on){g.beginPath();g.arc(jx,jy,jr,0,6.2832);
+             g.strokeStyle='#fff';g.lineWidth=1.4;g.stroke();}
       g.fillStyle=on?'#06101c':c;
       g.font='bold 7px ui-monospace,monospace';g.textAlign='center';
-      g.fillText(U.court,b.x+1+b.w/2,cy-4);
+      g.fillText(U.court.slice(0,5),jx,jy-3);
       g.font='6px ui-monospace,monospace';
-      var sim=s.sim, et=sim?sim.agents[U.membres[0]].etat:'';
-      g.fillText(U.membres.length+'H '+(DIAG_AB[et]||et),b.x+1+b.w/2,cy+4);
-    }else if(b.k==='tout'){
+      g.fillText(U.membres.length+'H',jx,jy+5);
+      continue;
+    }
+    if(b.k==='tout'){
       var all=(Object.keys(s.selN).filter(function(k){return s.selN[k];}).length===s.unites.length);
-      g.fillStyle=all?'#dfe8f0':'rgba(255,255,255,.10)';
-      coArr(g,b.x+1,b.y+1,b.w,b.h-2,3);g.fill();
+      g.fillStyle=all?'#dfe8f0':'rgba(255,255,255,.13)';
+      coArr(g,b.x,b.y,b.w,b.h,b.h/2);g.fill();
       g.fillStyle=all?'#06101c':'#cfe4f2';
-      g.font='bold 7px ui-monospace,monospace';g.textAlign='center';
-      g.fillText('TOUTES',b.x+1+b.w/2,cy);
-    }else{
+      g.font='bold 6px ui-monospace,monospace';g.textAlign='center';
+      g.fillText('TOUTES',b.x+b.w/2,cy);
+      continue;
+    }
+    {
       if(b.k==='rejouer'){
         g.fillStyle='#ffd24a';coArr(g,b.x,b.y,b.w,b.h,4);g.fill();
         g.fillStyle='#4a2c00';g.font='bold 10px ui-monospace,monospace';
@@ -2454,7 +2490,7 @@ function barreDessine(s,L,H){
       if(IC){
         /* le pictogramme en haut, le libelle dessous : on lit l'un de
            loin et l'autre quand on hesite */
-        var ih=Math.min(15,b.h-9);
+        var ih=Math.min(22,b.h-10);
         if(act){
           /* sur fond clair, l'icone blanche disparait : on la retourne */
           g.save();g.globalCompositeOperation='difference';
@@ -2464,7 +2500,7 @@ function barreDessine(s,L,H){
         }
         g.fillStyle=act?'#06101c':'#cfe4f2';
         g.font='bold 6px ui-monospace,monospace';g.textAlign='center';
-        g.fillText(b.t,cxb,b.y+b.h-4);
+        g.fillText(b.t,cxb,b.y+b.h-5);
       }else{
         g.fillStyle=act?'#06101c':'#cfe4f2';
         g.font='bold 7px ui-monospace,monospace';g.textAlign='center';
@@ -2485,6 +2521,13 @@ function coArr(g,x,y,w,h,r){
 function barreTouche(s,x,y){
   for(var i=0;i<s.barre.length;i++){
     var b=s.barre[i];
+    if(b.rond){
+      /* UN JETON SE TOUCHE EN ROND, avec trois points de marge : un
+         carre autour d'un rond vole les taps de ses voisins. */
+      var dx=x-b.cx, dy=y-b.cy, rr=b.r+3;
+      if(dx*dx+dy*dy<=rr*rr)return b;
+      continue;
+    }
     if(x>=b.x&&x<=b.x+b.w+2&&y>=b.y-2&&y<=b.y+b.h+2)return b;
   }
   return null;
@@ -2908,7 +2951,10 @@ var M={
        bouger sous le pouce, et c'est au relachement que ca part. Le
        panoramique reprend ses droits des que la visee est finie. */
     if(s.vise){s.viseXY=s.viseXY||[0,0];s.viseXY[0]=x;s.viseXY[1]=y;return;}
-    if(s.hbar&&y>s.H-s.hbar-2)return;   /* on ne panoramique pas sur la barre */
+    /* ni sur la barre, ni sur la barrette des jetons qui flotte juste
+       au-dessus : un doigt pose la commande, il ne deplace pas la rue */
+    var plancher=(s.jetonHaut!==undefined)?s.jetonHaut-2:(s.H-s.hbar-2);
+    if(s.hbar&&y>plancher)return;
     s.camLibre=true; s.camLibreT=5000; s.camVise=null;
     s.cam.x-=dx/s.cam.z; s.cam.y-=dy/s.cam.z;
     camBornes(s);

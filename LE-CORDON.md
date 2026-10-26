@@ -29,11 +29,13 @@ lui ; l'autre camp est tenu par l'IA.
 | But | tenir le passage 2 min 30, 45 passages tolérés | faire passer 24 des siens |
 | Ordres | TENIR, AVANT, ARRIÈRE, FORME, GROUPE, GAZ, EAU | POUSSER, RECULER, CASSER, BARRICADE, MOLOTOV, GROUPE, DISPERSER |
 
-Les ordres portent un **pictogramme** et tiennent sur deux rangées ; un
+Les ordres tiennent sur **une seule rangée** de gros pictogrammes ; un
 ordre qu'on ne peut pas donner (cocktails en recharge, eau demandée à
-des hommes à pied) est grisé avant qu'on le touche. Taper une pastille
-d'unité **amène la caméra** dessus, et le suivi automatique reprend
-quatre secondes plus tard.
+des hommes à pied) est grisé avant qu'on le touche. Les unités sont des
+**jetons ronds** posés par-dessus la scène, au-dessus de la barre : ils
+ne prennent pas de hauteur de rue, et l'avancement d'un ordre fait le
+tour du jeton. Taper un jeton **amène la caméra** sur l'unité, et le
+suivi automatique reprend quatre secondes plus tard.
 | Unités | 3 lignes, une réserve, deux camions | 4 blocs de cortège, les casseurs, les mobiles |
 
 **Déplacer un bloc du cortège.** On tape sa pastille, puis la case visée :
