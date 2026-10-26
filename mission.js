@@ -34,7 +34,11 @@ var CATALOGUE=[
      fausse menace. A la place, du monde arrive — et ca, ca se voit. */
   {k:'renfortCortege', t:'LE CORTÈGE GROSSIT', d:'Du monde arrive par l’ouest.', dur:0},
   {k:'presse',   t:'LES CAMÉRAS SONT SUR VOUS', d:'Tout ce que vous ferez sera filmé.', dur:22000},
-  {k:'renfort',  t:'RENFORT DISPONIBLE', d:'La réserve peut être engagée.', dur:0}
+  {k:'renfort',  t:'RENFORT DISPONIBLE', d:'La réserve peut être engagée.', dur:0},
+  /* L'INCENDIE DE LA PLACE. Une benne part au milieu de l'esplanade :
+     tout le monde la voit, personne ne peut passer dessus, et la rue
+     se tend toute seule tant qu'elle brûle. */
+  {k:'incendie', t:'ÇA BRÛLE AU MILIEU', d:'Une benne a pris feu sur l’esplanade.', dur:0}
 ];
 
 function De(g){this.g=g||1;}
@@ -161,12 +165,16 @@ MIS.creer=function(o){
     presseJusqu:0, briefT:7200
   };
   /* LA FILE D'EVENEMENTS, tiree une fois. Les minutes varient de huit
-     secondes et l'ordre des trois du milieu est melange : deux parties
+     secondes et l'ordre des quatre du milieu est melange : deux parties
      ne se ressemblent pas, et la meme graine se rejoue a l'identique. */
-  var milieu=['casseurs','renfortCortege','presse'];
+  var milieu=['casseurs','renfortCortege','presse','incendie'];
   for(var i=milieu.length-1;i>0;i--){var j=d.e(0,i);var t=milieu[i];milieu[i]=milieu[j];milieu[j]=t;}
   var plan=['poussee'].concat(milieu).concat(['poussee','renfort']);
-  var base=[16000,40000,66000,92000,116000,134000];
+  /* LES MINUTES N'ONT PAS BOUGE. Ajouter l'incendie en redistribuant
+     tout le calendrier avancait le renfort du cortege de quatre
+     secondes — assez pour que la police ne tienne plus une seule
+     partie. Le quatrieme creneau s'INSERE entre les anciens. */
+  var base=[16000,40000,56000,72000,92000,116000,134000];
   for(var k=0;k<plan.length;k++){
     M.file.push({k:plan[k], t:base[k]+d.e(-8000,8000)});
   }
@@ -241,6 +249,8 @@ MIS.noter=function(M,k){
   if(k==='gaz')M.gaz++;
   if(k==='charge')M.charges++;
   if(k==='eau')M.eau=(M.eau||0)+1;
+  if(k==='molotov')M.molotovs=(M.molotovs||0)+1;
+  if(k==='feu')M.feux=(M.feux||0)+1;
   if((k==='gaz'||k==='charge'||k==='eau')&&M.t<M.presseJusqu)M.fauteCam++;
 };
 
@@ -256,6 +266,7 @@ MIS.terminer=function(M,s,gagne){
     sc+=(M.barricades||0)*150;
     sc+=M.brisees*90;
     if(gagne)sc+=400+Math.max(0,Math.round((M.duree-M.t)/1000))*4;
+    sc+=(M.molotovs||0)*60;
     sc-=Math.round((M.enFuite||0)*2.2);
     M.score=Math.max(0,sc);
     M.detail=[
@@ -263,6 +274,7 @@ MIS.terminer=function(M,s,gagne){
       ['Barricades ('+(M.barricades||0)+')', '+'+(M.barricades||0)*150],
       ['Devantures ('+M.brisees+')', '+'+M.brisees*90],
       ['Ligne franchie', gagne?('+'+(400+Math.max(0,Math.round((M.duree-M.t)/1000))*4)):'0'],
+      ['Cocktails ('+(M.molotovs||0)+')', '+'+(M.molotovs||0)*60],
       ['Cortège dispersé ('+(M.enFuite||0)+')', '-'+Math.round((M.enFuite||0)*2.2)]
     ];
     return;
@@ -278,6 +290,7 @@ MIS.terminer=function(M,s,gagne){
   sc-=M.charges*20;
   sc-=(M.eau||0)*12;        /* l'eau disperse sans enflammer : elle coute moins */
   sc-=M.fauteCam*120;
+  sc-=(M.feux||0)*90;
   sc-=Math.round(M.tensionMax*320);
   M.score=Math.max(0,sc);
   M.detail=[
@@ -289,6 +302,7 @@ MIS.terminer=function(M,s,gagne){
     ['Charges ('+M.charges+')', '-'+M.charges*20],
     ['Lance à eau ('+(M.eau||0)+')', '-'+(M.eau||0)*12],
     ['Devant les caméras ('+M.fauteCam+')', '-'+M.fauteCam*120],
+    ['Incendies ('+(M.feux||0)+')', '-'+(M.feux||0)*90],
     ['Tension maximale ('+Math.round(M.tensionMax*100)+' %)', '-'+Math.round(M.tensionMax*320)]
   ];
 };

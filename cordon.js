@@ -1620,6 +1620,18 @@ function missionApi(s){
       P.ax=Math.max(2,s.front-0.5); P.ay=(AV.y0+AV.y1)/2+0.5;
       P.colle=true;
     }
+    else if(k==='incendie'){
+      /* LA BENNE DU MILIEU. Un foyer large et long, a l'est de la
+         fontaine mais DECALE AU NORD : pose sur l'axe du cortege il
+         barrait le passage a ceux-la memes qui l'allument, et le
+         cortege ne gagnait plus une seule partie. Decale, il tend la
+         place, oblige a contourner, et laisse le jeu jouable. */
+      if(!FUM||!s.fum)return;
+      var ccx=Math.round((RU.x0+RU.x1)/2)+5.5, ccy=Math.round((AV.y0+AV.y1)/2)-5.5;
+      var FE=FUM.feu(s.fum,ccx,ccy,1.35,120000);
+      if(FE)FE.r=2.1;
+      if(SON)SON.effet('charge');
+    }
     else if(k==='renfort'){
       /* SIX HOMMES DE PLUS, pour de vrai : ils arrivent par l'est et
          rejoignent la reserve. Un evenement qui n'ajouterait qu'une
@@ -1874,6 +1886,46 @@ function cmdDisperser(s){
   s.mot=selNoms(s)+' · ON SE DISPERSE';s.motT=1600;
 }
 
+/* LE MOLOTOV. Trois bouteilles partent du bloc choisi vers la ligne
+   d'en face : on les voit voler, et le feu ne nait qu'a l'impact. Le
+   foyer tient une demi-minute, repousse ce qui s'en approche et bloque
+   le passage aussi surement qu'une barricade — des deux cotes.
+   Ca se paie : la tension monte d'un coup, et le rapport s'en souvient. */
+function cmdMolotov(s){
+  var L=selection(s);
+  if(!FUM||!s.fum)return 0;
+  if(s.molotovRech>0){
+    s.mot='PAS DE BOUTEILLE · '+Math.ceil(s.molotovRech/1000)+' S';s.motT=1400;
+    return 0;
+  }
+  var mur=iaMur(s), n=0;
+  L.forEach(function(U){
+    var sx=0, sy=0, m=0, A=s.sim.agents;
+    for(var k=0;k<U.membres.length;k++){
+      var a=A[U.membres[k]];
+      if(a.etat==='PANIQUE'||a.etat==='FUIT')continue;
+      sx+=a.x; sy+=a.y; m++;
+    }
+    if(!m)return;
+    sx/=m; sy/=m;
+    /* on vise juste devant le cordon, pas dessus : un molotov qui tombe
+       sur la ligne brule ceux qui le lancent la seconde d'apres */
+    for(var j=0;j<3;j++){
+      var cx=Math.min(mur-1.6, sx+3.4+j*0.8);
+      var cy=sy+(j-1)*1.5;
+      FUM.projectile(s.fum,sx,sy,cx,cy,'molotov');
+      n++;
+    }
+  });
+  if(n){
+    s.molotovRech=22000;
+    if(s.M&&MISSION)MISSION.noter(s.M,'molotov');
+    if(SON)SON.effet('charge');
+    s.mot=selNoms(s)+' · COCKTAILS';s.motT=1700;
+  }
+  return n;
+}
+
 function cmdGaz(s){
   var L=selection(s).filter(function(U){return !U.camions;});
   if(!L.length){s.mot='LES CAMIONS NE LANCENT PAS DE GRENADE';s.motT=1600;return;}
@@ -1975,6 +2027,7 @@ var ORDRES_MANIF=[
   {k:'arriere', t:'RECULER'},
   {k:'casser',  t:'CASSER'},
   {k:'barricade',t:'BARRICADE'},
+  {k:'molotov', t:'MOLOTOV'},
   {k:'groupe',  t:'GROUPE'},
   {k:'disperser',t:'DISPERSER'},
   {k:'diag',    t:'DIAG'}
@@ -2106,7 +2159,7 @@ var M={
             sel:0, selN:{0:true}, front:0, pression:0, tension:0, vus:[],
             barre:[], hbar:0,
             diag:false, flash:null, M:null, poussee:0, finEnvoyee:false, enPause:false,
-            camp:'crs', tous:[], ia:null, barricades:[],
+            camp:'crs', tous:[], ia:null, barricades:[], molotovRech:0,
             fondu:0,
             casseurs:null, vitrines:[],
             /* LA DENSITE, mesuree : 190 corps a 58 images, 354 a 56,
@@ -2120,6 +2173,11 @@ var M={
   demarrer:function(s){
     /* LE CAMP VIENT DU MENU. La borne ne le choisit pas : elle le lit. */
     s.camp=(window.CO_CAMP==='manif')?'manif':'crs';
+    /* LA BANDEROLE DU JOUEUR, choisie au menu. On repeint l'atlas une
+       fois, avant la partie : ensuite le rendu ne sait rien du texte. */
+    if(ACTEURS&&ACTEURS.ecrire){
+      try{ACTEURS.ecrire(window.CO_SLOGAN||'', window.CO_TISSU||'');}catch(e){}
+    }
     s.graine=(Math.random()*2000000)|0;
     s.barricades=[];
     s.ia=window.CORDON_IA?window.CORDON_IA.creer(s.camp==='manif'?'crs':'manif'):null;
@@ -2136,7 +2194,7 @@ var M={
        suffisaient a faire perdre la mission en vingt secondes. */
     s.M=MISSION?MISSION.creer({graine:s.graine, ligne:GW-8,
                                camp:s.camp, vitrines:s.vitrines}):null;
-    s.mot='';s.motT=0;
+    s.mot='';s.motT=0;s.feuxVus=0;s.molotovRech=0;
     s.fondu=700;        /* la rue s'ouvre depuis le noir */
   },
   pas:function(s,dt){
@@ -2150,7 +2208,18 @@ var M={
     majUnites(s,dt);
     FOULE.pas(s.sim,dt);
     if(FUM&&s.fum)FUM.pas(s.fum,dt,s.sim);
+    if(s.molotovRech>0)s.molotovRech-=dt;
     majBarricades(s,dt);
+    /* UN FEU QUI BRULE TEND LA RUE, meme loin : tout le monde le voit.
+       C'est la contrepartie des molotovs, et elle est automatique. */
+    if(FUM&&s.fum&&s.M&&MISSION&&s.fum.nes>(s.feuxVus||0)){
+      while((s.feuxVus||0)<s.fum.nes){
+        s.feuxVus=(s.feuxVus||0)+1; MISSION.noter(s.M,'feu');
+      }
+    }
+    if(FUM&&s.fum&&s.fum.feux.length&&s.sim){
+      s.sim.tension=Math.min(1,s.sim.tension+dt*0.0000085*s.fum.feux.length);
+    }
     /* L'IA TIENT LE CAMP QU'ON NE JOUE PAS, et elle passe par les memes
        commandes que le doigt. */
     if(IA&&s.ia){
@@ -2206,6 +2275,9 @@ var M={
     var sx=Math.max(0,Math.floor(s.cam.x-vl/2-2)), sy=Math.max(0,Math.floor(s.cam.y-vh/2-2));
     var sw=Math.min(s.sol.width-sx,Math.ceil(vl+4)), sh=Math.min(s.sol.height-sy,Math.ceil(vh+4));
     if(sw>0&&sh>0)g.drawImage(s.sol,sx,sy,sw,sh,sx,sy,sw,sh);
+    /* les halos de feu AVANT les corps : une flamme eclaire le sol
+       autour d'elle, elle ne se pose pas devant les gens */
+    if(FUM&&s.fum)FUM.dessineSol(s.fum,g,mx,my,x0,x1,y0,y1,s.nuit);
     jalon('sol');
     /* LES UNITES CHOISIES, marquees AU SOL : sous les volumes, donc
        cachees comme elles quand un immeuble passe devant. Posees apres
@@ -2388,7 +2460,8 @@ var M={
         return;
       }
       if(s.M&&s.M.fin)return;       /* plus d'ordres une fois fini */
-      if(b.k==='pousser')cmdPousser2(s);
+      if(b.k==='molotov')cmdMolotov(s);
+      else if(b.k==='pousser')cmdPousser2(s);
       else if(b.k==='casser')cmdCasser(s);
       else if(b.k==='barricade')cmdBarricade(s);
       else if(b.k==='disperser')cmdDisperser(s);

@@ -27,8 +27,28 @@ lui ; l'autre camp est tenu par l'IA.
 | | La police | Le cortège |
 |---|---|---|
 | But | tenir le passage 2 min 30, 18 passages tolérés | faire passer 12 des siens |
-| Ordres | TENIR, AVANT, ARRIÈRE, FORME, GROUPE, GAZ, EAU | POUSSER, RECULER, CASSER, BARRICADE, GROUPE, DISPERSER |
+| Ordres | TENIR, AVANT, ARRIÈRE, FORME, GROUPE, GAZ, EAU | POUSSER, RECULER, CASSER, BARRICADE, MOLOTOV, GROUPE, DISPERSER |
 | Unités | 3 lignes, une réserve, deux camions | 4 blocs de cortège, les casseurs, les mobiles |
+
+**La banderole.** Côté cortège, le menu de la borne contient un champ de
+saisie, six slogans tout faits et six couleurs de tissu. Le texte est
+découpé en mots : chaque banderole du cortège en porte un, et on lit la
+phrase en balayant la foule. Les pancartes portent le mot le plus court.
+Vingt et un pixels de tissu, c'est cinq caractères — les mots plus longs
+sont coupés. Le choix est gardé d'une partie à l'autre.
+
+**Les cocktails Molotov.** Un bloc sélectionné en lance trois d'un coup,
+en arc, devant lui et jamais au-delà du cordon. Chacun allume un foyer à
+l'impact. Vingt-deux secondes de recharge. Côté score : +60 par salve
+pour le cortège, −90 par incendie pour la police.
+
+**Le feu.** Un foyer brûle trente-quatre secondes, repousse les corps
+dans un rayon d'une tuile et demie, et **ne se traverse pas** — ni par
+les manifestants, ni par la police. Il tend la rue tant qu'il brûle, pour
+les deux camps. Deux foyers voisins fusionnent ; au-delà de huit, le plus
+vieux s'éteint. L'événement `ÇA BRÛLE AU MILIEU` allume une benne sur
+l'esplanade, à l'écart de l'axe du cortège pour qu'elle gêne sans barrer
+le passage.
 
 **Les barricades** : quatre corps sur place pendant six secondes. La police
 peut les déloger avant qu'elles tiennent ; une fois debout, la case est
@@ -91,6 +111,8 @@ souris. Le serveur local doit tourner.
 | `strat_t.js` | huit graines jouées sans intervention |
 | `son_t.js` | création du contexte audio, effets, pause |
 | `final_t.js` | performance, médiane de cinq séries |
+| `feu_t.js` | banderole au menu et en jeu, molotov au doigt, incendie, feu-obstacle |
+| `perf_t.js` | coût de dessin avec et sans foyers, médiane de sept séries |
 
 Mesurer la performance dans un conteneur sans GPU ne prédit pas Android :
 canvas 2D y est accéléré. Les chiffres de `final_t.js` sont un plancher,
@@ -98,9 +120,12 @@ pas une prévision.
 
 ## Ce qui n'est pas fini
 
-- **L'équilibrage.** Côté cortège c'est net : sans rien faire on perd 3 fois
-  sur 3, en jouant on gagne 2 fois sur 3. Côté police c'est plus flou — ne
-  rien faire gagne encore environ une fois sur trois selon la graine.
+- **L'équilibrage.** Mesuré sur trois graines, les deux camps gagnent
+  environ une fois sur trois, et jouer activement ne change pas encore le
+  résultat de façon fiable. C'est la limite la plus visible du jeu.
+- **Le coût du feu.** Quatre foyers ajoutent environ 5 ms de dessin par
+  image dans un conteneur sans GPU (11 ms → 16 ms, 380 corps, portrait).
+  Le budget de particules a été divisé par deux pour y arriver.
 - **Les ordres de maintien restants** : nasse effective, dialogue.
   `GAZ`, `EAU`, `AVANT` et `ARRIÈRE` agissent réellement sur la foule.
 - **Une seule mission.**

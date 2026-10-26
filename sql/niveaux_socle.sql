@@ -1787,3 +1787,63 @@ where niveau = 29;
 -- fois sur 3 avec des scores de 348 a 1098 — l'ecart entre les deux est
 -- exactement ce qu'on cherchait. Police : l'equilibrage reste flou, ne
 -- rien faire gagne encore environ une fois sur trois.
+
+-- =====================================================================
+-- ETAPE : LA BANDEROLE, LES MOLOTOVS, LE FEU          2026-10-27-1720
+-- =====================================================================
+--
+-- CE QU'ON VOULAIT. Que le joueur ecrive son slogan, qu'il puisse
+-- lancer des cocktails, et qu'un incendie brule au milieu de la place.
+--
+-- LA BANDEROLE. Le menu de la borne, cote cortege, recoit un champ de
+-- saisie, six slogans tout faits, six couleurs de tissu et un apercu
+-- anime dessine avec les VRAIS sprites du jeu — pas une approximation.
+-- ACTEURS.ecrire() repeint l'atlas une seule fois au depart : le rendu
+-- ne sait toujours rien du texte.
+--   Le tissu fait vingt et un pixels : cinq caracteres. Afficher le
+-- slogan tronque donnait « ON LA ». On le decoupe donc en MOTS, et
+-- chaque banderole porte le suivant : on lit la phrase en balayant le
+-- cortege, comme dans une vraie manif. La pancarte prend le mot le
+-- plus court.
+--   DEUX DEFAUTS TROUVES PAR LA CAPTURE D'ECRAN, pas par un test :
+--   - la micro-police ecrivait OK pour ON (le glyphe N etait faux) ;
+--   - ACTEURS.dessine miroite les directions 1 et 2 pour economiser la
+--     moitie de l'atlas — et retournait donc les lettres. Un porteur de
+--     texte ne se miroite plus : une silhouette de trois pixels tournee
+--     du mauvais cote se voit moins qu'un slogan a l'envers.
+--
+-- LES MOLOTOVS. Trois bouteilles par salve, en arc, jamais au-dela du
+-- cordon, vingt-deux secondes de recharge. Le feu nait a l'impact :
+-- on voit la bouteille partir et on sait d'ou.
+--
+-- LE FEU EST UN OBSTACLE, pas un decor. La premiere version repoussait
+-- a 0,000165 : deux cents corps qui avancent traversaient le brasier
+-- sans ralentir. Desormais la poussee est triplee ET le coeur du foyer
+-- repose sur son bord les corps qui y entrent, en annulant la vitesse
+-- rentrante. Mesure : zero corps dans le rayon apres trois secondes.
+--
+-- CE QUE LE DESSIN A COUTE. Quatre foyers faisaient passer l'image de
+-- 11 ms a 23 ms — un doublement. Deux causes, mesurees separement :
+--   - un degrade radial reconstruit a chaque image et a chaque foyer :
+--     remplace par deux vignettes peintes une fois et etirees ;
+--   - 35 particules par foyer, chacune un blit etire avec transparence :
+--     budget divise par deux (flammes toutes les 95 ms au lieu de 70,
+--     fumee toutes les 300 ms au lieu de 150, mais plus grosse).
+-- Resultat : 16 ms au lieu de 23. Le halo a aussi ete resserre de
+-- f.r*26 a f.r*15 — a l'ancienne taille il couvrait un tiers de l'ecran
+-- et effacait le pave.
+--
+-- L'INCENDIE DE LA PLACE. Septieme evenement de mission, une benne qui
+-- brule deux minutes a l'est de la fontaine. DEUX ERREURS CORRIGEES :
+--   - pose sur l'axe du cortege, il barrait le passage a ceux-la memes
+--     qui l'allument : decale de cinq tuiles au nord ;
+--   - ajouter un septieme creneau en redistribuant tout le calendrier
+--     avancait le renfort du cortege de quatre secondes, assez pour que
+--     la police ne tienne plus une partie. Le creneau s'INSERE
+--     maintenant entre les anciens, qui n'ont pas bouge.
+--
+-- CE QUE LA MESURE A DIT SUR L'EQUILIBRAGE. En comparant la version
+-- publiee et celle-ci sur les memes trois graines : les deux camps
+-- gagnent environ une fois sur trois, AVANT comme APRES. Le
+-- desequilibre n'est donc pas une regression de cette etape — mais il
+-- reste la limite la plus visible du jeu.

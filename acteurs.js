@@ -122,6 +122,55 @@ function corps(g,x,y,dos,f,p,o){
   if(p.sac&&dos){P(g,x-2,Y-15,5,6,tein(p.bas,1.3));P(g,x-2,Y-15,5,1,tein(p.bas,1.6));}
 }
 
+/* =====================================================================
+   ECRIRE SUR UNE BANDEROLE
+
+   Un slogan sur un tissu de vingt et un pixels de large ne peut pas
+   passer par fillText : a cette taille une police vectorielle rend une
+   bouillie grise. On dessine donc les lettres a la main, sur trois
+   pixels de haut et deux de large — c'est illisible lettre a lettre, et
+   parfaitement lisible comme mot, exactement comme une vraie banderole
+   vue de l'autre bout d'une place.
+   ===================================================================== */
+/* Chaque lettre tient sur trois pixels de large et cinq de haut. Chaque
+   ligne est un masque de trois bits : 1 = gauche, 2 = milieu, 4 = droite.
+   Cinq caracteres par banderole, c'est tout ce qu'un tissu de vingt et un
+   pixels peut porter — et c'est deja plus que ce qu'on lit vraiment sur
+   une banderole a l'autre bout d'une place. */
+var MINI={
+  A:[2,5,7,5,5], B:[3,5,3,5,3], C:[6,1,1,1,6], D:[3,5,5,5,3], E:[7,1,3,1,7],
+  F:[7,1,3,1,1], G:[6,1,5,5,6], H:[5,5,7,5,5], I:[7,2,2,2,7], J:[4,4,4,5,2],
+  K:[5,5,3,5,5], L:[1,1,1,1,7], M:[5,7,7,5,5], N:[5,7,7,7,5], O:[2,5,5,5,2],
+  P:[3,5,3,1,1], Q:[2,5,5,3,6], R:[3,5,3,5,5], S:[6,1,2,4,3], T:[7,2,2,2,2],
+  U:[5,5,5,5,2], V:[5,5,5,2,2], W:[5,5,7,7,5], X:[5,5,2,5,5], Y:[5,5,2,2,2],
+  Z:[7,4,2,1,7], 'É':[7,1,3,1,7], 'È':[7,1,3,1,7], 'Ê':[7,1,3,1,7],
+  '0':[2,5,5,5,2], '1':[2,3,2,2,7], '2':[3,4,2,1,7], '3':[3,4,2,4,3],
+  '4':[5,5,7,4,4], '5':[7,1,3,4,3], '6':[6,1,3,5,2], '7':[7,4,2,2,2],
+  '8':[2,5,2,5,2], '9':[2,5,6,4,3], '!':[2,2,2,0,2], '?':[3,4,2,0,2],
+  '-':[0,0,7,0,0], "'":[2,2,0,0,0], '.':[0,0,0,0,2], ' ':[0,0,0,0,0]
+};
+function miniTexte(g,t,x,y,c,larg){
+  t=(t||'').toUpperCase();
+  var lp=4;                                   /* 3 de lettre, 1 d'espace */
+  var n=Math.min(t.length, Math.max(1,Math.floor(larg/lp)));
+  var dep=x+Math.max(0,Math.floor((larg-n*lp+1)/2));
+  g.fillStyle=c;
+  for(var i=0;i<n;i++){
+    var m=MINI[t.charAt(i)];
+    if(!m)continue;
+    for(var r=0;r<5;r++){
+      var v=m[r];
+      if(v&1)g.fillRect(dep+i*lp,  y+r,1,1);
+      if(v&2)g.fillRect(dep+i*lp+1,y+r,1,1);
+      if(v&4)g.fillRect(dep+i*lp+2,y+r,1,1);
+    }
+  }
+}
+var TEXTE={pancarte:1, banderole:1};   /* ceux qui portent des lettres */
+ACTEURS.slogan='';
+ACTEURS.mots=[];     /* le slogan decoupe en mots de cinq lettres au plus */
+ACTEURS.court='';    /* le mot le plus court : celui qui tient sur un carton */          /* ce que le joueur a ecrit, vide par defaut */
+
 /* les accessoires : ce qui dit a quoi sert ce bonhomme dans la rue */
 function pancarte(g,x,y,dos,f,p){
   var sau=PAS_SAU[f%6], Y=y+sau;
@@ -129,15 +178,31 @@ function pancarte(g,x,y,dos,f,p){
   P(g,x+4,Y-31,2,16,'#8a6a44');
   P(g,x-1,Y-41,12,11,c);
   P(g,x-1,Y-41,12,1,tein(c,0.8));
-  P(g,x+1,Y-38,9,2,'#2a3038'); P(g,x+1,Y-35,6,2,'#2a3038');
-  P(g,x+1,Y-32,8,1,'#c03a30');
+  if(ACTEURS.slogan){
+    /* la pancarte ne porte que le premier mot : deux lignes de trois
+       lettres sur onze pixels, c'est un gribouillis */
+    miniTexte(g,ACTEURS.court,x-1,Y-39,'#2a3038',12);
+    P(g,x+1,Y-32,8,1,ACTEURS.tissu||'#c03a30');
+  }else{
+    P(g,x+1,Y-38,9,2,'#2a3038'); P(g,x+1,Y-35,6,2,'#2a3038');
+    P(g,x+1,Y-32,8,1,'#c03a30');
+  }
 }
 function banderole(g,x,y,dos,f,p){
   var sau=PAS_SAU[f%6], Y=y+sau;
   P(g,x+4,Y-28,2,13,'#6a5a3e');
-  P(g,x+5,Y-31,21,10,'#c03a30');
-  P(g,x+5,Y-31,21,1,'#e05a46');
-  P(g,x+7,Y-28,15,2,'#f0e8d0'); P(g,x+7,Y-25,10,2,'#f0e8d0');
+  var tis=ACTEURS.tissu||'#c03a30';
+  P(g,x+5,Y-31,21,10,tis);
+  P(g,x+5,Y-31,21,1,tein(tis,1.35));
+  P(g,x+5,Y-22,21,1,tein(tis,0.7));
+  /* LE SLOGAN. Sans slogan, deux bandes blanches — une banderole vierge
+     se lit quand meme comme une banderole. */
+  /* UN MOT PAR BANDEROLE, et la suivante porte le suivant : on lit la
+     phrase en balayant le cortege, comme dans une vraie manif. Vingt et
+     un pixels de tissu, c'est cinq caracteres — pas une phrase. */
+  var mot=ACTEURS.mots.length?ACTEURS.mots[(p.varia||0)%ACTEURS.mots.length]:'';
+  if(mot)miniTexte(g,mot,x+5,Y-29,'#f4ecd4',20);
+  else{P(g,x+7,Y-28,15,2,'#f0e8d0'); P(g,x+7,Y-25,10,2,'#f0e8d0');}
 }
 function camera(g,x,y,dos,f,p){
   var sau=PAS_SAU[f%6], Y=y+sau;
@@ -185,6 +250,26 @@ function serie(type,nVar,fab){
   ACTEURS.atlas[type]=T;
 }
 
+/* CHANGER LE SLOGAN REPEINT L'ATLAS. C'est quatre-vingts petites
+   vignettes a refaire, soit quelques millisecondes une seule fois au
+   depart de la partie — pas de quoi compliquer le rendu. */
+ACTEURS.ecrire=function(txt,tissu){
+  ACTEURS.slogan=(txt||'').slice(0,18);
+  /* LE DECOUPAGE, fait une fois ici : le dessin ne fait plus que lire.
+     Un mot trop long est coupe plutot que jete — mieux vaut CONDI que
+     rien du tout sur un tissu de vingt et un pixels. */
+  ACTEURS.mots=ACTEURS.slogan.toUpperCase().split(/\s+/)
+    .filter(function(m){return m.length;}).map(function(m){return m.slice(0,5);});
+  ACTEURS.court='';
+  for(var q=0;q<ACTEURS.mots.length;q++){
+    var m=ACTEURS.mots[q];
+    if(m.length<=3&&(!ACTEURS.court||m.length>ACTEURS.court.length))ACTEURS.court=m;
+  }
+  if(!ACTEURS.court&&ACTEURS.mots.length)ACTEURS.court=ACTEURS.mots[0].slice(0,3);
+  ACTEURS.tissu=tissu||'#c03a30';
+  ACTEURS.pret=false;
+  ACTEURS.preparer();
+};
 ACTEURS.preparer=function(){
   if(ACTEURS.pret)return;
   /* la foule : douze silhouettes differentes suffisent a ce qu'on ne
@@ -275,7 +360,13 @@ ACTEURS.dessine=function(g,a,px,py){
   if(F){g.drawImage(F.cv,(px-F.ox)|0,(py-F.oy)|0);return;}
   var T=ACTEURS.atlas[a.type]; if(!T)return;
   var V=T[a.varia%T.length];
-  var dos=(a.dir===2||a.dir===3), mir=(a.dir===1||a.dir===2);
+  var dos=(a.dir===2||a.dir===3);
+  /* UN PORTEUR DE TEXTE NE SE MIROITE PAS. Le miroir economise la
+     moitie de l'atlas, mais il retourne aussi les lettres : on lisait
+     NO sur la moitie des pancartes. Entre une silhouette de trois
+     pixels tournee du mauvais cote et un slogan illisible, le choix
+     est vite fait. */
+  var mir=(a.dir===1||a.dir===2)&&!TEXTE[a.type];
   var S=V[dos?1:0][a.anim%6];
   if(mir){
     g.save();g.translate(px|0,py|0);g.scale(-1,1);

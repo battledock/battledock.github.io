@@ -20,7 +20,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-27-1520';
+  var MA_VERSION='2026-10-27-1720';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -384,6 +384,28 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
   box-shadow:0 5px 0 #16222e}
 #mnu.cdn .cc.manif.on::after{color:#7ab8e8}
 #mnu.cdn .cc.manif.on u{border-top-color:rgba(255,255,255,.16)}
+/* ===== LA BANDEROLE DU JOUEUR ===== */
+#mnu.cdn .aslo{margin:13px 4px 0;background:rgba(0,0,0,.22);border-radius:14px;
+  padding:9px 10px 10px;border:2px dashed rgba(255,216,106,.4)}
+#mnu.cdn .aslo u{text-decoration:none;display:block;font:400 11.5px 'Lilita One';
+  letter-spacing:2px;color:#ffd86a;margin-bottom:6px}
+#mnu.cdn .aslo input{width:100%;box-sizing:border-box;-webkit-appearance:none;
+  appearance:none;border:0;border-radius:10px;padding:8px 10px;
+  background:#ffe9c8;color:#8a2114;font:400 16px 'Lilita One';text-align:center}
+#mnu.cdn .aslo input::placeholder{color:rgba(138,33,20,.42)}
+#mnu.cdn .aslo .rg{display:flex;gap:9px;align-items:center;margin-top:8px}
+#mnu.cdn .apc{flex:none}
+#mnu.cdn .apc canvas{display:block;width:144px;height:65px;image-rendering:pixelated;
+  background:rgba(0,0,0,.22);border-radius:8px}
+#mnu.cdn .aslo .tt{flex:1;display:flex;gap:5px;justify-content:center}
+#mnu.cdn .aslo .tt button{width:28px;height:28px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.22)}
+#mnu.cdn .aslo .tt button.on{border-color:#fff;transform:scale(1.14)}
+#mnu.cdn .aslo .sg{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+#mnu.cdn .aslo .sg button{flex:1 1 30%;border-radius:8px;padding:6px 3px;
+  background:rgba(255,255,255,.1);color:#ffe9c8;font:700 9.5px 'Baloo 2';
+  border:1px solid rgba(255,255,255,.14)}
+#mnu.cdn .aslo .sg button.on{background:#ffd86a;color:#7a1c10;border-color:#ffd86a}
 #mnu.cdn .a3{display:flex;gap:9px;margin:15px 4px 0}
 #mnu.cdn .a3 div{flex:1;min-width:0;background:#ffe9c8;border-radius:14px;padding:9px 6px;text-align:center;
   box-shadow:0 5px 0 #a82e1c;color:#8a2114}
@@ -4366,6 +4388,36 @@ function mnuMaj(){
       mnuMaj();
     };
   });
+  /* LA BANDEROLE : on ecrit, on voit l'apercu tout de suite */
+  var slo=document.getElementById('coSlo');
+  if(slo){
+    var poser=function(){
+      CO_SLOGAN=slo.value.slice(0,18);
+      try{localStorage.setItem('bdl.cordon.slogan',CO_SLOGAN);}catch(e){}
+      apercuBanderole();
+    };
+    slo.oninput=poser;
+    slo.onkeydown=function(ev){if(ev.key==='Enter')slo.blur();};
+  }
+  [].forEach.call(MNUC.querySelectorAll('[data-slo]'),function(b){
+    b.onclick=function(){
+      CO_SLOGAN=b.getAttribute('data-slo');
+      try{localStorage.setItem('bdl.cordon.slogan',CO_SLOGAN);}catch(e){}
+      mnuMaj();
+    };
+  });
+  [].forEach.call(MNUC.querySelectorAll('[data-tissu]'),function(b){
+    b.onclick=function(){
+      CO_TISSU=b.getAttribute('data-tissu');
+      try{localStorage.setItem('bdl.cordon.tissu',CO_TISSU);}catch(e){}
+      mnuMaj();
+    };
+  });
+  apercuBanderole();
+  /* L'APERCU MARCHE SUR PLACE. Une seule horloge, remise a zero a
+     chaque reconstruction du menu : rien ne s'empile. */
+  if(APH)clearInterval(APH);
+  APH=document.getElementById('coApercu')?setInterval(apercuBanderole,170):0;
   [].forEach.call(MNUC.querySelectorAll('canvas[data-camp-ico]'),function(cv){
     try{campIcone(cv,cv.dataset.campIco);}catch(e){}
   });
@@ -4403,6 +4455,7 @@ function mnuOuvrir(){
 }
 function mnuFermer(){
   MNU.hidden=true;JEU.classList.remove('menu');
+  if(APH){clearInterval(APH);APH=0;}
   /* le tableau retourne a sa place : il sert aussi apres la mort */
   var cls=document.getElementById('jcls'), bas=document.getElementById('jbas');
   if(cls&&bas&&cls.parentNode!==bas)bas.appendChild(cls);
@@ -4745,11 +4798,39 @@ var CO_REC=0, CO_PARTIES=0;
 /* LE CAMP CHOISI, garde d'une partie a l'autre : on rejoue rarement
    l'autre bord juste apres. */
 var CO_CAMP=(function(){try{return localStorage.getItem('bdl.cordon.camp')||'crs';}catch(e){return 'crs';}})();
+/* LE SLOGAN DU CORTEGE : il se retrouve sur les banderoles et sur les
+   pancartes, et il reste d'une partie a l'autre. */
+var CO_SLOGAN=(function(){try{return localStorage.getItem('bdl.cordon.slogan')||'';}catch(e){return '';}})();
+var CO_TISSU=(function(){try{return localStorage.getItem('bdl.cordon.tissu')||'#c03a30';}catch(e){return '#c03a30';}})();
+var CO_SLOGANS=['ON NE LÂCHE RIEN','PAS UN DE PLUS','LA RUE EST À NOUS',
+                'ÇA SUFFIT','TOUS ENSEMBLE','ON EST LÀ'];
+var CO_TISSUS=['#c03a30','#1f7a4a','#2a5a9a','#8a3a8a','#c8902a','#2a2a2e'];
 /* LE MENU DU CORDON. Il doit dire une seule chose avant la partie :
    la force marche, et elle te coûte. Sans ça le joueur gaze d'entrée
    et perd sans comprendre pourquoi. */
 /* LES DEUX VIGNETTES DU CHOIX : trois silhouettes de chaque camp, en
    pixel, pour qu'on reconnaisse d'un coup d'oeil ce qu'on va tenir. */
+var APH=0;
+/* L'APERCU : trois porteurs de banderole, avec le vrai dessin du jeu.
+   On voit exactement ce qu'on aura dans la rue, pas une approximation. */
+function apercuBanderole(){
+  var cv=document.getElementById('coApercu'); if(!cv)return;
+  var A=window.CORDON_ACTEURS; if(!A)return;
+  try{A.ecrire(CO_SLOGAN,CO_TISSU);}catch(e){return;}
+  var g=cv.getContext('2d'); g.imageSmoothingEnabled=false;
+  g.clearRect(0,0,cv.width,cv.height);
+  var pose=((Date.now()/170)|0)%6;
+  var T=A.atlas.banderole;
+  [[30,0],[58,1]].forEach(function(q){
+    var S=T[q[1]%T.length][0][pose];
+    g.drawImage(S.cv,(q[0]-S.ox)|0,(50-S.oy)|0);
+  });
+  var P=A.atlas.pancarte, S2=P[0][0][pose];
+  g.drawImage(S2.cv,(96-S2.ox)|0,(50-S2.oy)|0);
+  var M=A.atlas.manif, S3=M[2][0][pose];
+  g.drawImage(S3.cv,(13-S3.ox)|0,(50-S3.oy)|0);
+}
+
 function campIcone(cv,camp){
   var g=cv.getContext('2d');g.imageSmoothingEnabled=false;
   g.clearRect(0,0,cv.width,cv.height);
@@ -4785,6 +4866,22 @@ function coMenu(){
          '<span class="ci"><canvas data-camp-ico="manif" width="46" height="34"></canvas></span>'+
          '<b>LE CORTÈGE</b><em>passer, coûte que coûte</em>'+
          '<u>pousser · casser · barricades</u></button></div>';
+    if(CO_CAMP==='manif'){
+      h+='<div class="aslo"><u>VOTRE BANDEROLE</u>'+
+         '<input id="coSlo" maxlength="18" placeholder="écris ton slogan" value="'+
+           (CO_SLOGAN||'').replace(/"/g,'&quot;')+'">'+
+         '<div class="rg"><div class="apc">'+
+           '<canvas id="coApercu" width="120" height="54"></canvas></div><div class="tt">';
+      CO_TISSUS.forEach(function(c){
+        h+='<button data-tissu="'+c+'" style="background:'+c+'"'+
+           (CO_TISSU===c?' class="on"':'')+' aria-label="couleur"></button>';
+      });
+      h+='</div></div><div class="sg">';
+      CO_SLOGANS.forEach(function(t){
+        h+='<button data-slo="'+t+'"'+(CO_SLOGAN===t?' class="on"':'')+'>'+t+'</button>';
+      });
+      h+='</div></div>';
+    }
     h+='<div class="a3">'+
        (CO_CAMP==='crs'
          ? '<div><i>I</i><small>PRESSION</small><em>la foule pousse</em></div>'+
@@ -4872,6 +4969,7 @@ function boucle(ts){
 }
 
 function ouvrirBorne(B){
+  if(APH){clearInterval(APH);APH=0;}   /* l'apercu du menu s'arrete ici */
   BORNE=MOTEUR[B.cle];if(!BORNE)return;
   BORNE.cle=B.cle;
   S=BORNE.init();
@@ -5163,11 +5261,11 @@ window.addEventListener('orientationchange',function(){
    ===================================================================== */
 </script>
 <script src="ia.js?v=5a692bbd"></script>
-<script src="fumee.js?v=5ad97725"></script>
+<script src="fumee.js?v=59693c69"></script>
 <script src="sons.js?v=2d2ab63a"></script>
-<script src="mission.js?v=e5a13a12"></script>
+<script src="mission.js?v=79d0babe"></script>
 <script src="foule.js?v=d9e4c132"></script>
-<script src="acteurs.js?v=ad5e9cf2"></script>
-<script src="cordon.js?v=d8e33eb0"></script>
+<script src="acteurs.js?v=25413e67"></script>
+<script src="cordon.js?v=905c2859"></script>
 </body>
 </html>
