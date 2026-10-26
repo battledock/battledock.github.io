@@ -2249,3 +2249,38 @@ where niveau = 29;
 -- le debut, c'etait le cadrage de la camera qui ne montrait que le
 -- tablier. Quand une image ne dit pas ce qu'on attend, regarder la
 -- source avant de soupconner le dessin.
+
+-- =====================================================================
+-- ETAPE : ON VOIT, ET ON A LE TEMPS DE VOIR          2026-10-28-0130
+-- =====================================================================
+--
+-- Trois reproches sur une seule capture d'ecran, et les trois etaient
+-- justes.
+--
+-- 1. « ON VOIT RIEN ». Un immeuble occupait les deux tiers de l'ecran
+--    pendant que la partie se jouait derriere. En isometrie, un volume
+--    place au sud-est de la foule est DEVANT elle : il se dessine
+--    par-dessus, et aucun angle de camera ne sauve la vue.
+--    La regle : un volume qui se dessine APRES des corps et dont le
+--    rectangle recouvre ces corps passe a trente pour cent. On ne le
+--    cache pas — il faut continuer a lire la ville — on le rend
+--    translucide. Le test porte sur les corps DEJA DESSINES, donc
+--    derriere, ce qui suffit et ne coute qu'une comparaison de boites.
+--    MESURE : une milliseconde de dessin en plus, pour trois a neuf
+--    batiments voiles selon la position. C'est payé.
+--
+-- 2. « C'EST TROP RAPIDE ». On aurait pu ralentir les vitesses et
+--    allonger la duree, mais chaque reglage ainsi touche demande de
+--    recalibrer tous les seuils, et on l'a deja fait trop de fois dans
+--    cette session. On ralentit donc le TEMPS lui-meme : la simulation,
+--    la mission, les recharges et le chrono recoivent le meme dt reduit
+--    a 72 %. Rien ne change dans les rapports entre les choses, tout
+--    prend un tiers de temps en plus. Un seul point de changement,
+--    aucun equilibrage a refaire.
+--
+-- 3. LES LIBELLES DEBORDAIENT. Neuf ordres sur un telephone, ce sont
+--    des boutons de vingt et un points : AVANT, ARRIERE et FORME se
+--    touchaient et se lisaient « AVANTARRIEREFORME ». On mesure
+--    maintenant le texte et on retrecit la police jusqu'a ce qu'il
+--    rentre, avec un plancher a quatre points et demi — en-dessous ce
+--    n'est plus du texte.

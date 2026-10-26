@@ -2567,6 +2567,8 @@ var COUT={
    paie treize secondes, et deux coups forts d'affilee vident la
    reserve. C'est la que le choix apparait. */
 var RES_MAX=80, RES_DEP=50, RES_GAIN=0.0026;
+/* le temps de jeu s'ecoule a 72 % du temps reel : voir MOTEUR.pas */
+var ALLURE=0.72;
 function resNom(s){return (s.camp==='manif')?'ÉLAN':'MOYENS';}
 function coute(s,k){
   var c=COUT[k]||0;
@@ -3062,7 +3064,18 @@ function barreDessine(s,L,H){
           g.drawImage(IC,(cxb-ih/2)|0,(b.y+2)|0,ih|0,ih|0);
         }
         g.fillStyle=act?'#06101c':'#cfe4f2';
-        g.font='bold 6px ui-monospace,monospace';g.textAlign='center';
+        /* LE LIBELLE NE DEBORDE PLUS DE SON BOUTON. Neuf ordres sur un
+           telephone, ce sont des boutons de vingt et un points : AVANT,
+           ARRIERE et FORME se touchaient et se lisaient
+           « AVANTARRIEREFORME ». On mesure, et on retrecit la police
+           jusqu'a ce que ca rentre — jamais au-dela de quatre points et
+           demi, en-dessous ce n'est plus du texte. */
+        var dispoT=b.w-4, tp=6;
+        g.font='bold 6px ui-monospace,monospace';
+        while(tp>4.5&&g.measureText(b.t).width>dispoT){
+          tp-=0.5; g.font='bold '+tp+'px ui-monospace,monospace';
+        }
+        g.textAlign='center';
         g.fillText(b.t,cxb,b.y+b.h-5);
         /* LE PRIX, en haut a droite du bouton. Sans lui on apprend le
            cout en appuyant, c'est-a-dire en le payant. */
@@ -3177,6 +3190,21 @@ var M={
   },
   pas:function(s,dt){
     if(!s.pret)return;
+    /* =================================================================
+       L'ALLURE DU JEU, EN UN SEUL POINT
+
+       « C'est trop rapide » : les parties se jouaient en quarante
+       secondes et on n'avait pas le temps de lire ce qui se passait.
+       On pourrait ralentir les vitesses et allonger la duree — mais
+       chaque reglage ainsi touche demande de recalibrer tous les
+       seuils, et on l'a deja fait trop de fois.
+       Ici on ralentit le TEMPS lui-meme : la simulation, la mission,
+       les recharges et le chrono recoivent le meme dt reduit. Rien ne
+       change dans les rapports entre les choses, tout prend un tiers de
+       temps en plus. Deux minutes trente de jeu font trois minutes
+       trente a la montre, et on voit enfin les mouvements.
+       ================================================================= */
+    dt*=ALLURE;
     s.t+=dt;
     if(s.motT>0)s.motT-=dt;
     if(!s.sim)return;
@@ -3421,11 +3449,52 @@ var M={
     jalon('tri');
     var vi=0, nv=vus.length;
     var i,e;
+    /* =================================================================
+       LES IMMEUBLES QUI CACHENT L'ACTION DEVIENNENT TRANSPARENTS
+
+       En isometrie, un immeuble place au sud-est de la foule est DEVANT
+       elle : il se dessine par-dessus, et il peut occuper les deux tiers
+       de l'ecran pendant que la partie se joue derriere. On a beau
+       pouvoir deplacer la camera, il n'y a aucun angle qui sauve la vue
+       quand le batiment est entre la foule et l'oeil.
+
+       La regle : un volume qui se dessine APRES des corps et dont le
+       rectangle recouvre ces corps passe a trente pour cent. On ne le
+       cache pas — il faut continuer a lire la ville — on le rend
+       translucide, et la foule se voit au travers.
+
+       Le test est fait sur les corps deja dessines (donc derriere), ce
+       qui suffit : un batiment qui ne recouvre personne reste opaque,
+       et c'est le cas de la plupart.
+       ================================================================= */
+    var dejaX0=1e9, dejaX1=-1e9, dejaY0=1e9, dejaY1=-1e9, dejaN=0;
+    s.voiles=0;
+    /* l'interrupteur de diagnostic, lu UNE FOIS par image et pas une
+       fois par volume : une lecture sur window dans une boucle qui
+       tourne cinquante fois par image est une lecture de trop */
+    var voilerOk=!window.__noVoile;
+    var a0b=g.globalAlpha;
     for(i=0;i<s.statiques.length;i++){
       e=s.statiques[i];
-      while(vi<nv&&vus[vi]._p<=e.prof){ACTEURS.dessine(g,vus[vi],vus[vi]._px,vus[vi]._py);vi++;}
+      while(vi<nv&&vus[vi]._p<=e.prof){
+        var vv=vus[vi];
+        ACTEURS.dessine(g,vv,vv._px,vv._py);
+        if(vv._px<dejaX0)dejaX0=vv._px;
+        if(vv._px>dejaX1)dejaX1=vv._px;
+        if(vv._py<dejaY0)dejaY0=vv._py;
+        if(vv._py>dejaY1)dejaY1=vv._py;
+        dejaN++;
+        vi++;
+      }
       if(e.x>x1||e.x+e.w<x0||e.y>y1||e.y+e.h<y0)continue;
+      /* un volume assez grand pour gener, et qui mord sur la zone des
+         corps deja poses : on le laisse passer la lumiere */
+      var voile=(voilerOk&&dejaN>6&&e.h>46&&
+                 e.x<dejaX1&&e.x+e.w>dejaX0&&
+                 e.y<dejaY1&&e.y+e.h>dejaY0-40);
+      if(voile){g.globalAlpha=a0b*0.30;s.voiles=(s.voiles||0)+1;}
       g.drawImage(e.cv,e.x|0,e.y|0);
+      if(voile)g.globalAlpha=a0b;
     }
     while(vi<nv){ACTEURS.dessine(g,vus[vi],vus[vi]._px,vus[vi]._py);vi++;}
     jalon('scene');

@@ -214,6 +214,21 @@ arroser avant de gazer, se replier quand elle est percée, reprendre du
 terrain quand la place se dégage. Elle réévalue quatre fois par seconde,
 jamais à chaque image.
 
+## Ce qu'on voit
+
+**Un immeuble qui cache l'action devient translucide.** En isométrie, un
+bâtiment placé au sud-est de la foule est *devant* elle : il peut
+occuper les deux tiers de l'écran pendant que la partie se joue
+derrière, et aucun angle de caméra ne sauve la vue. Un volume qui se
+dessine après des corps et dont le rectangle les recouvre passe à 30 %
+d'opacité — on continue à lire la ville, et on voit la foule au travers.
+
+**Le temps de jeu s'écoule à 72 % du temps réel.** Deux minutes trente
+de jeu font trois minutes trente à la montre. Ralentir les vitesses une
+par une aurait demandé de recalibrer tous les seuils ; ici c'est le
+`dt` lui-même qui est réduit, en un seul point, et rien ne change dans
+les rapports entre les choses.
+
 ## Jouer
 
 | Geste | Effet |
