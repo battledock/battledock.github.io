@@ -294,6 +294,24 @@ ACTEURS.preparer=function(){
     corps(g,x,y,dos,f,p,{gilet:'#d8c83a'});
     camera(g,x,y,dos,f,p);
   });
+  /* LE STREET MEDIC. Gilet blanc, croix rouge, casquette blanche : on
+     doit le reperer dans deux cents personnes, et c'est pour ca qu'il
+     est le seul en blanc. */
+  serie('medic',2,function(g,x,y,dos,f,v){
+    var p=paletteManif(v+5); p.hau='#e8e4da'; p.tet='casquette'; p.bon='#e8e4da';
+    corps(g,x,y,dos,f,p,{gilet:'#f2efe6'});
+    if(!dos)croix(g,x,y,f);
+  });
+  /* LE CASSEUR. Tout en sombre, capuche, visage couvert. La meme
+     silhouette que les autres : c'est la tenue qui le distingue, pas
+     une taille ou une posture — on n'est pas dans la caricature. */
+  serie('casseur',4,function(g,x,y,dos,f,v){
+    var p=paletteManif(v+2);
+    p.hau=['#1e2228','#232832','#1a1d22','#262b34'][v%4];
+    p.bas='#16181d'; p.tet='capuche'; p.bon=p.hau; p.chv='#15171b';
+    corps(g,x,y,dos,f,p);
+    if(!dos)masque(g,x,y,f);
+  });
   /* le cordon : meme tenue pour tous, c'est le propre d'une unite ; la
      variation est dans la nuance du bouclier et la stature */
   serie('crs',3,function(g,x,y,dos,f,v){
@@ -311,6 +329,17 @@ ACTEURS.preparer=function(){
   ACTEURS.pret=true;
 };
 
+/* la croix du medic, deux traits de deux pixels sur le gilet */
+function croix(g,x,y,f){
+  var sau=PAS_SAU[f%6], Y=y+sau;
+  P(g,x-1,Y-17,4,2,'#d04a3a');
+  P(g,x,Y-19,2,6,'#d04a3a');
+}
+/* le bas du visage couvert : une bande sombre a hauteur de bouche */
+function masque(g,x,y,f){
+  var sau=PAS_SAU[f%6], Y=y+sau;
+  P(g,x-2,Y-24,5,2,'#101317');
+}
 function corpsCRS(g,x,y,dos,f,p,off){
   /* le cordon marche plus court : il avance en gardant la ligne */
   var ec=(PAS_EC[f%6]*0.7)|0, bal=(PAS_BAL[f%6]*0.6)|0, sau=PAS_SAU[f%6];

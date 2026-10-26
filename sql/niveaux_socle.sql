@@ -2102,3 +2102,61 @@ where niveau = 29;
 -- victoires de chaque cote sur douze parties, et surtout le score du
 -- joueur actif depasse nettement celui du joueur passif — ce qui
 -- n'etait pas le cas avant.
+
+-- =====================================================================
+-- ETAPE : LES ACTIONS DU CORTEGE                        2026-10-27-2220
+-- =====================================================================
+--
+-- TROIS STYLES, choisis au menu. Ils ne changent pas les regles : ils
+-- changent QUI compose la foule, et le reste suit.
+--   PACIFIQUE : sept banderoles en tete au lieu de trois, des street
+--     medics, un temperament a 0,66 et une tension qui monte a 0,74.
+--   DETERMINE : le cortege d'avant, inchange.
+--   RADICAL : quatorze pour cent de casseurs, plus rapides, plus
+--     lourds, plus nerveux, et une tension a 1,34.
+-- Trois boutons, un seul geste : c'est la decision qu'on prend AVANT la
+-- partie et qui pese sur les deux minutes trente suivantes. Des
+-- curseurs auraient demande trois gestes pour le meme resultat.
+--
+-- LA BANDEROLE EST UN BOUCLIER. Un tissu tendu sur deux hampes, c'est
+-- ce que la tete d'un cortege oppose a un canon a eau. Le porteur
+-- encaisse le tiers et protege ceux qui sont a une tuile et demie
+-- derriere lui. Rien a activer : il suffit de les mettre devant.
+--   Le calcul de « qui est abrite » se fait UNE FOIS par pas, dans la
+-- simulation, et marque les corps pour une demi-seconde — pas dans la
+-- boucle de l'eau, qui tourne pour chaque jet et chaque corps.
+--
+-- LA FEINTE. Le passage fait treize tuiles pour une ligne qui en couvre
+-- huit : il y a toujours un cote degarni, encore faut-il que la police
+-- regarde ailleurs. Un bloc en feinte se jette en avant huit secondes,
+-- et l'IA envoie sa reserve au bruit. C'est la premiere action du jeu
+-- qui ne sert a rien toute seule.
+--
+-- LA BARRICADE ENFLAMMEE. Pas de bouton de plus : un cocktail a moins
+-- d'une tuile et demie d'une barricade debout y met un feu plus gros et
+-- plus long. C'est la rencontre de deux actions qu'on avait deja, et
+-- c'est au joueur de la voir.
+--
+-- ---- DEUX DEFAUTS TROUVES EN MESURANT ----
+--
+-- 1. L'IA NE PAYAIT PAS. La jauge d'elan ne s'appliquait qu'au joueur :
+--    la machine gazait en boucle pendant qu'on comptait ses coups, et
+--    on mesurait CENT QUARANTE-CINQ manifestants en fuite a la
+--    vingt-cinquieme seconde. Une regle qui ne vaut que pour un camp
+--    n'est pas une regle, c'est un handicap. L'IA a maintenant sa
+--    propre jauge, aux memes chiffres.
+--
+-- 2. LES UNITES DE L'IA NE SE DEPLACAIENT PAS. majUnites ne parcourait
+--    que s.unites, c'est-a-dire les unites DU JOUEUR. L'IA mordait a la
+--    feinte, calculait son chemin, posait son ordre — et sa reserve
+--    restait sur place. Exactement le meme defaut que celui du cortege
+--    corrige plus tot, mais du cote de la machine, donc invisible : il
+--    a fallu instrumenter l'IA pour le voir. C'est la lecon de cette
+--    etape : un bogue cote IA ne se signale jamais tout seul.
+--
+-- ---- L'EQUILIBRE, APRES ----
+-- 56 toleres, 52 a faire passer. Sur trois graines et quatre
+-- scenarios : quatre victoires de chaque cote, les parties vont au
+-- bout, et surtout le joueur actif gagne 3 fois sur 3 cote cortege
+-- contre 1 fois sur 3 pour le passif, avec des scores du simple au
+-- double (1408 contre 602). Jouer paie, enfin.

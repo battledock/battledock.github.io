@@ -78,6 +78,17 @@ IA.pasCRS=function(A,s,dt,api){
       return;
     }
   }
+  /* 1 bis. UNE FEINTE. Elle se jette en avant de facon ostensible, et
+        l'IA fait ce que ferait un commandant : elle envoie la reserve
+        au bruit. C'est exactement ce que le joueur cherche — et c'est
+        pour ca que la feinte ne vaut que si on en profite ailleurs. */
+  var fei=api.feinte&&api.feinte();
+  if(fei&&reserve&&!reserve.occupee){
+    api.aller(reserve,fei.x,fei.y);
+    reserve.occupee=true;
+    dire(A,'réserve au plus bruyant');
+    return;
+  }
   /* 2. UNE VITRINE QUI TOMBE : la reserve y va. Elle ne tient aucun
         front, c'est a ca qu'elle sert. */
   if(casse&&reserve&&!reserve.occupee){

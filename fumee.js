@@ -351,8 +351,15 @@ FUM.pas=function(F,dt,sim,R){
          forte de pres. L'eau disperse sans enflammer — elle tend moins
          qu'une grenade, et c'est tout son interet. */
       var f=(1-le/8.5)*0.000105;
+      /* LA BANDEROLE SERT DE BOUCLIER. Un tissu tendu sur deux hampes,
+         c'est ce que la tete d'un cortege oppose a un canon a eau — et
+         ca marche : celui qui la tient encaisse le tiers, et il protege
+         ceux qui sont derriere lui. Rien a activer, il suffit de mettre
+         les porteurs devant. */
+      if(ag.type==='banderole'){f*=0.34; }
+      else if(ag.abrite>0){f*=0.55;}
       ag.vx+=J.dx*f*dt; ag.vy+=J.dy*f*dt;
-      ag.choc=Math.min(0.9, ag.choc + dt*0.00022);
+      ag.choc=Math.min(0.9, ag.choc + dt*0.00022*(ag.type==='banderole'?0.4:1));
     }
   }
 };

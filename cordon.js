@@ -1261,6 +1261,15 @@ function peupler(s){
      cortege et le cordon ne tiennent pas ensemble dans l'ecran, et on
      ouvre la partie sur un carrefour vide. */
   var tete=GW-16-11;
+  /* LES TROIS STYLES, en chiffres. Rien d'autre ne change. */
+  var STYLES={
+    pacifique:{k:'pacifique', vit:0.95, masse:0.92, nerf:0.66, panc:0.19, tens:0.74},
+    determine:{k:'determine', vit:1.00, masse:1.00, nerf:1.00, panc:0.09, tens:1.00},
+    radical:  {k:'radical',   vit:1.08, masse:1.12, nerf:1.26, panc:0.06, tens:1.34}
+  };
+  var ST=STYLES[window.CO_STYLE]||STYLES.determine;
+  s.style=ST.k;
+  sim.styleTens=ST.tens;
   var blocs=[
     {n:s.densite?Math.round(34*s.densite):34, lx:3.4, ly:2.1, coh:1.4, dec:0},
     {n:s.densite?Math.round(46*s.densite):46, lx:4.2, ly:2.3, coh:1.0, dec:5.4},
@@ -1276,16 +1285,27 @@ function peupler(s){
          pas — c'est ce qui donne un cortege et non un essaim */
       var ex=(d.f()-0.5)*2*B.lx, ey=(d.f()-0.5)*2*B.ly;
       var t='manif', va=d.e(0,11);
-      if(bi===0&&i<3){t='banderole';va=d.e(0,2);ex=-0.6+i*0.9;ey=(i-1)*1.1;}
-      else if(d.f()<0.09){t='pancarte';va=d.e(0,4);}
+      /* LE STYLE DU CORTEGE, choisi au menu. Il ne change pas les
+         regles : il change QUI compose la foule, et le reste suit.
+         Un cortege pacifique a plus de banderoles — donc il encaisse
+         l'eau — et des medics ; un cortege radical a des casseurs, qui
+         poussent plus fort et paniquent plus vite. */
+      var nBand=(ST.k==='pacifique')?7:((ST.k==='radical')?2:3);
+      if(bi===0&&i<nBand){t='banderole';va=d.e(0,2);
+        ex=-0.9+(i%4)*0.75; ey=((i/4)|0)*1.0+(i%4-1.5)*0.8;}
+      else if(ST.k==='pacifique'&&d.f()<0.05){t='medic';va=d.e(0,1);}
+      else if(ST.k==='radical'&&d.f()<0.14){t='casseur';va=d.e(0,3);}
+      else if(d.f()<ST.panc){t='pancarte';va=d.e(0,4);}
       else if(d.f()<0.03){t='presse';va=d.e(0,1);}
+      var dur=(t==='casseur');
       FOULE.poser(sim,G,tete-B.dec+ex,midY+ey,{
         ex:ex, ey:ey, varia:va,
-        vmax:R.vMarche*(0.86+d.f()*0.3),
+        vmax:R.vMarche*(0.86+d.f()*0.3)*ST.vit*(dur?1.12:1),
+        masse:(t==='banderole'?1.25:1)*ST.masse*(dur?1.2:1),
         /* LE TEMPERAMENT, tire une fois. Les plus nerveux sont devant :
            c'est de la tete du cortege que part la panique, comme dans
            la rue. */
-        nerf:(0.55+d.f()*1.1)*(bi===0?1.25:1),
+        nerf:(0.55+d.f()*1.1)*(bi===0?1.25:1)*ST.nerf*(dur?1.3:1),
         stress:d.f()*0.10
       });
       sim.agents[sim.agents.length-1].type=t;
@@ -1684,7 +1704,14 @@ function renfortZone(s,z){
 }
 function majUnites(s,dt){
   if(!s.sim)return;
-  s.unites.forEach(function(U){
+  /* TOUTES LES UNITES, PAS SEULEMENT CELLES DU JOUEUR. C'est ici que
+     l'on avance le long d'une route ; en ne parcourant que s.unites, on
+     laissait l'IA donner des ordres de deplacement qui ne deplacaient
+     rien. Elle mordait a la feinte, calculait son chemin, posait son
+     ordre — et sa reserve restait sur place. Exactement le meme defaut
+     que celui du cortege, mais du cote de la machine, donc invisible :
+     il a fallu instrumenter l'IA pour le voir. */
+  s.tous.forEach(function(U){
     if(!U.route||U.ri>=U.route.length){
       if(U.ordre==='vers'){U.ordre=null;U.ordrePrio=0;}
       return;
@@ -1731,6 +1758,18 @@ function iaCible(s,U,port){
   if(n<4)return null;
   return [sx/n, sy/n];
 }
+/* L'IA PAIE AUSSI. Elle a sa propre jauge, aux memes chiffres : sans
+   elle, le joueur comptait ses coups pendant que la machine gazait en
+   boucle, et on mesurait cent quarante-cinq manifestants en fuite a la
+   vingt-cinquieme seconde. Une regle qui ne vaut que pour un camp n'est
+   pas une regle, c'est un handicap. */
+function iaCoute(s,k){
+  var c=COUT[k]||0;
+  if(!c)return true;
+  if((s.resIA||0)<c)return false;
+  s.resIA-=c;
+  return true;
+}
 function iaApi(s){
   return {
     aller:function(U,gx,gy){
@@ -1743,11 +1782,12 @@ function iaApi(s){
     },
     tenir:function(U){U.route=null;U.but=null;U.tenu={x:U.ax,y:U.ay};
       U.ordre=null;U.ordrePrio=0;FOULE.ordre(s.sim,U,'tenir',2200,4);},
-    avancer:function(U){FOULE.ordre(s.sim,U,'avance',3200,2);},
+    avancer:function(U){if(!iaCoute(s,'avant'))return;FOULE.ordre(s.sim,U,'avance',3200,2);},
     reculer:function(U){FOULE.ordre(s.sim,U,'recule',3200,2);},
-    pousser:function(U){FOULE.ordre(s.sim,U,'avance',3200,2);},
+    pousser:function(U){if(!iaCoute(s,'pousser'))return;FOULE.ordre(s.sim,U,'avance',3200,2);},
     formation:function(U,f){U.form=f;},
     gaz:function(U){
+      if(!iaCoute(s,'gaz'))return;
       var dv=FOULE.devant(U), gx=U.ax+dv[0]*3.8, gy=U.ay+dv[1]*3.8;
       /* L'IA VISE AUSSI. Maintenant que la cible est un parametre, il
          serait absurde que la machine lance toujours droit devant
@@ -1761,6 +1801,7 @@ function iaApi(s){
       if(SON)SON.effet('grenade');
     },
     eau:function(U){
+      if(!iaCoute(s,'eau'))return;
       var dv=FOULE.devant(U), T2=iaCible(s,U,PORT_EAU+2);
       U.membres.forEach(function(i){
         var a=s.sim.agents[i], ux=dv[0], uy=dv[1];
@@ -1808,6 +1849,17 @@ function iaApi(s){
         if(d<bd){bd=d;b=L[i];}
       }
       return b;
+    },
+    /* CE QUI FAIT LE PLUS DE BRUIT. Un bloc en feinte se signale : si
+       l'IA n'y voyait rien, l'action n'existerait pas. */
+    feinte:function(){
+      for(var i=0;i<s.tous.length;i++){
+        var U=s.tous[i];
+        if(U.camp!=='manif'||!(U.feinte>0))continue;
+        var fo=[U.ax,U.ay]; foyerUnite(s,U,fo);
+        return {x:fo[0], y:fo[1], u:U};
+      }
+      return null;
     },
     plusPresse:function(L){
       var b=null, bp=-1;
@@ -1919,6 +1971,39 @@ function barricadeNouvelle(s,U){
   var B={x:gx, y:gy, t:0, faite:false, groupe:U.id, pres:0};
   s.barricades.push(B);
   return B;
+}
+/* =====================================================================
+   LA BARRICADE ENFLAMMEE
+
+   Une barricade bloque la case ; la police peut la contourner, et avec
+   le temps la foule la deborde. Un cocktail dessus en fait autre chose :
+   tant qu'elle brule, PERSONNE ne s'en approche — le foyer repousse les
+   corps et son coeur ne se traverse pas.
+
+   On ne l'allume pas avec un bouton de plus : c'est la rencontre de
+   deux actions qu'on avait deja. Un molotov qui tombe a moins d'une
+   tuile et demie d'une barricade y met un feu plus gros et plus long
+   qu'ailleurs. C'est au joueur de voir la combinaison, pas au jeu de la
+   lui annoncer.
+   ===================================================================== */
+function majBarricadesFeu(s,dt){
+  if(!FUM||!s.fum||!s.barricades||!s.barricades.length)return;
+  for(var i=0;i<s.barricades.length;i++){
+    var B=s.barricades[i];
+    if(!B.faite||B.enflammee)continue;
+    for(var f=0;f<s.fum.feux.length;f++){
+      var F=s.fum.feux[f];
+      var dx=F.x-(B.x+0.5), dy=F.y-(B.y+0.5);
+      if(dx*dx+dy*dy>2.25)continue;         /* une tuile et demie */
+      B.enflammee=true;
+      F.x=B.x+0.5; F.y=B.y+0.5;
+      F.r=Math.max(F.r,2.0);
+      F.vie=Math.max(F.vie,F.t+46000);      /* elle brule longtemps */
+      s.mot='BARRICADE EN FEU';s.motT=1900;
+      if(SON)SON.effet('charge');
+      break;
+    }
+  }
 }
 function majBarricades(s,dt){
   if(!s.barricades)return;
@@ -2039,6 +2124,35 @@ function cmdForme(s){
 /* REGROUPER : les unites choisies convergent vers leur barycentre, en
    file, et s'y rangent. C'est un vrai deplacement — champs calcules,
    ordres poses — pas un rapprochement d'icones. */
+/* =====================================================================
+   LA FEINTE
+
+   Le passage fait treize tuiles pour une ligne qui en couvre huit :
+   geographiquement, il y a toujours un cote degarni. Encore faut-il
+   que la police regarde ailleurs — sinon elle se contente de suivre le
+   gros du cortege.
+
+   Un bloc en feinte se jette en avant de facon ostensible pendant huit
+   secondes, et l'IA adverse le prend pour l'attaque principale : elle
+   envoie sa reserve dessus. Pendant ce temps, le vrai effort passe
+   ailleurs. C'est la premiere action du jeu qui ne sert a rien toute
+   seule — elle ne vaut que par ce qu'on fait pendant.
+   ===================================================================== */
+function cmdFeinte(s){
+  var L=selection(s);
+  if(!L.length){s.mot='CHOISIS UN BLOC';s.motT=1500;return 0;}
+  var n=0;
+  L.forEach(function(U){
+    U.feinte=8000;
+    FOULE.ordre(s.sim,U,'avance',8000,2);
+    n++;
+  });
+  if(n){
+    s.mot=selNoms(s)+' · FEINTE';s.motT=1800;
+    if(SON)SON.effet('sifflet');
+  }
+  return n;
+}
 function cmdGrouper(s){
   var L=selection(s);
   /* UN SEUL BLOC SELECTIONNE : on le REND AU CORTEGE. Sans ca, un bloc
@@ -2199,6 +2313,7 @@ var COUT={
   molotov:34, barricade:26, casser:14, pousser:10, disperser:6, groupe:0,
   /* police */
   gaz:34, eau:24, avant:18, forme:4, tenir:0, arriere:0,
+  feinte:16,
   /* commun */
   diag:0
 };
@@ -2510,6 +2625,7 @@ var ORDRES_MANIF=[
   {k:'barricade',t:'BARRIC.'},
   {k:'molotov', t:'MOLOTOV'},
   {k:'groupe',  t:'GROUPE'},
+  {k:'feinte',  t:'FEINTE'},
   {k:'disperser',t:'DISPER.'}
 ];
 var ORDRES=ORDRES_CRS;
@@ -2774,7 +2890,7 @@ var M={
     s.M=MISSION?MISSION.creer({graine:s.graine, ligne:GW-11,
                                camp:s.camp, vitrines:s.vitrines}):null;
     s.mot='';s.motT=0;s.feuxVus=0;s.vise=null;s.viseXY=null;s.camVise=null;
-    s.res=RES_DEP; s.embT=0; s.embRech=0;
+    s.res=RES_DEP; s.resIA=RES_DEP; s.embT=0; s.embRech=0;
     faireZones(s);
     s.fondu=700;        /* la rue s'ouvre depuis le noir */
   },
@@ -2796,7 +2912,11 @@ var M={
        pour un coup fort a 4,2 points la seconde : huit secondes entre
        deux. C'est le tempo du jeu. */
     s.res=Math.min(RES_MAX, s.res+RES_GAIN*dt);
+    s.resIA=Math.min(RES_MAX, (s.resIA||0)+RES_GAIN*dt);
+    for(var fu=0;fu<s.tous.length;fu++)
+      if(s.tous[fu].feinte>0)s.tous[fu].feinte-=dt;
     majBarricades(s,dt);
+    majBarricadesFeu(s,dt);
     /* UN FEU QUI BRULE TEND LA RUE, meme loin : tout le monde le voit.
        C'est la contrepartie des molotovs, et elle est automatique. */
     if(FUM&&s.fum&&s.M&&MISSION&&s.fum.nes>(s.feuxVus||0)){
@@ -3146,7 +3266,8 @@ var M={
       /* ON PAIE AVANT D'AGIR, et seulement si l'ordre aboutit : le
          debit se fait ici, une seule fois, pour tous les ordres. */
       if(!coute(s,b.k))return;
-      if(b.k==='pousser')cmdPousser2(s);
+      if(b.k==='feinte')cmdFeinte(s);
+      else if(b.k==='pousser')cmdPousser2(s);
       else if(b.k==='casser')cmdCasser(s);
       else if(b.k==='barricade')cmdBarricade(s);
       else if(b.k==='disperser')cmdDisperser(s);

@@ -20,7 +20,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-27-2110';
+  var MA_VERSION='2026-10-27-2220';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -385,6 +385,21 @@ body{font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#d8ecf8}
 #mnu.cdn .cc.manif.on::after{color:#7ab8e8}
 #mnu.cdn .cc.manif.on u{border-top-color:rgba(255,255,255,.16)}
 /* ===== LA BANDEROLE DU JOUEUR ===== */
+#mnu.cdn .asty{margin:13px 4px 0;background:rgba(0,0,0,.22);border-radius:14px;
+  padding:9px 10px 10px;border:2px dashed rgba(255,216,106,.4)}
+#mnu.cdn .asty u{text-decoration:none;display:block;font:400 11.5px 'Lilita One';
+  letter-spacing:2px;color:#ffd86a;margin-bottom:7px}
+#mnu.cdn .asty .st{display:flex;gap:6px}
+#mnu.cdn .asty .st button{flex:1;border-radius:10px;padding:7px 3px;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14)}
+#mnu.cdn .asty .st button b{display:block;font:400 13px 'Lilita One';color:#ffe9c8}
+#mnu.cdn .asty .st button i{display:block;font:700 8.5px 'Baloo 2';font-style:normal;
+  color:rgba(255,233,200,.7);margin-top:2px;line-height:1.2}
+#mnu.cdn .asty .st button.on{background:#ffd86a;border-color:#ffd86a}
+#mnu.cdn .asty .st button.on b{color:#7a1c10}
+#mnu.cdn .asty .st button.on i{color:rgba(122,28,16,.78)}
+#mnu.cdn .asty em{display:block;font-style:normal;font:700 10px 'Baloo 2';
+  color:rgba(255,233,200,.82);margin-top:8px;line-height:1.35;text-align:center}
 #mnu.cdn .aslo{margin:13px 4px 0;background:rgba(0,0,0,.22);border-radius:14px;
   padding:9px 10px 10px;border:2px dashed rgba(255,216,106,.4)}
 #mnu.cdn .aslo u{text-decoration:none;display:block;font:400 11.5px 'Lilita One';
@@ -4399,6 +4414,13 @@ function mnuMaj(){
     slo.oninput=poser;
     slo.onkeydown=function(ev){if(ev.key==='Enter')slo.blur();};
   }
+  [].forEach.call(MNUC.querySelectorAll('[data-style]'),function(b){
+    b.onclick=function(){
+      CO_STYLE=b.getAttribute('data-style');
+      try{localStorage.setItem('bdl.cordon.style',CO_STYLE);}catch(e){}
+      mnuMaj();
+    };
+  });
   [].forEach.call(MNUC.querySelectorAll('[data-slo]'),function(b){
     b.onclick=function(){
       CO_SLOGAN=b.getAttribute('data-slo');
@@ -4804,6 +4826,18 @@ var CO_SLOGAN=(function(){try{return localStorage.getItem('bdl.cordon.slogan')||
 var CO_TISSU=(function(){try{return localStorage.getItem('bdl.cordon.tissu')||'#c03a30';}catch(e){return '#c03a30';}})();
 var CO_SLOGANS=['ON NE LÂCHE RIEN','PAS UN DE PLUS','LA RUE EST À NOUS',
                 'ÇA SUFFIT','TOUS ENSEMBLE','ON EST LÀ'];
+/* LE STYLE DU CORTEGE. Un seul geste, trois façons de jouer : c'est la
+   decision qu'on prend AVANT la partie, et elle pese sur les deux
+   minutes trente qui suivent. */
+var CO_STYLE=(function(){try{return localStorage.getItem('bdl.cordon.style')||'determine';}catch(e){return 'determine';}})();
+var CO_STYLES=[
+  {k:'pacifique', n:'PACIFIQUE', d:'banderoles et medics',
+   e:'Encaisse l’eau, panique peu, la tension monte lentement. Pousse moins fort.'},
+  {k:'determine', n:'DÉTERMINÉ', d:'un cortège ordinaire',
+   e:'Rien de marqué dans un sens ni dans l’autre.'},
+  {k:'radical',   n:'RADICAL',   d:'casseurs en tête',
+   e:'Pousse fort et casse vite. Panique plus, et fait monter la tension.'}
+];
 var CO_TISSUS=['#c03a30','#1f7a4a','#2a5a9a','#8a3a8a','#c8902a','#2a2a2e'];
 /* LE MENU DU CORDON. Il doit dire une seule chose avant la partie :
    la force marche, et elle te coûte. Sans ça le joueur gaze d'entrée
@@ -4867,6 +4901,13 @@ function coMenu(){
          '<b>LE CORTÈGE</b><em>passer, coûte que coûte</em>'+
          '<u>pousser · casser · barricades</u></button></div>';
     if(CO_CAMP==='manif'){
+      h+='<div class="asty"><u>VOTRE CORTÈGE</u><div class="st">';
+      CO_STYLES.forEach(function(S2){
+        h+='<button data-style="'+S2.k+'"'+(CO_STYLE===S2.k?' class="on"':'')+'>'+
+           '<b>'+S2.n+'</b><i>'+S2.d+'</i></button>';
+      });
+      var cur=CO_STYLES.filter(function(S2){return S2.k===CO_STYLE;})[0]||CO_STYLES[1];
+      h+='</div><em>'+cur.e+'</em></div>';
       h+='<div class="aslo"><u>VOTRE BANDEROLE</u>'+
          '<input id="coSlo" maxlength="18" placeholder="écris ton slogan" value="'+
            (CO_SLOGAN||'').replace(/"/g,'&quot;')+'">'+
@@ -5266,12 +5307,12 @@ window.addEventListener('orientationchange',function(){
    cinq à huit minutes — et le score est le temps qu'il restait.
    ===================================================================== */
 </script>
-<script src="ia.js?v=5a692bbd"></script>
-<script src="fumee.js?v=332eddf6"></script>
+<script src="ia.js?v=7edb06dc"></script>
+<script src="fumee.js?v=ccfa45f2"></script>
 <script src="sons.js?v=2d2ab63a"></script>
-<script src="mission.js?v=0df768fd"></script>
-<script src="foule.js?v=de72ff01"></script>
-<script src="acteurs.js?v=25413e67"></script>
-<script src="cordon.js?v=c78f0f04"></script>
+<script src="mission.js?v=c55a2678"></script>
+<script src="foule.js?v=3c5f7d88"></script>
+<script src="acteurs.js?v=a5a9e75e"></script>
+<script src="cordon.js?v=53066732"></script>
 </body>
 </html>

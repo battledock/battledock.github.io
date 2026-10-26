@@ -148,14 +148,14 @@ MIS.creer=function(o){
        attaquent quatre bandes differentes : il filtre du monde en
        permanence au lieu de ne rien laisser passer pendant deux
        minutes. Mesure sur trois graines, personne aux commandes :
-       entre 35 et 57 passages. La police en tolere 58 — moins que le
+       entre 35 et 57 passages. La police en tolere 56 — moins que le
        flux passif, donc ne rien faire est perdant. Le cortege doit en
-       faire passer 22 — plus que ce que l'IA policiere laisse filtrer, donc le laisser
+       faire passer 52 — plus que ce que l'IA policiere laisse filtrer, donc le laisser
        couler tout seul ne suffit pas non plus.
        DEUX SEUILS, PAS UN : le meme chiffre des deux cotes rendait un
        des camps ingagnable, puisqu'il devait faire mieux que ce que
        l'autre avait le droit de laisser. */
-    tolere:58, objectif:22, toleBris:0,
+    tolere:56, objectif:52, toleBris:0,
     passes:0, brisees:0, tensionMax:0,
     gaz:0, charges:0, fauteCam:0,
     camp:(o.camp||'crs'),

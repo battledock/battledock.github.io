@@ -26,8 +26,8 @@ lui ; l'autre camp est tenu par l'IA.
 
 | | La police | Le cortège |
 |---|---|---|
-| But | tenir le passage 2 min 30, 58 passages tolérés | faire passer 22 des siens |
-| Ordres | TENIR, AVANT, ARRIÈRE, FORME, GROUPE, GAZ, EAU | POUSSER, RECULER, CASSER, BARRICADE, MOLOTOV, GROUPE, DISPERSER |
+| But | tenir le passage 2 min 30, 56 passages tolérés | faire passer 52 des siens |
+| Ordres | TENIR, AVANT, ARRIÈRE, FORME, GROUPE, GAZ, EAU | POUSSER, RECULER, CASSER, BARRICADE, MOLOTOV, GROUPE, **FEINTE**, DISPERSER |
 
 Les ordres tiennent sur **une seule rangée** de gros pictogrammes ; un
 ordre qu'on ne peut pas donner (cocktails en recharge, eau demandée à
@@ -42,6 +42,38 @@ suivi automatique reprend quatre secondes plus tard.
 le bloc quitte la marche automatique et s'y rend par le chemin le plus
 court. `GROUPE` avec un seul bloc sélectionné le remet dans le rang.
 Tant qu'il est parti, le reste du cortège continue d'avancer sans lui.
+
+## Le style du cortège
+
+Côté cortège, le menu propose trois façons de jouer. Ça ne change pas
+les règles : ça change **qui compose la foule**, et le reste suit.
+
+| Style | Ce qu'il y a dedans | Ce que ça donne |
+|---|---|---|
+| **PACIFIQUE** | sept banderoles en tête, des street medics | encaisse l'eau, panique peu, tension lente. Pousse moins |
+| **DÉTERMINÉ** | un cortège ordinaire | rien de marqué dans un sens ni dans l'autre |
+| **RADICAL** | des casseurs en tête | pousse fort et casse vite. Panique plus, tension rapide |
+
+- Un porteur de **banderole** n'encaisse qu'un tiers du jet d'eau, et
+  protège ceux qui sont à une tuile et demie derrière lui. Rien à
+  activer : il suffit de les mettre devant.
+- Un **street medic** double la détente du stress autour de lui — assez
+  pour récupérer quelqu'un qu'on aurait perdu à la panique.
+- Un **casseur** est plus rapide, plus lourd, et plus nerveux.
+
+## Les actions qui ne servent à rien toutes seules
+
+**FEINTE** (16 d'élan) — un bloc se jette en avant de façon ostensible
+pendant huit secondes, et l'IA adverse y envoie sa réserve. Le passage
+fait treize tuiles pour une ligne qui en couvre huit : il y a toujours
+un côté dégarni, encore faut-il que la police regarde ailleurs. La
+feinte ne vaut que par ce qu'on fait pendant.
+
+**La barricade enflammée** — un cocktail qui tombe à moins d'une tuile
+et demie d'une barricade debout y met un feu plus gros et plus long
+qu'ailleurs. Tant qu'elle brûle, personne ne s'en approche. Pas de
+bouton pour ça : c'est la rencontre de deux actions qu'on avait déjà,
+et c'est au joueur de la voir.
 
 **La banderole.** Côté cortège, le menu de la borne contient un champ de
 saisie, six slogans tout faits et six couleurs de tissu. Le texte est

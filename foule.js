@@ -281,9 +281,18 @@ function majStress(S,a,voisins,dt){
   mont+=a.choc*0.0032;
   a.choc=Math.max(0,a.choc-dt*0.00075);
   if(a.brule>0)a.brule-=dt;     /* la marque des flammes s'efface seule */
+  if(a.abrite>0)a.abrite-=dt;
+  if(a.pris>0)a.pris-=dt;
   /* la detente : franche quand rien ne pousse, lente sinon */
   var detente=(mont<=0.000010)?0.00014:0.000026;
   if(a.etat==='CALME')detente*=3.2;          /* on souffle */
+  /* LE STYLE DU CORTEGE PESE SUR LA MONTEE, pas sur les regles : un
+     cortege pacifique s'echauffe moins vite, un radical plus vite. */
+  if(a.camp==='manif'&&S.styleTens)mont*=S.styleTens;
+  /* UN MEDIC CALME CEUX QUI SONT AUTOUR. Ce n'est pas un soin magique :
+     la detente est doublee a portee, ce qui suffit a sortir de la
+     panique quelqu'un qu'on aurait perdu. */
+  if(a.pris>0)detente*=2.4;
   a.stress=cl(a.stress+(mont-detente)*dt*a.nerf, 0, 1);
 }
 
@@ -396,7 +405,7 @@ FOULE.creer=function(o){
     agents:[], groupes:[], t:0,
     grille:new Grille(o.GW,o.GH),
     tmp:[], gr:(o.graine||12345),
-    front:o.front||0, pression:0, tension:0,
+    front:o.front||0, pression:0, tension:0, styleTens:1,
     sorties:o.sorties||[], evenements:[],
     paniques:0, bloquesVus:0, debloques:0
   };
@@ -449,7 +458,7 @@ FOULE.poser=function(S,G,x,y,o){
        pas au meme moment : chacun porte un coefficient qui multiplie
        tout ce qui lui arrive. Le groupe reste lisible — ils vont tous
        dans le meme sens — mais la panique part d'un endroit precis. */
-    nerf:(o.nerf||1), stress:(o.stress||0), choc:0, brule:0,
+    nerf:(o.nerf||1), stress:(o.stress||0), choc:0, brule:0, abrite:0, pris:0,
     serres:0, contact:0, distMenace:99, distCible:0,
     bloque:0, biais:((G.membres.length%2)?1:-1)
   };
@@ -782,6 +791,32 @@ FOULE.pas=function(S,dt){
       }
     }
     Gp.presse=c2/Math.max(1,Gp.membres.length);
+  }
+  /* QUI EST DERRIERE UNE BANDEROLE. On marque pour une demi-seconde les
+     manifestants proches d'un porteur : le calcul ne se fait donc pas
+     dans la boucle de l'eau, qui tourne pour chaque jet et chaque
+     corps. Une tuile et demie, c'est la largeur du tissu. */
+  for(i=0;i<A.length;i++){
+    var pm=A[i];
+    if(pm.type!=='medic')continue;
+    S.grille.autour(pm,S.tmp);
+    for(var mj=0;mj<S.tmp.length;mj++){
+      var vm=A[S.tmp[mj]];
+      if(vm.camp!=='manif')continue;
+      var mdx=vm.x-pm.x, mdy=vm.y-pm.y;
+      if(mdx*mdx+mdy*mdy<4.0)vm.pris=500;
+    }
+  }
+  for(i=0;i<A.length;i++){
+    var pb=A[i];
+    if(pb.type!=='banderole')continue;
+    S.grille.autour(pb,S.tmp);
+    for(var bj=0;bj<S.tmp.length;bj++){
+      var vb2=A[S.tmp[bj]];
+      if(vb2.camp!=='manif')continue;
+      var bdx=vb2.x-pb.x, bdy=vb2.y-pb.y;
+      if(bdx*bdx+bdy*bdy<2.25)vb2.abrite=500;
+    }
   }
 };
 
