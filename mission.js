@@ -154,6 +154,7 @@ MIS.pas=function(M,s,dt,api){
       M.ciblee.travail=(M.ciblee.travail||0)+dt*(n/6);
       if(M.ciblee.travail>5200){
         M.ciblee.brisee=true; M.brisees++;
+        if(window.CORDON_SON)window.CORDON_SON.effet('verre');
         M.alerte={t:'DEVANTURE BRISÉE',d:'Elle comptera dans le rapport.'};M.alerteT=3600;
       }
     }else M.ciblee.travail=Math.max(0,(M.ciblee.travail||0)-dt*0.8);

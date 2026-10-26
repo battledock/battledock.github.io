@@ -1610,3 +1610,72 @@ where niveau = 29;
 -- perdue parce que la strategie de test charge onze fois : charger sans
 -- discernement DOIT perdre. L'equilibrage n'est pas fini — ne rien faire
 -- gagne encore une fois sur deux — et c'est le prochain chantier.
+
+-- ============================================================
+-- LE CORDON — FINITION (2026-10-27-1120)
+-- ============================================================
+-- LA LECON DE CETTE PASSE : J'AI OPTIMISE DEUX FOIS DANS LE BRUIT.
+-- Premiere mesure : « le dessin coute 16 ms ». J'ai remplace des
+-- ellipses par des sprites, supprime des allocations — et la mesure
+-- suivante donnait 12 ms sans qu'aucun de ces changements n'ait ete
+-- ecrit (un patch avait echoue). Le conteneur de test partage son
+-- processeur : une mesure isolee ne veut rien dire. Tout est desormais
+-- mesure en MEDIANE DE CINQ SERIES, et la boucle de dessin porte des
+-- jalons (s.prof) qui disent ou va le temps, section par section.
+--
+-- ET CES JALONS ONT DIT QUELQUE CHOSE D'UTILE : la section la plus
+-- chere CHANGE d'une execution a l'autre (scene 11,7 ms une fois,
+-- chrome 11,1 ms la suivante). Ce n'est pas du JavaScript, c'est
+-- l'attente du compositeur : la derniere operation de l'image absorbe
+-- le temps de composition du canvas. Dans ce conteneur il n'y a pas de
+-- GPU et canvas 2D est fait en logiciel. CES CHIFFRES NE PREDISENT DONC
+-- PAS ANDROID, ou canvas 2D est accelere. Il faut un vrai telephone.
+--
+-- CE QUI A QUAND MEME ETE CORRIGE, et pourquoi c'est juste
+--  - m2e rendait un objet {x,y}. Appele pour trois cents corps et
+--    quatre-vingt-dix objets par image, cela faisait vingt-trois mille
+--    objets par seconde a ramasser. mx() et my() ne rendent qu'un
+--    nombre.
+--  - La position et la boite de chaque element STATIQUE sont calculees
+--    une fois a la preparation : un lampadaire ne bouge pas.
+--  - Les anneaux de selection etaient des ellipses tracees sous
+--    transformation d'echelle, douze par image. Peints une fois par
+--    couleur, recopies ensuite.
+--  - La brume du fond etait un degrade etale sur les deux tiers de
+--    l'ecran a chaque image : plus d'un million de points de degrade par
+--    image sur un ecran a deux points par pixel. Peinte une fois dans
+--    une bande de huit points qu'on etire.
+--  - measureText appele quatre fois par image pour une dizaine de
+--    textes possibles : mis en cache.
+--
+-- LA PAUSE. Un telephone qui recoit un appel : l'animation s'arrete
+-- d'elle-meme, mais au retour le joueur reprenait une rue qui avait
+-- bouge sans lui. Une borne qui declare pausable se fige sur perte de
+-- focus ou passage en arriere-plan, continue a DESSINER (sinon l'ecran
+-- reste fige sans dire pourquoi), coupe le son, et ne repart qu'au
+-- doigt. L'orientation est recadree sur resize ET sur
+-- orientationchange, deux fois apres coup : certains Android changent
+-- l'orientation avant les dimensions.
+--
+-- LE SON : AUCUN FICHIER. Tout est synthetise — rumeur de bruit filtre
+-- dont le volume vient du nombre de corps au contact et la couleur de
+-- la tension, impacts, sifflets. Un jeu qui se charge en 153 ms ne peut
+-- pas attendre trois cents kilo-octets de MP3, et un chemin casse est
+-- un silence qu'on ne remarque qu'en production. Le contexte n'est cree
+-- qu'au premier doigt : aucun navigateur mobile n'en laisse sortir
+-- avant un geste.
+--
+-- UNE REGRESSION TROUVEE PAR LES TESTS EXISTANTS : le rayon des hommes
+-- du cordon, passe a 0,45 pour rendre la ligne etanche, les faisait se
+-- chasser entre eux (0,90 de diametre pour 0,70 d'ecart entre deux
+-- places). L'ecart a la formation est passe de 2 a 7,4 tuiles. Deux
+-- hommes de la MEME ligne se serrent maintenant epaule contre epaule
+-- (rayon x0,62 entre eux), et le rayon reste entier face a la foule.
+-- Retour a 0,75 - 3,8 tuiles.
+--
+-- MESURE FINALE, mediane de cinq series, portrait 390x844 :
+--     378 corps (livre) : simulation 0,48 ms, dessin 11,9, image 12,5
+--     453 corps         : 0,84 / 15,1 / 15,8
+--     603 corps         : 1,13 / 16,1 / 16,3
+-- La simulation reste sous 1,2 ms meme a six cents corps : c'est le
+-- dessin qui plafonne, et c'est lui qu'un GPU accelere.

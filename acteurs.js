@@ -32,9 +32,12 @@ function tein(c,f){
   b=Math.max(0,Math.min(255,(b*f)|0));
   return '#'+((1<<24)+(r<<16)+(v<<8)+b).toString(16).slice(1);
 }
+/* L'OMBRE EST PORTEE. Centree sous les pieds, elle faisait flotter les
+   corps : rien ne disait d'ou venait la lumiere. Decalee vers la
+   droite-bas comme celle des immeubles, elle les repose au sol. */
 function ombre(g,x,y,rx,ry){
-  g.globalAlpha=0.26;g.fillStyle='#000';
-  g.beginPath();g.ellipse(x,y,rx,ry,0,0,7);g.fill();g.globalAlpha=1;
+  g.globalAlpha=0.28;g.fillStyle='#000';
+  g.beginPath();g.ellipse(x+1.5,y+0.8,rx,ry,0,0,7);g.fill();g.globalAlpha=1;
 }
 
 /* ---------------------------------------------------------------------
@@ -74,11 +77,17 @@ function paletteManif(i){
    formaient une bouillie ou l'on ne distinguait plus une pancarte d'une
    tete. Vingt-deux points : on lit la foule, et chaque sprite coute un
    tiers de surface en moins. */
+/* LA MARCHE EN SIX POSES. A quatre, le pas etait un va-et-vient :
+   jambes jointes, ecartees, jointes, ecartees. Six donnent un cycle —
+   appui, poussee, suspension, reception — et l'ecart intermediaire fait
+   qu'on ne voit plus le saut entre deux images. Le buste monte d'un
+   point a la suspension, les bras balancent a contretemps des jambes. */
+var PAS_EC =[0,-1,-2,0, 1, 2];   /* l'ecart des jambes */
+var PAS_SAU=[0,-1, 0,0,-1, 0];   /* la suspension */
+var PAS_BAL=[0, 1, 2,0,-1,-2];   /* les bras, a contretemps */
 function corps(g,x,y,dos,f,p,o){
   o=o||{};
-  var ec=(f===1?-1:f===3?1:0);        /* l'ecart des jambes */
-  var bal=(f===1?-1:f===3?1:0);       /* le balancement des bras */
-  var sau=(f===1||f===3)?-1:0;        /* le corps monte d'un point au pas */
+  var ec=PAS_EC[f%6], bal=PAS_BAL[f%6], sau=PAS_SAU[f%6];
   ombre(g,x,y,5,2.2);
   var Y=y+sau;
   /* jambes */
@@ -115,7 +124,7 @@ function corps(g,x,y,dos,f,p,o){
 
 /* les accessoires : ce qui dit a quoi sert ce bonhomme dans la rue */
 function pancarte(g,x,y,dos,f,p){
-  var sau=(f===1||f===3)?-1:0, Y=y+sau;
+  var sau=PAS_SAU[f%6], Y=y+sau;
   var c=['#e8e4d8','#d8d2c0','#e0d4b8'][p.varia%3];
   P(g,x+4,Y-31,2,16,'#8a6a44');
   P(g,x-1,Y-41,12,11,c);
@@ -124,20 +133,20 @@ function pancarte(g,x,y,dos,f,p){
   P(g,x+1,Y-32,8,1,'#c03a30');
 }
 function banderole(g,x,y,dos,f,p){
-  var sau=(f===1||f===3)?-1:0, Y=y+sau;
+  var sau=PAS_SAU[f%6], Y=y+sau;
   P(g,x+4,Y-28,2,13,'#6a5a3e');
   P(g,x+5,Y-31,21,10,'#c03a30');
   P(g,x+5,Y-31,21,1,'#e05a46');
   P(g,x+7,Y-28,15,2,'#f0e8d0'); P(g,x+7,Y-25,10,2,'#f0e8d0');
 }
 function camera(g,x,y,dos,f,p){
-  var sau=(f===1||f===3)?-1:0, Y=y+sau;
+  var sau=PAS_SAU[f%6], Y=y+sau;
   P(g,x+3,Y-20,6,5,'#1e2228'); P(g,x+8,Y-19,2,3,'#2e3640');
   P(g,x+9,Y-18,2,2,'#6ab0e0');
   P(g,x+3,Y-21,6,1,'#3a424c');
 }
 function bouclier(g,x,y,dos,f,p,c){
-  var sau=(f===1||f===3)?-1:0, Y=y+sau;
+  var sau=PAS_SAU[f%6], Y=y+sau;
   var bx=dos?x+3:x-8;
   P(g,bx,Y-19,6,14,c);
   P(g,bx,Y-19,6,2,tein(c,1.4));
@@ -146,7 +155,7 @@ function bouclier(g,x,y,dos,f,p,c){
   P(g,bx+(dos?0:5),Y-19,1,14,tein(c,0.7));
 }
 function matraque(g,x,y,dos,f,p){
-  var sau=(f===1||f===3)?-1:0, Y=y+sau, bal=(f===1?-1:f===3?1:0);
+  var sau=PAS_SAU[f%6], Y=y+sau, bal=PAS_BAL[f%6];
   var mx=dos?x-5:x+5;
   P(g,mx,Y-11-bal,2,7,'#1e2228');
 }
@@ -164,7 +173,7 @@ function serie(type,nVar,fab){
     var vv=[];
     for(var d=0;d<2;d++){
       var dd=[];
-      for(var f=0;f<4;f++){
+      for(var f=0;f<6;f++){
         (function(v,d,f){
           dd.push(cal(40,44,16,40,function(g,x,y){fab(g,x,y,d===1,f,v);}));
         })(v,d,f);
@@ -218,7 +227,8 @@ ACTEURS.preparer=function(){
 };
 
 function corpsCRS(g,x,y,dos,f,p,off){
-  var ec=(f===1?-1:f===3?1:0), bal=(f===1?-1:f===3?1:0), sau=(f===1||f===3)?-1:0;
+  /* le cordon marche plus court : il avance en gardant la ligne */
+  var ec=(PAS_EC[f%6]*0.7)|0, bal=(PAS_BAL[f%6]*0.6)|0, sau=PAS_SAU[f%6];
   ombre(g,x,y,5.4,2.4);
   var Y=y+sau;
   P(g,x-2+ec,Y-7,2,7,p.bas); P(g,x+1-ec,Y-7,2,7,tein(p.bas,0.86));
@@ -255,7 +265,7 @@ ACTEURS.dessine=function(g,a,px,py){
   var T=ACTEURS.atlas[a.type]; if(!T)return;
   var V=T[a.varia%T.length];
   var dos=(a.dir===2||a.dir===3), mir=(a.dir===1||a.dir===2);
-  var S=V[dos?1:0][a.anim&3];
+  var S=V[dos?1:0][a.anim%6];
   if(mir){
     g.save();g.translate(px|0,py|0);g.scale(-1,1);
     g.drawImage(S.cv,-S.ox,-S.oy);g.restore();

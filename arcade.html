@@ -20,7 +20,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-27-0920';
+  var MA_VERSION='2026-10-27-1120';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -4754,6 +4754,19 @@ function fmMenu(){
 function boucle(ts){
   if(!BORNE){RAF=null;return;}
   var dt=Math.min(60,ts-(boucle.vu||ts));boucle.vu=ts;
+  /* ===================================================================
+     LA PAUSE. Un telephone qui recoit un appel, un joueur qui change
+     d'onglet : l'animation s'arrete d'elle-meme, mais au retour il
+     reprend une rue qui a bouge sans lui et il ne comprend pas ce qui
+     s'est passe. Une borne qui le demande (pausable) se fige donc, et
+     ne repart qu'au doigt. On continue a DESSINER — sinon l'ecran reste
+     sur la derniere image sans dire pourquoi.
+     =================================================================== */
+  if(BORNE.pausable&&S&&S.enPause){
+    BORNE.dessine(S,SL,SH);
+    RAF=requestAnimationFrame(boucle);
+    return;
+  }
   var av=S.phase;
   BORNE.pas(S,dt);
   /* UNE BORNE PEUT DEMANDER QU'ON RANGE LES MANCHES — un ecran de choix,
@@ -5009,6 +5022,26 @@ async function chargerClassement(cle){
 }
 
 window.addEventListener('resize',function(){if(BORNE)cadrer();});
+/* LE TELEPHONE QU'ON TOURNE. resize suffit sur la plupart des
+   navigateurs, mais certains Android envoient orientationchange AVANT
+   d'avoir change les dimensions : on recadre aussi un peu apres. */
+window.addEventListener('orientationchange',function(){
+  if(!BORNE)return;cadrer();
+  setTimeout(function(){if(BORNE)cadrer();},120);
+  setTimeout(function(){if(BORNE)cadrer();},420);
+});
+function mettreEnPause(){
+  if(!BORNE||!S||!BORNE.pausable)return;
+  if(S.phase!=='jeu')return;
+  S.enPause=true;
+  if(window.CORDON_SON)window.CORDON_SON.pause(true);
+}
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState!=='visible')mettreEnPause();
+  else boucle.vu=0;          /* sinon le premier dt vaut le temps absent */
+});
+window.addEventListener('blur',mettreEnPause);
+window.addEventListener('focus',function(){boucle.vu=0;});
 window.addEventListener('orientationchange',function(){
   setTimeout(function(){if(BORNE)cadrer();},180);
 });
@@ -5048,9 +5081,10 @@ window.addEventListener('orientationchange',function(){
    cinq à huit minutes — et le score est le temps qu'il restait.
    ===================================================================== */
 </script>
-<script src="mission.js?v=3529371e"></script>
-<script src="foule.js?v=ce23e6bf"></script>
-<script src="acteurs.js?v=b9f7b902"></script>
-<script src="cordon.js?v=60478fce"></script>
+<script src="sons.js?v=251a5cd3"></script>
+<script src="mission.js?v=491e1f16"></script>
+<script src="foule.js?v=5190568a"></script>
+<script src="acteurs.js?v=bfcf378a"></script>
+<script src="cordon.js?v=c6e1dfe2"></script>
 </body>
 </html>

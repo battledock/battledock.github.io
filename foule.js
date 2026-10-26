@@ -625,7 +625,13 @@ FOULE.pas=function(S,dt){
       if(vois[j]===i)continue;
       b=A[vois[j]];
       var ex=a.x-b.x, ey=a.y-b.y, e2=ex*ex+ey*ey;
-      var min=a.r+b.r;
+      /* DEUX HOMMES DE LA MEME LIGNE SE SERRENT, ils ne se repoussent
+         pas. Avec un rayon de 0,45 pour 0,70 d'ecart entre deux places,
+         ils se chassaient mutuellement en permanence : la ligne gonflait
+         et l'ecart a la formation passait de deux a sept tuiles. Epaule
+         contre epaule, c'est exactement ce que fait un cordon — et le
+         rayon reste entier face a la foule d'en face. */
+      var min=(a.g===b.g&&a.camp==='crs')?((a.r+b.r)*0.62):(a.r+b.r);
       if(e2<min*min&&e2>1e-8){
         var e=Math.sqrt(e2), pen=(min-e)/min;
         /* LA MASSE COMPTE. Sans elle, un homme en tenue d'intervention
@@ -729,8 +735,8 @@ FOULE.pas=function(S,dt){
     if(v>a.vmax*0.12){
       var ex2=(a.vx-a.vy), ey2=(a.vx+a.vy);  /* la vitesse vue a l'ecran */
       a.dir=(ey2>0)?((ex2>0)?0:1):((ex2>0)?3:2);
-      a.pas+=v*dt*2.0;
-      a.anim=((a.pas|0)%4);
+      a.pas+=v*dt*2.6;
+      a.anim=((a.pas|0)%6);   /* six poses : le cycle complet d'un pas */
     }else{a.anim=0;}
     a.v=v;
   }

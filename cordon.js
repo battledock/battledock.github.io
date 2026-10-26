@@ -29,6 +29,12 @@ var MH=(GW+GH)*TH/2;         /* hauteur du sol projete */
 var CIEL=190;                /* ce que les toits montent au-dessus du sol */
 
 function m2e(gx,gy){return {x:(gx-gy)*(TW/2)+OX, y:(gx+gy)*(TH/2)};}
+/* LES MEMES, SANS ALLOUER. m2e rend un objet ; appele pour trois cents
+   corps et quatre-vingt-dix objets a chaque image, cela fait vingt-trois
+   mille objets par seconde a ramasser. Dans les boucles de rendu on
+   utilise donc ces deux-la, qui ne rendent qu'un nombre. */
+function mx(gx,gy){return (gx-gy)*(TW/2)+OX;}
+function my(gx,gy){return (gx+gy)*(TH/2);}
 function e2mx(ex,ey){var a=(ex-OX)/(TW/2), b=ey/(TH/2);return (a+b)/2;}
 function e2my(ex,ey){var a=(ex-OX)/(TW/2), b=ey/(TH/2);return (b-a)/2;}
 
@@ -106,7 +112,7 @@ function faireBatiments(C,d){
   function pose(x0,y0,x1,y1){
     if(x0<0||y0<0||x1>=GW||y1>=GH)return;
     var h=d.e(48,116);
-    var st=d.pick(['pierre','brique','crepi','moderne','vieux']);
+    var st=d.pick(['pierre','brique','crepi','moderne','vieux','ocre','ardoise','pastel']);
     var b={x0:x0,y0:y0,x1:x1,y1:y1,h:h,style:st,
            /* la devanture regarde la rue la plus proche */
            face:null, g:d.e(1,2000000)};
@@ -149,7 +155,7 @@ function faireBatiments(C,d){
     for(j=y;j<y+p2&&ok;j++)for(i=x;i<x+w;i++)
       if(C.sol[j][i]!==SOL.ILOT||C.haut[j][i]){ok=false;break;}
     if(!ok||d.f()<0.30)continue;
-    var hh=d.e(22,58), st2=d.pick(['vieux','brique','crepi']);
+    var hh=d.e(22,58), st2=d.pick(['vieux','brique','crepi','ocre','ardoise']);
     var b2={x0:x,y0:y,x1:x+w-1,y1:y+p2-1,h:hh,style:st2,g:d.e(1,2000000)};
     B.push(b2);
     for(j=y;j<y+p2;j++)for(i=x;i<x+w;i++){C.bloc[j][i]=1;C.haut[j][i]=hh;}
@@ -305,12 +311,18 @@ function peindreSol(C,d){
    est repere par u (de 0 a 1 le long de la face) et par sa hauteur. On
    n'ecrit donc jamais deux fois la trigonometrie de la projection.
    ===================================================================== */
+/* HUIT STYLES AU LIEU DE CINQ. Une rue entiere batie sur cinq teintes
+   se lit comme un motif repete des qu'on dezoome ; trois de plus, et
+   deux immeubles voisins ne sont presque jamais jumeaux. */
 var STYLES={
   pierre: {mur:'#a8a094', toit:'#6a6258', cadre:'#c8c0b0', soc:'#7e766c'},
   brique: {mur:'#8a5244', toit:'#5a4038', cadre:'#c0a894', soc:'#6a3e34'},
   crepi:  {mur:'#c2b49a', toit:'#7a6e5e', cadre:'#e0d6c0', soc:'#8e8470'},
   moderne:{mur:'#7e8894', toit:'#4e565e', cadre:'#aab4c0', soc:'#5e666e'},
-  vieux:  {mur:'#9a8e7e', toit:'#60584c', cadre:'#b8ac98', soc:'#70685c'}
+  vieux:  {mur:'#9a8e7e', toit:'#60584c', cadre:'#b8ac98', soc:'#70685c'},
+  ocre:   {mur:'#b89060', toit:'#6e5636', cadre:'#d8b888', soc:'#8a6a44'},
+  ardoise:{mur:'#6e7682', toit:'#3e444c', cadre:'#96a0ac', soc:'#525a64'},
+  pastel: {mur:'#a8b0a0', toit:'#5e6658', cadre:'#cdd4c4', soc:'#7c8474'}
 };
 var VITRE=['#2a3642','#32404e','#243040','#3a4a5a'];
 var ALLUM=['#ffd98a','#ffe8b4','#e8c070','#fff0c8'];
@@ -416,11 +428,16 @@ function peindreBat(b,d,nuit){
   var g=cv.getContext('2d'); g.imageSmoothingEnabled=false;
   g.translate(-xmin,-ymin);
   var S=STYLES[b.style];
-  /* l'ombre portee au sol, vers la droite-bas */
-  g.globalAlpha=0.3; g.fillStyle='#000';
+  /* L'OMBRE PORTEE SUIT LA HAUTEUR. Longue de huit points quelle que
+     soit la taille du batiment, elle donnait la meme assise a un hangar
+     de vingt points et a un immeuble de cent vingt. Elle s'allonge
+     maintenant avec lui. */
+  var oL=6+H*0.09;
+  g.globalAlpha=0.30; g.fillStyle='#000';
   g.beginPath();
-  g.moveTo(D.x+5,D.y+3);g.lineTo(C.x+5,C.y+3);g.lineTo(B.x+5,B.y+3);
-  g.lineTo(B.x+13,B.y+7);g.lineTo(C.x+13,C.y+7);g.lineTo(D.x+13,D.y+7);
+  g.moveTo(D.x+4,D.y+2);g.lineTo(C.x+4,C.y+2);g.lineTo(B.x+4,B.y+2);
+  g.lineTo(B.x+4+oL,B.y+2+oL*0.5);g.lineTo(C.x+4+oL,C.y+2+oL*0.5);
+  g.lineTo(D.x+4+oL,D.y+2+oL*0.5);
   g.closePath();g.fill(); g.globalAlpha=1;
   var nx=b.x1-b.x0+1, ny=b.y1-b.y0+1;
   /* la face de droite, puis celle de gauche : la seconde recouvre
@@ -908,9 +925,18 @@ function preparer(s){
     b.vu=!cache;
     if(cache&&b.cv){b.cv=null;}
   });
+  /* LA BOITE DE CHAQUE ELEMENT, calculee une fois. Un lampadaire ne
+     bouge pas : recalculer sa position et sa taille a l'ecran soixante
+     fois par seconde est du travail pur perdu. */
   s.statiques=[];
-  s.bats.forEach(function(b){if(b.vu)s.statiques.push({k:'bat',b:b,prof:b.prof});});
-  s.objs.forEach(function(o){s.statiques.push({k:'obj',o:o,prof:o.prof});});
+  s.bats.forEach(function(b){if(b.vu)s.statiques.push({k:'bat',b:b,prof:b.prof,
+    x:b.ox, y:b.oy, w:b.cv.width, h:b.cv.height, cv:b.cv});});
+  s.objs.forEach(function(o){
+    var S2=OBJ[o.t]||VEH[o.t]; if(!S2)return;
+    s.statiques.push({k:'obj',o:o,prof:o.prof,
+      x:mx(o.gx,o.gy)-S2.ox, y:my(o.gx,o.gy)-S2.oy,
+      w:S2.cv.width, h:S2.cv.height, cv:S2.cv});
+  });
   s.statiques.sort(function(a,b){return a.prof-b.prof;});
   peupler(s);
   var p=m2e((s.front+GW-16)/2, (AV.y0+AV.y1)/2+0.5);
@@ -1160,7 +1186,7 @@ function majUnites(s,dt){
    La mission dit QUAND ; c'est ici qu'on dit QUOI. Rien de decoratif :
    chaque branche deplace des groupes ou en cree.
    ===================================================================== */
-var MISSION=null;
+var MISSION=null, SON=null;
 function missionApi(s){
   return {evenement:function(k,M){
     if(k==='poussee'){
@@ -1252,7 +1278,7 @@ function cmdAller(s,gx,gy){
     FOULE.ordre(s.sim,U,'vers',0,3);
     ok++;
   }
-  if(ok){s.mot=selNoms(s)+' · EN MARCHE';s.motT=1500;}
+  if(ok){s.mot=selNoms(s)+' · EN MARCHE';s.motT=1500;if(SON)SON.effet('ordre');}
   else{s.mot='PAS DE PASSAGE PAR LA';s.motT=1400;}
   return ok;
 }
@@ -1271,6 +1297,7 @@ function cmdTenir(s){
 function cmdPousser(s,sens){
   var L=selection(s), ok=0;
   if(sens>0&&s.M&&MISSION)MISSION.noter(s.M,'charge');
+  if(SON)SON.effet(sens>0?'charge':'ordre');
   L.forEach(function(U){
     if(FOULE.ordre(s.sim,U,sens>0?'avance':'recule',3200,2))ok++;
   });
@@ -1319,6 +1346,7 @@ function cmdGrouper(s){
 function cmdGaz(s){
   var L=selection(s);
   if(s.M&&MISSION)MISSION.noter(s.M,'gaz');
+  if(SON)SON.effet('grenade');
   L.forEach(function(U){
     var dv=FOULE.devant(U);
     FOULE.evenement(s.sim,U.ax+dv[0]*3.4,U.ay+dv[1]*3.4,4.6,1.0);
@@ -1333,6 +1361,7 @@ function cmdGaz(s){
 function finMission(s){
   if(s.finEnvoyee)return;
   s.finEnvoyee=true;
+  if(SON){SON.effet(s.M.fin==='gagne'?'gagne':'perdu');SON.rumeur(0,0);}
   try{if(typeof finirPartie==='function')finirPartie(s.M.score,true);}catch(e){}
 }
 
@@ -1355,6 +1384,24 @@ function finMission(s){
    mieux que douze timbres illisibles.
    ===================================================================== */
 var UCOL=['#6ad8ff','#ffd24a','#7dff9a','#ff8ac8','#c8a0ff','#ff9a6a'];
+/* LES ANNEAUX DE SELECTION, PEINTS UNE FOIS PAR COULEUR.
+   Un stroke d'ellipse sous une transformation d'echelle coute cher :
+   douze hommes selectionnes, c'etait SIX MILLISECONDES par image, plus
+   d'un quart du budget, pour des ronds qui ne changent jamais. Peints
+   dans un calque et recopies, ils ne coutent plus rien. */
+var ANN={};
+function anneau(c,gros){
+  var k=c+(gros?'G':'P');
+  if(ANN[k])return ANN[k];
+  var rx=gros?12:6, ry=gros?6.5:3.2;
+  var cv=document.createElement('canvas');
+  cv.width=Math.ceil(rx*2+4); cv.height=Math.ceil(ry*2+4);
+  var g2=cv.getContext('2d');
+  g2.strokeStyle=c; g2.lineWidth=1; g2.globalAlpha=gros?0.9:0.6;
+  g2.beginPath();g2.ellipse(cv.width/2,cv.height/2,rx,ry,0,0,7);g2.stroke();
+  ANN[k]={cv:cv,ox:cv.width/2,oy:cv.height/2};
+  return ANN[k];
+}
 var ORDRES=[
   {k:'tenir', t:'TENIR'},
   {k:'avant', t:'AVANT'},
@@ -1465,7 +1512,7 @@ function dessineObjet(g,o,s){
 var CO_REC2=0;
 var M={
   nom:'Le Cordon', sous:'LA RUE · GLISSE, PINCE, MARCHE',
-  manches:null, vise:400,
+  manches:null, vise:400, pausable:true,
   init:function(){
     return {phase:'pret', t:0, score:0, L:200, H:400,
             cam:{x:MW/2, y:MH/2, z:0.75, zmin:0.75, zmax:2},
@@ -1474,7 +1521,8 @@ var M={
             mot:'', motT:0, sim:null, unites:null, corteges:null,
             sel:0, selN:{0:true}, front:0, pression:0, tension:0, vus:[],
             barre:[], hbar:0,
-            diag:false, flash:null, M:null, poussee:0, finEnvoyee:false,
+            diag:false, flash:null, M:null, poussee:0, finEnvoyee:false, enPause:false,
+            fondu:0,
             casseurs:null, vitrines:[],
             /* LA DENSITE, mesuree : 190 corps a 58 images, 354 a 56,
                504 a 55, 654 a 54. Le cout est lineaire — la grille de
@@ -1490,12 +1538,14 @@ var M={
     preparer(s);
     /* LA MISSION, calculee a part : elle ne fait que LIRE la rue. */
     MISSION=window.CORDON_MISSION;
+    SON=window.CORDON_SON||null;
     /* LA LIMITE EST A DEUX TUILES DE LA PREFECTURE, pas a cinq du
        cordon : trop pres, quelques corps ejectes d'une bousculade
        suffisaient a faire perdre la mission en vingt secondes. */
     s.M=MISSION?MISSION.creer({graine:s.graine, ligne:GW-8,
                                vitrines:s.vitrines}):null;
     s.mot='';s.motT=0;
+    s.fondu=700;        /* la rue s'ouvre depuis le noir */
   },
   pas:function(s,dt){
     if(!s.pret)return;
@@ -1511,18 +1561,37 @@ var M={
       MISSION.pas(s.M,s,dt,missionApi(s));
       if(s.M.fin)finMission(s);
     }
+    /* LA RUMEUR SUIT LA RUE, quatre fois par seconde et pas soixante :
+       une rampe d'un quart de seconde s'entend mieux qu'un saut par
+       image, et coute quinze fois moins. Son volume vient du nombre de
+       corps au contact, sa couleur de la tension : c'est un indicateur
+       de plus, pas une boucle qui tourne dans le vide. */
+    s.tSon=(s.tSon||0)+dt;
+    if(SON&&s.tSon>250){
+      s.tSon=0;
+      SON.rumeur(s.sim.pression*1.6+s.sim.agents.length*0.12, s.sim.tension);
+      if(s.sim.paniques>0&&!s.siffle){s.siffle=1;SON.effet('sifflet');}
+      if(s.sim.paniques===0)s.siffle=0;
+    }
   },
   /* ------------------------------------------------- le rendu ------- */
   dessine:function(s,L,H){
     s.L=L;s.H=H;
     var g=G;
+    /* UN CHRONOMETRE PAR SECTION, allume a la demande (s.prof). Deviner
+       ou passe le temps d'une image coute plus cher que de le mesurer :
+       j'ai optimise deux fois dans le vide avant de poser ces jalons. */
+    var PR=s.prof, T0=PR?performance.now():0, TT=T0;
+    function jalon(k){if(!PR)return;var n=performance.now();PR[k]=(PR[k]||0)+(n-TT);TT=n;}
     if(!s.cielG||s.cielH!==H){
       s.cielG=g.createLinearGradient(0,0,0,H);
       var c=s.nuit?['#0a1020','#141c30']:(s.heure==='soir'?['#3a2838','#6a4a3a']:['#4a6e92','#8aa8c0']);
       s.cielG.addColorStop(0,c[0]);s.cielG.addColorStop(1,c[1]);s.cielH=H;
     }
     g.fillStyle=s.cielG;g.fillRect(0,0,L,H);
+    jalon('ciel');
     fondLointain(s,L,H);
+    jalon('fond');
     if(!s.pret)return;
     var z=s.cam.z;
     g.save();
@@ -1536,6 +1605,7 @@ var M={
     var sx=Math.max(0,Math.floor(s.cam.x-vl/2-2)), sy=Math.max(0,Math.floor(s.cam.y-vh/2-2));
     var sw=Math.min(s.sol.width-sx,Math.ceil(vl+4)), sh=Math.min(s.sol.height-sy,Math.ceil(vh+4));
     if(sw>0&&sh>0)g.drawImage(s.sol,sx,sy,sw,sh,sx,sy,sw,sh);
+    jalon('sol');
     /* LES UNITES CHOISIES, marquees AU SOL : sous les volumes, donc
        cachees comme elles quand un immeuble passe devant. Posees apres
        le decor, ces marques se voyaient sur les toits.
@@ -1546,35 +1616,33 @@ var M={
     for(var su=0;su<s.unites.length;su++){
       if(!s.selN[su])continue;
       var U0=s.unites[su], uc=UCOL[su%UCOL.length];
+      var AP=anneau(uc,false);
       for(var mu=0;mu<U0.membres.length;mu++){
-        var am=s.sim.agents[U0.membres[mu]], pm=m2e(am.x,am.y);
-        g.strokeStyle=uc;g.globalAlpha=0.55;
-        g.beginPath();g.ellipse(pm.x,pm.y,5,2.5,0,0,7);g.stroke();
+        var am=s.sim.agents[U0.membres[mu]];
+        g.drawImage(AP.cv,(mx(am.x,am.y)-AP.ox)|0,(my(am.x,am.y)-AP.oy)|0);
       }
-      g.globalAlpha=1;
-      /* le chemin qui reste a parcourir, et la destination au bout */
+      /* le chemin qui reste a parcourir. Un point sur deux suffit a le
+         lire, et il est borne : trace integralement pour quatre unites,
+         c'etait quatre-vingts segments par image. */
       if(U0.route&&U0.ri<U0.route.length){
         g.strokeStyle=uc;g.globalAlpha=0.5;
         g.beginPath();
-        for(var q=U0.ri;q<U0.route.length;q++){
-          var pq=m2e(U0.route[q][0],U0.route[q][1]);
-          if(q===U0.ri)g.moveTo(pq.x,pq.y+TH/2);else g.lineTo(pq.x,pq.y+TH/2);
+        var fin=Math.min(U0.route.length,U0.ri+40);
+        for(var q=U0.ri;q<fin;q+=2){
+          var rq=U0.route[q];
+          if(q===U0.ri)g.moveTo(mx(rq[0],rq[1]),my(rq[0],rq[1])+TH/2);
+          else g.lineTo(mx(rq[0],rq[1]),my(rq[0],rq[1])+TH/2);
         }
         g.stroke();g.globalAlpha=1;
       }
       if(U0.but){
-        var pb2=m2e(U0.but[0]+0.5,U0.but[1]+0.5);
-        g.strokeStyle=uc;
-        g.beginPath();g.ellipse(pb2.x,pb2.y+TH/2,9,4.5,0,0,7);g.stroke();
-        g.beginPath();
-        g.moveTo(pb2.x-5,pb2.y+TH/2);g.lineTo(pb2.x+5,pb2.y+TH/2);
-        g.moveTo(pb2.x,pb2.y+TH/2-3);g.lineTo(pb2.x,pb2.y+TH/2+3);g.stroke();
+        var AB=anneau(uc,true);
+        g.drawImage(AB.cv,(mx(U0.but[0]+0.5,U0.but[1]+0.5)-AB.ox)|0,
+                          (my(U0.but[0]+0.5,U0.but[1]+0.5)+TH/2-AB.oy)|0);
       }
       /* l'anneau de ralliement : ou la figure se range */
-      var pu=m2e(U0.ax,U0.ay);
-      g.strokeStyle=uc;g.globalAlpha=0.85;
-      g.beginPath();g.ellipse(pu.x,pu.y+TH/2,11,5.5,0,0,7);g.stroke();
-      g.globalAlpha=1;
+      var AG=anneau(uc,true);
+      g.drawImage(AG.cv,(mx(U0.ax,U0.ay)-AG.ox)|0,(my(U0.ax,U0.ay)+TH/2-AG.oy)|0);
     }
     /* LES VOLUMES, du fond vers l'avant. Un objet dont le calque ne
        touche pas la fenetre n'est pas dessine du tout. */
@@ -1586,29 +1654,24 @@ var M={
     var vus=s.vus; vus.length=0;
     var A=s.sim?s.sim.agents:[], na=A.length, k;
     for(k=0;k<na;k++){
-      var ag=A[k], pa=m2e(ag.x,ag.y);
-      if(pa.x<x0-30||pa.x>x1+30||pa.y<y0-60||pa.y>y1+30)continue;
-      ag._px=pa.x; ag._py=pa.y; ag._p=ag.x+ag.y;
+      var ag=A[k], pax=mx(ag.x,ag.y), pay=my(ag.x,ag.y);
+      if(pax<x0-30||pax>x1+30||pay<y0-60||pay>y1+30)continue;
+      ag._px=pax; ag._py=pay; ag._p=ag.x+ag.y;
       vus.push(ag);
     }
+    jalon('selection');
     vus.sort(function(p,q){return p._p-q._p;});
+    jalon('tri');
     var vi=0, nv=vus.length;
     var i,e;
     for(i=0;i<s.statiques.length;i++){
       e=s.statiques[i];
       while(vi<nv&&vus[vi]._p<=e.prof){ACTEURS.dessine(g,vus[vi],vus[vi]._px,vus[vi]._py);vi++;}
-      if(e.k==='bat'){
-        var b=e.b;
-        if(b.ox>x1||b.ox+b.cv.width<x0||b.oy>y1||b.oy+b.cv.height<y0)continue;
-        g.drawImage(b.cv,Math.round(b.ox),Math.round(b.oy));
-      }else{
-        var o=e.o, S2=OBJ[o.t]||VEH[o.t]; if(!S2)continue;
-        var p=m2e(o.gx,o.gy), ox=p.x-S2.ox, oy=p.y-S2.oy;
-        if(ox>x1||ox+S2.cv.width<x0||oy>y1||oy+S2.cv.height<y0)continue;
-        g.drawImage(S2.cv,Math.round(ox),Math.round(oy));
-      }
+      if(e.x>x1||e.x+e.w<x0||e.y>y1||e.y+e.h<y0)continue;
+      g.drawImage(e.cv,e.x|0,e.y|0);
     }
     while(vi<nv){ACTEURS.dessine(g,vus[vi],vus[vi]._px,vus[vi]._py);vi++;}
+    jalon('scene');
     /* L'ETIQUETTE D'UNE UNITE, au-dessus de son chef : son nom et ce
        qu'elle est en train de faire. C'est le retour qui dit qu'un ordre
        a bien ete pris, avant meme qu'on voie la ligne bouger. */
@@ -1620,7 +1683,11 @@ var M={
       var ordre=UE.ordre?({vers:'VERS',avance:'AVANT',recule:'ARRIÈRE',tenir:'TENIR'}[UE.ordre]||UE.ordre.toUpperCase()):'';
       var txt=UE.court+(ordre?(' · '+ordre):'');
       g.font='bold 6px ui-monospace,monospace';g.textAlign='center';
-      var w2=g.measureText(txt).width+5;
+      /* measureText est un calcul de mise en page : quatre par image,
+         soixante fois par seconde, pour une dizaine de textes possibles.
+         On les mesure une fois chacun. */
+      if(!LARG[txt])LARG[txt]=g.measureText(txt).width+5;
+      var w2=LARG[txt];
       g.fillStyle=sel?'rgba(6,16,28,.86)':'rgba(6,16,28,.52)';
       g.fillRect(pe.x-w2/2,pe.y-38,w2,8);
       if(sel){g.fillStyle=ce;g.fillRect(pe.x-w2/2,pe.y-38,w2,1);}
@@ -1628,6 +1695,7 @@ var M={
       g.textBaseline='middle';g.fillText(txt,pe.x,pe.y-34);
       g.textBaseline='alphabetic';g.textAlign='left';
     }
+    jalon('etiquettes');
     if(s.diag)diagnostic(g,s,vus);
     /* le point de chute de la derniere grenade, deux secondes */
     if(s.flash){
@@ -1643,25 +1711,48 @@ var M={
     g.restore();
     /* LE VOILE DE L'HEURE : pose apres la scene et avant le bandeau,
        pour que le texte reste lisible la nuit */
+    jalon('flash');
     if(s.nuit){g.fillStyle='rgba(12,18,34,.42)';g.fillRect(0,0,L,H);}
     else if(s.heure==='soir'){g.fillStyle='rgba(60,30,20,.16)';g.fillRect(0,0,L,H);}
+    jalon('voile');
     if(!s.barre.length||s.barreL!==L||s.barreH!==H||s.barreFin!==!!(s.M&&s.M.fin)){
       barreMaj(s,L,H);s.barreL=L;s.barreH=H;s.barreFin=!!(s.M&&s.M.fin);
     }
-    if(s.M&&s.M.fin)resultat(s,L,H);
-    else hud(s,L,H);
-    barreDessine(s,L,H);
+    /* s.sansChrome : utilise par l'outil de mesure pour isoler le cout
+       de la scene de celui du bandeau et de la barre. */
+    /* LES TRANSITIONS. Une partie qui commence et un resultat qui
+       tombe d'un coup se lisent comme un bogue d'affichage : un demi-
+       quart de seconde de fondu suffit a dire que quelque chose vient de
+       changer. Le fondu d'ouverture descend, celui du resultat monte. */
+    if(s.fondu>0){
+      s.fondu-=16;
+      g.fillStyle='rgba(4,7,12,'+Math.max(0,Math.min(1,s.fondu/700)).toFixed(3)+')';
+      g.fillRect(0,0,L,H);
+    }
+    if(!s.sansChrome){
+      if(s.M&&s.M.fin)resultat(s,L,H);
+      else hud(s,L,H);
+      barreDessine(s,L,H);
+      if(s.enPause)voilePause(s,L,H);
+    }
+    if(PR){jalon('chrome');PR.n=(PR.n||0)+1;}
     if(s.presse1T>0){s.presse1T-=16;if(s.presse1T<=0)s.presse1=null;}
   },
   /* ------------------------------------------------- le doigt ------- */
   tape:function(s,x,y){
     if(!s.pret)return;
+    /* LE PREMIER DOIGT REVEILLE LE SON : aucun navigateur mobile n'en
+       laisse sortir avant un geste du joueur. */
+    if(SON&&!SON.ok){try{SON.demarrer();}catch(e){}}
+    if(s.enPause){s.enPause=false;if(SON)SON.pause(false);
+      s.mot='ON REPREND';s.motT=1100;return;}
     /* LA BARRE PASSE AVANT LA CARTE : sans cela, un doigt pose sur
        TENIR envoyait aussi l'unite sous la barre. */
     if(s.M&&s.M.briefT>1200)s.M.briefT=900;   /* une tape referme le briefing */
     var b=barreTouche(s,x,y);
     if(b){
       s.presse1=b.k; s.presse1T=160;
+      if(SON)SON.effet('clic');
       if(b.k==='tout'){
         var all=(Object.keys(s.selN).filter(function(k){return s.selN[k];}).length===s.unites.length);
         s.selN={};
@@ -1802,16 +1893,28 @@ function fondLointain(s,L,H){
   for(var i=-1;i<Math.ceil(L/512)+1;i++)
     g.drawImage(s.fond, dx+i*512, hy, 512, 120);
   g.globalAlpha=1;
-  /* la brume qui mange le pied des silhouettes */
-  if(!s.brume||s.brumeH!==H){
-    s.brume=g.createLinearGradient(0,hy+60,0,hy+140);
-    var c=s.nuit?'10,16,30':(s.heure==='soir'?'70,46,40':'126,152,174');
-    s.brume.addColorStop(0,'rgba('+c+',0)');
-    s.brume.addColorStop(0.6,'rgba('+c+',.85)');
-    s.brume.addColorStop(1,'rgba('+c+',1)');
-    s.brumeH=H;
+  /* LA BRUME, PEINTE UNE FOIS DANS UNE BANDE.
+     Premiere version : un degrade etale en fillRect sur les deux tiers
+     de l'ecran, a chaque image. Sur un telephone a deux points par
+     pixel, cela fait plus d'un million de points de degrade soixante
+     fois par seconde — c'etait le plus gros poste du rendu, devant les
+     trois cents personnages. Le degrade est maintenant peint une seule
+     fois dans une bande de huit points de large qu'on etire, et le bas
+     est un aplat : deux recopies au lieu d'un calcul. */
+  if(!s.brumeCv||s.brumeH!==H||s.brumeHeure!==s.heure){
+    var bc=document.createElement('canvas');bc.width=8;bc.height=90;
+    var bg=bc.getContext('2d');
+    var cc=s.nuit?'10,16,30':(s.heure==='soir'?'70,46,40':'126,152,174');
+    var gr2=bg.createLinearGradient(0,0,0,90);
+    gr2.addColorStop(0,'rgba('+cc+',0)');
+    gr2.addColorStop(0.62,'rgba('+cc+',.86)');
+    gr2.addColorStop(1,'rgba('+cc+',1)');
+    bg.fillStyle=gr2;bg.fillRect(0,0,8,90);
+    s.brumeCv=bc; s.brumeH=H; s.brumeHeure=s.heure;
+    s.brumeBas='rgb('+cc+')';
   }
-  g.fillStyle=s.brume;g.fillRect(0,hy+60,L,H-hy-60);
+  g.drawImage(s.brumeCv,0,hy+60,L,90);
+  if(hy+150<H){g.fillStyle=s.brumeBas;g.fillRect(0,hy+149,L,H-hy-149);}
   g.restore();
 }
 
@@ -1822,6 +1925,7 @@ function fondLointain(s,L,H){
    et une couleur par groupe. Au-dessus, le stress en barre. Un bouton
    l'allume et l'eteint — il ne coute rien quand il est eteint.
    ===================================================================== */
+var LARG={};
 var DIAG_C=['#6ad8ff','#ffd24a','#7dff9a','#ff8ac8','#c8a0ff','#ff9a6a','#9affe0','#ffffff'];
 var DIAG_AB={MARCHE:'MAR',ATTEND:'ATT',HESITE:'HES',POUSSE:'POU',RECULE:'REC',
              PANIQUE:'PAN',FUIT:'FUI',CALME:'CAL',TIENT:'TIE',VERS:'VER',
@@ -1990,17 +2094,34 @@ function briefing(s,L,H,M){
   g.textAlign='left';g.textBaseline='alphabetic';
 }
 
+function voilePause(s,L,H){
+  var g=G;
+  g.fillStyle='rgba(4,8,15,.72)';g.fillRect(0,0,L,H);
+  g.textAlign='center';g.textBaseline='middle';
+  g.font='bold 13px ui-monospace,monospace';g.fillStyle='#9ae8ff';
+  g.fillText('EN PAUSE',L/2,H/2-8);
+  g.font='7px ui-monospace,monospace';g.fillStyle='#8fb8cc';
+  g.fillText('touche l’écran pour reprendre',L/2,H/2+8);
+  g.textAlign='left';g.textBaseline='alphabetic';
+}
+
 /* =====================================================================
    L'ECRAN DE RESULTAT
    Ce qui s'est passe, ligne par ligne, et de quoi recommencer.
    ===================================================================== */
 function resultat(s,L,H){
   var g=G, M=s.M;
-  g.fillStyle='rgba(4,8,15,.84)';g.fillRect(0,0,L,H);
+  if(M.paru===undefined)M.paru=0;
+  if(M.paru<1)M.paru=Math.min(1,M.paru+0.055);
+  var A=M.paru;
+  g.fillStyle='rgba(4,8,15,'+(0.84*A).toFixed(3)+')';g.fillRect(0,0,L,H);
+  if(A<0.25)return;
   var w=Math.min(L-14,250), x=(L-w)/2;
   var nD=M.detail?M.detail.length:0;
   var h=Math.min(H-30, 60+nD*9+28);
-  var y=(H-h)/2-6;
+  /* le panneau monte de huit points en apparaissant */
+  var y=(H-h)/2-6+(1-A)*8;
+  g.globalAlpha=A;
   g.fillStyle='rgba(10,16,28,.96)';coArr(g,x,y,w,h,6);g.fill();
   g.strokeStyle=M.fin==='gagne'?'#7dff9a':'#ff6a6a';g.lineWidth=1;
   coArr(g,x,y,w,h,6);g.stroke();
@@ -2026,6 +2147,7 @@ function resultat(s,L,H){
   g.textAlign='center';
   g.font='bold 11px ui-monospace,monospace';g.fillStyle='#ffd24a';
   g.fillText(M.score+' POINTS',L/2,y+h-14);
+  g.globalAlpha=1;
   g.textAlign='left';g.textBaseline='alphabetic';
 }
 
