@@ -17,6 +17,28 @@ python3 -m http.server 8897
 puis `http://127.0.0.1:8897/arcade.html` dans un navigateur, de préférence
 en mode téléphone (390 × 844) avec le tactile activé.
 
+## Les cartes
+
+**Tirée au sort à chaque partie.** Un jeton, une carte : on ne choisit
+pas son terrain, on fait avec. C'est ce qui empêche d'apprendre une
+seule place par cœur.
+
+| Carte | Géométrie | Ce qui s'y joue |
+|---|---|---|
+| **LA PLACE** | esplanade de 24 tuiles, percée nord-sud, fontaine | passage de 13 tuiles pour un cordon qui en couvre 8 : on se dispute un côté |
+| **LE PONT** | tablier de 11 tuiles, parapets, de l'eau partout | aucun contournement. On force ou on ne passe pas — et une panique sur un pont ne va nulle part |
+
+Chaque carte porte sa géométrie, ses trois zones, sa ligne à franchir
+**et ses seuils** : le pont laisse passer cinq fois moins de monde que
+la place, un seuil unique aurait rendu l'un des deux injouable.
+
+- Sur le pont : 16 passages tolérés, 13 à faire passer. Les zones sont
+  **LA TÊTE DE PONT**, **LE MILIEU** et **LA CULÉE**, alignées sur le
+  tablier — les tenir toutes demande de s'étaler sur toute la longueur.
+- Pas de devanture sur un pont : l'événement « casseurs » y est
+  remplacé par une poussée. Un événement qui ne peut pas aboutir est
+  une fausse menace.
+
 ## Choisir son camp
 
 Le menu de la borne ouvre sur deux cartes — **LA POLICE** ou **LE CORTÈGE** —

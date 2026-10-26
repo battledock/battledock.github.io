@@ -1,5 +1,5 @@
 /* ===== EMPREINTES (posées par outils/empreintes.js) ===== */
-window.EMPREINTES={"acteurs.js":"a5a9e75e","coquille.js":"6cb3ae61","cordon.js":"ca1e54d6","courses.js":"10100329","ferme.js":"1cb0fed8","foule.js":"d876f995","fumee.js":"ccfa45f2","ia.js":"7edb06dc","maintenance.js":"d28efd07","mission.js":"9498a944","moteur.css":"1d74a8a8","moteur.js":"11963ba4","personnage.js":"084104c9","pokedock.js":"fee9c87d","pokedock_hw.js":"f7b629c6","port.js":"4deec6ec","responsive.css":"caca6b41","retour.js":"6c72c050","session.js":"b36fa1f2","sons.js":"2d2ab63a","surprise.js":"c6737cb1","sw.js":"4b426b28","tokyo.js":"c6dade53","voitures.js":"fa3b8d68"};
+window.EMPREINTES={"acteurs.js":"a5a9e75e","coquille.js":"6cb3ae61","cordon.js":"de730c07","courses.js":"10100329","ferme.js":"1cb0fed8","foule.js":"d876f995","fumee.js":"ccfa45f2","ia.js":"7edb06dc","maintenance.js":"d28efd07","mission.js":"848e159b","moteur.css":"1d74a8a8","moteur.js":"11963ba4","personnage.js":"084104c9","pokedock.js":"fee9c87d","pokedock_hw.js":"f7b629c6","port.js":"4deec6ec","responsive.css":"caca6b41","retour.js":"6c72c050","session.js":"b36fa1f2","sons.js":"2d2ab63a","surprise.js":"c6737cb1","sw.js":"4b426b28","tokyo.js":"c6dade53","voitures.js":"fa3b8d68"};
 /* ===== fin des empreintes ===== */
 /* LA TÊTE DE PAGE, commune à toutes les pages du jeu : la version et
    le cache, puis les gestes du navigateur qu'on neutralise (sélection,
@@ -8,7 +8,7 @@ window.EMPREINTES={"acteurs.js":"a5a9e75e","coquille.js":"6cb3ae61","cordon.js":
 (function(){var champ=function(t){return t&&t.closest&&t.closest('input,textarea,[contenteditable="true"]');};
 ['selectstart','copy','cut','contextmenu','dragstart'].forEach(function(k){document.addEventListener(k,function(e){if(!champ(e.target))e.preventDefault();},{capture:true});});})();
 (function(){
-var MA_VERSION='2026-10-27-2320';
+var MA_VERSION='2026-10-28-0030';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il

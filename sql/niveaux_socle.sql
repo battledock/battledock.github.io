@@ -2202,3 +2202,50 @@ where niveau = 29;
 -- pas, elle tient une figure. C'etait le seul bouton dont on ne se
 -- servait jamais, et neuf ordres tiennent encore a quarante-trois
 -- points d'ecran la ou dix tombaient a trente-neuf.
+
+-- =====================================================================
+-- ETAPE : LE PONT, ET DES TERRAINS                      2026-10-28-0030
+-- =====================================================================
+--
+-- AV et RU etaient des constantes : une seule place, pour toujours. Ce
+-- sont maintenant des objets qu'on REECRIT au demarrage sans jamais les
+-- remplacer — tout le fichier en garde la reference, et il n'y a pas
+-- une ligne a changer ailleurs. Le reste du jeu — les ordres, la jauge,
+-- les camps, l'IA — ne sait pas sur quelle carte il tourne, et c'est ce
+-- qui permet d'en ajouter une sans rien casser.
+--
+-- LE PONT. Onze tuiles de tablier entre deux parapets de pierre, de
+-- l'eau des deux cotes, un ministere qui barre le fond. Aucun
+-- contournement : le cortege force ou ne passe pas. Mais il n'y a PAS
+-- D'ECHAPPATOIRE, et une panique sur un pont ne va nulle part : la
+-- tension y est l'arme et le danger des deux camps.
+--   L'eau est un type de sol de plus, qui bloque comme un mur et se
+-- dessine autrement. C'est la seule difference, et c'est ce qui permet
+-- d'ajouter un fleuve sans toucher a la navigation.
+--   Les parapets sont des objets poses case par case : sans eux on lit
+-- une rue bordee de vide, pas un pont.
+--
+-- LES SEUILS SUIVENT LE TERRAIN. Mesure : le pont laisse passer cinq
+-- fois moins de monde que la place. 56 toleres / 52 a faire passer sur
+-- la place, 16 / 13 sur le pont. Un seuil unique aurait rendu la
+-- mission injouable d'un cote ou gagnee d'avance de l'autre.
+--
+-- LE ZOOM DE DEPART AUSSI. A 1,35 sur le pont on ne voyait que le
+-- tablier et la carte ressemblait a une rue : il faut voir le fleuve
+-- des la premiere image pour comprendre qu'il n'y a nulle part ou
+-- aller. Le pont demarre a 1,00.
+--
+-- UN DEFAUT TROUVE PAR LE TEST DE MISSION : sur un pont il n'y a pas de
+-- devanture, donc M.ciblee valait null, l'evenement « casseurs »
+-- partait quand meme et les casseurs n'avaient nulle part ou aller.
+-- L'objectif ne pouvait ni se gagner ni se perdre. Un evenement qui ne
+-- peut pas aboutir est une fausse menace : sur un terrain sans vitrine,
+-- il est remplace par une poussee, qui se voit.
+--
+-- POURQUOI UNE HEURE DE DIAGNOSTIC SUR LE RENDU. Les captures en jeu
+-- montraient une rue entre des immeubles, jamais le fleuve, et j'ai
+-- cherche un bogue de peinture qui n'existait pas. Exporter le CALQUE
+-- DE SOL entier a tranche en une capture : le pont etait parfait depuis
+-- le debut, c'etait le cadrage de la camera qui ne montrait que le
+-- tablier. Quand une image ne dit pas ce qu'on attend, regarder la
+-- source avant de soupconner le dessin.

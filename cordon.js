@@ -70,10 +70,96 @@ var AV={y0:12,y1:35};        /* l'esplanade, du nord au sud */
 var RU={x0:21,x1:25};        /* la percee nord-sud qui la traverse */
 var TROT=2;                  /* le pourtour dalle */
 
-var SOL={CHAUS:0, TROT:1, CLOU:2, CANIV:3, ILOT:4, HERBE:5, DALLE:6, PAVE:7};
+var SOL={CHAUS:0, TROT:1, CLOU:2, CANIV:3, ILOT:4, HERBE:5, DALLE:6, PAVE:7, EAU:8};
+
+/* =====================================================================
+   LES TERRAINS
+
+   AV et RU etaient des constantes : une seule place, pour toujours. Ce
+   sont maintenant des objets que l'on REECRIT au demarrage, sans jamais
+   les remplacer — tout le code du fichier en garde la reference, et il
+   n'y a pas une ligne a changer ailleurs.
+
+   Un terrain, c'est sa geometrie, ou se tiennent les barrieres, ou est
+   le batiment a defendre, et quelles zones on se dispute. Le reste du
+   jeu — les ordres, la jauge, les camps, l'IA — ne sait pas sur quelle
+   carte il tourne, et c'est ce qui permet d'en ajouter une sans rien
+   casser.
+   ===================================================================== */
+var TERRAINS={
+  place:{
+    nom:'LA PLACE', sous:'Esplanade et percée',
+    av:{y0:12,y1:35}, ru:{x0:21,x1:25},
+    bx:GW-14, demi:6, pref:{x0:GW-6,y0:12,y1:35,haut:150},
+    ligne:GW-11, eau:false, zoom:1.35,
+    tolere:56, objectif:52
+  },
+  pont:{
+    /* LE PONT. Neuf tuiles de tablier entre deux parapets, de l'eau des
+       deux cotes : aucun contournement. Le cortege force ou ne passe
+       pas, et la police tient a peu de frais — mais il n'y a PAS
+       D'ECHAPPATOIRE, et une panique sur un pont ne va nulle part. La
+       tension y est l'arme et le danger des deux camps. */
+    nom:'LE PONT', sous:'Onze tuiles, pas d’échappatoire',
+    av:{y0:19,y1:29}, ru:null,
+    /* demi couvre tout le tablier : pas une seule barriere sur un pont,
+       les parapets font deja le travail et on ne barre pas un pont avec
+       du mobilier. */
+    bx:GW-16, demi:7, pref:{x0:GW-11,y0:15,y1:33,haut:168},
+    ligne:GW-13, eau:true, rive:11,
+    /* ON DEMARRE PLUS LARGE SUR LE PONT. A 1,35 on ne voit que le
+       tablier et la carte ressemble a une rue : il faut voir le fleuve
+       des la premiere image pour comprendre qu'il n'y a nulle part ou
+       aller. */
+    zoom:1.00,
+    /* LE PONT N'A PAS LES MEMES CHIFFRES. Onze tuiles pour un cordon
+       qui en couvre huit, et aucun contournement : il y passe cinq fois
+       moins de monde que sur la place. Mesure a l'appui, les seuils
+       suivent le terrain — sinon la mission est injouable d'un cote ou
+       gagnee d'avance de l'autre. */
+    tolere:16, objectif:13
+  }
+};
+var TER=TERRAINS.place;
+/* ON REECRIT AV ET RU, on ne les remplace pas : les references que tout
+   le fichier garde doivent continuer de pointer sur le bon objet. */
+function poserTerrain(cle){
+  TER=TERRAINS[cle]||TERRAINS.place;
+  AV.y0=TER.av.y0; AV.y1=TER.av.y1;
+  if(TER.ru){RU.x0=TER.ru.x0; RU.x1=TER.ru.x1;}
+  else{RU.x0=-99; RU.x1=-99;}   /* pas de percee : hors carte */
+  return TER;
+}
 
 function faireCarte(d){
   var C={sol:[], bloc:[], haut:[]}, x, y;
+  /* LE PONT : tout est EAU sauf les deux rives et le tablier. L'eau
+     bloque comme un mur, mais elle se dessine autrement — c'est la
+     seule difference, et c'est ce qui permet d'ajouter un fleuve sans
+     toucher a la navigation. */
+  if(TER.eau){
+    var r=TER.rive, est=TER.pref.x0-1;
+    for(y=0;y<GH;y++){
+      C.sol[y]=[]; C.bloc[y]=[]; C.haut[y]=[];
+      for(x=0;x<GW;x++){
+        var surRive=(x<r||x>est);
+        var surTab=(y>=AV.y0&&y<=AV.y1);
+        var parap=(y===AV.y0-1||y===AV.y1+1);
+        var t2;
+        if(surRive)t2=SOL.ILOT;
+        else if(surTab){
+          var bordT=(y<=AV.y0+0||y>=AV.y1-0);
+          t2=bordT?SOL.TROT:SOL.CHAUS;
+        }
+        else if(parap)t2=SOL.PAVE;      /* le parapet */
+        else t2=SOL.EAU;
+        C.sol[y][x]=t2;
+        C.bloc[y][x]=(t2===SOL.ILOT||t2===SOL.EAU||t2===SOL.PAVE)?1:0;
+        C.haut[y][x]=0;
+      }
+    }
+    return C;
+  }
   for(y=0;y<GH;y++){
     C.sol[y]=[]; C.bloc[y]=[]; C.haut[y]=[];
     for(x=0;x<GW;x++){
@@ -194,14 +280,24 @@ function faireBatiments(C,d){
   /* LA PREFECTURE, au nord et derriere : c'est ce que le cortege veut
      atteindre, et il faut la voir depuis la place sans qu'elle cache
      quoi que ce soit. Posee au fond, elle peut etre haute. */
-  var px0=RU.x1+4, px1=Math.min(GW-2,px0+11), py1=AV.y0-3, py0=Math.max(1,py1-6);
+  /* OU EST LE BATIMENT A DEFENDRE. Sur la place il est au nord et en
+     retrait ; sur le pont il est sur la rive, en face, et il barre le
+     fond — c'est tout ce que le cortege voit au bout du tablier. */
+  var px0,px1,py0,py1;
+  if(TER.eau){
+    px0=TER.pref.x0; px1=Math.min(GW-1,px0+8);
+    py0=TER.pref.y0; py1=TER.pref.y1;
+  }else{
+    px0=RU.x1+4; px1=Math.min(GW-2,px0+11); py1=AV.y0-3; py0=Math.max(1,py1-6);
+  }
   var libre2=true;
   for(j=py0;j<=py1&&libre2;j++)for(i=px0;i<=px1;i++)if(C.haut[j]&&C.haut[j][i]>60){libre2=false;break;}
-  var PR={x0:px0,y0:py0,x1:px1,y1:py1,h:150,style:'pierre',g:7777,prefecture:true};
+  var PR={x0:px0,y0:py0,x1:px1,y1:py1,h:TER.pref.haut||150,
+          style:'pierre',g:7777,prefecture:true};
   B.push(PR);
   for(j=py0;j<=py1;j++)for(i=px0;i<=px1;i++){
     if(!C.bloc[j])continue;
-    C.bloc[j][i]=1;C.haut[j][i]=150;
+    C.bloc[j][i]=1;C.haut[j][i]=(TER.pref.haut||150);
   }
   /* ce qui reste vraiment : des cours pavees, bloquees */
   for(y=0;y<GH;y++)for(x=0;x<GW;x++)
@@ -252,6 +348,10 @@ var PAL={
   trotB:'#6e6c67',
   clou: '#d8d6cc',
   herbe:['#4e5048','#484a44','#54564e'],
+  /* LE FLEUVE. Trois bleus sombres et proches : de l'eau vue de haut un
+     soir d'hiver, pas une piscine. Assez sombre pour que les corps du
+     tablier s'en detachent, et c'est tout ce qu'on lui demande. */
+  eau:['#1f3c56','#24445f','#1b3650'],
   bandes:'#c8c4a8',
   /* LA PLACE : une pierre claire et chaude, assez pale pour que les
      corps s'y detachent — c'est le fond sur lequel on lira la foule. */
@@ -275,6 +375,7 @@ function peindreSol(C,d){
     else if(t===SOL.CLOU)los(g,p.x,p.y,PAL.chaus[v]);
     else if(t===SOL.TROT)los(g,p.x,p.y,PAL.trot[v]);
     else if(t===SOL.HERBE)los(g,p.x,p.y,PAL.herbe[v]);
+    else if(t===SOL.EAU)los(g,p.x,p.y,PAL.eau[(x*5+y*11)%3]);
     else los(g,p.x,p.y,'#2a2c32');
   }
   /* LE BORD DU TROTTOIR. Sans lui la chaussee et le trottoir sont deux
@@ -612,6 +713,20 @@ function faireObjets(nuit){
       mur(g,x,y-8+i*0,x+20,y+2,7+i*0.1,8+i*0.1,i%2?'#7a5a38':'#8a6a44');
     pave(g,x,y-8,1.3,0.16,8,'#8a6a44','#7a5a38','#6a4e30');
     pave(g,x,y-8,1.3,0.05,15,'#7a5a38','#6a4e30','#5e4428');
+  });
+  /* LE PARAPET DU PONT. Un muret de pierre plein, avec sa main
+     courante : c'est lui qui fait qu'on lit un pont et pas une rue
+     bordee de vide. Il occupe une tuile entiere en longueur, et on en
+     pose un par case du bord. */
+  OBJ.parapet=calque(40,30,4,24,function(g,x,y){
+    var A=[x,y-2], B2=[x+32,y+14];
+    mur(g,A[0],A[1],B2[0],B2[1],0,13,'#6e6a62');
+    mur(g,A[0],A[1],B2[0],B2[1],9,13,'#7e7a72');
+    mur(g,A[0],A[1],B2[0],B2[1],13,15.5,'#8e8a80');
+    /* les refends, tous les tiers : une pierre sans joint n'est pas de
+       la pierre */
+    for(var i=1;i<3;i++){var t=i/3,px=A[0]+(B2[0]-A[0])*t,py=A[1]+(B2[1]-A[1])*t;
+      mur(g,px,py,px+0.8,py,0,12,'#5e5a54');}
   });
   OBJ.barriere=calque(40,32,4,28,function(g,x,y){
     ombreSol(g,x+14,y,15,4);
@@ -990,7 +1105,16 @@ function garnir(C,d,nuit){
      choisir OU tenir et le cortege OU pousser. Les deux camps ont
      quelque chose a decider a chaque instant, et c'est tout ce qu'on
      demande a une place. */
-  var bx=GW-14, midB=Math.round((AV.y0+AV.y1)/2), demi=6;
+  /* LES PARAPETS, UNE FOIS POUR TOUTES. Sur le pont, chaque case du
+     bord en recoit un : c'est la seule chose qui distingue un tablier
+     d'une rue, et elle doit etre la des la premiere image. */
+  if(TER.eau){
+    for(x=TER.rive;x<TER.pref.x0;x++){
+      poser('parapet',x+0.5,AV.y0-0.4,true);
+      poser('parapet',x+0.5,AV.y1+1.4,true);
+    }
+  }
+  var bx=TER.bx, midB=Math.round((AV.y0+AV.y1)/2), demi=TER.demi;
   for(y=AV.y0;y<=AV.y1;y++){
     if(y>=midB-demi&&y<=midB+demi)continue;      /* le passage reste ouvert */
     poser('barriere',bx+0.1,y+0.05,true);
@@ -1221,14 +1345,14 @@ function preparer(s){
   });
   s.statiques.sort(function(a,b){return a.prof-b.prof;});
   peupler(s);
-  var p=m2e((s.front+GW-16)/2, (AV.y0+AV.y1)/2+0.5);
+  var p=m2e((s.front+TER.bx-2)/2, (AV.y0+AV.y1)/2+0.5);
   s.cam.x=p.x; s.cam.y=p.y;
   /* ON COMMENCE PRES DE L'ACTION, pas au plus large. Au zoom minimum on
      voyait la place entiere : des arbres, des trottoirs, et la foule en
      petit tas au milieu. Le premier regard doit tomber sur le contact
      entre le cortege et le cordon, c'est la que le jeu se joue. Le
      joueur peut toujours s'ecarter d'un pincement. */
-  s.cam.z=Math.min(s.cam.zmax, Math.max(s.cam.zmin, 1.35));
+  s.cam.z=Math.min(s.cam.zmax, Math.max(s.cam.zmin, TER.zoom||1.35));
   s.pret=true;
 }
 
@@ -1260,7 +1384,7 @@ function peupler(s){
   /* LA TETE DU CORTEGE part a onze tuiles du barrage : plus loin, le
      cortege et le cordon ne tiennent pas ensemble dans l'ecran, et on
      ouvre la partie sur un carrefour vide. */
-  var tete=GW-16-11;
+  var tete=TER.bx-13;
   /* LES TROIS STYLES, en chiffres. Rien d'autre ne change. */
   var STYLES={
     pacifique:{k:'pacifique', vit:0.95, masse:0.92, nerf:0.66, panc:0.19, tens:0.74},
@@ -1368,7 +1492,7 @@ function peupler(s){
 
   /* ---- LE CORDON : trois unites en ligne, une en reserve */
   s.unites=[];
-  var bar=GW-14;      /* au niveau de l'entonnoir, pas derriere lui */
+  var bar=TER.bx;     /* au niveau de l'entonnoir, pas derriere lui */
   /* LES TROIS LIGNES TIENNENT LE GOULOT, l'une derriere l'autre.
      Elles etaient cote a cote et posees DERRIERE les barrieres : elles
      couvraient vingt tuiles de front en epaisseur de un, alors que
@@ -1456,7 +1580,7 @@ function majCortege(s,dt){
      donc le front non plus. S'il cede, la tete avance et le front suit.
      Si on les repousse, le front recule avec eux. Ce n'est plus une
      regle qui decide ou s'arrete la foule : c'est le cordon. */
-  var PREF=GW-6;
+  var PREF=TER.pref.x0;
   var tete=-1e9, A0=s.sim.agents, B0=s.corteges[0];
   for(var ti=0;ti<B0.membres.length;ti++){
     var at=A0[B0.membres[ti]];
@@ -1601,9 +1725,26 @@ function majLignes(s,dt){
    ===================================================================== */
 function faireZones(s){
   var midY=(AV.y0+AV.y1)/2+0.5;
+  if(TER.eau){
+    /* SUR UN PONT, LES TROIS ZONES SONT SUR UNE LIGNE. Pas de percee,
+       pas de fontaine : on se dispute la tete de pont, le milieu et la
+       culee. Comme elles sont alignees, les tenir toutes demande de
+       s'etaler sur toute la longueur — ce qu'aucun des deux camps ne
+       peut se permettre en meme temps que de pousser. */
+    s.zones=[
+      {k:'passage', n:'LA CULÉE',      x:TER.bx,      y:midY, r:3.4, a:null, t:0,
+       d:'élan plus vite'},
+      {k:'percee',  n:'LA TÊTE DE PONT',x:TER.rive+3, y:midY, r:3.4, a:null, t:0,
+       d:'des renforts'},
+      {k:'fontaine',n:'LE MILIEU',     x:(TER.rive+TER.bx)/2, y:midY, r:3.2, a:null, t:0,
+       d:'la tension retombe'}
+    ];
+    s.zoneT=0;
+    return;
+  }
   var cxp=Math.round((RU.x0+RU.x1)/2), cyp=Math.round((AV.y0+AV.y1)/2);
   s.zones=[
-    {k:'passage', n:'LE PASSAGE', x:GW-14, y:midY, r:4.6, a:null, t:0,
+    {k:'passage', n:'LE PASSAGE', x:TER.bx, y:midY, r:4.6, a:null, t:0,
      d:'élan plus vite'},
     {k:'percee',  n:'LA PERCÉE',  x:cxp+0.5, y:AV.y0-2.5, r:4.0, a:null, t:0,
      d:'des renforts'},
@@ -1874,7 +2015,7 @@ function iaMur(s){
     var U=s.tous[i]; if(U.camp!=='crs'||U.camions)continue;
     for(var m=0;m<U.membres.length;m++){var a=A[U.membres[m]];if(a.x<mur)mur=a.x;}
   }
-  return (mur>1e8)?(GW-14):mur;
+  return (mur>1e8)?TER.bx:mur;
 }
 function missionApi(s){
   return {evenement:function(k,M){
@@ -2750,11 +2891,11 @@ var ORDRES_CRS=[
   {k:'eau',   t:'EAU'}
 ];
 var ORDRES_MANIF=[
-  {k:'pousser', t:'POUSSER'},
-  {k:'arriere', t:'RECULER'},
-  {k:'casser',  t:'CASSER'},
+  {k:'pousser', t:'POUSSE'},
+  {k:'arriere', t:'RECULE'},
+  {k:'casser',  t:'CASSE'},
   {k:'barricade',t:'BARRIC.'},
-  {k:'molotov', t:'MOLOTOV'},
+  {k:'molotov', t:'MOLOT.'},
   {k:'groupe',  t:'GROUPE'},
   {k:'feinte',  t:'FEINTE'},
   {k:'disperser',t:'DISPER.'}
@@ -2996,6 +3137,12 @@ var M={
   demarrer:function(s){
     /* LE CAMP VIENT DU MENU. La borne ne le choisit pas : elle le lit. */
     s.camp=(window.CO_CAMP==='manif')?'manif':'crs';
+    /* LA CARTE EST TIREE A CHAQUE PARTIE. Un jeton, une carte : on ne
+       choisit pas son terrain, on fait avec. C'est ce qui empeche
+       d'apprendre une seule place par coeur. */
+    var CL=Object.keys(TERRAINS);
+    s.terrain=CL[(Math.random()*CL.length)|0];
+    poserTerrain(s.terrain);
     /* LA BANDEROLE DU JOUEUR, choisie au menu. On repeint l'atlas une
        fois, avant la partie : ensuite le rendu ne sait rien du texte. */
     if(ACTEURS&&ACTEURS.ecrire){
@@ -3020,7 +3167,8 @@ var M={
        traverser une esplanade vide : le compteur restait a zero cent
        secondes durant, puis la moitie du cortege passait d'un coup.
        Mesure : le dernier rang tient a 36,6 ; la ligne est a 37. */
-    s.M=MISSION?MISSION.creer({graine:s.graine, ligne:GW-11,
+    s.M=MISSION?MISSION.creer({graine:s.graine, ligne:TER.ligne,
+                               tolere:TER.tolere, objectif:TER.objectif,
                                camp:s.camp, vitrines:s.vitrines}):null;
     s.mot='';s.motT=0;s.feuxVus=0;s.vise=null;s.viseXY=null;s.camVise=null;
     s.res=RES_DEP; s.resIA=RES_DEP; s.embT=0; s.embRech=0; s.somm=0;
@@ -3727,7 +3875,7 @@ function briefing(s,L,H,M){
   g.textAlign='left';g.textBaseline='middle';
   g.font='bold 8px ui-monospace,monospace';
   g.fillStyle='rgba(255,226,138,'+al.toFixed(2)+')';
-  g.fillText(M.camp==='manif'?'PLACE · LE CORTÈGE':'PLACE · LE CORDON',x+8,y+11);
+  g.fillText(TER.nom+' · '+(M.camp==='manif'?'LE CORTÈGE':'LE CORDON'),x+8,y+11);
   g.font='6px ui-monospace,monospace';
   g.fillStyle='rgba(205,228,242,'+al.toFixed(2)+')';
   /* LE BRIEFING LIT LA MISSION. Ecrit en dur, il annoncait encore

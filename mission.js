@@ -161,7 +161,10 @@ MIS.creer=function(o){
        DEUX SEUILS, PAS UN : le meme chiffre des deux cotes rendait un
        des camps ingagnable, puisqu'il devait faire mieux que ce que
        l'autre avait le droit de laisser. */
-    tolere:56, objectif:52, toleBris:0,
+    /* LES SEUILS VIENNENT DU TERRAIN quand il en donne. La place et le
+       pont ne laissent pas passer le meme monde, et un seuil unique
+       rendait forcement l'un des deux injouable. */
+    tolere:(o.tolere||56), objectif:(o.objectif||52), toleBris:0,
     passes:0, brisees:0, tensionMax:0,
     gaz:0, charges:0, fauteCam:0,
     camp:(o.camp||'crs'),
@@ -177,6 +180,13 @@ MIS.creer=function(o){
   var milieu=['casseurs','renfortCortege','presse','incendie'];
   for(var i=milieu.length-1;i>0;i--){var j=d.e(0,i);var t=milieu[i];milieu[i]=milieu[j];milieu[j]=t;}
   var plan=['poussee'].concat(milieu).concat(['poussee','renfort']);
+  /* UN TERRAIN SANS VITRINE N'A PAS DE CASSEURS. Sur un pont il n'y a
+     pas de devanture : l'evenement partait quand meme, les casseurs
+     n'avaient nulle part ou aller, et l'objectif ne pouvait ni se
+     gagner ni se perdre. Un evenement qui ne peut pas aboutir est une
+     fausse menace — on le remplace par une poussee, qui, elle, se voit. */
+  if(!(o.vitrines&&o.vitrines.length))
+    plan=plan.map(function(k){return k==='casseurs'?'poussee':k;});
   /* LES MINUTES N'ONT PAS BOUGE. Ajouter l'incendie en redistribuant
      tout le calendrier avancait le renfort du cortege de quatre
      secondes — assez pour que la police ne tienne plus une seule
