@@ -64,6 +64,9 @@ function objectifsManif(){
         var a=A[i];
         if(a.camp!=='manif')continue;
         if(a.etat==='PANIQUE'||a.etat==='FUIT')continue;
+        /* UN ENCERCLE NE COMPTE PAS. Il est physiquement derriere la
+           ligne peut-etre, mais il n'est pas passe : il est tenu. */
+        if(a.nasse>0)continue;
         if(a.x>M.ligne)n++;
       }
       M.passes=Math.max(M.passes,n);
@@ -108,6 +111,9 @@ function objectifs(){
         var a=A[i];
         if(a.camp!=='manif')continue;
         if(a.etat==='PANIQUE'||a.etat==='FUIT')continue;
+        /* UN ENCERCLE NE COMPTE PAS. Il est physiquement derriere la
+           ligne peut-etre, mais il n'est pas passe : il est tenu. */
+        if(a.nasse>0)continue;
         if(a.x>M.ligne)n++;
       }
       M.passes=Math.max(M.passes,n);
@@ -262,6 +268,11 @@ MIS.noterZone=function(M,k,mien){
 };
 MIS.noter=function(M,k){
   if(k==='gaz')M.gaz++;
+  /* SOMME : ca compte quand meme comme un gaz, mais ce n'est plus une
+     faute devant les cameras. La sommation n'efface pas le geste, elle
+     le rend legitime. */
+  if(k==='gazSomme'){M.gaz++;M.sommes=(M.sommes||0)+1;}
+  if(k==='eauSomme'){M.eau=(M.eau||0)+1;M.sommes=(M.sommes||0)+1;}
   if(k==='charge')M.charges++;
   if(k==='eau')M.eau=(M.eau||0)+1;
   if(k==='molotov')M.molotovs=(M.molotovs||0)+1;

@@ -27,7 +27,7 @@ lui ; l'autre camp est tenu par l'IA.
 | | La police | Le cortège |
 |---|---|---|
 | But | tenir le passage 2 min 30, 56 passages tolérés | faire passer 52 des siens |
-| Ordres | TENIR, AVANT, ARRIÈRE, FORME, GROUPE, GAZ, EAU | POUSSER, RECULER, CASSER, BARRICADE, MOLOTOV, GROUPE, **FEINTE**, DISPERSER |
+| Ordres | TENIR, AVANT, ARRIÈRE, FORME, **SOMM.**, **NASSE**, **INTERP.**, GAZ, EAU | POUSSER, RECULER, CASSER, BARRICADE, MOLOTOV, GROUPE, **FEINTE**, DISPERSER |
 
 Les ordres tiennent sur **une seule rangée** de gros pictogrammes ; un
 ordre qu'on ne peut pas donner (cocktails en recharge, eau demandée à
@@ -60,6 +60,29 @@ les règles : ça change **qui compose la foule**, et le reste suit.
 - Un **street medic** double la détente du stress autour de lui — assez
   pour récupérer quelqu'un qu'on aurait perdu à la panique.
 - Un **casseur** est plus rapide, plus lourd, et plus nerveux.
+
+## Les trois ordres de maintien
+
+La police avait la force — gaz, eau, charge — et rien d'autre. Or tenir
+une place, ce n'est pas seulement frapper.
+
+**SOMM.** (8) — les sommations ne dispersent personne par elles-mêmes :
+elles font reculer ceux qui hésitaient déjà (~30 personnes), et surtout
+elles **couvrent** les vingt secondes qui suivent. Gazer sans avoir
+sommé devant les caméras compte comme une faute ; après sommation, non.
+C'est le seul ordre du jeu dont l'intérêt est de rendre un *autre*
+ordre moins cher.
+
+**NASSE** (30) — les unités choisies se referment en fer à cheval sur
+la foule la plus proche. Ceux qui sont dedans (rayon 2,5 tuiles)
+n'avancent plus qu'au cinquième et **ne comptent plus** comme passages.
+Mais la tension monte de 0,12 d'un coup — et une rue tendue fait céder
+toutes les lignes, y compris la vôtre.
+
+**INTERP.** (22) — chaque bloc a un meneur. Le retirer divise la
+cohésion du bloc par quatre pendant vingt secondes : il s'étale, il
+pousse moins. Il faut être au contact (quatre tuiles), et le bloc se
+remet tout seul.
 
 ## Les actions qui ne servent à rien toutes seules
 

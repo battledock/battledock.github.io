@@ -2153,6 +2153,108 @@ function cmdFeinte(s){
   }
   return n;
 }
+/* =====================================================================
+   LES TROIS ORDRES DE MAINTIEN
+
+   La police avait la force — gaz, eau, charge — et rien d'autre. Or
+   tenir une place, ce n'est pas seulement frapper : c'est annoncer,
+   encercler, et retirer celui qui entraine les autres. Trois ordres,
+   trois couts, trois contreparties.
+   ===================================================================== */
+
+/* LES SOMMATIONS. Elles ne dispersent personne par elles-memes : elles
+   font reculer ceux qui hesitaient deja, et surtout elles COUVRENT ce
+   qui suit. Gazer sans avoir somme devant les cameras coute le double.
+   C'est le seul ordre du jeu dont l'interet est de rendre un AUTRE
+   ordre moins cher. */
+function cmdSommation(s){
+  s.somm=20000;
+  if(SON)SON.effet('sifflet');
+  var A=s.sim.agents, n=0;
+  for(var i=0;i<A.length;i++){
+    var a=A[i];
+    if(a.camp!=='manif')continue;
+    /* ceux qui tiennent mal se decrochent ; les autres durcissent */
+    /* MESURE : a 0,34 de seuil et 0,16 d'ajout, cent quarante personnes
+       decrochaient d'un coup et la moitie passait en panique — une
+       sommation n'est pas une grenade. On ne touche que ceux qui
+       hesitaient deja, et de moitie moins. */
+    if(a.stress>0.48&&a.nerf>1.0){a.stress=Math.min(1,a.stress+0.09);n++;}
+    else a.stress=Math.max(0,a.stress-0.06);
+  }
+  s.mot='SOMMATIONS · '+n+' RECULENT';s.motT=1900;
+  return 1;
+}
+
+/* LA NASSE. Les unites choisies se referment en fer a cheval sur la
+   foule la plus proche. Ceux qui sont dedans n'avancent plus et ne
+   comptent plus — mais une nasse se paie : la tension monte d'un coup,
+   et une rue tendue fait ceder TOUTES les lignes, y compris la sienne. */
+function cmdNasse(s){
+  var L=selection(s).filter(function(U){return !U.camions;});
+  if(!L.length){s.mot='CHOISIS UNE LIGNE';s.motT=1500;return 0;}
+  var c=iaCible(s,L[0],7.5);
+  if(!c){s.mot='PERSONNE À ENCERCLER';s.motT=1600;return 0;}
+  var n=0, A=s.sim.agents;
+  L.forEach(function(U){
+    U.form='nasse';
+    U.route=null;U.but=null;
+    U.ax=c[0]; U.ay=c[1];
+    U.cap=Math.atan2(-(c[0]-U.ax||1),(c[1]-U.ay||0));
+    FOULE.ordre(s.sim,U,'tenir',9000,4);
+    n++;
+  });
+  /* ceux qui sont dedans : marques pour douze secondes */
+  var pris=0;
+  for(var i=0;i<A.length;i++){
+    var a=A[i];
+    if(a.camp!=='manif')continue;
+    var dx=a.x-c[0], dy=a.y-c[1];
+    /* DEUX TUILES ET DEMIE. A trois, on encerclait cent trente
+       personnes d'un seul ordre : une nasse est chirurgicale, pas une
+       rafle. */
+    if(dx*dx+dy*dy>6.25)continue;
+    a.nasse=12000; pris++;
+  }
+  s.sim.tension=Math.min(1,s.sim.tension+0.12);
+  if(SON)SON.effet('charge');
+  s.mot='NASSE · '+pris+' ENCERCLÉS';s.motT=1900;
+  return n;
+}
+
+/* L'INTERPELLATION. Chaque bloc de cortege a un meneur — celui dont les
+   autres suivent l'allure. Le retirer desorganise le bloc pendant vingt
+   secondes : il perd sa cohesion, il s'etale, il pousse moins. C'est
+   chirurgical, et c'est pour ca que ca coute cher et que ca ne marche
+   qu'au contact. */
+function cmdArrestation(s){
+  var L=selection(s).filter(function(U){return !U.camions;});
+  if(!L.length){s.mot='CHOISIS UNE UNITÉ';s.motT=1500;return 0;}
+  var o=[0,0];
+  if(!foyerUnite(s,L[0],o)){o[0]=L[0].ax;o[1]=L[0].ay;}
+  /* LE BLOC DONT ON TIENT QUELQU'UN, pas celui dont le centre est
+     proche : un bloc de soixante-dix personnes a son centre a dix
+     tuiles alors que sa tete est au contact. On cherche donc le
+     manifestant le plus proche et on remonte a son groupe. */
+  var A=s.sim.agents, best=null, bd=16.0;
+  for(var i=0;i<A.length;i++){
+    var a=A[i];
+    if(a.camp!=='manif')continue;
+    var dx=a.x-o[0], dy=a.y-o[1], d2=dx*dx+dy*dy;
+    if(d2>=bd)continue;
+    var G=s.sim.groupes[a.g];
+    if(!G||!G.court||G.decapite>0)continue;
+    bd=d2; best=G;
+  }
+  if(!best){s.mot='AUCUN MENEUR À PORTÉE';s.motT=1700;return 0;}
+  best.decapite=20000;
+  best.cohAv=best.cohesion;
+  best.cohesion=Math.max(0,best.cohesion*0.25);
+  s.sim.tension=Math.min(1,s.sim.tension+0.05);
+  if(SON)SON.effet('sifflet');
+  s.mot='INTERPELLATION · '+best.nom+' DÉSORGANISÉ';s.motT=2000;
+  return 1;
+}
 function cmdGrouper(s){
   var L=selection(s);
   /* UN SEUL BLOC SELECTIONNE : on le REND AU CORTEGE. Sans ca, un bloc
@@ -2313,6 +2415,7 @@ var COUT={
   molotov:34, barricade:26, casser:14, pousser:10, disperser:6, groupe:0,
   /* police */
   gaz:34, eau:24, avant:18, forme:4, tenir:0, arriere:0,
+  somm:8, nasse:30, arrest:22,
   feinte:16,
   /* commun */
   diag:0
@@ -2419,7 +2522,10 @@ function cmdMolotov(s,cx,cy){
 function cmdGaz(s,cx,cy){
   var L=selection(s).filter(function(U){return !U.camions;});
   if(!L.length){s.mot='LES CAMIONS NE LANCENT PAS DE GRENADE';s.motT=1600;return;}
-  if(s.M&&MISSION)MISSION.noter(s.M,'gaz');
+  /* SOMMER AVANT DE GAZER. Le meme geste ne vaut pas la meme chose
+     selon qu'on a prevenu ou non : c'est tout l'interet des
+     sommations, et la seule faute que la presse retient. */
+  if(s.M&&MISSION)MISSION.noter(s.M,(s.somm>0)?'gazSomme':'gaz');
   if(SON)SON.effet('grenade');
   var loin=false, o=[0,0], c=[0,0];
   L.forEach(function(U){
@@ -2458,7 +2564,7 @@ function cmdEau(s,cx,cy){
       n++;
     });
   });
-  if(s.M&&MISSION)MISSION.noter(s.M,'eau');
+  if(s.M&&MISSION)MISSION.noter(s.M,(s.somm>0)?'eauSomme':'eau');
   if(SON)SON.effet('eau');
   s.mot='LANCE À EAU · '+n+' CANON'+(n>1?'S':'');s.motT=1600;
 }
@@ -2579,6 +2685,25 @@ function icones(){
     g.beginPath();g.arc(6,4,3,0,6.2832);g.fill();
     g.fillStyle='#fff';g.fillRect(5,9,4,6);g.fillRect(6,7,2,2);
   });
+  faire('somm',   function(g){       /* un porte-voix */
+    g.fillStyle='#fff';
+    g.beginPath();g.moveTo(3,6);g.lineTo(9,3);g.lineTo(9,13);g.lineTo(3,10);
+    g.closePath();g.fill();
+    g.fillStyle='rgba(255,255,255,.6)';
+    g.fillRect(11,5,1,2);g.fillRect(13,4,1,3);g.fillRect(11,9,1,2);g.fillRect(13,9,1,3);
+  });
+  faire('nasse',  function(g){       /* un fer a cheval qui se referme */
+    g.strokeStyle='#fff';g.lineWidth=2;
+    g.beginPath();g.arc(8,8,5.5,-0.5,3.64);g.stroke();
+    g.fillStyle='rgba(255,255,255,.55)';
+    g.fillRect(7,6,3,4);
+  });
+  faire('arrest', function(g){       /* une main qui saisit une epaule */
+    g.fillStyle='rgba(255,255,255,.4)';
+    g.fillRect(6,7,4,8);g.fillRect(6,3,4,3);
+    g.fillStyle='#fff';
+    g.fillRect(10,6,5,2);g.fillRect(13,4,2,5);
+  });
   faire('eau',    function(g){       /* un jet qui part en biais */
     g.fillStyle='#fff';g.fillRect(1,7,5,4);
     g.fillStyle='rgba(255,255,255,.75)';
@@ -2609,12 +2734,18 @@ function anneau(c,gros){
 /* CHAQUE CAMP A SES ORDRES. Un manifestant ne lance pas de grenade et
    un policier ne monte pas de barricade : afficher un bouton qui ne
    fait rien serait exactement la fausse fonctionnalite qu'on s'interdit. */
+/* NEUF ORDRES COTE POLICE, ET PAS DIX. GROUPE a saute : une ligne de
+   maintien ne se regroupe pas, elle tient une figure — c'etait le seul
+   bouton dont on ne se servait jamais. Neuf tiennent encore a
+   quarante-trois points d'ecran ; dix tombaient a trente-neuf. */
 var ORDRES_CRS=[
   {k:'tenir', t:'TENIR'},
   {k:'avant', t:'AVANT'},
-  {k:'arriere', t:'ARRIÈRE'},   /* cote police */
+  {k:'arriere', t:'ARRIÈRE'},
   {k:'forme', t:'FORME'},
-  {k:'groupe',t:'GROUPE'},
+  {k:'somm',  t:'SOMM.'},
+  {k:'nasse', t:'NASSE'},
+  {k:'arrest',t:'INTERP.'},
   {k:'gaz',   t:'GAZ'},
   {k:'eau',   t:'EAU'}
 ];
@@ -2691,6 +2822,8 @@ function dispo(s,k){
   if(k==='forme')return L.some(function(U){return !!U.form;});
   if(k==='groupe')return L.length>1||L.some(function(U){return !!U.libre;});
   if(k==='barricade')return s.camp==='manif';
+  if(k==='somm')return s.somm<=0;
+  if(k==='nasse'||k==='arrest')return L.some(function(U){return !U.camions;});
   return true;
 }
 function barreDessine(s,L,H){
@@ -2890,7 +3023,7 @@ var M={
     s.M=MISSION?MISSION.creer({graine:s.graine, ligne:GW-11,
                                camp:s.camp, vitrines:s.vitrines}):null;
     s.mot='';s.motT=0;s.feuxVus=0;s.vise=null;s.viseXY=null;s.camVise=null;
-    s.res=RES_DEP; s.resIA=RES_DEP; s.embT=0; s.embRech=0;
+    s.res=RES_DEP; s.resIA=RES_DEP; s.embT=0; s.embRech=0; s.somm=0;
     faireZones(s);
     s.fondu=700;        /* la rue s'ouvre depuis le noir */
   },
@@ -2915,6 +3048,15 @@ var M={
     s.resIA=Math.min(RES_MAX, (s.resIA||0)+RES_GAIN*dt);
     for(var fu=0;fu<s.tous.length;fu++)
       if(s.tous[fu].feinte>0)s.tous[fu].feinte-=dt;
+    if(s.somm>0)s.somm-=dt;
+    /* LE BLOC DECAPITE SE REMET, tout seul, au bout de vingt secondes :
+       une interpellation desorganise, elle ne supprime pas. */
+    for(var dc=0;dc<s.corteges.length;dc++){
+      var GD=s.corteges[dc];
+      if(!(GD.decapite>0))continue;
+      GD.decapite-=dt;
+      if(GD.decapite<=0&&GD.cohAv!==undefined){GD.cohesion=GD.cohAv;GD.cohAv=undefined;}
+    }
     majBarricades(s,dt);
     majBarricadesFeu(s,dt);
     /* UN FEU QUI BRULE TEND LA RUE, meme loin : tout le monde le voit.
@@ -3266,7 +3408,10 @@ var M={
       /* ON PAIE AVANT D'AGIR, et seulement si l'ordre aboutit : le
          debit se fait ici, une seule fois, pour tous les ordres. */
       if(!coute(s,b.k))return;
-      if(b.k==='feinte')cmdFeinte(s);
+      if(b.k==='somm')cmdSommation(s);
+      else if(b.k==='nasse')cmdNasse(s);
+      else if(b.k==='arrest')cmdArrestation(s);
+      else if(b.k==='feinte')cmdFeinte(s);
       else if(b.k==='pousser')cmdPousser2(s);
       else if(b.k==='casser')cmdCasser(s);
       else if(b.k==='barricade')cmdBarricade(s);

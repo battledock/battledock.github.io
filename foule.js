@@ -283,6 +283,9 @@ function majStress(S,a,voisins,dt){
   if(a.brule>0)a.brule-=dt;     /* la marque des flammes s'efface seule */
   if(a.abrite>0)a.abrite-=dt;
   if(a.pris>0)a.pris-=dt;
+  /* ENCERCLE : on n'avance plus, et on s'echauffe. Une nasse ne blesse
+     personne, elle retient — et c'est ce que ca fait ici. */
+  if(a.nasse>0){a.nasse-=dt; mont+=0.000022;}
   /* la detente : franche quand rien ne pousse, lente sinon */
   var detente=(mont<=0.000010)?0.00014:0.000026;
   if(a.etat==='CALME')detente*=3.2;          /* on souffle */
@@ -458,7 +461,7 @@ FOULE.poser=function(S,G,x,y,o){
        pas au meme moment : chacun porte un coefficient qui multiplie
        tout ce qui lui arrive. Le groupe reste lisible — ils vont tous
        dans le meme sens — mais la panique part d'un endroit precis. */
-    nerf:(o.nerf||1), stress:(o.stress||0), choc:0, brule:0, abrite:0, pris:0,
+    nerf:(o.nerf||1), stress:(o.stress||0), choc:0, brule:0, abrite:0, pris:0, nasse:0,
     serres:0, contact:0, distMenace:99, distCible:0,
     bloque:0, biais:((G.membres.length%2)?1:-1)
   };
@@ -634,6 +637,9 @@ FOULE.pas=function(S,dt){
     if(!suit){dx=a.cx-a.x; dy=a.cy-a.y; d=Math.sqrt(dx*dx+dy*dy);}
     if(d>0.0001){
       var vise=a.vmax*allure;
+      /* ENCERCLE : on tourne en rond, on n'avance plus. C'est ce que
+         fait une nasse, et c'est tout ce qu'elle fait. */
+      if(a.nasse>0)vise*=0.22;
       if(!suit&&d<1.1)vise=a.vmax*allure*(d/1.1);
       var sx=dx/d*vise, sy=dy/d*vise;
       fx+=(sx-a.vx)*R.acc/R.vMarche;

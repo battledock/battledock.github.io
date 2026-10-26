@@ -2160,3 +2160,45 @@ where niveau = 29;
 -- bout, et surtout le joueur actif gagne 3 fois sur 3 cote cortege
 -- contre 1 fois sur 3 pour le passif, avec des scores du simple au
 -- double (1408 contre 602). Jouer paie, enfin.
+
+-- =====================================================================
+-- ETAPE : LES TROIS ORDRES DE MAINTIEN                  2026-10-27-2320
+-- =====================================================================
+--
+-- La police avait la force — gaz, eau, charge — et rien d'autre. Or
+-- tenir une place, ce n'est pas seulement frapper : c'est annoncer,
+-- encercler, et retirer celui qui entraine les autres.
+--
+-- LES SOMMATIONS (8). Elles ne dispersent personne par elles-memes :
+-- elles font reculer ceux qui hesitaient deja, et surtout elles
+-- COUVRENT les vingt secondes suivantes. Gazer sans avoir somme devant
+-- les cameras est une faute ; apres sommation, non. C'est le seul ordre
+-- du jeu dont l'interet est de rendre un AUTRE ordre moins cher.
+--   MESURE : a 0,34 de seuil et 0,16 de stress ajoute, CENT QUARANTE
+-- personnes decrochaient d'un coup et la moitie passait en panique. Une
+-- sommation n'est pas une grenade : seuil 0,48, ajout 0,09, et on en
+-- touche une trentaine.
+--
+-- LA NASSE (30). Fer a cheval sur la foule la plus proche ; ceux qui
+-- sont dedans n'avancent plus qu'au cinquieme et NE COMPTENT PLUS comme
+-- passages — ils sont derriere la ligne, peut-etre, mais ils sont
+-- tenus, pas passes. En contrepartie la tension monte de 0,12 d'un
+-- coup, et une rue tendue fait ceder TOUTES les lignes, y compris la
+-- sienne.
+--   MESURE : a trois tuiles de rayon on encerclait cent trente
+-- personnes d'un seul ordre. Deux et demie : une nasse est
+-- chirurgicale, pas une rafle.
+--
+-- L'INTERPELLATION (22). Le meneur retire, la cohesion du bloc est
+-- divisee par quatre pendant vingt secondes : il s'etale, il pousse
+-- moins, et il se remet tout seul.
+--   UN DEFAUT CORRIGE : on cherchait le bloc dont le CENTRE est proche.
+-- Un bloc de soixante-dix personnes a son centre a dix tuiles alors que
+-- sa tete est au contact — « aucun meneur a portee », toujours. On
+-- cherche maintenant le manifestant le plus proche et on remonte a son
+-- groupe.
+--
+-- GROUPE A SAUTE cote police : une ligne de maintien ne se regroupe
+-- pas, elle tient une figure. C'etait le seul bouton dont on ne se
+-- servait jamais, et neuf ordres tiennent encore a quarante-trois
+-- points d'ecran la ou dix tombaient a trente-neuf.
