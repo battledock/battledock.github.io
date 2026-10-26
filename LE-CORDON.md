@@ -30,6 +30,11 @@ lui ; l'autre camp est tenu par l'IA.
 | Ordres | TENIR, AVANT, ARRIÈRE, FORME, GROUPE, GAZ, EAU | POUSSER, RECULER, CASSER, BARRICADE, MOLOTOV, GROUPE, DISPERSER |
 | Unités | 3 lignes, une réserve, deux camions | 4 blocs de cortège, les casseurs, les mobiles |
 
+**Déplacer un bloc du cortège.** On tape sa pastille, puis la case visée :
+le bloc quitte la marche automatique et s'y rend par le chemin le plus
+court. `GROUPE` avec un seul bloc sélectionné le remet dans le rang.
+Tant qu'il est parti, le reste du cortège continue d'avancer sans lui.
+
 **La banderole.** Côté cortège, le menu de la borne contient un champ de
 saisie, six slogans tout faits et six couleurs de tissu. Le texte est
 découpé en mots : chaque banderole du cortège en porte un, et on lit la

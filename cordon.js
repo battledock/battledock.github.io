@@ -1439,6 +1439,7 @@ function majCortege(s,dt){
   s.front=vise;
   var resp=Math.sin(s.sim.t*0.00045);
   s.corteges.forEach(function(G,gi){
+    if(G.libre)return;            /* celui-la obeit au joueur, pas au front */
     G.ax=s.front-G.base;
     /* la respiration laterale : le bloc roule doucement d'un bord de la
        chaussee a l'autre, comme une foule qui se tasse et se detasse */
@@ -1446,10 +1447,10 @@ function majCortege(s,dt){
   });
   if(!s.presse.colle)s.presse.ax=Math.min(arret-1, s.front+1.5);
   else s.presse.ax=Math.min(arret-0.6, s.front+0.4);
-  if(s.casseurs&&!s.casseurs.parti)s.casseurs.ax=s.front-s.casseurs.base;
+  if(s.casseurs&&!s.casseurs.parti&&!s.casseurs.libre)s.casseurs.ax=s.front-s.casseurs.base;
   /* la navette : elle remonte a la tete, puis redescend a la queue */
   var GM=s.mobile;
-  if(GM){
+  if(GM&&!GM.libre){
     var but=(GM.navette<0)?(s.front-1.6):(s.front-15);
     if(Math.abs(GM.ax-but)<0.7)GM.navette=-GM.navette;
     GM.ax+=Math.sign(but-GM.ax)*0.00085*dt;
@@ -1744,6 +1745,11 @@ function selNoms(s){
    perpendiculairement a leur marche. */
 function cmdAller(s,gx,gy){
   var L=selection(s), n=L.length, ok=0;
+  /* LE BLOC COMMANDE SORT DU CORTEGE. majCortege reposait la position
+     de ralliement de chaque bloc a chaque image : l'ordre partait, le
+     champ se calculait, et une milliseconde plus tard le bloc etait
+     ramene sur l'axe de l'avenue. Rien ne bougeait, et c'etait le seul
+     ordre du camp manifestant qui ne marchait pas. */
   for(var i=0;i<n;i++){
     var U=L[i], dec=(i-(n-1)/2)*2.2;
     var tx=gx, ty=Math.round(gy+dec);
@@ -1753,6 +1759,7 @@ function cmdAller(s,gx,gy){
     U.route=r;U.ri=0;U.nRoute=r.length;
     U.champ.calculer(s.sim,[[tx,ty]]);
     U.but=[tx,ty];
+    U.libre=true;
     FOULE.ordre(s.sim,U,'vers',0,3);
     ok++;
   }
@@ -1794,7 +1801,20 @@ function cmdForme(s){
    ordres poses — pas un rapprochement d'icones. */
 function cmdGrouper(s){
   var L=selection(s);
-  if(L.length<2){s.mot='CHOISIS AU MOINS DEUX UNITÉS';s.motT=1600;return 0;}
+  /* UN SEUL BLOC SELECTIONNE : on le REND AU CORTEGE. Sans ca, un bloc
+     envoye quelque part n'avait plus aucun moyen de revenir dans le
+     rang, et le cortege se vidait partie apres partie. */
+  var rendus=L.filter(function(U){return U.libre;});
+  if(L.length<2){
+    if(rendus.length){
+      rendus.forEach(function(U){U.libre=false;U.route=null;U.but=null;
+        U.ordre=null;U.ordrePrio=0;U.ordreT=0;});
+      s.mot=selNoms(s)+' · REJOINT LE CORTÈGE';s.motT=1600;
+      if(SON)SON.effet('ordre');
+      return rendus.length;
+    }
+    s.mot='CHOISIS AU MOINS DEUX UNITÉS';s.motT=1600;return 0;
+  }
   var cx=0, cy=0;
   L.forEach(function(U){cx+=U.ax;cy+=U.ay;});
   cx=Math.round(cx/L.length); cy=Math.round(cy/L.length);

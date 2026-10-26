@@ -1847,3 +1847,29 @@ where niveau = 29;
 -- gagnent environ une fois sur trois, AVANT comme APRES. Le
 -- desequilibre n'est donc pas une regression de cette etape — mais il
 -- reste la limite la plus visible du jeu.
+
+-- =====================================================================
+-- CORRECTIF : LE CORTEGE N'OBEISSAIT PAS                2026-10-27-1730
+-- =====================================================================
+--
+-- LE SYMPTOME, rapporte par le joueur : cote manifestant, impossible de
+-- deplacer un bloc. Le message « EN MARCHE » s'affichait, le chemin se
+-- dessinait, l'anneau de destination apparaissait — et rien ne bougeait.
+--
+-- LA CAUSE. majCortege() repose a CHAQUE IMAGE la position de
+-- ralliement de chaque bloc : G.ax = front - base, G.ay = axe de
+-- l'avenue. L'ordre partait bien, le champ de navigation se calculait
+-- bien, et une milliseconde plus tard le bloc etait ramene sur l'axe.
+-- Cote police les unites ne sont pilotees par rien : c'est pour ca que
+-- le meme ordre marchait d'un cote et pas de l'autre.
+--
+-- LE CORRECTIF. cmdAller pose U.libre sur les blocs commandes, et
+-- majCortege les saute — blocs de cortege, casseurs et mobiles. Le
+-- front du cortege continue d'etre calcule sur la tete : si le joueur
+-- l'emmene ailleurs, le reste suit sa nouvelle position, ce qui est
+-- exactement ce qu'on veut.
+--
+-- ET LE RETOUR. Un bloc parti n'avait aucun moyen de revenir dans le
+-- rang : le cortege se serait vide partie apres partie. GROUPE, qui
+-- refusait jusqu'ici une selection d'une seule unite, la rend
+-- maintenant au cortege.
