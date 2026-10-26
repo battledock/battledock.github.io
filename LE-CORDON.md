@@ -42,10 +42,24 @@ phrase en balayant la foule. Les pancartes portent le mot le plus court.
 Vingt et un pixels de tissu, c'est cinq caractères — les mots plus longs
 sont coupés. Le choix est gardé d'une partie à l'autre.
 
+**Viser.** `MOLOTOV`, `GAZ` et `EAU` ne partent pas au toucher du bouton :
+ils **arment la visée**. Un cercle pointillé montre alors la portée de
+chaque unité sélectionnée. Ensuite, au choix :
+
+- **taper** une case — ça part là ;
+- **poser le doigt et glisser** — une ligne de tir et un réticule suivent
+  le pouce, et ça part au relâchement. Le réticule passe à l'orange quand
+  la cible est hors de portée : le tir est alors raccourci sur la même
+  direction, jamais refusé.
+
+Re-taper le bouton annule. Pendant la visée le glissé vise au lieu de
+déplacer la caméra ; le panoramique revient dès que le tir est parti.
+Portées : cocktails 7,5 tuiles, grenade 6,5, lance à eau 5,5.
+
 **Les cocktails Molotov.** Un bloc sélectionné en lance trois d'un coup,
-en arc, devant lui et jamais au-delà du cordon. Chacun allume un foyer à
-l'impact. Vingt-deux secondes de recharge. Côté score : +60 par salve
-pour le cortège, −90 par incendie pour la police.
+en éventail autour de la direction visée, jamais au-delà du cordon.
+Chacun allume un foyer à l'impact. Vingt-deux secondes de recharge. Côté
+score : +60 par salve pour le cortège, −90 par incendie pour la police.
 
 **Le feu.** Un foyer brûle trente-quatre secondes, repousse les corps
 dans un rayon d'une tuile et demie, et **ne se traverse pas** — ni par
@@ -58,6 +72,9 @@ le passage.
 **Les barricades** : quatre corps sur place pendant six secondes. La police
 peut les déloger avant qu'elles tiennent ; une fois debout, la case est
 bloquée pour tout le monde.
+
+**L'IA vise aussi** : elle envoie grenade et jet sur le point le plus
+chargé de la foule à sa portée, pas droit devant sa formation.
 
 **L'IA** décide sur des règles lisibles, pas sur un minuteur — charger une
 barricade en construction, envoyer la réserve sur une devanture qui tombe,

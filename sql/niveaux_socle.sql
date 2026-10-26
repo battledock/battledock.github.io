@@ -1873,3 +1873,46 @@ where niveau = 29;
 -- rang : le cortege se serait vide partie apres partie. GROUPE, qui
 -- refusait jusqu'ici une selection d'une seule unite, la rend
 -- maintenant au cortege.
+
+-- =====================================================================
+-- ETAPE : VISER                                         2026-10-27-1800
+-- =====================================================================
+--
+-- LE SYMPTOME, rapporte par le joueur : les molotovs « partent pas dans
+-- la bonne direction ». Exact, et c'etait pire que ca.
+--   - cmdMolotov visait sx+3,4 : TOUJOURS vers l'est, quoi qu'il arrive.
+--   - cmdGaz et cmdEau visaient FOULE.devant(U), le cap de la formation.
+-- Trois ordres sur lesquels le joueur n'avait aucune prise.
+--
+-- LE SYSTEME. Le bouton n'execute plus : il ARME. Ensuite deux gestes
+-- mènent au meme endroit, parce qu'on ne sait pas lequel un pouce
+-- choisira :
+--   - taper une case : ca part la ;
+--   - poser et glisser : une ligne de tir et un reticule suivent le
+--     doigt, et ca part au relachement.
+-- Le second a demande un point d'entree de plus dans le shell :
+-- BORNE.relache(S,x,y), appele sur pointerup quand le doigt A bouge.
+-- Sans lui la visee se reglait et ne partait jamais. Les autres bornes
+-- n'ont pas ce point d'entree et ne voient aucune difference.
+--
+-- CE QU'ON VOIT PENDANT LA VISEE. Un cercle pointille de portee autour
+-- de chaque unite selectionnee — en projection isometrique, donc une
+-- ellipse deux fois plus large que haute — peint en deux traits, un
+-- lisere sombre puis la couleur de l'unite : a un seul trait fin il se
+-- perdait dans la foule. Et, tant que le doigt est pose, la ligne et le
+-- reticule, qui passent a l'orange hors de portee.
+--
+-- HORS DE PORTEE : ON RACCOURCIT, ON NE REFUSE PAS. borner() ramene la
+-- cible sur la meme direction et le message le dit. Un refus sec au
+-- doigt est une commande qui ne marche pas ; un tir raccourci se voit
+-- et s'apprend en une fois.
+--
+-- ARMER VERIFIE AVANT D'ALLUMER. Viser trois secondes pour s'entendre
+-- dire qu'il n'y a pas de bouteille est pire que de l'apprendre tout de
+-- suite : armer() refuse une selection vide, une recharge en cours, le
+-- gaz demande aux camions et l'eau demandee a des hommes a pied.
+--
+-- ET L'IA VISE AUSSI. Maintenant que la cible est un parametre, il
+-- serait absurde que la machine lance droit devant pendant que le
+-- joueur choisit : iaCible() lui donne le barycentre des manifestants a
+-- portee, et elle y envoie grenade et jet.

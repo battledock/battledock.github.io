@@ -1502,6 +1502,21 @@ var MISSION=null, SON=null, FUM=null, IA=null;
    commandes que le joueur. Si un ordre marche pour l'un, il marche pour
    l'autre — et un bogue d'ordre se voit deux fois plus vite.
    ===================================================================== */
+/* OU LA FOULE EST LA PLUS DENSE, a portee d'une unite. Le barycentre
+   des manifestants dans le cercle : c'est la que gaz et eau servent a
+   quelque chose, et ca se recalcule en un passage. */
+function iaCible(s,U,port){
+  var fo=[U.ax,U.ay]; foyerUnite(s,U,fo);
+  var A=s.sim.agents, sx=0, sy=0, n=0, p2=port*port;
+  for(var i=0;i<A.length;i++){
+    var a=A[i]; if(a.camp!=='manif')continue;
+    var dx=a.x-fo[0], dy=a.y-fo[1];
+    if(dx*dx+dy*dy>p2)continue;
+    sx+=a.x; sy+=a.y; n++;
+  }
+  if(n<4)return null;
+  return [sx/n, sy/n];
+}
 function iaApi(s){
   return {
     aller:function(U,gx,gy){
@@ -1520,16 +1535,26 @@ function iaApi(s){
     formation:function(U,f){U.form=f;},
     gaz:function(U){
       var dv=FOULE.devant(U), gx=U.ax+dv[0]*3.8, gy=U.ay+dv[1]*3.8;
+      /* L'IA VISE AUSSI. Maintenant que la cible est un parametre, il
+         serait absurde que la machine lance toujours droit devant
+         pendant que le joueur choisit : elle vise le point le plus
+         charge de la foule qui est a sa portee. */
+      var T=iaCible(s,U,PORT_GAZ);
+      if(T){gx=T[0];gy=T[1];}
       FOULE.evenement(s.sim,gx,gy,3.0,0.5);
       if(FUM&&s.fum)FUM.grenade(s.fum,gx,gy,1);
       if(s.M&&MISSION)MISSION.noter(s.M,'gaz');
       if(SON)SON.effet('grenade');
     },
     eau:function(U){
-      var dv=FOULE.devant(U);
+      var dv=FOULE.devant(U), T2=iaCible(s,U,PORT_EAU+2);
       U.membres.forEach(function(i){
-        var a=s.sim.agents[i];
-        if(FUM&&s.fum)FUM.jet(s.fum,a.x+dv[0]*0.9,a.y+dv[1]*0.9,dv[0],dv[1],2600);
+        var a=s.sim.agents[i], ux=dv[0], uy=dv[1];
+        if(T2){
+          var ddx=T2[0]-a.x, ddy=T2[1]-a.y, dd=Math.sqrt(ddx*ddx+ddy*ddy);
+          if(dd>0.4){ux=ddx/dd; uy=ddy/dd;}
+        }
+        if(FUM&&s.fum)FUM.jet(s.fum,a.x+ux*0.9,a.y+uy*0.9,ux,uy,2600);
       });
       if(s.M&&MISSION)MISSION.noter(s.M,'eau');
       if(SON)SON.effet('eau');
@@ -1911,29 +1936,100 @@ function cmdDisperser(s){
    foyer tient une demi-minute, repousse ce qui s'en approche et bloque
    le passage aussi surement qu'une barricade — des deux cotes.
    Ca se paie : la tension monte d'un coup, et le rapport s'en souvient. */
-function cmdMolotov(s){
+/* LE BARYCENTRE DES CORPS DEBOUT d'une unite : le point d'ou part ce
+   qu'elle lance. U.ax est un point de ralliement, parfois a dix tuiles
+   des hommes ; ce qu'on jette part des hommes. */
+function foyerUnite(s,U,out){
+  var sx=0, sy=0, m=0, A=s.sim.agents;
+  for(var k=0;k<U.membres.length;k++){
+    var a=A[U.membres[k]];
+    if(a.etat==='PANIQUE'||a.etat==='FUIT')continue;
+    sx+=a.x; sy+=a.y; m++;
+  }
+  if(!m)return false;
+  out[0]=sx/m; out[1]=sy/m;
+  return true;
+}
+/* RAMENER UNE CIBLE DANS LA PORTEE. On ne refuse pas un tir trop long :
+   on le raccourcit sur la meme direction. Un refus sec au doigt est
+   une commande qui ne marche pas ; un tir raccourci se voit et
+   s'apprend en une fois. */
+function borner(ox,oy,cx,cy,port,out){
+  var dx=cx-ox, dy=cy-oy, d=Math.sqrt(dx*dx+dy*dy);
+  if(d<1e-6){out[0]=ox+port*0.5;out[1]=oy;return false;}
+  if(d<=port){out[0]=cx;out[1]=cy;return true;}
+  out[0]=ox+dx/d*port; out[1]=oy+dy/d*port;
+  return false;
+}
+var PORT_MOLOTOV=7.5, PORT_GAZ=6.5, PORT_EAU=5.5;
+var VISE_MOT={molotov:'VISE : TAPE OU GLISSE LE DOIGT',
+              gaz:'VISE : TAPE OU GLISSE LE DOIGT',
+              eau:'VISE : TAPE OU GLISSE LE DOIGT'};
+/* DU DOIGT A LA CASE. L'ecran, la camera, puis la grille. */
+function doigtMonde(s,x,y,out){
+  var z=s.cam.z;
+  var ex=(x-s.L/2)/z+s.cam.x, ey=(y-s.H/2)/z+s.cam.y;
+  out[0]=e2mx(ex,ey); out[1]=e2my(ex,ey);
+}
+/* TIRER. Le meme code que le doigt tape ou qu'il se leve apres avoir
+   glisse : deux gestes, un seul chemin. */
+function tirer(s,x,y){
+  var q=s.vise; if(!q)return;
+  var w=[0,0]; doigtMonde(s,x,y,w);
+  s.vise=null; s.viseXY=null; s.motT=1700;
+  if(q==='molotov')cmdMolotov(s,w[0],w[1]);
+  else if(q==='gaz')cmdGaz(s,w[0],w[1]);
+  else cmdEau(s,w[0],w[1]);
+}
+/* ARMER. On refuse AVANT d'allumer le bouton : viser pendant trois
+   secondes pour s'entendre dire qu'il n'y a pas de bouteille est pire
+   que de l'apprendre tout de suite. */
+function armer(s,k){
+  var L=selection(s);
+  if(!L.length){s.mot='CHOISIS UNE UNITÉ';s.motT=1500;return false;}
+  if(k==='molotov'){
+    if(s.molotovRech>0){
+      s.mot='PAS DE BOUTEILLE · '+Math.ceil(s.molotovRech/1000)+' S';s.motT=1400;
+      return false;
+    }
+    return true;
+  }
+  if(k==='gaz'){
+    if(!L.filter(function(U){return !U.camions;}).length){
+      s.mot='LES CAMIONS NE LANCENT PAS DE GRENADE';s.motT=1600;return false;}
+    return true;
+  }
+  if(!L.filter(function(U){return U.camions;}).length){
+    s.mot='CHOISIS LES CAMIONS';s.motT=1500;return false;}
+  return true;
+}
+/* LA PORTEE DE CE QU'ON VISE, en tuiles, pour le cercle au sol. */
+function portee(k){
+  return (k==='molotov')?PORT_MOLOTOV:((k==='gaz')?PORT_GAZ:PORT_EAU);
+}
+function cmdMolotov(s,cx,cy){
   var L=selection(s);
   if(!FUM||!s.fum)return 0;
   if(s.molotovRech>0){
     s.mot='PAS DE BOUTEILLE · '+Math.ceil(s.molotovRech/1000)+' S';s.motT=1400;
     return 0;
   }
-  var mur=iaMur(s), n=0;
+  var mur=iaMur(s), n=0, loin=false, o=[0,0], c=[0,0];
   L.forEach(function(U){
-    var sx=0, sy=0, m=0, A=s.sim.agents;
-    for(var k=0;k<U.membres.length;k++){
-      var a=A[U.membres[k]];
-      if(a.etat==='PANIQUE'||a.etat==='FUIT')continue;
-      sx+=a.x; sy+=a.y; m++;
-    }
-    if(!m)return;
-    sx/=m; sy/=m;
-    /* on vise juste devant le cordon, pas dessus : un molotov qui tombe
-       sur la ligne brule ceux qui le lancent la seconde d'apres */
+    if(!foyerUnite(s,U,o))return;
+    var sx=o[0], sy=o[1];
+    /* OU ON VISE. Sans cible, droit devant comme avant ; avec une
+       cible, exactement la — a deux reserves pres : la portee du bras,
+       et la ligne de police. Un molotov qui tombe sur le cordon brule
+       ceux qui l'ont lance la seconde d'apres. */
+    var vx=(cx===undefined)?(sx+4.2):cx, vy=(cy===undefined)?sy:cy;
+    if(!borner(sx,sy,vx,vy,PORT_MOLOTOV,c))loin=true;
+    vx=Math.min(mur-1.3,c[0]); vy=c[1];
+    /* la salve s'etale perpendiculairement au tir */
+    var ax=vx-sx, ay=vy-sy, al=Math.sqrt(ax*ax+ay*ay)||1;
+    var px=-ay/al, py=ax/al;
     for(var j=0;j<3;j++){
-      var cx=Math.min(mur-1.6, sx+3.4+j*0.8);
-      var cy=sy+(j-1)*1.5;
-      FUM.projectile(s.fum,sx,sy,cx,cy,'molotov');
+      FUM.projectile(s.fum,sx,sy,vx+px*(j-1)*1.5,vy+py*(j-1)*1.5,'molotov');
       n++;
     }
   });
@@ -1941,30 +2037,35 @@ function cmdMolotov(s){
     s.molotovRech=22000;
     if(s.M&&MISSION)MISSION.noter(s.M,'molotov');
     if(SON)SON.effet('charge');
-    s.mot=selNoms(s)+' · COCKTAILS';s.motT=1700;
+    s.mot=selNoms(s)+(loin?' · COCKTAILS (TROP LOIN, RACCOURCI)':' · COCKTAILS');
+    s.motT=1700;
   }
   return n;
 }
 
-function cmdGaz(s){
+function cmdGaz(s,cx,cy){
   var L=selection(s).filter(function(U){return !U.camions;});
   if(!L.length){s.mot='LES CAMIONS NE LANCENT PAS DE GRENADE';s.motT=1600;return;}
   if(s.M&&MISSION)MISSION.noter(s.M,'gaz');
   if(SON)SON.effet('grenade');
+  var loin=false, o=[0,0], c=[0,0];
   L.forEach(function(U){
+    if(!foyerUnite(s,U,o)){o[0]=U.ax;o[1]=U.ay;}
     var dv=FOULE.devant(U);
-    var gx2=U.ax+dv[0]*3.8, gy2=U.ay+dv[1]*3.8;
-    FOULE.evenement(s.sim,gx2,gy2,3.0,0.5);     /* le souffle du depart */
-    if(FUM&&s.fum)FUM.grenade(s.fum,gx2,gy2,1);
+    var vx=(cx===undefined)?(o[0]+dv[0]*3.8):cx;
+    var vy=(cy===undefined)?(o[1]+dv[1]*3.8):cy;
+    if(!borner(o[0],o[1],vx,vy,PORT_GAZ,c))loin=true;
+    FOULE.evenement(s.sim,c[0],c[1],3.0,0.5);   /* le souffle du depart */
+    if(FUM&&s.fum)FUM.grenade(s.fum,c[0],c[1],1);
   });
-  s.mot='GRENADE · '+selNoms(s);s.motT=1500;
+  s.mot='GRENADE · '+selNoms(s)+(loin?' (TROP LOIN, RACCOURCIE)':'');s.motT=1500;
 }
 
 /* L'EAU. Le camion arrose devant lui : le jet pousse les corps qu'il
    touche, pendant deux secondes et demie. Il tend moins qu'une
    grenade — c'est tout son interet, et c'est pour ca qu'il compte
    moins au rapport. */
-function cmdEau(s){
+function cmdEau(s,cx,cy){
   var L=selection(s).filter(function(U){return U.camions;});
   if(!L.length){s.mot='CHOISIS LES CAMIONS';s.motT=1500;return;}
   if(!FUM||!s.fum)return;
@@ -1972,8 +2073,15 @@ function cmdEau(s){
   L.forEach(function(U){
     var dv=FOULE.devant(U);
     U.membres.forEach(function(i){
-      var a=s.sim.agents[i];
-      FUM.jet(s.fum,a.x+dv[0]*0.9,a.y+dv[1]*0.9,dv[0],dv[1],2600);
+      var a=s.sim.agents[i], ux=dv[0], uy=dv[1];
+      /* LE CANON SUIT LA CIBLE. Sans cible il arrose devant la
+         formation ; avec une cible, chaque camion oriente son jet vers
+         elle depuis sa propre position. */
+      if(cx!==undefined){
+        var dx=cx-a.x, dy=cy-a.y, d=Math.sqrt(dx*dx+dy*dy);
+        if(d>0.4){ux=dx/d; uy=dy/d;}
+      }
+      FUM.jet(s.fum,a.x+ux*0.9,a.y+uy*0.9,ux,uy,2600);
       n++;
     });
   });
@@ -2011,6 +2119,9 @@ function finMission(s){
    mieux que douze timbres illisibles.
    ===================================================================== */
 var UCOL=['#6ad8ff','#ffd24a','#7dff9a','#ff8ac8','#c8a0ff','#ff9a6a'];
+/* deux tableaux constants : setLineDash en alloue un a chaque appel si
+   on lui passe un litteral, soixante fois par seconde */
+var DASH=[5,7], VIDE=[];
 /* LES ANNEAUX DE SELECTION, PEINTS UNE FOIS PAR COULEUR.
    Un stroke d'ellipse sous une transformation d'echelle coute cher :
    douze hommes selectionnes, c'etait SIX MILLISECONDES par image, plus
@@ -2134,7 +2245,7 @@ function barreDessine(s,L,H){
         g.textAlign='center';g.fillText(b.t,b.x+b.w/2,b.y+b.h/2);
         continue;
       }
-      var act=(b.k==='diag'&&s.diag);
+      var act=(b.k==='diag'&&s.diag)||(s.vise===b.k);
       g.fillStyle=act?'#7ae8ff':'rgba(255,255,255,.10)';
       coArr(g,b.x+1,b.y+1,b.w,b.h-2,3);g.fill();
       if(s.presse1===b.k){g.fillStyle='rgba(255,255,255,.3)';coArr(g,b.x+1,b.y+1,b.w,b.h-2,3);g.fill();}
@@ -2214,7 +2325,7 @@ var M={
        suffisaient a faire perdre la mission en vingt secondes. */
     s.M=MISSION?MISSION.creer({graine:s.graine, ligne:GW-8,
                                camp:s.camp, vitrines:s.vitrines}):null;
-    s.mot='';s.motT=0;s.feuxVus=0;s.molotovRech=0;
+    s.mot='';s.motT=0;s.feuxVus=0;s.molotovRech=0;s.vise=null;s.viseXY=null;
     s.fondu=700;        /* la rue s'ouvre depuis le noir */
   },
   pas:function(s,dt){
@@ -2336,6 +2447,47 @@ var M={
       /* l'anneau de ralliement : ou la figure se range */
       var AG=anneau(uc,true);
       g.drawImage(AG.cv,(mx(U0.ax,U0.ay)-AG.ox)|0,(my(U0.ax,U0.ay)+TH/2-AG.oy)|0);
+      /* LA PORTEE, pendant la visee. Un cercle pointille au sol, en
+         projection isometrique — donc une ellipse deux fois plus large
+         que haute. Sans lui on vise a l'aveugle et on apprend la
+         portee en ratant, ce qui n'est pas une facon d'apprendre. */
+      if(s.vise){
+        var fo=[U0.ax,U0.ay];
+        foyerUnite(s,U0,fo);
+        var pr=portee(s.vise), pcx=mx(fo[0],fo[1]), pcy=my(fo[0],fo[1])+TH/2;
+        /* LE CERCLE DE PORTEE, en deux traits. Un seul trait fin se
+           perdait dans la foule : on pose d'abord un liseré sombre,
+           puis la couleur de l'unite par-dessus. */
+        g.setLineDash(DASH); g.lineDashOffset=-(s.t*0.012)%12;
+        g.beginPath();
+        g.ellipse(pcx,pcy,pr*TW/2,pr*TH/2,0,0,6.2832);
+        g.lineWidth=2.4;g.strokeStyle='rgba(4,8,14,.75)';g.stroke();
+        g.lineWidth=1.1;g.strokeStyle=uc;g.stroke();
+        g.setLineDash(VIDE);
+        /* LA LIGNE DE TIR ET LE POINT D'IMPACT, tant que le doigt est
+           pose. C'est ca qui fait qu'on choisit vraiment sa direction :
+           on la voit avant de lacher. */
+        if(s.viseXY){
+          var w=[0,0]; doigtMonde(s,s.viseXY[0],s.viseXY[1],w);
+          var c2=[0,0], dedans=borner(fo[0],fo[1],w[0],w[1],pr,c2);
+          if(s.vise==='molotov')c2[0]=Math.min(iaMur(s)-1.3,c2[0]);
+          var ix=mx(c2[0],c2[1]), iy=my(c2[0],c2[1])+TH/2;
+          g.lineWidth=2.4;g.strokeStyle='rgba(4,8,14,.7)';
+          g.beginPath();g.moveTo(pcx,pcy);g.lineTo(ix,iy);g.stroke();
+          g.lineWidth=1.1;g.strokeStyle=dedans?uc:'#ff8a5a';
+          g.beginPath();g.moveTo(pcx,pcy);g.lineTo(ix,iy);g.stroke();
+          /* le reticule : deux ellipses et une croix, lisibles sur
+             n'importe quel sol */
+          g.beginPath();g.ellipse(ix,iy,9,4.5,0,0,6.2832);
+          g.lineWidth=2.4;g.strokeStyle='rgba(4,8,14,.7)';g.stroke();
+          g.lineWidth=1.2;g.strokeStyle=dedans?uc:'#ff8a5a';g.stroke();
+          g.beginPath();
+          g.moveTo(ix-5,iy);g.lineTo(ix+5,iy);
+          g.moveTo(ix,iy-3);g.lineTo(ix,iy+3);
+          g.stroke();
+        }
+        g.lineWidth=1; g.globalAlpha=1;
+      }
     }
     /* LES VOLUMES, du fond vers l'avant. Un objet dont le calque ne
        touche pas la fenetre n'est pas dessine du tout. */
@@ -2480,8 +2632,21 @@ var M={
         return;
       }
       if(s.M&&s.M.fin)return;       /* plus d'ordres une fois fini */
-      if(b.k==='molotov')cmdMolotov(s);
-      else if(b.k==='pousser')cmdPousser2(s);
+      /* LES TROIS ORDRES QU'ON LANCE NE PARTENT PLUS TOUT SEULS. Le
+         bouton ARME la visee ; la case touchee ensuite est la cible.
+         Avant, gaz et eau partaient droit devant la formation et les
+         cocktails toujours vers l'est : on ne pouvait rien viser. */
+      if(b.k==='molotov'||b.k==='gaz'||b.k==='eau'){
+        if(s.vise===b.k){s.vise=null;s.viseXY=null;s.mot='VISÉE ANNULÉE';s.motT=1100;return;}
+        var pret=armer(s,b.k);
+        if(pret){
+          s.vise=b.k;
+          s.mot=VISE_MOT[b.k];s.motT=999999;  /* il reste tant qu'on n'a pas tire */
+          if(SON)SON.effet('clic');
+        }
+        return;
+      }
+      if(b.k==='pousser')cmdPousser2(s);
       else if(b.k==='casser')cmdCasser(s);
       else if(b.k==='barricade')cmdBarricade(s);
       else if(b.k==='disperser')cmdDisperser(s);
@@ -2490,8 +2655,6 @@ var M={
       else if(b.k==='arriere')cmdPousser(s,-1);
       else if(b.k==='forme')cmdForme(s);
       else if(b.k==='groupe')cmdGrouper(s);
-      else if(b.k==='gaz')cmdGaz(s);
-      else if(b.k==='eau')cmdEau(s);
       else if(b.k==='diag'){s.diag=!s.diag;s.mot=s.diag?'DIAGNOSTIC ALLUMÉ':'DIAGNOSTIC ÉTEINT';s.motT=1200;}
       return;
     }
@@ -2500,10 +2663,15 @@ var M={
     var ex=(x-s.L/2)/z+s.cam.x, ey=(y-s.H/2)/z+s.cam.y;
     var gx=Math.floor(e2mx(ex,ey)), gy=Math.floor(e2my(ex,ey));
     if(gx<0||gy<0||gx>=GW||gy>=GH){s.mot='HORS DE LA CARTE';s.motT=1100;return;}
+    if(s.vise){tirer(s,x,y);return;}
     cmdAller(s,gx,gy);
   },
   glisse:function(s,x,y,dx,dy){
     if(!s.pret||s.pince)return;
+    /* EN VISEE, LE DOIGT VISE. On voit la ligne et le point d'impact
+       bouger sous le pouce, et c'est au relachement que ca part. Le
+       panoramique reprend ses droits des que la visee est finie. */
+    if(s.vise){s.viseXY=s.viseXY||[0,0];s.viseXY[0]=x;s.viseXY[1]=y;return;}
     if(s.hbar&&y>s.H-s.hbar-2)return;   /* on ne panoramique pas sur la barre */
     s.camLibre=true; s.camLibreT=5000;
     s.cam.x-=dx/s.cam.z; s.cam.y-=dy/s.cam.z;
@@ -2512,6 +2680,11 @@ var M={
   /* DEUX DOIGTS. Le shell appelle ceci avec le rapport des ecartements
      et le milieu des deux doigts : on zoome AUTOUR de ce milieu, pas
      autour du centre de l'ecran, sinon la rue fuit sous les doigts. */
+  relache:function(s,x,y){
+    if(!s.pret||!s.vise)return;
+    if(s.hbar&&y>s.H-s.hbar-2){s.vise=null;s.viseXY=null;s.mot='VISÉE ANNULÉE';s.motT=1100;return;}
+    tirer(s,x,y);
+  },
   pince:function(s,fac,cx,cy,fini){
     if(!s.pret)return;
     if(fini){s.pince=false;camAimante(s);camBornes(s);return;}
