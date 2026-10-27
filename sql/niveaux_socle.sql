@@ -2372,3 +2372,53 @@ where niveau = 29;
 -- leurs trois langues — ce sont eux qu'on regarde — les petits se
 -- contentent de deux, et l'emission revient a 95 ms : 10,8 ms a quatre
 -- foyers contre 10,7 sans feu. Le feu ne coute plus rien.
+
+-- =====================================================================
+-- ETAPE : ÊTRE DANS LA FOULE                          2026-10-28-0430
+-- =====================================================================
+--
+-- « Je veux une vraie experience de jeu, la c'est nul. » Le reproche
+-- etait juste et il portait plus bas que tout ce qu'on avait corrige
+-- jusque-la : on avait ajoute des systemes autour d'un noyau qui ne
+-- donnait rien a FAIRE. Taper un jeton, taper la carte, attendre dix
+-- secondes qu'un bloc arrive, appuyer sur GAZ, regarder un compteur :
+-- un tableur anime vu du ciel.
+--
+-- ON EST QUELQU'UN, MAINTENANT. Un agent de la simulation porte la
+-- marque « moi ». La manche gauche le fait marcher, la camera le suit,
+-- son bloc le suit lui. Tout le reste du moteur continue sans savoir
+-- qu'un joueur existe — la foule pousse, les murs arretent, le feu
+-- brule, la panique emporte — et c'est exactement ce qu'on voulait :
+-- etre DANS la foule et non au-dessus.
+--   Le seul endroit du moteur qui sache qu'un joueur existe tient en
+-- trois lignes dans foule.js : si a.moi, la destination vient du pouce
+-- au lieu du champ. Trois lignes valent mieux qu'un systeme de controle
+-- parallele.
+--
+-- TOUT ETAIT DEJA LA. Le shell a deux manches tactiles completes,
+-- ecrites pour d'autres bornes, avec capture du pointeur et origine qui
+-- suit le pouce. Il a suffi de declarer manches:'une'.
+--
+-- TROIS REGLAGES, TROIS MESURES.
+--   1. L'avatar etait le premier membre de la liste, c'est-a-dire au
+--      COEUR du bloc : neuf voisins au contact, on poussait un mur de
+--      cinquante-quatre corps a chaque pas. Il est maintenant l'homme
+--      le plus avance — trois voisins, et la place d'un meneur.
+--   2. A la vitesse d'un passant on faisait vingt-cinq centimetres en
+--      une seconde et demie. On se faufile : la distance exigee des
+--      voisins est reduite de moitie, plutot que d'augmenter la force,
+--      ce qui l'aurait fait traverser la foule comme un char.
+--   3. Le bloc collait au meneur a un dixieme par milliseconde : on
+--      emmenait cinquante-quatre personnes a chaque pas et on avancait
+--      a LEUR vitesse. A deux millemes, on peut courir devant.
+--
+-- DEUX PIEGES D'INTERFACE, tous deux de recouvrement :
+--   - la zone de prise de la manche est en z-index 3, donc PAR-DESSUS
+--     le canvas. Descendue jusqu'en bas, elle avalait les tapes des
+--     jetons et des ordres : plus aucun bouton du coin gauche ne
+--     repondait. Elle s'arrete maintenant a cent dix-huit points du
+--     bas.
+--   - le shell posait la largeur de cette zone EN DUR, ce qui ecrasait
+--     la feuille de style : Le Cordon demandait un quart et recevait
+--     l'ecran entier. On ne la pose plus que pour les bornes qui n'ont
+--     pas de regle a elles.

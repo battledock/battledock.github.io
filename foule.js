@@ -424,6 +424,7 @@ FOULE.creer=function(o){
     grille:new Grille(o.GW,o.GH),
     tmp:[], gr:(o.graine||12345),
     front:o.front||0, pression:0, tension:0, styleTens:1,
+    moiV:null,                 /* la volonte du joueur, en tuiles/ms */
     sorties:o.sorties||[], evenements:[],
     paniques:0, bloquesVus:0, debloques:0
   };
@@ -477,6 +478,7 @@ FOULE.poser=function(S,G,x,y,o){
        tout ce qui lui arrive. Le groupe reste lisible — ils vont tous
        dans le meme sens — mais la panique part d'un endroit precis. */
     nerf:(o.nerf||1), stress:(o.stress||0), choc:0, brule:0, feu:0, abrite:0, pris:0, nasse:0,
+    moi:false,
     serres:0, contact:0, distMenace:99, distCible:0,
     bloque:0, biais:((G.membres.length%2)?1:-1)
   };
@@ -633,7 +635,41 @@ FOULE.pas=function(S,dt){
     /* --- OU ALLER. Trois regimes : suivre un champ, s'eloigner d'une
            menace, ou rejoindre sa place. --- */
     var dx, dy, d, suit=false;
-    if(a.etat==='FUIT'&&S.champFuitePret){
+    /* =================================================================
+       L'AVATAR : UN CORPS QUI N'OBEIT PAS AUX REGLES
+
+       Un seul agent de la simulation porte la marque « moi ». Il ne
+       cherche ni sa place dans la figure, ni la sortie, ni la pente
+       d'un champ : il va ou le pouce lui dit d'aller. Tout le reste
+       continue de s'appliquer — la separation, les murs, le feu, la
+       bousculade — si bien qu'on est dans la foule et non au-dessus
+       d'elle : elle nous pousse, elle nous bloque, elle nous emporte.
+
+       C'est le seul endroit du moteur qui sache qu'un joueur existe, et
+       c'est voulu : trois lignes ici valent mieux qu'un systeme de
+       controle parallele.
+       ================================================================= */
+    if(a.moi){
+      var mv=S.moiV;
+      if(mv&&(mv[0]||mv[1])){
+        dx=mv[0]; dy=mv[1]; d=1; suit=true;
+        allure=mv[2]||1;
+      }else{
+        fx-=a.vx*R.frein/R.vMarche*2.2; fy-=a.vy*R.frein/R.vMarche*2.2;
+        d=0;
+      }
+      if(d){
+        var viseM=a.vmax*allure;
+        var sxM=dx*viseM, syM=dy*viseM;
+        /* on pousse plus fort qu'un passant : on SAIT ou l'on va */
+        fx+=(sxM-a.vx)*R.acc/R.vMarche*1.8;
+        fy+=(syM-a.vy)*R.acc/R.vMarche*1.8;
+      }
+      /* on saute le choix de destination : il est fait */
+      d=-1;
+    }
+    if(d===-1){/* l'avatar a deja sa force */}
+    else if(a.etat==='FUIT'&&S.champFuitePret){
       if(S.champFuite.pente(S,a.x,a.y,pente)){dx=pente[0];dy=pente[1];d=1;suit=true;}
     }else if(a.etat==='VERS'&&G2.champ&&G2.champ.pret){
       if(G2.champ.pente(S,a.x,a.y,pente)){dx=pente[0];dy=pente[1];d=1;suit=true;}
@@ -649,7 +685,7 @@ FOULE.pas=function(S,dt){
         }
       }
     }
-    if(!suit){dx=a.cx-a.x; dy=a.cy-a.y; d=Math.sqrt(dx*dx+dy*dy);}
+    if(d!==-1&&!suit){dx=a.cx-a.x; dy=a.cy-a.y; d=Math.sqrt(dx*dx+dy*dy);}
     if(d>0.0001){
       var vise=a.vmax*allure;
       /* ENCERCLE : on tourne en rond, on n'avance plus. C'est ce que
@@ -675,6 +711,13 @@ FOULE.pas=function(S,dt){
          contre epaule, c'est exactement ce que fait un cordon — et le
          rayon reste entier face a la foule d'en face. */
       var min=(a.g===b.g&&a.camp==='crs')?((a.r+b.r)*0.62):(a.r+b.r);
+      /* ON SE FAUFILE. Mesure : au milieu de son propre bloc, l'avatar
+         faisait vingt-cinq centimetres en une seconde et demie — la
+         separation le tenait a quatre-vingt-seize pour cent. Un corps
+         qui joue des coudes passe entre les gens ; on reduit donc la
+         distance qu'il exige de ses voisins, plutot que d'augmenter sa
+         force, ce qui l'aurait fait traverser la foule comme un char. */
+      if(a.moi||b.moi)min*=0.52;
       if(e2<min*min&&e2>1e-8){
         var e=Math.sqrt(e2), pen=(min-e)/min;
         /* LA MASSE COMPTE. Sans elle, un homme en tenue d'intervention

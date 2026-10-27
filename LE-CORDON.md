@@ -259,6 +259,30 @@ par une aurait demandé de recalibrer tous les seuils ; ici c'est le
 `dt` lui-même qui est réduit, en un seul point, et rien ne change dans
 les rapports entre les choses.
 
+## Être dans la foule
+
+On ne commande plus depuis le ciel : **on est quelqu'un**. Le meneur du
+premier bloc — la tête du cortège, ou la première ligne — porte la
+marque « moi ». Un anneau blanc sous ses pieds et un chevron au-dessus
+de sa tête, pour qu'on se retrouve parmi trois cents corps.
+
+- La **manche gauche** le fait marcher. Sa course donne l'allure : on
+  flâne ou on court.
+- Son **bloc le suit**, avec du retard. On peut courir devant, se
+  détacher, revenir — ou les perdre.
+- Tout le reste du moteur ignore qu'un joueur existe : la foule nous
+  pousse, les murs nous arrêtent, le feu nous brûle, la bousculade nous
+  emporte. Le seul endroit qui le sache tient en trois lignes dans
+  `foule.js`.
+- Le commandement n'a pas disparu : les ordres sont toujours là, on les
+  donne **depuis le sol** au lieu du ciel.
+
+Deux réglages mesurés : l'avatar est placé sur l'homme le **plus
+avancé** du bloc (au milieu, il poussait un mur de cinquante-quatre
+corps à chaque pas), et il **se faufile** — il exige de ses voisins la
+moitié de la distance habituelle, plutôt que d'avancer en force comme
+un char.
+
 ## Jouer
 
 | Geste | Effet |

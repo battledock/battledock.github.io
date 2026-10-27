@@ -1223,6 +1223,24 @@ function chemin(C,x0,y0,x1,y1){
    la main pendant qu'on regarde ailleurs est pire que pas de suivi. */
 function camSuivi(s,dt){
   if(!s.sim||!s.unites)return;
+  /* LA CAMERA SUIT CELUI QU'ON EST. Quand on a un corps dans la rue,
+     il n'y a plus de « centre de l'action » a calculer : le centre,
+     c'est nous. Elle reste libre si le doigt a panoramique. */
+  if(s.moi!==undefined&&!s.camVise){
+    var am=s.sim.agents[s.moi];
+    if(am){
+      if(s.camLibre){
+        s.camLibreT=(s.camLibreT||0)-dt;
+        if(s.camLibreT>0)return;
+        s.camLibre=false;
+      }
+      var bx3=mx(am.x,am.y), by3=my(am.x,am.y);
+      var k3=Math.min(1,dt*0.006);
+      s.cam.x+=(bx3-s.cam.x)*k3; s.cam.y+=(by3-s.cam.y)*k3;
+      camBornes(s);
+      return;
+    }
+  }
   /* UN CADRAGE DEMANDE : on y glisse, on ne s'y teleporte pas. Un saut
      de camera fait perdre le fil ; un glissement de trois dixiemes de
      seconde se suit des yeux. */
@@ -2715,6 +2733,95 @@ var COUT={
 var RES_MAX=80, RES_DEP=50, RES_GAIN=0.0026;
 /* le temps de jeu s'ecoule a 72 % du temps reel : voir MOTEUR.pas */
 var ALLURE=0.72;
+/* =====================================================================
+   ÊTRE DANS LA FOULE
+
+   On commandait des blocs vus du ciel : on tapait un jeton, on tapait
+   la carte, on attendait dix secondes. Rien de ce qu'on faisait ne se
+   sentait sous le doigt.
+
+   Maintenant on EST quelqu'un. Un agent de la simulation porte la
+   marque « moi », la manche gauche le fait marcher, la camera le suit
+   de pres, et son bloc le suit lui. Tout le reste du moteur continue
+   sans savoir qu'un joueur existe : la foule nous pousse, les murs
+   nous arretent, le feu nous brule, la panique nous emporte.
+
+   Le commandement n'a pas disparu — on reste le meneur de son bloc, et
+   les ordres sont toujours la. On les donne depuis le sol au lieu de
+   les donner depuis le ciel, et c'est toute la difference.
+   ===================================================================== */
+/* DE L'ECRAN VERS LA GRILLE. La manche donne un vecteur d'ecran ; la
+   rue est en losange. Un pas vers le bas de l'ecran, c'est un pas vers
+   le sud-est du monde. */
+function manche2monde(mx2,my2,out){
+  var gx=mx2/2+my2, gy=-mx2/2+my2;
+  var n=Math.sqrt(gx*gx+gy*gy);
+  if(n<1e-6){out[0]=0;out[1]=0;return false;}
+  out[0]=gx/n; out[1]=gy/n;
+  return true;
+}
+/* QUI EST « MOI ». Le premier homme du bloc choisi au menu — la tete du
+   cortege, ou la premiere ligne. On le marque, on le garde. */
+function moiChoisir(s){
+  if(!s.sim||!s.unites||!s.unites.length)return;
+  var U=s.unites[0];
+  if(!U||!U.membres.length)return;
+  var A=s.sim.agents;
+  for(var i=0;i<A.length;i++)A[i].moi=false;
+  /* ON EST EN TETE, PAS AU MILIEU. Le premier membre de la liste se
+     trouvait au coeur du bloc, entoure de cinquante-quatre personnes :
+     on poussait un mur de corps a chaque pas. Le plus avance a de
+     l'espace devant lui — c'est la place d'un meneur, et c'est la seule
+     d'ou l'on voit quelque chose. */
+  var im=U.membres[0], avX=-1e9;
+  for(var q=0;q<U.membres.length;q++){
+    var ag=A[U.membres[q]];
+    var score=(s.camp==='manif')?ag.x:(-ag.x);
+    if(score>avX){avX=score;im=U.membres[q];}
+  }
+  A[im].moi=true;
+  A[im].nerf=0.25;              /* on ne panique pas a notre place */
+  /* ON SE FRAYE UN CHEMIN. Mesure : a la vitesse d'un passant, trois
+     cents corps serres faisaient faire trente centimetres en deux
+     secondes — on ne jouait pas, on patinait. Un tiers plus vite et
+     deux fois plus lourd, on avance dans la foule sans la traverser
+     comme un fantome. */
+  A[im].vmax*=1.45;
+  A[im].masse=(A[im].masse||1)*3.2;
+  A[im].r=(A[im].r||0.30)*1.05;
+  s.moi=im; s.moiU=U;
+  /* LE BLOC DU MENEUR SORT DU PILOTE AUTOMATIQUE : sans ca majCortege
+     lui repose son point de ralliement a chaque image et il ne nous
+     suivrait jamais. */
+  U.libre=true;
+  s.sim.moiV=[0,0,1];
+}
+/* CE QUE LE POUCE DEMANDE, une fois par image. */
+function moiMaj(s,dt){
+  if(s.moi===undefined||!s.sim)return;
+  var A=s.sim.agents, a=A[s.moi];
+  if(!a){s.moi=undefined;return;}
+  var M=(typeof MG!=='undefined'&&MG)?MG:null;
+  var v=s.sim.moiV||(s.sim.moiV=[0,0,1]);
+  if(M&&M.n>0.05&&manche2monde(M.x,M.y,v)){
+    /* la course de la manche donne l'allure : on flane ou on court */
+    v[2]=0.55+M.n*0.95;
+  }else{v[0]=0;v[1]=0;v[2]=1;}
+  /* SON BLOC LE SUIT. On est le meneur : le point de ralliement du
+     groupe, c'est nous. Sans ca, on s'eloigne seul de sa propre
+     colonne et la foule n'est plus la notre. */
+  var U=s.moiU;
+  if(U&&!U.route&&!(U.ordre==='tenir')){
+    /* LE BLOC SUIT AVEC DU RETARD, et c'est tout l'interet. A un
+       dixieme par milliseconde il collait au meneur : on emmenait
+       cinquante-quatre personnes a chaque pas et on avancait a leur
+       vitesse, soit trente-cinq centimetres en une seconde et demie.
+       A deux millemes, on peut courir devant, se detacher, et les
+       attendre — ou les perdre. */
+    U.ax+=(a.x-U.ax)*Math.min(1,dt*0.0020);
+    U.ay+=(a.y-U.ay)*Math.min(1,dt*0.0020);
+  }
+}
 function resNom(s){return (s.camp==='manif')?'ÉLAN':'MOYENS';}
 function coute(s,k){
   var c=COUT[k]||0;
@@ -3431,7 +3538,11 @@ function dessineObjet(g,o,s){
 var CO_REC2=0;
 var M={
   nom:'Le Cordon', sous:'LA RUE · GLISSE, PINCE, MARCHE',
-  manches:null, vise:400, pausable:true,
+  /* UNE MANCHE, A GAUCHE. Le Cordon s'en passait : il se commandait au
+     doigt sur la carte. Maintenant qu'on a un corps dans la rue, il lui
+     faut des jambes — et la zone de prise est reduite au coin, pour
+     qu'elle ne vole pas les tapes destinees a la carte. */
+  manches:'une', vise:400, pausable:true,
   init:function(){
     return {phase:'pret', t:0, score:0, L:200, H:400,
             cam:{x:MW/2, y:MH/2, z:0.75, zmin:0.75, zmax:2},
@@ -3491,6 +3602,7 @@ var M={
     s.mot='';s.motT=0;s.feuxVus=0;s.vise=null;s.viseXY=null;s.camVise=null;
     s.res=RES_DEP; s.resIA=RES_DEP; s.embT=0; s.embRech=0; s.somm=0;
     s.prep={t:PREP_DUREE, achats:{}};
+    moiChoisir(s);
     faireZones(s);
     s.fondu=700;        /* la rue s'ouvre depuis le noir */
   },
@@ -3519,6 +3631,7 @@ var M={
       s.prep.t-=dt;
       s.t+=dt;
       if(s.motT>0)s.motT-=dt;
+      moiMaj(s,dt);
       if(s.sim)FOULE.pas(s.sim,dt*0.16);
       camSuivi(s,dt);
       if(s.prep.t<=0)prepLancer(s);
@@ -3529,6 +3642,7 @@ var M={
     if(!s.sim)return;
     if(s.M&&s.M.fin)return;           /* la rue se fige quand c'est fini */
     if(s.poussee>0)s.poussee-=dt;
+    moiMaj(s,dt);
     majCortege(s,dt);
     majEmballe(s,dt);
     majZones(s,dt);
@@ -3761,6 +3875,26 @@ var M={
       if(av>0){
         g.strokeStyle='#ffd24a';
         g.beginPath();g.ellipse(pbx,pby+TH/2,12,6,0,-1.57,-1.57+av*6.283);g.stroke();
+      }
+    }
+    /* OU SUIS-JE. Dans trois cents corps qui se ressemblent, on se
+       perd en une seconde : un chevron blanc au-dessus de la tete et un
+       anneau sous les pieds, et on se retrouve sans y penser. */
+    if(s.moi!==undefined&&s.sim.agents[s.moi]){
+      var AM=s.sim.agents[s.moi];
+      var amx=mx(AM.x,AM.y), amy=my(AM.x,AM.y);
+      if(amx>x0-40&&amx<x1+40&&amy>y0-40&&amy<y1+40){
+        g.strokeStyle='rgba(8,12,20,.7)';g.lineWidth=2.6;
+        g.beginPath();g.ellipse(amx,amy+TH/2,7,3.5,0,0,6.2832);g.stroke();
+        g.lineWidth=1.3;g.strokeStyle='#fff';g.stroke();
+        var bat=Math.sin(s.t*0.006)*1.6;
+        g.fillStyle='rgba(8,12,20,.7)';
+        g.beginPath();g.moveTo(amx-4,amy-28+bat);g.lineTo(amx+4,amy-28+bat);
+        g.lineTo(amx,amy-23+bat);g.closePath();g.fill();
+        g.fillStyle='#fff';
+        g.beginPath();g.moveTo(amx-3,amy-28.5+bat);g.lineTo(amx+3,amy-28.5+bat);
+        g.lineTo(amx,amy-24.5+bat);g.closePath();g.fill();
+        g.lineWidth=1;
       }
     }
     jalon('selection');
