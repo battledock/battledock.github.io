@@ -2422,3 +2422,37 @@ where niveau = 29;
 --     la feuille de style : Le Cordon demandait un quart et recevait
 --     l'ecran entier. On ne la pose plus que pour les bornes qui n'ont
 --     pas de regle a elles.
+
+-- =====================================================================
+-- ETAPE : L'ARCADE N'A PLUS QU'UNE BORNE              2026-10-28-0530
+-- =====================================================================
+--
+-- Le joueur a demande de n'y garder que les zombies. L'arcade en
+-- portait deux ; Le Cordon est sorti.
+--
+-- CE QUE LA SUPPRESSION A EMPORTE, verifie avant de couper :
+--   - la borne dans BORNES, et BORNES_BIENTOT (Le Grutier annonce : une
+--     case grisee qui promet depuis des mois dit surtout qu'il ne se
+--     passe rien) ;
+--   - cent trente lignes de menu — choix du camp, banderole, style de
+--     cortege, apercu anime, horloge de l'apercu ;
+--   - cent neuf lignes de feuille de style (#mnu.cdn, .cdnj) ;
+--   - les branches « cordon » dans mnuMaj, mnuHaut, mnuOuvrir,
+--     ouvrirBorne, mettreEnPause et la largeur de la zone de manche ;
+--   - les sept fichiers de la rue isometrique.
+--
+-- CE QU'ON N'A PAS TOUCHE, et pourquoi : MOTEUR.ferme. Il n'est pas
+-- dans BORNES, il a sa propre page ferme.html avec son ferme.js, et
+-- fmBoutons est appele depuis fermerBorne. Le retirer aurait risque de
+-- casser une page pour zero benefice visible.
+--
+-- UNE ERREUR DE TEST, PAS UNE REGRESSION. Le scenario d'arcade levait
+-- « Cannot read properties of undefined » dans MOTEUR.hangar.pas : il
+-- force S.phase='jeu' sans passer par prendreJeton, donc la liste des
+-- zombies n'existe pas. Verifie sur une copie de l'etat PRECEDENT :
+-- la meme erreur s'y produisait. Quand un test casse apres une
+-- suppression, le rejouer sur l'avant coute deux minutes et evite une
+-- heure de chasse.
+--
+-- Le code du Cordon reste dans l'historique git, et LE-CORDON.md garde
+-- la trace de ce qui a ete construit.

@@ -1,3 +1,10 @@
+> **RETIRÉ DE L'ARCADE — 2026-10-28.** Le Cordon a été sorti de la salle
+> à la demande du joueur : l'arcade ne garde que Le Hangar. Ses sept
+> fichiers (`cordon.js`, `foule.js`, `acteurs.js`, `mission.js`,
+> `sons.js`, `fumee.js`, `ia.js`) sont supprimés du dépôt et récupérables
+> dans l'historique git. Ce document reste comme trace de ce qui a été
+> construit, et comme plan si on veut le reprendre.
+
 # Le Cordon — comment le lancer, comment le tester
 
 Borne de la salle d'arcade de Battle Dock. Une rue isométrique, une foule
