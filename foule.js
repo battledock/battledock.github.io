@@ -282,6 +282,8 @@ function majStress(S,a,voisins,dt){
   a.choc=Math.max(0,a.choc-dt*0.00075);
   if(a.brule>0)a.brule-=dt;     /* la marque des flammes s'efface seule */
   if(a.abrite>0)a.abrite-=dt;
+  /* le feu sur le corps est decompte par fumee.js, qui sait seul quand
+     on est encore dans les flammes ; ici on ne fait que le lire */
   if(a.pris>0)a.pris-=dt;
   /* ENCERCLE : on n'avance plus, et on s'echauffe. Une nasse ne blesse
      personne, elle retient — et c'est ce que ca fait ici. */
@@ -303,6 +305,11 @@ function majStress(S,a,voisins,dt){
    se verifie gagne : une panique l'emporte sur une hesitation, et un
    recul sur une poussee. */
 function reglesManif(S,a,G,dt){
+  if(a.feu>0){
+    if(a.etat!=='FUIT'){pourquoi(a,'en feu');etat(S,a,'FUIT');}
+    a.stress=Math.min(1,a.stress+dt*0.00055);
+    return;
+  }
   var E=a.etat;
   if(E==='PANIQUE'){
     if(a.etatT>1250){
@@ -366,6 +373,14 @@ function reglesManif(S,a,G,dt){
    a la densite ne s'exprime que si aucun ordre n'est en cours. */
 function reglesCRS(S,a,G,dt){
   var E=a.etat;
+  /* UN HOMME QUI BRULE NE TIENT RIEN. Il sort de la figure et il court,
+     et aucun ordre ne l'en empeche : c'est ce qu'un cocktail bien place
+     doit produire, et jusqu'ici il ne produisait rien du tout. */
+  if(a.feu>0){
+    if(E!=='FUIT'){pourquoi(a,'en feu');etat(S,a,'FUIT');}
+    a.stress=Math.min(1,a.stress+dt*0.00055);
+    return;
+  }
   /* LES FLAMMES PASSENT AVANT LES ORDRES. Un homme dans le feu recule,
      meme si on lui a dit de tenir — et c'est tout l'interet d'un
      cocktail bien place : il ouvre une breche la ou la poussee seule
@@ -461,7 +476,7 @@ FOULE.poser=function(S,G,x,y,o){
        pas au meme moment : chacun porte un coefficient qui multiplie
        tout ce qui lui arrive. Le groupe reste lisible — ils vont tous
        dans le meme sens — mais la panique part d'un endroit precis. */
-    nerf:(o.nerf||1), stress:(o.stress||0), choc:0, brule:0, abrite:0, pris:0, nasse:0,
+    nerf:(o.nerf||1), stress:(o.stress||0), choc:0, brule:0, feu:0, abrite:0, pris:0, nasse:0,
     serres:0, contact:0, distMenace:99, distCible:0,
     bloque:0, biais:((G.membres.length%2)?1:-1)
   };

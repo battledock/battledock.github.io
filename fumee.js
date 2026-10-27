@@ -25,29 +25,99 @@ var FLAM=null;
 function flammes(){
   if(FLAM)return FLAM;
   FLAM=[];
-  for(var k=0;k<3;k++){
-    var W=20, H=30, cv=document.createElement('canvas');
-    cv.width=W; cv.height=H;
+  /* =================================================================
+     UNE LANGUE DE FEU, PEINTE EN PIXELS ET NON EN COURBES
+
+     L'ancienne version empilait trois gouttes lissees : de loin ca
+     faisait trois taches orange, et de pres un degrade flou dans un jeu
+     qui n'a pas un seul pixel flou ailleurs. Une flamme ne ressemble
+     pas a une goutte — elle a une base large qui vacille, un corps qui
+     se tord, une pointe qui se detache, et quatre teintes nettes qui se
+     voient l'une dans l'autre.
+
+     On peint donc case par case, sur une grille de douze par vingt, en
+     quatre couleurs franches : coeur blanc, jaune, orange, rouge
+     sombre. Huit langues differentes, tirees d'une graine fixe pour que
+     le dessin soit toujours le meme — et une largeur qui se resserre
+     vers le haut avec un decalage lateral tire par langue, ce qui
+     donne le tordu sans qu'on ait a l'animer.
+     ================================================================= */
+  var W=12, H=20, PX=2;          /* 12x20 cases de 2 points */
+  var TEINTE=['#fff6d8','#ffd84a','#ff8c20','#d8401a'];
+  var gr2=991;
+  var al2=function(){gr2=(gr2*16807)%2147483647;return (gr2-1)/2147483646;};
+  for(var k=0;k<8;k++){
+    var cv=document.createElement('canvas');
+    cv.width=W*PX; cv.height=H*PX;
     var g=cv.getContext('2d');
-    /* trois couches : le coeur blanc, l'orange, le rouge sombre */
-    var C=[['rgba(255,86,24,0.0)','rgba(255,120,40,0.85)',1.0],
-           ['rgba(255,160,40,0.0)','rgba(255,196,80,0.92)',0.68],
-           ['rgba(255,250,210,0.0)','rgba(255,248,214,0.95)',0.36]];
-    for(var c=0;c<3;c++){
-      var w=W*C[c][2], h=H*C[c][2];
-      var gr=g.createLinearGradient(0,H,0,H-h);
-      gr.addColorStop(0,C[c][1]); gr.addColorStop(1,C[c][0]);
-      g.fillStyle=gr;
-      g.beginPath();
-      g.moveTo(W/2,H-h);
-      g.quadraticCurveTo(W/2+w*0.5+(k-1)*2,H-h*0.45, W/2+w*0.30,H);
-      g.lineTo(W/2-w*0.30,H);
-      g.quadraticCurveTo(W/2-w*0.5+(k-1)*2,H-h*0.45, W/2,H-h);
-      g.closePath(); g.fill();
+    /* LE TORDU. A 0,55 toutes les langues sortaient droites et on
+       voyait huit fois le meme triangle. La pente va maintenant jusqu'a
+       un demi-caractere de large, et elle s'applique au CARRE de la
+       hauteur : droite a la base, couchee a la pointe, comme une
+       flamme que l'air emporte. */
+    var pente=(al2()-0.5)*1.9;
+    var nerv=0.38+al2()*0.95;             /* de la trapue a l'effilee */
+    var souf=(al2()-0.5)*0.5;             /* le second coup de vent */
+    for(var y=0;y<H;y++){
+      var u=y/(H-1);                      /* 0 en haut, 1 en bas */
+      /* la demi-largeur : nulle a la pointe, large a la base, avec un
+         renflement au tiers inferieur — c'est ce renflement qui fait
+         qu'on lit une flamme et pas un triangle */
+      var dw=Math.pow(u,nerv)*(W/2-0.5)*(0.70+0.46*Math.sin(u*2.6+nerv));
+      var cx=W/2+pente*(1-u)*(1-u)*(W/2)+souf*Math.sin((1-u)*3.1)*(W/4);
+      var x0=Math.round(cx-dw), x1=Math.round(cx+dw);
+      if(x1<x0)continue;
+      /* une encoche de temps en temps : une flamme n'a pas deux bords
+         paralleles, elle se dedouble et se recolle */
+      var enc=(al2()<0.14&&u>0.25&&u<0.80)?1:0;
+      for(var x=x0;x<=x1;x++){
+        if(x<0||x>=W)continue;
+        /* la teinte vient de la distance au coeur ET de la hauteur :
+           blanc au fond du foyer, rouge sur les bords et en pointe */
+        var d=(dw>0.01)?Math.abs(x+0.5-cx)/dw:0;
+        var f=d*0.62+(1-u)*0.62;
+        var t=(f<0.30)?0:((f<0.56)?1:((f<0.84)?2:3));
+        if(u<0.14&&al2()<0.45)continue;   /* la pointe se delite */
+        if(enc&&Math.abs(x+0.5-cx)<dw*0.22)continue;
+        g.fillStyle=TEINTE[t];
+        g.fillRect(x*PX,y*PX,PX,PX);
+      }
     }
     FLAM.push(cv);
   }
   return FLAM;
+}
+
+/* LE TAPIS DE BRAISES, sous les langues : un feu n'est pas une rangee
+   de flammes posees sur du vide, c'est d'abord une surface qui rougeoie.
+   Quatre vignettes peintes une fois, etirees au sol. */
+var BRAI=null;
+function braises(){
+  if(BRAI)return BRAI;
+  BRAI=[];
+  var gr3=7717;
+  var al3=function(){gr3=(gr3*16807)%2147483647;return (gr3-1)/2147483646;};
+  for(var k=0;k<4;k++){
+    /* QUARANTE CASES DE LARGE, PAS VINGT. A vingt on voyait une grille
+       de gros carres rouges posee sur le pave ; a quarante, et avec des
+       braises plus sombres que les flammes, ca redevient un sol qui
+       rougeoie. */
+    var W=40, H=20, cv=document.createElement('canvas');
+    cv.width=W; cv.height=H;
+    var g=cv.getContext('2d');
+    for(var y=0;y<H;y++)for(var x=0;x<W;x++){
+      var dx=(x+0.5-W/2)/(W/2), dy=(y+0.5-H/2)/(H/2);
+      var r=dx*dx+dy*dy;
+      if(r>1)continue;
+      var v=al3();
+      if(v<r*0.92)continue;
+      var c=(v>0.965)?'#ffc85a':((v>0.86)?'#e8701c':((v>0.62)?'#9a2c0c':'#4a1206'));
+      g.fillStyle=c;
+      g.fillRect(x,y,1,1);
+    }
+    BRAI.push(cv);
+  }
+  return BRAI;
 }
 
 var PUFF=null;
@@ -80,7 +150,7 @@ function puffs(){
    LE MODELE
    --------------------------------------------------------------------- */
 FUM.creer=function(){
-  return {nuages:[], part:[], jets:[], feux:[], vols:[], flash:[], nes:0, gr:4242, libres:[]};
+  return {nuages:[], part:[], jets:[], feux:[], vols:[], flash:[], brules:[], nes:0, gr:4242, libres:[]};
 };
 
 /* ---------------------------------------------------------------------
@@ -214,12 +284,18 @@ FUM.pas=function(F,dt,sim,R){
        doublaient le temps de dessin : ce sont des blits etires avec
        transparence, les plus chers de la scene. Moins nombreux et plus
        gros, le brasier est aussi beau et deux fois moins lourd. */
+    /* LE BUDGET DU FEU, REMESURE. A trois langues toutes les quatre-
+       vingts millisecondes, quatre foyers coutaient neuf millisecondes
+       de dessin contre cinq avant. Les gros foyers gardent leurs trois
+       langues — ce sont eux qu'on regarde — les petits se contentent de
+       deux, et on revient a quatre-vingt-quinze. */
     if((fe.t%95)<dt){
-      var nf=(vieu<0.75)?2:1;
+      var nf=(vieu<0.75&&fe.r>1.6)?3:2;
       for(var q2=0;q2<nf;q2++){
         var pf=naitre(F,fe.x+(al(F)-0.5)*fe.r*1.5,fe.y+(al(F)-0.5)*fe.r*0.9,
                       0.0004,330+al(F)*260,3);
-        pf.vz=0.026+al(F)*0.022; pf.r=0.45+al(F)*0.5;
+        pf.vz=0.024+al(F)*0.026; pf.r=0.34+al(F)*0.46;
+        pf.rot=al(F)*6.283;
       }
     }
     if((fe.t%300)<dt){
@@ -297,8 +373,40 @@ FUM.pas=function(F,dt,sim,R){
   /* ---- CE QUE CA FAIT AUX CORPS ---- */
   if(!sim)return;
   var A=sim.agents;
+  /* la liste de ceux qui brulent, refaite ici et pas dans le dessin :
+     le rendu lit, il ne cherche pas */
+  F.brules.length=0;
   for(var a2=0;a2<A.length;a2++){
     var ag=A[a2];
+    /* LE FEU NE REGARDE PAS LES CAMPS, et c'etait le defaut : la boucle
+       entiere sautait les policiers, si bien qu'un cocktail tombe en
+       plein sur la ligne ne lui faisait ABSOLUMENT RIEN. Le gaz et
+       l'eau restent reserves au cortege — les CRS ont un masque et ne
+       s'arrosent pas eux-memes — mais les flammes brulent tout le
+       monde, et c'est bien le moindre des realismes. */
+    if(ag.feu>0){
+      ag.feu-=dt;
+      F.brules.push({x:ag.x,y:ag.y,t:ag.feu});
+      ag.choc=Math.min(1.6, ag.choc+dt*0.0016);
+    }
+    for(i=0;i<F.feux.length;i++){
+      var fe3=F.feux[i];
+      var gx3=ag.x-fe3.x, gy3=ag.y-fe3.y, g3=gx3*gx3+gy3*gy3;
+      var por3=fe3.r+1.3;
+      if(g3>=por3*por3||g3<=1e-6)continue;
+      var gl3=Math.sqrt(g3);
+      var rep3=(1-gl3/por3)*0.00052;
+      ag.vx+=gx3/gl3*rep3*dt; ag.vy+=gy3/gl3*rep3*dt;
+      ag.choc=Math.min(1.5, ag.choc + dt*0.00085*(1-gl3/por3));
+      ag.brule=900;
+      if(gl3<fe3.r*0.80&&ag.feu<=0)ag.feu=4200;
+      if(gl3<fe3.r){
+        var ux3=gx3/gl3, uy3=gy3/gl3;
+        ag.x=fe3.x+ux3*fe3.r; ag.y=fe3.y+uy3*fe3.r;
+        var dot3=ag.vx*ux3+ag.vy*uy3;
+        if(dot3<0){ag.vx-=ux3*dot3; ag.vy-=uy3*dot3;}
+      }
+    }
     if(ag.camp!=='manif')continue;
     for(i=0;i<F.nuages.length;i++){
       n=F.nuages[i];
@@ -313,32 +421,8 @@ FUM.pas=function(F,dt,sim,R){
     /* ON NE TRAVERSE PAS UN FEU. Il repousse fort et de pres, et il
        marque ceux qui s'en approchent : c'est ce qui en fait un
        obstacle et pas un decor. */
-    for(i=0;i<F.feux.length;i++){
-      var fe2=F.feux[i];
-      var fx2=ag.x-fe2.x, fy2=ag.y-fe2.y, f2=fx2*fx2+fy2*fy2;
-      var port=fe2.r+1.3;
-      if(f2<port*port&&f2>1e-6){
-        var fl=Math.sqrt(f2);
-        var rep=(1-fl/port)*0.00052;
-        ag.vx+=fx2/fl*rep*dt; ag.vy+=fy2/fl*rep*dt;
-        ag.choc=Math.min(1.5, ag.choc + dt*0.00085*(1-fl/port));
-        /* ON NE TIENT PAS UNE LIGNE DANS LES FLAMMES. Le corps est
-           marque pour une seconde ; c'est la simulation qui decide
-           quoi en faire, pas le dessin. */
-        ag.brule=900;
-        /* LE COEUR NE SE TRAVERSE PAS. Une poussee, meme forte, se
-           laisse vaincre par deux cents corps qui avancent ; un mur,
-           non. Sous le rayon du foyer on est repose sur le bord et la
-           vitesse qui rentrait est annulee. C'est ce qui fait d'un feu
-           un obstacle plutot qu'un decor. */
-        if(fl<fe2.r){
-          var ux=fx2/fl, uy=fy2/fl;
-          ag.x=fe2.x+ux*fe2.r; ag.y=fe2.y+uy*fe2.r;
-          var dot=ag.vx*ux+ag.vy*uy;
-          if(dot<0){ag.vx-=ux*dot; ag.vy-=uy*dot;}
-        }
-      }
-    }
+    /* la boucle des feux a ete remontee AVANT le filtre de camp :
+       voir plus haut. */
     for(i=0;i<F.jets.length;i++){
       var J=F.jets[i];
       var jx=ag.x-J.x, jy=ag.y-J.y;
@@ -415,6 +499,14 @@ FUM.dessineSol=function(F,g,mx,my,x0,x1,y0,y1,nuit){
     g.drawImage(TRACE,(px-tw/2)|0,(py+2-th/2)|0,tw|0,th|0);
     g.globalAlpha=a0*v;
     g.drawImage(HALO,(px-R)|0,(py-R*0.55)|0,(R*2)|0,(R*1.1)|0);
+    /* LE TAPIS DE BRAISES. Un feu commence par une surface qui
+       rougeoie ; les langues poussent dessus. Sans lui, les flammes
+       avaient l'air posees sur le pave. */
+    var BR=braises();
+    var bw=f.r*26*(0.92+0.08*Math.sin(f.t*0.006));
+    g.globalAlpha=a0*v*0.92;
+    g.drawImage(BR[(i+((f.t/420)|0))%4],
+                (px-bw/2)|0,(py-bw*0.26)|0,bw|0,(bw*0.52)|0);
   }
   g.globalAlpha=a0;
 };
@@ -431,9 +523,13 @@ FUM.dessine=function(F,g,mx,my,x0,x1,y0,y1){
          debout et non ecrasee comme une bouffee — une flamme couchee
          ne ressemble a rien. */
       var a3=1-vie;
-      var h3=p.r*26*(0.55+vie*0.7), w3=p.r*15*(1-vie*0.45);
-      g.globalAlpha=Math.min(1,a3*1.25);
-      g.drawImage(FL[p.img%3],(px-w3/2)|0,(py-h3)|0,w3|0,h3|0);
+      /* LE VACILLEMENT. Une flamme qui garde la meme largeur pendant
+         toute sa vie est une image, pas un feu : on la fait respirer a
+         une frequence propre a chaque langue. */
+      var vac=1+0.16*Math.sin(p.t*0.022+p.rot);
+      var h3=p.r*28*(0.50+vie*0.78), w3=p.r*14*(1-vie*0.42)*vac;
+      g.globalAlpha=Math.min(1,a3*1.3);
+      g.drawImage(FL[p.img%8],(px-w3/2)|0,(py-h3)|0,Math.max(2,w3)|0,Math.max(3,h3)|0);
       continue;
     }
     if(p.type===4){
@@ -476,6 +572,25 @@ FUM.dessine=function(F,g,mx,my,x0,x1,y0,y1){
     g.drawImage(P[p.img],(px-ech)|0,(py-ech*0.62)|0,(ech*2)|0,(ech*1.24)|0);
   }
   g.globalAlpha=1;
+  /* LES CORPS EN FEU. Trois petites langues accrochees a l'homme, qui
+     montent avec lui : c'est ce qui fait qu'on repere d'un coup d'oeil
+     celui qui brule au milieu de la ligne. */
+  if(F.brules&&F.brules.length){
+    var FL2=flammes();
+    for(i=0;i<F.brules.length;i++){
+      var BU=F.brules[i];
+      var bx2=mx(BU.x,BU.y), by2=my(BU.x,BU.y);
+      if(bx2<x0-40||bx2>x1+40||by2<y0-60||by2>y1+40)continue;
+      for(var q6=0;q6<3;q6++){
+        var ph2=9+q6*3+Math.sin(BU.t*0.02+q6*2)*3;
+        var pw2=5+Math.cos(BU.t*0.026+q6)*1.6;
+        g.globalAlpha=0.9;
+        g.drawImage(FL2[(q6*3+((BU.t/90)|0))%8],
+          (bx2-pw2/2+(q6-1)*2.4)|0,(by2-6-ph2)|0,pw2|0,ph2|0);
+      }
+    }
+    g.globalAlpha=1;
+  }
   /* LE FLASH DE L'IMPACT. Un dixieme de seconde, en lumiere ajoutee :
      c'est ce qui donne le COUP. Dessine apres les particules pour
      eclairer la gerbe, et pas dessous. */

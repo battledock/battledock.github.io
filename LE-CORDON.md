@@ -157,7 +157,10 @@ qui s'éteint la première. Plus un bris de verre au son.
 
 **Le feu.** Un foyer brûle trente-quatre secondes, repousse les corps
 dans un rayon d'une tuile et demie, et **ne se traverse pas** — ni par
-les manifestants, ni par la police. Il tend la rue tant qu'il brûle, pour
+les manifestants, ni par la police. **Qui est dans le cœur prend feu** :
+quatre secondes à courir, hors de toute formation et sourd à tous les
+ordres, quel que soit son camp. C'est ce qu'un cocktail bien placé doit
+produire, et c'est le seul moyen d'ouvrir une brèche à la demande. Il tend la rue tant qu'il brûle, pour
 les deux camps. Deux foyers voisins fusionnent ; au-delà de huit, le plus
 vieux s'éteint. L'événement `ÇA BRÛLE AU MILIEU` allume une benne sur
 l'esplanade, à l'écart de l'axe du cortège pour qu'elle gêne sans barrer

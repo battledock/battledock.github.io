@@ -2324,3 +2324,51 @@ where niveau = 29;
 -- et tapaient un bouton d'ordre dans la foulee ; il a suffi d'une ligne
 -- apres chaque demarrage. C'est le prix d'une phase qui s'intercale, et
 -- il valait mieux le payer dans les tests que dans le jeu.
+
+-- =====================================================================
+-- ETAPE : LE FEU BRULE, ET IL EST BEAU                2026-10-28-0330
+-- =====================================================================
+--
+-- LE BOGUE, ET IL ETAIT GROS. La boucle qui applique les effets aux
+-- corps commencait par « if(ag.camp!=='manif')continue; » — elle
+-- sautait donc TOUS les policiers, et la boucle des feux etait dedans.
+-- Resultat : un cocktail tombe en plein sur le cordon ne lui faisait
+-- absolument rien. Le seul moyen qu'avait le cortege d'ouvrir une
+-- breche ne marchait pas, et personne ne pouvait le voir autrement
+-- qu'en jouant.
+--   La boucle des feux est remontee AVANT le filtre de camp. Le gaz et
+-- l'eau restent reserves au cortege — les CRS ont un masque et ne
+-- s'arrosent pas — mais les flammes brulent tout le monde.
+--
+-- ET ELLES BRULENT POUR DE BON. Qui est dans les quatre cinquiemes du
+-- rayon prend feu : quatre secondes en etat FUIT, hors de toute
+-- formation et sourd a tous les ordres, avec trois petites langues
+-- accrochees au corps pour qu'on le repere au milieu de la ligne.
+-- Mesure : un foyer de 2,2 tuiles pose sur une ligne de 46 hommes en
+-- met 9 en feu et fait tomber de 46 a 6 le nombre de ceux qui restent a
+-- portee. Dix secondes plus tard la ligne s'est recomposee.
+--
+-- LE FEU ETAIT LAID, ET VOICI POURQUOI. Il empilait trois gouttes
+-- lissees avec des degrades : de loin trois taches orange, de pres un
+-- flou dans un jeu qui n'a pas un seul pixel flou ailleurs.
+--   Les langues sont maintenant peintes CASE PAR CASE sur une grille de
+-- douze par vingt, en quatre teintes franches — coeur blanc, jaune,
+-- orange, rouge sombre — avec une pente qui s'applique au CARRE de la
+-- hauteur (droite a la base, couchee a la pointe), un second coup de
+-- vent, une pointe qui se delite et une encoche de temps en temps.
+-- Huit langues tirees d'une graine fixe, plus un vacillement propre a
+-- chacune.
+--   MESURE DE CADRAGE : a 0,55 de pente toutes les langues sortaient
+-- droites et on voyait huit fois le meme triangle. A 1,9, elles se
+-- tordent.
+--   Et un TAPIS DE BRAISES sous les langues : un feu commence par une
+-- surface qui rougeoie, les flammes poussent dessus. A vingt cases de
+-- large on voyait une grille de gros carres rouges posee sur le pave ;
+-- a quarante, avec des braises plus sombres que les flammes, c'est un
+-- sol qui rougeoie.
+--
+-- CE QUE CA COUTE. Trois langues toutes les 80 ms faisaient passer
+-- quatre foyers de 5 a 9 ms de dessin en plus. Les gros foyers gardent
+-- leurs trois langues — ce sont eux qu'on regarde — les petits se
+-- contentent de deux, et l'emission revient a 95 ms : 10,8 ms a quatre
+-- foyers contre 10,7 sans feu. Le feu ne coute plus rien.
