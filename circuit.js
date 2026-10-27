@@ -142,6 +142,7 @@ MOTEUR.circuit={
             ligne:null, longueur:0, img:null, mini:null,
             x:0, y:0, a:0, vx:0, vy:0, idx:0,
             gauche:false, droite:false, frein:false,
+            cible:0, volant:0, touche:false, glisse:0, gommes:[],
             tour:0, tms:0, total:0, meilleur:0, tours:[], mi:false,
             hors:0, secousse:0, fini:0, deb:0,
             ecurie:0, trace:[], fant:null, fantI:0, fantNeuf:[],
@@ -242,7 +243,10 @@ MOTEUR.circuit={
         g.fillRect(x+2+q,y+3,3,2);
       }
     }
-    tribune(540,66,180,26); tribune(900,990,96,24); tribune(120,300,26,120);
+    /* LES TRIBUNES SE POSENT AU BORD DE LA PISTE, pas au milieu d'un
+       champ : celle de gauche flottait a cent pixels du bitume et
+       ressemblait a un rectangle gris oublie la. */
+    tribune(540,62,180,26); tribune(886,978,100,24); tribune(196,322,24,110);
     /* LES ARBRES ONT BESOIN D'UNE OMBRE ET D'UNE LUMIERE. Peints en deux
        verts voisins de celui de l'herbe, ils donnaient des boules grises
        posees sur rien : l'oeil ne lisait ni un relief ni un volume. */
@@ -284,7 +288,8 @@ MOTEUR.circuit={
     var p=s.ligne[0];
     s.phase='jeu';s.t=0;s.score=0;
     s.x=p[0];s.y=p[1];s.a=p[2];s.vx=0;s.vy=0;s.idx=0;
-    s.gauche=s.droite=s.frein=false;
+    s.gauche=s.droite=s.frein=false;s.cible=0;s.volant=0;s.touche=false;
+    s.glisse=0;s.gommes=[];
     s.tour=1;s.tms=0;s.total=0;s.meilleur=0;s.tours=[];s.mi=false;
     s.hors=0;s.secousse=0;s.fini=0;s.flash=0;s.pouss=[];
     s.fantNeuf=[];s.fant=null;s.fantI=0;s.enPause=false;s.recNeuf=false;
@@ -299,19 +304,40 @@ MOTEUR.circuit={
 
   dire:function(s,m,gros){s.mot=m;s.motT=gros?1600:1000;s.motGros=!!gros;},
 
-  /* ================= LE VOLANT =================
-     Gauche, droite, ou les deux pour freiner. On relit la liste entiere
-     a chaque changement plutot que de compter les appuis : un doigt qui
-     glisse d'un camp a l'autre, ou que le systeme oublie de rendre,
-     laisserait sinon le volant bloque. */
+  /* =====================================================================
+     LE VOLANT
+     ---------------------------------------------------------------------
+     LE BRAQUAGE EST ANALOGIQUE, ET C'EST TOUT LE SUJET. La premiere
+     version ne connaissait que trois etats : a fond a gauche, a fond a
+     droite, ou tout droit. On ne pouvait pas placer la voiture — on la
+     jetait d'un bord a l'autre et on passait son temps a corriger la
+     correction precedente. Ce qui manquait n'etait pas de la precision
+     de doigt, c'etait une COMMANDE PROGRESSIVE.
+
+     Chaque doigt vaut desormais sa distance au milieu de l'ecran : pres
+     du centre, une touche de volant ; contre le bord, braquage complet.
+     Une zone morte au milieu empeche un pouce pose la par hasard de
+     faire devier la voiture. Et comme on fait la SOMME des doigts, deux
+     pouces symetriques s'annulent — ce qui donne le frein tout droit —
+     tandis qu'un pouce au bord gauche et un autre juste a droite du
+     centre freinent EN TOURNANT a gauche. On freine donc en virage sans
+     avoir rien de plus a apprendre.
+     ===================================================================== */
   doigts:function(s,PTS){
-    var g=false, d=false;
+    var somme=0, g=false, d=false, n=0;
     for(var k in PTS){
       if(!PTS.hasOwnProperty(k))continue;
-      if(PTS[k].x < s.L/2) g=true; else d=true;
+      var f=(PTS[k].x-s.L/2)/(s.L/2);
+      f=Math.max(-1,Math.min(1,f));
+      var MORT=0.13;
+      if(Math.abs(f)<MORT)f=0;
+      else f=(f-(f>0?MORT:-MORT))/(1-MORT);
+      somme+=f; n++;
+      if(PTS[k].x<s.L/2)g=true; else d=true;
     }
-    s.gauche=g; s.droite=d; s.frein=(g&&d);
-    if(s.enPause&&(g||d))s.enPause=false;
+    s.cible=Math.max(-1,Math.min(1,somme));
+    s.gauche=g; s.droite=d; s.frein=(g&&d); s.touche=(n>0);
+    if(s.enPause&&n)s.enPause=false;
   },
   presse:function(s,x,y){ if(s.enPause)s.enPause=false; },
   leve:function(s){},
@@ -327,6 +353,9 @@ MOTEUR.circuit={
       var q=s.pouss[i]; q.vie-=dt; q.x+=q.vx*dt; q.y+=q.vy*dt;
       if(q.vie<=0)s.pouss.splice(i,1);
     }
+    for(var ig=s.gommes.length-1;ig>=0;ig--){
+      s.gommes[ig].vie-=dt; if(s.gommes[ig].vie<=0)s.gommes.splice(ig,1);
+    }
     if(s.phase!=='jeu'){
       if(s.fini>0){s.fini-=dt;if(s.fini<=0)this.fin(s);}
       return;
@@ -336,16 +365,32 @@ MOTEUR.circuit={
     var dirx=Math.cos(s.a), diry=Math.sin(s.a);
     var v=Math.hypot(s.vx,s.vy);
 
+    /* ---- LE VOLANT TOURNE, IL NE SAUTE PAS ----
+       Un angle de braquage qui passe de zero au maximum en une image
+       donne une voiture qui pivote par a-coups : on ne sent aucun poids,
+       et la moindre pression devient une embardee. Le volant rejoint donc
+       sa consigne en un dixieme de seconde environ — et il se REDRESSE
+       plus vite qu'il ne braque, parce que c'est ce que fait un vrai
+       volant qu'on lache, et parce que c'est ce qui sauve d'un tete-a-
+       queue quand on panique et qu'on retire les pouces. */
+    var vers=s.cible;
+    var vitV=(Math.abs(vers)>Math.abs(s.volant)?0.0115:0.0190);
+    s.volant+=(vers-s.volant)*Math.min(1,vitV*dt);
+    if(Math.abs(s.volant)<0.004)s.volant=0;
+
     /* ---- LE BRAQUAGE ----
        Il depend de la vitesse : a l'arret on ne tourne pas, et a pleine
        vitesse on braque moins — sinon la voiture pivote sur place dans
-       les lignes droites et le trace devient illisible. */
-    var dir=(s.gauche?-1:0)+(s.droite?1:0);
-    if(dir&&!s.frein){
-      var eff=Math.min(1,v/0.06)*(1-Math.min(0.42,v/VMAX*0.42));
-      s.a+=dir*0.0046*eff*dt;
-    }else if(dir&&s.frein){
-      s.a+=dir*0.0020*Math.min(1,v/0.06)*dt;  /* on braque encore un peu au frein */
+       les lignes droites et le trace devient illisible.
+
+       LE FREIN CHARGE L'AVANT. Freiner en entree de virage fait mordre
+       les roues directrices : on tourne plus court. C'est la seule chose
+       que fait un pilote et qu'un jeu oublie presque toujours de rendre,
+       et c'est pourtant elle qui donne envie de refaire le virage. */
+    if(s.volant){
+      var eff=Math.min(1,v/0.05)*(1-Math.min(0.46,v/VMAX*0.46));
+      if(s.frein)eff*=1.38;
+      s.a+=s.volant*0.0052*eff*dt;
     }
 
     /* ---- LE MOTEUR ---- */
@@ -367,14 +412,31 @@ MOTEUR.circuit={
        sur la glace. Le coefficient est ce qui definit la voiture — et il
        tombe de moitie sur l'herbe. */
     var perp=-s.vx*diry+s.vy*dirx;
-    var grip=(surHerbe?0.0042:0.0115);
+    var grip=(surHerbe?0.0042:(s.frein?0.0134:0.0118));
+    /* LE CONTRE-BRAQUAGE RATTRAPE. Quand le volant pointe a l'oppose de
+       la derive, les roues reprennent prise : la glisse se rattrape au
+       lieu de finir en tete-a-queue. Sans cette ligne, un derapage etait
+       une condamnation et le joueur n'avait qu'une chose a faire — ne
+       jamais glisser, c'est-a-dire ne jamais attaquer. */
+    if(s.volant*perp<-0.0035)grip*=1.42;
     var corr=Math.min(1,grip*dt);
     s.vx+=diry*perp*corr; s.vy-=dirx*perp*corr;
+    s.glisse+=(Math.abs(perp)-s.glisse)*Math.min(1,0.006*dt);
     /* la fumee quand ca glisse vraiment */
-    if(Math.abs(perp)>0.055&&Math.random()<0.5)
+    if(Math.abs(perp)>0.050&&Math.random()<0.55)
       s.pouss.push({x:s.x-dirx*8,y:s.y-diry*8,vx:(Math.random()-0.5)*0.01,
                     vy:(Math.random()-0.5)*0.01,vie:420,
                     c:surHerbe?'#6f8a4e':'#b9bec8'});
+    /* LES GOMMES. Deux traces noires derriere les roues arriere quand ca
+       glisse : elles restent trois secondes au sol et disent apres coup
+       ou on a perdu la voiture. C'est le seul retour qui apprenne
+       vraiment a doser, parce qu'on le lit au tour suivant. */
+    if(!surHerbe&&Math.abs(perp)>0.042){
+      var gx=-diry*7, gy=dirx*7, bx=s.x-dirx*9, by=s.y-diry*9;
+      s.gommes.push({x:bx+gx,y:by+gy,vie:3000});
+      s.gommes.push({x:bx-gx,y:by-gy,vie:3000});
+      if(s.gommes.length>520)s.gommes.splice(0,80);
+    }
 
     /* ---- LES FROTTEMENTS ---- */
     var frot=Math.pow(surHerbe?0.9975:0.99935,dt);
@@ -526,7 +588,10 @@ MOTEUR.circuit={
     var sec=s.secousse>0?(Math.random()-0.5)*s.secousse*2.6:0;
     /* LA CAMERA regarde un peu devant la voiture : centrer dessus fait
        perdre la moitie de l'ecran sur ce qu'on vient de quitter. */
-    var ax=s.x+Math.cos(s.a)*34, ay=s.y+Math.sin(s.a)*34;
+    /* LA CAMERA REGARDE D'AUTANT PLUS LOIN QU'ON VA VITE. A distance
+       fixe, on arrivait sur les virages rapides sans les avoir vus. */
+    var vv=Math.hypot(s.vx,s.vy), dev=28+vv*210;
+    var ax=s.x+Math.cos(s.a)*dev, ay=s.y+Math.sin(s.a)*dev;
     s.camX=(s.camX==null)?ax:s.camX+(ax-s.camX)*0.14;
     s.camY=(s.camY==null)?ay:s.camY+(ay-s.camY)*0.14;
     var cx=Math.round(Math.max(0,Math.min(CI_MW-L,s.camX-L/2))+sec);
@@ -537,6 +602,12 @@ MOTEUR.circuit={
     G.drawImage(s.img,cx,cy,L,H,0,0,L,H);
 
     var i;
+    for(i=0;i<s.gommes.length;i++){
+      var gm=s.gommes[i];
+      G.globalAlpha=Math.min(0.5,gm.vie/3000*0.5);
+      R(gm.x-cx-1,gm.y-cy-1,2,2,'#15171d');
+    }
+    G.globalAlpha=1;
     for(i=0;i<s.pouss.length;i++){
       var q=s.pouss[i];
       G.globalAlpha=Math.max(0,q.vie/420)*0.5;
@@ -592,21 +663,47 @@ MOTEUR.circuit={
       G.fillStyle='#ffb04a';G.fillText('HORS PISTE',L/2,H*0.30);
     }
 
-    /* ---- LE VOLANT, montre a l'ecran ----
-       Deux bandeaux qui s'allument sous les pouces. Sans eux, un joueur
-       qui prend la borne ne devine pas que l'ecran est coupe en deux —
-       et il n'y a pas de notice dans une salle d'arcade. */
-    var hb=Math.round(H*0.16);
-    R(0,H-hb,L/2-1,hb,s.gauche?'rgba(90,216,255,.18)':'rgba(255,255,255,.045)');
-    R(L/2+1,H-hb,L/2-1,hb,s.droite?'rgba(90,216,255,.18)':'rgba(255,255,255,.045)');
+    /* ---- LE VOLANT, MONTRE A L'ECRAN ----
+       LE BANDEAU DOIT DIRE QUE LA COMMANDE EST GRADUEE. Deux moities qui
+       s'allument en bloc laissaient croire a un braquage tout ou rien —
+       et un joueur qui croit ca pose son pouce n'importe ou dans la
+       moitie, donc toujours au maximum. Des graduations qui s'eclairent
+       du centre vers le bord montrent, sans un mot, que la position
+       compte. Il n'y a pas de notice dans une salle d'arcade.
+
+       LA BARRE DU DESSUS est le volant REEL, celui qui met un dixieme de
+       seconde a rejoindre la consigne : on voit donc son propre retard,
+       et c'est ce qui apprend a anticiper au lieu de corriger. */
+    var hb=Math.round(H*0.15), cy2=H-hb/2;
+    R(0,H-hb,L,hb,'rgba(6,9,14,.42)');
+    R(0,H-hb,L,1,'rgba(255,255,255,.14)');
+    var NG=9, bw=Math.max(3,Math.round(L*0.034));
+    for(i=0;i<NG;i++){
+      var fr=(i+1)/NG;
+      var lx=Math.round(L/2-(L/2-bw-1)*fr), rx=Math.round(L/2+(L/2-bw-1)*fr);
+      var seuil=fr-0.8/NG;
+      var ag=(s.cible<0&&-s.cible>=seuil), ad=(s.cible>0&&s.cible>=seuil);
+      var hh=Math.round(9+fr*9);
+      /* AU REPOS AUSSI, LES GRADUATIONS SE VOIENT. A sept pour cent de
+         blanc elles disparaissaient sur l'herbe claire, et le bandeau ne
+         disait plus rien tant qu'on n'avait pas le doigt dessus — c'est
+         justement l'inverse qu'on veut. Elles grandissent vers le bord :
+         la forme seule annonce que la commande est graduee. */
+      R(lx,cy2-hh/2,bw,hh,ag?'#78e0ff':'rgba(255,255,255,.17)');
+      R(rx-bw,cy2-hh/2,bw,hh,ad?'#78e0ff':'rgba(255,255,255,.17)');
+    }
+    /* la barre du volant reel, qui traine derriere la consigne */
+    var bl=Math.round(L*0.42);
+    R(L/2-bl,H-hb-7,bl*2,5,'rgba(6,9,14,.72)');
+    var vw=Math.round(Math.abs(s.volant)*bl);
+    if(vw>0)R(s.volant>=0?L/2:L/2-vw,H-hb-6,vw,3,s.frein?'#ff8a5a':'#78e0ff');
+    R(L/2,H-hb-9,1,9,'rgba(255,255,255,.65)');
     G.font='bold 8px ui-monospace,monospace';G.textAlign='center';
-    G.fillStyle=s.gauche?'#9ae8ff':'rgba(255,255,255,.30)';
-    G.fillText('◀',L/4,H-hb/2+3);
-    G.fillStyle=s.droite?'#9ae8ff':'rgba(255,255,255,.30)';
-    G.fillText('▶',L*3/4,H-hb/2+3);
     if(s.frein){
-      G.fillStyle='#ff6a5a';G.font='bold 9px ui-monospace,monospace';
-      G.fillText('FREIN',L/2,H-hb/2+3);
+      G.fillStyle='#ff6a5a';G.fillText('FREIN',L/2,cy2+3);
+    }else if(!s.touche){
+      G.fillStyle='rgba(255,255,255,.52)';G.font='7px ui-monospace,monospace';
+      G.fillText('PLUS LOIN DU CENTRE = PLUS FORT',L/2,H-hb-13);
     }
 
     /* ---- LA VITESSE ---- */
@@ -649,14 +746,18 @@ MOTEUR.circuit={
       G.font='bold 15px ui-monospace,monospace';G.fillStyle='#ffd24a';
       G.fillText('LE CIRCUIT',L/2,H*0.34);
       G.font='9px ui-monospace,monospace';G.fillStyle='#cfe4f2';
-      G.fillText('MOITIÉ GAUCHE : BRAQUE À GAUCHE',L/2,H*0.34+22);
-      G.fillText('MOITIÉ DROITE : BRAQUE À DROITE',L/2,H*0.34+36);
-      G.fillText('LES DEUX EN MÊME TEMPS : FREIN',L/2,H*0.34+50);
+      G.fillText('GAUCHE ET DROITE POUR BRAQUER',L/2,H*0.34+22);
+      G.fillStyle='#78e0ff';
+      G.fillText('PLUS TON POUCE EST PRÈS DU BORD,',L/2,H*0.34+38);
+      G.fillText('PLUS TU BRAQUES FORT',L/2,H*0.34+50);
+      G.fillStyle='#cfe4f2';
+      G.fillText('LES DEUX CÔTÉS EN MÊME TEMPS : FREIN',L/2,H*0.34+68);
       G.fillStyle='#9fb4c8';
-      G.fillText('LE GAZ EST AUTOMATIQUE',L/2,H*0.34+70);
-      G.fillText('TROIS TOURS · ON GARDE LE MEILLEUR',L/2,H*0.34+84);
+      G.fillText('FREINER FAIT MORDRE L\u2019AVANT :',L/2,H*0.34+86);
+      G.fillText('ON TOURNE PLUS COURT AU FREIN',L/2,H*0.34+98);
+      G.fillText('TROIS TOURS · LE GAZ EST AUTOMATIQUE',L/2,H*0.34+116);
       G.fillStyle='#ffd24a';
-      G.fillText('LE FANTÔME REJOUE TON RECORD',L/2,H*0.34+104);
+      G.fillText('LE FANTÔME REJOUE TON RECORD',L/2,H*0.34+134);
     }
     if(s.phase==='fini'){
       G.fillStyle='rgba(6,9,14,.82)';G.fillRect(0,H*0.26,L,96);

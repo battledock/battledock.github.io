@@ -2719,3 +2719,92 @@ where niveau = 29;
 
    COTE BASE : voir sql/arcade_circuit.sql.
    ===================================================================== */
+
+/* =====================================================================
+   ETAPE : LE VOLANT DEVIENT ANALOGIQUE — LE CIRCUIT    2026-10-28-1050
+   =====================================================================
+
+   LE PROBLEME, DIT SIMPLEMENT : on ne pouvait pas PLACER la voiture. Le
+   braquage ne connaissait que trois etats — a fond a gauche, a fond a
+   droite, tout droit — si bien qu'on jetait la monoplace d'un bord a
+   l'autre et qu'on passait son temps a corriger la correction
+   precedente. Ce qui manquait n'etait pas de la precision de doigt,
+   c'etait une COMMANDE PROGRESSIVE.
+
+   ---------------------------------------------------------------------
+   CE QUI A CHANGE
+   ---------------------------------------------------------------------
+
+   LE BRAQUAGE SUIT LA POSITION DU POUCE. Chaque doigt vaut desormais sa
+   distance au milieu de l'ecran : pres du centre, une touche de volant ;
+   contre le bord, braquage complet. Une zone morte de treize pour cent
+   au milieu empeche un pouce pose la par hasard de faire devier la
+   voiture. Verifie au doigt, pouce par pouce : x=120 donne -0,29,
+   x=60 donne -0,65, x=8 donne -0,95.
+
+   ON FAIT LA SOMME DES DOIGTS, et c'est ce qui rend le frein utilisable
+   en virage. Deux pouces symetriques s'annulent — frein tout droit —
+   tandis qu'un pouce au bord gauche et un autre juste a droite du centre
+   donnent une consigne de -0,81 AVEC le frein : on freine en tournant,
+   sans rien de plus a apprendre.
+
+   LE VOLANT TOURNE, IL NE SAUTE PAS. Un angle qui passe de zero au
+   maximum en une image donne une voiture sans poids ou la moindre
+   pression devient une embardee. Le volant rejoint sa consigne en un
+   dixieme de seconde, et il se REDRESSE plus vite qu'il ne braque —
+   comme un vrai volant qu'on lache, et parce que c'est ce qui sauve d'un
+   tete-a-queue quand on panique et qu'on retire les pouces.
+
+   LE FREIN CHARGE L'AVANT. Freiner en entree de virage fait mordre les
+   roues directrices : l'efficacite du braquage monte de trente-huit pour
+   cent et l'adherence avec. C'est la seule chose que fait un pilote et
+   qu'un jeu oublie presque toujours de rendre, et c'est pourtant elle
+   qui donne envie de refaire le virage.
+
+   LE CONTRE-BRAQUAGE RATTRAPE. Quand le volant pointe a l'oppose de la
+   derive, les roues reprennent quarante pour cent de prise. Sans cette
+   ligne, un derapage etait une condamnation, et le joueur n'avait qu'une
+   seule chose a faire : ne jamais glisser, c'est-a-dire ne jamais
+   attaquer.
+
+   LA CAMERA REGARDE PLUS LOIN QUAND ON VA VITE. A distance fixe, on
+   arrivait sur les virages rapides sans les avoir vus.
+
+   LES GOMMES. Deux traces noires derriere les roues arriere quand ca
+   glisse, qui restent trois secondes au sol. C'est le seul retour qui
+   apprenne vraiment a doser, parce qu'on le lit au tour suivant.
+
+   ---------------------------------------------------------------------
+   LA MESURE
+   ---------------------------------------------------------------------
+
+   Le meme pilote-robot, sur le meme trace, avec pour seule difference
+   qu'il DOSE au lieu de braquer a fond :
+
+       avant   28,02  27,83  27,83   —  meilleur 27,832 s  —  3 042 pts
+       apres   26,30  26,00  26,02   —  meilleur 25,999 s  —  3 500 pts
+
+   Une seconde huit par tour, six virgule six pour cent. Et c'est le
+   plancher du gain : un robot applique une regle, un joueur sent le
+   point ou la voiture commence a glisser et joue avec. Le dosage lui est
+   desormais accessible ; il ne l'etait pas du tout avant.
+
+   ---------------------------------------------------------------------
+   DEUX LECONS DE METHODE
+   ---------------------------------------------------------------------
+
+   LE BANDEAU DOIT DIRE QUE LA COMMANDE EST GRADUEE. Deux moities qui
+   s'allument en bloc laissaient croire a un braquage tout ou rien — et
+   un joueur qui croit ca pose son pouce n'importe ou dans la moitie,
+   donc toujours au maximum. Des graduations qui grandissent vers le bord
+   et s'eclairent une a une montrent la gradation sans un mot. Elles
+   restent visibles AU REPOS : a sept pour cent de blanc elles
+   disparaissaient sur l'herbe claire, et le bandeau ne disait plus rien
+   tant qu'on n'avait pas deja le doigt dessus.
+
+   UN SCRIPT DE TEST PERIME MENT COMME UN BOGUE. Le script de capture
+   pilotait encore en posant s.gauche et s.droite ; avec le volant
+   analogique, la consigne restait a zero et la voiture allait tout
+   droit. Pendant une minute, le jeu a eu l'air casse alors que seul le
+   robot l'etait. Quand la commande change, les robots changent avec.
+   ===================================================================== */
