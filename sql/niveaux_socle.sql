@@ -2808,3 +2808,98 @@ where niveau = 29;
    droit. Pendant une minute, le jeu a eu l'air casse alors que seul le
    robot l'etait. Quand la commande change, les robots changent avec.
    ===================================================================== */
+
+/* =====================================================================
+   ETAPE : CINQ TRACES, DOUZE MONOPLACES — LE CIRCUIT   2026-10-28-1210
+   =====================================================================
+
+   ---------------------------------------------------------------------
+   POURQUOI DOUZE LIVREES ET NON DOUZE COULEURS
+   ---------------------------------------------------------------------
+   Repeindre la meme carrosserie en douze teintes ne donne pas douze
+   voitures : a trente pixels de haut et vue de dessus, l'oeil ne retient
+   qu'une tache coloree, et deux ecuries de bleu voisin sont la meme
+   voiture. Chaque livree porte donc un MOTIF — bande centrale, chevrons
+   sur le nez, damier sur les pontons, fleche, diagonale, pois, cercles,
+   bicolore avant-arriere — applique au sprite pixel par pixel par une
+   fonction qui repond, pour chaque point de carrosserie : es-tu du
+   motif ? C'est la forme qui distingue ; la couleur ne fait que
+   confirmer.
+
+   LES LIVREES SONT INVENTEES, et les noms aussi — le Mistral, la
+   Calanque, le J4, le Phoceen, le Bora, le Mole, Saint-Jean, la Criee,
+   Endoume, le Frioul, Panier, Sormiou. Reproduire les couleurs d'une
+   ecurie reelle, c'est reproduire sa marque.
+
+   ---------------------------------------------------------------------
+   POURQUOI CINQ TERRAINS ET NON CINQ BOUCLES
+   ---------------------------------------------------------------------
+   Cinq traces sur le meme fond vert sont cinq fois le meme circuit : on
+   ne reconnait pas ou on est, donc on n'apprend rien, donc on ne
+   progresse pas. Chacun a son sol, ses obstacles et ses vibreurs :
+   l'herbe et le sable du Port, la mer et les palmiers de la Corniche,
+   la roche et les falaises des Calanques, le beton, les conteneurs et
+   les vibreurs jaunes de la Friche, les pins sombres de la Pinede.
+   Reconnaitre un endroit est la condition pour y freiner au bon moment.
+
+   LES TRACES ONT ETE VERIFIES AVANT D'ETRE DESSINES. Deux portions de
+   piste superposees rendraient la detection de sortie incoherente sans
+   jamais lever d'erreur. Les cinq sont passes au calcul : le plus serre
+   laisse 149 pixels entre deux portions eloignees le long du trace, pour
+   une piste large de 46, et tous tiennent dans leur cadre.
+
+   ---------------------------------------------------------------------
+   LE SCORE EST NORMALISE PAR TRACE
+   ---------------------------------------------------------------------
+   C'est la correction la moins visible et la plus necessaire. Mesure
+   faite, le meme pilote-robot boucle :
+
+       LA CORNICHE    19,92 s     LA FRICHE      21,90 s
+       LES CALANQUES  22,68 s     LA PINEDE      24,72 s
+       LE PORT        26,00 s
+
+   Avec l'ancienne formule — (40 000 - chrono) / 4 — ce meme pilote
+   marquait 5 021 points sur la Corniche et 3 500 sur le Port : quarante-
+   trois pour cent d'ecart pour le seul choix du trace. Le tableau du
+   port aurait recompense le circuit le plus court au lieu du meilleur
+   pilotage, tout le monde aurait couru la Corniche, et les quatre autres
+   n'auraient plus servi a rien.
+
+   Chaque trace porte donc son temps de reference, et le chrono est
+   ramene a l'echelle du Port avant d'etre compte. Verifie : le meme
+   pilote marque 3 500 partout, et un pilote vingt pour cent plus rapide
+   marque 4 800 partout. On choisit son circuit pour celui qu'on aime,
+   pas pour celui qui paie.
+
+   COTE BASE : le plafond de vraisemblance passe de 130 a 180 points par
+   seconde — un pilote quarante pour cent plus rapide que la reference
+   atteindrait 6 100 points en une quarantaine de secondes.
+
+   ---------------------------------------------------------------------
+   L'ECRAN DE CHOIX VIENT APRES LE JETON
+   ---------------------------------------------------------------------
+   Et c'est voulu : dans une salle d'arcade on met la piece, puis on
+   choisit sa machine — c'est le moment ou l'on prend le temps de
+   regarder, parce qu'on a deja paye. Le mettre avant obligerait a
+   decider a vide, sans savoir si on va jouer. Le trace et la monoplace
+   choisis sont gardes d'une partie a l'autre, et le record est garde PAR
+   TRACE, avec son fantome.
+
+   DEUX LECONS DE MISE EN PAGE :
+
+   LES POSITIONS SE CALCULENT DEPUIS LE BAS. Elles etaient des fractions
+   d'une hauteur supposee de 422 pixels ; la scene en fait 318 sur un
+   telephone ordinaire. Le resume et le bouton remontaient dans la
+   derniere rangee de voitures, et trois lignes de texte se retrouvaient
+   ecrites par-dessus des monoplaces. Le bouton, le resume et les grilles
+   s'empilent desormais a partir du bas, ou tout doit tenir.
+
+   LE NOM SE POSE SOUS LA VIGNETTE, pas dessus : ecrit par-dessus le
+   trace, il etait illisible sur la roche claire comme sur l'herbe
+   sombre — et c'est pourtant le seul endroit ou l'on apprend comment
+   s'appelle le circuit qu'on regarde.
+
+   ET UNE DE DESSIN : dessinerSprite tourne deja le sprite. Une rotation
+   posee en plus sur le contexte les additionnait, et les monoplaces de
+   la banniere roulaient de travers.
+   ===================================================================== */
