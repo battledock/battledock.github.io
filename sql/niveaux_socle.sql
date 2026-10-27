@@ -2621,3 +2621,101 @@ where niveau = 29;
    ---------------------------------------------------------------------
    COTE BASE : voir sql/arcade_pole.sql.
    ===================================================================== */
+
+/* =====================================================================
+   ETAPE : VUE DE DESSUS, ON TOURNE — LE CIRCUIT        2026-10-28-0940
+   =====================================================================
+
+   CE QU'ON VIENT CHERCHER : rouler. Pas un chrono deguise, pas une
+   gestion de course — tenir une monoplace sur un trace et tourner.
+
+   LE VOLANT TIENT DANS DEUX POUCES. Moitie gauche de l'ecran : braque a
+   gauche. Moitie droite : braque a droite. Les deux ensemble : frein. Et
+   rien du tout veut dire plein gaz. Aucun glissement a doser, aucun
+   bouton a viser — on joue d'une main dans le metro et a deux mains
+   quand on veut etre precis. C'est le schema des jeux de course vus de
+   dessus depuis toujours, et il n'a pas ete ameliore depuis.
+
+   DEUX VECTEURS, PAS UN. Faire avancer la voiture dans la direction ou
+   elle pointe donne un jouet sur rail : rien ne derape, il n'y a plus
+   rien a piloter. On garde donc SEPAREMENT l'orientation du chassis et
+   le vecteur vitesse, et l'adherence ne fait que rapprocher le second de
+   la premiere. Trop de vitesse en virage, et l'ecart ne se resorbe plus
+   assez vite : le nez pointe a l'interieur pendant que la voiture part a
+   l'exterieur. Le coefficient d'adherence est tout le caractere de la
+   voiture, et il tombe de moitie sur l'herbe.
+
+   LE CIRCUIT EST PEINT UNE FOIS dans une image hors ecran, et on en
+   decoupe ce qu'on voit. Repeindre huit cent quarante points de trace a
+   chaque image coute cher pour un decor immobile, et surtout cela
+   interdit les details — vibreurs, bacs a sable, bandes de tonte,
+   tribunes — qui font qu'on reconnait un endroit du circuit.
+
+   LE FANTOME EST LA RECOMPENSE : une voiture translucide rejoue le
+   meilleur tour, et on la double ou on la perd de vue. C'est plus
+   parlant qu'un delta chiffre — on voit son retard sous la forme d'une
+   voiture qui s'eloigne.
+
+   ---------------------------------------------------------------------
+   LE BOGUE QUI A COUTE LE PLUS DE TEMPS : LE MUR DE GLU
+   ---------------------------------------------------------------------
+
+   Une limite entourait le trace, loin derriere l'herbe, pour empecher
+   une voiture egaree de partir a l'autre bout du monde. Elle replacait
+   le chassis sur le cercle limite ET multipliait toute la vitesse par
+   0,35 — a chaque image. Une voiture qui poussait dedans perdait donc
+   soixante-cinq pour cent de son elan soixante fois par seconde.
+
+   LA MESURE : apres une sortie, la voiture restait a 0,0014 pixel par
+   milliseconde pendant douze secondes. Plaquee, sans aucun moyen de
+   repartir. Le pilote-robot ne bouclait pas un seul tour en
+   quatre-vingt-seize secondes, et rien dans les chiffres ne disait
+   pourquoi — il fallait regarder la vitesse ET la position hors piste
+   ensemble pour comprendre.
+
+   LA CORRECTION : on ne tue plus que ce qui POUSSE VERS LE DEHORS. La
+   composante le long de la limite est conservee, donc la voiture glisse
+   contre le bord au lieu de s'y coller, et braquer vers l'interieur
+   suffit a s'en degager. C'est ce que fait un rail de securite ; un mur
+   de glu n'existe nulle part. L'herbe a ete adoucie dans le meme
+   mouvement — a 0,42 de couple et sept pour cent de frottement par
+   image, une voiture sortie ne revenait plus jamais sur la piste.
+
+   ---------------------------------------------------------------------
+   DEUX VERIFICATIONS QUI ONT EVITE DES BOGUES SILENCIEUX
+   ---------------------------------------------------------------------
+
+   LE TRACE SE CROISE-T-IL ? Le mini-plan dessine une forme en sablier,
+   et deux portions de piste superposees auraient rendu la detection de
+   sortie incoherente sans jamais lever d'erreur. Verifie par le calcul
+   plutot que suppose : les deux portions les plus eloignees LE LONG du
+   trace mais les plus proches dans l'espace sont a 149 pixels l'une de
+   l'autre, pour une piste large de 46. Aucun chevauchement.
+
+   LE PILOTE-ROBOT EST PASSE DANS LA PAGE. Pilote depuis le script de
+   test, chaque commande coutait un aller-retour : le robot reagissait
+   avec un retard de plusieurs images et ne tenait pas la route, ce qui
+   donnait l'illusion d'un jeu injouable. Greffe sur pas(), il est
+   cadence par la boucle du jeu elle-meme et boucle ses tours. Un test
+   trop lent pour le jeu qu'il mesure ne mesure que lui-meme.
+
+   ---------------------------------------------------------------------
+   TROIS TOURS, PAS CINQ. Un tour demande vingt-huit secondes a un robot
+   prudent, une vingtaine a qui sait ou freiner. Cinq tours faisaient une
+   partie de deux minutes et demie : c'est une course, pas une borne.
+
+   LES LIVREES SONT INVENTEES, et les noms aussi — le Mistral, la
+   Calanque, le J4, le Mole, la Criee. Reproduire les couleurs d'une
+   ecurie reelle, c'est reproduire sa marque. Le style est celui de la
+   planche de reference ; les voitures sont a nous.
+
+   CE QUE LE SHELL A GAGNE : doigts(). presse() et leve() ne parlent que
+   d'un contact a la fois ; une borne qui commande a gauche et a droite
+   en meme temps ne peut rien en faire. Le shell passe desormais la liste
+   complete des doigts poses a chaque changement, y compris quand un
+   doigt glisse d'un camp a l'autre, et la vide a la perte de focus —
+   sans quoi un telephone qui recoit un appel pendant qu'on braque
+   revient avec le volant bloque.
+
+   COTE BASE : voir sql/arcade_circuit.sql.
+   ===================================================================== */

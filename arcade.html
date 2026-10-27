@@ -20,7 +20,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-28-0820';
+  var MA_VERSION='2026-10-28-0940';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -705,6 +705,13 @@ var VIGNETTE={
    isometrique et la manche gauche. Il reste le Hangar, et la salle est
    plus claire pour lui. */
 var BORNES=[
+ /* LE CIRCUIT D'ABORD. C'est la borne la plus simple a comprendre en
+    passant devant : on voit une voiture, une piste, et on sait tout de
+    suite ce qu'on va faire. */
+ {cle:'circuit', vig:'circuit', nom:'Le Circuit',
+  dit:'Vue de dessus, un trace ferme, trois tours. La moitie gauche de l\u2019ecran braque a gauche, la moitie droite braque a droite, les deux ensemble freinent \u2014 le gaz est automatique. Trop vite dans un virage et la voiture glisse : le nez pointe a l\u2019interieur pendant qu\u2019elle part a l\u2019exterieur. Un fantome rejoue ton meilleur tour.',
+  court:'Vue de dessus, trois tours. Deux pouces, et tu pilotes.',
+  mise:'1 JETON \u00b7 3 TOURS', tag:'\u2605 NOUVEAU'},
  /* LA POLE OUVRE LA SALLE. Un chrono qu'on vient battre revient plus
     souvent qu'un score qu'on pose : c'est la borne qui ramene. */
  {cle:'pole', vig:'pole', nom:'La Pole',
@@ -4779,6 +4786,12 @@ function ouvrirBorne(B){
        passerait pour un appui long, et un doigt qui bouge d'un pixel
        pendant qu'on freine laisserait le frein colle au plancher. */
     if(BORNE.presse)BORNE.presse(S,p.x,p.y);
+    /* TOUS LES DOIGTS POSES, A CHAQUE CHANGEMENT. presse() et leve() ne
+       parlent que d'un contact a la fois : une borne qui commande a
+       gauche et a droite en meme temps — un volant tactile — ne peut rien
+       en faire. On lui passe donc la liste complete, et c'est elle qui
+       decide ce que signifient deux pouces poses ensemble. */
+    if(BORNE.doigts)BORNE.doigts(S,PTS);
   };
   /* LE DOIGT QUI GLISSE. Une borne qui tient dans un monde plus grand
      que l'écran en a besoin ; les autres n'en savent rien. */
@@ -4799,6 +4812,16 @@ function ouvrirBorne(B){
     if(GLI.bouge)BORNE.glisse(S,p.x,p.y,dx,dy);
     GLI.x=p.x;GLI.y=p.y;
   };
+  /* un doigt qui glisse change de camp : la borne doit le savoir meme
+     quand elle n'a pas declare glisse() */
+  CV.addEventListener('pointermove',function(ev){
+    if(!BORNE||!S||!BORNE.doigts)return;
+    if(!PTS[ev.pointerId])return;
+    var b=CV.getBoundingClientRect();
+    PTS[ev.pointerId].x=(ev.clientX-b.left)/b.width*SL;
+    PTS[ev.pointerId].y=(ev.clientY-b.top)/b.height*SH;
+    BORNE.doigts(S,PTS);
+  });
   CV.onpointerup=CV.onpointercancel=function(ev){
     delete PTS[ev.pointerId];NPT=Object.keys(PTS).length;
     if(PIN&&NPT<2){PIN=null;if(BORNE&&BORNE.pince&&S)BORNE.pince(S,1,0,0,true);
@@ -4822,12 +4845,19 @@ function ouvrirBorne(B){
      un frein reste coince est pire qu'un frein qui ne repond pas. */
   CV.addEventListener('pointerup',function(ev){
     if(BORNE&&BORNE.leve&&S)BORNE.leve(S);
+    if(BORNE&&BORNE.doigts&&S)BORNE.doigts(S,PTS);
   });
   CV.addEventListener('pointercancel',function(ev){
     if(BORNE&&BORNE.leve&&S)BORNE.leve(S);
+    if(BORNE&&BORNE.doigts&&S)BORNE.doigts(S,PTS);
   });
   window.addEventListener('blur',function(){
     if(BORNE&&BORNE.leve&&S)BORNE.leve(S);
+    /* LA FENETRE QUI PERD LA MAIN RELACHE TOUT. Sans ce vidage, un
+       telephone qui recoit un appel pendant qu'on braque a gauche revient
+       avec le volant bloque a gauche, et le joueur croit a une panne. */
+    for(var k in PTS)delete PTS[k];NPT=0;
+    if(BORNE&&BORNE.doigts&&S)BORNE.doigts(S,PTS);
   });
   chargerClassement(B.cle);
   /* LE RECORD DU JOUEUR, LU AU COMPTOIR : c'est lui qui dit quelles
@@ -5020,6 +5050,7 @@ window.addEventListener('orientationchange',function(){
    cinq à huit minutes — et le score est le temps qu'il restait.
    ===================================================================== */
 </script>
+<script src="circuit.js?v=995ccaf6"></script>
 <script src="pole.js?v=f1ba484e"></script>
 <script src="portique.js?v=eb11a51d"></script>
 </body>
