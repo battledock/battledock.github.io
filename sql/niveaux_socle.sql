@@ -2456,3 +2456,82 @@ where niveau = 29;
 --
 -- Le code du Cordon reste dans l'historique git, et LE-CORDON.md garde
 -- la trace de ce qui a ete construit.
+
+/* =====================================================================
+   ETAPE : UNE BORNE LEGERE DANS LA SALLE — LE PORTIQUE   2026-10-28-0700
+   =====================================================================
+
+   CE QU'ON CHERCHAIT. Une partie de trente secondes, un seul pouce, une
+   mort nette et l'envie immediate de recommencer. Le Hangar demande
+   qu'on s'installe ; il manquait la borne qu'on prend en entrant.
+
+   LE JEU. On est a la grue. Le chariot va et vient, le conteneur se
+   balance au bout du cable, un tap le lache. Toute la difficulte tient
+   dans la vitesse qu'il emporte au moment du lacher.
+
+   POURQUOI LE PENCHANT ET PAS LA DECOUPE. Les jeux d'empilage coupent ce
+   qui depasse : la cible retrecit jusqu'a disparaitre, et la partie se
+   termine parce qu'il n'y a plus rien a viser. Ici le conteneur garde sa
+   taille et chaque decalage ajoute du couple. On VOIT le danger monter —
+   et on peut le rattraper : un conteneur pose dans l'axe, un « carreau »,
+   redresse la pile de moitie. Il existe donc une facon de se sortir d'une
+   mauvaise serie, et c'est ce qui fait relancer.
+
+   ---------------------------------------------------------------------
+   TROIS CHOSES MESUREES, TROIS CORRECTIONS
+   ---------------------------------------------------------------------
+
+   LE REPERE MONTRAIT L'APLOMB, PAS L'ARRIVEE. Un robot qui visait
+   l'aplomb du conteneur pendu au pixel pres a pose quatorze conteneurs
+   sans obtenir un seul carreau. Le conteneur emporte la vitesse du
+   chariot : il derive d'une dizaine de pixels pendant sa chute, plus de
+   la moitie de sa demi-largeur. Viser juste etait donc PUNI. Le repere
+   calcule maintenant le point d'arrivee (meme fonction que le lacher,
+   ils ne peuvent plus se contredire), et le meme robot fait huit a neuf
+   carreaux sur onze poses. La difficulte n'a pas baisse : le point
+   d'arrivee file sur le cote pendant que le chariot roule, il faut
+   toujours anticiper — mais on voit ce qu'on vise.
+
+   LA DERIVE DU PENCHANT ETAIT QUADRATIQUE. Le premier reglage accumulait
+   une vitesse de penchant : une pile a 0,44 — un seul conteneur pose de
+   travers — s'ecroulait en moins d'une seconde. Remplacee par une
+   croissance proportionnelle au penchant lui-meme : elle double en douze
+   secondes depuis la moitie, et laisse encore deux secondes pour placer
+   le carreau qui sauve quand on frole le bord. Avec une zone morte sous
+   un huitieme, sans quoi une pile presque droite tombait toute seule au
+   bout de deux minutes sans que le joueur puisse comprendre pourquoi.
+
+   LA PILE SORTAIT DE L'ECRAN. Deux causes qui s'additionnaient : la
+   camera ne suivait que la hauteur, alors que chaque pose decale un peu
+   la pile — trente pixels de serpentin au bout de dix etages ; et
+   l'inclinaison pivotait autour du PREMIER bloc, si bien qu'a cinquante
+   etages un penchant de cinq degres emportait le sommet a plusieurs
+   largeurs de conteneur. La camera suit desormais aussi le cote (plus
+   lentement que la hauteur : un recadrage aussi vif qu'on pose donne le
+   mal de mer), et le pivot est le douzieme bloc sous le sommet — bras de
+   levier constant, inclinaison lisible, pile toujours dans le cadre.
+
+   ---------------------------------------------------------------------
+   LE BOGUE DU SHELL QUE CETTE BORNE A REVELE
+   ---------------------------------------------------------------------
+
+   ouvrirBorne faisait :
+       var deux=(BORNE.manches && BORNE.manches!=='une');
+       ...classList.toggle('on', deux);
+
+   Pour une borne SANS manche du tout, cette expression rend undefined —
+   et classList.toggle, quand son second argument n'est pas un booleen,
+   l'ignore et BASCULE la classe. La zone de manche droite s'allumait
+   donc toute seule ; comme elle couvre la moitie de l'ecran en z-index 3,
+   elle avalait toutes les tapes destinees au canvas et la borne ne
+   repondait plus au doigt. Le Hangar ne l'avait jamais montre : son
+   manches:'une' rend deja un booleen. Un double point d'exclamation
+   suffit, mais il a fallu demander au navigateur QUI etait sous le doigt
+   (elementFromPoint) pour le voir — l'evenement n'arrivait jamais, donc
+   aucune trace cote moteur. Un evenement qui ne parvient pas ne se
+   signale pas tout seul.
+
+   ---------------------------------------------------------------------
+   COTE BASE : voir sql/arcade_portique.sql. Deux fonctions seulement,
+   la liste blanche des bornes et le plafond de vraisemblance.
+   ===================================================================== */
