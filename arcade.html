@@ -20,7 +20,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-28-0700';
+  var MA_VERSION='2026-10-28-0820';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -705,6 +705,12 @@ var VIGNETTE={
    isometrique et la manche gauche. Il reste le Hangar, et la salle est
    plus claire pour lui. */
 var BORNES=[
+ /* LA POLE OUVRE LA SALLE. Un chrono qu'on vient battre revient plus
+    souvent qu'un score qu'on pose : c'est la borne qui ramene. */
+ {cle:'pole', vig:'pole', nom:'La Pole',
+  dit:'Un tour de qualification sur le circuit du port. Le doigt pose, c\u2019est le frein ; le doigt leve, c\u2019est plein gaz. Rien d\u2019autre. Trop vite dans un virage et la voiture elargit \u2014 leve le pied. Le delta te dit en permanence si tu es au-dessus ou en dessous de ton record. Trois tours, on garde le meilleur.',
+  court:'Un tour de qualif. Le doigt, c\u2019est le frein. Bats ton record.',
+  mise:'1 JETON \u00b7 3 TOURS', tag:'\u2605 NOUVEAU'},
  /* LE PORTIQUE EN TETE. Une partie dure trente secondes et se joue d'un
     pouce : c'est la borne qu'on prend en entrant, avant de s'installer
     sur les zombies. La salle se lit mieux quand la plus legere est la
@@ -4766,6 +4772,13 @@ function ouvrirBorne(B){
     if(PIN)return;
     GLI=BORNE.glisse?{x:p.x,y:p.y,x0:p.x,y0:p.y,bouge:false}:null;
     if(BORNE.tape&&!GLI)BORNE.tape(S,p.x,p.y);
+    /* LE DOIGT QUI RESTE POSE. tape() ne dit que l'instant du contact :
+       une borne ou l'on MAINTIENT — le pied sur le frein — a besoin de
+       savoir quand ca commence et quand ca finit. Les deux points
+       d'entree sont separes de tape() a dessein, sans quoi un tap bref
+       passerait pour un appui long, et un doigt qui bouge d'un pixel
+       pendant qu'on freine laisserait le frein colle au plancher. */
+    if(BORNE.presse)BORNE.presse(S,p.x,p.y);
   };
   /* LE DOIGT QUI GLISSE. Une borne qui tient dans un monde plus grand
      que l'écran en a besoin ; les autres n'en savent rien. */
@@ -4803,6 +4816,19 @@ function ouvrirBorne(B){
     else if(g.bouge&&BORNE&&BORNE.relache&&S&&S.phase==='jeu')
       BORNE.relache(S,g.x,g.y);
   };
+  /* LE DOIGT QUI SE LEVE, QU'IL AIT BOUGE OU NON, et meme quand le
+     systeme annule le contact (un appel qui arrive, l'ecran qui tourne).
+     Une borne qui maintient doit pouvoir relacher dans TOUS les cas :
+     un frein reste coince est pire qu'un frein qui ne repond pas. */
+  CV.addEventListener('pointerup',function(ev){
+    if(BORNE&&BORNE.leve&&S)BORNE.leve(S);
+  });
+  CV.addEventListener('pointercancel',function(ev){
+    if(BORNE&&BORNE.leve&&S)BORNE.leve(S);
+  });
+  window.addEventListener('blur',function(){
+    if(BORNE&&BORNE.leve&&S)BORNE.leve(S);
+  });
   chargerClassement(B.cle);
   /* LE RECORD DU JOUEUR, LU AU COMPTOIR : c'est lui qui dit quelles
      armes sont deja debloquees. La page ne le calcule pas, elle le
@@ -4994,6 +5020,8 @@ window.addEventListener('orientationchange',function(){
    cinq à huit minutes — et le score est le temps qu'il restait.
    ===================================================================== */
 </script>
+<script src="pole.js?v=f1ba484e"></script>
 <script src="portique.js?v=eb11a51d"></script>
 </body>
 </html>
+

@@ -2535,3 +2535,89 @@ where niveau = 29;
    COTE BASE : voir sql/arcade_portique.sql. Deux fonctions seulement,
    la liste blanche des bornes et le plafond de vraisemblance.
    ===================================================================== */
+
+/* =====================================================================
+   ETAPE : UN TOUR DE QUALIFICATION — LA POLE          2026-10-28-0820
+   =====================================================================
+
+   LE JEU TIENT DANS UN GESTE. Doigt pose : le frein. Doigt leve : plein
+   gaz. Pas de volant, pas de rapport. Ce n'est pas un appauvrissement,
+   c'est le sujet : en qualification, ce qui separe deux pilotes tient
+   presque entierement dans le point de freinage, et une direction au
+   pouce sur un telephone ne produit qu'une voiture qui zigzague pendant
+   que le joueur corrige sa propre imprecision au lieu de lire la piste.
+
+   LA TRAJECTOIRE EST TENUE PAR LA VOITURE — tant qu'elle en a les
+   moyens. Arriver trop vite dans un virage ne fait pas « tourner moins
+   bien » : elle ELARGIT, visiblement, vers l'exterieur, et c'est au
+   joueur de lever le pied pour la ramener. La faute se voit venir et se
+   rattrape ; seule la sortie franche annule le tour.
+
+   LE DELTA EST LE JEU. On note, pour chaque segment du circuit,
+   l'instant ou on l'a atteint ; le meilleur tour laisse son ruban, et la
+   difference se lit en permanence a l'ecran. Un chrono seul ne dit rien
+   pendant qu'on roule. Le delta, lui, transforme chaque erreur en
+   information immediate, et on sait toujours, a deux virages de
+   l'arrivee, si le record va tomber. Le ruban est garde d'une partie a
+   l'autre : c'est contre soi-meme qu'on joue d'abord.
+
+   LE CIRCUIT NE CHANGE JAMAIS. Un trace tire au sort rendrait les
+   chronos incomparables, donc le tableau du port absurde et le delta
+   impossible. Dix-neuf morceaux, onze virages nommes — l'Estaque,
+   l'epingle du Phare, la Corniche, le Crochet — et une courbure qui
+   s'ouvre et se referme sur un quart de chaque morceau : un virage pose
+   d'un coup se lit comme un mur.
+
+   ---------------------------------------------------------------------
+   TROIS ERREURS, MESUREES PUIS CORRIGEES
+   ---------------------------------------------------------------------
+
+   LA PISTE NE SE DESSINAIT PAS DU TOUT. Un aplat vert sous un ciel. La
+   projection portait des divisions par PL_ROUTE et PL_CAMH ajoutees
+   « pour ajuster » : elles annulaient exactement l'echelle. La forme
+   juste est celle de tous les jeux de route en fausse 3D, et il n'y a
+   rien a regler dedans :
+       echelle      = profondeur / distance
+       x ecran      = L/2 * (1 + echelle * ecart lateral)
+       y ecran      = H/2 * (1 - echelle * ecart vertical)
+       demi-largeur = echelle * demi-route * L/2
+   L'horizon se place alors tout seul a mi-hauteur : c'est la que la
+   projection envoie un point infiniment loin. Le poser ailleurs — il
+   etait a 40 % — fait flotter la piste au-dessus du ciel.
+
+   LE TABLEAU DE BORD MENTAIT DANS LES VIRAGES. prochain() renvoyait le
+   PREMIER segment courbe devant soi. Comme un virage s'ouvre
+   progressivement, ses premiers segments ont une courbure faible et donc
+   une vitesse limite elevee : a l'approche de l'epingle du Phare,
+   l'ecran annoncait paisiblement 220 km/h alors qu'il fallait deja etre
+   a 90 trente metres plus loin. Le pilote-robot sortait systematiquement
+   au meme endroit — et un joueur aurait fait pareil en se croyant trahi.
+   On cherche desormais, sur toute la fenetre visible, le segment qui
+   contraint le plus MAINTENANT : pour chacun, la vitesse maximale qu'on
+   peut encore avoir ici est racine(v_limite^2 + 2 * frein * distance),
+   et on garde la plus petite. C'est ce que fait un pilote quand il
+   regarde loin dans le virage au lieu de regarder son capot.
+
+   ON PILOTAIT UNE VOITURE CACHEE DERRIERE SON TABLEAU DE BORD. Le bloc
+   « prochain virage », la pedale et les secteurs occupaient trois etages
+   du bas de l'ecran, c'est-a-dire exactement la place de la monoplace.
+   Le bas appartient desormais a la voiture, le haut a l'information, et
+   tout le chrome du bas tient dans une bande de vingt-deux pixels.
+
+   ---------------------------------------------------------------------
+   CE QUE LE SHELL A GAGNE
+   ---------------------------------------------------------------------
+
+   tape() ne dit que l'instant du contact. Une borne ou l'on MAINTIENT —
+   le pied sur le frein — a besoin de savoir quand ca commence et quand
+   ca finit. Deux points d'entree ont donc ete ajoutes, presse() et
+   leve(), separes de tape() a dessein : sans quoi un tap bref passerait
+   pour un appui long, et un doigt qui bouge d'un pixel pendant qu'on
+   freine laisserait le frein colle au plancher. leve() est appele au
+   lever du doigt, a l'annulation du contact par le systeme (un appel qui
+   arrive, l'ecran qui tourne) et a la perte de focus de la fenetre : un
+   frein reste coince est pire qu'un frein qui ne repond pas.
+
+   ---------------------------------------------------------------------
+   COTE BASE : voir sql/arcade_pole.sql.
+   ===================================================================== */
