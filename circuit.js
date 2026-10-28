@@ -154,30 +154,91 @@ var CI_ECURIES=[
    ===================================================================== */
 var CI_CIRCUITS=[
  {cle:'port', nom:'LE PORT', sous:'LARGE ET ROULANT', ref:26000, large:23, mw:1040, mh:1300,
-  theme:'port', pts:[
+  theme:'port',
+  /* le quai pave a l'entree du port, et la terre du terre-plein */
+  surf:[{d:0.14,f:0.22,t:'pave'},{d:0.52,f:0.60,t:'terre'}],
+  pts:[
    [500,130],[700,150],[840,260],[870,420],[800,530],[660,570],
    [690,700],[810,780],[860,920],[800,1070],[650,1150],[470,1160],
    [330,1090],[300,950],[380,850],[470,790],[420,680],[270,650],
    [190,520],[180,360],[260,220],[380,150]]},
  {cle:'corniche', nom:'LA CORNICHE', sous:'RAPIDE, FACE À LA MER', ref:19916, large:26, mw:1250, mh:980,
-  theme:'mer', pts:[
+  theme:'mer',
+  /* les embruns mouillent le bitume le long de la mer */
+  surf:[{d:0.30,f:0.44,t:'mouille'},{d:0.76,f:0.82,t:'gravier'}],
+  pts:[
    [240,180],[560,140],[900,170],[1080,300],[1090,520],[960,620],
    [700,600],[500,660],[430,790],[260,820],[150,700],[130,420]]},
  {cle:'calanques', nom:'LES CALANQUES', sous:'ÉTROIT ET CASSANT', ref:22684, large:19, mw:980, mh:1180,
-  theme:'roche', pts:[
+  theme:'roche',
+  /* une piste de terre entre deux calanques, et du gravier au bout */
+  surf:[{d:0.18,f:0.30,t:'terre'},{d:0.58,f:0.64,t:'gravier'},{d:0.84,f:0.92,t:'terre'}],
+  pts:[
    [420,120],[620,160],[700,300],[620,400],[700,520],[840,560],
    [860,720],[740,800],[760,950],[600,1040],[420,1020],[360,880],
    [460,790],[420,660],[260,640],[200,500],[280,380],[230,250],[300,150]]},
  {cle:'friche', nom:'LA FRICHE', sous:'MURS DE BÉTON', ref:21900, large:21, mw:1120, mh:1060,
-  theme:'beton', pts:[
+  theme:'beton',
+  /* la friche a garde ses paves et ses tas de gravier */
+  surf:[{d:0.10,f:0.18,t:'pave'},{d:0.44,f:0.52,t:'gravier'},{d:0.70,f:0.78,t:'pave'}],
+  pts:[
    [300,140],[760,130],[960,260],[980,460],[840,560],[880,720],
    [760,880],[520,920],[400,820],[460,660],[340,600],[180,640],
    [120,440],[160,260]]},
  {cle:'pinede', nom:'LA PINÈDE', sous:'SOUS LES PINS, LE SOIR', ref:24716, large:24, mw:1180, mh:1240,
-  theme:'pins', pts:[
+  theme:'pins',
+  /* sous les pins le bitume ne seche jamais, et un chemin de terre coupe */
+  surf:[{d:0.22,f:0.34,t:'mouille'},{d:0.62,f:0.74,t:'terre'}],
+  pts:[
    [380,150],[720,180],[900,320],[880,520],[720,600],[760,760],
    [900,880],[840,1060],[620,1120],[400,1060],[320,900],[440,800],
    [380,660],[200,620],[140,420],[200,250]]}
+];
+
+/* =====================================================================
+   LES SURFACES. Une piste d'une seule matiere se conduit partout pareil,
+   et un trace n'a alors de caractere que sa forme. Un passage en terre,
+   un bac de gravier, un pont mouille : l'adherence change, ca se voit, et
+   un virage connu redevient un probleme. C'est ce que fait Rush Rally,
+   et c'est ce qui donne plus de caractere a un circuit qu'une couleur de
+   fond.
+     adh : ce qu'il reste d'adherence. tremble : la secousse au passage.
+   ===================================================================== */
+var CI_SURF={
+  asphalte:{adh:1.00, tremble:0,    nom:'ASPHALTE'},
+  pave:    {adh:0.90, tremble:0.22, nom:'PAV\u00c9S',  c:'#4d4a52', c2:'#5a5660'},
+  terre:   {adh:0.74, tremble:0.14, nom:'TERRE',    c:'#6b4f33', c2:'#7d5e3e'},
+  gravier: {adh:0.60, tremble:0.26, nom:'GRAVIER',  c:'#7b7466', c2:'#8d8574'},
+  mouille: {adh:0.68, tremble:0,    nom:'MOUILL\u00c9', c:'#2b3340', c2:'#36404f'}
+};
+
+/* LE VOCABULAIRE DU CO-PILOTE. Un chiffre seul ne dit rien a qui n'a
+   jamais fait de rallye ; un mot seul ne se lit pas a deux cents a
+   l'heure. On donne les deux, et la COURBURE DE LA FLECHE par-dessus —
+   c'est elle qu'on lit vraiment, du coin de l'oeil. */
+/* LES SEUILS SORTENT DE LA MESURE, pas de l'idee qu'on se fait d'un
+   virage. Premiere version calibree a vue : les Calanques rendaient neuf
+   virages sur neuf notes « epingle », c'est-a-dire aucune information.
+   On a releve la courbure maximale des quarante-et-un virages des cinq
+   traces, puis coupe en six parts de taille voisine — chaque note
+   designe ainsi une portion reelle du terrain. Les rayons qui en
+   decoulent sont parlants pour une piste large de 38 a 52 pixels :
+     1  rayon < 39 px   plus serre que la piste n'est large
+     2  rayon < 46 px
+     3  rayon < 60 px
+     4  rayon < 86 px
+     5  rayon < 218 px
+     6  au-dela : une inflexion, pas un virage
+   Et le profil obtenu colle a ce que chaque trace annonce : la Corniche
+   n'a qu'un serre pour cinq longs, les Calanques six virages de note 1
+   ou 2 sur neuf. */
+var CI_NOTES=[
+  {max:9.00, n:1, m:'\u00c9PINGLE',    c:'#ff4a3c'},
+  {max:0.62, n:2, m:'TR\u00c8S SERR\u00c9', c:'#ff7a3c'},
+  {max:0.52, n:3, m:'SERR\u00c9',      c:'#ffb04a'},
+  {max:0.40, n:4, m:'MOYEN',      c:'#ffd24a'},
+  {max:0.28, n:5, m:'LONG',       c:'#9fe86a'},
+  {max:0.11, n:6, m:'L\u00c9GER',      c:'#7dff9a'}
 ];
 
 /* LES CINQ TERRAINS. Les teintes seules font le climat : on reconnait
@@ -242,6 +303,80 @@ MOTEUR.circuit={
       L[i][2]=Math.atan2(av[1]-ar[1], av[0]-ar[0]);
     }
     return L;
+  },
+
+  /* =====================================================================
+     LE CARNET DU CO-PILOTE, ecrit une fois au chargement du trace.
+     ---------------------------------------------------------------------
+     On mesure, pour chaque point, de combien le cap tourne sur les six
+     points suivants. Les plages ou ca depasse un seuil sont des virages ;
+     le maximum atteint dans la plage donne la severite. Rien de plus — et
+     c'est suffisant, parce qu'un co-pilote ne dit pas autre chose : de
+     quel cote, a quel point, et dans combien.
+
+     POURQUOI MESURER PLUTOT QU'ECRIRE A LA MAIN. Cinq traces font une
+     soixantaine de virages ; les annoter a la main, c'est soixante
+     occasions de se tromper, et tout est a refaire des qu'un point de
+     controle bouge d'un pixel. Mesure, le carnet suit le trace.
+     ===================================================================== */
+  carnet:function(s){
+    var L=s.ligne, n=L.length, i, c=[], V=[];
+    for(i=0;i<n;i++){
+      var a0=L[i][2], a1=L[(i+6)%n][2];
+      c.push(Math.atan2(Math.sin(a1-a0),Math.cos(a1-a0)));
+    }
+    var SEUIL=0.055, i0=-1, mx=0, sg=0;
+    for(i=0;i<n;i++){
+      var v=c[i], a=Math.abs(v);
+      if(a>SEUIL){
+        if(i0<0){i0=i;mx=0;sg=v>0?1:-1;}
+        if(a>mx){mx=a;sg=v>0?1:-1;}
+      }else if(i0>=0){
+        /* un virage de moins de cinq points est un defaut de trace, pas
+           un virage : l'annoncer ferait bavarder le co-pilote pour rien */
+        if(i-i0>=5)V.push({i:i0, fin:i, mx:mx, sens:sg});
+        i0=-1;
+      }
+    }
+    if(i0>=0&&n-i0>=5)V.push({i:i0, fin:n-1, mx:mx, sens:sg});
+    /* ON FUSIONNE CE QUI S'ENCHAINE. Deux courbes separees par trois
+       points sont un seul virage pour celui qui conduit. */
+    for(i=V.length-1;i>0;i--){
+      if(V[i].i-V[i-1].fin<7&&V[i].sens===V[i-1].sens){
+        V[i-1].fin=V[i].fin; V[i-1].mx=Math.max(V[i-1].mx,V[i].mx);
+        V.splice(i,1);
+      }
+    }
+    for(i=0;i<V.length;i++){
+      var N=CI_NOTES[CI_NOTES.length-1];
+      for(var k=0;k<CI_NOTES.length;k++)
+        if(V[i].mx<CI_NOTES[k].max){ N=CI_NOTES[k]; }
+      V[i].note=N;
+    }
+    s.virages=V;
+    /* ---- la surface de chaque point ---- */
+    s.surf=new Array(n);
+    for(i=0;i<n;i++)s.surf[i]='asphalte';
+    var P=s.C.surf||[];
+    for(i=0;i<P.length;i++){
+      var d=Math.floor(P[i].d*n), f=Math.floor(P[i].f*n);
+      for(var j=d;j<f;j++)s.surf[((j%n)+n)%n]=P[i].t;
+    }
+  },
+
+  /* le virage qui vient, et celui d'apres */
+  devant:function(s){
+    if(!s.virages||!s.virages.length)return null;
+    var n=s.ligne.length, i, best=null, bd=1e9, suiv=null;
+    for(i=0;i<s.virages.length;i++){
+      var d=((s.virages[i].i-s.idx)%n+n)%n;
+      if(d<bd){bd=d;best=i;}
+    }
+    if(best==null)return null;
+    var V=s.virages[best];
+    var dsuiv=s.virages[(best+1)%s.virages.length];
+    var ecart=((dsuiv.i-V.fin)%n+n)%n;
+    return {v:V, d:bd, suiv:(ecart<30?dsuiv:null)};
   },
 
   /* =====================================================================
@@ -310,6 +445,40 @@ MOTEUR.circuit={
     }
     for(i=0;i<L.length;i+=2){ p=L[i]; rond(p[0],p[1],LG+4,T.bord); }
     for(i=0;i<L.length;i+=2){ p=L[i]; rond(p[0],p[1],LG,T.piste); }
+    /* ---- LES SURFACES, peintes par-dessus le bitume ----
+       Elles doivent se voir de LOIN : une nuance de gris ne previent
+       personne, et on arrive dessus a pleine vitesse sans avoir compris
+       pourquoi la voiture part. */
+    for(i=0;i<L.length;i++){
+      var ty=s.surf[i]; if(ty==='asphalte')continue;
+      var SU=CI_SURF[ty];
+      rond(L[i][0],L[i][1],LG-1,SU.c);
+    }
+    for(i=0;i<L.length;i+=1){
+      var ty2=s.surf[i]; if(ty2==='asphalte')continue;
+      var SU2=CI_SURF[ty2], an=L[i][2];
+      /* chaque matiere a son grain : des cailloux pour le gravier, des
+         sillons pour la terre, des joints pour les paves, des reflets
+         pour le mouille */
+      for(var g2=0;g2<3;g2++){
+        var de=(al(i*3.1+g2*7.7)*2-1)*(LG-4);
+        var gx2=L[i][0]+Math.cos(an+1.5708)*de, gy2=L[i][1]+Math.sin(an+1.5708)*de;
+        if(ty2==='gravier') rect(gx2,gy2,2,2,SU2.c2);
+        else if(ty2==='terre'){ if((i+g2)%3===0)rect(gx2,gy2,3,1,SU2.c2); }
+        else if(ty2==='pave'){ if(i%4===0)rect(gx2,gy2,4,1,SU2.c2); }
+        else if(ty2==='mouille'){ if((i+g2)%5===0)rect(gx2,gy2,5,1,'rgba(150,190,220,.26)'); }
+      }
+    }
+    /* UNE LIGNE D'ENTREE ET DE SORTIE pour chaque portion : on voit ou
+       la matiere change avant d'y etre. */
+    for(i=0;i<L.length;i++){
+      var p1=s.surf[i], p2=s.surf[(i+1)%L.length];
+      if(p1===p2)continue;
+      var ab=L[i][2], nx3=Math.cos(ab+1.5708), ny3=Math.sin(ab+1.5708);
+      for(var w3=-LG;w3<LG;w3+=3)
+        rect(L[i][0]+nx3*w3-1,L[i][1]+ny3*w3-1,3,3,
+             ((w3/3)|0)%2?'#e8e8ec':'#30343c');
+    }
     /* L'USURE DE LA CORDE : la trajectoire des autres a noirci le bitume
        a l'interieur des virages. Ca se voit, et ca se suit. */
     for(i=0;i<L.length;i++){
@@ -709,6 +878,7 @@ MOTEUR.circuit={
     s.C=C;
     s.ligne=this.tracer(C.pts,4);
     s.longueur=s.ligne.length*4;
+    this.carnet(s);
     this.peindre(s);
     try{localStorage.setItem(CI_CLE+'.choix',JSON.stringify({c:s.iCir,e:s.iEcu}));}catch(e){}
     var p=s.ligne[0];
@@ -779,6 +949,7 @@ MOTEUR.circuit={
     if(Math.abs(s.volant)<0.004)s.volant=0;
 
     var surHerbe=(s.hors>0);
+    var SU0=CI_SURF[(s.surf&&s.surf[s.idx])||'asphalte']||CI_SURF.asphalte;
     /* LE FREIN CHARGE L'AVANT : on tourne plus court au frein. C'est ce
        qu'un pilote fait et qu'un jeu oublie presque toujours de rendre. */
     if(s.volant){
@@ -790,11 +961,18 @@ MOTEUR.circuit={
       s.vx-=s.vx*FREIN/Math.max(0.02,v)*dt*0.9;
       s.vy-=s.vy*FREIN/Math.max(0.02,v)*dt*0.9;
     }else{
-      var acc=ACC*(1-v/VMAX)*(surHerbe?0.62:1);
+      var acc=ACC*(1-v/VMAX)*(surHerbe?0.62:(0.72+0.28*SU0.adh));
       s.vx+=dirx*acc*dt; s.vy+=diry*acc*dt;
     }
     var perp=-s.vx*diry+s.vy*dirx;
-    var grip=(surHerbe?0.0042:(s.frein?0.0134:0.0118));
+    /* LA SURFACE SOUS LES ROUES. Le gravier ne rend que soixante pour
+       cent de l'adherence, la terre soixante-quatorze, le mouille
+       soixante-huit : un virage pris au meme rythme qu'au tour d'avant ne
+       passe plus, et c'est tout l'interet. */
+    var SU=CI_SURF[(s.surf&&s.surf[s.idx])||'asphalte']||CI_SURF.asphalte;
+    s.surfCo=SU;
+    var grip=(surHerbe?0.0042:(s.frein?0.0134:0.0118))*SU.adh;
+    if(SU.tremble&&v>0.06&&s.secousse<SU.tremble)s.secousse=SU.tremble;
     /* LE CONTRE-BRAQUAGE RATTRAPE : sans lui, une glisse est une
        condamnation et la seule strategie est de ne jamais attaquer. */
     if(s.volant*perp<-0.0035)grip*=1.42;
@@ -1033,6 +1211,77 @@ MOTEUR.circuit={
     R(3,20,3,9,E.c); R(3,20,3,3,E.e);
     G.font='7px ui-monospace,monospace';G.textAlign='left';
     G.fillStyle='#9fb4c8';G.fillText(E.n,9,27);
+
+    /* =====================================================================
+       LE CO-PILOTE
+       ---------------------------------------------------------------------
+       LA FLECHE EST L'INFORMATION, le reste est du confort. Son rayon
+       dit la severite : plus le virage est serre, plus elle est
+       repliee — et c'est cela qu'on lit du coin de l'oeil a pleine
+       vitesse, pas un chiffre ni un mot. Le chiffre et le mot sont la
+       pour apprendre le vocabulaire, et la couleur pour trancher entre
+       « leve le pied » et « passe ».
+
+       IL PARLE DEUX SECONDES AVANT, comme un vrai : plus tot, on oublie ;
+       plus tard, c'est deja fait. Deux secondes a la vitesse du moment,
+       donc la fenetre se deplace quand on va plus vite. */
+    var dv=this.devant(s);
+    if(dv&&!s.hors){
+      var vit=Math.max(0.06,Math.hypot(s.vx,s.vy));
+      var sec2=(dv.d*4)/(vit*1000);
+      if(sec2<2.6){
+        var N=dv.v.note, sens=dv.v.sens>0?1:-1;
+        var proche=Math.max(0,Math.min(1,(2.6-sec2)/2.0));
+        G.globalAlpha=0.42+proche*0.58;
+        /* L'ARC PART DU BAS ET TOURNE DU COTE DU VIRAGE, et son RAYON
+           dit la severite : plus c'est serre, plus il est replie. La
+           premiere version calculait le centre de l'arc d'un cote et la
+           pointe de l'autre : les deux morceaux ne se rejoignaient pas,
+           et la fleche ressemblait a deux signes poses cote a cote. On
+           part donc du meme centre pour tout. */
+        var rad=6+(N.n-1)*2.6;
+        var ox=Math.round(L/2-15+sens*rad), oy=52;
+        for(var t3=0;t3<=24;t3++){
+          var ph=(t3/24)*(Math.PI/2);
+          R(ox-sens*Math.cos(ph)*rad-1, oy-Math.sin(ph)*rad-1, 3, 3, N.c);
+        }
+        /* la pointe, au bout de l'arc et dans son prolongement */
+        for(var q3=0;q3<6;q3++){
+          var hh3=11-q3*1.7;
+          R(ox+sens*(q3*1.7)-1, oy-rad-hh3/2, 2, hh3, N.c);
+        }
+        /* le chiffre, a cote de la fleche et en gros : c'est lui qu'on
+           finit par lire quand on connait le trace */
+        G.textAlign='left';
+        G.font='bold 17px ui-monospace,monospace';G.fillStyle=N.c;
+        G.fillText(String(N.n),L/2+8,oy+4);
+        G.textAlign='center';
+        /* LE MOT SEUL : la fleche dit deja le cote, et « TRES SERRE A
+           DROITE » passait sous le mini-plan. Un libelle qu'on ne peut
+           pas lire en entier ne vaut pas mieux qu'une moitie de libelle. */
+        G.font='bold 8px ui-monospace,monospace';G.fillStyle=N.c;
+        G.fillText(N.m,L/2,oy+18);
+        /* L'ENCHAINEMENT : c'est lui qui permet de preparer la sortie du
+           premier virage en fonction du second. */
+        if(dv.suiv){
+          G.font='7px ui-monospace,monospace';G.fillStyle='rgba(207,228,242,.70)';
+          G.fillText('PUIS '+dv.suiv.note.n+(dv.suiv.sens>0?' À DROITE':' À GAUCHE'),
+                     L/2,oy+28);
+        }
+        G.globalAlpha=1;
+      }
+    }
+    /* ---- LA SURFACE SOUS LES ROUES ----
+       A gauche, sous le nom de l'ecurie : le milieu de l'ecran appartient
+       au co-pilote, et deux textes superposes ne se lisent ni l'un ni
+       l'autre. */
+    if(s.surfCo&&s.surfCo.adh<1){
+      G.textAlign='left';
+      G.font='bold 8px ui-monospace,monospace';G.fillStyle='#ffb04a';
+      G.fillText(s.surfCo.nom,4,38);
+      G.font='7px ui-monospace,monospace';G.fillStyle='rgba(255,176,74,.68)';
+      G.fillText('ADHÉRENCE '+Math.round(s.surfCo.adh*100)+'%',4,47);
+    }
 
     if(s.hors&&Math.floor(s.t/150)%2===0){
       G.font='bold 9px ui-monospace,monospace';G.textAlign='center';

@@ -2995,3 +2995,89 @@ where niveau = 29;
        en course        plein OUI   aucun bouton         tableau cache
        a l'arrivee      plein non   LE MENU / ENCORE     tableau visible
    ===================================================================== */
+
+/* =====================================================================
+   ETAPE : LE CO-PILOTE ET LES SURFACES — LE CIRCUIT   2026-10-28-1640
+   =====================================================================
+
+   Deux emprunts a Rush Rally Origins, le meilleur jeu de course vu de
+   dessus pense pour le pouce.
+
+   ---------------------------------------------------------------------
+   LE CO-PILOTE
+   ---------------------------------------------------------------------
+   Il annonce la SEVERITE du virage suivant, pas seulement sa distance.
+   Dans un jeu ou l'on apprend un trace pour gratter des dixiemes, cela
+   change tout le rythme : on attaque au lieu de decouvrir.
+
+   LA FLECHE EST L'INFORMATION, le reste est du confort. Son rayon dit la
+   severite — plus le virage est serre, plus elle est repliee — et c'est
+   elle qu'on lit du coin de l'oeil a pleine vitesse. Le chiffre et le
+   mot servent a apprendre le vocabulaire, la couleur a trancher entre
+   « leve le pied » et « passe ». L'enchainement est annonce en petit
+   quand un second virage suit de pres : c'est lui qui permet de preparer
+   la sortie du premier en fonction du second.
+
+   IL PARLE DEUX SECONDES ET DEMIE AVANT, a la vitesse du moment : la
+   fenetre se deplace donc quand on va plus vite, comme un vrai co-pilote
+   qui anticipe davantage dans les lignes droites.
+
+   LE CARNET EST MESURE, PAS ECRIT A LA MAIN. Cinq traces font
+   quarante-et-un virages ; les annoter a la main, c'est quarante-et-une
+   occasions de se tromper, et tout est a refaire des qu'un point de
+   controle bouge. On mesure de combien le cap tourne sur six points, on
+   groupe les plages au-dessus d'un seuil, on fusionne ce qui s'enchaine,
+   et le maximum de chaque plage donne la note.
+
+   ET LES SEUILS AUSSI SONT MESURES. Premiere version calibree a vue :
+   les Calanques rendaient NEUF VIRAGES SUR NEUF notes « epingle »,
+   c'est-a-dire aucune information. On a releve la courbure maximale des
+   quarante-et-un virages, puis coupe en six parts de taille voisine.
+   Les rayons qui en decoulent sont parlants pour une piste large de 38 a
+   52 pixels : note 1 sous 39 px de rayon — plus serre que la piste n'est
+   large — puis 46, 60, 86, 218. Le profil obtenu colle enfin a ce que
+   chaque trace annonce :
+
+       LE PORT        2 epingles, 3 moyens, 2 longs, 2 legers
+       LA CORNICHE    aucune epingle, 1 serre, 3 longs   (« rapide »)
+       LES CALANQUES  2 epingles, 5 tres serres, 2 serres, rien d'ouvert
+       LA FRICHE      reparti sur les six notes
+       LA PINEDE      reparti sur les six notes
+
+   ---------------------------------------------------------------------
+   LES SURFACES
+   ---------------------------------------------------------------------
+   Une piste d'une seule matiere se conduit partout pareil, et un trace
+   n'a alors de caractere que sa forme. Cinq matieres, chacune avec son
+   adherence : asphalte 100 %, paves 90 %, terre 74 %, mouille 68 %,
+   gravier 60 %. Le couple moteur passe moins bien aussi, et les paves
+   comme le gravier font trembler.
+
+   ELLES DOIVENT SE VOIR DE LOIN. Une nuance de gris ne previent
+   personne : on arrive dessus a pleine vitesse sans comprendre pourquoi
+   la voiture part. Chaque matiere a donc sa teinte franche et son grain
+   — cailloux du gravier, sillons de la terre, joints des paves, reflets
+   du mouille — et une LIGNE DE TRANSITION en damier marque l'entree et
+   la sortie de chaque portion.
+
+   Le co-pilote annonce la matiere et son adherence, a gauche sous le nom
+   de l'ecurie : le milieu de l'ecran lui appartient deja, et deux textes
+   superposes ne se lisent ni l'un ni l'autre.
+
+   ---------------------------------------------------------------------
+   DEUX LECONS
+   ---------------------------------------------------------------------
+
+   UNE FLECHE SE DESSINE D'UN SEUL CENTRE. La premiere version calculait
+   le centre de l'arc d'un cote et la pointe de l'autre : les deux
+   morceaux ne se rejoignaient pas, et la fleche ressemblait a deux
+   signes poses cote a cote.
+
+   UN TEST MAL ECRIT DECLARE DES ANOMALIES QUI N'EXISTENT QUE DANS LUI.
+   Le controle des surfaces cherchait le premier et le dernier index
+   d'une matiere pour se placer au milieu — mais deux portions separees
+   d'une meme matiere donnent un milieu situe ENTRE elles, donc sur une
+   autre matiere. Le test annoncait « terre lue comme asphalte » sur une
+   portion parfaitement correcte. On prend desormais la premiere portion
+   contigue.
+   ===================================================================== */
