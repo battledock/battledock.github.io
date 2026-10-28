@@ -20,7 +20,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
    rechargee pour la version du jour empecherait celle-ci de se recharger
    a son tour, et l'on jouerait une vieille copie sans le savoir. */
 (function(){
-  var MA_VERSION='2026-10-28-1830';
+  var MA_VERSION='2026-10-28-2010';
   window.MA_VERSION=MA_VERSION;
   var cle='bdl.version.vue:'+location.pathname.split('?')[0];
   function verifier(){
@@ -723,9 +723,9 @@ var BORNES=[
     sur les zombies. La salle se lit mieux quand la plus legere est la
     premiere. */
  {cle:'portique', vig:'portique', nom:'Le Portique',
-  dit:'Tu es a la grue. Les conteneurs arrivent en se balancant, un tap les lache. La pile monte, elle penche, et un conteneur pose pile dans l\u2019axe la redresse. Le mistral, les mouettes et le contremaitre s\u2019en melent. Trois a l\u2019eau et c\u2019est fini.',
-  court:'Empile les conteneurs a la grue. Un seul tap, et ca penche.',
-  mise:'1 JETON \u00b7 3 RAT\u00c9S', tag:'\u2605 NOUVEAU'},
+  dit:'Tu es a la grue, et en dessous les camions attendent. Le conteneur se balance au bout du cable, un tap le lache : pose-le sur la remorque. Pile dans l\u2019axe, c\u2019est un carreau. A cote, les dockers le remontent dans la cour \u2014 et la cour penche. Un camion charge a ras bord degage un conteneur du tas. Le mistral, les mouettes et le contremaitre s\u2019en melent. Six rates et le quai est plein.',
+  court:'Charge les camions a la grue. Vise la remorque, pas le quai.',
+  mise:'1 JETON \u00b7 6 RAT\u00c9S', tag:'\u2605 NOUVEAU'},
  {cle:'hangar', vig:'hangar', nom:'Le Hangar',
   dit:'Le port envahi : huit zones, des boss, seize armes. Ça tire tout seul — toi tu bouges, tu roules, tu lances la grenade. La sortie change de mur à chaque salle. 10 000 € toutes les 10 salles.',
   court:'Survis aux zombies du port. 10 000 € toutes les 10 salles.',
@@ -770,7 +770,19 @@ function salleMaj(){
   BORNES.forEach(function(B){poser(gr,B);});
   BORNES_BIENTOT.forEach(function(B){if(!BORNES.some(function(x){return x.cle===B.cle;}))poser(gr,B,true);});
 }
-setTimeout(salleMaj,0);
+/* LA SALLE SE DESSINE APRES LES BORNES, JAMAIS AVANT.
+   LE BOGUE QU'ON NE VOYAIT PAS. La salle etait peinte par un
+   setTimeout(0) place au milieu du document, alors que circuit.js,
+   pole.js et portique.js sont charges tout en bas : la minuterie partait
+   avant eux, MOTEUR[cle].banniere n'existait pas encore, et les trois
+   cartes tombaient sur le dessin de secours — le rectangle violet et
+   orange. Aucune erreur, aucune trace : juste trois vignettes fausses
+   depuis le premier jour, identiques entre elles, qu'on prenait pour un
+   choix graphique. On attend donc la fin de l'analyse du document, qui
+   est par definition posterieure aux scripts de fin de page. */
+if(document.readyState==='loading')
+  document.addEventListener('DOMContentLoaded',salleMaj);
+else setTimeout(salleMaj,0);
 document.getElementById('retour').onclick=function(){
   location.href='complexe.html?v='+(window.MA_VERSION||Date.now());
 };
@@ -5065,7 +5077,7 @@ window.addEventListener('orientationchange',function(){
 </script>
 <script src="circuit.js?v=bbe91d4f"></script>
 <script src="pole.js?v=f1ba484e"></script>
-<script src="portique.js?v=eb11a51d"></script>
+<script src="portique.js?v=bde999c2"></script>
 </body>
 </html>
 
