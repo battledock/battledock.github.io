@@ -3240,3 +3240,23 @@ where niveau = 29;
      criee 162 · cale 83 · remorqueur 30 · douane 165 · portique 107
    Plafonds poses : 260 · 200 · 90 · 260 · 260.
    ===================================================================== */
+
+/* =====================================================================
+   LA SALLE REVIENT A TROIS BORNES                        2026-10-29
+   =====================================================================
+   On retire Le Portique, La Criee, La Cale, Le Remorqueur et La Douane.
+   Restent Le Circuit, La Pole et Le Hangar.
+
+   LES PARTIES DEJA POSEES NE SONT PAS EFFACEES. Un score supprime, c'est
+   un joueur qui perd son record sans comprendre pourquoi ; les lignes
+   restent dans arcade_parties, elles ne sont simplement plus
+   atteignables. Les plafonds des cinq bornes restent eux aussi dans
+   arcade_plafond(), pour que ces parties se relisent correctement — et
+   pour qu'une borne rebranchee un jour retrouve son reglage mesure.
+
+   Le code est dans l'historique git. Les notes de conception et toutes
+   les mesures restent dans sql/arcade_portique.sql, arcade_criee.sql,
+   arcade_cale.sql, arcade_remorqueur.sql et arcade_douane.sql : ce qui
+   valait la peine d'etre garde, c'est ce que les robots y ont trouve, pas
+   le dessin des conteneurs.
+   ===================================================================== */
