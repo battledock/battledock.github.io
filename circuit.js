@@ -128,6 +128,10 @@ var CI_MOTIFS={
 };
 
 /* DOUZE ECURIES, inventees, aux noms du port et du large. */
+var CI_NOMS_MOTIF={uni:'UNI',bande:'BANDE CENTRALE',deux:'DOUBLE BANDE',
+  fleche:'FL\u00c8CHE',chevron:'CHEVRONS',damier:'DAMIER',diag:'DIAGONALES',
+  pois:'POIS',avant:'NEZ PEINT',arriere:'ARRI\u00c8RE PEINT',moitie:'DEUX MOITI\u00c9S',
+  cercles:'CERCLES'};
 var CI_ECURIES=[
   {n:'MISTRAL',   c:'#ff7a1e', d:'#17202c', e:'#ffd24a', m:'bande'},
   {n:'CALANQUE',  c:'#0f8f86', d:'#eef4f5', e:'#ff4a6a', m:'deux'},
@@ -198,7 +202,7 @@ MOTEUR.circuit={
   init:function(){
     return {phase:'pret', t:0, score:0, L:195, H:422,
             C:null, ligne:null, longueur:0, img:null, mini:null,
-            iCir:0, iEcu:0, vign:null,
+            iCir:0, iEcu:0, vign:null, bascule:0, glDx:0,
             x:0, y:0, a:0, vx:0, vy:0, idx:0,
             cible:0, volant:0, touche:false, gauche:false, droite:false,
             frein:false, glisse:0, gommes:[],
@@ -479,62 +483,189 @@ MOTEUR.circuit={
     return s.vign;
   },
 
-  /* les rectangles de l'ecran de choix, calcules au meme endroit pour le
+  /* =====================================================================
+     LE PADDOCK. Les rectangles sont calcules au meme endroit pour le
      dessin et pour le doigt : deux calculs separes finissent toujours
-     par diverger d'un pixel, et le bouton ne repond plus la ou il est */
+     par diverger d'un pixel, et le bouton ne repond plus la ou il est.
+     Tout s'empile depuis le bas, ou la place manque — une mise en page
+     posee en fractions d'une hauteur supposee se replie mal des que
+     l'ecran n'a pas la taille prevue.
+     ===================================================================== */
   zones:function(s){
-    var L=s.L, H=s.H;
-    var z={cir:[], ecu:[], go:null};
-    /* LE NOM SE POSE SOUS LA VIGNETTE, pas dessus. Ecrit par-dessus le
-       trace, il devenait illisible sur la roche claire comme sur l'herbe
-       sombre, et c'est pourtant le seul endroit ou l'on apprend comment
-       s'appelle le circuit qu'on regarde. La case reserve donc onze
-       pixels sous l'image rien que pour lui. */
-    /* LA MISE EN PAGE SE CALCULE DEPUIS LE BAS, et c'est ce qui manquait.
-       Les positions etaient des fractions de la hauteur supposee de
-       l'ecran — 422 pixels. La scene en fait 335 sur un telephone
-       ordinaire : le resume et le bouton remontaient dans la derniere
-       rangee de voitures, et trois lignes de texte se retrouvaient
-       ecrites par-dessus des monoplaces. Le bouton, le resume et les
-       grilles s'empilent donc a partir du bas, ou tout doit tenir, et
-       seules les vignettes de trace gardent une position haute fixe. */
-    /* LES REPERES DU HAUT SONT EN DUR, pas en fractions de hauteur. Un
-       titre pose a 5,5 % de l'ecran tombe sur le sous-titre quand la
-       scene fait trois cent dix-huit pixels et non quatre cent vingt. */
-    z.yTitre=15; z.ySousTitre=27;
-    var VH=30, NH=11, ch=VH+NH, y0=32;
-    var cw=Math.floor((L-14)/3);
-    for(var i=0;i<CI_CIRCUITS.length;i++){
-      var c=i%3, r=(i/3)|0;
-      z.cir.push({x:5+c*(cw+2), y:y0+r*(ch+4), w:cw, h:ch, i:i, vh:VH});
-    }
-    var basCir=y0+2*(ch+4);
-    z.go={x:Math.round(L*0.16), y:H-52, w:Math.round(L*0.68), h:24};
-    var ew=Math.floor((L-14)/4), eh=24, nr=Math.ceil(CI_ECURIES.length/4);
-    var hauteurEcu=nr*(eh+3)-3;
-    /* les voitures se posent au-dessus du resume ; si l'ecran est trop
-       court pour tout, elles restent collees sous les traces plutot que
-       de passer dessus */
-    z.yResume=z.go.y-26;
-    var y1=Math.max(basCir+13, z.yResume-10-hauteurEcu);
-    for(var j=0;j<CI_ECURIES.length;j++){
-      var c2=j%4, r2=(j/4)|0;
-      z.ecu.push({x:5+c2*(ew+2), y:y1+r2*(eh+3), w:ew, h:eh, i:j});
-    }
+    var L=s.L, H=s.H, z={};
+    z.yTitre=12;
+    z.band={x:5, y:22, w:L-10, h:38};
+    z.bandG={x:5, y:22, w:26, h:38};
+    z.bandD={x:L-31, y:22, w:26, h:38};
+    z.pastC=[]; var pw=9, tot=CI_CIRCUITS.length*pw, x0=Math.round((L-tot)/2);
+    for(var i=0;i<CI_CIRCUITS.length;i++)
+      z.pastC.push({x:x0+i*pw, y:64, w:pw-2, h:8, i:i});
+    z.go={x:Math.round(L*0.16), y:H-46, w:Math.round(L*0.68), h:24};
+    z.pastE=[]; var ew=8, tE=CI_ECURIES.length*ew, xE=Math.round((L-tE)/2);
+    var yPast=z.go.y-12;
+    for(var j=0;j<CI_ECURIES.length;j++)
+      z.pastE.push({x:xE+j*ew, y:yPast-3, w:ew-2, h:9, i:j});
+    z.plaque={x:24, y:yPast-38, w:L-48, h:32};
+    /* la scene de la voiture occupe tout ce qui reste entre les pastilles
+       de trace et la plaque : c'est elle qui respire quand l'ecran est
+       grand, et elle seule qui se tasse quand il est petit */
+    z.scene={x:0, y:78, w:L, h:z.plaque.y-84};
+    z.cy=Math.round(z.scene.y+z.scene.h/2);
+    z.ecuG={x:0, y:z.scene.y, w:Math.round(L*0.26), h:z.scene.h};
+    z.ecuD={x:L-Math.round(L*0.26), y:z.scene.y, w:Math.round(L*0.26), h:z.scene.h};
+    /* l'echelle de la monoplace se deduit de la place disponible : a
+       quatre fois sa taille elle debordait sur les petits ecrans */
+    z.ech=Math.max(2,Math.min(4,Math.floor(Math.min(z.scene.h/(CI_H+10), L*0.62/CI_L))));
     return z;
+  },
+
+  tourne:function(s,quoi,sens){
+    if(quoi==='c'){ s.iCir=(s.iCir+sens+CI_CIRCUITS.length)%CI_CIRCUITS.length; }
+    else { s.iEcu=(s.iEcu+sens+CI_ECURIES.length)%CI_ECURIES.length; }
+    s.bascule=12;
+  },
+
+  ecranChoix:function(s,L,H){
+    if(!CI_ART)CI_ART=CI_SPRITE();
+    var V=this.vignettes(s), z=this.zones(s), i, r;
+    var C=CI_CIRCUITS[s.iCir], E=CI_ECURIES[s.iEcu], T=CI_THEMES[C.theme];
+
+    /* ---- LE SOL DU GARAGE ---- */
+    G.fillStyle='#0c0f16';G.fillRect(0,0,L,H);
+    for(var y=0;y<H;y+=6) R(0,y,L,3,'#11151e');
+    /* LE PROJECTEUR. Une dizaine d'ellipses de plus en plus petites et
+       a peine opaques : c'est ce qui fait qu'on regarde la voiture et
+       non le menu autour. */
+    var cy=z.cy;
+    for(var k=26;k>0;k--){
+      var rr=k*3.4+6;
+      G.fillStyle='rgba(255,240,200,0.022)';
+      G.beginPath();G.ellipse(L/2,cy,rr,rr*0.62,0,0,7);G.fill();
+    }
+
+    G.textAlign='center';
+    G.font='bold 13px ui-monospace,monospace';G.fillStyle='#ffd24a';
+    G.fillText('LE CIRCUIT',L/2,z.yTitre);
+
+    /* ---- LE BANDEAU DU TRACE ---- */
+    r=z.band;
+    R(r.x,r.y,r.w,r.h,'rgba(255,255,255,.06)');
+    R(r.x,r.y,r.w,1,'rgba(255,255,255,.22)');R(r.x,r.y+r.h-1,r.w,1,'rgba(255,255,255,.12)');
+    R(r.x,r.y,1,r.h,'rgba(255,255,255,.12)');R(r.x+r.w-1,r.y,1,r.h,'rgba(255,255,255,.12)');
+    G.drawImage(V[s.iCir],r.x+4,r.y+4);
+    G.textAlign='left';
+    G.font='bold 8px ui-monospace,monospace';G.fillStyle='#ffd24a';
+    G.fillText(C.nom,r.x+60,r.y+13);
+    G.font='7px ui-monospace,monospace';G.fillStyle='#8fa6bc';
+    G.fillText(C.sous,r.x+60,r.y+23);
+    var rc=s.recs[C.cle];
+    G.fillStyle=rc?'#7dff9a':'#5d6e80';
+    G.fillText(rc?('RECORD '+this.mmss(rc.t)):'JAMAIS COURU',r.x+60,r.y+33);
+    G.textAlign='center';
+    G.font='bold 10px ui-monospace,monospace';G.fillStyle='rgba(255,210,74,.75)';
+    G.fillText('‹',z.bandG.x+9,r.y+24);
+    G.fillText('›',z.bandD.x+17,r.y+24);
+    for(i=0;i<z.pastC.length;i++){ r=z.pastC[i];
+      R(r.x,r.y+2,r.w,3,i===s.iCir?'#ffd24a':'rgba(255,255,255,.26)'); }
+
+    /* ---- LA MONOPLACE, EN GRAND ---- */
+    var e=z.ech;
+    /* les deux voisines, en retrait et sombres : on voit qu'il y en a
+       d'autres sans qu'elles volent l'attention */
+    var gv=(s.iEcu-1+CI_ECURIES.length)%CI_ECURIES.length;
+    var dv=(s.iEcu+1)%CI_ECURIES.length;
+    G.globalAlpha=0.16;
+    this.dessinerSprite(G,this.pal(gv),10,cy,-Math.PI/2,null,false);
+    this.dessinerSprite(G,this.pal(dv),L-10,cy,-Math.PI/2,null,false);
+    G.globalAlpha=1;
+    /* l'ombre portee, puis la voiture */
+    G.save();G.translate(L/2+e,cy+e);G.scale(e,e);
+    G.fillStyle='rgba(6,8,12,.45)';
+    for(var j2=0;j2<CI_ART.length;j2++){ var rw=CI_ART[j2];
+      for(var i2=0;i2<rw.length;i2++) if(rw[i2]!=='.')
+        G.fillRect(i2-CI_L/2,j2-CI_H/2,1,1); }
+    G.restore();
+    G.save();G.translate(L/2,cy);G.scale(e,e);
+    this.dessinerSprite(G,this.pal(s.iEcu),0,0,-Math.PI/2,null,false);
+    G.restore();
+    /* LE REFLET QUI BALAYE. Une bande claire qui descend lentement sur
+       la carrosserie : trois lignes de code, et la voiture cesse d'etre
+       une image collee pour devenir un objet pose sous une lampe. */
+    var hs=CI_H*e, ys=cy-hs/2;
+    var br=((s.t*0.045)%(hs+40))-20;
+    G.save();
+    G.beginPath();G.rect(L/2-CI_L*e/2,ys,CI_L*e,hs);G.clip();
+    G.fillStyle='rgba(255,255,255,.10)';
+    G.fillRect(L/2-CI_L*e/2,ys+br,CI_L*e,Math.max(2,e));
+    G.fillStyle='rgba(255,255,255,.05)';
+    G.fillRect(L/2-CI_L*e/2,ys+br+e,CI_L*e,Math.max(2,e*2));
+    G.restore();
+    /* les fleches, sur les cotes */
+    G.textAlign='center';
+    G.font='bold 15px ui-monospace,monospace';G.fillStyle='rgba(255,255,255,.62)';
+    G.fillText('‹',10,cy+5);
+    G.fillText('›',L-10,cy+5);
+
+    /* ---- LA PLAQUE DE L'ECURIE ---- */
+    r=z.plaque;
+    R(r.x,r.y,r.w,r.h,'rgba(255,255,255,.07)');
+    R(r.x,r.y,r.w,1,'#78e0ff');R(r.x,r.y+r.h-1,r.w,1,'#78e0ff');
+    R(r.x,r.y,1,r.h,'#78e0ff');R(r.x+r.w-1,r.y,1,r.h,'#78e0ff');
+    R(r.x+4,r.y+4,6,r.h-8,E.c);
+    R(r.x+4,r.y+4,6,7,E.e);
+    R(r.x+4,r.y+r.h-11,6,7,E.d);
+    G.textAlign='left';
+    G.font='bold 11px ui-monospace,monospace';G.fillStyle='#ffffff';
+    G.fillText(E.n,r.x+16,r.y+14);
+    G.font='7px ui-monospace,monospace';G.fillStyle='#8fa6bc';
+    G.fillText('N° '+(s.iEcu+1)+'  ·  '+CI_NOMS_MOTIF[E.m],r.x+16,r.y+25);
+    for(i=0;i<z.pastE.length;i++){ r=z.pastE[i];
+      R(r.x,r.y+3,r.w,3,i===s.iEcu?'#78e0ff':'rgba(255,255,255,.24)'); }
+
+    /* ---- EN PISTE ---- */
+    r=z.go;
+    R(r.x,r.y,r.w,r.h,'rgba(255,210,74,.18)');
+    R(r.x,r.y,r.w,1,'#ffd24a');R(r.x,r.y+r.h-1,r.w,1,'#ffd24a');
+    R(r.x,r.y,1,r.h,'#ffd24a');R(r.x+r.w-1,r.y,1,r.h,'#ffd24a');
+    G.textAlign='center';
+    G.font='bold 11px ui-monospace,monospace';G.fillStyle='#ffd24a';
+    G.fillText('EN PISTE',L/2,r.y+r.h/2+4);
+    G.font='6px ui-monospace,monospace';G.fillStyle='#7f93a8';
+    G.fillText('TOUCHE ‹ OU › POUR CHANGER',L/2,H-14);
+    G.fillText('GAUCHE / DROITE POUR BRAQUER · LES DEUX : FREIN',L/2,H-5);
   },
 
   tape:function(s,x,y){
     if(s.enPause){s.enPause=false;return;}
     if(s.phase!=='prep')return;
     var z=this.zones(s), i, r;
-    for(i=0;i<z.cir.length;i++){ r=z.cir[i];
-      if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h){ s.iCir=r.i; return; } }
-    for(i=0;i<z.ecu.length;i++){ r=z.ecu[i];
-      if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h){ s.iEcu=r.i; return; } }
-    r=z.go;
-    if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h) this.enPiste(s);
+    function dans(q){ return x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h; }
+    if(dans(z.go)){ this.enPiste(s); return; }
+    /* LES PASTILLES D'ABORD : elles sont posees sur les bandes de
+       defilement, et c'est l'acces direct qui doit gagner. */
+    for(i=0;i<z.pastC.length;i++) if(dans(z.pastC[i])){ s.iCir=i; s.bascule=12; return; }
+    for(i=0;i<z.pastE.length;i++) if(dans(z.pastE[i])){ s.iEcu=i; s.bascule=12; return; }
+    if(dans(z.bandG)){ this.tourne(s,'c',-1); return; }
+    if(dans(z.bandD)){ this.tourne(s,'c', 1); return; }
+    /* LE BANDEAU ENTIER CHANGE DE TRACE : viser une fleche de huit
+       pixels au pouce est une epreuve, et rien d'autre ne se trouve la. */
+    if(dans(z.band)){ this.tourne(s,'c', x<z.band.x+z.band.w/2?-1:1); return; }
+    if(dans(z.ecuG)){ this.tourne(s,'e',-1); return; }
+    if(dans(z.ecuD)){ this.tourne(s,'e', 1); return; }
+    if(dans(z.scene)){ this.tourne(s,'e', x<s.L/2?-1:1); return; }
   },
+  /* LE GLISSEMENT MARCHE AUSSI : c'est le geste qu'on essaie d'abord
+     devant une rangee d'objets, et il ne coute que quelques lignes. */
+  glisse:function(s,x,y,dx,dy){
+    if(s.phase!=='prep')return;
+    s.glDx=(s.glDx||0)+dx;
+    if(Math.abs(s.glDx)<26)return;
+    var z=this.zones(s), sens=s.glDx>0?-1:1;
+    s.glDx=0;
+    if(y>=z.band.y&&y<=z.band.y+z.band.h)this.tourne(s,'c',sens);
+    else if(y>=z.scene.y&&y<=z.scene.y+z.scene.h)this.tourne(s,'e',sens);
+  },
+  relache:function(s,x,y){ s.glDx=0; },
 
   enPiste:function(s){
     var C=CI_CIRCUITS[s.iCir];
@@ -834,80 +965,6 @@ MOTEUR.circuit={
   /* =====================================================================
      L'ECRAN DE CHOIX
      ===================================================================== */
-  ecranChoix:function(s,L,H){
-    if(!CI_ART)CI_ART=CI_SPRITE();
-    var V=this.vignettes(s), z=this.zones(s), i, r;
-    var C=CI_CIRCUITS[s.iCir], E=CI_ECURIES[s.iEcu];
-    var T=CI_THEMES[C.theme];
-    G.fillStyle='#0b0e14';G.fillRect(0,0,L,H);
-    /* un fond qui prend la couleur du terrain choisi : l'ecran de choix
-       annonce deja l'ambiance de la course */
-    G.fillStyle=T.h2;G.globalAlpha=0.30;G.fillRect(0,0,L,H);G.globalAlpha=1;
-
-    G.textAlign='center';
-    G.font='bold 13px ui-monospace,monospace';G.fillStyle='#ffd24a';
-    G.fillText('LE CIRCUIT',L/2,z.yTitre);
-    G.font='7px ui-monospace,monospace';G.fillStyle='#8fa6bc';
-    G.fillText('LE TRACÉ',L/2,z.ySousTitre);
-
-    for(i=0;i<z.cir.length;i++){
-      r=z.cir[i];
-      var sel=(i===s.iCir);
-      R(r.x,r.y,r.w,r.h,sel?'rgba(255,210,74,.14)':'rgba(255,255,255,.05)');
-      R(r.x,r.y,r.w,1,sel?'#ffd24a':'rgba(255,255,255,.14)');
-      R(r.x,r.y+r.h-1,r.w,1,sel?'#ffd24a':'rgba(255,255,255,.08)');
-      R(r.x,r.y,1,r.h,sel?'#ffd24a':'rgba(255,255,255,.08)');
-      R(r.x+r.w-1,r.y,1,r.h,sel?'#ffd24a':'rgba(255,255,255,.08)');
-      G.drawImage(V[i],Math.round(r.x+(r.w-50)/2),r.y+1);
-      /* LE NOM EST MESURE AVANT D'ETRE ECRIT : « LES CALANQUES » deborde
-         d'une case de soixante pixels en six points, et un nom tronque ne
-         vaut pas mieux qu'un nom absent. */
-      var nm=CI_CIRCUITS[i].nom, tp=7;
-      G.font='bold '+tp+'px ui-monospace,monospace';
-      while(tp>4&&G.measureText(nm).width>r.w-4){
-        tp--; G.font='bold '+tp+'px ui-monospace,monospace';
-      }
-      R(r.x+1,r.y+r.vh+1,r.w-2,r.h-r.vh-2,sel?'rgba(255,210,74,.16)':'rgba(0,0,0,.28)');
-      G.fillStyle=sel?'#ffd24a':'#9fb4c8';
-      G.fillText(nm,r.x+r.w/2,r.y+r.h-4);
-    }
-
-    G.font='7px ui-monospace,monospace';G.fillStyle='#8fa6bc';
-    G.fillText('LA MONOPLACE',L/2,z.ecu[0].y-5);
-    for(i=0;i<z.ecu.length;i++){
-      r=z.ecu[i];
-      var se=(i===s.iEcu);
-      R(r.x,r.y,r.w,r.h,se?'rgba(120,224,255,.14)':'rgba(255,255,255,.04)');
-      if(se){ R(r.x,r.y,r.w,1,'#78e0ff'); R(r.x,r.y+r.h-1,r.w,1,'#78e0ff');
-              R(r.x,r.y,1,r.h,'#78e0ff'); R(r.x+r.w-1,r.y,1,r.h,'#78e0ff'); }
-      G.save();
-      G.translate(r.x+r.w/2, r.y+r.h/2);
-      G.scale(0.84,0.84);
-      this.dessinerSprite(G,this.pal(i),0,0,-Math.PI/2,null,false);
-      G.restore();
-    }
-
-    /* le nom de ce qu'on a choisi, en toutes lettres */
-    var yb=z.yResume;
-    G.font='bold 9px ui-monospace,monospace';G.fillStyle='#ffd24a';
-    G.fillText(C.nom+'  ·  '+E.n,L/2,yb);
-    G.font='7px ui-monospace,monospace';G.fillStyle='#8fa6bc';
-    G.fillText(C.sous,L/2,yb+10);
-    var rc=s.recs[C.cle];
-    G.fillStyle=rc?'#7dff9a':'#5d6e80';
-    G.fillText(rc?('TON RECORD ICI · '+this.mmss(rc.t)):'JAMAIS COURU ICI',L/2,yb+20);
-
-    r=z.go;
-    R(r.x,r.y,r.w,r.h,'rgba(255,210,74,.18)');
-    R(r.x,r.y,r.w,1,'#ffd24a');R(r.x,r.y+r.h-1,r.w,1,'#ffd24a');
-    R(r.x,r.y,1,r.h,'#ffd24a');R(r.x+r.w-1,r.y,1,r.h,'#ffd24a');
-    G.font='bold 11px ui-monospace,monospace';G.fillStyle='#ffd24a';
-    G.fillText('EN PISTE',L/2,r.y+r.h/2+4);
-    G.font='6px ui-monospace,monospace';G.fillStyle='#7f93a8';
-    G.fillText('GAUCHE / DROITE POUR BRAQUER · LES DEUX : FREIN',L/2,H-17);
-    G.fillText('PLUS LOIN DU CENTRE, PLUS TU BRAQUES',L/2,H-8);
-  },
-
   chrome:function(s,L,H){
     var i;
     R(0,0,L,17,'rgba(6,9,14,.84)');

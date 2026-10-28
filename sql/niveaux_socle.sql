@@ -2903,3 +2903,55 @@ where niveau = 29;
    posee en plus sur le contexte les additionnait, et les monoplaces de
    la banniere roulaient de travers.
    ===================================================================== */
+
+/* =====================================================================
+   ETAPE : LE MENU DEVIENT UN PADDOCK — LE CIRCUIT      2026-10-28-1420
+   =====================================================================
+
+   CE QU'ON REGARDE DANS UN JEU DE COURSE, c'est sa voiture. L'ancien
+   menu en montrait douze a la taille d'un timbre dans une grille de
+   quatre colonnes : on voyait douze taches colorees, pas douze
+   monoplaces, et le choix se faisait au hasard. La voiture choisie
+   occupe desormais le milieu de l'ecran a quatre fois sa taille, sous un
+   projecteur, avec son ombre portee et un reflet qui balaye lentement sa
+   carrosserie — trois lignes de code pour qu'elle cesse d'etre une image
+   collee et devienne un objet pose sous une lampe.
+
+   LES DEUX VOISINES RESTENT VISIBLES de chaque cote, en retrait et a
+   seize pour cent d'opacite : on sait qu'il y en a d'autres sans
+   qu'elles volent l'attention. Sans elles, rien ne dit qu'on peut
+   defiler.
+
+   QUATRE FACONS DE CHANGER, parce qu'un menu ou l'on ne devine pas le
+   geste est un menu ferme : les fleches sur les cotes, le bandeau ou la
+   scene touches a gauche ou a droite de leur milieu, les pastilles pour
+   aller directement, et le GLISSEMENT — qui est le geste qu'on essaie
+   d'abord devant une rangee d'objets, et qui ne coute que quelques
+   lignes. Viser une fleche de huit pixels au pouce est une epreuve ; on
+   accepte donc le bandeau entier, puisque rien d'autre ne s'y trouve.
+
+   L'ECHELLE DE LA MONOPLACE SE DEDUIT DE LA PLACE. A quatre fois sa
+   taille en dur, elle debordait sur les petits ecrans : le facteur se
+   calcule maintenant a partir de la hauteur de scene disponible et de la
+   largeur, et il descend a deux si besoin.
+
+   ---------------------------------------------------------------------
+   LE PIEGE QUI A FAIT PERDRE LE PLUS DE TEMPS
+   ---------------------------------------------------------------------
+
+   REMPLACER UNE METHODE SANS SUPPRIMER L'ANCIENNE NE REMPLACE RIEN. Le
+   nouveau ecranChoix a ete insere plus haut dans l'objet litteral, et
+   l'ancien est reste en place quelques dizaines de lignes plus bas.
+   En JavaScript, dans un objet litteral, c'est la DERNIERE definition
+   d'une cle qui gagne : le menu dessine etait donc l'ancien, qui
+   cherchait des zones (z.cir, z.ecu) que la nouvelle mise en page ne
+   produit plus — « Cannot read properties of undefined ».
+
+   Et le piege est sournois : tous les tests de commande passaient. Les
+   fleches, les pastilles, le glissement, le bouton EN PISTE repondaient
+   parfaitement, parce que zones() et tape(), eux, etaient bien les
+   nouveaux. Seul le DESSIN etait l'ancien. Un test qui ne verifie que
+   les reponses d'un ecran peut le declarer bon alors qu'il ne s'affiche
+   pas du tout — c'est la trace d'erreur JS, pas le resultat des tapes,
+   qui a trahi la chose.
+   ===================================================================== */
