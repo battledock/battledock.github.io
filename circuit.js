@@ -484,6 +484,43 @@ MOTEUR.circuit={
   },
 
   /* =====================================================================
+     AVANT LE JETON. Un ecran a part, qui ne depend d'aucun circuit
+     charge : la version precedente passait par chrome(), lequel lit le
+     nom du trace choisi — qui n'existe pas encore a ce moment-la.
+     ===================================================================== */
+  ecranPret:function(s,L,H){
+    if(!CI_ART)CI_ART=CI_SPRITE();
+    G.fillStyle='#0c0f16';G.fillRect(0,0,L,H);
+    for(var y=0;y<H;y+=6) R(0,y,L,3,'#11151e');
+    var cy=Math.round(H*0.50);
+    for(var k=26;k>0;k--){
+      var rr=k*3.4+6;
+      G.fillStyle='rgba(255,240,200,0.022)';
+      G.beginPath();G.ellipse(L/2,cy,rr,rr*0.62,0,0,7);G.fill();
+    }
+    /* une monoplace qui change toute seule : l'ecran d'attente montre
+       ce qu'il y a dedans au lieu de le raconter */
+    var ec=Math.floor(s.t/1400)%CI_ECURIES.length;
+    var e=Math.max(2,Math.min(4,Math.floor(Math.min(H*0.34/(CI_H+10), L*0.62/CI_L))));
+    G.save();G.translate(L/2+e,cy+e);G.scale(e,e);
+    G.fillStyle='rgba(6,8,12,.45)';
+    for(var j=0;j<CI_ART.length;j++){ var rw=CI_ART[j];
+      for(var i=0;i<rw.length;i++) if(rw[i]!=='.')G.fillRect(i-CI_L/2,j-CI_H/2,1,1); }
+    G.restore();
+    G.save();G.translate(L/2,cy);G.scale(e,e);
+    this.dessinerSprite(G,this.pal(ec),0,0,-Math.PI/2,null,false);
+    G.restore();
+    G.textAlign='center';
+    G.font='bold 16px ui-monospace,monospace';G.fillStyle='#ffd24a';
+    G.fillText('LE CIRCUIT',L/2,Math.round(H*0.17));
+    G.font='9px ui-monospace,monospace';G.fillStyle='#cfe4f2';
+    G.fillText('CINQ TRAC\u00c9S, DOUZE MONOPLACES',L/2,Math.round(H*0.17)+20);
+    G.font='8px ui-monospace,monospace';G.fillStyle='#8fa6bc';
+    G.fillText('TU CHOISIS APR\u00c8S LE JETON',L/2,Math.round(H*0.82));
+    G.fillText('TROIS TOURS \u00b7 ON GARDE LE MEILLEUR',L/2,Math.round(H*0.82)+12);
+  },
+
+  /* =====================================================================
      LE PADDOCK. Les rectangles sont calcules au meme endroit pour le
      dessin et pour le doigt : deux calculs separes finissent toujours
      par diverger d'un pixel, et le bouton ne repond plus la ou il est.
@@ -923,7 +960,13 @@ MOTEUR.circuit={
   },
 
   dessine:function(s,L,H){
-    if(s.phase==='prep'||!s.img){ this.ecranChoix(s,L,H); return; }
+    /* LE PADDOCK N'APPARTIENT QU'A LA PHASE DE PREPARATION. La condition
+       disait « ou bien il n'y a pas encore d'image » — ce qui est vrai
+       AVANT le jeton : on voyait donc le paddock et son bouton EN PISTE
+       pendant que le shell affichait COMMENCER en dessous. Deux boutons,
+       dont un seul marche. */
+    if(s.phase==='prep'){ this.ecranChoix(s,L,H); return; }
+    if(!s.img){ this.ecranPret(s,L,H); return; }
     var sec=s.secousse>0?(Math.random()-0.5)*s.secousse*2.6:0;
     /* LA CAMERA REGARDE D'AUTANT PLUS LOIN QU'ON VA VITE. A distance
        fixe, on arrivait sur les virages rapides sans les avoir vus. */
@@ -974,7 +1017,7 @@ MOTEUR.circuit={
     G.fillStyle='#9fb4c8';
     G.fillText('TOUR '+Math.min(s.tour,CI_TOURS)+'/'+CI_TOURS,L/2,8);
     G.fillStyle=s.meilleur?'#ffd24a':'#5d6e80';
-    G.fillText(s.meilleur?('MEILLEUR '+this.mmss(s.meilleur)):s.C.nom,L/2,15);
+    G.fillText(s.meilleur?('MEILLEUR '+this.mmss(s.meilleur)):(s.C?s.C.nom:''),L/2,15);
 
     if(s.mini){
       var mx=L-s.miniW-3, my=20;

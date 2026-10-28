@@ -2955,3 +2955,43 @@ where niveau = 29;
    pas du tout — c'est la trace d'erreur JS, pas le resultat des tapes,
    qui a trahi la chose.
    ===================================================================== */
+
+/* =====================================================================
+   CORRECTION : DEUX BOUTONS A LA FOIS                 2026-10-28-1510
+   =====================================================================
+
+   CE QUE LE JOUEUR VOYAIT : le paddock, son bouton EN PISTE, et
+   juste en dessous le bandeau du shell avec « Un jeton, et c'est
+   parti » et COMMENCER. Deux boutons, dont un seul marchait.
+
+   DEUX CAUSES, QUI S'ADDITIONNAIENT.
+
+   1. LE PADDOCK S'AFFICHAIT AVANT LE JETON. La condition de dessin
+      disait « si la phase est prep OU BIEN s'il n'y a pas encore
+      d'image » — or il n'y a pas d'image avant le jeton. Le second
+      terme etait un filet pose pour le cas ou le circuit ne serait pas
+      charge ; il attrapait en realite tout l'ecran d'accueil. La phase
+      de preparation a maintenant son ecran, et l'avant-jeton le sien.
+
+   2. LE PLEIN ECRAN NE COUVRAIT QUE LA PHASE DE JEU. majPlein() posait
+      la classe « plein » sur la seule phase 'jeu' : pendant la
+      preparation, le bandeau du shell — message, boutons, tableau de la
+      borne — restait sous le canvas. Une borne qui dessine un ecran
+      entier avant de partir compte desormais comme du jeu.
+
+   L'ECRAN D'AVANT-JETON EST A PART, et ne depend d'aucun circuit
+   charge : la version precedente passait par chrome(), lequel lit le
+   nom du trace choisi — qui n'existe pas encore a ce moment-la. Il
+   montre une monoplace sous le projecteur, qui change toute seule
+   toutes les secondes et demie : l'ecran d'attente montre ce qu'il y a
+   dedans au lieu de le raconter.
+
+   LA VERIFICATION PORTE SUR CE QUE LE JOUEUR VOIT, pas sur l'etat
+   interne : pour chaque phase, on lit la classe « plein », le texte du
+   message, la liste des boutons du DOM et la visibilite du tableau.
+
+       avant le jeton   plein non   COMMENCER            tableau visible
+       pendant le choix plein OUI   aucun bouton         tableau cache
+       en course        plein OUI   aucun bouton         tableau cache
+       a l'arrivee      plein non   LE MENU / ENCORE     tableau visible
+   ===================================================================== */
