@@ -3081,3 +3081,89 @@ where niveau = 29;
    portion parfaitement correcte. On prend desormais la premiere portion
    contigue.
    ===================================================================== */
+
+/* =====================================================================
+   ETAPE : LE PIXEL FIN — LE CIRCUIT                   2026-10-28-1830
+   =====================================================================
+
+   LE VERROU N'ETAIT PAS LE DESSIN, C'ETAIT LA RESOLUTION. On avait
+   travaille le decor, les livrees, les surfaces — et chaque amelioration
+   butait sur le meme plafond : cent-quatre-vingt-quinze pixels de scene.
+   A cette taille, une monoplace en fait dix-huit, et il n'y a pas la
+   place d'y mettre autre chose qu'une silhouette.
+
+   cadrer() imposait un plancher de DEUX POINTS PAR PIXEL. C'etait un
+   choix — le gros pixel fait le style de la salle — mais applique a
+   toutes les bornes sans exception. Une borne peut desormais demander le
+   pixel fin (echMin:1) ; les autres gardent le plancher et ne voient
+   aucune difference, ce qui a ete verifie sur Le Portique.
+
+   LE CIRCUIT PASSE DONC A 390 x 844, soit QUATRE FOIS PLUS DE PIXELS.
+   Pour garder exactement le meme cadrage — la meme portion de piste
+   visible, la meme sensation de vitesse — tout le monde est double : la
+   longueur des traces, la largeur de piste, la taille de la voiture, les
+   vitesses. Rien ne change pour le joueur sinon la finesse.
+
+   ---------------------------------------------------------------------
+   CE QUE LES PIXELS EN PLUS PERMETTENT
+   ---------------------------------------------------------------------
+
+   LA MONOPLACE EN 36 x 62. On ne la dessine plus ligne par ligne : on
+   decrit la LARGEUR de la carrosserie a chaque hauteur, et le contour,
+   le degrade et les creux se deduisent. Le volume vient du degrade
+   lateral — clair au sommet de la courbe, sombre pres des aretes — et
+   c'est la seule chose qui separe une decoupe de papier d'un objet pose
+   sous une lumiere. Une monoplace n'est pas une goutte : c'est un nez
+   tres fin, une RUPTURE nette au cockpit, puis des pontons presque
+   paralleles. Un profil regulier donnait une poire. Et les bras de
+   suspension, deux pixels chacun, transforment quatre rectangles gris en
+   train roulant.
+
+   LE SOL EN CINQ TONS TRAMES. Deux tons alternes par bandes donnaient
+   des rayures de pres et un aplat de loin. On ecrit maintenant les
+   pixels directement — cinq millions de fillRect prendraient des
+   secondes, un seul ImageData prend le dixieme — avec un bruit
+   deterministe a trois sinus et le tramage de Bayer pour trancher entre
+   deux tons voisins.
+
+   LA PISTE SE PEINT AU TRAIT. Elle etait faite de disques poses tous les
+   huit pixels : espaces de huit et larges de dix, ils ne se recouvraient
+   qu'a peine et la bordure ressemblait a un collier de perles. Un seul
+   chemin ferme, trace avec une epaisseur et des bouts ronds, donne une
+   bande continue — et coute moins cher que huit cents disques. Le bitume
+   est fait de six traits concentriques, du plus large et sombre au plus
+   etroit et clair : un degrade lateral sans lire un seul pixel.
+
+   ET TOUTES LES OMBRES VONT DANS LE MEME SENS. C'est l'unite de
+   direction qui fait croire a une lumiere ; trois arbres eclaires chacun
+   de son cote donnent un decor en papier decoupe.
+
+   LE COUT, MESURE : la peinture d'un trace passe de 550 a 350
+   millisecondes, une seule fois au chargement, pour un canvas de 18 a 22
+   Mo. La cadence reste a 60 images par seconde malgre les quatre fois
+   plus de pixels a afficher.
+
+   ---------------------------------------------------------------------
+   TROIS PIEGES
+   ---------------------------------------------------------------------
+
+   UN NOM DE VARIABLE REUTILISE DANS UNE FONCTION LONGUE NE PREVIENT
+   JAMAIS. La boucle des trois tons de vibreur s'appelait « cv » — comme
+   le canvas du circuit declare cent lignes plus haut. var etant porte
+   par toute la fonction, la troisieme dent remplacait l'image par le
+   nombre 3. La peinture se terminait sans erreur, et c'est drawImage qui
+   se plaignait, trois cents lignes plus loin, de recevoir un nombre.
+
+   LE CHROME SE DESSINE DANS SON PROPRE REPERE. Tous ses textes sont
+   dimensionnes en pixels : au pixel fin, ils ont ete divises par deux et
+   sont devenus illisibles. Plutot que de multiplier une centaine de
+   tailles une a une — et d'en oublier —, on met le repere a l'echelle
+   avant de l'appeler. Le chrome continue de croire qu'il travaille sur
+   195 par 422, et il a raison : c'est sa vraie unite. Les zones tactiles
+   suivent le meme repere, sans quoi le doigt tombe ailleurs que le
+   bouton dessine.
+
+   LES TOUFFES D'HERBE NE SE POSENT PAS SUR UNE GRILLE. Parcourir le sol
+   de trois en trois les alignait en quadrillage : de loin on ne voyait
+   plus l'herbe, on voyait le pas de la boucle.
+   ===================================================================== */

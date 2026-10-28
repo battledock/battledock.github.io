@@ -49,7 +49,25 @@
    trace, pour une piste large de 46.
    ===================================================================== */
 
-var CI_L=18, CI_H=31;
+/* =====================================================================
+   LE FACTEUR D'ECHELLE, ET POURQUOI IL EXISTE
+   ---------------------------------------------------------------------
+   Le shell choisit la taille du pixel en divisant la largeur de l'ecran
+   par « vise », puis en arrondissant : il n'y a donc que deux reglages
+   possibles sur un telephone de 390 points — des pixels de deux points
+   (195 de scene) ou d'un point (390). On etait au premier. Tout le
+   travail de texture, d'ombre et de detail bute sur ce plafond : a 195
+   pixels de large, une monoplace en fait 18, et il n'y a pas la place
+   d'y mettre autre chose qu'une silhouette.
+
+   On passe donc a 390, soit QUATRE FOIS PLUS DE PIXELS a l'ecran. Pour
+   garder exactement le meme cadrage — la meme portion de piste visible,
+   la meme sensation de vitesse — tout le monde est double : la longueur
+   des traces, la largeur de piste, la taille de la voiture et les
+   vitesses. Rien ne change pour le joueur sinon la finesse.
+   ===================================================================== */
+var CI_K=2;
+var CI_L=36, CI_H=62;
 var CI_TOURS=3;
 var CI_CLE='bdl.circuit.v2';
 
@@ -61,48 +79,127 @@ var CI_CLE='bdl.circuit.v2';
    de repeindre la meme carrosserie sans la redessiner.
      K contour  c carrosserie  d motif  e accent  n gomme  W casque
    ===================================================================== */
+/* =====================================================================
+   LA MONOPLACE, VUE DE DESSUS, EN 36 x 62
+   ---------------------------------------------------------------------
+   ON NE DESSINE PLUS LIGNE PAR LIGNE A LA MAIN. A dix-huit pixels de
+   large, trente lignes d'ASCII suffisaient ; a trente-six sur soixante-
+   deux, il en faudrait soixante-deux de trente-six caracteres, et la
+   moindre retouche de profil obligerait a tout recompter. On decrit donc
+   la LARGEUR de la carrosserie a chaque hauteur, et le reste se deduit :
+   le contour, le degrade lateral, les creux.
+
+   LE VOLUME VIENT DU DEGRADE LATERAL. Une carrosserie d'une seule teinte
+   est une decoupe de papier ; trois tons — clair au sommet de la courbe,
+   normal, sombre pres des aretes — et la meme forme devient un objet
+   bombe. C'est la seule chose qui separe un sprite plat d'un sprite qui
+   a l'air pose sous une lumiere.
+     K contour   c normal   C eclaire   D ombre   d motif
+     n gomme     o rainure  N flanc     W casque  B visiere
+     G aileron   g reflet   S echappement
+   ===================================================================== */
 function CI_SPRITE(){
-  var A=[], i;
-  function C(m){var d=(CI_L-m.length)>>1;return '.'.repeat(d)+m+'.'.repeat(CI_L-m.length-d);}
-  function px(l,mot,ec){
-    var t=l.split(''), n=mot.length, g=(CI_L>>1)-ec-n, dt=(CI_L>>1)+ec;
-    for(var k=0;k<n;k++){ if(mot[k]!=='.'){ t[g+k]=mot[k]; t[dt+k]=mot[k]; } }
-    return t.join('');
+  var A=[], j, i, LARG=CI_L, HAUT=CI_H, cx=LARG>>1;
+  /* =====================================================================
+     LE PROFIL. UNE MONOPLACE N'EST PAS UNE GOUTTE : c'est un nez tres
+     fin et tres long, puis une rupture nette au niveau du cockpit, puis
+     des pontons larges et presque paralleles. Un profil qui s'elargit
+     regulierement du nez a l'arriere donne une forme de poire — c'etait
+     le defaut de la premiere version. Les RUPTURES font la silhouette.
+     ===================================================================== */
+  function demi(j){
+    if(j<7)  return 17;                        /* aileron avant, tres large */
+    if(j<11) return 2;                         /* le pylone, presque rien */
+    if(j<22) return 2.5 + (j-11)*0.13;         /* le nez, fin et long */
+    if(j<27) return 4 + (j-22)*1.30;           /* la rupture : il s'ouvre */
+    if(j<37) return 10.5 + (j-27)*0.26;        /* le cockpit */
+    if(j<51) return 13.2;                      /* les pontons, paralleles */
+    if(j<56) return 13.2 - (j-51)*1.80;        /* le retrecissement */
+    if(j<58) return 4.2;                       /* le capot moteur */
+    return 16;                                 /* aileron arriere */
   }
-  A.push(C('KKKKKKKKKKKKKKKK'));          /* 0  aileron avant */
-  A.push(C('KeeeeeeeeeeeeeeK'));
-  A.push(C('KKKKcccccccckKKK').replace('k','c'));
-  A.push(C('KccK'));                       /* 3  nez */
-  A.push(C('KccK'));
-  A.push(C('KccK'));
-  A.push(C('KccccK'));                     /* 6 */
-  A.push(C('KccccK'));
-  A.push(C('KccccK'));
-  A.push(C('KccccccK'));                   /* 9 */
-  A.push(C('KccccccK'));
-  A.push(C('KccccccK'));
-  A.push(C('KccccccK'));                   /* 12  cockpit */
-  A.push(C('KcKWWKcK'));
-  A.push(C('KcKWWKcK'));
-  A.push(C('KccKKccK'));
-  A.push(C('KcccccccccK'));                /* 16  pontons */
-  A.push(C('KcccccccccK'));
-  A.push(C('KcccccccccK'));
-  A.push(C('KcccccccccK'));
-  A.push(C('KcccccccccK'));                /* 20 */
-  A.push(C('KcccccccccK'));
-  A.push(C('KcccccccccK'));
-  A.push(C('KKccccccckK').replace('k','c'));
-  A.push(C('.KccccccK.'));                 /* 24  moteur */
-  A.push(C('.KccccK.'));
-  A.push(C('.KccccK.'));
-  A.push(C('.KKccKK.'));
-  A.push(C('KKKKKKKKKKKKKKKK'));           /* 28  aileron arriere */
-  A.push(C('KeeeeeeeeeeeeeeK'));
-  A.push(C('KKKKKKKKKKKKKKKK'));
-  for(i=5;i<=10;i++) A[i]=px(A[i],'KnK',6);
-  for(i=19;i<=25;i++)A[i]=px(A[i],'KnnK',5);
-  return A;
+  for(j=0;j<HAUT;j++){
+    var t=new Array(LARG); for(i=0;i<LARG;i++)t[i]='.';
+    var w=Math.max(2,Math.round(demi(j)));
+    var g0=cx-w, d0=cx+w-1;
+    for(i=g0;i<=d0;i++){
+      if(i<0||i>=LARG)continue;
+      var u=Math.abs(i-(cx-0.5))/w;            /* 0 au milieu, 1 au bord */
+      t[i]= (i===g0||i===d0) ? 'K' : (u>0.78?'D':(u<0.34?'C':'c'));
+    }
+    A.push(t);
+  }
+  function pose(j,i,ch){ if(j>=0&&j<HAUT&&i>=0&&i<LARG)A[j][i]=ch; }
+  function bande(j,i0,i1,ch){ for(var k=i0;k<=i1;k++)pose(j,k,ch); }
+  /* ---- LES AILERONS : deux plans, des derives, une lame d'accent ---- */
+  for(j=0;j<7;j++) for(i=cx-17;i<=cx+16;i++){
+    if(i<0||i>=LARG)continue;
+    pose(j,i, (j===0||j===6)?'K':(j===1?'G':(j<=4?'e':'G')));
+  }
+  for(j=58;j<HAUT;j++) for(i=cx-16;i<=cx+15;i++){
+    if(i<0||i>=LARG)continue;
+    pose(j,i, (j===58||j===HAUT-1)?'K':(j===59?'G':(j===60?'e':'G')));
+  }
+  /* les derives verticales des ailerons */
+  for(j=0;j<9;j++){ pose(j,cx-17,'K'); pose(j,cx+16,'K'); pose(j,cx-16,'G'); pose(j,cx+15,'G'); }
+  for(j=56;j<HAUT;j++){ pose(j,cx-16,'K'); pose(j,cx+15,'K'); pose(j,cx-15,'G'); pose(j,cx+14,'G'); }
+  /* ---- LE COCKPIT, LE HALO, LE CASQUE ---- */
+  for(j=28;j<=38;j++) bande(j,cx-5,cx+4,'K');
+  for(j=29;j<=37;j++) bande(j,cx-4,cx+3,'W');
+  for(j=30;j<=34;j++) bande(j,cx-3,cx+2,'B');
+  pose(29,cx-4,'w'); pose(29,cx+3,'w'); pose(30,cx-4,'w');
+  /* le halo : un arceau qui ceinture le cockpit */
+  bande(27,cx-6,cx+5,'G'); pose(28,cx-6,'G'); pose(28,cx+5,'G');
+  pose(38,cx-6,'G'); pose(38,cx+5,'G'); bande(39,cx-6,cx+5,'G');
+  pose(26,cx-1,'G'); pose(26,cx,'G');
+  /* ---- LES ENTREES D'AIR DES PONTONS ---- */
+  for(j=38;j<=44;j++){ bande(j,cx-13,cx-11,'K'); bande(j,cx+10,cx+12,'K'); }
+  for(j=39;j<=43;j++){ bande(j,cx-12,cx-12,'D'); bande(j,cx+11,cx+11,'D'); }
+  /* ---- LE CAPOT MOTEUR, SA PRISE D'AIR ET L'ECHAPPEMENT ---- */
+  for(j=24;j<=27;j++) bande(j,cx-2,cx+1,'D');
+  for(j=56;j<=57;j++) bande(j,cx-1,cx,'S');
+  /* ---- LES ROUES. Flanc sombre, bande de roulement grise, rainures ---- */
+  function roue(j0,j1,ec,larg){
+    for(var jj=j0;jj<=j1;jj++){
+      for(var k=0;k<larg;k++){
+        var ch=(k===0||k===larg-1)?'N':((jj-j0)%4===1?'o':'n');
+        if(jj===j0||jj===j1)ch='N';
+        pose(jj,cx-ec-larg+k,ch);
+        pose(jj,cx+ec+k,ch);
+      }
+    }
+  }
+  roue(13,26,10,8);     /* avant */
+  roue(40,55,9,9);      /* arriere */
+  /* =====================================================================
+     LES BRAS DE SUSPENSION. Sans eux, les roues flottent a cote de la
+     voiture comme quatre rectangles poses la : ce sont deux pixels par
+     bras, et c'est ce qui transforme quatre blocs gris en un train
+     roulant. On en met deux par roue, en V, comme sur une vraie.
+     ===================================================================== */
+  function bras(jr,jc,ec){
+    var dj=(jc>jr)?-1:1, n=Math.abs(jc-jr);
+    for(var k=0;k<=n;k++){
+      var jj=jr+(jc>jr?k:-k);
+      var f=k/Math.max(1,n);
+      var ii=Math.round(ec - f*(ec-Math.round(demi(jj))+1));
+      pose(jj, cx-ii, 'G'); pose(jj, cx+ii-1, 'G');
+    }
+  }
+  bras(16,21,11); bras(24,21,11);      /* triangle avant */
+  bras(43,47,10); bras(53,48,10);      /* triangle arriere */
+  /* LE NEZ RESTE AUX COULEURS DE L'ECURIE. Le pylone gris qui tenait
+     l'aileron courait sur toute la pointe : sur un nez de quatre pixels
+     de large, deux pixels gris, c'etait la moitie de la livree perdue a
+     l'endroit qu'on regarde le plus. Il ne reste que les deux montants
+     lateraux, qui existent sur une vraie et ne mordent sur rien. */
+  for(j=5;j<=9;j++){ pose(j,cx-11,'G'); pose(j,cx+10,'G'); }
+  /* un liseré clair sur le haut de chaque roue : elles cessent d'etre
+     des rectangles noirs */
+  for(i=0;i<8;i++){ pose(13,cx-18+i,'n'); pose(13,cx+10+i,'n'); }
+  for(i=0;i<9;i++){ pose(40,cx-18+i,'n'); pose(40,cx+9+i,'n'); }
+  var out=[]; for(j=0;j<HAUT;j++)out.push(A[j].join(''));
+  return out;
 }
 var CI_ART=null;
 
@@ -112,19 +209,29 @@ var CI_ART=null;
    teinte — a trente pixels de haut, deux bleus voisins sont la meme
    voiture.
    ===================================================================== */
+/* LES MOTIFS SONT ECRITS EN FRACTIONS DU SPRITE, pas en pixels. Ils
+   etaient calibres pour une monoplace de dix-huit de large : sur
+   trente-six, une « bande centrale » de trois pixels devenait un fil, et
+   un damier de deux sur deux un bruit. En travaillant sur l'ecart au
+   centre rapporte a la demi-largeur, le meme motif tient a n'importe
+   quelle taille. */
 var CI_MOTIFS={
   uni:     function(i,j){ return false; },
-  bande:   function(i,j){ return Math.abs(i-8.5)<1.6; },
-  deux:    function(i,j){ var a=Math.abs(i-8.5); return a>2.2&&a<4.0; },
-  fleche:  function(i,j){ return j<17&&Math.abs(i-8.5)<=Math.max(0,(j-2)*0.42); },
-  chevron: function(i,j){ return j<16&&((Math.abs(i-8.5)*1.3+j)%7)<2.2; },
-  damier:  function(i,j){ return j>=15&&j<=23&&((i>>1)+(j>>1))%2===0; },
-  diag:    function(i,j){ return ((i*1.6+j)%9)<3.2; },
-  pois:    function(i,j){ return (i%5===2)&&(j%5===1); },
-  avant:   function(i,j){ return j<16; },
-  arriere: function(i,j){ return j>=16; },
-  moitie:  function(i,j){ return i<9; },
-  cercles: function(i,j){ var a=i-8.5,b=(j%10)-5; return a*a+b*b<5.5; }
+  bande:   function(i,j){ return Math.abs(i-CI_L/2+0.5)<CI_L*0.095; },
+  deux:    function(i,j){ var a=Math.abs(i-CI_L/2+0.5)/(CI_L/2);
+                          return a>0.26&&a<0.46; },
+  fleche:  function(i,j){ var f=j/CI_H;
+                          return f<0.55&&Math.abs(i-CI_L/2+0.5)<=Math.max(0,(j-6)*0.30); },
+  chevron: function(i,j){ return j<CI_H*0.52&&
+                          ((Math.abs(i-CI_L/2+0.5)*1.25+j)%13)<4.4; },
+  damier:  function(i,j){ return j>=CI_H*0.42&&j<=CI_H*0.80&&
+                          (((i/3)|0)+((j/3)|0))%2===0; },
+  diag:    function(i,j){ return ((i*1.6+j)%17)<6.2; },
+  pois:    function(i,j){ var a=(i%9)-4, b=(j%9)-4; return a*a+b*b<3.2; },
+  avant:   function(i,j){ return j<CI_H*0.52; },
+  arriere: function(i,j){ return j>=CI_H*0.52; },
+  moitie:  function(i,j){ return i<CI_L/2; },
+  cercles: function(i,j){ var a=i-CI_L/2+0.5, b=(j%18)-9; return a*a+b*b<22; }
 };
 
 /* DOUZE ECURIES, inventees, aux noms du port et du large. */
@@ -243,22 +350,45 @@ var CI_NOTES=[
 
 /* LES CINQ TERRAINS. Les teintes seules font le climat : on reconnait
    un circuit avant d'avoir lu son nom. */
+/* =====================================================================
+   LES CINQ TERRAINS, EN CINQ TONS CHACUN
+   ---------------------------------------------------------------------
+   DEUX TONS NE FONT PAS UN SOL. L'ancienne version alternait deux verts
+   par bandes horizontales : de pres on voyait les bandes, de loin un
+   aplat, et dans les deux cas rien qui ressemble a du terrain. Cinq tons
+   poses par un bruit doux et TRAMES entre eux — la matrice de Bayer,
+   celle qu'on utilise depuis toujours en pixel art — donnent une surface
+   qui vit sans jamais se repeter visiblement.
+     sols   : du plus sombre au plus clair, pour le tramage
+     touffe : la ponctuation du sol (herbe haute, cailloux, aiguilles)
+   ===================================================================== */
 var CI_THEMES={
-  port:  {h1:'#2d5a33',h2:'#27512e',bord:'#d8dde4',piste:'#3d4049',hors:'#8f7a4a',
+  port:  {sols:['#1c4121','#224a28','#285430','#2f6038','#376c41'], touffe:'#4a8a52',
+          bord:'#d8dde4',piste:'#3d4049',hors:'#8f7a4a',
           ciel:'#27512e',vib1:'#d23a2e',vib2:'#eceef2',ligne:'rgba(236,238,242,.22)'},
-  mer:   {h1:'#8a9a52',h2:'#7f8f4a',bord:'#e6e9ee',piste:'#44474f',hors:'#cbb882',
+  mer:   {sols:['#6d7b3e','#788747','#839350','#8e9f5a','#99ab64'], touffe:'#b4c47a',
+          bord:'#e6e9ee',piste:'#44474f',hors:'#cbb882',
           ciel:'#7f8f4a',vib1:'#d23a2e',vib2:'#eceef2',ligne:'rgba(240,242,246,.22)'},
-  roche: {h1:'#b5a483',h2:'#aa9a7a',bord:'#eceef2',piste:'#4a4d55',hors:'#cfc0a0',
+  roche: {sols:['#8f8065','#9c8c70','#a9987b','#b6a487','#c3b094'], touffe:'#6f7a46',
+          bord:'#eceef2',piste:'#4a4d55',hors:'#cfc0a0',
           ciel:'#aa9a7a',vib1:'#c83a2e',vib2:'#f2f4f8',ligne:'rgba(240,242,246,.24)'},
-  beton: {h1:'#5a5f66',h2:'#53585f',bord:'#d2d7de',piste:'#36393f',hors:'#6e737b',
+  beton: {sols:['#43474e','#4b4f56','#53585f','#5b6068','#636971'], touffe:'#7b8289',
+          bord:'#d2d7de',piste:'#36393f',hors:'#6e737b',
           ciel:'#53585f',vib1:'#d8d23a',vib2:'#2a2d33',ligne:'rgba(230,232,238,.20)'},
-  pins:  {h1:'#1f3a26',h2:'#1a3321',bord:'#c8cfd6',piste:'#33363d',hors:'#6b5a3a',
+  pins:  {sols:['#122518','#172d1d','#1c3522','#213d28','#27462e'], touffe:'#3a6b42',
+          bord:'#c8cfd6',piste:'#33363d',hors:'#6b5a3a',
           ciel:'#1a3321',vib1:'#c83a2e',vib2:'#dde2e8',ligne:'rgba(220,226,234,.20)'}
 };
+/* la matrice de Bayer : l'ordre dans lequel on tranche entre deux tons */
+var CI_BAYER=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
+function CI_HEX(h){var n=parseInt(h.slice(1),16);return [(n>>16)&255,(n>>8)&255,n&255];}
 
 MOTEUR.circuit={
   nom:'Le Circuit', sous:'VUE DE DESSUS · CHOISIS TON TRACÉ',
-  vise:210, pausable:true,
+  /* LE PIXEL FIN. Le reste de la salle garde le gros pixel ; cette borne
+     demande le point a point, parce que tout son interet est dans le
+     detail du sol, des ombres et de la carrosserie. */
+  vise:390, echMin:1, pausable:true,
 
   init:function(){
     return {phase:'pret', t:0, score:0, L:195, H:422,
@@ -276,9 +406,15 @@ MOTEUR.circuit={
 
   /* ---- la courbe qui passe par tous les points ---- */
   tracer:function(pts,PAS){
+    /* LES POINTS DE CONTROLE SONT MIS A L'ECHELLE ICI, une fois pour
+       toutes : les reecrire dans les cinq tableaux serait quatre-vingt-
+       dix occasions de se tromper, et impossible a revenir en arriere. */
+    var ech=(PAS===10)?1:CI_K;     /* les vignettes gardent leur taille */
     var n=pts.length, brut=[], i, k;
     for(i=0;i<n;i++){
       var p0=pts[(i-1+n)%n], p1=pts[i], p2=pts[(i+1)%n], p3=pts[(i+2)%n];
+      p0=[p0[0]*ech,p0[1]*ech]; p1=[p1[0]*ech,p1[1]*ech];
+      p2=[p2[0]*ech,p2[1]*ech]; p3=[p3[0]*ech,p3[1]*ech];
       for(k=0;k<24;k++){
         var u=k/24, u2=u*u, u3=u2*u;
         brut.push([
@@ -387,15 +523,59 @@ MOTEUR.circuit={
      ===================================================================== */
   peindre:function(s){
     var C=s.C, T=CI_THEMES[C.theme], L=s.ligne, i, p;
-    var MW=C.mw, MH=C.mh, LG=C.large;
+    var MW=C.mw*CI_K, MH=C.mh*CI_K, LG=C.large*CI_K;
     var cv=document.createElement('canvas'); cv.width=MW; cv.height=MH;
     var g=cv.getContext('2d'); g.imageSmoothingEnabled=false;
     function rond(x,y,r,c){g.fillStyle=c;g.beginPath();g.arc(x,y,r,0,7);g.fill();}
     function rect(x,y,w,h,c){g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
 
-    /* ---- LE SOL, avec ses bandes : sans elles le hors-piste est un
-       aplat ou rien ne dit qu'on avance ---- */
-    for(var y=0;y<MH;y++) rect(0,y,MW,1, ((y/14)|0)%2?T.h1:T.h2);
+    /* =====================================================================
+       LE SOL, TRAME
+       ---------------------------------------------------------------------
+       ON ECRIT LES PIXELS DIRECTEMENT. Cinq millions de fillRect prendraient
+       plusieurs secondes ; un seul ImageData rempli en boucle prend le
+       dixieme. C'est ce qui rend le tramage abordable du tout.
+
+       LE BRUIT EST DETERMINISTE, pas aleatoire : trois sinus de periodes
+       differentes. Un bruit tire au hasard donne de la neige — chaque pixel
+       independant de son voisin — alors qu'un terrain a des plages, des
+       creux et des bosses. Et le TRAMAGE DE BAYER tranche entre deux tons
+       voisins selon la position : c'est ce qui remplace un degrade par des
+       pixels francs sans jamais faire de bandes.
+       ===================================================================== */
+    var TON=T.sols.map(CI_HEX), NT=TON.length;
+    var dat=g.createImageData(MW,MH), px=dat.data, o=0;
+    for(var y=0;y<MH;y++){
+      for(var x=0;x<MW;x++){
+        var b1=Math.sin(x*0.0155)*Math.cos(y*0.0135)
+              +Math.sin((x+y)*0.0085)*0.6
+              +Math.sin(x*0.045+y*0.035)*0.32;
+        var v=(b1+1.95)/3.9*(NT-1);
+        var k=Math.floor(v + (CI_BAYER[(y&3)*4+(x&3)]/16-0.5));
+        k=k<0?0:(k>NT-1?NT-1:k);
+        var c0=TON[k];
+        px[o++]=c0[0]; px[o++]=c0[1]; px[o++]=c0[2]; px[o++]=255;
+      }
+    }
+    g.putImageData(dat,0,0);
+    /* LA PONCTUATION DU SOL : des touffes claires, posees par le meme
+       bruit pour qu'elles se groupent au lieu de se disperser. */
+    /* LES TOUFFES NE SE POSENT PAS SUR UNE GRILLE. Parcourir le sol de
+       trois en trois les alignait en quadrillage : de loin on ne voyait
+       plus l'herbe, on voyait le pas de la boucle. Chaque touffe est donc
+       decalee de sa propre fraction, tiree du meme bruit que le reste —
+       ce qui les groupe en plaques au lieu de les disperser. */
+    var tf=CI_HEX(T.touffe);
+    g.fillStyle='rgba('+tf[0]+','+tf[1]+','+tf[2]+',.55)';
+    for(var ty=0;ty<MH;ty+=4){
+      for(var tx=0;tx<MW;tx+=4){
+        var bt=Math.sin(tx*0.021)*Math.cos(ty*0.019)+Math.sin((tx-ty)*0.013)*0.8;
+        if(bt<1.04)continue;
+        var ox2=al(tx*0.37+ty*1.7)*4, oy2=al(tx*1.9+ty*0.53)*4;
+        g.fillRect(tx+ox2,ty+oy2,1,1);
+        if(bt>1.5)g.fillRect(tx+ox2+1,ty+oy2+1,1,1);
+      }
+    }
 
     /* ---- CE QUE CHAQUE TERRAIN A EN PROPRE ---- */
     if(C.theme==='mer'){
@@ -438,69 +618,138 @@ MOTEUR.circuit={
       }
     }
 
-    /* ---- LES BACS, LA BORDURE, LA PISTE ---- */
-    for(i=0;i<L.length;i+=3){ p=L[i];
-      var ser=(i>>4)%7;
-      if(ser===0||ser===3) rond(p[0],p[1],LG+16,T.hors);
+    /* =====================================================================
+       LA PISTE SE PEINT AU TRAIT, PAS AU POINTILLE
+       ---------------------------------------------------------------------
+       Elle etait faite de disques poses tous les huit pixels : des
+       disques de dix de diametre espaces de huit ne se recouvrent qu'a
+       peine, et la bordure ressemblait a un collier de perles. Un seul
+       chemin ferme, parcouru une fois et trace avec une epaisseur et des
+       bouts ronds, donne une bande continue — et coute moins cher que
+       huit cents disques.
+
+       LE BITUME EST FAIT DE SIX TRAITS CONCENTRIQUES, du plus large et
+       sombre au plus etroit et clair : c'est un degrade lateral obtenu
+       sans lire un seul pixel, et c'est lui qui creuse la piste.
+       ===================================================================== */
+    function chemin(dx,dy){
+      g.beginPath();
+      g.moveTo(L[0][0]+(dx||0), L[0][1]+(dy||0));
+      for(var q=1;q<L.length;q++) g.lineTo(L[q][0]+(dx||0), L[q][1]+(dy||0));
+      g.closePath();
     }
-    for(i=0;i<L.length;i+=2){ p=L[i]; rond(p[0],p[1],LG+4,T.bord); }
-    for(i=0;i<L.length;i+=2){ p=L[i]; rond(p[0],p[1],LG,T.piste); }
-    /* ---- LES SURFACES, peintes par-dessus le bitume ----
-       Elles doivent se voir de LOIN : une nuance de gris ne previent
-       personne, et on arrive dessus a pleine vitesse sans avoir compris
-       pourquoi la voiture part. */
-    for(i=0;i<L.length;i++){
-      var ty=s.surf[i]; if(ty==='asphalte')continue;
-      var SU=CI_SURF[ty];
-      rond(L[i][0],L[i][1],LG-1,SU.c);
+    function trait(w,c,dx,dy){
+      g.strokeStyle=c; g.lineWidth=w; g.lineCap='round'; g.lineJoin='round';
+      chemin(dx,dy); g.stroke();
     }
-    for(i=0;i<L.length;i+=1){
-      var ty2=s.surf[i]; if(ty2==='asphalte')continue;
-      var SU2=CI_SURF[ty2], an=L[i][2];
-      /* chaque matiere a son grain : des cailloux pour le gravier, des
-         sillons pour la terre, des joints pour les paves, des reflets
-         pour le mouille */
-      for(var g2=0;g2<3;g2++){
-        var de=(al(i*3.1+g2*7.7)*2-1)*(LG-4);
-        var gx2=L[i][0]+Math.cos(an+1.5708)*de, gy2=L[i][1]+Math.sin(an+1.5708)*de;
-        if(ty2==='gravier') rect(gx2,gy2,2,2,SU2.c2);
-        else if(ty2==='terre'){ if((i+g2)%3===0)rect(gx2,gy2,3,1,SU2.c2); }
-        else if(ty2==='pave'){ if(i%4===0)rect(gx2,gy2,4,1,SU2.c2); }
-        else if(ty2==='mouille'){ if((i+g2)%5===0)rect(gx2,gy2,5,1,'rgba(150,190,220,.26)'); }
+    var PI=CI_HEX(T.piste), BO=CI_HEX(T.bord), HR=CI_HEX(T.hors);
+    function ton(C0,d){ return 'rgb('+Math.max(0,Math.min(255,C0[0]+d))+','+
+      Math.max(0,Math.min(255,C0[1]+d))+','+Math.max(0,Math.min(255,C0[2]+d))+')'; }
+
+    /* l'ombre portee de la piste, dans le meme sens que toutes les autres */
+    trait((LG+10)*2,'rgba(8,14,10,.30)',4,5);
+    /* les bacs : seulement par endroits, donc par segments */
+    g.lineCap='round';
+    for(i=0;i<L.length;i+=4){
+      if(((i>>6)%7)!==0&&((i>>6)%7)!==3)continue;
+      g.strokeStyle=T.hors; g.lineWidth=(LG+26)*2;
+      g.beginPath(); g.moveTo(L[i][0],L[i][1]);
+      g.lineTo(L[(i+4)%L.length][0],L[(i+4)%L.length][1]); g.stroke();
+    }
+    /* leur grain */
+    for(i=0;i<L.length;i+=2){
+      if(((i>>6)%7)!==0&&((i>>6)%7)!==3)continue;
+      p=L[i];
+      for(var gq=0;gq<4;gq++){
+        var ga=al(i*2.7+gq*5.1)*6.283, gr=LG+6+al(i*1.3+gq*3.9)*20;
+        rect(p[0]+Math.cos(ga)*gr,p[1]+Math.sin(ga)*gr,2,2,
+             ton(HR,al(i*4.4+gq)>0.5?20:-18));
       }
     }
-    /* UNE LIGNE D'ENTREE ET DE SORTIE pour chaque portion : on voit ou
-       la matiere change avant d'y etre. */
-    for(i=0;i<L.length;i++){
-      var p1=s.surf[i], p2=s.surf[(i+1)%L.length];
-      if(p1===p2)continue;
-      var ab=L[i][2], nx3=Math.cos(ab+1.5708), ny3=Math.sin(ab+1.5708);
-      for(var w3=-LG;w3<LG;w3+=3)
-        rect(L[i][0]+nx3*w3-1,L[i][1]+ny3*w3-1,3,3,
-             ((w3/3)|0)%2?'#e8e8ec':'#30343c');
+    /* la bordure, puis son liseré eclaire du cote de la lumiere */
+    trait((LG+5)*2, T.bord);
+    trait((LG+5)*2, 'rgba(255,255,255,.16)', -1,-1);
+    trait((LG+5)*2, 'rgba(0,0,0,.14)', 1.5,1.5);
+    /* LE BITUME EN SIX COUCHES : sombre et large dessous, clair et
+       etroit dessus. La piste parait alors legerement bombee, et ses
+       bords uses. */
+    for(var cb=0;cb<6;cb++){
+      var f=cb/5;
+      trait(LG*2*(1-f*0.80), ton(PI, -16+Math.round(f*26)));
     }
-    /* L'USURE DE LA CORDE : la trajectoire des autres a noirci le bitume
-       a l'interieur des virages. Ca se voit, et ca se suit. */
-    for(i=0;i<L.length;i++){
-      var a0=L[i][2], a1=L[(i+8)%L.length][2];
+    /* LA CORDE USEE : les trajectoires ont noirci l'interieur des
+       virages. Ca se voit, et ca se suit. */
+    g.lineCap='round';
+    for(i=0;i<L.length;i+=2){
+      var a0=L[i][2], a1=L[(i+10)%L.length][2];
       var dd=Math.atan2(Math.sin(a1-a0),Math.cos(a1-a0));
-      if(Math.abs(dd)<0.05)continue;
-      var sg=dd>0?1:-1, nx=Math.cos(a0+1.5708)*sg, ny=Math.sin(a0+1.5708)*sg;
-      rond(L[i][0]+nx*LG*0.5, L[i][1]+ny*LG*0.5, LG*0.42,'rgba(18,20,26,.16)');
+      if(Math.abs(dd)<0.04)continue;
+      var sgc=dd>0?1:-1, nxc=Math.cos(a0+1.5708)*sgc, nyc=Math.sin(a0+1.5708)*sgc;
+      g.strokeStyle='rgba(14,16,22,.13)'; g.lineWidth=LG*0.85;
+      g.beginPath();
+      g.moveTo(L[i][0]+nxc*LG*0.42, L[i][1]+nyc*LG*0.42);
+      var p2=L[(i+2)%L.length], n2=p2[2];
+      g.lineTo(p2[0]+Math.cos(n2+1.5708)*sgc*LG*0.42, p2[1]+Math.sin(n2+1.5708)*sgc*LG*0.42);
+      g.stroke();
     }
-    /* LES VIBREURS, seulement la ou ca tourne : en pleine ligne droite
-       ils ne veulent rien dire. */
-    for(i=0;i<L.length;i++){
-      var b0=L[i][2], b1=L[(i+6)%L.length][2];
+    /* LES FISSURES : des traits qui suivent la piste, pas des points */
+    g.lineWidth=1; g.strokeStyle='rgba(14,16,22,.5)';
+    for(var fz=0;fz<Math.round(L.length/22);fz++){
+      var i0f=Math.floor(al(fz*7.3)*L.length), w0f=(al(fz*3.1)*2-1)*(LG-6);
+      var lonf=4+Math.floor(al(fz*5.7)*12);
+      g.beginPath();
+      for(var kf=0;kf<lonf;kf++){
+        var pf=L[(i0f+kf)%L.length];
+        var nxf=Math.cos(pf[2]+1.5708), nyf=Math.sin(pf[2]+1.5708);
+        var wf=w0f+Math.sin(kf*0.6+fz)*4;
+        if(kf===0)g.moveTo(pf[0]+nxf*wf,pf[1]+nyf*wf);
+        else g.lineTo(pf[0]+nxf*wf,pf[1]+nyf*wf);
+      }
+      g.stroke();
+    }
+    /* =====================================================================
+       LES VIBREURS, EN SEGMENTS JOINTIFS ET EN VOLUME
+       ---------------------------------------------------------------------
+       Des carres poses un par un laissaient des trous entre eux. On trace
+       des bouts de bande le long du bord, en alternant rouge et blanc, et
+       chaque dent recoit trois tons : une ombre dessous, un corps, un
+       liseré eclaire dessus. A plat, ils avaient l'air de papier colle.
+       ===================================================================== */
+    g.lineCap='butt';
+    for(i=0;i<L.length;i+=2){
+      var b0=L[i][2], b1=L[(i+12)%L.length][2];
       var de=Math.atan2(Math.sin(b1-b0),Math.cos(b1-b0));
-      if(Math.abs(de)<0.055)continue;
-      var cc=((i/5)|0)%2?T.vib1:T.vib2;
-      var mx=Math.cos(b0+1.5708), my=Math.sin(b0+1.5708), sn=de>0?-1:1;
-      rect(L[i][0]+mx*LG*sn-2, L[i][1]+my*LG*sn-2,4,4,cc);
+      if(Math.abs(de)<0.045)continue;
+      var cc=(((i/10)|0)%2)?T.vib1:T.vib2, CB=CI_HEX(cc);
+      var sn=de>0?-1:1;
+      var p1v=L[i], p2v=L[(i+2)%L.length];
+      var n1=Math.cos(p1v[2]+1.5708)*sn, m1=Math.sin(p1v[2]+1.5708)*sn;
+      var n2=Math.cos(p2v[2]+1.5708)*sn, m2=Math.sin(p2v[2]+1.5708)*sn;
+      /* LA BOUCLE NE S'APPELLE PLUS cv. Elle le faisait, et « cv » est
+         deja le canvas du circuit, declare en haut de la fonction : var
+         etant porte par toute la fonction, la troisieme dent de vibreur
+         remplacait l'image par le nombre 3. La peinture se terminait sans
+         erreur, et c'est drawImage qui se plaignait, trois cents lignes
+         plus loin, de recevoir un nombre. Un nom reutilise dans une
+         fonction longue ne previent jamais. */
+      for(var kv=0;kv<3;kv++){
+        var dec=[1.5,0,-1.6][kv], lw=[9,7,2.6][kv];
+        g.strokeStyle=[ton(CB,-56),cc,ton(CB,46)][kv];
+        g.lineWidth=lw;
+        g.beginPath();
+        g.moveTo(p1v[0]+n1*(LG+dec), p1v[1]+m1*(LG+dec));
+        g.lineTo(p2v[0]+n2*(LG+dec), p2v[1]+m2*(LG+dec));
+        g.stroke();
+      }
     }
-    for(i=0;i<L.length;i+=6){
-      if(((i/6)|0)%2)continue;
-      p=L[i]; rect(p[0]-1,p[1]-1,2,2,T.ligne);
+    /* LA LIGNE CENTRALE, en pointille use */
+    g.lineCap='round'; g.strokeStyle=T.ligne; g.lineWidth=2.5;
+    for(i=0;i<L.length;i+=10){
+      if(((i/10)|0)%2)continue;
+      g.beginPath();
+      g.moveTo(L[i][0],L[i][1]);
+      g.lineTo(L[(i+5)%L.length][0],L[(i+5)%L.length][1]);
+      g.stroke();
     }
     /* ---- LA LIGNE DE DEPART, en damier ---- */
     var p0=L[0], aa=p0[2], nx2=Math.cos(aa+1.5708), ny2=Math.sin(aa+1.5708);
@@ -529,13 +778,36 @@ MOTEUR.circuit={
     /* ---- LE DECOR, par terrain ---- */
     function loinDeLaPiste(x,y,r){
       for(var q=0;q<L.length;q+=5)
-        if(Math.abs(L[q][0]-x)<r+LG+22&&Math.abs(L[q][1]-y)<r+LG+22)return false;
+        if(Math.abs(L[q][0]-x)<r+LG+22*CI_K&&Math.abs(L[q][1]-y)<r+LG+22*CI_K)return false;
       return true;
     }
-    function arbre(x,y,r,c1,c2,c3){
-      rond(x+r*0.3,y+r*0.35,r,'rgba(8,16,10,.42)');
-      rond(x,y,r,c1); rond(x-r*0.22,y-r*0.22,r*0.72,c2);
-      rond(x-r*0.38,y-r*0.38,r*0.36,c3);
+    /* QUATRE TONS ET UNE OMBRE QUI VA DANS LE MEME SENS QUE TOUTES LES
+       AUTRES. C'est l'unite de direction des ombres qui fait croire a
+       une lumiere ; trois arbres eclaires chacun de son cote donnent un
+       decor en papier decoupe. */
+    function arbre(x,y,r,c1,c2,c3,c4){
+      rond(x+r*0.42,y+r*0.50,r*1.02,'rgba(6,14,9,.40)');
+      rond(x,y,r,c1);
+      rond(x-r*0.16,y-r*0.16,r*0.80,c2);
+      rond(x-r*0.32,y-r*0.32,r*0.52,c3);
+      if(c4)rond(x-r*0.45,y-r*0.45,r*0.24,c4);
+    }
+    /* UNE PILE DE PNEUS : trois anneaux et un point. Minuscule, et c'est
+       pourtant ce qui dit « circuit » plus surement qu'une barriere. */
+    function pile(x,y){
+      rond(x+3,y+4,7,'rgba(6,14,9,.38)');
+      rond(x,y,7,'#191c23'); rond(x,y,5,'#23262f'); rond(x,y,3,'#2d313b');
+      rond(x,y,1.6,'#c8382c');
+    }
+    /* UNE BARRIERE : des panneaux rouges et blancs, avec leur ombre */
+    function barriere(x,y,an,n){
+      for(var kb=0;kb<n;kb++){
+        var bx=x+Math.cos(an)*kb*11, by=y+Math.sin(an)*kb*11;
+        rect(bx+3,by+4,9,5,'rgba(6,14,9,.34)');
+        var cb=(kb%2===0)?'#e8e8ec':'#c83a2e';
+        rect(bx,by,9,5,cb);
+        rect(bx,by,9,2,(kb%2===0)?'#ffffff':'#e2584a');
+      }
     }
     function tribune(x,y,w,h){
       rect(x,y,w,h,'#4a4f5c'); rect(x,y,w,2,'#5f6676');
@@ -552,20 +824,16 @@ MOTEUR.circuit={
       if(Math.abs(ux)>Math.abs(uy)) tribune(q1[0]+dx2-(sgn>0?0:22),q1[1]+dy2-28,22,56);
       else tribune(q1[0]+dx2-28,q1[1]+dy2-(sgn>0?0:16),56,16);
     }
-    var NB=C.theme==='beton'?34:76;
+    var NB=(C.theme==='beton'?34:76)*2;
     for(i=0;i<NB;i++){
-      var ax=al(i*3.1)*MW, ay=al(i*7.7)*MH, ar=5+al(i*2.3)*7;
+      var ax=al(i*3.1)*MW, ay=al(i*7.7)*MH, ar=(5+al(i*2.3)*7)*CI_K;
       if(C.theme==='mer'&&ax>MW-200)continue;
       if(!loinDeLaPiste(ax,ay,ar))continue;
       if(C.theme==='pins'){
-        /* DES PINS, pas des boules : un tronc et deux etages de houppier
-           suffisent a dire l'arbre du Sud vu d'en haut. */
-        rond(ax+3,ay+4,ar*1.1,'rgba(6,12,8,.5)');
-        rond(ax,ay,ar*1.15,'#14301a'); rond(ax-ar*0.2,ay-ar*0.2,ar*0.8,'#1d4a26');
-        rond(ax-ar*0.4,ay-ar*0.4,ar*0.4,'#2d6a34');
-        rect(ax-1,ay-1,2,2,'#3a2a18');
+        arbre(ax,ay,ar*1.15,'#0f2714','#17381d','#215029','#2e6c38');
+        rect(ax-1,ay-1,3,3,'#3a2a18');
       } else if(C.theme==='roche'){
-        arbre(ax,ay,ar*0.8,'#4a5a30','#5e7040','#748a52');
+        arbre(ax,ay,ar*0.85,'#3c4c26','#4c6032','#5f7641','#748c52');
       } else if(C.theme==='mer'){
         /* un palmier : une tache claire et quatre palmes */
         rond(ax+2,ay+3,ar*0.8,'rgba(40,40,20,.4)');
@@ -583,7 +851,25 @@ MOTEUR.circuit={
         rect(ax,ay,cw2,1,'rgba(255,255,255,.22)');
         for(var v2=2;v2<cw2-1;v2+=3)rect(ax+v2,ay+1,1,ch2-2,'rgba(0,0,0,.18)');
       } else {
-        arbre(ax,ay,ar,'#17401f','#235e2c','#398a3f');
+        arbre(ax,ay,ar,'#143a1b','#1d5226','#2a7033','#3e9148');
+      }
+    }
+    /* =====================================================================
+       CE QUI BORDE LA PISTE. Les piles de pneus et les barrieres se
+       posent AU BORD, accrochees a des points du trace : un element de
+       circuit pose au hasard dans un champ ne dit rien, le meme element
+       colle au bitume dit qu'on est sur un circuit.
+       ===================================================================== */
+    for(var kp=0;kp<26;kp++){
+      var ip=Math.floor(L.length*(kp/26)+al(kp*3.7)*20)%L.length;
+      var pp=L[ip], np=al(kp*5.3);
+      var ux2=Math.cos(pp[2]+1.5708), uy2=Math.sin(pp[2]+1.5708);
+      var sg2=(kp%2)?1:-1, dd3=LG+10+al(kp*2.1)*6;
+      if(np<0.42){
+        pile(pp[0]+ux2*dd3*sg2, pp[1]+uy2*dd3*sg2);
+        if(np<0.2)pile(pp[0]+ux2*(dd3+8)*sg2+4, pp[1]+uy2*(dd3+8)*sg2+4);
+      }else if(np<0.72){
+        barriere(pp[0]+ux2*(dd3+4)*sg2, pp[1]+uy2*(dd3+4)*sg2, pp[2], 3+((kp*3)%3));
       }
     }
     s.img=cv;
@@ -632,7 +918,7 @@ MOTEUR.circuit={
       cv.width=w;cv.height=h;
       var g=cv.getContext('2d'); g.imageSmoothingEnabled=false;
       var T=CI_THEMES[C.theme];
-      g.fillStyle=T.h2;g.fillRect(0,0,w,h);
+      g.fillStyle=T.sols[2];g.fillRect(0,0,w,h);
       var mx=1e9,my=1e9,Mx=-1e9,My=-1e9,i;
       for(i=0;i<L.length;i++){mx=Math.min(mx,L[i][0]);Mx=Math.max(Mx,L[i][0]);
                               my=Math.min(my,L[i][1]);My=Math.max(My,L[i][1]);}
@@ -657,8 +943,10 @@ MOTEUR.circuit={
      charge : la version precedente passait par chrome(), lequel lit le
      nom du trace choisi — qui n'existe pas encore a ce moment-la.
      ===================================================================== */
-  ecranPret:function(s,L,H){
+  ecranPret:function(s,L0,H0){
     if(!CI_ART)CI_ART=CI_SPRITE();
+    G.save(); G.scale(CI_K,CI_K);
+    var L=L0/CI_K, H=H0/CI_K;
     G.fillStyle='#0c0f16';G.fillRect(0,0,L,H);
     for(var y=0;y<H;y+=6) R(0,y,L,3,'#11151e');
     var cy=Math.round(H*0.50);
@@ -687,6 +975,7 @@ MOTEUR.circuit={
     G.font='8px ui-monospace,monospace';G.fillStyle='#8fa6bc';
     G.fillText('TU CHOISIS APR\u00c8S LE JETON',L/2,Math.round(H*0.82));
     G.fillText('TROIS TOURS \u00b7 ON GARDE LE MEILLEUR',L/2,Math.round(H*0.82)+12);
+    G.restore();
   },
 
   /* =====================================================================
@@ -698,7 +987,9 @@ MOTEUR.circuit={
      l'ecran n'a pas la taille prevue.
      ===================================================================== */
   zones:function(s){
-    var L=s.L, H=s.H, z={};
+    /* le meme repere que le chrome : c'est la seule facon que le doigt
+       tombe exactement la ou le bouton est dessine */
+    var L=s.L/CI_K, H=s.H/CI_K, z={};
     z.yTitre=12;
     z.band={x:5, y:22, w:L-10, h:38};
     z.bandG={x:5, y:22, w:26, h:38};
@@ -731,8 +1022,10 @@ MOTEUR.circuit={
     s.bascule=12;
   },
 
-  ecranChoix:function(s,L,H){
+  ecranChoix:function(s,L0,H0){
     if(!CI_ART)CI_ART=CI_SPRITE();
+    G.save(); G.scale(CI_K,CI_K);
+    var L=L0/CI_K, H=H0/CI_K;
     var V=this.vignettes(s), z=this.zones(s), i, r;
     var C=CI_CIRCUITS[s.iCir], E=CI_ECURIES[s.iEcu], T=CI_THEMES[C.theme];
 
@@ -839,11 +1132,15 @@ MOTEUR.circuit={
     G.font='6px ui-monospace,monospace';G.fillStyle='#7f93a8';
     G.fillText('TOUCHE ‹ OU › POUR CHANGER',L/2,H-14);
     G.fillText('GAUCHE / DROITE POUR BRAQUER · LES DEUX : FREIN',L/2,H-5);
+    G.restore();
   },
 
   tape:function(s,x,y){
     if(s.enPause){s.enPause=false;return;}
     if(s.phase!=='prep')return;
+    /* le doigt arrive dans le repere de la scene ; les zones sont dans
+       celui du chrome, deux fois plus petit */
+    x/=CI_K; y/=CI_K;
     var z=this.zones(s), i, r;
     function dans(q){ return x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h; }
     if(dans(z.go)){ this.enPiste(s); return; }
@@ -858,13 +1155,14 @@ MOTEUR.circuit={
     if(dans(z.band)){ this.tourne(s,'c', x<z.band.x+z.band.w/2?-1:1); return; }
     if(dans(z.ecuG)){ this.tourne(s,'e',-1); return; }
     if(dans(z.ecuD)){ this.tourne(s,'e', 1); return; }
-    if(dans(z.scene)){ this.tourne(s,'e', x<s.L/2?-1:1); return; }
+    if(dans(z.scene)){ this.tourne(s,'e', x<s.L/CI_K/2?-1:1); return; }
   },
   /* LE GLISSEMENT MARCHE AUSSI : c'est le geste qu'on essaie d'abord
      devant une rangee d'objets, et il ne coute que quelques lignes. */
   glisse:function(s,x,y,dx,dy){
     if(s.phase!=='prep')return;
-    s.glDx=(s.glDx||0)+dx;
+    y/=CI_K;
+    s.glDx=(s.glDx||0)+dx/CI_K;
     if(Math.abs(s.glDx)<26)return;
     var z=this.zones(s), sens=s.glDx>0?-1:1;
     s.glDx=0;
@@ -876,8 +1174,8 @@ MOTEUR.circuit={
   enPiste:function(s){
     var C=CI_CIRCUITS[s.iCir];
     s.C=C;
-    s.ligne=this.tracer(C.pts,4);
-    s.longueur=s.ligne.length*4;
+    s.ligne=this.tracer(C.pts,4*CI_K);
+    s.longueur=s.ligne.length*4*CI_K;
     this.carnet(s);
     this.peindre(s);
     try{localStorage.setItem(CI_CLE+'.choix',JSON.stringify({c:s.iCir,e:s.iEcu}));}catch(e){}
@@ -936,7 +1234,10 @@ MOTEUR.circuit={
       return;
     }
     dt=Math.min(34,dt);
-    var ACC=0.00042, FREIN=0.00075, VMAX=0.235, LG=s.C.large;
+    /* LES VITESSES SUIVENT L'ECHELLE : le monde a double, donc parcourir
+       la meme fraction de circuit dans le meme temps demande d'aller deux
+       fois plus vite en pixels par milliseconde. */
+    var ACC=0.00042*CI_K, FREIN=0.00075*CI_K, VMAX=0.235*CI_K, LG=s.C.large*CI_K;
     var dirx=Math.cos(s.a), diry=Math.sin(s.a);
     var v=Math.hypot(s.vx,s.vy);
 
@@ -980,11 +1281,11 @@ MOTEUR.circuit={
     s.vx+=diry*perp*corr; s.vy-=dirx*perp*corr;
     s.glisse+=(Math.abs(perp)-s.glisse)*Math.min(1,0.006*dt);
     if(Math.abs(perp)>0.050&&Math.random()<0.55)
-      s.pouss.push({x:s.x-dirx*8,y:s.y-diry*8,vx:(Math.random()-0.5)*0.01,
-                    vy:(Math.random()-0.5)*0.01,vie:420,
+      s.pouss.push({x:s.x-dirx*8*CI_K,y:s.y-diry*8*CI_K,vx:(Math.random()-0.5)*0.01*CI_K,
+                    vy:(Math.random()-0.5)*0.01*CI_K,vie:420,
                     c:surHerbe?'#6f8a4e':'#b9bec8'});
     if(!surHerbe&&Math.abs(perp)>0.042){
-      var gx=-diry*7, gy=dirx*7, bx=s.x-dirx*9, by=s.y-diry*9;
+      var gx=-diry*7*CI_K, gy=dirx*7*CI_K, bx=s.x-dirx*9*CI_K, by=s.y-diry*9*CI_K;
       s.gommes.push({x:bx+gx,y:by+gy,vie:3000});
       s.gommes.push({x:bx-gx,y:by-gy,vie:3000});
       if(s.gommes.length>520)s.gommes.splice(0,80);
@@ -1099,9 +1400,21 @@ MOTEUR.circuit={
   /* LA LIVREE S'APPLIQUE AU PIXEL. Le motif decide, pour chaque point de
      carrosserie, s'il prend la teinte principale ou celle du motif —
      c'est ce qui fait douze voitures au lieu de douze nuances. */
+  /* eclaircir et assombrir une teinte, pour le volume */
+  ton:function(h,f){
+    var n=parseInt(h.slice(1),16), r=(n>>16)&255, v=(n>>8)&255, b=n&255;
+    function m(x){ return Math.max(0,Math.min(255,Math.round(f>0?x+(255-x)*f:x*(1+f)))); }
+    return 'rgb('+m(r)+','+m(v)+','+m(b)+')';
+  },
   pal:function(ec){
-    var E=CI_ECURIES[ec%CI_ECURIES.length];
-    return {E:E, mot:CI_MOTIFS[E.m]||CI_MOTIFS.uni};
+    var E=CI_ECURIES[ec%CI_ECURIES.length], M=this;
+    var memo={};
+    return {E:E, mot:CI_MOTIFS[E.m]||CI_MOTIFS.uni,
+      clair:function(h){ return memo['c'+h]||(memo['c'+h]=M.ton(h, 0.22)); },
+      sombre:function(h){ return memo['s'+h]||(memo['s'+h]=M.ton(h,-0.32)); },
+      fixe:{'K':'#101219','n':'#4a4e5b','o':'#2e323c','N':'#1b1e26',
+            'W':'#f2f1ea','w':'#ffffff','B':'#6ab4e8','G':'#5a5f6e',
+            'g':'#8a90a0','S':'#9aa0ae','e':E.e}};
   },
   dessinerSprite:function(g,P,ex,ey,ang,alp,ombre){
     g.save();
@@ -1120,13 +1433,15 @@ MOTEUR.circuit={
     for(j=0;j<CI_ART.length;j++){
       row=CI_ART[j];
       for(i=0;i<row.length;i++){
-        ch=row[i];
-        var c=null;
-        if(ch==='K')c='#12141b';
-        else if(ch==='n')c='#3a3e4b';
-        else if(ch==='W')c='#f0efe8';
-        else if(ch==='e')c=P.E.e;
-        else if(ch==='c')c=P.mot(i,j)?P.E.d:P.E.c;
+        ch=row[i]; if(ch==='.')continue;
+        var c=P.fixe[ch];
+        if(c===undefined){
+          /* LE MOTIF DECIDE DE LA TEINTE, LE PROFIL DECIDE DU TON. Un
+             pixel de carrosserie connait donc deux choses : s'il
+             appartient au motif, et ou il se trouve sur la courbe. */
+          var base=P.mot(i,j)?P.E.d:P.E.c;
+          c = (ch==='C')?P.clair(base) : (ch==='D')?P.sombre(base) : base;
+        }
         if(c){g.fillStyle=c;g.fillRect(i-CI_L/2,j-CI_H/2,1,1);}
       }
     }
@@ -1148,15 +1463,15 @@ MOTEUR.circuit={
     var sec=s.secousse>0?(Math.random()-0.5)*s.secousse*2.6:0;
     /* LA CAMERA REGARDE D'AUTANT PLUS LOIN QU'ON VA VITE. A distance
        fixe, on arrivait sur les virages rapides sans les avoir vus. */
-    var vv=Math.hypot(s.vx,s.vy), dev=28+vv*210;
+    var vv=Math.hypot(s.vx,s.vy), dev=(28+vv*210/CI_K)*CI_K;
     var ax=s.x+Math.cos(s.a)*dev, ay=s.y+Math.sin(s.a)*dev;
     s.camX=(s.camX==null)?ax:s.camX+(ax-s.camX)*0.14;
     s.camY=(s.camY==null)?ay:s.camY+(ay-s.camY)*0.14;
-    var MW=s.C.mw, MH=s.C.mh;
+    var MW=s.C.mw*CI_K, MH=s.C.mh*CI_K;
     var cx=Math.round(Math.max(0,Math.min(MW-L,s.camX-L/2))+sec);
     var cy=Math.round(Math.max(0,Math.min(MH-H,s.camY-H/2))+sec*0.6);
 
-    G.fillStyle=CI_THEMES[s.C.theme].ciel;G.fillRect(0,0,L,H);
+    G.fillStyle=CI_THEMES[s.C.theme].sols[2];G.fillRect(0,0,L,H);
     G.imageSmoothingEnabled=false;
     G.drawImage(s.img,cx,cy,L,H,0,0,L,H);
 
@@ -1180,7 +1495,18 @@ MOTEUR.circuit={
       if(f)this.voiture(s,f[0]-cx,f[1]-cy,f[2],(s.iEcu+6),0.40);
     }
     this.voiture(s,s.x-cx,s.y-cy,s.a,s.iEcu,null);
-    this.chrome(s,L,H);
+    /* =====================================================================
+       LE CHROME SE DESSINE DANS SON PROPRE REPERE
+       ---------------------------------------------------------------------
+       Tous ses textes et ses blocs sont dimensionnes en pixels : en
+       passant au pixel fin, ils ont ete divises par deux a l'ecran et sont
+       devenus illisibles. Plutot que de multiplier une centaine de
+       tailles une a une — et d'en oublier —, on met le repere a l'echelle
+       avant de l'appeler. Le chrome continue de croire qu'il travaille sur
+       un ecran de 195 par 422, et il a raison : c'est sa vraie unite. */
+    G.save(); G.scale(CI_K,CI_K);
+    this.chrome(s,L/CI_K,H/CI_K);
+    G.restore();
   },
 
   /* =====================================================================
@@ -1201,10 +1527,10 @@ MOTEUR.circuit={
       var mx=L-s.miniW-3, my=20;
       G.drawImage(s.mini,mx,my);
       R(mx,my,s.miniW,1,'rgba(255,255,255,.18)');
-      R(mx+Math.round(s.x*s.miniW/s.C.mw)-1,my+Math.round(s.y*s.miniH/s.C.mh)-1,3,3,'#ff5a4a');
+      R(mx+Math.round(s.x*s.miniW/(s.C.mw*CI_K))-1,my+Math.round(s.y*s.miniH/(s.C.mh*CI_K))-1,3,3,'#ff5a4a');
       if(s.fant&&s.fant.length){
         var f=s.fant[Math.min(s.fantI,s.fant.length-1)];
-        if(f)R(mx+Math.round(f[0]*s.miniW/s.C.mw),my+Math.round(f[1]*s.miniH/s.C.mh),2,2,'#8fa6bc');
+        if(f)R(mx+Math.round(f[0]*s.miniW/(s.C.mw*CI_K)),my+Math.round(f[1]*s.miniH/(s.C.mh*CI_K)),2,2,'#8fa6bc');
       }
     }
     var E=CI_ECURIES[s.iEcu];
@@ -1228,7 +1554,7 @@ MOTEUR.circuit={
     var dv=this.devant(s);
     if(dv&&!s.hors){
       var vit=Math.max(0.06,Math.hypot(s.vx,s.vy));
-      var sec2=(dv.d*4)/(vit*1000);
+      var sec2=(dv.d*4*CI_K)/(vit*1000);
       if(sec2<2.6){
         var N=dv.v.note, sens=dv.v.sens>0?1:-1;
         var proche=Math.max(0,Math.min(1,(2.6-sec2)/2.0));
@@ -1318,7 +1644,7 @@ MOTEUR.circuit={
     var v=Math.hypot(s.vx,s.vy);
     G.textAlign='right';G.font='bold 13px ui-monospace,monospace';
     G.fillStyle=s.hors?'#ffb04a':'#ffffff';
-    G.fillText(String(Math.round(v*1180)),L-4,H-hb-22);
+    G.fillText(String(Math.round(v*1180/CI_K)),L-4,H-hb-22);
     G.font='6px ui-monospace,monospace';G.fillStyle='#8fa6bc';
     G.fillText('KM/H',L-4,H-hb-14);
 
