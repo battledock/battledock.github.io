@@ -3167,3 +3167,76 @@ where niveau = 29;
    de trois en trois les alignait en quadrillage : de loin on ne voyait
    plus l'herbe, on voyait le pas de la boucle.
    ===================================================================== */
+
+/* =====================================================================
+   QUATRE BORNES DU PORT, ET LE PORTIQUE REFAIT    2026-10-28 → 10-29
+   =====================================================================
+   La salle d'arcade passe de cinq a huit bornes jouables. Toutes sortent
+   du meme endroit : le port de Marseille et le metier qu'on y fait.
+
+     LE PORTIQUE (refait)  charger des camions au lieu d'empiler
+     LA CRIEE              trier le poisson a la cadence
+     LA CALE               arrimer sans faire giter le navire
+     LE REMORQUEUR         tracter 300 m de navire dans la passe
+     LA DOUANE             le scan et les papiers ne disent pas pareil
+
+   Chacune a son fichier de notes : sql/arcade_portique.sql,
+   arcade_criee.sql, arcade_cale.sql, arcade_remorqueur.sql,
+   arcade_douane.sql. Ce qui suit est ce qui vaut pour toutes.
+
+   CE QUE LES ROBOTS ONT TROUVE AVANT LES JOUEURS
+     - Criee : avec des caisses marquees « melangees » a la fabrication,
+       un robot qui jouait PARFAITEMENT perdait quand meme, parce que les
+       bacs changent et que les caisses deja sur le tapis devenaient
+       invendables sans qu'aucun dessin ne le dise.
+     - Cale : la gite etait une division fausse — un seul conteneur contre
+       le bord donnait 2,5 et le navire coulait a la premiere pose.
+     - Cale encore : six colonnes se remplissaient toutes seules, un robot
+       au hasard faisait trente-deux rangees sans perdre.
+     - Remorqueur : le couple etait cent mille fois trop fort, le navire
+       claquait en une image a sa bute et les trois pilotes rendaient le
+       meme resultat.
+
+   DEUX LEÇONS DE METHODE, PAYEES CHER
+
+   1. UN NOM DE CHAMP ET UN NOM DE METHODE NE PEUVENT PAS COEXISTER dans
+      le meme objet litteral. Le Remorqueur portait « vise: 150 » — le
+      nombre que le shell lit pour calculer l'echelle — et « vise: » une
+      methode. La derniere definition gagne : ECH valait dl/fonction,
+      c'est-a-dire NaN, et la borne s'ouvrait sur un ecran de taille NaN
+      SANS LA MOINDRE ERREUR dans la console. Meme piege que l'ancien
+      ecranChoix du Circuit, qui etait reste en double.
+
+   2. UN ROBOT QUI ENVELOPPE UN ROBOT NE MESURE PLUS RIEN. Chaque niveau
+      de test gardait « l'ancien pas() » en faisant M.pas.bind(M) — mais a
+      ce moment-la, M.pas etait DEJA le robot precedent. Le troisieme
+      enveloppait le deuxieme qui enveloppait le premier, et les trois
+      jouaient ensemble a chaque image. Sur La Douane, le robot qui
+      laissait TOUT passer rendait zero faute sur vingt-deux controles :
+      l'expert tranchait avant lui. Les quatre bornes ont ete remesurees
+      apres correction, et trois chiffres sur quatre avaient change.
+
+   3. ET UNE TROISIEME, SUR CE QU'ON MESURE. Les trois pilotes du
+      Remorqueur faisaient varier la DISTANCE DE VISEE : le « nul » a
+      dix-huit pixels battait le « bon » a cent vingt de deux cent
+      cinquante metres. Ce n'etaient pas trois niveaux de joueur,
+      c'etaient trois reglages d'automate — et le meilleur gagnait, ce
+      qui ne dit rien du jeu. On garde desormais une seule strategie et
+      on degrade LE TEMPS DE REACTION, qui est ce qui degrade un humain.
+
+   LE BOGUE DE LA SALLE, TROUVE AU PASSAGE. salleMaj() etait appelee par
+   un setTimeout(0) place au milieu de arcade.html, alors que les
+   fichiers de bornes sont charges tout en bas : la minuterie partait
+   avant eux, MOTEUR[cle].banniere n'existait pas encore, et TOUTES LES
+   CARTES tombaient sur le dessin de secours — le rectangle violet et
+   orange. Aucune erreur, aucune trace, des vignettes fausses depuis le
+   premier jour qu'on prenait pour un choix graphique.
+
+   LES PLAFONDS DE VRAISEMBLANCE vivent maintenant dans
+   public.arcade_plafond(borne, duree) au lieu d'etre ecrits en dur dans
+   arcade_score() : chaque borne ajoutee obligeait a reecrire la fonction
+   entiere, et corriger un plafond apres mesure devenait un risque pour
+   les autres. Mesures du robot parfait, en points par seconde :
+     criee 162 · cale 83 · remorqueur 30 · douane 165 · portique 107
+   Plafonds poses : 260 · 200 · 90 · 260 · 260.
+   ===================================================================== */
