@@ -31876,7 +31876,15 @@ if(!document.getElementById('cssMet')){const st=document.createElement('style');
 #page2Fond.met .tt{flex:1;min-width:0;font:400 27px/1 'Lilita One','Baloo 2',sans-serif;color:#fff;-webkit-text-stroke:5px #12356a;paint-order:stroke}
 #page2Fond.met .tt small{display:block;font:400 12.5px 'Lilita One','Baloo 2',sans-serif;color:#ffe066;-webkit-text-stroke:3px #12356a;letter-spacing:.5px;margin-bottom:2px}
 #page2Fond.met .x{flex:none;width:40px;height:40px;border:0;border-radius:12px;background:#e8503a;box-shadow:0 0 0 3px #fff,0 4px 0 3px #8a2a1a;color:#fff;font:400 20px 'Lilita One',sans-serif;margin-right:3px}
-#page2Fond.met .card{flex:none;min-height:0;max-height:calc(100% - 100px);margin:4px 12px 0;background:#fff8e4;border-radius:24px;box-shadow:0 0 0 3px #12356a,0 6px 0 3px #12356a;display:flex;flex-direction:column;padding:16px 14px 16px;max-width:560px;width:calc(100% - 24px);align-self:center}
+/* LA CARTE PREND LA HAUTEUR. Collee sous l'en-tete avec flex:none, elle
+   laissait deux cent quatre-vingt-trois pixels de bleu mort sous elle sur
+   un 412x915 — un tiers de l'ecran. La centrer ne reglait rien : elle
+   flottait, avec du vide au-dessus ET en dessous. Elle occupe donc tout
+   ce qui reste, et c'est la liste de la destination qui defile si jamais
+   elle deborde.
+   LA MARGE DU BAS PORTE L'ENCOCHE : sans elle, le bouton de Tokyo
+   passait sous la barre de navigation des telephones Android. */
+#page2Fond.met .card{flex:1;min-height:0;overflow:hidden;margin:4px 12px calc(env(safe-area-inset-bottom,0px) + 12px);background:#fff8e4;border-radius:24px;box-shadow:0 0 0 3px #12356a,0 6px 0 3px #12356a;display:flex;flex-direction:column;padding:16px 14px 16px;max-width:560px;width:calc(100% - 24px);align-self:center}
 #page2Fond.met .lh{flex:none;position:relative;height:96px;margin:4px 8px 12px}
 #page2Fond.met .lh .tr{position:absolute;left:12%;right:12%;top:20px;height:10px;border-radius:5px;background:#e8c040}
 #page2Fond.met .lh .s{position:absolute;top:4px;width:33%;transform:translateX(-50%);text-align:center;border:0;background:none;padding:0;-webkit-tap-highlight-color:transparent}
@@ -31885,7 +31893,12 @@ if(!document.getElementById('cssMet')){const st=document.createElement('style');
 #page2Fond.met .lh .s.on i{background:#2a6ab8;border-color:#2a6ab8;transform:scale(1.12)}
 #page2Fond.met .lh .s b{display:block;font:400 15px/1 'Lilita One','Baloo 2',sans-serif;color:#3a2408}
 #page2Fond.met .lh .s small{display:block;font:800 10.5px 'Baloo 2',sans-serif;color:#7a5a38}
-#page2Fond.met .sel{flex:none;max-height:52vh;overflow-y:auto;border-radius:20px;background:#f3e2b8;box-shadow:0 4px 0 #dcc694;padding:16px}
+/* LE PANNEAU DE LA DESTINATION GARDE SA TAILLE, et c'est « margin-bottom:
+   auto » qui envoie les boutons se coller en bas de la carte. Le creux
+   qui reste est alors en creme, a l'interieur : il ressemble a de l'air
+   et plus a un oubli. Il peut tout de meme retrecir et defiler quand la
+   destination a beaucoup de lignes sur un petit ecran. */
+#page2Fond.met .sel{flex:0 1 auto;min-height:0;margin-bottom:auto;overflow-y:auto;border-radius:20px;background:#f3e2b8;box-shadow:0 4px 0 #dcc694;padding:16px}
 #page2Fond.met .sel b{display:block;font:400 26px 'Lilita One','Baloo 2',sans-serif;color:#3a2408}
 #page2Fond.met .sel small{display:block;font:800 13px 'Baloo 2',sans-serif;color:#7a5a38;margin:2px 0 10px}
 #page2Fond.met .sel em{display:block;font:800 15px 'Baloo 2',sans-serif;font-style:normal;color:#5a4428;background:#fff8e4;border-radius:12px;padding:8px 11px;margin:0 0 7px}
