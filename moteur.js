@@ -31749,10 +31749,35 @@ background:radial-gradient(120% 70% at 50% 0%,#ff7aa8 0%,#7a3a8a 38%,#241640 70%
 #page2Fond.tkq .tq-ciel{position:absolute;inset:0;pointer-events:none}
 #page2Fond.tkq .tq-ciel i{position:absolute;top:-20px;width:9px;height:7px;border-radius:70% 0 70% 0;background:#ffc6d9;opacity:.85;animation:tkqTombe linear infinite}
 @keyframes tkqTombe{to{transform:translate(-60px,110vh) rotate(540deg)}}
-#page2Fond.tkq .tq-ville{position:absolute;left:0;right:0;bottom:0;height:46%;pointer-events:none;
-background:linear-gradient(0deg,#0d0818 0 30%,transparent 30%),
-repeating-linear-gradient(90deg,#1a1030 0 34px,#22163c 34px 58px,#160d2a 58px 90px);
--webkit-mask:linear-gradient(0deg,#000 60%,transparent);mask:linear-gradient(0deg,#000 60%,transparent);opacity:.9}
+/* LA VILLE. Elle etait faite d'une seule rayure verticale repetee : des
+   bandes toutes de la meme hauteur, dans trois violets a peine distincts
+   du ciel. A l'ecran, ca ne se lisait pas comme une ville — ca ne se
+   lisait pas du tout, et le bas de la page paraissait vide lui aussi.
+   Des tours de hauteurs differentes, avec leurs fenetres allumees,
+   disent Tokyo en une seconde. */
+#page2Fond.tkq .tq-ville{position:absolute;left:0;right:0;bottom:0;height:54%;pointer-events:none;
+overflow:hidden;
+-webkit-mask:linear-gradient(0deg,#000 58%,rgba(0,0,0,.3) 86%,transparent);
+mask:linear-gradient(0deg,#000 58%,rgba(0,0,0,.3) 86%,transparent)}
+/* L'ORDRE DES COUCHES FAIT TOUT. Au premier essai, les rangees allumees
+   etaient PAR-DESSUS et la colonne sombre dessous : la moitie de la
+   surface s'allumait et la ville devenait une grille de points, sans
+   silhouette. C'est le CORPS DE LA TOUR qui doit etre au-dessus, troue
+   de colonnes etroites — les fenetres ne se voient qu'a travers ces
+   trous, et elles retombent a un douzieme de la facade. */
+#page2Fond.tkq .tq-ville u{position:absolute;bottom:0;text-decoration:none;
+background-image:
+repeating-linear-gradient(90deg,var(--c) 0 9px,transparent 9px 13px),
+repeating-linear-gradient(0deg,transparent 0 9px,rgba(255,216,146,.46) 9px 12px),
+linear-gradient(var(--c),var(--c));
+box-shadow:inset 1px 0 0 rgba(255,255,255,.06)}
+/* le pied de la ville, noyé dans la nuit : sans lui les tours flottent */
+#page2Fond.tkq .tq-ville:after{content:'';position:absolute;left:0;right:0;bottom:0;
+height:22%;background:linear-gradient(0deg,#0b0618,rgba(11,6,24,0))}
+#page2Fond.tkq .tq-ville s{position:absolute;width:3px;height:3px;margin-left:-1.5px;
+border-radius:50%;background:#ff5a6a;box-shadow:0 0 6px #ff5a6a;
+animation:tkqBalise 1.8s steps(2,end) infinite}
+@keyframes tkqBalise{50%{opacity:.15}}
 #page2Fond.tkq .tq-haut{position:relative;background:none;padding:calc(env(safe-area-inset-top,0px) + 18px) 18px 0;display:flex;align-items:center;gap:12px}
 #page2Fond.tkq .tq-ligne{flex:none;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;
 background:#fff;color:#e4007f;border:5px solid #e4007f;font:800 20px 'Baloo 2',sans-serif;box-shadow:0 4px 16px rgba(228,0,127,.45)}
@@ -31760,7 +31785,12 @@ background:#fff;color:#e4007f;border:5px solid #e4007f;font:800 20px 'Baloo 2',s
 #page2Fond.tkq .tq-haut b{display:block;font:800 26px 'Baloo 2',sans-serif;line-height:1.05}
 #page2Fond.tkq .tq-haut .tq-x{margin-left:auto;flex:none;width:38px;height:38px;border-radius:50%;border:0;
 background:rgba(255,255,255,.16);color:#fff;font:700 18px 'Baloo 2',sans-serif}
-#page2Fond.tkq .tq-bas{position:relative;display:block;background:none;width:auto;margin-top:auto;padding:0 16px calc(env(safe-area-inset-bottom,0px) + 18px)}
+/* LE BILLET SE CENTRE. Avec « margin-top:auto » il etait plaque tout en
+   bas : sur un telephone haut, cinq cent vingt-huit pixels de violet
+   vide restaient entre l'en-tete et lui — cinquante-huit pour cent de
+   l'ecran. Mesure faite sur 412x915. « margin:auto 0 » partage la place
+   libre en deux et le pose au milieu de la ville. */
+#page2Fond.tkq .tq-bas{position:relative;display:block;background:none;width:auto;margin:auto 0;padding:0 16px calc(env(safe-area-inset-bottom,0px) + 18px)}
 #page2Fond.tkq .tq-billet{position:relative;background:#fbf6ec;color:#2b2418;border-radius:18px;padding:16px 18px 14px;
 box-shadow:0 18px 40px rgba(0,0,0,.45)}
 #page2Fond.tkq .tq-billet:before,#page2Fond.tkq .tq-billet:after{content:'';position:absolute;top:58%;width:20px;height:20px;border-radius:50%;background:#1a0f2c}
@@ -31785,9 +31815,18 @@ font:800 17px 'Baloo 2',sans-serif;color:#fff;background:linear-gradient(180deg,
 border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font:700 15px 'Baloo 2',sans-serif}
 #page2Fond.tkq .tq-bulle{min-height:16px;margin-top:8px;text-align:center;font:700 12px ui-monospace,monospace;color:#ffd0e0}`;
 document.head.appendChild(st);}
+/* LES TOURS DE LA VILLE, tirees d'une suite reguliere : largeurs et
+   hauteurs qui ne tombent jamais ensemble, donc une silhouette qui ne
+   se repete pas, et pourtant la meme a chaque ouverture. */
+let ville='';{let vx=-6;
+for(let i=0;vx<106;i++){
+const w=7+((i*5)%9), h=26+((i*17)%52), c=['#2a1a4e','#35215e','#201440'][i%3];
+ville+='<u style="left:'+vx.toFixed(1)+'%;width:'+w+'%;height:'+h+'%;--c:'+c+'"></u>';
+if(h>64)ville+='<s style="left:'+(vx+w/2).toFixed(1)+'%;bottom:'+h+'%;animation-delay:-'+(i%4)*0.4+'s"></s>';
+vx+=w+0.8;}}
 let petales='';for(let i=0;i<16;i++)petales+='<i style="left:'+(Math.random()*110).toFixed(0)+'%;animation-duration:'+(6+Math.random()*7).toFixed(1)+'s;animation-delay:-'+(Math.random()*10).toFixed(1)+'s;transform:scale('+(0.6+Math.random()*0.7).toFixed(2)+')"></i>';
 $('page2Fond').innerHTML=
-'<div class="tq-ciel">'+petales+'</div><div class="tq-ville"></div>'+
+'<div class="tq-ciel">'+petales+'</div><div class="tq-ville">'+ville+'</div>'+
 '<div class="tq-haut"><span class="tq-ligne">2</span><div><small>LE MÉTRO · LIGNE 2</small><b>'+(retour?'Direction Le port':'Direction Tokyo')+'</b></div><button class="tq-x" id="tkX" aria-label="Fermer">✕</button></div>'+
 '<div class="tq-bas"><div class="tq-billet">'+
 (retour?'<div class="tq-trajet"><div><small>DÉPART</small><b>Tokyo</b><em>東京</em></div><span class="tq-fl">→</span><div><small>ARRIVÉE</small><b>Le port</b><em>Marseille</em></div></div>'
@@ -31856,7 +31895,7 @@ if(!document.getElementById('cssMet')){const st=document.createElement('style');
 $('page2Fond').className='met';$('page2').classList.add('on');
 const nomIci=(STATIONS_L1.find(x=>x[3]===ICI)||['','La ferme'])[1];
 const I=INFO[S[3]]||['🚇','',[]];
-$('page2Fond').innerHTML='<div class="rhd"><div class="m">M</div><div class="tt"><small>LIGNE 1 · STATION '+nomIci.replace(/^(Le|La) /,'').toUpperCase()+'</small>Où vas-tu ?</div><button class="x" id="voyX">✕</button></div>'+
+$('page2Fond').innerHTML='<div class="hd"><div class="m">M</div><div class="tt"><small>LIGNE 1 · STATION '+nomIci.replace(/^(Le|La) /,'').toUpperCase()+'</small>Où vas-tu ?</div><button class="x" id="voyX">✕</button></div>'+
 '<div class="card"><div class="lh"><div class="tr"></div>'+STATIONS_L1.map(([c,n,,q],k)=>{const l=[12,50,88][k]||50, ici=q===ICI, on=q===S[3];
 return '<button class="s'+(ici?' ici':'')+(on?' on':'')+'" data-q="'+q+'" style="left:'+l+'%"><i></i><b>'+n+'</b><small>'+(ici?'tu es ici':(INFO[q]?INFO[q][1].replace(' de trajet','').replace('utes',''):''))+'</small></button>';}).join('')+'</div>'+
 '<div class="sel"><b>'+I[0]+' '+S[1]+'</b><small>'+I[1]+'</small>'+I[2].map(t=>'<em>'+t+'</em>').join('')+'</div>'+
