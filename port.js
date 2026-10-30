@@ -39,7 +39,7 @@ sente:{seuil:1660, y0:194, y1:572, arrivee:[1636,258]},
    revenant. Le platane de l'ouest a ete retire : il tenait pile dans la
    bande et on se cognait dedans avant d'avoir pu pousser. */
 chemin:{seuil:100, y0:194, y1:572, arrivee:[124,258]},   /* 100 et non 70 : meme marge de 24 px sur l'arrivee que le cote est */
-ruelle:{x:810,l:38,haut:30},   /* la montée vers Notre-Dame : axe (250+4*140), demi-largeur, sommet */
+ruelle:{x:810,l:76,haut:30},   /* la montée vers Notre-Dame : axe (250+4*140), demi-largeur DOUBLÉE, sommet */
 };
 const CARGO_X={pile:[1266,806],docks:[1318,686]};
 const PAV={poisson:[552,250],peche:[708,250]};
@@ -353,8 +353,8 @@ graverLesCollines(g,0,XP.debutVille+300,164,-1);
    couper net au-dessus de la nouvelle esplanade de l'ouest. */
 graverLesToitsDuFond(g,XP.finVille-72,160,XP.debutVille+72);
 {
-const cx=XP.ruelle.x, xg=cx-71, xd=cx+71, ym=XP.maisonsY+6;
-[[xg,cx-46,1],[cx+46,xd,-1]].forEach(([a,b,sens],j)=>{
+const cx=XP.ruelle.x, xg=cx-141, xd=cx+141, ym=XP.maisonsY+6;
+[[xg,cx-92,1],[cx+92,xd,-1]].forEach(([a,b,sens],j)=>{
 for(let y=0;y<ym;y+=4)for(let x=a;x<b;x+=5){R(x,y,5,4,((x+y*3)>>2)%3?'#b85e32':'#c9743e');R(x+4,y,1,4,'#8f3f20');R(x,y,5,1,'#e0925a');}
 const fx=Math.round((a+b)/2);R(fx-1,0,3,ym,'#e59a62');R(fx+(sens>0?2:-3),0,1,ym,'#8f3f20');
 R(sens>0?a:fx+2,0,sens>0?fx-a-1:b-fx-2,ym,'rgba(60,25,10,.16)');
@@ -366,7 +366,7 @@ for(let y=18;y<ym-10;y+=34){R(mur+1,y,4,10,'#3a2616');R(mur+1,y,4,1,'#7a5230'); 
 R(mur+1,y+14,4,5,'#2e3a44');                                                            /* une fenêtre */
 R(sens>0?mur-2:mur+6,y-4,2,3,'#3b3a36');R(sens>0?mur-2:mur+6,y-1,2,2,'#ffd98a');}      /* une lanterne */
 });
-const x0=cx-46, w=92, tx=x0+23, tw=46;   /* l'escalier élargi : il mange la moitié des briques */
+const x0=cx-92, w=184, tx=x0+46, tw=92;   /* l'escalier DOUBLÉ : il prend toute la largeur */
 for(let y=XP.maisonsY+6,k=0;y>XP.ruelle.haut-14;k++){
 const palier=k%6===5, h=palier?10:6, yh=y-h;
 R(x0,yh,w,h,palier?'#f3eee4':'#e9e3d6');R(x0,yh,w,1,'#ffffff');R(x0,y-2,w,2,'#bdb4a2');
@@ -2478,7 +2478,7 @@ if(k===4)continue;                                                  /* la ruelle
 if(k===0){XCAL['x_fonfon0']=graverLaMaree();CALQUES_DECO['x_fonfon']=XCAL['x_fonfon0'];P('x_fonfon',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'maree'});continue;}   /* Chez Fonfon, le restaurant de bouillabaisse. IL TIENT LE BOUT OUEST DU QUAI (k=0, ancien k=1) : l'est est tenu par la Capitainerie, les deux esplanades sont donc bordees d'une devanture et les deux immeubles vides sont rentres dans la rangee. */
 if(k===9){XCAL['x_presse0']=graverLaPresse();CALQUES_DECO['x_presse']=XCAL['x_presse0'];P('x_presse',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'presse'});continue;}   /* la maison de la presse */
 if(k===2){XCAL['x_facPeche0']=graverLaCabanePeche();CALQUES_DECO['x_facPeche']=XCAL['x_facPeche0'];P('x_facPeche',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'peche'});continue;}   /* Pêche & Marine */
-if(k===6){XCAL['x_facPoisson0']=graverLeGlacier();CALQUES_DECO['x_facPoisson']=XCAL['x_facPoisson0'];P('x_facPoisson',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'glacier'});continue;}   /* le glacier, ancienne Criée */
+if(k===6){XCAL['x_facPoisson0']=graverLePeigne();CALQUES_DECO['x_facPoisson']=XCAL['x_facPoisson0'];P('x_facPoisson',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'salon'});continue;}   /* la Marinière (remplace le glacier) */
 if(k===3){XCAL['x_bar0']=graverLeBarModerne();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'bar'});
 continue;}   /* le bar-tabac PMU (sans terrasse) */
 if(k===5){XCAL['x_peigne0']=graverLePeigne();CALQUES_DECO['x_peigne']=XCAL['x_peigne0'];P('x_peigne',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'salon'});continue;}   /* le salon de coiffure */
@@ -2504,7 +2504,7 @@ P('x_metroM',XP.rangX0+2*140,XP.maisonsY+88,{col:[44,16],bati:true,demi:50,ouvre
    32 px barres au milieu d'une ruelle qui en fait 76. Il reste 22 px de
    chaque cote dans la ruelle, et tout le quai en dessous — la montee ne
    commence qu'au-dessus de maisonsY+6, le tableau est 46 px plus bas. */
-P('x_tableau',XP.ruelle.x,XP.maisonsY+52,{col:[16,12]});
+P('x_tableau',XP.ruelle.x,XP.maisonsY+120,{col:[16,12]});   /* descendu dans la grande place, centré sur les escaliers */
 let nv=0;
 [360,620,880].forEach(px=>{                     /* on compte aussi l'ancien ponton du milieu : les autres voiliers gardent leur allure */
 const la=XP.pontons.includes(px);
