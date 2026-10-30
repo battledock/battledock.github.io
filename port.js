@@ -1,6 +1,6 @@
 const XP={
 maisonsY:152,            /* le pied des façades */
-quaiY:340,               /* le bord du quai, au-dessus du bassin */
+quaiY:580,               /* le bord du quai, au-dessus du bassin — descendu de 240 pour la grande place */
 bassinO:0, bassinE:MONDE_L,     /* LA MER SORT DU CADRE DES DEUX COTES.
                                    Elle s'arretait a 170 pour laisser une
                                    langue de terre au boulodrome ; le quai
@@ -19,8 +19,8 @@ finVille:1584,                  /* la face est de la derniere facade : la
                                    aux collines */
 debutVille:176,                 /* sa face ouest, le pendant exact : les deux
                                    esplanades font 176 px au meme pixel */
-pontons:[360,880], pontonL:13,           /* le ponton du milieu (620) est retiré, avec ses voiliers */ pontonFin:470,
-metro:[1316,496],      /* le métro reprend la place de l'ancienne gare */
+pontons:[360,880], pontonL:13,           /* le ponton du milieu (620) est retiré, avec ses voiliers */ pontonFin:710,
+metro:[1316,736],      /* le métro reprend la place de l'ancienne gare */
 /* LA SORTIE DES BOIS, au bout est de la promenade. Rien n'est bati : un
    panneau dit ou l'on va, et on s'en va en marchant vers l'est, entre la
    derniere facade et l'eau. 'seuil' est la ligne au-dela de laquelle, en
@@ -31,19 +31,19 @@ metro:[1316,496],      /* le métro reprend la place de l'ancienne gare */
    et l'on croyait le passage casse. A 1660 il garde 24 px de marge sur
    l'arrivee — assez pour qu'on ne reparte pas par accident en posant le
    pied — et le depart se declenche des qu'on entre dans la bande. */
-sente:{seuil:1660, y0:194, y1:332, arrivee:[1636,258]},
+sente:{seuil:1660, y0:194, y1:572, arrivee:[1636,258]},
 /* LA SORTIE DES CHAMPS, au bout ouest de la promenade : le pendant exact
    de la sente du bois, de l'autre cote du quai. Meme bande, meme demi-
    seconde de poussee, mais vers l'ouest. 'seuil' est la ligne en deca de
    laquelle on part ; 'arrivee' est l'endroit ou l'on repose le pied en
    revenant. Le platane de l'ouest a ete retire : il tenait pile dans la
    bande et on se cognait dedans avant d'avoir pu pousser. */
-chemin:{seuil:100, y0:194, y1:332, arrivee:[124,258]},   /* 100 et non 70 : meme marge de 24 px sur l'arrivee que le cote est */
+chemin:{seuil:100, y0:194, y1:572, arrivee:[124,258]},   /* 100 et non 70 : meme marge de 24 px sur l'arrivee que le cote est */
 ruelle:{x:810,l:38,haut:30},   /* la montée vers Notre-Dame : axe (250+4*140), demi-largeur, sommet */
 };
-const CARGO_X={pile:[1266,566],docks:[1318,446]};
+const CARGO_X={pile:[1266,806],docks:[1318,686]};
 const PAV={poisson:[552,250],peche:[708,250]};
-const CABANON=[1320,440];                              /* le cabanon de la bouillabaisse */
+const CABANON=[1320,680];                              /* le cabanon de la bouillabaisse */
 /* LES DEUX STATIONS sont au bout du quai, sur leur esplanade : on prend le
    velo la ou commence la longue ligne droite, pas au milieu. Celle de
    l'ouest etait restee a 284, au milieu de rien ; elle rejoint son
@@ -1590,7 +1590,7 @@ EQUIP_PECHE=d.equip;
 jouer('vente','moment');vibrer([12,30,12]);
 afficherPecheMarine('« Et voilà, petit ! Bonne pêche. »');
 }
-const FERRY={y:584,xo:228,xe:900,trajet:22,pause:4};     /* secondes */
+const FERRY={y:824,xo:228,xe:900,trajet:22,pause:4};     /* secondes */
 function positionDuFerry(){
 const T=Date.now()/1000, cycle=2*(FERRY.trajet+FERRY.pause), t=T%cycle;
 const lisse=(k)=>k*k*(3-2*k);
@@ -1601,7 +1601,7 @@ if(t<2*FERRY.pause+FERRY.trajet)return {x:FERRY.xe,sens:-1,v:0};
 const k=(t-2*FERRY.pause-FERRY.trajet)/FERRY.trajet;
 return {x:FERRY.xe-(FERRY.xe-FERRY.xo)*lisse(k),sens:-1,v:Math.sin(Math.PI*k)};
 }
-const BANCS=[[360,506],[620,508],[880,506],[250,378],[760,376],[1000,378],[500,380]];
+const BANCS=[[360,746],[620,748],[880,746],[250,618],[760,616],[1000,618],[500,620]];
 function eauVivante(g,camX,camY){
 const T=Date.now()/1000;
 g.save();
@@ -2518,8 +2518,8 @@ nv++;
 /* LE METRO EST DEPOSE. On ne prend plus la ligne 1 pour aller au bois :
    on y va a pied, par le bas du quai droit. */
 /* les réverbères et les bancs du quai sont en dur ; ceux des deux bouts (280, 390, 1496, 1510) sont retirés */
-[420,840,980,1120,1248,1710].forEach((x,i)=>P('lanterneP',x,324,{gr:i+1,col:[4,3]}));
-[[88,316],[670,316],[950,316],[1230,316],[1370,316],[1672,316]]
+[420,840,980,1120,1248,1710].forEach((x,i)=>P('lanterneP',x,564,{gr:i+1,col:[4,3]}));
+[[88,556],[670,556],[950,556],[1230,556],[1370,556],[1672,556]]
 .forEach(([x,y])=>P('bancP',x,y,{col:[23,7]}));
 /* L'ESPLANADE DU BOUT reste nue : les deux platanes et la petite pancarte
    sont retires. C'est la grande affiche, derriere le garde-corps, qui dit
