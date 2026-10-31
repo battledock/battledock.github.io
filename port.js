@@ -2499,7 +2499,7 @@ g.fillStyle='#f5c842';g.font='bold 7px monospace';g.textAlign='center';g.fillTex
 g.fillStyle='#c0392b';g.fillRect(2,62,14,10);
 g.fillStyle='#2980b9';g.fillRect(84,58,14,14);
 g.fillStyle='#27ae60';g.fillRect(84,46,14,12);
-return c;
+return {toile:c,W,H,sol:H-5};
 }
 
 function semerDecorExtramar(){
