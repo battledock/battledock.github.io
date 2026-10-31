@@ -11179,7 +11179,7 @@ let TXT_FERME=null;
 /* SI port.js NE CHARGE PAS, les cinquante-trois symboles ci-dessous
    restent indéfinis et le port ne se dessine pas, sans un mot. On le dit. */
 try{
-if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar}=eval(await chargerMorceau('port.js')));}
+if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar}=eval(await chargerMorceau('port.js')));}
 if(CARTE==='tokyo'){TKM=eval(await chargerMorceau('tokyo.js'));}
 }catch(erPort){
 try{document.body.insertAdjacentHTML('beforeend',
@@ -24825,11 +24825,11 @@ const b=$('msgGo');if(b)b.disabled=true;
 const d=await appelRPC('poste_envoyer',{p_joueur:e.id,p_pour:MSG.pseudo,p_mot:mot,
 p_objet:obj||null,p_qte:obj?q:0,p_argent:arg});
 if(b)b.disabled=false;
-if(!d||d.erreur){msgBulle(d&&d.erreur===’inconnu’?’Ce joueur n’existe plus.’
-:(d&&d.erreur===’pas_assez’?’Tu n’as pas cette somme.’
-:(d&&d.erreur===’trop’?’Dix messages par heure, pas plus !’
-:(d&&d.erreur===’toi meme’?’T’écrire à toi-même ? Peuchère…’
-:(d&&d.erreur===’argent’?’Montant invalide (200 € max).’:’Le message n’est pas parti.’)))));return;}
+if(!d||d.erreur){msgBulle(d&&d.erreur==='inconnu'?'Ce joueur n’existe plus.'
+:(d&&d.erreur==='pas_assez'?'Tu n’as pas cette somme.'
+:(d&&d.erreur==='trop'?'Dix messages par heure, pas plus !'
+:(d&&d.erreur==='toi meme'?'T’écrire à toi-même ? Peuchère…'
+:(d&&d.erreur==='argent'?'Montant invalide (200 € max).':'Le message n’est pas parti.')))));return;}
 if(d.sac)e.sac=d.sac;if(typeof d.euros==='number')e.euros=d.euros;
 try{sauver();majHaut();majPastille();}catch(x){}
 vibrer([12,30,12]);msgRendre();
