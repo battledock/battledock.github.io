@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Idle Docker</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;background:#1a1a2e;font-family:'Courier New',monospace;color:#e0e0e0}
+#ecran{display:flex;flex-direction:column;height:100%;width:100%;max-width:480px;margin:0 auto}
+#haut{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#16213e;border-bottom:2px solid #0f3460}
+#haut .euros{font-size:22px;font-weight:bold;color:#f5c842}
+#haut .eps{font-size:12px;color:#8899aa}
+#haut .retour{font-size:14px;color:#aaa;text-decoration:none;padding:6px 10px;border:1px solid #333;border-radius:4px}
+#scene{flex:1;position:relative;overflow:hidden}
+#toile{width:100%;height:100%;display:block}
+#clic-zone{position:absolute;top:0;left:0;width:100%;height:70%;cursor:pointer}
+#boutique{position:absolute;bottom:0;left:0;width:100%;background:rgba(22,33,62,0.95);border-top:2px solid #0f3460;max-height:45%;overflow-y:auto;padding:6px}
+.upgrade{display:flex;align-items:center;justify-content:space-between;padding:10px;margin:4px 0;background:#1a1a2e;border:1px solid #333;border-radius:6px;cursor:pointer;transition:background 0.15s}
+.upgrade:active{background:#0f3460}
+.upgrade .info{flex:1}
+.upgrade .nom{font-size:14px;font-weight:bold;color:#e0e0e0}
+.upgrade .desc{font-size:11px;color:#8899aa;margin-top:2px}
+.upgrade .qte{font-size:13px;color:#f5c842;margin-left:8px;min-width:30px;text-align:right}
+.upgrade .prix{font-size:13px;color:#5cb85c;margin-left:8px;min-width:70px;text-align:right}
+.upgrade.bloque{opacity:0.4;cursor:default}
+#notif{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;font-size:28px;font-weight:bold;color:#f5c842;opacity:0;transition:none}
+#notif.anim{opacity:1;transition:opacity 0.6s,transform 0.6s;transform:translate(-50%,-120%);opacity:0}
+#prestige-btn{display:none;padding:8px;margin:4px 0;background:#8e44ad;border:1px solid #9b59b6;border-radius:6px;color:white;font-size:13px;font-weight:bold;text-align:center;cursor:pointer}
+#prestige-btn:active{background:#6c3483}
+#chargement{position:absolute;top:0;left:0;width:100%;height:100%;background:#1a1a2e;display:flex;align-items:center;justify-content:center;font-size:16px;color:#8899aa;z-index:99}
+</style>
+</head>
+<body>
+<div id="ecran">
+<div id="haut">
+<a class="retour" href="jeu.html">← Port</a>
+<div style="text-align:right"><div class="euros" id="affEuros">0 €</div><div class="eps" id="affEps">0 €/s</div></div>
+</div>
+<div id="scene">
+<canvas id="toile"></canvas>
+<div id="clic-zone"></div>
+<div id="notif"></div>
+<div id="boutique">
+<div class="upgrade" id="u-docker" onclick="acheter('dockers')">
+<div class="info"><div class="nom">🧑‍🔧 Docker</div><div class="desc">Décharge 1 container/s</div></div>
+<div class="qte" id="q-dockers">0</div>
+<div class="prix" id="p-dockers">25 €</div>
+</div>
+<div class="upgrade" id="u-chariot" onclick="acheter('chariots')">
+<div class="info"><div class="nom">🚜 Chariot</div><div class="desc">Décharge 5 containers/s</div></div>
+<div class="qte" id="q-chariots">0</div>
+<div class="prix" id="p-chariots">150 €</div>
+</div>
+<div class="upgrade" id="u-grue" onclick="acheter('grues')">
+<div class="info"><div class="nom">🏗️ Grue</div><div class="desc">Décharge 25 containers/s</div></div>
+<div class="qte" id="q-grues">0</div>
+<div class="prix" id="p-grues">1 000 €</div>
+</div>
+<div class="upgrade" id="u-quai" onclick="acheter('quais')">
+<div class="info"><div class="nom">⚓ Nouveau quai</div><div class="desc">×2 sur tous les gains</div></div>
+<div class="qte" id="q-quais">1</div>
+<div class="prix" id="p-quais">5 000 €</div>
+</div>
+<div id="prestige-btn" onclick="prestige()">🔄 Nouveau contrat — Prestige ×<span id="pMult">2</span></div>
+</div>
+<div id="chargement">Chargement…</div>
+</div>
+</div>
+
+<script type="module">
+import{createClient}from'https://esm.sh/@supabase/supabase-js@2';
+
+const URL_SB='https://zpfkekiavlfphialvphi.supabase.co';
+const CLE_SB='sb_publishable__dfR2lEOwKjhhtavvJEvGw_KVACZnHP';
+const sbEntetes={'apikey':CLE_SB,'Authorization':'Bearer '+CLE_SB,'Content-Type':'application/json','Prefer':'return=representation'};
+const sb=createClient(URL_SB,CLE_SB);
+
+/* ---- état ---- */
+const G={
+  id:null, euros:0, dockers:0, chariots:0, grues:0, quais:1,
+  niveau:1, total:0, dernierTick:Date.now(),
+  // prestige
+  mult:1
+};
+
+const UPGRADES={
+  dockers:{base:25, facteur:1.12, eps:1},
+  chariots:{base:150, facteur:1.14, eps:5},
+  grues:  {base:1000, facteur:1.16, eps:25},
+  quais:  {base:5000, facteur:2.5,  eps:0}  // multiplicateur
+};
+
+function cout(type){
+  const u=UPGRADES[type];
+  return Math.floor(u.base * Math.pow(u.facteur, G[type]));
+}
+
+function eps(){
+  const base=(G.dockers*UPGRADES.dockers.eps + G.chariots*UPGRADES.chariots.eps + G.grues*UPGRADES.grues.eps);
+  return base * G.quais * G.mult;
+}
+
+function gainClic(){
+  return Math.max(1, Math.floor((1 + G.dockers*0.1) * G.quais * G.mult));
+}
+
+/* ---- rendu monnaie ---- */
+function fmt(n){
+  if(n>=1e12) return (n/1e12).toFixed(1)+'T €';
+  if(n>=1e9) return (n/1e9).toFixed(1)+'G €';
+  if(n>=1e6) return (n/1e6).toFixed(1)+'M €';
+  if(n>=1e3) return Math.floor(n).toLocaleString('fr-FR')+' €';
+  return Math.floor(n)+' €';
+}
+
+/* ---- interface ---- */
+const $=id=>document.getElementById(id);
+
+function maj(){
+  $('affEuros').textContent=fmt(G.euros);
+  $('affEps').textContent=fmt(eps())+'/s';
+  for(const t of ['dockers','chariots','grues','quais']){
+    $('q-'+t).textContent=G[t];
+    $('p-'+t).textContent=fmt(cout(t));
+    $('u-'+t.replace('s',''))||true;
+    const el=document.getElementById('u-'+t.replace(/s$/,''));
+    // check parent upgrade div
+    const div=$('u-'+({'dockers':'docker','chariots':'chariot','grues':'grue','quais':'quai'}[t]));
+    if(div) div.classList.toggle('bloque', G.euros<cout(t));
+  }
+  // prestige
+  const pb=$('prestige-btn');
+  if(G.total>=50000){pb.style.display='block';$('pMult').textContent=G.niveau+1;}
+  else pb.style.display='none';
+}
+
+/* ---- achat ---- */
+window.acheter=function(type){
+  const c=cout(type);
+  if(G.euros<c)return;
+  G.euros-=c;
+  G[type]++;
+  maj();
+  sauverDebounce();
+};
+
+/* ---- prestige ---- */
+window.prestige=function(){
+  if(G.total<50000)return;
+  G.niveau++;
+  G.mult=G.niveau;
+  G.euros=0;G.dockers=0;G.chariots=0;G.grues=0;G.quais=1;G.total=0;
+  maj();
+  sauverDebounce();
+};
+
+/* ---- clic ---- */
+$('clic-zone').addEventListener('pointerdown',(ev)=>{
+  ev.preventDefault();
+  const g=gainClic();
+  G.euros+=g;
+  G.total+=g;
+  // animation
+  animClic(g);
+  // petit vibration
+  if(navigator.vibrate) navigator.vibrate(8);
+  maj();
+});
+
+function animClic(n){
+  const el=$('notif');
+  el.classList.remove('anim');
+  el.textContent='+'+fmt(n);
+  el.offsetWidth; // reflow
+  el.classList.add('anim');
+}
+
+/* ---- boucle idle ---- */
+let dernierFrame=Date.now();
+function boucle(){
+  const now=Date.now();
+  const dt=(now-dernierFrame)/1000;
+  dernierFrame=now;
+  const gain=eps()*dt;
+  if(gain>0){G.euros+=gain;G.total+=gain;}
+  maj();
+  requestAnimationFrame(boucle);
+}
+
+/* ---- canvas pixel art ---- */
+const toile=$('toile');
+const ctx=toile.getContext('2d');
+
+function taillerCanvas(){
+  const r=window.devicePixelRatio||1;
+  const rect=toile.parentElement.getBoundingClientRect();
+  toile.width=rect.width*r;
+  toile.height=rect.height*r;
+  ctx.imageSmoothingEnabled=false;
+  ctx.setTransform(r,0,0,r,0,0);
+}
+
+const COULEURS={
+  ciel:['#87CEEB','#5BA3D9','#2E86C1'],
+  mer:['#1a5276','#1b4f72','#154360'],
+  quai:'#8B7355',
+  beton:'#696969',
+  container:['#c0392b','#2980b9','#27ae60','#f39c12','#8e44ad','#e74c3c','#16a085'],
+  grue:'#f4d03f',
+  bateau:'#5d4e37'
+};
+
+let animT=0;
+function dessiner(){
+  const W=toile.parentElement.getBoundingClientRect().width;
+  const H=toile.parentElement.getBoundingClientRect().height;
+  animT+=0.02;
+
+  // ciel dégradé
+  const grad=ctx.createLinearGradient(0,0,0,H*0.4);
+  grad.addColorStop(0,'#1a1a2e');
+  grad.addColorStop(0.5,'#16213e');
+  grad.addColorStop(1,'#0f3460');
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,0,W,H*0.4);
+
+  // mer
+  ctx.fillStyle='#1b4f72';
+  ctx.fillRect(0,H*0.35,W,H*0.25);
+  // vagues
+  for(let x=0;x<W;x+=6){
+    const y=H*0.38+Math.sin(x*0.05+animT)*3+Math.sin(x*0.02+animT*0.7)*2;
+    ctx.fillStyle='rgba(52,152,219,0.3)';
+    ctx.fillRect(x,y,5,2);
+  }
+
+  // quai béton
+  const qY=H*0.55;
+  ctx.fillStyle='#5d6d7e';
+  ctx.fillRect(0,qY,W,H*0.06);
+  ctx.fillStyle='#717d7e';
+  ctx.fillRect(0,qY,W,2);
+  // rayures quai
+  for(let x=10;x<W;x+=40){
+    ctx.fillStyle='#f1c40f';
+    ctx.fillRect(x,qY+2,20,H*0.06-4);
+    ctx.fillStyle='#2c3e50';
+    ctx.fillRect(x,qY+2,20,2);
+  }
+
+  // sol portuaire
+  ctx.fillStyle='#4a4a4a';
+  ctx.fillRect(0,qY+H*0.06,W,H);
+
+  // bateau
+  const bx=W*0.05;
+  const by=H*0.38;
+  const bw=W*0.55;
+  const bh=H*0.18;
+  // coque
+  ctx.fillStyle=COULEURS.bateau;
+  ctx.beginPath();
+  ctx.moveTo(bx,by+bh*0.4);
+  ctx.lineTo(bx+bw,by+bh*0.4);
+  ctx.lineTo(bx+bw-10,by+bh);
+  ctx.lineTo(bx+10,by+bh);
+  ctx.closePath();
+  ctx.fill();
+  // pont
+  ctx.fillStyle='#7d6544';
+  ctx.fillRect(bx+5,by+bh*0.3,bw-10,bh*0.12);
+  // cabine
+  ctx.fillStyle='#ecf0f1';
+  ctx.fillRect(bx+bw*0.75,by,bw*0.15,bh*0.35);
+  ctx.fillStyle='#3498db';
+  ctx.fillRect(bx+bw*0.77,by+4,bw*0.05,bh*0.12);
+  ctx.fillRect(bx+bw*0.84,by+4,bw*0.05,bh*0.12);
+  // cheminée
+  ctx.fillStyle='#e74c3c';
+  ctx.fillRect(bx+bw*0.8,by-bh*0.15,bw*0.06,bh*0.18);
+
+  // containers sur le bateau
+  const contW=22, contH=14;
+  let ci=0;
+  for(let row=0;row<2;row++){
+    for(let col=0;col<Math.min(8+G.niveau,12);col++){
+      const cx=bx+25+col*(contW+3);
+      const cy=by+bh*0.3-contH*(row+1)-row*2;
+      if(cx+contW>bx+bw*0.7)continue;
+      ctx.fillStyle=COULEURS.container[(ci+row)%COULEURS.container.length];
+      ctx.fillRect(cx,cy,contW,contH);
+      ctx.fillStyle='rgba(0,0,0,0.2)';
+      ctx.fillRect(cx,cy+contH-2,contW,2);
+      ci++;
+    }
+  }
+
+  // grues sur le quai
+  const grueCnt=Math.min(G.grues,3);
+  for(let i=0;i<grueCnt;i++){
+    const gx=W*0.3+i*W*0.22;
+    const gy=qY;
+    // pilier
+    ctx.fillStyle='#f4d03f';
+    ctx.fillRect(gx,gy-H*0.25,6,H*0.25);
+    // bras
+    ctx.fillStyle='#f4d03f';
+    ctx.fillRect(gx-20,gy-H*0.25,60,5);
+    // câble
+    ctx.fillStyle='#999';
+    const cableLen=H*0.12+Math.sin(animT+i)*8;
+    ctx.fillRect(gx+30,gy-H*0.25+5,2,cableLen);
+    // container suspendu
+    ctx.fillStyle=COULEURS.container[(i*3+Math.floor(animT))%COULEURS.container.length];
+    ctx.fillRect(gx+20,gy-H*0.25+5+cableLen,22,14);
+  }
+
+  // dockers (petits bonhommes)
+  const dockCnt=Math.min(G.dockers,6);
+  for(let i=0;i<dockCnt;i++){
+    const dx=W*0.15+i*W*0.12+Math.sin(animT*2+i*1.5)*8;
+    const dy=qY+H*0.06+8;
+    // corps
+    ctx.fillStyle='#f39c12';
+    ctx.fillRect(dx,dy,8,10);
+    // tête
+    ctx.fillStyle='#fdebd0';
+    ctx.fillRect(dx+1,dy-6,6,6);
+    // casque
+    ctx.fillStyle='#e74c3c';
+    ctx.fillRect(dx,dy-7,8,3);
+  }
+
+  // chariots
+  const charCnt=Math.min(G.chariots,4);
+  for(let i=0;i<charCnt;i++){
+    const cx=W*0.6+i*W*0.09+Math.sin(animT*1.5+i*2)*12;
+    const cy=qY+H*0.06+4;
+    // chassis
+    ctx.fillStyle='#f39c12';
+    ctx.fillRect(cx,cy,18,8);
+    // fourches
+    ctx.fillStyle='#7f8c8d';
+    ctx.fillRect(cx+16,cy+2,8,2);
+    ctx.fillRect(cx+16,cy+6,8,2);
+    // roues
+    ctx.fillStyle='#2c3e50';
+    ctx.fillRect(cx+2,cy+8,4,4);
+    ctx.fillRect(cx+12,cy+8,4,4);
+    // container porté
+    if(i%2===0){
+      ctx.fillStyle=COULEURS.container[(i*2)%COULEURS.container.length];
+      ctx.fillRect(cx+14,cy-8,16,10);
+    }
+  }
+
+  // containers empilés sur le quai
+  const piles=Math.min(Math.floor(G.total/100),20);
+  for(let i=0;i<piles;i++){
+    const px=W*0.7+((i%5))*26;
+    const py=qY+H*0.06+2-Math.floor(i/5)*16;
+    ctx.fillStyle=COULEURS.container[i%COULEURS.container.length];
+    ctx.fillRect(px,py,22,14);
+    ctx.fillStyle='rgba(0,0,0,0.15)';
+    ctx.fillRect(px,py+12,22,2);
+  }
+
+  requestAnimationFrame(dessiner);
+}
+
+/* ---- sauvegarde ---- */
+let saveTimer=null;
+function sauverDebounce(){
+  if(saveTimer)clearTimeout(saveTimer);
+  saveTimer=setTimeout(sauver,3000);
+}
+
+async function sauver(){
+  if(!G.id)return;
+  try{
+    await fetch(URL_SB+'/rest/v1/idle_docker?id=eq.'+G.id,{
+      method:'PATCH',
+      headers:sbEntetes,
+      body:JSON.stringify({
+        euros:G.euros, dockers:G.dockers, chariots:G.chariots,
+        grues:G.grues, quais:G.quais, niveau:G.niveau,
+        total_decharge:G.total, dernier_tick:new Date().toISOString(),
+        maj:new Date().toISOString()
+      })
+    });
+  }catch(x){}
+}
+
+async function charger(){
+  // récupérer l'ID joueur depuis localStorage (même clé que Battle Dock)
+  let id=null;
+  try{
+    const raw=localStorage.getItem('e');
+    if(raw){const o=JSON.parse(raw);id=o.id||o.joueur||null;}
+  }catch(x){}
+  if(!id){
+    // essayer une autre clé
+    try{
+      for(const k of Object.keys(localStorage)){
+        const v=localStorage.getItem(k);
+        if(v&&v.includes('"id"')&&v.includes('"pseudo"')){
+          const o=JSON.parse(v);if(o.id){id=o.id;break;}
+        }
+      }
+    }catch(x){}
+  }
+  if(!id){$('chargement').textContent='Joue d\'abord sur le port pour créer ton perso !';return;}
+  G.id=id;
+
+  // charger ou créer la sauvegarde
+  try{
+    const r=await fetch(URL_SB+'/rest/v1/idle_docker?id=eq.'+id+'&select=*',{headers:sbEntetes});
+    const data=await r.json();
+    if(data&&data.length>0){
+      const d=data[0];
+      G.euros=d.euros||0;
+      G.dockers=d.dockers||0;
+      G.chariots=d.chariots||0;
+      G.grues=d.grues||0;
+      G.quais=d.quais||1;
+      G.niveau=d.niveau||1;
+      G.mult=G.niveau;
+      G.total=d.total_decharge||0;
+      // gains hors-ligne
+      if(d.dernier_tick){
+        const dt=(Date.now()-new Date(d.dernier_tick).getTime())/1000;
+        if(dt>0&&dt<86400*3){
+          const horsLigne=eps()*dt*0.5; // 50% des gains offline
+          if(horsLigne>1){
+            G.euros+=horsLigne;
+            G.total+=horsLigne;
+            setTimeout(()=>animClic(Math.floor(horsLigne)),500);
+          }
+        }
+      }
+    }else{
+      // créer l'entrée
+      await fetch(URL_SB+'/rest/v1/idle_docker',{
+        method:'POST',headers:sbEntetes,
+        body:JSON.stringify({id:id,euros:0,dockers:0,chariots:0,grues:0,quais:1,niveau:1,total_decharge:0})
+      });
+    }
+  }catch(x){console.warn('idle load',x);}
+
+  $('chargement').style.display='none';
+  maj();
+  boucle();
+  // auto-save toutes les 30s
+  setInterval(sauver,30000);
+  // save quand on quitte
+  window.addEventListener('beforeunload',sauver);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)sauver();});
+}
+
+/* ---- démarrage ---- */
+taillerCanvas();
+window.addEventListener('resize',taillerCanvas);
+dessiner();
+charger();
+</script>
+</body>
+</html>

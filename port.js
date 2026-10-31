@@ -2471,6 +2471,37 @@ R(x+6,y-14-bob,6,6,'#b07a40');R(x+11,y-12-bob,2,2,'#2a1a10');R(x+8,y-12-bob,1,1,
 g.save();g.translate(x-7,y-8-bob);g.rotate(-0.6+q*0.15);R(-5,-1,5,2,'#b07a40');g.restore();                                                   /* la queue qui remue */
 if((t%5)<0.8){g.font='italic 700 6px Georgia';g.fillStyle='#ffffff';g.fillText('Ouaf !',x+8,y-19);}};
 
+function graverLeHangar(){
+const W=100,H=80;
+const c=document.createElement('canvas');c.width=W;c.height=H;
+const g=c.getContext('2d');
+// toit en tôle ondulée (arrondi)
+g.fillStyle='#5d6d7e';
+g.beginPath();g.moveTo(5,30);g.quadraticCurveTo(W/2,8,W-5,30);g.lineTo(W-5,32);g.quadraticCurveTo(W/2,12,5,32);g.closePath();g.fill();
+// ondulations du toit
+g.strokeStyle='#4a5a6a';g.lineWidth=1;
+for(let x=10;x<W-10;x+=6){const y=30-18*Math.sin((x-5)/(W-10)*Math.PI);g.beginPath();g.moveTo(x,y);g.lineTo(x,y+2);g.stroke();}
+// murs béton
+g.fillStyle='#7f8c8d';g.fillRect(8,30,W-16,45);
+// ombre sous le toit
+g.fillStyle='rgba(0,0,0,0.15)';g.fillRect(8,30,W-16,4);
+// grande porte coulissante
+g.fillStyle='#2c3e50';g.fillRect(20,38,60,37);
+// rayures porte
+g.fillStyle='#34495e';
+for(let y=40;y<74;y+=5)g.fillRect(20,y,60,2);
+// poignée
+g.fillStyle='#f39c12';g.fillRect(48,52,4,10);
+// enseigne "IDLE DOCKER"
+g.fillStyle='#1a1a2e';g.fillRect(22,26,56,10);
+g.fillStyle='#f5c842';g.font='bold 7px monospace';g.textAlign='center';g.fillText('IDLE DOCKER',50,34);
+// containers devant
+g.fillStyle='#c0392b';g.fillRect(2,62,14,10);
+g.fillStyle='#2980b9';g.fillRect(84,58,14,14);
+g.fillStyle='#27ae60';g.fillRect(84,46,14,12);
+return c;
+}
+
 function semerDecorExtramar(){
 DECOR=[];
 const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
@@ -2506,6 +2537,9 @@ P('x_metroM',XP.rangX0+2*140,XP.maisonsY+88,{col:[44,16],bati:true,demi:50,ouvre
    chaque cote dans la ruelle, et tout le quai en dessous — la montee ne
    commence qu'au-dessus de maisonsY+6, le tableau est 46 px plus bas. */
 P('x_tableau',XP.ruelle.x,XP.maisonsY+120,{col:[16,12]});   /* descendu dans la grande place, centré sur les escaliers */
+/* LE HANGAR IDLE DOCKER — bâtiment indépendant sur le quai est */
+XCAL['x_hangar0']=graverLeHangar();CALQUES_DECO['x_hangar']=XCAL['x_hangar0'];
+P('x_hangar',XP.finVille-60,XP.quaiY-80,{col:[50,40],bati:true,demi:40,ouvre:'idle_docker'});
 let nv=0;
 [360,620,880].forEach(px=>{                     /* on compte aussi l'ancien ponton du milieu : les autres voiliers gardent leur allure */
 const la=XP.pontons.includes(px);
@@ -2672,4 +2706,4 @@ R(XP.bassinO-4,XP.quaiY-4,XP.bassinE-XP.bassinO+8,0.5,'rgba(255,248,226,.40)');
 g.setTransform(1,0,0,1,0,0);
 return c;
 }
-;({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar});
+;({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar});

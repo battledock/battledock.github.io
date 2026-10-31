@@ -24825,10 +24825,11 @@ const b=$('msgGo');if(b)b.disabled=true;
 const d=await appelRPC('poste_envoyer',{p_joueur:e.id,p_pour:MSG.pseudo,p_mot:mot,
 p_objet:obj||null,p_qte:obj?q:0,p_argent:arg});
 if(b)b.disabled=false;
-if(!d||d.erreur){msgBulle(d&&d.erreur==='inconnu'?'Ce joueur n’existe plus.'
-:(d&&d.erreur==='pas_assez'?'Tu n’as pas cette somme.'
-:(d&&d.erreur==='trop'?'Dix messages par heure, pas plus !'
-:(d&&d.erreur==='toi meme'?'T’écrire à toi-même ? Peuchère…':'Le message n’est pas parti.'))));return;}
+if(!d||d.erreur){msgBulle(d&&d.erreur===’inconnu’?’Ce joueur n’existe plus.’
+:(d&&d.erreur===’pas_assez’?’Tu n’as pas cette somme.’
+:(d&&d.erreur===’trop’?’Dix messages par heure, pas plus !’
+:(d&&d.erreur===’toi meme’?’T’écrire à toi-même ? Peuchère…’
+:(d&&d.erreur===’argent’?’Montant invalide (200 € max).’:’Le message n’est pas parti.’)))));return;}
 if(d.sac)e.sac=d.sac;if(typeof d.euros==='number')e.euros=d.euros;
 try{sauver();majHaut();majPastille();}catch(x){}
 vibrer([12,30,12]);msgRendre();
@@ -25029,6 +25030,7 @@ if(o.ouvre==='glacier'){b.innerHTML='Le Glacier du Port<small>GLACES ARTISANALES
 if(o.ouvre==='karting'){b.innerHTML='Le Karting du Quai<small>GRAND PRIX · COURSE À 5 €</small>';b.classList.add('on');return;}
 if(o.ouvre==='kayak'){b.innerHTML='Location de kayaks<small>'+(nivInv('deblocage:kayak_frioul')?'DEUX DESCENTES':'LA DESCENTE')+' · COURSE À 5 €</small>';b.classList.add('on');return;}
 if(o.ouvre==='cabanon'){b.innerHTML='Ton cabanon<small>'+(nivInv('deblocage:cabanon')?'RANGER · 60 PLACES À L’ABRI':'LA RÉCOMPENSE DU NIVEAU 10')+'</small>';b.classList.add('on');return;}
+if(o.ouvre==='idle_docker'){b.innerHTML='Entrer au Hangar<small>IDLE DOCKER · DÉCHARGE DES CONTAINERS</small>';b.classList.add('on');b.onclick=()=>{try{sauver();envoyerSauvegarde(true);}catch(x){}location.href='docker.html?v='+(window.MA_VERSION||Date.now());};return;}
 if(o.ouvre==='peche'){b.innerHTML='Le Pêcheur Heureux<small>CANNES, MOULINETS, APPÂTS</small>';b.classList.add('on');return;}
 if(o.ouvre==='salon'){b.innerHTML='Entrer à La Marinière<small>VÊTEMENTS DU PORT</small>';b.classList.add('on');return;}
 if(o.ouvre==='presse'){b.innerHTML='Ouvrir mon livret<small>LA CAPITAINERIE DU PORT</small>';b.classList.add('on');return;}
