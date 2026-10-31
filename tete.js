@@ -1,5 +1,5 @@
 /* ===== EMPREINTES (posées par outils/empreintes.js) ===== */
-window.EMPREINTES={"circuit.js":"bbe91d4f","coquille.js":"6cb3ae61","courses.js":"10100329","ferme.js":"1cb0fed8","maintenance.js":"d28efd07","moteur.css":"1d74a8a8","moteur.js":"10bcd95f","personnage.js":"084104c9","pokedock.js":"fee9c87d","pokedock_hw.js":"f7b629c6","pole.js":"f1ba484e","port.js":"0e2b60d8","responsive.css":"caca6b41","retour.js":"6c72c050","session.js":"b36fa1f2","surprise.js":"c6737cb1","sw.js":"4b426b28","tokyo.js":"c6dade53","voitures.js":"fa3b8d68"};
+window.EMPREINTES={"circuit.js":"bbe91d4f","coquille.js":"6cb3ae61","courses.js":"10100329","ferme.js":"1cb0fed8","maintenance.js":"d28efd07","moteur.css":"1d74a8a8","moteur.js":"d4640069","personnage.js":"084104c9","pokedock.js":"fee9c87d","pokedock_hw.js":"f7b629c6","pole.js":"f1ba484e","port.js":"0e2b60d8","responsive.css":"caca6b41","retour.js":"6c72c050","session.js":"b36fa1f2","surprise.js":"c6737cb1","sw.js":"4b426b28","tokyo.js":"c6dade53","voitures.js":"fa3b8d68"};
 /* ===== fin des empreintes ===== */
 /* LA TÊTE DE PAGE, commune à toutes les pages du jeu : la version et
    le cache, puis les gestes du navigateur qu'on neutralise (sélection,
