@@ -1,5 +1,5 @@
 /* ===== EMPREINTES (posées par outils/empreintes.js) ===== */
-window.EMPREINTES={"circuit.js":"bbe91d4f","coquille.js":"6cb3ae61","courses.js":"10100329","ferme.js":"1cb0fed8","maintenance.js":"d28efd07","moteur.css":"1d74a8a8","moteur.js":"03fc1d2a","personnage.js":"084104c9","pokedock.js":"fee9c87d","pokedock_hw.js":"f7b629c6","pole.js":"f1ba484e","port.js":"d8642706","responsive.css":"caca6b41","retour.js":"6c72c050","session.js":"b36fa1f2","surprise.js":"c6737cb1","sw.js":"4b426b28","tokyo.js":"c6dade53","voitures.js":"fa3b8d68"};
+window.EMPREINTES={"circuit.js":"bbe91d4f","coquille.js":"6cb3ae61","courses.js":"10100329","ferme.js":"1cb0fed8","maintenance.js":"d28efd07","moteur.css":"1d74a8a8","moteur.js":"03fc1d2a","personnage.js":"084104c9","pokedock.js":"fee9c87d","pokedock_hw.js":"f7b629c6","pole.js":"f1ba484e","port.js":"a38f9f7c","responsive.css":"caca6b41","retour.js":"6c72c050","session.js":"b36fa1f2","surprise.js":"c6737cb1","sw.js":"4b426b28","tokyo.js":"c6dade53","voitures.js":"fa3b8d68"};
 /* ===== fin des empreintes ===== */
 /* LA TÊTE DE PAGE, commune à toutes les pages du jeu : la version et
    le cache, puis les gestes du navigateur qu'on neutralise (sélection,
@@ -8,7 +8,7 @@ window.EMPREINTES={"circuit.js":"bbe91d4f","coquille.js":"6cb3ae61","courses.js"
 (function(){var champ=function(t){return t&&t.closest&&t.closest('input,textarea,[contenteditable="true"]');};
 ['selectstart','copy','cut','contextmenu','dragstart'].forEach(function(k){document.addEventListener(k,function(e){if(!champ(e.target))e.preventDefault();},{capture:true});});})();
 (function(){
-var MA_VERSION='2026-10-31-1500';
+var MA_VERSION='2026-10-31-1510';
 window.MA_VERSION=MA_VERSION;          /* visible par tout le jeu (les réglages l'affichent) */
 /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il
