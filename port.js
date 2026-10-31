@@ -499,6 +499,145 @@ graverLAffiche(g,Math.round(XP.debutVille/2),XP.maisonsY-4,'peinte_ferme','LA FE
    demi-seconde qui raconte la sortie maintenant, et les collines se
    gagnent a pied : la barriere n'avait plus de role que decoratif, et son
    decor etait un mur. */
+/* ═══════════════════ LA PLACE MÉDITERRANÉENNE FESTIVE ═══════════════════
+   V2 — la grande place ouverte entre les facades et le quai. Mosaique
+   octogonale, fontaine carree ornementale a trois bassins, quatre oliviers,
+   guirlandes lumineuses, bancs, jardinieres, tonnelle fleurie avec terrasse
+   cafe, reverbieres dores, ancres decoratives. */
+{
+const cx=880, cy=366;
+/* --- mosaique octogonale au sol --- */
+g.save();g.translate(cx,cy);
+const mC=['#d4a050','#c09040','#b88838','#d0a858'];
+for(let r=160;r>20;r-=12){
+g.beginPath();for(let i=0;i<8;i++){const a=Math.PI*2*i/8-Math.PI/8;i===0?g.moveTo(Math.cos(a)*r,Math.sin(a)*r):g.lineTo(Math.cos(a)*r,Math.sin(a)*r);}
+g.closePath();g.strokeStyle=mC[(r/12|0)%4];g.lineWidth=1.2;g.stroke();
+}
+for(let ring=0;ring<6;ring++){
+const r1=30+ring*24, r2=r1+24;
+for(let i=0;i<16;i++){
+const a1=Math.PI*2*i/16, a2=Math.PI*2*(i+1)/16;
+g.beginPath();g.moveTo(Math.cos(a1)*r1,Math.sin(a1)*r1);g.lineTo(Math.cos(a1)*r2,Math.sin(a1)*r2);
+g.lineTo(Math.cos(a2)*r2,Math.sin(a2)*r2);g.lineTo(Math.cos(a2)*r1,Math.sin(a2)*r1);g.closePath();
+g.fillStyle=`hsl(${(ring*40+i*20)%360},25%,${65+ring*3}%)`;g.fill();
+g.strokeStyle='#b09848';g.lineWidth=0.5;g.stroke();
+}}
+g.restore();
+/* --- fontaine carree ornementale (3 bassins) --- */
+g.fillStyle='#4090b8';g.strokeStyle='#306880';g.lineWidth=3;
+g.beginPath();g.rect(cx-80,cy-80,160,160);g.fill();g.stroke();
+g.fillStyle='#50a8d0';g.strokeStyle='#4090b8';g.lineWidth=2;
+g.beginPath();g.rect(cx-60,cy-60,120,120);g.fill();g.stroke();
+g.fillStyle='#68c0e4';g.beginPath();g.rect(cx-35,cy-35,70,70);g.fill();
+/* margelles du bassin exterieur */
+R(cx-82,cy-82,164,4,'#bfae88');R(cx-82,cy+78,164,4,'#bfae88');
+R(cx-82,cy-82,4,164,'#bfae88');R(cx+78,cy-82,4,164,'#bfae88');
+/* piedestal et statue */
+g.fillStyle='#d0c098';g.strokeStyle='#a09068';g.lineWidth=2;
+g.beginPath();g.arc(cx,cy,14,0,Math.PI*2);g.fill();g.stroke();
+R(cx-4,cy-40,8,40,'#c0b488');
+g.fillStyle='#d0c898';g.beginPath();g.arc(cx,cy-44,10,0,Math.PI*2);g.fill();
+g.strokeStyle='#a09468';g.stroke();
+R(cx-3,cy-62,6,18,'#c8bc88');
+g.fillStyle='#c8bc88';g.beginPath();g.arc(cx,cy-65,6,0,Math.PI*2);g.fill();g.strokeStyle='#a09468';g.stroke();
+/* jets d'eau (8 radiaux) */
+g.strokeStyle='rgba(140,210,240,0.6)';g.lineWidth=1.5;
+for(let i=0;i<8;i++){const a=Math.PI*2*i/8;
+g.beginPath();g.moveTo(cx+Math.cos(a)*14,cy+Math.sin(a)*14);
+g.quadraticCurveTo(cx+Math.cos(a)*35,cy+Math.sin(a)*35-15,cx+Math.cos(a)*50,cy+Math.sin(a)*50);g.stroke();}
+/* gouttelettes (deterministes) */
+g.fillStyle='rgba(160,220,248,0.5)';
+for(let i=0;i<30;i++){const a=A(i+7000)*Math.PI*2,r=20+A(i+7100)*50;
+g.beginPath();g.arc(cx+Math.cos(a)*r,cy+Math.sin(a)*r,1+A(i+7200)*2,0,Math.PI*2);g.fill();}
+/* --- oliviers (4 coins de la place) --- */
+const arbre=(ox,oy,sz)=>{
+g.fillStyle='rgba(0,0,0,0.08)';g.beginPath();g.ellipse(ox+5,oy+sz*0.8,sz*0.9,sz*0.25,0.2,0,Math.PI*2);g.fill();
+R(ox-3,(oy+sz*0.3)|0,6,(sz*0.5)|0,'#6b4226');
+g.fillStyle='#4a7a2a';g.beginPath();g.ellipse(ox,oy,sz,sz*0.7,0,0,Math.PI*2);g.fill();
+g.fillStyle='#5a9a3a';g.beginPath();g.ellipse(ox-sz*0.3,oy-sz*0.2,sz*0.65,sz*0.5,0,0,Math.PI*2);g.fill();
+g.fillStyle='#6aaa4a';g.beginPath();g.ellipse(ox+sz*0.3,oy-sz*0.15,sz*0.55,sz*0.45,0,0,Math.PI*2);g.fill();
+g.fillStyle='#7aba5a';g.beginPath();g.ellipse(ox,oy-sz*0.35,sz*0.4,sz*0.35,0,0,Math.PI*2);g.fill();
+};
+arbre(420,240,32);arbre(1340,240,32);arbre(400,505,32);arbre(1360,505,32);
+/* --- guirlandes lumineuses --- */
+const guirl=(x1,y1,x2,y2,sag)=>{
+g.strokeStyle='#888';g.lineWidth=0.8;
+const mx=(x1+x2)/2,my=(y1+y2)/2+sag;
+g.beginPath();g.moveTo(x1,y1);g.quadraticCurveTo(mx,my,x2,y2);g.stroke();
+for(let i=1;i<12;i++){const t=i/12;
+const px=x1*(1-t)*(1-t)+2*mx*t*(1-t)+x2*t*t;
+const py=y1*(1-t)*(1-t)+2*my*t*(1-t)+y2*t*t;
+g.fillStyle='rgba(255,220,100,0.3)';g.beginPath();g.arc(px,py,5,0,Math.PI*2);g.fill();
+g.fillStyle=i%3===0?'#f0d050':i%3===1?'#f08040':'#e06060';
+g.beginPath();g.arc(px,py,2.5,0,Math.PI*2);g.fill();
+g.strokeStyle='#c0a030';g.lineWidth=0.5;g.stroke();}
+};
+guirl(420,225,cx-80,cy-80,-25);guirl(1340,225,cx+80,cy-80,-25);
+guirl(400,490,cx-80,cy+80,-20);guirl(1360,490,cx+80,cy+80,-20);
+guirl(420,225,1340,225,-30);
+guirl(420,240,400,505,-15);guirl(1340,240,1360,505,-15);
+/* --- bancs (8 autour de la fontaine) --- */
+for(let i=0;i<8;i++){const a=Math.PI*2*i/8;
+const bx=cx+Math.cos(a)*120,by=cy+Math.sin(a)*120;
+g.save();g.translate(bx,by);g.rotate(a+Math.PI/2);
+g.fillStyle='#7a5a30';g.strokeStyle='#5a4020';g.lineWidth=1;
+g.fillRect(-18,-5,36,10);g.strokeRect(-18,-5,36,10);
+g.fillStyle='#555';g.fillRect(-16,-6,3,12);g.fillRect(13,-6,3,12);
+g.strokeStyle='#6a4a28';g.lineWidth=0.8;
+g.beginPath();g.moveTo(-14,-2);g.lineTo(14,-2);g.stroke();
+g.beginPath();g.moveTo(-14,2);g.lineTo(14,2);g.stroke();
+g.restore();}
+/* --- jardinieres en terre cuite (9) --- */
+const bac=(px,py,c1,c2)=>{
+g.fillStyle='#c07040';g.strokeStyle='#a05830';g.lineWidth=1.5;
+g.beginPath();g.moveTo(px-14,py);g.lineTo(px-10,py+16);g.lineTo(px+10,py+16);g.lineTo(px+14,py);g.closePath();g.fill();g.stroke();
+R(px-15,py-2,30,5,'#d08050');
+g.fillStyle='#5a3a20';g.beginPath();g.ellipse(px,py+2,12,4,0,0,Math.PI*2);g.fill();
+for(let f=0;f<5;f++){const fx=px-8+f*4,fy=py-4-A(px+py+f)*8|0;
+R(fx,fy,2,6+(py-fy)|0,'#3a8a3a');
+g.fillStyle=f%2===0?c1:c2;g.beginPath();g.arc(fx+1,fy,3,0,Math.PI*2);g.fill();
+g.fillStyle='#f0e080';g.beginPath();g.arc(fx+1,fy,1.2,0,Math.PI*2);g.fill();}
+};
+bac(310,280,'#e04050','#f080a0');bac(310,440,'#5060e0','#80a0f0');
+bac(1450,280,'#d050d0','#e080e0');bac(1450,440,'#e0a030','#f0c060');
+bac(600,538,'#e04050','#f08060');bac(880,538,'#d050d0','#f080a0');bac(1160,538,'#5060e0','#80b0f0');
+bac(540,200,'#e0a030','#f0c060');bac(1220,200,'#e04050','#f080a0');
+/* --- tonnelle / pergola fleurie --- */
+{const tx=cx-130,tw=260,ty=465,th=80;
+R(tx,ty,tw,th,'rgba(240,230,210,0.4)');
+g.strokeStyle='#8a7a5a';g.lineWidth=2;g.strokeRect(tx,ty,tw,th);
+g.fillStyle='#9a8a6a';for(const p of [tx,tx+65,tx+130,tx+195,tx+tw])R(p-3,ty,6,th,'#9a8a6a');
+g.strokeStyle='#8a7a5a';g.lineWidth=1;
+for(let i=0;i<8;i++){g.beginPath();g.moveTo(tx,ty+5+i*10);g.lineTo(tx+tw,ty+5+i*10);g.stroke();}
+for(let i=0;i<20;i++){const vx=tx+10+A(i+8000)*240,vy=ty+A(i+8100)*20;
+g.fillStyle=A(i+8200)>0.5?'#6aaa4a':'#80c060';g.beginPath();g.ellipse(vx,vy,5,3,A(i+8300),0,Math.PI*2);g.fill();
+if(A(i+8400)>0.6){g.fillStyle='#e070a0';g.beginPath();g.arc(vx,vy-2,2,0,Math.PI*2);g.fill();}}
+for(let t=0;t<4;t++){const tbx=tx+40+t*60,tby=ty+52;
+g.fillStyle='#e8d8c0';g.strokeStyle='#b0a080';g.lineWidth=1;
+g.beginPath();g.arc(tbx,tby,8,0,Math.PI*2);g.fill();g.stroke();
+g.fillStyle='#9a7a50';for(let ch=0;ch<3;ch++){const ca=Math.PI*2*ch/3-Math.PI/2;
+g.beginPath();g.arc(tbx+Math.cos(ca)*14,tby+Math.sin(ca)*14,4,0,Math.PI*2);g.fill();}}}
+/* --- reverbieres dores (6) --- */
+const lampe=(lx,ly)=>{
+R(lx-2,ly,4,25,'#555');
+g.fillStyle='#666';g.beginPath();g.moveTo(lx-8,ly);g.lineTo(lx+8,ly);g.lineTo(lx+5,ly-3);g.lineTo(lx-5,ly-3);g.closePath();g.fill();
+g.fillStyle='rgba(255,220,100,0.4)';g.beginPath();g.arc(lx,ly-2,10,0,Math.PI*2);g.fill();
+g.fillStyle='#f0d050';g.strokeStyle='#c0a030';g.lineWidth=1;
+g.beginPath();g.arc(lx,ly-2,5,0,Math.PI*2);g.fill();g.stroke();
+g.fillStyle='#fff8d0';g.beginPath();g.arc(lx,ly-3,2,0,Math.PI*2);g.fill();
+};
+lampe(520,270);lampe(1240,270);lampe(520,460);lampe(1240,460);lampe(680,366);lampe(1080,366);
+/* --- ancres decoratives (pres du quai) --- */
+const ancre=(ax,ay,s)=>{
+g.strokeStyle='#6a6a6a';g.lineWidth=2.5*s;g.lineCap='round';
+g.beginPath();g.moveTo(ax,ay-20*s);g.lineTo(ax,ay+15*s);g.stroke();
+g.beginPath();g.moveTo(ax-12*s,ay-10*s);g.lineTo(ax+12*s,ay-10*s);g.stroke();
+g.beginPath();g.moveTo(ax-15*s,ay+5*s);g.quadraticCurveTo(ax-15*s,ay+18*s,ax,ay+15*s);g.stroke();
+g.beginPath();g.moveTo(ax+15*s,ay+5*s);g.quadraticCurveTo(ax+15*s,ay+18*s,ax,ay+15*s);g.stroke();
+g.beginPath();g.arc(ax,ay-23*s,4*s,0,Math.PI*2);g.stroke();g.lineCap='butt';
+};
+ancre(440,558,1);ancre(1320,558,1);
+}
 return c;
 }
 const TU_M={o:'#6e2c16',s:'#8f3f20',p:'#ad542c',c:'#c26a3a',h:'#d8844e',faite:'#e59a62'};
