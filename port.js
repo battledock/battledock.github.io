@@ -500,143 +500,126 @@ graverLAffiche(g,Math.round(XP.debutVille/2),XP.maisonsY-4,'peinte_ferme','LA FE
    gagnent a pied : la barriere n'avait plus de role que decoratif, et son
    decor etait un mur. */
 /* ═══════════════════ LA PLACE MÉDITERRANÉENNE FESTIVE ═══════════════════
-   V2 — la grande place ouverte entre les facades et le quai. Mosaique
-   octogonale, fontaine carree ornementale a trois bassins, quatre oliviers,
-   guirlandes lumineuses, bancs, jardinieres, tonnelle fleurie avec terrasse
-   cafe, reverbieres dores, ancres decoratives. */
+   V2b — taille réduite, palette terre cuite / pierre, rendu pixel-art.  */
 {
-const cx=880, cy=366;
-/* --- mosaique octogonale au sol --- */
+const cx=880, cy=340;
+/* --- rosace au sol (tons terre / ocre, pas arc-en-ciel) --- */
 g.save();g.translate(cx,cy);
-const mC=['#d4a050','#c09040','#b88838','#d0a858'];
-for(let r=160;r>20;r-=12){
+const mT=['#c4a878','#b89868','#cbb088','#bfa070','#c8a880','#b49060'];
+for(let r=70;r>12;r-=8){
 g.beginPath();for(let i=0;i<8;i++){const a=Math.PI*2*i/8-Math.PI/8;i===0?g.moveTo(Math.cos(a)*r,Math.sin(a)*r):g.lineTo(Math.cos(a)*r,Math.sin(a)*r);}
-g.closePath();g.strokeStyle=mC[(r/12|0)%4];g.lineWidth=1.2;g.stroke();
-}
-for(let ring=0;ring<6;ring++){
-const r1=30+ring*24, r2=r1+24;
-for(let i=0;i<16;i++){
-const a1=Math.PI*2*i/16, a2=Math.PI*2*(i+1)/16;
+g.closePath();g.strokeStyle=mT[(r/8|0)%6];g.lineWidth=1;g.stroke();}
+for(let ring=0;ring<4;ring++){const r1=14+ring*14,r2=r1+14;
+for(let i=0;i<12;i++){const a1=Math.PI*2*i/12,a2=Math.PI*2*(i+1)/12;
 g.beginPath();g.moveTo(Math.cos(a1)*r1,Math.sin(a1)*r1);g.lineTo(Math.cos(a1)*r2,Math.sin(a1)*r2);
 g.lineTo(Math.cos(a2)*r2,Math.sin(a2)*r2);g.lineTo(Math.cos(a2)*r1,Math.sin(a2)*r1);g.closePath();
-g.fillStyle=`hsl(${(ring*40+i*20)%360},25%,${65+ring*3}%)`;g.fill();
-g.strokeStyle='#b09848';g.lineWidth=0.5;g.stroke();
-}}
+const h=[32,25,18,38][ring],s=[30,25,20,28][ring],l=62+ring*3+((i*3)%5);
+g.fillStyle=`hsl(${h},${s}%,${l}%)`;g.fill();
+g.strokeStyle='rgba(160,140,100,.4)';g.lineWidth=0.5;g.stroke();}}
 g.restore();
-/* --- fontaine carree ornementale (3 bassins) --- */
-g.fillStyle='#4090b8';g.strokeStyle='#306880';g.lineWidth=3;
-g.beginPath();g.rect(cx-80,cy-80,160,160);g.fill();g.stroke();
-g.fillStyle='#50a8d0';g.strokeStyle='#4090b8';g.lineWidth=2;
-g.beginPath();g.rect(cx-60,cy-60,120,120);g.fill();g.stroke();
-g.fillStyle='#68c0e4';g.beginPath();g.rect(cx-35,cy-35,70,70);g.fill();
-/* margelles du bassin exterieur */
-R(cx-82,cy-82,164,4,'#bfae88');R(cx-82,cy+78,164,4,'#bfae88');
-R(cx-82,cy-82,4,164,'#bfae88');R(cx+78,cy-82,4,164,'#bfae88');
-/* piedestal et statue */
-g.fillStyle='#d0c098';g.strokeStyle='#a09068';g.lineWidth=2;
-g.beginPath();g.arc(cx,cy,14,0,Math.PI*2);g.fill();g.stroke();
-R(cx-4,cy-40,8,40,'#c0b488');
-g.fillStyle='#d0c898';g.beginPath();g.arc(cx,cy-44,10,0,Math.PI*2);g.fill();
-g.strokeStyle='#a09468';g.stroke();
-R(cx-3,cy-62,6,18,'#c8bc88');
-g.fillStyle='#c8bc88';g.beginPath();g.arc(cx,cy-65,6,0,Math.PI*2);g.fill();g.strokeStyle='#a09468';g.stroke();
-/* jets d'eau (8 radiaux) */
-g.strokeStyle='rgba(140,210,240,0.6)';g.lineWidth=1.5;
-for(let i=0;i<8;i++){const a=Math.PI*2*i/8;
-g.beginPath();g.moveTo(cx+Math.cos(a)*14,cy+Math.sin(a)*14);
-g.quadraticCurveTo(cx+Math.cos(a)*35,cy+Math.sin(a)*35-15,cx+Math.cos(a)*50,cy+Math.sin(a)*50);g.stroke();}
-/* gouttelettes (deterministes) */
-g.fillStyle='rgba(160,220,248,0.5)';
-for(let i=0;i<30;i++){const a=A(i+7000)*Math.PI*2,r=20+A(i+7100)*50;
-g.beginPath();g.arc(cx+Math.cos(a)*r,cy+Math.sin(a)*r,1+A(i+7200)*2,0,Math.PI*2);g.fill();}
-/* --- oliviers (4 coins de la place) --- */
-const arbre=(ox,oy,sz)=>{
-g.fillStyle='rgba(0,0,0,0.08)';g.beginPath();g.ellipse(ox+5,oy+sz*0.8,sz*0.9,sz*0.25,0.2,0,Math.PI*2);g.fill();
-R(ox-3,(oy+sz*0.3)|0,6,(sz*0.5)|0,'#6b4226');
-g.fillStyle='#4a7a2a';g.beginPath();g.ellipse(ox,oy,sz,sz*0.7,0,0,Math.PI*2);g.fill();
-g.fillStyle='#5a9a3a';g.beginPath();g.ellipse(ox-sz*0.3,oy-sz*0.2,sz*0.65,sz*0.5,0,0,Math.PI*2);g.fill();
-g.fillStyle='#6aaa4a';g.beginPath();g.ellipse(ox+sz*0.3,oy-sz*0.15,sz*0.55,sz*0.45,0,0,Math.PI*2);g.fill();
-g.fillStyle='#7aba5a';g.beginPath();g.ellipse(ox,oy-sz*0.35,sz*0.4,sz*0.35,0,0,Math.PI*2);g.fill();
-};
-arbre(420,240,32);arbre(1340,240,32);arbre(400,505,32);arbre(1360,505,32);
-/* --- guirlandes lumineuses --- */
+/* --- fontaine (bassin 56px, margelle pierre) --- */
+/* ombre au sol */
+g.fillStyle='rgba(0,0,0,.06)';g.beginPath();g.ellipse(cx+3,cy+4,34,30,0,0,Math.PI*2);g.fill();
+/* bassin extérieur */
+R(cx-28,cy-28,56,56,'#5094b0');
+R(cx-30,cy-30,60,3,'#c4b490');R(cx-30,cy+27,60,3,'#a89870');   /* margelle haut/bas */
+R(cx-30,cy-30,3,60,'#c4b490');R(cx+27,cy-30,3,60,'#a89870');   /* margelle g/d */
+/* bassin intérieur */
+R(cx-18,cy-18,36,36,'#68b4d0');
+R(cx-20,cy-20,40,2,'#baa880');R(cx-20,cy+18,40,2,'#9a8a68');
+R(cx-20,cy-20,2,40,'#baa880');R(cx+18,cy-20,2,40,'#9a8a68');
+/* eau centrale */
+R(cx-10,cy-10,20,20,'#80c8e0');
+/* reflets d'eau */
+for(let i=0;i<8;i++){const wx=cx-24+A(i+7000)*48,wy=cy-24+A(i+7100)*48;
+R(wx|0,wy|0,2+A(i+7200)*3|0,1,'rgba(180,230,250,.35)');}
+/* piedestal + colonne */
+R(cx-3,cy-3,6,6,'#d0c498');R(cx-2,cy-22,4,20,'#c4b888');
+R(cx-4,cy-24,8,3,'#d8cc9c');R(cx-4,cy-4,8,2,'#d8cc9c');
+/* pointe de la statue */
+R(cx-1,cy-28,2,5,'#c0b480');R(cx-2,cy-30,4,2,'#d4c898');
+/* 4 jets (diagonaux, pixel-art) */
+g.strokeStyle='rgba(130,200,235,.5)';g.lineWidth=1;
+for(let i=0;i<4;i++){const a=Math.PI/4+Math.PI*i/2;
+g.beginPath();g.moveTo(cx+Math.cos(a)*6,cy+Math.sin(a)*6);
+g.quadraticCurveTo(cx+Math.cos(a)*14,cy+Math.sin(a)*14-6,cx+Math.cos(a)*22,cy+Math.sin(a)*22);g.stroke();}
+/* gouttelettes */
+for(let i=0;i<12;i++){const a=A(i+7300)*Math.PI*2,r=8+A(i+7400)*18;
+R((cx+Math.cos(a)*r)|0,(cy+Math.sin(a)*r)|0,1,1,'rgba(150,215,240,.4)');}
+/* --- oliviers (4, taille 18) --- */
+const arbre=(ox,oy)=>{
+g.fillStyle='rgba(0,0,0,.06)';g.beginPath();g.ellipse(ox+3,oy+14,14,4,.15,0,Math.PI*2);g.fill();
+R(ox-1,oy+5,3,10,'#6b4a2a');
+g.fillStyle='#4a7a2e';g.beginPath();g.ellipse(ox,oy,16,12,0,0,Math.PI*2);g.fill();
+g.fillStyle='#5a9a3a';g.beginPath();g.ellipse(ox-5,oy-3,10,8,0,0,Math.PI*2);g.fill();
+g.fillStyle='#6aaa48';g.beginPath();g.ellipse(ox+5,oy-2,9,7,0,0,Math.PI*2);g.fill();
+g.fillStyle='#78b858';g.beginPath();g.ellipse(ox,oy-6,7,5,0,0,Math.PI*2);g.fill();};
+arbre(520,260);arbre(1240,260);arbre(500,460);arbre(1260,460);
+/* --- guirlandes (fil fin + petites ampoules) --- */
 const guirl=(x1,y1,x2,y2,sag)=>{
-g.strokeStyle='#888';g.lineWidth=0.8;
+g.strokeStyle='rgba(120,110,90,.35)';g.lineWidth=0.6;
 const mx=(x1+x2)/2,my=(y1+y2)/2+sag;
 g.beginPath();g.moveTo(x1,y1);g.quadraticCurveTo(mx,my,x2,y2);g.stroke();
-for(let i=1;i<12;i++){const t=i/12;
+for(let i=1;i<8;i++){const t=i/8;
 const px=x1*(1-t)*(1-t)+2*mx*t*(1-t)+x2*t*t;
 const py=y1*(1-t)*(1-t)+2*my*t*(1-t)+y2*t*t;
-g.fillStyle='rgba(255,220,100,0.3)';g.beginPath();g.arc(px,py,5,0,Math.PI*2);g.fill();
-g.fillStyle=i%3===0?'#f0d050':i%3===1?'#f08040':'#e06060';
-g.beginPath();g.arc(px,py,2.5,0,Math.PI*2);g.fill();
-g.strokeStyle='#c0a030';g.lineWidth=0.5;g.stroke();}
-};
-guirl(420,225,cx-80,cy-80,-25);guirl(1340,225,cx+80,cy-80,-25);
-guirl(400,490,cx-80,cy+80,-20);guirl(1360,490,cx+80,cy+80,-20);
-guirl(420,225,1340,225,-30);
-guirl(420,240,400,505,-15);guirl(1340,240,1360,505,-15);
-/* --- bancs (8 autour de la fontaine) --- */
-for(let i=0;i<8;i++){const a=Math.PI*2*i/8;
-const bx=cx+Math.cos(a)*120,by=cy+Math.sin(a)*120;
+g.fillStyle='rgba(255,220,100,.2)';g.beginPath();g.arc(px,py,3,0,Math.PI*2);g.fill();
+g.fillStyle=i%3===0?'#e8c848':i%3===1?'#e0884a':'#d86060';
+g.beginPath();g.arc(px,py,1.5,0,Math.PI*2);g.fill();}};
+guirl(520,250,cx-28,cy-28,-15);guirl(1240,250,cx+28,cy-28,-15);
+guirl(500,450,cx-28,cy+28,-12);guirl(1260,450,cx+28,cy+28,-12);
+guirl(520,250,1240,250,-20);
+guirl(520,260,500,460,-10);guirl(1240,260,1260,460,-10);
+/* --- bancs (6, plus petits, autour de la fontaine) --- */
+for(let i=0;i<6;i++){const a=Math.PI*2*i/6;
+const bx=(cx+Math.cos(a)*58)|0,by=(cy+Math.sin(a)*58)|0;
 g.save();g.translate(bx,by);g.rotate(a+Math.PI/2);
-g.fillStyle='#7a5a30';g.strokeStyle='#5a4020';g.lineWidth=1;
-g.fillRect(-18,-5,36,10);g.strokeRect(-18,-5,36,10);
-g.fillStyle='#555';g.fillRect(-16,-6,3,12);g.fillRect(13,-6,3,12);
-g.strokeStyle='#6a4a28';g.lineWidth=0.8;
-g.beginPath();g.moveTo(-14,-2);g.lineTo(14,-2);g.stroke();
-g.beginPath();g.moveTo(-14,2);g.lineTo(14,2);g.stroke();
+R(-10,-3,20,6,'#7a5a30');R(-10,-3,20,1,'#9a7a50');R(-10,2,20,1,'#5a4020');
+R(-9,-4,2,8,'#555');R(7,-4,2,8,'#555');
 g.restore();}
-/* --- jardinieres en terre cuite (9) --- */
+/* --- jardinieres (7, plus petites) --- */
 const bac=(px,py,c1,c2)=>{
-g.fillStyle='#c07040';g.strokeStyle='#a05830';g.lineWidth=1.5;
-g.beginPath();g.moveTo(px-14,py);g.lineTo(px-10,py+16);g.lineTo(px+10,py+16);g.lineTo(px+14,py);g.closePath();g.fill();g.stroke();
-R(px-15,py-2,30,5,'#d08050');
-g.fillStyle='#5a3a20';g.beginPath();g.ellipse(px,py+2,12,4,0,0,Math.PI*2);g.fill();
-for(let f=0;f<5;f++){const fx=px-8+f*4,fy=py-4-A(px+py+f)*8|0;
-R(fx,fy,2,6+(py-fy)|0,'#3a8a3a');
-g.fillStyle=f%2===0?c1:c2;g.beginPath();g.arc(fx+1,fy,3,0,Math.PI*2);g.fill();
-g.fillStyle='#f0e080';g.beginPath();g.arc(fx+1,fy,1.2,0,Math.PI*2);g.fill();}
-};
-bac(310,280,'#e04050','#f080a0');bac(310,440,'#5060e0','#80a0f0');
-bac(1450,280,'#d050d0','#e080e0');bac(1450,440,'#e0a030','#f0c060');
-bac(600,538,'#e04050','#f08060');bac(880,538,'#d050d0','#f080a0');bac(1160,538,'#5060e0','#80b0f0');
-bac(540,200,'#e0a030','#f0c060');bac(1220,200,'#e04050','#f080a0');
-/* --- tonnelle / pergola fleurie --- */
-{const tx=cx-130,tw=260,ty=465,th=80;
-R(tx,ty,tw,th,'rgba(240,230,210,0.4)');
-g.strokeStyle='#8a7a5a';g.lineWidth=2;g.strokeRect(tx,ty,tw,th);
-g.fillStyle='#9a8a6a';for(const p of [tx,tx+65,tx+130,tx+195,tx+tw])R(p-3,ty,6,th,'#9a8a6a');
-g.strokeStyle='#8a7a5a';g.lineWidth=1;
-for(let i=0;i<8;i++){g.beginPath();g.moveTo(tx,ty+5+i*10);g.lineTo(tx+tw,ty+5+i*10);g.stroke();}
-for(let i=0;i<20;i++){const vx=tx+10+A(i+8000)*240,vy=ty+A(i+8100)*20;
-g.fillStyle=A(i+8200)>0.5?'#6aaa4a':'#80c060';g.beginPath();g.ellipse(vx,vy,5,3,A(i+8300),0,Math.PI*2);g.fill();
-if(A(i+8400)>0.6){g.fillStyle='#e070a0';g.beginPath();g.arc(vx,vy-2,2,0,Math.PI*2);g.fill();}}
-for(let t=0;t<4;t++){const tbx=tx+40+t*60,tby=ty+52;
-g.fillStyle='#e8d8c0';g.strokeStyle='#b0a080';g.lineWidth=1;
-g.beginPath();g.arc(tbx,tby,8,0,Math.PI*2);g.fill();g.stroke();
-g.fillStyle='#9a7a50';for(let ch=0;ch<3;ch++){const ca=Math.PI*2*ch/3-Math.PI/2;
-g.beginPath();g.arc(tbx+Math.cos(ca)*14,tby+Math.sin(ca)*14,4,0,Math.PI*2);g.fill();}}}
-/* --- reverbieres dores (6) --- */
+R(px-6,py,12,10,'#b86838');R(px-7,py-1,14,2,'#c87848');
+R(px-5,py+1,10,2,'#5a3820');
+for(let f=0;f<3;f++){const fx=px-4+f*4,fy=py-2-A(px+py+f)*5|0;
+R(fx,fy,1,py-fy,'#3a8a3a');
+g.fillStyle=f%2===0?c1:c2;g.beginPath();g.arc(fx+.5,fy,2,0,Math.PI*2);g.fill();}};
+bac(420,290,'#d04848','#e88080');bac(1340,290,'#c850c0','#e080d0');
+bac(420,430,'#5060d0','#80a0e8');bac(1340,430,'#d0a030','#e8c060');
+bac(660,520,'#d04848','#e87060');bac(1100,520,'#5060d0','#80b0e8');
+bac(880,520,'#c850c0','#e080d0');
+/* --- tonnelle (plus compacte, 160×50) --- */
+{const tx=cx-80,tw=160,ty=440,th=50;
+R(tx,ty,tw,th,'rgba(235,225,205,.35)');
+g.strokeStyle='rgba(130,120,90,.5)';g.lineWidth=1;g.strokeRect(tx+.5,ty+.5,tw-1,th-1);
+for(const p of [tx,tx+40,tx+80,tx+120,tx+tw])R(p-2,ty,4,th,'#9a8a6a');
+g.strokeStyle='rgba(130,120,90,.3)';g.lineWidth=.5;
+for(let i=0;i<5;i++){g.beginPath();g.moveTo(tx,ty+4+i*10);g.lineTo(tx+tw,ty+4+i*10);g.stroke();}
+for(let i=0;i<12;i++){const vx=tx+6+A(i+8000)*(tw-12),vy=ty+A(i+8100)*14;
+g.fillStyle=A(i+8200)>.5?'#5a9a3e':'#70b050';g.beginPath();g.ellipse(vx,vy,3,2,A(i+8300),0,Math.PI*2);g.fill();
+if(A(i+8400)>.6){g.fillStyle='#d868a0';g.beginPath();g.arc(vx,vy-1,1.5,0,Math.PI*2);g.fill();}}
+for(let t=0;t<3;t++){const tbx=tx+30+t*50,tby=ty+35;
+g.fillStyle='#e0d0b8';g.beginPath();g.arc(tbx,tby,5,0,Math.PI*2);g.fill();
+g.strokeStyle='#b0a080';g.lineWidth=.5;g.stroke();
+g.fillStyle='#8a7048';for(let ch=0;ch<3;ch++){const ca=Math.PI*2*ch/3-Math.PI/2;
+g.beginPath();g.arc(tbx+Math.cos(ca)*9,tby+Math.sin(ca)*9,2.5,0,Math.PI*2);g.fill();}}}
+/* --- reverbieres (4, plus fines) --- */
 const lampe=(lx,ly)=>{
-R(lx-2,ly,4,25,'#555');
-g.fillStyle='#666';g.beginPath();g.moveTo(lx-8,ly);g.lineTo(lx+8,ly);g.lineTo(lx+5,ly-3);g.lineTo(lx-5,ly-3);g.closePath();g.fill();
-g.fillStyle='rgba(255,220,100,0.4)';g.beginPath();g.arc(lx,ly-2,10,0,Math.PI*2);g.fill();
-g.fillStyle='#f0d050';g.strokeStyle='#c0a030';g.lineWidth=1;
-g.beginPath();g.arc(lx,ly-2,5,0,Math.PI*2);g.fill();g.stroke();
-g.fillStyle='#fff8d0';g.beginPath();g.arc(lx,ly-3,2,0,Math.PI*2);g.fill();
-};
-lampe(520,270);lampe(1240,270);lampe(520,460);lampe(1240,460);lampe(680,366);lampe(1080,366);
+R(lx-1,ly,2,16,'#606060');R(lx-1,ly+16,3,2,'#505050');
+R(lx-4,ly-1,8,3,'#686868');
+g.fillStyle='rgba(255,215,90,.25)';g.beginPath();g.arc(lx,ly-1,6,0,Math.PI*2);g.fill();
+g.fillStyle='#e8c040';g.beginPath();g.arc(lx,ly-1,3,0,Math.PI*2);g.fill();
+R(lx-1,ly-2,2,2,'#fff8d0');};
+lampe(580,300);lampe(1180,300);lampe(580,420);lampe(1180,420);
 /* --- ancres decoratives (pres du quai) --- */
-const ancre=(ax,ay,s)=>{
-g.strokeStyle='#6a6a6a';g.lineWidth=2.5*s;g.lineCap='round';
-g.beginPath();g.moveTo(ax,ay-20*s);g.lineTo(ax,ay+15*s);g.stroke();
-g.beginPath();g.moveTo(ax-12*s,ay-10*s);g.lineTo(ax+12*s,ay-10*s);g.stroke();
-g.beginPath();g.moveTo(ax-15*s,ay+5*s);g.quadraticCurveTo(ax-15*s,ay+18*s,ax,ay+15*s);g.stroke();
-g.beginPath();g.moveTo(ax+15*s,ay+5*s);g.quadraticCurveTo(ax+15*s,ay+18*s,ax,ay+15*s);g.stroke();
-g.beginPath();g.arc(ax,ay-23*s,4*s,0,Math.PI*2);g.stroke();g.lineCap='butt';
-};
-ancre(440,558,1);ancre(1320,558,1);
+const ancre=(ax,ay)=>{
+g.strokeStyle='#7a7a7a';g.lineWidth=1.5;g.lineCap='round';
+g.beginPath();g.moveTo(ax,ay-12);g.lineTo(ax,ay+8);g.stroke();
+g.beginPath();g.moveTo(ax-7,ay-5);g.lineTo(ax+7,ay-5);g.stroke();
+g.beginPath();g.moveTo(ax-9,ay+3);g.quadraticCurveTo(ax-9,ay+10,ax,ay+8);g.stroke();
+g.beginPath();g.moveTo(ax+9,ay+3);g.quadraticCurveTo(ax+9,ay+10,ax,ay+8);g.stroke();
+g.beginPath();g.arc(ax,ay-14,2.5,0,Math.PI*2);g.stroke();g.lineCap='butt';};
+ancre(480,555);ancre(1280,555);
 }
 return c;
 }
