@@ -2,27 +2,27 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Battle Dock — Nouveau</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#000;touch-action:none}
-canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;-webkit-user-select:none;user-select:none}
+canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;position:absolute;left:0;top:0}
+#joy{position:fixed;left:0;top:0;pointer-events:none;z-index:10}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
+<canvas id="joy"></canvas>
 <script src="personnage.js"></script>
 <script>
 (function(){
 'use strict';
-const W=1000,H=1000;
-const cv=document.getElementById('c');
-const g=cv.getContext('2d');
-let vw=window.innerWidth,vh=window.innerHeight;
-cv.width=vw;cv.height=vh;
 
-/* ========== PSEUDO-RANDOM DETERMINISTE ========== */
+/* ========== CARTE ========== */
+const MONDE_W=1000, MONDE_H=1000;
+
+/* ========== PSEUDO-RANDOM DÉTERMINISTE (alea de moteur.js) ========== */
 const alea=(n)=>{const v=Math.sin(n*127.1)*43758.5453;return v-Math.floor(v);};
 const A=(i)=>alea(i*1.37+0.5);
 
@@ -32,108 +32,69 @@ const HERBE_CLAIR=['#5a9648','#528e42','#4e8a3c','#569444','#5c9a4c','#4a8638'];
 const HERBE_FONCE=['#3e7e32','#468836','#3a7a2e','#428434','#4a8c3a','#367a2a'];
 const CHEMIN=['#c8b898','#c4b494','#ccbc9c','#c0b090','#c8b898','#d0c0a0'];
 
-/* ========== CONSTRUCTION DU SOL TOP-DOWN ========== */
-/* Comme construireSolExtramar dans port.js : on grave tout le sol
-   sur un canvas hors-écran, pixel par pixel là où c'est nécessaire,
-   dalles par dalles sur les chemins de pierre. */
-
+/* ========== CONSTRUCTION DU SOL (hors-écran, comme port.js) ========== */
 function construireSol(){
 const c=document.createElement('canvas');
-c.width=W;c.height=H;
+c.width=MONDE_W;c.height=MONDE_H;
 const ctx=c.getContext('2d');
 const R=(x,y,w,h,col)=>{ctx.fillStyle=col;ctx.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
 
-/* ================================================================
-   FOND D'HERBE — tout le terrain est d'abord un pré
-   Variation pixel par pixel, comme port.js varie ses dalles.
-   ================================================================ */
-for(let y=0;y<H;y++){
-  for(let x=0;x<W;x++){
+/* --- FOND D'HERBE --- */
+for(let y=0;y<MONDE_H;y++){
+  for(let x=0;x<MONDE_W;x++){
     const n=A(x*0.73+y*1.31);
     const pal=n>.5?HERBE_CLAIR:HERBE_FONCE;
-    const ci=Math.floor(A(x*2.1+y*3.7)*pal.length);
-    R(x,y,1,1,pal[ci]);
+    R(x,y,1,1,pal[Math.floor(A(x*2.1+y*3.7)*pal.length)]);
   }
 }
 
-/* ================================================================
-   TACHES D'HERBE — zones plus sombres ou plus claires
-   Comme les variations de teinte sur le quai de port.js.
-   ================================================================ */
+/* --- TACHES D'HERBE --- */
 for(let i=0;i<120;i++){
-  const cx=Math.floor(A(i+100)*W);
-  const cy=Math.floor(A(i+200)*H);
+  const cx=Math.floor(A(i+100)*MONDE_W);
+  const cy=Math.floor(A(i+200)*MONDE_H);
   const r=8+Math.floor(A(i+300)*18);
   const dark=A(i+400)>.5;
-  for(let dy=-r;dy<=r;dy++){
-    for(let dx=-r;dx<=r;dx++){
-      if(dx*dx+dy*dy>r*r) continue;
-      const px=cx+dx,py=cy+dy;
-      if(px<0||px>=W||py<0||py>=H) continue;
-      const a=0.06+A(px*1.1+py*2.3)*0.08;
-      R(px,py,1,1,dark?`rgba(30,50,15,${a})`:`rgba(120,180,80,${a})`);
-    }
+  for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+    if(dx*dx+dy*dy>r*r) continue;
+    const px=cx+dx,py=cy+dy;
+    if(px<0||px>=MONDE_W||py<0||py>=MONDE_H) continue;
+    R(px,py,1,1,dark?`rgba(30,50,15,${(.06+A(px*1.1+py*2.3)*.08).toFixed(3)})`:`rgba(120,180,80,${(.06+A(px*1.1+py*2.3)*.08).toFixed(3)})`);
   }
 }
 
-/* ================================================================
-   CHEMINS DE TERRE — des sentiers qui traversent la carte
-   Un chemin principal est-ouest, un nord-sud, et quelques
-   embranchements.
-   ================================================================ */
+/* --- CHEMINS DE TERRE --- */
 function tracerChemin(points,largeur){
   for(let i=0;i<points.length-1;i++){
-    const x0=points[i][0],y0=points[i][1];
-    const x1=points[i+1][0],y1=points[i+1][1];
+    const x0=points[i][0],y0=points[i][1],x1=points[i+1][0],y1=points[i+1][1];
     const dist=Math.sqrt((x1-x0)**2+(y1-y0)**2);
     const steps=Math.ceil(dist);
     for(let s=0;s<=steps;s++){
       const t=s/steps;
-      const cx=x0+(x1-x0)*t;
-      const cy=y0+(y1-y0)*t;
+      const cx=x0+(x1-x0)*t,cy=y0+(y1-y0)*t;
       const demiL=largeur/2+Math.sin(s/8)*1.5;
       for(let d=-demiL;d<=demiL;d++){
         const nx=-(y1-y0)/dist, ny=(x1-x0)/dist;
-        const px=Math.round(cx+nx*d);
-        const py=Math.round(cy+ny*d);
-        if(px<0||px>=W||py<0||py>=H) continue;
-        const ci=Math.floor(A(px*1.3+py*0.7)*CHEMIN.length);
-        R(px,py,1,1,CHEMIN[ci]);
+        const px=Math.round(cx+nx*d),py=Math.round(cy+ny*d);
+        if(px<0||px>=MONDE_W||py<0||py>=MONDE_H) continue;
+        R(px,py,1,1,CHEMIN[Math.floor(A(px*1.3+py*0.7)*CHEMIN.length)]);
       }
     }
   }
 }
-
-/* chemin principal est-ouest */
 tracerChemin([[0,480],[120,490],[280,470],[450,500],[600,490],[780,510],[900,495],[1000,500]],28);
-/* chemin principal nord-sud */
 tracerChemin([[500,0],[490,150],[510,320],[500,500],[495,680],[505,850],[500,1000]],26);
-/* embranchements */
 tracerChemin([[280,470],[250,350],[220,200]],18);
 tracerChemin([[780,510],[820,400],[850,280]],18);
 tracerChemin([[500,500],[620,620],[700,780]],16);
 tracerChemin([[500,500],[380,600],[300,750]],16);
-
-/* détails sur les chemins : ornières, cailloux */
 for(let i=0;i<200;i++){
-  const cx=Math.floor(A(i+500)*W);
-  const cy=Math.floor(A(i+600)*H);
-  R(cx,cy,2,1,'rgba(100,80,50,.12)');
+  R(Math.floor(A(i+500)*MONDE_W),Math.floor(A(i+600)*MONDE_H),2,1,'rgba(100,80,50,.12)');
 }
 
-/* ================================================================
-   DALLE DE PIERRE — une place centrale, dallesDuQuai style
-   Un carré de 120×120 au croisement des chemins.
-   ================================================================ */
+/* --- DALLE DE PIERRE (dallesDuQuai style) --- */
 {
 const PX=440,PY=440,PW=120,PH=120;
-/* fond uni */
-for(let y=PY;y<PY+PH;y++){
-  for(let x=PX;x<PX+PW;x++){
-    R(x,y,1,1,'#d4d0c8');
-  }
-}
-/* dalles rangée par rangée (dallesDuQuai) */
+for(let y=PY;y<PY+PH;y++)for(let x=PX;x<PX+PW;x++) R(x,y,1,1,'#d4d0c8');
 let rowY=0;
 while(rowY<PH){
   const rowH=16+Math.floor(A(rowY*0.77+99)*9);
@@ -145,267 +106,380 @@ while(rowY<PH){
     const y0=Math.max(PY,PY+rowY),y1=Math.min(PY+PH,PY+rowY+rowH);
     if(x0<x1&&y0<y1){
       R(x0,y0,x1-x0,y1-y0,col);
-      /* joint haut */
       R(x0,y0,x1-x0,1,'rgba(118,114,106,.30)');
-      /* joint gauche */
       if(bx>=PX) R(x0,y0,1,y1-y0,'rgba(118,114,106,.30)');
-      /* grain */
       for(let gi=0;gi<3;gi++){
-        const gx=x0+2+Math.floor(A(bx*1.9+rowY+gi+99)*(x1-x0-4));
-        const gy=y0+2+Math.floor(A(bx*2.3+rowY*1.1+gi+99)*(y1-y0-4));
-        R(gx,gy,2,1,'rgba(255,255,255,.12)');
+        R(x0+2+Math.floor(A(bx*1.9+rowY+gi+99)*(x1-x0-4)),
+          y0+2+Math.floor(A(bx*2.3+rowY*1.1+gi+99)*(y1-y0-4)),2,1,'rgba(255,255,255,.12)');
       }
-      /* usure */
       if(A(bx*1.7+rowY+99)<.12){
-        const wx=x0+3+Math.floor(A(bx+99)*(x1-x0-7));
-        const wy=y0+3+Math.floor(A(rowY+99)*(y1-y0-6));
-        R(wx,wy,3,1,'rgba(110,108,104,.35)');
+        R(x0+3+Math.floor(A(bx+99)*(x1-x0-7)),
+          y0+3+Math.floor(A(rowY+99)*(y1-y0-6)),3,1,'rgba(110,108,104,.35)');
       }
     }
     bx+=bw;
   }
   rowY+=rowH;
 }
-/* bordure de la place */
-R(PX,PY,PW,1,'rgba(80,70,55,.25)');
-R(PX,PY,1,PH,'rgba(80,70,55,.25)');
-R(PX,PY+PH-1,PW,1,'rgba(80,70,55,.20)');
-R(PX+PW-1,PY,1,PH,'rgba(80,70,55,.20)');
+R(PX,PY,PW,1,'rgba(80,70,55,.25)');R(PX,PY,1,PH,'rgba(80,70,55,.25)');
+R(PX,PY+PH-1,PW,1,'rgba(80,70,55,.20)');R(PX+PW-1,PY,1,PH,'rgba(80,70,55,.20)');
 }
 
-/* ================================================================
-   EAU — un étang au sud-est, avec reflets
-   ================================================================ */
+/* --- EAU --- */
 {
 const EX=720,EY=200,ER=50;
-for(let dy=-ER-4;dy<=ER+4;dy++){
-  for(let dx=-ER-4;dx<=ER+4;dx++){
-    const d=Math.sqrt(dx*dx+dy*dy);
-    if(d>ER+4) continue;
-    const px=EX+dx,py=EY+dy;
-    if(px<0||px>=W||py<0||py>=H) continue;
-    if(d>ER){
-      /* berge */
-      R(px,py,1,1,'#6a8a52');
-    } else {
-      /* eau avec variation de teinte (port.js style) */
-      const n=A(px*1.7+py*2.3);
-      const b=Math.floor(140+n*30);
-      const gb=Math.floor(160+n*20);
-      R(px,py,1,1,`rgb(${60+Math.floor(n*20)},${gb},${b})`);
-      /* reflets */
-      if(A(px*3.1+py*0.9)>.92) R(px,py,1,1,'rgba(200,230,255,.25)');
-    }
+for(let dy=-ER-4;dy<=ER+4;dy++)for(let dx=-ER-4;dx<=ER+4;dx++){
+  const d=Math.sqrt(dx*dx+dy*dy);if(d>ER+4) continue;
+  const px=EX+dx,py=EY+dy;
+  if(px<0||px>=MONDE_W||py<0||py>=MONDE_H) continue;
+  if(d>ER){R(px,py,1,1,'#6a8a52');}
+  else{
+    const n=A(px*1.7+py*2.3);
+    R(px,py,1,1,`rgb(${60+Math.floor(n*20)},${Math.floor(160+n*20)},${Math.floor(140+n*30)})`);
+    if(A(px*3.1+py*0.9)>.92) R(px,py,1,1,'rgba(200,230,255,.25)');
   }
 }
 }
 
-/* ================================================================
-   ARBRES VUS DU DESSUS — tronc + couronne circulaire
-   ================================================================ */
-const ARBRES=[];
+/* --- ARBRES VUS DU DESSUS --- */
 for(let i=0;i<55;i++){
-  const tx=Math.floor(A(i+700)*W);
-  const ty=Math.floor(A(i+800)*H);
-  /* pas sur les chemins ni la place */
-  const surChemin=Math.abs(ty-490)<20||Math.abs(tx-500)<18;
-  const surPlace=tx>430&&tx<570&&ty>430&&ty<570;
-  const surEau=Math.sqrt((tx-720)**2+(ty-200)**2)<60;
-  if(surChemin||surPlace||surEau) continue;
+  const tx=Math.floor(A(i+700)*MONDE_W),ty=Math.floor(A(i+800)*MONDE_H);
+  if(Math.abs(ty-490)<20||Math.abs(tx-500)<18) continue;
+  if(tx>430&&tx<570&&ty>430&&ty<570) continue;
+  if(Math.sqrt((tx-720)**2+(ty-200)**2)<60) continue;
   const cr=6+Math.floor(A(i+900)*6);
-  ARBRES.push({x:tx,y:ty,r:cr});
-  /* ombre au sol */
-  for(let dy=-cr-2;dy<=cr+2;dy++){
-    for(let dx=-cr-2;dx<=cr+2;dx++){
-      if(dx*dx+dy*dy>(cr+2)*(cr+2)) continue;
-      const px=tx+dx+3,py=ty+dy+3;
-      if(px>=0&&px<W&&py>=0&&py<H) R(px,py,1,1,'rgba(0,0,0,.08)');
-    }
+  for(let dy=-cr-2;dy<=cr+2;dy++)for(let dx=-cr-2;dx<=cr+2;dx++){
+    if(dx*dx+dy*dy>(cr+2)*(cr+2)) continue;
+    const px=tx+dx+3,py=ty+dy+3;
+    if(px>=0&&px<MONDE_W&&py>=0&&py<MONDE_H) R(px,py,1,1,'rgba(0,0,0,.08)');
   }
-  /* couronne */
-  for(let dy=-cr;dy<=cr;dy++){
-    for(let dx=-cr;dx<=cr;dx++){
-      if(dx*dx+dy*dy>cr*cr) continue;
-      const px=tx+dx,py=ty+dy;
-      if(px<0||px>=W||py<0||py>=H) continue;
-      const n=A(px*2.7+py*1.3);
-      const gc=n>.5?'#3a7a2e':'#468838';
-      R(px,py,1,1,gc);
-      /* lumière (haut-gauche, port.js style) */
-      if(dx<-cr*0.3&&dy<-cr*0.3&&A(px+py*3)>.6) R(px,py,1,1,'rgba(120,200,80,.25)');
-    }
+  for(let dy=-cr;dy<=cr;dy++)for(let dx=-cr;dx<=cr;dx++){
+    if(dx*dx+dy*dy>cr*cr) continue;
+    const px=tx+dx,py=ty+dy;
+    if(px<0||px>=MONDE_W||py<0||py>=MONDE_H) continue;
+    const n=A(px*2.7+py*1.3);
+    R(px,py,1,1,n>.5?'#3a7a2e':'#468838');
+    if(dx<-cr*0.3&&dy<-cr*0.3&&A(px+py*3)>.6) R(px,py,1,1,'rgba(120,200,80,.25)');
   }
-  /* tronc au centre */
-  R(tx-1,ty-1,3,3,'#5a4030');
-  R(tx,ty,1,1,'#6a5040');
+  R(tx-1,ty-1,3,3,'#5a4030');R(tx,ty,1,1,'#6a5040');
 }
 
-/* ================================================================
-   FLEURS ET DETAILS
-   ================================================================ */
+/* --- FLEURS --- */
 for(let i=0;i<60;i++){
-  const fx=Math.floor(A(i+1000)*W);
-  const fy=Math.floor(A(i+1100)*H);
-  const fc=['#e84848','#e8c848','#e848a8','#48a8e8','#e8e848','#e89848','#ffffff'][Math.floor(A(i+1200)*7)];
-  R(fx,fy,2,2,fc);
+  const fx=Math.floor(A(i+1000)*MONDE_W),fy=Math.floor(A(i+1100)*MONDE_H);
+  R(fx,fy,2,2,['#e84848','#e8c848','#e848a8','#48a8e8','#e8e848','#e89848','#ffffff'][Math.floor(A(i+1200)*7)]);
   R(fx,fy,1,1,'rgba(255,255,255,.3)');
 }
-/* petits cailloux */
 for(let i=0;i<40;i++){
-  const sx=Math.floor(A(i+1300)*W);
-  const sy=Math.floor(A(i+1400)*H);
-  R(sx,sy,2,2,'#9a9282');
-  R(sx,sy,2,1,'#b0a898');
+  R(Math.floor(A(i+1300)*MONDE_W),Math.floor(A(i+1400)*MONDE_H),2,2,'#9a9282');
 }
-
 return c;
 }
 
-/* ========== CONSTRUCTION ========== */
-const TERRAIN=construireSol();
+const SOL=construireSol();
+
+/* ========== CANVAS PRINCIPAL + SCALING (moteur.js ECH) ========== */
+const cv=document.getElementById('c');
+const ctx=cv.getContext('2d');
+let ECH=1, ECH_CSS=1, VW=0, VH=0;
+
+function taille(){
+const w=window.innerWidth, h=window.innerHeight;
+const dpr=Math.max(1,Math.min(3,window.devicePixelRatio||1));
+/* Petit écran → 1 point de jeu = 1 point CSS.
+   Grand écran → on zoome un peu pour garder le pixel art net. */
+const e=Math.max(1,Math.min(3,Math.round(Math.min(w,h)/220)));
+ECH=Math.max(1,Math.round(e*dpr));
+ECH_CSS=ECH/dpr;
+VW=Math.ceil(w/ECH_CSS)+1;
+VH=Math.ceil(h/ECH_CSS)+1;
+cv.width=Math.round(VW*ECH);
+cv.height=Math.round(VH*ECH);
+cv.style.width=(VW*ECH_CSS)+'px';
+cv.style.height=(VH*ECH_CSS)+'px';
+cv.style.marginLeft=Math.round((w-VW*ECH_CSS)/2)+'px';
+cv.style.marginTop=Math.round((h-VH*ECH_CSS)/2)+'px';
+ctx.setTransform(ECH,0,0,ECH,0,0);
+ctx.imageSmoothingEnabled=false;
+}
+taille();
+let largeurVue=window.innerWidth;
+addEventListener('resize',()=>{
+  if(window.innerWidth===largeurVue)return;
+  largeurVue=window.innerWidth;taille();
+});
 
 /* ========== JOUEUR ========== */
-const PJ={x:500,y:500,vx:0,vy:0,dir:'bas',pas:0,bouge:false};
-const SPEED=2.5,FRIC=0.7;
+const joueur={x:500,y:500,dir:'bas',dir8:'bas',dirVue:'bas',pas:0,marche:false};
 const AP=window.Perso?Object.assign({},Perso.DEF_AP):{};
-let walkPhase=0;
 
-/* ========== CONTROLES ========== */
-const keys={};
-window.addEventListener('keydown',e=>{keys[e.key]=true;});
-window.addEventListener('keyup',e=>{keys[e.key]=false;});
+/* ========== MOUVEMENT (moteur.js : inertie, 8 directions) ========== */
+const VITESSE=112;
+const POUSSE_BASSE=0.60, POUSSE_HAUTE=1.00;
+const COURSE_ENTREE=0.88, COURSE_SORTIE=0.80;
+const ORDRE8=['droite','bas-droite','bas','bas-gauche','gauche','haut-gauche','haut','haut-droite'];
+/* Cadence de marche (moteur.js : GLISSE=0.55, PASM=24, PAS_U=13) */
+const CADENCE_PAS=0.55*24/(4*13); /* ≈ 0.254 */
+let vx=0, vy=0;
+let court=false;
 
-/* D-pad tactile */
-const touch={up:false,down:false,left:false,right:false};
-const touchIds={};
-const DPAD_R=55,DPAD_CX=75,DPAD_CY_OFF=95; /* centre du D-pad depuis le bas-gauche */
-
-function getTouchDir(tx,ty){
-  const cx=DPAD_CX,cy=vh-DPAD_CY_OFF;
-  const dx=tx-cx,dy=ty-cy;
-  if(Math.sqrt(dx*dx+dy*dy)>DPAD_R*1.8) return null;
-  if(Math.abs(dx)>Math.abs(dy)) return dx<0?'left':'right';
-  return dy<0?'up':'down';
+function tournerEnDouceur(dt){
+const cible=joueur.dir8||joueur.dir;
+if(!joueur.dirVue){joueur.dirVue=cible;return;}
+if(joueur.dirVue===cible)return;
+joueur._tVue=(joueur._tVue||0)+dt;
+if(joueur._tVue<0.042)return;
+joueur._tVue=0;
+const a=ORDRE8.indexOf(joueur.dirVue), b=ORDRE8.indexOf(cible);
+if(a<0||b<0){joueur.dirVue=cible;return;}
+const d=(b-a+8)%8;
+joueur.dirVue=ORDRE8[(a+(d<=4?1:-1)+8)%8];
 }
 
-cv.addEventListener('touchstart',e=>{
-  e.preventDefault();
-  for(let i=0;i<e.changedTouches.length;i++){
-    const t=e.changedTouches[i];
-    const z=getTouchDir(t.clientX,t.clientY);
-    if(z){touch[z]=true;touchIds[t.identifier]=z;}
-  }
+/* ========== JOYSTICK VIRTUEL (moteur.js) ========== */
+let joyX=0, joyY=0;
+const jc=document.getElementById('joy');
+const jg=jc.getContext('2d');
+let JDPR=1;
+const JOY_C=100;
+const RAYON=34, POUCE=13;
+const J={actif:false,id:null,ox:0,oy:0,x:0,y:0,vie:0};
+
+function tailleJoy(){
+JDPR=Math.max(1,Math.min(3,window.devicePixelRatio||1));
+jc.width=Math.round(JOY_C*JDPR);jc.height=Math.round(JOY_C*JDPR);
+jc.style.width=JOY_C+'px';jc.style.height=JOY_C+'px';
+}
+tailleJoy();
+addEventListener('resize',tailleJoy);
+
+function prendre(x,y){
+J.actif=true;J.ox=x;J.oy=y;J.x=x;J.y=y;J.vie=1;
+joyX=joyY=0;
+try{navigator.vibrate&&navigator.vibrate(20);}catch(e){}
+}
+function tirer(x,y){
+const dx=x-J.ox, dy=y-J.oy, d=Math.hypot(dx,dy);
+const a=Math.atan2(dy,dx);
+const m=Math.min(d,RAYON);
+J.x=J.ox+Math.cos(a)*m;J.y=J.oy+Math.sin(a)*m;
+if(d>RAYON){J.ox=x-Math.cos(a)*RAYON;J.oy=y-Math.sin(a)*RAYON;}
+const n=Math.min(1,d/RAYON);
+joyX=d<1?0:Math.cos(a)*n;
+joyY=d<1?0:Math.sin(a)*n;
+if(Math.hypot(joyX,joyY)<.16)joyX=joyY=0;
+}
+function lacher(){J.actif=false;J.id=null;joyX=joyY=0;}
+
+/* Touch */
+document.addEventListener('touchstart',ev=>{
+for(const t of ev.changedTouches){
+  if(J.actif) continue;
+  ev.preventDefault();
+  J.id=t.identifier;
+  prendre(t.clientX,t.clientY);
+}
 },{passive:false});
-cv.addEventListener('touchend',e=>{
-  e.preventDefault();
-  for(let i=0;i<e.changedTouches.length;i++){
-    const t=e.changedTouches[i];
-    const z=touchIds[t.identifier];
-    if(z){touch[z]=false;delete touchIds[t.identifier];}
-  }
+document.addEventListener('touchmove',ev=>{
+for(const t of ev.changedTouches){
+  if(t.identifier===J.id){ev.preventDefault();tirer(t.clientX,t.clientY);}
+}
 },{passive:false});
-cv.addEventListener('touchcancel',e=>{
-  for(let i=0;i<e.changedTouches.length;i++){
-    const t=e.changedTouches[i];
-    const z=touchIds[t.identifier];
-    if(z){touch[z]=false;delete touchIds[t.identifier];}
+['touchend','touchcancel'].forEach(k=>document.addEventListener(k,ev=>{
+for(const t of ev.changedTouches) if(t.identifier===J.id){ev.preventDefault();lacher();}
+},{passive:false}));
+
+/* Souris (fallback desktop) */
+document.addEventListener('mousedown',ev=>{prendre(ev.clientX,ev.clientY);});
+addEventListener('mousemove',ev=>{if(J.actif)tirer(ev.clientX,ev.clientY);});
+addEventListener('mouseup',()=>{if(J.actif)lacher();});
+
+/* Clavier (fallback) */
+const keysDown=new Set();
+addEventListener('keydown',ev=>{
+const k={ArrowUp:'z',ArrowDown:'s',ArrowLeft:'q',ArrowRight:'d',w:'z',a:'q'}[ev.key]||ev.key;
+keysDown.add(k);
+updateKeyJoy();
+});
+addEventListener('keyup',ev=>{
+const k={ArrowUp:'z',ArrowDown:'s',ArrowLeft:'q',ArrowRight:'d',w:'z',a:'q'}[ev.key]||ev.key;
+keysDown.delete(k);
+updateKeyJoy();
+});
+function updateKeyJoy(){
+if(J.actif) return; /* le joystick tactile a priorité */
+let kx=0,ky=0;
+if(keysDown.has('q'))kx=-1;
+if(keysDown.has('d'))kx=1;
+if(keysDown.has('z'))ky=-1;
+if(keysDown.has('s'))ky=1;
+joyX=kx;joyY=ky;
+}
+
+/* ========== CAMÉRA (moteur.js : suivi exponentiel) ========== */
+const CAM={x:null,y:null,t:0};
+
+function majCamera(dt){
+const cibleX=Math.max(0,Math.min(MONDE_W-VW, joueur.x-VW/2));
+const cibleY=Math.max(0,Math.min(MONDE_H-VH, joueur.y-VH/2));
+if(CAM.x===null){CAM.x=cibleX;CAM.y=cibleY;return;}
+const k=1-Math.pow(0.0008,dt);
+/* Saut instantané si déplacement > 60% du viewport */
+if(Math.abs(cibleX-CAM.x)>VW*0.6||Math.abs(cibleY-CAM.y)>VH*0.6){
+  CAM.x=cibleX;CAM.y=cibleY;return;
+}
+CAM.x+=(cibleX-CAM.x)*k;
+CAM.y+=(cibleY-CAM.y)*k;
+}
+
+/* ========== DESSIN DU JOYSTICK (identique à moteur.js) ========== */
+let joySale=false;
+function dessinerJoy(dt){
+if(!J.actif&&J.vie>0) J.vie=Math.max(0,J.vie-dt*5);
+if(J.vie<=0){
+  if(joySale){jg.setTransform(1,0,0,1,0,0);jg.clearRect(0,0,jc.width,jc.height);joySale=false;jc.style.visibility='hidden';}
+  return;
+}
+if(!joySale) jc.style.visibility='visible';
+const jox=Math.round(J.ox), joy=Math.round(J.oy);
+jc.style.transform='translate('+(jox-JOY_C/2)+'px,'+(joy-JOY_C/2)+'px)';
+jg.setTransform(1,0,0,1,0,0);jg.clearRect(0,0,jc.width,jc.height);
+jg.setTransform(JDPR,0,0,JDPR,JDPR*(JOY_C/2-jox),JDPR*(JOY_C/2-joy));
+joySale=true;
+jg.save();
+jg.globalAlpha=J.vie;
+const d=Math.hypot(J.x-J.ox,J.y-J.oy), a=Math.atan2(J.y-J.oy,J.x-J.ox);
+const pousse=Math.min(1,d/RAYON), course=pousse>0.88;
+
+/* Anneau */
+jg.beginPath();jg.arc(J.ox,J.oy,RAYON,0,7);
+jg.fillStyle='rgba(20,14,8,.12)';jg.fill();
+jg.lineWidth=3;jg.strokeStyle='rgba(20,14,8,.25)';jg.stroke();
+jg.lineWidth=1.5;jg.strokeStyle='rgba(250,244,228,.75)';jg.stroke();
+
+/* Arc directionnel */
+if(d>6){jg.beginPath();jg.arc(J.ox,J.oy,RAYON,a-0.4,a+0.4);jg.lineWidth=3;jg.strokeStyle=course?'#e8c06a':'#f4ecd8';jg.stroke();}
+
+/* Ombre du pouce */
+jg.beginPath();jg.arc(J.x,J.y+2.5,POUCE,0,7);jg.fillStyle='rgba(20,14,8,.3)';jg.fill();
+/* Pouce */
+jg.beginPath();jg.arc(J.x,J.y,POUCE,0,7);jg.fillStyle='#f4ecd8';jg.fill();
+
+/* Flèche directionnelle sur le pouce */
+jg.save();jg.translate(J.x,J.y);
+if(d>6){
+  jg.rotate(a);jg.fillStyle=course?'#a8791f':'#7a1f2b';
+  jg.beginPath();jg.moveTo(5.5,0);jg.lineTo(-2.5,-4.5);jg.lineTo(-0.5,0);jg.lineTo(-2.5,4.5);jg.closePath();jg.fill();
+} else {
+  jg.fillStyle='#7a1f2b';jg.beginPath();jg.arc(0,0,2,0,7);jg.fill();
+}
+jg.restore();
+jg.restore();
+}
+
+/* ========== MISE À JOUR JOUEUR (moteur.js : majJoueur) ========== */
+function majJoueur(dt){
+tournerEnDouceur(dt);
+const n=Math.hypot(joyX,joyY);
+const pousse=Math.min(1,n);
+
+/* Allure entre marche et course */
+const r=Math.max(0,Math.min(1,(pousse-POUSSE_BASSE)/(POUSSE_HAUTE-POUSSE_BASSE)));
+const allure=VITESSE+(VITESSE*0.36)*r; /* 112 → ~152 px/s */
+
+/* Hystérésis course */
+court=(pousse>(court?COURSE_SORTIE:COURSE_ENTREE));
+
+/* Vitesse cible */
+const cibleX=n>0.16?(joyX/n)*allure*pousse:0;
+const cibleY=n>0.16?(joyY/n)*allure*pousse:0;
+
+/* Inertie exponentielle (k=1-e^(-7.5·dt) pour la marche, 9 pour l'arrêt) */
+const k=1-Math.exp(-(n>0.16?7.5:9)*dt);
+
+/* Freinage demi-tour */
+if(cibleX*vx<0&&Math.abs(vx)>30) vx*=0.55;
+if(cibleY*vy<0&&Math.abs(vy)>30) vy*=0.55;
+
+vx+=(cibleX-vx)*k;
+vy+=(cibleY-vy)*k;
+
+const v=Math.hypot(vx,vy);
+
+if(v>1){
+  /* Déplacement */
+  joueur.x+=vx*dt;
+  joueur.y+=vy*dt;
+
+  /* Pas de marche */
+  joueur.pas+=v*dt*CADENCE_PAS;
+
+  /* Direction 4 (pour le sprite) */
+  const versX=Math.abs(vx)>Math.abs(vy)*1.35;
+  const versY=Math.abs(vy)>Math.abs(vx)*1.35;
+  if(versX) joueur.dir=vx>0?'droite':'gauche';
+  else if(versY) joueur.dir=vy>0?'bas':'haut';
+
+  /* Direction 8 */
+  const ang=Math.atan2(vy,vx), sect=Math.round(ang/(Math.PI/4));
+  const D8={0:'droite',1:'bas-droite',2:'bas',3:'bas-gauche',4:'gauche','-4':'gauche','-3':'haut-gauche','-2':'haut','-1':'haut-droite'}[sect];
+  if(D8&&D8!==joueur.dir8){
+    const centre=sect*(Math.PI/4), ecart=Math.abs(((ang-centre+Math.PI*3)%(Math.PI*2))-Math.PI);
+    if(ecart<Math.PI/8*0.8||!joueur.dir8) joueur.dir8=D8;
   }
+  joueur.marche=true;
+} else {
+  vx=vy=0;
+  joueur.pas=0;
+  joueur.marche=false;
+}
+
+/* Bornes */
+if(joueur.x<24)joueur.x=24;
+if(joueur.x>MONDE_W-24)joueur.x=MONDE_W-24;
+if(joueur.y<40)joueur.y=40;
+if(joueur.y>MONDE_H-10)joueur.y=MONDE_H-10;
+}
+
+/* ========== DESSIN PRINCIPAL ========== */
+function dessiner(){
+ctx.setTransform(ECH,0,0,ECH,0,0);
+ctx.imageSmoothingEnabled=false;
+
+const camX=Math.floor(CAM.x);
+const camY=Math.floor(CAM.y);
+/* Sub-pixel pour fluidité */
+const fx=Math.round((CAM.x-camX)*ECH)/ECH;
+const fy=Math.round((CAM.y-camY)*ECH)/ECH;
+
+/* Transform : tout est en coordonnées monde, la caméra décale */
+ctx.setTransform(ECH,0,0,ECH, -fx*ECH, -fy*ECH);
+
+/* Portion visible du sol */
+const lw=Math.min(VW+2,MONDE_W-camX);
+const lh=Math.min(VH+2,MONDE_H-camY);
+if(lw>0&&lh>0) ctx.drawImage(SOL,camX,camY,lw,lh,camX,camY,lw,lh);
+
+/* Joueur */
+if(window.Perso&&Perso.sprite){
+  const CASE_L=64, CASE_H=80;
+  Perso.sprite(ctx,joueur.x,joueur.y,AP,joueur.dir,joueur.pas,joueur.marche);
+}
+}
+
+/* ========== BOUCLE DE JEU (moteur.js : requestAnimationFrame + dt) ========== */
+let t0=0;
+requestAnimationFrame(function boucle(t){
+requestAnimationFrame(boucle);
+if(!t0){t0=t;return;}
+const dt=Math.min(.05,(t-t0)/1000);
+t0=t;
+majJoueur(dt);
+majCamera(dt);
+dessiner();
+dessinerJoy(dt);
 });
 
-/* ========== RESIZE ========== */
-window.addEventListener('resize',()=>{
-  vw=window.innerWidth;vh=window.innerHeight;
-  cv.width=vw;cv.height=vh;
-});
-
-/* ========== CAMERA ========== */
-const cam={x:0,y:0};
-
-/* ========== UPDATE ========== */
-function update(){
-  const left=keys['ArrowLeft']||keys['q']||keys['a']||touch.left;
-  const right=keys['ArrowRight']||keys['d']||touch.right;
-  const up=keys['ArrowUp']||keys['z']||keys['w']||touch.up;
-  const down=keys['ArrowDown']||keys['s']||touch.down;
-
-  let mx=0,my=0;
-  if(left){mx=-1;PJ.dir='gauche';}
-  if(right){mx=1;PJ.dir='droite';}
-  if(up){my=-1;PJ.dir='haut';}
-  if(down){my=1;PJ.dir='bas';}
-
-  /* diagonale normalisée */
-  if(mx&&my){mx*=0.707;my*=0.707;}
-
-  PJ.bouge=!!(mx||my);
-  if(PJ.bouge){
-    PJ.vx=mx*SPEED;
-    PJ.vy=my*SPEED;
-  } else {
-    PJ.vx*=FRIC;PJ.vy*=FRIC;
-    if(Math.abs(PJ.vx)<0.1)PJ.vx=0;
-    if(Math.abs(PJ.vy)<0.1)PJ.vy=0;
-  }
-
-  PJ.x+=PJ.vx;
-  PJ.y+=PJ.vy;
-
-  /* bornes */
-  if(PJ.x<24)PJ.x=24;
-  if(PJ.x>W-24)PJ.x=W-24;
-  if(PJ.y<40)PJ.y=40;
-  if(PJ.y>H-10)PJ.y=H-10;
-
-  /* phase de marche */
-  if(PJ.bouge){walkPhase+=0.15;}
-  else{walkPhase=0;}
-  PJ.pas=walkPhase;
-
-  /* caméra centrée */
-  cam.x=PJ.x-vw/2;
-  cam.y=PJ.y-vh/2;
-  if(cam.x<0)cam.x=0;
-  if(cam.x>W-vw)cam.x=Math.max(0,W-vw);
-  if(cam.y<0)cam.y=0;
-  if(cam.y>H-vh)cam.y=Math.max(0,H-vh);
-}
-
-/* ========== DRAW ========== */
-function draw(){
-  g.clearRect(0,0,vw,vh);
-  const ox=-cam.x,oy=-cam.y;
-
-  /* ---- TERRAIN ---- */
-  g.drawImage(TERRAIN,ox,oy);
-
-  /* ---- JOUEUR (personnage.js) ---- */
-  if(window.Perso&&Perso.sprite){
-    Perso.sprite(g,PJ.x+ox,PJ.y+oy,AP,PJ.dir,PJ.pas,PJ.bouge);
-  }
-
-  /* ---- D-PAD TACTILE ---- */
-  if('ontouchstart' in window){
-    const cx=DPAD_CX,cy=vh-DPAD_CY_OFF;
-    /* fond du D-pad */
-    g.globalAlpha=0.12;
-    g.fillStyle='#fff';
-    g.beginPath();g.arc(cx,cy,DPAD_R,0,Math.PI*2);g.fill();
-    g.globalAlpha=1;
-    /* flèches */
-    g.fillStyle='rgba(255,255,255,0.35)';
-    g.font='20px sans-serif';
-    g.textAlign='center';
-    g.textBaseline='middle';
-    g.fillText('▲',cx,cy-32);     /* haut */
-    g.fillText('▼',cx,cy+32);     /* bas */
-    g.fillText('◀',cx-32,cy);     /* gauche */
-    g.fillText('▶',cx+32,cy);     /* droite */
-  }
-}
-
-/* ========== BOUCLE ========== */
-function loop(){update();draw();requestAnimationFrame(loop);}
-loop();
 })();
 </script>
 </body>
