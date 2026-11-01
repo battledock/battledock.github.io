@@ -35,7 +35,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-11-01-0600';
+var MA_VERSION='2026-11-01-0700';
 /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il
    ecrivait « bdl.version.vue = <version> », et jeu.html — reste en
@@ -427,10 +427,6 @@ function scenePort(g,W,H,part){
      scène se retrouvait énorme sur une tablette en portrait. */
   var s=Math.max(1,Math.round(Math.min(Wu,bas)/48));
   ciel(P,Wu,hz,['#2d3f74','#48548f','#7b61a0','#b06c95','#d8826e','#f0a05e','#ffc078','#ffd9a0']);
-  soleil(P,Math.round(Wu*0.74),hz-Math.round(bas*0.07),Math.max(3,Math.round(bas*0.055)));
-  nuage(P,Math.round(Wu*0.12),Math.round(bas*0.10),Math.max(1,Math.round(s*0.9)),'rgba(255,238,220,.65)');
-  nuage(P,Math.round(Wu*0.56),Math.round(bas*0.06),Math.max(1,Math.round(s*0.6)),'rgba(255,238,220,.5)');
-
   colline(P,Wu,hz,s);
   ndg(P,Math.round(Wu*0.30),hz-Math.round(s*4.2),Math.max(1,Math.round(s*0.52)));
   var qy=hz+Math.round((bas-hz)*0.62);
@@ -438,8 +434,6 @@ function scenePort(g,W,H,part){
   cargo(P,Math.round(Wu*0.72),hz+Math.round((qy-hz)*0.24),Math.max(1,Math.round(s*0.40)));
   jetee(P,Math.round(Wu*0.09),hz+Math.round(s*0.5),Math.max(1,Math.round(s*0.5)));
   phare(P,Math.round(Wu*0.09),hz+Math.round(s*0.5),Math.max(1,Math.round(s*0.5)));
-  bateau(P,Math.round(Wu*0.17),qy-Math.round(s*0.5),Math.max(1,Math.round(s*0.8)),'#b8442e');
-  bateau(P,Math.round(Wu*0.88),qy-Math.round(s*1.4),Math.max(1,Math.round(s*0.6)),'#2f6a8a');
   quai(P,Wu,qy,bas,Math.max(1,Math.round(s*0.8)));
   grue(P,Math.round(Wu*0.62),qy+Math.round(s*1.2),Math.max(1,Math.round(s*0.7)));
   bitte(P,Math.round(Wu*0.12),qy+Math.round(s*3),Math.max(1,Math.round(s*0.7)));
@@ -454,7 +448,7 @@ function scenePort(g,W,H,part){
   g.fillStyle=lg;g.fillRect(0,0,W,bas*U);}
 
 const cvP=$('pre'), cvV=$('vie');
-let UV=4, HZV=0, QYV=0, WV=0, HV=0;
+let UV=4, HZV=0, QYV=0, WV=0, HV=0, WuV=0, HuV=0, sV=1, gV=null;
 function graver(){
  const dpr=Math.min(2,window.devicePixelRatio||1),W=innerWidth,H=innerHeight;
  WV=W;HV=H;
@@ -462,11 +456,27 @@ function graver(){
  const g=cvP.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.imageSmoothingEnabled=false;
  scenePort(g,W,H,1);
  UV=Math.max(2,Math.round(Math.min(W,H)/170));
- const Hu=Math.ceil(H/UV);HZV=Math.round(Hu*0.46);QYV=HZV+Math.round((Hu-HZV)*0.62);
+ WuV=Math.ceil(W/UV);HuV=Math.ceil(H/UV);
+ HZV=Math.round(HuV*0.46);QYV=HZV+Math.round((HuV-HZV)*0.62);
+ sV=Math.max(1,Math.round(Math.min(WuV,HuV)/48));
  cvV.width=Math.round(W*dpr);cvV.height=Math.round(H*dpr);
- cvV.getContext('2d').setTransform(dpr,0,0,dpr,0,0);
+ gV=cvV.getContext('2d');gV.setTransform(dpr,0,0,dpr,0,0);
 }
-function dessinerVie(t){}
+function dessinerVie(t){
+ if(!gV)return;
+ gV.clearRect(0,0,WV,HV);gV.imageSmoothingEnabled=false;
+ var P=Pix(gV,UV);
+ var rise=Math.min(1,t/45);
+ var sunY=HZV-Math.round(HuV*0.07)-Math.round(rise*HuV*0.06);
+ soleil(P,Math.round(WuV*0.74),sunY,Math.max(3,Math.round(HuV*0.055)));
+ var nx1=(WuV*0.12+t*0.6)%(WuV+20)-10;
+ var nx2=(WuV*0.56+t*0.3)%(WuV+20)-10;
+ nuage(P,Math.round(nx1),Math.round(HuV*0.10),Math.max(1,Math.round(sV*0.9)),'rgba(255,238,220,.65)');
+ nuage(P,Math.round(nx2),Math.round(HuV*0.06),Math.max(1,Math.round(sV*0.6)),'rgba(255,238,220,.5)');
+ var b1=Math.sin(t*0.8)*1.2, b2=Math.sin(t*0.6+1)*1;
+ bateau(P,Math.round(WuV*0.17),QYV-Math.round(sV*0.5)+Math.round(b1),Math.max(1,Math.round(sV*0.8)),'#b8442e');
+ bateau(P,Math.round(WuV*0.88),QYV-Math.round(sV*1.4)+Math.round(b2),Math.max(1,Math.round(sV*0.6)),'#2f6a8a');
+}
 let t0=0;
 function boucle(t){if(!t0)t0=t;dessinerVie((t-t0)/1000);requestAnimationFrame(boucle);}
 let rT=0;addEventListener('resize',()=>{clearTimeout(rT);rT=setTimeout(graver,120);});
