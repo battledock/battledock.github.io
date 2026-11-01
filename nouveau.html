@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Battle Dock</title>
+<title>Battle Dock — Nouveau</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden;background:#000;touch-action:none}
@@ -12,217 +12,400 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 </head>
 <body>
 <canvas id="c"></canvas>
+<script src="personnage.js"></script>
 <script>
 (function(){
-var W=1000,H=1000;
-var cv=document.getElementById('c');
-var cx=cv.getContext('2d');
-
-var vw=window.innerWidth,vh=window.innerHeight;
+'use strict';
+const W=1000,H=1000;
+const cv=document.getElementById('c');
+const g=cv.getContext('2d');
+let vw=window.innerWidth,vh=window.innerHeight;
 cv.width=vw;cv.height=vh;
 
-var cam={x:0,y:0};
-var SOL_Y=600;
+/* ========== PSEUDO-RANDOM DETERMINISTE (moteur.js / port.js) ========== */
+const alea=(n)=>{const v=Math.sin(n*127.1)*43758.5453;return v-Math.floor(v);};
+const A=(i)=>alea(i*1.37+0.5);
 
-/* Couleurs */
-var C_CIEL1='#5BA3D9',C_CIEL2='#A8D8EA';
-var C_HERBE1='#4a8a42',C_HERBE2='#5a9a4f',C_HERBE3='#6aaa5f';
-var C_GAZON='#4a7a42',C_GAZON2='#3d6e37';
-var C_TERRE1='#8B6914',C_TERRE2='#7A5C12',C_TERRE3='#6B4E10',C_TERRE4='#9A7A1C';
-var C_TERRE_F='#7A5510';
-var C_ROCHE='#5A4A3A',C_ROCHE2='#4A3A2A',C_ROCHE3='#6A5A4A';
-
-/* Brins d herbe */
-var herbes=[];
-for(var i=0;i<W;i+=6){
-  herbes.push({x:i,h:4+Math.random()*4,c:[C_HERBE1,C_HERBE2,C_HERBE3][Math.floor(Math.random()*3)]});
+/* ========== PROFIL DU SOL ========== */
+/* Le sol ondule doucement, comme un terrain naturel. */
+const SOL_BASE=480;
+const HMAP=new Float32Array(W);
+for(let x=0;x<W;x++){
+HMAP[x]=SOL_BASE
+  +Math.sin(x/200)*20
+  +Math.sin(x/75)*12
+  +Math.sin(x/28)*4
+  +Math.cos(x/130+2)*10;
 }
 
-/* Cailloux terre */
-var cailloux=[];
-for(var i=0;i<80;i++){
-  cailloux.push({
-    x:Math.random()*W,
-    y:SOL_Y+10+Math.random()*60,
-    w:4+Math.random()*6,
-    h:3+Math.random()*4,
-    c:Math.random()>0.5?C_TERRE3:C_TERRE4
-  });
+/* ========== PALETTES (port.js) ========== */
+/* Les mêmes tons que le quai du vieux-port : granit poli, joints effacés,
+   grain de surface. */
+const PIERRE=['#d6d2ca','#d2cec5','#dad6ce','#cfcbc2','#d4d0c8','#ccc8bf'];
+const TERRE=['#5a3a22','#644228','#6e4a2e','#583820','#6a4626'];
+const ARGILE=['#8a6a44','#947248','#7e6240','#906e46','#866842'];
+const ROCHE=['#6e665c','#7a7268','#646058','#706a60','#787068'];
+const HERBE=['#4a8a3a','#528e42','#5a9648','#3e7e32','#468836','#5aa04a'];
+
+/* ========== CONSTRUCTION DU TERRAIN (off-screen, port.js style) ========== */
+/* On grave le sol une fois sur un canvas hors-écran, comme port.js grave
+   le quai avec construireSolExtramar. Le sol est ensuite peint chaque image
+   d'un seul drawImage. */
+
+function construireSol(){
+const c=document.createElement('canvas');
+c.width=W;c.height=H;
+const ctx=c.getContext('2d');
+const R=(x,y,w,h,col)=>{ctx.fillStyle=col;ctx.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+
+/* ================================================================
+   COUCHE 1 — LA SURFACE HERBEUSE (5 px sous la ligne de sol)
+   Un gazon tondu, dense, avec des nuances de vert. Chaque colonne
+   prend un vert tiré au hasard, comme les dalles de pierre de port.js
+   prennent chacune une couleur dans leur palette.
+   ================================================================ */
+for(let x=0;x<W;x++){
+  const hs=HMAP[x]|0;
+  const ci=Math.floor(A(x*2.1)*HERBE.length);
+  R(x,hs,1,5,HERBE[ci]);
+  R(x,hs,1,1,A(x*3.7)>.55?'#6aaa58':'#4e8c3e');  /* le dessus éclairé */
+  R(x,hs+4,1,1,'#3a6a28');                          /* le joint, comme un pied de gazon */
 }
 
-/* Cailloux roche */
-var roches=[];
-for(var i=0;i<50;i++){
-  roches.push({
-    x:Math.random()*W,
-    y:SOL_Y+80+Math.random()*40,
-    w:5+Math.random()*8,
-    h:4+Math.random()*6,
-    c:Math.random()>0.5?C_ROCHE2:C_ROCHE3
-  });
+/* ================================================================
+   COUCHE 2 — LA TERRE SOMBRE (5-29 px)
+   Un sol meuble, riche, plein de racines. Les tons varient par
+   colonnes de 3-4 px, comme les briques de construireSolGarde.
+   ================================================================ */
+for(let x=0;x<W;x++){
+  const hs=HMAP[x]|0;
+  const ci=Math.floor(A(x*1.3+7)*TERRE.length);
+  R(x,hs+5,1,24,TERRE[ci]);
+}
+/* les strates horizontales, bandes de 3-4 px de tons alternés */
+for(let dy=7;dy<28;dy+=4){
+  for(let x=0;x<W;x+=3){
+    const hs=HMAP[x]|0;
+    R(x,hs+dy,3,1,A(x*2.1+dy*3.3)>.5?'rgba(0,0,0,.08)':'rgba(255,255,255,.06)');
+  }
+}
+/* les racines, comme les veines du marbre dans port.js */
+for(let i=0;i<160;i++){
+  const rx=Math.floor(A(i+100)*W);
+  const hs=HMAP[rx]|0;
+  const ry=hs+6+Math.floor(A(i+200)*20);
+  const rw=2+Math.floor(A(i+300)*5);
+  R(rx,ry,rw,1,'rgba(50,26,8,.22)');
+  if(A(i+400)>.7) R(rx+rw,ry-1,1,2,'rgba(50,26,8,.15)');
 }
 
-/* Joueur */
-var PJ={x:100,y:SOL_Y-16,w:12,h:16,vx:0,vy:0,onGround:true,dir:1};
-var GRAV=0.4,JUMP=-8,SPEED=2.5;
-var keys={};
+/* ================================================================
+   COUCHE 3 — L'ARGILE (29-49 px)
+   Plus clair, plus compact, avec des cailloux.
+   ================================================================ */
+for(let x=0;x<W;x++){
+  const hs=HMAP[x]|0;
+  const ci=Math.floor(A(x*1.7+33)*ARGILE.length);
+  R(x,hs+29,1,20,ARGILE[ci]);
+}
+/* cailloux épars */
+for(let i=0;i<90;i++){
+  const px=Math.floor(A(i+500)*W);
+  const hs=HMAP[px]|0;
+  const py=hs+30+Math.floor(A(i+600)*18);
+  const pw=2+Math.floor(A(i+700)*3);
+  R(px,py,pw,2,'rgba(140,120,90,.30)');
+  R(px,py,pw,1,'rgba(180,160,130,.15)');    /* le dessus éclairé */
+}
 
-/* Clavier */
-window.addEventListener('keydown',function(e){keys[e.key]=true;});
-window.addEventListener('keyup',function(e){keys[e.key]=false;});
+/* ================================================================
+   COUCHE 4 — LA PIERRE (49-159 px)
+   LE CŒUR DE L'APPAREIL, gravé comme dallesDuQuai dans port.js.
+   Des rangées de dalles horizontales, chacune d'une couleur tirée de
+   la palette PIERRE. Les joints sont sombres et faibles — de la
+   poussière entre les pierres, pas du mortier.
+   ================================================================ */
+/* le fond de la couche, uni */
+for(let x=0;x<W;x++){
+  const hs=HMAP[x]|0;
+  R(x,hs+49,1,110,'#d4d0c8');
+}
+/* les dalles : rangée par rangée, comme dallesDuQuai */
+{let rowY=0;
+while(rowY<110){
+  /* CHAQUE RANG A SA PROPRE HAUTEUR. Entre 16 et 24 : on lit des dalles. */
+  const rowH=16+Math.floor(A(rowY*0.77)*9);
+  let bx=-Math.floor(A(rowY*0.77)*50);
+  while(bx<W){
+    /* 36, 46, 56 ou 66 : de grandes dalles. */
+    const bw=36+Math.floor(A(bx*0.31+rowY)*4)*10;
+    const col=PIERRE[Math.floor(A(bx+rowY*3.1)*PIERRE.length)];
+    /* peindre la dalle colonne par colonne, calée sur le profil du sol */
+    const x0=Math.max(0,bx), x1=Math.min(W,bx+bw);
+    for(let x=x0;x<x1;x++){
+      const hs=HMAP[x]|0;
+      const y0=hs+49+rowY, y1=Math.min(y0+rowH,hs+159);
+      if(y0<H&&y0<y1) R(x,y0,1,y1-y0,col);
+    }
+    /* le joint du haut, pareil des quatre côtés et presque effacé */
+    for(let x=x0;x<x1;x++){
+      const hs=HMAP[x]|0;
+      const jy=hs+49+rowY;
+      if(jy<H) R(x,jy,1,1,'rgba(118,114,106,.30)');
+    }
+    /* le joint de gauche */
+    if(bx>=0&&bx<W){
+      const hs=HMAP[bx]|0;
+      const y0=hs+49+rowY, y1=Math.min(y0+rowH,hs+159);
+      if(y0<H&&y0<y1) R(bx,y0,1,y1-y0,'rgba(118,114,106,.30)');
+    }
+    /* le grain, DEDANS la dalle (port.js style) */
+    for(let i=0;i<3;i++){
+      const gx=x0+3+Math.floor(A(bx*1.9+rowY+i)*(bw-7));
+      if(gx>=0&&gx<W){
+        const hs=HMAP[gx]|0;
+        const gy=hs+49+rowY+2+Math.floor(A(bx*2.3+rowY*1.1+i)*(rowH-4));
+        if(gy<H) R(gx,gy,2,1,'rgba(255,255,255,.12)');
+      }
+    }
+    /* une usure, de temps en temps */
+    if(A(bx*1.7+rowY)<.10){
+      const wx=x0+3+Math.floor(A(bx)*(bw-9));
+      if(wx>=0&&wx<W){
+        const hs=HMAP[wx]|0;
+        const wy=hs+49+rowY+3+Math.floor(A(rowY)*(rowH-6));
+        if(wy<H) R(wx,wy,3,1,'rgba(110,108,104,.35)');
+      }
+    }
+    bx+=bw;
+  }
+  rowY+=rowH;
+}}
 
-/* Tactile */
-var touch={left:false,right:false,jump:false};
-var touchIds={};
+/* ================================================================
+   COUCHE 5 — LA ROCHE PROFONDE (159 px +)
+   Sombre, compacte, avec des strates horizontales et des veines de
+   minéral clair.
+   ================================================================ */
+for(let x=0;x<W;x++){
+  const hs=HMAP[x]|0;
+  const ci=Math.floor(A(x*0.7+165)*ROCHE.length);
+  if(hs+159<H) R(x,hs+159,1,H-hs-159,ROCHE[ci]);
+}
+/* strates dans la roche */
+for(let dy=4;dy<H-SOL_BASE-159;dy+=8){
+  if(A(dy*1.3)>.55) continue;
+  for(let x=0;x<W;x+=2){
+    const hs=HMAP[x]|0;
+    const y=hs+159+dy;
+    if(y<H) R(x,y,2,1,A(x+dy)>.5?'rgba(0,0,0,.07)':'rgba(255,255,255,.05)');
+  }
+}
+/* veines de minéral */
+for(let i=0;i<50;i++){
+  const vx=Math.floor(A(i+800)*W);
+  const hs=HMAP[vx]|0;
+  const vy=hs+165+Math.floor(A(i+900)*Math.max(1,H-hs-175));
+  const vl=4+Math.floor(A(i+1000)*10);
+  if(vy<H){
+    R(vx,vy,vl,1,'rgba(180,170,155,.22)');
+    R(vx+1,vy-1,Math.max(1,vl-2),1,'rgba(200,195,185,.12)');
+  }
+}
 
+/* ================================================================
+   BRINS D'HERBE (au-dessus de la ligne de sol)
+   Chaque brin monte de 3 à 8 pixels. Les verts varient, le sommet
+   est éclairé, la base est sombre.
+   ================================================================ */
+for(let x=0;x<W;x+=2){
+  const hs=HMAP[x]|0;
+  const bh=3+Math.floor(A(x*5.1)*6);
+  const bc=HERBE[Math.floor(A(x*7.3)*HERBE.length)];
+  R(x,hs-bh,1,bh,bc);
+  if(A(x*4.7)>.65) R(x,hs-bh,1,1,'#6aaa58');    /* pointe éclairée */
+  R(x,hs-1,1,2,'#3a6a28');                        /* base sombre */
+}
+/* touffes plus épaisses */
+for(let i=0;i<70;i++){
+  const tx=Math.floor(A(i+1100)*W);
+  const hs=HMAP[tx]|0;
+  const th=6+Math.floor(A(i+1200)*6);
+  R(tx,hs-th,2,th,'#4a8a3a');
+  R(tx+1,hs-th+1,1,th-2,'#528e42');
+  if(A(i+1250)>.5) R(tx-1,hs-th+2,1,th-3,'#3e7e32');
+}
+
+/* ================================================================
+   DETAILS DE SURFACE : pierres, fleurs
+   ================================================================ */
+/* petites pierres posées */
+for(let i=0;i<35;i++){
+  const sx=Math.floor(A(i+1300)*W);
+  const hs=HMAP[sx]|0;
+  const sw=2+Math.floor(A(i+1350)*3);
+  R(sx,hs-2,sw,2,'#9a9282');
+  R(sx,hs-2,sw,1,'#b0a898');
+}
+/* fleurs : tige + pétales */
+for(let i=0;i<25;i++){
+  const fx=Math.floor(A(i+1400)*W);
+  const hs=HMAP[fx]|0;
+  const fh=5+Math.floor(A(i+1500)*5);
+  R(fx,hs-fh,1,fh-2,'#3a7a2e');
+  const fc=['#e84848','#e8c848','#e848a8','#48a8e8','#e8e848','#e89848'][Math.floor(A(i+1600)*6)];
+  R(fx-1,hs-fh,3,2,fc);
+  R(fx,hs-fh-1,1,1,fc);
+}
+
+/* ================================================================
+   LIGNES DE TRANSITION entre les couches
+   ================================================================ */
+for(let x=0;x<W;x++){
+  const hs=HMAP[x]|0;
+  R(x,hs+28,1,1,'rgba(80,60,30,.20)');      /* terre → argile */
+  R(x,hs+48,1,1,'rgba(120,110,90,.18)');     /* argile → pierre */
+  R(x,hs+158,1,1,'rgba(60,50,40,.22)');      /* pierre → roche */
+}
+
+return c;
+}
+
+/* ========== COLLINES DU FOND (port.js graverLesCollines) ========== */
+/* Trois plans de collines, du plus lointain au plus proche, comme les
+   collines de l'est et de l'ouest dans port.js. Chaque plan est plus
+   sombre et plus détaillé que le précédent. */
+
+function construireCollines(){
+const c=document.createElement('canvas');
+c.width=W;c.height=SOL_BASE+40;
+const ctx=c.getContext('2d');
+const R=(x,y,w,h,col)=>{ctx.fillStyle=col;ctx.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+
+/* collines lointaines (brume bleutée) */
+for(let x=0;x<W;x++){
+  const h1=SOL_BASE-130+Math.sin(x/220)*35+Math.sin(x/85)*18+Math.sin(x/320+1)*25;
+  const y1=h1|0;
+  R(x,y1,1,SOL_BASE+40-y1,'#b8c8c0');
+  /* le grain : léger bruit de couleur */
+  if(A(x*1.1)>.7) R(x,y1+3,1,1,'rgba(255,255,255,.12)');
+}
+
+/* collines intermédiaires */
+for(let x=0;x<W;x++){
+  const h2=SOL_BASE-70+Math.sin(x/160+2)*28+Math.sin(x/55)*14+Math.cos(x/95)*10;
+  const y2=h2|0;
+  R(x,y2,1,SOL_BASE+40-y2,'#8aaa82');
+  if(A(x*1.7+100)>.75) R(x,y2+2,1,1,'rgba(255,255,255,.08)');
+}
+
+/* collines proches */
+for(let x=0;x<W;x++){
+  const h3=SOL_BASE-28+Math.sin(x/110+4)*18+Math.sin(x/38+1)*9;
+  const y3=h3|0;
+  R(x,y3,1,SOL_BASE+40-y3,'#6a9862');
+  if(A(x*2.3+200)>.8) R(x,y3+1,1,1,'rgba(255,255,255,.06)');
+}
+
+/* arbres sur les collines proches, comme les toits du fond de port.js */
+for(let i=0;i<45;i++){
+  const tx=Math.floor(A(i+2000)*W);
+  const h3=SOL_BASE-28+Math.sin(tx/110+4)*18+Math.sin(tx/38+1)*9;
+  const th=10+Math.floor(A(i+2100)*12);
+  const y3=h3|0;
+  /* tronc */
+  R(tx,y3-th,2,th,'#5a4030');
+  /* feuillage : un petit triangle de pixels, comme port.js */
+  const fc=A(i+2200)>.5?'#4a7e3a':'#528a42';
+  R(tx-3,y3-th-5,8,6,fc);
+  R(tx-2,y3-th-7,6,3,fc);
+  R(tx-1,y3-th-8,4,2,fc);
+  /* lumière sur le feuillage */
+  R(tx-1,y3-th-7,2,1,'#6aaa58');
+}
+
+return c;
+}
+
+/* ========== NUAGES ========== */
+const NUAGES=[];
+for(let i=0;i<14;i++){
+NUAGES.push({
+  x:A(i+3000)*W*1.5-200,
+  y:30+A(i+3100)*140,
+  w:50+A(i+3200)*70,
+  h:14+A(i+3300)*16,
+  a:.18+A(i+3400)*.22
+});
+}
+
+/* ========== CONSTRUCTION ========== */
+const TERRAIN=construireSol();
+const COLLINES=construireCollines();
+
+/* ========== JOUEUR ========== */
+const PJ={x:100,y:0,vx:0,vy:0,onGround:true,dir:'droite',pas:0,bouge:false};
+PJ.y=(HMAP[100]|0);
+const GRAV=0.45,JUMP=-8.5,SPEED=2.5;
+const AP=window.Perso?Object.assign({},Perso.DEF_AP):{};
+let walkPhase=0;
+
+/* ========== CONTROLES ========== */
+const keys={};
+window.addEventListener('keydown',e=>{keys[e.key]=true;});
+window.addEventListener('keyup',e=>{keys[e.key]=false;});
+
+const touch={left:false,right:false,jump:false};
+const touchIds={};
 function getTouchZone(tx){
-  var third=vw/3;
-  if(tx<third) return 'left';
-  if(tx>third*2) return 'right';
+  const t3=vw/3;
+  if(tx<t3) return 'left';
+  if(tx>t3*2) return 'right';
   return 'jump';
 }
 
-cv.addEventListener('touchstart',function(e){
+cv.addEventListener('touchstart',e=>{
   e.preventDefault();
-  for(var i=0;i<e.changedTouches.length;i++){
-    var t=e.changedTouches[i];
-    var zone=getTouchZone(t.clientX);
-    touch[zone]=true;
-    touchIds[t.identifier]=zone;
+  for(let i=0;i<e.changedTouches.length;i++){
+    const t=e.changedTouches[i];
+    const z=getTouchZone(t.clientX);
+    touch[z]=true;touchIds[t.identifier]=z;
   }
 },{passive:false});
-
-cv.addEventListener('touchend',function(e){
+cv.addEventListener('touchend',e=>{
   e.preventDefault();
-  for(var i=0;i<e.changedTouches.length;i++){
-    var t=e.changedTouches[i];
-    var zone=touchIds[t.identifier];
-    if(zone){touch[zone]=false;delete touchIds[t.identifier];}
+  for(let i=0;i<e.changedTouches.length;i++){
+    const t=e.changedTouches[i];
+    const z=touchIds[t.identifier];
+    if(z){touch[z]=false;delete touchIds[t.identifier];}
   }
 },{passive:false});
-
-cv.addEventListener('touchcancel',function(e){
-  for(var i=0;i<e.changedTouches.length;i++){
-    var t=e.changedTouches[i];
-    var zone=touchIds[t.identifier];
-    if(zone){touch[zone]=false;delete touchIds[t.identifier];}
+cv.addEventListener('touchcancel',e=>{
+  for(let i=0;i<e.changedTouches.length;i++){
+    const t=e.changedTouches[i];
+    const z=touchIds[t.identifier];
+    if(z){touch[z]=false;delete touchIds[t.identifier];}
   }
 });
 
-/* Resize */
-window.addEventListener('resize',function(){
+/* ========== RESIZE ========== */
+window.addEventListener('resize',()=>{
   vw=window.innerWidth;vh=window.innerHeight;
   cv.width=vw;cv.height=vh;
 });
 
-/* DRAW */
-function draw(){
-  cx.clearRect(0,0,vw,vh);
+/* ========== CAMERA ========== */
+const cam={x:0,y:0};
 
-  cam.x=PJ.x-vw/2;
-  cam.y=PJ.y-vh/2+100;
-  if(cam.x<0)cam.x=0;
-  if(cam.x>W-vw)cam.x=Math.max(0,W-vw);
-  if(cam.y>H-vh)cam.y=Math.max(0,H-vh);
-  if(cam.y<0)cam.y=0;
-
-  var ox=-cam.x,oy=-cam.y;
-
-  /* Ciel */
-  var grd=cx.createLinearGradient(0,Math.min(0,oy),0,Math.max(0,SOL_Y+oy));
-  grd.addColorStop(0,C_CIEL1);
-  grd.addColorStop(1,C_CIEL2);
-  cx.fillStyle=grd;
-  cx.fillRect(0,0,vw,Math.max(0,SOL_Y+oy));
-
-  /* Brins herbe */
-  for(var i=0;i<herbes.length;i++){
-    var h=herbes[i];
-    var hx=h.x+ox;
-    if(hx>-10&&hx<vw+10){
-      cx.fillStyle=h.c;
-      cx.fillRect(hx,SOL_Y-h.h+oy,3,h.h);
-    }
-  }
-
-  /* Gazon */
-  cx.fillStyle=C_GAZON;
-  cx.fillRect(ox,SOL_Y+oy,W,6);
-  cx.fillStyle=C_GAZON2;
-  cx.fillRect(ox,SOL_Y+2+oy,W,4);
-
-  /* Terre 1 */
-  cx.fillStyle=C_TERRE1;
-  cx.fillRect(ox,SOL_Y+6+oy,W,30);
-  cx.fillStyle=C_TERRE2;
-  cx.fillRect(ox,SOL_Y+6+oy,W,10);
-
-  /* Cailloux terre */
-  for(var i=0;i<cailloux.length;i++){
-    var c=cailloux[i];
-    var px=c.x+ox;
-    if(px>-10&&px<vw+10){
-      cx.fillStyle=c.c;
-      cx.fillRect(px,c.y+oy,c.w,c.h);
-    }
-  }
-
-  /* Terre 2 */
-  cx.fillStyle=C_TERRE_F;
-  cx.fillRect(ox,SOL_Y+36+oy,W,44);
-
-  /* Roche */
-  cx.fillStyle=C_ROCHE;
-  cx.fillRect(ox,SOL_Y+80+oy,W,H-SOL_Y-80);
-
-  for(var i=0;i<roches.length;i++){
-    var r=roches[i];
-    var rx=r.x+ox;
-    if(rx>-10&&rx<vw+10){
-      cx.fillStyle=r.c;
-      cx.fillRect(rx,r.y+oy,r.w,r.h);
-    }
-  }
-
-  /* Joueur */
-  var px=PJ.x+ox,py=PJ.y+oy;
-  cx.fillStyle='#e8c170';
-  cx.fillRect(px+2,py,8,6);
-  cx.fillStyle='#4a6fa5';
-  cx.fillRect(px+1,py+6,10,7);
-  cx.fillStyle='#5a3a1a';
-  cx.fillRect(px+2,py+13,3,3);
-  cx.fillRect(px+7,py+13,3,3);
-  cx.fillStyle='#222';
-  if(PJ.dir>0){cx.fillRect(px+6,py+2,2,2);}
-  else{cx.fillRect(px+4,py+2,2,2);}
-
-  /* HUD tactile */
-  if('ontouchstart' in window){
-    cx.globalAlpha=0.15;
-    cx.fillStyle='#fff';
-    cx.fillRect(0,vh-80,vw/3,80);
-    cx.fillRect(vw*2/3,vh-80,vw/3,80);
-    cx.beginPath();cx.arc(vw/2,vh-40,30,0,Math.PI*2);cx.fill();
-    cx.globalAlpha=1;
-    cx.fillStyle='rgba(255,255,255,0.4)';
-    cx.font='20px monospace';
-    cx.textAlign='center';
-    cx.fillText('◀',vw/6,vh-35);
-    cx.fillText('▶',vw*5/6,vh-35);
-    cx.fillText('▲',vw/2,vh-33);
-  }
-}
-
-/* UPDATE */
+/* ========== UPDATE ========== */
 function update(){
-  var left=keys['ArrowLeft']||keys['q']||keys['a']||touch.left;
-  var right=keys['ArrowRight']||keys['d']||touch.right;
-  var jump=keys['ArrowUp']||keys[' ']||keys['z']||keys['w']||touch.jump;
+  const left=keys['ArrowLeft']||keys['q']||keys['a']||touch.left;
+  const right=keys['ArrowRight']||keys['d']||touch.right;
+  const jump=keys['ArrowUp']||keys[' ']||keys['z']||keys['w']||touch.jump;
 
-  if(left){PJ.vx=-SPEED;PJ.dir=-1;}
-  else if(right){PJ.vx=SPEED;PJ.dir=1;}
-  else{PJ.vx=0;}
+  if(left){PJ.vx=-SPEED;PJ.dir='gauche';PJ.bouge=true;}
+  else if(right){PJ.vx=SPEED;PJ.dir='droite';PJ.bouge=true;}
+  else{PJ.vx*=0.7;if(Math.abs(PJ.vx)<0.1)PJ.vx=0;PJ.bouge=Math.abs(PJ.vx)>0.1;}
 
   if(jump&&PJ.onGround){PJ.vy=JUMP;PJ.onGround=false;}
 
@@ -230,12 +413,88 @@ function update(){
   PJ.x+=PJ.vx;
   PJ.y+=PJ.vy;
 
-  if(PJ.y>=SOL_Y-PJ.h){PJ.y=SOL_Y-PJ.h;PJ.vy=0;PJ.onGround=true;}
-  if(PJ.x<0)PJ.x=0;
-  if(PJ.x>W-PJ.w)PJ.x=W-PJ.w;
+  /* bornes de la carte */
+  if(PJ.x<24)PJ.x=24;
+  if(PJ.x>W-24)PJ.x=W-24;
+
+  /* collision avec le sol (height map) */
+  const ix=Math.max(0,Math.min(W-1,Math.round(PJ.x)));
+  const groundY=HMAP[ix]|0;
+  if(PJ.y>=groundY){PJ.y=groundY;PJ.vy=0;PJ.onGround=true;}
+
+  /* phase de marche */
+  if(PJ.bouge){walkPhase+=0.15;}
+  else{walkPhase=0;}
+  PJ.pas=walkPhase;
+
+  /* caméra centrée sur le joueur */
+  cam.x=PJ.x-vw/2;
+  cam.y=PJ.y-vh/2+60;
+  if(cam.x<0)cam.x=0;
+  if(cam.x>W-vw)cam.x=Math.max(0,W-vw);
+  if(cam.y<0)cam.y=0;
+  if(cam.y>H-vh)cam.y=Math.max(0,H-vh);
 }
 
-/* LOOP */
+/* ========== DRAW ========== */
+function draw(){
+  g.clearRect(0,0,vw,vh);
+  const ox=-cam.x,oy=-cam.y;
+
+  /* ---- CIEL ---- */
+  /* Un dégradé du bleu profond au bleu clair, comme le panorama de port.js */
+  const ciel=g.createLinearGradient(0,Math.min(0,oy),0,Math.max(vh,(SOL_BASE-60)+oy));
+  ciel.addColorStop(0,'#3a78b4');
+  ciel.addColorStop(0.35,'#5a98cc');
+  ciel.addColorStop(0.65,'#7ab8e0');
+  ciel.addColorStop(1,'#b0d8ee');
+  g.fillStyle=ciel;
+  g.fillRect(0,0,vw,vh);
+
+  /* ---- NUAGES (parallaxe) ---- */
+  NUAGES.forEach(n=>{
+    const nx=n.x+ox*0.2;
+    const ny=n.y+oy*0.08;
+    g.globalAlpha=n.a;
+    g.fillStyle='#f0f4f8';
+    g.beginPath();g.ellipse(nx,ny,n.w/2,n.h/2,0,0,Math.PI*2);g.fill();
+    g.beginPath();g.ellipse(nx-n.w*0.28,ny+2,n.w*0.32,n.h*0.38,0,0,Math.PI*2);g.fill();
+    g.beginPath();g.ellipse(nx+n.w*0.22,ny-1,n.w*0.28,n.h*0.32,0,0,Math.PI*2);g.fill();
+    g.beginPath();g.ellipse(nx+n.w*0.05,ny-n.h*0.2,n.w*0.22,n.h*0.28,0,0,Math.PI*2);g.fill();
+  });
+  g.globalAlpha=1;
+
+  /* ---- COLLINES (parallaxe douce) ---- */
+  g.drawImage(COLLINES,ox*0.4,oy*0.4);
+
+  /* ---- TERRAIN ---- */
+  g.drawImage(TERRAIN,ox,oy);
+
+  /* ---- JOUEUR (personnage.js) ---- */
+  if(window.Perso&&Perso.sprite){
+    Perso.sprite(g,PJ.x+ox,PJ.y+oy,AP,PJ.dir,PJ.pas,PJ.bouge);
+  }
+
+  /* ---- HUD TACTILE ---- */
+  if('ontouchstart' in window){
+    g.globalAlpha=0.10;
+    g.fillStyle='#fff';
+    g.fillRect(0,vh-90,vw/3,90);
+    g.fillRect(vw*2/3,vh-90,vw/3,90);
+    g.beginPath();g.arc(vw/2,vh-45,32,0,Math.PI*2);g.fill();
+    g.globalAlpha=1;
+
+    g.fillStyle='rgba(255,255,255,0.30)';
+    g.font='22px sans-serif';
+    g.textAlign='center';
+    g.textBaseline='middle';
+    g.fillText('◀',vw/6,vh-45);
+    g.fillText('▶',vw*5/6,vh-45);
+    g.fillText('▲',vw/2,vh-45);
+  }
+}
+
+/* ========== BOUCLE ========== */
 function loop(){update();draw();requestAnimationFrame(loop);}
 loop();
 })();
