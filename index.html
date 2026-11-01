@@ -35,7 +35,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-11-01-0901';
+var MA_VERSION='2026-11-01-0902';
 /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il
    ecrivait « bdl.version.vue = <version> », et jeu.html — reste en
@@ -170,10 +170,10 @@ box-shadow:0 4px 0 #a8550c,0 8px 18px rgba(120,60,10,.3)}
  .valider{height:46px;font-size:21px}}
 
 /* ÉCRAN MAINTENANCE — IDLE DOCKER */
-#ecran-maintenance{display:none;max-width:380px;gap:8px;
-background:linear-gradient(180deg,#1a2444 0%,#0f1729 100%);
-padding:18px 14px 24px;border-radius:18px;position:relative;z-index:2;
-box-shadow:0 0 60px 40px #0f1729}
+#ecran-maintenance{display:none;gap:8px;width:100%;max-width:100%;
+padding:16px 16px calc(16px + env(safe-area-inset-bottom));
+position:relative;z-index:2}
+#ecran-maintenance>*{max-width:400px;width:100%;margin-left:auto;margin-right:auto}
 .mt-head{text-align:center;margin-bottom:4px}
 .mt-head p:first-child{font:700 9px 'Baloo 2',sans-serif;color:#d4a05a;letter-spacing:4px;text-shadow:0 1px 4px rgba(0,0,0,.5)}
 .mt-head p:last-child{font:400 18px 'Lilita One',sans-serif;color:#ffd9a0;text-shadow:0 2px 6px rgba(0,0,0,.5);margin-top:2px}
@@ -597,7 +597,7 @@ var d=document.createElement('div');
 d.className='mt-up '+(can?'on':'off');
 d.innerHTML='<div><div class="mt-up-name">'+u.nom+(upCounts[i]?'<span class="mt-up-count"> ×'+upCounts[i]+'</span>':'')+'</div><div class="mt-up-desc">'+u.desc+'</div></div><div class="mt-up-cost">🪙 '+fmt(co)+'</div>';
 d.dataset.i=i;
-if(can)d.onclick=buyUp;
+if(can){d.onclick=buyUp;d.addEventListener('touchend',function(ev){ev.preventDefault();buyUp(ev);},{passive:false});}
 c.appendChild(d);
 }}
 function buyUp(e){
@@ -614,23 +614,31 @@ var p=Math.min(100,Math.round(coins/goal*100));
 $('mt-pct').textContent=p+'%';
 $('mt-fill').style.width=p+'%';
 }
-/* TAP */
-$('mt-zone').addEventListener('click',function(e){
+/* TAP — touch + click */
+function doTap(ex,ey){
 coins+=perTap;
-var r=e.currentTarget.getBoundingClientRect();
-var x=e.clientX-r.left,y=e.clientY-r.top;
+var r=$('mt-zone').getBoundingClientRect();
+var x=ex-r.left,y=ey-r.top;
 var sp=document.createElement('div');
 sp.textContent='+'+perTap;
 sp.style.cssText='position:absolute;left:'+x+'px;top:'+y+'px;color:#ffc078;font:700 16px "Baloo 2",sans-serif;pointer-events:none;animation:mt-float .7s forwards';
 $('mt-floats').appendChild(sp);
 setTimeout(function(){sp.remove();},750);
-/* crate */
 var cr=document.createElement('div');
 var cx=10+Math.random()*70;
 cr.style.cssText='position:absolute;bottom:28px;left:'+cx+'%;width:12px;height:10px;background:#a5764a;border:1px solid #8a5a30;animation:mt-crate .5s forwards';
 $('mt-floats').appendChild(cr);
 setTimeout(function(){cr.remove();},550);
 renderUp();ui();
+}
+var zone=$('mt-zone'),usedTouch=false;
+zone.addEventListener('touchstart',function(e){
+e.preventDefault();usedTouch=true;
+var t=e.touches[0];doTap(t.clientX,t.clientY);
+},{passive:false});
+zone.addEventListener('click',function(e){
+if(usedTouch){usedTouch=false;return;}
+doTap(e.clientX,e.clientY);
 });
 /* AUTO */
 var last=Date.now();
@@ -643,10 +651,12 @@ window.allerAuJeu=function(){
 $('ecran-choix').style.display='none';
 $('ecran-form').style.display='none';
 $('ecran-maintenance').style.display='flex';
-/* masquer le canvas pour fond propre */
+/* fond opaque plein écran */
 var cv=document.getElementById('pre');if(cv)cv.style.display='none';
 var vo=document.querySelector('.voile');if(vo)vo.style.display='none';
-document.body.style.background='#0f1729';
+document.body.style.background='linear-gradient(180deg,#1a2444,#0f1729)';
+var bl=document.getElementById('bloc');
+if(bl){bl.style.justifyContent='flex-start';bl.style.background='transparent';}
 renderUp();ui();
 };
 renderUp();
