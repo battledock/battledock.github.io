@@ -14,6 +14,7 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;posit
 <body>
 <canvas id="c"></canvas>
 <canvas id="joy"></canvas>
+<script src="render.js"></script>
 <script src="personnage.js"></script>
 <script>
 (function(){
@@ -44,14 +45,11 @@ ctx.fillRect(0,0,MONDE_W,MONDE_H);
 /* --- DALLES IRRÉGULIÈRES (rangées de hauteur variable, dalles de largeur variable) --- */
 let rowY=0, rowIdx=0;
 while(rowY<MONDE_H){
-  /* Hauteur de rangée : 18-32px, irrégulière */
   const rowH=18+Math.floor(A(rowIdx*0.77+3.1)*15);
-  /* Décalage horizontal par rangée (effet briques) */
   const offset=Math.floor(A(rowIdx*1.43+7.7)*30)-15;
   let bx=offset-80;
 
   while(bx<MONDE_W){
-    /* Largeur de dalle : 36-90px */
     const bw=36+Math.floor(A(bx*0.31+rowIdx*2.1+5.5)*8)*8;
     const col=PIERRE[Math.floor(A(bx*0.19+rowIdx*3.1+2.2)*PIERRE.length)];
 
@@ -59,16 +57,10 @@ while(rowY<MONDE_H){
     const y0=Math.max(0,rowY), y1=Math.min(MONDE_H,rowY+rowH);
 
     if(x0<x1&&y0<y1){
-      /* Fond de la dalle */
       R(x0,y0,x1-x0,y1-y0,col);
-
-      /* Joint horizontal (haut de la dalle) */
       R(x0,y0,x1-x0,1,'rgba(118,114,106,.28)');
-
-      /* Joint vertical (gauche de la dalle) */
       if(bx>=0) R(x0,y0,1,y1-y0,'rgba(118,114,106,.28)');
 
-      /* Grain — 3 à 5 touches de lumière par dalle */
       const ng=3+Math.floor(A(bx*1.1+rowIdx*0.3+8.8)*3);
       for(let gi=0;gi<ng;gi++){
         const gx=x0+2+Math.floor(A(bx*1.9+rowIdx+gi*3.7+1.1)*(x1-x0-4));
@@ -76,21 +68,18 @@ while(rowY<MONDE_H){
         R(gx,gy,2,1,'rgba(255,255,255,.10)');
       }
 
-      /* Grain sombre — 1 à 2 touches */
       if(A(bx*0.7+rowIdx*1.9+6.6)>.4){
         const gx=x0+3+Math.floor(A(bx*3.1+rowIdx*0.9+9.9)*(x1-x0-6));
         const gy=y0+2+Math.floor(A(bx*0.8+rowIdx*2.7+3.3)*(y1-y0-4));
         R(gx,gy,2,1,'rgba(110,105,95,.08)');
       }
 
-      /* Usure — ~10% des dalles ont une marque */
       if(A(bx*1.7+rowIdx*0.5+1.1)<.10){
         const ux=x0+3+Math.floor(A(bx*0.9+rowIdx*1.3+7.7)*(x1-x0-8));
         const uy=y0+3+Math.floor(A(rowIdx*0.6+bx*1.1+2.2)*(y1-y0-6));
         R(ux,uy,4+Math.floor(A(bx+rowIdx+5.5)*3),2,'rgba(110,108,100,.12)');
       }
 
-      /* Tache d'humidité — ~4% des dalles */
       if(A(bx*2.3+rowIdx*1.7+4.4)<.04){
         const tx=(x0+x1)/2, ty=(y0+y1)/2;
         const tr=4+Math.floor(A(bx*0.3+rowIdx+8.8)*6);
@@ -109,7 +98,7 @@ while(rowY<MONDE_H){
   rowIdx++;
 }
 
-/* --- TACHES DE PATINE (zones plus sombres, usure au sol sur les passages) --- */
+/* --- TACHES DE PATINE --- */
 for(let i=0;i<40;i++){
   const cx=Math.floor(A(i*1.3+100)*MONDE_W);
   const cy=Math.floor(A(i*1.7+200)*MONDE_H);
@@ -125,7 +114,7 @@ for(let i=0;i<40;i++){
   }
 }
 
-/* --- VEINURES CALCAIRE (lignes très subtiles dans la pierre) --- */
+/* --- VEINURES CALCAIRE --- */
 for(let i=0;i<60;i++){
   const sx=Math.floor(A(i*1.1+500)*MONDE_W);
   const sy=Math.floor(A(i*0.7+600)*MONDE_H);
@@ -143,51 +132,36 @@ for(let i=0;i<60;i++){
 return c;
 }
 
-const SOL=construireSol();
 
-/* ========== CANVAS PRINCIPAL + SCALING (moteur.js ECH) ========== */
-const cv=document.getElementById('c');
-const ctx=cv.getContext('2d');
-let ECH=1, ECH_CSS=1, VW=0, VH=0;
+/* ========== INIT MOTEUR DE RENDU ========== */
+Render.init('c',MONDE_W,MONDE_H,{zoom:1.35});
+Render.setSol(construireSol());
+/* Render.debug.fps=true; */ /* décommenter pour le compteur FPS */
 
-const ZOOM=1.35; /* zoom modéré : ~30% de pixels en moins que la vue standard */
-
-function taille(){
-const w=window.innerWidth, h=window.innerHeight;
-const dpr=Math.max(1,Math.min(3,window.devicePixelRatio||1));
-/* Base : min(w,h)/220, puis zoom appliqué, arrondi en pixels physiques */
-const base=Math.min(w,h)/220;
-ECH=Math.max(1,Math.min(Math.round(4*dpr),Math.round(base*ZOOM*dpr)));
-ECH_CSS=ECH/dpr;
-VW=Math.ceil(w/ECH_CSS)+1;
-VH=Math.ceil(h/ECH_CSS)+1;
-cv.width=Math.round(VW*ECH);
-cv.height=Math.round(VH*ECH);
-cv.style.width=(VW*ECH_CSS)+'px';
-cv.style.height=(VH*ECH_CSS)+'px';
-cv.style.marginLeft=Math.round((w-VW*ECH_CSS)/2)+'px';
-cv.style.marginTop=Math.round((h-VH*ECH_CSS)/2)+'px';
-ctx.setTransform(ECH,0,0,ECH,0,0);
-ctx.imageSmoothingEnabled=false;
-}
-taille();
-let largeurVue=window.innerWidth;
-addEventListener('resize',()=>{
-  if(window.innerWidth===largeurVue)return;
-  largeurVue=window.innerWidth;taille();
-});
 
 /* ========== JOUEUR ========== */
 const joueur={x:500,y:500,dir:'bas',dir8:'bas',dirVue:'bas',pas:0,marche:false};
 const AP=window.Perso?Object.assign({},Perso.DEF_AP):{};
 
-/* ========== MOUVEMENT (moteur.js : inertie, 8 directions) ========== */
+/* Enregistrer le joueur comme entité (tri-Y automatique) */
+Render.ajouterEntite('joueur',{
+  get x(){return joueur.x;},
+  get y(){return joueur.y;},
+  w:64, h:80,
+  get ySort(){return joueur.y;},
+  draw(ctx,cx,cy){
+    if(window.Perso&&Perso.sprite)
+      Perso.sprite(ctx,joueur.x-cx,joueur.y-cy,AP,joueur.dir,joueur.pas,joueur.marche);
+  }
+});
+
+
+/* ========== MOUVEMENT (inertie, 8 directions) ========== */
 const VITESSE=112;
 const POUSSE_BASSE=0.60, POUSSE_HAUTE=1.00;
 const COURSE_ENTREE=0.88, COURSE_SORTIE=0.80;
 const ORDRE8=['droite','bas-droite','bas','bas-gauche','gauche','haut-gauche','haut','haut-droite'];
-/* Cadence de marche (moteur.js : GLISSE=0.55, PASM=24, PAS_U=13) */
-const CADENCE_PAS=0.55*24/(4*13); /* ≈ 0.254 */
+const CADENCE_PAS=0.55*24/(4*13);
 let vx=0, vy=0;
 let court=false;
 
@@ -204,7 +178,8 @@ const d=(b-a+8)%8;
 joueur.dirVue=ORDRE8[(a+(d<=4?1:-1)+8)%8];
 }
 
-/* ========== JOYSTICK VIRTUEL (moteur.js) ========== */
+
+/* ========== JOYSTICK VIRTUEL ========== */
 let joyX=0, joyY=0;
 const jc=document.getElementById('joy');
 const jg=jc.getContext('2d');
@@ -275,7 +250,7 @@ keysDown.delete(k);
 updateKeyJoy();
 });
 function updateKeyJoy(){
-if(J.actif) return; /* le joystick tactile a priorité */
+if(J.actif) return;
 let kx=0,ky=0;
 if(keysDown.has('q'))kx=-1;
 if(keysDown.has('d'))kx=1;
@@ -284,23 +259,8 @@ if(keysDown.has('s'))ky=1;
 joyX=kx;joyY=ky;
 }
 
-/* ========== CAMÉRA (moteur.js : suivi exponentiel) ========== */
-const CAM={x:null,y:null,t:0};
 
-function majCamera(dt){
-const cibleX=Math.max(0,Math.min(MONDE_W-VW, joueur.x-VW/2));
-const cibleY=Math.max(0,Math.min(MONDE_H-VH, joueur.y-VH/2));
-if(CAM.x===null){CAM.x=cibleX;CAM.y=cibleY;return;}
-const k=1-Math.pow(0.0008,dt);
-/* Saut instantané si déplacement > 60% du viewport */
-if(Math.abs(cibleX-CAM.x)>VW*0.6||Math.abs(cibleY-CAM.y)>VH*0.6){
-  CAM.x=cibleX;CAM.y=cibleY;return;
-}
-CAM.x+=(cibleX-CAM.x)*k;
-CAM.y+=(cibleY-CAM.y)*k;
-}
-
-/* ========== DESSIN DU JOYSTICK (identique à moteur.js) ========== */
+/* ========== DESSIN DU JOYSTICK ========== */
 let joySale=false;
 function dessinerJoy(dt){
 if(!J.actif&&J.vie>0) J.vie=Math.max(0,J.vie-dt*5);
@@ -319,21 +279,16 @@ jg.globalAlpha=J.vie;
 const d=Math.hypot(J.x-J.ox,J.y-J.oy), a=Math.atan2(J.y-J.oy,J.x-J.ox);
 const pousse=Math.min(1,d/RAYON), course=pousse>0.88;
 
-/* Anneau */
 jg.beginPath();jg.arc(J.ox,J.oy,RAYON,0,7);
 jg.fillStyle='rgba(20,14,8,.12)';jg.fill();
 jg.lineWidth=3;jg.strokeStyle='rgba(20,14,8,.25)';jg.stroke();
 jg.lineWidth=1.5;jg.strokeStyle='rgba(250,244,228,.75)';jg.stroke();
 
-/* Arc directionnel */
 if(d>6){jg.beginPath();jg.arc(J.ox,J.oy,RAYON,a-0.4,a+0.4);jg.lineWidth=3;jg.strokeStyle=course?'#e8c06a':'#f4ecd8';jg.stroke();}
 
-/* Ombre du pouce */
 jg.beginPath();jg.arc(J.x,J.y+2.5,POUCE,0,7);jg.fillStyle='rgba(20,14,8,.3)';jg.fill();
-/* Pouce */
 jg.beginPath();jg.arc(J.x,J.y,POUCE,0,7);jg.fillStyle='#f4ecd8';jg.fill();
 
-/* Flèche directionnelle sur le pouce */
 jg.save();jg.translate(J.x,J.y);
 if(d>6){
   jg.rotate(a);jg.fillStyle=course?'#a8791f':'#7a1f2b';
@@ -345,27 +300,23 @@ jg.restore();
 jg.restore();
 }
 
-/* ========== MISE À JOUR JOUEUR (moteur.js : majJoueur) ========== */
+
+/* ========== MISE À JOUR JOUEUR ========== */
 function majJoueur(dt){
 tournerEnDouceur(dt);
 const n=Math.hypot(joyX,joyY);
 const pousse=Math.min(1,n);
 
-/* Allure entre marche et course */
 const r=Math.max(0,Math.min(1,(pousse-POUSSE_BASSE)/(POUSSE_HAUTE-POUSSE_BASSE)));
-const allure=VITESSE+(VITESSE*0.36)*r; /* 112 → ~152 px/s */
+const allure=VITESSE+(VITESSE*0.36)*r;
 
-/* Hystérésis course */
 court=(pousse>(court?COURSE_SORTIE:COURSE_ENTREE));
 
-/* Vitesse cible */
 const cibleX=n>0.16?(joyX/n)*allure*pousse:0;
 const cibleY=n>0.16?(joyY/n)*allure*pousse:0;
 
-/* Inertie exponentielle (k=1-e^(-7.5·dt) pour la marche, 9 pour l'arrêt) */
 const k=1-Math.exp(-(n>0.16?7.5:9)*dt);
 
-/* Freinage demi-tour */
 if(cibleX*vx<0&&Math.abs(vx)>30) vx*=0.55;
 if(cibleY*vy<0&&Math.abs(vy)>30) vy*=0.55;
 
@@ -375,20 +326,15 @@ vy+=(cibleY-vy)*k;
 const v=Math.hypot(vx,vy);
 
 if(v>1){
-  /* Déplacement */
   joueur.x+=vx*dt;
   joueur.y+=vy*dt;
-
-  /* Pas de marche */
   joueur.pas+=v*dt*CADENCE_PAS;
 
-  /* Direction 4 (pour le sprite) */
   const versX=Math.abs(vx)>Math.abs(vy)*1.35;
   const versY=Math.abs(vy)>Math.abs(vx)*1.35;
   if(versX) joueur.dir=vx>0?'droite':'gauche';
   else if(versY) joueur.dir=vy>0?'bas':'haut';
 
-  /* Direction 8 */
   const ang=Math.atan2(vy,vx), sect=Math.round(ang/(Math.PI/4));
   const D8={0:'droite',1:'bas-droite',2:'bas',3:'bas-gauche',4:'gauche','-4':'gauche','-3':'haut-gauche','-2':'haut','-1':'haut-droite'}[sect];
   if(D8&&D8!==joueur.dir8){
@@ -402,39 +348,14 @@ if(v>1){
   joueur.marche=false;
 }
 
-/* Bornes */
 if(joueur.x<24)joueur.x=24;
 if(joueur.x>MONDE_W-24)joueur.x=MONDE_W-24;
 if(joueur.y<40)joueur.y=40;
 if(joueur.y>MONDE_H-10)joueur.y=MONDE_H-10;
 }
 
-/* ========== DESSIN PRINCIPAL ========== */
-function dessiner(){
-ctx.setTransform(ECH,0,0,ECH,0,0);
-ctx.imageSmoothingEnabled=false;
 
-const camX=Math.floor(CAM.x);
-const camY=Math.floor(CAM.y);
-/* Sub-pixel pour fluidité */
-const fx=Math.round((CAM.x-camX)*ECH)/ECH;
-const fy=Math.round((CAM.y-camY)*ECH)/ECH;
-
-/* Transform : on dessine en coordonnées « vue » (0,0 = coin haut-gauche visible) */
-ctx.setTransform(ECH,0,0,ECH, -fx*ECH, -fy*ECH);
-
-/* Portion visible du sol — source : (camX,camY), destination : (0,0) */
-const lw=Math.min(VW+2,MONDE_W-camX);
-const lh=Math.min(VH+2,MONDE_H-camY);
-if(lw>0&&lh>0) ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
-
-/* Joueur — position relative à la caméra */
-if(window.Perso&&Perso.sprite){
-  Perso.sprite(ctx,joueur.x-camX,joueur.y-camY,AP,joueur.dir,joueur.pas,joueur.marche);
-}
-}
-
-/* ========== BOUCLE DE JEU (moteur.js : requestAnimationFrame + dt) ========== */
+/* ========== BOUCLE DE JEU ========== */
 let t0=0;
 requestAnimationFrame(function boucle(t){
 requestAnimationFrame(boucle);
@@ -442,8 +363,8 @@ if(!t0){t0=t;return;}
 const dt=Math.min(.05,(t-t0)/1000);
 t0=t;
 majJoueur(dt);
-majCamera(dt);
-dessiner();
+Render.camSuivre(joueur,dt);
+Render.frame(dt);
 dessinerJoy(dt);
 });
 
