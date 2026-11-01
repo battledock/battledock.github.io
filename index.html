@@ -35,7 +35,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>(function(){
-var MA_VERSION='2026-11-01-0700';
+var MA_VERSION='2026-11-01-0800';
 /* LE DRAPEAU EST PAR PAGE. Il etait commun a tout le site : des que
    index.html s'etait recharge une fois pour la version du jour, il
    ecrivait « bdl.version.vue = <version> », et jeu.html — reste en
@@ -85,7 +85,7 @@ document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&['+',
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;background:#0e1420;color:#3a2e1c;
 font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-#pre,#vie{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated}
+#pre{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated}
 .voile{position:fixed;inset:0;pointer-events:none;
 background:linear-gradient(180deg,rgba(10,14,40,.26),rgba(0,0,0,0) 44%,rgba(18,14,6,.50))}
 
@@ -176,7 +176,6 @@ box-shadow:0 4px 0 #a8550c,0 8px 18px rgba(120,60,10,.3)}
 </head>
 <body>
 <canvas id="pre"></canvas>
-<canvas id="vie"></canvas>
 <div class="voile"></div>
 
 <div class="bloc" id="bloc">
@@ -311,8 +310,8 @@ if(RECO){try{sb.auth.signOut({scope:'local'});}catch(x){}
    Le décor de l'accueil est dessiné à la grille, comme les écrans de
    chargement du jeu : un « pixel » vaut U points, et U grandit avec
    l'écran, si bien que l'image reste franche du téléphone à la tablette,
-   debout comme couchée. #pre porte la scène, #vie les mouettes et les
-   reflets, qui seuls bougent. */
+   debout comme couchée. Un seul canvas (#pre) redessine tout chaque
+   frame ; translate() sub-pixel rend les dérives fluides. */
 function al(n){var v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);}
 function Pix(g,U){return function(x,y,w,h,c){if(w<=0||h<=0)return;g.fillStyle=c;
   g.fillRect(Math.round(x)*U,Math.round(y)*U,Math.max(1,Math.round(w))*U,Math.max(1,Math.round(h))*U);};}
@@ -419,19 +418,40 @@ function tonneau(P,x,sol,s){
 function jetee(P,x,y,s){
   P(x-6*s,y,12*s,4*s,'#8a8276');P(x-6*s,y,12*s,Math.max(1,s),'#b3a996');
   for(var k=0;k<4;k++)P(x-6*s+k*3*s,y+s,3*s-1,3*s,k%2?'#938b7e':'#89806f');}
-function scenePort(g,W,H,part){
+function scenePort(g,W,H,part,t){
+  t=t||0;
   var U=Math.max(2,Math.round(Math.min(W,H)/170)),Wu=Math.ceil(W/U),Hu=Math.ceil(H/U),P=Pix(g,U);
-  var bas=Math.round(Hu*(part||1));            /* jusqu'où descend l'image */
+  var bas=Math.round(Hu*(part||1));
   var hz=Math.round(bas*0.46);
-  /* LA TAILLE SUIT LE PLUS PETIT CÔTÉ : réglée sur la seule hauteur, la
-     scène se retrouvait énorme sur une tablette en portrait. */
   var s=Math.max(1,Math.round(Math.min(Wu,bas)/48));
   ciel(P,Wu,hz,['#2d3f74','#48548f','#7b61a0','#b06c95','#d8826e','#f0a05e','#ffc078','#ffd9a0']);
+  /* soleil — DERRIÈRE les collines */
+  var rise=Math.min(1,t/45);
+  var sunY=hz-Math.round(Hu*0.07)-Math.round(rise*Hu*0.06);
+  soleil(P,Math.round(Wu*0.74),sunY,Math.max(3,Math.round(Hu*0.055)));
   colline(P,Wu,hz,s);
   ndg(P,Math.round(Wu*0.30),hz-Math.round(s*4.2),Math.max(1,Math.round(s*0.52)));
+  /* nuages — dérive sub-pixel via translate */
+  var envel=(Wu+20)*U;
+  var d1=(t*0.4)*U,d2=(t*0.2)*U,m1=d1%envel,m2=d2%envel;
+  var nx1=Math.round(Wu*0.12),ny1=Math.round(Hu*0.10),ns1=Math.max(1,Math.round(s*0.9));
+  g.save();g.translate(m1,0);nuage(P,nx1,ny1,ns1,'rgba(255,238,220,.65)');g.restore();
+  g.save();g.translate(m1-envel,0);nuage(P,nx1,ny1,ns1,'rgba(255,238,220,.65)');g.restore();
+  var nx2=Math.round(Wu*0.56),ny2=Math.round(Hu*0.06),ns2=Math.max(1,Math.round(s*0.6));
+  g.save();g.translate(m2,0);nuage(P,nx2,ny2,ns2,'rgba(255,238,220,.5)');g.restore();
+  g.save();g.translate(m2-envel,0);nuage(P,nx2,ny2,ns2,'rgba(255,238,220,.5)');g.restore();
   var qy=hz+Math.round((bas-hz)*0.62);
   mer(P,Wu,hz,qy,Math.max(1,Math.round(s*0.6)));
+  /* bateaux — tangage sub-pixel via translate */
+  var bob1=Math.sin(t*0.5)*U*1.2;
+  g.save();g.translate(0,bob1);
+  bateau(P,Math.round(Wu*0.17),qy-Math.round(s*0.5),Math.max(1,Math.round(s*0.8)),'#b8442e');
+  g.restore();
   cargo(P,Math.round(Wu*0.72),hz+Math.round((qy-hz)*0.24),Math.max(1,Math.round(s*0.40)));
+  var bob2=Math.sin(t*0.6+1)*U*1;
+  g.save();g.translate(0,bob2);
+  bateau(P,Math.round(Wu*0.88),qy-Math.round(s*1.4),Math.max(1,Math.round(s*0.6)),'#2f6a8a');
+  g.restore();
   jetee(P,Math.round(Wu*0.09),hz+Math.round(s*0.5),Math.max(1,Math.round(s*0.5)));
   phare(P,Math.round(Wu*0.09),hz+Math.round(s*0.5),Math.max(1,Math.round(s*0.5)));
   quai(P,Wu,qy,bas,Math.max(1,Math.round(s*0.8)));
@@ -447,40 +467,23 @@ function scenePort(g,W,H,part){
   lg.addColorStop(0,'rgba(10,14,40,.26)');lg.addColorStop(.5,'rgba(0,0,0,0)');lg.addColorStop(1,'rgba(20,16,6,.30)');
   g.fillStyle=lg;g.fillRect(0,0,W,bas*U);}
 
-const cvP=$('pre'), cvV=$('vie');
-let UV=4, HZV=0, QYV=0, WV=0, HV=0, WuV=0, HuV=0, sV=1, gV=null;
-function graver(){
- const dpr=Math.min(2,window.devicePixelRatio||1),W=innerWidth,H=innerHeight;
- WV=W;HV=H;
- cvP.width=Math.round(W*dpr);cvP.height=Math.round(H*dpr);
- const g=cvP.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.imageSmoothingEnabled=false;
- scenePort(g,W,H,1);
- UV=Math.max(2,Math.round(Math.min(W,H)/170));
- WuV=Math.ceil(W/UV);HuV=Math.ceil(H/UV);
- HZV=Math.round(HuV*0.46);QYV=HZV+Math.round((HuV-HZV)*0.62);
- sV=Math.max(1,Math.round(Math.min(WuV,HuV)/48));
- cvV.width=Math.round(W*dpr);cvV.height=Math.round(H*dpr);
- gV=cvV.getContext('2d');gV.setTransform(dpr,0,0,dpr,0,0);
+const cv=$('pre');
+let gCtx=null,cW=0,cH=0,cDpr=1;
+function dimensionner(){
+ cDpr=Math.min(2,window.devicePixelRatio||1);
+ cW=innerWidth;cH=innerHeight;
+ cv.width=Math.round(cW*cDpr);cv.height=Math.round(cH*cDpr);
+ gCtx=cv.getContext('2d');gCtx.setTransform(cDpr,0,0,cDpr,0,0);
 }
-function dessinerVie(t){
- if(!gV)return;
- gV.clearRect(0,0,WV,HV);gV.imageSmoothingEnabled=false;
- var P=Pix(gV,UV);
- var rise=Math.min(1,t/45);
- var sunY=HZV-Math.round(HuV*0.07)-Math.round(rise*HuV*0.06);
- soleil(P,Math.round(WuV*0.74),sunY,Math.max(3,Math.round(HuV*0.055)));
- var nx1=(WuV*0.12+t*0.6)%(WuV+20)-10;
- var nx2=(WuV*0.56+t*0.3)%(WuV+20)-10;
- nuage(P,Math.round(nx1),Math.round(HuV*0.10),Math.max(1,Math.round(sV*0.9)),'rgba(255,238,220,.65)');
- nuage(P,Math.round(nx2),Math.round(HuV*0.06),Math.max(1,Math.round(sV*0.6)),'rgba(255,238,220,.5)');
- var b1=Math.sin(t*0.8)*1.2, b2=Math.sin(t*0.6+1)*1;
- bateau(P,Math.round(WuV*0.17),QYV-Math.round(sV*0.5)+Math.round(b1),Math.max(1,Math.round(sV*0.8)),'#b8442e');
- bateau(P,Math.round(WuV*0.88),QYV-Math.round(sV*1.4)+Math.round(b2),Math.max(1,Math.round(sV*0.6)),'#2f6a8a');
+function dessiner(t){
+ if(!gCtx)return;
+ gCtx.clearRect(0,0,cW,cH);gCtx.imageSmoothingEnabled=false;
+ scenePort(gCtx,cW,cH,1,t);
 }
 let t0=0;
-function boucle(t){if(!t0)t0=t;dessinerVie((t-t0)/1000);requestAnimationFrame(boucle);}
-let rT=0;addEventListener('resize',()=>{clearTimeout(rT);rT=setTimeout(graver,120);});
-graver();requestAnimationFrame(boucle);</script>
+function boucle(ts){if(!t0)t0=ts;dessiner((ts-t0)/1000);requestAnimationFrame(boucle);}
+let rT=0;addEventListener('resize',()=>{clearTimeout(rT);rT=setTimeout(dimensionner,120);});
+dimensionner();requestAnimationFrame(boucle);</script>
 
 </body>
 </html>
