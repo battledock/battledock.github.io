@@ -26,153 +26,120 @@ const MONDE_W=1000, MONDE_H=1000;
 const alea=(n)=>{const v=Math.sin(n*127.1)*43758.5453;return v-Math.floor(v);};
 const A=(i)=>alea(i*1.37+0.5);
 
-/* ========== PALETTES (port.js) ========== */
-const PIERRE=['#d6d2ca','#d2cec5','#dad6ce','#cfcbc2','#d4d0c8','#ccc8bf'];
-const HERBE_CLAIR=['#5a9648','#528e42','#4e8a3c','#569444','#5c9a4c','#4a8638'];
-const HERBE_FONCE=['#3e7e32','#468836','#3a7a2e','#428434','#4a8c3a','#367a2a'];
-const CHEMIN=['#c8b898','#c4b494','#ccbc9c','#c0b090','#c8b898','#d0c0a0'];
+/* ========== PALETTE PIERRE CALCAIRE (quai de la Joliette) ========== */
+const PIERRE=['#d8d4cc','#d2cec4','#dcd8d0','#cec8be','#d6d2c8','#ccc8be',
+              '#dad6ce','#d4d0c8','#d0ccc2','#d6d0c6'];
 
-/* ========== CONSTRUCTION DU SOL (hors-écran, comme port.js) ========== */
+/* ========== CONSTRUCTION DU SOL — QUAI CALCAIRE ========== */
 function construireSol(){
 const c=document.createElement('canvas');
 c.width=MONDE_W;c.height=MONDE_H;
 const ctx=c.getContext('2d');
 const R=(x,y,w,h,col)=>{ctx.fillStyle=col;ctx.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
 
-/* --- FOND D'HERBE --- */
-for(let y=0;y<MONDE_H;y++){
-  for(let x=0;x<MONDE_W;x++){
-    const n=A(x*0.73+y*1.31);
-    const pal=n>.5?HERBE_CLAIR:HERBE_FONCE;
-    R(x,y,1,1,pal[Math.floor(A(x*2.1+y*3.7)*pal.length)]);
-  }
-}
+/* --- BASE CALCAIRE --- */
+ctx.fillStyle='#d4d0c8';
+ctx.fillRect(0,0,MONDE_W,MONDE_H);
 
-/* --- TACHES D'HERBE --- */
-for(let i=0;i<120;i++){
-  const cx=Math.floor(A(i+100)*MONDE_W);
-  const cy=Math.floor(A(i+200)*MONDE_H);
-  const r=8+Math.floor(A(i+300)*18);
-  const dark=A(i+400)>.5;
-  for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
-    if(dx*dx+dy*dy>r*r) continue;
-    const px=cx+dx,py=cy+dy;
-    if(px<0||px>=MONDE_W||py<0||py>=MONDE_H) continue;
-    R(px,py,1,1,dark?`rgba(30,50,15,${(.06+A(px*1.1+py*2.3)*.08).toFixed(3)})`:`rgba(120,180,80,${(.06+A(px*1.1+py*2.3)*.08).toFixed(3)})`);
-  }
-}
+/* --- DALLES IRRÉGULIÈRES (rangées de hauteur variable, dalles de largeur variable) --- */
+let rowY=0, rowIdx=0;
+while(rowY<MONDE_H){
+  /* Hauteur de rangée : 18-32px, irrégulière */
+  const rowH=18+Math.floor(A(rowIdx*0.77+3.1)*15);
+  /* Décalage horizontal par rangée (effet briques) */
+  const offset=Math.floor(A(rowIdx*1.43+7.7)*30)-15;
+  let bx=offset-80;
 
-/* --- CHEMINS DE TERRE --- */
-function tracerChemin(points,largeur){
-  for(let i=0;i<points.length-1;i++){
-    const x0=points[i][0],y0=points[i][1],x1=points[i+1][0],y1=points[i+1][1];
-    const dist=Math.sqrt((x1-x0)**2+(y1-y0)**2);
-    const steps=Math.ceil(dist);
-    for(let s=0;s<=steps;s++){
-      const t=s/steps;
-      const cx=x0+(x1-x0)*t,cy=y0+(y1-y0)*t;
-      const demiL=largeur/2+Math.sin(s/8)*1.5;
-      for(let d=-demiL;d<=demiL;d++){
-        const nx=-(y1-y0)/dist, ny=(x1-x0)/dist;
-        const px=Math.round(cx+nx*d),py=Math.round(cy+ny*d);
-        if(px<0||px>=MONDE_W||py<0||py>=MONDE_H) continue;
-        R(px,py,1,1,CHEMIN[Math.floor(A(px*1.3+py*0.7)*CHEMIN.length)]);
-      }
-    }
-  }
-}
-tracerChemin([[0,480],[120,490],[280,470],[450,500],[600,490],[780,510],[900,495],[1000,500]],28);
-tracerChemin([[500,0],[490,150],[510,320],[500,500],[495,680],[505,850],[500,1000]],26);
-tracerChemin([[280,470],[250,350],[220,200]],18);
-tracerChemin([[780,510],[820,400],[850,280]],18);
-tracerChemin([[500,500],[620,620],[700,780]],16);
-tracerChemin([[500,500],[380,600],[300,750]],16);
-for(let i=0;i<200;i++){
-  R(Math.floor(A(i+500)*MONDE_W),Math.floor(A(i+600)*MONDE_H),2,1,'rgba(100,80,50,.12)');
-}
+  while(bx<MONDE_W){
+    /* Largeur de dalle : 36-90px */
+    const bw=36+Math.floor(A(bx*0.31+rowIdx*2.1+5.5)*8)*8;
+    const col=PIERRE[Math.floor(A(bx*0.19+rowIdx*3.1+2.2)*PIERRE.length)];
 
-/* --- DALLE DE PIERRE (dallesDuQuai style) --- */
-{
-const PX=440,PY=440,PW=120,PH=120;
-for(let y=PY;y<PY+PH;y++)for(let x=PX;x<PX+PW;x++) R(x,y,1,1,'#d4d0c8');
-let rowY=0;
-while(rowY<PH){
-  const rowH=16+Math.floor(A(rowY*0.77+99)*9);
-  let bx=PX-Math.floor(A(rowY*0.77+99)*20);
-  while(bx<PX+PW){
-    const bw=36+Math.floor(A(bx*0.31+rowY+99)*4)*10;
-    const col=PIERRE[Math.floor(A(bx+rowY*3.1+99)*PIERRE.length)];
-    const x0=Math.max(PX,bx),x1=Math.min(PX+PW,bx+bw);
-    const y0=Math.max(PY,PY+rowY),y1=Math.min(PY+PH,PY+rowY+rowH);
+    const x0=Math.max(0,bx), x1=Math.min(MONDE_W,bx+bw);
+    const y0=Math.max(0,rowY), y1=Math.min(MONDE_H,rowY+rowH);
+
     if(x0<x1&&y0<y1){
+      /* Fond de la dalle */
       R(x0,y0,x1-x0,y1-y0,col);
-      R(x0,y0,x1-x0,1,'rgba(118,114,106,.30)');
-      if(bx>=PX) R(x0,y0,1,y1-y0,'rgba(118,114,106,.30)');
-      for(let gi=0;gi<3;gi++){
-        R(x0+2+Math.floor(A(bx*1.9+rowY+gi+99)*(x1-x0-4)),
-          y0+2+Math.floor(A(bx*2.3+rowY*1.1+gi+99)*(y1-y0-4)),2,1,'rgba(255,255,255,.12)');
+
+      /* Joint horizontal (haut de la dalle) */
+      R(x0,y0,x1-x0,1,'rgba(118,114,106,.28)');
+
+      /* Joint vertical (gauche de la dalle) */
+      if(bx>=0) R(x0,y0,1,y1-y0,'rgba(118,114,106,.28)');
+
+      /* Grain — 3 à 5 touches de lumière par dalle */
+      const ng=3+Math.floor(A(bx*1.1+rowIdx*0.3+8.8)*3);
+      for(let gi=0;gi<ng;gi++){
+        const gx=x0+2+Math.floor(A(bx*1.9+rowIdx+gi*3.7+1.1)*(x1-x0-4));
+        const gy=y0+2+Math.floor(A(bx*2.3+rowIdx*1.1+gi*2.9+4.4)*(y1-y0-4));
+        R(gx,gy,2,1,'rgba(255,255,255,.10)');
       }
-      if(A(bx*1.7+rowY+99)<.12){
-        R(x0+3+Math.floor(A(bx+99)*(x1-x0-7)),
-          y0+3+Math.floor(A(rowY+99)*(y1-y0-6)),3,1,'rgba(110,108,104,.35)');
+
+      /* Grain sombre — 1 à 2 touches */
+      if(A(bx*0.7+rowIdx*1.9+6.6)>.4){
+        const gx=x0+3+Math.floor(A(bx*3.1+rowIdx*0.9+9.9)*(x1-x0-6));
+        const gy=y0+2+Math.floor(A(bx*0.8+rowIdx*2.7+3.3)*(y1-y0-4));
+        R(gx,gy,2,1,'rgba(110,105,95,.08)');
+      }
+
+      /* Usure — ~10% des dalles ont une marque */
+      if(A(bx*1.7+rowIdx*0.5+1.1)<.10){
+        const ux=x0+3+Math.floor(A(bx*0.9+rowIdx*1.3+7.7)*(x1-x0-8));
+        const uy=y0+3+Math.floor(A(rowIdx*0.6+bx*1.1+2.2)*(y1-y0-6));
+        R(ux,uy,4+Math.floor(A(bx+rowIdx+5.5)*3),2,'rgba(110,108,100,.12)');
+      }
+
+      /* Tache d'humidité — ~4% des dalles */
+      if(A(bx*2.3+rowIdx*1.7+4.4)<.04){
+        const tx=(x0+x1)/2, ty=(y0+y1)/2;
+        const tr=4+Math.floor(A(bx*0.3+rowIdx+8.8)*6);
+        for(let dy=-tr;dy<=tr;dy++)for(let dx=-tr;dx<=tr;dx++){
+          if(dx*dx+dy*dy>tr*tr) continue;
+          const px=Math.floor(tx+dx),py=Math.floor(ty+dy);
+          if(px>=x0&&px<x1&&py>=y0&&py<y1){
+            R(px,py,1,1,'rgba(90,85,75,.04)');
+          }
+        }
       }
     }
     bx+=bw;
   }
   rowY+=rowH;
-}
-R(PX,PY,PW,1,'rgba(80,70,55,.25)');R(PX,PY,1,PH,'rgba(80,70,55,.25)');
-R(PX,PY+PH-1,PW,1,'rgba(80,70,55,.20)');R(PX+PW-1,PY,1,PH,'rgba(80,70,55,.20)');
+  rowIdx++;
 }
 
-/* --- EAU --- */
-{
-const EX=720,EY=200,ER=50;
-for(let dy=-ER-4;dy<=ER+4;dy++)for(let dx=-ER-4;dx<=ER+4;dx++){
-  const d=Math.sqrt(dx*dx+dy*dy);if(d>ER+4) continue;
-  const px=EX+dx,py=EY+dy;
-  if(px<0||px>=MONDE_W||py<0||py>=MONDE_H) continue;
-  if(d>ER){R(px,py,1,1,'#6a8a52');}
-  else{
-    const n=A(px*1.7+py*2.3);
-    R(px,py,1,1,`rgb(${60+Math.floor(n*20)},${Math.floor(160+n*20)},${Math.floor(140+n*30)})`);
-    if(A(px*3.1+py*0.9)>.92) R(px,py,1,1,'rgba(200,230,255,.25)');
-  }
-}
-}
-
-/* --- ARBRES VUS DU DESSUS --- */
-for(let i=0;i<55;i++){
-  const tx=Math.floor(A(i+700)*MONDE_W),ty=Math.floor(A(i+800)*MONDE_H);
-  if(Math.abs(ty-490)<20||Math.abs(tx-500)<18) continue;
-  if(tx>430&&tx<570&&ty>430&&ty<570) continue;
-  if(Math.sqrt((tx-720)**2+(ty-200)**2)<60) continue;
-  const cr=6+Math.floor(A(i+900)*6);
-  for(let dy=-cr-2;dy<=cr+2;dy++)for(let dx=-cr-2;dx<=cr+2;dx++){
-    if(dx*dx+dy*dy>(cr+2)*(cr+2)) continue;
-    const px=tx+dx+3,py=ty+dy+3;
-    if(px>=0&&px<MONDE_W&&py>=0&&py<MONDE_H) R(px,py,1,1,'rgba(0,0,0,.08)');
-  }
-  for(let dy=-cr;dy<=cr;dy++)for(let dx=-cr;dx<=cr;dx++){
-    if(dx*dx+dy*dy>cr*cr) continue;
-    const px=tx+dx,py=ty+dy;
-    if(px<0||px>=MONDE_W||py<0||py>=MONDE_H) continue;
-    const n=A(px*2.7+py*1.3);
-    R(px,py,1,1,n>.5?'#3a7a2e':'#468838');
-    if(dx<-cr*0.3&&dy<-cr*0.3&&A(px+py*3)>.6) R(px,py,1,1,'rgba(120,200,80,.25)');
-  }
-  R(tx-1,ty-1,3,3,'#5a4030');R(tx,ty,1,1,'#6a5040');
-}
-
-/* --- FLEURS --- */
-for(let i=0;i<60;i++){
-  const fx=Math.floor(A(i+1000)*MONDE_W),fy=Math.floor(A(i+1100)*MONDE_H);
-  R(fx,fy,2,2,['#e84848','#e8c848','#e848a8','#48a8e8','#e8e848','#e89848','#ffffff'][Math.floor(A(i+1200)*7)]);
-  R(fx,fy,1,1,'rgba(255,255,255,.3)');
-}
+/* --- TACHES DE PATINE (zones plus sombres, usure au sol sur les passages) --- */
 for(let i=0;i<40;i++){
-  R(Math.floor(A(i+1300)*MONDE_W),Math.floor(A(i+1400)*MONDE_H),2,2,'#9a9282');
+  const cx=Math.floor(A(i*1.3+100)*MONDE_W);
+  const cy=Math.floor(A(i*1.7+200)*MONDE_H);
+  const rx=10+Math.floor(A(i*2.1+300)*20);
+  const ry=6+Math.floor(A(i*0.9+400)*12);
+  for(let dy=-ry;dy<=ry;dy++)for(let dx=-rx;dx<=rx;dx++){
+    const d=(dx*dx)/(rx*rx)+(dy*dy)/(ry*ry);
+    if(d>1) continue;
+    const px=cx+dx,py=cy+dy;
+    if(px<0||px>=MONDE_W||py<0||py>=MONDE_H) continue;
+    const a=(.03+A(px*1.1+py*2.3)*.03)*(1-d);
+    R(px,py,1,1,`rgba(80,75,65,${a.toFixed(3)})`);
+  }
 }
+
+/* --- VEINURES CALCAIRE (lignes très subtiles dans la pierre) --- */
+for(let i=0;i<60;i++){
+  const sx=Math.floor(A(i*1.1+500)*MONDE_W);
+  const sy=Math.floor(A(i*0.7+600)*MONDE_H);
+  const len=8+Math.floor(A(i*2.3+700)*20);
+  const ang=A(i*1.9+800)*Math.PI;
+  for(let s=0;s<len;s++){
+    const px=Math.floor(sx+Math.cos(ang)*s);
+    const py=Math.floor(sy+Math.sin(ang)*s);
+    if(px>=0&&px<MONDE_W&&py>=0&&py<MONDE_H){
+      R(px,py,1,1,'rgba(190,185,175,.15)');
+    }
+  }
+}
+
 return c;
 }
 
