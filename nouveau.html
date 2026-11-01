@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Battle Dock</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;touch-action:none}
+canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+(function(){
+var W=1000,H=1000;
+var cv=document.getElementById('c');
+var cx=cv.getContext('2d');
+
+var vw=window.innerWidth,vh=window.innerHeight;
+cv.width=vw;cv.height=vh;
+
+var cam={x:0,y:0};
+var SOL_Y=600;
+
+/* Couleurs */
+var C_CIEL1='#5BA3D9',C_CIEL2='#A8D8EA';
+var C_HERBE1='#4a8a42',C_HERBE2='#5a9a4f',C_HERBE3='#6aaa5f';
+var C_GAZON='#4a7a42',C_GAZON2='#3d6e37';
+var C_TERRE1='#8B6914',C_TERRE2='#7A5C12',C_TERRE3='#6B4E10',C_TERRE4='#9A7A1C';
+var C_TERRE_F='#7A5510';
+var C_ROCHE='#5A4A3A',C_ROCHE2='#4A3A2A',C_ROCHE3='#6A5A4A';
+
+/* Brins d herbe */
+var herbes=[];
+for(var i=0;i<W;i+=6){
+  herbes.push({x:i,h:4+Math.random()*4,c:[C_HERBE1,C_HERBE2,C_HERBE3][Math.floor(Math.random()*3)]});
+}
+
+/* Cailloux terre */
+var cailloux=[];
+for(var i=0;i<80;i++){
+  cailloux.push({
+    x:Math.random()*W,
+    y:SOL_Y+10+Math.random()*60,
+    w:4+Math.random()*6,
+    h:3+Math.random()*4,
+    c:Math.random()>0.5?C_TERRE3:C_TERRE4
+  });
+}
+
+/* Cailloux roche */
+var roches=[];
+for(var i=0;i<50;i++){
+  roches.push({
+    x:Math.random()*W,
+    y:SOL_Y+80+Math.random()*40,
+    w:5+Math.random()*8,
+    h:4+Math.random()*6,
+    c:Math.random()>0.5?C_ROCHE2:C_ROCHE3
+  });
+}
+
+/* Joueur */
+var PJ={x:100,y:SOL_Y-16,w:12,h:16,vx:0,vy:0,onGround:true,dir:1};
+var GRAV=0.4,JUMP=-8,SPEED=2.5;
+var keys={};
+
+/* Clavier */
+window.addEventListener('keydown',function(e){keys[e.key]=true;});
+window.addEventListener('keyup',function(e){keys[e.key]=false;});
+
+/* Tactile */
+var touch={left:false,right:false,jump:false};
+var touchIds={};
+
+function getTouchZone(tx){
+  var third=vw/3;
+  if(tx<third) return 'left';
+  if(tx>third*2) return 'right';
+  return 'jump';
+}
+
+cv.addEventListener('touchstart',function(e){
+  e.preventDefault();
+  for(var i=0;i<e.changedTouches.length;i++){
+    var t=e.changedTouches[i];
+    var zone=getTouchZone(t.clientX);
+    touch[zone]=true;
+    touchIds[t.identifier]=zone;
+  }
+},{passive:false});
+
+cv.addEventListener('touchend',function(e){
+  e.preventDefault();
+  for(var i=0;i<e.changedTouches.length;i++){
+    var t=e.changedTouches[i];
+    var zone=touchIds[t.identifier];
+    if(zone){touch[zone]=false;delete touchIds[t.identifier];}
+  }
+},{passive:false});
+
+cv.addEventListener('touchcancel',function(e){
+  for(var i=0;i<e.changedTouches.length;i++){
+    var t=e.changedTouches[i];
+    var zone=touchIds[t.identifier];
+    if(zone){touch[zone]=false;delete touchIds[t.identifier];}
+  }
+});
+
+/* Resize */
+window.addEventListener('resize',function(){
+  vw=window.innerWidth;vh=window.innerHeight;
+  cv.width=vw;cv.height=vh;
+});
+
+/* DRAW */
+function draw(){
+  cx.clearRect(0,0,vw,vh);
+
+  cam.x=PJ.x-vw/2;
+  cam.y=PJ.y-vh/2+100;
+  if(cam.x<0)cam.x=0;
+  if(cam.x>W-vw)cam.x=Math.max(0,W-vw);
+  if(cam.y>H-vh)cam.y=Math.max(0,H-vh);
+  if(cam.y<0)cam.y=0;
+
+  var ox=-cam.x,oy=-cam.y;
+
+  /* Ciel */
+  var grd=cx.createLinearGradient(0,Math.min(0,oy),0,Math.max(0,SOL_Y+oy));
+  grd.addColorStop(0,C_CIEL1);
+  grd.addColorStop(1,C_CIEL2);
+  cx.fillStyle=grd;
+  cx.fillRect(0,0,vw,Math.max(0,SOL_Y+oy));
+
+  /* Brins herbe */
+  for(var i=0;i<herbes.length;i++){
+    var h=herbes[i];
+    var hx=h.x+ox;
+    if(hx>-10&&hx<vw+10){
+      cx.fillStyle=h.c;
+      cx.fillRect(hx,SOL_Y-h.h+oy,3,h.h);
+    }
+  }
+
+  /* Gazon */
+  cx.fillStyle=C_GAZON;
+  cx.fillRect(ox,SOL_Y+oy,W,6);
+  cx.fillStyle=C_GAZON2;
+  cx.fillRect(ox,SOL_Y+2+oy,W,4);
+
+  /* Terre 1 */
+  cx.fillStyle=C_TERRE1;
+  cx.fillRect(ox,SOL_Y+6+oy,W,30);
+  cx.fillStyle=C_TERRE2;
+  cx.fillRect(ox,SOL_Y+6+oy,W,10);
+
+  /* Cailloux terre */
+  for(var i=0;i<cailloux.length;i++){
+    var c=cailloux[i];
+    var px=c.x+ox;
+    if(px>-10&&px<vw+10){
+      cx.fillStyle=c.c;
+      cx.fillRect(px,c.y+oy,c.w,c.h);
+    }
+  }
+
+  /* Terre 2 */
+  cx.fillStyle=C_TERRE_F;
+  cx.fillRect(ox,SOL_Y+36+oy,W,44);
+
+  /* Roche */
+  cx.fillStyle=C_ROCHE;
+  cx.fillRect(ox,SOL_Y+80+oy,W,H-SOL_Y-80);
+
+  for(var i=0;i<roches.length;i++){
+    var r=roches[i];
+    var rx=r.x+ox;
+    if(rx>-10&&rx<vw+10){
+      cx.fillStyle=r.c;
+      cx.fillRect(rx,r.y+oy,r.w,r.h);
+    }
+  }
+
+  /* Joueur */
+  var px=PJ.x+ox,py=PJ.y+oy;
+  cx.fillStyle='#e8c170';
+  cx.fillRect(px+2,py,8,6);
+  cx.fillStyle='#4a6fa5';
+  cx.fillRect(px+1,py+6,10,7);
+  cx.fillStyle='#5a3a1a';
+  cx.fillRect(px+2,py+13,3,3);
+  cx.fillRect(px+7,py+13,3,3);
+  cx.fillStyle='#222';
+  if(PJ.dir>0){cx.fillRect(px+6,py+2,2,2);}
+  else{cx.fillRect(px+4,py+2,2,2);}
+
+  /* HUD tactile */
+  if('ontouchstart' in window){
+    cx.globalAlpha=0.15;
+    cx.fillStyle='#fff';
+    cx.fillRect(0,vh-80,vw/3,80);
+    cx.fillRect(vw*2/3,vh-80,vw/3,80);
+    cx.beginPath();cx.arc(vw/2,vh-40,30,0,Math.PI*2);cx.fill();
+    cx.globalAlpha=1;
+    cx.fillStyle='rgba(255,255,255,0.4)';
+    cx.font='20px monospace';
+    cx.textAlign='center';
+    cx.fillText('◀',vw/6,vh-35);
+    cx.fillText('▶',vw*5/6,vh-35);
+    cx.fillText('▲',vw/2,vh-33);
+  }
+}
+
+/* UPDATE */
+function update(){
+  var left=keys['ArrowLeft']||keys['q']||keys['a']||touch.left;
+  var right=keys['ArrowRight']||keys['d']||touch.right;
+  var jump=keys['ArrowUp']||keys[' ']||keys['z']||keys['w']||touch.jump;
+
+  if(left){PJ.vx=-SPEED;PJ.dir=-1;}
+  else if(right){PJ.vx=SPEED;PJ.dir=1;}
+  else{PJ.vx=0;}
+
+  if(jump&&PJ.onGround){PJ.vy=JUMP;PJ.onGround=false;}
+
+  PJ.vy+=GRAV;
+  PJ.x+=PJ.vx;
+  PJ.y+=PJ.vy;
+
+  if(PJ.y>=SOL_Y-PJ.h){PJ.y=SOL_Y-PJ.h;PJ.vy=0;PJ.onGround=true;}
+  if(PJ.x<0)PJ.x=0;
+  if(PJ.x>W-PJ.w)PJ.x=W-PJ.w;
+}
+
+/* LOOP */
+function loop(){update();draw();requestAnimationFrame(loop);}
+loop();
+})();
+</script>
+</body>
+</html>
