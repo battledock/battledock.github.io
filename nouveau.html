@@ -136,47 +136,30 @@ for(let i=0;i<60;i++){
   }
 }
 
-/* --- MER MÉDITERRANÉE (style pixel port d'origine) --- */
-{
-  const merH=MONDE_H-EAU_Y;
-  const B=['#4e7fa8','#44749c','#3b6890','#325c84','#2a5178'];
-  for(let i=0;i<B.length;i++){
-    const y0=EAU_Y+Math.round(merH*i/B.length);
-    const y1=EAU_Y+Math.round(merH*(i+1)/B.length);
-    ctx.fillStyle=B[i]; ctx.fillRect(0,y0,MONDE_W,y1-y0);
+/* --- MER MÉDITERRANÉE (gradient turquoise du port actuel) --- */
+for(let y=EAU_Y;y<MONDE_H;y++){
+  const k=(y-EAU_Y)/(MONDE_H-EAU_Y);
+  const bord=(y-EAU_Y)*1.4;
+  const p=Math.min(1,bord/90)*0.6+k*0.4;
+  const r=Math.round(52-p*22), g=Math.round(168-p*58), b=Math.round(186-p*30);
+  for(let x=0;x<MONDE_W;x+=2){
+    ctx.fillStyle='rgb('+r+','+g+','+b+')';ctx.fillRect(x,y,2,1);
   }
-  /* ligne de surface claire */
-  R(0,EAU_Y,MONDE_W,1,'#9ec8e0');
-  /* reflets pixel (comme l'original) */
-  for(let k=0;k<600;k++){
-    const t=A(k*7.3), x=Math.floor(A(k*2.1)*MONDE_W);
-    const y=EAU_Y+Math.round(Math.pow(t,1.5)*merH);
-    const L=1+Math.floor(t*4);
-    R(x,y,L,1,t<0.5?'rgba(220,240,250,.45)':'rgba(255,255,255,.28)');
-  }
+}
+/* reflets sur l'eau */
+for(let i=0;i<420;i++){
+  const x=8+A(i+3000)*(MONDE_W-16), y=EAU_Y+10+A(i+3400)*(MONDE_H-EAU_Y-14);
+  R(x,y,3+A(i)*5,1,i%3?'rgba(160,225,235,.35)':'rgba(20,70,110,.35)');
 }
 
-/* --- QUAI — bordure pierre (style pixel port d'origine) --- */
-{
-  const qH=EAU_Y-QUAI_Y, s=2;
-  /* fond quai */
-  ctx.fillStyle='#8a8276'; ctx.fillRect(0,QUAI_Y,MONDE_W,qH);
-  /* briques alternées */
-  for(let r=0;r<Math.ceil(qH/(2*s));r++){
-    const yy=QUAI_Y+r*2*s;
-    for(let x=(r%2?-s:0);x<MONDE_W;x+=4*s){
-      R(x,yy,4*s-1,2*s-1,r%2?'#938b7e':'#89806f');
-      R(x,yy,4*s-1,1,r%2?'#a79e8e':'#9a9183');
-    }
-  }
-  /* liseré supérieur + ombre */
-  R(0,QUAI_Y,MONDE_W,1,'#b3a996');
-  R(0,QUAI_Y-1,MONDE_W,1,'#5e5950');
-}
-/* Ligne de sécurité jaune */
-ctx.fillStyle='#c8a832';
-ctx.fillRect(0,QUAI_Y-4,MONDE_W,3);
-/* Bollards (bittes d'amarrage pixel) */
+/* --- QUAI — margelle pierre dorée (port actuel) --- */
+/* margelle (bordure supérieure dorée) */
+R(0,QUAI_Y-4,MONDE_W,5,'#bfae88');
+R(0,QUAI_Y-4,MONDE_W,1,'#efe3c4');
+/* face du quai sous la margelle */
+R(0,QUAI_Y+1,MONDE_W,EAU_Y-QUAI_Y-1,'#8f8468');
+R(0,EAU_Y-2,MONDE_W,2,'rgba(10,40,60,.35)');
+/* Bollards (bittes d'amarrage) */
 for(let x=40;x<MONDE_W;x+=70){
   const bx=x+Math.floor(A(x*0.7+50)*8)-4;
   R(bx-3,QUAI_Y+4,6,5,'#3b3f44');
@@ -587,14 +570,14 @@ eauT+=dt;
 majJoueur(dt);
 Actors.maj(dt);
 
-/* Eau animée (shimmer pixel discret) */
+/* Eau animée (shimmer turquoise) */
 Render.dessinerSur('ombres',(c2,cx,cy,vw,vh)=>{
   const sy0=Math.max(0,EAU_Y-cy), sy1=Math.min(vh,MONDE_H-cy);
   if(sy0>=sy1) return;
-  for(let sy=sy0;sy<sy1;sy+=4){
+  for(let sy=sy0;sy<sy1;sy+=3){
     const wy=cy+sy;
-    const sh=Math.sin(eauT*1.2+wy*.06)*.025+Math.sin(eauT*.5+wy*.025)*.015;
-    if(sh>0.005){c2.fillStyle=`rgba(220,240,250,${sh.toFixed(3)})`;c2.fillRect(0,sy,vw,1);}
+    const sh=Math.sin(eauT*1.0+wy*.05)*.03+Math.sin(eauT*.4+wy*.02)*.02;
+    if(sh>0.005){c2.fillStyle=`rgba(160,225,235,${sh.toFixed(3)})`;c2.fillRect(0,sy,vw,1);}
   }
 });
 
