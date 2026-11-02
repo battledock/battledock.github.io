@@ -10,8 +10,7 @@
    Elle charge le jeu dans un téléphone simulé (390x844, tactile), ouvre
    une à une TOUTES les boutiques et tous les écrans, et vérifie pour
    chacun : aucune erreur JavaScript, l'écran s'ouvre vraiment, et il a
-   des boutons vivants. Elle finit par un contrôle rapproché de La Marée
-   — les prises du large doivent s'y afficher et s'y vendre.
+   des boutons vivants.
 
    Sortie : une ligne par écran, « KO » devant ceux qui ne répondent pas,
    et une capture d'écran de chaque défaut dans _ronde/.
@@ -23,22 +22,20 @@ const { chromium } = require('/opt/npm-tools/node_modules/playwright-core');
 const fs=require('fs');const D='/tmp/claude-0/-home-claude/7e1e28be-3e26-5156-8e62-df052db9c11e/scratchpad/c4/_ronde';
 const CARTE=process.argv[2]||'extramar';
 const ECRANS={
- extramar:[['La Marée','ouvrirLaMaree()'],['Boutique de pêche','ouvrirLaBoutiqueDePeche()'],
-  ['Glacier','ouvrirLeGlacier()'],['Bar','ouvrirLeBar()'],['Salon','ouvrirLaMariniere()'],
-  ['Capitainerie','afficheCapitainerie()'],['Cabanon','ouvrirLeCabanon()'],['Rade','ouvrirLaRade()'],
+ extramar:[['Glacier','ouvrirLeGlacier()'],['Bar','ouvrirLeBar()'],['Salon','ouvrirLaMariniere()'],
+  ['Capitainerie','afficheCapitainerie()'],['Rade','ouvrirLaRade()'],
   ['Sac','ouvrirLeSac()'],['Carnet','ouvrirLeCarnet()'],['Classement','ouvrirLeClassement()'],
   ['Vestiaire','ouvrirLeVestiaire()'],['Courrier','ouvrirLaPoste()'],['Émotes','ouvrirEmotes(true)'],
   ['Mon niveau','ouvrirMonNiveau()'],['Réglages','ouvrirReglages()'],['Gazette','ouvrirLaGazette()'],
-  ['Comptoir','ouvrirLeComptoir()'],['Cuisine de Fonfon','ouvrirLaCuisineDeFonfon()'],['Pétanque','ouvrirLaPetanque()']],
+  ['Comptoir','ouvrirLeComptoir()'],['Pétanque','ouvrirLaPetanque()']],
  village:[['Chez Madeleine','ouvrirLaBoutiqueFerme()'],['Basse-cour','ouvrirLaBasseCour()'],['Grainetier','ouvrirLeGrainetier()'],
   ['Marché aux bêtes',"$('page2').classList.add('on');ouvrirLeMarcheAuxBetes()"],['Étable','ouvrirLEtable()'],['Fromagerie','ouvrirLaFromagerie()'],
   ['Four','ouvrirFour()'],['Établi','ouvrirEtabli()'],['Atelier','ouvrirLAtelier()'],['Sac','ouvrirLeSac()'],
   ['Carnet','ouvrirLeCarnet()'],['Classement','ouvrirLeClassement()'],['Vestiaire','ouvrirLeVestiaire()']],
  foret:[['Cabane','ouvrirLaCabane()'],['Étal du bois','ouvrirLEtalDuBois()'],['Grand chêne','ouvrirLeGrandChene()'],
   ['Sac','ouvrirLeSac()'],['Carnet','ouvrirLeCarnet()']]};
-const SAC={sardine:6,rouget:3,dorade:2,thon:1,castagnole:4,mendole:5,palamide:2,baleinebleue:1,
- oursin:3,meduse:2,homard:1,corb:2,lac_gardon:4,gardon:3,bois:20,pierre:12,ble:30,tomates:10,
- laine:4,lait:3,oeufs:6,truffe:2,miel:3,botte:1,chaussette:2,canne_bambou:1,pioche:1,hache:1};
+const SAC={bois:20,pierre:12,ble:30,tomates:10,
+ laine:4,lait:3,oeufs:6,truffe:2,miel:3,botte:1,chaussette:2,pioche:1,hache:1};
 (async()=>{const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
 const ctx=await b.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true,deviceScaleFactor:2});
 await ctx.addInitScript((sac)=>{try{localStorage.setItem('bdl.annonce.pokedock','1');localStorage.setItem('bdl.annonce.perso','1');
@@ -86,22 +83,6 @@ for(const [nom,appel] of (ECRANS[CARTE]||[])){
     try{window.__EV('fermeA=0');}catch(e){}});
   await p.waitForTimeout(350);
 }
-/* LA MARÉE DE PRÈS : les prises du large doivent s'y vendre */
-if(CARTE==='extramar'){
-  await p.evaluate(()=>{try{window.__EV('ouvrirLaMaree()');}catch(e){}});
-  await p.waitForTimeout(1600);
-  const m=await p.evaluate(()=>{
-    const c=document.getElementById('marCorps');if(!c)return {err:'pas de panneau'};
-    const cartes=[...c.querySelectorAll('.carte')].map(e=>e.dataset.k);
-    return {cartes,prix:window.__EV('[PRIX_POISSON.castagnole||0,PRIX_POISSON.baleinebleue||0]')};});
-  console.log('');
-  console.log('La Marée · cartes :',(m.cartes||[]).join(', ')||m.err);
-  console.log('La Marée · prix castagnole / baleine :',(m.prix||[]).join(' / '));
-  const v=await p.evaluate(()=>{const c=document.getElementById('marCorps');
-    const e=c&&c.querySelector('.carte[data-k=castagnole]');if(!e)return 'pas de castagnole';
-    e.click();const b=document.getElementById('marVendre');return b?b.textContent:'pas de bouton';});
-  console.log('La Marée · après un doigt sur la castagnole :',v);
-  if(!/\d/.test(String(v)))ko++;
-}
+/* (La Marée retirée — plus de pêche) */
 console.log(ko?('>>> '+ko+' écran(s) en défaut'):'>>> tous les écrans répondent');
 await b.close();process.exit(ko?1:0);})();

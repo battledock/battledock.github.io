@@ -10623,7 +10623,7 @@ const sol=y-4, AR=x-s*7, AV=x+s*11;   /* la poignee tombe ainsi a neuf pixels de
 }
 
 var TKM=null;   /* la carte de Tokyo (tokyo.js) : ses fonctions sont appelées par ce nom d'objet */
-let XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLeCabanon,graverLaStationVelo,graverTonBateau,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,graverArbuste,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar;
+let XP,CARGO_X,PAV,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaStationVelo,graverTonBateau,graverArbuste,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar;
 /* ================= LES NOMS QUE LA FERME NOUS REND =================
    La ferme vit dans ferme.js (chargé plus bas, et seulement sur sa
    carte). Ces 35 noms sont tout ce que le jeu lui demande :
@@ -10634,7 +10634,7 @@ let TXT_FERME=null;
 /* SI port.js NE CHARGE PAS, les cinquante-trois symboles ci-dessous
    restent indéfinis et le port ne se dessine pas, sans un mot. On le dit. */
 try{
-if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLeCabanon,graverLaStationVelo,graverTonBateau,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,graverArbuste,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar}=eval(await chargerMorceau('port.js')));}
+if(CARTE==='extramar'){({XP,CARGO_X,PAV,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaStationVelo,graverTonBateau,graverArbuste,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar}=eval(await chargerMorceau('port.js')));}
 if(CARTE==='tokyo'){TKM=eval(await chargerMorceau('tokyo.js'));}
 }catch(erPort){
 try{document.body.insertAdjacentHTML('beforeend',
@@ -10691,8 +10691,8 @@ if(t==='x_fo_aut'){XCAL[cle]=graverArbreAutomne(v||0);if(!CALQUES_DECO[t])CALQUE
 if(t==='x_cabanonMoi'){const c=CAB_LU();
 XCAL[cle]=graverTonCabanon(c.bati?(c.niveau>0?2:1):0);
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_maison'||t==='x_ndg'||t==='x_arbuste'||t==='x_belArbre'||t==='x_cabanon'||t==='x_stationVelo'||t==='x_bateau'){
-XCAL[cle]=t==='x_bateau'?graverTonBateau():t==='x_cabanon'?graverLeCabanon():t==='x_stationVelo'?graverLaStationVelo():t==='x_maison'?graverImmeuble(v||0):t==='x_ndg'?graverLaGarde():t==='x_belArbre'?graverBelArbre(v||0):graverArbuste(v||0);
+if(t==='x_maison'||t==='x_ndg'||t==='x_arbuste'||t==='x_belArbre'||t==='x_stationVelo'||t==='x_bateau'){
+XCAL[cle]=t==='x_bateau'?graverTonBateau():t==='x_stationVelo'?graverLaStationVelo():t==='x_maison'?graverImmeuble(v||0):t==='x_ndg'?graverLaGarde():t==='x_belArbre'?graverBelArbre(v||0):graverArbuste(v||0);
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
 return XCAL[cle];
 }
@@ -11465,19 +11465,7 @@ g.fillStyle='rgba(255,255,255,.35)';g.fillRect(cxN-5,cyN+5,3,1);
 g.fillStyle='rgba(0,0,0,.2)';g.fillRect(cxN-6,cyN+12,13,1);
 }
 }
-if(o.t==='x_cabanon'){                                       /* la marmite sur le feu */
-const T=Date.now()/1000, mx=Math.round(x)-66, my=Y0+C.sol+6;
-g.fillStyle='rgba(40,30,18,.3)';g.beginPath();g.ellipse(mx,my+1,9,3,0,0,Math.PI*2);g.fill();
-g.fillStyle='#3a3a36';g.fillRect(mx-8,my-16,1,16);g.fillRect(mx+7,my-16,1,16);g.fillRect(mx-8,my-17,16,1);   /* le trépied */
-for(let i=0;i<7;i++){const h=3+Math.abs(Math.sin(T*9+i*1.7))*5;
-g.fillStyle=i%2?'#ffb640':'#ff7a2a';g.fillRect(mx-5+i*1.5,my-h,1.5,h);}
-g.fillStyle='#ffe07a';g.fillRect(mx-2,my-3,4,2);
-g.fillStyle='#2a2a2a';g.beginPath();g.ellipse(mx,my-9,7,5,0,0,Math.PI*2);g.fill();
-g.fillStyle='#c96a2a';g.beginPath();g.ellipse(mx,my-12,6,2,0,0,Math.PI*2);g.fill();          /* le bouillon safrané */
-g.fillStyle='#3a3a36';g.fillRect(mx-7,my-13,14,1);
-for(let k=0;k<4;k++){const a=(T*0.5+k/4)%1;g.fillStyle='rgba(240,240,240,'+(0.5*(1-a))+')';
-g.fillRect(mx-2+Math.round(Math.sin(a*6+k)*3),my-16-Math.round(a*18),3,2);}
-}
+/* (marmite x_cabanon retirée — plus de pêche/Fonfon) */
 if(o.t==='x_maison'&&o.v===102){
 const T=Date.now()/1000, bx=Math.round(x)+69-12, by=Y0+C.sol-40+4;           /* le poteau du barbier, qui tourne */
 for(let k=0;k<26;k++){const b=((k+Math.floor(T*8))%6);g.fillStyle=b<2?'#c0392b':(b<4?'#f4f0e4':'#2d6fb0');g.fillRect(bx+1+((k+Math.floor(T*8))%2),by+k,3,1);}
@@ -19743,7 +19731,7 @@ for(const o of autour){
 const cueillable=['argile','roseaux','champignons','herbes','plumes',
   'x_fo_amanite','x_fo_cepe','x_fo_girolle','x_fo_plume','x_fo_argile'].includes(o.t);   /* les récoltes de la forêt aussi */
 const minerai=['fer','cuivre','charbon'].includes(o.t);
-const batiment=['mine','forge','comptoir','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro','x_cabanon','x_cabanonMoi','x_stationVelo','x_bateau','x_paillasson','x_chantier','x_tableau'].includes(o.t);
+const batiment=['mine','forge','comptoir','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro','x_cabanonMoi','x_stationVelo','x_bateau','x_paillasson','x_chantier','x_tableau'].includes(o.t);
 const buisFo=['x_fo_mure','x_fo_framboise','x_fo_myrtille'].includes(o.t);
 /* LE PONTON NE PASSE PLUS PAR ICI. Il a son propre test, surLePonton(),
    tout en haut de cette fonction : il exige d'avoir les pieds sur le
@@ -22281,7 +22269,6 @@ if(o.ouvre==='atelierBois'){b.innerHTML='L’atelier du bois<small>PLANCHES · P
 if(o.ouvre==='cheneOuverture'){b.innerHTML='Le grand chêne<small>CEUX QUI ÉTAIENT LÀ</small>';b.classList.add('on');return;}
 if(o.ouvre==='laRecolte'){b.innerHTML='La Récolte<small>VENDRE TA RÉCOLTE</small>';b.classList.add('on');return;}
 if(o.ouvre==='etalGraines'){b.innerHTML='Les graines<small>SEMENCES · OUTILS · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
-if(o.ouvre==='fonfon'){b.innerHTML='Chez Fonfon<small>BOUILLABAISSE · CUISINE</small>';b.classList.add('on');return;}
 if(o.ouvre==='glacier'){b.innerHTML='Le Glacier du Port<small>GLACES ARTISANALES</small>';b.classList.add('on');return;}
 if(o.ouvre==='karting'){b.innerHTML='Le Karting du Quai<small>GRAND PRIX · COURSE À 5 €</small>';b.classList.add('on');return;}
 if(o.ouvre==='kayak'){b.innerHTML='Location de kayaks<small>'+(nivInv('deblocage:kayak_frioul')?'DEUX DESCENTES':'LA DESCENTE')+' · COURSE À 5 €</small>';b.classList.add('on');return;}
@@ -22402,7 +22389,6 @@ if(o.ouvre==='crousti'){ouvrirCrousti();return;}
 if(o.ouvre==='salon'){ouvrirLaMariniere();return;}
 if(o.ouvre==='presse'){afficheCapitainerie();return;}
 if(o.ouvre==='bar'){ouvrirLeBar();return;}
-if(o.ouvre==='fonfon'){ouvrirLaCuisineDeFonfon();return;}
 if(o.ouvre==='glacier'){ouvrirLeGlacier();return;}
 if(o.ouvre==='karting'){ouvrirUneCourse('karting');return;}
 if(o.ouvre==='kayak'){ouvrirUneCourse('kayak');return;}
@@ -26884,198 +26870,8 @@ return '<div class="cmd'+(faite?' faite':'')+'">'+
 :'<button class="cmdGo" data-cmd="'+c.i+'"'+(pret?'':' disabled')+'>'+(pret?'Livrer':'Il te manque de quoi')+'</button>')+
 '</div>';}).join('');
 }
-let CUI=null;
-const CSS_CUI=`#page2Fond.cui{background:#241610;color:#f4e6cc;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%;overflow:hidden}
-#page2Fond.cui .hdr{position:relative;height:150px;flex:none;overflow:hidden;border-bottom:3px solid #8a6238}
-#page2Fond.cui .hdr canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
-#page2Fond.cui .hdr .v{position:absolute;inset:0;background:linear-gradient(180deg,rgba(24,14,8,.5),rgba(24,14,8,0) 45%,rgba(24,14,8,.9))}
-#page2Fond.cui .hdr .t{position:absolute;left:16px;bottom:10px}
-#page2Fond.cui .hdr b{font:400 26px Georgia;text-shadow:0 2px 4px #000}
-#page2Fond.cui .hdr small{display:block;font:700 9px Arial;letter-spacing:3px;color:#e8b06a}
-#page2Fond.cui .hdr button{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 12px);width:34px;height:34px;border-radius:50%;border:0;background:#f8ecd6;color:#2a1a10;font:700 14px Arial}
-#page2Fond.cui .corps{flex:1;overflow-y:auto;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
-#page2Fond.cui .mot{margin:12px 16px 0;font:italic 13px Georgia;color:#d8c0a0}
-#page2Fond.cui .four{margin:10px 14px 0;display:flex;gap:10px;align-items:center;background:rgba(232,140,26,.14);border:1px solid rgba(232,170,60,.45);border-radius:12px;padding:10px 12px}
-#page2Fond.cui .four canvas{width:28px;height:28px;image-rendering:pixelated}
-#page2Fond.cui .four b{display:block;font:700 11px Arial;letter-spacing:1px;color:#f2c230}
-#page2Fond.cui .four em{font:italic 11px Georgia;color:#e0c8a0}
-#page2Fond.cui .jg{height:8px;border-radius:4px;background:rgba(0,0,0,.4);margin-top:6px;overflow:hidden}
-#page2Fond.cui .jg i{display:block;height:100%;background:linear-gradient(90deg,#8a5a10,#f6dd8c)}
-#page2Fond.cui .prendre{width:100%;margin-top:8px;border:0;border-radius:12px;padding:11px;font:700 14px Georgia;background:linear-gradient(#f6dd8c,#c9a24a);color:#2a1a0e}
-#page2Fond.cui .board{margin:12px 14px;border-radius:12px;padding:14px 16px 16px;background:#2f3a2c;border:7px solid #7a5530;box-shadow:inset 0 0 26px rgba(0,0,0,.55),0 5px 0 #1c110a}
-#page2Fond.cui .board h3{font:400 23px 'Segoe Script','Bradley Hand','Brush Script MT',cursive;text-align:center;color:#fff;border-bottom:1px dashed rgba(255,255,255,.3);padding-bottom:7px;margin:0 0 9px}
-#page2Fond.cui .l{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dotted rgba(255,255,255,.18)}
-#page2Fond.cui .l:last-child{border-bottom:0}
-#page2Fond.cui .l svg{width:32px;height:32px;flex:none}
-#page2Fond.cui .n{flex:1;font:400 17px 'Segoe Script','Bradley Hand',cursive}
-#page2Fond.cui .n em{display:block;font:italic 11px Georgia;color:#c3d0bd}
-#page2Fond.cui .n .ing{display:block;margin-top:4px;font:400 11px Georgia;color:#aebfa8}
-#page2Fond.cui .n .ing i{font-style:normal;color:#9fe0a0}
-#page2Fond.cui .p{font:700 15px 'Segoe Script','Bradley Hand',cursive;color:#ffe08a}
-#page2Fond.cui .l button{margin-left:6px;border:1px solid #cfe0c8;border-radius:8px;background:transparent;color:#eef7ea;padding:7px 10px;font:700 12px Georgia}
-#page2Fond.cui .l button:disabled{border-color:#6a7a66;color:#8a9a86}`;
-function dessinerLeFournil(){
-const c=document.getElementById('cuiToile');if(!c||!c.clientWidth)return;
-const D=Math.min(2,window.devicePixelRatio||1);
-if(c.width!==Math.round(c.clientWidth*D)){c.width=Math.round(c.clientWidth*D);c.height=Math.round(c.clientHeight*D);}
-const g=c.getContext('2d'),K=c.width/195,H=c.height/K;g.setTransform(K,0,0,K,0,0);g.imageSmoothingEnabled=false;
-const S=H/79, t=Date.now()/1000;
-const al=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
-const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*S*2)/2,w,Math.max(1,h*S));};
-for(let y=0;y<79;y+=5)for(let x=0;x<195;x+=9){const k=al(x*.4+y);
-R(x+((y/5|0)%2?4.5:0),y,8,4.5,k<.35?'#8a5a3a':(k<.7?'#9a6a48':'#a87a56'));}
-for(let y=0;y<79;y+=5)R(0,y,195,0.8,'rgba(60,34,20,.35)');
-R(10,20,66,52,'#7a4a30');
-g.fillStyle='#7a4a30';g.beginPath();g.arc(43,22*S,33,Math.PI,0);g.fill();
-for(let y=22;y<70;y+=5)for(let x=12;x<74;x+=9){const k=al(x+y*3);
-R(x+((y/5|0)%2?4.5:0),y,8,4.5,k<.5?'#8f5c3c':'#a06a46');}
-g.fillStyle='#120a06';g.beginPath();g.moveTo(24,70*S);g.lineTo(24,44*S);g.arc(43,44*S,19,Math.PI,0);g.lineTo(62,70*S);g.fill();
-for(let k=0;k<16;k++){const f=al(k+Math.floor(t*8))*7;R(27+k*2.2,69-f,2,f+3,f>3?'#f2c230':'#e8701a');}
-g.fillStyle='rgba(255,170,60,.16)';g.beginPath();g.arc(43,60*S,34,0,7);g.fill();
-R(20,70,46,3,'#5a3420');
-R(86,52,100,10,'#a5764a');R(86,52,100,2,'#c19468');R(86,62,100,4,'#7d5934');
-for(let i=0;i<5;i++){const x=92+i*20;R(x,44,16,8,'#c98f4a');R(x,44,16,2,'#e0aa66');R(x+3,43,2,2,'#8a5a28');R(x+9,43,2,2,'#8a5a28');}
-R(150,32,22,12,'#e8e0d0');R(150,32,22,3,'#f6f0e2');R(154,34,4,8,'#c9b89a');
-for(let i=0;i<24;i++)R(88+al(i*3)*94,48+al(i*5)*4,1,1,'rgba(255,255,255,.5)');
-R(84,14,104,4,'#7d5934');
-for(let i=0;i<6;i++){const x=90+i*16;R(x,6,9,8,['#a8284a','#c03a2a','#6a9a3a','#d8a860','#a8284a','#c03a2a'][i]);
-R(x,4,9,3,'#e8e0d0');R(x,4,9,1,'#fff');}
-R(70,40,14,20,'#f0e8d8');R(70,40,14,3,'#fff');R(72,30,10,10,'#e8b890');R(71,28,12,4,'#f0e8d8');
-R(66,44,4,12,'#e8b890');R(84,44,4,12,'#e8b890');
-for(let i=0;i<3;i++)R(60+i*2,26-((t*2+i)%4)*1.2,1.5,2,'rgba(255,255,255,.35)');
-}
-let CUI_ANIM=0;
-/* ================= LA CUISINE, DANS LE CARNET ================= */
-const CUI_PRIX={pain:420,confiture:900,conserve:780,soupe:880,tarte:1500};
-const CUI_IC={
- pain:(P)=>{for(let y=0;y<11;y++){const w=20-Math.abs(y-5)*1.1;P(13-w/2,8+y,w,1,y<3?'#d8a860':'#b8843a');}
-   for(let k=0;k<3;k++)P(8+k*4,9,3,1,'#8a5a20');},
- confiture:(P)=>{P(8,8,10,12,'#a03050');P(8,8,10,3,'#c85070');P(7,6,12,3,'#7a5530');P(9,12,8,6,'#c04060');},
- conserve:(P)=>{P(8,7,10,14,'#9aa8b8');P(8,7,10,3,'#c4d2e0');P(7,5,12,3,'#7a8a9a');
-   for(let k=0;k<3;k++)P(9,11+k*3,8,1,'#7a8a9a');},
- soupe:(P)=>{for(let y=0;y<9;y++){const w=21-y*1.7;P(13-w/2,12+y,w,1,y<2?'#8a8a92':'#6a6a74');}
-   for(let y=0;y<3;y++)P(3,10+y,20,1,y<1?'#e8a03a':'#d0742a');},
- tarte:(P)=>{for(let y=0;y<7;y++){const w=22-y*1.4;P(13-w/2,12+y,w,1,'#c9a06a');}
-   P(3,10,20,3,'#e8c890');for(let k=0;k<5;k++)P(5+k*4,9,3,3,['#c03a2a','#8a3a8a','#d8a02a'][k%3]);},
- defaut:(P)=>{P(7,9,12,12,'#b8a888');P(7,9,12,3,'#d8c8a8');}};
-function cuiIcone(c,k){const P=mrmCtx(c,26);(CUI_IC[k]||CUI_IC.defaut)(P);}
-function cuiNomI(q){try{return POT_CULT[q]?POT_CULT[q][0].toLowerCase():((OBJETS[q]&&OBJETS[q].nom.toLowerCase())||q);}catch(e){return q;}}
-/* ① LA CARTE DES PLATS */
-async function cuiCarte(){
-  const d=await appelRPC('cuisine_etat',{p_joueur:e.id});
-  if(d&&!d.erreur&&d.recettes&&Object.keys(d.recettes).length)CUI=d;
-  const C=CUI||{recettes:{}}, R=C.recettes||{}, sac=(e.sac||{});
-  const cles=Object.keys(R);
-  if(!cles.length){
-    mrmCadre('La cuisine','ce que Fonfon sait faire',
-      '<div class="dit">La cuisine est froide pour l’instant. Reviens plus tard.</div>',
-      '<button class="s" id="cQ">RETOUR</button>');
-    document.getElementById('cQ').onclick=mrmAccueil;return;}
-  const besoin=(k)=>R[k].besoins||R[k].cout||{};
-  const manque=(k)=>{const c=besoin(k);const m=[];
-    for(const q in c){const a=sac[q]||0;if(a<c[q])m.push((c[q]-a)+' '+cuiNomI(q));}
-    return m;};
-  const lignes=cles.map((k,i)=>{const m=manque(k),ok=!m.length;
-    const ing=Object.entries(besoin(k)).map(([q,n])=>n+' '+cuiNomI(q)).join(' · ');
-    return '<div class="pl2'+(ok?'':' no')+'" data-pl="'+k+'">'+
-      '<canvas class="cuiI'+i+'" width="76" height="76"></canvas>'+
-      '<div class="nm"><b>'+R[k].nom+'</b><small>'+(ok?ing:('il te manque '+m.join(', ')))+'</small></div>'+
-      '<em>'+enEuros(CUI_PRIX[k]||R[k].prix||0)+'</em></div>';}).join('');
-  mrmCadre('La cuisine','ce que Fonfon sait faire',
-    '<div class="tt2">LA CARTE</div>'+lignes,
-    '<button class="s" id="cQ">RETOUR</button>');
-  cles.forEach((k,i)=>{const c=document.querySelector('.cuiI'+i);if(c)cuiIcone(c,k);});
-  document.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>cuiFiche(b.dataset.pl));
-  document.getElementById('cQ').onclick=mrmAccueil;
-}
-/* ③ LA FICHE DE RECETTE */
-function cuiFiche(k){
-  const C=CUI||{recettes:{}}, R=(C.recettes||{})[k]; if(!R)return;
-  const sac=(e.sac||{});
-  const cout=Object.entries(R.besoins||R.cout||{});
-  const manque=cout.filter(([q,n])=>(sac[q]||0)<n);
-  const lignes=cout.map(([q,n],i)=>{const a=sac[q]||0,ok=a>=n;
-    return '<div class="g"><canvas class="cuiF'+i+'" width="52" height="52"></canvas>'+
-      cuiNomI(q).charAt(0).toUpperCase()+cuiNomI(q).slice(1)+
-      '<em class="'+(ok?'ok':'no')+'">'+a+' / '+n+(ok?' ✓':'')+'</em></div>';}).join('');
-  mrmCadre('La recette','page du carnet',
-    '<div class="gr"><canvas id="cuiG" width="124" height="124"></canvas>'+
-    '<div class="nm"><b>'+R.nom+'</b><small>'+(R.rend?(R.rend+(R.rend>1?' pièces':' pièce')):'')+
-      (R.minutes?' · '+R.minutes+' min de cuisson':'')+'</small></div></div>'+
-    '<div class="tt2">IL FAUT</div><div class="ing">'+lignes+'</div>'+
-    '<div class="vl"><i>ELLE VAUT</i><b>'+enEuros(CUI_PRIX[k]||R.prix||0)+'</b></div>',
-    '<button class="p" id="cF1"'+(manque.length?' disabled':'')+'>'+
-      (manque.length?('IL TE MANQUE '+manque.map(([q,n])=>(n-(sac[q]||0))+' '+cuiNomI(q)).join(', ')).toUpperCase()
-                    :'METTRE AU FOUR')+'</button>'+
-    '<button class="s" id="cF2">RETOUR À LA CARTE</button>');
-  const g=document.getElementById('cuiG');if(g)cuiIcone(g,k);
-  cout.forEach(([q],i)=>{const c=document.querySelector('.cuiF'+i);if(c)cuiIcone(c,'defaut');});
-  document.getElementById('cF2').onclick=cuiCarte;
-  const b=document.getElementById('cF1');
-  if(b&&!manque.length)b.onclick=async()=>{
-    b.disabled=true;b.textContent='…';
-    const r=await appelRPC('cuisine_lancer',{p_joueur:e.id,p_recette:k});
-    if(!r||r.erreur){b.disabled=false;b.textContent='METTRE AU FOUR';
-      try{motOuverture(String((r&&r.erreur)||'Impossible pour l’instant'));}catch(x){}return;}
-    CUI=r;if(r.sac){e.sac=r.sac;}sauver();majHaut();vibrer([16,30,16]);
-    cuiCarte();};
-}
-async function ouvrirLaCuisineDeFonfon(mot){
-  if(typeof mrmCadre==='function'){cuiCarte();return;}
-
-if(!document.getElementById('cssCui')){const st=document.createElement('style');st.id='cssCui';st.textContent=CSS_CUI;document.head.appendChild(st);}
-$('page2Fond').className='cui';$('page2').classList.add('on');
-const d=await appelRPC('cuisine_etat',{p_joueur:e.id});if(d&&!d.erreur)CUI=d;
-const C=CUI||{recettes:{}}, R=C.recettes||{};
-const reste=C.fin?Math.max(0,new Date(C.fin).getTime()-Date.now()):0;
-const enCours=!!C.recette;
-const total=(enCours&&R[C.recette])?R[C.recette].minutes*60000:1;
-const part=enCours?Math.max(0,Math.min(1,1-reste/total)):0;
-const mn=Math.ceil(reste/60000);
-const attente=reste>0?('prête dans '+(mn>=60?(Math.floor(mn/60)+' h '+String(mn%60).padStart(2,'0')):(mn+' min'))):'c’est prêt, sors-la du four';
-const nomI=(q)=>POT_CULT[q]?POT_CULT[q][0].toLowerCase():((OBJETS[q]&&OBJETS[q].nom.toLowerCase())||q);
-$('page2Fond').innerHTML=
-'<div class="hdr"><canvas id="cuiToile"></canvas><span class="v"></span>'+
-'<div class="t"><small>CHEZ FONFON · LA CUISINE</small><b>L’ardoise du chef</b></div><button id="cuiX">✕</button></div>'+
-'<div class="corps"><div class="mot">'+(mot||'« Ma cuisine est à toi. Ce que tu prépares vaut trois fois ce que tu apportes. »')+'</div>'+
-(enCours?('<div class="four"><canvas id="cuiFeu"></canvas><div style="flex:1">'+
-'<b>AU FOUR · '+(((R[C.recette]&&R[C.recette].nom)||C.recette)+'').toUpperCase()+'</b>'+
-'<em>'+attente+'</em><div class="jg"><i style="width:'+Math.round(part*100)+'%"></i></div>'+
-(reste<=0?'<button class="prendre" id="cuiPrendre">Retirer du four</button>':'')+'</div></div>'):'')+
-'<div class="board"><h3>Ce qu’on peut cuisiner</h3>'+
-Object.keys(R).map(k=>{
-const r=R[k], ing=Object.entries(r.besoins||{});
-const pret=ing.every(([q,n])=>((e.sac&&e.sac[q])||0)>=n);
-return '<div class="l">'+(ICONES[k]?'<svg viewBox="0 0 16 16">'+ICONES[k]+'</svg>':'')+
-'<span class="n">'+r.nom+'<em>'+r.minutes+' min · × '+r.rend+'</em>'+
-'<span class="ing">'+ing.map(([q,n])=>{const a=(e.sac&&e.sac[q])||0;
-return (a>=n?'<i>':'')+nomI(q)+' '+Math.min(a,n)+'/'+n+(a>=n?'</i>':'');}).join(' · ')+'</span></span>'+
-'<span class="p">'+enEuros(r.prix).replace(' €','')+'</span>'+
-'<button data-cui="'+k+'"'+((pret&&!enCours)?'':' disabled')+'>'+(enCours?'Occupé':(pret?'Cuire':'Il manque'))+'</button></div>';}).join('')+
-'</div></div>';
-const feu=(c)=>{if(!c)return;const D=Math.min(2,devicePixelRatio||1),W=c.clientWidth||28;
-if(c.width!==Math.round(W*D)){c.width=Math.round(W*D);c.height=Math.round(W*D);}
-const g=c.getContext('2d'),S=c.width/16;g.setTransform(S,0,0,S,0,0);g.imageSmoothingEnabled=false;g.clearRect(0,0,16,16);
-const al=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);},t=Date.now()/600;
-for(let j=0;j<7;j++){const f=al(j+Math.floor(t*6))*5;g.fillStyle=f>2.5?'#f2c230':'#e8701a';g.fillRect(3+j*1.6,13-f,1.5,f+3);}
-g.fillStyle='#6a4a2a';g.fillRect(2,13,12,1.5);};
-const peindre=()=>{dessinerLeFournil();feu(document.getElementById('cuiFeu'));};
-requestAnimationFrame(peindre);
-clearInterval(CUI_ANIM);CUI_ANIM=setInterval(()=>{
-if($('page2').classList.contains('on')&&document.getElementById('cuiToile'))peindre();else clearInterval(CUI_ANIM);},140);
-if($('cuiPrendre'))$('cuiPrendre').onclick=async()=>{
-const r=await appelRPC('cuisine_retirer',{p_joueur:e.id});
-if(r&&!r.erreur){if(r.sac)e.sac=r.sac;CUI=r.etat||null;try{sauver();majHaut();lireSacServeur();majPastille();}catch(x){}
-jouer('vente','moment');vibrer([18,40,18]);
-ouvrirLaCuisineDeFonfon('« Et voilà : '+r.nb+' '+((OBJETS[r.plat]&&OBJETS[r.plat].nom)||r.plat).toLowerCase()+'. »');}
-else ouvrirLaCuisineDeFonfon(r&&r.erreur==='sac_plein'?'« Ton sac déborde : fais de la place. »':'« Ce n’est pas encore prêt. »');};
-$('page2Fond').querySelectorAll('[data-cui]').forEach(b=>b.onclick=async()=>{
-b.disabled=true;
-const r=await appelRPC('cuisine_lancer',{p_joueur:e.id,p_recette:b.dataset.cui});
-if(r&&!r.erreur){if(r.sac)e.sac=r.sac;CUI=r.etat||null;try{sauver();lireSacServeur();majPastille();}catch(x){}
-vibrer([12,30,12]);ouvrirLaCuisineDeFonfon('« Ça mijote. Reviens tout à l’heure. »');}
-else ouvrirLaCuisineDeFonfon(r&&r.erreur==='occupee'?'« Une chose à la fois : le four est pris. »':'« Il te manque de quoi. »');});
-}
+/* (Chez Fonfon / cuisine retiré — plus de pêche) */
+/* ANCIEN BLOC : CSS_CUI + dessinerLeFournil + CUI_ANIM + cuiCarte + cuiFiche + ouvrirLaCuisineDeFonfon supprimés */
 /* ================= CE QUE MADELEINE REPREND =================
    ELLE N'ACHETAIT QUE LE POTAGER, LE LAIT ET LE FROMAGE. Les fruits du
    verger, les œufs du poulailler et tout ce qui sort de la cuisine

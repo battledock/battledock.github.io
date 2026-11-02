@@ -43,7 +43,7 @@ ruelle:{x:880,l:140,haut:30},   /* la montée vers Notre-Dame : axe entre k=4 et
 };
 const CARGO_X={pile:[1266,806],docks:[1318,686]};
 const PAV={};
-const CABANON=[1320,680];                              /* le cabanon de la bouillabaisse */
+/* (CABANON retiré) */
 /* LES DEUX STATIONS sont au bout du quai, sur leur esplanade : on prend le
    velo la ou commence la longue ligne droite, pas au milieu. Celle de
    l'ouest etait restee a 284, au milieu de rien ; elle rejoint son
@@ -1069,49 +1069,7 @@ const l=h2.createRadialGradient(cx,sol,4,cx,sol,90);l.addColorStop(0,'rgba(255,2
 h2.fillStyle=l;h2.fillRect(cx-90,sol-80,180,90);
 return {toile:c,W,H:Ht,sol,nuit:n2};
 }
-function graverLeCabanon(){
-const W=120,Ht=100,cx=60,sol=92;
-const c=document.createElement('canvas');
-/* on grave les façades plus finement : les enseignes étaient tracées
-   sur une toile deux fois trop petite, puis agrandies à l'écran */
-const D=Math.max(2,Math.min(3,Math.ceil(window.devicePixelRatio||2)));
-c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
-const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
-const BL=74,x0=cx-BL/2-10,murH=34,basToit=sol-murH-10;
-g.fillStyle='rgba(40,30,18,.25)';g.beginPath();g.ellipse(cx,sol+2,52,7,0,0,7);g.fill();
-for(let rg=6;rg>=0;rg--){const y=basToit-rg*4, ret=Math.round(rg/7*10), xa=x0-6+ret, l=BL+12-ret*2;
-for(let x=xa;x<xa+l;x+=5){R(x,y,5,5,((x+rg*3)>>2)%3?'#ad542c':'#c26a3a');R(x+4,y,1,5,'#6e2c16');R(x+1,y,3,1,'#d8844e');}
-if(rg===6){R(xa-2,y-4,l+4,5,'#6e2c16');R(xa-2,y-4,l+4,2,'#e59a62');}}
-R(x0+BL-16,basToit-40,8,12,'#d6c6a0');R(x0+BL-17,basToit-42,10,3,'#9e8a64');          /* la cheminée */
-R(x0,basToit+2,BL,murH+8,'#8fb8cc');
-for(let x=x0;x<x0+BL;x+=5){R(x,basToit+2,1,murH+8,'#6f98ac');}
-for(let i=0;i<40;i++)R(x0+alea(i*3.1)*BL,basToit+4+alea(i*5.7)*murH,2,1,'#c9d8de');
-R(x0,basToit+2,BL,2,'rgba(30,20,10,.3)');
-R(x0+8,sol-30,16,30,'#2a2218');R(x0+8,sol-30,16,1,'#6f98ac');R(x0+24,sol-30,3,30,'#c0392b');
-R(x0+40,basToit+12,16,12,'#2e3a44');R(x0+34,basToit+12,6,12,'#c0392b');R(x0+56,basToit+12,6,12,'#c0392b');
-R(x0+40,basToit+17,16,1,'#8fb8cc');R(x0+47,basToit+12,1,12,'#8fb8cc');
-R(x0+6,basToit+4,BL-12,6,'#f2efe4');
-g.font='700 5px Georgia,serif';g.textAlign='center';g.fillStyle='#b5382c';g.fillText('BOUILLABAISSE',x0+BL/2,basToit+9,BL-16);
-const tx=x0+BL+2;
-R(tx+2,basToit+4,2,sol-basToit-4,'#6b4a2c');R(tx+30,basToit+8,2,sol-basToit-8,'#6b4a2c');
-R(tx,basToit+2,34,2,'#8a6238');
-for(let i=0;i<34;i++){g.fillStyle=['#4f7a36','#6a9a4a','#3f6a2c'][i%3];g.beginPath();g.ellipse(tx+2+alea(i*2.1)*32,basToit-2+alea(i*3.7)*8,4,3,0,0,7);g.fill();}
-for(let i=0;i<5;i++){R(tx+6+i*6,basToit+6,2,3,'#6a3a6a');}
-R(tx+6,sol-14,22,6,'#f2efe4');for(let x=tx+6;x<tx+28;x+=4)for(let y=sol-14;y<sol-8;y+=3)if(((x+y)/1|0)%2)R(x,y,2,2,'#c0392b');
-R(tx+8,sol-8,2,8,'#6b4a2c');R(tx+24,sol-8,2,8,'#6b4a2c');
-R(tx+2,sol-12,4,12,'#8a6238');R(tx+30,sol-12,4,12,'#8a6238');
-R(tx+12,sol-17,3,3,'#f2efe4');R(tx+19,sol-17,3,3,'#e8c06a');                              /* une assiette, un verre */
-R(x0-14,sol-20,12,18,'#6b4a2c');R(x0-13,sol-19,10,14,'#1f2624');
-for(let k=0;k<5;k++)R(x0-12,sol-17+k*2.6,5+(k%2)*3,1,'rgba(240,240,240,.8)');
-const n2=document.createElement('canvas');n2.width=W*D;n2.height=Ht*D;
-const h2=n2.getContext('2d');h2.setTransform(D,0,0,D,0,0);
-h2.fillStyle='rgba(16,20,44,.35)';h2.fillRect(x0,basToit+2,BL,murH+8);
-h2.fillStyle='#ffd98a';h2.fillRect(x0+9,sol-29,14,29);h2.fillRect(x0+41,basToit+13,14,10);
-const l=h2.createRadialGradient(tx+16,sol-20,2,tx+16,sol-20,40);l.addColorStop(0,'rgba(255,210,130,.5)');l.addColorStop(1,'rgba(255,210,130,0)');
-h2.fillStyle=l;h2.fillRect(tx-24,sol-60,80,70);
-for(let i=0;i<4;i++){h2.fillStyle='#fff0b0';h2.fillRect(tx+4+i*9,basToit+4,2,2);}         /* une guirlande dans la treille */
-return {toile:c,W,H:Ht,sol,nuit:n2};
-}
+/* (graverLeCabanon retiré — plus de pêche/bouillabaisse) */
 function graverLaStationVelo(){
 /* LA TOILE EST CALEE SUR L'ENCRE, PAS SUR LE SUPPOSE. Mesure faite dans
    un navigateur : un velo deborde de 9 px a gauche et de 18 a droite de
@@ -1158,49 +1116,7 @@ g.beginPath();g.moveTo(cx-HW,y0+14);g.lineTo(cx-HW-11,y0+2);g.stroke();
 g.beginPath();g.moveTo(cx-HW+2,y0+LH-20);g.lineTo(cx-HW-10,y0+LH-30);g.stroke();
 return {toile:c,W,H:Ht,sol};
 }
-const POISSONS_MARMITE=['sardine','bogue','girelle','rouget','mulet','saupe','seiche','maquereau','dorade','rascasse','loup','denti','murene','congre','poulpe','saintpierre','thon',
-'sar','vieille','grondin','pagre','barracuda','liche','chapon','baliste','raie','coryphene'];
-let RECETTE={};
-function ouvrirLeCabanon(){
-PANNEAU_PERSO=true;
-RECETTE={};
-dessinerLeCabanon();
-$('enLigne').classList.add('on');
-}
-function dessinerLeCabanon(){
-const c=$('carteL');
-const tot=Object.values(RECETTE).reduce((t,n)=>t+n,0), esp=Object.values(RECETTE).filter(n=>n>0).length;
-const valeur=Object.entries(RECETTE).reduce((t,[k,n])=>t+(PRIX_POISSON[k]||0)*n,0);
-const coef=esp>=3?2+(esp-3)*0.25:0, prix=Math.round(valeur*coef);
-const pret=tot>=4&&tot<=6&&esp>=3;
-let h='<button id="fermerL" aria-label="Fermer">✕</button><div class="titL">LE CABANON · CHEZ FONFON</div>'+
-'<div class="videL" style="padding:0 0 10px">« Donne-moi de 4 à 6 poissons, au moins 3 sortes : je te fais la bouillabaisse et je te l’achète. Plus c’est varié, mieux c’est payé. »</div>';
-const dispo=POISSONS_MARMITE.filter(k=>(e.sac||{})[k]>0);
-if(!dispo.length)h+=’<div class="videL">Tu n’as pas de poisson.</div>’;
-h+=dispo.map(k=>{const n=RECETTE[k]||0, max=(e.sac||{})[k];
-return '<div class="ligneJ" style="cursor:default"><span style="flex:1"><b>'+(OBJETS[k]?OBJETS[k].nom:k)+'</b><span>'+max+' dans le sac</span></span>'+
-'<button class="gris" data-m="'+k+'" style="border:0;border-radius:8px;width:30px;height:30px;background:#3a4a36;color:#f2efe4;font:700 16px Georgia">−</button>'+
-'<b style="min-width:22px;text-align:center">'+n+'</b>'+
-'<button data-p="'+k+'" style="border:0;border-radius:8px;width:30px;height:30px;background:#e8c06a;color:#2a1d0c;font:700 16px Georgia"'+(n>=max||tot>=6?' disabled':'')+'>+</button></div>';}).join('');
-h+='<div class="titL" style="margin-top:12px">DANS LA MARMITE · '+tot+' POISSON'+(tot>1?'S':'')+' · '+esp+' SORTE'+(esp>1?'S':'')+'</div>';
-h+='<div class="actionsF"><button id="cuisiner"'+(pret?'':' disabled style="opacity:.45"')+'>'+(pret?'Cuisiner · '+enEuros(prix):(esp<3?'Encore '+(3-esp)+' sorte'+(3-esp>1?'s':''):'4 à 6 poissons'))+'</button></div>';
-c.innerHTML=h;
-$('fermerL').onclick=fermerL;
-c.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{RECETTE[b.dataset.p]=(RECETTE[b.dataset.p]||0)+1;dessinerLeCabanon();});
-c.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{RECETTE[b.dataset.m]=Math.max(0,(RECETTE[b.dataset.m]||0)-1);dessinerLeCabanon();});
-if(pret)$('cuisiner').onclick=cuisinerLaBouillabaisse;
-}
-async function cuisinerLaBouillabaisse(){
-const b=$('cuisiner');b.disabled=true;b.textContent='Ça mijote…';
-const num=++numAppelSac;
-const d=await appelRPC('cuisiner_bouillabaisse',{p_joueur:e.id,p_recette:RECETTE});
-if(!d||d.erreur){b.textContent=!d?'Le feu s’est éteint, réessaie':d.erreur;setTimeout(dessinerLeCabanon,1600);return;}
-if(d.sac){adopterSac(d,num);e.sac=d.sac;}
-e.euros=d.euros;sauver();majHaut();
-fermerL();
-texteVolant(joueur.x,joueur.y-40,'bouillabaisse · +'+enEuros(d.gain),'#ffd76a');
-jouer('vente','moment');vibrer([20,40,20]);
-}
+/* (Chez Fonfon / bouillabaisse retiré — plus de pêche) */
 function graverArbuste(v){
 const W=40,Ht=40,cx=20,sol=36;
 const c=document.createElement('canvas');
@@ -1714,29 +1630,7 @@ function graverLeBarModerne(){return devanture(3,(g,R,{sol,cx,BL,x0,rez,yR},nuit
  g.font='700 2.2px Arial';g.fillStyle='#e8c47a';g.fillText('HAPPY',x0+BL-59.5,sol-13.5);g.fillText('HOUR',x0+BL-59.5,sol-11);g.fillStyle='#f0f0e8';g.fillText('18h-20h',x0+BL-59.5,sol-8.5);
  b2Carotte(g,R,x0+BL+9,yR-12);
  if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,95);l.addColorStop(0,'rgba(255,200,130,.55)');l.addColorStop(1,'rgba(255,200,130,0)');g.fillStyle=l;g.fillRect(cx-95,sol-95,190,100);}});}
-function restoFonfon(teinte){const T=teinte==='marine'?{b:'#1f3452',bh:'#2c4a72',bs:'#122238',store:['#1f3a6a','#2a4a80'],or:'#e2c070'}:{b:'#5a1a1e',bh:'#7a2a2e',bs:'#3a0c10',store:['#8a1a22','#a8262e'],or:'#e8c46a'};
-return devanture(1,(g,R,{sol,cx,BL,x0,rez,yR},nuit)=>{
-R(x0-2,yR-4,BL+4,rez+4,T.b);R(x0-2,yR-4,BL+4,1.5,T.or);R(x0-2,sol-6,BL+4,6,T.bs);R(x0-2,sol-6,BL+4,1,T.bh);
-[x0,x0+44,x0+BL-50,x0+BL-6].forEach(x=>{R(x,yR,6,rez-6,T.bh);R(x+1,yR,1,rez-6,'rgba(255,255,255,.18)');R(x+5,yR,1,rez-6,T.bs);R(x-1,yR,8,2,T.or);R(x-1,sol-8,8,2,T.or);});
-[[x0+6,38],[x0+BL-44,38]].forEach(([x,w],k)=>{const fond=nuit?'#ffe2b0':'#e8d2a8';R(x,yR+2,w,rez-10,fond);
-R(x,yR+2,w,10,nuit?'#f0c890':'#d8bc90');for(let q=0;q<3;q++){R(x+4+q*12,yR+4,1,6,'#6a4a2a');R(x+2+q*12,yR+10,5,2,'#fff4d0');}   /* les appliques */
-R(x,yR+12,w,1,'#b89a6a');
-for(let q=0;q<2;q++){const tx=x+9+q*20,ty=sol-16;R(tx-7,ty,14,4,'#fbfaf6');R(tx-7,ty+4,14,5,'#eeeae2');R(tx-1,ty+9,2,3,'#6a4a2a');
-R(tx-4,ty-2,3,2,'#e8703a');R(tx+2,ty-2,3,2,'#e8703a');R(tx-5.5,ty-1,1,1,'#fff');R(tx+.5,ty-5,1,4,'#d8e8f0');R(tx,ty-6,2,1.5,nuit?'#ffd060':'#e8c46a');   /* bouillabaisse, verre, bougie */
-}
-                    /* le serveur et son plateau */
-R(x,yR+2,w,rez-10,'rgba(255,255,255,.06)');g.fillStyle='rgba(255,255,255,.14)';g.beginPath();g.moveTo(x+4,sol-8);g.lineTo(x+14,yR+2);g.lineTo(x+19,yR+2);g.lineTo(x+9,sol-8);g.fill();
-R(x+w/2-.5,yR+2,1,rez-10,T.b);R(x,yR+2,w,1.5,T.b);R(x,sol-9,w,1.5,T.b);
-g.font='italic 700 4.6px Georgia,serif';g.textAlign='center';g.fillStyle=T.or;g.fillText(k?'Poissons du jour':'Bouillabaisse',x+w/2,yR+17.5,w-6);g.textAlign='left';});
-R(cx-10,yR+2,20,rez-8,T.bs);R(cx-9,yR+3,18,rez-10,nuit?'#ffe8b8':'#d8c4a0');R(cx-.5,yR+3,1,rez-10,T.b);R(cx-9,yR+14,18,1,T.b);R(cx+3,sol-18,1.5,4,'#e8c46a');R(cx-4.5,sol-18,1.5,4,'#e8c46a');
-R(x0+BL/2-24,yR+8,10,13,T.or);R(x0+BL/2-23,yR+9,8,11,'#f8f2e2');for(let q=0;q<4;q++)R(x0+BL/2-22,yR+11+q*2.4,6,.6,'#6a4a2a');
-const sy=yR-10;for(let k=0;k<BL+8;k+=1){const c=k%12<6?T.store[0]:T.store[1];R(x0-4+k,sy,1,9,c);}R(x0-4,sy,BL+8,1.5,'rgba(255,255,255,.2)');
-for(let k=0;k<BL+8;k+=12){g.fillStyle=T.store[0];g.beginPath();g.arc(x0-4+k+6,sy+9,6,0,Math.PI);g.fill();}R(x0-4,sy+8.5,BL+8,1,'rgba(0,0,0,.2)');
-g.font='700 5px Arial,sans-serif';g.textAlign='center';g.fillStyle='#fff6e0';g.fillText('R E S T A U R A N T   ·   B O U I L L A B A I S S E',cx,sy+6,BL-10);g.textAlign='left';
-const ey=yR-26;R(x0+14,ey,BL-28,14,T.b);R(x0+14,ey,BL-28,1.2,T.or);R(x0+14,ey+12.8,BL-28,1.2,T.or);
-g.font='italic 900 10.5px Georgia,serif';g.textAlign='center';g.fillStyle='rgba(0,0,0,.4)';g.fillText('Chez Fonfon',cx+.6,ey+10.6,BL-40);g.fillStyle=nuit?'#fff0c0':T.or;g.fillText('Chez Fonfon',cx,ey+10,BL-40);g.textAlign='left';
-[[x0+8],[x0+BL-10]].forEach(([x])=>{R(x,ey-2,2,6,'#3a3a40');R(x-2,ey+4,6,8,'#2a2a30');R(x-1,ey+5,4,6,nuit?'#ffe080':'#d8c890');if(nuit){g.fillStyle='rgba(255,220,130,.3)';g.beginPath();g.arc(x+1,ey+8,9,0,7);g.fill();}});
-if(nuit){const l=g.createRadialGradient(cx,sol,4,cx,sol,85);l.addColorStop(0,'rgba(255,215,150,.55)');l.addColorStop(1,'rgba(255,215,150,0)');g.fillStyle=l;g.fillRect(cx-85,sol-85,170,92);}});}
+/* (restoFonfon retiré — plus de pêche) */
 function clientCape(R,x,y,cheveux,cape){R(x-5,y-2,10,9,cape||'#f4f4f4');R(x-5,y-2,10,1,'#ffffff');R(x-2.5,y-8,5,6,'#e0b088');R(x-3,y-9,6,3,cheveux);R(x-1,y+7,2,4,'#3a3a40');R(x-4,y+10,8,1.5,'#3a3a40');}
 function coiffeur(R,x,y,tablier,cheveux){R(x-2.5,y-16,5,5,'#e0b088');R(x-3,y-17,6,2.5,cheveux);R(x-3,y-11,6,9,tablier);R(x-2.5,y-2,2,6,'#2a2a30');R(x+.5,y-2,2,6,'#2a2a30');R(x+3,y-10,4,1.5,'#e0b088');R(x+6.5,y-11,2,1,'#c8ccd4');R(x+6.5,y-9.5,2,1,'#c8ccd4');}
 function poteau(R,px,py,h,e){e=e||1;R(px-2*e,py-4,4*e+2,4,'#d8b050');R(px-2*e,py+h,4*e+2,4,'#d8b050');R(px-1.5*e,py,3*e+2,h,'#ffffff');
@@ -1924,7 +1818,7 @@ DECOR=[];
 const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
 for(let k=0;k<10;k++){
 if(k===4||k===5)continue;                                            /* k=4+k=5 : le grand escalier du complexe festif */
-if(k===0){XCAL['x_fonfon0']=restoFonfon('marine');CALQUES_DECO['x_fonfon']=XCAL['x_fonfon0'];P('x_fonfon',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'fonfon'});continue;}   /* Chez Fonfon, le restaurant de bouillabaisse */
+if(k===0)continue;   /* (Chez Fonfon retiré) */
 if(k===9){XCAL['x_presse0']=graverLaPresse();CALQUES_DECO['x_presse']=XCAL['x_presse0'];P('x_presse',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'presse'});continue;}   /* la maison de la presse */
 if(k===2)continue;   /* emplacement libre (ancienne boutique de pêche) */
 if(k===6){XCAL['x_peigne0']=graverLePeigne();CALQUES_DECO['x_peigne']=XCAL['x_peigne0'];P('x_peigne',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'salon'});continue;}   /* La Marinière (déplacée de k=5 à k=6) */
@@ -2123,4 +2017,4 @@ R(XP.bassinO-4,XP.quaiY-4,XP.bassinE-XP.bassinO+8,0.5,'rgba(255,248,226,.40)');
 g.setTransform(1,0,0,1,0,0);
 return c;
 }
-;({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverArbuste,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar});
+;({XP,CARGO_X,PAV,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLaStationVelo,graverTonBateau,graverArbuste,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar});
