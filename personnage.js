@@ -2417,9 +2417,13 @@ if(p._motif==='forestier'){                     /* LE MANTEAU DU GARDE FORESTIER
   R(xc2-L2,bas-4,L2*2,2,'#243a28');             /* le bas du manteau */
 }
 if(p._motif==='carreaux'){                      /* LA CHEMISE À CARREAUX, RAPIÉCÉE */
-  for(let r=yEp+3;r<bas-1;r+=4)for(let x=-L2;x<L2;x+=4){
-    if(((r/4|0)+(x/4|0))%2===0)R(xc2+x,r,4,4,'#7a2a1e');     /* le carreau sombre */
-    R(xc2+x,r,L2*2,0.8,'rgba(230,120,100,.22)');             /* le fil clair */
+  /* LES FILS RESTENT DANS LA CHEMISE. Le fil clair partait de chaque
+     carreau sur toute la largeur du torse : de profil il debordait du
+     corps et flottait en traits devant la poitrine. */
+  for(let r=yEp+3;r<bas-1;r+=4){
+    for(let x=-L2;x<L2;x+=4)
+      if(((r/4|0)+(x/4|0))%2===0)R(xc2+x,r,Math.min(4,L2-x),Math.min(4,bas-1-r),'#7a2a1e');     /* le carreau sombre */
+    R(xc2-L2,r,L2*2,0.8,'rgba(230,120,100,.22)');             /* le fil clair, une fois par rang */
   }
   for(let x=-L2;x<L2;x+=4)R(xc2+x,yEp+3,0.8,bas-yEp-4,'rgba(230,120,100,.18)');
   if(p._rapiece){                               /* les pièces cousues */

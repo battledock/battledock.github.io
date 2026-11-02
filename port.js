@@ -324,7 +324,7 @@ function dallesDuQuai(cb){
    silo d'Arenc et un ferry a la gare maritime ; puis La Major, le fort
    Saint-Jean, le MuCEM, et Notre-Dame de la Garde sur sa colline.
    Tout est pose au pixel, comme le reste du port. */
-function graverLePortAutonome(g,ambiance){
+function graverLePortAutonome(g,ambiance,couches){
 const M=MONDE_L, HZ=108, EAU=140;
 const aube=ambiance==='aube', nuit=ambiance==='nuit', soir=ambiance==='soir'||aube;
 const LUM=[], lum=(x,y,w,h,c,v)=>LUM.push([x,y,w,h,c,v]);   /* les lumieres qui s'allument : posees apres la teinte */
@@ -353,7 +353,8 @@ for(let y=0;y<EAU;y++)for(let x=0;x<M;x++){
 }
 g.putImageData(img,0,0);
 }
-const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+let G=g;   /* la toile ou l'on peint : le ciel, ou les nuages a part */
+const R=(x,y,w,h,col)=>{G.fillStyle=col;G.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
 if(SOLEIL){
   const S=aube?['#ffcfae','#ffe2c4','#fff4e4']:['#ffd890','#ffe7a8','#fff6d6'];
   for(let r=16;r>9;r--)for(let y=-r;y<=r;y++){const hw=Math.round(Math.sqrt(r*r-y*y));for(let x=-hw;x<=hw;x++)if(((x+y)&1)===0||r<12)R(SOLEIL.x+x,SOLEIL.y+y,1,1,r<12?S[1]:S[0]);}
@@ -370,6 +371,11 @@ if(nuit){
   [[-3,-2,2,2],[1,1,3,2],[-1,3,2,1],[2,-4,1,1]].forEach(m=>R(LUNE.x+m[0],LUNE.y+m[1],m[2],m[3],'#cdc7a8'));
 }
 
+/* LES COUCHES, pour que le fond vive : le ciel seul, les nuages qui
+   derivent, et le decor avec son bassin. */
+const copie=(src,h)=>{const c=document.createElement('canvas');c.width=M;c.height=h;c.getContext('2d').drawImage(src,0,0);return c;};
+let gn=null;
+if(couches){couches.ciel=copie(g.canvas,EAU);const cn=document.createElement('canvas');cn.width=M;cn.height=HZ;gn=cn.getContext('2d');G=gn;}
 /* ---------- LES NUAGES : trois tons, le dessous plat ---------- */
 const NU=nuit?['#56609a','#3a4274','#262d54']:(aube?['#ffd8c8','#e8a4a6','#8e7298']:(soir?['#ffe2c0','#f1aa92','#a87896']:['#ffffff','#e3edf6','#b4c8de']));
 function nuage(cx,cy,l,graine){
@@ -389,6 +395,7 @@ function nuage(cx,cy,l,graine){
 [[150,28,70,1],[520,18,54,2],[860,40,46,3],[1090,22,64,4],[1420,30,58,5],[1690,16,44,6],[300,54,34,7],[1260,58,30,8]].forEach(n=>nuage(n[0],n[1],n[2],n[3]*11.3));
 if(!nuit)for(let i=0;i<14;i++){const x=A(i*9.1)*M,y=6+A(i*4.4)*40,l=20+A(i*2.2)*60;R(x,y,l,1,soir?'rgba(255,220,190,.35)':'rgba(255,255,255,.30)');R(x+l*0.2,y+1,l*0.5,1,soir?'rgba(255,220,190,.18)':'rgba(255,255,255,.16)');}
 
+if(couches){couches.nuages=gn.canvas;g.drawImage(gn.canvas,0,0);G=g;}
 /* ---------- LE DECOR SE PEINT A PART, pour qu'on puisse l'eclairer ---------- */
 const s=document.createElement('canvas');s.width=M;s.height=EAU;
 const q=s.getContext('2d');
@@ -676,8 +683,8 @@ for(const l of LUM){if(l[5]&&DEVANT.some(d=>l[0]>=d[0]&&l[0]<d[1]&&l[1]>=d[2]))c
   P(l[0],l[1],l[2],l[3],l[4]);}
 g.drawImage(s,0,0);
 
-/* les goelands */
-if(!nuit)for(let i=0;i<9;i++){const x=Math.round(80+A(i*13.1)*(M-160)),y=Math.round(12+A(i*7.9)*50);
+/* les goelands (ils volent, quand le fond vit) */
+if(!nuit&&!couches)for(let i=0;i<9;i++){const x=Math.round(80+A(i*13.1)*(M-160)),y=Math.round(12+A(i*7.9)*50);
   R(x,y,1,1,soir?'#3a2c38':'#5a6270');R(x+4,y,1,1,soir?'#3a2c38':'#5a6270');R(x+1,y+1,3,1,soir?'#ffe6d0':'#ffffff');if(i%2)R(x+2,y+2,1,1,soir?'#c8a090':'#c8d0d8');}
 
 /* ---------- LE BASSIN : le reflet de tout ce qui est au-dessus, tremble ---------- */
@@ -694,7 +701,7 @@ g.fillStyle=fond;g.fillRect(0,HZ+2,M,EAU-HZ-2);
 }
 for(let i=0;i<1600;i++){
   const x=A(i*2.3+40)*M, y=HZ+3+Math.floor(A(i*3.9+70)*(EAU-HZ-4)), l=2+Math.floor(A(i*5.7)*6);
-  R(x,y,l,1,i%3?(nuit?'rgba(120,140,200,.12)':(aube?'rgba(255,196,196,.20)':(soir?'rgba(255,200,150,.22)':'rgba(190,230,245,.24)'))):'rgba(8,30,56,.25)');
+  R(x,y,l,1,i%3?(nuit?'rgba(120,140,200,.10)':(aube?'rgba(255,196,196,.16)':(soir?'rgba(255,200,150,.18)':'rgba(190,230,245,.20)'))):'rgba(8,30,56,.14)');
 }
 if(SOLEIL)for(let i=0;i<500;i++){
   const y=HZ+3+Math.floor(A(i*4.1+9)*(EAU-HZ-4)), sp=10+(y-HZ)*2.2, x=SOLEIL.x+(A(i*6.3)-0.5)*2*sp;
@@ -715,6 +722,13 @@ R(0,HZ+2,M,1,'rgba(10,20,30,.35)');
 /* la margelle de notre quai, au bord du bassin */
 R(0,EAU,M,6,'#c7b792');R(0,EAU,M,1,'#4a5a62');R(0,EAU+1,M,1,'#efe3c4');R(0,EAU+5,M,1,'#a8976e');
 for(let x=0;x<M;x+=46+Math.floor(A(x)*20))R(x,EAU+1,1,5,'#a8976e');
+if(couches){
+  const d=document.createElement('canvas');d.width=M;d.height=EAU;const dg=d.getContext('2d');
+  dg.drawImage(s,0,0);dg.drawImage(g.canvas,0,HZ+2,M,EAU-HZ-2,0,HZ+2,M,EAU-HZ-2);
+  couches.decor=d;couches.HZ=HZ;couches.EAU=EAU;couches.amb=ambiance;
+  couches.rouges=LUM.filter(l=>l[4]==='#ff3a2a').map(l=>[l[0],l[1],l[2],l[3]]);
+  couches.soleil=SOLEIL;couches.lune=nuit?LUNE:null;
+}
 }
 const AMBIANCE_PORT='jour';
 /* ================= L'HEURE DU PORT =================
@@ -724,7 +738,9 @@ const AMBIANCE_PORT='jour';
    Entre deux moments, les deux images se fondent l'une dans l'autre.
    Le bandeau se pose APRES la lumiere du moment : il porte deja la sienne. */
 const PANO={};
-function panoramaDuPort(a){if(!PANO[a]){const c=document.createElement('canvas');c.width=MONDE_L;c.height=140;graverLePortAutonome(c.getContext('2d'),a);PANO[a]=c;}return PANO[a];}
+function couchesDuPort(a){if(!PANO[a]){const k={}, c=document.createElement('canvas');c.width=MONDE_L;c.height=146;
+graverLePortAutonome(c.getContext('2d'),a,k);PANO[a]=k;}return PANO[a];}
+function panoramaDuPort(a){return couchesDuPort(a).decor;}
 const HEURES_PORT=[[0,'nuit'],[5.0,'nuit'],[6.3,'aube'],[7.2,'aube'],[8.6,'jour'],[17.2,'jour'],[18.6,'soir'],[19.9,'soir'],[21.2,'nuit'],[24,'nuit']];
 function heureDuPort(){
 let h=12;
@@ -735,16 +751,91 @@ for(let i=0;i<HEURES_PORT.length-1;i++){const a=HEURES_PORT[i],b=HEURES_PORT[i+1
 if(h>=a[0]&&h<=b[0]){const t=(h-a[0])/Math.max(0.001,b[0]-a[0]);return[a[1],b[1],t*t*(3-2*t)];}}
 return['nuit','nuit',0];
 }
+/* ================= LE FOND QUI VIT =================
+   Chaque image, on recompose la petite part du fond qui est a l'ecran
+   (cent a deux cents pixels de large : rien a payer) :
+     — les nuages derivent lentement vers l'est, derriere la ville ;
+     — le bassin ondule, rang par rang, et le soleil (ou la lune) y scintille ;
+     — la nuit, les feux rouges des portiques et des tours clignotent ;
+     — des goelands passent, et une pilotine fait la navette dans le bassin.
+   Entre deux moments de la journee, on compose les deux et on les fond. */
+const TAMPONS=[null,null];
+function tampon(i,w,h){let c=TAMPONS[i];if(!c){c=TAMPONS[i]=document.createElement('canvas');}
+if(c.width<w||c.height<h){c.width=Math.max(c.width,w);c.height=Math.max(c.height,h);}const q=c.getContext('2d');q.imageSmoothingEnabled=false;q.clearRect(0,0,c.width,c.height);return c;}
+function composerLePort(K,i,x0,w,T){
+const M=MONDE_L, H=K.EAU, c=tampon(i,w,H), q=c.getContext('2d');
+q.drawImage(K.ciel,x0,0,w,H,0,0,w,H);
+/* les nuages : une bande qui fait le tour du monde */
+const off=((T*1.6)%M+M)%M;
+for(const k of [0,-1,1]){const dx=off+k*M-x0;if(dx>w||dx+M<0)continue;q.drawImage(K.nuages,dx,0);}
+const HZ=K.HZ;
+q.drawImage(K.decor,x0,0,w,HZ+2,0,0,w,HZ+2);
+for(let y=HZ+2;y<H;y++){const u=(y-HZ)/(H-HZ), dx=Math.round(Math.sin(T*1.4+y*0.75)*(0.6+u*1.2));
+  q.drawImage(K.decor,x0,y,w,1,dx,y,w,1);if(dx>0)q.drawImage(K.decor,x0,y,1,1,0,y,dx,1);}
+/* les scintillements */
+const nuit=K.amb==='nuit', foyer=nuit?K.lune:K.soleil;
+const n=Math.round(w*(foyer?0.5:0.22));
+for(let j=0;j<n;j++){const slot=Math.floor(T*2.5+j*0.61);
+  const r1=alea(slot*13.7+j*3.1), r2=alea(slot*7.3+j*11.9), r3=alea(slot*5.1+j);
+  const y=Math.floor(HZ+4+r2*(H-HZ-6));
+  let x;
+  if(foyer&&j%3){const sp=(nuit?5:10)+(y-HZ)*(nuit?0.9:2.2);x=foyer.x+(r1-0.5)*2*sp-x0;}else x=r1*w;
+  if(x<0||x>=w)continue;
+  if(nuit&&!(foyer&&j%3))continue;
+  const vie=(T*2.5+j*0.61)%1, a=Math.sin(vie*Math.PI)*(0.5+r3*0.5);
+  q.fillStyle=nuit?'rgba(240,238,215,'+(a*0.8).toFixed(2)+')':(K.amb==='jour'?'rgba(255,255,255,'+(a*0.75).toFixed(2)+')':'rgba(255,228,170,'+(a*0.85).toFixed(2)+')');
+  q.fillRect(Math.round(x),y,r3>0.7?2:1,1);}
+/* les feux qui clignotent */
+if(nuit)for(let j=0;j<K.rouges.length;j++){const l=K.rouges[j], x=l[0]-x0;if(x<-3||x>w+3)continue;
+  const on=Math.floor(T*0.9+j*0.37)%2===0;
+  q.fillStyle=on?'rgba(255,70,50,.35)':'#121a34';q.fillRect(x-1,l[1]-1,l[2]+2,l[3]+2);
+  if(on){q.fillStyle='#ff4a36';q.fillRect(x,l[1],l[2],l[3]);}}
+return c;
+}
+function animerLePort(ctx,amb,camX,camY,lw,h,T){
+const M=MONDE_L, HZ=108, EAU=140;
+ctx.save();ctx.translate(-camX,-camY);
+ctx.beginPath();ctx.rect(camX,camY,lw,h);ctx.clip();
+/* LES GOELANDS : ils planent, battent deux fois des ailes, et repartent */
+if(amb!=='nuit')for(let i=0;i<6;i++){
+  const v=7+alea(i*3.3)*9, dir=i%2?1:-1, x=((alea(i*5.7)*M+dir*T*v)%M+M)%M, y=Math.round(14+alea(i*9.1)*58+Math.sin(T*0.4+i)*5);
+  if(x<camX-6||x>camX+lw+6)continue;
+  const bat=Math.floor(T*5+i*1.3)%10<3?Math.floor(T*5+i*1.3)%2:0, X=Math.round(x);
+  const c1=amb==='jour'?'#ffffff':'#2e2430', c2=amb==='jour'?'#5a6270':'#2e2430';
+  ctx.fillStyle=c2;
+  if(bat){ctx.fillRect(X-2,y+1,1,1);ctx.fillRect(X+2,y+1,1,1);ctx.fillStyle=c1;ctx.fillRect(X-1,y,3,1);}
+  else{ctx.fillRect(X-2,y-1,1,1);ctx.fillRect(X+2,y-1,1,1);ctx.fillStyle=c1;ctx.fillRect(X-1,y,1,1);ctx.fillRect(X+1,y,1,1);ctx.fillRect(X,y+1,1,1);}
+}
+/* LA PILOTINE : elle traverse le bassin en un peu plus de trois minutes, et revient */
+{const per=200, u=(T%(per*2))/per, aller=u<1, k=aller?u:2-u, x=Math.round(-40+k*(M+80)), y=HZ+19, d=aller?1:-1;
+ if(x>camX-60&&x<camX+lw+60){
+  const nuit=amb==='nuit';
+  const coque=nuit?'#1a1e2e':'#c8402c', bord=nuit?'#2a2e40':'#1c2230', cab=nuit?'#3a4058':(amb==='jour'?'#f2f2ee':'#f0d6c4');
+  for(let s=1;s<=22;s++){const a=(1-s/22)*0.5;ctx.fillStyle='rgba(255,255,255,'+(nuit?a*0.4:a).toFixed(2)+')';
+    ctx.fillRect(x-d*(10+s),y+3+((s+Math.floor(T*6))%3===0?0:1),1,1);if(s<12){ctx.fillRect(x-d*(10+s),y+5+Math.floor(s/4),1,1);}}
+  ctx.fillStyle=bord;ctx.fillRect(x-10,y+2,20,3);
+  ctx.fillStyle=coque;ctx.fillRect(x-10,y,20,2);ctx.fillRect(x+d*10,y,d>0?2:-2,2);
+  ctx.fillStyle=cab;ctx.fillRect(x-4-d*2,y-4,8,4);
+  ctx.fillStyle=nuit?'#ffe6a0':'#2a3c58';ctx.fillRect(x-3-d*2,y-3,6,1);
+  ctx.fillStyle=nuit?'#c8ccd0':'#1c2230';ctx.fillRect(x-d*2,y-7,1,3);
+  if(nuit){ctx.fillStyle='#ff4a36';ctx.fillRect(x-d*8,y-1,1,1);ctx.fillStyle='#4aff8a';ctx.fillRect(x+d*8,y-1,1,1);ctx.fillStyle='#ffffff';ctx.fillRect(x-d*2,y-8,1,1);}
+  ctx.fillStyle='rgba(255,255,255,.55)';ctx.fillRect(x+d*11,y+4,2,1);
+ }}
+ctx.restore();
+}
 let PANO_ATTENTE=false;
 function dessinerLePanorama(ctx,camX,camY,lw,lh){
 if(camY>=140)return;
-const[a,b,t]=heureDuPort(), h=Math.min(lh,140-camY);
+const[a,b,t]=heureDuPort(), h=Math.min(lh,140-camY), T=Date.now()/1000;
 const base=t<0.5?a:b, autre=t<0.5?b:a, k=t<0.5?t:1-t;
-ctx.drawImage(panoramaDuPort(base),camX,camY,lw,h,0,0,lw,h);
+const x0=Math.max(0,Math.floor(camX)), w=Math.min(MONDE_L-x0,Math.ceil(lw)+1);
+const c1=composerLePort(couchesDuPort(base),0,x0,w,T);
+ctx.drawImage(c1,0,camY,w,h,x0-camX,0,w,h);
 if(base!==autre&&k>0.01){
-  if(PANO[autre]){const ga=ctx.globalAlpha;ctx.globalAlpha=k;ctx.drawImage(PANO[autre],camX,camY,lw,h,0,0,lw,h);ctx.globalAlpha=ga;}
-  else if(!PANO_ATTENTE){PANO_ATTENTE=true;(window.requestIdleCallback||setTimeout)(()=>{try{panoramaDuPort(autre);}catch(x){}PANO_ATTENTE=false;});}
+  if(PANO[autre]){const c2=composerLePort(PANO[autre],1,x0,w,T);const ga=ctx.globalAlpha;ctx.globalAlpha=k;ctx.drawImage(c2,0,camY,w,h,x0-camX,0,w,h);ctx.globalAlpha=ga;}
+  else if(!PANO_ATTENTE){PANO_ATTENTE=true;(window.requestIdleCallback||setTimeout)(()=>{try{couchesDuPort(autre);}catch(x){}PANO_ATTENTE=false;});}
 }
+animerLePort(ctx,base,camX,camY,lw,h,T);
 }
 function construireSolExtramar(){
 const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;

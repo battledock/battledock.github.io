@@ -13930,7 +13930,7 @@ if(CARTE==='extramar'){scintillerLaMer(ctx,camX,camY);eauVivante(ctx,camX,camY);
 const px=Math.round((joueur.x-camX)*ECH)/ECH;
 const py=Math.round((joueur.y-camY)*ECH)/ECH;
 flechesVersLesAutres(camX,camY);
-if(QUALITE>=0.5)dessinerNuages(ctx,camX,camY);   /* l'ombre des nuages */
+if(QUALITE>=0.5&&CARTE!=='extramar')dessinerNuages(ctx,camX,camY);   /* l'ombre des nuages (pas au port : des taches sombres qui glissent sur le granit, sous un ciel peint ailleurs) */
 if(QUALITE>=1)dessinerPapillons(ctx,camX,camY);
 if(CARTE==='tokyo'&&TKM&&TKM.lumieresTokyo){try{TKM.lumieresTokyo(ctx,camX,camY);}catch(x){}}
 ambiance(ctx);                          /* une lueur douce vers le centre */
@@ -17249,7 +17249,17 @@ if(!bloque(sx,ay))ax=sx;
 if(!bloque(ax,sy))ay=sy;
 }
 }
-bloqueBord=(ax===joueur.x&&Math.abs(vx)>2)||(ay===joueur.y&&Math.abs(vy)>2);
+/* LE LONG D'UN MUR, ON MARCHE. Un seul axe bloque suffisait a arreter
+   la foulee, alors que l'autre axe avancait encore : collé au fond du
+   quai, on filait de cote les pieds immobiles. L'axe bloque perd sa
+   vitesse (le corps se tourne vers ou il va vraiment), et on ne s'arrete
+   que si l'on n'avance presque plus du tout. */
+let vReel=v;
+{const mx=ax-(+joueur.x||0), my=ay-(+joueur.y||0), ex=nx-(+joueur.x||0), ey=ny-(+joueur.y||0);
+if(Math.abs(ex)>0.05&&Math.abs(mx)<Math.abs(ex)*0.3)vx=0;
+if(Math.abs(ey)>0.05&&Math.abs(my)<Math.abs(ey)*0.3)vy=0;
+bloqueBord=Math.hypot(mx,my)<Math.hypot(ex,ey)*0.3;
+vReel=Math.hypot(mx,my)/Math.max(dt,1e-3);}
 joueur.x=ax;joueur.y=ay;
 /* ================= LA CADENCE DE LA FOULÉE =================
    Mesuré : le personnage fait 44,5 px de haut, sa hanche est à 11,5 px du
@@ -17280,7 +17290,7 @@ joueur.x=ax;joueur.y=ay;
    CADENCE, DÉRIVÉE, à partir du glissement, de la longueur du pas et du
    nombre d'images du cycle. Pour revenir à l'ancienne marche nerveuse,
    c'est GLISSE qu'on monte. */
-if(!bloqueBord)joueur.pas+=v*dt*CADENCE_PAS;
+if(!bloqueBord)joueur.pas+=Math.min(v,vReel)*dt*CADENCE_PAS;
 const versX=Math.abs(vx)>Math.abs(vy)*1.35;
 const versY=Math.abs(vy)>Math.abs(vx)*1.35;
 if(versX)joueur.dir=vx>0?'droite':'gauche';
@@ -18598,7 +18608,7 @@ if(Cm.f>0.2){const v=L.createRadialGradient(Lw/2,Lh*0.48,Math.min(Lw,Lh)*0.3,Lw/
 v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,10,'+((Cm.f-0.2)*0.9).toFixed(3)+')');L.fillStyle=v;L.fillRect(0,0,Lw,Lh);}
 L.globalCompositeOperation='lighter';
 for(const l of LUMIERES){const T=tacheTeinte(l.c[0],l.c[1],l.c[2]), rr=l.r*R;if(rr<1)continue;L.globalAlpha=Math.min(0.72,l.a*0.72);L.drawImage(T,l.x*R-rr,l.y*R-rr,rr*2,rr*2);}
-if(Cm.f>0.18&&typeof joueur!=='undefined'){const m=ctxJoueurEcran();if(m){const T=tacheTeinte(170,170,190), rr=64*R*(m.sc||1);L.globalAlpha=Math.min(0.55,(Cm.f-0.18)*1.4);L.drawImage(T,m.x*R-rr,m.y*R-rr,rr*2,rr*2);}}
+if(false&&Cm.f>0.18&&typeof joueur!=='undefined'){const m=ctxJoueurEcran();   /* plus de halo autour du joueur */if(m){const T=tacheTeinte(170,170,190), rr=64*R*(m.sc||1);L.globalAlpha=Math.min(0.55,(Cm.f-0.18)*1.4);L.drawImage(T,m.x*R-rr,m.y*R-rr,rr*2,rr*2);}}
 L.globalAlpha=1;L.globalCompositeOperation='source-over';
 g.globalCompositeOperation='multiply';g.imageSmoothingEnabled=true;g.drawImage(CARTE_LUM,0,0,W,H);
 }
