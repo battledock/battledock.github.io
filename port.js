@@ -334,7 +334,7 @@ const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.sli
 const BAYER=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
 const seuil=(x,y)=>(BAYER[(y&3)*4+(x&3)]+0.5)/16;
 const SOLEIL=aube?{x:1700,y:82}:(soir?{x:430,y:66}:null);   /* le soir derriere les portiques, l'aube derriere les collines */
-const LUNE={x:1210,y:26};
+const LUNE={x:960,y:24};
 
 /* ---------- LE CIEL : des bandes tramees, comme un vrai ciel de pixel ---------- */
 {
@@ -416,7 +416,7 @@ for(let x=0;x<M;x++){
   if(A(x*0.37)<0.3)px(x,t+3+Math.floor(A(x*1.3)*8),soir?'#7e6a8c':'#8ea2bc');
 }
 /* la colline de la Garde, et les pentes ou grimpe la ville */
-const garde=x=>{const u=(x-1540)/150;return 58+60*u*u;};
+const garde=x=>{const u=(x-1540)/150;return 70+54*u*u;};
 const crete2=x=>Math.min(HZ-9-4*sn(x*0.021)-3*sn(x*0.057),garde(x));
 for(let x=600;x<M;x++){
   const t=Math.round(crete2(x));if(t>=HZ)continue;
@@ -585,24 +585,71 @@ ligne(1000,HZ-34,1000,HZ-44,'#c8ccd0');P(997,HZ-42,7,1,'#c8ccd0');
 }
 
 Q=qm;
-/* ---------- LA MAJOR : les bandes vertes et blanches, les coupoles ---------- */
 {
-const B=['#ecdfc2','#8d9b86'];
-const raye=(x,y,w,h,ombre)=>{for(let j=0;j<h;j++){const c=((y+j)%3===0)?B[1]:B[0];P(x,y+j,w,1,c);if(ombre)P(x+w-2,y+j,2,1,((y+j)%3===0)?'#6f7c6a':'#c9bb9c');}};
+/* ---------- LA MAJOR : la cathedrale romano-byzantine, rayee vert et blanc ----------
+   De gauche a droite : les deux tours de la facade et leurs petites coupoles,
+   la nef et ses deux coupoles, la grande coupole sur son tambour a la
+   croisee, puis le chevet et ses coupoles qui descendent. Le tout pose sur
+   les voutes de l'esplanade. La lumiere vient de la gauche. */
+const W=['#fbf6ea','#eee4cc','#d9cbaa','#b8a67e'], G=['#9cb49a','#6f8a72','#55705c','#435a4a'];
+const DK='#2e2826', DK2='#4a3e38';
+/* un mur raye : deux rangs de pierre blanche, un rang de marbre vert */
+const raye=(x,y,w,h)=>{for(let j=0;j<h;j++){const yy=y+j, vert=((yy%3)+3)%3===2, C=vert?G:W;
+  P(x,yy,w,1,C[1]);px(x,yy,C[0]);if(w>4){P(x+w-2,yy,2,1,C[2]);}if(w>8)P(x+w-1,yy,1,1,C[3]);}};
+const corniche=(x,y,w)=>{P(x-1,y,w+2,1,W[0]);P(x-1,y+1,w+2,1,W[3]);};
+const baie=(x,y,w,h,c)=>{P(x,y+1,w,h-1,c||DK);if(w>2)P(x+1,y,w-2,1,c||DK);P(x,y+h,w,1,W[0]);};
+/* une coupole : rayee, nervuree, eclairee de gauche, un rien en ogive */
 const coupole=(cx,base,r,lant)=>{
-  for(let j=0;j<=r;j++){const hw=Math.round(Math.sqrt(r*r-(r-j)*(r-j))), y=base-r+j;
-    const c=(j%3===2)?B[1]:B[0];P(cx-hw,y,hw*2+1,1,c);P(cx+Math.round(hw*0.45),y,Math.max(1,hw-Math.round(hw*0.45)),1,(j%3===2)?'#6f7c6a':'#cdbf9f');px(cx-hw,y,'#f8f0dc');}
-  if(lant){P(cx-1,base-r-5,3,5,B[0]);P(cx-2,base-r-6,5,1,B[1]);px(cx,base-r-8,'#7a6a50');px(cx,base-r-9,'#7a6a50');px(cx-1,base-r-8,'#7a6a50');px(cx+1,base-r-8,'#7a6a50');}
+  const Hh=Math.round(r*1.12);
+  for(let j=0;j<=Hh;j++){const t=j/Hh, hw=Math.max(1,Math.round(r*Math.sqrt(1-Math.pow(1-t,1.7)))), y=base-Hh+j;
+    const vert=Math.floor(j/2)%2===1, C=vert?G:W;
+    for(let x=-hw;x<=hw;x++){const u=x/hw, l=-u*0.75+(1-t)*0.35;
+      let k=l>0.45?0:(l>0.0?1:(l>-0.45?2:3));
+      const nerv=hw>3&&[-0.62,-0.22,0.22,0.62].some(n=>Math.abs(u-n)<0.5/hw);
+      if(nerv)k=Math.min(3,k+1);
+      px(cx+x,y,C[k]);}}
+  P(cx-r,base,r*2+1,1,W[3]);
+  if(lant){const lh=Math.max(3,Math.round(r*0.4));P(cx-1,base-Hh-lh,3,lh,W[1]);P(cx+1,base-Hh-lh,1,lh,W[2]);
+    P(cx-2,base-Hh-lh-1,5,1,G[1]);px(cx,base-Hh-lh-2,W[0]);
+    P(cx,base-Hh-lh-6,1,4,'#7a6a50');P(cx-1,base-Hh-lh-5,3,1,'#7a6a50');}
 };
-P(1096,HZ-7,168,7,'#c8b48c');P(1096,HZ-7,168,1,'#e4d4b0');for(let x=1098;x<1262;x+=6)px(x,HZ-4,'#a8946e');
-raye(1140,HZ-30,112,23,true);
-for(let x=1144;x<1248;x+=6){P(x,HZ-18,2,6,'#3a3430');px(x,HZ-19,'#5a5048');if(nuit&&A(x*1.1)<0.5)lum(x,HZ-17,2,4,'#e8a050');}
-for(const tx of [1112,1128]){raye(tx,HZ-48,11,41,true);coupole(tx+5,HZ-48,5,true);P(tx+3,HZ-40,4,6,'#3a3430');}
-raye(1123,HZ-34,5,27,false);P(1124,HZ-14,3,7,'#3a3430');
-raye(1186,HZ-42,29,12,true);for(let x=1189;x<1213;x+=5)P(x,HZ-39,2,5,'#3a3430');
-coupole(1200,HZ-42,15,true);
-raye(1153,HZ-36,15,6,true);coupole(1160,HZ-36,7,true);
-raye(1232,HZ-37,15,7,true);coupole(1239,HZ-37,8,true);
+/* un tambour : le cylindre sous la coupole, perce de baies */
+const tambour=(cx,base,r,h)=>{raye(cx-r,base-h,r*2+1,h);for(let x=cx-r+2;x<cx+r-1;x+=4)baie(x,base-h+2,2,h-4);corniche(cx-r,base-h-1,r*2+1);};
+const x0=1092, sol=HZ-12;
+/* la grande coupole de la croisee, au fond */
+tambour(x0+120,sol-24,15,11);coupole(x0+120,sol-36,16,true);
+/* les bras du transept, un peu plus hauts que la nef */
+raye(x0+100,sol-28,40,28);corniche(x0+100,sol-29,40);
+for(let x=x0+104;x<x0+137;x+=6)baie(x,sol-23,3,9);
+P(x0+116,sol-34,9,6,W[1]);P(x0+117,sol-35,7,1,W[0]);px(x0+120,sol-33,DK);   /* le fronton et son oculus */
+/* la nef */
+raye(x0+44,sol-22,58,22);corniche(x0+44,sol-23,58);
+for(let x=x0+47;x<x0+100;x+=7){baie(x,sol-18,3,8);P(x-1,sol-6,5,1,W[2]);}
+for(let x=x0+45;x<x0+101;x+=2)px(x,sol-21,DK2);                               /* la galerie d'arcatures */
+tambour(x0+60,sol-23,5,4);coupole(x0+60,sol-28,6,true);
+tambour(x0+84,sol-23,5,4);coupole(x0+84,sol-28,6,true);
+/* le chevet : l'abside et ses coupoles qui descendent */
+raye(x0+140,sol-20,22,20);corniche(x0+140,sol-21,22);for(let x=x0+143;x<x0+160;x+=5)baie(x,sol-16,2,7);
+tambour(x0+150,sol-21,5,3);coupole(x0+150,sol-25,7,true);
+raye(x0+162,sol-13,12,13);corniche(x0+162,sol-14,12);coupole(x0+168,sol-15,5,true);
+/* la facade et ses deux tours */
+raye(x0+20,sol-30,24,30);corniche(x0+20,sol-31,24);
+for(let k=0;k<5;k++)P(x0+32-k*2,sol-36+k,k*4+1,1,k%2?G[1]:W[1]);            /* le pignon */
+P(x0+27,sol-22,10,22,W[2]);baie(x0+28,sol-21,8,20,DK);P(x0+31,sol-20,2,2,'#c89a50');   /* le grand portail */
+P(x0+26,sol-25,12,2,W[0]);
+for(const tx of [x0+6,x0+44-6-8]){
+  const tw=14, th=50;
+  raye(tx,sol-th,tw,th);corniche(tx,sol-th-1,tw);corniche(tx,sol-th+14,tw);
+  baie(tx+3,sol-th+3,3,9);baie(tx+8,sol-th+3,3,9);                          /* le beffroi */
+  baie(tx+5,sol-th+20,4,10);baie(tx+5,sol-14,4,8);
+  for(const cx of [tx,tx+tw-1]){P(cx,sol-th-4,1,3,W[1]);px(cx,sol-th-5,W[0]);}   /* les pinacles */
+  coupole(tx+7,sol-th-2,6,true);
+}
+/* les voutes de l'esplanade, au pied de la cathedrale */
+P(x0-4,sol,184,12,W[2]);P(x0-4,sol,184,1,W[0]);P(x0-4,sol+1,184,1,W[3]);
+for(let x=x0-2;x<x0+178;x+=8){P(x+1,sol+5,5,7,'#6a5a4c');P(x+2,sol+4,3,1,'#6a5a4c');P(x+1,sol+5,1,7,'#4e4238');P(x+6,sol+3,2,9,W[1]);px(x+6,sol+3,W[0]);}
+for(let x=x0-4;x<x0+180;x+=2)px(x,sol-1,W[1]);                                 /* la balustrade */
+if(nuit)for(let x=x0+2;x<x0+176;x+=8)lum(x+1,sol+6,4,4,'#e8a050');
 }
 
 /* ---------- LE FORT SAINT-JEAN ---------- */
@@ -630,18 +677,65 @@ ligne(1366,HZ-17,1392,HZ-26,'#5b534c');ligne(1366,HZ-16,1392,HZ-25,'#3a3530');
 /* le fort Saint-Nicolas, de l'autre cote de la passe */
 P(1500,HZ-11,70,11,'#c6ad84');P(1500,HZ-11,70,1,'#dcc6a0');for(let x=1500;x<1570;x+=4)P(x,HZ-13,2,2,'#c6ad84');
 
-/* ---------- NOTRE-DAME DE LA GARDE, la Bonne Mere ---------- */
+/* ---------- NOTRE-DAME DE LA GARDE, la Bonne Mere ----------
+   Sur son rocher : les remparts du vieux fort, la basilique rayee et sa
+   coupole, et le clocher carre qui porte la Vierge doree a l'Enfant,
+   tournee vers la mer. La lumiere vient de la gauche. */
 {
 const cx=1540, sol=Math.round(garde(cx));
-const B=['#efe6d2','#9ea48c'];
-P(cx-26,sol-6,52,8,'#d6c9ac');P(cx-26,sol-6,52,1,'#ece0c4');for(let x=cx-24;x<cx+26;x+=5)P(x,sol-3,2,2,'#7a6c58');
-for(let j=0;j<8;j++)P(cx-20,sol-14+j,22,1,(j%3===0)?B[1]:B[0]);
-for(let j=0;j<=5;j++){const hw=Math.round(Math.sqrt(25-(5-j)*(5-j)));P(cx-12-hw,sol-19+j,hw*2+1,1,j%3===2?B[1]:B[0]);}
-for(let j=0;j<30;j++){const y=sol-44+j;P(cx+2,y,9,1,(j%3===0)?B[1]:B[0]);px(cx+10,y,'#b8ae94');}
-P(cx+4,sol-38,2,5,'#3a3430');P(cx+7,sol-38,2,5,'#3a3430');
-P(cx+3,sol-48,7,4,B[0]);P(cx+3,sol-48,7,1,B[1]);
-P(cx+5,sol-51,3,3,'#d8cdb4');
-P(cx+5,sol-58,3,7,'#e8b83a');px(cx+5,sol-57,'#fff0a0');px(cx+5,sol-55,'#fff0a0');P(cx+7,sol-57,1,6,'#a87a20');px(cx+6,sol-59,'#e8b83a');
+const W=['#fbf6ea','#ece2c8','#d4c5a2','#b09c74'], G=['#9cb49a','#6f8a72','#55705c','#435a4a'];
+const DK='#2e2826';
+const raye=(x,y,w,h)=>{for(let j=0;j<h;j++){const yy=y+j, vert=((yy%3)+3)%3===2, C=vert?G:W;P(x,yy,w,1,C[1]);px(x,yy,C[0]);if(w>4)P(x+w-2,yy,2,1,C[2]);}};
+const corniche=(x,y,w)=>{P(x-1,y,w+2,1,W[0]);P(x-1,y+1,w+2,1,W[3]);};
+const baie=(x,y,w,h)=>{P(x,y+1,w,h-1,DK);if(w>2)P(x+1,y,w-2,1,DK);};
+/* le rocher calcaire sous le fort : des falaises en strates, de la garrigue */
+Q=q;   /* le rocher n'est pas eclaire la nuit : seul le monument l'est */
+for(let x=cx-30;x<=cx+30;x++){const u=(x-cx)/30, top=sol+1+Math.round(u*u*7), bas=sol+9+Math.round(Math.abs(u)*5)-Math.round(A(x*0.7)*3);
+  for(let y=top;y<bas;y++){const r=A(x*1.7+y*2.3), strate=((y+Math.floor(x/7))%3===0);
+    let c=y===top?'#f2ead6':(u>0.25?(strate?'#b4aa90':'#c8bea4'):(strate?'#c9bfa5':'#ded5bd'));
+    if(r<0.07)c='#8e846c';if(r>0.9&&y>top+1)c='#6f7d5c';px(x,y,c);}}
+Q=qm;
+/* les remparts et les bastions */
+const R0=sol+2;
+P(cx-34,R0-10,68,10,W[2]);P(cx-34,R0-10,68,1,W[0]);P(cx-34,R0-9,68,1,W[1]);
+for(let x=cx-34;x<cx+34;x+=3)P(x,R0-12,2,2,W[1]);                               /* les creneaux */
+for(let y=R0-8;y<R0;y+=2)for(let x=cx-33+((y>>1)%2)*3;x<cx+33;x+=6)P(x,y,4,1,W[3]);   /* l'appareil */
+P(cx+26,R0-10,8,10,W[3]);                                                         /* le flanc a l'ombre */
+P(cx-40,R0-6,8,6,W[2]);P(cx-40,R0-6,8,1,W[0]);P(cx+32,R0-6,8,6,W[3]);          /* les bastions bas */
+baie(cx-4,R0-7,5,7);P(cx-5,R0-8,7,1,W[0]);                                       /* la porte du fort */
+for(let k=0;k<6;k++)P(cx-30+k*3,R0+2+k,4,1,'#cfc5ac');                           /* la rampe qui monte */
+/* la basilique : la nef rayee a droite du clocher */
+const nb=R0-10;
+raye(cx-2,nb-14,26,14);corniche(cx-2,nb-15,26);
+for(let x=cx+1;x<cx+22;x+=5)baie(x,nb-11,2,6);
+raye(cx+24,nb-9,6,9);P(cx+29,nb-9,1,9,W[3]);                                      /* le chevet */
+/* la coupole, sur son tambour */
+raye(cx+7,nb-19,11,4);corniche(cx+7,nb-20,11);for(let x=cx+9;x<cx+17;x+=3)px(x,nb-17,DK);
+{const ccx=cx+12, b=nb-20, r=6, Hh=7;
+ for(let j=0;j<=Hh;j++){const t=j/Hh, hw=Math.max(1,Math.round(r*Math.sqrt(1-Math.pow(1-t,1.7)))), y=b-Hh+j, C=Math.floor(j/2)%2?G:W;
+   for(let x=-hw;x<=hw;x++){const l=-x/hw*0.75+(1-t)*0.3;px(ccx+x,y,C[l>0.45?0:(l>0?1:(l>-0.45?2:3))]);}}
+ P(ccx-1,b-Hh-3,3,3,W[1]);px(ccx,b-Hh-4,W[0]);P(ccx,b-Hh-7,1,3,'#c89a3a');P(ccx-1,b-Hh-6,3,1,'#c89a3a');}
+/* LE CLOCHER : carre, rayé, le beffroi et ses grandes baies, la balustrade */
+const tx=cx-13, tw=12, tb=R0-10, tt=tb-31;
+raye(tx,tt,tw,tb-tt);
+corniche(tx,tt+12,tw);corniche(tx,tt+21,tw);
+baie(tx+3,tt+23,6,7);P(tx+5,tt+23,2,7,W[2]);                                    /* la grande baie basse */
+baie(tx+2,tt+3,3,8);baie(tx+7,tt+3,3,8);                                         /* le beffroi */
+P(tx+1,tt+11,tw-2,1,W[3]);
+corniche(tx,tt-1,tw);for(let x=tx-1;x<tx+tw+1;x+=2)px(x,tt-2,W[1]);               /* la balustrade */
+/* le piedestal octogonal de la statue */
+const pc=tx+6;
+P(pc-4,tt-8,8,6,W[1]);px(pc-4,tt-8,W[0]);P(pc+2,tt-8,2,6,W[2]);
+for(let x=pc-3;x<pc+3;x+=2)P(x,tt-7,1,4,W[3]);
+P(pc-5,tt-9,10,1,W[0]);P(pc-3,tt-11,6,2,W[1]);P(pc+1,tt-11,2,2,W[2]);
+/* LA BONNE MERE : la Vierge doree, l'Enfant sur le bras, tournee vers la mer */
+{const OR={'0':'#fff4c0','1':'#f2c94e','2':'#cf9a2c','3':'#8e6018'}, sb=tt-11;
+ const M=['...0...','..011..','..112..','.01122.','0011122','0111122','.011122','..11122','..11223','..11223','.011223','.011223','.111223','0111223','1122233'];
+ const top=sb-M.length;
+ M.forEach((r,j)=>{for(let i=0;i<7;i++){const ch=r[i];if(ch!=='.')px(pc-3+i,top+j,OR[ch]);}});
+ if(!nuit){px(pc-1,top+1,'#ffffff');px(pc-2,top+5,'#ffffff');}
+
+}
 }
 
 Q=q;
@@ -677,7 +771,7 @@ if(ambiance!=='jour'){teinter(q,false);teinter(qm,true);}
 q.drawImage(qm.canvas,0,0);
 /* les lumieres, par-dessus la teinte : un petit halo, puis le point.
    Celles de la ville sont derriere les monuments : on ne les voit pas a travers. */
-const DEVANT=[[150,560,HZ-62],[638,682,6],[690,717,28],[727,869,HZ-22],[877,911,HZ-35],[928,1100,HZ-48],[1094,1266,HZ-64],[1268,1374,HZ-42],[1364,1460,HZ-27],[1498,1572,HZ-14]];
+const DEVANT=[[150,560,HZ-62],[638,682,6],[690,717,28],[727,869,HZ-22],[877,911,HZ-35],[928,1100,HZ-48],[1086,1276,HZ-80],[1496,1584,0],[1268,1374,HZ-42],[1364,1460,HZ-27],[1498,1572,HZ-14]];
 for(const l of LUM){if(l[5]&&DEVANT.some(d=>l[0]>=d[0]&&l[0]<d[1]&&l[1]>=d[2]))continue;if(l[4].indexOf('rgba(0,0,0,0)')===0||l[4].indexOf(',.0)')>0)continue;
   if(nuit&&(l[2]>1||l[4]==='#ff3a2a')){q.fillStyle=l[4]==='#ff3a2a'?'rgba(255,70,50,.22)':'rgba(255,200,120,.16)';q.fillRect(l[0]-1,l[1]-1,l[2]+2,l[3]+2);}
   P(l[0],l[1],l[2],l[3],l[4]);}
