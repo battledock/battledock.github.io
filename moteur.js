@@ -2743,10 +2743,7 @@ const VOIE2_X0=716;                /* son butoir, tout à gauche */
 const ENTREPOT_FIXE=[852,626];
 const SUD=505;                    /* la ligne des façades */
 const CARREAU_FIXE=[880,SUD];
-const PANNEAU_MINE=[1268,166];    /* l'écriteau planté devant le puits */
-const TAILLERIE_FIXE=[1110,SUD];
 const HALTE_FIXE=[1252,SUD];
-const COMPTOIR2_FIXE=[880,152], BOUTIQUE_FIXE=[1110,152];
 const HALTE_L=168;                /* sa largeur, à l'échelle de la forge */
 const RAIL_Y=358;
 const RAIL_X0=1000;               /* elle part de l'est du village et sort */
@@ -6437,7 +6434,6 @@ const F_ETAL={x:1280,y:530};       /* l'étal, à l'est de la carte */
    arrive par le sentier. Son écran existait depuis toujours mais aucune
    porte n'y menait : la seule qui en posait une était dans un bloc de
    code jamais exécuté. */
-const F_CABANE=[760,340];
 const F_BOIS={sombre:'#5b3f26',bas:'#6b4a2a',moyen:'#7d5833',clair:'#96693c',haut:'#ab7a49'};
 function F_palissade(){
   const c=document.createElement('canvas');c.width=20;c.height=34;
@@ -10224,8 +10220,6 @@ return false;
 }
 const CAMP_FIXE  =[430,SUD];                     /* le campement, sur la ligne du sud */
 const COFFRE_FIXE=[890,392];                    /* au sud-est de la place */
-const FORGE_FIXE =[662,318];                    /* à l'ouest, vers la rivière */
-const COMPTOIR_FIXE=[880,152];                  /* le long entrepôt, en haut à gauche */
 const CASINO_FIXE  =[912,246];                  /* au nord-est, dégagé de l'entrepôt */
 const dansLaCarte=(v,max)=>typeof v==='number'&&v>BORD&&v<max-BORD;
 let joueur={x:dansLaCarte(e.x,MONDE_L)?(e.x<400?e.x+400:e.x):CAMP_FIXE[0],
@@ -19637,10 +19631,6 @@ padding:6px 11px 6px 7px;font:800 12px 'Baloo 2',sans-serif;color:#2f3f50;box-sh
    — « j'avais bien une truffe » se trouve à la ferme, pas à la lettre T.
    Les poissons se reconnaissent aux tables du jeu, le reste à ces
    listes ; ce qui n'entre nulle part finit dans « Autres ». */
-const SAC_FERME=['laine','truffe','lait','fromage','oeufs','oeufdor','miel','foin',
- 'cerises','pommes','abricots','figues','amandes','grenades','oranges','citrons','olives','mimosa','prunes'];
-const SAC_FORET=['bois','resine','roseaux','baies','herbes','champignons','planche','poutre','fibre','manche','bogue','santon'];
-const SAC_MINE=['pierre','argile','charbon','cuivre','fer','ambre','argent','brique','tuile'];
 const SAC_CUISINE=['pain','confiture','conserve','soupe','tarte'];
 let SAC_POISSONS=null;
 const SAC_RAY=[['ferme','De la ferme','\u{1F33E}'],['peche','De la mer','\u{1F41F}'],
@@ -21978,8 +21968,6 @@ function vignetteTete(cv2,ap,dir){const D=Math.max(1,Math.min(2,Math.floor(windo
 cv2.width=L0*E;cv2.height=H0*E;const g=cv2.getContext('2d');g.setTransform(E,0,0,E,0,0);g.imageSmoothingEnabled=false;const av=GESTE;GESTE={t:0};sprite(g,L0/2,H0+22-(H0-32)*0.45,ap,dir||'bas',0,false);GESTE=av;}   /* le cadre suit la forme du médaillon */
 function hsBulle(t){const b=$('hsBulle');if(!b)return;b.textContent=t;b.classList.add('on');clearTimeout(hsBulle.t);hsBulle.t=setTimeout(()=>b.classList.remove('on'),2600);}
 let REPU_FIN=0;
-const MENUS_CROUSTI=[['limonade','La Limonade du Vieux-Port','une grande limonade glacée',100,0],['petit','Le Petit Crousti','3 pilons, des frites, une sauce',300,5],
-['seau','Le Seau du Port','le seau de 8 morceaux, frites, boisson',600,10],['mega','Le Méga-Seau','16 morceaux, 2 frites, 2 boissons, le dessert',1200,20]];
 const CRX={
 P:(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);},
 pilon(g,x,y,s){const r=(a,b,w,h,c)=>CRX.P(g,x+a*s,y+b*s,w*s,h*s,c);r(4,0,8,7,'#b8621e');r(3,1,10,5,'#c8742a');r(5,1,5,2,'#e8a050');r(6,2,2,1,'#f8c870');r(10,5,3,2,'#8a4414');r(11,6,2,4,'#f4ecd8');r(10,9,2,2,'#f4ecd8');r(12,9,2,2,'#f4ecd8');},
@@ -22250,12 +22238,6 @@ function glVendeuse(cv){const g=cv.getContext('2d');cv.width=44;cv.height=50;con
    Ton bateau (palier 19) ouvre la carte de la rade : quatre coins de
    pêche, chacun son gasoil et ses espèces. La pêche au large s'ouvre
    au palier 20 ; avant, la carte se visite mais on ne part pas. */
-const COINS_RADE=[
- ['digue','La digue du large',0,'Deux minutes de route. Loups, dorades et sars ; congre et murène à la nuit.'],
- ['frioul','Les îles du Frioul',300,'Les herbiers : sar, saupe, poulpe, rascasse — et le mérou, avec la canne en fibre.'],
- ['calanques','Les calanques',600,'Tombants et eau claire : denti, pagre, corb, barracuda, liche.'],
- ['planier','Le sec du Planier',1000,'Grand fond, courant fort. Thon, palamide, coryphène, espadon.']];
-const RADE_POS={frioul:[44,62],calanques:[108,26],digue:[130,120],planier:[32,158]};
 let RADE_SEL='digue', RADE_ETAT=null, RADE_PART=false, RADE_H=264;
 /* LA RADE PARLE AU SERVEUR EN TANT QUE JOUEUR CONNECTÉ.
    appelRPC n'envoie que la clé anonyme : auth.uid() y est vide, et
@@ -25686,24 +25668,6 @@ g.fillRect(X-(w>>1),Y+k,w,1);}}
 /* ================= LES PORTRAITS DES BÊTES =================
    Chaque espèce a plusieurs robes : la bête n° 2 est toujours la même,
    on tire sa robe de son numéro et non du hasard. */
-const BETE_ROBES={
-vache:[{corps:'#efe9dc',clair:'#fffdf6',ombre:'#c6bda9',tache:'#2e2721',tacheC:'#453b32',
-patte:'#e4ddcd',patteF:'#b8ae9b',sabot:'#3a2f26',museau:'#f0b4ae',museauC:'#f8cfca',
-naseau:'#a8766e',corne:'#d8c89c',corneC:'#f0e4c0',toupet:'#2e2721',collier:'#8a4e28',cloche:'#d8a84a',clocheC:'#f4d88a'},
-{corps:'#bf8549',clair:'#d9a062',ombre:'#8f6232',tache:'#f4efe4',tacheC:'#ffffff',
-patte:'#b07f46',patteF:'#8a6134',sabot:'#36281c',museau:'#e8ada6',museauC:'#f6c9c3',
-naseau:'#9c6a62',corne:'#d8c89c',corneC:'#f0e4c0',toupet:'#5a3c1e',collier:'#5a3c1e',cloche:'#d8a84a',clocheC:'#f4d88a'},
-{corps:'#312b26',clair:'#4b4238',ombre:'#1b1712',tache:'#f4efe4',tacheC:'#ffffff',
-patte:'#2a241e',patteF:'#1b1712',sabot:'#12100c',museau:'#d49a98',museauC:'#e8b8b4',
-naseau:'#8e625e',corne:'#c8b890',corneC:'#e4d8b0',toupet:'#f4efe4',collier:'#8a4e28',cloche:'#d8a84a',clocheC:'#f4d88a'}],
-mouton:[{corps:'#ded6c2',clair:'#f6f2e6',ombre:'#b4aa94',tete:'#3a3228',tete2:'#544a3c',
-patte:'#4e463a',patteF:'#36302a',sabot:'#1f1b17',museau:'#5e5346',oeil:'#f2efe4'},
-{corps:'#453f36',clair:'#625a4e',ombre:'#2a251f',tete:'#1f1b17',tete2:'#332d27',
-patte:'#2a241e',patteF:'#1b1712',sabot:'#12100c',museau:'#3a332c',oeil:'#ded6c6'}],
-cochon:[{corps:'#e8a0a8',clair:'#f6bfc5',ombre:'#c4808c',tache:null,
-patte:'#dd949e',patteF:'#b8737f',sabot:'#6b4348',groin:'#d8808f',groinC:'#eda0ac',naseau:'#9c5460',cil:'#8a5560'},
-{corps:'#e3a89c',clair:'#f2c4b8',ombre:'#bb8278',tache:'#514440',tacheC:'#6a5a54',
-patte:'#d79a8e',patteF:'#ac7a70',sabot:'#4a3a36',groin:'#cf8a84',groinC:'#e6a8a0',naseau:'#8f5c56',cil:'#7a564e'}]};
 /* LES BÊTES, DE PROFIL.
    DEUX RÈGLES APPRISES À L'ÉCRAN, à ne plus jamais perdre :
    1. tout ce qui dépasse (cornes, oreilles, queue, tête, toupet) doit
@@ -25718,98 +25682,6 @@ patte:'#d79a8e',patteF:'#ac7a70',sabot:'#4a3a36',groin:'#cf8a84',groinC:'#e6a8a0
    peintes plus sombres, et A.dy (qui monte à 5 en broutant) plonge la
    tête dans l'herbe — on l'amplifie juste assez pour que le mufle
    touche le sol sans le traverser. */
-const BETE_DESSIN={
-vache:(R,p,A)=>{
-const hd=A.dy*1.9, hx=7, hy=-15.5+hd, mj=A.mache?0.5:0;
-R(-9.5,-12,1.5,7,p.ombre);                                    /* la queue le long de la croupe */
-R(-11+A.q*0.5,-5.5,1.5,3.5,p.toupet);                         /* le toupet, qui balaie les mouches */
-R(-7+A.m*0.5,-4.5,2.5,6.5,p.patteF);R(2.5-A.m*0.5,-4.5,2.5,6.5,p.patteF);   /* les pattes du fond */
-R(-7+A.m*0.5,0.5,2.5,1.5,p.sabot);R(2.5-A.m*0.5,0.5,2.5,1.5,p.sabot);
-R(-8.5+A.m,-4.5,3,7.5,p.patte);R(4.5-A.m,-4.5,3,7.5,p.patte); /* les pattes de devant */
-R(-8.5+A.m,1.5,3,1.5,p.sabot);R(4.5-A.m,1.5,3,1.5,p.sabot);
-[[-13,-6.5,4.5],[-12,-8.5,6],[-11,-9.5,7],[-10,-10,7.5],[-9,-10,7.5],
- [-8,-10,7.5],[-7,-10,7.5],[-6,-10,7.5],[-5,-9.5,7],[-4,-9,6.5]]
-.forEach(([y,a,b])=>R(a,y,b-a,1.5,y<=-12?p.clair:(y>=-5?p.ombre:p.corps)));
-R(-10,-10,1.5,4,p.ombre);                                     /* la croupe qui tourne */
-/* LES TACHES restent une ligne SOUS le bord du dos : posées au ras, elles
-   débordaient de la silhouette et la ligne claire du dos se détachait
-   toute seule au-dessus, comme une barre en l'air. */
-if(p.tache){R(-7,-10.5,4.5,4,p.tache);                         /* pas de tache au ras de la croupe : elle
-                                                                  rejoignait le toupet et faisait une rayure */
-R(-0.5,-10.5,3.5,3.5,p.tache);R(0.5,-6.5,3,2.5,p.tache);R(-5,-6,3,2,p.tache);
-R(-7,-10.5,4.5,1,p.tacheC);R(-0.5,-10.5,3.5,1,p.tacheC);}
-R(-1,-5,4.5,3,p.museau);R(-1,-5,4.5,1,p.museauC);             /* le pis */
-R(0,-2.5,1,1.5,p.naseau);R(2.5,-2.5,1,1.5,p.naseau);
-const ep=Math.min(hd*0.4,4);                                   /* le garrot s'abaisse avec la tête, sinon il reste
-                                                                  une colonne carrée en l'air quand elle broute */
-R(2.5,-13.5+ep,6,6.5-ep*0.5,p.corps);R(2.5,-13.5+ep,6,1.5,p.clair);   /* l'encolure au garrot */
-const yB=hy+2;                                                 /* quand elle broute, l'encolure plonge */
-if(yB>-7)for(let y=-7;y<yB;y+=1){const t=(y+7)/(yB+7);
-const x=4.5+(hx+1-4.5)*t;R(x,y,4.5,1.5,p.corps);R(x,y,1.5,1.5,p.clair);}
-const cy2=-13.5+ep+3.5;                                        /* le collier suit l'encolure, cloche pendue dessous */
-R(4,cy2,3.5,1.5,p.collier);
-R(4.5,cy2+1,2,2,p.cloche);R(4.5,cy2+1,2,1,p.clocheC);
-R(hx-2,hy+1.5,2.5,2.5,p.corps);R(hx-2,hy+1.5,2.5,1,p.ombre);   /* l'oreille, derrière la tête */
-R(hx+1,hy-2,1.5,4,p.corne);R(hx+4.5,hy-2,1.5,4,p.corne);       /* les cornes, qui mordent sur le crâne */
-R(hx+1,hy-2,1.5,1.5,p.corneC);R(hx+4.5,hy-2,1.5,1.5,p.corneC);
-R(hx,hy+0.5,7.5,6.5,p.corps);R(hx,hy+0.5,7.5,1.5,p.clair);     /* le crâne */
-if(p.tache)R(hx+1,hy+0.5,4,2,p.tache);                         /* l'étoile au front */
-R(hx+1.5,hy+2.5,1.5,A.oeil?1.5:0.5,'#1b1712');
-if(A.oeil)R(hx+2,hy+2.5,0.5,0.5,'#ffffff');
-R(hx+4.5,hy+3.5+mj,4,4.5,p.museau);R(hx+4.5,hy+3.5+mj,4,1,p.museauC);   /* le mufle */
-R(hx+5.5,hy+5+mj,1,1,p.naseau);R(hx+7,hy+5.5+mj,1,1,p.naseau);
-R(hx+4.5,hy+7+mj,4,1,p.naseau);},
-mouton:(R,p,A)=>{
-const hd=A.dy*1.9, hx=5.5, hy=-11.5+hd, mj=A.mache?0.5:0;
-R(-5.5+A.m*0.5,-4,2,6.5,p.patteF);R(2+A.m*-0.5,-4,2,6.5,p.patteF);   /* les pattes du fond */
-R(-5.5+A.m*0.5,1,2,1.5,p.sabot);R(2-A.m*0.5,1,2,1.5,p.sabot);
-R(-6.5+A.m,-4,2.5,7,p.patte);R(3-A.m,-4,2.5,7,p.patte);              /* les pattes de devant */
-R(-6.5+A.m,1.5,2.5,1.5,p.sabot);R(3-A.m,1.5,2.5,1.5,p.sabot);
-[[-11,-5.5,3.5],[-10,-7.5,5],[-9,-8.5,5.5],[-8,-8.5,5.5],[-7,-8.5,5.5],
- [-6,-8.5,5.5],[-5,-8,5],[-4,-7,4.5]]
-.forEach(([y,a,b])=>R(a,y,b-a,1.5,y>=-5?p.ombre:p.corps));             /* la masse de la toison */
-/* LES BOUCLES : des touffes à huit côtés posées côte à côte. Les coins
-   qui manquent en haut font les creux — la toison n'est plus un pavé. */
-const boucle=(x,y,r)=>{R(x+1,y,r-2,r,p.corps);R(x,y+1,r,r-2,p.corps);
-R(x+1,y+0.5,r-2.5,r*0.4,p.clair);};
-[[-8,-13,5],[-3.5,-13.5,5],[0.5,-13,4.5],[-9.5,-9.5,4.5],
- [-9,-6,4],[3,-10.5,4],[-5.5,-5.5,4.5],[-1,-5,4.5],[2,-5.5,4]].forEach(([x,y,r])=>boucle(x,y,r));
-R(hx-1.5,hy+1.5,2.5,2.5,p.tete2);                                     /* l'oreille arrière */
-R(hx-0.5,hy-1.5,5,3.5,p.corps);R(hx-0.5,hy-1.5,5,1.5,p.clair);        /* le toupet de laine, bien mordu sur le crâne */
-R(hx,hy+0.5,6,5.5,p.tete);R(hx,hy+0.5,6,1,p.tete2);                   /* la tête, étroite et sombre */
-R(hx+2.5,hy+1,3,2,p.tete2);R(hx+2.5,hy+1,3,0.5,p.tete);               /* l'oreille qui tombe */
-R(hx+1,hy+2.5,1.5,A.oeil?1.5:0.5,p.oeil);
-if(A.oeil)R(hx+1,hy+2.5,0.5,0.5,'#1b1712');
-R(hx+4,hy+3+mj,3,3.5,p.museau);R(hx+4,hy+3+mj,3,1,p.tete2);
-R(hx+5,hy+4+mj,1,1,p.tete);R(hx+4,hy+5.5+mj,3,1,p.tete);},
-cochon:(R,p,A)=>{
-const hd=A.dy*1.4, hx=6, hy=-11.5+hd, mj=A.mache?0.5:0;               /* pattes courtes : le corps descend bas */
-R(-10,-9,1.5,2.5,p.patte);                                            /* la queue en tire-bouchon */
-R(-11+A.q*0.5,-10.5,1.5,2,p.patte);
-R(-10+A.q*0.5,-11.5,1.5,1.5,p.patte);
-R(-6.5+A.m*0.5,-3.5,2.5,5.5,p.patteF);R(2.5-A.m*0.5,-3.5,2.5,5.5,p.patteF); /* les pattes du fond */
-R(-6.5+A.m*0.5,0.5,2.5,1.5,p.sabot);R(2.5-A.m*0.5,0.5,2.5,1.5,p.sabot);
-R(-8.5+A.m,-3.5,3,6,p.patte);R(4.5-A.m,-3.5,3,6,p.patte);             /* les pattes de devant */
-R(-8.5+A.m,1.5,3,1.5,p.sabot);R(4.5-A.m,1.5,3,1.5,p.sabot);
-[[-11,-6,4],[-10,-8,5.5],[-9,-9.5,6.5],[-8,-10,7],[-7,-10,7],
- [-6,-10,7],[-5,-10,7],[-4,-9.5,6.5],[-3,-8.5,6]]
-.forEach(([y,a,b])=>R(a,y,b-a,1.5,y<=-10?p.clair:(y>=-4?p.ombre:p.corps)));
-R(-9.5,-8,1.5,4,p.ombre);                                             /* le jambon, qui tourne */
-if(p.tache){const rond=(x,y,w,h)=>{R(x+1,y,w-2,h,p.tache);R(x,y+1,w,h-2,p.tache);
-R(x+1.5,y+0.5,w-3,1,p.tacheC);};
-rond(-7.5,-9.5,5,4.5);rond(0.5,-8.5,4,3.5);rond(-3.5,-5,3.5,2.5);}
-R(2.5,-10.5,5,6.5,p.corps);R(2.5,-10.5,5,1.5,p.clair);                /* l'encolure, courte et épaisse */
-const yB=hy+2;
-if(yB>-4)for(let y=-4;y<yB;y+=1){const t=(y+4)/(yB+4);
-const x=4.5+(hx+1-4.5)*t;R(x,y,5,1.5,p.corps);R(x,y,1.5,1.5,p.clair);}
-R(hx+1.5,hy-1.5,3.5,3.5,p.corps);R(hx+1.5,hy-1.5,3.5,1,p.clair);      /* l'oreille, qui mord sur le crâne */
-R(hx,hy+0.5,7,6.5,p.corps);R(hx,hy+0.5,7,1.5,p.clair);                /* la tête */
-R(hx+2.5,hy+0.5,3,1.5,p.ombre);                                        /* le dessous de l'oreille */
-R(hx+1,hy+2.5,1.5,A.oeil?1.5:0.5,'#20181a');
-if(A.oeil)R(hx+1.5,hy+2.5,0.5,0.5,'#ffffff');
-R(hx+5.5,hy+2.5+mj,3.5,4.5,p.groin);R(hx+5.5,hy+2.5+mj,3.5,1,p.groinC); /* le groin, relevé */
-R(hx+6.5,hy+4+mj,1,1,p.naseau);R(hx+8,hy+4+mj,1,1,p.naseau);
-R(hx+5,hy+6.5+mj,3.5,1,p.ombre);}};
 /* ================= L'ENCLOS, VU DU DESSUS =================
    Chaque bête garde sa place d'une ouverture à l'autre : on la tire de son
    numéro, pas du hasard, sinon le troupeau sauterait partout. */
@@ -26835,7 +26707,6 @@ try{if(typeof MAD_SVG==='string')document.documentElement.style.setProperty('--m
    qui s'envole quand on approche. La nuit, ses yeux et les citrouilles
    luisent — le visage reste lisible.
    ===================================================================== */
-const HW_EPV={x:710,y:426}, HW_CIT=[[690,429,1],[731,431,0.8],[743,433,0.55]], HW_K=0.27;
 let HW={spr:{},cit:{},corb:{etat:'pose',t:0,x:0,y:0}};
 /* l'épouvantail, dessiné en unités puis réduit (0,27) — la nuit, seuls les yeux s'allument */
 
@@ -26850,5 +26721,4 @@ function mhCit(g,x,y,r,nuit){const c=hwCit(r*2,nuit);g.drawImage(c,Math.round(x-
    200, 500 et 800, une tenue collector qui ne reviendra jamais.
    ===================================================================== */
 let HW_ETAT=null, HW_LU=0;
-const HW_TENUES=[['hw_seigneur','Le Seigneur des citrouilles',200],['hw_tetecit','Tête de citrouille',500],['hw_roi','Le Roi de la récolte',800]];
 
