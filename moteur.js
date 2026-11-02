@@ -35,6 +35,89 @@ const q=p.toString();
 history.replaceState(null,'',cd+'.html'+(q?'?'+q:''));}
 }catch(x){}
 const CARTE=(()=>{const c=CARTE_DEMANDEE;return c==='large'?'large':'village';})();
+
+/* ===== STUBS NOOP : fonctions supprimées encore appelées ===== */
+function bcEnclos(){}
+function bloqueForet(){return false;}
+function coinDuBateau(){return false;}
+function dessinerBete(){}
+function dessinerChampignons(){}
+function dessinerChevreuil(){}
+function dessinerForge(){}
+function dessinerLEntrepot(){}
+function dessinerLaForge(){}
+function dessinerLeBateau(){}
+function dessinerLeComptoirNeuf(){}
+function dessinerLeForgeron(){}
+function dessinerLeMetro(){}
+function dessinerMine(){}
+function dessinerMinerai(){}
+function dessinerOutilPotager(){}
+function fermePrete(){}
+function fmDessinerHalloween(){}
+function graverAtelier(){return null;}
+function graverBordureFerme(){return null;}
+function graverBoucheMetro(){return null;}
+function graverCabaneBucheron(){return null;}
+function graverChampiFo(){return null;}
+function graverChampiRare(){return null;}
+function graverCheneDore(){return null;}
+function graverCheneFo(){return null;}
+function graverComptoirFerme(){return null;}
+function graverErable(){return null;}
+function graverLeComptoirNeuf(){return null;}
+function graverLeForgeron(){return null;}
+function graverLeMetro(){return null;}
+function graverMetroMFin(){return null;}
+function graverPontonFo(){return null;}
+function graverPuits(){return null;}
+function graverQuaiMetro(){return null;}
+function graverRecolte(){return null;}
+function hwActif(){return false;}
+function hwCarteHTML(){return null;}
+function hwCit(){return null;}
+function hwCss(){}
+function hwDonner(){}
+function hwLire(){}
+function icoDepuisPlante(){return null;}
+function majChevreuil(){}
+function majSautsDuPort(){}
+function ouvrirCrousti(){}
+function ouvrirLAtelier(){}
+function ouvrirLEchoppe(){}
+function ouvrirLEtable(){}
+function ouvrirLEtalDuBois(){}
+function ouvrirLaBasseCour(){}
+function ouvrirLaBoutiqueFerme(){}
+function ouvrirLaCabane(){}
+function ouvrirLaFerme(){}
+function ouvrirLaForge(){}
+function ouvrirLaFromagerie(){}
+function ouvrirLaMariniere(){}
+function ouvrirLaRade(){}
+function ouvrirLeBar(){}
+function ouvrirLeChantierFerme(){}
+function ouvrirLeComptoir(){}
+function ouvrirLeGlacier(){}
+function ouvrirLeGrainetier(){}
+function ouvrirLeGrandChene(){}
+function ouvrirLeMarcheAuxBetes(){}
+function ouvrirLePanorama(){}
+function ouvrirLeQuaiTokyo(){}
+function partirEnVoyage(){}
+function peindreLaFerme(){}
+function peindreLaFermeFin(){}
+function poserAuPort(){}
+function poserPlant(){}
+function poule(){}
+function recolterResine(){return false;}
+function rentrerAuPort(){}
+function semerLaForet(){}
+function stopperLeBateau(){}
+function surLePonton(){return false;}
+function verPlants(){}
+function voyagerVers(){}
+
 const ANIM_DECOR={};
 const ANNEXE=CARTE!=='village';     /* Extramar et Notre-Dame : des cartes à part, sans le monde partagé */
 let createClient=null, sb=null, SB_PRET=false;
@@ -16509,9 +16592,8 @@ function cible(){
   /* TON BATEAU D'ABORD : il est amarré au bout du ponton, et le ponton
      a la priorité absolue ici. Collé à la coque, c'est le bateau qu'on
      vise, pas le tablier. */
-  {const B=(CARTE==='extramar')?DECOR.find(o=>o.t==='x_bateau'):null;
-   if(B&&Math.abs(B.x-joueur.x)<36&&joueur.y>B.y-150&&joueur.y<B.y+30)return B;}
-  {const p=surLePonton();if(p)return p;}
+/* bateau extramar retiré */
+  /* surLePonton retiré */
 let d0=48,res=null;
 const autour=autourDe(joueur.x,joueur.y);
 const LARGES=['forge','comptoir','echoppe','mine2','taillerie'];
@@ -20561,10 +20643,7 @@ setTimeout(()=>texteVolant(o.x,o.y-66,'Vous allez bientôt pouvoir découvrir','
 setTimeout(()=>texteVolant(o.x,o.y-56,'une nouvelle partie du village !','#fff3d0'),700);vibrer(12);return;}
 
 if(o.ouvre==='crousti'){ouvrirCrousti();return;}
-if(o.ouvre==='salon'){ouvrirLaMariniere();return;}
 if(o.ouvre==='presse'){afficheCapitainerie();return;}
-if(o.ouvre==='bar'){ouvrirLeBar();return;}
-if(o.ouvre==='glacier'){ouvrirLeGlacier();return;}
 if(o.ouvre==='karting'){ouvrirUneCourse('karting');return;}
 if(o.ouvre==='kayak'){ouvrirUneCourse('kayak');return;}
 if(o.ouvre==='cabanon'){ouvrirMonCabanon();return;}
@@ -20577,7 +20656,6 @@ ouvrirLeChantier();return;}
 /* LA CABANE OUVRE SUR LE BÛCHERON, et non sur l'atelier du bois : les
    deux portes menaient au même écran, et celui du bûcheron n'était
    atteignable par aucun chemin. L'atelier garde la maison de pierre. */
-if(o.ouvre==='bucheron'){ouvrirLaCabane();return;}
 if(o.ouvre==='chantierBlague'){regarderLeChantier();return;}
 
 if(o.ouvre==='epicerie'){try{bulleQuai('« Fermé pour inventaire », dit l’écriteau.');}catch(x){}vibrer(8);return;}
@@ -20589,22 +20667,13 @@ if(['scierie','campement','herboriste','carriere','grandArbre','champiRare'].inc
     grandArbre:'Trois cents ans, peut-être plus. On se sent petit.',
     champiRare:'Ils luisent un peu. Mieux vaut attendre d’en savoir plus.'}[o.ouvre]);}catch(x){}
   vibrer(8);return;}
-if(o.ouvre==='laFerme'){ouvrirLaFerme();return;}
-if(o.ouvre==='bqFerme'){ouvrirLaBoutiqueFerme();return;}
 /* LE MARCHÉ SE POSE PAR-DESSUS L'ÉCRAN DES BÊTES : il cherche .mk dans
    page2Fond, donc l'étable doit être peinte avant lui. */
-if(o.ouvre==='bassecour'){ouvrirLaBasseCour();return;}
 if(o.ouvre==='marcheBetes'){ETB=null;ouvrirLEtable();
 setTimeout(()=>{try{ouvrirLeMarcheAuxBetes();}catch(x){}},70);return;}
 if(o.ouvre==='etable'){ETB=null;ouvrirLEtable();return;}
-if(o.ouvre==='fromagerie'){ouvrirLaFromagerie();return;}
 if(o.ouvre==='metroFerme'){choisirLaDestination();return;}
-if(o.ouvre==='etalForet'){ouvrirLEtalDuBois();return;}
-if(o.ouvre==='atelierBois'){ouvrirLAtelier();return;}   /* l'atelier du bois existe déjà */
-if(o.ouvre==='cheneOuverture'){ouvrirLeGrandChene();return;}
 
-if(o.ouvre==='laRecolte'){ouvrirLaBoutiqueFerme();return;}
-if(o.ouvre==='etalGraines'){ouvrirLeGrainetier('graines');return;}
 if(o.ouvre==='maree'){/* pêche retirée */;return;}
 
 if(o.ouvre==='peche'){ouvrirLaBoutiqueDePeche();return;}
