@@ -34,7 +34,7 @@ const p=new URLSearchParams(location.search);p.delete('carte');p.delete('v');
 const q=p.toString();
 history.replaceState(null,'',cd+'.html'+(q?'?'+q:''));}
 }catch(x){}
-const CARTE=(()=>{const c=CARTE_DEMANDEE;return (c==='large'?'large':(c==='foret'?'foret':((c==='ferme'||c==='village')?'village':(c==='tokyo'?'tokyo':'extramar'))));   /* la forêt est sa propre carte ; la ferme garde l'ancien village */})();
+const CARTE=(()=>{const c=CARTE_DEMANDEE;return c==='large'?'large':'village';})();
 const ANIM_DECOR={};
 const ANNEXE=CARTE!=='village';     /* Extramar et Notre-Dame : des cartes à part, sans le monde partagé */
 let createClient=null, sb=null, SB_PRET=false;
@@ -5749,7 +5749,6 @@ return SOL;}
 if(SOL_CACHE.pret){SOL=SOL_CACHE.sol;SOL_FIN=SOL_CACHE.fin;SOL_CACHE.pret=false;return SOL;}     /* déjà construit lors d'un lancement précédent */
 rangerSolQuandOnPeut();                                                                              /* on le range quand le joueur est a l arret */
 if(CARTE==='large'){SOL=construireSolLarge();SOL_FIN=null;CHEMIN=null;return SOL;}
-if(CARTE==='foret'){SOL=construireSolForet();SOL_FIN=null;CHEMIN=null;return SOL;}
 if(CHAMPS_SEULS&&CARTE==='village'){        /* LA FERME : le pré nu, rien d'autre */
 SOL=construireSolPre();SOL_FIN=null;CHEMIN=null;return SOL;}
 SOL=construireSol();SOL_FIN=null;CHEMIN=construireChemin();
@@ -7876,7 +7875,6 @@ let TXT_FERME=null;
    restent indéfinis et le port ne se dessine pas, sans un mot. On le dit. */
 try{
 if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar}=eval(await chargerMorceau('port.js')));}
-if(CARTE==='tokyo'){TKM=eval(await chargerMorceau('tokyo.js'));}
 }catch(erPort){
 try{document.body.insertAdjacentHTML('beforeend',
 '<div style="position:fixed;left:12px;right:12px;top:12px;z-index:99;padding:12px 14px;'+
@@ -8920,9 +8918,6 @@ function construireChemin(){
   peindreEtang(g);
   return c;}
 function construireSol(){
-if(CARTE==='extramar')return construireSolExtramar();
-if(CARTE==='tokyo')return TKM.construireSolTokyo();
-if(CARTE==='garde')return construireSolGarde();
 const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
 const g=c.getContext('2d');
 const FOR_Z=(typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village');
@@ -9652,10 +9647,6 @@ DECOR.push({t:'x_fe_mondial',x:bx+Math.round(bw/2),y:by-16,v:0});}
 
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}
 if(CARTE==='large'){DECOR=[];invaliderGrille();return;}
-if(CARTE==='foret')return semerLaForet();
-if(CARTE==='extramar')return semerDecorExtramar();
-if(CARTE==='tokyo')return TKM.semerDecorTokyo();
-if(CARTE==='garde')return semerDecorGarde();
 /* LE SEMEUR DU VILLAGE D'ORIGINE EST SUPPRIME (233 lignes). Il ne tournait que si CARTE valait 'village' SANS CHAMPS_SEULS — or CHAMPS_SEULS vaut CARTE_DEMANDEE!=='foret' et CARTE ne vaut 'village' que pour 'ferme' et 'village' : la condition etait impossible. Il semait la riviere, les ponts, le hameau, le camp, le coffre, la forge, l'echoppe, la place et ses tilleuls — rien de tout cela n'est sur la carte de la ferme. */
 }
 let LISIERE=null, LISIERE_SUD=null;
@@ -9785,7 +9776,6 @@ if(CARTE==='foret'){
     const d=t[o.gr||0]||t[0];if(!d)continue;
     if(Math.abs(o.x-x)<d.w/2+3&&Math.abs(o.y-y)<d.h/2+2)return true;}
   return false;}
-if(CARTE==='extramar')return bloqueExtramar(x,y);
 if(CHAMPS_SEULS&&CARTE==='village'){
 /* LA FERME EST NUE : seuls les bords du monde, et la restanque du verger. */
 const nx=+x, ny=+y;
@@ -9794,8 +9784,6 @@ if(!(nx>BORD&&nx<MONDE_L-BORD&&ny>BORD+14&&ny<MONDE_H-BORD))return true;
 if(verMuret(nx,ny))return true;
 return false;
 }
-if(CARTE==='tokyo')return TKM.bloqueTokyo(x,y);
-if(CARTE==='garde')return bloqueGarde(x,y);
 if(dansLisiere(x,y))return true;                     /* la forêt du pourtour */
 if(surLeSentier(x,y,0))return false;                 /* le sentier est toujours praticable */
 if(contreRambarde(x,y)||rambardeEst(x,y))return true;                  /* les rambardes des ponts */
@@ -10145,7 +10133,7 @@ try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(e,JSON.parse(b));}cat
    « bloque par la foret ». La case ne vaut maintenant que pour la carte
    qui l'a ecrite ; sinon on arrive par l'entree, comme il se doit. */
 const EXT_AU_DEPART=(e.ext&&e.extc===CARTE)?{x:e.ext.x,y:e.ext.y}:null;
-if(CARTE==='village'&&!PARAM_CARTE&&(e.carte==='extramar'||e.carte==='garde')){location.replace('jeu.html?carte=extramar');}   /* (pas quand on demande la ferme ou la forêt dans l'adresse) */
+/* redirect extramar/garde retiré */
 e.casino=null;e.camp=null;e.coffre=null;e.comptoir=null;
 if(typeof e.nivSac==='number'&&e.nivSac>0)e.sacMax=Math.max(e.sacMax||0,SAC_PALIERS[Math.min(e.nivSac,SAC_PALIERS.length-1)]);   /* les places gagnées aux niveaux s'ajoutent au palier : on ne redescend jamais en dessous du serveur */
 /* LE SCORE NE PEUT PAS ÊTRE EN DESSOUS DE LA RÉCOLTE : l'ancienne reprise
@@ -10350,8 +10338,6 @@ joueur.x=dx;joueur.y=dy;e.ext={x:dx,y:dy};e.extc=CARTE;e.carte='garde';
 try{sauver();}catch(x){}
 return;
 }
-if(CARTE==='tokyo'){TKM.poserTokyo();return;}
-if(CARTE==='extramar'){poserAuPort();return;}
 const [dx,dy]=degager(joueur.x,joueur.y);   /* on ne démarre jamais dans un tronc */
 joueur.x=dx;joueur.y=dy;e.x=dx;e.y=dy;
 }
@@ -10670,7 +10656,6 @@ if(SOL_FIN)ctx.drawImage(SOL_FIN,camX*2,camY*2,lw*2,lh*2,0,0,lw,lh);   /* le sol
 else ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
 if(CHEMIN)ctx.drawImage(CHEMIN,camX,camY,lw,lh,0,0,lw,lh);   /* la couche du chemin */
 if(CARTE==='village'&&FIN_OK()&&!FERME_SEULE)dessinerLaPlaceFin(ctx,camX,camY);    /* la grand-place en dalles fines */
-if(CARTE==='extramar'){scintillerLaMer(ctx,camX,camY);eauVivante(ctx,camX,camY);}
 const px=Math.round((joueur.x-camX)*ECH)/ECH;
 const py=Math.round((joueur.y-camY)*ECH)/ECH;
 flechesVersLesAutres(camX,camY);
@@ -16049,9 +16034,6 @@ DECOR.filter(o=>o.t==='bancP').sort((a,b)=>(a.y-b.y)||(a.x-b.x))
 return l;
 }
 function coinDuJoueur(){
-if(CARTE==='extramar')return 'à Extramar';
-if(CARTE==='garde')return 'à Notre-Dame';
-if(CARTE==='tokyo')return 'à Tokyo';
 try{return joueur.x<rivX(joueur.y)?'en forêt':'au village';}catch(x){return 'au village';}
 }
 function maPresence(){
@@ -23434,7 +23416,6 @@ try{if(CARTE==='extramar'&&new URLSearchParams(location.search).has('arrivee'))p
    réécrite à chaque pas sur n'importe quelle carte annexe : on arrivait
    donc dans le bois à la position qu'on avait à Extramar, parfois à
    l'intérieur d'un arbre. Le sentier est l'entrée, et la seule. */
-if(CARTE==='foret'){joueur.x=F_SENT_ARRIVEE[0];joueur.y=F_SENT_ARRIVEE[1];joueur.dir='droite';}
 if(CARTE==='large'){const p=batMonde(0,BARRE_Y+16);joueur.x=p[0];joueur.y=p[1];joueur.dir='haut';
   COIN_VU=null;window.TK_SANS_JOY=true;   /* au large, on ne marche pas : pas de joystick */
   try{majLeCoin();}catch(x){}try{poserLeBoutonDuLarge();poserLaCarteDuLarge();brancherLaBarre();}catch(x){}}
