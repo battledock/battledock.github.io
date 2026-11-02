@@ -22,19 +22,19 @@ const CARTE_FERMEES=['montagne','sommet','piscine','stade','vallon','paris'];   
 /* LA PAGE PEUT IMPOSER SA CARTE : ferme.html pose window.CARTE_PAGE avant
    de nous charger. Sinon on lit l'adresse, comme avant. */
 const CARTE_DEMANDEE=(()=>{let c=window.CARTE_PAGE||new URLSearchParams(location.search).get('carte');
-if(CARTE_FERMEES.indexOf(c)>=0)c=null;            /* ces lieux sont fermés : on repart du village */
+if(CARTE_FERMEES.indexOf(c)>=0)c=null;            /* ces lieux sont fermés : on repart du port */
 if(c)return c;
 try{const sv=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}');
-if(sv&&(sv.carte==='tokyo'))return sv.carte;}catch(x){}   /* rouvrir le jeu à Tokyo, c'est rester à Tokyo */
+if(sv&&(sv.carte==='ferme'||sv.carte==='foret'||sv.carte==='tokyo'))return sv.carte;}catch(x){}   /* rouvrir le jeu à Tokyo, c'est rester à Tokyo */
 return null;})();
 try{const cd=window.CARTE_PAGE||new URLSearchParams(location.search).get('carte')
 ||(JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}').carte);
-
-
-
-
-
-const CARTE=(()=>{const c=CARTE_DEMANDEE;return (c==='tokyo'?'tokyo':'village');})();
+if(cd==='foret'||cd==='ferme'){
+const p=new URLSearchParams(location.search);p.delete('carte');p.delete('v');
+const q=p.toString();
+history.replaceState(null,'',cd+'.html'+(q?'?'+q:''));}
+}catch(x){}
+const CARTE=(()=>{const c=CARTE_DEMANDEE;return (c==='large'?'large':(c==='foret'?'foret':((c==='ferme'||c==='village')?'village':(c==='tokyo'?'tokyo':'extramar'))));   /* la forêt est sa propre carte ; la ferme garde l'ancien village */})();
 const ANIM_DECOR={};
 const ANNEXE=CARTE!=='village';     /* Extramar et Notre-Dame : des cartes à part, sans le monde partagé */
 let createClient=null, sb=null, SB_PRET=false;
@@ -679,10 +679,10 @@ g.save();
 g.translate(x+mA[0],y+mA[1]);
 g.rotate(angO+(prof?Math.PI:0));
 if(!cote)g.scale(1,prof?0.6:0.55);
-if(typeGeste==='hache')(()=>{})();
-else if(typeGeste==='gouge')(()=>{})();
-else if(typeGeste==='tamis')(()=>{})();
-else (()=>{})();
+if(typeGeste==='hache')dessinerHache(g,0,0,1);
+else if(typeGeste==='gouge')dessinerGouge(g,0,0,1);
+else if(typeGeste==='tamis')dessinerTamis(g,0,0,1);
+else dessinerPioche(g,0,0,1);
 if(phase===2&&cote){g.globalAlpha=.3;g.fillStyle='#f2f5f8';
 g.fillRect(-1,-15,2,13);g.globalAlpha=1;}
 g.restore();
@@ -697,8 +697,8 @@ if(typeGeste!=='cueille'&&typeGeste!=='petanque'&&String(typeGeste).slice(0,3)!=
 g.save();
 g.translate(x,y+yT-14-Math.round((1+arc)*6));
 g.scale(1.05,0.55);
-if(typeGeste==='hache')(()=>{})();
-else (()=>{})();
+if(typeGeste==='hache')dessinerHache(g,0,0,1);
+else dessinerPioche(g,0,0,1);
 g.restore();
 }
 segment(epG,[epG[0]-1,epG[1]+9],4,brasT,null);
@@ -1262,7 +1262,7 @@ function graverSolides(){
 SOL_GRAVE={pierres:[],argile:null,roseaux:[]};
 TAILLES_PIERRE.forEach(S=>{
 const HT=S.h,L=S.l,W=L*2+10,HC=HT+8;
-SOL_GRAVE.pierres.push({c:(()=>{})()=>{
+SOL_GRAVE.pierres.push({c:toilePetit(W,HC,({R,ombre})=>{
 const cx=W/2,sol=HC-4,r=L*0.62;
 ombre(cx+1,sol,L*0.95,3);
 const haut=hautDeLobes([[cx-L*0.42,sol-r*0.72,r],[cx+L*0.46,sol-r*0.64,r*0.92],
@@ -1282,7 +1282,7 @@ R(cx-L-4,sol-5,5,1,P_PIERRE.clair);
 }),W,HC});
 });
 const W=38,HC=24;
-const argile=(pleine)=>(()=>{})()=>{
+const argile=(pleine)=>toilePetit(W,HC,({R,ombre})=>{
 const cx=W/2,sol=HC-4;
 ombre(cx+1,sol,15,4.5);
 const haut=hautDeLobes(pleine
@@ -1303,9 +1303,9 @@ else{R(cx-8,sol-6,3,1,P_ARG.luisant);R(cx-2,sol-4,5,2,P_ARG.fonce);}
 SOL_GRAVE.argile={pleine:argile(true),prise:argile(false),W,HC};
 T_ROSEAUX.forEach((E,v)=>{
 const HT=E.h,W2=30,HC2=HT+12;
-const pied=(()=>{})()=>{ombre(W2/2+1,6,12,3);
+const pied=toilePetit(W2,10,({R,ombre})=>{ombre(W2/2+1,6,12,3);
 R(W2/2-7,2,14,2,P_ROS.tigeO);});
-const tete=(()=>{})()=>{
+const tete=toilePetit(W2,HC2,({R})=>{
 const cx=W2/2,sol=HC2-2;
 for(let i=0;i<E.n;i++){
 const dx=Math.round((i-(E.n-1)/2)*(22/E.n));
@@ -1388,8 +1388,8 @@ R(bx,by,3,3,B.baie[0]);R(bx,by,2,1,B.baie[1]);
 }
 };
 return {
-plein:  (()=>{})()=>corps(R,ombre,true)),
-cueilli:(()=>{})()=>corps(R,ombre,false)),
+plein:  toilePetit(W,HC,({R,ombre})=>corps(R,ombre,true)),
+cueilli:toilePetit(W,HC,({R,ombre})=>corps(R,ombre,false)),
 W,HC};
 });
 });
@@ -1470,13 +1470,13 @@ g.drawImage(C.img,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
 const HAMEAU=[];
 const PLACE={x:960, y:270, w:560, h:200, r:92};
 const PLACE_SEULE=false;
-const FERME_SEULE=false;
+const FERME_SEULE=true;
 const FERME_X0=612;                          /* la ferme commence ici : plus de rivière ni de bois à l'ouest */
 const PARAM_CARTE=CARTE_DEMANDEE;
-const MODE_VIL='village';
-const CHAMPS_SEULS=false;
-const FERME_VIERGE=false;
-const FORET_SEULE=false;
+const MODE_VIL=(CARTE_DEMANDEE==='foret')?'foret':'ferme';
+const CHAMPS_SEULS=MODE_VIL==='ferme';      /* la ferme : les champs seuls */
+const FERME_VIERGE=CHAMPS_SEULS;            /* LA FERME REPART DE ZÉRO : une prairie de 1800 x 1800, rien dessus */
+const FORET_SEULE=MODE_VIL==='foret';       /* la forêt : le bois de l'ancien village, sa rivière et sa clairière */
 const FZ={x0:56,x1:668,y0:40,y1:1560};      /* les bornes de la forêt : elle descend maintenant jusqu'en bas */
 const FB={x0:760,x1:1564,y0:96,y1:444};       /* (à gauche : la gare du métro) */       /* (en haut : l'étal des graines) */       /* les bornes de la carte des champs */
 const VIL={x0:580,x1:1340,y0:82,y1:452};
@@ -1586,71 +1586,6 @@ R(cx+18,sol-49,7,7,'#fff0b0');}
 });
 return {corps,on:lum(true),off:lum(false),W,H,sol};
 }
-function graverAtelier(){
-const W=96, H=92, cx=W/2, sol=H-12;
-const B={bois:'#7d5934',boisC:'#96703f',boisO:'#5b3f21',boisS:'#3d2a17'};
-const N={n1:'#2a2724',n2:'#3a3632',n3:'#4a453f',n4:'#5c564e',n5:'#6e675d'};
-const corps=toileH(W,H,({R,g})=>{
-g.fillStyle=VERTS.ombre;
-g.beginPath();g.ellipse(cx+2,sol+2,34,10,0,0,7);g.fill();
-for(let y=0;y<48;y+=5){
-const dec=(y/5)%2?3:0;
-for(let x=0;x<68;x+=9){
-const t=((x+y*3)*7)%4;
-R(cx-34+x+dec,sol-48+y,8,4,[N.n3,N.n4,N.n2,N.n3][t]);
-R(cx-34+x+dec,sol-48+y,8,1,N.n5);
-}
-}
-R(cx-34,sol-4,68,4,N.n1);
-tuilesH(R,cx-40,sol-48,80,5,9,{toit:'#7d3d26',toitC:'#8f4a2e'});
-R(cx-18,sol-34,36,30,'#141310');
-R(cx-20,sol-38,40,5,B.boisO);
-R(cx+22,sol-14,12,10,B.boisO);
-R(cx+20,sol-20,16,6,'#5f666c');
-R(cx+20,sol-20,16,2,'#a2a9b0');
-for(let y=0;y<22;y+=5){
-const dec=(y/5)%2?3:0;
-for(let x=0;x<18;x+=9)R(cx-26+x+dec,sol-70+y,8,4,(x?N.n3:N.n4));
-}
-R(cx-28,sol-72,22,4,N.n5);
-for(let i=0;i<3;i++)for(let k=0;k<3-i;k++)
-R(cx-40+k*7,sol-10-i*6,6,5,k%2?B.bois:B.boisC);
-});
-const lum=(on)=>toileH(W,H,({R})=>{
-R(cx-16,sol-32,32,26,on?'#5b1e08':'#241a12');
-R(cx-12,sol-22,24,16,on?'#c94a1e':'#3a1608');
-R(cx-8,sol-16,16,9,on?'#ff9d2e':'#6b2410');
-if(on){R(cx-20,sol-2,40,3,'rgba(255,140,50,.32)');
-R(cx+22,sol-22,12,2,'#ff9d2e');}
-});
-return {corps,on:lum(true),off:lum(false),W,H,sol};
-}
-function graverPuits(){
-const W=44, H=52, cx=W/2, sol=H-10;
-const B={bois:'#7d5934',boisC:'#96703f',boisO:'#5b3f21'};
-const PI={p:'#7b8288',c:'#8b939a',h:'#a2a9b0',o:'#5f666c'};
-const corps=toileH(W,H,({R,g})=>{
-g.fillStyle=VERTS.ombre;
-g.beginPath();g.ellipse(cx,sol+2,16,5,0,0,7);g.fill();
-for(let y=0;y<12;y+=4){
-const dec=(y/4)%2?4:0;
-for(let x=0;x<26;x+=9)R(cx-13+x+dec,sol-12+y,8,3,(x?PI.p:PI.c));
-}
-R(cx-14,sol-14,28,3,PI.h);
-R(cx-9,sol-11,18,7,'#1a2430');                 /* l'eau, tout au fond */
-R(cx-9,sol-11,18,2,'#2a4458');
-R(cx-12,sol-34,4,22,B.boisO);
-R(cx+8,sol-34,4,22,B.boisO);
-R(cx-16,sol-38,32,5,B.bois);
-R(cx-16,sol-38,32,2,B.boisC);
-R(cx-2,sol-33,4,3,B.boisO);                    /* la manivelle */
-R(cx-1,sol-30,2,10,'#6b6b6b');                 /* la corde */
-R(cx-4,sol-20,8,5,B.boisO);                    /* le seau */
-R(cx-4,sol-20,8,1,B.boisC);
-});
-const rien=toileH(W,H,()=>{});
-return {corps,on:rien,off:rien,W,H,sol};
-}
 function calqueH(t,teinte){
 const cle=t+(teinte??'');
 if(!CALQUES_H[cle]){
@@ -1665,7 +1600,7 @@ function dessinerHameau(g,t,teinte,x,y){
 const C=calqueH(t,teinte);
 const ox=Math.round(x-C.W/2), oy=Math.round(y-C.sol);
 g.drawImage(C.corps,ox,oy,C.W,C.H);
-const on=(t==='atelier')?true:false;
+const on=(t==='atelier')?true:lampesAllumees();
 g.drawImage(on?C.on:C.off,ox,oy,C.W,C.H);
 }
 let CALQUE_FONTAINE=null;
@@ -2341,7 +2276,7 @@ let AMB_PRES_EAU=false;
 function ambiancer(){
 if(!SON_PRET||(typeof REG!=='undefined'&&REG.sons===false)){couperLAmbiance();return;}
 if(typeof document!=='undefined'&&document.hidden){couperLAmbiance();return;}
-const nuit=(false)&&false;
+const nuit=(typeof lampesAllumees==='function')&&lampesAllumees();
 if(CARTE==='large'){poserAmbiance('musique',V.mus>0);poserAmbiance('vent',true);poserAmbiance('vagues',true);
  poserAmbiance('oiseaux',false);poserAmbiance('grillons',false);AMB_PRES_EAU=true;return;}
 if(CARTE==='foret'){
@@ -2441,7 +2376,7 @@ if(fin&&!CALQUE_TABLEAU_FIN)graverLeTableauFin();
 if(!fin&&!CALQUE_TABLEAU)graverLeTableau();
 const C=fin?CALQUE_TABLEAU_FIN:CALQUE_TABLEAU;
 g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
-if(false&&false)
+if(typeof lampesAllumees==='function'&&lampesAllumees())
 lueurNuit(g,x+8,y-50,22,'rgba(255,200,110,§)');
 }
 const PAGES=[
@@ -2740,153 +2675,7 @@ soleil:'#eef0e4',sy:0.26,halo:'rgba(210,225,255,.28)',
 colline:['#1b2440','#141b31','#0d1224'],mer:['#16294a','#0f1d38'],
 sol:'#0e1322',voile:'rgba(40,60,110,.20)',etoiles:1}
 };
-function dessinerLeVoyage(g,VW,VH,p,T,heure){
-const C=CIELS[heure];
-const al=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
-const d=p*4200;
-const hzn=VH*0.60;                       /* la ligne d'horizon */
-const dg=g.createLinearGradient(0,0,0,hzn);
-C.ciel.forEach(([c,q])=>dg.addColorStop(q,c));
-g.fillStyle=dg;g.fillRect(0,0,VW,hzn);
-if(C.etoiles>0){
-for(let i=0;i<90;i++){
-const x=al(i*1.7)*VW, y=al(i*2.9)*hzn*0.75;
-const fade=1-(y/(hzn*0.75));
-const br=C.etoiles*fade*(0.35+al(i*5.1)*0.5)*(0.65+Math.sin(T*1.2+i*2)*0.35);
-if(br<=0.02)continue;
-g.fillStyle='rgba(255,252,240,'+br.toFixed(2)+')';
-g.fillRect(x,y,al(i*3.3)>0.9?2:1,1);
-}
-}
-const sx=VW*0.72, sy=hzn*C.sy;
-const ha=g.createRadialGradient(sx,sy,4,sx,sy,VW*0.42);
-ha.addColorStop(0,C.halo);ha.addColorStop(1,'rgba(0,0,0,0)');
-g.fillStyle=ha;g.fillRect(0,0,VW,hzn+VH*0.1);
-g.fillStyle=C.soleil;
-g.beginPath();g.arc(sx,sy,heure==='nuit'?9:13,0,7);g.fill();
-if(heure==='nuit'){
-g.fillStyle='#d8dcc8';
-g.beginPath();g.arc(sx-3,sy-2,3,0,7);g.fill();
-g.beginPath();g.arc(sx+3,sy+3,2,0,7);g.fill();
-}
-for(let k=0;k<3;k++){
-for(let i=-1;i<5;i++){
-const x=((i*150+k*57-d*(0.02+k*0.012))%(VW+300))-150;
-const y=hzn*(0.30+k*0.16);
-const w=40+k*16;
-g.fillStyle=heure==='nuit'?'rgba(40,56,92,.5)':
-(heure==='jour'?'rgba(255,255,255,.55)':'rgba(255,190,150,'+(0.30-k*0.06)+')');
-g.beginPath();g.ellipse(x,y,w,2.6,0,0,7);g.fill();
-g.beginPath();g.ellipse(x+w*0.4,y-2.4,w*0.5,1.8,0,0,7);g.fill();
-}
-}
-const mh=VH*0.055;
-const mg=g.createLinearGradient(0,hzn-mh,0,hzn);
-mg.addColorStop(0,C.mer[0]);mg.addColorStop(1,C.mer[1]);
-g.fillStyle=mg;g.fillRect(0,hzn-mh,VW,mh);
-for(let i=0;i<22;i++){
-const yy=hzn-mh+1+(i/22)*(mh-2);
-const w=3+i*1.6+Math.sin(T*1.8+i)*2;
-g.fillStyle=heure==='nuit'?'rgba(210,225,255,.12)':'rgba(255,240,205,.20)';
-g.fillRect(sx-w/2,yy,w,1);
-}
-[[0.055,0.13,C.colline[0]],[0.10,0.09,C.colline[1]]].forEach(([v,h,col],k)=>{
-g.fillStyle=col;
-g.beginPath();g.moveTo(-10,hzn);
-for(let x=-10;x<=VW+10;x+=10){
-const q=(x+d*v)*0.006+k*3;
-g.lineTo(x,hzn-VH*h*(0.55+Math.sin(q)*0.22+Math.sin(q*2.3)*0.12));
-}
-g.lineTo(VW+10,hzn);g.closePath();g.fill();
-});
-g.fillStyle=C.colline[2];
-g.fillRect(0,hzn,VW,VH*0.06);
-g.fillStyle=C.sol;
-g.fillRect(0,hzn+VH*0.06,VW,VH);
-for(let i=-1;i<10;i++){
-const x=((i*112-d*0.34)%(VW+224))-112;
-const h=VH*0.055*(0.7+al(i*2.3)*0.6);
-g.fillStyle=C.colline[2];
-g.beginPath();g.moveTo(x,hzn+VH*0.06);
-g.quadraticCurveTo(x-3,hzn+VH*0.06-h*0.55,x+2,hzn+VH*0.06-h);
-g.quadraticCurveTo(x+7,hzn+VH*0.06-h*0.55,x+4,hzn+VH*0.06);
-g.closePath();g.fill();
-}
-const base=VH*0.80;
-for(let i=-1;i<Math.ceil(VW/96)+3;i++){
-const x=((i*96-d*1.5)%(VW+192))-96;
-g.fillStyle=C.sol;
-g.fillRect(x,base-VH*0.20,3,VH*0.20);
-g.fillRect(x-9,base-VH*0.195,24,3);
-g.strokeStyle=heure==='nuit'?'rgba(60,72,100,.7)':'rgba(30,26,34,.45)';
-g.lineWidth=1;
-g.beginPath();g.moveTo(x,base-VH*0.175);
-g.quadraticCurveTo(x+48,base-VH*0.155,x+96,base-VH*0.175);g.stroke();
-}
-g.fillStyle=heure==='nuit'?'#141a26':'#3a3a3e';
-g.fillRect(0,base-4,VW,VH*0.2);
-for(let i=0;i<200;i++){
-const x=((al(i*1.7)*VW*1.5-d*1.3)%(VW+30))-15;
-const y=base-2+al(i*2.9)*VH*0.10;
-g.fillStyle=heure==='nuit'?'rgba(60,70,90,.5)':'rgba(120,116,110,.45)';
-g.fillRect(x,y,2,2);
-}
-g.fillStyle=heure==='nuit'?'#5a6478':'#9aa2a8';
-g.fillRect(0,base+3,VW,2);
-g.fillStyle=heure==='nuit'?'#8a94a8':'#d2d8dd';
-g.fillRect(0,base+3,VW,1);
-const vit=p<0.08?(p/0.08):(p>0.9?Math.max(0.1,(1-p)/0.1):1);
-const sec=Math.sin(T*22)*0.3*vit;
-(()=>{})();
-g.fillStyle=C.voile;g.fillRect(0,0,VW,VH);
-if(heure==='nuit'){
-const lg=g.createLinearGradient(0,base-14,0,base+VH*0.08);
-lg.addColorStop(0,'rgba(255,225,170,.14)');
-lg.addColorStop(1,'rgba(255,225,170,0)');
-g.fillStyle=lg;g.fillRect(0,base-14,VW,VH*0.10);
-}
-if(vit>0.6)for(let i=0;i<3;i++){
-const q=((T*1.6+i*0.37)%1);
-g.fillStyle='rgba(255,255,255,'+(0.06*(1-q)).toFixed(3)+')';
-g.fillRect(VW*(1-q)*1.2-40,VH*(0.22+i*0.1),40,1);
-}
-}
-function heureDuVoyage(){
-const mi=null;
-const h=Math.floor(mi/60)%24;
-if(h>=6&&h<9)return 'aube';
-if(h>=9&&h<18)return 'jour';
-if(h>=18&&h<21)return 'soir';
-return 'nuit';
-}
 let voyBoucle=0;
-function partirEnVoyage(dest){
-/* TOKYO : plus de trajet en train à regarder, on y va tout de suite */
-if(dest&&dest.id==='tokyo'){arriver(dest);return;}
-const V=$('voyage');
-V.classList.add('on');
-$('voyDest').textContent=dest.nom;
-const c=$('voyCv');
-const heure=heureDuVoyage();
-let p=0, t1=performance.now(), T2=0;
-const tic=(t)=>{
-const dt=Math.min(.05,(t-t1)/1000);t1=t;T2+=dt;
-p=Math.min(1,p+dt/VOY_DUREE);
-const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
-const r=V.getBoundingClientRect();
-if(Math.abs(c.width-r.width*D)>2){c.width=r.width*D;c.height=r.height*D;}
-const g=c.getContext('2d');
-const ech=Math.max(c.width/200,c.height/320);
-g.setTransform(ech,0,0,ech,0,0);g.imageSmoothingEnabled=false;
-try{dessinerLeVoyage(g,c.width/ech,c.height/ech,p,T2,heure);}catch(x){}
-$('voyJauge').style.width=Math.round(p*100)+'%';
-let m=MOTS[0][1];MOTS.forEach(([q,t3])=>{if(p>=q)m=t3;});
-$('voyMot').textContent=p<1?m:'arrivé';
-if(p<1)voyBoucle=requestAnimationFrame(tic);
-else setTimeout(()=>arriver(dest),1100);
-};
-voyBoucle=requestAnimationFrame(tic);
-}
 async function arriver(dest){
 try{if(typeof cancelAnimationFrame==='function')cancelAnimationFrame(voyBoucle);}catch(x){}
 try{await appelRPC('rentrer',{p_joueur:e.id});}catch(x){}
@@ -2926,6 +2715,29 @@ const GAL_DECO=[
 {t:'autel',x:1250},{t:'eboulis',x:1330}
 ];
 let FRET_ROULE=false, FRET_ANGLE=0;
+function aLaLanterne(){return e.ap&&e.ap.cos==='lanterne';}
+function galSol(x){return GAL_H-40;}
+function galPlafond(x){
+const s=salleDe(x);
+const p=galSol(x)-s.h;
+const i=GAL_SALLES.indexOf(s);
+const prev=GAL_SALLES[i-1], next=GAL_SALLES[i+1];
+if(prev&&x-s.x0<40){
+const q=(x-s.x0)/40;
+return galSol(x)-(prev.h+(s.h-prev.h)*(q*q*(3-2*q)));
+}
+if(next&&s.x1-x<40){
+const q=(s.x1-x)/40;
+return galSol(x)-(next.h+(s.h-next.h)*(q*q*(3-2*q)));
+}
+return p;
+}
+function galBloque(x,y){
+if(x<24||x>GAL_L-24)return true;
+if(y>galSol(x)-2||y<galPlafond(x)+16)return true;
+if(x>986&&x<1090&&y>galSol(x)-14)return true;
+return false;
+}
 const VOIE2_Y=728;                 /* la voie de service */
 const VOIE2_X0=716;                /* son butoir, tout à gauche */
 const ENTREPOT_FIXE=[852,626];
@@ -2949,6 +2761,12 @@ const DIRECTIONS=()=>[
 ];
 const FRET_PERIODE=30, FRET_SEJOUR=5;
 const PERIODE=FRET_PERIODE, SEJOUR=FRET_SEJOUR, ARRIVEE=15;
+function minuteDuFret(){
+const mi=(typeof minuteDuJour==='function')?minuteDuJour():null;
+if(mi!==null)return mi;
+const d=new Date();
+return d.getHours()*60+d.getMinutes()+d.getSeconds()/60;
+}
 let CALQUE_TILLEUL=null;
 function graverLeTilleul(){
 const W=60,H=96,cx=W/2,sol=H-10;
@@ -2997,7 +2815,7 @@ g.fillStyle='#5d8a42';
 g.fillRect(Math.round(x+Math.sin(p*7+k)*14),Math.round(y-48+p*44),2,2);
 g.globalAlpha=1;
 }
-const C2=false;
+const C2=cielAllume();
 if(C2&&C2.lampes>0.05){
 for(let k=0;k<12;k++){
 const a=k/12*6.283;
@@ -3054,7 +2872,7 @@ Rb(x-2,y-40,5,40,'#4d545c');Rb(x-7,y-50,15,11,'#3d4248');
 Rb(x-5,y-48,11,8,'#c8c2ae');Rb(x-9,y-53,19,3,'#4d545c');return;}
 g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
 const T=Date.now()/1000;
-const C2=false;
+const C2=cielAllume();
 const allume=C2?C2.lampes:0;
 const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(a),Math.round(b),w,h);};
 if(allume<0.05){R(x-5,y-42,11,8,'#c8c2ae');return;}
@@ -3071,11 +2889,216 @@ R(x+1+Math.cos(a)*rr,y-38+Math.sin(a*1.3)*rr*0.6,1,1,'#f0e2bc');
 g.globalAlpha=1;
 }
 }
+function conesDeLaPlace(g,camX,camY,VW2){
+const C=cielAllume();
+if(!C||C.lampes<0.05)return;
+const T=Date.now()/1000;
+DECOR.forEach(o=>{
+if(o.t!=='lanterneP')return;
+const x=o.x-camX, y=o.y-camY;
+if(x<-80||x>(VW2||400)+80)return;
+const vac=0.82+Math.sin(T*3.1+o.gr*2.3)*0.12;
+g.save();g.globalAlpha=C.lampes*vac*0.5;
+const d=g.createRadialGradient(x+1,y+2,3,x+1,y+2,52);
+d.addColorStop(0,'rgba(255,214,140,.55)');
+d.addColorStop(0.5,'rgba(255,190,100,.2)');
+d.addColorStop(1,'rgba(255,180,90,0)');
+g.fillStyle=d;
+g.beginPath();g.ellipse(x+1,y+2,52,23,0,0,7);g.fill();
+g.restore();
+});
+}
 const PI_F={o:'#4f565c',s:'#5f666c',p:'#7b8288',c:'#8b939a',h:'#a2a9b0',e:'#b7bec4'};
 const BR_F={o:'#7d3a28',s:'#8f4630',p:'#a3543a',c:'#b56448',h:'#c47a5c'};
 const B_F={bois:'#7d5934',boisC:'#96703f',boisH:'#a5764a',boisO:'#5b3f21',boisS:'#3d2a17'};
 const TU_F={o:'#6b3320',s:'#7d3d26',p:'#8f4a2e',c:'#a35a38',h:'#b56b46',faite:'#c98a5e'};
 let CALQUE_COMPTOIR2=null, CALQUE_BOUTIQUE=null;
+function outilsFront(g){
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+return {
+R,
+briques:(x0,y0,larg,haut)=>{
+for(let y=0;y<haut;y+=4){
+const dec=(y/4)%2?4:0;
+for(let x=0;x<larg;x+=9){
+const t=((x+y*3)*7)%4;
+R(x0+x+dec,y0+y,8,3,[BR_F.p,BR_F.c,BR_F.s,BR_F.p][t]);
+R(x0+x+dec,y0+y,8,1,BR_F.h);
+}
+}
+},
+toit:(cx,bas,larg,haut)=>{
+const rangs=Math.round(haut/4);
+for(let rg=rangs-1;rg>=0;rg--){
+const t=rg/rangs, y=bas-rg*4, retrait=Math.round(t*14);
+const x0=cx-larg/2-12+retrait, l2=larg+24-retrait*2;
+for(let x=x0;x<x0+l2;x+=6){
+const q=(x*7+rg*13)%4;
+R(x,y,6,5,q===0?TU_F.p:(q===1?TU_F.c:(q===2?TU_F.s:TU_F.p)));
+R(x,y,6,1,rg>rangs*0.6?TU_F.h:TU_F.c);
+R(x+5,y,1,5,TU_F.o);
+}
+R(x0,y+4,l2,1,TU_F.o);
+if(rg===rangs-1){R(x0-2,y-4,l2+4,5,TU_F.o);R(x0-2,y-4,l2+4,2,TU_F.faite);}
+}
+},
+enseigne:(cx,hy,larg,mot,taille)=>{
+R(cx-larg/2,hy-9,larg,18,B_F.boisS);
+R(cx-larg/2,hy-9,larg,2,B_F.boisC);
+R(cx-larg/2,hy+7,larg,2,'#2a1c12');
+R(cx-larg/2+2,hy-7,larg-4,1,'rgba(240,207,125,.25)');
+R(cx-larg/2-4,hy-11,4,22,B_F.boisO);
+R(cx+larg/2,hy-11,4,22,B_F.boisO);
+g.font='700 '+(taille||13)+'px Georgia,serif';
+g.fillStyle='#f0cf7d';g.textAlign='center';
+g.fillText(mot,cx,hy+5,larg-20);
+g.textAlign='left';
+},
+porte:(cx,sol,PL,PH)=>{
+R(cx-PL/2-5,sol-PH-8,PL+10,PH+4,PI_F.p);
+R(cx-PL/2-5,sol-PH-8,PL+10,2,PI_F.h);
+R(cx-PL/2-5,sol-PH-8,2,PH+4,PI_F.h);
+R(cx+PL/2+3,sol-PH-8,2,PH+4,PI_F.o);
+R(cx-PL/2-8,sol-PH-12,PL+16,6,B_F.boisO);
+R(cx-PL/2-8,sol-PH-12,PL+16,2,B_F.boisC);
+R(cx-PL/2-8,sol-PH-6,PL+16,1,B_F.boisS);
+R(cx-PL/2,sol-PH-4,PL,PH,'#241a12');
+[[-PL/2,1],[0,-1]].forEach(([a,sens])=>{
+R(cx+a,sol-PH-4,PL/2,PH,B_F.bois);
+for(let y=0;y<PH;y+=5)R(cx+a,sol-PH-4+y,PL/2,1,B_F.boisO);
+R(cx+a,sol-PH+4,PL/2,3,'#4a4a52');
+R(cx+a,sol-14,PL/2,3,'#4a4a52');
+R(cx+a+(sens>0?PL/2-4:2),sol-PH/2-4,3,3,'#b7bec4');
+R(cx+a+(sens>0?PL/2-1:0),sol-PH-4,1,PH,B_F.boisS);
+});
+R(cx-PL/2-4,sol-8,PL+8,3,PI_F.h);
+R(cx-PL/2-7,sol-5,PL+14,3,PI_F.c);
+R(cx-PL/2-10,sol-2,PL+20,2,PI_F.p);
+},
+caisse:(x,y)=>{R(x,y,14,11,B_F.bois);R(x,y,14,2,B_F.boisH);
+R(x,y+5,14,2,B_F.boisO);R(x+6,y,2,11,B_F.boisO);},
+tonneau:(x,y)=>{
+for(let k=0;k<5;k++)R(x+k*3,y-16,3,16,k===0||k===4?B_F.boisO:B_F.bois);
+R(x,y-16,15,2,B_F.boisH);
+R(x-1,y-13,17,2.6,'#4a4a52');R(x-1,y-5,17,2.6,'#4a4a52');
+}
+};
+}
+function graverLaBoutiqueNeuve(){
+const W=190, Ht=140, cx=W/2, sol=Ht-16;
+const c=document.createElement('canvas');
+const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+c.width=W*D;c.height=Ht*D;
+const g=c.getContext('2d');
+g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+const {R,briques,toit,enseigne,porte,caisse,tonneau}=outilsFront(g);
+const BL=150;
+const basToit=sol-70;
+g.fillStyle='rgba(30,50,24,.26)';
+g.beginPath();g.ellipse(cx+4,sol+4,BL*0.54,12,0,0,7);g.fill();
+toit(cx,basToit,BL,22);
+R(cx-BL/2-12,basToit+3,BL+24,4,PI_F.o);
+briques(cx-BL/2,basToit+6,BL,14);
+R(cx-BL/2,basToit+6,BL,3,BR_F.h);
+R(cx-BL/2-3,basToit+20,BL+6,6,PI_F.c);
+R(cx-BL/2-3,basToit+20,BL+6,2,PI_F.e);
+R(cx-BL/2-3,basToit+26,BL+6,1.4,PI_F.o);
+R(cx-BL/2,basToit+26,BL,sol-basToit-60,'#2e241c');
+R(cx-BL/2,sol-24,BL,16,B_F.boisO);
+for(let k=0;k<BL;k+=8)R(cx-BL/2+k,sol-24,1.4,16,B_F.boisS);
+R(cx-BL/2,sol-24,BL,2,B_F.bois);
+[-44,44].forEach(dx=>{
+R(cx+dx-26,basToit+30,52,44,B_F.boisO);
+R(cx+dx-26,basToit+30,52,3,B_F.boisH);
+R(cx+dx-24,basToit+33,48,38,'#3a4750');
+for(let i2=1;i2<4;i2++)R(cx+dx-24+i2*12,basToit+33,2,38,B_F.boisO);
+for(let j=1;j<4;j++)R(cx+dx-24,basToit+33+j*10,48,2,B_F.boisO);
+g.fillStyle='rgba(230,240,246,.16)';
+g.beginPath();
+g.moveTo(cx+dx-22,basToit+69);g.lineTo(cx+dx-6,basToit+35);
+g.lineTo(cx+dx+4,basToit+35);g.lineTo(cx+dx-12,basToit+69);
+g.closePath();g.fill();
+R(cx+dx-22,basToit+22,44,2,B_F.boisO);
+R(cx+dx-22,basToit+62,44,2,B_F.boisO);
+for(let k=0;k<4;k++){
+const px=cx+dx-18+k*11;
+R(px,basToit+40,7,8,['#a3543a','#7d9455','#8b939a','#c9a24a'][k]);
+R(px,basToit+40,7,2,'#d8c49a');
+R(px-1,basToit+38,9,2,B_F.boisO);
+}
+for(let k=0;k<3;k++){
+const px=cx+dx-18+k*14;
+R(px,basToit+52,10,10,['#8fa9c4','#d8a8a0','#c9a24a'][k]);
+R(px,basToit+52,10,2,'rgba(255,255,255,.2)');
+R(px+3,basToit+52,2,10,'rgba(0,0,0,.14)');
+}
+R(cx+dx-28,basToit+74,56,5,PI_F.c);
+R(cx+dx-28,basToit+74,56,1.6,PI_F.e);
+R(cx+dx-26,basToit+79,52,3,PI_F.o);
+[-22,16].forEach(px=>{
+g.save();g.translate(cx+dx+px,basToit+79);g.rotate(0.5);
+R(0,0,3,10,B_F.boisO);g.restore();
+});
+});
+[-BL/2+2,-16,10,BL/2-10].forEach(dx=>{
+R(cx+dx,basToit+26,8,sol-basToit-60,B_F.bois);
+R(cx+dx,basToit+26,2.4,sol-basToit-60,B_F.boisH);
+R(cx+dx+6,basToit+26,2,sol-basToit-60,B_F.boisS);
+R(cx+dx-2,basToit+26,12,5,B_F.boisO);
+R(cx+dx-2,basToit+26,12,1.6,B_F.boisC);
+R(cx+dx-2,sol-13,12,5,B_F.boisO);
+});
+const PL2=30, PH2=54;
+R(cx-PL2/2-4,sol-PH2-6,PL2+8,PH2+2,B_F.boisO);
+R(cx-PL2/2-4,sol-PH2-6,PL2+8,2,B_F.boisC);
+R(cx-PL2/2,sol-PH2-4,PL2,PH2,B_F.bois);
+R(cx-PL2/2+4,sol-PH2,PL2-8,20,'#3a4750');
+R(cx-1,sol-PH2,2,20,B_F.boisO);
+R(cx-PL2/2+4,sol-PH2+9,PL2-8,2,B_F.boisO);
+R(cx-PL2/2+4,sol-PH2+26,PL2-8,22,B_F.boisO);
+R(cx-PL2/2+6,sol-PH2+28,PL2-12,18,B_F.bois);
+R(cx-PL2/2,sol-PH2+2,PL2,3,'#4a4a52');
+R(cx-PL2/2,sol-12,PL2,3,'#4a4a52');
+R(cx+PL2/2-6,sol-PH2/2-2,3,3,'#b7bec4');
+R(cx-2,sol-PH2-11,4,5,'#c9a24a');
+R(cx-3,sol-PH2-13,6,2,B_F.boisS);
+R(cx-PL2/2-5,sol-8,PL2+10,3,PI_F.h);
+R(cx-PL2/2-8,sol-5,PL2+16,3,PI_F.c);
+R(cx-PL2/2-11,sol-2,PL2+22,2,PI_F.p);
+for(let k=-BL/2-4;k<BL/2+4;k+=6){
+const q=(k*7)%4;
+R(cx+k,basToit+18,6,5,q===0?TU_F.p:(q===1?TU_F.c:(q===2?TU_F.s:TU_F.p)));
+R(cx+k,basToit+18,6,1,TU_F.h);
+R(cx+k+5,basToit+18,1,5,TU_F.o);
+}
+R(cx-BL/2-6,basToit+22,BL+12,2,TU_F.o);
+for(let k=-BL/2-4;k<BL/2+4;k+=7)R(cx+k,basToit+24,4,3,B_F.boisO);
+briques(cx+BL/4,basToit-22,12,20);
+R(cx+BL/4-2,basToit-26,16,5,PI_F.c);
+R(cx+BL/4-2,basToit-26,16,1.6,PI_F.e);
+enseigne(cx,basToit-22,116,'BOUTIQUE',12);
+R(cx-BL/2-2,sol-64,3,12,B_F.boisS);
+R(cx-BL/2-20,sol-64,20,3,B_F.boisS);
+R(cx-BL/2-20,sol-64,20,1.2,B_F.boisO);
+R(cx-BL/2-6,sol-8,BL+12,7,B_F.bois);
+for(let x=0;x<BL+12;x+=7)R(cx-BL/2-6+x,sol-8,1,7,B_F.boisO);
+R(cx-BL/2-6,sol-8,BL+12,2,B_F.boisH);
+R(cx-BL/2-6,sol-1,BL+12,3,B_F.boisS);
+caisse(cx-BL/2+4,sol-19);
+caisse(cx-BL/2+4,sol-30);
+tonneau(cx+BL/2-20,sol-6);
+R(cx+BL/2-56,sol-20,34,5,B_F.bois);
+R(cx+BL/2-56,sol-20,34,1.6,B_F.boisH);
+[-52,-34].forEach(dx=>R(cx+BL/2+dx,sol-15,4,9,B_F.boisO));
+for(let k=0;k<6;k++){
+const px=cx+BL/2-53+k*6;
+g.fillStyle=['#c9503c','#d8703c','#c9a24a','#5d8a42','#b06a3a','#c9503c'][k];
+g.beginPath();g.arc(px,sol-23,2.6,0,7);g.fill();
+g.fillStyle='rgba(255,255,255,.2)';
+g.beginPath();g.arc(px-1,sol-24,1,0,7);g.fill();
+}
+CALQUE_BOUTIQUE={toile:c,W,H:Ht,sol};
+}
 const TICKETS=[['poisson','Le Petit Poisson',100,['#1f8ab8','#5ac0e8'],'🐟',[['1 €','1 sur 4'],['2 €','1 sur 7'],['5 €','1 sur 25'],['20 €','1 sur 125'],['100 €','1 sur 1 250']]],
 ['filet','Le Filet d’Or',300,['#b8862a','#f0cf6a'],'🎣',[['3 €','1 sur 4'],['6 €','1 sur 8'],['15 €','1 sur 30'],['50 €','1 sur 90'],['300 €','1 sur 800']]],
 ['cargo','Le Gros Cargo',1000,['#b81e1e','#f0604a'],'🚢',[['10 €','1 sur 4'],['20 €','1 sur 8'],['50 €','1 sur 30'],['150 €','1 sur 85'],['500 €','1 sur 400']]],
@@ -3088,6 +3111,81 @@ const coquille='<svg viewBox="0 0 24 24" width="28"><path d="M12 20 L3 10 Q12 0 
 const etoile='<svg viewBox="0 0 24 24" width="28"><path d="M12 2 l2.8 6.6 7 .6-5.3 4.6 1.7 7-6.2-3.8-6.2 3.8 1.7-7L2.2 9.2l7-.6z" fill="#f0a040"/></svg>';
 const sirene='<svg viewBox="0 0 24 24" width="30"><circle cx="12" cy="5" r="3" fill="#e0b088"/><path d="M9 4 q3 -4 7 1 q-1 6 -2 8" fill="#c84a2a"/><path d="M12 8 q-4 5 0 9 q2 3 -2 5 l6 -1 q-3 -2 -1 -4 q3 -4 -3 -9z" fill="#2aa0a0"/></svg>';
 let GRATTE_EN_COURS=false;
+function pellicule(z,style,fini){
+/* si la case n'a pas encore de taille, on attend l'image suivante :
+   sinon le masque est minuscule et la pellicule s'ouvre toute seule */
+if(z.getBoundingClientRect().width<12){requestAnimationFrame(()=>pellicule(z,style,fini));return null;}
+const cv=document.createElement('canvas');z.appendChild(cv);const r=z.getBoundingClientRect(),D=Math.min(3,devicePixelRatio||1);cv.width=Math.max(4,Math.round(r.width*D));cv.height=Math.max(4,Math.round(r.height*D));
+const W=cv.width,H=cv.height,g=cv.getContext('2d');const gr=g.createLinearGradient(0,0,W,H);style.grad.forEach((c,i)=>gr.addColorStop(i/(style.grad.length-1),c));g.fillStyle=gr;g.fillRect(0,0,W,H);
+if(style.motif)style.motif(g,W,H,D);for(let k=0;k<W*H/90;k++){g.fillStyle=Math.random()<.5?'rgba(255,255,255,.16)':'rgba(0,0,0,.05)';g.fillRect(Math.random()*W,Math.random()*H,D,D);}
+if(style.texte){g.fillStyle=style.coulTexte||'rgba(40,40,50,.4)';g.font='700 '+Math.round((style.taille||9)*D)+'px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText(style.texte,W/2,H/2);}
+g.globalCompositeOperation='destination-out';g.lineCap='round';g.lineJoin='round';
+const MW=24,MH=Math.max(8,Math.round(24*H/W)),m=document.createElement('canvas');m.width=MW;m.height=MH;const mg=m.getContext('2d');mg.fillStyle='#000';mg.fillRect(0,0,MW,MH);mg.strokeStyle='#fff';mg.lineCap='round';
+const R=14*D;let fin=false,der=null,file=[],raf=0,mes=0;
+/* LES COPEAUX : la matière grattée se détache et tombe */
+const COP=[];
+const cop=document.createElement('canvas');cop.width=W;cop.height=H;
+cop.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3';
+try{z.appendChild(cop);}catch(e){}
+const cg=cop.getContext('2d');
+const teinte=style.grad[1]||style.grad[0];
+let copRaf=0;
+const animCop=()=>{
+  cg.clearRect(0,0,W,H);
+  for(let i=COP.length-1;i>=0;i--){const p=COP[i];
+    p.vy+=0.28*D;p.x+=p.vx;p.y+=p.vy;p.vie--;
+    if(p.vie<=0||p.y>H+8){COP.splice(i,1);continue;}
+    cg.globalAlpha=Math.max(0,Math.min(1,p.vie/16));
+    cg.fillStyle=p.c;cg.fillRect(p.x|0,p.y|0,p.t,p.t);}
+  cg.globalAlpha=1;
+  copRaf=COP.length?requestAnimationFrame(animCop):0;};
+const semerCopeaux=(x,y,n)=>{
+  for(let k=0;k<n;k++)COP.push({x:x+(Math.random()-.5)*R,y:y+(Math.random()-.5)*R,
+    vx:(Math.random()-.5)*1.6*D,vy:-Math.random()*1.4*D,
+    vie:10+Math.random()*14,t:Math.max(1,Math.round(D*(1+Math.random()))),
+    c:Math.random()<.5?teinte:(style.grad[0]||teinte)});
+  if(!copRaf)copRaf=requestAnimationFrame(animCop);};
+const devoiler=()=>{if(fin)return;fin=true;
+  semerCopeaux(W/2,H/2,26);                    /* le reste de la pellicule s'envole */
+  try{vibrer(12);}catch(e){}
+  cv.classList.add('parti');fini();};
+const mesurer=()=>{const px=mg.getImageData(0,0,MW,MH).data;let v=0;for(let i=0;i<px.length;i+=4)if(px[i]>128)v++;if(v/(MW*MH)>=.42)devoiler();   /* on n'oblige plus à tout gratter */};
+const trait=(a,b)=>{for(let q=0;q<3;q++){g.lineWidth=R*2*(.84+q*.08);g.beginPath();g.moveTo(a.x+(q-1)*D,a.y+(q-1)*D*.6);g.lineTo(b.x+(q-1)*D*.6,b.y-(q-1)*D);g.stroke();}
+/* le bord du trait s'effrite, comme une vraie pellicule */
+for(let k=0;k<6;k++){const t=Math.random(),x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t;
+  const an=Math.random()*6.283,rr=R*(0.85+Math.random()*0.5);
+  g.beginPath();g.arc(x+Math.cos(an)*rr,y+Math.sin(an)*rr,R*0.22,0,7);g.fill();}
+semerCopeaux((a.x+b.x)/2,(a.y+b.y)/2,2+Math.round(Math.random()*2));
+mg.lineWidth=R*2*MW/W;mg.beginPath();mg.moveTo(a.x*MW/W,a.y*MH/H);mg.lineTo(b.x*MW/W,b.y*MH/H);mg.stroke();};
+const boucle=(ts)=>{raf=0;for(const p of file){trait(der||p,der?p:{x:p.x+.1,y:p.y+.1});der=p;}file=[];if(!fin&&ts-mes>100){mes=ts;mesurer();}};
+const pt=ev=>{const r=cv.getBoundingClientRect();return {x:(ev.clientX-r.left)*D,y:(ev.clientY-r.top)*D};};
+const prendre=ev=>{const L=ev.getCoalescedEvents?ev.getCoalescedEvents():[];for(const x of (L.length?L:[ev]))file.push(pt(x));if(!raf)raf=requestAnimationFrame(boucle);};
+/* ================= GRATTER SANS FAIRE BOUGER LA PAGE =================
+   Safari fait défiler la page dès qu'un doigt glisse, et la capture de
+   pointeur ne suffit pas à l'en empêcher. On coupe le geste à la racine :
+   touch-action sur la pellicule, et on retient les événements tactiles.
+   Et on gratte d'une pellicule à l'autre : le doigt traverse les zones. */
+try{cv.style.touchAction='none';cv.style.webkitUserSelect='none';cv.style.userSelect='none';}catch(e){}
+const bloqueDefil=ev=>{ev.preventDefault();ev.stopPropagation();};
+cv.addEventListener('touchstart',bloqueDefil,{passive:false});
+cv.addEventListener('touchmove', bloqueDefil,{passive:false});
+let vibA=0;
+const vibrerGratte=()=>{const t=Date.now();
+  try{window.__retourVerrou=t;}catch(e){}
+  if(t-vibA>110){vibA=t;try{vibrer(3);}catch(e){}}};
+/* LE VERROU DU GESTE DE RETOUR : gratter, c'est balayer l'ecran de
+   gauche a droite, exactement le geste par lequel Safari recule d'une
+   page. Tant que le doigt gratte, le retour est ignore (voir retour.js). */
+const verrou=()=>{try{window.__retourVerrou=Date.now();}catch(e){}};
+cv.onpointerdown=ev=>{ev.preventDefault();GRATTE_EN_COURS=true;verrou();cv.setPointerCapture(ev.pointerId);der=null;prendre(ev);vibrerGratte();};
+cv.onpointermove=ev=>{
+  if(cv.hasPointerCapture(ev.pointerId)){prendre(ev);vibrerGratte();return;}
+  /* le doigt vient d'une autre pellicule : on gratte quand même */
+  if(GRATTE_EN_COURS&&ev.buttons!==0){
+    const r=cv.getBoundingClientRect();
+    if(ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom){prendre(ev);vibrerGratte();}}};
+cv.onpointerup=cv.onpointercancel=()=>{der=null;GRATTE_EN_COURS=false;requestAnimationFrame(mesurer);};
+return {devoiler};}
 const bullesMotif=(g,W,H,D)=>{for(let k=0;k<6;k++){g.fillStyle='rgba(255,255,255,.35)';g.beginPath();g.arc(Math.random()*W,Math.random()*H,(2+Math.random()*5)*D,0,7);g.fill();}g.fillStyle='rgba(255,255,255,.55)';g.beginPath();g.arc(W*.32,H*.3,W*.09,0,7);g.fill();};
 const maillesMotif=(g,W,H,D)=>{g.strokeStyle='rgba(255,246,216,.4)';g.lineWidth=D;for(let k=-H;k<W+H;k+=8*D){g.beginPath();g.moveTo(k,0);g.lineTo(k+H,H);g.stroke();g.beginPath();g.moveTo(k,H);g.lineTo(k+H,0);g.stroke();}};
 const nervures=(c)=>(g,W,H,D)=>{g.fillStyle='rgba(0,0,0,.16)';for(let x=3*D;x<W;x+=5*D)g.fillRect(x,0,1.3*D,H);g.fillStyle='rgba(255,255,255,.25)';g.fillRect(0,0,W,2*D);};
@@ -3124,6 +3222,11 @@ const PRESSE=[
   gros:'La cagnotte du Loto grimpe encore'},
  {id:'almanach',nom:'L’Almanach du Pêcheur',prix:650,d:'Marées, lunes et conseils de saison.',
   gros:'Les nuits de pleine lune font monter le gros'}];
+function presseHTML(){
+  return '<div class="bar-t"><canvas width="36" height="36" data-i="journal"></canvas>LA PRESSE'+
+   '<small>Gratuit · toutes les nouveautés du port.</small></div>'+
+   '<div id="presseVue"><div class="bt-vide">On déplie le journal…</div></div>';
+}
 
 const PR_DESS=(id)=>(R)=>{
   const T={marseillais:['#e8e2d2','#2a3a4a','#c0392b'],echo:['#dfe8ee','#1d3a5a','#2a7a9a'],
@@ -3394,7 +3497,52 @@ const atListe=(nom)=>({YEUX_F:typeof YEUX_F!=='undefined'?YEUX_F:[],SOURCILS:typ
   BAS:typeof BAS!=='undefined'?BAS:[],SOULIERS:typeof SOULIERS!=='undefined'?SOULIERS:[],
   CHAPEAUX:typeof CHAPEAUX!=='undefined'?CHAPEAUX:[]}[nom]||[]);
 let VET_ONG='auto', VET_SAC=[];
+function vetPorte(v){return Object.keys(v.ap).every(k=>(e.ap[k]||0)===v.ap[k]);}
 /* ================= L'ATELIER : la planche de couture ================= */
+function atelierHTML(){
+  const R=AT_RUB.find(r=>r[0]===AT_ONG)||AT_RUB[0];
+  const nomDe=(ch)=>{
+    if(ch.t==='pal'){const n=(PALETTES[ch.c]||[]).length;return (e.ap[ch.c]||0)+1+' / '+n;}
+    const L=atListe(ch.l);return L[e.ap[ch.c]||0]||'—';};
+  return '<div class="at-haut">'+
+    '<div class="at-vign"><canvas width="132" height="190" id="atPerso"></canvas></div>'+
+    '<div class="at-fiche"><h4>TON PERSONNAGE</h4>'+
+      [['Teint',(e.ap.peau||0)+1+'ᵉ nuance'],['Cheveux',atListe('COIFFES')[e.ap.coiffe||0]||'—'],
+       ['Barbe',atListe('BARBES')[e.ap.barbe||0]||'—'],
+       ['Silhouette',atListe('SILHOUETTES')[e.ap.corps||0]||'—'],
+       ['Haut',atListe('HAUTS')[e.ap.haut||0]||'—']]
+      .map(([n,v])=>'<div class="at-r">'+n+'<b>'+v+'</b></div>').join('')+
+    '</div></div>'+
+    '<div class="at-ong">'+AT_RUB.map(r=>
+      '<button data-at="'+r[0]+'" class="'+(AT_ONG===r[0]?'on':'')+'">'+r[1].toUpperCase()+'</button>').join('')+'</div>'+
+    '<div class="at-zone">'+R[2].map(ch=>{
+      if(ch.t==='pal'){
+        const P=PALETTES[ch.c]||[];
+        return '<h5>'+ch.n.toUpperCase()+'</h5><div class="at-gr">'+
+          P.map((c,i)=>'<button class="at-ch'+((e.ap[ch.c]||0)===i?' on':'')+'" data-c="'+ch.c+'" data-i="'+i+'"'+
+            (c==='aucun'?' style="background:#f2e9d4"':' style="background:'+c+'"')+'>'+
+            (c==='aucun'?'<i>∅</i>':'')+'</button>').join('')+'</div>';}
+      const L=atListe(ch.l);
+      return '<h5>'+ch.n.toUpperCase()+'<em>'+nomDe(ch)+'</em></h5><div class="at-lst">'+
+        L.map((n,i)=>'<button class="at-m'+((e.ap[ch.c]||0)===i?' on':'')+'" data-c="'+ch.c+'" data-i="'+i+'">'+n+'</button>').join('')+
+        '</div>';}).join('')+'</div>';
+}
+function atelierBrancher(rendre){
+  const cv=$('atPerso');
+  if(cv){try{
+    const img=poseDe(e.ap,'bas',0);
+    const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,cv.width,cv.height);
+    if(img&&img.width){const k=Math.min(cv.width/img.width,cv.height/img.height);
+      const w=Math.round(img.width*k),h=Math.round(img.height*k);
+      g.drawImage(img,Math.round((cv.width-w)/2),Math.round((cv.height-h)/2),w,h);}
+  }catch(x){}}
+  $('page2Fond').querySelectorAll('[data-at]').forEach(b=>b.onclick=()=>{AT_ONG=b.dataset.at;vibrer(6);rendre();});
+  $('page2Fond').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
+    e.ap=Object.assign({},e.ap,{[b.dataset.c]:+b.dataset.i});
+    try{POSES.clear();}catch(x){}
+    sauver();if(typeof envoyerMaPosition==='function')envoyerMaPosition();
+    vibrer(6);rendre();});
+}
 /* ================= L'AFFICHE DU COMPLEXE FESTIF ================= */
 /* ================= L'AFFICHE DE LA CAPITAINERIE ================= */
 /* ================= LA CAPITAINERIE =================
@@ -3419,33 +3567,296 @@ const RANGS_MARIN=['Mousse','Matelot','Gabier','Second','Patron','Capitaine',
    prises, records detenus, avis de la semaine), dont un que le client n'a
    pas sous la main. Il vient donc du serveur, et le client ne fait que le
    poser : la sauvegarde le garde, la presence le porte aux autres. */
+function poserLeRang(r){
+if(typeof r!=='number'||r<0)return 0;
+const avant=e.rang|0;
+e.rang=r;try{sauver();}catch(x){}
+if(r!==avant&&typeof PRESENCE!=='undefined'&&PRESENCE){
+try{PRESENCE.track(maPresence());}catch(x){}}
+return r>avant?r:0;                             /* le nouvel echelon, si on monte */
+}
 /* On ne redemande le rang que quand il a pu bouger : a l'ouverture du
    registre ou du carnet, apres un avis encaisse, et sur une prise qui
    change le carnet. Une montee due au seul volume se verra a la visite
    suivante — jamais un titre FAUX, seulement un titre en retard. */
+async function rafraichirLeRang(){
+try{const r=await appelRPC('rang_marin',{p_joueur:e.id});
+return poserLeRang(typeof r==='number'?r:null);}catch(x){return 0;}
+}
 /* L'EPAULETTE. Cinq galons au plus — au-dela, l'usage de la marine met une
    etoile par echelon supplementaire plutot qu'une sixieme barre, et c'est
    aussi la seule facon de tenir dans vingt-deux pixels. */
+function galonsDe(cv,n){
+const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+const S=cv.width/28;g.setTransform(S,0,0,S,0,0);
+g.clearRect(0,0,28,22);
+const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+R(0,0,28,22,'#14294a');                       /* le drap de l'epaulette */
+R(0,0,28,1,'#28466f');R(0,21,28,1,'#0a1830');
+R(0,0,1,22,'#28466f');R(27,0,1,22,'#0a1830');
+if(n<=0){                                     /* le mousse : un noeud, pas un galon */
+R(9,9,11,1,'#b9872f');R(9,12,11,1,'#b9872f');
+R(12,8,1,6,'#c9a24a');R(16,8,1,6,'#c9a24a');
+return;}
+const barres=Math.min(5,n), etoiles=Math.max(0,n-5);
+for(let k=0;k<barres;k++){const y=19-3*k;
+R(3,y,22,1,'#b9872f');R(3,y-1,22,1,'#f4d98a');}
+/* l'etoile : une croix de trois pixels, posee au-dessus des barres */
+for(let k=0;k<etoiles;k++){const ex=etoiles===1?13:(k===0?9:17), ey=3;
+R(ex,ey-1,1,3,'#f4d98a');R(ex-1,ey,3,1,'#f4d98a');
+R(ex-1,ey-1,1,1,'#b9872f');R(ex+1,ey+1,1,1,'#b9872f');}
+}
 let CAP=null;        /* {livret, avis, brevets, onglet} : le registre, le temps d'une visite */
 /* quatre onglets : les libelles sont courts parce que la tranche fait
    moins de 80 px — « LES BREVETS » en toutes lettres debordait. */
 const CAP_ONGLETS=[['livret','LIVRET'],['avis','AVIS'],['records','RECORDS'],['brevets','BREVETS']];
+function capMessage(t){
+return '<div id="afc" style="position:fixed;inset:0;display:flex;flex-direction:column;'+
+'gap:14px;align-items:center;justify-content:center;background:#0b1f3a;color:#9db6d6;'+
+'font:italic 13px Georgia,serif;padding:24px;text-align:center">'+t+
+'<button id="afcOk" style="border:0;border-radius:8px;padding:12px 20px;background:#17365a;'+
+'color:#f2ece0;font:700 10px Arial,sans-serif;letter-spacing:2px">REDESCENDRE SUR LE QUAI</button></div>';
+}
+async function afficheCapitainerie(){
+$('page2Fond').className='';$('page2').classList.add('on');
+$('page2Fond').innerHTML='<div id="afc" style="position:fixed;inset:0;display:flex;'+
+'align-items:center;justify-content:center;background:#0b1f3a;color:#9db6d6;'+
+'font:italic 13px Georgia,serif">On ouvre le registre…</div>';
+/* les quatre d'un coup : le changement d'onglet doit etre instantane */
+const [L,A,R,B]=await Promise.all([
+appelRPC('capitainerie_livret',{p_joueur:e.id}),
+appelRPC('capitainerie_avis',{p_joueur:e.id}),
+appelRPC('capitainerie_records',{p_joueur:e.id}),
+appelRPC('capitainerie_brevets',{p_joueur:e.id})]);
+if(!$('page2').classList.contains('on'))return;         /* referme entre-temps */
+if(!L||L.erreur){
+$('page2Fond').innerHTML=capMessage('Le registre est resté fermé.<br>Réessaie dans un instant.');
+$('afcOk').onclick=()=>{$('page2').classList.remove('on');};return;}
+CAP={livret:L,avis:A,records:R,brevets:B,onglet:'livret'};
+poserLeRang(L.rang|0);            /* la verite du serveur, une bonne fois */
+capPeindre();
+try{jouer('achat','moment');}catch(x){}
+}
+function capPeindre(){
+const corps=CAP.onglet==='brevets'?capPageBrevets()
+           :CAP.onglet==='records'?capPageRecords()
+           :CAP.onglet==='avis'?capPageAvis():capPageLivret();
+$('page2Fond').innerHTML=CAP_STYLE+
+'<div id="afc"><div class="lvLiv">'+
+'<div class="lvEnt"><b>CAPITAINERIE DU PORT</b><i>Livret professionnel maritime</i></div>'+
+'<div class="lvPage">'+corps+'</div>'+
+'<div class="lvOng">'+CAP_ONGLETS.map(([k,t])=>
+'<button data-ong="'+k+'"'+(k===CAP.onglet?' class="on"':'')+'>'+t+'</button>').join('')+'</div>'+
+'<button id="afcOk">REDESCENDRE SUR LE QUAI</button>'+
+'</div></div>';
+document.querySelectorAll('#afc .lvOng button').forEach(b=>b.onclick=()=>{
+if(CAP.onglet===b.dataset.ong)return;
+CAP.onglet=b.dataset.ong;capPeindre();try{vibrer(8);}catch(x){}});
+$('afcOk').onclick=()=>{$('page2').classList.remove('on');CAP=null;};
+if(CAP.onglet==='livret')capDessinsLivret();
+document.querySelectorAll('#afc canvas[data-g]').forEach(c=>{
+try{galonsDe(c,+c.dataset.g);}catch(x){}});
+document.querySelectorAll('#afc [data-prendre]').forEach(b=>
+b.onclick=()=>capEncaisser(+b.dataset.prendre,b));
+const z=document.getElementById('afc');if(z)z.scrollTop=0;
+}
 /* ---------- LA PAGE DE GARDE : le titulaire et son rang ---------- */
 /* les quatre comptes du rang, dans l'ordre ou on les lit */
 const CAP_COND=[['especes','ESPÈCES'],['prises','PRISES'],
                 ['records','RECORDS'],['avis','AVIS DE LA SEMAINE']];
+function capCondLigne(cle,titre,seuil,valeur){
+if(!seuil)return '';                       /* un seuil a zero n'est pas une condition */
+const ok=valeur>=seuil;
+const part=Math.max(0,Math.min(1,valeur/seuil));
+return '<div class="lvCond'+(ok?' lvOkC':'')+'">'+
+ '<span class="lvCondN">'+titre+'</span>'+
+ '<span class="lvCondV">'+(ok?'✓ ':'')+valeur+' / '+seuil+'</span>'+
+ '<div class="lvCondJ"><i style="width:'+Math.round(part*100)+'%"></i></div></div>';
+}
+function capEchTexte(x){
+const t=[];
+if(x.especes)t.push(x.especes+' espèces');
+if(x.prises)t.push(x.prises+' prises');
+if(x.records)t.push(x.records+' record'+(x.records>1?'s':''));
+if(x.avis)t.push(x.avis+' avis');
+return t.length?t.join(' · '):'au premier jour';
+}
+function capPageLivret(){
+const d=CAP.livret;
+const ECH=Array.isArray(d.echelle)&&d.echelle.length?d.echelle
+:RANGS_MARIN.map((nom,i)=>({i,nom,especes:0}));
+const V=d.valeurs||{especes:d.especes|0,prises:d.prises|0,records:0,avis:0};
+const rg=d.rang|0, nEsp=d.especes|0;
+const dateFr=(t)=>{try{return new Date(t).toLocaleDateString('fr-FR',
+{day:'numeric',month:'long',year:'numeric'});}catch(x){return '—';}};
+const matricule=(()=>{let h=0;const s=String(e.id||'');
+for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;
+return 'EXM '+String(h%10000).padStart(4,'0')+' '+String((h>>>13)%100).padStart(2,'0');})();
+const suiv=d.suivant||null;
+const B=CAP.brevets;
+return '<div class="lvId">'+
+  '<div class="lvPho"><canvas id="lvTete" width="44" height="44"></canvas></div>'+
+  '<div class="lvCh"><p>LE TITULAIRE</p>'+
+  '<b>'+echapperT(d.pseudo||e.pseudo||'sans nom')+'</b>'+
+  '<span>Matricule '+matricule+'</span>'+
+  '<span>Inscrit le '+dateFr(d.inscrit)+'</span></div>'+
+  '<div class="lvTp"><i>CAPITAINERIE</i><b>VISÉ</b><i>DU PORT</i></div></div>'+
+'<hr>'+
+'<div class="lvRg"><canvas id="lvGalons" width="112" height="88"></canvas>'+
+  '<div><p>RANG AU REGISTRE</p>'+
+  '<b>'+echapperT(d.rang_nom||RANGS_MARIN[rg]||'Mousse')+'</b>'+
+  '<span>'+(rg+1)+'<sup>e</sup> échelon sur '+ECH.length+'</span></div></div>'+
+/* LE PROCHAIN ECHELON, condition par condition : le rang n'en compte
+   plus une seule, donc une seule jauge mentirait. */
+(suiv
+ ?'<div class="lvVers"><p>VERS '+echapperT(String(suiv.nom).toUpperCase())+'</p>'+
+   CAP_COND.map(([k,t])=>capCondLigne(k,t,suiv[k]|0,V[k]|0)).join('')+'</div>'
+ :'<div class="lvVers lvHaut"><p>ÉCHELON LE PLUS HAUT</p>'+
+   '<div class="lvHautM">Il n’y a rien au-dessus. Le port est à toi.</div></div>')+
+'<div class="lvEch">'+ECH.map((x,i)=>
+  '<div class="lvL'+(i===rg?' lvIci':(i>rg?' lvPas':''))+'">'+
+  '<canvas data-g="'+i+'" width="56" height="44"></canvas>'+
+  '<div class="lvLn"><b>'+echapperT(x.nom)+'</b>'+
+  '<span>'+capEchTexte(x)+'</span></div></div>').join('')+'</div>'+
+'<div class="lvSt">'+
+  '<div><b>'+nEsp+'</b><span>ESPÈCES AU CARNET</span></div>'+
+  '<div><b>'+(d.prises|0)+'</b><span>PRISES ENREGISTRÉES</span></div>'+
+  '<div><b>'+(d.record?(d.record.cm+' cm'):'—')+'</b><span>'+
+    (d.record?echapperT(String(((_)=>"?")(d.record.espece)).toUpperCase()):'AUCUN RECORD')+'</span></div>'+
+  '<div><b>'+(d.serie|0)+'</b><span>MEILLEURE SÉRIE</span></div></div>'+
+(B&&!B.erreur?'<div class="lvRenvoi">Le capitaine t’a délivré <b>'+(B.obtenus|0)+
+  '</b> brevet'+((B.obtenus|0)>1?'s':'')+' sur '+(B.total|0)+'.</div>':'')+
+'<div class="lvSig">Le capitaine du port</div>'+
+'<div class="lvNb">Le rang est un titre : il se porte, il n’ouvre aucune porte.</div>';
+}
+function capDessinsLivret(){
+try{const t=$('lvTete'),g=t.getContext('2d');g.imageSmoothingEnabled=false;
+const im=teteDe({ap:e.ap,pseudo:e.pseudo});
+g.clearRect(0,0,44,44);g.drawImage(im,0,0,im.width,im.height,-5,-2,53,53);}catch(x){}
+try{galonsDe($('lvGalons'),CAP.livret.rang|0);}catch(x){}
+}
 /* ---------- LES RECORDS DU PORT ----------
    Le seul tableau sans fin : un record ne s'obtient pas, il se PREND, et
    celui qui le tient peut le perdre demain. Les especes qu'on n'a jamais
    prises restent « ??? » — le carnet garde ses secrets, mais on voit que
    le mur continue. */
+function capPageRecords(){
+const R=CAP.records;
+if(!R||R.erreur||!Array.isArray(R.records))
+return '<div class="lvVide">Le mur des records n’a pas pu s’ouvrir.<br>Réessaie dans un instant.</div>';
+const L=R.records.slice();
+const aMoi=L.filter(r=>r.moi).sort((a,b)=>b.cm-a.cm);
+const aPrendre=L.filter(r=>!r.moi&&r.connu).sort((a,b)=>b.cm-a.cm);
+const inconnus=L.filter(r=>!r.moi&&!r.connu).sort((a,b)=>b.cm-a.cm);
+const ligne=(r)=>'<div class="lvRec'+(r.moi?' lvMien':'')+(r.connu?'':' lvFlou')+'">'+
+  '<b>'+(r.connu?echapperT(((_)=>"?")(r.espece)):'???')+'</b>'+
+  '<span class="lvRecCm">'+(r.cm|0)+' cm</span>'+
+  '<span class="lvRecQui">'+(r.moi?'à toi':echapperT(r.pseudo||'quelqu’un'))+
+  /* l'ecart plutot que sa propre taille : on sait tout de suite ce qu'il manque */
+  (!r.moi&&typeof r.mien==='number'?' · à '+Math.max(1,(r.cm|0)-r.mien)+' cm':'')+'</span></div>';
+const bloc=(t,arr)=>arr.length?'<div class="lvRecT">'+t+' · '+arr.length+'</div>'+arr.map(ligne).join(''):'';
+const part=Math.round((R.miens|0)/Math.max(1,R.total|0)*100);
+return '<div class="lvTete"><p>LES RECORDS DU PORT</p>'+
+  '<b>'+(R.miens|0)+' record'+((R.miens|0)>1?'s':'')+' sur '+(R.total|0)+'</b></div>'+
+'<div class="lvJa"><div class="lvJaB"><i style="width:'+part+'%"></i></div></div>'+
+bloc('TU LES TIENS',aMoi)+bloc('À PRENDRE',aPrendre)+bloc('PAS ENCORE RENCONTRÉES',inconnus)+
+'<div class="lvNb">Un record se prend : celui qui le tient peut le perdre demain.</div>';
+}
 /* ---------- LE MUR DES BREVETS ----------
    Neuf familles, trente-cinq brevets. Le volume, la taille, la serie, la
    nuit, l'aube et l'assiduite ne comptaient nulle part : ils comptent ici. */
+function capPageBrevets(){
+const B=CAP.brevets;
+if(!B||B.erreur||!Array.isArray(B.familles))
+return '<div class="lvVide">Le mur des brevets n’a pas pu s’ouvrir.<br>Réessaie dans un instant.</div>';
+const part=Math.round((B.obtenus|0)/Math.max(1,B.total|0)*100);
+return '<div class="lvTete"><p>LE MUR DU CAPITAINE</p>'+
+  '<b>'+(B.obtenus|0)+' brevet'+((B.obtenus|0)>1?'s':'')+' sur '+(B.total|0)+'</b></div>'+
+'<div class="lvJa"><div class="lvJaB"><i style="width:'+part+'%"></i></div></div>'+
+B.familles.map(f=>{
+const P=Array.isArray(f.paliers)?f.paliers:[];
+const suiv=P.find(x=>f.valeur<x.seuil);
+return '<div class="lvFam"><div class="lvFamH"><b>'+echapperT(f.titre)+'</b>'+
+  '<span>'+(f.valeur|0)+' '+echapperT(f.unite||'')+'</span></div>'+
+  '<div class="lvChips">'+P.map(x=>{
+    const ok=(f.valeur|0)>=x.seuil;
+    return '<i class="'+(ok?'lvOk':'lvNo')+'">'+(ok?echapperT(x.nom):('à '+x.seuil))+'</i>';
+  }).join('')+'</div>'+
+  (suiv?'<div class="lvSuiv">encore '+(suiv.seuil-(f.valeur|0))+' pour « '+echapperT(suiv.nom)+' »</div>'
+       :'<div class="lvSuiv lvFini">famille complète</div>')+
+  '</div>';}).join('')+
+'<div class="lvNb">Les brevets comptent ce que tu as déjà fait, depuis le premier jour.</div>';
+}
 /* ---------- LES AVIS DU CAPITAINE ----------
    Deux du jour, un de la semaine, tires de la DATE : les memes pour tout
    le port, et rouvrir la page n'en change pas un. Le serveur recompte tout
    au moment d'encaisser — le bouton n'est qu'un bouton. */
+function capAvisTexte(a){
+const n=a.cible|0;
+const quand=a.portee==='jour'?'aujourd’hui':'cette semaine';
+switch(a.type){
+case 'n':     return 'Rapporter <b>'+n+'</b> poissons '+quand+'.';
+case 'varie': return 'Rapporter <b>'+n+'</b> espèces différentes '+quand+'.';
+case 'cm':    return 'Ramener une prise d’au moins <b>'+n+' cm</b> '+quand+'.';
+case 'esp':   return 'Rapporter <b>'+n+'</b> '+echapperT(String(((_)=>"?")(a.espece)).toLowerCase())+
+                     (n>1?'s':'')+' '+quand+'.';
+case 'nuit':  return 'Rapporter <b>'+n+'</b> prises entre 22 h et 5 h, '+quand+'.';
+case 'aube':  return 'Rapporter <b>'+n+'</b> prises entre 5 h et 8 h, '+quand+'.';
+default:      return 'Avis illisible.';
+}
+}
+function capPageAvis(){
+const A=CAP.avis;
+if(!A||A.erreur||!Array.isArray(A.avis)||!A.avis.length)
+return '<div class="lvVide">Le tableau des avis est vide.<br>Réessaie dans un instant.</div>';
+const hon=A.honores|0;
+return '<div class="lvTete"><p>LES AVIS DU CAPITAINE</p>'+
+  '<b>'+(A.avis.filter(a=>a.pris).length)+' sur '+A.avis.length+' honorés</b></div>'+
+A.avis.map(a=>{
+const fait=a.fait|0, cible=a.cible|0;
+/* « cm » se lit en centimetres, pas en nombre de prises */
+const part=Math.max(0,Math.min(1,fait/Math.max(1,cible)));
+const pret=fait>=cible;
+return '<div class="lvAvis'+(a.pris?' lvPris':'')+(a.portee==='semaine'?' lvSem':'')+'">'+
+  '<div class="lvAvisH"><span>'+(a.portee==='semaine'?'AVIS DE LA SEMAINE':'AVIS DU JOUR')+'</span>'+
+  '<em>'+enEuros(a.prime|0)+'</em></div>'+
+  '<p>'+capAvisTexte(a)+'</p>'+
+  '<div class="lvJaB"><i style="width:'+Math.round(part*100)+'%"></i></div>'+
+  '<div class="lvAvisP">'+fait+(a.type==='cm'?' cm':'')+' sur '+cible+(a.type==='cm'?' cm':'')+'</div>'+
+  (a.pris?'<div class="lvFaitT">AVIS HONORÉ</div>'
+        :'<button data-prendre="'+(a.rang|0)+'"'+(pret?'':' class="pas" disabled')+'>'+
+          (pret?'ENCAISSER · '+enEuros(a.prime|0):'PAS ENCORE')+'</button>')+
+  (a.portee==='semaine'&&!(e.cos&&e.cos.casquette_capitaine)
+    ?'<div class="lvAvisC">Le premier avis de la semaine honoré te vaut <b>la casquette du capitaine</b>.</div>':'')+
+'</div>';}).join('')+
+(hon>0?'<div class="lvNb">'+hon+' avis de la semaine honoré'+(hon>1?'s':'')+' depuis l’ouverture.</div>'
+      :'<div class="lvNb">Les avis changent chaque jour, et le grand chaque lundi.</div>');
+}
+async function capEncaisser(rang,bouton){
+if(!CAP)return;
+bouton.disabled=true;bouton.textContent='…';
+const d=await appelRPC('capitainerie_avis_prendre',{p_joueur:e.id,p_rang:rang});
+if(!d||d.erreur){
+bouton.disabled=false;
+bouton.textContent=d&&d.erreur==='pas fini'?'PAS ENCORE'
+  :(d&&d.erreur==='deja pris'?'DÉJÀ HONORÉ'
+  :(d&&d.erreur==='plafond'?'PLAFOND DU JOUR ATTEINT':'LE CAPITAINE N’A PAS PU'));
+/* le serveur a peut-etre une verite plus fraiche que la notre */
+const A=await appelRPC('capitainerie_avis',{p_joueur:e.id});
+if(A&&!A.erreur&&CAP){CAP.avis=A;setTimeout(()=>{if(CAP)capPeindre();},1400);}
+return;}
+if(typeof d.euros==='number'){e.euros=d.euros;try{sauver();majHaut();}catch(x){}}
+try{jouer('achat','moment');vibrer([14,24,14]);}catch(x){}
+if(d.piece){try{await lireMesCosmetiques();}catch(x){}}
+if(rang===2)rafraichirLeRang();        /* les avis comptent pour les deux hauts echelons */
+const A=await appelRPC('capitainerie_avis',{p_joueur:e.id});
+if(A&&!A.erreur&&CAP)CAP.avis=A;
+if(!CAP)return;
+capPeindre();
+try{texteVolant(joueur.x,joueur.y-44,'+'+enEuros(d.verse|0),'#ffd76a');
+if(d.piece)setTimeout(()=>texteVolant(joueur.x,joueur.y-58,'la casquette du capitaine !','#f0d78a'),600);
+}catch(x){}
+}
 const CAP_STYLE=`<style>
 #afc{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
   display:flex;align-items:flex-start;justify-content:center;
@@ -3596,23 +4007,34 @@ const FORET_OUVERTE=true;    /* la forêt est ouverte à tous */
 const FORET_VIDE=true;
 /* ================= L'ANNONCE DE LA NOUVELLE INTERFACE =================
    Elle s'affiche une fois par joueur, au premier lancement apres la refonte. */
-const CSS_ANI=`#ani{position:absolute;inset:0;background:#15212e;box-shadow:inset 0 0 0 3px #e8c06a;
-display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
-padding:34px 22px calc(24px + env(safe-area-inset-bottom,0px))}
-#ani .pil{display:inline-flex;align-items:center;gap:8px;background:rgba(16,22,30,.9);
-border-radius:16px;padding:7px 14px 7px 11px;margin-bottom:20px}
-#ani .pil .enc{display:flex;gap:2px}
-#ani .pil .enc i{display:block;width:3px;height:13px;background:rgba(255,255,255,.25)}
-#ani .pil .enc i.on{background:#9fd47e}
-#ani .pil b{font:700 15px 'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#f6efdc}
-#ani .pil b em{font-style:normal;opacity:.5;font-size:12px}
-#ani h2{font:700 26px/1.2 'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#f6efdc;margin:0 0 12px}
-#ani p{font:italic 15px/1.7 Georgia,serif;color:#8fa6bd;max-width:290px;margin:0}
-#ani button{width:100%;max-width:320px;margin-top:26px;border:0;border-radius:14px;padding:14px;
-background:#e8c06a;color:#2a2016;font:700 15px 'Baloo 2','Trebuchet MS',system-ui,sans-serif}`;
 /* ================= L'ANNONCE DU CHANTIER =================
    Une seule annonce dans le jeu. Elle s'affiche une fois par
    joueur, puis ne revient plus : le bouton pose son marqueur. */
+function annonceChantier(){
+try{if(localStorage.getItem('bdl.annonce.perso')==='1')return false;}catch(x){}
+if(!document.getElementById('cssAni')){const st=document.createElement('style');
+st.id='cssAni';st.textContent=CSS_ANI;document.head.appendChild(st);}
+$('page2Fond').className='';$('page2').classList.add('on');
+$('page2Fond').innerHTML=
+ '<div id="ani">'+
+ '<span class="pil"><span class="enc"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span>'+
+ '<b>EN COURS</b></span>'+
+ '<h2>On refait ton personnage</h2>'+
+ '<p>Les prochains jours, le dessin du personnage et ses animations vont '+
+ 'changer : la marche, les gestes, les coupes de cheveux et les tenues. '+
+ 'Tu verras peut-être des choses bizarres en chemin — c’est normal, '+
+ 'ça veut dire que ça avance.</p>'+
+ '<p style="opacity:.75">Le style Classique reste disponible dans les '+
+ 'réglages si quelque chose te gêne.</p>'+
+ '<button id="aniOk">Compris</button></div>';
+$('aniOk').onclick=()=>{
+try{localStorage.setItem('bdl.annonce.perso','1');}catch(x){}
+fermeA=Date.now();$('page2').classList.remove('on');
+/* ET L'AFFICHE DU MONDIAL DERRIÈRE, à la ferme : deux annonces d'un
+   coup se recouvriraient, elles se suivent donc. */
+setTimeout(()=>{try{annonceMondial();}catch(x){}},420);};
+return true;
+}
 /* ================= L'ANNONCE DU POKÉDOCK =================
    La première édition arrive au Bar des Docks. Une affiche, trois cartes
    en éventail, et le nom du rayon où les trouver. Une fois par joueur.
@@ -3620,80 +4042,38 @@ background:#e8c06a;color:#2a2016;font:700 15px 'Baloo 2','Trebuchet MS',system-u
    ELLE N'A PAS BESOIN D'UN DESSIN DE PLUS : les trois cartes montrées
    sont les vraies, gravées par pokedock.js. Si le fichier n'a pas pu se
    charger, on n'affiche rien plutôt qu'un cadre vide. */
-const CSS_APK=`
-#apk{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;
-  background:rgba(8,7,12,.94);padding:14px;font-family:Georgia,serif;overflow-y:auto;
-  -webkit-overflow-scrolling:touch}
-#apk .pan{width:100%;max-width:358px;margin:auto;background:#13111a;border-radius:14px;
-  box-shadow:0 0 0 2px #c9a24a,0 0 0 5px #2a2012,0 22px 50px rgba(0,0,0,.75);overflow:hidden}
-#apk .haut{position:relative;padding:22px 16px 18px;text-align:center;
-  background:radial-gradient(90% 70% at 50% 0%,#33294a 0%,rgba(51,41,74,0) 70%),#191527;
-  border-bottom:2px solid #c9a24a}
-#apk small{display:block;font:700 8px Arial,sans-serif;letter-spacing:3.4px;color:#c9a24a}
-#apk h2{font:900 26px/1.12 Georgia,serif;color:#f6ecd4;margin:7px 0 0;
-  text-shadow:0 2px 0 rgba(0,0,0,.5)}
-#apk .eve{display:flex;justify-content:center;align-items:flex-end;margin:16px 0 0;height:124px}
-#apk .eve img{width:76px;border-radius:5px;box-shadow:0 8px 20px rgba(0,0,0,.6);
-  animation:apkPose .7s cubic-bezier(.2,.7,.3,1) backwards}
-#apk .eve img:nth-child(1){transform:rotate(-13deg) translateY(8px);z-index:1}
-#apk .eve img:nth-child(2){transform:scale(1.12);z-index:3;margin:0 -14px}
-#apk .eve img:nth-child(3){transform:rotate(13deg) translateY(8px);z-index:2}
-#apk .eve img:nth-child(2){animation-delay:.1s}
-#apk .eve img:nth-child(3){animation-delay:.2s}
-@keyframes apkPose{0%{opacity:0;transform:translateY(26px) scale(.86)}}
-#apk .co{padding:16px 17px calc(16px + env(safe-area-inset-bottom,0px));text-align:center}
-#apk p{font:400 13px/1.55 Georgia,serif;color:#c9d6e2;margin:0 0 10px}
-#apk b{color:#f6ecd4}
-#apk .ou{font:700 9px Arial,sans-serif;letter-spacing:2px;color:#c9a24a;margin:14px 0 0}
-#apk button{display:block;width:100%;margin-top:14px;border:0;border-radius:10px;
-  background:#c9a24a;color:#1a1208;font:900 12px Arial,sans-serif;letter-spacing:1.6px;
-  padding:14px}
-`;
+function annoncePokedock(){
+try{if(localStorage.getItem('bdl.annonce.pokedock')==='1')return false;}catch(x){}
+if(!window.Pokedock)return false;
+if(!document.getElementById('cssApk')){const st=document.createElement('style');
+st.id='cssApk';st.textContent=CSS_APK;document.head.appendChild(st);}
+$('page2Fond').className='';$('page2').classList.add('on');
+/* une commune, une rare et une brillante : de quoi montrer l'échelle */
+const trois=[12,44,96];
+$('page2Fond').innerHTML=
+ '<div id="apk"><div class="pan">'+
+ '<div class="haut"><small>NOUVEAU AU BAR DES DOCKS</small>'+
+ '<h2>Les cartes Pokédock</h2>'+
+ '<div class="eve">'+trois.map(n=>'<img alt="" src="'+window.Pokedock.carte(n)+'">').join('')+'</div>'+
+ '</div>'+
+ '<div class="co">'+
+ '<p><b>Cent cartes à collectionner</b>, et tout le port est dedans : '+
+ 'Marius, Fanny, Dédé, le chauffeur du 83, la dame du guichet.</p>'+
+ '<p>Un paquet de <b>dix cartes pour 6 €</b>. Six communes et quatre tirages. '+
+ 'Les secrètes sortent une fois sur deux cent cinquante — c’est fait exprès.</p>'+
+ '<div class="ou">RAYON POKÉDOCK · BAR DES DOCKS · PREMIÈRE ÉDITION</div>'+
+ '<button id="apkOk">ALLER VOIR</button>'+
+ '</div></div></div>';
+$('apkOk').onclick=()=>{
+try{localStorage.setItem('bdl.annonce.pokedock','1');}catch(x){}
+fermeA=Date.now();$('page2').classList.remove('on');};
+return true;
+}
 
 /* ================= L'ANNONCE DU MONDIAL DE PÉTANQUE =================
    Une affiche de tournoi, peinte en pixels : la banderole, le
    lampadaire, la coupe sous son halo. Elle s'ouvre une fois à la ferme,
    et le bouton la referme pour de bon. */
-const CSS_ANM=`
-#anm{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;
-  background:rgba(8,12,20,.93);padding:14px;font-family:Georgia,serif;overflow-y:auto;
-  -webkit-overflow-scrolling:touch}
-#anm .pan{width:100%;max-width:358px;margin:auto;background:#121c2c;border-radius:14px;
-  box-shadow:0 0 0 2px #c9a24a,0 0 0 5px #2a2012,0 22px 50px rgba(0,0,0,.75);overflow:hidden}
-#anm canvas{display:block;width:100%;image-rendering:pixelated;
-  border-bottom:2px solid #c9a24a}
-#anm .co{padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));text-align:center}
-#anm small{display:block;font:700 8px Arial,sans-serif;letter-spacing:3.4px;color:#c9a24a}
-#anm h2{font:900 28px/1.1 Georgia,serif;color:#f6ecd4;margin:7px 0 0;
-  text-shadow:0 2px 0 rgba(0,0,0,.5)}
-#anm .fan{display:flex;justify-content:center;gap:5px;margin:11px 0 0}
-#anm .fan i{display:block;width:21px;height:14px;border-radius:2px;
-  border:1px solid rgba(255,255,255,.26);box-shadow:0 1px 2px rgba(0,0,0,.5)}
-#anm .fr{background:linear-gradient(90deg,#1f3a93 0 33.3%,#f4f4f4 33.3% 66.6%,#c8102e 66.6%)}
-#anm .be{background:linear-gradient(90deg,#1a1a1a 0 33.3%,#f4d02c 33.3% 66.6%,#c8102e 66.6%)}
-#anm .it{background:linear-gradient(90deg,#248b48 0 33.3%,#f4f4f4 33.3% 66.6%,#c8102e 66.6%)}
-#anm .sn{background:linear-gradient(90deg,#248b48 0 33.3%,#f4d02c 33.3% 66.6%,#c8102e 66.6%)}
-#anm .mg{background:linear-gradient(90deg,#f4f4f4 0 33.3%,transparent 33.3%),linear-gradient(180deg,#c8102e 0 50%,#248b48 50%)}
-#anm .th{background:linear-gradient(180deg,#c8102e 0 16.6%,#f4f4f4 16.6% 33.3%,#1f3a93 33.3% 66.6%,#f4f4f4 66.6% 83.3%,#c8102e 83.3%)}
-#anm .tn{background:radial-gradient(circle at 56% 50%,#c8102e 0 24%,transparent 24%),radial-gradient(circle at 50% 50%,#f4f4f4 0 33%,#c8102e 33%)}
-#anm .es{background:linear-gradient(180deg,#c8102e 0 25%,#f4d02c 25% 75%,#c8102e 75%)}
-#anm .ch{font:italic 13px/1.6 Georgia,serif;color:#9fb2c8;margin:12px 4px 0}
-#anm .lst{margin:14px 0 0;text-align:left}
-#anm .lst div{background:#1a2638;border:1px solid #2c3c54;border-left:3px solid #c9a24a;
-  border-radius:9px;padding:9px 11px;margin-bottom:7px}
-#anm .lst b{display:block;font:700 13.5px Georgia,serif;color:#f0e6cf}
-#anm .lst em{display:block;font:italic 11.5px/1.45 Georgia,serif;color:#8fa3ba;margin-top:2px}
-#anm .cad{margin:12px 0 0;background:linear-gradient(180deg,#f8e8bc,#e8c87e);
-  border-radius:11px;padding:11px 12px;box-shadow:inset 0 0 0 1px #8a6a28}
-#anm .cad small{color:#8a6a1a;letter-spacing:2.6px}
-#anm .cad b{display:block;font:900 17px Georgia,serif;color:#2f2414;margin-top:3px}
-#anm .cad em{display:block;font:italic 11.5px Georgia,serif;color:#6a5020;margin-top:3px}
-#anm button{margin:15px 0 0;width:100%;border:0;border-radius:12px;padding:16px;
-  background:linear-gradient(180deg,#e8c06a,#c9a24a);color:#2a2016;
-  font:900 12px Arial,sans-serif;letter-spacing:3px;box-shadow:0 4px 0 #8a6a28}
-#anm button:active{transform:translateY(2px);box-shadow:0 2px 0 #8a6a28}
-@keyframes anmNe{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
-#anm .pan{animation:anmNe .42s cubic-bezier(.2,.9,.3,1.2) both}`;
 /* ================= L'AFFICHE DU MONDIAL =================
    Un soir de tournoi au boulodrome : la banderole de fanions, le
    lampadaire, le sable, la coupe sous son halo. Tout est peint en
@@ -3860,31 +4240,6 @@ function motOuverture(t){
   clearTimeout(motOuverture.t);
   motOuverture.t=setTimeout(()=>{b.style.opacity='0';},4600);
 }
-const CSS_ANF=`
-#anf{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-  background:rgba(20,14,8,.94);padding:16px;font-family:Georgia,serif;overflow-y:auto}
-#anf .pan{width:100%;max-width:356px;background:#f4ead2;border:6px solid #4a3218;border-radius:9px;
-  box-shadow:0 14px 38px rgba(0,0,0,.7);padding:0 0 16px;text-align:center;overflow:hidden}
-#anf canvas{display:block;width:100%;image-rendering:pixelated;border-bottom:3px solid #4a3218}
-#anf small{display:block;font:700 8px Arial;letter-spacing:3px;color:#9a7a30;margin-top:13px}
-#anf h2{font:900 27px Georgia;color:#3a2614;margin-top:3px}
-#anf .ch{font:italic 12.5px Georgia;color:#6a5434;padding:9px 18px 0;line-height:1.5}
-#anf .lst2{margin:13px 16px 0;text-align:left}
-#anf .lst2 div{background:#e8dcc0;border:1px solid #cdbb97;border-radius:9px;padding:8px 11px;margin-bottom:6px}
-#anf .lst2 b{display:block;font:700 13.5px Georgia;color:#3a2614}
-#anf .lst2 em{display:block;font:italic 10.5px Georgia;color:#6a5434;margin-top:1px}
-#anf .cad2{margin:14px 16px 0;background:linear-gradient(180deg,#f8e8bc,#ecd08a);
-  border:2px solid #c9a24a;border-radius:11px;padding:12px 13px}
-#anf .cad2 small{margin:0;color:#8a6a1a}
-#anf .cad2 b{display:block;font:900 17px Georgia;color:#3a2614;margin-top:3px}
-#anf .cad2 em{display:block;font:italic 11px Georgia;color:#6a5020;margin-top:3px;line-height:1.4}
-#anf .cad2 i{display:block;font:700 9px Arial;letter-spacing:1.6px;color:#8a3a22;margin-top:7px;font-style:normal}
-#anf button#anfOk{margin:15px 16px 0;width:calc(100% - 32px);border:0;border-radius:11px;padding:16px;
-  background:linear-gradient(180deg,#3f7040,#2a5230);color:#f2e7d2;
-  font:900 11px Arial;letter-spacing:2px;box-shadow:0 3px 0 #1d3a22}
-#anf button.pl{margin:8px 16px 0;width:calc(100% - 32px);border:0;background:transparent;
-  color:#8a7454;font:italic 12px Georgia;padding:6px}
-`;
 
 let FONFON={};
 /* l'état de la marmite, et le livre */
@@ -4030,19 +4385,614 @@ g.beginPath();g.moveTo(x-7,y);g.quadraticCurveTo(x-3.5,y-5,x,y);g.quadraticCurve
 g.restore();
 for(let y=0;y<H;y+=3)for(let x=((y/3)%2)?0:1;x<W;x+=3){g.fillStyle='rgba(30,26,20,.07)';g.fillRect(x,y,1,1);}
 }
+async function ouvrirLaGazette(){
+const d=new Date(), jour=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+const graine=(n)=>{const v=Math.sin((d.getFullYear()*400+d.getMonth()*32+d.getDate())*12.9898+n*78.233)*43758.5453;return v-Math.floor(v);};
+const hier=(n)=>{const y=new Date(d.getTime()-864e5);const v=Math.sin((y.getFullYear()*400+y.getMonth()*32+y.getDate())*12.9898+n*78.233)*43758.5453;return v-Math.floor(v);};
+const METEO=['☀️ Grand soleil sur le Vieux-Port. Mer belle.','🌤️ Soleil voilé, petite brise de mer.','💨 Mistral soutenu : les voiliers restent au port.','⛅ Quelques nuages, mer peu agitée.','🌦️ Averses passagères, puis éclaircies sur les quais.','☀️ Chaleur sur le quai, les cigales chantent.'];
+const temp=22+Math.round(graine(9)*9);
+const POISSONS=[['Sardine',0.4],['Rouget',2.1],['Dorade',4.5],['Loup de mer',6.8],['Thon rouge',24]];
+const cours=POISSONS.map(([n,b],k)=>{const a=b*(0.85+graine(k)*0.3), h=b*(0.85+hier(k)*0.3);return [n,a,a>h*1.02?'▲':(a<h*0.98?'▼':'=')];});
+$('page2Fond').className='';$('page2').classList.add('on');
+$('page2Fond').innerHTML='<div style="position:absolute;inset:0;background:#e9e1cc;display:flex;align-items:center;justify-content:center;font:italic 15px Georgia;color:#231c14">On déplie le journal…</div>';
+let G=null;try{G=await appelRPC('gazette',{});}catch(x){}
+let NEUF=[];try{const r=await appelRPC('gazette_nouveautes',{});if(Array.isArray(r))NEUF=r;}catch(x){}   /* LA UNE : ce qui vient d'ouvrir dans le jeu */
+let MARCHE=[];try{const r=await appelRPC('gazette_cours',{});if(Array.isArray(r))MARCHE=r;}catch(x){}   /* LES COURS DU JOUR, communs à tous */
+const CL=(G&&G.classement)||[];
+const esc=(t)=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const jourN=Math.floor((d-new Date(2026,0,1))/864e5);
+const H=(G&&G.hier)||{}, nomT={poisson:'Petit Poisson',filet:'Filet d’Or',cargo:'Gros Cargo'};
+const faits=[];
+if(H.loto)faits.push('<b>Loto :</b> '+H.loto.numeros.join(' · ')+' · Chance '+H.loto.chance+' — '+(H.loto.gagnants?H.loto.gagnants+' grille'+(H.loto.gagnants>1?'s':'')+' gagnante'+(H.loto.gagnants>1?'s':''):'aucune grille gagnante')+'.');
+if(H.tickets)faits.push('<b>'+H.tickets+' ticket'+(H.tickets>1?'s':'')+'</b> grattés au Bar des Docks'+(H.gros_ticket?' ; le plus gros gain : <b>'+enEuros(H.gros_ticket.gain)+'</b> pour '+esc(H.gros_ticket.pseudo):'')+'.');
+if(H.poisson)faits.push('<b>La plus belle prise :</b> '+esc(H.poisson.espece)+' de '+H.poisson.cm+' cm, par '+esc(H.poisson.pseudo)+' ('+H.prises+' poisson'+(H.prises>1?'s':'')+' pêchés en tout).');
+else if(H.prises)faits.push('<b>'+H.prises+' poisson'+(H.prises>1?'s':'')+'</b> sortis de l’eau.');
+if(H.repas)faits.push('Crousti’Port a servi <b>'+H.repas+' menu'+(H.repas>1?'s':'')+'</b>.');
+if(H.nouveaux&&H.nouveaux.length)faits.push('Bienvenue à <b>'+H.nouveaux.map(esc).join('</b>, <b>')+'</b>, arrivé'+(H.nouveaux.length>1?'s':'')+' sur le port.');
+const nomMarche=(k)=>POT_CULT[k]?POT_CULT[k][0]:((OBJETS[k]&&OBJETS[k].nom)||k);
+const marcheHTML=MARCHE.length?('<div class="gzv-marche"><h3>Le marché du port</h3>'+
+'<div class="gzv-illu petite"><canvas data-gr="etal"></canvas></div>'+
+'<p class="gzv-leg">L’étal de La Marée, à l’heure où les prix se décident.</p>'+
+'<p class="gzv-mleg">Les prix sont les mêmes pour tout le monde : ce que vendent les autres fait bouger les tiens.</p>'+
+MARCHE.map(m=>{const v=Math.round((m.f-1)*100);
+const c=v>2?'#2f6a2e':(v<-2?'#b8402e':'#5a5048'), fl=v>2?'▲':(v<-2?'▼':'=');
+return '<div class="gzv-ml"><span>'+esc(nomMarche(m.k))+'</span><b>'+enEuros(m.prix)+'</b>'+
+'<i style="color:'+c+'">'+fl+' '+(v>0?'+':'')+v+' %</i></div>';}).join('')+'</div>'):'';
+const hierHTML='<div class="gzv-hier"><h3>Hier sur le port</h3>'+'<div class="gzv-illu petite"><canvas data-gr="quai"></canvas></div><p class="gzv-leg">Le quai au crépuscule, les lanternes allumées.</p>'+(faits.length?'<ul>'+faits.map(f=>'<li>'+f+'</li>').join('')+'</ul>':'<p>Une journée tranquille : les quais se reposaient.</p>')+'</div>';
+const DEDE=['Un pastis, ça ne se boit pas, ça se mérite.','Le poisson, c’est comme la chance : il faut savoir attendre au bon endroit.','Ici, le mistral, on l’appelle le balai du Bon Dieu.','Celui qui gratte vite gagne rarement. Celui qui gratte bien… gagne aussi rarement, mais avec style.','Une sardine a bouché le port, une fois. Depuis, on se méfie.','Le secret de Fonfon ? Trois poissons au moins, et beaucoup d’amour.','Qui paie sa tournée a toujours des amis. Qui ne la paie pas en a moins.','Le Loto, c’est comme la pêche : on rêve du gros, on se contente du petit.','Au Bar des Docks, on n’a jamais perdu : on a juste pas encore gagné.','La mer, ça se respecte. Les clients aussi, surtout quand ils paient.'];
+const HORO=['Bélier : une rencontre au bout du ponton pourrait changer ta journée.','Taureau : ta patience sera récompensée, surtout avec une canne en fibre.','Gémeaux : gratte ton ticket de la main gauche, on ne sait jamais.','Cancer : les crabes te portent chance aujourd’hui. Ou pas.','Lion : tu brilles ! Même ta coupe du Hair Studio le dit.','Vierge : range ton sac, la chance aime l’ordre.','Balance : ni trop de sardines, ni trop peu. Tout est question d’équilibre.','Scorpion : une rascasse t’attend. Méfie-toi de ses épines.','Sagittaire : vise loin, lance plus loin encore.','Capricorne : le travail paie. La Marée aussi, d’ailleurs.','Verseau : une journée idéale pour un Seau du Port.','Poissons : c’est ta journée. Évidemment.'];
+const ANNONCES=['Loto du Port : tirage chaque soir à 21 h au Bar des Docks. La cagnotte n’attend que vous !','Le Glacier du Port : six parfums, six effets, dix minutes de bonheur.','Le Pêcheur Heureux : la canne en carbone est arrivée. Demandez Fanny.','Crousti’Port : un ticket d’or se cache peut-être dans votre seau. Tenue de poulet garantie.','Hair Studio : envie de changement ? La Comète, série limitée, il en reste encore.','Perdu : une casquette rouge près du ponton 3. Récompense : une sardine.','La Criée achète toutes vos prises, même les petites. Surtout les petites, dit le poissonnier.','Cherche équipier sérieux pour la pêche du matin. Pas de ronfleurs.','Vends canne en bambou, peu servie, cause passage au carbone.','Le Bar des Docks rappelle : vingt tickets par jour, pas un de plus. Même pour Marius.']
+const num=Math.max(1,Math.floor((d-new Date(2026,8,21))/864e5)+3);
+$('page2Fond').innerHTML=`<style>#gzv{position:fixed;inset:0;z-index:5;background:#f3ecdc;color:#1d1a16;font-family:'Times New Roman',Georgia,serif;display:flex;flex-direction:column}
+#gzv .gzv-page{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;
+padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 24px}
+#gzv .gzv-bandeau{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;border-bottom:4px solid #b8231a;padding-bottom:5px}
+#gzv h1{font:italic 900 36px 'Times New Roman',Georgia,serif;color:#b8231a;letter-spacing:-1px;line-height:.9;margin:0}
+#gzv .gzv-date{font:700 10px Arial,sans-serif;text-align:right;line-height:1.35;text-transform:uppercase;white-space:nowrap}
+#gzv .gzv-edition{font:700 10px Arial,sans-serif;letter-spacing:3px;background:#1d1a16;color:#f3ecdc;padding:3px 7px;margin:8px 0 4px;display:inline-block}
+#gzv h2{font:900 25px 'Times New Roman',Georgia,serif;line-height:1.02;text-transform:uppercase;margin:4px 0 0;overflow-wrap:break-word}
+#gzv .gzv-photo{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:center 20%;image-rendering:pixelated;filter:sepia(.45) contrast(1.05);border:1px solid #1d1a16;margin:10px 0 4px;background:#d8ccb4}
+#gzv .gzv-leg{font:italic 11.5px Georgia,serif;color:#5a5048;margin:0}
+#gzv .gzv-texte{font:14px Georgia,serif;line-height:1.45;margin:8px 0 0;column-count:2;column-gap:14px;text-align:justify;hyphens:auto;-webkit-hyphens:auto}
+#gzv .gzv-grille{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;margin-top:12px;border-top:2px solid #b8231a;padding-top:10px}
+#gzv h3{font:900 11px Arial,sans-serif;color:#b8231a;letter-spacing:1px;margin:0 0 4px;text-transform:uppercase}
+#gzv .gzv-bloc{font:13px Georgia,serif;line-height:1.4;min-width:0}
+#gzv .gzv-bloc ol{margin:0;padding-left:18px}
+#gzv .gzv-prix{display:flex;justify-content:space-between;gap:6px;border-bottom:1px dotted #8a7a5a;padding:2px 0}
+#gzv .gzv-annonces{margin-top:14px;border-top:2px solid #b8231a;padding-top:10px}
+#gzv .gzv-pa{border:1px solid #1d1a16;padding:7px 8px;margin-top:7px;font:italic 12.5px Georgia,serif;line-height:1.35}
+#gzv .gzv-fin{text-align:center;font:italic 11px Georgia,serif;color:#5a5048;margin-top:16px}
+#gzv .gzv-illu{width:100%;height:150px;border:1px solid #cdbfa4;margin:8px 0 4px;background:#e2dcc8}
+#gzv .gzv-illu.petite{height:112px}
+#gzv .gzv-illu canvas{width:100%;height:100%;display:block;image-rendering:pixelated}
+#gzv .gzv-marche{margin-top:12px;border-top:2px solid #b8231a;padding-top:10px}
+#gzv .gzv-marche h3{font:900 13px 'Times New Roman',Georgia,serif;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px}
+#gzv .gzv-mleg{font:italic 12px 'Times New Roman',Georgia,serif;color:#5a5048;margin:0 0 7px}
+#gzv .gzv-ml{display:flex;align-items:baseline;gap:8px;border-bottom:1px dotted #c9bfae;padding:4px 0;font:15px 'Times New Roman',Georgia,serif}
+#gzv .gzv-ml span{flex:1}
+#gzv .gzv-ml b{font-weight:700}
+#gzv .gzv-ml i{font-style:normal;font:700 11px Arial;letter-spacing:.5px;min-width:64px;text-align:right}
+#gzv .gzv-neuf{margin-top:12px;border-top:2px solid #b8231a;padding-top:10px}
+#gzv .gzv-neuf h3{font:900 13px 'Times New Roman',Georgia,serif;text-transform:uppercase;letter-spacing:1px;margin:0 0 6px}
+#gzv .gzv-neuf ul{margin:0;padding-left:18px}#gzv .gzv-neuf li{margin-bottom:7px;font:15px 'Times New Roman',Georgia,serif;line-height:1.35}
+#gzv .gzv-neuf i{color:#5a5048}
+#gzv .gzv-hier{margin-top:12px;border-top:2px solid #b8231a;padding-top:10px}#gzv .gzv-hier ul{margin:0;padding-left:18px}#gzv .gzv-hier li,#gzv .gzv-hier p{font:13px Georgia,serif;line-height:1.45;margin:0 0 4px}
+#gzv .gzv-dede{margin-top:14px;padding:10px 12px;border:1px solid #1d1a16;border-left:4px solid #b8231a;background:rgba(184,35,26,.04)}#gzv .gzv-dede p{font:italic 15px Georgia,serif;line-height:1.4;margin:0}#gzv .gzv-dede small{display:block;font:11px Georgia,serif;color:#5a5048;margin-top:4px}
+#gzv .gzv-pied{flex:none;padding:10px 16px calc(env(safe-area-inset-bottom,0px) + 12px);background:linear-gradient(rgba(243,236,220,0),#f3ecdc 30%)}
+#gzv .gzv-fermer{display:block;width:100%;border:0;border-radius:14px;padding:14px;font:700 16px Georgia,serif;background:#1d1a16;color:#f3ecdc}
+@media (max-width:340px){#gzv .gzv-texte{column-count:1}#gzv h1{font-size:30px}}</style>
+<div id="gzv" lang="fr"><div class="gzv-page">
+<div class="gzv-bandeau"><h1>Le Vieux-Port</h1><div class="gzv-date">${esc(d.toLocaleDateString('fr-FR',{weekday:'long'}))}<br>${esc(d.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}))}<br>N° ${num} · gratuit</div></div>
+<span class="gzv-edition">ÉDITION DU MATIN</span>
+${NEUF.length?`
+<h2>${esc(NEUF[0].titre)}</h2>
+<div class="gzv-illu"><canvas data-gr="mine"></canvas></div>
+<p class="gzv-leg">${esc(NEUF[0].lieu||'Le port')} · ${esc(new Date(NEUF[0].quand).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}))} — gravure de notre envoyé</p>
+<p class="gzv-texte">${esc(NEUF[0].texte)}</p>
+<div class="gzv-neuf"><h3>Ce qui vient d’ouvrir</h3><ul>${NEUF.slice(1).map(n=>
+'<li><b>'+esc(n.titre)+'</b> — '+esc(n.texte)+' <i>('+esc(n.lieu||'le port')+')</i></li>').join('')}</ul></div>`
+:`<h2>${esc((G&&G.titre)||'Le quai s’éveille')}</h2>
+<div class="gzv-illu"><canvas data-gr="quai"></canvas></div>
+<p class="gzv-leg">Sur le quai, à l'heure où les lanternes s'allument.</p>
+<p class="gzv-texte">${esc((G&&G.une)||'Les pêcheurs rentrent, le Fumoir fume, les mouettes veillent.')}</p>`}
+${marcheHTML}
+${hierHTML}
+<div class="gzv-grille">
+<div class="gzv-bloc"><h3>Classement</h3>${CL.length?'<ol>'+CL.map((j,k)=>'<li>'+(k===0?'<b>':'')+esc(j.pseudo)+(k===0?'</b>':'')+'</li>').join('')+'</ol>':'Personne encore au registre.'}</div>
+<div class="gzv-bloc"><h3>Météo</h3>${METEO[Math.floor(graine(7)*METEO.length)]} ${temp}°C.</div>
+<div class="gzv-bloc"><h3>Cours du poisson</h3>${cours.map(([n,a,f])=>'<div class="gzv-prix"><span>'+n+'</span><b>'+enEuros(Math.round(a*100)).replace(',00','')+' '+f+'</b></div>').join('')}</div>
+<div class="gzv-bloc"><h3>Sur les quais</h3><b>${(G&&G.joueurs)||0}</b> habitants inscrits au registre du port.</div>
+</div>
+<div class="gzv-dede"><h3>Le mot de Dédé</h3><p>« ${esc(DEDE[jourN%DEDE.length])} »</p><small>— Dédé, patron du Bar des Docks</small></div>
+<div class="gzv-grille"><div class="gzv-bloc"><h3>Horoscope du pêcheur</h3><p>${esc(HORO[(jourN*7)%HORO.length])}</p></div>
+<div class="gzv-bloc"><h3>Ce soir au Loto</h3><p>Cagnotte : <b>${enEuros((G&&G.cagnotte)||0)}</b>.<br>Tirage à 21 h au Bar des Docks.</p></div></div>
+<div class="gzv-annonces"><h3>Petites annonces</h3>${[0,1].map(k=>'<div class="gzv-pa">'+esc(ANNONCES[(jourN*2+k)%ANNONCES.length])+'</div>').join('')}</div>
+<div class="gzv-fin">— Le Vieux-Port, le journal des quais —</div>
+</div><div class="gzv-pied"><button class="gzv-fermer" id="gzFermer">Replier le journal</button></div></div>`;
+const peindre=()=>document.querySelectorAll('#gzv canvas[data-gr]').forEach(c=>{try{gravure(c,c.dataset.gr);}catch(x){}});
+requestAnimationFrame(peindre);setTimeout(peindre,140);
+$('gzFermer').onclick=()=>{$('page2').classList.remove('on');};
+}
+function nuitBoutique(g,x,y){
+const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x+a),Math.round(y+b),w,h);};
+const basRel=-116;
+[-44,44].forEach(dx=>{
+R(dx-24,basRel+59,48,38,'#f0c268');
+for(let i2=1;i2<4;i2++)R(dx-24+i2*12,basRel+59,2,38,'#6b4a28');
+for(let j=1;j<4;j++)R(dx-24,basRel+59+j*10,48,2,'#6b4a28');
+R(dx-22,basRel+74,44,2,'#6b4a28');
+R(dx-22,basRel+88,44,2,'#6b4a28');
+for(let k=0;k<4;k++)R(dx-18+k*11,basRel+66,7,8,'#8a5530');
+for(let k=0;k<3;k++)R(dx-18+k*14,basRel+78,10,10,'#7a5a34');
+const d=g.createRadialGradient(x+dx,y+basRel+78,8,x+dx,y+basRel+78,66);
+d.addColorStop(0,'rgba(255,200,110,.34)');d.addColorStop(1,'rgba(255,200,110,0)');
+g.fillStyle=d;g.fillRect(x+dx-66,y+basRel+12,132,132);
+});
+R(-11,-58,22,20,'#f0c268');
+R(-1,-58,2,20,'#6b4a28');
+[-44,44].forEach(dx=>{
+R(dx-11,basRel+17,22,20,'#f0c268');
+R(dx-1,basRel+17,2,20,'#6b4a28');
+R(dx-11,basRel+26,22,2,'#6b4a28');
+const d=g.createRadialGradient(x+dx,y+basRel+27,4,x+dx,y+basRel+27,44);
+d.addColorStop(0,'rgba(255,200,110,.26)');d.addColorStop(1,'rgba(255,200,110,0)');
+g.fillStyle=d;g.fillRect(x+dx-44,y+basRel-17,88,88);
+});
+R(-70,-4,140,4,'rgba(255,190,110,.28)');
+R(-52,0,104,3,'rgba(255,205,130,.18)');
+}
 let CALQUE_COMPTOIR_FIN=null;
+function outilsFin(g){
+const F=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,Math.round(w*2)/2),Math.max(0.5,Math.round(h*2)/2));};
+const hasard=(i)=>{const s=Math.sin(i*127.1+311.7)*43758.5453;return s-Math.floor(s);};
+const briques=(x0,y0,larg,haut,suie)=>{
+F(x0,y0,larg,haut,'#c9b89a');                                        /* le mortier */
+for(let r=0;r*2.5<haut;r++){const y=y0+r*2.5, dec=r%2?2.25:0;
+for(let x=-dec;x<larg;x+=5){const i=r*31+Math.round(x*3);const t=hasard(i);
+const base=t<0.18?BR_F.o:(t<0.4?BR_F.s:(t<0.75?BR_F.p:BR_F.c));
+const bx=Math.max(x0,x0+x), bw=Math.min(4.5,x0+x+4.5-bx, x0+larg-bx);if(bw<=0)continue;
+const bh=Math.min(2,y0+haut-y);F(bx,y,bw,bh,base);
+F(bx,y,bw,0.5,t>0.5?BR_F.h:BR_F.c);if(bh>1.5)F(bx,y+1.5,bw,0.5,BR_F.o);
+if(hasard(i+7)<0.08)F(bx+1,y+0.5,1,1,'#6e3222');                  /* une brique éclatée */
+if(suie&&y<y0+suie)F(bx,y,bw,bh,'rgba(40,30,25,'+(0.35*(1-(y-y0)/suie)).toFixed(2)+')');}}
+};
+const pierre=(x0,y0,larg,haut,bloc)=>{
+F(x0,y0,larg,haut,PI_F.s);
+for(let r=0;r*bloc<haut;r++){const y=y0+r*bloc, dec=r%2?bloc:0;
+for(let x=-dec;x<larg;x+=bloc*2){const bx=Math.max(x0,x0+x), bw=Math.min(bloc*2-0.5,x0+x+bloc*2-0.5-bx,x0+larg-bx), bh=Math.min(bloc-0.5,y0+haut-y);if(bw<=0||bh<=0)continue;
+const t=hasard(r*17+x);F(bx,y,bw,bh,t<0.3?PI_F.p:(t<0.7?PI_F.c:PI_F.p));
+F(bx,y,bw,0.5,PI_F.e);F(bx,y,0.5,bh,PI_F.h);F(bx+bw-0.5,y,0.5,bh,PI_F.o);F(bx,y+bh-0.5,bw,0.5,PI_F.o);
+if(t>0.8)F(bx+bw*0.4,y+bh*0.4,1,0.5,PI_F.s);}}
+};
+const bois=(x,y,w,h,col,sens)=>{F(x,y,w,h,col||B_F.bois);
+for(let k=0;k<(sens?w:h);k+=1.5){const t=hasard(x*3+y*7+k*11);if(t<0.45)continue;
+if(sens)F(x+k,y+t*2,0.5,h-t*3,B_F.boisO);else F(x+t*3,y+k,w-t*5,0.5,t>0.8?B_F.boisH:B_F.boisO);}};
+const toit=(cx0,bas,larg,haut)=>{
+const rangs=Math.round(haut/2.5);
+for(let rg=rangs-1;rg>=0;rg--){const t=rg/rangs, y=bas-rg*2.5, retrait=Math.round(t*14*2)/2;
+const x0=cx0-larg/2-12+retrait, l2=larg+24-retrait*2;
+for(let x=x0+(rg%2?1.5:0);x<x0+l2;x+=3){const q=hasard(rg*53+Math.round(x*2));
+const col=q<0.25?TU_F.s:(q<0.7?TU_F.p:TU_F.c);
+F(x,y,3,3,col);F(x+0.5,y,2,0.5,TU_F.h);F(x+0.5,y+0.5,1,1,rg>rangs*0.5?TU_F.faite:TU_F.h);
+F(x+2.5,y,0.5,3,TU_F.o);F(x,y+2.5,3,0.5,TU_F.o);
+if(q>0.93)F(x+1,y+1,1,1,'#5f7a3e');}                                   /* un peu de mousse */
+if(rg===rangs-1){for(let x=x0-2;x<x0+l2+2;x+=4){F(x,y-3,4,3.5,TU_F.p);F(x,y-3,4,1,TU_F.faite);F(x+3.5,y-3,0.5,3.5,TU_F.o);}}}
+F(cx0-larg/2-12,bas+3,larg+24,1,'rgba(40,20,10,.35)');                     /* l'ombre sous l'égout */
+};
+const clou=(x,y)=>{F(x,y,1,1,'#3a3a40');F(x,y,0.5,0.5,'#b7bec4');};
+return {F,hasard,briques,pierre,bois,toit,clou};
+}
 let CALQUE_BOUTIQUE_FIN=null;
+function graverLaBoutiqueFin(){
+const W=190, Ht=140, cx=W/2, sol=Ht-16, BL=150, basToit=sol-70;
+const c=document.createElement('canvas');c.width=W*2;c.height=Ht*2;
+const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
+const {F,hasard,briques,pierre,bois,toit,clou}=outilsFin(g);
+g.fillStyle='rgba(30,50,24,.26)';g.beginPath();g.ellipse(cx+4,sol+4,BL*0.54,12,0,0,7);g.fill();
+toit(cx,basToit,BL,22);
+F(cx-BL/2-12,basToit+3,BL+24,4,PI_F.o);F(cx-BL/2-12,basToit+3,BL+24,1,PI_F.p);
+briques(cx-BL/2,basToit+6,BL,14,6);F(cx-BL/2,basToit+6,BL,1.5,'rgba(0,0,0,.25)');
+pierre(cx-BL/2-3,basToit+20,BL+6,6,3);F(cx-BL/2-3,basToit+20,BL+6,1,PI_F.e);F(cx-BL/2-3,basToit+26,BL+6,1.5,PI_F.o);
+F(cx-BL/2,basToit+26,BL,sol-basToit-60,'#2e241c');
+bois(cx-BL/2,sol-24,BL,16,B_F.boisO);
+for(let k=0;k<BL;k+=8){F(cx-BL/2+k,sol-24,1,16,B_F.boisS);F(cx-BL/2+k+2,sol-21,4,10,B_F.bois);F(cx-BL/2+k+2,sol-21,4,0.5,B_F.boisH);F(cx-BL/2+k+5.5,sol-21,0.5,10,B_F.boisS);}
+F(cx-BL/2,sol-24,BL,1.5,B_F.boisC);
+[-44,44].forEach(dx=>{const X=cx+dx, y0=basToit+30;
+bois(X-26,y0,52,44,B_F.boisO);F(X-26,y0,52,1.5,B_F.boisH);F(X-26,y0+1.5,52,1,B_F.boisC);F(X+25.5,y0,0.5,44,B_F.boisS);
+for(let r=0;r<38;r++)F(X-24,y0+3+r,48,1,r<8?'#2f3c45':'#3a4750');
+F(X-22,y0+10,44,1.5,B_F.boisO);F(X-22,y0+10,44,0.5,B_F.boisC);
+['#a3543a','#7d9455','#8b939a','#c9a24a','#6b7fa8'].forEach((col,k)=>{const px=X-20+k*9;
+F(px,y0+4,6,6,col);F(px,y0+4,6,1,'#d8c49a');F(px+4.5,y0+5,1,5,'rgba(0,0,0,.2)');F(px+1,y0+5,1,3,'rgba(255,255,255,.25)');F(px+1,y0+3,4,1,'#3d2a17');});
+F(X-22,y0+24,44,1.5,B_F.boisO);F(X-22,y0+24,44,0.5,B_F.boisC);
+['#8fa9c4','#d8a8a0','#c9a24a'].forEach((col,k)=>{const px=X-19+k*14;
+F(px,y0+14,10,10,col);F(px,y0+14,10,1,'rgba(255,255,255,.28)');for(let r=2;r<10;r+=2)F(px,y0+14+r,10,0.5,'rgba(0,0,0,.12)');F(px+8.5,y0+14,1.5,10,'rgba(0,0,0,.18)');});
+for(let k=0;k<3;k++){const px=X-19+k*14;F(px,y0+27,11,8,'#b08a4a');for(let r=0;r<8;r+=2)F(px,y0+27+r,11,1,r%4?'#c9a24a':'#8a6a2a');F(px+2,y0+25,7,2,'#8a6a2a');}
+for(let i2=1;i2<4;i2++){F(X-24+i2*12,y0+3,2,38,B_F.boisO);F(X-24+i2*12,y0+3,0.5,38,B_F.boisC);}
+for(let j2=1;j2<4;j2++){F(X-24,y0+3+j2*9.5,48,1.5,B_F.boisO);F(X-24,y0+3+j2*9.5,48,0.5,B_F.boisC);}
+g.fillStyle='rgba(230,240,246,.16)';g.beginPath();g.moveTo(X-22,y0+39);g.lineTo(X-6,y0+5);g.lineTo(X+4,y0+5);g.lineTo(X-12,y0+39);g.closePath();g.fill();
+for(let i2=0;i2<4;i2++)for(let j2=0;j2<4;j2++)F(X-23+i2*12,y0+4+j2*9.5,1.5,0.5,'rgba(255,255,255,.35)');
+});
+[-BL/2+2,-16,10,BL/2-10].forEach(dx=>{const X=cx+dx, h=sol-basToit-60;
+F(X,basToit+26,8,h,B_F.bois);F(X,basToit+26,2,h,B_F.boisH);F(X+6.5,basToit+26,1.5,h,B_F.boisS);
+F(X+3,basToit+31,1,h-12,B_F.boisO);F(X+5,basToit+31,0.5,h-12,B_F.boisO);          /* les cannelures */
+F(X-2,basToit+26,12,5,B_F.boisO);F(X-2,basToit+26,12,1.5,B_F.boisC);F(X-2,basToit+30.5,12,0.5,B_F.boisS);
+F(X-2,sol-13,12,5,B_F.boisO);F(X-2,sol-13,12,1,B_F.boisC);});
+const PL2=30, PH2=54;
+bois(cx-PL2/2-4,sol-PH2-6,PL2+8,PH2+2,B_F.boisO);F(cx-PL2/2-4,sol-PH2-6,PL2+8,1.5,B_F.boisC);
+bois(cx-PL2/2,sol-PH2-4,PL2,PH2,B_F.bois,true);
+for(let r=0;r<20;r++)F(cx-PL2/2+4,sol-PH2+r,PL2-8,1,r<5?'#2f3c45':'#3a4750');
+F(cx-1,sol-PH2,2,20,B_F.boisO);F(cx-PL2/2+4,sol-PH2+9,PL2-8,2,B_F.boisO);F(cx-PL2/2+5,sol-PH2+1,3,0.5,'rgba(255,255,255,.4)');F(cx+2,sol-PH2+12,3,0.5,'rgba(255,255,255,.3)');
+[[cx-PL2/2+4],[cx+1]].forEach(([px])=>{F(px,sol-PH2+26,PL2/2-5,22,B_F.boisO);F(px+1.5,sol-PH2+27.5,PL2/2-8,19,B_F.bois);F(px+1.5,sol-PH2+27.5,PL2/2-8,0.5,B_F.boisH);});
+[sol-PH2+2,sol-12].forEach(yy=>{F(cx-PL2/2,yy,PL2,3,'#3f3f47');F(cx-PL2/2,yy,PL2,0.5,'#7a7a84');for(let k=1.5;k<PL2;k+=5)clou(cx-PL2/2+k,yy+1);});
+F(cx+PL2/2-6,sol-PH2/2-2,3,3,'#b7bec4');F(cx+PL2/2-6,sol-PH2/2-2,1,1,'#ffffff');
+F(cx-2,sol-PH2-11,4,5,'#c9a24a');F(cx-1.5,sol-PH2-10.5,1,3,'#f0cf7d');F(cx-0.5,sol-PH2-6,1,1,'#8a6a2a');F(cx-3,sol-PH2-13,6,2,B_F.boisS);
+for(let k=-BL/2-4;k<BL/2+4;k+=3){const q=hasard(k*9+3);
+F(cx+k,basToit+18,3,5,q<0.3?TU_F.s:(q<0.7?TU_F.p:TU_F.c));F(cx+k+0.5,basToit+18,2,0.5,TU_F.h);F(cx+k+0.5,basToit+18.5,1,1.5,TU_F.faite);F(cx+k+2.5,basToit+18,0.5,5,TU_F.o);}
+F(cx-BL/2-6,basToit+22,BL+12,2,TU_F.o);F(cx-BL/2-6,basToit+24,BL+12,1,'rgba(0,0,0,.25)');
+for(let k=-BL/2-4;k<BL/2+4;k+=7){F(cx+k,basToit+24,4,2,B_F.boisO);F(cx+k+1,basToit+26,2,1.5,B_F.boisO);F(cx+k+1.5,basToit+27,1,1,B_F.boisS);}
+briques(cx+BL/4,basToit-22,12,20,6);F(cx+BL/4,basToit-22,12,1,'rgba(0,0,0,.35)');
+F(cx+BL/4-2,basToit-26,16,5,PI_F.c);F(cx+BL/4-2,basToit-26,16,1,PI_F.e);F(cx+BL/4-2,basToit-21.5,16,0.5,PI_F.o);
+const larg=116, hy=basToit-22;
+bois(cx-larg/2,hy-9,larg,18,B_F.boisS);F(cx-larg/2,hy-9,larg,1.5,B_F.boisC);F(cx-larg/2,hy+7,larg,2,'#2a1c12');
+bois(cx-larg/2-4,hy-11,4,22,B_F.boisO,true);bois(cx+larg/2,hy-11,4,22,B_F.boisO,true);
+clou(cx-larg/2-2.5,hy-9);clou(cx-larg/2-2.5,hy+8);clou(cx+larg/2+1.5,hy-9);clou(cx+larg/2+1.5,hy+8);
+g.font='700 12px Georgia,serif';g.textAlign='center';
+g.fillStyle='#2a1a0e';g.fillText('BOUTIQUE',cx+0.5,hy+5.5,larg-20);g.fillStyle='#f0cf7d';g.fillText('BOUTIQUE',cx,hy+5,larg-20);g.textAlign='left';
+bois(cx-BL/2-2,sol-64,3,12,B_F.boisS,true);bois(cx-BL/2-20,sol-64,20,3,B_F.boisS);F(cx-BL/2-20,sol-64,20,1,B_F.boisO);F(cx-BL/2-18,sol-63,1,1,'#8f959b');
+F(cx-BL/2-6,sol-8,BL+12,7,B_F.bois);
+for(let x=0;x<BL+12;x+=7){const t=hasard(x+5);F(cx-BL/2-6+x,sol-8,6.5,7,t<0.3?B_F.boisC:(t<0.7?B_F.bois:B_F.boisO));
+F(cx-BL/2-6+x+6.5,sol-8,0.5,7,B_F.boisS);clou(cx-BL/2-6+x+1,sol-6.5);clou(cx-BL/2-6+x+1,sol-3);}
+F(cx-BL/2-6,sol-8,BL+12,1.5,B_F.boisH);F(cx-BL/2-6,sol-1,BL+12,3,B_F.boisS);
+CALQUE_BOUTIQUE_FIN={toile:c,W,H:Ht,sol};
+}
+function dessinerLaBoutique(g,x,y){
+let fin=false;try{fin=STYLE_FIN();}catch(x){}
+if(fin&&!CALQUE_BOUTIQUE_FIN)graverLaBoutiqueFin();
+if(!fin&&!CALQUE_BOUTIQUE)graverLaBoutiqueNeuve();
+const C=fin?CALQUE_BOUTIQUE_FIN:CALQUE_BOUTIQUE;
+g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
+fumeeFront(g,x+42,y-146,0.4);
+if(lampesAllumees())nuitBoutique(g,Math.round(x),Math.round(y));
+const T2=Date.now()/1000;
+g.save();g.translate(Math.round(x)-85,Math.round(y)-58);
+g.rotate(Math.sin(T2*1.1)*0.06);
+g.fillStyle='#7d5934';g.fillRect(-10,0,20,15);
+g.fillStyle='#a5764a';g.fillRect(-10,0,20,2);
+g.fillStyle='#5b3f21';g.fillRect(-9,2,18,12);
+g.fillStyle='#c9a24a';
+g.beginPath();g.moveTo(-5,11);g.lineTo(5,11);g.lineTo(4,5);g.lineTo(-4,5);
+g.closePath();g.fill();
+g.strokeStyle='#c9a24a';g.lineWidth=1.2;
+g.beginPath();g.arc(0,5,4,3.14159,0);g.stroke();
+g.restore();
+}
+function fumeeFront(g,x,y,d){
+const T2=Date.now()/1000;
+for(let i=0;i<4;i++){
+const p=((T2*0.22+i/4+d)%1);
+g.fillStyle='rgba(192,186,176,'+((1-p)*0.2).toFixed(2)+')';
+g.beginPath();g.arc(x-p*11,y-p*26,2+p*8,0,7);g.fill();
+}
+}
 const PI_M={o:'#5f666c',s:'#6f767c',p:'#7e868d',c:'#8f979e',h:'#a4acb3',t:'#bcc4ca'};
 const VERT_M={o:'#22402c',s:'#2f5a3c',p:'#3f7550',c:'#54916a',h:'#78b18c'};
 let CALQUE_METRO=null;
 let CALQUE_METRO_FIN=null;
 let CALQUE_HALTE=null;
+function dessinerLePassage(g,x,y){
+const T=Date.now()/1000;
+const cycle=(T%180);
+const baisse=cycle>168?Math.min(1,(cycle-168)/2):(cycle<6?Math.max(0,1-cycle/2):0);
+const R2=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(a),Math.round(b),w,h);};
+[-1,1].forEach(sg=>{
+const px=x+sg*26;
+R2(px-2,y-26,5,26,'#c9c2ae');
+R2(px-2,y-26,5,2,'#e8e2ce');
+for(let k=0;k<3;k++)R2(px-2,y-22+k*8,5,3,'#b4472f');
+g.save();
+g.translate(px,y-24);
+g.rotate(sg*(1.5708-baisse*1.5708));
+for(let k=0;k<22;k+=4)
+R2(0,-2+ (sg<0?0:0),4,4,((k/4)%2)?'#b4472f':'#f2efe4');
+g.restore();
+const feu=baisse>0.05&&Math.sin(T*6)>0;
+R2(px-6,y-32,5,5,feu&&sg<0?'#e8504a':'#4a3a36');
+R2(px+2,y-32,5,5,feu&&sg>0?'#e8504a':'#4a3a36');
+});
+g.save();
+g.translate(x-26,y-40);
+g.strokeStyle='#f2efe4';g.lineWidth=2.4;
+g.beginPath();g.moveTo(-7,-7);g.lineTo(7,7);g.moveTo(7,-7);g.lineTo(-7,7);g.stroke();
+g.strokeStyle='#b4472f';g.lineWidth=1.2;
+g.beginPath();g.moveTo(-7,-7);g.lineTo(7,7);g.moveTo(7,-7);g.lineTo(-7,7);g.stroke();
+g.restore();
+}
 const ROC=['#8f8778','#9a9182','#847c6e','#a49b8c'];
 let CALQUE_CARREAU=null, CALQUE_FORGERON=null;
 const TSud=()=>Date.now()/1000;
-const nuitSud=()=>(false)&&false;
+const nuitSud=()=>(typeof lampesAllumees==='function')&&lampesAllumees();
+function outilsSud(g){
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+return {R,
+briques:(x0,y0,larg,haut)=>{
+for(let y=0;y<haut;y+=4){
+const dec=(y/4)%2?4:0;
+for(let x=0;x<larg;x+=9){
+const t=((x+y*3)*7)%4;
+R(x0+x+dec,y0+y,8,3,[BR_F.p,BR_F.c,BR_F.s,BR_F.p][t]);
+R(x0+x+dec,y0+y,8,1,BR_F.h);
+}
+}
+},
+toit:(cx,bas,larg,haut)=>{
+const rangs=Math.round(haut/4);
+for(let rg=rangs-1;rg>=0;rg--){
+const t=rg/rangs, y=bas-rg*4, retrait=Math.round(t*14);
+const x0=cx-larg/2-12+retrait, l2=larg+24-retrait*2;
+for(let x=x0;x<x0+l2;x+=6){
+const q=(x*7+rg*13)%4;
+R(x,y,6,5,q===0?TU_F.p:(q===1?TU_F.c:(q===2?TU_F.s:TU_F.p)));
+R(x,y,6,1,rg>rangs*0.6?TU_F.h:TU_F.c);
+R(x+5,y,1,5,TU_F.o);
+}
+R(x0,y+4,l2,1,TU_F.o);
+if(rg===rangs-1){R(x0-2,y-4,l2+4,5,TU_F.o);R(x0-2,y-4,l2+4,2,TU_F.faite);}
+}
+},
+pierre:(x,y,w,h,gr)=>{
+const t=Math.floor(alea(gr*0.41)*ROC.length);
+R(x+1,y+1,w,h,'rgba(48,44,38,.34)');
+R(x,y,w,h,ROC[t]);
+R(x+1,y+1,w-2,h-2,'rgba(255,250,238,.13)');
+R(x,y,w-1,1,'rgba(252,246,232,.48)');
+R(x+w-1,y+1,1,h-1,'rgba(58,52,44,.3)');
+},
+enseigne:(cx,hy,larg,mot,taille)=>{
+R(cx-larg/2,hy-9,larg,18,B_F.boisS);
+R(cx-larg/2,hy-9,larg,2,B_F.boisC);
+R(cx-larg/2,hy+7,larg,2,'#2a1c12');
+R(cx-larg/2+2,hy-7,larg-4,1,'rgba(240,207,125,.25)');
+R(cx-larg/2-4,hy-11,4,22,B_F.boisO);
+R(cx+larg/2,hy-11,4,22,B_F.boisO);
+g.font='700 '+(taille||12)+'px Georgia,serif';
+g.fillStyle='#f0cf7d';g.textAlign='center';
+g.fillText(mot,cx,hy+5,larg-18);
+g.textAlign='left';
+}};
+}
+function graverLeCarreau(){
+const W=230, Ht=200, cx=W/2, sol=Ht-16;
+const c=document.createElement('canvas');
+const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+c.width=W*D;c.height=Ht*D;
+const g=c.getContext('2d');
+g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+const {R,briques,pierre,enseigne,toit}=outilsSud(g);
+g.fillStyle='rgba(30,50,24,.26)';
+g.beginPath();g.ellipse(cx+4,sol+4,96,14,0,0,7);g.fill();
+g.fillStyle='#6f675a';
+g.beginPath();g.moveTo(cx+38,sol-2);g.lineTo(cx+72,sol-46);
+g.lineTo(cx+104,sol-2);g.closePath();g.fill();
+g.fillStyle='#7a7264';
+g.beginPath();g.moveTo(cx+46,sol-2);g.lineTo(cx+72,sol-42);
+g.lineTo(cx+90,sol-2);g.closePath();g.fill();
+for(let i=0;i<70;i++){
+const t=alea(i*3.1), u=alea(i*1.7);
+const x=cx+44+u*56, y=sol-4-t*(38-Math.abs(u-0.5)*46);
+if(y>sol-2)continue;
+R(x,y,2,2,t<0.4?'#5f5a50':(t<0.75?'#6f675a':'#847c6e'));
+}
+for(let yy=0;yy<74;yy+=7){
+const dec=(yy/7)%2?9:0;
+for(let k=-96;k<52;k+=18){
+const h=74-Math.abs(k+22)*0.34;
+if(yy>h)continue;
+pierre(cx+k+dec,sol-78+yy,17,6,k*0.7+yy*1.3);
+}
+}
+for(let k=0;k<26;k++){
+const t=alea(k*3.7), u=alea(k*1.9);
+R(cx-92+u*140,sol-76+t*66,2,3,'rgba(48,44,38,.4)');
+}
+for(let k=0;k<22;k++){
+const t=alea(k*5.1), u=alea(k*2.3);
+const px=cx-88+u*140, py=sol-6-t*8;
+pierre(px,py,4+t*4,3+t*3,k*7.1);
+}
+for(let k=0;k<14;k++){
+const u=alea(k*4.3), t=alea(k*2.7);
+const px=cx-90+u*140, py=sol-70+t*54;
+for(let j=0;j<3;j++)R(px+j*2,py-3-alea(k+j)*3,1,4,j%2?'#6f8a48':'#7d9455');
+}
+[-76,-64,44].forEach((dx,i)=>{
+g.save();g.translate(cx+dx,sol-2);g.rotate(i===2?-0.14:0.12);
+R(0,-46,6,46,B_F.boisO);R(0,-46,2,46,B_F.bois);
+R(-2,-48,10,4,B_F.boisS);
+g.restore();
+});
+g.save();g.translate(cx-86,sol-2);g.rotate(0.16);
+R(0,-56,3,56,B_F.bois);R(9,-56,3,56,B_F.bois);
+for(let k=0;k<8;k++)R(0,-52+k*7,12,2.4,B_F.boisO);
+g.restore();
+const caisse=(px,py)=>{R(px,py,14,11,B_F.bois);R(px,py,14,2,B_F.boisH);
+R(px,py+5,14,2,B_F.boisO);R(px+6,py,2,11,B_F.boisO);};
+caisse(cx-72,sol-15);caisse(cx-56,sol-15);caisse(cx-64,sol-26);
+for(let k=0;k<5;k++)R(cx+34+k*3,sol-18,3,16,k===0||k===4?B_F.boisO:B_F.bois);
+R(cx+33,sol-15,17,2.4,'#4a4a52');
+R(cx+33,sol-7,17,2.4,'#4a4a52');
+for(let k=0;k<16;k++){
+const t=alea(k*6.1), u=alea(k*3.3);
+const px=cx-104+u*26, py=sol-4-t*10;
+g.fillStyle=t<0.3?'#b06a3a':(t<0.6?'#8f8778':'#7a7264');
+g.beginPath();g.arc(px,py,2.4+t*1.6,0,7);g.fill();
+g.fillStyle='rgba(255,250,238,.2)';
+g.beginPath();g.arc(px-0.8,py-0.8,1,0,7);g.fill();
+}
+[[-40,-0.3],[-33,0.22]].forEach(([dx,a])=>{
+g.save();g.translate(cx+dx,sol-2);g.rotate(a);
+R(0,-40,3,40,B_F.bois);
+g.fillStyle='#4a4f54';
+g.beginPath();g.moveTo(-9,-42);g.quadraticCurveTo(1.5,-48,12,-42);
+g.lineTo(12,-40);g.quadraticCurveTo(1.5,-45,-9,-40);g.closePath();g.fill();
+g.restore();
+});
+g.fillStyle='#17120c';
+g.beginPath();
+g.moveTo(cx-30,sol-2);g.lineTo(cx-30,sol-34);
+g.quadraticCurveTo(cx-8,sol-56,cx+14,sol-34);
+g.lineTo(cx+14,sol-2);g.closePath();g.fill();
+R(cx-36,sol-38,7,36,B_F.boisO);R(cx-36,sol-38,2.4,36,B_F.bois);
+R(cx+13,sol-38,7,36,B_F.boisO);R(cx+13,sol-38,2.4,36,B_F.bois);
+R(cx-39,sol-44,62,7,B_F.bois);
+R(cx-39,sol-44,62,2.4,B_F.boisH);
+R(cx-39,sol-37,62,2,B_F.boisS);
+[[-24,-30,0.55],[-18,-26,0.35],[-13,-22,0.2]].forEach(([dx,dy,a])=>{
+g.globalAlpha=a;
+R(cx+dx,sol-2+dy+4,4,-dy-6,B_F.boisO);
+R(cx-dx-14,sol-2+dy+4,4,-dy-6,B_F.boisO);
+R(cx+dx,sol+dy+2,-2*dx-10,3,B_F.boisO);
+g.globalAlpha=1;
+});
+for(let x=cx-14;x<cx+70;x+=9){
+R(x,sol-4,7,3,B_F.boisO);R(x,sol-4,7,1,B_F.bois);
+}
+[-2,4].forEach(dy=>{
+R(cx-16,sol-6+dy,88,1.6,PI_F.c);
+R(cx-16,sol-6+dy,88,0.8,PI_F.e);
+});
+const H2=sol-92;
+[[-34,-14],[34,14]].forEach(([bx,tx])=>{
+g.save();
+g.translate(cx+bx,sol-2);
+g.rotate(Math.atan2(-(sol-2-H2),(cx+tx)-(cx+bx))+Math.PI/2);
+R(0,0,7,Math.hypot((cx+tx)-(cx+bx),sol-2-H2),B_F.boisO);
+R(0,0,2.4,Math.hypot((cx+tx)-(cx+bx),sol-2-H2),B_F.bois);
+g.restore();
+});
+[0.28,0.55,0.8].forEach(q=>{
+const y=sol-2-(sol-2-H2)*q;
+const dx=34-(34-14)*q;
+R(cx-dx,y,dx*2,5,B_F.boisO);
+R(cx-dx,y,dx*2,1.6,B_F.bois);
+g.strokeStyle=B_F.boisS;g.lineWidth=2.4;
+g.beginPath();g.moveTo(cx-dx,y);g.lineTo(cx+dx,y-24);
+g.moveTo(cx+dx,y);g.lineTo(cx-dx,y-24);g.stroke();
+});
+R(cx-20,H2-4,40,6,B_F.bois);
+R(cx-20,H2-4,40,2,B_F.boisH);
+CALQUE_CARREAU={toile:c,W,H:Ht,sol,H2};
+}
+function dessinerLeCarreau(g,x,y){
+if(!CALQUE_CARREAU)graverLeCarreau();
+{const fin=FIN_OK();if(fin&&!CALQUE_CARREAU_FIN)graverLeCarreauFin();const C0=fin?CALQUE_CARREAU_FIN:CALQUE_CARREAU;
+g.drawImage(C0.toile,Math.round(x-C0.W/2),Math.round(y-C0.sol),C0.W,C0.H);}
+const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x+a),Math.round(y+b),w,h);};
+const hy=-(CALQUE_CARREAU.sol-CALQUE_CARREAU.H2)-16;
+g.save();g.translate(x,y+hy);
+g.fillStyle=PI_F.s;g.beginPath();g.arc(0,0,16,0,7);g.fill();
+g.fillStyle=PI_F.p;g.beginPath();g.arc(0,0,14,0,7);g.fill();
+g.fillStyle='#3d4248';g.beginPath();g.arc(0,0,11,0,7);g.fill();
+g.rotate(TSud()*0.8);
+g.strokeStyle=PI_F.h;g.lineWidth=2.2;
+for(let k=0;k<6;k++){
+const a=k/6*Math.PI;
+g.beginPath();g.moveTo(Math.cos(a)*12,Math.sin(a)*12);
+g.lineTo(-Math.cos(a)*12,-Math.sin(a)*12);g.stroke();
+}
+g.restore();
+g.fillStyle=PI_F.e;g.beginPath();g.arc(x,y+hy,3.4,0,7);g.fill();
+g.strokeStyle='#4a4a52';g.lineWidth=1.4;
+g.beginPath();g.moveTo(x-13,y+hy);g.lineTo(x-13,y-30);g.stroke();
+g.beginPath();g.moveTo(x+13,y+hy);
+g.lineTo(x+13,y-52+Math.sin(TSud()*0.6)*6);g.stroke();
+const by=y-52+Math.sin(TSud()*0.6)*6;
+R(+7,by-y,13,12,B_F.boisO);
+R(+7,by-y,13,2.4,B_F.bois);
+R(+7,by-y+5,13,1.6,'#4a4a52');
+const wx=42+Math.sin(TSud()*0.42)*34;
+R(wx-11,-20,24,13,'#5f666c');
+R(wx-11,-20,24,2.4,PI_F.h);
+R(wx-9,-18,20,4,'#3a3f44');
+for(let k=0;k<5;k++){
+const t=alea(k*7.3);
+g.fillStyle=t<0.4?'#7a7264':(t<0.7?'#8f8778':'#b06a3a');
+g.beginPath();g.arc(x+wx-7+k*4,y-21,2.2,0,7);g.fill();
+}
+[[-6],[7]].forEach(([dx])=>{
+g.fillStyle='#3a3f44';g.beginPath();g.arc(x+wx+dx,y-6,3.4,0,7);g.fill();
+g.fillStyle=PI_F.p;g.beginPath();g.arc(x+wx+dx,y-6,1.6,0,7);g.fill();
+});
+if(nuitSud()){
+R(-2,-36,4,3,'#ffd27a');
+const d=g.createRadialGradient(x,y-34,3,x,y-34,46);
+d.addColorStop(0,'rgba(255,200,110,.3)');d.addColorStop(1,'rgba(255,200,110,0)');
+g.fillStyle=d;g.fillRect(x-46,y-80,92,92);
+const d2=g.createRadialGradient(x,y+hy+18,3,x,y+hy+18,40);
+d2.addColorStop(0,'rgba(255,210,130,.26)');d2.addColorStop(1,'rgba(255,210,130,0)');
+g.fillStyle=d2;g.fillRect(x-40,y+hy-22,80,80);
+}else{
+R(-2,-30,3,3,'#e8b43a');
+}
+const {enseigne}=outilsSud(g);
+g.save();g.translate(x,y);
+enseigne(0,-64,96,'LA MINE',12);
+g.restore();
+}
+function rocheFin(F,x,y,w,h,seed){
+const t=hasardF(seed), cols=['#8f8778','#9a9182','#847c6e','#a49b8c'];
+const base=cols[Math.floor(t*4)];
+F(x+0.5,y+0.5,w,h,'rgba(40,36,30,.35)');
+F(x,y+0.5,w,h-1,base);F(x+0.5,y,w-1,h,base);
+F(x+0.5,y,w-1.5,0.5,'#b8ae9c');F(x,y+0.5,0.5,h-1.5,'#aca390');
+F(x+w-0.5,y+1,0.5,h-1.5,'#6a6356');F(x+1,y+h-0.5,w-1.5,0.5,'#5f5a50');
+F(x+w*0.3,y+h*0.25,w*0.4,0.5,'rgba(255,250,238,.16)');
+if(t>0.55)F(x+w*(0.2+t*0.4),y+h*0.4,0.5,h*0.45,'rgba(48,44,38,.45)');
+if(t<0.2)F(x+1,y+h-1.5,1.5,1,'#6f8a48');
+}
+function enseigneFin(g,F,cx,hy,larg,mot,taille){
+const {bois,clou}=outilsFin(g);
+bois(cx-larg/2,hy-9,larg,18,B_F.boisS);F(cx-larg/2,hy-9,larg,1.5,B_F.boisC);F(cx-larg/2,hy+7,larg,2,'#2a1c12');
+bois(cx-larg/2-4,hy-11,4,22,B_F.boisO,true);bois(cx+larg/2,hy-11,4,22,B_F.boisO,true);
+clou(cx-larg/2-2.5,hy-9);clou(cx-larg/2-2.5,hy+8);clou(cx+larg/2+1.5,hy-9);clou(cx+larg/2+1.5,hy+8);
+g.font='700 '+(taille||12)+'px Georgia,serif';g.textAlign='center';
+g.fillStyle='#1a120c';g.fillText(mot,cx+0.5,hy+5.5,larg-20);g.fillStyle='#f0cf7d';g.fillText(mot,cx,hy+5,larg-20);g.textAlign='left';
+}
 let CALQUE_FORGERON_FIN=null;
 let CALQUE_CARREAU_FIN=null;
+function graverLeCarreauFin(){
+const W=230, Ht=200, cx=W/2, sol=Ht-16;
+const c=document.createElement('canvas');c.width=W*2;c.height=Ht*2;
+const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
+const {F,bois,clou}=outilsFin(g);
+g.fillStyle='rgba(30,50,24,.26)';g.beginPath();g.ellipse(cx+4,sol+4,96,14,0,0,7);g.fill();
+g.fillStyle='#6f675a';g.beginPath();g.moveTo(cx+38,sol-2);g.lineTo(cx+72,sol-46);g.lineTo(cx+104,sol-2);g.closePath();g.fill();
+g.fillStyle='#7a7264';g.beginPath();g.moveTo(cx+46,sol-2);g.lineTo(cx+72,sol-42);g.lineTo(cx+90,sol-2);g.closePath();g.fill();
+for(let i=0;i<260;i++){const t=hasardF(i*3.1), u=hasardF(i*1.7);const x=cx+42+u*60, y=sol-3-t*(42-Math.abs(u-0.5)*80);
+if(y>sol-2||y<sol-46)continue;F(x,y,1+hasardF(i)*1.5,1,t<0.35?'#5f5a50':(t<0.7?'#6f675a':(t<0.93?'#8e8676':'#b06a3a')));}
+for(let yy=0;yy<74;yy+=5.5){const dec=hasardF(yy*7)*8;
+for(let k=-98;k<54;){const w=8+hasardF(k*3+yy)*9, hh=4+hasardF(k+yy*5)*3, j=(hasardF(k*11+yy)-0.5)*1.5;
+const h=74-Math.abs(k+22)*0.34;if(yy<=h)rocheFin(F,cx+k+dec,sol-78+yy+j,w,hh,k*0.7+yy*1.3);k+=w+0.5;}}
+for(let k=0;k<40;k++){const t=hasardF(k*3.7), u=hasardF(k*1.9);F(cx-92+u*140,sol-76+t*66,0.5,2+t*3,'rgba(48,44,38,.45)');}   /* les fissures */
+for(let k=0;k<26;k++){const t=hasardF(k*5.1), u=hasardF(k*2.3);rocheFin(F,cx-88+u*140,sol-6-t*8,3+t*4,2.5+t*3,k*7.1);}          /* les éboulis */
+for(let k=0;k<18;k++){const u=hasardF(k*4.3), t=hasardF(k*2.7);const px=cx-90+u*140, py=sol-70+t*54;
+for(let j=0;j<4;j++)F(px+j*1.2,py-3-hasardF(k+j)*3,0.5,3+hasardF(j+k*2)*2,j%2?'#6f8a48':'#8aa860');}                          /* l'herbe dans les fissures */
+[-76,-64,44].forEach((dx,i)=>{g.save();g.translate(cx+dx,sol-2);g.rotate(i===2?-0.14:0.12);
+bois(0,-46,6,46,B_F.boisO,true);F(0,-46,1.5,46,B_F.bois);F(5.5,-46,0.5,46,B_F.boisS);F(-2,-48,10,4,B_F.boisS);F(-2,-48,10,0.5,B_F.boisO);clou(1,-45);g.restore();});
+g.save();g.translate(cx-86,sol-2);g.rotate(0.16);
+bois(0,-56,3,56,B_F.bois,true);bois(9,-56,3,56,B_F.bois,true);
+for(let k=0;k<8;k++){F(0,-52+k*7,12,2,B_F.boisO);F(0,-52+k*7,12,0.5,B_F.boisC);}g.restore();
+for(let k=0;k<26;k++){const t=hasardF(k*6.1), u=hasardF(k*3.3);const px=cx-104+u*26, py=sol-4-t*10;
+g.fillStyle=t<0.3?'#b06a3a':(t<0.6?'#8f8778':'#7a7264');g.beginPath();g.arc(px,py,2+t*1.4,0,7);g.fill();
+F(px-1,py-1,1,0.5,'rgba(255,250,238,.35)');if(t<0.3)F(px+0.5,py,0.5,0.5,'#f0b070');}
+[[-40,-0.3],[-33,0.22]].forEach(([dx,a])=>{g.save();g.translate(cx+dx,sol-2);g.rotate(a);
+bois(0,-40,3,40,B_F.bois,true);F(0,-40,1,40,B_F.boisH);
+g.fillStyle='#3f454b';g.beginPath();g.moveTo(-9,-42);g.quadraticCurveTo(1.5,-48,12,-42);g.lineTo(12,-40);g.quadraticCurveTo(1.5,-45,-9,-40);g.closePath();g.fill();
+g.strokeStyle='#9aa2a8';g.lineWidth=0.5;g.beginPath();g.moveTo(-8,-42);g.quadraticCurveTo(1.5,-47.5,11,-42);g.stroke();g.restore();});
+g.fillStyle='#0e0a06';g.beginPath();g.moveTo(cx-30,sol-2);g.lineTo(cx-30,sol-34);g.quadraticCurveTo(cx-8,sol-56,cx+14,sol-34);g.lineTo(cx+14,sol-2);g.closePath();g.fill();
+[[-24,-30,0.55],[-18,-26,0.35],[-13,-22,0.2]].forEach(([dx,dy,a])=>{g.globalAlpha=a;
+F(cx+dx,sol-2+dy+4,4,-dy-6,B_F.boisO);F(cx-dx-14,sol-2+dy+4,4,-dy-6,B_F.boisO);F(cx+dx,sol+dy+2,-2*dx-10,3,B_F.boisO);g.globalAlpha=1;});
+F(cx-12,sol-10,1,1,'#c9a24a');F(cx-11.5,sol-9.5,0.5,0.5,'#fff0c4');                                   /* une lampe au loin */
+bois(cx-36,sol-38,7,36,B_F.boisO,true);F(cx-36,sol-38,2,36,B_F.bois);F(cx-29.5,sol-38,0.5,36,B_F.boisS);
+bois(cx+13,sol-38,7,36,B_F.boisO,true);F(cx+13,sol-38,2,36,B_F.bois);F(cx+19.5,sol-38,0.5,36,B_F.boisS);
+bois(cx-39,sol-44,62,7,B_F.bois);F(cx-39,sol-44,62,1.5,B_F.boisH);F(cx-39,sol-37,62,2,B_F.boisS);
+[[cx-37],[cx-32],[cx+15],[cx+20]].forEach(([x])=>clou(x,sol-42));
+for(let x=cx-14;x<cx+70;x+=6){F(x,sol-4,5,3,B_F.boisO);F(x,sol-4,5,0.5,B_F.bois);F(x+4.5,sol-4,0.5,3,B_F.boisS);}
+[-2,4].forEach(dy=>{F(cx-16,sol-6+dy,88,1.5,PI_F.c);F(cx-16,sol-6+dy,88,0.5,PI_F.e);F(cx-16,sol-4.5+dy,88,0.5,PI_F.o);
+for(let x=cx-14;x<cx+70;x+=6)F(x+1,sol-5.5+dy,0.5,0.5,'#2a2a30');});
+const H2=sol-92;
+[[-34,-14],[34,14]].forEach(([bx,tx])=>{g.save();g.translate(cx+bx,sol-2);
+g.rotate(Math.atan2(-(tx-bx),(H2-(sol-2))));const L=Math.hypot((cx+tx)-(cx+bx),sol-2-H2);   /* la jambe monte du pied vers la molette */
+bois(0,0,7,L,B_F.boisO,true);F(0,0,2,L,B_F.bois);F(6.5,0,0.5,L,B_F.boisS);g.restore();});
+[0.28,0.55,0.8].forEach(q=>{const y=sol-2-(sol-2-H2)*q, dx=34-(34-14)*q;
+bois(cx-dx,y,dx*2,5,B_F.boisO);F(cx-dx,y,dx*2,1.5,B_F.bois);
+g.strokeStyle=B_F.boisS;g.lineWidth=2.4;g.beginPath();g.moveTo(cx-dx,y);g.lineTo(cx+dx,y-24);g.moveTo(cx+dx,y);g.lineTo(cx-dx,y-24);g.stroke();
+g.strokeStyle=B_F.boisO;g.lineWidth=0.6;g.beginPath();g.moveTo(cx-dx,y-0.8);g.lineTo(cx+dx,y-24.8);g.stroke();
+clou(cx-dx+1,y+1.5);clou(cx+dx-2,y+1.5);clou(cx-0.5,y-12.5);});
+bois(cx-20,H2-4,40,6,B_F.bois);F(cx-20,H2-4,40,1.5,B_F.boisH);F(cx-20,H2+1.5,40,0.5,B_F.boisS);
+for(let k=-18;k<19;k+=6)F(cx+k,H2-5,0.5,2,'#3d2a17');                                         /* le garde-corps */
+F(cx-20,H2-6,40,0.5,B_F.boisO);
+CALQUE_CARREAU_FIN={toile:c,W,H:Ht,sol,H2};
+}
 const RECETTES=[
 {id:'lingotCuivre',nom:'Lingot de cuivre',cout:{cuivre:4,charbon:1},
 rend:'1 lingot',sec:180,
@@ -4061,7 +5011,52 @@ s2=Math.max(0,Math.round(s2));
 const m=Math.floor(s2/60), r2=s2%60;
 return m?(m+' min'+(r2?' '+r2+' s':'')):(r2+' s');
 };
+async function lireLaFournee(){
+if(!e.id)return null;
+const d=await appelRPC('ma_fournee',{p_joueur:e.id});
+FOURNEE_VUE=(d&&!d.vide)?d:null;
+return FOURNEE_VUE;
+}
 let battementForge=null, recalageForge=0;
+function arreterLeBattement(){
+if(battementForge){clearInterval(battementForge);battementForge=null;}
+}
+function battreUneFois(){
+{
+if(!$('page2').classList.contains('on')||!$('f-reste')&&!FOURNEE_VUE){
+if(!$('page2').classList.contains('on')){arreterLeBattement();return;}
+}
+const fo=FOURNEE_VUE;
+if(!fo){arreterLeBattement();return;}
+if(fo.reste>0){
+fo.reste=Math.max(0,fo.reste-1);
+const t=$('f-reste');
+if(t){
+t.textContent=enTemps(fo.reste);
+t.classList.toggle('bientot',fo.reste<=10);
+}
+const b=$('f-bar');
+if(b){
+const R2=RECETTES.find(x=>x.id===fo.recette);
+const total=(R2?R2.sec:180)*fo.nombre;
+b.style.width=Math.round(Math.max(0,Math.min(1,1-fo.reste/Math.max(1,total)))*100)+'%';
+}
+if(fo.reste<=0){
+jouer('pepite');vibrer([12,60,18]);
+dessinerLaForge();
+}
+}
+if(Date.now()-recalageForge>20000){
+recalageForge=Date.now();
+lireLaFournee().then(()=>{
+if(!$('page2').classList.contains('on'))return;
+const t=$('f-reste');
+if(FOURNEE_VUE&&FOURNEE_VUE.reste>0&&t)t.textContent=enTemps(FOURNEE_VUE.reste);
+else dessinerLaForge();
+});
+}
+}
+}
 setInterval(()=>{
 if(!e.id||!TAILLERIE_OUVERTE)return;
 if(FOURNEE_VUE&&FOURNEE_VUE.reste>0)FOURNEE_VUE.reste-=5;
@@ -4069,6 +5064,140 @@ else if(!FOURNEE_VUE)return;
 },5000);
 const EMOTE_DE=()=>null;
 const enEmote=()=>false;                         /* plus aucune émote, même venue d'ailleurs */
+function majLaRencontre(){
+const b=$('rencontre');if(!b)return;
+if(rencontreVue.on!==false){rencontreVue.on=false;b.classList.remove('on');}
+return;
+const gens=gensAPortee();
+const on=gens.length>0&&!pageOuverte();
+const qui=on?(gens.length>1?(gens[0].nom+' et '+(gens.length-1)+' autre'+
+(gens.length>2?'s':'')):gens[0].nom):null;
+if(on!==rencontreVue.on){rencontreVue.on=on;b.classList.toggle('on',on);}
+if(qui!==rencontreVue.qui){
+rencontreVue.qui=qui;
+const q=$('quiR');
+if(q&&qui)q.textContent=qui+' est là';
+}
+}
+function dessinerTGV(g,lx,base,avance,VW){
+const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,Math.max(1,w),Math.max(1,h));};
+const ARG='#c6ccd2', ARG_H='#e6eaee', ARG_O='#8d959c';
+const BLEU='#1f4e79', BLEU_H='#2f6fa8', GRIS='#3a4148';
+const bogie=(x)=>{
+R(x-9,base-11,18,7,GRIS);
+R(x-9,base-11,18,2,'#525a62');
+[-5,5].forEach(dx=>{
+g.fillStyle='#16191c';g.beginPath();g.arc(x+dx,base-4,4,0,7);g.fill();
+g.fillStyle='#2f3338';g.beginPath();g.arc(x+dx,base-4,2.4,0,7);g.fill();
+g.strokeStyle='#6b737a';g.lineWidth=0.9;
+const a=-avance*0.5+dx;
+g.beginPath();g.moveTo(x+dx,base-4);
+g.lineTo(x+dx+Math.cos(a)*3,base-4+Math.sin(a)*3);g.stroke();
+});
+};
+const motrice=(lx,sens)=>{
+g.save();
+if(sens<0){g.translate(lx*2+96,0);g.scale(-1,1);}
+g.fillStyle=ARG;
+g.beginPath();
+g.moveTo(lx,base-13);                       /* la pointe du nez, très bas */
+g.quadraticCurveTo(lx+16,base-16,lx+30,base-27);
+g.quadraticCurveTo(lx+40,base-35,lx+56,base-36);
+g.lineTo(lx+96,base-36);
+g.lineTo(lx+96,base-11);
+g.lineTo(lx+4,base-11);
+g.closePath();g.fill();
+g.fillStyle=ARG_H;
+g.beginPath();
+g.moveTo(lx+2,base-14);
+g.quadraticCurveTo(lx+18,base-18,lx+31,base-29);
+g.quadraticCurveTo(lx+41,base-36,lx+56,base-37);
+g.lineTo(lx+96,base-37);
+g.lineTo(lx+96,base-33);
+g.lineTo(lx+54,base-33);
+g.quadraticCurveTo(lx+38,base-32,lx+28,base-25);
+g.quadraticCurveTo(lx+16,base-15,lx+3,base-12);
+g.closePath();g.fill();
+R(lx+6,base-14,90,3,ARG_O);
+g.fillStyle=BLEU;
+g.beginPath();
+g.moveTo(lx+3,base-17);
+g.quadraticCurveTo(lx+20,base-21,lx+33,base-30);
+g.lineTo(lx+96,base-30);
+g.lineTo(lx+96,base-24);
+g.lineTo(lx+30,base-24);
+g.quadraticCurveTo(lx+18,base-16,lx+4,base-13);
+g.closePath();g.fill();
+g.fillStyle=BLEU_H;
+g.beginPath();
+g.moveTo(lx+3,base-17);
+g.quadraticCurveTo(lx+20,base-21,lx+33,base-30);
+g.lineTo(lx+96,base-30);
+g.lineTo(lx+96,base-28.5);
+g.lineTo(lx+33,base-28.5);
+g.quadraticCurveTo(lx+20,base-19.5,lx+4,base-15.5);
+g.closePath();g.fill();
+g.fillStyle='#16222c';
+g.beginPath();
+g.moveTo(lx+34,base-31);g.lineTo(lx+52,base-35);
+g.lineTo(lx+52,base-25);g.lineTo(lx+32,base-25);
+g.closePath();g.fill();
+g.fillStyle='#4a7392';
+g.beginPath();
+g.moveTo(lx+35,base-30.5);g.lineTo(lx+51,base-34);
+g.lineTo(lx+51,base-31);g.lineTo(lx+35,base-28);
+g.closePath();g.fill();
+R(lx+6,base-19,5,3,'#fff6d8');
+g.fillStyle='rgba(255,246,216,.35)';
+g.beginPath();g.arc(lx+8,base-17.5,6,0,7);g.fill();
+R(lx+4,base-13,4,2,'#d94b3a');
+R(lx+10,base-12,86,3,GRIS);
+const pgx=lx+74;
+g.strokeStyle='#2f3338';g.lineWidth=1.4;
+g.beginPath();g.moveTo(pgx-7,base-37);g.lineTo(pgx,base-47);
+g.lineTo(pgx+8,base-40);g.stroke();
+g.strokeStyle='#4d545c';g.lineWidth=1;
+g.beginPath();g.moveTo(pgx-7,base-37);g.lineTo(pgx+1,base-42);g.stroke();
+R(pgx-6,base-49,14,2,'#9aa2a8');
+R(pgx-9,base-38,18,2,'#3a4148');
+g.restore();
+bogie(lx+24);bogie(lx+82);
+};
+motrice(lx,1);
+let x=lx+96;
+for(let k=0;k<4;k++){
+R(x,base-33,5,21,'#2b3138');
+for(let i=0;i<5;i+=2)R(x+i,base-33,1,21,'#454d55');
+x+=5;
+const L2=62;
+R(x,base-36,L2,25,ARG);
+R(x,base-36,L2,3,ARG_H);
+R(x,base-14,L2,3,ARG_O);
+R(x,base-30,L2,6,BLEU);
+R(x,base-30,L2,1.5,BLEU_H);
+R(x+5,base-29,L2-10,9,'#16222c');
+R(x+5,base-29,L2-10,2.5,'#4a7392');
+for(let i=0;i<L2-10;i+=15)R(x+5+i,base-29,1.5,9,ARG);
+for(let i=0;i<3;i++){
+if((i+k)%2)continue;
+R(x+11+i*15,base-26,5,6,'rgba(232,196,154,.75)');
+R(x+10+i*15,base-28,7,2.5,'rgba(60,42,28,.75)');
+}
+R(x+L2-14,base-34,10,21,'#aeb6bd');
+R(x+L2-13,base-33,8,19,'#bfc7ce');
+R(x+L2-12,base-30,6,7,'#16222c');
+bogie(x+3);
+x+=L2;
+}
+R(x,base-33,5,21,'#2b3138');
+for(let i=0;i<5;i+=2)R(x+i,base-33,1,21,'#454d55');
+x+=5;
+motrice(x,-1);
+R(x+92,base-19,4,3,'#d94b3a');
+g.fillStyle='rgba(217,75,58,.30)';
+g.beginPath();g.arc(x+94,base-17.5,6,0,7);g.fill();
+return x+96;
+}
 const DESTS=[
 {id:'marseille',nom:'Marseille',mot:'le grand port, les docks, la Joliette',
 prix:500,min:14,ouvert:true},
@@ -4078,6 +5207,95 @@ prix:9500,min:31,ouvert:false},
 prix:0,min:52,ouvert:true}   /* TOKYO GRATUIT : le billet ne coûte rien (il valait 24000, soit 240 €) */
 ];
 let destChoisie=DESTS[0];
+function prochainDepart(min){
+const mi=(typeof minuteDuJour==='function')?minuteDuJour():null;
+const now=new Date();
+const h=(mi===null)?now.getHours():Math.floor(mi/60)%24;
+const m=(mi===null)?now.getMinutes():Math.floor(mi)%60;
+const q=(Math.floor(m/15)+1)*15+min%15;
+return String((h+Math.floor(q/60))%24).padStart(2,'0')+':'+String(q%60).padStart(2,'0');
+}
+function majGuichet(){
+const D=destChoisie;
+$('page2Fond').innerHTML=
+'<div class="gaTete"><canvas id="gaChef"></canvas>'+
+'<span class="t"><b>La gare du village</b>'+
+'<i>« Voie 1, départ dans deux minutes. »</i></span>'+
+'<span class="h"><u>IL EST</u><b id="gaH">—</b></span></div>'+
+'<div class="gaPan">'+DESTS.map(x=>
+'<div class="gaLig'+(x===D?' on':'')+(x.ouvert?'':' ferme')+'" data-dest="'+x.id+'">'+
+'<span class="d"><b>'+x.nom+'</b><i>'+x.mot+'</i></span>'+
+'<span class="hh">'+(x.ouvert?prochainDepart(x.min):'--:--')+'</span>'+
+'<span class="px">'+(x.ouvert?(x.prix?enEuros(x.prix):'gratuit'):'fermé')+'</span>'+
+'</div>').join('')+'</div>'+
+'<div class="gaBillet">'+
+'<div class="bT"><canvas id="gaMed"></canvas><b>'+(e.pseudo||'')+'</b>'+
+'<u>BILLET · UNE PLACE</u></div>'+
+'<div class="bL"><span>Du village</span><b>'+D.nom+'</b></div>'+
+'<div class="bL"><span>Départ</span><b>'+(D.ouvert?prochainDepart(D.min):'——')+'</b></div>'+
+'<div class="bL"><span>Durée</span><b>10 secondes · sans arrêt</b></div>'+
+'<div class="bL"><span>Prix</span><b>'+(D.prix?enEuros(D.prix):'gratuit')+'</b></div>'+
+'</div>'+
+'<button class="gaAch" id="gaAch"></button>'+
+'<div id="gaBulle"></div>'+
+'<button class="bandeC" id="ga-fermer"><u></u><span>REFERMER</span><u></u></button>';
+const mi=(typeof minuteDuJour==='function')?minuteDuJour():null;
+const now=new Date();
+$('gaH').textContent=(mi===null
+? String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')
+: String(Math.floor(mi/60)%24).padStart(2,'0')+':'+
+String(Math.floor(mi)%60).padStart(2,'0'));
+const av=GESTE;GESTE={t:0};
+const D2=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+const chef=$('gaChef');
+chef.width=52*D2;chef.height=66*D2;
+const g1=chef.getContext('2d');g1.setTransform(D2,0,0,D2,0,0);g1.imageSmoothingEnabled=false;
+sprite(g1,26,58,Object.assign({},DEF_AP,{veste:11,chapeau:1,cheveux:0}),'bas',0,false);
+const med=$('gaMed');
+med.width=34*D2;med.height=34*D2;
+const g2=med.getContext('2d');g2.setTransform(D2,0,0,D2,0,0);g2.imageSmoothingEnabled=false;
+sprite(g2,17,60,e.ap,'bas',0,false);
+GESTE=av;
+$('page2Fond').querySelectorAll('[data-dest]').forEach(b=>b.onclick=()=>{
+const x=DESTS.find(q=>q.id===b.dataset.dest);
+if(!x.ouvert){gaBulle('Cette ligne n’ouvre pas encore');return;}
+destChoisie=x;vibrer(18);majGuichet();
+});
+const peut=D.ouvert&&(e.euros||0)>=D.prix;
+const a=$('gaAch');
+a.className='gaAch'+(peut?'':' pas');
+a.textContent=!D.ouvert?'Ligne fermée'
+:(peut?('Prendre le billet · '+(D.prix?enEuros(D.prix):'gratuit'))
+:('Il te manque '+enEuros(D.prix-(e.euros||0))));
+a.onclick=prendreLeBillet;
+$('ga-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+}
+function gaBulle(t){
+const b=$('gaBulle');if(!b)return;
+b.textContent=t;b.classList.remove('on');void b.offsetWidth;b.classList.add('on');
+}
+async function prendreLeBillet(){
+const D=destChoisie;
+if(!D.ouvert)return;
+if((e.euros||0)<D.prix){gaBulle('Il te manque '+enEuros(D.prix-(e.euros||0)));return;}
+if(!D.prix){gaBulle('Billet gratuit · voie 1');setTimeout(()=>{fermeA=Date.now();$('page2').classList.remove('on');partirEnVoyage(D);},700);return;}
+const a=$('gaAch');a.textContent='…';a.className='gaAch pas';
+const d=await appelRPC('prendre_billet',{p_joueur:e.id,p_dest:D.id,p_cents:D.prix});
+if(!d||d.erreur){
+gaBulle(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer'
+:(d&&d.erreur==='ferme'?'Cette ligne n’ouvre pas encore':'Le guichet n’a pas pu'));
+if(d&&typeof d.euros==='number')e.euros=d.euros;
+majGuichet();return;
+}
+if(typeof d.euros==='number')e.euros=d.euros;
+sauver();majHaut();
+jouer('achat','moment');
+gaBulle('Billet pris · voie 1');
+setTimeout(()=>{
+fermeA=Date.now();$('page2').classList.remove('on');
+partirEnVoyage(D);
+},900);
+}
 const ECHOPPE_FIXE=[1110,152];   /* la boutique, au sud-ouest de la place */
 const VOIE_Y=680;                 /* l'axe des rails */
 const VOIE_X0=1020;                /* le heurtoir de la ligne, à l'ouest */
@@ -4105,12 +5323,183 @@ let CALQUE_COMPTOIR=null;
    remplacaient par une constante nulle : les lanternes du quai gardaient
    leur verre eteint et leur cone de lumiere ne se dessinait jamais, nuit
    comprise. Elles le demandent maintenant comme tout le monde. */
+function cielAllume(){
+  if(typeof REG!=='undefined'&&REG.ciel==='jour')return null;
+  try{return cielDuMoment();}catch(x){return null;}
+}
+function lampesAllumees(){
+if(typeof REG!=='undefined'&&REG.ciel==='jour')return false;
+const m=minuteDuJour();
+if(m===null)return false;
+const h=m/60;
+return h>=18||h<7;
+}
 const BOIS_C={bois:'#7d5934',boisC:'#96703f',boisH:'#a5764a',boisO:'#5b3f21',boisS:'#3d2a17',
 or:'#c9a24a',orC:'#f0cf7d',tuile:'#a83a3a',tuileC:'#c94a4a',tuileS:'#7d2828'};
 const CASINO_L=96, CASINO_H=104;
 /* (le casino est retire du jeu : graverLeCasino et dessinerCasino sont partis avec casino.html) */
+function dessinerCoffre(g,x,y,ouvert,ouverture){
+const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+const k=ouverture===undefined?(ouvert?1:0):ouverture;
+g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(x+1,y-1,12,3.5,0,0,7);g.fill();
+R(-11,-14,22,14,'#3a2a1c');                 /* caisse */
+R(-10,-13,20,12,'#8a6238');
+R(-10,-13,20,2,'#a5764a');
+R(-10,-4,20,3,'#6b4a28');
+R(-10,-9,20,2,'#5f4223');                   /* cerclage */
+R(-2,-9,4,6,'#c9a24a');                     /* serrure */
+R(-2,-9,4,1,'#e8c06a');
+const h=Math.round(7-4*k);                  /* il se raccourcit en pivotant */
+const dy=Math.round(-13-8*k);
+if(k>0.15)R(-8,-13,16,4,'#241a12');         /* l'intérieur apparaît */
+if(k>0.45){
+g.globalAlpha=Math.min(.5,(k-0.45)*1.6);  /* une lueur sort du coffre */
+g.fillStyle='#f0cf7d';
+g.fillRect(x-7,y-15,14,4);
+g.globalAlpha=1;
+}
+R(-11,dy-1,22,h+2,'#3a2a1c');
+R(-10,dy,20,h,k>0.5?'#7d5934':'#96703f');
+R(-10,dy,20,2,k>0.5?'#96703f':'#a5764a');
+R(-10,dy+h-1,20,1,'#5f4223');
+}
+function dessinerGouge(g,x,y,ech){
+const e2=ech||1;
+const R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect(x+dx*e2,y+dy*e2,w*e2,h*e2);};
+R(-1,-2,3,11,'#7d5934');R(-1,-2,1,11,'#a5764a');
+R(-1,6,3,2,'#5b3f21');
+R(-2,-9,5,7,'#8b939a');R(-2,-9,5,2,'#bcc4ca');
+R(-1,-11,3,3,'#a2a9b0');R(-1,-11,1,3,'#d2d8dd');
+}
+function dessinerTamis(g,x,y,ech){
+const e2=ech||1;
+const R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect(x+dx*e2,y+dy*e2,w*e2,h*e2);};
+R(-9,-4,18,3,'#7d5934');R(-9,-4,18,1,'#a5764a');
+R(-8,-1,16,5,'#8b939a');
+for(let i=0;i<16;i+=3)R(-8+i,-1,1,5,'#5f666c');
+for(let k=0;k<5;k+=2)R(-8,-1+k,16,1,'#6f767c');
+R(-9,4,18,2,'#5b3f21');
+}
+function dessinerPioche(g,x,y,ech){
+const k=ech||1;
+const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a*k,y+b*k,w*k,h*k);};
+R(-1,-12,2,12,'#8a6238');                   /* manche */
+R(-1,-12,1,12,'#a5764a');
+R(-6,-14,12,2,'#7b8288');                   /* fer */
+R(-6,-14,12,1,'#a2a9b0');
+R(-7,-13,2,2,'#5f666c');R(5,-13,2,2,'#5f666c');
+}
+function dessinerHache(g,x,y,ech){
+const k=ech||1;
+const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a*k,y+b*k,w*k,h*k);};
+R(-1,-13,2,13,'#8a6238');                   /* manche */
+R(-1,-13,1,13,'#a5764a');
+R(0,-14,5,6,'#7b8288');                     /* fer */
+R(0,-14,5,1,'#a2a9b0');
+R(4,-13,2,4,'#c0c7cd');                     /* tranchant */
+R(-2,-14,2,6,'#5f666c');                    /* talon */
+}
+function entailles(g,x,y,part,ht){
+const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+const base=-Math.round(ht*0.30);
+if(part>0){R(-4,base,5,2,'#5b3f21');R(-4,base+2,3,1,'#7d5934');}
+if(part>1){R(-4,base-3,6,2,'#4a3218');R(1,base+1,3,2,'#5b3f21');}
+if(part>2){R(-5,base-6,7,3,'#3d2a14');R(-5,base+3,7,1,'#4a3218');}
+if(part>3){R(-5,base-9,8,3,'#33240f');}
+}
+function felures(g,x,y,part){
+const R=(a,b,w,h)=>{g.fillStyle='#4a5057';g.fillRect(x+a,y+b,w,h);};
+if(part>0){R(-2,-14,1,5);R(-1,-10,1,3);}
+if(part>1){R(3,-17,1,4);R(2,-13,1,4);R(-6,-9,3,1);}
+if(part>2){R(-5,-16,1,6);R(5,-11,2,1);R(0,-20,1,4);}
+}
 let PETITS_GRAVES=null;
+function toilePetit(w,h,f){
+const c=document.createElement('canvas');
+const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+c.width=w*D;c.height=h*D;
+const g=c.getContext('2d');
+g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+f({g,R:(x,y,w2,h2,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w2|0),Math.max(1,h2|0));},
+ombre:(cx,cy,rx,ry)=>{g.fillStyle=VERTS.ombre;
+g.beginPath();g.ellipse(cx,cy,rx,ry,0,0,7);g.fill();}});
+return c;
+}
+function graverPetits(){
+PETITS_GRAVES={champignons:[],plumes:[],herbes:[]};
+const CH={chapeau:['#a83a3a','#c94a4a','#8a2e2e'],pied:['#e8dcc0','#f6f3ec','#c9bda2'],
+pois:'#f2efe4'};
+const PL={tige:'#d8d2c2',barbe:['#f2efe4','#c9c2b0']};
+const HE={brins:['#4a944a','#3d7d3f','#5aa855']};
+for(let v=0;v<2;v++){
+const W=30,HT=24;
+PETITS_GRAVES.champignons.push({c:toilePetit(W,HT,({R,ombre})=>{
+const cx=W/2;ombre(cx+1,HT-3,11,3);
+const un=(dx,ech)=>{
+const lp=Math.max(2,Math.round(3*ech)),hp=Math.round(9*ech);
+const lc=Math.round(11*ech),hc=Math.round(5*ech);
+const bx=Math.round(cx+dx),by=HT-4;
+R(bx-lp/2,by-hp,lp,hp,CH.pied[0]);
+R(bx-lp/2,by-hp,1,hp,CH.pied[1]);
+R(bx+lp/2-1,by-hp+2,1,hp-2,CH.pied[2]);
+R(bx-lc/2,by-hp-hc+1,lc,hc,CH.chapeau[0]);
+R(bx-lc/2,by-hp-hc+1,lc,2,CH.chapeau[1]);
+R(bx-lc/2,by-hp-1,lc,1,CH.chapeau[2]);
+R(bx-lc/2+2,by-hp-hc-1,lc-4,2,CH.chapeau[1]);
+R(bx-lc/2+2,by-hp-hc+2,2,2,CH.pois);
+R(bx+1,by-hp-hc,2,2,CH.pois);
+};
+un(-5,v?0.85:1);un(4,v?0.62:0.7);
+}),W,HT});
+}
+for(let v=0;v<2;v++){
+const W=26,HT=20;
+PETITS_GRAVES.plumes.push({c:toilePetit(W,HT,({R,ombre})=>{
+ombre(W/2+1,HT-3,9,2.6);
+const une=(bx,by,sens,lg)=>{
+for(let i=0;i<lg;i++){
+const x=bx+Math.round(i*0.42)*sens,y=by-i;
+R(x,y,1,1,PL.tige);
+if(i>1&&i<lg-1){
+const l=Math.round(3*Math.sin(i/lg*3.14));
+if(l>0){R(x-l*sens,y,l,1,PL.barbe[0]);R(x+1,y,l,1,PL.barbe[1]);}
+}
+}
+};
+une(Math.round(W*0.34),HT-4,-1,13);
+une(Math.round(W*0.62),HT-4,1,v?9:11);
+}),W,HT});
+}
+for(let v=0;v<2;v++){
+const W=28,HT=26;
+const pied=toilePetit(W,10,({R,ombre})=>{
+ombre(W/2+1,6,12,3);R(W/2-6,2,12,2,HE.brins[1]);});
+const tete=toilePetit(W,HT,({R})=>{
+const cx=W/2;
+[[-8,13],[-3,17+(v?2:0)],[2,14],[6,11]].forEach(([dx,h],i)=>{
+R(cx+dx,HT-3-h,2,h,HE.brins[i%2?0:1]);
+R(cx+dx,HT-3-h,1,Math.round(h*0.4),HE.brins[2]);
+});
+R(cx-6,HT-18,2,2,HE.brins[2]);R(cx+4,HT-15,2,2,HE.brins[2]);
+});
+PETITS_GRAVES.herbes.push({pied,tete,W,HT});
+}
+}
 const variantePetit=(x,y)=>alea((x*13+y*7)%997)<0.5?0:1;
+function dessinerPlumes(g,x,y,gr,mx,my){
+if(!PETITS_GRAVES)graverPetits();
+const L=PETITS_GRAVES.plumes;
+const A=L[Math.min(L.length-1,variantePetit(mx||x,my||y))];
+g.drawImage(A.c,Math.round(x-A.W/2),Math.round(y-A.HT+4),A.W,A.HT);
+}
+function dessinerHerbes(g,x,y,gr,mx,my){
+if(!PETITS_GRAVES)graverPetits();
+const L=PETITS_GRAVES.herbes;
+const A=L[Math.min(L.length-1,variantePetit(mx||x,my||y))];
+g.drawImage(A.pied,Math.round(x-A.W/2),Math.round(y-7),A.W,10);
+const so=penche(mx||x,my||y,0.9);
+g.drawImage(A.tete,Math.round(x-A.W/2+so),Math.round(y-A.HT+3),A.W,A.HT);
+}
 const MINERAIS={
 fer:    {base:'#4e4a48',clair:'#5c5754',haut:'#6b6562',bas:'#3a3735',cote:'#403c3a',
 veine:'#b06a3a',eclat:'#d4884c',debris:['#b06a3a','#8b8582','#d4884c','#5c5754']},
@@ -4119,8 +5508,87 @@ veine:'#3f9e7a',eclat:'#6fd8a8',debris:['#3f9e7a','#7d838f','#c9884a','#6fd8a8']
 charbon:{base:'#2e2c30',clair:'#3a373c',haut:'#464349',bas:'#1f1e21',cote:'#252428',
 veine:'#6d6a74',eclat:'#a7a3b0',debris:['#2e2c30','#6d6a74','#a7a3b0','#1f1e21']}
 };
+function dessinerEntaille(g,x,y,ht,pret){
+const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+const base=-Math.round(ht*0.34);
+R(-4,base,8,2,'#3d2a14');
+R(-3,base+2,6,2,'#5b3f21');
+R(-2,base+4,4,2,'#5b3f21');
+if(pret){                                      /* la résine a eu le temps de couler */
+R(-1,base+6,3,5,'#e8a94a');
+R(-1,base+6,1,4,'#f7cf7d');
+R(0,base+11,2,3,'#e8a94a');
+}
+R(-7,-6,13,6,'#6f7a80');
+R(-7,-6,13,2,'#88939a');
+if(pret)R(-5,-4,9,3,'#e8a94a');
+else{R(-5,-4,9,3,'#3a3f44');}
+}
 let CALQUE_FORGE=null;
 const FORGE_L=92, FORGE_H=110;        /* l'emprise du calque, en points */
+function dessinerFour(g,x,y,gr,allume){
+const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+const t=Date.now()/1000;
+const bat=allume?(Math.sin(t*7)*0.5+0.5):0;
+g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(x+1,y-1,18,4.5,0,0,7);g.fill();
+if(allume){                                    /* la lueur au sol */
+g.globalAlpha=.12+bat*0.06;g.fillStyle='#ff9d45';
+g.beginPath();g.ellipse(x,y-10,30,20,0,0,7);g.fill();g.globalAlpha=1;
+}
+R(-16,-10,32,10,'#5f666c');
+R(-16,-10,32,2,'#7b8288');
+R(-14,-26,28,16,'#6f767d');
+R(-14,-26,28,2,'#8b939a');
+R(-14,-26,4,16,'#8b939a');
+R(-10,-22,7,4,'#5a6067');R(-1,-22,7,4,'#5a6067');
+R(-6,-16,7,4,'#5a6067');R(4,-16,7,4,'#5a6067');
+R(-7,-19,14,9,'#1c1a18');
+if(allume){
+R(-6,-17,12,7,bat>0.5?'#c9421c':'#a8330f');
+R(-4,-16,8,5,bat>0.4?'#ff9d45':'#e8802c');
+R(-2,-15,4,3,bat>0.6?'#ffe08a':'#ffc65a');
+R(-9,-2,18,2,'#ff9d45');
+}else{
+R(-5,-16,10,5,'#2b2724');
+}
+R(-6,-36,12,10,'#5f666c');
+R(-6,-36,12,2,'#7b8288');
+R(-8,-38,16,3,'#4a5056');
+if(allume){                                    /* la fumée */
+for(let i=0;i<3;i++){
+const h=((t*14+i*16)%48);
+g.globalAlpha=Math.max(0,.55-h/60);
+g.fillStyle='#9a958e';
+g.fillRect(Math.round(x-3+Math.sin(t+i)*4),Math.round(y-42-h),5+i,4+i);
+}
+g.globalAlpha=1;
+}
+}
+function dessinerEtabli(g,x,y){
+const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(x+1,y-1,20,4.5,0,0,7);g.fill();
+R(-16,-42,32,18,'#5b3f21');
+R(-16,-42,32,2,'#7d5934');
+R(-12,-39,3,10,'#8a6238');R(-14,-40,7,3,'#7b8288');
+R(-3,-39,2,11,'#8a6238');R(-6,-40,8,2,'#7b8288');
+R(7,-38,6,8,'#7b8288');R(7,-38,6,2,'#a2a9b0');
+R(-17,-12,5,12,'#5b3f21');R(12,-12,5,12,'#5b3f21');
+R(-20,-20,40,9,'#6b4a28');
+R(-20,-20,40,3,'#a5764a');
+R(-20,-13,40,2,'#4a3218');
+R(-19,-24,7,5,'#5f666c');
+R(-19,-24,7,2,'#8b939a');
+R(-8,-24,10,3,'#7b8288');
+R(-8,-24,10,1,'#a2a9b0');
+R(-4,-27,2,4,'#8a6238');
+R(5,-25,9,6,'#8a6238');
+R(5,-25,9,2,'#a5764a');
+}
+function dessinerSouche(g,x,y,gr,neuf){
+const V=VERTS, R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+g.fillStyle=V.ombre;g.beginPath();g.ellipse(x+1,y-1,6,2,0,0,7);g.fill();
+R(-4,-5,9,5,V.tronc);R(-4,-5,9,2,V.troncC);R(-2,-4,5,1,'#a5764a');R(-4,-2,9,2,V.troncO);
+}
 /* LE PORT S'ALLONGE VERS L'EST, de 1400 a 1760. On arrivait au bout du
    quai droit devant un bord de carte nu : rien ne disait qu'il y avait
    quelque chose a aller chercher par la. Les 360 pixels gagnes portent la
@@ -4283,18 +5751,18 @@ rangerSolQuandOnPeut();
 return SOL;}
 if(SOL_CACHE.pret){SOL=SOL_CACHE.sol;SOL_FIN=SOL_CACHE.fin;SOL_CACHE.pret=false;return SOL;}     /* déjà construit lors d'un lancement précédent */
 rangerSolQuandOnPeut();                                                                              /* on le range quand le joueur est a l arret */
-if(CARTE==='large'){SOL=null;SOL_FIN=null;CHEMIN=null;return SOL;}
-if(CARTE==='foret'){SOL=null;SOL_FIN=null;CHEMIN=null;return SOL;}
+if(CARTE==='large'){SOL=construireSolLarge();SOL_FIN=null;CHEMIN=null;return SOL;}
+if(CARTE==='foret'){SOL=construireSolForet();SOL_FIN=null;CHEMIN=null;return SOL;}
 if(CHAMPS_SEULS&&CARTE==='village'){        /* LA FERME : le pré nu, rien d'autre */
 SOL=construireSolPre();SOL_FIN=null;CHEMIN=null;return SOL;}
-SOL=construireSol();SOL_FIN=null;CHEMIN=(()=>{})();
+SOL=construireSol();SOL_FIN=null;CHEMIN=construireChemin();
 /* LE PORT EN DOUBLE DÉFINITION. Le mécanisme existait — SOL_FIN, lu en
    camX*2 par le dessin — mais aucune carte ne le remplissait. Le port s'en
    sert : joints, grain, rides et reflets y sont peints au demi-pixel. */
 if(CARTE==='extramar'&&typeof affinerLeSolExtramar==='function'&&!ECO){
   try{SOL_FIN=affinerLeSolExtramar(SOL);}catch(x){SOL_FIN=null;}
 }
-if(SOL_FIN&&CARTE==='village')try{(()=>{})());}catch(x){}   /* la campagne, au demi-pixel */
+if(SOL_FIN&&CARTE==='village')try{peindreLaFermeFin(SOL_FIN.getContext('2d'));}catch(x){}   /* la campagne, au demi-pixel */
 return SOL;}
 /* ================= LE PRÉ DE LA FERME =================
    Rien que l'herbe, ses touffes, ses reflets et ses fleurettes : le sol
@@ -4657,7 +6125,7 @@ g.fillStyle='rgb(60,110,50)';g.fillRect(x,y,1,2);
 g.fillStyle='rgb('+f[0]+','+f[1]+','+f[2]+')';g.fillRect(x,y-2,1,1);}}
 /* LA GANIVELLE N'EST PLUS DANS LE SOL. Peinte ici, elle était un tapis :
    on lui marchait dessus, et le joueur passait devant même en étant
-   derrière. Elle est devenue un objet, gravé par null et
+   derrière. Elle est devenue un objet, gravé par graverGanivelle() et
    posé en bandes dans la pile triée du dessin de la ferme — on passe
    devant celles qui sont au sud de nous, derrière celles qui sont au
    nord, comme pour n'importe quel bâtiment. */
@@ -4971,6 +6439,26 @@ const F_ETAL={x:1280,y:530};       /* l'étal, à l'est de la carte */
    code jamais exécuté. */
 const F_CABANE=[760,340];
 const F_BOIS={sombre:'#5b3f26',bas:'#6b4a2a',moyen:'#7d5833',clair:'#96693c',haut:'#ab7a49'};
+function F_palissade(){
+  const c=document.createElement('canvas');c.width=20;c.height=34;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const sol=31;
+  R(0,sol,20,3,'rgba(30,44,22,.34)');R(0,sol-4,20,4,F_BOIS.sombre);
+  for(let i=0;i<20;i+=3){const h=18+((i*7)%3), t=(i/3)%3;
+    R(i,sol-h,3,h,t===0?F_BOIS.moyen:(t===1?F_BOIS.bas:F_BOIS.clair));
+    R(i,sol-h,1,h,F_BOIS.haut);R(i,sol-h-2,3,2,t===1?F_BOIS.clair:F_BOIS.moyen);
+    R(i+2,sol-h+2,1,h-2,F_BOIS.sombre);}
+  R(0,sol-14,20,3,F_BOIS.bas);R(0,sol-14,20,1,F_BOIS.clair);R(0,sol-6,20,2,F_BOIS.sombre);
+  return c;}
+function F_profil(){
+  const c=document.createElement('canvas');c.width=12;c.height=20;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  R(1,0,9,20,F_BOIS.moyen);R(1,0,1,20,F_BOIS.haut);R(9,0,1,20,F_BOIS.sombre);
+  R(10,0,2,20,'rgba(30,44,22,.30)');
+  for(let y=0;y<20;y+=3)R(1,y,9,1,F_BOIS.bas);
+  return c;}
 /* ================= LES SENTES DU BOIS =================
    La forêt n'avait qu'un chemin, celui qui sort vers le port : la mine, la
    cabane, la maison de pierre et l'étal se trouvaient en errant dans les
@@ -4980,15 +6468,218 @@ const F_BOIS={sombre:'#5b3f26',bas:'#6b4a2a',moyen:'#7d5833',clair:'#96693c',hau
    parce que des pas l'ont dénudée. Elle est donc étroite, elle ondule, et
    elle s'efface par endroits — là où l'on passe moins. Même palette que le
    sentier du port, mais sans ornières : on n'y mène pas de charrette. */
+function peindreLesSentes(s){
+  const riveSure=(x)=>Math.round(F_rive(x))-18;      /* jamais dans l'eau */
+  const N={
+    /* ON SE BRANCHE DANS LA PARTIE PLEINE DU SENTIER DU PORT, pas dans sa
+       queue : peindreLeSentier dissout volontairement sa piste dans les
+       feuilles à partir de la moitié. En partant de 214 on démarrait dans
+       le vide, et les deux chemins ne se rejoignaient pas. */
+    arrivee:  [140, F_SENT_Y],
+    carrefour:[566, 432],
+    mine:     [370, 324],
+    cabane:   [760, 368],
+    maison:   [1090,258],
+    etal:     [F_ETAL.x, F_ETAL.y+26],
+    ponton1:  [F_PONT.x,  riveSure(F_PONT.x)],
+    ponton2:  [F_PONT2.x, riveSure(F_PONT2.x)]
+  };
+  /* le réseau : qui mène à qui, et combien la sente est battue (1 = très
+     passante, 0,5 = à peine marquée) */
+  const SENTES=[
+    ['arrivee','carrefour',1.00],
+    ['carrefour','mine',0.80],
+    ['carrefour','cabane',0.95],
+    ['carrefour','ponton1',0.70],
+    ['cabane','maison',0.80],
+    ['maison','etal',0.75],
+    ['etal','ponton2',0.65]
+  ];
+  let graine=0;
+  for(const [a,b,force] of SENTES){
+    const A=N[a], B=N[b];
+    graine+=37;
+    const dx=B[0]-A[0], dy=B[1]-A[1], L=Math.max(1,Math.round(Math.hypot(dx,dy)));
+    const ux=dx/L, uy=dy/L, nx=-uy, ny=ux;          /* le vecteur, et sa perpendiculaire */
+    for(let i=0;i<=L;i++){
+      const k=i/L;
+      /* LA SENTE N'EST PAS UNE RÈGLE. Deux ondes de périodes différentes
+         l'écartent de la ligne droite : sans elles on obtient un trait
+         tiré au cordeau, qui ne ressemble à rien de ce qu'un pas creuse. */
+      /* L'ONDULATION S'ÉTEINT AUX DEUX BOUTS. Sans cela une sente arrive à
+         vingt-six pixels de son point d'arrivée : aucune jonction ne tombe
+         juste, et celle du sentier du port tombait carrément à côté. */
+      const amorti=Math.min(1,Math.min(k,1-k)*5);
+      const serp=((F_hs(i*0.021+graine)-0.5)*26+(F_hs(i*0.073+graine*2)-0.5)*9)*amorti;
+      const cx=A[0]+ux*i+nx*serp, cy=A[1]+uy*i+ny*serp;
+      if(cy>riveSure(cx)+10)continue;               /* on s'arrête au bord de l'eau */
+      /* AUSSI LARGE QU'UN HOMME, au moins : une sente plus étroite que le
+         personnage ne se lit pas, elle se confond avec le bruit de la
+         litière. */
+      const demi=5.5+force*3.4+(F_hs(i*0.11+graine)-0.5)*2.4;
+      for(let j=-Math.ceil(demi);j<=Math.ceil(demi);j++){
+        const px=Math.round(cx+nx*j), py=Math.round(cy+ny*j);
+        if(px<4||py<F_BAR+4||px>MONDE_L-4||py>MONDE_H-4)continue;
+        if(py>F_rive(px)-6)continue;
+        const bord=Math.abs(j)/demi;
+        /* UNE SENTE, C'EST D'ABORD L'ABSENCE DE FEUILLES. Le centre est
+           donc peint plein : les feuilles y sont effacées, et c'est ce
+           vide qui dessine le chemin. Seuls les bords se trouent, là où la
+           litière reprend ses droits. */
+        const dens=bord>0.82?0.30*force:(bord>0.6?0.70*force:1);
+        if(dens<1&&F_hs(px*0.37+py*0.71+graine)>dens)continue;
+        const t=F_hs(px*0.21+py*0.37);
+        s.fillStyle = bord>0.82 ? (t<.5?'#4a3c1e':'#544323')
+                    : bord>0.6  ? (t<.5?'#64501f':'#6d5726')
+                    : (t<.4?'#7a6030':'#846734');
+        s.fillRect(px,py,1,1);
+        if(bord<0.3&&t<0.14){s.fillStyle='#8f7540';s.fillRect(px,py,1,1);}   /* la terre polie par les pas */
+      }
+    }
+  }
+  /* LE CARREFOUR : là où quatre sentes se rejoignent, la terre est nue et
+     quelqu'un a planté un poteau. C'est le repère du bois. */
+  const [cx0,cy0]=N.carrefour;
+  for(let a=0;a<360;a+=2)for(let r=0;r<20;r++){
+    const px=Math.round(cx0+Math.cos(a*Math.PI/180)*r), py=Math.round(cy0+Math.sin(a*Math.PI/180)*r*0.72);
+    if(r>12&&F_hs(px*0.31+py*0.53)>1-(r-12)/9)continue;
+    const t=F_hs(px*0.21+py*0.37);
+    s.fillStyle=t<.4?'#7a6030':'#846734';s.fillRect(px,py,1,1);
+  }
+  /* LE POTEAU DU CARREFOUR : un piquet et sa planche, le repère du bois */
+  s.fillStyle='#3a2a15';s.fillRect(cx0-2,cy0-34,4,34);
+  s.fillStyle='#5b4423';s.fillRect(cx0-2,cy0-34,2,34);
+  s.fillStyle='#6b5228';s.fillRect(cx0-11,cy0-33,22,7);
+  s.fillStyle='#8a6a38';s.fillRect(cx0-11,cy0-33,22,2);
+  s.fillStyle='#2a1d0f';s.fillRect(cx0-11,cy0-27,22,1);
+  for(let k=0;k<4;k++){s.fillStyle='#3d2e18';s.fillRect(cx0-8+k*5,cy0-31,3,1);}   /* l'inscription effacée */
+}
 /* LE CHEMIN DE TERRE qui sort de la forêt vers l'ouest. Il se peint par
    dessus la lisière et la palissade : plus simple que de trouer chacune,
    et c'est bien ce qu'on veut voir — un passage battu par les pas. */
+function peindreLeSentier(s){
+  const y0=F_SENT_Y, D=F_SENT_DEMI, L=210;
+  /* la terre, large au bord puis qui s'amenuise ; et sur le dernier tiers
+     on ne pose plus qu'une partie des points, pour que le chemin se perde
+     dans les feuilles mortes au lieu de s'arrêter au couteau. */
+  for(let x=0;x<L;x++){
+    const k=x/L;                                   /* 0 au bord, 1 au fond */
+    /* le bord n'est pas une règle : il ondule, sinon le chemin ressemble
+       à une bande peinte au pochoir */
+    const onde=(F_hs(x*0.08+3)-0.5)*14 + (F_hs(x*0.23+11)-0.5)*7;
+    const demi=Math.round(D*(1-k*0.34)+onde);
+    const densite=k<0.52?1:Math.max(0,1-(k-0.52)/0.48);
+    for(let y=-demi;y<=demi;y++){
+      if(densite<1&&F_hs(x*0.61+y*1.13+40)>densite)continue;
+      const b=F_hs(x*0.21+y*0.37);
+      const bord=Math.abs(y)/demi;                 /* plus clair au centre */
+      s.fillStyle = bord>0.86 ? (b<.5?'#3a3119':'#45391d')
+                  : bord>0.6  ? (b<.5?'#56431f':'#614b23')
+                  : (b<.33?'#6b5428':'#755c2c');
+      s.fillRect(x,y0+y,1,1);}}
+  /* deux ornières creusées par les charrettes, qui s'effacent elles aussi */
+  for(const dy of [-15,15])for(let x=0;x<L-24;x++){
+    const k=x/L;
+    if(k>0.52&&F_hs(x*0.83+(dy>0?5:2))>Math.max(0,1-(k-0.52)/0.48))continue;
+    const on=Math.round(F_hs(x*0.17+(dy>0?9:3))*3)-1;
+    s.fillStyle='#4a3a1b';s.fillRect(x,y0+dy+on,1,3);}
+  /* quelques cailloux et touffes au bord du chemin */
+  for(let i=0;i<46;i++){
+    const x=Math.round(F_hs(i*1.7)*L*0.8);
+    const c=(F_hs(i*2.3)<.5?-1:1)*Math.round(D*(0.62+F_hs(i*3.1)*0.3));
+    if(F_hs(i*4.7)<.45){s.fillStyle='#6e6a5c';s.fillRect(x,y0+c,3,2);
+      s.fillStyle='#8a867a';s.fillRect(x,y0+c,3,1);}
+    else{s.fillStyle='#3d6b35';s.fillRect(x-2,y0+c-2,5,4);
+      s.fillStyle='#4f8a44';s.fillRect(x-1,y0+c-3,3,2);}}
+  /* les deux montants de la trouée, plantés de part et d'autre */
+  for(const dy of [-D-4,D+2]){
+    s.fillStyle='#3a2a15';s.fillRect(F_BAR-10,y0+dy-24,13,30);
+    s.fillStyle='#5b4423';s.fillRect(F_BAR-10,y0+dy-24,13,4);
+    s.fillStyle='#2a1d0f';s.fillRect(F_BAR-10,y0+dy+2,13,4);}
+}
 /* L'ÉRABLE : l'arbre de la nouvelle forêt. Bords dentelés, touffes qui
    débordent, trous de ciel, écorce striée et racines au pied. */
+function F_masse(g,R,x,y,w,h,col,clair,sombre,graine){
+  const bord=[];
+  for(let i=0;i<w;i++){
+    const d=Math.round(F_hs(graine+i*0.37)*3), b=Math.round(F_hs(graine*2+i*0.29)*2);
+    bord.push([d,b]);R(x+i,y+d,1,h-d-b,col);}
+  for(let i=0;i<w;i++)R(x+i,y+bord[i][0],1,2,clair);
+  for(let i=0;i<w;i++)R(x+i,y+h-bord[i][1]-2,1,2,sombre);
+  for(let k=0;k<Math.round(w/7);k++){
+    const i=Math.round(F_hs(graine*3+k)*(w-6))+3;
+    R(x+i-1,y+bord[i][0]-2,4,3,col);R(x+i-1,y+bord[i][0]-2,4,1,clair);}
+  for(let k=0;k<2;k++){
+    const j=Math.round(F_hs(graine*5+k)*(h-6))+3;
+    R(x-2,y+j,3,4,col);R(x+w-1,y+j+1,3,4,col);
+    R(x-2,y+j,3,1,clair);R(x+w-1,y+j+1,3,1,clair);}
+  for(let k=0;k<Math.round(w/14);k++){
+    const i=Math.round(F_hs(graine*7+k)*(w-8))+4, j=Math.round(F_hs(graine*9+k)*(h-6))+3;
+    R(x+i,y+j,2,2,sombre);}
+}
 /* LE CHÊNE DORÉ et LE CHARME : les deux compagnons de l'érable.
    Même grammaire, palettes différentes. */
+function F_arbre(v,haut,ep,EC,etages){
+  const LW=84, LH=112;
+  const c=document.createElement('canvas');c.width=LW;c.height=LH;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
+    g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const cx=LW/2, sol=LH-6, G=v*37+3;
+  g.fillStyle='rgba(24,34,20,.26)';
+  g.beginPath();g.ellipse(cx,sol,Math.max(9,ep),3.4,0,0,7);g.fill();
+  for(let y=0;y<haut;y++){
+    const t=y/haut, w=ep*(1-t*0.18)+(F_hs(y*0.7+G)<0.3?1:0);
+    R(cx-w/2,sol-haut+y,w,1,EC[0]);
+    R(cx-w/2,sol-haut+y,1.4,1,EC[1]);R(cx+w/2-1.4,sol-haut+y,1.4,1,EC[2]);}
+  for(let k=0;k<Math.round(haut/8);k++){
+    const y=sol-haut+3+Math.round(F_hs(k*5+G)*(haut-6));R(cx-ep/2+1,y,ep-3,1,EC[2]);}
+  for(let k=0;k<4;k++){const s2=k<2?-1:1, dx=(k%2)*3+2;
+    for(let i=0;i<5;i++)R(cx+s2*(dx+i*1.1),sol-4+i*0.9,3,2,EC[0]);
+    R(cx+s2*dx,sol-4,3,1,EC[1]);}
+  const y0=sol-haut;
+  etages.forEach(([dy,w,h,col,clair,sombre],i)=>
+    F_masse(g,R,cx-w/2,y0+dy,w,h,col,clair,sombre,G+i*8));
+  return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
+}
 /* LE DOUBLE OLIVE : un grand et un petit, l'un contre l'autre,
    dans un vert-gris tardif qui fait la transition avec les roseaux. */
+function graverDoubleOlive(v){
+  const LW=96, LH=112;
+  const c=document.createElement('canvas');c.width=LW;c.height=LH;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
+    g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const cx=LW/2, sol=LH-6, G=v*41+5;
+  const EC=['#5a5444','#746c5a','#3e3a2e'];
+  g.fillStyle='rgba(24,34,20,.26)';
+  g.beginPath();g.ellipse(cx-5,sol,16,4,0,0,7);g.fill();
+  const unTronc=(x,haut,ep)=>{
+    for(let y=0;y<haut;y++){
+      const t=y/haut, w=ep*(1-t*0.18)+(F_hs(y*0.7+G+x)<0.3?1:0);
+      R(x-w/2,sol-haut+y,w,1,EC[0]);
+      R(x-w/2,sol-haut+y,1.4,1,EC[1]);R(x+w/2-1.4,sol-haut+y,1.4,1,EC[2]);}
+    for(let k=0;k<Math.round(haut/8);k++){
+      const y=sol-haut+3+Math.round(F_hs(k*5+x+G)*(haut-6));R(x-ep/2+1,y,ep-3,1,EC[2]);}
+    for(let k=0;k<4;k++){const s2=k<2?-1:1, dx=(k%2)*3+2;
+      for(let i=0;i<5;i++)R(x+s2*(dx+i*1.1),sol-4+i*0.9,3,2,EC[0]);
+      R(x+s2*dx,sol-4,3,1,EC[1]);}};
+  unTronc(cx-12,42+v*2,11);unTronc(cx+16,22,7);
+  const P=[['#4a5a24','#64743c','#323e14'],['#5e7030','#788a48','#44541e'],
+           ['#74863e','#8ea056','#566628'],['#8a9a52','#a4b46c','#6a7a36']];
+  F_masse(g,R,cx-38,sol-56,52,14,P[0][0],P[0][1],P[0][2],G);
+  F_masse(g,R,cx-32,sol-69,44,13,P[1][0],P[1][1],P[1][2],G+8);
+  F_masse(g,R,cx-24,sol-81,28,12,P[2][0],P[2][1],P[2][2],G+16);
+  F_masse(g,R,cx+2,sol-34,32,12,P[2][0],P[2][1],P[2][2],G+24);
+  F_masse(g,R,cx+6,sol-44,24,11,P[3][0],P[3][1],P[3][2],G+32);
+  return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
+}
+function graverCharme(v){
+  return F_arbre(v,28+v*2,9,['#8a8278','#a8a096','#5f5a52'],[
+    [-10,42,13,'#8a5420','#a46e36','#623a0e'],
+    [-21,48,13,'#a86a28','#c2843e','#7a4c16'],
+    [-32,32,12,'#bc8236','#d69c52','#8c5e20']]);
+}
 /* LES CHAMPIGNONS DE LA FORÊT : amanite, cèpe et girolle.
    Chacun en touffe de deux à quatre, de tailles inégales. */
 /* LA PLUME PLANTÉE : fichée droite dans le sol, avec une petite sœur
@@ -4999,15 +6690,127 @@ const F_BOIS={sombre:'#5b3f26',bas:'#6b4a2a',moyen:'#7d5833',clair:'#96693c',hau
    repousse : on croyait que le ramassage n'avait rien fait. Les
    champignons, les baies et l'argile avaient chacun le leur ; la plume,
    non. */
+function graverPlumeFo(v){
+  const cueilli=!!(v&4); v=v&3;
+  const LW=34, LH=34;
+  const c=document.createElement('canvas');c.width=LW;c.height=LH;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
+    g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const cx=LW/2, sol=LH-5, G=v*23+7;
+  g.fillStyle='rgba(24,34,20,.2)';
+  g.beginPath();g.ellipse(cx,sol+1,8,2.6,0,0,7);g.fill();
+  const plume=(x,y,lg,ang,col,clair,sombre,tige)=>{
+    const ux=Math.cos(ang), uy=Math.sin(ang);
+    for(let t=0;t<lg;t++){
+      const px=x+ux*t, py=y+uy*t;
+      const l=Math.round(Math.sin((t/lg)*3.14)*3.4)+1;
+      for(let s2=-l;s2<=l;s2++){
+        const qx=px-uy*s2, qy=py+ux*s2;
+        if(F_hs(t*0.9+s2*2.3+G)<0.12)continue;        /* les barbes s'écartent */
+        R(qx,qy,1,1,s2<0?clair:(Math.abs(s2)>l-1?sombre:col));}
+      R(px,py,1,1,tige);}
+    R(x,y,1.6,1.6,tige);};
+  if(cueilli){
+    /* ON A PRIS LES BELLES. Reste le duvet : trois petites touffes
+       couchees, deux tons de gris clair, et l'ombre s'allege avec. */
+    g.clearRect(0,0,LW,LH);
+    g.fillStyle='rgba(24,34,20,.12)';
+    g.beginPath();g.ellipse(cx,sol+1,5,1.8,0,0,7);g.fill();
+    [[-5,0.35],[2,-0.2],[6,0.6]].forEach(([dx,a2],i)=>{
+      plume(cx+dx,sol-(i===1?2:0),4+i,a2,'#ded8c8','#f0ebdc','#b4ad9c','#9a9286');});
+    return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
+  }
+  /* la grande, plantée droite, très légèrement inclinée */
+  const ang=-1.5708+0.12+(v-1)*0.09;
+  const ux=Math.cos(ang), uy=Math.sin(ang);
+  for(let t=0;t<20;t++){
+    const px=cx+ux*t, py=sol+uy*t;
+    const l=Math.round(Math.sin((t/20)*3.14)*3.4)+1;
+    for(let s2=-l;s2<=l;s2++){
+      const qx=px-uy*s2, qy=py+ux*s2;
+      if(F_hs(t*0.9+s2*2.3+G)<0.12)continue;
+      R(qx,qy,1,1,s2<0?'#ffffff':(Math.abs(s2)>l-1?'#c9c2b0':'#f2ece0'));}
+    R(px,py,1,1,'#a89e8c');}
+  /* la petite, couchée au pied */
+  plume(cx-11,sol,9,0.2,'#eae4d6','#fbf7ec','#bfb8a4','#a0978a');
+  return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
+}
 /* L'ARGILE : le dessin exact de l'ancienne forêt, trois lobes fusionnés,
    avec son état plein et son état déjà pris. */
 const F_ARG={fonce:'#7d3826',bas:'#9c4a32',moyen:'#a85039',clair:'#bb5e42',
   haut:'#c76b4c',luisant:'#e0977a'};
+function F_lobes(lobes,LW){
+  const h=new Array(LW).fill(null);
+  for(let x=0;x<LW;x++){
+    let y=null;
+    lobes.forEach(([cx2,cy,r])=>{
+      const dx=x+0.5-cx2;if(Math.abs(dx)>=r)return;
+      const t=cy-Math.sqrt(r*r-dx*dx);
+      if(y===null||t<y)y=t;});
+    h[x]=y===null?null:Math.round(y);}
+  return h;}
+function graverArgileFo(pleine){
+  const LW=40, LH=26;
+  const c=document.createElement('canvas');c.width=LW;c.height=LH;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
+    g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const cx=LW/2, sol=LH-4;
+  g.fillStyle='rgba(24,34,20,.24)';
+  g.beginPath();g.ellipse(cx+1,sol,15,4.5,0,0,7);g.fill();
+  const haut=F_lobes(pleine
+    ? [[cx-8,sol-5,7],[cx+7,sol-5.5,7.4],[cx-1,sol-11,7.8]]
+    : [[cx-7,sol-3.5,5.4],[cx+6,sol-3,5]],LW);
+  for(let x=0;x<LW;x++){
+    const y=haut[x];if(y===null)continue;
+    const h=sol-y;if(h<=0)continue;
+    R(x,y,1,h,F_ARG.moyen);
+    R(x,y,1,Math.max(2,Math.round(h*0.4)),F_ARG.clair);
+    if(x<LW*0.5)R(x,y,1,2,F_ARG.haut);
+    R(x,sol-3,1,3,F_ARG.bas);R(x,sol-1,1,1,F_ARG.fonce);}
+  if(pleine){R(cx-6,sol-14,4,1,F_ARG.luisant);R(cx+3,sol-7,4,1,F_ARG.luisant);
+    R(cx-11,sol-6,3,1,F_ARG.luisant);}
+  else{R(cx-8,sol-6,3,1,F_ARG.luisant);R(cx-2,sol-4,5,2,F_ARG.fonce);}
+  return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
+}
 /* LES ROCHERS : le dessin de l'ancienne forêt, trois tailles, avec une
    coiffe de mousse qui épouse la crête et retombe de quelques pixels. */
 const F_PIE={pierre:'#7b8288',clair:'#8b939a',haut:'#a2a9b0',ombre:'#5f666c',eclat:'#b7bec4'};
 const F_MOU={fonce:'#3a6a30',moyen:'#4f7a3a',clair:'#669a4e',vif:'#7cb45e'};
 const F_TAILLES_PIERRE=[{h:22,l:11},{h:26,l:13},{h:30,l:15}];
+function graverRocherFo(v){
+  const S=F_TAILLES_PIERRE[Math.min(2,v||0)];
+  const HT=S.h, L=S.l, LW=L*2+10, LH=HT+8;
+  const c=document.createElement('canvas');c.width=LW;c.height=LH;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
+    g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const cx=LW/2, sol=LH-4, r=L*0.62, G=v*31+11;
+  g.fillStyle='rgba(24,34,20,.24)';
+  g.beginPath();g.ellipse(cx+1,sol,L*0.95,3,0,0,7);g.fill();
+  const haut=F_lobes([[cx-L*0.42,sol-r*0.72,r],[cx+L*0.46,sol-r*0.64,r*0.92],
+    [cx-L*0.06,sol-HT*0.58,r*1.04]],LW);
+  for(let x=0;x<LW;x++){
+    const y=haut[x];if(y===null)continue;
+    const h=sol-y;if(h<=0)continue;
+    R(x,y,1,h,F_PIE.pierre);
+    R(x,y,1,Math.max(2,Math.round(h*0.36)),F_PIE.clair);
+    if(x<LW*0.5)R(x,y,1,2,F_PIE.haut);
+    R(x,sol-3,1,3,F_PIE.ombre);}
+  const xx=Math.round(cx-L*0.2);                    /* la cassure */
+  for(let i=0;i<Math.round(HT*0.34);i++)R(xx+Math.round(i*0.5),sol-6-i,2,1,F_PIE.eclat);
+  R(cx-L-4,sol-5,5,3,F_PIE.pierre);R(cx-L-4,sol-5,5,1,F_PIE.clair);
+  /* LA COIFFE DE MOUSSE : elle suit la crête, son bord est grignoté */
+  for(let x=0;x<LW;x++){
+    const y=haut[x];if(y===null)continue;
+    if(F_hs(x*0.7+G)<0.18)continue;
+    const ep=2+Math.round(F_hs(x*0.5+G)*3);
+    R(x,y,1,ep,F_MOU.moyen);
+    R(x,y,1,1,F_MOU.clair);
+    if(F_hs(x*1.3+G)<0.3)R(x,y-1,1,1,F_MOU.vif);}   /* les brins qui dépassent */
+  return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
+}
 /* LES BUISSONS À BAIES : les trois variétés de l'ancienne forêt,
    quatre lobes fusionnés, avec leur état cueilli. */
 const F_VAR_BUIS=[
@@ -5017,6 +6820,39 @@ const F_VAR_BUIS=[
   baie:['#b8344a','#d4506a'],nb:6,h:30,l:11},
  {id:'myrtille',  V:['#2a5c30','#36703c','#427f46','#4e9152','#5ea45f'],
   baie:['#3a4a8a','#6478bc'],nb:7,h:20,l:15}];
+function graverBuissonFo(sorte,v){
+  const B=F_VAR_BUIS[Math.min(2,sorte)];
+  const gr=v&1, avecBaies=!(v&2);
+  const k=gr?1:0.8;
+  const HT=Math.round(B.h*k), L=Math.round(B.l*k), LW=L*2+8, LH=HT+8;
+  const c=document.createElement('canvas');c.width=LW;c.height=LH;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
+    g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const cx=LW/2, sol=LH-4, r=L*0.52;
+  g.fillStyle='rgba(24,34,20,.24)';
+  g.beginPath();g.ellipse(cx+1,sol,L*0.9,3,0,0,7);g.fill();
+  const lobes=[[cx-L*0.52,sol-r*0.9,r],[cx+L*0.5,sol-r*0.82,r*0.96],
+    [cx-L*0.16,sol-HT*0.56,r*1.06],[cx+L*0.3,sol-HT*0.72,r*0.8]];
+  for(let x=0;x<LW;x++){
+    let y=null;
+    lobes.forEach(([lx,ly,lr])=>{
+      const dx=x+0.5-lx;if(Math.abs(dx)>=lr)return;
+      const t=ly-Math.sqrt(lr*lr-dx*dx);if(y===null||t<y)y=t;});
+    if(y===null)continue;
+    y=Math.round(y);
+    const h=sol-y;if(h<=0)continue;
+    R(x,y,1,h,B.V[1]);                                  /* la masse */
+    R(x,y,1,Math.max(2,Math.round(h*0.34)),B.V[2]);     /* le haut, plus clair */
+    if(x<LW*0.56)R(x,y,1,2,B.V[3]);                     /* la lumière à gauche */
+    R(x,sol-3,1,3,B.V[0]);}                             /* l'ombre au pied */
+  if(avecBaies)for(let i=0;i<B.nb;i++){
+    const [lx,ly,lr]=lobes[i%lobes.length];
+    const bx=Math.round(lx+(F_hs(i*5.3+B.nb)-0.5)*lr*1.1);
+    const by=Math.round(ly+(F_hs(i*9.1+B.nb)-0.2)*lr*0.9);
+    R(bx,by,3,3,B.baie[0]);R(bx,by,2,1,B.baie[1]);}
+  return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
+}
 /* ================= L'ÉTAL DU BOIS : LE MENU =================
    Les cours du jour, une ressource vedette payée plus cher, et
    une ligne par chose à vendre. */
@@ -5026,40 +6862,57 @@ const F_NOMS={bois:'bûches',champignons:'champignons',baies:'baies',roseaux:'ro
 /* les prises du lac portent le nom que leur donne le moteur de pêche */
 try{Object.keys(ESP_PECHE||{}).forEach(k=>{if(ESP_PECHE[k].lac)F_NOMS[k]=ESP_PECHE[k].nom;});}catch(x){}
 let ETAL={cours:null,vedette:null};
-const CSS_ETAL=`
-#et{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#f2e7d2;font-family:Georgia,serif}
-#et .et-h{flex:none;background:linear-gradient(180deg,#8a3a22,#5f2414);border-bottom:3px solid #c9a24a;
-  padding:calc(env(safe-area-inset-top,0px) + 12px) 12px 12px}
-#et .et-h b{font:900 17px Georgia,serif;color:#e8c46a}
-#et .et-h b i{display:block;font:italic 10.5px Georgia,serif;color:#e0c0a8;font-weight:400}
-#et .et-ved{flex:none;background:#e4d6bc;border-bottom:1px solid #c9b48a;padding:9px 12px;
-  font:italic 12.5px Georgia,serif;color:#5f4d34}
-#et .et-ved b{font-style:normal;font-weight:700;color:#8a3a22}
-#et .et-page{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:11px}
-#et .et-t{font:900 9px Arial,sans-serif;letter-spacing:1.8px;color:#8a7454;margin:2px 2px 8px}
-#et .et-l{background:#fbf6e8;border:1px solid #d8c9a6;border-radius:11px;padding:10px 11px;margin-bottom:8px;
-  display:flex;align-items:center;gap:10px}
-#et .et-l.ved{border-color:#c9a24a;background:#fdf3dc}
-#et .et-l .t{flex:1;min-width:0}
-#et .et-l .t b{display:block;font:700 13.5px Georgia,serif;color:#2f2820;text-transform:capitalize}
-#et .et-l .t small{display:block;font:italic 11.5px Georgia,serif;color:#5f4d34;margin-top:1px}
-#et .et-l button{flex:none;border:0;border-radius:9px;background:#8a3a22;color:#f6ecd8;padding:9px 12px;
-  font:700 9px Arial,sans-serif;letter-spacing:1.1px;text-align:center}
-#et .et-l button i{display:block;font:700 12px Georgia,serif;font-style:normal;margin-top:2px}
-#et .et-cours{background:#fbf6e8;border:1px solid #d8c9a6;border-radius:11px;padding:4px 11px}
-#et .et-c{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dotted #d8c9a6;
-  font:400 12.5px Georgia,serif;color:#5f4d34;text-transform:capitalize}
-#et .et-c:last-child{border:0}
-#et .et-c.ved{color:#8a3a22;font-weight:700}
-#et .et-c b{font:700 12.5px Georgia,serif;color:#2f2820}
-#et .et-vide{text-align:center;font:italic 13px Georgia,serif;color:#8a7454;padding:34px 20px;line-height:1.6}
-#et .et-pied{flex:none;background:#e4d6bc;border-top:1px solid #c9b48a;
-  padding:11px 12px calc(env(safe-area-inset-bottom,0px) + 13px);display:flex;gap:9px}
-#et .et-pied button{flex:1;border:0;border-radius:9px;padding:13px;font:700 10px Arial,sans-serif;
-  letter-spacing:1.3px;background:#ddd2b8;color:#6a5c42}
-#et .et-pied .p{background:#8a3a22;color:#f6ecd8}
-#et .et-pied .p:disabled{background:#ddd2b8;color:#9a8a6c}
-`;
+function etalRendre(){
+  if(!document.getElementById('cssEtal')){const st=document.createElement('style');
+    st.id='cssEtal';st.textContent=CSS_ETAL;document.head.appendChild(st);}
+  const C=ETAL.cours||{}, sac=e.sac||{};
+  const aVendre=Object.keys(C).filter(k=>(sac[k]||0)>0);
+  $('page2Fond').className='';$('page2').classList.add('on');
+  const lignes=aVendre.length?aVendre.map(k=>{
+    const n=sac[k]||0, p=C[k]||0, ved=k===ETAL.vedette;
+    return '<div class="et-l'+(ved?' ved':'')+'">'+
+      '<div class="t"><b>'+(F_NOMS[k]||k)+'</b><small>'+n+' dans le sac · '+p+' € pièce'+
+      (ved?' · LE COURS DU JOUR':'')+'</small></div>'+
+      '<button data-v="'+k+'">VENDRE<i>'+(p*n)+' €</i></button></div>';}).join('')
+    : '<div class="et-vide">Ton inventaire est vide.<br>Reviens avec de quoi vendre.</div>';
+  const tableau=Object.keys(C).sort((a,b)=>C[b]-C[a]).map(k=>
+    '<div class="et-c'+(k===ETAL.vedette?' ved':'')+'"><span>'+(F_NOMS[k]||k)+'</span><b>'+C[k]+' €</b></div>').join('');
+  $('page2Fond').innerHTML=
+   '<div id="et"><div class="et-h"><b>L’ÉTAL DU BOIS<i>On achète ta récolte</i></b></div>'+
+   '<div class="et-ved">Aujourd’hui, <b>'+(F_NOMS[ETAL.vedette]||'—')+'</b> à bon prix</div>'+
+   '<div class="et-page"><div class="et-t">CE QUE TU PEUX VENDRE</div>'+lignes+
+   '<div class="et-t" style="margin-top:14px">LES COURS DU JOUR</div>'+
+   '<div class="et-cours">'+tableau+'</div></div>'+
+   '<div class="et-pied"><button id="etSortir">SORTIR</button>'+
+   '<button id="etTout" class="p"'+(aVendre.length?'':' disabled')+'>TOUT VENDRE</button></div></div>';
+  $('page2Fond').querySelectorAll('[data-v]').forEach(b=>b.onclick=async()=>{
+    b.disabled=true;
+    const r=await appelRPC('etal_vendre',{p_joueur:e.id,p_type:b.dataset.v,p_nb:null});
+    if(r&&r.erreur){motOuverture(r.erreur);b.disabled=false;return;}
+    if(r&&r.gain){motOuverture('+'+r.gain+' €');vibrer(10);}
+    /* l'argent arrive avec la réponse : on l'affiche tout de suite */
+    if(r&&typeof r.euros==='number'){e.euros=r.euros;try{sauver();}catch(x){}majHaut();}
+    if(r&&r.sac)e.sac=r.sac;
+    /* chargerSac n'existe que dans forge.html : ici l'appel levait une
+       ReferenceError avalée par le catch, et le sac n'était jamais relu. */
+    try{await lireSacServeur();}catch(x){}
+    etalRendre();});
+  $('etSortir').onclick=()=>{$('page2').classList.remove('on');};
+  $('etTout').onclick=async()=>{
+    let total=0;
+    for(const k of aVendre){
+      const r=await appelRPC('etal_vendre',{p_joueur:e.id,p_type:k,p_nb:null});
+      if(r&&r.gain)total+=r.gain;
+      if(r&&typeof r.euros==='number'){e.euros=r.euros;majHaut();}
+      if(r&&r.sac)e.sac=r.sac;}
+    if(total)motOuverture('+'+total.toFixed(2).replace('.',',')+' €');
+    try{sauver();}catch(x){}
+    vibrer([10,24,10]);
+    /* chargerSac n'existe que dans forge.html : ici l'appel levait une
+       ReferenceError avalée par le catch, et le sac n'était jamais relu. */
+    try{await lireSacServeur();}catch(x){}
+    etalRendre();};
+}
 /* ================= LA PÊCHE AU LAC =================
    Cinquante prises possibles. Le serveur tire l'espèce, le jeu la dessine. */
 const LAC_P={gardon:{lg:30,ht:6,dos:'#4a5a46',mil:'#8a9a92',ventre:'#c8d4ce',clair:'#e8eee8',nag:'#b4543a'},
@@ -5125,39 +6978,6 @@ function echapper(t){return String(t==null?'':t)
    déjà signé » comme une création, avec vibration de fête et message de
    récompense à la clé, et il n'a jamais vérifié que l'écriture de la tenue
    avait abouti — elle échouait en 403, en silence, depuis toujours.) */
-const CSS_CHENE=`
-#chn{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#20160c;
-  font-family:Georgia,serif}
-#chn .hd{flex:none;text-align:center;padding:calc(env(safe-area-inset-top,0px) + 18px) 16px 13px;
-  background:linear-gradient(180deg,#3a2a14,#20160c);border-bottom:2px solid #8a6a2a}
-#chn .hd small{font:700 8px Arial;letter-spacing:3px;color:#c9a24a}
-#chn .hd b{display:block;font:900 25px Georgia;color:#f2dfa8;margin-top:3px}
-#chn .hd i{display:block;font:italic 11px Georgia;color:#a8906a;margin-top:2px}
-#chn .cp{flex:1;overflow-y:auto;padding:14px}
-#chn button#chnGraver{width:100%;border:0;border-radius:11px;padding:16px;
-  background:linear-gradient(180deg,#d8b45a,#a8791f);color:#2b2010;
-  font:900 12px Arial;letter-spacing:2.4px;box-shadow:0 3px 0 #6a4a10}
-#chn .mot{text-align:center;font:italic 11px Georgia;color:#a8906a;margin-top:9px}
-#chn .fait{text-align:center;background:rgba(201,162,74,.14);border:1px solid #8a6a2a;
-  border-radius:11px;padding:14px;font:700 13px Georgia;color:#f2dfa8}
-#chn .fait em{display:block;font:italic 11px Georgia;color:#b8a070;font-weight:400;margin-top:4px}
-#chn .clos{text-align:center;background:rgba(255,255,255,.05);border:1px solid #4a3a22;
-  border-radius:11px;padding:14px;font:700 13px Georgia;color:#c8b48a}
-#chn .clos em{display:block;font:italic 11px Georgia;color:#8a7454;font-weight:400;margin-top:4px}
-#chn .tt{font:700 8px Arial;letter-spacing:2.4px;color:#8a7454;margin:16px 0 8px;text-align:center}
-#chn .lst{background:#2a1e10;border:1px solid #4a3a22;border-radius:11px;padding:4px 12px}
-#chn .n{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dotted #4a3a22;
-  font:400 14px Georgia;color:#e8dcc0}
-#chn .n:last-child{border:0}
-#chn .n .r{width:22px;text-align:right;font:700 11px Georgia;color:#8a7454}
-#chn .n.moi{color:#f2dfa8;font-weight:700}
-#chn .vide{text-align:center;font:italic 12px Georgia;color:#8a7454;padding:18px 0}
-#chn .att{padding:40px;text-align:center;font:italic 13px Georgia;color:#a8906a}
-#chn .bas{flex:none;padding:12px 14px calc(env(safe-area-inset-bottom,0px) + 14px);
-  border-top:1px solid #4a3a22}
-#chn .bas button{width:100%;border:1px solid #6a5430;background:transparent;color:#d8c49a;
-  border-radius:11px;padding:14px;font:700 10px Arial;letter-spacing:2px}
-`;
 /* LE GRAND CHÊNE DE L'OUVERTURE : un tronc épais, un feuillage large,
    et une plaque de bois clouée où s'inscrivent les noms. */
 /* L'ENTRÉE DE LA MINE : un cadre de poutres dans l'éboulis, le trou noir,
@@ -5167,8 +6987,88 @@ const CSS_CHENE=`
    revient un jour, elle reviendra entiere. */
 /* LA MAISON DE PIERRE : moellons gris, chaînage d'angle, toit de tuiles
    et cheminée qui fume. C'est l'atelier du bois. */
+function graverMaisonFo(){
+  const LW=104, LH=98;
+  const c=document.createElement('canvas');c.width=LW;c.height=LH;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
+    g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const cx=LW/2, sol=LH-6, MUR=48, LARG=74;
+  g.fillStyle='rgba(24,34,20,.26)';
+  g.beginPath();g.ellipse(cx,sol+1,46,8,0,0,7);g.fill();
+  /* les moellons */
+  for(let j=0;j<MUR;j++)for(let i=0;i<LARG;i++){
+    const n=F_hs(i*0.4+j*0.7);
+    R(cx-LARG/2+i,sol-MUR+j,1,1,n<.34?'#6a6760':(n<.68?'#7a7770':'#5f5c56'));}
+  for(let j=0;j<MUR;j+=6)R(cx-LARG/2,sol-MUR+j,LARG,1,'#4f4c46');
+  /* le chaînage d'angle, plus haut et plus large */
+  for(let j=0;j<MUR;j+=8){
+    R(cx-LARG/2-3,sol-MUR+j,7,8,'#8e9a92');R(cx-LARG/2-3,sol-MUR+j,7,1,'#a8b4ac');
+    R(cx+LARG/2-4,sol-MUR+j,7,8,'#8e9a92');R(cx+LARG/2-4,sol-MUR+j,7,1,'#a8b4ac');}
+  /* le toit de tuiles, débordant */
+  for(let i=0;i<20;i++)R(cx-46+i*4.8,sol-MUR-4,7,6,i%2?'#8a3a22':'#a8562a');
+  R(cx-48,sol-MUR,96,4,'#5f4426');
+  R(cx-48,sol-MUR-5,96,2,'#c08a52');
+  /* la porte, à double battant */
+  R(cx-13,sol-32,27,32,'#2a2218');
+  R(cx-1,sol-32,2,32,'#3f3326');
+  R(cx-15,sol-35,31,4,'#8a6238');R(cx-15,sol-36,31,1.4,'#a5764a');
+  R(cx-9,sol-18,2.4,2.4,'#c9a24a');R(cx+6,sol-18,2.4,2.4,'#c9a24a');
+  /* le seuil de pierre */
+  R(cx-16,sol-2,33,3,'#8e9a92');R(cx-16,sol-2,33,1,'#a8b4ac');
+  /* deux fenêtres */
+  [[-26],[18]].forEach(([dx])=>{
+    R(cx+dx,sol-38,15,15,'#3a4f5a');R(cx+dx,sol-38,15,2.4,'#5a7a88');
+    R(cx+dx+7,sol-38,1.4,15,'#5f4426');R(cx+dx,sol-31,15,1.4,'#5f4426');
+    R(cx+dx-2,sol-40,19,3,'#8a6238');});
+  /* la cheminée */
+  R(cx-30,sol-72,12,24,'#6a6760');R(cx-31,sol-74,14,3,'#8e9a92');
+  for(let j=0;j<24;j+=6)R(cx-30,sol-72+j,12,1,'#4f4c46');
+  return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
+}
 /* L'ÉTAL DU BOIS : bâche haute à rayures, enseigne, deux lanternes et
    le tableau des cours. Il se repère de loin dans le brun du sous-bois. */
+function graverEtalFo(){
+  const LW=112, LH=94;
+  const c=document.createElement('canvas');c.width=LW;c.height=LH;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;
+    g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const cx=LW/2, sol=LH-6;
+  g.fillStyle='rgba(24,34,20,.24)';
+  g.beginPath();g.ellipse(cx,sol+1,52,8,0,0,7);g.fill();
+  /* les deux grandes perches */
+  [[-44],[40]].forEach(([dx])=>{
+    R(cx+dx,sol-52,4,52,'#6b4a2a');R(cx+dx,sol-52,1.4,52,'#96693c');});
+  /* la bâche, rayée rouge et blanc, bombée */
+  for(let i=0;i<88;i++){const x=cx-44+i, h=Math.round(Math.sin(i/88*3.14)*11);
+    R(x,sol-56-h,1,9,i%10<5?'#a8342a':'#f2e7d2');}
+  R(cx-44,sol-48,88,3,'#5b3f26');
+  for(let k=0;k<11;k++)R(cx-44+k*8,sol-45,6,4,k%2?'#a8342a':'#f2e7d2');   /* les festons */
+  /* l'enseigne */
+  R(cx-26,sol-38,52,10,'#5b3f26');R(cx-25,sol-37,50,8,'#c9a878');
+  g.font='700 5.5px Georgia,serif';g.textAlign='center';g.fillStyle='#4a3420';
+  g.fillText('L’ÉTAL DU BOIS',cx,sol-31);g.textAlign='left';
+  /* les deux lanternes, avec leur halo */
+  [[-46],[42]].forEach(([dx])=>{
+    R(cx+dx-2,sol-44,9,10,'#3a3f46');R(cx+dx-1,sol-43,7,8,'#ffd96a');
+    R(cx+dx-1,sol-43,7,2,'#fff2b8');
+    for(let a=0;a<6.283;a+=0.3)
+      R(cx+dx+2+Math.cos(a)*11,sol-39+Math.sin(a)*11,3,2,'rgba(255,214,110,.12)');});
+  /* l'étal et ses cageots */
+  R(cx-40,sol-16,56,6,'#7d5833');R(cx-40,sol-16,56,1.6,'#96693c');
+  R(cx-38,sol-10,4,10,'#6b4a2a');R(cx+10,sol-10,4,10,'#6b4a2a');
+  for(let k=0;k<5;k++){const x=cx-38+k*11;
+    R(x,sol-24,10,8,'#8a6238');R(x,sol-24,10,2,'#a5764a');R(x,sol-19,10,1.4,'#6b4a2a');
+    for(let i=0;i<3;i++)R(x+1+i*3,sol-26,2.4,2.4,
+      ['#c0392b','#e8b43a','#2e2438','#4f7a3a','#3a4a8a'][(k+i)%5]);}
+  /* le tableau des cours */
+  R(cx+20,sol-28,22,20,'#5b3f26');R(cx+21,sol-27,20,18,'#e4d7b6');
+  for(let k=0;k<4;k++){
+    R(cx+23,sol-25+k*4,4,2.4,['#c0392b','#8a5a2a','#e8b43a','#2e2438'][k]);
+    R(cx+29,sol-24+k*4,8,1.4,'#8a7454');}
+  return {toile:c,W:LW,H:LH,sol:sol,nuit:null};
+}
 /* LE QUAI DE BOIS : la station de métro de la forêt */
 /* LE DÉCOR DE LA FORÊT : les roseaux du bord de l'eau et la station */
 /* ================= LES RIDES QUI DÉFILENT =================
@@ -5187,6 +7087,51 @@ let F_RIDES=null;
    F_rive coûte trois sinus ; on la consulte à chaque ride et à chaque
    image. Un tableau de 1 500 nombres règle la question. */
 let F_RIVE_T=null;
+function tableDeLaRive(){
+  if(F_RIVE_T)return F_RIVE_T;
+  const t=new Float32Array(MONDE_L);
+  for(let x=0;x<MONDE_L;x++)t[x]=F_rive(x);
+  F_RIVE_T=t;return t;
+}
+function tableDesRides(){
+  if(F_RIDES)return F_RIDES;
+  const n=Math.round(MONDE_L*0.42), t=[];
+  for(let k=0;k<n;k++){
+    const base=F_hs(k*3.1)*MONDE_L;
+    const r=F_rive(base);
+    const h=F_hs(k);
+    t.push({base:base,
+            y:r+8+F_hs(k*7.3)*(MONDE_H-r-16),
+            v:5+h*6,
+            l:6+Math.round(h*5)});
+  }
+  t.sort((a,b)=>a.y-b.y);
+  F_RIDES=t;return t;
+}
+function dessinerLesRides(g,camX,camY,VW2,VH2){
+  if(CARTE!=='foret')return;
+  const t=Date.now()/1000;
+  const haut=F_rive(camX+VW2/2)-20;
+  if(camY+VH2<haut)return;                     /* le lac n'est pas à l'écran */
+  g.fillStyle='rgba(176,216,232,.2)';
+  const T=tableDesRides(), RIV=tableDeLaRive(), bas=camY+VH2+6, cime=camY-6;
+  for(let k=0;k<T.length;k++){
+    const o=T[k];
+    if(o.y<cime)continue;
+    if(o.y>bas)break;                          /* rangées : le reste est plus bas */
+    const x=(o.base+t*o.v)%MONDE_L;
+    /* UNE RIDE NE SORT PAS DE L'EAU. Sa hauteur est fixée à son point de
+       départ, mais son abscisse défile sur toute la largeur du monde — et
+       la rive ondule de 663 à 739. Soixante-quatre rides sur six cent
+       trente finissaient donc par glisser sur le tapis de feuilles, jusqu'à
+       cinquante-quatre pixels au-dessus de l'eau. On les efface le temps
+       qu'elles repassent sous la rive. */
+    if(o.y<RIV[x|0]+4)continue;
+    const ex=x-camX;
+    if(ex<-14||ex>VW2+14)continue;
+    g.fillRect(Math.round(ex),Math.round(o.y-camY),o.l,1);
+  }
+}
 /* QUELLE SECOUSSE POUR QUEL OBJET, quand on le frappe. Les trois familles
    reprennent exactement les mouvements des objets du village. */
 const FAM_COUP={
@@ -5220,12 +7165,102 @@ const FA={                                    /* la palette des bêtes */
    sentier du port, jamais collé aux bords de la carte */
 const bonCoinFaune=(x,y)=>x>90&&x<MONDE_L-90&&y>F_BAR+70&&y<F_rive(x)-34
   &&!(typeof dansLeSentier==='function'&&dansLeSentier(x,y));
+function coinAuHasard(loinDe){
+  for(let k=0;k<60;k++){
+    const x=90+Math.random()*(MONDE_L-180);
+    const y=F_BAR+70+Math.random()*(MONDE_H-F_BAR-200);
+    if(!bonCoinFaune(x,y))continue;
+    if(loinDe&&Math.hypot(x-joueur.x,y-joueur.y)<loinDe)continue;
+    return [x,y];
+  }
+  return null;
+}
+function semerLaFaune(){
+  FAUNE.length=0;SAUTS.length=0;
+  for(let i=0;i<3;i++){
+    const c=coinAuHasard(0);if(!c)continue;
+    FAUNE.push({g:'chevreuil',x:c[0],y:c[1],dir:Math.random()<.5?-1:1,
+      etat:'broute',t:1+Math.random()*4,vx:0,vy:0,pas:0});
+  }
+  for(let i=0;i<11;i++){
+    const c=coinAuHasard(0);if(!c)continue;
+    FAUNE.push({g:'oiseau',x:c[0],y:c[1],dir:Math.random()<.5?-1:1,
+      etat:'sol',t:0.4+Math.random()*1.2,vx:0,vy:0,h:0,a:1,pas:0});
+  }
+}
 /* LE SABOT QUI MARQUE. Une trace tous les `ecart` pixels parcourus : on
    compte la distance, pas le temps, sinon une bête lente en sèmerait
    autant qu'une bête au galop. */
 /* LE CHEVREUIL : broute, guette, détale. */
 /* L'OISEAU : sautille, puis s'envole et revient se poser ailleurs. */
+function majOiseau(b,dt){
+  b.t-=dt;
+  if(b.etat==='sol'){
+    if(Math.hypot(joueur.x-b.x,joueur.y-b.y)<60){
+      b.etat='vol';b.t=1.6;
+      const a=Math.atan2(b.y-joueur.y,b.x-joueur.x)+(Math.random()-.5)*0.9;
+      b.vx=Math.cos(a)*86;b.vy=Math.sin(a)*48;b.dir=b.vx<0?-1:1;
+    }else if(b.t<=0){                           /* un petit saut sur place */
+      b.t=0.5+Math.random()*1.3;
+      b.dir=Math.random()<.5?-1:1;
+      const nx=b.x+b.dir*(3+Math.random()*7), ny=b.y+(Math.random()-.5)*6;
+      if(bonCoinFaune(nx,ny)){b.x=nx;b.y=ny;}
+      b.pas=1;                                  /* le petit bond */
+    }
+    if(b.pas>0)b.pas=Math.max(0,b.pas-dt*4);
+  }else if(b.etat==='vol'){
+    b.x+=b.vx*dt;b.y+=b.vy*dt;b.h+=dt*52;       /* il prend de la hauteur */
+    b.a=Math.max(0,Math.min(1,b.t/0.8));
+    if(b.t<=0){b.etat='absent';b.t=5+Math.random()*9;b.a=0;}
+  }else{                                        /* absent */
+    if(b.t<=0){
+      const c=coinAuHasard(150);
+      if(c){b.x=c[0];b.y=c[1];b.etat='sol';b.h=0;b.a=1;b.t=0.4+Math.random()*1.2;}
+      else b.t=2;
+    }
+  }
+}
 let prochainSaut=3;
+function majFaune(dt){
+  if(CARTE!=='foret')return;
+  for(let i=0;i<FAUNE.length;i++){
+    const b=FAUNE[i];
+    if(b.g==='chevreuil')majChevreuil(b,dt);else majOiseau(b,dt);
+  }
+  /* LES POISSONS DU LAC : un saut de temps en temps, loin de la rive */
+  /* LES POISSONS SAUTAIENT POUR PERSONNE. Le point était tiré sur toute la
+     largeur du lac — 1 260 px — alors qu'on n'en voit que 185 à la fois :
+     six sauts sur sept tombaient hors de l'écran. Un saut toutes les six
+     secondes, oui, mais un saut VISIBLE toutes les quarante : on pouvait
+     pêcher dix minutes sans jamais en voir un.
+     On tire maintenant dans l'eau qu'on a sous les yeux. */
+  prochainSaut-=dt;
+  if(prochainSaut<=0&&SAUTS.length<2){
+    prochainSaut=5+Math.random()*6;
+    let cx=joueur.x-VW/2, cy=joueur.y-VH/2;
+    try{if(CAM&&CAM.x!==null){cx=CAM.x;cy=CAM.y;}}catch(err){}
+    /* la bande d'eau réellement à l'écran, avec une marge pour que le
+       poisson n'apparaisse pas toujours en plein milieu */
+    const x=cx-24+Math.random()*(VW+48);
+    if(x>60&&x<MONDE_L-60){
+      const r=F_rive(x);
+      const haut=Math.max(r+30, cy+8);            /* jamais sur la rive ni au-dessus du haut de l'écran */
+      /* ni tout au fond de l'écran : la barre d'action occupe les derniers
+         pixels, un poisson qui saute derrière elle ne se voit pas. Mais la
+         marge reste courte : vu de la berge, l'eau visible n'est qu'une
+         bande étroite, et une marge large la supprimait tout entière. */
+      const bas=Math.min(MONDE_H-50, cy+VH-26);
+      if(bas>haut+8){
+        const y=haut+Math.random()*(bas-haut);
+        SAUTS.push({x,y,t:0,dur:0.85,dir:Math.random()<.5?-1:1});
+      }else prochainSaut=1.5;                     /* pas d'eau en vue : on repasse vite */
+    }
+  }
+  for(let i=SAUTS.length-1;i>=0;i--){
+    SAUTS[i].t+=dt;
+    if(SAUTS[i].t>SAUTS[i].dur+0.7)SAUTS.splice(i,1);
+  }
+}
 /* ================= LES POISSONS DU PORT =================
    Le bassin etait une eau morte : elle scintillait, elle ridait, et rien
    n'y vivait. On reprend le saut du lac tel quel — meme parabole, memes
@@ -5257,7 +7292,46 @@ let prochainSautPort=2;
    trop peu pour que la forêt se couvre de boue. */
 const TRACES=[];
 const TRACE_VIE=30000, TRACE_MAX=110;
+function poserUneTrace(x,y,ux,uy,bete){
+  if(CARTE!=='foret')return;
+  TRACES.push({x,y,ux,uy,t:Date.now(),b:!!bete});
+  if(TRACES.length>TRACE_MAX)TRACES.splice(0,TRACES.length-TRACE_MAX);
+}
 let traceCote=1;
+function dessinerLesTraces(g,camX,camY){
+  if(CARTE!=='foret'||!TRACES.length)return;
+  const n=Date.now();
+  for(let i=TRACES.length-1;i>=0;i--){
+    const T=TRACES[i];
+    const part=(n-T.t)/TRACE_VIE;
+    if(part>=1){TRACES.splice(i,1);continue;}
+    const x=Math.round(T.x-camX), y=Math.round(T.y-camY);
+    if(x<-12||y<-12||x>VW+12||y>VH+12)continue;
+    /* elle s'efface doucement, et pas d'un coup à la fin */
+    const a=(1-part)*(1-part);
+    const vert=Math.abs(T.uy)>Math.abs(T.ux);     /* on marche vers le haut ou le bas */
+    if(T.b){
+      /* LE SABOT DU CHEVREUIL : deux onglons, un creux au milieu */
+      g.globalAlpha=a*0.6;g.fillStyle='#17110a';
+      if(vert){g.fillRect(x-2,y-1,2,3);g.fillRect(x+1,y-1,2,3);}
+      else{g.fillRect(x-1,y-2,3,2);g.fillRect(x-1,y+1,3,2);}
+    }else{
+      /* LE PAS : la terre nue, là où les feuilles ont été poussées.
+         Le tapis de feuilles est très bruité — des taches claires et
+         sombres de la taille d'un pas. Une marque discrète s'y perd
+         entièrement. Celle-ci est donc plus sombre que tout ce que la
+         litière contient, et bordée d'un liseré clair : c'est le contraste
+         des deux qui la détache, pas sa seule noirceur. */
+      const w=vert?3:4, h=vert?4:3;
+      const X=x-(w>>1), Y=y-(h>>1);
+      g.globalAlpha=a*0.62;g.fillStyle='#17110a';
+      g.fillRect(X,Y,w,h);
+      g.globalAlpha=a*0.34;g.fillStyle='#8a7449';   /* les feuilles repoussées sur le bord */
+      g.fillRect(X,Y-1,w,1);g.fillRect(X-1,Y,1,h);
+    }
+  }
+  g.globalAlpha=1;
+}
 /* ================= LES LUCIOLES =================
    Une forêt la nuit n'est pas une pièce noire : elle bouge. Les lucioles
    sont le moyen le plus économique de le dire — quelques points qui
@@ -5266,13 +7340,137 @@ let traceCote=1;
 
    Elles ne vivent qu'autour du joueur, et seulement la nuit. */
 const LUCIOLES=[];
+function majLucioles(dt){
+  if(CARTE!=='foret'||!lampesAllumees()){LUCIOLES.length=0;return;}
+  let cx=joueur.x-VW/2, cy=joueur.y-VH/2;
+  try{if(CAM&&CAM.x!==null){cx=CAM.x;cy=CAM.y;}}catch(e){}
+  /* on en garde une trentaine dans la vue, et on remplace celles qui sortent */
+  while(LUCIOLES.length<30){
+    const x=cx-30+Math.random()*(VW+60), y=cy-30+Math.random()*(VH+60);
+    if(y>F_rive(x)-10){continue;}                 /* pas au-dessus de l'eau */
+    LUCIOLES.push({x,y,
+      a:Math.random()*6.283,                      /* le cap de la dérive */
+      v:4+Math.random()*7,
+      ph:Math.random()*6.283,                     /* la phase du clignotement */
+      vp:0.5+Math.random()*1.1});
+  }
+  for(let i=LUCIOLES.length-1;i>=0;i--){
+    const L=LUCIOLES[i];
+    L.a+=(Math.random()-0.5)*dt*3.2;              /* elle flâne, elle ne file pas droit */
+    L.x+=Math.cos(L.a)*L.v*dt;
+    L.y+=Math.sin(L.a)*L.v*dt*0.6;
+    L.ph+=dt*L.vp;
+    if(L.x<cx-60||L.x>cx+VW+60||L.y<cy-60||L.y>cy+VH+60||L.y>F_rive(L.x)-6)
+      LUCIOLES.splice(i,1);
+  }
+}
+function dessinerLesLucioles(g,camX,camY){
+  if(CARTE!=='foret'||!LUCIOLES.length)return;
+  for(let i=0;i<LUCIOLES.length;i++){
+    const L=LUCIOLES[i];
+    /* le clignotement : longtemps éteinte, brève et franche quand elle
+       s'allume. Une sinusoïde donnerait un clignotant de voiture. */
+    const b2=Math.pow(Math.max(0,Math.sin(L.ph)),3.2);
+    if(b2<0.04)continue;
+    const x=Math.round(L.x-camX), y=Math.round(L.y-camY);
+    if(x<-4||y<-4||x>VW+4||y>VH+4)continue;
+    g.globalAlpha=b2*0.9;g.fillStyle='#d8ff9a';g.fillRect(x,y,1,1);
+    g.globalAlpha=b2*0.28;g.fillStyle='#9ad86a';
+    g.fillRect(x-1,y,1,1);g.fillRect(x+1,y,1,1);g.fillRect(x,y-1,1,1);g.fillRect(x,y+1,1,1);
+    try{lueurNuit(g,L.x-camX,L.y-camY,7*b2,'rgba(170,230,120,§)');}catch(e){}
+  }
+  g.globalAlpha=1;
+}
 /* LA LANTERNE DU CARREFOUR. Le poteau est peint dans le sol ; sa lanterne,
    elle, doit passer par-dessus le décor et éclairer. C'est le seul point
    fixe du bois la nuit : si tu la vois, tu sais où tu es. */
 const F_CARREFOUR=[566,432];
+function dessinerLaLanterne(g,camX,camY){
+  if(CARTE!=='foret')return;
+  const x=Math.round(F_CARREFOUR[0]-camX), y=Math.round(F_CARREFOUR[1]-camY);
+  if(x<-30||y<-60||x>VW+30||y>VH+40)return;
+  const on=lampesAllumees();
+  const tete=y-40;
+  g.fillStyle='#2a1d0f';g.fillRect(x-4,tete,8,2);           /* le chapeau */
+  g.fillStyle='#4a3a1d';g.fillRect(x-3,tete+2,6,6);         /* la cage */
+  g.fillStyle=on?'#ffd98a':'#6a6252';g.fillRect(x-2,tete+3,4,4);
+  if(on){
+    const vac=0.86+Math.sin(Date.now()/420)*0.14;           /* la flamme vacille */
+    g.globalAlpha=vac;g.fillStyle='#fff0bc';g.fillRect(x-1,tete+4,2,2);g.globalAlpha=1;
+    lueurNuit(g,x,tete+5,52,'rgba(255,206,122,§)');
+  }
+  g.fillStyle='#2a1d0f';g.fillRect(x-4,tete+8,8,1);
+}
 /* ---- les dessins ---- */
+function dessinerOiseau(g,b,camX,camY){
+  if(b.etat==='absent'||b.a<=0)return;
+  const x=Math.round(b.x-camX), y=Math.round(b.y-camY-b.h);
+  const f=b.dir;
+  const R=(a,c,w,h,col)=>{g.fillStyle=col;
+    const ax=f>0?a:(-a-w);
+    g.fillRect(x+Math.round(ax),y+Math.round(c),w,h);};
+  g.globalAlpha=b.a;
+  if(b.etat==='sol'){
+    const h=Math.round(b.pas*2);                 /* le petit bond : tout monte */
+    g.globalAlpha=b.a*0.28;g.fillStyle='#1c2416';
+    g.fillRect(x-3,y-1,7,1);g.globalAlpha=b.a;
+    R(-3,-6-h,6,4,FA.oi);                        /* le corps */
+    R(-2,-4-h,4,2,FA.oiVentre);                  /* la poitrine claire */
+    R(2,-9-h,4,4,FA.oiClair);                    /* la tête */
+    R(5,-8-h,2,1,FA.bec);                        /* le bec */
+    R(4,-8-h,1,1,FA.oeil);
+    R(-6,-6-h,3,2,FA.oi);                        /* la queue */
+    R(-6,-5-h,3,1,FA.oiClair);
+    R(-1,-2-h,1,2+h,FA.bec);R(1,-2-h,1,2+h,FA.bec);   /* les pattes s'allongent */
+  }else{
+    const haut=Math.sin(Date.now()/55)>0;
+    R(-3,-4,6,3,FA.oi);                          /* le corps en vol */
+    R(-2,-3,4,1,FA.oiVentre);
+    R(2,-6,4,3,FA.oiClair);                      /* la tête tendue */
+    R(5,-5,2,1,FA.bec);
+    R(4,-5,1,1,FA.oeil);
+    R(-6,-4,3,2,FA.oi);                          /* la queue déployée */
+    if(haut){R(-2,-7,3,2,FA.oi);R(0,-9,3,2,FA.oiClair);}    /* les ailes en haut */
+    else{R(-2,-1,3,2,FA.oi);R(0,1,3,2,FA.oiClair);}         /* les ailes en bas */
+  }
+  g.globalAlpha=1;
+}
 /* LES POISSONS QUI SAUTENT : une parabole, un éclat de ventre, et deux
    anneaux dans l'eau — celui du départ et celui de la retombée. */
+function dessinerLesSauts(g,camX,camY){
+  for(let i=0;i<SAUTS.length;i++){
+    const s=SAUTS[i], x=Math.round(s.x-camX), y=Math.round(s.y-camY);
+    const k=s.t/s.dur;
+    if(x<-30||x>VW+30||y<-40||y>VH+40)continue;
+    /* l'anneau du départ, puis celui de la retombée */
+    const anneau=(t0,xx)=>{const q=(s.t-t0)/0.6;if(q<0||q>1)return;
+      g.strokeStyle='rgba(224,244,252,'+(0.8*(1-q)).toFixed(3)+')';g.lineWidth=1.1;
+      g.beginPath();g.ellipse(xx,y,2+q*13,1+q*4,0,0,7);g.stroke();};
+    anneau(0,x);
+    anneau(s.dur,x+Math.round(s.dir*22));
+    if(k<0||k>1)continue;
+    const px=x+Math.round(s.dir*22*k);
+    const py=y-Math.round((4*k*(1-k))*22);       /* la parabole */
+    const mont=k<0.5;
+    g.save();g.translate(px,py);
+    g.rotate(s.dir*(mont?-0.7:0.7));
+    g.fillStyle=FA.poDos;g.fillRect(-5,-3,10,2);  /* le dos sombre */
+    g.fillStyle=FA.po;g.fillRect(-5,-1,10,2);     /* le flanc */
+    g.fillStyle=FA.poClair;g.fillRect(-4,1,8,1);  /* le ventre qui accroche la lumière */
+    g.fillStyle=FA.poDos;                         /* la queue fourchue */
+    g.fillRect(-9,-4,3,2);g.fillRect(-9,1,3,2);g.fillRect(-7,-2,3,3);
+    g.fillRect(-1,-5,4,2);                        /* la dorsale */
+    g.fillStyle=FA.po;g.fillRect(1,2,3,1);        /* la ventrale */
+    g.fillStyle='#f0f6f8';g.fillRect(3,-2,2,2);   /* l'œil */
+    g.fillStyle='#10181c';g.fillRect(4,-2,1,1);
+    g.restore();
+    /* quelques gouttes */
+    if(k<0.35)for(let q=0;q<3;q++){
+      g.fillStyle='rgba(224,244,252,'+(0.6-k).toFixed(2)+')';
+      g.fillRect(px-3+q*3,py+4+q*2,1,1);
+    }
+  }
+}
 const REPOUSSE_FO={
   x_fo_amanite:150000, x_fo_cepe:150000, x_fo_girolle:150000,
   x_fo_mure:240000, x_fo_framboise:240000, x_fo_myrtille:240000,
@@ -5280,6 +7478,15 @@ const REPOUSSE_FO={
 };
 /* LA PETITE BARRE VERTE, la même qu'au village : fond sombre, remplissage
    clair, deux pixels de haut, juste au-dessus du pied de l'objet. */
+function jaugeDeRepousseFo(g,o,x,y){
+  const duree=REPOUSSE_FO[o.t];
+  if(!duree||!o.cueilli)return;
+  const part=(Date.now()-o.cueilli)/duree;
+  if(part<0||part>=1)return;
+  const X=Math.round(x-6), Y=Math.round(y-12);
+  g.fillStyle='rgba(20,28,18,.35)';g.fillRect(X,Y,12,2);
+  g.fillStyle='rgba(159,214,122,.85)';g.fillRect(X,Y,Math.round(12*part),2);
+}
 /* ce qui barre le passage dans la forêt */
 const BOIS_PONT={sombre:'#3d2a17',fonce:'#5b3f21',bas:'#6b4a28',moyen:'#7d5934',
 clair:'#96703f',haut:'#a5764a'};
@@ -5699,33 +7906,33 @@ const XCAL={};
 function graverX(t,v){
 const cle=t+(v||0);
 if(XCAL[cle])return XCAL[cle];
-if(t==='x_chantier'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_scierie'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_camp'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_herbo'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_carriere'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_grandArbre'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_champiRare'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_pin'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_quai'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_erable'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_chene'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_charme'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_olive'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_amanite'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_cepe'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_girolle'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_plume'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_argile'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_rocher'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_etal'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_ponton'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_maison'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_chene_grand'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_mure'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_framboise'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_myrtille'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_fo_aut'){XCAL[cle]=null;if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_chantier'){XCAL[cle]=graverLeChantier();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_scierie'){XCAL[cle]=graverScierie();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_camp'){XCAL[cle]=graverCampement();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_herbo'){XCAL[cle]=graverHerbo();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_carriere'){XCAL[cle]=graverCarriere();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_grandArbre'){XCAL[cle]=graverGrandArbre();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_champiRare'){XCAL[cle]=graverChampiRare();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_pin'){XCAL[cle]=graverConifere(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_quai'){XCAL[cle]=graverQuaiMetro();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_erable'){XCAL[cle]=graverErable(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_chene'){XCAL[cle]=graverCheneDore(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_charme'){XCAL[cle]=graverCharme(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_olive'){XCAL[cle]=graverDoubleOlive(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_amanite'){XCAL[cle]=graverChampiFo(0,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_cepe'){XCAL[cle]=graverChampiFo(1,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_girolle'){XCAL[cle]=graverChampiFo(2,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_plume'){XCAL[cle]=graverPlumeFo(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_argile'){XCAL[cle]=graverArgileFo(!v);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_rocher'){XCAL[cle]=graverRocherFo(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_etal'){XCAL[cle]=graverEtalFo();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_ponton'){XCAL[cle]=graverPontonFo();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_maison'){XCAL[cle]=graverMaisonFo();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_chene_grand'){XCAL[cle]=graverCheneFo();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_mure'){XCAL[cle]=graverBuissonFo(0,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_framboise'){XCAL[cle]=graverBuissonFo(1,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_myrtille'){XCAL[cle]=graverBuissonFo(2,v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_fo_aut'){XCAL[cle]=graverArbreAutomne(v||0);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_cabanonMoi'){const c=CAB_LU();
 XCAL[cle]=graverTonCabanon(c.bati?(c.niveau>0?2:1):0);
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
@@ -5966,7 +8173,7 @@ h2.fillStyle='#3d7fe0';h2.fillRect(tx-8,sol-86,17,17);
 h2.fillStyle='#ffffff';h2.fillRect(tx-5,sol-83,2,11);h2.fillRect(tx+4,sol-83,2,11);
 h2.fillRect(tx-3,sol-82,2,2);h2.fillRect(tx-2,sol-80,2,2);h2.fillRect(tx+1,sol-80,2,2);h2.fillRect(tx+2,sol-82,2,2);
 h2.fillStyle='rgba(255,236,190,.35)';h2.fillRect(cx-22,sol-24,44,22);             /* la lumière qui remonte */
-XCAL[cle]={toile:(FIN_OK()?null:c),W,H,sol,nuit:n2};          /* en pixel fin, la station redessinée */
+XCAL[cle]={toile:(FIN_OK()?graverMetroMFin(W,H,sol,cx):c),W,H,sol,nuit:n2};          /* en pixel fin, la station redessinée */
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
 return XCAL[cle];
 }
@@ -6434,7 +8641,7 @@ const X0=Math.round(x-C.W/2), Y0=Math.round(y-C.sol+dy);
 if(o.flip){g.save();g.translate(Math.round(x)*2,0);g.scale(-1,1);}
 ombrePortee(g,C,x,y+dy,o.t);
 g.drawImage(C.toile,X0,Y0,C.W,C.H);
-if(false){const t=o.t||'';
+if(lampesAllumees()){const t=o.t||'';
 /* LES FEUX PORTÉS PAR LE CALQUE. Les tests par nom ci-dessous ne
    marchent que pour un dessin dont on connaît d'avance la taille : la
    ruelle a quatre corps de largeurs et de hauteurs différentes, et leurs
@@ -6575,6 +8782,40 @@ h.addColorStop(0,'rgba(255,236,160,'+(0.25+i*.4)+')');h.addColorStop(1,'rgba(255
 g.fillStyle=h;g.fillRect(x-34,y-C.sol-17,68,68);
 }
 }
+function scintillerLaMer(g,camX,camY){
+const T=Date.now()/1000;
+for(let i=0;i<Math.round(46*FAC);i++){
+const bx=XP.bassinO+10+alea(i*7.1)*(XP.bassinE-XP.bassinO-20);
+const by=XP.quaiY+14+alea(i*3.3)*(MONDE_H-XP.quaiY-18);
+const x=bx+Math.sin(T*.6+i)*6-camX, y=by-camY;
+if(x<-4||y<-4||x>VW+4||y>VH+4)continue;
+const on=Math.sin(T*2.2+i*1.7);
+if(on<.2)continue;
+g.fillStyle='rgba(235,250,255,'+(on*.7)+')';g.fillRect(Math.round(x),Math.round(y),on>.8?3:2,1);
+}
+}
+function graverLeChantier(){
+const W=110,Ht=80,cx=55,sol=74;
+const c=document.createElement('canvas');const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+c.width=W*D;c.height=Ht*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+g.fillStyle='rgba(40,30,18,.25)';g.beginPath();g.ellipse(cx+2,sol+2,48,6,0,0,7);g.fill();
+[[cx-38],[cx+38]].forEach(([bx])=>{
+R(bx-16,sol-14,2,14,'#6b6b66');R(bx+14,sol-14,2,14,'#6b6b66');R(bx-18,sol-1,6,2,'#3b3a36');R(bx+12,sol-1,6,2,'#3b3a36');
+for(let x=0;x<32;x+=4)R(bx-16+x,sol-16,4,6,((x/4)%2)?'#f4f0e4':'#d0302a');R(bx-16,sol-16,32,1,'rgba(255,255,255,.4)');});
+R(cx-2,sol-30,2,30,'#6b6b66');R(cx+8,sol-30,2,30,'#6b6b66');
+R(cx-30,sol-66,64,38,'#1b1b1b');R(cx-28,sol-64,60,34,'#f4c020');
+for(let x=0;x<60;x+=6){R(cx-28+x,sol-64,3,4,'#1b1b1b');R(cx-28+x+3,sol-34,3,4,'#1b1b1b');}
+R(cx-22,sol-58,14,14,'#f4c020');g.fillStyle='#1b1b1b';g.beginPath();g.moveTo(cx-22,sol-44);g.lineTo(cx-15,sol-58);g.lineTo(cx-8,sol-44);g.closePath();g.fill();
+g.fillStyle='#f4c020';g.beginPath();g.moveTo(cx-19,sol-46);g.lineTo(cx-15,sol-54);g.lineTo(cx-11,sol-46);g.closePath();g.fill();
+R(cx-16,sol-52,2,2,'#1b1b1b');R(cx-17,sol-50,3,2,'#1b1b1b');R(cx-14,sol-48,3,1,'#1b1b1b');
+g.font='700 7px ui-monospace,monospace';g.textAlign='left';g.fillStyle='#1b1b1b';
+g.fillText('TRAVAUX',cx-5,sol-52);g.font='700 5px ui-monospace,monospace';g.fillText('EN COURS',cx-5,sol-45);
+[[cx-54],[cx+52]].forEach(([px])=>{g.fillStyle='#f07a20';g.beginPath();g.moveTo(px-4,sol);g.lineTo(px,sol-10);g.lineTo(px+4,sol);g.fill();R(px-2,sol-6,4,2,'#f4f0e4');});
+g.fillStyle='#d8c08a';g.beginPath();g.ellipse(cx+20,sol-2,10,5,0,Math.PI,0);g.fill();
+R(cx-30,sol-8,14,5,'#8f959b');R(cx-32,sol-3,4,3,'#2a2c2e');R(cx-16,sol-9,6,1,'#6b4a2c');
+return {toile:c,W,H:Ht,sol};
+}
 const OLIVE_F={base:'#8fa464',moyen:'#889d5e',fonce:'#819658',ombre:'#70844b',clair:'#9cb072',sec:'#a3ab6a'};
 const TERRE_F={o:'#8d7550',s:'#9c8159',p:'#ab9166',c:'#b9a074',h:'#c7b184'};
 const BLE_F={o:'#a9974e',s:'#bda75c',c:'#cdb96e',h:'#dcc981'};
@@ -6600,10 +8841,88 @@ const dansLaFerme=(x,y)=>y!==undefined&&((x>FERME.champ2.x0-12&&x<FERME.champ2.x
 ||(x>FERME.champ2.x1&&x<1880&&y>150&&y<560));   /* le champ, la cour de la ferme, le poulailler et le rucher restent nets */
 const PORTE_H=30;                                            /* la hauteur du passage dans la clôture */
 /* on peint l'étang dans la couche du chemin : il passe au-dessus de l'herbe */
+function peindreEtang(g){
+  const al2=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+  /* LA BERGE : une bande de sable, discrète */
+  for(let x=0;x<MONDE_L;x++){
+    const ry=riveY(x);
+    for(let y=ry-20;y<ry;y++){
+      if(y<0||y>=MONDE_H)continue;
+      const t=(y-(ry-20))/20, n=al2(x*0.4+y*0.3);
+      if(t<0.35&&n<0.55)continue;
+      g.fillStyle=n<.4?'#d4c8a6':(n<.75?'#cabd98':'#dcd2b2');
+      g.fillRect(x,y,1,1);}}
+  /* L'EAU : calme et plate, deux tons très proches */
+  for(let x=0;x<MONDE_L;x++){
+    const ry=riveY(x);
+    for(let y=Math.max(0,Math.round(ry));y<MONDE_H;y++){
+      const p=Math.min(1,(y-ry)/210), n=al2(x*0.4+y*0.3);
+      g.fillStyle=(p<0.2)?(n<.5?'#5fa8c4':'#64aec9'):
+                  (p<0.6)?(n<.5?'#4f98b6':'#539dbb'):
+                          (n<.5?'#448aa8':'#478ead');
+      g.fillRect(x,y,1,1);}}
+  /* quelques reflets longs et rares : une eau sans vent */
+  for(let i=0;i<190;i++){
+    const x=al2(i*3)*MONDE_L, ry=riveY(x);
+    const y=ry+12+al2(i*7)*(MONDE_H-ry-20);
+    if(y>=MONDE_H)continue;
+    g.fillStyle='rgba(255,255,255,'+(0.07+al2(i*5)*0.09)+')';
+    g.fillRect(Math.round(x),Math.round(y),12+al2(i)*22,1);}
+  /* LE PONTON : simple. Des pilotis, un tablier, rien d'autre. */
+  const px=Math.round(sentierX(ETANG.bord)), pl=42;
+  const py0=Math.round(riveY(px))-10, py1=py0+150;
+  g.fillStyle='rgba(20,52,68,.22)';g.fillRect(px-pl/2+4,py0+6,pl,py1-py0);
+  for(let k=0;k<5;k++){const y=py0+22+k*32;
+    [-1,1].forEach(s2=>{const x=px+s2*(pl/2-6);
+      g.fillStyle='#5b3f21';g.fillRect(x-3,y,7,22);
+      g.fillStyle='#6f4f2c';g.fillRect(x-3,y,2,22);});}
+  for(let y=py0;y<py1;y+=9){
+    const n=al2(y*1.7);
+    g.fillStyle=n<.34?'#a5764a':(n<.68?'#97693f':'#b08052');
+    g.fillRect(px-pl/2,y,pl,8);
+    g.fillStyle='rgba(40,26,12,.28)';g.fillRect(px-pl/2,y+8,pl,1);}
+  g.fillStyle='#7d5934';g.fillRect(px-pl/2-2,py0,2,py1-py0);g.fillRect(px+pl/2,py0,2,py1-py0);
+  g.fillStyle='#b08052';g.fillRect(px-pl/2,py0,pl,1);
+}
 
 /* ================= LA COUCHE DU CHEMIN =================
    Une toile transparente posée SUR le sol et SOUS le décor. L'herbe et les
    fleurs ne poussent pas dessus : le semis les en écarte. */
+function construireChemin(){
+  if(!(typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village'))return null;
+  const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const al2=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+  const terre=(x,y)=>{if(x<0||x>=MONDE_L||y<0||y>=MONDE_H)return;
+    const n=al2(x*0.5+y*0.3);
+    g.fillStyle=n<0.28?'#b08c5e':(n<0.56?'#a07c50':(n<0.82?'#c09a6c':'#8e6e44'));
+    g.fillRect(x,y,1,1);};
+  for(let y=0;y<MONDE_H;y++){
+    const w=sentierLargeur(y), cx2=sentierX(y);
+    for(let x=cx2-w;x<cx2+w;x++){
+      const b2=Math.abs(x-cx2)/w;
+      if(b2>0.86&&al2(x*0.5+y*0.3)<0.5)continue;      /* le bord s'effrite */
+      terre(x,y);}}
+  /* LES AMORCES : de la gare et de la cabane vers le sentier */
+  for(const a of AMORCES){
+    const ax1=sentierX(a.y1);
+    for(let y=a.y0;y<=a.y1;y++){
+      const t=(y-a.y0)/(a.y1-a.y0), e=t*t*(3-2*t);
+      const cx2=a.x0+(ax1-a.x0)*e, w=a.w;
+      for(let x=cx2-w;x<cx2+w;x++){
+        if(Math.abs(x-cx2)/w>0.86&&al2(x*0.5+y*0.3)<0.5)continue;
+        terre(x,y);}}}
+  /* la branche vers la clairière du bûcheron */
+  for(let t=0;t<210;t++){const x=sentierX(880)+t, y=880+Math.sin(t/72)*38;
+    for(let w=-15;w<15;w++)if(!(Math.abs(w)>12&&al2(x+w)<0.42))terre(x,y+w);}
+  /* les cailloux, et l'herbe qui mord sur les bords */
+  for(let i2=0;i2<300;i2++){const y=al2(i2*7)*MONDE_H, x=sentierX(y)+(al2(i2*3)-0.5)*40;
+    g.fillStyle=al2(i2)<0.5?'#cbbd96':'#8e8064';g.fillRect(Math.round(x),Math.round(y),2,2);}
+  for(let i2=0;i2<420;i2++){const y=al2(i2*11)*MONDE_H;
+    const cote=al2(i2*5)<0.5?-1:1, x=sentierX(y)+cote*(sentierLargeur(y)-2+al2(i2*3)*6);
+    g.fillStyle=al2(i2*13)<0.5?'#6f9553':'#5b7d44';g.fillRect(Math.round(x),Math.round(y),1,2);}
+  peindreEtang(g);
+  return c;}
 function construireSol(){
 if(CARTE==='extramar')return construireSolExtramar();
 if(CARTE==='tokyo')return TKM.construireSolTokyo();
@@ -6826,8 +9145,8 @@ P(x,y-1,F.petale);P(x-1,y,F.petale);P(x+1,y,F.petale);P(x,y+1,F.petale);
 P(x,y,F.coeur);
 }
 }
-null;
-
+graverChemins(g);
+try{peindreLaFerme(g);}catch(x){}                      /* la campagne, à l'est du village */
 return c;
 }
 const BORD=34;
@@ -6955,14 +9274,433 @@ if(k>=0&&k<N_CH*M_CH)SURCHEMIN[k]=1;
 }
 const TERRE_CH=['#9c8560','#a89068','#8e7854','#b09a72','#7d6a4a'];
 let CALQUE_ENTREPOT=null;
+function graverLesPaves(g){
+const PI={o:'#5f666c',s:'#6f767c',p:'#7e868d',c:'#8f979e',h:'#a4acb3',t:'#bcc4ca'};
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,w,h);};
+for(let y=PL_N()+6;y<PL_S();y+=12){
+const dec=(Math.floor((y-PL_N())/12)%2)?9:0;
+for(let x=PL_O()+dec;x<PL_E();x+=18){
+const gr=alea(x*0.41+y*1.07);
+const w=Math.min(18,PL_E()-x), h=Math.min(12,PL_S()-y+6);
+if(w<6||h<5)continue;
+R(x+1,y-5,w,h,'rgba(40,46,50,.34)');
+R(x,y-6,w,h,gr<0.3?PI.s:(gr<0.6?PI.p:PI.c));
+R(x+1,y-5,w-2,h-2,'rgba(255,255,255,.05)');
+R(x,y-6,w-1,1,PI.h);
+R(x,y-6,1,h-1,'rgba(200,210,216,.4)');
+R(x+w-1,y-5,1,h-1,PI.o);
+if(gr>0.88){R(x,y-6,w,h,PI.t);R(x,y-6,w-1,1,'#d2d8dd');}
+for(let k=0;k<2;k++){
+if(alea(x*3.1+y*5.9+k)<0.7)continue;
+R(x+2+alea(x+k)*(w-5),y-6+alea(y+k)*(h-2),2,2,'rgba(70,78,84,.3)');
+}
+}
+}
+const clair=(px,py)=>{R(px-3,py-2,6,4,PI.t);R(px-3,py-2,6,1,'#d2d8dd');};
+for(let x=PL_O();x<PL_E();x+=6){clair(x,PL_N());clair(x,PL_S());}
+for(let y=PL_N();y<PL_S();y+=4){clair(PL_O(),y);clair(PL_E(),y);}
+const pave=(px,py)=>{
+const t=Math.floor(alea(px*0.7+py*1.3)*4);
+R(px-3,py-2,6,4,[PI.p,PI.c,PI.s,PI.p][t]);
+R(px-3,py-2,6,1,PI.h);R(px+2,py-2,1,4,PI.o);
+};
+for(let x=PLACE.x-34;x<PLACE.x+34;x+=6){pave(x,PL_N());pave(x,PL_S());}
+for(let y=PLACE.y-34;y<PLACE.y+34;y+=4){pave(PL_O(),y);pave(PL_E(),y);}
+}
+function graverChemins(g){
+if(!ROUTES.length)calculerChemins();
+const GRIS=['#8f979e','#7e868d','#a4acb3','#6f767c','#bcc4ca'];
+const MOSA_FOND  =['#9a9284','#a6a092','#8e8678','#b2aa9c'];
+const MOSA_CLAIR =['#d0c8b6','#d8d0be','#c6beac'];
+const MOSA_SOMBRE=['#6f675a','#7a7264','#645c50'];
+const MOSA_BORD  =['#8f8778','#9a9182','#847c6e','#a49b8c'];
+const PAVES=['#9d9583','#a79f8d','#948c7a','#b0a896','#8b8371','#a49c8a'];
+const surUnPont=(x,y)=>PONTS.some(py=>Math.abs(y-py)<PONT_DEMI+6&&Math.abs(x-rivX(py))<40);
+if(!(FORET_SEULE&&CARTE==='village'))PONTS.forEach(py=>{
+const px=rivX(py);
+[-1,1].forEach(s2=>{
+g.fillStyle='#a4acb3';g.fillRect((px+s2*30-2)|0,(py-13)|0,5,26);
+g.fillStyle='#d2d8dd';g.fillRect((px+s2*30-2)|0,(py-13)|0,5,2);
+g.fillStyle='#8f979e';g.fillRect((px+s2*35-2)|0,(py-11)|0,4,22);
+});
+});
+if(!FERME_SEULE)graverLesPaves(g);         /* la place, par-dessus les chemins (la ferme n'a pas de pavés) */
+}
 /* ================= LE BALAI DU SENTIER =================
    Passé en dernier sur tout le décor de la forêt : rien ne reste sur le
    chemin ni dans le lac, quelle que soit la fonction qui l'a semé. */
+function balayerLeSentier(){
+  if(!(typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village'))return;
+  const garde=['x_fo_cabane','x_fe_gare'];      /* les bâtiments restent */
+  DECOR=DECOR.filter(o=>garde.includes(o.t)||
+    (!surLeSentier(o.x,o.y,15)&&!dansEtang(o.x,o.y,-30)));
+}
+function semerDecor(){
+if(CHAMPS_SEULS&&CARTE==='village'){
+/* LA FERME : deux bâtiments, et rien d'autre. Le métro plein nord, la
+   graineterie au centre, le potager au sud : l'axe de la ferme. */
+DECOR=[];
+if(FERME_VIERGE){DECOR.push({t:'x_madeleine',bati:true,ouvre:'bqFerme',x:330,y:948,demi:60});DECOR.push({t:'metro',x:1585,y:950,demi:28});DECOR.push({t:'x_cabNiv',bati:true,ouvre:'cabanon',x:1430,y:640,demi:40});try{/* LA PORTE DE LA LONGÈRE. On ne peut pas se reposer sur ferme.js : le semeur tourne avant qu'il soit chargé. On refait son calcul (FM_K=0,61, façade de 330 points centrée, pied à 150+270*K) et on s'en remet à lui s'il est là. */const K=0.61,MX=(typeof FM_MX==='function')?FM_MX():Math.round(MONDE_L/2-330*K/2),BY=(typeof FM_BASE==='function')?FM_BASE():150+Math.round(270*K);DECOR.push({t:'x_fePorte',bati:true,ouvre:'bassecour',x:Math.round(MX+146*K),y:BY,demi:34});}catch(x){}invaliderGrille();return;}   /* la porte de la longère : on y achète les bêtes */   /* l'étal de Madeleine : sa porte, pour la plaque jaune */
+/* (l'ancienne gare du nord laisse la place à la halte, près de La Récolte) */
+/* ================= LE GRAND POULAILLER =================
+   Le vocabulaire de l'ancien — pilotis, bardage vertical à trois tons,
+   tuiles en rangs, trappe, échelle, nichoirs, lucarne, girouette — mais
+   en double corps : deux cabanes de hauteurs différentes, pour que le
+   bâtiment ait un profil au lieu d'un rectangle. */
+/* ================= LA FROMAGERIE =================
+   Le premier atelier de la ferme : le lait y entre, le fromage en sort deux
+   heures plus tard. Murs de pierre, toit de tuiles, une porte large pour
+   faire passer les bidons, et l'enseigne avec sa meule. */
+function graverAppentis(){
+const L=116, H=104;
+const c=document.createElement('canvas');c.width=L*2;c.height=H*2;
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(2,0,0,2,0,0);
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
+Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+const T2=(h,d)=>teint(h,d);
+const PI='#9a948a', BOIS='#8a6238', FER='#4e545c';
+const cx=L/2, sol=H-2, DEMI=42, MUR=48;
+/* L'OMBRE PORTÉE */
+g.fillStyle='rgba(18,14,8,.32)';
+g.beginPath();g.ellipse(cx+5,sol+1,DEMI+6,7,0,0,7);g.fill();
+/* LE SOUBASSEMENT DE PIERRE */
+{let x=cx-DEMI,i=0;
+while(x<cx+DEMI){
+const w=Math.min(8+Math.round(PR_h(i,4,111)*7),cx+DEMI-x);
+for(let r=0;r<9;r++)R(x,sol-9+r,w,1,T2(PI,Math.round((PR_h(i*3,r*5,112)-0.5)*22)));
+x+=w;i++;}}
+R(cx-DEMI,sol-9,DEMI*2,1,T2(PI,18));
+R(cx-DEMI,sol-1,DEMI*2,1,T2(PI,-38));
+/* LE FOND, planches verticales */
+for(let x=cx-DEMI+2;x<cx+DEMI-2;x+=8){
+const t=T2(BOIS,Math.round((PR_h(x,2,113)-0.5)*22));
+R(x,sol-MUR,7,MUR-9,t);
+R(x,sol-MUR,1,MUR-9,T2(t,20));
+R(x+6,sol-MUR,1,MUR-9,T2(t,-28));
+for(let k=7;k<MUR-9;k+=11)if(PR_h(x,k,114)<0.4)R(x+1,sol-MUR+k,5,1,T2(t,-12));}
+/* LES CLAIRE-VOIES : on voit le pré au travers */
+for(let x=cx-DEMI+6;x<cx+DEMI-6;x+=16)R(x,sol-40,2,22,'#241d16');
+/* LES DEUX POTEAUX ET LEUR CHAPEAU */
+[-DEMI-2,DEMI-3].forEach(d=>{
+R(cx+d,sol-MUR-8,6,MUR+7,'#6b4a2c');
+R(cx+d,sol-MUR-8,2,MUR+7,BOIS);
+R(cx+d-1,sol-MUR-10,8,3,T2(PI,6));});
+R(cx-DEMI-3,sol-MUR-6,DEMI*2+8,5,'#6b4a2c');
+R(cx-DEMI-3,sol-MUR-6,DEMI*2+8,1,BOIS);
+/* LE TOIT DE BARDEAUX, en quinconce */
+for(let r=0;r<20;r++){
+const dec=(r%2)?3:0;
+for(let x=cx-DEMI-7+dec;x<cx+DEMI+7;x+=6)
+R(x,sol-56-r,5,1,r%3===0?'#5a4432':(PR_h(x,r,115)<0.4?'#7d5934':'#6b4a2c'));}
+R(cx-DEMI-7,sol-56,DEMI*2+14,3,'#4e3620');
+/* LA LANTERNE, au crochet */
+R(cx+DEMI-4,sol-52,2,6,FER);R(cx+DEMI-7,sol-46,7,2,FER);
+R(cx+DEMI-7,sol-44,7,8,'#2e3238');R(cx+DEMI-5,sol-43,3,5,'#f6dd8c');
+R(cx+DEMI-5,sol-43,3,2,'#fff4c8');
+/* L'ENSEIGNE, peinte sur le fond */
+R(cx-24,sol-42,48,14,'#2a1f16');R(cx-22,sol-40,44,10,'#3a2a1c');
+R(cx-22,sol-40,44,1,'#5a4432');
+/* LE COMPTOIR */
+for(let x=cx-26;x<cx+26;x+=8){
+const t=T2(BOIS,Math.round((PR_h(x,7,116)-0.5)*16));
+R(x,sol-22,7,13,t);R(x,sol-22,7,1,T2(t,22));}
+R(cx-28,sol-24,56,3,T2(BOIS,20));
+R(cx-28,sol-11,56,2,T2(BOIS,-34));
+/* LA CLOCHE D'APPEL ET LE REGISTRE */
+R(cx-18,sol-30,9,7,'#8d949c');R(cx-18,sol-30,9,2,'#b0b8c0');
+R(cx-15,sol-32,2,2,'#6a727c');
+R(cx+4,sol-28,13,4,'#e8e0cc');R(cx+4,sol-28,13,1,'#f6f0e0');
+R(cx+6,sol-30,3,2,'#8a6238');
+return c;}
+/* ================= LA BANDEROLE DU MONDIAL =================
+   ELLE NE SE VOIT QUE QUAND IL SE PASSE QUELQUE CHOSE : tant qu'aucun
+   tableau n'est en cours, rien n'est dessiné. Un décor d'événement qui
+   reste planté toute l'année ne dit plus rien au bout de deux jours.
+   Elle reprend la couleur du menu — vert de platane et laiton — pour
+   qu'on reconnaisse l'écran avant même de l'avoir ouvert, et porte les
+   huit pavillons en frise dessous : on compte huit nations sans lire.
+   LES DRAPEAUX SONT DES BANDES, pas des emblèmes : à onze pixels sur
+   sept, un croissant ou une étoile font une tache sale. */
+const MOND_NAT=[['#1f3a93','#f4f4f4','#c8102e'],   /* France */
+['#f4f4f4','#c8102e','#248b48'],                   /* Madagascar */
+['#c8102e','#f4f4f4','#1f3a93'],                   /* Thaïlande */
+['#c8102e','#f4f4f4','#c8102e'],                   /* Tunisie */
+['#248b48','#f4d02c','#c8102e'],                   /* Sénégal */
+['#1a1a1a','#f4d02c','#c8102e'],                   /* Belgique */
+['#248b48','#f4f4f4','#c8102e'],                   /* Italie */
+['#c8102e','#f4d02c','#c8102e']];                  /* Espagne */
+function graverBanderoleMondial(v){
+const fete=(v===1);
+const L=196, H=84;
+const c=document.createElement('canvas');c.width=L*2;c.height=H*2;
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(2,0,0,2,0,0);
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
+Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+const cx=L/2, sol=H-4;
+/* LES DEUX POTEAUX ET LEUR OMBRE */
+[[-82],[76]].forEach(([d])=>{
+g.fillStyle='rgba(16,12,6,.28)';g.beginPath();g.ellipse(cx+d+5,sol+1,8,3,0,0,7);g.fill();
+R(cx+d,sol-56,6,56,'#6b4a2c');R(cx+d,sol-56,2,56,'#8a6238');R(cx+d,sol-2,6,2,'#54381f');});
+/* LA TOILE */
+R(cx-88,sol-60,176,30,'#1e2b21');R(cx-86,sol-58,172,26,'#2a3c2e');
+R(cx-86,sol-58,172,1,'#3d5543');R(cx-88,sol-31,176,1,'#16201a');
+R(cx-86,sol-33,172,2,'#d8bf6a');R(cx-86,sol-58,172,1,'#d8bf6a');
+g.fillStyle='#eef3e4';g.font='700 13px Georgia';g.textAlign='center';
+g.fillText(fete?'LE MONDIAL':'LE BOULODROME',cx,sol-44);
+g.fillStyle='#93a68c';g.font='6px Georgia';
+g.fillText(fete?'HUIT NATIONS · TROIS TOURS · UNE FINALE'
+:'DEUX TERRAINS · OUVERT À TOUS',cx,sol-36);g.textAlign='left';
+/* LES HUIT PAVILLONS, EN FRISE — seulement les jours de Mondial. Le
+   reste du temps, trois boules et un cochonnet. */
+if(fete)for(let k=0;k<8;k++){const x=cx-84+k*21.5, y=sol-29, C=MOND_NAT[k];
+R(x,y,11,2,C[0]);R(x,y+2,11,3,C[1]);R(x,y+5,11,2,C[2]);
+R(x,y,11,1,'rgba(255,255,255,.3)');R(x,y+6,11,1,'rgba(0,0,0,.25)');}
+else{const by=sol-25;
+/* TROIS BOULES ET LE COCHONNET, dessinés comme sur le terrain : une
+   calotte claire en haut à gauche, un creux sombre en bas à droite. */
+[[-22],[-2],[18]].forEach(([d])=>{const a=cx+d;
+g.fillStyle='rgba(12,18,10,.35)';g.beginPath();g.ellipse(a,by+5,5,2,0,0,7);g.fill();
+g.fillStyle='#8b9399';g.beginPath();g.arc(a,by,4.5,0,7);g.fill();
+g.fillStyle='#c8ced4';g.beginPath();g.arc(a-1.3,by-1.4,2.3,0,7);g.fill();
+g.fillStyle='#636a70';g.beginPath();g.arc(a+1.7,by+1.6,1.7,0,7);g.fill();
+R(a-3,by-2,6,1,'#737a80');R(a-3,by+1,6,1,'#737a80');});
+{const a=cx+36;g.fillStyle='rgba(12,18,10,.3)';g.beginPath();g.ellipse(a,by+4,3,1.4,0,0,7);g.fill();
+g.fillStyle='#e8a030';g.beginPath();g.arc(a,by+1,2.6,0,7);g.fill();
+g.fillStyle='#ffd070';g.beginPath();g.arc(a-0.8,by+0.2,1.2,0,7);g.fill();}}
+return c;}
+/* LE MONDIAL SE TIENT TOUS LES JOURS, ET LE PANNEAU L'ANNONCE AVANT
+   QU'ON Y AILLE. Il ne l'affichait que si un tableau était DÉJÀ ouvert
+   — c'est-à-dire seulement après être entré dans le menu et s'être
+   inscrit. Un panneau qui ne prévient qu'une fois qu'on sait ne sert à
+   rien : c'est lui qui doit donner l'envie de descendre.
+   Il repasse à sa face ordinaire quand la journée est jouée — éliminé
+   ou titré —, parce qu'alors il n'y a plus rien à venir chercher avant
+   demain. */
+function mondEnCours(){try{mondCharger();
+return !(MOND&&MOND.jour===mondJour()&&MOND.fini);}catch(x){return true;}}
+/* ================= LE COMPTOIR DE LA FERME =================
+   IL REMPLACE L'APPENTIS, À LA MÊME PLACE DANS L'ENCLOS, et il ouvre
+   l'écran unifié : tout ce qu'on peut faire à la ferme tient derrière
+   cette porte-là. Un store rayé sur deux fers forgés, une baie pleine de
+   bocaux, un étal de cageots, la balance et l'ardoise des prix.
+   TROIS CHOSES QUI LUI DONNENT DU VOLUME, et qui manquaient à l'appentis :
+   le mur est dégradé (plus clair en haut à gauche, plus sombre vers le
+   bas et la droite), l'ombre tombe sous chaque avant-toit, et les tuiles
+   ont un creux clair puis un rouleau sombre au lieu d'un aplat. */
+/* ================= LE LAMPADAIRE DE FONTE =================
+   Posé comme objet, il a une hauteur : on passe derrière quand on est au
+   nord, devant quand on est au sud, et il barre le passage à son pied. */
+/* ================= LA FONTAINE DE LA PLACE =================
+   Un bac de pierre appareillé, posé comme un vrai objet : il a une paroi
+   avant, donc une hauteur, et il passe devant ou derrière le joueur selon
+   l'endroit où l'on se tient. */
+/* ================= LE BANC DE PIERRE =================
+   Un bloc massif sur deux dés : rien ne bouge, rien ne pourrit. */
+function graverBancPierre(){
+const L=52, H=24;
+const c=document.createElement('canvas');c.width=L*2;c.height=H*2;
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(2,0,0,2,0,0);
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
+Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+const T2=(h,d)=>teint(h,d);
+const PI='#9a948a', piC=T2(PI,16), piO=T2(PI,-22), piT=T2(PI,-40);
+const cx=L/2, sol=H-2;
+/* LES DEUX DÉS */
+[[-18],[10]].forEach(q=>{
+const px=cx+q[0];
+R(px,sol-12,8,12,PI);R(px,sol-12,8,1,piC);R(px+6,sol-12,2,12,piO);
+R(px,sol-1,8,1,piT);});
+/* LA DALLE D'ASSISE */
+R(cx-22,sol-16,44,5,PI);
+R(cx-22,sol-16,44,1,piC);
+R(cx-22,sol-12,44,1,piO);
+for(let k=0;k<44;k+=13)R(cx-22+k,sol-16,1,5,piO);
+/* LE GRAIN DE LA PIERRE */
+for(let k=0;k<24;k++)
+R(cx-20+Math.round(alea(k*2.7)*40),sol-15+Math.round(alea(k*4.1)*3),1,1,
+alea(k*7.7)>0.5?piC:piO);
+return c;}
+/* ================= LA RÉCOLTE : LA BOUTIQUE DE LA FERME =================
+   Le bois vivant : chaque planche a sa teinte, son veinage et ses nœuds,
+   au lieu d'une texture répétée. Toiture de tuiles, deux vitrines à petits
+   bois, porte à lattes, enseigne de bois sur ses deux potences. */
+
+/* LE CALQUE : dessinerX attend {toile,W,H,sol}, pas une toile nue —
+   c'est pour ça que la boutique ne s'affichait pas. */
+/* LA CLÉ DU CALQUE : graverX colle le type et la version, donc 'x_fe_poulG'
+   + 0. Avec un tiret bas, il ne trouvait rien et ne dessinait rien. */
+/* LE CALQUE DU POULAILLER N'EST PLUS GRAVÉ. */
+/* LE POULAILLER A ÉTÉ DÉMOLI : les poules vivent dans l'enclos, avec les bêtes. */
+/* LA STATION DE MÉTRO EST RETIRÉE de la ferme : on en sort désormais à
+   pied, par le chemin de l'est. */
+/* LA RÉCOLTE EST REMPLACÉE PAR LA MAISON DE MADELEINE, dans la ruelle :
+   c'est elle qui ouvre la boutique (ouvre:'bqFerme'). SON CALQUE N'EST
+   PLUS GRAVÉ. Il l'était encore à chaque chargement de la ferme — une
+   gravure de cent cinquante sur cent cinquante que personne ne dessinait
+   jamais, le DECOR.push étant commenté juste en dessous. graverRecolte()
+   existe toujours plus haut si on veut la reposer un jour. */
+/* DECOR.push({t:'x_fe_recolte',x:880,y:PASSAGE.y0+4-25,v:0,bati:true,demi:80,ouvre:'laRecolte'}); */
+/* LE MOBILIER DE LA PLACE EST RETIRÉ avec elle : la fontaine, les quatre
+   bancs et les quatre lampadaires n'entouraient plus rien. */
+{
+/* L'APPENTIS AUX BÊTES EST DÉMOLI. C'était la porte de l'étable dans
+   l'enclos, à gauche du portillon. L'étable s'ouvre maintenant depuis la
+   ruelle — « LA FERME » puis sa carte, ou « LES BÊTES » qui la peint
+   d'abord — et l'enclos redevient un pré, sans bâtiment au milieu des
+   bêtes. SON CALQUE N'EST PLUS GRAVÉ : il l'était à chaque chargement de
+   la ferme, cent seize sur cent quatre, pour un bâtiment que plus rien ne
+   posait. graverAppentis() existe toujours plus haut si on veut le
+   reposer un jour.
+const AP=calque(graverAppentis(),116,104,96);
+XCAL['x_fe_appentis0']=AP;CALQUES_DECO['x_fe_appentis']=AP;
+TAILLES['x_fe_appentis']=[{w:104,h:18}];
+DECOR.push({t:'x_fe_appentis',x:244,y:930,v:0,bati:true,demi:56,ouvre:'etable'}); */
+/* LE COMPTOIR DE LA FERME prend sa place, à l'unité près : il ouvre
+   l'écran unifié (laFerme), d'où l'on atteint Madeleine, l'étable, le
+   marché, la fromagerie et le journal de ce qui pousse. */
+const CF=calque(graverComptoirFerme(),116,104,96);
+XCAL['x_fe_comptoirF0']=CF;CALQUES_DECO['x_fe_comptoirF']=CF;
+TAILLES['x_fe_comptoirF']=[{w:96,h:18}];
+DECOR.push({t:'x_fe_comptoirF',x:290,y:930,v:0,bati:true,demi:56,ouvre:'laFerme'});
+/* ================= L'ÉCLAIRAGE DU SOIR =================
+   TRENTE-ET-UNE LANTERNES, ET PAS UNE AU HASARD : chacune est posée sur
+   une CLÔTURE — à un coin d'enceinte, ou au milieu d'un long côté. C'est
+   la règle entière : on n'éclaire pas un trajet, on dessine le contour de
+   ce qui est à soi. De nuit, la ferme se lit donc comme un plan.
+
+   LES MILIEUX ONT ÉTÉ AJOUTÉS APRÈS COUP, et voici pourquoi. Les coins
+   seuls se lisent sur un plan ; le joueur, lui, ne voit jamais de plan.
+   Son écran montre 185 x 401 points de jeu — VUE_L x VUE_H, à l'échelle
+   d'un téléphone de 393 px — pour une ferme de 935 x 1360 : il en voit
+   5,5 % à la fois. Mesure sur toute la zone de marche, au pas de quatre
+   points : avec les dix-neuf coins seuls, 51,8 % des positions avaient
+   une lanterne à l'écran. Une fois sur deux, la nuit était noire. Depuis
+   le centre de l'enclos, la plus proche était à 239 points, soit plus de
+   deux écrans et demi.
+   On ajoute donc le MILIEU de chaque longue clôture — jamais autre chose,
+   la règle tient. 31 au total, 83,8 % de couverture. Les 16 % qui restent
+   sont le centre de l'enclos et le milieu du pré, où il n'y a aucune
+   clôture pour en poser une.
+
+   C'EST LE LAMPADAIRE DU PORT, pas une copie : t:'lanterneP', donc le
+   même mât, le même vacillement, le même halo que sur le quai, et
+   lueurNuit s'en occupe tout seul au crépuscule. gr décale la phase du
+   vacillement pour qu'elles ne clignotent pas ensemble.
+
+   ELLES N'ARRÊTENT RIEN. La ferme n'appelle pas bloque() : un décor qui
+   doit stopper pose sa bande à la main dans majJoueur. On n'en pose
+   aucune ici, exprès — trente-et-un poteaux bloquants, c'est autant
+   d'angles où l'on se coince. On leur passe au travers. */
+[[179,162],[997,162],[179,483],[997,483],          /* le muret du verger, ses coins */
+ [588,162],[383,483],[793,483],[179,322],[997,322],/*   et le milieu de ses quatre cotes */
+ [150,522],[1026,522],                             /* les deux coins hauts du potager */
+ [132,750],[588,750],[1046,750],                   /* la chaussée : les deux bouts et le milieu */
+ [176,812],[672,812],[176,1462],[672,1462],        /* la palissade de l'enclos, ses coins */
+ [424,812],[176,1137],[672,1137],[424,1462],       /*   et le milieu de ses quatre cotes */
+ [290,938],                                        /* devant la porte du comptoir */
+ [748,870],[982,870],[748,1404],[982,1404],        /* le boulodrome, ses coins */
+ [865,870],[865,1404],                             /*   et le milieu de ses deux largeurs */
+ [724,1137],[1006,1137]]                           /* à mi-longueur des pistes, en vis-à-vis */
+.forEach(([x,y],k)=>DECOR.push({t:'lanterneP',x,y,gr:k}));
+/* LA FROMAGERIE, juste au-dessus de l'enclos : le lait sort de l'étable à
+   quelques pas. Elle occupe la bande vide du milieu de la carte, qui ne
+   servait à rien. L'enclos commence à y=812, elle s'arrête à 740. */
+/* LA FROMAGERIE A DÉMÉNAGÉ DANS LA RUELLE : c'est le corps 'ruFrom' qui
+   l'ouvre. SON ANCIEN CALQUE N'EST PLUS GRAVÉ — il l'était encore à
+   chaque chargement sans que rien ne le pose. La photo d'en-tête de son
+   écran montre désormais le corps de la ruelle (x_fe_ruFrom0). Le lait
+   continue de s'affiner en cave côté serveur. */
+/* LES QUATRE LAMPADAIRES PARTENT AVEC LA PLACE. Ils étaient posés en
+   PX ± 103 — or PX était le centre de la place, qui n'existe plus, et le
+   nom est aussi celui du traceur de pixels : ils se seraient retrouvés en
+   NaN, sans que rien ne proteste. */
+}
+/* ================= LE BOULODROME : CE QUI SE POSE DESSUS =================
+   LA RUELLE A ÉTÉ RASÉE — les quatre corps et leurs enseignes, l'arche
+   et ses cyprès, les lanternes, l'étal, la balance, les cageots, les
+   bidons, la claie, le parc, l'abreuvoir, la charrette, les sacs et les
+   jarres. Tout passait déjà par le comptoir de la ferme, dans l'enclos,
+   qui ouvre le même écran.
+   LE BOULODROME DU PORT PREND LA PLACE, avec ce qui l'entourait là-bas :
+   quatre platanes, deux bancs, quatre boulistes. Ce sont les MÊMES
+   sprites qu'au port — x_platane, bancP, x_bouliste — pas des copies.
+   LE SABLE N'ARRÊTE RIEN : on marche dessus, on traverse les pistes.
+   Seuls les quatre troncs arrêtent, par une bande chacun — la ferme
+   n'appelle pas bloque(), donc un décor qui doit arrêter doit poser sa
+   bande à la main, dans majJoueur. */
+{
+const B=BOULO, bx=B[0], by=B[1], bw=B[2], bh=B[3];
+/* les quatre platanes, aux quatre coins, décalés comme au port */
+[[bx-24,by+82,0],[bx+bw+24,by+186,1],[bx-24,by+388,2],[bx+bw+24,by+476,3]]
+.forEach(([x,y,v])=>DECOR.push({t:'x_platane',x:Math.round(x),y:Math.round(y),v}));
+/* LA BANDEROLE DU MONDIAL, en tête de terrain. Elle est posée en
+   permanence ; c'est dessinerX qui la saute quand aucun tableau n'est
+   en cours — le décor de la ferme se sème une fois, au chargement, et
+   le Mondial, lui, s'ouvre et se ferme en cours de partie. */
+{const BM=calque(graverBanderoleMondial(0),196,84,80);
+XCAL['x_fe_mondial0']=BM;CALQUES_DECO['x_fe_mondial']=BM;
+XCAL['x_fe_mondial1']=calque(graverBanderoleMondial(1),196,84,80);
+TAILLES['x_fe_mondial']=[{w:170,h:10}];
+DECOR.push({t:'x_fe_mondial',x:bx+Math.round(bw/2),y:by-16,v:0});}
+/* les deux bancs, face aux pistes */
+[[bx-42,by+242],[bx+bw+42,by+302]]
+.forEach(([x,y])=>DECOR.push({t:'bancP',x:Math.round(x),y:Math.round(y),gr:0}));
+/* LES QUATRE BOULISTES. v:0 est celui qui soupèse sa boule — c'est lui
+   qui porte l'animation, les trois autres regardent. */
+[[bx+38,by+156,'haut',{veste:1,chapeau:1}],
+ [bx+68,by+178,'haut',{veste:2,cheveux:1}],
+ [bx+156,by+412,'bas',{veste:0,barbe:1,cheveux:0}],
+ [bx+184,by+440,'bas',{veste:2,chapeau:2}]]
+.forEach(([x,y,dir,ap],i)=>DECOR.push({t:'x_bouliste',x:Math.round(x),y:Math.round(y),v:i,dir,ap}));
+}
+
+DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}
+if(CARTE==='large'){DECOR=[];invaliderGrille();return;}
+if(CARTE==='foret')return semerLaForet();
+if(CARTE==='extramar')return semerDecorExtramar();
+if(CARTE==='tokyo')return TKM.semerDecorTokyo();
+if(CARTE==='garde')return semerDecorGarde();
+/* LE SEMEUR DU VILLAGE D'ORIGINE EST SUPPRIME (233 lignes). Il ne tournait que si CARTE valait 'village' SANS CHAMPS_SEULS — or CHAMPS_SEULS vaut CARTE_DEMANDEE!=='foret' et CARTE ne vaut 'village' que pour 'ferme' et 'village' : la condition etait impossible. Il semait la riviere, les ponts, le hameau, le camp, le coffre, la forge, l'echoppe, la place et ses tilleuls — rien de tout cela n'est sur la carte de la ferme. */
+}
 let LISIERE=null, LISIERE_SUD=null;
 const LIS_PROF=30;                 /* profondeur de la forêt */
 const BARRIERE=44;                 /* la ligne de la palissade */
 const BOIS_P={sombre:'#5b3f26',bas:'#6b4a2a',moyen:'#7d5833',clair:'#96693c',
 haut:'#ab7a49'};
+function segmentPalissade(){
+const c=document.createElement('canvas');
+const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+c.width=20*D;c.height=34*D;
+const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+const sol=31;
+R(0,sol,20,3,'rgba(30,44,22,.34)');                /* l'ombre portée */
+R(0,sol-4,20,4,BOIS_P.sombre);                     /* le pied dans la terre */
+for(let i=0;i<20;i+=3){
+const h=18+((i*7)%3), t=(i/3)%3;
+R(i,sol-h,3,h,t===0?BOIS_P.moyen:(t===1?BOIS_P.bas:BOIS_P.clair));
+R(i,sol-h,1,h,BOIS_P.haut);                      /* la lumière sur la planche */
+R(i,sol-h-2,3,2,t===1?BOIS_P.clair:BOIS_P.moyen);/* la pointe */
+R(i+2,sol-h+2,1,h-2,BOIS_P.sombre);              /* l'ombre entre deux planches */
+}
+R(0,sol-14,20,3,BOIS_P.bas);                       /* les deux traverses */
+R(0,sol-14,20,1,BOIS_P.clair);
+R(0,sol-6,20,2,BOIS_P.sombre);
+return c;
+}
+function segmentProfil(){
+const c=document.createElement('canvas');
+const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+c.width=12*D;c.height=20*D;
+const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+R(1,0,9,20,BOIS_P.moyen);
+R(1,0,1,20,BOIS_P.haut);
+R(9,0,1,20,BOIS_P.sombre);
+R(10,0,2,20,'rgba(30,44,22,.30)');
+for(let y=0;y<20;y+=3)R(1,y,9,1,BOIS_P.bas);       /* le haut des planches */
+return c;
+}
 function construireLisiere(){
 if(ANNEXE){LISIERE_SUD=null;return null;}
 const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
@@ -6987,7 +9725,7 @@ bande(g,-6,-6,MONDE_L+6,LIS_PROF,0);                      /* nord */
 bande(g,-6,-6,LIS_PROF,MONDE_H+6,77);                     /* ouest */
 bande(g,MONDE_L-LIS_PROF,-6,MONDE_L+6,MONDE_H+6,131);     /* est */
 bande(gs,-6,MONDE_H-LIS_PROF,MONDE_L+6,MONDE_H+6,193);    /* sud : devant le joueur */
-const S=(()=>{})(), P=(()=>{})();
+const S=segmentPalissade(), P=segmentProfil();
 const D=S.width/20;
 for(let x=0;x<MONDE_L;x+=20){
 g.drawImage(S,x,BARRIERE-31,20,34);                     /* nord */
@@ -7042,9 +9780,9 @@ if(l)for(const o of l)out.push(o);
 return out;
 }
 function bloque(x,y){
-if(CARTE==='large')return false;
+if(CARTE==='large')return bloqueLarge(x,y);
 if(CARTE==='foret'){
-  if(false)return true;
+  if(bloqueForet(x,y))return true;
   for(const o of autourDe(x,y)){
     if(o.t==='x_fo_ponton')continue;          /* on marche dessus, il ne barre rien */
     const t=TAILLES[o.t];if(!t)continue;
@@ -7057,7 +9795,7 @@ if(CHAMPS_SEULS&&CARTE==='village'){
 const nx=+x, ny=+y;
 if(FERME_VIERGE)return !(nx>16&&nx<MONDE_L-16&&ny>26&&ny<MONDE_H-10);
 if(!(nx>BORD&&nx<MONDE_L-BORD&&ny>BORD+14&&ny<MONDE_H-BORD))return true;
-if(false)return true;
+if(verMuret(nx,ny))return true;
 return false;
 }
 if(CARTE==='tokyo')return TKM.bloqueTokyo(x,y);
@@ -7133,11 +9871,11 @@ function margesDe(t){
 if(MARGES_VUES[t])return MARGES_VUES[t];
 let C=null;
 try{
-if(t==='taillerie'){if(!CALQUE_FORGERON)null;C=CALQUE_FORGERON;}
-else if(t==='mine2'){if(!CALQUE_CARREAU)null;C=CALQUE_CARREAU;}
-else if(t==='comptoir'){if(!CALQUE_COMPTOIR2)null;C=CALQUE_COMPTOIR2;}
-else if(t==='echoppe'){if(!CALQUE_BOUTIQUE)null;C=CALQUE_BOUTIQUE;}
-else if(t==='metro'){if(!CALQUE_METRO)null;C=CALQUE_METRO;}
+if(t==='taillerie'){if(!CALQUE_FORGERON)graverLeForgeron();C=CALQUE_FORGERON;}
+else if(t==='mine2'){if(!CALQUE_CARREAU)graverLeCarreau();C=CALQUE_CARREAU;}
+else if(t==='comptoir'){if(!CALQUE_COMPTOIR2)graverLeComptoirNeuf();C=CALQUE_COMPTOIR2;}
+else if(t==='echoppe'){if(!CALQUE_BOUTIQUE)graverLaBoutiqueNeuve();C=CALQUE_BOUTIQUE;}
+else if(t==='metro'){if(!CALQUE_METRO)graverLeMetro();C=CALQUE_METRO;}
 else if(CALQUES_DECO[t])C=CALQUES_DECO[t];
 }catch(x){}
 const m=C?{demi:C.W/2+20,haut:C.sol+20,bas:C.H-C.sol+20}
@@ -7153,7 +9891,7 @@ return a;
 }
 function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
 if(PERF.on)PERF.objets=0;
-(()=>{})();
+conesDeLaPlace(g,camX,camY,VW2);
 const gens=acteurs.slice().sort((a,b)=>a.y-b.y);
 let iG=0;
 const poserGens=(jusqua)=>{while(iG<gens.length&&gens[iG].y<=jusqua)gens[iG++].f();};
@@ -7217,7 +9955,7 @@ if(o.t[0]==='x'&&o.t[1]==='_'){
      petite barre verte qui dit où en est la pousse. En forêt le sprite
      changeait (pieds coupés, buisson dépouillé) mais rien ne disait quand
      ça revenait : on repassait dix fois pour rien. */
-  (()=>{})();
+  jaugeDeRepousseFo(g,o,x,y);
   /* LES ENTAILLES DE LA HACHE ET L'ENTAILLE À RÉSINE. Elles n'étaient
      dessinées que pour l'arbre du village : les arbres de la forêt passent
      par le report de calque en cache, qui ignore o.coups et o.saigne. On
@@ -7227,8 +9965,8 @@ if(o.t[0]==='x'&&o.t[1]==='_'){
   if(FAM_COUP[o.t]==='arbre'&&(o.coups||o.saigne)){
     let ht=0;try{ht=graverX(o.t,o.v||0).sol;}catch(err){}
     if(ht>12){
-      if(o.coups)(()=>{})();
-      if(o.saigne)(()=>{})()-o.saigne>180000);
+      if(o.coups)entailles(g,x,y,o.coups,ht);
+      if(o.saigne)dessinerEntaille(g,x,y,ht,Date.now()-o.saigne>180000);
     }
   }
 }
@@ -7244,10 +9982,10 @@ g.save();g.translate(x,y);
 if(dx)g.transform(1,0,dx*0.03,1,0,0);              /* le tronc se cintre */
 dessinerArbre(g,0,0,o.gr,essenceDe(o.x,o.y));
 g.restore();
-if(o.coups)(()=>{})();
+if(o.coups)entailles(g,x,y,o.coups,[50,64,79][o.gr||0]);
 if(o.saigne){
 const pret=Date.now()-o.saigne>180000;   /* la résine coule en 3 min */
-(()=>{})();
+dessinerEntaille(g,x,y,[50,64,79][o.gr||0],pret);
 }
 }
 }
@@ -7262,8 +10000,8 @@ dx=Math.round(am*3);dy=Math.round(Math.abs(am)*2);ecrase=am*0.12;
 }
 g.save();g.translate(x+dx,y+dy);
 if(ecrase)g.scale(1+ecrase,1-ecrase);
-(()=>{})();
-if(o.coups)(()=>{})();
+dessinerMinerai(g,0,0,o.gr,o.t);
+if(o.coups)felures(g,0,0,o.coups);
 g.restore();
 if(o.frappe&&Date.now()-o.frappe<70){
 g.globalAlpha=.5;g.fillStyle='#fff';
@@ -7287,7 +10025,7 @@ g.save();
 g.translate(x+dx,y+dy);
 if(ecrase)g.scale(1+ecrase,1-ecrase);              /* il s'écrase à l'impact */
 dessinerRocher(g,0,0,o.gr);
-if(o.coups)(()=>{})();
+if(o.coups)felures(g,0,0,o.coups);
 g.restore();
 if(o.frappe&&Date.now()-o.frappe<70){
 g.globalAlpha=.5;g.fillStyle='#fff';
@@ -7320,40 +10058,40 @@ if(e2<1)ec=Math.exp(-e2*4)*Math.sin(e2*24)*0.14;
 g.save();g.translate(x,y);
 if(ec)g.scale(1+ec,1-ec);
 if(o.t==='argile')dessinerArgile(g,0,0,o.gr,vide);
-else ({roseaux:dessinerRoseaux,champignons:(()=>null),
-herbes:(()=>null),plumes:(()=>null)})[o.t](g,0,0,o.gr,o.x,o.y);
+else ({roseaux:dessinerRoseaux,champignons:dessinerChampignons,
+herbes:dessinerHerbes,plumes:dessinerPlumes})[o.t](g,0,0,o.gr,o.x,o.y);
 g.restore();
 }
 }
-else if(o.t==='forge'){(()=>{})();lueurNuit(g,x,y-18,42,'rgba(255,140,50,§)');}
-else if(o.t==='four')(()=>{})()<e.four.fin));
-else if(o.t==='etabli')(()=>{})();
+else if(o.t==='forge'){dessinerForge(g,x,y,true);lueurNuit(g,x,y-18,42,'rgba(255,140,50,§)');}
+else if(o.t==='four')dessinerFour(g,x,y,0,!!(e.four&&Date.now()<e.four.fin));
+else if(o.t==='etabli')dessinerEtabli(g,x,y);
 else if(o.t==='poteau')dessinerLePoteau(g,x,y);
 else if(o.t==='ecriteau')dessinerLEcriteau(g,x,y);
-else if(o.t==='taillerie')(()=>{})();
-else if(o.t==='mine2')(()=>{})();
+else if(o.t==='taillerie')dessinerLeForgeron(g,x,y);
+else if(o.t==='mine2')dessinerLeCarreau(g,x,y);
 else if(o.t==='tilleul')dessinerLeTilleul(g,x,y,o.gr||0);
 else if(o.t==='lanterneP')dessinerLaLanterneP(g,x,y,o.gr||0);
-else if(o.t==='passage')(()=>{})();
-else if(o.t==='entrepot')(()=>{})();
-else if(o.t==='echoppe')(()=>{})();
-else if(o.t==='metro'){if(CARTE==='extramar')dessinerX(g,{t:'x_metroM',v:0,x:o.x,y:o.y},x,y);else (()=>{})();}
+else if(o.t==='passage')dessinerLePassage(g,x,y);
+else if(o.t==='entrepot')dessinerLEntrepot(g,x,y);
+else if(o.t==='echoppe')dessinerLaBoutique(g,x,y);
+else if(o.t==='metro'){if(CARTE==='extramar')dessinerX(g,{t:'x_metroM',v:0,x:o.x,y:o.y},x,y);else dessinerLeMetro(g,x,y);}
 else if(o.t==='fontaine')dessinerLaFontaine(g,x,y);
 else if(o.t==='panneauV')dessinerLeTableau(g,x,y);
 else if(o.t==='arbrePot'||o.t==='bancP')dessinerDeco(g,o.t,x,y);
 else if(o.t==='maison'||o.t==='taverne'||o.t==='atelier'||o.t==='puits'){
 dessinerHameau(g,o.t,o.teinte,x,y);
 if(o.t==='atelier')lueurNuit(g,x,y-16,34,'rgba(255,140,50,§)');
-else if(o.t!=='puits'&&false)
+else if(o.t!=='puits'&&lampesAllumees())
 lueurNuit(g,x,y-22,o.t==='taverne'?38:28,'rgba(255,190,90,§)');
 }
-else if(o.t==='comptoir'){(()=>{})();
-if(false){
+else if(o.t==='comptoir'){dessinerLeComptoirNeuf(g,x,y);
+if(lampesAllumees()){
 lueurNuit(g,x,y-26,38,'rgba(255,200,110,§)');          /* la porte */
 [-78,78].forEach(dx=>lueurNuit(g,x+dx,y-30,24,'rgba(255,190,90,§)'));  /* les fenêtres */
 }}
 else if(o.t==='panneau'){dessinerPanneau(g,x,y);lueurNuit(g,x,y-14,18,'rgba(255,200,120,§)');}
-else if(o.t==='mine'){(()=>{})();lueurNuit(g,x,y-16,30,'rgba(255,180,90,§)');}
+else if(o.t==='mine'){dessinerMine(g,x,y);lueurNuit(g,x,y-16,30,'rgba(255,180,90,§)');}
 else if(o.t==='coffre'){
 let k=e.coffreOuvert?1:0;
 if(e.coffreQuand){
@@ -7365,17 +10103,17 @@ const f=Math.min(1,(age-2600)/900);                /* puis il s'efface */
 if(f>=1){DECOR.splice(DECOR.indexOf(o),1);invaliderGrille();continue;}
 g.save();g.globalAlpha=1-f;
 g.translate(0,f*9);
-(()=>{})());
+dessinerCoffre(g,x,y,true,0.94*(1-f*0.35));
 g.restore();
 continue;
 }
 }
-(()=>{})();
+dessinerCoffre(g,x,y,!!e.coffreOuvert,k);
 }
 else if(o.t==='souche'){
 let k=1;
 if(o.neuf){const t=Math.min(1,(Date.now()-o.neuf)/400);k=rebond(t);}
-g.save();g.translate(x,y);g.scale(1,k);(()=>{})();g.restore();
+g.save();g.translate(x,y);g.scale(1,k);dessinerSouche(g,0,0);g.restore();
 }
 else if(o.t==='gravats'){
 let k=1;
@@ -7609,7 +10347,7 @@ if(MONDE_PRET&&SOL)return;
 MONDE_PRET=true;
 /* ET SI LE SOL EXISTE DÉJÀ, on ne le refait pas : c'est la seconde
    serrure contre le double chargement. */
-LISIERE=construireLisiere();if(!SOL)refaireLeSol();(()=>{})();(()=>{})();
+LISIERE=construireLisiere();if(!SOL)refaireLeSol();semerDecor();balayerLeSentier();
 if(CARTE==='garde'){
 const arrive=new URLSearchParams(location.search).has('arrivee')||!EXT_AU_DEPART;
 const p0=arrive?[GX.descente.x,GX.plS-14]:[EXT_AU_DEPART.x,EXT_AU_DEPART.y];
@@ -7619,7 +10357,7 @@ try{sauver();}catch(x){}
 return;
 }
 if(CARTE==='tokyo'){TKM.poserTokyo();return;}
-if(CARTE==='extramar'){(()=>{})();return;}
+if(CARTE==='extramar'){poserAuPort();return;}
 const [dx,dy]=degager(joueur.x,joueur.y);   /* on ne démarre jamais dans un tronc */
 joueur.x=dx;joueur.y=dy;e.x=dx;e.y=dy;
 }
@@ -7683,7 +10421,7 @@ try{fmDessinerLampes(ctx,camX,camY,pileV);}catch(x){}
 try{fmDessinerDeco(ctx,camX,camY,pileV);}catch(x){}
 try{fmDessinerMetro(ctx,camX,camY,pileV);}catch(x){}
 try{fmDessinerLanternes(ctx,camX,camY,pileV);}catch(x){}
-
+try{fmDessinerHalloween(ctx,camX,camY,pileV);}catch(x){}
 try{pgDessiner(ctx,camX,camY,pileV);}catch(x){}
 try{pcDessiner(ctx,camX,camY,pileV);}catch(x){}
 try{moDessiner(ctx,camX,camY,pileV);}catch(x){}
@@ -7704,7 +10442,7 @@ const vergerArbres=[];
 try{
 /* LA CLÔTURE, EN BANDES TRIÉES. Elle ne dépend pas du serveur : elle est
    là dès la première image, même si l'état du verger n'est pas revenu. */
-if(!VER_BANDES)VER_BANDES=(()=>{})();
+if(!VER_BANDES)VER_BANDES=verBandesClot();
 const CL=VER_CLOT;
 for(const [sx,sy,sw,sh,yt] of VER_BANDES){
 if(CL.oy+sy-camY>VH+40||CL.oy+sy+sh-camY<-40)continue;
@@ -7716,10 +10454,10 @@ try{
 if(VERG.charge){
 const ZV=VER_Z();
 if(ZV.x1-camX>-10&&ZV.x0-camX<VW+10&&ZV.y1-camY>-10&&ZV.y0-camY<VH+40){
-if(VER_SALE||!VER_CHAMP){VER_CHAMP=(()=>{})();VER_SALE=false;}
+if(VER_SALE||!VER_CHAMP){VER_CHAMP=verGraver();VER_SALE=false;}
 ctx.drawImage(VER_CHAMP,Math.round(ZV.x0-camX),Math.round(ZV.y0-camY),ZV.x1-ZV.x0,ZV.y1-ZV.y0);
 for(let i=0;i<VER.n;i++){const F=VERG.f[i];if(!F||!F.esp||!ARB[F.esp])continue;
-const P=verPied(i), st=null;
+const P=verPied(i), st=verStade(F);
 if(P.x-camX>VW+60||P.x-camX<-60||P.y-camY>VH+40||P.y-camY<-110)continue;
 vergerArbres.push({y:P.y,f:()=>{try{poserArbre(ctx,F.esp,st,P.x-camX,P.y-camY,1);}catch(x){}}});
 if(st===3)vergerArbres.push({y:P.y+1,f:()=>{try{const t2=Date.now()/300;
@@ -7821,7 +10559,7 @@ b.y=Math.max(ENCLOS_Z.y0+14,Math.min(ENCLOS_Z.y1-14,b.y));});
 F.forEach(b=>{
 if(b.x-camX<-30||b.x-camX>VW+30||b.y-camY<-30||b.y-camY>VH+30)return;
 pousses_bete.push({y:b.y,f:()=>{try{
-(()=>{})();}catch(x){}}});});}
+poule(ctx,b.x-camX,b.y-camY,b.robe,b.etat,b.dir,b.coq,b.pas);}catch(x){}}});});}
 /* ================= LE TROUPEAU DE L'ENCLOS =================
    Les bêtes achetées au marché broutent pour de vrai dans le grand enclos.
    On tire leur nombre de la base une fois, puis on le resynchronise quand
@@ -7875,13 +10613,13 @@ b.y=Math.max(EN.y0+16,Math.min(EN.y1-16,b.y));});
 B.forEach(b=>{
 if(b.x-camX<-60||b.x-camX>VW+60||b.y-camY<-60||b.y-camY>VH+60)return;
 pousses_bete.push({y:b.y,f:()=>{try{
-(()=>null)(ctx,b.esp,b.x-camX,b.y-camY,b.esp==='vache'?1.3:1.1,true,b.robe,
+dessinerBete(ctx,b.esp,b.x-camX,b.y-camY,b.esp==='vache'?1.3:1.1,true,b.robe,
 b.dir||1,b.etat==='marche'?'marche':'broute',b.pas||0);}catch(x){}}});});}
 const pousses=[];
 if(POT.charge&&!CHAMP_LIBRE)for(let i=0;i<24;i++){
 const P=POT.parc[i];if(!P||!P.cult||!PLANTES[P.cult])continue;
 if(!potOuverte(i))continue;
-const Q=POT_XY(i), st=null;
+const Q=POT_XY(i), st=potStade(P);
 if(Q.x-camX>VW+30||Q.x+Q.PW-camX<-30||Q.y-camY>VH+40||Q.y+Q.PH-camY<-40)continue;
 /* UN PLANT, UNE LIGNE. Avant, les douze plants d'une planche étaient triés
    sur le bas de la parcelle : debout au milieu, on passait derrière eux
@@ -7899,7 +10637,7 @@ pousses.push({y:py,f:()=>{try{
 const ex=px-camX, ey=py-camY;
 ctx.fillStyle='#9a8158';ctx.fillRect(ex-4,ey-1,9,3);            /* la motte */
 ctx.fillStyle='rgba(30,22,12,.38)';ctx.fillRect(ex-4,ey+2,9,1);
-(()=>{})();
+poserPlant(ctx,P.cult,st,ex,ey,2);
 }catch(x){}}});
 }}
 /* ================= LE MÊME PIÈGE QUE LE VERGER, UNE FOIS DE PLUS =======
@@ -7938,7 +10676,7 @@ if(SOL_FIN)ctx.drawImage(SOL_FIN,camX*2,camY*2,lw*2,lh*2,0,0,lw,lh);   /* le sol
 else ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
 if(CHEMIN)ctx.drawImage(CHEMIN,camX,camY,lw,lh,0,0,lw,lh);   /* la couche du chemin */
 if(CARTE==='village'&&FIN_OK()&&!FERME_SEULE)dessinerLaPlaceFin(ctx,camX,camY);    /* la grand-place en dalles fines */
-if(CARTE==='extramar'){(()=>{})();eauVivante(ctx,camX,camY);}
+if(CARTE==='extramar'){scintillerLaMer(ctx,camX,camY);eauVivante(ctx,camX,camY);}
 const px=Math.round((joueur.x-camX)*ECH)/ECH;
 const py=Math.round((joueur.y-camY)*ECH)/ECH;
 flechesVersLesAutres(camX,camY);
@@ -7955,14 +10693,14 @@ if(ax<-40||ay<-70||ax>VW+40||ay>VH+40)continue;
 acteurs.push({y:a.y,f:()=>dessinerUnAutre(ctx,a,camX,camY)});
 }
 /* pêche retirée */if(LISIERE&&!(CHAMPS_SEULS&&CARTE==='village'))ctx.drawImage(LISIERE,camX,camY,lw,lh,0,0,lw,lh);
-
-(()=>{})();   /* l'eau du lac remue */
+try{dessinerLesTraces(ctx,camX,camY);}catch(x){}   /* les pas dans les feuilles, sous tout le reste */
+dessinerLesRides(ctx,camX,camY,VW,VH);   /* l'eau du lac remue */
 if(CARTE==='foret'){
-
+  try{dessinerLesSauts(ctx,camX,camY);}catch(x){}   /* les poissons, sur l'eau */
   /* LA LANTERNE SE TRIE AVEC LE DÉCOR. Dessinée avant lui, elle passait
      derrière le premier tronc venu — et c'est justement le repère qu'on ne
      doit jamais perdre de vue. */
-  acteurs.push({y:F_CARREFOUR[1],f:()=>{try{(()=>{})();}catch(x){}}});
+  acteurs.push({y:F_CARREFOUR[1],f:()=>{try{dessinerLaLanterne(ctx,camX,camY);}catch(x){}}});
   /* LES BÊTES se trient avec le décor : un chevreuil derrière un tronc
      passe derrière, devant il passe devant. */
   for(let i=0;i<FAUNE.length;i++){
@@ -7971,16 +10709,16 @@ if(CARTE==='foret'){
     const bx=b.x-camX, by=b.y-camY;
     if(bx<-40||by<-80||bx>VW+40||by>VH+40)continue;
     acteurs.push({y:b.y,f:(bb=>()=>{try{
-      (bb.g==='chevreuil'?(()=>null):(()=>null))(ctx,bb,camX,camY);
+      (bb.g==='chevreuil'?dessinerChevreuil:dessinerOiseau)(ctx,bb,camX,camY);
     }catch(x){}})(b)});
   }
 }
-if(CARTE==='extramar'){try{(()=>{})();}catch(x){}}   /* les poissons du bassin, sous les barques */
-if(CARTE==='large'){try{(()=>{})();}catch(x){}}      /* la coque, sous le marin */
+if(CARTE==='extramar'){try{dessinerLesSauts(ctx,camX,camY);}catch(x){}}   /* les poissons du bassin, sous les barques */
+if(CARTE==='large'){try{dessinerLeBateau(ctx,camX,camY);}catch(x){}}      /* la coque, sous le marin */
 dessinerDecor(ctx,camX,camY,VW,VH,acteurs);
 /* LES LUCIOLES FLOTTENT : elles passent par-dessus le décor, jamais
    derrière un tronc — elles sont entre les arbres et nous. */
-if(CARTE==='foret'){try{(()=>{})();}catch(x){}}
+if(CARTE==='foret'){try{dessinerLesLucioles(ctx,camX,camY);}catch(x){}}
 /* pêche retirée */   /* le lac et le large aussi */
 dessinerBulles(ctx,camX,camY,px,py);
 dessinerParts(ctx,camX,camY);
@@ -11022,7 +13760,7 @@ if(CARTE==='tokyo'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif){TKM.majEssai(dt,joyX,joyY);
 /* AU LARGE, LE JOYSTICK EST LA BARRE. On ne marche pas sur le pont :
    il n'y a rien à y faire, et deux modes à comprendre pour un bateau
    vide, c'était un mode de trop. Ligne à l'eau, le bateau s'arrête. */
-if(CARTE==='large'){(()=>{})();vx=vy=0;joueur.marche=false;return;}
+if(CARTE==='large'){majNavigation(dt);vx=vy=0;joueur.marche=false;return;}
 if(window.FP_GEL&&Date.now()<window.FP_GEL){vx=0;vy=0;joueur.marche=false;tournerEnDouceur(dt);return;}   /* on arrose : on reste planté jusqu'à la fin */
 tournerEnDouceur(dt);
 const n=Math.hypot(joyX,joyY);
@@ -11033,7 +13771,7 @@ const max=vitesseDuJoueur();
    marche, au-dessus de POUSSE_HAUTE on est à la pointe des souliers. */
 const r=Math.max(0,Math.min(1,(pousse-POUSSE_BASSE)/(POUSSE_HAUTE-POUSSE_BASSE)));
 const allureBase=VITESSE+(max-VITESSE)*r;
-const allure=allureBase*(VELO&&CARTE==='extramar'?1.75:1)*(REPU_FIN>Date.now()?1.15:1)*(null?1.15:1);   /* la glace à la vanille : toute l'allure, marche comprise */
+const allure=allureBase*(VELO&&CARTE==='extramar'?1.75:1)*(REPU_FIN>Date.now()?1.15:1)*(glaceA('vanille')?1.15:1);   /* la glace à la vanille : toute l'allure, marche comprise */
 /* La foulée a deux seuils, un pour s'ouvrir, un plus bas pour se
    refermer : le pouce qui tremble au bord ne la fait plus clignoter. */
 court=(pousse>(court?COURSE_SORTIE:COURSE_ENTREE))&&max>=SEUIL_COURSE;
@@ -11175,7 +13913,7 @@ return t1>t0+1e-9;};
 const dansB=(X,Y,B)=>X>B[0]&&X<B[1]&&Y>B[2]&&Y<B[3];
 const BANDES=[];
 /* ---------- LA GANIVELLE DU VERGER ----------
-   Les quatre courants, à l'épaisseur où ils sont gravés : (()=>null)
+   Les quatre courants, à l'épaisseur où ils sont gravés : verBandesClot
    pose le nord à MY0+5, le sud à MY1+5, et les côtés sur vingt-deux et
    vingt-quatre unités de large. La trouée du sud laisse passer. */
 {const Mb=VER.mur, MX0=VER.x0-Mb, MX1=VER.x0+VER.L+Mb,
@@ -11543,7 +14281,7 @@ $('page2Fond').innerHTML='<div class="tete"><small>LA FERME · TON JOURNAL</smal
 '<span class="bourse">EN POCHE<b>'+enEuros(e.euros||0)+'</b></span></div>'+
 '<div class="corps"><div class="calme">On regarde…</div></div>'+
 '<div class="rbas"><button id="encX">RETOUR À LA FERME</button></div>';
-$('encX').onclick=()=>{vibrer(8);(()=>{})();};
+$('encX').onclick=()=>{vibrer(8);ouvrirLaFerme();};
 let P=null,C=null,CM=null;
 try{P=await appelRPC('pot_etat',{p_joueur:e.id});}catch(x){}
 try{C=await appelRPC('cuisine_etat',{p_joueur:e.id});}catch(x){}
@@ -12058,6 +14796,58 @@ const CSS_CHANT=`#page2Fond.chant{background:#f4eddd;color:#33291b;font-family:G
 #page2Fond.chant .go{width:100%;border:0;border-radius:14px;padding:14px;font:700 15px Georgia;background:linear-gradient(#f6dd8c,#c9a24a);color:#2a1a0e;margin-top:10px}
 #page2Fond.chant .go:disabled{background:#d8cdb4;color:#8a8070}`;
 const CAB_NOMS={planche:'Planches',pierre:'Pierres',tuile:'Tuiles',poutre:'Poutres',bois:'Bûches'};
+async function ouvrirLeChantier(mot){
+if(!document.getElementById('cssChant')){const st=document.createElement('style');st.id='cssChant';st.textContent=CSS_CHANT;document.head.appendChild(st);}
+$('page2Fond').className='chant';$('page2').classList.add('on');
+$('page2Fond').innerHTML='<div class="tete"><div><small>TON TERRAIN · LE VALLON</small><b>Le chantier</b></div><button id="chX">✕</button></div><div class="corps"><p class="mot">On regarde…</p></div>';
+$('chX').onclick=()=>{$('page2').classList.remove('on');};
+await cabLire();
+const etape=CAB.bati?'agrandir':'cabane';
+const cout=(etape==='cabane'?CAB.cout_cabane:CAB.cout_agrandir)||{};
+const sac=CAB.sac||{};
+let peut=(CAB.bati?CAB.niveau<1:true);
+const lignes=Object.entries(cout).map(([k,n])=>{
+const a=sac[k]||0, ok=a>=n;if(!ok)peut=false;
+return '<div class="mat '+(ok?'ok':'ko')+'"><b>'+(CAB_NOMS[k]||k)+'</b><i>'+Math.min(a,n)+' / '+n+'</i></div>';}).join('');
+const fini=(CAB.bati&&CAB.niveau>=1);
+$('page2Fond').innerHTML='<div class="tete"><div><small>TON TERRAIN · LE VALLON</small><b>'+
+(fini?'Ton cabanon':(CAB.bati?'Agrandir le cabanon':'Bâtir le cabanon'))+'</b></div><button id="chX">✕</button></div>'+
+'<div class="corps"><p class="mot">'+(mot||(fini?'« Le coffre, le séchoir et l’établi viendront bientôt. »'
+:(CAB.bati?'« Une pièce de plus, et un vrai toit de tuiles. »':'« Quatre murs, une porte, un toit. »')))+'</p>'+
+(fini?'':'<h4>CE QU’IL FAUT</h4>'+lignes+
+'<button class="go" id="chGo"'+(peut?'':' disabled')+'>'+(peut?(CAB.bati?'Agrandir':'Bâtir le cabanon'):'Il te manque de quoi')+'</button>')+
+'</div>';
+$('chX').onclick=()=>{$('page2').classList.remove('on');};
+if($('chGo'))$('chGo').onclick=async function(){this.disabled=true;this.textContent='…';
+const d=await appelRPC('cabanon_batir',{p_joueur:e.id,p_etape:etape});
+if(d&&d.ok){
+  if(d.sac)e.sac=d.sac;try{sauver();lireSacServeur();majPastille();}catch(x){}
+  CAB=Object.assign({},CAB,d.etat||{});cabRetenir();
+  jouer('vente','moment');vibrer([20,40,20]);
+  ouvrirLeChantier(etape==='cabane'?'« Et voilà. C’est chez toi. »':'« Plus grand, plus solide. »');
+  /* ON PART LA SAUVEGARDE AVANT DE RECHARGER, et on laisse le temps de lire :
+     le rechargement arrivait au bout de 800 ms, il effaçait le message qu'on
+     venait d'afficher et annulait la sauvegarde en cours de route. */
+  try{await envoyerSauvegarde(true);}catch(x){}
+  setTimeout(()=>location.reload(),2200);        /* le cabanon apparaît sur ton terrain */
+  return;
+}
+/* CHAQUE REFUS A SON MOT. « deja » et « pas_de_cabane » manquaient à l'appel
+   et tombaient dans « ne répond pas » : le joueur croyait à une panne alors
+   que le chantier avait abouti. */
+const MOTS={manque:'« Il te manque encore de quoi. »',
+            deja:'« C’est déjà fait. »',
+            pas_de_cabane:'« Il faut d’abord bâtir le cabanon. »',
+            etape:'« Je ne sais pas faire ça. »'};
+if(d&&d.erreur){ouvrirLeChantier(MOTS[d.erreur]||('« '+d.erreur+' »'));return;}
+/* AUCUNE RÉPONSE LISIBLE : le chantier a peut-être abouti quand même
+   (appelRPC renvoie null sur un corps non-JSON). On ne fait pas deviner
+   le joueur et on ne l'invite pas à recliquer : on redemande au serveur. */
+await cabLire();
+const fait=(etape==='cabane')?!!CAB.bati:((CAB.niveau||0)>=1);
+if(fait){ouvrirLeChantier('« C’est fait. »');setTimeout(()=>location.reload(),1800);}
+else ouvrirLeChantier('« Le chantier n’a pas répondu. Réessaie. »');};
+}
 /* LA PORTE DE LA BÊTA : c'est le serveur qui dit qui entre, pas la page.
    Avant, l'identifiant du développeur était écrit en clair ici — une fois lu,
    n'importe qui pouvait se faire passer pour lui. La réponse est demandée une
@@ -12736,7 +15526,7 @@ if(CARTE==='foret'&&joueur.pas-tracePrec>=2.2){
 tracePrec=joueur.pas;
 const v=Math.hypot(vx,vy)||1, ux=vx/v, uy=vy/v;
 traceCote=-traceCote;
-(()=>{})();
+poserUneTrace(joueur.x-uy*2.4*traceCote, joueur.y+ux*1.6*traceCote, ux, uy, false);
 }
 if(!dansRiviere(joueur.x,joueur.y))return;     /* plus de poussière sur la terre : seules les éclaboussures restent */
 if(joueur.pas-pasPrec<1.6)return;
@@ -13070,7 +15860,7 @@ g.fillStyle='rgba(159,214,122,.85)';g.fillRect(Math.round(x-6),Math.round(y-12),
 }
 /* ================= LA FORÊT SE SOUVIENT =================
    Elle sortait ici sur `if(ANNEXE)return` — et la forêt est une annexe.
-   On rechargeait la page, null reposait les trente-cinq arbres
+   On rechargeait la page, semerLaForet() reposait les trente-cinq arbres
    neufs, et le joueur revoyait un érable entier. Mais le SERVEUR, lui, se
    souvenait : on le coupait, il répondait « déjà coupé ». Le jeu et le
    serveur ne montraient pas la même forêt.
@@ -13745,7 +16535,7 @@ function cible(){
      vise, pas le tablier. */
   {const B=(CARTE==='extramar')?DECOR.find(o=>o.t==='x_bateau'):null;
    if(B&&Math.abs(B.x-joueur.x)<36&&joueur.y>B.y-150&&joueur.y<B.y+30)return B;}
-  {const p=false;if(p)return p;}
+  {const p=surLePonton();if(p)return p;}
 let d0=48,res=null;
 const autour=autourDe(joueur.x,joueur.y);
 const LARGES=['forge','comptoir','echoppe','mine2','taillerie'];
@@ -13757,7 +16547,7 @@ const cueillable=['argile','roseaux','champignons','herbes','plumes',
 const minerai=['fer','cuivre','charbon'].includes(o.t);
 const batiment=['mine','forge','comptoir','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro','x_etal','x_pavPoisson','x_pavPeche','x_cabanon','x_cabanonMoi','x_stationVelo','x_bateau','x_paillasson','x_chantier','x_tableau'].includes(o.t);
 const buisFo=['x_fo_mure','x_fo_framboise','x_fo_myrtille'].includes(o.t);
-/* LE PONTON NE PASSE PLUS PAR ICI. Il a son propre test, false,
+/* LE PONTON NE PASSE PLUS PAR ICI. Il a son propre test, surLePonton(),
    tout en haut de cette fonction : il exige d'avoir les pieds sur le
    tablier. Mais il était aussi admis dans la recherche générale, qui
    accroche à 48 px — donc depuis la berge, à côté du ponton, le jeu
@@ -14151,28 +16941,358 @@ const batLocal=(x,y)=>{const dx=x-BAT.x,dy=y-BAT.y,c=Math.cos(BAT.a),s=Math.sin(
   return [dx*c+dy*s, -dx*s+dy*c];};
 const batMonde=(lx,ly)=>{const c=Math.cos(BAT.a),s=Math.sin(BAT.a);
   return [BAT.x+lx*c-ly*s, BAT.y+lx*s+ly*c];};
+function bloqueLarge(x,y){
+  const [lx,ly]=batLocal(x,y);
+  const w=demiPont((ly+PONT_L.L/2)/PONT_L.L);
+  return !(w>6&&Math.abs(lx)<w-9);
+}
 /* LA TERRE : on ne passe pas à travers les îles. Les formes sont les
    mêmes que celles peintes dans le sol — on les teste, on ne relit pas
    les pixels. */
+function terreLarge(x,y){
+  if(x<120||y<120||x>MONDE_L-120||y>MONDE_H-120)return true;
+  const ell=(cx,cy,rx,ry)=>((x-cx)*(x-cx))/(rx*rx)+((y-cy)*(y-cy))/(ry*ry)<1;
+  if(ell(520,620,164,110)||ell(690,760,110,78)||ell(380,840,84,60))return true;   /* le Frioul */
+  if(ell(420,1880,74,48))return true;                                             /* le Planier */
+  if(y>=600&&y<1560){if(x>=2118+Math.sin(y*.009)*52+Math.sin(y*.027)*20)return true;}  /* les calanques */
+  else if(x>=2210)return true;
+  if(x>=1480&&y>=2046&&y<=2108)return true;                                       /* la digue */
+  if(x>=1946&&y>=2196)return true;                                                /* le quai */
+  return false;
+}
 /* ---------------- la coque, gravée une fois ---------------- */
 /* LE POINTU, peint une fois pour toutes. On le grave la proue en haut ;
    la même peinture sert au port (posée) et au large (tournée). */
+function peindreCoque(g,cx,y0,L,HW){
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const hs2=(x,y,q)=>{let n=Math.sin(x*12.9898+y*78.233+q*37.719)*43758.5453;return n-Math.floor(n);};
+  const demi=(t)=>{if(t<0||t>1)return -1;return Math.max(.9,HW*Math.pow(Math.sin(Math.pow(t,.80)*Math.PI),.95));};
+  const BORD='#16304a', LISSE='#2f6a9e', CLAIR='#4e8fc4', BLANC='#f6f1e6', OMBRE='#d8cfbc';
+  const BOIS=['#8a6a40','#9a7a4e','#a98a5c','#b89a6c'], VERNI='#6d5231';
+  /* l'ombre portée sur l'eau */
+  g.save();g.globalAlpha=.22;g.fillStyle='#06202e';
+  g.beginPath();g.ellipse(cx+4,y0+L/2+4,HW+3,L/2+2,0,0,7);g.fill();g.restore();
+  for(let j=0;j<L;j++){
+    const t=j/L, w=demi(t), y=y0+j;
+    for(let i=-w;i<=w;i++){
+      const d=Math.abs(i)/w;
+      let col=BLANC;
+      if(i>w*0.34)col=OMBRE;                       /* le flanc tribord à l'ombre */
+      if(d>0.72)col=CLAIR;
+      if(d>0.80)col=LISSE;                         /* le liseré peint */
+      if(d>0.93)col=BORD;                          /* la lisse, trait net */
+      R(cx+i,y,1,1,col);}
+  }
+  /* LE PONT, en bois verni : des bordés dans la longueur et des membrures */
+  for(let j=0;j<L;j++){
+    const t=j/L, w=demi(t)-Math.max(3,HW*0.22), y=y0+j;
+    if(w<1.2)continue;
+    for(let i=-w;i<=w;i++){
+      const b=Math.floor((cx+i)/5), n=hs2(cx+i,y,13);
+      let col=BOIS[(b%2)?1:2];
+      if(n>.82)col=BOIS[3];else if(n<.14)col=BOIS[0];
+      if(((cx+i)%5)===0)col=VERNI;                 /* le joint des bordés */
+      R(cx+i,y,1,1,col);}
+    if(j%Math.max(7,Math.round(L/12))===0)R(cx-w,y,w*2+1,1,VERNI);   /* les membrures */
+  }
+  /* L'ÉTRAVE : une pièce claire qui monte, et le bout-dehors */
+  const bw=Math.max(2,Math.round(HW*0.22));
+  for(let j=0;j<Math.round(L*0.14);j++){const w=Math.max(1,demi(j/L)-1);
+    R(cx-Math.min(bw,w),y0+j,Math.min(bw,w)*2,1,'#fbf7ee');}
+  R(cx-1,y0-Math.round(L*0.05),2,Math.round(L*0.07),'#c9a86e');
+  /* LES BANCS */
+  const banc=(t)=>{const y=y0+L*t,w=demi(t)-Math.max(2,HW*0.12);
+    R(cx-w,y,w*2,Math.max(2,HW*0.09),'#6a4a2a');R(cx-w,y,w*2,1,'#9a7a52');
+    R(cx-w,y+Math.max(2,HW*0.09)-1,w*2,1,'#4a3220');};
+  banc(.30);banc(.56);
+  /* LE MOTEUR, SA BARRE FRANCHE, et le tableau arrière */
+  const sy=y0+L-Math.round(L*0.12);
+  R(cx-Math.round(HW*0.26),sy,Math.round(HW*0.52),Math.round(L*0.07),'#1e2d36');
+  R(cx-Math.round(HW*0.26),sy,Math.round(HW*0.52),1,'#3e5664');
+  R(cx-1,sy-Math.round(L*0.10),2,Math.round(L*0.10),'#8a6a44');
+  R(cx-Math.round(HW*0.10),sy-Math.round(L*0.11),Math.round(HW*0.20),2,'#6a4a2a');
+  /* LES ACCESSOIRES : caisse, seau, cordage lové, bouée, fanaux */
+  const cw=Math.max(5,Math.round(HW*0.42)), ch=Math.max(5,Math.round(L*0.09));
+  R(cx-Math.round(HW*0.62),y0+Math.round(L*0.33),cw,ch,'#b8762a');
+  R(cx-Math.round(HW*0.62),y0+Math.round(L*0.33),cw,2,'#d8a055');
+  for(let k=1;k<3;k++)R(cx-Math.round(HW*0.62),y0+Math.round(L*0.33)+Math.round(ch*k/3),cw,1,'#8a5418');
+  R(cx+Math.round(HW*0.28),y0+Math.round(L*0.44),Math.max(4,Math.round(HW*0.3)),Math.max(4,Math.round(L*0.055)),'#9aa6ac');
+  R(cx+Math.round(HW*0.28),y0+Math.round(L*0.44),Math.max(4,Math.round(HW*0.3)),1,'#c8d0d4');
+  /* le cordage lové à l'avant */
+  for(let a=0;a<3;a++){g.strokeStyle=a?'#cdbc94':'#e4d7b4';g.lineWidth=1;
+    g.beginPath();g.arc(cx+Math.round(HW*0.3),y0+Math.round(L*0.18),2+a*2,0,7);g.stroke();}
+  /* la bouée couronne, à bâbord */
+  g.fillStyle='#c8322a';g.beginPath();g.arc(cx-HW*0.72,y0+L*0.62,Math.max(4,HW*0.17),0,7);g.fill();
+  g.fillStyle='#f6f1e6';g.beginPath();g.arc(cx-HW*0.72,y0+L*0.62,Math.max(2,HW*0.09),0,7);g.fill();
+  /* deux pare-battages dehors, à tribord */
+  for(const t of [0.36,0.60]){const w=demi(t);
+    R(cx+w-1,y0+L*t,3,Math.max(3,L*0.045),'#d8d2c2');R(cx+w-1,y0+L*t,3,1,'#9a948a');}
+  /* le fanal de proue */
+  R(cx-1,y0+Math.round(L*0.08),2,3,'#2a2c30');R(cx-1,y0+Math.round(L*0.08),2,1,'#ffe8a8');
+}
+function graverLaCoque(){
+  const W=PONT_L.HW*2+16, H=PONT_L.L+24, cx=W/2, y0=12;
+  const c=document.createElement('canvas');c.width=W;c.height=H;
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  peindreCoque(g,cx,y0,PONT_L.L,PONT_L.HW);
+  return {toile:c,cx,cy:y0+PONT_L.L/2};
+}
 /* ---------------- la navigation ---------------- */
 const BAT_VMAX=186, BAT_VIR=3.6;
 let CAP_BAT=null;                       /* le point où l'on a dit d'aller */
+function mettreLeCap(x,y){
+  if(terreLarge(x,y)){try{texteVolant(joueur.x,joueur.y-52,'pas par là','#ffd040');}catch(e){}return false;}
+  CAP_BAT={x,y,t:0};
+  if(PECHE&&PECHE.etat!=='combat')/* pêche retirée */
+  try{jouer('clic');vibrer(8);}catch(e){}
+  return true;
+}
+function majNavigation(dt){
+  /* L'AUTOPILOTE : on touche l'eau, le bateau met le cap dessus, ralentit
+     en arrivant et s'arrête tout seul. Rien à maintenir sous le pouce. */
+  if(CAP_BAT){
+    CAP_BAT.t+=dt;
+    const dx=CAP_BAT.x-BAT.x, dy=CAP_BAT.y-BAT.y, dist=Math.hypot(dx,dy);
+    const vise=Math.atan2(dx,-dy);
+    let d=vise-BAT.a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;
+    const pas=BAT_VIR*dt;
+    BAT.a+=Math.max(-pas,Math.min(pas,d));
+    const frein=Math.min(1,Math.max(.12,(dist-20)/170));
+    const cible=BAT_VMAX*frein*(1-Math.min(.6,Math.abs(d)/Math.PI*1.2));
+    BAT.v+=(cible-BAT.v)*(1-Math.exp(-3.4*dt));
+    if(dist<24){CAP_BAT=null;BAT.v*=0.25;}
+  }else BAT.v*=Math.exp(-2.6*dt);
+  if(BAT.v<2)BAT.v=0;
+  const nx=BAT.x+Math.sin(BAT.a)*BAT.v*dt, ny=BAT.y-Math.cos(BAT.a)*BAT.v*dt;
+  if(coqueAterre(nx,ny,BAT.a)){
+    BAT.v=0;CAP_BAT=null;
+    if(!BAT.touche||Date.now()-BAT.touche>1400){BAT.touche=Date.now();
+      try{vibrer([18,50,18]);texteVolant(joueur.x,joueur.y-52,'on racle !','#ffd040');}catch(x){}}
+  }else{BAT.x=nx;BAT.y=ny;}
+  /* le joueur reste collé à la barre */
+  const [bx,by]=batMonde(0,BARRE_Y+16);
+  joueur.x=bx;joueur.y=by;joueur.dir='haut';joueur.dirVue='haut';
+  /* le sillage */
+  if(BAT.v>14){const [sx,sy]=batMonde((Math.random()-.5)*26,PONT_L.L/2+6);
+    BAT.sillage.push({x:sx,y:sy,t:0});}
+  for(let i=BAT.sillage.length-1;i>=0;i--){BAT.sillage[i].t+=dt;if(BAT.sillage[i].t>1.8)BAT.sillage.splice(i,1);}
+  if(BAT.sillage.length>90)BAT.sillage.splice(0,BAT.sillage.length-90);
+  majLeCoin();
+  try{miniPeindre();}catch(x){}
+}
+function majLeCoin(){
+  const k=coinDuBateau();
+  if(k===COIN_VU)return;
+  COIN_VU=k;
+  const b=$('bLarge');if(b){const s=b.querySelector('small');
+    if(s)s.textContent=k?COIN_NOM[k]:'en route — aucun coin';}
+  if(k)try{texteVolant(joueur.x,joueur.y-52,COIN_NOM[k],'#9fe1cb');}catch(x){}
+  try{majAction();}catch(x){}
+}
 /* l'étrave, les deux joues et le tableau : quatre points suffisent */
+function coqueAterre(x,y,a){
+  const c=Math.cos(a),s=Math.sin(a);
+  const P=[[0,-PONT_L.L/2+6],[-PONT_L.HW+6,-28],[PONT_L.HW-6,-28],[0,PONT_L.L/2-6]];
+  for(const [lx,ly] of P)if(terreLarge(x+lx*c-ly*s, y+lx*s+ly*c))return true;
+  return false;
+}
 /* ---------------- la mer et ses quatre coins ---------------- */
+function construireSolLarge(){
+  const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
+  const s=c.getContext('2d');s.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{s.fillStyle=col;s.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const hs2=(x,y,q)=>{let n=Math.sin(x*12.9898+y*78.233+q*37.719)*43758.5453;return n-Math.floor(n);};
+  const LW=Math.ceil(MONDE_L/2),LH=Math.ceil(MONDE_H/2);
+  const pt=document.createElement('canvas');pt.width=LW;pt.height=LH;
+  const pg=pt.getContext('2d');const img=pg.createImageData(LW,LH),px=new Uint32Array(img.data.buffer);
+  const ent=(h)=>{const n=parseInt(h.slice(1),16);return (255<<24)|((n&255)<<16)|(((n>>8)&255)<<8)|((n>>16)&255);};
+  const PROF=['#082c48','#0f4466','#165c86','#1f74a4'].map(ent);      /* le grand fond */
+  const MOYEN=['#0f5068','#16708c','#1d8aa6','#27a6bc'].map(ent);     /* la rade */
+  const CLAIR=['#0d5a6e','#149086','#1aa89a','#24c2ac'].map(ent);     /* l'eau claire */
+  const MOU=ent('#d2eeea');
+  const CP=COINS_L.calanques, FR=COINS_L.frioul, DG=COINS_L.digue, PL=COINS_L.planier;
+  for(let y=0;y<LH;y++){const wy=y*2;
+    for(let x=0;x<LW;x++){const wx=x*2;
+      let v=Math.sin(wy*.022+Math.sin(wx*.009)*2.2)*.34
+           +Math.sin(wy*.058+wx*.013)*.12
+           +hs2(x>>1,y>>1,3)*.34+hs2(x>>2,y>>2,7)*.26;
+      let P=MOYEN;
+      const dC=Math.min(Math.hypot(wx-CP.x,wy-CP.y),Math.hypot(wx-FR.x,wy-FR.y));
+      const dP=Math.hypot(wx-PL.x,wy-PL.y);
+      if(dC<460)P=CLAIR;else if(dP<520)P=PROF;
+      px[y*LW+x]=(v>.80&&hs2(x,y,17)>.72)?MOU:P[Math.min(3,Math.max(0,Math.floor(v*4.2)))];}}
+  pg.putImageData(img,0,0);s.drawImage(pt,0,0,LW,LH,0,0,LW*2,LH*2);
+  const ecume=(x,y,n,q)=>{for(let i=0;i<n;i++)R(x+hs2(i,q,21)*70-35,y+hs2(i,q,22)*12,2+hs2(i,q,23)*5,2,'#e4f2ee');};
+  const roche=(x,y,rx,ry,g0)=>{for(let j=-ry;j<=ry;j++){const w=rx*Math.sqrt(Math.max(0,1-(j/ry)*(j/ry)))*(1+Math.sin(j*.3+g0)*.14);
+      for(let i=-w;i<=w;i++){const v=hs2(x+i,y+j,g0);R(x+i,y+j,1,1,v>.72?'#c4b388':(v>.38?'#a89772':'#8c7c5c'));}
+      R(x-w,y+j,1,1,'#f2f8f2');R(x+w,y+j,1,1,'#eef6f2');}
+    for(let i=0;i<10;i++)R(x+hs2(i,g0,31)*rx*1.6-rx*.8,y+ry+2+hs2(i,g0,32)*8,3,2,'#e4f2ee');};
+  /* LE PORT ET SA DIGUE, en bas à droite : c'est par là qu'on rentre */
+  R(1500,2060,MONDE_L-1500,34,'#8e897c');R(1500,2060,MONDE_L-1500,5,'#c2bcae');R(1500,2090,MONDE_L-1500,5,'#5e5a50');
+  for(let x=1500;x<MONDE_L;x+=8)R(x,2066,1,24,'#726d62');
+  R(1492,2016,16,52,'#f2ece0');R(1487,2004,26,13,'#c8322a');R(1492,2042,16,6,'#c8322a');
+  for(let x=1520;x<MONDE_L;x+=120)ecume(x,2098,12,x);
+  R(1960,2210,MONDE_L-1960,MONDE_H-2210,'#a8a08c');R(1960,2210,MONDE_L-1960,6,'#cfc7b2');
+  for(let i=0;i<14;i++){R(1990+i*28,2236,18,46,'#f2ece0');R(1994+i*28,2232,10,5,'#c8322a');}
+  /* LES ÎLES DU FRIOUL, en haut à gauche */
+  roche(520,620,150,96,1.3);roche(690,760,96,64,2.6);roche(380,840,70,46,3.9);
+  for(let i=0;i<40;i++)R(380+hs2(i,4,9)*380,520+hs2(i,5,9)*120,4,3,'#f2ece0');
+  /* LES CALANQUES, la falaise du bord est */
+  for(let y=600;y<1560;y++){const b=2130+Math.sin(y*.009)*52+Math.sin(y*.027)*20;
+    for(let x=Math.round(b);x<MONDE_L;x++){const v=hs2(x>>1,y>>1,11);
+      R(x,y,1,1,v>.7?'#e6dcc2':(v>.36?'#cfc3a4':'#b0a386'));}
+    R(Math.round(b),y,1,1,'#f8fcf6');R(Math.round(b)+1,y,1,1,'#d4e8e2');}
+  for(let i=0;i<150;i++)R(2150+hs2(i,6,9)*240,600+hs2(i,7,9)*950,6+hs2(i,8,9)*7,5,'#3a6a34');
+  for(let y=620;y<1560;y+=90)ecume(2140,y,12,y);
+  /* LE SEC DU PLANIER, seul en bas à gauche */
+  roche(420,1880,60,34,0.6);R(412,1826,14,54,'#f2ece0');R(407,1812,24,15,'#c8322a');R(412,1850,14,7,'#c8322a');
+  for(let a=0;a<4;a++){s.strokeStyle='rgba(232,192,106,'+(.14-a*.03)+')';s.lineWidth=3;
+    s.beginPath();s.arc(420,1836,44+a*40,0,7);s.stroke();}
+  /* les bouées des quatre coins */
+  const bouee=(x,y,col)=>{s.fillStyle='rgba(6,30,44,.3)';s.beginPath();s.ellipse(x+5,y+5,11,11,0,0,7);s.fill();
+    s.fillStyle=col;s.beginPath();s.arc(x,y,11,0,7);s.fill();
+    s.fillStyle='#f2eee4';s.beginPath();s.arc(x,y,5,0,7);s.fill();
+    R(x-2,y-28,5,18,'#2a2c30');R(x-5,y-33,11,6,col);ecume(x,y+13,8,x);};
+  bouee(COINS_L.digue.x-120,COINS_L.digue.y+40,'#2a7a5a');
+  bouee(COINS_L.frioul.x+180,COINS_L.frioul.y+210,'#2a7a5a');
+  bouee(COINS_L.calanques.x-170,COINS_L.calanques.y+120,'#e8c06a');
+  bouee(COINS_L.planier.x+150,COINS_L.planier.y+140,'#c8322a');
+  return c;
+}
 /* ================= LA CARTE DE NAVIGATION =================
    Une mer de 2400 sur 2400 et un écran qui en montre 390 : sans carte,
    on tourne en rond. Elle se pose en haut à droite, montre les quatre
    coins, la terre, et le bateau avec son cap. */
 let MINI_C=null, MINI_FOND=null;
 const MINI_T=108;
+function miniFond(){
+  const c=document.createElement('canvas');c.width=MINI_T;c.height=MINI_T;
+  const g=c.getContext('2d');const k=MINI_T/MONDE_L;
+  g.fillStyle='#0d3a52';g.fillRect(0,0,MINI_T,MINI_T);
+  g.fillStyle='#16607e';
+  for(let y=0;y<MINI_T;y+=3)g.fillRect(0,y,MINI_T,1);
+  /* la terre, à gros traits */
+  g.fillStyle='#b4a378';
+  const ell=(cx,cy,rx,ry)=>{g.beginPath();g.ellipse(cx*k,cy*k,rx*k,ry*k,0,0,7);g.fill();};
+  ell(520,620,164,110);ell(690,760,110,78);ell(380,840,84,60);ell(420,1880,74,48);
+  g.fillRect(2118*k,600*k,MINI_T-2118*k,960*k);
+  g.fillRect(1480*k,2046*k,MINI_T-1480*k,62*k);
+  g.fillRect(1946*k,2196*k,MINI_T-1946*k,MINI_T-2196*k);
+  g.strokeStyle='rgba(232,192,106,.35)';g.lineWidth=1;g.strokeRect(.5,.5,MINI_T-1,MINI_T-1);
+  return c;
+}
+function miniPeindre(){
+  if(!MINI_C)return;
+  if(!MINI_FOND)MINI_FOND=miniFond();
+  const g=MINI_C.getContext('2d'),k=MINI_T/MONDE_L;
+  g.clearRect(0,0,MINI_T,MINI_T);g.drawImage(MINI_FOND,0,0);
+  for(const c in COINS_L){const C=COINS_L[c],on=(COIN_VU===c);
+    g.fillStyle=on?'rgba(232,192,106,.22)':'rgba(143,211,192,.14)';
+    g.beginPath();g.arc(C.x*k,C.y*k,C.r*k,0,7);g.fill();
+    g.fillStyle=on?'#e8c06a':'#8fd3c0';
+    g.beginPath();g.arc(C.x*k,C.y*k,on?3.4:2.4,0,7);g.fill();}
+  g.save();g.translate(BAT.x*k,BAT.y*k);g.rotate(BAT.a);
+  g.fillStyle='#f4efe2';g.beginPath();g.moveTo(0,-6);g.lineTo(3.6,5);g.lineTo(0,3);g.lineTo(-3.6,5);g.closePath();g.fill();
+  g.restore();
+}
+function poserLaCarteDuLarge(){
+  if(CARTE!=='large'||$('miniL'))return;
+  const d=document.createElement('div');d.id='miniL';
+  d.style.cssText='position:fixed;right:10px;top:calc(96px + env(safe-area-inset-top));z-index:25;'+
+    'padding:4px;border-radius:10px;background:rgba(8,20,26,.72);border:1px solid rgba(232,192,106,.4);pointer-events:none';
+  MINI_C=document.createElement('canvas');MINI_C.width=MINI_T;MINI_C.height=MINI_T;
+  MINI_C.style.cssText='display:block;width:'+MINI_T+'px;height:'+MINI_T+'px;image-rendering:pixelated;border-radius:7px';
+  d.appendChild(MINI_C);document.body.appendChild(d);
+  miniPeindre();
+}
 /* ================= ON MONTRE, IL Y VA =================
    Pas de joystick au large : on touche l'eau et le bateau met le cap
    dessus. On touche la coque, il s'arrête. On touche un coin sur la
    carte, il y file. */
 let BARRE_BRANCHEE=false;
+function pointDuMonde(ev){
+  const r=cv.getBoundingClientRect();
+  if(!r.width||!r.height)return null;
+  const x=CAM.x+(ev.clientX-r.left)*(VW/r.width);
+  const y=CAM.y+(ev.clientY-r.top)*(VH/r.height);
+  return [x,y];
+}
+function brancherLaBarre(){
+  if(BARRE_BRANCHEE||CARTE!=='large')return;BARRE_BRANCHEE=true;
+  const surUI=(c)=>!!(c&&c.closest&&c.closest('#barre,#emPan,button,#action,#hublot,#pan,#page2,#porte,#bandeau,#miniL,#bLarge,#nivPop,#carnetP,#catalogue'));
+  const toucher=(ev)=>{
+    if(pageOuverte()||surUI(ev.target))return;
+    /* pêche retirée */        /* on est en train de ferrer */
+    const p=pointDuMonde(ev);if(!p)return;
+    const [lx,ly]=batLocal(p[0],p[1]);
+    const w=demiPont((ly+PONT_L.L/2)/PONT_L.L);
+    if(w>0&&Math.abs(lx)<w+6){stopperLeBateau();return;}   /* la coque : on stoppe */
+    mettreLeCap(p[0],p[1]);
+  };
+  addEventListener('pointerdown',toucher,{passive:true});
+  /* la carte : un coin d'un doigt */
+  const d=$('miniL');
+  if(d){d.style.pointerEvents='auto';
+    d.addEventListener('pointerdown',(ev)=>{
+      ev.stopPropagation();
+      const r=MINI_C.getBoundingClientRect();
+      const wx=(ev.clientX-r.left)/r.width*MONDE_L, wy=(ev.clientY-r.top)/r.height*MONDE_H;
+      let k=null,d0=1e9;
+      for(const c in COINS_L){const C=COINS_L[c],dd=Math.hypot(wx-C.x,wy-C.y);if(dd<d0){d0=dd;k=c;}}
+      if(k&&d0<COINS_L[k].r*1.25){const C=COINS_L[k];
+        /* on se range à l'entrée du coin, pas sur le rocher */
+        const a=Math.atan2(BAT.y-C.y,BAT.x-C.x);
+        let px=C.x+Math.cos(a)*C.r*0.45, py=C.y+Math.sin(a)*C.r*0.45;
+        for(let q=0;q<10&&terreLarge(px,py);q++){px=C.x+Math.cos(a+q)*C.r*0.6;py=C.y+Math.sin(a+q)*C.r*0.6;}
+        if(mettreLeCap(px,py))try{texteVolant(joueur.x,joueur.y-52,'cap sur '+COIN_NOM[k],'#e8c06a');}catch(e){}
+      }else mettreLeCap(wx,wy);
+    },{passive:true});}
+}
+function poserLeBoutonDuLarge(){
+  if(CARTE!=='large'||$('bLarge'))return;
+  const b=document.createElement('button');b.id='bLarge';
+  b.innerHTML='⚓ Rentrer au port<small>'+(COIN_NOM[COIN_LARGE]||'')+'</small>';
+  b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:calc(8px + env(safe-area-inset-top));z-index:26;'+
+    'padding:9px 16px;border:1px solid rgba(232,192,106,.55);border-radius:999px;background:rgba(8,20,26,.86);'+
+    'color:#e8c06a;font:700 13px/1.1 Georgia;letter-spacing:.06em;text-align:center';
+  b.querySelector('small').style.cssText='display:block;margin-top:2px;font:400 9px/1 Georgia;letter-spacing:.14em;color:#9fb8ad;text-transform:uppercase';
+  b.onclick=()=>{jouer('clic');vibrer(10);rentrerAuPort();};
+  document.body.appendChild(b);
+}
+async function gagnerLeCombat(){
+const P=PECHE;if(P.fx){P.bx=P.fx;P.by=P.fy;}P.etat='remonte';P.t0=performance.now();TIENT_PECHE=false;majAction();
+const num=++numAppelSac;
+const d=await appelRPC('pecher_prise',{p_joueur:e.id});
+if(!d||d.erreur){
+const m=!d?'la ligne a cassé':(d.erreur==='sac plein'?'ton inventaire est plein':(d.erreur==='deja pris'?'quelqu’un l’a déjà pris aujourd’hui':'il s’est échappé'));
+texteVolant(joueur.x,joueur.y-34,m,'#e8a06a');PECHE=null;majAction();return;
+}
+if(d.sac){adopterSac(d,num);e.sac=d.sac;sauver();if(typeof majHaut==='function')majHaut();}
+if(CARNET_PECHE){const c=CARNET_PECHE[d.espece]||{n:0,record:0};c.n++;c.record=Math.max(c.record,d.cm);CARNET_PECHE[d.espece]=c;}
+DERNIERE_PECHE={espece:d.espece,cm:d.cm};
+P.etat='saute';P.t0=performance.now();P.fin=d;                     /* le poisson jaillit vers nous */
+const S=ESP_PECHE[d.espece]||ESP_PECHE.sardine;
+setTimeout(()=>{
+if(PECHE!==P)return;
+texteVolant(joueur.x,joueur.y-44,(LEGENDES.includes(d.espece)?'🏆 ':'')+S.nom+' · '+d.cm+' cm',
+LEGENDES.includes(d.espece)?'#f4d98a':(d.neuf?'#9fdfb8':'#cfe0f2'));
+
+if(d.neuf)setTimeout(()=>texteVolant(joueur.x,joueur.y-54,'nouvelle espèce au carnet !','#9fdfb8'),500);
+/* une espece neuve ou un record peuvent faire monter d'un echelon :
+   c'est le seul moment ou cela vaut un aller-retour au serveur */
+if(d.neuf||d.record)rafraichirLeRang().then(nr=>{
+if(nr&&RANGS_MARIN[nr])texteVolant(joueur.x,joueur.y-66,
+'livret visé · '+RANGS_MARIN[nr].toUpperCase(),'#e8c06a');});
+else if(d.record)setTimeout(()=>texteVolant(joueur.x,joueur.y-54,'nouveau record !','#e8c06a'),500);
+if(d.points>0){marquer('peche',d.points);sauver();setTimeout(()=>texteVolant(joueur.x+14,joueur.y-30,'+'+d.points+' pt'+(d.points>1?'s':''),'#ffd76a'),900);}
+jouer('achat','moment');vibrer(LEGENDES.includes(d.espece)?[40,60,40,60,120]:[18,30,18]);
+PECHE=null;majAction();
+},650);
+}
+function perdreLeCombat(){
+texteVolant(joueur.x,joueur.y-34,'la ligne a cassé…','#e8a06a');
+vibrer(80);PECHE=null;TIENT_PECHE=false;majAction();
+}
 /* chaque poisson a sa façon de se battre */
 const ALLURE={
   /* les nerveux : des cercles courts, qui se resserrent peu */
@@ -16577,7 +19697,7 @@ if(!document.getElementById('cssCls')){const st=document.createElement('style');
 st.id='cssCls';st.textContent=CSS_CLS;document.head.appendChild(st);}
 $('page2Fond').className='';$('page2').classList.add('on');
 if(CLS_VUE==='peche')return '';
-if(CLS_VUE==='pokedock')return (()=>{})();
+if(CLS_VUE==='pokedock')return clsPokedockA();
 return clsNiveaux();
 }
 /* ================= LE CLASSEMENT DES NIVEAUX (modèle A) =================
@@ -16747,6 +19867,21 @@ async function clsNiveaux(){
    Le podium des meilleurs pêcheurs (leurs points), puis tous les autres ;
    en dessous, les légendes et les plus grosses prises de la semaine. */
 /* ================= LE POKÉDOCK, AU STYLE DU CARNET ================= */
+async function clsPokedockA(){
+ clsPrepA();clsCadreA('pokedock','<div class="nvVide">On ouvre les classeurs…</div>');
+ let L=[];try{const d=await appelRPC('pokedock_classement',{});if(Array.isArray(d))L=d;}catch(x){}
+ if(!clsActif('pokedock'))return;
+ const f=n=>(+n||0).toLocaleString('fr-FR');
+ if(!L.length){clsCadreA('pokedock','<div class="nvVide">Personne n’a encore ouvert un paquet.<br>Le rayon Pokédock est au Bar des Docks.</div>');return;}
+ const sec=(n)=>n>0?' · ✶ '+n+' SECRÈTE'+(n>1?'S':''):'';
+ const moi=L.findIndex(j=>j.id===e.id);
+ let h=clsPodium(L,j=>(j.distinctes||0),j=>f(j.total)+' CARTES'+sec(j.secretes||0));
+ if(moi>0){const ec=(L[moi-1].distinctes||0)-(L[moi].distinctes||0)+1;h+='<div class="cible">🃏 Il te manque <b>'+ec+' carte'+(ec>1?'s':'')+' différente'+(ec>1?'s':'')+'</b> pour passer devant <b>'+echapperT(L[moi-1].pseudo)+'</b>.</div>';}
+ else if(moi===0)h+='<div class="cible">🃏 Tu as <b>la plus belle collection du port</b>. Il en reste '+(100-(L[0].distinctes||0))+' à trouver.</div>';
+ else h+='<div class="cible">🃏 Tu n’as pas encore de carte. Le rayon Pokédock est au <b>Bar des Docks</b>.</div>';
+ h+=L.slice(3).map((j,i)=>clsLigne(j,i+4,f(j.total)+' CARTES'+sec(j.secretes||0),j.distinctes||0,(j.distinctes||0)+' / 100','DIFFÉRENTES')).join('');
+ h+='<div class="regle">On compte les cartes différentes : la série en a cent.</div>';
+ clsCadreA('pokedock',h);}
 
 /* le détail d'un score : seulement les activités où l'on a des points */
 function clsParts(j){const f=n=>(+n||0).toLocaleString('fr-FR');
@@ -16760,6 +19895,34 @@ return p.length?p.map(([i,n])=>i+' '+f(n)).join(' · '):(clsVu(j.maj)||'—');}
    jamais un collectionneur de la première heure sur un coup de chance.
    Le compte vient du serveur (pokedock_classement) : une collection
    qu'on peut écrire depuis la console n'est pas une collection. */
+async function clsPokedock(){
+clsCadre('Pokédock','CENT CARTES · QUI LES A TOUTES');
+let liste=[];
+try{const d=await appelRPC('pokedock_classement',{});if(Array.isArray(d))liste=d;}catch(x){}
+const C=$('page2Fond').querySelector('#cls .corps');if(!C)return;
+if(!liste.length){C.innerHTML='<div class="vide">Personne n’a encore ouvert un paquet.</div>';return;}
+/* ICI L'ÉTALON N'EST PAS LE RECORD MAIS LA SÉRIE ENTIÈRE : cent cartes.
+   La barre devient donc un avancement — on lit d'un coup où en est chacun
+   de sa collection, et non pas seulement qui mène. */
+const sec=(n)=>n>0?(' · ✶ '+n+' SECRÈTE'+(n>1?'S':'')):'';
+let h='<div class="ech"><span>0</span><span>100 · LA SÉRIE ENTIÈRE</span></div>';
+h+=liste.map((j,k)=>{
+const moi=j.id===e.id, part=Math.max(2.5,Math.round((j.distinctes||0)))
+return '<div class="lg'+(k===0?' prem':'')+(moi?' moi':'')+'">'+
+'<div class="ba" style="width:'+part+'%"></div><div class="dd">'+
+'<span class="r">'+(k+1)+'</span>'+
+'<img src="'+clsTete(j)+'" alt="">'+
+'<span class="g"><b>'+echapperT(j.pseudo)+(moi?' <i>· toi</i>':'')+'</b>'+
+'<small>'+clsPts(j.total)+' carte'+((j.total||0)>1?'s':'')+sec(j.secretes||0)+'</small></span>'+
+'<span class="s">'+(j.distinctes||0)+'<u>/100</u></span></div></div>';}).join('');
+const iMoi=liste.findIndex(j=>j.id===e.id);
+if(iMoi>0){
+const ecart=(liste[iMoi-1].distinctes||0)-(liste[iMoi].distinctes||0)+1;
+h+='<div class="ecart">Il te manque <b>'+ecart+' carte'+(ecart>1?'s':'')+' différente'+(ecart>1?'s':'')+'</b> pour passer '+iMoi+(iMoi===1?'ᵉʳ':'ᵉ')+'</div>';
+}else if(iMoi===0){h+='<div class="ecart">Tu as <b>la plus belle collection du port</b>. Il en reste '+(100-(liste[0].distinctes||0))+' à trouver.</div>';}
+else{h+='<div class="ecart">Tu n’as pas encore de carte. Le rayon Pokédock est au <b>Bar des Docks</b>.</div>';}
+C.innerHTML=h;
+}
 /* ================= LE MUR DES TROPHÉES =================
    Les meilleurs pêcheurs, les légendes sorties de l'eau, et les cinq plus
    grosses prises de la semaine. Les poissons sont dessinés par le jeu. */
@@ -17114,6 +20277,8 @@ if($('b-courrier'))$('b-courrier').onclick=()=>{try{fermerTiroir();}catch(x){}ou
 if($('carnetP'))$('carnetP').onclick=(ev)=>{if(ev.target===$('carnetP'))$('carnetP').classList.remove('on');};
 if($('catFermer'))$('catFermer').onclick=fermerLeCatalogue;
 let PANO=false;
+function bouclePano(t){if(!PANO)return;const c=$('panoToile'),g=c.getContext('2d');g.imageSmoothingEnabled=false;
+panoramaGarde(g,c.width,c.height,t);requestAnimationFrame(bouclePano);}
 if($('panoFermer'))$('panoFermer').onclick=()=>{PANO=false;$('panorama').classList.remove('on');};
 if($('pqBouton'))$('pqBouton').onclick=toucherPetanque;
 if($('pqToile'))$('pqToile').onclick=toucherPetanque;
@@ -17161,7 +20326,7 @@ b.classList.add('on');b.onclick=laverLArgile;return;
    n'était récoltable depuis que la pêche y est ouverte.
    Quand une ligne est déjà à l'eau, la pêche reprend la main : il faut
    bien pouvoir ferrer. */
-if(CARTE==='large'&&!PECHE&&!false){
+if(CARTE==='large'&&!PECHE&&!coinDuBateau()){
   b.innerHTML='Mets le cap<small>APPROCHE D’UN COIN POUR PÊCHER</small>';
   b.classList.add('on');b.classList.add('inerte');b.onclick=null;return;}
 if(!recolteSousLaMain()&&false)return;
@@ -17204,7 +20369,7 @@ if(CARTE==='tokyo'&&GESTE.t<=0){
   const M=TKM.TK.metro;
   if(M&&Math.abs(joueur.x-M.x)<M.l&&joueur.y>M.y0&&joueur.y<M.y1){
     b.innerHTML='Prendre le métro<small>LIGNE 2 · RETOUR AU PORT · GRATUIT</small>';b.classList.add('on');
-    b.onclick=()=>{(()=>{})();};
+    b.onclick=()=>{ouvrirLeQuaiTokyo(true);};
     return;}
   const P=TKM.TK.porte;
   if(P&&Math.abs(joueur.x-P.x)<P.l&&joueur.y>P.y0&&joueur.y<P.y1){
@@ -17220,7 +20385,7 @@ setTimeout(()=>{location.href='jeu.html?carte=extramar&garde=1';},120);};
 return;
 }
 const lv=GX.longues.find(([x,y])=>Math.hypot(joueur.x-x,(joueur.y-y)*1.4)<22);
-if(lv){b.innerHTML='Regarder la ville<small>LA LONGUE-VUE</small>';b.classList.add('on');b.onclick=(()=>null);return;}
+if(lv){b.innerHTML='Regarder la ville<small>LA LONGUE-VUE</small>';b.classList.add('on');b.onclick=ouvrirLePanorama;return;}
 }
 if(dansLeBoulodrome()&&GESTE.t<=0){
 b.innerHTML='Jouer aux boules<small>UNE MÈNE CONTRE MARIUS · '+menesGagnees()+' GAGNÉE'+(menesGagnees()>1?'S':'')+'</small>';
@@ -17416,31 +20581,31 @@ return;
 }
 if(o.t==='panneauV'){ouvrirLeTuto();return;}
 if(o.t==='x_tableau'){ouvrirLeTableau();return;}
-
+if(o.t==='metro'){choisirLaDestination();return;}
 if(o.t==='x_etal'||o.t==='x_pavPoisson'){/* pêche retirée */;return;}
 if(o.t==='x_pavPeche'){ouvrirLaBoutiqueDePeche();return;}
 if(o.t==='x_chantier'){texteVolant(o.x,o.y-78,'Construction en cours…','#ffd040');
 setTimeout(()=>texteVolant(o.x,o.y-66,'Vous allez bientôt pouvoir découvrir','#fff3d0'),350);
 setTimeout(()=>texteVolant(o.x,o.y-56,'une nouvelle partie du village !','#fff3d0'),700);vibrer(12);return;}
 
-
-
-
-
-
-
-
+if(o.ouvre==='crousti'){ouvrirCrousti();return;}
+if(o.ouvre==='salon'){ouvrirLaMariniere();return;}
+if(o.ouvre==='presse'){afficheCapitainerie();return;}
+if(o.ouvre==='bar'){ouvrirLeBar();return;}
+if(o.ouvre==='glacier'){ouvrirLeGlacier();return;}
+if(o.ouvre==='karting'){ouvrirUneCourse('karting');return;}
+if(o.ouvre==='kayak'){ouvrirUneCourse('kayak');return;}
 if(o.ouvre==='cabanon'){ouvrirMonCabanon();return;}
-
-
+if(o.ouvre==='metroForet'){choisirLaDestination();return;}
+if(o.ouvre==='tokyo'){choisirLaDestination();return;}
 if(o.ouvre==='metroVallon'){voyagerVers('extramar','Direction Le port');return;}
 if(o.ouvre==='chantierVallon'){
-if(!ligne2Permise()){(()=>{})();return;}
-(()=>{})();return;}
+if(!ligne2Permise()){ouvrirLeChantierFerme();return;}
+ouvrirLeChantier();return;}
 /* LA CABANE OUVRE SUR LE BÛCHERON, et non sur l'atelier du bois : les
    deux portes menaient au même écran, et celui du bûcheron n'était
    atteignable par aucun chemin. L'atelier garde la maison de pierre. */
-
+if(o.ouvre==='bucheron'){ouvrirLaCabane();return;}
 if(o.ouvre==='chantierBlague'){regarderLeChantier();return;}
 
 if(o.ouvre==='epicerie'){try{bulleQuai('« Fermé pour inventaire », dit l’écriteau.');}catch(x){}vibrer(8);return;}
@@ -17452,22 +20617,22 @@ if(['scierie','campement','herboriste','carriere','grandArbre','champiRare'].inc
     grandArbre:'Trois cents ans, peut-être plus. On se sent petit.',
     champiRare:'Ils luisent un peu. Mieux vaut attendre d’en savoir plus.'}[o.ouvre]);}catch(x){}
   vibrer(8);return;}
-
-
+if(o.ouvre==='laFerme'){ouvrirLaFerme();return;}
+if(o.ouvre==='bqFerme'){ouvrirLaBoutiqueFerme();return;}
 /* LE MARCHÉ SE POSE PAR-DESSUS L'ÉCRAN DES BÊTES : il cherche .mk dans
    page2Fond, donc l'étable doit être peinte avant lui. */
+if(o.ouvre==='bassecour'){ouvrirLaBasseCour();return;}
+if(o.ouvre==='marcheBetes'){ETB=null;ouvrirLEtable();
+setTimeout(()=>{try{ouvrirLeMarcheAuxBetes();}catch(x){}},70);return;}
+if(o.ouvre==='etable'){ETB=null;ouvrirLEtable();return;}
+if(o.ouvre==='fromagerie'){ouvrirLaFromagerie();return;}
+if(o.ouvre==='metroFerme'){choisirLaDestination();return;}
+if(o.ouvre==='etalForet'){ouvrirLEtalDuBois();return;}
+if(o.ouvre==='atelierBois'){ouvrirLAtelier();return;}   /* l'atelier du bois existe déjà */
+if(o.ouvre==='cheneOuverture'){ouvrirLeGrandChene();return;}
 
-
-setTimeout(()=>{try{(()=>{})();}catch(x){}},70);return;}
-
-
-
-
-
-
-
-
-
+if(o.ouvre==='laRecolte'){ouvrirLaBoutiqueFerme();return;}
+if(o.ouvre==='etalGraines'){ouvrirLeGrainetier('graines');return;}
 if(o.ouvre==='maree'){/* pêche retirée */;return;}
 
 if(o.ouvre==='peche'){ouvrirLaBoutiqueDePeche();return;}
@@ -17476,14 +20641,14 @@ if(o.ouvre==='ecole'){ouvrirLEcole();return;}
 if(o.ouvre==='descenteTC'){redescendreEnTelecabine();return;}
 if(o.ouvre==='pistes'){partirSkier('descente');return;}
 if(o.ouvre==='longuevue'){regarderLaVue();return;}
-
+if(o.t==='x_bateau'){ouvrirLaRade();return;}
 if(o.t==='x_stationVelo'){VELO=!VELO;jouer('cueille');vibrer(VELO?[10,30,10]:12);
 texteVolant(joueur.x,joueur.y-40,VELO?'en route !':'trottinette rendue','#9fdfb8');majAction();return;}
 if(o.t==='entrepot')return;          /* on n'y ramasse rien : c'est un bâtiment */
-
+if(o.t==='taillerie'){ouvrirLaForge();return;}
 if(o.t==='ecriteau')return;
-
-
+if(o.t==='echoppe'){ouvrirLEchoppe();return;}
+if(o.t==='comptoir'){if(CHAMPS_SEULS&&CARTE==='village'){ouvrirLaBoutiqueFerme();return;}ouvrirLeComptoir();return;}
 if(o.t==='forge'){location.href='forge.html';return;}
 if(o.t==='metro')return;                       /* jamais de geste dessus */
 if((o.t==='rocher'||['fer','cuivre','charbon'].includes(o.t))&&!e.outils.pioche)return;
@@ -17696,28 +20861,6 @@ vibrer(deux?[12,30,26]:24);
 }else texteVolant(joueur.x,joueur.y-34,(d&&d.erreur)||'l’eau a tout emporté','#e8a06a');
 sauver();majHaut();majPastille();majAction();
 });
-}
-function recolterResine(o){
-signalerLeMonde(o,'resine','resine');
-o.saigne=Date.now();o.frappe=Date.now();
-o.coups=0;                                   /* l'entaille cicatrise */
-for(let i=0;i<9;i++){
-const a=-1.1-Math.random()*0.8;
-PARTS.push({x:o.x+(Math.random()-.5)*10,y:o.y-[50,64,79][o.gr||0]*0.3,
-vx:Math.cos(a)*(20+Math.random()*40)*(Math.random()<.5?-1:1),
-vy:Math.sin(a)*(30+Math.random()*30),
-vie:.9,taille:2,rot:0,vrot:0,
-c:i%2?'#e8a94a':'#f7cf7d',rebondi:false});
-}
-secouer(0.3);
-const q=1+Math.floor(Math.random()*2);
-const pris=ajouter('resine',q);
-e.recolte=(e.recolte||0)+pris;marquer('resine',pris);
-texteVolant(o.x,o.y-30,'+'+pris+' résine','#f7cf7d');
-texteVolant(o.x,o.y-42,'+7 pts','#a9c96a');
-for(let i=0;i<pris;i++)setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,'resine'),i*80);
-vibrer([10,26,16]);
-sauver();monterEnLigne(true);
 }
 const RECOLTES={
 argile:      {nom:'argile',      q:[2,3], pts:2, col:['#bb5e42','#9c4a32'], vole:false},
@@ -18197,15 +21340,6 @@ return r;}
 /* RENDU EN GRAND, PUIS RÉDUIT : à seize pixels sur seize, le dessin de la
    plante s'écrasait en un sachet informe. On le rend quatre fois plus
    gros et on le pose comme une image dans le carré de seize. */
-function icoDepuisPlante(k){try{
-const S=4,c=document.createElement('canvas');c.width=16*S;c.height=16*S;
-const g=c.getContext('2d');if(!g)return null;g.imageSmoothingEnabled=false;
-g.setTransform(S,0,0,S,0,0);PLANTES[k](g,8,15.4,3);
-const d=g.getImageData(0,0,16*S,16*S).data;let plein=false;
-for(let q=3;q<d.length;q+=4)if(d[q]>40){plein=true;break;}
-if(!plein)return null;
-return '<image href="'+c.toDataURL('image/png')+'" x="0" y="0" width="16" height="16" style="image-rendering:pixelated"/>';
-}catch(x){return null;}}
 /* QUATRE SILHOUETTES, pour que deux fruits ne se ressemblent pas :
    la ronde, la paire sur sa queue, la goutte, la grappe. */
 const ICO_FORME={
@@ -18761,6 +21895,19 @@ rare:      {nom:'RARE',      c:'#3f7d9c'},
 epique:    {nom:'ÉPIQUE',    c:'#8a4fa8'},
 legendaire:{nom:'LÉGENDAIRE',c:'#c9a24a'}
 };
+function echMarchand(){
+const c=$('echMarchand');if(!c)return;
+const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+c.width=56*D;c.height=70*D;
+const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+const avant=GESTE;GESTE={t:0};
+sprite(g,28,62,Object.assign({},DEF_AP,{veste:4,cheveux:3,chapeau:1,peau:2}),'bas',0,false);
+GESTE=avant;
+}
+function echBulle(txt){
+const b=$('echBulle');if(!b)return;
+b.textContent=txt;b.classList.remove('on');void b.offsetWidth;b.classList.add('on');
+}
 let PIECES_PRISES=[];
 async function lireMesNiveaux(){
 if(!e.id)return;
@@ -18796,6 +21943,27 @@ monterEnLigne(true);
 }
 sauver();
 }
+async function echPayer(cents){
+const d=await appelRPC('depenser',{p_joueur:e.id,p_cents:cents});
+if(!d||d.erreur){
+echBulle(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':'Le marchand n’a pas pu');
+if(d&&typeof d.euros==='number')e.euros=d.euros;
+echMaj();return false;
+}
+if(typeof d.euros==='number')e.euros=d.euros;
+return true;
+}
+function echMaj(){
+const c=$('echCorps');if(!c)return;
+$('echArgent').textContent=enEuros(e.euros||0);
+document.querySelectorAll('[data-ray]').forEach(b=>
+b.classList.toggle('on',b.dataset.ray===rayonEch));
+if(rayonEch==='equipement')echEquipement(c);
+else if(rayonEch==='metier')echMetier(c);
+else echVestiaire(c);
+document.querySelectorAll('[data-ray]').forEach(b=>
+b.onclick=()=>{rayonEch=b.dataset.ray;echMaj();});
+}
 const ECH_SEL={equipement:'sac',metier:'gouge',vestiaire:null};
 const PIX_ECH={
 sac:[['#8a6238',3,5,10,9],['#6b4a2c',3,5,10,2],['#a97f52',5,3,6,2],['#c9a24a',7,8,2,2]],
@@ -18804,47 +21972,14 @@ hache:[['#8a6238',7,3,2,12],['#9aa2a8',9,3,5,6],['#c7cdd2',9,3,5,1],['#6b7076',1
 pied:[['#5a3a20',2,8,6,5],['#5a3a20',9,8,6,5],['#3a2616',2,12,6,1],['#3a2616',9,12,6,1],['#8a6238',3,8,4,1],['#8a6238',10,8,4,1]],
 gouge:[['#8a6238',7,7,2,8],['#5a3f21',6,6,4,2],['#c7cdd2',7,1,2,6],['#eef2f5',7,1,1,6]],
 tamis:[['#8a6238',2,5,12,7],['#c7b88a',3,6,10,5],['#6b4a28',3,6,10,1],['#e8c06a',5,8,1,1],['#e8c06a',9,9,1,1]]};
+function pixEch(cv,k){const g=cv.getContext('2d');g.clearRect(0,0,16,16);(PIX_ECH[k]||[]).forEach(([c,x,y,w,h])=>{g.fillStyle=c;g.fillRect(x,y,w,h);});}
 let COMETES_VENDUES=0, RAYON_SALON='coupe', SEL_SALON=null;
-const CSS_SALON=`.salon .tete{background:#1f4a3a}.salon .tete .logo{color:#1f4a3a}.salon .btn{background:#1f4a3a}.salon .btn.enl{background:#fff;color:#1f4a3a;border-color:#1f4a3a}
-.salon .puces button.on{background:#1f4a3a;border-color:#1f4a3a}.salon .carte.on{border-color:#1f4a3a}.salon .carte .p{color:#8a6a1e}.salon .cabine .inf .prix{color:#8a6a1e}`;
-const CSS_SALON2=`
-.peigne{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;color:#fff;font-family:'Trebuchet MS',Arial,sans-serif;background:#0e0d14}
-.peigne .hd{padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 4px;text-align:center;position:relative}
-.peigne .neon{font:700 32px 'Trebuchet MS',sans-serif;letter-spacing:5px;color:#ff5fae;text-shadow:0 0 6px #ff5fae,0 0 18px #ff2a8a;animation:nn 4s infinite}
-@keyframes nn{0%,93%,97%,100%{opacity:1}95%{opacity:.45}}
-.peigne .sub{font:12px 'Trebuchet MS';letter-spacing:5px;color:#5ff2ff;text-shadow:0 0 8px #5ff2ff}
-.peigne .bourse{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 14px);font:11px 'Trebuchet MS';color:#aaa;text-align:right}.peigne .bourse b{display:block;color:#ffe45f;font-size:14px;text-shadow:0 0 6px #ffb000}
-.peigne .big{margin:8px 14px;border:2px solid #5ff2ff;border-radius:18px;box-shadow:0 0 14px rgba(95,242,255,.45),inset 0 0 14px rgba(95,242,255,.2);display:flex;align-items:center;gap:12px;padding:10px}
-.peigne .big canvas{flex:none;width:118px;height:128px;border-radius:12px;background:#1c1a26}
-.peigne .big .t{flex:1;min-width:0}.peigne .big .k{font:700 10px 'Trebuchet MS';letter-spacing:3px;color:#5ff2ff}
-.peigne .big h3{margin:3px 0;font:700 19px 'Trebuchet MS';line-height:1.15}.peigne .big .p{color:#ffe45f;font:700 21px 'Trebuchet MS';text-shadow:0 0 8px #ffb000}
-.peigne .big .et{font:12px 'Trebuchet MS';color:#aaa;margin:2px 0 8px}
-.peigne .big .coll{display:inline-block;font:700 10px 'Trebuchet MS';letter-spacing:1px;color:#0e0d14;background:#ffe45f;border-radius:6px;padding:2px 7px;box-shadow:0 0 10px #ffb000}
-.peigne .ac{border:0;border-radius:30px;padding:10px 16px;width:100%;font:700 14px 'Trebuchet MS';background:#ff5fae;color:#0e0d14;box-shadow:0 0 14px #ff5fae}
-.peigne .ac.enl{background:transparent;color:#ff5fae;border:2px solid #ff5fae}.peigne .ac.pas{background:#2c2a3a;color:#888;box-shadow:none}
-.peigne .onglets{display:flex;gap:8px;padding:4px 14px 6px}
-.peigne .onglets button{flex:1;padding:8px 4px;border-radius:30px;border:1px solid #3a3850;background:transparent;font:700 12px 'Trebuchet MS';color:#aaa}
-.peigne .onglets button.on{border-color:#ff5fae;color:#ff5fae;box-shadow:0 0 8px #ff5fae}
-.peigne .mur{flex:1;overflow-y:auto;padding:6px 14px 90px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;align-content:start}
-.peigne .med{background:#1c1a26;border-radius:14px;padding:6px;text-align:center;border:1px solid #2c2a3a;position:relative}
-.peigne .med.on{border-color:#ff5fae;box-shadow:0 0 12px rgba(255,95,174,.6)}
-.peigne .med canvas{width:100%;aspect-ratio:1;border-radius:10px;background:#252333}
-.peigne .med .n{font:700 13px 'Trebuchet MS';margin-top:4px}.peigne .med .p{font:700 13px 'Trebuchet MS';color:#ffe45f}
-.peigne .med .bd{position:absolute;top:10px;left:10px;font:700 9px 'Trebuchet MS';letter-spacing:1px;padding:2px 6px;border-radius:5px;background:#ff5fae;color:#0e0d14}
-.peigne .med .bd.a{background:#5ff2ff}.peigne .med .bd.or{background:#ffe45f;box-shadow:0 0 8px #ffb000}
-.peigne .flacon{position:absolute;right:10px;top:10px;width:16px;height:22px;border-radius:4px 4px 6px 6px;border:2px solid #fff;box-shadow:0 0 6px rgba(255,255,255,.6)}
-.peigne .bulle{position:absolute;left:14px;right:14px;bottom:70px;background:#1c1a26;border:1px solid #5ff2ff;color:#5ff2ff;border-radius:12px;padding:10px 12px;font:14px 'Trebuchet MS';opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none;box-shadow:0 0 12px rgba(95,242,255,.4)}
-.peigne .bulle.on{opacity:1;transform:none}
-.peigne .sortir{position:absolute;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);border:2px solid #5ff2ff;border-radius:30px;padding:12px;background:#0e0d14;color:#5ff2ff;font:700 15px 'Trebuchet MS';box-shadow:0 0 12px rgba(95,242,255,.4)}`;
+function vignetteTete(cv2,ap,dir){const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));const L0=30,H0=Math.round(L0*((cv2.clientHeight||32)/(cv2.clientWidth||30))),E=((cv2.clientWidth||140)/L0)*D;
+cv2.width=L0*E;cv2.height=H0*E;const g=cv2.getContext('2d');g.setTransform(E,0,0,E,0,0);g.imageSmoothingEnabled=false;const av=GESTE;GESTE={t:0};sprite(g,L0/2,H0+22-(H0-32)*0.45,ap,dir||'bas',0,false);GESTE=av;}   /* le cadre suit la forme du médaillon */
+function hsBulle(t){const b=$('hsBulle');if(!b)return;b.textContent=t;b.classList.add('on');clearTimeout(hsBulle.t);hsBulle.t=setTimeout(()=>b.classList.remove('on'),2600);}
 let REPU_FIN=0;
 const MENUS_CROUSTI=[['limonade','La Limonade du Vieux-Port','une grande limonade glacée',100,0],['petit','Le Petit Crousti','3 pilons, des frites, une sauce',300,5],
 ['seau','Le Seau du Port','le seau de 8 morceaux, frites, boisson',600,10],['mega','Le Méga-Seau','16 morceaux, 2 frites, 2 boissons, le dessert',1200,20]];
-const CSS_CROUSTI=`.crou .tete{background:#c8281e}.crou .tete .logo{color:#c8281e}.crou .ep button{background:#c8281e}.crou .ep .ok{color:#c8281e}
-.crou .ticket{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:rgba(20,10,0,.75)}
-.crou .ticket>div{width:82%;border-radius:16px;padding:22px 18px;text-align:center;background:linear-gradient(135deg,#f8e08a,#d8a830 45%,#fff0b0 55%,#c89020);color:#3a2604;box-shadow:0 0 40px rgba(255,210,90,.8);animation:tkt 1.2s ease-out}
-.crou .ticket b{display:block;font:900 26px Georgia;letter-spacing:3px}.crou .ticket p{font:italic 15px Georgia;margin:10px 0}
-.crou .ticket button{border:0;border-radius:20px;padding:10px 18px;background:#3a2604;color:#ffe08a;font:700 15px Georgia}
-@keyframes tkt{0%{transform:scale(.2) rotate(-20deg);opacity:0}60%{transform:scale(1.08) rotate(3deg);opacity:1}100%{transform:none}}`;
 const CRX={
 P:(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);},
 pilon(g,x,y,s){const r=(a,b,w,h,c)=>CRX.P(g,x+a*s,y+b*s,w*s,h*s,c);r(4,0,8,7,'#b8621e');r(3,1,10,5,'#c8742a');r(5,1,5,2,'#e8a050');r(6,2,2,1,'#f8c870');r(10,5,3,2,'#8a4414');r(11,6,2,4,'#f4ecd8');r(10,9,2,2,'#f4ecd8');r(12,9,2,2,'#f4ecd8');},
@@ -18864,6 +21999,23 @@ if(d==='seau'){CRX.seau(g,W*0.18,H*0.14,s*1.05);CRX.gobelet(g,W*0.66,H*0.22,s*0.
 if(d==='mega'){CRX.seau(g,W*0.04,H*0.16,s*0.95,true);CRX.frites(g,W*0.62,H*0.18,s*0.8);CRX.coupe(g,W*0.78,H*0.36,s*0.7);}
 if(d==='limonade'){CRX.gobelet(g,W/2-7*s,H*0.24,s*1.2);}
 if(d==='mouette'){CRX.mouette(g,W/2-11*s,2,s);}}};
+function etagere(objets){
+let h='';
+for(let i=0;i<objets.length;i+=3){
+h+='<div class="echEtagere"><div class="echObjets">'+objets.slice(i,i+3).map(o=>
+'<button class="echObj'+(o.choisi?' on':'')+'" data-sel="'+o.id+'">'+
+(o.vign?'<canvas class="vg" data-vue="'+o.id+'"></canvas>':'<canvas class="px" data-px="'+o.px+'" width="16" height="16"></canvas>')+
+'<span class="echEtiq'+(o.etiqClasse?' '+o.etiqClasse:'')+'">'+o.etiq+'</span>'+
+'<small>'+o.nom+'</small>'+
+(o.crans?'<span class="echNiv">'+o.crans.map(p=>'<i'+(p?' class="p"':'')+'></i>').join('')+'</span>':'')+
+'</button>').join('')+'</div><div class="echPlanche"></div></div>';
+}
+return h;
+}
+function brancherEtagere(c,rayon){
+c.querySelectorAll('canvas[data-px]').forEach(cv=>pixEch(cv,cv.dataset.px));
+c.querySelectorAll('[data-sel]').forEach(b=>b.onclick=()=>{ECH_SEL[rayon]=b.dataset.sel;echMaj();vibrer(8);});
+}
 /* CE QUE LE DERNIER CRAN DE SOULIERS DÉBLOQUE VRAIMENT.
    La fiche n'annonçait qu'un nombre : « 142 de pas → 152 de pas ». À cinq
    cents euros, +10 de pas ressemble à une arnaque — alors que c'est le
@@ -18871,6 +22023,100 @@ if(d==='mouette'){CRX.mouette(g,W/2-11*s,2,s);}}};
    le joueur ne marche plus, il court, avec sa propre foulée.
    On le lit dans PAS_VITESSE et SEUIL_COURSE plutôt que de l'écrire en
    dur : si le seuil bouge, la phrase suit toute seule. */
+function motDeLaCourse(clef,niv){
+if(clef!=='pied')return '';
+const V=PAS_VITESSE, n=Math.min(niv,V.length-1);
+if(V[n]>=SEUIL_COURSE)return 'tu cours déjà';
+if(n+1<V.length&&V[n+1]>=SEUIL_COURSE)return 'et tu te mets à courir';
+/* on annonce le palier de loin : ça donne une raison d'épargner */
+for(let i=n+1;i<V.length;i++)if(V[i]>=SEUIL_COURSE)return 'la course au '+(i+1)+'ᵉ cran';
+return '';
+}
+function echEquipement(c){
+const niv={sac:e.nivSac||0,pioche:e.nivPioche||0,hache:e.nivHache||0,pied:e.nivPied||0};
+const A=[
+{k:'sac',nom:'le sac',titre:'Le sac',unite:'objets',val:SAC_PALIERS,prix:SAC_PRIX,dit:'Un bon sac, ça change une journée : tu ramènes plus, tu fais moins d’allers-retours.'},
+{k:'pioche',nom:'la pioche',titre:'La pioche',unite:'coups par rocher',val:PIOCHE_COUPS,prix:PIOCHE_PRIX,dit:'Acier trempé à la forge d’à côté. Le rocher cède plus vite.'},
+{k:'hache',nom:'la hache',titre:'La hache',unite:'coups par arbre',val:HACHE_COUPS,prix:HACHE_PRIX,dit:'Manche de frêne, fer affûté. Même les chênes têtus finissent par tomber.'},
+{k:'pied',nom:'les souliers',titre:'Les souliers',unite:'de pas',val:PAS_VITESSE,prix:PIED_PRIX,dit:'Cuir souple, semelle cloutée : on va plus loin, plus vite.'}];
+const sel=A.find(a=>a.k===ECH_SEL.equipement)||A[0];
+c.innerHTML=etagere(A.map(a=>{const n=niv[a.k], max=n>=a.prix.length;
+return {id:a.k,px:a.k,nom:a.nom,choisi:a.k===sel.k,etiq:max?'MAX':enEuros(a.prix[n]).replace(',00',''),etiqClasse:max?'max':'',
+crans:a.val.map((v,i)=>i<=n)};}));
+const n=niv[sel.k], max=n>=sel.prix.length, prix=max?0:sel.prix[n], peut=!max&&(e.euros||0)>=prix;
+c.innerHTML+='<div class="echFiche"><b>'+sel.titre+(max?' · au maximum':' · '+(n+2)+'ᵉ cran')+'</b>'+
+'<p>« '+sel.dit+' »</p>'+
+'<div class="echGain">'+sel.val[n]+' '+sel.unite+(max?'':' <span>→</span> <b>'+sel.val[n+1]+' '+sel.unite+'</b>')+(motDeLaCourse(sel.k,n)?' <b style="color:#c9a24a">· '+motDeLaCourse(sel.k,n)+'</b>':'')+'</div>'+
+'<button id="echAcheter" class="'+(max?'max':(peut?'':'pas'))+'">'+(max?'Rien de plus à vendre':(peut?'Acheter · '+enEuros(prix):'Il te manque '+enEuros(prix-(e.euros||0))))+'</button></div>';
+brancherEtagere(c,'equipement');
+$('echAcheter').onclick=async()=>{
+if(max||!peut)return;
+const b=$('echAcheter');b.textContent='…';
+const d=await appelRPC('acheter_amelioration',{p_joueur:e.id,p_clef:sel.k});
+if(!d||d.erreur){echBulle(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':(d&&d.erreur==='au maximum'?'C’est déjà au maximum':'Le marchand n’a pas pu'));
+if(d&&typeof d.euros==='number')e.euros=d.euros;echMaj();return;}
+if(typeof d.euros==='number')e.euros=d.euros;
+if(sel.k==='sac'){e.nivSac=d.niveau;e.sacMax=SAC_PALIERS[Math.min(d.niveau,SAC_PALIERS.length-1)];setTimeout(()=>{try{lireSacServeur();}catch(x){}},400);}
+if(sel.k==='pioche')e.nivPioche=d.niveau;
+if(sel.k==='hache')e.nivHache=d.niveau;
+if(sel.k==='pied')e.nivPied=d.niveau;
+sauver();envoyerSauvegarde(true);majHaut();majPastille();majAction();
+jouer('achat','moment');echBulle(sel.titre+' : '+sel.val[n+1]+' '+sel.unite);vibrer(24);echMaj();
+};
+}
+function echMetier(c){
+e.metiers=e.metiers||{};
+const sel=METIERS.find(M=>M.id===ECH_SEL.metier)||METIERS[0];
+c.innerHTML=etagere(METIERS.map(M=>({id:M.id,px:M.id,nom:M.nom.toLowerCase(),choisi:M.id===sel.id,
+etiq:e.metiers[M.id]?'À TOI':enEuros(M.prix).replace(',00',''),etiqClasse:e.metiers[M.id]?'atoi':''})));
+const a=!!e.metiers[sel.id], peut=(e.euros||0)>=sel.prix;
+c.innerHTML+='<div class="echFiche"><b>'+sel.nom+(a?' · à toi':' · une fois pour toutes')+'</b>'+
+'<p>« '+sel.mot.charAt(0).toUpperCase()+sel.mot.slice(1)+'. »</p>'+
+'<div class="echGain"><i>'+sel.avant+'</i> <span>→</span> <b>'+sel.apres+'</b></div>'+
+'<button id="echAcheter" class="'+(a?'max':(peut?'':'pas'))+'">'+(a?'Tu l’as déjà':(peut?'Acheter · '+enEuros(sel.prix):'Il te manque '+enEuros(sel.prix-(e.euros||0))))+'</button></div>';
+brancherEtagere(c,'metier');
+$('echAcheter').onclick=async()=>{
+if(a||!peut)return;
+const b=$('echAcheter');b.textContent='…';
+const d=await appelRPC('acheter_metier',{p_joueur:e.id,p_metier:sel.id});
+if(!d||d.erreur){echBulle(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':'Le marchand n’a pas pu');echMaj();return;}
+if(typeof d.euros==='number')e.euros=d.euros;
+e.metiers[sel.id]=true;
+sauver();envoyerSauvegarde(true);majHaut();majAction();
+echBulle(sel.nom+' · à toi de t’en servir');vibrer(24);echMaj();
+};
+}
+function echVestiaire(c){
+e.cos=e.cos||{};
+const ordre={legendaire:0,epique:1,rare:2,commune:3};
+const L=[...COSMETIQUES].sort((a,b)=>(ordre[a.rar]-ordre[b.rar])||(b.prix-a.prix));
+const sel=L.find(C=>C.id===ECH_SEL.vestiaire)||L[0];ECH_SEL.vestiaire=sel.id;
+c.innerHTML=etagere(L.map(C=>{const a=!!e.cos[C.id], mis=(e.ap&&e.ap.cos)===C.id;
+return {id:C.id,vign:true,nom:C.nom.replace(/^(La |Le |Les |L’)/,'').toLowerCase(),choisi:C.id===sel.id,
+etiq:mis?'PORTÉ':(a?'À TOI':(C.hors?(C.etiq||'CAPITAINERIE'):enEuros(C.prix).replace(',00',''))),
+etiqClasse:mis?'porte':(a?'atoi':'')};}));
+const RA=RARETES[sel.rar], a=!!e.cos[sel.id], mis=(e.ap&&e.ap.cos)===sel.id, peut=(e.euros||0)>=sel.prix;
+c.innerHTML+='<div class="echFiche"><span class="echRare" style="background:'+RA.c+'">'+RA.nom+(sel.unique?' · UNE SEULE AU MONDE':'')+'</span>'+
+'<b>'+sel.nom+'</b><p>« '+sel.mot.charAt(0).toUpperCase()+sel.mot.slice(1)+'. Les autres la verront sur toi. »</p>'+
+'<button id="echAcheter" class="'+(a?'':((sel.hors||!peut)?'pas':''))+'">'+
+(a?(mis?'L’enlever':'La mettre')
+  :(sel.hors?'Elle ne s’achète pas · '+sel.gagne
+           :(peut?'Acheter · '+enEuros(sel.prix):'Il te manque '+enEuros(sel.prix-(e.euros||0)))))+'</button></div>';
+c.querySelectorAll('canvas[data-vue]').forEach(cv2=>{const C=COSMETIQUES.find(x=>x.id===cv2.dataset.vue);dessinerVignette(cv2,C);});
+brancherEtagere(c,'vestiaire');
+$('echAcheter').onclick=async()=>{
+if(!a){
+if(sel.hors){echBulle('Elle se gagne : '+sel.gagne+'.');return;}   /* hors commerce */
+if(!peut){echBulle('Il te manque '+enEuros(sel.prix-(e.euros||0)));return;}
+const d=await appelRPC('acheter_cosmetique',{p_joueur:e.id,p_piece:sel.id});
+if(!d||d.erreur){echBulle(d&&d.erreur==='deja portee'?'Quelqu’un la porte déjà · une seule existe':(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer':'Le marchand n’a pas pu'));
+if(d&&typeof d.euros==='number')e.euros=d.euros;echMaj();return;}
+if(typeof d.euros==='number')e.euros=d.euros;
+e.cos[sel.id]=true;e.ap.cos=sel.id;echBulle(sel.nom+' · les autres la verront');
+}else e.ap.cos=mis?null:sel.id;
+sauver();envoyerSauvegarde(true);monterEnLigne(true);vibrer(20);echMaj();
+};
+}
 function dessinerVignette(cv2,C){
 const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
 const larg=cv2.clientWidth||90;
@@ -18959,7 +22205,7 @@ let MAR_ONG='mer', MAR_SEL={}, MAR_EN_COURS=false;
    arrive toute seule dans la boutique. */
 const PRIX_DEMANDES=new Set();
 const marRayon=(k)=>k.startsWith('hw_')?'halloween':MAR_TRESORS.includes(k)?'tresors':((MAR_LAC.includes(k)||(typeof LAC_P!=='undefined'&&LAC_P&&LAC_P[k]))?'lac':'mer');
-const marPrix=(k)=>{const p=prixDuJour(k,PRIX_POISSON[k]||0);return null?Math.floor(p*1.05):p;};   /* la fraise : +5 %, comme au serveur */
+const marPrix=(k)=>{const p=prixDuJour(k,PRIX_POISSON[k]||0);return glaceA('fraise')?Math.floor(p*1.05):p;};   /* la fraise : +5 %, comme au serveur */
 const marTend=(k)=>{const f=COURS[k]&&COURS[k].f;if(!f)return ['eq','='];const p=Math.round((f-1)*100);if(p>=4)return ['up','▲ '+p+' %'];if(p<=-4)return ['dn','▼ '+(-p)+' %'];return ['eq','='];};
 /* ================= LE GLACIER DU PORT =================
    L'ancienne Criée. On compose un cornet de une à trois boules ; chaque
@@ -18975,9 +22221,11 @@ const GL_P=[
  {k:'citron',n:'Citron',c:'#fff07a',e:'🎒 Sac +5 places'},
  {k:'citrouille',n:'Citrouille',c:'#ff9a3a',e:'🎃 Halloween +15 %',hw:true}];
 var GLACE=null, GL_DEC=0;let GL_SEL=['vanille'], GL_POT=false, GL_HW=true, GL_T=0, GL_OFF=0;
+function glaceA(k){return !!(GLACE&&GLACE.parfums&&GLACE.parfums.includes(k)&&new Date(GLACE.jusqua).getTime()+GL_DEC>Date.now());}
 const glReste=()=>GLACE?Math.max(0,new Date(GLACE.jusqua).getTime()+GL_DEC-Date.now()):0;
 const glPrix=(n)=>[0,100000,250000,500000][n]||0;   /* des effets qui avantagent vraiment : un prix de luxe */
-setTimeout((()=>null),4000);
+async function glLire(){try{const d=await appelRPC('glacier_etat',{p_joueur:e.id});if(d&&!d.erreur){if(d.now)GL_DEC=Date.now()-new Date(d.now).getTime();GLACE=d.glace||null;GL_HW=d.halloween!==false;GL_OFF=d.offertes||0;}}catch(x){}}
+setTimeout(glLire,4000);
 /* LA PASTILLE DE LA GLACE, sous le bandeau du haut : on voit ce qui agit
    et ce qu'il reste. Sans elle, un effet qui marche ne se sent pas. */
 (function(){const st=document.createElement('style');st.textContent='#hGlace{position:fixed;left:10px;top:calc(env(safe-area-inset-top,0px) + 80px);z-index:4;display:flex;align-items:center;gap:6px;background:rgba(255,246,249,.95);color:#4a2a36;border:1.5px solid #f48aa8;border-radius:14px;padding:3px 10px 3px 6px;font:800 12px \'Baloo 2\',system-ui,sans-serif;box-shadow:0 3px 10px rgba(0,0,0,.25);pointer-events:none}#hGlace[hidden]{display:none}#hGlace i{font-style:normal;font-size:16px}#hGlace u{text-decoration:none;color:#c8406a}';document.head.appendChild(st);})();
@@ -18987,57 +22235,21 @@ setInterval(()=>{const h=document.getElementById('hGlace');if(!h)return;const r=
  const m=Math.floor(r/60000),sc=Math.floor(r%60000/1000);
  h.innerHTML='<i>🍦</i>'+GLACE.parfums.map(k=>GL_ICO[k]||'').join('')+' <u>'+m+':'+String(sc).padStart(2,'0')+'</u>';
  if(h.hidden){h.hidden=false;try{majHaut();}catch(x){}}},1000);
-const CSS_GL=`#gl{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#fff6f9;color:#4a2a36;font-family:'Baloo 2',system-ui,sans-serif}
-#gl .hd{flex:none;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 10px;background:linear-gradient(#ffd0e0,#ffb8d0);border-bottom:3px solid #8ad8c0}
-#gl .l1{display:flex;align-items:center;gap:8px}#gl .ens{flex:1;min-width:0}#gl .ens b{display:block;font-family:Georgia,serif;font-style:italic;font-weight:900;font-size:23px;color:#c8406a;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#gl .ens small{display:block;font-size:10px;font-weight:800;letter-spacing:2px;color:#8a4a62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#gl .bo{flex:none;border:1.5px solid #c8406a;color:#c8406a;border-radius:14px;padding:2px 10px;font-weight:800;font-size:13px;background:#fff;white-space:nowrap}
-#gl .x{flex:none;width:38px;height:38px;border-radius:12px;border:1.5px solid #c8406a;background:#fff;color:#c8406a;font:800 17px 'Baloo 2',sans-serif}
-#gl .pat{display:flex;gap:10px;align-items:flex-end;margin-top:8px}#gl .pat canvas{flex:none;width:44px;height:50px;image-rendering:pixelated}
-#gl .bul{flex:1;min-width:0;position:relative;background:#fff;border-radius:14px;padding:5px 10px;font-weight:700;font-size:13px;line-height:1.3}#gl .bul:before{content:'';position:absolute;left:-8px;bottom:10px;border:8px solid transparent;border-right-color:#fff;border-left:0}
-#gl .store{flex:none;height:12px;background:repeating-linear-gradient(90deg,#f48aa8 0 14px,#fff 14px 28px)}
-#gl .corps{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:12px 12px calc(16px + env(safe-area-inset-bottom,0px))}
-#gl .actif{background:#fff;border:1.5px dashed #8ad8c0;border-radius:14px;padding:6px 10px;font-weight:800;font-size:12.5px;margin-bottom:10px;line-height:1.3}#gl .actif b{color:#1f7a5a}
-#gl .sc{height:250px;border-radius:22px;background:radial-gradient(60% 60% at 50% 45%,#fff,#ffe0ec);position:relative;display:grid;place-items:center}
-#gl .sc .px{position:absolute;right:12px;top:10px;background:#c8406a;color:#fff;border-radius:12px;padding:2px 10px;font-weight:800;font-size:15px}
-#gl .sc .ef{position:absolute;left:10px;bottom:10px;right:10px;display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
-#gl .eff{display:inline-flex;align-items:center;gap:4px;border-radius:10px;padding:1px 8px;font-weight:800;font-size:11.5px;background:#e8fbf4;color:#1f7a5a;border:1px solid #9ae0c8}
-#gl .lb{font-size:11px;font-weight:800;letter-spacing:2px;color:#a87088;margin:12px 2px 6px;display:flex;justify-content:space-between}#gl .lb i{font-style:normal;letter-spacing:0}
-#gl .pf{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-#gl .pf button{border:2px solid #f4c0d0;background:#fff;border-radius:14px;padding:6px 4px;font:800 12.5px 'Baloo 2',sans-serif;color:#4a2a36;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.15}
-#gl .pf button i{width:26px;height:26px;border-radius:50%;display:block;box-shadow:inset -3px -3px 0 rgba(0,0,0,.08)}#gl .pf button small{font-size:10px;color:#8a5a6a;font-weight:700}
-#gl .pf button.on{border-color:#e0507a;background:#fff0f5}#gl .pf button.hw{border-color:#ffb870}#gl .pf button.hw.on{border-color:#e8761e;background:#fff4e8}#gl .pf button[disabled]{opacity:.4}
-#gl .su{display:grid;grid-template-columns:1fr 1fr;gap:8px}#gl .su button{border:2px solid #f4c0d0;background:#fff;border-radius:14px;padding:6px;font:800 13px 'Baloo 2',sans-serif;color:#4a2a36}#gl .su button.on{border-color:#e0507a;background:#fff0f5}
-#gl .go{display:block;width:100%;margin-top:12px;border:0;border-radius:16px;padding:11px;font:800 17px 'Baloo 2',sans-serif;color:#fff;background:linear-gradient(#ff8ab0,#e0507a);box-shadow:0 4px 0 #a8305a;line-height:1.1}
-#gl .go small{display:block;font-size:12px;opacity:.85}#gl .go:active{transform:translateY(3px);box-shadow:0 1px 0 #a8305a}#gl .go[disabled]{opacity:.6}
-@media(min-width:720px){#gl .corps{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-content:start;padding:14px 24px}#gl .actif{grid-column:1/3}#gl .sc{height:auto;min-height:320px;grid-row:2/span 6}#gl .lb:first-of-type{margin-top:0}}`;
+function glCornet(cs,w,pot){
+ const boule=(c,x,y)=>'<circle cx="'+x+'" cy="'+y+'" r="14" fill="'+c+'"/><circle cx="'+(x-5)+'" cy="'+(y-5)+'" r="4" fill="rgba(255,255,255,.45)"/>';
+ if(pot){/* dans le pot : deux boules côte à côte, la troisième posée dessus */
+  const P=cs.length===1?[[30,40]]:cs.length===2?[[22,42],[38,42]]:[[22,44],[38,44],[30,28]];
+  const b=cs.map((c,i)=>boule(c,P[i][0],P[i][1])).join('');
+  return '<svg viewBox="0 0 60 90" width="'+w+'" height="'+(w*1.5)+'">'+b+'<path d="M10 50 L50 50 L44 78 L16 78 Z" fill="#fff" stroke="#f48aa8" stroke-width="3"/><rect x="8" y="47" width="44" height="6" rx="3" fill="#f48aa8"/></svg>';}
+ const b=cs.map((c,i)=>boule(c,30+(i===1?7:i===2?-7:0),38-(i?14:0))).join('');
+ return '<svg viewBox="0 0 60 90" width="'+w+'" height="'+(w*1.5)+'"><path d="M14 44 L46 44 L30 88 Z" fill="#d8a050"/><g stroke="#a87030" stroke-width="1.5"><path d="M18 44 L36 80"/><path d="M26 44 L40 70"/><path d="M34 44 L44 56"/><path d="M42 44 L24 80"/><path d="M34 44 L20 70"/><path d="M26 44 L16 56"/></g>'+b+'</svg>';}
+function glVendeuse(cv){const g=cv.getContext('2d');cv.width=44;cv.height=50;const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+ R(10,2,24,6,'#f4f4f0');R(12,0,20,3,'#f4f4f0');R(11,8,22,15,'#f0c8a0');R(16,13,3,3,'#1a1a1a');R(25,13,3,3,'#1a1a1a');R(18,19,8,2,'#c8406a');R(9,6,4,14,'#8a4a2a');R(31,6,4,14,'#8a4a2a');
+ R(8,25,28,22,'#ffb8d0');R(8,25,28,3,'#fff');R(12,30,20,17,'#fff');R(4,27,6,14,'#ffb8d0');R(34,27,6,14,'#ffb8d0');R(3,40,7,4,'#f0c8a0');R(34,40,7,4,'#f0c8a0');}
 /* ======================= LA RADE =======================
    Ton bateau (palier 19) ouvre la carte de la rade : quatre coins de
    pêche, chacun son gasoil et ses espèces. La pêche au large s'ouvre
    au palier 20 ; avant, la carte se visite mais on ne part pas. */
-const CSS_RADE=`
-#rade{position:absolute;inset:0;display:flex;flex-direction:column;background:#081822;color:#eaf3ee;font-family:Georgia,serif;overflow:hidden}
-#rade .rhd{position:relative;padding:14px 14px 10px;flex:0 0 auto}
-#rade .rti{font:700 10px/1 Georgia;letter-spacing:.22em;color:#8fd3c0;text-transform:uppercase}
-#rade h1{margin:6px 0 0;font:400 27px/1.05 Georgia;color:#f4efe2}
-#rade h1 i{color:#e8c06a;font-style:italic}
-#rade .rx{position:absolute;right:12px;top:12px;width:40px;height:40px;border-radius:50%;background:rgba(8,20,26,.75);
-  border:1px solid rgba(232,192,106,.5);color:#e8c06a;font-size:17px;line-height:38px;text-align:center;padding:0}
-#rade .rmap{position:relative;flex:1 1 auto;min-height:120px}
-#rade canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
-#rade .rpin{position:absolute;width:52px;height:52px;margin:-26px 0 0 -26px;background:none;border:0;padding:0}
-#rade .rbas{flex:0 0 auto;display:block;padding:10px 14px calc(16px + env(safe-area-inset-bottom));
-  background:linear-gradient(0deg,#081822 72%,rgba(8,24,34,0));max-height:58%;overflow:auto}
-#rade .rco{display:block;width:100%;box-sizing:border-box;text-align:left;background:rgba(9,24,31,.82);
-  border:1px solid rgba(143,211,192,.26);border-radius:12px;padding:10px 13px;margin-top:8px;color:inherit;font:inherit}
-#rade .rco.on{border-color:#e8c06a;background:rgba(232,192,106,.1)}
-#rade .rco b{display:block;font:400 18px/1.15 Georgia;color:#f4efe2}
-#rade .rco em{display:block;font:italic 400 12px/1.4 Georgia;color:#9fb8ad;margin-top:3px}
-#rade .rco .rpx{float:right;font:700 10px/1 Georgia;letter-spacing:.12em;color:#e8c06a;margin-top:4px}
-#rade .rgo{display:block;width:100%;box-sizing:border-box;margin-top:11px;padding:14px;border:0;border-radius:12px;
-  background:#e8c06a;color:#1b2a22;font:700 15px/1 Georgia;letter-spacing:.1em;text-transform:uppercase}
-#rade .rgo[disabled]{background:rgba(207,227,218,.16);color:#9fb8ad}
-#rade .rnote{margin:9px 2px 0;font:italic 400 12px/1.45 Georgia;color:#9fb8ad;text-align:center}`;
 const COINS_RADE=[
  ['digue','La digue du large',0,'Deux minutes de route. Loups, dorades et sars ; congre et murène à la nuit.'],
  ['frioul','Les îles du Frioul',300,'Les herbiers : sar, saupe, poulpe, rascasse — et le mérou, avec la canne en fibre.'],
@@ -19054,98 +22266,120 @@ let RADE_SEL='digue', RADE_ETAT=null, RADE_PART=false, RADE_H=264;
    La porte de la longère ouvre l'étable de la maison : on y achète les
    poules, les moutons et les cochons au même endroit. L'écran demande
    son état lui-même (bassecour_etat) et ne dépend d'aucun autre. */
-const CSS_BC=`
-#bc{position:absolute;inset:0;display:flex;flex-direction:column;background:#141a10;color:#f2f6e8;font-family:Georgia,serif;overflow:hidden}
-#bc .bhd{position:relative;flex:0 0 auto;padding:16px 60px 12px 16px}
-#bc .bti{font:700 10px/1 Georgia;letter-spacing:.22em;color:#a8c878;text-transform:uppercase}
-#bc h1{margin:6px 0 0;font:400 27px/1 Georgia}
-#bc h1 i{color:#e8c06a;font-style:italic}
-#bc .bx{position:absolute;right:14px;top:14px;width:40px;height:40px;border-radius:50%;background:rgba(10,16,8,.7);
- border:1px solid rgba(232,192,106,.5);color:#e8c06a;font-size:17px;line-height:38px;text-align:center;padding:0}
-#bc .bour{position:absolute;right:62px;top:20px;font:700 9px/1 Georgia;letter-spacing:.16em;color:#a8bc8c;text-align:right}
-#bc .bour b{display:block;color:#ffd970;font-size:16px;letter-spacing:0;margin-top:4px}
-#bc .benc{flex:1 1 0;min-height:118px;position:relative;overflow:hidden;margin-bottom:3px;
- background:#0e1409;border:0;padding:0;display:block;width:100%;text-align:left;color:inherit;font:inherit}
-#bc .benc canvas{position:absolute;left:0;top:0;width:100%;height:100%;image-rendering:pixelated}
-#bc .bvoile{position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,12,6,.92) 0%,rgba(8,12,6,.74) 44%,rgba(8,12,6,.12) 86%,rgba(8,12,6,0) 100%)}
-#bc .benc.on{box-shadow:inset 0 0 0 3px #e8c06a}
-#bc .benc.on .btxt b{color:#ffd970}
-#bc .benc.on .bcpt{border-color:rgba(232,192,106,.75);color:#ffd970}
-#bc .benc.on .bvoile{background:linear-gradient(90deg,rgba(8,12,6,.94) 0%,rgba(8,12,6,.78) 46%,rgba(26,18,4,.2) 88%,rgba(8,12,6,0) 100%)}
-#bc .benc.plein{filter:grayscale(.55) brightness(.72)}
-#bc .btxt{position:absolute;left:16px;top:20px;max-width:214px}
-#bc .btxt b{display:block;font:400 23px/1.05 Georgia;text-shadow:0 2px 4px rgba(0,0,0,.7)}
-#bc .btxt em{display:block;font:italic 400 11.5px/1.35 Georgia;color:#bcd0a4;margin-top:5px;text-shadow:0 1px 3px rgba(0,0,0,.8)}
-#bc .bcpt{display:inline-block;margin-top:9px;padding:4px 9px;border-radius:999px;border:1px solid rgba(168,200,120,.5);
- font:700 10px/1 Georgia;letter-spacing:.1em;color:#cfe0b4;background:rgba(8,12,6,.4)}
-#bc .bpx{position:absolute;left:16px;bottom:13px;font:700 15px/1 Georgia;color:#ffd970;text-shadow:0 1px 3px rgba(0,0,0,.85)}
-#bc .bpx.gris{color:#b8c8a4}
-#bc .bpied{flex:0 0 auto;padding:12px 14px calc(14px + env(safe-area-inset-bottom))}
-#bc .bach{display:block;width:100%;box-sizing:border-box;padding:15px;border:0;border-radius:13px;
- background:#a8c878;color:#1b2a10;font:700 14px/1 Georgia;letter-spacing:.11em;text-transform:uppercase;box-shadow:0 3px 0 #6f8c4a}
-#bc .bach[disabled]{background:rgba(207,224,180,.16);color:#9fb08a;box-shadow:none}`;
 let BC_ETAT=null, BC_SEL='cochon', BC_OCC=false;
 const BC_LOTS=[
- ['(()=>null)','Le poulailler','poules','poules_max','prix_poule','elle pond tous les jours, si elle est nourrie','POULE'],
+ ['poule','Le poulailler','poules','poules_max','prix_poule','elle pond tous les jours, si elle est nourrie','POULE'],
  ['mouton','Le pré','moutons','moutons_max','prix_mouton','sa toison se tond toutes les quarante-huit heures','MOUTON'],
  ['cochon','La soue','cochons','cochons_max','prix_cochon','il fouille sous les chênes et trouve des truffes','COCHON']];
 /* LA BÊTE, sur une grille de 26 : la même à l'enclos et dans un bouton. */
 /* L'ENCLOS : son décor, et les bêtes qu'on y a vraiment. */
+function bcPeindre(){
+ const f=$('page2Fond');if(!f||!$('page2').classList.contains('on'))return;
+ const E=BC_ETAT||{};
+ const L=BC_LOTS.find(l=>l[0]===BC_SEL)||BC_LOTS[2];
+ const prix=E[L[4]], sansPoul=(BC_SEL==='poule'&&E.poulailler===0);
+ const cher=(typeof E.euros==='number'&&prix!=null&&E.euros<prix);
+ const bloque=BC_OCC||prix==null||sansPoul||cher||BC_ETAT===null;
+ f.innerHTML='<div id="bc" lang="fr"><div class="bhd"><div class="bti">LA FERME · LA MAISON</div>'+
+  '<h1>La <i>basse-cour</i></h1><button class="bx" id="bcX" aria-label="Fermer">✕</button>'+
+  '<div class="bour">EN POCHE<b>'+enEuros(E.euros||0)+'</b></div></div>'+
+  BC_LOTS.map(([k,nom,cn,cm,cp,mot,maj])=>{
+   const p=E[cp], n=E[cn]||0, m=E[cm]||0, vide=(k==='poule'&&E.poulailler===0);
+   return '<button class="benc'+(k===BC_SEL?' on':'')+((p==null||vide)?' plein':'')+'" data-bc="'+k+'">'+
+    '<canvas data-be="'+k+'"></canvas><span class="bvoile"></span>'+
+    '<span class="btxt"><b>'+nom+'</b><em>'+(vide?'il faut d’abord bâtir le poulailler':mot)+'</em>'+
+    '<span class="bcpt">'+n+' '+maj+(n>1?'S':'')+' SUR '+m+'</span></span>'+
+    '<span class="bpx'+((p==null||vide)?' gris':'')+'">'+(vide?'fermé':(p==null?'au complet':enEuros(p)))+'</span>'+
+   '</button>';}).join('')+
+  '<div class="bpied"><button class="bach" id="bcAch"'+(bloque?' disabled':'')+'>'+
+   (BC_OCC?'On s’arrange…':(BC_ETAT===null?'…':(sansPoul?'Il faut d’abord le poulailler':
+    (prix==null?'Au complet':(cher?'Pas assez en poche':
+     'Acheter '+({poule:'une poule',mouton:'un mouton',cochon:'un cochon'})[BC_SEL]+' · '+enEuros(prix))))))+
+  '</button></div></div>';
+ f.querySelectorAll('[data-be]').forEach(c=>{const l=BC_LOTS.find(x=>x[0]===c.dataset.be);
+  try{bcEnclos(c,c.dataset.be,E[l[2]]||0);}catch(x){}});
+ $('bcX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+ f.querySelectorAll('[data-bc]').forEach(b=>b.onclick=()=>{BC_SEL=b.dataset.bc;jouer('clic');vibrer(8);bcPeindre();});
+ $('bcAch').onclick=async()=>{
+  if(BC_OCC)return;BC_OCC=true;bcPeindre();
+  const d=BC_SEL==='poule'
+   ? await appelRPC('poul_acheter',{p_joueur:e.id,p_article:'poule'})
+   : await appelRPC('betes_acheter',{p_joueur:e.id,p_espece:BC_SEL});
+  BC_OCC=false;
+  if(!d||d.erreur){bcPeindre();try{motOuverture(({plein:'Le poulailler est plein.',max:'L’enclos est au complet.',
+    pas_assez:'Il te manque des sous.',poulailler:'Il faut d’abord bâtir le poulailler.'})[d&&d.erreur]||
+    'L’achat n’a pas pu se faire. Réessaie.');}catch(x){}return;}
+  jouer('achat');vibrer([20,40,20]);
+  const n=await appelRPC('bassecour_etat',{p_joueur:e.id});
+  if(n&&!n.erreur){BC_ETAT=n;if(typeof n.euros==='number'){e.euros=n.euros;sauver();majHaut();}}
+  try{ETB=null;}catch(x){}
+  bcPeindre();
+ };
+}
 /* LES COURSES DU PORT : le karting et le kayak vivent dans courses.js.
    On leur prête la caisse (le serveur) et le solde, rien d'autre. */
+function ouvrirUneCourse(jeu){
+  if(!window.Courses){texteVolant(joueur.x,joueur.y-60,'La course n’a pas pu se charger','#ffd040');return;}
+  window.Courses[jeu]({pseudo:e.pseudo||'',
+    rpc:async(nom,args)=>{if(!sb)return {erreur:'La caisse est hors ligne. Réessaie.'};
+      try{const {data,error}=await sb.rpc(nom,args||{});if(error)return {erreur:'Le serveur n’a pas répondu. Réessaie.'};return data==null?{}:data;}catch(x){return {erreur:'Le serveur n’a pas répondu. Réessaie.'};}},
+    majEuros:(c)=>{e.euros=c;sauver();majHaut();},
+    fermer:()=>{}});
+}
+function glActifTxt(){const r=glReste();if(!GLACE||r<=0)return 'Pas de glace en cours. Une glace dure <b>10 minutes</b>.';
+ const m=Math.floor(r/60000),s=Math.floor(r%60000/1000);
+ return '🍦 En cours : <b>'+GLACE.parfums.map(k=>(GL_P.find(p=>p.k===k)||{n:k}).n).join(' · ')+'</b> · encore '+m+' min '+String(s).padStart(2,'0')+' s';}
+function glMaj(){const C=$('glCorps');if(!C)return;
+ try{$('glBo').textContent='🪙 '+enEuros(e.euros||0);}catch(x){}
+ const L=GL_P.filter(p=>!p.hw||GL_HW);GL_SEL=GL_SEL.filter(k=>L.some(p=>p.k===k));
+ const sel=GL_SEL.map(k=>GL_P.find(p=>p.k===k));const prix=GL_OFF>0?0:glPrix(sel.length);
+ C.innerHTML='<div class="actif" id="glActif">'+glActifTxt()+'</div>'+
+  '<div class="sc"><span class="px">'+(GL_OFF>0&&sel.length?'OFFERTE':prix?enEuros(prix):'—')+'</span>'+glCornet(sel.length?sel.map(p=>p.c):['#f4e8e8'],sel.length?120:100,GL_POT)+
+  '<div class="ef">'+sel.map(p=>'<span class="eff">'+p.e+'</span>').join('')+'</div></div>'+
+  '<div class="lb">TES PARFUMS<i>'+sel.length+' / 3</i></div><div class="pf">'+L.map(p=>'<button data-p="'+p.k+'" class="'+(GL_SEL.includes(p.k)?'on ':'')+(p.hw?'hw':'')+'"><i style="background:'+p.c+'"></i>'+p.n+'<small>'+p.e+'</small></button>').join('')+'</div>'+
+  '<div class="lb">SERVI EN</div><div class="su"><button data-s="0" class="'+(GL_POT?'':'on')+'">🍦 Cornet</button><button data-s="1" class="'+(GL_POT?'on':'')+'">🥣 Pot</button></div>'+
+  '<button class="go" id="glGo"'+(sel.length?'':' disabled')+'>'+(sel.length?(GL_OFF>0?'Commander · offerte 🎁':'Commander · '+enEuros(prix)):'Choisis un parfum')+'<small>'+(sel.length?(GL_OFF>0?GL_OFF+' glace'+(GL_OFF>1?'s':'')+' offerte'+(GL_OFF>1?'s':'')+' par tes niveaux · ':'')+sel.length+' effet'+(sel.length>1?'s':'')+' · 10 minutes':'une à trois boules')+'</small></button>';
+ C.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{const k=b.dataset.p;
+  if(GL_SEL.includes(k))GL_SEL=GL_SEL.filter(x=>x!==k);else if(GL_SEL.length<3)GL_SEL.push(k);else{GL_SEL.shift();GL_SEL.push(k);}vibrer(8);glMaj();});
+ C.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{GL_POT=b.dataset.s==='1';vibrer(6);glMaj();});
+ $('glGo').onclick=glCommander;}
+async function glCommander(){const b=$('glGo');if(!b||!GL_SEL.length)return;
+ const prix=GL_OFF>0?0:glPrix(GL_SEL.length);if((e.euros||0)<prix){$('glBul').textContent='« Il te manque '+enEuros(prix-(e.euros||0))+', mon cœur. »';return;}
+ b.disabled=true;b.innerHTML='…';
+ const r=await appelRPC('glacier_acheter',{p_joueur:e.id,p_parfums:GL_SEL,p_pot:GL_POT});
+ if(!r||r.erreur){$('glBul').textContent='« '+((r&&r.erreur)||'La machine fait des siennes. Réessaie.')+' »';glMaj();return;}
+ if(typeof r.euros==='number'){e.euros=r.euros;sauver();majHaut();}
+ if(r.now)GL_DEC=Date.now()-new Date(r.now).getTime();
+ GLACE=r.glace;if(typeof r.offertes==='number')GL_OFF=r.offertes;try{recalerLeSac(true);}catch(x){}jouer('vente','moment');vibrer([16,30,16]);
+ $('glBul').textContent=['« Et voilà ! Ne la fais pas tomber. »','« Régale-toi, mon cœur. »','« Attention, ça fond vite au soleil. »'][Math.floor(Math.random()*3)];
+ glMaj();}
 
-const CSS_MAR=`#mar{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#0d2238;color:#14263a;font-family:'Baloo 2',system-ui,sans-serif}
-#mar *{box-sizing:border-box}
-#mar .tete{flex:none;position:relative;padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 12px;background:#f4f7fa;background-image:linear-gradient(rgba(120,150,180,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(120,150,180,.18) 1px,transparent 1px);background-size:14px 14px}
-#mar .l1{display:flex;align-items:center;gap:8px}
-#mar .ens{flex:1;min-width:0;display:flex;align-items:center;gap:8px}
-#mar .plaque{white-space:nowrap;background:#1f4f8a;border:3px solid #fff;outline:2px solid #1f4f8a;border-radius:6px;padding:1px 10px;color:#fff;font-weight:800;font-size:20px;letter-spacing:2px;line-height:1.25}
-#mar .ens small{display:block;font-size:10px;font-weight:800;color:#1f4f8a;letter-spacing:1px;line-height:1.1;min-width:0}
-#mar .bourse{flex:none;background:#14263a;color:#ffd970;border-radius:14px;padding:4px 10px;font-weight:800;font-size:13px;white-space:nowrap}
-#mar .x{flex:none;width:38px;height:38px;border-radius:12px;border:0;background:#e2564a;color:#fff;font-weight:800;font-size:18px;box-shadow:0 3px 0 #9a2a22}
-#mar .poiss{display:flex;gap:10px;align-items:flex-end;margin-top:8px}
-#mar .poiss canvas{flex:none;width:46px;height:52px;image-rendering:pixelated}
-#mar .bulle{position:relative;flex:1;min-width:0;background:#fff;border:2px solid #1f4f8a;border-radius:14px;padding:5px 10px;font-weight:700;font-size:13px;line-height:1.3;color:#14263a}
-#mar .bulle:before{content:'';position:absolute;left:-9px;bottom:10px;border:8px solid transparent;border-right-color:#1f4f8a;border-left:0}
-#mar .store{flex:none;height:14px;background:repeating-linear-gradient(90deg,#1f4f8a 0 18px,#fff 18px 36px);position:relative}
-#mar .store:after{content:'';position:absolute;left:0;right:0;top:14px;height:8px;background:radial-gradient(circle at 9px 0,#1f4f8a 8.5px,transparent 9px) 0 0/36px 8px repeat-x,radial-gradient(circle at 27px 0,#fff 8.5px,transparent 9px) 0 0/36px 8px repeat-x;z-index:2}
-#mar .onglets{flex:none;display:flex;gap:6px;padding:16px 12px 8px}
-#mar .onglets button{flex:1;border:0;border-radius:12px;padding:8px 0;font:800 13px 'Baloo 2',sans-serif;background:#1b3a5c;color:#bcd2e6}
-#mar .onglets button.on{background:#ffd970;color:#14263a;box-shadow:0 3px 0 #b08a2a}
-#mar .onglets button.hw{background:#3a1f52;color:#ffb040;flex:1.5;white-space:nowrap}#mar .onglets button.hw.on{background:linear-gradient(#ffb040,#e07a22);color:#2a1004;box-shadow:0 3px 0 #7a3a10}
-#mar.hwon .glace{background:linear-gradient(180deg,#2a1a3a,#1a1026);box-shadow:inset 0 0 0 2px #e07a22,0 4px 0 #0a0510}#mar.hwon .ic{background:radial-gradient(ellipse at 50% 60%,#4a2a5a,#2a1638)}
-#mar .rar{display:inline-block;font-size:10px;font-weight:800;border-radius:6px;padding:0 5px;margin-top:2px}#mar .rar.commun{background:#eef1f4;color:#6a7a88}#mar .rar.moyen{background:#e3f0ff;color:#1f4f8a}#mar .rar.rare{background:#f2e3ff;color:#7a3ab8}#mar .rar.objet{background:#fff0dc;color:#b8601a}#mar .rar.legendaire{background:linear-gradient(90deg,#ffd970,#e07a22);color:#2a1004}
-#mar .corps{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:10px 12px 12px}
-#mar .glace{background:linear-gradient(180deg,#e6f3fa,#cfe6f2);border-radius:18px;padding:10px;box-shadow:inset 0 0 0 2px #fff,0 4px 0 #0a1a2c}
-#mar .grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:8px}
-#mar .carte{position:relative;background:#fff;border-radius:14px;padding:8px 8px 7px;box-shadow:0 2px 0 #9ec0d4;border:2px solid transparent;min-width:0}
-#mar .carte.sel{border-color:#1f4f8a;box-shadow:0 2px 0 #1f4f8a}
-#mar .ic{height:52px;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 60%,#eaf6fc,#d4eaf4);border-radius:10px}
-#mar .ic svg{width:44px;height:44px;shape-rendering:crispEdges}
-#mar .carte b{display:block;font-size:14.5px;margin-top:4px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#mar .prix{display:flex;align-items:center;gap:4px;font-weight:800;font-size:13px;color:#1f4f8a;flex-wrap:wrap}
-#mar .t{font-size:11px;padding:0 5px;border-radius:6px}#mar .t.up{background:#dff4e2;color:#2a8a3a}#mar .t.dn{background:#fbe3df;color:#c0392b}#mar .t.eq{background:#eef1f4;color:#8a96a2}
-#mar .dispo{font-size:11px;color:#6a7a88;font-weight:700}
-#mar .badge{position:absolute;top:-6px;right:-6px;min-width:26px;height:26px;border-radius:13px;background:#1f4f8a;color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;padding:0 6px;border:2px solid #fff}
-#mar .pm{display:flex;gap:4px;margin-top:5px}#mar .pm button{flex:1;height:32px;border:0;border-radius:9px;font:800 16px 'Baloo 2',sans-serif;background:#e8f1f7;color:#1f4f8a;padding:0}#mar .pm button.tout{flex:1.6;font-size:12px;background:#1f4f8a;color:#fff}
-#mar .vide{margin:30px 10px;text-align:center;font:700 15px 'Baloo 2',sans-serif;color:#cfe0ef;line-height:1.45}
-#mar .pied{flex:none;background:#0d2238;border-top:3px solid #ffd970;padding:10px 12px calc(12px + env(safe-area-inset-bottom,0px))}
-#mar .ticket{display:flex;justify-content:space-between;align-items:center;background:#fffaf0;border-radius:10px;padding:6px 12px;font:13px 'Courier New',monospace;color:#3a2a1a;margin-bottom:8px}
-#mar .ticket b{font:800 22px 'Baloo 2',sans-serif;color:#14263a}
-#mar .btns{display:flex;gap:8px}
-#mar .vendre{flex:1;border:0;border-radius:14px;height:52px;font:800 18px 'Baloo 2',sans-serif;background:linear-gradient(#ffd970,#f0b830);color:#14263a;box-shadow:0 4px 0 #a07a1a}
-#mar .vendre.rien{background:#4a5a6a;color:#a8b4c0;box-shadow:0 4px 0 #2a3a4a}
-#mar .tousv{flex:none;border:0;border-radius:14px;height:52px;padding:0 14px;font:800 14px 'Baloo 2',sans-serif;background:#1b3a5c;color:#fff;box-shadow:0 4px 0 #0a1a2c}
-#mar .cote{display:none}
-#mar .vendu{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) rotate(-12deg) scale(.4);opacity:0;font:900 44px Georgia,serif;color:#1f4f8a;border:5px solid #1f4f8a;border-radius:10px;padding:4px 18px;pointer-events:none;z-index:4;background:rgba(255,255,255,.85)}
-#mar .vendu.on{animation:marV 1.3s ease-out}@keyframes marV{0%{opacity:0;transform:translate(-50%,-50%) rotate(-12deg) scale(2)}20%{opacity:1;transform:translate(-50%,-50%) rotate(-12deg) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) rotate(-12deg) scale(1)}}
-@media (min-width:700px){#mar .tete{padding-left:24px;padding-right:24px}#mar .plaque{font-size:26px}#mar .ens small{font-size:11px}
- #mar .onglets{padding:14px 24px 8px}#mar .onglets button{flex:none;width:180px}
- #mar .corps{display:grid;grid-template-columns:1fr 300px;gap:16px;padding:14px 24px;align-items:start}#mar .pied{display:none}
- #mar .cote{display:block;background:#0d2238;border-radius:18px;padding:14px;color:#fff;position:sticky;top:0;border:2px solid #2a4a6c}
- #mar .cote h4{margin:0 0 8px;color:#ffd970;font-size:15px;letter-spacing:1px}#mar .cote .row{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:3px 0;border-bottom:1px dashed rgba(255,255,255,.15)}
- #mar .cote .vendre,#mar .cote .tousv{width:100%;margin-top:10px}#mar .cote .tousv{height:44px}
- #mar .grille{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}}`;
+function marMot(ks){const hausse=ks.filter(k=>marTend(k)[0]==='up').sort((a,b)=>marPrix(b)-marPrix(a))[0];
+ if(hausse)return '« '+((OBJETS[hausse]&&OBJETS[hausse].nom)||hausse)+' : ça monte aujourd’hui ! Pose-moi ça sur la glace, mon petit. »';
+ return ks.length?'« Montre-moi ta pêche, je te fais le prix du jour. »':'« Rien sur toi ? Va lancer ta ligne au bout des pontons. »';}
+function marMaj(){if(!$('marCorps'))return;SAC_PEUT_BAISSER=Date.now();
+ const tous=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&PRIX_POISSON[k]);
+ {marMaj.lus=marMaj.lus||new Set();const neufs=tous.filter(k=>!marMaj.lus.has(k));if(neufs.length&&!marMaj.enCours){marMaj.enCours=true;neufs.forEach(k=>marMaj.lus.add(k));((_)=>Promise.resolve())(neufs).then(()=>{marMaj.enCours=false;if($('marCorps'))marMaj();}).catch(()=>{marMaj.enCours=false;});}}
+ const compte={mer:0,lac:0,tresors:0,halloween:0};tous.forEach(k=>compte[marRayon(k)]++);
+ $('page2Fond').querySelectorAll('.onglets button').forEach(b=>{const o=b.dataset.o;b.classList.toggle('on',o===MAR_ONG);b.textContent=({mer:'Mer',lac:'Lac',tresors:'Trésors',halloween:'🎃 Halloween'})[o]+(compte[o]?' · '+compte[o]:'');if(o==='halloween')b.style.display=(compte.halloween||(typeof hwActif==='function'&&hwActif()))?'':'none';});
+ const ks=tous.filter(k=>marRayon(k)===MAR_ONG).sort((a,b)=>marPrix(b)*e.sac[b]-marPrix(a)*e.sac[a]);
+ const n=(k)=>MAR_SEL[k]||0;
+ try{$('mar').classList.toggle('hwon',MAR_ONG==='halloween');0;}catch(x){}
+ const html=ks.length?'<div class="glace"><div class="grille">'+ks.map(k=>{const [tc,tt]=marTend(k),s=n(k);return '<div class="carte'+(s?' sel':'')+'" data-k="'+k+'">'+(s?'<div class="badge">'+s+'</div>':'')+
+  '<div class="ic"><svg viewBox="0 0 16 16">'+(ICONES[k]||'')+'</svg></div><b>'+((OBJETS[k]&&OBJETS[k].nom)||k)+'</b><div class="prix">'+cptSou(marPrix(k))+'<span class="t '+tc+'">'+tt+'</span></div>'+
+  (k.startsWith('hw_')?'<span class="rar '+((HW_POISSONS.find(x=>x.k===k)||{}).r||'commun')+'">'+HW_RARETE[(HW_POISSONS.find(x=>x.k===k)||{}).r||'commun']+'</span>':'')+'<div class="dispo">'+e.sac[k]+' dans le sac</div><div class="pm"><button data-m="-1">−</button><button data-m="1">+</button><button class="tout" data-m="tout">Tout</button></div></div>';}).join('')+'</div></div>'
+  :'<div class="vide">'+(MAR_ONG==='mer'?'Pas un poisson de mer dans ton sac.<br>Va lancer ta ligne au bout des pontons.':MAR_ONG==='lac'?'Rien du lac dans ton sac.<br>Le lac est dans la forêt.':MAR_ONG==='halloween'?'Pas encore de prise d’Halloween.<br>Jusqu’au 2 novembre, cinquante espèces étranges mordent au port et au lac — la nuit, les plus terribles.':'Pas de trésor repêché pour l’instant.<br>Ça mord parfois des choses bizarres…')+'</div>';
+ const sel=ks.filter(k=>n(k)>0), total=sel.reduce((t,k)=>t+marPrix(k)*n(k),0), nb=sel.reduce((t,k)=>t+n(k),0), toutVal=ks.reduce((t,k)=>t+marPrix(k)*e.sac[k],0);
+ const cote='<div class="cote"><h4>TON TICKET</h4>'+(sel.length?sel.map(k=>'<div class="row"><span>'+n(k)+' × '+((OBJETS[k]&&OBJETS[k].nom)||k)+'</span><b>'+cptSou(marPrix(k)*n(k))+'</b></div>').join(''):'<div class="row" style="opacity:.6"><span>Touche + ou Tout sur une carte</span></div>')+
+  '<div class="row" style="border:0;margin-top:6px;font-size:18px"><span>Total</span><b style="color:#ffd970">'+cptSou(total)+'</b></div>'+
+  '<button class="vendre'+(total?'':' rien')+'" data-v="sel">'+(total?'Vendre '+nb+' pièce'+(nb>1?'s':''):'Rien de choisi')+'</button><button class="tousv" data-v="tout">Tout vendre · '+cptSou(toutVal)+'</button></div>';
+ $('marCorps').innerHTML=html+cote;
+ $('marCorps').querySelectorAll('.carte').forEach(el=>{const k=el.dataset.k;el.onclick=(ev)=>{const b=ev.target.closest('[data-m]');const m=b?b.dataset.m:(n(k)?'0':'tout');
+  MAR_SEL[k]=m==='tout'?e.sac[k]:m==='0'?0:Math.max(0,Math.min(e.sac[k],n(k)+(+m)));vibrer(12);marMaj();};});
+ $('marCorps').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>((_)=>0)(b.dataset.v==='tout'));
+ $('marCombien').textContent=nb?(nb+' pièce'+(nb>1?'s':'')+' sur la glace'):'Touche une carte pour choisir';$('marTotal').textContent=cptSou(total);
+ const v=$('marVendre');v.classList.toggle('rien',!total);v.textContent=total?('Vendre · '+cptSou(total)):'Rien de choisi';$('marTout').textContent=ks.length?'Tout':'—';
+ $('marArgent').textContent='🪙 '+enEuros(e.euros||0);if(!marMaj.parle){$('marBulle').textContent=marMot(tous);}}
 
 let CRI_VENTE={}, CRI_EN_COURS=false;
 let COURS={};                       /* LE MARCHÉ : les prix bougent pour tout le monde */
@@ -19159,6 +22393,130 @@ const criPrix=()=>CRI_ETAL==='poisson'?PRIX_POISSON:PRIX_COMPTOIR;
 
 
 let CPT=MODE_COMPTOIR;
+function cptPapier(){
+const c=$('cptGrain');if(!c)return;
+const r=$('page2Fond').getBoundingClientRect();
+c.width=r.width;c.height=Math.max(400,r.height);
+const g=c.getContext('2d');
+const al=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+for(let i=0;i<1100;i++){
+const x=al(i*1.7)*c.width,y=al(i*2.9)*c.height,t=al(i*3.3);
+g.fillStyle='rgba('+(t<0.5?'150,120,70':'255,250,230')+','+(0.03+t*0.05).toFixed(3)+')';
+g.fillRect(x,y,1+al(i*5)*6,1);
+}
+const d=g.createRadialGradient(c.width*0.9,c.height*0.1,4,c.width*0.9,c.height*0.1,120);
+d.addColorStop(0,'rgba(170,140,80,.13)');d.addColorStop(1,'rgba(170,140,80,0)');
+g.fillStyle=d;g.fillRect(0,0,c.width,c.height);
+}
+function cptCommis(){
+const c=$('cptCommis');if(!c)return;
+const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+c.width=56*D;c.height=70*D;
+const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+const avant=GESTE;GESTE={t:0};
+sprite(g,28,62,Object.assign({},DEF_AP,CPT.ap),'bas',0,false);
+GESTE=avant;
+}
+function cptSou(c){return (c/100).toFixed(2).replace('.',',')+' €';}
+function cptMaj(){
+SAC_PEUT_BAISSER=Date.now();   /* une vente : le sac a le droit de baisser */
+const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&CPT.prix[k])
+.sort((a,b)=>CPT.prix[b]*e.sac[b]-CPT.prix[a]*e.sac[a]);
+const combien=(k)=>(k in VENTE)?VENTE[k]:e.sac[k];
+$('cptCorps').innerHTML= ks.length? ks.map(k=>{
+const n=combien(k);
+return '<div class="cptLg '+(n>0?'on':'off')+'" data-k="'+k+'">'+
+'<span class="cptCoche">✓</span>'+
+'<svg viewBox="0 0 16 16" width="30">'+(ICONES[k]||'')+'</svg>'+
+'<span class="cptNm"><b>'+(OBJETS[k]?OBJETS[k].nom:k)+'</b>'+
+'<i>'+cptSou(CPT.prix[k])+' pièce · '+e.sac[k]+' dans le sac</i></span>'+
+'<span class="cptQt"><button data-m="-1">−</button><span>'+n+'</span>'+
+'<button data-m="1">+</button></span>'+
+'<span class="cptPr">'+cptSou(CPT.prix[k]*n)+'</span></div>';
+}).join('') : CPT.vide;
+$('cptCorps').querySelectorAll('.cptLg').forEach(el=>{
+const k=el.dataset.k;if(!k)return;
+el.onclick=(ev)=>{
+const b=ev.target.closest('[data-m]');
+if(b)VENTE[k]=Math.max(0,Math.min(e.sac[k],combien(k)+(+b.dataset.m)));
+else VENTE[k]=combien(k)>0?0:e.sac[k];
+vibrer(20);cptMaj();
+};
+});
+const total=ks.reduce((t,k)=>t+CPT.prix[k]*combien(k),0);
+const nb=ks.reduce((t,k)=>t+combien(k),0);
+const pd=ks.reduce((t,k)=>t+combien(k)*1,0);
+$('cptCombien').textContent=CPT===MODE_POISSON?(nb+' poisson'+(nb>1?'s':'')+' sur l’étal'):(nb+' objet'+(nb>1?'s':'')+' sur le comptoir');
+$('cptPoids').textContent=pd+' de charge rendue';
+$('cptTotal').textContent=cptSou(total);
+$('cptArgent').textContent=enEuros(e.euros||0);
+const v=$('cptVendre');
+v.classList.toggle('rien',total===0);
+v.textContent=total?('Vendre · '+cptSou(total)):'Rien à vendre';
+}
+function cptPluie(total){
+const c=$('cptPieces');if(!c)return;
+const r=$('page2Fond').getBoundingClientRect();
+c.width=r.width;c.height=r.height;
+const g=c.getContext('2d');
+const N=Math.min(40,6+Math.round(total/40)), P=[];
+for(let i=0;i<N;i++)P.push({x:c.width*0.5+(Math.random()-0.5)*90,y:c.height*0.46,
+vx:(Math.random()-0.5)*260,vy:-180-Math.random()*220,r:Math.random()*6});
+let t0=performance.now();
+(function boucle(t){
+const dt=Math.min(.04,(t-t0)/1000);t0=t;
+g.clearRect(0,0,c.width,c.height);
+let vivants=0;
+P.forEach(p=>{
+p.vy+=760*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=dt*6;
+if(p.y<c.height+30){vivants++;
+g.save();g.translate(p.x,p.y);g.rotate(p.r);
+g.fillStyle='#c9a24a';g.fillRect(-5,-5,10,10);
+g.fillStyle='#e8cf8a';g.fillRect(-5,-5,10,3);
+g.fillStyle='#8a6a2a';g.fillRect(-5,2,10,3);
+g.restore();}
+});
+if(vivants)requestAnimationFrame(boucle);else g.clearRect(0,0,c.width,c.height);
+})(t0);
+}
+async function cptVendre(){
+const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&CPT.prix[k]);
+const combien=(k)=>(k in VENTE)?VENTE[k]:e.sac[k];
+const prevu=ks.reduce((t,k)=>t+CPT.prix[k]*combien(k),0);
+if(!prevu)return;
+if(venteEnCours)return;
+venteEnCours=true;
+const v=$('cptVendre');
+v.textContent='…';v.classList.add('rien');
+let gagne=0;
+for(const k of ks){
+const n=combien(k);
+if(!n)continue;
+SAC_PEUT_BAISSER=Date.now();
+const d2=await appelRPC(CPT.rpc,{p_joueur:e.id,p_type:k,p_nb:n});
+if(d2&&d2.erreur==='plafond'){
+auFil(CPT.nom,'Le marchand refuse : tu lui as déjà vendu plus que '+
+'tes récoltes ne le permettent.',false,'#e8b43a');
+break;
+}
+if(!d2||d2.erreur)continue;
+gagne+=d2.gain||0;
+if(typeof d2.euros==='number')e.euros=d2.euros;
+if(d2.sac)adopterSac({sac:d2.sac},++numAppelSac);
+}
+venteEnCours=false;
+VENTE={};
+sauver();majHaut();majPastille();
+if(gagne){
+jouer('vente','moment');
+cptPluie(gagne);
+const sc=$('cptSceau');
+if(sc){sc.classList.remove('on');void sc.offsetWidth;sc.classList.add('on');
+setTimeout(()=>sc.classList.remove('on'),1400);}
+vibrer([30,50,30]);
+}
+cptMaj();
+}
 let venteEnCours=false;
 function lireReglages(){
 try{
@@ -19401,7 +22759,7 @@ corps='<div class="mot">Un relevé pour comprendre les soucis d’affichage.</di
 ' · ouvertes '+(POT&&POT.j?POT.j.nb:'?')+'<br>'+
 'parcelle 0 '+(()=>{try{const P=POT.parc[0];if(!P)return 'absente';
 const Q=POT_XY(0);return (P.cult||'vide')+' en '+Math.round(Q.x)+','+Math.round(Q.y)+
-' ('+Q.PW+'x'+Q.PH+') stade '+null+(potOuverte(0)?' ouverte':' fermée');}catch(x){return 'erreur '+x.message;}})()+'<br>'+
+' ('+Q.PW+'x'+Q.PH+') stade '+potStade(P)+(potOuverte(0)?' ouverte':' fermée');}catch(x){return 'erreur '+x.message;}})()+'<br>'+
 'bloque droite '+(()=>{try{return bloque(joueur.x+12,joueur.y);}catch(x){return 'erreur '+x.message;}})()+'<br>'+
 'bloque bas '+(()=>{try{return bloque(joueur.x,joueur.y+12);}catch(x){return 'erreur '+x.message;}})()+'<br>'+
 'sol '+(SOL?SOL.width+'x'+SOL.height:'absent')+' · monde pret '+(typeof MONDE_PRET!=='undefined'?MONDE_PRET:'?')+'<br>'+
@@ -19500,6 +22858,63 @@ const FONTES=[
 {id:'lingotCuivre',nom:'Lingot de cuivre', cout:{cuivre:2,charbon:1}, rend:{lingotCuivre:1},duree:75},
 {id:'brique',      nom:'Brique',           cout:{argile:3,charbon:1}, rend:{brique:2},      duree:60}
 ];
+function assez(cout){return Object.entries(cout).every(([k,n])=>combien(k)>=n);}
+function coutHTML(cout){
+return '<span class="cout">'+Object.entries(cout).map(([k,n])=>
+'<i class="'+(combien(k)>=n?'ok':'')+'">'+n+' '+OBJETS[k].nom.toLowerCase()+'</i>').join('')+'</span>';
+}
+function ouvrirFour(){
+if(e.four){
+const reste=e.four.fin-Date.now();
+if(reste>0){
+const f=FONTES.find(x=>x.id===e.four.recette);
+const total=f.duree*1000, fait=Math.max(0,total-reste);
+return ouvrirPage('Le four','EN CHAUFFE',
+'<div class="chauffe"><div class="barre"><i style="width:'+
+Math.round(fait/total*100)+'%"></i></div>'+
+'<div class="reste">'+(reste>60000?Math.ceil(reste/60000)+' min restantes'
+:Math.ceil(reste/1000)+' s restantes')+'</div></div>'+
+'<div class="vide2">Il continue de chauffer même si tu t’éloignes<br>ou que tu fermes le jeu.</div>',
+false);
+}
+const f=FONTES.find(x=>x.id===e.four.recette);
+Object.entries(f.rend).forEach(([k,n])=>ajouter(k,n));
+Object.entries(f.rend).forEach(([k,n])=>
+(SAC_PEUT_BAISSER=Date.now(),appelRPC('livrer',{p_joueur:e.id,p_type:k,p_nb:n})).then(d=>adopterSac(d,++numAppelSac)));
+const quoi=Object.entries(f.rend).map(([k,n])=>n+' '+OBJETS[k].nom.toLowerCase()).join(', ');
+e.four=null;sauver();majPastille();monterEnLigne(true);
+const c=cible();
+if(c&&c.t==='four'){
+texteVolant(c.x,c.y-34,'+'+quoi,'#ffc65a');
+eclats(c.x,c.y-14,14,'#ff9d45',1.2);
+secouer(0.4);
+}
+vibrer([12,34,20]);
+return ouvrirPage('Le four','FOURNÉE TERMINÉE',
+'<div class="gagne2">'+quoi+'</div>'+
+'<div class="vide2">Le métal est dans ton inventaire.</div>',false);
+}
+const corps=FONTES.map(f=>{
+const ok=assez(f.cout);
+return '<div class="recette"><span class="ic"><svg viewBox="0 0 16 16" width="26">'+
+ICONES[Object.keys(f.rend)[0]]+'</svg></span>'+
+'<span class="tx"><b>'+f.nom+'</b><span>'+f.duree+' secondes de chauffe</span>'+
+coutHTML(f.cout)+'</span>'+
+'<button data-fondre="'+f.id+'"'+(ok?'':' disabled')+'>Fondre</button></div>';
+}).join('')+
+'<div class="vide2">Le four garde sa chaleur : tu peux partir récolter<br>pendant que le métal fond.</div>';
+ouvrirPage('Le four','QUE VEUX-TU FONDRE ?',corps,false);
+$('page2Fond').querySelectorAll('[data-fondre]').forEach(b=>b.onclick=()=>{
+const f=FONTES.find(x=>x.id===b.dataset.fondre);
+if(!assez(f.cout))return;
+Object.entries(f.cout).forEach(([k,n])=>{e.sac[k]=combien(k)-n;});
+(SAC_PEUT_BAISSER=Date.now(),appelRPC('retirer_du_sac',{p_joueur:e.id,p_cout:f.cout})).then(d=>adopterSac(d,++numAppelSac));
+e.four={recette:f.id,fin:Date.now()+f.duree*1000};
+sauver();majPastille();monterEnLigne(true);
+vibrer([10,30,18]);
+ouvrirFour();
+});
+}
 const FORGES=[
 {id:'piocheFer',nom:'Pioche de fer',   d:'Deux coups au lieu de quatre sur les filons.',
 cout:{lingotFer:2,bois:1}, coul:'#b06a3a', fait:()=>e.outils.piocheFer,
@@ -19514,6 +22929,33 @@ faire:()=>{e.sacMax=110;}},
 cout:{resine:2,bois:2}, coul:'#e8a94a', fait:()=>false,
 faire:()=>{ajouter('torche',3);}}
 ];
+function ouvrirEtabli(){
+const corps=FORGES.map(f=>{
+const ok=assez(f.cout), deja=f.fait();
+return '<div class="recette"'+(deja?' style="opacity:.5"':'')+'>'+
+'<span class="ic"><svg viewBox="0 0 16 16" width="26">'+
+(ICONES[f.id]||ICONES.pioche)+'</svg></span>'+
+'<span class="tx"><b>'+f.nom+'</b><span>'+f.d+'</span>'+coutHTML(f.cout)+'</span>'+
+'<button data-forger="'+f.id+'"'+((ok&&!deja)?'':' disabled')+'>'+
+(deja?'Déjà fait':'Forger')+'</button></div>';
+}).join('');
+ouvrirPage('L’établi','FORGER SES OUTILS',corps,false);
+$('page2Fond').querySelectorAll('[data-forger]').forEach(b=>b.onclick=()=>{
+const f=FORGES.find(x=>x.id===b.dataset.forger);
+if(!assez(f.cout)||f.fait())return;
+Object.entries(f.cout).forEach(([k,n])=>{e.sac[k]=combien(k)-n;});
+(SAC_PEUT_BAISSER=Date.now(),appelRPC('retirer_du_sac',{p_joueur:e.id,p_cout:f.cout})).then(d=>{
+adopterSac(d,++numAppelSac);
+if(f.id==='grandSac')appelRPC('agrandir_sac',{p_joueur:e.id,p_max:110}).then(adopterSac);
+});
+f.faire();
+sauver();majPastille();monterEnLigne(true);
+const c=cible();
+if(c){texteVolant(c.x,c.y-34,f.nom+' !','#ffe08a');eclats(c.x,c.y-14,16,'#c9a24a',1.3);secouer(0.5);}
+vibrer([14,40,26]);
+ouvrirEtabli();
+});
+}
 const BULLES=new Map();                         /* id → {txt, jusqu'a} */
 const PHRASES=['Salut !','Ça va ?','Viens par ici','Attention !','Bien joué',
 'Tu mines quoi ?','On se voit au complexe ?','À plus','Merci !','Aide-moi'];
@@ -19742,13 +23184,6 @@ if(m)m.textContent=mot;
 }
 /* LA FERME EST-ELLE PRÊTE ? Le champ, les poules et les cochons sont arrivés
    du serveur, et le monde a été dessiné au moins deux fois derrière le voile. */
-async function portPret(){
-VF.cible=Math.max(VF.cible,84);vfMot('On amarre les bateaux');
-/* le sol du port (le quai, l'eau, les façades) et le décor sont dessinés derrière l'écran */
-const t0=Date.now();while(!(typeof SOL!=='undefined'&&SOL)&&Date.now()-t0<6000)await new Promise(r=>setTimeout(r,100));
-VF.cible=Math.max(VF.cible,92);vfMot('Le port se réveille');
-for(let k=0;k<4;k++)await new Promise(r=>requestAnimationFrame(r));
-VF.pret=true;}
 function leverLeVoile(force){
 const v=document.getElementById('voile');
 if(!v||v.classList.contains('parti'))return;
@@ -20012,7 +23447,7 @@ if(ANNEXE&&e.ext&&e.extc===CARTE){joueur.x=+e.ext.x||0;joueur.y=+e.ext.y||0;}
 /* ET L'ARRIVÉE PAR-DESSUS TOUT. Quand l'adresse dit qu'on arrive,
    c'est la borne qui gagne, quoi qu'aient posé la sauvegarde du
    serveur ou le e.ext d'une visite précédente. */
-try{if(CARTE==='extramar'&&new URLSearchParams(location.search).has('arrivee'))(()=>{})();}catch(x){}
+try{if(CARTE==='extramar'&&new URLSearchParams(location.search).has('arrivee'))poserAuPort();}catch(x){}
 /* EN FORÊT, ON ARRIVE TOUJOURS PAR LE SENTIER. e.ext est une case unique,
    réécrite à chaque pas sur n'importe quelle carte annexe : on arrivait
    donc dans le bois à la position qu'on avait à Extramar, parfois à
@@ -20020,7 +23455,7 @@ try{if(CARTE==='extramar'&&new URLSearchParams(location.search).has('arrivee'))(
 if(CARTE==='foret'){joueur.x=F_SENT_ARRIVEE[0];joueur.y=F_SENT_ARRIVEE[1];joueur.dir='droite';}
 if(CARTE==='large'){const p=batMonde(0,BARRE_Y+16);joueur.x=p[0];joueur.y=p[1];joueur.dir='haut';
   COIN_VU=null;window.TK_SANS_JOY=true;   /* au large, on ne marche pas : pas de joystick */
-
+  try{majLeCoin();}catch(x){}try{poserLeBoutonDuLarge();poserLaCarteDuLarge();brancherLaBarre();}catch(x){}}
 /* LA NOUVELLE CARTE : on arrive devant la gare, et plus rien ne pousse
    le joueur vers l'ancienne cour, qui n'existe plus. */
 /* UNE SEULE FOIS, AU CHARGEMENT : si la position vient de l'ancienne carte,
@@ -20039,7 +23474,7 @@ e.ext={x:joueur.x,y:joueur.y};e.extc=CARTE;try{sauver();}catch(x){}
 try{if(CARTE==='extramar'&&dansLeBassin(joueur.x,joueur.y)&&!surPonton(joueur.x,joueur.y))joueur.y=XP.quaiY-14;}catch(x){}
 taille();garderAllume();
 fondu=1;                                   /* le jeu apparaît en fondu */
-if(VF.on){try{await null;}catch(x){}leverLeVoile();}
+if(VF.on){try{await fermePrete();}catch(x){}leverLeVoile();}
 else requestAnimationFrame(()=>requestAnimationFrame(leverLeVoile));
 }
 ouvrirPorte();
@@ -20062,7 +23497,7 @@ function regraverLeDecor(){
   videCache();
   try{refaireLeSol();}catch(x){}
   try{LISIERE=construireLisiere();}catch(x){}
-
+  try{semerDecor();}catch(x){}
   mctx=null;MINI=null;
   try{taille();}catch(x){}
 }
@@ -20169,9 +23604,9 @@ majJoueur(dt);majGeste(dt);
 majVent(dt);
 if(QUALITE>=0.5)majNuages(dt);
 if(QUALITE>=1)majPapillons(dt);
-
-
-
+try{majFaune(dt);}catch(x){}
+try{majSautsDuPort(dt);}catch(x){}
+try{majLucioles(dt);}catch(x){}
 poussiereDePas();bornerParts();
 majParts(dt);majTextes(dt);majVols(dt);majAction();majAutres(dt);
 brancherPerf();
@@ -20181,7 +23616,7 @@ if(t-dernierMini>200){dernierMini=t;majHaut();}   /* le bandeau du haut */
 if(t-dernierSolde>20000){dernierSolde=t;lireLeSolde();}   /* le solde, toutes les 20 s */
 if(t-dernierRencontre>200){
 dernierRencontre=t;
-(()=>{})();
+majLaRencontre();
 }
 if(t-dernierParler>200){
 dernierParler=t;
@@ -20250,10 +23685,6 @@ try{
     saisit = false; pose = null;
     document.documentElement.style.removeProperty('--h-menu');
   }
-  function champ(el){
-    return !!(el && (el.tagName === 'TEXTAREA' ||
-      (el.tagName === 'INPUT' && !/^(button|submit|checkbox|radio|range)$/i.test(el.type||''))));
-  }
 
   document.addEventListener('focusin', function(ev){
     if(!champ(ev.target)) return;
@@ -20305,7 +23736,7 @@ for(let j=0;j<H2;j++){const yy=j/2;for(let i=0;i<W2;i++){const col=f(i/2,yy);if(
 q.putImageData(im,0,0);const lisse=g.imageSmoothingEnabled;g.imageSmoothingEnabled=false;g.drawImage(c,x0,y0,W2/2,H2/2);g.imageSmoothingEnabled=lisse;}
 /* parcelle() a été retirée : c'était l'ancien dessin des planches, à plat,
    au fillRect d'un demi-pixel sur toute la largeur. Le potager du village
-   est passé aux billons de la ferme ((()=>null)), et plus rien ne l'appelait. */
+   est passé aux billons de la ferme (potGraver), et plus rien ne l'appelait. */
 const semis=(g,x,y)=>{PX(g,x-1,y-0.5,2,1,'#4f3c26');PX(g,x-0.5,y-1,1,0.5,'#c8b080');};
 const pousse=(g,x,y,c)=>{PX(g,x,y-2.5,0.5,2.5,'#5f8f3c');feuille(g,x-1.2,y-2.8,1.3,0.6,-0.5,c||VERTC);feuille(g,x+1.4,y-3,1.3,0.6,0.5,c||VERTC);};
 const PLANTES={
@@ -20410,70 +23841,6 @@ const PLANT_IMG={};
 const GRAINES=[['radis','Radis',1.2,5,8],['salade','Salade',2.5,15,18],['carottes','Carottes',3.5,30,32],['ble','Blé',3,45,27],
 ['tomates','Tomates',6,60,56],['courgettes','Courgettes',9,120,88],['fraises','Fraises',15,180,136],['melon','Melon de Cavaillon',24,360,224],
 ['citrouille','Citrouille géante',36,720,352],['lavande','Lavande (vivace)',60,480,128]];
-const CSS_GR=`.gr{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;
-font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;color:#f0e4c6;background:#2a2118}
-.gr .haut{position:relative;flex:none;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 12px;
-display:flex;align-items:flex-start;gap:10px}
-.gr .haut .tx{flex:1;min-width:0}
-.gr .haut small{display:block;font:700 9px ui-monospace,monospace;letter-spacing:3px;color:#c9a24a}
-.gr .haut b{display:block;font:700 23px 'Baloo 2',sans-serif;color:#f0e4c6;margin-top:4px}
-.gr .haut em{display:block;font:italic 12px Georgia,serif;color:#a08f72;margin-top:2px}
-.gr .haut .bs{flex:none;text-align:right;font:700 8px ui-monospace,monospace;letter-spacing:1.5px;color:#a08f72}
-.gr .haut .bs b{display:block;font:700 16px 'Baloo 2',sans-serif;color:#c9a24a;letter-spacing:0;margin:0}
-.gr .grOng{display:flex;gap:6px;padding:0 16px 14px;flex:none}
-.gr .grOng button{border:0;border-radius:13px;padding:7px 14px;font:700 12px 'Baloo 2',sans-serif;
-background:rgba(255,255,255,.07);color:#a08f72}
-.gr .grOng button.on{background:#c9a24a;color:#2a2016}
-.gr .corps{flex:1;overflow-y:auto;padding:0 0 calc(env(safe-area-inset-bottom,0px) + 86px)}
-.gr .mot{font:italic 12.5px/1.55 Georgia,serif;color:#a08f72;padding:0 16px 12px}
-.gr .rub{font:700 9px ui-monospace,monospace;letter-spacing:2px;color:#5f7489;padding:10px 16px 8px}
-/* LES SACHETS DE GRAINES */
-.gr .etag{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0 16px 14px}
-/* LE CALENDRIER : les fenêtres de temps, puis une ligne par espèce */
-.gr .fen{display:flex;gap:6px;padding:0 16px 12px}
-.gr .fen button{flex:1;border:0;border-radius:11px;padding:8px 4px;
-font:700 11.5px 'Baloo 2',sans-serif;background:rgba(255,255,255,.07);color:#a08f72}
-.gr .fen button.on{background:#c9a24a;color:#2a2016}
-.gr .gn{display:flex;align-items:center;gap:11px;padding:10px 16px;border-top:1px solid rgba(201,162,74,.18)}
-.gr .gn canvas{width:40px;height:40px;flex:none;border-radius:10px;background:rgba(255,255,255,.06)}
-.gr .gn .t{flex:1;min-width:0}
-.gr .gn .t b{display:block;font:700 14px 'Baloo 2',sans-serif;color:#f0e4c6}
-.gr .gn .t small{display:block;font:11.5px system-ui,sans-serif;color:#a08f72;margin-top:1px}
-.gr .gn .t small em{color:#9fd47e;font-style:normal;font-weight:700}
-.gr .gn .px{flex:none;font:700 13px 'Baloo 2',sans-serif;color:#c9a24a}
-.gr .gn button{flex:none;border:0;border-radius:10px;padding:7px 10px;
-background:rgba(255,255,255,.08);color:#f0e4c6;font:700 11px 'Baloo 2',sans-serif}
-.gr .gn.verrou{opacity:.62}
-.gr .sachet{background:rgba(255,255,255,.06);border-radius:16px;padding:10px;text-align:center}
-.gr .sachet canvas{width:100%;height:72px;display:block;border-radius:11px;
-background:linear-gradient(#20334a,#2b4030 60%,#5b4a33 61%,#44381f)}
-.gr .sachet b{display:block;font:700 14px 'Baloo 2',sans-serif;color:#f6efdc;margin-top:7px}
-.gr .sachet .inf{font:italic 12px Georgia,serif;color:#5f7489;margin:2px 0 8px}
-.gr .sachet .inf em{color:#9fd47e;font-style:normal}
-.gr .sachet button{width:100%;border:0;border-radius:12px;padding:9px;
-background:rgba(255,255,255,.08);color:#f6efdc;font:700 12px 'Baloo 2',sans-serif}
-/* LES OUTILS, UNE LIGNE CHACUN */
-.gr .outil{display:flex;gap:12px;align-items:center;padding:13px 16px;border-top:1px solid rgba(255,255,255,.07)}
-.gr .outil canvas{width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,.07);flex:none}
-.gr .outil .t{flex:1;min-width:0}
-.gr .outil .t b{display:block;font:700 15px 'Baloo 2',sans-serif;color:#f6efdc}
-.gr .outil .t small{display:block;font:italic 12px Georgia,serif;color:#5f7489;margin-top:1px}
-.gr .outil button{flex:none;border:0;border-radius:12px;padding:9px 13px;background:#e8c06a;color:#2a2016;
-font:700 12px 'Baloo 2',sans-serif}
-.gr .outil button.pris{background:rgba(255,255,255,.08);color:#8fa6bd}
-/* L'ÉTAT DU CHAMP */
-.gr .compteurs{display:flex;gap:8px;padding:0 16px 12px}
-.gr .compteurs span{flex:1;background:rgba(255,255,255,.06);border-radius:12px;padding:10px;text-align:center}
-.gr .compteurs b{display:block;font:700 19px 'Baloo 2',sans-serif}
-.gr .compteurs i{font:700 8px ui-monospace,monospace;letter-spacing:1px;color:#5f7489;font-style:normal}
-.gr .plan{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:0 16px;margin-bottom:9px}
-.gr .plan i{aspect-ratio:1.4;border-radius:3px;background:rgba(255,255,255,.08);display:block}
-.gr .plan i.pousse{background:#5f8a3c}.gr .plan i.eau{background:#3f6a8a}
-.gr .plan i.libre{background:#8d7550}.gr .plan i.prete{background:#9fd47e}
-.gr .legende{display:flex;gap:12px;flex-wrap:wrap;padding:0 16px 14px;font:italic 11.5px Georgia,serif;color:#5f7489}
-.gr .legende i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:3px}
-.gr .sortir{position:absolute;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);
-border:0;border-radius:14px;padding:13px;background:#c9a24a;color:#2a2016;font:700 15px 'Baloo 2',sans-serif}`;
 
 const POT_CULT={radis:['Radis',120,5,800],salade:['Salade',250,15,1800],carottes:['Carottes',350,30,3200],ble:['Blé',300,45,2700],
 tomates:['Tomates',600,60,5600],courgettes:['Courgettes',900,120,8800],fraises:['Fraises',1500,180,13600],melon:['Melon de Cavaillon',2400,360,22400],
@@ -20522,9 +23889,27 @@ const POT_ORDRE=[0,1,2,3,4,5, 6,7,8,9,10,11, 12,13,14,15,16,17, 18,19,20,21,22,2
 let POT={j:null,parc:{},decal:0,charge:false}, POT_CHAMP=null, POT_SALE=true, POT_ARROSE=0, POT_OCCUPE=false;
 const potOuverte=(i)=>POT.j&&POT_ORDRE.indexOf(i)<POT.j.nb;
 const potNow=()=>Date.now()+POT.decal;
+function potStade(P){if(!P||!P.cult)return -1;const t0=new Date(P.t0).getTime(), m=new Date(P.mur_a).getTime(), k=(potNow()-t0)/Math.max(1,m-t0);return k>=1?3:(k>0.6?2:(k>0.2?1:0));}
+function potAdopter(d){if(!d||d.erreur||!d.j)return false;POT.j=d.j;POT.debloque=d.debloque||POT.debloque||[];POT.parc={};(d.parcelles||[]).forEach(p=>POT.parc[p.i]=p);
+if(d.now)POT.decal=new Date(d.now).getTime()-Date.now();if(typeof d.euros==='number'){e.euros=d.euros;try{majHaut();}catch(x){}}POT_SALE=true;POT.charge=true;return true;}
 /* IDEM POUR LE POTAGER : chargerLeChampVite, la veille de deux secondes
    et le rafraîchissement de deux minutes tiraient en même temps. */
 let POT_ENVOL=false;
+async function potCharger(){if(PLACE_SEULE||CARTE!=='village'||!e.id)return;
+if(POT_ENVOL)return;POT_ENVOL=true;
+try{potAdopter(await appelRPC('pot_etat',{p_joueur:e.id}));}catch(x){}
+finally{POT_ENVOL=false;}}
+function potProche(){if(CARTE!=='village'||PLACE_SEULE||CHAMP_LIBRE||FERME_VIERGE)return null;
+/* ON VÉRIFIE D'ABORD LE CARRÉ ENTIER. Sans ce garde-fou, une erreur de
+   coordonnées fait apparaître « Semer » en plein pré, loin du potager. */
+if(POT_NEUF()){
+if(joueur.x<CARRE.x0-20||joueur.x>CARRE.x0+CARRE.L+20)return null;
+if(joueur.y<CARRE.y0-20||joueur.y>CARRE.y0+CARRE.H+30)return null;}
+/* LES PIEDS DANS LA PLANCHE, pas dans l'allée : la marge basse était de
+   huit pixels alors que l'allée n'en fait que quatorze, donc « Semer »
+   s'allumait en plein passage entre deux planches. */
+for(let i=0;i<24;i++){if(!potOuverte(i))continue;const {x,y,PW,PH}=POT_XY(i);
+if(joueur.x>=x&&joueur.x<=x+PW&&joueur.y>y&&joueur.y<=y+PH+3)return i;}return null;}
 /* ================= LE POTAGER DU VILLAGE, AU MÊME LOOK QUE LA FERME =====
    Il gardait l'ancien dessin : des planches plates au ton uni posées sur
    une texture de terre claire, alors que la ferme est passée au gravier
@@ -20538,13 +23923,70 @@ let POT_ENVOL=false;
    buis, les herbes et les pancartes restent au pinceau : ils sont peu
    nombreux, leurs rectangles font plusieurs pixels, et ils doivent passer
    PAR-DESSUS — donc après la pose. */
+function potGraver(){const Z=POT_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0, D=2, c=document.createElement('canvas');c.width=W*D;c.height=H*D;const g=c.getContext('2d');
+g.setTransform(D,0,0,D,-Z.x0*D,-Z.y0*D);g.imageSmoothingEnabled=false;
+{
+const LW=W*D, LH=H*D, im=g.createImageData(LW,LH), d2=im.data;
+/* met2 prend des coordonnées MONDE et remplit le bloc D×D correspondant */
+const met2=(x,y,co)=>{const i=(x-Z.x0)*D, j=(y-Z.y0)*D;
+if(i<0||j<0||i>=LW||j>=LH)return;
+for(let b=0;b<D;b++)for(let a=0;a<D;a++){const k=((j+b)*LW+(i+a))*4;d2[k]=co[0];d2[k+1]=co[1];d2[k+2]=co[2];d2[k+3]=255;}};
+const GRA=[[191,179,147],[202,190,158],[178,166,134]], GRAIN=[157,145,118];
+for(let y=Z.y0;y<Z.y1;y++)for(let x=Z.x0;x<Z.x1;x++){
+const n=PR_h(x,y,41);
+met2(x,y,n<.4?GRA[0]:(n<.75?GRA[1]:GRA[2]));}
+/* le grain du gravier */
+for(let k=0;k<Math.round(W*H/40);k++){
+const x=Z.x0+Math.floor(PR_h(k,3,43)*W);
+const y=Z.y0+Math.floor(PR_h(k,7,45)*H);
+met2(x,y,GRAIN);}
+/* LA TERRE EN BILLONS : crête, flanc, sillon. La planche arrosée descend
+   d'un cran de plus : on voit de loin ce qui vient d'être arrosé. */
+const BIL=[[[127,103,69],[135,110,74]],[[106,84,56],[114,89,60]],
+           [[87,67,44],[93,72,48]],[[71,54,38],[77,59,41]]];
+const BIL_EAU=[[[91,74,52],[97,79,56]],[[76,61,43],[82,64,46]],
+               [[63,49,34],[67,52,37]],[[51,39,29],[55,43,31]]];
+for(let i=0;i<24;i++){const {x,y,PW,PH}=POT_XY(i), P=POT.parc[i];
+const B=(P&&P.etat==='bechee'&&P.eau)?BIL_EAU:BIL;
+for(let j=0;j<PH;j++)for(let a=0;a<PW;a++){
+const ond=Math.sin((x+a)/16)*0.9+Math.sin((x+a)/6)*0.3;
+const rel=((j+ond)%5+5)%5, q=PR_h(x+a,Math.floor(j/5),47);
+const et=rel<1?0:(rel<2.4?1:(rel<3.6?2:3));
+met2(x+a,y+j,B[et][q<.5?0:1]);}}
+g.putImageData(im,0,0);
+}
+for(let i=0;i<24;i++){const {x,y,PW,PH}=POT_XY(i), P=POT.parc[i], bechee=P&&P.etat==='bechee';
+/* LES MOTTES RETOURNÉES */
+for(let k=0;k<Math.round(PW*PH/30);k++){
+const a=Math.floor(PR_h(k,i,49)*(PW-3)), b=Math.floor(PR_h(k,i,51)*(PH-3));
+const w2=2+Math.floor(PR_h(k,i,53)*2);
+g.fillStyle=(bechee&&P.eau)?'#67553a':'#8e7550';g.fillRect(x+a,y+b,w2,2);}
+/* LES GOUTTES, sur la planche qu'on vient d'arroser */
+if(bechee&&P.eau)for(let k=0;k<9;k++){const a=x+1+PR_h(k,i,55)*(PW-2), b=y+1+PR_h(k,i,57)*(PH-2);
+PX(g,a,b,1,0.5,'rgba(170,215,240,.6)');PX(g,a+0.5,b-0.5,0.5,0.5,'rgba(230,245,255,.7)');}
+/* LA PLANCHE EN FRICHE : l'herbe reprend le dessus */
+if(!bechee){for(let k=0;k<60;k++){const a=x+1+PR_h(k,i,59)*(PW-2), b=y+3+PR_h(k,i,61)*(PH-3), h=2+PR_h(k,i,63)*3;
+PX(g,a,b-h,0.5,h,k%2?'#6f8449':'#7d9450');PX(g,a,b-h-0.5,0.5,0.5,'#9cb072');}
+if(!potOuverte(i)){const sx=x+PW-8, sy=y+PH-6;PX(g,sx,sy-10,1,10,'#6b4a28');PX(g,sx-4,sy-12,9,5,'#e8dcc0');PX(g,sx-4,sy-12,9,0.5,'#fff4d8');PX(g,sx-4,sy-7.5,9,0.5,'#8a6a40');
+g.fillStyle='#6b4a28';g.font='700 2.6px Georgia';g.fillText('À LOUER',sx-3.6,sy-8.6);}}
+if(POT.j&&POT.j.arroseurs&&POT.j.arroseurs.includes(i)){PX(g,x+2,y+2,1,5,'#8b9198');PX(g,x+1,y+1.5,3,1,'#6f767c');}}
+/* LA BORDURE DE BUIS. À la ferme elle fait le tour de chaque planche ;
+   ici les allées ne font que six pixels, deux haies s'y toucheraient et
+   le gravier disparaîtrait. Elle ne cerne donc que le carré entier. */
+{const buis=(x,y)=>{const t=PR_h(x,y,65);
+g.fillStyle=t<.5?'#3f6b34':'#487a3a';g.fillRect(x,y-3,3,4);
+g.fillStyle='#5a9044';g.fillRect(x,y-4,3,1);
+g.fillStyle='#6aa44e';g.fillRect(x+1,y-4,1,1);};
+for(let a=Z.x0;a<Z.x1;a+=3){buis(a,Z.y0+4);buis(a,Z.y1-1);}
+for(let b=Z.y0+7;b<Z.y1-3;b+=3){buis(Z.x0,b);buis(Z.x1-3,b);}}
+return c;}
 const potDecorVrai=dessinerDecor;
 dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
 if(CARTE==='village'&&POT.charge&&!CHAMP_LIBRE){const Z=POT_Z();
 if(Z.x1-camX>-10&&Z.x0-camX<VW2+10&&Z.y1-camY>-10&&Z.y0-camY<VH2+30){
-if(POT_SALE||!POT_CHAMP){POT_CHAMP=(()=>{})();POT_SALE=false;}
+if(POT_SALE||!POT_CHAMP){POT_CHAMP=potGraver();POT_SALE=false;}
 g.drawImage(POT_CHAMP,Math.round(Z.x0-camX),Math.round(Z.y0-camY),Z.x1-Z.x0,Z.y1-Z.y0);
-for(let i=0;i<24;i++){const P=POT.parc[i];if(!P||!P.cult||!PLANTES[P.cult])continue;const {x,y,PW,PH}=POT_XY(i), s=null;
+for(let i=0;i<24;i++){const P=POT.parc[i];if(!P||!P.cult||!PLANTES[P.cult])continue;const {x,y,PW,PH}=POT_XY(i), s=potStade(P);
 if(x-camX>VW2+20||x+PW-camX<-20||y-camY>VH2+30||y+PH-camY<-30)continue;
 /* CHAQUE PLANT DANS LE CREUX DE SON SILLON, comme à la ferme : la même
    ondulation que les billons, et un tri en profondeur par rangée. */
@@ -20555,13 +23997,13 @@ const py=y+Math.round(Math.floor((Math.round(PH*((r+0.55)/2)))/5)*5+3-ond);
 acteurs.push({y:py,f:()=>{const ex=px-camX, ey=py-camY;
 g.fillStyle='#9a8158';g.fillRect(ex-2,ey-1,5,2);
 g.fillStyle='rgba(30,22,12,.38)';g.fillRect(ex-2,ey+1,5,1);
-(()=>{})();}});}
+poserPlant(g,P.cult,s,ex,ey,1);}});}
 if(s===3)acteurs.push({y:y+PH,f:()=>{const t=Date.now()/300;PX(g,x+PW-4-camX,y+3-camY+Math.sin(t)*0.5,1,1,'#fff6c0');PX(g,x+PW-4.5-camX,y+3.25-camY,2,0.5,'#fff6c0');}});}}}
 if(CARTE==='village'&&POT.charge&&!CHAMP_LIBRE){const nEp=Math.min(3,(POT.j&&POT.j.epouvantails)||0);   /* les épouvantails, au milieu de chaque rang gardé */
 /* LE SERVEUR GARDE PAR GROUPES DE HUIT (pot_recolter : p_i / 8), ce qui
    ne tombe plus sur une rangée depuis que le potager est couché. On pose
    donc chaque épouvantail au milieu de son groupe, pas au bout d'un rang. */
-for(let r=0;r<nEp;r++){const A=POT_XY(r*8+3), ex=A.x-POT_ALLEE/2, ey=A.y+A.PH-1;acteurs.push({y:ey,f:()=>(()=>{})()});}}
+for(let r=0;r<nEp;r++){const A=POT_XY(r*8+3), ex=A.x-POT_ALLEE/2, ey=A.y+A.PH-1;acteurs.push({y:ey,f:()=>dessinerEpouvantail(g,ex-camX,ey-camY)});}}
 return potDecorVrai(g,camX,camY,VW2,VH2,acteurs);};
 /* ================= L'ÉPOUVANTAIL, AU PIXEL PLEIN =================
    Il était le plus flou de la ferme : cinquante-cinq pour cent de ses
@@ -20577,12 +24019,39 @@ return potDecorVrai(g,camX,camY,VW2,VH2,acteurs);};
    qui la porte. Le chapeau mord la tête, la tête mord le mât, les bras
    mordent le mât, le pantalon mord la chemise, les touffes mordent la
    traverse. */
+function dessinerEpouvantail(g,x,y){
+const X=Math.round(x), Y=Math.round(y);
+const souffle=Math.sin(Date.now()/800)>0?-1:1;             /* la paille se lève, puis retombe */
+const R=(a,c,w,h,col)=>{g.fillStyle=col;g.fillRect(X+a,Y+c,w,h);};
+ombreAuSol(g,X+1,Y,5,1.4,'rgba(40,34,18,.25)');            /* l'ombre */
+R(0,-22,1,22,'#6a4a2a');                                   /* le mât */
+R(-3,-16,7,9,'#b93327');                                   /* la chemise */
+R(-3,-16,1,9,'#cf4a39');                                   /* son flanc éclairé, la lumière vient de gauche */
+R(3,-16,1,9,'#8f2820');                                    /* son flanc à l'ombre */
+R(-3,-12,7,1,'#8a2a1a');                                   /* le pli de la taille */
+R(-2,-8,5,3,'#4a5a7a');                                    /* le pantalon, mord la chemise */
+R(-2,-8,1,3,'#5d6e8e');
+/* LA TRAVERSE NE BOUGE PAS : elle est clouée. C'est la paille des manches
+   qui bat au vent, et c'est elle qui porte le mouvement. */
+R(-8,-16,16,1,'#6a4a2a');                                  /* la traverse des bras, aux épaules */
+R(-9,-16,2,1,'#e0c46a');R(-9,-16+souffle,2,1,'#c9a84e');   /* la paille qui dépasse des manches */
+R(7,-16,2,1,'#e0c46a');R(7,-16+souffle,2,1,'#c9a84e');
+R(-2,-22,5,5,'#e8d4a0');                                   /* la tête, un sac de toile */
+R(2,-22,1,5,'#c9b47e');                                    /* son côté à l'ombre */
+R(-3,-21,2,2,'#e0c46a');R(2,-21,2,2,'#e0c46a');            /* la paille qui sort du sac */
+R(-1,-21,1,1,'#1b1b1b');R(1,-21,1,1,'#1b1b1b');            /* les yeux */
+R(-1,-19,3,1,'#8a5a30');                                   /* la bouche cousue */
+R(-2,-25,5,3,'#d8b060');                                   /* la calotte du chapeau */
+R(-2,-25,1,3,'#e8c87c');
+R(-2,-24,5,1,'#8a3a2a');                                   /* le ruban */
+R(-4,-23,9,2,'#c9a24a');                                   /* le bord, mord la calotte */
+R(-4,-22,9,1,'#a8853a');}                                  /* son dessous, dans l'ombre */
 const potBullesVrai=dessinerBulles;
 dessinerBulles=function(g,camX,camY,px,py){const d=Date.now()-POT_ARROSE;
 {const A=window.FP_ANIM;if(A){const e2=Date.now()-A.t0;if(e2<1400){try{fpDessinerArrosoir(g,camX,camY,e2/1400,A);}catch(x){}}}}
 return potBullesVrai(g,camX,camY,px,py);};
 const potMajVrai=majAction;
-majAction=function(){const i=false;if(i===null||!POT.charge)return potMajVrai();
+majAction=function(){const i=potProche();if(i===null||!POT.charge)return potMajVrai();
 try{const b2=cible();                                   /* une porte ne passe devant la parcelle que si on est vraiment collé à elle */
 if(b2&&(b2.ouvre||b2.t==='comptoir')){const demi=b2.demi||40;
 const ec=Math.max(0,Math.abs(b2.x-joueur.x)-demi), dd=Math.hypot(ec,(joueur.y-b2.y)*0.8);
@@ -20594,10 +24063,10 @@ if(dd<26)return potMajVrai();}}catch(x){}
    plaque était éteinte ; en sortant de la parcelle, le remove('on') de la
    plaque normale était donc sauté et « Semer » restait collé en bas de
    l'écran pendant qu'on marchait ailleurs dans la ferme.
-   false ne rend que des parcelles ACHETÉES : la branche « Parcelle à
+   potProche() ne rend que des parcelles ACHETÉES : la branche « Parcelle à
    louer » ne pouvait jamais s'afficher, elle disparaît. */
 plaqueVrai=$('action');
-const b=plaqueFeinte, P=POT.parc[i], s=null, J=POT.j;let t;
+const b=plaqueFeinte, P=POT.parc[i], s=potStade(P), J=POT.j;let t;
 /* LA HOUE EST DONNEE A TOUT LE MONDE depuis que le Grainetier a fermé :
    il n'y a plus d'endroit pour l'acheter, donc plus de raison de la
    refuser. On ne verifie plus rien. */
@@ -20617,18 +24086,49 @@ const VIVACES=['lavande'];
    jeu est désormais la seule à faire avancer le geste. */
 const potGeste=(type,ms)=>{GESTE={t:1,pourMoi:true,cible:null,impact:false,type};};
 const potRefus=(d)=>texteVolant(joueur.x,joueur.y-56,d&&d.erreur==='pas_assez'?'Pas assez d’argent':(d&&d.erreur==='pas_mur'?'Pas encore mûr':'Réessaie dans un instant'),'#ffe8a0');
-$('action').addEventListener('click',(ev)=>{const i=false;if(i===null||!POT.charge)return;ev.stopImmediatePropagation();ev.preventDefault();(()=>{})();},true);
+async function potAgir(i){if(POT_OCCUPE)return;const P=POT.parc[i], s=potStade(P), J=POT.j;
+/* LE GRAINETIER N'EST PLUS UN BATIMENT : tout se passe a la boutique de
+   la ferme, celle de l'etable. Envoyer le joueur a une porte qui n'existe
+   plus, c'est pire que de ne rien dire. */
+if(!potOuverte(i)){texteVolant(joueur.x,joueur.y-56,'Parcelle à louer · à la boutique de la ferme','#ffe8a0');return;}
+POT_OCCUPE=true;try{
+if(!P||P.etat!=='bechee'){
+/* BECHER N'EST PAS UNE DECISION, c'est la formalite qui precede le
+   semis : on ne beche jamais pour autre chose. Les deux gestes n'en
+   font donc plus qu'un, et la liste des graines s'ouvre dans la
+   foulee — un toucher de moins par planche, vingt-quatre par champ. */
+potGeste('houe',650);vibrer(15);const d=await appelRPC('pot_becher',{p_joueur:e.id,p_i:i});
+if(!potAdopter(d)){potRefus(d);}
+else{POT_OCCUPE=false;setTimeout(()=>{try{potGraines(i);}catch(x){}},240);return;}}
+else if(!P.cult){POT_OCCUPE=false;potGraines(i);return;}
+else if(s===3){potGeste('cueille',600);const d=await appelRPC('pot_recolter',{p_joueur:e.id,p_i:i});
+if(d&&!d.erreur&&d.etat){potAdopter(d.etat);try{lireSacServeur();}catch(x){}jouer('vente','moment');vibrer([20,40,20]);
+const nom=POT_CULT[d.cult]?POT_CULT[d.cult][0]:d.cult;
+texteVolant(joueur.x,joueur.y-58,
+d.nb?('+'+d.nb+' '+nom+' dans ton inventaire')
+:('+1 gerbe → réserve du poulailler'+(d.gerbes?' ('+d.gerbes+')':'')),'#ffe070');
+if(!d.nb)setTimeout(()=>texteVolant(joueur.x,joueur.y-72,'Elle nourrira tes poules · bouton « Une gerbe »','#e8d9a0'),900);
+if(d.oiseaux)setTimeout(()=>texteVolant(joueur.x,joueur.y-70,'Les oiseaux sont passés pendant ton absence… −50 %','#ffb8a8'),1000);
+if(d.ticket){e.cos=e.cos||{};e.cos.costume_epouvantail=true;setTimeout(()=>ticketDOrTenue('epouvantail'),700);}}   /* sans épouvantail */
+else if(d&&d.erreur==='sac_plein'){texteVolant(joueur.x,joueur.y-58,'Inventaire plein : va vendre à la boutique','#ffd0a0');try{bulle&&motOuverture('Ton inventaire est plein.');}catch(x){}}
+else potRefus(d);}
+else if(VIVACES.includes(P.cult))await potArracher(i);
+else if(!P.eau&&J.arrosoir){POT_ARROSE=Date.now();vibrer(12);
+potGeste('arrose',900);        /* on se penche et on tient la pose */const d=await appelRPC('pot_arroser',{p_joueur:e.id,p_i:i});if(!potAdopter(d))potRefus(d);}
+else texteVolant(joueur.x,joueur.y-56,J.arrosoir||P.eau?'Ça pousse… patience':'Un arrosoir irait deux fois plus vite','#fff3d0');
+}finally{POT_OCCUPE=false;try{majAction();}catch(x){}}}
+$('action').addEventListener('click',(ev)=>{const i=potProche();if(i===null||!POT.charge)return;ev.stopImmediatePropagation();ev.preventDefault();potAgir(i);},true);
 let POT_LONG=0;
 const potArracher=async(i)=>{
 const P=POT.parc[i];if(!P||!P.cult)return;
 const nom=POT_CULT[P.cult]?POT_CULT[P.cult][0]:P.cult;
 if(!confirm('Arracher '+nom.toLowerCase()+' ? Le pied est perdu, la parcelle repart bêchée.'))return;
 const d=await appelRPC('pot_arracher',{p_joueur:e.id,p_i:i});
-if(d&&!d.erreur){(()=>{})();texteVolant(joueur.x,joueur.y-56,nom+' arraché','#ffd0a0');vibrer([14,40,14]);}
+if(d&&!d.erreur){potAdopter(d.etat||d);texteVolant(joueur.x,joueur.y-56,nom+' arraché','#ffd0a0');vibrer([14,40,14]);}
 else potRefus(d);
 try{majAction();}catch(x){}};
 ['touchstart','mousedown'].forEach(ev=>$('action').addEventListener(ev,()=>{
-const i=false;if(i===null||!POT.charge)return;
+const i=potProche();if(i===null||!POT.charge)return;
 const P=POT.parc[i];if(!P||!P.cult)return;
 clearTimeout(POT_LONG);POT_LONG=setTimeout(()=>potArracher(i),650);},true));
 ['touchend','touchmove','mouseup','mouseleave'].forEach(ev=>$('action').addEventListener(ev,()=>clearTimeout(POT_LONG),true));
@@ -20636,6 +24136,84 @@ clearTimeout(POT_LONG);POT_LONG=setTimeout(()=>potArracher(i),650);},true));
    Il s'ouvre quand on touche une planche bêchée. Même peau que le
    grainetier : bois de grange, Baloo 2, une ligne par espèce avec son
    temps de pousse et sa marge. */
+function potGraines(i){const old=document.getElementById('potGr');if(old)old.remove();
+if(!document.getElementById('cssPotGr')){const st=document.createElement('style');st.id='cssPotGr';
+st.textContent=`#potGr{position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 86px);
+z-index:60;background:#2a2118;border-radius:18px;padding:0;overflow:hidden;max-height:62vh;
+display:flex;flex-direction:column;box-shadow:0 10px 30px rgba(0,0,0,.5);
+font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif}
+#potGr .hd{flex:none;display:flex;align-items:center;gap:10px;padding:13px 14px 11px}
+#potGr .hd b{flex:1;font:700 16px 'Baloo 2',sans-serif;color:#f0e4c6}
+#potGr .hd small{display:block;font:11px system-ui,sans-serif;color:#a08f72;font-weight:400}
+#potGr .hd button{border:0;background:rgba(255,255,255,.08);color:#f0e4c6;border-radius:50%;
+width:30px;height:30px;font:700 14px 'Baloo 2',sans-serif;flex:none}
+#potGr .liste{overflow-y:auto;padding-bottom:8px}
+#potGr .gn{display:flex;align-items:center;gap:11px;padding:10px 14px;width:100%;border:0;
+background:none;text-align:left;border-top:1px solid rgba(201,162,74,.18)}
+#potGr .gn:active{background:rgba(255,255,255,.05)}
+#potGr .gn canvas{width:34px;height:34px;flex:none;border-radius:9px;background:rgba(255,255,255,.06)}
+#potGr .gn .t{flex:1;min-width:0}
+#potGr .gn .t b{display:block;font:700 13.5px 'Baloo 2',sans-serif;color:#f0e4c6}
+#potGr .gn .t small{display:block;font:11px system-ui,sans-serif;color:#a08f72;margin-top:1px}
+#potGr .gn .t small em{color:#9fd47e;font-style:normal;font-weight:700}
+#potGr .gn .px{flex:none;font:700 12.5px 'Baloo 2',sans-serif;color:#c9a24a}
+#potGr .gn.cher{opacity:.45}#potGr .gn.verrou{opacity:.6}
+#potGr .gn.verrou .px{color:#a08f72}
+/* L'ETENDUE DU GESTE : une planche, ou le rang de six. On choisit
+   d'abord jusqu'ou l'on seme, puis quoi — l'inverse obligerait a
+   rouvrir la liste pour changer d'avis. */
+#potGr .ou{flex:none;display:flex;gap:6px;padding:0 14px 11px}
+#potGr .ou button{flex:1;min-height:40px;border:1px solid rgba(201,162,74,.35);
+border-radius:12px;background:none;color:#a08f72;font:700 12px 'Baloo 2',sans-serif}
+#potGr .ou button.on{background:#c9a24a;border-color:#c9a24a;color:#2a2118}`;
+document.head.appendChild(st);}
+const box=document.createElement('div');box.id='potGr';
+const fmt=(c)=>enEuros(c).replace(',00','');
+let h='<div class="rhd"><b>Quelle graine ?<small>la plus rapide en haut</small></b>'+
+'<button id="potGrX">✕</button></div>'+
+'<div class="ou"><button data-ou="une" class="'+(POT_ETENDUE==='rang'?'':'on')+'">Cette parcelle</button>'+
+'<button data-ou="rang" class="'+(POT_ETENDUE==='rang'?'on':'')+'">Le rang de six</button></div>'+
+'<div class="liste">';
+h+=Object.entries(POT_CULT).sort((x,y)=>x[1][2]-y[1][2]).map(([k,[nom,g,min,v]])=>{
+const libre=potLibre(k), peu=(e.euros||0)<g;
+/* data-no ne servait à rien : il était écrit, jamais lu. La classe
+   « cher » ou « verrou » suffit à griser le bouton, et le gestionnaire de
+   data-k vérifie déjà qu'on peut semer. */
+return '<button class="gn'+(libre?(peu?' cher':''):' verrou')+'" data-k="'+k+'">'+
+'<canvas data-p="'+k+'"></canvas>'+
+'<span class="t"><b>'+nom+'</b><small>'+potDuree(min)+
+(libre?' · marge <em>'+fmt(v-g)+'</em>':' · à débloquer à la boutique')+'</small></span>'+
+'<span class="px">'+fmt(libre?g:POT_VERROU[k])+'</span></button>';}).join('');
+box.innerHTML=h+'</div>';
+document.body.appendChild(box);
+$('potGrX').onclick=()=>box.remove();
+box.querySelectorAll('[data-ou]').forEach(b=>b.onclick=()=>{
+POT_ETENDUE=b.dataset.ou;vibrer(8);
+box.querySelectorAll('[data-ou]').forEach(o=>o.classList.toggle('on',o.dataset.ou===POT_ETENDUE));});
+box.querySelectorAll('canvas[data-p]').forEach(cv=>{
+const D=2,W=34,H=34;cv.width=W*D;cv.height=H*D;
+const g2=cv.getContext('2d');g2.setTransform(D*2.9,0,0,D*2.9,0,0);g2.imageSmoothingEnabled=false;
+try{PLANTES[cv.dataset.p](g2,W/2.9*0.5,H/2.9*0.9,3);}catch(x){}});
+box.querySelectorAll('.gn').forEach(b=>b.onclick=async()=>{
+const k=b.dataset.k, nom=POT_CULT[k][0];
+if(!potLibre(k)){box.remove();texteVolant(joueur.x,joueur.y-56,nom+' : à débloquer à la boutique','#ffe8a0');return;}
+if((e.euros||0)<POT_CULT[k][1]){texteVolant(joueur.x,joueur.y-56,'Pas assez d’argent','#ffe8a0');return;}
+box.remove();if(POT_OCCUPE)return;POT_OCCUPE=true;potGeste('semer',600);vibrer(10);
+try{
+if(POT_ETENDUE==='rang'){
+const d=await appelRPC('pot_semer_rang',{p_joueur:e.id,p_i:i,p_cult:k});
+if(!d||d.erreur){potRefus(d);}
+else{potAdopter(d.etat);sauver();
+const n=d.semees||0;
+texteVolant(joueur.x,joueur.y-56,
+n?(n+' parcelle'+(n>1?'s':'')+' de '+nom.toLowerCase()):'rien à semer ici','#dff0c8');
+if(d.manque)setTimeout(()=>texteVolant(joueur.x,joueur.y-74,
+'le reste du rang attendra : plus assez d’argent','#ffd0a0'),800);}
+}else{
+const d=await appelRPC('pot_semer',{p_joueur:e.id,p_i:i,p_cult:k});
+if(!potAdopter(d))potRefus(d);else texteVolant(joueur.x,joueur.y-56,nom+' semé','#dff0c8');}
+}finally{POT_OCCUPE=false;majAction();}});
+}
 let GR_FEN='h1';
 /* jusqu'ou porte le prochain semis : 'une' planche, ou le 'rang' de six */
 let POT_ETENDUE='une';
@@ -20646,17 +24224,17 @@ let POT_ETENDUE='une';
 (function chargerLeChampVite(n){
 if(CARTE!=='village'||PLACE_SEULE)return;
 if(!e.id){if(n<40)return void setTimeout(()=>chargerLeChampVite(n+1),100);return;}
-(()=>{})();
+potCharger();
 })(0);
 /* LA PLAQUE DOIT AUSSI S'EFFACER. Avant, on ne rafraîchissait que si
    l'on était sur une parcelle : en s'éloignant, « Semer » restait affiché. */
 let POT_PRES=null;
 setInterval(()=>{if(document.hidden)return;
 if(CARTE!=='village'||!POT.charge)return;
-try{const i=false;
+try{const i=potProche();
 if(i!==POT_PRES){POT_PRES=i;majAction();}
 else if(i!==null)majAction();}catch(x){}},400);
-setInterval(()=>{if(CARTE==='village'&&document.visibilityState==='visible')(()=>{})();},120000);
+setInterval(()=>{if(CARTE==='village'&&document.visibilityState==='visible')potCharger();},120000);
 /* LA MÊME COURSE QUE LE VERGER : chargerLeChampVite abandonne au bout de
    quatre secondes, alors que e.id n'arrive qu'avec la session. On insiste
    jusqu'à ce que le champ soit là, et on recharge si l'identité change. */
@@ -20669,7 +24247,7 @@ setInterval(()=>{if(CARTE!=='village'||PLACE_SEULE||document.hidden||!e.id)retur
 if(POT.charge&&e.id===POT_ID){POT_ESSAIS=0;return;}
 if(e.id!==POT_ID)POT_ESSAIS=0;
 if(POT_ESSAIS>=10)return;
-POT_ESSAIS++;POT_ID=e.id;(()=>{})();},2000);
+POT_ESSAIS++;POT_ID=e.id;potCharger();},2000);
 const PQL=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
 /* LE POULAILLER, SES POUSSINS ET SON MOTEUR DE BASSE-COUR SONT SUPPRIMÉS. */
 /* L'ANCIENNE ZONE DU POULAILLER N'EXISTE PLUS. */
@@ -20681,13 +24259,51 @@ fibre:'les buissons et les herbes de la forêt'};
 const NOM_MAT={bois:['bois','bois'],pierre:['pierre','pierres'],roseaux:['roseau','roseaux'],argile:['argile','argile'],fibre:['fibre','fibres']};
 const ICO_MAT={bois:'🪵',pierre:'🪨',roseaux:'🌾',argile:'🟤',fibre:'🧵'};
 let CHANTIERS={};
+async function lireChantiers(){try{const d=await appelRPC('chantier_etat',{p_joueur:e.id});if(d&&typeof d==='object')CHANTIERS=d;}catch(x){}}
 const chantierComplet=(cle)=>Object.entries(MAT_FERME[cle]||{}).every(([k,n])=>((CHANTIERS[cle]||{})[k]||0)>=n);
+function chantierHTML(cle){const B=MAT_FERME[cle];if(!B)return '';const D=CHANTIERS[cle]||{};
+const lignes=Object.entries(B).map(([k,n])=>{const d=Math.min(n,D[k]||0), a=(e.sac&&e.sac[k])||0, pc=Math.round(d/n*100);
+return '<div style="display:flex;align-items:center;gap:6px;margin:4px 0;font:12px Georgia"><span style="width:22px;display:inline-flex" title="'+NOM_MAT[k][1]+'"><svg viewBox="0 0 16 16" width="20">'+(ICONES[k]||'')+'</svg></span>'+   /* les vraies icônes du sac */
+'<div style="flex:1;height:9px;border-radius:5px;background:#e2d4b4;overflow:hidden"><i style="display:block;height:100%;width:'+pc+'%;background:'+(d>=n?'#4f7d42':'#c8a050')+'"></i></div>'+
+'<b style="min-width:74px;text-align:right">'+d+' / '+n+'</b><span style="opacity:.7;min-width:58px">sac : '+a+'</span></div>';}).join('');
+const manque=Object.entries(B).filter(([k,n])=>((D[k]||0)<n)).map(([k])=>k);
+const ou=manque.length?'<div style="margin-top:5px;font:italic 11px Georgia;color:#6a5a3a">Il te manque '+
+manque.map(k=>NOM_MAT[k][1]).join(', ')+' — on en trouve dans '+
+[...new Set(manque.map(k=>OU_MAT[k]))].join(', et ')+'.</div>':'';
+const peut=Object.entries(B).some(([k,n])=>((D[k]||0)<n)&&((e.sac&&e.sac[k])||0)>0);
+return '<div style="margin-top:6px">'+lignes+ou+(chantierComplet(cle)?'<div style="font:700 12px Georgia;color:#2f6a2e;margin-top:4px">✓ Tous les matériaux sont livrés</div>':
+'<button data-dep="'+cle+'" style="width:100%;margin-top:6px;border:0;border-radius:14px;padding:8px;font:700 13px Georgia;background:'+(peut?'#8a6238':'#c8bca0')+';color:#fff">'+(peut?'Déposer ce que j’ai dans l’inventaire':'Rien d’utile dans ton inventaire')+'</button>')+'</div>';}
+function brancherDepots(recharger,bulle){document.querySelectorAll('[data-dep]').forEach(b=>b.onclick=async()=>{b.disabled=true;
+const d=await appelRPC('chantier_deposer',{p_joueur:e.id,p_cle:b.dataset.dep});
+if(d&&d.chantiers)CHANTIERS=d.chantiers;
+if(!d||d.erreur){b.disabled=false;motOuverture(d&&d.erreur==='rien'?'Rien dans ton inventaire ne sert à ce chantier.':'Réessaie dans un instant.');return;}
+if(d.sac){e.sac=d.sac;try{majHaut();majPastille();}catch(x){}}sauver();jouer('pioche');vibrer(15);recharger();setTimeout(()=>motOuverture(d.depose+' matériaux déposés au chantier.'),60);});}
+function matManque(m){if(!m)return 'Il te manque des matériaux.';return 'Il te manque '+Object.entries(m).map(([k,n])=>n+' '+NOM_MAT[k][n>1?1:0]).join(' et ')+'. Va couper des arbres et casser des rochers !';}
 let POUL={p:null,places:0,decal:0,charge:false};
 const poulNow=()=>Date.now()+POUL.decal;
+function poulAdopter(d){if(!d||d.erreur||!d.p)return false;POUL.p=d.p;POUL.places=d.places||0;
+if(d.now)POUL.decal=new Date(d.now).getTime()-Date.now();if(typeof d.euros==='number'){e.euros=d.euros;try{majHaut();}catch(x){}}
+POUL.charge=true;return true;}
+async function poulCharger(){if(PLACE_SEULE||CARTE!=='village'||!e.id)return;try{poulAdopter(await appelRPC('poul_etat',{p_joueur:e.id}));}catch(x){}}
 const SORTIES=[
 {nom:'LA FORÊT',      cote:'g', y:268, col:'#4f7d42', vers:null},
 {nom:'LE VIEUX-PORT', cote:'d', y:268, col:'#2a6ab0', vers:'jeu.html?carte=extramar', carte:'extramar', ligne:'port'}];
 let SOL_SORTIES=null;
+function graverSolSorties(){const {x0,x1,y0,y1}=VIL, W=x1-x0, H=y1-y0;const c=document.createElement('canvas');c.width=W*2;c.height=H*2;const q=c.getContext('2d');
+q.setTransform(2,0,0,2,-x0*2,-y0*2);q.imageSmoothingEnabled=false;const R=(x,y,w,h,col)=>{q.fillStyle=col;q.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(.5,w),Math.max(.5,h));};
+const chemin=(ax,ay,bx,by)=>{const d=Math.hypot(bx-ax,by-ay), nx=-(by-ay)/d, ny=(bx-ax)/d, ep=11;
+for(let t=0;t<d;t+=.5){const u=t/d, x=ax+(bx-ax)*u, y=ay+(by-ay)*u, terre=Math.max(0,(u-0.55)/0.45);   /* les 55 % près de la place sont pavés */
+for(let s2=-ep;s2<ep;s2+=.5){const px=x+nx*s2, py=y+ny*s2, n=alea(px*2.3+py*3.7);
+if(Math.abs(s2)>ep-2){R(px,py,.5,.5,n<0.5?'#7c776c':'#8e897e');continue;}                        /* la bordure de pierres */
+if(n<terre*0.9){R(px,py,.5,.5,n<0.3?'#9c8159':(n<0.6?'#ab9166':'#b39a70'));continue;}                 /* la terre battue, dans la forêt */
+const gi=Math.floor((t)/4), gj=Math.floor((s2+ep)/4), cxg=gi*4+2, cyg=gj*4-ep+2+(gi%2)*2, dx=t-cxg, dy=s2-cyg;
+const dd=Math.hypot(dx,dy*1.2), v=alea(gi*7.3+gj*3.1);
+R(px,py,.5,.5,dd>1.7?'#8e877a':(dy<-0.5?(v<0.5?'#d6cfbf':'#e0d9c9'):(v<0.5?'#bdb5a5':'#c8c0b0')));}
+if(alea(t*1.3)<0.12){const side=alea(t*2.1)<0.5?-1:1, px=x+nx*side*(ep+1.5), py=y+ny*side*(ep+1.5);   /* des touffes d'herbe au bord */
+R(px,py-2,.5,2,'#6f8449');R(px+.5,py-1.5,.5,1.5,'#7d9450');R(px,py-2.5,.5,.5,'#9cb072');}}};
+const PO=PL_O(),PE=PL_E(),PN=PL_N(),PS=PL_S();
+chemin(PO,268,x0-6,268);chemin(PE,268,x1+6,268);chemin(960,PS,960,y1+6);chemin(960,PN,960,y0-6);
+return c;}
 const dansSortie=(x,y)=>{const {x0,x1,y0,y1}=VIL;
 if(Math.abs(y-268)<12&&(x<x0+60||x>x1-60))return x<x0+60?0:1;
 if(Math.abs(x-960)<12&&(y<y0+50||y>y1-40))return y>y1-40?2:3;return -1;};
@@ -20718,7 +24334,7 @@ for(let y=34;y<H-22;y+=6){if(Math.abs(y-(268-y0))<16)continue;R(32,y,5,6,'#7d593
 return c;}
 const lisVrai=dessinerDecor;
 dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
-if(PLACE_SEULE&&CARTE==='village'){if(!SOL_SORTIES)SOL_SORTIES=null;g.drawImage(SOL_SORTIES,VIL.x0-camX,VIL.y0-camY,VIL.x1-VIL.x0,VIL.y1-VIL.y0);}   /* les chemins, sous le décor */
+if(PLACE_SEULE&&CARTE==='village'){if(!SOL_SORTIES)SOL_SORTIES=graverSolSorties();g.drawImage(SOL_SORTIES,VIL.x0-camX,VIL.y0-camY,VIL.x1-VIL.x0,VIL.y1-VIL.y0);}   /* les chemins, sous le décor */
 const r=lisVrai(g,camX,camY,VW2,VH2,acteurs);
 if(PLACE_SEULE&&CARTE==='village'){if(!LISIERE_PLACE)LISIERE_PLACE=graverLisierePlace();g.drawImage(LISIERE_PLACE,VIL.x0-camX,VIL.y0-camY,VIL.x1-VIL.x0,VIL.y1-VIL.y0);}
 return r;};
@@ -20729,117 +24345,29 @@ if(x<VIL.x0+34||x>VIL.x1-34||y<VIL.y0+30||y>VIL.y1-22)return true;return boutBlo
 if(CARTE==='village'&&!CHAMPS_SEULS){for(const bx of [1340,1570])if(Math.abs(x-bx)<78&&y>156-78&&y<156+3)return true;   /* (le Grainetier et le Fournil n'existent plus à la ferme des champs) */
 if(Math.abs(x-1780)<48&&y>250-70&&y<250+3)return true;}return boutBloqueVrai(x,y);};                 /* le moulin aussi, sur toute sa profondeur */
 /* LE GRILLAGE DU POULAILLER NE BLOQUE PLUS RIEN : il n'existe plus. */
-const CSS_BQ=`
-/* ---------- CHEZ MADELEINE, DANS LE CARNET ----------
-   C'ÉTAIT LE PLUS LOIN DE TOUS : fond brun, Baloo 2 du haut en bas,
-   un bandeau peint de 116 px qui portait le titre, le sac et la croix
-   en surimpression, et une palette sombre qui ne ressemblait à aucun
-   autre écran de la ferme. Elle prend la coque commune ; il ne lui
-   reste en propre que ses onglets, sa caisse, ses commandes et son
-   atelier — recolorés sur le papier. */
-#page2Fond.bq .bande canvas{height:116px}
-/* LES TROIS ONGLETS. La classe .ong existe déjà ailleurs dans le jeu,
-   avec un fond crème : d'où le bandeau clair qui chevauchait. */
-#page2Fond.bq .bqOng{display:flex;gap:6px;padding:10px 14px 2px;flex:none}
-#page2Fond.bq .bqOng button{border:1px solid #d6c4a0;border-radius:13px;padding:7px 14px;font:700 11px Arial;letter-spacing:.6px;
-background:rgba(255,255,255,.62);color:#7a6a4e}
-#page2Fond.bq .bqOng button.on{background:#8a6238;border-color:#8a6238;color:#fbf5e6}
-#page2Fond.bq .mot{font:italic 12.5px/1.55 Georgia,serif;color:#7a6a4e;padding:2px 2px 10px}
-#page2Fond.bq .rub{font:700 10px Arial;letter-spacing:2px;color:#8a6238;padding:14px 2px 8px}
-/* UNE LIGNE PAR PRODUIT */
-#page2Fond.bq .lg{display:flex;align-items:center;gap:12px;width:100%;padding:11px 13px;margin-bottom:9px;
-border:1px solid #d6c4a0;border-radius:15px;background:rgba(255,255,255,.62);color:inherit;text-align:left}
-#page2Fond.bq .lg:active{background:rgba(255,255,255,.9)}
-#page2Fond.bq .lg svg{width:30px;height:30px;flex:none;border-radius:8px;background:#e6dcc0}
-#page2Fond.bq .lg .n{flex:1;min-width:0}
-#page2Fond.bq .lg b{display:block;font:400 16px Georgia;color:#33291b}
-#page2Fond.bq .lg em{display:block;font:italic 11.5px Georgia;color:#7a6a4e;margin-top:1px}
-#page2Fond.bq .lg .q{flex:none;font:700 11px Arial;color:#7a6a4e}
-#page2Fond.bq .lg .p{flex:none;width:68px;text-align:right;font:400 15px Georgia;color:#8a6238}
-#page2Fond.bq .vide{font:italic 13px/1.6 Georgia,serif;color:#7a6a4e;text-align:center;padding:26px 20px}
-/* LA CAISSE : le total et le bouton, juste au-dessus du rail. */
-#page2Fond.bq .caisse{flex:none;padding:10px 14px 2px;background:#efe3c8}
-#page2Fond.bq .tot{display:flex;justify-content:space-between;align-items:baseline;
-font:700 10px Arial;letter-spacing:1.6px;color:#8a6238;margin-bottom:8px}
-#page2Fond.bq .tot b{font:400 19px Georgia;color:#33291b;letter-spacing:0}
-#page2Fond.bq .go{width:100%;border:0;border-radius:14px;padding:13px;
-font:700 12px Arial;letter-spacing:2px;background:#4e7a38;color:#fbf5e6}
-#page2Fond.bq .go:disabled{background:#cdbd9c;color:#7a6a4e}
-/* LES COMMANDES */
-#page2Fond.bq .cmd{margin:0 0 9px;border:1px solid #d6c4a0;background:rgba(255,255,255,.62);border-radius:15px;padding:13px}
-#page2Fond.bq .cmd.faite{opacity:.5}
-#page2Fond.bq .cmdT{font:400 16px Georgia;color:#33291b}
-#page2Fond.bq .cmdT em{display:block;font:italic 11.5px Georgia,serif;color:#7a6a4e;margin-top:2px}
-#page2Fond.bq .cmdB{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0}
-#page2Fond.bq .cmdL{font:700 10px Arial;letter-spacing:.8px;color:#7a6a4e;
-background:#e3d6b8;border-radius:10px;padding:6px 9px}
-#page2Fond.bq .cmdL.ok{color:#fbf5e6;background:#4e7a38}
-#page2Fond.bq .cmdGo{width:100%;border:0;border-radius:12px;padding:10px;
-font:700 11px Arial;letter-spacing:1.4px;background:#4e7a38;color:#fbf5e6}
-#page2Fond.bq .cmdGo:disabled{background:#cdbd9c;color:#7a6a4e}
-#page2Fond.bq .cmdF{font:700 10px Arial;letter-spacing:1.5px;color:#4e7a38;
-background:rgba(78,122,56,.14);border-radius:10px;padding:9px;text-align:center}
-/* LES OUTILS */
-#page2Fond.bq .outil{display:flex;gap:12px;align-items:center;padding:12px 13px;margin-bottom:9px;
-border:1px solid #d6c4a0;border-radius:15px;background:rgba(255,255,255,.62)}
-#page2Fond.bq .outil canvas{width:46px;height:46px;border-radius:12px;background:#e6dcc0;flex:none}
-/* .t EST DÉJÀ PRIS PAR LE CARNET, où il désigne une VIGNETTE : cadre
-   blanc, colonne, contenu centré. Ici c'est juste le bloc de texte d'une
-   ligne d'outil. On ne reprenait que flex et min-width, donc le cadre, le
-   centrage et l'espacement du carnet restaient : le nom de l'outil
-   apparaissait enfermé dans une boîte blanche au milieu de sa propre
-   ligne. On annule ce que la vignette impose, on garde le reste. */
-#page2Fond.bq .outil .t{flex:1;min-width:0;
-display:block;text-align:left;gap:0;padding:0;border:0;background:none;border-radius:0}
-/* le carnet centre le titre d'une vignette ; une ligne d'outil se lit
-   au fer à gauche, comme le reste de la boutique */
-#page2Fond.bq .outil .t b{display:block;font:400 16px Georgia;color:#33291b;text-align:left}
-#page2Fond.bq .outil .t small{display:block;font:italic 11.5px Georgia;color:#7a6a4e;margin-top:1px}
-#page2Fond.bq .outil button{flex:none;border:0;border-radius:12px;padding:9px 13px;
-background:#4e7a38;color:#fbf5e6;font:700 10px Arial;letter-spacing:1.2px}
-#page2Fond.bq .outil button.pris{background:#cdbd9c;color:#7a6a4e}
-/* ---------- LES GRAINES ----------
-   La fenetre de temps, puis la marge au bout de chaque ligne. */
-#page2Fond.bq .bqFen{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 12px}
-#page2Fond.bq .bqFen::-webkit-scrollbar{display:none}
-#page2Fond.bq .bqFen button{flex:0 0 auto;min-height:40px;padding:0 14px;
-border:1px solid #d6c4a0;border-radius:13px;background:rgba(255,255,255,.62);
-color:#7a6a4e;font:700 11.5px Arial;white-space:nowrap}
-#page2Fond.bq .bqFen button.on{background:#8a6238;border-color:#8a6238;color:#fbf5e6}
-#page2Fond.bq .outil .marge{flex:none;font:400 15px Georgia;color:#4e7a38}`;
 
 let CMD={commandes:[],faites:[]};
+async function lireLesCommandes(){
+try{const d=await appelRPC('commandes_etat',{p_joueur:e.id});
+if(d&&!d.erreur)CMD={commandes:d.commandes||[],faites:d.faites||[]};}catch(x){}
+}
 const nomDe=(k)=>POT_CULT[k]?POT_CULT[k][0]:(OBJETS[k]?OBJETS[k].nom:k);
+function cmdHTML(){
+if(!CMD.commandes.length)return '';
+return '<div class="ard"><h3>Les commandes du jour</h3>'+CMD.commandes.map(c=>{
+const faite=CMD.faites.includes(c.i);
+const lignes=Object.entries(c.besoins).map(([k,n])=>{
+const a=(e.sac&&e.sac[k])||0;
+return '<span class="cmdL'+(a>=n?' ok':'')+'">'+nomDe(k)+' <b>'+Math.min(a,n)+' / '+n+'</b></span>';}).join('');
+const pret=Object.entries(c.besoins).every(([k,n])=>((e.sac&&e.sac[k])||0)>=n);
+return '<div class="cmd'+(faite?' faite':'')+'">'+
+'<div class="cmdT">Commande '+(c.i+1)+' <em>· payée '+Math.round((c.prime-1)*100)+' % au-dessus du cours</em></div>'+
+'<div class="cmdB">'+lignes+'</div>'+
+(faite?'<div class="cmdF">✓ LIVRÉE AUJOURD’HUI</div>'
+:'<button class="cmdGo" data-cmd="'+c.i+'"'+(pret?'':' disabled')+'>'+(pret?'Livrer':'Il te manque de quoi')+'</button>')+
+'</div>';}).join('');
+}
 let CUI=null;
-const CSS_CUI=`#page2Fond.cui{background:#241610;color:#f4e6cc;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%;overflow:hidden}
-#page2Fond.cui .hdr{position:relative;height:150px;flex:none;overflow:hidden;border-bottom:3px solid #8a6238}
-#page2Fond.cui .hdr canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
-#page2Fond.cui .hdr .v{position:absolute;inset:0;background:linear-gradient(180deg,rgba(24,14,8,.5),rgba(24,14,8,0) 45%,rgba(24,14,8,.9))}
-#page2Fond.cui .hdr .t{position:absolute;left:16px;bottom:10px}
-#page2Fond.cui .hdr b{font:400 26px Georgia;text-shadow:0 2px 4px #000}
-#page2Fond.cui .hdr small{display:block;font:700 9px Arial;letter-spacing:3px;color:#e8b06a}
-#page2Fond.cui .hdr button{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 12px);width:34px;height:34px;border-radius:50%;border:0;background:#f8ecd6;color:#2a1a10;font:700 14px Arial}
-#page2Fond.cui .corps{flex:1;overflow-y:auto;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
-#page2Fond.cui .mot{margin:12px 16px 0;font:italic 13px Georgia;color:#d8c0a0}
-#page2Fond.cui .four{margin:10px 14px 0;display:flex;gap:10px;align-items:center;background:rgba(232,140,26,.14);border:1px solid rgba(232,170,60,.45);border-radius:12px;padding:10px 12px}
-#page2Fond.cui .four canvas{width:28px;height:28px;image-rendering:pixelated}
-#page2Fond.cui .four b{display:block;font:700 11px Arial;letter-spacing:1px;color:#f2c230}
-#page2Fond.cui .four em{font:italic 11px Georgia;color:#e0c8a0}
-#page2Fond.cui .jg{height:8px;border-radius:4px;background:rgba(0,0,0,.4);margin-top:6px;overflow:hidden}
-#page2Fond.cui .jg i{display:block;height:100%;background:linear-gradient(90deg,#8a5a10,#f6dd8c)}
-#page2Fond.cui .prendre{width:100%;margin-top:8px;border:0;border-radius:12px;padding:11px;font:700 14px Georgia;background:linear-gradient(#f6dd8c,#c9a24a);color:#2a1a0e}
-#page2Fond.cui .board{margin:12px 14px;border-radius:12px;padding:14px 16px 16px;background:#2f3a2c;border:7px solid #7a5530;box-shadow:inset 0 0 26px rgba(0,0,0,.55),0 5px 0 #1c110a}
-#page2Fond.cui .board h3{font:400 23px 'Segoe Script','Bradley Hand','Brush Script MT',cursive;text-align:center;color:#fff;border-bottom:1px dashed rgba(255,255,255,.3);padding-bottom:7px;margin:0 0 9px}
-#page2Fond.cui .l{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dotted rgba(255,255,255,.18)}
-#page2Fond.cui .l:last-child{border-bottom:0}
-#page2Fond.cui .l svg{width:32px;height:32px;flex:none}
-#page2Fond.cui .n{flex:1;font:400 17px 'Segoe Script','Bradley Hand',cursive}
-#page2Fond.cui .n em{display:block;font:italic 11px Georgia;color:#c3d0bd}
-#page2Fond.cui .n .ing{display:block;margin-top:4px;font:400 11px Georgia;color:#aebfa8}
-#page2Fond.cui .n .ing i{font-style:normal;color:#9fe0a0}
-#page2Fond.cui .p{font:700 15px 'Segoe Script','Bradley Hand',cursive;color:#ffe08a}
-#page2Fond.cui .l button{margin-left:6px;border:1px solid #cfe0c8;border-radius:8px;background:transparent;color:#eef7ea;padding:7px 10px;font:700 12px Georgia}
-#page2Fond.cui .l button:disabled{border-color:#6a7a66;color:#8a9a86}`;
 let CUI_ANIM=0;
 /* ================= LA CUISINE, DANS LE CARNET ================= */
 const CUI_PRIX={pain:420,confiture:900,conserve:780,soupe:880,tarte:1500};
@@ -20871,14 +24399,49 @@ const VERGER_FRUITS=['cerises','pommes','abricots','figues','amandes',
 const CUISINE_PLATS=['pain','confiture','conserve','soupe','tarte'];
 const FERME_REPREND=Object.keys(POT_CULT)
 .concat(VERGER_FRUITS, CUISINE_PLATS, ['lait','fromage','oeufs','oeufdor','miel','laine','truffe']);
+function bqLignes(){const L=[];for(const k of FERME_REPREND){const n=(e.sac&&e.sac[k])||0;
+  /* LE COURS DU JOUR, le même que celui qui sera payé : sans cela la boutique
+     de la ferme affichait un prix fixe et le serveur en versait un autre. */
+  if(n>0)L.push([k,n,prixDuJour(k,PRIX_COMPTOIR[k]||0)]);}return L;}
 let BQ_ONG='vendre';
 /* LES OUTILS DU POTAGER : la graineterie est partie, ils avaient perdu
    leur porte d'entrée. La Récolte les reprend. */
 /* ================= LES ICÔNES DE L'ATELIER =================
-   Le code appelait (()=>null), une fonction qui n'a jamais
+   Le code appelait dessinerOutilPotager, une fonction qui n'a jamais
    existé : le garde `typeof === 'function'` avalait l'échec en silence et
    laissait des carrés vides. La voici, gravée au pixel.
    Le repère est une case de 20 × 20. */
+function bqOutils(){
+const J=(POT&&POT.j)||{nb:6,houe:true,arrosoir:false,engrais:0,arroseurs:[],epouvantails:0};
+const fmt=(c)=>enEuros(c).replace(',00','');
+const ligne=(k,nom,dit,prix,pris)=>'<div class="outil"><canvas data-o="'+k+'"></canvas>'+
+'<span class="t"><b>'+nom+'</b><small>'+dit+'</small></span>'+
+'<button data-a="'+k+'" class="'+(pris?'pris':'')+'">'+(pris?'\u2713':fmt(prix))+'</button></div>';
+let h='<div class="mot">« Prends ce qu’il te faut, on comptera après. »</div>';
+h+=ligne('houe','La houe','pour bêcher les parcelles en friche',2500,J.houe);
+h+=ligne('arrosoir','L’arrosoir','une plante arrosée pousse deux fois plus vite',1500,J.arrosoir);
+h+=ligne('engrais','Sac d’engrais','la prochaine récolte pousse 1,5 × plus vite · tu en as '+(J.engrais||0),1000,false);
+h+=ligne('arroseur','L’arroseur automatique','arrose une parcelle pour toujours · '+((J.arroseurs||[]).length)+' posés',25000,false);
+h+=ligne('epouvantail','L’épouvantail','garde un rang de parcelles · tu en as '+((J.epouvantails||0))+' / 3',2000,(J.epouvantails||0)>=3);
+h+='<div class="rub">TON CHAMP · '+J.nb+' PARCELLES SUR 24</div>';
+const prix={6:150000,12:500000,18:1500000};
+[[6,'6 → 12 parcelles'],[12,'12 → 18 parcelles'],[18,'18 → 24 parcelles']].forEach(([n,t])=>{
+const fait=J.nb>n, dispo=J.nb===n;
+/* LA LOCATION DE PARCELLES demande des matériaux, apportés de la forêt.
+   Le panneau de chantier manquait ici : on voyait le prix, mais ni ce qu'il
+   fallait livrer, ni le bouton pour le déposer. */
+const cleC='champ:'+(n+6);
+const pret=chantierComplet(cleC);
+h+='<div class="outil" style="display:block">'+
+'<div style="display:flex;align-items:center;gap:8px">'+
+'<span class="t"><b>'+t+'</b><small>'+
+(fait?'déjà loué':(dispo?(pret?'les matériaux sont livrés · prête à louer'
+:'six parcelles de plus · il faut des matériaux'):'d’abord l’étape précédente'))+
+'</small></span>'+
+'<button '+((dispo&&pret)?'data-a="agrandir"':'')+' class="'+((dispo&&pret)?'':'pris')+'">'+
+(fait?'✓':fmt(prix[n]))+'</button></div>'+
+(dispo?chantierHTML(cleC):'')+'</div>';});
+return h;}
 /* ================= LES GRAINES, CHEZ MADELEINE =================
    LE GRAINETIER EXISTAIT, MAIS HORS DE LA CARTE : son batiment etait
    pose en x=1340 sur un champ qui s'arrete a 1200. Personne ne pouvait
@@ -20888,6 +24451,27 @@ let BQ_ONG='vendre';
    ON NE CHOISIT PAS UNE GRAINE, ON CHOISIT UN MOMENT : « je repasse
    dans une heure » ne laisse que ce qui sera mur d'ici la. C'est la
    vraie question qu'on se pose devant un champ. */
+function bqGraines(){
+const fmt=(c)=>enEuros(c).replace(',00','');
+const FEN=[['h1','Dans 1 h',60],['soir','Ce soir',360],['demain','Demain',1440],['tout','Tout',99999]];
+const fen=GR_FEN||'h1';
+const lim=(FEN.find(f=>f[0]===fen)||FEN[0])[2];
+const liste=Object.entries(POT_CULT).filter(([k,[n,px,min,v]])=>min<=lim)
+.sort((x,y)=>x[1][2]-y[1][2]);
+let h='<div class="mot">« Les graines se paient quand tu sèmes, pas ici. '
++'Regarde seulement ce qui sera mûr à ton retour. »</div>'
++'<div class="bqFen">'+FEN.map(([id,mot])=>
+'<button data-fen="'+id+'" class="'+(fen===id?'on':'')+'">'+mot+'</button>').join('')+'</div>';
+if(!liste.length)return h+'<div class="vide">Rien ne pousse aussi vite.<br>Essaie une fenêtre plus large.</div>';
+h+='<div class="rub">'+(fen==='tout'?'TOUTES LES ESPÈCES':'MÛR À TON RETOUR')+'</div>';
+h+=liste.map(([k,[nom,px,min,v]])=>{
+const libre=potLibre(k);
+return '<div class="outil"><canvas data-p="'+k+'"></canvas>'+
+'<span class="t"><b>'+nom+'</b><small>'+potDuree(min)+
+(libre?(FERME_VIERGE?' · '+fmt(Math.ceil(px/3)*4)+' la parcelle · '+(chPoints(k)*4)+' pts':' · la graine '+fmt(px)+', la récolte '+fmt(v)):' · encore à débloquer')+'</small></span>'+
+(libre?(FERME_VIERGE?'<span class="marge">'+(chDeSaison(k)?'SAISON':'✓')+'</span>':'<span class="marge">+'+fmt(v-px)+'</span>')
+:'<button data-deb="'+k+'">'+fmt(POT_VERROU[k])+'</button>')+'</div>';}).join('');
+return h;}
 /* ================= CHEZ MADELEINE =================
    DEMANDER ET DESSINER SONT DEUX GESTES DIFFÉRENTS. Une seule fonction
    faisait les deux : en dessinant, elle voyait qu'il lui manquait les
@@ -20897,21 +24481,21 @@ let BQ_ONG='vendre';
    pas demandé » de « j'ai demandé, c'est vide ». Trois tours par seconde,
    des heures durant, et le téléphone figeait.
 
-   Maintenant on demande UNE FOIS, en entrant ((()=>null)) ;
+   Maintenant on demande UNE FOIS, en entrant (ouvrirLaBoutiqueFerme) ;
    tout le reste — changer d'onglet, vendre, acheter, livrer — ne fait que
    redessiner (peindreMadeleine), et redessiner ne demande plus rien. */
 let peindreMadeleine=function(mot){
 /* LE CARNET PASSE EN PREMIER : CSS_BQ ne garde plus que ses morceaux à
    elle, qui doivent pouvoir affiner ce que la coque pose. */
 if(!document.getElementById('cssBq')){const st=document.createElement('style');st.id='cssBq';st.textContent=CARNET('bq')+CSS_BQ+CSS_BQ_A;document.head.appendChild(st);}
-const L=(()=>{})(), total=L.reduce((t,[,n,p])=>t+n*p,0);
+const L=bqLignes(), total=L.reduce((t,[,n,p])=>t+n*p,0);
 const charge=Object.values(e.sac||{}).reduce((t,n)=>t+(n||0),0);
 $('page2Fond').className='bq mA';$('page2').classList.add('on');
 const ong=BQ_ONG||'vendre';
 let corps='';
 if(ong==='vendre'){
-const hwOn=(false)&&false;if(hwOn){(()=>{})();if(!HW_ETAT||Date.now()-HW_LU>30000)(()=>{})().then(()=>{if(HW_ETAT&&$('page2').classList.contains('on')&&$('page2Fond').classList.contains('bq')&&BQ_ONG==='vendre')peindreMadeleine(mot);});}
-corps=(hwOn?(()=>{})():'')+'<div class="mot">'+(mot||'Madeleine reprend tout ce qui vient de la ferme, au cours du jour — comme La Marée au port.')+'</div>'+
+const hwOn=(typeof hwActif==='function')&&hwActif();if(hwOn){hwCss();if(!HW_ETAT||Date.now()-HW_LU>30000)hwLire(true).then(()=>{if(HW_ETAT&&$('page2').classList.contains('on')&&$('page2Fond').classList.contains('bq')&&BQ_ONG==='vendre')peindreMadeleine(mot);});}
+corps=(hwOn?hwCarteHTML():'')+'<div class="mot">'+(mot||'Madeleine reprend tout ce qui vient de la ferme, au cours du jour — comme La Marée au port.')+'</div>'+
 (L.length?'<div class="aGrid">'+L.map(([k,n,p])=>'<button class="lg" data-v="'+k+'">'+
 (ICONES[k]?'<svg viewBox="0 0 16 16">'+ICONES[k]+'</svg>':'<svg viewBox="0 0 16 16"></svg>')+
 '<span class="n"><b>'+(POT_CULT[k]?POT_CULT[k][0]:(OBJETS[k]?OBJETS[k].nom:k))+'</b>'+
@@ -20920,9 +24504,9 @@ corps=(hwOn?(()=>{})():'')+'<div class="mot">'+(mot||'Madeleine reprend tout ce 
 :'<div class="vide">Ton inventaire est vide.<br>Va récolter ton champ, et reviens me voir.</div>');
 }
 if(ong==='commandes')corps='<div class="mot">« Voilà ce qu’il me faut pour aujourd’hui. '+
-'Ce que tu m’apportes, je te le paie mieux qu’au marché. »</div>'+(()=>{})();
-if(ong==='graines')corps=(()=>{})();
-if(ong==='outils')corps=FERME_VIERGE?bqAtelierChamp():(()=>{})();
+'Ce que tu m’apportes, je te le paie mieux qu’au marché. »</div>'+cmdHTML();
+if(ong==='graines')corps=bqGraines();
+if(ong==='outils')corps=FERME_VIERGE?bqAtelierChamp():bqOutils();
 /* LE BANDEAU PORTAIT LE TITRE, LE SAC ET LA CROIX EN SURIMPRESSION, sur
    une image qui change de clarté d'un bout à l'autre. Le chapeau commun
    prend le nom et l'argent, la grange descend en image encadrée, le sac
@@ -20952,7 +24536,7 @@ b.disabled=true;
 const d=await appelRPC('pot_debloquer',{p_joueur:e.id,p_cult:k});
 if(!d||d.erreur){b.disabled=false;
 motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':'Madeleine n’a pas pu.');return;}
-(()=>{})();sauver();jouer('vente','moment');vibrer([15,40,15]);
+potAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);
 peindreMadeleine(POT_CULT[k][0]+' débloqué ! Tu peux le semer.');});
 /* LE BANDEAU : la grange de Madeleine au petit matin. */
 try{const bd=$('bqBandeau');
@@ -20986,12 +24570,12 @@ const J2=(POT&&POT.j)||{nb:6,arroseurs:[]};
 $('page2Fond').querySelectorAll('canvas[data-o]').forEach(cv=>{
 try{const D=2;cv.width=46*D;cv.height=46*D;const g=cv.getContext('2d');
 g.setTransform(D*2.9,0,0,D*2.9,0,0);g.imageSmoothingEnabled=false;
-if(false)(()=>{})();}catch(x){}});
+if(typeof dessinerOutilPotager==='function')dessinerOutilPotager(g,cv.dataset.o);}catch(x){}});
 /* LES DÉPÔTS DE MATÉRIAUX : ils étaient branchés au grainetier et au
    poulailler, mais pas ici — alors que Chez Madeleine est devenu le seul
    endroit où l'on loue des parcelles. Sans ça, les boutons « Déposer » et
    « Louer » s'affichaient sans rien faire. */
-try{(()=>{})()=>peindreMadeleine(),
+try{brancherDepots(()=>peindreMadeleine(),
 (t)=>{try{texteVolant(joueur.x,joueur.y-34,t,'#d8c9a0');}catch(x){}});}catch(x){}
 $('page2Fond').querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{
 let art=b.dataset.a;
@@ -21004,7 +24588,7 @@ b.disabled=true;
 const d=await appelRPC('pot_acheter',{p_joueur:e.id,p_article:art});
 if(!d||d.erreur){b.disabled=false;
 motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':'Madeleine n’a pas pu.');return;}
-(()=>{})();sauver();jouer('vente','moment');vibrer([15,40,15]);
+potAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);
 peindreMadeleine();});}
 /* L'ARROSEUR DU JEU est un tuyau fin posé sur le cadre : à 44 pixels il
    ne restait qu'une caisse sombre. L'icône montre maintenant l'arroseur
@@ -21038,13 +24622,13 @@ if(d&&!d.erreur){
 if(typeof d.euros==='number')e.euros=d.euros;if(d.sac)e.sac=d.sac;
 try{sauver();majHaut();lireSacServeur();}catch(x){}
 jouer('vente','moment');vibrer([20,50,20]);
-await (()=>{})();
+await lireLesCommandes();
 peindreMadeleine('« Marché conclu : '+enEuros(d.gain)+' pour la commande. »');
 }else{
-await (()=>{})();
+await lireLesCommandes();
 peindreMadeleine(d&&d.erreur==='deja'?'« Celle-là, tu me l’as déjà livrée. »':'« Il te manque encore de quoi. »');
 }});
-$('bqX').onclick=()=>{fermeA=Date.now();vibrer(8);if(FERME_VIERGE){$('page2').classList.remove('on');return;}(()=>{})();};
+$('bqX').onclick=()=>{fermeA=Date.now();vibrer(8);if(FERME_VIERGE){$('page2').classList.remove('on');return;}ouvrirLaFerme();};
 const vendre=async(liste)=>{let gain=0;
 for(const k of liste){const d=await appelRPC('vendre_au_comptoir',{p_joueur:e.id,p_type:k});
 if(d&&!d.erreur){gain+=d.gain||0;if(typeof d.euros==='number')e.euros=d.euros;if(d.sac)e.sac=d.sac;}}
@@ -21053,8 +24637,8 @@ if(gain){jouer('vente','moment');vibrer([15,40,15]);}
 peindreMadeleine(gain?('Vendu ! '+enEuros(gain)+' dans ta poche.'):'Le primeur n’a rien pris.');};
 $('page2Fond').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{b.disabled=true;vendre([b.dataset.v]);});
 const bt=$('bqTout');                    /* il n'existe que dans l'onglet Vendre */
-if(bt)bt.onclick=()=>{bt.disabled=true;vendre(L.map(([k])=>k).filter(k=>!(k==='citrouille'&&false&&false)));};
-const hd=$('hwDon');if(hd)hd.onclick=()=>(()=>{})();
+if(bt)bt.onclick=()=>{bt.disabled=true;vendre(L.map(([k])=>k).filter(k=>!(k==='citrouille'&&typeof hwActif==='function'&&hwActif())));};
+const hd=$('hwDon');if(hd)hd.onclick=()=>hwDonner(hd);
 $('page2Fond').querySelectorAll('canvas[data-hwt]').forEach(cv=>{try{vignetteTenue(cv,cv.dataset.hwt);}catch(x){}});
 }
 const MOTS_CUEILLEUR=[
@@ -21075,16 +24659,19 @@ const MOTS_CUEILLEUR=[
 'Le silence ici, c’est pas du vide. C’est plein, mais de rien.',
 'Méfie-toi de l’amanite. Elle est belle, elle est rouge, et elle t’aime pas.'];
 let CUEIL_DIT=-1;
-const CSS_CUEIL=`
-#cueilB{position:fixed;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 96px);z-index:60;
-background:linear-gradient(180deg,rgba(253,251,244,.97),rgba(238,231,212,.97));color:#33291b;
-border-radius:16px;padding:14px 16px 13px 58px;font:400 16px Georgia;line-height:1.45;
-box-shadow:0 8px 26px rgba(0,0,0,.45);opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s}
-#cueilB.on{opacity:1;transform:none}
-#cueilB small{display:block;font:700 7.5px Arial;letter-spacing:2px;color:#7a6a46;margin-bottom:4px}
-#cueilB .tete{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;
-background:radial-gradient(circle at 40% 34%,#f2ead8,#c9bda2);box-shadow:inset 0 0 0 1px rgba(90,72,44,.3);
-display:flex;align-items:center;justify-content:center;font-size:19px}`;
+function parlerAuCueilleur(){
+let i;do{i=Math.floor(Math.random()*MOTS_CUEILLEUR.length);}while(i===CUEIL_DIT&&MOTS_CUEILLEUR.length>1);
+CUEIL_DIT=i;
+if(!document.getElementById('cssCueil')){const st=document.createElement('style');st.id='cssCueil';
+st.textContent=CSS_CUEIL;document.head.appendChild(st);}
+let b=document.getElementById('cueilB');
+if(!b){b=document.createElement('div');b.id='cueilB';document.body.appendChild(b);}
+b.innerHTML='<span class="tete">🍄</span><small>MARIUS LE CUEILLEUR</small>« '+MOTS_CUEILLEUR[i]+' »';
+b.classList.add('on');
+clearTimeout(parlerAuCueilleur.t);
+parlerAuCueilleur.t=setTimeout(()=>b.classList.remove('on'),6500);
+try{vibrer(10);}catch(x){}
+}
 /* ================= LE CONIFÈRE ET L'ARBRE D'AUTOMNE =================
    Deux silhouettes de plus pour casser l'uniformité du bois. */
 TAILLES['x_fo_pin']=[{w:20,h:12},{w:20,h:12},{w:20,h:12}];
@@ -21107,61 +24694,357 @@ TAILLES['x_fo_mure']=[{w:22,h:8},{w:26,h:9}];
 TAILLES['x_fo_framboise']=[{w:18,h:8},{w:22,h:9}];
 TAILLES['x_fo_myrtille']=[{w:26,h:7},{w:30,h:8}];
 /* ================= LES NOUVEAUX LIEUX DE LA FORÊT ================= */
+function toileFo(W,H,f){
+  const D=2,c=document.createElement('canvas');c.width=W*D;c.height=H*D;
+  const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const hs=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+  f(R,g,W,H,hs);
+  return {toile:c,W,H,sol:H-4,nuit:null};
+}
 /* LA SCIERIE : un hangar ouvert, sa lame, ses grumes et ses planches */
+function graverScierie(){return toileFo(132,104,(R,g,W,H,hs)=>{
+  R(10,H-10,112,8,'rgba(24,34,20,.2)');
+  /* le corps */
+  for(let x=18;x<114;x+=7)R(x,30,6,64,hs(x)<.5?'#9a7146':'#8a6238');
+  R(18,30,96,3,'#a5764a');R(18,92,96,3,'#5b3f21');
+  /* le toit de tuiles */
+  for(let r=0;r<4;r++)for(let x=12-r*2;x<120+r*2;x+=7){
+    const n=hs(x*0.7+r*3.1);R(x,26-r*5,6,6,n<.3?'#a8452f':(n<.6?'#bd5a3c':'#9c4525'));}
+  R(10,26,112,4,'#6e2c16');
+  /* l'ouverture et la lame circulaire */
+  R(44,54,44,40,'#2a2018');
+  for(let a2=0;a2<6.283;a2+=0.06){const x=66+Math.cos(a2)*13,y=74+Math.sin(a2)*13;R(x,y,3,3,'#9aa0a8');}
+  R(63,71,7,7,'#5f636a');
+  /* les grumes empilées et les planches */
+  for(let r=0;r<2;r++)for(let k=0;k<3;k++)R(6+k*11,H-22-r*9,10,8,hs(k+r)<.5?'#a5764a':'#8a6238');
+  for(let k=0;k<4;k++)R(94+k*3,H-26,3,22,'#c9a878');
+  R(92,H-28,18,4,'#b8905c');});}
 /* LE CAMPEMENT : une tente, un feu, des rondins */
+function graverCampement(){return toileFo(104,86,(R,g,W,H,hs)=>{
+  R(8,H-8,88,6,'rgba(24,34,20,.2)');
+  /* la tente */
+  for(let i=0;i<34;i++){const w=Math.round(i*1.5);
+    R(50-w/2,H-18-i*1.6,w,2,i%3?'#c9b48a':'#b8a074');}
+  R(28,H-22,44,6,'#8a7a58');
+  R(44,H-34,12,16,'#3a2f22');
+  R(50,H-70,2,14,'#6a4a2a');
+  /* le feu, à gauche */
+  for(let k=0;k<5;k++)R(10+k*4,H-16,9,4,'#6a4a2a');
+  for(let k=0;k<6;k++)R(14+hs(k)*10,H-24-k*3,4+hs(k*3)*3,4,['#e8ba2a','#e07f2e','#c03a2a'][k%3]);
+  /* les rondins-sièges */
+  for(let k=0;k<3;k++){R(74+k*8,H-24-k*2,7,9,'#8a6238');R(74+k*8,H-24-k*2,7,3,'#a5764a');}});}
 /* L'HERBORISTERIE : une maisonnette, ses bacs de plantes, ses bottes séchées */
+function graverHerbo(){return toileFo(118,104,(R,g,W,H,hs)=>{
+  R(10,H-10,98,8,'rgba(24,34,20,.2)');
+  for(let y=40;y<94;y+=8)for(let x=16;x<104;x+=14){
+    const n=hs(x*0.4+y*0.3);R(x,y,13,7,n<.3?'#9aa08e':(n<.6?'#8a9080':'#a8ae9c'));}
+  R(16,40,88,3,'#b8bda8');R(16,92,88,3,'#5f6458');
+  /* le toit pentu */
+  for(let i=0;i<9;i++){const w=104-i*9;R(W/2-w/2,38-i*4,w,5,i%2?'#2f5a3a':'#3f7a52');}
+  R(10,36,98,4,'#264c30');
+  /* la porte et les fenêtres */
+  R(52,64,20,30,'#4e3419');R(26,54,16,14,'#8fc4d4');R(82,54,16,14,'#8fc4d4');
+  /* les bacs de plantes devant */
+  for(let k=0;k<3;k++){const x=14+k*34;R(x,H-16,28,10,'#7d5934');R(x,H-18,28,3,'#a5764a');
+    for(let f=0;f<4;f++)R(x+3+f*6,H-26+hs(k+f)*4,4,9,['#4f7a36','#3f6a2a','#5f8a46','#c03a2a'][f]);}
+  /* les bottes d'herbes pendues sous l'auvent */
+  for(let k=0;k<4;k++)R(24+k*20,44,4,12,'#8a9a52');});}
 /* LA CARRIÈRE : une paroi entaillée, des blocs, des outils */
+function graverCarriere(){return toileFo(110,78,(R,g,W,H,hs)=>{
+  /* ================= L'EXCAVATION =================
+     Une entaille franche dans le talus : la terre s'ouvre sur une galerie
+     boisée de madriers, un rail en sort vers le chemin. Plus grande qu'une
+     simple niche, mais sans mur ni bâtiment. */
+  const cx=W/2, sol=H-6;
+  R(8,sol+2,94,6,'rgba(24,34,20,.22)');                   /* l'ombre au sol */
+  /* LE TALUS : un bourrelet de terre, haut et large */
+  for(let k=0;k<44;k++){
+    const a=Math.PI+(k/44)*Math.PI, x=cx+Math.cos(a)*46, y=sol-34+Math.sin(a)*18;
+    const n=hs(x*0.5+k);
+    R(x-3,y,7,sol-y+3,n<.34?'#5a4428':(n<.68?'#4a3820':'#6a5230'));}
+  R(cx-46,sol-10,92,12,'#4a3820');R(cx-46,sol-10,92,3,'#5f4a2c');
+  /* la terre remuée, plus claire, devant la galerie */
+  for(let k=0;k<42;k++){const x=cx-42+hs(k*3)*84, y=sol-7+hs(k*7)*9;
+    R(x,y,5,3,hs(k)<.5?'#7a6238':'#8a7244');}
+  /* les cailloux sortis de la galerie */
+  for(let k=0;k<11;k++){const x=cx-34+hs(k*5)*68, y=sol-16+hs(k*9)*14;
+    R(x,y,8,5,'#8e9a92');R(x,y,8,2,'#a6b2aa');R(x,y+4,8,1.4,'#55605a');}
+  /* L'OUVERTURE, large et profonde */
+  const ew=17, ey=sol-12;
+  for(let a=0;a<3.15;a+=0.05)R(cx+Math.cos(a)*ew-1,ey-22-Math.sin(a)*13,3,3,'#141210');
+  R(cx-ew,ey-22,ew*2,22,'#141210');
+  for(let k=0;k<4;k++)R(cx-ew+3+k*8,ey-21,5,21,'rgba(255,255,255,'+(0.028+k*0.013).toFixed(3)+')');
+  for(let k=0;k<3;k++)R(cx-ew+5+k*11,ey-20,3,20,'rgba(70,58,44,.5)');   /* les étais du fond */
+  /* LES MADRIERS : deux montants épais et un linteau */
+  R(cx-ew-5,ey-27,5,27,'#6a4a2a');R(cx-ew-5,ey-27,2,27,'#8a6238');
+  R(cx+ew,ey-27,5,27,'#6a4a2a');R(cx+ew,ey-27,2,27,'#8a6238');
+  R(cx-ew-7,ey-31,ew*2+14,5,'#6a4a2a');R(cx-ew-7,ey-31,ew*2+14,2,'#8a6238');
+  R(cx-ew-8,ey-33,ew*2+16,2.4,'#5b3f21');
+  /* la lanterne accrochée au montant gauche */
+  R(cx-ew-7,ey-25,2,4,'#4a4a52');R(cx-ew-11,ey-21,6,7,'#3a3f46');
+  R(cx-ew-10,ey-20,4,5,'#ffd96a');R(cx-ew-10,ey-20,4,2,'#fff2b8');
+  /* LE RAIL qui sort et descend vers le chemin */
+  for(let t=0;t<22;t++){const y=ey+t;
+    if(t%4===0)R(cx-9,y,19,1.6,'#5b3f21');
+    R(cx-8,y,2,1.4,'#9aa2a8');R(cx+6,y,2,1.4,'#9aa2a8');}
+  /* LE WAGONNET, chargé, au bout du rail */
+  const wx=cx+23, wy=ey+6;
+  R(wx-10,wy,20,11,'#4f5f6a');R(wx-10,wy,20,3,'#6f7f8a');R(wx-9,wy+2,18,7,'#39474f');
+  for(let k=0;k<5;k++)R(wx-8+k*4,wy,3.4,2.4,k%2?'#a7a49c':'#8d8a84');
+  [wx-7,wx+4].forEach(x=>R(x,wy+11,3.4,3.4,'#2a2f34'));
+  /* la pancarte, sur ses deux piquets */
+  const px=cx-40, py=ey-24;
+  R(px+2,py+9,2,15,'#6a4a2a');R(px+17,py+9,2,15,'#6a4a2a');
+  R(px,py,23,10,'#8a6238');R(px+1,py+1.5,21,7,'#c9a878');
+  g.font='700 5px Arial,sans-serif';g.textAlign='center';g.fillStyle='#4a3420';
+  g.fillText('CARRIÈRE',px+11.5,py+7);g.textAlign='left';
+  /* la caisse et la pioche appuyée */
+  R(cx+38,sol-13,13,12,'#8a6238');R(cx+38,sol-13,13,3,'#a5764a');R(cx+38,sol-7,13,1.6,'#6a4a2a');
+  R(cx-30,sol-22,2,20,'#6a4a2a');R(cx-35,sol-24,12,3,'#9aa0a8');});}
 
 /* L'ARBRE REMARQUABLE : un chêne immense, à contre-emploi des autres */
+function graverGrandArbre(){return toileFo(150,170,(R,g,W,H,hs)=>{
+  const cx=W/2,sol=H-8;
+  R(cx-40,sol,80,8,'rgba(24,34,20,.24)');
+  /* les racines */
+  for(let k=0;k<5;k++){const dx=(k-2)*15;R(cx+dx-4,sol-10,10,12,'#5b3f21');}
+  /* le tronc, épais */
+  for(let y=0;y<62;y++){const w=40-y*0.16;
+    R(cx-w/2,sol-10-y,w,1,'rgb('+(122-y*0.5|0)+','+(88-y*0.4|0)+','+(52-y*0.2|0)+')');}
+  for(let i=0;i<40;i++)R(cx-16+hs(i*3)*32,sol-70+hs(i*7)*58,2,7,'rgba(58,40,22,.45)');
+  /* la couronne, très large, en masses */
+  const T=['#1f4a24','#2a5e2e','#367239','#448647'];
+  const masse=(mx,my,rx,ry,gr)=>{
+    for(let y=-ry;y<=ry;y++){
+      const dx=Math.round(rx*Math.sqrt(Math.max(0,1-(y/ry)*(y/ry))));
+      const on=Math.round((hs(gr+y*0.7)-0.5)*7);
+      for(let x=-dx+on;x<=dx+on;x++){
+        const d=Math.sqrt((x/rx)*(x/rx)+(y/ry)*(y/ry)),n=hs(gr+x*0.31+y*0.57);
+        let t;if(d>0.88)t=0;else if(y<-ry*0.24&&d<0.7)t=n<.4?3:2;else t=n<.3?0:(n<.62?1:2);
+        R(cx+x,my+y,1,1,T[t]);}}};
+  masse(0,sol-104,44,34,3.1);masse(-38,sol-86,34,26,7.7);masse(38,sol-84,33,25,11.3);
+  masse(-20,sol-124,32,24,15.9);masse(22,sol-122,30,23,19.3);
+  for(let i=0;i<40;i++)R(cx+(hs(i*3)-0.5)*150,sol-140+hs(i*7)*70,4,3,hs(i)<.5?'#57a04e':'#183d1c');});}
 /* LES CHAMPIGNONS RARES : une touffe bleutée qui luit */
 
 TAILLES['x_fo_aut']=[{w:22,h:12},{w:22,h:12},{w:22,h:12}];
+function graverConifere(v){
+  const W=64,H=96,D=2,c=document.createElement('canvas');
+  c.width=W*D;c.height=H*D;
+  const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const hs=n=>{const q=Math.sin(n*12.9898)*43758.5453;return q-Math.floor(q);};
+  const cx=W/2,sol=H-6;
+  const T=[['#1d4a30','#245a38','#2f6a44','#153a26'],
+           ['#245a2c','#2c6a34','#377a3e','#1b4622'],
+           ['#2a5a3c','#336a46','#3e7a52','#1f4a30']][v%3];
+  R(cx-9,sol,18,4,'rgba(24,34,20,.22)');
+  R(cx-3,sol-16,6,16,'#5b3f21');R(cx-3,sol-16,2,16,'#6f4f2c');
+  for(let k=0;k<6;k++){const w=30-k*4.4, yy=sol-18-k*10;
+    R(cx-w/2,yy,w,11,k%2?T[0]:T[1]);R(cx-w/2,yy,w,3,T[2]);}
+  R(cx-2,sol-78,4,8,T[1]);
+  for(let i=0;i<8;i++)R(cx+(hs(i*5+v)-0.5)*26,sol-70+hs(i*3+v)*48,2,2,T[3]);
+  return {toile:c,W,H,sol,nuit:null};
+}
+function graverArbreAutomne(v){
+  const W=72,H=88,D=2,c=document.createElement('canvas');
+  c.width=W*D;c.height=H*D;
+  const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{if(w<=0||h<=0)return;g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const hs=n=>{const q=Math.sin(n*12.9898)*43758.5453;return q-Math.floor(q);};
+  const cx=W/2,sol=H-6;
+  const T=[['#c06a1e','#d8862a','#e8a43a','#a8521a'],
+           ['#b4541e','#c96a28','#dc8434','#984418'],
+           ['#c98a1e','#dca42c','#eabe44','#a86e14']][v%3];
+  R(cx-11,sol,22,4,'rgba(24,34,20,.22)');
+  R(cx-3,sol-24,6,24,'#6a4a2a');R(cx-3,sol-24,2,24,'#8a6238');
+  R(cx-20,sol-40,40,18,T[0]);R(cx-15,sol-51,30,14,T[1]);R(cx-9,sol-60,18,11,T[2]);
+  for(let i=0;i<9;i++)R(cx+(hs(i*3+v)-0.5)*36,sol-56+hs(i*7+v)*30,3,2,T[3]);
+  return {toile:c,W,H,sol,nuit:null};
+}
+function semerLaClairiere(CL,GARE){
+const L=[];
+const C=graverCabaneBucheron();XCAL['x_fo_cabane0']=C;CALQUES_DECO['x_fo_cabane']=C;TAILLES['x_fo_cabane']=[{w:100,h:14}];
+L.push({t:'x_fo_cabane',x:POS_CAB[0],y:POS_CAB[1],v:0,gr:0,bati:true,demi:44,ouvre:'bucheron'});   /* à droite de la gare, au milieu du bois */
+{const G=graverBoucheMetro('LA FORÊT');XCAL['x_fe_gare0']=G;CALQUES_DECO['x_fe_gare']=G;TAILLES['x_fe_gare']=[{w:96,h:16}];}
+{const gx=(GARE&&GARE[0])||(CL[0]-96), gy=(GARE&&GARE[1])||(CL[1]+52);
+L.push({t:'x_fe_gare',x:gx,y:gy,v:0,bati:true,demi:34,ouvre:'metroForet'});
+}
+/* ================= LA CLAIRIÈRE DU BÛCHERON =================
+   Une vraie clairière : un tapis de fleurs et d'herbes devant la cabane,
+   le bûcheronnage à ses pieds — bûches, souches, feu — et un sentier qui
+   descend rejoindre le chemin principal. Les arbres forment sa lisière,
+   par paquets, jamais en rond régulier. */
+{const cx=POS_CAB[0], cy=POS_CAB[1];        /* la cabane */
+ const R=118;                            /* le rayon de la clairière */
+ /* LE TAPIS FLEURI, au-dessus et autour de la cabane */
+ for(let k=0;k<16;k++){const a2=(k/16)*6.283, r2=52+alea(k*3)*34;
+   const x=cx+Math.cos(a2)*r2, y=cy-46+Math.sin(a2)*r2*0.52;
+   L.push({t:alea(k*7)<0.55?'fleurs':'herbes',x,y,gr:k%3});}
+ /* LE BÛCHERONNAGE, devant la cabane */
+ for(let k=0;k<4;k++)L.push({t:'souche',x:cx-72+k*30,y:cy+34+Math.sin(k)*12,gr:k%3});
+ for(let k=0;k<7;k++)L.push({t:'herbes',x:cx-96+k*32,y:cy+68+Math.sin(k/1.6)*14,gr:k%3});
+ /* LA LISIÈRE DE LA CLAIRIÈRE : des paquets d'arbres, pas un cercle */
+ const paquets=[[-1.15,1.0],[-0.72,1.06],[-0.35,0.94],[0.5,1.02],[0.95,0.96],
+                [1.55,1.04],[2.15,0.98],[2.62,1.06],[3.35,0.95],[3.9,1.02],
+                [4.45,0.99],[5.05,1.05],[5.6,0.97]];
+ paquets.forEach(([a2,f],k)=>{
+   const n=1+Math.floor(alea(k*5)*2);
+   for(let j=0;j<n;j++){
+     const aa=a2+(j-0.5)*0.18, rr=R*f+alea(k*7+j)*26;
+     const x=cx+Math.cos(aa)*rr, y=cy+Math.sin(aa)*rr*0.72;
+     if(x<30||x>MONDE_L-30||y<40)continue;
+     if(surLeSentier(x,y,24))continue;
+     /* plus de conifères du tout : les six essences de feuillus suffisent */
+     /* un arbre ordinaire : il ne doit pas garder les réglages du conifère
+        (bâti, colonne de collision), qui ne veulent rien dire pour lui. */
+     const nbv=(TAILLES['arbre']&&TAILLES['arbre'].length)||1;
+     L.push({t:'arbre',x,y,gr:k%nbv});}});
+ /* LE SENTIER QUI DESCEND rejoindre le chemin : des pas japonais en pierre */
+ for(let k=0;k<9;k++){
+   const t=k/8, x=cx-10-t*66+Math.sin(t*3)*14, y=cy+96+t*96;
+   L.push({t:'rocher',x,y,gr:k%3});}
+ /* les champignons au pied de la lisière, côté ombre */
+ for(let k=0;k<6;k++)L.push({t:'champignons',x:cx+82+Math.sin(k)*22,y:cy-10+k*22,gr:k%3});
+}
+/* ================= LES SIX MOMENTS DU PARCOURS =================
+   L'écran du téléphone montre environ 390 x 560 de carte. En descendant, le
+   joueur traverse six fenêtres : chacune doit avoir son point d'intérêt, et
+   celui du suivant doit déjà pointer au bord de l'écran précédent. */
+{const SX=(y)=>sentierX(y);
+ /* 1 · LA LISIÈRE : un portail naturel, deux gros arbres qui encadrent l'entrée */
+ L.push({t:'arbre',x:SX(120)-64,y:130,gr:2});
+ L.push({t:'arbre',x:SX(120)+64,y:142,gr:2});
+ /* des souches et du bois mort, pour dire qu'on bûcheronne ici */
+ for(let k=0;k<5;k++)L.push({t:'souche',x:SX(200)+(k-2)*56,y:200+Math.sin(k)*30,gr:k%3});
+ /* 2 · LES PREMIÈRES RESSOURCES : un bouquet de buissons à cueillir, à gauche */
+ for(let k=0;k<9;k++)L.push({t:'buisson',x:72+k*24,y:400+((k%2)?22:0)+Math.sin(k/2)*14,gr:k%2});
+ /* 3 · LE BOIS DENSE : un rocher marquant au bord du sentier */
+ for(let k=0;k<5;k++)L.push({t:'rocher',x:SX(640)-72-k*24,y:630+k*22+Math.sin(k)*14,gr:k%3});
+ /* 4 · LA DÉCOUVERTE DE L'EAU : des roseaux qui annoncent la rivière,
+        visibles depuis l'écran précédent */
+ for(let k=0;k<14;k++)L.push({t:'roseaux',x:MONDE_L-126+((k%3)-1)*30,y:950+k*22,gr:k%3});
+ /* 5 · LE PASSAGE : des rochers de gué, au bord de l'eau */
+ for(let k=0;k<5;k++)L.push({t:'rocher',x:MONDE_L-96+((k%2)?26:0),y:1120+k*26,gr:k%3});
+ /* 7 · LE BAS DU BOIS : trois raisons d'y descendre */
+ /* un cercle de rochers, comme un ancien campement */
+ for(let k=0;k<7;k++){const a2=k/7*6.283;
+   L.push({t:'rocher',x:SX(1120)-24+Math.cos(a2)*54,y:1120+Math.sin(a2)*34,gr:k%3});}
+ /* un carré d'argile, au bord de l'eau */
+ for(let k=0;k<9;k++)L.push({t:'argile',x:MONDE_L-150+(k%3)*26,y:1214+Math.floor(k/3)*24,gr:0});
+ /* un massif de buissons et d'herbes, tout en bas */
+ for(let k=0;k<11;k++)L.push({t:'buisson',x:90+k*30,y:1180+((k%2)?22:0)+Math.sin(k/2)*14,gr:k%2});
+ for(let k=0;k<9;k++)L.push({t:'herbes',x:150+k*28,y:1256+Math.sin(k)*18,gr:k%3});
+ /* des plumes, à ramasser sous les grands arbres */
+ for(let k=0;k<7;k++)L.push({t:'plumes',x:SX(1060)+((k%2)?40:-40),y:1040+k*26,gr:k%3});
+ /* 6 · LA CLAIRIÈRE : des champignons semés sur la branche du sentier,
+        ils mènent l'oeil vers la cabane */
+ for(let k=0;k<10;k++)L.push({t:'champignons',x:SX(880)+38+k*22,y:876+Math.sin(k/2.4)*36,gr:k%3});
+ /* AUTOUR DE LA CARRIÈRE : on habille avec les éléments de la forêt,
+    pour que la zone minérale reste petite et se referme tout de suite. */
+ {const qx=474, qy=820;
+  /* la forêt reprend ses droits tout autour : quelques rochers seulement,
+     et de la végétation qui mord sur les bords de l'excavation */
+  for(let k=0;k<4;k++)L.push({t:'rocher',x:qx-34+k*24,y:qy-18+Math.sin(k*1.7)*12,gr:k%3});
+  for(let k=0;k<6;k++)L.push({t:'buisson',x:qx-56+k*9,y:qy+26+Math.sin(k)*10,gr:k%2});
+  for(let k=0;k<4;k++)L.push({t:'buisson',x:qx+16+k*13,y:qy+20+Math.sin(k)*12,gr:k%2});
+  for(let k=0;k<5;k++)L.push({t:'herbes',x:qx-30+k*15,y:qy+6+Math.sin(k*2)*8,gr:k%3});
+  for(let k=0;k<4;k++)L.push({t:'champignons',x:qx-34+k*26,y:qy+34+Math.sin(k*1.4)*8,gr:k%3});
+  for(let k=0;k<3;k++)L.push({t:'souche',x:qx-40+k*38,y:qy-32+Math.sin(k)*10,gr:k%3});}
+}
+/* les six moments réservent leur espace : aucun arbre ne vient les masquer */
+const SX_M=(y)=>sentierX(y);
+const MOMENTS=[[366,272,132],
+               [520,250,96],[150,452,82],[176,640,90],[540,830,92],[220,980,96],   /* la clairière du bûcheron : large et protégée */
+               [SX_M(1120),1120,92],[MONDE_L-124,1240,84],[230,1210,110],
+               [sentierX(120),140,100],[120,420,92],[sentierX(640)-90,660,90],
+               [MONDE_L-130,1010,100],[MONDE_L-90,1260,90],[sentierX(880)+120,900,96],
+               [sentierX(1180)-24,1180,86],[MONDE_L-124,1372,80],
+               [230,1470,110],[sentierX(1060),1120,80]];
+const dansUnMoment=(x,y)=>MOMENTS.some(([mx,my,r])=>Math.hypot(x-mx,y-my)<r);
+/* ================= LES NOUVEAUX LIEUX, POSÉS SUR LA CARTE ================= */
+{const nouveau=(t,x,y,demi,ouvre,colw,colh)=>{
+   const C=graverX(t,0);if(C){XCAL[t+'0']=C;CALQUES_DECO[t]=C;TAILLES[t]=[{w:colw*2,h:12}];}
+   L.push({t,x,y,v:0,gr:0,bati:true,demi,ouvre,col:[colw,colh]});};
+ nouveau('x_fo_scierie',    520, 250, 62,'scierie',    58,96);
+ nouveau('x_fo_camp',       150, 452, 48,'campement',  46,74);
+ nouveau('x_fo_herbo',      176, 640, 54,'herboriste', 52,92);
+ nouveau('x_fo_carriere',   474, 820, 42,'carriere',   40,54);   /* juste à droite du sentier */
+
+ /* les champignons rares, trois touffes cachées dans le bas du bois */
+ [[420,1130],[128,1224],[586,1046]].forEach(([x,y],k)=>{
+   nouveau('x_fo_champiRare',x,y,18,'champiRare',16,28);});
+}
+/* ================= LE SOUS-BOIS : BAIES, TOUFFES ET FLEURS =================
+   Ce qui manquait : les buissons à baies vont par groupes, les champignons
+   par touffes, et un semis fin de fleurs couvre l'herbe. */
+{const A3=alea;
+ /* LES BUISSONS À BAIES, en bouquets de trois à cinq */
+ for(let b=0;b<17;b++){
+   const bx=40+A3(b*7.7)*(MONDE_L-80), by=120+A3(b*3.3)*(MONDE_H-320);
+   if(surLeSentier(bx,by,34)||dansEtang(bx,by,-40))continue;
+   const n=2+Math.floor(A3(b*5.1)*2);
+   for(let k=0;k<n;k++){
+     const x=bx+(A3(b*11+k)-0.5)*54, y=by+(A3(b*13+k)-0.5)*38;
+     if(surLeSentier(x,y,24)||dansEtang(x,y,-34))continue;
+     L.push({t:'buisson',x,y,gr:Math.floor(A3(b*3+k)*2)});}}
+ /* LES CHAMPIGNONS, en touffes serrées au pied des arbres */
+ for(let b=0;b<22;b++){
+   const bx=30+A3(b*9.3+1)*(MONDE_L-60), by=140+A3(b*4.7+2)*(MONDE_H-340);
+   if(surLeSentier(bx,by,30)||dansEtang(bx,by,-40))continue;
+   const n=2+Math.floor(A3(b*6.1)*2);
+   for(let k=0;k<n;k++){
+     const x=bx+(A3(b*17+k)-0.5)*26, y=by+(A3(b*19+k)-0.5)*20;
+     if(surLeSentier(x,y,22)||dansEtang(x,y,-34))continue;
+     L.push({t:'champignons',x,y,gr:Math.floor(A3(b*5+k)*3)});}}
+ /* LES FLEURS sont désormais gravées dans l'image du sol, pas semées en objets */
+ /* LES HERBES HAUTES, par petits paquets */
+ for(let b=0;b<20;b++){
+   const bx=30+A3(b*8.1+3)*(MONDE_L-60), by=140+A3(b*5.9+4)*(MONDE_H-320);
+   if(surLeSentier(bx,by,28)||dansEtang(bx,by,-40))continue;
+   for(let k=0;k<3;k++){
+     const x=bx+(A3(b*23+k)-0.5)*30, y=by+(A3(b*29+k)-0.5)*22;
+     if(surLeSentier(x,y,22))continue;
+     L.push({t:'herbes',x,y,gr:Math.floor(A3(b*7+k)*3)});}}
+}
+/* ================= LA VARIÉTÉ DU BOIS =================
+   Des conifères et quelques arbres d'automne, semés là où rien ne gêne :
+   ni le sentier, ni les abords des bâtiments, ni les autres arbres. */
+{const A2=alea;
+ for(let i=0;i<1900;i++){
+   const x=24+A2(i*13+5)*(MONDE_L-48), y=64+A2(i*7+3)*(MONDE_H-150);
+   if(surLeSentier(x,y,26))continue;
+   if(dansEtang(x,y,-30))continue;      /* pas d'arbre dans le lac */
+   if(((x)=>false)({t:'arbre',x,y}))continue;
+   if(dansUnMoment(x,y))continue;      /* on laisse respirer les points d'intérêt */
+   /* l'écart minimal se resserre dans le bois : les arbres s'y chevauchent */
+   const prof0=Math.max(0,Math.min(1,(y-260)/520));
+   /* ON AÈRE LE CŒUR DU BOIS : les arbres s'y chevauchaient presque,
+      ce qui faisait tomber le nombre d'images par seconde sur téléphone. */
+   const ecart=32-prof0*6;
+   if(L.some(o=>Math.hypot(o.x-x,o.y-y)<ecart))continue;
+   /* LA DENSITÉ SUIT LA ZONE : rare en lisière, serré dans le bois dense,
+      et les arbres d'automne se cantonnent aux marges du bois. */
+   const prof=prof0;                                     /* 0 en lisière, 1 au coeur */
+   if(A2(i*17)>0.26+prof*0.52)continue;                   /* rare en haut, dense sans excès au coeur */
+   const r=A2(i*3);
+   /* les arbres d'automne restent rares et jamais côte à côte */
+   const auto=(r>0.955)&&!L.some(o=>o.t==='x_fo_aut'&&Math.hypot(o.x-x,o.y-y)<130);
+   if(auto)L.push({t:'x_fo_aut',x,y,v:i%3,gr:0,bati:true,demi:11,col:[11,62]});
+   else {const nbv=(TAILLES['arbre']&&TAILLES['arbre'].length)||1;
+     L.push({t:'arbre',x,y,gr:i%nbv});}          /* uniquement des feuillus */}}
+/* ================= LA FORÊT VIDE =================
+   Toutes les ressources sont retirées : plus un arbre, plus un rocher,
+   plus un champignon. Seuls restent les bâtiments et les points d'intérêt. */
+if(FORET_VIDE){
+  const RESSOURCES=new Set(['arbre','buisson','rocher','champignons','herbes',
+    'plumes','argile','fleurs','roseaux','souche','x_fo_aut','x_fo_champiRare']);
+  for(let i=L.length-1;i>=0;i--)if(RESSOURCES.has(L[i].t))L.splice(i,1);
+}
+return L;
+}
 let FOR=null, BUC_N=1, BUC_OUTIL='hache';
-const CSS_BUC=`
-#page2Fond.buc{background:#f6f1e4;color:#26221a;font-family:Georgia,serif;display:flex;flex-direction:column;height:100%;
-background-image:radial-gradient(ellipse at 24% 8%,#fbf7ec,#efe8d6)}
-#page2Fond.buc .tt{flex:none;padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 14px;display:flex;align-items:center;gap:12px;
-background:#26221a;color:#f6f1e4;border-bottom:3px solid #b4302c}
-#page2Fond.buc .tt b{flex:1;font:700 25px Georgia}
-#page2Fond.buc .tt small{display:block;font:700 8.5px Arial;letter-spacing:2.6px;color:#b0a68e}
-#page2Fond.buc .tt button{width:34px;height:34px;border-radius:50%;border:2px solid #f6f1e4;background:none;font:700 15px Arial;color:#f6f1e4;flex:none}
-#page2Fond.buc .sac{flex:none;margin:12px 14px 0;display:flex;justify-content:space-between;align-items:center;
-background:#1d3f66;color:#eaf2fb;border-radius:12px;padding:10px 14px;font:700 11px Arial;letter-spacing:1.4px}
-#page2Fond.buc .corps{flex:1;min-height:0;display:flex;flex-direction:column;gap:9px;
-padding:10px 14px calc(env(safe-area-inset-bottom,0px) + 14px)}
-#page2Fond.buc .seg{flex:none;display:flex;gap:7px}
-#page2Fond.buc .seg button{flex:1;border:2px solid #26221a;border-radius:12px;background:#fff;color:#26221a;
-font:700 13px Arial;letter-spacing:1.2px;padding:11px 0}
-#page2Fond.buc .seg button.on{background:#26221a;color:#f6f1e4}
-#page2Fond.buc .bd{flex:1;min-height:0;border-radius:18px;padding:14px;display:flex;align-items:center;gap:13px;
-border:2px solid #26221a;box-shadow:4px 4px 0 rgba(38,34,26,.14)}
-#page2Fond.buc .bd .ic{font-size:34px;flex:none}
-#page2Fond.buc .bd .g{flex:1;min-width:0}
-#page2Fond.buc .bd b{display:block;font:700 22px Georgia}
-#page2Fond.buc .bd span{display:block;font:700 8.5px Arial;letter-spacing:1.3px;opacity:.85;margin-top:3px}
-#page2Fond.buc .bd .go{flex:none;border:0;border-radius:12px;padding:13px 16px;font:700 12px Arial;letter-spacing:1.1px}
-#page2Fond.buc .bd.b1{background:#fff;color:#26221a}
-#page2Fond.buc .bd.b1 .go{background:#26221a;color:#f6f1e4}
-#page2Fond.buc .bd.b2{background:#fff;color:#26221a}
-#page2Fond.buc .bd.b2 .go{background:#b4302c;color:#fff}
-#page2Fond.buc .bd.b3{background:#26221a;color:#f6f1e4;border-color:#26221a}
-#page2Fond.buc .bd.b3 .go{background:#e2c24a;color:#2e2608}
-#page2Fond.buc .bd.b4{background:#1d3f66;color:#eaf2fb;border-color:#14304f}
-#page2Fond.buc .bd.b4 .go{background:#eaf2fb;color:#123050}
-#page2Fond.buc .bd.b5{background:#b4302c;color:#fff4f0;border-color:#7d1f1c}
-#page2Fond.buc .bd.b5 .go{background:#fff4f0;color:#8a2420}
-#page2Fond.buc .bd.off{background:#e8e2d2;color:#8e8674;border:2px dashed #b8b0a0;box-shadow:none}
-#page2Fond.buc .bd.off .go{background:#d6cebc;color:#8e8674}
-#page2Fond.buc .outils{flex:none;display:flex;gap:7px}
-#page2Fond.buc .outils .pet{flex:1;border:2px solid #26221a;border-radius:12px;background:#fff;color:#26221a;
-font:400 12px Georgia;padding:9px 4px;text-align:center}
-#page2Fond.buc .outils .pet.on{background:#26221a;color:#f6f1e4}
-#page2Fond.buc .crans{display:flex;gap:3px;justify-content:center;margin-top:4px}
-#page2Fond.buc .crans i{width:6px;height:6px;border-radius:2px;background:#ddd5c2;display:inline-block}
-#page2Fond.buc .crans i.p{background:#e2c24a}
-#page2Fond.buc .outils .pet.on .crans i{background:#4a4436}
-#page2Fond.buc .outils .pet.on .crans i.p{background:#e2c24a}
-`;
 const OUTILS_BUC=()=>[
 {k:'hache',titre:'La hache',unite:'coups par arbre',val:HACHE_COUPS,prix:HACHE_PRIX,niv:e.nivHache||0,dit:'Manche de frêne, fer affûté : même les chênes têtus finissent par tomber.'},
 {k:'pioche',titre:'La pioche',unite:'coups par rocher',val:PIOCHE_COUPS,prix:PIOCHE_PRIX,niv:e.nivPioche||0,dit:'Acier trempé : le rocher cède plus vite.'},
@@ -21189,54 +25072,117 @@ const AT_DESS={
    R(16+Math.cos(a2)*7,16+Math.sin(a2)*6,7,2,'#443c34');}},
  resine_pure:(R)=>{R(10,8,12,16,'#d8a83a');R(10,8,12,3,'#e8c45a');R(12,24,8,3,'#a07a22');
    R(13,11,2,8,'rgba(255,255,255,.4)');}};
+function atDessiner(cv,k){
+  const f=AT_DESS[k];if(!f)return;
+  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+  const S=cv.width/32;g.setTransform(S,0,0,S,0,0);
+  f((x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));});}
 const atDuree=(mn)=>mn<=0?'instantané':(mn<60?mn+' min':Math.round(mn/60)+' h');
 const atReste=(s)=>s<=0?'prête':(s<60?s+' s':(s<3600?Math.ceil(s/60)+' min':Math.round(s/3600)+' h'));
 const AT_NOMS={bois:'bûches',pierre:'pierres',fibre:'fibre',resine:'résine',
   planche:'planches',poutre:'poutres',bardeau:'bardeaux',manche:'manches',charbon:'charbon',resine_pure:'résine épurée'};
-const CSS_AT=`
-#at{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#f2e7d2;font-family:Georgia,serif}
-#at .at-h{flex:none;background:linear-gradient(180deg,#6a4a2a,#4a3218);border-bottom:3px solid #c9a24a;
-  padding:calc(env(safe-area-inset-top,0px) + 12px) 12px 12px;display:flex;align-items:center;gap:10px}
-#at .at-h b{flex:1;font:900 17px Georgia,serif;color:#e8c46a}
-#at .at-h b i{display:block;font:italic 10.5px Georgia,serif;color:#d8c0a0;font-weight:400}
-#at .at-st{background:#2f2218;border:1px solid #8a6238;border-radius:13px;padding:5px 10px;text-align:right}
-#at .at-st span{display:block;font:700 6.5px Arial,sans-serif;letter-spacing:1.5px;color:#a89070}
-#at .at-st b{display:block;font:700 13px Georgia,serif;color:#e8c46a}
-#at .at-ong{flex:none;display:flex;background:#4a3218}
-#at .at-ong button{flex:1;border:0;background:none;color:#c8ae88;padding:11px 3px;
-  font:700 9px Arial,sans-serif;letter-spacing:1.2px;border-bottom:3px solid transparent}
-#at .at-ong button.on{color:#e8c46a;border-color:#c9a24a}
-#at .at-stock{flex:none;background:#e4d6bc;border-bottom:1px solid #c9b48a;padding:10px 12px;display:flex;gap:8px}
-#at .at-stock div{flex:1;background:#fbf6e8;border:1px solid #d8c9a6;border-radius:9px;padding:7px;text-align:center}
-#at .at-stock small{display:block;font:700 7px Arial,sans-serif;letter-spacing:1.2px;color:#8a7454}
-#at .at-stock b{display:block;font:700 16px Georgia,serif;color:#2f2820;margin-top:1px}
-#at .at-page{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:11px}
-#at .at-t{font:900 9px Arial,sans-serif;letter-spacing:1.8px;color:#8a7454;margin:2px 2px 8px}
-#at .at-r{background:#fbf6e8;border:1px solid #d8c9a6;border-radius:11px;padding:10px 11px;margin-bottom:9px;
-  display:flex;align-items:center;gap:10px;box-shadow:0 2px 0 rgba(120,96,56,.1)}
-#at .at-r canvas{flex:none;width:44px;height:44px;image-rendering:pixelated}
-#at .at-r .t{flex:1;min-width:0}
-#at .at-r .t b{display:block;font:700 13.5px Georgia,serif;color:#2f2820}
-#at .at-r .t small{display:block;font:italic 11.5px Georgia,serif;color:#5f4d34;margin-top:1px}
-#at .at-r .t u{display:block;text-decoration:none;font:700 8px Arial,sans-serif;letter-spacing:1.1px;color:#8a7454;margin-top:3px}
-#at .at-r .go{flex:none;border:0;border-radius:9px;background:#6a4a2a;color:#f2e7d2;padding:11px 13px;
-  font:700 9px Arial,sans-serif;letter-spacing:1.2px}
-#at .at-r .go.pas{background:#ddd2b8;color:#9a8a6c}
-#at .at-c{background:#fbf6e8;border:1px solid #d8c9a6;border-radius:11px;padding:11px;margin-bottom:9px}
-#at .at-c .h{display:flex;align-items:center;gap:8px}
-#at .at-c .h b{flex:1;font:700 13.5px Georgia,serif;color:#2f2820}
-#at .at-c .h span{background:#8a6238;color:#f6ecd8;border-radius:11px;padding:3px 9px;font:700 9px Georgia,serif}
-#at .at-c .h span.ok{background:#2f7a4a}
-#at .at-c .barre{height:9px;border-radius:5px;background:#e8dcc0;margin-top:8px;overflow:hidden}
-#at .at-c .barre i{display:block;height:100%;background:linear-gradient(90deg,#8a6238,#c9a24a)}
-#at .at-vide{text-align:center;font:italic 13px Georgia,serif;color:#8a7454;padding:40px 20px;line-height:1.6}
-#at .at-pied{flex:none;background:#e4d6bc;border-top:1px solid #c9b48a;
-  padding:11px 12px calc(env(safe-area-inset-bottom,0px) + 13px);display:flex;gap:9px}
-#at .at-pied button{flex:1;border:0;border-radius:9px;padding:13px;font:700 10px Arial,sans-serif;letter-spacing:1.3px}
-#at .at-pied .s{background:#ddd2b8;color:#6a5c42}
-#at .at-pied .p{background:#6a4a2a;color:#f2e7d2}
-#at .at-pied .p:disabled{background:#ddd2b8;color:#9a8a6c}
-`;
+function atRendre(){
+  if(!document.getElementById('cssAt')){const st=document.createElement('style');st.id='cssAt';st.textContent=CSS_AT;document.head.appendChild(st);}
+  const E=AT_ETAT||{recettes:[],sac:{},encours:[]};
+  const sac=E.sac||{}, enc=E.encours||[];
+  $('page2Fond').className='at';$('page2').classList.add('on');
+  /* « prêt » n'est vrai que si le serveur l'a dit. Le compte à rebours local
+     peut atteindre zéro par dérive d'horloge ou après une mise en veille :
+     on ne propose pas de prendre une pièce que le serveur refuserait. */
+  const pretes=AT_VERIFIE?enc.filter(c=>c.reste<=0).length:0;
+  const stock=['bois','planche','resine'].map(k=>
+    '<div><small>'+(AT_NOMS[k]||k).toUpperCase()+'</small><b>'+(sac[k]||0)+'</b></div>').join('');
+  let corps='';
+  if(AT_VUE==='etabli'){
+    corps='<div class="at-t">CE QU’IL SAIT FAIRE</div>'+(E.recettes||[]).map(r=>{
+      const prend=Object.entries(r.prend||{});
+      const peut=prend.every(([k,q])=>(sac[k]||0)>=q);
+      const recette=prend.map(([k,q])=>q+' '+(AT_NOMS[k]||k)).join(' + ');
+      return '<div class="at-r"><canvas width="88" height="88" data-at="'+r.k+'"></canvas>'+
+        '<div class="t"><b>'+r.nom+'</b><small>'+recette+' → '+r.nbr+' '+(AT_NOMS[r.rend]||r.rend)+'</small>'+
+        '<u>'+atDuree(r.minutes).toUpperCase()+'</u></div>'+
+        '<button class="go'+(peut?'':' pas')+'" data-faire="'+r.k+'">'+(peut?'FAIRE':'IL MANQUE')+'</button></div>';}).join('');
+  }else{
+    corps=enc.length?enc.map(c=>{
+      const r=(E.recettes||[]).find(z=>z.k===c.piece)||{nom:c.piece,minutes:1,nbr:1,rend:c.piece};
+      const tot=Math.max(1,r.minutes*60*c.nb), part=Math.max(0,Math.min(1,1-c.reste/tot));
+      return '<div class="at-c"><div class="h"><b>'+(c.nb>1?c.nb+' × ':'')+r.nom+'</b>'+
+        '<span'+(c.reste<=0?' class="ok"':'')+'>'+atReste(c.reste).toUpperCase()+'</span></div>'+
+        '<div class="barre"><i style="width:'+Math.round(part*100)+'%"></i></div></div>';}).join('')
+      :'<div class="at-vide">Rien sur l’établi.<br>Va voir ce qu’il sait faire.</div>';
+  }
+  $('page2Fond').innerHTML=
+   '<div id="at"><div class="at-h"><b>L’ATELIER DU BOIS<i>Chez le bûcheron</i></b>'+
+   '<span class="at-st"><span>EN COURS</span><b>'+enc.length+' / 5</b></span></div>'+
+   '<div class="at-ong"><button data-v="etabli" class="'+(AT_VUE==='etabli'?'on':'')+'">L’ÉTABLI</button>'+
+   '<button data-v="encours" class="'+(AT_VUE==='encours'?'on':'')+'">EN COURS'+(pretes?' · '+pretes:'')+'</button></div>'+
+   '<div class="at-stock">'+stock+'</div>'+
+   '<div class="at-page">'+corps+'</div>'+
+   '<div class="at-pied"><button class="s" id="atSortir">SORTIR</button>'+
+   '<button class="p" id="atPrendre"'+((pretes&&!AT_EN_VOL)?'':' disabled')+'>'+
+   (AT_EN_VOL?'…':(pretes?'PRENDRE CE QUI EST PRÊT':'RIEN DE PRÊT'))+'</button></div></div>';
+  $('page2Fond').querySelectorAll('canvas[data-at]').forEach(cv=>atDessiner(cv,cv.dataset.at));
+  $('page2Fond').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{AT_VUE=b.dataset.v;vibrer(6);atRendre();});
+  $('page2Fond').querySelectorAll('[data-faire]').forEach(b=>b.onclick=async()=>{
+    if(b.classList.contains('pas')){motOuverture('Il te manque de quoi.');return;}
+    b.disabled=true;
+    const r=await appelRPC('atelier_poser',{p_joueur:e.id,p_piece:b.dataset.faire,p_nb:1});
+    if(r&&r.erreur){motOuverture(r.erreur);b.disabled=false;return;}
+    vibrer(10);AT_VUE='encours';
+    const d=await appelRPC('atelier_etat',{p_joueur:e.id});if(d&&!d.erreur)AT_ETAT=d;
+    AT_VERIFIE=true;                     /* l'état sort du serveur */
+    atRendre();});
+  $('atSortir').onclick=()=>{clearInterval(AT_MINUTEUR);AT_MINUTEUR=0;$('page2').classList.remove('on');};
+  $('atPrendre').onclick=async()=>{
+    if(AT_EN_VOL)return;                      /* un retrait est déjà parti */
+    AT_EN_VOL=true;atRendre();
+    let frais=false;                          /* l'état a-t-il été relu avec succès ? */
+    try{
+      const r=await appelRPC('atelier_prendre',{p_joueur:e.id});
+      /* ON NE VIBRE PLUS AVANT DE SAVOIR : le téléphone confirmait d'un coup
+         de vibreur un retrait que le serveur venait de refuser, et aucun
+         message ne s'affichait. */
+      if(!r||r.erreur){
+        motOuverture((r&&r.erreur)||'le serveur n’a pas répondu');
+      }else{
+        const l=r.rendu?Object.entries(r.rendu).map(([k,n])=>n+' '+(AT_NOMS[k]||k)).join(', '):'';
+        motOuverture(l?('Tu récupères '+l+'.'):'Il n’y avait rien à prendre.');
+        if(l)vibrer([10,24,10]);
+      }
+      /* chargerSac n'existe que dans forge.html : ici l'appel levait une
+         ReferenceError avalée par le catch, et le sac n'était jamais relu. */
+      try{await lireSacServeur();}catch(x){}
+      const d=await appelRPC('atelier_etat',{p_joueur:e.id});
+      if(d&&!d.erreur){AT_ETAT=d;frais=true;}
+    }finally{
+      AT_EN_VOL=false;
+      /* si la relecture a échoué, on ne prétend pas connaître l'état :
+         le bouton reste éteint jusqu'à une réponse du serveur. */
+      AT_VERIFIE=frais;
+      atRendre();
+    }};
+  /* le compte à rebours, tant qu'on reste dans l'atelier */
+  clearInterval(AT_MINUTEUR);
+  if(enc.some(c=>c.reste>0))AT_MINUTEUR=setInterval(()=>{
+    if(!$('page2').classList.contains('on')){clearInterval(AT_MINUTEUR);return;}
+    let arriveAZero=false;
+    (AT_ETAT.encours||[]).forEach(c=>{
+      const avant=c.reste;
+      c.reste=Math.max(0,c.reste-1);
+      if(avant>0&&c.reste<=0)arriveAZero=true;
+    });
+    /* UNE PIÈCE VIENT D'ARRIVER À TERME SELON NOUS : on demande au serveur
+       avant d'allumer le bouton. C'est lui qui décide si elle est prête. */
+    if(arriveAZero&&AT_VERIFIE){
+      AT_VERIFIE=false;
+      appelRPC('atelier_etat',{p_joueur:e.id}).then(d=>{
+        if(d&&!d.erreur)AT_ETAT=d;
+        AT_VERIFIE=true;
+        if($('page2').classList.contains('on'))atRendre();
+      }).catch(()=>{AT_VERIFIE=true;});
+    }
+    if(AT_VUE==='encours')atRendre();},1000);
+}
 let BUC_EN_VOL=false;
 const TENUES=[{k:'',nom:'Tes habits',lieu:'toujours à toi',rare:''},
 {k:'forestier',nom:'Le garde forestier',lieu:'Le grand chêne · ouverture de la forêt',rare:'OCTOBRE 2026'},
@@ -21374,6 +25320,9 @@ const VS_RAYONS=[['tenues','Tenues','\u{1F3AD}'],['habits','Habits','\u{1F9E5}']
 const VS_FAM=[['haut','Haut'],['bas','Bas'],['pieds','Souliers'],['tete','Chapeau']];
 let VS={ray:'habits',sous:'haut'}, VS_AVANT=null, VS_LST=[];
 /* les champs que touche une famille : pour le bouton « Rien » */
+function vsChamps(f){const C={};
+VETEMENTS.filter(v=>v.fam===f||(f==='haut'&&v.fam==='auto')).forEach(v=>Object.keys(v.ap).forEach(k=>C[k]=1));
+return Object.keys(C);}
 const vsFamille=(f)=>VETEMENTS.filter(v=>v.fam===f||(f==='haut'&&v.fam==='auto'));
 function vsBulle(t){const b=$('vsBulle');if(!b)return;b.textContent=t;b.classList.add('on');
 clearTimeout(vsBulle.t);vsBulle.t=setTimeout(()=>b.classList.remove('on'),2200);}
@@ -21411,7 +25360,7 @@ const F=$('page2Fond');
    donc toutes les tenues ouvertes. */
 const ai=(k)=>!k||!!(e.cos||{})['costume_'+k];
 const porte=(e.ap&&e.ap.deguisement)||'';
-const (()=>null)=(v)=>Object.keys(v.ap).every(k=>(e.ap[k]||0)===v.ap[k]);
+const vetPorte=(v)=>Object.keys(v.ap).every(k=>(e.ap[k]||0)===v.ap[k]);
 VS_LST=[];
 const pousser=(o)=>{VS_LST.push(o);return VS_LST.length-1;};
 const carte=(o,q)=>'<button class="c'+(o.on?' on':'')+(o.ok?'':' no')+'" data-vs="'+q+'">'+
@@ -21432,14 +25381,14 @@ if(VS.ray==='tenues'){
 
 if(VS.ray==='habits'){
  const L=vsFamille(VS.sous);
- const rien=!L.some(v=>VET_SAC.includes(v.id)&&(()=>{})());
+ const rien=!L.some(v=>VET_SAC.includes(v.id)&&vetPorte(v));
  let h='<div class="sous">'+VS_FAM.map(([k,n])=>
   '<button class="'+(VS.sous===k?'on':'')+'" data-vf="'+k+'">'+n+'</button>').join('')+'</div>'+
   '<div class="tt">'+(VS_FAM.find(x=>x[0]===VS.sous)||VS_FAM[0])[1]+
   '<span>'+L.filter(v=>VET_SAC.includes(v.id)).length+' à toi</span></div><div class="gr">';
  h+=carte({nom:'Rien',ok:true,on:rien},pousser({nom:'Rien',ok:true,on:rien,ap:vsNu(),tete:false,g:'rien',k:VS.sous}));
  L.forEach(v=>{const p=vsNu();Object.assign(p,v.ap);
-  const o={nom:v.nom,ok:VET_SAC.includes(v.id),on:VET_SAC.includes(v.id)&&(()=>{})(),
+  const o={nom:v.nom,ok:VET_SAC.includes(v.id),on:VET_SAC.includes(v.id)&&vetPorte(v),
    ap:p,tete:false,g:'vet',k:v.id};
   h+=carte(o,pousser(o));});
  corps=h+'</div>';
@@ -21492,7 +25441,7 @@ F.querySelectorAll('[data-vs]').forEach(b=>b.onclick=()=>{
  if(o.g==='tenue'){if(!o.k||o.k===porte)delete e.ap.deguisement;else e.ap.deguisement=o.k;}
  else{
   const avait=!!e.ap.deguisement;delete e.ap.deguisement;
-  if(o.g==='rien')(()=>{})().forEach(c=>{e.ap[c]=DEF_AP[c]||0;});
+  if(o.g==='rien')vsChamps(o.k).forEach(c=>{e.ap[c]=DEF_AP[c]||0;});
   if(o.g==='vet'){const v=VETEMENTS.find(x=>x.id===o.k);if(v)Object.assign(e.ap,v.ap);}
   if(o.g==='reg')e.ap[o.k]=o.v;
   if(avait)mot='Tu as retiré ta tenue pour voir.';}
@@ -21506,7 +25455,7 @@ $('vsHasard').onclick=()=>{
  VS_FAM.forEach(([f])=>{const mien=vsFamille(f).filter(v=>VET_SAC.includes(v.id));
   if(!mien.length)return;
   const v=mien[Math.floor(Math.random()*(mien.length+1))];
-  if(v)Object.assign(e.ap,v.ap);else (()=>{})().forEach(c=>{e.ap[c]=DEF_AP[c]||0;});});
+  if(v)Object.assign(e.ap,v.ap);else vsChamps(f).forEach(c=>{e.ap[c]=DEF_AP[c]||0;});});
  ['visage','cheveux','corps'].forEach(r=>{const R=AT_RUB.find(x=>x[0]===r);if(!R)return;
   R[2].forEach(ch=>{const n=(ch.t==='pal')?(PALETTES[ch.c]||[]).length:(atListe(ch.l)||[]).length;
    if(n)e.ap[ch.c]=Math.floor(Math.random()*n);});});
@@ -21585,18 +25534,65 @@ const autresStations=()=>STATIONS_L1.filter(([,,,k])=>k!==stationIci()).map(([,n
 function heureDuJeu(){
 try{const d=new Date(new Date().toLocaleString('en-US',{timeZone:'Europe/Paris'}));
 return d.getHours()+d.getMinutes()/60;}catch(x){return 12;}}
-function cielDuVoyage(){
-const h=heureDuJeu();
-/* six moments, du petit matin à la nuit profonde */
-if(h<6)   return {haut:'#1b2748',bas:'#3a3f6a',sol:'#191628',astre:'#dfe6ff',lune:true, mot:'AVANT L’AUBE'};
-if(h<9)   return {haut:'#f4c9a0',bas:'#e9a2a0',sol:'#3b2f46',astre:'#fff4d8',lune:false,mot:'AU PETIT MATIN'};
-if(h<17)  return {haut:'#8fc4e8',bas:'#cfe4ee',sol:'#3a3f44',astre:'#fffaea',lune:false,mot:'EN PLEIN JOUR'};
-if(h<20)  return {haut:'#f9d49a',bas:'#b8617f',sol:'#2f2638',astre:'#fff6dc',lune:false,mot:'AU COUCHANT'};
-if(h<22)  return {haut:'#8a5a7e',bas:'#4a3a62',sol:'#241f33',astre:'#ffe8c0',lune:false,mot:'À LA TOMBÉE DU JOUR'};
-return    {haut:'#16203c',bas:'#2a3152',sol:'#17142a',astre:'#fff6dc',lune:true, mot:'DERNIER MÉTRO'};
-}
 /* LE QUAI DE TOKYO : la station sous le Pecheur Heureux. Le billet passe par
    prendre_billet (prix fixe au serveur), puis le train part vers Tokyo.html. */
+function choisirLaDestination(sel){
+const ICI=stationIci();
+const INFO={port:['⚓','2 minutes de trajet',['🐟 La Marée : vendre ta pêche','⛴ Les docks et le caboteur','🎉 Le Complexe Festif']],
+ferme:['🌾','3 minutes de trajet',['🌱 Ton champ et tes parcelles','🧺 L’étal de Madeleine','🏡 Ta longère']],
+foret:['🌲','5 minutes de trajet',['🪓 Le bois à couper','🎣 Le lac et la pêche','🌾 Les roseaux et la cueillette']]};
+const autres=STATIONS_L1.filter(([,,,q])=>q!==ICI);
+const S=STATIONS_L1.find(x=>x[3]===sel)||autres[0];
+if(!document.getElementById('cssMet')){const st=document.createElement('style');st.id='cssMet';st.textContent=`
+@font-face{font-family:'Lilita One';src:url(assets/fonts/lilita-one-latin-400-normal.woff2) format('woff2');font-display:swap}
+#page2Fond.met{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;background:repeating-linear-gradient(135deg,#2a6ab8 0 22px,#2462aa 22px 44px);font-family:'Baloo 2','Trebuchet MS',sans-serif;color:#3a2408}
+#page2Fond.met .hd{flex:none;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 16px) 14px 12px}
+#page2Fond.met .m{flex:none;width:44px;height:44px;border-radius:12px;background:#fff;color:#1d4f9a;font:400 28px 'Lilita One',sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 0 #12356a}
+#page2Fond.met .tt{flex:1;min-width:0;font:400 27px/1 'Lilita One','Baloo 2',sans-serif;color:#fff;-webkit-text-stroke:5px #12356a;paint-order:stroke}
+#page2Fond.met .tt small{display:block;font:400 12.5px 'Lilita One','Baloo 2',sans-serif;color:#ffe066;-webkit-text-stroke:3px #12356a;letter-spacing:.5px;margin-bottom:2px}
+#page2Fond.met .x{flex:none;width:40px;height:40px;border:0;border-radius:12px;background:#e8503a;box-shadow:0 0 0 3px #fff,0 4px 0 3px #8a2a1a;color:#fff;font:400 20px 'Lilita One',sans-serif;margin-right:3px}
+/* LA CARTE PREND LA HAUTEUR. Collee sous l'en-tete avec flex:none, elle
+   laissait deux cent quatre-vingt-trois pixels de bleu mort sous elle sur
+   un 412x915 — un tiers de l'ecran. La centrer ne reglait rien : elle
+   flottait, avec du vide au-dessus ET en dessous. Elle occupe donc tout
+   ce qui reste, et c'est la liste de la destination qui defile si jamais
+   elle deborde.
+   LA MARGE DU BAS PORTE L'ENCOCHE : sans elle, le bouton de Tokyo
+   passait sous la barre de navigation des telephones Android. */
+#page2Fond.met .card{flex:1;min-height:0;overflow:hidden;margin:4px 12px calc(env(safe-area-inset-bottom,0px) + 12px);background:#fff8e4;border-radius:24px;box-shadow:0 0 0 3px #12356a,0 6px 0 3px #12356a;display:flex;flex-direction:column;padding:16px 14px 16px;max-width:560px;width:calc(100% - 24px);align-self:center}
+#page2Fond.met .lh{flex:none;position:relative;height:96px;margin:4px 8px 12px}
+#page2Fond.met .lh .tr{position:absolute;left:12%;right:12%;top:20px;height:10px;border-radius:5px;background:#e8c040}
+#page2Fond.met .lh .s{position:absolute;top:4px;width:33%;transform:translateX(-50%);text-align:center;border:0;background:none;padding:0;-webkit-tap-highlight-color:transparent}
+#page2Fond.met .lh .s i{display:block;width:38px;height:38px;margin:0 auto 6px;border-radius:50%;background:#fff;border:6px solid #e8c040;transition:transform .15s}
+#page2Fond.met .lh .s.ici i{background:#e8c040;box-shadow:0 0 0 4px #fff8e4,0 0 0 7px #2a6ab8}
+#page2Fond.met .lh .s.on i{background:#2a6ab8;border-color:#2a6ab8;transform:scale(1.12)}
+#page2Fond.met .lh .s b{display:block;font:400 15px/1 'Lilita One','Baloo 2',sans-serif;color:#3a2408}
+#page2Fond.met .lh .s small{display:block;font:800 10.5px 'Baloo 2',sans-serif;color:#7a5a38}
+/* LE PANNEAU DE LA DESTINATION GARDE SA TAILLE, et c'est « margin-bottom:
+   auto » qui envoie les boutons se coller en bas de la carte. Le creux
+   qui reste est alors en creme, a l'interieur : il ressemble a de l'air
+   et plus a un oubli. Il peut tout de meme retrecir et defiler quand la
+   destination a beaucoup de lignes sur un petit ecran. */
+#page2Fond.met .sel{flex:0 1 auto;min-height:0;margin-bottom:auto;overflow-y:auto;border-radius:20px;background:#f3e2b8;box-shadow:0 4px 0 #dcc694;padding:16px}
+#page2Fond.met .sel b{display:block;font:400 26px 'Lilita One','Baloo 2',sans-serif;color:#3a2408}
+#page2Fond.met .sel small{display:block;font:800 13px 'Baloo 2',sans-serif;color:#7a5a38;margin:2px 0 10px}
+#page2Fond.met .sel em{display:block;font:800 15px 'Baloo 2',sans-serif;font-style:normal;color:#5a4428;background:#fff8e4;border-radius:12px;padding:8px 11px;margin:0 0 7px}
+#page2Fond.met .bg{flex:none;margin-top:14px;border:0;width:100%;background:linear-gradient(#ffe88a,#f0b838);box-shadow:0 0 0 3px #3a2408,0 6px 0 3px #3a2408;border-radius:18px;padding:12px;font:400 22px 'Lilita One','Baloo 2',sans-serif;color:#3a2408;margin-bottom:6px}
+#page2Fond.met .bg small{display:block;font:800 12px 'Baloo 2',sans-serif;color:#5a3a10}
+#page2Fond.met .bg:active{transform:translateY(3px);box-shadow:0 0 0 3px #3a2408,0 3px 0 3px #3a2408}`;document.head.appendChild(st);}
+$('page2Fond').className='met';$('page2').classList.add('on');
+const nomIci=(STATIONS_L1.find(x=>x[3]===ICI)||['','La ferme'])[1];
+const I=INFO[S[3]]||['🚇','',[]];
+$('page2Fond').innerHTML='<div class="hd"><div class="m">M</div><div class="tt"><small>LIGNE 1 · STATION '+nomIci.replace(/^(Le|La) /,'').toUpperCase()+'</small>Où vas-tu ?</div><button class="x" id="voyX">✕</button></div>'+
+'<div class="card"><div class="lh"><div class="tr"></div>'+STATIONS_L1.map(([c,n,,q],k)=>{const l=[12,50,88][k]||50, ici=q===ICI, on=q===S[3];
+return '<button class="s'+(ici?' ici':'')+(on?' on':'')+'" data-q="'+q+'" style="left:'+l+'%"><i></i><b>'+n+'</b><small>'+(ici?'tu es ici':(INFO[q]?INFO[q][1].replace(' de trajet','').replace('utes',''):''))+'</small></button>';}).join('')+'</div>'+
+'<div class="sel"><b>'+I[0]+' '+S[1]+'</b><small>'+I[1]+'</small>'+I[2].map(t=>'<em>'+t+'</em>').join('')+'</div>'+
+'<button class="bg" id="metGo">Partir pour '+S[1].replace(/^Le /,'le ').replace(/^La /,'la ')+'<small>LIGNE 1 · '+I[1].replace(' de trajet','').replace('minutes','MIN').toUpperCase()+'</small></button>'+(ICI==='port'?'<button class="bg" id="metTokyo" style="background:linear-gradient(#ff9ac0,#d85a8a)">🌸 Ligne 2 · Tokyo<small>LE TRAIN DE NUIT · AU QUAI DU MÉTRO</small></button>':'')+'</div>';
+$('voyX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+$('page2Fond').querySelectorAll('.lh .s').forEach(b=>b.onclick=()=>{if(b.classList.contains('ici'))return;vibrer(6);choisirLaDestination(b.dataset.q);});
+$('metGo').onclick=()=>{vibrer(10);$('page2').classList.remove('on');voyagerVers(S[0],'Direction '+S[1]);};
+if($('metTokyo'))$('metTokyo').onclick=()=>{vibrer(10);ouvrirLeQuaiTokyo();};
+}
 function dessinerLeCiel(cv,C){
 if(!cv)return;
 const W=cv.clientWidth||320, H=cv.clientHeight||560;
@@ -21657,90 +25653,7 @@ const h2=g.createRadialGradient(lx+1,ly-58,1,lx+1,ly-58,54);
 h2.addColorStop(0,'rgba(255,210,122,.32)');h2.addColorStop(1,'rgba(255,210,122,0)');
 g.fillStyle=h2;g.fillRect(lx-53,ly-111,108,108);}
 }
-async function voyagerVers(carte,nom){
-if(voyagerVers.enCours)return;voyagerVers.enCours=true;
-/* PLUS DE VOILE DE TRAJET : on part tout de suite, le lieu se charge directement. */
-try{e.ext={x:joueur.x,y:joueur.y};e.extc=CARTE;e.carte=carte;sauver();}catch(x){}
-/* ON ATTEND QUE LA SAUVEGARDE SOIT PARTIE avant de quitter la page. Elle
-   était lancée sans être attendue, et le changement d'adresse l'annulait :
-   le dernier bout de progrès se perdait à chaque voyage. */
-try{await envoyerSauvegarde(true);}catch(x){}
-const page=(carte==='foret')?'foret.html':((carte==='ferme')?'ferme.html':'jeu.html?carte='+carte);
-/* D'OÙ L'ON VIENT, DIT DANS L'ADRESSE. Le port a deux entrées — le
-   chemin des champs à l'ouest, la sente du bois à l'est — et les deux
-   déposaient au même endroit : en venant de la ferme on se retrouvait
-   à l'autre bout du quai. */
-location.href=page+(page.indexOf('?')<0?'?':'&')+'arrivee=1&de='+CARTE+'&v='+Date.now();
-}
 let ETB=null, FUMIER_DOSES=0;
-const CSS_ETB=`
-/* ================= L'ENCLOS, VU DU DESSUS =================
-   Pas de liste : le pré lui-même, avec les bêtes dessus et une étiquette
-   sur chacune. On appuie sur une bête pour agir. */
-/* LA PAGE OCCUPE TOUT L'ÉCRAN. Sans hauteur explicite, le pré se
-   réduisait à rien et l'on voyait le jeu au travers. */
-/* LE CARNET DE FERME : écran clair, papier. Le pixel art des bêtes ressort
-   mieux sur crème que sur vert sombre, et les trois univers de couleur qui
-   se cognaient (vert, marron de l'abri, doré) tombent à un seul. */
-#page2Fond.etb{position:absolute;inset:0;background:#efe3c8;
-display:flex;flex-direction:column;overflow:hidden}
-#page2Fond.etb .tete{flex:none;position:relative;
-padding:calc(env(safe-area-inset-top,0px) + 13px) 14px 10px}
-#page2Fond.etb .tete small{display:block;font:700 7.5px ui-monospace,monospace;
-letter-spacing:3px;color:#9fc47a}
-#page2Fond.etb .tete b{display:block;font:400 21px Georgia,serif;color:#f0e6d2;margin-top:1px}
-#page2Fond.etb .tete .eu{position:absolute;right:54px;bottom:12px;
-font:700 13px 'Baloo 2',sans-serif;color:#f0cf7d}
-#page2Fond.etb .tete button{position:absolute;right:12px;
-top:calc(env(safe-area-inset-top,0px) + 11px);
-width:34px;height:34px;border-radius:50%;border:0;
-background:rgba(255,255,255,.1);color:#f0e6d2;font:700 15px 'Baloo 2',sans-serif}
-#page2Fond.etb .scene{position:relative;flex:1 1 auto;min-height:220px;overflow:hidden;
-border-top:2px solid #2c4023;border-bottom:2px solid #2c4023}
-#page2Fond.etb .scene canvas{position:absolute;inset:0;width:100%;height:100%;
-image-rendering:pixelated}
-#page2Fond.etb .bulle{position:absolute;transform:translate(-50%,-100%);
-padding:4px 9px;border-radius:12px;background:rgba(14,20,10,.84);
-font:700 10px 'Baloo 2',sans-serif;color:#f0e6d2;
-border:1px solid rgba(201,162,74,.45);white-space:nowrap;
-box-shadow:0 3px 10px rgba(0,0,0,.4)}
-#page2Fond.etb .bulle u{display:block;text-decoration:none;
-font:italic 8px Georgia,serif;color:#9fc47a}
-#page2Fond.etb .bulle.pret{background:rgba(201,162,74,.94);color:#1d1708;border-color:#f0d78a}
-#page2Fond.etb .bulle.pret u{color:#4a3a10}
-#page2Fond.etb .bulle.vide{background:rgba(14,20,10,.72);border-style:dashed}
-#page2Fond.etb .bas{flex:none;padding:11px 12px calc(env(safe-area-inset-bottom,0px) + 13px);
-background:linear-gradient(180deg,#20301a,#16200f)}
-#page2Fond.etb .lot{display:flex;gap:7px}
-#page2Fond.etb .lot button{flex:1;border:1px solid rgba(159,196,122,.22);border-radius:12px;
-padding:9px 2px 8px;background:#2c4023;color:#dff0cc;font:700 10.5px 'Baloo 2',sans-serif}
-#page2Fond.etb .lot button i{display:block;font-style:normal;
-font:italic 8px Georgia,serif;color:#9fb490;margin-top:1px}
-#page2Fond.etb .lot button.p{background:linear-gradient(180deg,#f0d78a,#d8a84a);
-color:#241a06;border-color:#f6e6b0;box-shadow:0 3px 0 rgba(0,0,0,.26)}
-#page2Fond.etb .lot button.p i{color:#5a4410}
-#page2Fond.etb .lot button:disabled{opacity:.45}
-#page2Fond.etb .mot{margin:0 1px 9px;font:italic 10.5px Georgia,serif;color:#9fb490}
-#page2Fond.etb .tiroir{position:absolute;left:0;right:0;bottom:0;z-index:4;
-background:#fbf5e6;border-top:2px solid #d8c6a0;border-radius:18px 18px 0 0;
-padding:14px 15px 16px;transform:translateY(102%);transition:transform .22s;
-box-shadow:0 -8px 24px rgba(90,74,40,.22)}
-#page2Fond.etb .tiroir.on{transform:none}
-#page2Fond.etb .tiroir .h{display:flex;align-items:center;gap:11px;margin-bottom:11px}
-#page2Fond.etb .tiroir canvas{width:52px;height:52px;border-radius:12px;
-image-rendering:pixelated;flex:none;background:#e6dcc0;border:1px solid #cdbb96}
-#page2Fond.etb .tiroir b{display:block;font:400 17px Georgia,serif;color:#3a2c1a}
-#page2Fond.etb .tiroir em{font-style:normal;font:400 12px 'Baloo 2',sans-serif;color:#8a7a5e}
-#page2Fond.etb .tiroir .x{margin-left:auto;border:1px solid #d8c6a0;background:#efe3c8;
-color:#3a2c1a;width:32px;height:32px;border-radius:50%;font:700 14px 'Baloo 2',sans-serif}
-#page2Fond.etb .tiroir .act{display:flex;gap:8px;flex-wrap:wrap}
-#page2Fond.etb .tiroir .act button{flex:1;min-width:96px;border:1px solid #d8c6a0;
-border-radius:12px;padding:12px 0;font:700 13px 'Baloo 2',sans-serif;
-background:#fbf5e6;color:#5a7a2e}
-#page2Fond.etb .tiroir .act button.p{background:linear-gradient(180deg,#f3d992,#e3c069);
-border-color:#c9a24a;color:#3a2a08}
-#page2Fond.etb .tiroir .act button:disabled{opacity:.45}
-`;
 
 /* ================= LES POULES =================
    Elle était appelée par la basse-cour ET par le portrait de l'étable, mais
@@ -21904,6 +25817,47 @@ let ETB_PRE=null, ETB_BOUCLE=0;
 const etbDuree=(s)=>{if(s==null)return '';
 const h=Math.floor(s/3600), m=Math.floor(s%3600/60);
 return h>0?(h+' h '+(m<10?'0':'')+m):(Math.max(1,m)+' min');};
+function placesDuTroupeau(E){
+const L=[];
+const pose=(esp,n,b)=>{for(let k=0;k<n;k++)L.push({esp,i:k,robe:k,
+fx:0.08+PR_h(b+k*7,k*3+1,141)*0.84,
+fy:0.16+PR_h(b+k*11,k*5+2,142)*0.72,
+ph:PR_h(k,b,143)*6.283});};
+pose('vache',E.vaches||0,11);
+pose('mouton',E.moutons||0,37);
+pose('cochon',E.cochons||0,71);
+return L;}
+function peindreLePre(cv,L,t){
+const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+const D=Math.min(2,window.devicePixelRatio||1);
+const W=Math.round(cv.clientWidth)||Math.round(cv.parentNode.clientWidth)||300;
+const H=Math.round(cv.clientHeight)||Math.round(cv.parentNode.clientHeight)||260;
+if(W<10||H<10)return;
+if(cv.width!==W*D||cv.height!==H*D){cv.width=W*D;cv.height=H*D;}
+g.setTransform(D,0,0,D,0,0);
+for(let y=0;y<H;y+=2)for(let x=0;x<W;x+=2){
+const n=PR_h(x,y,101);
+g.fillStyle=n<.38?'#4e7a38':(n<.72?'#58873f':'#447030');
+g.fillRect(x,y,2,2);}
+const nb=Math.round(W*H/900);
+for(let k=0;k<nb;k++){
+const tx=Math.floor(PR_h(k,8,102)*W), ty=Math.floor(PR_h(k,9,103)*H);
+g.fillStyle='rgba(30,48,22,.3)';g.fillRect(tx-1,ty+1,6,1);
+for(let b=0;b<4;b++){g.fillStyle=PR_h(k,b,104)<.5?'#63954a':'#6fa052';
+g.fillRect(tx+b,ty-(b%2?3:2),1,3);}}
+for(let p=0;p<W;p+=7){
+const h=11+Math.round(PR_h(p,1,105)*4), c=PR_h(p,2,106);
+g.fillStyle=c<.35?'#8a6238':(c<.7?'#7d5934':'#96703f');
+g.fillRect(p,0,5,h);
+g.fillStyle='#a5764a';g.fillRect(p+1,h,3,2);}
+L.forEach(o=>{
+const bal=Math.sin(t/900+o.ph);
+o.x=Math.round(o.fx*(W-70))+35+Math.round(bal*5);
+o.y=Math.round(o.fy*(H-70))+40;});
+/* LA PROFONDEUR : celles du fond passent derrière celles du devant. */
+L.slice().sort((a,b)=>a.y-b.y).forEach(o=>{
+dessinerBete(g,o.esp,o.x,o.y,o.esp==='mouton'?1.25:1.5,true,o.robe,
+Math.cos(t/900+o.ph)>0?1:-1,'broute',t/420+o.ph);});}
 /* ======================================================================
    L'ÉCRAN DE LA FERME : UNE SEULE PORTE POUR TOUT
    ----------------------------------------------------------------------
@@ -22021,126 +25975,9 @@ let FER_BOUCLE=0;
 /* ---------- CE QUI RESTE EN PROPRE À L'ÉTABLE ----------
    Le pré encadré, l'abri à poules et la ligne-bouton. Tout le reste
    vient de CARNET(). */
-const CSS_ETB_CARNET=`
-#page2Fond.etb .l canvas{flex:none;width:44px;height:44px;border-radius:11px;background:#e6dcc0}
-/* LA LIGNE QUI AGIT : la même carte, avec son bouton au bout. */
-/* L'ABRI À POULES : une carte comme les autres, avec ses rangs dedans. */
-#page2Fond.etb .abri{border:1px solid #d6c4a0;border-radius:15px;background:rgba(255,255,255,.62);padding:4px 13px 10px;margin-top:9px}
-#page2Fond.etb .abri .rub{font:700 9px Arial;letter-spacing:1.6px;color:#8a6238;padding:11px 0 6px}
-#page2Fond.etb .abri .row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #e3d6b8}
-#page2Fond.etb .abri .row:first-of-type{border-top:0}
-#page2Fond.etb .abri .nm{flex:1;min-width:0}
-#page2Fond.etb .abri .nm b{display:block;font:400 15px Georgia;line-height:1.3}
-#page2Fond.etb .abri .nm i{font:italic 11px Georgia;color:#7a6a4e;line-height:1.35}
-#page2Fond.etb .abri .faim{color:#b4502e}
-#page2Fond.etb .abri button{flex:none;border:0;border-radius:12px;padding:9px 13px;background:#4e7a38;color:#fbf5e6;font:700 10px Arial;letter-spacing:1.2px}
-#page2Fond.etb .abri button.pris{background:#cdbd9c;color:#7a6a4e}
-`;
 /* ================= L'ÉCRAN DES BÊTES, EN FICHES =================
    Un bandeau de pré en haut pour garder le troupeau sous les yeux, puis
    une fiche par espèce : portrait, jauge, et le geste qui va avec. */
-const CSS_BETES=`
-/* LE CARNET DE FERME. Trois choix tenus, contre ce qu'il y avait avant :
-   - UNE SEULE famille de couleur. L'encart marron de l'abri planté au milieu
-     d'une liste verte était le point le plus laid de l'écran : il devient
-     une carte comme les autres.
-   - UNE SEULE typo pour les libellés. Avant il y en avait quatre — Baloo,
-     Georgia italique, du monospace espacé à 3 px, plus les émojis ⌂ ✓ ⏱ qui
-     ne se dessinent pas pareil d'un téléphone à l'autre. Georgia ne reste
-     que pour les titres, où il sert vraiment.
-   - DES JAUGES DE 8 PX. À 4 px on ne les voyait pas. */
-/* LA SAFE-AREA EST SUR LA MARGE DU CADRE, plus sur le padding du chapeau :
-   le bandeau ne colle plus au bord haut, donc c'est lui qui doit descendre
-   sous l'encoche, sinon le titre passe dessous sur un iPhone. */
-#page2Fond.etb .bande{position:relative;flex:none;height:152px;
-margin:calc(env(safe-area-inset-top,0px) + 12px) 14px 0;
-border:5px solid #8a6238;border-radius:14px;background:#365426;overflow:hidden}
-#page2Fond.etb .bande canvas{position:absolute;inset:0;width:100%;height:100%;
-image-rendering:pixelated}
-#page2Fond.etb .chap{position:absolute;left:0;right:0;top:0;display:flex;
-align-items:center;gap:9px;padding:9px 11px;
-background:linear-gradient(180deg,rgba(12,18,8,.72),rgba(12,18,8,0))}
-#page2Fond.etb .chap .ti{flex:1;min-width:0}
-#page2Fond.etb .chap small{display:block;font:700 11px 'Baloo 2',sans-serif;
-letter-spacing:0;color:#d8e4c0}
-#page2Fond.etb .chap b{display:block;font:400 19px Georgia,serif;color:#fbf5e6}
-#page2Fond.etb .chap .eu{background:#fbf5e6;color:#3a2c1a;
-border-radius:12px;padding:4px 10px;font:700 13px 'Baloo 2',sans-serif}
-#page2Fond.etb .chap button{flex:none;width:28px;height:28px;border-radius:50%;border:0;
-background:rgba(12,18,8,.55);color:#fbf5e6;font:700 13px 'Baloo 2',sans-serif}
-#page2Fond.etb .foin{position:absolute;left:0;right:0;bottom:0;display:flex;
-align-items:center;gap:9px;padding:8px 11px;
-background:linear-gradient(0deg,rgba(12,18,8,.86),rgba(12,18,8,0))}
-#page2Fond.etb .foin span{flex:1;font:700 12px 'Baloo 2',sans-serif;color:#f0ead8}
-#page2Fond.etb .foin i{font-style:normal;font:400 12px 'Baloo 2',sans-serif;color:#bfcfa8}
-#page2Fond.etb .foin .ja{flex:none;width:84px;height:7px;background:rgba(0,0,0,.45);
-border-radius:4px;overflow:hidden}
-#page2Fond.etb .foin .ja b{display:block;height:100%;background:#c98a2c}
-#page2Fond.etb .liste{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
-padding:16px 14px calc(env(safe-area-inset-bottom,0px) + 14px)}
-/* LE BOUTON DE RÉCOLTE : le seul objet plein de l'écran. */
-#page2Fond.etb .tout{width:100%;display:flex;align-items:center;gap:12px;
-border:2px solid #c9a24a;border-radius:14px;padding:13px 14px;
-background:linear-gradient(180deg,#f3d992,#e8c877);color:#3a2a08;
-text-align:left;margin-bottom:18px}
-#page2Fond.etb .tout .ic{order:2;margin-left:auto;flex:none;width:28px;height:28px;
-border-radius:50%;background:#c9a24a;color:#fbf5e6;
-font:700 15px 'Baloo 2',sans-serif;line-height:28px;text-align:center}
-#page2Fond.etb .tout .nm{flex:1;min-width:0}
-#page2Fond.etb .tout b{display:block;font:700 18px 'Baloo 2',sans-serif}
-#page2Fond.etb .tout i{display:block;font-style:normal;
-font:400 13px 'Baloo 2',sans-serif;color:#7a5c18;margin-top:2px}
-#page2Fond.etb .tout.pris{background:#e7dbc1;border-color:#d2c09a;color:#6e6048}
-#page2Fond.etb .tout.pris .ic{background:#cbbb97}
-#page2Fond.etb .tout.pris i{color:#8a7a5e}
-#page2Fond.etb .eti{margin:0 2px 10px;font:700 11px 'Baloo 2',sans-serif;
-letter-spacing:2px;color:#8a7a5e}
-/* UNE FICHE PAR ESPÈCE, posée comme une carte sur le papier. */
-#page2Fond.etb .fi{display:flex;align-items:center;gap:14px;background:#fbf5e6;
-border:1.5px solid #d8c6a0;border-radius:14px;padding:9px 14px 9px 12px;margin-bottom:10px;
-box-shadow:0 3px 0 rgba(120,100,60,.18)}
-#page2Fond.etb .fi.pret{border-color:#c9a24a}
-#page2Fond.etb .fi canvas{width:52px;height:52px;border-radius:12px;
-background:#e6dcc0;border:1px solid #cdbb96;image-rendering:pixelated;flex:none}
-#page2Fond.etb .fi .co{flex:1;min-width:0}
-#page2Fond.etb .fi .li{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-#page2Fond.etb .fi b{font:400 19px Georgia,serif;color:#3a2c1a}
-#page2Fond.etb .fi em{font-style:normal;font:700 13px 'Baloo 2',sans-serif;
-color:#8a7a5e;white-space:nowrap}
-#page2Fond.etb .fi em.or{color:#b98520}
-#page2Fond.etb .fi .ja{height:8px;background:#e2d5b6;border-radius:4px;
-margin-top:8px;overflow:hidden}
-#page2Fond.etb .fi .ja span{display:block;height:100%;border-radius:4px}
-#page2Fond.etb .fi .et{display:none}      /* le ✓ / ⏱ : la couleur du chiffre le dit déjà */
-#page2Fond.etb .vide{background:#f6efdc;border:1.5px dashed #cdbb96;
-border-radius:14px;padding:20px 14px;text-align:center;margin-bottom:10px}
-#page2Fond.etb .vide b{display:block;font:400 18px Georgia,serif;color:#3a2c1a}
-#page2Fond.etb .vide em{font-style:normal;font:400 13px 'Baloo 2',sans-serif;color:#8a7a5e}
-/* L'ABRI : la MÊME carte que les bêtes. Plus de bloc marron. */
-#page2Fond.etb .abri{background:#fbf5e6;border:1.5px solid #d8c6a0;border-radius:14px;
-padding:12px 14px 6px;margin-bottom:10px;box-shadow:0 3px 0 rgba(120,100,60,.18)}
-#page2Fond.etb .abri .rub{font:400 18px Georgia,serif;letter-spacing:0;
-color:#3a2c1a;margin-bottom:8px}
-#page2Fond.etb .abri .row{display:flex;align-items:center;gap:10px;padding:9px 0;
-border-top:1px solid #e4d8bc}
-#page2Fond.etb .abri .row:first-of-type{border-top:0}
-#page2Fond.etb .abri .row .nm{flex:1;min-width:0}
-#page2Fond.etb .abri .row b{display:block;font:700 14px 'Baloo 2',sans-serif;color:#3a2c1a}
-#page2Fond.etb .abri .row i{font-style:normal;font:400 12px 'Baloo 2',sans-serif;color:#8a7a5e}
-#page2Fond.etb .abri .row .faim{color:#b98520}
-#page2Fond.etb .abri .row button{flex:none;border:1.5px solid #c9a24a;
-border-radius:10px;padding:8px 13px;background:linear-gradient(180deg,#f3d992,#e8c877);
-color:#3a2a08;font:700 13px 'Baloo 2',sans-serif}
-#page2Fond.etb .abri .row button.pris{background:#e7dbc1;border-color:#d2c09a;color:#8a7a5e}
-#page2Fond.etb .pied{display:flex;gap:10px;margin-top:4px}
-#page2Fond.etb .pied button{flex:1;border:1.5px solid #d8c6a0;border-radius:13px;
-padding:13px 0;background:#fbf5e6;color:#5a7a2e;font:700 15px 'Baloo 2',sans-serif;
-box-shadow:0 3px 0 rgba(120,100,60,.18)}
-#page2Fond.etb .pied button.bois{border:0;background:#5a7a2e;color:#f4f0e0;
-box-shadow:0 3px 0 #3f5a1c}
-#page2Fond.etb .mot{margin:12px 2px 0;font:400 13px 'Baloo 2',sans-serif;
-color:#8a7a5e;text-align:center}
-`;
 /* ================= LES GESTES DES POULES =================
    Les mêmes appels qu'au poulailler : seul l'écran a changé de place. */
 /* TOUT RAMASSER : les œufs, le lait, la laine et les truffes d'un geste. */
@@ -22154,127 +25991,12 @@ let ETB_OCCUPE=false;
    Le serveur savait déjà tout faire : etable_cave prend 4 L de lait dans le
    sac, les met en cave deux heures, et rend une meule. Elle n'était appelée
    nulle part — il manquait seulement l'écran. */
-const CSS_FRO = `
-#page2Fond.fro{position:absolute;inset:0;background:#efe3c8;
-display:flex;flex-direction:column;overflow:hidden}
-#page2Fond.fro .cadre{position:relative;flex:none;
-margin:calc(env(safe-area-inset-top,0px) + 12px) 14px 0;
-border:5px solid #8a6238;border-radius:14px;background:#4e7a38;overflow:hidden}
-#page2Fond.fro .cadre canvas{display:block;width:100%;height:150px;image-rendering:pixelated}
-#page2Fond.fro .chap{position:absolute;left:0;right:0;top:0;display:flex;
-align-items:center;gap:9px;padding:9px 11px;
-background:linear-gradient(180deg,rgba(12,18,8,.72),rgba(12,18,8,0))}
-#page2Fond.fro .chap .ti{flex:1;min-width:0}
-#page2Fond.fro .chap small{display:block;font:700 11px 'Baloo 2',sans-serif;color:#d8e4c0}
-#page2Fond.fro .chap b{display:block;font:400 19px Georgia,serif;color:#fbf5e6}
-#page2Fond.fro .chap .eu{background:#fbf5e6;color:#3a2c1a;border-radius:12px;
-padding:4px 10px;font:700 13px 'Baloo 2',sans-serif}
-#page2Fond.fro .chap button{flex:none;width:28px;height:28px;border-radius:50%;border:0;
-background:rgba(12,18,8,.55);color:#fbf5e6;font:700 13px 'Baloo 2',sans-serif}
-#page2Fond.fro .corps{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
-padding:16px 14px calc(env(safe-area-inset-bottom,0px) + 14px)}
-#page2Fond.fro .eti{margin:0 2px 10px;font:700 11px 'Baloo 2',sans-serif;
-letter-spacing:2px;color:#8a7a5e}
-#page2Fond.fro .carte{background:#fbf5e6;border:1.5px solid #d8c6a0;border-radius:14px;
-padding:14px;margin-bottom:12px;box-shadow:0 3px 0 rgba(120,100,60,.18)}
-#page2Fond.fro .carte.pret{border-color:#c9a24a}
-#page2Fond.fro .carte .h{display:flex;align-items:center;gap:13px}
-#page2Fond.fro .carte canvas{width:56px;height:56px;flex:none;border-radius:12px;
-background:#bda987;border:1px solid #a8926e;image-rendering:pixelated}
-#page2Fond.fro .carte .nm{flex:1;min-width:0}
-#page2Fond.fro .carte b{display:block;font:400 19px Georgia,serif;color:#3a2c1a}
-#page2Fond.fro .carte i{font-style:normal;font:400 12.5px 'Baloo 2',sans-serif;color:#8a7a5e}
-#page2Fond.fro .ja{height:8px;background:#e2d5b6;border-radius:4px;margin-top:12px;overflow:hidden}
-#page2Fond.fro .ja span{display:block;height:100%;background:#c9a24a;border-radius:4px}
-#page2Fond.fro .carte button{width:100%;margin-top:12px;border:1.5px solid #c9a24a;
-border-radius:12px;padding:13px 0;background:linear-gradient(180deg,#f3d992,#e8c877);
-color:#3a2a08;font:700 15px 'Baloo 2',sans-serif}
-#page2Fond.fro .carte button:disabled{background:#e7dbc1;border-color:#d2c09a;color:#8a7a5e}
-#page2Fond.fro .note{margin:2px 2px 0;font:400 12.5px 'Baloo 2',sans-serif;
-color:#8a7a5e;text-align:center}
-#page2Fond.fro .mot{margin:12px 2px 0;font:400 13px 'Baloo 2',sans-serif;
-color:#b98520;text-align:center}
-`;
 let FRO_OCCUPE=false, FRO_BOUCLE=0;
+function froDuree(sec){const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60);
+return h>0?(h+' h '+(m<10?'0':'')+m):(Math.max(1,m)+' min');}
 /* ---------- CE QUI RESTE EN PROPRE AU MARCHÉ ----------
    La réplique de Lucien et la pancarte, plus large que les vignettes du
    menu : une bête ne tient pas dans un carré de quarante pixels. */
-const CSS_MK_CARNET=`
-#page2Fond .mk .dit{font:italic 12.5px Georgia;color:#6b5a3e;background:rgba(255,255,255,.5);border-left:3px solid #c9a24a;border-radius:0 10px 10px 0;padding:9px 12px;margin:-4px 0 4px;line-height:1.5}
-#page2Fond .mk .bande canvas{height:140px}
-#page2Fond .mk .l canvas{flex:none;width:44px;height:44px;border-radius:11px;background:#e6dcc0}
-#page2Fond .mk .grille{gap:8px}
-#page2Fond .mk .t{padding:9px 6px 10px;gap:5px}
-#page2Fond .mk .t canvas{width:100%;height:auto;border-radius:9px;background:#e6dcc0}
-#page2Fond .mk .t b{font:400 13px Georgia}
-#page2Fond .mk .t em{font:italic 10.5px Georgia;color:#7a6a4e;text-align:center;line-height:1.3}
-#page2Fond .mk .t i{font-style:normal;font:700 10px Arial;letter-spacing:1px;border-radius:11px;padding:6px 10px;background:#4e7a38;color:#fbf5e6;margin-top:2px}
-#page2Fond .mk .t[disabled]{opacity:.55}
-#page2Fond .mk .t[disabled] i{background:#cdbd9c;color:#7a6a4e}
-`;
-const CSS_MARCHE=`
-/* LE MARCHÉ SUIT LE CARNET. Il était resté en vert sombre pendant que
-   l'étable passait au papier : on sortait d'un écran clair pour tomber sur
-   un écran noir. Mêmes surfaces, mêmes bords, même doré — et les pancartes
-   marron deviennent des cartes crème, comme l'abri à poules avant elles. */
-#page2Fond .mk{position:absolute;inset:0;z-index:6;background:#efe3c8;
-display:flex;flex-direction:column;overflow:hidden}
-#page2Fond .mk .etal{position:relative;flex:none;
-margin:calc(env(safe-area-inset-top,0px) + 12px) 14px 0;
-border:5px solid #8a6238;border-radius:14px;background:#2a3a1c;overflow:hidden}
-#page2Fond .mk .etal canvas{display:block;width:100%;height:158px;image-rendering:pixelated}
-#page2Fond .mk .dit{position:absolute;left:9px;bottom:9px;max-width:66%;
-background:rgba(251,245,230,.94);border:1px solid #c9a24a;
-border-radius:12px;padding:6px 11px;color:#3a2c1a;
-font:700 12px 'Baloo 2',sans-serif}
-#page2Fond .mk .dit u{display:block;text-decoration:none;
-font-style:normal;font:400 12px 'Baloo 2',sans-serif;color:#8a7a5e}
-#page2Fond .mk .eu{position:absolute;right:46px;top:9px;
-background:#fbf5e6;color:#3a2c1a;border-radius:12px;
-padding:4px 10px;font:700 13px 'Baloo 2',sans-serif}
-#page2Fond .mk .x{position:absolute;right:9px;top:9px;width:28px;height:28px;
-border-radius:50%;border:0;background:rgba(12,18,8,.55);color:#fbf5e6;
-font:700 13px 'Baloo 2',sans-serif}
-#page2Fond .mk .corps{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
-padding:16px 14px calc(env(safe-area-inset-bottom,0px) + 14px)}
-#page2Fond .mk .eti{margin:0 2px 10px;font:700 11px 'Baloo 2',sans-serif;
-letter-spacing:2px;color:#8a7a5e}
-#page2Fond .mk .eti+.eti,#page2Fond .mk .pan+.eti{margin-top:18px}
-#page2Fond .mk .lot{display:flex;align-items:center;gap:13px;background:#fbf5e6;
-border:1.5px solid #d8c6a0;border-left:6px solid #c9a24a;border-radius:14px;
-padding:10px 14px;margin-bottom:10px;box-shadow:0 3px 0 rgba(120,100,60,.18)}
-#page2Fond .mk .lot.rien{background:#f6efdc;border:1.5px dashed #cdbb96;
-box-shadow:none;opacity:.8}
-/* LA TUILE DES MARCHANDISES EST PLUS SOMBRE QUE LES AUTRES : le seau de
-   lait et les toisons sont blancs. Sur le crème des portraits de bêtes ils
-   disparaissaient purement et simplement. */
-#page2Fond .mk .lot canvas{width:44px;height:44px;flex:none;border-radius:11px;
-background:#bda987;border:1px solid #a8926e;image-rendering:pixelated}
-#page2Fond .mk .lot span{flex:1;min-width:0}
-#page2Fond .mk .lot b{display:block;font:400 18px Georgia,serif;color:#3a2c1a}
-#page2Fond .mk .lot em{font-style:normal;font:400 12px 'Baloo 2',sans-serif;color:#8a7a5e}
-#page2Fond .mk .lot button{flex:none;border:1.5px solid #c9a24a;border-radius:11px;
-padding:10px 14px;background:linear-gradient(180deg,#f3d992,#e8c877);
-color:#3a2a08;font:700 14px 'Baloo 2',sans-serif}
-/* LES TROIS PANCARTES : des cartes de la même famille que les lots, plus
-   le portrait sur fond crème — le carré d'herbe faisait une vignette sale. */
-#page2Fond .mk .pan{display:flex;gap:10px;margin-top:2px}
-#page2Fond .mk .pan>div{flex:1;min-width:0;background:#fbf5e6;
-border:1.5px solid #d8c6a0;border-radius:14px;padding:8px 7px 10px;
-text-align:center;box-shadow:0 3px 0 rgba(120,100,60,.18)}
-#page2Fond .mk .pan>div.plein{background:#efe6d0;border-style:dashed;
-border-color:#cdbb96;box-shadow:none}
-#page2Fond .mk .pan canvas{width:100%;height:56px;background:#e6dcc0;
-border:1px solid #cdbb96;border-radius:10px;image-rendering:pixelated}
-#page2Fond .mk .pan b{display:block;font:400 16px Georgia,serif;
-color:#3a2c1a;margin:7px 0 1px}
-#page2Fond .mk .pan em{font-style:normal;font:400 11.5px 'Baloo 2',sans-serif;color:#8a7a5e}
-#page2Fond .mk .pan button{width:100%;margin-top:7px;border:1.5px solid #c9a24a;
-border-radius:10px;padding:8px 0;
-background:linear-gradient(180deg,#f3d992,#e8c877);color:#3a2a08;
-font:700 13px 'Baloo 2',sans-serif}
-#page2Fond .mk .pan button:disabled{background:#e7dbc1;border-color:#d2c09a;color:#8a7a5e}
-`;
 /* LES MARCHANDISES, dessinées au pixel comme les bêtes */
 const MARCH_DESSIN={
 lait:(R)=>{R(5,6,10,3,'#d8d2c4');R(4,9,12,18,'#f2efe4');R(4,9,12,2,'#ffffff');
@@ -22283,12 +26005,61 @@ laine:(R)=>{R(4,10,22,16,'#e8e2d4');for(let k=0;k<22;k+=4)R(4+k,7,6,6,'#f2efe4')
 R(4,24,22,2,'#c8c2b4');R(9,14,4,4,'#d8d2c4');R(17,17,4,4,'#d8d2c4');},
 truffe:(R)=>{R(8,12,14,12,'#3a2b1e');R(8,12,14,2,'#4e3a28');R(10,22,10,3,'#2a1e14');
 R(12,15,3,3,'#5a4432');R(17,18,2,2,'#5a4432');R(13,9,2,4,'#4e3a28');}};
+function dessinerMarchandise(cv,quoi){
+try{const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+const D=Math.min(2,window.devicePixelRatio||1);
+/* CHAQUE MARCHANDISE EST CENTRÉE DANS SA TUILE : le seau ne fait que douze
+   unités de large sur trente, il se collait à gauche. */
+cv.width=44*D;cv.height=44*D;const S=D*44/32;g.setTransform(S,0,0,S,0,0);
+const CAL={lait:[6,-0.5],laine:[1,-0.5],truffe:[1,-1]}[quoi]||[1,0];
+g.translate(CAL[0],CAL[1]+1);
+const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+(MARCH_DESSIN[quoi]||MARCH_DESSIN.lait)(R);}catch(x){}}
 /* L'ÉTAL : le décor du marché, redessiné à chaque ouverture. */
+function peindreLEtal(cv,E,C){
+const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+const W=180,H=85,D=Math.min(2,window.devicePixelRatio||1)*2;
+cv.width=W*D;cv.height=H*D;g.setTransform(D,0,0,D,0,0);
+const al=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+for(let y=0;y<H;y+=2)for(let x=0;x<W;x+=2){const n=al(x*1.7+y*0.9);
+g.fillStyle=y<34?(n<.5?'#2b3f20':'#304724'):(n<.38?'#4e7a38':(n<.72?'#58873f':'#447030'));
+g.fillRect(x,y,2,2);}
+for(let p=0;p<W;p+=7){const h=9+Math.round(al(p)*3);
+R(p,0,5,h,al(p*2)<.5?'#8a6238':'#7d5934');R(p+1,h,3,2,'#a5764a');}
+R(14,20,152,4,'#6a4a28');
+for(let s=0;s<150;s+=10){R(15+s,24,5,9,'#c23b2a');R(20+s,24,5,9,'#f4ecd8');}
+for(let s=0;s<155;s+=5)R(15+s,33,4,2,al(s)<.5?'#b03424':'#e4dcc8');
+R(16,24,3,32,'#7d5934');R(162,24,3,32,'#7d5934');
+R(22,52,136,14,'#8a6238');R(22,52,136,2,'#a5764a');R(22,64,136,2,'#5e4024');
+for(let b=26;b<156;b+=13)R(b,54,1,10,'#6e4e2c');
+if((E.moutons||0)>0)dessinerBete(g,'mouton',44,50,0.95);
+if((E.cochons||0)>0)dessinerBete(g,'cochon',132,50,0.95);
+if((E.vaches||0)>0)dessinerBete(g,'vache',152,48,0.85);
+R(84,34,14,16,'#5a6b8f');R(84,34,14,2,'#6c7da1');R(86,50,4,5,'#3a3228');R(93,50,4,5,'#3a3228');
+R(86,26,11,9,'#e8c49a');R(86,26,11,2,'#f2d2ae');R(84,24,15,4,'#7d5934');R(83,27,17,2,'#8a6238');
+R(88,30,1,1,'#2a241e');R(94,30,1,1,'#2a241e');R(89,33,4,1,'#b0836a');
+R(80,38,5,10,'#e8c49a');R(97,38,5,10,'#e8c49a');
+R(100,44,9,7,'#d8a84a');R(100,44,9,2,'#f0d78a');R(102,46,2,2,'#8a6a20');
+R(52,56,12,8,'#c9a040');R(52,56,12,2,'#e0c060');R(116,55,14,9,'#f2efe4');R(116,55,14,2,'#ffffff');
+/* L'ARDOISE : les cours du matin, écrits à la craie. */
+R(62,34,48,15,'#2a241e');R(63,35,46,13,'#3a3228');
+const craie=(x,y,t)=>{g.fillStyle='#e4dcc8';
+for(let i=0;i<t.length;i++){const c=t[i];
+if(c==='.')R(x+i*4+1,y+4,1,1,'#e4dcc8');
+else if(c==='|')R(x+i*4+1,y,1,5,'#e4dcc8');
+else if(c==='^'){R(x+i*4+1,y,1,5,'#e4dcc8');R(x+i*4,y+1,3,1,'#e4dcc8');}
+else if(c==='v'){R(x+i*4+1,y,1,5,'#e4dcc8');R(x+i*4,y+3,3,1,'#e4dcc8');}
+else R(x+i*4,y+2,3,1,'#e4dcc8');}};
+craie(66,37,'-|-.');craie(66,43,'-^-.');craie(90,37,'|-.-');craie(90,43,'-v|.');}
 const BORD_Z={x0:752,x1:1572,y0:88,y1:462};
+function bordAlea(n){const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);}
+function bordBuisson(g,x,y,r,k){const cs=['#2f5b34','#3d6b3a','#4a7a3e'];for(let i=0;i<7;i++){const a=bordAlea(k*7+i)*6.28,d=bordAlea(k*3+i)*r*0.6;g.fillStyle=cs[i%3];g.beginPath();g.arc(x+Math.cos(a)*d,y+Math.sin(a)*d*0.6,r*(0.55+bordAlea(k+i)*0.3),0,7);g.fill();}
+g.fillStyle='#6a9a4e';g.beginPath();g.arc(x-r*0.3,y-r*0.4,r*0.3,0,7);g.fill();}
 let BORD_F=null;
 const bordDecorVrai=dessinerDecor;
 dessinerDecor=function(g,camX,camY,VW2,VH2,acteurs){
-if(CHAMPS_SEULS&&CARTE==='village'){if(!BORD_F)BORD_F=null;const Z=BORD_Z;g.drawImage(BORD_F,Math.round(Z.x0-camX),Math.round(Z.y0-camY),Z.x1-Z.x0,Z.y1-Z.y0);}
+if(CHAMPS_SEULS&&CARTE==='village'){if(!BORD_F)BORD_F=graverBordureFerme();const Z=BORD_Z;g.drawImage(BORD_F,Math.round(Z.x0-camX),Math.round(Z.y0-camY),Z.x1-Z.x0,Z.y1-Z.y0);}
 return bordDecorVrai(g,camX,camY,VW2,VH2,acteurs);};
 {const bloqueFermeVrai=bloque;bloque=function(x,y){
 if(FORET_SEULE&&CARTE==='village'&&dansEtang(x,y,-4)){
@@ -22302,12 +26073,24 @@ if(FORET_SEULE&&CARTE==='village'&&(x<FZ.x0+10||y<FZ.y0+12||y>FZ.y1-8||x>rivX(y)
 return bloqueFermeVrai(x,y);};}
 /* L'ÉCRAN DU POULAILLER EST SUPPRIMÉ : son menu vit dans l'enclos.
    Seule la relecture régulière de l'état des poules reste utile. */
-setTimeout(()=>(()=>{})(),2800);
-setInterval(()=>{if(CARTE==='village'&&document.visibilityState==='visible')(()=>{})();},90000);
+setTimeout(()=>poulCharger(),2800);
+setInterval(()=>{if(CARTE==='village'&&document.visibilityState==='visible')poulCharger();},90000);
 const PZ=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(0.5,w),Math.max(0.5,h));};
 const PIERRE6={s:'#5f5a50',o:'#77705f',p:'#8f8672',c:'#a89d86',h:'#c2b79e',t:'#d8cfb6'};
 const BOIS6={s:'#3d2a17',o:'#5b3f21',p:'#7d5934',c:'#8a6238',h:'#a5764a',t:'#c09a6a'};
 const COUR=FERME_SEULE?{x0:1530,x1:1866,y0:226,y1:392}:{x0:1256,x1:1866,y0:226,y1:392};   /* la cour se resserre à droite du champ */
+function graverSolCour(){const W=COUR.x1-COUR.x0, H=COUR.y1-COUR.y0, E=2, c=document.createElement('canvas');c.width=W*E;c.height=H*E;const g=c.getContext('2d');
+g.imageSmoothingEnabled=false;g.setTransform(E,0,0,E,0,0);const R=(x,y,w,h,col)=>PZ(g,x,y,w,h,col);
+TEX(g,0,0,W,H,(x,y)=>{const n=alea(x*3.7+y*5.3);return n<0.3?'#c9b48a':(n<0.65?'#d4c098':(n<0.9?'#bea878':'#dccaa4'));});
+for(let k=0;k<2600;k++){const x=alea(k*1.9)*W, y=alea(k*3.1)*H, n=alea(k*4.7);R(x,y,n<0.5?1:0.5,0.5,n<0.3?'#a8987a':(n<0.7?'#e8dcc0':'#b8a888'));
+if(n>0.96){R(x,y+0.5,1.5,0.5,'rgba(60,50,30,.25)');R(x,y-0.5,1.5,1,'#9aa0a6');}}
+[[0,H*0.45,W*0.35,H*0.5],[W*0.12,0,W*0.2,H*0.5],[W*0.45,0,W*0.52,H*0.45],[W*0.78,0,W*0.84,H*0.5]].forEach(([x0,y0,x1,y1])=>{
+for(let k=0;k<700;k++){const x=x0+alea(k*2.1+x0)*(x1-x0), y=y0+alea(k*3.3+y0)*(y1-y0);R(x,y,1,0.5,'#b8a47e');}});
+const pierre=(x,y,w,h)=>{const n=alea(x*1.3+y*2.1);R(x,y,w,h,n<0.4?'#9a927e':(n<0.8?'#aea690':'#c2baa2'));R(x,y,w,0.5,'#d8d0b8');R(x,y+h-0.5,w,0.5,'#7e7666');};
+for(let x=0;x<W;x+=5){pierre(x,H-4,4.5,4);}for(let y=0;y<H-4;y+=5){pierre(0,y,4,4.5);pierre(W-4,y,4,4.5);}
+for(let k=0;k<180;k++){const bord=k%3, t=alea(k*2.7);const x=bord===0?4+t*6:(bord===1?W-10+t*6:t*W), y=bord===2?H-8+alea(k)*3:alea(k*5.1)*H;
+R(x,y-2,0.5,2,'#6f8449');R(x+0.5,y-1.5,0.5,1.5,'#7d9450');R(x,y-2.5,0.5,0.5,'#9cb072');}
+return c;}
 function calque(cv,W,H,sol){return {toile:cv,W,H,sol,nuit:null};}
 /* ======================================================================
    LE VERGER
@@ -22490,7 +26273,7 @@ fruit(g,fx,fy,esp,A,gros,k+G);}
    un demi-pixel, que le navigateur mélange avec ce qu'il y a dessous —
    invisible sur la masse du feuillage, mais sur un fruit de quatre pixels
    très contrasté, ça donne une tache floue. Les légumes du potager
-   échappent au problème parce qu'ils sont posés au double ((()=>null)
+   échappent au problème parce qu'ils sont posés au double (poserPlant
    …,2) : leurs demi-unités retombent sur des pixels entiers.
    Les fruits sont donc calés sur la grille, centre arrondi compris. */
 const PXE=(g,x,y,w,h,c)=>{g.fillStyle=c;
@@ -22619,17 +26402,56 @@ const verNow=()=>Date.now()+VERG.decal;
 const verOuverte=(i)=>!!(VERG.j&&i<VERG.j.nb);
 const verDuree=(ms)=>{const m=Math.max(0,Math.ceil(ms/60000));
 return m>=60?(Math.floor(m/60)+' H '+String(m%60).padStart(2,'0')):(m+' MIN');};
+function verStade(P){if(!P||!P.esp)return -1;
+const t0=new Date(P.t0).getTime(), ad=new Date(P.adulte_a).getTime(), n=verNow();
+if(n<ad)return ((n-t0)/Math.max(1,ad-t0))<0.45?0:1;
+return n>=new Date(P.mur_a).getTime()?3:2;}
+function verAdopter(d){if(!d||d.erreur||!d.j)return false;
+VERG.j=d.j;VERG.f={};(d.fosses||[]).forEach(p=>VERG.f[p.i]=p);
+if(d.now)VERG.decal=new Date(d.now).getTime()-Date.now();
+if(typeof d.euros==='number'){e.euros=d.euros;try{majHaut();}catch(x){}}
+VER_SALE=true;VERG.charge=true;return true;}
 /* UN SEUL APPEL À LA FOIS. La veille de deux secondes et le premier
    chargement se croisaient : au démarrage, verger_etat partait trois fois
    pour rien. */
 let VER_ENVOL=false;
+async function verCharger(){if(PLACE_SEULE||CARTE!=='village'||!CHAMPS_SEULS||!e.id)return;
+if(VER_ENVOL)return;VER_ENVOL=true;
+try{verAdopter(await appelRPC('verger_etat',{p_joueur:e.id}));}catch(x){}
+finally{VER_ENVOL=false;}}
 
 /* LA RESTANQUE ARRÊTE LE JOUEUR, le portillon non. Appelée par bloque(),
    donc à chaque pas : on sort tout de suite si l'on est loin du verger. */
+function verMuret(x,y){
+const Mb=VER.mur, X0=VER.x0-Mb, X1=VER.x0+VER.L+Mb, Y0=VER.y0-Mb, Y1=VER.y0+VER.H+Mb;
+if(x<X0-6||x>X1+12||y<Y0-6||y>Y1+10)return false;
+/* LA GANIVELLE EST MINCE : on l'arrête au pied, là où les lattes entrent
+   dans la terre, pas sur toute leur hauteur. Le muret de pierre d'avant
+   faisait onze pixels d'épaisseur ; celle-ci en fait quatre. */
+const surH=(yy)=>y>=yy-3&&y<=yy+5;
+const surV=(xx)=>x>=xx-3&&x<=xx+8;
+const dansX=(x>=X0-3&&x<=X1+8), dansY=(y>=Y0-3&&y<=Y1+6);
+if(surH(Y0)&&dansX)return true;
+if(surV(X0)&&dansY)return true;
+if(surV(X1)&&dansY)return true;
+/* LA TROUÉE DU SUD est franchement ouverte : plus de lisse en travers,
+   cinquante-huit pixels de passage entre les deux poteaux. */
+if(surH(Y1)&&dansX&&!(x>VER.porte-29&&x<VER.porte+29))return true;
+return false;}
 
 /* ON EST DEVANT UN ARBRE quand on touche sa cuvette, pas n'importe où dans
    la case : une case fait 112 × 98, la cuvette 52 × 20. Sans ça, « Planter »
    s'allumerait sur la moitié du verger à la fois. */
+function verProche(){
+if(FERME_VIERGE)return null;
+if(CARTE!=='village'||PLACE_SEULE||typeof CHAMPS_SEULS==='undefined'||!CHAMPS_SEULS)return null;
+if(joueur.x<VER.x0-30||joueur.x>VER.x0+VER.L+30)return null;
+if(joueur.y<VER.y0-30||joueur.y>VER.y0+VER.H+30)return null;
+/* LES FOSSES NON LOUÉES RÉPONDENT AUSSI : on plante une pancarte « À
+   LOUER » devant le joueur, autant qu'elle dise où aller la louer. */
+for(let i=0;i<VER.n;i++){const P=verPied(i);
+if(Math.abs(joueur.x-P.x)<=32&&joueur.y>P.y-24&&joueur.y<=P.y+13)return i;}
+return null;}
 const VER_LOYER={3:80000, 6:300000, 9:900000};
 
 /* ================= LA GRAVURE DES EMPLACEMENTS =================
@@ -22652,12 +26474,149 @@ const VER_Z=()=>({x0:VER.x0-50, y0:VER.y0-50, x1:VER.x0+VER.L+50, y1:VER.y0+VER.
    On la grave une fois dans sa toile, puis on la pose par bandes triées
    avec le joueur : c'est ce qui lui donne son épaisseur. */
 const VER_CLOT={toile:null, ox:0, oy:0, w:0, h:0};
+function graverGanivelle(){
+const Mb=VER.mur, MX0=VER.x0-Mb, MX1=VER.x0+VER.L+Mb, MY0=VER.y0-Mb, MY1=VER.y0+VER.H+Mb;
+const OX=MX0-10, OY=MY0-34, W=(MX1+14)-OX, H=(MY1+12)-OY;
+const c=document.createElement('canvas');c.width=W;c.height=H;
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+g.setTransform(1,0,0,1,-OX,-OY);
+const CHAT=['#8a6a3c','#9c7a46','#7a5c32','#ab8a54'];
+const FIL=(t)=>t<.5?'#6b6b70':'#8a8a90';
+const ganivelleH=(ax,bx,Y)=>{
+for(let x=ax;x<bx;x+=4){
+const t=PR_h(x,Y,151), h=20+Math.round(PR_h(x,0,152)*4);
+g.fillStyle=CHAT[Math.floor(t*4)%4];g.fillRect(x,Y-h,2,h+4);
+g.fillStyle='rgba(255,240,210,.22)';g.fillRect(x,Y-h,1,h+4);
+g.fillStyle='rgba(40,30,16,.26)';g.fillRect(x+1,Y-h,1,h+4);
+g.fillStyle='#c0a070';g.fillRect(x,Y-h,2,1);
+if(t<0.4){g.fillStyle='rgba(40,30,16,.3)';g.fillRect(x,Y-h+3+Math.floor(t*h*0.7),2,1);}}
+[7,15].forEach(dy=>{for(let x=ax;x<bx;x++){
+g.fillStyle=FIL(PR_h(x,dy,153));g.fillRect(x,Y-dy,1,1);}});
+for(let x=ax+14;x<bx;x+=38){
+g.fillStyle='#6b4a2c';g.fillRect(x,Y-26,3,30);
+g.fillStyle='#8a6238';g.fillRect(x,Y-26,1,30);
+g.fillStyle='#a5764a';g.fillRect(x,Y-27,3,2);}
+for(let y=0;y<3;y++)for(let x=ax;x<bx;x++){
+if(PR_h(x,Y+4+y,130)<0.3)continue;
+g.fillStyle='rgba(30,38,20,'+(0.20-y*0.06).toFixed(2)+')';g.fillRect(x,Y+4+y,1,1);}};
+const ganivelleV=(X,ay,by)=>{
+for(let y=ay;y<by;y+=4){
+const t=PR_h(X,y,151);
+g.fillStyle=CHAT[Math.floor(t*4)%4];g.fillRect(X,y,6,4);
+g.fillStyle='rgba(255,240,210,.24)';g.fillRect(X,y,1,4);
+g.fillStyle='rgba(40,30,16,.30)';g.fillRect(X+5,y,1,4);
+g.fillStyle='rgba(35,25,12,.45)';g.fillRect(X,y,6,1);
+g.fillStyle='rgba(255,240,210,.14)';g.fillRect(X,y+1,6,1);}
+[1,4].forEach(dx=>{for(let y=ay;y<by;y++){
+g.fillStyle=FIL(PR_h(dx,y,153));g.fillRect(X+dx,y,1,1);}});
+for(let y=ay+14;y<by;y+=38){
+g.fillStyle='#6b4a2c';g.fillRect(X-1,y,8,4);
+g.fillStyle='#a5764a';g.fillRect(X-1,y,8,1);
+g.fillStyle='rgba(40,28,14,.35)';g.fillRect(X-1,y+3,8,1);}
+for(let x=0;x<3;x++)for(let y=ay;y<by;y++){
+if(PR_h(X+6+x,y,130)<0.3)continue;
+g.fillStyle='rgba(30,38,20,'+(0.18-x*0.05).toFixed(2)+')';g.fillRect(X+6+x,y,1,1);}};
+ganivelleH(MX0,MX1+6,MY0);
+ganivelleV(MX0,MY0,MY1+4);
+ganivelleV(MX1,MY0,MY1+4);
+ganivelleH(MX0,VER.porte-30,MY1);
+ganivelleH(VER.porte+30,MX1+6,MY1);
+[VER.porte-33,VER.porte+30].forEach(px=>{
+g.fillStyle='#6b4a2c';g.fillRect(px,MY1-28,3,32);
+g.fillStyle='#8a6238';g.fillRect(px,MY1-28,1,32);
+g.fillStyle='#a5764a';g.fillRect(px,MY1-29,3,2);});
+VER_CLOT.toile=c;VER_CLOT.ox=OX;VER_CLOT.oy=OY;VER_CLOT.w=W;VER_CLOT.h=H;
+return VER_CLOT;}
 /* LES BANDES : le nord d'un bloc, le sud d'un bloc, et les côtés
    découpés tous les seize pixels pour qu'on les double proprement. */
+function verBandesClot(){
+const Mb=VER.mur, MX0=VER.x0-Mb, MX1=VER.x0+VER.L+Mb, MY0=VER.y0-Mb, MY1=VER.y0+VER.H+Mb;
+if(!VER_CLOT.toile)graverGanivelle();
+const C=VER_CLOT, B=[];
+const haut=(MY0+8)-C.oy, bas=(MY1-32)-C.oy;
+B.push([0,0,C.w,haut,MY0+5]);                       /* tout le courant nord */
+for(let sy=haut;sy<bas;sy+=16){const sh=Math.min(16,bas-sy);
+B.push([0,sy,22,sh,C.oy+sy+sh]);                    /* le côté ouest */
+B.push([C.w-24,sy,24,sh,C.oy+sy+sh]);}              /* le côté est */
+B.push([0,bas,C.w,C.h-bas,MY1+5]);                  /* tout le courant sud */
+return B;}
 let VER_BANDES=null;
 /* LA PANCARTE : un poteau et une planche assez grandes pour se lire de
    loin. L'ancienne faisait 24 × 12 avec un texte de 6,5 px — à l'écran,
    une tache claire qu'on ne remarquait pas. */
+function verPancarte(g,cx,y,mot,pale){
+/* LA PLANCHE SUIT LE TEXTE : fixée à 46 px, « À CREUSER » débordait et le
+   « À » se faisait couper. */
+g.font='700 9px Georgia';
+const H=15, W=Math.max(46,Math.ceil(g.measureText(mot).width)+10), x=cx-W/2;
+ombreAuSol(g,x+W/2,y+2,10,3,'rgba(24,20,12,.26)');
+PX(g,x+W/2-1.5,y-20,3,22,pale?'#7a6248':'#6b4a28');           /* le poteau */
+PX(g,x+W/2-1.5,y-20,1,22,pale?'#95805f':'#8a6238');
+PX(g,x-1,y-H-19,W+2,H+2,pale?'#8a7a5e':'#6b4a28');            /* le cadre */
+PX(g,x,y-H-18,W,H,pale?'#ded3bb':'#f2e8cc');                  /* la planche */
+PX(g,x,y-H-18,W,1,pale?'#efe6d2':'#fff8e4');
+PX(g,x,y-19,W,1,'#9a8158');                                   /* l'ombre sous la planche */
+g.fillStyle=pale?'#6b6050':'#5a3f21';g.font='700 9px Georgia';
+const l=g.measureText(mot).width;
+g.fillText(mot,x+(W-l)/2,y-H-18+11);}
+function verGraver(){
+const Z=VER_Z(), W=Z.x1-Z.x0, H=Z.y1-Z.y0, D=2;
+const c=document.createElement('canvas');c.width=W*D;c.height=H*D;
+const g=c.getContext('2d');g.setTransform(D,0,0,D,-Z.x0*D,-Z.y0*D);g.imageSmoothingEnabled=false;
+const RX=26, RY=10;
+for(let i=0;i<VER.n;i++){
+const P=verPied(i), F=VERG.f[i], ouverte=verOuverte(i),
+      creusee=!!(F&&F.etat==='creusee'), plante=!!(F&&F.esp),
+      mouille=!!(F&&F.eau&&plante);
+/* ---------- LE FOND DU ROND ---------- */
+for(let v=-RY;v<=RY;v+=0.5)for(let u=-RX;u<=RX;u+=0.5){
+const d=Math.hypot(u/RX,v/RY);if(d>1)continue;
+const n=PR_h(Math.round(P.x+u),Math.round(P.y+v),117);
+let col;
+if(creusee||plante){                      /* la terre, ratissée */
+col=d>0.86?'#6f5c3c':(n<.3?'#7b6644':(n<.62?'#8a7450':'#99835c'));
+if(!plante&&d<0.34)col=n<.5?'#6a5636':'#776043';
+if(mouille)col=n<.4?'#52412a':'#5e4b31';}
+else if(ouverte){                         /* pas encore creusé : l'herbe rase,
+   avec la terre qui perce par endroits — on voit que le sol est préparé */
+col=n<.30?'#7d9a52':(n<.62?'#86a35c':'#74914b');
+const t2=PR_h(Math.round(P.x+u*1.7),Math.round(P.y+v*1.7),135);
+if(t2<0.22)col=n<.5?'#8a7450':'#99835c';}
+else{                                     /* pas louée : l'herbe du pré, à peine marquée */
+col=n<.34?'#789a4f':'#82a257';}
+PX(g,P.x+u,P.y+v,0.5,0.5,col);}
+/* ---------- LES COUPS DE RÂTEAU, sur la terre seulement ---------- */
+if(creusee||plante)for(let k=0;k<7;k++){const r=0.35+k*0.09;
+for(let a=-3.14;a<3.14;a+=0.07){
+const u=Math.cos(a)*RX*r, v=Math.sin(a)*RY*r;
+if(PR_h(Math.round(P.x+u),Math.round(P.y+v),118)<0.45)continue;
+PX(g,P.x+u,P.y+v,0.5,0.5,'#6f5c3c');}}
+/* ---------- LE CORDON DE PIERRES, toujours ---------- */
+for(let a=0;a<6.283;a+=0.22){
+if(!ouverte&&PR_h(Math.round(a*100),i,136)<0.35)continue;   /* à moitié enfoui */
+const u=Math.cos(a)*(RX+2), v=Math.sin(a)*(RY+1);
+const t=PR_h(Math.round(u),Math.round(v),119);
+const cl=ouverte?(t<.4?'#9a9382':(t<.75?'#aba493':'#8c8674'))
+                :(t<.5?'#88876f':'#7a7a66');
+PX(g,P.x+u-1,P.y+v-1.5,3,2.5,cl);
+PX(g,P.x+u-1,P.y+v-1.5,3,0.5,ouverte?'#c6bfab':'#a6a28c');
+PX(g,P.x+u-1,P.y+v+0.5,3,0.5,'rgba(50,43,31,.4)');}
+/* ---------- LA PANCARTE ---------- */
+if(!ouverte){
+/* NEUF PANCARTES « À LOUER » D'UN COUP, ça crie. Seules les trois
+   prochaines — celles qu'on peut louer tout de suite — portent une
+   planche ; au-delà, le rond de pierres et un piquet suffisent à dire
+   qu'il y a là un emplacement. */
+if(i<((VERG.j&&VERG.j.nb)||0)+3)verPancarte(g,P.x,P.y-3,'À LOUER',true);
+else{PX(g,P.x+16,P.y-16,2,18,'#7a6248');PX(g,P.x+16,P.y-16,1,18,'#95805f');
+PX(g,P.x+14.5,P.y-17.5,5,2,'#8a7a5e');}}
+else if(!creusee&&!plante)verPancarte(g,P.x,P.y-3,'À CREUSER',false);
+else if(!plante)verPancarte(g,P.x,P.y-3,'À PLANTER',false);
+else if(verStade(F)===3){                 /* les fruits tombés, sous un arbre mûr */
+const A=ARB[F.esp];
+if(A)for(let k=0;k<5;k++){const a=PR_h(k,i,131)*6.283, r=0.55+PR_h(k,i+1,132)*0.45;
+PX(g,P.x+Math.cos(a)*24*r,P.y+Math.sin(a)*9*r,2,2,A.fr[2]);}}}
+return c;}
 
 /* ================= LE DESSIN =================
    Il n'y a rien ici. Le verger se dessine dans dessiner(), au milieu du
@@ -22680,13 +26639,13 @@ return verBullesVrai(g,camX,camY,px,py);};
    bas de l'écran quand on s'éloigne. */
 const verMajVrai=majAction;
 majAction=function(){
-const i=false;if(i===null||!VERG.charge)return verMajVrai();
+const i=verProche();if(i===null||!VERG.charge)return verMajVrai();
 try{const b2=cible();
 if(b2&&(b2.ouvre||b2.t==='comptoir')){const demi=b2.demi||40;
 const ec=Math.max(0,Math.abs(b2.x-joueur.x)-demi), dd=Math.hypot(ec,(joueur.y-b2.y)*0.8);
 if(dd<26)return verMajVrai();}}catch(x){}
 plaqueVrai=$('action');
-const b=plaqueFeinte, F=VERG.f[i], J=VERG.j, s=null;let t;
+const b=plaqueFeinte, F=VERG.f[i], J=VERG.j, s=verStade(F);let t;
 if(!verOuverte(i)){const px=VER_LOYER[J.nb];
 t=(i<(J.nb||0)+3&&px)?['Fosse à louer','CHEZ MADELEINE · '+enEuros(px).replace(',00','')]
  :['Fosse à louer','D’ABORD LES PRÉCÉDENTES'];}
@@ -22711,20 +26670,48 @@ const verRefus=(d)=>texteVolant(joueur.x,joueur.y-56,
 d&&d.erreur==='pas_assez'?'Pas assez d’argent':(d&&d.erreur==='pas_mur'?'Pas encore mûr':
 (d&&d.erreur==='sac_plein'?'Inventaire plein : va vendre':'Réessaie dans un instant')),'#ffe8a0');
 
+async function verAgir(i){if(VER_OCCUPE)return;
+const F=VERG.f[i], J=VERG.j, s=verStade(F);
+if(!verOuverte(i)){texteVolant(joueur.x,joueur.y-56,'Fosse à louer chez Madeleine','#ffe8a0');return;}
+VER_OCCUPE=true;try{
+if(!F||F.etat!=='creusee'){
+if(!J.beche){texteVolant(joueur.x,joueur.y-56,'Il te faut une bêche (chez Madeleine)','#ffe8a0');return;}
+verGeste('houe');vibrer(15);
+const d=await appelRPC('verger_creuser',{p_joueur:e.id,p_i:i});
+if(!verAdopter(d))verRefus(d);else texteVolant(joueur.x,joueur.y-56,'Fosse creusée','#dff0c8');}
+else if(!F.esp){VER_OCCUPE=false;verPlants(i);return;}
+else if(s<2){
+if(F.eau){texteVolant(joueur.x,joueur.y-56,'Il pousse… patience','#fff3d0');return;}
+VER_ARROSE=Date.now();vibrer(12);verGeste('arrose');
+const d=await appelRPC('verger_arroser',{p_joueur:e.id,p_i:i});
+if(!verAdopter(d))verRefus(d);}
+else if(s===3){verGeste('cueille');
+const d=await appelRPC('verger_cueillir',{p_joueur:e.id,p_i:i});
+if(d&&!d.erreur&&d.etat){verAdopter(d.etat);try{lireSacServeur();}catch(x){}
+jouer('vente','moment');vibrer([20,40,20]);
+texteVolant(joueur.x,joueur.y-58,'+'+d.nb+' '+(OBJETS[d.fruit]?OBJETS[d.fruit].nom.toLowerCase():d.fruit),'#ffe070');
+if(d.taille)setTimeout(()=>texteVolant(joueur.x,joueur.y-74,'La taille a payé : moitié plus','#dff0c8'),800);
+setTimeout(()=>texteVolant(joueur.x,joueur.y-90,'L’arbre reste : il redonnera','#cfe0b8'),1500);}
+else verRefus(d);}
+else if(J.secateur&&!F.taille){verGeste('houe');vibrer(12);
+const d=await appelRPC('verger_tailler',{p_joueur:e.id,p_i:i});
+if(!verAdopter(d))verRefus(d);else texteVolant(joueur.x,joueur.y-56,'Taillé · +50 % à la prochaine','#dff0c8');}
+else texteVolant(joueur.x,joueur.y-56,'Ça mûrit… repasse plus tard','#fff3d0');
+}finally{VER_OCCUPE=false;try{majAction();}catch(x){}}}
 
-$('action').addEventListener('click',(ev)=>{const i=false;
+$('action').addEventListener('click',(ev)=>{const i=verProche();
 if(i===null||!VERG.charge)return;
-ev.stopImmediatePropagation();ev.preventDefault();(()=>{})();},true);
+ev.stopImmediatePropagation();ev.preventDefault();verAgir(i);},true);
 /* L'APPUI LONG ARRACHE L'ARBRE : c'est la seule façon de changer d'essence */
 const verArracher=async(i)=>{const F=VERG.f[i];if(!F||!F.esp)return;
 const A=ARB[F.esp];
 if(!confirm('Arracher le '+A.n.toLowerCase()+' ? L’arbre est perdu, la fosse repart vide.'))return;
 const d=await appelRPC('verger_arracher',{p_joueur:e.id,p_i:i});
-if(d&&!d.erreur){(()=>{})();texteVolant(joueur.x,joueur.y-56,A.n+' arraché','#ffd0a0');vibrer([14,40,14]);}
+if(d&&!d.erreur){verAdopter(d);texteVolant(joueur.x,joueur.y-56,A.n+' arraché','#ffd0a0');vibrer([14,40,14]);}
 else verRefus(d);
 try{majAction();}catch(x){}};
 ['touchstart','mousedown'].forEach(ev=>$('action').addEventListener(ev,()=>{
-const i=false;if(i===null||!VERG.charge)return;
+const i=verProche();if(i===null||!VERG.charge)return;
 const F=VERG.f[i];if(!F||!F.esp)return;
 clearTimeout(VER_LONG);VER_LONG=setTimeout(()=>verArracher(i),650);},true));
 ['touchend','touchmove','mouseup','mouseleave'].forEach(ev=>
@@ -22739,13 +26726,30 @@ $('action').addEventListener(ev,()=>clearTimeout(VER_LONG),true));
    La bêche, le sécateur et la location des fosses. On greffe la section
    sur l'onglet « L'atelier » au lieu d'ouvrir un quatrième onglet : c'est
    le même geste, et le même comptoir. */
-const verBqLignesVrai=(()=>null);
-(()=>null)=function(){const L=verBqLignesVrai();
+const verBqLignesVrai=bqLignes;
+bqLignes=function(){const L=verBqLignesVrai();
 for(const k of ARB_ORDRE){const f=ARB[k].fruit, n=(e.sac&&e.sac[f])||0;
 if(n>0)L.push([f,n,prixDuJour(f,PRIX_COMPTOIR[f]||0)]);}
 return L;};
-const verBqOutilsVrai=(()=>null);
-(()=>null)=function(){return verBqOutilsVrai()+(()=>{})();};
+function verBqSection(){
+const J=(VERG&&VERG.j)||{nb:3,beche:false,secateur:false};
+const fmt=(c)=>enEuros(c).replace(',00','');
+const ligne=(k,nom,dit,prix,pris)=>'<div class="outil"><canvas data-ov="'+k+'"></canvas>'+
+'<span class="t"><b>'+nom+'</b><small>'+dit+'</small></span>'+
+'<button data-av="'+k+'" class="'+(pris?'pris':'')+'">'+(pris?'✓':fmt(prix))+'</button></div>';
+let h='<div class="rub">LE VERGER · '+J.nb+' FOSSES SUR 12</div>';
+h+=ligne('beche','La bêche','pour creuser les fosses du verger',3000,J.beche);
+h+=ligne('secateur','Le sécateur','tailler un arbre donne moitié plus à la cueillette suivante',8000,J.secateur);
+const prix={3:80000,6:300000,9:900000};
+[[3,'3 → 6 fosses'],[6,'6 → 9 fosses'],[9,'9 → 12 fosses']].forEach(([n,t])=>{
+const fait=J.nb>n, dispo=J.nb===n;
+h+='<div class="outil"><span class="t"><b>'+t+'</b><small>'+
+(fait?'déjà loué':(dispo?'trois fosses de plus, prêtes à creuser':'d’abord l’étape précédente'))+
+'</small></span><button '+(dispo?'data-av="agrandir"':'')+' class="'+(dispo?'':'pris')+'">'+
+(fait?'✓':fmt(prix[n]))+'</button></div>';});
+return h;}
+const verBqOutilsVrai=bqOutils;
+bqOutils=function(){return verBqOutilsVrai()+verBqSection();};
 /* LES BOUTONS : la boutique câble [data-a] sur pot_acheter, pas les nôtres.
    On repasse derrière elle une fois la page écrite. */
 /* ON HABILLE LE DESSIN, PAS L'ENTRÉE : le verger se charge une seule fois,
@@ -22772,7 +26776,7 @@ const d=await appelRPC('verger_acheter',{p_joueur:e.id,p_article:b.dataset.av});
 if(!d||d.erreur){b.disabled=false;
 motOuverture(d&&d.erreur==='pas_assez'?'Pas assez d’argent.':
 (d&&d.erreur==='deja'?'Tu l’as déjà.':'Madeleine n’a pas pu.'));return;}
-(()=>{})();sauver();jouer('vente','moment');vibrer([15,40,15]);
+verAdopter(d);sauver();jouer('vente','moment');vibrer([15,40,15]);
 peindreMadeleine();
 setTimeout(()=>motOuverture(b.dataset.av==='agrandir'?'Trois fosses de plus ! Va les creuser.'
 :(b.dataset.av==='beche'?'Une bonne bêche. Le verger t’attend.':'Un sécateur bien aiguisé.')),60);});
@@ -22796,91 +26800,21 @@ if(document.hidden||!e.id)return;
 if(VERG.charge&&e.id===VER_ID){VER_ESSAIS=0;return;}
 if(e.id!==VER_ID)VER_ESSAIS=0;
 if(VER_ESSAIS>=10)return;      /* même garde-fou que le potager */
-VER_ESSAIS++;VER_ID=e.id;(()=>{})();},2000);
+VER_ESSAIS++;VER_ID=e.id;verCharger();},2000);
 /* LA PLAQUE DOIT AUSSI S'EFFACER quand on s'éloigne d'un arbre : sans ce
    rappel, « Cueillir » resterait affiché pendant qu'on marche ailleurs. */
 setInterval(()=>{if(document.hidden)return;
 if(CARTE!=='village'||!VERG.charge)return;
-try{const i=false;
+try{const i=verProche();
 if(i!==VER_PRES){VER_PRES=i;majAction();}
 else if(i!==null)majAction();}catch(x){}},400);
 /* LES ARBRES MÛRISSENT SANS NOUS : on relit l'état de temps en temps pour
    que la cuvette se couvre de fruits tombés sans qu'on ait à ressortir. */
-setInterval(()=>{if(CARTE==='village'&&document.visibilityState==='visible')(()=>{})();},120000);
+setInterval(()=>{if(CARTE==='village'&&document.visibilityState==='visible')verCharger();},120000);
 /* LE SOL SE REDESSINE quand un arbre change de stade, pas à chaque image */
 setInterval(()=>{if(!VERG.charge||document.hidden)return;
-let cle='';for(let i=0;i<VER.n;i++){const F=VERG.f[i];cle+=(F&&F.esp?F.esp+null:'-')+',';}
+let cle='';for(let i=0;i<VER.n;i++){const F=VERG.f[i];cle+=(F&&F.esp?F.esp+verStade(F):'-')+',';}
 if(cle!==VER_CLE){VER_CLE=cle;VER_SALE=true;}},3000);
-const CSS_BQ_A=`
-@font-face{font-family:'Lilita One';src:url(assets/fonts/lilita-one-latin-400-normal.woff2) format('woff2');font-display:swap}
-#page2Fond.bq.mA{display:flex;flex-direction:column;height:100%;overflow:hidden;background:repeating-linear-gradient(135deg,#8fc85a 0 22px,#84bd50 22px 44px);color:#3a2408}
-#page2Fond.bq.mA .aTop{flex:none;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 16px) 14px 10px}
-#page2Fond.bq.mA .aTtl{font:400 29px/1 'Lilita One','Baloo 2',sans-serif;color:#fff;-webkit-text-stroke:6px #2e5a1a;paint-order:stroke}
-#page2Fond.bq.mA .aTtl small{display:block;font:400 13px 'Lilita One','Baloo 2',sans-serif;color:#ffe88a;-webkit-text-stroke:4px #2e5a1a;letter-spacing:.5px}
-#page2Fond.bq.mA .aBourse{margin-left:auto;background:#2e5a1a;color:#fff;border-radius:16px;padding:5px 12px;font:400 16px 'Lilita One','Baloo 2',sans-serif;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25);white-space:nowrap}
-#page2Fond.bq.mA .aBourse:first-letter{color:#f0c040}
-#page2Fond.bq.mA .aX{flex:none;width:40px;height:40px;border:0;border-radius:12px;background:#e8503a;box-shadow:0 0 0 3px #fff,0 4px 0 3px #8a2a1a;color:#fff;font:400 20px 'Lilita One',sans-serif;margin-right:3px}
-#page2Fond.bq.mA .bqOng{flex:none;display:flex;gap:6px;padding:2px 12px 12px}
-#page2Fond.bq.mA .bqOng button{flex:1;border:0;background:#fff8e4;border-radius:14px;box-shadow:0 4px 0 #2e5a1a;padding:6px 0 4px;display:flex;flex-direction:column;align-items:center;font:400 13px 'Lilita One','Baloo 2',sans-serif;color:#2e5a1a;letter-spacing:0}
-#page2Fond.bq.mA .bqOng button.on{background:#ffd84a;box-shadow:0 4px 0 #a87010,0 0 0 3px #fff;color:#3a2408}
-#page2Fond.bq.mA .bqOng button i{font-style:normal;font-size:20px;line-height:1.15}
-#page2Fond.bq.mA .aCarte{flex:1;min-height:0;margin:0 12px;background:#fff8e4;border-radius:22px 22px 0 0;box-shadow:0 -3px 0 #2e5a1a;display:flex;flex-direction:column;overflow:hidden}
-#page2Fond.bq.mA .corps{flex:1;min-height:0;overflow-y:auto;padding:12px 12px 16px;background:none}
-#page2Fond.bq.mA .mot{position:relative;min-height:52px;padding:7px 11px;margin:0 0 12px 62px;background:#f3e2b8;border-radius:14px;font:700 13px/1.3 'Baloo 2','Trebuchet MS',sans-serif;color:#5a4428;font-style:normal}
-#page2Fond.bq.mA .mot:before{content:'';position:absolute;left:-62px;top:0;width:50px;height:50px;border-radius:50%;background:#f3d8a8 var(--mad,none) center/42px 42px no-repeat;box-shadow:0 0 0 3px #2e5a1a;image-rendering:pixelated}
-#page2Fond.bq.mA .aGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-#page2Fond.bq.mA .lg{position:relative;display:grid;grid-template-columns:40px 1fr;grid-template-rows:auto auto;column-gap:8px;align-items:center;margin:0;padding:9px;border:0;border-radius:16px;background:#f3e2b8;color:#3a2408;text-align:left;box-shadow:0 3px 0 #dcc694}
-#page2Fond.bq.mA .lg:active{transform:translateY(2px);box-shadow:0 1px 0 #dcc694}
-#page2Fond.bq.mA .lg svg{grid-row:1/3;width:40px;height:40px;background:none;border-radius:0;image-rendering:pixelated}
-#page2Fond.bq.mA .lg .n{min-width:0}
-#page2Fond.bq.mA .lg b{font:400 15.5px/1.1 'Lilita One','Baloo 2',sans-serif;color:#3a2408;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#page2Fond.bq.mA .lg em{font:800 11px 'Baloo 2',sans-serif;font-style:normal;color:#7a5a38}
-#page2Fond.bq.mA .lg .q{position:absolute;top:-7px;right:-4px;background:#2e5a1a;color:#fff;font:400 13px 'Lilita One',sans-serif;border-radius:10px;padding:1px 7px}
-#page2Fond.bq.mA .lg .p{grid-column:2;width:auto;text-align:left;font:400 15px 'Lilita One','Baloo 2',sans-serif;color:#2e7a2a}
-#page2Fond.bq.mA .vide{font:700 14px/1.5 'Baloo 2',sans-serif;color:#7a5a38;padding:30px 16px}
-#page2Fond.bq.mA .caisse{flex:none;padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 16px);background:#fff8e4;border-top:2px dashed #e6d2a4}
-#page2Fond.bq.mA .tot{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px;font:400 15px 'Lilita One','Baloo 2',sans-serif;letter-spacing:0;color:#7a5a38}
-#page2Fond.bq.mA .tot b{font:400 24px 'Lilita One','Baloo 2',sans-serif;color:#2e5a1a}
-#page2Fond.bq.mA .go{width:100%;border:0;border-radius:18px;padding:12px;background:linear-gradient(#ffe88a,#f0b838);box-shadow:0 0 0 3px #3a2408,0 6px 0 3px #3a2408;font:400 22px 'Lilita One','Baloo 2',sans-serif;letter-spacing:.5px;color:#3a2408;margin-bottom:6px}
-#page2Fond.bq.mA .go:disabled{background:#e6d8b8;color:#a08868;box-shadow:0 0 0 3px #c8b48c,0 6px 0 3px #c8b48c}
-#page2Fond.bq.mA .rub{font:400 14px 'Lilita One','Baloo 2',sans-serif;letter-spacing:.3px;color:#2e5a1a;padding:12px 2px 8px}
-#page2Fond.bq.mA .outil{border:0;border-radius:16px;background:#f3e2b8;box-shadow:0 3px 0 #dcc694;padding:10px 11px;margin-bottom:9px}
-#page2Fond.bq.mA .outil canvas{background:#fff8e4;border-radius:12px}
-#page2Fond.bq.mA .outil .t b{font:400 16px 'Lilita One','Baloo 2',sans-serif;color:#3a2408}
-#page2Fond.bq.mA .outil .t small{font:800 11.5px 'Baloo 2',sans-serif;font-style:normal;color:#7a5a38}
-#page2Fond.bq.mA .outil button{border-radius:13px;padding:9px 13px;background:linear-gradient(#ffe88a,#f0b838);box-shadow:0 0 0 2px #3a2408,0 3px 0 2px #3a2408;color:#3a2408;font:400 15px 'Lilita One','Baloo 2',sans-serif;letter-spacing:0}
-#page2Fond.bq.mA .outil button.pris,#page2Fond.bq.mA .outil button:disabled{background:#e6d8b8;color:#a08868;box-shadow:0 0 0 2px #c8b48c}
-#page2Fond.bq.mA .outil .marge{font:400 13px 'Lilita One','Baloo 2',sans-serif;color:#fff;background:#4e9a3a;border-radius:9px;padding:2px 8px}
-#page2Fond.bq.mA .bqFen button{border:0;border-radius:13px;background:#f3e2b8;box-shadow:0 3px 0 #dcc694;color:#5a4428;font:400 14px 'Lilita One','Baloo 2',sans-serif}
-#page2Fond.bq.mA .bqFen button.on{background:#ffd84a;box-shadow:0 3px 0 #a87010;color:#3a2408}
-#page2Fond.bq.mA .ard{background:none;padding:0;border:0;box-shadow:none}
-#page2Fond.bq.mA .ard h3{font:400 17px 'Lilita One','Baloo 2',sans-serif;color:#2e5a1a;margin:4px 2px 10px}
-#page2Fond.bq.mA .cmd{border:0;border-radius:16px;background:#f3e2b8;box-shadow:0 3px 0 #dcc694;padding:12px}
-#page2Fond.bq.mA .cmdT{font:400 17px 'Lilita One','Baloo 2',sans-serif;color:#3a2408}
-#page2Fond.bq.mA .cmdT em{font:800 11.5px 'Baloo 2',sans-serif;font-style:normal;color:#7a5a38}
-#page2Fond.bq.mA .cmdL{background:#fff8e4;color:#5a4428;font:800 12px 'Baloo 2',sans-serif;letter-spacing:0;border-radius:10px}
-#page2Fond.bq.mA .cmdL.ok{background:#4e9a3a;color:#fff}
-#page2Fond.bq.mA .cmdGo{border-radius:14px;padding:10px;background:linear-gradient(#ffe88a,#f0b838);box-shadow:0 0 0 2px #3a2408,0 4px 0 2px #3a2408;color:#3a2408;font:400 17px 'Lilita One','Baloo 2',sans-serif;letter-spacing:0}
-#page2Fond.bq.mA .cmdGo:disabled{background:#e6d8b8;color:#a08868;box-shadow:0 0 0 2px #c8b48c}
-#page2Fond.bq.mA .cmdF{background:#4e9a3a;color:#fff;font:400 14px 'Lilita One','Baloo 2',sans-serif;letter-spacing:0}
-#page2Fond.bq.mA .aLi{display:flex;align-items:center;gap:10px;border-radius:16px;background:#f3e2b8;box-shadow:0 3px 0 #dcc694;padding:9px 10px;margin-bottom:9px}
-#page2Fond.bq.mA .aLi .ic{width:44px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;font-size:24px;background:#fff8e4;border-radius:12px}
-#page2Fond.bq.mA .aLi canvas{width:44px;height:44px;flex:none;border-radius:12px;background:#fff8e4;image-rendering:pixelated}
-#page2Fond.bq.mA .aLi .tx{flex:1;min-width:0}
-#page2Fond.bq.mA .aLi b{display:block;font:400 15.5px/1.15 'Lilita One','Baloo 2',sans-serif;color:#3a2408}
-#page2Fond.bq.mA .aLi small{display:block;font:800 11px/1.3 'Baloo 2',sans-serif;color:#7a5a38}
-#page2Fond.bq.mA .aLi .jauge{display:block;height:8px;border-radius:4px;background:#fff8e4;box-shadow:inset 0 0 0 1.5px #dcc694;overflow:hidden;margin-top:5px}
-#page2Fond.bq.mA .aLi .jauge i{display:block;height:100%;background:#6ab84a}
-#page2Fond.bq.mA .aLi button{flex:none;min-width:70px;border:0;border-radius:13px;padding:7px 10px;background:linear-gradient(#ffe88a,#f0b838);box-shadow:0 0 0 2px #3a2408,0 3px 0 2px #3a2408;font:400 16px/1.05 'Lilita One','Baloo 2',sans-serif;color:#3a2408}
-#page2Fond.bq.mA .aLi button small{font:800 10.5px 'Baloo 2',sans-serif;color:#5a3a10}
-#page2Fond.bq.mA .aLi em{flex:none;font:400 13px 'Lilita One',sans-serif;font-style:normal;color:#2e7a2a}
-#page2Fond.bq.mA .aChamp{border-radius:18px;background:#f3e2b8;box-shadow:0 3px 0 #dcc694;padding:14px;text-align:center}
-#page2Fond.bq.mA .aChamp b{display:block;font:400 34px 'Lilita One','Baloo 2',sans-serif;color:#2e5a1a;line-height:1.1}
-#page2Fond.bq.mA .aChamp small{display:block;font:800 12.5px 'Baloo 2',sans-serif;color:#7a5a38;margin-bottom:12px}
-#page2Fond.bq.mA .aChamp .jauge{height:12px;border-radius:6px;background:#fff8e4;box-shadow:inset 0 0 0 2px #dcc694;overflow:hidden;margin:0 0 14px}
-#page2Fond.bq.mA .aChamp .jauge i{display:block;height:100%;background:#6ab84a}
-#page2Fond.bq.mA .aChamp button{width:100%;border:0;border-radius:16px;padding:11px;background:linear-gradient(#ffe88a,#f0b838);box-shadow:0 0 0 3px #3a2408,0 5px 0 3px #3a2408;font:400 19px 'Lilita One','Baloo 2',sans-serif;color:#3a2408}
-#page2Fond.bq.mA .aChamp button small{display:block;margin:0;font:800 12px 'Baloo 2',sans-serif;color:#5a3a10}`;
 /* ================= LA FERME =================
    Les deux mille trois cents lignes de la ferme vivent maintenant dans
    ferme.js. On les évalue ICI, à leur place d'avant et dans la même
@@ -22893,7 +26827,6 @@ const CSS_BQ_A=`
    vide. Le CSS lit maintenant une variable, qu'on pose ici. */
 if(TXT_FERME){({CH_X0,CH_Y0,CH,chStade,chAdopter,chCharger,chDeSaison,chPoints,chDessinFerme,fmDansMaison,peindreClotureFerme,fmDessinerMaison,peindreCheminsFerme,fpCadre,fpTerre,fmDessinerEtal,MAD_SVG,bqAtelierChamp,fmDessinerLampes,fmDessinerDeco,fmDessinerMetro,fpDessinerArrosoir,fpDessinerArroseur,fmDessinerLanternes,PG,pgCharger,pgDessiner,PC,pcCharger,pcDessiner,moDessiner,ptDessiner,cbfDessiner,ruDessiner,ouvrirMonCabanon}=eval(TXT_FERME));}
 try{if(typeof MAD_SVG==='string')document.documentElement.style.setProperty('--mad',MAD_SVG);}catch(erMad){}
-
 
 
 /* =====================================================================
@@ -22909,6 +26842,7 @@ let HW={spr:{},cit:{},corb:{etat:'pose',t:0,x:0,y:0}};
 /* HALLOWEEN : citrouilles-lanternes le long des allées, façade de Madeleine, cimetière des légumes */
 
 /* HALLOWEEN À LA MARÉE : citrouilles-lanternes sous le store, chauves-souris aux bouts de l'enseigne, toiles aux coins de la vitrine */
+function mhCit(g,x,y,r,nuit){const c=hwCit(r*2,nuit);g.drawImage(c,Math.round(x-c.width/4),Math.round(y-c.height/4),c.width/2,c.height/2);if(nuit)lueurNuit(g,x,y,r*2+10,'rgba(255,150,50,1)');}
 
 /* =====================================================================
    LES CITROUILLES DE MADELEINE (Halloween 2026) : chez elle, chaque
