@@ -445,13 +445,17 @@ for(const m of imm){
   P(x+m.w-1,y,1,HZ-y,brume(m.f[2],k));
   if(m.i%3)P(x-1,y-1,m.w+2,1,brume(A(m.i)<0.5?'#ad542c':'#8f3f20',k));
   for(let wy=y+2;wy<m.b-1;wy+=3)for(let wx=x+1;wx<x+m.w-2;wx+=3){px(wx,wy,brume(A(wx*1.3+wy)<0.15?'#f0e4c0':'#5a4a40',k));
-    if(A(wx*2.9+wy*1.7)<allume(0.42))lum(wx,wy,1,1,['#ffd27a','#ffe7ad','#f4b860'][Math.floor(A(wx+wy*3)*3)],1);}
+    /* LA NUIT, des immeubles entiers restent noirs, d'autres ont quelques fenetres
+       allumees, rangees dans leur grille ; plus loin, plus faibles. */
+    if(A(m.i*3.3)>0.35&&A(wx*2.9+wy*1.7)<allume(0.30)){const loin=k>0.3;
+      lum(wx,wy,1,1,loin?['#b88a50','#c89a5c'][Math.floor(A(wx+wy)*2)]:['#ffd27a','#ffe2a0','#f4b860'][Math.floor(A(wx+wy*3)*3)],1);}}
 }
 
 /* le quai d'en face, sur lequel tout repose */
 P(0,HZ-1,M,1,'#d8ccb0');P(0,HZ,M,2,'#8a7e68');
 for(let x=12;x<M;x+=38+Math.floor(A(x*0.7)*14))if(A(x*1.9)<allume(1)*1.4)lum(x,HZ-3,1,1,'#ffb860');   /* les lampadaires du quai d'en face */
-for(let x=0;x<M;x+=3)if(crete1(x)<HZ-10&&A(x*4.3)<allume(0.05))lum(x,Math.round(crete1(x))+4+Math.floor(A(x)*6),1,1,'#ffc880');   /* les villages de l'Estaque */
+/* les villages de l'Estaque : quelques points au pied des collines, alignes sur la cote */
+for(let x=4;x<620;x+=7+Math.floor(A(x*1.9)*9))if(A(x*4.3)<allume(0.7))lum(x,HZ-6-Math.floor(A(x*2.7)*3),1,1,A(x)<0.5?'#ffc880':'#e8b070');
 
 /* ---------- LES CONTENEURS ---------- */
 const CT=[['#2a5d9f','#3f78bd','#1d4475'],['#c23a2c','#d95646','#8e271e'],['#e8e4dc','#f6f3ee','#bdb8ae'],['#2f7d4f','#43a067','#215a38'],['#d9822b','#ee9c48','#a85f1a'],['#7a7f86','#959aa1','#5a5e64'],['#8a4b2c','#a8633f','#653620'],['#1f8a8a','#35a8a8','#156464'],['#d8c23a','#ecd85a','#a8941f'],['#4a3f7a','#655899','#332b57']];
@@ -751,8 +755,10 @@ const teinter=(cv,monu)=>{
     if(nuit){
       const som=dd[o]+dd[o+1]+dd[o+2];
       if(monu&&x>=1386&&x<1458){   /* le MuCEM : la resille en ombre chinoise sur l'interieur allume */
-        if(som<200){dd[o]=168+((x+y)&1)*14;dd[o+1]=100+((x*3+y)%3)*8;dd[o+2]=42;}else{dd[o]=50;dd[o+1]=36;dd[o+2]=32;}continue;}
-      if(monu&&som>380){dd[o]=Math.min(255,dd[o]*0.82+26);dd[o+1]=dd[o+1]*0.68+14;dd[o+2]=dd[o+2]*0.42+12;continue;}
+        if(som<200){const v=(y-(HZ-25))/25;dd[o]=118+v*26;dd[o+1]=76+v*16;dd[o+2]=42;}else{dd[o]=34;dd[o+1]=28;dd[o+2]=30;}continue;}
+      /* LES PROJECTEURS eclairent par en bas : le pied est dore, le haut retombe dans la nuit */
+      if(monu&&som>380){const f=0.42+0.58*Math.min(1,Math.max(0,y/HZ));
+        dd[o]=Math.min(255,dd[o]*0.80*f+22);dd[o+1]=dd[o+1]*0.64*f+14;dd[o+2]=dd[o+2]*0.40*f+18;continue;}
       if(monu){dd[o]=dd[o]*0.42+20;dd[o+1]=dd[o+1]*0.36+14;dd[o+2]=dd[o+2]*0.34+16;continue;}
       dd[o]=dd[o]*0.20+6;dd[o+1]=dd[o+1]*0.25+10;dd[o+2]=dd[o+2]*0.40+26;
     }else if(aube){
@@ -789,8 +795,8 @@ for(let y=HZ+2;y<EAU;y++){
 }
 {
 const fond=g.createLinearGradient(0,HZ+2,0,EAU);
-fond.addColorStop(0,nuit?'rgba(4,8,28,.50)':(aube?'rgba(96,72,120,.42)':(soir?'rgba(70,50,96,.45)':'rgba(30,96,140,.45)')));
-fond.addColorStop(1,nuit?'rgba(2,6,22,.72)':(aube?'rgba(52,42,92,.66)':(soir?'rgba(40,30,70,.70)':'rgba(18,66,110,.68)')));
+fond.addColorStop(0,nuit?'rgba(6,10,30,.78)':(aube?'rgba(96,72,120,.74)':(soir?'rgba(70,50,96,.74)':'rgba(36,104,148,.74)')));   /* le reflet n'est plus qu'un souvenir */
+fond.addColorStop(1,nuit?'rgba(4,8,24,.90)':(aube?'rgba(52,42,92,.88)':(soir?'rgba(40,30,70,.88)':'rgba(20,70,116,.88)')));
 g.fillStyle=fond;g.fillRect(0,HZ+2,M,EAU-HZ-2);
 }
 for(let i=0;i<1600;i++){
@@ -804,11 +810,11 @@ if(SOLEIL)for(let i=0;i<500;i++){
 if(nuit){
   /* le chemin de lune */
   for(let i=0;i<260;i++){const y=HZ+3+Math.floor(A(i*4.7+3)*(EAU-HZ-4)), sp=4+(y-HZ)*0.9, x=LUNE.x+(A(i*6.9)-0.5)*2*sp;
-    R(x,y,1+A(i)*3,1,'rgba(230,232,210,'+(0.18+A(i*8.1)*0.4).toFixed(2)+')');}
+    R(x,y,1+A(i)*3,1,'rgba(230,232,210,'+(0.12+A(i*8.1)*0.28).toFixed(2)+')');}
   /* chaque lumiere du bord jette son trait tremblant dans le bassin */
-  for(const l of LUM){if(l[1]<HZ-36||A(l[0]*1.3+l[1])>((l[2]>1||l[4]==='#ff3a2a')?0.6:0.07))continue;
+  for(const l of LUM){if(l[1]<HZ-36||A(l[0]*1.3+l[1])>((l[2]>1||l[4]==='#ff3a2a')?0.35:0.015))continue;
     const c=hex(l[4].length===7?l[4]:'#ffd890');
-    for(let y=HZ+3;y<EAU;y+=2){const u=(y-HZ)/(EAU-HZ), a=0.55*(1-u);if(A(l[0]+y*1.7)<0.3)continue;
+    for(let y=HZ+3;y<EAU;y+=2){const u=(y-HZ)/(EAU-HZ), a=0.28*(1-u);if(A(l[0]+y*1.7)<0.4)continue;
       R(l[0]+Math.round(Math.sin(y*0.9+l[0])*1.5),y,1+Math.floor(A(y+l[0])*2),1,'rgba('+c.join(',')+','+a.toFixed(2)+')');}}
 }
 R(0,HZ+2,M,1,'rgba(10,20,30,.35)');
