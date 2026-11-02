@@ -2649,11 +2649,11 @@ img:(g,w,h)=>{g.fillStyle='#d9c7a0';g.fillRect(0,0,w,h);g.fillStyle='rgba(0,0,0,
 const ox=w*0.3,oy=h*0.55;g.beginPath();g.arc(ox,oy,30,0,7);g.fillStyle='rgba(20,14,8,.12)';g.fill();g.lineWidth=1.5;g.strokeStyle='rgba(250,244,228,.9)';g.stroke();
 g.beginPath();g.arc(ox+16,oy-12,12,0,7);g.fillStyle='#f4ecd8';g.fill();g.fillStyle='#7a1f2b';g.beginPath();g.moveTo(ox+23,oy-18);g.lineTo(ox+11,oy-14);g.lineTo(ox+19,oy-6);g.fill();
 g.fillStyle='rgba(20,14,8,.7)';g.beginPath();g.roundRect?g.roundRect(w*0.56,h*0.62,w*0.38,30,15):g.rect(w*0.56,h*0.62,w*0.38,30);g.fill();
-g.fillStyle='#f4ecd8';g.font='13px Georgia,serif';g.fillText('Entrer',w*0.6,h*0.62+19);}},
+g.fillStyle='#f4ecd8';g.font='13px Georgia,serif';g.fillText('Entrer',w*0.6,h*0.62+19);
 g.fillStyle='#c8d4dc';g.beginPath();g.ellipse(w*0.84,h*0.7,12,5,0,0,7);g.fill();g.beginPath();g.moveTo(w*0.84+10,h*0.7);g.lineTo(w*0.84+18,h*0.7-5);g.lineTo(w*0.84+18,h*0.7+5);g.fill();}},
-{titre:'Se régaler',sous:'LE GLACIER ET CROUSTI’PORT',
+{titre:'Se régaler',sous:'LE GLACIER ET CROUSTI\'PORT',
 txt:['Au <b>Glacier du Port</b>, compose un cornet de <b>1 à 3 boules</b> : chaque parfum donne un <b>effet de 10 minutes</b> — marcher plus vite, vendre plus cher.',
-'Un menu chez <b>Crousti’Port</b> te rend <b>repu</b> : tu marches plus vite pendant un moment.'],
+'Un menu chez <b>Crousti\’Port</b> te rend <b>repu</b> : tu marches plus vite pendant un moment.'],
 img:(g,w,h)=>{g.fillStyle='#ffd0e0';g.fillRect(0,0,w,h);g.fillStyle='#8ad8c0';g.fillRect(0,h-4,w,4);
 for(let i=0;i<w;i+=16){g.fillStyle=(i/16)%2?'#fff':'#f48aa8';g.fillRect(i,0,16,10);}
 g.fillStyle='#d8a050';g.beginPath();g.moveTo(w*0.3-12,h*0.5);g.lineTo(w*0.3+12,h*0.5);g.lineTo(w*0.3,h*0.9);g.fill();
@@ -3596,7 +3596,7 @@ const bullesMotif=(g,W,H,D)=>{for(let k=0;k<6;k++){g.fillStyle='rgba(255,255,255
 const maillesMotif=(g,W,H,D)=>{g.strokeStyle='rgba(255,246,216,.4)';g.lineWidth=D;for(let k=-H;k<W+H;k+=8*D){g.beginPath();g.moveTo(k,0);g.lineTo(k+H,H);g.stroke();g.beginPath();g.moveTo(k,H);g.lineTo(k+H,0);g.stroke();}};
 const nervures=(c)=>(g,W,H,D)=>{g.fillStyle='rgba(0,0,0,.16)';for(let x=3*D;x<W;x+=5*D)g.fillRect(x,0,1.3*D,H);g.fillStyle='rgba(255,255,255,.25)';g.fillRect(0,0,W,2*D);};
 const TK_ICONE={
-   const bx=16,by=20,lg=30,ht=13;
+ _ancien:(R)=>{const bx=16,by=20,lg=30,ht=13;
    for(let i=0;i<lg;i++){const t=i/lg,h=Math.round(ht/2*Math.sqrt(Math.max(.03,1-Math.pow(t*2-.82,2))));
      for(let q=-h;q<=h;q++)R(bx+i,by+q,1,1,q<-h*.3?'#dff0fa':'#5aa8d8');}
    R(bx+lg,by-5,4,10,'#5aa8d8');R(bx+lg+3,by-8,3,6,'#5aa8d8');R(bx+lg+3,by+2,3,6,'#5aa8d8');
@@ -3620,8 +3620,8 @@ const TK_ICONE={
    Quatre titres, qui racontent ce qui se passe sur le port. */
 const PRESSE=[
  {id:'marseillais',nom:'Le Marseillais',prix:180,d:'Les nouvelles du port, chaque matin.',
-  gros:’Le port bat son record de l’année’},
- {id:'echo',nom:'L’Écho des Quais',prix:220,d:'Marées et petites annonces.',
+  gros:'Le port bat son record de l\'année'},
+ {id:'echo',nom:'L\'Écho des Quais',prix:220,d:'Marées et petites annonces.',
   gros:'Un cœlacanthe remonté au Vieux-Port ?'},
  {id:'courrier',nom:'Le Courrier du Soir',prix:320,d:'Le journal du soir, encré de frais.',
   gros:'La cagnotte du Loto grimpe encore'},
@@ -5684,7 +5684,7 @@ if(H.nouveaux&&H.nouveaux.length)faits.push('Bienvenue à <b>'+H.nouveaux.map(es
 const nomMarche=(k)=>POT_CULT[k]?POT_CULT[k][0]:((OBJETS[k]&&OBJETS[k].nom)||k);
 const marcheHTML=MARCHE.length?('<div class="gzv-marche"><h3>Le marché du port</h3>'+
 '<div class="gzv-illu petite"><canvas data-gr="etal"></canvas></div>'+
-‘<p class="gzv-leg">L’étal du marché, à l’heure où les prix se décident.</p>’+
+'<p class="gzv-leg">L\'étal du marché, à l\'heure où les prix se décident.</p>'+
 '<p class="gzv-mleg">Les prix sont les mêmes pour tout le monde : ce que vendent les autres fait bouger les tiens.</p>'+
 MARCHE.map(m=>{const v=Math.round((m.f-1)*100);
 const c=v>2?'#2f6a2e':(v<-2?'#b8402e':'#5a5048'), fl=v>2?'▲':(v<-2?'▼':'=');
@@ -5741,7 +5741,7 @@ ${NEUF.length?`
 <div class="gzv-illu"><canvas data-gr="mine"></canvas></div>
 <p class="gzv-leg">${esc(NEUF[0].lieu||'Le port')} · ${esc(new Date(NEUF[0].quand).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}))} — gravure de notre envoyé</p>
 <p class="gzv-texte">${esc(NEUF[0].texte)}</p>
-<div class="gzv-neuf"><h3>Ce qui vient d’ouvrir</h3><ul>${NEUF.slice(1).map(n=>
+<div class="gzv-neuf"><h3>Ce qui vient d'ouvrir</h3><ul>${NEUF.slice(1).map(n=>
 '<li><b>'+esc(n.titre)+'</b> — '+esc(n.texte)+' <i>('+esc(n.lieu||'le port')+')</i></li>').join('')}</ul></div>`
 :`<h2>${esc((G&&G.titre)||'Le quai s’éveille')}</h2>
 <div class="gzv-illu"><canvas data-gr="quai"></canvas></div>
@@ -23945,7 +23945,7 @@ opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;pointer
 @keyframes crvT{0%{transform:scale(.2) rotate(-20deg);opacity:0}60%{transform:scale(1.08) rotate(3deg);opacity:1}100%{transform:none}}
 @media (max-width:350px){#crv .crv-item canvas{width:60px;height:46px}#crv .crv-tampon{width:52px;height:52px;font-size:15px}#crv .crv-tete b{font-size:26px}}</style>
 <div id="crv" lang="fr"><div class="crv-page"><div class="crv-panneau">
-<div class="crv-tete"><div class="crv-bourse">TA BOURSE<b>${enEuros(e.euros||0)}</b></div><canvas data-crx="mouette"></canvas><b>CROUSTI’PORT</b><small>LE POULET DU VIEUX-PORT</small><span class="crv-autocol">CROUSTI<br>À GOGO !</span></div>
+<div class="crv-tete"><div class="crv-bourse">TA BOURSE<b>${enEuros(e.euros||0)}</b></div><canvas data-crx="mouette"></canvas><b>CROUSTI'PORT</b><small>LE POULET DU VIEUX-PORT</small><span class="crv-autocol">CROUSTI<br>À GOGO !</span></div>
 ${repu?'<div class="crv-repu">😋 Tu es repu encore <b>'+Math.ceil((REPU_FIN-Date.now())/60000)+' min</b> : tu marches 15 % plus vite. Un nouveau menu prolonge.</div>':''}
 ${ordre.map(k=>{const M=MENUS_CROUSTI.find(m=>m[0]===k);if(!M)return '';const [id,nom,,px,mn]=M;const cher=(e.euros||0)<px;
 return '<div class="crv-item"><canvas data-crx="'+id+'"></canvas><div class="crv-t"><b>'+nom+'</b><small>'+DESC[id]+(mn?' · repu '+mn+' min':'')+'</small></div>'+
@@ -24671,7 +24671,7 @@ vibrer(20);cptMaj();
 const total=ks.reduce((t,k)=>t+CPT.prix[k]*combien(k),0);
 const nb=ks.reduce((t,k)=>t+combien(k),0);
 const pd=ks.reduce((t,k)=>t+combien(k)*1,0);
-$(‘cptCombien’).textContent=nb+’ objet’+(nb>1?’s’:’’)+’ sur le comptoir’;
+$('cptCombien').textContent=nb+' objet'+(nb>1?'s':'')+' sur le comptoir';
 $('cptPoids').textContent=pd+' de charge rendue';
 $('cptTotal').textContent=cptSou(total);
 $('cptArgent').textContent=enEuros(e.euros||0);

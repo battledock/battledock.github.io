@@ -37,12 +37,7 @@ location.replace(u);
 .catch(function(){});
 }
 verifier();
-document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){
-if(window.__JEU_DEMARRE)return;
-var d=document.createElement('div');d.style.cssText='position:fixed;inset:0;z-index:9999;background:#1d1a14;color:#f2e8d0;display:flex;align-items:center;justify-content:center;padding:24px;font:16px Georgia,serif;text-align:center;line-height:1.5';
-d.innerHTML='<div><b style="font-size:20px">Ton navigateur est trop ancien pour Battle Dock</b><br><br>Mets à jour <b>Chrome</b> ou <b>Samsung Internet</b> depuis le Play Store, puis rouvre le jeu.<br><br><small style="opacity:.7">'+(navigator.userAgent||'').replace(/[<>]/g,'').slice(0,160)+'</small></div>';
-document.body.appendChild(d);
-},1500);});
+/* (écran « navigateur trop ancien » retiré) */
 var vu=Date.now();
 document.addEventListener('visibilitychange',function(){
 if(document.visibilityState!=='visible')return;
