@@ -559,6 +559,16 @@ if(joueur.y>QUAI_Y-15)joueur.y=QUAI_Y-15;
 }
 
 
+/* ========== POISSONS (état persistant) ========== */
+const poissons=[];
+for(let i=0;i<7;i++){
+  poissons.push({
+    x:A(i+7000)*MONDE_W, y:EAU_Y+25+A(i+7100)*(MONDE_H-EAU_Y-50),
+    vx:8+A(i+7200)*14, sz:7+A(i+7300)*11, ph:A(i+7400)*6.28, w:0,
+    dir:A(i+7500)>.5?1:-1
+  });
+}
+
 /* ========== BOUCLE DE JEU ========== */
 let t0=0, eauT=0;
 requestAnimationFrame(function boucle(t){
@@ -570,14 +580,65 @@ eauT+=dt;
 majJoueur(dt);
 Actors.maj(dt);
 
-/* Eau animée (shimmer turquoise) */
+/* Eau animée — caustiques fluides + ombres de poissons */
 Render.dessinerSur('ombres',(c2,cx,cy,vw,vh)=>{
   const sy0=Math.max(0,EAU_Y-cy), sy1=Math.min(vh,MONDE_H-cy);
   if(sy0>=sy1) return;
-  for(let sy=sy0;sy<sy1;sy+=3){
+
+  /* --- Caustiques 2D (lumière sous-marine) --- */
+  const S=6;
+  for(let sy=sy0;sy<sy1;sy+=S){
     const wy=cy+sy;
-    const sh=Math.sin(eauT*1.0+wy*.05)*.03+Math.sin(eauT*.4+wy*.02)*.02;
-    if(sh>0.005){c2.fillStyle=`rgba(160,225,235,${sh.toFixed(3)})`;c2.fillRect(0,sy,vw,1);}
+    for(let sx=0;sx<vw;sx+=S){
+      const wx=cx+sx;
+      const v=Math.sin(wx*.02+eauT*.7)*Math.sin(wy*.025+eauT*.5)
+             +Math.sin((wx+wy)*.015+eauT*.3)*.5
+             +Math.sin(wx*.04-eauT*1.1)*Math.sin(wy*.03+eauT*.8)*.3;
+      if(v>.15){
+        c2.fillStyle=`rgba(180,240,250,${((v-.15)*.08).toFixed(3)})`;
+        c2.fillRect(sx,sy,S,S);
+      }else if(v<-.2){
+        c2.fillStyle=`rgba(10,50,80,${((.2+v)*-.05).toFixed(3)})`;
+        c2.fillRect(sx,sy,S,S);
+      }
+    }
+  }
+
+  /* --- Ondulations de surface (bord eau) --- */
+  const bandH=12;
+  const sby=Math.max(sy0,EAU_Y-cy), sey=Math.min(sy0+bandH,sy1);
+  for(let sy=sby;sy<sey;sy++){
+    const wy=cy+sy;
+    const a=(.03-.025*((sy-sby)/bandH));
+    const off=Math.sin(eauT*.6+wy*.1)*2;
+    c2.fillStyle=`rgba(200,245,255,${a.toFixed(3)})`;
+    c2.fillRect(off,sy,vw,1);
+  }
+
+  /* --- Ombres de poissons --- */
+  for(const f of poissons){
+    f.w+=dt*3;
+    f.x+=f.vx*f.dir*dt;
+    if(f.dir>0&&f.x>MONDE_W+30){f.x=-30;f.y=EAU_Y+25+Math.random()*(MONDE_H-EAU_Y-50);}
+    if(f.dir<0&&f.x<-30){f.x=MONDE_W+30;f.y=EAU_Y+25+Math.random()*(MONDE_H-EAU_Y-50);}
+    const px=f.x-cx, py=f.y-cy;
+    if(px<-40||px>vw+40||py<sy0-10||py>sy1+10) continue;
+    const tw=Math.sin(f.w+f.ph)*.3;
+    c2.save();
+    c2.translate(px,py);
+    c2.scale(f.dir,1);
+    c2.globalAlpha=.1;
+    c2.fillStyle='#0a2a3a';
+    c2.beginPath();
+    c2.ellipse(0,0,f.sz,f.sz*.38,0,0,Math.PI*2);
+    c2.fill();
+    c2.beginPath();
+    c2.moveTo(-f.sz*.8,0);
+    c2.lineTo(-f.sz*1.4,-f.sz*.35+tw*f.sz);
+    c2.lineTo(-f.sz*1.4,f.sz*.35+tw*f.sz);
+    c2.closePath();
+    c2.fill();
+    c2.restore();
   }
 });
 
