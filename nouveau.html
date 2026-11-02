@@ -136,41 +136,52 @@ for(let i=0;i<60;i++){
   }
 }
 
-/* --- MER MÉDITERRANÉE --- */
-for(let y=EAU_Y;y<MONDE_H;y++){
-  const t=(y-EAU_Y)/(MONDE_H-EAU_Y);
-  ctx.fillStyle=`rgb(${14+Math.floor(t*12)},${80+Math.floor((1-t)*55)},${105+Math.floor((1-t)*35)})`;
-  ctx.fillRect(0,y,MONDE_W,1);
-  for(let x=0;x<MONDE_W;x+=2){
-    const v=A(x*0.3+y*0.7+100)*0.05;
-    if(v>0.01) R(x,y,2,1,`rgba(255,255,255,${v.toFixed(3)})`);
+/* --- MER MÉDITERRANÉE (style pixel port d'origine) --- */
+{
+  const merH=MONDE_H-EAU_Y;
+  const B=['#4e7fa8','#44749c','#3b6890','#325c84','#2a5178'];
+  for(let i=0;i<B.length;i++){
+    const y0=EAU_Y+Math.round(merH*i/B.length);
+    const y1=EAU_Y+Math.round(merH*(i+1)/B.length);
+    ctx.fillStyle=B[i]; ctx.fillRect(0,y0,MONDE_W,y1-y0);
   }
-}
-/* Écume */
-for(let x=0;x<MONDE_W;x++){
-  const w=Math.floor(A(x*0.1+200)*5);
-  for(let dy=0;dy<2+w;dy++){
-    const al=0.25*(1-dy/(2+w));
-    R(x,EAU_Y+dy,1,1,`rgba(168,232,224,${al.toFixed(2)})`);
+  /* ligne de surface claire */
+  R(0,EAU_Y,MONDE_W,1,'#9ec8e0');
+  /* reflets pixel (comme l'original) */
+  for(let k=0;k<600;k++){
+    const t=A(k*7.3), x=Math.floor(A(k*2.1)*MONDE_W);
+    const y=EAU_Y+Math.round(Math.pow(t,1.5)*merH);
+    const L=1+Math.floor(t*4);
+    R(x,y,L,1,t<0.5?'rgba(220,240,250,.45)':'rgba(255,255,255,.28)');
   }
 }
 
-/* --- BORD DU QUAI (pierre sombre) --- */
-ctx.fillStyle='#9a9488';
-ctx.fillRect(0,QUAI_Y,MONDE_W,EAU_Y-QUAI_Y);
-ctx.fillStyle='#8a8478';
-ctx.fillRect(0,QUAI_Y+2,MONDE_W,2);
-ctx.fillStyle='rgba(0,0,0,.18)';
-ctx.fillRect(0,EAU_Y-2,MONDE_W,2);
+/* --- QUAI — bordure pierre (style pixel port d'origine) --- */
+{
+  const qH=EAU_Y-QUAI_Y, s=2;
+  /* fond quai */
+  ctx.fillStyle='#8a8276'; ctx.fillRect(0,QUAI_Y,MONDE_W,qH);
+  /* briques alternées */
+  for(let r=0;r<Math.ceil(qH/(2*s));r++){
+    const yy=QUAI_Y+r*2*s;
+    for(let x=(r%2?-s:0);x<MONDE_W;x+=4*s){
+      R(x,yy,4*s-1,2*s-1,r%2?'#938b7e':'#89806f');
+      R(x,yy,4*s-1,1,r%2?'#a79e8e':'#9a9183');
+    }
+  }
+  /* liseré supérieur + ombre */
+  R(0,QUAI_Y,MONDE_W,1,'#b3a996');
+  R(0,QUAI_Y-1,MONDE_W,1,'#5e5950');
+}
 /* Ligne de sécurité jaune */
 ctx.fillStyle='#c8a832';
 ctx.fillRect(0,QUAI_Y-4,MONDE_W,3);
-/* Bollards */
+/* Bollards (bittes d'amarrage pixel) */
 for(let x=40;x<MONDE_W;x+=70){
   const bx=x+Math.floor(A(x*0.7+50)*8)-4;
-  ctx.fillStyle='#4a4640';ctx.fillRect(bx-3,QUAI_Y+6,6,8);
-  ctx.fillStyle='#6a6660';ctx.fillRect(bx-2,QUAI_Y+7,4,3);
-  ctx.fillStyle='#999';ctx.fillRect(bx-1,QUAI_Y+7,2,1);
+  R(bx-3,QUAI_Y+4,6,5,'#3b3f44');
+  R(bx-4,QUAI_Y+2,8,3,'#4a4f55');
+  R(bx-4,QUAI_Y+2,8,1,'#646a71');
 }
 
 /* --- VOIES DE CIRCULATION --- */
@@ -204,7 +215,7 @@ return c;
 
 
 /* ========== INIT MOTEUR DE RENDU ========== */
-Render.init('c',MONDE_W,MONDE_H,{zoom:1.35});
+Render.init('c',MONDE_W,MONDE_H,{zoom:1.1});
 Render.setSol(construireSol());
 /* Render.debug.fps=true; */ /* décommenter pour le compteur FPS */
 
@@ -576,14 +587,14 @@ eauT+=dt;
 majJoueur(dt);
 Actors.maj(dt);
 
-/* Eau animée (shimmer) */
+/* Eau animée (shimmer pixel discret) */
 Render.dessinerSur('ombres',(c2,cx,cy,vw,vh)=>{
   const sy0=Math.max(0,EAU_Y-cy), sy1=Math.min(vh,MONDE_H-cy);
   if(sy0>=sy1) return;
-  for(let sy=sy0;sy<sy1;sy+=2){
+  for(let sy=sy0;sy<sy1;sy+=4){
     const wy=cy+sy;
-    const sh=Math.sin(eauT*1.5+wy*.08)*.03+Math.sin(eauT*.7+wy*.03)*.02;
-    if(sh>0){c2.fillStyle=`rgba(255,255,255,${sh.toFixed(3)})`;c2.fillRect(0,sy,vw,2);}
+    const sh=Math.sin(eauT*1.2+wy*.06)*.025+Math.sin(eauT*.5+wy*.025)*.015;
+    if(sh>0.005){c2.fillStyle=`rgba(220,240,250,${sh.toFixed(3)})`;c2.fillRect(0,sy,vw,1);}
   }
 });
 
