@@ -56,11 +56,11 @@ const STATIONS_VELO=[[118,240],[1642,240]];            /* les stations de vélos
 const surPonton=(x,y)=>false;   /* pontons retirés */
 const dansLeBassin=(x,y)=>x>XP.bassinO&&x<XP.bassinE&&y>XP.quaiY;
 function bloqueExtramar(x,y){
-const dansRuelle=Math.abs(x-XP.ruelle.x)<XP.ruelle.l&&y>=XP.ruelle.haut;   /* la montée du casino */
+/* ruelle/escalier retire */
 /* LE BAS DE LA CARTE RETIENT TOUT LE MONDE. On s'arrete au bord du quai,
    on continue de pousser vers le sud, et c'est la demi-seconde de poussee
    qui emmene au bois — pas un pas de plus hors du cadre. */
-if(x<XP.debutVille+8||x>XP.finVille-8||(y<XP.maisonsY+6&&!dansRuelle)||y>MONDE_H-6)return true;
+if(x<XP.debutVille+8||x>XP.finVille-8||y<XP.ruelle.haut||y>MONDE_H-6)return true;
 if(dansLeBassin(x-3,y)||dansLeBassin(x+3,y)||dansLeBassin(x,y+2)){
 if(!surPonton(x,y))return true;              /* l'eau : on ne nage pas */
 }
@@ -352,98 +352,8 @@ graverLesCollines(g,0,XP.debutVille+300,164,-1);
    de bout, pas seulement de celui de l'est : sans cela on les voyait se
    couper net au-dessus de la nouvelle esplanade de l'ouest. */
 graverLesToitsDuFond(g,XP.finVille-72,160,XP.debutVille+72);
-{
-const cx=XP.ruelle.x, xg=cx-141, xd=cx+141, ym=XP.maisonsY+6;
-[[xg,cx-140,1],[cx+140,xd,-1]].forEach(([a,b,sens],j)=>{
-for(let y=0;y<ym;y+=4)for(let x=a;x<b;x+=5){R(x,y,5,4,((x+y*3)>>2)%3?'#b85e32':'#c9743e');R(x+4,y,1,4,'#8f3f20');R(x,y,5,1,'#e0925a');}
-const fx=Math.round((a+b)/2);R(fx-1,0,3,ym,'#e59a62');R(fx+(sens>0?2:-3),0,1,ym,'#8f3f20');
-R(sens>0?a:fx+2,0,sens>0?fx-a-1:b-fx-2,ym,'rgba(60,25,10,.16)');
-for(let y=24;y<ym-20;y+=46){R(fx-4,y,8,9,'#d6c6a0');R(fx-4,y,8,2,'#efe6cc');R(fx-5,y-2,10,3,'#9e8a64');}
-const mur=sens>0?b-6:a;
-R(mur,0,6,ym,['#dfb672','#dca088'][j]);R(mur,0,6,ym,'rgba(0,0,0,.0)');
-R(sens>0?mur:mur+5,0,1,ym,'rgba(60,35,15,.35)');
-for(let y=18;y<ym-10;y+=34){R(mur+1,y,4,10,'#3a2616');R(mur+1,y,4,1,'#7a5230');           /* une porte */
-R(mur+1,y+14,4,5,'#2e3a44');                                                            /* une fenêtre */
-R(sens>0?mur-2:mur+6,y-4,2,3,'#3b3a36');R(sens>0?mur-2:mur+6,y-1,2,2,'#ffd98a');}      /* une lanterne */
-});
-const x0=cx-140, w=280, tx=x0+70, tw=140;   /* l'escalier couvre k=4+k=5 : 280px */
-for(let y=XP.maisonsY+6,k=0;y>XP.ruelle.haut-14;k++){
-const palier=k%6===5, h=palier?10:6, yh=y-h;
-R(x0,yh,w,h,palier?'#f3eee4':'#e9e3d6');R(x0,yh,w,1,'#ffffff');R(x0,y-2,w,2,'#bdb4a2');
-for(let i=0;i<3;i++){const vx=x0+alea(k*5+i)*w;R(vx,yh+1,1,h-3,'rgba(140,130,120,.35)');R(vx+1,yh+2+alea(i+k)*2,2,1,'rgba(140,130,120,.35)');}   /* les veines du marbre */
-R(tx,yh,tw,h,'#9e1822');R(tx,y-2,tw,2,'#6a0e14');R(tx,yh,1,h,'#d8b050');R(tx+tw-1,yh,1,h,'#d8b050');
-if(!palier){R(tx-2,y-3,tw+4,1,'#f0cf7d');R(tx-3,y-4,2,2,'#c9a24a');R(tx+tw+1,y-4,2,2,'#c9a24a');}     /* la tringle */
-else{
-[x0+4,x0+w-7].forEach(px=>{R(px,yh-4,3,10,'#b8902e');R(px+1,yh-4,1,10,'#f0cf7d');R(px-1,yh-6,5,3,'#f0cf7d');R(px-1,yh+5,5,2,'#8a6a20');});
-g.strokeStyle='#8a1420';g.lineWidth=1.4;
-[x0+5.5,x0+w-5.5].forEach(px=>{g.beginPath();g.moveTo(px,yh-3);g.quadraticCurveTo(px+(px<cx?2.5:-2.5),yh-14,px,yh-26);g.stroke();});
-}
-y-=h;
-}
-R(x0-3,0,3,XP.maisonsY+6,'#c9a24a');R(x0-3,0,1,XP.maisonsY+6,'#f0cf7d');                        /* les bordures dorées */
-R(x0+w,0,3,XP.maisonsY+6,'#c9a24a');R(x0+w+2,0,1,XP.maisonsY+6,'#8a6a20');
-const hy=XP.ruelle.haut-14;
-R(x0,0,w,hy,'#2a2420');
-g.fillStyle='#e9e3d6';g.beginPath();g.moveTo(x0-4,hy+2);g.lineTo(x0-4,hy-8);g.arc(cx,hy-8,w/2+4,Math.PI,0);g.lineTo(x0+w+4,hy+2);g.lineTo(x0+w,hy+2);
-g.lineTo(x0+w,hy-8);g.arc(cx,hy-8,w/2,0,Math.PI,true);g.lineTo(x0,hy+2);g.closePath();g.fill();
-g.strokeStyle='#d8b050';g.lineWidth=1;g.beginPath();g.arc(cx,hy-8,w/2+2,Math.PI,0);g.stroke();
-const fond=g.createLinearGradient(0,hy,0,hy+24);fond.addColorStop(0,'rgba(20,16,12,.55)');fond.addColorStop(1,'rgba(20,16,12,0)');
-g.fillStyle=fond;g.fillRect(x0,hy,w,24);
-const ey=Math.max(0,hy-30);
-R(cx-34,ey-1,68,17,'#5a0e14');R(cx-33,ey,66,15,'#9e1822');R(cx-33,ey,66,1,'#c83a44');
-for(let k=0;k<17;k++){R(cx-33+k*4,ey-1,2,2,k%2?'#fff4b0':'#ffd24a');R(cx-33+k*4,ey+14,2,2,k%2?'#ffd24a':'#fff4b0');}
-/* LE COMPLEXE FESTIF, en lettres de pixels : net à toutes les tailles */
-{const A2={A:[[0,1,0],[1,0,1],[1,1,1],[1,0,1],[1,0,1]],C:[[1,1,1],[1,0,0],[1,0,0],[1,0,0],[1,1,1]],
- E:[[1,1,1],[1,0,0],[1,1,0],[1,0,0],[1,1,1]],F:[[1,1,1],[1,0,0],[1,1,0],[1,0,0],[1,0,0]],
- I:[[1,1,1],[0,1,0],[0,1,0],[0,1,0],[1,1,1]],L:[[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,1,1]],
- M:[[1,0,1],[1,1,1],[1,1,1],[1,0,1],[1,0,1]],O:[[1,1,1],[1,0,1],[1,0,1],[1,0,1],[1,1,1]],
- P:[[1,1,1],[1,0,1],[1,1,1],[1,0,0],[1,0,0]],S:[[1,1,1],[1,0,0],[1,1,1],[0,0,1],[1,1,1]],
- T:[[1,1,1],[0,1,0],[0,1,0],[0,1,0],[0,1,0]],X:[[1,0,1],[1,0,1],[0,1,0],[1,0,1],[1,0,1]],
- ' ':[[0],[0],[0],[0],[0]]};
- const lignes=['LE COMPLEXE','FESTIF'];
- lignes.forEach((mot,n)=>{
-   let lg=0;for(const ch of mot)lg+=(A2[ch]?A2[ch][0].length:1)+1;
-   let px=cx-(lg-1)/2;
-   for(const ch of mot){const G=A2[ch]||A2[' '];
-     for(let r=0;r<5;r++)for(let c=0;c<G[0].length;c++)if(G[r][c]){
-       R(px+c,ey+1+n*6+r+0.5,1,1,'#7a0a10');
-       R(px+c,ey+1+n*6+r,1,1,'#ffe49a');}
-     px+=G[0].length+1;}});}
-/* =========== L'ENTRÉE DU COMPLEXE, EN HALLOWEEN ===========
-   Des citrouilles sur chaque palier de l'escalier, l'enseigne aux ampoules
-   orange et violettes, des toiles d'araignée dans l'arche, des chauves-
-   souris dessus, une banderole « HALLOWEEN PARTY » et deux grosses
-   citrouilles au pied du tapis rouge. */
-{const cit=(x,y,s2)=>{const c=['#b8500e','#e8761e','#f08a2a','#e8761e','#b8500e'];
-   for(let i=0;i<5;i++)R(x+(i-2.5)*s2,y-s2*2.6,s2,s2*2.8,c[i]);R(x-s2*2.2,y-s2*2.9,s2*4.4,s2*0.6,'#d8661a');
-   R(x-s2*0.3,y-s2*3.6,s2*0.7,s2,'#3a6a2a');
-   R(x-s2*1.5,y-s2*1.9,s2*0.8,s2*0.7,'#ffd84a');R(x+s2*0.7,y-s2*1.9,s2*0.8,s2*0.7,'#ffd84a');R(x-s2*1.2,y-s2*0.9,s2*2.4,s2*0.5,'#ffd84a');};
- /* les paliers : une citrouille de chaque côté */
- for(let y=XP.maisonsY+6,k=0;y>XP.ruelle.haut-14;k++){const palier=k%6===5,h=palier?10:6;
-   if(palier){cit(x0+12,y-1,2.3);cit(x0+w-13,y-1,2.3);}y-=h;}
- /* deux grosses citrouilles au pied du tapis */
- cit(x0-10,XP.maisonsY+6,3.4);cit(x0+w+10,XP.maisonsY+6,3.4);
- /* l'enseigne : ampoules orange et violettes */
- for(let k=0;k<17;k++){R(cx-33+k*4,ey-1,2,2,k%2?'#ff8a1a':'#b05aff');R(cx-33+k*4,ey+14,2,2,k%2?'#b05aff':'#ff8a1a');}
- /* la banderole sous l'enseigne */
- R(cx-30,ey+18,60,8,'#1a1020');R(cx-30,ey+18,60,1,'#ff8a1a');R(cx-30,ey+25,60,1,'#ff8a1a');
- {const A3={H:[[1,0,1],[1,0,1],[1,1,1],[1,0,1],[1,0,1]],A:[[0,1,0],[1,0,1],[1,1,1],[1,0,1],[1,0,1]],L:[[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,1,1]],
-   O:[[1,1,1],[1,0,1],[1,0,1],[1,0,1],[1,1,1]],W:[[1,0,1],[1,0,1],[1,0,1],[1,1,1],[1,0,1]],E:[[1,1,1],[1,0,0],[1,1,0],[1,0,0],[1,1,1]],N:[[1,0,1],[1,1,1],[1,1,1],[1,0,1],[1,0,1]]};
-  const mot='HALLOWEEN';let px=cx-(mot.length*4-1)/2;for(const ch of mot){const G=A3[ch];for(let r=0;r<5;r++)for(let c=0;c<3;c++)if(G[r][c])R(px+c,ey+19.5+r,1,1,'#ffb04a');px+=4;}}
- /* des toiles d'araignée dans les coins de l'arche */
- g.strokeStyle='rgba(235,235,250,.55)';g.lineWidth=.6;
- for(const [ox,sens] of [[x0,1],[x0+w,-1]]){const oy=hy-8;for(let k=0;k<5;k++){const a=-Math.PI/2+sens*(k*Math.PI/10)*(sens>0?1:1);
-   g.beginPath();g.moveTo(ox,oy);g.lineTo(ox+sens*Math.cos(k*Math.PI/10)*16,oy-Math.sin(k*Math.PI/10)*16+16);g.stroke();}
-   for(const q of [5,10,15]){g.beginPath();for(let k=0;k<5;k++){const px2=ox+sens*Math.cos(k*Math.PI/10)*q,py2=oy-Math.sin(k*Math.PI/10)*q+q;k?g.lineTo(px2,py2):g.moveTo(px2,py2);}g.stroke();}}
- /* le fond de l'arche, violet */
- g.fillStyle='rgba(110,40,160,.28)';g.fillRect(x0,hy-30,w,30);
- /* des chauves-souris au-dessus de l'arche */
- g.fillStyle='rgba(16,8,20,.9)';
- for(const [bx,by,sc] of [[cx-40,ey-14,1],[cx+38,ey-20,.8],[cx+8,ey-26,.7],[cx-18,ey-30,.6]]){
-   g.save();g.translate(bx,by);g.scale(sc,sc);g.beginPath();g.moveTo(0,0);g.quadraticCurveTo(-4,-4,-10,-2);g.quadraticCurveTo(-7,0,-7,2);g.quadraticCurveTo(-4,0,-3,2);
-   g.quadraticCurveTo(0,1,3,2);g.quadraticCurveTo(4,0,7,2);g.quadraticCurveTo(7,0,10,-2);g.quadraticCurveTo(4,-4,0,0);g.fill();g.restore();}
-}
-}
+/* escalier du complexe festif retire */
+
 for(let y=XP.quaiY;y<MONDE_H;y++){
 const k=(y-XP.quaiY)/(MONDE_H-XP.quaiY);
 for(let x=XP.bassinO;x<XP.bassinE;x+=2){
@@ -469,20 +379,7 @@ R(XP.bassinO,XP.quaiY+7,XP.bassinE-XP.bassinO,2,'rgba(10,40,60,.35)');
 /* (le tremplin etait grave ici : le quai est redevenu plat) */
 R(0,XP.maisonsY-2,MONDE_L,8,'rgba(60,40,20,.12)');
 /* (le sol fin, au demi-pixel, est peint par affinerLeSolExtramar) */
-/* LA GRANDE AFFICHE se pose avant le garde-corps : son pied passe
-   derriere la balustrade, comme si elle etait plantee de l'autre cote. */
-/* LES DEUX AFFICHES, chacune au milieu de son esplanade. Les esplanades
-   faisant maintenant la meme largeur, les deux distances sont egales : 25
-   px de bois nu entre le cadre et la facade, 25 entre le cadre et le bord
-   du cadre du monde, des deux cotes. */
-/* LA FORÊT REPREND SA PLAQUE EMAILLEE BLEUE. Les deux bouts du quai
-   etaient passes ensemble a l'affiche peinte, et ils se ressemblaient
-   trop : meme cadre, meme bandeau, meme construction — deux planches
-   d'une meme serie, et l'on ne savait plus lequel on regardait.
-   Le bleu de l'est contre le coucher de soleil de l'ouest : on reconnait
-   son bout de quai d'un coup d'oeil. La ferme ne bouge pas. */
-graverLAffiche(g,Math.round((XP.finVille+MONDE_L)/2),XP.maisonsY-4,'email','LA FORÊT',1);
-graverLAffiche(g,Math.round(XP.debutVille/2),XP.maisonsY-4,'peinte_ferme','LA FERME',-1);
+/* affiches foret/ferme retirees */
 /* ================= PLUS DE GARDE-CORPS AU BOUT =================
    Une balustrade fermait les deux esplanades. Elle expliquait pourquoi on
    ne monte pas au coteau, mais elle barrait la vue d'un mur clair en
@@ -1807,29 +1704,11 @@ return {toile:c,W,H,sol:H-5};
 function semerDecorExtramar(){
 DECOR=[];
 const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
-/* TOUTES LES BOUTIQUES RETIREES : seuls les immeubles restent */
-for(let k=0;k<10;k++){
-if(k===4||k===5)continue;   /* le grand escalier du complexe festif */
-P('x_maison',XP.rangX0+k*140,XP.maisonsY,{v:k,col:[70,24]});
-}
-/* LES DEUX PLATANES DU QUAI, chacun avec son banc. Celui de l'ouest avait
-   ete arrache : il poussait en 44,212, au milieu du couloir du chemin, et
-   l'on butait dessus au lieu de s'en aller. Il replante en 390, le miroir
-   exact de celui de l'est autour de l'axe de la rangee (880) — donc sur le
-   quai, devant les facades, et non sur l'esplanade qui reste nue des deux
-   cotes. */
-/* LES PLATANES S'ECARTENT D'UN DEMI-IMMEUBLE : ils cachaient les vitrines du kayak (k=1) et du karting (k=8). Ils poussent maintenant entre deux facades. */
-[316,1444].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+(k?-30:30),XP.maisonsY+72,{col:[23,7]});});
+/* batiments (x_maison) retires */
+/* platanes et bancs des facades retires */
 /* LA STATION DE TOKYO (facade k=2) : c'est la que le train part. */
 /* station de tokyo retirée */
-/* LE TABLEAU DU PORT, DEVANT LE CENTRE DES ESCALIERS. Il etait decale de
-   58 px a l'ouest pour ne jamais gener la montee ; on le remet dans l'axe,
-   face aux marches, ou le regard tombe dessus en arrivant.
-   ON PASSE TOUJOURS : sa boite de collision fait 16 de demi-largeur, soit
-   32 px barres au milieu d'une ruelle qui en fait 76. Il reste 22 px de
-   chaque cote dans la ruelle, et tout le quai en dessous — la montee ne
-   commence qu'au-dessus de maisonsY+6, le tableau est 46 px plus bas. */
-P('x_tableau',XP.ruelle.x,XP.maisonsY+120,{col:[16,12]});   /* descendu dans la grande place, centré sur les escaliers */
+/* tableau du port retire */
 /* LE HANGAR IDLE DOCKER — bâtiment indépendant sur le quai est */
 XCAL['x_hangar0']=graverLeHangar();CALQUES_DECO['x_hangar']=XCAL['x_hangar0'];
 P('x_hangar',XP.finVille-60,XP.quaiY-80,{col:[50,40],bati:true,demi:40,ouvre:'idle_docker'});
@@ -1899,21 +1778,7 @@ for(let i=0;i<900;i++){
   R(x,y,1+A(i)*2,0.5,'rgba(100,98,94,.10)');
 }
 
-/* ================= L'OMBRE DES FAÇADES SUR LE QUAI =================
-   Les immeubles posaient sur la pierre sans rien lui faire : ils avaient
-   l'air collés dessus. Le soleil est haut et à gauche — ils portent donc
-   une ombre courte, décalée vers la droite, dense au pied et qui se perd
-   en trois pas. C'est elle qui pose la ville sur le sol. */
-{
-const y0=XP.maisonsY+4, h=30;
-for(let y=0;y<h;y++){
-  const t=y/h, a=0.26*(1-t)*(1-t);
-  R(6+y*0.35,y0+y,MONDE_L,0.5,'rgba(44,34,22,'+a.toFixed(3)+')');
-}
-/* le contact, juste sous la façade : une ligne franche */
-R(0,y0-1,MONDE_L,1.5,'rgba(38,28,18,.30)');
-R(0,y0-1,MONDE_L,0.5,'rgba(30,22,14,.38)');
-}
+/* ombres des facades retirees */
 
 /* ================= LA LUMIÈRE SUR LE QUAI =================
    Un dégradé chaud depuis le haut-gauche, un refroidissement vers l'eau :
