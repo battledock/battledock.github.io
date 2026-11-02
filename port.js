@@ -19,7 +19,7 @@ finVille:1584,                  /* la face est de la derniere facade : la
                                    aux collines */
 debutVille:176,                 /* sa face ouest, le pendant exact : les deux
                                    esplanades font 176 px au meme pixel */
-pontons:[360,880], pontonL:13,           /* le ponton du milieu (620) est retiré, avec ses voiliers */ pontonFin:710,
+/* pontons retirés */
 metro:[1316,736],      /* le métro reprend la place de l'ancienne gare */
 /* LA SORTIE DES BOIS, au bout est de la promenade. Rien n'est bati : un
    panneau dit ou l'on va, et on s'en va en marchant vers l'est, entre la
@@ -53,7 +53,7 @@ const PAV={};
    demi-largeur) reste en dehors des deux couloirs de sortie. */
 const STATIONS_VELO=[[118,240],[1642,240]];            /* les stations de vélos */
 /* sur un vélo : on va plus vite */    /* les deux pavillons du milieu */   /* où l'on prend, où l'on dépose */
-const surPonton=(x,y)=>XP.pontons.some(px=>Math.abs(x-px)<XP.pontonL&&y<XP.pontonFin);
+const surPonton=(x,y)=>false;   /* pontons retirés */
 const dansLeBassin=(x,y)=>x>XP.bassinO&&x<XP.bassinE&&y>XP.quaiY;
 function bloqueExtramar(x,y){
 const dansRuelle=Math.abs(x-XP.ruelle.x)<XP.ruelle.l&&y>=XP.ruelle.haut;   /* la montée du casino */
@@ -464,16 +464,7 @@ margelle(XP.bassinO-4,XP.quaiY-4,XP.bassinE-XP.bassinO+8,5);
 R(XP.bassinO,XP.quaiY+1,XP.bassinE-XP.bassinO,6,'#8f8468');
 R(XP.bassinO,XP.quaiY+7,XP.bassinE-XP.bassinO,2,'rgba(10,40,60,.35)');
 /* (plus de margelle ni a l'ouest ni a l'est : l'eau continue hors du cadre) */
-XP.pontons.forEach(px=>{
-const x0=px-XP.pontonL, w=XP.pontonL*2;
-R(x0+2,XP.quaiY+2,w,XP.pontonFin-XP.quaiY+2,'rgba(10,40,60,.35)');   /* l'ombre */
-for(let y=XP.quaiY-2;y<XP.pontonFin;y+=4){
-R(x0,y,w,4,(y/4)%2?'#9a7248':'#a97f52');R(x0,y,w,1,'#c29868');R(x0,y+3,w,1,'#6b4a2c');
-}
-for(let y=XP.quaiY+20;y<=XP.pontonFin;y+=40){
-R(x0-2,y-2,3,6,'#5b3f21');R(x0+w-1,y-2,3,6,'#5b3f21');
-}
-});
+/* pontons retirés — plus de tablier de bois dans le bassin */
 /* (le boulodrome etait grave ici : il est sous l'eau desormais) */
 /* (le tremplin etait grave ici : le quai est redevenu plat) */
 R(0,XP.maisonsY-2,MONDE_L,8,'rgba(60,40,20,.12)');
@@ -1816,18 +1807,9 @@ return {toile:c,W,H,sol:H-5};
 function semerDecorExtramar(){
 DECOR=[];
 const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
+/* TOUTES LES BOUTIQUES RETIREES : seuls les immeubles restent */
 for(let k=0;k<10;k++){
-if(k===4||k===5)continue;                                            /* k=4+k=5 : le grand escalier du complexe festif */
-if(k===0)continue;   /* (Chez Fonfon retiré) */
-if(k===9){XCAL['x_presse0']=graverLaPresse();CALQUES_DECO['x_presse']=XCAL['x_presse0'];P('x_presse',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'presse'});continue;}   /* la maison de la presse */
-if(k===2)continue;   /* emplacement libre (ancienne boutique de pêche) */
-if(k===6){XCAL['x_peigne0']=graverLePeigne();CALQUES_DECO['x_peigne']=XCAL['x_peigne0'];P('x_peigne',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'salon'});continue;}   /* La Marinière (déplacée de k=5 à k=6) */
-if(k===3){XCAL['x_bar0']=graverLeBarModerne();CALQUES_DECO['x_bar']=XCAL['x_bar0'];P('x_bar',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'bar'});
-continue;}   /* le bar-tabac PMU (sans terrasse) */
-/* k=5 supprimé : absorbé par le grand escalier */
-if(k===7){XCAL['x_crousti0']=graverCroustiPort();CALQUES_DECO['x_crousti']=XCAL['x_crousti0'];P('x_crousti',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'crousti'});continue;}   /* le fast-food du quai */
-if(k===8){XCAL['x_karting0']=graverLeKarting();CALQUES_DECO['x_karting']=XCAL['x_karting0'];P('x_karting',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'karting'});continue;}   /* le karting du quai */
-if(k===1){XCAL['x_kayak0']=graverLesKayaks();CALQUES_DECO['x_kayak']=XCAL['x_kayak0'];P('x_kayak',XP.rangX0+k*140,XP.maisonsY,{col:[70,24],bati:true,demi:56,ouvre:'kayak'});continue;}   /* la location de kayaks */
+if(k===4||k===5)continue;   /* le grand escalier du complexe festif */
 P('x_maison',XP.rangX0+k*140,XP.maisonsY,{v:k,col:[70,24]});
 }
 /* LES DEUX PLATANES DU QUAI, chacun avec son banc. Celui de l'ouest avait
@@ -1839,7 +1821,7 @@ P('x_maison',XP.rangX0+k*140,XP.maisonsY,{v:k,col:[70,24]});
 /* LES PLATANES S'ECARTENT D'UN DEMI-IMMEUBLE : ils cachaient les vitrines du kayak (k=1) et du karting (k=8). Ils poussent maintenant entre deux facades. */
 [316,1444].forEach((x,k)=>{P('x_belArbre',x,XP.maisonsY+60,{v:k,col:[8,4]});P('bancP',x+(k?-30:30),XP.maisonsY+72,{col:[23,7]});});
 /* LA STATION DE TOKYO (facade k=2) : c'est la que le train part. */
-P('x_metroM',XP.rangX0+2*140,XP.maisonsY+88,{col:[44,16],bati:true,demi:50,ouvre:'tokyo'});
+/* station de tokyo retirée */
 /* LE TABLEAU DU PORT, DEVANT LE CENTRE DES ESCALIERS. Il etait decale de
    58 px a l'ouest pour ne jamais gener la montee ; on le remet dans l'axe,
    face aux marches, ou le regard tombe dessus en arrivant.
@@ -1851,16 +1833,7 @@ P('x_tableau',XP.ruelle.x,XP.maisonsY+120,{col:[16,12]});   /* descendu dans la 
 /* LE HANGAR IDLE DOCKER — bâtiment indépendant sur le quai est */
 XCAL['x_hangar0']=graverLeHangar();CALQUES_DECO['x_hangar']=XCAL['x_hangar0'];
 P('x_hangar',XP.finVille-60,XP.quaiY-80,{col:[50,40],bati:true,demi:40,ouvre:'idle_docker'});
-let nv=0;
-[360,620,880].forEach(px=>{                     /* on compte aussi l'ancien ponton du milieu : les autres voiliers gardent leur allure */
-const la=XP.pontons.includes(px);
-for(let y=XP.quaiY+24;y<=XP.pontonFin-6;y+=16){
-if(la&&alea(px*0.37+y*1.13)>0.27)P('x_voilier',px-XP.pontonL-27,y,{v:(nv)*7%11});
-nv++;
-if(la&&alea(px*0.71+y*0.53+9)>0.27)P('x_voilier',px+XP.pontonL+27,y+8,{v:(nv)*7%11,flip:true});
-nv++;
-}
-});
+/* voiliers et pontons retirés */
 /* LE METRO EST DEPOSE. On ne prend plus la ligne 1 pour aller au bois :
    on y va a pied, par le bas du quai droit. */
 /* les réverbères et les bancs du quai sont en dur ; ceux des deux bouts (280, 390, 1496, 1510) sont retirés */
@@ -1871,14 +1844,13 @@ nv++;
    sont retires. C'est la grande affiche, derriere le garde-corps, qui dit
    ou mene le bout du quai. */
 for(let x=24;x<MONDE_L-24;x+=74){
-if(XP.pontons.some(p=>Math.abs(p-x)<26))continue;
 P('x_bitte',x,XP.quaiY-3,{col:[4,3]});
 }
 /* LA LANGUE DE TERRE DU SUD-OUEST EST SOUS L'EAU : avec elle partent les
    quatre platanes, les deux bancs et les quatre boulistes qui s'y
    tenaient. Les boulistes de Notre-Dame-de-la-Garde, eux, ne bougent pas. */
 STATIONS_VELO.forEach(([x,y])=>P('x_stationVelo',x,y,{col:[40,5]}));
-P('x_bateau',XP.pontons[1],XP.pontonFin+118,{col:[26,8],bati:true,ouvre:'bateau'});   /* ton bateau, amarré DANS L'AXE, au bout du ponton de l'est : le long du tablier il chevauchait les voiliers */
+/* ton bateau retiré */
 
 DECOR.forEach(o=>{if(o.t.slice(0,2)==='x_')graverX(o.t,o.v);});
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
