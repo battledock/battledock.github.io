@@ -678,6 +678,7 @@ for(let y=HZ-24;y<HZ;y++)for(let x=1387;x<1457;x++){
 P(1386,HZ-25,72,1,'#a89c8e');P(1456,HZ-25,2,25,'#2a2c30');
 ligne(1366,HZ-17,1392,HZ-26,'#5b534c');ligne(1366,HZ-16,1392,HZ-25,'#3a3530');
 }
+if(nuit){for(let x=1277;x<1372;x+=18)lum(x,HZ-1,1,1,'#fff2c0');for(let x=1505;x<1572;x+=18)lum(x,HZ-1,1,1,'#fff2c0');}   /* les projecteurs des forts */
 /* le fort Saint-Nicolas, de l'autre cote de la passe */
 P(1500,HZ-11,70,11,'#c6ad84');P(1500,HZ-11,70,1,'#dcc6a0');for(let x=1500;x<1570;x+=4)P(x,HZ-13,2,2,'#c6ad84');
 
@@ -757,7 +758,12 @@ const teinter=(cv,monu)=>{
       if(monu&&x>=1386&&x<1458){   /* le MuCEM : la resille en ombre chinoise sur l'interieur allume */
         if(som<200){const v=(y-(HZ-25))/25;dd[o]=118+v*26;dd[o+1]=76+v*16;dd[o+2]=42;}else{dd[o]=34;dd[o+1]=28;dd[o+2]=30;}continue;}
       /* LES PROJECTEURS eclairent par en bas : le pied est dore, le haut retombe dans la nuit */
-      if(monu&&som>380){const f=0.42+0.58*Math.min(1,Math.max(0,y/HZ));
+      if(monu&&som>380){let f=0.42+0.58*Math.min(1,Math.max(0,y/HZ));
+        /* LES FORTS : des projecteurs espaces au pied du mur, chacun son cone de lumiere */
+        const fort=(x>=1268&&x<1376)||(x>=1496&&x<1574);
+        if(fort){const x0=x<1400?1268:1496, k=Math.round((x-x0-9)/18), sx=x0+9+k*18, h=Math.max(0,HZ-y);
+          const cone=Math.exp(-Math.pow((x-sx)/(4+h*0.35),2))*Math.exp(-h/34);
+          f=0.30+0.85*cone;}
         dd[o]=Math.min(255,dd[o]*0.80*f+22);dd[o+1]=dd[o+1]*0.64*f+14;dd[o+2]=dd[o+2]*0.40*f+18;continue;}
       if(monu){dd[o]=dd[o]*0.42+20;dd[o+1]=dd[o+1]*0.36+14;dd[o+2]=dd[o+2]*0.34+16;continue;}
       dd[o]=dd[o]*0.20+6;dd[o+1]=dd[o+1]*0.25+10;dd[o+2]=dd[o+2]*0.40+26;
