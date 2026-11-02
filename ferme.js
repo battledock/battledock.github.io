@@ -2134,7 +2134,7 @@ if(ptPres()){try{const b2=cible();if(b2&&(b2.ouvre||b2.t==='comptoir'||b2.t==='m
 $('action').addEventListener('click',(ev)=>{if(ptPres()){ev.stopImmediatePropagation();ev.preventDefault();vibrer(10);bqOuvrir();}},true);}
 
 
-/* LE CABANON (récompense du niveau 10) : la petite maison de pêcheur des
+/* LE CABANON (récompense du niveau 10) : la petite maison des
    Marseillais, murs chaulés, tuiles rondes, volets bleus. Chacun y a SA
    remise : on y range ce qu'on veut garder hors du sac (cabanon_etat). */
 function graverMonCabanon(){const W=124,H=104,sol=H-8;

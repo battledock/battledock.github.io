@@ -41,9 +41,6 @@
   var NOUV=[
     ['🎃','Halloween à la ferme','Un épouvantail-sorcier au bord du champ et son corbeau, des citrouilles-lanternes le long de toutes les allées, la façade de Madeleine décorée, et un cimetière des légumes où rôde un petit fantôme la nuit.'],
     ['🧺','Les citrouilles de Madeleine','Plante des citrouilles, puis choisis : les vendre, ou les donner à Madeleine. À 200, 500 et 800 dons, trois tenues collector qui ne reviendront jamais : le Seigneur des citrouilles, Tête de citrouille et le Roi de la récolte.'],
-    ['👻','50 espèces d’Halloween','Jusqu’au 2 novembre, des poissons étranges mordent au port et au lac : sardine fantôme, rouget vampire, bébé kraken, objets maudits… et, la nuit seulement, deux légendaires : le Léviathan des Ténèbres et le Capitaine Fantôme.'],
-    ['🐟','La Marée','Une nouvelle poissonnerie au bout du quai, seul endroit où vendre ta pêche. L’étal de glace, le prix du jour et sa tendance, et un onglet Halloween rien que pour les prises maudites.'],
-    ['🎣','Le Pêcheur Heureux refait','Une vraie cabane de pêcheur sur le quai, et une boutique toute neuve : cannes, accessoires, appâts et finitions en cartes claires.'],
     ['🐷','La nouvelle ferme','Une porcherie et ses cochons, un pré à moutons et sa bergerie, et un boulodrome pour jouer à la pétanque contre le village.'],
     ['🏆','La pétanque, en grand','Un nouveau gameplay tactique : poser sa donnée, choisir sa portée, viser au bon moment. Des terrains vivants avec leur public, un Mondial à disputer et ta fiche de joueur.'],
     ['⚓','Le port fait peau neuve','Un quai en granit clair comme le vrai Vieux-Port, une station de métro moderne qui mène à la ferme, à la forêt et à Tokyo.'],

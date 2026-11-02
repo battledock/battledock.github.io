@@ -1,7 +1,7 @@
 /* =====================================================================
    LE MOTEUR DU JEU — tout ce qui est commun à toutes les cartes : le
    joueur, le sac, le dessin, les menus, le carnet, les niveaux, le
-   classement, la messagerie, les boutiques, la pêche, la forêt.
+   classement, la messagerie, les boutiques, la forêt.
 
    Il vivait dans jeu.html ; il est ici pour que chaque page du jeu
    (jeu.html, ferme.html) charge le même moteur, mis en cache une fois,
@@ -2644,23 +2644,15 @@ const PAGES_PORT=[
 {titre:'Se déplacer',sous:'LE POUCE ET LE BOUTON',
 txt:['Pose le pouce <b>n’importe où</b> sur l’écran et fais-le glisser : le joystick apparaît sous ton doigt. '+
 'Pousse jusqu’au bord pour <b>courir</b>.',
-'Près d’un lieu ou d’un objet, un <b>bouton</b> apparaît en bas de l’écran : touche-le pour entrer, pêcher, acheter…'],
+'Près d’un lieu ou d’un objet, un <b>bouton</b> apparaît en bas de l’écran : touche-le pour entrer, acheter…'],
 img:(g,w,h)=>{g.fillStyle='#d9c7a0';g.fillRect(0,0,w,h);g.fillStyle='rgba(0,0,0,.06)';for(let y=0;y<h;y+=14)for(let x=(y/14)%2*12;x<w;x+=24)g.fillRect(x,y,23,1);
 const ox=w*0.3,oy=h*0.55;g.beginPath();g.arc(ox,oy,30,0,7);g.fillStyle='rgba(20,14,8,.12)';g.fill();g.lineWidth=1.5;g.strokeStyle='rgba(250,244,228,.9)';g.stroke();
 g.beginPath();g.arc(ox+16,oy-12,12,0,7);g.fillStyle='#f4ecd8';g.fill();g.fillStyle='#7a1f2b';g.beginPath();g.moveTo(ox+23,oy-18);g.lineTo(ox+11,oy-14);g.lineTo(ox+19,oy-6);g.fill();
 g.fillStyle='rgba(20,14,8,.7)';g.beginPath();g.roundRect?g.roundRect(w*0.56,h*0.62,w*0.38,30,15):g.rect(w*0.56,h*0.62,w*0.38,30);g.fill();
 g.fillStyle='#f4ecd8';g.font='13px Georgia,serif';g.fillText('Entrer',w*0.6,h*0.62+19);}},
-{titre:'Pêcher et vendre',sous:'TON PREMIER GAGNE-PAIN',
-txt:['Va au <b>bout des pontons</b> ou au <b>bord du quai</b>, puis touche <b>Pêcher</b>. Plus l’équipement est bon, plus les prises sont belles : '+
-'cannes, moulinets et appâts au <b>Pêcheur Heureux</b>.',
-'Vends ta pêche à <b>La Marée</b> : les cours bougent chaque jour, regarde la flèche avant de vider ton inventaire.'],
-img:(g,w,h)=>{const m=g.createLinearGradient(0,h*0.45,0,h);m.addColorStop(0,'#34a8ba');m.addColorStop(1,'#1c5a88');g.fillStyle='#d9c7a0';g.fillRect(0,0,w,h*0.45);g.fillStyle=m;g.fillRect(0,h*0.45,w,h);
-g.fillStyle='#a97f52';g.fillRect(w*0.4,h*0.3,w*0.1,h*0.5);for(let y=h*0.3;y<h*0.8;y+=5){g.fillStyle='#6b4a2c';g.fillRect(w*0.4,y,w*0.1,1);}
-g.strokeStyle='#3a2616';g.lineWidth=1.5;g.beginPath();g.moveTo(w*0.47,h*0.72);g.lineTo(w*0.66,h*0.5);g.stroke();g.strokeStyle='rgba(255,255,255,.8)';g.lineWidth=.7;g.beginPath();g.moveTo(w*0.66,h*0.5);g.lineTo(w*0.7,h*0.86);g.stroke();
-g.fillStyle='#e0402f';g.beginPath();g.arc(w*0.7,h*0.86,2.5,0,7);g.fill();
 g.fillStyle='#c8d4dc';g.beginPath();g.ellipse(w*0.84,h*0.7,12,5,0,0,7);g.fill();g.beginPath();g.moveTo(w*0.84+10,h*0.7);g.lineTo(w*0.84+18,h*0.7-5);g.lineTo(w*0.84+18,h*0.7+5);g.fill();}},
 {titre:'Se régaler',sous:'LE GLACIER ET CROUSTI’PORT',
-txt:['Au <b>Glacier du Port</b>, compose un cornet de <b>1 à 3 boules</b> : chaque parfum donne un <b>effet de 10 minutes</b> — marcher plus vite, pêcher plus rare, vendre plus cher.',
+txt:['Au <b>Glacier du Port</b>, compose un cornet de <b>1 à 3 boules</b> : chaque parfum donne un <b>effet de 10 minutes</b> — marcher plus vite, vendre plus cher.',
 'Un menu chez <b>Crousti’Port</b> te rend <b>repu</b> : tu marches plus vite pendant un moment.'],
 img:(g,w,h)=>{g.fillStyle='#ffd0e0';g.fillRect(0,0,w,h);g.fillStyle='#8ad8c0';g.fillRect(0,h-4,w,4);
 for(let i=0;i<w;i+=16){g.fillStyle=(i/16)%2?'#fff':'#f48aa8';g.fillRect(i,0,16,10);}
@@ -3515,13 +3507,11 @@ g.beginPath();g.arc(px-1,sol-24,1,0,7);g.fill();
 }
 CALQUE_BOUTIQUE={toile:c,W,H:Ht,sol};
 }
-const TICKETS=[['poisson','Le Petit Poisson',100,['#1f8ab8','#5ac0e8'],'🐟',[['1 €','1 sur 4'],['2 €','1 sur 7'],['5 €','1 sur 25'],['20 €','1 sur 125'],['100 €','1 sur 1 250']]],
+const TICKETS=[
 ['filet','Le Filet d’Or',300,['#b8862a','#f0cf6a'],'🎣',[['3 €','1 sur 4'],['6 €','1 sur 8'],['15 €','1 sur 30'],['50 €','1 sur 90'],['300 €','1 sur 800']]],
 ['cargo','Le Gros Cargo',1000,['#b81e1e','#f0604a'],'🚢',[['10 €','1 sur 4'],['20 €','1 sur 8'],['50 €','1 sur 30'],['150 €','1 sur 85'],['500 €','1 sur 400']]],
 ['bouteille','La Bouteille à la Mer',200,['#17313f','#7fd0ec'],'🍾',[['3 €','ancre'],['8 €','sirène'],['15 €','étoile'],['40 €','perle'],['150 €','trésor']]]];
 const clair=(h)=>{const n=parseInt(h.slice(1),16);const c=[n>>16,(n>>8)&255,n&255].map(v=>Math.round(v+(255-v)*.28));return 'rgb('+c.join(',')+')';};const al=a=>a[Math.floor(Math.random()*a.length)];const melange=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
-const POISSONS={sardine:['Sardine','#9aa8b8','#dfe6ee'],rouget:['Rouget','#d8503a','#f4a08a'],dorade:['Dorade','#c9a24a','#f0d890'],maquereau:['Maquereau','#2a7ab0','#8ac8e8'],loup:['Loup','#6a7888','#b8c4d0']};
-const poissonSVG=(k,w)=>{const [n,c1,c2]=POISSONS[k];return '<svg viewBox="0 0 40 22" width="'+w+'"><ellipse cx="18" cy="11" rx="13" ry="7" fill="'+c1+'"/><ellipse cx="17" cy="9" rx="9" ry="3" fill="'+c2+'" opacity=".7"/><polygon points="30,11 39,4 39,18" fill="'+c1+'"/><circle cx="10" cy="9.5" r="1.6" fill="#1a1a1a"/>'+(k==='maquereau'?'<path d="M14 5 l3 5 M19 5 l3 5 M24 6 l2 4" stroke="#123" stroke-width="1"/>':'')+'</svg>';};
 const ancre='<svg viewBox="0 0 24 24" width="30"><circle cx="12" cy="4.5" r="2.3" fill="none" stroke="#3a2a0a" stroke-width="1.8"/><path d="M12 7v13 M7 10h10 M4 14c0 4 4 6 8 6s8-2 8-6" fill="none" stroke="#3a2a0a" stroke-width="1.8" stroke-linecap="round"/></svg>';
 const coquille='<svg viewBox="0 0 24 24" width="28"><path d="M12 20 L3 10 Q12 0 21 10 Z" fill="#e8a8a0"/><path d="M12 20 L7 8 M12 20 L12 5 M12 20 L17 8" stroke="#b86a60" stroke-width="1"/></svg>';
 const etoile='<svg viewBox="0 0 24 24" width="28"><path d="M12 2 l2.8 6.6 7 .6-5.3 4.6 1.7 7-6.2-3.8-6.2 3.8 1.7-7L2.2 9.2l7-.6z" fill="#f0a040"/></svg>';
@@ -3606,7 +3596,6 @@ const bullesMotif=(g,W,H,D)=>{for(let k=0;k<6;k++){g.fillStyle='rgba(255,255,255
 const maillesMotif=(g,W,H,D)=>{g.strokeStyle='rgba(255,246,216,.4)';g.lineWidth=D;for(let k=-H;k<W+H;k+=8*D){g.beginPath();g.moveTo(k,0);g.lineTo(k+H,H);g.stroke();g.beginPath();g.moveTo(k,H);g.lineTo(k+H,0);g.stroke();}};
 const nervures=(c)=>(g,W,H,D)=>{g.fillStyle='rgba(0,0,0,.16)';for(let x=3*D;x<W;x+=5*D)g.fillRect(x,0,1.3*D,H);g.fillStyle='rgba(255,255,255,.25)';g.fillRect(0,0,W,2*D);};
 const TK_ICONE={
- poisson:(R)=>{for(let y=0;y<40;y++)R(0,y,64,1,'#1a6a98');
    const bx=16,by=20,lg=30,ht=13;
    for(let i=0;i<lg;i++){const t=i/lg,h=Math.round(ht/2*Math.sqrt(Math.max(.03,1-Math.pow(t*2-.82,2))));
      for(let q=-h;q<=h;q++)R(bx+i,by+q,1,1,q<-h*.3?'#dff0fa':'#5aa8d8');}
@@ -3631,12 +3620,12 @@ const TK_ICONE={
    Quatre titres, qui racontent ce qui se passe sur le port. */
 const PRESSE=[
  {id:'marseillais',nom:'Le Marseillais',prix:180,d:'Les nouvelles du port, chaque matin.',
-  gros:'La Marée bat son record de l’année'},
- {id:'echo',nom:'L’Écho des Quais',prix:220,d:'Pêche, marées et petites annonces.',
+  gros:’Le port bat son record de l’année’},
+ {id:'echo',nom:'L’Écho des Quais',prix:220,d:'Marées et petites annonces.',
   gros:'Un cœlacanthe remonté au Vieux-Port ?'},
  {id:'courrier',nom:'Le Courrier du Soir',prix:320,d:'Le journal du soir, encré de frais.',
   gros:'La cagnotte du Loto grimpe encore'},
- {id:'almanach',nom:'L’Almanach du Pêcheur',prix:650,d:'Marées, lunes et conseils de saison.',
+ {id:'almanach',nom:'L’Almanach des Quais',prix:650,d:'Marées, lunes et vie des quais.',
   gros:'Les nuits de pleine lune font monter le gros'}];
 function presseHTML(){
   return '<div class="bar-t"><canvas width="36" height="36" data-i="journal"></canvas>LA PRESSE'+
@@ -3712,10 +3701,10 @@ async function ouvrirLeBar(){
 $('page2Fond').className='';$('page2').classList.add('on');
 const d0=await appelRPC('mes_grattages',{p_joueur:e.id});let faits=(d0&&typeof d0.aujourdhui==='number')?d0.aujourdhui:0;
 const bulle=(t)=>{const b=$('barBulle');if(!b)return;b.textContent=t;b.classList.add('on');clearTimeout(bulle.t);bulle.t=setTimeout(()=>b.classList.remove('on'),2600);};
-const TKFOND={poisson:'linear-gradient(140deg,#5ac8e8,#1a6a98)',filet:'linear-gradient(140deg,#fdf2d4,#d8b45a)',cargo:'linear-gradient(140deg,#1d3358,#0b1428)',bouteille:'linear-gradient(140deg,#3a7fa0,#15303f)'};
-const MAX={poisson:100,filet:300,cargo:500,bouteille:150};
-const FOND_MINI={poisson:'radial-gradient(circle at 20% 15%,#7fd4e8,transparent 45%),linear-gradient(160deg,#4ab8d8,#1a6a98)',filet:'linear-gradient(135deg,#fbf0cf,#f0dca0 45%,#fff6dc 60%,#e8cc88)',cargo:'linear-gradient(180deg,#0e1a33,#16284a 60%,#0e1a33)',bouteille:'radial-gradient(circle at 26% 18%,#7fd0ec,transparent 42%),linear-gradient(170deg,#2f6a8a,#17313f 62%,#0e2230)'};
-const COUL_MINI={poisson:'#fff',filet:'#4a3410',cargo:'#fff',bouteille:'#eaf4fb'};
+const TKFOND={filet:'linear-gradient(140deg,#fdf2d4,#d8b45a)',cargo:'linear-gradient(140deg,#1d3358,#0b1428)',bouteille:'linear-gradient(140deg,#3a7fa0,#15303f)'};
+const MAX={filet:300,cargo:500,bouteille:150};
+const FOND_MINI={filet:'linear-gradient(135deg,#fbf0cf,#f0dca0 45%,#fff6dc 60%,#e8cc88)',cargo:'linear-gradient(180deg,#0e1a33,#16284a 60%,#0e1a33)',bouteille:'radial-gradient(circle at 26% 18%,#7fd0ec,transparent 42%),linear-gradient(170deg,#2f6a8a,#17313f 62%,#0e2230)'};
+const COUL_MINI={filet:'#4a3410',cargo:'#fff',bouteille:'#eaf4fb'};
 const mini=(nom,k)=>'<span class="bar-mini" style="background:'+FOND_MINI[k]+';color:'+COUL_MINI[k]+'"><small>BAR DES DOCKS</small><b>'+nom+'</b><i></i></span>';
 let ONG='gratter', SEL=[], CH=0, LOTO_T=0, ETAT=null, TKSEL=null;
 /* ================= LE RAYON POKÉDOCK =================
@@ -4347,10 +4336,7 @@ const gratter=(T,d)=>{const C=d.compo||{},n=('000000'+Math.floor(Math.random()*9
 const v=document.createElement('div');v.className='gt';let html='',zones=[];
 try{document.body.classList.add('gratte');}catch(x){}
 try{v.style.touchAction='pan-y';v.style.overscrollBehavior='contain';}catch(e){}
-if(T[0]==='poisson'){const B=C.bulles||[];
-html='<div class="tk t1"><div class="flot"></div><div class="rhd"><small>BAR DES DOCKS · 1 €</small><b>Le Petit Poisson</b></div><div class="regle">Gratte ton appât, puis les six bulles. Retrouve ton poisson : tu gagnes le montant affiché dessous.</div>'+
-'<div class="z appat" data-z="a"><div class="dessous"><small>TON APPÂT</small>'+poissonSVG(C.appat,54)+'<b>'+POISSONS[C.appat][0]+'</b></div></div>'+
-'<div class="bulles">'+B.map((x,i)=>'<div class="z bulle" data-z="'+i+'"><div class="dessous">'+poissonSVG(x.p,40)+'<b>'+eu(x.m)+'</b><small>'+POISSONS[x.p][0]+'</small></div></div>').join('')+'</div><div class="pd"><span>N° '+n+'</span><span>JUSQU’À 100 €</span></div></div>';
+html='<div class="tk t1"><div class="flot"></div><div class="rhd"><small>BAR DES DOCKS · 1 €</small><b>Le Petit Poisson</b></div><div class="regle">Gratte les six bulles. Retrouve la bonne : tu gagnes le montant affiché dessous.</div>'+
 zones=(el)=>{const z=el.dataset.z,b=B[+z];return {gagne:d.gain>0&&(z==='a'||(b&&b.p===C.appat)),style:z==='a'?{grad:['#b8c8d4','#eef4f8','#a8b8c6'],texte:'TON APPÂT',taille:10}:{grad:['#a8d8ec','#eefaff','#8ac8e0'],motif:bullesMotif}};};}
 else if(T[0]==='bouteille'){
 const CS=C.cases||[], SYM=C.symbole||'', VAL=C.valeur||0;
@@ -4415,7 +4401,7 @@ $('gtRes').innerHTML='<small>Il reste à gratter : '+nom+'</small>';};
 const fin=(z)=>{if(z)z.fait=true;
 if(T[0]==='bouteille'){if(Z.filter(q=>q.fait).length<4)return;reste=0;}
 if(--reste>0){clearTimeout(fin.t);fin.t=setTimeout(rappel,1200);return;}fini=true;clearTimeout(fin.t);Z.forEach(z=>z.gagne&&z.el.classList.add('gg'));
-const POURQUOI={poisson:['Ton poisson était dans une bulle !','Ton poisson n’était dans aucune bulle.'],filet:['Trois ancres alignées !','Pas trois ancres alignées : le trésor t’échappe.'],cargo:['Des conteneurs portent un numéro du jour !','Aucun conteneur ne porte un numéro du jour.'],bouteille:['Trois messages identiques !','Pas trois messages identiques.']}[T[0]]||['Gagné !','Pas cette fois.'];
+const POURQUOI={filet:['Trois ancres alignées !','Pas trois ancres alignées : le trésor t’échappe.'],cargo:['Des conteneurs portent un numéro du jour !','Aucun conteneur ne porte un numéro du jour.'],bouteille:['Trois messages identiques !','Pas trois messages identiques.']}[T[0]]||['Gagné !','Pas cette fois.'];
 if(d.gain>0){jouer('vente','moment');vibrer([25,40,25]);$('gtRes').innerHTML='Gagné · <span>'+enEuros(d.gain)+'</span><small>'+POURQUOI[0]+'</small>';}
 else{$('gtRes').innerHTML='Pas cette fois<small>'+POURQUOI[1]+'</small>';const t=v.querySelector('.tresor');if(t)t.classList.add('rate');}
 if(typeof d.euros==='number'){e.euros=d.euros;sauver();majHaut();}$('gtOk').style.visibility='visible';};
@@ -4521,7 +4507,7 @@ const VETEMENTS=[
   ap:{haut:3,veste:24,motif:0}},
  {id:'chemise_lin',nom:'Chemise de lin',prix:2400,fam:'haut',d:'Légère, un peu froissée. C’est voulu.',
   ap:{haut:2,veste:19,motif:0}},
- {id:'vareuse',nom:'Vareuse bleue',prix:3800,fam:'haut',d:'Celle des pêcheurs, en toile épaisse.',
+ {id:'vareuse',nom:'Vareuse bleue',prix:3800,fam:'haut',d:'En toile épaisse, style marin.',
   ap:{haut:0,veste:16,motif:0}},
  {id:'cire_jaune',nom:'Ciré jaune',prix:4500,fam:'haut',d:'Pour les jours où la mer monte.',
   ap:{haut:5,veste:23,motif:0}},
@@ -4569,7 +4555,7 @@ const VETEMENTS=[
  /* ===== LES MARQUES DU PORT ===== */
  {id:'ec_cabanon',nom:'Chemise Cabanon',prix:3400,fam:'haut',m:'ec',
   d:'Coupe large, col ouvert. On la porte pieds nus.',ap:{haut:2,veste:28,motif:0}},
- {id:'ec_pecheur',nom:'Tunique du Pêcheur',prix:2900,fam:'haut',m:'ec',
+ {id:'ec_pecheur',nom:'Tunique du Marin',prix:2900,fam:'haut',m:'ec',
   d:'Lin lavé, poche unique. Increvable.',ap:{haut:7,veste:24,motif:0}},
  {id:'ec_sardinier',nom:'Veste Sardinier',prix:4100,fam:'haut',m:'ec',
   d:'Bleu délavé, boutons de corne.',ap:{haut:0,veste:27,motif:0}},
@@ -4719,7 +4705,7 @@ async function ouvrirLaMariniere(){
           '</div>';}).join('')+
       '</div></div>'+
     '<div class="vt-pied"><div class="vt-bulle" id="vtBulle"></div>'+
-      '<span>« Un pêcheur bien habillé prend plus de poissons. »</span>'+
+      '<span>« Un docker bien habillé travaille mieux. »</span>'+
       '<button class="vt-fermer" id="vtFermer">RETOUR</button></div></div>';
     /* les vignettes : le personnage habillé de l'article */
     $('page2Fond').querySelectorAll('canvas[data-v]').forEach(cv=>{
@@ -4759,7 +4745,6 @@ async function ouvrirLaMariniere(){
 /* ================= LA CAPITAINERIE =================
    Le livret du titulaire, et le mur des brevets.
 
-   Tout le livret se compte depuis carnet_peche, et depuis elle seule :
    peches.total s'en ecarte (167 contre 150 pour un joueur), et un livret
    qui affiche deux fois le meme chiffre differemment n'est plus un livret.
 
@@ -5006,7 +4991,6 @@ function capAvisTexte(a){
 const n=a.cible|0;
 const quand=a.portee==='jour'?'aujourd’hui':'cette semaine';
 switch(a.type){
-case 'n':     return 'Rapporter <b>'+n+'</b> poissons '+quand+'.';
 case 'varie': return 'Rapporter <b>'+n+'</b> espèces différentes '+quand+'.';
 case 'cm':    return 'Ramener une prise d’au moins <b>'+n+' cm</b> '+quand+'.';
 case 'esp':   return 'Rapporter <b>'+n+'</b> '+echapperT(String(carnetNom(a.espece)).toLowerCase())+
@@ -5560,448 +5544,6 @@ const CSS_ANF=`
   color:#8a7454;font:italic 12px Georgia;padding:6px}
 `;
 
-let FONFON={};
-function ouvrirChezFonfon(){
-  try{ffMarmiteMaj();}catch(x){}
-  if(typeof mrmAccueil==='function'){mrmAccueil();return;}
-FONFON={};$('page2Fond').className='';$('page2').classList.add('on');
-$('page2Fond').innerHTML=`<style>#ff{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#f6efe2;color:#2a1418;font-family:Georgia,serif}
-#ff .ff-h{flex:none;padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 14px;background:#5a1a1e;color:#f8e8c8;border-bottom:3px solid #e8c46a;position:relative}
-#ff .ff-h small{font:700 9px Arial,sans-serif;letter-spacing:4px;color:#e8c46a}#ff .ff-h b{display:block;font:italic 900 30px Georgia,serif;color:#e8c46a;line-height:1.05;margin:2px 0}
-#ff .ff-h i{display:block;font:italic 13px Georgia,serif;color:#f0dcc0;line-height:1.35;padding-right:4px}
-#ff .ff-bourse{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 12px);text-align:right;font:700 9px Arial,sans-serif;letter-spacing:2px;color:#e8c46a}#ff .ff-bourse b{display:block;font:900 15px Georgia,serif;letter-spacing:0;color:#fff;font-style:normal}
-#ff .ff-page{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;padding:14px 14px 10px}
-#ff .ff-t{font:700 10px Arial,sans-serif;letter-spacing:3px;color:#8a5a3a;margin:2px 2px 8px}
-#ff .ff-lg{display:flex;align-items:center;gap:10px;padding:9px 10px;margin-bottom:8px;border-radius:12px;background:#fff;box-shadow:0 1px 0 rgba(90,26,30,.08),0 4px 12px rgba(90,26,30,.06);min-width:0}
-#ff .ff-ic{flex:none;width:40px;height:40px;border-radius:10px;background:#f8f0e0;display:flex;align-items:center;justify-content:center}
-#ff .ff-nm{flex:1;min-width:0}#ff .ff-nm b{display:block;font:700 15px Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#ff .ff-nm span{font:italic 12px Georgia,serif;color:#8a6a5a}
-#ff .ff-qt{flex:none;display:flex;align-items:center;gap:6px}#ff .ff-qt button{width:32px;height:32px;border:0;border-radius:50%;background:#5a1a1e;color:#e8c46a;font:900 17px Arial,sans-serif;padding:0}
-#ff .ff-qt button:disabled{opacity:.3}#ff .ff-qt b{min-width:20px;text-align:center;font:900 15px Arial,sans-serif}
-#ff .ff-vide{margin:30px 10px;text-align:center;font:italic 15px Georgia,serif;color:#8a6a5a;line-height:1.5}
-#ff .ff-regle{margin-top:6px;padding:10px 12px;border-radius:12px;background:#f0e4d0;font:italic 12.5px Georgia,serif;color:#6a4a3a;line-height:1.45}
-#ff .ff-pied{flex:none;position:relative;background:#fbf6ec;border-top:2px solid #e8c46a;padding:10px 14px calc(env(safe-area-inset-bottom,0px) + 12px)}
-#ff .ff-marmite{display:flex;align-items:center;gap:12px;margin-bottom:10px}
-#ff .ff-bulle b{font:400 16px Georgia,serif;display:block;margin-bottom:5px}
-#ff .ff-bulle .ff-lg{font:400 13px Georgia,serif;color:#f2e4d0;background:rgba(0,0,0,.22);
-  border-radius:8px;padding:6px 9px;margin:3px 0;text-align:left}
-#ff .ff-bulle .ff-jour{display:block;margin-top:6px;font:italic 13px Georgia,serif;color:#f0d78a}
-#ff .ff-mij{display:none;margin-bottom:10px;padding:10px 12px;border-radius:12px;
-  background:linear-gradient(180deg,#5a2e18,#3f2010);border:1px solid #8a4a2a;color:#f6e6d0}
-#ff .ff-mij.on{display:block}
-#ff .ff-mij b{display:block;font:400 16px Georgia,serif}
-#ff .ff-mij small{display:block;font:700 7.5px Arial;letter-spacing:2px;color:#e8a05a;margin-bottom:5px}
-#ff .ff-mij .jg{height:8px;border-radius:5px;background:rgba(0,0,0,.35);margin-top:7px;overflow:hidden}
-#ff .ff-mij .jg i{display:block;height:100%;background:linear-gradient(90deg,#c9503a,#e8ba2a);border-radius:5px}
-#ff .ff-mij .fum{float:right;font-size:17px;animation:ffFum 2.4s ease-in-out infinite}
-@keyframes ffFum{0%,100%{opacity:.35;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}
-#ff .ff-pot{flex:none;width:52px;height:40px;position:relative}#ff .ff-pot:before{content:'';position:absolute;left:2px;right:2px;bottom:0;height:28px;border-radius:0 0 26px 26px;background:linear-gradient(#d8843a,#9a4a1a)}
-#ff .ff-pot:after{content:'';position:absolute;left:0;right:0;top:8px;height:6px;border-radius:3px;background:#e8603a;box-shadow:0 0 0 2px #b8622a}
-#ff .ff-pot i{position:absolute;left:50%;top:-6px;width:8px;height:8px;border-radius:50%;background:rgba(180,160,150,.5);animation:ffV 2s ease-out infinite}@keyframes ffV{from{transform:translate(-50%,6px);opacity:.8}to{transform:translate(-50%,-14px) scale(2);opacity:0}}
-#ff .ff-etat b{display:block;font:700 14px Georgia,serif}#ff .ff-etat span{font:12px Arial,sans-serif;color:#8a6a5a}
-#ff .ff-cuisine{width:100%;margin-top:9px;border:1px solid rgba(240,216,144,.5);border-radius:14px;padding:11px;font:400 16px Georgia;background:rgba(240,216,144,.12);color:#f6e6c0}
-#ff .ff-cuisine small{display:block;font:700 7px system-ui;letter-spacing:1.6px;color:#d8b87a;margin-top:2px}
-#ff .ff-btns{display:flex;gap:10px}#ff .ff-btns button{border:0;border-radius:14px;padding:14px;font:700 15px Georgia,serif}
-#ff .ff-cuire{flex:1;background:linear-gradient(180deg,#e8c46a,#c9a24a);color:#3a0c10;box-shadow:0 4px 0 #8a6a28}#ff .ff-cuire.pas{background:#d8ccb8;color:#8a7a6a;box-shadow:none}#ff .ff-sortir{background:#5a1a1e;color:#f8e8c8}
-#ff .ff-bulle{position:absolute;left:14px;right:14px;bottom:calc(100% + 8px);background:#5a1a1e;color:#f8e8c8;border-radius:14px;padding:10px 12px;font:700 14px Georgia,serif;text-align:center;opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;pointer-events:none}
-#ff .ff-bulle.on{opacity:1;transform:none}</style>
-<div id="ff" lang="fr"><div class="ff-h"><small>RESTAURANT · BOUILLABAISSE</small><b>Chez Fonfon</b><i>« Donne-moi de 4 à 6 poissons, au moins 3 sortes : je te fais la bouillabaisse et je te l’achète. »</i><div class="ff-bourse">BOURSE<b id="ffArgent">—</b></div></div>
-<div class="ff-page" id="ffCorps"></div>
-<div class="ff-pied"><div class="ff-bulle" id="ffBulle"></div>
-<div class="ff-mij" id="ffMijBar"></div>
-<div class="ff-marmite"><span class="ff-pot"><i></i></span><div class="ff-etat" id="ffEtat"></div></div>
-<div class="ff-btns"><button class="ff-sortir" id="ffSortir">Sortir</button><button class="ff-cuire pas" id="ffCuire">—</button></div>
-<div class="ff-btns" style="margin-top:8px"><button class="ff-sortir" id="ffLivre">Le livre des recettes</button><button class="ff-cuire" id="ffMij" style="background:#8a4a2a">Faire mijoter · 2 h</button></div>
-<button class="ff-cuisine" id="ffCuisine">Passer en cuisine<small>PAIN · CONFITURE · CONSERVES · SOUPE · TARTE</small></button></div></div>`;
-$('ffCuisine').onclick=()=>{CUI=null;ouvrirLaCuisineDeFonfon();};
-$('ffSortir').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-$('ffCuire').onclick=ffCuisiner;
-{const m=$('ffMij');if(m)m.onclick=ffMijoter;
- const l=$('ffLivre');if(l)l.onclick=ffOuvrirLivre;}
-ffMarmiteMaj();ffMaj();}
-/* l'état de la marmite, et le livre */
-/* ================= L'ÉCRAN DE LA MARMITE ================= */
-let MRM_T=0, MRM_RAF=0, MRM_FIN=0;
-const mrmAl=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
-function mrmCtx(c,W){const g=c.getContext('2d');g.imageSmoothingEnabled=false;
-  const S=c.width/W;g.setTransform(S,0,0,S,0,0);
-  return (x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};}
-function scene(T){
-  const c=document.getElementById('mrmSc'),W=180,H=Math.round(180*c.height/c.width),P=mrmCtx(c,W);
-  for(let y=0;y<H;y++)P(0,y,W,1,'#6a5030');
-  for(let x=0;x<W;x+=12){const n=mrmAl(x);P(x,0,12,H,n<.3?'#6a5030':(n<.6?'#75593a':'#5f4728'));P(x,0,1,H,'rgba(46,30,14,.3)');}
-  const sh=Math.max(9,H*0.17);
-  P(6,sh,106,2,'#8a6238');
-  for(let k=0;k<11;k++){const x=9+k*9.3,h=4+mrmAl(k)*4;P(x,sh-h,5,h,['#8a9a6a','#9a7a5a','#6f8a9a','#a89a6a'][k%4]);
-    P(x,sh-h,5,1,'rgba(255,255,255,.28)');}
-  for(let k=0;k<4;k++){const x=126+k*9;P(x,4,1,6,'#9a8a6a');P(x-4,10,9,4,'#b8ccd8');P(x-4,10,9,1,'#e2eef4');}
-  for(let y=5;y<Math.min(H-24,33);y++){const k=(y-5)/28;P(160,y,18,1,k<0.4?'#7fb8d8':(k<0.7?'#5f9ac0':'#3f80a6'));}
-  P(158,3,22,2,'#8a6238');P(168,3,2,31,'#8a6238');
-  P(12,0,1,6,'#9a8a6a');P(7,6,11,12,'#3a3f46');P(9,8,7,8,'#f6e6a8');P(9,8,7,3,'#fff6d0');
-  for(let r=13;r>0;r--){const x=12-r,y=12-r*0.8;if(x<0||y<0)continue;P(x,y,r*2,r*1.6,'rgba(255,214,120,.016)');}
-  for(let y=H-22;y<H;y++)P(0,y,W,1,'#6a7a54');
-  for(let y=H-22;y<H;y+=7)for(let x=(((y-(H-22))/7|0)%2)?0:6;x<W;x+=13)
-    P(x,y,12,6,mrmAl(x*0.3+y*0.2)<.5?'#78885e':'#6c7c52');
-  P(20,H-30,22,16,'#9a7146');P(19,H-32,24,3,'#b8905c');
-  for(let k=0;k<5;k++)P(23+k*4,H-36+mrmAl(k)*3,5,4,'#b8ccd8');
-  P(140,H-30,28,17,'#9a7146');P(140,H-30,28,3,'#b8905c');
-  const cx=88, sol=H-24, RX=Math.min(30,H*0.36);
-  for(let k=0;k<11;k++)P(cx-38+k*7,sol-4,6,5,mrmAl(k)<.5?'#9a9a90':'#7a7a72');
-  for(let k=0;k<5;k++)P(cx-20+k*9,sol-9,7,6,'#7a5530');
-  for(let k=0;k<15;k++){const x=cx-21+k*2.8,h=5+Math.sin(T/6+k)*4+mrmAl(k)*4;
-    P(x,sol-9-h,2,h,['#f6dc50','#f0923a','#d43a1e'][k%3]);}
-  for(let k=0;k<9;k++)P(cx-20+mrmAl(k*3)*40,sol-7,3,2,'rgba(255,200,70,'+(0.45+mrmAl(k+T/30)*0.4)+')');
-  const HT=RX*1.26, my=sol-9-HT;
-  for(let y=0;y<HT;y++){const t=y/HT;
-    const w=RX*2*Math.sqrt(Math.max(0.06,1-Math.pow(t*1.45-0.42,2)*1.75));
-    P(cx-w/2,my+y,w,1,(t<0.1)?'#55555f':(t<0.38?'#46464f':(t<0.72?'#38383f':'#2b2b32')));
-    if(y>3&&y<HT-7)P(cx-w/2+2,my+y,2,1,'rgba(165,165,178,.55)');}
-  P(cx-RX-4,my-5,RX*2+8,6,'#55555f');P(cx-RX-4,my-5,RX*2+8,2,'#76768a');
-  P(cx-RX-8,my-1,6,5,'#3d3d46');P(cx+RX+2,my-1,6,5,'#3d3d46');
-  for(let y=0;y<5;y++){const w=(RX*2-8)-y*3;P(cx-w/2,my-3+y,w,1,y<2?'#f6b04a':(y<4?'#e8803a':'#cf5a22'));}
-  for(let k=0;k<12;k++){const a=(T/13+k*0.5);
-    P(cx+Math.cos(a)*(RX-9)*mrmAl(k),my-1+Math.sin(a*1.4)*2,3,2,['#f6d06a','#e8843a','#c03a2a','#f2ede0'][k%4]);}
-  for(let k=0;k<9;k++){const t=((T/30)+k/9)%1;
-    P(cx-11+k*3+Math.sin(T/15+k*2)*7,my-7-t*(H*0.42),2+t*4,2+t*4,'rgba(230,226,216,'+(0.32*(1-t))+')');}
-}
-function poisson(c,c1,c2,c3){const P=mrmCtx(c,26);
-  for(let x=0;x<16;x++){const t=x/16,h=Math.round(8*Math.sqrt(Math.max(0.05,1-Math.pow(t*2-0.85,2))));
-    for(let y=-h;y<=h;y++)P(4+x,13+y,1,1,y<-h*0.35?c2:(y>h*0.4?c3:c1));}
-  P(19,9,2,8,c1);P(21,7,2,4,c1);P(21,14,2,4,c1);
-  P(9,17,6,2,c3);P(10,6,5,2,c2);P(6,11,2,2,'#f4f2ee');P(6,11,1,1,'#101418');}
-function bol(c){const P=mrmCtx(c,26);
-  for(let y=0;y<9;y++){const w=20-y*1.6;P(13-w/2,12+y,w,1,y<2?'#8a8a92':'#6a6a74');}
-  for(let y=0;y<3;y++)P(4,10+y,18,1,y<1?'#f0a03a':'#e0742a');
-  for(let k=0;k<6;k++)P(6+k*3,10+mrmAl(k),2,1,['#f6d06a','#c03a2a','#f2ede0'][k%3]);
-  P(3,9,20,2,'#8a8a92');}
-
-/* ================= LE CARNET DE FONFON : quatre vues ================= */
-const MRM_T3=[['#5f92bc','#a8cde4','#e8f2f8'],['#8a93a8','#c4d2e2','#f0f4f8'],
-               ['#7e8f7a','#bccdb8','#e6eee2'],['#b4553a','#dc8a6a','#f2c4ac']];
-function mrmNom(k){const P=POISSONS[k];return P?P[0]:k.charAt(0).toUpperCase()+k.slice(1);}
-/* le doigt : on relaie nous-mêmes, le jeu annule les gestes par défaut */
-function mrmRelais(dv){
-  if(!dv||dv.__relais)return; dv.__relais=true;
-  /* UN SEUL RELAIS PAR GESTE : on écoutait pointerup ET touchend, or un doigt
-     déclenche les deux. Chaque appui comptait donc double — d'où les poissons
-     ajoutés par deux et la recette lancée deux fois. */
-  let dernier=0;
-  const relayer=(ev)=>{
-    const t=ev.target&&ev.target.closest&&ev.target.closest('button,[data-pl],[data-p],[data-m]');
-    if(!t||t.disabled)return;
-    ev.preventDefault();ev.stopPropagation();
-    const n=ev.timeStamp||Date.now();
-    if(n-dernier<350)return;                  /* le second événement du même appui */
-    dernier=n;
-    if(typeof t.onclick==='function')t.onclick(ev);};
-  dv.addEventListener('pointerup',relayer,{passive:false});
-  dv.addEventListener('touchend',relayer,{passive:false});
-}
-function mrmCadre(titre,sous,corps,boutons){
-  let dv=document.getElementById('mrm');
-  if(!dv){dv=document.createElement('div');dv.id='mrm';document.body.appendChild(dv);}
-  let an='';const n=Math.max(6,Math.floor(innerHeight/46));
-  for(let k=0;k<n;k++)an+='<i style="margin-top:'+(k?34:26)+'px"></i>';
-  dv.innerHTML='<div class="mrmPan"><div class="rl">'+an+'</div>'+
-    '<button class="ret" id="mrmRet" type="button">FERMER ✕</button>'+
-    '<div class="in"><h1>'+titre+'</h1><div class="sub">'+sous+'</div>'+
-    corps+'<div class="bt">'+boutons+'</div></div></div>';
-  dv.classList.add('on');
-  const r=document.getElementById('mrmRet');if(r)r.onclick=mrmFermer;
-  mrmRelais(dv);
-  return dv;
-}
-function mrmAnimer(){
-  cancelAnimationFrame(MRM_RAF);
-  (function b(){MRM_T++;
-    const cv=document.getElementById('mrmSc');
-    if(cv){const r=cv.getBoundingClientRect();
-      if(r.width>4&&(Math.abs(cv.width-r.width*2)>2||Math.abs(cv.height-r.height*2)>2)){
-        cv.width=Math.round(r.width*2);cv.height=Math.round(r.height*2);}
-      try{scene(MRM_T);}catch(e){}}
-    if(document.getElementById('mrmTxt'))mrmMinuteur();
-    MRM_RAF=requestAnimationFrame(b);})();
-}
-/* ① L'ACCUEIL */
-function mrmAccueil(){
-  mrmCadre('Chez Fonfon','Restaurant · bouillabaisse',
-   '<div class="dit">« Donne-moi de 4 à 6 poissons, au moins 3 sortes : je te fais la bouillabaisse et je te l’achète. »</div>'+
-   '<div class="sc"><canvas id="mrmSc" width="700" height="600"></canvas></div>',
-   '<button class="p" id="mA1">COMPOSER LA MARMITE</button>'+
-   '<button class="pl" id="mA2">LE LIVRE DES RECETTES</button>'+
-   '<button class="s" id="mA3">PASSER EN CUISINE</button>');
-  document.getElementById('mA1').onclick=async()=>{
-    try{await ffMarmiteMaj();}catch(x){}        /* on redemande au serveur avant d'ouvrir */
-    if(FF_MIJ){MRM_FIN=FF_MIJ.fin;mrmMarmite();}else mrmCompo();};
-  document.getElementById('mA2').onclick=mrmLivre;
-  document.getElementById('mA3').onclick=()=>{try{cuiCarte();}catch(e){}};
-  mrmAnimer();
-}
-/* ② LA COMPOSITION */
-function mrmCompo(){
-  const sac=(e.sac||{});
-  const ESP=['sardine','bogue','girelle','rouget','mulet','saupe','seiche','maquereau','dorade','rascasse',
-    'loup','denti','murene','congre','poulpe','saintpierre','thon','sar','vieille','grondin','pagre',
-    'barracuda','liche','chapon','baliste','raie','coryphene'];
-  const dispo=ESP.filter(k=>(sac[k]||0)>0);
-  if(!dispo.length){
-    mrmCadre('La marmite','choisis tes poissons',
-      '<div class="dit">Ton inventaire est vide. Va donc pêcher, et reviens me voir.</div>',
-      '<button class="s" id="mC0">RETOUR</button>');
-    document.getElementById('mC0').onclick=mrmAccueil;return;}
-  const lignes=dispo.map((k,i)=>'<div class="q"><canvas class="mrmQ'+i+'" width="60" height="60"></canvas>'+
-    '<div class="nm"><b>'+mrmNom(k)+'</b><small>'+(sac[k]||0)+' dans le sac · '+
-      enEuros(PRIX_POISSON[k]||0)+'</small></div>'+
-    '<div class="n"><button data-m="'+k+'">−</button><span id="mq_'+k+'">'+(FONFON[k]||0)+
-    '</span><button data-p="'+k+'">+</button></div></div>').join('');
-  mrmCadre('La marmite','choisis tes poissons',
-    '<div class="tt" style="font:700 10px Arial;letter-spacing:2.4px;color:#9a8a6c;margin:14px 0 5px">TA PÊCHE</div>'+
-    lignes+'<div class="tot"><i id="mrmCpt">—</i><b id="mrmPrix">0,00 €</b></div>',
-    '<button class="p" id="mC1">CUISINER MAINTENANT</button>'+
-    '<button class="pl" id="mC2">FAIRE MIJOTER · 2 H</button>'+
-    '<button class="s" id="mC3">RETOUR</button>');
-  dispo.forEach((k,i)=>{const c=document.querySelector('.mrmQ'+i);
-    if(c)poisson(c,MRM_T3[i%4][0],MRM_T3[i%4][1],MRM_T3[i%4][2]);});
-  const maj=()=>{const {tot,esp,prix,pret}=ffCalcul();
-    document.getElementById('mrmCpt').textContent=tot+' POISSON'+(tot>1?'S':'')+' · '+esp+' SORTE'+(esp>1?'S':'');
-    document.getElementById('mrmPrix').textContent=enEuros(prix);
-    document.getElementById('mC1').disabled=!pret;document.getElementById('mC2').disabled=!pret;
-    dispo.forEach(k=>{const el=document.getElementById('mq_'+k);if(el)el.textContent=FONFON[k]||0;});};
-  document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{
-    const k=b.dataset.p;if((FONFON[k]||0)<(sac[k]||0)){FONFON[k]=(FONFON[k]||0)+1;vibrer(5);maj();}});
-  document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{
-    const k=b.dataset.m;if(FONFON[k]>0){FONFON[k]--;if(!FONFON[k])delete FONFON[k];vibrer(4);maj();}});
-  document.getElementById('mC1').onclick=async()=>{
-    const r=await ffCuisiner();
-    if(r===false)return;                   /* le refus a déjà parlé */
-    if(MRM_RES&&MRM_RES.ok)mrmResultat();else mrmCompo();};
-  document.getElementById('mC2').onclick=async()=>{
-    const ok=await ffMijoter();
-    if(ok===false)return;
-    await ffMarmiteMaj();
-    if(FF_MIJ)MRM_FIN=FF_MIJ.fin;          /* l'heure vient du serveur, pas d'un reste à zéro */
-    mrmMarmite();};
-  document.getElementById('mC3').onclick=mrmAccueil;
-  maj();
-}
-/* ③ LE LIVRE */
-async function mrmLivre(){
-  const L0=await appelRPC('cuisine_livre_lire',{p_joueur:e.id});
-  const L=Array.isArray(L0)?L0:[];
-  const R=await appelRPC('recette_du_jour',{});
-  const NOMP={bouillabaisse:'Bouillabaisse',marmite:'Marmite mijotée'};
-  const faits={};L.forEach(p=>faits[p.plat]=p);
-  const tous=['bouillabaisse','marmite'];
-  const lignes=tous.map((k,i)=>{const p=faits[k];
-    return '<div class="ch"'+(p?'':' style="opacity:.45"')+'><canvas class="mrmB'+i+'" width="68" height="68"></canvas>'+
-      '<div class="nm"><b>'+NOMP[k]+'</b><small>'+(p?p.fois+' fois':'pas encore')+'</small></div>'+
-      '<em>'+(p?'record<br>'+enEuros(p.meilleure):'—')+'</em></div>';}).join('');
-  mrmCadre('Le livre','les recettes de Fonfon',
-    '<div class="tt" style="font:700 10px Arial;letter-spacing:2.4px;color:#9a8a6c;margin:14px 0 5px">CE QUE TU AS RÉUSSI</div>'+
-    lignes+(R&&R.espece?'<div class="jr"><b>AUJOURD’HUI</b>Fonfon veut du '+R.espece+' : la marmite paie double.</div>':''),
-    '<button class="s" id="mL1">RETOUR</button>');
-  tous.forEach((k,i)=>{const c=document.querySelector('.mrmB'+i);if(c)bol(c);});
-  document.getElementById('mL1').onclick=mrmAccueil;
-}
-/* ④ LE RÉSULTAT */
-let MRM_RES=null;
-function mrmResultat(){
-  const d=MRM_RES||{};
-  const et='★'.repeat(d.note||3)+'☆'.repeat(5-(d.note||3));
-  mrmCadre('Servie !','Fonfon goûte, puis il paie',
-    '<div class="et">'+et+'</div>'+
-    '<div class="gn"><b>'+enEuros(d.gain||0)+'</b><small>FONFON TE LA RACHÈTE</small></div>'+
-    '<div class="sc"><canvas id="mrmSc" width="700" height="420"></canvas></div>'+
-    '<div class="dit">'+(d.bonus?'« La recette du jour ! Je te double la mise, petit. »'
-      :(d.note>=4?'« Tu commences à savoir faire, petit. »':'« C’est honnête. On fera mieux la prochaine fois. »'))+'</div>',
-    '<button class="p" id="mR1">ENCORE UNE</button><button class="s" id="mR2">SORTIR</button>');
-  document.getElementById('mR1').onclick=mrmCompo;
-  document.getElementById('mR2').onclick=mrmFermer;
-  mrmAnimer();
-}
-function mrmMarmite(){
-  if(FF_MIJ&&FF_MIJ.fin)MRM_FIN=FF_MIJ.fin;   /* sinon on hérite d'une vieille heure */
-  let dv=document.getElementById('mrm');
-  if(!dv){dv=document.createElement('div');dv.id='mrm';document.body.appendChild(dv);}
-  const ing=(MRM_ING||[]).slice(0,4);
-  const nom=k=>{const P=POISSONS[k];return P?P[0]:k.charAt(0).toUpperCase()+k.slice(1);};
-  let anneaux='';const n=Math.max(6,Math.floor(innerHeight/46));
-  for(let k=0;k<n;k++)anneaux+='<i style="margin-top:'+(k?34:26)+'px"></i>';
-  dv.innerHTML='<div class="mrmPan"><div class="rl">'+anneaux+'</div>'+
-   '<button class="ret" id="mrmRet" type="button">FERMER ✕</button>'+
-   '<div class="in"><h1>La marmite</h1><div class="sub">Chez Fonfon · ça mijote</div>'+
-   '<div class="sc"><canvas id="mrmSc" width="700" height="300"></canvas></div>'+
-   '<div class="tm"><small>IL RESTE</small><b id="mrmTxt">…</b></div>'+
-   '<div class="jg"><i id="mrmRem"></i></div>'+
-   '<div class="dit" id="mrmDit">Ça sent bon dans toute la rue… Encore un peu de patience !</div>'+
-   (ing.length?'<div class="li"><div class="t">DANS LA MARMITE</div>'+
-     ing.map((p,k)=>'<div class="g"><canvas class="mrmF'+k+'" width="60" height="60"></canvas>'+
-       nom(p.k)+'<em>×'+p.n+' <b>✓</b></em></div>').join('')+
-     '<div class="r"><canvas id="mrmBol" width="64" height="64"></canvas>Bouillabaisse'+
-     '<span>'+(MRM_ESP||ing.length)+' espèces</span></div></div>':'')+
-   '<div class="bt"><button class="p" id="mrmOk">RETIRER LA MARMITE</button>'+
-   '<button class="s" id="mrmRec">VOIR LA RECETTE</button></div></div></div>';
-  dv.classList.add('on');
-  const T3=[['#5f92bc','#a8cde4','#e8f2f8'],['#8a93a8','#c4d2e2','#f0f4f8'],
-            ['#7e8f7a','#bccdb8','#e6eee2'],['#9a8a6a','#cfc2a4','#efe8d8']];
-  ing.forEach((p,k)=>{const cv=dv.querySelector('.mrmF'+k);if(cv)poisson(cv,T3[k%4][0],T3[k%4][1],T3[k%4][2]);});
-  const bo=document.getElementById('mrmBol');if(bo)bol(bo);
-  mrmRelais(dv);
-  document.getElementById('mrmRet').onclick=mrmFermer;
-  document.getElementById('mrmRec').onclick=()=>{mrmFermer();mrmLivre();};
-  document.getElementById('mrmOk').onclick=async()=>{
-    const b=document.getElementById('mrmOk');
-    const reste=Math.max(0,Math.round((MRM_FIN-Date.now())/1000));
-    if(reste>0){
-      const h=Math.floor(reste/3600), m=Math.floor((reste%3600)/60);
-      const d2=document.getElementById('mrmDit');
-      if(d2)d2.innerHTML='<b>Elle n’est pas prête.</b> Il faut encore '+(h?h+' h ':'')+m+' min.';
-      try{vibrer(14);}catch(x){}
-      b.animate([{transform:'translateX(0)'},{transform:'translateX(-5px)'},
-                 {transform:'translateX(5px)'},{transform:'translateX(0)'}],{duration:240});
-      return;}
-    b.disabled=true;b.textContent='…';
-    const ok=await ffPrendreMarmite();
-    try{await ffMarmiteMaj();}catch(x){}
-    if(ok&&MRM_RES&&MRM_RES.ok){mrmResultat();return;}
-    mrmMarmite();
-    const d3=document.getElementById('mrmDit');
-    if(d3)d3.innerHTML='<b>Rien à retirer.</b> '+(FF_MIJ?'Elle mijote encore.':'Il n’y a rien sur le feu.');
-    try{vibrer(12);}catch(x){}};
-  cancelAnimationFrame(MRM_RAF);
-  (function boucle(){MRM_T++;
-    const cv=document.getElementById('mrmSc');
-    if(cv){const r=cv.getBoundingClientRect();
-      if(r.width>4&&(Math.abs(cv.width-r.width*2)>2||Math.abs(cv.height-r.height*2)>2)){
-        cv.width=Math.round(r.width*2);cv.height=Math.round(r.height*2);}
-      try{scene(MRM_T);}catch(e){}}
-    mrmMinuteur();MRM_RAF=requestAnimationFrame(boucle);})();
-}
-function mrmMinuteur(){
-  const t=document.getElementById('mrmTxt'), r=document.getElementById('mrmRem');
-  if(!t||!r)return;
-  const reste=Math.max(0,Math.round((MRM_FIN-Date.now())/1000));
-  const h=Math.floor(reste/3600), m=Math.floor((reste%3600)/60);
-  t.textContent=reste>0?((h?h+' h ':'')+m+' min restantes'):'Elle est prête !';
-  r.style.width=Math.round((1-Math.min(1,reste/7200))*100)+'%';
-  const dit=document.getElementById('mrmDit');
-  if(dit&&reste<=0)dit.textContent='Voilà, elle est à point. Viens la chercher !';
-  const ok=document.getElementById('mrmOk');
-  if(ok){
-    ok.disabled=false;                 /* jamais grisé : il doit pouvoir répondre */
-    ok.dataset.prete=reste>0?'0':'1';
-    ok.classList.toggle('attend',reste>0);
-    ok.textContent=reste>0
-      ? ('ELLE MIJOTE ENCORE · '+(h?h+' H ':'')+m+' MIN')
-      : 'RETIRER LA MARMITE';}
-}
-function mrmFermer(){
-  const d=document.getElementById('mrm');
-  if(d){d.classList.remove('on');d.innerHTML='';}      /* on vide, sinon il reste cliquable */
-  cancelAnimationFrame(MRM_RAF);MRM_RAF=0;
-  clearInterval(FF_MIJ_T);FF_MIJ_T=0;
-  /* et on referme vraiment le restaurant dessous */
-  try{const p=document.getElementById('page2');
-      if(p)p.classList.remove('on');
-      const f=document.getElementById('page2Fond');
-      if(f){f.innerHTML='';f.className='sacFond';}
-      fermeA=Date.now();}catch(x){}}
-let MRM_ING=[], MRM_ESP=0;
-let FF_MIJ=null, FF_MIJ_T=0;
-function ffMijBandeau(){
-  const bar=$('ffMijBar'), m=$('ffMij');
-  if(!bar||!m)return;
-  if(!FF_MIJ||FF_MIJ.vide){bar.classList.remove('on');bar.innerHTML='';
-    m.textContent='Faire mijoter · 2 h';m.onclick=ffMijoter;return;}
-  const reste=Math.max(0, Math.round((FF_MIJ.fin-Date.now())/1000));
-  const total=2*3600, fait=Math.max(0,Math.min(1,(total-reste)/total));
-  const h=Math.floor(reste/3600), mi=Math.floor((reste%3600)/60), se=reste%60;
-  bar.classList.add('on');
-  bar.innerHTML='<span class="fum">♨</span><small>SUR LE FEU</small>'+
-    '<b>'+(reste>0?('Encore '+(h?h+' h ':'')+(h?mi+' min':mi+' min '+se+' s')):'Elle est prête !')+'</b>'+
-    '<div class="jg"><i style="width:'+Math.round(fait*100)+'%"></i></div>';
-  m.textContent=reste>0?'Voir la marmite':'Retirer la marmite';
-  m.onclick=()=>{MRM_FIN=FF_MIJ.fin;mrmOuvrir();};
-}
-async function ffMarmiteMaj(){
-  const d=await appelRPC('marmite_etat',{p_joueur:e.id});
-  if(!d)return;
-  /* si le serveur ne donne pas le reste, on le calcule depuis l'heure annoncée */
-  const reste = d.vide ? 0
-    : (typeof d.reste_s==='number' ? d.reste_s
-       : Math.max(0,Math.round((new Date(d.prete).getTime()-Date.now())/1000)));
-  FF_MIJ = d.vide ? null : {fin:Date.now()+reste*1000};
-  MRM_ING = d.vide ? [] : Object.entries(d.recette||{}).filter(([k,n])=>n>0).map(([k,n])=>({k,n}));
-  MRM_ESP = d.especes||MRM_ING.length;
-  clearInterval(FF_MIJ_T);
-  ffMijBandeau();
-  if(FF_MIJ)FF_MIJ_T=setInterval(()=>{if(!$('ffMijBar')){clearInterval(FF_MIJ_T);return;}ffMijBandeau();},1000);}
-async function ffOuvrirLivre(){
-  const L=await appelRPC('cuisine_livre_lire',{p_joueur:e.id});
-  const R=await appelRPC('recette_du_jour',{});
-  const NOMP={bouillabaisse:'Bouillabaisse',marmite:'Marmite mijotée'};
-  const lignes=(L&&L.length)
-    ? L.map(p=>'<div class="ff-lg">'+(NOMP[p.plat]||p.plat)+' · '+p.fois+' fois · record '+enEuros(p.meilleure)+'</div>').join('')
-    : '<div class="ff-lg">Rien encore. Mets donc une marmite sur le feu.</div>';
-  ffBulle('<b>Le livre des recettes</b><br>'+lignes+
-    (R&&R.espece?'<span class="ff-jour">Aujourd’hui : du '+R.espece+', et la marmite paie double.</span>':''), true);}
-function ffBulle(t,longue){const b=$('ffBulle');if(!b)return;
-b.onclick=()=>{b.classList.remove('on');clearTimeout(ffBulle.t);};
-b.innerHTML=String(t);                       /* on accepte le gras, les retours, les étoiles */
-b.classList.add('on');clearTimeout(ffBulle.t);
-ffBulle.t=setTimeout(()=>b.classList.remove('on'),longue?7000:2800);}
-function ffCalcul(){const tot=Object.values(FONFON).reduce((t,n)=>t+n,0), esp=Object.values(FONFON).filter(n=>n>0).length;
-const valeur=Object.entries(FONFON).reduce((t,[k,n])=>t+(PRIX_POISSON[k]||0)*n,0), coef=esp>=3?2.8+(esp-3)*0.45:0;return {tot,esp,prix:Math.round(valeur*coef),pret:tot>=4&&tot<=6&&esp>=3};}
-function ffMaj(){if(!$('ffCorps'))return;$('ffArgent').textContent=enEuros(e.euros||0);const {tot,esp,prix,pret}=ffCalcul();
-const dispo=POISSONS_MARMITE.filter(k=>(e.sac||{})[k]>0);
-$('ffCorps').innerHTML=(dispo.length?'<div class="ff-t">TA PÊCHE</div>'+dispo.map(k=>{const n=FONFON[k]||0,max=e.sac[k];
-return '<div class="ff-lg"><span class="ff-ic"><svg viewBox="0 0 16 16" width="30">'+(ICONES[k]||'')+'</svg></span><span class="ff-nm"><b>'+(OBJETS[k]?OBJETS[k].nom:k)+'</b><span>'+max+' dans le sac</span></span>'+
-'<span class="ff-qt"><button data-m="'+k+'"'+(n<=0?' disabled':'')+'>−</button><b>'+n+'</b><button data-p="'+k+'"'+(n>=max||tot>=6?' disabled':'')+'>+</button></span></div>';}).join('')
-:'<div class="ff-vide">Tu n’as pas de poisson pour la marmite.<br>Va pêcher au bout des pontons, et reviens me voir !</div>')+
-'<div class="ff-regle">Plus ta bouillabaisse est variée, mieux Fonfon la paie : trois sortes, c’est presque trois fois la valeur des poissons ; chaque sorte en plus ajoute encore près d’une demie. La marmite qui mijote deux heures rapporte moitié plus.</div>';
-$('ffCorps').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{FONFON[b.dataset.p]=(FONFON[b.dataset.p]||0)+1;vibrer(6);ffMaj();});
-$('ffCorps').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{FONFON[b.dataset.m]=Math.max(0,(FONFON[b.dataset.m]||0)-1);vibrer(6);ffMaj();});
-$('ffEtat').innerHTML='<b>La marmite · '+tot+' poisson'+(tot>1?'s':'')+'</b><span>'+esp+' sorte'+(esp>1?'s':'')+(pret?' · prête à mijoter':'')+'</span>';
-const c=$('ffCuire');c.classList.toggle('pas',!pret);c.textContent=pret?'Cuisiner · '+enEuros(prix):(tot>6?'6 poissons au plus':(esp<3?'Encore '+(3-esp)+' sorte'+(3-esp>1?'s':''):'Encore '+(4-tot)+' poisson'+(4-tot>1?'s':'')));}
-async function ffCuisiner(){const {pret}=ffCalcul();
-if(!pret){try{mrmMot('« Il me faut 4 à 6 poissons, et au moins 3 sortes. »');}catch(x){ffBulle('Il me faut 4 à 6 poissons, et au moins 3 sortes.');}return false;}
-const c=$('ffCuire');if(c){c.disabled=true;c.textContent='Ça mijote…';}
-const num=++numAppelSac;
-const d=await appelRPC('cuisiner_bouillabaisse',{p_joueur:e.id,p_recette:FONFON});
-if(c)c.disabled=false;
-if(!d||d.erreur){ffBulle(!d?'Le feu s’est éteint, réessaie.':String(d.erreur));MRM_RES=null;ffMaj();return false;}
-if(d.sac){adopterSac(d,num);e.sac=d.sac;}if(typeof d.euros==='number')e.euros=d.euros;sauver();majHaut();FONFON={};
-jouer('vente','moment');vibrer([20,40,20]);
-MRM_RES={gain:d.gain,note:d.note,bonus:d.bonus,ok:true};
-const et='★'.repeat(d.note||3)+'☆'.repeat(5-(d.note||3));
-ffBulle((d.bonus?'La recette du jour ! Fonfon double la mise. ':'')+
-  'Fonfon te la rachète '+enEuros(d.gain||0)+'.<br><span style="letter-spacing:2px;color:#c9a24a">'+et+'</span>');
-ffMaj();}
-/* ================= LA MARMITE QUI MIJOTE =================
-   On la lance, elle cuit deux heures, elle paie moitié plus. */
-async function ffMijoter(){const {pret}=ffCalcul();
-  if(!pret){ffBulle('Il me faut 4 à 6 poissons, et au moins 3 sortes.');return;}
-  const b=$('ffMij');if(b){b.disabled=true;b.textContent='…';}
-  const num=++numAppelSac;
-  const d=await appelRPC('marmite_lancer',{p_joueur:e.id,p_recette:FONFON});
-  if(b)b.disabled=false;
-  if(!d||d.erreur){try{mrmMot(d&&d.erreur==='deja'?'« Une marmite mijote déjà. »':'« Le feu s’est éteint. »');}catch(x){}
-    ffMaj();return false;}
-  if(d.sac){adopterSac(d,num);e.sac=d.sac;}sauver();majHaut();FONFON={};
-  vibrer([16,30,16]);ffBulle('La marmite est sur le feu. Reviens dans deux heures.');ffMarmiteMaj();ffMaj();return true;}
-async function ffPrendreMarmite(){
-  const d=await appelRPC('marmite_prendre',{p_joueur:e.id});
-  if(!d||d.erreur){ffBulle(d&&d.erreur==='pas prete'?'Elle mijote encore.':'Rien sur le feu.');
-    MRM_RES=null;return false;}
-  if(typeof d.euros==='number')e.euros=d.euros;sauver();majHaut();
-  const et='★'.repeat(d.note||3)+'☆'.repeat(5-(d.note||3));
-  jouer('vente','moment');vibrer([25,50,25]);
-  MRM_RES={gain:d.gain,note:d.note,bonus:false,ok:true};
-  ffBulle('Elle a mijoté deux heures. Fonfon te la rachète '+enEuros(d.gain||0)+
-    '.<br><span style="letter-spacing:2px;color:#c9a24a">'+et+'</span>');FF_MIJ=null;ffMarmiteMaj();ffMaj();return true;}
-(()=>{const P=document.getElementById('page2'),F=document.getElementById('page2Fond');if(!P||!F)return;let avant=P.classList.contains('on');
-new MutationObserver(()=>{const on=P.classList.contains('on');
-if(avant&&!on){F.innerHTML='';F.className='sacFond';}                                   /* fermée : on efface tout de suite */
-avant=on;}).observe(P,{attributes:true,attributeFilter:['class']});})();
 function gravure(c,quoi){
 if(!c||!c.clientWidth)return;
 const D=Math.min(2,window.devicePixelRatio||1);
@@ -6078,10 +5620,6 @@ for(let y=h*0.62;y<h;y+=7)for(let x=((y/7|0)%2)*10;x<w;x+=20)R(x,y,19,6,al(x+y)<
 R(26,h*0.42,w-120,h*0.26,'#a5764a');R(26,h*0.42,w-120,5,'#c19468');R(26,h*0.68,w-120,h*0.1,'#7d5934');
 R(30,h*0.40,w-128,h*0.08,'#dfe8ee');
 for(let i=0;i<120;i++)R(32+al(i*3)*(w-134),h*0.40+al(i*7)*h*0.08,3,2,al(i)<.5?'#fff':'#c5d3dc');
-const poisson=(x,y,col,L)=>{R(x,y,L,5,col[0]);R(x,y,L,2,col[1]);R(x+L,y-2,5,9,col[2]);R(x+3,y+1,1.5,1.5,'#1b1b1b');};
-for(let i=0;i<5;i++)poisson(38+i*15,h*0.44,['#9fb3c4','#cfdbe4','#8fa2b2'],13);
-for(let i=0;i<4;i++)poisson(112+i*17,h*0.44,['#c03a2a','#e06a4a','#a02a1e'],15);
-for(let i=0;i<4;i++)poisson(186+i*16,h*0.44,['#c9a24a','#e8c06a','#a8822a'],14);
 const cageot=(x,y,col)=>{R(x,y,30,16,'#b8905c');R(x,y,30,3,'#d0a878');
 for(let k=0;k<7;k++)R(x+3+al(k*3)*22,y+3+al(k*5)*8,6,5,col[k%col.length]);};
 cageot(w-88,h*0.46,['#c03a2a','#e06a4a']);cageot(w-88,h*0.66,['#6a9a3a','#8aba5a']);
@@ -6129,8 +5667,6 @@ const graine=(n)=>{const v=Math.sin((d.getFullYear()*400+d.getMonth()*32+d.getDa
 const hier=(n)=>{const y=new Date(d.getTime()-864e5);const v=Math.sin((y.getFullYear()*400+y.getMonth()*32+y.getDate())*12.9898+n*78.233)*43758.5453;return v-Math.floor(v);};
 const METEO=['☀️ Grand soleil sur le Vieux-Port. Mer belle.','🌤️ Soleil voilé, petite brise de mer.','💨 Mistral soutenu : les voiliers restent au port.','⛅ Quelques nuages, mer peu agitée.','🌦️ Averses passagères, puis éclaircies sur les quais.','☀️ Chaleur sur le quai, les cigales chantent.'];
 const temp=22+Math.round(graine(9)*9);
-const POISSONS=[['Sardine',0.4],['Rouget',2.1],['Dorade',4.5],['Loup de mer',6.8],['Thon rouge',24]];
-const cours=POISSONS.map(([n,b],k)=>{const a=b*(0.85+graine(k)*0.3), h=b*(0.85+hier(k)*0.3);return [n,a,a>h*1.02?'▲':(a<h*0.98?'▼':'=')];});
 $('page2Fond').className='';$('page2').classList.add('on');
 $('page2Fond').innerHTML='<div style="position:absolute;inset:0;background:#e9e1cc;display:flex;align-items:center;justify-content:center;font:italic 15px Georgia;color:#231c14">On déplie le journal…</div>';
 let G=null;try{G=await appelRPC('gazette',{});}catch(x){}
@@ -6139,27 +5675,25 @@ let MARCHE=[];try{const r=await appelRPC('gazette_cours',{});if(Array.isArray(r)
 const CL=(G&&G.classement)||[];
 const esc=(t)=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 const jourN=Math.floor((d-new Date(2026,0,1))/864e5);
-const H=(G&&G.hier)||{}, nomT={poisson:'Petit Poisson',filet:'Filet d’Or',cargo:'Gros Cargo'};
+const H=(G&&G.hier)||{}, nomT={filet:'Filet d’Or',cargo:'Gros Cargo'};
 const faits=[];
 if(H.loto)faits.push('<b>Loto :</b> '+H.loto.numeros.join(' · ')+' · Chance '+H.loto.chance+' — '+(H.loto.gagnants?H.loto.gagnants+' grille'+(H.loto.gagnants>1?'s':'')+' gagnante'+(H.loto.gagnants>1?'s':''):'aucune grille gagnante')+'.');
 if(H.tickets)faits.push('<b>'+H.tickets+' ticket'+(H.tickets>1?'s':'')+'</b> grattés au Bar des Docks'+(H.gros_ticket?' ; le plus gros gain : <b>'+enEuros(H.gros_ticket.gain)+'</b> pour '+esc(H.gros_ticket.pseudo):'')+'.');
-if(H.poisson)faits.push('<b>La plus belle prise :</b> '+esc(H.poisson.espece)+' de '+H.poisson.cm+' cm, par '+esc(H.poisson.pseudo)+' ('+H.prises+' poisson'+(H.prises>1?'s':'')+' pêchés en tout).');
-else if(H.prises)faits.push('<b>'+H.prises+' poisson'+(H.prises>1?'s':'')+'</b> sortis de l’eau.');
 if(H.repas)faits.push('Crousti’Port a servi <b>'+H.repas+' menu'+(H.repas>1?'s':'')+'</b>.');
 if(H.nouveaux&&H.nouveaux.length)faits.push('Bienvenue à <b>'+H.nouveaux.map(esc).join('</b>, <b>')+'</b>, arrivé'+(H.nouveaux.length>1?'s':'')+' sur le port.');
 const nomMarche=(k)=>POT_CULT[k]?POT_CULT[k][0]:((OBJETS[k]&&OBJETS[k].nom)||k);
 const marcheHTML=MARCHE.length?('<div class="gzv-marche"><h3>Le marché du port</h3>'+
 '<div class="gzv-illu petite"><canvas data-gr="etal"></canvas></div>'+
-'<p class="gzv-leg">L’étal de La Marée, à l’heure où les prix se décident.</p>'+
+‘<p class="gzv-leg">L’étal du marché, à l’heure où les prix se décident.</p>’+
 '<p class="gzv-mleg">Les prix sont les mêmes pour tout le monde : ce que vendent les autres fait bouger les tiens.</p>'+
 MARCHE.map(m=>{const v=Math.round((m.f-1)*100);
 const c=v>2?'#2f6a2e':(v<-2?'#b8402e':'#5a5048'), fl=v>2?'▲':(v<-2?'▼':'=');
 return '<div class="gzv-ml"><span>'+esc(nomMarche(m.k))+'</span><b>'+enEuros(m.prix)+'</b>'+
 '<i style="color:'+c+'">'+fl+' '+(v>0?'+':'')+v+' %</i></div>';}).join('')+'</div>'):'';
 const hierHTML='<div class="gzv-hier"><h3>Hier sur le port</h3>'+'<div class="gzv-illu petite"><canvas data-gr="quai"></canvas></div><p class="gzv-leg">Le quai au crépuscule, les lanternes allumées.</p>'+(faits.length?'<ul>'+faits.map(f=>'<li>'+f+'</li>').join('')+'</ul>':'<p>Une journée tranquille : les quais se reposaient.</p>')+'</div>';
-const DEDE=['Un pastis, ça ne se boit pas, ça se mérite.','Le poisson, c’est comme la chance : il faut savoir attendre au bon endroit.','Ici, le mistral, on l’appelle le balai du Bon Dieu.','Celui qui gratte vite gagne rarement. Celui qui gratte bien… gagne aussi rarement, mais avec style.','Une sardine a bouché le port, une fois. Depuis, on se méfie.','Le secret de Fonfon ? Trois poissons au moins, et beaucoup d’amour.','Qui paie sa tournée a toujours des amis. Qui ne la paie pas en a moins.','Le Loto, c’est comme la pêche : on rêve du gros, on se contente du petit.','Au Bar des Docks, on n’a jamais perdu : on a juste pas encore gagné.','La mer, ça se respecte. Les clients aussi, surtout quand ils paient.'];
-const HORO=['Bélier : une rencontre au bout du ponton pourrait changer ta journée.','Taureau : ta patience sera récompensée, surtout avec une canne en fibre.','Gémeaux : gratte ton ticket de la main gauche, on ne sait jamais.','Cancer : les crabes te portent chance aujourd’hui. Ou pas.','Lion : tu brilles ! Même ta coupe du Hair Studio le dit.','Vierge : range ton sac, la chance aime l’ordre.','Balance : ni trop de sardines, ni trop peu. Tout est question d’équilibre.','Scorpion : une rascasse t’attend. Méfie-toi de ses épines.','Sagittaire : vise loin, lance plus loin encore.','Capricorne : le travail paie. La Marée aussi, d’ailleurs.','Verseau : une journée idéale pour un Seau du Port.','Poissons : c’est ta journée. Évidemment.'];
-const ANNONCES=['Loto du Port : tirage chaque soir à 21 h au Bar des Docks. La cagnotte n’attend que vous !','Le Glacier du Port : six parfums, six effets, dix minutes de bonheur.','Le Pêcheur Heureux : la canne en carbone est arrivée. Demandez Fanny.','Crousti’Port : un ticket d’or se cache peut-être dans votre seau. Tenue de poulet garantie.','Hair Studio : envie de changement ? La Comète, série limitée, il en reste encore.','Perdu : une casquette rouge près du ponton 3. Récompense : une sardine.','La Criée achète toutes vos prises, même les petites. Surtout les petites, dit le poissonnier.','Cherche équipier sérieux pour la pêche du matin. Pas de ronfleurs.','Vends canne en bambou, peu servie, cause passage au carbone.','Le Bar des Docks rappelle : vingt tickets par jour, pas un de plus. Même pour Marius.']
+const DEDE=['Un pastis, ça ne se boit pas, ça se mérite.','Ici, le mistral, on l’appelle le balai du Bon Dieu.','Celui qui gratte vite gagne rarement. Celui qui gratte bien… gagne aussi rarement, mais avec style.','Qui paie sa tournée a toujours des amis. Qui ne la paie pas en a moins.',‘Le Loto, c’est un rêve : on vise le gros, on se contente du petit.’,'Au Bar des Docks, on n’a jamais perdu : on a juste pas encore gagné.','La mer, ça se respecte. Les clients aussi, surtout quand ils paient.'];
+const HORO=['Bélier : une rencontre au bout du ponton pourrait changer ta journée.','Taureau : ta patience sera récompensée.','Gémeaux : gratte ton ticket de la main gauche, on ne sait jamais.','Cancer : les crabes te portent chance aujourd’hui. Ou pas.','Lion : tu brilles ! Même ta coupe du Hair Studio le dit.','Vierge : range ton sac, la chance aime l’ordre.','Balance : ni trop de travail, ni trop peu. Tout est question d\'équilibre.','Scorpion : une surprise t\'attend. Méfie-toi.','Sagittaire : vise loin, toujours plus loin.',‘Capricorne : le travail paie. Toujours.’,'Verseau : une journée idéale pour un Seau du Port.','Poissons : c’est ta journée. Évidemment.'];
+const ANNONCES=['Loto du Port : tirage chaque soir à 21 h au Bar des Docks. La cagnotte n’attend que vous !','Le Glacier du Port : six parfums, six effets, dix minutes de bonheur.','Crousti’Port : un ticket d’or se cache peut-être dans votre seau. Tenue de poulet garantie.','Hair Studio : envie de changement ? La Comète, série limitée, il en reste encore.','Le Bar des Docks rappelle : vingt tickets par jour, pas un de plus. Même pour Marius.']
 const num=Math.max(1,Math.floor((d-new Date(2026,8,21))/864e5)+3);
 $('page2Fond').innerHTML=`<style>#gzv{position:fixed;inset:0;z-index:5;background:#f3ecdc;color:#1d1a16;font-family:'Times New Roman',Georgia,serif;display:flex;flex-direction:column}
 #gzv .gzv-page{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;
@@ -6212,17 +5746,16 @@ ${NEUF.length?`
 :`<h2>${esc((G&&G.titre)||'Le quai s’éveille')}</h2>
 <div class="gzv-illu"><canvas data-gr="quai"></canvas></div>
 <p class="gzv-leg">Sur le quai, à l'heure où les lanternes s'allument.</p>
-<p class="gzv-texte">${esc((G&&G.une)||'Les pêcheurs rentrent, le Fumoir fume, les mouettes veillent.')}</p>`}
+<p class="gzv-texte">${esc((G&&G.une)||'Le port s'anime, le Fumoir fume, les mouettes veillent.')}</p>`}
 ${marcheHTML}
 ${hierHTML}
 <div class="gzv-grille">
 <div class="gzv-bloc"><h3>Classement</h3>${CL.length?'<ol>'+CL.map((j,k)=>'<li>'+(k===0?'<b>':'')+esc(j.pseudo)+(k===0?'</b>':'')+'</li>').join('')+'</ol>':'Personne encore au registre.'}</div>
 <div class="gzv-bloc"><h3>Météo</h3>${METEO[Math.floor(graine(7)*METEO.length)]} ${temp}°C.</div>
-<div class="gzv-bloc"><h3>Cours du poisson</h3>${cours.map(([n,a,f])=>'<div class="gzv-prix"><span>'+n+'</span><b>'+enEuros(Math.round(a*100)).replace(',00','')+' '+f+'</b></div>').join('')}</div>
 <div class="gzv-bloc"><h3>Sur les quais</h3><b>${(G&&G.joueurs)||0}</b> habitants inscrits au registre du port.</div>
 </div>
 <div class="gzv-dede"><h3>Le mot de Dédé</h3><p>« ${esc(DEDE[jourN%DEDE.length])} »</p><small>— Dédé, patron du Bar des Docks</small></div>
-<div class="gzv-grille"><div class="gzv-bloc"><h3>Horoscope du pêcheur</h3><p>${esc(HORO[(jourN*7)%HORO.length])}</p></div>
+<div class="gzv-grille"><div class="gzv-bloc"><h3>Horoscope du port</h3><p>${esc(HORO[(jourN*7)%HORO.length])}</p></div>
 <div class="gzv-bloc"><h3>Ce soir au Loto</h3><p>Cagnotte : <b>${enEuros((G&&G.cagnotte)||0)}</b>.<br>Tirage à 21 h au Bar des Docks.</p></div></div>
 <div class="gzv-annonces"><h3>Petites annonces</h3>${[0,1].map(k=>'<div class="gzv-pa">'+esc(ANNONCES[(jourN*2+k)%ANNONCES.length])+'</div>').join('')}</div>
 <div class="gzv-fin">— Le Vieux-Port, le journal des quais —</div>
@@ -9538,8 +9071,6 @@ function graverBuissonFo(sorte,v){
 const F_NOMS={bois:'bûches',champignons:'champignons',baies:'baies',roseaux:'roseaux',
   herbes:'herbes',plumes:'plumes',argile:'argile',pierre:'pierre',fibre:'fibre',
   resine:'résine',ambre:'ambre'};
-/* les prises du lac portent le nom que leur donne le moteur de pêche */
-try{Object.keys(ESP_PECHE||{}).forEach(k=>{if(ESP_PECHE[k].lac)F_NOMS[k]=ESP_PECHE[k].nom;});}catch(x){}
 let ETAL={cours:null,vedette:null};
 async function ouvrirLEtalDuBois(){
   if(!document.getElementById('cssEtal')){const st=document.createElement('style');
@@ -9633,7 +9164,6 @@ const CSS_ETAL=`
 #et .et-pied .p{background:#8a3a22;color:#f6ecd8}
 #et .et-pied .p:disabled{background:#ddd2b8;color:#9a8a6c}
 `;
-/* ================= LA PÊCHE AU LAC =================
    Cinquante prises possibles. Le serveur tire l'espèce, le jeu la dessine. */
 const LAC_P={gardon:{lg:30,ht:6,dos:'#4a5a46',mil:'#8a9a92',ventre:'#c8d4ce',clair:'#e8eee8',nag:'#b4543a'},
  perche:{lg:32,ht:7,dos:'#3a5a28',mil:'#7a9a4a',ventre:'#c8d49a',clair:'#e4eac4',nag:'#d87a2a',ray:1},
@@ -9652,7 +9182,6 @@ const LAC_P={gardon:{lg:30,ht:6,dos:'#4a5a46',mil:'#8a9a92',ventre:'#c8d4ce',cla
  barbeau:{lg:34,ht:7,dos:'#5a5a2a',mil:'#9a9450',ventre:'#c8c088',clair:'#e8e2b4',nag:'#8a6a2a'},
  sandre:{lg:36,ht:7,dos:'#3a4a34',mil:'#7a8a5a',ventre:'#b8c094',clair:'#dce2bc',nag:'#4a5a3a'},
  black_bass:{lg:34,ht:8,dos:'#2a4a2a',mil:'#5a8a4a',ventre:'#a8c488',clair:'#d0e4b4',nag:'#2a4a2a',bande:1},
- poisson_chat:{lg:28,ht:8,dos:'#1e2420',mil:'#3a4440',ventre:'#6a7068',clair:'#8a9088',nag:'#141816'},
  lotte:{lg:38,ht:6,dos:'#4a3a1e',mil:'#8a7440',ventre:'#b8a46a',clair:'#d8c894',nag:'#3a2e18',tache:1},
  truite_fario:{lg:32,ht:6,dos:'#4a5a34',mil:'#9a9a5a',ventre:'#d8d49a',clair:'#f0ecc8',nag:'#8a7a4a',points:1},
  truite_arc:{lg:34,ht:6,dos:'#4a5a5a',mil:'#9aa4a0',ventre:'#d4dcd8',clair:'#f0f4f2',nag:'#7a8a86',rose:1},
@@ -9668,64 +9197,8 @@ const LAC_P={gardon:{lg:30,ht:6,dos:'#4a5a46',mil:'#8a9a92',ventre:'#c8d4ce',cla
  anguille_blanche:{serp:1,dos:'#d8d4cc',mil:'#eeeae2',ventre:'#fbf8f2',halo:'rgba(240,236,228,.14)',oeil:'#c0392b'}};
 const LAC_AUTRE={ecrevisse:'#8a2a1a',moule:'#584c3a',grenouille:'#4a8a3a',tetard:'#2a2a24',
  sangsue:'#4a5a2a',gammare:'#c8c4a0',larve_libellule:'#4a5a34',tortue:'#3a2e18',
- botte:'#2e3a2a',conserve:'#8a7a62',bouteille:'#2e5a3a',hamecon:'#8a6a4a',roue:'#6a6a72',
+ botte:'#2e3a2a',conserve:'#8a7a62',bouteille:'#2e5a3a',roue:'#6a6a72',
  seau:'#8a929a',piece:'#7a6a26',bague:'#c9a24a',poterie:'#a8663a',bouchon:'#b8d4e4',plaque:'#1d5090'};
-function lacDessiner(g2,cle,x,y,ech){
-  const E=ech||1;
-  g2.save();g2.translate(x,y);g2.scale(E,E);
-  const R=(a,b,w,h,c)=>{g2.fillStyle=c;g2.fillRect(Math.round(a),Math.round(b),
-    Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
-  const o=LAC_P[cle];
-  if(o&&o.halo)for(let a=0;a<6.283;a+=0.26)R(Math.cos(a)*22,Math.sin(a)*11,3,2,o.halo);
-  if(o&&o.serp){
-    for(let i=0;i<46;i++){
-      const t=i/45, h=Math.round(3.4*Math.sin(Math.pow(t,0.4)*3.14))+1;
-      const dy=Math.round(Math.sin(t*7)*3);
-      for(let j=-h;j<=h;j++){const v=j/h;
-        R(-23+i,dy+j,1,1,v<-0.3?o.dos:(v<0.4?o.mil:o.ventre));}}
-    const dy=Math.round(Math.sin(7)*3);
-    R(20,dy-2,2,2,o.oeil||'#f2ece0');
-    g2.restore();return;}
-  if(o){
-    const x0=-o.lg/2;
-    for(let i=0;i<7;i++){const h=Math.round(2+i*0.9);
-      for(let j=-h;j<=h;j++)R(x0-5+i,j,1,1,Math.abs(j)>h-1?o.nag:o.mil);}
-    for(let i=0;i<o.lg;i++){
-      const t=i/(o.lg-1);
-      const h=Math.round(o.ht*Math.sin(Math.pow(t,0.72)*3.14159)*0.9)+1;
-      for(let j=-h;j<=h;j++){
-        const v=j/h;
-        let c = v<-0.55?o.dos : (v<0.05?o.mil : (v<0.62?o.ventre:o.clair));
-        if(o.ray&&((i+Math.round(v*3))%6)<2&&v<0.2)c=o.dos;
-        if(o.bande&&Math.abs(v)<0.22)c=o.clair;
-        if(o.tache&&F_hs(i*2.3+j*1.7)<0.12)c=o.dos;
-        R(x0+i,j,1,1,c);}
-      R(x0+i,-h,1,1,o.dos);R(x0+i,h,1,1,o.clair);}
-    const d0=Math.round(o.lg*0.34), d1=Math.round(o.lg*0.62);
-    for(let i=d0;i<d1;i++){
-      const t=(i-d0)/(d1-d0);
-      const h=Math.round(o.ht*Math.sin(Math.pow(i/(o.lg-1),0.72)*3.14159)*0.9)+1;
-      const hh=Math.round((o.voile?6:3)*Math.sin(t*3.14));
-      R(x0+i,-h-hh,1,hh+1,o.nag);}
-    for(let i=0;i<6;i++)R(x0+Math.round(o.lg*0.38)+i,Math.round(o.ht*0.55)+Math.round(i*0.4),1,3,o.nag);
-    if(o.points)for(let k=0;k<11;k++){const a=x0+2+F_hs(k*5)*(o.lg-4), b=-3+F_hs(k*3)*6;
-      R(a,b,2,2,k%3?'#2a2a1a':'#c0392b');}
-    if(o.rose)for(let i=0;i<o.lg-8;i++)R(x0+4+i,Math.round(Math.sin(i*0.22)),2,2,'#d85a7a');
-    if(o.koi)for(let k=0;k<7;k++){const a=x0+3+F_hs(k*5)*(o.lg-6), b=-4+F_hs(k*3)*8;
-      R(a,b,5,4,k%3?'#e8762a':'#2a2420');}
-    if(o.ecus)for(let k=0;k<9;k++){R(x0+4+k*4,-5,2,2,'#c8d0c4');R(x0+4+k*4,3,2,2,'#c8d0c4');}
-    if(o.barb){R(x0+o.lg-4,-4,9,1.4,o.dos);R(x0+o.lg-4,-6,7,1.4,o.dos);
-      R(x0+o.lg-5,3,6,1.4,o.dos);R(x0+o.lg-5,5,5,1.4,o.dos);}
-    R(x0+o.lg-5,-2,2,2,'#f2ece0');R(x0+o.lg-5,-2,1.4,1.4,'#1a1410');
-    g2.restore();return;}
-  /* les bêtes, les trouvailles et les objets : une vignette simple mais nette */
-  const c=LAC_AUTRE[cle]||'#8a8a92';
-  R(-8,-6,16,12,c);R(-8,-6,16,3,'rgba(255,255,255,.26)');
-  R(-8,4,16,2,'rgba(0,0,0,.3)');
-  R(-5,-3,4,3,'rgba(255,255,255,.2)');
-  g2.restore();
-}
-/* LE PONTON : une passerelle de planches fines qui avance dans le lac,
    avec son garde-corps léger et ses pilotis reflétés dans l'eau. */
 const F_PONT={x:520,y:0};          /* y calculé à la rive, voir le semis */
 /* LE SECOND PONTON, À L'EST. Mille cinq cents pixels de rive pour un seul
@@ -10429,8 +9902,6 @@ function majFaune(dt){
     const b=FAUNE[i];
     if(b.g==='chevreuil')majChevreuil(b,dt);else majOiseau(b,dt);
   }
-  /* LES POISSONS DU LAC : un saut de temps en temps, loin de la rive */
-  /* LES POISSONS SAUTAIENT POUR PERSONNE. Le point était tiré sur toute la
      largeur du lac — 1 260 px — alors qu'on n'en voit que 185 à la fois :
      six sauts sur sept tombaient hors de l'écran. Un saut toutes les six
      secondes, oui, mais un saut VISIBLE toutes les quarante : on pouvait
@@ -10463,7 +9934,6 @@ function majFaune(dt){
     if(SAUTS[i].t>SAUTS[i].dur+0.7)SAUTS.splice(i,1);
   }
 }
-/* ================= LES POISSONS DU PORT =================
    Le bassin etait une eau morte : elle scintillait, elle ridait, et rien
    n'y vivait. On reprend le saut du lac tel quel — meme parabole, memes
    deux anneaux, meme poisson de neuf pixels, meme tableau SAUTS, puisque
@@ -10715,7 +10185,6 @@ function dessinerOiseau(g,b,camX,camY){
   }
   g.globalAlpha=1;
 }
-/* LES POISSONS QUI SAUTENT : une parabole, un éclat de ventre, et deux
    anneaux dans l'eau — celui du départ et celui de la retombée. */
 function dessinerLesSauts(g,camX,camY){
   for(let i=0;i<SAUTS.length;i++){
@@ -11153,22 +10622,8 @@ const sol=y-4, AR=x-s*7, AV=x+s*11;   /* la poignee tombe ainsi a neuf pixels de
   }
 }
 
-let EQUIP_PECHE=null;
-const FINITIONS=[{id:'bleu',nom:'Bleu marine',prix:500,col:['#1f3f6f','#4f7fb8']},{id:'rouge',nom:'Rouge Estaque',prix:500,col:['#8a2a22','#c8503f']},
-{id:'olive',nom:'Vert olive',prix:500,col:['#5a6a2e','#8a9a4e']},{id:'dore',nom:'Vernis doré',prix:3000,col:['#a8822a','#f0cf7d']},
-{id:'nacre',nom:'Nacre',prix:6000,col:['#c8c8d8','#ffffff'],nacre:true},
-/* huit finitions de plus, avec leur caractère */
-{id:'bois',nom:'Bois ciré',prix:800,col:['#6a4420','#b8884a']},
-{id:'raies',nom:'Rayures de régate',prix:1200,col:['#1d3a5a','#f2ece0'],raies:true},
-{id:'flamme',nom:'Flammes',prix:2000,col:['#8a2a10','#f0a030'],flamme:true},
-{id:'ecaille',nom:'Écailles',prix:4000,col:['#1d5b4a','#6fd0a8'],ecaille:true},
-{id:'nuit',nom:'Bleu de nuit',prix:5000,col:['#101a3a','#3a5a9a'],etoiles:true},
-{id:'corail',nom:'Corail',prix:7000,col:['#b02a4a','#f08aa0'],ecaille:true},
-{id:'abysse',nom:'Abysse',prix:12000,col:['#0a1420','#2a6a8a'],etoiles:true,nacre:true},
-{id:'phosphore',nom:'Phosphore',prix:20000,col:['#1a3a1a','#8fe060'],phospho:true}];
-let iconesPoissonsFaites=false;
 var TKM=null;   /* la carte de Tokyo (tokyo.js) : ses fonctions sont appelées par ce nom d'objet */
-let XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar;
+let XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLeCabanon,graverLaStationVelo,graverTonBateau,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,graverArbuste,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar;
 /* ================= LES NOMS QUE LA FERME NOUS REND =================
    La ferme vit dans ferme.js (chargé plus bas, et seulement sur sa
    carte). Ces 35 noms sont tout ce que le jeu lui demande :
@@ -11179,7 +10634,7 @@ let TXT_FERME=null;
 /* SI port.js NE CHARGE PAS, les cinquante-trois symboles ci-dessous
    restent indéfinis et le port ne se dessine pas, sans un mot. On le dit. */
 try{
-if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar}=eval(await chargerMorceau('port.js')));}
+if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLeCabanon,graverLaStationVelo,graverTonBateau,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,graverArbuste,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar}=eval(await chargerMorceau('port.js')));}
 if(CARTE==='tokyo'){TKM=eval(await chargerMorceau('tokyo.js'));}
 }catch(erPort){
 try{document.body.insertAdjacentHTML('beforeend',
@@ -11236,12 +10691,12 @@ if(t==='x_fo_aut'){XCAL[cle]=graverArbreAutomne(v||0);if(!CALQUES_DECO[t])CALQUE
 if(t==='x_cabanonMoi'){const c=CAB_LU();
 XCAL[cle]=graverTonCabanon(c.bati?(c.niveau>0?2:1):0);
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_maison'||t==='x_ndg'||t==='x_pavPoisson'||t==='x_pavPeche'||t==='x_arbuste'||t==='x_belArbre'||t==='x_criee'||t==='x_cabanon'||t==='x_stationVelo'||t==='x_bateau'){
-XCAL[cle]=t==='x_bateau'?graverTonBateau():t==='x_cabanon'?graverLeCabanon():t==='x_stationVelo'?graverLaStationVelo():t==='x_criee'?graverLaCriee():t==='x_maison'?graverImmeuble(v||0):t==='x_ndg'?graverLaGarde():t==='x_pavPoisson'?graverPavillon('poisson'):t==='x_pavPeche'?graverPavillon('peche'):t==='x_belArbre'?graverBelArbre(v||0):graverArbuste(v||0);
+if(t==='x_maison'||t==='x_ndg'||t==='x_arbuste'||t==='x_belArbre'||t==='x_cabanon'||t==='x_stationVelo'||t==='x_bateau'){
+XCAL[cle]=t==='x_bateau'?graverTonBateau():t==='x_cabanon'?graverLeCabanon():t==='x_stationVelo'?graverLaStationVelo():t==='x_maison'?graverImmeuble(v||0):t==='x_ndg'?graverLaGarde():t==='x_belArbre'?graverBelArbre(v||0):graverArbuste(v||0);
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
 return XCAL[cle];
 }
-const T={x_paillasson:[30,10],x_panneauG:[40,44],x_tableau:[60,66],x_panneauF:[52,70],x_ferry:[96,56],x_caboteur:[250,120],x_docks:[150,96],x_pile:[44,34],x_roue:[180,210],x_kiosque:[44,68],x_fontaine:[54,46],x_metroM:[96,100],x_platane:[84,108],x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
+const T={x_paillasson:[30,10],x_panneauG:[40,44],x_tableau:[60,66],x_panneauF:[52,70],x_ferry:[96,56],x_caboteur:[250,120],x_docks:[150,96],x_pile:[44,34],x_roue:[180,210],x_kiosque:[44,68],x_fontaine:[54,46],x_metroM:[96,100],x_platane:[84,108],x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_caisses:[28,24],
 x_filets:[34,16],x_bitte:[12,14],x_barque:[62,34],x_cargo:[250,128],x_grue:[80,120],
 x_phare:[30,96]}[t]||[40,40];
 const W=T[0],H=T[1],cx=W/2,sol=H-6;
@@ -11706,19 +11161,6 @@ g.strokeStyle=i%2?'#3d7d3f':'#2f6b34';g.lineWidth=3;g.beginPath();g.moveTo(hx,hy
 g.quadraticCurveTo(hx+dx*.6,hy+dy-8,hx+dx,hy+dy);g.stroke();});
 R(hx-2,hy-1,4,4,'#5b3f21');
 }
-else if(t==='x_etal'){
-ombre(36,5);
-R(cx-34,sol-18,68,14,'#7d5934');R(cx-34,sol-18,68,2,'#a5764a');                    /* la table */
-R(cx-32,sol-4,4,4,'#5b3f21');R(cx+28,sol-4,4,4,'#5b3f21');
-R(cx-32,sol-24,64,7,'#dff2f5');for(let k=0;k<64;k+=3)R(cx-32+k,sol-24+(k%2),2,1,'#b9e3ea');   /* la glace */
-for(let k=0;k<8;k++){const x=cx-28+k*7;                                             /* les poissons */
-R(x,sol-23+(k%2),6,3,k%3?'#9aa6b0':'#c9d2d8');R(x+5,sol-23+(k%2),2,3,'#7d8a94');R(x+1,sol-22+(k%2),1,1,'#1b1b1b');}
-R(cx-34,sol-50,2,34,'#6b4a2c');R(cx+32,sol-50,2,34,'#6b4a2c');                      /* les poteaux */
-for(let k=0;k<72;k+=8){R(cx-36+k,sol-54,4,8,'#2d6fb0');R(cx-32+k,sol-54,4,8,'#f2efe4');} /* l'auvent rayé */
-for(let k=0;k<72;k+=4)R(cx-36+k,sol-46,3,2,k%8?'#f2efe4':'#2d6fb0');
-R(cx-12,sol-44,24,7,'#f2efe4');R(cx-12,sol-44,24,1,'#c9c1a6');                      /* l'ardoise */
-for(let k=0;k<18;k+=3)R(cx-9+k,sol-41,2,1,'#2d6fb0');
-}
 else if(t==='x_caisses'){
 ombre(13,3);
 const caisse=(x,y)=>{R(x,y,12,8,'#c9a26a');R(x,y,12,1,'#e0bf8a');R(x,y+4,12,1,'#a5764a');R(x,y,1,8,'#a5764a');R(x+11,y,1,8,'#a5764a');};
@@ -11828,7 +11270,7 @@ function silhouetteDe(C){
    arbustes et tout le bois de la foret (chene, charme, erable, olivier).
    Ils gardent le disque de contact grave dans leur vignette — sans lui ils
    flotteraient — mais plus la grande ombre couchee sur le sol. */
-const SANS_OMBRE=/ruArche|ponton|quai|bitte|paillasson|voilier|barque|ferry|caboteur|cargo|rides|etal$|_sol|traces|fleurs|herbe|maison|fonfon|presse|facPeche|facPoisson|_bar$|peigne|crousti|ndg|criee|immeuble|toits|arbre|arbuste|platane|palmier|pin$|chene|erable|charme|olive/i;
+const SANS_OMBRE=/ruArche|ponton|quai|bitte|paillasson|voilier|barque|ferry|caboteur|cargo|rides|etal$|_sol|traces|fleurs|herbe|maison|presse|_bar$|peigne|crousti|ndg|immeuble|toits|arbre|arbuste|platane|palmier|pin$|chene|erable|charme|olive/i;
 /* L'OMBRE PORTEE DU PERSONNAGE A ETE RETIREE, avec le soleil du moment et
    le tampon qui la fabriquaient : elle n'avait qu'un seul client. Le
    decor, lui, garde la sienne — ombrePortee ci-dessous — sauf pour les
@@ -14423,11 +13865,10 @@ const ax=a.x-camX, ay=a.y-camY;
 if(ax<-40||ay<-70||ax>VW+40||ay>VH+40)continue;
 acteurs.push({y:a.y,f:()=>dessinerUnAutre(ctx,a,camX,camY)});
 }
-try{hwMareeDessiner(ctx,camX,camY,acteurs);}catch(x){}if(LISIERE&&!(CHAMPS_SEULS&&CARTE==='village'))ctx.drawImage(LISIERE,camX,camY,lw,lh,0,0,lw,lh);
+if(LISIERE&&!(CHAMPS_SEULS&&CARTE==='village'))ctx.drawImage(LISIERE,camX,camY,lw,lh,0,0,lw,lh);
 try{dessinerLesTraces(ctx,camX,camY);}catch(x){}   /* les pas dans les feuilles, sous tout le reste */
 dessinerLesRides(ctx,camX,camY,VW,VH);   /* l'eau du lac remue */
 if(CARTE==='foret'){
-  try{dessinerLesSauts(ctx,camX,camY);}catch(x){}   /* les poissons, sur l'eau */
   /* LA LANTERNE SE TRIE AVEC LE DÉCOR. Dessinée avant lui, elle passait
      derrière le premier tronc venu — et c'est justement le repère qu'on ne
      doit jamais perdre de vue. */
@@ -14444,13 +13885,11 @@ if(CARTE==='foret'){
     }catch(x){}})(b)});
   }
 }
-if(CARTE==='extramar'){try{dessinerLesSauts(ctx,camX,camY);}catch(x){}}   /* les poissons du bassin, sous les barques */
 if(CARTE==='large'){try{dessinerLeBateau(ctx,camX,camY);}catch(x){}}      /* la coque, sous le marin */
 dessinerDecor(ctx,camX,camY,VW,VH,acteurs);
 /* LES LUCIOLES FLOTTENT : elles passent par-dessus le décor, jamais
    derrière un tronc — elles sont entre les arbres et nous. */
 if(CARTE==='foret'){try{dessinerLesLucioles(ctx,camX,camY);}catch(x){}}
-if(CARTE==='extramar'||CARTE==='foret'||CARTE==='large')dessinerLaPeche(ctx,camX,camY);   /* le lac et le large aussi */
 dessinerBulles(ctx,camX,camY,px,py);
 dessinerParts(ctx,camX,camY);
 dessinerTextes(ctx,camX,camY);
@@ -17115,7 +16554,6 @@ if(String(typeG).slice(0,3)==='em_'){if(typeG!=='em_sante')return;const bx=Math.
 if(typeG==='petanque'){if(frG<=0.36)return;const bx=Math.round(h.x), by=Math.round(h.y)+1;   /* la boule dans la main, jusqu'au lâcher */
  R(bx-3,by-2,6,6,'#5a6068');R(bx-3,by-3,6,1,'#5a6068');R(bx-2,by-3,4,6,'#9aa2aa');R(bx-2,by-2,3,3,'#d8dde2');R(bx-1,by-2,1,1,'#ffffff');R(bx-3,by+1,6,1,'#3a4048');return;}
 /* LE LANCER NE MET RIEN DANS LA MAIN. La canne est deja dessinee, et bien
-   mieux : dessinerLaPeche la trace depuis la main jusqu'au scion, avec sa
    finition, ses motifs et son pliage. Sans ce retour, le geste tombait
    dans le cas general ci-dessous — celui du fer de pioche — et l'on
    pechait une pioche a la main, canne comprise.
@@ -18030,7 +17468,6 @@ if(pousse.length)lignes.push(['LE CHAMP',pousse.length+' parcelle'+(pousse.lengt
 dureeCourte(new Date(pousse[0].mur_a).getTime()-maintenant)]);
 if(C&&C.recette){
 const r=(C.recettes||{})[C.recette]||{};const reste=new Date(C.fin).getTime()-maintenant;
-/* la cuisine de Fonfon n'existe plus */
 }
 const faites=(CM&&CM.faites)||[];
 ((CM&&CM.commandes)||[]).forEach(c=>{
@@ -18095,7 +17532,6 @@ c.width=Math.round(W*D);c.height=Math.round(W*D);
 const g=c.getContext('2d');g.imageSmoothingEnabled=false;const S=c.width/32;g.setTransform(S,0,0,S,0,0);
 const al=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
-if(k==='peche'){for(let y=0;y<32;y++){const t=y/32;g.fillStyle=`rgb(${60+t*40|0},${120+t*50|0},${160+t*40|0})`;g.fillRect(0,y,32,1);}
 R(0,20,32,12,'#2e6f92');for(let i=0;i<26;i++)R(al(i*3)*32,20+al(i*7)*12,4,1,'rgba(255,255,255,.3)');
 g.strokeStyle='#f0e8d0';g.lineWidth=1;g.beginPath();g.moveTo(6,3);g.lineTo(21,17);g.stroke();
 R(4,2,4,3,'#8a6238');R(19,16,3,3,'#e8402a');
@@ -18198,36 +17634,32 @@ let corps='';
 if(AIDE_ONG==='debuter')corps=
  '<div class="card">'+
  pas(1,'Pose le pouce et marche','Ton personnage suit ton doigt. Pousse jusqu’au bord pour courir.')+
- pas(2,'Regarde la plaque en bas','Elle dit ce que tu peux faire ici : pêcher, entrer, récolter. Un toucher suffit.')+
- pas(3,'Remplis ton sac, puis vends','La pêche à La Marée, les récoltes à la ferme, le bois au comptoir de la forêt. La jauge en haut à gauche te dit la place qui reste.')+
+ pas(2,'Regarde la plaque en bas','Elle dit ce que tu peux faire ici : entrer, récolter. Un toucher suffit.')+
+ pas(3,'Remplis ton sac, puis vends','Les récoltes à la ferme, le bois au comptoir de la forêt. La jauge en haut à gauche te dit la place qui reste.')+
  '</div><div class="rub">PAR QUOI COMMENCER ?</div><div class="gr">'+
- gc('🎣','Pêcher','Au bord du quai ou au bout des pontons. Aucun achat nécessaire.')+
  gc('🌱','Semer','À la ferme : bêche, sème, arrose, et reviens quand c’est mûr.')+
  gc('🍦','Une glace','Au Glacier du Port : un effet de 10 minutes selon le parfum.')+
  gc('🃏','Le Pokédock','Des paquets de cartes à collectionner au Bar des Docks.')+
  '</div>';
 if(AIDE_ONG==='lieux')corps='<div class="lieux">'+
- lieu('port','Le port','La Marée pour vendre ta pêche, le Pêcheur Heureux pour t’équiper, le Glacier, le Bar des Docks, Crousti’Port, le Peigne, la Capitainerie et, en haut du tapis rouge, le Complexe Festif.',['PÊCHER','VENDRE','JOUER','SE RÉGALER'])+
+ lieu('port','Le port','Le Glacier, le Bar des Docks, Crousti’Port, le Peigne, la Capitainerie et, en haut du tapis rouge, le Complexe Festif.',['VENDRE','JOUER','SE RÉGALER'])+
  lieu('ferme','La ferme','Le champ, l’étable, le poulailler et la boutique de Madeleine, avec ses commandes.',['SEMER','TRAIRE','RAMASSER','LIVRER'])+
- lieu('foret','La forêt','Le bois à couper, le lac et son ponton, le comptoir qui rachète ce que tu ramènes.',['COUPER','CUEILLIR','PÊCHER AU LAC'])+
+ lieu('foret','La forêt','Le bois à couper, le comptoir qui rachète ce que tu ramènes.',['COUPER','CUEILLIR'])+
  '</div><div class="card" style="padding:12px 14px;margin-top:10px"><b style="font-size:15px">🚇 Le métro</b><em style="display:block;font-style:normal;color:#8a94a6;font-weight:700;font-size:12.5px;line-height:1.35">Aux stations du port et de la ferme : le port, la ferme, la forêt, et Tokyo.</em></div>';
 if(AIDE_ONG==='argent')corps='<div class="card">'+
- ast('🐟','<b>La pêche, à La Marée.</b> Chaque poisson a son cours du jour : regarde la flèche avant de vendre. La glacière du Pêcheur Heureux fait payer 12 % de plus.')+
  ast('🍅','<b>Les récoltes, à la ferme.</b> Plus une culture met de temps à pousser, plus elle rapporte. Les commandes de Madeleine paient mieux.')+
  ast('🪵','<b>Le bois et la cueillette, au comptoir de la forêt.</b>')+
  ast('🃏','<b>Les cartes Pokédock.</b> Les doubles se revendent au marchand du rayon, ou aux autres joueurs au Marché.')+
  ast('🎟️','<b>La chance.</b> Tickets à gratter, Loto du Port chaque soir à 21 h, casino : ça peut tout changer — dans les deux sens.')+
  '</div>';
 if(AIDE_ONG==='astuces')corps='<div class="card">'+
- ast('€','<b>Les prix bougent pour tout le monde.</b> Si quelqu’un vend deux cents sardines, le cours tombe.')+
- ast('◎','<b>Vise l’anneau doré</b> quand ça mord. Une meilleure canne l’élargit.')+
- ast('⏱','<b>Tout pousse pendant ton absence.</b> Les semis, l’étable, le poulailler : repasse les voir.')+
+  ast('⏱','<b>Tout pousse pendant ton absence.</b> Les semis, l’étable, le poulailler : repasse les voir.')+
  ast('🍦','<b>Une glace dure 10 minutes.</b> La pastille rose en haut à gauche montre ses effets et le temps qui reste.')+
  ast('🎒','<b>Un sac plein bloque tout.</b> Garde de la place, ou va vendre avant de repartir.')+
  ast('★','<b>Des tenues se cachent dans le jeu.</b> Ton vestiaire te dit où chercher.')+
  ast('✉','<b>Écris aux autres joueurs</b> depuis le Courrier, dans le menu.')+
  '</div><div class="card hw" style="margin-top:10px">'+
- ast('🎃','<b>Halloween, jusqu’au 2 novembre.</b> Cinquante poissons d’Halloween mordent au port et au lac, et les paquets Pokédock Halloween sont en vente au Bar des Docks. Après le 2 novembre, plus de paquets Halloween.')+
+ ast('🎃','<b>Halloween, jusqu’au 2 novembre.</b> Les paquets Pokédock Halloween sont en vente au Bar des Docks. Après le 2 novembre, plus de paquets Halloween.')+
  '</div>';
 $('page2Fond').innerHTML='<div id="ai2"><div class="rhd"><div class="tt"><small>LE GUIDE DU PORT</small><b>Comment jouer</b></div><button class="x" id="aiX">✕</button></div>'+
  '<div class="tabs">'+[['debuter','🚀 Débuter'],['lieux','🗺 Les lieux'],['argent','💰 Gagner'],['astuces','💡 Astuces']].map(([k,n])=>'<button data-ai-ong="'+k+'" class="'+(AIDE_ONG===k?'on':'')+'">'+n+'</button>').join('')+'</div>'+
@@ -18720,7 +18152,7 @@ function remplirNivPop(){const N=NIV&&NIV.niveau;if(!N)return;const part=Math.ma
   $('nivPop').innerHTML='<small>'+(NIV.titre?NIV.titre.toUpperCase()+' · ':'')+'NIVEAU</small><b>Niveau '+N.niveau+'</b>'+
     '<div class="jg"><i style="width:'+Math.round(part*100)+'%"></i></div><div class="t">'+(N.dans||0).toLocaleString('fr-FR')+' / '+(N.pour||0).toLocaleString('fr-FR')+' XP · encore '+Math.max(0,(N.pour||0)-(N.dans||0)).toLocaleString('fr-FR')+'</div>'+
     (proch?'<div class="pro"><em>NIVEAU '+proch.niveau+' · '+echapperT(proch.nom).toUpperCase()+'</em>'+nivRecompenses(proch).map(r=>(NIV_IC[r.t]||'🎁')+' '+echapperT(nivTexte(r))).join('<br>')+'</div>':'')+
-    '<div class="reg">L’XP, c’est ton score au classement : forêt, légumes, fruits, pêche.'+(enAttente?' <span style="color:#e8c06a;font-weight:700">'+enAttente+' récompense'+(enAttente>1?'s':'')+' t’attend'+(enAttente>1?'ent':'')+'</span> : le carnet pour les réclamer arrive très vite.':'')+'</div>';}
+    '<div class="reg">L’XP, c’est ton score au classement : forêt, légumes, fruits.'+(enAttente?' <span style="color:#e8c06a;font-weight:700">'+enAttente+' récompense'+(enAttente>1?'s':'')+' t’attend'+(enAttente>1?'ent':'')+'</span> : le carnet pour les réclamer arrive très vite.':'')+'</div>';}
 function annoncerNiveau(niv){const p=nivPalier(niv);const g=$('nivGagne');if(!g)return;let src='';try{src=teteDe({ap:e.ap,pseudo:e.pseudo}).toDataURL();}catch(x){}
   g.innerHTML='<div class="ray"></div><div class="med"><img src="'+src+'" alt=""><b>'+niv+'</b></div><div class="tt">NIVEAU ATTEINT</div><h2>Niveau '+niv+' !</h2>'+(p?'<div class="nm">'+echapperT(p.nom)+'</div>':'')+
     (p?'<div class="rc">'+nivRecompenses(p).map(r=>'<span><i>'+(NIV_IC[r.t]||'🎁')+'</i>'+echapperT(nivTexte(r))+'</span>').join('')+'</div>':'')+'<div class="deuxB"><button class="cl" id="nivOk">PLUS TARD</button><button id="nivRec">RÉCLAMER !</button></div>';
@@ -20311,7 +19743,7 @@ for(const o of autour){
 const cueillable=['argile','roseaux','champignons','herbes','plumes',
   'x_fo_amanite','x_fo_cepe','x_fo_girolle','x_fo_plume','x_fo_argile'].includes(o.t);   /* les récoltes de la forêt aussi */
 const minerai=['fer','cuivre','charbon'].includes(o.t);
-const batiment=['mine','forge','comptoir','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro','x_etal','x_pavPoisson','x_pavPeche','x_cabanon','x_cabanonMoi','x_stationVelo','x_bateau','x_paillasson','x_chantier','x_tableau'].includes(o.t);
+const batiment=['mine','forge','comptoir','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro','x_cabanon','x_cabanonMoi','x_stationVelo','x_bateau','x_paillasson','x_chantier','x_tableau'].includes(o.t);
 const buisFo=['x_fo_mure','x_fo_framboise','x_fo_myrtille'].includes(o.t);
 /* LE PONTON NE PASSE PLUS PAR ICI. Il a son propre test, surLePonton(),
    tout en haut de cette fonction : il exige d'avoir les pieds sur le
@@ -20356,16 +19788,15 @@ function actionDeSecours(){
 const charge=Object.entries(e.sac||{}).reduce((t,[k,n])=>t+n*1  /* le sac compte les OBJETS, plus leur poids */,0);
 const max=e.sacMax||60;
 if(charge>=max){
-/* OÙ VENDRE DÉPEND DE CE QU'ON PORTE ET D'OÙ L'ON EST : la pêche à La
-   Marée, les récoltes à la ferme, le reste au comptoir de la forêt. */
-let pois=0,ferme=0,autre=0;
+   ferme, le reste au comptoir de la forêt. */
+let ferme=0,autre=0;
 for(const [k,n] of Object.entries(e.sac||{})){if(!(n>0))continue;
- if(PRIX_POISSON[k])pois+=n;else if((typeof POT_CULT!=='undefined'&&POT_CULT[k])||/^(oeufs|oeufdor|miel|lait|fromage|laine|ble|foin|truffe|pain|confiture|conserve|soupe|tarte|citrouille)$/.test(k))ferme+=n;else autre+=n;}
-let sous='vends ta pêche à La Marée';
-if(CARTE==='village'&&CHAMPS_SEULS&&ferme>=pois)sous='vends tes récoltes à la boutique';
-else if(CARTE==='village'&&FORET_SEULE&&autre>=pois)sous='vends ton butin au comptoir';
-else if(ferme>pois&&ferme>=autre)sous='vends tes récoltes à la ferme';
-else if(autre>pois&&autre>ferme)sous='vends ton butin au comptoir de la forêt';
+ if((typeof POT_CULT!=='undefined'&&POT_CULT[k])||/^(oeufs|oeufdor|miel|lait|fromage|laine|ble|foin|truffe|pain|confiture|conserve|soupe|tarte|citrouille)$/.test(k))ferme+=n;else autre+=n;}
+let sous='vends tes récoltes';
+if(CARTE==='village'&&CHAMPS_SEULS)sous='vends tes récoltes à la boutique';
+else if(CARTE==='village'&&FORET_SEULE)sous='vends ton butin au comptoir';
+else if(ferme>=autre)sous='vends tes récoltes à la ferme';
+else sous='vends ton butin au comptoir de la forêt';
 return {mot:'Inventaire plein',sous:sous,f:null};}
 const prive=[...FILS_PRIVES.entries()].find(([,f])=>f.some(m=>m.nonLu));
 if(prive)
@@ -20406,466 +19837,7 @@ contains(c){return plaqueVrai.classList.contains(c);}
    Les deux sont supprimés — plaque d'action, dessin sur le dos du joueur,
    ralentissement à la marche et repères de proximité compris.
    La fonction serveur decharger_cargo reste en place, inutilisée. */
-const FORMES_POISSON={
-sardine:{f:'fuseau',L:12,H:4,dos:'#4f6f8a',ventre:'#dfe8ee',nag:'#8499aa',motif:'points',acc:'#2a4050'},
-bogue:{f:'fuseau',L:12,H:4,dos:'#8a9a7a',ventre:'#e8ecd8',nag:'#a8b098',motif:'bande',acc:'#c8b060'},
-girelle:{f:'fuseau',L:11,H:4,dos:'#2f8a8a',ventre:'#8ad0c0',nag:'#2a7070',motif:'bande',acc:'#e8803a'},
-rouget:{f:'fuseau',L:12,H:5,dos:'#c0402f',ventre:'#f0b8a0',nag:'#e8806a',motif:'bande',acc:'#f0d060',barbe:true},
-mulet:{f:'fuseau',L:15,H:5,dos:'#5f6f78',ventre:'#dde4e8',nag:'#8a9aa2',motif:'lignes',acc:'#8a9aa2'},
-saupe:{f:'fuseau',L:14,H:5,dos:'#8a929a',ventre:'#e8ecee',nag:'#a8b0b8',motif:'lignes',acc:'#e0c050'},
-maquereau:{f:'fuseau',L:15,H:5,dos:'#2a5a7a',ventre:'#e8f0f4',nag:'#3a6a8a',motif:'tigre',acc:'#1a3a52'},
-dorade:{f:'haut',L:14,H:7,dos:'#8a969c',ventre:'#e6ecee',nag:'#a8b4ba',motif:'bandeau',acc:'#e0b43a'},
-seiche:{f:'seiche',L:13,H:7,dos:'#b8a888',ventre:'#e8dcc0',nag:'#d8c8a8',motif:'zebre',acc:'#7a6a4a'},
-rascasse:{f:'haut',L:12,H:7,dos:'#b0402a',ventre:'#e8a080',nag:'#c85a3a',motif:'marbre',acc:'#7a2a1a',epines:true},
-loup:{f:'fuseau',L:18,H:6,dos:'#5a6a74',ventre:'#e4eaee',nag:'#7d8b96',motif:'aucun',acc:'#5a6a74'},
-poulpe:{f:'poulpe',L:13,H:8,dos:'#b8506a',ventre:'#e89ab0',nag:'#c0607a',motif:'points',acc:'#f0c0d0'},
-denti:{f:'haut',L:18,H:8,dos:'#b87890',ventre:'#f0d8e0',nag:'#c08aa0',motif:'taches',acc:'#4a7ab8'},
-murene:{f:'anguille',L:24,H:4,dos:'#4a3a1a',ventre:'#8a7a4a',nag:'#5a4a2a',motif:'taches',acc:'#e0c060'},
-congre:{f:'anguille',L:24,H:4,dos:'#4a4438',ventre:'#8a8270',nag:'#5a5040',motif:'aucun',acc:'#5a5040'},
-saintpierre:{f:'haut',L:14,H:10,dos:'#8a8272',ventre:'#d8d0bc',nag:'#a8a090',motif:'pouce',acc:'#1b1b1b',voile:true},
-thon:{f:'fuseau',L:26,H:9,dos:'#1a2a4a',ventre:'#c8d4de',nag:'#e8c040',motif:'pinnules',acc:'#e8c040'},
-legende:{f:'fuseau',L:24,H:8,dos:'#a8822a',ventre:'#fff0b8',nag:'#e8c060',motif:'or',acc:'#fff6d0'},
-rascassedor:{f:'haut',L:14,H:8,dos:'#d8a02a',ventre:'#fff0a0',nag:'#f0c040',motif:'or',acc:'#fff6d0',epines:true},
-botte:{f:'botte',L:10,H:8,dos:'#3a2a1c',ventre:'#5a3f21',nag:'#5a3f21',motif:'aucun',acc:'#8a6238'},
-sar:{f:'haut',L:14,H:7,dos:'#9aa2a8',ventre:'#eef2f4',nag:'#b0b8be',motif:'rayures',acc:'#2a2c2e'},
-/* ===== LES ESPÈCES DU LARGE (palier 20) ===== */
-mendole:{f:'haut',L:11,H:5,dos:'#7a8a9a',ventre:'#e4ecf2',nag:'#9aa8b4',motif:'points',acc:'#3a4a58'},
-gobie:{f:'fuseau',L:8,H:4,dos:'#6a5a42',ventre:'#d8cdb4',nag:'#8a7a5c',motif:'taches',acc:'#3a2e1e'},
-blennie:{f:'fuseau',L:9,H:4,dos:'#5a6a3a',ventre:'#d8dcb8',nag:'#7a8a52',motif:'marbre',acc:'#2e3a1e'},
-oblade:{f:'haut',L:13,H:6,dos:'#8a949c',ventre:'#eef2f6',nag:'#a8b2ba',motif:'bande',acc:'#1a1a1e'},
-chinchard:{f:'fuseau',L:14,H:5,dos:'#4a6a80',ventre:'#e2ecf2',nag:'#7a8e9c',motif:'lignes',acc:'#2a3a48'},
-marbre:{f:'haut',L:14,H:6,dos:'#9aa4ac',ventre:'#f0f4f8',nag:'#b4bcc4',motif:'rayures',acc:'#4a5058'},
-canthare:{f:'haut',L:14,H:7,dos:'#4a4a56',ventre:'#c8ccd4',nag:'#5a5a68',motif:'lignes',acc:'#2a2a32'},
-orphie:{f:'anguille',L:22,H:4,dos:'#3a6a5a',ventre:'#e8f2ee',nag:'#5a8a74',motif:'lignes',acc:'#2a9a7a'},
-oursin:{f:'oursin',L:10,H:10,dos:'#2a1a2e',ventre:'#6a3a52',nag:'#3a2440',motif:'aucun',acc:'#8a4a6a'},
-meduse:{f:'meduse',L:13,H:15,dos:'#b06a9a',ventre:'#e8b4d2',nag:'#c88ab4',motif:'points',acc:'#f0d8e8'},
-sole:{f:'plat',L:17,H:11,dos:'#9a8560',ventre:'#e4dcc0',nag:'#7a6a44',motif:'taches',acc:'#3a2e1a'},
-turbot:{f:'plat',L:19,H:15,dos:'#8a8a70',ventre:'#ddd8c0',nag:'#62624e',motif:'marbre',acc:'#2e2e24'},
-encornet:{f:'calamar',L:24,H:8,dos:'#c05a5a',ventre:'#f0bcb4',nag:'#d87a7a',motif:'points',acc:'#ffe0d8'},
-ombrine:{f:'haut',L:18,H:8,dos:'#9a9a8a',ventre:'#eef0e8',nag:'#b4b4a4',motif:'lignes',acc:'#d8c060'},
-araignee:{f:'crabe',L:14,H:11,dos:'#a8603a',ventre:'#e8b48a',nag:'#c07a52',motif:'points',acc:'#f0d0a8'},
-cigale:{f:'crabe',L:15,H:10,dos:'#8a6a4a',ventre:'#d8b890',nag:'#a8865c',motif:'lignes',acc:'#e8d0a8'},
-homard:{f:'crabe',L:17,H:11,dos:'#2a3a6a',ventre:'#7a94c8',nag:'#3a4e8a',motif:'points',acc:'#d85a3a'},
-tassergal:{f:'fuseau',L:19,H:6,dos:'#4a6a7a',ventre:'#e4eef2',nag:'#7a94a2',motif:'lignes',acc:'#2a3a46'},
-maigre:{f:'haut',L:24,H:9,dos:'#8a8a74',ventre:'#e8e8d8',nag:'#a4a490',motif:'lignes',acc:'#d8c060'},
-sabre:{f:'anguille',L:28,H:4,dos:'#b8c0c8',ventre:'#eef2f6',nag:'#8a9298',motif:'aucun',acc:'#1a1a1e'},
-seriole:{f:'fuseau',L:22,H:7,dos:'#4a5a74',ventre:'#eef0ee',nag:'#d8c060',motif:'bande',acc:'#2a3444'},
-badeche:{f:'haut',L:23,H:10,dos:'#6a5438',ventre:'#cdb48a',nag:'#8a6e4a',motif:'taches',acc:'#3a2a18'},
-raietorpille:{f:'raie',L:18,H:14,dos:'#6a6a5a',ventre:'#c8c4b0',nag:'#4a4a3e',motif:'points',acc:'#e8d860'},
-pastenague:{f:'raie',L:22,H:16,dos:'#7a6a52',ventre:'#d8ccb4',nag:'#5a4e3a',motif:'taches',acc:'#2e2418'},
-germon:{f:'fuseau',L:24,H:8,dos:'#2a4a6a',ventre:'#dde6ee',nag:'#3a6a9a',motif:'pinnules',acc:'#6aa0d0'},
-thonobese:{f:'fuseau',L:27,H:10,dos:'#1a2a44',ventre:'#d8e2ea',nag:'#e8c040',motif:'pinnules',acc:'#e8c040'},
-beryx:{f:'haut',L:16,H:9,dos:'#c03a3a',ventre:'#f0a090',nag:'#d85a52',motif:'points',acc:'#ffd0c0'},
-requingris:{f:'requin',L:28,H:8,dos:'#5a6a74',ventre:'#e8eef2',nag:'#44535c',motif:'aucun',acc:'#2a343a'},
-requinrenard:{f:'requin',L:32,H:8,dos:'#3a4a6a',ventre:'#e4ecf4',nag:'#2a3850',motif:'aucun',acc:'#1a2434'},
-requinmarteau:{f:'requin',L:30,H:9,dos:'#6a7a84',ventre:'#eef2f6',nag:'#52626c',motif:'aucun',acc:'#2a343a'},
-requinpelerin:{f:'requin',L:36,H:11,dos:'#4a5a62',ventre:'#dee6ea',nag:'#36444c',motif:'aucun',acc:'#1e262c'},
-voilier:{f:'voile',L:30,H:7,dos:'#1f3f7a',ventre:'#e8eef8',nag:'#2a5aa8',motif:'lignes',acc:'#3a8ad8'},
-marlin:{f:'voile',L:32,H:8,dos:'#16305c',ventre:'#e4ecf8',nag:'#2a4a8a',motif:'lignes',acc:'#4a9ad8'},
-lampris:{f:'haut',L:20,H:17,dos:'#8a3a5a',ventre:'#e8a0b4',nag:'#d85a6a',motif:'points',acc:'#ffe0e8'},
-dauphin:{f:'dauphin',L:26,H:8,dos:'#5a6a76',ventre:'#eef2f4',nag:'#44525c',motif:'aucun',acc:'#2a343a'},
-globicephale:{f:'baleine',L:30,H:12,dos:'#2a2a32',ventre:'#5a5a66',nag:'#3a3a46',motif:'aucun',acc:'#8a8a96',aileron:true},
-tortueluth:{f:'tortue',L:20,H:17,dos:'#2a3440',ventre:'#6a7a8a',nag:'#3a4a58',motif:'points',acc:'#8a9aaa'},
-cachalot:{f:'baleine',L:40,H:14,dos:'#4a4a48',ventre:'#9a9a94',nag:'#5e5e5a',motif:'aucun',acc:'#2e2e2c'},
-rorqual:{f:'baleine',L:44,H:14,dos:'#3a4a56',ventre:'#b8c4cc',nag:'#4a5e6a',motif:'lignes',acc:'#2a3640',aileron:true},
-baleinebleue:{f:'baleine',L:48,H:16,dos:'#2a4a6a',ventre:'#a8c0d4',nag:'#3a5e80',motif:'taches',acc:'#1e3448',aileron:true},
-castagnole:{f:'haut',L:10,H:7,dos:'#3a3a52',ventre:'#8a8ab0',nag:'#2a2a3e',motif:'aucun',acc:'#6a6a92'},
-serran:{f:'fuseau',L:12,H:5,dos:'#8a6a3a',ventre:'#e8dcb8',nag:'#a88a52',motif:'rayures',acc:'#4a3a1a'},
-pageot:{f:'haut',L:15,H:7,dos:'#d8a0a0',ventre:'#f8e8e4',nag:'#e0b4b4',motif:'points',acc:'#c04a5a'},
-mostelle:{f:'fuseau',L:19,H:6,dos:'#8a6a52',ventre:'#e0cdb8',nag:'#a8866a',motif:'marbre',acc:'#5a4030',barbe:true},
-corb:{f:'haut',L:20,H:9,dos:'#2a2a2e',ventre:'#d8d4c8',nag:'#3a3a40',motif:'lignes',acc:'#e8c040'},
-palamide:{f:'fuseau',L:22,H:7,dos:'#2a4a7a',ventre:'#dce6ee',nag:'#8a9aa8',motif:'chevrons',acc:'#1a2a44'},
-langouste:{f:'poulpe',L:16,H:9,dos:'#a8321a',ventre:'#e07a52',nag:'#c04a2a',motif:'anneaux',acc:'#f0c070'},
-cernier:{f:'haut',L:26,H:11,dos:'#4a4a52',ventre:'#c8c4b8',nag:'#5a5a62',motif:'marbre',acc:'#2a2a2e'},
-requinbleu:{f:'requin',L:32,H:7,dos:'#1f3f7a',ventre:'#eef2f8',nag:'#16305c',motif:'aucun',acc:'#16305c'},
-mante:{f:'raie',L:30,H:22,dos:'#1a1a22',ventre:'#f0f2f4',nag:'#2a2a36',motif:'taches',acc:'#0a0a10'},
-vieille:{f:'fuseau',L:15,H:6,dos:'#3f7a4a',ventre:'#c8e0b0',nag:'#e07a3a',motif:'marbre',acc:'#e8c060'},
-grondin:{f:'fuseau',L:15,H:5,dos:'#c04a3a',ventre:'#f0c0a8',nag:'#3a8ad0',motif:'aucun',acc:'#c04a3a',ailes:true},
-pagre:{f:'haut',L:17,H:8,dos:'#c87a7a',ventre:'#f4dcd8',nag:'#d89090',motif:'points',acc:'#6aa0d8'},
-barracuda:{f:'anguille',L:24,H:5,dos:'#5a6a74',ventre:'#e8eef2',nag:'#8a9aa2',motif:'chevrons',acc:'#2a3a44',machoire:true},
-liche:{f:'fuseau',L:22,H:7,dos:'#6a7a5a',ventre:'#eef0e4',nag:'#c8b060',motif:'bande',acc:'#e0c050'},
-chapon:{f:'haut',L:16,H:9,dos:'#c02a1a',ventre:'#f09070',nag:'#d8402a',motif:'marbre',acc:'#7a1a0a',epines:true},
-baliste:{f:'haut',L:14,H:9,dos:'#6a6a5a',ventre:'#c8c4a8',nag:'#3a8ab0',motif:'lignes',acc:'#3a8ab0',corne:true},
-coryphene:{f:'fuseau',L:22,H:8,dos:'#2a9a6a',ventre:'#f0e050',nag:'#3aa0d8',motif:'points',acc:'#3aa0d8',front:true},
-raie:{f:'raie',L:18,H:14,dos:'#8a7a5a',ventre:'#d8ccb0',nag:'#6a5a3a',motif:'taches',acc:'#5a4a2a'},
-espadon:{f:'epee',L:28,H:8,dos:'#2a3a5a',ventre:'#c8d0dc',nag:'#1a2a44',motif:'aucun',acc:'#b9c1c7'},
-mola:{f:'lune',L:18,H:18,dos:'#8a9aa6',ventre:'#dde4ea',nag:'#6a7a86',motif:'marbre',acc:'#b8c4cc'},
-requin:{f:'requin',L:30,H:8,dos:'#2a5a9a',ventre:'#eef2f6',nag:'#1f4a80',motif:'aucun',acc:'#1f4a80'},
-hippocampe:{f:'hippo',L:8,H:14,dos:'#e8a02a',ventre:'#f8d070',nag:'#c87a1a',motif:'anneaux',acc:'#fff0b0'},
-calamar:{f:'calamar',L:30,H:10,dos:'#b83a3a',ventre:'#f0a8a0',nag:'#d85a5a',motif:'points',acc:'#ffd0c8'},
-coelacanthe:{f:'coela',L:26,H:10,dos:'#1f3a6a',ventre:'#6a8ab8',nag:'#2a4a80',motif:'taches',acc:'#e8f0ff'},
-};
-function dessinerPoisson(g,x,y,esp,dir,bat,ombre){
-const F=FORMES_POISSON[esp]||FORMES_POISSON.sardine;
-const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(a),Math.round(b),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
-const O=ombre?'#1d3a4a':null, col=(c)=>O||c;
-g.save();g.translate(Math.round(x),Math.round(y));g.scale(dir<0?-1:1,1);
-const L=F.L,H=F.H,b=bat||0;
-if(F.f==='botte'){R(-5,-5,5,8,col(F.dos));R(-5,1,10,3,col(F.dos));R(-5,-5,5,1,col(F.ventre));R(-5,4,10,1,col('#1b1510'));g.restore();return;}
-if(F.f==='poulpe'||F.f==='calamar'){
-const long=F.f==='calamar';
-for(let i=0;i<(long?L*0.55:L*0.5);i++){const k=i/(long?L*0.55:L*0.5), hh=Math.round(H/2*Math.sin(Math.PI*(0.15+k*0.85)));
-R(i-(long?2:L*0.25),-hh,1,hh*2,col(k<.5?F.dos:F.nag));R(i-(long?2:L*0.25),-hh,1,1,col(F.acc));}
-for(let a=0;a<(long?8:6);a++){const yy=-H/2+2+a*(H-3)/((long?8:6)-1);
-for(let i=0;i<(long?L*0.45:L*0.5);i++)R(-(long?2:L*0.25)-i,yy+Math.round(Math.sin(i*0.5+a+b)*1.2),1,1,col(i%3?F.dos:F.ventre));}
-if(long){R(L*0.55-3,-1,4,2,col(F.nag));R(L*0.55-6,-H/2-1,4,2,col(F.nag));R(L*0.55-6,H/2-1,4,2,col(F.nag));}
-if(!O){R(long?4:0,-2,2,2,'#fff');R(long?5:1,-2,1,1,'#10161a');}
-g.restore();return;
-}
-if(F.f==='hippo'){
-for(let j=0;j<H;j++){const w=Math.round(2+Math.sin(j/H*Math.PI)*3);R(-w/2,-H/2+j,w,1,col(j%3?F.dos:F.ventre));}
-R(-1,-H/2-3,4,3,col(F.dos));R(3,-H/2-2,3,1,col(F.dos));R(0,-H/2-4,1,1,col(F.acc));
-for(let k=0;k<6;k++)R(-1+Math.round(Math.sin(k)*2),H/2+k*0.8,2,1,col(F.nag));
-R(-3,-2,2,4,col(F.nag));if(!O)R(1,-H/2-2,1,1,'#10161a');
-g.restore();return;
-}
-if(F.f==='raie'){
-for(let j=-H/2;j<=H/2;j++){const w=Math.round(L/2*(1-Math.abs(j)/(H/2)));R(-w,j,w*2,1,col(Math.abs(j)<2?F.ventre:F.dos));}
-for(let i=0;i<L*0.6;i++)R(-L/2-i,Math.round(Math.sin(i*0.4+b)),1,1,col(F.nag));
-if(!O){for(let k=0;k<6;k++)R(-L/3+k*3,-3+(k%3)*2,1,1,F.acc);R(L/2-4,-2,1,1,'#10161a');R(L/2-4,1,1,1,'#10161a');}
-g.restore();return;
-}
-if(F.f==='baleine'){
-/* LE GÉANT : un corps plein, la tête massive devant, les nageoires
-   caudales à plat derrière — c'est à ça qu'on reconnaît un cétacé. */
-for(let i=0;i<L;i++){const u=i/L;
-  const hh=Math.round(H/2*Math.pow(Math.sin(Math.PI*(0.06+u*0.9)),0.55)*(u>0.86?(1-(u-0.86)/0.14*0.55):1));
-  const x0=-L/2+i;
-  for(let j=-hh;j<=hh;j++){
-    const d=(j+hh)/(2*hh||1);
-    R(x0,j,1,1,col(d<0.42?F.dos:(d<0.62?F.nag:F.ventre)));}
-  if(u>0.1&&u<0.5&&i%4===0)R(x0,hh-1,1,1,col(F.acc));          /* les sillons du ventre */
-}
-/* la caudale, deux palmes à plat */
-for(let k=0;k<L*0.2;k++){const w=Math.round(1+k*0.9);
-  R(-L/2-k,-w,1,1,col(F.nag));R(-L/2-k,w-1,1,1,col(F.nag));
-  R(-L/2-k,-w+1,1,Math.max(1,2*w-2),col(k<2?F.dos:F.nag));}
-/* la nageoire pectorale et le petit aileron */
-R(-L*0.02,H/2-2,Math.round(L*0.16),2,col(F.nag));
-if(F.aileron)R(-L*0.18,-H/2+1,Math.round(L*0.07),2,col(F.dos));
-if(!O){R(L/2-5,-1,2,2,'#fff');R(L/2-4,-1,1,1,'#10161a');
-  R(L*0.22,-H/2,2,1,F.acc);                                     /* l'évent */
-  for(let k=0;k<5;k++)R(L*0.22,-H/2-2-k,1,1,'rgba(226,244,252,.75)');}
-g.restore();return;
-}
-if(F.f==='dauphin'){
-for(let i=0;i<L;i++){const u=i/L;
-  const hh=Math.round(H/2*Math.pow(Math.sin(Math.PI*(0.1+u*0.86)),0.75));
-  const x0=-L/2+i, ond=Math.round(Math.sin(u*3+b*1.2)*1.1);
-  for(let j=-hh;j<=hh;j++)R(x0,j+ond,1,1,col((j+hh)/(2*hh||1)<0.5?F.dos:F.ventre));}
-R(L/2-2,-1,5,2,col(F.dos));R(L/2-2,0,5,1,col(F.ventre));         /* le bec */
-for(let k=0;k<5;k++)R(-L*0.02+k,-H/2-4+k,4-k*0.4,1,col(F.dos)); /* l'aileron, en faux */
-R(-L*0.2,H/2-2,Math.round(L*0.2),2,col(F.nag));
-for(let k=0;k<L*0.16;k++){const w=Math.round(1+k*0.8);
-  R(-L/2-k,-w,1,2*w,col(F.nag));}
-if(!O){R(L/2-5,-2,2,2,'#fff');R(L/2-4,-2,1,1,'#10161a');}
-g.restore();return;
-}
-if(F.f==='tortue'){
-/* LES PALMES D'ABORD, elles passent derrière la carapace */
-for(const [sx,sy] of [[1,-1],[1,1],[-1,-1],[-1,1]]){
-  const av=sx>0;
-  for(let k=0;k<L*0.34;k++){
-    const t=k/(L*0.34), w=Math.round(2+t*3.4);
-    const px=sx*(L*0.2+k*0.72), py=sy*(H*0.26+k*(av?0.52:0.64));
-    R(px-w/2,py-1,w,2,col(k<2?F.dos:F.nag));}}
-/* la carapace : un ovale à nervures */
-for(let j=-H/2;j<=H/2;j++){const w=Math.round(L/2*Math.sqrt(Math.max(0,1-(j/(H/2))**2)));
-  for(let i=-w;i<=w;i++){
-    const bord=(Math.abs(i)>w-2);
-    const nerv=(Math.abs(i)%6===2)&&!bord;
-    R(i,j,1,1,col(bord?F.acc:(nerv?F.nag:((j<-H/6)?F.dos:F.ventre))));}}
-/* la tête, devant */
-R(L/2-1,-3,5,6,col(F.nag));R(L/2+3,-2,3,4,col(F.nag));R(L/2+3,-2,3,1,col(F.dos));
-if(!O){R(L/2+4,-1,1,1,'#10161a');for(let k=0;k<4;k++)R(-L/4+k*4,-H/3,1,1,'rgba(255,255,255,.3)');}
-g.restore();return;
-}
-if(F.f==='meduse'){
-for(let j=-H/2;j<=0;j++){const w=Math.round(L/2*Math.sqrt(Math.max(0,1-(j/(H/2))**2)));
-  for(let i=-w;i<=w;i++)R(i,j,1,1,col(j<-H/4?F.dos:F.nag));}
-R(-L/2+1,0,L-2,1,col(F.acc));
-for(let a=0;a<7;a++){const x0=-L/2+2+a*((L-4)/6);
-  for(let k=0;k<H*0.8;k++)R(x0+Math.round(Math.sin(k*0.5+a+b)*1.6),k,1,1,col(k%3?F.ventre:F.acc));}
-if(!O){for(let k=0;k<5;k++)R(-L/4+k*3,-H/3,1,1,'rgba(255,255,255,.65)');}
-g.restore();return;
-}
-if(F.f==='crabe'){
-for(let j=-H/2;j<=H/2*0.7;j++){const w=Math.round(L/2*Math.sqrt(Math.max(0,1-(j/(H/2))**2)));
-  for(let i=-w;i<=w;i++)R(i,j,1,1,col((i+j)%3?F.dos:F.nag));}
-for(const s of [-1,1])for(let k=0;k<4;k++)R(L*0.1+k*2,s*(H*0.34+k),2,2,col(F.nag));   /* les pattes */
-for(const s of [-1,1]){R(L/2-1,s*(H*0.2),4,2,col(F.dos));R(L/2+2,s*(H*0.2)-1,3,4,col(F.acc));R(L/2+3,s*(H*0.2),2,1,col(F.ventre));}
-if(!O){R(L*0.22,-2,1,1,'#10161a');R(L*0.22,1,1,1,'#10161a');}
-g.restore();return;
-}
-if(F.f==='oursin'){
-for(let a=0;a<18;a++){const an=a/18*Math.PI*2, r=L/2+2+((a%3)?1:3);
-  for(let k=L/2-1;k<r;k++)R(Math.cos(an)*k,Math.sin(an)*k,1,1,col(F.acc));}
-for(let j=-L/2;j<=L/2;j++){const w=Math.round(L/2*Math.sqrt(Math.max(0,1-(j/(L/2))**2)));
-  for(let i=-w;i<=w;i++)R(i,j,1,1,col((i*i+j*j)<4?F.ventre:((i+j)%2?F.dos:F.nag)));}
-g.restore();return;
-}
-if(F.f==='plat'){
-/* LE POISSON PLAT, vu du dessus : un ovale, la frange des nageoires tout
-   autour, et les deux yeux du même côté. */
-for(let j=-H/2;j<=H/2;j++){const w=Math.round(L/2*Math.sqrt(Math.max(0,1-(j/(H/2))**2)));
-  for(let i=-w;i<=w;i++){
-    const d=Math.abs(i)/Math.max(1,w);
-    let c=F.dos;
-    if(((i*3+j*5)%9)===0)c=F.acc;
-    if(((i*7+j*3)%13)===0)c=F.ventre;
-    if(d>0.82)c=F.nag;
-    R(i,j,1,1,col(c));}
-  /* la frange, un pixel plus clair qui dépasse */
-  if(w>1&&(j%2===0)){R(-w-1,j,1,1,col(F.ventre));R(w+1,j,1,1,col(F.ventre));}}
-R(-L/2-2,-1,3,2,col(F.nag));                       /* la queue */
-if(!O){R(L/2-7,-3,3,3,'#f6f8f8');R(L/2-6,-3,2,2,'#10161a');
-       R(L/2-7,1,3,3,'#f6f8f8');R(L/2-6,2,2,2,'#10161a');}
-g.restore();return;
-}
-if(F.f==='lune'){
-for(let j=-H/2;j<=H/2;j++){const w=Math.round(L/2*Math.sqrt(1-(j/(H/2))**2));R(-w,j,w*2,1,col(j<0?F.dos:F.ventre));}
-R(-2,-H/2-6,4,7,col(F.nag));R(-2,H/2-1,4,7,col(F.nag));R(-L/2-2,-3,3,6,col(F.nag));
-if(!O){R(L/2-5,-3,2,2,'#fff');R(L/2-4,-3,1,1,'#10161a');for(let k=0;k<8;k++)R(-L/3+(k*5)%(L*0.6),-H/3+(k*7)%(H*0.6),2,1,F.acc);}
-g.restore();return;
-}
-const effile=F.f==='anguille'?0.25:(F.f==='haut'?0.9:0.6);
-const profil=(i)=>{const u=i/L;                          /* 0 à la queue, 1 au museau */
-if(F.f==='anguille')return H/2*(u<0.1?u/0.1:(u>0.9?(1-u)/0.1*0.8+0.2:1));
-if(F.f==='haut'||F.f==='coela')return H/2*Math.pow(Math.sin(Math.PI*Math.min(1,u*1.05+0.05)),effile);
-if(F.f==='requin')return H/2*Math.pow(Math.sin(Math.PI*(0.1+u*0.9)),0.8);
-return H/2*Math.pow(Math.sin(Math.PI*(0.08+u*0.92)),0.7);};
-const x0=-L/2;
-for(let i=0;i<L;i++){
-const hh=Math.max(1,Math.round(profil(i))), xx=x0+i;
-for(let j=-hh;j<hh;j++){
-const v=(j+hh)/(2*hh);
-R(xx,j,1,1,col(v<0.45?F.dos:(v<0.6?(ombre?F.dos:mix(F.dos,F.ventre)):F.ventre)));
-}
-if(!O){R(xx,-hh,1,1,'rgba(20,20,20,.35)');R(xx,hh-1,1,1,'rgba(20,20,20,.22)');}
-}
-const qx=x0-1, qt=F.f==='requin'||F.f==='epee'||F.f==='fuseau'&&L>18?'lune':'fourche';
-for(let k=0;k<(F.f==='anguille'?0:4);k++){R(qx-k,-1-k-(qt==='lune'?k*0.5:0)+b,1,2,col(F.nag));R(qx-k,k+(qt==='lune'?k*0.5:0)+b-1,1,2,col(F.nag));}
-const mid=Math.round(L*0.55), hm=Math.round(profil(mid));
-if(F.f==='requin'){for(let k=0;k<5;k++)R(x0+mid-2+k,-hm-5+k,6-k,1,col(F.nag));R(x0+mid-4,hm-1,5,2,col(F.nag));}
-else if(F.voile){for(let k=0;k<L*0.6;k++)R(x0+L*0.2+k,-hm-1-Math.round(Math.sin(k/(L*0.6)*Math.PI)*4),1,1,col(F.nag));}
-else if(F.f!=='anguille'){for(let k=0;k<L*0.35;k++)R(x0+L*0.35+k,-hm-1-(k%3===0?1:0),1,1,col(F.nag));R(x0+L*0.45,hm-1,3,2,col(F.nag));}
-else{for(let k=0;k<L*0.8;k++)R(x0+L*0.1+k,-hm-1,1,1,col(F.nag));}
-if(F.epines)for(let k=0;k<5;k++)R(x0+L*0.4+k*2,-hm-3,1,3,col(F.acc));
-if(F.ailes){for(let k=0;k<6;k++)R(x0+L*0.55-k,1+k,4,1,col(k%2?F.nag:'#6ab0f0'));}
-if(F.corne)R(x0+L*0.65,-hm-3,1,4,col(F.acc));
-if(F.front)R(x0+L-3,-hm,3,hm,col(F.dos));
-if(F.f==='voile'){R(L/2,-1,13,2,col(F.acc));R(L/2,0,13,1,col('#8a9298'));
-  for(let i=0;i<L*0.5;i++){const u=i/(L*0.5),hv=Math.round(H*1.25*Math.sin(Math.PI*Math.min(1,u*1.1)));
-    R(x0+mid-L*0.1+i,-hm-hv,1,hv,col((i%3)?F.nag:F.acc));}
-  for(let k=0;k<6;k++)R(x0+mid-6+k,hm-1,5-k,1,col(F.nag));}
-if(F.f==='epee'){R(L/2,-1,11,2,col(F.acc));R(L/2,0,11,1,col('#8a9298'));for(let k=0;k<6;k++)R(x0+mid-2+k,-hm-4+k,5-k,1,col(F.nag));}
-if(F.f==='coela'){[[0.3,1],[0.55,-1],[0.7,1]].forEach(([u,s])=>R(x0+L*u,s>0?hm-1:-hm-3,3,4,col(F.nag)));}
-if(F.machoire&&!O)R(L/2-4,1,4,1,'#f2efe4');
-if(F.barbe&&!O){R(L/2-1,2,1,2,'#f0d060');R(L/2-3,2,1,2,'#f0d060');}
-if(!O){
-const m=F.motif, a=F.acc;
-if(m==='bande'){for(let i=Math.round(L*0.15);i<L*0.85;i++)R(x0+i,-1,1,1,a);}
-if(m==='lignes'){for(let i=Math.round(L*0.15);i<L*0.85;i++){R(x0+i,-2,1,1,a);R(x0+i,0,1,1,a);}}
-if(m==='rayures'){for(let i=Math.round(L*0.25);i<L*0.8;i+=3){const hh=Math.round(profil(i));R(x0+i,-hh+1,1,hh*2-2,a);}}
-if(m==='tigre'){for(let i=Math.round(L*0.2);i<L*0.85;i+=2){const hh=Math.round(profil(i));R(x0+i,-hh+1,1,Math.max(1,hh-1),a);}}
-if(m==='taches'||m==='points'){for(let k=0;k<Math.round(L/2.5);k++){const i=Math.round(L*0.15+((k*7)%Math.round(L*0.7))), hh=Math.round(profil(i));R(x0+i,-hh+1+((k*5)%Math.max(1,hh*2-2)),1,1,a);}}
-if(m==='marbre'){for(let k=0;k<L;k++){const i=(k*5)%L, hh=Math.round(profil(i));R(x0+i,-hh+1+(k*3)%Math.max(1,hh*2-2),2,1,a);}}
-if(m==='bandeau'){R(x0+L-5,-2,2,3,a);}
-if(m==='pouce'){R(x0+L*0.45,-1,3,3,a);R(x0+L*0.45+1,-2,1,1,'#f2efe4');}
-if(m==='zebre'){for(let i=2;i<L-2;i+=2)R(x0+i,-Math.round(profil(i))+1,1,2,a);}
-if(m==='chevrons'){for(let i=Math.round(L*0.2);i<L*0.8;i+=3){R(x0+i,-2,1,1,a);R(x0+i+1,-1,1,1,a);}}
-if(m==='pinnules'){for(let i=Math.round(L*0.1);i<L*0.4;i+=2){const hh=Math.round(profil(i));R(x0+i,-hh-1,1,1,a);R(x0+i,hh,1,1,a);}}
-if(m==='anneaux'){}
-if(m==='or'){for(let k=0;k<5;k++){const i=Math.round(L*0.2+k*L*0.13), hh=Math.round(profil(i));R(x0+i,-hh+1,1,1,'#ffffff');}}
-const ex=L/2-Math.max(3,Math.round(L*0.18)), ey=-Math.max(1,Math.round(profil(L-3)*0.4));
-R(ex,ey,2,2,'#f4f0e4');R(ex+1,ey+1,1,1,'#10161a');
-for(let i=Math.round(L*0.3);i<L*0.7;i+=2){const hh=Math.round(profil(i));R(x0+i,-hh+1,1,1,'rgba(255,255,255,.35)');}
-}
-g.restore();
-}
-function mix(a,b){
-const p=(c)=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];
-const x=p(a),y=p(b);return 'rgb('+Math.round((x[0]+y[0])/2)+','+Math.round((x[1]+y[1])/2)+','+Math.round((x[2]+y[2])/2)+')';
-}
-const LEGENDES=['legende','rascassedor','calamar','coelacanthe'];
-const ESP_PECHE={
-/* ===== LES CINQUANTE PRISES DU LAC ===== */
-gardon:{nom:'Gardon',col:['#4a5a46','#c8d4ce'],L:8,touches:2,vit:1.2,lac:1},
-perche:{nom:'Perche',col:['#3a5a28','#d87a2a'],L:9,touches:3,vit:1.1,lac:1},
-ablette:{nom:'Ablette',col:['#5a6a74','#f2f6fa'],L:7,touches:2,vit:1.4,lac:1},
-rotengle:{nom:'Rotengle',col:['#5a6a2a','#c0392b'],L:8,touches:3,vit:1.1,lac:1},
-goujon:{nom:'Goujon',col:['#5a4a2a','#e4dcb8'],L:6,touches:2,vit:1.3,lac:1},
-vairon:{nom:'Vairon',col:['#3a5a4a','#c8d4d8'],L:5,touches:2,vit:1.5,lac:1},
-able:{nom:'Able de Heckel',col:['#4a5a3a','#f4f8f6'],L:5,touches:2,vit:1.5,lac:1},
-chevesne:{nom:'Chevesne',col:['#3a4a5a','#e4ecf2'],L:10,touches:3,vit:1.0,lac:1},
-hotu:{nom:'Hotu',col:['#3a4a54','#b4443a'],L:9,touches:3,vit:1.0,lac:1},
-perche_soleil:{nom:'Perche soleil',col:['#2a5a5a','#e8b43a'],L:7,touches:3,vit:1.1,lac:1},
-tanche:{nom:'Tanche',col:['#2e4a28','#d4c45a'],L:10,touches:4,vit:0.8,lac:1},
-brochet:{nom:'Brochet',col:['#3a4a2a','#dcd892'],L:13,touches:5,vit:0.9,lac:1},
-carpe:{nom:'Carpe',col:['#5a3a18','#e8c87a'],L:12,touches:5,vit:0.7,lac:1},
-breme:{nom:'Brème',col:['#4a3a1a','#dcc684'],L:11,touches:4,vit:0.8,lac:1},
-barbeau:{nom:'Barbeau',col:['#5a5a2a','#e8e2b4'],L:11,touches:4,vit:0.9,lac:1},
-sandre:{nom:'Sandre',col:['#3a4a34','#dce2bc'],L:12,touches:5,vit:0.9,lac:1},
-black_bass:{nom:'Black-bass',col:['#2a4a2a','#d0e4b4'],L:11,touches:4,vit:1.0,lac:1},
-poisson_chat:{nom:'Poisson-chat',col:['#1e2420','#8a9088'],L:9,touches:4,vit:0.7,lac:1},
-lotte:{nom:'Lotte',col:['#4a3a1e','#d8c894'],L:12,touches:4,vit:0.7,lac:1},
-truite_fario:{nom:'Truite fario',col:['#4a5a34','#f0ecc8'],L:10,touches:4,vit:1.3,lac:1},
-truite_arc:{nom:'Truite arc-en-ciel',col:['#4a5a5a','#d85a7a'],L:11,touches:4,vit:1.3,lac:1},
-ombre:{nom:'Ombre commun',col:['#4a4a5a','#7a5a9a'],L:10,touches:4,vit:1.2,lac:1},
-anguille:{nom:'Anguille',col:['#242a1a','#c8b44a'],L:14,touches:6,vit:0.8,lac:1},
-silure:{nom:'Silure',col:['#2a2e2a','#b0b6ae'],L:16,touches:7,vit:0.6,lac:1},
-esturgeon:{nom:'Esturgeon',col:['#4a5248','#cdd4c8'],L:15,touches:7,vit:0.6,lac:1},
-carpe_koi:{nom:'Carpe koï',col:['#e8e4d8','#e8762a'],L:12,touches:5,vit:0.8,lac:1},
-saumon_fontaine:{nom:'Saumon de fontaine',col:['#2e4a3a','#f0a85a'],L:11,touches:5,vit:1.3,lac:1},
-lamproie:{nom:'Lamproie',col:['#3a2e22','#a89880'],L:11,touches:4,vit:0.9,lac:1},
-ecrevisse:{nom:'Écrevisse',col:['#8a2a1a','#c8564a'],L:6,touches:3,vit:0.9,lac:1},
-moule:{nom:'Moule d’eau douce',col:['#584c3a','#c8bca0'],L:5,touches:2,vit:0.4,lac:1},
-grenouille:{nom:'Grenouille verte',col:['#4a8a3a','#e8dc8a'],L:6,touches:2,vit:1.4,lac:1},
-tetard:{nom:'Têtard',col:['#2a2a24','#6a6a5a'],L:4,touches:1,vit:1.3,lac:1},
-sangsue:{nom:'Sangsue',col:['#4a5a2a','#c08a2a'],L:7,touches:2,vit:0.9,lac:1},
-gammare:{nom:'Gammare',col:['#c8c4a0','#e8e4c8'],L:4,touches:1,vit:1.4,lac:1},
-larve_libellule:{nom:'Larve de libellule',col:['#4a5a34','#7a8a5a'],L:5,touches:2,vit:1.1,lac:1},
-tortue:{nom:'Tortue cistude',col:['#3a2e18','#d8c45a'],L:11,touches:5,vit:0.5,lac:1},
-botte:{nom:'Vieille botte',col:['#2e3a2a','#52644a'],L:11,touches:4,vit:0.4,lac:1},
-conserve:{nom:'Boîte de conserve',col:['#8a7a62','#c8bc9e'],L:7,touches:3,vit:0.5,lac:1},
-bouteille:{nom:'Bouteille',col:['#2e5a3a','#4a7a52'],L:9,touches:3,vit:0.5,lac:1},
-hamecon:{nom:'Hameçon rouillé',col:['#8a6a4a','#c9b48a'],L:6,touches:2,vit:0.7,lac:1},
-roue:{nom:'Roue de vélo',col:['#6a6a72','#9a9aa2'],L:14,touches:6,vit:0.35,lac:1},
-seau:{nom:'Seau percé',col:['#8a929a','#b7bec4'],L:11,touches:5,vit:0.4,lac:1},
-piece:{nom:'Pièce ancienne',col:['#7a6a26','#b4a44a'],L:6,touches:3,vit:0.9,lac:1},
-bague:{nom:'Bague',col:['#c9a24a','#3a6ab4'],L:5,touches:3,vit:1.0,lac:1},
-poterie:{nom:'Éclat de poterie',col:['#a8663a','#e0a87a'],L:8,touches:3,vit:0.6,lac:1},
-bouchon:{nom:'Bouchon de cristal',col:['#b8d4e4','#f0fafe'],L:7,touches:3,vit:0.8,lac:1},
-plaque:{nom:'Plaque du métro',col:['#1d5090','#f4f8fc'],L:12,touches:5,vit:0.5,lac:1},
-silure_geant:{nom:'Silure géant',col:['#242a26','#a2aaa0'],L:20,touches:9,vit:0.5,lac:1},
-truite_or:{nom:'Truite d’or',col:['#a8761a','#fbeaa8'],L:13,touches:7,vit:1.4,lac:1},
-anguille_blanche:{nom:'Anguille blanche',col:['#d8d4cc','#fbf8f2'],L:15,touches:7,vit:1.0,lac:1},
-oursou:      {nom:'oursou',                 col:['#5a3f72','#8a6aa8'],L:9, touches:4,vit:0.9},
-/* les nouvelles prises improbables */
-cabas:       {nom:'cabas de mamie',         col:['#b4302c','#e8c06a'],L:11,touches:3,vit:0.6},
-pneu:        {nom:'pneu de mobylette',      col:['#2a2e32','#4a5058'],L:12,touches:6,vit:0.4},
-cadenas:     {nom:'cadenas d’amoureux',     col:['#c9a24a','#f0d78a'],L:7, touches:3,vit:1.0},
-chariot:     {nom:'chariot de supermarché', col:['#9aa2aa','#cdd4da'],L:14,touches:7,vit:0.35},
-maillot:     {nom:'maillot de l’OM',        col:['#5fc8e8','#f2f8fc'],L:10,touches:3,vit:0.9},
-santon:      {nom:'santon ébréché',         col:['#c97a52','#e8c8a8'],L:7, touches:2,vit:1.2},
-panneau:     {nom:'panneau « baignade interdite »',col:['#b4302c','#f2ece0'],L:11,touches:4,vit:0.7},
-parapluie:   {nom:'parapluie retourné',     col:['#2f3a52','#6a7a92'],L:11,touches:4,vit:0.8},
-canard:      {nom:'canard en plastique',    col:['#f0cf3a','#fae88a'],L:7, touches:1,vit:1.5},
-sirene:      {nom:'statuette de sirène',    col:['#2f8a7a','#7fd0c0'],L:9, touches:9,vit:0.3},
-savonnette:  {nom:'savonnette',             col:['#e8dfae','#f4eecb'],L:8, touches:2,vit:0.7},
-chaussette:  {nom:'chaussette dépareillée', col:['#b8c6d4','#dde6ee'],L:10,touches:2,vit:0.6},
-boule:       {nom:'boule de pétanque',      col:['#9aa2aa','#c4ccd4'],L:8, touches:5,vit:0.5},
-telephone:   {nom:'téléphone noyé',         col:['#2a2e34','#4a7f9a'],L:9, touches:4,vit:0.8},
-dentier:     {nom:'dentier',                col:['#f2c8c0','#f6f2ea'],L:8, touches:3,vit:1.1},
-cagole:      {nom:'lunettes à strass',      col:['#e070a8','#fff6c0'],L:9, touches:3,vit:1.2},
-scaphandrier:{nom:'casque de scaphandrier', col:['#b9842e','#2a4a58'],L:16,touches:8,vit:0.45},
-bouteille:   {nom:'bouteille à la mer',     col:['#6a9a78','#e8dfc0'],L:11,touches:3,vit:0.75},
-sardine:{nom:'sardine',  col:['#9fb3c4','#c9d6e0'],L:9, touches:3,vit:1.5},
-anchois:{nom:'anchois',  col:['#8aa8c0','#e4eef4'],L:8, touches:2,vit:1.7},
-merou:  {nom:'mérou',    col:['#6a5a44','#b8a070'],L:24,touches:7,vit:0.8},
-castagnole:{nom:'castagnole',col:['#3a3a52','#8a8ab0'],L:8, touches:2,vit:1.6},
-mendole:{nom:'mendole',col:['#7a8a9a','#e4ecf2'],L:9,touches:2,vit:1.5},
-gobie:{nom:'gobie',col:['#6a5a42','#d8cdb4'],L:6,touches:2,vit:1.4},
-blennie:{nom:'blennie',col:['#5a6a3a','#d8dcb8'],L:7,touches:2,vit:1.5},
-oblade:{nom:'oblade',col:['#8a949c','#eef2f6'],L:11,touches:3,vit:1.4},
-chinchard:{nom:'chinchard',col:['#4a6a80','#e2ecf2'],L:12,touches:4,vit:1.5},
-marbre:{nom:'marbré',col:['#9aa4ac','#f0f4f8'],L:12,touches:4,vit:1.25},
-canthare:{nom:'canthare',col:['#4a4a56','#c8ccd4'],L:12,touches:4,vit:1.2},
-orphie:{nom:'orphie',col:['#3a6a5a','#e8f2ee'],L:18,touches:5,vit:1.6},
-oursin:{nom:'oursin',col:['#2a1a2e','#6a3a52'],L:8,touches:3,vit:0.4},
-meduse:{nom:'méduse pélagie',col:['#b06a9a','#e8b4d2'],L:11,touches:3,vit:0.5},
-sole:{nom:'sole',col:['#6a5a3a','#e4dcc0'],L:14,touches:4,vit:0.75},
-turbot:{nom:'turbot',col:['#5a5a48','#ddd8c0'],L:16,touches:5,vit:0.7},
-encornet:{nom:'encornet',col:['#c05a5a','#f0bcb4'],L:18,touches:5,vit:1.1},
-ombrine:{nom:'ombrine',col:['#9a9a8a','#eef0e8'],L:15,touches:5,vit:1.05},
-araignee:{nom:'araignée de mer',col:['#a8603a','#e8b48a'],L:12,touches:5,vit:0.5},
-cigale:{nom:'cigale de mer',col:['#8a6a4a','#d8b890'],L:13,touches:5,vit:0.5},
-homard:{nom:'homard',col:['#2a3a6a','#7a94c8'],L:16,touches:6,vit:0.6},
-tassergal:{nom:'tassergal',col:['#4a6a7a','#e4eef2'],L:16,touches:5,vit:1.5},
-maigre:{nom:'maigre',col:['#8a8a74','#e8e8d8'],L:22,touches:7,vit:1.0},
-sabre:{nom:'poisson-sabre',col:['#b8c0c8','#eef2f6'],L:22,touches:6,vit:1.3},
-seriole:{nom:'sériole',col:['#4a5a74','#eef0ee'],L:20,touches:6,vit:1.45},
-badeche:{nom:'badèche',col:['#6a5438','#cdb48a'],L:22,touches:7,vit:0.85},
-raietorpille:{nom:'torpille',col:['#6a6a5a','#c8c4b0'],L:17,touches:6,vit:0.6},
-pastenague:{nom:'pastenague',col:['#7a6a52','#d8ccb4'],L:20,touches:7,vit:0.7},
-germon:{nom:'germon',col:['#2a4a6a','#dde6ee'],L:22,touches:7,vit:1.5},
-thonobese:{nom:'thon obèse',col:['#1a2a44','#d8e2ea'],L:26,touches:8,vit:1.4},
-beryx:{nom:'béryx',col:['#c03a3a','#f0a090'],L:15,touches:5,vit:0.9},
-requingris:{nom:'requin gris',col:['#5a6a74','#e8eef2'],L:26,touches:8,vit:1.25},
-requinrenard:{nom:'requin-renard',col:['#3a4a6a','#e4ecf4'],L:28,touches:9,vit:1.3},
-requinmarteau:{nom:'requin-marteau',col:['#6a7a84','#eef2f6'],L:29,touches:9,vit:1.3},
-requinpelerin:{nom:'requin pèlerin',col:['#4a5a62','#dee6ea'],L:32,touches:10,vit:0.9},
-voilier:{nom:'voilier',col:['#1f3f7a','#e8eef8'],L:28,touches:9,vit:1.6},
-marlin:{nom:'marlin bleu',col:['#16305c','#e4ecf8'],L:30,touches:10,vit:1.55},
-lampris:{nom:'lampris',col:['#8a3a5a','#e8a0b4'],L:19,touches:7,vit:0.8},
-dauphin:{nom:'dauphin',col:['#5a6a76','#eef2f4'],L:24,touches:7,vit:1.6},
-globicephale:{nom:'globicéphale',col:['#2a2a32','#5a5a66'],L:28,touches:9,vit:0.9},
-tortueluth:{nom:'tortue luth',col:['#2a3440','#6a7a8a'],L:18,touches:7,vit:0.55},
-cachalot:{nom:'cachalot',col:['#4a4a48','#9a9a94'],L:34,touches:11,vit:0.75},
-rorqual:{nom:'rorqual commun',col:['#3a4a56','#b8c4cc'],L:36,touches:12,vit:0.8},
-baleinebleue:{nom:'baleine bleue',col:['#2a4a6a','#a8c0d4'],L:40,touches:12,vit:0.75},
-serran:   {nom:'serran',    col:['#8a6a3a','#e8dcb8'],L:9, touches:3,vit:1.4},
-pageot:   {nom:'pageot',    col:['#d8a0a0','#f8e8e4'],L:12,touches:4,vit:1.2},
-mostelle: {nom:'mostelle',  col:['#8a6a52','#e0cdb8'],L:17,touches:5,vit:0.85},
-corb:     {nom:'corb',      col:['#2a2a2e','#d8d4c8'],L:18,touches:6,vit:0.95},
-palamide: {nom:'palamide',  col:['#2a4a7a','#dce6ee'],L:20,touches:6,vit:1.45},
-langouste:{nom:'langouste', col:['#a8321a','#e07a52'],L:14,touches:6,vit:0.6},
-cernier:  {nom:'cernier',   col:['#4a4a52','#c8c4b8'],L:26,touches:8,vit:0.7},
-requinbleu:{nom:'requin bleu',col:['#1f3f7a','#eef2f8'],L:30,touches:9,vit:1.25},
-mante:    {nom:'raie manta',col:['#1a1a22','#f0f2f4'],L:30,touches:10,vit:0.8},
-lotte:  {nom:'lotte',    col:['#5a4a42','#9a8878'],L:22,touches:6,vit:0.7},
-rouget: {nom:'rouget',   col:['#d0553f','#e8806a'],L:10,touches:3,vit:1.35},
-dorade: {nom:'dorade',   col:['#a9b4ba','#e0b43a'],L:12,touches:4,vit:1.2},
-seiche: {nom:'seiche',   col:['#c8b89a','#8a7a5c'],L:11,touches:4,vit:1.15},
-loup:   {nom:'loup',     col:['#7d8b96','#4f5b64'],L:15,touches:5,vit:1.0},
-poulpe: {nom:'poulpe',   col:['#c0607a','#e08aa0'],L:11,touches:5,vit:.95},
-congre: {nom:'congre',   col:['#5a5040','#8a7a5c'],L:20,touches:6,vit:.9},
-botte:  {nom:'vieille chaussure',col:['#3a2a1c','#5a3f21'],L:9,touches:2,vit:1.7},
-legende:{nom:'Vieux Loup du Vieux-Port',col:['#c9a24a','#f4d98a'],L:22,touches:7,vit:.75},
-bogue:  {nom:'bogue',    col:['#b8c8b0','#dfe8d8'],L:9, touches:3,vit:1.5},
-girelle:{nom:'girelle',  col:['#3aa0a0','#e8803a'],L:8, touches:3,vit:1.45},
-mulet:  {nom:'mulet',    col:['#8a9aa2','#b8c4ca'],L:13,touches:4,vit:1.15},
-saupe:  {nom:'saupe',    col:['#b0b8c0','#e0c050'],L:12,touches:4,vit:1.2},
-maquereau:{nom:'maquereau',col:['#3a6a8a','#6ab0c8'],L:12,touches:4,vit:1.25},
-rascasse:{nom:'rascasse',col:['#c0503a','#e08050'],L:10,touches:4,vit:1.1},
-denti:  {nom:'denti',    col:['#c08aa0','#6a8ab0'],L:17,touches:5,vit:1.0},
-murene: {nom:'murène',   col:['#5a4a2a','#c8b060'],L:21,touches:6,vit:.9},
-saintpierre:{nom:'saint-pierre',col:['#a8a090','#3a3a36'],L:12,touches:6,vit:.85},
-thon:   {nom:'thon rouge',col:['#2a3a5a','#a8b8c8'],L:26,touches:8,vit:.75},
-rascassedor:{nom:'Rascasse d’or',col:['#e8b83a','#fff0a0'],L:13,touches:7,vit:.72},
-sar:{nom:'sar',col:['#9aa2a8','#eef2f4'],L:14,touches:4,vit:1.15},
-vieille:{nom:'vieille',col:['#3f7a4a','#c8e0b0'],L:15,touches:4,vit:1.1},
-grondin:{nom:'grondin',col:['#c04a3a','#f0c0a8'],L:15,touches:5,vit:1.05},
-pagre:{nom:'pagre',col:['#c87a7a','#f4dcd8'],L:17,touches:5,vit:.95},
-barracuda:{nom:'barracuda',col:['#5a6a74','#e8eef2'],L:24,touches:6,vit:.9},
-liche:{nom:'liche',col:['#6a7a5a','#eef0e4'],L:22,touches:6,vit:.88},
-chapon:{nom:'chapon',col:['#c02a1a','#f09070'],L:16,touches:6,vit:.86},
-baliste:{nom:'baliste',col:['#6a6a5a','#c8c4a8'],L:14,touches:6,vit:.82},
-coryphene:{nom:'coryphène',col:['#2a9a6a','#f0e050'],L:22,touches:7,vit:.78},
-raie:{nom:'raie',col:['#8a7a5a','#d8ccb0'],L:18,touches:7,vit:.8},
-espadon:{nom:'espadon',col:['#2a3a5a','#c8d0dc'],L:28,touches:8,vit:.68},
-mola:{nom:'poisson-lune',col:['#8a9aa6','#dde4ea'],L:18,touches:8,vit:.7},
-requin:{nom:'requin peau-bleue',col:['#2a5a9a','#eef2f6'],L:30,touches:9,vit:.64},
-pain:{nom:'Pain de campagne',d:'Cuit au fournil, croûte dorée.',poids:1},
-confiture:{nom:'Confiture de baies',d:'Un pot bien serré, ramassé en forêt.',poids:1},
-conserve:{nom:'Conserve de tomates',d:'De quoi tenir tout l’hiver.',poids:1},
-soupe:{nom:'Soupe au pistou',d:'Le plat du dimanche, à Marseille.',poids:1},
-tarte:{nom:'Tarte aux fraises',d:'Elle ne survit jamais jusqu’au soir.',poids:1},
-gardon:{nom:'Gardon',col:['#c8d2da','#eef3f7'],L:14,touches:3,vit:1.25},
-perche:{nom:'Perche',col:['#6a8a3a','#c8d878'],L:20,touches:4,vit:1.15},
-truite:{nom:'Truite',col:['#8a7a5a','#e8c8a0'],L:26,touches:5,vit:1.2},
-carpe:{nom:'Carpe',col:['#a08a4a','#d8c078'],L:34,touches:6,vit:.9},
-brochet:{nom:'Brochet',col:['#4a6a3a','#9ab86a'],L:40,touches:7,vit:1.05},
-anguilledouce:{nom:'Anguille',col:['#3a4a3a','#6a7a5a'],L:36,touches:6,vit:1.1},
-ecrevisse:{nom:'Écrevisse',col:['#b04030','#e08a6a'],L:10,touches:3,vit:.95},
-silure:{nom:'Silure',col:['#4a4238','#8a7a6a'],L:52,touches:9,vit:.75},
-hippocampe:{nom:'hippocampe',col:['#e8a02a','#f8d070'],L:8,touches:9,vit:.6},
-calamar:{nom:'Calamar géant',col:['#b83a3a','#f0a8a0'],L:30,touches:10,vit:.56},
-coelacanthe:{nom:'Cœlacanthe',col:['#1f3a6a','#6a8ab8'],L:26,touches:10,vit:.52},
-};
 let SERIE_VUE=0;
-let PECHE=null, TIENT_PECHE=false, CARNET_PECHE=null;
-let DERNIERE_PECHE=null;
 /* ======================= LE LARGE =======================
    Une mer ouverte, et ton bateau dessus. On prend la barre, on met le
    cap, on lâche la barre pour pêcher. Quatre coins y vivent — la digue
@@ -21026,7 +19998,7 @@ let CAP_BAT=null;                       /* le point où l'on a dit d'aller */
 function mettreLeCap(x,y){
   if(terreLarge(x,y)){try{texteVolant(joueur.x,joueur.y-52,'pas par là','#ffd040');}catch(e){}return false;}
   CAP_BAT={x,y,t:0};
-  if(PECHE&&PECHE.etat!=='combat')try{annulerLaPeche('on remonte la ligne');}catch(e){}
+  
   try{jouer('clic');vibrer(8);}catch(e){}
   return true;
 }
@@ -21208,7 +20180,6 @@ function brancherLaBarre(){
   const surUI=(c)=>!!(c&&c.closest&&c.closest('#barre,#emPan,button,#action,#hublot,#pan,#page2,#porte,#bandeau,#miniL,#bLarge,#nivPop,#carnetP,#catalogue'));
   const toucher=(ev)=>{
     if(pageOuverte()||surUI(ev.target))return;
-    if(PECHE&&PECHE.etat==='combat')return;        /* on est en train de ferrer */
     const p=pointDuMonde(ev);if(!p)return;
     const [lx,ly]=batLocal(p[0],p[1]);
     const w=demiPont((ly+PONT_L.L/2)/PONT_L.L);
@@ -21244,498 +20215,6 @@ function poserLeBoutonDuLarge(){
   b.querySelector('small').style.cssText='display:block;margin-top:2px;font:400 9px/1 Georgia;letter-spacing:.14em;color:#9fb8ad;text-transform:uppercase';
   b.onclick=()=>{jouer('clic');vibrer(10);rentrerAuPort();};
   document.body.appendChild(b);
-}
-function lieuDePeche(){
-if(CARTE==='large'){
-  const k=coinDuBateau();if(!k)return null;   /* en pleine eau, rien ne mord */
-  const [lx,ly]=batLocal(joueur.x,joueur.y);
-  const w=demiPont((ly+PONT_L.L/2)/PONT_L.L);if(w<=6)return null;
-  const cote=joueur.dir==='gauche'?-1:1;
-  const [bx,by]=batMonde(cote*(w+38),ly);
-  return {bx:Math.max(18,Math.min(MONDE_L-18,bx)),by:Math.max(18,Math.min(MONDE_H-18,by)),lieu:k,bout:true};
-}
-/* LE LAC : on pêche depuis n'importe quel point du tablier d'un ponton,
-   et depuis n'importe quel point de la berge. La berge, c'est la bande de
-   terre juste au-dessus du trait d'eau F_rive(x) : la marche s'y arrête à
-   F_rive(x)-3 (voir bloqueForet), on ouvre donc la pêche sur les 34 unités
-   qui précèdent — un pas ou deux du bord, pas le milieu de la clairière. */
-if(CARTE==='foret'){
-  const P=pontonSousLesPieds();
-  if(P){
-    const bout=joueur.y>P.y+86;
-    /* le bouchon tombe toujours dans l'eau libre, au-delà du bout du ponton */
-    const bx=P.x+(joueur.dir==='gauche'?-34:(joueur.dir==='droite'?34:0));
-    const by=Math.max(joueur.y+40, P.y+128);
-    return {bx, by:Math.min(by, MONDE_H-26), lieu:'lac', bout};
-  }
-  if(typeof F_rive!=='function')return null;
-  if(joueur.y<=F_rive(joueur.x)-34)return null;
-  /* DEPUIS LA BERGE : le bouchon part un peu sur le côté où l'on regarde,
-     et tombe sous le trait d'eau de SON abscisse — pas de celle du joueur,
-     sinon sur une rive qui descend le bouchon se pose sur la terre. */
-  const bx=Math.max(F_BAR+10, Math.min(MONDE_L-F_BAR-10,
-    joueur.x+(joueur.dir==='gauche'?-26:(joueur.dir==='droite'?26:0))));
-  const by=Math.max(F_rive(bx)+34, joueur.y+38);
-  return {bx, by:Math.min(by, MONDE_H-26), lieu:'lac', bout:false};
-}
-if(FORET_SEULE&&CARTE==='village'){          /* LE BORD DE LA RIVIÈRE, EN FORÊT */
-const x=joueur.x,y=joueur.y,cx=rivX(y);
-if(y>110&&y<520&&x>cx-46&&x<cx-8)
-return {bx:cx+6,by:y+6,lieu:'riviere'};
-return null;
-}
-if(CARTE!=='extramar')return null;
-const x=joueur.x,y=joueur.y;
-for(const px of XP.pontons){
-if(Math.abs(x-px)<XP.pontonL&&y>XP.pontonFin-46&&y<XP.pontonFin){
-const bout=y>XP.pontonFin-16, longue=((EQUIP_PECHE&&EQUIP_PECHE.canne)||0)>=3;
-if(bout&&longue)
-return {bx:px+(joueur.dir==='gauche'?-52:(joueur.dir==='droite'?52:0)),by:XP.pontonFin+58,lieu:'large'};
-return {bx:px+(joueur.dir==='gauche'?-30:(joueur.dir==='droite'?30:0)),by:XP.pontonFin+22,lieu:'ponton',bout};
-}
-}
-if(y>XP.quaiY-26&&y<XP.quaiY+2&&x>XP.bassinO+14&&x<XP.bassinE-14&&
-!XP.pontons.some(px=>Math.abs(x-px)<24))
-return {bx:x,by:XP.quaiY+30,lieu:'quai'};
-return null;
-}
-async function lancerLaLigne(){
-if(CARTE==='large'){BAT.v=0;}   /* on jette la ligne : on coupe le moteur */
-const L=lieuDePeche();
-if(!L||PECHE)return;
-PECHE={etat:'lance',lieu:L.lieu,t0:performance.now(),bx:L.bx,by:L.by,px:joueur.x,py:joueur.y,
-cote:joueur.dir==='gauche'?-1:1,esp:null,cm:0};
-PECHE.mordA=PECHE.t0+600+(glaceA('pistache')?1300+Math.random()*2500:2000+Math.random()*4000)*(1-nivInv('bonus:peche_morsure')/100);
-/* LE LANCER : le bras part en arrière puis fouette vers l'avant.
-   C'est majGeste, dans la boucle de jeu, qui fait avancer le geste — une
-   minuterie en plus entrerait en conflit avec lui. */
-try{GESTE={t:1,pourMoi:true,cible:null,impact:false,type:'lance'};}catch(x){}
-jouer('cueille');vibrer(8);majAction();
-const P=PECHE;
-const d=await appelRPC('pecher_touche',{p_joueur:e.id,p_lieu:L.lieu});
-if(PECHE!==P)return;
-if(!d||d.erreur||!d.espece){annulerLaPeche(!d||!d.espece&&!d.erreur?'la ligne s’emmêle, relance':(d.erreur==='trop tot'?'patience…':(d.erreur==='canne courte'?'ta canne ne porte pas si loin':'rien ne mord ici')));return;}
-P.esp=d.espece;P.cm=d.cm;
-P.eq={canne:d.canne||0,moulinet:!!d.moulinet,bouchon:!!d.bouchon,finition:d.finition||null,
-  sondeur:!!d.sondeur,glaciere:!!d.glaciere};
-/* LE SONDEUR : il annonce ce qui vient de mordre, avant qu'on ferre */
-if(d.sondeur&&d.annonce){const S2=ESP_PECHE[d.annonce];
-  if(S2)setTimeout(()=>{if(PECHE===P)texteVolant(joueur.x,joueur.y-54,'sondeur · '+S2.nom,'#8fe0a0');},260);}
-if(EQUIP_PECHE){EQUIP_PECHE.canne=P.eq.canne;EQUIP_PECHE.finition=P.eq.finition;if(d.appat)EQUIP_PECHE.appats[d.appat]=d.reste;}
-if(P.eq.bouchon)P.mordA=Math.max(performance.now()+300,P.t0+600+1000+Math.random()*2000);
-/* les quatre nouveaux appâts manquaient dans cette table : leur nom sortait en « undefined » */
-if(d.appat)texteVolant(joueur.x,joueur.y-40,
-  ({vers:'vers de mer',crevettes:'crevettes',sardine:'sardine fraîche',
-    crabe:'crabe mou',calamarpetit:'petit calamar',
-    leurre:'leurre doré',esche:'esche vivante'})[d.appat]
-  || String(d.appat).replace(/_/g,' '),'#e8c06a');
-}
-function annulerLaPeche(mot){
-if(!PECHE)return;
-if(mot)texteVolant(joueur.x,joueur.y-34,mot,'#b9c7d0');
-PECHE=null;TIENT_PECHE=false;majAction();
-}
-function ferrer(){
-if(!PECHE)return;
-if(PECHE.etat!=='mord'){annulerLaPeche('trop tôt : il a filé');return;}
-const P=PECHE;
-const S=ESP_PECHE[P.esp]||ESP_PECHE.sardine;
-P.etat='combat';P.touches=0;P.besoin=S.touches;P.coeurs=[2,3,3,4,4,5][(P.eq&&P.eq.canne)||0];P.dist=1;   /* une bonne canne pardonne plus de casse */
-nouveauCercle(P);vibrer([12,20,12]);majAction();
-}
-async function gagnerLeCombat(){
-const P=PECHE;if(P.fx){P.bx=P.fx;P.by=P.fy;}P.etat='remonte';P.t0=performance.now();TIENT_PECHE=false;majAction();
-const num=++numAppelSac;
-const d=await appelRPC('pecher_prise',{p_joueur:e.id});
-if(!d||d.erreur){
-const m=!d?'la ligne a cassé':(d.erreur==='sac plein'?'ton inventaire est plein':(d.erreur==='deja pris'?'quelqu’un l’a déjà pris aujourd’hui':'il s’est échappé'));
-texteVolant(joueur.x,joueur.y-34,m,'#e8a06a');PECHE=null;majAction();return;
-}
-if(d.sac){adopterSac(d,num);e.sac=d.sac;sauver();if(typeof majHaut==='function')majHaut();}
-if(CARNET_PECHE){const c=CARNET_PECHE[d.espece]||{n:0,record:0};c.n++;c.record=Math.max(c.record,d.cm);CARNET_PECHE[d.espece]=c;}
-DERNIERE_PECHE={espece:d.espece,cm:d.cm};
-P.etat='saute';P.t0=performance.now();P.fin=d;                     /* le poisson jaillit vers nous */
-const S=ESP_PECHE[d.espece]||ESP_PECHE.sardine;
-setTimeout(()=>{
-if(PECHE!==P)return;
-texteVolant(joueur.x,joueur.y-44,(LEGENDES.includes(d.espece)?'🏆 ':'')+S.nom+' · '+d.cm+' cm',
-LEGENDES.includes(d.espece)?'#f4d98a':(d.neuf?'#9fdfb8':'#cfe0f2'));
-
-if(d.neuf)setTimeout(()=>texteVolant(joueur.x,joueur.y-54,'nouvelle espèce au carnet !','#9fdfb8'),500);
-/* une espece neuve ou un record peuvent faire monter d'un echelon :
-   c'est le seul moment ou cela vaut un aller-retour au serveur */
-if(d.neuf||d.record)rafraichirLeRang().then(nr=>{
-if(nr&&RANGS_MARIN[nr])texteVolant(joueur.x,joueur.y-66,
-'livret visé · '+RANGS_MARIN[nr].toUpperCase(),'#e8c06a');});
-else if(d.record)setTimeout(()=>texteVolant(joueur.x,joueur.y-54,'nouveau record !','#e8c06a'),500);
-if(d.points>0){marquer('peche',d.points);sauver();setTimeout(()=>texteVolant(joueur.x+14,joueur.y-30,'+'+d.points+' pt'+(d.points>1?'s':''),'#ffd76a'),900);}
-jouer('achat','moment');vibrer(LEGENDES.includes(d.espece)?[40,60,40,60,120]:[18,30,18]);
-PECHE=null;majAction();
-},650);
-}
-function perdreLeCombat(){
-texteVolant(joueur.x,joueur.y-34,'la ligne a cassé…','#e8a06a');
-vibrer(80);PECHE=null;TIENT_PECHE=false;majAction();
-}
-function eclaboussure(x,y,n){
-for(let i=0;i<(n||10);i++){
-const a=-Math.PI/2+(Math.random()-.5)*2.2;
-PARTS.push({x,y,vx:Math.cos(a)*38,vy:Math.sin(a)*46,vie:.45+Math.random()*.3,
-taille:2,rot:0,vrot:0,c:'rgba(220,240,250,.85)',rebondi:true});
-}
-}
-function tempsDeLaPeche(t,dt){
-const P=PECHE;if(!P)return;
-if(P.etat!=='combat'&&P.etat!=='remonte'&&P.etat!=='saute'&&Math.hypot(joueur.x-P.px,joueur.y-P.py)>5){annulerLaPeche('ligne relevée');return;}
-if(P.etat==='combat'||P.etat==='remonte'||P.etat==='saute'){joueur.x=P.px;joueur.y=P.py;}
-if(P.etat==='lance'&&t-P.t0>600){P.etat='attend';majAction();}
-if(P.etat==='attend'&&!P.esp&&t>P.mordA+4000){annulerLaPeche('la ligne s’emmêle, relance');return;}
-if(P.etat==='attend'&&t>=P.mordA&&P.esp){
-P.etat='mord';P.mordT=t;vibrer([30,40,30]);eclaboussure(P.bx,P.by);majAction();
-}
-if(P.etat==='mord'&&t-P.mordT>1100)annulerLaPeche('il s’est décroché');
-if(P.etat==='combat'&&P.cercle){
-const C=P.cercle;
-C.k=(t-C.t0)/C.duree;                            /* 0 : grand · 1 : sur le poisson */
-if((C.k-1)*C.duree>0.52*900&&!C.juge)jugerLaTouche(P,false);   /* trop tard : raté */
-if(C.juge&&t-C.juge.t>420){
-if(P.touches>=P.besoin){gagnerLeCombat();return;}
-if(P.coeurs<=0){perdreLeCombat('il a filé…');return;}
-nouveauCercle(P);
-}
-}
-}
-function nouveauCercle(P){
-const S=ESP_PECHE[P.esp]||ESP_PECHE.sardine;
-P.dist=1-P.touches/P.besoin;
-const vers=Math.min(1,1-P.dist)*0.75;
-P.fx=P.bx+(P.px-P.bx)*vers+(Math.random()-.5)*34*(P.dist+.3);
-P.fy=P.by+((P.py+12)-P.by)*vers+(Math.random()-.5)*8;
-/* ================= L'ALLURE DE CHAQUE ESPÈCE =================
-   Le geste ne change pas : c'est le rythme du cercle qui raconte le poisson. */
-P.cercle={t0:performance.now(),duree:dureeDuCercle(P,S),k:0,juge:null};
-eclaboussure(P.fx,P.fy,5);
-}
-/* chaque poisson a sa façon de se battre */
-const ALLURE={
-  /* les nerveux : des cercles courts, qui se resserrent peu */
-  sardine:'nerveux',anchois:'nerveux',bogue:'nerveux',girelle:'nerveux',gardon:'nerveux',
-  /* les têtus : lents, mais ils se durcissent vite */
-  thon:'tetu',merou:'tetu',coelacanthe:'tetu',silure:'tetu',calamar:'tetu',mola:'tetu',
-  congre:'tetu',murene:'tetu',lotte:'tetu',
-  /* les sournois : le cercle ralentit, puis détale */
-  poulpe:'sournois',seiche:'sournois',baliste:'sournois',hippocampe:'sournois',
-  raie:'sournois',saintpierre:'sournois',
-  /* les fuyants : la vitesse change d'un cercle à l'autre */
-  loup:'fuyant',barracuda:'fuyant',denti:'fuyant',liche:'fuyant',espadon:'fuyant',
-  requin:'fuyant',brochet:'fuyant',coryphene:'fuyant',legende:'fuyant',rascassedor:'fuyant',
-  /* le large */
-  mendole:'nerveux',gobie:'nerveux',blennie:'nerveux',chinchard:'nerveux',castagnole:'nerveux',
-  serran:'nerveux',oblade:'nerveux',orphie:'nerveux',
-  cachalot:'tetu',rorqual:'tetu',baleinebleue:'tetu',globicephale:'tetu',cernier:'tetu',
-  badeche:'tetu',homard:'tetu',araignee:'tetu',cigale:'tetu',tortueluth:'tetu',langouste:'tetu',
-  meduse:'sournois',oursin:'sournois',sole:'sournois',turbot:'sournois',encornet:'sournois',
-  pastenague:'sournois',raietorpille:'sournois',beryx:'sournois',lampris:'sournois',
-  palamide:'fuyant',seriole:'fuyant',tassergal:'fuyant',germon:'fuyant',thonobese:'fuyant',
-  voilier:'fuyant',marlin:'fuyant',dauphin:'fuyant',sabre:'fuyant',
-  requinbleu:'fuyant',requingris:'fuyant',requinrenard:'fuyant',requinmarteau:'fuyant',
-  requinpelerin:'tetu',mante:'tetu'
-};
-function dureeDuCercle(P,S){
-  const base=1000/S.vit;
-  const a=ALLURE[P.esp]||'droit';
-  const n=P.touches, reste=P.besoin-n;
-  let d;
-  if(a==='nerveux'){
-    /* vif dès le départ, mais il ne se durcit presque pas */
-    d=base*0.72*(1.02-n*0.015);
-  }else if(a==='tetu'){
-    /* large au début, de plus en plus serré : le dernier tour est le pire */
-    d=base*1.26*(1.06-n*0.085);
-  }else if(a==='sournois'){
-    /* un cercle lent, un cercle rapide, en alternance */
-    d=base*(n%2?0.62:1.3)*(1.04-n*0.04);
-  }else if(a==='fuyant'){
-    /* on ne sait jamais : entre très lent et très vif */
-    d=base*(0.6+Math.random()*0.85)*(1.04-n*0.05);
-  }else{
-    d=base*(1.04-n*0.05);
-  }
-  /* le dernier cercle est le plus nerveux : il accélère */
-  if(reste<=1)d*=0.78;
-  /* LA CANNE RALENTIT LE CERCLE : c'est ce que promet la boutique */
-  const cn=(P.eq&&P.eq.canne)||0;
-  d*= [1,1.15,1.25,1.35,1.45,1.52][cn]||1;
-  return Math.max(260,d);
-}
-function taperPeche(){
-const P=PECHE;if(!P||P.etat!=='combat'||!P.cercle||P.cercle.juge)return;
-jugerLaTouche(P,true);
-}
-const fenetreParfaite=(cn)=>[.09,.12,.15,.19,.23,.28][cn||0];    /* la canne élargit le liseré doré */
-const fenetreBonne=(cn)=>[.22,.26,.30,.34,.38,.42][cn||0];
-function jugerLaTouche(P,tape){
-/* On juge en millisecondes, pas en fraction du cercle : sinon un cercle lent
-   offrirait une fenêtre immense et tout deviendrait parfait. */
-const REF=900;                                   /* le cercle de référence */
-const C=P.cercle, ecart=Math.abs(1-C.k)*C.duree/REF;
-const cn=(P.eq&&P.eq.canne)||0;
-/* on plafonne : une fenêtre ne prend jamais plus du quart du tour pour le parfait,
-   ni plus de la moitié pour le bien. Sinon les petits poissons deviennent gratuits. */
-const tour=C.duree/REF;
-const fp=Math.min(fenetreParfaite(cn), tour*0.15);
-const fb=Math.min(fenetreBonne(cn),    tour*0.34);
-const note=!tape?'rate':(ecart<fp?'parfait':(ecart<fb?'bien':'rate'));
-C.juge={note,t:performance.now()};
-if(note==='rate'){P.coeurs--;vibrer(60);texteVolant(P.fx,P.fy-10,tape?(C.k<1?'trop tôt !':'trop tard !'):'trop tard !','#ff7a5a');}
-else{
-P.touches+=(note==='parfait'||(P.eq&&P.eq.moulinet&&P.touches>=1))&&P.touches<P.besoin-1?2:1;P.touches=Math.min(P.touches,P.besoin);
-texteVolant(P.fx,P.fy-10,note==='parfait'?'PARFAIT !':'bien !',note==='parfait'?'#ffd76a':'#9fdfb8');
-vibrer(note==='parfait'?[14,20,24]:14);eclaboussure(P.fx,P.fy,note==='parfait'?12:7);
-if(note==='parfait')jouer('cueille');
-}
-}
-window.addEventListener('pointerdown',ev=>{
-if(PECHE&&PECHE.etat==='combat'){taperPeche();}
-},true);
-function dessinerLaPeche(g,camX,camY){
-if(!PECHE)return;
-const t=performance.now(), dt=Math.min(.05,(t-(PECHE.tp||t))/1000);PECHE.tp=t;
-tempsDeLaPeche(t,dt);
-const P=PECHE;if(!P)return;
-const c=P.cote;
-const combat=P.etat==='combat';
-let bx=P.bx-camX, by=P.by-camY;
-if(combat){bx=P.fx-camX;by=P.fy-camY;}
-const tire=combat?.6+(P.cercle&&P.cercle.juge&&P.cercle.juge.note!=='rate'?.4:0):(P.etat==='mord'?.4:0);
-const hx=joueur.x+c*5-camX, hy=joueur.y-14-camY;
-/* ================= LE SCION PLIE =================
-   Il etait raide : une courbe fixe que seul le combat inflechissait. Il se
-   charge maintenant au lancer — il part en arriere puis se detend —, a la
-   touche, et surtout quand on sort la prise : c'est la canne qui souleve
-   le poisson, pas le poisson qui saute tout seul. */
-let plie=0;
-if(P.etat==='lance')plie=-0.9*(1-Math.min(1,(t-P.t0)/600));
-else if(P.etat==='mord')plie=0.55;
-else if(P.etat==='remonte'||P.etat==='saute')plie=1.15;
-/* un hasard repetable, pour que les gouttes d'une meme eclaboussure
-   gardent leur direction d'une image a l'autre */
-const al=(n)=>{const z=Math.sin(n*127.1)*43758.5453;return z-Math.floor(z);};
-const sx=joueur.x+c*(17-tire*3)-camX+(bx-(joueur.x-camX))*0.08*tire, sy=joueur.y-34-camY+tire*9+plie*6;
-const fin=FINITIONS.find(f=>f.id===((P.eq&&P.eq.finition)||(EQUIP_PECHE&&EQUIP_PECHE.finition)));
-const colC=fin?fin.col:['#6b4a28','#a5764a'];
-g.strokeStyle=colC[0];g.lineWidth=1.4;
-g.beginPath();g.moveTo(hx,hy);g.quadraticCurveTo(hx+c*8,hy-14-tire*2+plie*4,sx,sy);g.stroke();
-g.strokeStyle=colC[1];g.lineWidth=.7;g.beginPath();g.moveTo(hx+c*4,hy-6);g.quadraticCurveTo(hx+c*9,hy-15+plie*4,sx,sy);g.stroke();
-/* LES MOTIFS : ils courent le long du brin */
-if(fin&&(fin.raies||fin.flamme||fin.ecaille||fin.etoiles||fin.phospho)){
-  for(let i=0;i<=16;i++){const k=i/16;
-    const px=hx+(sx-hx)*k, py=hy+(sy-hy)*k-4*Math.sin(k*Math.PI);
-    if(fin.raies){ if(i%2)
-      {g.fillStyle=fin.col[1];g.fillRect(Math.round(px),Math.round(py),2,2);} }
-    else if(fin.flamme){ if(k>0.1&&k<0.7)
-      {g.fillStyle=['#f0a030','#e8681a','#f6d050'][i%3];
-       g.fillRect(Math.round(px),Math.round(py-1+Math.sin(t/160+i)*1.2),2,2);} }
-    else if(fin.ecaille){ if(i%2)
-      {g.fillStyle=fin.col[1];g.fillRect(Math.round(px),Math.round(py),1,2);
-       g.fillRect(Math.round(px)+1,Math.round(py)+1,1,1);} }
-    else if(fin.etoiles){ if(i%3===0)
-      {g.fillStyle='rgba(255,255,255,'+(0.4+0.6*Math.abs(Math.sin(t/340+i)))+')';
-       g.fillRect(Math.round(px),Math.round(py),1,1);} }
-    else if(fin.phospho){
-      g.fillStyle='rgba(143,224,96,'+(0.35+0.45*Math.abs(Math.sin(t/260+i*0.7)))+')';
-      g.fillRect(Math.round(px),Math.round(py),2,2);}}
-  if(fin.phospho){g.fillStyle='rgba(143,224,96,.12)';
-    g.beginPath();g.arc(sx,sy,9,0,7);g.fill();}
-}
-if(fin&&fin.nacre){const k=(t/700)%1, px=hx+(sx-hx)*k, py=hy+(sy-hy)*k-4*Math.sin(k*Math.PI);
-g.fillStyle='rgba(255,255,255,.95)';g.fillRect(Math.round(px),Math.round(py),1,1);
-g.fillStyle=['rgba(255,200,230,.8)','rgba(200,230,255,.8)','rgba(220,255,220,.8)'][Math.floor(t/300)%3];g.fillRect(Math.round(px)+1,Math.round(py),1,1);}
-/* ================= L'ANNEAU QUI S'ELARGIT =================
-   Le meme geste sert a la pose, aux coups de museau et a la prise : une
-   ellipse qui grandit et s'efface. q va de 0 a 1. */
-const anneauP=(ax,ay,q,force)=>{if(q<0||q>1)return;
-  g.strokeStyle='rgba(224,244,252,'+(force*(1-q)).toFixed(3)+')';g.lineWidth=1;
-  g.beginPath();g.ellipse(ax,ay,2+q*16,0.8+q*5,0,0,7);g.stroke();};
-if(P.etat==='lance'){
-const k=Math.min(1,(t-P.t0)/600);
-/* LA TRAINEE DU BOUCHON : quatre positions en arriere de lui. Sans elle le
-   lancer n'est qu'un point qui glisse et l'on ne voit pas la vitesse. */
-for(let i=1;i<=4;i++){const q=k-i*0.055;if(q<=0)continue;
-  g.fillStyle='rgba(240,246,248,'+(0.30-i*0.06).toFixed(2)+')';
-  g.fillRect(Math.round(sx+(bx-sx)*q),Math.round(sy+(by-sy)*q-Math.sin(q*Math.PI)*22),1,1);}
-bx=sx+(bx-sx)*k;by=sy+(by-sy)*k-Math.sin(k*Math.PI)*22;}
-else if(P.etat==='attend'){
-by+=Math.sin(t/260)*.8;
-/* LA POSE : une couronne de gouttes et deux anneaux, les 420 ms qui
-   suivent l'arrivee du bouchon. L'etat 'lance' dure 600 ms, on compte
-   donc depuis P.t0+600. Avant, le bouchon se posait sans rien. */
-const kp=(t-P.t0-600)/420;
-if(kp>=0&&kp<=1){
-  for(let i=0;i<14;i++){
-    const a=-0.18-i*0.21, vv=1.5+al(i)*1.3;
-    const gx=bx+Math.cos(a)*vv*17*kp, gy=by-Math.sin(a)*vv*22*kp+kp*kp*34;
-    if(gy<by+1){g.fillStyle='rgba(224,244,252,'+(0.85-kp*0.7).toFixed(2)+')';
-      g.fillRect(Math.round(gx),Math.round(gy),1,kp<0.5?2:1);}}
-  anneauP(bx,by+1,kp,0.9);anneauP(bx,by+1,kp-0.35,0.6);
-}
-/* L'OMBRE QUI APPROCHE. Rien n'annoncait la touche : elle tombait d'un
-   coup. Le poisson vient maintenant du large dans les 1 100 ms qui
-   precedent, museau en avant, et grossit en se rapprochant. */
-const ka=1-Math.min(1,Math.max(0,(P.mordA-t)/1100));
-if(ka>0){
-  const ox=bx+c*(46-44*ka), oy=by+16-7*ka;
-  g.fillStyle='rgba(8,38,58,'+(0.16+0.26*ka).toFixed(2)+')';
-  g.beginPath();g.ellipse(ox,oy,7+ka*2,2.2+ka*0.8,0,0,7);g.fill();
-  if(ka>0.55){g.fillStyle='rgba(8,38,58,.18)';
-    g.beginPath();g.ellipse(ox-c*8,oy-1,3,1.2,0,0,7);g.fill();}
-}
-/* LES DEUX COUPS DE MUSEAU : il goute avant de prendre. C'est ce qui fait
-   qu'on guette le bon instant au lieu d'attendre un signal. */
-[[900,2],[450,3.4]].forEach(([avant,prof])=>{
-  const k2=(t-(P.mordA-avant))/300;
-  if(k2>=0&&k2<=1){by+=Math.sin(k2*Math.PI)*prof;anneauP(bx,by+2,k2,0.7);}
-});}
-else if(P.etat==='mord'){
-/* LA PRISE : le bouchon ne tremble plus sur place, il file sous l'eau en
-   diagonale, et des bulles remontent de la ou il a disparu. */
-const k=Math.min(1,(t-P.mordT)/420);
-bx+=c*k*7;by+=2+k*9+Math.sin(t/40)*1.2;
-for(let i=0;i<7;i++){const q=(k*1.6-i*0.14);if(q<0||q>1)continue;
-  g.fillStyle='rgba(214,240,248,'+(0.7*(1-q)).toFixed(2)+')';
-  g.fillRect(Math.round(bx-c*2+Math.sin(q*7+i)*2),Math.round(by-q*14),1,1);}
-g.fillStyle='rgba(8,38,58,.30)';
-g.beginPath();g.ellipse(bx+c*3,by+3,8,2.6,0,0,7);g.fill();
-anneauP(bx,by-k*9+2,k,0.5);}
-if(P.etat==='saute'){
-/* ================= LA SORTIE DE L'EAU =================
-   Le poisson glissait le long d'un arc, a plat, sans rien derriere lui.
-   Il creve maintenant la surface dans une couronne de gouttes, tourne sur
-   lui-meme pendant la montee — c'est la canne qui le souleve — et seme
-   des gouttes tout du long.
-   LE DEPART SE RECALCULE A CHAQUE IMAGE depuis P.bx/P.by, les coordonnees
-   MONDE du bouchon. Un premier essai le gardait en memoire une fois pour
-   toutes — mais en coordonnees ecran : des que la camera bougeait, la
-   couronne se decalait du trou qu'elle est censee entourer. */
-const k=Math.min(1,(t-P.t0)/600), S=ESP_PECHE[P.fin.espece]||ESP_PECHE.sardine;
-const dx0=P.bx-camX, dy0=P.by-camY;
-const x=dx0+((joueur.x-camX)-dx0)*k, y=dy0+((joueur.y-26-camY)-dy0)*k-Math.sin(k*Math.PI)*34;
-if(k<0.30){                                  /* la couronne du moment ou il perce */
-  const q=k/0.30;
-  for(let i=0;i<11;i++){
-    const a=-0.25-i*0.26, vv=1.3+al(i*3.1)*1.2;
-    g.fillStyle='rgba(224,244,252,'+(0.85-q*0.7).toFixed(2)+')';
-    g.fillRect(Math.round(dx0+Math.cos(a)*vv*20*q),Math.round(dy0-Math.sin(a)*vv*26*q+q*q*26),1,q<0.5?2:1);
-  }
-  g.strokeStyle='rgba(224,244,252,'+(1-q).toFixed(2)+')';g.lineWidth=1;
-  g.beginPath();g.ellipse(dx0,dy0,2+q*16,0.8+q*5,0,0,7);g.stroke();
-}
-for(let i=0;i<5;i++){                        /* les gouttes qui le quittent */
-  const q=((k*2.2-i*0.18)%1);
-  if(q>0&&k>0.12){g.fillStyle='rgba(224,244,252,'+(0.7*(1-q)).toFixed(2)+')';
-    g.fillRect(Math.round(x-6+al(i*7.7)*12),Math.round(y+2+q*20),1,1);}
-}
-g.strokeStyle='rgba(240,240,240,.8)';g.lineWidth=.5;g.beginPath();g.moveTo(sx,sy);g.lineTo(x,y);g.stroke();
-if(LEGENDES.includes(P.fin.espece)){const r=g.createRadialGradient(x,y,1,x,y,18);r.addColorStop(0,'rgba(255,220,120,.7)');r.addColorStop(1,'rgba(255,220,120,0)');g.fillStyle=r;g.fillRect(x-18,y-18,36,36);}
-/* IL TOURNE EN MONTANT, un tour et demi, dans le sens de la canne. */
-g.save();g.translate(Math.round(x),Math.round(y));g.rotate(c*(-0.9+k*7.2));
-/* AU LARGE ON VOIT LA MOITIÉ MOINS GRAND : le poisson y sortait minuscule
-   et l'on ne reconnaissait rien. On le remonte à la taille du port. */
-if(CARTE==='large')g.scale(2,2);
-dessinerPoisson(g,0,0,P.fin.espece,c,Math.sin(t/40)>0?1:-1,false);
-g.restore();
-return;
-}
-g.strokeStyle=combat?'rgba(255,255,255,.95)':'rgba(240,240,240,.75)';g.lineWidth=combat?.7:.5;
-g.beginPath();g.moveTo(sx,sy);
-if(combat)g.lineTo(bx,by);else g.quadraticCurveTo((sx+bx)/2,Math.max(sy,by)+(P.etat==='lance'?0:6),bx,by);
-g.stroke();
-if(combat){
-const S=ESP_PECHE[P.esp]||ESP_PECHE.sardine, C=P.cercle;
-const dir=bx<joueur.x-camX?1:-1;
-g.globalAlpha=.6;dessinerPoisson(g,bx,by+2,P.esp,dir,Math.sin(t/60)>0?1:-1,true);g.globalAlpha=1;
-const r0=(t/300)%1;g.strokeStyle='rgba(235,248,255,'+(0.5*(1-r0))+')';g.lineWidth=.7;
-g.beginPath();g.ellipse(bx,by+2,3+r0*9,1+r0*3,0,0,Math.PI*2);g.stroke();
-const cible=6;
-g.strokeStyle='rgba(255,255,255,.85)';g.lineWidth=1;g.beginPath();g.arc(bx,by,cible,0,Math.PI*2);g.stroke();
-if(C&&!C.juge){
-const cn=(P.eq&&P.eq.canne)||0, fp=fenetreParfaite(cn), fb=fenetreBonne(cn);
-g.strokeStyle='rgba(159,223,184,.30)';g.lineWidth=Math.max(2,fb*60);
-g.beginPath();g.arc(bx,by,cible,0,Math.PI*2);g.stroke();          /* la zone « bien » */
-g.strokeStyle='rgba(255,215,106,.75)';g.lineWidth=Math.max(2,fp*60);
-g.beginPath();g.arc(bx,by,cible,0,Math.PI*2);g.stroke();          /* la zone parfaite, au centre */
-g.strokeStyle='rgba(255,255,255,.55)';g.lineWidth=1;
-g.beginPath();g.arc(bx,by,cible+fp*30,0,Math.PI*2);g.stroke();
-g.beginPath();g.arc(bx,by,Math.max(1.5,cible-fp*30),0,Math.PI*2);g.stroke();
-const r=cible+Math.max(0,1-C.k)*30, pret=Math.abs(1-C.k)<fp;
-g.strokeStyle=pret?'#fff3c0':'rgba(255,255,255,.95)';g.lineWidth=pret?2.5:1.5;
-g.beginPath();g.arc(bx,by,Math.max(1,r),0,Math.PI*2);g.stroke();
-}else if(C&&C.juge){
-const k=(t-C.juge.t)/420, col=C.juge.note==='parfait'?'255,215,106':(C.juge.note==='bien'?'159,223,184':'255,122,90');
-g.strokeStyle='rgba('+col+','+(1-k)+')';g.lineWidth=2;g.beginPath();g.arc(bx,by,cible+k*14,0,Math.PI*2);g.stroke();
-}
-const hx=Math.round(joueur.x-camX), hy=Math.round(joueur.y-camY-58);
-const nbc=P.coeursMax||(P.coeursMax=P.coeurs);
-for(let k=0;k<nbc;k++){
-const x=hx-nbc*4+k*8, plein=k<P.coeurs;
-g.fillStyle=plein?'#e0402f':'#3a2a2a';
-g.fillRect(x,hy,2,2);g.fillRect(x+3,hy,2,2);g.fillRect(x-1,hy+1,7,2);g.fillRect(x,hy+3,5,1);g.fillRect(x+1,hy+4,3,1);g.fillRect(x+2,hy+5,1,1);
-}
-for(let k=0;k<P.besoin;k++){
-const x=hx-P.besoin*3+k*6+1, y=hy+9;
-g.fillStyle=k<P.touches?S.col[0]:'#2a3238';g.fillRect(x,y,4,3);g.fillRect(x-1,y+1,1,1);
-}
-return;
-}
-if(P.etat!=='lance'){
-const r=(t/500)%1;
-g.strokeStyle='rgba(230,245,250,'+(.5*(1-r))+')';g.lineWidth=.6;
-g.beginPath();g.ellipse(bx,by+2,3+r*(P.etat==='mord'?10:6),1.2+r*2,0,0,Math.PI*2);g.stroke();
-}
-if(P.etat!=='mord'||Math.sin(t/50)>-.2){
-g.fillStyle='#f2efe4';g.fillRect(Math.round(bx)-1,Math.round(by)-3,3,2);
-g.fillStyle='#d0402f';g.fillRect(Math.round(bx)-1,Math.round(by)-1,3,2);
-}
-if(P.etat==='mord'){
-g.font='700 8px ui-monospace,monospace';g.textAlign='center';
-g.fillStyle='rgba(10,16,10,.6)';g.fillText('ÇA MORD !',bx+1,by-9);
-g.fillStyle='#ffd76a';g.fillText('ÇA MORD !',bx,by-10);
-}
-}
-function actionDePeche(b){
-if(CARTE!=='extramar'&&CARTE!=='foret'&&CARTE!=='large')return false;   /* le lac et le large aussi */
-if(PECHE){
-const E=PECHE.etat;
-b.classList.toggle('mince',E==='combat');
-b.innerHTML=E==='mord'?'FERRER !<small>VITE, ÇA MORD</small>'
-:E==='combat'?'TAPE !'
-:(E==='remonte'||E==='saute')?'…<small>ON LE SORT DE L’EAU</small>'
-:'Attendre…<small>LE BOUCHON FLOTTE · BOUGER RELÈVE LA LIGNE</small>';
-b.classList.add('on');b.classList.toggle('mord',E==='mord');
-b.onclick=E==='mord'?ferrer:(E==='lance'||E==='attend'?ferrer:null);
-return true;
-}
-b.classList.remove('mord');b.classList.remove('mince');
-/* TON BATEAU GAGNE SUR LA CANNE. Il est amarré au bout du ponton, donc
-   en plein dans la zone de pêche : collé à lui, c'est « monter à bord »
-   qu'on attend, pas « lancer la ligne ». */
-if(CARTE==='extramar'){try{const B=DECOR.find(o=>o.t==='x_bateau');
-  if(B&&Math.abs(B.x-joueur.x)<36&&joueur.y>B.y-150&&joueur.y<B.y+30)return false;}catch(x){}}
-{const LP=lieuDePeche();
-/* LA PLAQUE DE PÊCHE reste disponible pendant les gestes qui ne sont pas
-   un travail en cours : sinon, le bouton disparaît pendant une seconde
-   après chaque lancer et l'on croit que l'action est cassée. */
-const gesteTravail=GESTE.t>0&&['houe','pioche','cueille','hache','gouge','tamis',
-'semer','arrose','ramasse'].indexOf(GESTE.type)>=0;
-if(LP&&!gesteTravail){
-const longue=((EQUIP_PECHE&&EQUIP_PECHE.canne)||0)>=3;
-b.innerHTML=CARTE==='large'?'Lancer la ligne<small>'+((COIN_NOM[LP.lieu]||'AU LARGE').toUpperCase())+'</small>'
-:(LP.lieu==='large'?'Lancer au large<small>LE GROS POISSON · CANNE LONGUE</small>'
-:(LP.bout&&!longue?'Pêcher<small>LE LARGE DEMANDE UNE CANNE EN CARBONE</small>'
-:'Pêcher<small>LANCER LA LIGNE</small>'));
-b.classList.add('on');b.onclick=lancerLaLigne;return true;
-}}
-return false;
 }
 const PQC={W:160,H:280,S:[80,262],DT:1/60,FROT:70};
 function pqHasard(graine){let a=graine>>>0;return function(){a=(a+0x6D2B79F5)>>>0;let t=a;
@@ -21842,466 +20321,11 @@ try{localStorage.setItem('bdl.petanque.carreaux',
 try{jouer('achat');}catch(x){}try{vibrer([12,30,12,30]);}catch(x){}
 PET.annonce=K.b.morte?'<b>CARREAU !</b> sa boule sort, la tienne prend sa place.'
 :'<b>CARREAU !</b> tu l’as chassée et tu restes dessus.';return;}
-PET.annonce=K.b.morte?'<b>Tu l’as sortie.</b>':'<b>Touchée.</b> Sa boule a bougé.';}
-function pqQuiMarque(E){const C=E.coch;if(!C||C.mort)return null;const d=b=>Math.hypot(b.x-C.x,b.y-C.y);
-const vivantes=E.boules.filter(b=>!b.morte);const moi=vivantes.filter(b=>b.qui==='moi').sort((a,b)=>d(a)-d(b)), lui=vivantes.filter(b=>b.qui==='lui').sort((a,b)=>d(a)-d(b));
-if(!moi.length&&!lui.length)return null;const bm=moi.length?d(moi[0]):Infinity, bl=lui.length?d(lui[0]):Infinity;if(bm===bl)return null;
-const gagne=bm<bl, G=gagne?moi:lui, adv=gagne?lui[0]:moi[0], seuil=gagne?bl:bm;return {gagnant:gagne?'moi':'lui',boules:G.filter(b=>d(b)<seuil),adv};}
-function pqCompter(E){
-const C=E.coch, dist=b=>Math.hypot(b.x-C.x,b.y-C.y);
-const moi=E.boules.filter(b=>b.qui==='moi'&&!b.morte).map(dist).sort((a,b)=>a-b);
-const lui=E.boules.filter(b=>b.qui==='lui'&&!b.morte).map(dist).sort((a,b)=>a-b);
-const bm=moi.length?moi[0]:Infinity, bl=lui.length?lui[0]:Infinity;
-if(bm===Infinity&&bl===Infinity)return {gagne:false,nulle:true,pts:0,bm,bl};
-if(bm<bl)return {gagne:true,pts:moi.filter(v=>v<bl).length,bm,bl};
-return {gagne:false,pts:lui.filter(v=>v<bm).length,bm,bl};
-}
-const PQ=PQC;
-let PET=null;
-/* LE BOULODROME A DÉMÉNAGÉ AU PRÉ. Il était au port, sur la langue de
-   terre du sud-ouest ; elle est passée sous l'eau et XP.boulo avec elle,
-   donc cette fonction rendait toujours false et la pétanque — la mène
-   contre Marius, le jeu entre amis par canal, l'Edge Function — tournait
-   dans le vide depuis. Elle regarde maintenant les deux terrains. */
-function dansLeBoulodrome(){
-if(typeof FERME_VIERGE!=='undefined'&&FERME_VIERGE&&CARTE==='village')return false;
-const B=(CARTE==='extramar')?XP.boulo
-:((typeof CHAMPS_SEULS!=='undefined'&&CHAMPS_SEULS&&CARTE==='village'
-   &&typeof BOULO!=='undefined')?BOULO:null);
-if(!B)return false;
-const [x0,y0,w,h]=B;
-return joueur.x>x0-4&&joueur.x<x0+w+4&&joueur.y>y0-8&&joueur.y<y0+h+4;
-}
-function menesGagnees(){try{return +(localStorage.getItem('bdl.petanque.gagnees')||0);}catch(x){return 0;}}
-function ouvrirLaPetanque(){
-PET={etape:'choix'};
-$('petanque').classList.add('on');
-majTextePetanque();
-requestAnimationFrame(bouclePetanque);
-}
-function fermerLaPetanque(){
-/* PARTIR, C'EST PERDRE. Sans ça il suffisait de fermer l'écran quand on
-   était mené pour rejouer le même tour autant de fois qu'on voulait. */
-try{if(PET&&PET.mode==='partie'&&PET.mondial&&!PET.partieFinie
-&&MOND&&!MOND.fini&&MOND.encours)mondAvancer(false);}catch(x){}
-try{if(PET&&PET.mode==='ami'&&PET.canal){PET.canal.send({type:'broadcast',event:'quitte',payload:{de:e.id}});setTimeout(()=>{try{sb.removeChannel(PET.canal);}catch(x){}},400);}}catch(x){}
-clearInterval(PQ_RENVOI);$('petanque').classList.remove('on');PET=null;
-try{pqBandeaux();}catch(x){}}
-async function commencerLaMene(mode){
-let graine,cx,cy,id=null;
-if(mode==='payant'){
-$('pqTexte').innerHTML='Marius sort les boules…';
-const {data,error}=await sb.rpc('petanque_debut',{p_mode:'payant'});
-if(error||!data||data.erreur){
-$('pqTexte').innerHTML=(data&&data.erreur)||'Le boulodrome est fermé, réessaie.';
-setTimeout(()=>{if(PET&&PET.etape==='choix')majTextePetanque();},1800);return;
-}
-graine=data.graine;cx=data.cx;cy=data.cy;id=data.id;
-e.euros=data.euros;sauver();majHaut();
-}else{
-graine=Math.floor(Math.random()*4294967295);cx=46+Math.random()*68;cy=40+Math.random()*60;
-}
-PET={mode,id,graine,cx0:cx,cy0:cy,E:pqNouvelle(cx,cy),n:0,tour:'moi',etape:'viser',t0:performance.now(),lancers:[],acc:0,vol:null,fin:null};
-majTextePetanque();
-}
-function ajusterToilePQ(){const c=$('pqToile'), carte=document.querySelector('#petanque .pqCarte');if(!c||!carte)return;
-const H=(window.visualViewport?visualViewport.height:innerHeight);
-if($('petanque').classList.contains('plein')){
-/* EN MÈNE, LE SABLE PREND TOUT CE QUI RESTE entre les deux bandeaux, et
-   jamais un pixel dessous : une boule cachée derrière le verre serait
-   injouable. Le reste de la hauteur est du noir, et le vignettage s'en
-   charge. */
-const h1=$('pqSom').offsetHeight, h2=$('pqPied').offsetHeight;
-const dispo=Math.max(120,H-h1-h2-6), large=carte.clientWidth;
-const h=Math.min(dispo,large*PQ_CH/PQ_CW);
-c.style.height=Math.round(h)+'px';
-c.style.width=Math.round(h*PQ_CW/PQ_CH)+'px';
-c.style.marginTop=Math.round((h1-h2)/2)+'px';                                   /* centré entre les deux */
-return;}
-c.style.height='';c.style.marginTop='';
-const autre=carte.scrollHeight-c.offsetHeight;                                  /* tout ce qui n'est pas le terrain */
-const largeur=carte.clientWidth-24, dispo=Math.max(150,H-24-autre-8);
-c.style.width=Math.round(Math.max(110,Math.min(largeur,dispo*PQ_CW/PQ_CH)))+'px';}
-/* ---------- LES DEUX BANDEAUX DE LA MÈNE ----------
-   Tout ce qu'il faut lire en jouant tient ici, et nulle part ailleurs :
-   en haut qui mène et contre qui, juste dessous ce qui vient de se
-   passer, en bas les boules qui restent et les deux mesures. Le texte de
-   l'action ne garde que l'action. */
-const PQ_MENUS=['choix','vitrine','mondial','amis','attenteAmi','palmares'];
-function pqEnMatch(){return !!(PET&&PET.E&&PQ_MENUS.indexOf(PET.etape)<0);}
-function pqTourDuMondial(){try{mondCharger();return PQ_TOURS[Math.min(2,(MOND&&MOND.tour)||0)];}catch(x){return PQ_TOURS[0];}}
-function pqFiche(){
-const duel=(PET.mode==='partie'||PET.mode==='ami');
-let titre;
-if(PET.mondial)titre='LE MONDIAL · '+pqTourDuMondial();
-else if(PET.mode==='partie')titre='PARTIE EN 13 POINTS';
-else if(PET.mode==='ami')titre='EN 13 POINTS · ENTRE AMIS';
-else titre=(PET.mode==='payant'?'LE BOULODROME · MÈNE À 6 €':'LE BOULODROME · ENTRAÎNEMENT');
-return {duel,titre,nom:(PET.ami&&PET.ami.pseudo)||'Marius',d:(PET.adv&&PET.adv.d)||'fr',
-sous:duel?('MÈNE '+PET.mene+' · EN 13'):'TROIS BOULES CHACUNE'};}
-const pqPastilles=(n,or,droite)=>{let h='';
-for(let i=0;i<3;i++){const pleine=droite?(i>=3-n):(i<n);
-h+='<i class="'+(pleine?(or?'or':''):'vide')+'"></i>';}
-return h;};
-function pqBandeaux(){
-const P=$('petanque'), haut=$('pqHaut'), cri=$('pqCri'), bas=$('pqBas'), pied=$('pqPied'), fer=$('pqFermer');
-if(!P||!haut||!cri||!bas||!pied)return;
-if(!pqEnMatch()){
-if(P.classList.contains('plein')){P.classList.remove('plein');
-const carte=pied.parentNode;
-if(fer&&fer.parentNode===pied&&carte)carte.insertBefore(fer,carte.firstChild);}
-/* le menu et la boutique prennent l'écran aussi, mais ils défilent */
-const grand=!!(PET&&(PET.etape==='choix'||PET.etape==='vitrine'||PET.etape==='palmares'));
-P.classList.toggle('menu',grand);
-haut.innerHTML='';cri.className='';cri.innerHTML='';
-if(!grand)bas.innerHTML='';
-return;}
-P.classList.remove('menu');P.classList.add('plein');
-pied.classList.toggle('fini',!!PET.fin);
-if(fer&&fer.parentNode!==pied)pied.insertBefore(fer,pied.firstChild);
-const F=pqFiche();
-/* le haut : le score, ou la boule en cours quand il n'y a pas de score */
-const centre=F.duel
-?('<div class="s">'+PET.score.moi+'<u>—</u>'+PET.score.lui+'</div>')
-:('<div class="s" style="font-size:23px">boule '+Math.min(3,(PET.n||0)+1)+'<u>/</u>3</div>');
-haut.innerHTML='<div class="d">'+
-'<div class="j">'+drap('fr')+'<span>Toi</span></div>'+
-'<div class="c">'+centre+'</div>'+
-'<div class="j dr2">'+drap(F.d)+'<span>'+echapperT(F.nom)+'</span></div>'+
-'</div><b class="t">'+F.titre+'</b><b class="m">'+F.sous+'</b>';
-/* l'annonce : le verdict s'il y en a un, sinon qui tient le point */
-const E=PET.E, C=E.coch;
-if(PET.fin){const T=PET.titreFin||{t:'Fin de la mène',c:'or'};
-cri.className='on '+(T.c||'or');
-cri.innerHTML='<b'+(T.t.length>17?' class="pet"':'')+'>'+T.t+
-(T.n?' <span class="nb">'+T.n+'</span>':'')+'</b><em>'+PET.fin+'</em>';}
-else{const M=(C&&!C.mort)?pqQuiMarque(E):null;
-const dit=PET.annonce?('<em>'+PET.annonce+'</em>'):'';
-if(M){const moi=M.gagnant==='moi';
-cri.className='on '+(moi?'a':'b');
-cri.innerHTML='<b style="color:'+(moi?'#9fdfb8':'#ffb0a0')+'">'+
-(moi?'TU TIENS LE POINT !':'POINT À L’ADVERSAIRE')+'</b>'+
-(M.boules.length>1?'<em>'+M.boules.length+' boules devant la sienne</em>':dit);}
-else{cri.className='on or';
-const vide=(!C||C.mort)?['LE COCHONNET','il se lance entre 6 et 10 mètres']
-:(E.boules.filter(x=>!x.morte).length?['ÉGALITÉ','les deux meilleures sont à la même distance']
-:['PREMIÈRE BOULE','pose-la le plus près possible du but']);
-cri.innerHTML='<b class="pet" style="color:#f4e2b0">'+vide[0]+'</b>'+(dit||('<em>'+vide[1]+'</em>'));}}
-/* le bas : les boules qui restent de chaque côté, les deux mesures */
-const nMoi=E.boules.filter(b=>b.qui==='moi').length, nLui=E.boules.filter(b=>b.qui!=='moi').length;
-let mz='';
-if(C&&!C.mort){const d=b=>Math.hypot(b.x-C.x,b.y-C.y), vi=E.boules.filter(b=>!b.morte);
-const m=vi.filter(b=>b.qui==='moi').map(d).sort((a,b)=>a-b)[0];
-const l=vi.filter(b=>b.qui!=='moi').map(d).sort((a,b)=>a-b)[0];
-if(m!==undefined||l!==undefined)
-mz='<span'+((m!==undefined&&(l===undefined||m<l))?' class="w"':'')+'>'+(m===undefined?'—':pqCm(m).toUpperCase())+'</span>'+
-'<span'+((l!==undefined&&(m===undefined||l<m))?' class="w"':'')+'>'+(l===undefined?'—':pqCm(l).toUpperCase())+'</span>';}
-bas.innerHTML='<div class="bs">'+pqPastilles(Math.max(0,3-nMoi),true,false)+'</div>'+
-'<div class="mz">'+mz+'</div>'+
-'<div class="bs">'+pqPastilles(Math.max(0,3-nLui),false,true)+'</div>';
-}
-addEventListener('resize',()=>{if(PET)ajusterToilePQ();});
-function majTextePetanque(){
-if(!PET)return;
-pqBandeaux();
-requestAnimationFrame(ajusterToilePQ);
-const t=$('pqTexte'),b=$('pqBouton');
-if(PET.etape==='choix'){pqEcranMenu(t,b);return;}
-if(PET.etape==='vitrine'){pqEcranVitrine(t,b);return;}
-if(PET.etape==='palmares'){pqEcranPalmares(t,b);return;}
-if(PET.etape==='mondial'){
-if(PET.ecran==='fin'){mondEcranFin(t,b);return;}
-if(PET.ecran==='adv'){mondEcranAdversaire(t,b);return;}
-mondEcranTableau(t,b);return;}
-if(PET.mode==='ami'||PET.mode==='partie'||PET.etape==='amis'||PET.etape==='attenteAmi'){if(majTexteAmi(t,b))return;}
-b.style.display='';
-/* LE VERDICT ET LE POINT SONT MONTÉS DANS LES BANDEAUX : ici ne reste
-   que ce qu'on peut faire, et comment. */
-if(PET.fin){t.innerHTML='';b.textContent='Rejouer';return;}
-if(PET.tour==='lui'){t.innerHTML='Marius joue sa boule '+(PET.n+1)+'/3…';b.textContent='…';return;}
-const n=PET.n+1;
-const cible=PET.E.boules.some(x=>x.qui!=='moi'&&!x.morte);
-if(!cible)PET.typeTir='pointe';
-if(PET.etape==='viser'){
-t.innerHTML=(cible?('<div class="pqChoixTir"><button data-tir="pointe" class="'+(PET.typeTir!=='tir'?'on':'')+'">Pointer<small>approcher</small></button>'+
-'<button data-tir="tir" class="'+(PET.typeTir==='tir'?'on':'')+'">Tirer<small>chasser sa boule</small></button></div>'):'')+
-'touche le terrain pour fixer la <b>direction</b>';
-t.querySelectorAll('[data-tir]').forEach(x=>x.onclick=(ev)=>{ev.stopPropagation();PET.typeTir=x.dataset.tir;majTextePetanque();});
-b.textContent='Viser';}
-else if(PET.etape==='force'){t.innerHTML=(PET.typeTir==='tir'?'<b>tir</b>':'<b>point</b>')+' · touche pour fixer la <b>force</b>';b.textContent='Lancer !';}
-else{t.innerHTML='la boule roule…';b.textContent='…';}
-}
-function toucherPetanque(){
-if(!PET)return;
-if(PET.fin){if(PET.mode==='ami'){revancheAmi();return;}
-if(PET.mode==='partie'){
-if(PET.mondial&&PET.partieFinie){mondEntrer();return;}
-if(PET.partieFinie)demarrerPartieMarius(PET.adv);else nouvelleMene();return;}
-PET={etape:'choix'};majTextePetanque();return;}
-if(PET.etape==='choix'||PET.etape==='amis'||PET.etape==='attenteAmi'||PET.tour!=='moi')return;
-const t=performance.now();
-if(PET.etape==='viser'){PET.angle=Math.sin((t-PET.t0)/PQ_VIS_PER)*PQ_VIS_AMP;PET.etape='force';PET.t0=t;vibrer(8);}
-else if(PET.etape==='force'){
-const force=(1-Math.cos((t-PET.t0)/PQ_FOR_PER))/2;
-/* POINTER OU TIRER, EN SOLO AUSSI. pqTirer() et PET.typeTir existaient,
-   mais le choix n'était offert qu'entre amis : contre Marius on ne
-   pouvait que pointer, et la moitié du jeu restait éteinte. Le type part
-   avec le lancer, pour que l'arbitre rejoue la même mène que toi. */
-/* LE COCHONNET EST UN LANCER COMME UN AUTRE, ET IL L'EMPORTE SUR TOUT.
-   Ce test ne regardait que le mode 'ami' : en partie contre Marius, le
-   lancer du cochonnet partait comme une boule ordinaire. On croyait
-   lancer le but, on posait sa première boule sur un terrain sans but,
-   on en perdait une des trois — et la mène était jouée d'avance. */
-const ty=(PET.phase==='coch')?'coch'
-:((PET.typeTir==='tir'&&PET.E.boules.some(b=>b.qui!=='moi'&&!b.morte))?'tir':'pointe');
-PET.lancers.push([PET.angle,force,ty]);
-PET.annonce=null;
-if(PET.mode==='ami'){envoyerLancerAmi(PET.angle,force,ty);if(ty!=='coch')PET.reste.moi--;lancer('moi',PET.angle,force,ty);vibrer(ty==='tir'?[10,20,30]:14);majTextePetanque();return;}
-if(PET.mode==='partie'){if(ty!=='coch')PET.reste.moi--;
-if(ty==='tir')PET.cible=pqCibleDuTir(PET.E);
-{const M0=pqQuiMarque(PET.E);PET.__pt=M0?M0.gagnant:null;}
-lancer('moi',PET.angle,force,ty);PET.maDerniere=PET.vol&&PET.vol.b;
-vibrer(ty==='tir'?[10,20,30]:14);majTextePetanque();return;}
-if(ty==='tir')PET.cible=pqCibleDuTir(PET.E);
-lancer('moi',PET.angle,force,ty);
-PET.maDerniere=PET.vol&&PET.vol.b;
-vibrer(ty==='tir'?[10,20,30]:14);
-}
-majTextePetanque();
-}
-function pqTirer(E,qui,angle,force){const [tx,ty]=pqCible(angle,force+0.08);
-const b={x:tx,y:ty,vx:Math.sin(angle)*165,vy:-Math.cos(angle)*165,qui,morte:false,frot:520};E.boules.push(b);return b;}
-function pqLancerCoch(E,angle,force){const [tx,ty]=pqCible(angle,force);E.coch={x:tx,y:ty,vx:Math.sin(angle)*22,vy:-Math.cos(angle)*22};return E.coch;}
-function lancer(qui,angle,force,type){
-const b=type==='coch'?pqLancerCoch(PET.E,angle,force):(type==='tir'?pqTirer(PET.E,qui,angle,force):pqPoser(PET.E,qui,angle,force));
-PET.vol={b,tx:b.x,ty:b.y,t0:performance.now(),dur:type==='tir'?520+force*300:650+force*450,roule:type==='tir'?60:pqRoulette(force),coch:type==='coch'};
-b.enVol=true;PET.etape='vol';
-}
-function apresLArret(){
-const avant=PET.__pt;
-if(PET.mode==='ami'){apresLArretAmi(avant);return;}
-if(PET.tour==='moi')pqJugerLeTir();
-if(PET.annonce&&/CARREAU/.test(PET.annonce))pqAnnonce('CARREAU !','#f6dd8c',true);
-else pqCrier(avant);
-if(PET.mode==='partie'){apresLArretAmi(avant);return;}
-if(PET.tour==='moi'){PET.tour='lui';PET.etape='attend';majTextePetanque();
-setTimeout(()=>{if(!PET||PET.fin)return;const m=pqMarius(PET.graine,PET.n,PET.E);lancer('lui',m[0],m[1]);majTextePetanque();},700);}
-else{PET.n++;
-if(PET.n>=3){finirLaMene();return;}
-PET.tour='moi';PET.etape='viser';PET.t0=performance.now();majTextePetanque();}
-}
-/* LE TITRE DE LA MÈNE SOLO : trois mots, et le nombre de points dans son
-   rond. Le détail reste dessous, en petit. */
-const pqTitreMene=(R)=>R.nulle?{t:'Mène nulle',c:'or'}
-:(R.gagne?{t:'Mène gagnée',n:R.pts,c:'a'}:{t:'Mène perdue',n:R.pts,c:'b'});
-async function finirLaMene(){
-const R=pqCompter(PET.E), cm=v=>Math.max(1,Math.round(v*1.6))+' cm';
-PET.etape='fin';
-if(PET.mode==='ami'||PET.mode==='partie'){finirMeneAmi();return;}
-if(PET.mode!=='payant'){PET.titreFin=pqTitreMene(R);PET.fin=verdict(R,cm,null);majTextePetanque();return;}
-PET.titreFin={t:'On mesure',c:'or'};
-const avant=(e&&e.euros)||0;
-PET.fin='Marius sort le mètre… <i>l’arbitre vérifie</i>';majTextePetanque();
-const {data,error}=await sb.functions.invoke('petanque',{body:{id:PET.id,lancers:PET.lancers}});
-if(error||!data||data.erreur){PET.titreFin={t:'Pas de verdict',c:'b'};
-PET.fin='L’arbitre n’a pas pu trancher : '+((data&&data.erreur)||'réessaie plus tard')+'.';majTextePetanque();return;}
-/* CE QU'ON A TOUCHÉ, PAS CE QU'ON CROIT AVOIR TOUCHÉ. Le gain affiché
-   était écrit en dur côté client — quatorze, neuf, cinq — et il aurait
-   menti à la première fois qu'on change le barème au serveur. On lit la
-   différence de bourse : c'est l'arbitre qui a le dernier mot. */
-const gain=(typeof data.euros==='number')?(data.euros-avant):0;
-if(typeof data.euros==='number'){e.euros=data.euros;sauver();majHaut();}
-PET.titreFin=pqTitreMene(data);
-PET.fin=verdict(data,cm,gain)+(typeof data.restant==='number'?'<br><i>'+data.restant+' mène'+(data.restant>1?'s':'')+' payante'+(data.restant>1?'s':'')+' restante'+(data.restant>1?'s':'')+' aujourd’hui</i>':'');
-majTextePetanque();
-}
-let PQ_RENVOI=null, PQ_COMPTE=null;
-const amisAuPort=()=>(EN_LIGNE||[]).filter(p=>p&&p.id&&p.lieu==='à Extramar');
-function majTexteAmi(t,b){
-/* LE TITRE DISAIT « JOUER AVEC UN AMI » EN PLEIN MONDIAL : le mode
    'partie' emprunte cet affichage, qui ne savait pas qu'un tournoi
    existait. */
 {const T=document.querySelector('#petanque .pqTitre');if(T)T.textContent=
 PET.mode==='ami'?'PARTIE EN 13 POINTS · ENTRE AMIS'
-:(PET.mondial?('LE MONDIAL · '+pqTourDuMondial()):'PARTIE EN 13 POINTS · CONTRE '+((PET.ami&&PET.ami.pseudo)||'MARIUS').toUpperCase());}
-if(PET.etape==='amis'){const L=amisAuPort();b.style.display='none';
-t.innerHTML='<div class="pqAmis">'+(L.length?L.map(p=>'<button data-inv="'+p.id+'">'+echapperT(p.pseudo||'survivant')+'<small>inviter</small></button>').join(''):
-'<i>Aucun ami au port pour l’instant. Invite-les à te rejoindre au boulodrome !</i>')+'</div><button id="pqRetourChoix" class="pqLien">← retour</button>';
-t.querySelectorAll('[data-inv]').forEach(x=>x.onclick=()=>{const p=L.find(q=>q.id===x.dataset.inv);if(p)inviterAmi(p);});
-$('pqRetourChoix').onclick=()=>{PET={etape:'choix'};majTextePetanque();};return true;}
-if(PET.etape==='attenteAmi'){b.style.display='none';t.innerHTML='<b>'+echapperT(PET.ami.pseudo)+'</b> reçoit ton invitation…<br><i>La partie commence dès qu’il accepte.</i>';return true;}
-if(PET.mode!=='ami'&&PET.mode!=='partie')return false;
-b.style.display='';const n=echapperT(PET.ami.pseudo);
-/* LE SCORE, LE POINT ET LES MESURES SONT DANS LES BANDEAUX : ce texte ne
-   garde que le geste à faire. */
-if(PET.fin){t.innerHTML='';b.textContent=PET.partieFinie?'Nouvelle partie':'Mène suivante';return true;}
-if(PET.phase==='coch'){
-if(PET.tour==='lui'){t.innerHTML='<b>'+n+'</b> lance le cochonnet…';b.textContent='…';return true;}
-const m=PET.etape==='viser'?'la <b>direction</b>':(PET.etape==='force'?'la <b>force</b>':'…');
-t.innerHTML='à toi le <b>cochonnet</b>, entre 6 et 10 m'+(PET.essais?' <i>(essai '+(PET.essais+1)+'/3)</i>':'')+' · touche pour fixer '+m;
-b.textContent=PET.etape==='viser'?'Viser':(PET.etape==='force'?'Lancer !':'…');return true;}
-if(PET.tour==='lui'){t.innerHTML='<b>'+n+'</b> '+(PET.etape==='attend'?'se prépare…':'joue…');b.textContent='…';return true;}
-if(PET.etape==='viser'){
-t.innerHTML='<div class="pqChoixTir"><button data-tir="pointe" class="'+(PET.typeTir!=='tir'?'on':'')+'">Pointer<small>approcher</small></button><button data-tir="tir" class="'+(PET.typeTir==='tir'?'on':'')+'">Tirer<small>chasser une boule</small></button></div>touche le terrain pour fixer la <b>direction</b>';
-t.querySelectorAll('[data-tir]').forEach(x=>x.onclick=(ev)=>{ev.stopPropagation();PET.typeTir=x.dataset.tir;majTextePetanque();});b.textContent='Viser';}
-else if(PET.etape==='force'){t.innerHTML=(PET.typeTir==='tir'?'<b>tir</b>':'<b>point</b>')+' · touche pour fixer la <b>force</b>';b.textContent='Lancer !';}
-else{t.innerHTML='la boule roule…';b.textContent='…';}
-return true;}
-function canalPartie(id){
-if(!sb)return {send(){},on(){return this;},subscribe(){}};                      /* hors ligne : un canal muet */
-const ch=sb.channel('pq:'+id,{config:{broadcast:{self:false,ack:false}}});
-ch.on('broadcast',{event:'accepte'},({payload:p})=>{if(PET&&PET.etape==='attenteAmi'&&PET.partie===id)demarrerAmi(PET.inv,true);});
-ch.on('broadcast',{event:'refuse'},()=>{if(PET&&PET.etape==='attenteAmi'){PET={etape:'choix'};majTextePetanque();$('pqTexte').innerHTML='Ton ami ne peut pas jouer pour l’instant.';}});
-ch.on('broadcast',{event:'lancer'},({payload:p})=>recevoirLancerAmi(p));
-ch.on('broadcast',{event:'recu'},({payload:p})=>{if(PET&&PET.mode==='ami'&&PET.aEnvoyer&&p.k>=PET.aEnvoyer.k)PET.aEnvoyer=null;});
-ch.on('broadcast',{event:'quitte'},()=>{if(PET&&PET.mode==='ami'&&!PET.fin){PET.fin='<b>'+echapperT(PET.ami.pseudo)+'</b> a quitté le boulodrome. <i>Mène interrompue.</i>';PET.etape='fin';majTextePetanque();}});
-ch.on('broadcast',{event:'revanche'},({payload:p})=>{if(PET&&PET.mode==='ami'&&PET.partieFinie)demarrerAmi(Object.assign({},PET.inv,p),PET.hote);});
-ch.subscribe();return ch;}
-function inviterAmi(p){
-const id=(Date.now().toString(36)+Math.random().toString(36).slice(2,7));
-const inv={partie:id,de:e.id,pseudo:e.pseudo||'survivant',graine:Math.floor(Math.random()*4294967295),cx:46+Math.random()*68,cy:40+Math.random()*60};
-PET={etape:'attenteAmi',partie:id,ami:{id:p.id,pseudo:p.pseudo||'ton ami'},inv,hote:true};
-PET.canal=canalPartie(id);
-const boite=sb.channel('moi:'+p.id);
-boite.subscribe(st=>{if(st==='SUBSCRIBED'){boite.send({type:'broadcast',event:'petanque',payload:Object.assign({type:'invite'},inv)});setTimeout(()=>{try{sb.removeChannel(boite);}catch(x){}},1500);}});
-majTextePetanque();
-setTimeout(()=>{if(PET&&PET.etape==='attenteAmi'&&PET.partie===id){PET={etape:'choix'};majTextePetanque();$('pqTexte').innerHTML='Pas de réponse de ton ami. Réessaie plus tard.';}},45000);
-}
-const PQ_COCH_MIN=105, PQ_COCH_MAX=205;                   /* 6 et 10 m, à l'échelle du terrain */
-function demarrerAmi(inv,hote){
-const canal=PET&&PET.canal, ami=PET&&PET.ami;
-const premier=((inv.graine>>>3)&1)===0?(hote?'moi':'lui'):(hote?'lui':'moi');       /* le tirage au sort, le même chez les deux */
-PET={mode:'ami',partie:inv.partie,inv,hote,canal,ami,graine:inv.graine,score:{moi:0,lui:0},mene:0,lanceurCoch:premier,
-envoyes:0,recus:0,aEnvoyer:null,acc:0,vol:null,fin:null,typeTir:'pointe',lancers:[]};
-nouvelleMene();
-clearInterval(PQ_RENVOI);
-PQ_RENVOI=setInterval(()=>{if(!PET||PET.mode!=='ami'){clearInterval(PQ_RENVOI);return;}if(PET.aEnvoyer)try{PET.canal.send({type:'broadcast',event:'lancer',payload:PET.aEnvoyer});}catch(x){}},1200);
-}
-function nouvelleMene(){
-PET.mene++;PET.E={boules:[],coch:null,vraies:true};PET.reste={moi:3,lui:3};PET.phase='coch';PET.essais=0;PET.fin=null;PET.partieFinie=false;
-PET.tour=PET.lanceurCoch;PET.etape=PET.tour==='moi'?'viser':'attend';PET.t0=performance.now();PET.typeTir='pointe';PET.vol=null;
-PET.annonce=null;PET.cible=null;PET.titreFin=null;
-/* LA FINALE S'OUVRE SOUS LES FUSÉES */
-if(PET.finale&&PET.mene===1){PQ_FEU=[];feuDArtifice(5,430);}
-majTextePetanque();
-if(PET.tour==='lui'&&PET.mode==='partie'){const q=PET.mene;
-setTimeout(()=>{if(PET&&PET.mode==='partie'&&PET.mene===q&&PET.tour==='lui'&&PET.etape==='attend'&&!PET.fin)jouerMarius();},900);return;}
-if(PET.tour==='lui'&&PET.enAttente){const p=PET.enAttente;PET.enAttente=null;recevoirLancerAmi(p);}
-}
-function envoyerLancerAmi(angle,force,type){const L={k:PET.envoyes++,angle,force,type:type||'pointe'};PET.aEnvoyer=L;try{PET.canal.send({type:'broadcast',event:'lancer',payload:L});}catch(x){}}
-function recevoirLancerAmi(p){
-if(!PET||PET.mode!=='ami'||!p)return;
-try{PET.canal.send({type:'broadcast',event:'recu',payload:{k:p.k}});}catch(x){}
-if(p.k!==PET.recus)return;
-if(PET.tour!=='lui'||PET.etape!=='attend'||PET.fin){PET.enAttente=p;return;}
-PET.recus++;const ty=p.type||'pointe';
-if(ty==='coch'&&PET.phase!=='coch'){return;}
-if(ty!=='coch')PET.reste.lui--;
-lancer('lui',p.angle,p.force,ty);majTextePetanque();
-}
-/* ================= LA PARTIE EN 13 CONTRE MARIUS =================
-   LES VRAIES RÈGLES ÉTAIENT DÉJÀ ÉCRITES, mais seulement entre amis :
-   on lance le cochonnet soi-même, il doit tomber entre six et dix
-   mètres et on a trois essais, celui qui n'a pas le point joue, la mène
-   s'arrête quand les six boules sont tirées ou que le cochonnet sort,
-   le gagnant marque autant de points qu'il a de boules devant la
-   meilleure de l'autre, il lance le cochonnet suivant, et la partie va
-   à treize — avec la Fanny si l'autre reste à zéro.
-   EN SOLO ON N'AVAIT RIEN DE TOUT ÇA : un cochonnet posé d'avance, trois
-   boules chacun à tour de rôle, et c'était fini. Marius joue maintenant
-   la même partie que ton ami, avec le même code : seul l'envoi par le
-   canal est remplacé par sa décision.
-   LA MÈNE PAYANTE NE CHANGE PAS. C'est une mène, pas une partie, et c'est
-   l'arbitre du serveur qui la rejoue pour payer : lui donner les vraies
-   règles demande de refaire sa validation, ce qui est une autre affaire. */
-/* ================= LE MONDIAL =================
-   HUIT NATIONS, TROIS TOURS, UNE FINALE. Chaque tour est une partie en
-   13 aux vraies règles ; on perd, on rentre chez soi, et le tableau
-   suivant n'ouvre que le lendemain.
-   RIEN NE SE JOUE EN ARGENT, ET C'EST VOULU : le Mondial se tient
-   entièrement dans le téléphone, sans arbitre au serveur. Payer un
-   vainqueur depuis le client, c'est payer quiconque sait ouvrir la
-   console — la mène à 2 € passe par une Edge Function exactement pour
-   cette raison. Ce qui se gagne ici est un titre, pas des euros ; le
-   jour où on voudra une cagnotte, il faudra un RPC qui tienne le
-   tableau côté serveur.
-   LES TROIS TRAITS NE SONT PAS DU DÉCOR : point règle la dispersion de
-   la main, tir la propension à chasser ta boule, sang-froid ce qui lui
-   reste quand il est mené. */
-const PQ_NATIONS={fr:'France',be:'Belgique',it:'Italie',mg:'Madagascar',
-th:'Thaïlande',tn:'Tunisie',sn:'Sénégal',es:'Espagne'};
-const PQ_MONDIAL=[
-{d:'mg',nom:'Rakoto',point:.88,tir:.40,sang:.72,mot:'Chez nous on pointe au millimètre. Tes carreaux ne me font pas peur.'},
-{d:'th',nom:'Somchai',point:.74,tir:.80,sang:.66,mot:'Je tire d’abord. On discute après.'},
-{d:'tn',nom:'Mehdi',point:.70,tir:.58,sang:.84,mot:'Treize points, c’est long. Je suis patient.'},
-{d:'sn',nom:'Ousmane',point:.80,tir:.66,sang:.58,mot:'Donne-moi un cochonnet à neuf mètres et tu verras.'},
-{d:'be',nom:'Vandamme',point:.64,tir:.52,sang:.70,mot:'Une bonne boule, une bonne bière. Dans cet ordre.'},
-{d:'it',nom:'Beppe',point:.78,tir:.62,sang:.50,mot:'La boule, c’est de la géométrie. Et un peu de théâtre.'},
-{d:'es',nom:'Nacho',point:.72,tir:.74,sang:.62,mot:'On joue vite, on gagne vite.'},
-{d:'fr',nom:'Marius',point:.76,tir:.56,sang:.76,mot:'Tu es chez moi, ici. Fais attention.'}];
-const PQ_TOURS=['LES QUARTS','LES DEMIES','LA FINALE'];
-let MOND=null;
-function mondCharger(){if(MOND)return MOND;
-try{MOND=JSON.parse(localStorage.getItem('bdl.mondial')||'null');}catch(x){MOND=null;}
-return MOND;}
-function mondRanger(){try{localStorage.setItem('bdl.mondial',JSON.stringify(MOND));}catch(x){}}
-const mondJour=()=>new Date().toISOString().slice(0,10);
-/* LE TIRAGE : toi et sept des huit, mélangés. Marius garde sa place —
-   c'est le boulodrome qui l'invite. */
-function mondNouveau(){
-const autres=PQ_MONDIAL.slice();
-for(let i=autres.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));
-const t=autres[i];autres[i]=autres[j];autres[j]=t;}
-const sept=autres.slice(0,7);
-const camps=[{moi:true,d:'fr',nom:'Toi'}].concat(sept);
-for(let i=camps.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));
-const t=camps[i];camps[i]=camps[j];camps[j]=t;}
-MOND={jour:mondJour(),tour:0,camps,scores:[],fini:null};
-mondRanger();return MOND;}
-/* le duel du tour où tu te trouves */
-function mondMonDuel(){if(!MOND)return null;
-for(let i=0;i<MOND.camps.length;i+=2){
-if(MOND.camps[i].moi||MOND.camps[i+1].moi)return {i,a:MOND.camps[i],b:MOND.camps[i+1]};}
-return null;}
-function mondAdversaire(){const D=mondMonDuel();if(!D)return null;return D.a.moi?D.b:D.a;}
-/* LES AUTRES DUELS SE JOUENT TOUT SEULS, d'après leurs traits : le
-   meilleur passe le plus souvent, mais pas toujours. */
-function mondJouerLesAutres(){
-const suivants=[];
-for(let i=0;i<MOND.camps.length;i+=2){
-const a=MOND.camps[i], b=MOND.camps[i+1];
-if(a.moi||b.moi){suivants.push(null);continue;}
-const fa=a.point*2+a.tir+a.sang, fb=b.point*2+b.tir+b.sang;
-const pa=fa/(fa+fb), g=Math.random()<pa?a:b, pd=g===a?b:a;
-MOND.scores.push({tour:MOND.tour,gagnant:g.nom,perdant:pd.nom,
-pts:13+' – '+(3+Math.floor(Math.random()*9))});
-suivants.push(g);}
-return suivants;}
-/* LE TOURNOI CONTINUE SANS TOI. Tu sors en quarts, les sept autres se
-   départagent quand même : il en reste un, et c'est son nom qui monte
-   au palmarès. Avant, le tableau s'arrêtait avec toi — comme si le
-   Mondial n'avait pas eu de champion cette année-là. */
-function mondFinirSansMoi(){
-let garde=0;
-while(MOND.camps.length>1&&garde++<8){const nv=[];
-for(let i=0;i<MOND.camps.length;i+=2){
-const a=MOND.camps[i], b=MOND.camps[i+1];
-const fa=a.point*2+a.tir+a.sang, fb=b.point*2+b.tir+b.sang;
-const g=(Math.random()<fa/(fa+fb))?a:b, pd=(g===a)?b:a;
-MOND.scores.push({tour:MOND.tour,gagnant:g.nom,perdant:pd.nom,
-pts:'13 – '+(3+Math.floor(Math.random()*9))});
-nv.push(g);}
-MOND.camps=nv;MOND.tour++;}
-return MOND.camps[0];}
-/* LE PALMARÈS EST AU SERVEUR. Un classement qu'on peut écrire depuis la
-   console n'est pas un classement : la table ne s'atteint que par ses
-   deux fonctions, et un joueur n'y inscrit qu'un titre par jour — le
-   tableau se tire une fois par jour. */
-function mondInscrire(bot,nom,d){
-const corps={p_bot:!!bot,p_nom:String(nom||''),p_drapeau:String(d||'fr')};
 /* DEUX FAUTES ICI, ET LE REGISTRE EST RESTÉ VIDE. Nacho gagne son Mondial,
-   et le classement affiche encore l'ancien nom : le titre n'est jamais parti.
-   1. un sb.rpc() qu'on ne lit pas n'est qu'un objet — la bibliothèque
       n'envoie la requête qu'au premier .then(). Rien, pas même une erreur.
    2. sb n'existe que si le CDN a répondu, alors que tout le reste du jeu
       parle au serveur par appelRPC, un fetch tout simple.
@@ -22681,498 +20705,6 @@ return true;}
    pour l'avoir. Une boule verrouillée se voit quand même, en gris : on
    ne collectionne pas ce qu'on ignore. */
 /* ================= LA BOUTIQUE =================
-   C'était une grille de vignettes de 46 px avec un cadenas : on voyait
-   ce qu'on n'avait pas, jamais ce qui manquait pour l'avoir. Chaque
-   pièce montre maintenant sa jauge et ce qu'il reste à faire. TOUT SE
-   GAGNE : rien ne s'achète, la boutique ne touche pas à l'économie. */
-function pqAvance(o){                                    /* où en est-on de la condition */
-if(o.prix)return Math.max(0,Math.min(1,(e.euros||0)/o.prix));
-if(!o.quoi)return 1;
-const n=pqCompteurs()[o.quoi]||0;return Math.max(0,Math.min(1,n/o.seuil));}
-/* L'ÉTAT D'UNE PIÈCE, en un mot : à moi, à prendre, à payer, à gagner.
-   L'achat se fait en deux touches — la première dit le prix, la seconde
-   paie. Personne ne perd cent vingt euros en effleurant une carte. */
-function pqEtat(o,mien){
-if(pqDebloque(o))return mien?{t:'on',l:'ÉQUIPÉE'}:{t:'prendre',l:'ÉQUIPER'};
-if(o.prix){const sous=(e&&e.euros)||0;
-if(PET&&PET.achat===o.c)return {t:'conf',l:'CONFIRMER  ·  '+enEuros(o.prix)};
-if(sous>=o.prix)return {t:'ach',l:'ACHETER  ·  '+enEuros(o.prix)};
-return {t:'cher',note:'il te manque '+enEuros(o.prix-sous),k:sous/o.prix};}
-return {t:'gagner',note:o.cond||o.dit,k:pqAvance(o)};}
-const pqBas2=(E)=>E.l?('<span class="act'+(E.t==='ach'?' ach':(E.t==='conf'?' conf':''))+'">'+E.l+'</span>')
-:('<i class="jg"><u style="width:'+Math.round((E.k||0)*100)+'%"></u></i><small>'+E.note.toUpperCase()+'</small>');
-function pqChoisir(o,fam){
-if(fam==='b')e.pqBoule=o.c;else{e.pqTerrain=o.c;SABLE_PQ=null;DECOR_PQ=null;}
-try{sauver();}catch(x){}try{vibrer(10);}catch(x){}majTextePetanque();}
-function pqToucheItem(cle,fam){
-const L=(fam==='b')?PQ_BOULES:PQ_TERRAINS, o=L.find(z=>z.c===cle);
-if(!o||!PET)return;
-if(pqDebloque(o)){PET.achat=null;pqChoisir(o,fam);return;}
-if(!o.prix)return;
-if(((e&&e.euros)||0)<o.prix){PET.achat=null;majTextePetanque();return;}
-if(PET.achat!==cle){PET.achat=cle;try{vibrer(8);}catch(x){}majTextePetanque();return;}
-/* ON PAIE. La bourse et l'achat partent dans la même sauvegarde. */
-/* LA BOURSE EST EN CENTIMES dans tout le jeu — un prix aussi. */
-e.euros=Math.max(0,Math.round((e.euros||0)-o.prix));
-e.pqAchats=((e.pqAchats)||[]).concat([cle]);
-PET.achat=null;
-try{jouer('achat');}catch(x){}try{vibrer([12,30,12]);}catch(x){}
-pqChoisir(o,fam);
-try{majHaut();}catch(x){}}
-/* ================= LA BOUTIQUE =================
-   C'était une grille de vignettes de 46 px avec un cadenas : on voyait
-   ce qu'on n'avait pas, jamais ce qui manquait pour l'avoir. Chaque
-   pièce dit maintenant où elle en est — et celles qui se paient le
-   disent aussi. CE QUI SE GAGNE NE S'ACHÈTE PAS : la championne
-   vaudrait moins si elle avait un prix. */
-function pqEcranVitrine(t,b){
-{const T=document.querySelector('#petanque .pqTitre');
-if(T)T.textContent='LE BOULODROME · LA BOUTIQUE';}
-const C=pqCompteurs(), maB=pqMaBoule().c, maT=pqMonTerrain().c;
-const nB=PQ_BOULES.filter(pqDebloque).length, nT=PQ_TERRAINS.filter(pqDebloque).length;
-const R=PQ_BOULES[PQ_BOULES.length-1], okR=pqDebloque(R), ER=pqEtat(R,R.c===maB);
-let h='<div class="mTete"><small>L’ÉTAL DU BOULODROME</small><h3>La boutique</h3>'+
-'<span class="mSou">'+enEuros((e&&e.euros)||0)+'</span></div>'+
-'<div class="mVed rare'+(okR?'':' gris')+'"'+(okR?' data-item="'+R.c+'" data-fam="b"':'')+'><span class="ct">'+
-'<canvas data-boule="'+R.c+'" data-k="4"></canvas><span class="tx">'+
-'<small>LA PIÈCE RARE</small><b>'+R.nom+'</b>'+
-'<em>'+(okR?R.dit:'elle ne s’achète pas : '+R.cond+'.')+'</em>'+
-(okR?'<span class="go">'+ER.l+'</span>'
-:'<i class="jg"><u style="width:'+Math.round(pqAvance(R)*100)+'%"></u></i>')+
-'</span></span></div>';
-const caseB=(B)=>{const E=pqEtat(B,B.c===maB), ok=E.t==='on'||E.t==='prendre';
-return '<button class="bCase'+(E.t==='on'?' on':'')+(E.t==='conf'?' conf':'')+(ok?'':' off')+'"'+
-((ok||E.t==='ach'||E.t==='conf')?' data-item="'+B.c+'" data-fam="b"':' disabled')+'>'+
-'<canvas data-boule="'+B.c+'" data-k="2.6"></canvas>'+(ok?'':'<i class="bCad"></i>')+
-'<b>'+B.nom+'</b>'+pqBas2(E)+'</button>';};
-const aGagner=PQ_BOULES.slice(0,PQ_BOULES.length-1).filter(B=>!B.prix);
-const aPayer=PQ_BOULES.filter(B=>B.prix);
-h+='<div class="mRub">LES BOULES  ·  '+nB+' SUR '+PQ_BOULES.length+'  ·  À GAGNER</div>'+
-'<div class="mGr2">'+aGagner.map(caseB).join('')+'</div>'+
-'<div class="mRub">LES BOULES  ·  À ACHETER</div>'+
-'<div class="mGr2">'+aPayer.map(caseB).join('')+'</div>'+
-'<div class="mRub">LES TERRAINS  ·  '+nT+' SUR '+PQ_TERRAINS.length+'  ·  GLISSE  ›</div><div class="mRang">';
-PQ_TERRAINS.forEach(T2=>{const E=pqEtat(T2,T2.c===maT), ok=E.t==='on'||E.t==='prendre';
-h+='<button class="mCarte bTer'+(E.t==='on'?' or':'')+(E.t==='conf'?' conf':'')+(ok?'':' off')+'"'+
-((ok||E.t==='ach'||E.t==='conf')?' data-item="'+T2.c+'" data-fam="t"':' disabled')+'>'+
-'<span class="ct"><canvas data-terr="'+T2.c+'" data-w="126" data-h="56"></canvas>'+
-(ok?'':'<i class="bCad" style="top:46px"></i>')+
-'<b>'+T2.nom+'</b>'+
-(E.l?'<span class="go'+(E.t==='ach'?' ach':(E.t==='conf'?' conf':''))+'">'+(E.t==='on'?'EN JEU':E.l)+'</span>'
-:'<i class="jg"><u style="width:'+Math.round((E.k||0)*100)+'%"></u></i><em>'+E.note+'</em>')+
-'</span></button>';});
-h+='</div>';
-t.innerHTML=h;b.style.display='none';
-$('pqBas').innerHTML='<div class="mJ"><canvas data-ico="deux" data-s="1.1"></canvas>'+
-'<span class="n"><b>'+C.menes+' mène'+(C.menes>1?'s':'')+' · '+C.carreaux+' carreau'+(C.carreaux>1?'x':'')+
-' · '+C.titres13+' partie'+(C.titres13>1?'s':'')+'</b>'+
-'<em>'+(C.titres?C.titres+' titre'+(C.titres>1?'s':'')+' au Mondial':'pas encore de titre au Mondial')+'</em></span>'+
-'<button id="pqRetourMenu">← LE JEU</button></div>';
-pqPeindre(t);pqPeindre($('pqBas'));
-t.querySelectorAll('[data-item]').forEach(x=>x.onclick=()=>pqToucheItem(x.dataset.item,x.dataset.fam));
-$('pqRetourMenu').onclick=()=>{PET={etape:'choix'};majTextePetanque();};
-return true;}
-function mondEcranTableau(t,b){
-const M=MOND, tour=Math.min(2,M.tour);
-{const T=document.querySelector('#petanque .pqTitre');
-if(T)T.textContent='LE MONDIAL · '+PQ_TOURS[tour];}
-let h='<div class="pqRub">'+(M.camps.length/2)+' DUEL'+(M.camps.length>2?'S':'')+' · ON JOUE EN 13</div>';
-for(let i=0;i<M.camps.length;i+=2){
-const a=M.camps[i], c=M.camps[i+1], mien=a.moi||c.moi;
-h+='<div class="pqDuel'+(mien?' toi':'')+'">'+
-'<div class="c">'+drap(a.d)+'<span>'+echapperT(a.nom)+'</span></div>'+
-'<div class="c">'+drap(c.d)+'<span>'+echapperT(c.nom)+'</span></div>'+
-'<span class="et">'+(mien?'À TOI':'')+'</span></div>';}
-t.innerHTML=h;
-b.style.display='none';
-const d=document.createElement('button');d.className='pqGros';
-d.textContent='VOIR TON ADVERSAIRE';
-d.onclick=()=>{PET.ecran='adv';majTextePetanque();};
-t.appendChild(d);
-return true;}
-/* ---------- L'ÉCRAN DE L'ADVERSAIRE ---------- */
-function mondEcranAdversaire(t,b){
-const A=mondAdversaire(), tour=Math.min(2,MOND.tour);
-{const T=document.querySelector('#petanque .pqTitre');
-if(T)T.textContent='LE MONDIAL · '+PQ_TOURS[tour];}
-const jauge=(nom,v,col)=>'<div class="pqJ"><small>'+nom.split('').join(' ')+
-'</small><u><i style="width:'+Math.round(v*100)+'%;background:'+col+'"></i></u></div>';
-t.innerHTML='<div class="pqFiche"><div class="h">'+drap(A.d,true)+
-'<span><b>'+echapperT(A.nom)+'</b><small>'+(PQ_NATIONS[A.d]||'').toUpperCase().split('').join(' ')+'</small></span></div>'+
-'<div class="mot">« '+echapperT(A.mot)+' »</div></div>'+
-jauge('POINT',A.point,'#7fb463')+jauge('TIR',A.tir,'#d8bf6a')+jauge('SANG-FROID',A.sang,'#8fb8c8')+
-'<div class="pqRub">CE QUI SE JOUE</div>'+
-'<div class="pqL"><span class="n"><b>Une partie en 13</b>'+
-'<em>'+(MOND.camps.length===2?'la finale · gagne-la et le titre est à toi'
-:'perds, et le Mondial s’arrête là pour toi')+'</em></span></div>';
-b.style.display='none';
-const d=document.createElement('button');d.className='pqGros';
-d.textContent='ENTRER SUR LE TERRAIN';
-/* LE DUEL EST ENGAGÉ dès qu'on entre : si la page se ferme, on l'a
-   perdu. C'est le prix d'un tableau qu'on ne retire pas. */
-d.onclick=()=>{try{MOND.encours=1;mondRanger();}catch(x){}demarrerPartieMarius(A,true);};
-t.appendChild(d);
-const r=document.createElement('button');r.className='pqLien';
-r.textContent='← le tableau';r.onclick=()=>{PET.ecran='tableau';majTextePetanque();};
-t.appendChild(r);
-return true;}
-/* ---------- LE PALMARÈS ---------- */
-let PALM=null;
-function pqEcranPalmares(t,b){
-{const T=document.querySelector('#petanque .pqTitre');
-if(T)T.textContent='LE BOULODROME · LE PALMARÈS';}
-b.style.display='none';
-const dessiner=()=>{
-let h='<div class="mTete"><small>LE MONDIAL</small><h3>Le palmarès</h3></div>';
-if(PALM==='coupe')h+='<div class="mRub">LE REGISTRE NE RÉPOND PAS</div>'+
-'<div class="pVide">Le palmarès se tient au loin, et on n’arrive pas à le lire.'+
-'<br>Réessaie dans un moment.</div>';
-else if(!PALM)h+='<div class="mRub">ON COMPTE LES TITRES…</div>';
-else if(!PALM.length)h+='<div class="mRub">PERSONNE N’A ENCORE DE TITRE</div>';
-else{h+='<div class="mRub">LES '+PALM.length+' PREMIERS</div><div class="mLst">';
-PALM.forEach((p,i)=>{h+='<div class="pLig'+(p.moi?' moi':'')+'">'+
-'<i class="r">'+(i+1)+'</i>'+drap(p.drapeau||'fr')+
-'<span class="n"><b>'+echapperT(p.nom||'sans nom')+'</b><em>'+
-(p.bot?'bouliste du Mondial':'joueur')+'</em></span>'+
-'<u>'+(+p.titres||0)+'</u></div>';});
-h+='</div>';}
-t.innerHTML=h;
-$('pqBas').innerHTML='<div class="mJ"><canvas data-ico="coupe" data-s="1.1"></canvas>'+
-'<span class="n"><b>'+mondTitres()+' titre'+(mondTitres()>1?'s':'')+' pour toi</b>'+
-'<em>le tableau se tire une fois par jour</em></span>'+
-'<button id="pqRetourMenu">← LE JEU</button></div>';
-pqPeindre($('pqBas'));
-$('pqRetourMenu').onclick=()=>{PET={etape:'choix'};majTextePetanque();};};
-dessiner();
-/* LE REGISTRE PEUT NE PAS RÉPONDRE. Sans limite de temps, l'écran
-   restait sur « on compte les titres… » pour toujours — vu dans un
-   navigateur, réseau coupé. On attend huit secondes, puis on le dit. */
-if(PALM===null){
-let rendu=false;
-const fini=(v)=>{if(rendu)return;rendu=true;
-if(!PET||PET.etape!=='palmares')return;PALM=v;dessiner();};
-setTimeout(()=>fini('coupe'),8000);
-/* ON LE TIRE PAR SA SESSION QUAND ON PEUT : c'est ce qui permet au
-   serveur de reconnaître ta ligne et de la souligner. Sinon on le tire
-   comme tout le reste du jeu, par appelRPC : le classement s'affiche,
-   simplement sans savoir laquelle des lignes est la tienne. */
-try{
-if(sb)sb.rpc('mondial_classement').then(({data,error})=>{
-fini((!error&&Array.isArray(data))?data:'coupe');},()=>fini('coupe'));
-else appelRPC('mondial_classement',{}).then(
-r=>fini(Array.isArray(r)?r:'coupe'),()=>fini('coupe'));}
-catch(x){fini('coupe');}}
-return true;}
-/* ---------- CE QU'ON VOIT APRÈS SA PARTIE ---------- */
-function mondEcranFin(t,b){
-{const T=document.querySelector('#petanque .pqTitre');
-if(T)T.textContent='LE MONDIAL';}
-if(MOND.fini==='gagne')
-t.innerHTML='<div class="pqFiche"><div class="h">'+drap('fr',true)+
-'<span><b>Champion du monde</b><small>'+String(mondTitres()).split('').join(' ')+
-' T I T R E'+(mondTitres()>1?' S':'')+'</small></span></div>'+
-'<div class="mot">Huit nations, trois parties, et c’est toi qui restes sur le terrain. '+
-'Le prochain tableau se tire demain.</div></div>';
-else{const CH=MOND.champion;
-t.innerHTML='<div class="pqFiche"><div class="h">'+drap((CH&&CH.d)||'fr',true)+
-'<span><b>Éliminé</b><small>'+PQ_TOURS[Math.min(2,MOND.tour-1)].split('').join(' ')+'</small></span></div>'+
-'<div class="mot">C’est fini pour cette fois.'+
-(CH?' Le tournoi s’est joué sans toi : <b style="color:#d8bf6a">'+echapperT(CH.nom)+
-'</b> a gagné la finale, et son nom est au palmarès.':'')+
-' Le prochain tableau se tire demain.</div></div>';}
-b.style.display='none';
-const p=document.createElement('button');p.className='pqGros';
-p.textContent='LE PALMARÈS';
-p.onclick=()=>{PALM=null;PET={etape:'palmares'};majTextePetanque();};
-t.appendChild(p);
-const d=document.createElement('button');d.className='pqGros gris';
-d.textContent='RETOUR AU BOULODROME';
-d.onclick=()=>{PET={etape:'choix'};majTextePetanque();};
-t.appendChild(d);
-return true;}
-function mondEntrer(){
-mondCharger();
-if(!MOND||MOND.jour!==mondJour())mondNouveau();
-/* UN DUEL LAISSÉ EN PLAN EST UN DUEL PERDU : on a rechargé la page au
-   milieu, ou fermé l'onglet. Le tableau ne se retire pas. */
-if(MOND&&!MOND.fini&&MOND.encours){try{mondAvancer(false);}catch(x){}}
-PET={etape:'mondial',ecran:(MOND.fini?'fin':'tableau')};
-majTextePetanque();}
-function demarrerPartieMarius(adv,mondial){
-const A=adv||PQ_MONDIAL[PQ_MONDIAL.length-1];                      /* Marius par défaut */
-const premier=Math.random()<0.5?'moi':'lui';
-const finale=!!(mondial&&MOND&&MOND.camps&&MOND.camps.length===2);
-PET={mode:'partie',adv:A,mondial:!!mondial,finale,ami:{pseudo:A.nom},
-graine:Math.floor(Math.random()*4294967295),
-score:{moi:0,lui:0},mene:0,lanceurCoch:premier,acc:0,vol:null,fin:null,typeTir:'pointe',lancers:[]};
-nouvelleMene();
-}
-/* CE QUE MARIUS DÉCIDE. Il ne tire pas au hasard : il tire quand il n'a
-   pas le point et que ta boule est vraiment près du cochonnet, sinon il
-   pointe. Sa main reste celle qu'il a toujours eue — neuf et demi
-   d'écart-type — mais elle tremble un peu plus au tir, comme la vraie. */
-function mariusDecide(E){
-const [sx,sy]=PQ.S, C=E.coch;
-const A=(PET&&PET.adv)||{point:.76,tir:.56,sang:.76};
-/* SA MAIN SUIT SON TRAIT : neuf et demi d'écart-type pour un point de
-   0,76 — le niveau de Marius —, moins s'il pointe mieux, plus s'il
-   pointe moins bien. Et elle tremble quand il est mené, à moins d'avoir
-   du sang-froid. */
-const mene=(PET&&PET.score&&PET.score.lui<PET.score.moi)?1:0;
-/* LE NIVEAU MONTE AVEC LE TOUR. Un titre mondial ne se gagne pas trois
-   fois de la même façon : en quarts il joue le sien, en demies il
-   resserre d'un sixième, en finale d'un tiers. */
-let tourM=0;
-if(PET&&PET.mondial){try{tourM=Math.min(2,(MOND&&MOND.tour)||0);}catch(x){}}
-const niv=PET&&PET.mondial?(0.92-0.16*tourM):1;
-const DISP=9.5*(0.76/Math.max(0.3,A.point))*(1+mene*(1-A.sang)*0.45)*niv;
-const g4=()=>{let t=0;for(let i=0;i<4;i++)t+=Math.random();return (t-2)*1.7;};
-const viser=(tx,ty,roule)=>{const d0=Math.hypot(tx-sx,ty-sy), angle=Math.atan2(tx-sx,sy-ty);
-let f=Math.max(0,Math.min(1,(d0-40)/210));
-if(roule)for(let k=0;k<4;k++){const v=pqRoulette(f), r=v*v/(2*PQC.FROT);f=Math.max(0,Math.min(1,(d0-r-40)/210));}
-return [angle,f];};
-/* LE COCHONNET : il le pose au milieu de la zone, pas au bord, pour ne
-   pas gâcher ses trois essais. */
-if(PET.phase==='coch'){
-const d=(PQ_COCH_MIN+PQ_COCH_MAX)/2+g4()*12;
-const ec=g4()*7, a=Math.atan2(ec,d);
-const [ang,f]=viser(sx+Math.sin(a)*d,sy-Math.cos(a)*d,false);
-return [ang,Math.max(0,Math.min(1,f-0.015)),'coch'];
-}
-/* LE TIR : seulement s'il est mené, et si ta boule vaut la peine. */
-const M=pqQuiMarque(E);
-const mienne=pqCibleDuTirDe(E,'lui');
-/* et il ose davantage à mesure qu'on monte */
-const oser=Math.min(0.95,A.tir*(1+0.22*tourM));
-if(M&&M.gagnant==='moi'&&mienne&&Math.hypot(mienne.x-C.x,mienne.y-C.y)<13&&Math.random()<oser){
-const [ang,f]=viser(mienne.x+g4()*(DISP*0.48),mienne.y+g4()*(DISP*0.48),false);
-return [ang,Math.max(0,Math.min(1,f-0.08)),'tir'];
-}
-const [ang,f]=viser(C.x+g4()*DISP,C.y+g4()*DISP,true);
-return [ang,f,'pointe'];
-}
-/* la boule de l'autre camp la plus près du cochonnet, vue par 'qui' */
-function pqCibleDuTirDe(E,qui){const C=E.coch;if(!C||C.mort)return null;
-let m=null,dm=Infinity;
-for(const b of E.boules)if(b.qui!==qui&&!b.morte){const d=Math.hypot(b.x-C.x,b.y-C.y);if(d<dm){dm=d;m=b;}}
-return m;}
-function jouerMarius(){
-if(!PET||PET.mode!=='partie'||PET.tour!=='lui'||PET.fin)return;
-const [a,f,ty]=mariusDecide(PET.E);
-{const M0=pqQuiMarque(PET.E);PET.__pt=M0?M0.gagnant:null;}
-if(ty!=='coch')PET.reste.lui--;
-lancer('lui',a,f,ty);majTextePetanque();
-}
-function cochValide(C){if(!C||C.mort)return false;const [sx,sy]=PQ.S, d=Math.hypot(C.x-sx,C.y-sy);return d>=PQ_COCH_MIN&&d<=PQ_COCH_MAX&&C.x>8&&C.x<PQ.W-8&&C.y>8;}
-function apresLArretAmi(avant){
-if(PET.mode==='ami')pqCrier(avant);
-const r=PET.reste;
-if(PET.phase==='coch'){
-if(cochValide(PET.E.coch)){PET.phase='boules';PET.tour=PET.lanceurCoch;}              /* celui qui a lancé le cochonnet joue la première boule */
-else{PET.E.coch=null;PET.essais++;
-if(PET.essais>=3){PET.lanceurCoch=PET.lanceurCoch==='moi'?'lui':'moi';PET.essais=0;}   /* trois essais ratés : à l'autre de le lancer */
-PET.tour=PET.lanceurCoch;texteDansLeBoulodrome('Cochonnet hors zone · on relance');}
-}else{
-if(PET.E.coch&&PET.E.coch.mort){finirMeneAmi();return;}
-if(r.moi<=0&&r.lui<=0){finirMeneAmi();return;}
-let qui;
-if(r.moi<=0)qui='lui';else if(r.lui<=0)qui='moi';
-else{const R=pqCompter(PET.E);qui=R.nulle?PET.lanceurCoch:(R.gagne?'lui':'moi');}
-PET.tour=qui;
-}
-PET.etape=PET.tour==='moi'?'viser':'attend';PET.t0=performance.now();majTextePetanque();
-if(PET.tour==='lui'&&PET.mode==='partie'){const q=PET.mene;
-setTimeout(()=>{if(PET&&PET.mode==='partie'&&PET.mene===q&&PET.tour==='lui'&&PET.etape==='attend'&&!PET.fin)jouerMarius();},800);return;}
-if(PET.tour==='lui'&&PET.enAttente){const p=PET.enAttente;PET.enAttente=null;recevoirLancerAmi(p);}
-}
-function texteDansLeBoulodrome(m){const t=$('pqTexte');if(t){t.innerHTML='<i>'+m+'</i>';}}
-function finirMeneAmi(){
-const n=echapperT(PET.ami.pseudo), cm=v=>Math.max(1,Math.round(v*1.6))+' cm';let gagnant=null, pts=0, txt;
-if(PET.E.coch&&PET.E.coch.mort){
-const r=PET.reste;
-/* LE CHIFFRE EST DANS LE BANDEAU : le texte ne le répète pas, il
-   explique. */
-if(r.moi>0&&r.lui<=0){gagnant='moi';pts=r.moi;txt='Le cochonnet est sorti, et il te restait '+pts+' boule'+(pts>1?'s':'')+'.';}
-else if(r.lui>0&&r.moi<=0){gagnant='lui';pts=r.lui;txt='Le cochonnet est sorti, et il restait '+pts+' boule'+(pts>1?'s':'')+' à '+n+'.';}
-else txt='Le cochonnet est sorti des deux côtés.';
-}else{const R=pqCompter(PET.E);
-if(R.nulle||R.bm===R.bl)txt='Égalité parfaite au mètre.';
-else if(R.gagne){gagnant='moi';pts=R.pts;txt=(pts>1?pts+' de tes boules sont':'ta boule est')+' plus près du cochonnet que la meilleure de '+n+' <i>(numérotées sur le terrain)</i>.';}
-else{gagnant='lui';pts=R.pts;txt=(pts>1?pts+' de ses boules sont':'sa boule est')+' plus près du cochonnet que ta meilleure <i>(numérotées sur le terrain)</i>.';}}
-/* LES POINTS SE COMPTENT UN PAR UN. Ils tombaient d'un coup, au milieu
-   d'un paragraphe : trois points gagnés faisaient le même effet qu'un.
-   Le score monte d'une unité toutes les trois cents millisecondes, avec
-   son annonce et son bruit. */
-/* LE TITRE DU BANDEAU : trois mots et un chiffre, pas un paragraphe. */
-PET.titreFin=gagnant?{t:gagnant==='moi'?'Tu marques':(n+' marque'),n:pts,c:gagnant==='moi'?'a':'b'}
-:{t:'Mène nulle',c:'or'};
-if(gagnant){PET.lanceurCoch=gagnant;
-clearInterval(PQ_COMPTE);
-let reste2=pts;
-PQ_COMPTE=setInterval(()=>{
-if(!PET||PET.etape!=='fin'){clearInterval(PQ_COMPTE);return;}
-if(reste2<=0){clearInterval(PQ_COMPTE);
-if(PET.score.moi>=13||PET.score.lui>=13){const moi2=PET.score.moi>=13;
-pqAnnonce(moi2?(PET.finale?'CHAMPION DU MONDE !':'PARTIE GAGNÉE !'):'PARTIE PERDUE',
-moi2?'#f6dd8c':'#ffb0a0',true);
-if(moi2&&PET.finale)feuDArtifice(16,170);
-if(moi2){try{jouer('vente','moment');}catch(x){}try{vibrer([20,40,20,40,80]);}catch(x){}
-try{localStorage.setItem('bdl.petanque.parties',
-(+(localStorage.getItem('bdl.petanque.parties')||0))+1);}catch(x){}}
-PET.titreFin={t:moi2?'PARTIE GAGNÉE !':'PARTIE PERDUE',c:moi2?'or':'b'};majTextePetanque();}
-return;}
-PET.score[gagnant]++;reste2--;
-pqAnnonce(gagnant==='moi'?'+1 POUR TOI':'+1 POUR LUI',gagnant==='moi'?'#9fdfb8':'#ffb0a0');
-try{jouer('pioche');}catch(x){}
-try{vibrer(gagnant==='moi'?12:6);}catch(x){}
-majTextePetanque();},320);}
-PET.etape='fin';
-if((PET.score.moi+(gagnant==='moi'?pts:0))>=13||(PET.score.lui+(gagnant==='lui'?pts:0))>=13){
-PET.partieFinie=true;const moi=(PET.score.moi+(gagnant==='moi'?pts:0))>=13;
-if(PET.mondial&&MOND&&!MOND.fini){try{mondAvancer(moi);}catch(x){}}
-if(moi){jouer('vente','moment');vibrer([20,40,20,40,60]);}
-const sm=PET.score.moi+(gagnant==='moi'?pts:0), sl=PET.score.lui+(gagnant==='lui'?pts:0);
-txt+='<br><b style="color:#d8bf6a">'+(moi?'Tu gagnes la partie '+sm+' à '+sl+' !':n+' gagne la partie '+sl+' à '+sm+'.')+'</b>'+
-(sm===0||sl===0?'<br><i>… et à zéro : Fanny !</i>':'');}
-PET.fin=txt;majTextePetanque();
-}
-function revancheAmi(){
-if(!PET||PET.mode!=='ami')return;
-if(!PET.partieFinie){nouvelleMene();return;}                                               /* les deux téléphones passent à la mène suivante d'eux-mêmes */
-if(!PET.hote){$('pqTexte').innerHTML=(PET.fin||'')+'<br><i>'+echapperT(PET.ami.pseudo)+' lance une nouvelle partie…</i>';return;}
-const nv={graine:Math.floor(Math.random()*4294967295)};
-try{PET.canal.send({type:'broadcast',event:'revanche',payload:nv});}catch(x){}
-demarrerAmi(Object.assign({},PET.inv,nv),true);
-}
-function verdict(R,cm,gain){
-/* LE COMPTE EST DANS LE BANDEAU, DANS SON ROND : ici on ne répète pas le
-   chiffre, on dit ce qu'il y a à savoir en plus. */
-if(R.nulle)return 'Toutes les boules sont sorties.';
-if(R.gagne){
-let n=menesGagnees()+1;try{localStorage.setItem('bdl.petanque.gagnees',n);}catch(x){}
-jouer('vente','moment');vibrer([20,40,20]);
-return 'Ta meilleure boule est à '+cm(R.bm)+'.'+
-(gain>0?'<br><b style="color:#d8bf6a">+'+enEuros(gain)+'</b> · « Pas mal, petit… »':'<br>« Pas mal, petit… »');
-}
-return 'Sa boule est à '+cm(R.bl)+'.'+
-(gain>0?'<br><i>'+enEuros(gain)+' de consolation.</i>':'')+
-'<br>« Tu tires comme un Parisien ! »';
-}
-let SABLE_PQ=null;
-/* ================= LA VITRINE : LES BOULES ET LES TERRAINS =================
-   TOUT EST COSMÉTIQUE, ET ÇA RESTE COSMÉTIQUE. Une boule dorée roule
-   exactement comme une boule d'acier : rien ici ne touche à la physique
-   ni aux chances de gagner. C'est la seule façon de donner à
-   collectionner sans déséquilibrer la partie.
-   LES DÉBLOCAGES SE LISENT, ILS NE SE STOCKENT PAS. On ne garde nulle
-   part « la dorée est débloquée » : on compte les mènes gagnées, les
-   carreaux et les titres, et on en déduit la liste à chaque ouverture.
-   Un compteur de moins à tenir, et rien à réparer si une sauvegarde
-   part de travers.
-   CE QUI SE STOCKE, c'est seulement le CHOIX — dans la sauvegarde du
-   joueur, avec son apparence, parce qu'il doit suivre d'un téléphone à
-   l'autre. */
-const PQ_BOULES=[
-{c:'acier', nom:'Acier strié', dit:'celle de tout le monde', seuil:0,
- cond:'', a:'#8f989f', b:'#d7dde2', o:'#5f686f', stries:1},
-{c:'doree', nom:'La dorée', dit:'pour une partie en 13 gagnée', seuil:1, quoi:'titres13',
- cond:'gagne une partie en 13', a:'#c9a24a', b:'#f6dd8c', o:'#8a6a20', stries:0},
-{c:'port', nom:'Édition du Vieux-Port', dit:'cinq mènes gagnées', seuil:5, quoi:'menes',
- cond:'gagne cinq mènes', a:'#4a6b82', b:'#9fc4d8', o:'#2c4152', stries:2},
-{c:'veteran', nom:'La rouillée du vétéran', dit:'trois carreaux', seuil:3, quoi:'carreaux',
- cond:'réussis trois carreaux', a:'#8a6a52', b:'#c0a080', o:'#4f3a2c', stries:3},
-/* CELLES QU'ON ACHÈTE. Elles ne se gagnent pas : elles coûtent, et
-   c'est tout ce qui les distingue — aucune ne roule autrement qu'une
-   autre, le prix n'achète que l'allure. */
-{c:'olive', nom:'La verte olive', dit:'la couleur du pays', prix:2500,
- cond:'', a:'#56663c', b:'#93a66b', o:'#364024', stries:2},
-{c:'cuivre', nom:'La cuivrée', dit:'patinée par les mains', prix:6000,
- cond:'', a:'#965c31', b:'#d9975a', o:'#5c3418', stries:1},
-{c:'nuit', nom:'La noire mate', dit:'elle ne renvoie rien', prix:12000,
- cond:'', a:'#2b2f33', b:'#4e555c', o:'#15181b', stries:0},
-{c:'nacre', nom:'La nacrée', dit:'une pièce de collection', prix:28000,
- cond:'', a:'#c3bed4', b:'#f6f2ff', o:'#8b86a2', stries:0, laiton:1},
-{c:'mondial', nom:'La championne', dit:'un titre au Mondial', seuil:1, quoi:'titres',
- cond:'gagne le Mondial', a:'#b8c0c8', b:'#ffffff', o:'#6f7880', stries:0, laiton:1}];
-const PQ_TERRAINS=[
-{c:'port', nom:'Le terrain du port', dit:'là où tout a commencé', seuil:0,
- sable:'#d8bf8c', grain:['#c9ad78','#e6d0a0','#bca06a','#d0b682','#efdcae'],
- bord:'#6b4a2c', haut:'#a97f52', taches:'rgba(60,80,30,.10)', nb:14},
-{c:'place', nom:'La place du village', dit:'trois mènes gagnées', seuil:3, quoi:'menes',
- sable:'#c8b084', grain:['#b89e6e','#d8c49a','#ab9263','#c2a97c','#e2d0a4'],
- bord:'#7d6a4e', haut:'#a2906c', taches:'rgba(50,60,40,.12)', nb:20},
-{c:'platanes', nom:'Sous les platanes', dit:'dix mènes gagnées', seuil:10, quoi:'menes',
- sable:'#cdb588', grain:['#bca476','#dcc69c','#ae9668','#c6ae80','#e6d2a8'],
- bord:'#5f4a30', haut:'#8a7050', taches:'rgba(26,46,16,.18)', nb:34},
-{c:'champ', nom:'Le boulodrome du championnat', dit:'un titre au Mondial', seuil:1, quoi:'titres',
- sable:'#e0cb9e', grain:['#d2bb88','#f0dcb4','#c6ae7c','#dcc698','#f6e8c4'],
- bord:'#2f4433', haut:'#4e7a38', taches:'rgba(60,80,30,.07)', nb:8, lignes:1},
-/* CELUI QU'ON ACHÈTE : le même terrain, la nuit tombée. */
-{c:'nuit', nom:'Sous le lampadaire', dit:'on joue jusqu’à pas d’heure', prix:40000,
- sable:'#6e6a58', grain:['#5f5c4c','#817c66','#56533f','#6b6754','#948d72'],
- bord:'#2a2a2e', haut:'#45454c', taches:'rgba(16,18,26,.16)', nb:16}];
-/* CE QUE LE JOUEUR A FAIT, lu là où c'était déjà compté. */
-function pqCompteurs(){
-const n=(k)=>{try{return +(localStorage.getItem(k)||0);}catch(x){return 0;}};
-return {menes:n('bdl.petanque.gagnees'), carreaux:n('bdl.petanque.carreaux'),
-titres:mondTitres(), titres13:n('bdl.petanque.parties')};}
-/* DEUX FAÇONS D'AVOIR UNE PIÈCE : la gagner, ou la payer. Ce qui se
-   paie ne se gagne jamais, et ce qui se gagne ne s'achète pas — sinon
-   la championne ne voudrait plus rien dire. L'achat est gardé dans la
-   sauvegarde comme le reste de la bourse : il vaut ce que vaut le reste
-   de l'économie du jeu, ni plus ni moins. */
-const pqAchete=(o)=>{try{return (e.pqAchats||[]).indexOf(o.c)>=0;}catch(x){return false;}};
-const pqDebloque=(o)=>o.prix?pqAchete(o):(!o.quoi||(pqCompteurs()[o.quoi]||0)>=o.seuil);
-const pqMaBoule=()=>{const c=(e&&e.pqBoule)||'acier';
-const B=PQ_BOULES.find(x=>x.c===c);return (B&&pqDebloque(B))?B:PQ_BOULES[0];};
-const pqMonTerrain=()=>{
-/* LA FINALE SE JOUE TOUJOURS AU BOULODROME DU CHAMPIONNAT, qu'on l'ait
-   gagné ou non. C'est une finale. */
-try{if(PET&&PET.finale)return PQ_TERRAINS.find(x=>x.c==='champ')||PQ_TERRAINS[0];}catch(x){}
-const c=(e&&e.pqTerrain)||'port';
-const T=PQ_TERRAINS.find(x=>x.c===c);return (T&&pqDebloque(T))?T:PQ_TERRAINS[0];};
-/* ================= LES QUATRE TERRAINS =================
-   DEUX DÉFAUTS À CORRIGER, PAS UNE NOUVELLE DIRECTION. Le sable était
-   plat — une poussière de pixels au hasard, sans aucune variation de
-   fond — et le relief venait de GROSSES ELLIPSES translucides posées
-   par-dessus, qui font des taches grises floues et qui gênent la
-   lecture des boules.
-   LE FOND PASSE AU BRUIT DE VALEUR, à la manière du reste du jeu :
-   PR_h lu à deux échelles, une large et une serrée, qui donne une
-   marbrure douce sans jamais faire de tache. Le grain d'un pixel se
-   pose par-dessus, comme sur le sol de la ferme.
-   ON REPREND LES PALETTES DE LA MAISON : B_F pour le bois, PI_F pour la
-   ferraille et la pierre, les verts du pré. Rien de nouveau.
-   LA SURFACE DE JEU NE BOUGE PAS D'UN PIXEL. Les boules meurent à
-   quatre unités du bord et l'arbitre du serveur rejoue avec les mêmes
-   limites : tout est posé À PLAT, rien n'arrête une boule, et les
-   bordures gardent leur épaisseur. Une ombre de feuillage est une
-   nuance de sable, pas un obstacle.
-   LE SABLE SE GRAVE PAR TERRAIN, et on garde le dernier gravé. */
-let SABLE_CLE=null;
-const SABLE_CACHE=new Map();
-function graverLeSablePetanque(){
-const T=pqMonTerrain(), W=PQ.W, H=PQ.H;
-/* UN SABLE GRAVÉ RESTE GRAVÉ : un cinquième de seconde par terrain, et
-   on le refaisait à chaque changement. */
-{const v=SABLE_CACHE.get(T.c);if(v){SABLE_PQ=v;SABLE_CLE=T.c;return;}}
-const c=document.createElement('canvas');c.width=W;c.height=H;
-const g=c.getContext('2d');
-const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
-const A=(i)=>alea(i*1.37+0.21);
-/* LA MARBRURE : du bruit LISSÉ, à trois échelles.
-   Lu par cases entières, PR_h fait des CARRÉS — on voyait le damier
-   d'une maille sur l'autre, exactement le motif répétitif qu'on ne
-   veut pas. On interpole donc entre les quatre coins de la maille,
-   avec un adoucissement en 3t²−2t³ : le fond devient une marbrure
-   continue, sans grille et sans tache. */
-const lisse=(x,y,e,k)=>{
-const fx=x/e, fy=y/e, ix=Math.floor(fx), iy=Math.floor(fy);
-const tx=fx-ix, ty=fy-iy, ad=(t)=>t*t*(3-2*t);
-const p00=PR_h(ix,iy,k), p10=PR_h(ix+1,iy,k);
-const p01=PR_h(ix,iy+1,k), p11=PR_h(ix+1,iy+1,k);
-const u=ad(tx), v=ad(ty);
-return (p00*(1-u)+p10*u)*(1-v)+(p01*(1-u)+p11*u)*v;};
 const marbre=(x,y,k)=>lisse(x,y,7,k)*0.32+lisse(x,y,19,k+1)*0.36+lisse(x,y,43,k+2)*0.32;
 /* LE SABLE, AU TRAMAGE.
    CINQ BEIGES À DIX POUR CENT L'UN DE L'AUTRE, posés en dégradé
@@ -23811,180 +21343,6 @@ g.setTransform(1,0,0,1,0,0);
 dessinerLeFeu(g,t,dt);
 requestAnimationFrame(bouclePetanque);
 }
-const ESP_LARGE=['castagnole','serran','pageot','mostelle','corb','palamide','langouste','cernier','requinbleu','mante',
-  'mendole','gobie','blennie','oblade','chinchard','marbre','canthare','orphie','oursin','meduse','sole','turbot','encornet','ombrine','araignee','cigale','homard','tassergal','maigre','sabre','seriole','badeche','raietorpille','pastenague','germon','thonobese','beryx','requingris','requinrenard','requinmarteau','requinpelerin','voilier','marlin','lampris','dauphin','globicephale','tortueluth','cachalot','rorqual','baleinebleue'];
-const CARNET_ORDRE=[
-['sardine','COMMUNE','partout, à toute heure'],['bogue','COMMUNE','partout, le jour et à l’aube'],
-['girelle','COMMUNE','le long du quai, en plein jour'],['rouget','COMMUNE','partout'],['mulet','COMMUNE','partout, à toute heure'],
-['dorade','PEU COMMUNE','le jour et à l’aube'],['saupe','PEU COMMUNE','le long du quai, le jour et à l’aube'],
-['maquereau','PEU COMMUNE','au bout des pontons, le jour et à l’aube'],['seiche','PEU COMMUNE','la nuit et à l’aube, au bout des pontons'],
-['rascasse','PEU COMMUNE','la nuit et à l’aube, au bout des pontons'],
-['loup','RARE','la nuit et à l’aube, au bout des pontons'],['poulpe','RARE','le long du quai'],
-['denti','RARE','seulement à l’aube, au bout des pontons'],['murene','RARE','seulement la nuit, le long du quai'],
-['congre','TRÈS RARE','seulement la nuit, au bout des pontons'],['saintpierre','TRÈS RARE','seulement la nuit, au bout des pontons'],
-/* LE LARGE : on n'y va qu'en bateau, à partir du niveau 20 */
-['castagnole','COMMUNE','au large, à la digue et au Frioul'],['serran','COMMUNE','au large, à la digue et au Frioul'],
-['mendole','COMMUNE','au large, à la digue'],
-['gobie','COMMUNE','au large, à la digue et au Frioul'],
-['blennie','COMMUNE','au large, à la digue et au Frioul'],
-['oblade','COMMUNE','au large, à la digue et aux calanques'],
-['chinchard','COMMUNE','au large, à la digue et au Planier'],
-['marbre','PEU COMMUNE','au large, à la digue, au Frioul et aux calanques'],
-['canthare','PEU COMMUNE','au large, à la digue, au Frioul et aux calanques'],
-['orphie','PEU COMMUNE','au large, à la digue'],
-['oursin','COMMUNE','au large, partout sauf au Planier'],
-['meduse','COMMUNE','au large, partout'],
-['sole','PEU COMMUNE','au large, à la digue et au Frioul'],
-['turbot','RARE','au large, au Frioul'],
-['encornet','PEU COMMUNE','au large, au Frioul'],
-['ombrine','PEU COMMUNE','au large, à la digue'],
-['araignee','PEU COMMUNE','au large, au Frioul'],
-['cigale','RARE','au large, au Frioul'],
-['homard','TRÈS RARE','au large, au Frioul, avec la canne en carbone'],
-['tassergal','RARE','au large, à la digue et aux calanques'],
-['maigre','RARE','au large, à la digue et aux calanques'],
-['sabre','RARE','au large, la nuit'],
-['seriole','RARE','au large, aux calanques et au Planier'],
-['badeche','TRÈS RARE','au large, avec la canne en carbone'],
-['raietorpille','RARE','au large, aux calanques et au Planier'],
-['pastenague','RARE','au large, aux calanques et au Planier'],
-['germon','RARE','au large, au Planier'],
-['thonobese','TRÈS RARE','au large, au Planier, canne en carbone'],
-['beryx','TRÈS RARE','au large, au Planier, canne en carbone'],
-['requingris','TRÈS RARE','au large, au Planier, canne en carbone'],
-['requinrenard','LÉGENDAIRE','au large, au Planier, canne de maître'],
-['requinmarteau','LÉGENDAIRE','au large, au Planier, canne de maître'],
-['requinpelerin','LÉGENDAIRE','au large, au Planier, canne du Roi René'],
-['voilier','LÉGENDAIRE','au large, au Planier, canne de maître'],
-['marlin','LÉGENDAIRE','au large, au Planier, canne du Roi René'],
-['lampris','LÉGENDAIRE','au large, au Planier, canne de maître'],
-['dauphin','TRÈS RARE','au large, aux calanques et au Planier'],
-['globicephale','LÉGENDAIRE','au large, au Planier, canne de maître'],
-['tortueluth','LÉGENDAIRE','au large, aux calanques et au Planier'],
-['cachalot','LÉGENDAIRE','au large, au Planier, canne du Roi René'],
-['rorqual','LÉGENDAIRE','au large, au Planier, canne du Roi René'],
-['baleinebleue','LÉGENDAIRE','au large, au Planier, canne du Roi René'],
-['pageot','PEU COMMUNE','au large, à la digue et aux calanques'],
-['mostelle','RARE','au large, avec la canne en fibre'],['corb','RARE','au large, aux calanques'],
-['palamide','RARE','au large, au Planier — et aux calanques à l’aube'],
-['langouste','TRÈS RARE','au large, dans les herbiers du Frioul'],
-['cernier','TRÈS RARE','au large, avec la canne en carbone'],
-['requinbleu','LÉGENDAIRE','au sec du Planier, avec la canne de maître'],
-['mante','LÉGENDAIRE','au sec du Planier, seulement à l’aube, canne du Roi René'],
-['thon','TRÈS RARE','seulement à l’aube, au bout des pontons'],['botte','…','un peu partout, hélas'],
-['legende','LÉGENDAIRE','à l’aube, au bout des pontons · un seul par jour'],
-['rascassedor','LÉGENDAIRE','la nuit, le long du quai · une seule par nuit'],
-['sar','PEU COMMUNE','canne en bambou · le jour et à l’aube'],['vieille','PEU COMMUNE','canne en bambou · le long du quai, le jour'],
-['grondin','RARE','canne en bambou · au bout des pontons, nuit et aube'],
-['pagre','RARE','canne en fibre · au bout des pontons, à l’aube'],['barracuda','TRÈS RARE','canne en fibre · au bout des pontons, le jour'],
-['liche','TRÈS RARE','canne en fibre · au bout des pontons, jour et aube'],['chapon','TRÈS RARE','canne en fibre · le long du quai, la nuit'],
-['baliste','TRÈS RARE','canne en carbone · le long du quai, le jour'],['coryphene','EXTRÊMEMENT RARE','canne en carbone · pontons, à l’aube'],
-['raie','EXTRÊMEMENT RARE','canne en carbone · le long du quai, la nuit'],
-['espadon','EXTRÊMEMENT RARE','canne de maître · pontons, à l’aube'],['mola','EXTRÊMEMENT RARE','canne de maître · pontons, le jour'],
-['requin','EXTRÊMEMENT RARE','canne de maître · pontons, la nuit'],
-['hippocampe','EXTRÊMEMENT RARE','canne du Roi René · le long du quai, à l’aube'],
-['calamar','LÉGENDAIRE','canne du Roi René · pontons, la nuit · un seul par nuit'],
-['coelacanthe','MYTHIQUE','canne du Roi René · pontons, la nuit · un seul par semaine']];
-async function ouvrirLeCarnet(){
-try{fermerTiroir();}catch(x){}
-const f=$('feuilleC');f.innerHTML='<h2>Carnet de pêche</h2><div class="sousC">On feuillette…</div>';
-$('carnetP').classList.add('on');
-const d=await appelRPC('mon_carnet',{p_joueur:e.id});
-CARNET_PECHE=(d&&typeof d==='object'&&!d.erreur)?d:(CARNET_PECHE||{});
-if(d&&typeof d==='object'&&!d.erreur)rafraichirLeRang();
-carnetGarde();
-}
-/* LA LISTE COMPLÈTE : celle du port, plus toutes les prises du lac.
-   Elle se construit toute seule, donc elle ne peut plus être en retard. */
-function carnetListeOrdre(){
-const LAC=Object.keys(ESP_PECHE).filter(k=>ESP_PECHE[k].lac).map(k=>[k,'LE LAC','le lac, depuis le ponton']);
-return CARNET_ORDRE.concat(LAC.filter(([k])=>!CARNET_ORDRE.some(([j])=>j===k)));
-}
-function carnetNom(id){return (OBJETS[id]&&OBJETS[id].nom)||(ESP_PECHE[id]&&ESP_PECHE[id].nom)||id;}
-function carnetJauge(titre,pris,tot,col){
-return '<div class="jaugeC"><div class="hC"><span>'+titre+'</span><span>'+pris+' / '+tot+'</span></div>'+
-  '<div class="bC"><i style="width:'+Math.round(pris/Math.max(1,tot)*100)+'%;background:'+col+'"></i></div></div>';
-}
-/* LA PAGE DE GARDE : aucune liste, seulement l'avancement et les deux belles lignes */
-function carnetGarde(){
-const f=$('feuilleC');
-/* LA BOTTE RESTE AU CARNET mais sort des comptes : ce n'est pas une espece.
-   La Capitainerie l'exclut partout, et deux ecrans qui annoncent deux
-   totaux differents de la meme collection, c'est un de trop. */
-const ORDRE=carnetListeOrdre().filter(([id])=>id!=='botte');
-const dansLac=(id)=>ESP_PECHE[id]&&ESP_PECHE[id].lac;
-const n=ORDRE.filter(([id])=>CARNET_PECHE[id]).length;
-const nMer=ORDRE.filter(([id])=>!dansLac(id)&&ESP_LARGE.indexOf(id)<0).length;
-const nMerPris=ORDRE.filter(([id])=>!dansLac(id)&&ESP_LARGE.indexOf(id)<0&&CARNET_PECHE[id]).length;
-const nLac=ORDRE.filter(([id])=>dansLac(id)).length;
-const nLacPris=ORDRE.filter(([id])=>dansLac(id)&&CARNET_PECHE[id]).length;
-/* LE LARGE : les espèces qu'on ne prend qu'en bateau */
-const auLarge=(id)=>ESP_LARGE.indexOf(id)>=0;
-const nLge=ORDRE.filter(([id])=>auLarge(id)).length;
-const nLgePris=ORDRE.filter(([id])=>auLarge(id)&&CARNET_PECHE[id]).length;
-/* le total des prises, le plus gros poisson, et les pièces de collection */
-let total=0, mId=null, mCm=0;
-ORDRE.forEach(([id])=>{const c=CARNET_PECHE[id];if(!c)return;total+=(c.n||0);
-  if((c.record||0)>mCm){mCm=c.record;mId=id;}});
-const HAUT=['LÉGENDAIRE','MYTHIQUE','EXTRÊMEMENT RARE'];
-const nHaut=ORDRE.filter(([id,rare])=>CARNET_PECHE[id]&&HAUT.some(h=>rare.indexOf(h)===0)).length;
-f.innerHTML='<h2>Carnet de pêche</h2><div class="sousC">'+n+' espèce'+(n>1?'s':'')+' sur '+ORDRE.length+'</div>'+
-  carnetJauge('LA COLLECTION',n,ORDRE.length,'#e8c06a')+
-  carnetJauge('LA MER',nMerPris,nMer,'#9fe1cb')+
-  carnetJauge('LE LAC',nLacPris,nLac,'#c0dd97')+
-  carnetJauge('LE LARGE',nLgePris,nLge,'#8fb8e8')+
-  (mId?'<div class="recC"><p>La plus belle prise</p><div class="lC"><b>'+carnetNom(mId)+'</b><span>'+mCm+' cm</span></div></div>':'')+
-  (DERNIERE_PECHE?'<div class="recC"><p>La dernière</p><div class="lC"><b>'+carnetNom(DERNIERE_PECHE.espece)+'</b><span>'+DERNIERE_PECHE.cm+' cm</span></div></div>':'')+
-  '<div class="duoC"><div class="statC"><b>'+total+'</b><span>PRISES</span></div>'+
-  '<div class="statC"><b>'+nHaut+'</b><span>PIÈCES RARES</span></div></div>';
-const l=document.createElement('button');l.className='listeC';l.textContent='Feuilleter les espèces';
-l.onclick=carnetListe;f.appendChild(l);
-const b=document.createElement('button');b.className='fermerC';b.textContent='Refermer le carnet';
-b.onclick=()=>$('carnetP').classList.remove('on');f.appendChild(b);
-f.scrollTop=0;
-}
-/* LES PAGES DU FOND : la liste complète, derrière le bouton */
-function carnetListe(){
-const f=$('feuilleC');
-const ORDRE=carnetListeOrdre();                 /* la botte se voit… */
-const dansLac=(id)=>ESP_PECHE[id]&&ESP_PECHE[id].lac;
-const SANS=ORDRE.filter(([id])=>id!=='botte');  /* …mais ne se compte pas */
-const n=SANS.filter(([id])=>CARNET_PECHE[id]).length;
-f.innerHTML='<h2>Les espèces</h2><div class="sousC">'+n+' sur '+SANS.length+'</div>';
-ORDRE.forEach(([id,rare,indice])=>{
-const c=CARNET_PECHE[id], S=ESP_PECHE[id];
-const ligne=document.createElement('div');ligne.className='esp'+(c?'':' inconnu');
-const cv=document.createElement('canvas');cv.width=48;cv.height=26;cv.style.width='60px';cv.style.height='32px';
-const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
-if(dansLac(id)){
-  /* les prises du lac ont leur propre dessin */
-  g.save();g.translate(24,13);g.scale(0.62,0.62);
-  if(!c)g.globalAlpha=.4;
-  try{lacDessiner(g,id,0,0,1);}catch(x){}
-  g.restore();
-}else{
-  const FF=FORMES_POISSON[id]||{L:12,H:6}, ech=Math.min(1,40/(FF.L+(FF.f==='epee'?14:6)),20/(FF.H+8));
-  g.save();g.translate(24,13);g.scale(ech,ech);
-  if(c)dessinerPoisson(g,0,0,id,1,0,false);else{g.globalAlpha=.85;dessinerPoisson(g,0,0,id,1,0,true);}
-  g.restore();
-}
-ligne.appendChild(cv);
-const t=document.createElement('div');
-t.innerHTML=c?'<b>'+(OBJETS[id]?OBJETS[id].nom:S.nom)+'</b><span>'+c.n+' prise'+(c.n>1?'s':'')+' · record '+c.record+' cm</span>'
-:'<b>???</b><span>'+indice+'</span>';
-ligne.appendChild(t);
-const r=document.createElement('div');r.className='rareC';r.textContent=rare;ligne.appendChild(r);
-f.appendChild(ligne);
-});
-const b=document.createElement('button');b.className='fermerC';b.textContent='Revenir à la page de garde';
-b.onclick=carnetGarde;f.appendChild(b);
-f.scrollTop=0;
-}
-if($('b-carnet'))$('b-carnet').onclick=ouvrirLeCarnet;
-/* ================= LE CLASSEMENT, DANS LE JEU =================
-   Il vivait dans classement.html : on en sortait par un rechargement complet.
-   Ici, c'est un écran comme les autres, en affiche : le premier du port en
-   grand, puis la liste, puis l'écart à combler. */
 const CSS_CLS=`#cls{position:absolute;inset:0;background:#15212e;display:flex;flex-direction:column;
 font-family:'Baloo 2','Trebuchet MS',system-ui,sans-serif;overflow:hidden}
 #cls .hd{flex:none;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 12px;display:flex;align-items:flex-start;gap:10px}
@@ -24082,7 +21440,6 @@ function clsCadre(titre,sus){
 const tete='<div class="rhd"><span class="tx"><small>'+sus+'</small><b>'+titre+'</b></span>'+
 '<button id="clsX">✕</button></div>'+
 '<div class="seg"><button data-cv="recolte"'+(CLS_VUE==='recolte'?' class="on"':'')+'>Récolte</button>'+
-'<button data-cv="peche"'+(CLS_VUE==='peche'?' class="on"':'')+'>Pêche</button>'+
 '<button data-cv="pokedock"'+(CLS_VUE==='pokedock'?' class="on"':'')+'>Pokédock</button></div>';
 $('page2Fond').innerHTML='<div id="cls">'+tete+'<div class="corps"><div class="vide">On ouvre le registre…</div></div></div>';
 $('clsX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
@@ -24147,26 +21504,7 @@ const SAC_FERME=['laine','truffe','lait','fromage','oeufs','oeufdor','miel','foi
 const SAC_FORET=['bois','resine','roseaux','baies','herbes','champignons','planche','poutre','fibre','manche','bogue','santon'];
 const SAC_MINE=['pierre','argile','charbon','cuivre','fer','ambre','argent','brique','tuile'];
 const SAC_CUISINE=['pain','confiture','conserve','soupe','tarte'];
-let SAC_POISSONS=null;
-function sacPoissons(){
-if(SAC_POISSONS)return SAC_POISSONS;
-const S={};
-try{Object.keys(ESP_PECHE||{}).forEach(k=>{S[k]=1;S['lac_'+k]=1;});}catch(x){}
-try{Object.keys(LAC_P||{}).forEach(k=>{S[k]=1;S['lac_'+k]=1;});}catch(x){}
-try{(HW_POISSONS||[]).forEach(h=>{S[h.k]=1;});}catch(x){}
-SAC_POISSONS=S;return S;}
-function sacRayon(k){
-if(OBJETS[k]&&OBJETS[k].outil)return 'outils';
-/* LA CUISINE D'ABORD : on repêche parfois une conserve ou un pot de
-   confiture, qui portent le même nom que ceux de Madeleine. */
-if(SAC_CUISINE.indexOf(k)>=0)return 'cuisine';
-if(sacPoissons()[k])return 'peche';
-if(SAC_FORET.indexOf(k)>=0)return 'foret';
-if(SAC_MINE.indexOf(k)>=0)return 'mine';
-if(SAC_FERME.indexOf(k)>=0)return 'ferme';
-try{if(POT_CULT&&POT_CULT[k])return 'ferme';}catch(x){}
-return 'autres';}
-const SAC_RAY=[['ferme','De la ferme','\u{1F33E}'],['peche','De la mer','\u{1F41F}'],
+const SAC_RAY=[['ferme','De la ferme','\u{1F33E}'],
  ['foret','De la forêt','\u{1FAB5}'],['mine','De la mine','⛏️'],
  ['cuisine','Cuisine','\u{1F35E}'],['autres','Autres','✨'],['outils','Tes outils','\u{1F527}']];
 /* un nom présentable même pour ce qui n'est pas encore dans la table */
@@ -24197,8 +21535,8 @@ let h='<div id="sacE"><div class="rhd"><span class="tx"><small>CE QUE TU PORTES<
 sortes+' sorte'+(sortes>1?'s':'')+' d’objet'+(sortes>1?'s':'')))+'</em></span></div>'+
 '<div class="corps">';
 if(!sortes)h+='<div class="vide">'+((grp.outils&&grp.outils.length)
-?'Rien que tes outils pour l’instant.<br>Va pêcher, ramasser, couper, creuser —<br>le sac se remplira tout seul.'
-:'Ton sac est vide.<br>Va pêcher, ramasser, couper, creuser —<br>il se remplira tout seul.')+'</div>';
+?'Rien que tes outils pour l’instant.<br>Va ramasser, couper, creuser —<br>le sac se remplira tout seul.'
+:'Ton sac est vide.<br>Va ramasser, couper, creuser —<br>il se remplira tout seul.')+'</div>';
 h+=SAC_RAY.map(([r,nom,ic])=>{
 const L=grp[r];if(!L||!L.length)return '';
 if(r==='outils')return '<div class="rub"><i>'+ic+'</i>'+nom.toUpperCase()+'</div><div class="out">'+
@@ -24219,7 +21557,6 @@ async function ouvrirLeClassement(){
 if(!document.getElementById('cssCls')){const st=document.createElement('style');
 st.id='cssCls';st.textContent=CSS_CLS;document.head.appendChild(st);}
 $('page2Fond').className='';$('page2').classList.add('on');
-if(CLS_VUE==='peche')return clsPecheA();
 if(CLS_VUE==='pokedock')return clsPokedockA();
 return clsNiveaux();
 }
@@ -24227,7 +21564,7 @@ return clsNiveaux();
    Au style du carnet : un podium pour les trois premiers (portrait et
    médaille de niveau), puis une carte par joueur, son grade, sa barre
    d'XP et s'il est en ligne. L'XP, c'est le score juste (progres). */
-const CLS_GRADES=[[30,'Roi du Vieux-Port'],[25,'Capitaine'],[20,'Patron de pêche'],[15,'Bosco'],[10,'Second'],[5,'Matelot'],[1,'Mousse']];
+const CLS_GRADES=[[30,'Roi du Vieux-Port'],[25,'Capitaine'],[20,'Patron de quai'],[15,'Bosco'],[10,'Second'],[5,'Matelot'],[1,'Mousse']];
 const CSS_CLA=`.clA .podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:6px 0 12px}
 .clA .pod{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center}
 .clA .pod .med{position:relative;border-radius:50%;background:radial-gradient(circle at 50% 35%,#4a6a8a,#1a2a3a);box-shadow:0 0 0 3px #3a2408,0 4px 0 3px #3a2408}
@@ -24272,9 +21609,9 @@ function clsPrepA(){
  if(!document.getElementById('cssClA')){const st=document.createElement('style');st.id='cssClA';st.textContent=CSS_CLA;document.head.appendChild(st);}
  $('page2Fond').className='bq mA niv clA';}
 function clsCadreA(vue,corps,badge){const F=$('page2Fond');F.className='bq mA niv clA';F.dataset.vue=vue;
- const T={recolte:['LE REGISTRE DU PORT','Classement'],peche:['LE MUR DES TROPHÉES','Pêche'],pokedock:['CENT CARTES','Pokédock']}[vue];
+ const T={recolte:['LE REGISTRE DU PORT','Classement'],pokedock:['CENT CARTES','Pokédock']}[vue];
  F.innerHTML='<div class="aTop"><div class="aTtl"><small>'+T[0]+'</small>'+T[1]+'</div>'+(badge?'<span class="aBourse">'+badge+'</span>':'')+'<button class="aX" id="clsXA">✕</button></div>'+
-  '<div class="bqOng">'+[['recolte','🏅','Niveaux'],['peche','🐟','Pêche'],['pokedock','🃏','Pokédock']].map(([k,i,t])=>'<button data-cva="'+k+'" class="'+(k===vue?'on':'')+'"><i>'+i+'</i>'+t+'</button>').join('')+'</div>'+
+  '<div class="bqOng">'+[['recolte','🏅','Niveaux'],['pokedock','🃏','Pokédock']].map(([k,i,t])=>'<button data-cva="'+k+'" class="'+(k===vue?'on':'')+'"><i>'+i+'</i>'+t+'</button>').join('')+'</div>'+
   '<div class="aCarte"><div class="corps">'+corps+'</div></div>';
  $('clsXA').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
  F.querySelectorAll('[data-cva]').forEach(b=>b.onclick=()=>{if(b.dataset.cva===vue)return;CLS_VUE=b.dataset.cva;vibrer(8);ouvrirLeClassement();});
@@ -24384,33 +21721,10 @@ async function clsNiveaux(){
  if(moi>0){const a=L[moi-1],m=L[moi];h+='<div class="cible">⚓ Il te manque <b>'+f(a.score-m.score+1)+' XP</b> pour passer devant <b>'+echapperT(a.pseudo)+'</b>'+(moi===1?' et prendre la tête':'')+'.</div>';}
  else if(moi===0)h+='<div class="cible">⚓ Tu es <b>premier du port</b>. Tiens bon.</div>';
  h+=L.slice(3).map((j,i)=>clsLigne(j,i+4,echapperT(j.T).toUpperCase(),Math.round(j.N.dans/Math.max(1,j.N.pour)*100),'Niv. '+j.N.n,f(j.score)+' XP')).join('');
- h+='<div class="regle">L’XP vient de la forêt, des légumes, des fruits et de la pêche.</div>';
+ h+='<div class="regle">L’XP vient de la forêt, des légumes et des fruits.</div>';
  clsCadreA('recolte',h,badge);}
-/* ================= LA PÊCHE, AU STYLE DU CARNET =================
    Le podium des meilleurs pêcheurs (leurs points), puis tous les autres ;
    en dessous, les légendes et les plus grosses prises de la semaine. */
-async function clsPecheA(){
- clsPrepA();clsCadreA('peche','<div class="nvVide">On ouvre le mur…</div>');
- let d=null;try{d=await appelRPC('records_peche',{});}catch(x){}
- if(!clsActif('peche'))return;
- if(!d||d.erreur||d.code){clsCadreA('peche','<div class="nvVide">Le mur est en travaux, reviens dans un moment.</div>');return;}
- const f=n=>(+n||0).toLocaleString('fr-FR');const esp={};(d.especes||[]).forEach(x=>esp[x.joueur]=x.n);
- const L=(d.points||[]).filter(j=>j&&j.pseudo&&j.pseudo!=='sans nom'&&j.pseudo!=='quelqu’un');
- const quand=(t)=>{const j=Math.round((Date.now()-new Date(t).getTime())/86400000);return j<=0?'aujourd’hui':(j===1?'hier':'il y a '+j+' jours');};
- const nomP=(k)=>(OBJETS[k]&&OBJETS[k].nom)||(ESP_PECHE[k]&&ESP_PECHE[k].nom)||k;
- const moi=L.findIndex(j=>j.id===e.id);
- let h='';
- if(!L.length)h='<div class="nvVide">Personne n’a encore rien pêché.</div>';
- else{h+=clsPodium(L,j=>f(j.points),j=>(esp[j.id]||0)+' ESPÈCES');
-  if(moi>0){const a=L[moi-1],m=L[moi];h+='<div class="cible">🎣 Il te manque <b>'+f(a.points-m.points+1)+' pts</b> pour passer devant <b>'+echapperT(a.pseudo)+'</b>.</div>';}
-  else if(moi===0)h+='<div class="cible">🎣 Tu es <b>le meilleur pêcheur du port</b>.</div>';
-  h+=L.slice(3).map((j,i)=>clsLigne(j,i+4,(esp[j.id]||0)+' ESPÈCES · '+f(j.total)+' POISSON'+((j.total||0)>1?'S':''),null,f(j.points),'POINTS')).join('');}
- const plaque=(e2,titre,sous,cm)=>'<div class="l pq"><span class="pc"><canvas data-f="'+echapperT(e2)+'"></canvas></span><span class="tx"><b>'+titre+'</b><small>'+sous+'</small></span><span class="xp">'+cm+'<small>CM</small></span></div>';
- h+='<div class="nvRub" style="margin-top:14px">Les légendes</div>'+((d.legendes||[]).length?(d.legendes||[]).map(x=>plaque(x.espece,echapperT(nomP(x.espece)),echapperT(x.pseudo).toUpperCase()+' · LÉGENDAIRE · '+quand(x.jour).toUpperCase(),x.cm)).join(''):'<div class="nvVide">Les légendes attendent encore leur maître.</div>');
- h+='<div class="nvRub" style="margin-top:14px">Les plus grosses prises de la semaine</div>'+((d.gros||[]).length?(d.gros||[]).slice(0,5).map((x,i)=>plaque(x.espece,(i+1)+'. '+echapperT(nomP(x.espece)),echapperT(x.pseudo).toUpperCase()+' · '+quand(x.quand).toUpperCase(),x.cm)).join(''):'<div class="nvVide">Rien de sorti de l’eau cette semaine.</div>');
- h+='<div class="regle">Les points suivent la rareté des prises.</div>';
- const C=clsCadreA('peche',h);C.querySelectorAll('canvas[data-f]').forEach(cv=>clsPoisson(cv,cv.dataset.f));}
-/* ================= LE POKÉDOCK, AU STYLE DU CARNET ================= */
 async function clsPokedockA(){
  clsPrepA();clsCadreA('pokedock','<div class="nvVide">On ouvre les classeurs…</div>');
  let L=[];try{const d=await appelRPC('pokedock_classement',{});if(Array.isArray(d))L=d;}catch(x){}
@@ -24429,7 +21743,7 @@ async function clsPokedockA(){
 
 /* le détail d'un score : seulement les activités où l'on a des points */
 function clsParts(j){const f=n=>(+n||0).toLocaleString('fr-FR');
-const p=[['🌲',j.foret],['🥕',j.legumes],['🍒',j.fruits],['🐑',j.betes],['🐟',j.peche]].filter(([,n])=>+n>0);
+const p=[['🌲',j.foret],['🥕',j.legumes],['🍒',j.fruits],['🐑',j.betes],].filter(([,n])=>+n>0);
 return p.length?p.map(([i,n])=>i+' '+f(n)).join(' · '):(clsVu(j.maj)||'—');}
 /* ================= LE CLASSEMENT POKÉDOCK =================
    CENT CARTES, ET DEUX SECRÈTES HORS SÉRIE. On classe sur le nombre de
@@ -24466,61 +21780,6 @@ h+='<div class="ecart">Il te manque <b>'+ecart+' carte'+(ecart>1?'s':'')+' diff�
 }else if(iMoi===0){h+='<div class="ecart">Tu as <b>la plus belle collection du port</b>. Il en reste '+(100-(liste[0].distinctes||0))+' à trouver.</div>';}
 else{h+='<div class="ecart">Tu n’as pas encore de carte. Le rayon Pokédock est au <b>Bar des Docks</b>.</div>';}
 C.innerHTML=h;
-}
-/* ================= LE MUR DES TROPHÉES =================
-   Les meilleurs pêcheurs, les légendes sorties de l'eau, et les cinq plus
-   grosses prises de la semaine. Les poissons sont dessinés par le jeu. */
-function clsPoisson(cv,esp){
-try{
-const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
-const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
-cv.width=62*D;cv.height=26*D;g.setTransform(D,0,0,D,0,0);
-if(ESP_PECHE[esp]&&ESP_PECHE[esp].lac){
-g.save();g.translate(31,13);g.scale(0.62,0.62);
-try{lacDessiner(g,esp,0,0,1);}catch(x){}
-g.restore();return;
-}
-const F=FORMES_POISSON[esp]||{L:12,H:6};
-const ech=Math.min(1.4,52/(F.L+(F.f==='epee'?14:6)),20/(F.H+8));
-g.save();g.translate(31,13);g.scale(ech,ech);
-try{dessinerPoisson(g,0,0,esp,1,0,false);}catch(x){}
-g.restore();
-}catch(x){}
-}
-async function clsLeMur(){
-clsCadre('Le mur des trophées','LES PLUS BEAUX COUPS DE LIGNE');
-let d=null, teteDe2={};
-try{d=await appelRPC('records_peche',{});}catch(x){}
-try{
-const r=await fetch(URL_SB+'/rest/v1/joueurs?select=pseudo,apparence&limit=200',{headers:sbEntetes});
-const l=await r.json();
-(Array.isArray(l)?l:[]).forEach(j=>{if(j&&j.pseudo)teteDe2[j.pseudo]=j.apparence;});
-}catch(x){}
-const C=$('page2Fond').querySelector('#cls .corps');if(!C)return;
-if(!d||d.erreur||d.code){C.innerHTML='<div class="vide">Le mur est en travaux, reviens dans un moment.</div>';return;}
-const esp={};(d.especes||[]).forEach(x=>esp[x.pseudo]=x.n);
-const quand=(t)=>{const j=Math.round((Date.now()-new Date(t).getTime())/86400000);
-return j<=0?'aujourd’hui':(j===1?'hier':'il y a '+j+' jours');};
-const nomP=(k)=>(OBJETS[k]&&OBJETS[k].nom)||(ESP_PECHE[k]&&ESP_PECHE[k].nom)||k;
-let h='<div class="rub">LES MEILLEURS PÊCHEURS</div><div class="cartes">'+
-((d.points||[]).length?(d.points||[]).slice(0,8).map((x,i)=>
-'<div class="carte'+(i===0?' or':'')+'"><span class="rg">'+(i+1)+'</span>'+
-'<img src="'+clsTete({apparence:teteDe2[x.pseudo],pseudo:x.pseudo})+'" alt="">'+
-'<b>'+echapperT(x.pseudo)+'</b><div class="v">'+clsPts(x.points)+' pts</div>'+
-'<small>'+(esp[x.pseudo]||0)+' espèces · '+clsPts(x.total)+' poisson'+(x.total>1?'s':'')+'</small></div>').join('')
-:'<div class="vide" style="grid-column:1/3">Personne n’a encore rien pêché.</div>')+'</div>';
-const plaque=(e2,titre,sous,cm)=>'<div class="plaque"><canvas data-f="'+echapperT(e2)+'"></canvas>'+
-'<span class="g"><b>'+titre+'</b><small>'+sous+'</small></span>'+
-'<span class="cm">'+cm+'<i>cm</i></span></div>';
-h+='<div class="rub">LES LÉGENDES</div>'+((d.legendes||[]).length
-?(d.legendes||[]).map(x=>plaque(x.espece,echapperT(nomP(x.espece))+' · '+echapperT(x.pseudo),'légendaire · '+quand(x.jour),x.cm)).join('')
-:'<div class="vide">Les légendes attendent encore leur maître.</div>');
-h+='<div class="rub">LES CINQ PLUS GROSSES PRISES DE LA SEMAINE</div>'+((d.gros||[]).length
-?(d.gros||[]).slice(0,5).map((x,i)=>plaque(x.espece,(i+1)+'. '+echapperT(nomP(x.espece))+' · '+echapperT(x.pseudo),quand(x.quand),x.cm)).join('')
-:'<div class="vide">Rien de sorti de l’eau cette semaine.</div>');
-h+='<div class="ecart">les points suivent la rareté des prises</div>';
-C.innerHTML=h;
-C.querySelectorAll('canvas[data-f]').forEach(cv=>clsPoisson(cv,cv.dataset.f));
 }
 let COURRIER_N=0;
 /* LE SIGNAL DU COURRIER : un point sur le Menu quand il est fermé, pour qu'on
@@ -24836,7 +22095,6 @@ vibrer([12,30,12]);msgRendre();
 }
 if($('b-courrier'))$('b-courrier').onclick=()=>{try{fermerTiroir();}catch(x){}ouvrirLaPoste();};
 if($('carnetP'))$('carnetP').onclick=(ev)=>{if(ev.target===$('carnetP'))$('carnetP').classList.remove('on');};
-if($('catFermer'))$('catFermer').onclick=fermerLeCatalogue;
 let PANO=false;
 function ouvrirLePanorama(){PANO=true;$('panorama').classList.add('on');requestAnimationFrame(bouclePano);}
 function bouclePano(t){if(!PANO)return;const c=$('panoToile'),g=c.getContext('2d');g.imageSmoothingEnabled=false;
@@ -24846,7 +22104,7 @@ if($('pqBouton'))$('pqBouton').onclick=toucherPetanque;
 if($('pqToile'))$('pqToile').onclick=toucherPetanque;
 if($('pqFermer'))$('pqFermer').onclick=fermerLaPetanque;
 const ICO_ACTION=[[/^(Couper|Abattre)/,'hache'],[/^(Casser|Miner|Frapper)/,'pioche'],[/^(Cueillir|Ramasser|Récolter|Saigner|Laver)/,'main'],
-[/^(Pêcher|Lancer|Ferrer|Tirer)/,'canne'],[/^(Vendre|Acheter|Entrer|Ouvrir|Lire|Prendre|Rendre|Descendre|Monter|Parler|La |Le |Les |Pêche)/,'porte']];
+[/^(Vendre|Acheter|Entrer|Ouvrir|Lire|Prendre|Rendre|Descendre|Monter|Parler|La |Le |Les )/,'porte']];
 function icoAction(){const b=$('action');if(!b)return;const t=b.textContent||'';let k='etoile';for(const [re,v] of ICO_ACTION)if(re.test(t)){k=v;break;}
 if(b.dataset.ico!==k)b.dataset.ico=k;}
 setInterval(()=>{if(!document.hidden)icoAction();},250);
@@ -24854,7 +22112,6 @@ setInterval(()=>{if(!document.hidden)icoAction();},250);
    d'agir() : ce qui s'y cueille à la main. */
 function recolteSousLaMain(){
 try{
-if(PECHE)return false;
 if(GESTE.t>0)return false;
 const o=cible();
 if(!o)return false;
@@ -24888,10 +22145,10 @@ b.classList.add('on');b.onclick=laverLArgile;return;
    n'était récoltable depuis que la pêche y est ouverte.
    Quand une ligne est déjà à l'eau, la pêche reprend la main : il faut
    bien pouvoir ferrer. */
-if(CARTE==='large'&&!PECHE&&!coinDuBateau()){
-  b.innerHTML='Mets le cap<small>APPROCHE D’UN COIN POUR PÊCHER</small>';
+if(CARTE==='large'&&!coinDuBateau()){
+  b.innerHTML='Mets le cap<small>EN ROUTE</small>';
   b.classList.add('on');b.classList.add('inerte');b.onclick=null;return;}
-if(!recolteSousLaMain()&&actionDePeche(b))return;
+if(!recolteSousLaMain())return;
 if(CARTE==='extramar'&&Math.abs(joueur.x-XP.ruelle.x)<XP.ruelle.l&&joueur.y<XP.ruelle.haut+22&&GESTE.t<=0){
 /* ================= LE HAUT DE LA RUELLE =================
    LE COMPLEXE FESTIF EST OUVERT À TOUT LE MONDE. Il ne l'était qu'à qui
@@ -25022,16 +22279,14 @@ if(o.ouvre==='metroFerme'){b.innerHTML='Prendre le métro<small>LIGNE 1 · '+aut
 if(o.ouvre==='etalForet'){b.innerHTML='L’étal du bois<small>VENDRE SA RÉCOLTE</small>';b.classList.add('on');return;}
 if(o.ouvre==='atelierBois'){b.innerHTML='L’atelier du bois<small>PLANCHES · POUTRES · CHARBON</small>';b.classList.add('on');return;}
 if(o.ouvre==='cheneOuverture'){b.innerHTML='Le grand chêne<small>CEUX QUI ÉTAIENT LÀ</small>';b.classList.add('on');return;}
-if(o.t==='x_fo_ponton')return;   /* le moteur de pêche s'en occupe */
 if(o.ouvre==='laRecolte'){b.innerHTML='La Récolte<small>VENDRE TA RÉCOLTE</small>';b.classList.add('on');return;}
 if(o.ouvre==='etalGraines'){b.innerHTML='Les graines<small>SEMENCES · OUTILS · AGRANDIR TON CHAMP</small>';b.classList.add('on');return;}
-if(o.ouvre==='maree'){b.innerHTML='Entrer à La Marée<small>POISSONNERIE · VENDS TA PÊCHE</small>';b.classList.add('on');return;}
+if(o.ouvre==='fonfon'){b.innerHTML='Chez Fonfon<small>BOUILLABAISSE · CUISINE</small>';b.classList.add('on');return;}
 if(o.ouvre==='glacier'){b.innerHTML='Le Glacier du Port<small>GLACES ARTISANALES</small>';b.classList.add('on');return;}
 if(o.ouvre==='karting'){b.innerHTML='Le Karting du Quai<small>GRAND PRIX · COURSE À 5 €</small>';b.classList.add('on');return;}
 if(o.ouvre==='kayak'){b.innerHTML='Location de kayaks<small>'+(nivInv('deblocage:kayak_frioul')?'DEUX DESCENTES':'LA DESCENTE')+' · COURSE À 5 €</small>';b.classList.add('on');return;}
 if(o.ouvre==='cabanon'){b.innerHTML='Ton cabanon<small>'+(nivInv('deblocage:cabanon')?'RANGER · 60 PLACES À L’ABRI':'LA RÉCOMPENSE DU NIVEAU 10')+'</small>';b.classList.add('on');return;}
 if(o.ouvre==='idle_docker'){b.innerHTML='Entrer au Hangar<small>IDLE DOCKER · DÉCHARGE DES CONTAINERS</small>';b.classList.add('on');b.onclick=()=>{try{sauver();envoyerSauvegarde(true);}catch(x){}location.href='docker.html?v='+(window.MA_VERSION||Date.now());};return;}
-if(o.ouvre==='peche'){b.innerHTML='Le Pêcheur Heureux<small>CANNES, MOULINETS, APPÂTS</small>';b.classList.add('on');return;}
 if(o.ouvre==='salon'){b.innerHTML='Entrer à La Marinière<small>VÊTEMENTS DU PORT</small>';b.classList.add('on');return;}
 if(o.ouvre==='presse'){b.innerHTML='Ouvrir mon livret<small>LA CAPITAINERIE DU PORT</small>';b.classList.add('on');return;}
 if(o.ouvre==='bar'){b.innerHTML='Entrer au Bar des Docks<small>BAR · TABAC · JEUX À GRATTER</small>';b.classList.add('on');return;}
@@ -25042,15 +22297,10 @@ if(o.ouvre==='descenteTC'){b.innerHTML='Redescendre en télécabine<small>VERS L
 if(o.ouvre==='pistes'){b.innerHTML='Descendre à ski<small>LA PISTE DES CIMES · 21 PORTES</small>';b.classList.add('on');return;}
 if(o.ouvre==='longuevue'){b.innerHTML='Regarder dans la longue-vue<small>LE PANORAMA DES CIMES</small>';b.classList.add('on');return;}
 if(o.ferme){b.innerHTML=o.ferme+'<small>FERMÉ · OUVERTURE PROCHAINE</small>';b.classList.add('on','inerte');b.onclick=null;return;}   /* Saumaski : tout est fermé pour l'instant */
-if(o.t==='x_pavPoisson'){b.innerHTML='Vendre ta pêche<small>LA POISSONNERIE</small>';b.classList.add('on');return;}
+
 if(o.t==='x_stationVelo'){b.innerHTML=VELO?'Rendre la trottinette<small>À LA BORNE</small>':'Prendre une trottinette<small>ÉLECTRIQUE · EN LIBRE-SERVICE</small>';b.classList.add('on');return;}
 if(o.t==='x_bateau'){const ok=!!nivInv('deblocage:bateau');b.innerHTML=ok?'Monter à bord<small>PARTIR EN MER</small>':'Ton bateau<small>IL ARRIVE AU NIVEAU 19</small>';b.classList.add('on');return;}
-if(o.t==='x_pavPeche'){b.innerHTML='Pêche & Marine<small>CANNES, MOULINETS, APPÂTS</small>';b.classList.add('on');return;}
-if(o.t==='x_etal'){
-b.innerHTML='Vendre ta pêche<small>LA POISSONNERIE DU PORT</small>';
-b.classList.add('on');
-return;
-}
+
 if(o.t==='metro'){
 b.innerHTML='Prendre le métro<small>LIGNE 1 · '+autresStations()+'</small>';
 b.classList.add('on');
@@ -25144,8 +22394,6 @@ return;
 if(o.t==='panneauV'){ouvrirLeTuto();return;}
 if(o.t==='x_tableau'){ouvrirLeTableau();return;}
 if(o.t==='metro'){choisirLaDestination();return;}
-if(o.t==='x_etal'||o.t==='x_pavPoisson'){ouvrirLaMaree();return;}
-if(o.t==='x_pavPeche'){ouvrirLaBoutiqueDePeche();return;}
 if(o.t==='x_chantier'){texteVolant(o.x,o.y-78,'Construction en cours…','#ffd040');
 setTimeout(()=>texteVolant(o.x,o.y-66,'Vous allez bientôt pouvoir découvrir','#fff3d0'),350);
 setTimeout(()=>texteVolant(o.x,o.y-56,'une nouvelle partie du village !','#fff3d0'),700);vibrer(12);return;}
@@ -25154,6 +22402,7 @@ if(o.ouvre==='crousti'){ouvrirCrousti();return;}
 if(o.ouvre==='salon'){ouvrirLaMariniere();return;}
 if(o.ouvre==='presse'){afficheCapitainerie();return;}
 if(o.ouvre==='bar'){ouvrirLeBar();return;}
+if(o.ouvre==='fonfon'){ouvrirLaCuisineDeFonfon();return;}
 if(o.ouvre==='glacier'){ouvrirLeGlacier();return;}
 if(o.ouvre==='karting'){ouvrirUneCourse('karting');return;}
 if(o.ouvre==='kayak'){ouvrirUneCourse('kayak');return;}
@@ -25195,9 +22444,7 @@ if(o.ouvre==='cheneOuverture'){ouvrirLeGrandChene();return;}
 
 if(o.ouvre==='laRecolte'){ouvrirLaBoutiqueFerme();return;}
 if(o.ouvre==='etalGraines'){ouvrirLeGrainetier('graines');return;}
-if(o.ouvre==='maree'){ouvrirLaMaree();return;}
 
-if(o.ouvre==='peche'){ouvrirLaBoutiqueDePeche();return;}
 if(o.ouvre==='sortieStade'){sortirDuStade();return;}
 if(o.ouvre==='ecole'){ouvrirLEcole();return;}
 if(o.ouvre==='descenteTC'){redescendreEnTelecabine();return;}
@@ -25582,7 +22829,7 @@ c:'rgba(190,178,150,.7)',rebondi:true});
 }
 }
 const OBJETS={
-oursou:{nom:'Oursou',d:'Un oursin qui grogne. Il se vend bien à La Marée.',poids:1},
+oursou:{nom:'Oursou',d:'Un oursin qui grogne. Un oursin rare.',poids:1},
 savonnette:{nom:'Savonnette',d:'Savon de Marseille, passé à l’eau de mer. Toujours bon.',poids:1},
 cabas:{nom:'Cabas de mamie',d:'Vide, hélas. Le tissu tient encore.',poids:1},
 pneu:{nom:'Pneu de mobylette',d:'Lisse comme une savonnette. Il a vécu.',poids:1},
@@ -25625,7 +22872,7 @@ lingotCuivre:{nom:'Lingot de cuivre',d:'Sorti du four. Souple et brillant.',    
 brique: {nom:'Brique', d:'Argile cuite. Pour bâtir en dur.',                     poids:2},
 fumier: {nom:'Fumier', d:'Curé à l’enclos. Quatre seaux font une dose d’engrais, à l’étable.', poids:1},
 torche: {nom:'Torche', d:'Résine et bois. Éclaire la nuit.',                     poids:1},
-sardine:{nom:'Sardine',d:'Pêchée au port. La plus commune du bassin.',          poids:1},
+sardine:{nom:'Sardine',d:'La plus commune du bassin.',          poids:1},
 /* ces six-là étaient dans la table des prises mais pas dans le catalogue :
    le sac affichait « undefined » à leur place */
 botte:    {nom:'Vieille chaussure',d:'Repêchée au fond du bassin. Elle ne vaut rien, et c’est très bien.',poids:1},
@@ -25649,14 +22896,14 @@ oursin:{nom:'Oursin',d:'Remonté au large. On le mange sur place, avec du pain.'
 meduse:{nom:'Méduse pélagie',d:'Remontée au large. Ne la touche pas à main nue.',poids:1},
 sole:{nom:'Sole',d:'Pêchée au large. Couchée sur le sable, elle attend la nuit.',poids:1},
 turbot:{nom:'Turbot',d:'Pêché au large. Large comme une assiette, et aussi plat.',poids:1},
-encornet:{nom:'Encornet',d:'Pêché au large. La pêche au jig, quand le jour tombe.',poids:1},
+encornet:{nom:'Encornet',d:'Du large marseillais.',poids:1},
 ombrine:{nom:'Ombrine',d:'Pêchée au large. Elle grogne quand on la sort de l\u2019eau.',poids:1},
 araignee:{nom:'Araignée de mer',d:'Remontée au large. Toute en pattes, et pleine de corail.',poids:1},
 cigale:{nom:'Cigale de mer',d:'Remontée au large. Une armure plate, et rien qui dépasse.',poids:1},
 homard:{nom:'Homard',d:'Remonté au large. Bleu nuit, deux pinces, et un prix.',poids:1},
 tassergal:{nom:'Tassergal',d:'Pêché au large. Il coupe le fil, et il recommence.',poids:1},
 maigre:{nom:'Maigre',d:'Pêché au large. Il tambourine dans la coque, on l\u2019entend venir.',poids:3},
-sabre:{nom:'Poisson-sabre',d:'Pêché au large, la nuit. Une lame d\u2019argent, et des dents.',poids:3},
+sabre:{nom:'Poisson-sabre',d:'Pris au large, la nuit. Une lame d\u2019argent, et des dents.',poids:3},
 seriole:{nom:'Sériole',d:'Pêchée au large. Elle tire droit vers le fond, sans prévenir.',poids:3},
 badeche:{nom:'Badèche',d:'Pêchée au large. La cousine du mérou, en plus pâle.',poids:3},
 raietorpille:{nom:'Torpille',d:'Remontée au large. Elle pique les doigts, pour de vrai.',poids:1},
@@ -25706,7 +22953,7 @@ saintpierre:{nom:'Saint-Pierre', d:'La tache noire sur son flanc, c’est le pou
 thon:   {nom:'Thon rouge', d:'Un monstre venu du large, à l’aube. Il faut des bras.', poids:4},
 rascassedor:{nom:'Rascasse d’or', d:'Une seule par nuit, sous le quai. On dit qu’elle porte chance.', poids:2},
 sar:{nom:'Sar',d:'Rayé de noir, méfiant. Il faut une vraie canne.',poids:1},
-gardon:{nom:'Gardon',d:'Le poisson des débutants, argenté et vif.',poids:1},
+gardon:{nom:'Gardon',d:'Argenté et vif.',poids:1},
 perche:{nom:'Perche',d:'Rayée de vert, la hargne des rivières.',poids:1},
 truite:{nom:'Truite',d:'Mouchetée de rouge, elle remonte le courant.',poids:1},
 carpe:{nom:'Carpe',d:'Lourde et paisible, elle dort dans la vase.',poids:1},
@@ -25798,13 +23045,6 @@ oursin:'<rect x="5" y="5" width="6" height="6" fill="#4a2a4a"/><rect x="5" y="5"
 '<rect x="3" y="7" width="2" height="1" fill="#2a1a2a"/><rect x="11" y="7" width="2" height="1" fill="#2a1a2a"/>'+
 '<rect x="7" y="2" width="1" height="3" fill="#2a1a2a"/><rect x="7" y="11" width="1" height="3" fill="#2a1a2a"/>'+
 '<rect x="3" y="3" width="2" height="2" fill="#2a1a2a"/><rect x="11" y="10" width="2" height="2" fill="#2a1a2a"/>',
-anguille:'<rect x="1" y="8" width="12" height="2" fill="#3a4a3a"/><rect x="1" y="8" width="12" height="1" fill="#5a6a4a"/>'+
-'<rect x="13" y="7" width="2" height="4" fill="#2a3a2a"/><rect x="2" y="8" width="1" height="1" fill="#1b1b1b"/>',
-chapon:'<rect x="3" y="5" width="9" height="6" fill="#b04030"/><rect x="3" y="5" width="9" height="1" fill="#d0604a"/>'+
-'<rect x="4" y="3" width="1" height="2" fill="#8a2a20"/><rect x="6" y="3" width="1" height="2" fill="#8a2a20"/><rect x="8" y="3" width="1" height="2" fill="#8a2a20"/>'+
-'<rect x="12" y="4" width="2" height="8" fill="#8a2a20"/><rect x="5" y="7" width="1" height="1" fill="#1b1b1b"/>',
-baudroie:'<rect x="2" y="6" width="10" height="5" fill="#6a5a50"/><rect x="2" y="6" width="10" height="1" fill="#8a7a6a"/>'+
-'<rect x="2" y="9" width="8" height="2" fill="#4a3a34"/><rect x="3" y="3" width="1" height="3" fill="#8a7a6a"/><rect x="2" y="2" width="3" height="2" fill="#e0c060"/>'+
 '<rect x="12" y="6" width="2" height="5" fill="#5a4a44"/><rect x="4" y="7" width="1" height="1" fill="#1b1b1b"/>',
 vieille:'<rect x="2" y="6" width="10" height="4" fill="#3f7a4a"/><rect x="2" y="6" width="10" height="1" fill="#5f9a64"/>'+
 '<rect x="3" y="8" width="2" height="1" fill="#c8e0b0"/><rect x="7" y="7" width="2" height="1" fill="#c8e0b0"/><rect x="5" y="9" width="2" height="1" fill="#c8e0b0"/>'+
@@ -25943,21 +23183,9 @@ const ICO_FORME={
 function icoFruit(clair,fonce,forme){
 return icoGrille(ICO_FORME[forme]||ICO_FORME.ronde,
  {t:'#6a4a22',F:'#4f9434',f:'#3f7a2a',c:clair,o:fonce});}
-/* L'ICÔNE D'UN POISSON SE TIRE DE SA SILHOUETTE : plus de liste à tenir
-   à jour, toute espèce ajoutée à FORMES_POISSON a la sienne. */
-function icoDepuisPoisson(k){try{
-  const F=FORMES_POISSON[k];if(!F)return '';
-  const T=64, cv=document.createElement('canvas');cv.width=T;cv.height=T;
-  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
-  const ec=Math.min(T*0.92/(F.L+(F.f==='epee'||F.f==='voile'?14:4)), T*0.92/(F.H+(F.f==='voile'?14:4)));
-  g.save();g.translate(T/2,T/2);g.scale(ec,ec);
-  dessinerPoisson(g,0,0,k,1,0,false);g.restore();
-  return '<image href="'+cv.toDataURL()+'" x="0" y="0" width="16" height="16" style="image-rendering:pixelated"/>';
-}catch(x){return '';}}
+   à jour. */
 function completerLesIcones(){
 if(ICONES_FAITES)return;ICONES_FAITES=true;
-try{if(typeof FORMES_POISSON!=='undefined')for(const k of Object.keys(FORMES_POISSON)){
-  if(ICONES[k])continue;const i=icoDepuisPoisson(k);if(i)ICONES[k]=i;}}catch(x){}
 /* ON REMPLACE, on ne complète pas : chaque culture avait déjà une icône,
    mais c'était le sachet générique posé par défaut — le même pour les
    dix-huit, à la couleur près. Le vrai dessin de la plante vaut mieux. */
@@ -26001,9 +23229,8 @@ for(const k in G)ICONES[k]=icoGrille(G[k][0],G[k][1]);
 
 
 /* ================= LES ICÔNES ET LES NOMS QUI MANQUAIENT =================
-   Les poissons du lac et de la mer reçoivent une icône dessinée d'après
-   leurs couleurs ; la laine, la truffe, les matériaux et les objets
-   repêchés ont la leur. Rien ne doit plus s'afficher sans image ni sous
+   La laine, la truffe, les matériaux et les objets
+   ont leur icône. Rien ne doit plus s'afficher sans image ni sous
    son nom de code. */
 (function completerObjets(){
  const S=(x)=>x;
@@ -26024,7 +23251,6 @@ for(const k in G)ICONES[k]=icoGrille(G[k][0],G[k][1]);
   chariot:'<path d="M2 3 h2 l2 7 h7 l1.4-5 h-9.4" stroke="#8a9098" stroke-width="1.2" fill="none"/><circle cx="6.4" cy="12.6" r="1.4" fill="#3a3a3a"/><circle cx="11.6" cy="12.6" r="1.4" fill="#3a3a3a"/>',
   sirene:'<circle cx="8" cy="3.6" r="2" fill="#6a9a6a"/><path d="M6.4 5.6 h3.2 l1 4 q-1 3 1.4 4.6 h-6 q1.6-1.6 .4-4.6z" fill="#4a8a5a"/><path d="M5.6 14.2 l2.4-1.4 2.4 1.4" fill="#3a7a4a"/>',
   botte:'<path d="M5 2 h5 v8 h3 v4 h-8z" fill="#3a4a2a"/><rect x="5" y="2" width="5" height="1.4" fill="#5a6a4a"/><rect x="5" y="12.6" width="8" height="1.4" fill="#1a2210"/>',
-  hamecon:'<path d="M9 2 v8 q0 3-3 3 q-2.4 0-2.4-2.4" stroke="#9aa2a8" stroke-width="1.4" fill="none"/><path d="M3.6 10.6 l-1 1.6 2.2-.4" fill="#9aa2a8"/><circle cx="9" cy="2" r="1" fill="none" stroke="#9aa2a8" stroke-width=".8"/>',
   roue:'<circle cx="8" cy="8" r="6" fill="none" stroke="#8a5a30" stroke-width="1.8"/><circle cx="8" cy="8" r="1.4" fill="#5a3a20"/><path d="M8 2 v12 M2 8 h12 M3.8 3.8 l8.4 8.4 M12.2 3.8 l-8.4 8.4" stroke="#8a5a30" stroke-width=".9"/>',
   seau:'<path d="M3.4 5 h9.2 l-1.2 9 h-6.8z" fill="#8a9aa8"/><rect x="3.4" y="5" width="9.2" height="1.2" fill="#c8d4dc"/><path d="M3.6 5 q4.4-5 8.8 0" stroke="#5a6a74" stroke-width=".8" fill="none"/>',
   piece:'<circle cx="8" cy="8" r="5.6" fill="#d8a830"/><circle cx="8" cy="8" r="4.2" fill="none" stroke="#f0d070" stroke-width=".8"/><rect x="7.2" y="5.4" width="1.6" height="5.2" fill="#a87818"/>',
@@ -26041,34 +23267,10 @@ for(const k in G)ICONES[k]=icoGrille(G[k][0],G[k][1]);
   tortue:'<ellipse cx="8" cy="9" rx="5.4" ry="3.8" fill="#5a7a3a"/><path d="M5 9 h6 M8 6 v6" stroke="#3a5a2a" stroke-width=".8"/><circle cx="13.6" cy="8.4" r="1.6" fill="#8aa05a"/><rect x="3.4" y="11.6" width="1.6" height="1.6" fill="#8aa05a"/><rect x="10.6" y="11.6" width="1.6" height="1.6" fill="#8aa05a"/>'};
  const NOMS={laine:['Laine','Tondue sur tes moutons. Madeleine la reprend.'],truffe:['Truffe','Trouvée par tes cochons. Madeleine la paie très cher.'],
   tuile:['Tuile','Une tuile ronde, cuite au four.'],poutre:['Poutre','Pour bâtir solide.'],manche:['Manche d’outil','Taillé dans le bois.']};
- const poisson=(c1,c2)=>'<path d="M2 8 q5-5 10 0 q-5 5-10 0z" fill="'+c1+'"/><path d="M4 9 q4 2.4 8-1" fill="'+c2+'"/><path d="M12 8 l3-3 v6z" fill="'+c1+'"/><circle cx="4.4" cy="7.2" r=".8" fill="#1a1208"/>';
  try{Object.keys(MAIN).forEach(k=>{if(!ICONES[k])ICONES[k]=MAIN[k];});}catch(x){}
  try{Object.keys(NOMS).forEach(k=>{if(!OBJETS[k])OBJETS[k]={nom:NOMS[k][0],d:NOMS[k][1],poids:1};});}catch(x){}
- try{Object.keys(ESP_PECHE).forEach(k=>{const E=ESP_PECHE[k];if(!E)return;const c=E.col||['#6a7a8a','#d8e0e8'];
-   const ic=MAIN[k]||poisson(c[0],c[1]||c[0]);
    if(!ICONES[k])ICONES[k]=ic;if(!ICONES['lac_'+k])ICONES['lac_'+k]=ic;
    const nm=E.nom?E.nom.charAt(0).toUpperCase()+E.nom.slice(1):k;
-   if(!OBJETS[k])OBJETS[k]={nom:nm,d:'',poids:1};if(!OBJETS['lac_'+k])OBJETS['lac_'+k]={nom:nm,d:'Pêché au lac.',poids:1};});}catch(x){}
-})();
-
-function CAB_LU(){try{const v=JSON.parse(localStorage.getItem('bdl.cabanon')||'{}');
-return {bati:!!v.bati,niveau:+v.niveau||0};}catch(x){return {bati:false,niveau:0};}}
-const MOTS_CHANTIER=[
-'Le panneau dit « travaux en cours ». Le trou dit autre chose.',
-'Une brouette est posée là. Elle n’a jamais bougé. Elle ne bougera pas.',
-'Un écriteau : « reprise des travaux lundi ». La date est effacée.',
-'Tu regardes le trou. Le trou te regarde. Personne ne creuse.',
-'Le sable a fait une croûte. Des herbes poussent dedans.',
-'Deux plots orange montent la garde. C’est tout le personnel.',
-'Un chat dort dans la brouette. Lui au moins, il occupe le poste.',
-'On raconte qu’un ouvrier est venu, une fois. Il a regardé, et il est reparti.',
-'Le trou s’est agrandi tout seul, à force de pluie. C’est le seul avancement.',
-'Sur la barrière, quelqu’un a écrit « bon courage ». C’était il y a longtemps.',
-'Fin des travaux : prévue. C’est tout ce que dit le panneau.',
-'Un pigeon inspecte les lieux. Il repart sans commentaire.'];
-let CHANT_DIT=-1;
-function regarderLeChantier(){
-let i;do{i=Math.floor(Math.random()*MOTS_CHANTIER.length);}while(i===CHANT_DIT&&MOTS_CHANTIER.length>1);
 CHANT_DIT=i;
 if(!document.getElementById('cssChantB')){const st=document.createElement('style');st.id='cssChantB';
 st.textContent=`#chantB{position:fixed;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 96px);z-index:60;
@@ -26129,23 +23331,6 @@ P(px-2+i,py-9+10-h,1,h,'#d8cdb2');}
 P(px-1,py-1,pw+2,ph+1,'#3a2a18');P(px,py,pw,ph,'#7a4a28');
 for(let k=0;k<pw;k+=4){P(px+k,py,3,ph,hs2(px+k)<.5?'#7a4a28':'#6a3f22');P(px+k+3,py,1,ph,'#4e2d16');}
 P(px,py,pw,1,'#96603a');P(px+pw-6,py+Math.round(ph*0.55),2,2,'#e2c060');
-for(let i=0;i<pw;i++){const h=Math.round(Math.sqrt(Math.max(0,1-Math.pow((i-pw/2)/(pw/2),2)))*8);
-P(px+i,py-h,1,h,'#6a3f22');}
-const fen=(fx)=>{
-P(fx-1,bas+21,26,22,'#2b2f36');P(fx,bas+22,24,20,'#8fc4d4');P(fx,bas+22,24,9,'#b3dce8');
-for(let k=0;k<20;k++)P(fx+Math.round(k*0.6),bas+22+k,5,1,'rgba(255,255,255,.22)');
-P(fx+12,bas+22,1,20,'#2b2f36');P(fx,bas+32,24,1,'#2b2f36');
-[fx-9,fx+25].forEach(vx=>{P(vx,bas+20,8,25,'#2f5f8a');P(vx,bas+20,8,1,'#4a7fae');
-for(let k=1;k<8;k++)P(vx,bas+20+k*3,8,1,'rgba(20,30,48,.3)');});};
-fen(cx+30);fen(cx-56);
-if(gros)fen(cx+76);
-P(cx-1,bas+14,2,7,'#3f434a');P(cx-6,bas+20,12,9,'#3f434a');P(cx-5,bas+21,10,7,'#f6e6a8');
-P(cx-5,bas+21,10,2,'#fff6d0');
-if(gros){P(cx+BL/2-32,bas-42,12,20,'#a8563a');P(cx+BL/2-34,bas-45,16,3,'#c9b68c');}
-return {toile:c,W,H,sol,nuit:null};}
-function surLesAbordsForet(o){
-if(!(typeof FORET_SEULE!=='undefined'&&FORET_SEULE&&CARTE==='village'))return false;
-const t=o.t||o.genre;
 if(!['arbre','buisson','rocher','souche','roseaux','pin','sapin','bouleau','gravats'].includes(t))return false;
 const CL=[300,300], MARGE=18, CIME=90;
 const B=[{x:POS_GARE[0],y:POS_GARE[1],w:96,h:16,haut:86},    /* la gare */
@@ -26942,160 +24127,20 @@ let VENTE={};                 /* combien de chaque objet on met sur le comptoir 
 const MODE_COMPTOIR={nom:'Le comptoir',mot:'« Fais voir ce que tu as ramené. »',
 prix:PRIX_COMPTOIR,rpc:'vendre_au_comptoir',ap:{veste:2,cheveux:1,chapeau:0},
 vide:'<div class="cptVide">Ton inventaire est vide.<br>Traverse le gué : tout pousse sur l’autre rive.</div>'};
-const PRIX_POISSON={gardon:40,perche:90,truite:180,anguilledouce:260,carpe:380,brochet:700,silure:1600,ecrevisse:140,
-anchois:50,merou:1800,lotte:1250,sardine:45,bogue:40,girelle:55,rouget:90,mulet:90,saupe:110,seiche:130,maquereau:140,dorade:170,rascasse:280,
-loup:380,denti:520,murene:660,congre:850,poulpe:1100,saintpierre:1400,thon:2800,legende:4600,rascassedor:4600,
-sar:190,vieille:235,grondin:330,pagre:750,barracuda:1000,liche:1100,chapon:1400,baliste:2000,raie:2800,coryphene:3200,
-mola:9000,espadon:11000,requin:14000,hippocampe:23000,calamar:45000,coelacanthe:72000,
-/* les prises improbables : le serveur les paie, le téléphone doit les connaître aussi */
-chaussette:20,canard:45,savonnette:60,cabas:90,oursou:120,parapluie:140,pneu:160,boule:240,
-cadenas:280,santon:340,dentier:350,panneau:420,bouteille:480,maillot:520,chariot:640,
-telephone:900,cagole:1500,scaphandrier:4200,sirene:6800,botte:0};   /* le serveur a les mêmes */   /* le serveur a les mêmes */
-
-/* =====================================================================
-   HALLOWEEN : CINQUANTE ESPÈCES. Elles ne mordent que du 20 octobre au
-   2 novembre (le serveur décide, table halloween_poissons) et ne se
-   vendent qu'à La Marée, dans l'onglet Halloween. Ici, le téléphone
-   apprend leurs noms, leurs prix et leurs icônes.
    ===================================================================== */
-const HW_POISSONS=[{"k": "hw_citrouillard", "n": "Poisson-citrouille", "r": "commun", "f": "citrouille", "c": ["#e07a22", "#f2a040", "#3a1a08"], "p": 90, "l": "mer", "nuit": 0, "L": 7}, {"k": "hw_sardinefantome", "n": "Sardine fantôme", "r": "commun", "f": "fantome", "c": ["#dfe8f4", "#ffffff", "#5a6a8a"], "p": 70, "l": "mer", "nuit": 0, "L": 7}, {"k": "hw_anchoisos", "n": "Anchois squelette", "r": "commun", "f": "squelette", "c": ["#f0ead8", "#c8c0a8", "#2a2a2a"], "p": 60, "l": "mer", "nuit": 0, "L": 7}, {"k": "hw_gobiesorciere", "n": "Gobie sorcière", "r": "commun", "f": "sorciere", "c": ["#7a4ab8", "#b88ae0", "#2a1a3a"], "p": 110, "l": "mer", "nuit": 0, "L": 7}, {"k": "hw_boguebrume", "n": "Bogue des brumes", "r": "commun", "f": "fantome", "c": ["#b8c4cc", "#e8eef4", "#4a5a6a"], "p": 80, "l": "mer", "nuit": 0, "L": 7}, {"k": "hw_merlanminuit", "n": "Merlan de minuit", "r": "commun", "f": "poisson", "c": ["#1e2a5a", "#3a5aa8", "#ffd860"], "p": 130, "l": "mer", "nuit": 0, "L": 10}, {"k": "hw_girelletrouille", "n": "Girelle-trouille", "r": "commun", "f": "raye", "c": ["#e07a22", "#1e1a26", "#ffd860"], "p": 120, "l": "mer", "nuit": 0, "L": 7}, {"k": "hw_rougetvampire", "n": "Rouget vampire", "r": "commun", "f": "vampire", "c": ["#8a1a2a", "#d8404a", "#f4f4f4"], "p": 150, "l": "mer", "nuit": 0, "L": 7}, {"k": "hw_mulethante", "n": "Mulet hanté", "r": "commun", "f": "fantome", "c": ["#c8d4c0", "#eef6e8", "#3a4a3a"], "p": 140, "l": "mer", "nuit": 0, "L": 12}, {"k": "hw_crabecrane", "n": "Crabe tête-de-mort", "r": "commun", "f": "crabe", "c": ["#2a2a32", "#f0ead8", "#e07a22"], "p": 170, "l": "mer", "nuit": 0, "L": 7}, {"k": "hw_crevettezombie", "n": "Crevette zombie", "r": "commun", "f": "crevette", "c": ["#7ab85a", "#b8e08a", "#3a5a2a"], "p": 100, "l": "mer", "nuit": 0, "L": 7}, {"k": "hw_meduselanterne", "n": "Méduse lanterne", "r": "commun", "f": "meduse", "c": ["#ffb040", "#ffe08a", "#c86a1a"], "p": 160, "l": "mer", "nuit": 0, "L": 7}, {"k": "hw_poulpinet", "n": "Poulpinet sorcier", "r": "commun", "f": "pieuvre", "c": ["#7a3ab8", "#b88ae0", "#ffd860"], "p": 190, "l": "mer", "nuit": 0, "L": 7}, {"k": "hw_seichebrume", "n": "Seiche des brumes", "r": "commun", "f": "pieuvre", "c": ["#9aa4ae", "#d8e0e8", "#3a4048"], "p": 130, "l": "mer", "nuit": 0, "L": 7}, {"k": "hw_arete", "n": "Arête qui nage", "r": "commun", "f": "squelette", "c": ["#e8e0c8", "#c0b898", "#1a1a1a"], "p": 75, "l": "mer", "nuit": 0, "L": 7}, {"k": "hw_loupgarou", "n": "Loup-garou de mer", "r": "moyen", "f": "loupgarou", "c": ["#6a5a4a", "#a8987a", "#ffd860"], "p": 520, "l": "mer", "nuit": 1, "L": 18}, {"k": "hw_doradedesmorts", "n": "Dorade des morts", "r": "moyen", "f": "poisson", "c": ["#1e1a26", "#c9a24a", "#ffd860"], "p": 480, "l": "mer", "nuit": 0, "L": 11}, {"k": "hw_congrecercueil", "n": "Congre cercueil", "r": "moyen", "f": "anguille", "c": ["#3a2a1e", "#6a4a30", "#c9a24a"], "p": 820, "l": "mer", "nuit": 1, "L": 22}, {"k": "hw_murenemaudite", "n": "Murène maudite", "r": "moyen", "f": "anguille", "c": ["#3a6a2a", "#8ac060", "#ffd860"], "p": 700, "l": "mer", "nuit": 1, "L": 22}, {"k": "hw_rascassedemon", "n": "Rascasse démon", "r": "moyen", "f": "demon", "c": ["#b82a1a", "#f06a3a", "#1a1a1a"], "p": 560, "l": "mer", "nuit": 0, "L": 8}, {"k": "hw_saintpierreos", "n": "Saint-Pierre d'os", "r": "moyen", "f": "squelette", "c": ["#f4ecd8", "#c8bc98", "#7a3ab8"], "p": 900, "l": "mer", "nuit": 0, "L": 14}, {"k": "hw_raiechauvesouris", "n": "Raie chauve-souris", "r": "moyen", "f": "raie", "c": ["#1e1a26", "#4a3a5a", "#ffd860"], "p": 860, "l": "mer", "nuit": 1, "L": 22}, {"k": "hw_chaponcitrouille", "n": "Chapon-citrouille", "r": "moyen", "f": "citrouille", "c": ["#d8601a", "#f0902a", "#1a3a0a"], "p": 640, "l": "mer", "nuit": 0, "L": 13}, {"k": "hw_maquereaumomie", "n": "Maquereau momie", "r": "moyen", "f": "momie", "c": ["#e8dcb8", "#c8b890", "#3a2a1a"], "p": 380, "l": "mer", "nuit": 0, "L": 10}, {"k": "hw_seicheencre", "n": "Seiche d'encre noire", "r": "moyen", "f": "pieuvre", "c": ["#141018", "#3a3048", "#8affb0"], "p": 420, "l": "mer", "nuit": 1, "L": 8}, {"k": "hw_lottelanterne", "n": "Lotte à lanterne", "r": "moyen", "f": "lanterne", "c": ["#5a4a3a", "#8a7a5a", "#9aff6a"], "p": 760, "l": "mer", "nuit": 1, "L": 15}, {"k": "hw_grondingrincant", "n": "Grondin grinçant", "r": "moyen", "f": "demon", "c": ["#a83a2a", "#e8a080", "#f4f4f4"], "p": 360, "l": "mer", "nuit": 0, "L": 11}, {"k": "hw_brochetvampire", "n": "Brochet vampire", "r": "moyen", "f": "vampire", "c": ["#3a5a3a", "#8aa86a", "#f4f4f4"], "p": 650, "l": "lac", "nuit": 0, "L": 21}, {"k": "hw_carpecrane", "n": "Carpe-crâne", "r": "moyen", "f": "squelette", "c": ["#e8d8a8", "#b8a878", "#2a1a0a"], "p": 520, "l": "lac", "nuit": 0, "L": 16}, {"k": "hw_anguillespectre", "n": "Anguille spectrale", "r": "moyen", "f": "anguille", "c": ["#c8e8f0", "#ffffff", "#4a7a8a"], "p": 600, "l": "lac", "nuit": 1, "L": 22}, {"k": "hw_perchesorciere", "n": "Perche sorcière", "r": "moyen", "f": "sorciere", "c": ["#4a7a3a", "#a8c860", "#2a1a3a"], "p": 300, "l": "lac", "nuit": 0, "L": 7}, {"k": "hw_ecrevissezombie", "n": "Écrevisse zombie", "r": "moyen", "f": "crabe", "c": ["#5a8a3a", "#a8d06a", "#c83a2a"], "p": 280, "l": "lac", "nuit": 0, "L": 7}, {"k": "hw_requinfantome", "n": "Requin fantôme", "r": "rare", "f": "requin", "c": ["#d8e4f0", "#ffffff", "#4a5a7a"], "p": 4200, "l": "mer", "nuit": 1, "L": 22}, {"k": "hw_espadonfaucheur", "n": "Espadon faucheur", "r": "rare", "f": "espadon", "c": ["#2a2a3a", "#6a6a8a", "#c8c8d8"], "p": 4800, "l": "mer", "nuit": 0, "L": 22}, {"k": "hw_poissonchaudron", "n": "Poisson-chaudron", "r": "rare", "f": "chaudronpoisson", "c": ["#2a2a2a", "#5adf4a", "#ffd860"], "p": 2600, "l": "mer", "nuit": 0, "L": 15}, {"k": "hw_krakenbebe", "n": "Bébé kraken", "r": "rare", "f": "pieuvre", "c": ["#5a1a4a", "#a83a8a", "#ffd860"], "p": 3800, "l": "mer", "nuit": 1, "L": 22}, {"k": "hw_silurenecro", "n": "Silure nécromancien", "r": "rare", "f": "sorciere", "c": ["#2a2a2a", "#5a5a6a", "#9aff6a"], "p": 3400, "l": "lac", "nuit": 1, "L": 22}, {"k": "hw_hippocampeos", "n": "Hippocampe d'os", "r": "rare", "f": "hippocampe", "c": ["#f0ead8", "#c8c0a8", "#e07a22"], "p": 5200, "l": "mer", "nuit": 0, "L": 7}, {"k": "hw_thonspectral", "n": "Thon spectral", "r": "rare", "f": "fantome", "c": ["#a8c8e8", "#e8f4ff", "#2a4a7a"], "p": 4400, "l": "mer", "nuit": 0, "L": 22}, {"k": "hw_baudroiecitrouille", "n": "Baudroie-citrouille", "r": "rare", "f": "lanterne", "c": ["#c8601a", "#e8903a", "#ffd860"], "p": 3000, "l": "mer", "nuit": 1, "L": 18}, {"k": "hw_crane", "n": "Crâne de pirate", "r": "objet", "f": "crane", "c": ["#f0ead8", "#c8c0a8", "#1a1a1a"], "p": 900, "l": "mer", "nuit": 0, "L": 7}, {"k": "hw_balai", "n": "Balai de sorcière", "r": "objet", "f": "balai", "c": ["#7a4a2a", "#d8b050", "#3a2414"], "p": 650, "l": "mer", "nuit": 0, "L": 22}, {"k": "hw_chaudron", "n": "Petit chaudron", "r": "objet", "f": "chaudron", "c": ["#2a2a2a", "#5adf4a", "#4a4a4a"], "p": 1200, "l": "mer", "nuit": 0, "L": 8}, {"k": "hw_bougie", "n": "Bougie qui ne s'éteint pas", "r": "objet", "f": "bougie", "c": ["#f4ecd8", "#ffb040", "#c8b890"], "p": 480, "l": "mer", "nuit": 0, "L": 7}, {"k": "hw_chapeau", "n": "Chapeau pointu trempé", "r": "objet", "f": "chapeau", "c": ["#3a1f52", "#e07a22", "#241434"], "p": 560, "l": "mer", "nuit": 0, "L": 10}, {"k": "hw_coffre", "n": "Coffre maudit", "r": "objet", "f": "coffre", "c": ["#6a4a2a", "#c9a24a", "#2a1a0a"], "p": 2400, "l": "mer", "nuit": 1, "L": 16}, {"k": "hw_lanterne", "n": "Lanterne du capitaine", "r": "objet", "f": "lanterneobj", "c": ["#3a3a40", "#ffd860", "#c9a24a"], "p": 1500, "l": "mer", "nuit": 1, "L": 10}, {"k": "hw_poupee", "n": "Poupée vaudou", "r": "objet", "f": "poupee", "c": ["#c8a878", "#d8323a", "#3a2a1a"], "p": 1100, "l": "mer", "nuit": 1, "L": 7}, {"k": "hw_leviathan", "n": "Léviathan des Ténèbres", "r": "legendaire", "f": "leviathan", "c": ["#141024", "#5a2a8a", "#ff4a3a"], "p": 18000, "l": "mer", "nuit": 1, "L": 22}, {"k": "hw_capitainefantome", "n": "Le Capitaine Fantôme", "r": "legendaire", "f": "capitaine", "c": ["#d8f0ff", "#ffffff", "#1a2a4a"], "p": 20000, "l": "mer", "nuit": 1, "L": 22}];
 function hwIcone(f,c){try{const cv=document.createElement('canvas');cv.width=32;cv.height=32;const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x*2,y*2,w*2,h*2);};const [a,b,k]=c;
  const corps=(x0,y0,l,h,col,ventre)=>{for(let x=0;x<l;x++){const t=x/(l-1),hh=Math.max(1,Math.round(h*Math.sin(Math.PI*(0.15+0.75*t))));R(x0+x,y0-Math.floor(hh/2),1,hh,col);if(ventre&&hh>2)R(x0+x,y0+Math.ceil(hh/2)-1,1,1,ventre);}};
  const queue=(x,y,col)=>{R(x,y-2,1,5,col);R(x-1,y-3,1,2,col);R(x-1,y+2,1,2,col);};
  const oeil=(x,y,col)=>{R(x,y,1,1,col||'#101010');};
- const poisson=(col,ventre,ec)=>{corps(3,8,11,7,col,ventre);queue(2,8,col);R(7,4,3,1,col);oeil(11,7,ec);};
- switch(f){
- case 'poisson':poisson(a,b,k);break;
- case 'raye':poisson(a,null,'#101010');for(const x of [5,8,11])R(x,5,1,6,b);oeil(11,7);break;
- case 'vampire':poisson(a,b,'#ffd860');R(12,9,1,2,k);R(10,9,1,2,k);R(6,3,4,1,'#1a1a1a');break;
- case 'sorciere':poisson(a,b,'#ffd860');R(7,4,5,1,k);R(8,2,3,2,k);R(9,0,1,2,k);R(6,4,7,1,k);break;
- case 'loupgarou':poisson(a,b,'#ffd860');R(9,2,1,3,a);R(12,2,1,3,a);R(12,9,1,1,'#fff');R(10,9,1,1,'#fff');break;
- case 'demon':poisson(a,b,'#ffd860');R(10,2,1,2,k);R(13,2,1,2,k);R(9,3,1,1,k);R(14,3,1,1,k);break;
- case 'momie':poisson(a,b,'#e03030');for(const x of [4,6,8,10,12])R(x,4+(x%4?1:0),1,8,k);break;
- case 'citrouille':for(const [x,w,col] of [[3,3,a],[5,3,b],[8,3,a],[10,3,b]])R(x,4,w,9,col);R(4,3,8,1,a);R(4,13,8,1,a);R(7,1,2,3,'#3a6a1a');R(5,6,2,2,k);R(9,6,2,2,k);R(5,10,6,1,k);R(6,11,1,1,k);R(9,11,1,1,k);queue(2,8,a);break;
- case 'fantome':{g.globalAlpha=.85;corps(3,8,11,7,a,b);queue(2,8,a);g.globalAlpha=1;R(10,6,2,2,k);R(12,6,1,2,k);R(11,10,2,1,k);break;}
- case 'squelette':R(11,5,4,5,a);oeil(12,7);oeil(13,7);for(let x=3;x<11;x++)R(x,8,1,1,a);for(const x of [4,6,8,10]){R(x,5,1,3,b);R(x,9,1,3,b);}queue(2,8,a);break;
- case 'crabe':R(4,7,8,5,a);R(5,6,6,1,a);R(5,8,1,1,b);R(7,8,2,2,b);R(10,8,1,1,b);R(2,5,2,2,a);R(12,5,2,2,a);R(1,4,1,1,a);R(14,4,1,1,a);for(const x of [3,5,10,12])R(x,12,1,2,a);R(6,5,1,1,k);R(9,5,1,1,k);break;
- case 'crevette':for(let i=0;i<9;i++)R(3+i,6+Math.round(Math.sin(i/3)*2),2,3,i%2?a:b);R(12,4,1,3,k);R(13,3,2,1,k);oeil(11,6);R(2,9,2,3,a);break;
- case 'meduse':R(4,3,8,6,a);R(5,2,6,1,a);R(5,4,2,2,b);for(const x of [4,6,8,10,11])R(x,9,1,3+(x%3),k);oeil(6,6);oeil(9,6);break;
- case 'pieuvre':R(4,2,8,7,a);R(5,1,6,1,a);R(5,3,2,2,b);oeil(6,6,k==='#ffd860'?'#ffd860':'#101010');oeil(9,6,k==='#ffd860'?'#ffd860':'#101010');for(let i=0;i<5;i++){R(3+i*2,9,1,3+(i%2),a);R(4+i*2,12-(i%2),1,2,a);}break;
- case 'anguille':for(let i=0;i<14;i++)R(1+i,7+Math.round(Math.sin(i/2)*2),1,3,a);for(let i=0;i<14;i+=2)R(1+i,8+Math.round(Math.sin(i/2)*2),1,1,b);oeil(14,7+Math.round(Math.sin(6.5)*2),k);break;
- case 'raie':R(3,6,10,4,a);R(5,4,6,8,a);R(1,7,2,2,a);R(13,7,2,2,a);R(7,12,1,3,a);R(6,7,1,1,k);R(9,7,1,1,k);R(5,10,6,1,b);break;
- case 'lanterne':poisson(a,b,'#101010');R(12,3,1,4,a);R(13,2,2,2,k);g.fillStyle=k;g.globalAlpha=.35;g.beginPath();g.arc(28,6,6,0,7);g.fill();g.globalAlpha=1;R(11,9,3,1,'#f4f4f4');break;
- case 'requin':{g.globalAlpha=.85;corps(2,9,12,6,a,b);queue(1,9,a);R(7,4,2,3,a);R(8,3,1,1,a);g.globalAlpha=1;oeil(11,8,k);R(11,11,3,1,'#fff');break;}
- case 'espadon':corps(2,8,9,5,a,b);queue(1,8,a);R(11,8,5,1,k);R(6,4,2,2,a);oeil(9,7,'#e03030');R(13,5,2,1,k);R(14,4,1,1,k);break;
- case 'chaudronpoisson':R(4,7,9,7,a);R(3,6,11,2,'#4a4a4a');R(4,6,9,1,b);R(6,4,2,2,b);R(9,3,2,2,b);R(5,14,2,1,a);R(10,14,2,1,a);R(1,8,3,3,a);R(13,9,2,1,k);oeil(11,9,k);break;
- case 'hippocampe':R(7,2,4,3,a);R(11,3,2,1,a);oeil(9,3);for(let i=0;i<8;i++)R(6+Math.round(Math.sin(i/2)),5+i,3,1,i%2?b:a);R(8,13,2,1,a);R(9,14,1,1,a);R(5,6,1,4,k);break;
- case 'crane':R(4,3,8,7,a);R(5,2,6,1,a);R(5,10,6,2,a);R(5,5,2,3,'#1a1a1a');R(9,5,2,3,'#1a1a1a');R(7,8,2,1,'#1a1a1a');for(const x of [5,7,9])R(x,11,1,1,'#3a3a3a');R(3,12,10,1,b);break;
- case 'balai':for(let i=0;i<10;i++)R(2+i,12-i,1,1,a);for(let i=0;i<4;i++)R(10+i,1,1,5,b),R(11+i,2+i,1,2,b);R(11,5,4,1,k);break;
- case 'chaudron':R(3,7,10,6,a);R(2,6,12,2,k);R(3,6,10,1,b);R(5,4,1,2,b);R(9,3,1,2,b);R(4,13,2,1,a);R(10,13,2,1,a);break;
- case 'bougie':R(6,6,4,8,a);R(5,13,6,1,k);R(7,3,2,3,b);R(7,2,1,1,'#fff6a0');R(6,8,1,3,k);break;
- case 'chapeau':R(1,11,14,2,a);R(4,9,8,2,a);R(5,6,6,3,a);R(6,4,4,2,a);R(8,2,3,2,a);R(10,1,2,1,a);R(4,9,8,1,b);R(2,12,12,1,k);break;
- case 'coffre':R(2,6,12,8,a);R(2,4,12,3,'#8a6a3a');R(2,6,12,1,b);R(2,10,12,1,b);R(7,8,2,3,b);R(7,9,2,1,k);R(3,4,1,10,b);R(12,4,1,10,b);break;
- case 'lanterneobj':R(7,1,2,2,a);R(5,3,6,1,a);R(5,4,6,8,a);R(6,5,4,6,b);R(5,12,6,2,a);R(7,6,2,4,'#fff6c0');R(4,3,1,1,k);break;
- case 'poupee':R(5,2,6,5,a);R(4,7,8,7,a);R(6,4,1,1,'#1a1a1a');R(9,4,1,1,'#1a1a1a');R(6,5,4,1,'#1a1a1a');R(3,8,1,4,a);R(12,8,1,4,a);R(7,8,2,2,b);R(5,11,1,1,k);R(10,9,1,1,k);R(11,6,3,1,'#c8c8c8');R(3,11,3,1,'#c8c8c8');break;
- case 'leviathan':corps(1,8,14,9,a,b);R(4,3,1,2,b);R(7,2,1,2,b);R(10,3,1,2,b);oeil(12,6,k);R(12,10,3,1,'#f4f4f4');R(13,11,1,1,'#f4f4f4');queue(1,8,a);break;
- case 'capitaine':{g.globalAlpha=.85;R(4,5,8,8,a);R(5,4,6,1,a);for(let i=0;i<4;i++)R(4+i*2,13,1,2,a);g.globalAlpha=1;R(3,2,10,2,k);R(5,0,6,2,k);R(7,1,2,1,'#c9a24a');R(6,6,1,2,'#101820');R(9,6,1,2,'#101820');R(7,9,2,1,'#101820');break;}
- default:poisson(a,b,k);}
  return '<image href="'+cv.toDataURL()+'" x="0" y="0" width="16" height="16" style="image-rendering:pixelated"/>';}catch(x){return '';}}
 const HW_RARETE={commun:'Commun',moyen:'Peu commun',rare:'Rare',objet:'Objet maudit',legendaire:'LÉGENDAIRE'};
-HW_POISSONS.forEach(h=>{PRIX_POISSON[h.k]=h.p;
- if(!OBJETS[h.k])OBJETS[h.k]={nom:h.n,d:'Halloween 2026 · '+HW_RARETE[h.r]+(h.l==='lac'?' · pêché au lac':'')+'. Se vend seulement à La Marée.',poids:1};
- try{if(typeof ESP_PECHE!=='undefined'&&!ESP_PECHE[h.k])ESP_PECHE[h.k]={nom:h.n.charAt(0).toLowerCase()+h.n.slice(1),col:[h.c[0],h.c[1]],L:h.L,touches:({commun:2,moyen:4,rare:6,objet:3,legendaire:9})[h.r],vit:({commun:1.3,moyen:1,rare:0.8,objet:0.7,legendaire:0.5})[h.r]};}catch(x){}
- try{if(typeof F_NOMS!=='undefined')F_NOMS[h.k]=h.n;}catch(x){}});
-let HW_ICONES_FAITES=false;
-function hwIconesPoissons(){if(HW_ICONES_FAITES)return;HW_ICONES_FAITES=true;HW_POISSONS.forEach(h=>{if(!ICONES[h.k])ICONES[h.k]=hwIcone(h.f,h.c);});}
-try{hwIconesPoissons();}catch(x){HW_ICONES_FAITES=false;}
 
-const MODE_POISSON={nom:'La poissonnerie',mot:'« Montre-moi ta pêche, petit. »',
-prix:PRIX_POISSON,rpc:'vendre_poisson',ap:{veste:0,cheveux:3,chapeau:1},
-vide:'<div class="cptVide">Pas un poisson dans ton inventaire.<br>Va lancer ta ligne au bout des pontons.</div>'};
-/* ================= LES PRISES DU LAC =================
-   Le serveur les connaît (table lac_especes) et les met dans le sac ; le
-   téléphone, lui, ignorait leurs noms et leurs prix. Elles entraient donc
-   dans le sac sans jamais s'afficher ni pouvoir se vendre. On les lit au
-   démarrage : une espèce ajoutée en base arrive toute seule dans le jeu. */
-let LAC_CHARGE=false;
-async function chargerLesEspecesDuLac(){
-if(LAC_CHARGE)return true;
-try{
-const r=await fetch(URL_SB+'/rest/v1/lac_especes?select=cle,nom,prix',{headers:sbEntetes});
-if(!r.ok)return false;
-const l=await r.json();
-(l||[]).forEach(x=>{
-if(!x||!x.cle)return;
-if(!OBJETS[x.cle])OBJETS[x.cle]={nom:x.nom||x.cle,d:'Pris au lac, sur l\u2019autre rive.',poids:1};
-if(!PRIX_POISSON[x.cle])PRIX_POISSON[x.cle]=(x.prix||0)*100;
-if(!F_NOMS[x.cle])F_NOMS[x.cle]=x.nom||x.cle;
-});
-graverLesIconesDuLac();
-LAC_CHARGE=true;return true;
-}catch(x){return false;}
-}
-chargerLesEspecesDuLac();
-/* ON RÉESSAIE. Le chargement se faisait une seule fois au démarrage : s'il
-   ratait — connexion lente, réseau coupé — les prises du lac restaient sans
-   nom et invendables jusqu'au rechargement de la page. */
-setTimeout(()=>{if(!LAC_CHARGE&&!document.hidden)chargerLesEspecesDuLac();},8000);
-setTimeout(()=>{if(!LAC_CHARGE&&!document.hidden)chargerLesEspecesDuLac();},30000);
-/* L'ICÔNE DES PRISES DU LAC : elles ne sont pas dans FORMES_POISSON, elles ont
-   leur propre dessin. On le grave une fois sur une toile, et on le pose dans la
-   liste comme une image, exactement comme pour les poissons de mer. */
-function iconeDuLac(cle){
-try{
-if(typeof LAC_P==='undefined'||!LAC_P[cle])return '';
-const c=document.createElement('canvas');c.width=32;c.height=32;
-const g=c.getContext('2d');g.imageSmoothingEnabled=false;
-g.save();g.translate(16,16);g.scale(0.52,0.52);
-lacDessiner(g,cle,0,0,1);
-g.restore();
-return '<image href="'+c.toDataURL()+'" x="0" y="0" width="16" height="16" style="image-rendering:pixelated"/>';
-}catch(x){return '';}
-}
-function graverLesIconesDuLac(){
-try{Object.keys(LAC_P||{}).forEach(k=>{if(!ICONES[k]){const i=iconeDuLac(k);if(i)ICONES[k]=i;}});}catch(x){}
-}
-
-
-/* =====================================================================
-   LA MARÉE — la poissonnerie du Vieux-Port, à la place de Chez Fonfon.
-   C'est désormais le seul endroit où l'on vend sa pêche. L'étal de glace :
-   une carte par espèce, − / + / Tout, le prix du jour et sa tendance, le
-   ticket en bas sur téléphone et dans une colonne à droite sur tablette.
-   ===================================================================== */
-const MAR_LAC=['gardon','perche','truite','anguilledouce','carpe','brochet','silure','ecrevisse'];
-const MAR_TRESORS=['chaussette','canard','savonnette','cabas','oursou','parapluie','pneu','boule','cadenas','santon','dentier','panneau','bouteille','maillot','chariot','telephone','cagole','scaphandrier','sirene','botte'];
-let MAR_ONG='mer', MAR_SEL={}, MAR_EN_COURS=false;
-/* ================= LE TARIF VIENT DU SERVEUR =================
-   PRIX_POISSON était une liste écrite à la main : chaque espèce ajoutée
-   en base et oubliée ici valait 0 € — elle ne s'affichait pas à La Marée
-   et ne se vendait pas. Le téléphone demande maintenant le prix de ce
-   qu'il a dans le sac et ne connaît pas. Une espèce ajoutée en base
-   arrive toute seule dans la boutique. */
-const PRIX_DEMANDES=new Set();
-async function chargerLesPrixManquants(){try{
-  const manquants=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&!PRIX_POISSON[k]&&!PRIX_DEMANDES.has(k));
-  if(!manquants.length)return false;
-  manquants.forEach(k=>PRIX_DEMANDES.add(k));
-  const d=await appelRPC('prix_des_prises',{p_types:manquants});
-  if(!d||d.erreur||typeof d!=='object')return false;
-  let n=0;for(const k in d){const p=+d[k];if(p>0&&!PRIX_POISSON[k]){PRIX_POISSON[k]=p;n++;}}
-  return n>0;
-}catch(x){return false;}}
-const marRayon=(k)=>k.startsWith('hw_')?'halloween':MAR_TRESORS.includes(k)?'tresors':((MAR_LAC.includes(k)||(typeof LAC_P!=='undefined'&&LAC_P&&LAC_P[k]))?'lac':'mer');
-const marPrix=(k)=>{const p=prixDuJour(k,PRIX_POISSON[k]||0);return glaceA('fraise')?Math.floor(p*1.05):p;};   /* la fraise : +5 %, comme au serveur */
-const marTend=(k)=>{const f=COURS[k]&&COURS[k].f;if(!f)return ['eq','='];const p=Math.round((f-1)*100);if(p>=4)return ['up','▲ '+p+' %'];if(p<=-4)return ['dn','▼ '+(-p)+' %'];return ['eq','='];};
-/* ================= LE GLACIER DU PORT =================
-   L'ancienne Criée. On compose un cornet de une à trois boules ; chaque
-   parfum donne un effet pendant dix minutes. Le prix et l'effet se
-   décident au serveur (glacier_acheter, glace_a) : ici on montre, on
-   demande, et l'on applique ce qui se voit côté joueur (la marche, la
    touche plus rapide, la place du sac). */
 const GL_P=[
  {k:'vanille',n:'Vanille',c:'#f4e8c8',e:'⚡ Marche +15 %'},
- {k:'chocolat',n:'Chocolat',c:'#7a4a2a',e:'🎣 Poissons rares +'},
- {k:'fraise',n:'Fraise',c:'#f48aa8',e:'💰 La Marée +5 %'},
+ {k:'chocolat',n:'Chocolat',c:'#7a4a2a',e:'🎣 Bonus rare +'},
+ {k:'fraise',n:'Fraise',c:'#f48aa8',e:'💰 Vente +5 %'},
  {k:'pistache',n:'Pistache',c:'#a8d890',e:'⏱ Touche plus vite'},
  {k:'citron',n:'Citron',c:'#fff07a',e:'🎒 Sac +5 places'},
  {k:'citrouille',n:'Citrouille',c:'#ff9a3a',e:'🎃 Halloween +15 %',hw:true}];
@@ -27108,7 +24153,7 @@ setTimeout(glLire,4000);
 /* LA PASTILLE DE LA GLACE, sous le bandeau du haut : on voit ce qui agit
    et ce qu'il reste. Sans elle, un effet qui marche ne se sent pas. */
 (function(){const st=document.createElement('style');st.textContent='#hGlace{position:fixed;left:10px;top:calc(env(safe-area-inset-top,0px) + 80px);z-index:4;display:flex;align-items:center;gap:6px;background:rgba(255,246,249,.95);color:#4a2a36;border:1.5px solid #f48aa8;border-radius:14px;padding:3px 10px 3px 6px;font:800 12px \'Baloo 2\',system-ui,sans-serif;box-shadow:0 3px 10px rgba(0,0,0,.25);pointer-events:none}#hGlace[hidden]{display:none}#hGlace i{font-style:normal;font-size:16px}#hGlace u{text-decoration:none;color:#c8406a}';document.head.appendChild(st);})();
-const GL_ICO={vanille:'⚡',chocolat:'🎣',fraise:'💰',pistache:'⏱',citron:'🎒',citrouille:'🎃'};
+const GL_ICO={vanille:'⚡',chocolat:'🍫',fraise:'💰',pistache:'⏱',citron:'🎒',citrouille:'🎃'};
 setInterval(()=>{const h=document.getElementById('hGlace');if(!h)return;const r=glReste();
  if(!GLACE||r<=0){if(!h.hidden){h.hidden=true;try{recalerLeSac(true);majHaut();}catch(x){}}return;}
  const m=Math.floor(r/60000),sc=Math.floor(r%60000/1000);
@@ -27151,7 +24196,7 @@ function glVendeuse(cv){const g=cv.getContext('2d');cv.width=44;cv.height=50;con
  R(8,25,28,22,'#ffb8d0');R(8,25,28,3,'#fff');R(12,30,20,17,'#fff');R(4,27,6,14,'#ffb8d0');R(34,27,6,14,'#ffb8d0');R(3,40,7,4,'#f0c8a0');R(34,40,7,4,'#f0c8a0');}
 /* ======================= LA RADE =======================
    Ton bateau (palier 19) ouvre la carte de la rade : quatre coins de
-   pêche, chacun son gasoil et ses espèces. La pêche au large s'ouvre
+   pêche, chacun son gasoil et ses espèces. Le large s'ouvre
    au palier 20 ; avant, la carte se visite mais on ne part pas. */
 const CSS_RADE=`
 #rade{position:absolute;inset:0;display:flex;flex-direction:column;background:#081822;color:#eaf3ee;font-family:Georgia,serif;overflow:hidden}
@@ -27258,9 +24303,9 @@ function radePeindre(){
      le départ de toute façon, l'écran n'a pas à rester bloqué pour ça. */
   const E=RADE_ETAT||{};
   const bat=(E.bateau===undefined)?!!nivInv('deblocage:bateau'):!!E.bateau;
-  const lar=(E.large===undefined)?!!nivInv('deblocage:peche_large'):!!E.large;
+  const lar=(E.large===undefined)?false:!!E.large;
   const sous_=typeof E.euros==='number'?E.euros:(e.euros||0);
-  const sous=!bat?'Il t’attend au niveau 19.':(lar?'Choisis ton coin, et mets le cap.':'La pêche au large ouvre au niveau 20.');
+  const sous=!bat?'Il t’attend au niveau 19.':(lar?'Choisis ton coin, et mets le cap.':'Le large ouvre au niveau 20.');
   const C=COINS_RADE.find(c=>c[0]===RADE_SEL)||COINS_RADE[0];
   const cher=sous_<C[2];
   f.innerHTML='<div id="rade" lang="fr"><div class="rhd"><div class="rti">TON BATEAU · LA RADE</div>'+
@@ -27557,114 +24602,6 @@ const CSS_MAR=`#mar{position:fixed;inset:0;z-index:5;display:flex;flex-direction
  #mar .cote h4{margin:0 0 8px;color:#ffd970;font-size:15px;letter-spacing:1px}#mar .cote .row{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:3px 0;border-bottom:1px dashed rgba(255,255,255,.15)}
  #mar .cote .vendre,#mar .cote .tousv{width:100%;margin-top:10px}#mar .cote .tousv{height:44px}
  #mar .grille{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}}`;
-function marPoissonniere(cv){if(!cv)return;const g=cv.getContext('2d');cv.width=46;cv.height=52;g.imageSmoothingEnabled=false;const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
- R(12,6,22,4,'#3a2a20');R(11,9,24,16,'#e8c0a0');R(10,8,4,14,'#5a3a2a');R(32,8,4,14,'#5a3a2a');R(17,15,3,3,'#1a1a1a');R(27,15,3,3,'#1a1a1a');R(19,21,8,2,'#a84a3a');R(14,19,3,2,'#f0a0a0');R(30,19,3,2,'#f0a0a0');
- R(8,26,30,22,'#2a5a9a');R(12,28,22,20,'#f4f4f4');R(12,28,22,2,'#1f4f8a');R(4,28,6,14,'#2a5a9a');R(36,28,6,14,'#2a5a9a');R(3,40,7,5,'#e8c0a0');R(36,40,7,5,'#e8c0a0');R(10,6,26,3,'#1f4f8a');}
-function marMot(ks){const hausse=ks.filter(k=>marTend(k)[0]==='up').sort((a,b)=>marPrix(b)-marPrix(a))[0];
- if(hausse)return '« '+((OBJETS[hausse]&&OBJETS[hausse].nom)||hausse)+' : ça monte aujourd’hui ! Pose-moi ça sur la glace, mon petit. »';
- return ks.length?'« Montre-moi ta pêche, je te fais le prix du jour. »':'« Rien sur toi ? Va lancer ta ligne au bout des pontons. »';}
-function ouvrirLaMaree(){try{
- if(typeof LAC_CHARGE!=='undefined'&&!LAC_CHARGE&&typeof chargerLesEspecesDuLac==='function')chargerLesEspecesDuLac().then(ok=>{if(ok&&$('mar'))marMaj();});
- MAR_SEL={};if(!$('cssMar')){const s=document.createElement('style');s.id='cssMar';s.textContent=CSS_MAR;document.head.appendChild(s);}
- $('page2Fond').className='';$('page2').classList.add('on');
- $('page2Fond').innerHTML='<div id="mar" lang="fr"><div class="tete"><div class="l1"><div class="ens"><div class="plaque">LA MARÉE</div><small>POISSONNERIE<br>DU VIEUX-PORT</small></div><div class="bourse" id="marArgent">—</div><button class="x" id="marFermer" aria-label="Fermer">✕</button></div>'+
- '<div class="poiss"><canvas id="marPoiss"></canvas><div class="bulle" id="marBulle">—</div></div></div><div class="store"></div>'+
- '<div class="onglets"><button data-o="mer">La mer</button><button data-o="lac">Le lac</button><button data-o="tresors">Trésors</button><button data-o="halloween" class="hw">🎃 Halloween</button></div>'+
- '<div class="corps" id="marCorps"></div>'+
- '<div class="pied"><div class="ticket"><span id="marCombien">—</span><b id="marTotal">0 €</b></div><div class="btns"><button class="vendre" id="marVendre">Vendre</button><button class="tousv" id="marTout">Tout</button></div></div>'+
- '<div class="vendu" id="marVendu">VENDU</div></div>';
- marPoissonniere($('marPoiss'));
- $('marFermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
- $('marVendre').onclick=()=>marVendre(false);$('marTout').onclick=()=>marVendre(true);
- $('page2Fond').querySelectorAll('.onglets button').forEach(b=>b.onclick=()=>{MAR_ONG=b.dataset.o;MAR_SEL={};vibrer(12);marMaj();});
- marMaj();
- /* on demande à l'ouverture, on redessine quand ça revient */
- chargerLesPrixManquants().then(ok=>{if(ok&&$('marCorps')){try{completerLesIcones();}catch(x){}marMaj();}});
-}catch(x){try{$('page2').classList.remove('on');}catch(y){}try{motOuverture('La Marée a eu un souci : '+(x&&x.message?x.message:x));}catch(y){}}}
-function marMaj(){if(!$('marCorps'))return;SAC_PEUT_BAISSER=Date.now();
- const tous=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&PRIX_POISSON[k]);
- {marMaj.lus=marMaj.lus||new Set();const neufs=tous.filter(k=>!marMaj.lus.has(k));if(neufs.length&&!marMaj.enCours){marMaj.enCours=true;neufs.forEach(k=>marMaj.lus.add(k));lireLesCours(neufs).then(()=>{marMaj.enCours=false;if($('marCorps'))marMaj();}).catch(()=>{marMaj.enCours=false;});}}
- const compte={mer:0,lac:0,tresors:0,halloween:0};tous.forEach(k=>compte[marRayon(k)]++);
- $('page2Fond').querySelectorAll('.onglets button').forEach(b=>{const o=b.dataset.o;b.classList.toggle('on',o===MAR_ONG);b.textContent=({mer:'Mer',lac:'Lac',tresors:'Trésors',halloween:'🎃 Halloween'})[o]+(compte[o]?' · '+compte[o]:'');if(o==='halloween')b.style.display=(compte.halloween||(typeof hwActif==='function'&&hwActif()))?'':'none';});
- const ks=tous.filter(k=>marRayon(k)===MAR_ONG).sort((a,b)=>marPrix(b)*e.sac[b]-marPrix(a)*e.sac[a]);
- const n=(k)=>MAR_SEL[k]||0;
- try{$('mar').classList.toggle('hwon',MAR_ONG==='halloween');hwIconesPoissons();}catch(x){}
- const html=ks.length?'<div class="glace"><div class="grille">'+ks.map(k=>{const [tc,tt]=marTend(k),s=n(k);return '<div class="carte'+(s?' sel':'')+'" data-k="'+k+'">'+(s?'<div class="badge">'+s+'</div>':'')+
-  '<div class="ic"><svg viewBox="0 0 16 16">'+(ICONES[k]||'')+'</svg></div><b>'+((OBJETS[k]&&OBJETS[k].nom)||k)+'</b><div class="prix">'+cptSou(marPrix(k))+'<span class="t '+tc+'">'+tt+'</span></div>'+
-  (k.startsWith('hw_')?'<span class="rar '+((HW_POISSONS.find(x=>x.k===k)||{}).r||'commun')+'">'+HW_RARETE[(HW_POISSONS.find(x=>x.k===k)||{}).r||'commun']+'</span>':'')+'<div class="dispo">'+e.sac[k]+' dans le sac</div><div class="pm"><button data-m="-1">−</button><button data-m="1">+</button><button class="tout" data-m="tout">Tout</button></div></div>';}).join('')+'</div></div>'
-  :'<div class="vide">'+(MAR_ONG==='mer'?'Pas un poisson de mer dans ton sac.<br>Va lancer ta ligne au bout des pontons.':MAR_ONG==='lac'?'Rien du lac dans ton sac.<br>Le lac est dans la forêt.':MAR_ONG==='halloween'?'Pas encore de prise d’Halloween.<br>Jusqu’au 2 novembre, cinquante espèces étranges mordent au port et au lac — la nuit, les plus terribles.':'Pas de trésor repêché pour l’instant.<br>Ça mord parfois des choses bizarres…')+'</div>';
- const sel=ks.filter(k=>n(k)>0), total=sel.reduce((t,k)=>t+marPrix(k)*n(k),0), nb=sel.reduce((t,k)=>t+n(k),0), toutVal=ks.reduce((t,k)=>t+marPrix(k)*e.sac[k],0);
- const cote='<div class="cote"><h4>TON TICKET</h4>'+(sel.length?sel.map(k=>'<div class="row"><span>'+n(k)+' × '+((OBJETS[k]&&OBJETS[k].nom)||k)+'</span><b>'+cptSou(marPrix(k)*n(k))+'</b></div>').join(''):'<div class="row" style="opacity:.6"><span>Touche + ou Tout sur une carte</span></div>')+
-  '<div class="row" style="border:0;margin-top:6px;font-size:18px"><span>Total</span><b style="color:#ffd970">'+cptSou(total)+'</b></div>'+
-  '<button class="vendre'+(total?'':' rien')+'" data-v="sel">'+(total?'Vendre '+nb+' pièce'+(nb>1?'s':''):'Rien de choisi')+'</button><button class="tousv" data-v="tout">Tout vendre · '+cptSou(toutVal)+'</button></div>';
- $('marCorps').innerHTML=html+cote;
- $('marCorps').querySelectorAll('.carte').forEach(el=>{const k=el.dataset.k;el.onclick=(ev)=>{const b=ev.target.closest('[data-m]');const m=b?b.dataset.m:(n(k)?'0':'tout');
-  MAR_SEL[k]=m==='tout'?e.sac[k]:m==='0'?0:Math.max(0,Math.min(e.sac[k],n(k)+(+m)));vibrer(12);marMaj();};});
- $('marCorps').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>marVendre(b.dataset.v==='tout'));
- $('marCombien').textContent=nb?(nb+' pièce'+(nb>1?'s':'')+' sur la glace'):'Touche une carte pour choisir';$('marTotal').textContent=cptSou(total);
- const v=$('marVendre');v.classList.toggle('rien',!total);v.textContent=total?('Vendre · '+cptSou(total)):'Rien de choisi';$('marTout').textContent=ks.length?'Tout':'—';
- $('marArgent').textContent='🪙 '+enEuros(e.euros||0);if(!marMaj.parle){$('marBulle').textContent=marMot(tous);}}
-function marBulle(t){const b=$('marBulle');if(!b)return;b.textContent=t;marMaj.parle=true;clearTimeout(marBulle.t);marBulle.t=setTimeout(()=>{marMaj.parle=false;},3200);}
-async function marVendre(tout){if(MAR_EN_COURS)return;try{
- const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&PRIX_POISSON[k]&&marRayon(k)===MAR_ONG);const q=(k)=>tout?e.sac[k]:(MAR_SEL[k]||0);
- if(!ks.some(k=>q(k)>0))return;MAR_EN_COURS=true;let gagne=0;
- for(const k of ks){const nb=q(k);if(!nb)continue;SAC_PEUT_BAISSER=Date.now();const d=await appelRPC('vendre_poisson',{p_joueur:e.id,p_type:k,p_nb:nb});
-  if(d&&d.erreur==='plafond'){marBulle('« Oh, doucement ! Je ne peux plus rien t’acheter aujourd’hui. »');break;}if(!d||d.erreur)continue;
-  gagne+=d.gain||0;if(typeof d.euros==='number')e.euros=d.euros;if(d.sac)adopterSac({sac:d.sac},++numAppelSac);}
- MAR_EN_COURS=false;MAR_SEL={};sauver();majHaut();majPastille();
- if(gagne){jouer('vente','moment');vibrer([30,50,30]);const s=$('marVendu');if(s){s.classList.remove('on');void s.offsetWidth;s.classList.add('on');}marBulle('« Et voilà '+cptSou(gagne)+' ! Belle pêche. »');}
- else marBulle('« La vente n’a pas pu se faire. Réessaie. »');marMaj();
-}catch(x){MAR_EN_COURS=false;marBulle('La vente a eu un souci : '+(x&&x.message?x.message:x));}}
-
-let CRI_VENTE={}, CRI_EN_COURS=false;
-let COURS={};                       /* LE MARCHÉ : les prix bougent pour tout le monde */
-async function lireLesCours(types){
-const t=[...new Set(types.filter(Boolean))];if(!t.length)return;
-try{const d=await appelRPC('cours_du_jour',{p_types:t});
-if(d&&!d.erreur)Object.assign(COURS,d);}catch(x){}
-}
-const prixDuJour=(k,defaut)=>(COURS[k]&&typeof COURS[k].prix==='number')?COURS[k].prix:defaut;
-const fleche=(k)=>{const f=COURS[k]&&COURS[k].f;if(!f)return '';
-if(f>1.06)return '<span style="color:#9fe0a0"> ▲</span>';
-if(f<0.94)return '<span style="color:#e8a090"> ▼</span>';
-return '<span style="opacity:.5"> =</span>';};
-let CRI_ETAL='poisson';                 /* LA CRIÉE A DEUX ÉTALS : la pêche, et le comptoir du port */
-const criPrix=()=>CRI_ETAL==='poisson'?PRIX_POISSON:PRIX_COMPTOIR;
-
-
-function criBulle(t){const b=$('criBulle');if(!b)return;b.textContent=t;b.classList.add('on');clearTimeout(criBulle.t);criBulle.t=setTimeout(()=>b.classList.remove('on'),2600);}
-function criMaj(){if(!$('criCorps'))return;SAC_PEUT_BAISSER=Date.now();
-const P0=criPrix()||{};
-const P=new Proxy({},{get:(_,k)=>P0[k]?prixDuJour(k,P0[k]):undefined,has:(_,k)=>!!P0[k]});
-const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&P0[k]).sort((a,b)=>P[b]*e.sac[b]-P[a]*e.sac[a]);
-{criMaj.lus=criMaj.lus||new Set();
-const neufs=ks.filter(k=>!criMaj.lus.has(k));
-if(neufs.length&&!criMaj.enCours){
-criMaj.enCours=true;neufs.forEach(k=>criMaj.lus.add(k));
-lireLesCours(neufs).then(()=>{criMaj.enCours=false;if($('criCorps'))criMaj();})
-.catch(()=>{criMaj.enCours=false;});}}
-const n=(k)=>(k in CRI_VENTE)?CRI_VENTE[k]:e.sac[k];
-$('criCorps').innerHTML=ks.length?ks.map(k=>'<div class="cri-lg '+(n(k)>0?'':'off')+'" data-k="'+k+'"><span class="cri-ic"><svg viewBox="0 0 16 16" width="34">'+(ICONES[k]||'')+'</svg></span>'+
-'<span class="cri-nm"><b>'+(OBJETS[k]?OBJETS[k].nom:k)+'</b><span class="cri-ardoise">'+cptSou(P[k])+' pièce'+fleche(k)+'</span><span class="cri-dans">· '+e.sac[k]+' dans le sac</span></span>'+
-'<span class="cri-qt"><button data-m="-1">−</button><span>'+n(k)+'</span><button data-m="1">+</button></span></div>').join('')
-:(CRI_ETAL==='poisson'?'<div class="cri-vide">Pas un poisson dans ton inventaire.<br>Va lancer ta ligne au bout des pontons.</div>'
-:'<div class="cri-vide">Rien à changer.<br>Le comptoir prend le minerai, la pierre, l’ambre et le reste.</div>');
-$('criCorps').querySelectorAll('.cri-lg').forEach(el=>{const k=el.dataset.k;el.onclick=(ev)=>{const b=ev.target.closest('[data-m]');
-if(b)CRI_VENTE[k]=Math.max(0,Math.min(e.sac[k],n(k)+(+b.dataset.m)));else CRI_VENTE[k]=n(k)>0?0:e.sac[k];vibrer(15);criMaj();};});
-const total=ks.reduce((t,k)=>t+P[k]*n(k),0), nb=ks.reduce((t,k)=>t+n(k),0);
-$('criCombien').textContent=CRI_ETAL==='poisson'?(nb+' poisson'+(nb>1?'s':'')+' sur l’étal')
-:(nb+' objet'+(nb>1?'s':'')+' sur le comptoir');$('criTotal').textContent=cptSou(total);$('criArgent').textContent=enEuros(e.euros||0);
-const v=$('criVendre');v.classList.toggle('rien',total===0);v.textContent=total?('Vendre · '+cptSou(total)):'Rien à vendre';}
-async function criVendre(){try{return await criVendreReelle();}catch(x){
-CRI_EN_COURS=false;try{criBulle('La vente a eu un souci : '+(x&&x.message?x.message:x));}catch(y){}}}
-async function criVendreReelle(){const P=criPrix();const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&P[k]);const n=(k)=>(k in CRI_VENTE)?CRI_VENTE[k]:e.sac[k];
-if(!ks.reduce((t,k)=>t+P[k]*n(k),0)||CRI_EN_COURS)return;CRI_EN_COURS=true;const v=$('criVendre');v.textContent='…';v.classList.add('rien');let gagne=0;
-for(const k of ks){const q=n(k);if(!q)continue;SAC_PEUT_BAISSER=Date.now();const d=await appelRPC(CRI_ETAL==='poisson'?'vendre_poisson':'vendre_au_comptoir',{p_joueur:e.id,p_type:k,p_nb:q});
-if(d&&d.erreur==='plafond'){criBulle('Le marchand refuse : tu lui as déjà trop vendu.');break;}if(!d||d.erreur)continue;
-gagne+=d.gain||0;if(typeof d.euros==='number')e.euros=d.euros;if(d.sac)adopterSac({sac:d.sac},++numAppelSac);}
-CRI_EN_COURS=false;CRI_VENTE={};sauver();majHaut();majPastille();
-if(gagne){jouer('vente','moment');vibrer([30,50,30]);const s=$('criVendu');if(s){s.classList.remove('on');void s.offsetWidth;s.classList.add('on');}criBulle('Et voilà '+cptSou(gagne)+(CRI_ETAL==='poisson'?' ! Belle pêche.':' ! Le compte est bon.'));}
-else criBulle('La vente n’a pas pu se faire. Réessaie.');criMaj();}
 let CPT=MODE_COMPTOIR;
 function ouvrirLeComptoir(mode){
 CPT=mode||MODE_COMPTOIR;
@@ -27748,7 +24685,7 @@ vibrer(20);cptMaj();
 const total=ks.reduce((t,k)=>t+CPT.prix[k]*combien(k),0);
 const nb=ks.reduce((t,k)=>t+combien(k),0);
 const pd=ks.reduce((t,k)=>t+combien(k)*1,0);
-$('cptCombien').textContent=CPT===MODE_POISSON?(nb+' poisson'+(nb>1?'s':'')+' sur l’étal'):(nb+' objet'+(nb>1?'s':'')+' sur le comptoir');
+$(‘cptCombien’).textContent=nb+’ objet’+(nb>1?’s’:’’)+’ sur le comptoir’;
 $('cptPoids').textContent=pd+' de charge rendue';
 $('cptTotal').textContent=cptSou(total);
 $('cptArgent').textContent=enEuros(e.euros||0);
@@ -27810,19 +24747,6 @@ venteEnCours=false;
 VENTE={};
 sauver();majHaut();majPastille();
 if(gagne){
-jouer('vente','moment');
-cptPluie(gagne);
-const sc=$('cptSceau');
-if(sc){sc.classList.remove('on');void sc.offsetWidth;sc.classList.add('on');
-setTimeout(()=>sc.classList.remove('on'),1400);}
-vibrer([30,50,30]);
-}
-cptMaj();
-}
-let venteEnCours=false;
-async function vendreAuComptoir(types){
-if(venteEnCours)return;          /* deux doigts ne vendent pas deux fois */
-venteEnCours=true;
 let gagne=0;
 for(const k of types){
 const n=(e.sac||{})[k]||0;
@@ -28471,8 +25395,8 @@ const o=$('onde');if(o)o.classList.remove('on');
 const ETAPES=window.__voileMarseille!=null?[
 [document.getElementById('vMot')?document.getElementById('vMot').textContent:'On hisse les voiles…',0.10],
 ['On retrouve ton compte',    0.28],
-['On déplie les filets',      0.46],
-['On compte la pêche du sac', 0.62],
+['On ouvre les cales',      0.46],
+['On vérifie le sac', 0.62],
 ['Le port se réveille',       0.80],
 ['Bienvenue au Vieux-Port',   1.00]
 ]:[
@@ -28490,7 +25414,7 @@ let etapeVue=-1, voileNe=Date.now();
    est prêt — elle accélère jusqu'au bout et le voile se lève sur une ferme
    déjà complète. */
 const VF={port:!!(document.getElementById('voile')&&document.getElementById('voile').classList.contains('pt')),on:!!(document.getElementById('voile')&&(document.getElementById('voile').classList.contains('fm')||document.getElementById('voile').classList.contains('pt'))),aff:4,cible:4,vite:16,t:0,pret:false};
-const VF_MOTS=VF.port?['On hisse les voiles…','On retrouve ton compte','On déplie les filets','On compte la pêche du sac','Le port se réveille','Bienvenue au Vieux-Port']:['On sème les graines…','On retrouve ton compte','On ouvre la barrière','On compte ce qu’il y a dans ton panier','On réveille la ferme','Te voilà'];
+const VF_MOTS=VF.port?['On hisse les voiles…','On retrouve ton compte','On ouvre les cales','On vérifie le sac','Le port se réveille','Bienvenue au Vieux-Port']:['On sème les graines…','On retrouve ton compte','On ouvre la barrière','On compte ce qu’il y a dans ton panier','On réveille la ferme','Te voilà'];
 function vfBoucle(now){const v=document.getElementById('voile');if(!v||v.classList.contains('parti'))return;
  const dt=Math.min(0.1,((now||0)-(VF.t||now||0))/1000);VF.t=now||0;
  if(VF.aff<VF.cible)VF.aff=Math.min(VF.cible,VF.aff+VF.vite*dt);
@@ -28869,9 +25793,6 @@ try{CANAL&&CANAL.send({type:'broadcast',event:'sortie',payload:{id:e.id}});}catc
    — puis preparerMonde() le reconstruisait une seconde fois, sans savoir
    qu'il existait déjà. La ferme payait donc deux fois ses 1 920 000
    pixels, et les rangeait deux fois en cache : le cache lu au démarrage
-   était consommé par le premier passage, et le second repartait de zéro.
-   C'est de là que venait la lenteur de ferme.html.
-   Au premier chargement il n'y a rien à regraver : preparerMonde s'en
    charge. Seule la page sortie du congélateur (persisted) a perdu ses
    toiles et doit être regravée. */
 addEventListener('pageshow',(ev)=>{
@@ -29422,30 +26343,6 @@ const px=x+Math.round(PW*((q+0.5)/3));
 const ond=Math.sin(px/16)*0.9+Math.sin(px/6)*0.3;
 const py=y+Math.round(Math.floor((Math.round(PH*((r+0.55)/2)))/5)*5+3-ond);
 acteurs.push({y:py,f:()=>{const ex=px-camX, ey=py-camY;
-g.fillStyle='#9a8158';g.fillRect(ex-2,ey-1,5,2);
-g.fillStyle='rgba(30,22,12,.38)';g.fillRect(ex-2,ey+1,5,1);
-poserPlant(g,P.cult,s,ex,ey,1);}});}
-if(s===3)acteurs.push({y:y+PH,f:()=>{const t=Date.now()/300;PX(g,x+PW-4-camX,y+3-camY+Math.sin(t)*0.5,1,1,'#fff6c0');PX(g,x+PW-4.5-camX,y+3.25-camY,2,0.5,'#fff6c0');}});}}}
-if(CARTE==='village'&&POT.charge&&!CHAMP_LIBRE){const nEp=Math.min(3,(POT.j&&POT.j.epouvantails)||0);   /* les épouvantails, au milieu de chaque rang gardé */
-/* LE SERVEUR GARDE PAR GROUPES DE HUIT (pot_recolter : p_i / 8), ce qui
-   ne tombe plus sur une rangée depuis que le potager est couché. On pose
-   donc chaque épouvantail au milieu de son groupe, pas au bout d'un rang. */
-for(let r=0;r<nEp;r++){const A=POT_XY(r*8+3), ex=A.x-POT_ALLEE/2, ey=A.y+A.PH-1;acteurs.push({y:ey,f:()=>dessinerEpouvantail(g,ex-camX,ey-camY)});}}
-return potDecorVrai(g,camX,camY,VW2,VH2,acteurs);};
-/* ================= L'ÉPOUVANTAIL, AU PIXEL PLEIN =================
-   Il était le plus flou de la ferme : cinquante-cinq pour cent de ses
-   pixels étaient des mélanges. Toutes ses pièces tombaient sur des demis
-   — un mât de 1,2 de large posé en x−0,5, un bord de chapeau de 1,2 de
-   haut posé en y−22,5, des yeux de 0,8 — et le navigateur les étalait
-   sur deux pixels en les délavant.
-   Tout est maintenant en unités entières, posé sur une base arrondie.
-   Le balancement des bras, qui valait ±0,4 — donc jamais un pixel
-   entier — passe à ±1 : on le voit enfin bouger au lieu de le voir
-   trembloter.
-   Règle de la maison : chaque pièce mord d'au moins une unité dans celle
-   qui la porte. Le chapeau mord la tête, la tête mord le mât, les bras
-   mordent le mât, le pantalon mord la chemise, les touffes mordent la
-   traverse. */
 function dessinerEpouvantail(g,x,y){
 const X=Math.round(x), Y=Math.round(y);
 const souffle=Math.sin(Date.now()/800)>0?-1:1;             /* la paille se lève, puis retombe */
@@ -30166,7 +27063,6 @@ const peindre=()=>{dessinerLeFournil();feu(document.getElementById('cuiFeu'));};
 requestAnimationFrame(peindre);
 clearInterval(CUI_ANIM);CUI_ANIM=setInterval(()=>{
 if($('page2').classList.contains('on')&&document.getElementById('cuiToile'))peindre();else clearInterval(CUI_ANIM);},140);
-$('cuiX').onclick=()=>{clearInterval(CUI_ANIM);ouvrirChezFonfon();};   /* on revient dans la salle */
 if($('cuiPrendre'))$('cuiPrendre').onclick=async()=>{
 const r=await appelRPC('cuisine_retirer',{p_joueur:e.id});
 if(r&&!r.erreur){if(r.sac)e.sac=r.sac;CUI=r.etat||null;try{sauver();majHaut();lireSacServeur();majPastille();}catch(x){}
@@ -30353,7 +27249,7 @@ const ong=BQ_ONG||'vendre';
 let corps='';
 if(ong==='vendre'){
 const hwOn=(typeof hwActif==='function')&&hwActif();if(hwOn){hwCss();if(!HW_ETAT||Date.now()-HW_LU>30000)hwLire(true).then(()=>{if(HW_ETAT&&$('page2').classList.contains('on')&&$('page2Fond').classList.contains('bq')&&BQ_ONG==='vendre')peindreMadeleine(mot);});}
-corps=(hwOn?hwCarteHTML():'')+'<div class="mot">'+(mot||'Madeleine reprend tout ce qui vient de la ferme, au cours du jour — comme La Marée au port.')+'</div>'+
+corps=(hwOn?hwCarteHTML():'')+'<div class="mot">'+(mot||'Madeleine reprend tout ce qui vient de la ferme, au cours du jour.')+'</div>'+
 (L.length?'<div class="aGrid">'+L.map(([k,n,p])=>'<button class="lg" data-v="'+k+'">'+
 (ICONES[k]?'<svg viewBox="0 0 16 16">'+ICONES[k]+'</svg>':'<svg viewBox="0 0 16 16"></svg>')+
 '<span class="n"><b>'+(POT_CULT[k]?POT_CULT[k][0]:(OBJETS[k]?OBJETS[k].nom:k))+'</b>'+
@@ -31713,7 +28609,7 @@ try{sauver();envoyerSauvegarde(true);monterEnLigne(true);}catch(x){}d.remove();}
 }
 /* (LIGNE2_OUVERTE_A retiré : jamais lu, et il publiait un identifiant de compte) */
 const STATIONS_L2=[];   /* la ligne 2 est déposée : le terrain part en forêt */
-const STATIONS_L1=[['extramar','Le port','Les docks, La Marée, le Complexe Festif','port'],
+const STATIONS_L1=[['extramar','Le port','Les docks, le Complexe Festif','port'],
 ['ferme','La ferme','Le champ, l’étal, l’étable','ferme'],
 ['foret','La forêt','Le bois, le lac, les roseaux','foret']];
 const stationIci=()=>CARTE==='extramar'?'port':(CARTE==='foret'?'foret':(CARTE==='large'?'large':'ferme'));
@@ -31833,7 +28729,7 @@ $('page2Fond').innerHTML=
 '<div class="tq-bas"><div class="tq-billet">'+
 (retour?'<div class="tq-trajet"><div><small>DÉPART</small><b>Tokyo</b><em>東京</em></div><span class="tq-fl">→</span><div><small>ARRIVÉE</small><b>Le port</b><em>Marseille</em></div></div>'
 :'<div class="tq-trajet"><div><small>DÉPART</small><b>Le port</b><em>Marseille</em></div><span class="tq-fl">→</span><div><small>ARRIVÉE</small><b>Tokyo</b><em>東京</em></div></div>')+
-'<p class="tq-mot">'+(retour?'Le Vieux-Port, ses quais et son Pêcheur Heureux':D.mot)+'.</p>'+
+'<p class="tq-mot">'+(retour?'Le Vieux-Port et ses quais':D.mot)+'.</p>'+
 '<div class="tq-tir"></div>'+
 '<div class="tq-prix"><span>BILLET<br>TON SOLDE · '+enEuros(solde)+'</span><b>'+(!retour&&D.prix?enEuros(D.prix):'GRATUIT')+'</b></div>'+
 '</div>'+
@@ -31865,9 +28761,9 @@ partirEnVoyage(D);
 }
 function choisirLaDestination(sel){
 const ICI=stationIci();
-const INFO={port:['⚓','2 minutes de trajet',['🐟 La Marée : vendre ta pêche','⛴ Les docks et le caboteur','🎉 Le Complexe Festif']],
+const INFO={port:['⚓','2 minutes de trajet',['⛴ Les docks et le caboteur','🎉 Le Complexe Festif']],
 ferme:['🌾','3 minutes de trajet',['🌱 Ton champ et tes parcelles','🧺 L’étal de Madeleine','🏡 Ta longère']],
-foret:['🌲','5 minutes de trajet',['🪓 Le bois à couper','🎣 Le lac et la pêche','🌾 Les roseaux et la cueillette']]};
+foret:['🌲','5 minutes de trajet',['🪓 Le bois à couper','🌾 Les roseaux et la cueillette']]};
 const autres=STATIONS_L1.filter(([,,,q])=>q!==ICI);
 const S=STATIONS_L1.find(x=>x[3]===sel)||autres[0];
 if(!document.getElementById('cssMet')){const st=document.createElement('style');st.id='cssMet';st.textContent=`
@@ -34453,14 +31349,8 @@ if(O.D){const bx=1030,by=880;
  if(nuit)P(by+40,()=>{const X=bx+Math.sin(t/1400)*26-camX,Y=by-30+Math.sin(t/500)*3-camY;g.fillStyle='rgba(240,244,255,.82)';g.beginPath();g.arc(X,Y,7,Math.PI,0);g.lineTo(X+7,Y+10);
    for(let k=0;k<4;k++)g.lineTo(X+7-(k+0.5)*3.5,Y+(k%2?10:7)+Math.sin(t/120+k));g.lineTo(X-7,Y+10);g.fill();g.fillStyle='#1a1a22';g.fillRect(X-3.5,Y-2,2,3);g.fillRect(X+1.5,Y-2,2,3);g.fillRect(X-1,Y+3,2,2);lueurNuit(g,X,Y+2,16,'rgba(200,220,255,1)');});}}
 
-/* HALLOWEEN À LA MARÉE : citrouilles-lanternes sous le store, chauves-souris aux bouts de l'enseigne, toiles aux coins de la vitrine */
 function mhCit(g,x,y,r,nuit){const c=hwCit(r*2,nuit);g.drawImage(c,Math.round(x-c.width/4),Math.round(y-c.height/4),c.width/2,c.height/2);if(nuit)lueurNuit(g,x,y,r*2+10,'rgba(255,150,50,1)');}
-function mhStore(g,X,Y,t,nuit){/* lanternes-citrouilles sous le store, chauves-souris en papier, toiles aux coins */
- for(let i=0;i<6;i++){const x=X-60+i*24,y=Y-48+Math.sin(t/700+i)*0.8;g.strokeStyle='#2a1a10';g.lineWidth=.5;g.beginPath();g.moveTo(x,Y-54);g.lineTo(x,y-3);g.stroke();mhCit(g,x,y,4.5,nuit);}
- for(let i=0;i<4;i++){const x=X+[-72,-62,62,72][i],y=Y-62+(i%2)*6,w=Math.sin(t/180+i)*1.5;g.fillStyle='#1a1222';g.beginPath();g.ellipse(x,y,1.8,2.4,0,0,7);g.fill();g.beginPath();g.moveTo(x-1,y-1);g.lineTo(x-6,y-3+w);g.lineTo(x-5,y+1);g.lineTo(x-1,y+2);g.fill();g.beginPath();g.moveTo(x+1,y-1);g.lineTo(x+6,y-3+w);g.lineTo(x+5,y+1);g.lineTo(x+1,y+2);g.fill();g.fillStyle='#ffd860';g.fillRect(x-1.2,y-1,.9,.9);g.fillRect(x+.4,y-1,.9,.9);}
  g.strokeStyle='rgba(245,245,255,.85)';g.lineWidth=.5;for(const [cx,d] of [[X-69,1],[X+69,-1]]){for(let k=0;k<5;k++){const a=k/4*Math.PI/2;g.beginPath();g.moveTo(cx,Y-40);g.lineTo(cx+d*Math.cos(a)*12,Y-40+Math.sin(a)*12);g.stroke();}for(const r of [4,8,11]){g.beginPath();for(let k=0;k<=4;k++){const a=k/4*Math.PI/2;const px=cx+d*Math.cos(a)*r,py=Y-40+Math.sin(a)*r;k?g.lineTo(px,py):g.moveTo(px,py);}g.stroke();}}}
-function hwMareeDessiner(ctx,camX,camY,pile){if(CARTE!=='extramar'||!hwActif()||typeof XP==='undefined'||!XP)return;const cx=XP.rangX0-camX,M=XP.maisonsY;if(cx<-100||cx>VW+100)return;
- let ci=null;try{ci=cielDuMoment();}catch(x){}const nuit=!!(ci&&ci.lampes>0.3),t=Date.now();pile.push({y:M+1,f:()=>{try{mhStore(ctx,cx,M-camY,t,nuit);}catch(x){}}});}
 function fmDessinerHalloween(ctx,camX,camY,pile){if(!FERME_VIERGE||CARTE!=='village'||!hwActif())return;try{hwDecoDessiner(ctx,camX,camY,pile);}catch(x){}
 const X=HW_EPV.x-camX,Y=HW_EPV.y-camY;if(X<-120||X>VW+120||Y<-120||Y>VH+160)return;
 let ci=null;try{ci=cielDuMoment();}catch(x){}const nuit=!!(ci&&ci.lampes>0.3);

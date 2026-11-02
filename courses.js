@@ -810,7 +810,7 @@ function karting(ctx){
     Rt.menu.innerHTML='<div class="accueil"><div class="titre"><div class="ti">LE VIEUX-PORT · KARTING</div><h1>Grand Prix<br><i>'+(M.C.court==='LE PANIER'?'du Panier':(M.C.eau>0?'de la Corniche':'du Quai'))+'</i></h1></div>'+carteCircuit()+
       (circuitFerme()
         ?'<button class="ved ferme" data-a="ferme"><small>CIRCUIT FERMÉ</small><b>'+M.C.nom+'</b>'+
-          '<em>Il ouvre au niveau '+M.C.nivN+'. Récolte, pêche, coupe : l’XP vient vite.</em>'+
+          '<em>Il ouvre au niveau '+M.C.nivN+'. Récolte, coupe : l’XP vient vite.</em>'+
           '<span class="go">NIV. '+M.C.nivN+'</span></button>'
         :      '<button class="ved" data-a="paye"><small>GRAND PRIX · 5 €</small><b>La course aux euros</b><em>1er : 20 € · 2e : 12 € · 3e : 7 € · 4e : 3 €'+(typeof rest==='number'?' · '+Math.max(0,rest)+' aujourd’hui':'')+'</em><span class="go">5 €</span></button>'+
       '<div class="duo"><button class="ved gris" data-a="libre"><small>GRATUIT</small><b>Course libre</b><em>'+DIFFS[pref.diff].nom+' · '+DIFFS[pref.diff].sous+'</em></button>'+
@@ -1143,7 +1143,7 @@ function kayak(ctx){
     Rt.menu.innerHTML='<div class="ti">'+P.ti+'</div><h2>'+P.h2+'</h2>'+carteParcours()+'<p class="so">'+P.so+'</p>'+
       (parcoursFerme()
         ?'<button class="ved ferme" data-a="ferme"><small>PARCOURS FERMÉ</small><b>'+P.nom+'</b>'+
-          '<em>Il ouvre au niveau '+P.nivN+'. Récolte, pêche, coupe : l’XP vient vite.</em>'+
+          '<em>Il ouvre au niveau '+P.nivN+'. Récolte, coupe : l’XP vient vite.</em>'+
           '<span class="go">NIV. '+P.nivN+'</span></button>'
         :'<button class="ved" data-a="paye"><small>COURSE À 5 €</small><b>'+P.nom+'</b><em>1er : 20 € · 2e : 12 € · 3e : 7 €</em><span class="go">5 €</span></button>'+
       '<button class="ved gris" data-a="entr"><small>GRATUIT</small><b>Entraînement</b><em>un autre tirage, sans gain ni record</em><span class="go">RAMER</span></button>')+'<div class="msg"></div>'+
