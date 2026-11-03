@@ -13956,6 +13956,7 @@ if(CARTE==='foret'){
 }
 if(CARTE==='extramar'){try{dessinerLesSauts(ctx,camX,camY);}catch(x){}}   /* les poissons du bassin, sous les barques */
 if(CARTE==='large'){try{dessinerLeBateau(ctx,camX,camY);}catch(x){}}      /* la coque, sous le marin */
+if(CARTE==='extramar'){try{barriereDuQuai(acteurs,ctx,camX,camY);}catch(x){}}
 dessinerDecor(ctx,camX,camY,VW,VH,acteurs);
 /* LES LUCIOLES FLOTTENT : elles passent par-dessus le décor, jamais
    derrière un tronc — elles sont entre les arbres et nous. */
@@ -33103,3 +33104,59 @@ const maj=()=>{try{
 maj();setInterval(maj,1000);
 }catch(x){console.warn('badge',x);}
 })();
+
+
+/* ================= LA BARRIÈRE DU BOUT EST =================
+   Une barrière levante rouge et blanche ferme le quai côté est. On s'en
+   approche, le lecteur lit le badge (jaune), passe au vert, et le bras se
+   lève. Des séparateurs bas, rouges et blancs, ferment le reste de la ligne.
+   Derrière, rien encore : on peut passer et revenir. */
+const BARR={x:1530, y0:232, y1:312, h:16, ang:0, etat:'ferme', t:0, bip:0, vert:0};
+function barriereMaj(){
+  const now=Date.now()/1000, dt=Math.min(0.1,now-(BARR.t||now));BARR.t=now;
+  const j=joueur, dans=j&&j.y>BARR.y0-2&&j.y<BARR.y1+2, dx=j?j.x-BARR.x:999;
+  const proche=dans&&Math.abs(dx)<40, loin=!dans||Math.abs(dx)>52;
+  if(BARR.etat==='ferme'&&proche){BARR.etat='lit';BARR.bip=now;}
+  if(BARR.etat==='lit'&&now-BARR.bip>0.35){BARR.etat='ouvre';try{jouer('clic');}catch(x){}try{vibrer&&vibrer(8);}catch(x){}}
+  if(BARR.etat==='ouvre'){BARR.ang=Math.min(1,BARR.ang+dt/0.7);if(BARR.ang>=1)BARR.etat='ouvert';BARR.vert=now;}
+  if(BARR.etat==='ouvert'){if(!loin||Math.abs(dx)<10)BARR.vert=now;else if(now-BARR.vert>1.2)BARR.etat='baisse';}
+  if(BARR.etat==='baisse'){if(proche&&Math.abs(dx)<40){BARR.etat='ouvre';}
+    else{BARR.ang=Math.max(0,BARR.ang-dt/0.8);if(BARR.ang<=0)BARR.etat='ferme';}}
+}
+window.barriereBloque=function(x,y){
+  if(typeof CARTE==='undefined'||CARTE!=='extramar')return false;
+  if(Math.abs(x-BARR.x)>5)return false;
+  if(y>BARR.y0-1&&y<BARR.y1+1)return BARR.ang<0.75;      /* la voie : ouverte ou non */
+  return true;                                           /* les séparateurs */
+};
+function barriereDuQuai(acteurs,ctx,camX,camY){
+  barriereMaj();
+  const X=BARR.x-camX;
+  if(X<-120||X>VW+120)return;
+  const R=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h);};
+  const ease=u=>u*u*(3-2*u);
+  /* les séparateurs : des blocs bas, rouges et blancs, alignés */
+  const blocs=[];for(let y=166;y<BARR.y0-6;y+=12)blocs.push(y);for(let y=BARR.y1+8;y<350;y+=12)blocs.push(y);
+  blocs.forEach((yb,i)=>acteurs.push({y:yb+12,f:()=>{const Y=yb-camY, c=i%2?'#c0392b':'#f4f2ec', cO=i%2?'#8e2a20':'#cfcabe';
+    ctx.fillStyle='rgba(30,26,20,.18)';ctx.fillRect(X-4,Y+11,9,2);
+    R(X-3,Y-4,7,11,c);R(X-3,Y-4,7,1,i%2?'#d95646':'#ffffff');R(X-3,Y+7,7,5,cO);R(X+3,Y-4,1,16,'rgba(0,0,0,.12)');}}));
+  const Y0=BARR.y0-camY, Y1=BARR.y1-camY, H=BARR.h, L=BARR.y1-BARR.y0;
+  /* le lecteur de badge, sur son poteau, avant la barrière */
+  acteurs.push({y:BARR.y0-3,f:()=>{const x=X-15, y=Y0-3, now=Date.now()/1000;
+    const led=BARR.etat==='lit'?'#f2d21e':(BARR.ang>0||BARR.etat==='ouvre'?'#3aff6a':'#ff3a2a');
+    ctx.fillStyle='rgba(30,26,20,.22)';ctx.fillRect(x-2,y,7,2);
+    R(x,y-22,3,22,'#8a9098');R(x+2,y-22,1,22,'#6a7078');R(x-3,y-32,9,11,'#24282e');R(x-2,y-31,7,5,'#3d6a8a');
+    R(x-1,y-24,5,2,led);if(BARR.etat==='lit'&&Math.floor(now*12)%2)R(x-2,y-25,7,4,'rgba(242,210,30,.35)');}});
+  /* le fût et le bras */
+  const a=ease(BARR.ang)*Math.PI/2*0.98, bout=Math.cos(a)*L-Math.sin(a)*L;   /* projection : à plat il descend, levé il monte */
+  acteurs.push({y:BARR.ang<0.5?BARR.y1-1:BARR.y0,f:()=>{
+    ctx.fillStyle='rgba(30,26,20,.25)';ctx.fillRect(X-7,Y0+1,14,3);
+    R(X-6,Y0-24,12,26,'#f4f2ec');R(X+4,Y0-24,2,26,'#cfcabe');R(X-6,Y0-24,12,2,'#ffffff');R(X-6,Y0,12,2,'#b8b2a6');
+    R(X-3,Y0-19,6,6,'#c0392b');
+    const sy=Y0-H, n=Math.max(1,Math.round(Math.abs(bout)*2));
+    for(let i=0;i<n;i++){const d=i/n, yy=sy+bout*d, k=Math.floor(Math.abs(bout*d)/8)%2;R(X-1.5,yy-1.5,3,3,k?'#c0392b':'#f6f4ee');}
+    R(X-2,sy-2,4,4,'#3a3f46');}});
+  /* le support qui reçoit le bras, de l'autre côté de la voie */
+  acteurs.push({y:BARR.y1,f:()=>{ctx.fillStyle='rgba(30,26,20,.22)';ctx.fillRect(X-4,Y1,9,2);
+    R(X-1,Y1-H,3,H,'#9aa0a8');R(X-3,Y1-1,7,2,'#6a7078');R(X-2,Y1-H-1,5,2,'#6a7078');}});
+}
