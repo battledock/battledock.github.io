@@ -14069,6 +14069,9 @@ return c;
    de spriteClassique reste en place comme filet de sécurité, mais rien ne
    l'appelle plus. */
 const STYLE_FIN=()=>true;
+/* LE CRANE DE PROFIL, rang par rang : [bord arriere, bord avant], le visage tourne vers la droite. */
+const PRO_TETE=[[-8,3],[-11,6],[-12,7],[-13,8],[-14,8],[-14,9],[-14,9],[-14,9],[-14,10],[-14,9],
+[-14,9],[-14,10],[-14,10],[-14,10],[-14,10],[-14,10],[-14,10],[-14,10],[-13,9],[-13,10],[-11,10],[-6,9],[-2,8],[2,7]];
 const PLAFOND_PLANCHES=24;
 /* L'APERÇU D'UNE BOUTIQUE : on retire le déguisement, sinon l'épouvantail
    s'affiche à la place des vêtements qu'on essaie. */
@@ -15495,25 +15498,32 @@ if(cote){
    plus court que large, donc aplati dès que le personnage tourne. Un crâne
    humain est l'inverse. On l'allonge de 4 px VERS L'ARRIÈRE, là où aucun
    trait n'est posé — le nez, l'œil et la mâchoire ne bougent pas d'un pixel. */
-for(let r=0;r<24;r++){
-const w=r<2?19:(r>20?18:25), xx=-14+(r>20?2:0);
-R(xx,hy+r,w,1,peau);}
-R(-14,hy+3,2,17,peauO);                                                         /* la nuque */
-R(-14,hy+2,3,1,T(peau,-14));                                                    /* l'occiput, dans l'ombre */
+/* ET IL S'ARRONDIT. C'etait un rectangle : sommet plat, arriere droit,
+   menton coupe a angle vif. Un crane de profil est un oeuf penche — le
+   sommet tourne, l'occiput bombe, le front recule un peu au-dessus de
+   l'arcade, et la machoire remonte en biais du menton vers l'oreille. */
+for(let r=0;r<24;r++){const [a,b]=PRO_TETE[r];R(a,hy+r,b-a+1,1,peau);}
+for(let r=2;r<21;r++){const a=PRO_TETE[r][0];R(a,hy+r,2,1,peauO);R(a+2,hy+r,1,1,T(peau,-14));}   /* l'occiput qui tourne dans l'ombre */
+R(PRO_TETE[0][0]+1,hy,4,1,T(peau,10));R(PRO_TETE[1][0]+2,hy+1,6,1,T(peau,6));                   /* le sommet, eclaire */
+for(let r=19;r<24;r++){const a=PRO_TETE[r][0];R(a,hy+r,2,1,T(peau,-20));}                         /* le dessous de la machoire */
+R(PRO_TETE[23][0],hy+23,PRO_TETE[23][1]-PRO_TETE[23][0],1,T(peau,-24));
+R(9,hy+8,2,1,T(peau,6));R(9,hy+9,1,1,T(peau,-10));                                              /* l'arcade, puis le creux de l'oeil */
 R(3,hy+13,4,1,peauC);R(4,hy+12,2,1,T(peau,22));R(3,hy+15,3,3,T(peau,-12));
-for(let x=-2;x<9;x++)R(x,hy+21+(x<2?0:(x<6?1:0)),1,1,T(peau,-18));             /* la ligne de la mâchoire */
+for(let x=-2;x<8;x++)R(x,hy+20+(x<1?0:(x<5?1:2)),1,1,T(peau,-12));             /* la ligne de la mâchoire, en biais */
 R(7,hy+22,3,1,peauC);R(6,hy+9,4,1,T(peau,-7));R(-6,hy+5,3,6,T(peau,-8));        /* le menton, l'orbite, la tempe */
 /* L'ARRIÈRE DU CRÂNE, maintenant plus long : un dégradé le fait tourner
    au lieu de rester un aplat. */
-R(-13,hy+3,3,15,T(peau,-13));R(-14,hy+5,2,11,T(peau,-20));
+
 const NZ={petit:[[10,11,1],[10,12,2],[10,13,2]],droit:[[10,10,1],[10,11,2],[10,12,2],[10,13,3],[10,14,2]],
 large:[[10,10,2],[10,11,3],[10,12,3],[10,13,4],[10,14,3]],retrousse:[[10,11,1],[10,12,2],[10,13,3],[11,12,2]]}[nez]||[];
 NZ.forEach(([a,b,l])=>R(a,hy+b,l,1,peau));
 const bout=NZ.reduce((m,[a,b,l])=>Math.max(m,a+l),10);
 R(bout-1,hy+(nez==='retrousse'?12:13),1,1,peauC);                               /* la pointe éclairée */
 R(10,hy+14,2,1,peauO);R(11,hy+14,1,1,peauT);                                   /* l'aile, la narine */
-R(-3,hy+9,5,7,peau);R(-3,hy+9,1,7,peauO);R(-2,hy+9,3,1,peauC);
-R(-1,hy+10,2,4,peauO);R(0,hy+11,1,2,peauT);R(1,hy+11,1,3,peau);R(-2,hy+15,3,1,peauO);
+/* L'OREILLE, ronde : un C ouvert vers l'avant, plus un carre */
+R(-2,hy+9,3,1,peauC);R(-3,hy+10,1,5,peauO);R(-2,hy+10,3,5,peau);R(1,hy+10,1,4,T(peau,-6));
+R(-1,hy+11,1,3,peauO);R(0,hy+12,1,1,peauT);R(-2,hy+15,2,1,peauO);R(0,hy+15,1,1,T(peau,-8));
+R(2,hy+15,3,3,T(peau,-7));R(4,hy+17,2,2,T(peau,-11));   /* sous la pommette, la joue qui creuse */
 if(boucle!=='aucune')R(-2,hy+16,2,2,boucle==='perle'?'#f2efe4':(boucle==='plume'?'#c0392b':'#e8c06a'));
 oeilDe(4,hy+10,true);sourcilDe(3,hy+7,true);
 R(10,hy+17,1,3,peau);R(9,hy+17,1,1,levre);R(9,hy+19,1,1,levreC);
@@ -15792,8 +15802,8 @@ return 12;};
 /* DE PROFIL : le crâne va de -10 à 11, resserré à 16 de large sur les deux
    premiers rangs, et il avance de 2 px au niveau de la mâchoire. */
 const craneC=(r,hy)=>{const k=r-hy;
-if(k<0)return {g:-12,d:6};                /* au-dessus : le volume */
-if(k<2)return {g:-14,d:5};
+if(k<0){const t=-k;return {g:-10+t,d:4-Math.floor(t/2)};}   /* au-dessus : le volume, qui s'arrondit en montant */
+if(k<4)return {g:PRO_TETE[k][0]-1,d:Math.min(5,PRO_TETE[k][1])};
 if(k>20)return {g:-12,d:7};
 return {g:-14,d:11};};
 const craneF=(r,hy)=>{const k=r-hy;
