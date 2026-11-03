@@ -2521,12 +2521,17 @@ if(cote){
    seize unites sous l'epaule au lieu de vingt-deux. */
 /* LE COUDE EST A MI-CHEMIN, un rien plus haut que la ligne epaule-main :
    c'est ce qui donne le bras TENDU plutot que le bras raide. */
-const ex=TROT?(fonce?8:9):(PEDALE?(fonce?3:4):(COURSE?1+balance*2*AMPL:2+balance*5*AMPL)),
+const ex=TROT?(fonce?8:9):(PEDALE?(fonce?3:4):(COURSE?1+balance*2*AMPL:2+balance*6*AMPL)),
       ey=TROT?yEp+6:yEp+11-(COURSE?1:0);
-const hx=TROT?(fonce?TROT_AVANT-2:TROT_AVANT):(PEDALE?(fonce?5:6):(COURSE?ex+3+Math.max(0,balance)*3:2+balance*8*AMPL+(balance>0?1:0))),
-      hy=TROT?yEp+TROT_MAIN+(fonce?1:0):(PEDALE?yEp+22:(COURSE?ey-2-balance*5:yEp+20));
+const hx=TROT?(fonce?TROT_AVANT-2:TROT_AVANT):(PEDALE?(fonce?5:6):(COURSE?ex+3+Math.max(0,balance)*3:2+balance*11*AMPL+(balance>0?1:0))),
+      hy=TROT?yEp+TROT_MAIN+(fonce?1:0):(PEDALE?yEp+22:(COURSE?ey-2-balance*5:yEp+20-Math.round(Math.abs(balance)*2)));   /* au bout du balancement, la main remonte un peu : le bras decrit un arc */
 const hautC=manches>0?c:sk, basC=manches>=1?c:sk;
 R(-3,yEp,7,4,manches>0?cC:sk);R(-3,yEp+3,7,1,manches>0?c:skO);          /* l'épaule, arrondie */
+/* LE BRAS SE DETACHE DU BUSTE. De la meme etoffe que la veste, le bras
+   du premier plan se fondait dans le torse : de profil, on ne voyait
+   qu'une main flotter a la taille. Un liseré sombre tout autour, et il
+   se lit d'un bout a l'autre du balancement. */
+if(!fonce&&!PEDALE&&!TROT){seg(1,yEp+3,ex,ey,SX.bras[0]+3,manches>0?cT:skO);seg(ex,ey,hx,hy,SX.bras[1]+3,manches>=1?cT:skO);}
 seg(1,yEp+3,ex,ey,SX.bras[0]+1,hautC);seg(1,yEp+3,ex,ey,2,manches>0?cC:peauC);
 seg(ex,ey,hx,hy,SX.bras[1]+1,basC);
 if(manches>0&&manches<1){seg(ex,ey,hx,hy,4,sk);R(Math.round(ex)-2,Math.round(ey)-1,5,1,cT);}
