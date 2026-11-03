@@ -17087,7 +17087,7 @@ if(court&&joueur.marche){
 const F=Math.floor(joueur.pas*2)%16;
 if((F===0||F===8)&&F!==dernierAppui){
 dernierAppui=F;
-jouer('pas');
+/* plus de bruit de pas, a sa demande */
 /* PAS DE POUSSIÈRE SUR LE PORT : la dalle de granit ne se soulève pas. */
 const t0=teinteDePoussiere(joueur.x,joueur.y,0), t1=teinteDePoussiere(joueur.x,joueur.y,1);
 if(CARTE!=='extramar')for(let i=0;i<4;i++){
