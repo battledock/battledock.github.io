@@ -33392,9 +33392,18 @@ function dessinerHallEmbauche(g,K,t,moi,J){
   const EMP=EMB_EMP, DOCK=EMB_DOCK;
 
   /* sol : marbre en damier */
-  for(let y=96;y<340;y+=14)for(let x=0;x<270;x+=14){const k=(x/14+(y-96)/14)%2;R(x,y,14,14,k?'#ece4d4':'#3c4250');
-    if(k){R(x+2+alea(x+y)*8,y+3,4,0.5,'rgba(160,150,130,.4)');}else{R(x+3,y+4+alea(x*y)*6,5,0.5,'rgba(120,130,150,.35)');}}
+  /* LE SOL, DOUX : grandes dalles de pierre claire, deux tons proches, un cabochon de terre cuite aux croisements */
+  for(let y=96;y<372;y+=16)for(let x=0;x<270;x+=16){const k=(x/16+(y-96)/16)%2;R(x,y,16,16,k?'#efe6d3':'#e6dbc4');
+    R(x,y,16,0.5,'rgba(170,150,115,.35)');R(x,y,0.5,16,'rgba(170,150,115,.35)');R(x+3+alea(x+y)*8,y+4+alea(x*y)*7,5,0.5,'rgba(190,170,135,.35)');}
+  for(let y=96;y<372;y+=16)for(let x=0;x<=270;x+=16){R(x-1.5,y-1.5,3,3,'#c98a64');R(x-0.5,y-1.5,1,1,'#dca07a');}
   for(let y=96;y<200;y++)R(0,y,270,1,'rgba(20,16,10,'+Math.max(0,0.22-(y-96)*0.002).toFixed(3)+')');
+  /* LE HAUT DU HALL : le mur continue, la grande inscription, les fils des globes */
+  R(0,-90,270,90,'#efe2c4');for(let y=-84;y<0;y+=7)R(0,y,270,0.5,'rgba(190,168,128,.25)');
+  R(0,-90,270,6,'#cdb68a');R(0,-84,270,2,'#f8eed8');for(let x=1;x<270;x+=4)R(x,-82,2,2,'#d8c39a');
+  R(10,-62,250,16,'#2f5a44');R(10,-62,250,1.2,'#d4ad52');R(10,-47.2,250,1.2,'#d4ad52');
+  TC('BUREAU CENTRAL DE LA MAIN D OEUVRE',135,-58,'#f2d688',1.6);
+  R(0,-24,270,3,'#d8c39a');R(0,-21,270,1,'#cdb68a');
+  for(const lx of [80,190])R(lx-0.25,-90,0.5,186,'#3a3a3a');
   /* le mur du fond, tres haut */
   R(0,0,270,96,'#efe2c4');for(let y=8;y<70;y+=7)R(0,y,270,0.5,'rgba(190,168,128,.25)');
   R(0,0,270,5,'#f8eed8');R(0,5,270,2,'#cdb68a');for(let x=1;x<270;x+=3)R(x,7,1.5,1.5,'#d8c39a');
@@ -33428,7 +33437,7 @@ function dessinerHallEmbauche(g,K,t,moi,J){
   /* les globes */
   for(const lx of [80,190]){R(lx-0.25,96,0.5,40,'#3a3a3a');R(lx-4,136,8,7,'#fff8e0');R(lx-4,136,8,1.5,'#d4ad52');glow(lx,140,30,'rgba(255,230,160,.18)');}
 
-  R(115,334,40,6,'#8a3a2a');R(117,335,36,4,'#a84a32');
+  R(113,358,44,8,'#8a3a2a');R(115,359,40,6,'#a84a32');for(let k2=0;k2<5;k2++)R(118+k2*8,361,4,1,'#c86a4a');
   /* LE RESTE SE TRIE PAR LA PROFONDEUR : on passe devant et derriere */
   const A=[];
   A.push({y:210,f:()=>{
@@ -33448,9 +33457,16 @@ function dessinerHallEmbauche(g,K,t,moi,J){
   for(const [k,x,y] of EMB_FILE)A.push({y,f:()=>{ombre(x,y,12);perso(DOCK[k],x,y,'haut',false);}});
   for(const bx of [95,165])A.push({y:301,f:()=>{ombre(bx+5,301,26);R(bx-8,286,26,4,'#8a5a34');R(bx-8,286,26,1,'#a8714a');R(bx-7,290,2,10,'#5a3a22');R(bx+15,290,2,10,'#5a3a22');R(bx-8,280,26,2,'#8a5a34');}});
   A.push({y:330,f:()=>plante(S,14,330,'#b8683a')});A.push({y:330,f:()=>plante(S,256,330,'#b8683a')});
-  if(J)A.push({y:J.y,f:()=>{ombre(J.x,J.y,12);perso(moi,J.x,J.y,J.dir,false,J.pas,J.bouge);}});
+  if(J)A.push({y:J.y,f:()=>{
+    if(typeof personne==='function'){g.save();g.translate(J.x*K,J.y*K);g.scale(K,K);try{personne(g,0,0,moi,J.dir,J.pas,J.bouge,J.court);}catch(x){}g.restore();}
+    else{ombre(J.x,J.y,12);perso(moi,J.x,J.y,J.dir,false,J.pas,J.bouge);}}});
   A.sort((a,b)=>a.y-b.y).forEach(a=>a.f());
-  R(0,0,2.5,340,'rgba(0,0,0,.35)');R(267.5,0,2.5,340,'rgba(0,0,0,.35)');
+  /* LE MUR D'ENTREE, en bas : boiserie sombre, la porte ouverte sur le quai */
+  R(0,372,270,110,'#3a2414');R(0,372,270,2,'#5a3a24');for(let x=4;x<270;x+=22){R(x,378,18,26,'#4a2e1c');R(x,378,18,1,'#6b4a2c');}
+  R(110,366,50,8,'#2a1a10');R(113,372,44,40,'#f2e2bc');for(let y=372;y<412;y++)R(113,y,44,1,'rgba(255,240,200,'+(0.5-(y-372)*0.01).toFixed(3)+')');
+  R(113,380,44,1,'#d8c49a');R(108,366,5,46,'#6b4a2c');R(157,366,5,46,'#6b4a2c');R(108,364,54,3,'#d4ad52');
+  glow(135,368,40,'rgba(255,236,190,.22)');
+  R(0,-90,2.5,462,'rgba(0,0,0,.35)');R(267.5,-90,2.5,462,'rgba(0,0,0,.35)');
 }
 const EMB_FILE=[[0,50,236],[1,220,240],[2,52,262]];
 
@@ -33480,7 +33496,8 @@ function billetDuJour(){
    collisions simples, le tri par la profondeur. Au guichet 2, on demande
    son billet ; en redescendant sur le tapis, on ressort sur le quai. */
 function embBloque(x,y){
-  if(x<12||x>258||y<214||y>338)return true;
+  if(x<12||x>258||y<214||y>370)return true;
+  if(y>352&&(x<114||x>156))return true;                                                             /* le couloir de la porte */
   if(Math.abs(x-20)<10&&y>243&&y<253)return true;if(Math.abs(x-250)<10&&y>243&&y<253)return true;     /* les colonnes */
   for(const [k,fx,fy] of EMB_FILE)if(Math.hypot(x-fx,(y-fy)*1.6)<8)return true;                      /* la file */
   for(const bx of [95,165])if(x>bx-10&&x<bx+20&&y>282&&y<303)return true;                            /* les bancs */
@@ -33498,9 +33515,7 @@ function ouvrirLEmbauche(){
   '#embInt .go{background:#2f5a44;color:#f2d688;box-shadow:0 4px 0 #1a3a2a}'+
   '#embInt .out{background:rgba(255,255,255,.14);color:#fff}'+
   '#embInt .go:active,#embInt .out:active{transform:translateY(2px)}'+
-  '#embInt .joy{position:absolute;width:110px;height:110px;margin:-55px 0 0 -55px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);display:none;pointer-events:none}'+
-  '#embInt .joy i{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(255,255,255,.45)}'+
-  '#embInt .msg{position:absolute;left:50%;top:calc(16px + env(safe-area-inset-top));transform:translateX(-50%);background:rgba(14,22,38,.85);color:#fff;font:700 13px system-ui;padding:8px 14px;border-radius:10px;opacity:0;transition:opacity .3s;white-space:nowrap}'+
+    '#embInt .msg{position:absolute;left:50%;top:calc(16px + env(safe-area-inset-top));transform:translateX(-50%);background:rgba(14,22,38,.85);color:#fff;font:700 13px system-ui;padding:8px 14px;border-radius:10px;opacity:0;transition:opacity .3s;white-space:nowrap}'+
   '#embInt .msg.on{opacity:1}'+
   '#embBil{position:absolute;inset:0;background:rgba(10,16,28,.66);display:flex;align-items:center;justify-content:center;flex-direction:column;padding:20px;z-index:2}'+
   '#embBil .t{position:relative;width:min(340px,92vw);background:#f6edd6;color:#2a241c;padding:20px 22px 18px;font-family:"Courier New",monospace;box-shadow:0 18px 40px rgba(0,0,0,.45);transform:rotate(-1.5deg);animation:embSort .45s cubic-bezier(.2,.9,.3,1.2)}'+
@@ -33518,44 +33533,44 @@ function ouvrirLEmbauche(){
   '#embBil .bts{display:flex;gap:10px;margin-top:22px;width:min(340px,92vw)}#embBil .bts .go{flex:1}';
   document.head.appendChild(css);
   const W=270,H=340, D=document.createElement('div');D.id='embInt';
-  const cv=document.createElement('canvas');
-  const ech=Math.min(innerWidth/W,innerHeight/H);
-  const k=Math.max(1,Math.min(4,Math.ceil(ech*(devicePixelRatio||1))));
-  cv.width=W*k;cv.height=H*k;cv.style.width=Math.round(W*ech)+'px';cv.style.height=Math.round(H*ech)+'px';
+  const cv=document.createElement('canvas');cv.style.position='absolute';cv.style.left='0';cv.style.top='0';
+  let ech=4,k=4,vw=W,vh=H;
+  const taille=()=>{const dpr=Math.min(3,devicePixelRatio||1);ech=(typeof ECH_CSS!=='undefined'&&ECH_CSS>0)?ECH_CSS:Math.max(2,innerWidth/190);k=ech*dpr;
+    cv.width=Math.round(innerWidth*dpr);cv.height=Math.round(innerHeight*dpr);cv.style.width=innerWidth+'px';cv.style.height=innerHeight+'px';vw=innerWidth/ech;vh=innerHeight/ech;};
+  taille();addEventListener('resize',taille);
   D.appendChild(cv);
-  D.insertAdjacentHTML('beforeend','<div class="joy"><i></i></div><div class="msg"></div><div class="act"><button class="go"></button></div>');
+  D.insertAdjacentHTML('beforeend','<div class="msg"></div><div class="act"><button class="go"></button></div>');
   document.body.appendChild(D);
-  const joy=D.querySelector('.joy'), bouton=D.querySelector('.act'), bgo=bouton.querySelector('.go'), msg=D.querySelector('.msg');
+  const bouton=D.querySelector('.act'), bgo=bouton.querySelector('.go'), msg=D.querySelector('.msg');
   const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
   const moi=Object.assign({},(typeof e!=='undefined'&&e.ap)||{});
-  const J={x:135,y:322,dir:'haut',pas:0,bouge:false};
-  const IN={dx:0,dy:0,id:null,ox:0,oy:0,cles:{}};
+  const J={x:135,y:346,dir:'haut',pas:0,bouge:false,court:false};
+  /* LE JOYSTICK DU JEU : le meme, au meme doigt. On gele le joueur du quai
+     pendant qu'on est dedans, et le joystick passe au-dessus du hall. */
+  window.FP_GEL=Date.now()+864e5;const jz=document.getElementById('joy');if(jz)jz.style.zIndex='61';
   const dire=(t)=>{msg.textContent=t;msg.classList.add('on');clearTimeout(dire._t);dire._t=setTimeout(()=>msg.classList.remove('on'),1800);};
-  /* le joystick : on pose le doigt n'importe ou */
-  D.addEventListener('pointerdown',ev=>{if(ev.target.closest('button')||document.getElementById('embBil'))return;IN.id=ev.pointerId;IN.ox=ev.clientX;IN.oy=ev.clientY;
-    joy.style.left=IN.ox+'px';joy.style.top=IN.oy+'px';joy.style.display='block';joy.firstChild.style.transform='';});
-  D.addEventListener('pointermove',ev=>{if(ev.pointerId!==IN.id)return;let dx=ev.clientX-IN.ox,dy=ev.clientY-IN.oy;const L=Math.hypot(dx,dy),M=40;
-    if(L>M){dx*=M/L;dy*=M/L;}IN.dx=dx/M;IN.dy=dy/M;joy.firstChild.style.transform='translate('+dx+'px,'+dy+'px)';});
-  const lacher=ev=>{if(ev.pointerId!==IN.id)return;IN.id=null;IN.dx=IN.dy=0;joy.style.display='none';};
-  D.addEventListener('pointerup',lacher);D.addEventListener('pointercancel',lacher);
-  const kd=ev=>{IN.cles[ev.key]=true;}, ku=ev=>{IN.cles[ev.key]=false;};
-  addEventListener('keydown',kd);addEventListener('keyup',ku);
   let vivant=true, t0=performance.now(), tp=t0, action=null, sortie=false;
-  const fermer=()=>{if(!vivant)return;vivant=false;removeEventListener('keydown',kd);removeEventListener('keyup',ku);D.remove();css.remove();
+  const fermer=()=>{if(!vivant)return;vivant=false;removeEventListener('resize',taille);window.FP_GEL=0;if(jz)jz.style.zIndex='';D.remove();css.remove();
     try{if(typeof joueur!=='undefined'){joueur.y=EMB.y+12;joueur.x=EMB.x;joueur.dir='bas';}}catch(x){}};
   const boucle=(now)=>{
     if(!vivant)return;
     const dt=Math.min(0.05,(now-tp)/1000);tp=now;
-    let dx=IN.dx,dy=IN.dy;const C=IN.cles;
-    if(C.ArrowLeft||C.q||C.a)dx=-1;if(C.ArrowRight||C.d)dx=1;if(C.ArrowUp||C.z||C.w)dy=-1;if(C.ArrowDown||C.s)dy=1;
-    const L=Math.hypot(dx,dy);
-    if(L>0.15&&!document.getElementById('embBil')){
-      const v=62*Math.min(1,L), nx=J.x+dx/L*v*dt, ny=J.y+dy/L*v*dt;
-      if(!embBloque(nx,J.y))J.x=nx;if(!embBloque(J.x,ny))J.y=ny;
-      J.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'droite':'gauche'):(dy>0?'bas':'haut');J.pas+=v*dt/9;J.bouge=true;
-    }else J.bouge=false;
+    window.FP_GEL=Date.now()+864e5;
+    const dx=joyX, dy=joyY, L=Math.hypot(dx,dy);
+    if(L>0.16&&!document.getElementById('embBil')){
+      let vmax=60;try{vmax=vitesseDuJoueur();}catch(x){}
+      let v0=60;try{v0=VITESSE;}catch(x){}
+      const r=Math.max(0,Math.min(1,(Math.min(1,L)-0.6)/0.4)), v=v0+(vmax-v0)*r;
+      J.court=r>0.5;
+      const nx=J.x+dx/L*v*dt, ny=J.y+dy/L*v*dt;let bouge=false;
+      if(!embBloque(nx,J.y)){J.x=nx;bouge=true;}if(!embBloque(J.x,ny)){J.y=ny;bouge=true;}
+      const sC=((Math.round(Math.atan2(dy,dx)/(Math.PI/4))%8)+8)%8;
+      J.dir=['droite','bas-droite','bas','bas-gauche','gauche','haut-gauche','haut','haut-droite'][sC];
+      let cad=0.11;try{cad=CADENCE_PAS;}catch(x){}
+      if(bouge)J.pas+=v*dt*cad;J.bouge=bouge;
+    }else{J.bouge=false;J.court=false;}
     /* le tapis : on ressort */
-    if(J.y>334&&J.x>112&&J.x<158){fermer();return;}
+    if(J.y>364&&J.x>112&&J.x<158){fermer();return;}
     /* les guichets */
     let a=null;
     if(J.y<226){if(J.x>112&&J.x<158)a='g2';else if(J.x>26&&J.x<74)a='g1';else if(J.x>196&&J.x<244)a='g3';}
@@ -33563,7 +33578,10 @@ function ouvrirLEmbauche(){
       if(a==='g2'){bgo.textContent='Guichet 2 · Mon affectation';bouton.classList.add('on');}
       else if(a){bgo.textContent='Guichet '+(a==='g1'?'1':'3')+' · Faire la queue';bouton.classList.add('on');}
       else bouton.classList.remove('on');}
-    try{g.clearRect(0,0,cv.width,cv.height);dessinerHallEmbauche(g,k,(now-t0)/1000,moi,J);}catch(x){}
+    /* la camera suit, comme dehors */
+    const Y0=-90, Y1=420, cx=W<=vw?(W-vw)/2:Math.max(0,Math.min(W-vw,J.x-vw/2)), cy=(Y1-Y0)<=vh?(Y0+Y1-vh)/2:Math.max(Y0,Math.min(Y1-vh,J.y-vh*0.55));
+    try{g.setTransform(1,0,0,1,0,0);g.fillStyle='#1a1410';g.fillRect(0,0,cv.width,cv.height);g.imageSmoothingEnabled=false;
+      g.translate(Math.round(-cx*k),Math.round(-cy*k));dessinerHallEmbauche(g,k,(now-t0)/1000,moi,J);}catch(x){}
     requestAnimationFrame(boucle);
   };
   requestAnimationFrame(boucle);
