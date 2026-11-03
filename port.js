@@ -528,10 +528,7 @@ function portique(x0,releve,graine){
     treillis(x0+l+3,yT,bout,yT,3,GR.p,GR.s);
     ligne(ax,ay,x0+l+34,yT,GR.s);ligne(ax,ay,bout-2,yT,GR.s);
     P(bout-4,yT,4,4,'#e04030');P(bout-4,yT+1,4,1,'#ffffff');if(nuit){lum(bout-3,yT+1,2,2,'#ff3a2a');}
-    const ch=x0+l+22+Math.floor(A(graine)*28);
-    P(ch,yT+4,8,5,'#eef1f4');P(ch+1,yT+5,4,2,'#2a3c58');
-    ligne(ch+2,yT+9,ch+2,yT+20+A(graine*3)*12,'#2a2a2a');ligne(ch+5,yT+9,ch+5,yT+20+A(graine*3)*12,'#2a2a2a');
-    P(ch-2,yT+20+A(graine*3)*12,12,2,'#e8b020');if(nuit)lum(ch+1,yT+5,4,2,'#ffe6a0');
+    /* le chariot, les cables et le palonnier ne sont plus graves : ils bougent (animerLesPortiques) */
   }
 }
 portique(60,true,1);portique(205,false,2);portique(350,false,3);portique(520,true,4);
@@ -940,6 +937,11 @@ if(amb!=='nuit'){
     peindre(SP[fr],x,y,dir<0);
   }
 }
+/* LES PORTIQUES TRAVAILLENT. Le chariot court sous la fleche, va chercher
+   un conteneur sur le porte-conteneurs, le remonte, rentre entre les pieds
+   et le pose sur le quai. Un cavalier arrive, l'enjambe, le leve et
+   l'emmene. Un cycle de quarante secondes, decale d'un portique a l'autre. */
+animerLesPortiques(ctx,amb,T,camX,lw);
 /* LA PILOTINE : elle traverse le bassin en un peu plus de trois minutes, et revient */
 {const per=200, u=(T%(per*2))/per, aller=u<1, k=aller?u:2-u, x=Math.round(-40+k*(M+80)), y=HZ+19, d=aller?1:-1;
  if(x>camX-60&&x<camX+lw+60){
@@ -956,6 +958,65 @@ if(amb!=='nuit'){
   ctx.fillStyle='rgba(255,255,255,.55)';ctx.fillRect(x+d*11,y+4,2,1);
  }}
 ctx.restore();
+}
+
+const CT_ANIM=[['#2a5d9f','#3f78bd','#1d4475'],['#c23a2c','#d95646','#8e271e'],['#e8e4dc','#f6f3ee','#bdb8ae'],['#2f7d4f','#43a067','#215a38'],['#d9822b','#ee9c48','#a85f1a'],['#7a7f86','#959aa1','#5a5e64']];
+function animerLesPortiques(ctx,amb,T,camX,lw){
+const HZ=108, yT=HZ-64, l=28, pont=HZ-12, nuit=amb==='nuit';
+const A=(i)=>alea(i*1.37+0.5);
+const ombre=nuit?0.45:(amb==='jour'?0:0.18);
+const fonce=(c)=>{if(!ombre)return c;const n=parseInt(c.slice(1),16),f=v=>Math.round(v*(1-ombre)+ (nuit?18:40)*ombre);
+  return 'rgb('+f(n>>16&255)+','+f(n>>8&255)+','+f(n&255)+')';};
+const R=(x,y,w,h,c)=>{ctx.fillStyle=fonce(c);ctx.fillRect(Math.round(x),Math.round(y),w,h);};
+const lueur=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w,h);};
+const ease=(u)=>{u=Math.max(0,Math.min(1,u));return u*u*(3-2*u);};
+const seg=(t,a,b)=>(t-a)/(b-a);
+const boite=(x,y,c)=>{R(x,y,12,5,c[0]);R(x,y,12,1,c[1]);R(x,y+4,12,1,c[2]);for(let i=1;i<11;i+=2)R(x+i,y+1,1,3,c[2]);R(x+11,y,1,5,c[2]);};
+for(const [x0,pile,dec] of [[205,259,0],[350,415,17]]){
+  if(x0-60>camX+lw||660<camX)continue;
+  const P=40, t=((T+dec)%P+P)%P, cycle=Math.floor((T+dec)/P);
+  const coul=CT_ANIM[Math.floor(alea(cycle*7.1+x0)*CT_ANIM.length)];
+  const haut=2+Math.floor(A(pile*0.9)*4), dessus=pont-5*haut;   /* le haut de la pile, au pixel pres */
+  const xc=x0+l/2-4, xs=pile+6, yRepos=yT+14, ySol=HZ-5;
+  let tx=xc, sy=yRepos, porte=false, auSol=false;
+  if(t<6){tx=xc+(xs-xc)*ease(t/6);}
+  else if(t<9){tx=xs;sy=yRepos+(dessus-1-yRepos)*ease(seg(t,6,9));}
+  else if(t<10){tx=xs;sy=dessus-1;}
+  else if(t<13){tx=xs;sy=dessus-1+(yRepos-dessus+1)*ease(seg(t,10,13));porte=true;}
+  else if(t<19){tx=xs+(xc-xs)*ease(seg(t,13,19));porte=true;}
+  else if(t<22){sy=yRepos+(ySol-1-yRepos)*ease(seg(t,19,22));porte=true;}
+  else if(t<23){sy=ySol-1;auSol=true;}
+  else if(t<26){sy=ySol-1+(yRepos-ySol+1)*ease(seg(t,23,26));auSol=true;}
+  else auSol=true;
+  /* SOUS LE PONT, le conteneur passe derriere les piles du navire : il
+     descend sur le quai, cache par la coque. */
+  let yCache=pont;for(let x=168;x<492;x+=13)if(x<xc+6&&x+12>xc-6)yCache=Math.min(yCache,pont-5*(2+Math.floor(A(x*0.9)*4)));
+  const cache=t>=19&&t<26;
+  /* le chariot et sa cabine */
+  R(tx-4,yT+4,9,3,'#d8dde3');R(tx-4,yT+4,9,1,'#ffffff');R(tx+1,yT+7,4,3,'#eef1f4');R(tx+2,yT+8,2,1,'#2a3c58');
+  if(nuit)lueur(tx+2,yT+8,2,1,'#ffe6a0');
+  if(cache){ctx.save();ctx.beginPath();ctx.rect(camX-10,0,lw+20,yCache);ctx.clip();}
+  R(tx-3,yT+7,1,sy-yT-7,'#2a2a2a');R(tx+3,yT+7,1,sy-yT-7,'#2a2a2a');                 /* les cables */
+  R(tx-6,sy,13,2,'#e8b020');R(tx-6,sy+1,13,1,'#b08010');                               /* le palonnier */
+  if(porte)boite(tx-6,sy+2,coul);
+  if(cache)ctx.restore();
+  /* LE CAVALIER, derriere le navire on ne le voit pas ; il sort par
+     l'arriere, son conteneur entre les jambes, et file sur le quai. */
+  if(t>=27){
+    const cx=548+100*ease(seg(t,27,38)), cy=HZ-11, a=Math.max(0,1-seg(t,36.5,39));
+    ctx.save();ctx.beginPath();ctx.rect(561,0,400,140);ctx.clip();
+    const ga=ctx.globalAlpha;ctx.globalAlpha=ga*a;
+    const J='#e8c020', Jo='#a88a10', haut2=HZ-14;
+    for(const lx of [cx-9,cx+8]){R(lx,haut2,2,HZ-haut2-2,J);R(lx+1,haut2,1,HZ-haut2-2,Jo);R(lx-1,HZ-2,4,2,'#1a1a1a');}
+    R(cx-9,haut2-1,19,2,J);R(cx-9,haut2,19,1,Jo);
+    R(cx+8,haut2-5,5,4,'#f2f0e8');R(cx+9,haut2-4,3,2,'#2a3c58');if(nuit)lueur(cx+9,haut2-4,3,2,'#ffe6a0');
+    const on=Math.floor(T*3)%2===0;lueur(cx,haut2-2,1,1,on?'#ff9a2a':fonce('#a85a10'));
+    R(cx-4,haut2+1,1,cy-haut2-1,'#2a2a2a');R(cx+4,haut2+1,1,cy-haut2-1,'#2a2a2a');R(cx-6,cy,13,1,'#555555');
+    boite(cx-6,cy+1,coul);
+    if(nuit){lueur(cx+13,HZ-5,1,1,'#fff2c0');}
+    ctx.globalAlpha=ga;ctx.restore();
+  }
+}
 }
 let PANO_ATTENTE=false;
 function dessinerLePanorama(ctx,camX,camY,lw,lh){
