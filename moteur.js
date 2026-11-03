@@ -210,7 +210,8 @@ const CACHE_FIN=new Map();
 /* LA TENUE UNIQUE — docker occasionnel. Tout le monde la porte, quoi
    qu'il y ait dans la sauvegarde : le vestiaire est fermé. */
 const UNIFORME={haut:1,veste:'#1f3566',pantalon:'#e8c41c',bas:0,souliers:3,chaussures:'#1e1a16',chapeau:0,sac:0,motif:0,_motif:'docker',_docker:true};
-function uniforme(ap){const a=Object.assign({},ap||{},UNIFORME);delete a.cos;delete a.deguisement;delete a.maillot;delete a.gilet;delete a.patin;return a;}
+function uniforme(ap){if(ap&&ap._pnj)return ap;   /* les employés gardent leurs habits */
+const a=Object.assign({},ap||{},UNIFORME);delete a.cos;delete a.deguisement;delete a.maillot;delete a.gilet;delete a.patin;return a;}
 function sprite(g,x,y,ap0,dir,pas,bouge){
 ap0=uniforme(ap0);
 let fin=false;try{fin=STYLE_FIN();}catch(x){fin=false;}          /* (au tout début du chargement, on reste classique) */
@@ -33166,7 +33167,7 @@ function barriereDuQuai(acteurs,ctx,camX,camY){
 /* ================= LA MAISON DE L'EMBAUCHE =================
    Sur le quai, au milieu. Gravée une fois (jour, nuit) au quart de pixel,
    puis posée comme un acteur : on passe derrière elle, pas à travers. */
-const EMB={x:880, y:302, K:4, cache:{}};
+const EMB={x:305, y:312, K:4, cache:{}};
   const F={E:['11111','10000','10000','11110','10000','10000','11111'],M:['10001','11011','10101','10101','10001','10001','10001'],
     B:['11110','10001','10001','11110','10001','10001','11110'],A:['01110','10001','10001','11111','10001','10001','10001'],
     U:['10001','10001','10001','10001','10001','10001','01110'],C:['01111','10000','10000','10000','10000','10000','01111'],
