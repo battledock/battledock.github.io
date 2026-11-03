@@ -879,19 +879,8 @@ const HZ=K.HZ;
 q.drawImage(K.decor,x0,0,w,HZ+2,0,0,w,HZ+2);
 for(let y=HZ+2;y<H;y++){const u=(y-HZ)/(H-HZ), dx=Math.round(Math.sin(T*1.4+y*0.75)*(0.6+u*1.2));
   q.drawImage(K.decor,x0,y,w,1,dx,y,w,1);if(dx>0)q.drawImage(K.decor,x0,y,1,1,0,y,dx,1);}
-/* les scintillements */
-const nuit=K.amb==='nuit', foyer=nuit?K.lune:K.soleil;
-const n=Math.round(w*(foyer?0.5:0.22));
-for(let j=0;j<n;j++){const slot=Math.floor(T*2.5+j*0.61);
-  const r1=alea(slot*13.7+j*3.1), r2=alea(slot*7.3+j*11.9), r3=alea(slot*5.1+j);
-  const y=Math.floor(HZ+4+r2*(H-HZ-6));
-  let x;
-  if(foyer&&j%3){const sp=(nuit?5:10)+(y-HZ)*(nuit?0.9:2.2);x=foyer.x+(r1-0.5)*2*sp-x0;}else x=r1*w;
-  if(x<0||x>=w)continue;
-  if(nuit&&!(foyer&&j%3))continue;
-  const vie=(T*2.5+j*0.61)%1, a=Math.sin(vie*Math.PI)*(0.5+r3*0.5);
-  q.fillStyle=nuit?'rgba(240,238,215,'+(a*0.8).toFixed(2)+')':(K.amb==='jour'?'rgba(255,255,255,'+(a*0.75).toFixed(2)+')':'rgba(255,228,170,'+(a*0.85).toFixed(2)+')');
-  q.fillRect(Math.round(x),y,r3>0.7?2:1,1);}
+/* PLUS DE SCINTILLEMENTS : poses dans le cadre de l'ecran et non dans le monde, ils restaient colles a l'ecran quand on marchait. */
+const nuit=K.amb==='nuit';
 /* les feux qui clignotent */
 if(nuit)for(let j=0;j<K.rouges.length;j++){const l=K.rouges[j], x=l[0]-x0;if(x<-3||x>w+3)continue;
   const on=Math.floor(T*0.9+j*0.37)%2===0;
