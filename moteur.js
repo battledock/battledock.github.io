@@ -15359,10 +15359,10 @@ if(cote){
    seize unites sous l'epaule au lieu de vingt-deux. */
 /* LE COUDE EST A MI-CHEMIN, un rien plus haut que la ligne epaule-main :
    c'est ce qui donne le bras TENDU plutot que le bras raide. */
-const ex=TROT?(fonce?8:9):(PEDALE?(fonce?3:4):(COURSE?1+balance*2*AMPL:2+balance*6*AMPL)),
+const ex=TROT?(fonce?8:9):(PEDALE?(fonce?3:4):(COURSE?-1+balance*7:2+balance*6*AMPL)),   /* en course, le coude part loin derriere puis revient devant */
       ey=TROT?yEp+6:yEp+11-(COURSE?1:0);
-const hx=TROT?(fonce?TROT_AVANT-2:TROT_AVANT):(PEDALE?(fonce?5:6):(COURSE?ex+3+Math.max(0,balance)*3:2+balance*11*AMPL+(balance>0?1:0))),
-      hy=TROT?yEp+TROT_MAIN+(fonce?1:0):(PEDALE?yEp+22:(COURSE?ey-2-balance*5:yEp+20-Math.round(Math.abs(balance)*2)));   /* au bout du balancement, la main remonte un peu : le bras decrit un arc */
+const hx=TROT?(fonce?TROT_AVANT-2:TROT_AVANT):(PEDALE?(fonce?5:6):(COURSE?ex+6+Math.max(0,balance)*2:2+balance*11*AMPL+(balance>0?1:0))),
+      hy=TROT?yEp+TROT_MAIN+(fonce?1:0):(PEDALE?yEp+22:(COURSE?ey-3-Math.round(balance*5):yEp+20-Math.round(Math.abs(balance)*2)));   /* au bout du balancement, la main remonte un peu : le bras decrit un arc */
 const hautC=manches>0?c:sk, basC=manches>=1?c:sk;
 R(-3,yEp,7,4,manches>0?cC:sk);R(-3,yEp+3,7,1,manches>0?c:skO);          /* l'épaule, arrondie */
 /* LE BRAS SE DETACHE DU BUSTE. De la meme etoffe que la veste, le bras
@@ -16746,7 +16746,7 @@ const xs=EP-1+(diag?vis:0);
 if(snow){R(xs,yTete-12,6,62,c);R(xs,yTete-12,1,62,T(c,26));R(xs+5,yTete-12,1,62,cO);R(xs+1,yEp+6,4,6,c2);R(xs+1,yTete-13,4,1,c);}
 else{[0,3].forEach(o=>{R(xs+o,yTete-14,2,64,c);R(xs+o,yTete-14,1,64,T(c,26));R(xs+o-1,yTete-16,2,2,c);R(xs+o,yEp+6,2,5,c2);});}
 };
-const lean=frG>0?Math.round(pencheG*1.3):(PEDALE&&cote?9:(COURSE&&cote?2:0));   /* le buste se penche vers ce qu'on frappe, en avant quand on court, et sur le guidon à vélo */
+const lean=frG>0?Math.round(pencheG*1.3):(PEDALE&&cote?9:(COURSE&&cote?4:0));   /* (en course : deux pixels, le corps part devant ses pieds) le buste se penche vers ce qu'on frappe, en avant quand on court, et sur le guidon à vélo */
 const penche=(f)=>{if(!lean)return f();g.save();g.translate(s*lean*u,0);f();g.restore();};
 if(!dos&&!cote)skisDe();                                                        /* de face, les skis passent derrière le corps */
 if(cote){
