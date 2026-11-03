@@ -33606,3 +33606,48 @@ function ouvrirLEmbauche(){
     el.querySelector('.go').onclick=()=>{el.remove();fermer();try{texteVolant(joueur.x,joueur.y-30,'Direction '+B.quai.split(' ·')[0]+' !','#f2d688');}catch(x){}};
   };
 }
+
+/* ================= LE JEU CHANGE DE DIMENSION =================
+   À chaque arrivée, un écran prévient que le port est en travaux.
+   Un bouton pour entrer, et on retrouve le jeu tel qu'il est. */
+(function ecranDimension(){
+try{
+if(document.getElementById('dimEcran'))return;
+const css=document.createElement('style');css.textContent=
+'#dimEcran{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px;'+
+'background:radial-gradient(120% 80% at 50% 0%,#24406e 0%,#13223e 55%,#0a1222 100%);color:#f4ecd8;font-family:system-ui,sans-serif;transition:opacity .45s}'+
+'#dimEcran.part{opacity:0;pointer-events:none}'+
+'#dimEcran .bx{width:min(380px,100%);text-align:center}'+
+'#dimEcran .ic{width:96px;height:96px;margin:0 auto 22px;position:relative}'+
+'#dimEcran .ic i{position:absolute;inset:0;border-radius:50%;border:3px solid rgba(242,214,136,.25);border-top-color:#f2d688;animation:dimTour 1.4s linear infinite}'+
+'#dimEcran .ic i+i{inset:14px;border-color:rgba(118,166,192,.25);border-bottom-color:#76a6c0;animation-duration:2.2s;animation-direction:reverse}'+
+'#dimEcran .ic b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px}'+
+'@keyframes dimTour{to{transform:rotate(360deg)}}'+
+'#dimEcran small{display:block;font:800 11px system-ui;letter-spacing:3px;color:#f2d688;margin-bottom:10px}'+
+'#dimEcran h1{font:900 28px/1.15 system-ui;margin:0 0 14px;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.35)}'+
+'#dimEcran p{font:500 15px/1.5 system-ui;color:#cfd8e8;margin:0 0 10px}'+
+'#dimEcran .pts{display:inline-flex;gap:6px;margin:8px 0 26px}'+
+'#dimEcran .pts span{width:8px;height:8px;border-radius:50%;background:#f2d688;opacity:.25;animation:dimPt 1.2s infinite}'+
+'#dimEcran .pts span:nth-child(2){animation-delay:.2s}#dimEcran .pts span:nth-child(3){animation-delay:.4s}'+
+'@keyframes dimPt{50%{opacity:1;transform:translateY(-3px)}}'+
+'#dimEcran button{all:unset;cursor:pointer;-webkit-tap-highlight-color:transparent;display:block;width:100%;box-sizing:border-box;'+
+'padding:16px 20px;border-radius:16px;background:#f4d41e;color:#13223e;font:900 17px system-ui;box-shadow:0 5px 0 #b89a10;text-align:center}'+
+'#dimEcran button:active{transform:translateY(3px);box-shadow:0 2px 0 #b89a10}';
+document.head.appendChild(css);
+const d=document.createElement('div');d.id='dimEcran';
+d.innerHTML='<div class="bx"><div class="ic"><i></i><i></i><b>⚓</b></div>'+
+'<small>BATTLE DOCK · TRAVAUX EN COURS</small>'+
+'<h1>Le jeu change de dimension</h1>'+
+'<p>Le port se transforme : nouveau quai, nouveau personnage, nouvelle façon de jouer.</p>'+
+'<p>Pendant les travaux, des choses peuvent manquer ou bouger d’un jour à l’autre. Ta sauvegarde est conservée.</p>'+
+'<p>Merci de patienter, ça vaut le coup.</p>'+
+'<div class="pts"><span></span><span></span><span></span></div>'+
+'<button type="button">Entrer sur le quai</button></div>';
+const poser=()=>{document.body.appendChild(d);
+  const b=d.querySelector('button');
+  const stop=ev=>ev.stopPropagation();
+  ['pointerdown','touchstart','mousedown'].forEach(t=>d.addEventListener(t,stop,{passive:true}));
+  b.onclick=()=>{try{vibrer(10);}catch(x){}d.classList.add('part');setTimeout(()=>{d.remove();css.remove();},500);};};
+if(document.body)poser();else addEventListener('DOMContentLoaded',poser);
+}catch(x){}
+})();
