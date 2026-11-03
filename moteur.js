@@ -32997,6 +32997,7 @@ try{peindreMadeleine('« Merci pour tes '+d.donne+' citrouille'+(d.donne>1?'s':'
    l'ancien tiroir. Rien ici ne touche au jeu : si un ecran manque, le
    bouton ne fait simplement rien. */
 (function barreAtelier(){
+return; /* menu du bas retiré */
 try{
 if(document.getElementById('barreB'))return;
 const PAL={O:'#f08a24',o:'#ffb45a',d:'#a85810',W:'#fff6e6',w:'#d8cdb8',K:'#1d2b44',k:'#3a4e72',R:'#c0392b',N:'#6a4a2a',n:'#a07040',S:'#9aa4b0',s:'#5a6470'};
