@@ -209,7 +209,7 @@ try{window.comparerPose=comparerPose;}catch(x){}
 const CACHE_FIN=new Map();
 /* LA TENUE UNIQUE — docker occasionnel. Tout le monde la porte, quoi
    qu'il y ait dans la sauvegarde : le vestiaire est fermé. */
-const UNIFORME={haut:6,veste:'#f2731c',pantalon:'#2b3340',bas:0,souliers:3,chaussures:'#221d18',chapeau:0,sac:0,motif:0};
+const UNIFORME={haut:1,veste:'#1f3566',pantalon:'#e8c41c',bas:0,souliers:3,chaussures:'#1e1a16',chapeau:0,sac:0,motif:0,_motif:'docker',_docker:true};
 function uniforme(ap){const a=Object.assign({},ap||{},UNIFORME);delete a.cos;return a;}
 function sprite(g,x,y,ap0,dir,pas,bouge){
 ap0=uniforme(ap0);
@@ -15008,6 +15008,8 @@ seg(kx,ky,fx,fyy,SX.jambe-2,bas);
 const mx=kx+(fx-kx)*0.35-2, my=ky+(fyy-ky)*0.35;
 R(Math.round(mx)-1,Math.round(my)-2,2,5,bas);R(Math.round(mx)-2,Math.round(my)-1,1,3,basO);
 R(Math.round(kx)+2,Math.round(ky)-1,1,2,court?skC:cc);                            /* le genou */
+if(p._docker&&!court){const w2=SX.jambe-1;for(const t of [0.3,0.68]){const bx=kx+(fx-kx)*t, by=ky+(fyy-ky)*t;
+  R(Math.round(bx-w2/2),Math.round(by),w2,2,'#e9eef2');R(Math.round(bx-w2/2),Math.round(by),w2,1,'#ffffff');}}
 if(court)R(Math.round(cx+(kx-cx)*0.6)-3,Math.round(yHan+(ky-yHan)*0.6),7,1,cO);  /* le bas du short */
 soulierDe(fx,fyy+3,fonce,cote?(fonce?pD:pG):null);
 return;
@@ -15066,6 +15068,8 @@ else R(cx-2,yGen,4,1,court?skO:cO);                                             
 if(court)R(cx-4,yGen-3,8,1,cO);                                                   /* le bas du short */
 if(!court&&basT==='treillis'){R(cx-3,-18,3,4,cO);R(cx-3,-18,3,1,cc);}             /* la poche du treillis */
 if(!court&&!jupe)R(cx+(cx<0?2:-3),yChev-2,2,1,cO);                                /* le pli du bas de pantalon */
+if(p._docker&&!court&&!jupe){for(const t of [0.3,0.68]){const yb=Math.round(yGen+(yChev-yGen)*t);
+  R(cx-Math.floor(J/2),yb,J,2,'#e9eef2');R(cx-Math.floor(J/2),yb,J,1,'#ffffff');R(cx-Math.floor(J/2)+J-1,yb,1,2,'#aab4bd');}}   /* les bandes réfléchissantes */
 soulierDe(cx,-lev+prof,fonce);
 };
 function soulierDe(cx,by,fonce,pp){
@@ -15283,6 +15287,16 @@ else if(p._doudoune){for(let r=yEp+5;r<bas-1;r+=4){R(xc2-L2,r,L2*2,1,vestO);R(xc
 if(!dos&&!cote){R(xc2-4,yEp-2,8,3,vestO);R(xc2-4,yEp-2,8,1,vestC);}}                         /* le col montant */
 if(p._motif==='retro'){for(let x=-L2;x<L2;x+=2){const zy=yEp+9+((x/2)%2?2:0);R(xc2+x,zy,2,2,'#f0e040');R(xc2+x,zy+4,2,1,'#3ad0c0');}
 R(xc2-L2,yHan-5,L2*2,2,'#3ad0c0');}
+if(p._motif==='docker'){                       /* LE GILET DU DOCKER : jaune dessus, bleu dessous, deux bandes */
+  const J='#f4d41e', JC='#fde862', JO='#d4b012', B='#1f3566', BO='#152648', BD='#e9eef2', BDO='#aab4bd';
+  const yB=yHan-7;
+  for(let r=yEp+1;r<yB;r++){R(xc2-L2,r,L2*2,1,J);R(xc2-L2,r,1,1,JC);R(xc2+L2-1,r,1,1,JO);}
+  R(xc2-L2,yB,L2*2,yHan-1-yB,B);R(xc2+L2-1,yB,1,yHan-1-yB,BO);
+  if(!cote&&!dos){for(let r=yEp+1;r<yEp+7;r++){const o=Math.max(0,3-Math.round((r-yEp-1)*0.55));if(o)R(xc2-o,r,o*2,1,'#1f3566');}
+    R(xc2,yEp+6,1,yHan-1-yEp-6,JO);}                                   /* l'encolure en V, la fermeture */
+  const bande=(y)=>{R(xc2-L2,y,L2*2,2,BD);R(xc2-L2,y,L2*2,1,'#ffffff');R(xc2-L2,y+2,L2*2,0.5,BDO);};
+  bande(yEp+8);bande(yB-3);
+}
 if(p._motif==='gilet'){R(xc2-L2,yEp+9,L2*2,2,'#d8dde2');R(xc2-L2,yEp+9,L2*2,0.5,'#ffffff');R(xc2-L2,yHan-7,L2*2,2,'#d8dde2');R(xc2-L2,yHan-7,L2*2,0.5,'#ffffff');}
 if(p._motif==='course'){R(xc2-L2,yEp+7,L2*2,3,'#f4efe0');R(xc2-L2,yEp+8,L2*2,1,'#b8392c');
 if(!dos){R(xc2+3,yEp+12,5,3,'#f4efe0');R(xc2+4,yEp+13,3,1,'#1d3f6a');}                        /* le dossard */
@@ -16873,6 +16887,7 @@ seg(hX,hY,kX,kY,SX.jambe,c);
 seg(hX+1,hY+1,kX+1,kY,1,fonce?pant:pantC);                               /* la cuisse, éclairée devant */
 seg(kX,kY,fX,fY,SX.jambe-1,bas2);
 R(Math.round(kX)-1,Math.round(kY),2,1,fonce?pant:pantC);                 /* le genou */
+if(p._docker&&!court){const w2=SX.jambe-1;for(const t of [0.3,0.68]){const bx=kX+(fX-kX)*t, by=kY+(fY-kY)*t;R(Math.round(bx-w2/2),Math.round(by),w2,2,'#e9eef2');R(Math.round(bx-w2/2),Math.round(by),w2,1,'#ffffff');}}
 soulierDe(Math.round(fX),Math.round(fY)+3,fonce,pp);};
 /* QUELLE JAMBE EST AU FOND : celle dont l'écart de hanche la fait monter
    à l'écran. Le signe sort de la projection elle-même, on ne le devine
