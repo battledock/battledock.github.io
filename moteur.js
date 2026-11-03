@@ -32990,3 +32990,49 @@ const nv=d.nouvelles||[];for(const k of nv){e.cos=e.cos||{};e.cos['costume_'+k]=
 nv.forEach((k,i)=>setTimeout(()=>{try{ticketDOrTenue(k,'HALLOWEEN 2026','Madeleine te l’a cousue !');}catch(x){console.error('hwT',x);}},500+i*400));
 try{peindreMadeleine('« Merci pour tes '+d.donne+' citrouille'+(d.donne>1?'s':'')+' ! Ça fait '+d.n+' en tout. »');}catch(x){console.error('hwO',x);}}
 
+
+/* ================= LA BARRE DE L'ATELIER =================
+   Le nouveau menu : une plaque d'acier rivetee en bas de l'ecran, cinq
+   boutons toujours a portee du pouce. Elle appelle les memes ecrans que
+   l'ancien tiroir. Rien ici ne touche au jeu : si un ecran manque, le
+   bouton ne fait simplement rien. */
+(function barreAtelier(){
+try{
+if(document.getElementById('barreB'))return;
+const PAL={O:'#f08a24',o:'#ffb45a',d:'#a85810',W:'#fff6e6',w:'#d8cdb8',K:'#1d2b44',k:'#3a4e72',R:'#c0392b',N:'#6a4a2a',n:'#a07040',S:'#9aa4b0',s:'#5a6470'};
+const IC={
+casque:['....oOOO....','..oOOOOOOO..','.oOOOOOOOOO.','.OOOOWWOOOOO','oOOOOWWOOOOO','OOOOOOOOOOOd','dddddddddddd','.d........d.'],
+lettre:['WWWWWWWWWWWW','WkWWWWWWWWkW','WWkWWWWWWkWW','WWWkkWWkkWWW','WWWWWkkWWWWW','WWWWWWWWWWWW','WWWWWWWWWWRW','wwwwwwwwwwww'],
+bulle:['..WWWWWWWW..','.WWWWWWWWWW.','WWKWWKWWKWWW','WWKWWKWWKWWW','WWWWWWWWWWWW','.WWWWWWWWWW.','..WWw.......','..Ww........'],
+carnet:['NNNNNNNNNNN.','NnWWWWWWWWN.','NnWKKKKKWWN.','NnWWWWWWWWN.','NnWKKKKWWWN.','NnWWWWWWWWN.','NnWKKKKKWWN.','NNNNNNNNNNN.'],
+roue:['....SSSS....','.S.SSSSSS.S.','..SSSssSSS..','SSSs....sSSS','SSSs....sSSS','..SSSssSSS..','.S.SSSSSS.S.','....SSSS....']};
+const svg=(m)=>{const k=3,w=m[0].length,h=m.length;let s='<svg width="36" height="36" style="image-rendering:pixelated;shape-rendering:crispEdges">';
+  m.forEach((r,j)=>{for(let i=0;i<w;i++){const c=PAL[r[i]];if(c)s+='<rect x="'+((36-w*k)/2+i*k)+'" y="'+((36-h*k)/2+j*k)+'" width="'+k+'" height="'+k+'" fill="'+c+'"/>';}});return s+'</svg>';};
+const st=document.createElement('style');st.textContent=
+'#barreB{position:fixed;left:10px;right:10px;bottom:calc(12px + env(safe-area-inset-bottom));height:74px;z-index:6;border-radius:16px;background:#1d2b44;border:3px solid #0e1626;'+
+'box-shadow:inset 0 3px 0 #33486c,0 6px 0 #0e1626,0 10px 24px rgba(0,0,0,.35);display:flex;justify-content:space-around;align-items:center;padding:0 4px;touch-action:none;-webkit-user-select:none;user-select:none}'+
+'#barreB .riv{position:absolute;width:6px;height:6px;border-radius:50%;background:#56688a;box-shadow:inset -1px -1px 0 #0e1626}'+
+'#barreB button{all:unset;width:20%;text-align:center;position:relative;cursor:pointer;-webkit-tap-highlight-color:transparent}'+
+'#barreB .fd{width:46px;height:44px;margin:0 auto;border-radius:12px;background:#2b3d5e;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 -3px 0 #16233a;transition:transform .08s}'+
+'#barreB button:active .fd{transform:translateY(2px);background:#f08a24;box-shadow:inset 0 -2px 0 #a85810}'+
+'#barreB b{display:block;font:700 11px system-ui,sans-serif;color:#cfd8e8;margin-top:3px;letter-spacing:.3px}'+
+'#barreB .bdg{position:absolute;top:-5px;right:calc(50% - 30px);background:#e84a3a;color:#fff;font:700 11px system-ui;border-radius:9px;min-width:18px;height:18px;line-height:18px;border:2px solid #1d2b44;display:none}'+
+'html body #barre{bottom:calc(94px + env(safe-area-inset-bottom))!important;padding-bottom:0!important}'+
+'body.clavier #barreB{opacity:0;pointer-events:none}';
+document.head.appendChild(st);
+const b=document.createElement('div');b.id='barreB';
+const BT=[['casque','Vestiaire','b-vestiaire'],['lettre','Courrier','b-courrier'],['bulle','Émotes','b-emotes'],['carnet','Docker',null],['roue','Réglages','b-reglages']];
+b.innerHTML='<span class="riv" style="left:7px;top:7px"></span><span class="riv" style="right:7px;top:7px"></span><span class="riv" style="left:7px;bottom:7px"></span><span class="riv" style="right:7px;bottom:7px"></span>'+
+ BT.map(([ic,nom,id],i)=>'<button data-i="'+i+'"><div class="fd">'+svg(IC[ic])+'</div><b>'+nom+'</b>'+(id==='b-courrier'?'<span class="bdg" id="bB-co">0</span>':'')+'</button>').join('');
+document.body.appendChild(b);
+const stop=(ev)=>ev.stopPropagation();
+['pointerdown','touchstart','mousedown'].forEach(t=>b.addEventListener(t,stop,{passive:true}));
+b.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',(ev)=>{ev.stopPropagation();
+  const [, ,id]=BT[+btn.dataset.i];try{if(typeof vibrer==='function')vibrer(8);}catch(x){}
+  try{if(id){const o=document.getElementById(id);if(o&&o.onclick)o.onclick(ev);else if(o)o.click();}
+      else if(typeof ouvrirMonNiveau==='function')ouvrirMonNiveau();}catch(x){console.warn(x);}}));
+/* la pastille du courrier suit celle de l'ancien bouton */
+setInterval(()=>{try{const s=document.getElementById('co-nb'), d=document.getElementById('bB-co');if(!s||!d)return;
+  const n=parseInt(s.textContent,10)||0;d.textContent=n;d.style.display=n>0&&getComputedStyle(s).display!=='none'?'block':'none';}catch(x){}},1500);
+}catch(x){console.warn('barre',x);}
+})();
