@@ -13958,7 +13958,6 @@ if(CARTE==='foret'){
 }
 if(CARTE==='extramar'){try{dessinerLesSauts(ctx,camX,camY);}catch(x){}}   /* les poissons du bassin, sous les barques */
 if(CARTE==='large'){try{dessinerLeBateau(ctx,camX,camY);}catch(x){}}      /* la coque, sous le marin */
-if(CARTE==='extramar'){try{embaucheDuQuai(acteurs,ctx,camX,camY);}catch(x){}}
 dessinerDecor(ctx,camX,camY,VW,VH,acteurs);
 /* LES LUCIOLES FLOTTENT : elles passent par-dessus le décor, jamais
    derrière un tronc — elles sont entre les arbres et nous. */
@@ -33317,6 +33316,7 @@ function graverTableauEmbauche(){
 }
 function embaucheNuit(){try{const h=heureDuPort();const a=h[2]<0.5?h[0]:h[1];return a==='nuit'||a==='soir';}catch(x){return false;}}
 window.embaucheBloque=function(x,y){
+  return false; /* embauche retirée */
   if(typeof CARTE==='undefined'||CARTE!=='extramar')return false;
   const s=EMB.s;
   if(x>EMB.x-80*s&&x<EMB.x+80*s&&y>EMB.y-62*s&&y<EMB.y+3)return true;               /* le bâtiment */
