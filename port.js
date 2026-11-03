@@ -888,19 +888,57 @@ if(nuit)for(let j=0;j<K.rouges.length;j++){const l=K.rouges[j], x=l[0]-x0;if(x<-
   if(on){q.fillStyle='#ff4a36';q.fillRect(x,l[1],l[2],l[3]);}}
 return c;
 }
+const GOELAND_G={
+plane:['..GG.......GG..',
+       '.GGGG.....GGGG.',
+       'DgG..GWWWG..GgD',
+       'D.....wWWEY...D',
+       '.......ww......'],
+milieu:['...............',
+        '.GGGG.....GGGG.',
+        'DGGgGGWWWGGgGGD',
+        '......wWWEY....',
+        '.......ww......'],
+haut:['DD...........DD',
+      '.GG.........GG.',
+      '..GG.......GG..',
+      '...gGGWWWGGg...',
+      '......wWWEY....',
+      '.......ww......'],
+bas:['...............',
+     '......WWW......',
+     '....GGWWWEY....',
+     '..GGg.www.gGG..',
+     '.GG.........GG.',
+     'DD...........DD']};
+const GOELAND_P={
+plane:['.GG...GG.','DG.GWG.GD','....wY...'],
+milieu:['.........','DGGGWGGGD','....wY...'],
+haut:['D.......D','.G.....G.','..GGWGG..','....wY...'],
+bas:['...GWY...','.GG.w.GG.','D.......D']};
 function animerLePort(ctx,amb,camX,camY,lw,h,T){
 const M=MONDE_L, HZ=108, EAU=140;
 ctx.save();ctx.translate(-camX,-camY);
 ctx.beginPath();ctx.rect(camX,camY,lw,h);ctx.clip();
-/* LES GOELANDS : ils planent, battent deux fois des ailes, et repartent */
-if(amb!=='nuit')for(let i=0;i<6;i++){
-  const v=7+alea(i*3.3)*9, dir=i%2?1:-1, x=((alea(i*5.7)*M+dir*T*v)%M+M)%M, y=Math.round(14+alea(i*9.1)*58+Math.sin(T*0.4+i)*5);
-  if(x<camX-6||x>camX+lw+6)continue;
-  const bat=Math.floor(T*5+i*1.3)%10<3?Math.floor(T*5+i*1.3)%2:0, X=Math.round(x);
-  const c1=amb==='jour'?'#ffffff':'#2e2430', c2=amb==='jour'?'#5a6270':'#2e2430';
-  ctx.fillStyle=c2;
-  if(bat){ctx.fillRect(X-2,y+1,1,1);ctx.fillRect(X+2,y+1,1,1);ctx.fillStyle=c1;ctx.fillRect(X-1,y,3,1);}
-  else{ctx.fillRect(X-2,y-1,1,1);ctx.fillRect(X+2,y-1,1,1);ctx.fillStyle=c1;ctx.fillRect(X-1,y,1,1);ctx.fillRect(X+1,y,1,1);ctx.fillRect(X,y+1,1,1);}
+/* LES GOELANDS, dessines au pixel : le corps blanc, la tete et son bec
+   jaune vers la ou ils vont, les ailes grises en M aux bouts noirs. Ils
+   planent longtemps, puis battent trois fois des ailes. Les plus proches
+   sont plus grands, les lointains plus petits et plus haut. */
+if(amb!=='nuit'){
+  const PAL=amb==='jour'?{W:'#ffffff',w:'#d6dce3',G:'#bcc5cf',g:'#97a2ae',D:'#24262a',E:'#24262a',Y:'#e8a820'}
+                        :{W:'#ffe4cc',w:'#d8b4a8',G:'#b89aa6',g:'#8e7484',D:'#2e2228',E:'#2e2228',Y:'#e89a40'};
+  const peindre=(spr,X,Y,versGauche)=>{const h=spr.length, w=spr[0].length, x0=Math.round(X-w/2), y0=Math.round(Y-h/2);
+    for(let j=0;j<h;j++)for(let i=0;i<w;i++){const ch=spr[j][versGauche?w-1-i:i];if(ch==='.')continue;ctx.fillStyle=PAL[ch];ctx.fillRect(x0+i,y0+j,1,1);}};
+  for(let i=0;i<7;i++){
+    const grand=i<3, SP=grand?GOELAND_G:GOELAND_P;
+    const v=(grand?11:6)+alea(i*3.3)*7, dir=i%2?1:-1, x=((alea(i*5.7)*M+dir*T*v)%M+M)%M;
+    const y=Math.round((grand?24:8)+alea(i*9.1)*(grand?26:30)+Math.sin(T*0.35+i*1.7)*4);   /* dans le ciel, au-dessus des toits */
+    if(x<camX-10||x>camX+lw+10)continue;
+    /* le cycle : douze temps de plane, puis trois battements (milieu, haut, milieu, bas) */
+    const t=(T*7+i*5.3)%24, k=Math.floor(t);
+    const fr=k<12?'plane':['milieu','haut','milieu','bas'][(k-12)%4];
+    peindre(SP[fr],x,y,dir<0);
+  }
 }
 /* LA PILOTINE : elle traverse le bassin en un peu plus de trois minutes, et revient */
 {const per=200, u=(T%(per*2))/per, aller=u<1, k=aller?u:2-u, x=Math.round(-40+k*(M+80)), y=HZ+19, d=aller?1:-1;
