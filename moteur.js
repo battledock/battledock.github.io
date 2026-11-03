@@ -210,7 +210,7 @@ const CACHE_FIN=new Map();
 /* LA TENUE UNIQUE — docker occasionnel. Tout le monde la porte, quoi
    qu'il y ait dans la sauvegarde : le vestiaire est fermé. */
 const UNIFORME={haut:1,veste:'#1f3566',pantalon:'#e8c41c',bas:0,souliers:3,chaussures:'#1e1a16',chapeau:0,sac:0,motif:0,_motif:'docker',_docker:true};
-function uniforme(ap){const a=Object.assign({},ap||{},UNIFORME);delete a.cos;return a;}
+function uniforme(ap){const a=Object.assign({},ap||{},UNIFORME);delete a.cos;delete a.deguisement;delete a.maillot;delete a.gilet;delete a.patin;return a;}
 function sprite(g,x,y,ap0,dir,pas,bouge){
 ap0=uniforme(ap0);
 let fin=false;try{fin=STYLE_FIN();}catch(x){fin=false;}          /* (au tout début du chargement, on reste classique) */
@@ -227,6 +227,7 @@ return;
 return spriteClassique(g,x,y,ap0,dir,pas,bouge);
 }
 function spriteClassique(g,x,y,ap0,dir,pas,bouge){
+ap0=uniforme(ap0);
 const p=Object.assign({},DEF_AP,ap0||{});
 appliquerDeguisement(p);                 /* les tenues valent aussi pour le dessin classique */
 const P=PALETTES;
@@ -16935,6 +16936,7 @@ if(dos||cote)skisDe();                                                       /* 
 }
 let BRISE_PH=0, CLIGNE_FIN=false;
 function graverFin(ap,dir,pas,bouge,brise,cligne){
+ap=uniforme(ap);
 BRISE_PH=(brise||0)*Math.PI/2;CLIGNE_FIN=!!cligne;
 const FG=finesseGravure();
 const L=CASE_L*FG, H=CASE_H*FG;
