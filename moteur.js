@@ -14825,8 +14825,8 @@ const appui=bouge?0:(rpA?(rpA.sway[rpF]?1:0):(rpS?0:APPUI[((iBrise%8)+8)%8]));
 /* RÉÉCHANTILLONNÉES POUR VINGT-QUATRE. Chaque table vaut une foulée,
    répétée deux fois par cycle. Le sommet de la course tient toujours sur
    UNE seule image — c'est lui qui donne la propulsion, l'étaler le tue. */
-const BOB_M=[ 0, 1, 1, 1, 0, 0,-1,-1,-1,-1, 0, 0,
-              0, 1, 1, 1, 0, 0,-1,-1,-1,-1, 0, 0];
+const BOB_M=[ 0, 1, 2, 1, 1, 0,-1,-1,-2,-1, 0, 0,   /* un demi-pixel de plus en haut et en bas : le pas se sent */
+              0, 1, 2, 1, 1, 0,-1,-1,-2,-1, 0, 0];
 const BOB_C=[ 1, 0, 0,-1,-1,-1, 0, 1, 1, 2, 1, 1,
               1, 0, 0,-1,-1,-1, 0, 1, 1, 2, 1, 1];
 const bobPas=(COURSE?BOB_C:BOB_M)[((F%PASM)+PASM)%PASM];
@@ -15320,10 +15320,16 @@ const main=(mx,my,cote2,profil,fonce,deDos)=>{
 let p0=fonce?peauO:peau, p1=fonce?peauT:peauO, pc=fonce?peau:peauC;
 if(p._gants){const gc=p._gants.g;p0=fonce?T(gc,-24):gc;p1=T(gc,-44);pc=T(gc,20);
 if(p._gants.g2){R(mx-2,my-1,5,2,p._gants.g2);}}                                   /* le poignet, d'une autre couleur */
-if(profil){R(mx-2,my,4,4,p0);R(mx-2,my+3,4,1,p1);R(mx+1,my+1,1,2,p1);R(mx-2,my,1,1,pc);R(mx+2,my+1,1,2,p0);return;}
-R(mx-2,my,5,4,p0);
-R(mx-2,my+4,1,1,p0);R(mx,my+4,1,1,p0);R(mx+2,my+4,1,1,p0);           /* le bout des doigts */
-R(mx-1,my+3,1,2,p1);R(mx+1,my+3,1,2,p1);                                /* les séparations */
+/* LA MAIN GRANDIT D'UN CRAN et prend un liseré sous elle et cote ombre :
+   a quatre demi-pixels, elle se lisait comme une tache au bout du bras. */
+const li=T(p1,-22);
+if(profil){R(mx-2,my-1,5,6,li);R(mx-2,my,4,5,p0);R(mx-2,my+4,4,1,p1);R(mx+1,my+1,1,3,p1);R(mx-2,my,1,1,pc);R(mx-1,my,2,1,pc);
+  R(mx+2,my,1,3,p0);R(mx+2,my+3,1,1,p1);return;}                       /* de profil : le pouce dessus, les doigts replies */
+R(mx-3,my,7,6,li);
+R(mx-2,my,5,5,p0);
+R(mx-2,my+5,1,1,p0);R(mx,my+5,1,1,p0);R(mx+2,my+5,1,1,p0);           /* le bout des doigts */
+R(mx-1,my+3,1,3,p1);R(mx+1,my+3,1,3,p1);                                /* les séparations */
+R(mx-1,my+1,3,1,pc);                                                    /* les jointures, eclairees */
 const pouce=cote2<0?mx+2:mx-2;                                          /* le pouce, vers le corps */
 if(!deDos){R(pouce+(cote2<0?1:-1),my+1,1,2,p0);R(pouce,my+1,1,1,p1);}
 R(mx-2,my,5,1,pc);R(cote2<0?mx-2:mx+2,my,1,4,p1);                      /* le dos éclairé, le bord dans l'ombre */
