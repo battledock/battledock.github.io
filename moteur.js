@@ -33054,7 +33054,7 @@ const st=document.createElement('style');st.textContent=
 '#badgeH small{display:block;font:700 11px system-ui,sans-serif;color:#ffe2a0;text-shadow:0 1px 0 #1d2b44,0 0 6px rgba(0,0,0,.55);white-space:nowrap}'+
 '#badgeH #bH-g{display:none}'+
 '#hudD{position:fixed;right:14px;top:calc(12px + env(safe-area-inset-top));z-index:6;text-align:right;pointer-events:none;font:800 15px system-ui,sans-serif;color:#fff;text-shadow:0 1px 0 #1d2b44,0 0 6px rgba(0,0,0,.55);line-height:1.5}'+
-'#hudD span{display:block}#hudD .h{font:800 15px system-ui,sans-serif}'+
+'#hudD span{display:block}#hudD .h{display:none}'+   /* plus d'heure a l'ecran */
 '#hudD i{width:13px;height:13px;border-radius:50%;background:#e8c040;box-shadow:inset -2px -2px 0 #b08a20,0 1px 0 #1d2b44;display:inline-block;margin-right:5px;vertical-align:-1px}';
 document.head.appendChild(st);
 const b=document.createElement('div');b.id='badgeH';
