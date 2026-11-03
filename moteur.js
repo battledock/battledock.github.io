@@ -2615,22 +2615,6 @@ g.fillStyle='#151a20';g.fillRect(w*0.20,h*0.40,w*0.16,h*0.16);
 g.fillStyle='#7d3b2a';g.fillRect(w*0.54,h*0.36,w*0.34,h*0.28);
 g.fillStyle='#7d5934';g.fillRect(w*0.62,h*0.04,w*0.34,h*0.26);
 g.fillStyle='#e8cf8a';g.font='9px Georgia,serif';g.fillText('ENTREPÔT',w*0.66,h*0.20);
-}},
-{titre:'Le classement',sous:'CE QUI SE COMPTE',
-txt:['Le premier est celui qui a <b>le plus récolté</b> — un objet ramassé, un '+
-'point, quel qu’il soit. Au champ, une récolte rapporte <b>plus de points quand elle a mis longtemps à pousser</b>.',
-'Tu y retrouves aussi qui est en ligne. Et quand un autre joueur est hors '+
-'de ton écran, son <b>médaillon</b> apparaît sur le bord, avec son visage.'],
-img:(g,w,h)=>{
-g.fillStyle='#f6efdc';g.fillRect(0,0,w,h);
-['Dopio','Eliasse','Mathieu'].forEach((n,i)=>{
-g.fillStyle=i?'rgba(120,96,56,.1)':'rgba(201,162,74,.22)';
-g.fillRect(w*0.05,h*0.14+i*h*0.28,w*0.9,h*0.22);
-g.fillStyle='#2b2418';g.font='14px Georgia,serif';
-g.fillText(n,w*0.14,h*0.29+i*h*0.28);
-g.fillStyle='#8a6a2a';g.font='15px Georgia,serif';
-g.fillText([405,401,39][i],w*0.78,h*0.29+i*h*0.28);
-});
 }}
 ];
 const PAGES_PORT=[
@@ -5790,7 +5774,7 @@ ${NEUF.length?`
 ${marcheHTML}
 ${hierHTML}
 <div class="gzv-grille">
-<div class="gzv-bloc"><h3>Classement</h3>${CL.length?'<ol>'+CL.map((j,k)=>'<li>'+(k===0?'<b>':'')+esc(j.pseudo)+(k===0?'</b>':'')+'</li>').join('')+'</ol>':'Personne encore au registre.'}</div>
+
 <div class="gzv-bloc"><h3>Météo</h3>${METEO[Math.floor(graine(7)*METEO.length)]} ${temp}°C.</div>
 <div class="gzv-bloc"><h3>Cours du poisson</h3>${cours.map(([n,a,f])=>'<div class="gzv-prix"><span>'+n+'</span><b>'+enEuros(Math.round(a*100)).replace(',00','')+' '+f+'</b></div>').join('')}</div>
 <div class="gzv-bloc"><h3>Sur les quais</h3><b>${(G&&G.joueurs)||0}</b> habitants inscrits au registre du port.</div>
@@ -7674,7 +7658,7 @@ R(-4,-5,9,5,V.tronc);R(-4,-5,9,2,V.troncC);R(-2,-4,5,1,'#a5764a');R(-4,-2,9,2,V.
    surtout les collines boisees qui apparaissent sur l'horizon : on marche
    vers quelque chose qu'on voit, pas vers un mur. */
 const MONDE_L=CARTE==='large'?2400:(CARTE==='foret'?1500:(CARTE==='tokyo'?900:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:(FERME_VIERGE?1800:1200)):1760))));   /* la ferme : 1200 x 1600 */
-const MONDE_H=CARTE==='large'?2400:(CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?(FERME_VIERGE?1800:1600):(CARTE==='tokyo'?2560:840)));   /* Tokyo : la ville en haut, le grand circuit dessous */   /* la ferme : 1200 x 1600 */
+const MONDE_H=CARTE==='large'?2400:(CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?(FERME_VIERGE?1800:1600):(CARTE==='tokyo'?2560:562)));   /* le port : le quai resserre, 210 de dalles */   /* Tokyo : la ville en haut, le grand circuit dessous */   /* la ferme : 1200 x 1600 */
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 /* AU LARGE, LA CAMÉRA RECULE : le bateau fait à lui seul 252 points de
    long, et naviguer sans voir devant soi n'a aucun sens. */
@@ -23021,6 +23005,7 @@ $('sacX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
 }
 
 async function ouvrirLeClassement(){
+return;   /* LE CLASSEMENT EST RETIRE du jeu. Les donnees restent au serveur. */
 if(!document.getElementById('cssCls')){const st=document.createElement('style');
 st.id='cssCls';st.textContent=CSS_CLS;document.head.appendChild(st);}
 $('page2Fond').className='';$('page2').classList.add('on');

@@ -1,6 +1,7 @@
 const XP={
 maisonsY:152,            /* le pied des façades */
-quaiY:580,               /* le bord du quai, au-dessus du bassin — descendu de 240 pour la grande place */
+quaiY:362,   /* RESSERRE : le fond, le quai et la mer tiennent dans un ecran de telephone */
+               /* le bord du quai, au-dessus du bassin — descendu de 240 pour la grande place */
 bassinO:0, bassinE:MONDE_L,     /* LA MER SORT DU CADRE DES DEUX COTES.
                                    Elle s'arretait a 170 pour laisser une
                                    langue de terre au boulodrome ; le quai
@@ -2244,9 +2245,9 @@ const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
 /* LE METRO EST DEPOSE. On ne prend plus la ligne 1 pour aller au bois :
    on y va a pied, par le bas du quai droit. */
 /* les réverbères et les bancs du quai sont en dur ; ceux des deux bouts (280, 390, 1496, 1510) sont retirés */
-[420,840,980,1120,1248,1710].forEach((x,i)=>P('lanterneP',x,564,{gr:i+1,col:[4,3]}));
-[[88,556],[670,556],[950,556],[1230,556],[1370,556],[1672,556]]
-.forEach(([x,y])=>P('bancP',x,y,{col:[23,7]}));
+[420,840,980,1120,1248,1710].forEach((x,i)=>P('lanterneP',x,XP.quaiY-16,{gr:i+1,col:[4,3]}));
+[88,670,950,1230,1370,1672]
+.forEach(x=>P('bancP',x,XP.quaiY-24,{col:[23,7]}));
 /* L'ESPLANADE DU BOUT reste nue : les deux platanes et la petite pancarte
    sont retires. C'est la grande affiche, derriere le garde-corps, qui dit
    ou mene le bout du quai. */
