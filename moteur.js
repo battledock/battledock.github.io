@@ -14070,8 +14070,7 @@ return c;
    l'appelle plus. */
 const STYLE_FIN=()=>true;
 /* LE CRANE DE PROFIL, rang par rang : [bord arriere, bord avant], le visage tourne vers la droite. */
-const PRO_TETE=[[-8,3],[-11,6],[-12,7],[-13,8],[-14,8],[-14,9],[-14,9],[-14,9],[-14,10],[-14,9],
-[-14,9],[-14,10],[-13,10],[-13,10],[-12,10],[-11,10],[-10,10],[-9,10],[-8,9],[-7,10],[-6,10],[-4,9],[-1,8],[2,7]];   /* l'occiput rentre vers la nuque */
+const PRO_TETE=[[-8,3],[-11,6],[-12,7],[-13,8],[-14,8],[-14,9],[-14,9],[-14,9],[-14,10],[-14,9],[-14,9],[-14,10],[-14,10],[-14,10],[-14,10],[-14,10],[-13,10],[-13,10],[-12,9],[-10,10],[-8,10],[-6,9],[-3,8],[1,7]];   /* un oeuf : l'occiput rond, qui ne rentre qu'en bas, vers la nuque */
 const PLAFOND_PLANCHES=24;
 /* L'APERÇU D'UNE BOUTIQUE : on retire le déguisement, sinon l'épouvantail
    s'affiche à la place des vêtements qu'on essaie. */
