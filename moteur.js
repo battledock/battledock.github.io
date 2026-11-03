@@ -18814,6 +18814,14 @@ o.quand=Date.now();
 return o;
 }
 function aSauver(){sauvSale=true;}
+/* LA SAUVEGARDE PART AVEC LA CONNEXION DU JOUEUR. La cle de l'appareil se
+   perd (stockage vide, ancienne version) et le serveur refusait alors
+   toute ecriture, pour toujours. Connecte, c'est son compte qui fait foi. */
+async function entetesSauv(){
+const h=Object.assign({},sbEntetes);
+try{if(typeof sb!=='undefined'&&sb&&sb.auth){const d=await sb.auth.getSession();
+  const t=d&&d.data&&d.data.session&&d.data.session.access_token;if(t)h.Authorization='Bearer '+t;}}catch(x){}
+return h;}
 async function envoyerSauvegarde(force){
 if(!e.id)return;
 /* UNE SAUVEGARDE FORCÉE NE S'ABANDONNE PAS. Avant, « if(sauvEnVol) return »
@@ -18837,7 +18845,7 @@ const corps=JSON.stringify([{id:e.id,cle:e.cle,etat:etatAGarder(),maj:new Date()
 const petit=corps.length<60000;
 const r=await fetch(URL_SB+'/rest/v1/sauvegardes',{method:'POST',
 keepalive:petit,
-headers:Object.assign({},sbEntetes,{Prefer:'resolution=merge-duplicates,return=minimal'}),
+headers:Object.assign(await entetesSauv(),{Prefer:'resolution=merge-duplicates,return=minimal'}),
 body:corps});
 /* ON NE JETTE PLUS L'ÉCHEC : avant, une sauvegarde refusée passait inaperçue
    et le joueur perdait sa partie sans rien voir. 401/403 = la clé ne passe
@@ -18857,7 +18865,7 @@ async function recupererSauvegarde(){
 if(!e.id)return;
 try{
 const r=await fetch(URL_SB+'/rest/v1/sauvegardes?id=eq.'+encodeURIComponent(e.id)+
-'&select=etat,maj',{headers:sbEntetes});
+'&select=etat,maj',{headers:await entetesSauv()});
 const d=await r.json();
 if(!Array.isArray(d)||!d[0]||!d[0].etat)return;
 const dist=d[0].etat;
