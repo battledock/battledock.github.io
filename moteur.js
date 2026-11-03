@@ -33046,16 +33046,16 @@ setInterval(()=>{try{const s=document.getElementById('co-nb'), d=document.getEle
 try{
 if(document.getElementById('badgeH'))return;
 const st=document.createElement('style');st.textContent=
-'#badgeH{position:fixed;left:10px;top:calc(10px + env(safe-area-inset-top));z-index:6;width:150px;background:#f4efe4;border-radius:9px;border:2px solid #1d2b44;overflow:hidden;box-shadow:0 3px 0 #0e1626;pointer-events:none}'+
-'#badgeH .bd{background:#f08a24;color:#fff;font:800 8px system-ui,sans-serif;letter-spacing:1.2px;padding:2px 7px;white-space:nowrap}'+
-'#badgeH .cp{display:flex;gap:6px;padding:4px 6px;align-items:center}'+
-'#badgeH img{width:28px;height:28px;image-rendering:pixelated;background:#cfd8e8;border:2px solid #1d2b44;object-fit:cover;flex:none}'+
-'#badgeH b{display:block;font:800 12px system-ui,sans-serif;color:#1d2b44;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px}'+
-'#badgeH small{display:block;font:700 9px system-ui,sans-serif;color:#6a6458;white-space:nowrap}'+
-'#hudD{position:fixed;right:10px;top:calc(10px + env(safe-area-inset-top));z-index:6;display:flex;flex-direction:column;align-items:flex-end;gap:5px;pointer-events:none}'+
-'#hudD span{display:inline-flex;align-items:center;gap:5px;background:#1d2b44;border:2px solid #0e1626;border-radius:12px;padding:2px 9px;font:800 13px system-ui,sans-serif;color:#fff;box-shadow:0 3px 0 #0e1626}'+
-'#hudD .h{font:800 14px ui-monospace,monospace;color:#ffe2a0}'+
-'#hudD i{width:13px;height:13px;border-radius:50%;background:#e8c040;box-shadow:inset -2px -2px 0 #b08a20;display:inline-block}';
+/* LE HUD FLOTTANT : pas de plaque, le nom et l'argent ecrits sur le ciel, detoures d'une ombre */
+'#badgeH{position:fixed;left:12px;top:calc(12px + env(safe-area-inset-top));z-index:6;display:flex;align-items:center;gap:8px;pointer-events:none}'+
+'#badgeH .bd{display:none}#badgeH .cp{display:flex;align-items:center;gap:8px}'+
+'#badgeH img{width:34px;height:34px;border-radius:50%;image-rendering:pixelated;background:#8fb8e0;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);object-fit:cover;flex:none}'+
+'#badgeH b{display:block;font:800 15px system-ui,sans-serif;color:#fff;text-shadow:0 1px 0 #1d2b44,0 0 6px rgba(0,0,0,.55);white-space:nowrap;line-height:1.15}'+
+'#badgeH small{display:block;font:700 11px system-ui,sans-serif;color:#ffe2a0;text-shadow:0 1px 0 #1d2b44,0 0 6px rgba(0,0,0,.55);white-space:nowrap}'+
+'#badgeH #bH-g{display:none}'+
+'#hudD{position:fixed;right:14px;top:calc(12px + env(safe-area-inset-top));z-index:6;text-align:right;pointer-events:none;font:800 15px system-ui,sans-serif;color:#fff;text-shadow:0 1px 0 #1d2b44,0 0 6px rgba(0,0,0,.55);line-height:1.5}'+
+'#hudD span{display:block}#hudD .h{font:800 15px system-ui,sans-serif}'+
+'#hudD i{width:13px;height:13px;border-radius:50%;background:#e8c040;box-shadow:inset -2px -2px 0 #b08a20,0 1px 0 #1d2b44;display:inline-block;margin-right:5px;vertical-align:-1px}';
 document.head.appendChild(st);
 const b=document.createElement('div');b.id='badgeH';
 b.innerHTML='<div class="bd">DOCKER · MARSEILLE</div><div class="cp"><img id="bH-t" alt=""><div><b id="bH-n">—</b><small id="bH-m">N° — · Niv. 1</small><small id="bH-g">Occasionnel</small></div></div>';
@@ -33068,7 +33068,7 @@ const maj=()=>{try{
   const t=$$('hTete'), n=$$('hNom'), v=$$('hNiv'), g=$$('hTitre'), a=$$('hArgent');
   if(t&&t.src&&$$('bH-t').src!==t.src)$$('bH-t').src=t.src;
   if(n)$$('bH-n').textContent=n.textContent;
-  $$('bH-m').textContent='N° '+matricule()+' · Niv. '+((v&&v.textContent)||'1');
+  $$('bH-m').textContent='Niv. '+((v&&v.textContent)||'1')+' · Docker';
   if(g&&g.textContent){const tt=g.textContent.trim().toLowerCase();$$('bH-g').textContent=tt.charAt(0).toUpperCase()+tt.slice(1);}
   if(a)$$('bH-a').textContent=a.textContent;
   let m=null;try{m=(typeof minuteDuJour==='function')?minuteDuJour():null;}catch(x){}
