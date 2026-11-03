@@ -29,6 +29,7 @@ try{const sv=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}');
 return null;})();
 const CARTE=(()=>{const c=CARTE_DEMANDEE;return c==='large'?'large':(c==='village'?'village':'extramar');})();
 const ANIM_DECOR={};
+ANIM_DECOR.emb_vide=()=>{};   /* la porte de l'Embauche : le bâtiment se dessine ailleurs */
 const ANNEXE=CARTE!=='village';     /* Extramar et Notre-Dame : des cartes à part, sans le monde partagé */
 let createClient=null, sb=null, SB_PRET=false;
 async function chargerSupabase(){
@@ -23838,6 +23839,7 @@ if(o.ouvre==='kayak'){b.innerHTML='Location de kayaks<small>'+(nivInv('deblocage
 if(o.ouvre==='cabanon'){b.innerHTML='Ton cabanon<small>'+(nivInv('deblocage:cabanon')?'RANGER · 60 PLACES À L’ABRI':'LA RÉCOMPENSE DU NIVEAU 10')+'</small>';b.classList.add('on');return;}
 if(o.ouvre==='idle_docker'){b.innerHTML='Entrer au Hangar<small>IDLE DOCKER · DÉCHARGE DES CONTAINERS</small>';b.classList.add('on');b.onclick=()=>{try{sauver();envoyerSauvegarde(true);}catch(x){}location.href='docker.html?v='+(window.MA_VERSION||Date.now());};return;}
 if(o.ouvre==='peche'){b.innerHTML='Le Pêcheur Heureux<small>CANNES, MOULINETS, APPÂTS</small>';b.classList.add('on');return;}
+if(o.ouvre==='embauche'){b.innerHTML='Entrer à l’Embauche<small>BUREAU CENTRAL · TON AFFECTATION DU JOUR</small>';b.classList.add('on');return;}
 if(o.ouvre==='salon'){b.innerHTML='Entrer à La Marinière<small>VÊTEMENTS DU PORT</small>';b.classList.add('on');return;}
 if(o.ouvre==='presse'){b.innerHTML='Ouvrir mon livret<small>LA CAPITAINERIE DU PORT</small>';b.classList.add('on');return;}
 if(o.ouvre==='bar'){b.innerHTML='Entrer au Bar des Docks<small>BAR · TABAC · JEUX À GRATTER</small>';b.classList.add('on');return;}
@@ -23957,6 +23959,7 @@ setTimeout(()=>texteVolant(o.x,o.y-66,'Vous allez bientôt pouvoir découvrir','
 setTimeout(()=>texteVolant(o.x,o.y-56,'une nouvelle partie du village !','#fff3d0'),700);vibrer(12);return;}
 
 if(o.ouvre==='crousti'){ouvrirCrousti();return;}
+if(o.ouvre==='embauche'){ouvrirLEmbauche();return;}
 if(o.ouvre==='salon'){ouvrirLaMariniere();return;}
 if(o.ouvre==='presse'){afficheCapitainerie();return;}
 if(o.ouvre==='bar'){ouvrirLeBar();return;}
@@ -33167,7 +33170,7 @@ function barriereDuQuai(acteurs,ctx,camX,camY){
 /* ================= LA MAISON DE L'EMBAUCHE =================
    Sur le quai, au milieu. Gravée une fois (jour, nuit) au quart de pixel,
    puis posée comme un acteur : on passe derrière elle, pas à travers. */
-const EMB={x:305, y:312, K:4, cache:{}};
+const EMB={x:305, y:312, K:4, s:0.72, cache:{}};
   const F={E:['11111','10000','10000','11110','10000','10000','11111'],M:['10001','11011','10101','10101','10001','10001','10001'],
     B:['11110','10001','10001','11110','10001','10001','11110'],A:['01110','10001','10001','11111','10001','10001','10001'],
     U:['10001','10001','10001','10001','10001','10001','01110'],C:['01111','10000','10000','10000','10000','10000','01111'],
@@ -33218,7 +33221,7 @@ const EMB={x:305, y:312, K:4, cache:{}};
     /* le drapeau */
     R(bx-0.5,fy-38,1,18,'#5a5e64');R(bx-1,fy-39,2,1,C.or);
     const ond=(x)=>Math.round(Math.sin(x*0.6+Date.now()/400)*0.6*2)/2;
-    for(let x=0;x<13;x++){const c3=x<4?'#2a4f9c':(x<9?'#f4f4f0':'#d2343a');R(bx+0.5+x,fy-37+ond(x),1,8,c3);}
+    /* le tissu du drapeau flotte : il est peint a chaque image (embaucheDuQuai) */
     /* ---- le bandeau EMBAUCHE ---- */
     const by2=by-46;
     R(bx-W+4,by2-1,W*2-8,11,'#2a4a3a');R(bx-W+4,by2-1,W*2-8,1,'#3d6852');R(bx-W+4,by2+9,W*2-8,1,'#1a2e24');
@@ -33315,15 +33318,215 @@ function graverTableauEmbauche(){
 function embaucheNuit(){try{const h=heureDuPort();const a=h[2]<0.5?h[0]:h[1];return a==='nuit'||a==='soir';}catch(x){return false;}}
 window.embaucheBloque=function(x,y){
   if(typeof CARTE==='undefined'||CARTE!=='extramar')return false;
-  if(x>EMB.x-80&&x<EMB.x+80&&y>EMB.y-70&&y<EMB.y+3)return true;               /* le bâtiment */
-  if(x>EMB.x+52&&x<EMB.x+77&&y>EMB.y+15&&y<EMB.y+20)return true;               /* le tableau */
+  const s=EMB.s;
+  if(x>EMB.x-80*s&&x<EMB.x+80*s&&y>EMB.y-62*s&&y<EMB.y+3)return true;               /* le bâtiment */
+  if(x>EMB.x+52*s&&x<EMB.x+77*s&&y>EMB.y+15*s&&y<EMB.y+20*s)return true;               /* le tableau */
   return false;
 };
 function embaucheDuQuai(acteurs,ctx,camX,camY){
-  if(joueur&&window.embaucheBloque(joueur.x,joueur.y)&&!(joueur.x>EMB.x+52&&joueur.x<EMB.x+77)){joueur.y=EMB.y+8;}   /* jamais coincé dedans */
-  const X=EMB.x-100-camX, Y=EMB.y-166-camY;
-  if(X>VW+20||X+200<-20)return;
+  const s=EMB.s;
+  if(joueur&&window.embaucheBloque(joueur.x,joueur.y)&&!(joueur.x>EMB.x+52*s&&joueur.x<EMB.x+77*s)){joueur.y=EMB.y+8;}   /* jamais coincé dedans */
+  const X=EMB.x-100*s-camX, Y=EMB.y-166*s-camY;
+  if(X>VW+20||X+200*s<-20)return;
+  if(!DECOR.some(o=>o.ouvre==='embauche')){DECOR.push({t:'embauche',x:EMB.x,y:EMB.y+6,gr:0,bati:true,ouvre:'embauche',anim:'emb_vide',demi:20});try{invaliderGrille();}catch(x){}}
   const c=graverEmbauche(embaucheNuit()), t=graverTableauEmbauche();
-  acteurs.push({y:EMB.y,f:()=>ctx.drawImage(c,X,Y,200,190)});
-  acteurs.push({y:EMB.y+18,f:()=>ctx.drawImage(t,X,Y,200,190)});
+  acteurs.push({y:EMB.y,f:()=>{ctx.drawImage(c,X,Y,200*s,190*s);
+    /* LE DRAPEAU FLOTTE : l'onde part du mat et grandit vers le bout */
+    const T=Date.now()/1000, x0=X+100.5*s, y0=Y+33*s;
+    for(let i=0;i<13;i++){const a=(i/12), o=Math.sin(i*0.7-T*5)*1.1*a+Math.sin(T*1.3)*0.3*a;
+      ctx.fillStyle=i<4?'#2a4f9c':(i<9?'#f4f4f0':'#d2343a');ctx.fillRect(x0+i*s,y0+o*s,s+0.05,8*s);
+      ctx.fillStyle='rgba(0,0,0,'+(0.10+0.10*Math.cos(i*0.7-T*5)).toFixed(3)+')';ctx.fillRect(x0+i*s,y0+o*s,s+0.05,8*s);}}});
+  acteurs.push({y:EMB.y+18*s,f:()=>ctx.drawImage(t,X,Y,200*s,190*s)});
+}
+
+
+/* ================= L'EMBAUCHE, DEDANS =================
+   Le grand hall : damier de marbre, colonnes, tableau des equipes, quatre
+   employes qui travaillent, trois guichets. On y entre par la porte du
+   quai ; au guichet, on recoit son billet d'affectation du jour. */
+const EMB_FONT=(()=>{return {A:'010101111101101',B:'110101110101110',C:'011100100100011',D:'110101101101110',E:'111100110100111',F:'111100110100100',G:'011100101101011',H:'101101111101101',I:'111010010010111',J:'001001001101010',K:'101101110101101',L:'100100100100111',M:'101111111101101',N:'101111111111101',O:'010101101101010',P:'110101110100100',Q:'010101101111011',R:'110101110101101',S:'011100010001110',T:'111010010010010',U:'101101101101111',V:'101101101101010',X:'101101010101101',Y:'101101010010010',Z:'111001010100111',' ':'000000000000000','0':'111101101101111','1':'010110010010111','2':'110001010100111','3':'110001010001110','4':'101101111001001','5':'111100110001110','6':'011100111101111','7':'111001010010010','8':'111101111101111','9':'111101111001110','-':'000000111000000','·':'000000010000000',':':'000010000010000','É':'111100110100111','H2':'',};
+})();
+const EMB_EMP=[
+ {peau:1,cheveux:0,haut:2,veste:'#f2efe6',pantalon:'#4a4f58',bas:0},
+ {peau:4,cheveux:1,barbe:2,haut:2,veste:'#dfe8f2',pantalon:'#3a3f48',bas:0},
+ {peau:2,cheveux:3,haut:3,veste:'#8a3a3a',pantalon:'#3a3f48',bas:0,coiffe:3},
+ {peau:3,cheveux:2,barbe:1,haut:0,veste:'#2c3a58',pantalon:'#2c3a58',bas:0},
+ {peau:0,cheveux:5,haut:2,veste:'#f4f0e8',pantalon:'#5a4a3a',bas:0,coiffe:2},
+ {peau:5,cheveux:1,barbe:3,haut:3,veste:'#3a5a48',pantalon:'#3a3f48',bas:0}];
+const EMB_DOCK=[{peau:2,cheveux:1,barbe:1},{peau:5,cheveux:0,barbe:0},{peau:1,cheveux:3,barbe:2},{peau:4,cheveux:2,barbe:3}];
+const EMB_MOI={peau:3,cheveux:4,barbe:3};
+/* les gestes de bureau, communs */
+function papiers(S,x,y){const {R,t}=S;R(x,y,10,7,'#fbf6ea');R(x,y+1,10,0.5,'#e0d8c4');R(x,y+2.2,10,0.5,'#e0d8c4');
+  const u=(Math.sin(t*2.4)+1)/2, sx=x+2+u*16, sy=y-0.5-Math.sin(u*Math.PI)*3;R(sx,sy,8,6,'#ffffff');for(let k=0;k<3;k++)R(sx+1,sy+1.5+k*1.3,6-(k%2)*2,0.4,'#8a8070');
+  R(x+18,y,9,6.5,'#fbf6ea');R(x+18,y+1.5,9,0.4,'#d8d0bc');}
+function telephone(S,hx,hy,px,py){const {R,g,t}=S;
+  R(hx,hy,3,9,'#1a1a1a');R(hx,hy-0.5,3,1.5,'#2a2a2a');R(hx,hy+7.5,3,1.5,'#2a2a2a');
+  for(let k=0;k<9;k++)R(hx+2+Math.sin(k*1.4),hy+9+k*((py-hy-9)/9),1,1,'#2a2a2a');
+  R(px,py,12,6,'#1a1a1a');R(px+1,py-1,10,2,'#2a2a2a');R(px+3.5,py+1,5,4,'#3a3a3a');R(px+5.5,py+2.5,1,1,'#d8d0bc');
+  const d=Math.floor(t*3)%4;R(hx+6,hy-16,22,11,'#ffffff');R(hx+7,hy-5,3,2,'#ffffff');g.strokeStyle='#2a2a2a';g.lineWidth=0.6*S.K;g.strokeRect((hx+6)*S.K,(hy-16)*S.K,22*S.K,11*S.K);
+  for(let k=0;k<3;k++)R(hx+11+k*5,hy-11.5,2.5,2.5,k<d?'#2a2a2a':'#d8d8d8');}
+function machine(S,x,y){const {R,t}=S;const av=(t*6)%14;R(x+2,y-2,16,4,'#e8e4d4');R(x+2+av*0.4,y-8,10,7,'#ffffff');for(let k=0;k<3;k++)R(x+3+av*0.4,y-6.5+k*1.6,av*0.5,0.4,'#3a3a3a');
+  R(x,y,20,8,'#2e3238');R(x,y,20,1,'#4a5058');for(let r=0;r<2;r++)for(let k=0;k<7;k++)R(x+2+k*2.4+r,y+3+r*2,1.6,1.4,(Math.floor(t*8)+k*3+r)%9===0?'#d4ad52':'#e8e4dc');}
+function tampon(S,x,y){const {R,t}=S;const ph=(t*1.6)%1, h=ph<0.5?6-ph*10:(ph-0.5)*12;R(x,y,12,8,'#f4e0a0');R(x,y,12,1,'#c0392b');
+  for(let k=0;k<Math.min(3,Math.floor(t*1.6)%4);k++)R(x+2+k*3,y+3,2.5,2.5,'rgba(192,57,43,.7)');
+  R(x+14,y+1,6,4,'#3a2a2a');R(x+15,y+1.5,4,3,'#c0392b');R(x+5,y-3-h,4,3,'#6b4a2c');R(x+5.5,y-h,3,2,'#2a2a2a');R(x+6.5,y-7-h,1,4,'#6b4a2c');}
+function bureau(S,x,y,w,bois){const {R}=S;const c=bois||['#a8714a','#c48a5e','#8a5a34','#6a4024'];
+  R(x,y-10,w,8,c[0]);R(x,y-10,w,1,c[1]);R(x,y-2,w,11,c[2]);R(x+1,y-2,w-2,0.6,c[3]);
+  for(let k=0;k<2;k++){R(x+w/2-7+k*8,y+1,6,5,c[3]);R(x+w/2-5+k*8,y+3,2,0.6,'#d4ad52');}}
+function lampeBanquier(S,x,y){const {R,glow}=S;R(x,y,4,6,'#2f5a44');R(x-1,y+5,6,1.5,'#d4ad52');R(x+0.5,y,3,2,'#e8f0a0');glow(x+2,y+4,10,'rgba(255,230,150,.25)');}
+function plante(S,x,y,pot){const {R}=S;R(x-5,y-8,10,9,pot||'#b8683a');R(x-5,y-8,10,1,'#d8885a');for(let k=0;k<34;k++){const a=alea(x+k*3)*6.28,d=alea(x*2+k*7)*8;R(x+Math.cos(a)*d-1.5,y-15+Math.sin(a)*d*1.1-1.5,3,3,k%3?'#3f6a3a':'#5a8a4a');}
+  for(let k=0;k<5;k++)R(x-6+k*3,y-26+alea(k+x)*4,1.5,10,'#4a7a42');}
+
+
+function dessinerHallEmbauche(g,K,t,moi){
+  const FONT=EMB_FONT;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x*K*2)/2,Math.round(y*K*2)/2,w*K,h*K);};
+  const T=(s,x,y,col,tt)=>{for(const ch of s){const gl=FONT[ch]||FONT[' '];for(let j=0;j<5;j++)for(let i=0;i<3;i++)if(gl[j*3+i]==='1')R(x+i*tt,y+j*tt,tt,tt,col);x+=4*tt;}};
+  const TL=(s,tt)=>s.length*4*tt-tt;
+  const TC=(s,cx,y,col,tt)=>T(s,cx-TL(s,tt)/2,y,col,tt);
+  const perso=(ap,x,y,dir,pnj)=>{g.save();g.translate(x*K,y*K);g.scale(K,K);try{sprite(g,0,0,Object.assign({},DEF_AP,ap,pnj===false?{}:{_pnj:true}),dir||'bas',0,false);}catch(x){}g.restore();};
+  const ombre=(x,y,w)=>{g.fillStyle='rgba(20,16,10,.25)';g.fillRect((x-w/2)*K,(y-1)*K,w*K,2.5*K);};
+  const glow=(x,y,r,col)=>{const gr=g.createRadialGradient(x*K,y*K,0,x*K,y*K,r*K);gr.addColorStop(0,col);gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect((x-r)*K,(y-r)*K,2*r*K,2*r*K);};
+  const S={g,R,T,TC,TL,perso,ombre,glow,t,moi,K};
+  const EMP=EMB_EMP, DOCK=EMB_DOCK;
+
+  /* sol : marbre en damier */
+  for(let y=96;y<340;y+=14)for(let x=0;x<270;x+=14){const k=(x/14+(y-96)/14)%2;R(x,y,14,14,k?'#ece4d4':'#3c4250');
+    if(k){R(x+2+alea(x+y)*8,y+3,4,0.5,'rgba(160,150,130,.4)');}else{R(x+3,y+4+alea(x*y)*6,5,0.5,'rgba(120,130,150,.35)');}}
+  for(let y=96;y<200;y++)R(0,y,270,1,'rgba(20,16,10,'+Math.max(0,0.22-(y-96)*0.002).toFixed(3)+')');
+  /* le mur du fond, tres haut */
+  R(0,0,270,96,'#efe2c4');for(let y=8;y<70;y+=7)R(0,y,270,0.5,'rgba(190,168,128,.25)');
+  R(0,0,270,5,'#f8eed8');R(0,5,270,2,'#cdb68a');for(let x=1;x<270;x+=3)R(x,7,1.5,1.5,'#d8c39a');
+  R(0,72,270,24,'#2f5a44');R(0,72,270,1.5,'#d4ad52');R(0,94,270,2,'#1f3e2e');for(let x=4;x<270;x+=18){R(x,76,14,15,'#2a5040');R(x,76,14,0.6,'#3d6852');}
+  /* deux grandes baies cintrees : la mer et les portiques */
+  for(const wx of [12,222]){R(wx-3,8,42,64,'#f8eed8');
+    for(let yy=0;yy<60;yy++){let w=36;if(yy<18){const d=18-yy;w=2*Math.sqrt(Math.max(0,324-d*d));}R(wx+18-w/2,10+yy,w,1,yy<34?'#a8d0ec':(yy<40?'#d8c8a0':'#4a8ab0'));}
+    R(wx+6,26,1,14,'#3567a6');R(wx+14,26,1,14,'#3567a6');R(wx+2,26,22,1.5,'#3567a6');R(wx+24,22,1,18,'#3567a6');R(wx+30,22,1,18,'#3567a6');R(wx+20,22,14,1.5,'#3567a6');
+    for(let k=0;k<4;k++)R(wx+3+k*8,38,6,2,['#c23a2c','#2a5d9f','#d9822b','#2f7d4f'][k]);
+    for(let k=0;k<5;k++)R(wx+4+k*7,50+(k%2)*4,4,0.6,'#d8ecf8');
+    R(wx+17.5,10,1,60,'#f8eed8');R(wx,40,36,1,'#f8eed8');R(wx-4,70,44,3,'#cdb68a');}
+  /* le grand tableau des equipes */
+  R(62,12,146,54,'#6b4a2c');R(65,15,140,48,'#26382c');TC('EQUIPES DU JOUR',135,18,'#f4f0e0',1);
+  const lig=[['VILLE DE TANGER','MOUREPIANE 4','6H'],['CMA SAINT LOUIS','QUAI 3','7H'],['PIANA','JOLIETTE','8H'],['MARSEILLE FOS','FOS 2','13H'],['RIVAGE','ARENC','14H']];
+  lig.forEach((l,r)=>{const y=27+r*7;S.T(l[0],70,y,'#e8e4d4',0.8);S.T(l[1],130,y,'#f2d878',0.8);S.T(l[2],188,y,'#e8e4d4',0.8);R(68,y+5.2,134,0.3,'rgba(244,240,224,.2)');});
+  R(65,63,140,2,'#7a5a3a');
+  R(130,1,10,9,'#d4ad52');R(131,2,8,7,'#fbf8ee');R(134.75,3,0.5,3.5,'#222');R(135,5.5,2.5,0.5,'#222');
+  /* les fanions du port */
+  for(const fx of [52,212]){R(fx,8,1,30,'#8a7a5a');R(fx-4,10,9,16,'#1f3566');R(fx-4,10,9,2,'#d4ad52');R(fx-2,15,5,5,'#f4f2ec');R(fx-1,16,3,3,'#1f3566');for(let k=0;k<4;k++)R(fx-4+k*2.4,26,1.5,1.5+(k%2),'#1f3566');}
+  /* les colonnes */
+  const colonne=(x,y,h)=>{ombre(x,y,18);R(x-7,y-h,14,h,'#ece2cc');R(x-7,y-h,3,h,'#f8f0dc');R(x+4,y-h,3,h,'#cbbd9c');for(let k=-5;k<6;k+=3)R(x+k,y-h+6,0.6,h-10,'rgba(180,160,120,.4)');
+    R(x-10,y-h-5,20,5,'#f2e8d2');R(x-10,y-h-5,20,1,'#ffffff');R(x-9,y-h,18,1.5,'#cdb68a');R(x-10,y-5,20,5,'#d8ccb0');R(x-10,y-5,20,1,'#ece2cc');};
+  /* derriere le comptoir : quatre bureaux */
+  const BY=136;
+  perso(EMP[0],38,BY+8);bureau(S,14,BY,48);papiers(S,18,BY-9);lampeBanquier(S,54,BY-14);
+  perso(EMP[1],102,BY+8);telephone(S,106,BY-40,108,BY-9);bureau(S,80,BY,46);R(84,BY-9,10,6,'#f4ead0');
+  perso(EMP[2],166,BY+8);bureau(S,144,BY,46);machine(S,158,BY-8);
+  perso(EMP[4],230,BY+8);bureau(S,208,BY,48);tampon(S,212,BY-8);lampeBanquier(S,248,BY-14);
+  /* les casiers a billets sur les cotes */
+  for(const cx of [2,252]){R(cx,98,16,40,'#7a4a2a');for(let r=0;r<5;r++)for(let k=0;k<2;k++){R(cx+1.5+k*7,100+r*7.5,6,6,'#4a2a1a');if(alea(cx+r*3+k)<0.7)R(cx+2.5+k*7,102+r*7.5,4,3,'#fbf6ea');}}
+  /* le comptoir de marbre, trois guichets */
+  const CY=196;
+  perso(EMP[3],135,CY-2);
+  R(8,CY-14,254,10,'#e4dccb');R(8,CY-14,254,1.5,'#ffffff');for(let k=0;k<14;k++)R(10+k*18,CY-12+alea(k)*5,8,0.4,'rgba(150,140,120,.5)');
+  R(8,CY-4,254,18,'#2f5a44');R(8,CY-4,254,1,'#d4ad52');R(8,CY+13,254,1.5,'#1a3a2a');for(let x=12;x<258;x+=16){R(x,CY,12,10,'#2a5040');R(x,CY,12,0.6,'#3d6852');}
+  for(const [gx,nom] of [[30,'GUICHET 1'],[115,'GUICHET 2'],[200,'GUICHET 3']]){
+    R(gx,CY-46,40,32,'rgba(200,228,245,.30)');R(gx,CY-46,40,1.2,'#d4ad52');R(gx,CY-46,1.2,32,'#d4ad52');R(gx+38.8,CY-46,1.2,32,'#d4ad52');
+    for(let k=0;k<6;k++)R(gx+12+k*3,CY-36,0.7,10,'#b08a3a');R(gx+11,CY-37,18,1.2,'#b08a3a');R(gx+3,CY-44,4,20,'rgba(255,255,255,.25)');
+    R(gx+4,CY-58,32,9,'#1f3f8a');R(gx+4,CY-58,32,1,'#4a6ab0');TC(nom,gx+20,CY-56,'#ffffff',0.9);R(gx+10,CY-64,0.5,6,'#5a5e64');R(gx+30,CY-64,0.5,6,'#5a5e64');}
+  R(140,CY-13,12,5,'#f4e0a0');R(140,CY-13,12,1,'#c0392b');                                            /* un billet qui attend */
+  colonne(20,250,92);colonne(250,250,92);
+  /* les globes */
+  for(const lx of [80,190]){R(lx-0.25,96,0.5,40,'#3a3a3a');R(lx-4,136,8,7,'#fff8e0');R(lx-4,136,8,1.5,'#d4ad52');glow(lx,140,30,'rgba(255,230,160,.18)');}
+  /* la file : deux dockers aux guichets 1 et 3 */
+  ombre(50,236,12);perso(DOCK[0],50,236,'haut',false);ombre(220,240,12);perso(DOCK[1],220,240,'haut',false);
+  ombre(50,262,12);perso(DOCK[2],52,262,'haut',false);
+  /* les bancs et les plantes */
+  for(const bx of [95,165]){ombre(bx+5,301,26);R(bx-8,286,26,4,'#8a5a34');R(bx-8,286,26,1,'#a8714a');R(bx-7,290,2,10,'#5a3a22');R(bx+15,290,2,10,'#5a3a22');R(bx-8,280,26,2,'#8a5a34');}
+  plante(S,14,330,'#b8683a');plante(S,256,330,'#b8683a');
+  ombre(135,318,12);perso(S.moi,135,318,'haut',false);
+  R(115,334,40,6,'#8a3a2a');R(117,335,36,4,'#a84a32');
+  R(0,0,2.5,340,'rgba(0,0,0,.35)');R(267.5,0,2.5,340,'rgba(0,0,0,.35)');
+
+}
+
+
+/* LE BILLET DU JOUR : le même toute la journée pour un docker donné,
+   tiré de la date et de son nom. */
+function billetDuJour(){
+  const d=new Date(), cle=d.getFullYear()*1000+(d.getMonth()+1)*40+d.getDate();
+  const nom=(typeof e!=='undefined'&&e.pseudo)||'Docker';
+  let h=cle;for(const ch of nom)h=(h*31+ch.charCodeAt(0))%1000003;
+  const r=(k)=>alea(h*0.0137+k*7.31);
+  const pick=(L,k)=>L[Math.floor(r(k)*L.length)%L.length];
+  const niv=parseInt((document.getElementById('hNiv')||{}).textContent)||1;
+  const horaire=pick(['6 h 00 – 13 h 00','7 h 00 – 14 h 00','13 h 00 – 20 h 00','14 h 00 – 21 h 00'],1);
+  const navire=pick(['Ville de Tanger','Piana','Rivage','Cap Canaille','Mistral','Belle Joliette','Saint-Louis','Estaque'],2);
+  const quai=pick(['Mourepiane · poste 4','Joliette · poste 1','Arenc · poste 2','Quai 3 · poste 6','Fos · poste 2'],3);
+  const poste=pick(['Docker de bord','Docker de quai','Cariste','Saisisseur','Pointeur','Grutier'],4);
+  const chef=pick(['Ferrand','Santoni','Benali','Agostini','Mercier','Rinaldi'],5);
+  const eq=1+Math.floor(r(6)*24), no=String(1000+Math.floor(r(7)*8999)).padStart(6,'0');
+  const prime=Math.round(90+niv*3+r(8)*40);
+  const jours=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'], mois=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  return {nom,niv,horaire,navire,quai,poste,chef,eq,no,prime,date:jours[d.getDay()]+' '+d.getDate()+' '+mois[d.getMonth()]};
+}
+function ouvrirLEmbauche(){
+  if(document.getElementById('embInt'))return;
+  const css=document.createElement('style');css.id='embCss';css.textContent=
+  '#embInt{position:fixed;inset:0;z-index:60;background:#0e1626;display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:none}'+
+  '#embInt canvas{image-rendering:pixelated;max-width:100%;max-height:100%}'+
+  '#embInt .bas{position:absolute;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom));display:flex;gap:10px;justify-content:center;padding:0 16px}'+
+  '#embInt button{all:unset;cursor:pointer;-webkit-tap-highlight-color:transparent;font:800 15px system-ui;padding:14px 20px;border-radius:14px;text-align:center}'+
+  '#embInt .go{background:#2f5a44;color:#f2d688;flex:1;box-shadow:0 4px 0 #1a3a2a}'+
+  '#embInt .out{background:rgba(255,255,255,.14);color:#fff}'+
+  '#embInt .go:active,#embInt .out:active{transform:translateY(2px)}'+
+  '#embBil{position:absolute;inset:0;background:rgba(10,16,28,.66);display:flex;align-items:center;justify-content:center;flex-direction:column;padding:20px}'+
+  '#embBil .t{position:relative;width:min(340px,92vw);background:#f6edd6;color:#2a241c;padding:20px 22px 18px;font-family:"Courier New",monospace;box-shadow:0 18px 40px rgba(0,0,0,.45);transform:rotate(-1.5deg);animation:embSort .45s cubic-bezier(.2,.9,.3,1.2)}'+
+  '@keyframes embSort{from{transform:translateY(60px) rotate(4deg);opacity:0}to{transform:rotate(-1.5deg);opacity:1}}'+
+  '#embBil .t:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(120,100,60,.05) 0 1px,transparent 1px 3px);pointer-events:none}'+
+  '#embBil .t:after{content:"";position:absolute;left:-6px;right:-6px;top:0;bottom:0;background:radial-gradient(circle 6px at 0 9px,#0e1626 98%,transparent) 0 0/100% 18px repeat-y,radial-gradient(circle 6px at 100% 9px,#0e1626 98%,transparent) 0 0/100% 18px repeat-y;pointer-events:none;opacity:.0}'+
+  '#embBil h5{font:700 10px "Courier New",monospace;letter-spacing:1.5px;text-align:center;color:#5a4a30}'+
+  '#embBil h3{font:900 21px Georgia,serif;text-align:center;letter-spacing:1px;margin:6px 0 2px}'+
+  '#embBil .no{text-align:center;font-size:11px;color:#7a6a4a}'+
+  '#embBil hr{border:0;border-top:1.5px dashed #b8a47a;margin:12px 0}'+
+  '#embBil .l{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:4px 0}'+
+  '#embBil .l b{font-weight:700;text-align:right}#embBil .l span{color:#6a5a40}'+
+  '#embBil .tampon{position:absolute;right:14px;bottom:8px;border:3px solid #c0392b;color:#c0392b;font:900 20px Georgia,serif;padding:4px 10px;transform:rotate(-14deg);opacity:.85;letter-spacing:2px;border-radius:4px;animation:embTamp .35s .45s both}'+
+  '@keyframes embTamp{from{transform:rotate(-14deg) scale(2.2);opacity:0}to{transform:rotate(-14deg) scale(1);opacity:.85}}'+
+  '#embBil .cb{height:30px;margin-top:6px;background:repeating-linear-gradient(90deg,#2a241c 0 2px,transparent 2px 3px,#2a241c 3px 4px,transparent 4px 7px,#2a241c 7px 10px,transparent 10px 11px)}'+
+  '#embBil .bts{display:flex;gap:10px;margin-top:22px;width:min(340px,92vw)}';
+  document.head.appendChild(css);
+  const W=270,H=340, D=document.createElement('div');D.id='embInt';
+  const cv=document.createElement('canvas');
+  const k=Math.max(1,Math.min(4,Math.floor(Math.min(innerWidth*devicePixelRatio/W,(innerHeight-80)*devicePixelRatio/H))));
+  cv.width=W*k;cv.height=H*k;
+  const ech=Math.min(innerWidth/W,(innerHeight-90)/H);cv.style.width=Math.round(W*ech)+'px';cv.style.height=Math.round(H*ech)+'px';
+  D.appendChild(cv);
+  const bas=document.createElement('div');bas.className='bas';
+  bas.innerHTML='<button class="out">Sortir</button><button class="go">Guichet 2 · Mon affectation</button>';
+  D.appendChild(bas);document.body.appendChild(D);
+  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+  const moi=Object.assign({},(typeof e!=='undefined'&&e.ap)||{});
+  const t0=Date.now();let vivant=true;
+  const boucle=()=>{if(!vivant)return;try{g.clearRect(0,0,cv.width,cv.height);dessinerHallEmbauche(g,k,(Date.now()-t0)/1000,moi);}catch(x){}setTimeout(boucle,90);};
+  boucle();
+  const fermer=()=>{vivant=false;D.remove();css.remove();};
+  bas.querySelector('.out').onclick=()=>{try{vibrer(6);}catch(x){}fermer();};
+  bas.querySelector('.go').onclick=()=>{
+    try{vibrer([8,30,12]);jouer('clic');}catch(x){}
+    const B=billetDuJour(), el=document.createElement('div');el.id='embBil';
+    el.innerHTML='<div class="t"><h5>PORT DE MARSEILLE · BUREAU DE L’EMBAUCHE</h5><h3>BILLET D’AFFECTATION</h3>'+
+      '<div class="no">N° '+B.no+' · '+B.date+'</div><hr>'+
+      '<div class="l"><span>Docker</span><b>'+String(B.nom).toUpperCase()+' · niv. '+B.niv+'</b></div>'+
+      '<div class="l"><span>Poste</span><b>'+B.poste+'</b></div>'+
+      '<div class="l"><span>Navire</span><b>« '+B.navire+' »</b></div>'+
+      '<div class="l"><span>Quai</span><b>'+B.quai+'</b></div>'+
+      '<div class="l"><span>Horaire</span><b>'+B.horaire+'</b></div>'+
+      '<div class="l"><span>Équipe</span><b>n° '+B.eq+' · chef '+B.chef+'</b></div>'+
+      '<hr><div class="l"><span>Prime estimée</span><b>'+B.prime+' €</b></div><div class="cb"></div>'+
+      '<div class="tampon">EMBAUCHÉ</div></div>'+
+      '<div class="bts"><button class="out">Fermer</button><button class="go">Prendre mon poste</button></div>';
+    D.appendChild(el);
+    el.querySelector('.out').onclick=()=>el.remove();
+    el.querySelector('.go').onclick=()=>{el.remove();fermer();try{texteVolant(joueur.x,joueur.y-30,'Direction '+B.quai.split(' ·')[0]+' !','#f2d688');}catch(x){}};
+  };
 }
