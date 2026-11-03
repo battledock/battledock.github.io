@@ -612,7 +612,12 @@ return {differents:n, total:a.length/4,
 verdict:n===0?'identiques':(n<12?'quasi identiques':'ÉCART')};}
 try{window.comparerPose=comparerPose;}catch(x){}
 const CACHE_FIN=new Map();
+/* LA TENUE UNIQUE — docker occasionnel. Tout le monde la porte, quoi
+   qu'il y ait dans la sauvegarde : le vestiaire est fermé. */
+const UNIFORME={haut:6,veste:'#f2731c',pantalon:'#2b3340',bas:0,souliers:3,chaussures:'#221d18',chapeau:0,sac:0,motif:0};
+function uniforme(ap){const a=Object.assign({},ap||{},UNIFORME);delete a.cos;return a;}
 function sprite(g,x,y,ap0,dir,pas,bouge){
+ap0=uniforme(ap0);
 /* =====================================================================
    UN COSTUME INTEGRAL REMPLACE LE DESSIN, IL NE SE POSE PAS DESSUS.
    Premiere tentative : peindre la peluche PAR-DESSUS le personnage,
@@ -1586,6 +1591,7 @@ P={cle,dirs:{}};POSES.set(cle,P);
 return P;
 }
 function poseDe(ap,dir,i){
+ap=uniforme(ap);
 const P=planche(ap);
 let L=P.dirs[dir];
 if(!L){L=P.dirs[dir]=[];}
@@ -1665,6 +1671,7 @@ const ETAPES_GESTE=8, ETAPES_EMOTE=12;
 const PLAFOND_GESTES=120;
 const GESTES_GRAVES=[];
 function poseDuGeste(ap,dir,pas,marche,type,part){
+ap=uniforme(ap);
 const P=planche(ap);
 if(!P.gestes)P.gestes={};
 const emote=String(type||'').slice(0,3)==='em:';

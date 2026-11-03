@@ -207,7 +207,12 @@ return {differents:n, total:a.length/4,
 verdict:n===0?'identiques':(n<12?'quasi identiques':'ÉCART')};}
 try{window.comparerPose=comparerPose;}catch(x){}
 const CACHE_FIN=new Map();
+/* LA TENUE UNIQUE — docker occasionnel. Tout le monde la porte, quoi
+   qu'il y ait dans la sauvegarde : le vestiaire est fermé. */
+const UNIFORME={haut:6,veste:'#f2731c',pantalon:'#2b3340',bas:0,souliers:3,chaussures:'#221d18',chapeau:0,sac:0,motif:0};
+function uniforme(ap){const a=Object.assign({},ap||{},UNIFORME);delete a.cos;return a;}
 function sprite(g,x,y,ap0,dir,pas,bouge){
+ap0=uniforme(ap0);
 let fin=false;try{fin=STYLE_FIN();}catch(x){fin=false;}          /* (au tout début du chargement, on reste classique) */
 if(fin){
 const ges=(typeof GESTE!=='undefined'&&GESTE&&GESTE.t>0)?(GESTE.type||'pioche')+':'+Math.round((1-GESTE.t)*11):'';
@@ -4663,7 +4668,7 @@ function atelierBrancher(rendre){
     sauver();if(typeof envoyerMaPosition==='function')envoyerMaPosition();
     vibrer(6);rendre();});
 }
-async function ouvrirLaMariniere(){
+async function ouvrirLaMariniere(){ return; /* vestiaire fermé */
   $('page2Fond').className='';$('page2').classList.add('on');
   try{const g=await appelRPC('ma_garde_robe',{p_joueur:e.id});if(Array.isArray(g))VET_SAC=g;}catch(x){}
   const bulle=(t)=>{const b=$('vtBulle');if(!b)return;b.textContent=t;b.classList.add('on');
@@ -14088,6 +14093,7 @@ P={cle,dirs:{}};POSES.set(cle,P);
 return P;
 }
 function poseDe(ap,dir,i){
+ap=uniforme(ap);
 const P=planche(ap);
 let L=P.dirs[dir];
 if(!L){L=P.dirs[dir]=[];}
@@ -14167,6 +14173,7 @@ const ETAPES_GESTE=8, ETAPES_EMOTE=12;
 const PLAFOND_GESTES=120;
 const GESTES_GRAVES=[];
 function poseDuGeste(ap,dir,pas,marche,type,part){
+ap=uniforme(ap);
 const P=planche(ap);
 if(!P.gestes)P.gestes={};
 const emote=String(type||'').slice(0,3)==='em:';
@@ -30011,7 +30018,7 @@ sprite(g,0,0,ap,'bas',0,false);g.restore();}catch(x){}}
 const vsBase=()=>{const p=Object.assign({},DEF_AP,e.ap||{});delete p.maillot;delete p.ski;return p;};
 const vsNu=()=>{const p=vsBase();delete p.deguisement;return p;};
 
-async function ouvrirLeVestiaire(){
+async function ouvrirLeVestiaire(){ return; /* vestiaire fermé */
 if(!document.getElementById('cssVest')){const st=document.createElement('style');
 st.id='cssVest';st.textContent=CSS_VEST;document.head.appendChild(st);}
 e.ap=Object.assign({},DEF_AP,e.ap||{});
