@@ -1002,7 +1002,7 @@ for(const [x0,pile,dec] of [[205,259,0],[350,415,17]]){
   if(cache)ctx.restore();
   /* LE CAVALIER, derriere le navire on ne le voit pas ; il sort par
      l'arriere, son conteneur entre les jambes, et file sur le quai. */
-  if(t>=27){
+  if(false&&t>=27){   /* cavaliers retirés */
     const cx=548+100*ease(seg(t,27,38)), cy=HZ-11, a=Math.max(0,1-seg(t,36.5,39));
     ctx.save();ctx.beginPath();ctx.rect(561,0,400,140);ctx.clip();
     const ga=ctx.globalAlpha;ctx.globalAlpha=ga*a;
