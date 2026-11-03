@@ -33036,3 +33036,45 @@ setInterval(()=>{try{const s=document.getElementById('co-nb'), d=document.getEle
   const n=parseInt(s.textContent,10)||0;d.textContent=n;d.style.display=n>0&&getComputedStyle(s).display!=='none'?'block':'none';}catch(x){}},1500);
 }catch(x){console.warn('barre',x);}
 })();
+
+/* ================= LE BADGE DU PORT =================
+   Le nouveau HUD, petit : en haut a gauche la carte de docker (photo,
+   nom, matricule, niveau, grade), en haut a droite l'heure du port et
+   l'argent. Il recopie l'ancienne plaque, cachee mais toujours tenue a
+   jour par le jeu : rien a recalculer ici. */
+(function badgeDuPort(){
+try{
+if(document.getElementById('badgeH'))return;
+const st=document.createElement('style');st.textContent=
+'#badgeH{position:fixed;left:10px;top:calc(10px + env(safe-area-inset-top));z-index:6;width:150px;background:#f4efe4;border-radius:9px;border:2px solid #1d2b44;overflow:hidden;box-shadow:0 3px 0 #0e1626;pointer-events:none}'+
+'#badgeH .bd{background:#f08a24;color:#fff;font:800 8px system-ui,sans-serif;letter-spacing:1.2px;padding:2px 7px;white-space:nowrap}'+
+'#badgeH .cp{display:flex;gap:6px;padding:4px 6px;align-items:center}'+
+'#badgeH img{width:28px;height:28px;image-rendering:pixelated;background:#cfd8e8;border:2px solid #1d2b44;object-fit:cover;flex:none}'+
+'#badgeH b{display:block;font:800 12px system-ui,sans-serif;color:#1d2b44;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px}'+
+'#badgeH small{display:block;font:700 9px system-ui,sans-serif;color:#6a6458;white-space:nowrap}'+
+'#hudD{position:fixed;right:10px;top:calc(10px + env(safe-area-inset-top));z-index:6;display:flex;flex-direction:column;align-items:flex-end;gap:5px;pointer-events:none}'+
+'#hudD span{display:inline-flex;align-items:center;gap:5px;background:#1d2b44;border:2px solid #0e1626;border-radius:12px;padding:2px 9px;font:800 13px system-ui,sans-serif;color:#fff;box-shadow:0 3px 0 #0e1626}'+
+'#hudD .h{font:800 14px ui-monospace,monospace;color:#ffe2a0}'+
+'#hudD i{width:13px;height:13px;border-radius:50%;background:#e8c040;box-shadow:inset -2px -2px 0 #b08a20;display:inline-block}';
+document.head.appendChild(st);
+const b=document.createElement('div');b.id='badgeH';
+b.innerHTML='<div class="bd">DOCKER · MARSEILLE</div><div class="cp"><img id="bH-t" alt=""><div><b id="bH-n">—</b><small id="bH-m">N° — · Niv. 1</small><small id="bH-g">Occasionnel</small></div></div>';
+document.body.appendChild(b);
+const d=document.createElement('div');d.id='hudD';d.innerHTML='<span class="h" id="bH-h">--:--</span><span><i></i><b id="bH-a" style="font:inherit">0 €</b></span>';
+document.body.appendChild(d);
+const $$=(id)=>document.getElementById(id);
+const matricule=()=>{try{const s=String((typeof e!=='undefined'&&e&&e.id)||'');let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return 1000+(h%9000);}catch(x){return '—';}};
+const maj=()=>{try{
+  const t=$$('hTete'), n=$$('hNom'), v=$$('hNiv'), g=$$('hTitre'), a=$$('hArgent');
+  if(t&&t.src&&$$('bH-t').src!==t.src)$$('bH-t').src=t.src;
+  if(n)$$('bH-n').textContent=n.textContent;
+  $$('bH-m').textContent='N° '+matricule()+' · Niv. '+((v&&v.textContent)||'1');
+  if(g&&g.textContent){const tt=g.textContent.trim().toLowerCase();$$('bH-g').textContent=tt.charAt(0).toUpperCase()+tt.slice(1);}
+  if(a)$$('bH-a').textContent=a.textContent;
+  let m=null;try{m=(typeof minuteDuJour==='function')?minuteDuJour():null;}catch(x){}
+  if(m===null){const D=new Date();m=D.getHours()*60+D.getMinutes();}
+  m=Math.floor(m)%1440;$$('bH-h').textContent=String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+}catch(x){}};
+maj();setInterval(maj,1000);
+}catch(x){console.warn('badge',x);}
+})();
