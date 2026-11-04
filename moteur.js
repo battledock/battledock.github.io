@@ -8031,7 +8031,55 @@ R(fx,fy,1,1,fc);
 if(hh(k,902,3)<.4){R(fx-1,fy,1,1,fc);R(fx,fy-1,1,1,fc);}
 }
 
-/* ── PASS 6 : bordure de la carte — lisière d'arbres ── */
+/* ── PASS 6 : maisons du hameau — gravées dans le sol ── */
+{const maison=(mx,my,mw,mh,fc,tc,vi)=>{
+/* ombre au sol */
+g.fillStyle='rgba(30,20,10,.25)';g.beginPath();g.ellipse(mx+mw/2+3,my+mh+2,mw/2+5,6,0,0,7);g.fill();
+/* murs */
+for(let y2=my;y2<my+mh;y2++)for(let x2=mx;x2<mx+mw;x2++){
+const sn=vn(x2,y2,8,50+(vi*7));
+const pr=fc[0]+((sn-.5)*14|0),pg=fc[1]+((sn-.5)*12|0),pb=fc[2]+((sn-.5)*8|0);
+R(x2,y2,1,1,'rgb('+cl(pr)+','+cl(pg)+','+cl(pb)+')');
+}
+/* ligne de toit (corniche) */
+R(mx-2,my-2,mw+4,2,'rgb('+(fc[0]-20)+','+(fc[1]-18)+','+(fc[2]-14)+')');
+/* toit — tuiles canal */
+const th=Math.floor(mh*0.4);
+for(let k=0;k<th;k++){const tw=mw+6-k*((mw+6)/(th+4)),tx=mx-3+(mw+6-tw)/2;
+const tt=k%2?tc:'rgb('+(tc[0]||parseInt(tc.substr(1,2),16))+','+(tc[1]||parseInt(tc.substr(3,2),16))+','+(tc[2]||parseInt(tc.substr(5,2),16))+')';
+R(tx,my-3-k*2,tw,3,k%2?'#b85a30':'#c86838');
+R(tx,my-3-k*2,tw,1,k%2?'#c86a40':'#a84a28');
+}
+/* fenêtres */
+const fw=8,fh=10;
+const nf=Math.max(1,Math.floor(mw/28));
+for(let f=0;f<nf;f++){
+const fx=mx+Math.floor((f+.5)*mw/nf)-fw/2, fy=my+Math.floor(mh*.3);
+R(fx,fy,fw,fh,'#1a2a38');R(fx+1,fy+1,fw-2,fh-2,'#3a5a6a');
+R(fx+fw/2|0,fy,1,fh,'#1a2a38');R(fx,fy+fh/2|0,fw,1,'#1a2a38');
+/* volets */
+const vc=vi%3===0?'#2a5a8a':(vi%3===1?'#4a6a3a':'#5a4a3a');
+R(fx-3,fy,3,fh,vc);R(fx+fw,fy,3,fh,vc);
+for(let s=1;s<fh;s+=2){R(fx-3,fy+s,3,1,'rgba(0,0,0,.15)');R(fx+fw,fy+s,3,1,'rgba(0,0,0,.15)');}
+/* appui */
+R(fx-1,fy+fh,fw+2,2,'#c8b890');
+}
+/* porte */
+const pw=10,ph2=16,px=mx+Math.floor(mw/2)-pw/2, ppy=my+mh-ph2;
+R(px,ppy,pw,ph2,'#4a3a28');R(px,ppy,pw,1,'#a09070');R(px+pw/2|0,ppy+ph2-6,2,2,'#c0a040');
+};
+/* ouest */
+maison(20,110,80,65,[215,168,100],'#b85a30',0);
+maison(20,290,75,60,[220,180,160],'#c86838',2);
+/* est */
+maison(500,115,80,60,[232,215,185],'#b85a30',1);
+maison(505,290,75,65,[228,205,160],'#c86838',4);
+/* nord */
+maison(95,12,90,55,[198,160,110],'#b85a30',3);
+maison(410,12,90,55,[225,185,165],'#c86838',5);
+}
+
+/* ── PASS 7 : bordure de la carte — lisière d'arbres ── */
 /* haut */
 for(let x=0;x<W;x++){
 const th=8+Math.floor(vn(x,0,30,20)*10);
@@ -12760,14 +12808,13 @@ DECOR.push({t:'bancP',x:245,y:300,gr:0,bati:true,demi:16});
 DECOR.push({t:'bancP',x:355,y:300,gr:0,bati:true,demi:16});
 /* tableau du port (panneau d'affichage en liège) — près de la place */
 DECOR.push({t:'x_tableau',x:300,y:170,bati:true,demi:24});
-/* maisons du hameau — à l'ouest et à l'est */
-DECOR.push({t:'x_maison',x:72,y:160,v:0,bati:true,demi:55});
-DECOR.push({t:'x_maison',x:72,y:340,v:2,bati:true,demi:55});
-DECOR.push({t:'x_maison',x:528,y:165,v:1,bati:true,demi:55});
-DECOR.push({t:'x_maison',x:528,y:340,v:4,bati:true,demi:55});
-/* maisons du nord */
-DECOR.push({t:'x_maison',x:150,y:58,v:3,bati:true,demi:50});
-DECOR.push({t:'x_maison',x:450,y:58,v:5,bati:true,demi:50});
+/* maisons du hameau — gravées dans le sol, collision seulement */
+DECOR.push({t:'_mur',x:60,y:140,bati:true,demi:45});
+DECOR.push({t:'_mur',x:58,y:318,bati:true,demi:42});
+DECOR.push({t:'_mur',x:540,y:143,bati:true,demi:45});
+DECOR.push({t:'_mur',x:542,y:320,bati:true,demi:42});
+DECOR.push({t:'_mur',x:140,y:38,bati:true,demi:40});
+DECOR.push({t:'_mur',x:455,y:38,bati:true,demi:40});
 /* lampadaires le long du chemin */
 DECOR.push({t:'x_lampadaire',x:270,y:160,bati:true,demi:5});
 DECOR.push({t:'x_lampadaire',x:330,y:160,bati:true,demi:5});
