@@ -12440,13 +12440,13 @@ function semerDecor(){
 if(CARTE==='spawn'){DECOR=[];
 /* LA PLACE DU VILLAGE PROVENÇAL — fontaine, bancs, tableau, platanes */
 DECOR.push({t:'x_fontaine',x:300,y:300,demi:24});
-/* quatre bancs bien espacés autour de la place */
-DECOR.push({t:'bancP',x:240,y:360,gr:0});
-DECOR.push({t:'bancP',x:360,y:360,gr:0});
-DECOR.push({t:'bancP',x:240,y:250,gr:0});
-DECOR.push({t:'bancP',x:360,y:250,gr:0});
-/* grand tableau interactif (classement) au nord de la place */
-DECOR.push({t:'x_tableau',x:300,y:190,demi:30});
+/* quatre bancs bien éloignés de la fontaine */
+DECOR.push({t:'bancP',x:220,y:380,gr:0});
+DECOR.push({t:'bancP',x:380,y:380,gr:0});
+DECOR.push({t:'bancP',x:220,y:230,gr:0});
+DECOR.push({t:'bancP',x:380,y:230,gr:0});
+/* grand tableau interactif (classement) bien au nord */
+DECOR.push({t:'x_tableau',x:300,y:160,demi:30});
 /* platanes aux quatre coins, bien écartés */
 DECOR.push({t:'x_platane',x:180,y:200,demi:40});
 DECOR.push({t:'x_platane',x:420,y:200,demi:40});
