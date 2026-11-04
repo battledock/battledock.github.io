@@ -27,7 +27,7 @@ if(c)return c;
 try{const sv=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}');
 }catch(x){}   /* ferme/foret/tokyo sont fermés */
 return null;})();
-const CARTE=(()=>{const c=CARTE_DEMANDEE;return c==='large'?'large':(c==='village'?'village':'extramar');})();
+const CARTE=(()=>{const c=CARTE_DEMANDEE;return c==='spawn'?'spawn':(c==='large'?'large':(c==='village'?'village':'extramar'));})();
 const ANIM_DECOR={};
 ANIM_DECOR.emb_vide=()=>{};   /* la porte de l'Embauche : le bâtiment se dessine ailleurs */
 const ANNEXE=CARTE!=='village';     /* Extramar et Notre-Dame : des cartes à part, sans le monde partagé */
@@ -7665,8 +7665,8 @@ R(-4,-5,9,5,V.tronc);R(-4,-5,9,2,V.troncC);R(-2,-4,5,1,'#a5764a');R(-4,-2,9,2,V.
    fin de la ville — une derniere facade, une esplanade de platanes — et
    surtout les collines boisees qui apparaissent sur l'horizon : on marche
    vers quelque chose qu'on voit, pas vers un mur. */
-const MONDE_L=CARTE==='large'?2400:(CARTE==='foret'?1500:(CARTE==='tokyo'?900:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:(FERME_VIERGE?1800:1200)):1760))));   /* la ferme : 1200 x 1600 */
-const MONDE_H=CARTE==='large'?2400:(CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?(FERME_VIERGE?1800:1600):(CARTE==='tokyo'?2560:562)));   /* le port : le quai resserre, 210 de dalles */   /* Tokyo : la ville en haut, le grand circuit dessous */   /* la ferme : 1200 x 1600 */
+const MONDE_L=CARTE==='spawn'?600:(CARTE==='large'?2400:(CARTE==='foret'?1500:(CARTE==='tokyo'?900:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:(FERME_VIERGE?1800:1200)):1760)))));   /* spawn : 600×600 */
+const MONDE_H=CARTE==='spawn'?600:(CARTE==='large'?2400:(CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?(FERME_VIERGE?1800:1600):(CARTE==='tokyo'?2560:562))));   /* spawn : 600×600 */
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 /* AU LARGE, LA CAMÉRA RECULE : le bateau fait à lui seul 252 points de
    long, et naviguer sans voir devant soi n'a aucun sens. */
@@ -7813,6 +7813,7 @@ function refaireLeSol(){
    autres cartes. Le construire coûte cinq passes sur 1 920 000 pixels, soit
    une bonne demi-seconde où l'écran titre reste figé. La clé du cache
    contient le numéro de version, donc une mise à jour le renouvelle. */
+if(CARTE==='spawn'){SOL=construireSolSpawn();SOL_FIN=null;CHEMIN=null;LISIERE=null;LISIERE_SUD=null;return SOL;}
 if(CHAMPS_SEULS&&CARTE==='village'){
 if(SOL_CACHE.pret&&SOL_CACHE.sol&&SOL_CACHE.sol.width===MONDE_L&&SOL_CACHE.sol.height===MONDE_H){SOL=SOL_CACHE.sol;SOL_FIN=null;CHEMIN=null;LISIERE=null;LISIERE_SUD=null;
 SOL_CACHE.pret=false;return SOL;}
@@ -7894,6 +7895,36 @@ y:VER.y0+Math.floor(n/VER.c)*(VER.ch+VER.al), w:VER.cw, h:VER.ch});
 const verPied=(n)=>{const C=verCase(n);return {x:C.x+C.w/2, y:C.y+C.h-10};};
 const PR_h=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;
 n=(n^(n>>>13))*1274126177;return ((n^(n>>>16))>>>0)/4294967296;};
+/* ================= LE SOL DU SPAWN — prairie 600×600 =================
+   Identique à construirePreVierge mais sur 600×600. */
+function construireSolSpawn(){
+const W=600, H=600, c=document.createElement('canvas');c.width=W;c.height=H;
+const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+const img=g.createImageData(W,H), d=img.data;
+const hh=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
+const vn=(x,y,s,k)=>{const X=Math.floor(x/s),Y=Math.floor(y/s),fx=x/s-X,fy=y/s-Y,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);
+const a=hh(X,Y,k),b=hh(X+1,Y,k),c2=hh(X,Y+1,k),e2=hh(X+1,Y+1,k);return a+(b-a)*u+(c2-a)*v+(a-b-c2+e2)*u*v;};
+const cl=v=>v<0?0:(v>255?255:v);
+const pose=(x,y,r,v,b)=>{if(x<0||y<0||x>=W||y>=H)return;const i=(y*W+x)*4;d[i]=r;d[i+1]=v;d[i+2]=b;d[i+3]=255;};
+const V=[[104,150,66],[116,162,74],[96,140,60]];
+for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+const big=vn(x,y,90,5), mid=vn(x,y,26,8), n=hh(x,y,10), c2=V[n<.4?0:(n<.78?1:2)];
+const sh=(big-0.5)*20+(mid-0.5)*9;
+const i=(y*W+x)*4;d[i]=cl(c2[0]+sh|0);d[i+1]=cl(c2[1]+sh|0);d[i+2]=cl(c2[2]+sh*0.6|0);d[i+3]=255;}
+for(let y=2;y<H-1;y++)for(let x=1;x<W-1;x++){const t=hh(x,y,12);if(t>=0.057)continue;
+const i=(y*W+x)*4, R=d[i], G2=d[i+1], B=d[i+2];
+if(t<0.03){for(let k=0;k<4;k++)pose(x,y-k,cl(R+(k===3?18:k?4:-26)),cl(G2+(k===3?26:k?8:-22)),cl(B+(k===3?6:-16)));
+pose(x-1,y-1,cl(R-8),cl(G2),cl(B-8));pose(x+1,y-2,cl(R+6),cl(G2+14),cl(B));}
+else if(t<0.045){pose(x,y,cl(R+14),cl(G2+22),cl(B+6));pose(x+1,y,cl(R+8),cl(G2+12),cl(B+3));}
+else if(t<0.055)pose(x,y,cl(R-22),cl(G2-18),cl(B-18));
+else if(vn(x,y,30,16)>0.6){pose(x,y,86,140,62);pose(x+1,y,86,140,62);pose(x,y-1,106,164,72);pose(x+1,y+1,86,140,62);}}
+g.putImageData(img,0,0);
+const FL=[[240,236,220],[236,214,90],[220,120,130],[170,160,220],[90,130,210]];
+for(let y=4;y<H-4;y++)for(let x=4;x<W-4;x++){const co=vn(x,y,60,18);if(hh(x,y,20)>=0.0016+co*0.006)continue;
+const f=FL[Math.floor(hh(x,y,22)*FL.length)];g.fillStyle='rgb(70,110,50)';g.fillRect(x,y,1,2);g.fillStyle='rgb('+f[0]+','+f[1]+','+f[2]+')';
+if(hh(x,y,24)<0.3){g.fillRect(x-1,y-2,3,1);g.fillRect(x,y-3,1,3);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x,y-2,1,1);}else g.fillRect(x,y-2,1,1);}
+return c;}
+
 /* ================= LA PRAIRIE DE LA NOUVELLE FERME =================
    Une herbe verte, d'un seul tenant : des clairs et des ombres très larges
    pour qu'elle ne fasse pas moquette, des touffes, des brins, des reflets,
@@ -12343,6 +12374,7 @@ function balayerLeSentier(){
     (!surLeSentier(o.x,o.y,15)&&!dansEtang(o.x,o.y,-30)));
 }
 function semerDecor(){
+if(CARTE==='spawn'){DECOR=[];invaliderGrille();return;}   /* spawn : prairie vide */
 if(CHAMPS_SEULS&&CARTE==='village'){
 /* LA FERME : deux bâtiments, et rien d'autre. Le métro plein nord, la
    graineterie au centre, le potager au sud : l'axe de la ferme. */
@@ -12929,7 +12961,7 @@ for(let y=0;y<20;y+=3)R(1,y,9,1,BOIS_P.bas);       /* le haut des planches */
 return c;
 }
 function construireLisiere(){
-if(ANNEXE){LISIERE_SUD=null;return null;}
+if(CARTE==='spawn'||ANNEXE){LISIERE_SUD=null;return null;}
 const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
 const g=c.getContext('2d');
 const sud=document.createElement('canvas');sud.width=MONDE_L;sud.height=MONDE_H;
@@ -13007,6 +13039,7 @@ if(l)for(const o of l)out.push(o);
 return out;
 }
 function bloque(x,y){
+if(CARTE==='spawn')return !(x>10&&x<590&&y>10&&y<590);   /* spawn : seuls les bords */
 if(CARTE==='large')return bloqueLarge(x,y);
 if(CARTE==='foret'){
   if(bloqueForet(x,y))return true;
@@ -13455,8 +13488,8 @@ const FORGE_FIXE =[662,318];                    /* à l'ouest, vers la rivière 
 const COMPTOIR_FIXE=[880,152];                  /* le long entrepôt, en haut à gauche */
 const CASINO_FIXE  =[912,246];                  /* au nord-est, dégagé de l'entrepôt */
 const dansLaCarte=(v,max)=>typeof v==='number'&&v>BORD&&v<max-BORD;
-let joueur={x:dansLaCarte(e.x,MONDE_L)?(e.x<400?e.x+400:e.x):CAMP_FIXE[0],
-y:dansLaCarte(e.y,MONDE_H)?e.y:CAMP_FIXE[1]+30,dir:'bas',pas:0,marche:false};
+let joueur={x:CARTE==='spawn'?300:(dansLaCarte(e.x,MONDE_L)?(e.x<400?e.x+400:e.x):CAMP_FIXE[0]),
+y:CARTE==='spawn'?300:(dansLaCarte(e.y,MONDE_H)?e.y:CAMP_FIXE[1]+30),dir:'bas',pas:0,marche:false};
 let joyX=0,joyY=0;
 /* ================= roundRect SUR LES VIEUX SAFARI =================
    ctx.roundRect n'existe qu'à partir de Safari 16.4. Trois appels n'étaient
