@@ -7898,53 +7898,158 @@ n=(n^(n>>>13))*1274126177;return ((n^(n>>>16))>>>0)/4294967296;};
 /* ================= LE SOL DU SPAWN — prairie 600×600 =================
    Identique à construirePreVierge mais sur 600×600. */
 function construireSolSpawn(){
-const W=600, H=600, c=document.createElement('canvas');c.width=W;c.height=H;
+const W=600,H=600,c=document.createElement('canvas');c.width=W;c.height=H;
 const g=c.getContext('2d');g.imageSmoothingEnabled=false;
-const img=g.createImageData(W,H), d=img.data;
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,w,h);};
+const img=g.createImageData(W,H),d=img.data;
 const hh=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
 const vn=(x,y,s,k)=>{const X=Math.floor(x/s),Y=Math.floor(y/s),fx=x/s-X,fy=y/s-Y,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);
 const a=hh(X,Y,k),b=hh(X+1,Y,k),c2=hh(X,Y+1,k),e2=hh(X+1,Y+1,k);return a+(b-a)*u+(c2-a)*v+(a-b-c2+e2)*u*v;};
-const cl=v=>v<0?0:(v>255?255:v);
-/* ══ CALADE PROVENÇALE — pavés ocre irréguliers ══ */
+const cl=v=>v<0?0:v>255?255:v;
+/* ═══════════════════════════════════════════════════════════════
+   PLACE DU VILLAGE PROVENÇAL — version complète avec façades
+   Bâtiments autour, sol dallé, ombres portées, passage voûté
+   ═══════════════════════════════════════════════════════════════ */
+const BT=80,BL=68,BR=68,BB=55;
+/* ── PASS 1 : sol dallé en pierre, pixel par pixel ── */
 for(let y=0;y<H;y++)for(let x=0;x<W;x++){
 const i=(y*W+x)*4;
-const h=hh(x,y,10);
-const big=vn(x,y,80,5), mid=vn(x,y,20,8);
-const sh=(big-0.5)*18+(mid-0.5)*8;
-/* base ocre/sable */
-let r=210+sh, gv=190+sh*0.9, b=150+sh*0.6;
-/* joints entre pavés — grille ~11px avec décalage par rangée */
-const decal=Math.floor(hh(0,Math.floor(y/11),3)*5);
-const gx=(x+decal)%11, gy=y%11;
-if(gx<1||gy<1){r-=28;gv-=28;b-=22;}
-/* zone centrale plus claire (rayon ~85 autour de 300,300) */
+if(x<BL||x>W-BR||y<BT||y>H-BB){d[i]=50;d[i+1]=45;d[i+2]=40;d[i+3]=255;continue;}
+const n1=vn(x,y,55,3),n2=vn(x,y,16,7),h2=hh(x,y,10);
+const sh=(n1-.5)*22+(n2-.5)*10;
+let r=200+sh,gv=184+sh*.85,b=146+sh*.55;
+const row=Math.floor(y/14),dec=row%2?7:0;
+if((x+dec)%14<1||y%14<1){r-=20;gv-=18;b-=14;}
 const dx=x-300,dy=y-300,dist=Math.sqrt(dx*dx+dy*dy);
-if(dist<90){const f=(1-dist/90)*0.3;r+=f*20;gv+=f*16;b+=f*10;}
-/* motif radial subtil autour fontaine */
-if(dist>55&&dist<88&&Math.floor(dist/4)%2===0){r-=7;gv-=7;b-=5;}
-/* bord : herbe qui pousse entre les pavés */
-const bord=Math.min(x,y,W-x,H-y);
-if(bord<35){
-const f=(35-bord)/35*hh(x*3,y*7,14);
-if(f>0.45){r=92+h*30;gv=132+h*40;b=58+h*20;}
-else if(f>0.25){r=r*0.8+22;gv=gv*0.85+30;b=b*0.7+15;} /* transition */
-}
-/* usure et taches aléatoires */
-if(h>0.93){r+=10;gv+=8;b+=6;}
-if(h<0.04){r-=12;gv-=10;b-=8;}
+if(dist<60){const f=(1-dist/60)*.15;r+=f*28;gv+=f*20;b+=f*10;}
+/* ombres portées des bâtiments — plus fortes côté nord (soleil du sud) */
+const dT=y-BT,dL=x-BL,dR=W-BR-x,dB=H-BB-y;
+let sf=0;
+if(dT<35)sf=Math.max(sf,(1-dT/35)*.35);
+if(dL<25)sf=Math.max(sf,(1-dL/25)*.22);
+if(dR<25)sf=Math.max(sf,(1-dR/25)*.22);
+if(dB<18)sf=Math.max(sf,(1-dB/18)*.14);
+if(sf>0){r*=(1-sf);gv*=(1-sf);b*=(1-sf);}
+/* chaleur solaire au sud de la place */
+if(dT>120){const su=Math.min((dT-120)/200,.1);r+=su*14;gv+=su*10;b+=su*5;}
+if(h2>.93){r+=8;gv+=6;b+=4;}
+if(h2<.04){r-=9;gv-=8;b-=5;}
 d[i]=cl(r|0);d[i+1]=cl(gv|0);d[i+2]=cl(b|0);d[i+3]=255;
 }
 g.putImageData(img,0,0);
-/* fleurettes dans les bords herbeux seulement */
-const FL=[[240,236,220],[236,214,90],[220,120,130],[170,160,220]];
-for(let y=4;y<H-4;y++)for(let x=4;x<W-4;x++){
-const bord=Math.min(x,y,W-x,H-y);
-if(bord>30)continue;
-if(hh(x,y,20)>=0.003)continue;
-const f=FL[Math.floor(hh(x,y,22)*FL.length)];
-g.fillStyle='rgb(70,110,50)';g.fillRect(x,y,1,2);
-g.fillStyle='rgb('+f[0]+','+f[1]+','+f[2]+')';g.fillRect(x,y-1,1,1);
+
+/* ── PASS 2 : toitures canal ── */
+for(let x=0;x<W;x++){
+if(x>282&&x<318)continue;
+R(x,0,1,10,(Math.floor(x/5+hh(x,0,50)*2)%2)?'#b85a30':'#c86838');
+R(x,9,1,1,'#8a4420');
 }
+R(0,10,282,2,'#7a4a28');R(318,10,282,2,'#7a4a28');
+
+/* ── PASS 3 : façades du haut — 4 bâtiments + passage voûté ── */
+const FC=[[0,140,215,168,100],[146,134,232,215,185],[320,125,198,110,78],[448,152,228,205,160]];
+FC.forEach(f=>{const[x0,w,cr,cg,cb]=f;
+R(x0,12,w,BT-12,'rgb('+cr+','+cg+','+cb+')');
+R(x0,12,w,28,'rgb('+(cr+6)+','+(cg+5)+','+(cb+3)+')');
+R(x0,BT-6,w,6,'rgb('+(cr-25)+','+(cg-24)+','+(cb-18)+')');
+R(x0,BT-7,w,1,'rgb('+(cr-10)+','+(cg-10)+','+(cb-8)+')');
+for(let k=0;k<w/3;k++){const tx=x0+hh(k,x0,40)*w|0,ty=14+hh(k,x0,41)*(BT-22)|0;
+R(tx,ty,3,2,'rgba(0,0,0,'+(hh(k,x0,42)*.07)+')');
+R(tx+1,ty-1,2,1,'rgba(255,255,255,'+(hh(k,x0,43)*.08)+')');}
+});
+
+/* passage voûté au centre — arche en pierre */
+R(282,0,36,BT,'#1a1815');
+g.fillStyle='#b0a080';g.beginPath();g.arc(300,BT,18,Math.PI,0);g.fill();
+g.fillStyle='#c8b890';g.beginPath();g.arc(300,BT,17,Math.PI,0);g.fill();
+g.fillStyle='#1a1815';g.beginPath();g.arc(300,BT,15,Math.PI,0);g.fill();
+for(let a=0;a<8;a++){const an=Math.PI*a/7;R(300+Math.cos(an)*16-.5|0,BT-Math.sin(an)*16-.5|0,1,1,'#8a7a60');}
+for(let y=20;y<BT-5;y++)R(285,y,30,1,'rgba(20,18,15,'+(0.5+(y-20)/(BT-25)*.3)+')');
+/* clef de voûte */
+R(298,BT-18,4,4,'#c8b890');R(298,BT-18,4,1,'#ddd0b0');
+
+/* fenêtres — volets provençaux */
+const fen=(wx,wy,sc)=>{
+R(wx-6,wy-9,12,11,'#1a2a38');R(wx-7,wy-10,14,1,'#a09070');R(wx-6,wy+2,12,2,'#b0a080');
+R(wx-9,wy-9,3,11,sc);R(wx+6,wy-9,3,11,sc);
+for(let k=0;k<4;k++){R(wx-9,wy-8+k*3,3,1,'rgba(255,255,255,.12)');R(wx+6,wy-8+k*3,3,1,'rgba(255,255,255,.12)');}
+R(wx,wy-9,1,11,'#304858');R(wx-6,wy-4,12,1,'#304858');
+};
+fen(42,44,'#2a5a8a');fen(105,44,'#2a5a8a');
+fen(188,40,'#4a6a3a');fen(242,40,'#4a6a3a');
+fen(358,42,'#2a5a8a');fen(408,42,'#2a5a8a');
+fen(485,44,'#5a4a3a');fen(548,44,'#5a4a3a');
+
+/* portes — boulangerie, mairie (arche), maisons */
+R(68,BT-20,16,20,'#4a3a28');R(68,BT-20,16,1,'#a09070');R(76,BT-10,2,2,'#c0a040');
+R(210,BT-24,20,24,'#3a4a50');R(210,BT-24,20,1,'#b0a080');
+g.fillStyle='#3a4a50';g.beginPath();g.arc(220,BT-24,10,Math.PI,0);g.fill();
+R(219,BT-14,2,2,'#c0a040');
+R(372,BT-18,14,18,'#5a3a28');R(372,BT-18,14,1,'#a09070');R(379,BT-8,2,2,'#c0a040');
+R(502,BT-18,14,18,'#4a4a38');R(502,BT-18,14,1,'#a09070');R(509,BT-8,2,2,'#c0a040');
+
+/* enseigne boulangerie — panneau en bois */
+R(52,56,52,9,'#3a2a18');R(52,56,52,1,'#5a4a38');
+for(let k=0;k<6;k++)R(57+k*7,58,4,1,'#e8d090');
+
+/* ── PASS 4 : façade gauche — mur rose provençal + lierre ── */
+R(0,BT,BL,H-BT-BB,'rgb(220,180,160)');
+R(0,BT,BL,Math.floor((H-BT-BB)/2),'rgb(225,185,165)');
+R(0,H-BB-5,BL,5,'rgb(190,150,130)');
+R(0,H-BB-6,BL,1,'rgb(205,165,145)');
+for(let k=0;k<15;k++){const ty=BT+10+hh(k,100,60)*(H-BT-BB-20)|0;
+R(hh(k,101,61)*55|0,ty,3,2,'rgba(0,0,0,.06)');}
+fen(32,BT+55,'#2a5a8a');fen(32,BT+155,'#2a5a8a');fen(32,BT+260,'#5a4a3a');fen(32,BT+360,'#2a5a8a');
+/* lierre grimpant */
+R(BL-2,BT+45,2,280,'#4a3a20');
+for(let k=0;k<35;k++){const vy=BT+50+k*8+(hh(k,200,70)*5|0);if(vy>H-BB-10)break;
+g.fillStyle=['#2a5820','#3a6828','#3a7030'][k%3];
+g.beginPath();g.ellipse(BL-4+Math.sin(k*.6)*5,vy,4+hh(k,203,73)*2,2.5,hh(k,202,72)*2,0,7);g.fill();}
+
+/* ── PASS 5 : façade droite — mur sable + store de café ── */
+R(W-BR,BT,BR,H-BT-BB,'rgb(228,205,160)');
+R(W-BR,BT,BR,Math.floor((H-BT-BB)/2),'rgb(232,210,166)');
+R(W-BR,H-BB-5,BR,5,'rgb(198,175,130)');
+R(W-BR,H-BB-6,BR,1,'rgb(215,192,148)');
+for(let k=0;k<15;k++){const ty=BT+10+hh(k,300,60)*(H-BT-BB-20)|0;
+R(W-BR+hh(k,301,61)*55|0,ty,3,2,'rgba(0,0,0,.06)');}
+fen(W-BR+34,BT+55,'#4a6a3a');fen(W-BR+34,BT+155,'#4a6a3a');fen(W-BR+34,BT+260,'#2a5a8a');fen(W-BR+34,BT+360,'#4a6a3a');
+/* store de café — rayures rouge et crème */
+const ay=BT+228;
+R(W-BR,ay,BR,4,'#8a2020');
+for(let k=0;k<BR;k+=6)R(W-BR+k,ay,3,4,(k/6)%2?'#f0e8d0':'#8a2020');
+R(W-BR,ay+4,BR,1,'rgba(0,0,0,.15)');
+
+/* ── PASS 6 : muret du bas — pierre taillée + ouverture centrale ── */
+R(0,H-BB,W,BB,'rgb(180,168,148)');R(0,H-BB,W,2,'rgb(200,188,168)');
+for(let y2=H-BB;y2<H;y2+=8)for(let x2=0;x2<W;x2+=12+Math.floor(hh(x2,y2,80)*5)){
+const sw=10+(hh(x2,y2,81)*5|0);
+R(x2,y2,sw,7,'rgb('+(175+(hh(x2,y2,82)*18|0))+','+(163+(hh(x2,y2,83)*16|0))+','+(142+(hh(x2,y2,84)*14|0))+')');
+R(x2,y2,sw,1,'rgb('+(190+(hh(x2,y2,85)*12|0))+','+(178+(hh(x2,y2,86)*10|0))+','+(158+(hh(x2,y2,87)*8|0))+')');}
+/* ouverture — chemin en pierre visible */
+for(let y2=H-BB;y2<H;y2++)for(let x2=248;x2<352;x2++){
+const n=vn(x2,y2,14,3);R(x2,y2,1,1,'rgb('+(195+((n-.5)*16|0))+','+(180+((n-.5)*14|0))+','+(142+((n-.5)*10|0))+')');}
+/* piliers de l'ouverture */
+R(242,H-BB-4,6,BB+4,'rgb(170,158,138)');R(242,H-BB-4,6,2,'rgb(195,183,163)');
+R(352,H-BB-4,6,BB+4,'rgb(170,158,138)');R(352,H-BB-4,6,2,'rgb(195,183,163)');
+g.fillStyle='rgb(185,173,153)';
+g.beginPath();g.arc(245,H-BB-4,4,0,7);g.fill();
+g.beginPath();g.arc(355,H-BB-4,4,0,7);g.fill();
+
+/* ── PASS 7 : végétation au pied des murs ── */
+for(let k=0;k<90;k++){const s=hh(k,500,1);
+let gx,gy;
+if(s<.35){gx=BL+(hh(k,501,2)*4-1|0);gy=BT+20+(hh(k,502,3)*(H-BT-BB-40)|0);}
+else if(s<.65){gx=BL+10+(hh(k,503,4)*(W-BL-BR-20)|0);gy=BT+(hh(k,504,5)*3|0);}
+else{gx=W-BR-(hh(k,505,6)*3|0);gy=BT+20+(hh(k,506,7)*(H-BT-BB-40)|0);}
+R(gx,gy,2,1,'rgb('+(50+(hh(k,507,8)*35|0))+','+(90+(hh(k,508,9)*45|0))+','+(30+(hh(k,509,10)*25|0))+')');}
+/* feuilles mortes */
+for(let k=0;k<12;k++){const lx=BL+25+(hh(k,600,1)*(W-BL-BR-50)|0),ly=BT+25+(hh(k,601,2)*(H-BT-BB-50)|0);
+R(lx,ly,2,1,['#8a7030','#6a8830','#a08040'][k%3]);}
+/* petites fleurs au pied du lierre */
+for(let k=0;k<8;k++){const fy=BT+60+k*35+(hh(k,700,3)*10|0);if(fy>H-BB-20)break;
+R(BL+1,fy,1,1,['#e84848','#d870a8','#e8a838','#7868d0'][k%4]);}
+
 return c;}
 
 /* ================= LA PRAIRIE DE LA NOUVELLE FERME =================
@@ -12629,36 +12734,36 @@ function balayerLeSentier(){
 }
 function semerDecor(){
 if(CARTE==='spawn'){DECOR=[];
-/* LA PLACE DU VILLAGE PROVENÇAL — fontaine, bancs, tableau, platanes */
+/* LA PLACE DU VILLAGE PROVENÇAL — encadrée de façades, fontaine centrale */
 DECOR.push({t:'x_fontaine',x:300,y:300,bati:true,demi:38});
-/* bancs en pierre — placement organique */
-DECOR.push({t:'bancP',x:200,y:410,gr:0,bati:true,demi:16});
-DECOR.push({t:'bancP',x:400,y:425,gr:0,bati:true,demi:16});
-DECOR.push({t:'bancP',x:185,y:200,gr:0,bati:true,demi:16});
-DECOR.push({t:'bancP',x:420,y:195,gr:0,bati:true,demi:16});
-/* tableau interactif (classement) */
-DECOR.push({t:'x_tableau',x:300,y:110,bati:true,demi:24});
-/* platanes — décalés, pas aux coins exacts */
-DECOR.push({t:'x_platane',x:125,y:135,bati:true,demi:22});
-DECOR.push({t:'x_platane',x:475,y:140,bati:true,demi:22});
-DECOR.push({t:'x_platane',x:110,y:475,bati:true,demi:22});
-DECOR.push({t:'x_platane',x:480,y:465,bati:true,demi:22});
-/* lampadaires en fer forgé */
-DECOR.push({t:'x_lampadaire',x:220,y:255,bati:true,demi:5});
-DECOR.push({t:'x_lampadaire',x:380,y:255,bati:true,demi:5});
-DECOR.push({t:'x_lampadaire',x:220,y:365,bati:true,demi:5});
-DECOR.push({t:'x_lampadaire',x:380,y:365,bati:true,demi:5});
-/* pots de fleurs terre cuite */
-DECOR.push({t:'x_potFleur',x:258,y:218,v:0});
-DECOR.push({t:'x_potFleur',x:342,y:218,v:1});
-DECOR.push({t:'x_potFleur',x:248,y:392,v:2});
-DECOR.push({t:'x_potFleur',x:352,y:392,v:3});
-DECOR.push({t:'x_potFleur',x:158,y:310,v:0});
-DECOR.push({t:'x_potFleur',x:442,y:300,v:1});
-/* pigeons décoratifs */
-DECOR.push({t:'x_pigeon',x:270,y:340,v:0});
-DECOR.push({t:'x_pigeon',x:330,y:352,v:1});
-DECOR.push({t:'x_pigeon',x:312,y:368,v:2});
+/* bancs en pierre — le long des allées */
+DECOR.push({t:'bancP',x:165,y:210,gr:0,bati:true,demi:16});
+DECOR.push({t:'bancP',x:435,y:215,gr:0,bati:true,demi:16});
+DECOR.push({t:'bancP',x:165,y:400,gr:0,bati:true,demi:16});
+DECOR.push({t:'bancP',x:435,y:405,gr:0,bati:true,demi:16});
+/* tableau interactif (classement) — contre le mur nord */
+DECOR.push({t:'x_tableau',x:300,y:118,bati:true,demi:24});
+/* platanes — proches des façades, pas au milieu */
+DECOR.push({t:'x_platane',x:128,y:155,bati:true,demi:22});
+DECOR.push({t:'x_platane',x:472,y:158,bati:true,demi:22});
+DECOR.push({t:'x_platane',x:122,y:455,bati:true,demi:22});
+DECOR.push({t:'x_platane',x:478,y:448,bati:true,demi:22});
+/* lampadaires en fer forgé — éclairant les allées */
+DECOR.push({t:'x_lampadaire',x:215,y:250,bati:true,demi:5});
+DECOR.push({t:'x_lampadaire',x:385,y:250,bati:true,demi:5});
+DECOR.push({t:'x_lampadaire',x:215,y:375,bati:true,demi:5});
+DECOR.push({t:'x_lampadaire',x:385,y:375,bati:true,demi:5});
+/* pots de fleurs terre cuite — au bord des chemins */
+DECOR.push({t:'x_potFleur',x:245,y:195,v:0});
+DECOR.push({t:'x_potFleur',x:355,y:195,v:1});
+DECOR.push({t:'x_potFleur',x:245,y:418,v:2});
+DECOR.push({t:'x_potFleur',x:355,y:418,v:3});
+DECOR.push({t:'x_potFleur',x:135,y:305,v:0});
+DECOR.push({t:'x_potFleur',x:465,y:300,v:1});
+/* pigeons sur la place */
+DECOR.push({t:'x_pigeon',x:268,y:342,v:0});
+DECOR.push({t:'x_pigeon',x:332,y:354,v:1});
+DECOR.push({t:'x_pigeon',x:308,y:368,v:2});
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}   /* spawn : place du village */
 if(CHAMPS_SEULS&&CARTE==='village'){
 /* LA FERME : deux bâtiments, et rien d'autre. Le métro plein nord, la
@@ -13325,7 +13430,7 @@ return out;
 }
 function bloque(x,y){
 if(CARTE==='spawn'){
-if(!(x>10&&x<590&&y>10&&y<590))return true;   /* bords */
+if(!(x>68&&x<532&&y>80&&y<545))return true;   /* façades = murs solides */
 /* collision circulaire avec les objets solides du spawn */
 for(const o of DECOR){
 if(!o.bati||!o.demi)continue;
