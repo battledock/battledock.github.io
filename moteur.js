@@ -7983,71 +7983,6 @@ g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x,y-2,1,1);
 }else g.fillRect(x,y-2,1,1);
 }
 
-/* ── PASS 6 : place pavée – grès chaud méditerranéen ── */
-const PCX=400,PCY=400,PRX=110,PRY=90;
-/* palette grès chaud / sable / terracotta */
-const STONES=[
-[218,198,168],[228,208,178],[208,188,158],[198,178,148],
-[222,202,170],[212,192,162],[232,214,184],[202,182,152]];
-const JOINT=[105,92,72];/* mortier sombre */
-const imgP=g.getImageData(0,0,W,H),dp=imgP.data;
-for(let y=PCY-PRY-16;y<=PCY+PRY+16;y++)for(let x=PCX-PRX-16;x<=PCX+PRX+16;x++){
-if(x<0||y<0||x>=W||y>=H)continue;
-const dx=(x-PCX)/PRX,dy=(y-PCY)/PRY,dist2=dx*dx+dy*dy;
-if(dist2>1.25)continue;
-const i=(y*W+x)*4;
-/* bordure organique : pierres éparses dans l'herbe */
-if(dist2>.88){
-const edge=(dist2-.88)/(.37);
-const nz=hh(x*3,y*3,40)*.5+hh(x,y,41)*.5;
-if(edge>nz)continue;
-/* pierre isolée dans l'herbe */
-const si2=((x*7+y*13)&0x7FFFFFFF)%STONES.length;
-const es=STONES[si2];
-const eg2=hh(x,y,42)*8-4;
-dp[i]=cl(es[0]-15+eg2);dp[i+1]=cl(es[1]-15+eg2);dp[i+2]=cl(es[2]-15+eg2);dp[i+3]=255;
-continue;}
-/* voronoï — cellules plus grandes (vrais pavés) */
-const cellS=16;
-const gx2=Math.floor(x/cellS),gy2=Math.floor(y/cellS);
-let minD=1e9,tileId=0,minD2b=1e9;
-for(let oy=-1;oy<=1;oy++)for(let ox=-1;ox<=1;ox++){
-const nx=gx2+ox,ny=gy2+oy;
-const jx=nx*cellS+cellS*.5+(hh(nx,ny,110)-.5)*cellS*.6;
-const jy=ny*cellS+cellS*.5+(hh(nx,ny,111)-.5)*cellS*.6;
-const dd=(x-jx)*(x-jx)+(y-jy)*(y-jy);
-if(dd<minD){minD2b=minD;minD=dd;tileId=(nx*7919+ny*104729)|0;}
-else if(dd<minD2b)minD2b=dd;
-}
-const si=((tileId&0x7FFFFFFF)%STONES.length);
-const st=STONES[si];
-const grain=hh(x,y,120)*12-6;
-const wear=vn(x,y,22,130)*10-5;
-/* usure locale — taches sombres */
-const scuff=vn(x,y,8,140)>.72?-18:0;
-const isJoint=(minD2b-minD<12);
-if(isJoint){
-/* joints mortier sombres bien visibles */
-const jn=hh(x,y,125)*6-3;
-const hasMoss=hh(x,y,126)>.82;
-if(hasMoss){dp[i]=cl(95+jn);dp[i+1]=cl(110+jn);dp[i+2]=cl(80+jn);}
-else{dp[i]=cl(JOINT[0]+jn);dp[i+1]=cl(JOINT[1]+jn);dp[i+2]=cl(JOINT[2]+jn);}
-}else{
-dp[i]=cl(st[0]+grain+wear+scuff);dp[i+1]=cl(st[1]+grain+wear+scuff);dp[i+2]=cl(st[2]+grain+wear+scuff);
-}
-dp[i+3]=255;
-}
-/* anneau bordure sombre (rebord de la place) */
-for(let a=0;a<360;a+=.3){const rad=a*Math.PI/180;
-for(let r=.84;r<.89;r+=.008){
-const px2=PCX+Math.cos(rad)*PRX*r,py2=PCY+Math.sin(rad)*PRY*r;
-const ix=Math.round(px2),iy=Math.round(py2);
-if(ix<0||iy<0||ix>=W||iy>=H)continue;
-const i=(iy*W+ix)*4;
-dp[i]=cl(145+hh(ix,iy,135)*15);dp[i+1]=cl(130+hh(ix,iy,136)*15);dp[i+2]=cl(105+hh(ix,iy,137)*12);
-}}
-g.putImageData(imgP,0,0);
-
 return c;}
 
 /* ================= LA PRAIRIE DE LA NOUVELLE FERME =================
@@ -12987,49 +12922,6 @@ function balayerLeSentier(){
 }
 function semerDecor(){
 if(CARTE==='spawn'){DECOR=[];
-/* ── fontaine au centre ── */
-DECOR.push({t:'x_spFontaine',x:400,y:400,bati:true,demi:32});
-/* ── panneau d'accueil : entrée sud de la place ── */
-DECOR.push({t:'x_spPanneau',x:400,y:520,bati:true,demi:12});
-/* ── bancs : 2 paires de chaque côté, bien espacés ── */
-DECOR.push({t:'x_spBanc',x:300,y:370,bati:true,demi:10});
-DECOR.push({t:'x_spBanc',x:300,y:420,bati:true,demi:10});
-DECOR.push({t:'x_spBanc',x:500,y:370,bati:true,demi:10});
-DECOR.push({t:'x_spBanc',x:500,y:420,bati:true,demi:10});
-/* ── bancs isolés sur les chemins ── */
-DECOR.push({t:'x_spBanc',x:370,y:560,bati:true,demi:10});
-DECOR.push({t:'x_spBanc',x:430,y:250,bati:true,demi:10});
-/* ── lampadaires : 4 autour de la place + 4 périphériques ── */
-DECOR.push({t:'x_spLampadaire',x:320,y:340});
-DECOR.push({t:'x_spLampadaire',x:480,y:340});
-DECOR.push({t:'x_spLampadaire',x:320,y:460});
-DECOR.push({t:'x_spLampadaire',x:480,y:460});
-DECOR.push({t:'x_spLampadaire',x:400,y:220});
-DECOR.push({t:'x_spLampadaire',x:400,y:580});
-DECOR.push({t:'x_spLampadaire',x:200,y:400});
-DECOR.push({t:'x_spLampadaire',x:600,y:400});
-/* ── jardinières autour de la place ── */
-DECOR.push({t:'x_spJardiniere',x:340,y:320,v:0});
-DECOR.push({t:'x_spJardiniere',x:460,y:320,v:1});
-DECOR.push({t:'x_spJardiniere',x:340,y:480,v:2});
-DECOR.push({t:'x_spJardiniere',x:460,y:480,v:3});
-DECOR.push({t:'x_spJardiniere',x:280,y:395,v:0});
-DECOR.push({t:'x_spJardiniere',x:520,y:395,v:2});
-/* ── arbres : forêt clairsemée autour ── */
-DECOR.push({t:'x_spArbre',x:120,y:140,v:0});
-DECOR.push({t:'x_spArbre',x:680,y:120,v:1});
-DECOR.push({t:'x_spArbre',x:90,y:350,v:2});
-DECOR.push({t:'x_spArbre',x:710,y:380,v:0});
-DECOR.push({t:'x_spArbre',x:130,y:600,v:1});
-DECOR.push({t:'x_spArbre',x:670,y:620,v:2});
-DECOR.push({t:'x_spArbre',x:200,y:180,v:0});
-DECOR.push({t:'x_spArbre',x:600,y:200,v:1});
-DECOR.push({t:'x_spArbre',x:180,y:680,v:2});
-DECOR.push({t:'x_spArbre',x:620,y:700,v:0});
-DECOR.push({t:'x_spArbre',x:100,y:480,v:1});
-DECOR.push({t:'x_spArbre',x:700,y:500,v:2});
-DECOR.push({t:'x_spArbre',x:280,y:100,v:0});
-DECOR.push({t:'x_spArbre',x:520,y:720,v:1});
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}
 if(CHAMPS_SEULS&&CARTE==='village'){
 /* LA FERME : deux bâtiments, et rien d'autre. Le métro plein nord, la
