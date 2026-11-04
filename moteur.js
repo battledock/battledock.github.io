@@ -7983,77 +7983,91 @@ g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x,y-2,1,1);
 }else g.fillRect(x,y-2,1,1);
 }
 
-/* ── PASS 6 : place pavée centrale (dalles chaudes Voronoï) ── */
-const PCX=400,PCY=400,PRX=135,PRY=110;
-const STONES=[[205,190,165],[195,178,150],[215,200,175],[188,172,145],[210,195,168],[200,185,158],[220,208,182]];
+/* ── PASS 6 : place pavée – grès chaud méditerranéen ── */
+const PCX=400,PCY=400,PRX=110,PRY=90;
+/* palette grès chaud / sable / terracotta */
+const STONES=[
+[218,198,168],[228,208,178],[208,188,158],[198,178,148],
+[222,202,170],[212,192,162],[232,214,184],[202,182,152]];
+const JOINT=[105,92,72];/* mortier sombre */
 const imgP=g.getImageData(0,0,W,H),dp=imgP.data;
-for(let y=PCY-PRY-12;y<=PCY+PRY+12;y++)for(let x=PCX-PRX-12;x<=PCX+PRX+12;x++){
+for(let y=PCY-PRY-16;y<=PCY+PRY+16;y++)for(let x=PCX-PRX-16;x<=PCX+PRX+16;x++){
 if(x<0||y<0||x>=W||y>=H)continue;
 const dx=(x-PCX)/PRX,dy=(y-PCY)/PRY,dist2=dx*dx+dy*dy;
-if(dist2>1.15)continue;
+if(dist2>1.25)continue;
 const i=(y*W+x)*4;
-if(dist2>.92){
-const t2=(dist2-.92)/(.15-.08);
-if(t2>hh(x,y,40)*.6+.4)continue;
-dp[i]=cl(120+hh(x,y,41)*20);dp[i+1]=cl(145+hh(x,y,42)*20);dp[i+2]=cl(95+hh(x,y,43)*15);dp[i+3]=255;
+/* bordure organique : pierres éparses dans l'herbe */
+if(dist2>.88){
+const edge=(dist2-.88)/(.37);
+const nz=hh(x*3,y*3,40)*.5+hh(x,y,41)*.5;
+if(edge>nz)continue;
+/* pierre isolée dans l'herbe */
+const si2=((x*7+y*13)&0x7FFFFFFF)%STONES.length;
+const es=STONES[si2];
+const eg2=hh(x,y,42)*8-4;
+dp[i]=cl(es[0]-15+eg2);dp[i+1]=cl(es[1]-15+eg2);dp[i+2]=cl(es[2]-15+eg2);dp[i+3]=255;
 continue;}
-const cellS=11+Math.floor(hh(Math.floor(x/20),Math.floor(y/20),100)*5);
+/* voronoï — cellules plus grandes (vrais pavés) */
+const cellS=16;
 const gx2=Math.floor(x/cellS),gy2=Math.floor(y/cellS);
-let minD=999,tileId=0,minD2b=999;
+let minD=1e9,tileId=0,minD2b=1e9;
 for(let oy=-1;oy<=1;oy++)for(let ox=-1;ox<=1;ox++){
 const nx=gx2+ox,ny=gy2+oy;
-const jx=nx*cellS+cellS*.5+hh(nx,ny,110)*cellS*.4-cellS*.2;
-const jy=ny*cellS+cellS*.5+hh(nx,ny,111)*cellS*.4-cellS*.2;
+const jx=nx*cellS+cellS*.5+(hh(nx,ny,110)-.5)*cellS*.6;
+const jy=ny*cellS+cellS*.5+(hh(nx,ny,111)-.5)*cellS*.6;
 const dd=(x-jx)*(x-jx)+(y-jy)*(y-jy);
 if(dd<minD){minD2b=minD;minD=dd;tileId=(nx*7919+ny*104729)|0;}
 else if(dd<minD2b)minD2b=dd;
 }
 const si=((tileId&0x7FFFFFFF)%STONES.length);
 const st=STONES[si];
-const grain=hh(x,y,120)*10-5;
-const wear=vn(x,y,18,130)*8-4;
-const isJoint=(minD2b-minD<8);
+const grain=hh(x,y,120)*12-6;
+const wear=vn(x,y,22,130)*10-5;
+/* usure locale — taches sombres */
+const scuff=vn(x,y,8,140)>.72?-18:0;
+const isJoint=(minD2b-minD<12);
 if(isJoint){
-const hasMoss=hh(x,y,125)>.7;
-if(hasMoss){dp[i]=cl(130+grain);dp[i+1]=cl(140+grain);dp[i+2]=cl(110+grain);}
-else{dp[i]=cl(155+grain);dp[i+1]=cl(145+grain);dp[i+2]=cl(125+grain);}
+/* joints mortier sombres bien visibles */
+const jn=hh(x,y,125)*6-3;
+const hasMoss=hh(x,y,126)>.82;
+if(hasMoss){dp[i]=cl(95+jn);dp[i+1]=cl(110+jn);dp[i+2]=cl(80+jn);}
+else{dp[i]=cl(JOINT[0]+jn);dp[i+1]=cl(JOINT[1]+jn);dp[i+2]=cl(JOINT[2]+jn);}
 }else{
-dp[i]=cl(st[0]+grain+wear);dp[i+1]=cl(st[1]+grain+wear);dp[i+2]=cl(st[2]+grain+wear);
+dp[i]=cl(st[0]+grain+wear+scuff);dp[i+1]=cl(st[1]+grain+wear+scuff);dp[i+2]=cl(st[2]+grain+wear+scuff);
 }
 dp[i+3]=255;
 }
-/* anneau décoratif sombre */
-for(let a=0;a<360;a+=.5){const rad=a*Math.PI/180;
-for(let r=.88;r<.93;r+=.01){
+/* anneau bordure sombre (rebord de la place) */
+for(let a=0;a<360;a+=.3){const rad=a*Math.PI/180;
+for(let r=.84;r<.89;r+=.008){
 const px2=PCX+Math.cos(rad)*PRX*r,py2=PCY+Math.sin(rad)*PRY*r;
 const ix=Math.round(px2),iy=Math.round(py2);
 if(ix<0||iy<0||ix>=W||iy>=H)continue;
 const i=(iy*W+ix)*4;
-dp[i]=cl(165+hh(ix,iy,135)*12);dp[i+1]=cl(152+hh(ix,iy,136)*12);dp[i+2]=cl(130+hh(ix,iy,137)*12);
+dp[i]=cl(145+hh(ix,iy,135)*15);dp[i+1]=cl(130+hh(ix,iy,136)*15);dp[i+2]=cl(105+hh(ix,iy,137)*12);
 }}
 g.putImageData(imgP,0,0);
 
-/* ── PASS 7 : chemin de dalles depuis le sud vers la place ── */
-const chG=g;
-const pathStone=(px2,py2,sw,sh)=>{
-chG.fillStyle='rgb('+(185+Math.floor(hh(px2,py2,150)*20))+','+(172+Math.floor(hh(px2,py2,151)*18))+','+(148+Math.floor(hh(px2,py2,152)*16))+')';
-chG.fillRect(px2,py2,sw,sh);
-chG.fillStyle='rgba(0,0,0,0.08)';chG.fillRect(px2,py2+sh-1,sw,1);
+/* ── PASS 7 : chemins de pas japonais (pierres plates espacées) ── */
+const drawSlab=(sx,sy,sw,sh)=>{
+const sr=195+Math.floor(hh(sx,sy,150)*25);
+const sg2=178+Math.floor(hh(sx,sy,151)*22);
+const sb=148+Math.floor(hh(sx,sy,152)*18);
+g.fillStyle='rgb('+sr+','+sg2+','+sb+')';
+g.beginPath();g.ellipse(sx+sw/2,sy+sh/2,sw/2,sh/2,hh(sx,sy,153)*.4-.2,0,Math.PI*2);g.fill();
+g.fillStyle='rgba(0,0,0,0.12)';
+g.beginPath();g.ellipse(sx+sw/2,sy+sh/2+1,sw/2-1,sh/2-1,hh(sx,sy,153)*.4-.2,0,Math.PI*2);g.fill();
 };
-/* chemin sud (vers le bas de la map) */
-for(let py2=PCY+PRY+5;py2<750;py2+=8){
-const wobble=Math.sin(py2*0.04)*4;
-const pw=18+Math.floor(hh(py2,0,155)*8);
-for(let dx2=-pw/2;dx2<pw/2;dx2+=5+Math.floor(hh(dx2,py2,156)*3)){
-pathStone(Math.floor(400+wobble+dx2),py2,4+Math.floor(hh(dx2,py2,157)*3),3+Math.floor(hh(dx2,py2,158)*3));
-}}
+/* chemin sud */
+for(let py2=PCY+PRY+10;py2<740;py2+=14+Math.floor(hh(py2,0,155)*6)){
+const wobble=Math.sin(py2*0.03)*5;
+drawSlab(Math.floor(397+wobble),py2,8+Math.floor(hh(py2,1,156)*4),6+Math.floor(hh(py2,1,157)*3));
+}
 /* chemin nord */
-for(let py2=PCY-PRY-5;py2>50;py2-=8){
-const wobble=Math.sin(py2*0.05)*3;
-const pw=14+Math.floor(hh(py2,1,155)*6);
-for(let dx2=-pw/2;dx2<pw/2;dx2+=5+Math.floor(hh(dx2,py2,159)*3)){
-pathStone(Math.floor(400+wobble+dx2),py2,4+Math.floor(hh(dx2,py2,160)*2),3+Math.floor(hh(dx2,py2,161)*2));
-}}
+for(let py2=PCY-PRY-10;py2>60;py2-=14+Math.floor(hh(py2,2,155)*6)){
+const wobble=Math.sin(py2*0.035)*4;
+drawSlab(Math.floor(398+wobble),py2,7+Math.floor(hh(py2,3,156)*4),5+Math.floor(hh(py2,3,157)*3));
+}
 
 return c;}
 
@@ -11858,28 +11872,62 @@ R(cx-4,sol-11,1,3,'rgb(52,108,35)');R(cx+4,sol-11,1,3,'rgb(48,100,32)');
 g.fillStyle=fc3;g.fillRect(cx-3,sol-14,7,2);g.fillRect(cx-1,sol-15,3,1);g.fillRect(cx-5,sol-12,2,2);g.fillRect(cx+4,sol-12,2,2);
 }
 else if(t==='x_spArbre'){
-/* tronc */
-R(cx-3,sol-30,7,28,'rgb(92,65,40)');R(cx-2,sol-32,5,2,'rgb(85,60,38)');
-R(cx-4,sol-4,1,4,'rgb(80,58,35)');R(cx+4,sol-4,1,4,'rgb(80,58,35)');
-/* ombrage tronc */
-R(cx-3,sol-28,2,20,'rgb(78,55,34)');R(cx+2,sol-28,2,16,'rgb(100,72,46)');
-/* canopée — 3 masses superposées */
-const lv=v||0,greens=[
-['rgb(52,100,40)','rgb(68,125,48)','rgb(45,88,35)'],
-['rgb(48,95,38)','rgb(62,118,44)','rgb(42,82,32)'],
-['rgb(56,105,42)','rgb(72,130,52)','rgb(50,92,38)']
-][lv%3];
-/* masse principale */
-g.fillStyle=greens[0];g.beginPath();g.ellipse(cx,sol-52,24,22,0,0,Math.PI*2);g.fill();
-/* masse haute */
-g.fillStyle=greens[1];g.beginPath();g.ellipse(cx-4,sol-64,16,14,0,0,Math.PI*2);g.fill();
-/* masse latérale */
-g.fillStyle=greens[2];g.beginPath();g.ellipse(cx+8,sol-48,14,12,0,0,Math.PI*2);g.fill();
-/* détails feuillage */
 const _h=(a,b,k)=>{let n=(a*374761393+b*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
-for(let i2=0;i2<18;i2++){const ax=cx-20+_h(i2,lv,200)*40,ay=sol-72+_h(i2,lv,201)*38;
-const sz=2+_h(i2,lv,202)*3;g.fillStyle=_h(i2,lv,203)<.5?greens[1]:'rgb(80,140,58)';
-g.fillRect(ax,ay,sz,sz);}
+const lv=v||0;
+/* ombre au sol */
+g.fillStyle='rgba(20,30,15,0.25)';g.beginPath();g.ellipse(cx+2,sol+2,18,6,0,0,Math.PI*2);g.fill();
+/* racines */
+R(cx-6,sol-2,2,3,'rgb(75,52,32)');R(cx+5,sol-2,2,3,'rgb(75,52,32)');
+R(cx-8,sol,2,2,'rgb(68,48,30)');R(cx+7,sol,2,2,'rgb(68,48,30)');
+/* tronc — forme irrégulière */
+R(cx-3,sol-35,7,33,'rgb(88,62,38)');R(cx-2,sol-38,5,3,'rgb(82,58,35)');
+R(cx-4,sol-8,1,8,'rgb(78,55,34)');R(cx+4,sol-8,1,8,'rgb(78,55,34)');
+/* écorce (ombres et lumières sur le tronc) */
+R(cx-3,sol-32,2,24,'rgb(72,50,30)');/* ombre gauche */
+R(cx+1,sol-30,2,18,'rgb(98,70,44)');/* lumière droite */
+/* nœud */
+R(cx-1,sol-18,3,2,'rgb(65,45,28)');R(cx,sol-17,1,1,'rgb(78,55,34)');
+/* branche gauche */
+R(cx-6,sol-32,4,2,'rgb(82,58,35)');R(cx-8,sol-34,3,2,'rgb(78,55,34)');
+/* branche droite */
+R(cx+4,sol-28,4,2,'rgb(85,60,37)');R(cx+7,sol-30,3,2,'rgb(80,56,35)');
+/* canopée — technique pixel par pixel, pas d'ellipse */
+const dk=['rgb(38,72,28)','rgb(32,65,24)','rgb(42,78,32)'][lv%3];
+const md=['rgb(52,100,40)','rgb(48,92,36)','rgb(56,105,44)'][lv%3];
+const lt=['rgb(72,130,55)','rgb(68,122,50)','rgb(76,135,58)'][lv%3];
+const hi=['rgb(92,155,68)','rgb(88,148,62)','rgb(96,160,72)'][lv%3];
+/* couche sombre (base large) */
+g.fillStyle=dk;
+g.fillRect(cx-18,sol-52,36,8);g.fillRect(cx-22,sol-56,44,4);
+g.fillRect(cx-20,sol-60,40,4);g.fillRect(cx-16,sol-64,32,4);
+g.fillRect(cx-12,sol-67,24,3);g.fillRect(cx-8,sol-44,16,4);
+/* couche moyenne */
+g.fillStyle=md;
+g.fillRect(cx-20,sol-58,40,6);g.fillRect(cx-16,sol-64,32,6);
+g.fillRect(cx-12,sol-68,24,4);g.fillRect(cx-18,sol-50,36,4);
+/* couche claire (lumière du dessus) */
+g.fillStyle=lt;
+g.fillRect(cx-14,sol-66,28,4);g.fillRect(cx-18,sol-60,36,4);
+g.fillRect(cx-10,sol-70,20,3);
+/* reflets */
+g.fillStyle=hi;
+g.fillRect(cx-8,sol-68,16,2);g.fillRect(cx-12,sol-64,8,2);
+/* texture feuillage — pixels épars */
+for(let i2=0;i2<40;i2++){
+const fx=cx-22+Math.floor(_h(i2,lv,200)*44);
+const fy=sol-72+Math.floor(_h(i2,lv,201)*32);
+const dd=((fx-cx)*(fx-cx)/484)+((fy-(sol-56))*(fy-(sol-56))/256);
+if(dd>1)continue;
+const shade=_h(i2,lv,202);
+g.fillStyle=shade<.25?dk:(shade<.5?md:(shade<.8?lt:hi));
+g.fillRect(fx,fy,2,2);
+}
+/* feuilles pendantes sous la canopée */
+for(let i2=0;i2<6;i2++){
+const lx=cx-16+Math.floor(_h(i2,lv,210)*32);
+g.fillStyle=_h(i2,lv,211)<.5?md:dk;
+g.fillRect(lx,sol-42+Math.floor(_h(i2,lv,212)*4),1,3);
+}
 }
 
 XCAL[cle]={toile:c,W,H,sol};
