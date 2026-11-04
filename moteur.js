@@ -7901,20 +7901,26 @@ function construireSolSpawn(){
 const W=800,H=800,c=document.createElement('canvas');c.width=W;c.height=H;
 const g=c.getContext('2d');g.imageSmoothingEnabled=false;
 /* ═══════════════════════════════════════════════════════════════
-   SOL NU — herbe checkerboard (technique village) + patches bruit
+   HERBE RICHE — checkerboard village + grain fin + touffes + trèfle + fleurs
    ═══════════════════════════════════════════════════════════════ */
 const hh=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
-/* checkerboard demi-résolution */
+const vn=(x,y,s,k)=>{const X=Math.floor(x/s),Y=Math.floor(y/s),fx=x/s-X,fy=y/s-Y,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);
+const a=hh(X,Y,k),b=hh(X+1,Y,k),c2=hh(X,Y+1,k),e2=hh(X+1,Y+1,k);return a+(b-a)*u+(c2-a)*v+(a-b-c2+e2)*u*v;};
+const cl=v=>v<0?0:v>255?255:v;
+const pose=(x,y,r,v,b)=>{if(x<0||y<0||x>=W||y>=H)return;const i=(y*W+x)*4;d[i]=r;d[i+1]=v;d[i+2]=b;d[i+3]=255;};
+
+/* ── PASS 1 : checkerboard demi-résolution (technique village) ── */
 const LW=Math.ceil(W/2),LH=Math.ceil(H/2);
 const pt=document.createElement('canvas');pt.width=LW;pt.height=LH;
 const pg2=pt.getContext('2d');
-const img=pg2.createImageData(LW,LH),px=new Uint32Array(img.data.buffer);
-const Za=(255<<24)|(66<<16)|(150<<8)|104;   /* #689a68 olive base */
-const Zb=(255<<24)|(94<<16)|(157<<8)|136;   /* #889d5e olive moyen */
+const img0=pg2.createImageData(LW,LH),px=new Uint32Array(img0.data.buffer);
+const Za=(255<<24)|(66<<16)|(150<<8)|104;
+const Zb=(255<<24)|(94<<16)|(157<<8)|136;
 for(let y=0;y<LH;y++){const l=y*LW;for(let x=0;x<LW;x++)px[l+x]=((x+y)&1)?Za:Zb;}
-pg2.putImageData(img,0,0);
+pg2.putImageData(img0,0,0);
 g.drawImage(pt,0,0,LW,LH,0,0,W,H);
-/* patches bruit 8×8 */
+
+/* ── PASS 2 : patches bruit 8×8 (ombre/lumière grandes zones) ── */
 const bruit=(x,y)=>{const v=Math.sin(x*127.1+y*311.7)*43758.5453;return v-Math.floor(v);};
 const lisse=(x,y)=>{const x0=Math.floor(x),y0=Math.floor(y),fx=x-x0,fy=y-y0;
 const m=(a,b,t)=>a+(b-a)*(t*t*(3-2*t));
@@ -7923,6 +7929,58 @@ for(let y=0;y<H;y+=8)for(let x=0;x<W;x+=8){
 const n=lisse(x/90,y/90);
 if(n<.38){g.fillStyle='rgba(112,132,75,.34)';g.fillRect(x,y,8,8);}
 else if(n>.68){g.fillStyle='rgba(156,176,114,.28)';g.fillRect(x,y,8,8);}
+}
+
+/* ── PASS 3 : grain fin pixel par pixel (3 teintes d'herbe + bruit) ── */
+const img=g.createImageData(W,H),d=img.data;
+const exist=g.getImageData(0,0,W,H).data;
+for(let i=0;i<d.length;i++)d[i]=exist[i];
+const V=[[104,150,66],[116,162,74],[96,140,60]];
+for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+const i=(y*W+x)*4;
+const big=vn(x,y,90,5),mid=vn(x,y,26,8),n=hh(x,y,10);
+const sh=(big-.5)*14+(mid-.5)*7;
+const c2=V[n<.4?0:(n<.78?1:2)];
+const er=d[i],eg=d[i+1],eb=d[i+2];
+d[i]=cl(((er+c2[0]+sh)/2)|0);
+d[i+1]=cl(((eg+c2[1]+sh)/2)|0);
+d[i+2]=cl(((eb+c2[2]+sh*.6)/2)|0);
+}
+g.putImageData(img,0,0);
+
+/* ── PASS 4 : touffes d'herbe (brins qui dépassent, technique ferme) ── */
+for(let y=2;y<H-1;y++)for(let x=1;x<W-1;x++){
+const t=hh(x,y,12);if(t>=.057)continue;
+const i=(y*W+x)*4;
+const R2=exist[(y*W+x)*4],G2=exist[(y*W+x)*4+1],B2=exist[(y*W+x)*4+2];
+if(t<.03){
+for(let k=0;k<4;k++){
+const nr=cl(R2+(k===3?18:k?4:-26)),ng=cl(G2+(k===3?26:k?8:-22)),nb=cl(B2+(k===3?6:-16));
+g.fillStyle='rgb('+nr+','+ng+','+nb+')';g.fillRect(x,y-k,1,1);}
+g.fillStyle='rgb('+cl(R2-8)+','+G2+','+cl(B2-8)+')';g.fillRect(x-1,y-1,1,1);
+g.fillStyle='rgb('+cl(R2+6)+','+cl(G2+14)+','+B2+')';g.fillRect(x+1,y-2,1,1);
+} else if(t<.045){
+g.fillStyle='rgb('+cl(R2+14)+','+cl(G2+22)+','+cl(B2+6)+')';g.fillRect(x,y,1,1);
+g.fillStyle='rgb('+cl(R2+8)+','+cl(G2+12)+','+cl(B2+3)+')';g.fillRect(x+1,y,1,1);
+} else if(t<.055){
+g.fillStyle='rgb('+cl(R2-22)+','+cl(G2-18)+','+cl(B2-18)+')';g.fillRect(x,y,1,1);
+} else if(vn(x,y,30,16)>.6){
+g.fillStyle='rgb(86,140,62)';g.fillRect(x,y,1,1);g.fillRect(x+1,y,1,1);
+g.fillStyle='rgb(106,164,72)';g.fillRect(x,y-1,1,1);
+g.fillStyle='rgb(86,140,62)';g.fillRect(x+1,y+1,1,1);
+}}
+
+/* ── PASS 5 : colonies de fleurettes (technique ferme) ── */
+const FL=[[240,236,220],[236,214,90],[220,120,130],[170,160,220],[90,130,210]];
+for(let y=4;y<H-4;y++)for(let x=4;x<W-4;x++){
+const co=vn(x,y,60,18);
+if(hh(x,y,20)>=.0016+co*.006)continue;
+const f=FL[Math.floor(hh(x,y,22)*FL.length)];
+g.fillStyle='rgb(70,110,50)';g.fillRect(x,y,1,2);
+g.fillStyle='rgb('+f[0]+','+f[1]+','+f[2]+')';
+if(hh(x,y,24)<.3){g.fillRect(x-1,y-2,3,1);g.fillRect(x,y-3,1,3);
+g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x,y-2,1,1);
+}else g.fillRect(x,y-2,1,1);
 }
 return c;}
 
