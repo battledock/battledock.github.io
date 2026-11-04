@@ -11126,27 +11126,48 @@ return XCAL[cle];
 }
 else if(t==='x_fontaine'){
 ombre(34,6);
-/* grand bassin octogonal en pierre */
+/* grand bassin en pierre massive */
+g.fillStyle='#908060';g.beginPath();g.ellipse(cx,sol-4,34,13,0,0,7);g.fill();
 g.fillStyle='#a89870';g.beginPath();g.ellipse(cx,sol-6,33,12,0,0,7);g.fill();
 g.fillStyle='#c4b48c';g.beginPath();g.ellipse(cx,sol-8,31,11,0,0,7);g.fill();
 g.fillStyle='#d6c8a0';g.beginPath();g.ellipse(cx,sol-10,30,10,0,0,7);g.fill();
-/* rebord épais */
-g.strokeStyle='#9a8a62';g.lineWidth=2;g.beginPath();g.ellipse(cx,sol-9,31,11,0,0,7);g.stroke();
+/* rebord épais double */
+g.strokeStyle='#8a7a52';g.lineWidth=2.5;g.beginPath();g.ellipse(cx,sol-8,32,11.5,0,0,7);g.stroke();
+g.strokeStyle='#b0a078';g.lineWidth=1;g.beginPath();g.ellipse(cx,sol-9,30,10,0,0,7);g.stroke();
 /* eau du bassin */
-g.fillStyle='#2e82a6';g.beginPath();g.ellipse(cx,sol-10,27,8,0,0,7);g.fill();
-g.fillStyle='#4aa0c2';g.beginPath();g.ellipse(cx-4,sol-11,16,4,0,0,7);g.fill();
-g.fillStyle='#68bada';g.beginPath();g.ellipse(cx-6,sol-12,8,2,0,0,7);g.fill();
-/* colonne centrale en pierre */
-R(cx-4,sol-36,8,26,'#c4b48c');R(cx-4,sol-36,3,26,'#ddd0b0');R(cx+3,sol-36,1,26,'#a89870');
-/* vasque supérieure */
-g.fillStyle='#c4b48c';g.beginPath();g.ellipse(cx,sol-37,12,4,0,0,7);g.fill();
-g.fillStyle='#2e82a6';g.beginPath();g.ellipse(cx,sol-38,9,2.5,0,0,7);g.fill();
-g.fillStyle='#4aa0c2';g.beginPath();g.ellipse(cx-2,sol-39,5,1.2,0,0,7);g.fill();
-/* jet central */
-R(cx-1,sol-46,2,8,'#a89870');
-/* pomme de pin (sommet) */
-g.fillStyle='#a89870';g.beginPath();g.ellipse(cx,sol-48,3,4,0,0,7);g.fill();
-g.fillStyle='#c4b48c';g.beginPath();g.ellipse(cx,sol-49,2,3,0,0,7);g.fill();
+g.fillStyle='#1e6e96';g.beginPath();g.ellipse(cx,sol-10,27,8,0,0,7);g.fill();
+g.fillStyle='#2e8ab0';g.beginPath();g.ellipse(cx-3,sol-11,18,5,0,0,7);g.fill();
+g.fillStyle='#4aa8cc';g.beginPath();g.ellipse(cx-5,sol-12,10,3,0,0,7);g.fill();
+/* colonne centrale sculptée */
+R(cx-5,sol-38,10,28,'#c4b48c');R(cx-5,sol-38,3,28,'#ddd0b0');R(cx+4,sol-38,1,28,'#a08a68');
+/* moulure basse */
+R(cx-7,sol-14,14,4,'#b0a078');R(cx-7,sol-14,14,1,'#d0c4a0');
+/* moulure haute */
+R(cx-6,sol-38,12,3,'#b0a078');R(cx-6,sol-38,12,1,'#d0c4a0');
+/* vasque supérieure large */
+g.fillStyle='#b0a078';g.beginPath();g.ellipse(cx,sol-39,16,5,0,0,7);g.fill();
+g.fillStyle='#c4b48c';g.beginPath();g.ellipse(cx,sol-40,14,4,0,0,7);g.fill();
+g.fillStyle='#1e6e96';g.beginPath();g.ellipse(cx,sol-41,11,3,0,0,7);g.fill();
+g.fillStyle='#2e8ab0';g.beginPath();g.ellipse(cx-2,sol-42,6,1.5,0,0,7);g.fill();
+/* tige + pomme de pin */
+R(cx-1,sol-50,3,9,'#b0a078');R(cx-1,sol-50,1,9,'#d0c4a0');
+g.fillStyle='#b0a078';g.beginPath();g.ellipse(cx,sol-52,3.5,5,0,0,7);g.fill();
+g.fillStyle='#c4b48c';g.beginPath();g.ellipse(cx,sol-53,2.5,3.5,0,0,7);g.fill();
+/* === 4 JETS D'EAU en arc retombant dans le bassin === */
+g.lineWidth=2;g.lineCap='round';
+g.strokeStyle='rgba(74,168,204,0.6)';
+g.beginPath();g.moveTo(cx-8,sol-42);g.quadraticCurveTo(cx-20,sol-60,cx-24,sol-12);g.stroke();
+g.beginPath();g.moveTo(cx+8,sol-42);g.quadraticCurveTo(cx+20,sol-60,cx+24,sol-12);g.stroke();
+g.strokeStyle='rgba(46,138,176,0.4)';g.lineWidth=1.2;
+g.beginPath();g.moveTo(cx-6,sol-41);g.quadraticCurveTo(cx-16,sol-55,cx-20,sol-13);g.stroke();
+g.beginPath();g.moveTo(cx+6,sol-41);g.quadraticCurveTo(cx+16,sol-55,cx+20,sol-13);g.stroke();
+/* éclaboussures à l'impact */
+g.fillStyle='rgba(90,190,220,0.5)';
+g.beginPath();g.ellipse(cx-24,sol-12,3,1.5,0,0,7);g.fill();
+g.beginPath();g.ellipse(cx+24,sol-12,3,1.5,0,0,7);g.fill();
+g.fillStyle='rgba(90,190,220,0.3)';
+g.beginPath();g.ellipse(cx-20,sol-13,2,1,0,0,7);g.fill();
+g.beginPath();g.ellipse(cx+20,sol-13,2,1,0,0,7);g.fill();
 }
 else if(t==='x_caboteur'){
 g.fillStyle='rgba(10,40,60,.35)';g.fillRect(8,sol-2,W-16,6);
