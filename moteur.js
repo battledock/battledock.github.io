@@ -7984,7 +7984,7 @@ g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x,y-2,1,1);
 }
 
 /* ── PASS 6 : place pavée centrale (dalles chaudes Voronoï) ── */
-const PCX=400,PCY=395,PRX=95,PRY=75;
+const PCX=400,PCY=400,PRX=135,PRY=110;
 const STONES=[[205,190,165],[195,178,150],[215,200,175],[188,172,145],[210,195,168],[200,185,158],[220,208,182]];
 const imgP=g.getImageData(0,0,W,H),dp=imgP.data;
 for(let y=PCY-PRY-12;y<=PCY+PRY+12;y++)for(let x=PCX-PRX-12;x<=PCX+PRX+12;x++){
@@ -8032,6 +8032,28 @@ const i=(iy*W+ix)*4;
 dp[i]=cl(165+hh(ix,iy,135)*12);dp[i+1]=cl(152+hh(ix,iy,136)*12);dp[i+2]=cl(130+hh(ix,iy,137)*12);
 }}
 g.putImageData(imgP,0,0);
+
+/* ── PASS 7 : chemin de dalles depuis le sud vers la place ── */
+const chG=g;
+const pathStone=(px2,py2,sw,sh)=>{
+chG.fillStyle='rgb('+(185+Math.floor(hh(px2,py2,150)*20))+','+(172+Math.floor(hh(px2,py2,151)*18))+','+(148+Math.floor(hh(px2,py2,152)*16))+')';
+chG.fillRect(px2,py2,sw,sh);
+chG.fillStyle='rgba(0,0,0,0.08)';chG.fillRect(px2,py2+sh-1,sw,1);
+};
+/* chemin sud (vers le bas de la map) */
+for(let py2=PCY+PRY+5;py2<750;py2+=8){
+const wobble=Math.sin(py2*0.04)*4;
+const pw=18+Math.floor(hh(py2,0,155)*8);
+for(let dx2=-pw/2;dx2<pw/2;dx2+=5+Math.floor(hh(dx2,py2,156)*3)){
+pathStone(Math.floor(400+wobble+dx2),py2,4+Math.floor(hh(dx2,py2,157)*3),3+Math.floor(hh(dx2,py2,158)*3));
+}}
+/* chemin nord */
+for(let py2=PCY-PRY-5;py2>50;py2-=8){
+const wobble=Math.sin(py2*0.05)*3;
+const pw=14+Math.floor(hh(py2,1,155)*6);
+for(let dx2=-pw/2;dx2<pw/2;dx2+=5+Math.floor(hh(dx2,py2,159)*3)){
+pathStone(Math.floor(400+wobble+dx2),py2,4+Math.floor(hh(dx2,py2,160)*2),3+Math.floor(hh(dx2,py2,161)*2));
+}}
 
 return c;}
 
@@ -10895,7 +10917,7 @@ return XCAL[cle];
 }
 const T={x_paillasson:[30,10],x_panneauG:[40,44],x_tableau:[60,66],x_panneauF:[52,70],x_ferry:[96,56],x_caboteur:[250,120],x_docks:[150,96],x_pile:[44,34],x_roue:[180,210],x_kiosque:[44,68],x_fontaine:[78,74],x_metroM:[96,100],x_platane:[84,108],x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
 x_filets:[34,16],x_bitte:[12,14],x_barque:[62,34],x_cargo:[250,128],x_grue:[80,120],
-x_phare:[30,96],x_spMaison:[100,90],x_spFontaine:[70,70],x_spPanneau:[40,52],x_spBanc:[30,18],x_spLampadaire:[14,44],x_spJardiniere:[18,22]}[t]||[40,40];
+x_phare:[30,96],x_spMaison:[100,90],x_spFontaine:[70,70],x_spPanneau:[40,52],x_spBanc:[30,18],x_spLampadaire:[14,44],x_spJardiniere:[18,22],x_spArbre:[60,90]}[t]||[40,40];
 const W=T[0],H=T[1],cx=W/2,sol=H-6;
 const c=document.createElement('canvas');
 const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
@@ -11834,6 +11856,29 @@ const fc3=fcs[v%5][0];
 R(cx-2,sol-12,1,4,'rgb(55,110,38)');R(cx+2,sol-12,1,4,'rgb(50,105,35)');R(cx,sol-14,1,6,'rgb(58,115,40)');
 R(cx-4,sol-11,1,3,'rgb(52,108,35)');R(cx+4,sol-11,1,3,'rgb(48,100,32)');
 g.fillStyle=fc3;g.fillRect(cx-3,sol-14,7,2);g.fillRect(cx-1,sol-15,3,1);g.fillRect(cx-5,sol-12,2,2);g.fillRect(cx+4,sol-12,2,2);
+}
+else if(t==='x_spArbre'){
+/* tronc */
+R(cx-3,sol-30,7,28,'rgb(92,65,40)');R(cx-2,sol-32,5,2,'rgb(85,60,38)');
+R(cx-4,sol-4,1,4,'rgb(80,58,35)');R(cx+4,sol-4,1,4,'rgb(80,58,35)');
+/* ombrage tronc */
+R(cx-3,sol-28,2,20,'rgb(78,55,34)');R(cx+2,sol-28,2,16,'rgb(100,72,46)');
+/* canopée — 3 masses superposées */
+const lv=v||0,greens=[
+['rgb(52,100,40)','rgb(68,125,48)','rgb(45,88,35)'],
+['rgb(48,95,38)','rgb(62,118,44)','rgb(42,82,32)'],
+['rgb(56,105,42)','rgb(72,130,52)','rgb(50,92,38)']
+][lv%3];
+/* masse principale */
+g.fillStyle=greens[0];g.beginPath();g.ellipse(cx,sol-52,24,22,0,0,Math.PI*2);g.fill();
+/* masse haute */
+g.fillStyle=greens[1];g.beginPath();g.ellipse(cx-4,sol-64,16,14,0,0,Math.PI*2);g.fill();
+/* masse latérale */
+g.fillStyle=greens[2];g.beginPath();g.ellipse(cx+8,sol-48,14,12,0,0,Math.PI*2);g.fill();
+/* détails feuillage */
+for(let i2=0;i2<18;i2++){const ax=cx-20+hh(i2,lv,200)*40,ay=sol-72+hh(i2,lv,201)*38;
+const sz=2+hh(i2,lv,202)*3;g.fillStyle=hh(i2,lv,203)<.5?greens[1]:'rgb(80,140,58)';
+g.fillRect(ax,ay,sz,sz);}
 }
 
 XCAL[cle]={toile:c,W,H,sol};
@@ -12889,24 +12934,49 @@ function balayerLeSentier(){
 }
 function semerDecor(){
 if(CARTE==='spawn'){DECOR=[];
-/* ── centre du spawn : fontaine + panneau + bancs + lampadaires + jardinières ── */
-DECOR.push({t:'x_spFontaine',x:400,y:392,bati:true,demi:22});
-DECOR.push({t:'x_spPanneau',x:400,y:440,bati:true,demi:10});
-/* bancs (2 de chaque côté) */
-DECOR.push({t:'x_spBanc',x:345,y:382,bati:true,demi:10});
-DECOR.push({t:'x_spBanc',x:345,y:412,bati:true,demi:10});
-DECOR.push({t:'x_spBanc',x:455,y:382,bati:true,demi:10});
-DECOR.push({t:'x_spBanc',x:455,y:412,bati:true,demi:10});
-/* lampadaires (4 coins) */
-DECOR.push({t:'x_spLampadaire',x:362,y:362});
-DECOR.push({t:'x_spLampadaire',x:438,y:362});
-DECOR.push({t:'x_spLampadaire',x:362,y:432});
-DECOR.push({t:'x_spLampadaire',x:438,y:432});
-/* jardinières fleuries */
-DECOR.push({t:'x_spJardiniere',x:372,y:355,v:0});
-DECOR.push({t:'x_spJardiniere',x:428,y:355,v:1});
-DECOR.push({t:'x_spJardiniere',x:372,y:440,v:2});
-DECOR.push({t:'x_spJardiniere',x:428,y:440,v:3});
+/* ── fontaine au centre ── */
+DECOR.push({t:'x_spFontaine',x:400,y:385,bati:true,demi:26});
+/* ── panneau d'accueil : entrée sud de la place ── */
+DECOR.push({t:'x_spPanneau',x:400,y:520,bati:true,demi:12});
+/* ── bancs : 2 paires de chaque côté, bien espacés ── */
+DECOR.push({t:'x_spBanc',x:300,y:370,bati:true,demi:10});
+DECOR.push({t:'x_spBanc',x:300,y:420,bati:true,demi:10});
+DECOR.push({t:'x_spBanc',x:500,y:370,bati:true,demi:10});
+DECOR.push({t:'x_spBanc',x:500,y:420,bati:true,demi:10});
+/* ── bancs isolés sur les chemins ── */
+DECOR.push({t:'x_spBanc',x:370,y:560,bati:true,demi:10});
+DECOR.push({t:'x_spBanc',x:430,y:250,bati:true,demi:10});
+/* ── lampadaires : 4 autour de la place + 4 périphériques ── */
+DECOR.push({t:'x_spLampadaire',x:320,y:340});
+DECOR.push({t:'x_spLampadaire',x:480,y:340});
+DECOR.push({t:'x_spLampadaire',x:320,y:460});
+DECOR.push({t:'x_spLampadaire',x:480,y:460});
+DECOR.push({t:'x_spLampadaire',x:400,y:220});
+DECOR.push({t:'x_spLampadaire',x:400,y:580});
+DECOR.push({t:'x_spLampadaire',x:200,y:400});
+DECOR.push({t:'x_spLampadaire',x:600,y:400});
+/* ── jardinières autour de la place ── */
+DECOR.push({t:'x_spJardiniere',x:340,y:320,v:0});
+DECOR.push({t:'x_spJardiniere',x:460,y:320,v:1});
+DECOR.push({t:'x_spJardiniere',x:340,y:480,v:2});
+DECOR.push({t:'x_spJardiniere',x:460,y:480,v:3});
+DECOR.push({t:'x_spJardiniere',x:280,y:395,v:0});
+DECOR.push({t:'x_spJardiniere',x:520,y:395,v:2});
+/* ── arbres : forêt clairsemée autour ── */
+DECOR.push({t:'x_spArbre',x:120,y:140,v:0});
+DECOR.push({t:'x_spArbre',x:680,y:120,v:1});
+DECOR.push({t:'x_spArbre',x:90,y:350,v:2});
+DECOR.push({t:'x_spArbre',x:710,y:380,v:0});
+DECOR.push({t:'x_spArbre',x:130,y:600,v:1});
+DECOR.push({t:'x_spArbre',x:670,y:620,v:2});
+DECOR.push({t:'x_spArbre',x:200,y:180,v:0});
+DECOR.push({t:'x_spArbre',x:600,y:200,v:1});
+DECOR.push({t:'x_spArbre',x:180,y:680,v:2});
+DECOR.push({t:'x_spArbre',x:620,y:700,v:0});
+DECOR.push({t:'x_spArbre',x:100,y:480,v:1});
+DECOR.push({t:'x_spArbre',x:700,y:500,v:2});
+DECOR.push({t:'x_spArbre',x:280,y:100,v:0});
+DECOR.push({t:'x_spArbre',x:520,y:720,v:1});
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}
 if(CHAMPS_SEULS&&CARTE==='village'){
 /* LA FERME : deux bâtiments, et rien d'autre. Le métro plein nord, la
