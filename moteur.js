@@ -7923,29 +7923,69 @@ const FL=[[240,236,220],[236,214,90],[220,120,130],[170,160,220],[90,130,210]];
 for(let y=4;y<H-4;y++)for(let x=4;x<W-4;x++){const co=vn(x,y,60,18);if(hh(x,y,20)>=0.0016+co*0.006)continue;
 const f=FL[Math.floor(hh(x,y,22)*FL.length)];g.fillStyle='rgb(70,110,50)';g.fillRect(x,y,1,2);g.fillStyle='rgb('+f[0]+','+f[1]+','+f[2]+')';
 if(hh(x,y,24)<0.3){g.fillRect(x-1,y-2,3,1);g.fillRect(x,y-3,1,3);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x,y-2,1,1);}else g.fillRect(x,y-2,1,1);}
-/* LA PLACE DU VILLAGE — un rond pavé au centre de la prairie */
-const CX=300, CY=300, RAY=90;
-for(let y2=CY-RAY-4;y2<CY+RAY+4;y2++)for(let x2=CX-RAY-4;x2<CX+RAY+4;x2++){
+/* LA PLACE DU VILLAGE — mosaïque provençale au centre de la prairie */
+const CX=300, CY=300, RAY=100;
+for(let y2=CY-RAY-5;y2<CY+RAY+5;y2++)for(let x2=CX-RAY-5;x2<CX+RAY+5;x2++){
 const dx=x2-CX, dy=y2-CY, dist=Math.sqrt(dx*dx+dy*dy);
-if(dist>RAY+3)continue;
+if(dist>RAY+4)continue;
 if(dist>RAY){/* bord arrondi : mélange herbe/pavé */
-const a=(dist-RAY)/3;
-const base=hh(x2,y2,30)<0.5?[194,176,148]:[182,166,138];
-const hr=[cl(base[0]*(1-a)+d[(y2*W+x2)*4]*a),cl(base[1]*(1-a)+d[(y2*W+x2)*4+1]*a),cl(base[2]*(1-a)+d[(y2*W+x2)*4+2]*a)];
+const a=(dist-RAY)/4;
+const base=[178,160,128];
+const hi=(y2*W+x2)*4;
+const hr=[cl(base[0]*(1-a)+d[hi]*a),cl(base[1]*(1-a)+d[hi+1]*a),cl(base[2]*(1-a)+d[hi+2]*a)];
 pose(x2,y2,hr[0],hr[1],hr[2]);continue;}
-/* pavés irréguliers */
-const bx2=Math.floor(x2/12), by2=Math.floor(y2/12);
-const jx=(x2%12), jy=(y2%12);
-const joint=(jx===0||jy===0||(jx===6&&by2%2===0));
-if(joint){pose(x2,y2,148,136,112);continue;}
-const pv=hh(bx2,by2,40);
-const base=pv<0.3?[204,188,158]:(pv<0.6?[194,178,150]:(pv<0.85?[212,196,168]:[186,170,142]));
-const sh2=(vn(x2,y2,30,42)-0.5)*12;
-pose(x2,y2,cl(base[0]+sh2),cl(base[1]+sh2),cl(base[2]+sh2*0.7));}
-/* bordure de la place : une rangée de pierres plus sombres */
-for(let a2=0;a2<360;a2+=2){const rad=a2*Math.PI/180;
-const bx3=Math.round(CX+Math.cos(rad)*(RAY+1)), by3=Math.round(CY+Math.sin(rad)*(RAY+1));
-pose(bx3,by3,140,128,104);pose(bx3+1,by3,142,130,106);}
+/* === MOSAÏQUE PROVENÇALE — motifs concentriques avec rosace === */
+const ang=Math.atan2(dy,dx);
+const norm=dist/RAY; /* 0 = centre, 1 = bord */
+/* double bordure : extérieure sombre + intérieure ocre */
+if(dist>RAY-3){pose(x2,y2,128,112,86);continue;}
+if(dist>RAY-6){const sh2=(vn(x2,y2,8,50)-0.5)*8;pose(x2,y2,cl(196+sh2),cl(168+sh2),cl(110+sh2));continue;}
+/* anneau extérieur : pavés en arc-de-cercle posés en éventail */
+if(dist>RAY-22){
+const seg=Math.floor((ang+Math.PI)*28/Math.PI/2);
+const segAng=seg*Math.PI*2/56-Math.PI;
+const dAng=ang-segAng;
+const isJoint=Math.abs(dAng)>0.09||(Math.abs(dist-(RAY-14))< 1.2);
+if(isJoint){pose(x2,y2,148,132,104);continue;}
+const pv=hh(seg,0,44);
+const base=pv<0.35?[210,194,162]:(pv<0.7?[198,180,148]:[218,200,170]);
+const sh2=(vn(x2,y2,12,46)-0.5)*10;
+pose(x2,y2,cl(base[0]+sh2),cl(base[1]+sh2),cl(base[2]+sh2*0.7));continue;}
+/* anneau intermédiaire : frise losange bleu/terre cuite */
+if(dist>RAY-34){
+const fa=((ang+Math.PI)/(Math.PI*2))*16;
+const fi=Math.floor(fa), ff=fa-fi;
+const radN=(dist-(RAY-34))/12;
+const losange=Math.abs(ff-0.5)+Math.abs(radN-0.5);
+if(losange<0.42){/* carreau bleu provençal */
+const sh2=(vn(x2,y2,6,52)-0.5)*12;
+pose(x2,y2,cl(68+sh2),cl(102+sh2),cl(162+sh2));continue;}
+if(losange<0.48){/* joint */pose(x2,y2,148,136,112);continue;}
+/* fond terre cuite */
+const sh2=(vn(x2,y2,8,54)-0.5)*10;
+pose(x2,y2,cl(192+sh2),cl(148+sh2),cl(108+sh2));continue;}
+/* rosace centrale — étoile à 8 branches */
+if(dist>8){
+const rose=((ang+Math.PI)/(Math.PI*2))*8;
+const ri=Math.floor(rose), rf=rose-ri;
+const pointe=Math.abs(rf-0.5)*2; /* 0=centre de branche, 1=entre */
+const innerR=(dist-8)/(RAY-42);
+const star=pointe+innerR*0.6;
+if(star<0.55){/* branche : ocre doré */
+const sh2=(vn(x2,y2,10,56)-0.5)*10;
+pose(x2,y2,cl(210+sh2),cl(180+sh2),cl(100+sh2));continue;}
+if(star<0.60){/* joint de l'étoile */pose(x2,y2,148,136,112);continue;}
+/* fond entre les branches : terre cuite rosé */
+const sh2=(vn(x2,y2,8,58)-0.5)*10;
+pose(x2,y2,cl(200+sh2),cl(162+sh2),cl(132+sh2));continue;}
+/* centre : médaillon rond ocre foncé */
+const sh2=(vn(x2,y2,4,60)-0.5)*8;
+pose(x2,y2,cl(172+sh2),cl(142+sh2),cl(82+sh2));}
+/* double bordure extérieure : pierres taillées */
+for(let a2=0;a2<360;a2+=1.5){const rad=a2*Math.PI/180;
+for(let rr=0;rr<2;rr++){const R2=RAY+1+rr;
+const bx3=Math.round(CX+Math.cos(rad)*R2), by3=Math.round(CY+Math.sin(rad)*R2);
+pose(bx3,by3,cl(130+rr*8),cl(116+rr*8),cl(90+rr*6));}}
 return c;}
 
 /* ================= LA PRAIRIE DE LA NOUVELLE FERME =================
@@ -12398,20 +12438,20 @@ function balayerLeSentier(){
 }
 function semerDecor(){
 if(CARTE==='spawn'){DECOR=[];
-/* LA PLACE DU VILLAGE PROVENÇAL — fontaine, bancs, panneau, arbres */
+/* LA PLACE DU VILLAGE PROVENÇAL — fontaine, bancs, tableau, platanes */
 DECOR.push({t:'x_fontaine',x:300,y:300,demi:24});
-/* quatre bancs autour de la fontaine */
-DECOR.push({t:'bancP',x:260,y:340,gr:0});
-DECOR.push({t:'bancP',x:340,y:340,gr:0});
-DECOR.push({t:'bancP',x:260,y:270,gr:0});
-DECOR.push({t:'bancP',x:340,y:270,gr:0});
-/* panneau du classement au nord de la place */
-DECOR.push({t:'x_panneauG',x:300,y:220,demi:18});
-/* arbres aux quatre coins de la place */
-DECOR.push({t:'x_platane',x:220,y:230,demi:40});
-DECOR.push({t:'x_platane',x:380,y:230,demi:40});
-DECOR.push({t:'x_platane',x:220,y:380,demi:40});
-DECOR.push({t:'x_platane',x:380,y:380,demi:40});
+/* quatre bancs bien espacés autour de la place */
+DECOR.push({t:'bancP',x:240,y:360,gr:0});
+DECOR.push({t:'bancP',x:360,y:360,gr:0});
+DECOR.push({t:'bancP',x:240,y:250,gr:0});
+DECOR.push({t:'bancP',x:360,y:250,gr:0});
+/* grand tableau interactif (classement) au nord de la place */
+DECOR.push({t:'x_tableau',x:300,y:190,demi:30});
+/* platanes aux quatre coins, bien écartés */
+DECOR.push({t:'x_platane',x:180,y:200,demi:40});
+DECOR.push({t:'x_platane',x:420,y:200,demi:40});
+DECOR.push({t:'x_platane',x:180,y:410,demi:40});
+DECOR.push({t:'x_platane',x:420,y:410,demi:40});
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}   /* spawn : place du village */
 if(CHAMPS_SEULS&&CARTE==='village'){
 /* LA FERME : deux bâtiments, et rien d'autre. Le métro plein nord, la
