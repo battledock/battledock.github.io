@@ -11876,8 +11876,9 @@ g.fillStyle=greens[1];g.beginPath();g.ellipse(cx-4,sol-64,16,14,0,0,Math.PI*2);g
 /* masse latérale */
 g.fillStyle=greens[2];g.beginPath();g.ellipse(cx+8,sol-48,14,12,0,0,Math.PI*2);g.fill();
 /* détails feuillage */
-for(let i2=0;i2<18;i2++){const ax=cx-20+hh(i2,lv,200)*40,ay=sol-72+hh(i2,lv,201)*38;
-const sz=2+hh(i2,lv,202)*3;g.fillStyle=hh(i2,lv,203)<.5?greens[1]:'rgb(80,140,58)';
+const _h=(a,b,k)=>{let n=(a*374761393+b*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
+for(let i2=0;i2<18;i2++){const ax=cx-20+_h(i2,lv,200)*40,ay=sol-72+_h(i2,lv,201)*38;
+const sz=2+_h(i2,lv,202)*3;g.fillStyle=_h(i2,lv,203)<.5?greens[1]:'rgb(80,140,58)';
 g.fillRect(ax,ay,sz,sz);}
 }
 
