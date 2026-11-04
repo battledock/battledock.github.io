@@ -7918,12 +7918,7 @@ pose(x-1,y-1,cl(R-8),cl(G2),cl(B-8));pose(x+1,y-2,cl(R+6),cl(G2+14),cl(B));}
 else if(t<0.045){pose(x,y,cl(R+14),cl(G2+22),cl(B+6));pose(x+1,y,cl(R+8),cl(G2+12),cl(B+3));}
 else if(t<0.055)pose(x,y,cl(R-22),cl(G2-18),cl(B-18));
 else if(vn(x,y,30,16)>0.6){pose(x,y,86,140,62);pose(x+1,y,86,140,62);pose(x,y-1,106,164,72);pose(x+1,y+1,86,140,62);}}
-g.putImageData(img,0,0);
-const FL=[[240,236,220],[236,214,90],[220,120,130],[170,160,220],[90,130,210]];
-for(let y=4;y<H-4;y++)for(let x=4;x<W-4;x++){const co=vn(x,y,60,18);if(hh(x,y,20)>=0.0016+co*0.006)continue;
-const f=FL[Math.floor(hh(x,y,22)*FL.length)];g.fillStyle='rgb(70,110,50)';g.fillRect(x,y,1,2);g.fillStyle='rgb('+f[0]+','+f[1]+','+f[2]+')';
-if(hh(x,y,24)<0.3){g.fillRect(x-1,y-2,3,1);g.fillRect(x,y-3,1,3);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x,y-2,1,1);}else g.fillRect(x,y-2,1,1);}
-/* LA PLACE DU VILLAGE — grande mosaïque provençale au centre */
+/* LA PLACE DU VILLAGE — grande mosaïque provençale au centre (AVANT putImageData) */
 const CX=300, CY=300, RAY=130;
 for(let y2=CY-RAY-5;y2<CY+RAY+5;y2++)for(let x2=CX-RAY-5;x2<CX+RAY+5;x2++){
 const dx=x2-CX, dy=y2-CY, dist=Math.sqrt(dx*dx+dy*dy);
@@ -7990,6 +7985,14 @@ for(let a2=0;a2<360;a2+=1){const rad=a2*Math.PI/180;
 for(let rr=0;rr<3;rr++){const R2=RAY+1+rr;
 const bx3=Math.round(CX+Math.cos(rad)*R2), by3=Math.round(CY+Math.sin(rad)*R2);
 pose(bx3,by3,cl(122+rr*8),cl(108+rr*8),cl(84+rr*6));}}
+g.putImageData(img,0,0);
+/* fleurettes — on saute la zone mosaïque */
+const FL=[[240,236,220],[236,214,90],[220,120,130],[170,160,220],[90,130,210]];
+for(let y=4;y<H-4;y++)for(let x=4;x<W-4;x++){
+const fdx=x-CX,fdy=y-CY;if(fdx*fdx+fdy*fdy<(RAY+6)*(RAY+6))continue;
+const co=vn(x,y,60,18);if(hh(x,y,20)>=0.0016+co*0.006)continue;
+const f=FL[Math.floor(hh(x,y,22)*FL.length)];g.fillStyle='rgb(70,110,50)';g.fillRect(x,y,1,2);g.fillStyle='rgb('+f[0]+','+f[1]+','+f[2]+')';
+if(hh(x,y,24)<0.3){g.fillRect(x-1,y-2,3,1);g.fillRect(x,y-3,1,3);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x,y-2,1,1);}else g.fillRect(x,y-2,1,1);}
 return c;}
 
 /* ================= LA PRAIRIE DE LA NOUVELLE FERME =================
