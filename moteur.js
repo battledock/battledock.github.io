@@ -8031,53 +8031,7 @@ R(fx,fy,1,1,fc);
 if(hh(k,902,3)<.4){R(fx-1,fy,1,1,fc);R(fx,fy-1,1,1,fc);}
 }
 
-/* ── PASS 6 : maisons du hameau — gravées dans le sol ── */
-{const maison=(mx,my,mw,mh,fc,tc,vi)=>{
-/* ombre au sol */
-g.fillStyle='rgba(30,20,10,.25)';g.beginPath();g.ellipse(mx+mw/2+3,my+mh+2,mw/2+5,6,0,0,7);g.fill();
-/* murs */
-for(let y2=my;y2<my+mh;y2++)for(let x2=mx;x2<mx+mw;x2++){
-const sn=vn(x2,y2,8,50+(vi*7));
-const pr=fc[0]+((sn-.5)*14|0),pg=fc[1]+((sn-.5)*12|0),pb=fc[2]+((sn-.5)*8|0);
-R(x2,y2,1,1,'rgb('+cl(pr)+','+cl(pg)+','+cl(pb)+')');
-}
-/* ligne de toit (corniche) */
-R(mx-2,my-2,mw+4,2,'rgb('+(fc[0]-20)+','+(fc[1]-18)+','+(fc[2]-14)+')');
-/* toit — tuiles canal */
-const th=Math.floor(mh*0.4);
-for(let k=0;k<th;k++){const tw=mw+6-k*((mw+6)/(th+4)),tx=mx-3+(mw+6-tw)/2;
-const tt=k%2?tc:'rgb('+(tc[0]||parseInt(tc.substr(1,2),16))+','+(tc[1]||parseInt(tc.substr(3,2),16))+','+(tc[2]||parseInt(tc.substr(5,2),16))+')';
-R(tx,my-3-k*2,tw,3,k%2?'#b85a30':'#c86838');
-R(tx,my-3-k*2,tw,1,k%2?'#c86a40':'#a84a28');
-}
-/* fenêtres */
-const fw=8,fh=10;
-const nf=Math.max(1,Math.floor(mw/28));
-for(let f=0;f<nf;f++){
-const fx=mx+Math.floor((f+.5)*mw/nf)-fw/2, fy=my+Math.floor(mh*.3);
-R(fx,fy,fw,fh,'#1a2a38');R(fx+1,fy+1,fw-2,fh-2,'#3a5a6a');
-R(fx+fw/2|0,fy,1,fh,'#1a2a38');R(fx,fy+fh/2|0,fw,1,'#1a2a38');
-/* volets */
-const vc=vi%3===0?'#2a5a8a':(vi%3===1?'#4a6a3a':'#5a4a3a');
-R(fx-3,fy,3,fh,vc);R(fx+fw,fy,3,fh,vc);
-for(let s=1;s<fh;s+=2){R(fx-3,fy+s,3,1,'rgba(0,0,0,.15)');R(fx+fw,fy+s,3,1,'rgba(0,0,0,.15)');}
-/* appui */
-R(fx-1,fy+fh,fw+2,2,'#c8b890');
-}
-/* porte */
-const pw=10,ph2=16,px=mx+Math.floor(mw/2)-pw/2, ppy=my+mh-ph2;
-R(px,ppy,pw,ph2,'#4a3a28');R(px,ppy,pw,1,'#a09070');R(px+pw/2|0,ppy+ph2-6,2,2,'#c0a040');
-};
-/* ouest */
-maison(20,110,80,65,[215,168,100],'#b85a30',0);
-maison(20,290,75,60,[220,180,160],'#c86838',2);
-/* est */
-maison(500,115,80,60,[232,215,185],'#b85a30',1);
-maison(505,290,75,65,[228,205,160],'#c86838',4);
-/* nord */
-maison(95,12,90,55,[198,160,110],'#b85a30',3);
-maison(410,12,90,55,[225,185,165],'#c86838',5);
-}
+/* ── PASS 6 : maisons du hameau — rendues en DECOR (x_spMaison) ── */
 
 /* ── PASS 7 : bordure de la carte — lisière d'arbres ── */
 /* haut */
@@ -10971,7 +10925,7 @@ return XCAL[cle];
 }
 const T={x_paillasson:[30,10],x_panneauG:[40,44],x_tableau:[60,66],x_panneauF:[52,70],x_ferry:[96,56],x_caboteur:[250,120],x_docks:[150,96],x_pile:[44,34],x_roue:[180,210],x_kiosque:[44,68],x_fontaine:[78,74],x_metroM:[96,100],x_platane:[84,108],x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
 x_filets:[34,16],x_bitte:[12,14],x_barque:[62,34],x_cargo:[250,128],x_grue:[80,120],
-x_phare:[30,96]}[t]||[40,40];
+x_phare:[30,96],x_spMaison:[100,90]}[t]||[40,40];
 const W=T[0],H=T[1],cx=W/2,sol=H-6;
 const c=document.createElement('canvas');
 const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
@@ -11739,6 +11693,94 @@ else if(t==='x_phare'){
 ombre(12,4);
 for(let y=0;y<70;y++){const w=14-Math.floor(y/12);R(cx-w/2,sol-y,w,1,Math.floor(y/12)%2?'#c0392b':'#f2efe4');}
 R(cx-7,sol-78,14,8,'#3b3a36');R(cx-5,sol-77,10,6,'#ffe7a0');R(cx-8,sol-80,16,2,'#1b1b1b');R(cx-2,sol-84,4,4,'#1b1b1b');
+}
+else if(t==='x_spMaison'){
+const facades=['#e6b97c','#e3a383','#ecdcbc','#d99b86','#f0e4c8','#d7a067'];
+const volets =['#6f8f7a','#4f7fa8','#7d8f6a','#5d7f96','#8a9a8a','#4f7a64'];
+const F=facades[v%6],V=volets[(v*5+1)%6];
+const ALE=(i)=>alea(i*3.7+v*19.3);
+const L=80,rdc=22,et=16,niv=2,haut=rdc+niv*et+12,x0=cx-L/2,y0=sol-haut;
+/* ombre portée */
+ombre(38,4);
+/* murs — enduit */
+R(x0,y0,L,haut,F);
+for(let i=0;i<60;i++)R(x0+ALE(i)*L,y0+ALE(i+99)*haut,1+ALE(i+7)*2,1,'rgba(120,80,40,.08)');
+for(let i=0;i<30;i++)R(x0+ALE(i+200)*L,y0+ALE(i+300)*haut,1,1,'rgba(255,255,255,.12)');
+/* moellons (pierres apparentes) en bas */
+const mbH=14;
+for(let my=sol-mbH;my<sol;my+=5){const off=(my%10<5)?0:8;
+for(let mx=x0+2;mx<x0+L-2;mx+=12+ALE(mx+my)*4){
+const bw=8+ALE(mx*7+my)*5|0;
+g.fillStyle='rgba(140,110,70,.22)';g.fillRect(mx+off,my,bw,4);
+g.fillStyle='rgba(90,70,40,.15)';g.fillRect(mx+off,my+4,bw,1);
+}}
+/* chaînes d'angle */
+for(let ay=y0;ay<sol;ay+=6){R(x0,ay,4,5,'rgba(160,130,90,.25)');R(x0+L-4,ay,4,5,'rgba(160,130,90,.25)');}
+/* éclairage bord */
+R(x0,y0,1,haut,'rgba(255,255,240,.12)');R(x0+L-1,y0,1,haut,'rgba(0,0,0,.10)');
+/* corniche génoise */
+const cy0=y0-3;
+R(x0-2,cy0,L+4,3,'#c8a870');
+for(let gx=x0-1;gx<x0+L;gx+=4){R(gx,cy0,3,1,gx%8<4?'#c06030':'#d07040');R(gx,cy0+1,3,1,'#b89060');}
+/* toit — tuiles canal */
+const tH=16,tY=cy0-tH;
+for(let ty=0;ty<tH;ty++){const tw=L+6-ty*0.4,tx=cx-tw/2;
+R(tx,tY+ty,tw,1,ty%2?'#b85a30':'#c86838');
+if(ty%5===0)R(tx,tY+ty,tw,1,'rgba(0,0,0,.08)');
+}
+/* faîte */
+R(cx-L/2+6,tY-1,L-12,2,'#d4a050');
+/* cheminée */
+if(v%3===0){R(cx+14,tY-6,6,8,'#a08060');R(cx+13,tY-7,8,2,'#806040');}
+/* fenêtres étages */
+for(let nv=0;nv<niv;nv++){const fy=y0+4+nv*et;
+for(let fx=0;fx<2;fx++){const wx=x0+12+fx*44,ww=12,wh=14;
+/* encadrement pierre */
+R(wx-2,fy-1,ww+4,wh+3,'#c8b890');
+/* vitre */
+R(wx,fy,ww,wh,'#1a2a3a');R(wx+1,fy+1,ww-2,wh-2,'#2a4a5a');
+R(wx+ww/2|0,fy,1,wh,'#1a2a3a');R(wx,fy+wh/2|0,ww,1,'#1a2a3a');
+/* reflet */
+R(wx+1,fy+1,3,4,'rgba(180,220,255,.18)');
+/* volets persiennes */
+const ouvert=ALE(nv*10+fx+v)>.4;
+if(ouvert){R(wx-5,fy,4,wh,V);R(wx+ww+1,fy,4,wh,V);
+for(let s=1;s<wh;s+=2){R(wx-5,fy+s,4,1,'rgba(0,0,0,.12)');R(wx+ww+1,fy+s,4,1,'rgba(0,0,0,.12)');}}
+else{R(wx,fy,ww/2,wh,V);R(wx+ww/2,fy,ww/2,wh,V);
+for(let s=1;s<wh;s+=2)R(wx,fy+s,ww,1,'rgba(0,0,0,.10)');}
+/* appui + jardinière */
+R(wx-2,fy+wh,ww+4,2,'#c8b890');
+if(ALE(nv+fx+v*3)>.6){R(wx,fy+wh+1,ww,3,'#6a4a2a');
+for(let fl=0;fl<3;fl++)R(wx+2+fl*4,fy+wh-1,3,2,fl%2?'#e04040':'#e8c020');}
+}}
+/* porte RDC */
+const pw=14,ph=20,px=cx-pw/2,py=sol-ph;
+R(px-1,py-1,pw+2,ph+1,'#c8b890');
+R(px,py,pw,ph,'#5a4030');
+for(let p=0;p<pw;p+=4)R(px+p,py,1,ph,'rgba(0,0,0,.10)');
+R(px+pw-4,py+ph/2|0,2,2,'#c0a040');
+/* store rayé */
+if(v%3!==2){const sw=L*0.6,sx=cx-sw/2,sy=y0+haut-rdc-4,sh=8;
+for(let sr=0;sr<sh;sr++){const srw=sw+sr*0.6;
+R(cx-srw/2,sy+sr,srw,1,sr%2?'#f5f0e0':'#c04030');}}
+/* caisses */
+if(v%2===0){const bx=v%4===0?x0+L+2:x0-14;
+R(bx,sol-10,12,10,'#8a6a3a');R(bx,sol-10,12,1,'#6a4a2a');R(bx+5,sol-10,2,10,'#6a4a2a');
+R(bx,sol-18,10,8,'#9a7a4a');R(bx,sol-18,10,1,'#7a5a3a');}
+/* gouttière */
+R(x0+L-3,y0+4,1,haut-4,'#7a7a7a');R(x0+L-3,sol-3,4,3,'#6a6a6a');
+/* nuit */
+const n2=document.createElement('canvas');n2.width=W;n2.height=H;const g2=n2.getContext('2d');
+for(let nv=0;nv<niv;nv++){const fy=y0+4+nv*et;
+for(let fx=0;fx<2;fx++){const wx=x0+12+fx*44;
+if(ALE(nv+fx+v*7)>.3){g2.fillStyle='rgba(255,210,120,.7)';g2.fillRect(wx+1,fy+1,10,12);}}}
+g2.fillStyle='rgba(255,200,100,.5)';g2.fillRect(px+2,py+2,pw-4,ph-4);
+const gr=g2.createRadialGradient(cx,py+ph/2,2,cx,py+ph/2,18);
+gr.addColorStop(0,'rgba(255,200,100,.25)');gr.addColorStop(1,'rgba(255,200,100,0)');
+g2.fillStyle=gr;g2.fillRect(cx-20,py-10,40,40);
+XCAL[cle]={toile:c,W,H,sol,nuit:n2};
+if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
+return XCAL[cle];
 }
 XCAL[cle]={toile:c,W,H,sol};
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];              /* pour les marges de dessin */
@@ -12809,12 +12851,12 @@ DECOR.push({t:'bancP',x:355,y:300,gr:0,bati:true,demi:16});
 /* tableau du port (panneau d'affichage en liège) — près de la place */
 DECOR.push({t:'x_tableau',x:300,y:170,bati:true,demi:24});
 /* maisons du hameau — gravées dans le sol, collision seulement */
-DECOR.push({t:'_mur',x:60,y:140,bati:true,demi:45});
-DECOR.push({t:'_mur',x:58,y:318,bati:true,demi:42});
-DECOR.push({t:'_mur',x:540,y:143,bati:true,demi:45});
-DECOR.push({t:'_mur',x:542,y:320,bati:true,demi:42});
-DECOR.push({t:'_mur',x:140,y:38,bati:true,demi:40});
-DECOR.push({t:'_mur',x:455,y:38,bati:true,demi:40});
+DECOR.push({t:'x_spMaison',x:60,y:175,v:0,bati:true,demi:42});
+DECOR.push({t:'x_spMaison',x:58,y:350,v:1,bati:true,demi:40});
+DECOR.push({t:'x_spMaison',x:540,y:175,v:2,bati:true,demi:42});
+DECOR.push({t:'x_spMaison',x:542,y:355,v:3,bati:true,demi:40});
+DECOR.push({t:'x_spMaison',x:140,y:70,v:4,bati:true,demi:38});
+DECOR.push({t:'x_spMaison',x:455,y:70,v:5,bati:true,demi:38});
 /* lampadaires le long du chemin */
 DECOR.push({t:'x_lampadaire',x:270,y:160,bati:true,demi:5});
 DECOR.push({t:'x_lampadaire',x:330,y:160,bati:true,demi:5});
