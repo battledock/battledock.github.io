@@ -7918,54 +7918,10 @@ pose(x-1,y-1,cl(R-8),cl(G2),cl(B-8));pose(x+1,y-2,cl(R+6),cl(G2+14),cl(B));}
 else if(t<0.045){pose(x,y,cl(R+14),cl(G2+22),cl(B+6));pose(x+1,y,cl(R+8),cl(G2+12),cl(B+3));}
 else if(t<0.055)pose(x,y,cl(R-22),cl(G2-18),cl(B-18));
 else if(vn(x,y,30,16)>0.6){pose(x,y,86,140,62);pose(x+1,y,86,140,62);pose(x,y-1,106,164,72);pose(x+1,y+1,86,140,62);}}
-/* LA PLACE DU VILLAGE — mosaïque « calade étoilée » provençale */
-const CX=300,CY=300,HALF=130;
-const SL=CX-HALF,SR=CX+HALF,ST=CY-HALF,SB=CY+HALF;
-for(let y2=ST;y2<SB;y2++)for(let x2=SL;x2<SR;x2++){
-const lx=x2-SL,ly=y2-ST,S=HALF*2;
-/* triple bordure */
-if(lx<3||lx>=S-3||ly<3||ly>=S-3){pose(x2,y2,58,52,40);continue;}
-if(lx<6||lx>=S-6||ly<6||ly>=S-6){pose(x2,y2,201,162,74);continue;}
-/* fond galets clairs texturés */
-const gn=hh(x2,y2,30),gn2=hh(x2,y2,31);
-const gr=200+gn*30|0,gg=188+gn*28|0,gb=160+gn2*24|0;
-/* coordonnées centrées */
-const dx2=x2-CX,dy2=y2-CY,dist=Math.sqrt(dx2*dx2+dy2*dy2);
-const angle=Math.atan2(dy2,dx2);
-/* étoile à 8 branches en galets sombres */
-const a8=((angle+Math.PI)/(Math.PI*2))*8;
-const frac=a8%1;
-const brW=0.12+0.06*Math.max(0,1-dist/100);
-const onBranch=Math.abs(frac-0.5)>(0.5-brW)&&dist>12&&dist<110;
-/* 3 anneaux concentriques */
-const ring1=Math.abs(dist-40)<3,ring2=Math.abs(dist-70)<3,ring3=Math.abs(dist-100)<3;
-/* centre doré */
-if(dist<=12){
-if(dist<=4){pose(x2,y2,240,216,112);}
-else if(dist<=8){pose(x2,y2,201,162,74);}
-else{pose(x2,y2,210,175,88);}
-}
-/* anneaux */
-else if(ring1){const rn=hh(x2,y2,33);pose(x2,y2,rn>0.3?184:196,rn>0.3?96:112,rn>0.3?80:92);}
-else if(ring2){const rn=hh(x2,y2,34);pose(x2,y2,rn>0.3?58:74,rn>0.3?106:122,rn>0.3?152:168);}
-else if(ring3){const rn=hh(x2,y2,35);pose(x2,y2,rn>0.3?184:196,rn>0.3?96:112,rn>0.3?80:92);}
-/* branches de l'étoile */
-else if(onBranch){const bn=hh(x2,y2,36);pose(x2,y2,bn>0.4?58:68,bn>0.4?52:60,bn>0.4?40:48);}
-/* losanges bleus intercalaires (8 entre les branches, à dist ~55) */
-else if(dist>45&&dist<65){
-const la=((angle+Math.PI)/(Math.PI*2))*8+0.5;
-const lf=la%1;
-if(Math.abs(lf-0.5)<0.1){const ln=hh(x2,y2,37);pose(x2,y2,ln>0.3?58:74,ln>0.3?106:122,ln>0.3?152:168);}
-else{pose(x2,y2,gr,gg,gb);}
-}
-/* fond texturé galets */
-else{pose(x2,y2,gr,gg,gb);}
-}
 g.putImageData(img,0,0);
-/* fleurettes — on saute la zone mosaïque */
+/* fleurettes */
 const FL=[[240,236,220],[236,214,90],[220,120,130],[170,160,220],[90,130,210]];
 for(let y=4;y<H-4;y++)for(let x=4;x<W-4;x++){
-if(x>=CX-HALF-2&&x<CX+HALF+2&&y>=CY-HALF-2&&y<CY+HALF+2)continue;
 const co=vn(x,y,60,18);if(hh(x,y,20)>=0.0016+co*0.006)continue;
 const f=FL[Math.floor(hh(x,y,22)*FL.length)];g.fillStyle='rgb(70,110,50)';g.fillRect(x,y,1,2);g.fillStyle='rgb('+f[0]+','+f[1]+','+f[2]+')';
 if(hh(x,y,24)<0.3){g.fillRect(x-1,y-2,3,1);g.fillRect(x,y-3,1,3);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x,y-2,1,1);}else g.fillRect(x,y-2,1,1);}
@@ -11153,104 +11109,144 @@ if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
 return XCAL[cle];
 }
 else if(t==='x_fontaine'){
-ombre(38,7);
-/* === FONTAINE EN DUR — architecture provençale détaillée === */
-/* ── grand socle octogonal avec marches ── */
-R(cx-36,sol-2,72,2,'#706050');  /* marche basse ombre */
-R(cx-36,sol-4,72,2,'#908068');  /* marche basse */
-R(cx-35,sol-4,70,1,'#b0a080');  /* highlight marche */
-R(cx-34,sol-6,68,2,'#908068');  /* marche haute */
-R(cx-33,sol-6,66,1,'#b8a888');  /* highlight */
-/* chanfreins du socle (octogone) */
-R(cx-36,sol-2,3,1,'#605040');R(cx+33,sol-2,3,1,'#605040');
-R(cx-34,sol-6,2,1,'#706050');R(cx+32,sol-6,2,1,'#706050');
-/* ── bassin principal — murs épais avec moulures ── */
-R(cx-32,sol-8,64,2,'#a89870');   /* base mur */
-R(cx-30,sol-20,60,12,'#b0a078');  /* mur bassin */
-R(cx-30,sol-20,60,2,'#c8b890');   /* moulure haute highlight */
-R(cx-30,sol-18,60,1,'#d0c4a0');   /* liseret */
-R(cx-28,sol-10,56,2,'#8a7a58');   /* moulure basse ombre */
-R(cx-30,sol-8,60,2,'#c4b48c');    /* rebord haut mur */
-/* texture pierre du bassin */
-for(let k=0;k<12;k++){R(cx-28+((k*17)%54),sol-17+((k*7)%8),2,1,k%3?'rgba(160,150,130,.3)':'rgba(255,255,255,.25)');}
-/* ombre intérieure bassin */
-R(cx-28,sol-18,56,1,'#7a6a48');
-/* eau du bassin — dégradé */
-R(cx-26,sol-17,52,8,'#1e6e96');
-R(cx-24,sol-16,48,5,'#2880a8');
-R(cx-20,sol-15,40,3,'#3898c0');
-R(cx-14,sol-14,28,2,'#4aa8cc');
-R(cx-8,sol-13,16,1,'#5cb8d8');
+ombre(42,8);
+const ALE=(i)=>alea(i*3.7+v*9);
+/* ═══════════════════════════════════════════════════════════════
+   FONTAINE MONUMENTALE PROVENÇALE — en dur, style x_ndg
+   ~120 appels de dessin, arcs, ellipses, texture pierre pixel
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── MARCHES (3 niveaux concentriques, elliptiques) ── */
+g.fillStyle='#706050';g.beginPath();g.ellipse(cx,sol,42,8,0,0,7);g.fill();           /* ombre marche 1 */
+g.fillStyle='#908068';g.beginPath();g.ellipse(cx,sol-2,40,7,0,0,7);g.fill();         /* marche 1 */
+g.fillStyle='#a89878';g.beginPath();g.ellipse(cx,sol-3,40,7,0,Math.PI,7);g.fill();   /* highlight haut marche 1 */
+g.fillStyle='#807058';g.beginPath();g.ellipse(cx,sol-4,36,6,0,0,7);g.fill();         /* marche 2 */
+g.fillStyle='#a89878';g.beginPath();g.ellipse(cx,sol-5,36,6,0,Math.PI,7);g.fill();
+g.fillStyle='#706050';g.beginPath();g.ellipse(cx,sol-6,32,5,0,0,7);g.fill();         /* marche 3 */
+g.fillStyle='#a08868';g.beginPath();g.ellipse(cx,sol-7,32,5,0,Math.PI,7);g.fill();
+
+/* ── BASSIN PRINCIPAL (grande vasque octogonale en pierre) ── */
+/* paroi extérieure — épaisse, en arc */
+g.fillStyle='#b0a078';g.beginPath();g.ellipse(cx,sol-10,34,10,0,0,7);g.fill();       /* corps bassin */
+g.fillStyle='#c8b890';g.beginPath();g.ellipse(cx,sol-14,34,6,0,Math.PI,7);g.fill();  /* lèvre supérieure highlight */
+g.fillStyle='#d0c4a0';g.beginPath();g.ellipse(cx,sol-16,33,4,0,Math.PI+0.3,2*Math.PI-0.3);g.fill();   /* liseret brillant */
+/* moulure basse du bassin */
+g.fillStyle='#8a7a58';g.beginPath();g.ellipse(cx,sol-6,34,6,0,0,Math.PI);g.fill();
+g.fillStyle='#a09068';g.beginPath();g.ellipse(cx,sol-7,33,5,0,0,Math.PI);g.fill();
+/* texture pierre du bassin — petits rectangles aléatoires */
+for(let k=0;k<25;k++){
+const kx=cx-28+ALE(k)*56|0, ky=sol-18+ALE(k+50)*10|0;
+R(kx,ky,2,1,k%3===0?'rgba(255,255,255,.2)':k%3===1?'rgba(160,150,130,.25)':'rgba(140,120,90,.2)');
+}
+/* joints de pierre (lignes verticales sur le bassin) */
+for(let k=0;k<8;k++){const a=k*Math.PI/4;
+const px2=cx+Math.cos(a)*30|0, py=sol-12;
+R(px2,py,1,6,'rgba(100,90,70,.3)');
+}
+/* ── EAU DU BASSIN ── */
+g.fillStyle='#1a6888';g.beginPath();g.ellipse(cx,sol-14,28,6,0,0,7);g.fill();
+g.fillStyle='#2080a8';g.beginPath();g.ellipse(cx,sol-15,24,4,0,0,7);g.fill();
+g.fillStyle='#38a0c4';g.beginPath();g.ellipse(cx,sol-15,16,3,0,0,7);g.fill();
 /* reflets sur l'eau */
-R(cx-18,sol-16,4,1,'rgba(140,220,255,.4)');
-R(cx+6,sol-15,6,1,'rgba(140,220,255,.3)');
-R(cx-10,sol-14,3,1,'rgba(180,240,255,.25)');
-/* ── colonne cannelée ── */
-R(cx-5,sol-42,10,22,'#c4b48c');   /* fût principal */
-R(cx-5,sol-42,2,22,'#ddd0b0');    /* reflet gauche */
-R(cx+4,sol-42,1,22,'#a08a68');    /* ombre droite */
-/* cannelures (rainures verticales) */
-R(cx-2,sol-42,1,22,'#b8a880');R(cx+1,sol-42,1,22,'#b8a880');
-/* moulure base colonne — tore + scotie */
-R(cx-8,sol-20,16,3,'#b0a078');
-R(cx-8,sol-20,16,1,'#d0c4a0');
-R(cx-9,sol-21,18,1,'#c8b890');
-R(cx-7,sol-18,14,1,'#8a7a58');
-/* chapiteau (moulure haute colonne) */
-R(cx-7,sol-43,14,2,'#b0a078');
-R(cx-7,sol-43,14,1,'#d8ccaa');
-R(cx-8,sol-44,16,1,'#c8b890');
-R(cx-9,sol-45,18,2,'#b0a078');
-R(cx-9,sol-45,18,1,'#d8ccaa');
-/* ── vasque supérieure avec godrons ── */
-R(cx-14,sol-50,28,5,'#b0a078');   /* corps vasque */
-R(cx-14,sol-50,28,1,'#d0c4a0');   /* highlight haut */
-R(cx-12,sol-48,24,1,'#a09068');   /* lèvre */
-R(cx-14,sol-45,28,1,'#8a7a58');   /* ombre sous vasque */
-/* godrons (motifs en relief) */
-for(let k=0;k<6;k++){R(cx-12+k*4,sol-49,3,3,k%2?'#c4b48c':'#b8a880');}
-/* eau vasque supérieure */
-R(cx-11,sol-49,22,3,'#1e6e96');
-R(cx-9,sol-48,18,2,'#2e8ab0');
-R(cx-6,sol-48,12,1,'#4aa8cc');
-/* ── tige haute + fleuron ── */
-R(cx-3,sol-58,6,8,'#b0a078');
-R(cx-3,sol-58,2,8,'#d0c4a0');    /* reflet */
-R(cx+2,sol-58,1,8,'#9a8a68');    /* ombre */
-/* fleuron sommital (pomme de pin provençale) */
-R(cx-4,sol-62,8,4,'#b0a078');
-R(cx-3,sol-63,6,3,'#c8b890');
-R(cx-3,sol-66,6,3,'#b0a078');
-R(cx-2,sol-67,4,3,'#c8b890');
-R(cx-2,sol-69,4,2,'#b0a078');
-R(cx-1,sol-70,2,2,'#d0c4a0');
-R(cx-1,sol-71,2,1,'#e0d4b8');     /* pointe éclairée */
-/* écailles de la pomme de pin */
-R(cx-3,sol-64,2,1,'#9a8a68');R(cx+1,sol-65,2,1,'#9a8a68');
-R(cx-2,sol-67,1,1,'#9a8a68');R(cx+1,sol-68,1,1,'#9a8a68');
-/* ── 4 jets d'eau — arcs paraboliques pixelisés ── */
-/* jet gauche — arc descendant */
-const jc='rgba(74,168,204,';
-R(cx-10,sol-49,2,1,jc+'0.8)');R(cx-12,sol-50,2,1,jc+'0.8)');
-R(cx-15,sol-49,2,1,jc+'0.7)');R(cx-18,sol-47,2,1,jc+'0.7)');
-R(cx-20,sol-44,2,1,jc+'0.6)');R(cx-22,sol-40,2,2,jc+'0.6)');
-R(cx-24,sol-36,2,2,jc+'0.5)');R(cx-25,sol-30,2,3,jc+'0.5)');
-R(cx-26,sol-24,2,3,jc+'0.4)');R(cx-26,sol-18,2,2,jc+'0.3)');
-/* jet droit */
-R(cx+8,sol-49,2,1,jc+'0.8)');R(cx+10,sol-50,2,1,jc+'0.8)');
-R(cx+13,sol-49,2,1,jc+'0.7)');R(cx+16,sol-47,2,1,jc+'0.7)');
-R(cx+18,sol-44,2,1,jc+'0.6)');R(cx+20,sol-40,2,2,jc+'0.6)');
-R(cx+22,sol-36,2,2,jc+'0.5)');R(cx+23,sol-30,2,3,jc+'0.5)');
-R(cx+24,sol-24,2,3,jc+'0.4)');R(cx+24,sol-18,2,2,jc+'0.3)');
+R(cx-16,sol-16,5,1,'rgba(140,220,255,.35)');R(cx+8,sol-15,4,1,'rgba(140,220,255,.25)');
+R(cx-6,sol-14,3,1,'rgba(200,240,255,.2)');
+
+/* ── COLONNE CENTRALE — fût cannelé sur piédestal ── */
+/* piédestal (base carrée moulurée) */
+R(cx-10,sol-18,20,4,'#b0a078');R(cx-10,sol-18,20,1,'#d0c4a0');
+R(cx-11,sol-19,22,1,'#c8b890');R(cx-9,sol-15,18,1,'#8a7a58');
+R(cx-8,sol-22,16,4,'#b8a888');R(cx-8,sol-22,16,1,'#d8ccaa');
+/* texture piédestal */
+for(let k=0;k<6;k++){R(cx-8+((k*7)%14),sol-21+((k*3)%3),2,1,k%2?'rgba(255,255,255,.2)':'rgba(140,130,110,.2)');}
+/* fût — 6 cannelures visibles, torsadé */
+for(let y=0;y<28;y++){
+const w=y<3?10:y>25?9:8;
+const base=y<14?'#c4b48c':'#baa880';
+R(cx-w/2,sol-24-y,w,1,base);
+/* reflet gauche */
+R(cx-w/2,sol-24-y,2,1,'#ddd0b0');
+/* ombre droite */
+R(cx+w/2-1,sol-24-y,1,1,'#9a8a68');
+/* cannelures */
+if(y>2&&y<26){
+R(cx-2,sol-24-y,1,1,'#b0a078');R(cx+1,sol-24-y,1,1,'#b0a078');
+if(w>=10){R(cx-4,sol-24-y,1,1,'#b8a880');}
+}
+}
+/* tore (anneau en relief) à mi-colonne */
+R(cx-6,sol-38,12,2,'#c8b890');R(cx-6,sol-38,12,1,'#e0d4b8');
+/* chapiteau corinthien simplifié */
+R(cx-7,sol-52,14,2,'#b0a078');R(cx-7,sol-52,14,1,'#d8ccaa');
+R(cx-9,sol-53,18,1,'#c8b890');
+R(cx-10,sol-54,20,2,'#b0a078');R(cx-10,sol-54,20,1,'#d8ccaa');
+R(cx-11,sol-55,22,1,'#c4b48c');
+/* volutes du chapiteau */
+g.fillStyle='#c8b890';
+g.beginPath();g.arc(cx-9,sol-54,3,Math.PI,2*Math.PI);g.fill();
+g.beginPath();g.arc(cx+9,sol-54,3,Math.PI,2*Math.PI);g.fill();
+g.fillStyle='#e0d4b8';
+g.beginPath();g.arc(cx-9,sol-55,2,Math.PI,2*Math.PI);g.fill();
+g.beginPath();g.arc(cx+9,sol-55,2,Math.PI,2*Math.PI);g.fill();
+
+/* ── VASQUE SUPÉRIEURE (coupe évasée avec moulures) ── */
+g.fillStyle='#b0a078';g.beginPath();g.ellipse(cx,sol-58,16,5,0,0,7);g.fill();
+g.fillStyle='#c8b890';g.beginPath();g.ellipse(cx,sol-60,16,4,0,Math.PI,7);g.fill();
+g.fillStyle='#d0c4a0';g.beginPath();g.ellipse(cx,sol-61,15,3,0,Math.PI+0.5,2*Math.PI-0.5);g.fill();
+/* ombre sous la vasque */
+g.fillStyle='#8a7a58';g.beginPath();g.ellipse(cx,sol-55,14,3,0,0,Math.PI);g.fill();
+/* eau vasque sup */
+g.fillStyle='#1a6888';g.beginPath();g.ellipse(cx,sol-60,12,3,0,0,7);g.fill();
+g.fillStyle='#2888b0';g.beginPath();g.ellipse(cx,sol-60,8,2,0,0,7);g.fill();
+R(cx-4,sol-60,3,1,'rgba(140,220,255,.3)');
+
+/* ── TIGE HAUTE + POMME DE PIN PROVENÇALE ── */
+R(cx-3,sol-64,6,4,'#b0a078');R(cx-3,sol-64,2,4,'#d0c4a0');R(cx+2,sol-64,1,4,'#9a8a68');
+/* pomme de pin — couches d'écailles */
+R(cx-5,sol-69,10,3,'#b0a078');R(cx-5,sol-69,10,1,'#d0c4a0');
+R(cx-4,sol-72,8,3,'#c4b48c');R(cx-4,sol-72,8,1,'#ddd0b0');
+R(cx-4,sol-74,8,2,'#b0a078');
+R(cx-3,sol-76,6,3,'#c4b48c');R(cx-3,sol-76,6,1,'#ddd0b0');
+R(cx-2,sol-79,4,3,'#b0a078');R(cx-2,sol-79,4,1,'#d0c4a0');
+R(cx-1,sol-82,2,3,'#c8b890');R(cx-1,sol-84,2,1,'#e8dcc0');
+/* écailles détaillées */
+for(let row=0;row<4;row++){
+const y0=sol-70-row*3, w=10-row*2, x0=cx-w/2;
+for(let k=0;k<w;k+=2){R(x0+k,y0,1,1,k%4===0?'#9a8a68':'#d0c4a0');}
+}
+
+/* ── JETS D'EAU — 4 arcs paraboliques + jet central ── */
 /* jet central montant */
-R(cx-1,sol-58,2,1,jc+'0.9)');R(cx-1,sol-60,2,1,jc+'0.8)');
-R(cx-1,sol-62,2,1,jc+'0.6)');R(cx,sol-64,1,1,jc+'0.4)');
+for(let k=0;k<12;k++){
+const a=0.9-k*0.06;
+R(cx,sol-64-k*2,1,2,'rgba(74,168,204,'+a+')');
+if(k<4) R(cx-1,sol-65-k*2,1,1,'rgba(140,220,255,'+(a*0.5)+')');
+}
+/* arcs gauche et droit — courbes paraboliques pixel par pixel */
+for(let k=0;k<16;k++){
+const t2=k/15;
+/* parabole : x va de 0 à ±28, y monte puis descend */
+const jx=t2*28, jy=-Math.sin(t2*Math.PI)*20;
+const a=0.8-t2*0.5;
+R(cx-10-jx|0,sol-58+jy|0,2,1,'rgba(74,168,204,'+a+')');
+R(cx+8+jx|0,sol-58+jy|0,2,1,'rgba(74,168,204,'+a+')');
+}
+/* jet arrière-gauche et arrière-droit (plus courts) */
+for(let k=0;k<10;k++){
+const t2=k/9;
+const jx=t2*18, jy=-Math.sin(t2*Math.PI)*12;
+const a=0.5-t2*0.3;
+R(cx-6-jx|0,sol-56+jy|0,1,1,'rgba(74,168,204,'+a+')');
+R(cx+5+jx|0,sol-56+jy|0,1,1,'rgba(74,168,204,'+a+')');
+}
 /* éclaboussures dans le bassin */
-R(cx-27,sol-17,3,1,'rgba(90,190,220,0.5)');R(cx-28,sol-18,2,1,'rgba(140,220,255,0.3)');
-R(cx+24,sol-17,3,1,'rgba(90,190,220,0.5)');R(cx+26,sol-18,2,1,'rgba(140,220,255,0.3)');
-/* gouttelettes */
-R(cx-24,sol-20,1,1,'rgba(90,200,230,0.4)');R(cx+23,sol-19,1,1,'rgba(90,200,230,0.4)');
-R(cx-22,sol-22,1,1,'rgba(90,200,230,0.3)');R(cx+21,sol-21,1,1,'rgba(90,200,230,0.3)');
+for(let k=0;k<8;k++){
+const sx=cx-28+ALE(k+100)*56|0, sy=sol-16+ALE(k+110)*4|0;
+R(sx,sy,1,1,'rgba(90,190,220,'+(0.3+ALE(k+120)*0.3)+')');
+}
+/* vaguelettes concentriques */
+g.strokeStyle='rgba(140,220,255,.15)';g.lineWidth=0.5;
+g.beginPath();g.ellipse(cx,sol-14,20,4,0,0,7);g.stroke();
+g.beginPath();g.ellipse(cx,sol-14,26,5,0,0,7);g.stroke();
 }
 else if(t==='x_caboteur'){
 g.fillStyle='rgba(10,40,60,.35)';g.fillRect(8,sol-2,W-16,6);
@@ -12559,19 +12555,19 @@ function balayerLeSentier(){
 function semerDecor(){
 if(CARTE==='spawn'){DECOR=[];
 /* LA PLACE DU VILLAGE PROVENÇAL — fontaine, bancs, tableau, platanes */
-DECOR.push({t:'x_fontaine',x:300,y:300,demi:34});
+DECOR.push({t:'x_fontaine',x:300,y:300,bati:true,demi:38});
 /* quatre bancs très éloignés de la fontaine */
-DECOR.push({t:'bancP',x:190,y:420,gr:0});
-DECOR.push({t:'bancP',x:410,y:420,gr:0});
-DECOR.push({t:'bancP',x:190,y:190,gr:0});
-DECOR.push({t:'bancP',x:410,y:190,gr:0});
+DECOR.push({t:'bancP',x:190,y:420,gr:0,bati:true,demi:16});
+DECOR.push({t:'bancP',x:410,y:420,gr:0,bati:true,demi:16});
+DECOR.push({t:'bancP',x:190,y:190,gr:0,bati:true,demi:16});
+DECOR.push({t:'bancP',x:410,y:190,gr:0,bati:true,demi:16});
 /* grand tableau interactif (classement) tout en haut */
-DECOR.push({t:'x_tableau',x:300,y:120,demi:30});
+DECOR.push({t:'x_tableau',x:300,y:120,bati:true,demi:30});
 /* platanes aux quatre coins, très écartés */
-DECOR.push({t:'x_platane',x:140,y:150,demi:40});
-DECOR.push({t:'x_platane',x:460,y:150,demi:40});
-DECOR.push({t:'x_platane',x:140,y:460,demi:40});
-DECOR.push({t:'x_platane',x:460,y:460,demi:40});
+DECOR.push({t:'x_platane',x:140,y:150,bati:true,demi:22});
+DECOR.push({t:'x_platane',x:460,y:150,bati:true,demi:22});
+DECOR.push({t:'x_platane',x:140,y:460,bati:true,demi:22});
+DECOR.push({t:'x_platane',x:460,y:460,bati:true,demi:22});
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}   /* spawn : place du village */
 if(CHAMPS_SEULS&&CARTE==='village'){
 /* LA FERME : deux bâtiments, et rien d'autre. Le métro plein nord, la
@@ -13237,7 +13233,16 @@ if(l)for(const o of l)out.push(o);
 return out;
 }
 function bloque(x,y){
-if(CARTE==='spawn')return !(x>10&&x<590&&y>10&&y<590);   /* spawn : seuls les bords */
+if(CARTE==='spawn'){
+if(!(x>10&&x<590&&y>10&&y<590))return true;   /* bords */
+/* collision avec les objets solides du spawn */
+for(const o of DECOR){
+if(!o.demi)continue;
+const dx=Math.abs(o.x-x), dy=Math.abs(o.y-y);
+if(dx<o.demi&&dy<o.demi)return true;
+}
+return false;
+}
 if(CARTE==='large')return bloqueLarge(x,y);
 if(CARTE==='foret'){
   if(bloqueForet(x,y))return true;
