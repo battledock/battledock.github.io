@@ -7923,8 +7923,8 @@ const FL=[[240,236,220],[236,214,90],[220,120,130],[170,160,220],[90,130,210]];
 for(let y=4;y<H-4;y++)for(let x=4;x<W-4;x++){const co=vn(x,y,60,18);if(hh(x,y,20)>=0.0016+co*0.006)continue;
 const f=FL[Math.floor(hh(x,y,22)*FL.length)];g.fillStyle='rgb(70,110,50)';g.fillRect(x,y,1,2);g.fillStyle='rgb('+f[0]+','+f[1]+','+f[2]+')';
 if(hh(x,y,24)<0.3){g.fillRect(x-1,y-2,3,1);g.fillRect(x,y-3,1,3);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x,y-2,1,1);}else g.fillRect(x,y-2,1,1);}
-/* LA PLACE DU VILLAGE — mosaïque provençale au centre de la prairie */
-const CX=300, CY=300, RAY=100;
+/* LA PLACE DU VILLAGE — grande mosaïque provençale au centre */
+const CX=300, CY=300, RAY=130;
 for(let y2=CY-RAY-5;y2<CY+RAY+5;y2++)for(let x2=CX-RAY-5;x2<CX+RAY+5;x2++){
 const dx=x2-CX, dy=y2-CY, dist=Math.sqrt(dx*dx+dy*dy);
 if(dist>RAY+4)continue;
@@ -7936,45 +7936,49 @@ const hr=[cl(base[0]*(1-a)+d[hi]*a),cl(base[1]*(1-a)+d[hi+1]*a),cl(base[2]*(1-a)
 pose(x2,y2,hr[0],hr[1],hr[2]);continue;}
 /* === MOSAÏQUE PROVENÇALE — motifs concentriques avec rosace === */
 const ang=Math.atan2(dy,dx);
-const norm=dist/RAY; /* 0 = centre, 1 = bord */
-/* double bordure : extérieure sombre + intérieure ocre */
-if(dist>RAY-3){pose(x2,y2,128,112,86);continue;}
-if(dist>RAY-6){const sh2=(vn(x2,y2,8,50)-0.5)*8;pose(x2,y2,cl(196+sh2),cl(168+sh2),cl(110+sh2));continue;}
+/* triple bordure : extérieure sombre + filet ocre + filet sombre */
+if(dist>RAY-4){pose(x2,y2,118,102,76);continue;}
+if(dist>RAY-7){const sh2=(vn(x2,y2,8,50)-0.5)*8;pose(x2,y2,cl(200+sh2),cl(172+sh2),cl(114+sh2));continue;}
+if(dist>RAY-9){pose(x2,y2,128,112,86);continue;}
 /* anneau extérieur : pavés en arc-de-cercle posés en éventail */
-if(dist>RAY-22){
-const seg=Math.floor((ang+Math.PI)*28/Math.PI/2);
-const segAng=seg*Math.PI*2/56-Math.PI;
+if(dist>RAY-32){
+const seg=Math.floor((ang+Math.PI)*36/Math.PI/2);
+const segAng=seg*Math.PI*2/72-Math.PI;
 const dAng=ang-segAng;
-const isJoint=Math.abs(dAng)>0.09||(Math.abs(dist-(RAY-14))< 1.2);
+const isJoint=Math.abs(dAng)>0.07||(Math.abs(dist-(RAY-20))< 1.2);
 if(isJoint){pose(x2,y2,148,132,104);continue;}
 const pv=hh(seg,0,44);
 const base=pv<0.35?[210,194,162]:(pv<0.7?[198,180,148]:[218,200,170]);
 const sh2=(vn(x2,y2,12,46)-0.5)*10;
 pose(x2,y2,cl(base[0]+sh2),cl(base[1]+sh2),cl(base[2]+sh2*0.7));continue;}
+/* second filet séparateur */
+if(dist>RAY-34){pose(x2,y2,138,122,96);continue;}
 /* anneau intermédiaire : frise losange bleu/terre cuite */
-if(dist>RAY-34){
-const fa=((ang+Math.PI)/(Math.PI*2))*16;
+if(dist>RAY-50){
+const fa=((ang+Math.PI)/(Math.PI*2))*20;
 const fi=Math.floor(fa), ff=fa-fi;
-const radN=(dist-(RAY-34))/12;
+const radN=(dist-(RAY-50))/16;
 const losange=Math.abs(ff-0.5)+Math.abs(radN-0.5);
-if(losange<0.42){/* carreau bleu provençal */
+if(losange<0.40){/* carreau bleu provençal */
 const sh2=(vn(x2,y2,6,52)-0.5)*12;
-pose(x2,y2,cl(68+sh2),cl(102+sh2),cl(162+sh2));continue;}
-if(losange<0.48){/* joint */pose(x2,y2,148,136,112);continue;}
+pose(x2,y2,cl(58+sh2),cl(92+sh2),cl(155+sh2));continue;}
+if(losange<0.46){/* joint */pose(x2,y2,148,136,112);continue;}
 /* fond terre cuite */
 const sh2=(vn(x2,y2,8,54)-0.5)*10;
 pose(x2,y2,cl(192+sh2),cl(148+sh2),cl(108+sh2));continue;}
+/* filet intérieur avant la rosace */
+if(dist>RAY-52){pose(x2,y2,138,122,96);continue;}
 /* rosace centrale — étoile à 8 branches */
-if(dist>8){
+if(dist>12){
 const rose=((ang+Math.PI)/(Math.PI*2))*8;
 const ri=Math.floor(rose), rf=rose-ri;
 const pointe=Math.abs(rf-0.5)*2; /* 0=centre de branche, 1=entre */
-const innerR=(dist-8)/(RAY-42);
-const star=pointe+innerR*0.6;
-if(star<0.55){/* branche : ocre doré */
+const innerR=(dist-12)/(RAY-64);
+const star=pointe+innerR*0.55;
+if(star<0.52){/* branche : ocre doré */
 const sh2=(vn(x2,y2,10,56)-0.5)*10;
-pose(x2,y2,cl(210+sh2),cl(180+sh2),cl(100+sh2));continue;}
-if(star<0.60){/* joint de l'étoile */pose(x2,y2,148,136,112);continue;}
+pose(x2,y2,cl(215+sh2),cl(185+sh2),cl(95+sh2));continue;}
+if(star<0.57){/* joint de l'étoile */pose(x2,y2,148,136,112);continue;}
 /* fond entre les branches : terre cuite rosé */
 const sh2=(vn(x2,y2,8,58)-0.5)*10;
 pose(x2,y2,cl(200+sh2),cl(162+sh2),cl(132+sh2));continue;}
@@ -7982,10 +7986,10 @@ pose(x2,y2,cl(200+sh2),cl(162+sh2),cl(132+sh2));continue;}
 const sh2=(vn(x2,y2,4,60)-0.5)*8;
 pose(x2,y2,cl(172+sh2),cl(142+sh2),cl(82+sh2));}
 /* double bordure extérieure : pierres taillées */
-for(let a2=0;a2<360;a2+=1.5){const rad=a2*Math.PI/180;
-for(let rr=0;rr<2;rr++){const R2=RAY+1+rr;
+for(let a2=0;a2<360;a2+=1){const rad=a2*Math.PI/180;
+for(let rr=0;rr<3;rr++){const R2=RAY+1+rr;
 const bx3=Math.round(CX+Math.cos(rad)*R2), by3=Math.round(CY+Math.sin(rad)*R2);
-pose(bx3,by3,cl(130+rr*8),cl(116+rr*8),cl(90+rr*6));}}
+pose(bx3,by3,cl(122+rr*8),cl(108+rr*8),cl(84+rr*6));}}
 return c;}
 
 /* ================= LA PRAIRIE DE LA NOUVELLE FERME =================
@@ -10846,7 +10850,7 @@ XCAL[cle]=t==='x_bateau'?graverTonBateau():t==='x_cabanon'?graverLeCabanon():t==
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
 return XCAL[cle];
 }
-const T={x_paillasson:[30,10],x_panneauG:[40,44],x_tableau:[60,66],x_panneauF:[52,70],x_ferry:[96,56],x_caboteur:[250,120],x_docks:[150,96],x_pile:[44,34],x_roue:[180,210],x_kiosque:[44,68],x_fontaine:[54,46],x_metroM:[96,100],x_platane:[84,108],x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
+const T={x_paillasson:[30,10],x_panneauG:[40,44],x_tableau:[60,66],x_panneauF:[52,70],x_ferry:[96,56],x_caboteur:[250,120],x_docks:[150,96],x_pile:[44,34],x_roue:[180,210],x_kiosque:[44,68],x_fontaine:[70,56],x_metroM:[96,100],x_platane:[84,108],x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
 x_filets:[34,16],x_bitte:[12,14],x_barque:[62,34],x_cargo:[250,128],x_grue:[80,120],
 x_phare:[30,96]}[t]||[40,40];
 const W=T[0],H=T[1],cx=W/2,sol=H-6;
@@ -11121,16 +11125,28 @@ if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
 return XCAL[cle];
 }
 else if(t==='x_fontaine'){
-ombre(24,5);
-g.fillStyle='#bfae88';g.beginPath();g.ellipse(cx,sol-6,23,8,0,0,7);g.fill();
-g.fillStyle='#d9c7a0';g.beginPath();g.ellipse(cx,sol-8,22,7,0,0,7);g.fill();
-g.fillStyle='#e8d9b6';g.beginPath();g.ellipse(cx,sol-9,21,6,0,0,7);g.fill();
-g.fillStyle='#3a8fb0';g.beginPath();g.ellipse(cx,sol-9,18,4.5,0,0,7);g.fill();
-g.fillStyle='#5fb2cf';g.beginPath();g.ellipse(cx-3,sol-10,11,2.5,0,0,7);g.fill();
-R(cx-3,sol-26,6,17,'#d9c7a0');R(cx-3,sol-26,2,17,'#efe3c4');R(cx+2,sol-26,1,17,'#bfae88');
-g.fillStyle='#d9c7a0';g.beginPath();g.ellipse(cx,sol-27,8,3,0,0,7);g.fill();
-g.fillStyle='#3a8fb0';g.beginPath();g.ellipse(cx,sol-28,6,1.8,0,0,7);g.fill();
-R(cx-1,sol-32,2,4,'#bfae88');
+ombre(34,6);
+/* grand bassin octogonal en pierre */
+g.fillStyle='#a89870';g.beginPath();g.ellipse(cx,sol-6,33,12,0,0,7);g.fill();
+g.fillStyle='#c4b48c';g.beginPath();g.ellipse(cx,sol-8,31,11,0,0,7);g.fill();
+g.fillStyle='#d6c8a0';g.beginPath();g.ellipse(cx,sol-10,30,10,0,0,7);g.fill();
+/* rebord épais */
+g.strokeStyle='#9a8a62';g.lineWidth=2;g.beginPath();g.ellipse(cx,sol-9,31,11,0,0,7);g.stroke();
+/* eau du bassin */
+g.fillStyle='#2e82a6';g.beginPath();g.ellipse(cx,sol-10,27,8,0,0,7);g.fill();
+g.fillStyle='#4aa0c2';g.beginPath();g.ellipse(cx-4,sol-11,16,4,0,0,7);g.fill();
+g.fillStyle='#68bada';g.beginPath();g.ellipse(cx-6,sol-12,8,2,0,0,7);g.fill();
+/* colonne centrale en pierre */
+R(cx-4,sol-36,8,26,'#c4b48c');R(cx-4,sol-36,3,26,'#ddd0b0');R(cx+3,sol-36,1,26,'#a89870');
+/* vasque supérieure */
+g.fillStyle='#c4b48c';g.beginPath();g.ellipse(cx,sol-37,12,4,0,0,7);g.fill();
+g.fillStyle='#2e82a6';g.beginPath();g.ellipse(cx,sol-38,9,2.5,0,0,7);g.fill();
+g.fillStyle='#4aa0c2';g.beginPath();g.ellipse(cx-2,sol-39,5,1.2,0,0,7);g.fill();
+/* jet central */
+R(cx-1,sol-46,2,8,'#a89870');
+/* pomme de pin (sommet) */
+g.fillStyle='#a89870';g.beginPath();g.ellipse(cx,sol-48,3,4,0,0,7);g.fill();
+g.fillStyle='#c4b48c';g.beginPath();g.ellipse(cx,sol-49,2,3,0,0,7);g.fill();
 }
 else if(t==='x_caboteur'){
 g.fillStyle='rgba(10,40,60,.35)';g.fillRect(8,sol-2,W-16,6);
@@ -12439,7 +12455,7 @@ function balayerLeSentier(){
 function semerDecor(){
 if(CARTE==='spawn'){DECOR=[];
 /* LA PLACE DU VILLAGE PROVENÇAL — fontaine, bancs, tableau, platanes */
-DECOR.push({t:'x_fontaine',x:300,y:300,demi:24});
+DECOR.push({t:'x_fontaine',x:300,y:300,demi:34});
 /* quatre bancs bien éloignés de la fontaine */
 DECOR.push({t:'bancP',x:220,y:380,gr:0});
 DECOR.push({t:'bancP',x:380,y:380,gr:0});
