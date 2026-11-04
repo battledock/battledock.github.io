@@ -11769,57 +11769,55 @@ return XCAL[cle];
 }
 /* ═══════ OBJETS DU SPAWN ═══════ */
 else if(t==='x_spFontaine'){
-ombre(34,9);
+ombre(32,8);
+/* Repères : sol=H-6. Tout est au-dessus de sol.
+   S1 = socle bas (sol-14 → sol-2), S2 = marche (sol-24 → sol-14),
+   bassin (sol-40 → sol-24), pilier (sol-58 → sol-38), vasque (sol-62 → sol-58) */
 /* ── SOCLE NIVEAU 1 (base large) ── */
-for(let dy=-4;dy<=10;dy++)for(let dx=-34;dx<=34;dx++){
-const ex=dx/34,ey=(dy-3)/7,dd=ex*ex+ey*ey;if(dd>1)continue;
+for(let dy=-14;dy<=-2;dy++)for(let dx=-34;dx<=34;dx++){
+const ex=dx/34,ey=(dy+8)/6,dd=ex*ex+ey*ey;if(dd>1)continue;
 const rn=alea(dx*2.3+dy*4.1)*12;
-const shade=dy<0?10:(dd>.7?-12:0);
+const shade=dy<-10?10:(dd>.7?-12:0);
 R(cx+dx,sol+dy,1,1,'rgb('+Math.round(178+rn+shade)+','+Math.round(162+rn+shade)+','+Math.round(138+rn+shade)+')');
 }
-/* rainure décorative sur le socle bas */
+/* rainure décorative */
 for(let a=0;a<360;a+=3){const rad=a*Math.PI/180;
-const bx=Math.round(cx+Math.cos(rad)*31),by=Math.round(sol+3+Math.sin(rad)*6);
+const bx=Math.round(cx+Math.cos(rad)*31),by=Math.round(sol-8+Math.sin(rad)*5);
 R(bx,by,1,1,'rgb('+Math.round(148+alea(a)*10)+','+Math.round(135+alea(a+1)*10)+','+Math.round(112+alea(a+2)*8)+')');}
-/* ── SOCLE NIVEAU 2 (marche intermédiaire) ── */
-for(let dy=-14;dy<=-2;dy++)for(let dx=-26;dx<=26;dx++){
-const ex=dx/26,ey=(dy+8)/6,dd=ex*ex+ey*ey;if(dd>1)continue;
+/* ── SOCLE NIVEAU 2 (marche) ── */
+for(let dy=-24;dy<=-14;dy++)for(let dx=-26;dx<=26;dx++){
+const ex=dx/26,ey=(dy+19)/5,dd=ex*ex+ey*ey;if(dd>1)continue;
 const rn=alea(dx*3.7+dy*2.9)*10;
-const shade=dy<-10?8:(dd>.7?-10:0);
+const shade=dy<-20?8:(dd>.7?-10:0);
 R(cx+dx,sol+dy,1,1,'rgb('+Math.round(168+rn+shade)+','+Math.round(152+rn+shade)+','+Math.round(128+rn+shade)+')');
 }
-/* listel en haut de la marche */
+/* listel */
 for(let a=0;a<360;a+=3){const rad=a*Math.PI/180;
-const bx=Math.round(cx+Math.cos(rad)*25),by=Math.round(sol-12+Math.sin(rad)*5);
+const bx=Math.round(cx+Math.cos(rad)*24),by=Math.round(sol-23+Math.sin(rad)*4);
 R(bx,by,1,1,'rgb('+Math.round(188+alea(a+50)*12)+','+Math.round(172+alea(a+51)*10)+','+Math.round(148+alea(a+52)*8)+')');}
-/* ── BASSIN (vasque basse) ── */
-for(let dy=-18;dy<=0;dy++)for(let dx=-24;dx<=24;dx++){
-const ex=dx/24,ey=(dy+9)/9,dd=ex*ex+ey*ey;if(dd>1)continue;
-if(dd>.6){/* rebord pierre */
-const rn=alea(dx*4.1+dy*3.3)*14;
-const dark=dd>.85?-15:0;
-R(cx+dx,sol-14+dy,1,1,'rgb('+Math.round(182+rn+dark)+','+Math.round(166+rn+dark)+','+Math.round(142+rn+dark)+')');
-}else{/* eau statique (fond sombre, l'animation ajoute les reflets) */
-const wv=Math.round(alea(dx*2.1+dy*4.7)*20);
-R(cx+dx,sol-14+dy,1,1,'rgb('+Math.round(50+wv)+','+Math.round(100+wv)+','+Math.round(155+wv)+')');
+/* ── BASSIN ── */
+for(let dy=-16;dy<=0;dy++)for(let dx=-22;dx<=22;dx++){
+const ex=dx/22,ey=(dy+8)/8,dd=ex*ex+ey*ey;if(dd>1)continue;
+if(dd>.55){const rn=alea(dx*4.1+dy*3.3)*14;const dark=dd>.8?-15:0;
+R(cx+dx,sol-24+dy,1,1,'rgb('+Math.round(182+rn+dark)+','+Math.round(166+rn+dark)+','+Math.round(142+rn+dark)+')');
+}else{const wv=Math.round(alea(dx*2.1+dy*4.7)*20);
+R(cx+dx,sol-24+dy,1,1,'rgb('+Math.round(50+wv)+','+Math.round(100+wv)+','+Math.round(155+wv)+')');
 }}
-/* ── PILIER CENTRAL ── */
-for(let dy=-46;dy<=-22;dy++){const pw=dy<-40?4:dy<-30?5:6;
+/* ── PILIER ── */
+for(let dy=-58;dy<=-38;dy++){const pw=dy<-52?4:dy<-46?5:6;
 const light=dy%2===0?6:0;
-R(cx-Math.floor(pw/2),sol-14+dy,pw,1,'rgb('+Math.round(160+light)+','+Math.round(145+light)+','+Math.round(125+light)+')');
-/* côté clair */
-R(cx-Math.floor(pw/2),sol-14+dy,Math.floor(pw/3),1,'rgb('+Math.round(178+light)+','+Math.round(162+light)+','+Math.round(140+light)+')');
+R(cx-Math.floor(pw/2),sol+dy,pw,1,'rgb('+Math.round(160+light)+','+Math.round(145+light)+','+Math.round(125+light)+')');
+R(cx-Math.floor(pw/2),sol+dy,Math.floor(pw/3),1,'rgb('+Math.round(178+light)+','+Math.round(162+light)+','+Math.round(140+light)+')');
 }
-/* bagues décoratives */
-R(cx-4,sol-14-32,9,2,'#c0aa88');R(cx-4,sol-14-40,9,2,'#c0aa88');
+R(cx-4,sol-46,9,2,'#c0aa88');R(cx-4,sol-54,9,2,'#c0aa88');
 /* ── VASQUE HAUTE ── */
 for(let dx=-10;dx<=10;dx++){
 const rn=Math.round(alea(dx*1.7+99)*8);
-R(cx+dx,sol-62,1,1,'rgb('+Math.round(178+rn)+','+Math.round(162+rn)+','+Math.round(138+rn)+')');
-R(cx+dx,sol-63,1,1,'rgb('+Math.round(170+rn)+','+Math.round(155+rn)+','+Math.round(130+rn)+')');
+R(cx+dx,sol-60,1,1,'rgb('+Math.round(178+rn)+','+Math.round(162+rn)+','+Math.round(138+rn)+')');
+R(cx+dx,sol-61,1,1,'rgb('+Math.round(170+rn)+','+Math.round(155+rn)+','+Math.round(130+rn)+')');
 if(Math.abs(dx)<=8){const wv=Math.round(alea(dx*1.3)*10);
-R(cx+dx,sol-61,1,1,'rgb('+Math.round(60+wv)+','+Math.round(110+wv)+','+Math.round(160+wv)+')');}}
-R(cx-11,sol-62,1,2,'#9a8a72');R(cx+11,sol-62,1,2,'#9a8a72');
+R(cx+dx,sol-59,1,1,'rgb('+Math.round(60+wv)+','+Math.round(110+wv)+','+Math.round(160+wv)+')');}}
+R(cx-11,sol-60,1,2,'#9a8a72');R(cx+11,sol-60,1,2,'#9a8a72');
 }
 else if(t==='x_spPanneau'){
 ombre(12,3);
@@ -13820,80 +13818,80 @@ return a;
 function animerFontaineSpawn(g,sx,sy){
 const t=Date.now()*0.001;
 const _h=(a,b,k)=>{let n=(a*374761+b*668265+k*1442695)|0;n=(n^(n>>>13))*1274126|0;return((n^(n>>>16))>>>0)/4294967296;};
-/* sol du sprite : le y passé est o.y (pied de la fontaine côté monde),
-   et le sprite a sol≈22 dans graverX, donc le bassin est à y-14 en sprite,
-   soit environ sy - 14 en écran. On cale sur le même repère. */
-const by=sy-14;/* centre eau du bassin */
+/* Repères écran (sol=76, sprite Y0=sy-76) :
+   bassin eau centre = sol-32 → sy-32
+   vasque haute      = sol-60 → sy-60 */
+const by=sy-32;/* centre eau du bassin */
+const vy=sy-60;/* centre vasque haute */
 
 /* ── reflets miroitants dans le bassin ── */
 g.save();
-g.beginPath();g.ellipse(sx,by-9,20,6,0,0,Math.PI*2);g.clip();
-const sh1=Math.sin(t*1.2)*5;
-g.fillStyle='rgba(140,200,240,0.35)';
-g.beginPath();g.ellipse(sx+sh1,by-10,7,2,0.2,0,Math.PI*2);g.fill();
-g.fillStyle='rgba(180,225,255,0.25)';
-g.beginPath();g.ellipse(sx-sh1*0.7,by-8,5,1.5,-0.3,0,Math.PI*2);g.fill();
+g.beginPath();g.ellipse(sx,by,16,5,0,0,Math.PI*2);g.clip();
+const sh1=Math.sin(t*1.2)*4;
+g.fillStyle='rgba(140,200,240,0.4)';
+g.beginPath();g.ellipse(sx+sh1,by-1,6,2,0.2,0,Math.PI*2);g.fill();
+g.fillStyle='rgba(180,225,255,0.3)';
+g.beginPath();g.ellipse(sx-sh1*0.7,by+1,5,1.5,-0.3,0,Math.PI*2);g.fill();
 g.restore();
 
 /* ── rides concentriques ── */
 for(let r=0;r<3;r++){
 const age=((t*1.2+r*0.33)%1);
-const rr=age*18;
-const alpha=Math.max(0,(1-age)*0.28);
+const rr=age*14;
+const alpha=Math.max(0,(1-age)*0.3);
 g.strokeStyle='rgba(180,220,255,'+alpha.toFixed(2)+')';
-g.lineWidth=0.5;
-g.beginPath();g.ellipse(sx,by-9,rr,rr*0.35,0,0,Math.PI*2);g.stroke();
+g.lineWidth=0.6;
+g.beginPath();g.ellipse(sx,by,rr,rr*0.35,0,0,Math.PI*2);g.stroke();
 }
 
 /* ── cascade latérale (gouttes de la vasque haute au bassin) ── */
-const vy=by-48;/* centre vasque haute */
 for(let side=-1;side<=1;side+=2){
-for(let d=0;d<8;d++){
-const prog=((t*2.2+d*0.125)%1);
-const dx=side*(3+prog*9);
-const dy2=prog*30;/* de vasque haute vers bassin */
+for(let d=0;d<6;d++){
+const prog=((t*2.0+d*0.17)%1);
+const dx=side*(2+prog*8);
+const dy2=prog*28;/* de vy vers by : distance 28px */
 const sz=1.0-prog*0.4;
-const alpha=Math.max(0,(1-prog)*0.6);
+const alpha=Math.max(0,(1-prog)*0.55);
 g.fillStyle='rgba(120,190,240,'+alpha.toFixed(2)+')';
-g.beginPath();g.arc(sx+dx+Math.sin(t+d)*0.6,vy+dy2,sz,0,Math.PI*2);g.fill();
+g.beginPath();g.arc(sx+dx+Math.sin(t+d)*0.5,vy+dy2,sz,0,Math.PI*2);g.fill();
 }}
 
-/* ── jet principal ── */
-const jetH=22+Math.sin(t*1.4)*5+Math.sin(t*2.6)*2;
-/* lueur */
-g.strokeStyle='rgba(180,225,255,0.25)';g.lineWidth=3;
+/* ── jet principal (vers le HAUT depuis vasque) ── */
+const jetH=18+Math.sin(t*1.4)*4+Math.sin(t*2.6)*2;
+/* lueur large */
+g.strokeStyle='rgba(180,225,255,0.35)';g.lineWidth=3.5;
 g.beginPath();g.moveTo(sx,vy);
-g.quadraticCurveTo(sx+Math.sin(t*0.8)*1.5,vy-jetH*0.6,sx+Math.sin(t*1.2)*0.8,vy-jetH);
+g.quadraticCurveTo(sx+Math.sin(t*0.8)*1.2,vy-jetH*0.6,sx+Math.sin(t*1.2)*0.6,vy-jetH);
 g.stroke();
-/* cœur du jet */
-g.strokeStyle='rgba(150,215,255,0.65)';g.lineWidth=1.2;
+/* cœur */
+g.strokeStyle='rgba(200,235,255,0.75)';g.lineWidth=1.5;
 g.beginPath();g.moveTo(sx,vy);
-g.quadraticCurveTo(sx+Math.sin(t*0.8)*1.5,vy-jetH*0.6,sx+Math.sin(t*1.2)*0.8,vy-jetH);
+g.quadraticCurveTo(sx+Math.sin(t*0.8)*1.2,vy-jetH*0.6,sx+Math.sin(t*1.2)*0.6,vy-jetH);
 g.stroke();
 
 /* ── gouttelettes retombantes ── */
-for(let d=0;d<14;d++){
-const age=((t*1.8+d*0.25)%3.5)/3.5;
-if(age<0.25)continue;
-const prog=(age-0.25)/0.75;
+for(let d=0;d<12;d++){
+const age=((t*1.6+d*0.28)%3)/3;
+if(age<0.2)continue;
+const prog=(age-0.2)/0.8;
 const angle=_h(d,0,99)*Math.PI*2;
-const spd=1.2+_h(d,1,99)*2.5;
-const dx=Math.cos(angle)*spd*prog*11;
-const dy2=-jetH*(1-prog)+prog*prog*jetH*1.6;
+const spd=1+_h(d,1,99)*2;
+const dx=Math.cos(angle)*spd*prog*9;
+const dy2=-jetH*(1-prog)+prog*prog*jetH*1.5;
 const alpha=Math.max(0,(1-prog)*0.5);
-const sz=0.5+_h(d,2,99)*0.7;
+const sz=0.5+_h(d,2,99)*0.6;
 g.fillStyle='rgba(150,210,250,'+alpha.toFixed(2)+')';
 g.beginPath();g.arc(sx+dx,vy+dy2,sz,0,Math.PI*2);g.fill();
 }
 
 /* ── brume légère ── */
-for(let m=0;m<4;m++){
-const mAge=((t*0.7+m*0.25)%1);
-const mx=sx+Math.sin(t*0.4+m*1.8)*14*(0.4+mAge);
-const my=vy-8-mAge*12;
-const mAlpha=Math.max(0,Math.sin(mAge*Math.PI)*0.1);
+for(let m=0;m<3;m++){
+const mAge=((t*0.6+m*0.33)%1);
+const mx=sx+Math.sin(t*0.4+m*1.8)*10*(0.4+mAge);
+const my=vy-6-mAge*10;
+const mAlpha=Math.max(0,Math.sin(mAge*Math.PI)*0.12);
 g.fillStyle='rgba(200,230,255,'+mAlpha.toFixed(2)+')';
-g.beginPath();g.arc(mx,my,2+mAge*3,0,Math.PI*2);g.fill();
+g.beginPath();g.arc(mx,my,2+mAge*2.5,0,Math.PI*2);g.fill();
 }
 }
 
