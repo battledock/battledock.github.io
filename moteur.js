@@ -7665,8 +7665,8 @@ R(-4,-5,9,5,V.tronc);R(-4,-5,9,2,V.troncC);R(-2,-4,5,1,'#a5764a');R(-4,-2,9,2,V.
    fin de la ville — une derniere facade, une esplanade de platanes — et
    surtout les collines boisees qui apparaissent sur l'horizon : on marche
    vers quelque chose qu'on voit, pas vers un mur. */
-const MONDE_L=CARTE==='spawn'?600:(CARTE==='large'?2400:(CARTE==='foret'?1500:(CARTE==='tokyo'?900:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:(FERME_VIERGE?1800:1200)):1760)))));   /* spawn : 600×600 */
-const MONDE_H=CARTE==='spawn'?600:(CARTE==='large'?2400:(CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?(FERME_VIERGE?1800:1600):(CARTE==='tokyo'?2560:562))));   /* spawn : 600×600 */
+const MONDE_L=CARTE==='spawn'?800:(CARTE==='large'?2400:(CARTE==='foret'?1500:(CARTE==='tokyo'?900:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:(FERME_VIERGE?1800:1200)):1760)))));   /* spawn : 800×800 */
+const MONDE_H=CARTE==='spawn'?800:(CARTE==='large'?2400:(CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?(FERME_VIERGE?1800:1600):(CARTE==='tokyo'?2560:562))));   /* spawn : 800×800 */
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 /* AU LARGE, LA CAMÉRA RECULE : le bateau fait à lui seul 252 points de
    long, et naviguer sans voir devant soi n'a aucun sens. */
@@ -7898,171 +7898,32 @@ n=(n^(n>>>13))*1274126177;return ((n^(n>>>16))>>>0)/4294967296;};
 /* ================= LE SOL DU SPAWN — prairie 600×600 =================
    Identique à construirePreVierge mais sur 600×600. */
 function construireSolSpawn(){
-const W=600,H=600,c=document.createElement('canvas');c.width=W;c.height=H;
+const W=800,H=800,c=document.createElement('canvas');c.width=W;c.height=H;
 const g=c.getContext('2d');g.imageSmoothingEnabled=false;
-const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,w,h);};
-const img=g.createImageData(W,H),d=img.data;
-const hh=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
-const vn=(x,y,s,k)=>{const X=Math.floor(x/s),Y=Math.floor(y/s),fx=x/s-X,fy=y/s-Y,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);
-const a=hh(X,Y,k),b=hh(X+1,Y,k),c2=hh(X,Y+1,k),e2=hh(X+1,Y+1,k);return a+(b-a)*u+(c2-a)*v+(a-b-c2+e2)*u*v;};
-const cl=v=>v<0?0:v>255?255:v;
 /* ═══════════════════════════════════════════════════════════════
-   LE VILLAGE — rivière, pont, chemins de terre, herbe, place
-   Inspiré du village d'origine : hameau, pont, place, tilleuls
+   SOL NU — herbe checkerboard (technique village) + patches bruit
    ═══════════════════════════════════════════════════════════════ */
-
-/* ── la rivière : bande sinueuse est-ouest en bas de la carte ── */
-const RIV_Y=460, RIV_W=32;
-const rivSin=(x)=>RIV_Y+Math.sin(x/70)*14+Math.cos(x/35)*6;
-const dansRiv=(x,y)=>{const cy=rivSin(x);return Math.abs(y-cy)<RIV_W/2+vn(x,y,20,90)*4;};
-
-/* ── le pont en pierre : x=260..340 ── */
-const PONT_X0=260,PONT_X1=340;
-const surPont=(x,y)=>x>=PONT_X0&&x<=PONT_X1&&Math.abs(y-rivSin(300))<RIV_W/2+12;
-
-/* ── les chemins de terre : un Y — nord→centre, centre→pont, centre→est ── */
-const surChemin=(x,y)=>{
-const CW=18;
-/* chemin nord-sud : du haut vers la place (x=300) */
-if(x>300-CW&&x<300+CW&&y<280)return true;
-/* chemin de la place vers le pont (sud) */
-if(x>290-CW&&x<290+CW&&y>280&&y<RIV_Y-RIV_W/2)return true;
-/* chemin est depuis la place */
-if(y>250&&y<250+CW*2&&x>340&&x<590)return true;
-/* la place elle-même : un ovale au centre */
-const dx=(x-300)/90,dy=(y-265)/55;
-if(dx*dx+dy*dy<1)return true;
-return false;
-};
-
-/* ── PASS 1 : herbe + rivière + chemins, pixel par pixel ── */
-for(let y=0;y<H;y++)for(let x=0;x<W;x++){
-const i=(y*W+x)*4;
-const n1=vn(x,y,80,5),n2=vn(x,y,22,8),h2=hh(x,y,10);
-const sh=(n1-.5)*18+(n2-.5)*8;
-
-if(dansRiv(x,y)&&!surPont(x,y)){
-/* ── eau ── */
-const wn=vn(x,y,40,12),wn2=vn(x+wn*20,y,15,14);
-let wr=50+wn*25+wn2*12, wg=90+wn*35+wn2*18, wb=140+wn*20+wn2*10;
-/* reflets de lumière */
-if(wn2>.72){wr+=14;wg+=18;wb+=22;}
-/* profondeur au centre */
-const cy=rivSin(x),dd=Math.abs(y-cy)/(RIV_W/2);
-wr-=(1-dd)*15;wg-=(1-dd)*10;wb+=(1-dd)*8;
-d[i]=cl(wr|0);d[i+1]=cl(wg|0);d[i+2]=cl(wb|0);d[i+3]=255;
-} else if(surChemin(x,y)&&!dansRiv(x,y)){
-/* ── chemin de terre ── */
-let cr=195+sh*.8,cg=175+sh*.7,cb=138+sh*.5;
-/* gravier — variation fine */
-if(h2>.88){cr+=8;cg+=6;cb+=4;}
-if(h2<.06){cr-=10;cg-=8;cb-=6;}
-/* bords du chemin un peu plus sombres */
-d[i]=cl(cr|0);d[i+1]=cl(cg|0);d[i+2]=cl(cb|0);d[i+3]=255;
-} else {
-/* ── herbe ── */
-const base=[104,150,66];
-let hr=base[0]+sh,hg=base[1]+sh,hb=base[2]+sh*.6;
-/* taches d'ombre larges */
-if(n1<.35){hr-=8;hg-=6;hb-=5;}
-if(n1>.7){hr+=6;hg+=8;hb+=3;}
-/* grain fin */
-if(h2>.92){hr+=7;hg+=10;hb+=4;}
-if(h2<.05){hr-=8;hg-=6;hb-=6;}
-d[i]=cl(hr|0);d[i+1]=cl(hg|0);d[i+2]=cl(hb|0);d[i+3]=255;
+const hh=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
+/* checkerboard demi-résolution */
+const LW=Math.ceil(W/2),LH=Math.ceil(H/2);
+const pt=document.createElement('canvas');pt.width=LW;pt.height=LH;
+const pg2=pt.getContext('2d');
+const img=pg2.createImageData(LW,LH),px=new Uint32Array(img.data.buffer);
+const Za=(255<<24)|(66<<16)|(150<<8)|104;   /* #689a68 olive base */
+const Zb=(255<<24)|(94<<16)|(157<<8)|136;   /* #889d5e olive moyen */
+for(let y=0;y<LH;y++){const l=y*LW;for(let x=0;x<LW;x++)px[l+x]=((x+y)&1)?Za:Zb;}
+pg2.putImageData(img,0,0);
+g.drawImage(pt,0,0,LW,LH,0,0,W,H);
+/* patches bruit 8×8 */
+const bruit=(x,y)=>{const v=Math.sin(x*127.1+y*311.7)*43758.5453;return v-Math.floor(v);};
+const lisse=(x,y)=>{const x0=Math.floor(x),y0=Math.floor(y),fx=x-x0,fy=y-y0;
+const m=(a,b,t)=>a+(b-a)*(t*t*(3-2*t));
+return m(m(bruit(x0,y0),bruit(x0+1,y0),fx),m(bruit(x0,y0+1),bruit(x0+1,y0+1),fx),fy);};
+for(let y=0;y<H;y+=8)for(let x=0;x<W;x+=8){
+const n=lisse(x/90,y/90);
+if(n<.38){g.fillStyle='rgba(112,132,75,.34)';g.fillRect(x,y,8,8);}
+else if(n>.68){g.fillStyle='rgba(156,176,114,.28)';g.fillRect(x,y,8,8);}
 }
-}
-g.putImageData(img,0,0);
-
-/* ── PASS 2 : berges — bande de galets/terre au bord de l'eau ── */
-for(let x=0;x<W;x++){
-if(x>=PONT_X0&&x<=PONT_X1)continue;
-const cy=rivSin(x);
-for(let s=-1;s<=1;s+=2){
-const by=cy+s*(RIV_W/2+vn(x,cy,20,90)*4);
-for(let k=0;k<5;k++){
-const bx2=x,by2=Math.round(by+s*k);
-if(bx2<0||bx2>=W||by2<0||by2>=H)continue;
-const f=1-k/5;
-R(bx2,by2,1,1,'rgba(160,140,100,'+(.3*f)+')');
-}}}
-
-/* ── PASS 3 : le pont en pierre ── */
-{const py=Math.round(rivSin(300)),ph=RIV_W+24,pw=PONT_X1-PONT_X0;
-const py0=py-ph/2, py1=py+ph/2;
-/* parapet gauche et droit */
-for(let y2=py0;y2<py1;y2++){
-for(let k=0;k<4;k++){
-const c2=175+(hh(PONT_X0+k,y2,30)*20|0);
-R(PONT_X0+k,y2,1,1,'rgb('+c2+','+(c2-8)+','+(c2-20)+')');
-R(PONT_X1-k,y2,1,1,'rgb('+c2+','+(c2-8)+','+(c2-20)+')');
-}}
-/* surface du pont — pierres taillées */
-for(let y2=py0;y2<py1;y2++)for(let x2=PONT_X0+4;x2<PONT_X1-4;x2++){
-const sn=vn(x2,y2,12,30);
-let pr=190+((sn-.5)*16|0), pg2=178+((sn-.5)*14|0), pb=155+((sn-.5)*10|0);
-if(x2%16<1||y2%10<1){pr-=12;pg2-=10;pb-=8;}
-if(hh(x2,y2,31)>.94){pr+=6;pg2+=5;pb+=3;}
-R(x2,y2,1,1,'rgb('+cl(pr)+','+cl(pg2)+','+cl(pb)+')');
-}
-/* arche sous le pont (ombre) */
-g.fillStyle='rgba(20,30,40,.55)';
-g.beginPath();g.ellipse(300,py+2,32,12,0,0,Math.PI);g.fill();
-/* garde-corps — deux murets bas */
-R(PONT_X0,py0-2,pw,3,'rgb(185,170,148)');R(PONT_X0,py0-3,pw,1,'rgb(200,185,163)');
-R(PONT_X0,py1,pw,3,'rgb(185,170,148)');R(PONT_X0,py1,pw,1,'rgb(200,185,163)');
-}
-
-/* ── PASS 4 : touffes d'herbe et brins ── */
-for(let k=0;k<600;k++){
-const tx=Math.floor(hh(k,800,1)*W),ty=Math.floor(hh(k,801,2)*H);
-if(dansRiv(tx,ty)||surPont(tx,ty))continue;
-if(surChemin(tx,ty)&&hh(k,802,3)>.15)continue;
-const col=hh(k,803,4)<.5?'rgba(80,130,50,.4)':'rgba(120,170,70,.35)';
-R(tx,ty,1,2,col);
-}
-
-/* ── PASS 5 : petites fleurs dans l'herbe ── */
-for(let k=0;k<80;k++){
-const fx=Math.floor(hh(k,900,1)*W),fy=Math.floor(hh(k,901,2)*H);
-if(dansRiv(fx,fy)||surChemin(fx,fy))continue;
-const fc=['#e84848','#d870a8','#e8d838','#7868d0','#f0f0f0'][k%5];
-R(fx,fy,1,1,fc);
-if(hh(k,902,3)<.4){R(fx-1,fy,1,1,fc);R(fx,fy-1,1,1,fc);}
-}
-
-/* ── PASS 6 : maisons du hameau — rendues en DECOR (x_spMaison) ── */
-
-/* ── PASS 7 : bordure de la carte — lisière d'arbres ── */
-/* haut */
-for(let x=0;x<W;x++){
-const th=8+Math.floor(vn(x,0,30,20)*10);
-for(let y2=0;y2<th;y2++){
-const f=1-y2/th;
-R(x,y2,1,1,'rgba(40,'+(70+Math.floor(hh(x,y2,40)*30))+',28,'+(f*.7)+')');
-}}
-/* bas (sous la rivière) */
-for(let x=0;x<W;x++){
-const th=6+Math.floor(vn(x,H,30,21)*8);
-for(let y2=H-th;y2<H;y2++){
-const f=(y2-(H-th))/th;
-R(x,y2,1,1,'rgba(40,'+(70+Math.floor(hh(x,y2,41)*30))+',28,'+(f*.65)+')');
-}}
-/* gauche */
-for(let y2=0;y2<H;y2++){
-const tw=6+Math.floor(vn(0,y2,30,22)*8);
-for(let x2=0;x2<tw;x2++){
-const f=1-x2/tw;
-R(x2,y2,1,1,'rgba(40,'+(70+Math.floor(hh(x2,y2,42)*30))+',28,'+(f*.5)+')');
-}}
-/* droite */
-for(let y2=0;y2<H;y2++){
-const tw=6+Math.floor(vn(W,y2,30,23)*8);
-for(let x2=W-tw;x2<W;x2++){
-const f=(x2-(W-tw))/tw;
-R(x2,y2,1,1,'rgba(40,'+(70+Math.floor(hh(x2,y2,43)*30))+',28,'+(f*.5)+')');
-}}
-
 return c;}
 
 /* ================= LA PRAIRIE DE LA NOUVELLE FERME =================
@@ -12835,46 +12696,8 @@ function balayerLeSentier(){
 }
 function semerDecor(){
 if(CARTE==='spawn'){DECOR=[];
-/* LE VILLAGE — rivière, pont, place avec tilleuls, hameau autour */
-/* fontaine au centre de la place */
-DECOR.push({t:'x_fontaine',x:300,y:260,bati:true,demi:38});
-/* tilleuls autour de la place */
-DECOR.push({t:'x_platane',x:200,y:200,bati:true,demi:22});
-DECOR.push({t:'x_platane',x:400,y:200,bati:true,demi:22});
-DECOR.push({t:'x_platane',x:190,y:320,bati:true,demi:22});
-DECOR.push({t:'x_platane',x:410,y:320,bati:true,demi:22});
-/* bancs en pierre — sur la place */
-DECOR.push({t:'bancP',x:245,y:230,gr:0,bati:true,demi:16});
-DECOR.push({t:'bancP',x:355,y:230,gr:0,bati:true,demi:16});
-DECOR.push({t:'bancP',x:245,y:300,gr:0,bati:true,demi:16});
-DECOR.push({t:'bancP',x:355,y:300,gr:0,bati:true,demi:16});
-/* tableau du port (panneau d'affichage en liège) — près de la place */
-DECOR.push({t:'x_tableau',x:300,y:170,bati:true,demi:24});
-/* maisons du hameau — gravées dans le sol, collision seulement */
-DECOR.push({t:'x_spMaison',x:60,y:175,v:0,bati:true,demi:42});
-DECOR.push({t:'x_spMaison',x:58,y:350,v:1,bati:true,demi:40});
-DECOR.push({t:'x_spMaison',x:540,y:175,v:2,bati:true,demi:42});
-DECOR.push({t:'x_spMaison',x:542,y:355,v:3,bati:true,demi:40});
-DECOR.push({t:'x_spMaison',x:140,y:70,v:4,bati:true,demi:38});
-DECOR.push({t:'x_spMaison',x:455,y:70,v:5,bati:true,demi:38});
-/* lampadaires le long du chemin */
-DECOR.push({t:'x_lampadaire',x:270,y:160,bati:true,demi:5});
-DECOR.push({t:'x_lampadaire',x:330,y:160,bati:true,demi:5});
-DECOR.push({t:'x_lampadaire',x:270,y:350,bati:true,demi:5});
-DECOR.push({t:'x_lampadaire',x:330,y:350,bati:true,demi:5});
-/* pots de fleurs */
-DECOR.push({t:'x_potFleur',x:260,y:195,v:0});
-DECOR.push({t:'x_potFleur',x:340,y:195,v:1});
-DECOR.push({t:'x_potFleur',x:260,y:330,v:2});
-DECOR.push({t:'x_potFleur',x:340,y:330,v:3});
-/* pigeons sur la place */
-DECOR.push({t:'x_pigeon',x:285,y:275,v:0});
-DECOR.push({t:'x_pigeon',x:315,y:285,v:1});
-DECOR.push({t:'x_pigeon',x:295,y:295,v:2});
-/* arbres au sud, au-delà de la rivière */
-DECOR.push({t:'x_platane',x:100,y:530,bati:true,demi:22});
-DECOR.push({t:'x_platane',x:500,y:530,bati:true,demi:22});
-DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}   /* spawn : le village */
+/* SOL NU — pas de décor pour l'instant */
+DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}   /* spawn : vide */
 if(CHAMPS_SEULS&&CARTE==='village'){
 /* LA FERME : deux bâtiments, et rien d'autre. Le métro plein nord, la
    graineterie au centre, le potager au sud : l'axe de la ferme. */
@@ -13540,12 +13363,7 @@ return out;
 }
 function bloque(x,y){
 if(CARTE==='spawn'){
-if(x<8||x>592||y<8||y>592)return true;   /* bords de la carte */
-/* la rivière bloque sauf sur le pont (x=260..340) */
-{const RIV_Y=460,RIV_W=32;
-const rivSin=(rx)=>RIV_Y+Math.sin(rx/70)*14+Math.cos(rx/35)*6;
-const cy=rivSin(x);
-if(Math.abs(y-cy)<RIV_W/2&&!(x>=260&&x<=340))return true;}
+if(x<8||x>792||y<8||y>792)return true;   /* bords de la carte 800×800 */
 /* collision circulaire avec les objets solides du spawn */
 for(const o of DECOR){
 if(!o.bati||!o.demi)continue;
@@ -14002,8 +13820,8 @@ const FORGE_FIXE =[662,318];                    /* à l'ouest, vers la rivière 
 const COMPTOIR_FIXE=[880,152];                  /* le long entrepôt, en haut à gauche */
 const CASINO_FIXE  =[912,246];                  /* au nord-est, dégagé de l'entrepôt */
 const dansLaCarte=(v,max)=>typeof v==='number'&&v>BORD&&v<max-BORD;
-let joueur={x:CARTE==='spawn'?300:(dansLaCarte(e.x,MONDE_L)?(e.x<400?e.x+400:e.x):CAMP_FIXE[0]),
-y:CARTE==='spawn'?300:(dansLaCarte(e.y,MONDE_H)?e.y:CAMP_FIXE[1]+30),dir:'bas',pas:0,marche:false};
+let joueur={x:CARTE==='spawn'?400:(dansLaCarte(e.x,MONDE_L)?(e.x<400?e.x+400:e.x):CAMP_FIXE[0]),
+y:CARTE==='spawn'?400:(dansLaCarte(e.y,MONDE_H)?e.y:CAMP_FIXE[1]+30),dir:'bas',pas:0,marche:false};
 let joyX=0,joyY=0;
 /* ================= roundRect SUR LES VIEUX SAFARI =================
    ctx.roundRect n'existe qu'à partir de Safari 16.4. Trois appels n'étaient
