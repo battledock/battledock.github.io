@@ -2054,7 +2054,7 @@ R(3,6,46,6,'#e8e0cc');R(3,6,46,1.5,'#f8f2e2');R(3,12,46,5,'#cfc5ae');R(3,16.5,46
 for(let k=0;k<40;k++){R(4+((k*37)%44),7+((k*13)%9),1,1,k%3?'rgba(160,150,130,.35)':'rgba(255,255,255,.4)');}
 [[6],[42]].forEach(([x])=>{R(x,12,5,sol-12,'#bfb59e');R(x,12,1,sol-12,'#d8cfb8');});R(24,12,4,.8,'#a89e88');})};}
 function dessinerDeco(g,t,x,y){
-if(t==='bancP'&&CARTE==='extramar'){if(!CALQUE_BANC_PIERRE)CALQUE_BANC_PIERRE=graverBancPierre();const B=CALQUE_BANC_PIERRE;g.drawImage(B.toile,Math.round(x-B.W/2),Math.round(y-B.sol),B.W,B.H);return;}   /* au port : le banc de pierre */
+if(t==='bancP'&&(CARTE==='extramar'||CARTE==='spawn')){if(!CALQUE_BANC_PIERRE)CALQUE_BANC_PIERRE=graverBancPierre();const B=CALQUE_BANC_PIERRE;g.drawImage(B.toile,Math.round(x-B.W/2),Math.round(y-B.sol),B.W,B.H);return;}   /* port + spawn : le banc de pierre */
 if(t==='bancP'&&FIN_OK()){if(!CALQUE_BANC_FIN)graverLeBancFin();const B=CALQUE_BANC_FIN;g.drawImage(B.toile,Math.round(x-B.W/2),Math.round(y-B.sol),B.W,B.H);return;}
 if(!CALQUES_DECO[t])graverDeco(t);
 const C=CALQUES_DECO[t];
@@ -7918,41 +7918,49 @@ pose(x-1,y-1,cl(R-8),cl(G2),cl(B-8));pose(x+1,y-2,cl(R+6),cl(G2+14),cl(B));}
 else if(t<0.045){pose(x,y,cl(R+14),cl(G2+22),cl(B+6));pose(x+1,y,cl(R+8),cl(G2+12),cl(B+3));}
 else if(t<0.055)pose(x,y,cl(R-22),cl(G2-18),cl(B-18));
 else if(vn(x,y,30,16)>0.6){pose(x,y,86,140,62);pose(x+1,y,86,140,62);pose(x,y-1,106,164,72);pose(x+1,y+1,86,140,62);}}
-/* LA PLACE DU VILLAGE — mosaïque carrée nette, pixel art */
+/* LA PLACE DU VILLAGE — mosaïque « calade étoilée » provençale */
 const CX=300,CY=300,HALF=130;
 const SL=CX-HALF,SR=CX+HALF,ST=CY-HALF,SB=CY+HALF;
 for(let y2=ST;y2<SB;y2++)for(let x2=SL;x2<SR;x2++){
 const lx=x2-SL,ly=y2-ST,S=HALF*2;
-/* bordure extérieure pierre sombre 4px */
-if(lx<4||lx>=S-4||ly<4||ly>=S-4){pose(x2,y2,108,94,72);continue;}
-/* filet doré 2px */
-if(lx<6||lx>=S-6||ly<6||ly>=S-6){pose(x2,y2,198,172,108);continue;}
-/* seconde bordure fine 2px */
-if(lx<8||lx>=S-8||ly<8||ly>=S-8){pose(x2,y2,118,104,80);continue;}
-/* intérieur : 244×244 */
-const ix=lx-8,iy=ly-8,inner=S-16;/* 0..243 */
-const TILE=16;
-const tx=ix%TILE,ty=iy%TILE;
-const txi=Math.floor(ix/TILE),tyi=Math.floor(iy/TILE);
-/* joints entre carreaux 1px */
-if(tx===0||ty===0){pose(x2,y2,148,136,112);continue;}
+/* triple bordure */
+if(lx<3||lx>=S-3||ly<3||ly>=S-3){pose(x2,y2,58,52,40);continue;}
+if(lx<6||lx>=S-6||ly<6||ly>=S-6){pose(x2,y2,201,162,74);continue;}
+/* fond galets clairs texturés */
+const gn=hh(x2,y2,30),gn2=hh(x2,y2,31);
+const gr=200+gn*30|0,gg=188+gn*28|0,gb=160+gn2*24|0;
 /* coordonnées centrées */
-const mx=ix-inner/2,my=iy-inner/2;
-const amx=Math.abs(mx),amy=Math.abs(my);
-/* médaillon central doré 16×16 */
-if(amx<8&&amy<8){pose(x2,y2,215,188,92);continue;}
-/* croix centrale bleue (bras de 8px de large) */
-if((amx<8&&amy<40)||(amy<8&&amx<40)){pose(x2,y2,52,86,148);continue;}
-/* 4 carreaux bleus aux diagonales */
-if(amx>20&&amx<36&&amy>20&&amy<36&&Math.abs(amx-amy)<8){pose(x2,y2,58,92,155);continue;}
-/* bande intermédiaire terracotta (couronne carrée) */
-if(amx>36&&amx<52&&amy<52&&amy>36){pose(x2,y2,185,140,105);continue;}
-if(amy>36&&amy<52&&amx<52&&amx>36){pose(x2,y2,185,140,105);continue;}
-/* coins extérieurs : accent ocre */
-if(amx>80&&amy>80&&amx<96&&amy<96){pose(x2,y2,210,182,100);continue;}
-/* damier principal */
-if((txi+tyi)%2===0){pose(x2,y2,218,204,174);}
-else{pose(x2,y2,196,162,128);}}
+const dx2=x2-CX,dy2=y2-CY,dist=Math.sqrt(dx2*dx2+dy2*dy2);
+const angle=Math.atan2(dy2,dx2);
+/* étoile à 8 branches en galets sombres */
+const a8=((angle+Math.PI)/(Math.PI*2))*8;
+const frac=a8%1;
+const brW=0.12+0.06*Math.max(0,1-dist/100);
+const onBranch=Math.abs(frac-0.5)>(0.5-brW)&&dist>12&&dist<110;
+/* 3 anneaux concentriques */
+const ring1=Math.abs(dist-40)<3,ring2=Math.abs(dist-70)<3,ring3=Math.abs(dist-100)<3;
+/* centre doré */
+if(dist<=12){
+if(dist<=4){pose(x2,y2,240,216,112);}
+else if(dist<=8){pose(x2,y2,201,162,74);}
+else{pose(x2,y2,210,175,88);}
+}
+/* anneaux */
+else if(ring1){const rn=hh(x2,y2,33);pose(x2,y2,rn>0.3?184:196,rn>0.3?96:112,rn>0.3?80:92);}
+else if(ring2){const rn=hh(x2,y2,34);pose(x2,y2,rn>0.3?58:74,rn>0.3?106:122,rn>0.3?152:168);}
+else if(ring3){const rn=hh(x2,y2,35);pose(x2,y2,rn>0.3?184:196,rn>0.3?96:112,rn>0.3?80:92);}
+/* branches de l'étoile */
+else if(onBranch){const bn=hh(x2,y2,36);pose(x2,y2,bn>0.4?58:68,bn>0.4?52:60,bn>0.4?40:48);}
+/* losanges bleus intercalaires (8 entre les branches, à dist ~55) */
+else if(dist>45&&dist<65){
+const la=((angle+Math.PI)/(Math.PI*2))*8+0.5;
+const lf=la%1;
+if(Math.abs(lf-0.5)<0.1){const ln=hh(x2,y2,37);pose(x2,y2,ln>0.3?58:74,ln>0.3?106:122,ln>0.3?152:168);}
+else{pose(x2,y2,gr,gg,gb);}
+}
+/* fond texturé galets */
+else{pose(x2,y2,gr,gg,gb);}
+}
 g.putImageData(img,0,0);
 /* fleurettes — on saute la zone mosaïque */
 const FL=[[240,236,220],[236,214,90],[220,120,130],[170,160,220],[90,130,210]];
@@ -10821,7 +10829,7 @@ XCAL[cle]=t==='x_bateau'?graverTonBateau():t==='x_cabanon'?graverLeCabanon():t==
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
 return XCAL[cle];
 }
-const T={x_paillasson:[30,10],x_panneauG:[40,44],x_tableau:[60,66],x_panneauF:[52,70],x_ferry:[96,56],x_caboteur:[250,120],x_docks:[150,96],x_pile:[44,34],x_roue:[180,210],x_kiosque:[44,68],x_fontaine:[70,56],x_metroM:[96,100],x_platane:[84,108],x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
+const T={x_paillasson:[30,10],x_panneauG:[40,44],x_tableau:[60,66],x_panneauF:[52,70],x_ferry:[96,56],x_caboteur:[250,120],x_docks:[150,96],x_pile:[44,34],x_roue:[180,210],x_kiosque:[44,68],x_fontaine:[78,74],x_metroM:[96,100],x_platane:[84,108],x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
 x_filets:[34,16],x_bitte:[12,14],x_barque:[62,34],x_cargo:[250,128],x_grue:[80,120],
 x_phare:[30,96]}[t]||[40,40];
 const W=T[0],H=T[1],cx=W/2,sol=H-6;
@@ -11058,19 +11066,68 @@ if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
 return XCAL[cle];
 }
 else if(t==='x_platane'){
-ombre(30,6);
+ombre(34,7);
 const tr=cx;
-for(let y=0;y<44;y++){const w=10+(y<4?3:0)-(y>36?1:0);
-R(tr-w/2,sol-y,w,1,'#b8b39a');}
 const ALE=(i)=>alea(i*2.3+v*11);
-for(let i=0;i<40;i++)R(tr-5+ALE(i)*9,sol-44+ALE(i+50)*42,2+ALE(i+9)*2,2+ALE(i+19)*2,
-['#8f8a6a','#d9d4bc','#7d7a5c','#c9c4a4'][i%4]);
-R(tr-10,sol-46,6,3,'#9a947a');R(tr+4,sol-48,7,3,'#9a947a');                        /* les maîtresses branches */
-const blocs=[[0,-64,34,20,'#6f9a4a'],[-22,-58,20,14,'#5f8a40'],[22,-58,20,14,'#5f8a40'],
-[-12,-74,20,14,'#7fae58'],[12,-76,20,14,'#7fae58'],[0,-82,18,10,'#8fbf66'],[-28,-66,12,8,'#4f7a36'],[28,-66,12,8,'#4f7a36']];
+/* ── racines apparentes ── */
+R(tr-14,sol-2,4,3,'#8a856e');R(tr+10,sol-2,4,3,'#8a856e');
+R(tr-12,sol-1,2,2,'#7a756a');R(tr+10,sol-1,3,2,'#7a756a');
+/* ── tronc massif — écorce tachetée caractéristique ── */
+for(let y=0;y<48;y++){
+const w=12+(y<6?4:0)+(y<3?2:0)-(y>40?2:0)-(y>44?2:0);
+const base=y<20?'#b8b39a':'#a8a48a';
+R(tr-w/2,sol-y,w,1,base);
+}
+/* reflet gauche du tronc */
+for(let y=4;y<44;y++){R(tr-6,sol-y,2,1,'#d0ccb4');}
+/* ombre droite du tronc */
+for(let y=4;y<44;y++){R(tr+5,sol-y,1,1,'#8a866e');}
+/* écorce tachetée (plaques claires/sombres typiques du platane) */
+for(let i=0;i<30;i++){
+const px2=tr-4+ALE(i)*8|0, py=sol-6-ALE(i+50)*36|0;
+const w=2+ALE(i+10)*3|0, h=2+ALE(i+20)*4|0;
+const col=['#d9d4bc','#8f8a6a','#c9c4a4','#7d7a5c','#e0dcca'][i%5];
+R(px2,py,w,h,col);
+}
+/* nœuds du tronc */
+R(tr-3,sol-18,3,3,'#6a6658');R(tr+1,sol-30,2,2,'#6a6658');
+/* ── maîtresses branches (épaisses, angulaires) ── */
+/* branche gauche */
+R(tr-8,sol-46,6,4,'#9a947a');R(tr-14,sol-52,6,3,'#9a947a');R(tr-18,sol-56,5,3,'#8a846a');
+R(tr-8,sol-46,6,1,'#b0aa90');  /* highlight */
+/* branche droite */
+R(tr+3,sol-48,7,4,'#9a947a');R(tr+9,sol-54,6,3,'#9a947a');R(tr+14,sol-58,5,3,'#8a846a');
+R(tr+3,sol-48,7,1,'#b0aa90');
+/* branche haute */
+R(tr-3,sol-50,6,3,'#9a947a');R(tr-2,sol-56,5,4,'#8a846a');
+R(tr-3,sol-50,6,1,'#b0aa90');
+/* branches secondaires fines */
+R(tr-22,sol-60,4,2,'#7a7460');R(tr-26,sol-64,3,2,'#7a7460');
+R(tr+18,sol-62,4,2,'#7a7460');R(tr+22,sol-66,3,2,'#7a7460');
+R(tr-6,sol-60,3,2,'#7a7460');R(tr+4,sol-62,3,2,'#7a7460');
+/* ── feuillage dense — masses principales ── */
+const blocs=[
+[0,-70,36,22,'#5a8a3a'],[0,-68,38,18,'#6f9a4a'],
+[-24,-62,22,16,'#4f7a30'],[-22,-60,20,14,'#5f8a40'],
+[24,-62,22,16,'#4f7a30'],[22,-60,20,14,'#5f8a40'],
+[-14,-80,22,16,'#6fae48'],[14,-82,22,16,'#6fae48'],
+[0,-88,20,12,'#7fbe58'],[-8,-86,14,10,'#8fc866'],
+[-30,-70,14,10,'#3f6a26'],[30,-70,14,10,'#3f6a26'],
+[-18,-72,16,10,'#5a8a3a'],[18,-74,16,10,'#5a8a3a'],
+[0,-94,14,8,'#8fc866'],[0,-66,30,10,'#4a7a2e'],
+];
 blocs.forEach(([dx,dy,rx,ry,col])=>{g.fillStyle=col;g.beginPath();g.ellipse(cx+dx,sol+dy,rx,ry,0,0,7);g.fill();});
-for(let i=0;i<60;i++){g.fillStyle=i%3?'rgba(160,210,110,.55)':'rgba(40,70,30,.35)';
-g.fillRect(cx-36+ALE(i+200)*72,sol-92+ALE(i+300)*44,2,2);}
+/* ── texture feuillage — petites feuilles individuelles ── */
+for(let i=0;i<80;i++){
+const fx=cx-38+ALE(i+200)*76, fy=sol-98+ALE(i+300)*50;
+const col=i%4===0?'rgba(40,70,20,.5)':i%4===1?'rgba(140,200,90,.5)':i%4===2?'rgba(90,150,50,.4)':'rgba(180,220,120,.4)';
+g.fillStyle=col;g.fillRect(fx,fy,2,2);
+}
+/* points de lumière traversant le feuillage */
+for(let i=0;i<20;i++){
+g.fillStyle='rgba(200,230,140,.35)';
+g.fillRect(cx-30+ALE(i+400)*60,sol-92+ALE(i+500)*40,1,1);
+}
 }
 else if(t==='x_kiosque'){
 ombre(20,4);
@@ -11096,67 +11153,104 @@ if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
 return XCAL[cle];
 }
 else if(t==='x_fontaine'){
-ombre(34,6);
-/* === FONTAINE EN DUR — pixel art rectangles uniquement === */
-/* socle / base large */
-R(cx-32,sol-4,64,4,'#908060');
-R(cx-30,sol-6,60,2,'#a89870');
-/* bassin principal — murs épais */
-R(cx-28,sol-16,56,10,'#b0a078');
-R(cx-28,sol-16,56,2,'#c8b890');/* highlight haut mur */
-R(cx-26,sol-14,52,1,'#8a7a58');/* ombre intérieure */
-/* eau dans le bassin */
-R(cx-24,sol-14,48,7,'#1e6e96');
-R(cx-20,sol-13,40,4,'#2e8ab0');
-R(cx-14,sol-12,28,2,'#4aa8cc');
-/* colonne centrale */
-R(cx-4,sol-38,8,24,'#c4b48c');
-R(cx-4,sol-38,2,24,'#ddd0b0');/* reflet gauche */
-R(cx+3,sol-38,1,24,'#a08a68');/* ombre droite */
-/* moulure basse */
-R(cx-7,sol-16,14,3,'#b0a078');
-R(cx-7,sol-16,14,1,'#d0c4a0');
-/* moulure haute */
-R(cx-6,sol-39,12,2,'#b0a078');
-R(cx-6,sol-39,12,1,'#d0c4a0');
-/* vasque supérieure */
-R(cx-12,sol-44,24,5,'#b0a078');
-R(cx-12,sol-44,24,1,'#c8b890');
-R(cx-10,sol-43,20,3,'#1e6e96');
-R(cx-8,sol-42,16,2,'#2e8ab0');
-/* tige + sommet */
-R(cx-2,sol-52,4,8,'#b0a078');
-R(cx-2,sol-52,1,8,'#d0c4a0');
-R(cx-3,sol-56,6,4,'#b0a078');
-R(cx-2,sol-57,4,2,'#c8b890');
-/* === 4 jets d'eau en pixels === */
-/* jet gauche — cascade de pixels */
-R(cx-10,sol-43,2,1,'rgba(74,168,204,0.7)');
-R(cx-14,sol-46,2,1,'rgba(74,168,204,0.7)');
-R(cx-17,sol-48,2,1,'rgba(74,168,204,0.6)');
-R(cx-20,sol-46,2,1,'rgba(74,168,204,0.6)');
-R(cx-22,sol-42,2,1,'rgba(74,168,204,0.5)');
-R(cx-24,sol-38,2,1,'rgba(74,168,204,0.5)');
-R(cx-25,sol-34,2,1,'rgba(74,168,204,0.4)');
-R(cx-26,sol-28,2,2,'rgba(74,168,204,0.4)');
-R(cx-26,sol-22,2,3,'rgba(74,168,204,0.3)');
-R(cx-25,sol-16,2,2,'rgba(74,168,204,0.3)');
+ombre(38,7);
+/* === FONTAINE EN DUR — architecture provençale détaillée === */
+/* ── grand socle octogonal avec marches ── */
+R(cx-36,sol-2,72,2,'#706050');  /* marche basse ombre */
+R(cx-36,sol-4,72,2,'#908068');  /* marche basse */
+R(cx-35,sol-4,70,1,'#b0a080');  /* highlight marche */
+R(cx-34,sol-6,68,2,'#908068');  /* marche haute */
+R(cx-33,sol-6,66,1,'#b8a888');  /* highlight */
+/* chanfreins du socle (octogone) */
+R(cx-36,sol-2,3,1,'#605040');R(cx+33,sol-2,3,1,'#605040');
+R(cx-34,sol-6,2,1,'#706050');R(cx+32,sol-6,2,1,'#706050');
+/* ── bassin principal — murs épais avec moulures ── */
+R(cx-32,sol-8,64,2,'#a89870');   /* base mur */
+R(cx-30,sol-20,60,12,'#b0a078');  /* mur bassin */
+R(cx-30,sol-20,60,2,'#c8b890');   /* moulure haute highlight */
+R(cx-30,sol-18,60,1,'#d0c4a0');   /* liseret */
+R(cx-28,sol-10,56,2,'#8a7a58');   /* moulure basse ombre */
+R(cx-30,sol-8,60,2,'#c4b48c');    /* rebord haut mur */
+/* texture pierre du bassin */
+for(let k=0;k<12;k++){R(cx-28+((k*17)%54),sol-17+((k*7)%8),2,1,k%3?'rgba(160,150,130,.3)':'rgba(255,255,255,.25)');}
+/* ombre intérieure bassin */
+R(cx-28,sol-18,56,1,'#7a6a48');
+/* eau du bassin — dégradé */
+R(cx-26,sol-17,52,8,'#1e6e96');
+R(cx-24,sol-16,48,5,'#2880a8');
+R(cx-20,sol-15,40,3,'#3898c0');
+R(cx-14,sol-14,28,2,'#4aa8cc');
+R(cx-8,sol-13,16,1,'#5cb8d8');
+/* reflets sur l'eau */
+R(cx-18,sol-16,4,1,'rgba(140,220,255,.4)');
+R(cx+6,sol-15,6,1,'rgba(140,220,255,.3)');
+R(cx-10,sol-14,3,1,'rgba(180,240,255,.25)');
+/* ── colonne cannelée ── */
+R(cx-5,sol-42,10,22,'#c4b48c');   /* fût principal */
+R(cx-5,sol-42,2,22,'#ddd0b0');    /* reflet gauche */
+R(cx+4,sol-42,1,22,'#a08a68');    /* ombre droite */
+/* cannelures (rainures verticales) */
+R(cx-2,sol-42,1,22,'#b8a880');R(cx+1,sol-42,1,22,'#b8a880');
+/* moulure base colonne — tore + scotie */
+R(cx-8,sol-20,16,3,'#b0a078');
+R(cx-8,sol-20,16,1,'#d0c4a0');
+R(cx-9,sol-21,18,1,'#c8b890');
+R(cx-7,sol-18,14,1,'#8a7a58');
+/* chapiteau (moulure haute colonne) */
+R(cx-7,sol-43,14,2,'#b0a078');
+R(cx-7,sol-43,14,1,'#d8ccaa');
+R(cx-8,sol-44,16,1,'#c8b890');
+R(cx-9,sol-45,18,2,'#b0a078');
+R(cx-9,sol-45,18,1,'#d8ccaa');
+/* ── vasque supérieure avec godrons ── */
+R(cx-14,sol-50,28,5,'#b0a078');   /* corps vasque */
+R(cx-14,sol-50,28,1,'#d0c4a0');   /* highlight haut */
+R(cx-12,sol-48,24,1,'#a09068');   /* lèvre */
+R(cx-14,sol-45,28,1,'#8a7a58');   /* ombre sous vasque */
+/* godrons (motifs en relief) */
+for(let k=0;k<6;k++){R(cx-12+k*4,sol-49,3,3,k%2?'#c4b48c':'#b8a880');}
+/* eau vasque supérieure */
+R(cx-11,sol-49,22,3,'#1e6e96');
+R(cx-9,sol-48,18,2,'#2e8ab0');
+R(cx-6,sol-48,12,1,'#4aa8cc');
+/* ── tige haute + fleuron ── */
+R(cx-3,sol-58,6,8,'#b0a078');
+R(cx-3,sol-58,2,8,'#d0c4a0');    /* reflet */
+R(cx+2,sol-58,1,8,'#9a8a68');    /* ombre */
+/* fleuron sommital (pomme de pin provençale) */
+R(cx-4,sol-62,8,4,'#b0a078');
+R(cx-3,sol-63,6,3,'#c8b890');
+R(cx-3,sol-66,6,3,'#b0a078');
+R(cx-2,sol-67,4,3,'#c8b890');
+R(cx-2,sol-69,4,2,'#b0a078');
+R(cx-1,sol-70,2,2,'#d0c4a0');
+R(cx-1,sol-71,2,1,'#e0d4b8');     /* pointe éclairée */
+/* écailles de la pomme de pin */
+R(cx-3,sol-64,2,1,'#9a8a68');R(cx+1,sol-65,2,1,'#9a8a68');
+R(cx-2,sol-67,1,1,'#9a8a68');R(cx+1,sol-68,1,1,'#9a8a68');
+/* ── 4 jets d'eau — arcs paraboliques pixelisés ── */
+/* jet gauche — arc descendant */
+const jc='rgba(74,168,204,';
+R(cx-10,sol-49,2,1,jc+'0.8)');R(cx-12,sol-50,2,1,jc+'0.8)');
+R(cx-15,sol-49,2,1,jc+'0.7)');R(cx-18,sol-47,2,1,jc+'0.7)');
+R(cx-20,sol-44,2,1,jc+'0.6)');R(cx-22,sol-40,2,2,jc+'0.6)');
+R(cx-24,sol-36,2,2,jc+'0.5)');R(cx-25,sol-30,2,3,jc+'0.5)');
+R(cx-26,sol-24,2,3,jc+'0.4)');R(cx-26,sol-18,2,2,jc+'0.3)');
 /* jet droit */
-R(cx+8,sol-43,2,1,'rgba(74,168,204,0.7)');
-R(cx+12,sol-46,2,1,'rgba(74,168,204,0.7)');
-R(cx+15,sol-48,2,1,'rgba(74,168,204,0.6)');
-R(cx+18,sol-46,2,1,'rgba(74,168,204,0.6)');
-R(cx+20,sol-42,2,1,'rgba(74,168,204,0.5)');
-R(cx+22,sol-38,2,1,'rgba(74,168,204,0.5)');
-R(cx+23,sol-34,2,1,'rgba(74,168,204,0.4)');
-R(cx+24,sol-28,2,2,'rgba(74,168,204,0.4)');
-R(cx+24,sol-22,2,3,'rgba(74,168,204,0.3)');
-R(cx+23,sol-16,2,2,'rgba(74,168,204,0.3)');
-/* éclaboussures (pixels) */
-R(cx-27,sol-14,4,1,'rgba(90,190,220,0.5)');
-R(cx-25,sol-15,2,1,'rgba(90,190,220,0.3)');
-R(cx+23,sol-14,4,1,'rgba(90,190,220,0.5)');
-R(cx+25,sol-15,2,1,'rgba(90,190,220,0.3)');
+R(cx+8,sol-49,2,1,jc+'0.8)');R(cx+10,sol-50,2,1,jc+'0.8)');
+R(cx+13,sol-49,2,1,jc+'0.7)');R(cx+16,sol-47,2,1,jc+'0.7)');
+R(cx+18,sol-44,2,1,jc+'0.6)');R(cx+20,sol-40,2,2,jc+'0.6)');
+R(cx+22,sol-36,2,2,jc+'0.5)');R(cx+23,sol-30,2,3,jc+'0.5)');
+R(cx+24,sol-24,2,3,jc+'0.4)');R(cx+24,sol-18,2,2,jc+'0.3)');
+/* jet central montant */
+R(cx-1,sol-58,2,1,jc+'0.9)');R(cx-1,sol-60,2,1,jc+'0.8)');
+R(cx-1,sol-62,2,1,jc+'0.6)');R(cx,sol-64,1,1,jc+'0.4)');
+/* éclaboussures dans le bassin */
+R(cx-27,sol-17,3,1,'rgba(90,190,220,0.5)');R(cx-28,sol-18,2,1,'rgba(140,220,255,0.3)');
+R(cx+24,sol-17,3,1,'rgba(90,190,220,0.5)');R(cx+26,sol-18,2,1,'rgba(140,220,255,0.3)');
+/* gouttelettes */
+R(cx-24,sol-20,1,1,'rgba(90,200,230,0.4)');R(cx+23,sol-19,1,1,'rgba(90,200,230,0.4)');
+R(cx-22,sol-22,1,1,'rgba(90,200,230,0.3)');R(cx+21,sol-21,1,1,'rgba(90,200,230,0.3)');
 }
 else if(t==='x_caboteur'){
 g.fillStyle='rgba(10,40,60,.35)';g.fillRect(8,sol-2,W-16,6);
