@@ -7923,6 +7923,29 @@ const FL=[[240,236,220],[236,214,90],[220,120,130],[170,160,220],[90,130,210]];
 for(let y=4;y<H-4;y++)for(let x=4;x<W-4;x++){const co=vn(x,y,60,18);if(hh(x,y,20)>=0.0016+co*0.006)continue;
 const f=FL[Math.floor(hh(x,y,22)*FL.length)];g.fillStyle='rgb(70,110,50)';g.fillRect(x,y,1,2);g.fillStyle='rgb('+f[0]+','+f[1]+','+f[2]+')';
 if(hh(x,y,24)<0.3){g.fillRect(x-1,y-2,3,1);g.fillRect(x,y-3,1,3);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x,y-2,1,1);}else g.fillRect(x,y-2,1,1);}
+/* LA PLACE DU VILLAGE — un rond pavé au centre de la prairie */
+const CX=300, CY=300, RAY=90;
+for(let y2=CY-RAY-4;y2<CY+RAY+4;y2++)for(let x2=CX-RAY-4;x2<CX+RAY+4;x2++){
+const dx=x2-CX, dy=y2-CY, dist=Math.sqrt(dx*dx+dy*dy);
+if(dist>RAY+3)continue;
+if(dist>RAY){/* bord arrondi : mélange herbe/pavé */
+const a=(dist-RAY)/3;
+const base=hh(x2,y2,30)<0.5?[194,176,148]:[182,166,138];
+const hr=[cl(base[0]*(1-a)+d[(y2*W+x2)*4]*a),cl(base[1]*(1-a)+d[(y2*W+x2)*4+1]*a),cl(base[2]*(1-a)+d[(y2*W+x2)*4+2]*a)];
+pose(x2,y2,hr[0],hr[1],hr[2]);continue;}
+/* pavés irréguliers */
+const bx2=Math.floor(x2/12), by2=Math.floor(y2/12);
+const jx=(x2%12), jy=(y2%12);
+const joint=(jx===0||jy===0||(jx===6&&by2%2===0));
+if(joint){pose(x2,y2,148,136,112);continue;}
+const pv=hh(bx2,by2,40);
+const base=pv<0.3?[204,188,158]:(pv<0.6?[194,178,150]:(pv<0.85?[212,196,168]:[186,170,142]));
+const sh2=(vn(x2,y2,30,42)-0.5)*12;
+pose(x2,y2,cl(base[0]+sh2),cl(base[1]+sh2),cl(base[2]+sh2*0.7));}
+/* bordure de la place : une rangée de pierres plus sombres */
+for(let a2=0;a2<360;a2+=2){const rad=a2*Math.PI/180;
+const bx3=Math.round(CX+Math.cos(rad)*(RAY+1)), by3=Math.round(CY+Math.sin(rad)*(RAY+1));
+pose(bx3,by3,140,128,104);pose(bx3+1,by3,142,130,106);}
 return c;}
 
 /* ================= LA PRAIRIE DE LA NOUVELLE FERME =================
@@ -12374,7 +12397,22 @@ function balayerLeSentier(){
     (!surLeSentier(o.x,o.y,15)&&!dansEtang(o.x,o.y,-30)));
 }
 function semerDecor(){
-if(CARTE==='spawn'){DECOR=[];invaliderGrille();return;}   /* spawn : prairie vide */
+if(CARTE==='spawn'){DECOR=[];
+/* LA PLACE DU VILLAGE PROVENÇAL — fontaine, bancs, panneau, arbres */
+DECOR.push({t:'x_fontaine',x:300,y:300,demi:24});
+/* quatre bancs autour de la fontaine */
+DECOR.push({t:'bancP',x:260,y:340,gr:0});
+DECOR.push({t:'bancP',x:340,y:340,gr:0});
+DECOR.push({t:'bancP',x:260,y:270,gr:0});
+DECOR.push({t:'bancP',x:340,y:270,gr:0});
+/* panneau du classement au nord de la place */
+DECOR.push({t:'x_panneauG',x:300,y:220,demi:18});
+/* arbres aux quatre coins de la place */
+DECOR.push({t:'x_platane',x:220,y:230,demi:40});
+DECOR.push({t:'x_platane',x:380,y:230,demi:40});
+DECOR.push({t:'x_platane',x:220,y:380,demi:40});
+DECOR.push({t:'x_platane',x:380,y:380,demi:40});
+DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}   /* spawn : place du village */
 if(CHAMPS_SEULS&&CARTE==='village'){
 /* LA FERME : deux bâtiments, et rien d'autre. Le métro plein nord, la
    graineterie au centre, le potager au sud : l'axe de la ferme. */
