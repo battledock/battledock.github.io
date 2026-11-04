@@ -12456,18 +12456,18 @@ function semerDecor(){
 if(CARTE==='spawn'){DECOR=[];
 /* LA PLACE DU VILLAGE PROVENÇAL — fontaine, bancs, tableau, platanes */
 DECOR.push({t:'x_fontaine',x:300,y:300,demi:34});
-/* quatre bancs bien éloignés de la fontaine */
-DECOR.push({t:'bancP',x:220,y:380,gr:0});
-DECOR.push({t:'bancP',x:380,y:380,gr:0});
-DECOR.push({t:'bancP',x:220,y:230,gr:0});
-DECOR.push({t:'bancP',x:380,y:230,gr:0});
-/* grand tableau interactif (classement) bien au nord */
-DECOR.push({t:'x_tableau',x:300,y:160,demi:30});
-/* platanes aux quatre coins, bien écartés */
-DECOR.push({t:'x_platane',x:180,y:200,demi:40});
-DECOR.push({t:'x_platane',x:420,y:200,demi:40});
-DECOR.push({t:'x_platane',x:180,y:410,demi:40});
-DECOR.push({t:'x_platane',x:420,y:410,demi:40});
+/* quatre bancs très éloignés de la fontaine */
+DECOR.push({t:'bancP',x:190,y:420,gr:0});
+DECOR.push({t:'bancP',x:410,y:420,gr:0});
+DECOR.push({t:'bancP',x:190,y:190,gr:0});
+DECOR.push({t:'bancP',x:410,y:190,gr:0});
+/* grand tableau interactif (classement) tout en haut */
+DECOR.push({t:'x_tableau',x:300,y:120,demi:30});
+/* platanes aux quatre coins, très écartés */
+DECOR.push({t:'x_platane',x:140,y:150,demi:40});
+DECOR.push({t:'x_platane',x:460,y:150,demi:40});
+DECOR.push({t:'x_platane',x:140,y:460,demi:40});
+DECOR.push({t:'x_platane',x:460,y:460,demi:40});
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}   /* spawn : place du village */
 if(CHAMPS_SEULS&&CARTE==='village'){
 /* LA FERME : deux bâtiments, et rien d'autre. Le métro plein nord, la
