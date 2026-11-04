@@ -7907,148 +7907,159 @@ const vn=(x,y,s,k)=>{const X=Math.floor(x/s),Y=Math.floor(y/s),fx=x/s-X,fy=y/s-Y
 const a=hh(X,Y,k),b=hh(X+1,Y,k),c2=hh(X,Y+1,k),e2=hh(X+1,Y+1,k);return a+(b-a)*u+(c2-a)*v+(a-b-c2+e2)*u*v;};
 const cl=v=>v<0?0:v>255?255:v;
 /* ═══════════════════════════════════════════════════════════════
-   PLACE DU VILLAGE PROVENÇAL — version complète avec façades
-   Bâtiments autour, sol dallé, ombres portées, passage voûté
+   LE VILLAGE — rivière, pont, chemins de terre, herbe, place
+   Inspiré du village d'origine : hameau, pont, place, tilleuls
    ═══════════════════════════════════════════════════════════════ */
-const BT=80,BL=68,BR=68,BB=55;
-/* ── PASS 1 : sol dallé en pierre, pixel par pixel ── */
+
+/* ── la rivière : bande sinueuse est-ouest en bas de la carte ── */
+const RIV_Y=460, RIV_W=32;
+const rivSin=(x)=>RIV_Y+Math.sin(x/70)*14+Math.cos(x/35)*6;
+const dansRiv=(x,y)=>{const cy=rivSin(x);return Math.abs(y-cy)<RIV_W/2+vn(x,y,20,90)*4;};
+
+/* ── le pont en pierre : x=260..340 ── */
+const PONT_X0=260,PONT_X1=340;
+const surPont=(x,y)=>x>=PONT_X0&&x<=PONT_X1&&Math.abs(y-rivSin(300))<RIV_W/2+12;
+
+/* ── les chemins de terre : un Y — nord→centre, centre→pont, centre→est ── */
+const surChemin=(x,y)=>{
+const CW=18;
+/* chemin nord-sud : du haut vers la place (x=300) */
+if(x>300-CW&&x<300+CW&&y<280)return true;
+/* chemin de la place vers le pont (sud) */
+if(x>290-CW&&x<290+CW&&y>280&&y<RIV_Y-RIV_W/2)return true;
+/* chemin est depuis la place */
+if(y>250&&y<250+CW*2&&x>340&&x<590)return true;
+/* la place elle-même : un ovale au centre */
+const dx=(x-300)/90,dy=(y-265)/55;
+if(dx*dx+dy*dy<1)return true;
+return false;
+};
+
+/* ── PASS 1 : herbe + rivière + chemins, pixel par pixel ── */
 for(let y=0;y<H;y++)for(let x=0;x<W;x++){
 const i=(y*W+x)*4;
-if(x<BL||x>W-BR||y<BT||y>H-BB){d[i]=50;d[i+1]=45;d[i+2]=40;d[i+3]=255;continue;}
-const n1=vn(x,y,55,3),n2=vn(x,y,16,7),h2=hh(x,y,10);
-const sh=(n1-.5)*22+(n2-.5)*10;
-let r=200+sh,gv=184+sh*.85,b=146+sh*.55;
-const row=Math.floor(y/14),dec=row%2?7:0;
-if((x+dec)%14<1||y%14<1){r-=20;gv-=18;b-=14;}
-const dx=x-300,dy=y-300,dist=Math.sqrt(dx*dx+dy*dy);
-if(dist<60){const f=(1-dist/60)*.15;r+=f*28;gv+=f*20;b+=f*10;}
-/* ombres portées des bâtiments — plus fortes côté nord (soleil du sud) */
-const dT=y-BT,dL=x-BL,dR=W-BR-x,dB=H-BB-y;
-let sf=0;
-if(dT<35)sf=Math.max(sf,(1-dT/35)*.35);
-if(dL<25)sf=Math.max(sf,(1-dL/25)*.22);
-if(dR<25)sf=Math.max(sf,(1-dR/25)*.22);
-if(dB<18)sf=Math.max(sf,(1-dB/18)*.14);
-if(sf>0){r*=(1-sf);gv*=(1-sf);b*=(1-sf);}
-/* chaleur solaire au sud de la place */
-if(dT>120){const su=Math.min((dT-120)/200,.1);r+=su*14;gv+=su*10;b+=su*5;}
-if(h2>.93){r+=8;gv+=6;b+=4;}
-if(h2<.04){r-=9;gv-=8;b-=5;}
-d[i]=cl(r|0);d[i+1]=cl(gv|0);d[i+2]=cl(b|0);d[i+3]=255;
+const n1=vn(x,y,80,5),n2=vn(x,y,22,8),h2=hh(x,y,10);
+const sh=(n1-.5)*18+(n2-.5)*8;
+
+if(dansRiv(x,y)&&!surPont(x,y)){
+/* ── eau ── */
+const wn=vn(x,y,40,12),wn2=vn(x+wn*20,y,15,14);
+let wr=50+wn*25+wn2*12, wg=90+wn*35+wn2*18, wb=140+wn*20+wn2*10;
+/* reflets de lumière */
+if(wn2>.72){wr+=14;wg+=18;wb+=22;}
+/* profondeur au centre */
+const cy=rivSin(x),dd=Math.abs(y-cy)/(RIV_W/2);
+wr-=(1-dd)*15;wg-=(1-dd)*10;wb+=(1-dd)*8;
+d[i]=cl(wr|0);d[i+1]=cl(wg|0);d[i+2]=cl(wb|0);d[i+3]=255;
+} else if(surChemin(x,y)&&!dansRiv(x,y)){
+/* ── chemin de terre ── */
+let cr=195+sh*.8,cg=175+sh*.7,cb=138+sh*.5;
+/* gravier — variation fine */
+if(h2>.88){cr+=8;cg+=6;cb+=4;}
+if(h2<.06){cr-=10;cg-=8;cb-=6;}
+/* bords du chemin un peu plus sombres */
+d[i]=cl(cr|0);d[i+1]=cl(cg|0);d[i+2]=cl(cb|0);d[i+3]=255;
+} else {
+/* ── herbe ── */
+const base=[104,150,66];
+let hr=base[0]+sh,hg=base[1]+sh,hb=base[2]+sh*.6;
+/* taches d'ombre larges */
+if(n1<.35){hr-=8;hg-=6;hb-=5;}
+if(n1>.7){hr+=6;hg+=8;hb+=3;}
+/* grain fin */
+if(h2>.92){hr+=7;hg+=10;hb+=4;}
+if(h2<.05){hr-=8;hg-=6;hb-=6;}
+d[i]=cl(hr|0);d[i+1]=cl(hg|0);d[i+2]=cl(hb|0);d[i+3]=255;
+}
 }
 g.putImageData(img,0,0);
 
-/* ── PASS 2 : toitures canal ── */
+/* ── PASS 2 : berges — bande de galets/terre au bord de l'eau ── */
 for(let x=0;x<W;x++){
-if(x>282&&x<318)continue;
-R(x,0,1,10,(Math.floor(x/5+hh(x,0,50)*2)%2)?'#b85a30':'#c86838');
-R(x,9,1,1,'#8a4420');
+if(x>=PONT_X0&&x<=PONT_X1)continue;
+const cy=rivSin(x);
+for(let s=-1;s<=1;s+=2){
+const by=cy+s*(RIV_W/2+vn(x,cy,20,90)*4);
+for(let k=0;k<5;k++){
+const bx2=x,by2=Math.round(by+s*k);
+if(bx2<0||bx2>=W||by2<0||by2>=H)continue;
+const f=1-k/5;
+R(bx2,by2,1,1,'rgba(160,140,100,'+(.3*f)+')');
+}}}
+
+/* ── PASS 3 : le pont en pierre ── */
+{const py=Math.round(rivSin(300)),ph=RIV_W+24,pw=PONT_X1-PONT_X0;
+const py0=py-ph/2, py1=py+ph/2;
+/* parapet gauche et droit */
+for(let y2=py0;y2<py1;y2++){
+for(let k=0;k<4;k++){
+const c2=175+(hh(PONT_X0+k,y2,30)*20|0);
+R(PONT_X0+k,y2,1,1,'rgb('+c2+','+(c2-8)+','+(c2-20)+')');
+R(PONT_X1-k,y2,1,1,'rgb('+c2+','+(c2-8)+','+(c2-20)+')');
+}}
+/* surface du pont — pierres taillées */
+for(let y2=py0;y2<py1;y2++)for(let x2=PONT_X0+4;x2<PONT_X1-4;x2++){
+const sn=vn(x2,y2,12,30);
+let pr=190+((sn-.5)*16|0), pg2=178+((sn-.5)*14|0), pb=155+((sn-.5)*10|0);
+if(x2%16<1||y2%10<1){pr-=12;pg2-=10;pb-=8;}
+if(hh(x2,y2,31)>.94){pr+=6;pg2+=5;pb+=3;}
+R(x2,y2,1,1,'rgb('+cl(pr)+','+cl(pg2)+','+cl(pb)+')');
 }
-R(0,10,282,2,'#7a4a28');R(318,10,282,2,'#7a4a28');
+/* arche sous le pont (ombre) */
+g.fillStyle='rgba(20,30,40,.55)';
+g.beginPath();g.ellipse(300,py+2,32,12,0,0,Math.PI);g.fill();
+/* garde-corps — deux murets bas */
+R(PONT_X0,py0-2,pw,3,'rgb(185,170,148)');R(PONT_X0,py0-3,pw,1,'rgb(200,185,163)');
+R(PONT_X0,py1,pw,3,'rgb(185,170,148)');R(PONT_X0,py1,pw,1,'rgb(200,185,163)');
+}
 
-/* ── PASS 3 : façades du haut — 4 bâtiments + passage voûté ── */
-const FC=[[0,140,215,168,100],[146,134,232,215,185],[320,125,198,110,78],[448,152,228,205,160]];
-FC.forEach(f=>{const[x0,w,cr,cg,cb]=f;
-R(x0,12,w,BT-12,'rgb('+cr+','+cg+','+cb+')');
-R(x0,12,w,28,'rgb('+(cr+6)+','+(cg+5)+','+(cb+3)+')');
-R(x0,BT-6,w,6,'rgb('+(cr-25)+','+(cg-24)+','+(cb-18)+')');
-R(x0,BT-7,w,1,'rgb('+(cr-10)+','+(cg-10)+','+(cb-8)+')');
-for(let k=0;k<w/3;k++){const tx=x0+hh(k,x0,40)*w|0,ty=14+hh(k,x0,41)*(BT-22)|0;
-R(tx,ty,3,2,'rgba(0,0,0,'+(hh(k,x0,42)*.07)+')');
-R(tx+1,ty-1,2,1,'rgba(255,255,255,'+(hh(k,x0,43)*.08)+')');}
-});
+/* ── PASS 4 : touffes d'herbe et brins ── */
+for(let k=0;k<600;k++){
+const tx=Math.floor(hh(k,800,1)*W),ty=Math.floor(hh(k,801,2)*H);
+if(dansRiv(tx,ty)||surPont(tx,ty))continue;
+if(surChemin(tx,ty)&&hh(k,802,3)>.15)continue;
+const col=hh(k,803,4)<.5?'rgba(80,130,50,.4)':'rgba(120,170,70,.35)';
+R(tx,ty,1,2,col);
+}
 
-/* passage voûté au centre — arche en pierre */
-R(282,0,36,BT,'#1a1815');
-g.fillStyle='#b0a080';g.beginPath();g.arc(300,BT,18,Math.PI,0);g.fill();
-g.fillStyle='#c8b890';g.beginPath();g.arc(300,BT,17,Math.PI,0);g.fill();
-g.fillStyle='#1a1815';g.beginPath();g.arc(300,BT,15,Math.PI,0);g.fill();
-for(let a=0;a<8;a++){const an=Math.PI*a/7;R(300+Math.cos(an)*16-.5|0,BT-Math.sin(an)*16-.5|0,1,1,'#8a7a60');}
-for(let y=20;y<BT-5;y++)R(285,y,30,1,'rgba(20,18,15,'+(0.5+(y-20)/(BT-25)*.3)+')');
-/* clef de voûte */
-R(298,BT-18,4,4,'#c8b890');R(298,BT-18,4,1,'#ddd0b0');
+/* ── PASS 5 : petites fleurs dans l'herbe ── */
+for(let k=0;k<80;k++){
+const fx=Math.floor(hh(k,900,1)*W),fy=Math.floor(hh(k,901,2)*H);
+if(dansRiv(fx,fy)||surChemin(fx,fy))continue;
+const fc=['#e84848','#d870a8','#e8d838','#7868d0','#f0f0f0'][k%5];
+R(fx,fy,1,1,fc);
+if(hh(k,902,3)<.4){R(fx-1,fy,1,1,fc);R(fx,fy-1,1,1,fc);}
+}
 
-/* fenêtres — volets provençaux */
-const fen=(wx,wy,sc)=>{
-R(wx-6,wy-9,12,11,'#1a2a38');R(wx-7,wy-10,14,1,'#a09070');R(wx-6,wy+2,12,2,'#b0a080');
-R(wx-9,wy-9,3,11,sc);R(wx+6,wy-9,3,11,sc);
-for(let k=0;k<4;k++){R(wx-9,wy-8+k*3,3,1,'rgba(255,255,255,.12)');R(wx+6,wy-8+k*3,3,1,'rgba(255,255,255,.12)');}
-R(wx,wy-9,1,11,'#304858');R(wx-6,wy-4,12,1,'#304858');
-};
-fen(42,44,'#2a5a8a');fen(105,44,'#2a5a8a');
-fen(188,40,'#4a6a3a');fen(242,40,'#4a6a3a');
-fen(358,42,'#2a5a8a');fen(408,42,'#2a5a8a');
-fen(485,44,'#5a4a3a');fen(548,44,'#5a4a3a');
-
-/* portes — boulangerie, mairie (arche), maisons */
-R(68,BT-20,16,20,'#4a3a28');R(68,BT-20,16,1,'#a09070');R(76,BT-10,2,2,'#c0a040');
-R(210,BT-24,20,24,'#3a4a50');R(210,BT-24,20,1,'#b0a080');
-g.fillStyle='#3a4a50';g.beginPath();g.arc(220,BT-24,10,Math.PI,0);g.fill();
-R(219,BT-14,2,2,'#c0a040');
-R(372,BT-18,14,18,'#5a3a28');R(372,BT-18,14,1,'#a09070');R(379,BT-8,2,2,'#c0a040');
-R(502,BT-18,14,18,'#4a4a38');R(502,BT-18,14,1,'#a09070');R(509,BT-8,2,2,'#c0a040');
-
-/* enseigne boulangerie — panneau en bois */
-R(52,56,52,9,'#3a2a18');R(52,56,52,1,'#5a4a38');
-for(let k=0;k<6;k++)R(57+k*7,58,4,1,'#e8d090');
-
-/* ── PASS 4 : façade gauche — mur rose provençal + lierre ── */
-R(0,BT,BL,H-BT-BB,'rgb(220,180,160)');
-R(0,BT,BL,Math.floor((H-BT-BB)/2),'rgb(225,185,165)');
-R(0,H-BB-5,BL,5,'rgb(190,150,130)');
-R(0,H-BB-6,BL,1,'rgb(205,165,145)');
-for(let k=0;k<15;k++){const ty=BT+10+hh(k,100,60)*(H-BT-BB-20)|0;
-R(hh(k,101,61)*55|0,ty,3,2,'rgba(0,0,0,.06)');}
-fen(32,BT+55,'#2a5a8a');fen(32,BT+155,'#2a5a8a');fen(32,BT+260,'#5a4a3a');fen(32,BT+360,'#2a5a8a');
-/* lierre grimpant */
-R(BL-2,BT+45,2,280,'#4a3a20');
-for(let k=0;k<35;k++){const vy=BT+50+k*8+(hh(k,200,70)*5|0);if(vy>H-BB-10)break;
-g.fillStyle=['#2a5820','#3a6828','#3a7030'][k%3];
-g.beginPath();g.ellipse(BL-4+Math.sin(k*.6)*5,vy,4+hh(k,203,73)*2,2.5,hh(k,202,72)*2,0,7);g.fill();}
-
-/* ── PASS 5 : façade droite — mur sable + store de café ── */
-R(W-BR,BT,BR,H-BT-BB,'rgb(228,205,160)');
-R(W-BR,BT,BR,Math.floor((H-BT-BB)/2),'rgb(232,210,166)');
-R(W-BR,H-BB-5,BR,5,'rgb(198,175,130)');
-R(W-BR,H-BB-6,BR,1,'rgb(215,192,148)');
-for(let k=0;k<15;k++){const ty=BT+10+hh(k,300,60)*(H-BT-BB-20)|0;
-R(W-BR+hh(k,301,61)*55|0,ty,3,2,'rgba(0,0,0,.06)');}
-fen(W-BR+34,BT+55,'#4a6a3a');fen(W-BR+34,BT+155,'#4a6a3a');fen(W-BR+34,BT+260,'#2a5a8a');fen(W-BR+34,BT+360,'#4a6a3a');
-/* store de café — rayures rouge et crème */
-const ay=BT+228;
-R(W-BR,ay,BR,4,'#8a2020');
-for(let k=0;k<BR;k+=6)R(W-BR+k,ay,3,4,(k/6)%2?'#f0e8d0':'#8a2020');
-R(W-BR,ay+4,BR,1,'rgba(0,0,0,.15)');
-
-/* ── PASS 6 : muret du bas — pierre taillée + ouverture centrale ── */
-R(0,H-BB,W,BB,'rgb(180,168,148)');R(0,H-BB,W,2,'rgb(200,188,168)');
-for(let y2=H-BB;y2<H;y2+=8)for(let x2=0;x2<W;x2+=12+Math.floor(hh(x2,y2,80)*5)){
-const sw=10+(hh(x2,y2,81)*5|0);
-R(x2,y2,sw,7,'rgb('+(175+(hh(x2,y2,82)*18|0))+','+(163+(hh(x2,y2,83)*16|0))+','+(142+(hh(x2,y2,84)*14|0))+')');
-R(x2,y2,sw,1,'rgb('+(190+(hh(x2,y2,85)*12|0))+','+(178+(hh(x2,y2,86)*10|0))+','+(158+(hh(x2,y2,87)*8|0))+')');}
-/* ouverture — chemin en pierre visible */
-for(let y2=H-BB;y2<H;y2++)for(let x2=248;x2<352;x2++){
-const n=vn(x2,y2,14,3);R(x2,y2,1,1,'rgb('+(195+((n-.5)*16|0))+','+(180+((n-.5)*14|0))+','+(142+((n-.5)*10|0))+')');}
-/* piliers de l'ouverture */
-R(242,H-BB-4,6,BB+4,'rgb(170,158,138)');R(242,H-BB-4,6,2,'rgb(195,183,163)');
-R(352,H-BB-4,6,BB+4,'rgb(170,158,138)');R(352,H-BB-4,6,2,'rgb(195,183,163)');
-g.fillStyle='rgb(185,173,153)';
-g.beginPath();g.arc(245,H-BB-4,4,0,7);g.fill();
-g.beginPath();g.arc(355,H-BB-4,4,0,7);g.fill();
-
-/* ── PASS 7 : végétation au pied des murs ── */
-for(let k=0;k<90;k++){const s=hh(k,500,1);
-let gx,gy;
-if(s<.35){gx=BL+(hh(k,501,2)*4-1|0);gy=BT+20+(hh(k,502,3)*(H-BT-BB-40)|0);}
-else if(s<.65){gx=BL+10+(hh(k,503,4)*(W-BL-BR-20)|0);gy=BT+(hh(k,504,5)*3|0);}
-else{gx=W-BR-(hh(k,505,6)*3|0);gy=BT+20+(hh(k,506,7)*(H-BT-BB-40)|0);}
-R(gx,gy,2,1,'rgb('+(50+(hh(k,507,8)*35|0))+','+(90+(hh(k,508,9)*45|0))+','+(30+(hh(k,509,10)*25|0))+')');}
-/* feuilles mortes */
-for(let k=0;k<12;k++){const lx=BL+25+(hh(k,600,1)*(W-BL-BR-50)|0),ly=BT+25+(hh(k,601,2)*(H-BT-BB-50)|0);
-R(lx,ly,2,1,['#8a7030','#6a8830','#a08040'][k%3]);}
-/* petites fleurs au pied du lierre */
-for(let k=0;k<8;k++){const fy=BT+60+k*35+(hh(k,700,3)*10|0);if(fy>H-BB-20)break;
-R(BL+1,fy,1,1,['#e84848','#d870a8','#e8a838','#7868d0'][k%4]);}
+/* ── PASS 6 : bordure de la carte — lisière d'arbres ── */
+/* haut */
+for(let x=0;x<W;x++){
+const th=8+Math.floor(vn(x,0,30,20)*10);
+for(let y2=0;y2<th;y2++){
+const f=1-y2/th;
+R(x,y2,1,1,'rgba(40,'+(70+Math.floor(hh(x,y2,40)*30))+',28,'+(f*.7)+')');
+}}
+/* bas (sous la rivière) */
+for(let x=0;x<W;x++){
+const th=6+Math.floor(vn(x,H,30,21)*8);
+for(let y2=H-th;y2<H;y2++){
+const f=(y2-(H-th))/th;
+R(x,y2,1,1,'rgba(40,'+(70+Math.floor(hh(x,y2,41)*30))+',28,'+(f*.65)+')');
+}}
+/* gauche */
+for(let y2=0;y2<H;y2++){
+const tw=6+Math.floor(vn(0,y2,30,22)*8);
+for(let x2=0;x2<tw;x2++){
+const f=1-x2/tw;
+R(x2,y2,1,1,'rgba(40,'+(70+Math.floor(hh(x2,y2,42)*30))+',28,'+(f*.5)+')');
+}}
+/* droite */
+for(let y2=0;y2<H;y2++){
+const tw=6+Math.floor(vn(W,y2,30,23)*8);
+for(let x2=W-tw;x2<W;x2++){
+const f=(x2-(W-tw))/tw;
+R(x2,y2,1,1,'rgba(40,'+(70+Math.floor(hh(x2,y2,43)*30))+',28,'+(f*.5)+')');
+}}
 
 return c;}
 
@@ -12734,37 +12745,47 @@ function balayerLeSentier(){
 }
 function semerDecor(){
 if(CARTE==='spawn'){DECOR=[];
-/* LA PLACE DU VILLAGE PROVENÇAL — encadrée de façades, fontaine centrale */
-DECOR.push({t:'x_fontaine',x:300,y:300,bati:true,demi:38});
-/* bancs en pierre — le long des allées */
-DECOR.push({t:'bancP',x:165,y:210,gr:0,bati:true,demi:16});
-DECOR.push({t:'bancP',x:435,y:215,gr:0,bati:true,demi:16});
-DECOR.push({t:'bancP',x:165,y:400,gr:0,bati:true,demi:16});
-DECOR.push({t:'bancP',x:435,y:405,gr:0,bati:true,demi:16});
-/* tableau interactif (classement) — contre le mur nord */
-DECOR.push({t:'x_tableau',x:300,y:118,bati:true,demi:24});
-/* platanes — proches des façades, pas au milieu */
-DECOR.push({t:'x_platane',x:128,y:155,bati:true,demi:22});
-DECOR.push({t:'x_platane',x:472,y:158,bati:true,demi:22});
-DECOR.push({t:'x_platane',x:122,y:455,bati:true,demi:22});
-DECOR.push({t:'x_platane',x:478,y:448,bati:true,demi:22});
-/* lampadaires en fer forgé — éclairant les allées */
-DECOR.push({t:'x_lampadaire',x:215,y:250,bati:true,demi:5});
-DECOR.push({t:'x_lampadaire',x:385,y:250,bati:true,demi:5});
-DECOR.push({t:'x_lampadaire',x:215,y:375,bati:true,demi:5});
-DECOR.push({t:'x_lampadaire',x:385,y:375,bati:true,demi:5});
-/* pots de fleurs terre cuite — au bord des chemins */
-DECOR.push({t:'x_potFleur',x:245,y:195,v:0});
-DECOR.push({t:'x_potFleur',x:355,y:195,v:1});
-DECOR.push({t:'x_potFleur',x:245,y:418,v:2});
-DECOR.push({t:'x_potFleur',x:355,y:418,v:3});
-DECOR.push({t:'x_potFleur',x:135,y:305,v:0});
-DECOR.push({t:'x_potFleur',x:465,y:300,v:1});
+/* LE VILLAGE — rivière, pont, place avec tilleuls, hameau autour */
+/* fontaine au centre de la place */
+DECOR.push({t:'x_fontaine',x:300,y:260,bati:true,demi:38});
+/* tilleuls autour de la place */
+DECOR.push({t:'x_platane',x:200,y:200,bati:true,demi:22});
+DECOR.push({t:'x_platane',x:400,y:200,bati:true,demi:22});
+DECOR.push({t:'x_platane',x:190,y:320,bati:true,demi:22});
+DECOR.push({t:'x_platane',x:410,y:320,bati:true,demi:22});
+/* bancs en pierre — sur la place */
+DECOR.push({t:'bancP',x:245,y:230,gr:0,bati:true,demi:16});
+DECOR.push({t:'bancP',x:355,y:230,gr:0,bati:true,demi:16});
+DECOR.push({t:'bancP',x:245,y:300,gr:0,bati:true,demi:16});
+DECOR.push({t:'bancP',x:355,y:300,gr:0,bati:true,demi:16});
+/* tableau du port (panneau d'affichage en liège) — près de la place */
+DECOR.push({t:'x_tableau',x:300,y:170,bati:true,demi:24});
+/* maisons du hameau — à l'ouest et à l'est */
+DECOR.push({t:'x_maison',x:72,y:160,v:0,bati:true,demi:55});
+DECOR.push({t:'x_maison',x:72,y:340,v:2,bati:true,demi:55});
+DECOR.push({t:'x_maison',x:528,y:165,v:1,bati:true,demi:55});
+DECOR.push({t:'x_maison',x:528,y:340,v:4,bati:true,demi:55});
+/* maisons du nord */
+DECOR.push({t:'x_maison',x:150,y:58,v:3,bati:true,demi:50});
+DECOR.push({t:'x_maison',x:450,y:58,v:5,bati:true,demi:50});
+/* lampadaires le long du chemin */
+DECOR.push({t:'x_lampadaire',x:270,y:160,bati:true,demi:5});
+DECOR.push({t:'x_lampadaire',x:330,y:160,bati:true,demi:5});
+DECOR.push({t:'x_lampadaire',x:270,y:350,bati:true,demi:5});
+DECOR.push({t:'x_lampadaire',x:330,y:350,bati:true,demi:5});
+/* pots de fleurs */
+DECOR.push({t:'x_potFleur',x:260,y:195,v:0});
+DECOR.push({t:'x_potFleur',x:340,y:195,v:1});
+DECOR.push({t:'x_potFleur',x:260,y:330,v:2});
+DECOR.push({t:'x_potFleur',x:340,y:330,v:3});
 /* pigeons sur la place */
-DECOR.push({t:'x_pigeon',x:268,y:342,v:0});
-DECOR.push({t:'x_pigeon',x:332,y:354,v:1});
-DECOR.push({t:'x_pigeon',x:308,y:368,v:2});
-DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}   /* spawn : place du village */
+DECOR.push({t:'x_pigeon',x:285,y:275,v:0});
+DECOR.push({t:'x_pigeon',x:315,y:285,v:1});
+DECOR.push({t:'x_pigeon',x:295,y:295,v:2});
+/* arbres au sud, au-delà de la rivière */
+DECOR.push({t:'x_platane',x:100,y:530,bati:true,demi:22});
+DECOR.push({t:'x_platane',x:500,y:530,bati:true,demi:22});
+DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}   /* spawn : le village */
 if(CHAMPS_SEULS&&CARTE==='village'){
 /* LA FERME : deux bâtiments, et rien d'autre. Le métro plein nord, la
    graineterie au centre, le potager au sud : l'axe de la ferme. */
@@ -13430,7 +13451,12 @@ return out;
 }
 function bloque(x,y){
 if(CARTE==='spawn'){
-if(!(x>68&&x<532&&y>80&&y<545))return true;   /* façades = murs solides */
+if(x<8||x>592||y<8||y>592)return true;   /* bords de la carte */
+/* la rivière bloque sauf sur le pont (x=260..340) */
+{const RIV_Y=460,RIV_W=32;
+const rivSin=(rx)=>RIV_Y+Math.sin(rx/70)*14+Math.cos(rx/35)*6;
+const cy=rivSin(x);
+if(Math.abs(y-cy)<RIV_W/2&&!(x>=260&&x<=340))return true;}
 /* collision circulaire avec les objets solides du spawn */
 for(const o of DECOR){
 if(!o.bati||!o.demi)continue;
