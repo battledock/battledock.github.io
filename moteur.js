@@ -14533,7 +14533,8 @@ if(CARTE==='foret'){
 }
 if(CARTE==='extramar'){try{dessinerLesSauts(ctx,camX,camY);}catch(x){}}   /* les poissons du bassin, sous les barques */
 if(CARTE==='large'){try{dessinerLeBateau(ctx,camX,camY);}catch(x){}}      /* la coque, sous le marin */
-dessinerDecor(ctx,camX,camY,VW,VH,acteurs);
+try{dessinerDecor(ctx,camX,camY,VW,VH,acteurs);}catch(_errD){ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='red';ctx.font='14px monospace';ctx.fillText('DECOR ERR: '+_errD.message,10,40);ctx.restore();}
+if(CARTE==='spawn'){ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#ff0';ctx.font='bold 16px monospace';ctx.fillText('DECOR='+DECOR.length+' types:'+DECOR.map(o=>o.t).join(','),10,20);ctx.restore();}
 /* LES LUCIOLES FLOTTENT : elles passent par-dessus le décor, jamais
    derrière un tronc — elles sont entre les arbres et nous. */
 if(CARTE==='foret'){try{dessinerLesLucioles(ctx,camX,camY);}catch(x){}}
