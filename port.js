@@ -2330,8 +2330,8 @@ const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
 /* station de tokyo retirée */
 P('x_tableau', Math.floor(MONDE_L/2), XP.maisonsY+120, {col:[30,10]});
 /* Les deux tours en dur, en face de leur position dans le fond */
-P('x_tourCMA', 660, XP.maisonsY+120, {col:[30,10]});
-P('x_tourMars', 704, XP.maisonsY+120, {col:[24,8]});
+P('x_tourCMA', 660, XP.maisonsY+10, {col:[30,10]});
+P('x_tourMars', 704, XP.maisonsY+10, {col:[24,8]});
 /* hangar idle docker retire */
 
 /* voiliers et pontons retirés */

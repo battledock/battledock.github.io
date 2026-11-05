@@ -1,5 +1,5 @@
 /* ===== EMPREINTES (posées par outils/empreintes.js) ===== */
-window.EMPREINTES={"moteur.js":"02a470c8","port.js":"4ba6092c","tete.js":"3b38b246"};
+window.EMPREINTES={"moteur.js":"02a470c8","port.js":"9c014e60","tete.js":"9794608f"};
 /* ===== fin des empreintes ===== */
 /* LA TÊTE DE PAGE, commune à toutes les pages du jeu : la version et
    le cache, puis les gestes du navigateur qu'on neutralise (sélection,
