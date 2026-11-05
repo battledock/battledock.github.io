@@ -10838,6 +10838,8 @@ if(t==='x_fo_aut'){XCAL[cle]=graverArbreAutomne(v||0);if(!CALQUES_DECO[t])CALQUE
 if(t==='x_cabanonMoi'){const c=CAB_LU();
 XCAL[cle]=graverTonCabanon(c.bati?(c.niveau>0?2:1):0);
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_tourCMA'){XCAL[cle]=graverTourCMA();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_tourMars'){XCAL[cle]=graverTourMars();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_maison'||t==='x_ndg'||t==='x_pavPoisson'||t==='x_pavPeche'||t==='x_arbuste'||t==='x_belArbre'||t==='x_criee'||t==='x_cabanon'||t==='x_stationVelo'||t==='x_bateau'){
 XCAL[cle]=t==='x_bateau'?graverTonBateau():t==='x_cabanon'?graverLeCabanon():t==='x_stationVelo'?graverLaStationVelo():t==='x_criee'?graverLaCriee():t==='x_maison'?graverImmeuble(v||0):t==='x_ndg'?graverLaGarde():t==='x_pavPoisson'?graverPavillon('poisson'):t==='x_pavPeche'?graverPavillon('peche'):t==='x_belArbre'?graverBelArbre(v||0):graverArbuste(v||0);
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
@@ -34020,6 +34022,120 @@ const EMB={x:305, y:238, K:4, s:1, cache:{}};
     R(tx-1,ty-23,23,1.5,'#4a3220');
     g.fillStyle='rgba(40,34,26,.25)';g.fillRect((tx-camX)*K,(ty-Y0)*K,23*K,2*K);
   }
+
+/* ========== LA TOUR CMA CGM EN DUR SUR LE QUAI ========== */
+function graverTourCMA(){
+const W=60,H=190,cx=W/2,sol=H-6;
+const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+const c=document.createElement('canvas');c.width=W*D;c.height=H*D;
+const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+const ombre=(rx,ry)=>{g.fillStyle='rgba(60,40,20,.22)';g.beginPath();g.ellipse(cx+1,sol+1,rx,ry,0,0,7);g.fill();};
+ombre(22,5);
+/* les deux demi-tours de verre */
+const VE=['#b6d6ee','#86b2dc','#5a8cbc','#3e6a98'];
+const hTour=170, yTop=sol-hTour;
+for(let y=yTop;y<sol;y++){
+  const t=(y-yTop)/hTour;
+  /* demi-tour gauche : largeur sinusoïdale */
+  const wl=Math.round(12+8*Math.sin(Math.PI*Math.min(1,t*1.15)));
+  for(let x=cx-wl;x<cx;x++){
+    const v=Math.min(3,Math.floor(t*3.2+((x-cx+wl)/wl)*0.6+((x*2.3+y*1.1)%1)*0.3));
+    R(x,y,1,1,VE[v]);
+  }
+  /* demi-tour droite (plus courte, part à 30% de la hauteur) */
+  if(t>=0.13){
+    const t2=(t-0.13)/0.87;
+    const wr=Math.round(10+5*Math.sin(Math.PI*Math.min(1,t2*1.1)));
+    for(let x=cx+2;x<cx+2+wr;x++){
+      const v=Math.min(3,1+Math.floor(t2*2.4+((x*2.1+y*0.9)%1)*0.3));
+      R(x,y,1,1,VE[v]);
+    }
+    R(cx+1+wr,y,1,1,'#2a3a54'); /* bord droit sombre */
+  }
+  /* l'ossature blanche (l'épine centrale) */
+  R(cx,y,2,1,'#22324a');
+  /* bord gauche blanc */
+  R(cx-wl,y,1,1,'#eef2f5');
+  /* vitrage horizontal tous les 4px */
+  if(y%4===0){R(cx-wl,y,wl,1,'rgba(30,50,80,.35)');R(cx+2,y,12,1,'rgba(30,50,80,.30)');}
+}
+/* structure diagonale gauche */
+for(let y=yTop+10;y<sol;y+=14){
+  g.strokeStyle='#e6ecf1';g.lineWidth=0.8;g.beginPath();
+  g.moveTo(cx-16,y);g.lineTo(cx-2,y+14);g.stroke();
+}
+/* couronnement */
+R(cx-14,yTop,14,1,'#ffffff');R(cx+2,yTop+Math.round(hTour*0.13),12,1,'#ffffff');
+/* la lumière rouge d'aviation */
+R(cx-1,yTop-4,3,3,'#ff3a2a');
+/* calque nuit : fenêtres allumées */
+const n2=document.createElement('canvas');n2.width=W*D;n2.height=H*D;
+const h2=n2.getContext('2d');h2.setTransform(D,0,0,D,0,0);
+h2.fillStyle='#cfe6ff';
+for(let y=yTop+8;y<sol-6;y+=4){
+  for(let x=cx-12;x<cx+14;x+=4){
+    if(x!==cx&&x!==cx+1&&((x*2.3+y*1.1)%1)<0.45){
+      h2.fillRect(x,y,2,2);
+    }
+  }
+}
+/* lumière rouge nuit */
+h2.fillStyle='#ff3a2a';h2.globalAlpha=0.9;h2.fillRect(cx-1,yTop-4,3,3);h2.globalAlpha=1;
+/* lueur rouge */
+h2.fillStyle='rgba(255,58,42,.3)';h2.beginPath();h2.arc(cx,yTop-3,6,0,7);h2.fill();
+XCAL['x_tourCMA']={toile:c,W,H,sol,nuit:n2};
+if(!CALQUES_DECO['x_tourCMA'])CALQUES_DECO['x_tourCMA']=XCAL['x_tourCMA'];
+return XCAL['x_tourCMA'];
+}
+
+/* ========== LA TOUR LA MARSEILLAISE EN DUR SUR LE QUAI ========== */
+function graverTourMars(){
+const W=48,H=170,cx=W/2,sol=H-6;
+const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+const c=document.createElement('canvas');c.width=W*D;c.height=H*D;
+const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+const ombre=(rx,ry)=>{g.fillStyle='rgba(60,40,20,.22)';g.beginPath();g.ellipse(cx+1,sol+1,rx,ry,0,0,7);g.fill();};
+ombre(18,4);
+const hTour=154, yTop=sol-hTour;
+const A=x=>((Math.sin(x*127.1)*43758.5453)%1+1)%1; /* pseudo-aléa stable */
+/* les brise-soleil bleu-blanc-rouge */
+for(let x=cx-16;x<cx+16;x++){
+  for(let y=yTop;y<sol;y++){
+    const band=Math.floor((y+Math.floor(A(x*0.7)*6))/7);
+    const r=A(x*3.1+band*11.7);
+    let col;
+    if(x>=cx+13) col='#4a4a58'; /* mur latéral gris */
+    else if(r<0.34) col='#c0392b'; /* rouge */
+    else if(r<0.62) col='#2e5d93'; /* bleu */
+    else if(r<0.85) col='#e9e4dc'; /* blanc cassé */
+    else col='#9aa0a8'; /* gris */
+    R(x,y,1,1,col);
+  }
+}
+/* la dalle de couronnement */
+R(cx-17,yTop-1,34,1,'#d8d8d8');
+/* la lumière rouge */
+R(cx-1,yTop-5,3,3,'#ff3a2a');
+/* calque nuit : fenêtres allumées jaunes */
+const n2=document.createElement('canvas');n2.width=W*D;n2.height=H*D;
+const h2=n2.getContext('2d');h2.setTransform(D,0,0,D,0,0);
+h2.fillStyle='#ffe2a0';
+for(let y=yTop+4;y<sol-4;y+=3){
+  for(let x=cx-14;x<cx+12;x+=2){
+    if(A(x*3.3+y*1.9)<0.35){
+      h2.fillRect(x,y,1,1);
+    }
+  }
+}
+/* lumière rouge nuit */
+h2.fillStyle='#ff3a2a';h2.globalAlpha=0.9;h2.fillRect(cx-1,yTop-5,3,3);h2.globalAlpha=1;
+h2.fillStyle='rgba(255,58,42,.3)';h2.beginPath();h2.arc(cx,yTop-4,5,0,7);h2.fill();
+XCAL['x_tourMars']={toile:c,W,H,sol,nuit:n2};
+if(!CALQUES_DECO['x_tourMars'])CALQUES_DECO['x_tourMars']=XCAL['x_tourMars'];
+return XCAL['x_tourMars'];
+}
 
 function graverEmbauche(nuit){
   const k='b'+(nuit?1:0);if(EMB.cache[k])return EMB.cache[k];
