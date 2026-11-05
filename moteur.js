@@ -10843,7 +10843,7 @@ XCAL[cle]=t==='x_bateau'?graverTonBateau():t==='x_cabanon'?graverLeCabanon():t==
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
 return XCAL[cle];
 }
-const T={x_paillasson:[30,10],x_panneauG:[40,44],x_tableau:[90,100],x_panneauF:[52,70],x_ferry:[96,56],x_caboteur:[250,120],x_docks:[150,96],x_pile:[44,34],x_roue:[180,210],x_kiosque:[44,68],x_fontaine:[78,74],x_metroM:[96,100],x_platane:[84,108],x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
+const T={x_paillasson:[30,10],x_panneauG:[40,44],x_tableau:[75,84],x_panneauF:[52,70],x_ferry:[96,56],x_caboteur:[250,120],x_docks:[150,96],x_pile:[44,34],x_roue:[180,210],x_kiosque:[44,68],x_fontaine:[78,74],x_metroM:[96,100],x_platane:[84,108],x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
 x_filets:[34,16],x_bitte:[12,14],x_barque:[62,34],x_cargo:[250,128],x_grue:[80,120],
 x_phare:[30,96],x_spMaison:[100,90],x_spFontaine:[76,82],x_spPanneau:[40,52],x_spBanc:[30,18],x_spLampadaire:[14,44],x_spJardiniere:[18,22],x_spArbre:[60,90]}[t]||[40,40];
 const W=T[0],H=T[1],cx=W/2,sol=H-6;
@@ -11472,20 +11472,20 @@ R(cx-12,sol-6,24,6,'#1b1b1b');R(cx-11,sol-5,22,4,'#2a2a2e');R(cx-12,sol-6,24,1,'
 for(let k=0;k<5;k++)R(cx-9+k*4,sol-4,2,2,'#c9a24a');
 }
 else if(t==='x_tableau'){
-/* LE TABLEAU DU PORT : version agrandie (90×100). Même style liège
-   sur pieds en bois, billets punaisés de travers. */
-ombre(26,6);
-R(cx-32,sol-40,6,40,'#5b3f21');R(cx-32,sol-40,2,40,'#7d5934');      /* les deux pieds */
-R(cx+26,sol-40,6,40,'#5b3f21');R(cx+26,sol-40,2,40,'#7d5934');
-R(cx-42,sol-90,84,52,'#4a3118');                                     /* le cadre */
-R(cx-42,sol-90,84,3,'#7d5934');R(cx-42,sol-41,84,3,'#2e1d0e');
-R(cx-38,sol-86,76,42,'#a9825a');                                     /* le liege */
-for(let i=0;i<40;i++){const px=cx-36+((i*17)%72), py=sol-84+((i*11)%40);
+/* LE TABLEAU DU PORT : taille intermédiaire (75×84). Liège sur pieds,
+   billets punaisés de travers. */
+ombre(22,5);
+R(cx-26,sol-34,5,34,'#5b3f21');R(cx-26,sol-34,2,34,'#7d5934');      /* les deux pieds */
+R(cx+21,sol-34,5,34,'#5b3f21');R(cx+21,sol-34,2,34,'#7d5934');
+R(cx-35,sol-76,70,44,'#4a3118');                                     /* le cadre */
+R(cx-35,sol-76,70,3,'#7d5934');R(cx-35,sol-35,70,3,'#2e1d0e');
+R(cx-32,sol-72,64,36,'#a9825a');                                     /* le liège */
+for(let i=0;i<32;i++){const px=cx-30+((i*17)%60), py=sol-70+((i*11)%34);
   R(px,py,1,1,'rgba(90,62,34,.5)');}
 /* les billets punaisés */
-const bl=[[-30,-80,22,14,'#f4ecd8'],[-4,-82,20,13,'#efe4cc'],[20,-78,16,16,'#f6eedc'],
-          [-28,-58,18,13,'#eee3c8'],[-4,-61,24,14,'#f4ecd8'],[22,-56,14,13,'#efe4cc'],
-          [-18,-44,16,10,'#f6eedc'],[6,-46,18,11,'#efe4cc']];
+const bl=[[-25,-67,18,12,'#f4ecd8'],[-3,-69,17,11,'#efe4cc'],[16,-66,13,13,'#f6eedc'],
+          [-23,-50,15,11,'#eee3c8'],[-3,-52,20,12,'#f4ecd8'],[19,-48,12,11,'#efe4cc'],
+          [-14,-38,14,9,'#f6eedc'],[5,-39,15,10,'#efe4cc']];
 const pins=['#c0392b','#2f6a8a','#c9a24a','#7a8a3a','#8a4a7a','#c0392b','#2f6a8a','#c9a24a'];
 bl.forEach(([dx,dy,w,h,c],i)=>{
   R(cx+dx,sol+dy,w,h,'rgba(60,40,20,.25)');
@@ -11494,7 +11494,7 @@ bl.forEach(([dx,dy,w,h,c],i)=>{
   R(cx+dx+Math.floor(w/2)-2,sol+dy-2,3,3,pins[i%pins.length]);
 });
 /* la plaque de laiton */
-R(cx-20,sol-39,40,8,'#8a6a2a');R(cx-20,sol-39,40,2,'#f0cf7d');
+R(cx-16,sol-33,32,7,'#8a6a2a');R(cx-16,sol-33,32,2,'#f0cf7d');
 }
 else if(t==='x_panneauG'){
 ombre(8,2);
