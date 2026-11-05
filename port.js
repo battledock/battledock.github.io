@@ -2328,7 +2328,7 @@ const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
 /* platanes et bancs des facades retires */
 /* LA STATION DE TOKYO (facade k=2) : c'est la que le train part. */
 /* station de tokyo retirée */
-P('x_tableau', Math.floor(MONDE_L/2), XP.maisonsY+120);
+P('x_tableau', Math.floor(MONDE_L/2), XP.maisonsY+120, {col:[30,10]});
 /* hangar idle docker retire */
 
 /* voiliers et pontons retirés */
