@@ -10838,8 +10838,7 @@ if(t==='x_fo_aut'){XCAL[cle]=graverArbreAutomne(v||0);if(!CALQUES_DECO[t])CALQUE
 if(t==='x_cabanonMoi'){const c=CAB_LU();
 XCAL[cle]=graverTonCabanon(c.bati?(c.niveau>0?2:1):0);
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_tourCMA'){XCAL[cle]=graverTourCMA();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-if(t==='x_tourMars'){XCAL[cle]=graverTourMars();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t==='x_capitainerie'){XCAL[cle]=graverCapitainerie();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_maison'||t==='x_ndg'||t==='x_pavPoisson'||t==='x_pavPeche'||t==='x_arbuste'||t==='x_belArbre'||t==='x_criee'||t==='x_cabanon'||t==='x_stationVelo'||t==='x_bateau'){
 XCAL[cle]=t==='x_bateau'?graverTonBateau():t==='x_cabanon'?graverLeCabanon():t==='x_stationVelo'?graverLaStationVelo():t==='x_criee'?graverLaCriee():t==='x_maison'?graverImmeuble(v||0):t==='x_ndg'?graverLaGarde():t==='x_pavPoisson'?graverPavillon('poisson'):t==='x_pavPeche'?graverPavillon('peche'):t==='x_belArbre'?graverBelArbre(v||0):graverArbuste(v||0);
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
@@ -34023,118 +34022,184 @@ const EMB={x:305, y:238, K:4, s:1, cache:{}};
     g.fillStyle='rgba(40,34,26,.25)';g.fillRect((tx-camX)*K,(ty-Y0)*K,23*K,2*K);
   }
 
-/* ========== LA TOUR CMA CGM EN DUR SUR LE QUAI ========== */
-function graverTourCMA(){
-const W=60,H=190,cx=W/2,sol=H-6;
+/* ========== LA CAPITAINERIE DU PORT ========== */
+function graverCapitainerie(){
+const W=120,H=110,cx=W/2,sol=H-6;
 const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
 const c=document.createElement('canvas');c.width=W*D;c.height=H*D;
 const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
 const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
-const ombre=(rx,ry)=>{g.fillStyle='rgba(60,40,20,.22)';g.beginPath();g.ellipse(cx+1,sol+1,rx,ry,0,0,7);g.fill();};
-ombre(22,5);
-/* les deux demi-tours de verre */
-const VE=['#b6d6ee','#86b2dc','#5a8cbc','#3e6a98'];
-const hTour=170, yTop=sol-hTour;
-for(let y=yTop;y<sol;y++){
-  const t=(y-yTop)/hTour;
-  /* demi-tour gauche : largeur sinusoïdale */
-  const wl=Math.round(12+8*Math.sin(Math.PI*Math.min(1,t*1.15)));
-  for(let x=cx-wl;x<cx;x++){
-    const v=Math.min(3,Math.floor(t*3.2+((x-cx+wl)/wl)*0.6+((x*2.3+y*1.1)%1)*0.3));
-    R(x,y,1,1,VE[v]);
-  }
-  /* demi-tour droite (plus courte, part à 30% de la hauteur) */
-  if(t>=0.13){
-    const t2=(t-0.13)/0.87;
-    const wr=Math.round(10+5*Math.sin(Math.PI*Math.min(1,t2*1.1)));
-    for(let x=cx+2;x<cx+2+wr;x++){
-      const v=Math.min(3,1+Math.floor(t2*2.4+((x*2.1+y*0.9)%1)*0.3));
-      R(x,y,1,1,VE[v]);
-    }
-    R(cx+1+wr,y,1,1,'#2a3a54'); /* bord droit sombre */
-  }
-  /* l'ossature blanche (l'épine centrale) */
-  R(cx,y,2,1,'#22324a');
-  /* bord gauche blanc */
-  R(cx-wl,y,1,1,'#eef2f5');
-  /* vitrage horizontal tous les 4px */
-  if(y%4===0){R(cx-wl,y,wl,1,'rgba(30,50,80,.35)');R(cx+2,y,12,1,'rgba(30,50,80,.30)');}
+
+/* ombre au sol */
+g.fillStyle='rgba(40,30,20,.18)';g.beginPath();g.ellipse(cx,sol+2,50,7,0,0,7);g.fill();
+
+/* === CORPS PRINCIPAL : pierre chaude méditerranéenne === */
+const bx=cx-44, bw=88, by=sol-68, bh=68;
+/* mur de pierre : dégradé vertical chaud */
+const pierres=['#f5e6c8','#ecdbb4','#e8d1a3','#e0c696','#d8bc8a','#ceb07e'];
+for(let y=by;y<sol;y++){
+  const t=(y-by)/bh;
+  const ci=Math.min(5,Math.floor(t*5.5));
+  R(bx,y,bw,1,pierres[ci]);
 }
-/* structure diagonale gauche */
-for(let y=yTop+10;y<sol;y+=14){
-  g.strokeStyle='#e6ecf1';g.lineWidth=0.8;g.beginPath();
-  g.moveTo(cx-16,y);g.lineTo(cx-2,y+14);g.stroke();
+/* joints de pierre horizontaux */
+for(let y=by+8;y<sol;y+=8){
+  R(bx,y,bw,1,'rgba(180,155,115,.35)');
 }
-/* couronnement */
-R(cx-14,yTop,14,1,'#ffffff');R(cx+2,yTop+Math.round(hTour*0.13),12,1,'#ffffff');
-/* la lumière rouge d'aviation */
-R(cx-1,yTop-4,3,3,'#ff3a2a');
-/* calque nuit : fenêtres allumées */
-const n2=document.createElement('canvas');n2.width=W*D;n2.height=H*D;
-const h2=n2.getContext('2d');h2.setTransform(D,0,0,D,0,0);
-h2.fillStyle='#cfe6ff';
-for(let y=yTop+8;y<sol-6;y+=4){
-  for(let x=cx-12;x<cx+14;x+=4){
-    if(x!==cx&&x!==cx+1&&((x*2.3+y*1.1)%1)<0.45){
-      h2.fillRect(x,y,2,2);
-    }
+/* joints verticaux (décalés une rangée sur deux) */
+for(let row=0;row<9;row++){
+  const ry=by+row*8;
+  const off=(row%2)*12+6;
+  for(let x=bx+off;x<bx+bw;x+=24){
+    R(x,ry,1,8,'rgba(180,155,115,.25)');
   }
-}
-/* lumière rouge nuit */
-h2.fillStyle='#ff3a2a';h2.globalAlpha=0.9;h2.fillRect(cx-1,yTop-4,3,3);h2.globalAlpha=1;
-/* lueur rouge */
-h2.fillStyle='rgba(255,58,42,.3)';h2.beginPath();h2.arc(cx,yTop-3,6,0,7);h2.fill();
-XCAL['x_tourCMA']={toile:c,W,H,sol,nuit:n2};
-if(!CALQUES_DECO['x_tourCMA'])CALQUES_DECO['x_tourCMA']=XCAL['x_tourCMA'];
-return XCAL['x_tourCMA'];
 }
 
-/* ========== LA TOUR LA MARSEILLAISE EN DUR SUR LE QUAI ========== */
-function graverTourMars(){
-const W=48,H=170,cx=W/2,sol=H-6;
-const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
-const c=document.createElement('canvas');c.width=W*D;c.height=H*D;
-const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
-const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
-const ombre=(rx,ry)=>{g.fillStyle='rgba(60,40,20,.22)';g.beginPath();g.ellipse(cx+1,sol+1,rx,ry,0,0,7);g.fill();};
-ombre(18,4);
-const hTour=154, yTop=sol-hTour;
-const A=x=>((Math.sin(x*127.1)*43758.5453)%1+1)%1; /* pseudo-aléa stable */
-/* les brise-soleil bleu-blanc-rouge */
-for(let x=cx-16;x<cx+16;x++){
-  for(let y=yTop;y<sol;y++){
-    const band=Math.floor((y+Math.floor(A(x*0.7)*6))/7);
-    const r=A(x*3.1+band*11.7);
-    let col;
-    if(x>=cx+13) col='#4a4a58'; /* mur latéral gris */
-    else if(r<0.34) col='#c0392b'; /* rouge */
-    else if(r<0.62) col='#2e5d93'; /* bleu */
-    else if(r<0.85) col='#e9e4dc'; /* blanc cassé */
-    else col='#9aa0a8'; /* gris */
-    R(x,y,1,1,col);
-  }
+/* === ETAGE NOBLE : balcon et fenêtres cintrées === */
+/* corniche entre RDC et étage */
+R(bx-2,by+34,bw+4,2,'#c8a870');
+R(bx-2,by+36,bw+4,1,'#b89860');
+
+/* fenêtres cintrées du RDC (3 fenêtres) */
+const fRDC=[[bx+10,by+40,14,22],[bx+37,by+40,14,22],[bx+64,by+40,14,22]];
+fRDC.forEach(([fx,fy,fw,fh])=>{
+  R(fx,fy,fw,fh,'#2a4a6a'); /* vitre sombre */
+  /* arc cintré */
+  g.fillStyle='#d8bc8a';
+  g.beginPath();g.arc(fx+fw/2,fy,fw/2+1,Math.PI,0);g.fill();
+  g.fillStyle='#2a4a6a';
+  g.beginPath();g.arc(fx+fw/2,fy,fw/2-1,Math.PI,0);g.fill();
+  /* croisillons */
+  R(fx+fw/2-0.5,fy,1,fh,'#c8a870');
+  R(fx,fy+fh/2,fw,1,'#c8a870');
+  /* volets bleus */
+  R(fx-3,fy-1,3,fh+1,'#2e6e9e');
+  R(fx+fw,fy-1,3,fh+1,'#2e6e9e');
+});
+
+/* fenêtres de l'étage (3 fenêtres plus petites) */
+const fET=[[bx+12,by+6,12,20],[bx+38,by+6,12,20],[bx+64,by+6,12,20]];
+fET.forEach(([fx,fy,fw,fh])=>{
+  R(fx,fy,fw,fh,'#3a5a7a'); /* vitre */
+  /* arc cintré */
+  g.fillStyle='#e0c696';
+  g.beginPath();g.arc(fx+fw/2,fy,fw/2+1,Math.PI,0);g.fill();
+  g.fillStyle='#3a5a7a';
+  g.beginPath();g.arc(fx+fw/2,fy,fw/2-1,Math.PI,0);g.fill();
+  /* croisillons */
+  R(fx+fw/2-0.5,fy,1,fh,'#c8a870');
+  R(fx,fy+fh/2,fw,1,'#c8a870');
+  /* volets bleus */
+  R(fx-3,fy-1,3,fh+1,'#2878a8');
+  R(fx+fw,fy-1,3,fh+1,'#2878a8');
+});
+
+/* balconnets en fer forgé sous les fenêtres de l'étage */
+fET.forEach(([fx,fy,fw,fh])=>{
+  R(fx-2,fy+fh,fw+4,1,'#3a3a3a');
+  for(let i=0;i<4;i++) R(fx+i*4,fy+fh+1,1,3,'#4a4a4a');
+});
+
+/* === PORTE D'ENTREE CENTRALE === */
+R(cx-8,sol-26,16,26,'#5a3a22'); /* porte bois sombre */
+R(cx-7,sol-25,14,24,'#6b4a2c'); /* panneau bois */
+R(cx-0.5,sol-25,1,24,'#4a2a18'); /* ligne centrale */
+/* arc de la porte */
+g.fillStyle='#c8a870';
+g.beginPath();g.arc(cx,sol-26,9,Math.PI,0);g.fill();
+g.fillStyle='#5a3a22';
+g.beginPath();g.arc(cx,sol-26,7,Math.PI,0);g.fill();
+/* marche en pierre */
+R(cx-10,sol-1,20,1,'#b89860');
+
+/* === TOIT EN TUILES TERRACOTTA === */
+const ty=by-14;
+/* pignon du toit */
+g.fillStyle='#c0542a';
+g.beginPath();
+g.moveTo(bx-4,by);g.lineTo(cx,ty);g.lineTo(bx+bw+4,by);g.closePath();g.fill();
+/* tuiles : lignes horizontales */
+for(let y=ty+3;y<by;y+=3){
+  const t=(y-ty)/(by-ty);
+  const hw=Math.round(t*(bw/2+4));
+  R(cx-hw,y,hw*2,1,'rgba(140,58,26,.4)');
 }
-/* la dalle de couronnement */
-R(cx-17,yTop-1,34,1,'#d8d8d8');
-/* la lumière rouge */
-R(cx-1,yTop-5,3,3,'#ff3a2a');
-/* calque nuit : fenêtres allumées jaunes */
+/* faîtage */
+R(cx-2,ty-1,4,2,'#e8d1a3');
+
+/* === TOUR D'HORLOGE === */
+const tw=22,th=36, tx=cx-tw/2, tty=ty-th;
+/* mur de la tour */
+for(let y=tty;y<ty;y++){
+  const t=(y-tty)/th;
+  const ci=Math.min(5,Math.floor(t*4));
+  R(tx,y,tw,1,pierres[ci]);
+}
+/* fenêtre d'horloge (cercle) */
+g.fillStyle='#1a3050';
+g.beginPath();g.arc(cx,tty+14,6,0,7);g.fill();
+g.strokeStyle='#c8a870';g.lineWidth=1.5;
+g.beginPath();g.arc(cx,tty+14,6.5,0,7);g.stroke();
+/* aiguilles de l'horloge */
+g.strokeStyle='#f0e0c0';g.lineWidth=1;
+g.beginPath();g.moveTo(cx,tty+14);g.lineTo(cx,tty+9);g.stroke(); /* 12h */
+g.beginPath();g.moveTo(cx,tty+14);g.lineTo(cx+4,tty+13);g.stroke(); /* 3h ~ */
+
+/* chapeau de la tour */
+g.fillStyle='#8a3a1a';
+g.beginPath();
+g.moveTo(tx-2,tty);g.lineTo(cx,tty-10);g.lineTo(tx+tw+2,tty);g.closePath();g.fill();
+/* girouette */
+R(cx-0.5,tty-14,1,5,'#4a4a4a');
+g.fillStyle='#d4a040';
+g.beginPath();g.moveTo(cx,tty-14);g.lineTo(cx+5,tty-12);g.lineTo(cx,tty-11);g.closePath();g.fill();
+
+/* === DETAILS DECORATIFS === */
+/* corniche haute sous le toit */
+R(bx-3,by-1,bw+6,2,'#d8bc8a');
+/* corniche basse au sol */
+R(bx-1,sol-1,bw+2,2,'#c8a870');
+
+/* bordure de quai / soubassement pierre */
+R(bx,sol-3,bw,3,'#bca878');
+
+/* drapeau tricolore sur le toit */
+R(bx+bw-10,by-12,1,12,'#4a4a4a'); /* mât */
+R(bx+bw-9,by-12,3,2,'#2e5d93');
+R(bx+bw-6,by-12,3,2,'#ffffff');
+R(bx+bw-3,by-12,3,2,'#c0392b');
+
+/* === CALQUE NUIT === */
 const n2=document.createElement('canvas');n2.width=W*D;n2.height=H*D;
 const h2=n2.getContext('2d');h2.setTransform(D,0,0,D,0,0);
-h2.fillStyle='#ffe2a0';
-for(let y=yTop+4;y<sol-4;y+=3){
-  for(let x=cx-14;x<cx+12;x+=2){
-    if(A(x*3.3+y*1.9)<0.35){
-      h2.fillRect(x,y,1,1);
-    }
-  }
-}
-/* lumière rouge nuit */
-h2.fillStyle='#ff3a2a';h2.globalAlpha=0.9;h2.fillRect(cx-1,yTop-5,3,3);h2.globalAlpha=1;
-h2.fillStyle='rgba(255,58,42,.3)';h2.beginPath();h2.arc(cx,yTop-4,5,0,7);h2.fill();
-XCAL['x_tourMars']={toile:c,W,H,sol,nuit:n2};
-if(!CALQUES_DECO['x_tourMars'])CALQUES_DECO['x_tourMars']=XCAL['x_tourMars'];
-return XCAL['x_tourMars'];
+
+/* fenêtres allumées : lueur chaude */
+const lum='#ffe4a0';
+fRDC.forEach(([fx,fy,fw,fh])=>{
+  h2.fillStyle=lum;h2.globalAlpha=0.85;
+  h2.fillRect(fx+1,fy+1,fw-2,fh-2);
+});
+fET.forEach(([fx,fy,fw,fh])=>{
+  h2.fillStyle=lum;h2.globalAlpha=0.7;
+  h2.fillRect(fx+1,fy+1,fw-2,fh-2);
+});
+/* lueur de la porte */
+h2.fillStyle='#ffd080';h2.globalAlpha=0.6;
+h2.fillRect(cx-6,sol-24,12,22);
+
+/* horloge éclairée */
+h2.fillStyle='#e0d8b0';h2.globalAlpha=0.8;
+h2.beginPath();h2.arc(cx,tty+14,5,0,7);h2.fill();
+
+/* lampe au-dessus de la porte */
+h2.fillStyle='#ffcc60';h2.globalAlpha=0.9;
+h2.beginPath();h2.arc(cx,sol-28,4,0,7);h2.fill();
+h2.fillStyle='rgba(255,200,80,.25)';h2.globalAlpha=1;
+h2.beginPath();h2.arc(cx,sol-28,10,0,7);h2.fill();
+
+h2.globalAlpha=1;
+
+return {toile:c,W,H,sol,nuit:n2};
 }
 
 function graverEmbauche(nuit){
