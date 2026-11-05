@@ -66,7 +66,7 @@ if(dansLeBassin(x-3,y)||dansLeBassin(x+3,y)||dansLeBassin(x,y+2)){
 if(!surPonton(x,y))return true;              /* l'eau : on ne nage pas */
 }
 if(typeof window!=='undefined'&&window.barriereBloque&&window.barriereBloque(x,y))return true;   /* la barrière du bout est */
-if(typeof window!=='undefined'&&window.embaucheBloque&&window.embaucheBloque(x,y))return true;   /* la maison de l'embauche */
+/* embaucheBloque retiré — plus de bâtiment d'embauche sur le quai */
 for(const o of DECOR){
 if(!o.col)continue;
 if(Math.abs(x-o.x)<o.col[0]&&y>o.y-o.col[1]&&y<o.y+3)return true;
