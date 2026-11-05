@@ -14629,7 +14629,7 @@ if(CARTE==='foret'){
   }
 }
 if(CARTE==='extramar'){try{dessinerLesSauts(ctx,camX,camY);}catch(x){}}   /* les poissons du bassin, sous les barques */
-if(CARTE==='extramar'){try{embaucheDuQuai(acteurs,ctx,camX,camY);}catch(x){}}   /* le bâtiment de l'Embauche, trié avec les acteurs */
+/* embaucheDuQuai retiré — remplacé par x_tableau + menu poste */
 if(CARTE==='large'){try{dessinerLeBateau(ctx,camX,camY);}catch(x){}}      /* la coque, sous le marin */
 dessinerDecor(ctx,camX,camY,VW,VH,acteurs);
 /* LES LUCIOLES FLOTTENT : elles passent par-dessus le décor, jamais
@@ -18723,6 +18723,49 @@ F.querySelectorAll('[data-sup]').forEach(b=>b.onclick=async()=>{
   const {data,error}=await sb.rpc('billets_supprimer',{p_id:id});
   if(error||!data||!data.ok){b.textContent='REFUSÉ';return;}
   vibrer([10,40,20]);await tabCharger();tabPeindre();});
+}
+
+/* =====================================================================
+   MENU POSTE — le panneau du quai pour choisir son poste de travail
+   ===================================================================== */
+function ouvrirMenuPoste(){
+const f=document.getElementById('page2Fond');
+f.className='';f.innerHTML='';f.style.cssText='display:flex;position:fixed;inset:0;z-index:9999;'+
+'background:rgba(15,22,30,.92);flex-direction:column;align-items:center;justify-content:center;'+
+'font-family:"Baloo 2","Trebuchet MS",system-ui,sans-serif;color:#f6efdc;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)';
+const postes=[
+{nom:'Docker',icone:'⚓',desc:'Charger et décharger les navires',couleur:'#3a8fd4'},
+{nom:'Cariste',icone:'🏗️',desc:'Conduire le chariot élévateur',couleur:'#e8a832'},
+{nom:'Grutier',icone:'🔧',desc:'Manœuvrer la grue du port',couleur:'#c0392b'},
+{nom:'Pointeur',icone:'📋',desc:'Vérifier et pointer les conteneurs',couleur:'#27ae60'}
+];
+let h='<div style="text-align:center;margin-bottom:24px">'+
+'<div style="font:700 9px ui-monospace,monospace;letter-spacing:3px;color:#c9a24a;margin-bottom:6px">PANNEAU D\'EMBAUCHE</div>'+
+'<div style="font:700 22px \'Baloo 2\',sans-serif;color:#f0e4c6">Choisis ton poste</div></div>'+
+'<div style="display:flex;flex-direction:column;gap:12px;width:min(320px,85vw)">';
+postes.forEach(p=>{
+h+='<button onclick="choisirPoste(\''+p.nom+'\')" style="display:flex;align-items:center;gap:14px;'+
+'padding:16px 18px;border:2px solid '+p.couleur+'44;border-radius:14px;background:'+p.couleur+'18;'+
+'color:#f6efdc;font-family:inherit;cursor:pointer;text-align:left;transition:background .15s,border-color .15s" '+
+'ontouchstart="this.style.background=\''+p.couleur+'40\';this.style.borderColor=\''+p.couleur+'\'" '+
+'ontouchend="this.style.background=\''+p.couleur+'18\';this.style.borderColor=\''+p.couleur+'44\'">'+
+'<span style="font-size:28px;flex:none;width:40px;text-align:center">'+p.icone+'</span>'+
+'<span><b style="font:700 16px \'Baloo 2\',sans-serif;display:block">'+p.nom+'</b>'+
+'<small style="font:13px \'Baloo 2\',sans-serif;color:#8fa6bd">'+p.desc+'</small></span></button>';
+});
+h+='</div><button onclick="fermerMenuPoste()" style="margin-top:20px;border:0;background:none;'+
+'color:#8fa6bd;font:600 14px \'Baloo 2\',sans-serif;padding:10px 18px;cursor:pointer">Annuler</button>';
+f.innerHTML=h;f.style.display='flex';
+}
+function fermerMenuPoste(){
+const f=document.getElementById('page2Fond');
+f.style.display='none';f.className='';f.innerHTML='';
+}
+function choisirPoste(nom){
+fermerMenuPoste();
+texteVolant(JOUEUR.x,JOUEUR.y-80,'Poste : '+nom,'#e8c06a');
+vibrer(20);
+/* TODO : enregistrer le poste choisi et lancer le mini-jeu */
 }
 
 async function ouvrirLeTableau(){
@@ -24449,7 +24492,11 @@ b.innerHTML='Lire<small>LE TABLEAU DU VILLAGE</small>';
 b.classList.add('on');return;
 }
 if(o.t==='x_tableau'){
+if(CARTE==='extramar'){
+b.innerHTML='Choisir un poste<small>DOCKER · CARISTE · GRUTIER · POINTEUR</small>';
+}else{
 b.innerHTML='Lire le tableau<small>BUGS, IDÉES · ELIAS RÉPOND</small>';
+}
 b.classList.add('on');return;
 }
 if(o.t==='taillerie'){
@@ -24622,7 +24669,10 @@ ouvrirPage('Le coffre','TU L’AS OUVERT',
 return;
 }
 if(o.t==='panneauV'){ouvrirLeTuto();return;}
-if(o.t==='x_tableau'){ouvrirLeTableau();return;}
+if(o.t==='x_tableau'){
+if(CARTE==='extramar'){ouvrirMenuPoste();return;}
+ouvrirLeTableau();return;
+}
 if(o.t==='metro'){choisirLaDestination();return;}
 if(o.t==='x_etal'||o.t==='x_pavPoisson'){/* pêche retirée */;return;}
 if(o.t==='x_pavPeche'){ouvrirLaBoutiqueDePeche();return;}
