@@ -10838,7 +10838,7 @@ if(t==='x_fo_aut'){XCAL[cle]=graverArbreAutomne(v||0);if(!CALQUES_DECO[t])CALQUE
 if(t==='x_cabanonMoi'){const c=CAB_LU();
 XCAL[cle]=graverTonCabanon(c.bati?(c.niveau>0?2:1):0);
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
-
+if(t==='x_capitainerie'){XCAL[cle]=graverCapitainerie();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_maison'||t==='x_ndg'||t==='x_pavPoisson'||t==='x_pavPeche'||t==='x_arbuste'||t==='x_belArbre'||t==='x_criee'||t==='x_cabanon'||t==='x_stationVelo'||t==='x_bateau'){
 XCAL[cle]=t==='x_bateau'?graverTonBateau():t==='x_cabanon'?graverLeCabanon():t==='x_stationVelo'?graverLaStationVelo():t==='x_criee'?graverLaCriee():t==='x_maison'?graverImmeuble(v||0):t==='x_ndg'?graverLaGarde():t==='x_pavPoisson'?graverPavillon('poisson'):t==='x_pavPeche'?graverPavillon('peche'):t==='x_belArbre'?graverBelArbre(v||0):graverArbuste(v||0);
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
@@ -34022,7 +34022,133 @@ const EMB={x:305, y:238, K:4, s:1, cache:{}};
     g.fillStyle='rgba(40,34,26,.25)';g.fillRect((tx-camX)*K,(ty-Y0)*K,23*K,2*K);
   }
 
-/* graverCapitainerie retirée */
+/* ========== LA CAPITAINERIE — HANGAR RÉHABILITÉ ========== */
+function graverCapitainerie(){
+const W=100,H=80,cx=W/2,sol=H-6;
+const D=Math.max(1,Math.min(2,Math.floor(window.devicePixelRatio||1)));
+const c=document.createElement('canvas');c.width=W*D;c.height=H*D;
+const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+
+/* ombre au sol */
+g.fillStyle='rgba(40,30,20,.15)';g.beginPath();g.ellipse(cx,sol+2,42,5,0,0,7);g.fill();
+
+/* === MUR CORTEN (acier rouillé) === */
+const bx=cx-40, bw=80, by=sol-42, bh=42;
+const corten=['#9a5228','#8a4a24','#7a4020','#8a4a28','#7a3a1a','#6a3418','#603018'];
+for(let y=by;y<sol;y++){
+  const t=(y-by)/bh;
+  const ci=Math.min(6,Math.floor(t*6));
+  R(bx,y,bw,1,corten[ci]);
+}
+/* texture rouille : taches aléatoires */
+for(let i=0;i<60;i++){
+  const rx=bx+2+((i*37+13)%76);
+  const ry=by+2+((i*23+7)%(bh-4));
+  const rw=1+((i*11)%2);
+  const shade=((i*7)%3)===0?'rgba(120,70,30,.3)':'rgba(80,40,10,.2)';
+  R(rx,ry,rw,1,shade);
+}
+
+/* === OSSATURE ACIER === */
+const acier='#4a4a4a';
+const acierClair='#5a5a5a';
+R(bx,by,2,bh,acier);          /* montant gauche */
+R(bx+bw-2,by,2,bh,acier);    /* montant droit */
+R(cx-1,by,2,bh,acier);        /* montant central */
+R(bx,by+Math.floor(bh/2),bw,1,acierClair); /* traverse horizontale */
+
+/* === GRANDES BAIES VITRÉES === */
+const verre='#7ac4e0';
+const verreSombre='#5aa0c0';
+/* panneau gauche haut */
+R(bx+4,by+4,17,16,verre);
+R(bx+4,by+4,17,1,acierClair);R(bx+4,by+11,17,1,acierClair);
+R(bx+4,by+4,1,16,acierClair);R(bx+12,by+4,1,16,acierClair);R(bx+20,by+4,1,16,acierClair);
+/* panneau gauche bas */
+R(bx+4,by+22,17,16,verreSombre);
+R(bx+4,by+22,17,1,acierClair);R(bx+4,by+29,17,1,acierClair);
+R(bx+4,by+22,1,16,acierClair);R(bx+12,by+22,1,16,acierClair);R(bx+20,by+22,1,16,acierClair);
+/* panneau droit haut */
+R(bx+24,by+4,14,16,verre);
+R(bx+24,by+4,14,1,acierClair);R(bx+24,by+11,14,1,acierClair);
+R(bx+24,by+4,1,16,acierClair);R(bx+31,by+4,1,16,acierClair);R(bx+37,by+4,1,16,acierClair);
+/* panneau droit bas */
+R(bx+24,by+22,14,16,verreSombre);
+R(bx+24,by+22,14,1,acierClair);R(bx+24,by+29,14,1,acierClair);
+R(bx+24,by+22,1,16,acierClair);R(bx+31,by+22,1,16,acierClair);R(bx+37,by+22,1,16,acierClair);
+/* panneau centre-droit haut */
+R(bx+42,by+4,17,16,verre);
+R(bx+42,by+4,17,1,acierClair);R(bx+42,by+11,17,1,acierClair);
+R(bx+42,by+4,1,16,acierClair);R(bx+50,by+4,1,16,acierClair);R(bx+58,by+4,1,16,acierClair);
+/* panneau centre-droit bas */
+R(bx+42,by+22,17,16,verreSombre);
+R(bx+42,by+22,17,1,acierClair);R(bx+42,by+29,17,1,acierClair);
+R(bx+42,by+22,1,16,acierClair);R(bx+50,by+22,1,16,acierClair);R(bx+58,by+22,1,16,acierClair);
+/* panneau extrême droit */
+R(bx+62,by+4,14,16,verre);
+R(bx+62,by+4,14,1,acierClair);R(bx+62,by+11,14,1,acierClair);
+R(bx+62,by+4,1,16,acierClair);R(bx+69,by+4,1,16,acierClair);R(bx+75,by+4,1,16,acierClair);
+R(bx+62,by+22,14,16,verreSombre);
+R(bx+62,by+22,14,1,acierClair);R(bx+62,by+29,14,1,acierClair);
+R(bx+62,by+22,1,16,acierClair);R(bx+69,by+22,1,16,acierClair);R(bx+75,by+22,1,16,acierClair);
+
+/* === PORTE COULISSANTE CENTRALE === */
+R(cx-6,sol-16,12,16,acier);
+R(cx-5,sol-15,10,14,'#5a5a5a');
+R(cx-5,sol-15,10,1,acierClair);
+R(cx,sol-15,1,14,acierClair);
+
+/* === TOIT SHED === */
+g.fillStyle='#5a5a5a';
+g.beginPath();
+g.moveTo(bx-2,by);g.lineTo(bx-2,by-8);g.lineTo(bx+bw+2,by-4);g.lineTo(bx+bw+2,by);g.closePath();g.fill();
+R(bx-2,by-8,bw+4,1,'#4a4a4a');
+/* verrières de toit (shed) */
+R(bx+6,by-7,12,3,'#7ac4e0');R(bx+6,by-7,1,3,acierClair);R(bx+17,by-7,1,3,acierClair);
+R(bx+24,by-6,12,3,'#7ac4e0');R(bx+24,by-6,1,3,acierClair);R(bx+35,by-6,1,3,acierClair);
+R(bx+42,by-6,12,2,'#7ac4e0');R(bx+42,by-6,1,2,acierClair);R(bx+53,by-6,1,2,acierClair);
+R(bx+60,by-5,14,2,'#7ac4e0');R(bx+60,by-5,1,2,acierClair);R(bx+73,by-5,1,2,acierClair);
+
+/* === ENSEIGNE === */
+g.fillStyle='#d4a040';g.font='bold 4px monospace';
+g.fillText('CAPITAINERIE',bx+8,sol-2);
+
+/* === SOUBASSEMENT === */
+R(bx-2,sol-1,bw+4,2,'#4a4a4a');
+
+/* === CALQUE NUIT === */
+const n2=document.createElement('canvas');n2.width=W*D;n2.height=H*D;
+const h2=n2.getContext('2d');h2.setTransform(D,0,0,D,0,0);
+
+/* fenêtres allumées : lueur intérieure chaude */
+h2.fillStyle='#ffe4a0';h2.globalAlpha=0.7;
+h2.fillRect(bx+5,by+5,16,14);
+h2.fillRect(bx+25,by+5,12,14);
+h2.fillRect(bx+43,by+5,16,14);
+h2.fillRect(bx+63,by+5,12,14);
+/* étage bas plus tamisé */
+h2.globalAlpha=0.4;
+h2.fillRect(bx+5,by+23,16,14);
+h2.fillRect(bx+25,by+23,12,14);
+h2.fillRect(bx+43,by+23,16,14);
+h2.fillRect(bx+63,by+23,12,14);
+
+/* lumière de la porte */
+h2.fillStyle='#ffd080';h2.globalAlpha=0.6;
+h2.fillRect(cx-5,sol-14,10,12);
+
+/* enseigne éclairée */
+h2.fillStyle='#ffa030';h2.globalAlpha=0.8;
+h2.fillRect(bx+6,sol-4,68,3);
+
+/* lueur au sol */
+h2.fillStyle='rgba(255,220,120,.2)';h2.globalAlpha=1;
+h2.beginPath();h2.ellipse(cx,sol+2,30,4,0,0,7);h2.fill();
+
+h2.globalAlpha=1;
+return {toile:c,W,H,sol,nuit:n2};
+}
 
 function graverEmbauche(nuit){
   const k='b'+(nuit?1:0);if(EMB.cache[k])return EMB.cache[k];
