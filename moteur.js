@@ -7814,7 +7814,7 @@ function refaireLeSol(){
    autres cartes. Le construire coûte cinq passes sur 1 920 000 pixels, soit
    une bonne demi-seconde où l'écran titre reste figé. La clé du cache
    contient le numéro de version, donc une mise à jour le renouvelle. */
-if(CARTE==='spawn'){SOL=JOL?JOL.sol():construireSolSpawn();SOL_FIN=null;CHEMIN=null;LISIERE=null;LISIERE_SUD=null;return SOL;}
+if(CARTE==='spawn'){SOL=JOL?JOL.sol():construireSolSpawn();SOL_FIN=null;try{if(JOL&&JOL.solFin)SOL_FIN=JOL.solFin(SOL);}catch(x){SOL_FIN=null;}CHEMIN=null;LISIERE=null;LISIERE_SUD=null;return SOL;}
 if(CHAMPS_SEULS&&CARTE==='village'){
 if(SOL_CACHE.pret&&SOL_CACHE.sol&&SOL_CACHE.sol.width===MONDE_L&&SOL_CACHE.sol.height===MONDE_H){SOL=SOL_CACHE.sol;SOL_FIN=null;CHEMIN=null;LISIERE=null;LISIERE_SUD=null;
 SOL_CACHE.pret=false;return SOL;}
