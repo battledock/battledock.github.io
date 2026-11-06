@@ -10782,7 +10782,7 @@ let TXT_FERME=null;
 /* SI port.js NE CHARGE PAS, les cinquante-trois symboles ci-dessous
    restent indéfinis et le port ne se dessine pas, sans un mot. On le dit. */
 try{
-if(CARTE==='spawn'){try{let lieu='';try{lieu=new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu==='terrasses'?'terrasses.js':'joliette.js'));}catch(x){console.warn('JOL',x);JOL=null;}}
+if(CARTE==='spawn'){try{let lieu='';try{lieu=new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':'joliette.js'));}catch(x){console.warn('JOL',x);JOL=null;}}
 if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar,dessinerLePanorama}=eval(await chargerMorceau('port.js')));}
 if(CARTE==='tokyo'){TKM=eval(await chargerMorceau('tokyo.js'));}
 }catch(erPort){
@@ -14608,6 +14608,7 @@ if(CARTE==='extramar'&&typeof dessinerLePanorama==='function'){try{dessinerLePan
 nettoyerBulles();
 const acteurs=[{y:joueur.y,
 f:()=>{if(CARTE==='tokyo'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif){try{TKM.dessinerEssai(ctx,camX,camY);}catch(x){}return;}try{const m=ctx.getTransform();JOUEUR_ECRAN={x:m.a*px+m.e,y:m.d*(py-18)+m.f,sc:m.a/3};}catch(x){}return personne(ctx,px,py,e.ap,(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche,court);}}];
+if(OVATION){if(Date.now()>OVATION.fin)OVATION=null;else for(const f of OVATION.gens)acteurs.push({y:f.y,f:()=>{try{dessinerFigurant(ctx,f,camX,camY);}catch(x){}}});}
 for(const [,a] of AUTRES){
 const ax=a.x-camX, ay=a.y-camY;
 if(ax<-40||ay<-70||ax>VW+40||ay>VH+40)continue;
@@ -19003,7 +19004,26 @@ function remplirNivPop(){const N=NIV&&NIV.niveau;if(!N)return;const part=Math.ma
     '<div class="jg"><i style="width:'+Math.round(part*100)+'%"></i></div><div class="t">'+(N.dans||0).toLocaleString('fr-FR')+' / '+(N.pour||0).toLocaleString('fr-FR')+' XP · encore '+Math.max(0,(N.pour||0)-(N.dans||0)).toLocaleString('fr-FR')+'</div>'+
     (proch?'<div class="pro"><em>NIVEAU '+proch.niveau+' · '+echapperT(proch.nom).toUpperCase()+'</em>'+nivRecompenses(proch).map(r=>(NIV_IC[r.t]||'🎁')+' '+echapperT(nivTexte(r))).join('<br>')+'</div>':'')+
     '<div class="reg">L’XP, c’est ton score au classement : forêt, légumes, fruits, pêche.'+(enAttente?' <span style="color:#e8c06a;font-weight:700">'+enAttente+' récompense'+(enAttente>1?'s':'')+' t’attend'+(enAttente>1?'ent':'')+'</span> : le carnet pour les réclamer arrive très vite.':'')+'</div>';}
-function annoncerNiveau(niv){const p=nivPalier(niv);const g=$('nivGagne');if(!g)return;let src='';try{src=teteDe({ap:e.ap,pseudo:e.pseudo}).toDataURL();}catch(x){}
+/* ================= L'OVATION DU PORT =================
+   À chaque niveau gagné sur le port, les dockers sortent des hangars et
+   font cercle autour de toi pour t'applaudir. Pour la voir sans attendre :
+   jeu.html?carte=extramar&ovation=1 */
+let OVATION=null;
+function lancerOvation(){if(CARTE!=='extramar')return;const gens=[],N=14,cx=joueur.x,cy=joueur.y;
+  for(let i=0;i<N;i++){const a=i/N*Math.PI*2+0.11;let x=0,y=0,ok=false;
+    for(const k of [1,.85,.7]){x=cx+Math.cos(a)*96*k;y=cy+Math.sin(a)*64*k;if(!bloque(x,y)){ok=true;break;}}
+    if(!ok)continue;
+    gens.push({i,x,y,ph:Math.random()*6,ap:Object.assign({},DEF_AP,{peau:i%5,cheveux:(i*3)%7,barbe:i%3===0?1:0})});}
+  OVATION={fin:Date.now()+9000,gens};
+  try{texteVolant(cx,cy-60,'Bravo !','#f0cf7d');}catch(x){}try{vibrer([20,60,20,60,20]);}catch(x){}}
+function dessinerFigurant(g,f,camX,camY){const x=Math.round(f.x-camX),y=Math.round(f.y-camY);
+  const dx=joueur.x-f.x,dy=joueur.y-f.y,dir=Math.abs(dx)>Math.abs(dy)*1.2?(dx>0?'droite':'gauche'):(dy>0?'bas':'haut');
+  const s=GESTE;GESTE={t:0.5+0.35*Math.sin(Date.now()/700+f.ph),pourMoi:false,cible:null,impact:false,type:'em_bravo'};
+  try{personne(g,x,y,f.ap,dir,0,false,false);}finally{GESTE=s;}
+  if(Math.sin(Date.now()/160+f.i*1.7)>0.45){g.font='700 7px system-ui,sans-serif';g.textAlign='center';
+    g.fillStyle='rgba(255,236,150,.9)';g.fillText('clap',x+(f.i%2?7:-7),y-48);g.textAlign='left';}}
+setTimeout(function ovationEssai(){try{if(/[?&]ovation=1/.test(location.search)){if(typeof joueur==='undefined'||!joueur||CARTE!=='extramar'){setTimeout(ovationEssai,800);return;}lancerOvation();}}catch(x){}},3000);
+function annoncerNiveau(niv){try{setTimeout(lancerOvation,1200);}catch(x){}const p=nivPalier(niv);const g=$('nivGagne');if(!g)return;let src='';try{src=teteDe({ap:e.ap,pseudo:e.pseudo}).toDataURL();}catch(x){}
   g.innerHTML='<div class="ray"></div><div class="med"><img src="'+src+'" alt=""><b>'+niv+'</b></div><div class="tt">NIVEAU ATTEINT</div><h2>Niveau '+niv+' !</h2>'+(p?'<div class="nm">'+echapperT(p.nom)+'</div>':'')+
     (p?'<div class="rc">'+nivRecompenses(p).map(r=>'<span><i>'+(NIV_IC[r.t]||'🎁')+'</i>'+echapperT(nivTexte(r))+'</span>').join('')+'</div>':'')+'<div class="deuxB"><button class="cl" id="nivOk">PLUS TARD</button><button id="nivRec">RÉCLAMER !</button></div>';
   g.classList.add('on');vibrer([30,50,30,50,60]);try{jouer('vente','moment');}catch(x){}
