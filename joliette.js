@@ -575,7 +575,6 @@ function decor(){
   /* les lampadaires */
   for(const [x,y] of [[120,452],[680,452],[120,642],[680,642],[300,746],[500,746]])P('x_jol_lampadaire',x,y,{col:[4,3]});
   /* le tableau d'embauche, à deux pas de l'arrivée */
-  P('x_tableau',488,694,{col:[34,10]});
   /* le kiosque à journaux */
   P('x_kiosque',150,600,{col:[30,10]});
   return D;
