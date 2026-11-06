@@ -505,6 +505,63 @@ for(let i=0;i<70;i++){const x=7+((i*37)%(L-14)),y=s-3-((i*13)%8);
 return {toile:c,W:L,H:HH,sol:s};
 }
 
+/* ---------- LES JARDINIÈRES ---------- */
+function feuillageP(g,R,cx,cy,rx,ry,pal,n,seed,t){const [s,m,c,l]=pal;t=t||1;
+  for(let i=0;i<n;i++){const a=hA(i,seed,1)*Math.PI*2,r=Math.sqrt(hA(i,seed,2));const x=cx+Math.cos(a)*rx*r,y=cy+Math.sin(a)*ry*r;
+    const lum=((cx-x)/rx+(cy-y)/ry)*.5+hA(i,seed,3)*.4;g.fillStyle=lum>.55?l:lum>.15?c:lum>-.3?m:s;
+    g.beginPath();g.ellipse(x,y,(1.2+hA(i,seed,4)*1.4)*t,(.9+hA(i,seed,5)*.9)*t,hA(i,seed,6)*3,0,7);g.fill();}}
+/* le bac : pierre claire biseautée, terre sombre, ombre portée */
+function bacP(g,R,L,s,h){g.fillStyle='rgba(30,26,18,.22)';g.beginPath();g.ellipse(L/2+5,s+1.5,L/2,3.5,0,0,7);g.fill();
+  for(let y=s-h;y<s;y+=.5){const k=(y-s+h)/h;R(4,y,L-8,.6,`rgb(${(232-k*34)|0},${(222-k*34)|0},${(202-k*36)|0})`);}
+  R(3,s-h-1.5,L-6,2,'#f6f0e4');R(3,s-h+.5,L-6,.6,'#cfc2a8');R(L-6,s-h,2,h,'rgba(80,60,40,.18)');
+  for(let x=18;x<L-8;x+=22)R(x,s-h+1,.6,h-1,'rgba(120,100,70,.25)');
+  R(5,s-h-2.5,L-10,1.5,'#4a3a2a');}
+function tigeP(g,x,y,dx,h,col,w){g.strokeStyle=col;g.lineWidth=w||.5;g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+dx*.2,y-h*.6,x+dx,y-h);g.stroke();}
+
+/* 1. LAVANDE DE PROVENCE : coussins gris-vert, épis violets dégradés */
+function massif1(){const L=96,HH=46,{c,g,R}=toileA(L,HH),s=HH-4,h=10;bacP(g,R,L,s,h);const t=s-h-2;
+  const GV=['#4a5a4a','#6a7a66','#8a9a84','#b0bca8'];
+  for(let k=0;k<5;k++){const x=14+k*17;feuillageP(g,R,x,t-3,9,4,GV,90,k+11);
+    for(let i=0;i<16;i++){const dx=(hA(i,k,1)-.5)*16,hh=9+hA(i,k,2)*6,x0=x+dx*.4;tigeP(g,x0,t-2,dx*.5,hh,'#7a8a6a',.5);
+      const xe=x0+dx*.5,ye=t-2-hh;for(let j=0;j<4;j++){g.fillStyle=['#5a3a8a','#7a52b0','#9a74cc','#b89ae0'][j];g.beginPath();g.ellipse(xe-dx*.02*j,ye+j*1.1,.9,.8,0,0,7);g.fill();}}}
+  for(let i=0;i<14;i++)R(10+hA(i,3,9)*(L-20),t-14-hA(i,4,9)*4,.6,.6,'#f4e8a0');/* abeilles / reflets */
+  return c;}
+/* 2. BUIS TAILLÉS ET ROSIERS BLANCS : boules nettes, roses crème */
+function massif2(){const L=96,HH=46,{c,g,R}=toileA(L,HH),s=HH-4,h=10;bacP(g,R,L,s,h);const t=s-h-2;
+  const BU=['#1e3a22','#2e5430','#467440','#6e9a58'],RO=['#2a4a2a','#3e643a','#5a8248','#7aa060'];
+  for(const x of [16,L-16]){feuillageP(g,R,x,t-8,10,9,BU,260,x);}
+  feuillageP(g,R,L/2,t-7,26,7,RO,260,7);
+  for(let i=0;i<22;i++){const x=L/2-24+hA(i,2,3)*48,y=t-12+hA(i,3,3)*8;g.fillStyle='#fbf6ea';g.beginPath();g.arc(x,y,1.7,0,7);g.fill();
+    g.fillStyle='#ecdcc0';g.beginPath();g.arc(x+.5,y+.5,.9,0,7);g.fill();R(x-.6,y-.8,.6,.6,'#ffffff');}
+  return c;}
+/* 3. JARDIN SAUVAGE : graminées dorées, échinacées roses, gaura blanche */
+function massif3(){const L=96,HH=46,{c,g,R}=toileA(L,HH),s=HH-4,h=10;bacP(g,R,L,s,h);const t=s-h-2;
+  feuillageP(g,R,L/2,t-3,42,4,['#3a4a2a','#5a6a3a','#7a8a4a','#9aaa5a'],220,21);
+  for(let i=0;i<70;i++){const x=8+hA(i,1,5)*(L-16),dx=(hA(i,2,5)-.5)*10,hh=10+hA(i,3,5)*14;tigeP(g,x,t,dx,hh,i%2?'#c8b070':'#a89a58',.5);
+    if(i%3===0){g.fillStyle='#e8d498';g.beginPath();g.ellipse(x+dx,t-hh,.8,2.2,dx*.08,0,7);g.fill();}}
+  for(let i=0;i<12;i++){const x=12+hA(i,4,5)*(L-24),y=t-12-hA(i,5,5)*6;tigeP(g,x,t,0,t-y,'#5a7a40',.6);
+    for(let a=0;a<6;a++){g.fillStyle='#d06a98';g.beginPath();g.ellipse(x+Math.cos(a)*1.6,y+Math.sin(a)*.8,1.1,.6,a,0,7);g.fill();}R(x-.8,y-.8,1.6,1.6,'#8a4a1a');}
+  for(let i=0;i<26;i++)R(8+hA(i,6,5)*(L-16),t-8-hA(i,7,5)*12,.9,.9,'#fbf6ee');
+  return c;}
+/* 4. MÉDITERRANÉEN : agapanthes bleues, romarin, sauge, petite boule d'olivier */
+function massif4(){const L=96,HH=46,{c,g,R}=toileA(L,HH),s=HH-4,h=10;bacP(g,R,L,s,h);const t=s-h-2;
+  feuillageP(g,R,L/2,t-3,42,4,['#2e4a3a','#46644e','#647e62','#8aa082'],240,41);
+  for(const x of [20,48,76]){for(let i=0;i<10;i++){const dx=(hA(i,x,1)-.5)*14;tigeP(g,x,t,dx,6,'#3e6a3a',.9);}
+    tigeP(g,x,t,1,18,'#5a8a4a',.6);const cy=t-20;for(let i=0;i<26;i++){const a=hA(i,x,2)*7,r=Math.sqrt(hA(i,x,3))*5;g.fillStyle=['#3a5ab0','#5a7ad0','#8aa4ea'][i%3];g.beginPath();g.ellipse(x+1+Math.cos(a)*r,cy+Math.sin(a)*r*.8,1,.7,a,0,7);g.fill();}}
+  for(const x of [34,62]){feuillageP(g,R,x,t-6,7,6,['#4a5a52','#6a7a72','#8a9a90','#b0c0b4'],90,x);for(let i=0;i<6;i++)R(x-5+hA(i,x,8)*10,t-10+hA(i,x,9)*6,.7,.7,'#9a8ad8');}
+  return c;}
+/* 5. AUTOMNE : graminées rousses, asters mauves, sédums cuivrés, érable nain */
+function massif5(){const L=96,HH=46,{c,g,R}=toileA(L,HH),s=HH-4,h=10;bacP(g,R,L,s,h);const t=s-h-2;
+  feuillageP(g,R,L/2,t-3,42,4,['#4a3a1e','#6a5a2a','#8a7a3a','#aa9a4a'],220,51);
+  for(let i=0;i<50;i++){const x=8+hA(i,1,6)*(L-16),dx=(hA(i,2,6)-.5)*12,hh=8+hA(i,3,6)*12;tigeP(g,x,t,dx,hh,['#c08a40','#a86a30','#d8b060'][i%3],.6);}
+  feuillageP(g,R,L/2,t-12,12,10,['#6a1e14','#9a2e1a','#c8482a','#e8784a'],240,52);
+  for(const x of [18,L-18]){feuillageP(g,R,x,t-5,9,5,['#6a2a1a','#8a3e20','#b0582a','#d07a3a'],120,x);}
+  for(let i=0;i<30;i++){const x=10+hA(i,4,6)*(L-20);if(Math.abs(x-L/2)<12)continue;const y=t-6-hA(i,5,6)*6;g.fillStyle=i%2?'#9a7ac8':'#b89ae0';g.beginPath();g.arc(x,y,1.1,0,7);g.fill();R(x-.3,y-.3,.6,.6,'#f0c040');}
+  return c;}
+
+const MASSIFS=[massif1,massif3,massif4,massif5];
+function graverMassifBeau(v){const c=MASSIFS[(v||0)%4]();return {toile:c,W:96,H:46,sol:42};}
+
 /* ---------- LES ARBRES CHOISIS : PLATANES ET MAGNOLIAS ---------- */
 function toileA(L,HH){const D=2,c=document.createElement('canvas');c.width=L*D;c.height=HH*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
   const R=(x,y,w,hh,col)=>{g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(.5,Math.round(w*2)/2),Math.max(.5,Math.round(hh*2)/2));};return {c,g,R};}
@@ -547,7 +604,7 @@ function arbreMagnolia(){const L=110,HH=140,{c,g,R}=toileA(L,HH),cx=L/2,s=HH-6;o
 function graverPlatane(v){const t=arbrePlatane(v);return {toile:t.c,W:t.W,H:t.H,sol:t.s};}
 function graverMagnolia(){const t=arbreMagnolia();return {toile:t.c,W:t.W,H:t.H,sol:t.s};}
 
-const GRAVEURS={x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassif,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_tram:graverVide};
+const GRAVEURS={x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_tram:graverVide};
 function graver(t,v){return (GRAVEURS[t]||graverVide)(v||0);}
 
 function decor(){
@@ -569,7 +626,7 @@ function decor(){
   /* les allées de platanes */
   [470,590,710].forEach((y,i)=>{P('x_jol_platane',42,y,{col:[12,6],v:i});P('x_jol_platane',W-42,y,{col:[12,6],v:i+3});});
   /* les massifs de lavande et de graminées, avec leurs bancs */
-  for(const [x,y] of [[200,470],[600,470],[200,700],[600,700]]){P('x_jol_massif',x,y,{col:[84,14]});P('x_jol_banc',x,y+20,{col:[40,6]});}
+  for(const [i,[x,y]] of [[200,470],[600,470],[200,700],[600,700]].entries()){P('x_jol_massif',x,y,{col:[84,14],v:i});P('x_jol_banc',x,y+20,{col:[40,6]});}
   /* des bancs tournés vers la fontaine */
   for(const [x,y] of [[300,526],[500,526],[296,652],[504,652]])P('x_jol_banc',x,y,{col:[40,6]});
   /* les lampadaires */
