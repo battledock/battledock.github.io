@@ -30,7 +30,8 @@ return null;})();
 const CARTE=(()=>{const c=CARTE_DEMANDEE;return c==='spawn'?'spawn':(c==='large'?'large':(c==='village'?'village':'extramar'));})();
 const ANIM_DECOR={};
 ANIM_DECOR.emb_vide=()=>{};   /* la porte de l'Embauche : le bâtiment se dessine ailleurs */
-const ANNEXE=CARTE!=='village';     /* Extramar et Notre-Dame : des cartes à part, sans le monde partagé */
+const ANNEXE=CARTE!=='village';
+let JOL=null;   /* la place de la Joliette (joliette.js), chargée seulement pour la carte d'arrivée */     /* Extramar et Notre-Dame : des cartes à part, sans le monde partagé */
 let createClient=null, sb=null, SB_PRET=false;
 async function chargerSupabase(){
 for(const url of ["https://esm.sh/@supabase/supabase-js@2",
@@ -7813,7 +7814,7 @@ function refaireLeSol(){
    autres cartes. Le construire coûte cinq passes sur 1 920 000 pixels, soit
    une bonne demi-seconde où l'écran titre reste figé. La clé du cache
    contient le numéro de version, donc une mise à jour le renouvelle. */
-if(CARTE==='spawn'){SOL=construireSolSpawn();SOL_FIN=null;CHEMIN=null;LISIERE=null;LISIERE_SUD=null;return SOL;}
+if(CARTE==='spawn'){SOL=JOL?JOL.sol():construireSolSpawn();SOL_FIN=null;CHEMIN=null;LISIERE=null;LISIERE_SUD=null;return SOL;}
 if(CHAMPS_SEULS&&CARTE==='village'){
 if(SOL_CACHE.pret&&SOL_CACHE.sol&&SOL_CACHE.sol.width===MONDE_L&&SOL_CACHE.sol.height===MONDE_H){SOL=SOL_CACHE.sol;SOL_FIN=null;CHEMIN=null;LISIERE=null;LISIERE_SUD=null;
 SOL_CACHE.pret=false;return SOL;}
@@ -10781,6 +10782,7 @@ let TXT_FERME=null;
 /* SI port.js NE CHARGE PAS, les cinquante-trois symboles ci-dessous
    restent indéfinis et le port ne se dessine pas, sans un mot. On le dit. */
 try{
+if(CARTE==='spawn'){try{JOL=eval(await chargerMorceau('joliette.js'));}catch(x){console.warn('JOL',x);JOL=null;}}
 if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar,dessinerLePanorama}=eval(await chargerMorceau('port.js')));}
 if(CARTE==='tokyo'){TKM=eval(await chargerMorceau('tokyo.js'));}
 }catch(erPort){
@@ -10838,6 +10840,7 @@ if(t==='x_fo_aut'){XCAL[cle]=graverArbreAutomne(v||0);if(!CALQUES_DECO[t])CALQUE
 if(t==='x_cabanonMoi'){const c=CAB_LU();
 XCAL[cle]=graverTonCabanon(c.bati?(c.niveau>0?2:1):0);
 if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
+if(t.slice(0,6)==='x_jol_'&&JOL){XCAL[cle]=JOL.graver(t);if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_capitainerie'){XCAL[cle]=graverCapitainerie();if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];return XCAL[cle];}
 if(t==='x_maison'||t==='x_ndg'||t==='x_pavPoisson'||t==='x_pavPeche'||t==='x_arbuste'||t==='x_belArbre'||t==='x_criee'||t==='x_cabanon'||t==='x_stationVelo'||t==='x_bateau'){
 XCAL[cle]=t==='x_bateau'?graverTonBateau():t==='x_cabanon'?graverLeCabanon():t==='x_stationVelo'?graverLaStationVelo():t==='x_criee'?graverLaCriee():t==='x_maison'?graverImmeuble(v||0):t==='x_ndg'?graverLaGarde():t==='x_pavPoisson'?graverPavillon('poisson'):t==='x_pavPeche'?graverPavillon('peche'):t==='x_belArbre'?graverBelArbre(v||0):graverArbuste(v||0);
@@ -12922,7 +12925,8 @@ function balayerLeSentier(){
     (!surLeSentier(o.x,o.y,15)&&!dansEtang(o.x,o.y,-30)));
 }
 function semerDecor(){
-if(CARTE==='spawn'){DECOR=[];
+if(CARTE==='spawn'){DECOR=JOL?JOL.decor():[];
+DECOR.forEach(o=>{if(o.t.slice(0,2)==='x_')graverX(o.t,o.v);});
 DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();return;}
 if(CHAMPS_SEULS&&CARTE==='village'){
 /* LA FERME : deux bâtiments, et rien d'autre. Le métro plein nord, la
@@ -13588,6 +13592,7 @@ if(l)for(const o of l)out.push(o);
 return out;
 }
 function bloque(x,y){
+if(CARTE==='spawn'&&JOL)return JOL.bloque(x,y);
 if(CARTE==='spawn'){
 if(x<8||x>792||y<8||y>792)return true;   /* bords de la carte 800×800 */
 /* collision circulaire avec les objets solides du spawn */
@@ -14128,8 +14133,8 @@ const FORGE_FIXE =[662,318];                    /* à l'ouest, vers la rivière 
 const COMPTOIR_FIXE=[880,152];                  /* le long entrepôt, en haut à gauche */
 const CASINO_FIXE  =[912,246];                  /* au nord-est, dégagé de l'entrepôt */
 const dansLaCarte=(v,max)=>typeof v==='number'&&v>BORD&&v<max-BORD;
-let joueur={x:CARTE==='spawn'?400:(dansLaCarte(e.x,MONDE_L)?(e.x<400?e.x+400:e.x):CAMP_FIXE[0]),
-y:CARTE==='spawn'?400:(dansLaCarte(e.y,MONDE_H)?e.y:CAMP_FIXE[1]+30),dir:'bas',pas:0,marche:false};
+let joueur={x:CARTE==='spawn'?(JOL?JOL.depart[0]:400):(dansLaCarte(e.x,MONDE_L)?(e.x<400?e.x+400:e.x):CAMP_FIXE[0]),
+y:CARTE==='spawn'?(JOL?JOL.depart[1]:400):(dansLaCarte(e.y,MONDE_H)?e.y:CAMP_FIXE[1]+30),dir:'bas',pas:0,marche:false};
 let joyX=0,joyY=0;
 /* ================= roundRect SUR LES VIEUX SAFARI =================
    ctx.roundRect n'existe qu'à partir de Safari 16.4. Trois appels n'étaient
@@ -24493,7 +24498,7 @@ b.innerHTML='Lire<small>LE TABLEAU DU VILLAGE</small>';
 b.classList.add('on');return;
 }
 if(o.t==='x_tableau'){
-if(CARTE==='extramar'){
+if(CARTE==='extramar'||CARTE==='spawn'){
 b.innerHTML='Choisir un poste<small>DOCKER · CARISTE · GRUTIER · POINTEUR</small>';
 }else{
 b.innerHTML='Lire le tableau<small>BUGS, IDÉES · ELIAS RÉPOND</small>';
@@ -24671,7 +24676,7 @@ return;
 }
 if(o.t==='panneauV'){ouvrirLeTuto();return;}
 if(o.t==='x_tableau'){
-if(CARTE==='extramar'){ouvrirMenuPoste();return;}
+if(CARTE==='extramar'||CARTE==='spawn'){ouvrirMenuPoste();return;}
 ouvrirLeTableau();return;
 }
 if(o.t==='metro'){choisirLaDestination();return;}
@@ -28178,6 +28183,7 @@ try{if(CARTE==='extramar'&&new URLSearchParams(location.search).has('arrivee'))p
    réécrite à chaque pas sur n'importe quelle carte annexe : on arrivait
    donc dans le bois à la position qu'on avait à Extramar, parfois à
    l'intérieur d'un arbre. Le sentier est l'entrée, et la seule. */
+if(CARTE==='spawn'&&JOL){joueur.x=JOL.depart[0];joueur.y=JOL.depart[1];joueur.dir='haut';}   /* on arrive toujours au même endroit de la place */
 if(CARTE==='foret'){joueur.x=F_SENT_ARRIVEE[0];joueur.y=F_SENT_ARRIVEE[1];joueur.dir='droite';}
 if(CARTE==='large'){const p=batMonde(0,BARRE_Y+16);joueur.x=p[0];joueur.y=p[1];joueur.dir='haut';
   COIN_VU=null;window.TK_SANS_JOY=true;   /* au large, on ne marche pas : pas de joystick */
