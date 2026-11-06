@@ -197,12 +197,72 @@ function graverBanc(){if(TBANC)return TBANC;const Wd=74,Hd=24,sol=20;const {c,g}
   R(g,5,sol-3,64,1.4,'#7a5636');for(const x of [10,62]){R(g,x,sol-3,3,4,'#6a6e74');}
   TBANC={toile:c,W:Wd,H:Hd,sol};return TBANC;}
 
+
+/* ---------- LA BELLE ALLEMANDE ET SON PROPRIÉTAIRE ---------- */
+const VX=560, VY=700;
+let TVOIT=null;
+function graverVoiture(){if(TVOIT)return TVOIT;const Wd=190,Hd=78,sol=66,cx=95;const {c,g}=toile(Wd,Hd);
+  /* le podium tournant d'exposition, laqué blanc, liseré lumineux */
+  g.fillStyle='rgba(30,26,20,.18)';g.beginPath();g.ellipse(cx+4,sol+3,92,13,0,0,7);g.fill();
+  g.fillStyle='#d8d6d0';g.beginPath();g.ellipse(cx,sol,90,12,0,0,Math.PI);g.lineTo(cx-90,sol-4);g.ellipse(cx,sol-4,90,12,0,Math.PI,0,true);g.fill();
+  g.fillStyle='#f6f5f1';g.beginPath();g.ellipse(cx,sol-4,90,12,0,0,7);g.fill();
+  g.strokeStyle='rgba(120,200,255,.8)';g.lineWidth=.8;g.beginPath();g.ellipse(cx,sol-1,89,11.5,0,.15,Math.PI-.15);g.stroke();
+  /* l'ombre sous la voiture */
+  g.fillStyle='rgba(20,20,26,.35)';g.beginPath();g.ellipse(cx,sol-6,68,6,0,0,7);g.fill();
+  const bas=sol-8, L0=cx-72, L1=cx+72;
+  /* la caisse : profil de berline sportive, bleu nuit métallisé */
+  const caisse=()=>{g.beginPath();g.moveTo(L0+4,bas-6);g.lineTo(L0+1,bas-16);g.quadraticCurveTo(L0+2,bas-23,L0+14,bas-24);
+    g.lineTo(cx-34,bas-26);g.quadraticCurveTo(cx-22,bas-42,cx-4,bas-43);g.lineTo(cx+22,bas-43);g.quadraticCurveTo(cx+40,bas-41,cx+52,bas-28);
+    g.lineTo(L1-6,bas-26);g.quadraticCurveTo(L1+1,bas-24,L1,bas-14);g.lineTo(L1-2,bas-6);g.closePath();};
+  g.fillStyle=lin(g,0,bas-44,0,bas,[[0,'#3a4e78'],[.35,'#1c2a48'],[.62,'#0e1626'],[1,'#1a2640']]);caisse();g.fill();
+  /* le reflet du toit et la ligne de caractère */
+  g.strokeStyle='rgba(200,220,255,.55)';g.lineWidth=.8;g.beginPath();g.moveTo(L0+10,bas-20);g.lineTo(L1-8,bas-21);g.stroke();
+  g.fillStyle='rgba(255,255,255,.18)';g.beginPath();g.moveTo(cx-20,bas-40);g.quadraticCurveTo(cx,bas-43,cx+24,bas-42);g.lineTo(cx+20,bas-40);g.lineTo(cx-16,bas-39);g.fill();
+  /* les vitres teintées, cerclées de chrome */
+  g.fillStyle='#0a0e16';g.beginPath();g.moveTo(cx-29,bas-27);g.quadraticCurveTo(cx-19,bas-39,cx-3,bas-40);g.lineTo(cx+20,bas-40);g.quadraticCurveTo(cx+35,bas-38,cx+45,bas-28);g.closePath();g.fill();
+  g.strokeStyle='#c8ccd2';g.lineWidth=.9;g.stroke();
+  R(g,cx+8,bas-40,1.6,13,'#c8ccd2');
+  g.fillStyle='rgba(140,170,210,.35)';g.beginPath();g.moveTo(cx-24,bas-28);g.lineTo(cx-12,bas-38);g.lineTo(cx-6,bas-38);g.lineTo(cx-18,bas-28);g.fill();
+  /* poignées, rétroviseur, bas de caisse */
+  R(g,cx-12,bas-23,6,1.2,'#c8ccd2');R(g,cx+18,bas-23,6,1.2,'#c8ccd2');
+  g.fillStyle='#1c2a48';g.beginPath();g.ellipse(cx-28,bas-28,3,2,0,0,7);g.fill();
+  R(g,L0+14,bas-8,L1-L0-28,2,'#0a0e16');
+  /* phares effilés à l'avant (à droite), feux rouges à l'arrière */
+  g.fillStyle='#eaf6ff';g.beginPath();g.moveTo(L1-14,bas-22);g.lineTo(L1-1,bas-20);g.lineTo(L1-2,bas-17);g.lineTo(L1-15,bas-19);g.fill();
+  g.fillStyle='rgba(180,230,255,.5)';g.beginPath();g.ellipse(L1-4,bas-19,6,2.4,0,0,7);g.fill();
+  g.fillStyle='#c81e1e';g.beginPath();g.moveTo(L0+2,bas-21);g.lineTo(L0+12,bas-22);g.lineTo(L0+11,bas-18);g.lineTo(L0+2,bas-18);g.fill();
+  R(g,L1-10,bas-11,8,3,'#0a0e16');for(let k=0;k<3;k++)R(g,L1-9+k*2.6,bas-11,.8,3,'#5a6270');/* la calandre */
+  /* les jantes : cinq doubles branches, étrier bleu */
+  for(const wx of [L0+30,L1-30]){g.fillStyle='#0c0c10';g.beginPath();g.arc(wx,bas-6,12,0,7);g.fill();
+    g.fillStyle='#9aa2ac';g.beginPath();g.arc(wx,bas-6,8,0,7);g.fill();g.fillStyle='#3a3e46';g.beginPath();g.arc(wx,bas-6,6.8,0,7);g.fill();
+    g.strokeStyle='#dfe4ea';g.lineWidth=1.3;for(let k=0;k<5;k++){const a=k*Math.PI*2/5-.3;g.beginPath();g.moveTo(wx,bas-6);g.lineTo(wx+Math.cos(a)*7.4,bas-6+Math.sin(a)*7.4);g.stroke();}
+    R(g,wx+3,bas-10,3,5,'#2a6ad0');g.fillStyle='#c8ccd2';g.beginPath();g.arc(wx,bas-6,1.6,0,7);g.fill();}
+  TVOIT={toile:c,W:Wd,H:Hd,sol};return TVOIT;}
+let TMEC=null;
+function graverMec(){if(TMEC)return TMEC;const Wd=30,Hd=62,sol=58,x=15;const {c,g}=toile(Wd,Hd);
+  g.fillStyle='rgba(30,26,20,.25)';g.beginPath();g.ellipse(x,sol,9,2.6,0,0,7);g.fill();
+  R(g,x-7,sol-4,6,4,'#f4f4f2');R(g,x+1,sol-4,6,4,'#f4f4f2');/* baskets blanches */
+  R(g,x-6,sol-24,5,20,'#c8b89a');R(g,x+1,sol-24,5,20,'#c8b89a');R(g,x-6,sol-25,12,2,'#5a3a20');/* chino beige, ceinture */
+  R(g,x-9,sol-41,18,17,'#f8f8f6');R(g,x-1,sol-41,2,5,'#e0ddd6');/* chemise blanche ouverte */
+  g.fillStyle='#e8b896';g.beginPath();g.moveTo(x-2,sol-41);g.lineTo(x+2,sol-41);g.lineTo(x,sol-36);g.fill();
+  g.strokeStyle='#e8c040';g.lineWidth=.9;g.beginPath();g.moveTo(x-4,sol-41);g.quadraticCurveTo(x,sol-35,x+4,sol-41);g.stroke();/* la chaîne en or */
+  R(g,x-11,sol-38,18,5,'#f0f0ee');R(g,x-11,sol-34,18,1,'#d8d6d0');/* les bras croisés */
+  R(g,x-11,sol-36,3,3,'#e0b088');R(g,x+5,sol-36,3,3,'#e0b088');
+  R(g,x+8,sol-35,2,2,'#e8c040');/* la montre */
+  g.fillStyle='#e0b088';g.fillRect(x-6,sol-53,12,12);
+  R(g,x-7,sol-57,14,5,'#1a1410');R(g,x-7,sol-53,2,3,'#1a1410');R(g,x+5,sol-53,2,3,'#1a1410');R(g,x-6,sol-58,10,1.6,'rgba(255,255,255,.35)');/* cheveux gominés */
+  R(g,x-6,sol-50,12,3,'#101014');R(g,x-5,sol-49.4,4,1,'rgba(120,160,220,.6)');R(g,x+1,sol-49.4,4,1,'rgba(120,160,220,.6)');/* lunettes noires */
+  R(g,x-2,sol-45,4,1,'#a86a50');
+  TMEC={toile:c,W:Wd,H:Hd,sol};return TMEC;}
+
 /* ---------- LE DÉCOR ET LES OBSTACLES ---------- */
 function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
   const e=graverEscalators();P('x_jol_tdp_escalators_sol',e.ox+e.W/2,GY2+0);
   const t=graverTour();P('x_jol_tdp_tour_sol',TX-TW/2+t.W/2-t.x0,TB,{anim:'tdp_tour'});
   for(const [x,y] of [[90,640],[300,740],[520,600],[730,700]])P('x_jol_tdp_palmier',x,y,{col:[26,8]});
-  for(const [x,y] of [[190,620],[620,760],[290,550]])P('x_jol_tdp_banc',x,y,{col:[64,8]});
+  for(const [x,y] of [[190,620],[180,760],[290,550]])P('x_jol_tdp_banc',x,y,{col:[64,8]});
+  P('x_jol_tdp_voiture_sol',VX,VY,{col:[176,22]});
+  P('x_jol_tdp_mec_sol',VX+104,VY+8,{col:[16,6],parler:['Moi j’ai acheté une belle BM parce que j’ai un petit zizi.'],nom:'LE GARS À LA BM',tete:'😎'});
   return D;}
 function bloque(x,y){
   if(x<12||x>W-12)return true;
@@ -214,7 +274,7 @@ function bloque(x,y){
   if(x>TX-TW/2-6&&x<TX+TW/2+6&&y>TB-TD-6&&y<TB+4)return true; /* la tour */
   for(const o of DECOR){if(!o.col)continue;if(Math.abs(x-o.x)<o.col[0]/2&&y>o.y-o.col[1]&&y<o.y+3)return true;}
   return false;}
-const GRAVEURS={x_jol_tdp_escalators_sol:graverEscalators,x_jol_tdp_tour_sol:graverTour,x_jol_tdp_palmier:graverPalmier,x_jol_tdp_banc:graverBanc};
+const GRAVEURS={x_jol_tdp_voiture_sol:graverVoiture,x_jol_tdp_mec_sol:graverMec,x_jol_tdp_escalators_sol:graverEscalators,x_jol_tdp_tour_sol:graverTour,x_jol_tdp_palmier:graverPalmier,x_jol_tdp_banc:graverBanc};
 function graver(t){const r=(GRAVEURS[t]||(()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0})))();return {toile:r.toile,W:r.W,H:r.H,sol:r.sol};}
 
 /* au pied des escalators : l'étage n'est pas encore ouvert */

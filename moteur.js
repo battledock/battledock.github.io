@@ -20609,7 +20609,7 @@ const buisFo=['x_fo_mure','x_fo_framboise','x_fo_myrtille'].includes(o.t);
    accroche à 48 px — donc depuis la berge, à côté du ponton, le jeu
    proposait de pêcher et la ligne partait de la terre ferme. */
 if(o.t!=='rocher'&&o.t!=='x_fo_rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'&&!buisFo
-&&!batiment&&!o.bati&&!cueillable&&!minerai)continue;
+&&!batiment&&!o.bati&&!o.parler&&!cueillable&&!minerai)continue;
 if(buisFo&&o.cueilli&&Date.now()-o.cueilli<240000)continue;
 if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
 if(o.t==='buisson'&&o.cueilli&&Date.now()-o.cueilli<240000)continue;   /* repousse en 4 min */
@@ -24489,6 +24489,7 @@ b.classList.add('on');b.onclick=()=>ouvrirFicheJoueur(pres.id);return;
 const o=cible();
 if(!o||GESTE.t>0){secours();return;}
 b.onclick=agir;                     /* une cible : c'est elle qu'on vise */
+if(o.parler){b.innerHTML='Parler<small>'+(o.nom||'')+'</small>';b.classList.add('on');return;}
 if(o.t==='echoppe'){
 b.innerHTML='Entrer<small>L’ÉCHOPPE · ACHETER</small>';
 b.classList.add('on');return;
@@ -24650,6 +24651,7 @@ b.classList.add('on');
 function agir(){
 if(pageOuverte()||Date.now()-fermeA<500)return;
 const o=cible();if(!o||GESTE.t>0)return;
+if(o.parler){direPNJ(o);return;}
 if(o.t==='coffre'){
 if(e.coffreOuvert)return;
 e.coffreOuvert=true;e.outils.pioche=true;e.outils.hache=true;e.coffreQuand=Date.now();
@@ -29793,6 +29795,12 @@ box-shadow:0 8px 26px rgba(0,0,0,.45);opacity:0;transform:translateY(8px);transi
 #cueilB .tete{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;
 background:radial-gradient(circle at 40% 34%,#f2ead8,#c9bda2);box-shadow:inset 0 0 0 1px rgba(90,72,44,.3);
 display:flex;align-items:center;justify-content:center;font-size:19px}`;
+/* UN PERSONNAGE QUI PARLE : tout objet du décor qui porte « parler » (une liste de répliques) et « nom » */
+function direPNJ(o){const L=o.parler;let i=0;if(L.length>1){do{i=Math.floor(Math.random()*L.length);}while(i===o.dit);}o.dit=i;
+if(!document.getElementById('cssCueil')){const st=document.createElement('style');st.id='cssCueil';st.textContent=CSS_CUEIL;document.head.appendChild(st);}
+let b=document.getElementById('cueilB');if(!b){b=document.createElement('div');b.id='cueilB';document.body.appendChild(b);}
+b.innerHTML='<span class="tete">'+(o.tete||'🙂')+'</span><small>'+(o.nom||'')+'</small>« '+L[i]+' »';
+b.classList.add('on');clearTimeout(direPNJ.t);direPNJ.t=setTimeout(()=>b.classList.remove('on'),6500);try{vibrer(10);}catch(x){}}
 function parlerAuCueilleur(){
 let i;do{i=Math.floor(Math.random()*MOTS_CUEILLEUR.length);}while(i===CUEIL_DIT&&MOTS_CUEILLEUR.length>1);
 CUEIL_DIT=i;
