@@ -905,7 +905,7 @@ setInterval(()=>{try{
   const devant=joueur.y<DOCKS_PIED+22&&PORTES.some(([px])=>Math.abs(joueur.x-px)<20);
   CONTRE=devant?CONTRE+1:0;
   if(CONTRE>=3){ENTRE=true;try{sauver();}catch(x){}
-    setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='spawn.html?lieu=terrasses'+v;},250);}
+    setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='terrasses.html?'+v.slice(1);},250);}
 }catch(x){}},150);
 ANIM_DECOR.jol_tram=dessinerTram;
 ANIM_DECOR.jol_docks=dessinerLesDocks;

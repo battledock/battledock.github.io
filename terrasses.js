@@ -3,12 +3,12 @@
    Même logique de vue que la place : le mur du fond monte à la verticale
    (rez-de-chaussée, puis le balcon du +1, puis celui du +2) ; tout le reste
    est posé au sol. Les boutiques sont vides : « À LOUER ».
-   Chargé par moteur.js (eval direct) quand spawn.html?lieu=terrasses.
+   Chargé par moteur.js (eval direct) par terrasses.html (le rez-de-chaussée) et terrasses.html?niveau=1 (l’étage).
    ===================================================================== */
 (()=>{
 const W=800, H=800, Y0=410, ETAGE=128;
 const Q=(()=>{try{return new URLSearchParams(location.search);}catch(x){return new URLSearchParams('');}})();
-const ETG=Q.get('lieu')==='terrasses1';                 /* l'étage +1 */
+const ETG=Q.get('niveau')==='1'||Q.get('lieu')==='terrasses1';                 /* l'étage +1 */
 const DEPART=ETG?[600,578]:(Q.get('de')==='etage'?[78,540]:[400,740]), SORTIE_X=400, SORTIE_DEMI=46;
 const BLEU='#1f3fa8', BLEU2='#2a6ad0';
 const hA=(x,y,k)=>{let n=((x*73856093)^(y*19349663)^(k*83492791))|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
@@ -287,11 +287,11 @@ function graver(t,v){const r=(GRAVEURS[t]||(()=>({toile:document.createElement('
 
 /* LES ESCALATORS : au pied (rez-de-chaussée) on monte ; sur la plaque (étage) on redescend */
 let PASSE=false;
-const aller=(q)=>{PASSE=true;try{sauver();}catch(x){}setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='spawn.html?'+q+v;},250);};
+const aller=(q)=>{PASSE=true;try{sauver();}catch(x){}setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='terrasses.html?'+q+v;},250);};
 setInterval(()=>{try{
   if(PASSE||typeof joueur==='undefined')return;
-  if(!ETG&&joueur.x<EX0-20&&joueur.x>EX0-60&&joueur.y>GY1-PROF&&joueur.y<GY2+10)aller('lieu=terrasses1');
-  if(ETG&&joueur.x>PLAQUE[0]-4&&joueur.x<PLAQUE[0]+24&&joueur.y>PLAQUE[1]-30&&joueur.y<PLAQUE[1]+2)aller('lieu=terrasses&de=etage');
+  if(!ETG&&joueur.x<EX0-20&&joueur.x>EX0-60&&joueur.y>GY1-PROF&&joueur.y<GY2+10)aller('niveau=1');
+  if(ETG&&joueur.x>PLAQUE[0]-4&&joueur.x<PLAQUE[0]+24&&joueur.y>PLAQUE[1]-30&&joueur.y<PLAQUE[1]+2)aller('de=etage');
 }catch(x){}},150);
 /* LA SORTIE : par les portes du sud, on retrouve la place de la Joliette */
 let PARTI=false;
