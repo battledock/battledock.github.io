@@ -258,8 +258,7 @@ for(const [x,y,c,rr] of BULBES){if(!JOUR){g.save();g.globalCompositeOperation='l
   R(x-.6,y-.6,1.2,1.2,c);R(x-.25,y-.5,.5,.5,'#ffffff');}
 }
 
-const NOEL=(()=>{try{const q=new URLSearchParams(location.search).get('noel');if(q!==null)return q==='1';}catch(x){}
-  const d=new Date(),m=d.getMonth(),j=d.getDate();return m===10||m===11||(m===0&&j<=6);})();   /* du 1er novembre à l'Épiphanie */
+const NOEL=false;   /* pas de décor de Noël */
 function toileDocks(jour){
   const D=2,c=document.createElement('canvas');c.width=W*D;c.height=250*D;
   const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(D,0,0,D,0,12*D);
