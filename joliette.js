@@ -7,10 +7,10 @@
    et la sortie vivent ici, et le moteur ne fait que les appeler. */
 (()=>{
 const W=800, H=800;
-const DOCKS_PIED=236, TROTTOIR=300, TRAM0=300, TRAM1=362, PLACE_BAS=760;
+const DOCKS_PIED=236, TROTTOIR=346, TRAM0=346, TRAM1=422, PLACE_BAS=760;
 const SORTIE_X=400, SORTIE_DEMI=44;
-const DEPART=[400,676];
-const FONT=[400,560];
+const DEPART=[400,712];
+const FONT=[400,592];
 const h=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
 const teinte=(hex,d)=>{const v=parseInt(hex.slice(1),16);const c=k=>Math.max(0,Math.min(255,((v>>k)&255)+d));
   return 'rgb('+c(16)+','+c(8)+','+c(0)+')';};
@@ -32,15 +32,19 @@ dalles(g,R,0,DOCKS_PIED,W,TROTTOIR-DOCKS_PIED,['#e6e0d6','#e2dcd2','#eae4da','#d
 for(let x=20;x<W;x+=80){R(x,DOCKS_PIED+16,40,6,'#c8bcaa');R(x,DOCKS_PIED+16,40,.5,'#d8ccba');R(x+20,DOCKS_PIED+34,40,6,'#c8bcaa');}
 R(0,DOCKS_PIED,W,3,'rgba(40,30,20,.22)');          /* l'ombre du socle */
 /* les grilles d'arbres, en fonte, au pied des pins du parvis */
-for(const x of [40,250,550,760]){g.fillStyle='#5a5650';g.beginPath();g.ellipse(x,296,13,5,0,0,7);g.fill();
-  g.strokeStyle='#3a3834';g.lineWidth=1;for(let r=3;r<13;r+=3){g.beginPath();g.ellipse(x,296,r,r*.38,0,0,7);g.stroke();}}
+for(const x of [40,250,550,760]){g.fillStyle='#5a5650';g.beginPath();g.ellipse(x,342,13,5,0,0,7);g.fill();
+  g.strokeStyle='#3a3834';g.lineWidth=1;for(let r=3;r<13;r+=3){g.beginPath();g.ellipse(x,342,r,r*.38,0,0,7);g.stroke();}}
 
-/* LE TRAM : bordure, pavés gris, deux voies */
+/* LE TRAM : bordure, pavés gris, deux voies, et le quai de la station côté place */
 R(0,TRAM0,W,4,'#b9b3a6');R(0,TRAM0,W,1,'#eae4d6');
-for(let y=TRAM0+4;y<TRAM1-4;y+=5){let x=-((y/5|0)%2)*5;
+for(let y=TRAM0+4;y<402;y+=5){let x=-((y/5|0)%2)*5;
   while(x<W){R(x,y,10,5,teinte('#8d8a84',((h(x,y,11)-.5)*16)|0));R(x,y,10,1,'rgba(255,255,255,.10)');R(x,y,1,5,'rgba(0,0,0,.12)');x+=10;}}
-for(const ry of [314,326,340,352]){R(0,ry,W,2,'#c8ccd0');R(0,ry+2,W,1,'#4c4f54');}
-R(0,TRAM1-4,W,4,'#b9b3a6');R(0,TRAM1-1,W,1,'#7f796c');
+for(const ry of [360,372,384,396]){R(0,ry,W,2,'#c8ccd0');R(0,ry+2,W,1,'#4c4f54');}
+/* le quai : béton clair, la bande d'éveil podotactile, le liseré blanc du bord */
+R(0,402,W,16,'#d6d2ca');R(0,402,W,1,'#f2f0ea');R(0,403,W,1.5,'#f8f8f4');
+for(let x=1;x<W;x+=3)R(x,406,1.4,1.4,'#e8d070');for(let x=2.5;x<W;x+=3)R(x,408,1.4,1.4,'#e8d070');
+for(let x=0;x<W;x+=24)R(x,402,.5,16,'#c2beb4');
+R(0,418,W,4,'#b9b3a6');R(0,TRAM1-1,W,1,'#7f796c');
 
 /* LA PLACE : de grandes dalles claires, quadrillées de bandes de pierre plus sombre */
 dalles(g,R,0,TRAM1,W,PLACE_BAS-TRAM1,['#ebe4d6','#e6dfd0','#efe8da','#e2dbcc','#e8e1d3'],56,22);
@@ -110,24 +114,33 @@ for(let x=cx-24;x<cx+26;x+=4)R(x,s-44,2,2,(x>>2)%2?'#c0392b':'#f4ede0');
 return {toile:c,W:L,H:HH,sol:s};
 }
 function graverAbri(){
-const L=96,HH=78,{c,g,R}=toile(L,HH),cx=L/2,s=HH-6;
-g.fillStyle='rgba(30,22,14,.24)';g.beginPath();g.ellipse(cx+4,s,46,7,0,0,7);g.fill();
-R(cx-42,s-2,84,3,'#a8a294');
-/* les vitres */
-R(cx-40,s-44,80,42,'rgba(170,215,235,.42)');
-R(cx-40,s-44,80,1,'rgba(255,255,255,.6)');
-for(const x of [cx-40,cx-13,cx+13,cx+39])R(x,s-46,2,46,'#5a6068');
-R(cx-36,s-40,6,30,'rgba(255,255,255,.22)');
+/* l'abri de la station : poteaux d'acier fins, vitres claires à points sérigraphiés, toit
+   à liseré bleu éclairé par-dessous, banc de bois, borne d'information et distributeur */
+const L=120,HH=84,{c,g,R}=toile(L,HH),cx=L/2-8,s=HH-6;
+g.fillStyle='rgba(30,22,14,.24)';g.beginPath();g.ellipse(cx+4,s+1,48,6,0,0,7);g.fill();
+/* le fond vitré */
+g.fillStyle='rgba(190,222,236,.40)';g.fillRect(cx-42,s-46,84,44);
+for(let x=cx-41;x<cx+42;x+=2.5)for(let y=s-44;y<s-38;y+=2.5)R(x,y,.8,.8,'rgba(255,255,255,.55)');   /* les points sérigraphiés */
+g.fillStyle='rgba(255,255,255,.28)';g.beginPath();g.moveTo(cx-38,s-4);g.lineTo(cx-20,s-44);g.lineTo(cx-14,s-44);g.lineTo(cx-32,s-4);g.closePath();g.fill();
+for(const x of [cx-42,cx-14,cx+14,cx+41])R(x,s-48,1.2,48,'#5a6068');
+R(cx-42,s-24,84,.8,'#5a6068');
+/* le plan du réseau, rétroéclairé */
+R(cx+16,s-40,22,26,'#f4f2ea');R(cx+16,s-40,22,1,'#1e88c8');
+g.strokeStyle='#1e88c8';g.lineWidth=.8;g.beginPath();g.moveTo(cx+18,s-20);g.lineTo(cx+26,s-30);g.lineTo(cx+36,s-30);g.stroke();
+g.strokeStyle='#e8a030';g.beginPath();g.moveTo(cx+18,s-34);g.lineTo(cx+28,s-24);g.lineTo(cx+36,s-18);g.stroke();
+for(const [px,py] of [[cx+26,s-30],[cx+28,s-24],[cx+22,s-25]]){g.fillStyle='#ffffff';g.beginPath();g.arc(px,py,1.2,0,7);g.fill();g.strokeStyle='#2a2a2a';g.lineWidth=.4;g.stroke();}
 /* le banc */
-R(cx-30,s-16,60,4,'#7a5a3a');R(cx-28,s-12,2,10,'#3a3a3a');R(cx+26,s-12,2,10,'#3a3a3a');
-/* le toit */
-R(cx-46,s-52,92,7,'#e8e8e6');R(cx-46,s-52,92,1,'#ffffff');R(cx-46,s-46,92,2,'#8a9096');
-/* le totem de la station */
-R(cx+44,s-64,8,64,'#2f3b4c');R(cx+44,s-64,8,10,'#1e88c8');
-g.fillStyle='#ffffff';g.font='bold 7px "Trebuchet MS",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('T',cx+48,s-59);
-R(cx-24,s-62,48,9,'#1e88c8');
-g.font='bold 7px "Trebuchet MS",sans-serif';g.fillText('JOLIETTE',cx,s-57.5);
-return {toile:c,W:L+16,H:HH,sol:s};
+R(cx-36,s-15,44,3,'#b07a48');R(cx-36,s-15,44,.6,'#d09a62');R(cx-34,s-12,1.4,10,'#4a4a4a');R(cx+6,s-12,1.4,10,'#4a4a4a');
+/* le toit : une dalle fine, liseré bleu, lumière dessous */
+R(cx-48,s-56,96,6,'#f2f2f0');R(cx-48,s-56,96,.8,'#ffffff');R(cx-48,s-51,96,1.8,'#1e88c8');
+const gl=g.createLinearGradient(0,s-49,0,s-36);gl.addColorStop(0,'rgba(255,248,220,.55)');gl.addColorStop(1,'rgba(255,248,220,0)');g.fillStyle=gl;g.fillRect(cx-46,s-49,92,13);
+/* la borne d'information, le logo du tram */
+R(cx+50,s-66,10,66,'#2f3b4c');R(cx+50,s-66,10,.8,'#4a5a70');R(cx+51,s-64,8,8,'#1e88c8');
+g.fillStyle='#ffffff';g.font='bold 6px "Trebuchet MS",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('T',cx+55,s-59.6);
+R(cx+51.5,s-52,7,9,'#0e1a26');R(cx+52.5,s-50.5,5,.8,'#f0b040');R(cx+52.5,s-48.5,4,.8,'#7ad0ff');R(cx+52.5,s-46.5,5,.8,'#7ad0ff');
+/* le distributeur de titres */
+R(cx-60,s-30,10,30,'#c8ccd2');R(cx-60,s-30,10,.8,'#eef0f2');R(cx-58,s-26,6,5,'#20303c');R(cx-57,s-18,4,1.4,'#2a2a2a');R(cx-51,s-30,1,30,'#9aa0a8');
+return {toile:c,W:L+16,H:HH,sol:s,feux:[{x:cx+8,y:s-46,r:30,teinte:'rgba(255,240,200,§)'},{x:cx+27,y:s-28,w:22,h:26,r:18,vitre:'#f6f4ea'}]};
 }
 function graverPanneauPort(){
 const L=44,HH=62,{c,g,R}=toile(L,HH),cx=L/2,s=HH-6;
@@ -151,6 +164,7 @@ function graverVide(){const c=document.createElement('canvas');c.width=2;c.heigh
    d'affiches, boutiques et stores blancs, et le nom en grandes lettres carrées.
    Toile x2, lumière en haut à gauche. Les portes coulissantes sont dessinées à part,
    à chaque image, pour qu'elles s'ouvrent quand on approche. */
+const PORTES=[[350,52],[450,52]], PH=64;   /* les deux entrées coulissantes : x, largeur ; leur hauteur */
 function dessinerTerrasses(g,ST){
 const W=800,PIED=236,CX=400,JOUR=ST.jour!==false;
 const h=(x,y,k)=>{let n=((x*73856093)^(y*19349663)^(k*83492791))|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
@@ -293,18 +307,43 @@ const boite=(x0,x1,nom,coul)=>{const y0=TOIT+14,y1=TOIT+66;
   g.fillStyle='rgba(255,255,255,.2)';g.beginPath();g.moveTo(x0+4,y1-3);g.lineTo(x0+20,y0+3);g.lineTo(x0+26,y0+3);g.lineTo(x0+10,y1-3);g.closePath();g.fill();
   OMB(x0,y1,x1-x0,6,.45);};
 boite(B0,A0+14,'CAFÉ','#2f6b4f');boite(A1-14,B1,'SALON DE THÉ','#c8a24a');
-for(const cx of [B0+28,B1-28]){HG(cx-4,TOIT+66,8,SOL-TOIT-66,[[0,'#c8c8c4'],[.3,'#ffffff'],[.7,'#ecece8'],[1,'#b0b0aa']]);}
+for(const cx of [B0+14,B1-14]){HG(cx-4,TOIT+66,8,SOL-TOIT-66,[[0,'#c8c8c4'],[.3,'#ffffff'],[.7,'#ecece8'],[1,'#b0b0aa']]);}
 
 /* ---------- le bandeau bleu « Bienvenue » ---------- */
-{const y=SOL-63;R(B0-4,y,B1-B0+8,7,BLEU);R(B0-4,y,B1-B0+8,.6,'#4a78c8');R(B0-4,y+6.5,B1-B0+8,.5,'#122e66');
+{const y=SOL-PH-7;R(B0-4,y,B1-B0+8,7,BLEU);R(B0-4,y,B1-B0+8,.6,'#4a78c8');R(B0-4,y+6.5,B1-B0+8,.5,'#122e66');
   R(CX-62,y,124,7,'#173f8e');texte('BIENVENUE AUX TERRASSES DU PORT',CX,y+3.7,'bold 4.4px "Helvetica Neue",Arial,sans-serif','#ffffff');
   for(const gx of [CX-74,CX+64]){R(gx,y+1.5,4,4,'#ffffff');R(gx+1,y+2.5,2,2,'#173f8e');R(gx+5,y+1.5,4,4,'#ffffff');R(gx+6,y+2.5,.8,3,'#173f8e');R(gx+7.2,y+2.5,.8,3,'#173f8e');}}
-/* l'entrée : un hall éclairé derrière les vitrages ; les portes elles-mêmes sont animées */
-{const y=SOL-56;R(B0,y,B1-B0,56,'#1c2a30');VG(B0+1,y+1,B1-B0-2,55,'#e8f0f0','#a8bcbc');
-  for(const [px,pw] of PORTES){VG(px-pw/2,y+1,pw,55,'#fff6e2','#f0d0a0');LUMS.push([px-pw/2,y+1,pw,55]);
-    for(let k=0;k<3;k++)R(px-pw/2+6+k*12,y+30-k*3,5,24+k*3,['#7a6a5a','#4a5a6a','#9a7a5a'][k]);}
-  for(let x=B0;x<=B1;x+=16)if(!PORTES.some(([px,pw])=>x>px-pw/2-pw/2-1&&x<px+pw/2+pw/2+1))R(x-.5,y,1,56,'#1c2a30');R(B0,y+28,B1-B0,.8,'#1c2a30');
-  R(B0,y,B1-B0,1,'#1c2a30');}
+/* l'entrée : derrière les vitrages, le mail du centre commercial — sol de pierre poli,
+   boutiques éclairées au fond, plafond à spots, un escalator, des passants, un palmier en pot.
+   Les portes elles-mêmes sont animées à part. */
+{const y=SOL-PH, x0=B0, x1=B1;
+  R(x0,y,x1-x0,PH,'#1c2a30');
+  g.save();g.beginPath();g.rect(x0+1,y+1,x1-x0-2,PH-1);g.clip();
+  /* le plafond et ses spots */
+  VG(x0,y,x1-x0,14,'#f4efe6','#ddd4c4');for(let x=x0+8;x<x1;x+=16){R(x-1.5,y+5,3,1,'#fffbe8');const gr=g.createRadialGradient(x,y+6,0,x,y+6,9);gr.addColorStop(0,'rgba(255,248,226,.8)');gr.addColorStop(1,'rgba(255,248,226,0)');g.fillStyle=gr;g.fillRect(x-9,y+3,18,12);}
+  /* le mur du fond : des vitrines éclairées */
+  R(x0,y+14,x1-x0,24,'#e8ddcc');
+  for(let x=x0+6;x<x1-20;x+=44){R(x,y+16,36,22,'#3a3230');VG(x+1,y+17,34,21,'#fff2d8','#e6b878');
+    for(let k=0;k<4;k++)R(x+4+k*8,y+26-((k*7)%5),5,12+((k*7)%5),['#c86a4a','#e8d8b8','#5a7a8a','#d8a848'][k]);
+    R(x,y+15,36,1.4,'#2a2420');}
+  /* le sol poli, qui reflète */
+  VG(x0,y+38,x1-x0,PH-38,'#d8d0c2','#f2ece2');for(let x=x0;x<x1;x+=14)R(x,y+38,.5,PH-38,'rgba(160,150,130,.35)');
+  for(let x=x0+6;x<x1-20;x+=44){g.fillStyle='rgba(255,220,160,.25)';g.fillRect(x+1,y+39,34,8);}
+  /* un escalator vers l'étage, à droite */
+  g.strokeStyle='#7a7c80';g.lineWidth=3;g.beginPath();g.moveTo(x1-60,y+PH-4);g.lineTo(x1-24,y+16);g.stroke();
+  g.strokeStyle='#c8ccd0';g.lineWidth=1;g.beginPath();g.moveTo(x1-62,y+PH-7);g.lineTo(x1-26,y+13);g.stroke();
+  /* un palmier en pot, à gauche */
+  R(x0+18,y+PH-12,10,11,'#e8e0d2');R(x0+22.5,y+PH-30,1.4,18,'#8a6a4a');
+  for(let k=0;k<7;k++){const a=-Math.PI+k*Math.PI/6;g.strokeStyle=k%2?'#4a8a4a':'#3a7440';g.lineWidth=1.2;g.beginPath();g.moveTo(x0+23,y+PH-30);g.quadraticCurveTo(x0+23+Math.cos(a)*6,y+PH-34+Math.sin(a)*3,x0+23+Math.cos(a)*10,y+PH-28+Math.sin(a)*2);g.stroke();}
+  /* des passants */
+  const passant=(x,c1,c2)=>{g.fillStyle='#e0c0a0';g.beginPath();g.arc(x,y+PH-27,2.2,0,7);g.fill();R(x-2.6,y+PH-24.5,5.2,11,c1);R(x-2.2,y+PH-13.5,1.8,11,c2);R(x+.4,y+PH-13.5,1.8,11,c2);};
+  passant(x0+70,'#3a5a8a','#2a2a30');passant(x0+124,'#c8a070','#4a4a52');passant(x0+168,'#8a3a3a','#2a2a30');passant(x0+206,'#e8e2d6','#3a3a40');
+  g.restore();
+  for(const [px,pw] of PORTES)LUMS.push([px-pw/2,y+1,pw,PH-1]);
+  /* les vitrages fixes, leurs montants */
+  g.fillStyle='rgba(200,225,232,.16)';g.fillRect(x0+1,y+1,x1-x0-2,PH-1);
+  for(let x=x0;x<=x1;x+=16)if(!PORTES.some(([px,pw])=>x>px-pw-1&&x<px+pw+1))R(x-.5,y,1,PH,'#1c2a30');
+  R(x0,y,x1-x0,1.2,'#1c2a30');R(x0,y+PH*.48,x1-x0,.8,'rgba(28,42,48,.8)');}
 
 /* ---------- le pied ---------- */
 R(0,SOL,W,PIED-SOL,'#d8cfc2');for(let x=0;x<W;x+=20)R(x,SOL,.4,PIED-SOL,'#c4b8a8');R(0,SOL,W,.6,'#f2ebe0');
@@ -312,12 +351,11 @@ R(0,SOL,W,PIED-SOL,'#d8cfc2');for(let x=0;x<W;x+=20)R(x,SOL,.4,PIED-SOL,'#c4b8a8
 /* ---------- la nuit ---------- */
 if(!JOUR){g.save();g.globalCompositeOperation='multiply';g.fillStyle='rgb(120,120,172)';g.fillRect(0,-12,W,PIED+12);g.restore();
   g.save();g.globalCompositeOperation='lighter';for(const [x,y,w,hh] of LUMS){g.fillStyle='rgba(130,80,30,.6)';g.fillRect(x,y,w,hh);}g.restore();
-  const y=SOL-63;R(B0-4,y,B1-B0+8,7,'#2a62c8');texte('BIENVENUE AUX TERRASSES DU PORT',CX,y+3.7,'bold 4.4px "Helvetica Neue",Arial,sans-serif','#ffffff');
+  const y=SOL-PH-7;R(B0-4,y,B1-B0+8,7,'#2a62c8');texte('BIENVENUE AUX TERRASSES DU PORT',CX,y+3.7,'bold 4.4px "Helvetica Neue",Arial,sans-serif','#ffffff');
   ecrire();}
 }
 /* les deux entrées coulissantes : leur place dans la façade (x, largeur) */
-const PORTES=[[350,44],[450,44]];
-const PORTE_Y=222-56, PH=56;                       /* le haut des portes, dans le repère de la façade */
+const PORTE_Y=222-64;                       /* le haut des portes, dans le repère de la façade */
 /* les vantaux, dessinés à chaque image par-dessus la façade, s'écartent quand on s'approche */
 const OUVERT=PORTES.map(()=>0);
 function dessinerLesPortes(g,X0,Y0){
@@ -332,8 +370,7 @@ function dessinerLesPortes(g,X0,Y0){
       g.fillStyle='rgba(255,255,255,.28)';g.beginPath();g.moveTo(x+1.5,y+PH-4);g.lineTo(x+lw*.7,y+1.5);g.lineTo(x+lw*.7+2,y+1.5);g.lineTo(x+3.5,y+PH-4);g.closePath();g.fill();
       g.fillStyle='#c8d0d4';g.fillRect(x+(s<0?lw-3:1.6),y+PH*.45,1.4,8);}
     /* les deux caissons fixes de part et d'autre, où les vantaux viennent se ranger */
-    g.fillStyle='#1c2a30';g.fillRect(x0-lw+2,y,lw-2,PH);g.fillRect(x0+pw,y,lw-2,PH);
-    g.fillStyle='rgba(200,225,232,.38)';g.fillRect(x0-lw+3,y+1,lw-4,PH-2);g.fillRect(x0+pw+1,y+1,lw-4,PH-2);
+    for(const cxx of [x0-lw+2,x0+pw]){g.fillStyle='rgba(200,225,232,.22)';g.fillRect(cxx,y,lw-2,PH);g.fillStyle='rgba(28,42,48,.95)';g.fillRect(cxx,y,lw-2,1);g.fillRect(cxx,y+PH-1,lw-2,1);g.fillRect(cxx,y,1,PH);g.fillRect(cxx+lw-3,y,1,PH);}
     g.fillStyle='rgba(28,42,48,.95)';g.fillRect(x0-1,y-1.5,pw+2,1.5);
   });
 }
@@ -382,16 +419,22 @@ R(L/2-14,s-44,28,4,'#b0b6bc');g.strokeStyle='#4c5056';g.lineWidth=1.5;g.beginPat
 g.moveTo(L/2-8,s-44);g.lineTo(L/2,s-54);g.lineTo(L/2+8,s-44);g.stroke();R(L/2-6,s-55,12,2,'#4c5056');
 return {c,L,HH,s};
 }
-const PERIODE=46, TRAVERSEE=11;
+/* LA RAME S'ARRÊTE À LA STATION : elle arrive en freinant, attend, repart en accélérant. */
+const PERIODE=52, ARRIVEE=8, ARRET=8, DEPART_T=8, LONG_RAME=250;
+function posTram(o){
+  const t=(Date.now()/1000+(o.sens>0?0:PERIODE/2))%PERIODE, x0=o.sens>0?-300:W+300, x2=o.sens>0?W+300:-300, xa=o.arret;
+  if(t<ARRIVEE){const k=t/ARRIVEE;return x0+(xa-x0)*(1-Math.pow(1-k,3));}
+  if(t<ARRIVEE+ARRET)return xa;
+  if(t<ARRIVEE+ARRET+DEPART_T){const k=(t-ARRIVEE-ARRET)/DEPART_T;return xa+(x2-xa)*k*k*k;}
+  return null;}
 function dessinerTram(g,o,x,y){
-  const t=(Date.now()/1000+(o.sens>0?0:PERIODE/2))%PERIODE;
-  if(t>TRAVERSEE)return;
+  const wx=posTram(o);if(wx===null)return;
   if(!RAME)RAME=graverRame();
-  const k=t/TRAVERSEE, e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
-  const wx=o.sens>0?(-300+e*(W+600)):(W+300-e*(W+600));
   const sx=Math.round(x+(wx-o.x)-RAME.L/2), sy=Math.round(y-RAME.s);
   g.drawImage(RAME.c,sx,sy,RAME.L,RAME.HH);
 }
+/* la rame est un obstacle : on ne la traverse pas */
+function dansLaRame(o,x,y){const wx=posTram(o);if(wx===null)return false;return Math.abs(x-wx)<LONG_RAME/2-4&&y>o.y-14&&y<o.y+3;}
 
 
 /* ---------- LES ARBRES, LES BANCS, LES MASSIFS DE LA PLACE ---------- */
@@ -467,30 +510,29 @@ function decor(){
   /* la façade des Docks, au demi-pixel */
   P('x_jol_docks_sol',W/2,DOCKS_PIED,{anim:'jol_docks'});
   /* le parvis : des pins parasols dans leurs grilles, deux terrasses de café */
-  for(const x of [40,250,550,760])P('x_jol_pin',x,296,{col:[8,5]});
-  for(const x of [110,170,630,690])P('x_jol_parasol',x,284,{col:[44,12],bas:5});
-  /* la station de tram */
-  P('x_jol_abri',600,300,{col:[86,6]});
-  /* les deux rames, une par voie (elles passent, on ne les heurte pas) */
-  P('x_jol_tram',400,330,{anim:'jol_tram',sens:1});
-  P('x_jol_tram',400,356,{anim:'jol_tram',sens:-1});
+  for(const x of [40,250,550,760])P('x_jol_pin',x,342,{col:[8,5]});
+  for(const x of [110,170,630,690])P('x_jol_parasol',x,290,{col:[44,12],bas:5});
+  /* les deux stations : une sur le parvis pour la voie du haut, une sur le quai côté place */
+  P('x_jol_abri',220,350,{col:[100,6]});
+  P('x_jol_abri',600,420,{col:[100,6]});
+  /* les deux rames, une par voie ; elles s'arrêtent devant leur station */
+  P('x_jol_tram',400,376,{anim:'jol_tram',sens:1,arret:220});
+  P('x_jol_tram',400,400,{anim:'jol_tram',sens:-1,arret:600});
   /* la fontaine au milieu, deux oliviers en bacs de part et d'autre */
   P('x_fontaine',FONT[0],FONT[1],{col:[80,26],bas:8});
-  P('x_jol_olivier',290,566,{col:[26,10]});P('x_jol_olivier',510,566,{col:[26,10]});
+  P('x_jol_olivier',290,598,{col:[26,10]});P('x_jol_olivier',510,598,{col:[26,10]});
   /* les allées de pins */
-  for(const y of [440,560,690]){P('x_jol_pin',42,y,{col:[8,5]});P('x_jol_pin',W-42,y,{col:[8,5]});}
+  for(const y of [470,590,710]){P('x_jol_pin',42,y,{col:[8,5]});P('x_jol_pin',W-42,y,{col:[8,5]});}
   /* les massifs de lavande et de graminées, avec leurs bancs */
-  for(const [x,y] of [[200,420],[600,420],[200,698],[600,698]]){P('x_jol_massif',x,y,{col:[84,14]});P('x_jol_banc',x,y+20,{col:[40,6]});}
+  for(const [x,y] of [[200,470],[600,470],[200,700],[600,700]]){P('x_jol_massif',x,y,{col:[84,14]});P('x_jol_banc',x,y+20,{col:[40,6]});}
   /* des bancs tournés vers la fontaine */
-  for(const [x,y] of [[320,488],[480,488],[322,616],[478,616]])P('x_jol_banc',x,y,{col:[40,6]});
+  for(const [x,y] of [[300,526],[500,526],[296,652],[504,652]])P('x_jol_banc',x,y,{col:[40,6]});
   /* les lampadaires */
-  for(const [x,y] of [[120,400],[680,400],[120,600],[680,600],[300,740],[500,740]])P('x_jol_lampadaire',x,y,{col:[4,3]});
+  for(const [x,y] of [[120,452],[680,452],[120,642],[680,642],[300,746],[500,746]])P('x_jol_lampadaire',x,y,{col:[4,3]});
   /* le tableau d'embauche, à deux pas de l'arrivée */
-  P('x_tableau',488,662,{col:[34,10]});
+  P('x_tableau',488,694,{col:[34,10]});
   /* le kiosque à journaux */
-  P('x_kiosque',150,560,{col:[30,10]});
-  /* le panneau du port, au bord du passage piéton */
-  P('x_jol_panneau',SORTIE_X+60,PLACE_BAS-2,{col:[6,4]});
+  P('x_kiosque',150,600,{col:[30,10]});
   return D;
 }
 
@@ -499,7 +541,8 @@ function bloque(x,y){
   if(y<DOCKS_PIED+16)return true;                     /* la façade des Docks */
   if(y>PLACE_BAS+4&&Math.abs(x-SORTIE_X)>SORTIE_DEMI)return true;   /* la rue : seulement par le passage */
   if(y>H-4)return true;
-  for(const o of DECOR){if(!o.col)continue;
+  for(const o of DECOR){if(o.anim==='jol_tram'){try{if(dansLaRame(o,x,y)&&!dansLaRame(o,joueur.x,joueur.y))return true;}catch(e){}continue;}
+    if(!o.col)continue;
     if(Math.abs(x-o.x)<o.col[0]/2&&y>o.y-o.col[1]&&y<o.y+(o.bas||3))return true;}
   return false;
 }
