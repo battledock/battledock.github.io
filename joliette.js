@@ -134,12 +134,13 @@ function graverVide(){const c=document.createElement('canvas');c.width=2;c.heigh
 
 
 /* ---------- LA FAÇADE : LES TERRASSES DU PORT ---------- */
-/* LES TERRASSES DU PORT, côté place. Pierre blonde en grands bandeaux, fentes vitrées
-   horizontales, une peau d'écailles d'acier sur l'aile droite, un grand hall vitré au
-   centre, des vitrines sous un auvent, et la terrasse sur le toit, avec ses parasols,
-   ses palmiers et son garde-corps de verre. Toile x2, lumière en haut à gauche. */
+/* LES TERRASSES DU PORT, côté ville. Un long volume bas en pierre blonde, taillée en
+   grands blocs à joints fins, percé de hautes baies étroites et profondes ; un attique
+   vitré en retrait sous une fine casquette blanche ; une toiture en sheds qui reprend
+   les toits des Docks ; un grand hall vitré qui fend le bâtiment ; une aile en écailles
+   d'acier. Toile x2, lumière en haut à gauche. */
 function dessinerTerrasses(g,ST){
-const W=800,PIED=236,CX=400,noel=!!ST.noel,JOUR=ST.jour!==false;
+const W=800,PIED=236,CX=400,JOUR=ST.jour!==false;
 const h=(x,y,k)=>{let n=((x*73856093)^(y*19349663)^(k*83492791))|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
 const hx=s=>{const v=parseInt(s.slice(1),16);return[(v>>16)&255,(v>>8)&255,v&255];};
 const mix=(a,b,k)=>{const A=hx(a),B=hx(b);return 'rgb('+A.map((v,i)=>Math.round(v+(B[i]-v)*k)).join(',')+')';};
@@ -149,113 +150,94 @@ const R=(x,y,w,hh,c)=>{if(w<=0||hh<=0)return;const X=q(x),Y=q(y);g.fillStyle=c;g
 const VG=(x,y,w,hh,c1,c2)=>{for(let k=0;k<hh;k+=.5)R(x,y+k,w,.5,mix(c1,c2,k/Math.max(.5,hh-.5)));};
 const HG=(x,y,w,hh,st)=>{for(let k=0;k<w;k+=.5){const t=k/Math.max(.5,w-.5);let i=0;while(i<st.length-2&&t>st[i+1][0])i++;const[t0,c0]=st[i],[t1,c1]=st[i+1];R(x+k,y,.5,hh,mix(c0,c1,Math.min(1,Math.max(0,(t-t0)/(t1-t0)))));}};
 const OMB=(x,y,w,hh,a)=>{for(let k=0;k<hh;k+=.5)R(x,y+k,w,.5,'rgba(30,24,16,'+(a*(1-k/hh)).toFixed(3)+')');};
-const ARC=(cx,cy,r,c,a0=0,a1=7)=>{g.fillStyle=c;g.beginPath();g.arc(cx,cy,r,a0,a1);g.fill();};
-const LUMS=[], BULBES=[];
+const LUMS=[];
 const vitre=(x,y,w,hh,lum)=>{if(lum){VG(x,y,w,hh,'#ffe2a8','#d08a3a');LUMS.push([x,y,w,hh]);return;}
-  VG(x,y,w,hh,'#c6dae6','#4a6a88');g.fillStyle='rgba(255,255,255,.22)';g.beginPath();g.moveTo(x+.5,y+hh*.8);g.lineTo(x+Math.min(w*.35,hh*.7),y+.5);g.lineTo(x+Math.min(w*.35,hh*.7)+2.5,y+.5);g.lineTo(x+3,y+hh*.8);g.closePath();g.fill();};
-const texte=(t,x,y,px,c,f)=>{g.fillStyle=c;g.font=(f||'bold '+px+'px "Helvetica Neue",Arial,sans-serif');g.textAlign='center';g.textBaseline='middle';g.fillText(t,x,y);};
+  VG(x,y,w,hh,'#c8dce8','#46667f');g.fillStyle='rgba(255,255,255,.22)';g.beginPath();g.moveTo(x+.5,y+hh*.85);g.lineTo(x+Math.min(w*.45,hh*.5),y+.5);g.lineTo(x+Math.min(w*.45,hh*.5)+2,y+.5);g.lineTo(x+2.5,y+hh*.85);g.closePath();g.fill();};
+const texte=(t,x,y,f,c)=>{g.fillStyle=c;g.font=f;g.textAlign='center';g.textBaseline='middle';g.fillText(t,x,y);};
 
-const BLOND='#e4cfa2', BLOND_C='#f2e2bf', BLOND_S='#c4ab7c', JOINT='#cdb68a';
-const ALU='#7d8288', NOIR='#26282b';
-const TOIT=50, CORPS=58, AUVENT=172, SOL=216;
-const H0=300, H1=500;                 /* le grand hall vitré */
-const E0=560;                         /* l'aile en écailles */
+const BLOND='#e2cc9c', BLOND_C='#f0dfb8', BLOND_S='#c2a676', JOINT='#d2bb8c';
+const NOIR='#232528', ALU='#8a9098';
+const CASQ=30, ATT0=34, PIERRE0=62, RDC0=190, SOL=216;
+const H0=336, H1=464;                       /* le grand hall qui fend le bâtiment */
+const E0=688;                               /* l'aile en écailles */
 
 /* ---------- le ciel ---------- */
-VG(0,-12,W,70,JOUR?'#7fb4e8':'#1c2450',JOUR?'#dceaf4':'#3a4272');
+VG(0,-12,W,74,JOUR?'#7fb4e8':'#1c2450',JOUR?'#dceaf4':'#3a4272');
 
-/* ---------- la terrasse sur le toit ---------- */
-/* le pavillon des restaurants, en retrait */
-R(60,22,240,28,'#efe6d4');R(60,22,240,1,'#ffffff');for(let x=66;x<300;x+=14){vitre(x,27,10,18,!JOUR&&h(x,1,2)<.7);}
-R(520,26,200,24,'#efe6d4');R(520,26,200,1,'#ffffff');for(let x=526;x<720;x+=14){vitre(x,30,10,16,!JOUR&&h(x,2,2)<.7);}
-/* une pergola */
-for(let x=330;x<480;x+=10)R(x,24,1,26,'#a88a62');R(326,23,158,2,'#b8986c');for(let x=330;x<480;x+=4)R(x,25,2.5,1,'#c8a878');
-/* palmiers */
-const palmier=(x,y,s)=>{for(let k=0;k<s*22;k+=.5)R(x+Math.sin(k*.06)*1.5,y-k,1.6,.6,mix('#9a7a52','#7a5a3a',k/(s*22)));
-  const tx=x+Math.sin(s*22*.06)*1.5,ty=y-s*22;
-  for(let a=0;a<8;a++){const an=-Math.PI+a*Math.PI/7;g.strokeStyle=a%2?'#4a8a4a':'#3a7440';g.lineWidth=1.4;g.beginPath();g.moveTo(tx,ty);g.quadraticCurveTo(tx+Math.cos(an)*7,ty+Math.sin(an)*5-3,tx+Math.cos(an)*11,ty+Math.sin(an)*4+3);g.stroke();}};
-for(const [x,s] of [[46,1.3],[312,1.1],[496,1.2],[744,1.35]])palmier(x,48,s);
-/* des parasols carrés, blancs */
-for(const x of [110,170,230,560,620,680]){R(x-.5,34,1,14,'#8a8a8a');g.fillStyle='#fbfaf6';g.beginPath();g.moveTo(x-14,36);g.lineTo(x,30);g.lineTo(x+14,36);g.closePath();g.fill();R(x-14,36,28,1,'#d8d4cc');}
-/* le garde-corps de verre */
-R(0,TOIT-2,W,.8,ALU);g.fillStyle='rgba(200,230,240,.35)';g.fillRect(0,TOIT-1.2,W,8);for(let x=0;x<W;x+=16)R(x,TOIT-2,.6,9,ALU);
-/* les guirlandes guinguette de la terrasse */
-for(let x0=40;x0<W-40;x0+=60){for(let t=0;t<=1;t+=1/24)R(x0+t*60,TOIT-14+Math.sin(t*Math.PI)*5,.5,.5,'#3a3a3a');
-  for(let k=1;k<24;k+=3){const t=k/24;BULBES.push([x0+t*60,TOIT-13.5+Math.sin(t*Math.PI)*5,noel?['#ff5050','#ffd34a','#5ad06a','#5ab8ff'][(k+x0/60)%4|0]:'#ffe6a8']);}}
-/* la dalle du toit */
-VG(0,TOIT+6,W,4,'#fbf6ea','#d8ccb0');OMB(0,TOIT+10,W,3,.3);
+/* ---------- la toiture en sheds, comme les toits des Docks ---------- */
+for(let x=0;x<W;x+=50){const r=x+25;
+  g.fillStyle=JOUR?'#b9c0c6':'#7a8088';g.beginPath();g.moveTo(x,ATT0-4);g.lineTo(r,6);g.lineTo(x+50,ATT0-4);g.closePath();g.fill();
+  g.fillStyle=JOUR?'#d6dbdf':'#949aa2';g.beginPath();g.moveTo(x,ATT0-4);g.lineTo(r,6);g.lineTo(r,ATT0-4);g.closePath();g.fill();
+  for(let k=1;k<8;k++){const t=k/8;g.strokeStyle='rgba(90,98,106,.35)';g.lineWidth=.5;g.beginPath();g.moveTo(x+t*25,ATT0-4-(ATT0-10)*t);g.lineTo(x+t*25,ATT0-4);g.stroke();
+    g.beginPath();g.moveTo(r+t*25,6+(ATT0-10)*t);g.lineTo(r+t*25,ATT0-4);g.stroke();}
+  R(r-.5,5.5,1,1.5,'#6c747c');}
 
-/* ---------- la pierre blonde, en grands bandeaux horizontaux ---------- */
-const pierre=(x0,x1,y0,y1)=>{for(let y=y0;y<y1;y+=12){let x=x0-(((y-y0)/12|0)%2)*30;
-  while(x<x1){const w=60,xa=Math.max(x,x0),wa=Math.min(x+w,x1)-xa,d=(h(x|0,y,3)-.5)*10;
-    if(wa>0){VG(xa,y,wa,Math.min(12,y1-y),T(BLOND_C,d),T(BLOND,d));R(xa,y,wa,.5,'#fbf0d6');R(xa,y+11.5,wa,.5,JOINT);R(xa,y,.5,12,JOINT);
-      for(let k=0;k<5;k++)R(xa+2+h(x|0,y,k)*(wa-4),y+2+h(y,x|0,k)*8,1,.5,'rgba(160,130,90,.25)');}
+/* ---------- l'attique vitré, en retrait sous sa casquette ---------- */
+R(0,ATT0,W,PIERRE0-ATT0,NOIR);
+vitre(0,ATT0+1,W,PIERRE0-ATT0-2,false);
+for(let x=0;x<W;x+=20){R(x,ATT0,1.2,PIERRE0-ATT0,'#f2f2ee');}
+if(!JOUR)for(let x=0;x<W;x+=20)if(h(x,3,3)<.6)LUMS.push([x+1.2,ATT0+1,18.8,PIERRE0-ATT0-2]);
+/* la casquette : une fine dalle blanche en porte-à-faux, son ombre portée */
+R(0,CASQ,W,4,'#f7f6f2');R(0,CASQ,W,.6,'#ffffff');R(0,CASQ+3.5,W,.5,'#cfcac0');OMB(0,ATT0,W,8,.45);
+
+/* ---------- le corps en pierre blonde ---------- */
+const pierre=(x0,x1,y0,y1)=>{for(let y=y0;y<y1;y+=16){let x=x0-(((y-y0)/16|0)%2)*24;
+  while(x<x1){const w=48,xa=Math.max(x,x0),wa=Math.min(x+w,x1)-xa,hh=Math.min(16,y1-y),d=(h(x|0,y,3)-.5)*8;
+    if(wa>0){VG(xa,y,wa,hh,T(BLOND_C,d),T(BLOND,d));R(xa,y,wa,.5,T(BLOND_C,d+10));R(xa,y+hh-.5,wa,.5,JOINT);R(xa,y,.5,hh,JOINT);
+      for(let k=0;k<7;k++)R(xa+2+h(x|0,y,k)*(wa-4),y+2+h(y,x|0,k)*(hh-4),1,.5,'rgba(150,120,80,.22)');}
     x+=w;}}};
-pierre(0,H0,CORPS,AUVENT);pierre(H1,E0,CORPS,AUVENT);
+pierre(0,H0,PIERRE0,SOL);pierre(H1,E0,PIERRE0,SOL);
+/* l'arête haute de la pierre */
+R(0,PIERRE0,H0,1.2,'#f8ecd0');R(H1,PIERRE0,E0-H1,1.2,'#f8ecd0');
 
-/* les longues fentes vitrées, profondes, coupées de lames de pierre */
-const fente=(x0,x1,y,hh)=>{R(x0,y,x1-x0,hh,'#1e1f22');vitre(x0+1,y+2,x1-x0-2,hh-3,!JOUR&&h(x0|0,y|0,7)<.75);
-  OMB(x0,y,x1-x0,3,.55);R(x0,y+hh,x1-x0,1,'#fbf0d6');
-  for(let x=x0+6;x<x1;x+=12)HG(x,y,3,hh,[[0,BLOND_S],[.4,BLOND_C],[1,BLOND_S]]);};
-for(const [a,b] of [[16,H0-16],[H1+16,E0-14]]){fente(a,b,78,14);fente(a,b,118,14);}
+/* les hautes baies étroites et profondes, par paires */
+const baie=(x,y,w,hh)=>{R(x-1,y-1,w+2,hh+2,BLOND_S);R(x,y,w,hh,NOIR);
+  vitre(x+1.5,y+2.5,w-2,hh-3,!JOUR&&h(x|0,y|0,7)<.6);
+  R(x,y,1.5,hh,'rgba(20,16,10,.55)');R(x,y,w,2.5,'rgba(20,16,10,.6)');           /* la profondeur du tableau */
+  R(x-1,y+hh+1,w+2,.8,'#f6e8c8');};
+for(const [a,b] of [[0,H0],[H1,E0]]){
+  for(let x=a+18;x<b-14;x+=48){for(const dx of [0,13]){baie(x+dx,PIERRE0+14,8,48);baie(x+dx,PIERRE0+74,8,44);}}}
 
 /* ---------- l'aile en écailles d'acier ---------- */
-{const x0=E0,y0=CORPS-4,y1=AUVENT;R(x0,y0,W-x0,y1-y0,'#5a6068');
+{const x0=E0,y0=PIERRE0-2,y1=SOL;R(x0,y0,W-x0,y1-y0,'#5e646c');
   g.save();g.beginPath();g.rect(x0,y0,W-x0,y1-y0);g.clip();
-  for(let r=0;r<(y1-y0)/7+2;r++){for(let c=-1;c<(W-x0)/10+2;c++){const x=x0+c*10+(r%2)*5,y=y0+r*7;
-    const k=(Math.sin(c*.45+r*.3)+1)/2, base=mix('#9aa2aa','#e2e6ea',k);
-    g.fillStyle=base;g.beginPath();g.moveTo(x,y-5);g.lineTo(x+5,y);g.lineTo(x,y+5);g.lineTo(x-5,y);g.closePath();g.fill();
-    g.fillStyle='rgba(255,255,255,.35)';g.beginPath();g.moveTo(x,y-5);g.lineTo(x-5,y);g.lineTo(x-3.5,y);g.lineTo(x,y-3.5);g.closePath();g.fill();
-    g.fillStyle='rgba(30,40,50,.25)';g.beginPath();g.moveTo(x+5,y);g.lineTo(x,y+5);g.lineTo(x,y+3.5);g.lineTo(x+3.5,y);g.closePath();g.fill();
-    if(h(c+40,r,9)<.3)R(x-.4,y-.4,.8,.8,'rgba(30,40,50,.5)');}}
-  g.restore();R(x0-3,y0,3,y1-y0,'rgba(30,24,16,.25)');}
+  for(let r=0;r<(y1-y0)/6+2;r++)for(let c=-1;c<(W-x0)/8+2;c++){const x=x0+c*8+(r%2)*4,y=y0+r*6;
+    const k=(Math.sin(c*.5+r*.35)+1)/2;g.fillStyle=mix(JOUR?'#9ea6ae':'#6a7078',JOUR?'#e6eaee':'#a8aeb6',k);
+    g.beginPath();g.moveTo(x-4,y-1);g.quadraticCurveTo(x,y-5,x+4,y-1);g.lineTo(x+4,y+3);g.quadraticCurveTo(x,y+.5,x-4,y+3);g.closePath();g.fill();
+    R(x-3.5,y-1.2,7,.5,'rgba(255,255,255,.35)');R(x-4,y+2.6,8,.5,'rgba(30,40,50,.35)');}
+  g.restore();R(x0-2.5,y0,2.5,y1-y0,'rgba(30,24,16,.3)');}
 
-/* ---------- le grand hall vitré au centre ---------- */
-{const y0=CORPS-6;
-  HG(H0-6,y0,6,SOL-y0,[[0,BLOND_C],[1,BLOND_S]]);HG(H1,y0,6,SOL-y0,[[0,BLOND_S],[1,'#a88f62']]);
-  R(H0,y0,H1-H0,SOL-y0,NOIR);
-  vitre(H0+1,y0+1,H1-H0-2,SOL-y0-2,!JOUR);
-  if(!JOUR){/* l'atrium éclairé : les niveaux et les gens */for(const ly of [96,136])R(H0+1,ly,H1-H0-2,2,'rgba(90,60,30,.6)');}
-  for(let x=H0;x<=H1;x+=10)R(x-.3,y0,.6,SOL-y0,ALU);
-  for(let y=y0+20;y<SOL;y+=20)R(H0,y,H1-H0,.8,ALU);
-  /* l'enseigne en lettres blanches sur le bandeau du haut */
-  R(H0-6,CORPS-14,H1-H0+12,10,'#f4e8cc');R(H0-6,CORPS-14,H1-H0+12,.6,'#ffffff');OMB(H0-6,CORPS-4,H1-H0+12,2,.25);
-  texte('LES TERRASSES DU PORT',CX,CORPS-8.7,7,JOUR?'#2a3a4c':'#ffe6b0');
-  /* les portes coulissantes et leur auvent */
-  R(CX-30,SOL-26,60,26,NOIR);vitre(CX-29,SOL-25,28,25,!JOUR);vitre(CX+1,SOL-25,28,25,!JOUR);R(CX-.5,SOL-26,1,26,NOIR);
-  R(CX-44,SOL-32,88,3,'#f4f2ee');R(CX-44,SOL-32,88,.6,'#ffffff');OMB(CX-42,SOL-29,84,3,.3);
-  if(noel){/* un grand sapin dans le hall */
-    const sx=CX,sb=SOL-30;for(let k=0;k<5;k++){const w=6+k*5,y=sb-46+k*9;g.fillStyle=k%2?'#2f6b3a':'#3a7a44';g.beginPath();g.moveTo(sx,y-6);g.lineTo(sx+w,y+6);g.lineTo(sx-w,y+6);g.closePath();g.fill();}
-    for(let k=0;k<18;k++)BULBES.push([sx-18+h(k,1,3)*36*(.4+k/30),sb-44+k*2.4,['#ff5050','#ffd34a','#5ab8ff'][k%3]]);
-    BULBES.push([sx,sb-52,'#ffe07a',7]);}
+/* ---------- le grand hall vitré ---------- */
+{const y0=CASQ+4;
+  HG(H0-8,PIERRE0,8,SOL-PIERRE0,[[0,BLOND_C],[1,BLOND_S]]);HG(H1,PIERRE0,8,SOL-PIERRE0,[[0,BLOND_S],[1,'#a48c60']]);
+  R(H0,y0,H1-H0,SOL-y0,NOIR);vitre(H0+1,y0+1,H1-H0-2,SOL-y0-2,!JOUR);
+  if(!JOUR){for(const ly of [96,140])R(H0+1,ly,H1-H0-2,2,'rgba(80,52,24,.6)');}
+  for(let x=H0;x<=H1;x+=16)R(x-.4,y0,.8,SOL-y0,ALU);
+  for(let y=y0+24;y<SOL;y+=24)R(H0,y,H1-H0,.8,ALU);
+  /* l'enseigne, en lettres fines sur le verre */
+  R(H0+8,PIERRE0+2,H1-H0-16,12,'rgba(250,248,242,.92)');
+  texte('LES TERRASSES DU PORT',CX,PIERRE0+8.4,'600 6.5px "Helvetica Neue",Arial,sans-serif','#24364a');
+  /* l'entrée : portes coulissantes, auvent de verre sur tirants */
+  R(CX-28,SOL-26,56,26,NOIR);vitre(CX-27,SOL-25,26,25,!JOUR);vitre(CX+1,SOL-25,26,25,!JOUR);
+  R(CX-40,SOL-33,80,2,'rgba(220,235,242,.8)');R(CX-40,SOL-33,80,.5,'#ffffff');OMB(CX-38,SOL-31,76,3,.25);
+  for(const x of [CX-36,CX+36]){g.strokeStyle='#5a6068';g.lineWidth=.5;g.beginPath();g.moveTo(x,SOL-33);g.lineTo(x+(x<CX?-6:6),SOL-46);g.stroke();}
 }
 
-/* ---------- l'auvent et les vitrines du rez-de-chaussée ---------- */
-const ENS=['MODE','CAFÉ','BEAUTÉ','SPORT','LIBRAIRIE','BIJOUX','DÉCO','GLACES'];
-for(const [a,b] of [[0,H0-6],[H1+6,W]]){
-  R(a,AUVENT,b-a,SOL-AUVENT,NOIR);
-  for(let x=a+2;x<b-4;x+=36){const w=Math.min(32,b-x-4),lum=!JOUR||h(x,5,5)<.4;vitre(x+1,AUVENT+8,w,SOL-AUVENT-10,lum);
-    R(x+1,AUVENT+2,w,5,'#1a1b1d');texte(ENS[((x/36)|0)%ENS.length],x+1+w/2,AUVENT+4.6,'',JOUR?'#e8e2d4':'#ffe2a0','bold 3px "Helvetica Neue",Arial,sans-serif');
-    if(lum&&JOUR)for(let k=0;k<3;k++)R(x+4+k*9,SOL-14-h(x,k,6)*6,6,12+h(x,k,6)*6,['#c8a07a','#7a8aa0','#e8d8c8','#a86a5a'][(h(x,k,8)*4)|0]);
-    R(x+w+1,AUVENT,2,SOL-AUVENT,'#3a3c40');}
-}
-/* l'auvent, une fine dalle blanche en porte-à-faux */
-R(0,AUVENT-4,H0-6,4,'#f6f4f0');R(H1+6,AUVENT-4,W-H1-6,4,'#f6f4f0');R(0,AUVENT-4,H0-6,.6,'#ffffff');R(H1+6,AUVENT-4,W-H1-6,.6,'#ffffff');
-OMB(0,AUVENT,H0-6,4,.4);OMB(H1+6,AUVENT,W-H1-6,4,.4);
-if(noel){for(let x=0;x<W;x+=.5)if(x<H0-6||x>H1+6)R(x,AUVENT-4.8,.5,.9+h(x*2|0,1,4)*.6,'#f5f8fb');}
-/* le trottoir de granit */
-VG(0,SOL,W,PIED-SOL,'#55575a','#3a3c3f');R(0,SOL,W,.8,'#9a9ca0');for(let x=0;x<W;x+=24)R(x,SOL,.5,PIED-SOL,'#2a2c2e');
+/* ---------- le rez-de-chaussée : quelques grandes vitrines profondes ---------- */
+for(const [a,b] of [[0,H0],[H1,E0]]){
+  for(let x=a+20;x<b-50;x+=96){const w=56,y=RDC0+2;
+    R(x-1.5,y-1.5,w+3,SOL-y+1.5,BLOND_S);R(x,y,w,SOL-y,NOIR);vitre(x+2,y+3,w-3,SOL-y-3,!JOUR||h(x,1,5)<.35);
+    R(x,y,2,SOL-y,'rgba(20,16,10,.55)');R(x,y,w,3,'rgba(20,16,10,.6)');R(x+w/2-.4,y+3,.8,SOL-y-3,NOIR);}}
+
+/* ---------- le soubassement et le trottoir ---------- */
+R(0,SOL-1,W,1,'#b49a6c');VG(0,SOL,W,PIED-SOL,'#5a5c60','#3c3e42');R(0,SOL,W,.8,'#a0a2a6');for(let x=0;x<W;x+=24)R(x,SOL,.5,PIED-SOL,'#2c2e30');
 
 /* ---------- la nuit ---------- */
 if(!JOUR){g.save();g.globalCompositeOperation='multiply';g.fillStyle='rgb(124,124,176)';g.fillRect(0,-12,W,PIED+12);g.restore();
-  g.save();g.globalCompositeOperation='lighter';
-  for(const [x,y,w,hh] of LUMS){g.fillStyle='rgba(120,70,20,.6)';g.fillRect(x,y,w,hh);}
-  const r=g.createLinearGradient(0,AUVENT,0,SOL);r.addColorStop(0,'rgba(255,200,120,.25)');r.addColorStop(1,'rgba(255,170,80,0)');g.fillStyle=r;g.fillRect(0,AUVENT,W,SOL-AUVENT);
-  g.restore();
-  texte('LES TERRASSES DU PORT',CX,CORPS-8.7,7,'#ffe6b0');
-  g.save();g.globalCompositeOperation='lighter';const gl=g.createRadialGradient(CX,CORPS-9,2,CX,CORPS-9,60);gl.addColorStop(0,'rgba(255,200,120,.22)');gl.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gl;g.fillRect(CX-70,CORPS-30,140,40);g.restore();}
-for(const [x,y,c,rr] of BULBES){if(!JOUR){g.save();g.globalCompositeOperation='lighter';const r=g.createRadialGradient(x,y,0,x,y,rr||3.4);r.addColorStop(0,c);r.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=r;g.fillRect(x-8,y-8,16,16);g.restore();}
-  R(x-.6,y-.6,1.2,1.2,c);R(x-.25,y-.5,.5,.5,'#ffffff');}
+  g.save();g.globalCompositeOperation='lighter';for(const [x,y,w,hh] of LUMS){g.fillStyle='rgba(120,70,20,.6)';g.fillRect(x,y,w,hh);}g.restore();
+  texte('LES TERRASSES DU PORT',CX,PIERRE0+8.4,'600 6.5px "Helvetica Neue",Arial,sans-serif','#3a4c60');
+  /* la pierre lavée de lumière depuis le sol */
+  g.save();g.globalCompositeOperation='lighter';const r=g.createLinearGradient(0,SOL,0,SOL-80);r.addColorStop(0,'rgba(255,200,130,.18)');r.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=r;g.fillRect(0,SOL-80,E0,80);g.restore();}
 }
 
 const NOEL=false;   /* pas de décor de Noël */
