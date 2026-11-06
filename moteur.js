@@ -10782,7 +10782,7 @@ let TXT_FERME=null;
 /* SI port.js NE CHARGE PAS, les cinquante-trois symboles ci-dessous
    restent indéfinis et le port ne se dessine pas, sans un mot. On le dit. */
 try{
-if(CARTE==='spawn'){try{JOL=eval(await chargerMorceau('joliette.js'));}catch(x){console.warn('JOL',x);JOL=null;}}
+if(CARTE==='spawn'){try{let lieu='';try{lieu=new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu==='terrasses'?'terrasses.js':'joliette.js'));}catch(x){console.warn('JOL',x);JOL=null;}}
 if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar,dessinerLePanorama}=eval(await chargerMorceau('port.js')));}
 if(CARTE==='tokyo'){TKM=eval(await chargerMorceau('tokyo.js'));}
 }catch(erPort){
@@ -34470,6 +34470,7 @@ function ouvrirLEmbauche(){
 (function ecranDimension(){
 try{
 if(document.getElementById('dimEcran'))return;
+if(/[?&](lieu|de|arrivee)=/.test(location.search))return;   /* passage d'un lieu à l'autre : pas d'écran d'accueil */
 const css=document.createElement('style');css.textContent=
 '#dimEcran{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px;'+
 'background:radial-gradient(120% 80% at 50% 0%,#24406e 0%,#13223e 55%,#0a1222 100%);color:#f4ecd8;font-family:system-ui,sans-serif;transition:opacity .45s}'+

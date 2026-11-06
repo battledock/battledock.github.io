@@ -9,7 +9,7 @@
 const W=800, H=800;
 const DOCKS_PIED=236, TROTTOIR=346, TRAM0=346, TRAM1=422, PLACE_BAS=760;
 const SORTIE_X=400, SORTIE_DEMI=44;
-const DEPART=[400,712];
+const DEPART=(()=>{try{if(new URLSearchParams(location.search).get('de')==='terrasses')return [400,262];}catch(x){}return [400,712];})();
 const FONT=[400,592];
 const h=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
 const teinte=(hex,d)=>{const v=parseInt(hex.slice(1),16);const c=k=>Math.max(0,Math.min(255,((v>>k)&255)+d));
@@ -761,6 +761,16 @@ setInterval(()=>{try{
       location.href='jeu.html?carte=extramar&arrivee=1&de=joliette'+v;},620);
   }}catch(x){}},150);
 
+
+/* ON ENTRE AUX TERRASSES : face à une porte coulissante ouverte, on pousse vers le haut */
+let ENTRE=false, CONTRE=0;
+setInterval(()=>{try{
+  if(ENTRE||PARTI||typeof joueur==='undefined')return;
+  const devant=joueur.y<DOCKS_PIED+22&&PORTES.some(([px])=>Math.abs(joueur.x-px)<20);
+  CONTRE=devant?CONTRE+1:0;
+  if(CONTRE>=3){ENTRE=true;try{sauver();}catch(x){}
+    setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='spawn.html?lieu=terrasses'+v;},250);}
+}catch(x){}},150);
 ANIM_DECOR.jol_tram=dessinerTram;
 ANIM_DECOR.jol_docks=dessinerLesDocks;
 ANIM_DECOR.jol_fontaine=PLACE.dessinerFontaine;
