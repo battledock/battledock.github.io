@@ -20629,7 +20629,7 @@ const buisFo=['x_fo_mure','x_fo_framboise','x_fo_myrtille'].includes(o.t);
    accroche à 48 px — donc depuis la berge, à côté du ponton, le jeu
    proposait de pêcher et la ligne partait de la terre ferme. */
 if(o.t!=='rocher'&&o.t!=='x_fo_rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'&&!buisFo
-&&!batiment&&!o.bati&&!o.parler&&!cueillable&&!minerai)continue;
+&&!batiment&&!o.bati&&!o.parler&&!o.agir&&!cueillable&&!minerai)continue;
 if(buisFo&&o.cueilli&&Date.now()-o.cueilli<240000)continue;
 if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
 if(o.t==='buisson'&&o.cueilli&&Date.now()-o.cueilli<240000)continue;   /* repousse en 4 min */
@@ -24510,6 +24510,7 @@ const o=cible();
 if(!o||GESTE.t>0){secours();return;}
 b.onclick=agir;                     /* une cible : c'est elle qu'on vise */
 if(o.parler){b.innerHTML='Parler<small>'+(o.nom||'')+'</small>';b.classList.add('on');return;}
+if(o.agir){b.innerHTML=(o.libelle||'Voir')+'<small>'+(o.nom||'')+'</small>';b.classList.add('on');return;}
 if(o.t==='echoppe'){
 b.innerHTML='Entrer<small>L’ÉCHOPPE · ACHETER</small>';
 b.classList.add('on');return;
@@ -24672,6 +24673,7 @@ function agir(){
 if(pageOuverte()||Date.now()-fermeA<500)return;
 const o=cible();if(!o||GESTE.t>0)return;
 if(o.parler){direPNJ(o);return;}
+if(o.agir){try{o.agir(o);}catch(x){console.warn(x);}return;}
 if(o.t==='coffre'){
 if(e.coffreOuvert)return;
 e.coffreOuvert=true;e.outils.pioche=true;e.outils.hache=true;e.coffreQuand=Date.now();

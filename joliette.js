@@ -705,7 +705,143 @@ function bloquePlace(x,y){const ex=(x-CX),ey=(y-CY),a=Math.atan2(ey/112,ex/178);
 return {solFin,graverSegment,graverFontaine,dessinerFontaine,bloquePlace,SEGS,FY,CX};
 })();
 
-const GRAVEURS={x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_tram:graverVide};
+/* ---------- LE KIOSQUE À JOURNAUX (bleu marine, store bordeaux) ---------- */
+const KIOSQUE=(()=>{
+const lin=(g,x0,y0,x1,y1,st)=>{const gr=g.createLinearGradient(x0,y0,x1,y1);st.forEach(([o,c])=>gr.addColorStop(o,c));return gr;};
+const R=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+const COUV=[['#c8302a','#f6e8c8'],['#1f4fa8','#ffd84a'],['#f2c230','#1a1a1a'],['#2a8a5a','#ffffff'],['#e8702a','#ffffff'],['#7a3ab8','#ffe0f0'],['#f4f0e6','#c8302a'],['#1a1a22','#f0cf7d'],['#e8487a','#ffffff'],['#2ab0c8','#ffffff']];
+/* une couverture de magazine : fond, titre, visage ou photo, accroches */
+function couv(g,x,y,w,h,k){const [f,t]=COUV[k%COUV.length];
+  R(g,x+.5,y+.5,w,h,'rgba(0,0,0,.28)');R(g,x,y,w,h,f);
+  R(g,x+.8,y+.8,w-1.6,h*.2,t);R(g,x+1.2,y+1.2,w*.55,h*.08,f);           /* le titre en réserve */
+  if(k%3===0){g.fillStyle='#e0b896';g.beginPath();g.ellipse(x+w*.55,y+h*.6,w*.24,h*.2,0,0,7);g.fill();R(g,x+w*.3,y+h*.78,w*.5,h*.22,t);} /* un visage */
+  else if(k%3===1){R(g,x+1,y+h*.3,w-2,h*.42,'rgba(255,255,255,.35)');R(g,x+1,y+h*.55,w-2,h*.17,'rgba(0,0,0,.18)');}                  /* une photo */
+  R(g,x+1,y+h*.8,w*.5,.7,t);R(g,x+1,y+h*.88,w*.35,.7,t);
+  R(g,x,y,w,.6,'rgba(255,255,255,.35)');}
+/* un quotidien plié : manchette, gros titre, colonnes */
+function quotidien(g,x,y,w,h,rouge){R(g,x+.5,y+.6,w,h,'rgba(0,0,0,.25)');R(g,x,y,w,h,'#f4f0e4');
+  R(g,x+1,y+1,w-2,h*.16,rouge?'#c8302a':'#1a1a1a');R(g,x+1,y+h*.24,w-2,h*.1,'#1a1a1a');
+  R(g,x+1,y+h*.4,w*.45,h*.32,'#9a9a9a');for(let i=0;i<5;i++)R(g,x+w*.52,y+h*.4+i*h*.07,w*.42,.5,'#7a7a7a');
+  for(let i=0;i<3;i++)R(g,x+1,y+h*.78+i*h*.07,w-2,.5,'#7a7a7a');}
+/* une pile de journaux sur le comptoir */
+function pile(g,x,y,w,n){for(let i=0;i<n;i++){R(g,x,y-i*1.1,w,1.1,i%2?'#ebe6d8':'#f6f2e6');}R(g,x,y-n*1.1,w,.6,'#1a1a1a');R(g,x+1,y-n*1.1+1,w*.6,.5,'#c8302a');}
+/* le vendeur, derrière le comptoir */
+function vendeur(g,x,y){R(g,x-7,y-12,14,12,'#3a4a6a');R(g,x-1,y-12,2,5,'#f2efe6');g.fillStyle='#e0b088';g.fillRect(x-4.5,y-22,9,10);R(g,x-5,y-24,10,4,'#5a4030');R(g,x-6,y-24,12,1.6,'#2a2a30');R(g,x-5,y-27,10,3.4,'#2a2a30');/* casquette */
+  R(g,x-3,y-18,1.4,1,'#2a1a10');R(g,x+1.6,y-18,1.4,1,'#2a1a10');R(g,x-2,y-14.6,4,.8,'#a86a50');}
+function ombre(g,cx,y,rx){g.fillStyle=lin(g,0,y-4,0,y+6,[[0,'rgba(30,26,20,.32)'],[1,'rgba(30,26,20,.12)']]);g.beginPath();g.ellipse(cx+3,y+1.5,rx,6,0,0,7);g.fill();}
+
+/* LE KIOSQUE À JOURNAUX, vu de trois-quarts : face, deux pans coupés, coupole */
+function kiosque(g,cx,sol,P){
+  const L=84,F=56,x0=cx-L/2,x1=cx+L/2,fx0=cx-F/2,fx1=cx+F/2,HB=60,yh=sol-HB;
+  ombre(g,cx,sol,52);
+  /* le socle de pierre */
+  g.fillStyle=lin(g,0,sol-6,0,sol,[[0,'#bdb4a4'],[1,'#8a8274']]);g.beginPath();g.moveTo(x0-2,sol-6);g.lineTo(x1+2,sol-6);g.lineTo(x1+1,sol);g.lineTo(x0-1,sol);g.fill();R(g,x0-2,sol-6.5,L+4,1,'#d8d0c0');
+  /* les pans coupés, gauche et droit, plus sombres, couverts de magazines */
+  const pan=(xa,xb,sombre)=>{g.fillStyle=lin(g,xa,0,xb,0,sombre?[[0,P.c2],[1,P.c1]]:[[0,P.c1],[1,P.c2]]);g.fillRect(xa,yh,xb-xa,HB-6);
+    for(let r=0;r<4;r++)for(let c=0;c<2;c++)couv(g,xa+1.6+c*6.4,yh+5+r*12.4,5.6,10.6,(r*2+c+(sombre?3:0))*3+1);
+    R(g,xa,yh,xb-xa,1.2,P.or);R(g,sombre?xa:xb-1,yh,1,HB-6,'rgba(0,0,0,.35)');};
+  pan(x0,fx0,false);pan(fx1,x1,true);
+  /* la face : panneaux pleins en bas, fenêtre ouverte au milieu */
+  g.fillStyle=lin(g,fx0,0,fx1,0,[[0,P.c1],[.35,P.c0],[1,P.c1]]);g.fillRect(fx0,yh,F,HB-6);
+  for(const px of [fx0+2,fx1-2])R(g,px-.7,yh,1.4,HB-6,P.or);
+  /* le soubassement à panneaux moulurés */
+  for(let k=0;k<3;k++){const px=fx0+4+k*(F-8)/3;g.strokeStyle='rgba(0,0,0,.3)';g.lineWidth=.6;g.strokeRect(px+1,sol-20,(F-8)/3-2,11);g.strokeStyle='rgba(255,255,255,.18)';g.strokeRect(px+1.6,sol-19.4,(F-8)/3-3.2,9.8);}
+  /* la fenêtre : intérieur chaud, vendeur, étagères de magazines au fond */
+  const wy0=yh+12,wy1=sol-24;g.fillStyle=lin(g,0,wy0,0,wy1,[[0,'#3a2a1c'],[1,'#5a3e26']]);g.fillRect(fx0+5,wy0,F-10,wy1-wy0);
+  for(let c=0;c<7;c++)couv(g,fx0+6.5+c*6.3,wy0+1.5,5.2,8,c*2+5);
+  g.fillStyle='rgba(255,210,140,.25)';g.fillRect(fx0+5,wy0,F-10,wy1-wy0);
+  vendeur(g,cx+6,wy1);
+  /* le comptoir de bois, et les piles du jour */
+  g.fillStyle=lin(g,0,wy1,0,wy1+5,[[0,'#a8784a'],[1,'#6a4a2a']]);g.fillRect(fx0+2,wy1,F-4,5);R(g,fx0+2,wy1,F-4,1,'#d0a070');
+  pile(g,fx0+6,wy1,11,5);pile(g,fx0+19,wy1,11,3);pile(g,cx+14,wy1,10,4);
+  /* les quotidiens suspendus à la ficelle, pinces à linge */
+  g.strokeStyle='#e8e0cc';g.lineWidth=.4;g.beginPath();g.moveTo(fx0+5,wy0+12);g.quadraticCurveTo(cx,wy0+14,fx1-5,wy0+12);g.stroke();
+  for(let i=0;i<4;i++){const qx=fx0+7+i*11.2;quotidien(g,qx,wy0+12.6+Math.sin(i/3*Math.PI)*1.4,9,12,i%2===0);R(g,qx+3.6,wy0+11.6+Math.sin(i/3*Math.PI)*1.4,1.6,2.4,'#c8a060');}
+  /* le store qui déborde au-dessus de la fenêtre */
+  const sy=wy0-1;for(let i=0;i<8;i++){const a=fx0+1+i*(F-2)/8,b=a+(F-2)/8;g.fillStyle=i%2?P.s1:P.s0;g.beginPath();g.moveTo(a+1,sy-4);g.lineTo(b+1,sy-4);g.lineTo(b,sy+3);g.lineTo(a,sy+3);g.fill();
+    g.beginPath();g.arc((a+b)/2,sy+3,(b-a)/2,0,Math.PI);g.fill();}
+  R(g,fx0+1,sy-4.6,F-1,1.2,'rgba(0,0,0,.3)');g.fillStyle='rgba(0,0,0,.15)';g.fillRect(fx0+5,sy+5,F-10,3);
+  /* la corniche et l'enseigne */
+  g.fillStyle=lin(g,0,yh-12,0,yh,[[0,P.c1],[1,P.c2]]);g.beginPath();g.moveTo(x0-4,yh-12);g.lineTo(x1+4,yh-12);g.lineTo(x1+1,yh);g.lineTo(x0-1,yh);g.fill();
+  R(g,x0-4,yh-12.6,L+8,1.4,P.or);R(g,x0-1,yh-1.2,L+2,1.2,P.or);
+  g.fillStyle=P.or;g.font='bold 8.4px Georgia,"Liberation Serif",serif';g.textAlign='center';g.textBaseline='middle';g.fillText(P.mot,cx,yh-5.8);
+  g.fillStyle='rgba(255,255,255,.35)';g.fillText(P.mot,cx-.3,yh-6.2);g.fillStyle=P.or;g.fillText(P.mot,cx,yh-5.8);
+  /* la coupole : profil bombé, côtes, puis sa face supérieure en ellipse */
+  const dy=yh-12, top=dy-28;
+  g.fillStyle=lin(g,x0,0,x1,0,[[0,P.c2],[.3,P.c0],[.55,P.c1],[1,P.c2]]);
+  g.beginPath();g.moveTo(x0-4,dy);g.bezierCurveTo(x0-2,dy-16,cx-18,top,cx,top);g.bezierCurveTo(cx+18,top,x1+2,dy-16,x1+4,dy);g.closePath();g.fill();
+  g.save();g.clip();for(let i=-6;i<=6;i++){const bx=cx+i*7.4;g.strokeStyle='rgba(0,0,0,.25)';g.lineWidth=.7;g.beginPath();g.moveTo(cx+i*1.2,top);g.quadraticCurveTo(bx,dy-14,cx+i*7.6,dy);g.stroke();
+    g.strokeStyle='rgba(255,255,255,.12)';g.beginPath();g.moveTo(cx+i*1.2+.8,top);g.quadraticCurveTo(bx+.8,dy-14,cx+i*7.6+.8,dy);g.stroke();}
+  for(let r=1;r<4;r++){g.strokeStyle='rgba(0,0,0,.18)';g.lineWidth=.5;g.beginPath();g.ellipse(cx,dy-r*7,(L/2+4)*(1-r*.2),3,0,0,Math.PI);g.stroke();}
+  g.restore();
+  /* la frise dentelée au bas de la coupole */
+  for(let i=0;i<22;i++){const px=x0-3+i*(L+6)/22;g.fillStyle=P.or;g.beginPath();g.moveTo(px,dy);g.lineTo(px+(L+6)/44,dy+2.4);g.lineTo(px+(L+6)/22,dy);g.fill();}
+  /* le lanternon et son épi */
+  g.fillStyle=lin(g,cx-5,0,cx+5,0,[[0,P.c2],[.4,P.c0],[1,P.c2]]);g.fillRect(cx-5,top-8,10,8);R(g,cx-6,top-9,12,1.4,P.or);R(g,cx-6,top-.6,12,1,P.or);
+  R(g,cx-3,top-6.4,2,4,'rgba(255,220,140,.7)');R(g,cx+1,top-6.4,2,4,'rgba(255,220,140,.7)');
+  g.fillStyle=P.c1;g.beginPath();g.moveTo(cx-6,top-9);g.quadraticCurveTo(cx,top-17,cx+6,top-9);g.fill();
+  R(g,cx-.6,top-22,1.2,7,P.or);g.fillStyle=P.or;g.beginPath();g.arc(cx,top-22.5,1.8,0,7);g.fill();g.beginPath();g.moveTo(cx-2.4,top-17);g.lineTo(cx,top-19);g.lineTo(cx+2.4,top-17);g.fill();
+  /* le chevalet : l'édition du jour */
+  const cxv=x1+16;g.fillStyle='rgba(30,26,20,.25)';g.beginPath();g.ellipse(cxv+2,sol+1,10,2.4,0,0,7);g.fill();
+  R(g,cxv-1,sol-30,1.4,30,'#3a2a1c');R(g,cxv+12-1,sol-30,1.4,30,'#3a2a1c');
+  R(g,cxv-2,sol-32,16,24,'#2a2a2e');R(g,cxv-1,sol-31,14,22,'#f4f0e4');
+  g.fillStyle='#1a1a1a';g.font='bold 2.6px Georgia,serif';g.textAlign='center';g.fillText('LE PETIT',cxv+6,sol-27.6);g.fillText('DOCKER',cxv+6,sol-24.8);
+  R(g,cxv,sol-22.6,12,.6,'#1a1a1a');g.fillStyle='#c8302a';g.font='bold 2.6px Arial';g.fillText('NOUVEAU !',cxv+6,sol-19.4);
+  R(g,cxv+1,sol-17,10,5,'#9a9a9a');for(let i=0;i<2;i++)R(g,cxv+1,sol-11+i*1.5,10,.5,'#7a7a7a');
+  /* le présentoir tournant de cartes postales, à gauche */
+  const px=x0-12;g.fillStyle='rgba(30,26,20,.25)';g.beginPath();g.ellipse(px+2,sol+1,7,2,0,0,7);g.fill();R(g,px-.6,sol-34,1.2,34,'#5a5e64');
+  for(let r=0;r<4;r++){R(g,px-6,sol-34+r*7,12,6,'#e8e4dc');for(let c=0;c<3;c++)R(g,px-5.4+c*3.8,sol-33.4+r*7,3.2,4.8,['#4a9ad0','#e8c040','#e86a3a','#3a9a5a','#f2efe6','#c84a6a'][(r*3+c)%6]);}
+  R(g,px-6.5,sol-35,13,1.2,'#5a5e64');
+}
+
+const P={c0:'#2e4a78',c1:'#203a62',c2:'#142644',or:'#e8c870',s0:'#9a2a2a',s1:'#f2ebdc',mot:'PRESSE'};
+let T=null;
+function graver(){if(T)return T;const Wd=136,Hd=140,sol=132,cx=62,D=2;const c=document.createElement('canvas');c.width=Wd*D;c.height=Hd*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);
+  kiosque(g,cx,sol,P);T={toile:c,W:Wd,H:Hd,sol};return T;}
+return {graver};})();
+
+/* ---------- LE QUAI : le journal qu'on lit au kiosque ---------- */
+const JOURNAL={date:'Vendredi 6 nov. 2026',une:{tag:'Exclusif',titre:'Les Terrasses du Port enfin ouvertes !',img:'galerie',chapo:'Escalators, ascenseurs de verre et des dizaines de vitrines à louer : on a visité la galerie avant tout le monde.'},
+  breves:[{tag:'Port',titre:"L'ovation des dockers",txt:'À chaque niveau gagné sur le port, tout le quai applaudit.',img:'ovation'},
+    {tag:'Shopping',titre:"L'étage +1 ouvert",txt:"Vue plongeante sur l'atrium, par l'escalator « La Terrasse ».",img:'etage'},
+    {tag:'Joliette',titre:'La place toute ronde',txt:'Fontaine recentrée, haie de buis, banc circulaire.',img:'place'},
+    {tag:'Météo',titre:'Automne doré',txt:"Les platanes gardent leurs couleurs jusqu'au 20 décembre.",img:'place',pos:'0 100%'}]};
+const CSS_QUAI=`#quaiJ{position:fixed;inset:0;z-index:2147483000;background:rgba(14,18,26,.94);overflow-y:auto;-webkit-overflow-scrolling:touch;opacity:0;transition:opacity .25s;font-family:Arial,Helvetica,sans-serif}
+#quaiJ.on{opacity:1}#quaiJ *{box-sizing:border-box}
+#quaiJ .pap{max-width:520px;margin:14px auto 90px;background:#f7f5f0;box-shadow:0 14px 40px rgba(0,0,0,.6);padding-bottom:14px;transform:translateY(16px);transition:transform .3s}
+#quaiJ.on .pap{transform:none}
+#quaiJ .mast{background:#c8102e;color:#fff;padding:10px 14px 8px;display:flex;align-items:flex-end;justify-content:space-between}
+#quaiJ .mast h1{margin:0;font:900 italic 44px/.9 Arial,Helvetica,sans-serif;letter-spacing:-2.5px}#quaiJ .mast h1 span{color:#ffd84a}
+#quaiJ .mast small{font:700 9px Arial;text-align:right;line-height:1.3}
+#quaiJ .sub{background:#141414;color:#fff;font:700 9px Arial;letter-spacing:.12em;padding:5px 14px;display:flex;gap:14px;text-transform:uppercase}#quaiJ .sub b{color:#ffd84a}
+#quaiJ .une{position:relative}#quaiJ .une img{display:block;width:100%;height:270px;object-fit:cover}
+#quaiJ .une .t{position:absolute;left:0;right:0;bottom:0;padding:40px 14px 12px;background:linear-gradient(transparent,rgba(0,0,0,.85))}
+#quaiJ .tag{display:inline-block;background:#ffd84a;color:#141414;font:900 10px Arial;letter-spacing:.08em;padding:3px 7px;text-transform:uppercase}
+#quaiJ .une h2{margin:6px 0 0;color:#fff;font:900 30px/1 Arial;letter-spacing:-1px;text-transform:uppercase}
+#quaiJ .chap{padding:10px 14px 4px;font:700 15px/1.35 Georgia,serif;color:#141414}
+#quaiJ .g{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 14px}
+#quaiJ .c img{display:block;width:100%;height:100px;object-fit:cover}#quaiJ .c .tag{margin-top:6px;background:#c8102e;color:#fff}
+#quaiJ .c h3{margin:4px 0 2px;font:900 15px/1.05 Arial;letter-spacing:-.3px;color:#141414}#quaiJ .c p{margin:0;font:13px/1.3 Georgia,serif;color:#333}
+#quaiJ .bar{position:fixed;left:0;right:0;bottom:0;padding:12px 14px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(14,18,26,.95) 40%);display:flex;justify-content:center}
+#quaiJ .bar button{background:#c8102e;color:#fff;border:0;font:700 15px Arial;padding:12px 30px;border-radius:24px;box-shadow:0 4px 14px rgba(0,0,0,.5)}`;
+function ouvrirJournal(){if(document.getElementById('quaiJ'))return;
+  if(!document.getElementById('cssQuai')){const st=document.createElement('style');st.id='cssQuai';st.textContent=CSS_QUAI;document.head.appendChild(st);}
+  const J=JOURNAL,v=window.MA_VERSION?('?v='+encodeURIComponent(window.MA_VERSION)):'',im=n=>'assets/journal/'+n+'.jpg'+v;
+  const d=document.createElement('div');d.id='quaiJ';
+  d.innerHTML='<div class="pap"><div class="mast"><h1>Le <span>Quai</span></h1><small>'+J.date.toUpperCase()+'<br>ÉDITION DE MARSEILLE · 1 €</small></div>'+
+    '<div class="sub"><b>● En direct</b><span>Joliette</span><span>Terrasses</span><span>Port</span></div>'+
+    '<div class="une"><img src="'+im(J.une.img)+'" alt=""><div class="t"><span class="tag">'+J.une.tag+'</span><h2>'+J.une.titre+'</h2></div></div>'+
+    '<div class="chap">'+J.une.chapo+'</div><div class="g">'+
+    J.breves.map(b=>'<div class="c"><img src="'+im(b.img)+'" alt=""'+(b.pos?' style="object-position:'+b.pos+'"':'')+'><span class="tag">'+b.tag+'</span><h3>'+b.titre+'</h3><p>'+b.txt+'</p></div>').join('')+
+    '</div></div><div class="bar"><button type="button">Fermer</button></div>';
+  document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));
+  const fermer=()=>{d.classList.remove('on');setTimeout(()=>d.remove(),260);};
+  d.querySelector('button').addEventListener('click',fermer);
+  d.addEventListener('click',ev=>{if(ev.target===d)fermer();});
+  ['pointerdown','touchstart','keydown'].forEach(t=>d.addEventListener(t,ev=>ev.stopPropagation()));
+  try{vibrer(8);}catch(x){}}
+
+const GRAVEURS={x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_tram:graverVide};
 function graver(t,v){return (GRAVEURS[t]||graverVide)(v||0);}
 
 function decor(){
@@ -730,10 +866,10 @@ function decor(){
   for(const [i,[x,y]] of [[200,470],[600,470],[200,700],[600,700]].entries()){P('x_jol_massif',x,y,{col:[84,14],v:i});P('x_jol_banc',x,y+20,{col:[40,6]});}
   /* des bancs tournés vers la fontaine */
   /* les lampadaires */
-  for(const [x,y] of [[120,452],[680,452],[120,642],[680,642],[300,746],[500,746]])P('x_jol_lampadaire',x,y,{col:[4,3]});
+  for(const [x,y] of [[120,452],[680,452],[96,668],[680,642],[300,746],[500,746]])P('x_jol_lampadaire',x,y,{col:[4,3]});
   /* le tableau d'embauche, à deux pas de l'arrivée */
   /* le kiosque à journaux */
-  P('x_kiosque',150,600,{col:[30,10]});
+  P('x_jol_kiosque',156,600,{col:[96,14],agir:ouvrirJournal,libelle:'Lire le journal',nom:'LE QUAI'});
   return D;
 }
 
