@@ -375,7 +375,10 @@ function dessinerLesPortes(g,X0,Y0){
   });
 }
 
-const NOEL=false;   /* pas de décor de Noël */
+const NOEL=false;
+/* les platanes prennent leurs couleurs d'automne du 22 septembre au 20 décembre (?automne=0 ou 1 pour forcer) */
+const AUTOMNE=(()=>{try{const q=new URLSearchParams(location.search).get('automne');if(q!==null)return q==='1';}catch(x){}
+  const d=new Date(),m=d.getMonth(),j=d.getDate();return (m===8&&j>=22)||m===9||m===10||(m===11&&j<=20);})();   /* pas de décor de Noël */
 function toileDocks(jour){
   const D=2,c=document.createElement('canvas');c.width=W*D;c.height=250*D;
   const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(D,0,0,D,0,12*D);
@@ -515,13 +518,22 @@ function feuillage(g,R,cx,cy,rx,ry,pal,n,seed){
     g.fillStyle=col;g.beginPath();g.ellipse(x,y,2.2+hA(i,seed,4)*2.2,1.6+hA(i,seed,5)*1.4,hA(i,seed,6)*3,0,7);g.fill();}}
 
 /* 1. LE PLATANE : tronc tacheté, canopée ample */
-function arbrePlatane(){const L=120,HH=150,{c,g,R}=toileA(L,HH),cx=L/2,s=HH-6;ombreA(g,cx+16,s+1,48,9);
+function arbrePlatane(v){const L=120,HH=150,{c,g,R}=toileA(L,HH),cx=L/2,s=HH-6;ombreA(g,cx+16,s+1,48,9);
   for(let y=s;y>s-70;y-=.5){const t=(s-y)/70,w=14-t*5+(t<.08?(.08-t)*60:0);R(cx-w/2,y,w,.6,'#b8ae92');}
   for(let i=0;i<110;i++){const y=s-2-hA(i,1,7)*66,t=(s-y)/70,w=14-t*5;R(cx-w/2+hA(i,2,7)*(w-3),y,2.5+hA(i,3,7)*3,2+hA(i,4,7)*2.5,['#d8d0b0','#8a8a6a','#a6a284','#e6e0c8'][i%4]);}
   R(cx+3,s-70,1.6,70,'rgba(60,50,30,.25)');
   for(const [dx,dy] of [[-22,-30],[20,-26],[-6,-36],[8,-34]]){g.strokeStyle='#a89e82';g.lineWidth=2.2;g.beginPath();g.moveTo(cx,s-66);g.quadraticCurveTo(cx+dx*.4,s-66+dy*.6,cx+dx,s-66+dy);g.stroke();}
-  const P=['#3a5a2c','#4f7a36','#6f9a44','#9cc05a'];
-  feuillage(g,R,cx,s-84,48,14,P,260,4);feuillage(g,R,cx-28,s-100,32,24,P,320,1);feuillage(g,R,cx+28,s-102,32,24,P,320,2);feuillage(g,R,cx,s-120,38,24,P,360,3);
+  const ETE=['#3a5a2c','#4f7a36','#6f9a44','#9cc05a'];
+  if(!AUTOMNE){feuillage(g,R,cx,s-84,48,14,ETE,260,4);feuillage(g,R,cx-28,s-100,32,24,ETE,320,1);feuillage(g,R,cx+28,s-102,32,24,ETE,320,2);feuillage(g,R,cx,s-120,38,24,ETE,360,3);}
+  else{/* L'AUTOMNE, UN PEU DE TOUT : chaque arbre mêle l'or, le roux, le cuivre et un reste de vert, dans des proportions à lui */
+    const DORE=['#7a5a1e','#b8862a','#dcb440','#f2d870'], ROUX=['#6a2e18','#a84a20','#d4742c','#eeaa4a'], CUIVRE=['#5a3a20','#8a5a2a','#b07a3a','#c89a58'], VERT=['#4a5a2c','#6a7a36','#8a9a44','#b0b85a'];
+    const M=[[ROUX,DORE,CUIVRE,DORE],[DORE,DORE,ROUX,VERT],[CUIVRE,ROUX,DORE,ROUX],[DORE,VERT,ROUX,DORE],[ROUX,CUIVRE,DORE,DORE],[DORE,ROUX,VERT,CUIVRE]][(v||0)%6];
+    feuillage(g,R,cx,s-84,48,14,M[0],260,4);feuillage(g,R,cx-28,s-100,32,24,M[1],320,1);feuillage(g,R,cx+28,s-102,32,24,M[2],320,2);feuillage(g,R,cx,s-120,38,24,M[3],360,3);
+    /* quelques touffes d'une autre couleur, mêlées dans la masse */
+    feuillage(g,R,cx-10,s-108,40,26,M[(v+1)%4],120,5+(v||0));
+    /* le tapis de feuilles mortes au pied */
+    const T=['#d8a830','#c0602a','#9a6a38','#e8c050','#a04020','#b08048'];
+    for(let i=0;i<300;i++){const a=hA(i,7+(v||0),61)*Math.PI*2,r=Math.sqrt(hA(i,8,61));g.fillStyle=T[(i+(v||0))%T.length];g.beginPath();g.ellipse(cx+10+Math.cos(a)*r*56,s+Math.sin(a)*r*10,1.4,.9,a,0,7);g.fill();}}
   return {c,W:L,H:HH,s};}
 /* 5. LE MAGNOLIA : feuilles vernissées sombres, grandes fleurs blanches */
 function arbreMagnolia(){const L=110,HH=140,{c,g,R}=toileA(L,HH),cx=L/2,s=HH-6;ombreA(g,cx+12,s+1,38,8);
@@ -532,11 +544,11 @@ function arbreMagnolia(){const L=110,HH=140,{c,g,R}=toileA(L,HH),cx=L/2,s=HH-6;o
     g.fillStyle='#fbf8f0';g.beginPath();g.ellipse(x,y,2.4,1.8,0,0,7);g.fill();g.fillStyle='#e8e0cc';g.beginPath();g.ellipse(x+.8,y+.6,1.2,.9,0,0,7);g.fill();}
   return {c,W:L,H:HH,s};}
 
-function graverPlatane(){const t=arbrePlatane();return {toile:t.c,W:t.W,H:t.H,sol:t.s};}
+function graverPlatane(v){const t=arbrePlatane(v);return {toile:t.c,W:t.W,H:t.H,sol:t.s};}
 function graverMagnolia(){const t=arbreMagnolia();return {toile:t.c,W:t.W,H:t.H,sol:t.s};}
 
 const GRAVEURS={x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassif,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_tram:graverVide};
-function graver(t){return (GRAVEURS[t]||graverVide)();}
+function graver(t,v){return (GRAVEURS[t]||graverVide)(v||0);}
 
 function decor(){
   const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
@@ -555,7 +567,7 @@ function decor(){
   P('x_fontaine',FONT[0],FONT[1],{col:[80,26],bas:8});
   P('x_jol_olivier',290,598,{col:[26,10]});P('x_jol_olivier',510,598,{col:[26,10]});
   /* les allées de platanes */
-  for(const y of [470,590,710]){P('x_jol_platane',42,y,{col:[12,6]});P('x_jol_platane',W-42,y,{col:[12,6]});}
+  [470,590,710].forEach((y,i)=>{P('x_jol_platane',42,y,{col:[12,6],v:i});P('x_jol_platane',W-42,y,{col:[12,6],v:i+3});});
   /* les massifs de lavande et de graminées, avec leurs bancs */
   for(const [x,y] of [[200,470],[600,470],[200,700],[600,700]]){P('x_jol_massif',x,y,{col:[84,14]});P('x_jol_banc',x,y+20,{col:[40,6]});}
   /* des bancs tournés vers la fontaine */
