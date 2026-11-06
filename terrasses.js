@@ -261,8 +261,6 @@ function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0}
   const t=graverTour();P('x_jol_tdp_tour_sol',TX-TW/2+t.W/2-t.x0,TB,{anim:'tdp_tour'});
   for(const [x,y] of [[90,640],[300,740],[520,600],[730,700]])P('x_jol_tdp_palmier',x,y,{col:[26,8]});
   for(const [x,y] of [[190,620],[180,760],[290,550]])P('x_jol_tdp_banc',x,y,{col:[64,8]});
-  P('x_jol_tdp_voiture_sol',VX,VY,{col:[176,22]});
-  P('x_jol_tdp_mec_sol',VX+104,VY+8,{col:[16,6],parler:['Moi j’ai acheté une belle BM parce que j’ai un petit zizi.'],nom:'LE GARS À LA BM',tete:'😎'});
   return D;}
 function bloque(x,y){
   if(x<12||x>W-12)return true;
