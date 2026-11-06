@@ -9,7 +9,8 @@
 const W=800, H=800, Y0=410, ETAGE=128;
 const Q=(()=>{try{return new URLSearchParams(location.search);}catch(x){return new URLSearchParams('');}})();
 const ETG=Q.get('niveau')==='1'||Q.get('lieu')==='terrasses1';                 /* l'étage +1 */
-const DEPART=ETG?[600,578]:(Q.get('de')==='etage'?[78,540]:[400,740]), SORTIE_X=400, SORTIE_DEMI=46;
+const DEPART=ETG?[600,578]:(Q.get('de')==='etage'?[78,540]:[400,694]), SORTIE_X=400, SORTIE_DEMI=46;
+const MUR_S=H-70, PL=136;      /* le mur de l'entrée, au sud, et la largeur des portes */
 const BLEU='#1f3fa8', BLEU2='#2a6ad0';
 const hA=(x,y,k)=>{let n=((x*73856093)^(y*19349663)^(k*83492791))|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
 const lin=(g,x0,y0,x1,y1,st)=>{const gr=g.createLinearGradient(x0,y0,x1,y1);st.forEach(([o,c])=>gr.addColorStop(o,c));return gr;};
@@ -56,13 +57,20 @@ function peindreSol(g){
   /* le reflet des vitrines dans la pierre lustrée */
   const p=(W-8)/5;for(let k=0;k<5;k++){g.fillStyle=lin(g,0,Y0,0,Y0+70,[[0,'rgba(90,110,130,.22)'],[1,'rgba(90,110,130,0)']]);g.fillRect(12+k*p,Y0,p-16,70);}
   /* une bande de laiton : la route maritime incrustée, et la rose des vents */
-  g.strokeStyle='#b89a5a';g.lineWidth=1.4;g.beginPath();g.moveTo(0,690);g.bezierCurveTo(160,640,260,720,400,676);g.bezierCurveTo(540,632,640,700,W,660);g.stroke();
-  g.fillStyle=BLEU;for(let k=0;k<4;k++){const a=k*Math.PI/2;g.beginPath();g.moveTo(400+Math.cos(a)*20,676+Math.sin(a)*9);g.lineTo(400+Math.cos(a+.6)*4,676+Math.sin(a+.6)*2);g.lineTo(400,676);g.fill();}
-  g.strokeStyle='#b89a5a';g.lineWidth=.7;g.beginPath();g.ellipse(400,676,15,7,0,0,7);g.stroke();
+  g.strokeStyle='#b89a5a';g.lineWidth=1.4;g.beginPath();g.moveTo(0,610);g.bezierCurveTo(160,560,260,640,400,596);g.bezierCurveTo(540,552,640,620,W,580);g.stroke();
+  g.fillStyle=BLEU;for(let k=0;k<4;k++){const a=k*Math.PI/2;g.beginPath();g.moveTo(400+Math.cos(a)*20,596+Math.sin(a)*9);g.lineTo(400+Math.cos(a+.6)*4,596+Math.sin(a+.6)*2);g.lineTo(400,596);g.fill();}
+  g.strokeStyle='#b89a5a';g.lineWidth=.7;g.beginPath();g.ellipse(400,596,15,7,0,0,7);g.stroke();
   /* les murs latéraux */
   R(g,0,Y0,6,H-Y0,'#d8d2c6');R(g,W-6,Y0,6,H-Y0,'#d8d2c6');
-  /* l'entrée au sud : seuil et paillasson devant les portes coulissantes */
-  R(g,SORTIE_X-60,H-22,120,22,'#45454c');for(let x=SORTIE_X-58;x<SORTIE_X+58;x+=4)R(g,x,H-20,2,18,'#55555e');
+  /* les flèches bleues au sol, qui mènent à la sortie */
+  for(let i=0;i<3;i++){g.fillStyle='rgba(31,63,168,'+(.22+i*.16)+')';g.beginPath();g.moveTo(SORTIE_X-13,MUR_S-62+i*16);g.lineTo(SORTIE_X+13,MUR_S-62+i*16);g.lineTo(SORTIE_X,MUR_S-52+i*16);g.closePath();g.fill();}
+  /* le mur de l'entrée, au sud : pierre claire, deux baies fixes sur le parvis */
+  g.fillStyle=lin(g,0,MUR_S,0,H,[[0,'#efe9de'],[1,'#ddd5c6']]);g.fillRect(0,MUR_S,W,H-MUR_S);
+  R(g,0,MUR_S,W,2,'#c8bfae');R(g,0,MUR_S+2,W,1,'#ffffff');for(let y=MUR_S+18;y<H;y+=18)R(g,0,y,W,.6,'rgba(150,140,125,.35)');
+  for(const bx of [90,560]){const bw=150;g.fillStyle=lin(g,0,MUR_S+12,0,H,[[0,'#cfe6f4'],[.55,'#eef4f6'],[.56,'#d8cdb8'],[1,'#cfc3ab']]);g.fillRect(bx,MUR_S+12,bw,H-MUR_S-12);
+    for(let x=bx;x<=bx+bw;x+=bw/3)R(g,x-1,MUR_S+12,2,H-MUR_S-12,'#4a4c52');R(g,bx,MUR_S+10,bw,3,'#4a4c52');
+    g.fillStyle='rgba(255,255,255,.22)';g.beginPath();g.moveTo(bx+14,MUR_S+13);g.lineTo(bx+30,MUR_S+13);g.lineTo(bx+12,H);g.lineTo(bx-4,H);g.fill();}
+  R(g,0,MUR_S-6,W,6,'rgba(0,0,0,.08)');
   R(g,SORTIE_X-62,H-24,124,2,'#a8adb2');
 }
 function sol(){const c=document.createElement('canvas');c.width=W;c.height=H;(ETG?peindreEtage:peindreSol)(c.getContext('2d'));return c;}
@@ -268,21 +276,24 @@ function bloqueEtage(x,y){
 function decor(){if(ETG)return decorEtage();const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
   const e=graverEscalators();P('x_jol_tdp_escalators_sol',e.ox+e.W/2,GY2+0);
   const t=graverTour();P('x_jol_tdp_tour_sol',TX-TW/2+t.W/2-t.x0,TB,{anim:'tdp_tour'});
-  for(const [x,y] of [[90,640],[300,740],[520,600],[730,700]])P('x_jol_tdp_palmier',x,y,{col:[26,8]});
-  for(const [x,y] of [[190,620],[180,760],[290,550]])P('x_jol_tdp_banc',x,y,{col:[64,8]});
+  for(const [x,y] of [[90,640],[280,680],[520,600],[730,700]])P('x_jol_tdp_palmier',x,y,{col:[26,8]});
+  for(const [x,y] of [[190,620],[160,690],[290,550]])P('x_jol_tdp_banc',x,y,{col:[64,8]});
+  P('x_jol_tdp_portes_sol',SORTIE_X,H,{anim:'tdp_portes'});
+  P('x_jol_tdp_vide_sol',SORTIE_X,MUR_S-10,{agir:()=>sortir(),libelle:'Sortir',nom:'PLACE DE LA JOLIETTE'});
+  P('x_jol_tdp_panneau_sol',SORTIE_X,MUR_S-150);
   return D;}
 function bloque(x,y){
   if(ETG)return bloqueEtage(x,y);
   if(x<12||x>W-12)return true;
   if(y<Y0+10)return true;                                   /* les vitrines du fond */
-  if(y>H-6&&Math.abs(x-SORTIE_X)>SORTIE_DEMI)return true;
-  if(y>H+4)return true;
+  if(y>MUR_S-4&&Math.abs(x-SORTIE_X)>PL/2-14)return true;   /* le mur de l'entrée, sauf la baie des portes */
+  if(y>H-6)return true;
   if(x>EX0-26&&x<EX1+6&&y>GY1-PROF-2&&y<GY2+4)return true;   /* les escalators */
   if(x>EX1+104&&x<EX1+122&&y>GY2-8&&y<GY2+4)return true;    /* le poteau du palier */
   if(x>TX-TW/2-6&&x<TX+TW/2+6&&y>TB-TD-6&&y<TB+4)return true; /* la tour */
   for(const o of DECOR){if(!o.col)continue;if(Math.abs(x-o.x)<o.col[0]/2&&y>o.y-o.col[1]&&y<o.y+3)return true;}
   return false;}
-const GRAVEURS={x_jol_tdp_rail_sol:v=>graverRail(v),x_jol_tdp_escalators_sol:graverEscalators,x_jol_tdp_tour_sol:graverTour,x_jol_tdp_palmier:graverPalmier,x_jol_tdp_banc:graverBanc};
+const GRAVEURS={x_jol_tdp_panneau_sol:graverPanneau,x_jol_tdp_portes_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0}),x_jol_tdp_vide_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0}),x_jol_tdp_rail_sol:v=>graverRail(v),x_jol_tdp_escalators_sol:graverEscalators,x_jol_tdp_tour_sol:graverTour,x_jol_tdp_palmier:graverPalmier,x_jol_tdp_banc:graverBanc};
 function graver(t,v){const r=(GRAVEURS[t]||(()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0})))(v||0);return {toile:r.toile,W:r.W,H:r.H,sol:r.sol};}
 
 /* LES ESCALATORS : au pied (rez-de-chaussée) on monte ; sur la plaque (étage) on redescend */
@@ -297,11 +308,53 @@ setInterval(()=>{try{
 let PARTI=false;
 setInterval(()=>{try{
   if(ETG||PARTI||typeof joueur==='undefined')return;
-  if(joueur.y>H-14&&Math.abs(joueur.x-SORTIE_X)<SORTIE_DEMI){PARTI=true;
-    try{sauver();}catch(x){}
-    setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='spawn.html?de=terrasses'+v;},300);}
+  if(joueur.y>MUR_S+16&&Math.abs(joueur.x-SORTIE_X)<PL/2){sortir();}
 }catch(x){}},150);
+function sortir(){if(PARTI)return;PARTI=true;
+  try{sauver();}catch(x){}
+  setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='spawn.html?de=terrasses'+v;},300);}
 
-ANIM_DECOR.tdp_tour=dessinerTour;
+/* ---------- LES PORTES DE SORTIE, vues de l'intérieur : elles s'ouvrent à l'approche ---------- */
+let OUV=0;
+function dessinerPortes(g,o,x,y){
+  const dx=joueur.x-SORTIE_X,dy=joueur.y-MUR_S,pres=Math.abs(dx)<90&&dy>-90;
+  OUV+=((pres?1:0)-OUV)*0.12;const e=OUV*OUV*(3-2*OUV);
+  const L=PL,top=y-(H-MUR_S)+4,x0=x-L/2,hh=y-top;
+  /* le jour dehors : ciel, la place, un platane */
+  g.fillStyle=lin(g,0,top,0,y,[[0,'#bcdcf0'],[.5,'#eef4f6'],[.51,'#d8cdb8'],[1,'#cbbfa6']]);g.fillRect(x0,top,L,hh);
+  for(let k=0;k<8;k++)R(g,x0+k*L/8,top+hh*.51,.5,hh*.49,'rgba(0,0,0,.1)');
+  g.fillStyle='#c8862a';g.beginPath();g.ellipse(x0+24,top+hh*.32,16,10,0,0,7);g.fill();g.fillStyle='#e0a83a';g.beginPath();g.ellipse(x0+20,top+hh*.28,10,6,0,0,7);g.fill();R(g,x0+23,top+hh*.36,2.4,hh*.18,'#cfc6b4');
+  /* les deux vantaux, qui glissent derrière les dormants */
+  const vw=L/2-4,dec=e*(vw-6);
+  g.save();g.beginPath();g.rect(x0,top,L,hh);g.clip();
+  for(const s of [-1,1]){const vx=s<0?x-vw-dec:x+dec;
+    g.fillStyle='rgba(200,228,238,.5)';g.fillRect(vx,top+3,vw,hh-3);
+    R(g,vx,top+3,vw,2.4,'#5a5c62');R(g,vx,y-3,vw,3,'#5a5c62');R(g,s<0?vx+vw-2.4:vx,top+3,2.4,hh-3,'#5a5c62');R(g,s<0?vx:vx+vw-1.4,top+3,1.4,hh-3,'#5a5c62');
+    R(g,s<0?vx+vw-8:vx+5,top+hh*.52,3,10,'#c8ccd2');
+    g.fillStyle='rgba(255,255,255,.25)';g.beginPath();g.moveTo(vx+8,top+5);g.lineTo(vx+20,top+5);g.lineTo(vx+6,y-4);g.lineTo(vx-6,y-4);g.fill();}
+  g.restore();
+  /* dormants et caisson du mécanisme, bronze sombre */
+  R(g,x0-8,top,8,hh,'#3a3c42');R(g,x0+L,top,8,hh,'#3a3c42');R(g,x0-8,top,1.4,hh,'#6a6e76');R(g,x0+L+6.6,top,1.4,hh,'#2a2c30');
+  R(g,x0-10,top-12,L+20,13,'#3a3c42');R(g,x0-10,top-12,L+20,1.6,'#70747c');R(g,x0-10,top,L+20,1,'rgba(0,0,0,.4)');
+  /* le panneau vert SORTIE, lumineux */
+  const sx=x,sy=top-28;g.fillStyle='rgba(90,208,138,.25)';g.beginPath();g.ellipse(sx,sy+7,30,12,0,0,7);g.fill();
+  R(g,sx-22,sy,44,14,'#0e8a3a');R(g,sx-22,sy,44,1.4,'#7ae0a6');R(g,sx-22,sy+12.6,44,1.4,'#06622a');
+  g.fillStyle='#fff';g.font='bold 8px "Helvetica Neue",Arial,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('SORTIE',sx+5,sy+7.4);
+  g.beginPath();g.arc(sx-15,sy+3.6,1.5,0,7);g.fill();R(g,sx-16,sy+5.4,2.2,6,'#fff');R(g,sx-18,sy+7,6,1.2,'#fff');
+  R(g,sx-.5,top-14,1,0,'#666');
+  /* le seuil inox */
+  R(g,x0-8,y-2,L+16,2,'#c8ccd0');}
+/* le panneau bleu suspendu, dans le style des Terrasses */
+let TPAN=null;
+function graverPanneau(){if(TPAN)return TPAN;const Wd=116,Hd=150,sol=146;const {c,g}=toile(Wd,Hd);const x=10,y=0;
+  R(g,22,0,1.2,40,'#6a6e74');R(g,Wd-24,0,1.2,40,'#6a6e74');
+  R(g,x+1,42,96,30,'rgba(0,0,0,.18)');R(g,x,40,96,30,BLEU);R(g,x,40,96,1.6,'#5a7ae0');R(g,x,68.4,96,1.6,'#162e80');
+  g.fillStyle='#fff';g.beginPath();g.moveTo(x+7,50);g.lineTo(x+17,50);g.lineTo(x+12,58);g.closePath();g.fill();
+  g.font='bold 7.4px "Helvetica Neue",Arial,sans-serif';g.textAlign='left';g.textBaseline='middle';g.fillText('Place de la Joliette',x+22,50.5);
+  g.font='7px "Helvetica Neue",Arial,sans-serif';g.fillStyle='#d8e4ff';g.fillText('Sortie · Tram T2 · T3',x+22,61);
+  /* son ombre au sol, très loin dessous */
+  TPAN={toile:c,W:Wd,H:Hd,sol};return TPAN;}
+
+ANIM_DECOR.tdp_tour=dessinerTour;ANIM_DECOR.tdp_portes=dessinerPortes;
 return {sol,solFin,decor,bloque,graver,depart:DEPART};
 })()
