@@ -807,9 +807,9 @@ function graver(){if(T)return T;const Wd=136,Hd=140,sol=132,cx=62,D=2;const c=do
 return {graver};})();
 
 /* ---------- LE QUAI : le journal qu'on lit au kiosque ---------- */
-const JOURNAL={date:'Vendredi 6 nov. 2026',une:{tag:'Exclusif',titre:'La Galerie Bleue enfin ouverte !',img:'galerie',chapo:'Escalators, ascenseurs de verre et des dizaines de vitrines à louer : on a visité la galerie avant tout le monde.'},
+const JOURNAL={date:'Vendredi 6 nov. 2026',une:{tag:'Exclusif',titre:'La Galerie Bleue enfin ouverte !',img:'galerie',chapo:'Une grande verrière, un mur végétal et sept grandes vitrines à louer : on a visité la galerie avant tout le monde.'},
   breves:[{tag:'Port',titre:"L'ovation des dockers",txt:'À chaque niveau gagné sur le port, tout le quai applaudit.',img:'ovation'},
-    {tag:'Shopping',titre:"L'étage +1 ouvert",txt:"Vue plongeante sur l'atrium, par les escalators de la galerie.",img:'etage'},
+    {tag:'Shopping',titre:"Sept grandes boutiques à louer",txt:"Un seul grand niveau sous la verrière, avis aux marchands.",img:'galerie'},
     {tag:'Joliette',titre:'La place toute ronde',txt:'Fontaine recentrée, haie de buis, banc circulaire.',img:'place'},
     {tag:'Météo',titre:'Automne doré',txt:"Les platanes gardent leurs couleurs jusqu'au 20 décembre.",img:'place',pos:'0 100%'}]};
 const CSS_QUAI=`#quaiJ{position:fixed;inset:0;z-index:2147483000;background:rgba(14,18,26,.94);overflow-y:auto;-webkit-overflow-scrolling:touch;opacity:0;transition:opacity .25s;font-family:Arial,Helvetica,sans-serif}
