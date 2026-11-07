@@ -98,7 +98,13 @@ function peindreSol(g){
   let x=0;const p=(W-BOUT.reduce((a,b)=>a+b,0))/(BOUT.length+1);
   for(let i=0;i<BOUT.length;i++){
     g.fillStyle=lin(g,x,0,x+p,0,[[0,'#dcd8d0'],[.5,'#fbfaf6'],[1,'#d0ccc4']]);g.fillRect(x,76,p,Y0-76);x+=p;
-    if(STYLES[i])boutique(g,x,80,BOUT[i],Y0-84,STYLES[i]);x+=BOUT[i];}
+    if(STYLES[i]){/* une façade à taille humaine : environ trois fois le personnage, posée dans un mur de pierre */
+      const w2=Math.round(BOUT[i]*.66),x2=x+(BOUT[i]-w2)/2,y2=Y0-150;
+      g.fillStyle=lin(g,0,76,0,Y0,[[0,'#efe9de'],[1,'#e6ded0']]);g.fillRect(x,76,BOUT[i],Y0-76);
+      for(let yy=96;yy<Y0;yy+=20)R(g,x,yy,BOUT[i],.6,'rgba(150,140,125,.3)');
+      R(g,x,y2-8,BOUT[i],3,'#d6cebe');R(g,x,y2-9,BOUT[i],1,'#ffffff');
+      boutique(g,x2,y2,w2,Y0-4-y2,STYLES[i]);}
+    x+=BOUT[i];}
   g.fillStyle=lin(g,x,0,x+p,0,[[0,'#dcd8d0'],[.5,'#fbfaf6'],[1,'#d0ccc4']]);g.fillRect(x,76,W-x,Y0-76);
   R(g,0,Y0-4,W,4,'#cfc8ba');R(g,0,Y0-1,W,1,'rgba(0,0,0,.28)');
   /* les grandes dalles de pierre claire, posées en quinconce */
@@ -543,7 +549,6 @@ function graverBistrot(){if(TBIS)return TBIS;const Wd=90,Hd=56,sol=50,cx=45;cons
 /* ---------- LE DÉCOR ET LES OBSTACLES ---------- */
 function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
   /* les palmiers contre les vitrines, entre deux maisons */
-  for(const [x,y] of [[30,420],[1570,420],[580,420],[1020,420]])P('x_jol_tdp_palmier',x,y,{col:[26,8]});
   /* le hall bleu : ses suspensions et ses deux banquettes crème */
   for(const [x,y] of BANQ)P('x_jol_tdp_banquette_sol',x,Math.round(y+RBQ*.42),{col:[RBQ*2,40],v:1});
   /* LE COIN CAFÉ, à gauche : le comptoir rond, ses tables */
