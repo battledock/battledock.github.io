@@ -47,17 +47,17 @@ function niveau(g,y,n){R(g,0,y,W,110,'#ece6dc');const p=(W-8)/n;
 const BOUT=[180,200,240,330,240,200,180];
 /* LES MAISONS : chaque local a sa façade, sa matière, son cadre */
 const STYLES=[
- {nom:'marbre',bandeau:'#f4f1ec',veine:'rgba(150,150,160,.35)',cadre:'#b89a5a'},
- {nom:'noyer',bandeau:'#6a4428',lame:'#5a3820',cadre:'#1e1e22',store:['#1e4a36','#2c6a4e']},
- {nom:'granit',bandeau:'#23252b',grain:'rgba(255,255,255,.18)',cadre:'#c8a860'},
+ {nom:'marbre',mur:['#f6f0e6','#e8dcc8'],parquet:['#e4dccf','#cfc4b2'],bandeau:'#f4f1ec',veine:'rgba(150,150,160,.35)',cadre:'#b89a5a'},
+ {nom:'noyer',mur:['#e8f0e6','#c8d8c4'],parquet:['#a8784a','#8a5e38'],bandeau:'#6a4428',lame:'#5a3820',cadre:'#1e1e22',store:['#1e4a36','#2c6a4e']},
+ {nom:'granit',mur:['#3a3c46','#2a2c34'],parquet:['#5a5048','#3e3630'],bandeau:'#23252b',grain:'rgba(255,255,255,.18)',cadre:'#c8a860'},
  null,
- {nom:'laiton',bandeau:'#b89050',brosse:'rgba(255,240,200,.28)',cadre:'#7a5a2a'},
- {nom:'creme',bandeau:'#efe6d2',cadre:'#ffffff',store:['#1c2c58','#f4f0e6']},
- {nom:'ocre',bandeau:'#c8783e',cadre:'#5a3020',store:['#a84a24','#e8c8a0']}];
+ {nom:'laiton',mur:['#fbeccc','#eed4a0'],parquet:['#d8b888','#c09868'],bandeau:'#b89050',brosse:'rgba(255,240,200,.28)',cadre:'#7a5a2a'},
+ {nom:'creme',mur:['#e8eef6','#ccd8e8'],parquet:['#e8e0d0','#d0c4ae'],bandeau:'#efe6d2',cadre:'#ffffff',store:['#1c2c58','#f4f0e6']},
+ {nom:'ocre',mur:['#fbe6d0','#f0c8a0'],parquet:['#c8784a','#a85e36'],bandeau:'#c8783e',cadre:'#5a3020',store:['#a84a24','#e8c8a0']}];
 /* l'intérieur d'un local vide, éclairé : murs chauds, parquet, étagères, spots */
 function vitrineEclairee(g,x,y,w,h,S){
   R(g,x,y,w,h,S.cadre);const vx=x+3,vy=y+3,vw=w-6,vh=h-6;
-  g.fillStyle=lin(g,0,vy,0,vy+vh,[[0,'#fff3dc'],[.62,'#f0dcb8'],[.63,'#d8b88a'],[1,'#c8a070']]);g.fillRect(vx,vy,vw,vh);
+  g.fillStyle=lin(g,0,vy,0,vy+vh,[[0,S.mur[0]],[.62,S.mur[1]],[.63,S.parquet[0]],[1,S.parquet[1]]]);g.fillRect(vx,vy,vw,vh);
   /* le fond : des étagères vides, une porte de réserve */
   for(let k=0;k<3;k++){const ey=vy+vh*(.22+k*.13);R(g,vx+8,ey,vw*.36,2,'#e8d8bc');R(g,vx+8,ey+2,vw*.36,1,'rgba(0,0,0,.12)');R(g,vx+vw-8-vw*.36,ey,vw*.36,2,'#e8d8bc');R(g,vx+vw-8-vw*.36,ey+2,vw*.36,1,'rgba(0,0,0,.12)');}
   R(g,vx+vw/2-12,vy+vh*.2,24,vh*.42,'#e6d2ae');R(g,vx+vw/2+7,vy+vh*.42,2,4,'#b89a5a');
@@ -133,21 +133,12 @@ function peindreSol(g){
   for(let k=0;k<9;k++){const bx=40+k*190;g.fillStyle=lin(g,0,Y0,0,H,[[0,'rgba(255,250,232,.22)'],[1,'rgba(255,250,232,0)']]);
     g.beginPath();g.moveTo(bx,Y0);g.lineTo(bx+46,Y0);g.lineTo(bx+46+140,H);g.lineTo(bx+140,H);g.closePath();g.fill();}
   g.restore();
-  /* LE COIN CAFÉ : un grand rond de parquet de chêne, cerclé de laiton */
-  {const cx=320,cy=630,rx=230,ry=118;g.save();g.beginPath();g.ellipse(cx,cy,rx,ry,0,0,7);g.clip();
-   g.fillStyle='#c8955a';g.fillRect(cx-rx,cy-ry,rx*2,ry*2);
-   for(let y=cy-ry;y<cy+ry;y+=7)for(let x=cx-rx-((y/7|0)%3)*20;x<cx+rx;x+=60){R(g,x+.4,y+.4,59.2,6.2,['#c8955a','#bd8a50','#d4a068','#c4905a'][(((x/60)|0)+(y/7|0))%4]);}
-   g.fillStyle='rgba(255,240,210,.18)';g.beginPath();g.ellipse(cx-40,cy-50,rx*.7,ry*.35,0,0,7);g.fill();g.restore();
-   g.strokeStyle='#c8a860';g.lineWidth=2.4;g.beginPath();g.ellipse(cx,cy,rx,ry,0,0,7);g.stroke();g.strokeStyle='rgba(255,240,200,.6)';g.lineWidth=.6;g.beginPath();g.ellipse(cx,cy,rx-2,ry-1.2,0,Math.PI,2*Math.PI);g.stroke();}
-  /* LE COIN JARDIN : une grande ellipse de pierre claire bordée de massifs, gravier blond */
-  {const cx=1290,cy=630,rx=240,ry=122;
-   g.fillStyle='#e6dccb';g.beginPath();g.ellipse(cx,cy,rx,ry,0,0,7);g.fill();
-   for(let i=0;i<2400;i++){const a=hA(i,9,1)*Math.PI*2,r=Math.sqrt(hA(i,9,2));R(g,cx+Math.cos(a)*rx*.86*r,cy+Math.sin(a)*ry*.86*r,1,1,hA(i,9,3)<.5?'#d4c6ae':'#f2ead8');}
-   g.strokeStyle='#c8bca4';g.lineWidth=3;g.beginPath();g.ellipse(cx,cy,rx*.88,ry*.88,0,0,7);g.stroke();
-   /* la couronne de massifs : buis, graminées, petites fleurs */
-   for(let i=0;i<3200;i++){const a=hA(i,10,1)*Math.PI*2;if(Math.abs(Math.sin(a))<.16)continue;const r=.88+hA(i,10,2)*.14;const x=cx+Math.cos(a)*rx*r,y=cy+Math.sin(a)*ry*r;
-     g.fillStyle=['#2e5430','#467440','#6e9a58','#3a6028'][i%4];g.beginPath();g.ellipse(x,y-hA(i,10,4)*6,3.2,2.2,a,0,7);g.fill();
-     if(i%7===0){g.fillStyle=['#f4f0e4','#e8a0c0','#c8a8e8'][i%3];g.fillRect(x,y-2,1.4,1.4);}}}
+  /* LE COIN CAFÉ : une terrasse de lames de teck, légèrement surélevée, nez de laiton */
+  {const x0=96,y0=520,w=448,hh=228;
+   g.fillStyle='rgba(60,40,20,.18)';g.fillRect(x0+4,y0+hh,w,6);
+   for(let y=y0;y<y0+hh;y+=8)for(let x=x0-((y/8|0)%3)*24;x<x0+w;x+=72){const xa=Math.max(x,x0),xb=Math.min(x+72,x0+w);if(xb>xa)R(g,xa+.4,y+.4,xb-xa-.8,7.2,['#b88252','#a87446','#c48e5c','#b07c4c'][(((x/72)|0)+(y/8|0))%4]);}
+   g.fillStyle='rgba(255,236,200,.14)';g.fillRect(x0,y0,w,hh*.4);
+   R(g,x0,y0+hh,w,4,'#8a5e36');R(g,x0,y0+hh-1,w,1.4,'#c8a860');R(g,x0,y0,w,1.4,'#c8a860');R(g,x0,y0,1.4,hh,'#c8a860');R(g,x0+w-1.4,y0,1.4,hh,'#c8a860');}
   /* la pierre lustrée : quelques éclats de lumière et des veines dorées */
   for(let k=0;k<70;k++){const x=hA(k,3,9)*W,y=Y0+40+hA(k,4,9)*(H-Y0-60);if(x>630&&x<970)continue;g.strokeStyle='rgba(200,168,96,.22)';g.lineWidth=.6;g.beginPath();g.moveTo(x,y);g.bezierCurveTo(x+20,y+6,x+30,y-4,x+60,y+4);g.stroke();}
   /* le vignettage doux sur les bords */
@@ -490,6 +481,23 @@ function ouvrirFiche(L){if(document.getElementById('ficheL'))return;
     d.querySelector('.m').textContent='Noté ! Les réservations ouvrent bientôt : le local '+L.id+' t’est mis de côté.';try{vibrer(10);}catch(x){}};
   try{vibrer(8);}catch(x){}}
 
+/* une jardinière longue en bois, garnie de buis et de graminées */
+const TBAC={};
+function graverBac(v){if(TBAC[v])return TBAC[v];const lg=v===1?96:60,Wd=lg+10,Hd=40,sol=34;const {c,g}=toile(Wd,Hd);
+  ombreSol(g,Wd/2,sol,lg/2+2,3,.22);
+  g.fillStyle=Lg(g,0,sol-14,0,sol,[[0,'#a8784a'],[1,'#7a5432']]);g.fillRect(5,sol-14,lg,14);for(let x=5;x<5+lg;x+=8)R(g,x,sol-14,.6,14,'rgba(60,40,20,.35)');R(g,4,sol-15,lg+2,2,'#c89a68');
+  fe(g,Wd/2,sol-19,lg/2-2,6,VERTS[v===1?1:0],Math.round(lg*4),v+7,1.1);
+  for(let i=0;i<lg/6;i++){const x=8+i*6+hA(i,v,1)*3;g.strokeStyle='#c8b070';g.lineWidth=.5;g.beginPath();g.moveTo(x,sol-18);g.quadraticCurveTo(x+2,sol-26,x+(hA(i,v,2)-.5)*6,sol-32);g.stroke();}
+  for(let i=0;i<lg/10;i++){g.fillStyle=['#f4f0e4','#e8a0c0','#c8a8e8'][i%3];g.fillRect(8+hA(i,v,3)*(lg-6),sol-24+hA(i,v,4)*8,1.6,1.6);}
+  return TBAC[v]={toile:c,W:Wd,H:Hd,sol};}
+/* une colonne blanche à chapiteau doré, qui monte vers la verrière */
+let TCOL=null;
+function graverColonne(){if(TCOL)return TCOL;const Wd=30,Hd=210,sol=204;const {c,g}=toile(Wd,Hd);
+  ombreSol(g,15,sol,12,3.5,.25);R(g,5,sol-8,20,8,'#e8e2d6');R(g,5,sol-8,20,1.2,'#ffffff');
+  g.fillStyle=Lg(g,8,0,22,0,[[0,'#d8d2c6'],[.4,'#ffffff'],[1,'#c8c2b6']]);g.fillRect(8,10,14,sol-18);for(let k=1;k<4;k++)R(g,8+k*3.5,14,.6,sol-26,'rgba(160,150,130,.35)');
+  R(g,5,4,20,6,'#d8b060');R(g,4,2,22,2,'#f0d488');R(g,6,10,18,2,'#b8904a');
+  const gr=g.createRadialGradient(15,30,0,15,30,14);gr.addColorStop(0,'rgba(255,240,200,.7)');gr.addColorStop(1,'rgba(255,240,200,0)');g.fillStyle=gr;g.fillRect(1,16,28,28);R(g,12,26,6,4,'#fff6d8');
+  return TCOL={toile:c,W:Wd,H:Hd,sol};}
 /* ---------- LE DÉCOR ET LES OBSTACLES ---------- */
 function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
   /* les palmiers contre les vitrines, entre deux maisons */
@@ -500,9 +508,16 @@ function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0}
   /* LE COIN CAFÉ, à gauche : le comptoir rond, ses tables */
   P('x_jol_tdp_cafe_sol',320,620,{col:[96,30]});
   for(const [x,y] of [[170,580],[470,580],[150,660],[490,660],[200,720],[440,720],[320,735],[230,540],[410,540]])P('x_jol_tdp_table_sol',x,y,{col:[22,6]});
+  /* les bacs de buis qui ferment la terrasse du café, avec deux ouvertures */
+  for(const [x,y] of [[140,524],[240,524],[400,524],[500,524],[140,752],[500,752]])P('x_jol_tdp_bac_sol',x,y,{col:[62,10],v:0});
+  /* les colonnes, de part et d'autre du hall bleu et le long de la galerie */
+  for(const x of [600,1000,80,1520])P('x_jol_tdp_colonne_sol',x,480,{col:[18,8]});
   /* LE COIN JARDIN, à droite : la grande banquette à l'olivier, des bancs, des fougères */
   P('x_jol_tdp_olivier_sol',1290,Math.round(620+RBO*.42),{col:[RBO*2,46]});
-  for(const [x,y] of [[1160,690],[1420,690],[1160,560],[1420,560]])P('x_jol_tdp_banc',x,y,{col:[64,8]});
+  for(const [x,y] of [[1130,540],[1450,540],[1130,740],[1450,740]])P('x_jol_tdp_bac_sol',x,y,{col:[100,10],v:1});
+  for(const [x,y] of [[1170,640],[1410,640]])P('x_jol_tdp_banc',x,y,{col:[64,8]});
+  for(const [x,y] of [[1290,520],[1290,770]])P('x_jol_tdp_bac_sol',x,y,{col:[100,10],v:1});
+  for(const [x,y] of [[1050,650],[1530,650]])P('x_jol_tdp_palmier',x,y,{col:[26,8]});
   /* LES LOCAUX : on touche la vitrine pour voir la fiche */
   return D;}
 function bloque(x,y){
@@ -512,7 +527,7 @@ function bloque(x,y){
   if(y>H-6)return true;
   for(const o of DECOR){if(!o.col)continue;if(Math.abs(x-o.x)<o.col[0]/2&&y>o.y-o.col[1]&&y<o.y+3)return true;}
   return false;}
-const GRAVEURS={x_jol_tdp_cafe_sol:graverCafe,x_jol_tdp_table_sol:graverTable,x_jol_tdp_olivier_sol:graverBanqOlivier,x_jol_tdp_susp_sol:graverSusp,x_jol_tdp_murveg_sol:graverMur,x_jol_tdp_banquette_sol:v=>graverBanquette(v),x_jol_tdp_panneau_sol:graverPanneau,x_jol_tdp_portes_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0}),x_jol_tdp_vide_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0}),x_jol_tdp_rail_sol:v=>graverRail(v),x_jol_tdp_escalators_sol:graverEscalators,x_jol_tdp_tour_sol:graverTour,x_jol_tdp_palmier:graverPalmier,x_jol_tdp_banc:graverBanc};
+const GRAVEURS={x_jol_tdp_bac_sol:v=>graverBac(v),x_jol_tdp_colonne_sol:graverColonne,x_jol_tdp_cafe_sol:graverCafe,x_jol_tdp_table_sol:graverTable,x_jol_tdp_olivier_sol:graverBanqOlivier,x_jol_tdp_susp_sol:graverSusp,x_jol_tdp_murveg_sol:graverMur,x_jol_tdp_banquette_sol:v=>graverBanquette(v),x_jol_tdp_panneau_sol:graverPanneau,x_jol_tdp_portes_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0}),x_jol_tdp_vide_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0}),x_jol_tdp_rail_sol:v=>graverRail(v),x_jol_tdp_escalators_sol:graverEscalators,x_jol_tdp_tour_sol:graverTour,x_jol_tdp_palmier:graverPalmier,x_jol_tdp_banc:graverBanc};
 function graver(t,v){const r=(GRAVEURS[t]||(()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0})))(v||0);return {toile:r.toile,W:r.W,H:r.H,sol:r.sol};}
 
 /* LES ESCALATORS : au pied (rez-de-chaussée) on monte ; sur la plaque (étage) on redescend */
