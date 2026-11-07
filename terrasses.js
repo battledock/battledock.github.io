@@ -272,13 +272,78 @@ function bloqueEtage(x,y){
   for(const o of DECOR){if(!o.col)continue;if(Math.abs(x-o.x)<o.col[0]/2&&y>o.y-o.col[1]&&y<o.y+3)return true;}
   return false;}
 
+
+/* ---------- L'ÎLOT : le mur végétal et ses deux banquettes rondes ---------- */
+const hB=(x,y,k)=>{let n=((x*73856093)^(y*19349663)^(k*83492791))|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
+const Lg=(g,x0,y0,x1,y1,st)=>{const gr=g.createLinearGradient(x0,y0,x1,y1);st.forEach(([o,c])=>gr.addColorStop(o,c));return gr;};
+function fe(g,cx,cy,rx,ry,pal,n,seed,t){t=t||1;for(let i=0;i<n;i++){const a=hB(i,seed,1)*Math.PI*2,r=Math.sqrt(hB(i,seed,2));const x=cx+Math.cos(a)*rx*r,y=cy+Math.sin(a)*ry*r;
+  const lum=((cx-x)/rx+(cy-y)/ry)*.5+hB(i,seed,3)*.4;g.fillStyle=lum>.55?pal[3]:lum>.15?pal[2]:lum>-.3?pal[1]:pal[0];
+  g.beginPath();g.ellipse(x,y,(1.2+hB(i,seed,4)*1.6)*t,(.9+hB(i,seed,5)*1)*t,hB(i,seed,6)*3,0,7);g.fill();}}
+const VERTS=[['#1e3a22','#2e5430','#467440','#6e9a58'],['#22401e','#3a6028','#5a8a3a','#8ab45a'],['#1a3428','#2a4e3a','#3e7050','#64986e']];
+function ombreSol(g,cx,cy,rx,ry,a){g.fillStyle='rgba(40,30,20,'+(a||.18)+')';g.beginPath();g.ellipse(cx+4,cy+3,rx,ry,0,0,7);g.fill();}
+/* une banquette ronde de velours, autour d'un bac planté */
+function banquette(g,cx,cy,R,P){const ry=R*.42,H=12;ombreSol(g,cx,cy,R+4,ry+3,.2);
+  /* le socle et l'assise, face avant visible */
+  g.fillStyle=Lg(g,cx-R,0,cx+R,0,[[0,P.f2],[.35,P.f0],[1,P.f2]]);g.beginPath();g.ellipse(cx,cy,R,ry,0,0,Math.PI);g.lineTo(cx-R,cy-H);g.ellipse(cx,cy-H,R,ry,0,Math.PI,0,true);g.fill();
+  g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(cx,cy,R,ry,0,0,Math.PI);g.ellipse(cx,cy-2,R,ry,0,Math.PI,0,true);g.fill();
+  /* capitons */
+  for(let k=1;k<12;k++){const a=k/12*Math.PI;g.fillStyle='rgba(0,0,0,.18)';g.fillRect(cx+Math.cos(a)*R-.5,cy-H+Math.sin(a)*ry+2,1,H-4);}
+  g.fillStyle=P.f1;g.beginPath();g.ellipse(cx,cy-H,R,ry,0,0,7);g.fill();
+  g.fillStyle='rgba(255,255,255,.18)';g.beginPath();g.ellipse(cx-R*.2,cy-H-ry*.3,R*.6,ry*.35,0,0,7);g.fill();
+  /* le dossier central : un muret courbe */
+  const r2=R*.5,ry2=r2*.42;g.fillStyle=Lg(g,cx-r2,0,cx+r2,0,[[0,'#d8d4cc'],[.4,'#fbfaf6'],[1,'#c8c4bc']]);
+  g.beginPath();g.ellipse(cx,cy-H,r2,ry2,0,0,Math.PI);g.lineTo(cx-r2,cy-H-14);g.ellipse(cx,cy-H-14,r2,ry2,0,Math.PI,0,true);g.fill();
+  g.fillStyle='#5a4632';g.beginPath();g.ellipse(cx,cy-H-14,r2-2,ry2-1.5,0,0,7);g.fill();
+  /* la plante au centre */
+  P.plante(g,cx,cy-H-14);}
+function olivierB(g,x,y){g.strokeStyle='#6e6252';g.lineWidth=2.6;g.beginPath();g.moveTo(x,y);g.bezierCurveTo(x-4,y-12,x+5,y-22,x,y-34);g.stroke();
+  g.lineWidth=1.6;g.beginPath();g.moveTo(x,y-22);g.lineTo(x-9,y-32);g.moveTo(x+1,y-26);g.lineTo(x+9,y-36);g.stroke();
+  fe(g,x,y-42,22,13,['#4a5a42','#6a7a5c','#8a9c7a','#b4c4a0'],420,7);}
+function fougeres(g,x,y){fe(g,x,y-6,18,7,VERTS[1],220,8,1.2);for(let k=0;k<8;k++){const a=-Math.PI/2+(k-3.5)*.35;g.strokeStyle='#3e7a3a';g.lineWidth=1.6;g.beginPath();g.moveTo(x,y-6);g.quadraticCurveTo(x+Math.cos(a)*10,y-6+Math.sin(a)*12,x+Math.cos(a)*20,y-4+Math.sin(a)*8);g.stroke();}}
+/* le mur végétal : un grand panneau autoportant couvert de plantes */
+function murVegetal(g,x,y,w,h,logo){ombreSol(g,x+w/2,y,w/2+6,6,.22);
+  g.fillStyle='#e8e6e0';g.fillRect(x-4,y-h-6,w+8,6);g.fillStyle='#ffffff';g.fillRect(x-4,y-h-6,w+8,1.4);   /* le chapeau */
+  g.fillStyle='#d8d4cc';g.fillRect(x-4,y-h,4,h);g.fillRect(x+w,y-h,4,h);g.fillStyle='#bdb8ae';g.fillRect(x-4,y-8,w+8,8);
+  g.fillStyle='#1e3420';g.fillRect(x,y-h,w,h-8);
+  for(let k=0;k<3;k++){const pal=VERTS[k];for(let i=0;i<Math.round(w*h/9);i++){const px=x+hB(i,k,11)*w,py=y-h+hB(i,k,12)*(h-8);const lum=hB(i,k,13)+(1-(py-(y-h))/h)*.3;
+    g.fillStyle=lum>1?pal[3]:lum>.7?pal[2]:lum>.4?pal[1]:pal[0];g.beginPath();g.ellipse(px,py,1.6+hB(i,k,14)*1.6,1.1+hB(i,k,15),hB(i,k,16)*3,0,7);g.fill();}}
+  for(let i=0;i<Math.round(w*h/90);i++){g.fillStyle=['#f2efe6','#e8a0c0','#f0cf6a','#c8a8e8'][i%4];g.fillRect(x+hB(i,5,21)*w,y-h+hB(i,5,22)*(h-10),1.4,1.4);}
+  /* le dégradé d'ombre en bas, les spots qui l'éclairent */
+  g.fillStyle=Lg(g,0,y-30,0,y-8,[[0,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,.35)']]);g.fillRect(x,y-30,w,22);
+  for(let i=0;i<4;i++){const sx=x+w*(i+.5)/4;g.fillStyle='rgba(255,240,200,.18)';g.beginPath();g.moveTo(sx-4,y-h);g.lineTo(sx+4,y-h);g.lineTo(sx+14,y-h+40);g.lineTo(sx-14,y-h+40);g.fill();}
+  if(logo){g.fillStyle='rgba(255,255,255,.92)';g.font='bold 9px "Helvetica Neue",Arial';g.textAlign='center';g.fillText('LES TERRASSES',x+w/2,y-h+h*.45);g.font='7px "Helvetica Neue",Arial';g.fillText('DU PORT',x+w/2,y-h+h*.45+10);}}
+
+const MURV=[400,600,204,70], BANQ=[[328,684],[472,684]], RBQ=44;
+let TMUR=null,TBQ=null;
+function graverMur(){if(TMUR)return TMUR;const [,,w,h]=MURV,Wd=w+30,sol=h+14,Hd=sol+12;const {c,g}=toile(Wd,Hd);murVegetal(g,15,sol,w,h,true);TMUR={toile:c,W:Wd,H:Hd,sol};return TMUR;}
+const BLEUV={f0:'#2e4a8a',f1:'#3a5aa0',f2:'#1e3266',plante:fougeres};
+function graverBanquette(){if(TBQ)return TBQ;const ry=RBQ*.42,Wd=RBQ*2+20,cyL=82,Hd=Math.ceil(cyL+ry+8);const {c,g}=toile(Wd,Hd);banquette(g,Wd/2,cyL,RBQ,BLEUV);TBQ={toile:c,W:Wd,H:Hd,sol:cyL+ry};return TBQ;}
+
+/* ---------- LES PASSANTS : ils font leur tour dans la galerie ---------- */
+const TOURNEES=[
+  {pts:[[120,580],[660,580],[660,720],[120,720]],v:26,n:2},
+  {pts:[[110,522],[560,522],[560,640],[250,640],[250,522]],v:22,n:2},
+  {pts:[[40,432],[560,432],[560,468],[40,468]],v:18,n:1}];
+const GENS=[];
+(()=>{let k=0;for(const T of TOURNEES){let L=0;const seg=[];for(let i=0;i<T.pts.length;i++){const a=T.pts[i],b=T.pts[(i+1)%T.pts.length],d=Math.hypot(b[0]-a[0],b[1]-a[1]);seg.push([a,b,L,d]);L+=d;}
+  for(let j=0;j<T.n;j++){GENS.push({seg,L,v:T.v*(0.85+hA(k,3,1)*.3),dec:L*(j/T.n)+hA(k,4,1)*60,sens:j%2?-1:1,
+    ap:{peau:[1,3,5,2,6][k%5],cheveux:[1,4,6,0,10][k%5],coiffe:[0,6,2,15,5][k%5],barbe:k%4===1?3:0,haut:[1,2,3,5,6][k%5],veste:[18,0,8,24,11][k%5],pantalon:[0,7,10,2,8][k%5],bas:[0,5,0,2,0][k%5],souliers:1,chaussures:[6,0,7,1,9][k%5],sac:k%3===0?2:0,chapeau:0,raye:0,motif:0,_pnj:true},x:0,y:0,dir:'bas',pas:0});k++;}}})();
+function figurants(){const now=Date.now()/1000;
+  for(const P of GENS){let s=((now*P.v*P.sens+P.dec)%P.L+P.L)%P.L;
+    for(const [a,b,L0,d] of P.seg){if(s<=L0+d){const t=(s-L0)/d;const nx=a[0]+(b[0]-a[0])*t,ny=a[1]+(b[1]-a[1])*t;
+      let dx=(b[0]-a[0])*P.sens,dy=(b[1]-a[1])*P.sens;P.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'droite':'gauche'):(dy>0?'bas':'haut');
+      P.x=nx;P.y=ny;P.pas=now*P.v/9;break;}}}
+  return GENS;}
+
 /* ---------- LE DÉCOR ET LES OBSTACLES ---------- */
 function decor(){if(ETG)return decorEtage();const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
   const e=graverEscalators();P('x_jol_tdp_escalators_sol',e.ox+e.W/2,GY2+0);
   const t=graverTour();P('x_jol_tdp_tour_sol',TX-TW/2+t.W/2-t.x0,TB,{anim:'tdp_tour'});
-  for(const [x,y] of [[90,640],[280,680],[520,600],[730,700]])P('x_jol_tdp_palmier',x,y,{col:[26,8]});
-  for(const [x,y] of [[190,620],[160,690],[290,550]])P('x_jol_tdp_banc',x,y,{col:[64,8]});
+  for(const [x,y] of [[90,640],[730,700]])P('x_jol_tdp_palmier',x,y,{col:[26,8]});
+  for(const [x,y] of [[190,620],[160,690]])P('x_jol_tdp_banc',x,y,{col:[64,8]});
   P('x_jol_tdp_portes_sol',SORTIE_X,H,{anim:'tdp_portes'});
+  P('x_jol_tdp_murveg_sol',MURV[0],MURV[1],{col:[MURV[2]+8,14]});
+  for(const [x,y] of BANQ)P('x_jol_tdp_banquette_sol',x,Math.round(y+RBQ*.42),{col:[RBQ*2,40]});
   P('x_jol_tdp_vide_sol',SORTIE_X,MUR_S-10,{agir:()=>sortir(),libelle:'Sortir',nom:'PLACE DE LA JOLIETTE'});
   P('x_jol_tdp_panneau_sol',SORTIE_X,MUR_S-150);
   return D;}
@@ -293,7 +358,7 @@ function bloque(x,y){
   if(x>TX-TW/2-6&&x<TX+TW/2+6&&y>TB-TD-6&&y<TB+4)return true; /* la tour */
   for(const o of DECOR){if(!o.col)continue;if(Math.abs(x-o.x)<o.col[0]/2&&y>o.y-o.col[1]&&y<o.y+3)return true;}
   return false;}
-const GRAVEURS={x_jol_tdp_panneau_sol:graverPanneau,x_jol_tdp_portes_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0}),x_jol_tdp_vide_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0}),x_jol_tdp_rail_sol:v=>graverRail(v),x_jol_tdp_escalators_sol:graverEscalators,x_jol_tdp_tour_sol:graverTour,x_jol_tdp_palmier:graverPalmier,x_jol_tdp_banc:graverBanc};
+const GRAVEURS={x_jol_tdp_murveg_sol:graverMur,x_jol_tdp_banquette_sol:graverBanquette,x_jol_tdp_panneau_sol:graverPanneau,x_jol_tdp_portes_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0}),x_jol_tdp_vide_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0}),x_jol_tdp_rail_sol:v=>graverRail(v),x_jol_tdp_escalators_sol:graverEscalators,x_jol_tdp_tour_sol:graverTour,x_jol_tdp_palmier:graverPalmier,x_jol_tdp_banc:graverBanc};
 function graver(t,v){const r=(GRAVEURS[t]||(()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0})))(v||0);return {toile:r.toile,W:r.W,H:r.H,sol:r.sol};}
 
 /* LES ESCALATORS : au pied (rez-de-chaussée) on monte ; sur la plaque (étage) on redescend */
@@ -356,5 +421,5 @@ function graverPanneau(){if(TPAN)return TPAN;const Wd=116,Hd=150,sol=146;const {
   TPAN={toile:c,W:Wd,H:Hd,sol};return TPAN;}
 
 ANIM_DECOR.tdp_tour=dessinerTour;ANIM_DECOR.tdp_portes=dessinerPortes;
-return {sol,solFin,decor,bloque,graver,depart:DEPART};
+return {sol,solFin,decor,bloque,graver,depart:DEPART,figurants:()=>ETG?[]:figurants()};
 })()
