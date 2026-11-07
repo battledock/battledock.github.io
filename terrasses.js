@@ -421,5 +421,5 @@ function graverPanneau(){if(TPAN)return TPAN;const Wd=116,Hd=150,sol=146;const {
   TPAN={toile:c,W:Wd,H:Hd,sol};return TPAN;}
 
 ANIM_DECOR.tdp_tour=dessinerTour;ANIM_DECOR.tdp_portes=dessinerPortes;
-return {sol,solFin,decor,bloque,graver,depart:DEPART,figurants:()=>ETG?[]:figurants()};
+return {sol,solFin,decor,bloque,graver,depart:DEPART,figurants:()=>[]};
 })()
