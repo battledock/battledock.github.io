@@ -319,6 +319,33 @@ for(const cx of [B0+14,B1-14]){HG(cx-4,TOIT+66,8,SOL-TOIT-66,[[0,'#c8c8c4'],[.3,
 {const y=SOL-PH, x0=B0, x1=B1;
   R(x0,y,x1-x0,PH,'#1c2a30');
   g.save();g.beginPath();g.rect(x0+1,y+1,x1-x0-2,PH-1);g.clip();
+  const FV=2;   /* le hall bleu */
+  if(FV===1){
+  /* 1 — CE QU'ON TROUVE DEDANS : la verrière, les grandes vitrines, le mur végétal et les banquettes bleues */
+  VG(x0,y,x1-x0,10,'#a8cce8','#e4f0f8');for(let x=x0;x<x1;x+=10)R(x,y,.6,10,'#ffffff');R(x0,y+10,x1-x0,1.2,'#e6e2da');
+  R(x0,y+11,x1-x0,26,'#ece6dc');
+  for(let x=x0+4;x<x1-10;x+=52){R(x,y+13,46,4,'#efe9de');R(x,y+17,46,20,'#2c2e32');VG(x+1.5,y+18,43,18,'#6a7c88','#b4c2cc');R(x+16,y+24,14,4,'#fbf8f0');R(x+16,y+24,14,1,'#1f3fa8');}
+  VG(x0,y+37,x1-x0,PH-37,'#ddd6ca','#f2ede4');for(let x=x0;x<x1;x+=14)R(x,y+37,.5,PH-37,'rgba(160,150,130,.3)');
+  {const cx=(x0+x1)/2,mw=64,my=y+30;R(cx-mw/2-1,my-1,mw+2,1.2,'#ffffff');R(cx-mw/2,my,mw,16,'#1e3420');
+   for(let i=0;i<260;i++){const px=cx-mw/2+((i*37)%mw),py=my+((i*13)%16);g.fillStyle=['#2e5430','#467440','#6e9a58','#3a6028'][i%4];g.fillRect(px,py,1.6,1.2);}
+   g.fillStyle='rgba(255,255,255,.9)';g.font='bold 3.4px "Helvetica Neue",Arial';g.textAlign='center';g.textBaseline='middle';g.fillText('LA GALERIE BLEUE',cx,my+8);
+   for(const dx of [-22,22]){g.fillStyle='#2e4a8a';g.beginPath();g.ellipse(cx+dx,y+PH-6,12,4,0,0,7);g.fill();g.fillStyle='#3a5aa0';g.beginPath();g.ellipse(cx+dx,y+PH-8,12,4,0,0,7);g.fill();g.fillStyle='#fbfaf6';g.fillRect(cx+dx-5,y+PH-14,10,6);g.fillStyle='#4e8a48';g.beginPath();g.ellipse(cx+dx,y+PH-15,6,3,0,0,7);g.fill();}}
+  }else if(FV===2){
+  /* 2 — LE HALL BLEU : un grand mur bleu profond, le nom en lumière, des suspensions, un sol miroir */
+  VG(x0,y,x1-x0,PH*.62,'#1a3a8e','#2a5ac8');
+  for(let x=x0;x<x1;x+=12)R(x,y,.5,PH*.62,'rgba(255,255,255,.06)');
+  {const cx=(x0+x1)/2;g.save();g.shadowColor='rgba(200,225,255,.9)';g.shadowBlur=6;g.fillStyle='#ffffff';g.font='bold 7px "Helvetica Neue",Arial';g.textAlign='center';g.textBaseline='middle';g.fillText('LA GALERIE BLEUE',cx,y+PH*.3);g.restore();
+   R(cx-30,y+PH*.3+6,60,.6,'rgba(255,255,255,.6)');}
+  for(let k=0;k<7;k++){const lx=x0+20+k*(x1-x0-40)/6;R(lx-.2,y,.4,10,'#c8c8c8');g.fillStyle='#e8c870';g.beginPath();g.arc(lx,y+11,2.2,Math.PI,0);g.fill();const gr=g.createRadialGradient(lx,y+12,0,lx,y+12,10);gr.addColorStop(0,'rgba(255,236,190,.7)');gr.addColorStop(1,'rgba(255,236,190,0)');g.fillStyle=gr;g.fillRect(lx-10,y+10,20,14);}
+  VG(x0,y+PH*.62,x1-x0,PH*.38,'#e8e2d6','#cfc6b6');g.fillStyle='rgba(42,90,200,.22)';g.fillRect(x0,y+PH*.62,x1-x0,PH*.2);
+  }else if(FV===3){
+  /* 3 — VERRE TEINTÉ : on ne voit pas dedans, le vitrage renvoie le ciel et la place, avec des lueurs chaudes */
+  VG(x0,y,x1-x0,PH,'#7a9cb8','#2a3e52');
+  for(let k=0;k<5;k++){const lx=x0+30+k*(x1-x0-60)/4;const gr=g.createRadialGradient(lx,y+PH*.55,0,lx,y+PH*.55,22);gr.addColorStop(0,'rgba(255,214,150,.35)');gr.addColorStop(1,'rgba(255,214,150,0)');g.fillStyle=gr;g.fillRect(lx-22,y,44,PH);}
+  g.fillStyle='rgba(255,255,255,.35)';for(let k=0;k<4;k++){const bx=x0+k*70;g.beginPath();g.moveTo(bx,y);g.lineTo(bx+16,y);g.lineTo(bx-14,y+PH);g.lineTo(bx-30,y+PH);g.fill();}
+  for(let k=0;k<6;k++){const px=x0+20+k*44;g.fillStyle='rgba(200,140,60,.35)';g.beginPath();g.ellipse(px,y+PH*.72,9,5,0,0,7);g.fill();}
+  R(x0,y+PH*.82,x1-x0,PH*.18,'rgba(220,210,190,.25)');
+  }else{
   /* le plafond et ses spots */
   VG(x0,y,x1-x0,14,'#f4efe6','#ddd4c4');for(let x=x0+8;x<x1;x+=16){R(x-1.5,y+5,3,1,'#fffbe8');const gr=g.createRadialGradient(x,y+6,0,x,y+6,9);gr.addColorStop(0,'rgba(255,248,226,.8)');gr.addColorStop(1,'rgba(255,248,226,0)');g.fillStyle=gr;g.fillRect(x-9,y+3,18,12);}
   /* le mur du fond : des vitrines éclairées */
@@ -338,8 +365,9 @@ for(const cx of [B0+14,B1-14]){HG(cx-4,TOIT+66,8,SOL-TOIT-66,[[0,'#c8c8c4'],[.3,
   /* des passants */
   const passant=(x,c1,c2)=>{g.fillStyle='#e0c0a0';g.beginPath();g.arc(x,y+PH-27,2.2,0,7);g.fill();R(x-2.6,y+PH-24.5,5.2,11,c1);R(x-2.2,y+PH-13.5,1.8,11,c2);R(x+.4,y+PH-13.5,1.8,11,c2);};
   passant(x0+70,'#3a5a8a','#2a2a30');passant(x0+124,'#c8a070','#4a4a52');passant(x0+168,'#8a3a3a','#2a2a30');passant(x0+206,'#e8e2d6','#3a3a40');
+  }
   g.restore();
-  for(const [px,pw] of PORTES)LUMS.push([px-pw/2,y+1,pw,PH-1]);
+  if(FV!==2)for(const [px,pw] of PORTES)LUMS.push([px-pw/2,y+1,pw,PH-1]);
   /* les vitrages fixes, leurs montants */
   g.fillStyle='rgba(200,225,232,.16)';g.fillRect(x0+1,y+1,x1-x0-2,PH-1);
   for(let x=x0;x<=x1;x+=16)if(!PORTES.some(([px,pw])=>x>px-pw-1&&x<px+pw+1))R(x-.5,y,1,PH,'#1c2a30');
@@ -351,6 +379,8 @@ R(0,SOL,W,PIED-SOL,'#d8cfc2');for(let x=0;x<W;x+=20)R(x,SOL,.4,PIED-SOL,'#c4b8a8
 /* ---------- la nuit ---------- */
 if(!JOUR){g.save();g.globalCompositeOperation='multiply';g.fillStyle='rgb(120,120,172)';g.fillRect(0,-12,W,PIED+12);g.restore();
   g.save();g.globalCompositeOperation='lighter';for(const [x,y,w,hh] of LUMS){g.fillStyle='rgba(130,80,30,.6)';g.fillRect(x,y,w,hh);}g.restore();
+  /* le hall bleu, allumé : on le voit briller à travers les portes */
+  g.save();g.globalCompositeOperation='lighter';g.fillStyle='rgba(30,70,190,.55)';g.fillRect(B0,SOL-PH,B1-B0,PH*.62);g.fillStyle='rgba(120,110,90,.35)';g.fillRect(B0,SOL-PH*.38,B1-B0,PH*.38);g.restore();
   const y=SOL-PH-7;R(B0-4,y,B1-B0+8,7,'#2a62c8');texte('BIENVENUE À LA GALERIE BLEUE',CX,y+3.7,'bold 4.4px "Helvetica Neue",Arial,sans-serif','#ffffff');
   ecrire();}
 }
