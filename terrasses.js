@@ -120,9 +120,9 @@ function peindreSol(g){
    g.fillStyle=lin(g,0,Y0,0,H,[[0,'#16306e'],[1,'#22449a']]);g.fillRect(x0,Y0,x1-x0,H-Y0);
    for(let y=Y0;y<H;y+=30)R(g,x0,y,x1-x0,.8,'rgba(255,255,255,.07)');for(let x=x0+55;x<x1;x+=55)R(g,x,Y0,.6,H-Y0,'rgba(255,255,255,.05)');
    R(g,x0-2,Y0,2,H-Y0,'#c8a860');R(g,x1,Y0,2,H-Y0,'#c8a860');
-   /* le reflet du mur vert dans le marbre, et les halos des suspensions */
+   /* le reflet du mur vert dans le marbre */
    g.fillStyle=lin(g,0,Y0,0,Y0+80,[[0,'rgba(90,160,110,.28)'],[1,'rgba(90,160,110,0)']]);g.fillRect(x0,Y0,x1-x0,80);
-   for(let k=0;k<3;k++)for(const dx of [-72,72]){const lx=800+dx,ly=410+k*100;g.save();g.translate(lx,ly);g.scale(1,.32);const gr=g.createRadialGradient(0,0,0,0,0,36);gr.addColorStop(0,'rgba(255,230,170,.5)');gr.addColorStop(1,'rgba(255,230,170,0)');g.fillStyle=gr;g.beginPath();g.arc(0,0,36,0,7);g.fill();g.restore();}}
+   /* (plus de suspensions : rien ne les tenait) */}
   /* ===== LA LUMIÈRE ET LES MATIÈRES ===== */
   {const p=(W-BOUT.reduce((a,b)=>a+b,0))/(BOUT.length+1);let x=p;
    /* la lumière chaude des vitrines éclairées se répand sur la pierre */
@@ -265,16 +265,23 @@ function dessinerTour(g,o,x,y){const t=graverTour();const X0=Math.round(x-t.W/2)
 
 /* ---------- LE MOBILIER : palmiers en bacs blancs, bancs de bois ---------- */
 let TPALM=null;
-function graverPalmier(){if(TPALM)return TPALM;const Wd=80,Hd=100,sol=94,x=40;const {c,g}=toile(Wd,Hd);
-  g.fillStyle='rgba(30,26,20,.2)';g.beginPath();g.ellipse(x+4,sol+1,18,4.5,0,0,7);g.fill();
-  g.fillStyle=lin(g,x-15,0,x+15,0,[[0,'#d8d6d0'],[.35,'#fbfaf7'],[1,'#c8c6c0']]);g.beginPath();g.moveTo(x-15,sol-20);g.lineTo(x+15,sol-20);g.lineTo(x+12,sol);g.lineTo(x-12,sol);g.fill();
-  g.fillStyle='#ffffff';g.beginPath();g.ellipse(x,sol-20,15,4.5,0,0,7);g.fill();g.fillStyle='#5a4632';g.beginPath();g.ellipse(x,sol-20,12.5,3.3,0,0,7);g.fill();
-  g.strokeStyle='#8a6e50';g.lineWidth=3;g.beginPath();g.moveTo(x,sol-21);g.quadraticCurveTo(x+4,sol-46,x+2,sol-70);g.stroke();
-  for(let y=sol-24;y>sol-68;y-=4){g.strokeStyle='rgba(60,40,20,.35)';g.lineWidth=.6;g.beginPath();g.moveTo(x-1+(sol-y)*.03,y);g.lineTo(x+2+(sol-y)*.03,y-1);g.stroke();}
-  for(let k=0;k<11;k++){const a=-Math.PI/2+(k-5)*.38;const L=26+(k%3)*4;
-    g.strokeStyle=['#24502a','#346838','#4e8648'][k%3];g.lineWidth=2.8;g.lineCap='round';g.beginPath();g.moveTo(x+2,sol-70);
-    g.quadraticCurveTo(x+2+Math.cos(a)*L*.5,sol-70+Math.sin(a)*L*.5-6,x+2+Math.cos(a)*L,sol-70+Math.sin(a)*L*.55+10);g.stroke();
-    g.strokeStyle='rgba(160,210,120,.5)';g.lineWidth=.6;g.beginPath();g.moveTo(x+2,sol-71);g.quadraticCurveTo(x+2+Math.cos(a)*L*.5,sol-71+Math.sin(a)*L*.5-6,x+2+Math.cos(a)*L,sol-71+Math.sin(a)*L*.55+10);g.stroke();}
+function graverPalmier(){if(TPALM)return TPALM;const Wd=110,Hd=130,sol=122,x=55;const {c,g}=toile(Wd,Hd);
+  g.fillStyle='rgba(30,26,20,.24)';g.beginPath();g.ellipse(x+5,sol+1,22,5.5,0,0,7);g.fill();
+  /* le bac : grand cylindre blanc mat, liseré */
+  g.fillStyle=lin(g,x-18,0,x+18,0,[[0,'#d6d2ca'],[.35,'#fdfcf8'],[.7,'#ece8e0'],[1,'#c8c4bc']]);g.fillRect(x-18,sol-28,36,28);
+  g.fillStyle='#ffffff';g.beginPath();g.ellipse(x,sol-28,18,4.6,0,0,7);g.fill();g.fillStyle='#4a3a28';g.beginPath();g.ellipse(x,sol-28,15.5,3.4,0,0,7);g.fill();
+  g.fillStyle='rgba(0,0,0,.08)';g.beginPath();g.ellipse(x,sol,18,4.6,0,0,Math.PI);g.fill();
+  /* le stipe : anneaux en écailles */
+  for(let y=sol-29;y>sol-88;y-=3){const t=(sol-29-y)/59,xx=x+Math.sin(t*1.6)*3,w=6-t*1.6;g.fillStyle=t<.5?'#8a6a48':'#9a7a54';g.beginPath();g.ellipse(xx,y,w,2,0,0,7);g.fill();g.fillStyle='rgba(60,40,20,.4)';g.fillRect(xx-w,y+1,w*2,.6);}
+  /* les palmes : rachis courbe et folioles de part et d'autre, en deux tons */
+  const tx=x+2,ty=sol-90;
+  const palme=(a,L,cl)=>{let px=tx,py=ty;const pts=[];for(let s=0;s<=14;s++){const u=s/14;pts.push([tx+Math.cos(a)*L*u,ty+Math.sin(a)*L*u*.7+u*u*L*.55]);}
+    for(let s=1;s<pts.length;s++){const [x0,y0]=pts[s-1],[x1,y1]=pts[s],ang=Math.atan2(y1-y0,x1-x0),fl=(1-s/14)*9+2;
+      for(const d of [-1,1]){g.strokeStyle=cl[(s+(d>0?1:0))%2];g.lineWidth=1.3;g.beginPath();g.moveTo(x1,y1);g.lineTo(x1+Math.cos(ang+d*1.1)*fl,y1+Math.sin(ang+d*1.1)*fl+2);g.stroke();}}
+    g.strokeStyle='#5a7a3a';g.lineWidth=1.1;g.beginPath();g.moveTo(pts[0][0],pts[0][1]);for(const [xx,yy] of pts)g.lineTo(xx,yy);g.stroke();};
+  const SOMB=['#2a5a2c','#24502a'],CLR=['#4e8a40','#6aa450'];
+  for(const [a,L] of [[Math.PI*1.08,40],[-.08,40],[Math.PI*1.3,34],[-.3,34]])palme(a,L,SOMB);
+  for(const [a,L] of [[Math.PI*.92,38],[.08,38],[-Math.PI/2-.4,26],[-Math.PI/2+.4,26],[-Math.PI/2,22]])palme(a,L,CLR);
   TPALM={toile:c,W:Wd,H:Hd,sol};return TPALM;}
 let TBANC=null;
 function graverBanc(){if(TBANC)return TBANC;const Wd=74,Hd=24,sol=20;const {c,g}=toile(Wd,Hd);
@@ -498,26 +505,57 @@ function graverColonne(){if(TCOL)return TCOL;const Wd=30,Hd=210,sol=204;const {c
   R(g,5,4,20,6,'#d8b060');R(g,4,2,22,2,'#f0d488');R(g,6,10,18,2,'#b8904a');
   const gr=g.createRadialGradient(15,30,0,15,30,14);gr.addColorStop(0,'rgba(255,240,200,.7)');gr.addColorStop(1,'rgba(255,240,200,0)');g.fillStyle=gr;g.fillRect(1,16,28,28);R(g,12,26,6,4,'#fff6d8');
   return TCOL={toile:c,W:Wd,H:Hd,sol};}
+/* ---------- LES GRANDES PLANTES : pot de céramique, feuillage dense et ombré ---------- */
+const TPL={};
+function feuille(g,x,y,lg,lr,a,c0,c1){g.save();g.translate(x,y);g.rotate(a);g.fillStyle=c0;g.beginPath();g.moveTo(0,0);g.quadraticCurveTo(lg*.5,-lr,lg,0);g.quadraticCurveTo(lg*.5,lr,0,0);g.fill();
+  g.fillStyle=c1;g.beginPath();g.moveTo(0,0);g.quadraticCurveTo(lg*.5,-lr,lg,0);g.quadraticCurveTo(lg*.5,-lr*.1,0,0);g.fill();g.strokeStyle='rgba(0,0,0,.18)';g.lineWidth=.4;g.beginPath();g.moveTo(0,0);g.lineTo(lg*.92,0);g.stroke();g.restore();}
+function graverPlante(v){if(TPL[v])return TPL[v];const Wd=80,Hd=120,sol=112,cx=40;const {c,g}=toile(Wd,Hd);
+  ombreSol(g,cx,sol,26,6,.26);
+  /* le pot : céramique crème (café) ou terre cuite (jardin), bombé, avec reflet */
+  const P=v?['#c87a4a','#a85e36','#e09868']:['#f2ede4','#cfc6b6','#ffffff'];
+  g.fillStyle=Lg(g,cx-17,0,cx+17,0,[[0,P[1]],[.35,P[2]],[.7,P[0]],[1,P[1]]]);g.beginPath();g.moveTo(cx-17,sol-30);g.quadraticCurveTo(cx-19,sol-8,cx-12,sol);g.lineTo(cx+12,sol);g.quadraticCurveTo(cx+19,sol-8,cx+17,sol-30);g.closePath();g.fill();
+  g.fillStyle=P[2];g.beginPath();g.ellipse(cx,sol-30,18,4.5,0,0,7);g.fill();g.fillStyle='#4a3a28';g.beginPath();g.ellipse(cx,sol-30,15.5,3.4,0,0,7);g.fill();
+  if(v){/* l'olivier en pot : tronc noueux, feuillage argenté */
+    g.strokeStyle='#6e6252';g.lineWidth=3;g.beginPath();g.moveTo(cx,sol-31);g.bezierCurveTo(cx-5,sol-48,cx+6,sol-58,cx,sol-70);g.stroke();
+    g.lineWidth=1.6;g.beginPath();g.moveTo(cx,sol-60);g.lineTo(cx-12,sol-74);g.moveTo(cx+1,sol-64);g.lineTo(cx+13,sol-78);g.stroke();
+    for(let i=0;i<220;i++){const a=hA(i,3,1)*7,r=Math.sqrt(hA(i,3,2));const x=cx+Math.cos(a)*24*r,y=sol-84+Math.sin(a)*16*r;const lum=(cx-x)/24+(sol-84-y)/16;
+      feuille(g,x,y,5,1.3,hA(i,3,3)*6.3,lum>.4?'#a8b890':lum>-.2?'#7e9068':'#58684a','rgba(255,255,255,.18)');}}
+  else{/* le ficus lyrata : grandes feuilles vernissées en étages */
+    g.strokeStyle='#6a5236';g.lineWidth=2.4;g.beginPath();g.moveTo(cx,sol-31);g.lineTo(cx,sol-60);g.stroke();
+    /* un buisson ample de grandes feuilles vernissées, ombré en bas à droite, éclairé en haut à gauche */
+    for(let i=0;i<70;i++){const a=hA(i,4,1)*Math.PI*2,r=Math.sqrt(hA(i,4,2));const x=cx+Math.cos(a)*24*r,y=sol-70+Math.sin(a)*22*r;const lum=((cx-x)/24+(sol-70-y)/22)*.6+hA(i,4,3)*.4;
+      feuille(g,x,y,10+hA(i,4,4)*5,4.4,hA(i,4,5)*6.3,lum>.5?'#5a9a4a':lum>.05?'#3e7a3a':'#2a5a2a','rgba(200,250,180,.22)');}}
+  return TPL[v]={toile:c,W:Wd,H:Hd,sol};}
+/* ---------- LE BISTROT : grande table de marbre, deux chaises cannées ---------- */
+let TBIS=null;
+function graverBistrot(){if(TBIS)return TBIS;const Wd=90,Hd=56,sol=50,cx=45;const {c,g}=toile(Wd,Hd);
+  ombreSol(g,cx,sol,38,6,.22);
+  const chaise=(x,d)=>{g.fillStyle='#2a2a2e';g.fillRect(x-1,sol-14,2,14);g.fillRect(x+d*10-1,sol-14,2,14);
+    g.fillStyle='#c8a46a';g.fillRect(x-2+(d<0?-10:0),sol-17,13,4);for(let k=0;k<5;k++)g.fillRect(x-1+(d<0?-10:0)+k*2.5,sol-17,.6,4);
+    g.fillStyle='#2a2a2e';g.fillRect(x+(d<0?-11:11)-1,sol-34,2,20);g.fillStyle='#c8a46a';g.fillRect(x+(d<0?-12:9),sol-33,4,14);
+    g.strokeStyle='#2a2a2e';g.lineWidth=1.4;g.beginPath();g.arc(x+(d<0?-10:10),sol-33,4,Math.PI,0);g.stroke();};
+  chaise(cx-20,-1);chaise(cx+20,1);
+  g.fillStyle='#2a2a2e';g.fillRect(cx-1.5,sol-22,3,22);g.beginPath();g.ellipse(cx,sol,9,2.4,0,0,7);g.fill();
+  g.fillStyle='#d8d2c6';g.beginPath();g.ellipse(cx,sol-22,17,6,0,0,7);g.fill();g.fillStyle='#f6f3ec';g.beginPath();g.ellipse(cx,sol-23,17,6,0,0,7);g.fill();
+  g.strokeStyle='rgba(150,150,165,.4)';g.lineWidth=.5;g.beginPath();g.moveTo(cx-10,sol-25);g.quadraticCurveTo(cx,sol-21,cx+12,sol-24);g.stroke();
+  g.fillStyle='#ffffff';g.fillRect(cx-6,sol-27,4,3);g.fillStyle='#6a4a2a';g.fillRect(cx-5.4,sol-27,2.8,1);g.fillStyle='#ffffff';g.fillRect(cx+3,sol-27,4,3);
+  return TBIS={toile:c,W:Wd,H:Hd,sol};}
 /* ---------- LE DÉCOR ET LES OBSTACLES ---------- */
 function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
   /* les palmiers contre les vitrines, entre deux maisons */
   for(const [x,y] of [[30,420],[1570,420],[580,420],[1020,420]])P('x_jol_tdp_palmier',x,y,{col:[26,8]});
   /* le hall bleu : ses suspensions et ses deux banquettes crème */
-  for(let k=0;k<3;k++)for(const dx of [-72,72])P('x_jol_tdp_susp_sol',800+dx,410+k*100);
   for(const [x,y] of BANQ)P('x_jol_tdp_banquette_sol',x,Math.round(y+RBQ*.42),{col:[RBQ*2,40],v:1});
   /* LE COIN CAFÉ, à gauche : le comptoir rond, ses tables */
-  P('x_jol_tdp_cafe_sol',320,620,{col:[96,30]});
-  for(const [x,y] of [[170,580],[470,580],[150,660],[490,660],[200,720],[440,720],[320,735],[230,540],[410,540]])P('x_jol_tdp_table_sol',x,y,{col:[22,6]});
+  for(const [x,y] of [[210,590],[430,590],[210,700],[430,700]])P('x_jol_tdp_bistrot_sol',x,y,{col:[70,12]});
   /* les bacs de buis qui ferment la terrasse du café, avec deux ouvertures */
-  for(const [x,y] of [[140,524],[240,524],[400,524],[500,524],[140,752],[500,752]])P('x_jol_tdp_bac_sol',x,y,{col:[62,10],v:0});
+  for(const [x,y] of [[112,540],[528,540],[112,768],[528,768]])P('x_jol_tdp_plante_sol',x,y,{col:[34,10],v:0});
   /* les colonnes, de part et d'autre du hall bleu et le long de la galerie */
-  for(const x of [600,1000,80,1520])P('x_jol_tdp_colonne_sol',x,480,{col:[18,8]});
   /* LE COIN JARDIN, à droite : la grande banquette à l'olivier, des bancs, des fougères */
   P('x_jol_tdp_olivier_sol',1290,Math.round(620+RBO*.42),{col:[RBO*2,46]});
-  for(const [x,y] of [[1130,540],[1450,540],[1130,740],[1450,740]])P('x_jol_tdp_bac_sol',x,y,{col:[100,10],v:1});
+  for(const [x,y] of [[1130,560],[1450,560],[1130,740],[1450,740]])P('x_jol_tdp_plante_sol',x,y,{col:[34,10],v:1});
   for(const [x,y] of [[1170,640],[1410,640]])P('x_jol_tdp_banc',x,y,{col:[64,8]});
-  for(const [x,y] of [[1290,520],[1290,770]])P('x_jol_tdp_bac_sol',x,y,{col:[100,10],v:1});
-  for(const [x,y] of [[1050,650],[1530,650]])P('x_jol_tdp_palmier',x,y,{col:[26,8]});
+
   /* LES LOCAUX : on touche la vitrine pour voir la fiche */
   return D;}
 function bloque(x,y){
@@ -527,7 +565,7 @@ function bloque(x,y){
   if(y>H-6)return true;
   for(const o of DECOR){if(!o.col)continue;if(Math.abs(x-o.x)<o.col[0]/2&&y>o.y-o.col[1]&&y<o.y+3)return true;}
   return false;}
-const GRAVEURS={x_jol_tdp_bac_sol:v=>graverBac(v),x_jol_tdp_colonne_sol:graverColonne,x_jol_tdp_cafe_sol:graverCafe,x_jol_tdp_table_sol:graverTable,x_jol_tdp_olivier_sol:graverBanqOlivier,x_jol_tdp_susp_sol:graverSusp,x_jol_tdp_murveg_sol:graverMur,x_jol_tdp_banquette_sol:v=>graverBanquette(v),x_jol_tdp_panneau_sol:graverPanneau,x_jol_tdp_portes_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0}),x_jol_tdp_vide_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0}),x_jol_tdp_rail_sol:v=>graverRail(v),x_jol_tdp_escalators_sol:graverEscalators,x_jol_tdp_tour_sol:graverTour,x_jol_tdp_palmier:graverPalmier,x_jol_tdp_banc:graverBanc};
+const GRAVEURS={x_jol_tdp_plante_sol:v=>graverPlante(v),x_jol_tdp_bistrot_sol:graverBistrot,x_jol_tdp_bac_sol:v=>graverBac(v),x_jol_tdp_colonne_sol:graverColonne,x_jol_tdp_cafe_sol:graverCafe,x_jol_tdp_table_sol:graverTable,x_jol_tdp_olivier_sol:graverBanqOlivier,x_jol_tdp_susp_sol:graverSusp,x_jol_tdp_murveg_sol:graverMur,x_jol_tdp_banquette_sol:v=>graverBanquette(v),x_jol_tdp_panneau_sol:graverPanneau,x_jol_tdp_portes_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0}),x_jol_tdp_vide_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0}),x_jol_tdp_rail_sol:v=>graverRail(v),x_jol_tdp_escalators_sol:graverEscalators,x_jol_tdp_tour_sol:graverTour,x_jol_tdp_palmier:graverPalmier,x_jol_tdp_banc:graverBanc};
 function graver(t,v){const r=(GRAVEURS[t]||(()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0})))(v||0);return {toile:r.toile,W:r.W,H:r.H,sol:r.sol};}
 
 /* LES ESCALATORS : au pied (rez-de-chaussée) on monte ; sur la plaque (étage) on redescend */
