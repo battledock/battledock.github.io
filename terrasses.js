@@ -74,7 +74,7 @@ function vitrineEclairee(g,x,y,w,h,S){
   /* la vitrophanie élégante : un bandeau translucide « À LOUER » */
   const by=vy+vh*.44,bh=Math.max(14,vh*.12);g.fillStyle='rgba(31,63,168,.86)';g.fillRect(vx,by,vw,bh);R(g,vx,by,vw,1,'#c8a860');R(g,vx,by+bh-1,vw,1,'#c8a860');
   g.fillStyle='#ffffff';g.font='bold '+(bh*.42).toFixed(1)+'px "Helvetica Neue",Arial,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('À LOUER',vx+vw/2,by+bh*.4);
-  g.fillStyle='rgba(255,255,255,.75)';g.font=(bh*.26).toFixed(1)+'px "Helvetica Neue",Arial,sans-serif';g.fillText('LA GALERIE BLEUE · TOUCHE LA VITRINE',vx+vw/2,by+bh*.76);}
+  g.fillStyle='rgba(255,255,255,.75)';g.font=(bh*.26).toFixed(1)+'px "Helvetica Neue",Arial,sans-serif';g.fillText('LA GALERIE BLEUE',vx+vw/2,by+bh*.76);}
 function boutique(g,x,y,w,h,S){
   /* le bandeau d'enseigne, dans la matière de la maison */
   R(g,x,y,w,30,S.bandeau);
@@ -123,6 +123,36 @@ function peindreSol(g){
    /* le reflet du mur vert dans le marbre, et les halos des suspensions */
    g.fillStyle=lin(g,0,Y0,0,Y0+80,[[0,'rgba(90,160,110,.28)'],[1,'rgba(90,160,110,0)']]);g.fillRect(x0,Y0,x1-x0,80);
    for(let k=0;k<3;k++)for(const dx of [-72,72]){const lx=800+dx,ly=410+k*100;g.save();g.translate(lx,ly);g.scale(1,.32);const gr=g.createRadialGradient(0,0,0,0,0,36);gr.addColorStop(0,'rgba(255,230,170,.5)');gr.addColorStop(1,'rgba(255,230,170,0)');g.fillStyle=gr;g.beginPath();g.arc(0,0,36,0,7);g.fill();g.restore();}}
+  /* ===== LA LUMIÈRE ET LES MATIÈRES ===== */
+  {const p=(W-BOUT.reduce((a,b)=>a+b,0))/(BOUT.length+1);let x=p;
+   /* la lumière chaude des vitrines éclairées se répand sur la pierre */
+   for(let i=0;i<BOUT.length;i++){if(STYLES[i]){g.fillStyle=lin(g,0,Y0,0,Y0+120,[[0,'rgba(255,214,150,.42)'],[1,'rgba(255,214,150,0)']]);
+     g.beginPath();g.moveTo(x+6,Y0);g.lineTo(x+BOUT[i]-6,Y0);g.lineTo(x+BOUT[i]+30,Y0+120);g.lineTo(x-30,Y0+120);g.closePath();g.fill();}x+=BOUT[i]+p;}}
+  /* les rais de lumière de la verrière, en biais, sur toute la galerie */
+  g.save();g.globalCompositeOperation='screen';
+  for(let k=0;k<9;k++){const bx=40+k*190;g.fillStyle=lin(g,0,Y0,0,H,[[0,'rgba(255,250,232,.22)'],[1,'rgba(255,250,232,0)']]);
+    g.beginPath();g.moveTo(bx,Y0);g.lineTo(bx+46,Y0);g.lineTo(bx+46+140,H);g.lineTo(bx+140,H);g.closePath();g.fill();}
+  g.restore();
+  /* LE COIN CAFÉ : un grand rond de parquet de chêne, cerclé de laiton */
+  {const cx=320,cy=630,rx=230,ry=118;g.save();g.beginPath();g.ellipse(cx,cy,rx,ry,0,0,7);g.clip();
+   g.fillStyle='#c8955a';g.fillRect(cx-rx,cy-ry,rx*2,ry*2);
+   for(let y=cy-ry;y<cy+ry;y+=7)for(let x=cx-rx-((y/7|0)%3)*20;x<cx+rx;x+=60){R(g,x+.4,y+.4,59.2,6.2,['#c8955a','#bd8a50','#d4a068','#c4905a'][(((x/60)|0)+(y/7|0))%4]);}
+   g.fillStyle='rgba(255,240,210,.18)';g.beginPath();g.ellipse(cx-40,cy-50,rx*.7,ry*.35,0,0,7);g.fill();g.restore();
+   g.strokeStyle='#c8a860';g.lineWidth=2.4;g.beginPath();g.ellipse(cx,cy,rx,ry,0,0,7);g.stroke();g.strokeStyle='rgba(255,240,200,.6)';g.lineWidth=.6;g.beginPath();g.ellipse(cx,cy,rx-2,ry-1.2,0,Math.PI,2*Math.PI);g.stroke();}
+  /* LE COIN JARDIN : une grande ellipse de pierre claire bordée de massifs, gravier blond */
+  {const cx=1290,cy=630,rx=240,ry=122;
+   g.fillStyle='#e6dccb';g.beginPath();g.ellipse(cx,cy,rx,ry,0,0,7);g.fill();
+   for(let i=0;i<2400;i++){const a=hA(i,9,1)*Math.PI*2,r=Math.sqrt(hA(i,9,2));R(g,cx+Math.cos(a)*rx*.86*r,cy+Math.sin(a)*ry*.86*r,1,1,hA(i,9,3)<.5?'#d4c6ae':'#f2ead8');}
+   g.strokeStyle='#c8bca4';g.lineWidth=3;g.beginPath();g.ellipse(cx,cy,rx*.88,ry*.88,0,0,7);g.stroke();
+   /* la couronne de massifs : buis, graminées, petites fleurs */
+   for(let i=0;i<3200;i++){const a=hA(i,10,1)*Math.PI*2;if(Math.abs(Math.sin(a))<.16)continue;const r=.88+hA(i,10,2)*.14;const x=cx+Math.cos(a)*rx*r,y=cy+Math.sin(a)*ry*r;
+     g.fillStyle=['#2e5430','#467440','#6e9a58','#3a6028'][i%4];g.beginPath();g.ellipse(x,y-hA(i,10,4)*6,3.2,2.2,a,0,7);g.fill();
+     if(i%7===0){g.fillStyle=['#f4f0e4','#e8a0c0','#c8a8e8'][i%3];g.fillRect(x,y-2,1.4,1.4);}}}
+  /* la pierre lustrée : quelques éclats de lumière et des veines dorées */
+  for(let k=0;k<70;k++){const x=hA(k,3,9)*W,y=Y0+40+hA(k,4,9)*(H-Y0-60);if(x>630&&x<970)continue;g.strokeStyle='rgba(200,168,96,.22)';g.lineWidth=.6;g.beginPath();g.moveTo(x,y);g.bezierCurveTo(x+20,y+6,x+30,y-4,x+60,y+4);g.stroke();}
+  /* le vignettage doux sur les bords */
+  g.fillStyle=lin(g,0,0,140,0,[[0,'rgba(60,50,40,.18)'],[1,'rgba(60,50,40,0)']]);g.fillRect(0,Y0,140,H-Y0);
+  g.fillStyle=lin(g,W,0,W-140,0,[[0,'rgba(60,50,40,.18)'],[1,'rgba(60,50,40,0)']]);g.fillRect(W-140,Y0,140,H-Y0);
   /* les murs latéraux */
   R(g,0,Y0,6,H-Y0,'#d8d2c6');R(g,W-6,Y0,6,H-Y0,'#d8d2c6');
   /* LA SORTIE SANS MUR : la galerie continue vers le bas ; le jour de la place arrive doucement */
@@ -469,12 +499,11 @@ function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0}
   for(const [x,y] of BANQ)P('x_jol_tdp_banquette_sol',x,Math.round(y+RBQ*.42),{col:[RBQ*2,40],v:1});
   /* LE COIN CAFÉ, à gauche : le comptoir rond, ses tables */
   P('x_jol_tdp_cafe_sol',320,620,{col:[96,30]});
-  for(const [x,y] of [[170,560],[470,560],[170,700],[470,700],[320,730]])P('x_jol_tdp_table_sol',x,y,{col:[22,6]});
+  for(const [x,y] of [[170,580],[470,580],[150,660],[490,660],[200,720],[440,720],[320,735],[230,540],[410,540]])P('x_jol_tdp_table_sol',x,y,{col:[22,6]});
   /* LE COIN JARDIN, à droite : la grande banquette à l'olivier, des bancs, des fougères */
   P('x_jol_tdp_olivier_sol',1290,Math.round(620+RBO*.42),{col:[RBO*2,46]});
-  for(const [x,y] of [[1110,700],[1470,700],[1110,540],[1470,540]])P('x_jol_tdp_banc',x,y,{col:[64,8]});
+  for(const [x,y] of [[1160,690],[1420,690],[1160,560],[1420,560]])P('x_jol_tdp_banc',x,y,{col:[64,8]});
   /* LES LOCAUX : on touche la vitrine pour voir la fiche */
-  for(const L of LOCAUX)P('x_jol_tdp_vide_sol',L.x,Y0+16,{agir:()=>ouvrirFiche(L),libelle:'Voir le local',nom:'LOCAL '+L.id+' · À LOUER',demi:L.w/2-10});
   return D;}
 function bloque(x,y){
   if(ETG)return bloqueEtage(x,y);
