@@ -63,15 +63,8 @@ function peindreSol(g){
   /* les murs latéraux */
   R(g,0,Y0,6,H-Y0,'#d8d2c6');R(g,W-6,Y0,6,H-Y0,'#d8d2c6');
   /* les flèches bleues au sol, qui mènent à la sortie */
-  for(let i=0;i<3;i++){g.fillStyle='rgba(31,63,168,'+(.22+i*.16)+')';g.beginPath();g.moveTo(SORTIE_X-13,MUR_S-62+i*16);g.lineTo(SORTIE_X+13,MUR_S-62+i*16);g.lineTo(SORTIE_X,MUR_S-52+i*16);g.closePath();g.fill();}
-  /* le mur de l'entrée, au sud : pierre claire, deux baies fixes sur le parvis */
-  g.fillStyle=lin(g,0,MUR_S,0,H,[[0,'#efe9de'],[1,'#ddd5c6']]);g.fillRect(0,MUR_S,W,H-MUR_S);
-  R(g,0,MUR_S,W,2,'#c8bfae');R(g,0,MUR_S+2,W,1,'#ffffff');for(let y=MUR_S+18;y<H;y+=18)R(g,0,y,W,.6,'rgba(150,140,125,.35)');
-  for(const bx of [90,560]){const bw=150;g.fillStyle=lin(g,0,MUR_S+12,0,H,[[0,'#cfe6f4'],[.55,'#eef4f6'],[.56,'#d8cdb8'],[1,'#cfc3ab']]);g.fillRect(bx,MUR_S+12,bw,H-MUR_S-12);
-    for(let x=bx;x<=bx+bw;x+=bw/3)R(g,x-1,MUR_S+12,2,H-MUR_S-12,'#4a4c52');R(g,bx,MUR_S+10,bw,3,'#4a4c52');
-    g.fillStyle='rgba(255,255,255,.22)';g.beginPath();g.moveTo(bx+14,MUR_S+13);g.lineTo(bx+30,MUR_S+13);g.lineTo(bx+12,H);g.lineTo(bx-4,H);g.fill();}
-  R(g,0,MUR_S-6,W,6,'rgba(0,0,0,.08)');
-  R(g,SORTIE_X-62,H-24,124,2,'#a8adb2');
+  /* LA SORTIE SANS MUR : la galerie continue vers le bas ; le jour de la place arrive doucement */
+  g.fillStyle=lin(g,0,H-90,0,H,[[0,'rgba(255,250,236,0)'],[1,'rgba(255,248,228,.55)']]);g.fillRect(0,H-90,W,90);
 }
 function sol(){const c=document.createElement('canvas');c.width=W;c.height=H;(ETG?peindreEtage:peindreSol)(c.getContext('2d'));return c;}
 function solFin(){const c=document.createElement('canvas');c.width=W*2;c.height=H*2;const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);(ETG?peindreEtage:peindreSol)(g);return c;}
@@ -341,17 +334,13 @@ function decor(){if(ETG)return decorEtage();const D=[];const P=(t,x,y,o)=>D.push
   const t=graverTour();P('x_jol_tdp_tour_sol',TX-TW/2+t.W/2-t.x0,TB,{anim:'tdp_tour'});
   for(const [x,y] of [[90,640],[730,700]])P('x_jol_tdp_palmier',x,y,{col:[26,8]});
   for(const [x,y] of [[190,620],[160,690]])P('x_jol_tdp_banc',x,y,{col:[64,8]});
-  P('x_jol_tdp_portes_sol',SORTIE_X,H,{anim:'tdp_portes'});
   P('x_jol_tdp_murveg_sol',MURV[0],MURV[1],{col:[MURV[2]+8,14]});
   for(const [x,y] of BANQ)P('x_jol_tdp_banquette_sol',x,Math.round(y+RBQ*.42),{col:[RBQ*2,40]});
-  P('x_jol_tdp_vide_sol',SORTIE_X,MUR_S-10,{agir:()=>sortir(),libelle:'Sortir',nom:'PLACE DE LA JOLIETTE'});
-  P('x_jol_tdp_panneau_sol',SORTIE_X,MUR_S-150);
   return D;}
 function bloque(x,y){
   if(ETG)return bloqueEtage(x,y);
   if(x<12||x>W-12)return true;
   if(y<Y0+10)return true;                                   /* les vitrines du fond */
-  if(y>MUR_S-4&&Math.abs(x-SORTIE_X)>PL/2-14)return true;   /* le mur de l'entrée, sauf la baie des portes */
   if(y>H-6)return true;
   if(x>EX0-26&&x<EX1+6&&y>GY1-PROF-2&&y<GY2+4)return true;   /* les escalators */
   if(x>EX1+104&&x<EX1+122&&y>GY2-8&&y<GY2+4)return true;    /* le poteau du palier */
@@ -373,11 +362,13 @@ setInterval(()=>{try{
 let PARTI=false;
 setInterval(()=>{try{
   if(ETG||PARTI||typeof joueur==='undefined')return;
-  if(joueur.y>MUR_S+16&&Math.abs(joueur.x-SORTIE_X)<PL/2){sortir();}
+  if(joueur.y>H-22){sortir();}
 }catch(x){}},150);
 function sortir(){if(PARTI)return;PARTI=true;
   try{sauver();}catch(x){}
-  setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='spawn.html?de=terrasses'+v;},300);}
+  /* le fondu : la galerie s'efface dans la lumière du jour */
+  try{const f=document.createElement('div');f.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#fff8ea;opacity:0;transition:opacity .45s;pointer-events:none';document.body.appendChild(f);requestAnimationFrame(()=>f.style.opacity='1');}catch(x){}
+  setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='spawn.html?de=terrasses'+v;},480);}
 
 /* ---------- LES PORTES DE SORTIE, vues de l'intérieur : elles s'ouvrent à l'approche ---------- */
 let OUV=0;
