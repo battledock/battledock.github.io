@@ -656,7 +656,7 @@ const T={
 
 const CX=400, CY=582, NSEG=16;
 const PORTES_A=[0,Math.PI/2,Math.PI,-Math.PI/2];
-const dansPorte=a=>PORTES_A.some(p=>{let d=Math.abs(a-p);if(d>Math.PI)d=2*Math.PI-d;return d<.17;});
+const dansPorte=(a,l)=>PORTES_A.some(p=>{let d=Math.abs(a-p);if(d>Math.PI)d=2*Math.PI-d;return d<(l||.30);});   /* .30 : là où rien ne pousse ; on passe à .22 */
 /* toutes les plantes, en coordonnées du monde : la haie de buis autour, l'anneau de graminées autour du banc */
 const PLANTES=(()=>{const L=[];
   for(let i=0;i<520;i++){const a=hA(i,77,1)*Math.PI*2,r=Math.sqrt(hA(i,77,2)*(1-(166/178)**2)+(166/178)**2);if(dansPorte(Math.atan2(Math.sin(a),Math.cos(a))))continue;L.push({x:CX+Math.cos(a)*178*r,y:CY+Math.sin(a)*112*r,i,f:'buis',a});}
@@ -679,8 +679,8 @@ function solFin(SOL){const c=document.createElement('canvas');c.width=SOL.width*
   terre(166,104,178,112);terre(84,50,106,64);
   /* les quatre passages dans la haie et dans l'anneau, dallés */
   g.save();g.beginPath();g.ellipse(cx,cy,180,114,0,0,Math.PI*2);g.closePath();g.moveTo(cx+160,cy);g.ellipse(cx,cy,160,100,0,0,Math.PI*2);g.closePath();g.moveTo(cx+108,cy);g.ellipse(cx,cy,108,66,0,0,Math.PI*2);g.closePath();g.moveTo(cx+84,cy);g.ellipse(cx,cy,84,50,0,0,Math.PI*2);g.closePath();g.clip('evenodd');
-  for(const a of PORTES_A){g.fillStyle='#ddd0b6';g.beginPath();g.moveTo(cx,cy);g.ellipse(cx,cy,190,120,0,a-.17,a+.17);g.closePath();g.fill();}g.restore();
-  for(const a of PORTES_A){g.strokeStyle='rgba(140,120,90,.4)';g.lineWidth=.35;for(let r=.45;r<1.06;r+=.06){g.beginPath();g.ellipse(cx,cy,178*r,112*r,0,a-.17,a+.17);g.stroke();}}
+  for(const a of PORTES_A){g.fillStyle='#ddd0b6';g.beginPath();g.moveTo(cx,cy);g.ellipse(cx,cy,190,120,0,a-.30,a+.30);g.closePath();g.fill();}g.restore();
+  for(const a of PORTES_A){g.strokeStyle='rgba(140,120,90,.4)';g.lineWidth=.35;for(let r=.45;r<1.06;r+=.06){g.beginPath();g.ellipse(cx,cy,178*r,112*r,0,a-.30,a+.30);g.stroke();}}
   bord(g,cx,cy,84,50,7,'#e8dcc4','#fbf4e4');g.strokeStyle='#a8987a';g.lineWidth=.6;g.beginPath();g.ellipse(cx,cy,77,45.8,0,0,7);g.stroke();
   anneaux(g,cx,cy,77,45.8,4,['#e6dac2','#dccfb4','#e0d3b8'],'rgba(140,120,90,.4)',9);
   return c;}
@@ -693,15 +693,21 @@ function graverFontaine(){if(TF)return TF;const Wd=130,Hd=118,sol=100,D=2,c=docu
   for(let k=0;k<4;k++){const a=k*Math.PI/2+Math.PI/4,x=cx+Math.cos(a)*50,y=by+Math.sin(a)*22;arc(g,x,y,cx+Math.cos(a)*16,by-2+Math.sin(a)*7,12,.7);}jet(g,cx,by-26,12,.8);
   TF={toile:c,W:Wd,H:Hd,sol};return TF;}
 function dessinerFontaine(g,o,x,y){const t=graverFontaine();const X0=x-t.W/2,Y0=y-t.sol;g.drawImage(t.toile,X0,Y0,t.W,t.H);
+  /* la nuit : la pierre passe au bleu sombre, l'eau s'éclaire par en dessous */
+  {const k=nuitDecor();if(k>.02){g.globalAlpha=k;g.drawImage(versionNuit(t),X0,Y0,t.W,t.H);g.globalAlpha=1;
+    const wy=Y0+t.sol-(FY-BY);g.save();g.globalCompositeOperation='lighter';
+    const gr=g.createRadialGradient(x,wy,2,x,wy,54);gr.addColorStop(0,'rgba(80,230,240,'+(.42*k)+')');gr.addColorStop(.7,'rgba(40,160,210,'+(.22*k)+')');gr.addColorStop(1,'rgba(40,160,210,0)');
+    g.fillStyle=gr;g.beginPath();g.ellipse(x,wy,52,22,0,0,Math.PI*2);g.fill();
+    g.fillStyle='rgba(120,240,250,'+(.35*k)+')';g.beginPath();g.ellipse(x,wy-24,16,5,0,0,Math.PI*2);g.fill();g.restore();}}
   const cx=x,by=Y0+t.sol-(FY-BY),ph=Date.now()/90;
   for(let i=0;i<18;i++){const k=(ph+i*7.3)%18/18,a=Math.PI*(.08+.84*((i*.37)%1));g.fillStyle='rgba(240,250,255,'+(.8-k*.6)+')';
     g.fillRect(cx+Math.cos(a)*(18+k*3),by-24+Math.sin(a)*6+k*20,.8,.8);}
   for(let i=0;i<8;i++){const k=(ph*.7+i*2.1)%8/8;g.fillStyle='rgba(240,250,255,'+(.9-k*.8)+')';g.fillRect(cx-3+((i*5)%7),by-38-k*3+((i*3)%4),.7,.7);}
   g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=.5;for(let i=0;i<3;i++){const k=((ph*.05+i/3)%1);g.beginPath();g.ellipse(cx,by,18+k*30,6+k*13,0,0,Math.PI*2);g.globalAlpha=1-k;g.stroke();g.globalAlpha=1;}}
 function bloquePlace(x,y){const ex=(x-CX),ey=(y-CY),a=Math.atan2(ey/112,ex/178);
-  const r1=Math.hypot(ex/178,ey/112);if(r1<1.01&&r1>.925&&!dansPorte(a))return true;
-  const a2=Math.atan2(ey/64,ex/106),r2=Math.hypot(ex/106,ey/64);if(r2<1.02&&r2>.76&&!dansPorte(a2))return true;
-  if(Math.hypot((x-CX)/58,(y-BY-3)/31)<1)return true;return false;}
+  const r1=Math.hypot(ex/178,ey/112);if(r1<1.01&&r1>.925&&!dansPorte(a,.22))return true;
+  const a2=Math.atan2(ey/64,ex/106),r2=Math.hypot(ex/106,ey/64);if(r2<1.02&&r2>.76&&!dansPorte(a2,.22))return true;
+  if(Math.hypot((x-CX)/60,(y-BY-6)/37)<1)return true;   /* le bassin, avec sa margelle de devant */return false;}
 return {solFin,graverSegment,graverFontaine,dessinerFontaine,bloquePlace,SEGS,FY,CX};
 })();
 

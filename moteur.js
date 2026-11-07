@@ -11989,6 +11989,14 @@ function ombreCuite(C,pente,ecrase){
   par.set(sil,o);
   return o;
 }
+/* LA NUIT SUR LE DÉCOR DE LA PLACE. Le moteur assombrit le sol mais pas les
+   objets : la fontaine, les buis et les platanes restaient en plein jour au
+   milieu d'une place bleu nuit. Chaque dessin reçoit donc sa version de nuit
+   (le même dessin, passé au bleu sombre), posée par-dessus selon l'heure. */
+function nuitDecor(){try{const c=cielDuMoment();return c?Math.min(1,c.lampes||0):0;}catch(x){return 0;}}
+function versionNuit(C){if(C._nuit)return C._nuit;const s=C.toile,c=document.createElement('canvas');c.width=s.width;c.height=s.height;const g=c.getContext('2d');
+g.drawImage(s,0,0);g.globalCompositeOperation='multiply';g.fillStyle='#4a5288';g.fillRect(0,0,c.width,c.height);
+g.globalCompositeOperation='destination-in';g.drawImage(s,0,0);C._nuit=c;return c;}
 function dessinerX(g,o,x,y){
 /* LE PANNEAU DU BOULODROME CHANGE LES JOURS DE MONDIAL. Il était sauté
    quand aucun tableau n'était en cours : on arrivait à la ferme et il
@@ -12034,6 +12042,7 @@ const X0=Math.round(x-C.W/2), Y0=Math.round(y-C.sol+dy);
 if(o.flip){g.save();g.translate(Math.round(x)*2,0);g.scale(-1,1);}
 ombrePortee(g,C,x,y+dy,o.t);
 g.drawImage(C.toile,X0,Y0,C.W,C.H);
+if(CARTE==='spawn'&&!window.LIEU_PAGE&&(o.t||'').slice(0,6)==='x_jol_'){const k=nuitDecor();if(k>0.02){g.globalAlpha=k;g.drawImage(versionNuit(C),X0,Y0,C.W,C.H);g.globalAlpha=1;}}
 if(lampesAllumees()){const t=o.t||'';
 /* LES FEUX PORTÉS PAR LE CALQUE. Les tests par nom ci-dessous ne
    marchent que pour un dessin dont on connaît d'avance la taille : la
