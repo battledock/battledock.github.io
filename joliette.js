@@ -262,9 +262,9 @@ const LOGO='bold 12px "Arial Black","Helvetica Neue",Arial,sans-serif';
 const glyphe=(x,y)=>{R(x,y,11,8,'#ffffff');R(x+2,y+2,7,4,PIERRE);R(x+9,y+2,2,4,PIERRE);
   R(x+14,y,11,8,'#ffffff');R(x+16,y+2,2,6,PIERRE);R(x+21,y+2,2,6,PIERRE);};
 const ecrire=()=>{g.save();g.shadowColor='rgba(60,40,20,.45)';g.shadowOffsetY=.8;g.shadowBlur=.6;
-  g.font=LOGO;const w1=g.measureText('LES TERRASSES').width;
-  texte('LES TERRASSES',B0-14,TOIT+13,LOGO,'#ffffff','right');texte('DU PORT',B1+14,TOIT+13,LOGO,'#ffffff','left');
-  const w2=g.measureText('DU PORT').width;g.restore();
+  g.font=LOGO;const w1=g.measureText('LA GALERIE').width;
+  texte('LA GALERIE',B0-14,TOIT+13,LOGO,'#ffffff','right');texte('BLEUE',B1+14,TOIT+13,LOGO,'#ffffff','left');
+  const w2=g.measureText('BLEUE').width;g.restore();
   glyphe(B0-14-w1-34,TOIT+9);glyphe(B1+14+w2+8,TOIT+9);};
 ecrire();
 /* ---------- l'atrium de verre teinté ---------- */
@@ -311,7 +311,7 @@ for(const cx of [B0+14,B1-14]){HG(cx-4,TOIT+66,8,SOL-TOIT-66,[[0,'#c8c8c4'],[.3,
 
 /* ---------- le bandeau bleu « Bienvenue » ---------- */
 {const y=SOL-PH-7;R(B0-4,y,B1-B0+8,7,BLEU);R(B0-4,y,B1-B0+8,.6,'#4a78c8');R(B0-4,y+6.5,B1-B0+8,.5,'#122e66');
-  R(CX-62,y,124,7,'#173f8e');texte('BIENVENUE AUX TERRASSES DU PORT',CX,y+3.7,'bold 4.4px "Helvetica Neue",Arial,sans-serif','#ffffff');
+  R(CX-62,y,124,7,'#173f8e');texte('BIENVENUE À LA GALERIE BLEUE',CX,y+3.7,'bold 4.4px "Helvetica Neue",Arial,sans-serif','#ffffff');
   for(const gx of [CX-74,CX+64]){R(gx,y+1.5,4,4,'#ffffff');R(gx+1,y+2.5,2,2,'#173f8e');R(gx+5,y+1.5,4,4,'#ffffff');R(gx+6,y+2.5,.8,3,'#173f8e');R(gx+7.2,y+2.5,.8,3,'#173f8e');}}
 /* l'entrée : derrière les vitrages, le mail du centre commercial — sol de pierre poli,
    boutiques éclairées au fond, plafond à spots, un escalator, des passants, un palmier en pot.
@@ -351,7 +351,7 @@ R(0,SOL,W,PIED-SOL,'#d8cfc2');for(let x=0;x<W;x+=20)R(x,SOL,.4,PIED-SOL,'#c4b8a8
 /* ---------- la nuit ---------- */
 if(!JOUR){g.save();g.globalCompositeOperation='multiply';g.fillStyle='rgb(120,120,172)';g.fillRect(0,-12,W,PIED+12);g.restore();
   g.save();g.globalCompositeOperation='lighter';for(const [x,y,w,hh] of LUMS){g.fillStyle='rgba(130,80,30,.6)';g.fillRect(x,y,w,hh);}g.restore();
-  const y=SOL-PH-7;R(B0-4,y,B1-B0+8,7,'#2a62c8');texte('BIENVENUE AUX TERRASSES DU PORT',CX,y+3.7,'bold 4.4px "Helvetica Neue",Arial,sans-serif','#ffffff');
+  const y=SOL-PH-7;R(B0-4,y,B1-B0+8,7,'#2a62c8');texte('BIENVENUE À LA GALERIE BLEUE',CX,y+3.7,'bold 4.4px "Helvetica Neue",Arial,sans-serif','#ffffff');
   ecrire();}
 }
 /* les deux entrées coulissantes : leur place dans la façade (x, largeur) */
@@ -807,9 +807,9 @@ function graver(){if(T)return T;const Wd=136,Hd=140,sol=132,cx=62,D=2;const c=do
 return {graver};})();
 
 /* ---------- LE QUAI : le journal qu'on lit au kiosque ---------- */
-const JOURNAL={date:'Vendredi 6 nov. 2026',une:{tag:'Exclusif',titre:'Les Terrasses du Port enfin ouvertes !',img:'galerie',chapo:'Escalators, ascenseurs de verre et des dizaines de vitrines à louer : on a visité la galerie avant tout le monde.'},
+const JOURNAL={date:'Vendredi 6 nov. 2026',une:{tag:'Exclusif',titre:'La Galerie Bleue enfin ouverte !',img:'galerie',chapo:'Escalators, ascenseurs de verre et des dizaines de vitrines à louer : on a visité la galerie avant tout le monde.'},
   breves:[{tag:'Port',titre:"L'ovation des dockers",txt:'À chaque niveau gagné sur le port, tout le quai applaudit.',img:'ovation'},
-    {tag:'Shopping',titre:"L'étage +1 ouvert",txt:"Vue plongeante sur l'atrium, par l'escalator « La Terrasse ».",img:'etage'},
+    {tag:'Shopping',titre:"L'étage +1 ouvert",txt:"Vue plongeante sur l'atrium, par les escalators de la galerie.",img:'etage'},
     {tag:'Joliette',titre:'La place toute ronde',txt:'Fontaine recentrée, haie de buis, banc circulaire.',img:'place'},
     {tag:'Météo',titre:'Automne doré',txt:"Les platanes gardent leurs couleurs jusqu'au 20 décembre.",img:'place',pos:'0 100%'}]};
 const CSS_QUAI=`#quaiJ{position:fixed;inset:0;z-index:2147483000;background:rgba(14,18,26,.94);overflow-y:auto;-webkit-overflow-scrolling:touch;opacity:0;transition:opacity .25s;font-family:Arial,Helvetica,sans-serif}
@@ -835,7 +835,7 @@ function ouvrirJournal(){if(document.getElementById('quaiJ'))return;
   const J=JOURNAL,v=window.MA_VERSION?('?v='+encodeURIComponent(window.MA_VERSION)):'',im=n=>'assets/journal/'+n+'.jpg'+v;
   const d=document.createElement('div');d.id='quaiJ';
   d.innerHTML='<div class="pap"><div class="mast"><h1>Le <span>Quai</span></h1><small>'+J.date.toUpperCase()+'<br>ÉDITION DE MARSEILLE · 1 €</small></div>'+
-    '<div class="sub"><b>● En direct</b><span>Joliette</span><span>Terrasses</span><span>Port</span></div>'+
+    '<div class="sub"><b>● En direct</b><span>Joliette</span><span>Galerie Bleue</span><span>Port</span></div>'+
     '<div class="une"><img src="'+im(J.une.img)+'" alt=""><div class="t"><span class="tag">'+J.une.tag+'</span><h2>'+J.une.titre+'</h2></div></div>'+
     '<div class="chap">'+J.une.chapo+'</div><div class="g">'+
     J.breves.map(b=>'<div class="c"><img src="'+im(b.img)+'" alt=""'+(b.pos?' style="object-position:'+b.pos+'"':'')+'><span class="tag">'+b.tag+'</span><h3>'+b.titre+'</h3><p>'+b.txt+'</p></div>').join('')+

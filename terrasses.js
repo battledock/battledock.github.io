@@ -1,5 +1,5 @@
 /* =====================================================================
-   L'INTÉRIEUR DES TERRASSES DU PORT — le rez-de-chaussée, autour de l'atrium.
+   L'INTÉRIEUR DE LA GALERIE BLEUE — le rez-de-chaussée, autour de l'atrium.
    Même logique de vue que la place : le mur du fond monte à la verticale
    (rez-de-chaussée, puis le balcon du +1, puis celui du +2) ; tout le reste
    est posé au sol. Les boutiques sont vides : « À LOUER ».
@@ -137,8 +137,8 @@ function graverEscalators(){if(TESC)return TESC;
   const px=lx+lw-14;g.fillStyle=lin(g,px,0,px+10,0,[[0,'#d8d4cc'],[.4,'#fbfaf6'],[1,'#c8c4bc']]);g.fillRect(px,lb+18,10,sol-(lb+18));
   g.fillStyle='rgba(30,26,20,.18)';g.beginPath();g.ellipse(px+8,sol+1,10,3,0,0,7);g.fill();
   /* les deux escalators : celui du fond monte, celui de devant descend */
-  escalier(g,ox,top,EX0,EX1,GY1,'LA TERRASSE',1);
-  escalier(g,ox,top,EX0,EX1,GY2,'LA TERRASSE',-1);
+  escalier(g,ox,top,EX0,EX1,GY1,'GALERIE BLEUE',1);
+  escalier(g,ox,top,EX0,EX1,GY2,'GALERIE BLEUE',-1);
   /* les potelets inox à disque bleu, au départ */
   for(const [x,y,d] of [[EX0-34,GY1-6,0],[EX0-34,GY2-6,1],[EX0-34,GY2+6,0]]){const X=x-ox,Y=y-top;
     g.fillStyle='rgba(30,26,20,.2)';g.beginPath();g.ellipse(X+2,Y,5,1.6,0,0,7);g.fill();
@@ -229,7 +229,7 @@ function peindreEtage(g){
   const p=graverPalmier();g.drawImage(p.toile,210-p.W/2,VY+70-p.sol,p.W,p.H);
   g.fillStyle=lin(g,0,VY-VRY,0,VY-VRY+60,[[0,'rgba(0,0,0,.25)'],[1,'rgba(0,0,0,0)']]);g.fillRect(0,VY-VRY,W,60);
   g.fillStyle='rgba(20,20,40,.12)';g.fillRect(0,VY-VRY,W,VRY*2);
-  escalier(g,0,0,VX+20,VX+VRX-6,VY+128-20,'LA TERRASSE');
+  escalier(g,0,0,VX+20,VX+VRX-6,VY+128-20,'GALERIE BLEUE');
   g.restore();
   g.strokeStyle='#ffffff';g.lineWidth=3;g.beginPath();g.ellipse(VX,VY,VRX,VRY,0,0,Math.PI*2);g.stroke();
   g.strokeStyle='#d8d4cc';g.lineWidth=1;g.beginPath();g.ellipse(VX,VY+2,VRX,VRY,0,0,Math.PI);g.stroke();
@@ -304,7 +304,7 @@ function murVegetal(g,x,y,w,h,logo){ombreSol(g,x+w/2,y,w/2+6,6,.22);
   /* le dégradé d'ombre en bas, les spots qui l'éclairent */
   g.fillStyle=Lg(g,0,y-30,0,y-8,[[0,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,.35)']]);g.fillRect(x,y-30,w,22);
   for(let i=0;i<4;i++){const sx=x+w*(i+.5)/4;g.fillStyle='rgba(255,240,200,.18)';g.beginPath();g.moveTo(sx-4,y-h);g.lineTo(sx+4,y-h);g.lineTo(sx+14,y-h+40);g.lineTo(sx-14,y-h+40);g.fill();}
-  if(logo){g.fillStyle='rgba(255,255,255,.92)';g.font='bold 9px "Helvetica Neue",Arial';g.textAlign='center';g.fillText('LES TERRASSES',x+w/2,y-h+h*.45);g.font='7px "Helvetica Neue",Arial';g.fillText('DU PORT',x+w/2,y-h+h*.45+10);}}
+  if(logo){g.fillStyle='rgba(255,255,255,.92)';g.font='bold 9px "Helvetica Neue",Arial';g.textAlign='center';g.fillText('LA GALERIE',x+w/2,y-h+h*.45);g.font='7px "Helvetica Neue",Arial';g.fillText('BLEUE',x+w/2,y-h+h*.45+10);}}
 
 const MURV=[400,600,204,70], BANQ=[[328,684],[472,684]], RBQ=44;
 let TMUR=null,TBQ=null;

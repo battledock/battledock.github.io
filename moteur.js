@@ -20121,7 +20121,7 @@ DECOR.filter(o=>o.t==='bancP').sort((a,b)=>(a.y-b.y)||(a.x-b.x))
 return l;
 }
 function coinDuJoueur(){
-if(window.LIEU_PAGE==='terrasses')return 'aux Terrasses du Port';
+if(window.LIEU_PAGE==='terrasses')return 'à la Galerie Bleue';
 if(CARTE==='extramar')return 'à Extramar';
 if(CARTE==='garde')return 'à Notre-Dame';
 if(CARTE==='tokyo')return 'à Tokyo';
