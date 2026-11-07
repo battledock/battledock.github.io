@@ -45,14 +45,50 @@ function niveau(g,y,n){R(g,0,y,W,110,'#ece6dc');const p=(W-8)/n;
 /* ---------- LE SOL ---------- */
 /* les grandes boutiques du fond : largeurs variées, la locomotive au centre */
 const BOUT=[180,200,240,330,240,200,180];
-const CADRES=['#2c2e32','#8a6a3a','#2c2e32','#c8c4bc','#2c2e32','#8a6a3a','#2c2e32'];
-function boutique(g,x,y,w,h,cadre){
-  /* le bandeau d'enseigne en pierre, vide, éclairé par deux appliques */
-  R(g,x,y,w,26,'#efe9de');R(g,x,y+24,w,2,'#d6cebe');R(g,x+10,y+8,w-20,10,'rgba(0,0,0,.05)');
-  for(const f of [.25,.75]){const lx=x+w*f;R(g,lx-6,y+2,12,3,'#b89a5a');g.fillStyle='rgba(255,236,190,.35)';g.beginPath();g.moveTo(lx-5,y+5);g.lineTo(lx+5,y+5);g.lineTo(lx+12,y+24);g.lineTo(lx-12,y+24);g.fill();}
-  vitrine(g,x,y+26,w,h-26);
-  /* le cadre teinté de la maison (bronze, noir, blanc) */
-  g.strokeStyle=cadre;g.lineWidth=4;g.strokeRect(x+2,y+28,w-4,h-30);}
+/* LES MAISONS : chaque local a sa façade, sa matière, son cadre */
+const STYLES=[
+ {nom:'marbre',bandeau:'#f4f1ec',veine:'rgba(150,150,160,.35)',cadre:'#b89a5a'},
+ {nom:'noyer',bandeau:'#6a4428',lame:'#5a3820',cadre:'#1e1e22',store:['#1e4a36','#2c6a4e']},
+ {nom:'granit',bandeau:'#23252b',grain:'rgba(255,255,255,.18)',cadre:'#c8a860'},
+ null,
+ {nom:'laiton',bandeau:'#b89050',brosse:'rgba(255,240,200,.28)',cadre:'#7a5a2a'},
+ {nom:'creme',bandeau:'#efe6d2',cadre:'#ffffff',store:['#1c2c58','#f4f0e6']},
+ {nom:'ocre',bandeau:'#c8783e',cadre:'#5a3020',store:['#a84a24','#e8c8a0']}];
+/* l'intérieur d'un local vide, éclairé : murs chauds, parquet, étagères, spots */
+function vitrineEclairee(g,x,y,w,h,S){
+  R(g,x,y,w,h,S.cadre);const vx=x+3,vy=y+3,vw=w-6,vh=h-6;
+  g.fillStyle=lin(g,0,vy,0,vy+vh,[[0,'#fff3dc'],[.62,'#f0dcb8'],[.63,'#d8b88a'],[1,'#c8a070']]);g.fillRect(vx,vy,vw,vh);
+  /* le fond : des étagères vides, une porte de réserve */
+  for(let k=0;k<3;k++){const ey=vy+vh*(.22+k*.13);R(g,vx+8,ey,vw*.36,2,'#e8d8bc');R(g,vx+8,ey+2,vw*.36,1,'rgba(0,0,0,.12)');R(g,vx+vw-8-vw*.36,ey,vw*.36,2,'#e8d8bc');R(g,vx+vw-8-vw*.36,ey+2,vw*.36,1,'rgba(0,0,0,.12)');}
+  R(g,vx+vw/2-12,vy+vh*.2,24,vh*.42,'#e6d2ae');R(g,vx+vw/2+7,vy+vh*.42,2,4,'#b89a5a');
+  /* le parquet en perspective */
+  for(let k=0;k<10;k++){g.strokeStyle='rgba(120,80,40,.25)';g.lineWidth=.6;g.beginPath();g.moveTo(vx+vw*k/9,vy+vh*.63);g.lineTo(vx+vw/2+(k/9-.5)*vw*1.6,vy+vh);g.stroke();}
+  /* les spots et leurs halos */
+  for(let k=0;k<4;k++){const sx=vx+vw*(k+.5)/4;R(g,sx-2,vy+2,4,2,'#fffbe8');g.fillStyle='rgba(255,246,220,.35)';g.beginPath();g.moveTo(sx-2,vy+4);g.lineTo(sx+2,vy+4);g.lineTo(sx+14,vy+vh*.63);g.lineTo(sx-14,vy+vh*.63);g.fill();}
+  /* deux présentoirs vides */
+  for(const f of [.3,.7]){const px=vx+vw*f;R(g,px-10,vy+vh*.66,20,10,'#f6efe2');R(g,px-10,vy+vh*.66,20,1.4,'#ffffff');R(g,px-10,vy+vh*.66+10,20,2,'rgba(0,0,0,.15)');}
+  /* le vitrage : reflets, montants, la porte */
+  g.save();g.beginPath();g.rect(vx,vy,vw,vh);g.clip();g.fillStyle='rgba(255,255,255,.16)';
+  for(let k=0;k<3;k++){const bx=vx+vw*.08+k*vw*.34;g.beginPath();g.moveTo(bx,vy);g.lineTo(bx+vh*.25,vy);g.lineTo(bx+vh*.25-vh*.45,vy+vh);g.lineTo(bx-vh*.45,vy+vh);g.fill();}g.restore();
+  const nm=Math.max(2,Math.round(w/60));for(let k=1;k<nm;k++)R(g,vx+vw*k/nm-.8,vy,1.6,vh,S.cadre);
+  /* la vitrophanie élégante : un bandeau translucide « À LOUER » */
+  const by=vy+vh*.44,bh=Math.max(14,vh*.12);g.fillStyle='rgba(31,63,168,.86)';g.fillRect(vx,by,vw,bh);R(g,vx,by,vw,1,'#c8a860');R(g,vx,by+bh-1,vw,1,'#c8a860');
+  g.fillStyle='#ffffff';g.font='bold '+(bh*.42).toFixed(1)+'px "Helvetica Neue",Arial,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('À LOUER',vx+vw/2,by+bh*.4);
+  g.fillStyle='rgba(255,255,255,.75)';g.font=(bh*.26).toFixed(1)+'px "Helvetica Neue",Arial,sans-serif';g.fillText('LA GALERIE BLEUE · TOUCHE LA VITRINE',vx+vw/2,by+bh*.76);}
+function boutique(g,x,y,w,h,S){
+  /* le bandeau d'enseigne, dans la matière de la maison */
+  R(g,x,y,w,30,S.bandeau);
+  if(S.veine)for(let k=0;k<5;k++){g.strokeStyle=S.veine;g.lineWidth=.6;g.beginPath();g.moveTo(x+k*w/5,y);g.bezierCurveTo(x+k*w/5+20,y+10,x+k*w/5+10,y+20,x+k*w/5+40,y+30);g.stroke();}
+  if(S.lame)for(let xx=x;xx<x+w;xx+=6)R(g,xx,y,1,30,S.lame);
+  if(S.grain)for(let k=0;k<w*2;k++)R(g,x+hA(k,y,5)*w,y+hA(k,y,6)*30,.8,.8,S.grain);
+  if(S.brosse)for(let yy=y;yy<y+30;yy+=2)R(g,x,yy,w,.6,S.brosse);
+  R(g,x,y+28,w,2,'rgba(0,0,0,.25)');R(g,x,y,w,1,'rgba(255,255,255,.35)');
+  /* deux appliques dorées */
+  for(const f of [.2,.8]){const lx=x+w*f;R(g,lx-5,y+4,10,3,'#c8a860');g.fillStyle='rgba(255,236,190,.4)';g.beginPath();g.moveTo(lx-4,y+7);g.lineTo(lx+4,y+7);g.lineTo(lx+10,y+28);g.lineTo(lx-10,y+28);g.fill();}
+  vitrineEclairee(g,x,y+30,w,h-30,S);
+  /* le store, pour les maisons qui en ont un */
+  if(S.store){const sy=y+30,n=Math.round(w/16);for(let k=0;k<n;k++){g.fillStyle=S.store[k%2];g.beginPath();g.moveTo(x+k*w/n,sy);g.lineTo(x+(k+1)*w/n,sy);g.lineTo(x+(k+1)*w/n+1,sy+14);g.lineTo(x+k*w/n+1,sy+14);g.fill();
+    g.beginPath();g.arc(x+(k+.5)*w/n+1,sy+14,w/n/2,0,Math.PI);g.fill();}g.fillStyle='rgba(0,0,0,.18)';g.fillRect(x+3,sy+18,w-6,3);}}
 function peindreSol(g){
   /* la verrière : ciel, montants blancs, la lumière qui tombe */
   g.fillStyle=lin(g,0,0,0,64,[[0,'#9cc6e6'],[1,'#e4f0f8']]);g.fillRect(0,0,W,64);
@@ -62,7 +98,7 @@ function peindreSol(g){
   let x=0;const p=(W-BOUT.reduce((a,b)=>a+b,0))/(BOUT.length+1);
   for(let i=0;i<BOUT.length;i++){
     g.fillStyle=lin(g,x,0,x+p,0,[[0,'#dcd8d0'],[.5,'#fbfaf6'],[1,'#d0ccc4']]);g.fillRect(x,76,p,Y0-76);x+=p;
-    boutique(g,x,80,BOUT[i],Y0-84,CADRES[i]);x+=BOUT[i];}
+    if(STYLES[i])boutique(g,x,80,BOUT[i],Y0-84,STYLES[i]);x+=BOUT[i];}
   g.fillStyle=lin(g,x,0,x+p,0,[[0,'#dcd8d0'],[.5,'#fbfaf6'],[1,'#d0ccc4']]);g.fillRect(x,76,W-x,Y0-76);
   R(g,0,Y0-4,W,4,'#cfc8ba');R(g,0,Y0-1,W,1,'rgba(0,0,0,.28)');
   /* les grandes dalles de pierre claire, posées en quinconce */
@@ -362,12 +398,83 @@ function graverSusp(){if(TSUS)return TSUS;const Wd=20,Hd=96,sol=94;const {c,g}=t
   g.fillStyle='#fff6d8';g.beginPath();g.ellipse(10,70.6,4.4,1.5,0,0,7);g.fill();
   const gr=g.createRadialGradient(10,72,0,10,72,10);gr.addColorStop(0,'rgba(255,236,190,.7)');gr.addColorStop(1,'rgba(255,236,190,0)');g.fillStyle=gr;g.fillRect(0,62,20,20);
   TSUS={toile:c,W:Wd,H:Hd,sol};return TSUS;}
+/* ---------- LES COINS DE VIE ---------- */
+/* l'îlot café : comptoir rond, machine, ardoise, suspensions */
+function cafe(g,cx,cy){const R=40,ry=17,H=20;ombreSol(g,cx,cy,R+6,ry+4,.22);
+  /* la marquise au-dessus : un anneau de bois suspendu, avec ses lampes */
+  g.fillStyle=Lg(g,cx-R,0,cx+R,0,[[0,'#f4f2ee'],[.4,'#ffffff'],[1,'#d8d4cc']]);g.beginPath();g.ellipse(cx,cy,R,ry,0,0,Math.PI);g.lineTo(cx-R,cy-H);g.ellipse(cx,cy-H,R,ry,0,Math.PI,0,true);g.fill();
+  g.fillStyle='#1f3fa8';g.beginPath();g.ellipse(cx,cy-6,R,ry,0,.1,Math.PI-.1);g.ellipse(cx,cy-8,R,ry,0,Math.PI-.1,.1,true);g.fill();
+  g.fillStyle='#b8875a';g.beginPath();g.ellipse(cx,cy-H,R+2,ry+1.5,0,0,7);g.fill();g.fillStyle='#d8a874';g.beginPath();g.ellipse(cx,cy-H-1,R+1,ry+.5,0,0,7);g.fill();
+  g.fillStyle='#5a4632';g.beginPath();g.ellipse(cx,cy-H-1,R-9,ry-5,0,0,7);g.fill();   /* l'intérieur */
+  /* la machine à espresso, les tasses, les viennoiseries */
+  g.fillStyle='#c8ccd2';g.fillRect(cx-10,cy-H-14,20,12);g.fillStyle='#e8ecf0';g.fillRect(cx-10,cy-H-14,20,2);g.fillStyle='#2a2a30';g.fillRect(cx-7,cy-H-9,14,3);g.fillStyle='#c83a2a';g.fillRect(cx+5,cy-H-12,2,2);
+  for(let k=0;k<4;k++){g.fillStyle='#fff';g.fillRect(cx-28+k*5,cy-H-4,3,3);}g.fillStyle='#e0a050';for(let k=0;k<3;k++){g.beginPath();g.ellipse(cx+20+k*5,cy-H-3,2.4,1.6,0,0,7);g.fill();}
+  /* le barista */
+  g.fillStyle='#2a2a34';g.fillRect(cx-2,cy-H-22,7,10);g.fillStyle='#e0b088';g.fillRect(cx-1,cy-H-30,6,7);g.fillStyle='#3a2a20';g.fillRect(cx-1.5,cy-H-31,7,3);g.fillStyle='#f4f0e4';g.fillRect(cx-2,cy-H-20,7,6);
+  /* les suspensions : trois globes laiton au-dessus du comptoir */
+  for(const dx of [-22,0,22]){g.fillStyle='#7a7e84';g.fillRect(cx+dx-.3,cy-H-90,.6,48);g.fillStyle='rgba(255,220,150,.25)';g.beginPath();g.ellipse(cx+dx,cy-H-36,12,6,0,0,7);g.fill();
+    g.fillStyle='#d8b060';g.beginPath();g.arc(cx+dx,cy-H-42,4.6,Math.PI,0);g.fill();g.fillStyle='#fff3c8';g.beginPath();g.ellipse(cx+dx,cy-H-41.6,3.4,1.4,0,0,7);g.fill();}
+  /* l'ardoise sur pied */
+  g.fillStyle='#3a2a1c';g.fillRect(cx+R+6,cy-26,1.4,26);g.fillStyle='#22262a';g.fillRect(cx+R+2,cy-34,16,18);g.fillStyle='#b8875a';g.fillRect(cx+R+1,cy-35,18,1.4);
+  g.fillStyle='#f4f0e4';g.font='bold 5px Arial';g.textAlign='center';g.fillText('CAFÉ',cx+R+10,cy-28);g.fillRect(cx+R+4,cy-25,12,.6);g.fillRect(cx+R+4,cy-22,10,.6);g.fillRect(cx+R+4,cy-19,11,.6);
+  /* les tabourets hauts devant */
+  for(const a of [.5,1.1,1.7,2.3]){const tx=cx+Math.cos(a)*(R+10),ty=cy+Math.sin(a)*(ry+6);g.fillStyle='rgba(30,26,20,.2)';g.beginPath();g.ellipse(tx+1,ty+1,4,1.4,0,0,7);g.fill();g.fillStyle='#4a4c52';g.fillRect(tx-.6,ty-12,1.2,12);g.fillStyle='#1f3fa8';g.beginPath();g.ellipse(tx,ty-12,4,1.8,0,0,7);g.fill();}}
+function tableRonde(g,x,y){ombreSol(g,x,y,8,2.6,.2);g.fillStyle='#4a4c52';g.fillRect(x-.8,y-12,1.6,12);g.fillStyle='#f4f2ee';g.beginPath();g.ellipse(x,y-12,8,3.2,0,0,7);g.fill();g.fillStyle='#fff';g.fillRect(x-2,y-14,3,2);
+  for(const dx of [-12,12]){g.fillStyle='#b8875a';g.fillRect(x+dx-3,y-8,6,2);g.fillStyle='#4a4c52';g.fillRect(x+dx-.5,y-6,1,6);g.fillRect(x+dx+(dx<0?-3:2),y-14,1,7);}}
+
+let TCAFE=null,TTAB=null,TOLB=null;
+function graverCafe(){if(TCAFE)return TCAFE;const Wd=150,Hd=160,sol=132;const {c,g}=toile(Wd,Hd);cafe(g,70,sol-17);TCAFE={toile:c,W:Wd,H:Hd,sol};return TCAFE;}
+function graverTable(){if(TTAB)return TTAB;const Wd=40,Hd=26,sol=22;const {c,g}=toile(Wd,Hd);tableRonde(g,20,sol);TTAB={toile:c,W:Wd,H:Hd,sol};return TTAB;}
+const MIEL={f0:'#c8955a',f1:'#d8a874',f2:'#9a6a3a',plante:olivierB};const RBO=54;
+function graverBanqOlivier(){if(TOLB)return TOLB;const ry=RBO*.42,Wd=RBO*2+20,cyL=110,Hd=Math.ceil(cyL+ry+8);const {c,g}=toile(Wd,Hd);banquette(g,Wd/2,cyL,RBO,MIEL);TOLB={toile:c,W:Wd,H:Hd,sol:cyL+ry};return TOLB;}
+
+/* ---------- 5. LA FICHE D'UN LOCAL, quand on touche sa vitrine ---------- */
+const LOCAUX=(()=>{const L=[];let x=0;const p=(W-BOUT.reduce((a,b)=>a+b,0))/(BOUT.length+1);const NOMS=['A1','A2','A3',null,'B1','B2','B3'];
+  const OU=['Côté café, en entrée de galerie','Côté café, sous les appliques','Face au café, près du hall bleu',null,'Face au jardin, près du hall bleu','Côté jardin, très passant','Côté jardin, en bout de galerie'];
+  for(let i=0;i<BOUT.length;i++){x+=p;if(STYLES[i])L.push({id:NOMS[i],x:x+BOUT[i]/2,w:BOUT[i],m2:Math.round(BOUT[i]*.42),loyer:Math.round(BOUT[i]*16/100)*100,ou:OU[i],style:STYLES[i].nom,x0:x});x+=BOUT[i];}return L;})();
+const MATIERE={marbre:'Marbre blanc et laiton',noyer:'Noyer, store vert sapin',granit:'Granit noir et or',laiton:'Laiton brossé',creme:'Pierre crème, store marine',ocre:'Ocre provençal, store terracotta'};
+function ouvrirFiche(L){if(document.getElementById('ficheL'))return;
+  if(!document.getElementById('cssFicheL')){const st=document.createElement('style');st.id='cssFicheL';st.textContent=`
+#ficheL{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:flex-end;justify-content:center;background:rgba(8,14,34,.55);opacity:0;transition:opacity .2s;font-family:'Baloo 2',Arial,sans-serif}
+#ficheL.on{opacity:1}#ficheL .f{width:100%;max-width:460px;background:#f8f4ec;border-radius:24px 24px 0 0;padding:10px 18px calc(18px + env(safe-area-inset-bottom));transform:translateY(30px);transition:transform .25s;box-shadow:0 -10px 40px rgba(0,0,0,.4)}
+#ficheL.on .f{transform:none}#ficheL .poi{width:44px;height:5px;border-radius:3px;background:#d8ccb4;margin:0 auto 12px}
+#ficheL canvas{display:block;width:100%;border-radius:14px}#ficheL small{display:block;margin-top:12px;font:800 11px 'Baloo 2';letter-spacing:3px;color:#1f3fa8}
+#ficheL h3{margin:2px 0 8px;font:400 28px 'Lilita One','Baloo 2';color:#1c2450}
+#ficheL .g{display:grid;grid-template-columns:1fr 1fr;gap:8px}#ficheL .g div{background:#fff;border-radius:12px;padding:8px 12px;box-shadow:inset 0 0 0 1.5px #e8dfcc}
+#ficheL .g i{display:block;font:800 10px 'Baloo 2';font-style:normal;letter-spacing:1.3px;color:#9a8a6a;text-transform:uppercase}#ficheL .g b{font:700 16px 'Baloo 2';color:#2a2018}
+#ficheL .r{margin-top:12px;width:100%;height:56px;border:0;border-radius:16px;font:400 22px 'Lilita One';color:#fff;background:linear-gradient(#2e5ad0,#1f3fa8);box-shadow:0 4px 0 #142c78}
+#ficheL .m{min-height:20px;margin-top:8px;text-align:center;font:700 14px 'Baloo 2';color:#1f3fa8}
+#ficheL .x{display:block;margin:6px auto 0;background:none;border:0;font:700 14px 'Baloo 2';color:#9a8a6a}`;document.head.appendChild(st);}
+  const d=document.createElement('div');d.id='ficheL';
+  d.innerHTML='<div class="f"><div class="poi"></div><canvas width="600" height="300"></canvas><small>LOCAL '+L.id+' · LA GALERIE BLEUE</small><h3>Une boutique à toi</h3>'+
+   '<div class="g"><div><i>Surface</i><b>'+L.m2+' m²</b></div><div><i>Loyer</i><b>'+L.loyer.toLocaleString('fr-FR')+' € / semaine</b></div><div><i>Emplacement</i><b>'+L.ou+'</b></div><div><i>Façade</i><b>'+MATIERE[L.style]+'</b></div></div>'+
+   '<button class="r" type="button">Réserver ce local</button><div class="m"></div><button class="x" type="button">Fermer</button></div>';
+  document.body.appendChild(d);
+  try{const cv=d.querySelector('canvas'),k=cv.getContext('2d');const s=solFin();const sx=(L.x0-10)*2,sw=(L.w+20)*2;k.drawImage(s,sx,140,sw,(Y0-60)*2,0,0,600,300);}catch(x){}
+  requestAnimationFrame(()=>d.classList.add('on'));
+  const fermer=()=>{d.classList.remove('on');setTimeout(()=>d.remove(),220);};
+  d.querySelector('.x').onclick=fermer;d.addEventListener('click',ev=>{if(ev.target===d)fermer();});
+  ['pointerdown','touchstart','keydown'].forEach(tp=>d.addEventListener(tp,ev=>ev.stopPropagation()));
+  d.querySelector('.r').onclick=()=>{let deja=[];try{deja=JSON.parse(localStorage.getItem('bdl.galerie.voeux')||'[]');}catch(x){}
+    if(deja.indexOf(L.id)<0)deja.push(L.id);try{localStorage.setItem('bdl.galerie.voeux',JSON.stringify(deja));}catch(x){}
+    d.querySelector('.m').textContent='Noté ! Les réservations ouvrent bientôt : le local '+L.id+' t’est mis de côté.';try{vibrer(10);}catch(x){}};
+  try{vibrer(8);}catch(x){}}
+
 /* ---------- LE DÉCOR ET LES OBSTACLES ---------- */
 function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
-  for(const [x,y] of [[60,430],[1540,430],[330,690],[1270,690],[560,430],[1040,430]])P('x_jol_tdp_palmier',x,y,{col:[26,8]});
-  for(const [x,y] of [[200,600],[1400,600],[460,600],[1140,600]])P('x_jol_tdp_banc',x,y,{col:[64,8]});
+  /* les palmiers contre les vitrines, entre deux maisons */
+  for(const [x,y] of [[30,420],[1570,420],[580,420],[1020,420]])P('x_jol_tdp_palmier',x,y,{col:[26,8]});
+  /* le hall bleu : ses suspensions et ses deux banquettes crème */
   for(let k=0;k<3;k++)for(const dx of [-72,72])P('x_jol_tdp_susp_sol',800+dx,410+k*100);
-  for(const [x,y] of BANQ.concat([[300,500],[1300,500]]))P('x_jol_tdp_banquette_sol',x,Math.round(y+RBQ*.42),{col:[RBQ*2,40],v:(x>635&&x<965)?1:0});
+  for(const [x,y] of BANQ)P('x_jol_tdp_banquette_sol',x,Math.round(y+RBQ*.42),{col:[RBQ*2,40],v:1});
+  /* LE COIN CAFÉ, à gauche : le comptoir rond, ses tables */
+  P('x_jol_tdp_cafe_sol',320,620,{col:[96,30]});
+  for(const [x,y] of [[170,560],[470,560],[170,700],[470,700],[320,730]])P('x_jol_tdp_table_sol',x,y,{col:[22,6]});
+  /* LE COIN JARDIN, à droite : la grande banquette à l'olivier, des bancs, des fougères */
+  P('x_jol_tdp_olivier_sol',1290,Math.round(620+RBO*.42),{col:[RBO*2,46]});
+  for(const [x,y] of [[1110,700],[1470,700],[1110,540],[1470,540]])P('x_jol_tdp_banc',x,y,{col:[64,8]});
+  /* LES LOCAUX : on touche la vitrine pour voir la fiche */
+  for(const L of LOCAUX)P('x_jol_tdp_vide_sol',L.x,Y0+16,{agir:()=>ouvrirFiche(L),libelle:'Voir le local',nom:'LOCAL '+L.id+' · À LOUER',demi:L.w/2-10});
   return D;}
 function bloque(x,y){
   if(ETG)return bloqueEtage(x,y);
@@ -376,7 +483,7 @@ function bloque(x,y){
   if(y>H-6)return true;
   for(const o of DECOR){if(!o.col)continue;if(Math.abs(x-o.x)<o.col[0]/2&&y>o.y-o.col[1]&&y<o.y+3)return true;}
   return false;}
-const GRAVEURS={x_jol_tdp_susp_sol:graverSusp,x_jol_tdp_murveg_sol:graverMur,x_jol_tdp_banquette_sol:v=>graverBanquette(v),x_jol_tdp_panneau_sol:graverPanneau,x_jol_tdp_portes_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0}),x_jol_tdp_vide_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0}),x_jol_tdp_rail_sol:v=>graverRail(v),x_jol_tdp_escalators_sol:graverEscalators,x_jol_tdp_tour_sol:graverTour,x_jol_tdp_palmier:graverPalmier,x_jol_tdp_banc:graverBanc};
+const GRAVEURS={x_jol_tdp_cafe_sol:graverCafe,x_jol_tdp_table_sol:graverTable,x_jol_tdp_olivier_sol:graverBanqOlivier,x_jol_tdp_susp_sol:graverSusp,x_jol_tdp_murveg_sol:graverMur,x_jol_tdp_banquette_sol:v=>graverBanquette(v),x_jol_tdp_panneau_sol:graverPanneau,x_jol_tdp_portes_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0}),x_jol_tdp_vide_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0}),x_jol_tdp_rail_sol:v=>graverRail(v),x_jol_tdp_escalators_sol:graverEscalators,x_jol_tdp_tour_sol:graverTour,x_jol_tdp_palmier:graverPalmier,x_jol_tdp_banc:graverBanc};
 function graver(t,v){const r=(GRAVEURS[t]||(()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0})))(v||0);return {toile:r.toile,W:r.W,H:r.H,sol:r.sol};}
 
 /* LES ESCALATORS : au pied (rez-de-chaussée) on monte ; sur la plaque (étage) on redescend */
