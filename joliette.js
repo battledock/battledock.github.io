@@ -391,7 +391,7 @@ const OUVERT=PORTES.map(()=>0);
 function dessinerLesPortes(g,X0,Y0){
   const dt=Math.min(.05,(performance.now()-(dessinerLesPortes.t||performance.now()))/1000);dessinerLesPortes.t=performance.now();
   PORTES.forEach(([px,pw],i)=>{
-    let pres=false;try{const dx=joueur.x-px,dy=joueur.y-236;pres=Math.abs(dx)<pw*1.1&&dy>-6&&dy<72;}catch(x){}
+    let pres=false;try{const dx=joueur.x-px,dy=joueur.y-236;pres=Math.abs(dx)<pw*1.1&&dy>-40&&dy<72;}catch(x){}
     OUVERT[i]+=((pres?1:0)-OUVERT[i])*Math.min(1,dt*7);
     const o=OUVERT[i], lw=pw/2, dec=o*(lw-2), y=Y0+PORTE_Y+12, x0=X0+px-pw/2;
     for(const [s,bx] of [[-1,x0],[1,x0+lw]]){const x=bx+s*dec;
@@ -902,7 +902,7 @@ function ouvrirJournal(){if(document.getElementById('quaiJ'))return;
   ['pointerdown','touchstart','keydown'].forEach(t=>d.addEventListener(t,ev=>ev.stopPropagation()));
   try{vibrer(8);}catch(x){}}
 
-const GRAVEURS={x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_tram:graverVide};
+const GRAVEURS={x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_tram:graverVide};
 function graver(t,v){return (GRAVEURS[t]||graverVide)(v||0);}
 
 function decor(){
@@ -930,6 +930,7 @@ function decor(){
   for(const [x,y] of [[120,452],[680,452],[96,668],[680,642],[300,746],[500,746]])P('x_jol_lampadaire',x,y,{col:[4,3]});
   /* le tableau d'embauche, à deux pas de l'arrivée */
   /* le kiosque à journaux */
+  for(const [px] of PORTES)P('x_jol_entree',px,DOCKS_PIED+10,{agir:entrerGalerie,libelle:'Entrer',nom:'LA GALERIE BLEUE'});
   P('x_jol_kiosque',156,600,{col:[96,14],agir:ouvrirJournal,libelle:'Lire le journal',nom:'LE QUAI'});
   return D;
 }
@@ -959,15 +960,24 @@ setInterval(()=>{try{
   }}catch(x){}},150);
 
 
-/* ON ENTRE AUX TERRASSES : face à une porte coulissante ouverte, on pousse vers le haut */
-let ENTRE=false, CONTRE=0;
-setInterval(()=>{try{
-  if(ENTRE||PARTI||typeof joueur==='undefined')return;
-  const devant=joueur.y<DOCKS_PIED+22&&PORTES.some(([px])=>Math.abs(joueur.x-px)<20);
-  CONTRE=devant?CONTRE+1:0;
-  if(CONTRE>=3){ENTRE=true;try{sauver();}catch(x){}
-    setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='terrasses.html?'+v.slice(1);},250);}
-}catch(x){}},150);
+/* ON ENTRE À LA GALERIE BLEUE : devant une porte, le bouton « Entrer » ; on passe la porte, l'écran se fond en bleu */
+let ENTRE=false;
+const VOILE_GB='position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;pointer-events:none;'+
+  'background:radial-gradient(ellipse at 50% 42%,#2a64b8 0%,#173f86 55%,#0c2554 100%);color:#fff;font-family:"Helvetica Neue",Arial,sans-serif;transition:opacity .5s';
+const TITRE_GB='<div style="font-size:13px;letter-spacing:.5em;opacity:.75;transform:translateX(.25em)">BIENVENUE À</div>'+
+  '<div style="font-weight:800;font-size:30px;letter-spacing:.14em">LA GALERIE BLEUE</div><div style="width:64px;height:2px;background:#8cc4ff;border-radius:2px"></div>';
+function entrerGalerie(){if(ENTRE||PARTI)return;ENTRE=true;try{vibrer&&vibrer(12);}catch(x){}
+  const px=PORTES.reduce((a,[x])=>Math.abs(x-joueur.x)<Math.abs(a-joueur.x)?x:a,PORTES[0][0]);
+  const x0=joueur.x,y0=joueur.y,y1=DOCKS_PIED-26,t0=performance.now(),D=900;
+  window.FP_GEL=Date.now()+4000;
+  let marche=true;try{Object.defineProperty(joueur,'marche',{configurable:true,get:()=>marche,set:()=>{}});}catch(x){}
+  const pas=()=>{const k=Math.min(1,(performance.now()-t0)/D),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    joueur.x=x0+(px-x0)*Math.min(1,k*2.2);joueur.y=y0+(y1-y0)*e;joueur.dir='haut';joueur.dirVue='haut';joueur.pas+=.12;
+    if(k<1)requestAnimationFrame(pas);};
+  requestAnimationFrame(pas);
+  const v=document.createElement('div');v.style.cssText=VOILE_GB+';opacity:0';v.innerHTML=TITRE_GB;
+  setTimeout(()=>{document.body.appendChild(v);requestAnimationFrame(()=>v.style.opacity='1');},520);
+  setTimeout(()=>{try{sauver();}catch(x){}const q=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='terrasses.html?de=place'+q;},1250);}
 ANIM_DECOR.jol_tram=dessinerTram;
 ANIM_DECOR.jol_docks=dessinerLesDocks;
 ANIM_DECOR.jol_fontaine=PLACE.dessinerFontaine;
