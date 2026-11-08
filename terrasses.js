@@ -75,6 +75,24 @@ function vitrineEclairee(g,x,y,w,h,S){
   const by=vy+vh*.44,bh=Math.max(14,vh*.12);g.fillStyle='rgba(31,63,168,.86)';g.fillRect(vx,by,vw,bh);R(g,vx,by,vw,1,'#c8a860');R(g,vx,by+bh-1,vw,1,'#c8a860');
   g.fillStyle='#ffffff';g.font='bold '+(bh*.42).toFixed(1)+'px "Helvetica Neue",Arial,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('À LOUER',vx+vw/2,by+bh*.4);
   g.fillStyle='rgba(255,255,255,.75)';g.font=(bh*.26).toFixed(1)+'px "Helvetica Neue",Arial,sans-serif';g.fillText('LA GALERIE BLEUE',vx+vw/2,by+bh*.76);}
+/* BLEU DE CHAUFFE : la première boutique ouverte. Laque bleu marine, lettres de laiton, la veste de travail en vitrine */
+function facadeBleuDeChauffe(g,x,y,w,h){
+  R(g,x-6,y-6,w+12,h+6,'#173a6a');for(let xx=x-6;xx<x+w+6;xx+=6)R(g,xx,y-6,.6,h+6,'rgba(0,0,0,.18)');
+  R(g,x,y,w,28,'#0f2a50');R(g,x,y,w,1,'#3a6aa8');R(g,x,y+27,w,1.4,'#c8a050');
+  g.fillStyle='#e0b860';g.font='800 11px "Helvetica Neue",Arial,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('BLEU DE CHAUFFE',x+w/2,y+11);
+  g.font='5px "Helvetica Neue",Arial,sans-serif';g.fillStyle='#c8d8f0';g.fillText('VÊTEMENTS DE TRAVAIL & DE VILLE',x+w/2,y+21);
+  const vy=y+32,vh=h-32;R(g,x,vy,w,vh,'#c8a050');
+  g.fillStyle=lin(g,0,vy,0,vy+vh,[[0,'#e4dccb'],[.62,'#d6c8ae'],[.63,'#8a6440'],[1,'#6a4a2c']]);g.fillRect(x+2,vy+2,w-4,vh-4);
+  for(const sx of [x+6,x+w-38]){for(let k=0;k<3;k++){R(g,sx,vy+16+k*16,32,1.6,'#8a6440');for(let j=0;j<3;j++){g.fillStyle=['#2a4a8a','#e8c060','#3a3a3e','#c84a3a'][(j+k)%4];g.beginPath();g.ellipse(sx+6+j*10,vy+12+k*16,4.4,3,0,Math.PI,0);g.fill();}}}
+  const mx=x+w/2;R(g,mx-1,vy+8,2,6,'#8a8a8e');g.fillStyle='#2a5aa8';g.beginPath();g.moveTo(mx-12,vy+16);g.lineTo(mx+12,vy+16);g.lineTo(mx+11,vy+56);g.lineTo(mx-11,vy+56);g.fill();
+  R(g,mx-15,vy+16,4,30,'#2a5aa8');R(g,mx+11,vy+16,4,30,'#2a5aa8');R(g,mx-.6,vy+18,1.2,38,'#1e4a8a');for(let k=0;k<4;k++)R(g,mx-2,vy+22+k*9,1.6,1.6,'#e0b860');R(g,mx-9,vy+28,6,6,'#1e4a8a');R(g,mx+3,vy+28,6,6,'#1e4a8a');
+  for(const bx of [x+20,x+w-28]){R(g,bx,vy+vh-16,7,12,'#5a3a22');R(g,bx,vy+vh-6,11,4,'#3a2414');R(g,bx+9,vy+vh-16,7,12,'#5a3a22');}
+  g.fillStyle='rgba(255,255,255,.15)';for(let k=0;k<2;k++){const bx=x+14+k*60;g.beginPath();g.moveTo(bx,vy+2);g.lineTo(bx+26,vy+2);g.lineTo(bx-22,vy+vh-2);g.lineTo(bx-48,vy+vh-2);g.fill();}
+  R(g,x+w/3,vy,1.4,vh,'#c8a050');R(g,x+2*w/3,vy,1.4,vh,'#c8a050');
+  for(const lx of [x-3,x+w+3]){R(g,lx-3,y+40,6,9,'#e0b860');g.fillStyle='rgba(255,220,150,.45)';g.beginPath();g.arc(lx,y+45,9,0,7);g.fill();}}
+/* on pousse la porte : l'écran de la boutique, chargé à part */
+let BDC_CHARGE=false;
+async function ouvrirBoutique0(){try{if(!BDC_CHARGE){eval(await chargerMorceau('bleudechauffe.js'));BDC_CHARGE=true;}window.ouvrirBleuDeChauffe();}catch(x){try{console.warn('BDC',x);}catch(_){}}}
 function boutique(g,x,y,w,h,S){
   /* le bandeau d'enseigne, dans la matière de la maison */
   R(g,x,y,w,30,S.bandeau);
@@ -103,7 +121,7 @@ function peindreSol(g){
       g.fillStyle=lin(g,0,76,0,Y0,[[0,'#efe9de'],[1,'#e6ded0']]);g.fillRect(x,76,BOUT[i],Y0-76);
       for(let yy=96;yy<Y0;yy+=20)R(g,x,yy,BOUT[i],.6,'rgba(150,140,125,.3)');
       R(g,x,y2-8,BOUT[i],3,'#d6cebe');R(g,x,y2-9,BOUT[i],1,'#ffffff');
-      boutique(g,x2,y2,w2,Y0-4-y2,STYLES[i]);}
+      (i===0?facadeBleuDeChauffe(g,x2,y2,w2,Y0-4-y2):boutique(g,x2,y2,w2,Y0-4-y2,STYLES[i]));}
     x+=BOUT[i];}
   g.fillStyle=lin(g,x,0,x+p,0,[[0,'#dcd8d0'],[.5,'#fbfaf6'],[1,'#d0ccc4']]);g.fillRect(x,76,W-x,Y0-76);
   R(g,0,Y0-4,W,4,'#cfc8ba');R(g,0,Y0-1,W,1,'rgba(0,0,0,.28)');
@@ -548,6 +566,8 @@ function graverBistrot(){if(TBIS)return TBIS;const Wd=90,Hd=56,sol=50,cx=45;cons
   return TBIS={toile:c,W:Wd,H:Hd,sol};}
 /* ---------- LE DÉCOR ET LES OBSTACLES ---------- */
 function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
+  /* la porte de Bleu de Chauffe : on s'approche, on entre */
+  {const p=(W-BOUT.reduce((a,b)=>a+b,0))/(BOUT.length+1);P('x_jol_tdp_porte_sol',p+BOUT[0]/2,Y0+14,{agir:ouvrirBoutique0,libelle:'Entrer',nom:'BLEU DE CHAUFFE',demi:56});}
   /* les palmiers contre les vitrines, entre deux maisons */
   /* le hall bleu : ses suspensions et ses deux banquettes crème */
   for(const [x,y] of BANQ)P('x_jol_tdp_banquette_sol',x,Math.round(y+RBQ*.42),{col:[RBQ*2,40],v:1});

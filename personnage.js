@@ -615,7 +615,8 @@ const CACHE_FIN=new Map();
 /* LA TENUE UNIQUE — docker occasionnel. Tout le monde la porte, quoi
    qu'il y ait dans la sauvegarde : le vestiaire est fermé. */
 const UNIFORME={haut:1,veste:'#1f3566',pantalon:'#e8c41c',bas:0,souliers:3,chaussures:'#1e1a16',chapeau:0,sac:0,motif:0,_motif:'docker',_docker:true};
-function uniforme(ap){if(ap&&ap._pnj)return ap;   /* les employés gardent leurs habits */
+function uniforme(ap){if(ap&&ap._pnj)return ap;
+if(ap&&ap._civil&&!window.AU_TRAVAIL)return ap;   /* la tenue civile, achetée chez Bleu de Chauffe ; au port, on reste en docker */   /* les employés gardent leurs habits */
 const a=Object.assign({},ap||{},UNIFORME);delete a.cos;delete a.deguisement;delete a.maillot;delete a.gilet;delete a.patin;return a;}
 function sprite(g,x,y,ap0,dir,pas,bouge){
 ap0=uniforme(ap0);
