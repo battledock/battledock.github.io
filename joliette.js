@@ -913,8 +913,8 @@ function decor(){
   for(const x of [40,250,550,760])P('x_jol_arbre_magnolia',x,342,{col:[10,5]});
   for(const x of [110,170,630,690])P('x_jol_parasol',x,290,{col:[44,12],bas:5});
   /* les deux stations : une sur le parvis pour la voie du haut, une sur le quai côté place */
-  P('x_jol_abri',220,350,{col:[100,6],agir:ouvrirTram,libelle:'Prendre le tram',nom:'TRAM'});
-  P('x_jol_abri',600,420,{col:[100,6],agir:ouvrirTram,libelle:'Prendre le tram',nom:'TRAM'});
+  P('x_jol_abri',220,350,{col:[100,6]});
+  P('x_jol_abri',600,420,{col:[100,6]});   /* (le menu du tram vers les autres lieux est débranché) */
   /* les deux rames, une par voie ; elles s'arrêtent devant leur station */
   P('x_jol_tram',400,376,{anim:'jol_tram',sens:1,arret:220});
   P('x_jol_tram',400,400,{anim:'jol_tram',sens:-1,arret:600});
