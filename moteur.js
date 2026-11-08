@@ -12042,7 +12042,7 @@ const X0=Math.round(x-C.W/2), Y0=Math.round(y-C.sol+dy);
 if(o.flip){g.save();g.translate(Math.round(x)*2,0);g.scale(-1,1);}
 ombrePortee(g,C,x,y+dy,o.t);
 g.drawImage(C.toile,X0,Y0,C.W,C.H);
-if(CARTE==='spawn'&&!window.LIEU_PAGE&&(o.t||'').slice(0,6)==='x_jol_'){const k=nuitDecor();if(k>0.02){g.globalAlpha=k;g.drawImage(versionNuit(C),X0,Y0,C.W,C.H);g.globalAlpha=1;}}
+if(CARTE==='spawn'&&(!window.LIEU_PAGE||window.LIEU_PAGE==='stade')&&(o.t||'').slice(0,6)==='x_jol_'){const k=nuitDecor();if(k>0.02){g.globalAlpha=k;g.drawImage(versionNuit(C),X0,Y0,C.W,C.H);g.globalAlpha=1;}}
 if(lampesAllumees()){const t=o.t||'';
 /* LES FEUX PORTÉS PAR LE CALQUE. Les tests par nom ci-dessous ne
    marchent que pour un dessin dont on connaît d'avance la taille : la
@@ -19284,7 +19284,7 @@ const CIEL=[
 {h:21.5, amb:[44,54,104],  lampes:1,   soleil:null},
 {h:24,   amb:[30,40,86],   lampes:1,   soleil:null}];
 function cielDuMoment(){
-if(window.LIEU_PAGE==="terrasses"||window.LIEU_PAGE==="stade")return null;   /* sous la verrière, toujours éclairé */
+if(window.LIEU_PAGE==="terrasses")return null;   /* sous la verrière, toujours éclairé */
 const m=minuteDuJour();
 if(m===null)return null;
 const h=m/60;
