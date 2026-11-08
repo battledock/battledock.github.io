@@ -422,7 +422,9 @@ const GENS=[];
   for(const T of TOURNEES){let L=0;const seg=[];for(let i=0;i<T.pts.length;i++){const a=T.pts[i],b=T.pts[(i+1)%T.pts.length],d=Math.hypot(b[0]-a[0],b[1]-a[1]);seg.push([a,b,L,d]);L+=d;}
     for(let j=0;j<T.n;j++){GENS.push({seg,L,v:T.v*(0.85+hA(k,3,1)*.3),dec:L*(j/T.n)+hA(k,4,1)*60,sens:1,ap:ap(k),x:0,y:0,dir:'bas',pas:0});k++;}}
   for(const [x,y,d] of POSES){GENS.push({fixe:true,ap:ap(k),x,y,dir:d,pas:0});k++;}})();
+let TRAMO=null;
 function figurants(){const now=Date.now()/1000;
+  try{if(!TRAMO)TRAMO=DECOR.find(o=>o.anim==='std_tram');const wx=posRame();if(TRAMO&&wx!==null)TRAMO.x=wx;}catch(e){}
   for(const P of GENS){if(P.fixe)continue;let s=((now*P.v+P.dec)%P.L+P.L)%P.L;
     for(const [a,b,L0,d] of P.seg){if(s<=L0+d){const t=(s-L0)/d;P.x=a[0]+(b[0]-a[0])*t;P.y=a[1]+(b[1]-a[1])*t;
       const dx=b[0]-a[0],dy=b[1]-a[1];P.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'droite':'gauche'):(dy>0?'bas':'haut');P.pas=now*P.v/9;break;}}}

@@ -863,7 +863,7 @@ const CSS_QUAI=`#quaiJ{position:fixed;inset:0;z-index:2147483000;background:rgba
 /* LE TRAM : à l'arrêt, on choisit sa destination ; le tram nous y dépose */
 const DESTINATIONS=[
   {n:'Vélodrome',d:'Le stade · parvis et grand escalier',page:'stade.html',c:'#2f9ae0'},
-  {n:'La plage',d:'Bientôt',page:null,c:'#e8b44a'},
+  {n:'Plage des Catalans',d:'Le sable, la mer, le château d’If',page:'plage.html',c:'#e8b44a'},
   {n:'Vieux-Port',d:'Bientôt',page:null,c:'#c8604a'}];
 function ouvrirTram(){if(document.getElementById('tramM'))return;
   const d=document.createElement('div');d.id='tramM';
