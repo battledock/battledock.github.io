@@ -9,7 +9,7 @@
 const W=800, H=800;
 const DOCKS_PIED=236, TROTTOIR=346, TRAM0=346, TRAM1=422, PLACE_BAS=760;
 const SORTIE_X=400, SORTIE_DEMI=44;
-const DEPART=(()=>{try{if(new URLSearchParams(location.search).get('de')==='terrasses')return [400,262];}catch(x){}return [400,712];})();
+const DEPART=(()=>{try{const q=new URLSearchParams(location.search).get('de');if(q==='terrasses')return [400,262];if(q==='stade')return [600,440];}catch(x){}return [400,712];})();
 const FONT=[400,592];
 const h=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
 const teinte=(hex,d)=>{const v=parseInt(hex.slice(1),16);const c=k=>Math.max(0,Math.min(255,((v>>k)&255)+d));
@@ -860,6 +860,30 @@ const CSS_QUAI=`#quaiJ{position:fixed;inset:0;z-index:2147483000;background:rgba
 #quaiJ .c h3{margin:4px 0 2px;font:900 15px/1.05 Arial;letter-spacing:-.3px;color:#141414}#quaiJ .c p{margin:0;font:13px/1.3 Georgia,serif;color:#333}
 #quaiJ .bar{position:fixed;left:0;right:0;bottom:0;padding:12px 14px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(14,18,26,.95) 40%);display:flex;justify-content:center}
 #quaiJ .bar button{background:#c8102e;color:#fff;border:0;font:700 15px Arial;padding:12px 30px;border-radius:24px;box-shadow:0 4px 14px rgba(0,0,0,.5)}`;
+/* LE TRAM : à l'arrêt, on choisit sa destination ; le tram nous y dépose */
+const DESTINATIONS=[
+  {n:'Vélodrome',d:'Le stade · parvis et grand escalier',page:'stade.html',c:'#2f9ae0'},
+  {n:'La plage',d:'Bientôt',page:null,c:'#e8b44a'},
+  {n:'Vieux-Port',d:'Bientôt',page:null,c:'#c8604a'}];
+function ouvrirTram(){if(document.getElementById('tramM'))return;
+  const d=document.createElement('div');d.id='tramM';
+  d.style.cssText='position:fixed;inset:0;z-index:2147483000;background:rgba(10,16,30,.55);display:flex;align-items:flex-end;justify-content:center;font-family:"Helvetica Neue",Arial,sans-serif;opacity:0;transition:opacity .2s';
+  let h='<div style="width:min(440px,100%);background:#f6f7f8;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.3)">'+
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><div style="background:#1c4f9c;color:#fff;font-weight:900;border-radius:8px;padding:5px 9px;font-size:15px">T</div>'+
+    '<div><div style="font-weight:800;font-size:18px;color:#16202c">Joliette</div><div style="font-size:13px;color:#6a7480">Où veux-tu aller ?</div></div>'+
+    '<button id="tramX" style="margin-left:auto;width:38px;height:38px;border-radius:50%;border:0;background:#e2e6ea;font-size:20px;color:#3a4450">×</button></div>';
+  DESTINATIONS.forEach((D,i)=>{const ok=!!D.page;
+    h+='<button data-i="'+i+'" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-radius:14px;padding:14px;margin-bottom:8px;background:'+(ok?'#fff':'#eceff2')+';box-shadow:'+(ok?'0 2px 8px rgba(0,0,0,.08)':'none')+';opacity:'+(ok?1:.55)+'">'+
+      '<span style="width:12px;height:12px;border-radius:50%;background:'+D.c+';flex:none"></span>'+
+      '<span style="flex:1"><b style="display:block;font-size:16px;color:#16202c">'+D.n+'</b><span style="font-size:13px;color:#6a7480">'+D.d+'</span></span>'+
+      (ok?'<span style="font-size:20px;color:#1c4f9c">›</span>':'')+'</button>';});
+  d.innerHTML=h+'</div>';document.body.appendChild(d);requestAnimationFrame(()=>d.style.opacity='1');
+  const fermer=()=>{d.style.opacity='0';setTimeout(()=>d.remove(),200);};
+  d.addEventListener('click',e=>{if(e.target===d)fermer();});d.querySelector('#tramX').onclick=fermer;
+  d.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{const D=DESTINATIONS[+b.dataset.i];if(!D.page)return;
+    try{vibrer&&vibrer(15);}catch(x){}try{sauver();}catch(x){}
+    const f=document.createElement('div');f.style.cssText='position:fixed;inset:0;z-index:2147483001;background:#0e1a2c;opacity:0;transition:opacity .45s;display:flex;align-items:center;justify-content:center;color:#fff;font:700 18px "Helvetica Neue",Arial,sans-serif';f.textContent='Prochain arrêt : '+D.n;document.body.appendChild(f);requestAnimationFrame(()=>f.style.opacity='1');
+    setTimeout(()=>{const v=window.MA_VERSION?('?v='+encodeURIComponent(window.MA_VERSION)):'';location.href=D.page+v;},900);});}
 function ouvrirJournal(){if(document.getElementById('quaiJ'))return;
   if(!document.getElementById('cssQuai')){const st=document.createElement('style');st.id='cssQuai';st.textContent=CSS_QUAI;document.head.appendChild(st);}
   const J=JOURNAL,v=window.MA_VERSION?('?v='+encodeURIComponent(window.MA_VERSION)):'',im=n=>'assets/journal/'+n+'.jpg'+v;
@@ -888,8 +912,8 @@ function decor(){
   for(const x of [40,250,550,760])P('x_jol_arbre_magnolia',x,342,{col:[10,5]});
   for(const x of [110,170,630,690])P('x_jol_parasol',x,290,{col:[44,12],bas:5});
   /* les deux stations : une sur le parvis pour la voie du haut, une sur le quai côté place */
-  P('x_jol_abri',220,350,{col:[100,6]});
-  P('x_jol_abri',600,420,{col:[100,6]});
+  P('x_jol_abri',220,350,{col:[100,6],agir:ouvrirTram,libelle:'Prendre le tram',nom:'TRAM'});
+  P('x_jol_abri',600,420,{col:[100,6],agir:ouvrirTram,libelle:'Prendre le tram',nom:'TRAM'});
   /* les deux rames, une par voie ; elles s'arrêtent devant leur station */
   P('x_jol_tram',400,376,{anim:'jol_tram',sens:1,arret:220});
   P('x_jol_tram',400,400,{anim:'jol_tram',sens:-1,arret:600});

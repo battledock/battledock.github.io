@@ -8,7 +8,7 @@
    ===================================================================== */
 (()=>{
 const W=1600, H=800, Y0=372;
-const DEPART=[800,690];
+const DEPART=[700,716];
 const BLEU='#1c4f9c', CIEL='#2a9ad8';
 const hA=(x,y,k)=>{let n=((x*73856093)^(y*19349663)^(k*83492791))|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
 const lin=(g,x0,y0,x1,y1,st)=>{const gr=g.createLinearGradient(x0,y0,x1,y1);st.forEach(([o,c])=>gr.addColorStop(o,c));return gr;};
@@ -292,6 +292,13 @@ function graverCamion(){return memo('ca',()=>{const Wd=176,Hd=100,sol=94,x=12,w=
   const ax=Wd-14;g.strokeStyle='#6a4a2a';g.lineWidth=2;g.beginPath();g.moveTo(ax-8,sol);g.lineTo(ax-4,sol-26);g.lineTo(ax+4,sol-26);g.lineTo(ax+8,sol);g.stroke();
   R(g,ax-8,sol-30,16,20,'#2a2e2c');R(g,ax-8,sol-30,16,1,'#6a4a2a');txt(g,'2€',ax,sol-23,6.6,'#f8f4e8','center','bold');txt(g,'chichi',ax,sol-16,4.4,'#f8f4e8','center','normal');
   return {toile:c,W:Wd,H:Hd,sol};});}
+/* le poteau d'arrêt du tram : totem bleu, plan de ligne */
+function graverArret(){return memo('ar',()=>{const Wd=40,Hd=96,sol=90,x=20;const {c,g}=toile(Wd,Hd);
+  g.fillStyle='rgba(40,34,26,.22)';g.beginPath();g.ellipse(x+8,sol,12,2.6,0,0,7);g.fill();
+  R(g,x-2,sol-60,4,60,'#5a6066');R(g,x-9,sol-86,18,30,'#1c4f9c');R(g,x-9,sol-86,18,1.4,'#5a8ad8');
+  txt(g,'T',x,sol-78,10,'#ffffff','center','900');R(g,x-7,sol-70,14,10,'#ffffff');txt(g,'Vélodrome',x,sol-65,3.2,'#1c4f9c','center','bold');
+  R(g,x-6,sol-50,12,16,'#f4f6f8');for(let i=0;i<4;i++)R(g,x-4,sol-47+i*3.4,8,.8,'#8a96a2');
+  return {toile:c,W:Wd,H:Hd,sol};});}
 /* le grand mât d'éclairage au pied de l'escalier, deux têtes */
 function graverGrandLampe(){return memo('gl',()=>{const Wd=60,Hd=230,sol=224,x=30;const {c,g}=toile(Wd,Hd);
   g.fillStyle='rgba(40,34,26,.22)';g.beginPath();g.ellipse(x+14,sol,20,3.4,0,0,7);g.fill();
@@ -327,6 +334,8 @@ function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0}
   /* la rangée de platanes, le long du boulevard, avec ses lampadaires */
   let i=0;for(const x of [90,300,520,1080,1300,1510]){P('x_jol_std_platane_sol',x,BOUL-12,{col:[16,8],v:i++});}
   for(const x of [195,410,1190,1405])P('x_jol_std_vide_sol',x,BOUL-14,{col:[8,6],anim:'std_lum',spr:'x_jol_std_lampe_sol',lum:[[0,-112,40,'rgba(255,230,170,1)'],[0,-10,56,'rgba(255,220,160,1)']]});
+  /* l'arrêt de tram, sur le trottoir : on rentre à la Joliette */
+  P('x_jol_std_arret_sol',740,BOUL+4,{col:[30,6],agir:rentrer,libelle:'Rentrer en tram',nom:'TRAM'});
   /* des bancs */
   for(const [x,y] of [[200,560],[1400,560],[650,650],[950,650]])P('x_jol_std_banc_sol',x,y,{col:[76,8]});
   /* les pigeons du parvis */
@@ -389,7 +398,7 @@ function bloque(x,y){
   for(const o of DECOR){if(!o.col)continue;if(Math.abs(x-o.x)<o.col[0]/2&&y>o.y-o.col[1]&&y<o.y+3)return true;}
   return false;}
 const GRAVEURS={x_jol_std_platane_sol:graverPlatane,x_jol_std_lampe_sol:graverLampe,x_jol_std_tourniquets_sol:graverTourniquets,
-  x_jol_std_billetterie_sol:graverBilletterie,x_jol_std_camion_sol:graverCamion,x_jol_std_drapeau_sol:graverDrapeau,x_jol_std_banc_sol:graverBanc,x_jol_std_grandlampe_sol:graverGrandLampe,x_jol_std_vide_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0})};
+  x_jol_std_billetterie_sol:graverBilletterie,x_jol_std_camion_sol:graverCamion,x_jol_std_drapeau_sol:graverDrapeau,x_jol_std_banc_sol:graverBanc,x_jol_std_grandlampe_sol:graverGrandLampe,x_jol_std_arret_sol:graverArret,x_jol_std_vide_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0})};
 function graver(t,v){const r=(GRAVEURS[t]||(()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0})))(v||0);return {toile:r.toile,W:r.W,H:r.H,sol:r.sol};}
 
 /* LA SORTIE : en traversant le boulevard, on rentre sur la place de la Joliette */
@@ -398,6 +407,8 @@ setInterval(()=>{try{if(PARTI||typeof joueur==='undefined')return;if(joueur.y>H-
 function sortir(){if(PARTI)return;PARTI=true;try{sauver();}catch(x){}
   try{const f=document.createElement('div');f.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#fff8ea;opacity:0;transition:opacity .45s;pointer-events:none';document.body.appendChild(f);requestAnimationFrame(()=>f.style.opacity='1');}catch(x){}
   setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='spawn.html?de=stade'+v;},480);}
+/* LE RETOUR : l'arrêt de tram, sur le trottoir du boulevard */
+function rentrer(){sortir();}
 
 return {sol,solFin,decor,bloque,graver,depart:DEPART,figurants};
 })()
