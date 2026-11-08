@@ -162,7 +162,8 @@ function parvis(g){
   R(g,0,BOUL,W,10,'#c8c2b6');R(g,0,BOUL,W,1.4,'#f2eee6');R(g,0,BOUL+10,W,3,'#8a8680');
   g.fillStyle=lin(g,0,BOUL+13,0,H,[[0,'#4e5258'],[1,'#5a5e64']]);g.fillRect(0,BOUL+13,W,H-BOUL-13);
   for(let i=0;i<900;i++){const x=hA(i,1,7)*W,y=BOUL+14+hA(i,2,7)*(H-BOUL-14);R(g,x,y,1,1,hA(i,3,7)>.5?'rgba(255,255,255,.07)':'rgba(0,0,0,.1)');}
-  for(let x=10;x<W;x+=60)R(g,x,BOUL+40,30,2.4,'rgba(250,250,240,.75)');
+  for(let x=10;x<W;x+=60)R(g,x,BOUL+30,30,2.4,'rgba(250,250,240,.75)');
+  for(const ry of [H-22,H-8]){R(g,0,ry,W,2.4,'#a8acb0');R(g,0,ry,W,.8,'#e0e4e8');R(g,0,ry+2.4,W,.8,'rgba(0,0,0,.35)');}
   for(let x=W/2-70;x<W/2+70;x+=16)R(g,x,BOUL+15,9,H-BOUL-18,'rgba(248,248,240,.85)');
 }
 /* ---------- LES CÔTÉS : le mur à l'affiche à gauche, l'immeuble rond et le panneau de la boutique à droite ---------- */
@@ -296,7 +297,7 @@ function graverCamion(){return memo('ca',()=>{const Wd=176,Hd=100,sol=94,x=12,w=
 function graverArret(){return memo('ar',()=>{const Wd=40,Hd=96,sol=90,x=20;const {c,g}=toile(Wd,Hd);
   g.fillStyle='rgba(40,34,26,.22)';g.beginPath();g.ellipse(x+8,sol,12,2.6,0,0,7);g.fill();
   R(g,x-2,sol-60,4,60,'#5a6066');R(g,x-9,sol-86,18,30,'#1c4f9c');R(g,x-9,sol-86,18,1.4,'#5a8ad8');
-  txt(g,'T',x,sol-78,10,'#ffffff','center','900');R(g,x-7,sol-70,14,10,'#ffffff');txt(g,'Vélodrome',x,sol-65,3.2,'#1c4f9c','center','bold');
+  txt(g,'T',x,sol-78,10,'#ffffff','center','900');R(g,x-7,sol-70,14,10,'#ffffff');txt(g,'Vélodrome',x,sol-65,2.7,'#1c4f9c','center','bold');
   R(g,x-6,sol-50,12,16,'#f4f6f8');for(let i=0;i<4;i++)R(g,x-4,sol-47+i*3.4,8,.8,'#8a96a2');
   return {toile:c,W:Wd,H:Hd,sol};});}
 /* le grand mât d'éclairage au pied de l'escalier, deux têtes */
@@ -321,6 +322,41 @@ function graverBanc(){return memo('bc',()=>{const Wd=84,Hd=26,sol=22;const {c,g}
   R(g,6,sol-14,72,5,'#b8875a');R(g,6,sol-14,72,1.4,'#dcae7c');for(let x=6;x<78;x+=9)R(g,x,sol-14,.5,5,'rgba(80,50,20,.3)');
   return {toile:c,W:Wd,H:Hd,sol};});}
 
+
+/* ---------- LE TRAM DU BOULEVARD : il arrive, s'arrête devant le poteau, repart ---------- */
+function graverRame(){if(T.rame)return T.rame;
+const L=250,HH=56,{c,g}=toile(L,HH),RR=(x,y,w,h,col)=>R(g,x,y,w,h,col),s=HH-4;
+g.fillStyle='rgba(20,20,26,.28)';g.fillRect(4,s-2,L-8,5);
+/* la caisse */
+RR(6,s-40,L-12,36,'#f3f4f2');
+RR(6,s-40,L-12,2,'#ffffff');RR(6,s-6,L-12,2,'#9aa0a6');
+/* le bandeau vitré */
+RR(10,s-34,L-20,14,'#2e4660');
+for(let x=14;x<L-14;x+=18){RR(x,s-34,1,14,'#c9d2da');RR(x+2,s-32,4,4,'rgba(200,230,255,.35)');}
+/* la ligne bleue */
+RR(6,s-18,L-12,4,'#1e88c8');RR(6,s-14,L-12,1,'#13608e');
+/* les portes */
+for(const x of [44,112,180]){RR(x,s-34,14,28,'#c9cfd4');RR(x+6,s-34,2,28,'#7a828a');RR(x+1,s-32,5,10,'#3e5672');RR(x+8,s-32,5,10,'#3e5672');}
+/* les deux nez arrondis */
+for(const [x,d] of [[2,1],[L-10,-1]]){
+  g.fillStyle='#f3f4f2';g.beginPath();g.ellipse(x+4,s-22,8,18,0,0,7);g.fill();
+  g.fillStyle='#22364c';g.beginPath();g.ellipse(x+4+d*-1,s-28,5,9,0,0,7);g.fill();
+  RR(x+2,s-12,4,2,'#ffe6a0');}
+/* bogies et pantographe */
+for(const x of [30,L/2-10,L-50]){RR(x,s-4,20,4,'#2e3036');RR(x+3,s-1,5,2,'#55585e');RR(x+12,s-1,5,2,'#55585e');}
+RR(L/2-14,s-44,28,4,'#b0b6bc');g.strokeStyle='#4c5056';g.lineWidth=1.5;g.beginPath();
+g.moveTo(L/2-8,s-44);g.lineTo(L/2,s-54);g.lineTo(L/2+8,s-44);g.stroke();RR(L/2-6,s-55,12,2,'#4c5056');
+return T.rame={c,L,HH,s};
+}
+const VOIE=H-12, ARRET_X=740, PER=52;
+function posRame(){const t=(Date.now()/1000+13)%PER;const x0=-300,x2=W+300,xa=ARRET_X;
+  if(t<8){const k=t/8;return x0+(xa-x0)*(1-Math.pow(1-k,3));}if(t<16)return xa;if(t<24){const k=(t-16)/8;return xa+(x2-xa)*k*k*k;}return null;}
+ANIM_DECOR.std_tram=(g,o,x,y)=>{const wx=posRame();if(wx===null)return;const Rm=graverRame();
+  const sx=Math.round(x+(wx-o.x)-Rm.L/2),sy=Math.round(y-Rm.s);g.drawImage(Rm.c,sx,sy,Rm.L,Rm.HH);
+  let k=0;try{k=nuitDecor();}catch(e){}
+  if(k>.02){if(!Rm.n)Rm.n=versionNuit({toile:Rm.c});g.globalAlpha=k;g.drawImage(Rm.n,sx,sy,Rm.L,Rm.HH);g.globalAlpha=1;
+    if(typeof lueurNuit==='function')for(let i=-2;i<=2;i++)lueurNuit(g,sx+Rm.L/2+i*45,sy+Rm.s-26,34,'rgba(255,240,210,1)');}};
+const dansRame=(x,y)=>{const wx=posRame();return wx!==null&&Math.abs(x-wx)<123&&y>VOIE-16&&y<VOIE+4;};
 /* ---------- LE DÉCOR ---------- */
 function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
   /* au pied de l'escalier, on ne monte pas : le stade est fermé */
@@ -334,6 +370,7 @@ function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0}
   /* la rangée de platanes, le long du boulevard, avec ses lampadaires */
   let i=0;for(const x of [90,300,520,1080,1300,1510]){P('x_jol_std_platane_sol',x,BOUL-12,{col:[16,8],v:i++});}
   for(const x of [195,410,1190,1405])P('x_jol_std_vide_sol',x,BOUL-14,{col:[8,6],anim:'std_lum',spr:'x_jol_std_lampe_sol',lum:[[0,-112,40,'rgba(255,230,170,1)'],[0,-10,56,'rgba(255,220,160,1)']]});
+  P('x_jol_std_tramv_sol',800,VOIE,{anim:'std_tram'});
   /* l'arrêt de tram, sur le trottoir : on rentre à la Joliette */
   P('x_jol_std_arret_sol',740,BOUL+4,{col:[30,6],agir:rentrer,libelle:'Rentrer en tram',nom:'TRAM'});
   /* des bancs */
@@ -395,6 +432,7 @@ function bloque(x,y){
   if(x<12||x>W-12)return true;
   if(y<Y0+12)return true;
   if(y>H-6)return true;
+  if(dansRame(x,y))return true;
   for(const o of DECOR){if(!o.col)continue;if(Math.abs(x-o.x)<o.col[0]/2&&y>o.y-o.col[1]&&y<o.y+3)return true;}
   return false;}
 const GRAVEURS={x_jol_std_platane_sol:graverPlatane,x_jol_std_lampe_sol:graverLampe,x_jol_std_tourniquets_sol:graverTourniquets,
