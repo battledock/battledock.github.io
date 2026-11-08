@@ -977,7 +977,7 @@ function entrerGalerie(){if(ENTRE||PARTI)return;ENTRE=true;try{vibrer&&vibrer(12
   requestAnimationFrame(pas);
   const v=document.createElement('div');v.style.cssText=VOILE_GB+';opacity:0';v.innerHTML=TITRE_GB;
   setTimeout(()=>{document.body.appendChild(v);requestAnimationFrame(()=>v.style.opacity='1');},520);
-  setTimeout(()=>{try{sauver();}catch(x){}const q=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='terrasses.html?de=place'+q;},1250);}
+  setTimeout(()=>{try{sauver();}catch(x){}const q=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='terrasses.html?de=place'+q+'&t='+Date.now();},1250);}
 ANIM_DECOR.jol_tram=dessinerTram;
 ANIM_DECOR.jol_docks=dessinerLesDocks;
 ANIM_DECOR.jol_fontaine=PLACE.dessinerFontaine;

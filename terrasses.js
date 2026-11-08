@@ -591,7 +591,7 @@ function sortir(){if(PARTI)return;PARTI=true;
   try{sauver();}catch(x){}
   /* le fondu : la galerie s'efface dans la lumière du jour */
   try{const f=document.createElement('div');f.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#fff8ea;opacity:0;transition:opacity .45s;pointer-events:none';document.body.appendChild(f);requestAnimationFrame(()=>f.style.opacity='1');}catch(x){}
-  setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='spawn.html?de=terrasses'+v;},480);}
+  setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='spawn.html?de=terrasses'+v+'&t='+Date.now();},480);}
 
 /* ---------- LES PORTES DE SORTIE, vues de l'intérieur : elles s'ouvrent à l'approche ---------- */
 let OUV=0;
