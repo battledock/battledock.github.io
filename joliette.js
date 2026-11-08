@@ -864,6 +864,7 @@ const CSS_QUAI=`#quaiJ{position:fixed;inset:0;z-index:2147483000;background:rgba
 const DESTINATIONS=[
   {n:'Vélodrome',d:'Le stade · parvis et grand escalier',page:'stade.html',c:'#2f9ae0'},
   {n:'Plage des Catalans',d:'Le sable, la mer, le château d’If',page:'plage.html',c:'#e8b44a'},
+  {n:'La Corniche',d:'Le grand banc, les plongeurs, la mer',page:'corniche.html',c:'#3aa0a0'},
   {n:'Vieux-Port',d:'Bientôt',page:null,c:'#c8604a'}];
 function ouvrirTram(){if(document.getElementById('tramM'))return;
   const d=document.createElement('div');d.id='tramM';
