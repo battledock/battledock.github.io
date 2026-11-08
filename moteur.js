@@ -7666,7 +7666,7 @@ R(-4,-5,9,5,V.tronc);R(-4,-5,9,2,V.troncC);R(-2,-4,5,1,'#a5764a');R(-4,-2,9,2,V.
    fin de la ville — une derniere facade, une esplanade de platanes — et
    surtout les collines boisees qui apparaissent sur l'horizon : on marche
    vers quelque chose qu'on voit, pas vers un mur. */
-const MONDE_L=CARTE==='spawn'?(window.LIEU_PAGE==='terrasses'?1600:800):(CARTE==='large'?2400:(CARTE==='foret'?1500:(CARTE==='tokyo'?900:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:(FERME_VIERGE?1800:1200)):1760)))));   /* spawn : 800×800 */
+const MONDE_L=CARTE==='spawn'?((window.LIEU_PAGE==='terrasses'||window.LIEU_PAGE==='stade')?1600:800):(CARTE==='large'?2400:(CARTE==='foret'?1500:(CARTE==='tokyo'?900:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:(FERME_VIERGE?1800:1200)):1760)))));   /* spawn : 800×800 */
 const MONDE_H=CARTE==='spawn'?800:(CARTE==='large'?2400:(CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?(FERME_VIERGE?1800:1600):(CARTE==='tokyo'?2560:562))));   /* spawn : 800×800 */
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 /* AU LARGE, LA CAMÉRA RECULE : le bateau fait à lui seul 252 points de
@@ -10782,7 +10782,7 @@ let TXT_FERME=null;
 /* SI port.js NE CHARGE PAS, les cinquante-trois symboles ci-dessous
    restent indéfinis et le port ne se dessine pas, sans un mot. On le dit. */
 try{
-if(CARTE==='spawn'){try{let lieu=window.LIEU_PAGE||'';try{lieu=lieu||new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':'joliette.js'));}catch(x){console.warn('JOL',x);JOL=null;}}
+if(CARTE==='spawn'){try{let lieu=window.LIEU_PAGE||'';try{lieu=lieu||new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':(lieu==='stade'?'stade.js':'joliette.js')));}catch(x){console.warn('JOL',x);JOL=null;}}
 if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar,dessinerLePanorama}=eval(await chargerMorceau('port.js')));}
 if(CARTE==='tokyo'){TKM=eval(await chargerMorceau('tokyo.js'));}
 }catch(erPort){
@@ -19284,7 +19284,7 @@ const CIEL=[
 {h:21.5, amb:[44,54,104],  lampes:1,   soleil:null},
 {h:24,   amb:[30,40,86],   lampes:1,   soleil:null}];
 function cielDuMoment(){
-if(window.LIEU_PAGE==="terrasses")return null;   /* sous la verrière, toujours éclairé */
+if(window.LIEU_PAGE==="terrasses"||window.LIEU_PAGE==="stade")return null;   /* sous la verrière, toujours éclairé */
 const m=minuteDuJour();
 if(m===null)return null;
 const h=m/60;
@@ -20121,7 +20121,7 @@ DECOR.filter(o=>o.t==='bancP').sort((a,b)=>(a.y-b.y)||(a.x-b.x))
 return l;
 }
 function coinDuJoueur(){
-if(window.LIEU_PAGE==='terrasses')return 'à la Galerie Bleue';
+if(window.LIEU_PAGE==='terrasses')return 'à la Galerie Bleue';if(window.LIEU_PAGE==='stade')return 'au Vélodrome';
 if(CARTE==='extramar')return 'à Extramar';
 if(CARTE==='garde')return 'à Notre-Dame';
 if(CARTE==='tokyo')return 'à Tokyo';
