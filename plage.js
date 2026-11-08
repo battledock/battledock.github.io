@@ -231,7 +231,7 @@ function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0}
   for(const [x,y] of [[520,352],[700,334],[980,318],[1110,366],[300,372]])P('x_jol_plg_vide_sol',x,y,{anim:'plg_nageur'});
   P('x_jol_plg_vide_sol',300,196,{anim:'plg_voilier',vit:7,dec:0});P('x_jol_plg_vide_sol',900,176,{anim:'plg_voilier',vit:4,dec:900,v:1});
   /* LE SABLE : parasols, serviettes, le poste de secours, le volley, les douches */
-  P('x_jol_plg_poste_sol',230,476,{col:[70,10],parler:['Baignade surveillée, drapeau vert.','Restez entre les bouées jaunes !']});
+  P('x_jol_plg_poste_sol',230,476,{col:[70,10],parler:['Baignade surveillée, drapeau vert.','L’eau est bonne ! Restez entre les bouées jaunes.']});
   P('x_jol_plg_terrain_sol',1340,520,{});P('x_jol_plg_filet_sol',1340,522,{col:[200,6]});
   let i=0;for(const [x,y] of [[480,486],[600,560],[740,470],[880,548],[1010,480],[520,616],[760,600],[1100,600],[360,560],[960,612]]){
     P('x_jol_plg_parasol_sol',x,y,{col:[6,4],v:i});P('x_jol_plg_serviette_sol',x+26+(i%2)*8,y+12,{v:i});i++;}
@@ -299,10 +299,37 @@ function figurants(){const now=Date.now()/1000;
     for(const [a,b,L0,d] of P.seg){if(s<=L0+d){const t=(s-L0)/d;P.x=a[0]+(b[0]-a[0])*t;P.y=a[1]+(b[1]-a[1])*t;
       const dx=b[0]-a[0],dy=b[1]-a[1];P.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'droite':'gauche'):(dy>0?'bas':'haut');P.pas=now*P.v/9;break;}}}
   return GENS;}
+
+/* LA BAIGNADE : dans l'eau, le corps s'enfonce ; on redessine la mer par-dessus, jusqu'à la ligne de flottaison */
+const dansLEau=y=>y<RIVAGE+4;
+const prof=y=>Math.max(0,Math.min(1,(RIVAGE+4-y)/46));
+let DERN=null,ECLAB=[];
+/* on photographie l'eau juste avant que le baigneur soit dessiné, et on la repose par-dessus son corps */
+const BUFS={};
+function zone(x,y,camX,camY){const d=prof(y),t=performance.now()/1000,h=3+d*30,X=x-camX,Y=y-camY,l=34,top=Math.round(Y-h+Math.sin(t*2.4+x)*0.8);return {X,Y,l,top,hh:Math.round(Y+3)-top,d};}
+function photo(ctx,camX,camY,x,y,cle){const z=zone(x,y,camX,camY);if(z.d<=0)return;const m=ctx.getTransform();
+  const dx=Math.round(m.a*(z.X-z.l/2)+m.e),dy=Math.round(m.d*z.top+m.f),dw=Math.max(1,Math.round(m.a*z.l)),dh=Math.max(1,Math.round(m.d*z.hh));
+  let B=BUFS[cle];if(!B){B=BUFS[cle]=document.createElement('canvas');}if(B.width!==dw||B.height!==dh){B.width=dw;B.height=dh;}
+  const q=B.getContext('2d');q.clearRect(0,0,dw,dh);q.drawImage(ctx.canvas,dx,dy,dw,dh,0,0,dw,dh);B._z=z;}
+function eau(ctx,camX,camY,x,y,bouge,cle){const B=BUFS[cle];if(!B||!B._z)return;const z=B._z;if(z.d<=0)return;const t=performance.now()/1000;
+  ctx.drawImage(B,z.X-z.l/2,z.top,z.l,z.hh);
+  const r=9+Math.sin(t*3)*1.2+(bouge?2:0);
+  ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(z.X,z.top+1,r,2.4,0,0,7);ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.ellipse(z.X,z.top+1.4,r+5+((t*8)%6),3.4,0,0,7);ctx.stroke();
+  if(bouge&&Math.random()<.5)ECLAB.push({x:x+(Math.random()-.5)*14,y:y-(z.Y-z.top),vy:-30-Math.random()*30,vx:(Math.random()-.5)*30,t:t});}
+function acteurs(){const L=[];let j=null;try{j=joueur;}catch(e){}
+  if(j&&dansLEau(j.y)){const bouge=DERN&&Math.hypot(j.x-DERN[0],j.y-DERN[1])>.3;DERN=[j.x,j.y];
+    L.push({y:j.y-.01,f:(ctx,cx,cy)=>photo(ctx,cx,cy,j.x,j.y,'moi')});
+    L.push({y:j.y+.01,f:(ctx,cx,cy)=>{eau(ctx,cx,cy,j.x,j.y,bouge,'moi');
+      const t=performance.now()/1000;ECLAB=ECLAB.filter(e=>t-e.t<.5);for(const e of ECLAB){const k=t-e.t;ctx.fillStyle='rgba(255,255,255,'+(1-k*2)+')';ctx.fillRect(e.x+e.vx*k-cx,e.y+e.vy*k+90*k*k-cy,1.6,1.6);}}});}
+  else DERN=j?[j.x,j.y]:null;
+  try{for(const [k,a] of AUTRES){if(a&&dansLEau(a.y)){L.push({y:a.y-.01,f:(ctx,cx,cy)=>photo(ctx,cx,cy,a.x,a.y,'a'+k)});L.push({y:a.y+.01,f:(ctx,cx,cy)=>eau(ctx,cx,cy,a.x,a.y,false,'a'+k)});}}}catch(e){}
+  return L;}
 function bloque(x,y){
   if(x<12||x>W-12)return true;
-  if(y<RIVAGE+10)return true;                                        /* la mer : on ne nage pas (encore) */
-  if((x<112||x>1488)&&y<RIVAGE+38)return true;                        /* les rochers des digues */
+  if(y<304)return true;                                              /* on nage jusqu'à la ligne des bouées, pas plus loin */
+  if(Math.abs(x-820)<58&&y<268)return true;                           /* le ponton */
+  if((x<128||x>1472)&&y<RIVAGE+38)return true;                        /* les rochers des digues */
   if(y>PROM-6&&y<PROM+12&&!ESCS.some(([ex,w])=>Math.abs(x-ex)<w/2-6))return true;   /* le muret, sauf aux escaliers */
   if(y>H-6)return true;
   if(dansRame(x,y))return true;
@@ -317,5 +344,5 @@ function sortir(){if(PARTI)return;PARTI=true;try{sauver();}catch(x){}
   try{const f=document.createElement('div');f.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#0e1a2c;opacity:0;transition:opacity .45s;display:flex;align-items:center;justify-content:center;color:#fff;font:700 18px "Helvetica Neue",Arial,sans-serif';f.textContent='Prochain arrêt : Joliette';document.body.appendChild(f);requestAnimationFrame(()=>f.style.opacity='1');}catch(x){}
   setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='spawn.html?de=stade'+v;},800);}
 function rentrer(){sortir();}
-return {sol,solFin,decor,bloque,graver,depart:DEPART,figurants};
+return {sol,solFin,decor,bloque,graver,depart:DEPART,figurants,acteurs};
 })()
