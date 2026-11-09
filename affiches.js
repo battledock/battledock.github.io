@@ -24,7 +24,7 @@ const CSS=`#aff{position:fixed;inset:0;z-index:2147482100;display:flex;flex-dire
 #aff .a .p h3{margin:0;font:900 19px/1 'Baloo 2',system-ui,sans-serif;letter-spacing:-.2px}
 #aff .a .p .k{font:800 9.5px 'Baloo 2',system-ui,sans-serif;letter-spacing:1.6px;opacity:.75}
 #aff .a .p p{margin:6px 0 0;font:700 12px/1.25 'Baloo 2',system-ui,sans-serif}
-#aff .a .p .big{font-size:34px;line-height:1;margin:6px 0 2px}
+#aff .a .p .big{font-size:34px;line-height:1;margin:6px 0 2px}#aff .a .p .big svg{display:block;image-rendering:pixelated}#aff .zoom .a .p .big svg{height:120px}
 #aff .lang{display:flex;gap:0;margin:8px -11px -11px;border-top:1.5px dashed rgba(0,0,0,.35)}
 #aff .lang span{flex:1;height:30px;border-right:1.5px dashed rgba(0,0,0,.35);font:800 7.5px 'Baloo 2',system-ui,sans-serif;writing-mode:vertical-rl;text-align:center;padding:2px 0;overflow:hidden}
 #aff .lang span.pris{visibility:hidden}
@@ -43,11 +43,13 @@ const CSS=`#aff{position:fixed;inset:0;z-index:2147482100;display:flex;flex-dire
 /* LES AFFICHES : leur look, leur texte, ce qu'il se passe quand on les prend */
 /* LES AFFICHES : aucune pour l'instant (on les choisira plus tard). Modèle d'une affiche :
  {id,r:-2,fond,coul,k:'SURTITRE',h:'Titre',big:'📺',p:'Texte',neuf:true,lang:'LANGUETTE',main:false,go:'Arracher et y aller',fait:()=>aller('page.html','…')} */
-const AFF=[];
+const AFF=[
+ {id:'voeux',r:-2.5,fond:'#fdf6e3',coul:'#1f3a5a',k:'AU MILIEU DE LA PLACE',big:'<svg viewBox="0 0 64 44" width="100%" height="60" shape-rendering="crispEdges"><rect x="6" y="30" width="52" height="8" fill="#b4a68a"/><rect x="4" y="28" width="56" height="4" fill="#f2ead8"/><rect x="8" y="31" width="48" height="3" fill="#4a9cc4"/><rect x="29" y="14" width="6" height="14" fill="#d8ccb2"/><rect x="22" y="12" width="20" height="3" fill="#f2ead8"/><rect x="31" y="4" width="2" height="8" fill="#9ad4f0"/><rect x="28" y="2" width="8" height="2" fill="#c8ecff"/><rect x="18" y="15" width="2" height="12" fill="#9ad4f0"/><rect x="44" y="15" width="2" height="12" fill="#9ad4f0"/><rect x="12" y="20" width="4" height="4" fill="#f2b030"/><rect x="13" y="21" width="2" height="2" fill="#ffe08a"/><rect x="48" y="6" width="2" height="2" fill="#fff"/><rect x="10" y="8" width="2" height="2" fill="#fff"/><rect x="52" y="16" width="2" height="2" fill="#fff"/></svg>',h:'La fontaine à vœux',p:'Une pièce, un vœu. Un seul par jour : choisis bien.',neuf:true,lang:'1 VŒU / JOUR',go:'J’y vais',fait:()=>{fermer();mot('La fontaine est au milieu de la place');}},
+ {id:'galerie',r:2,fond:'#173f86',coul:'#ffffff',k:'SOUS LES DOCKS',big:'<svg viewBox="0 0 64 44" width="100%" height="60" shape-rendering="crispEdges"><rect x="2" y="10" width="60" height="32" fill="#1f4a96"/><rect x="2" y="6" width="60" height="5" fill="#2a64b8"/><rect x="2" y="40" width="60" height="3" fill="#0c2554"/><rect x="8" y="16" width="10" height="12" fill="#8cc4ff"/><rect x="46" y="16" width="10" height="12" fill="#8cc4ff"/><rect x="26" y="20" width="12" height="20" fill="#0c2554"/><rect x="27" y="21" width="10" height="19" fill="#f2c94c"/><rect x="31" y="21" width="2" height="19" fill="#c89a20"/><rect x="22" y="13" width="20" height="4" fill="#fff"/><rect x="9" y="17" width="3" height="3" fill="#fff"/><rect x="47" y="17" width="3" height="3" fill="#fff"/><rect x="8" y="30" width="10" height="2" fill="#e8302a"/><rect x="46" y="30" width="10" height="2" fill="#e8302a"/></svg>',h:'La Galerie Bleue',p:'Les boutiques, le café, les terrasses. Ouvert tous les jours.',neuf:true,go:'Y aller',fait:()=>aller('terrasses.html?de=place','La Galerie Bleue…')}];
 let RAC=null;
 function mot(t){try{if(typeof texteVolant==='function'&&typeof joueur!=='undefined')texteVolant(joueur.x,joueur.y-40,t,'#f0cf7d');}catch(x){}}
 function aller(url,t){fermer();const v=document.createElement('div');v.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#1f1a14;color:#f2c94c;display:grid;place-items:center;font:800 20px "Baloo 2",system-ui,sans-serif;opacity:0;transition:opacity .35s';v.textContent=t;document.body.appendChild(v);requestAnimationFrame(()=>v.style.opacity='1');
-  setTimeout(()=>{try{sauver();}catch(x){}location.href=url+'?t='+Date.now();},900);}
+  setTimeout(()=>{try{sauver();}catch(x){}location.href=url+(url.indexOf('?')<0?'?':'&')+'t='+Date.now();},900);}
 const PRIS=()=>{try{return JSON.parse(localStorage.getItem('aff_pris')||'{}');}catch(x){return {};}};
 function carte(a,grand){const pris=PRIS()[a.id]||0;return '<button class="a" data-id="'+a.id+'" style="--r:'+(grand?0:a.r)+'deg"><span class="pin"></span>'+(a.neuf?'<span class="neuf">NOUVEAU</span>':'')+
   '<div class="p" style="background:'+a.fond+';color:'+a.coul+(a.main?';font-family:\'Chalkboard SE\',\'Comic Sans MS\',system-ui,sans-serif':'')+'"><div class="k">'+a.k+'</div><div class="big">'+a.big+'</div><h3>'+a.h+'</h3><p>'+a.p+'</p>'+

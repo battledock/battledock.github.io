@@ -989,6 +989,7 @@ function decor(){
   /* le kiosque à journaux */
   for(const [px] of PORTES)P('x_jol_entree',px,DOCKS_PIED+10,{agir:entrerGalerie,libelle:'Entrer',nom:'LA GALERIE BLEUE'});
   P('x_jol_kiosque',156,600,{col:[96,14],agir:ouvrirJournal,libelle:'Lire le journal',nom:'LE QUAI'});
+  P('x_jol_entree',PLACE.CX,628,{agir:()=>VOEU.faire(),libelle:'Faire un vœu',nom:'FONTAINE À VŒUX'});
   P('x_jol_affiches',622,600,{col:[90,8],agir:ouvrirAffiches,libelle:'Voir les affiches',nom:'À L’AFFICHE',demi:56});
   return D;
 }
@@ -1102,8 +1103,51 @@ try{window.__PIG={L,j:()=>joueur};}catch(e){}
 return {acteurs};
 })();
 
+/* ---------- LA FONTAINE À VŒUX : une pièce par jour, un vœu, une petite fortune ---------- */
+const VOEU=(()=>{
+const DIRES=['Le mistral tournera en ta faveur.','Un pigeon te portera chance. Ou pas.','Ta prochaine caisse sera bien remplie.','Quelqu’un pense à toi sur le port.','Le soleil se lèvera pour toi, et pour les autres aussi.','Une belle surprise t’attend du côté de la mer.','Ta prochaine pêche sera mémorable.','Tu trouveras ce que tu as perdu. Peut-être.','Un vieux docker te racontera une histoire vraie.','La chance sourit à ceux qui marchent sous les platanes.','Ton vœu est entendu. La fontaine garde le secret.','Évite les mouettes près des sandwichs.'];
+const jour=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();};
+let PIECE=null,RONDS=[];
+const CSS=`#voeu{position:fixed;inset:0;z-index:2147482100;display:grid;place-items:center;padding:24px;background:rgba(20,30,50,.45);opacity:0;transition:opacity .25s;font-family:'Baloo 2',system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+#voeu.on{opacity:1}#voeu *{box-sizing:border-box}#voeu *::after{content:none!important;display:none!important}
+#voeu .c{position:relative;width:min(320px,86vw);background:#f6f1e6;border-radius:22px;padding:26px 22px 18px;text-align:center;box-shadow:0 6px 0 #ddd3c0,0 20px 40px rgba(0,0,0,.3);transform:translateY(20px) scale(.92);transition:transform .35s cubic-bezier(.2,1.4,.4,1)}
+#voeu.on .c{transform:none}
+#voeu .pc{width:56px;height:56px;margin:-54px auto 8px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe9a0,#f2b030 55%,#b07810);box-shadow:0 4px 0 #8a5a08,0 0 0 4px #f6f1e6;display:grid;place-items:center;font:900 22px 'Baloo 2',system-ui,sans-serif;color:#7a4a00;animation:vPc 1.2s ease-out}
+@keyframes vPc{0%{transform:rotateY(0) translateY(-30px)}60%{transform:rotateY(720deg) translateY(4px)}100%{transform:rotateY(720deg)}}
+#voeu .k{font:800 11px 'Baloo 2',system-ui,sans-serif;letter-spacing:2px;color:#8a7a5a}
+#voeu h3{margin:2px 0 10px;font:900 24px/1.05 'Baloo 2',system-ui,sans-serif;color:#2a2016}
+#voeu p{margin:0 0 16px;font:700 17px/1.3 'Baloo 2',system-ui,sans-serif;color:#2a2016}
+#voeu button{width:100%;border:0;border-radius:16px;padding:13px;background:#2a2016;color:#fff;font:800 16px 'Baloo 2',system-ui,sans-serif;box-shadow:0 4px 0 #000}
+#voeu .s{margin-top:10px;font:700 12px 'Baloo 2',system-ui,sans-serif;color:#8a7a5a}`;
+function carte(t){if(!document.getElementById('voeuCss')){const s=document.createElement('style');s.id='voeuCss';s.textContent=CSS;document.head.appendChild(s);}
+  const d=document.createElement('div');d.id='voeu';d.innerHTML='<div class="c"><div class="pc">€</div><div class="k">FONTAINE À VŒUX</div><h3>Ton vœu du jour</h3><p>'+t+'</p><button>Merci la fontaine</button><div class="s">Reviens demain pour un nouveau vœu.</div></div>';
+  document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));
+  let fini=false;const f=()=>{if(fini)return;fini=true;d.classList.remove('on');setTimeout(()=>d.remove(),250);};
+  d.onclick=ev=>{if(ev.target===d)f();};d.querySelector('button').onclick=()=>{try{vibrer(8);}catch(x){}f();};}
+function faire(){
+  let j=null;try{j=localStorage.getItem('voeu_jour');}catch(x){}
+  if(j===jour()){try{texteVolant(joueur.x,joueur.y-40,'Un vœu par jour… reviens demain','#f0cf7d');}catch(x){}return;}
+  if(PIECE)return;
+  try{localStorage.setItem('voeu_jour',jour());}catch(x){}
+  try{vibrer(10);}catch(x){}
+  const tx=PLACE.CX+(Math.random()*30-15),ty=592+Math.random()*6;
+  PIECE={x0:joueur.x,y0:joueur.y-18,tx,ty,t0:performance.now()};
+  const dire=DIRES[(Math.random()*DIRES.length)|0];
+  setTimeout(()=>{RONDS.push({x:tx,y:ty,t:performance.now()});try{vibrer([6,40,6]);}catch(x){}},900);
+  setTimeout(()=>carte(dire),1500);}
+function acteurs(){const A=[],now=performance.now();
+  if(PIECE){const k=(now-PIECE.t0)/900;if(k>=1)PIECE=null;else{const P=PIECE,x=P.x0+(P.tx-P.x0)*k,y=P.y0+(P.ty-P.y0)*k-Math.sin(k*Math.PI)*46;
+    A.push({y:99999,f:(g,cx,cy)=>{const w=Math.abs(Math.cos(k*20))*2.6+.5;g.fillStyle='#b07810';g.fillRect(x-cx-w/2,y-cy-1.5,w,3);g.fillStyle='#ffd860';g.fillRect(x-cx-w/2+.3,y-cy-1.2,Math.max(.3,w-.6),2);
+      if(((now/60)|0)%3===0){g.fillStyle='#fff';g.fillRect(x-cx+1,y-cy-2.5,.8,.8);}}});}}
+  for(let i=RONDS.length-1;i>=0;i--){const r=RONDS[i],a=(now-r.t)/1400;if(a>1){RONDS.splice(i,1);continue;}
+    A.push({y:r.y+40,f:(g,cx,cy)=>{g.strokeStyle='rgba(255,255,255,'+(1-a)+')';g.lineWidth=.7;for(const q of [0,.25]){const b=Math.max(0,a-q);if(b<=0)continue;g.beginPath();g.ellipse(r.x-cx,r.y-cy,2+b*16,1+b*6,0,0,7);g.stroke();}
+      if(a<.35){g.fillStyle='rgba(220,245,255,'+(1-a*2.5)+')';for(let k=0;k<6;k++){const an=k/6*6.28;g.fillRect(r.x-cx+Math.cos(an)*a*14,r.y-cy-Math.sin(a*9)*5-Math.abs(Math.sin(an))*3,.8,.8);}}}});}
+  return A;}
+return {faire,acteurs};
+})();
+
 ANIM_DECOR.jol_tram=dessinerTram;
 ANIM_DECOR.jol_docks=dessinerLesDocks;
 ANIM_DECOR.jol_fontaine=PLACE.dessinerFontaine;
-return {sol,decor,bloque,graver,depart:DEPART,solFin:PLACE.solFin,acteurs:PIGEONS.acteurs};
+return {sol,decor,bloque,graver,depart:DEPART,solFin:PLACE.solFin,acteurs:()=>PIGEONS.acteurs().concat(VOEU.acteurs())};
 })()
