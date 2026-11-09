@@ -23816,6 +23816,7 @@ $('sacX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
 }
 
 async function ouvrirLeClassement(){
+try{if(!window.ouvrirRegistre)eval(await chargerMorceau('classement.js'));window.ouvrirRegistre();return;}catch(x){console.warn('RGP',x);}
 if(!document.getElementById('cssCls')){const st=document.createElement('style');
 st.id='cssCls';st.textContent=CSS_CLS;document.head.appendChild(st);}
 $('page2Fond').className='';$('page2').classList.add('on');
