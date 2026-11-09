@@ -169,19 +169,37 @@ const SPR={};
 ANIM_DECOR.blc_lum=(g,o,x,y)=>{if(o.spr){const t=SPR[o.spr]||(SPR[o.spr]=graver(o.spr,o.v||0)),X0=Math.round(x-t.W/2),Y1=Math.round(y-t.sol);g.drawImage(t.toile,X0,Y1,t.W,t.H);
     let k=0;try{k=nuitDecor();}catch(e){}if(k>.02){g.globalAlpha=k;g.drawImage(versionNuit(t),X0,Y1,t.W,t.H);g.globalAlpha=1;}}
   if(o.lum&&typeof lueurNuit==='function')for(const [dx,dy,r,c] of o.lum)lueurNuit(g,x+dx,y+dy,r,c);};
-/* le feu : flammes qui dansent, braises, colonne de fumée, et la lumière qu'il jette */
-function flammes(g,x,y,f,t,seed){
-  /* la fumée, qui monte et s'élargit */
-  for(let i=0;i<14;i++){const k=((t*.35+i/14+seed)%1),sx=x+Math.sin(i*1.7+t*.8)*6*k+k*k*30,sy=y-36-k*170,r=6+k*26;
-    g.fillStyle='rgba('+(60+k*40)+','+(60+k*40)+','+(64+k*40)+','+(.45*(1-k)*f)+')';g.beginPath();g.arc(sx,sy,r,0,7);g.fill();}
-  /* le halo chaud */
-  const h=g.createRadialGradient(x,y-24,2,x,y-24,60);h.addColorStop(0,'rgba(255,170,60,'+(.35*f)+')');h.addColorStop(1,'rgba(255,120,30,0)');g.fillStyle=h;g.fillRect(x-60,y-84,120,120);
-  /* les langues de feu */
-  const C=[['#ff3a10',1],['#ff8a1e',.78],['#ffd23a',.52],['#fff4c0',.28]];
-  for(const [c,s] of C){for(let i=0;i<5;i++){const fx=x-12+i*6+Math.sin(t*9+i*2+seed)*1.6,hh=(22+Math.sin(t*11+i*1.3+seed)*7+(i===2?8:0))*s*f+6*s;
-    g.fillStyle=c;g.beginPath();g.moveTo(fx-5*s-1,y-34);g.quadraticCurveTo(fx-4*s,y-34-hh*.6,fx+Math.sin(t*7+i)*2,y-34-hh);g.quadraticCurveTo(fx+4*s,y-34-hh*.6,fx+5*s+1,y-34);g.fill();}}
-  /* les braises qui s'envolent */
-  for(let i=0;i<8;i++){const k=((t*.9+i/8+seed*.3)%1);g.fillStyle='rgba(255,'+(160+i*10)+',60,'+(1-k)*f+')';g.fillRect(x-10+((i*37)%20)+Math.sin(t*3+i)*6,y-40-k*70,1.6,1.6);}}
+/* LE FEU : des centaines de petites lueurs qui montent en se refroidissant (blanc, jaune, orange, rouge),
+   additionnées les unes aux autres comme de la vraie lumière ; puis la fumée, épaisse, qui roule vers le ciel */
+const BLOBS={};
+function blob(c){if(BLOBS[c])return BLOBS[c];const k=document.createElement('canvas');k.width=k.height=64;const q=k.getContext('2d');
+  const gr=q.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,c);gr.addColorStop(.35,c.replace(/,1\)$/,',.55)'));gr.addColorStop(1,c.replace(/,1\)$/,',0)'));q.fillStyle=gr;q.fillRect(0,0,64,64);return BLOBS[c]=k;}
+const RAMPE=['rgba(255,222,140,1)','rgba(255,180,60,1)','rgba(255,130,30,1)','rgba(230,70,15,1)','rgba(140,30,10,1)'];
+const hF=(i,k)=>{let n=(i*2654435761^k*40503)>>>0;n=(n^(n>>>15))*2246822519>>>0;return (n>>>0)/4294967296;};
+function flammes(g,x,y,f,t,seed){const top=y-36;
+  /* la fumée d'abord, derrière : grosses volutes sombres qui s'élargissent et dérivent avec le vent */
+  for(let i=0;i<26;i++){const ph=((t*.2+i/26+seed*.13)%1),dr=ph*ph;
+    const sx=x+(hF(i,1)-.5)*12+dr*50+Math.sin(t*.9+i*1.9)*6*ph,sy=top-22-ph*200,r=10+ph*40;
+    const c=Math.round(40+ph*70);g.globalAlpha=(ph<.15?ph/.15:1)*(1-ph)*.75*f;g.drawImage(blob('rgba('+c+','+c+','+(c+6)+',1)'),sx-r,sy-r,r*2,r*2);}
+  g.globalAlpha=1;
+  /* la lueur sur le sol et sur la poubelle */
+  let h=g.createRadialGradient(x,top+6,2,x,top+6,74);h.addColorStop(0,'rgba(255,150,50,'+(.32*f)+')');h.addColorStop(1,'rgba(255,110,30,0)');g.fillStyle=h;g.fillRect(x-74,top-68,148,148);
+  /* les flammes : particules additives, du cœur blanc aux pointes rouges */
+  g.save();g.globalCompositeOperation='lighter';
+  const N=64;
+  for(let i=0;i<N;i++){const vit=.9+hF(i,2)*.9,ph=((t*vit+hF(i,3))%1);
+    const largeur=12*(1-ph*.85),dx=(hF(i,4)-.5)*2*largeur+Math.sin(t*6+i*2.3)*2.2*ph;
+    const sx=x+dx,sy=top+2-ph*(44+hF(i,5)*34)*f;
+    const r=(8*(1-ph)+2.4)*(.7+hF(i,6)*.6)*(.55+.45*f);
+    const k=Math.min(RAMPE.length-1,Math.floor(ph*1.15*RAMPE.length+hF(i,7)*.8));
+    g.globalAlpha=(ph<.1?ph/.1:1)*(1-ph*.6)*.34*f;g.drawImage(blob(RAMPE[k]),sx-r,sy-r*1.35,r*2,r*2.7);}
+  /* le cœur, à ras du bord : un lit de braises éclatant */
+  for(let i=0;i<7;i++){const sx=x-11+i*3.6+Math.sin(t*13+i)*1.2,r=5+Math.sin(t*9+i*1.7)*1.2;g.globalAlpha=.4*f;g.drawImage(blob(RAMPE[1+i%2]),sx-r,top-r*.6,r*2,r*1.2);}
+  g.restore();g.globalAlpha=1;
+  /* les étincelles qui s'échappent, en zigzag */
+  for(let i=0;i<10;i++){const ph=((t*(.5+hF(i,8)*.6)+hF(i,9))%1),sx=x+(hF(i,10)-.5)*20+Math.sin(t*5+i*3)*6*ph+ph*12,sy=top-6-ph*90;
+    g.globalAlpha=(1-ph)*f;g.fillStyle=ph<.4?'#fff2b0':'#ff9a3a';g.fillRect(sx,sy,1.4,1.4);}
+  g.globalAlpha=1;}
 ANIM_DECOR.blc_bac=(g,o,x,y)=>{const t=performance.now()/1000;
   let X=x,Y=y;
   const spr=graverBac(o.v,!!o.brule),X0=Math.round(X-spr.W/2),Y1=Math.round(Y-spr.sol);
@@ -189,7 +207,7 @@ ANIM_DECOR.blc_bac=(g,o,x,y)=>{const t=performance.now()/1000;
   let k=0;try{k=nuitDecor();}catch(e){}if(k>.02){g.globalAlpha=k;g.drawImage(versionNuit(spr),X0,Y1,spr.W,spr.H);g.globalAlpha=1;}
   if(o.feu){const age=(Date.now()-o.feu)/FEU_DUREE;let f=age<.08?age/.08:age>.85?Math.max(0,(1-age)/.15):1;
     if(o.brule){/* la carcasse fume encore un peu */for(let i=0;i<5;i++){const kk=((t*.25+i/5)%1);g.fillStyle='rgba(90,90,96,'+(.3*(1-kk))+')';g.beginPath();g.arc(X+kk*kk*16,Y-34-kk*90,4+kk*14,0,7);g.fill();}}
-    else{flammes(g,X,Y,f,t,o.v);if(typeof lueurNuit==='function')lueurNuit(g,X,Y-30,70,'rgba(255,150,60,1)');}}
+    else{g.globalAlpha=Math.min(.85,age*1.4);const sb=graverBac(o.v,true);g.drawImage(sb.toile,X0,Y1,sb.W,sb.H);g.globalAlpha=1;flammes(g,X,Y,f,t,o.v);if(typeof lueurNuit==='function')lueurNuit(g,X,Y-30,70,'rgba(255,150,60,1)');}}
   if(o.porte){g.strokeStyle='rgba(255,217,138,.8)';g.lineWidth=1.4;g.setLineDash([3,3]);g.beginPath();g.ellipse(X,Y,20,5,0,0,7);g.stroke();g.setLineDash([]);}};
 ANIM_DECOR.blc_brasero=(g,o,x,y)=>{const t=performance.now()/1000,s=graverBrasero();g.drawImage(s.toile,Math.round(x-s.W/2),Math.round(y-s.sol),s.W,s.H);
   for(let i=0;i<4;i++){const fx=x-6+i*4,hh=6+Math.sin(t*10+i*1.7)*3;g.fillStyle=i%2?'#ffb02a':'#ff6a1a';g.beginPath();g.moveTo(fx-2.4,y-22);g.quadraticCurveTo(fx,y-22-hh,fx+2.4,y-22);g.fill();}
