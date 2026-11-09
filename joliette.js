@@ -1036,8 +1036,74 @@ function entrerGalerie(){if(ENTRE||PARTI)return;ENTRE=true;try{vibrer&&vibrer(12
   const v=document.createElement('div');v.style.cssText=VOILE_GB+';opacity:0';v.innerHTML=TITRE_GB;
   setTimeout(()=>{document.body.appendChild(v);requestAnimationFrame(()=>v.style.opacity='1');},520);
   setTimeout(()=>{try{sauver();}catch(x){}const q=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='terrasses.html?de=place'+q+'&t='+Date.now();},1250);}
+
+/* ---------- LES PIGEONS : ils picorent sur la place, s'envolent quand on approche, reviennent plus tard ---------- */
+const PIGEONS=(()=>{
+const PAL={k:'#2e2c3a',g:'#969cac',l:'#c4c8d4',d:'#707688',b:'#282a34',n:'#468c76',p:'#825a96',o:'#f08c32',y:'#ece0ce',f:'#dc7878',t:'#464856'};
+const SPR={
+marche:['..........kkk...','.........kgllk..','.........kglokyy','.........kgggk..','.....kkkknpnnk..','...kkddddnpnpgk.','.kkdbddbdggnggk.','kttdbddbdgglggk.','.kttddddllglgk..','..kkkkllllllk...','.....kkkkkkk....','......f...f.....'],
+marche2:['................','...........kkk..','..........kgllk.','..........kglokyy','.....kkkkknpnnk.','...kkddddnpnpgk.','.kkdbddbdggnggk.','kttdbddbdgglggk.','.kttddddllglgk..','..kkkkllllllk...','.....kkkkkkk....','.....f.....f....'],
+picore:['................','................','....kkkkk.......','..kkddddgkk.....','.kdbddbdggnkk...','kttbddbdgggpnk..','kttdddddlggnpk..','.kkkllllllgggkk.','....kkkkkkklokk.','.......f..f.kgkyy','............kk..','................'],
+vol1:['..kk............','..kdk...........','...kdk.....kkk..','...kdbk...kgllk.','....kdbk..kglokyy','.kk..kddkkkgggk.','kttkkkddgnpnnk..','.kttddddggnpgk..','..kkkllllllkk...','.....kkkkkk.....','................','................'],
+vol2:['................','................','...........kkk..','..........kgllk.','..........kglokyy','.kk.......kgggk.','kttkkkkkkknpnnk.','.kttddddggnpgk..','..kkkdddllllkk..','.....kdbbkkk....','......kddk......','.......kk.......']};
+const C={};
+for(const k in SPR)for(const s of [1,-1]){const c=document.createElement('canvas');c.width=18;c.height=12;const g=c.getContext('2d');
+  SPR[k].forEach((r,y)=>{for(let x=0;x<r.length;x++){const v=PAL[r[x]];if(!v)continue;g.fillStyle=v;g.fillRect(s>0?x:17-x,y,1,1);}});C[k+s]=c;
+  const n=document.createElement('canvas');n.width=18;n.height=12;const h=n.getContext('2d');h.drawImage(c,0,0);h.globalCompositeOperation='multiply';h.fillStyle='#5a6490';h.fillRect(0,0,18,12);h.globalCompositeOperation='destination-in';h.drawImage(c,0,0);C[k+s+'n']=n;}
+const R=(a,b)=>a+Math.random()*(b-a);
+const BANDES=[[330,650,4],[480,520,3],[318,730,3],[560,640,2]];
+const L=[];
+for(const [hx,hy,n] of BANDES){const bd={hx,hy,etat:'sol',t:0};for(let i=0;i<n;i++){const x=hx+R(-14,14),y=hy+R(-8,8);
+  L.push({bd,x,y,z:0,tx:x,ty:y,dir:Math.random()<.5?1:-1,att:R(0,2),pic:0,ph:R(0,9),vx:0,vy:0,vz:0,fin:0});}}
+const libre=(x,y)=>{try{return !bloque(x,y);}catch(e){return true;}};
+let T0=performance.now();
+function pas(){const now=performance.now(),dt=Math.min(.05,(now-T0)/1000);T0=now;
+  const jx=joueur.x,jy=joueur.y;
+  for(const p of L){const b=p.bd;p.ph+=dt;
+    if(p.etat==='vol'){p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.vz=Math.min(p.vz+30*dt,90);
+      if(p.z>170){p.etat='loin';p.fin=now+R(6000,11000);}continue;}
+    if(p.etat==='loin'){if(now>p.fin){if(Math.hypot(jx-b.hx,jy-b.hy)<70){p.fin=now+R(2000,4000);continue;}
+        const a=R(0,6.28);p.ox=b.hx+Math.cos(a)*220;p.oy=b.hy+Math.sin(a)*120;p.tx=b.hx+R(-16,16);p.ty=b.hy+R(-9,9);p.t0=now;p.etat='retour';p.dir=p.tx>p.ox?1:-1;}continue;}
+    if(p.etat==='retour'){const k=Math.min(1,(now-p.t0)/2600),e=1-Math.pow(1-k,2);p.x=p.ox+(p.tx-p.ox)*e;p.y=p.oy+(p.ty-p.oy)*e;p.z=160*(1-k)*(1-k)+Math.sin(k*Math.PI)*8;
+      if(k>=1){p.etat='sol';p.z=0;p.att=R(.3,1.5);}continue;}
+    /* au sol : on a peur si quelqu'un s'approche */
+    const d=Math.hypot(jx-p.x,jy-p.y);
+    if(d<36){for(const q of L)if(q.bd===b&&(q.etat==='sol'||!q.etat)){const a=Math.atan2(q.y-jy,q.x-jx)+R(-.7,.7),v=R(60,85);
+        q.etat='vol';q.vx=Math.cos(a)*v;q.vy=Math.sin(a)*v*.6;q.vz=R(40,60);q.dir=q.vx>0?1:-1;q.ph=R(0,1);}
+      try{if(!b.flou||now-b.flou>4000){b.flou=now;plumes(p.x,p.y);}}catch(e){}continue;}
+    if(p.att>0){p.att-=dt;if(p.pic<=0&&Math.random()<dt*1.4)p.pic=R(.3,.9);if(p.pic>0)p.pic-=dt;
+      if(p.att<=0){for(let i=0;i<6;i++){const tx=b.hx+R(-20,20),ty=b.hy+R(-11,11);if(libre(tx,ty)){p.tx=tx;p.ty=ty;break;}}}continue;}
+    const dx=p.tx-p.x,dy=p.ty-p.y,dd=Math.hypot(dx,dy);
+    if(dd<.6){p.att=R(.6,2.6);continue;}
+    const v=Math.min(dd,9*dt);p.x+=dx/dd*v;p.y+=dy/dd*v;if(Math.abs(dx)>.3)p.dir=dx>0?1:-1;}
+}
+/* trois plumes qui retombent quand ils s'envolent */
+const PL=[];
+function plumes(x,y){for(let i=0;i<4;i++)PL.push({x:x+R(-6,6),y,z:R(4,12),vx:R(-8,8),t:performance.now(),f:R(0,6)});}
+function dessinerPigeon(g,p,cx,cy){
+  let k='marche';
+  if(p.etat==='vol'||p.etat==='retour'){k=(p.etat==='retour'&&p.z<10)?'vol1':(((p.ph*14)|0)%2?'vol1':'vol2');}
+  else if(p.pic>0)k=((p.pic*5)|0)%2?'picore':'marche';
+  else if(p.att<=0)k=((p.ph*8)|0)%2?'marche2':'marche';
+  const X=p.x-cx,Y=p.y-cy;
+  g.fillStyle='rgba(30,26,18,'+(.22*Math.max(.15,1-p.z/120))+')';g.beginPath();g.ellipse(X,Y,4.8*Math.max(.4,1-p.z/200),1.6,0,0,7);g.fill();
+  const s=g.imageSmoothingEnabled;g.imageSmoothingEnabled=false;
+  const x0=Math.round((X-6.75)*2)/2,y0=Math.round((Y-8.4-p.z)*2)/2;g.drawImage(C[k+p.dir],x0,y0,13.5,9);
+  let nk=0;try{nk=nuitDecor();}catch(e){}if(nk>.02){g.globalAlpha=nk;g.drawImage(C[k+p.dir+'n'],x0,y0,13.5,9);g.globalAlpha=1;}g.imageSmoothingEnabled=s;}
+function acteurs(){try{pas();}catch(e){}
+  const A=[];
+  for(const p of L){if(p.etat==='loin')continue;A.push({y:p.z>14?99999:p.y,f:(g,cx,cy)=>dessinerPigeon(g,p,cx,cy)});}
+  const now=performance.now();
+  for(let i=PL.length-1;i>=0;i--){const q=PL[i],a=(now-q.t)/1000;if(a>1.6){PL.splice(i,1);continue;}
+    A.push({y:q.y,f:(g,cx,cy)=>{const z=Math.max(0,q.z-a*9),x=q.x+q.vx*a+Math.sin(a*6+q.f)*2;g.globalAlpha=Math.min(1,(1.6-a)*2);g.fillStyle='#d8dce4';
+      g.fillRect(Math.round((x-cx)*2)/2,Math.round((q.y-cy-z)*2)/2,1.5,.5);g.globalAlpha=1;}});}
+  return A;}
+try{window.__PIG={L,j:()=>joueur};}catch(e){}
+return {acteurs};
+})();
+
 ANIM_DECOR.jol_tram=dessinerTram;
 ANIM_DECOR.jol_docks=dessinerLesDocks;
 ANIM_DECOR.jol_fontaine=PLACE.dessinerFontaine;
-return {sol,decor,bloque,graver,depart:DEPART,solFin:PLACE.solFin};
+return {sol,decor,bloque,graver,depart:DEPART,solFin:PLACE.solFin,acteurs:PIGEONS.acteurs};
 })()
