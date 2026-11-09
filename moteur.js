@@ -28365,6 +28365,7 @@ const brut=t-tBrut;tBrut=t;
 if(brut>2&&brut<40)rythmeEcran=rythmeEcran*0.92+brut*0.08;
 /* on ne saute plus une image sur deux : ça hachait le pas du personnage */
 if(ecranFige()){t0=t;return;}                 /* rien n'a changé : on garde l'image */
+if(window.ECRAN_COUVRANT){t0=t;return;}      /* un écran plein (le classement) cache le jeu : on ne le redessine pas */
 const dt=Math.min(.05,(t-t0)/1000);mesurer(t-t0);majPerf(t-t0);
 if(PERF.on)PERF.traits=0;
 t0=t;

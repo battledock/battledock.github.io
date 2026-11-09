@@ -40,7 +40,7 @@ const CSS_BASE=`#rgp{position:fixed;inset:0;z-index:2147482100;font-family:'Balo
 #rgp .hd{flex:none;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 10px}
 #rgp .hd b{flex:1;font:800 24px 'Baloo 2',system-ui,sans-serif;line-height:1;letter-spacing:-.3px}
 #rgp .x{width:40px;height:40px;border-radius:50%;border:0;background:#efe9de;font:800 16px 'Baloo 2',system-ui,sans-serif;color:#1f1a14}
-#rgp .corps{flex:1;overflow-y:auto;padding:0 16px calc(24px + env(safe-area-inset-bottom));overscroll-behavior:contain}
+#rgp .corps{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;contain:content;padding:0 16px calc(24px + env(safe-area-inset-bottom));overscroll-behavior:contain}
 #rgp .chips{display:flex;gap:6px;overflow-x:auto;padding:2px 16px 12px;flex:none;scrollbar-width:none}#rgp .chips::-webkit-scrollbar{display:none}
 #rgp .chips button{flex:none;border:0;border-radius:20px;padding:6px 13px 5px;background:#efe9de;font:800 13.5px 'Baloo 2',system-ui,sans-serif;color:#6a5e4c;display:flex;align-items:center;gap:5px}
 #rgp .chips button.on{background:#1f1a14;color:#fff}
@@ -79,7 +79,7 @@ C:`#rgp .roi{display:flex;align-items:center;gap:14px;border-radius:26px;padding
 #rgp .cou .moi{position:absolute;top:10px;right:10px;font-size:10.5px;font-weight:800;background:#1f1a14;color:#fff;border-radius:8px;padding:1px 6px}`};
 const V=()=>(window.RGP_V||'C');
 function enLigne(j){try{return clsEnLigne(j);}catch(x){return false;}}
-function tete(j){try{return clsTete(j);}catch(x){return '';}}
+const TETES={};function tete(j){const k=j.id+'|'+JSON.stringify(j.apparence||{});if(TETES[k])return TETES[k];try{return TETES[k]=clsTete(j);}catch(x){return '';}}
 const unite=k=>k==='tout'?'XP':'pts';
 function rang(j,i,k){const M=metDe(k),val=M[4](j);return '<div class="r'+(j.id===e.id?' toi':'')+'"><span class="n">'+(i+1)+'</span><span class="av"><img src="'+tete(j)+'" alt="">'+(enLigne(j)?'<u></u>':'')+'</span>'+
   '<span class="t"><b>'+esc(j.pseudo)+(j.id===e.id?' · toi':'')+'</b><small>'+(k==='tout'?esc(grade(j))+' · niv. '+j.N.n:M[1]+' '+M[2])+'</small></span><span class="v">'+f(val)+'<small>'+unite(k)+'</small></span></div>';}
@@ -124,12 +124,12 @@ function remplir(){if(!RAC)return;const v=V(),C=RAC.querySelector('.corps'),Ch=R
     C.querySelector('.roi').onclick=()=>{MET='tout';try{vibrer(6);}catch(x){}remplir();const t=C.querySelectorAll('.titre')[0];if(t)C.scrollTo({top:t.offsetTop-10,behavior:'smooth'});};
     C.querySelectorAll('.cou').forEach(b=>b.onclick=()=>{MET=b.dataset.m;try{vibrer(6);}catch(x){}remplir();const t=C.querySelectorAll('.titre')[0];if(t)C.scrollTo({top:t.offsetTop-10,behavior:'smooth'});});}
   RAC.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>{if(MET===b.dataset.m)return;MET=b.dataset.m;try{vibrer(6);}catch(x){}remplir();});}
-function fermer(){if(!RAC)return;const R0=RAC;RAC=null;R0.classList.remove('on');setTimeout(()=>R0.remove(),280);}
+function fermer(){if(!RAC)return;window.ECRAN_COUVRANT=false;const R0=RAC;RAC=null;R0.classList.remove('on');setTimeout(()=>R0.remove(),280);}
 window.ouvrirRegistre=async function(){if(RAC)return;const v=V();MET='tout';
   let st=document.getElementById('rgpCss');if(!st){st=document.createElement('style');st.id='rgpCss';document.head.appendChild(st);}st.textContent=CSS_BASE+CSS_V[v];
   const d=document.createElement('div');d.id='rgp';RAC=d;
   d.innerHTML='<div class="hd"><b>'+(v==='A'?'Ta course':v==='B'?'La course du port':'Les couronnes')+'</b><button class="x" aria-label="Fermer">✕</button></div>'+(v==='C'?'':'<div class="chips"></div>')+'<div class="corps"><div class="vide">Chargement…</div></div>';
-  document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));
+  document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));setTimeout(()=>{if(RAC===d)window.ECRAN_COUVRANT=true;},300);
   d.querySelector('.x').onclick=()=>{try{vibrer(8);}catch(x){}fermer();};
   try{sauver();envoyerSauvegarde(true);}catch(x){}
   let R=[];try{const r=await appelRPC('classement_general',{});if(Array.isArray(r))R=r.filter(j=>j&&j.pseudo&&j.pseudo!=='sans nom');}catch(x){}

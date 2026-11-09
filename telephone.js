@@ -124,7 +124,7 @@ function allerAuPlateau(){try{sauver();}catch(x){}const f=document.createElement
 /* LES PHOTOS : on cache le téléphone, on photographie l'écran du jeu, on applique un filtre */
 function grille(){const G=RAC&&RAC.querySelector('.grille');if(!G)return;let L=[];try{L=JSON.parse(localStorage.getItem('tel_photos')||'[]');}catch(x){}
   G.innerHTML=L.length?L.map(u=>'<img src="'+u+'" style="width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:4px">').join(''):'<div style="grid-column:1/4;color:#aab;padding:20px;text-align:center;font-size:14px">Aucune photo. Choisis un filtre pour prendre un selfie.</div>';}
-function photo(f){if(!RAC)return;const R0=RAC;R0.style.visibility='hidden';vib(10);
+function photo(f){if(!RAC)return;const R0=RAC;R0.style.visibility='hidden';window.ECRAN_COUVRANT=false;vib(10);
   setTimeout(()=>{try{const cv=[...document.querySelectorAll('canvas')].sort((a,b)=>b.width*b.height-a.width*a.height)[0];const w=180,h=320,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');
     const r=Math.max(w/cv.width,h/cv.height),sw=w/r,sh=h/r;
     if(f==='mistral'){g.globalAlpha=.35;for(let k=0;k<5;k++)g.drawImage(cv,(cv.width-sw)/2-k*8,(cv.height-sh)/2,sw,sh,0,0,w,h);g.globalAlpha=1;g.save();g.translate(w/2,h/2);g.rotate(-.06);g.drawImage(cv,(cv.width-sw)/2,(cv.height-sh)/2,sw,sh,-w/2,-h/2,w,h);g.restore();g.strokeStyle='rgba(255,255,255,.8)';g.lineWidth=2;for(let k=0;k<9;k++){const y=20+k*34;g.beginPath();g.moveTo(10+k*7%40,y);g.lineTo(80+k*13%60,y);g.stroke();}}
@@ -134,9 +134,9 @@ function photo(f){if(!RAC)return;const R0=RAC;R0.style.visibility='hidden';vib(1
     g.fillStyle='rgba(255,255,255,.85)';g.font='bold 9px sans-serif';g.textAlign='left';g.fillText('Battle Dock · '+new Date().toLocaleDateString('fr-FR'),8,h-8);
     let L=[];try{L=JSON.parse(localStorage.getItem('tel_photos')||'[]');}catch(x){}L.unshift(c.toDataURL('image/jpeg',.72));localStorage.setItem('tel_photos',JSON.stringify(L.slice(0,12)));}catch(x){}
     const fl=document.createElement('div');fl.style.cssText='position:fixed;inset:0;background:#fff;z-index:2147483600;opacity:.9;transition:opacity .35s';document.body.appendChild(fl);requestAnimationFrame(()=>fl.style.opacity='0');setTimeout(()=>fl.remove(),400);
-    R0.style.visibility='';grille();},180);}
+    R0.style.visibility='';grille();if(RAC)window.ECRAN_COUVRANT=true;},180);}
 window.appelEntrant=function(k){if(!RAC)window.ouvrirLeTelephone();setTimeout(()=>appeler(k==='inconnu'?INCONNU:CONTACTS.find(c=>c.k===k)),300);};
-function fermer(){if(!RAC)return;const R0=RAC;RAC=null;clearInterval(TIMER);R0.classList.remove('on');setTimeout(()=>R0.remove(),220);try{window.FP_GEL=0;}catch(x){}}
+function fermer(){if(!RAC)return;window.ECRAN_COUVRANT=false;const R0=RAC;RAC=null;clearInterval(TIMER);R0.classList.remove('on');setTimeout(()=>R0.remove(),220);try{window.FP_GEL=0;}catch(x){}}
 window.ouvrirLeTelephone=function(){if(RAC)return;
   if(!document.getElementById('telCss')){const s=document.createElement('style');s.id='telCss';s.textContent=CSS;document.head.appendChild(s);}
   const d=document.createElement('div');d.id='tel';RAC=d;
@@ -149,7 +149,7 @@ window.ouvrirLeTelephone=function(){if(RAC)return;
     '<div class="vue appel" data-v="appel"><div class="qui"></div><div class="fil"></div><div class="chx"></div><button class="racc" aria-label="Raccrocher">✆</button></div>'+
     '<div class="vue photos" data-v="photos"><button class="ret ret2">‹ Accueil</button><h2>Photos</h2><div class="pfil" style="display:flex;gap:6px;padding:0 14px 10px;flex-wrap:wrap"><button data-f="aucun">📷 Normal</button><button data-f="mouette">🐦 Mouette</button><button data-f="mistral">🌬️ Mistral</button><button data-f="soleil">🌅 Coucher de soleil</button></div><div class="grille" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;padding:0 6px;overflow-y:auto"></div></div>'+
     '<div class="barreH"></div></div></div>';
-  document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));window.FP_GEL=Date.now()+86400000;vib(8);
+  document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));window.FP_GEL=Date.now()+86400000;vib(8);setTimeout(()=>{if(RAC===d)window.ECRAN_COUVRANT=true;},260);
   d.querySelector('.fermer').onclick=fermer;d.addEventListener('click',ev=>{if(ev.target===d)fermer();});
   d.querySelectorAll('.ap[data-a=tel]').forEach(b=>b.onclick=()=>{vib(6);vue('rep');});
   d.querySelectorAll('.ap.off').forEach(b=>b.onclick=()=>{vib(20);});
