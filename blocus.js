@@ -7,8 +7,8 @@
    quand on recharge. Chargé par moteur.js (eval direct).
    ===================================================================== */
 (()=>{
-const W=800, H=800;
-const DEPART=[400,700];
+const W=800, H=800, PX1_=530, Y0_=300;
+const DEPART=(()=>{const q=new URLSearchParams(location.search).get('de');return q==='tour'?[PX1_+66,Y0_+40]:q==='garde'?[400,740]:[400,700];})();
 const hA=(x,y,k)=>{let n=((x*73856093)^(y*19349663)^(k*83492791))|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
 const lin=(g,x0,y0,x1,y1,st)=>{const gr=g.createLinearGradient(x0,y0,x1,y1);st.forEach(([o,c])=>gr.addColorStop(o,c));return gr;};
 const R=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
@@ -35,6 +35,14 @@ function ciel(g){
   for(let x=-10,k=0;x<W;x+=58,k++){const n=1+Math.floor(hA(k,3,1)*3);for(let j=0;j<n;j++){const y=Y0-34-j*26,c=COUL[(k*3+j)%COUL.length];
     R(g,x,y-22,56,24,c);for(let xx=x+3;xx<x+54;xx+=4)R(g,xx,y-20,1.2,20,'rgba(0,0,0,.18)');R(g,x,y-22,56,1.4,'rgba(255,255,255,.3)');R(g,x,y+1,56,1.4,'rgba(0,0,0,.3)');}}
   g.fillStyle='rgba(216,230,238,.35)';g.fillRect(0,0,W,Y0-40);}
+/* LA TOUR DU PORT : verre bleuté, courbe, la direction tout en haut */
+function tour(g){const x0=596,x1=700,top=6;
+  g.fillStyle=lin(g,x0,0,x1,0,[[0,'#6a8eae'],[.35,'#a8c8e0'],[.6,'#7aa0c0'],[1,'#4a6a8a']]);g.beginPath();g.moveTo(x0,Y0-40);g.lineTo(x0+8,top+30);g.quadraticCurveTo(x0+30,top,x1-10,top+8);g.lineTo(x1,Y0-40);g.fill();
+  for(let y=top+20;y<Y0-40;y+=7){g.fillStyle='rgba(255,255,255,.18)';g.fillRect(x0+6,y,x1-x0-10,1);}
+  for(let x=x0+14;x<x1;x+=14){g.fillStyle='rgba(30,50,70,.18)';g.fillRect(x,top+20,1,Y0-60-top);}
+  /* le dernier étage, éclairé : le bureau de la directrice */
+  g.fillStyle='#ffe6a8';g.fillRect(x0+10,top+22,x1-x0-20,10);g.fillStyle='rgba(60,40,10,.4)';g.fillRect(x0+40,top+24,10,6);
+  R(g,x0+12,top+14,x1-x0-24,6,'#1d3f74');txt(g,'DIRECTION DU PORT',(x0+x1)/2,top+17,3.8,'#ffffff','center','900');}
 function cloture(g){
   /* le grillage, de part et d'autre de la porte */
   for(const [x0,x1] of [[0,PX0-24],[PX1+24,W]]){R(g,x0,Y0-64,x1-x0,64,'rgba(60,70,80,.08)');
@@ -81,7 +89,7 @@ function route(g){
   /* la zone du blocus, tracée à la craie par les copains */
   g.setLineDash([6,5]);g.strokeStyle='rgba(255,220,120,.55)';g.lineWidth=2;g.strokeRect(ZONE.x0,ZONE.y0,ZONE.x1-ZONE.x0,ZONE.y1-ZONE.y0);g.setLineDash([]);
   txt(g,'ICI ON BLOQUE',W/2,ZONE.y1-10,9,'rgba(255,220,120,.6)','center','900');}
-function peindreSol(g){ciel(g);cloture(g);porte(g);route(g);}
+function peindreSol(g){ciel(g);tour(g);cloture(g);porte(g);route(g);}
 function sol(){const c=document.createElement('canvas');c.width=W;c.height=H;peindreSol(c.getContext('2d'));return c;}
 function solFin(){const c=document.createElement('canvas');c.width=W*2;c.height=H*2;const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);peindreSol(g);return c;}
 
@@ -129,7 +137,10 @@ function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0}
   P('x_jol_blc_vauban_sol',690,380,{col:[84,6]});
   for(const x of [240,560])P('x_jol_blc_vide_sol',x,Y0+6,{anim:'blc_lum',spr:'x_jol_blc_lampe_sol',lum:[[0,-112,40,'rgba(255,230,170,1)'],[0,-10,50,'rgba(255,220,160,1)']],col:[8,5]});
   /* le camion qui veut entrer */
-  P('x_jol_blc_vide_sol',W/2,H-10,{anim:'blc_camion'});
+  P('x_jol_blc_vide_sol',W/2,H+200,{anim:'blc_camion',camion:true});
+  P('x_jol_blc_vide_sol',W/2,H+210,{remorque:true,libelle:'Fouiller',nom:'LA REMORQUE',demi:46});
+  P('x_jol_blc_vide_sol',PX1+66,Y0+12,{agir:guerite,libelle:'Gardien',nom:'MONTER À LA TOUR',demi:30});
+  P('x_jol_blc_vide_sol',-200,H+300,{anim:'blc_police',police:true});
   return D;}
 const bacs=()=>DECOR.filter(o=>o.bac);
 function surPlace(o){return !o.porte&&o.x>ZONE.x0&&o.x<ZONE.x1&&o.y>ZONE.y0&&o.y<ZONE.y1+10;}
@@ -161,8 +172,83 @@ function mot(t){let m=document.getElementById('blcMot');if(!m){m=document.create
 let DEJA=false;
 function majBlocus(){let b=document.getElementById('blcBan');if(!b){b=document.createElement('div');b.id='blcBan';b.style.cssText='position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 74px);transform:translateX(-50%);z-index:2147482300;border-radius:14px;padding:5px 14px;font:800 14px "Baloo 2",sans-serif;pointer-events:none;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.25);transition:background .3s';document.body.appendChild(b);}
   const n=nbBloque();if(n>=BESOIN){b.style.background='#c8302a';b.style.color='#fff';b.innerHTML='🔥 BLOCUS · le port est bloqué';if(!DEJA){DEJA=true;mot('Blocus en place ! Plus rien ne rentre.');try{vibrer&&vibrer([30,60,30,60,30]);}catch(x){}}}
-  else{DEJA=false;b.style.background='rgba(20,22,26,.85)';b.style.color='#ffd98a';b.innerHTML='Blocus : '+n+' / '+BESOIN+' poubelles devant la porte';}}
+  else{DEJA=false;b.style.background='rgba(20,22,26,.85)';b.style.color='#ffd98a';b.innerHTML='Blocus : '+n+' / '+BESOIN+' poubelles devant la porte';}
+  try{if(BUTIN.length)b.innerHTML+=' · 🎒 '+BUTIN.length;}catch(x){}}
 setTimeout(majBlocus,600);
+
+
+/* ====================== LE BUTIN, LA POLICE, LA GARDE À VUE ======================
+   Tout reste local (localStorage) : le butin, et l'heure de fin de la garde à vue. */
+const LS=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');localStorage.setItem(k,JSON.stringify(v));}catch(x){return null;}};
+/* si tu es encore en garde à vue, on te ramène en cellule */
+try{if((LS('blc_gav_fin')||0)>Date.now())location.replace('garde.html');}catch(x){}
+let BUTIN=LS('blc_butin')||[];let VOLS=0;
+const LOTS=[['Carton de baskets',180],['Télé 55 pouces',420],['Caisse de pastis',90],['Régime de bananes',15],['Pièces de moteur',260],['Lot de téléphones',650],['Rouleaux de tissu',120],['Café vert en sacs',140]];
+function fouiller(o){if(CAM.etat!=='bloque'){mot('La remorque roule, impossible.');return;}if(CAM.vide){mot('Il n’y a plus rien.');return;}
+  CAM.ouvert=true;const l1=LOTS[Math.floor(Math.random()*LOTS.length)],l2=LOTS[Math.floor(Math.random()*LOTS.length)];
+  dialogue({nom:'La remorque',texte:'Les portes cèdent. Dedans : '+l1[0].toLowerCase()+', '+l2[0].toLowerCase()+'… Tu prends quoi ?',choix:[l1[0]+' · '+l1[1]+' €',l2[0]+' · '+l2[1]+' €','Rien, je referme']}).then(i=>{
+    if(i===2){CAM.ouvert=false;return;}const L=i===0?l1:l2;BUTIN.push(L);LS('blc_butin',BUTIN);VOLS++;CAM.vide=true;mot('Tu as pris : '+L[0]+' ('+L[1]+' €)');majBlocus();appelerPolice(VOLS>1?3:6);});}
+function guerite(){if(blocusTient()||ACCES){dialogue({nom:'Le gardien',ap:AP_GARDIEN,texte:ACCES?'« Le commissaire a appelé. Montez, elle vous attend au 42e. »':'« Avec votre bazar devant la porte… La directrice veut vous voir. Ascenseur au fond. »',choix:['Monter à la tour','Pas maintenant']}).then(i=>{if(i===0)monter();});}
+  else dialogue({nom:'Le gardien',ap:AP_GARDIEN,texte:'« Sans rendez-vous, personne ne monte voir la directrice. Faudrait déjà qu’elle ait une raison de vous recevoir… »',choix:['D’accord']});}
+let ACCES=false;
+function monter(){try{sauver();}catch(x){}const f=document.createElement('div');f.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#1a1d24;color:#ffd98a;display:flex;flex-direction:column;align-items:center;justify-content:center;font:800 20px "Baloo 2",sans-serif;opacity:0;transition:opacity .35s';
+  f.innerHTML='<div style="font-size:13px;letter-spacing:.3em;color:#8a96aa">ASCENSEUR</div><div id="blcEt" style="font-size:64px;line-height:1">1</div><div style="font-size:13px;color:#8a96aa">DIRECTION DU PORT · 42</div>';document.body.appendChild(f);requestAnimationFrame(()=>f.style.opacity='1');
+  let n=1;const it=setInterval(()=>{n=Math.min(42,n+3);const e2=document.getElementById('blcEt');if(e2)e2.textContent=n;if(n>=42){clearInterval(it);setTimeout(()=>location.href='tour.html?t='+Date.now(),350);}},55);}
+/* LA POLICE : un fourgon arrive, deux agents descendent, le commissaire te parle */
+const AP_FLIC={peau:2,cheveux:1,coiffe:0,barbe:0,haut:0,veste:16,bas:0,pantalon:8,souliers:0,chaussures:0,sac:0,chapeau:1,raye:0,motif:0,_pnj:true};
+const AP_COM={peau:3,cheveux:6,coiffe:1,barbe:2,haut:5,veste:11,bas:0,pantalon:9,souliers:0,chaussures:0,sac:0,chapeau:0,raye:0,motif:0,_pnj:true};
+const AP_GARDIEN={peau:5,cheveux:0,coiffe:0,barbe:1,haut:2,veste:16,bas:0,pantalon:9,souliers:0,chaussures:0,sac:0,chapeau:1,raye:0,motif:0,_pnj:true};
+let POL={etat:'absent',t:0,vx:-60,vy:H+60,agents:[]};let BLOCUS_DEPUIS=0,APPEL=0;
+try{if(/[?&]police=1/.test(location.search))setTimeout(()=>appelerPolice(0),1500);}catch(x){}
+function appelerPolice(delai){if(POL.etat!=='absent'||APPEL)return;APPEL=Date.now()+delai*1000;}
+function policePas(dt){
+  if(blocusTient()){if(!BLOCUS_DEPUIS)BLOCUS_DEPUIS=Date.now();if(Date.now()-BLOCUS_DEPUIS>22000)appelerPolice(0);}else BLOCUS_DEPUIS=0;
+  if(POL.etat==='absent'&&APPEL&&Date.now()>APPEL){APPEL=0;POL.etat='arrive';POL.vx=290;POL.vy=H+80;POL.agents=[];mot('🚨 La police arrive !');try{vibrer&&vibrer([40,60,40]);}catch(x){}}
+  if(POL.etat==='arrive'){POL.vy-=dt*110;if(POL.vy<=640){POL.vy=640;POL.etat='descend';POL.t=0;POL.agents=[{x:POL.vx-30,y:650,ap:AP_COM,chef:true},{x:POL.vx+30,y:650,ap:AP_FLIC}];}}
+  else if(POL.etat==='descend'){POL.t+=dt;let tous=true;
+    for(const [i,a] of POL.agents.entries()){const tx=joueur.x+(i?26:-26),ty=joueur.y+18,dx=tx-a.x,dy=ty-a.y,d=Math.hypot(dx,dy);
+      if(d>4){tous=false;const v=Math.min(d,dt*70);a.x+=dx/d*v;a.y+=dy/d*v;a.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'droite':'gauche'):(dy>0?'bas':'haut');a.pas=(a.pas||0)+dt*8;}else{a.dir='haut';}}
+    if(tous||POL.t>9){POL.etat='parle';interrogatoire();}}
+  else if(POL.etat==='repart'){let tous=true;for(const a of POL.agents){const dx=POL.vx-a.x,dy=POL.vy-a.y,d=Math.hypot(dx,dy);if(d>4){tous=false;const v=Math.min(d,dt*80);a.x+=dx/d*v;a.y+=dy/d*v;a.dir=dy>0?'bas':'haut';a.pas=(a.pas||0)+dt*8;}}
+    if(tous){POL.agents=[];POL.vy+=dt*120;if(POL.vy>H+120){POL.etat='absent';}}}}
+async function interrogatoire(){window.FP_GEL=Date.now()+86400000;let mal=0;
+  const q=async(texte,choix,mauvais)=>{const i=await dialogue({nom:'Le commissaire',ap:AP_COM,texte,choix});if(mauvais.includes(i))mal++;return i;};
+  await q('« Bonjour. Commissaire Rinaldi. C’est vous qui bloquez l’accès au port ? »',['On défend nos emplois. C’est un droit.','Et alors, t’es qui toi ?','Non non, je passais par là…'],BUTIN.length?[1,2]:[1]);
+  const feu=bacs().some(o=>o.feu);
+  await q(feu?'« Et ces poubelles en feu, c’est vous ? »':'« Vous allez me dégager ces poubelles de la chaussée. »',feu?['C’est pas nous. On éteint tout de suite.','Venez les chercher, les poubelles.','On veut parler à la directrice.']:['On les range, pas de souci.','Venez les chercher vous-mêmes.','On veut parler à la directrice.'],[1]);
+  if(BUTIN.length){const i=await q('« Et ce '+BUTIN[BUTIN.length-1][0].toLowerCase()+' que tu tiens, il sort d’où ? »',['Je l’ai trouvé par terre.','Je le rends. C’était une connerie.','Ça vous regarde pas.'],[0,2]);
+    if(i===1){BUTIN.pop();LS('blc_butin',BUTIN);mal=Math.max(0,mal-1);}}
+  if(mal>=2){await dialogue({nom:'Le commissaire',ap:AP_COM,texte:'« Bon. Ça suffit. Vous êtes placé en garde à vue. Les mains derrière le dos. »',choix:['…']});arreter();return;}
+  ACCES=true;await dialogue({nom:'Le commissaire',ap:AP_COM,texte:mal?'« Dernier avertissement. Je repasse dans dix minutes. Et la directrice accepte de vous recevoir — voyez le gardien. »':'« Bon. Restez calmes. La directrice accepte de vous recevoir : voyez le gardien, il vous fait monter. »',choix:['Merci, commissaire']});
+  window.FP_GEL=0;POL.etat='repart';}
+function arreter(){try{vibrer&&vibrer([60,80,60,80,120]);}catch(x){}LS('blc_gav_fin',Date.now()+90000);
+  const f=document.createElement('div');f.style.cssText='position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:#fff;font:800 24px "Baloo 2",sans-serif;opacity:0;transition:opacity .4s;animation:blcGyro .5s infinite alternate';
+  f.innerHTML='<div style="font-size:13px;letter-spacing:.3em;opacity:.8">POLICE NATIONALE</div><div>Garde à vue</div>';
+  if(!document.getElementById('blcGyroCss')){const st=document.createElement('style');st.id='blcGyroCss';st.textContent='@keyframes blcGyro{from{background:rgba(20,40,120,.92)}to{background:rgba(140,20,30,.92)}}';document.head.appendChild(st);}
+  document.body.appendChild(f);requestAnimationFrame(()=>f.style.opacity='1');setTimeout(()=>location.href='garde.html?t='+Date.now(),1800);}
+/* LA BOÎTE DE DIALOGUE : le portrait, la réplique, les choix */
+function portrait(cv,ap){const s=3,NW=40,NH=40;cv.width=NW*s;cv.height=NH*s;cv.style.width=NW*1.6+'px';cv.style.height=NH*1.6+'px';const t=document.createElement('canvas');t.width=40;t.height=66;const q=t.getContext('2d');q.imageSmoothingEnabled=false;personne(q,20,62,ap,'bas',0,false);
+  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(t,0,12,40,40,0,0,NW*s,NH*s);}
+function dialogue({nom,ap,texte,choix}){return new Promise(ok=>{const old=document.getElementById('blcDia');if(old)old.remove();
+  const d=document.createElement('div');d.id='blcDia';d.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:2147482600;background:#1b1d22;color:#fff;border-radius:22px 22px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.45);font-family:"Baloo 2",system-ui,sans-serif;transform:translateY(100%);transition:transform .2s';
+  d.innerHTML='<div style="display:flex;gap:10px;align-items:flex-start"><canvas style="flex:none;border-radius:14px;background:#2a2e36;image-rendering:pixelated"></canvas><div style="flex:1;min-width:0"><b style="display:block;color:#ffd98a;font-size:14px;letter-spacing:.06em">'+nom.toUpperCase()+'</b><div style="font-weight:700;font-size:16px;line-height:1.3">'+texte+'</div></div></div><div class="ch" style="display:flex;flex-direction:column;gap:7px;margin-top:12px"></div>';
+  if(ap)portrait(d.querySelector('canvas'),ap);else d.querySelector('canvas').style.display='none';
+  const C=d.querySelector('.ch');choix.forEach((c,i)=>{const b=document.createElement('button');b.textContent=c;b.style.cssText='border:0;border-radius:14px;padding:11px 12px;text-align:left;background:#2e323b;color:#fff;font:800 15px "Baloo 2",sans-serif;box-shadow:0 3px 0 #15171b';
+    b.onclick=()=>{try{vibrer&&vibrer(8);}catch(x){}d.style.transform='translateY(100%)';setTimeout(()=>d.remove(),200);ok(i);};C.appendChild(b);});
+  document.body.appendChild(d);requestAnimationFrame(()=>d.style.transform='none');});}
+/* le fourgon et les agents */
+ANIM_DECOR.blc_police=(g,o,x,y)=>{if(POL.etat==='absent')return;const t=performance.now()/1000;
+  const X=x+(POL.vx-o.x),Y=y+(POL.vy-o.y);
+  /* le fourgon, vu de dos : blanc, bande bleue, gyrophares */
+  g.fillStyle='rgba(0,0,0,.3)';g.fillRect(X-38,Y-3,76,7);R(g,X-36,Y-72,72,66,'#f2f2ee');R(g,X-36,Y-40,72,9,'#1d3f74');R(g,X-36,Y-31,72,3,'#c8302a');
+  txt(g,'POLICE',X,Y-35.6,7,'#ffffff','center','900');R(g,X-30,Y-66,26,20,'#2a3a4c');R(g,X+4,Y-66,26,20,'#2a3a4c');R(g,X-1,Y-70,2,60,'#c8ccd0');
+  const on=Math.floor(t*6)%2;R(g,X-22,Y-78,14,6,on?'#2a6aff':'#0a1a50');R(g,X+8,Y-78,14,6,on?'#0a1a50':'#ff2a2a');R(g,X-34,Y-10,8,4,'#e04030');R(g,X+26,Y-10,8,4,'#e04030');
+  for(const rx of [X-28,X+20])R(g,rx,Y-6,10,8,'#16181a');
+  if(typeof lueurNuit==='function'){lueurNuit(g,X-15,Y-76,on?60:24,'rgba(60,110,255,1)');lueurNuit(g,X+15,Y-76,on?24:60,'rgba(255,50,50,1)');}};
+function dessinerAgents(g,camX,camY){for(const a of POL.agents){personne(g,a.x-camX,a.y-camY,a.ap,a.dir||'bas',a.pas||0,a.pas>0);
+  /* le brassard et la casquette marqués POLICE */g.fillStyle='#ffffff';g.font='bold 3px sans-serif';g.textAlign='center';g.fillText('POLICE',a.x-camX,a.y-camY-24);}}
+function acteurs(){return POL.agents.map(a=>({y:a.y,f:(ctx,cx,cy)=>{personne(ctx,a.x-cx,a.y-cy,a.ap,a.dir||'bas',a.pas||0,POL.etat!=='parle');
+  ctx.fillStyle='rgba(255,255,255,.9)';ctx.fillRect(a.x-cx-5,a.y-cy-28,10,3);ctx.fillStyle='#1d3f74';ctx.font='bold 2.6px sans-serif';ctx.textAlign='center';ctx.fillText('POLICE',a.x-cx,a.y-cy-25.8);}}));}
 
 /* ---------- LES ANIMATIONS ---------- */
 const SPR={};
@@ -217,21 +303,28 @@ ANIM_DECOR.blc_brasero=(g,o,x,y)=>{const t=performance.now()/1000,s=graverBraser
 let CAM={y:H+140,etat:'arrive',t:0};
 function camionPas(dt){const arret=ZONE.y1+90;
   if(CAM.etat==='arrive'){CAM.y-=dt*60;if(blocusTient()&&CAM.y<=arret+20){CAM.y=arret+20;CAM.etat='bloque';CAM.t=0;}else if(CAM.y<Y0+30){CAM.etat='rentre';}}
-  else if(CAM.etat==='bloque'){CAM.t+=dt;if(!blocusTient())CAM.etat='arrive';}
-  else if(CAM.etat==='rentre'){CAM.y-=dt*60;if(CAM.y<Y0-60){CAM.y=H+260;CAM.etat='arrive';}}}
+  else if(CAM.etat==='bloque'){CAM.t+=dt;if(!blocusTient()){CAM.etat='arrive';CAM.ouvert=false;}}
+  else if(CAM.etat==='rentre'){CAM.y-=dt*60;if(CAM.y<Y0-60){CAM.y=H+260;CAM.etat='arrive';CAM.ouvert=false;CAM.vide=false;}}}
 let DERN_T=performance.now();
-ANIM_DECOR.blc_camion=(g,o,x,y)=>{const now=performance.now(),dt=Math.min(.1,(now-DERN_T)/1000);DERN_T=now;camionPas(dt);
-  const Y=y+(CAM.y-o.y),X=x;if(CAM.etat==='rentre'&&CAM.y<Y0+4)return;
+ANIM_DECOR.blc_camion=(g,o,x,y)=>{
+  const Y=y,X=x;if(CAM.etat==='rentre'&&CAM.y<Y0+4)return;
   /* l'arrière d'une remorque porte-conteneur : portes, feux, plaque */
   g.fillStyle='rgba(0,0,0,.3)';g.fillRect(X-50,Y-4,100,8);
   R(g,X-48,Y-118,96,110,'#b8402e');for(let xx=X-46;xx<X+46;xx+=5)R(g,xx,Y-116,1.4,106,'rgba(0,0,0,.18)');R(g,X-48,Y-118,96,2,'rgba(255,255,255,.3)');
-  R(g,X-1,Y-116,2,106,'#6a2418');for(const bx of [X-30,X-12,X+10,X+28])R(g,bx,Y-110,2,98,'#8a8e94');
+  if(CAM.ouvert){/* portes ouvertes : les cartons dedans, en vrac */R(g,X-46,Y-114,92,104,'#2a1a14');for(let k=0;k<9;k++){const bx=X-42+(k%3)*28,by=Y-40-Math.floor(k/3)*26;R(g,bx,by,24,22,['#c49a62','#b48a52','#d4aa72'][k%3]);R(g,bx,by+10,24,2,'rgba(0,0,0,.2)');}
+    R(g,X-60,Y-116,14,108,'#a8382a');R(g,X+46,Y-116,14,108,'#a8382a');}
+  else{R(g,X-1,Y-116,2,106,'#6a2418');for(const bx of [X-30,X-12,X+10,X+28])R(g,bx,Y-110,2,98,'#8a8e94');}
   R(g,X-48,Y-10,96,8,'#2a2c30');R(g,X-44,Y-8,10,4,'#e04030');R(g,X+34,Y-8,10,4,'#e04030');R(g,X-12,Y-9,24,6,'#f2f0e6');txt(g,'GD-413-PM',X,Y-6,4,'#1a1a1a','center','bold');
   for(const rx of [X-38,X-24,X+24,X+38]){R(g,rx-5,Y-4,10,8,'#16181a');}
   if(CAM.etat==='bloque'){const k=Math.floor(CAM.t*2)%4;if(k<2){g.fillStyle='rgba(255,255,255,.95)';g.beginPath();g.roundRect(X-30,Y-150,60,22,8);g.fill();txt(g,'TÛÛÛT !',X,Y-139,10,'#c8302a','center','900');}
     if(typeof lueurNuit==='function'){lueurNuit(g,X-39,Y-6,16,'rgba(255,60,40,1)');lueurNuit(g,X+39,Y-6,16,'rgba(255,60,40,1)');}}};
 /* chaque image : la poubelle qu'on pousse suit le joueur, devant lui */
-function figurants(){try{if(PORTE){const d=joueur.dir||'bas',o=PORTE;const off={bas:[0,16],haut:[0,-12],gauche:[-20,3],droite:[20,3]}[d]||[0,16];
+let DT0=performance.now();
+function figurants(){const now=performance.now(),dt=Math.min(.1,(now-DT0)/1000);DT0=now;
+  try{camionPas(dt);policePas(dt);let re=false;for(const o of DECOR){if(o.camion&&o.y!==CAM.y){o.y=CAM.y;re=true;}
+      if(o.remorque){const y2=CAM.y+6;if(o.y!==y2){o.y=y2;re=true;}o.agir=CAM.etat==='bloque'&&!CAM.vide?fouiller:null;o.libelle=CAM.ouvert?'Refermer':'Fouiller';}
+      if(o.police&&(o.x!==POL.vx||o.y!==POL.vy)){o.x=POL.vx;o.y=POL.vy;re=true;}}if(re)reordonner();}catch(e){}
+  try{if(PORTE){const d=joueur.dir||'bas',o=PORTE;const off={bas:[0,16],haut:[0,-12],gauche:[-20,3],droite:[20,3]}[d]||[0,16];
     const nx=joueur.x+off[0],ny=joueur.y+off[1];if(Math.abs(nx-o.x)>.2||Math.abs(ny-o.y)>.2){o.x=nx;o.y=Math.max(Y0+16,ny);reordonner();majBlocus();}}}catch(e){}
   return [];}
 function bloque(x,y){
@@ -243,5 +336,5 @@ function bloque(x,y){
   return false;}
 const GRAVEURS={x_jol_blc_palettes_sol:graverPalettes,x_jol_blc_pneus_sol:graverPneus,x_jol_blc_vauban_sol:graverVauban,x_jol_blc_lampe_sol:graverLampe};
 function graver(t,v){const r=(GRAVEURS[t]||(()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0})))(v||0);return {toile:r.toile,W:r.W,H:r.H,sol:r.sol};}
-return {sol,solFin,decor,bloque,graver,depart:DEPART,figurants};
+return {sol,solFin,decor,bloque,graver,depart:DEPART,figurants,acteurs};
 })()
