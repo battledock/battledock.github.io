@@ -75,7 +75,7 @@ function peindre(){if(!RAC)return;const C=RAC.querySelector('.corps'),y=C.scroll
   let h='<div class="lb">SON ET VIBRATIONS</div><div class="grp">'+
     row({ic:'🔊',c:'#ffe8c8',n:'Les sons',s:'Tous les bruits du jeu',d:['sw','sons'],droite:sw('sons',on('sons'))})+
     row({ic:'📳',c:'#dcf4e0',n:'Vibrer',s:vib0?'Quand tu touches, récoltes, gagnes':'Pas possible sur ce téléphone',d:vib0?['sw','vibre']:null,droite:vib0?sw('vibre',!!REG.vibre):''})+
-    (on('sons')?segRow({ic:'🔔',c:'#f2ecdf',n:'Les effets',s:'Récolter, vendre, gagner'},'sGestes',NIVS,REG.sGestes===undefined?2:REG.sGestes|0)+(window.MUSIQUE_PRETE?segRow({ic:'🎵',c:'#f2e0ff',n:'La musique'},'sMus',NIVS,REG.sMus===undefined?2:REG.sMus|0):''):'')+
+    (on('sons')?segRow({ic:'🔔',c:'#f2ecdf',n:'Les effets',s:'Récolter, vendre, gagner'},'sGestes',NIVS,REG.sGestes===undefined?2:REG.sGestes|0)+(window.MUSIQUE_PRETE?segRow({ic:'🎵',c:'#f2e0ff',n:'La musique',s:'Sur la place et au port'},'sMus',NIVS,REG.sMus===undefined?2:REG.sMus|0):''):'')+
   '</div><div class="lb">AFFICHAGE</div><div class="grp">'+
     segRow({ic:'🌙',c:'#dce4ff',n:'Jour et nuit',s:'Suivre l’heure de Marseille, ou toujours clair'},'ciel',[['heure','Suivre l’heure'],['jour','Plein jour']],REG.ciel==='jour'?'jour':'heure')+
     segRow({ic:'⚡',c:'#fff0c8',n:'Performance',s:perf==='fluide'?'Décor allégé, batterie ménagée':perf==='beaute'?'Le plus beau, plus gourmand':'Le jeu s’adapte à ton téléphone'},'perf',[['auto','Auto'],['fluide','Fluidité'],['beaute','Beauté']],perf)+
