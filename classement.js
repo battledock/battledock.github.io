@@ -40,7 +40,7 @@ const CSS_BASE=`#rgp{position:fixed;inset:0;z-index:2147482100;font-family:'Balo
 #rgp .hd{flex:none;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 10px}
 #rgp .hd b{flex:1;font:800 24px 'Baloo 2',system-ui,sans-serif;line-height:1;letter-spacing:-.3px}
 #rgp .x{width:40px;height:40px;border-radius:50%;border:0;background:#efe9de;font:800 16px 'Baloo 2',system-ui,sans-serif;color:#1f1a14}
-#rgp .corps{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;contain:content;padding:0 16px calc(24px + env(safe-area-inset-bottom));overscroll-behavior:contain}
+#rgp .corps{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;contain:content;padding:0 16px calc(24px + env(safe-area-inset-bottom));overscroll-behavior:contain}
 #rgp .chips{display:flex;gap:6px;overflow-x:auto;padding:2px 16px 12px;flex:none;scrollbar-width:none}#rgp .chips::-webkit-scrollbar{display:none}
 #rgp .chips button{flex:none;border:0;border-radius:20px;padding:6px 13px 5px;background:#efe9de;font:800 13.5px 'Baloo 2',system-ui,sans-serif;color:#6a5e4c;display:flex;align-items:center;gap:5px}
 #rgp .chips button.on{background:#1f1a14;color:#fff}
