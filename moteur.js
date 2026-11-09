@@ -10784,7 +10784,7 @@ let TXT_FERME=null;
 /* SI port.js NE CHARGE PAS, les cinquante-trois symboles ci-dessous
    restent indéfinis et le port ne se dessine pas, sans un mot. On le dit. */
 try{
-if(CARTE==='spawn'){try{let lieu=window.LIEU_PAGE||'';try{lieu=lieu||new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':(lieu==='stade'?'stade.js':(lieu==='plage'?'plage.js':(lieu==='corniche'?'corniche.js':(lieu==='blocus'?'blocus.js':(lieu==='garde'?'garde.js':(lieu==='tour'?'tour.js':(lieu==='plateau'?'plateau.js':'joliette.js')))))))));}catch(x){console.warn('JOL',x);JOL=null;}}
+if(CARTE==='spawn'){try{let lieu=window.LIEU_PAGE||'';try{lieu=lieu||new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':(lieu==='stade'?'stade.js':(lieu==='plage'?'plage.js':(lieu==='corniche'?'corniche.js':(lieu==='blocus'?'blocus.js':(lieu==='garde'?'garde.js':(lieu==='tour'?'tour.js':(lieu==='plateau'?'plateau.js':(lieu==='labo'?'labo.js':'joliette.js'))))))))));}catch(x){console.warn('JOL',x);JOL=null;}}
 if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar,dessinerLePanorama}=eval(await chargerMorceau('port.js')));}
 if(CARTE==='tokyo'){TKM=eval(await chargerMorceau('tokyo.js'));}
 }catch(erPort){
@@ -19287,7 +19287,7 @@ const CIEL=[
 {h:21.5, amb:[44,54,104],  lampes:1,   soleil:null},
 {h:24,   amb:[30,40,86],   lampes:1,   soleil:null}];
 function cielDuMoment(){
-if(window.LIEU_PAGE==="terrasses"||window.LIEU_PAGE==="garde"||window.LIEU_PAGE==="tour"||window.LIEU_PAGE==="plateau")return null;   /* sous la verrière, toujours éclairé */
+if(window.LIEU_PAGE==="terrasses"||window.LIEU_PAGE==="garde"||window.LIEU_PAGE==="tour"||window.LIEU_PAGE==="plateau"||window.LIEU_PAGE==="labo")return null;   /* sous la verrière, toujours éclairé */
 const m=minuteDuJour();
 if(m===null)return null;
 const h=m/60;
@@ -34577,7 +34577,7 @@ const CSS_MR=`#menuRond{position:fixed;right:12px;bottom:calc(14px + env(safe-ar
 #menuTir .g small{font:700 11.5px 'Baloo 2',sans-serif;color:#8a7a5a;margin-top:-6px}`;
 function fermerMenu(){const d=document.getElementById('menuTir');if(!d)return;d.classList.remove('on');setTimeout(()=>d.remove(),220);}
 let TEL_CHARGE=false;
-async function ouvrirTelephone(){try{if(!TEL_CHARGE){eval(await chargerMorceau('telephone.js'));TEL_CHARGE=true;}window.ouvrirLeTelephone();}catch(x){console.warn('TEL',x);}}
+async function ouvrirTelephone(){try{if(!TEL_CHARGE&&!window.ouvrirLeTelephone){eval(await chargerMorceau('telephone.js'));TEL_CHARGE=true;}window.ouvrirLeTelephone();}catch(x){console.warn('TEL',x);}}
 function ouvrirMenu(){if(document.getElementById('menuTir'))return;try{vibrer(8);}catch(x){}
   const d=document.createElement('div');d.id='menuTir';
   d.innerHTML='<div class="f"><div class="pg"></div><div class="tt">MENU</div><div class="g">'+

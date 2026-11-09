@@ -52,7 +52,10 @@ const CONTACTS=[
   {k:'tv',n:'Mistral TV',s:'Rédaction · Le Grand Débat',c:'#e8402a',i:'TV'},
   {k:'radio',n:'Radio Joliette',s:'Standard de l’antenne',c:'#7a3ad8',i:'RJ'},
   {k:'quai',n:'Le Quai',s:'Rédaction du journal',c:'#1d3f74',i:'LQ'},
-  {k:'maman',n:'Maman',s:'mobile',c:'#e88aa8',i:'❤'}];
+  {k:'maman',n:'Maman',s:'mobile',c:'#e88aa8',i:'❤'},
+  {k:'pizza',n:'Pizza Mamma Dock',s:'Livraison sur le quai',c:'#e8a02a',i:'🍕'},
+  {k:'patron',n:'Le Patron',s:'⚠️ ne pas appeler pour rien',c:'#3a3e46',i:'P'}];
+const INCONNU={k:'inconnu',n:'Numéro inconnu',s:'',c:'#8a8e94',i:'?'};
 let RAC=null,T0=0,TIMER=null;
 const vib=x=>{try{vibrer&&vibrer(x);}catch(_){}};
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
@@ -68,6 +71,22 @@ function choix(L){return new Promise(ok=>{const C=RAC.querySelector('.chx');C.in
   RAC.querySelector('.fil').scrollTop=1e6;});}
 /* LES CONVERSATIONS */
 const APPELS={
+  async pizza(){await eux('Pizza Mamma Dock, bonjour ! Qu’est-ce qu’on vous sert ?');
+    const i=await choix(['Une Reine','Une 4 fromages','Une spéciale sardine','Surprenez-moi']);const P=['Reine','4 fromages','spéciale sardine','surprise du chef'][i];
+    if(i===3)await eux('Ah, la surprise ! Même nous on ne sait pas ce qu’il y a dedans.');
+    await eux('Une '+P+', c’est noté. Vous êtes où ?');
+    if(window.LABO&&window.LABO.pizza){await choix(['Au Labo, sur le quai.']);await eux('Le livreur part tout de suite. Il est rapide. Enfin, il est motivé.');window.LABO.pizza(P);}
+    else{await choix(['Sur le port.']);await eux('Ah, désolé, pour l’instant on ne livre qu’au Labo. C’est une pizzeria expérimentale.');}},
+  async patron(){await eux('Ouais ? C’est le patron. Fais vite, j’ai trois bateaux qui attendent.');
+    const i=await choix(['Je suis malade, je ne viens pas.','Ma grand-mère se marie.','Une mouette m’a volé mes clés.','Je passe à la télé ce soir.']);
+    const R=['Malade ? Hier tu faisais la course de chariots. Envoie un certificat.','Ta grand-mère se marie ? C’est la troisième fois cette année. Elle collectionne ?','… Une mouette. Tes clés.  … HAHAHA ! Allez, prends ta journée, tu l’as méritée.','À la télé ? Je regarderai. Mais demain à 6 h, t’es là.'];
+    await eux(R[i]);if(i===2)await eux('Et si tu la retrouves, ramène-la, elle bossera mieux que Bébert.');await choix(['Merci patron']);},
+  async inconnu(){await eux('Allô ? C’est pour le canapé Leboncoin ?');
+    const i=await choix(['Oui, c’est moi !','Non, vous faites erreur.','Le canapé est vendu, désolé.']);
+    if(i===1){await eux('Ah… pardon. Vous ne voulez pas un canapé, du coup ? Il est en cuir. Presque.');await choix(['Non merci.']);return;}
+    await eux('Super ! Il est toujours à 50 € ? Il a vraiment les taches de café décrites dans l’annonce ?');
+    const j=await choix(['Oui, des taches artistiques.','Les taches sont en option, +20 €.','En fait c’est un pouf.']);
+    await eux(['Artistiques ! J’adore. Je passe demain.','En option ?! … C’est raisonnable. Je prends avec.','Un pouf ?! … Bon. J’aime bien les poufs aussi.'][j]);await choix(['À demain !']);await eux('(Tu viens de vendre un canapé que tu n’as pas.)');},
   async tv(){await eux('Allô ? Karima, de Mistral TV. C’est bien vous, le docker dont tout le port parle ?');
     let i=await choix(['Lui-même.','Ça dépend de qui demande…','Non, vous faites erreur.']);
     if(i===2){await eux('Ah… dommage. On cherchait quelqu’un avec du caractère pour Le Grand Débat de ce soir.');i=await choix(['Attendez, c’est moi en fait !','Tant pis.']);if(i===1){await eux('Rappelez si vous changez d’avis !');return;}}
@@ -102,6 +121,21 @@ async function appeler(C){vue('appel');const V=RAC.querySelector('.vue[data-v=ap
 function allerAuPlateau(){try{sauver();}catch(x){}const f=document.createElement('div');f.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#0b0d14;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font:800 22px "Baloo 2",sans-serif;opacity:0;transition:opacity .4s';
   f.innerHTML='<div style="font-size:12px;letter-spacing:.35em;color:#ff6a50">● EN DIRECT CE SOIR</div><div>Le Grand Débat</div><div style="font-size:13px;color:#8a96aa">MISTRAL TV</div>';document.body.appendChild(f);requestAnimationFrame(()=>f.style.opacity='1');
   setTimeout(()=>location.href='plateau.html?t='+Date.now(),1300);}
+/* LES PHOTOS : on cache le téléphone, on photographie l'écran du jeu, on applique un filtre */
+function grille(){const G=RAC&&RAC.querySelector('.grille');if(!G)return;let L=[];try{L=JSON.parse(localStorage.getItem('tel_photos')||'[]');}catch(x){}
+  G.innerHTML=L.length?L.map(u=>'<img src="'+u+'" style="width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:4px">').join(''):'<div style="grid-column:1/4;color:#aab;padding:20px;text-align:center;font-size:14px">Aucune photo. Choisis un filtre pour prendre un selfie.</div>';}
+function photo(f){if(!RAC)return;const R0=RAC;R0.style.visibility='hidden';vib(10);
+  setTimeout(()=>{try{const cv=[...document.querySelectorAll('canvas')].sort((a,b)=>b.width*b.height-a.width*a.height)[0];const w=180,h=320,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');
+    const r=Math.max(w/cv.width,h/cv.height),sw=w/r,sh=h/r;
+    if(f==='mistral'){g.globalAlpha=.35;for(let k=0;k<5;k++)g.drawImage(cv,(cv.width-sw)/2-k*8,(cv.height-sh)/2,sw,sh,0,0,w,h);g.globalAlpha=1;g.save();g.translate(w/2,h/2);g.rotate(-.06);g.drawImage(cv,(cv.width-sw)/2,(cv.height-sh)/2,sw,sh,-w/2,-h/2,w,h);g.restore();g.strokeStyle='rgba(255,255,255,.8)';g.lineWidth=2;for(let k=0;k<9;k++){const y=20+k*34;g.beginPath();g.moveTo(10+k*7%40,y);g.lineTo(80+k*13%60,y);g.stroke();}}
+    else g.drawImage(cv,(cv.width-sw)/2,(cv.height-sh)/2,sw,sh,0,0,w,h);
+    if(f==='soleil'){const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'rgba(255,120,60,.55)');gr.addColorStop(1,'rgba(140,40,120,.35)');g.fillStyle=gr;g.fillRect(0,0,w,h);g.fillStyle='rgba(255,220,120,.7)';g.beginPath();g.arc(w*.75,h*.2,22,0,7);g.fill();}
+    if(f==='mouette'){g.font='64px sans-serif';g.textAlign='center';g.fillText('🐦',w*.72,h*.32);g.font='bold 16px sans-serif';g.fillStyle='#fff';g.strokeStyle='#000';g.lineWidth=3;g.strokeText('KIAAA',w*.72,h*.42);g.fillText('KIAAA',w*.72,h*.42);}
+    g.fillStyle='rgba(255,255,255,.85)';g.font='bold 9px sans-serif';g.textAlign='left';g.fillText('Battle Dock · '+new Date().toLocaleDateString('fr-FR'),8,h-8);
+    let L=[];try{L=JSON.parse(localStorage.getItem('tel_photos')||'[]');}catch(x){}L.unshift(c.toDataURL('image/jpeg',.72));localStorage.setItem('tel_photos',JSON.stringify(L.slice(0,12)));}catch(x){}
+    const fl=document.createElement('div');fl.style.cssText='position:fixed;inset:0;background:#fff;z-index:2147483600;opacity:.9;transition:opacity .35s';document.body.appendChild(fl);requestAnimationFrame(()=>fl.style.opacity='0');setTimeout(()=>fl.remove(),400);
+    R0.style.visibility='';grille();},180);}
+window.appelEntrant=function(k){if(!RAC)window.ouvrirLeTelephone();setTimeout(()=>appeler(k==='inconnu'?INCONNU:CONTACTS.find(c=>c.k===k)),300);};
 function fermer(){if(!RAC)return;const R0=RAC;RAC=null;clearInterval(TIMER);R0.classList.remove('on');setTimeout(()=>R0.remove(),220);try{window.FP_GEL=0;}catch(x){}}
 window.ouvrirLeTelephone=function(){if(RAC)return;
   if(!document.getElementById('telCss')){const s=document.createElement('style');s.id='telCss';s.textContent=CSS;document.head.appendChild(s);}
@@ -109,16 +143,19 @@ window.ouvrirLeTelephone=function(){if(RAC)return;
   const J=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'],M=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'],D=new Date();
   d.innerHTML='<div class="app"><button class="fermer" aria-label="Fermer">✕</button><div class="ecran"><div class="encoche"></div><div class="sb"><span class="h">'+heure()+'</span><span>📶 🔋</span></div>'+
     '<div class="vue acc on" data-v="acc"><div class="heure">'+heure()+'</div><div class="date">'+J[D.getDay()]+' '+D.getDate()+' '+M[D.getMonth()]+'</div>'+
-      '<div class="apps"><button class="ap" data-a="tel"><i style="background:linear-gradient(#5ce07a,#2ab84a)">📞</i>Téléphone</button><button class="ap off"><i style="background:linear-gradient(#6ae07a,#2ab84a)">💬</i>Messages</button><button class="ap off"><i style="background:linear-gradient(#ffd060,#f08a20)">📷</i>Photos</button><button class="ap off"><i style="background:linear-gradient(#7ac8ff,#2a7ad8)">🌤️</i>Météo</button></div>'+
+      '<div class="apps"><button class="ap" data-a="tel"><i style="background:linear-gradient(#5ce07a,#2ab84a)">📞</i>Téléphone</button><button class="ap off"><i style="background:linear-gradient(#6ae07a,#2ab84a)">💬</i>Messages</button><button class="ap" data-a="photos"><i style="background:linear-gradient(#ffd060,#f08a20)">📷</i>Photos</button><button class="ap off"><i style="background:linear-gradient(#7ac8ff,#2a7ad8)">🌤️</i>Météo</button></div>'+
       '<div class="dock"><button class="ap" data-a="tel"><i style="background:linear-gradient(#5ce07a,#2ab84a)">📞</i></button><button class="ap off"><i style="background:linear-gradient(#6ae07a,#2ab84a)">💬</i></button><button class="ap off"><i style="background:linear-gradient(#ff8a7a,#e04a3a)">🎵</i></button></div></div>'+
     '<div class="vue rep" data-v="rep"><button class="ret">‹ Accueil</button><h2>Contacts</h2><div class="liste">'+CONTACTS.map(c=>'<button class="ct" data-c="'+c.k+'"><span class="av" style="background:'+c.c+'">'+c.i+'</span><span><b>'+c.n+'</b><small>'+c.s+'</small></span><span class="ap2">📞</span></button>').join('')+'</div></div>'+
     '<div class="vue appel" data-v="appel"><div class="qui"></div><div class="fil"></div><div class="chx"></div><button class="racc" aria-label="Raccrocher">✆</button></div>'+
+    '<div class="vue photos" data-v="photos"><button class="ret ret2">‹ Accueil</button><h2>Photos</h2><div class="pfil" style="display:flex;gap:6px;padding:0 14px 10px;flex-wrap:wrap"><button data-f="aucun">📷 Normal</button><button data-f="mouette">🐦 Mouette</button><button data-f="mistral">🌬️ Mistral</button><button data-f="soleil">🌅 Coucher de soleil</button></div><div class="grille" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;padding:0 6px;overflow-y:auto"></div></div>'+
     '<div class="barreH"></div></div></div>';
   document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));window.FP_GEL=Date.now()+86400000;vib(8);
   d.querySelector('.fermer').onclick=fermer;d.addEventListener('click',ev=>{if(ev.target===d)fermer();});
   d.querySelectorAll('.ap[data-a=tel]').forEach(b=>b.onclick=()=>{vib(6);vue('rep');});
   d.querySelectorAll('.ap.off').forEach(b=>b.onclick=()=>{vib(20);});
-  d.querySelector('.ret').onclick=()=>vue('acc');
+  d.querySelector('.ret').onclick=()=>vue('acc');d.querySelector('.ret2').onclick=()=>vue('acc');
+  d.querySelectorAll('.ap[data-a=photos]').forEach(b=>b.onclick=()=>{vib(6);vue('photos');grille();});
+  d.querySelectorAll('.pfil button').forEach(b=>{b.style.cssText='border:0;border-radius:12px;padding:7px 10px;background:rgba(255,255,255,.9);color:#0a2a5a;font:700 13px system-ui';b.onclick=()=>photo(b.dataset.f);});
   d.querySelectorAll('.ct').forEach(b=>b.onclick=()=>appeler(CONTACTS.find(c=>c.k===b.dataset.c)));
   d.querySelector('.racc').onclick=()=>{clearInterval(TIMER);vib(12);vue('rep');};
   d.querySelector('.barreH').onclick=()=>vue('acc');};
