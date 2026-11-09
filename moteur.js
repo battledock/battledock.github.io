@@ -18149,7 +18149,7 @@ const pageOuverte=()=>$('pan').classList.contains('on')
 ||$('catalogue').classList.contains('on')||!!($('crs')&&$('crs').classList.contains('on'))||!!($('nivGagne')&&$('nivGagne').classList.contains('on'))||!!document.querySelector('.zouv')||!!($('emPan')&&$('emPan').classList.contains('on'));   /* la liste en ligne bloquait le tap de fermeture */
 addEventListener('pointerdown',reveillerLeSon,{once:false});
 const surUnBouton=(cible)=>!!(cible&&cible.closest&&cible.closest('#barre,#emPan,button,#fpPop,#fpListe,#action,#hublot,#pan,#page2,#porte,#bandeau,#repond,#hPlaque,#nivPop,#nivGagne,.zouv'));
-const zoneMarche=(x,y,cible)=>!pageOuverte()&&!surUnBouton(cible)&&!window.TK_SANS_JOY&&!window.ECRAN_COUVRANT&&!(cible&&cible.closest&&cible.closest('#rgp,#tel,#blcDia,#menuTir,#labEmo'));   /* les écrans par-dessus (classement, téléphone, dialogues) gardent leurs gestes : défilement, taps */   /* au volant, mode boutons : pas de joystick */
+const zoneMarche=(x,y,cible)=>!pageOuverte()&&!surUnBouton(cible)&&!window.TK_SANS_JOY&&!window.ECRAN_COUVRANT&&!(cible&&cible.closest&&cible.closest('#rgp,#tel,#blcDia,#menuTir,#labEmo,#aff'));   /* les écrans par-dessus (classement, téléphone, dialogues) gardent leurs gestes : défilement, taps */   /* au volant, mode boutons : pas de joystick */
 document.addEventListener('touchstart',ev=>{
 for(const t of ev.changedTouches){
 if(J.actif)continue;

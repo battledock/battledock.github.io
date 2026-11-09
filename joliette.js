@@ -152,6 +152,25 @@ g.fillText('LE PORT',cx,s-50);
 g.beginPath();g.moveTo(cx-4,s-45);g.lineTo(cx+4,s-45);g.lineTo(cx,s-40);g.closePath();g.fill();
 return {toile:c,W:L,H:HH,sol:s};
 }
+
+/* LE PANNEAU D'AFFICHAGE de la place : un toit de tuiles, deux poteaux, du liège et des affiches */
+function graverPanneauAffiches(){
+const L=96,HH=92,{c,g,R}=toile(L,HH),s=HH-4;
+g.fillStyle='rgba(30,22,14,.22)';g.beginPath();g.ellipse(L/2+3,s,44,5,0,0,7);g.fill();
+/* les poteaux */
+R(10,s-70,6,70,'#6a4428');R(L-16,s-70,6,70,'#6a4428');R(10,s-70,2,70,'#8a5a36');R(L-16,s-70,2,70,'#8a5a36');
+/* le toit de tuiles */
+g.fillStyle='#a8452e';g.beginPath();g.moveTo(2,s-70);g.lineTo(L/2,s-90);g.lineTo(L-2,s-70);g.closePath();g.fill();
+g.fillStyle='#c8583a';for(let k=0;k<5;k++)R(6+k*18,s-74,12,3,'#c8583a');R(2,s-71,L-4,3,'#7a2e1e');
+/* le cadre et le liège */
+R(6,s-68,L-12,50,'#7a4e2c');R(9,s-65,L-18,44,'#c89a5e');
+for(let i=0;i<160;i++){g.fillStyle=i%3?'rgba(120,80,40,.25)':'rgba(255,230,180,.25)';g.fillRect(9+((i*37)%(L-19)),s-65+((i*17)%43),1,1);}
+/* pas encore d'affiches : juste le liège et quelques punaises */
+for(const [x,y] of [[22,s-58],[52,s-50],[74,s-60],[36,s-34],[66,s-32]]){R(x,y,2,2,'#e8302a');R(x+1,y+2,1,1,'rgba(0,0,0,.3)');}
+/* la plaque */
+R(L/2-20,s-16,40,9,'#1f1a14');g.fillStyle='#f2c94c';g.font='bold 6px "Trebuchet MS",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('À L’AFFICHE',L/2,s-11.5);
+return {toile:c,W:L,H:HH,sol:s};
+}
 function graverVide(){const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1600,H:80,sol:40};}
 
 
@@ -885,6 +904,8 @@ function ouvrirTram(){if(document.getElementById('tramM'))return;
     try{vibrer&&vibrer(15);}catch(x){}try{sauver();}catch(x){}
     const f=document.createElement('div');f.style.cssText='position:fixed;inset:0;z-index:2147483001;background:#0e1a2c;opacity:0;transition:opacity .45s;display:flex;align-items:center;justify-content:center;color:#fff;font:700 18px "Helvetica Neue",Arial,sans-serif';f.textContent='Prochain arrêt : '+D.n;document.body.appendChild(f);requestAnimationFrame(()=>f.style.opacity='1');
     setTimeout(()=>{const v=window.MA_VERSION?('?v='+encodeURIComponent(window.MA_VERSION)):'';location.href=D.page+v;},900);});}
+let AFF_CHARGE=false;
+async function ouvrirAffiches(){try{if(!window.ouvrirLesAffiches)eval(await chargerMorceau('affiches.js'));window.ouvrirLesAffiches();}catch(x){console.warn('AFF',x);}}
 function ouvrirJournal(){if(document.getElementById('quaiJ'))return;
   if(!document.getElementById('cssQuai')){const st=document.createElement('style');st.id='cssQuai';st.textContent=CSS_QUAI;document.head.appendChild(st);}
   const J=JOURNAL,v=window.MA_VERSION?('?v='+encodeURIComponent(window.MA_VERSION)):'',im=n=>'assets/journal/'+n+'.jpg'+v;
@@ -902,7 +923,7 @@ function ouvrirJournal(){if(document.getElementById('quaiJ'))return;
   ['pointerdown','touchstart','keydown'].forEach(t=>d.addEventListener(t,ev=>ev.stopPropagation()));
   try{vibrer(8);}catch(x){}}
 
-const GRAVEURS={x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_tram:graverVide};
+const GRAVEURS={x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_affiches:graverPanneauAffiches,x_jol_tram:graverVide};
 function graver(t,v){return (GRAVEURS[t]||graverVide)(v||0);}
 
 function decor(){
@@ -932,6 +953,7 @@ function decor(){
   /* le kiosque à journaux */
   for(const [px] of PORTES)P('x_jol_entree',px,DOCKS_PIED+10,{agir:entrerGalerie,libelle:'Entrer',nom:'LA GALERIE BLEUE'});
   P('x_jol_kiosque',156,600,{col:[96,14],agir:ouvrirJournal,libelle:'Lire le journal',nom:'LE QUAI'});
+  P('x_jol_affiches',622,600,{col:[90,8],agir:ouvrirAffiches,libelle:'Voir les affiches',nom:'À L’AFFICHE',demi:56});
   return D;
 }
 
