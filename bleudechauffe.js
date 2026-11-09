@@ -1,147 +1,195 @@
 /* =====================================================================
    BLEU DE CHAUFFE — la boutique de vêtements de la Galerie Bleue.
    Un écran à part, chargé à la demande quand on pousse la porte
-   (terrasses.js l'évalue sur place : il voit e, appelRPC, enEuros…).
-   Le portant défile ; on touche un vêtement, on l'essaie sur le tapis ;
-   on l'achète (le serveur débite et garde la trace) ; on le porte.
-   Au port, on reste en tenue de docker : la tenue civile se porte ailleurs.
+   (terrasses.js l'évalue sur place : il voit e, appelRPC, enEuros,
+   personne, DEF_AP, sauver, vibrer…).
+
+   L'essayage se fait par TENUE : on essaie un haut, un bas, des
+   chaussures, une casquette ; le bandeau du bas fait le compte de ce
+   qu'il reste à payer, et on achète la tenue d'un coup. Ce qu'on a déjà
+   se porte sans payer. Le serveur débite et garde la trace de chaque
+   pièce (acheter_vetement). Au port, on reste en tenue de docker.
    ===================================================================== */
 (()=>{
+/* LE CATALOGUE : des modèles, chacun en une ou plusieurs couleurs. Les identifiants (et leurs prix) sont ceux du serveur. */
 const CATALOGUE={
-  'Hauts':[
-    ['h_veste_bleu','Veste de travail','Le bleu de chauffe, coton épais, poches plaquées.',240,{haut:0,veste:17}],
-    ['h_veste_noire','Veste noire','La même coupe, en toile noire. Sobre.',260,{haut:0,veste:20}],
-    ['h_chemise_lin','Chemise en lin','Écrue, légère, pour les soirs d’été.',160,{haut:2,veste:24}],
-    ['h_chemise_bleu','Chemise bleue','Oxford bleu marine, col boutonné.',120,{haut:2,veste:16}],
-    ['h_pull_marin','Pull marin','Laine bleu nuit, maille serrée.',140,{haut:3,veste:16}],
-    ['h_pull_bordeaux','Pull bordeaux','Le même, couleur vin.',130,{haut:3,veste:22}],
-    ['h_tshirt_blanc','T-shirt blanc','Coton lourd, coupe droite.',45,{haut:1,veste:19}],
-    ['h_tshirt_vert','T-shirt vert','Vert pin, délavé juste ce qu’il faut.',45,{haut:1,veste:21}],
-    ['h_manteau','Manteau','Drap de laine anthracite, pour le mistral.',380,{haut:5,veste:11}],
-    ['h_gilet_moutarde','Gilet moutarde','Sans manches, à porter sur une chemise.',95,{haut:6,veste:23}]],
-  'Bas':[
-    ['b_jean','Jean brut','Toile indigo, coupe droite.',90,{bas:0,pantalon:8}],
-    ['b_chino','Chino écru','Léger, se roule aux chevilles.',85,{bas:0,pantalon:10}],
-    ['b_noir','Pantalon noir','Pour sortir.',95,{bas:0,pantalon:9}],
-    ['b_treillis','Treillis kaki','Poches cargo, toile solide.',75,{bas:3,pantalon:12}],
-    ['b_short','Short écru','Pour la plage.',50,{bas:1,pantalon:10}],
-    ['b_bermuda','Bermuda bleu','Long, au-dessus du genou.',55,{bas:5,pantalon:0}]],
-  'Chaussures':[
-    ['c_baskets_blanc','Baskets blanches','Cuir blanc, semelle crème.',110,{souliers:1,chaussures:6}],
-    ['c_baskets_marine','Baskets marine','Toile bleu marine.',110,{souliers:1,chaussures:7}],
-    ['c_bottes_cuir','Bottes en cuir','Cuir fauve, cousues main.',220,{souliers:0,chaussures:3}],
-    ['c_bottillons','Bottillons','Daim brun, à lacets.',180,{souliers:3,chaussures:5}],
-    ['c_sandales','Sandales','Cuir, pour l’été.',40,{souliers:2,chaussures:9}]],
-  'Casquettes':[
-    ['k_aucune','Tête nue','Rien sur la tête.',0,{chapeau:0}],
-    ['k_casquette','Casquette','Toile, visière courbe.',35,{chapeau:1}],
-    ['k_bonnet','Bonnet','Laine côtelée, pour l’hiver.',30,{chapeau:3}],
-    ['k_beret','Béret','Feutre de laine.',45,{chapeau:6}],
-    ['k_chapeau','Chapeau','Paille tressée.',90,{chapeau:5}]]};
+  hauts:{nom:'Hauts',modeles:[
+    {nom:'Veste de travail',d:'Le bleu de chauffe : coton épais, poches plaquées.',v:[['h_veste_bleu','Bleu',240,'#1d4a8a',{haut:0,veste:17}],['h_veste_noire','Noire',260,'#24262a',{haut:0,veste:20}]]},
+    {nom:'Chemise',d:'Col boutonné, manches retroussées.',v:[['h_chemise_lin','Lin écru',160,'#e8dcc0',{haut:2,veste:24}],['h_chemise_bleu','Oxford',120,'#1e3a6a',{haut:2,veste:16}]]},
+    {nom:'Pull marin',d:'Laine à maille serrée, chaude et légère.',v:[['h_pull_marin','Bleu nuit',140,'#1e3a6a',{haut:3,veste:16}],['h_pull_bordeaux','Bordeaux',130,'#7a2232',{haut:3,veste:22}]]},
+    {nom:'T-shirt',d:'Coton lourd, coupe droite.',v:[['h_tshirt_blanc','Blanc',45,'#f2ece0',{haut:1,veste:19}],['h_tshirt_vert','Vert pin',45,'#2f5a4a',{haut:1,veste:21}]]},
+    {nom:'Manteau',d:'Drap de laine anthracite, pour le mistral.',v:[['h_manteau','Anthracite',380,'#3a3e46',{haut:5,veste:11}]]},
+    {nom:'Gilet',d:'Sans manches, à porter sur une chemise.',v:[['h_gilet_moutarde','Moutarde',95,'#c9a24a',{haut:6,veste:23}]]}]},
+  bas:{nom:'Bas',modeles:[
+    {nom:'Pantalon',d:'Coupe droite, toile solide.',v:[['b_jean','Jean brut',90,'#1e3a6a',{bas:0,pantalon:8}],['b_chino','Chino écru',85,'#e2d6b8',{bas:0,pantalon:10}],['b_noir','Noir',95,'#24262a',{bas:0,pantalon:9}]]},
+    {nom:'Treillis',d:'Poches cargo, toile kaki.',v:[['b_treillis','Kaki',75,'#4a5a3a',{bas:3,pantalon:12}]]},
+    {nom:'Short',d:'Pour la plage et les beaux jours.',v:[['b_short','Écru',50,'#e2d6b8',{bas:1,pantalon:10}]]},
+    {nom:'Bermuda',d:'Long, au-dessus du genou.',v:[['b_bermuda','Bleu',55,'#2a5aa8',{bas:5,pantalon:0}]]}]},
+  pieds:{nom:'Chaussures',modeles:[
+    {nom:'Baskets',d:'Semelle crème, confort toute la journée.',v:[['c_baskets_blanc','Blanches',110,'#f2efe8',{souliers:1,chaussures:6}],['c_baskets_marine','Marine',110,'#1e3a6a',{souliers:1,chaussures:7}]]},
+    {nom:'Bottes',d:'Cuir fauve, cousues main.',v:[['c_bottes_cuir','Fauve',220,'#9a6a3a',{souliers:0,chaussures:3}]]},
+    {nom:'Bottillons',d:'Daim brun, à lacets.',v:[['c_bottillons','Daim',180,'#7a5a3a',{souliers:3,chaussures:5}]]},
+    {nom:'Sandales',d:'Cuir, pour l’été.',v:[['c_sandales','Cuir',40,'#b48a5a',{souliers:2,chaussures:9}]]}]},
+  tete:{nom:'Tête',modeles:[
+    {nom:'Tête nue',d:'Rien sur la tête.',v:[['k_aucune','',0,null,{chapeau:0}]]},
+    {nom:'Casquette',d:'Toile, visière courbe.',v:[['k_casquette','',35,null,{chapeau:1}]]},
+    {nom:'Bonnet',d:'Laine côtelée, pour l’hiver.',v:[['k_bonnet','',30,null,{chapeau:3}]]},
+    {nom:'Béret',d:'Feutre de laine.',v:[['k_beret','',45,null,{chapeau:6}]]},
+    {nom:'Chapeau',d:'Paille tressée.',v:[['k_chapeau','',90,null,{chapeau:5}]]}]}};
 const CATS=Object.keys(CATALOGUE);
+const ICONES={
+  hauts:'<svg viewBox="0 0 24 24"><path d="M8 3l4 2 4-2 5 3-2 5-2-1v11H7V10l-2 1-2-5z"/></svg>',
+  bas:'<svg viewBox="0 0 24 24"><path d="M6 3h12l1 18h-5l-2-11-2 11H5z"/></svg>',
+  pieds:'<svg viewBox="0 0 24 24"><path d="M3 15c2 0 4-1 5-4l2-6h4l-1 7c3 1 6 2 7 4v3H3z"/></svg>',
+  tete:'<svg viewBox="0 0 24 24"><path d="M4 15c0-5 3.5-8 8-8s8 3 8 8z"/><path d="M14 15h8v2h-8z"/></svg>'};
+/* les pièces gratuites, et le rangement par pièce */
 const GRATUITS=new Set(['k_aucune']);
-let CAT='Hauts', SEL=0, ESSAI=null, MIENS=new Set(), RACINE=null;
-/* la base de l'essayage : ton visage, sans déguisement ni tenue de ski, en tenue civile simple si tu n'en as pas encore */
+const PAR_ID={};for(const c of CATS)for(const m of CATALOGUE[c].modeles)for(const v of m.v)PAR_ID[v[0]]={cat:c,m,v};
+const CHAMPS={hauts:['haut','veste'],bas:['bas','pantalon'],pieds:['souliers','chaussures'],tete:['chapeau']};
+
+let RACINE=null,CAT='hauts',DIR=0,ESSAI={},MIENS=new Set(),ACHAT=false;
+const DIRS=['bas','gauche','haut','droite'];
+/* la base : ton visage, sans déguisement ni tenue de ski ; tenue civile simple si tu n'en as pas encore */
 const base=()=>{const ap=Object.assign({},DEF_AP,e.ap||{},e.ap&&e.ap._civil?{}:{haut:1,veste:19,bas:0,pantalon:8,souliers:1,chaussures:6,chapeau:0,motif:0,raye:0},{sac:0});
   delete ap.deguisement;delete ap.ski;return ap;};
-const CSS=`#bdc{position:fixed;inset:0;z-index:2147482000;font-family:"Helvetica Neue",Arial,sans-serif;background:linear-gradient(#e4dccb,#d6c8ae 56%,#8a6440 56%,#6a4a2c);overflow:hidden;opacity:0;transition:opacity .25s;touch-action:manipulation;user-select:none;-webkit-user-select:none}
-#bdc .hd{position:absolute;left:0;right:0;top:0;background:#0f2a50;color:#e0b860;text-align:center;padding:calc(12px + env(safe-area-inset-top)) 0 10px;border-bottom:2px solid #c8a050}
-#bdc .hd b{font:800 22px "Helvetica Neue",Arial;letter-spacing:.06em;display:block}#bdc .hd small{display:block;color:#c8d8f0;font-size:9px;letter-spacing:.25em;margin-top:3px}
-#bdc .x{position:absolute;right:12px;bottom:12px;width:36px;height:36px;border-radius:50%;background:#1d3d6a;color:#fff;border:0;font-size:20px}
-#bdc .argent{display:inline-block;margin-top:7px;background:#1d3d6a;color:#e0b860;border-radius:14px;padding:4px 12px;font-weight:700;font-size:12px}
-#bdc .rail{position:absolute;left:0;right:0;top:calc(108px + env(safe-area-inset-top));height:120px}
-#bdc .barre{position:absolute;left:8px;right:8px;top:14px;height:6px;border-radius:3px;background:linear-gradient(#e2e6ea,#8a9098);box-shadow:0 2px 3px rgba(0,0,0,.2)}
-#bdc .cintres{position:absolute;left:0;right:0;top:8px;display:flex;overflow-x:auto;padding:0 10px 10px;gap:4px;scrollbar-width:none}
-#bdc .cintres::-webkit-scrollbar{display:none}
-#bdc .ci{flex:0 0 70px;text-align:center;position:relative;transition:transform .15s;border:0;background:none;padding:0}
-#bdc .ci.on{transform:translateY(8px)}#bdc .ci.on .px{color:#0f2a50}
-#bdc .ci canvas{image-rendering:pixelated;display:block;margin:0 auto;width:66px;height:45px}
-#bdc .croc{width:2px;height:9px;background:#8a9098;margin:0 auto}#bdc .epaule{width:32px;height:2px;background:#8a9098;margin:0 auto}
-#bdc .px{font-size:11px;font-weight:800;color:#a07a30;margin-top:3px}#bdc .px.pok{color:#2f8a4a;background:none}
-#bdc .ci.on:after{content:'';position:absolute;left:12px;right:12px;bottom:-8px;height:3px;border-radius:2px;background:#e0b860}
-#bdc .cats{position:absolute;left:10px;right:10px;top:calc(238px + env(safe-area-inset-top));display:flex;gap:6px}
-#bdc .cats button{flex:1;border:0;padding:9px 0;border-radius:20px;background:rgba(15,42,80,.12);color:#0f2a50;font-weight:700;font-size:12px}#bdc .cats button.on{background:#0f2a50;color:#fff}
-#bdc .scene{position:absolute;left:0;right:0;top:calc(282px + env(safe-area-inset-top));bottom:150px}
-#bdc canvas.decor{position:absolute;inset:0;width:100%;height:100%}
-#bdc .tapis{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:220px;height:46px;border-radius:50%;background:radial-gradient(#2a5aa8,#173a6a);box-shadow:0 6px 0 #0f2a50}
-#bdc canvas.p{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);image-rendering:pixelated;height:min(88%,264px)}
-#bdc *{box-sizing:border-box}
-#bdc .fiche{display:block;position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));background:#fffaf0;border-radius:18px;padding:14px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
-#bdc .fiche h3{display:block;font-size:17px;color:#0f2a50;margin:0;font-weight:800}#bdc .fiche p{display:block;font-size:12px;color:#6a7480;margin:3px 0 10px;min-height:16px}
-#bdc .btns{display:flex;gap:8px}#bdc .btns button{flex:1;border:0;border-radius:14px;padding:14px 6px;font-weight:800;font-size:15px}
-#bdc .b1{background:#e8eef6;color:#0f2a50}#bdc .b2{background:#0f2a50;color:#fff}#bdc .b2 span{color:#e0b860}#bdc .b2.porte{background:#2f8a4a}#bdc .b2:disabled{opacity:.45}
-#bdc .mot{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);background:rgba(15,42,80,.92);color:#fff;padding:10px 16px;border-radius:14px;font-weight:700;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;text-align:center;max-width:80%}`;
-function dessine(cv,ap,s,dx,dy){const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,cv.width,cv.height);g.save();g.scale(s,s);personne(g,dx,dy,ap,'bas',0,false);g.restore();}
-function mot(t){const m=RACINE&&RACINE.querySelector('.mot');if(!m)return;m.textContent=t;m.style.opacity='1';clearTimeout(mot.t);mot.t=setTimeout(()=>m.style.opacity='0',1600);}
-function article(){return CATALOGUE[CAT][SEL];}
-function aMoi(id){return GRATUITS.has(id)||MIENS.has(id);}
-function porte(A){return Object.keys(A[4]).every(k=>e.ap&&e.ap._civil&&(e.ap[k]||0)===A[4][k]);}
+/* la pièce que tu portes dans chaque rayon (déduite de ton apparence) */
+/* ce que tu portes déjà, rayon par rayon (rien si tu es encore en docker, sauf la tête nue) */
+function depart(){const b=base(),civ=!!(e.ap&&e.ap._civil),o={};for(const c of CATS){const id=porteDans(c,b);o[c]=civ||GRATUITS.has(id)?id:null;}return o;}
+function porteDans(cat,ap){for(const m of CATALOGUE[cat].modeles)for(const v of m.v){if(CHAMPS[cat].every(k=>(ap[k]||0)===(v[4][k]||0)))return v[0];}return null;}
+const aMoi=id=>GRATUITS.has(id)||MIENS.has(id);
+/* l'apparence d'essai : ta base, plus chaque pièce essayée */
+function apEssai(){const ap=base();for(const c of CATS){const id=ESSAI[c];if(id)Object.assign(ap,PAR_ID[id].v[4]);}return Object.assign(ap,{_civil:true,_pnj:true});}
+function aPayer(){return CATS.map(c=>ESSAI[c]).filter(id=>id&&!aMoi(id));}
+function total(){return aPayer().reduce((s,id)=>s+PAR_ID[id].v[2],0);}
+function dejaPorte(){if(!e.ap||!e.ap._civil)return false;return CATS.every(c=>!ESSAI[c]||porteDans(c,e.ap)===ESSAI[c]);}
 
-/* LE FOND DE LA BOUTIQUE : lambris de chêne, deux étagères de pliés, le grand miroir, les suspensions */
-function decorScene(){const cv=RACINE&&RACINE.querySelector('canvas.decor');if(!cv)return;const W=cv.clientWidth,H=cv.clientHeight,D=Math.min(2,window.devicePixelRatio||1);
-  cv.width=W*D;cv.height=H*D;const g=cv.getContext('2d');g.setTransform(D,0,0,D,0,0);const sol=H*.72;
-  let gr=g.createLinearGradient(0,0,0,sol);gr.addColorStop(0,'#e9dfca');gr.addColorStop(1,'#dccdb0');g.fillStyle=gr;g.fillRect(0,0,W,sol);
-  for(let x=0;x<W;x+=28){g.fillStyle='rgba(120,90,50,.12)';g.fillRect(x,0,1,sol);}
-  g.fillStyle='#b88a5a';g.fillRect(0,sol-10,W,10);g.fillStyle='rgba(255,255,255,.3)';g.fillRect(0,sol-10,W,1.4);
-  gr=g.createLinearGradient(0,sol,0,H);gr.addColorStop(0,'#9a6e44');gr.addColorStop(1,'#7a5432');g.fillStyle=gr;g.fillRect(0,sol,W,H-sol);
-  for(let y=sol+14;y<H;y+=14){g.fillStyle='rgba(0,0,0,.12)';g.fillRect(0,y,W,1);}
-  for(let k=0;k<30;k++){const y=sol+Math.floor(k/6)*14,x=(k%6)*80+(Math.floor(k/6)%2)*40;g.fillStyle='rgba(0,0,0,.12)';g.fillRect(x,y,1,14);}
-  /* le grand miroir derrière le tapis */
-  const mw=Math.min(170,W*.42),mh=sol*.86,mx=W/2-mw/2,my=sol-mh-4;
-  g.fillStyle='#c8a050';g.beginPath();g.roundRect(mx-6,my-6,mw+12,mh+12,[mw/2+6,mw/2+6,6,6]);g.fill();
-  gr=g.createLinearGradient(mx,my,mx+mw,my+mh);gr.addColorStop(0,'#f6fafc');gr.addColorStop(.5,'#dfe8ec');gr.addColorStop(1,'#c8d4da');g.fillStyle=gr;g.beginPath();g.roundRect(mx,my,mw,mh,[mw/2,mw/2,3,3]);g.fill();
-  g.fillStyle='rgba(255,255,255,.5)';g.beginPath();g.moveTo(mx+mw*.2,my+mh*.15);g.lineTo(mx+mw*.32,my+mh*.12);g.lineTo(mx+mw*.12,my+mh*.9);g.lineTo(mx,my+mh*.9);g.fill();
-  /* les étagères de pliés, de chaque côté */
-  const COUL=['#1d3f74','#2a5aa8','#ece2c8','#3a3e44','#8a2a3a','#2f4a3a','#c9a24a','#f2ece0'];
-  for(const [ex,ew] of [[8,mx-22],[mx+mw+14,W-mx-mw-22]]){if(ew<40)continue;
-    for(let r=0;r<4;r++){const y=24+r*(sol-40)/4;g.fillStyle='#8a6440';g.fillRect(ex,y+26,ew,4);g.fillStyle='rgba(0,0,0,.15)';g.fillRect(ex,y+30,ew,3);
-      for(let k=0;k*22<ew-20;k++){for(let p=0;p<3;p++){g.fillStyle=COUL[(r*3+k+p)%COUL.length];g.fillRect(ex+4+k*22,y+20-p*6,18,6);g.fillStyle='rgba(0,0,0,.12)';g.fillRect(ex+4+k*22,y+25-p*6,18,1);}}}}
-  /* trois suspensions de laiton */
-  for(const lx of [W*.18,W*.5,W*.82]){g.fillStyle='#6a6e74';g.fillRect(lx-.5,0,1,18);g.fillStyle='#c8a050';g.beginPath();g.moveTo(lx-12,26);g.lineTo(lx+12,26);g.lineTo(lx+5,16);g.lineTo(lx-5,16);g.fill();
-    const h=g.createRadialGradient(lx,30,0,lx,30,70);h.addColorStop(0,'rgba(255,236,190,.55)');h.addColorStop(1,'rgba(255,236,190,0)');g.fillStyle=h;g.fillRect(lx-70,20,140,90);}}
-function rendre(){if(!RACINE)return;const A=article();
-  RACINE.querySelector('.argent').textContent=enEuros(e.euros||0);
-  RACINE.querySelectorAll('.cats button').forEach(b=>b.classList.toggle('on',b.dataset.c===CAT));
-  const CI=RACINE.querySelector('.cintres');CI.innerHTML='';
-  CATALOGUE[CAT].forEach((a,i)=>{const d=document.createElement('button');d.className='ci'+(i===SEL?' on':'');
-    d.innerHTML='<div class="croc"></div><div class="epaule"></div>';
-    const t=document.createElement('canvas');t.width=96;t.height=128;dessine(t,Object.assign(base(),a[4],{_civil:true,_pnj:true}),2,24,58);
-    const cv=document.createElement('canvas');cv.width=44;cv.height=30;const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
-    const zone=CAT==='Hauts'?[26,50,44,30]:CAT==='Bas'?[26,80,44,30]:CAT==='Chaussures'?[26,96,44,30]:[26,10,44,30];
-    g.drawImage(t,zone[0],zone[1],zone[2],zone[3],0,0,44,30);d.appendChild(cv);
-    d.insertAdjacentHTML('beforeend','<div class="px'+(aMoi(a[0])?' pok':'')+'">'+(aMoi(a[0])?'À toi':a[3]+' €')+'</div>');
-    d.onclick=()=>{SEL=i;ESSAI=Object.assign(ESSAI||base(),a[4]);try{vibrer&&vibrer(8);}catch(x){}rendre();};CI.appendChild(d);});
-  dessine(RACINE.querySelector('canvas.p'),Object.assign({},ESSAI||base(),{_civil:true,_pnj:true}),2,24,58);
-  RACINE.querySelector('.fiche h3').textContent=A[1];RACINE.querySelector('.fiche p').textContent=A[2];
-  const b2=RACINE.querySelector('.b2');b2.disabled=false;b2.classList.remove('porte');
-  if(porte(A)){b2.innerHTML='Porté ✓';b2.disabled=true;b2.classList.add('porte');}
-  else if(aMoi(A[0]))b2.innerHTML='Porter';
-  else{b2.innerHTML='Acheter <span>'+A[3]+' €</span>';if((e.euros||0)<A[3]*100)b2.disabled=true;}
-  RACINE.querySelector('.b1').textContent=e.ap&&e.ap._civil?'Tenue de docker':'Remettre ma tenue';}
-function porter(A){const ski=e.ap&&e.ap.ski;e.ap=Object.assign({},base(),A[4],{_civil:true});if(ski)e.ap.ski=ski;delete e.ap._pnj;ESSAI=null;try{sauver();}catch(x){}mot('Tu portes : '+A[1]);rendre();}
-async function acheter(){const A=article();if(aMoi(A[0])){porter(A);return;}
-  if((e.euros||0)<A[3]*100){mot('Il te manque '+enEuros(A[3]*100-(e.euros||0))+'.');return;}
-  const b2=RACINE.querySelector('.b2');b2.disabled=true;b2.textContent='…';
-  const r=await appelRPC('acheter_vetement',{p_joueur:e.id,p_article:A[0]});
-  if(!r||r.erreur){mot(r&&r.erreur?String(r.erreur):'La caisse n’a pas répondu.');rendre();return;}
-  if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}
-  MIENS.add(A[0]);try{e.garde=[...MIENS];}catch(x){}try{vibrer&&vibrer([14,26,14]);}catch(x){}porter(A);}
-function fermer(){if(!RACINE)return;const R0=RACINE;RACINE=null;R0.style.opacity='0';setTimeout(()=>R0.remove(),260);try{window.FP_GEL=0;}catch(x){}}
+/* LE PERSONNAGE NET : dessiné à sa taille réelle, puis agrandi par un nombre entier de pixels écran */
+function dessinePerso(cv,ap,taille,dir){const NW=40,NH=66,DPR=Math.max(1,window.devicePixelRatio||1);const s=Math.max(1,Math.round(taille*DPR));
+  if(cv.width!==NW*s){cv.width=NW*s;cv.height=NH*s;cv.style.width=(NW*s/DPR)+'px';cv.style.height=(NH*s/DPR)+'px';}
+  const t=document.createElement('canvas');t.width=NW;t.height=NH;const q=t.getContext('2d');q.imageSmoothingEnabled=false;personne(q,NW/2,NH-4,ap,dir||'bas',0,false);
+  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,cv.width,cv.height);g.drawImage(t,0,0,NW*s,NH*s);}
+/* la vignette d'une pièce : on ne garde que la zone du corps qu'elle habille */
+const ZONES={hauts:[8,29,24,16],bas:[8,43,24,17],pieds:[9,56,22,8],tete:[8,13,24,18]};
+function vignette(cv,cat,ap){const DPR=Math.max(1,window.devicePixelRatio||1),[sx,sy,w,h]=ZONES[cat],s=Math.max(1,Math.round(2.6*DPR*(cat==='pieds'?1.25:1)));
+  cv.width=w*s;cv.height=h*s;cv.style.width=(w*s/DPR)+'px';cv.style.height=(h*s/DPR)+'px';
+  const t=document.createElement('canvas');t.width=40;t.height=66;const q=t.getContext('2d');q.imageSmoothingEnabled=false;personne(q,20,62,ap,'bas',0,false);
+  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(t,sx,sy,w,h,0,0,w*s,h*s);}
+
+const CSS=`@keyframes bdcIn{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+@keyframes bdcPop{0%{transform:scale(1)}40%{transform:scale(1.06)}100%{transform:scale(1)}}
+#bdc{position:fixed;inset:0;z-index:2147482000;display:flex;flex-direction:column;font-family:"Baloo 2","Helvetica Neue",Arial,sans-serif;color:#fff;
+  background:radial-gradient(120% 60% at 50% 18%,#2d63b0 0%,#163b78 45%,#0b1f45 100%);opacity:0;transition:opacity .22s;user-select:none;-webkit-user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#bdc *{box-sizing:border-box;margin:0;padding:0;font-family:inherit}
+#bdc button{border:0;background:none;color:inherit;cursor:pointer}
+#bdc .barre{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 12px 6px}
+#bdc .fermer{width:40px;height:40px;border-radius:14px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700}
+#bdc .titre{flex:1;line-height:1}#bdc .titre b{display:block;font-size:20px;font-weight:700;letter-spacing:.02em}#bdc .titre small{font-size:11px;color:#9fc0ec;letter-spacing:.14em;font-weight:500}
+#bdc .bourse{display:flex;align-items:center;gap:6px;background:rgba(5,16,40,.55);border-radius:14px;padding:6px 11px;font-weight:700;font-size:15px;color:#ffd36a}
+#bdc .bourse i{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe9a0,#e0a628);box-shadow:inset 0 -1px 0 rgba(0,0,0,.25)}
+#bdc .scene{position:relative;flex:0 0 auto;height:min(31vh,250px);display:flex;align-items:flex-end;justify-content:center}
+#bdc .halo{position:absolute;left:50%;bottom:6px;width:260px;height:260px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(rgba(255,214,130,.34),rgba(255,214,130,0) 62%);pointer-events:none}
+#bdc .socle{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);width:170px;height:38px;border-radius:50%;background:radial-gradient(#3d72cc 0%,#1d4588 70%);box-shadow:0 6px 0 #0b2856,0 14px 22px rgba(0,0,0,.35)}
+#bdc .socle:after{content:'';position:absolute;inset:6px 18px;border-radius:50%;border:2px solid rgba(255,255,255,.14)}
+#bdc canvas.perso{position:relative;margin-bottom:26px;image-rendering:pixelated}
+#bdc .tourner{position:absolute;bottom:22px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.12);font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center}
+#bdc .tourner.g{left:calc(50% - 128px)}#bdc .tourner.d{right:calc(50% - 128px)}
+#bdc .annuler{position:absolute;top:6px;right:12px;font-size:12px;font-weight:700;color:#cfe0f8;background:rgba(255,255,255,.1);border-radius:12px;padding:5px 10px;display:none}
+#bdc .annuler.on{display:block}
+#bdc .docker{position:absolute;top:6px;left:12px;font-size:12px;font-weight:700;color:#cfe0f8;background:rgba(255,255,255,.1);border-radius:12px;padding:5px 10px;display:none}
+#bdc .docker.on{display:block}
+#bdc .onglets{display:flex;gap:6px;padding:4px 12px 0}
+#bdc .onglets button{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 0 6px;border-radius:16px 16px 0 0;background:rgba(255,255,255,.08);color:#9fc0ec;font-weight:700;font-size:12px;position:relative}
+#bdc .onglets svg{width:20px;height:20px;fill:currentColor}
+#bdc .onglets button.on{background:#f6f1e6;color:#0e2348}
+#bdc .onglets button em{position:absolute;top:5px;right:calc(50% - 22px);width:9px;height:9px;border-radius:50%;background:#ffb92e;box-shadow:0 0 0 2px #163b78}
+#bdc .onglets button.on em{box-shadow:0 0 0 2px #f6f1e6}
+#bdc .rayon{flex:1;min-height:0;margin:0 12px;background:#f6f1e6;border-radius:0 0 20px 20px;overflow-y:auto;padding:10px 10px 12px;-webkit-overflow-scrolling:touch}
+#bdc .grille{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+#bdc .carte{position:relative;background:#fff;border-radius:16px;padding:8px 6px 8px;text-align:center;color:#0e2348;box-shadow:0 3px 0 #ddd3c0;transition:transform .12s;animation:bdcIn .25s both}
+#bdc .carte:active{transform:scale(.96)}
+#bdc .carte.on{box-shadow:0 0 0 3px #ffb92e,0 3px 0 #c88a10}
+#bdc .carte .fond{height:68px;border-radius:12px;background:linear-gradient(#eef3fa,#dde7f4);display:flex;align-items:center;justify-content:center;margin-bottom:5px}
+#bdc .carte canvas{image-rendering:pixelated}
+#bdc .carte b{display:block;font-size:13px;font-weight:700;line-height:1.1}
+#bdc .carte .teintes{display:flex;justify-content:center;gap:6px;margin:5px 0 3px;min-height:16px}
+#bdc .carte .teintes span{width:16px;height:16px;border-radius:50%;box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.15)}
+#bdc .carte .teintes span.on{box-shadow:0 0 0 2px #fff,0 0 0 4px #0e2348}
+#bdc .carte .prix{display:inline-block;margin-top:2px;font-size:13px;font-weight:700;border-radius:10px;padding:1px 9px;background:#ffb92e;color:#4a2e00;box-shadow:0 2px 0 #c88a10}
+#bdc .carte .prix.a{background:#2f8a4a;color:#fff;box-shadow:0 2px 0 #1e5e30}
+#bdc .carte .badge{position:absolute;top:6px;left:6px;font-size:10px;font-weight:700;background:#0e2348;color:#fff;border-radius:8px;padding:1px 6px}
+#bdc .caisse{padding:10px 12px calc(12px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px}
+#bdc .resume{flex:1;min-width:0;line-height:1.15}
+#bdc .resume b{display:block;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#bdc .resume small{display:block;font-size:12px;color:#9fc0ec;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#bdc .acheter{flex:0 0 auto;min-width:150px;border-radius:18px;padding:13px 16px;background:#ffb92e;color:#3e2600;font-size:17px;font-weight:700;box-shadow:0 5px 0 #c88a10;transition:transform .1s}
+#bdc .acheter:active{transform:translateY(3px);box-shadow:0 2px 0 #c88a10}
+#bdc .acheter.vert{background:#3fae5f;color:#fff;box-shadow:0 5px 0 #237a3c}
+#bdc .acheter.gris{background:#5a6e8e;color:#d8e2f0;box-shadow:0 5px 0 #3a4a66}
+#bdc .acheter.pop{animation:bdcPop .35s}
+#bdc .mot{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) scale(.96);background:rgba(5,16,40,.92);color:#fff;padding:11px 18px;border-radius:16px;font-weight:700;font-size:15px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;text-align:center;max-width:80%}
+#bdc .mot.on{opacity:1;transform:translate(-50%,-50%) scale(1)}`;
+
+function mot(t){const m=RACINE&&RACINE.querySelector('.mot');if(!m)return;m.textContent=t;m.classList.add('on');clearTimeout(mot.t);mot.t=setTimeout(()=>m.classList.remove('on'),1700);}
+function vib(x){try{vibrer&&vibrer(x);}catch(_){}}
+function rendreScene(){dessinePerso(RACINE.querySelector('canvas.perso'),apEssai(),3,DIRS[DIR]);
+  const D0=depart(),modif=CATS.some(c=>ESSAI[c]!==D0[c]);
+  RACINE.querySelector('.annuler').classList.toggle('on',modif);
+  RACINE.querySelector('.docker').classList.toggle('on',!!(e.ap&&e.ap._civil));}
+function rendreOnglets(){RACINE.querySelectorAll('.onglets button').forEach(b=>{const c=b.dataset.c;b.classList.toggle('on',c===CAT);
+  const em=b.querySelector('em');const pastille=ESSAI[c]&&!aMoi(ESSAI[c]);if(pastille&&!em)b.insertAdjacentHTML('beforeend','<em></em>');if(!pastille&&em)em.remove();});}
+function rendreRayon(){const G=RACINE.querySelector('.grille');G.innerHTML='';const ap0=apEssai();
+  CATALOGUE[CAT].modeles.forEach((m,i)=>{const choisi=m.v.find(v=>v[0]===ESSAI[CAT])||m.v[0];const on=m.v.some(v=>v[0]===ESSAI[CAT]);
+    const c=document.createElement('button');c.className='carte'+(on?' on':'');c.style.animationDelay=(i*25)+'ms';
+    const fond=document.createElement('div');fond.className='fond';const cv=document.createElement('canvas');fond.appendChild(cv);c.appendChild(fond);
+    vignette(cv,CAT,Object.assign({},ap0,choisi[4],{_pnj:true}));
+    const porte=e.ap&&e.ap._civil&&porteDans(CAT,e.ap)===choisi[0];
+    let h='<b>'+m.nom+'</b><div class="teintes">';if(m.v.length>1)m.v.forEach(v=>{h+='<span data-id="'+v[0]+'" class="'+(v[0]===choisi[0]&&on?'on':'')+'" style="background:'+v[3]+'"></span>';});h+='</div>';
+    h+=aMoi(choisi[0])?'<span class="prix a">'+(choisi[2]?'À toi ✓':'Gratuit')+'</span>':'<span class="prix">'+choisi[2]+' €</span>';
+    if(porte)h+='<span class="badge">Porté</span>';
+    c.insertAdjacentHTML('beforeend',h);
+    c.onclick=ev=>{const sw=ev.target.closest('span[data-id]');const id=sw?sw.dataset.id:(on&&m.v.length>1?(m.v[(m.v.indexOf(choisi)+1)%m.v.length][0]):choisi[0]);
+      ESSAI[CAT]=id;vib(8);rendreTout();};
+    G.appendChild(c);});}
+function rendreCaisse(){const b=RACINE.querySelector('.acheter'),r=RACINE.querySelector('.resume');const L=aPayer(),T=total();
+  RACINE.querySelector('.bourse span').textContent=enEuros(e.euros||0);
+  b.className='acheter';
+  if(L.length){r.innerHTML='<b>'+L.map(id=>PAR_ID[id].m.nom).join(' + ')+'</b><small>'+(L.length>1?L.length+' pièces à payer':'1 pièce à payer')+' · il te reste '+enEuros(Math.max(0,(e.euros||0)-T*100))+'</small>';
+    b.innerHTML='Acheter · '+T+' €';if((e.euros||0)<T*100)b.classList.add('gris');}
+  else if(!CATS.some(c=>ESSAI[c]&&!GRATUITS.has(ESSAI[c]))&&!(e.ap&&e.ap._civil)){r.innerHTML='<b>Touche un vêtement</b><small>Tu l’essaies tout de suite, sur toi.</small>';b.innerHTML='Essayer';b.classList.add('gris');}
+  else if(dejaPorte()){r.innerHTML='<b>Tu portes cette tenue</b><small>Essaie une autre pièce pour la changer.</small>';b.innerHTML='Porté ✓';b.classList.add('gris');}
+  else{r.innerHTML='<b>Tout est à toi</b><small>Tu peux la porter tout de suite.</small>';b.innerHTML='Porter';b.classList.add('vert');}}
+function rendreTout(){if(!RACINE)return;rendreScene();rendreOnglets();rendreRayon();rendreCaisse();}
+function porterEssai(){const ski=e.ap&&e.ap.ski;const ap=apEssai();delete ap._pnj;ap._civil=true;if(ski)ap.ski=ski;e.ap=ap;try{sauver();}catch(x){}}
+async function caisse(){if(ACHAT)return;const L=aPayer(),T=total(),b=RACINE.querySelector('.acheter');
+  if(!L.length){if(dejaPorte()||!CATS.some(c=>ESSAI[c]&&!GRATUITS.has(ESSAI[c])))return;porterEssai();vib([10,30,10]);b.classList.add('pop');mot('Nouvelle tenue !');rendreTout();return;}
+  if((e.euros||0)<T*100){mot('Il te manque '+enEuros(T*100-(e.euros||0))+'.');vib(30);return;}
+  ACHAT=true;b.innerHTML='…';
+  for(const id of L){const r=await appelRPC('acheter_vetement',{p_joueur:e.id,p_article:id});
+    if(!r||r.erreur){ACHAT=false;mot(r&&r.erreur?String(r.erreur):'La caisse n’a pas répondu.');rendreTout();return;}
+    if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}MIENS.add(id);}
+  e.garde=[...MIENS];ACHAT=false;porterEssai();vib([14,30,14]);b.classList.add('pop');mot(L.length>1?'Tenue achetée et portée !':'Achetée et portée !');rendreTout();}
+function fermer(){if(!RACINE)return;const R0=RACINE;RACINE=null;R0.style.opacity='0';setTimeout(()=>R0.remove(),240);try{window.FP_GEL=0;}catch(x){}}
 window.ouvrirBleuDeChauffe=async function(){if(RACINE)return;
   if(!document.getElementById('bdcCss')){const s=document.createElement('style');s.id='bdcCss';s.textContent=CSS;document.head.appendChild(s);}
-  CAT='Hauts';SEL=0;ESSAI=Object.assign(base(),CATALOGUE.Hauts[0][4]);try{(e.garde||[]).forEach(x=>MIENS.add(x));}catch(x){}
+  try{(e.garde||[]).forEach(x=>MIENS.add(x));}catch(x){}
+  CAT='hauts';DIR=0;ESSAI=depart();
   const d=document.createElement('div');d.id='bdc';RACINE=d;
-  d.innerHTML='<div class="hd"><b>BLEU DE CHAUFFE</b><small>VÊTEMENTS DE TRAVAIL &amp; DE VILLE</small><div class="argent"></div><button class="x">×</button></div>'+
-    '<div class="rail"><div class="barre"></div><div class="cintres"></div></div>'+
-    '<div class="cats">'+CATS.map(c=>'<button data-c="'+c+'">'+c+'</button>').join('')+'</div>'+
-    '<div class="scene"><canvas class="decor"></canvas><div class="tapis"></div><canvas class="p" width="96" height="128" style="aspect-ratio:3/4"></canvas></div>'+
-    '<div class="fiche"><h3></h3><p></p><div class="btns"><button class="b1"></button><button class="b2"></button></div></div><div class="mot"></div>';
+  d.innerHTML='<div class="barre"><button class="fermer">✕</button><div class="titre"><b>BLEU DE CHAUFFE</b><small>VÊTEMENTS DE TRAVAIL &amp; DE VILLE</small></div><div class="bourse"><i></i><span></span></div></div>'+
+    '<div class="scene"><div class="halo"></div><div class="socle"></div><canvas class="perso"></canvas><button class="tourner g">‹</button><button class="tourner d">›</button><button class="annuler">↺ Ma tenue</button><button class="docker">Tenue de docker</button></div>'+
+    '<div class="onglets">'+CATS.map(c=>'<button data-c="'+c+'">'+ICONES[c]+CATALOGUE[c].nom+'</button>').join('')+'</div>'+
+    '<div class="rayon"><div class="grille"></div></div>'+
+    '<div class="caisse"><div class="resume"></div><button class="acheter"></button></div><div class="mot"></div>';
   document.body.appendChild(d);requestAnimationFrame(()=>d.style.opacity='1');window.FP_GEL=Date.now()+86400000;
-  d.querySelector('.x').onclick=fermer;
-  d.querySelectorAll('.cats button').forEach(b=>b.onclick=()=>{CAT=b.dataset.c;SEL=0;ESSAI=Object.assign(ESSAI||base(),CATALOGUE[CAT][0][4]);rendre();RACINE.querySelector('.cintres').scrollLeft=0;});
-  d.querySelector('.b2').onclick=acheter;
-  d.querySelector('.b1').onclick=()=>{if(ESSAI){ESSAI=null;rendre();return;}
-    if(e.ap&&e.ap._civil){e.ap=Object.assign({},e.ap);delete e.ap._civil;try{sauver();}catch(x){}mot('Tu remets la tenue de docker.');}rendre();};
-  rendre();requestAnimationFrame(decorScene);
-  try{const r=await appelRPC('mes_vetements',{p_joueur:e.id});if(Array.isArray(r)){r.forEach(x=>MIENS.add(x));e.garde=[...MIENS];rendre();}}catch(x){}};
+  d.querySelector('.fermer').onclick=fermer;
+  d.querySelectorAll('.onglets button').forEach(b=>b.onclick=()=>{CAT=b.dataset.c;vib(6);rendreOnglets();rendreRayon();d.querySelector('.rayon').scrollTop=0;});
+  d.querySelector('.tourner.g').onclick=()=>{DIR=(DIR+1)%4;rendreScene();};d.querySelector('.tourner.d').onclick=()=>{DIR=(DIR+3)%4;rendreScene();};
+  /* on fait tourner le personnage en glissant le doigt sur la scène */
+  let x0=null;const sc=d.querySelector('.scene');sc.addEventListener('touchstart',ev=>{x0=ev.touches[0].clientX;},{passive:true});
+  sc.addEventListener('touchmove',ev=>{if(x0===null)return;const dx=ev.touches[0].clientX-x0;if(Math.abs(dx)>40){DIR=(DIR+(dx>0?3:1))%4;x0=ev.touches[0].clientX;rendreScene();}},{passive:true});
+  sc.addEventListener('touchend',()=>{x0=null;});
+  d.querySelector('.annuler').onclick=()=>{ESSAI=depart();vib(8);rendreTout();};
+  d.querySelector('.docker').onclick=()=>{e.ap=Object.assign({},e.ap);delete e.ap._civil;try{sauver();}catch(x){}mot('Tenue de docker remise.');rendreTout();};
+  d.querySelector('.acheter').onclick=caisse;
+  rendreTout();
+  try{const r=await appelRPC('mes_vetements',{p_joueur:e.id});if(Array.isArray(r)){r.forEach(x=>MIENS.add(x));e.garde=[...MIENS];rendreTout();}}catch(x){}};
 })();
