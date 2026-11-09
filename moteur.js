@@ -10784,7 +10784,7 @@ let TXT_FERME=null;
 /* SI port.js NE CHARGE PAS, les cinquante-trois symboles ci-dessous
    restent indéfinis et le port ne se dessine pas, sans un mot. On le dit. */
 try{
-if(CARTE==='spawn'){try{let lieu=window.LIEU_PAGE||'';try{lieu=lieu||new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':(lieu==='stade'?'stade.js':(lieu==='plage'?'plage.js':(lieu==='corniche'?'corniche.js':(lieu==='blocus'?'blocus.js':(lieu==='garde'?'garde.js':(lieu==='tour'?'tour.js':'joliette.js'))))))));}catch(x){console.warn('JOL',x);JOL=null;}}
+if(CARTE==='spawn'){try{let lieu=window.LIEU_PAGE||'';try{lieu=lieu||new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':(lieu==='stade'?'stade.js':(lieu==='plage'?'plage.js':(lieu==='corniche'?'corniche.js':(lieu==='blocus'?'blocus.js':(lieu==='garde'?'garde.js':(lieu==='tour'?'tour.js':(lieu==='plateau'?'plateau.js':'joliette.js')))))))));}catch(x){console.warn('JOL',x);JOL=null;}}
 if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar,dessinerLePanorama}=eval(await chargerMorceau('port.js')));}
 if(CARTE==='tokyo'){TKM=eval(await chargerMorceau('tokyo.js'));}
 }catch(erPort){
@@ -12044,7 +12044,7 @@ const X0=Math.round(x-C.W/2), Y0=Math.round(y-C.sol+dy);
 if(o.flip){g.save();g.translate(Math.round(x)*2,0);g.scale(-1,1);}
 ombrePortee(g,C,x,y+dy,o.t);
 g.drawImage(C.toile,X0,Y0,C.W,C.H);
-if(CARTE==='spawn'&&(!window.LIEU_PAGE||window.LIEU_PAGE==='stade'||window.LIEU_PAGE==='plage'||window.LIEU_PAGE==='corniche'||window.LIEU_PAGE==='blocus')&&(o.t||'').slice(0,6)==='x_jol_'){const k=nuitDecor();if(k>0.02){g.globalAlpha=k;g.drawImage(versionNuit(C),X0,Y0,C.W,C.H);g.globalAlpha=1;}}
+if(CARTE==='spawn'&&(!window.LIEU_PAGE||window.LIEU_PAGE==='stade'||window.LIEU_PAGE==='plage'||window.LIEU_PAGE==='corniche'||window.LIEU_PAGE==='blocus'||window.LIEU_PAGE==='plateau')&&(o.t||'').slice(0,6)==='x_jol_'){const k=nuitDecor();if(k>0.02){g.globalAlpha=k;g.drawImage(versionNuit(C),X0,Y0,C.W,C.H);g.globalAlpha=1;}}
 if(lampesAllumees()){const t=o.t||'';
 /* LES FEUX PORTÉS PAR LE CALQUE. Les tests par nom ci-dessous ne
    marchent que pour un dessin dont on connaît d'avance la taille : la
@@ -19287,7 +19287,7 @@ const CIEL=[
 {h:21.5, amb:[44,54,104],  lampes:1,   soleil:null},
 {h:24,   amb:[30,40,86],   lampes:1,   soleil:null}];
 function cielDuMoment(){
-if(window.LIEU_PAGE==="terrasses"||window.LIEU_PAGE==="garde"||window.LIEU_PAGE==="tour")return null;   /* sous la verrière, toujours éclairé */
+if(window.LIEU_PAGE==="terrasses"||window.LIEU_PAGE==="garde"||window.LIEU_PAGE==="tour"||window.LIEU_PAGE==="plateau")return null;   /* sous la verrière, toujours éclairé */
 const m=minuteDuJour();
 if(m===null)return null;
 const h=m/60;
@@ -20124,7 +20124,7 @@ DECOR.filter(o=>o.t==='bancP').sort((a,b)=>(a.y-b.y)||(a.x-b.x))
 return l;
 }
 function coinDuJoueur(){
-if(window.LIEU_PAGE==='terrasses')return 'à la Galerie Bleue';if(window.LIEU_PAGE==='stade')return 'au Vélodrome';if(window.LIEU_PAGE==='plage')return 'à la plage des Catalans';if(window.LIEU_PAGE==='corniche')return 'sur la Corniche';if(window.LIEU_PAGE==='blocus')return 'au blocus';if(window.LIEU_PAGE==='garde')return 'en garde à vue';if(window.LIEU_PAGE==='tour')return 'à la tour du port';
+if(window.LIEU_PAGE==='terrasses')return 'à la Galerie Bleue';if(window.LIEU_PAGE==='stade')return 'au Vélodrome';if(window.LIEU_PAGE==='plage')return 'à la plage des Catalans';if(window.LIEU_PAGE==='corniche')return 'sur la Corniche';if(window.LIEU_PAGE==='blocus')return 'au blocus';if(window.LIEU_PAGE==='garde')return 'en garde à vue';if(window.LIEU_PAGE==='tour')return 'à la tour du port';if(window.LIEU_PAGE==='plateau')return 'sur le plateau de Mistral TV';
 if(CARTE==='extramar')return 'à Extramar';
 if(CARTE==='garde')return 'à Notre-Dame';
 if(CARTE==='tokyo')return 'à Tokyo';
@@ -23816,7 +23816,6 @@ $('sacX').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
 }
 
 async function ouvrirLeClassement(){
-return;   /* LE CLASSEMENT EST RETIRE du jeu. Les donnees restent au serveur. */
 if(!document.getElementById('cssCls')){const st=document.createElement('style');
 st.id='cssCls';st.textContent=CSS_CLS;document.head.appendChild(st);}
 $('page2Fond').className='';$('page2').classList.add('on');
@@ -23875,7 +23874,7 @@ function clsPrepA(){
 function clsCadreA(vue,corps,badge){const F=$('page2Fond');F.className='bq mA niv clA';F.dataset.vue=vue;
  const T={recolte:['LE REGISTRE DU PORT','Classement'],peche:['LE MUR DES TROPHÉES','Pêche'],pokedock:['CENT CARTES','Pokédock']}[vue];
  F.innerHTML='<div class="aTop"><div class="aTtl"><small>'+T[0]+'</small>'+T[1]+'</div>'+(badge?'<span class="aBourse">'+badge+'</span>':'')+'<button class="aX" id="clsXA">✕</button></div>'+
-  '<div class="bqOng">'+[['recolte','🏅','Niveaux'],['peche','🐟','Pêche'],['pokedock','🃏','Pokédock']].map(([k,i,t])=>'<button data-cva="'+k+'" class="'+(k===vue?'on':'')+'"><i>'+i+'</i>'+t+'</button>').join('')+'</div>'+
+  '<div class="bqOng">'+[['recolte','🏅','Niveaux'],['pokedock','🃏','Pokédock']].map(([k,i,t])=>'<button data-cva="'+k+'" class="'+(k===vue?'on':'')+'"><i>'+i+'</i>'+t+'</button>').join('')+'</div>'+
   '<div class="aCarte"><div class="corps">'+corps+'</div></div>';
  $('clsXA').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
  F.querySelectorAll('[data-cva]').forEach(b=>b.onclick=()=>{if(b.dataset.cva===vue)return;CLS_VUE=b.dataset.cva;vibrer(8);ouvrirLeClassement();});
@@ -34554,3 +34553,41 @@ const poser=()=>{document.body.appendChild(d);
 if(document.body)poser();else addEventListener('DOMContentLoaded',poser);
 }catch(x){}
 })();
+
+/* ================= LE MENU ROND, EN BAS À DROITE =================
+   Un seul bouton ; il ouvre un tiroir avec, pour l'instant, le
+   classement et le téléphone. Le téléphone vit dans telephone.js,
+   chargé seulement quand on l'ouvre. */
+(()=>{try{
+const CSS_MR=`#menuRond{position:fixed;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:6;width:54px;height:54px;border-radius:18px;border:0;
+  background:#e8c06a;box-shadow:0 3px 0 rgba(0,0,0,.22),0 7px 20px rgba(0,0,0,.35);display:grid;place-items:center;pointer-events:auto}
+#menuRond:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.22),0 5px 14px rgba(0,0,0,.35)}
+#menuRond i{display:block;width:22px;height:3px;border-radius:2px;background:#2a2016;box-shadow:0 -7px 0 #2a2016,0 7px 0 #2a2016}
+#barre{padding-right:78px!important}
+#menuTir{position:fixed;inset:0;z-index:2147482000;background:rgba(10,14,20,.45);opacity:0;transition:opacity .2s;font-family:'Baloo 2',system-ui,sans-serif}
+#menuTir.on{opacity:1}
+#menuTir .f{position:absolute;left:0;right:0;bottom:0;background:#f6f1e6;border-radius:24px 24px 0 0;padding:10px 14px calc(16px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .22s cubic-bezier(.2,.8,.2,1);box-shadow:0 -10px 30px rgba(0,0,0,.3)}
+#menuTir.on .f{transform:none}
+#menuTir .pg{width:44px;height:5px;border-radius:3px;background:#d8cfbe;margin:0 auto 12px}
+#menuTir .tt{font:800 12px 'Baloo 2',sans-serif;letter-spacing:2px;color:#8a7a5a;margin:0 2px 8px}
+#menuTir .g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#menuTir .g button{border:0;border-radius:18px;padding:14px 10px 12px;background:#fff;box-shadow:0 3px 0 #ddd3c0;display:flex;flex-direction:column;align-items:center;gap:6px;font:800 16px 'Baloo 2',sans-serif;color:#2a2016}
+#menuTir .g button:active{transform:translateY(2px);box-shadow:0 1px 0 #ddd3c0}
+#menuTir .g i{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;font-style:normal;font-size:30px}
+#menuTir .g small{font:700 11.5px 'Baloo 2',sans-serif;color:#8a7a5a;margin-top:-6px}`;
+function fermerMenu(){const d=document.getElementById('menuTir');if(!d)return;d.classList.remove('on');setTimeout(()=>d.remove(),220);}
+let TEL_CHARGE=false;
+async function ouvrirTelephone(){try{if(!TEL_CHARGE){eval(await chargerMorceau('telephone.js'));TEL_CHARGE=true;}window.ouvrirLeTelephone();}catch(x){console.warn('TEL',x);}}
+function ouvrirMenu(){if(document.getElementById('menuTir'))return;try{vibrer(8);}catch(x){}
+  const d=document.createElement('div');d.id='menuTir';
+  d.innerHTML='<div class="f"><div class="pg"></div><div class="tt">MENU</div><div class="g">'+
+    '<button data-k="cls"><i style="background:linear-gradient(#ffe29a,#e8b840)">🏆</i>Classement<small>les meilleurs du port</small></button>'+
+    '<button data-k="tel"><i style="background:linear-gradient(#9ad8ff,#3a8ad8)">📱</i>Téléphone<small>appeler, se faire inviter</small></button>'+
+    '</div></div>';
+  document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));
+  d.addEventListener('click',ev=>{if(ev.target===d){fermerMenu();return;}const b=ev.target.closest('button[data-k]');if(!b)return;const k=b.dataset.k;fermerMenu();
+    if(k==='cls')setTimeout(()=>ouvrirLeClassement(),120);if(k==='tel')setTimeout(ouvrirTelephone,120);});}
+function poser(){if(document.getElementById('menuRond'))return;const s=document.createElement('style');s.textContent=CSS_MR;document.head.appendChild(s);
+  const b=document.createElement('button');b.id='menuRond';b.setAttribute('aria-label','Menu');b.innerHTML='<i></i>';b.onclick=ouvrirMenu;document.body.appendChild(b);}
+if(document.body)setTimeout(poser,400);else addEventListener('DOMContentLoaded',()=>setTimeout(poser,400));
+}catch(x){}})();
