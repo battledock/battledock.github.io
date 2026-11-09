@@ -153,24 +153,60 @@ g.beginPath();g.moveTo(cx-4,s-45);g.lineTo(cx+4,s-45);g.lineTo(cx,s-40);g.closeP
 return {toile:c,W:L,H:HH,sol:s};
 }
 
-/* LE PANNEAU D'AFFICHAGE de la place : un toit de tuiles, deux poteaux, du liège et des affiches */
-function graverPanneauAffiches(){
-const L=96,HH=92,{c,g,R}=toile(L,HH),s=HH-4;
-g.fillStyle='rgba(30,22,14,.22)';g.beginPath();g.ellipse(L/2+3,s,44,5,0,0,7);g.fill();
-/* les poteaux */
-R(10,s-70,6,70,'#6a4428');R(L-16,s-70,6,70,'#6a4428');R(10,s-70,2,70,'#8a5a36');R(L-16,s-70,2,70,'#8a5a36');
-/* le toit de tuiles */
-g.fillStyle='#a8452e';g.beginPath();g.moveTo(2,s-70);g.lineTo(L/2,s-90);g.lineTo(L-2,s-70);g.closePath();g.fill();
-g.fillStyle='#c8583a';for(let k=0;k<5;k++)R(6+k*18,s-74,12,3,'#c8583a');R(2,s-71,L-4,3,'#7a2e1e');
-/* le cadre et le liège */
-R(6,s-68,L-12,50,'#7a4e2c');R(9,s-65,L-18,44,'#c89a5e');
-for(let i=0;i<160;i++){g.fillStyle=i%3?'rgba(120,80,40,.25)':'rgba(255,230,180,.25)';g.fillRect(9+((i*37)%(L-19)),s-65+((i*17)%43),1,1);}
-/* pas encore d'affiches : juste le liège et quelques punaises */
-for(const [x,y] of [[22,s-58],[52,s-50],[74,s-60],[36,s-34],[66,s-32]]){R(x,y,2,2,'#e8302a');R(x+1,y+2,1,1,'rgba(0,0,0,.3)');}
-/* la plaque */
-R(L/2-20,s-16,40,9,'#1f1a14');g.fillStyle='#f2c94c';g.font='bold 6px "Trebuchet MS",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('À L’AFFICHE',L/2,s-11.5);
-return {toile:c,W:L,H:HH,sol:s};
-}
+/* LE PANNEAU D'AFFICHAGE de la place — trois dessins à l'essai (window.AFF_V = A, B ou C) */
+function graverPanneauAffiches(){const v=window.AFF_V||'C';return v==='B'?affSucette():v==='C'?affMunicipal():affColonne();}
+/* A — LA COLONNE MORRIS : le cylindre vert, son dôme festonné, des affiches tout autour */
+function affColonne(){
+const L=60,HH=118,{c,g,R}=toile(L,HH),cx=L/2,s=HH-4;
+g.fillStyle='rgba(30,22,14,.25)';g.beginPath();g.ellipse(cx+3,s,24,5,0,0,7);g.fill();
+/* le socle */
+R(cx-21,s-8,42,8,'#1f4a3a');R(cx-21,s-8,42,1.5,'#3a7a5a');R(cx-23,s-2,46,2,'#173a2c');
+/* le fût : bande d'affiches courbée (ombrée sur les bords) */
+const top=s-84,h=76;
+const gr=g.createLinearGradient(cx-19,0,cx+19,0);gr.addColorStop(0,'#c8b890');gr.addColorStop(.3,'#f2e8d0');gr.addColorStop(.75,'#e8dcc0');gr.addColorStop(1,'#a89870');g.fillStyle=gr;g.fillRect(cx-19,top,38,h);
+/* affiches posées sur le fût */
+const A=[[cx-17,top+4,12,18,'#d84a3a'],[cx-4,top+3,11,22,'#2a5aa8'],[cx+8,top+5,9,17,'#f2c43a'],[cx-16,top+27,10,20,'#3a9a5a'],[cx-5,top+29,13,16,'#7a3ad8'],[cx+9,top+26,8,22,'#e8862a'],[cx-12,top+52,16,18,'#f2ece0'],[cx+5,top+51,11,20,'#1f1a14']];
+for(const [x,y,w,hh,col] of A){R(x,y,w,hh,col);R(x+1,y+2,w-2,1.5,'rgba(255,255,255,.7)');R(x+1,y+5,w-4,1,'rgba(255,255,255,.45)');R(x+1,y+hh-4,w-2,2,'rgba(0,0,0,.25)');}
+/* l'ombre de rondeur */
+const sh=g.createLinearGradient(cx-19,0,cx+19,0);sh.addColorStop(0,'rgba(0,0,0,.28)');sh.addColorStop(.25,'rgba(0,0,0,0)');sh.addColorStop(.7,'rgba(0,0,0,0)');sh.addColorStop(1,'rgba(0,0,0,.32)');g.fillStyle=sh;g.fillRect(cx-19,top,38,h);
+/* la corniche, le dôme vert et ses festons */
+R(cx-22,top-6,44,6,'#1f5a44');R(cx-22,top-6,44,1.5,'#4a9a74');
+for(let k=0;k<7;k++){g.fillStyle='#1f5a44';g.beginPath();g.arc(cx-19+k*6.3,top,3,0,Math.PI);g.fill();}
+g.fillStyle='#2a6a50';g.beginPath();g.moveTo(cx-20,top-6);g.quadraticCurveTo(cx-18,top-24,cx,top-26);g.quadraticCurveTo(cx+18,top-24,cx+20,top-6);g.fill();
+g.fillStyle='#4a9a74';g.beginPath();g.moveTo(cx-12,top-8);g.quadraticCurveTo(cx-10,top-20,cx-2,top-22);g.lineTo(cx-2,top-19);g.quadraticCurveTo(cx-8,top-17,cx-9,top-8);g.fill();
+R(cx-1.5,top-32,3,7,'#1f5a44');g.fillStyle='#e8c06a';g.beginPath();g.arc(cx,top-33,2.4,0,7);g.fill();
+return {toile:c,W:L,H:HH,sol:s};}
+/* B — LA SUCETTE : un mobilier urbain moderne, cadre gris, vitrine éclairée */
+function affSucette(){
+const L=48,HH=104,{c,g,R}=toile(L,HH),cx=L/2,s=HH-4;
+g.fillStyle='rgba(30,22,14,.25)';g.beginPath();g.ellipse(cx+3,s,18,4,0,0,7);g.fill();
+R(cx-6,s-6,12,6,'#3a3e46');R(cx-3,s-26,6,22,'#4a4e58');R(cx-3,s-26,2,22,'#6a6e78');
+/* le caisson */
+R(cx-20,s-98,40,74,'#3a3e46');R(cx-20,s-98,40,2,'#6a6e78');R(cx+18,s-98,2,74,'#2a2e36');
+/* la vitrine éclairée, l'affiche dessous */
+const gr=g.createLinearGradient(0,s-94,0,s-28);gr.addColorStop(0,'#fff8e8');gr.addColorStop(1,'#f2e2c0');g.fillStyle=gr;g.fillRect(cx-17,s-95,34,68);
+R(cx-14,s-92,28,60,'#2a5aa8');R(cx-14,s-92,28,24,'#4a7ad8');g.fillStyle='#ffe08a';g.beginPath();g.arc(cx+5,s-80,6,0,7);g.fill();
+R(cx-12,s-62,24,3,'#fff');R(cx-12,s-57,18,2,'rgba(255,255,255,.7)');R(cx-12,s-53,20,2,'rgba(255,255,255,.7)');R(cx-12,s-42,14,6,'#f2c43a');
+g.fillStyle='rgba(255,255,255,.28)';g.beginPath();g.moveTo(cx-17,s-95);g.lineTo(cx-4,s-95);g.lineTo(cx-17,s-60);g.fill();
+R(cx-17,s-28,34,3,'#2a2e36');g.fillStyle='#e8c06a';g.font='bold 4px "Trebuchet MS",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('À L’AFFICHE',cx,s-26.5);
+return {toile:c,W:L,H:HH,sol:s,feux:[{x:cx,y:s-62,r:30,teinte:'rgba(255,236,190,§)'}]};}
+/* C — LE PANNEAU MUNICIPAL : métal vert sapin, fronton bleu de la Ville, vitrines à clé */
+function affMunicipal(){
+const L=104,HH=96,{c,g,R}=toile(L,HH),cx=L/2,s=HH-4;
+g.fillStyle='rgba(30,22,14,.24)';g.beginPath();g.ellipse(cx+3,s,46,5,0,0,7);g.fill();
+for(const x of [8,L-12]){R(x,s-80,4,80,'#24463a');R(x,s-80,1.4,80,'#4a7a64');R(x-2,s-4,8,4,'#1a3a2e');}
+/* le fronton */
+R(4,s-90,L-8,14,'#1d3f74');R(4,s-90,L-8,1.6,'#4a7ad0');R(4,s-77,L-8,1.6,'#132a52');
+g.fillStyle='#ffffff';g.font='bold 5.6px "Trebuchet MS",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('À L’AFFICHE · JOLIETTE',cx,s-83);
+for(const x of [10,L-14])R(x,s-87,4,8,'#e8c06a');
+/* les deux vitrines */
+for(const [x0,w] of [[12,(L-28)/2],[cx+2,(L-28)/2]]){R(x0,s-74,w,50,'#24463a');R(x0+2,s-72,w-4,46,'#c89a5e');
+  for(let i=0;i<70;i++){g.fillStyle=i%3?'rgba(120,80,40,.25)':'rgba(255,230,180,.25)';g.fillRect(x0+3+((i*31)%(w-6)),s-71+((i*17)%44),1,1);}
+  g.fillStyle='rgba(200,230,255,.22)';g.fillRect(x0+2,s-72,w-4,46);g.fillStyle='rgba(255,255,255,.35)';g.beginPath();g.moveTo(x0+2,s-72);g.lineTo(x0+12,s-72);g.lineTo(x0+2,s-52);g.fill();
+  R(x0+w-5,s-50,2,4,'#e8c06a');}
+/* la tablette et le pied */
+R(10,s-24,L-20,4,'#1a3a2e');R(10,s-24,L-20,1,'#4a7a64');
+return {toile:c,W:L,H:HH,sol:s};}
 function graverVide(){const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1600,H:80,sol:40};}
 
 
