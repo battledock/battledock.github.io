@@ -34616,16 +34616,6 @@ function poser(){if(document.getElementById('menuRond'))return;const s=document.
 if(document.body)setTimeout(poser,400);else addEventListener('DOMContentLoaded',()=>setTimeout(poser,400));
 }catch(x){}})();
 
-/* ================= LA MUSIQUE DES LIEUX =================
-   Une boucle par lieu, composée pour le jeu : « Lo-fi du Vieux-Port » sur
-   la place (et ses lieux voisins), « Les quais au soleil » au port. Elle
-   démarre au premier toucher (le navigateur l'exige), suit le réglage
-   « La musique », se tait quand les sons sont coupés ou l'onglet caché, et
-   entre / sort en fondu. Un seul tampon décodé par morceau, lu en boucle
-   par l'Audio du jeu (A()) : pas de trou à la reprise. */
-(function musiqueDesLieux(){
-window.MUSIQUE_PRETE=true;window.MUSIQUE_ETAT=()=>({piste:PISTE,tampon:!!tampon,joue:!!src,vol:gain?+gain.gain.value.toFixed(2):0});
-const PISTE=(()=>{try{if(CARTE==='extramar')return 'musique/quais_au_soleil.mp3';if(CARTE==='spawn')return 'musique/vieux_port.mp3';}catch(x){}return null;})();
 if(!PISTE)return;
 let tampon=null,charge=false,src=null,gain=null;
 const voulu=()=>{try{return SON_PRET&&(typeof REG==='undefined'||REG.sons!==false)&&V.mus>0&&!document.hidden;}catch(x){return false;}};
