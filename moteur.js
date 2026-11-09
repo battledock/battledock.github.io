@@ -18149,7 +18149,7 @@ const pageOuverte=()=>$('pan').classList.contains('on')
 ||$('catalogue').classList.contains('on')||!!($('crs')&&$('crs').classList.contains('on'))||!!($('nivGagne')&&$('nivGagne').classList.contains('on'))||!!document.querySelector('.zouv')||!!($('emPan')&&$('emPan').classList.contains('on'));   /* la liste en ligne bloquait le tap de fermeture */
 addEventListener('pointerdown',reveillerLeSon,{once:false});
 const surUnBouton=(cible)=>!!(cible&&cible.closest&&cible.closest('#barre,#emPan,button,#fpPop,#fpListe,#action,#hublot,#pan,#page2,#porte,#bandeau,#repond,#hPlaque,#nivPop,#nivGagne,.zouv'));
-const zoneMarche=(x,y,cible)=>!pageOuverte()&&!surUnBouton(cible)&&!window.TK_SANS_JOY&&!window.ECRAN_COUVRANT&&!(cible&&cible.closest&&cible.closest('#rgp,#tel,#blcDia,#menuTir,#labEmo,#aff,#sacN'));   /* les écrans par-dessus (classement, téléphone, dialogues) gardent leurs gestes : défilement, taps */   /* au volant, mode boutons : pas de joystick */
+const zoneMarche=(x,y,cible)=>!pageOuverte()&&!surUnBouton(cible)&&!window.TK_SANS_JOY&&!window.ECRAN_COUVRANT&&!(cible&&cible.closest&&cible.closest('#rgp,#tel,#blcDia,#menuTir,#labEmo,#aff,#sacN,#crn,#regN,#vesN,#carN'));   /* les écrans par-dessus (classement, téléphone, dialogues) gardent leurs gestes : défilement, taps */   /* au volant, mode boutons : pas de joystick */
 document.addEventListener('touchstart',ev=>{
 for(const t of ev.changedTouches){
 if(J.actif)continue;
@@ -34584,6 +34584,8 @@ const CSS_MR=`#menuRond{position:fixed;right:12px;bottom:calc(14px + env(safe-ar
 #menuTir .g button.nope{animation:mrNope .35s}@keyframes mrNope{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}`;
 function fermerMenu(){const d=document.getElementById('menuTir');if(!d)return;d.classList.remove('on');setTimeout(()=>d.remove(),220);}
 let TEL_CHARGE=false;
+async function ouvrirCarnetN(ong){try{if(!window.ouvrirCarnetNeuf)eval(await chargerMorceau('carnet.js'));window.ouvrirCarnetNeuf(ong);}catch(x){console.warn('CARNET',x);}}
+async function ouvrirNeuf(fichier,fn){try{if(!window[fn])eval(await chargerMorceau(fichier));window[fn]();}catch(x){console.warn('ECRAN',fichier,x);}}
 async function ouvrirSacN(){try{if(!window.ouvrirSacNeuf)eval(await chargerMorceau('sac.js'));window.ouvrirSacNeuf();}catch(x){console.warn('SAC',x);}}
 async function ouvrirTelephone(){try{if(!TEL_CHARGE&&!window.ouvrirLeTelephone){eval(await chargerMorceau('telephone.js'));TEL_CHARGE=true;}window.ouvrirLeTelephone();}catch(x){console.warn('TEL',x);}}
 function ouvrirMenu(){if(document.getElementById('menuTir'))return;try{vibrer(8);}catch(x){}
@@ -34599,8 +34601,8 @@ function ouvrirMenu(){if(document.getElementById('menuTir'))return;try{vibrer(8)
   const PAL={sac:{a:'#5a3418',b:'#5a3418',c:'#e8923a',d:'#b8622a',e:'#5a3418',f:'#f2c94c'},vest:{a:'#1d3a6a',b:'#2a62b0',c:'#f2c94c'},carnet:{a:'#5a3a18',b:'#f6ead0',c:'#c8a060',d:'#d84a3a',e:'#a89070',f:'#e8b030'},
     cls:{a:'#a86a10',b:'#f2c43a',c:'#6a4a2a',d:'#8a6a4a'},reg:{a:'#4a4e58',b:'#8a909c',c:'#c8ccd4'},carte:{a:'#6a5030',b:'#7ab0d8',c:'#9ad07a',d:'#e8d8a8',e:'#d84a3a'}};
   const icone=k=>{const c=document.createElement('canvas');c.width=16;c.height=16;const g=c.getContext('2d');PIX[k].forEach((l,y)=>[...l].forEach((ch,x)=>{if(ch!=='.'){g.fillStyle=PAL[k][ch];g.fillRect(x,y,1,1);}}));return c.toDataURL();};
-  const T=[['sac','Sac','tes affaires','#ffe2c0'],['vest','Vestiaire','tes tenues','#dce8ff',1],['carnet','Carnet','niveau, objectifs','#fff0c8',1],
-    ['cls','Classement','les couronnes','#fff0b8'],['reg','Réglages','son, compte','#ececf0',1],['carte','Carte','aller ailleurs','#dcf4e0',1]];
+  const T=[['sac','Sac','tes affaires','#ffe2c0'],['vest','Vestiaire','tes tenues','#dce8ff'],['carte','Carte','aller ailleurs','#dcf4e0'],
+    ['cls','Classement','les couronnes','#fff0b8'],['reg','Réglages','son, compte','#ececf0']];
   d.innerHTML='<div class="f"><div class="pg"></div><div class="tt">MENU</div><div class="g g3">'+
     T.map(([k,n,s,c,bientot])=>'<button data-k="'+k+'"'+(bientot?' class="bt"':'')+'><i style="background:'+c+'"><img src="'+icone(k)+'" alt=""></i>'+n+'<small>'+s+'</small>'+(bientot?'<em>bientôt</em>':'')+'</button>').join('')+
     '</div></div>';
@@ -34608,7 +34610,7 @@ function ouvrirMenu(){if(document.getElementById('menuTir'))return;try{vibrer(8)
   d.addEventListener('click',ev=>{if(ev.target===d){fermerMenu();return;}const b=ev.target.closest('button[data-k]');if(!b)return;const k=b.dataset.k;
     if(b.classList.contains('bt')){try{vibrer(20);}catch(x){}b.classList.remove('nope');void b.offsetWidth;b.classList.add('nope');return;}
     fermerMenu();
-    setTimeout(()=>{try{if(k==='cls')ouvrirLeClassement();if(k==='sac')ouvrirSacN();if(k==='carnet')ouvrirMonNiveau();if(k==='reg'){REG_VUE='liste';ouvrirReglages();}}catch(x){console.warn('MENU',x);}},120);});}
+    setTimeout(()=>{try{if(k==='cls')ouvrirLeClassement();if(k==='sac')ouvrirSacN();if(k==='carnet')ouvrirCarnetN();if(k==='reg')ouvrirNeuf('reglages.js','ouvrirReglagesNeufs');if(k==='vest')ouvrirNeuf('vestiaire.js','ouvrirVestiaireNeuf');if(k==='carte')ouvrirNeuf('carte.js','ouvrirCarteNeuve');}catch(x){console.warn('MENU',x);}},120);});}
 function poser(){if(document.getElementById('menuRond'))return;const s=document.createElement('style');s.textContent=CSS_MR;document.head.appendChild(s);
   const b=document.createElement('button');b.id='menuRond';b.setAttribute('aria-label','Menu');b.innerHTML='<i></i>';b.onclick=ouvrirMenu;document.body.appendChild(b);}
 if(document.body)setTimeout(poser,400);else addEventListener('DOMContentLoaded',()=>setTimeout(poser,400));
