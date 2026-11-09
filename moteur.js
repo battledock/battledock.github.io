@@ -34583,8 +34583,7 @@ async function ouvrirTelephone(){try{if(!TEL_CHARGE&&!window.ouvrirLeTelephone){
 function ouvrirMenu(){if(document.getElementById('menuTir'))return;try{vibrer(8);}catch(x){}
   const d=document.createElement('div');d.id='menuTir';
   d.innerHTML='<div class="f"><div class="pg"></div><div class="tt">MENU</div><div class="g">'+
-    '<button data-k="cls"><i style="background:linear-gradient(#ffe29a,#e8b840)">🏆</i>Classement<small>les meilleurs du port</small></button>'+
-    '<button data-k="tel"><i style="background:linear-gradient(#9ad8ff,#3a8ad8)">📱</i>Téléphone<small>appeler, se faire inviter</small></button>'+
+    '<button data-k="cls" style="grid-column:1/3"><i style="background:linear-gradient(#ffe29a,#e8b840)">🏆</i>Classement<small>les meilleurs du port</small></button>'+
     '</div></div>';
   document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));
   d.addEventListener('click',ev=>{if(ev.target===d){fermerMenu();return;}const b=ev.target.closest('button[data-k]');if(!b)return;const k=b.dataset.k;fermerMenu();
