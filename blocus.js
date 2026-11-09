@@ -8,7 +8,7 @@
    ===================================================================== */
 (()=>{
 const W=800, H=800, PX1_=530, Y0_=300;
-const DEPART=(()=>{const q=new URLSearchParams(location.search).get('de');return q==='tour'?[PX1_+66,Y0_+40]:q==='garde'?[400,740]:[400,700];})();
+const DEPART=(()=>{const q=new URLSearchParams(location.search).get('de');return [400,700];})();
 const hA=(x,y,k)=>{let n=((x*73856093)^(y*19349663)^(k*83492791))|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
 const lin=(g,x0,y0,x1,y1,st)=>{const gr=g.createLinearGradient(x0,y0,x1,y1);st.forEach(([o,c])=>gr.addColorStop(o,c));return gr;};
 const R=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
@@ -139,8 +139,6 @@ function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0}
   /* le camion qui veut entrer */
   P('x_jol_blc_vide_sol',W/2,H+200,{anim:'blc_camion',camion:true});
   P('x_jol_blc_vide_sol',W/2,H+210,{remorque:true,libelle:'Fouiller',nom:'LA REMORQUE',demi:46});
-  P('x_jol_blc_vide_sol',PX1+66,Y0+12,{agir:guerite,libelle:'Gardien',nom:'MONTER À LA TOUR',demi:30});
-  P('x_jol_blc_vide_sol',-200,H+300,{anim:'blc_police',police:true});
   return D;}
 const bacs=()=>DECOR.filter(o=>o.bac);
 function surPlace(o){return !o.porte&&o.x>ZONE.x0&&o.x<ZONE.x1&&o.y>ZONE.y0&&o.y<ZONE.y1+10;}
@@ -180,8 +178,7 @@ setTimeout(majBlocus,600);
 /* ====================== LE BUTIN, LA POLICE, LA GARDE À VUE ======================
    Tout reste local (localStorage) : le butin, et l'heure de fin de la garde à vue. */
 const LS=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');localStorage.setItem(k,JSON.stringify(v));}catch(x){return null;}};
-/* si tu es encore en garde à vue, on te ramène en cellule */
-try{if((LS('blc_gav_fin')||0)>Date.now())location.replace('garde.html');}catch(x){}
+try{localStorage.removeItem('blc_gav_fin');}catch(x){}
 let BUTIN=LS('blc_butin')||[];let VOLS=0;
 const LOTS=[['Carton de baskets',180],['Télé 55 pouces',420],['Caisse de pastis',90],['Régime de bananes',15],['Pièces de moteur',260],['Lot de téléphones',650],['Rouleaux de tissu',120],['Café vert en sacs',140]];
 function fouiller(o){if(CAM.etat!=='bloque'){mot('La remorque roule, impossible.');return;}if(CAM.vide){mot('Il n’y a plus rien.');return;}
@@ -199,9 +196,8 @@ const AP_FLIC={peau:2,cheveux:1,coiffe:0,barbe:0,haut:0,veste:16,bas:0,pantalon:
 const AP_COM={peau:3,cheveux:6,coiffe:1,barbe:2,haut:5,veste:11,bas:0,pantalon:9,souliers:0,chaussures:0,sac:0,chapeau:0,raye:0,motif:0,_pnj:true};
 const AP_GARDIEN={peau:5,cheveux:0,coiffe:0,barbe:1,haut:2,veste:16,bas:0,pantalon:9,souliers:0,chaussures:0,sac:0,chapeau:1,raye:0,motif:0,_pnj:true};
 let POL={etat:'absent',t:0,vx:-60,vy:H+60,agents:[]};let BLOCUS_DEPUIS=0,APPEL=0;
-try{if(/[?&]police=1/.test(location.search))setTimeout(()=>appelerPolice(0),1500);}catch(x){}
-function appelerPolice(delai){if(POL.etat!=='absent'||APPEL)return;APPEL=Date.now()+delai*1000;}
-function policePas(dt){
+function appelerPolice(delai){return;if(POL.etat!=='absent'||APPEL)return;APPEL=Date.now()+delai*1000;}
+function policePas(dt){return;
   if(blocusTient()){if(!BLOCUS_DEPUIS)BLOCUS_DEPUIS=Date.now();if(Date.now()-BLOCUS_DEPUIS>22000)appelerPolice(0);}else BLOCUS_DEPUIS=0;
   if(POL.etat==='absent'&&APPEL&&Date.now()>APPEL){APPEL=0;POL.etat='arrive';POL.vx=290;POL.vy=H+80;POL.agents=[];mot('🚨 La police arrive !');try{vibrer&&vibrer([40,60,40]);}catch(x){}}
   if(POL.etat==='arrive'){POL.vy-=dt*110;if(POL.vy<=640){POL.vy=640;POL.etat='descend';POL.t=0;POL.agents=[{x:POL.vx-30,y:650,ap:AP_COM,chef:true},{x:POL.vx+30,y:650,ap:AP_FLIC}];}}
