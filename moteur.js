@@ -34616,19 +34616,3 @@ function poser(){if(document.getElementById('menuRond'))return;const s=document.
 if(document.body)setTimeout(poser,400);else addEventListener('DOMContentLoaded',()=>setTimeout(poser,400));
 }catch(x){}})();
 
-if(!PISTE)return;
-let tampon=null,charge=false,src=null,gain=null;
-const voulu=()=>{try{return SON_PRET&&(typeof REG==='undefined'||REG.sons!==false)&&V.mus>0&&!document.hidden;}catch(x){return false;}};
-const volume=()=>Math.min(1.2,V.mus*1.35);
-async function charger(){if(charge)return;charge=true;
-  try{const r=await fetch(PISTE+'?v=1',{cache:'force-cache'});const b=await r.arrayBuffer();tampon=await new Promise((ok,ko)=>A().decodeAudioData(b,ok,ko));}catch(x){charge=false;}}
-function lancer(){const c=A();if(src||!tampon)return;
-  gain=c.createGain();gain.gain.setValueAtTime(0.0001,c.currentTime);gain.gain.exponentialRampToValueAtTime(Math.max(0.0001,volume()),c.currentTime+2.5);gain.connect(c.destination);
-  src=c.createBufferSource();src.buffer=tampon;src.loop=true;src.connect(gain);src.start();}
-function arreter(){if(!src)return;const c=A(),s=src,g=gain;src=null;gain=null;
-  try{g.gain.cancelScheduledValues(c.currentTime);g.gain.setValueAtTime(Math.max(0.0001,g.gain.value),c.currentTime);g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+.8);}catch(x){}
-  setTimeout(()=>{try{s.stop();}catch(x){}try{g.disconnect();}catch(x){}},900);}
-setInterval(()=>{try{
-  if(voulu()){if(!tampon){charger();return;}if(!src)lancer();else{const c=A();gain.gain.setTargetAtTime(Math.max(0.0001,volume()),c.currentTime,.3);}}
-  else arreter();}catch(x){}},700);
-})();
