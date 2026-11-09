@@ -10784,7 +10784,7 @@ let TXT_FERME=null;
 /* SI port.js NE CHARGE PAS, les cinquante-trois symboles ci-dessous
    restent indéfinis et le port ne se dessine pas, sans un mot. On le dit. */
 try{
-if(CARTE==='spawn'){try{let lieu=window.LIEU_PAGE||'';try{lieu=lieu||new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':(lieu==='stade'?'stade.js':(lieu==='plage'?'plage.js':(lieu==='corniche'?'corniche.js':'joliette.js')))));}catch(x){console.warn('JOL',x);JOL=null;}}
+if(CARTE==='spawn'){try{let lieu=window.LIEU_PAGE||'';try{lieu=lieu||new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':(lieu==='stade'?'stade.js':(lieu==='plage'?'plage.js':(lieu==='corniche'?'corniche.js':(lieu==='blocus'?'blocus.js':'joliette.js'))))));}catch(x){console.warn('JOL',x);JOL=null;}}
 if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar,dessinerLePanorama}=eval(await chargerMorceau('port.js')));}
 if(CARTE==='tokyo'){TKM=eval(await chargerMorceau('tokyo.js'));}
 }catch(erPort){
@@ -12044,7 +12044,7 @@ const X0=Math.round(x-C.W/2), Y0=Math.round(y-C.sol+dy);
 if(o.flip){g.save();g.translate(Math.round(x)*2,0);g.scale(-1,1);}
 ombrePortee(g,C,x,y+dy,o.t);
 g.drawImage(C.toile,X0,Y0,C.W,C.H);
-if(CARTE==='spawn'&&(!window.LIEU_PAGE||window.LIEU_PAGE==='stade'||window.LIEU_PAGE==='plage'||window.LIEU_PAGE==='corniche')&&(o.t||'').slice(0,6)==='x_jol_'){const k=nuitDecor();if(k>0.02){g.globalAlpha=k;g.drawImage(versionNuit(C),X0,Y0,C.W,C.H);g.globalAlpha=1;}}
+if(CARTE==='spawn'&&(!window.LIEU_PAGE||window.LIEU_PAGE==='stade'||window.LIEU_PAGE==='plage'||window.LIEU_PAGE==='corniche'||window.LIEU_PAGE==='blocus')&&(o.t||'').slice(0,6)==='x_jol_'){const k=nuitDecor();if(k>0.02){g.globalAlpha=k;g.drawImage(versionNuit(C),X0,Y0,C.W,C.H);g.globalAlpha=1;}}
 if(lampesAllumees()){const t=o.t||'';
 /* LES FEUX PORTÉS PAR LE CALQUE. Les tests par nom ci-dessous ne
    marchent que pour un dessin dont on connaît d'avance la taille : la
@@ -20124,7 +20124,7 @@ DECOR.filter(o=>o.t==='bancP').sort((a,b)=>(a.y-b.y)||(a.x-b.x))
 return l;
 }
 function coinDuJoueur(){
-if(window.LIEU_PAGE==='terrasses')return 'à la Galerie Bleue';if(window.LIEU_PAGE==='stade')return 'au Vélodrome';if(window.LIEU_PAGE==='plage')return 'à la plage des Catalans';if(window.LIEU_PAGE==='corniche')return 'sur la Corniche';
+if(window.LIEU_PAGE==='terrasses')return 'à la Galerie Bleue';if(window.LIEU_PAGE==='stade')return 'au Vélodrome';if(window.LIEU_PAGE==='plage')return 'à la plage des Catalans';if(window.LIEU_PAGE==='corniche')return 'sur la Corniche';if(window.LIEU_PAGE==='blocus')return 'au blocus';
 if(CARTE==='extramar')return 'à Extramar';
 if(CARTE==='garde')return 'à Notre-Dame';
 if(CARTE==='tokyo')return 'à Tokyo';
