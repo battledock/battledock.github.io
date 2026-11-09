@@ -34571,23 +34571,43 @@ const CSS_MR=`#menuRond{position:fixed;right:12px;bottom:calc(14px + env(safe-ar
 #menuTir .f{position:absolute;left:0;right:0;bottom:0;background:#f6f1e6;border-radius:24px 24px 0 0;padding:10px 14px calc(16px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .22s cubic-bezier(.2,.8,.2,1);box-shadow:0 -10px 30px rgba(0,0,0,.3)}
 #menuTir.on .f{transform:none}
 #menuTir .pg{width:44px;height:5px;border-radius:3px;background:#d8cfbe;margin:0 auto 12px}
-#menuTir .tt{font:800 12px 'Baloo 2',sans-serif;letter-spacing:2px;color:#8a7a5a;margin:0 2px 8px}
+#menuTir .tt{font:800 12px 'Baloo 2',system-ui,sans-serif;letter-spacing:2px;color:#8a7a5a;margin:0 2px 8px}
 #menuTir .g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 #menuTir .g button{border:0;border-radius:18px;padding:14px 10px 12px;background:#fff;box-shadow:0 3px 0 #ddd3c0;display:flex;flex-direction:column;align-items:center;gap:6px;font:800 16px 'Baloo 2',sans-serif;color:#2a2016}
 #menuTir .g button:active{transform:translateY(2px);box-shadow:0 1px 0 #ddd3c0}
 #menuTir .g i{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;font-style:normal;font-size:30px}
-#menuTir .g small{font:700 11.5px 'Baloo 2',sans-serif;color:#8a7a5a;margin-top:-6px}`;
+#menuTir .g small{font:700 11.5px 'Baloo 2',sans-serif;color:#8a7a5a;margin-top:-6px}
+#menuTir .g3{grid-template-columns:1fr 1fr 1fr;gap:8px}#menuTir .g3 button{padding:12px 4px 10px;font-size:14.5px;gap:5px}#menuTir .g3 i{width:58px;height:58px;font-size:26px;border-radius:18px}#menuTir .g3 small{font-size:10.5px;line-height:1.15;text-align:center}
+#menuTir .g3 i img{width:40px;height:40px;image-rendering:pixelated}#menuTir .g3 button{position:relative}
+#menuTir .g button.bt i{opacity:.9}
+#menuTir .g button em{position:absolute;top:7px;right:7px;font:800 9px 'Baloo 2',system-ui,sans-serif;font-style:normal;letter-spacing:.5px;background:#2a2016;color:#f2d27a;border-radius:7px;padding:1px 6px}
+#menuTir .g button.nope{animation:mrNope .35s}@keyframes mrNope{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}`;
 function fermerMenu(){const d=document.getElementById('menuTir');if(!d)return;d.classList.remove('on');setTimeout(()=>d.remove(),220);}
 let TEL_CHARGE=false;
 async function ouvrirTelephone(){try{if(!TEL_CHARGE&&!window.ouvrirLeTelephone){eval(await chargerMorceau('telephone.js'));TEL_CHARGE=true;}window.ouvrirLeTelephone();}catch(x){console.warn('TEL',x);}}
 function ouvrirMenu(){if(document.getElementById('menuTir'))return;try{vibrer(8);}catch(x){}
   const d=document.createElement('div');d.id='menuTir';
-  d.innerHTML='<div class="f"><div class="pg"></div><div class="tt">MENU</div><div class="g">'+
-    '<button data-k="cls" style="grid-column:1/3"><i style="background:linear-gradient(#ffe29a,#e8b840)">🏆</i>Classement<small>les meilleurs du port</small></button>'+
+  /* les icônes en pixel art, 16×16 : une lettre par couleur */
+  const PIX={
+    sac:['.....aaaaaa.....','....a......a....','...bbbbbbbbbb...','..bccccccccccb..','.bccccccccccccb.','.bcddddddddddcb.','.bcdccccccccdcb.','.bcdccccccccdcb.','.bcddddffddddcb.','.bccccceecccccb.','.bccccccccccccb.','.bdddddddddddddb','.bccccccccccccb.','.bccccccccccccb.','..bbbbbbbbbbbb..','................'],
+    vest:['................','....aa....aa....','...abbaaaabba...','..abbbbccbbbba..','.abbbbbccbbbbba.','.abbbbbbbbbbbba.','..aabbbbbbbbaa..','....abbbbbba....','....abbbbbba....','....abbbbbba....','....abbbbbba....','....abbbbbba....','....abbbbbba....','....aaaaaaaa....','................','................'],
+    carnet:['................','...aaaaaaaaaa...','..abbbbbbbbbbc..','..abddddddddbc..','..abbbbbbbbbbc..','..abeeeeeeebbc..','..abbbbbbbbbbc..','..abeeeeebbbbc..','..abbbbbbbbbbc..','..abeeeeeeebbc..','..abbbbbbbbbbc..','..abbbbbbffbbc..','..abbbbbbffbbc..','...aaaaaaaaaa...','................','................'],
+    cls:['................','...aaaaaaaaaa...','..aabbbbbbbbaa..','.a.abbbbbbbba.a.','.a.abbbbbbbba.a.','..aabbbbbbbbaa..','....abbbbbba....','.....abbbba.....','......abba......','.......aa.......','.......aa.......','.....cccccc.....','....cddddddc....','....cccccccc....','................','................'],
+    reg:['................','.......aa.......','...aa.abba.aa...','...abaabbaaba...','....abbbbbba....','..aabbbccbbbaa..','..abbbccccbbba..','...abcc..ccba...','...abcc..ccba...','..abbbccccbbba..','..aabbbccbbbaa..','....abbbbbba....','...abaabbaaba...','...aa.abba.aa...','.......aa.......','................'],
+    carte:['................','..aaa.aaaa.aaa..','..abbaccccaddda.','..abbacccca.dda.','..abbaccccaddda.','..abbac.ccadeda.','..ab.acccca.dda.','..abbaccccaddda.','..abbacccca.dda.','..abbaccccaddda.','..abba.cccaddda.','..abbaccccaddda.','..aaa.aaaa.aaa..','................','................','................']};
+  const PAL={sac:{a:'#5a3418',b:'#5a3418',c:'#e8923a',d:'#b8622a',e:'#5a3418',f:'#f2c94c'},vest:{a:'#1d3a6a',b:'#2a62b0',c:'#f2c94c'},carnet:{a:'#5a3a18',b:'#f6ead0',c:'#c8a060',d:'#d84a3a',e:'#a89070',f:'#e8b030'},
+    cls:{a:'#a86a10',b:'#f2c43a',c:'#6a4a2a',d:'#8a6a4a'},reg:{a:'#4a4e58',b:'#8a909c',c:'#c8ccd4'},carte:{a:'#6a5030',b:'#7ab0d8',c:'#9ad07a',d:'#e8d8a8',e:'#d84a3a'}};
+  const icone=k=>{const c=document.createElement('canvas');c.width=16;c.height=16;const g=c.getContext('2d');PIX[k].forEach((l,y)=>[...l].forEach((ch,x)=>{if(ch!=='.'){g.fillStyle=PAL[k][ch];g.fillRect(x,y,1,1);}}));return c.toDataURL();};
+  const T=[['sac','Sac','tes affaires','#ffe2c0',1],['vest','Vestiaire','tes tenues','#dce8ff',1],['carnet','Carnet','niveau, objectifs','#fff0c8',1],
+    ['cls','Classement','les couronnes','#fff0b8'],['reg','Réglages','son, compte','#ececf0',1],['carte','Carte','aller ailleurs','#dcf4e0',1]];
+  d.innerHTML='<div class="f"><div class="pg"></div><div class="tt">MENU</div><div class="g g3">'+
+    T.map(([k,n,s,c,bientot])=>'<button data-k="'+k+'"'+(bientot?' class="bt"':'')+'><i style="background:'+c+'"><img src="'+icone(k)+'" alt=""></i>'+n+'<small>'+s+'</small>'+(bientot?'<em>bientôt</em>':'')+'</button>').join('')+
     '</div></div>';
   document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));
-  d.addEventListener('click',ev=>{if(ev.target===d){fermerMenu();return;}const b=ev.target.closest('button[data-k]');if(!b)return;const k=b.dataset.k;fermerMenu();
-    if(k==='cls')setTimeout(()=>ouvrirLeClassement(),120);if(k==='tel')setTimeout(ouvrirTelephone,120);});}
+  d.addEventListener('click',ev=>{if(ev.target===d){fermerMenu();return;}const b=ev.target.closest('button[data-k]');if(!b)return;const k=b.dataset.k;
+    if(b.classList.contains('bt')){try{vibrer(20);}catch(x){}b.classList.remove('nope');void b.offsetWidth;b.classList.add('nope');return;}
+    fermerMenu();
+    setTimeout(()=>{try{if(k==='cls')ouvrirLeClassement();if(k==='sac')ouvrirLeSac();if(k==='carnet')ouvrirMonNiveau();if(k==='reg'){REG_VUE='liste';ouvrirReglages();}}catch(x){console.warn('MENU',x);}},120);});}
 function poser(){if(document.getElementById('menuRond'))return;const s=document.createElement('style');s.textContent=CSS_MR;document.head.appendChild(s);
   const b=document.createElement('button');b.id='menuRond';b.setAttribute('aria-label','Menu');b.innerHTML='<i></i>';b.onclick=ouvrirMenu;document.body.appendChild(b);}
 if(document.body)setTimeout(poser,400);else addEventListener('DOMContentLoaded',()=>setTimeout(poser,400));
