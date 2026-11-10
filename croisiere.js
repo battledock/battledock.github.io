@@ -161,10 +161,10 @@ function carteFin(f,r){let d=document.getElementById('bagFin');
     '<div class="paie">Ta paie<big>+'+((r.verse||0)/100).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €</big>'+(r.pourboires?'dont '+(r.pourboires/100).toLocaleString('fr-FR',{minimumFractionDigits:2})+' € de pourboires':'')+'</div>';
   d.innerHTML='<div class="c"><small>FIN DE LA VACATION</small><h2>'+(f.livres>=25?'Docker de légende !':f.livres>=15?'Beau boulot, collègue !':f.livres>=6?'Pas mal pour un début':'Les passagers attendent encore…')+'</h2>'+
     '<div class="g"><div><b>'+f.livres+'</b>valises</div><div><b>'+f.malles+'</b>malles</div><div><b>×'+f.best+'</b>meilleure série</div></div>'+paie+
-    '<button class="b1">Nouvelle vacation</button><button class="b2">Retour au Vieux-Port</button></div>';
+    '<button class="b1">Nouvelle vacation</button><button class="b2">Retour à la place</button></div>';
   if(r&&typeof r.euros==='number'){try{e.euros=r.euros;sauver();majHaut();}catch(x){}}
   d.querySelector('.b1').onclick=()=>{vib(8);d.remove();J.etat='attente';commencer();};
-  d.querySelector('.b2').onclick=()=>{vib(8);try{sauver();}catch(x){}document.body.style.transition='opacity .4s';document.body.style.opacity='0';setTimeout(()=>{location.href='vieuxport.html?de=croisiere&t='+Date.now();},400);};}
+  d.querySelector('.b2').onclick=()=>{vib(8);try{sauver();}catch(x){}document.body.style.transition='opacity .4s';document.body.style.opacity='0';setTimeout(()=>{location.href='spawn.html?de=port&t='+Date.now();},400);};}
 
 /* ---------- LE DÉCOR ---------- */
 function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
@@ -176,7 +176,7 @@ function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0}
   P('x_jol_entree',CHEF.x,CHEF.y+4,{agir:commencer,libelle:'Prendre la vacation',nom:'LE CHEF D’ÉQUIPE'});
   for(let x=40;x<W;x+=80)if(Math.abs(x-400)>40)P('x_jol_bitte',x,QUAI+4,{col:[6,3]});
   for(const x of [80,300,500,720])P('x_jol_barriere',x,CAR_Y-60,{col:[36,3]});
-  P('x_jol_entree',40,520,{agir:()=>{try{sauver();}catch(x){}location.href='vieuxport.html?de=croisiere&t='+Date.now();},libelle:'Retour au Vieux-Port',nom:'VERS LE VIEUX-PORT'});
+  P('x_jol_entree',40,520,{agir:()=>{try{sauver();}catch(x){}location.href='spawn.html?de=port&t='+Date.now();},libelle:'Retour à la place',nom:'VERS LA JOLIETTE'});
   return D;}
 
 /* ---------- LES PASSANTS ---------- */

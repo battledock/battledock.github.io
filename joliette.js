@@ -1015,7 +1015,7 @@ setInterval(()=>{try{
     try{texteVolant(joueur.x,joueur.y-40,'Direction le port…','#f0cf7d');}catch(x){}
     try{sauver();}catch(x){}
     setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';
-      location.href='vieuxport.html?de=joliette'+v;},620);
+      location.href='croisiere.html?de=joliette'+v;},620);
   }}catch(x){}},150);
 
 

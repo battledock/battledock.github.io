@@ -55,7 +55,7 @@ const V=()=>window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';
 const LIEUX=[
  {k:'place',n:'Place de la Joliette',d:'La fontaine, le kiosque, le panneau d’affichage',ic:'⛲',c:'#fff0c8',x:.56,y:.48,url:()=>'spawn.html?t='+Date.now()+V()},
  {k:'galerie',n:'La Galerie Bleue',d:'Les boutiques, Bleu de Chauffe',ic:'🛍️',c:'#dce8ff',x:.62,y:.24,url:()=>'terrasses.html?de=place&t='+Date.now()+V()},
- {k:'port',n:'Le Port',d:'Le Vieux-Port, ses boutiques, le terminal croisières',ic:'⚓',c:'#dcf4e0',x:.3,y:.68,url:()=>'vieuxport.html?de=joliette'+V()}];
+ {k:'port',n:'Le Port',d:'Le terminal croisières : le travail',ic:'⚓',c:'#dcf4e0',x:.3,y:.68,url:()=>'croisiere.html?de=joliette'+V()}];
 function ici(){try{if(window.LIEU_PAGE==='terrasses')return 'galerie';if(CARTE==='extramar')return 'port';if(CARTE==='spawn'&&!window.LIEU_PAGE)return 'place';}catch(x){}return '';}
 function plan(cv){const box=cv.parentNode,D=Math.max(1,Math.round(window.devicePixelRatio||2)),W=box.clientWidth,H=box.clientHeight;cv.width=W*D;cv.height=H*D;const g=cv.getContext('2d');g.setTransform(D,0,0,D,0,0);
   /* la mer et ses vaguelettes */
