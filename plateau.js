@@ -104,7 +104,7 @@ function acteurs(){const t=performance.now()/1000;return [
     if(DIRECT&&Math.floor(t*3)%2){ctx.fillStyle='#f2f0e6';ctx.fillRect(NADIA[0]-cx+4,NADIA[1]-cy-22,4,5);}}}];}
 function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
   P('x_jol_tv_fauteuil_sol',NADIA[0],446,{v:0,col:[36,8]});
-  P('x_jol_tv_fauteuil_sol',438,446,{v:1,col:[36,8],agir:emission,libelle:'S’asseoir',nom:'LE FAUTEUIL DE L’INVITÉ',demi:44});
+  P('x_jol_tv_fauteuil_sol',438,446,{v:1,col:[36,8],agir:jeuTV,libelle:'Jouer au Grand Mistral',nom:'LE PUPITRE DU CANDIDAT',demi:44});
   P('x_jol_tv_table_sol',400,452,{col:[36,6]});
   P('x_jol_tv_gr_sol',262,470,{col:[70,52]});P('x_jol_tv_gr_sol',538,470,{col:[70,52]});
   for(const [x,v] of [[330,0],[470,1]])P('x_jol_tv_vide_sol',x,566,{anim:'tv_cam',v,col:[26,6]});
@@ -112,10 +112,12 @@ function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0}
 function audimat(d,type){AUD=Math.max(.2,AUD+d);const now=Date.now();if(type==='appl')APPL=now+2600;if(type==='rire')RIRE=now+2200;if(type==='huee')HUEE=now+2000;
   try{vibrer&&vibrer(type==='huee'?40:[10,30,10]);}catch(x){}majHUD();}
 function majHUD(){let b=document.getElementById('tvBan');if(!b){b=document.createElement('div');b.id='tvBan';b.style.cssText='position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 74px);transform:translateX(-50%);z-index:2147482300;border-radius:14px;padding:5px 14px;font:800 14px "Baloo 2",sans-serif;pointer-events:none;white-space:nowrap;background:rgba(10,12,20,.88);color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.3)';document.body.appendChild(b);}
-  b.innerHTML=DIRECT?'<span style="color:#ff5a4a">● DIRECT</span> · Audimat <b style="color:#ffd98a">'+AUD.toFixed(1).replace('.',',')+' M</b>':(FINI?'Merci d’être venu · sortie en bas':'Mistral TV · installe-toi dans le fauteuil rouge');}
+  b.innerHTML=DIRECT?'<span style="color:#ff5a4a">● DIRECT</span> · Audimat <b style="color:#ffd98a">'+AUD.toFixed(1).replace('.',',')+' M</b>':(FINI?'Merci d’être venu · sortie en bas':'Mistral TV · le pupitre rouge t’attend');}
 setTimeout(majHUD,700);
 async function danser(){const D=['bas','gauche','haut','droite'];let k=0;DANSE=Date.now()+3200;const y0=joueur.y;
   await new Promise(ok=>{const it=setInterval(()=>{k++;try{joueur.dir=D[k%4];joueur.y=y0-(k%2?2:0);}catch(x){}if(Date.now()>DANSE){clearInterval(it);try{joueur.y=y0;joueur.dir='bas';}catch(x){}ok();}},150);});}
+async function jeuTV(){try{if(!window.ouvrirJeuTV)eval(await chargerMorceau('tvjeu.js'));window.ouvrirJeuTV();}catch(x){console.warn('TVJ',x);}}
+if(/[?&]jeu=1/.test(location.search))setTimeout(jeuTV,1300);
 async function emission(){if(DIRECT)return;if(FINI){await dialogue({nom:'Nadia',ap:AP_NADIA,texte:'« Encore merci ! Vous avez été formidable. La sortie est en bas. »',choix:['Au revoir']});return;}
   window.FP_GEL=Date.now()+86400000;try{joueur.x=438;joueur.y=448;joueur.dir='bas';}catch(x){}
   DIRECT=true;AUD=1.2;majHUD();mot('● Antenne dans 3, 2, 1…');await new Promise(r=>setTimeout(r,1400));
