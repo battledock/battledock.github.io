@@ -8,8 +8,8 @@
    Chargé par moteur.js (eval direct). Ne touche à rien d'autre.
    ===================================================================== */
 (()=>{
-const W=800, H=800, NAV=286, QUAI=312, TAPIS_Y=430, TX0=236, TX1=564;
-const DEPART=(()=>{try{if(new URLSearchParams(location.search).get('de')==='travail')return [24,520];}catch(x){}return [404,392];})();
+const W=800, H=800, NAV=286, QUAI=312, TAPIS_Y=430, TX0=104, TX1=392, PASS=240;
+const DEPART=[44,520];
 const DUREE=90;
 const hA=(x,y,k)=>{let n=((x*73856093)^(y*19349663)^(k*83492791))|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
 const tn=(hex,d)=>{const v=parseInt(hex.slice(1),16);const c=k=>Math.max(0,Math.min(255,((v>>k)&255)+d));return 'rgb('+c(16)+','+c(8)+','+c(0)+')';};
@@ -19,8 +19,9 @@ const vib=x=>{try{vibrer(x);}catch(_){}};
 function mot(t,c){let m=document.getElementById('bagMot');if(!m){m=document.createElement('div');m.id='bagMot';m.style.cssText="position:fixed;left:50%;top:24%;transform:translateX(-50%);z-index:2147482000;background:#2a2016;color:#fff;font:800 16px 'Baloo 2',system-ui,sans-serif;padding:9px 16px;border-radius:14px;box-shadow:0 4px 0 #000;transition:opacity .3s;pointer-events:none;white-space:nowrap";document.body.appendChild(m);}
   m.textContent=t;m.style.background=c||'#2a2016';m.style.opacity='1';clearTimeout(mot.t);mot.t=setTimeout(()=>m.style.opacity='0',1600);}
 
+const FILE_VOIT=[];for(let r=0;r<3;r++)for(let i=0;i<4;i++)if((r*4+i)%5!==3)FILE_VOIT.push({x:572+i*56,y:654+r*50,col:['#c8402a','#3a6ab8','#e8e8e8','#2a2a2a','#e8a020','#3a8a5a'][(r*4+i)%6]});
 /* les trois cars, leur couleur d'étiquette et leur destination */
-const CARS=[{c:'#d8402a',n:'AIX',x:150},{c:'#2a6ab8',n:'CALANQUES',x:400},{c:'#f2b830',n:'AVIGNON',x:650}];
+const CARS=[{c:'#d8402a',n:'AIX',x:86},{c:'#2a6ab8',n:'CALANQUES',x:246},{c:'#f2b830',n:'AVIGNON',x:406}];
 const CAR_Y=716;
 
 /* ---------- LE SOL ---------- */
@@ -36,15 +37,18 @@ function solFin(){const S=2,c=document.createElement('canvas');c.width=W*S;c.hei
   R(0,QUAI,W,6,'#e8e2d4');R(0,QUAI+6,W,1,'#8a8270');
   for(let x=0;x<W;x+=16){R(x,QUAI+10,8,4,'#f2c230');R(x+8,QUAI+10,8,4,'#2a2a2a');}
   /* le passage des piétons, de la passerelle aux cars */
-  for(let y=470;y<CAR_Y-40;y+=14)for(const cx of [150,400,650])R(cx-16,y,32,7,'rgba(255,255,255,.55)');
+  for(let y=470;y<CAR_Y-40;y+=14)for(const cx of CARS.map(c=>c.x))R(cx-16,y,32,7,'rgba(255,255,255,.55)');
   /* les emplacements des cars, peints au sol */
   for(const C of CARS){R(C.x-66,CAR_Y-30,132,2,'#f6f1e6');R(C.x-66,CAR_Y+16,132,2,'#f6f1e6');R(C.x-66,CAR_Y-30,2,48,'#f6f1e6');R(C.x+64,CAR_Y-30,2,48,'#f6f1e6');}
+  /* le coin de l'embarquement : trois files de voitures qui attendent le ferry */
+  for(let r=0;r<4;r++)R(560,640+r*50,236,2,'#f6f1e6');R(552,632,8,154,'#2a8a6a');
+  for(const v of FILE_VOIT){const col=v.col;g.save();g.translate(v.x,v.y);R(0,0,40,20,col);R(6,2,20,16,tn(col,30));R(8,4,16,12,'#2a3a4a');R(10,6,12,8,col);R(2,19,6,3,'#1a1a1a');R(30,19,6,3,'#1a1a1a');R(37,3,3,4,'#fff6c8');R(37,13,3,4,'#fff6c8');g.restore();}
   return c;}
 
 /* ---------- LE PAQUEBOT ---------- */
 function graverPaquebot(){const L=W,HH=NAV+4,{c,g,R}=toile(L,HH),s=NAV;
   const gr=g.createLinearGradient(0,0,0,60);gr.addColorStop(0,'#86c0e8');gr.addColorStop(1,'#d2e8f6');g.fillStyle=gr;g.fillRect(0,0,L,60);
-  const X0=-30,X1=L+30;
+  const X0=-30,X1=486;
   /* la coque : blanche, la ligne de flottaison bleue, la bande rouge */
   R(X0,170,X1-X0,s-170,'#f4f6f8');R(X0,s-24,X1-X0,24,'#1f3a6a');R(X0,s-28,X1-X0,4,'#c8302a');R(X0,s-6,X1-X0,6,'#7a2a2a');
   for(let x=X0+20;x<X1;x+=14)R(x,200,6,5,'#2a3a4a');
@@ -58,9 +62,16 @@ function graverPaquebot(){const L=W,HH=NAV+4,{c,g,R}=toile(L,HH),s=NAV;
   /* les canots de sauvetage, orange */
   for(let x=X0+60;x<X1-40;x+=70){R(x,160,40,9,'#f28a1a');R(x,160,40,2,'#ffb050');R(x+2,169,36,2,'#b85a10');R(x+18,154,4,6,'#9aa4ae');}
   /* la cheminée et le haut */
-  R(L/2-200,40,400,22,'#fafbfc');for(let x=L/2-196;x<L/2+196;x+=12)R(x,44,10,10,'#2a4a6a');
-  R(L/2+120,6,60,40,'#f4f6f8');R(L/2+120,6,60,10,'#1f3a6a');R(L/2+120,16,60,4,'#c8302a');R(L/2+130,-4,40,10,'#2a2a2a');
-  R(L/2-260,30,10,32,'#c8d0d8');R(L/2-262,26,14,4,'#9aa4ae');
+  R(60,40,340,22,'#fafbfc');for(let x=64;x<396;x+=12)R(x,44,10,10,'#2a4a6a');
+  R(300,6,60,40,'#f4f6f8');R(300,6,60,10,'#1f3a6a');R(300,16,60,4,'#c8302a');R(310,-4,40,10,'#2a2a2a');
+  /* la proue du paquebot, arrondie */
+  g.fillStyle='#f4f6f8';g.beginPath();g.moveTo(486,170);g.quadraticCurveTo(520,226,486,s);g.closePath();g.fill();R(470,s-24,22,24,'#1f3a6a');
+  /* LE PORTE-CONTENEURS, à droite : coque sombre, conteneurs, château */
+  R(520,196,L-520,s-196,'#1f2a3a');R(520,s-14,L-520,14,'#8a2a2a');R(520,196,L-520,3,'#3a4a5a');
+  const CC=['#c8402a','#2a6ab8','#3a8a5a','#e8a020','#7a3a6a','#2a8a9a','#d86a2a','#5a5a6a'];
+  for(let i=0;i<9;i++)for(let j=0;j<4;j++){const x=596+i*23,y=190-j*12,col=CC[((i*7+j*3)%CC.length)];R(x,y,22,11,col);R(x,y,22,1.5,tn(col,40));for(let k=x+2;k<x+21;k+=2)R(k,y+2,.5,8,tn(col,-24));R(x,y+10,22,1,tn(col,-50));}
+  R(530,110,52,86,'#f2f2ee');for(let k=0;k<7;k++)R(534,118+k*10,44,4,'#2a3a4a');R(544,92,22,18,'#c8402a');R(544,92,22,4,'#2a2a2a');
+  g.fillStyle='#e8e8e8';g.font='bold 12px "Helvetica Neue",Arial,sans-serif';g.textAlign='left';g.fillText('MEDITERRANÉE EXPRESS',600,s-28);
   return {toile:c,W:L,H:HH,sol:s};}
 function graverPasserelle(){const L=50,HH=70,{c,g,R}=toile(L,HH),cx=L/2,s=HH-2;
   g.fillStyle='rgba(30,30,30,.25)';g.fillRect(cx-12,s-6,30,6);
@@ -94,8 +105,22 @@ function graverCar(i){const C=CARS[i],L=140,HH=60,{c,g,R}=toile(L,HH),cx=L/2,s=H
   return {toile:c,W:L,H:HH,sol:s};}
 function graverBarriere(){const L=40,HH=14,{c,g,R}=toile(L,HH),s=HH-2;R(2,s-8,36,3,'#f2c230');for(let x=2;x<38;x+=8)R(x,s-8,4,3,'#2a2a2a');R(4,s-5,2,5,'#6a6a6a');R(34,s-5,2,5,'#6a6a6a');return {toile:c,W:L,H:HH,sol:s};}
 function graverBitte(){const L=10,HH=10,{c,g,R}=toile(L,HH),cx=5,s=8;R(cx-2.5,s-6,5,6,'#2a2e34');R(cx-3.5,s-7,7,2,'#3a4048');return {toile:c,W:L,H:HH,sol:s};}
+function graverPortiqueQ(){const L=110,HH=330,{c,g,R}=toile(L,HH),x=L/2,s=HH-6,col='#d84a2a';
+  g.fillStyle='rgba(30,26,18,.25)';g.beginPath();g.ellipse(x+10,s,46,6,0,0,7);g.fill();
+  for(const dx of [-40,36]){R(x+dx,s-200,5,200,col);R(x+dx+1,s-200,1.5,200,tn(col,30));for(let y=s-190;y<s;y+=20)R(x+dx,y,5,2,tn(col,-30));R(x+dx-4,s-6,13,6,'#3a3a3a');}
+  R(x-42,s-206,86,10,col);R(x-42,s-196,86,2,tn(col,-30));R(x-6,s-250,12,46,col);R(x-4,s-320,8,72,tn(col,-10));
+  R(x-14,s-214,28,12,'#f2f2ee');R(x-11,s-211,9,5,'#2a3a4a');R(x-2,s-150,4,60,'#2a2a2a');R(x-14,s-92,28,4,'#f2c230');
+  return {toile:c,W:L,H:HH,sol:s};}
+function graverPileQ(){const L=230,HH=96,{c,g,R}=toile(L,HH),s=HH-4;const CC=['#c8402a','#2a6ab8','#3a8a5a','#e8a020','#7a3a6a','#2a8a9a'];
+  g.fillStyle='rgba(30,26,18,.25)';g.fillRect(8,s-4,L-8,8);
+  for(let j=0;j<3;j++)for(let i=0;i<3;i++){const x=6+i*74,y=s-26-j*27,col=CC[(i*5+j*2)%CC.length];R(x,y,72,26,col);R(x,y,72,2,tn(col,40));for(let k=x+3;k<x+70;k+=3)R(k,y+3,1,21,tn(col,-24));R(x,y+24,72,2,tn(col,-50));}
+  return {toile:c,W:L,H:HH,sol:s};}
+function graverPoste(n,nom,col){const L=130,HH=70,{c,g,R}=toile(L,HH),x=L/2,s=HH-4;g.font='bold 9px "Helvetica Neue",Arial,sans-serif';const tw=g.measureText(nom).width,pw=tw+36,px=x-pw/2;
+  g.fillStyle='rgba(30,26,18,.25)';g.beginPath();g.ellipse(x+3,s,10,3,0,0,7);g.fill();R(x-1.5,s-34,3,34,'#3a4048');R(px,s-62,pw,30,col);R(px,s-62,pw,2,'rgba(255,255,255,.35)');
+  g.fillStyle='#fff';g.beginPath();g.arc(px+13,s-47,9,0,7);g.fill();g.fillStyle=col;g.font='bold 12px "Helvetica Neue",Arial,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(n,px+13,s-46.5);
+  g.fillStyle='#fff';g.font='bold 9px "Helvetica Neue",Arial,sans-serif';g.textAlign='left';g.fillText(nom,px+27,s-47);return {toile:c,W:L,H:HH,sol:s};}
 function graverVide(){const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};}
-const GRAVEURS={x_jol_paquebot:graverPaquebot,x_jol_passerelle:graverPasserelle,x_jol_tapis:graverTapis,x_jol_car0:()=>graverCar(0),x_jol_car1:()=>graverCar(1),x_jol_car2:()=>graverCar(2),x_jol_barriere:graverBarriere,x_jol_bitte:graverBitte,x_jol_entree:graverVide};
+const GRAVEURS={x_jol_paquebot:graverPaquebot,x_jol_passerelle:graverPasserelle,x_jol_tapis:graverTapis,x_jol_car0:()=>graverCar(0),x_jol_car1:()=>graverCar(1),x_jol_car2:()=>graverCar(2),x_jol_barriere:graverBarriere,x_jol_bitte:graverBitte,x_jol_entree:graverVide,x_jol_portique:graverPortiqueQ,x_jol_pile:graverPileQ,x_jol_poste1:()=>graverPoste('1','EMBARQUEMENT','#2a8a6a'),x_jol_poste2:()=>graverPoste('2','LE PORTIQUE','#d84a2a'),x_jol_place:()=>graverPoste('←','LA PLACE','#5a6470')};
 function graver(t,v){return (GRAVEURS[t]||graverVide)(v||0);}
 
 /* ---------- LES VALISES ---------- */
@@ -110,7 +135,7 @@ function valiseCanvas(b){const k=b.lourd+'|'+b.t+'|'+b.c;if(SPR[k])return SPR[k]
 
 /* ---------- LA VACATION ---------- */
 const J={etat:'attente',t0:0,belt:[],main:null,livres:0,malles:0,combo:0,best:0,tombes:0,erreurs:0,prochaine:0,vac:null,fin:null};
-const CHEF={x:366,y:388};
+const CHEF={x:300,y:388};
 function hud(){let d=document.getElementById('bagHud');
   if(J.etat!=='jeu'){if(d)d.remove();return;}
   if(!d){d=document.createElement('div');d.id='bagHud';d.style.cssText="position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 58px);transform:translateX(-50%);z-index:2147481000;display:flex;gap:6px;pointer-events:none;font-family:'Baloo 2',system-ui,sans-serif";document.body.appendChild(d);}
@@ -137,6 +162,8 @@ function charger(i){if(J.etat!=='jeu'){mot('Le car attend ses passagers');return
   try{texteVolant(CARS[i].x,CAR_Y-60,'+'+(pb+tip).toFixed(2).replace('.',',')+' €'+(J.combo>2?'  ×'+J.combo:''),'#7ae08a');}catch(x){}
   if(J.combo===5||J.combo===10)mot(J.combo===10?'Dix d’affilée ! Le chef est bluffé !':'Cinq d’affilée ! Pourboires en hausse !','#2a8a4a');}
 const ALEA=L=>L[(Math.random()*L.length)|0];
+async function lancer(f,fn){try{if(!window[fn])eval(await chargerMorceau(f));window[fn]();}catch(x){console.warn('POSTE',f,x);}}
+function partirVers(u){try{sauver();}catch(z){}document.body.style.transition='opacity .4s';document.body.style.opacity='0';setTimeout(()=>{location.href=u+'&t='+Date.now();},400);}
 function nouvelleValise(){const car=(Math.random()*3)|0,lourd=Math.random()<.16?1:0;J.belt.push({x:TX0+18,car,c:CARS[car].c,lourd,t:(Math.random()*TEINTES.length)|0,id:Math.random()});}
 function finir(){J.etat='fin';hud();J.main=null;
   const euros=J.livres*1.2+J.malles*2.6+Math.min(J.best,10)*.2*J.livres/3;
@@ -169,20 +196,26 @@ function carteFin(f,r){let d=document.getElementById('bagFin');
 /* ---------- LE DÉCOR ---------- */
 function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
   P('x_jol_paquebot',W/2,NAV);
-  P('x_jol_passerelle',400,NAV+52);
+  P('x_jol_passerelle',PASS,NAV+52);
   P('x_jol_tapis',(TX0+TX1)/2,TAPIS_Y,{col:[TX1-TX0+30,14]});
   for(let i=0;i<3;i++)P('x_jol_car'+i,CARS[i].x,CAR_Y+10,{col:[132,28],agir:()=>charger(i),libelle:'Charger la valise',nom:'CAR POUR '+CARS[i].n});
   for(const x of [TX0+40,TX0+120,TX0+200,TX0+280])P('x_jol_entree',x,TAPIS_Y+12,{agir:prendre,libelle:'Prendre une valise',nom:'LE TAPIS'});
   P('x_jol_entree',CHEF.x,CHEF.y+4,{agir:commencer,libelle:'Prendre la vacation',nom:'LE CHEF D’ÉQUIPE'});
-  for(let x=40;x<W;x+=80)if(Math.abs(x-400)>40)P('x_jol_bitte',x,QUAI+4,{col:[6,3]});
-  for(const x of [80,300,500,720])P('x_jol_barriere',x,CAR_Y-60,{col:[36,3]});
-  P('x_jol_entree',40,520,{agir:()=>{try{sauver();}catch(x){}location.href='travail.html?de=croisiere&t='+Date.now();},libelle:'Aller au port qui travaille',nom:'LE QUAI'});
+  for(let x=40;x<W;x+=80)if(Math.abs(x-PASS)>40)P('x_jol_bitte',x,QUAI+4,{col:[6,3]});
+  for(const x of [40,480])P('x_jol_barriere',x,CAR_Y-60,{col:[36,3]});
+  /* le coin des portiques, sous le porte-conteneurs */
+  for(const x of [580,730])P('x_jol_portique',x,QUAI+150,{col:[60,6]});
+  P('x_jol_pile',660,QUAI+250,{col:[220,30]});
+  P('x_jol_poste2',655,QUAI+176,{col:[4,3],agir:()=>lancer('portique.js','ouvrirPortique'),libelle:'Poste : le portique',nom:'GRUTIER'});
+  /* le coin de l'embarquement, en bas à droite */
+  P('x_jol_poste1',540,CAR_Y-40,{col:[4,3],agir:()=>lancer('embarquement.js','ouvrirEmbarquement'),libelle:'Poste : l’embarquement',nom:'FERRY'});
+  P('x_jol_place',30,560,{col:[4,3],agir:()=>partirVers('spawn.html?de=port'),libelle:'Retour à la place',nom:'LA PLACE'});
   return D;}
 
 /* ---------- LES PASSANTS ---------- */
 const AP0={peau:1,cheveux:1,coiffe:1,barbe:0,haut:2,veste:0,bas:0,pantalon:9,souliers:0,chaussures:0,sac:0,chapeau:0,raye:0,motif:0,_pnj:true};
 const CHEF_AP=Object.assign({},AP0,{peau:3,coiffe:2,barbe:1,haut:0,veste:17,pantalon:2});
-const PAX=[0,1,2,3,4,5].map(i=>({i,x:400,y:NAV+30,car:i%3,ap:Object.assign({},AP0,{peau:1+(i*3)%5,cheveux:i%4,coiffe:(i*2)%7,haut:[1,2,3,5][i%4],veste:[19,24,22,16,21,23][i],chapeau:i===2?1:0}),dir:'bas',pas:0,att:i*2.4,phase:0}));
+const PAX=[0,1,2,3,4,5].map(i=>({i,x:PASS,y:NAV+30,car:i%3,ap:Object.assign({},AP0,{peau:1+(i*3)%5,cheveux:i%4,coiffe:(i*2)%7,haut:[1,2,3,5][i%4],veste:[19,24,22,16,21,23][i],chapeau:i===2?1:0}),dir:'bas',pas:0,att:i*2.4,phase:0}));
 let TL=performance.now();
 function pas(){const n=performance.now(),dt=Math.min(.05,(n-TL)/1000);TL=n;
   /* le tapis */
@@ -194,10 +227,10 @@ function pas(){const n=performance.now(),dt=Math.min(.05,(n-TL)/1000);TL=n;
   /* les passagers descendent la passerelle et vont à leur car */
   const out=[];
   for(const p of PAX){if(p.att>0){p.att-=dt;continue;}
-    const C=CARS[p.car],cote=C.x<400?190:610;const pts=[[400,NAV+30],[400,QUAI+40],[cote,QUAI+40],[cote,470],[C.x,470],[C.x,CAR_Y-40]];const NS=pts.length-1;
+    const C=CARS[p.car];const pts=[[PASS,NAV+30],[PASS,QUAI+40],[50,QUAI+40],[50,470],[C.x,470],[C.x,CAR_Y-40]];const NS=pts.length-1;
     p.phase+=dt*.5;const seg=Math.min(NS-.001,p.phase),k=seg-Math.floor(seg),a=pts[Math.floor(seg)],b=pts[Math.floor(seg)+1];
     const nx=a[0]+(b[0]-a[0])*k,ny=a[1]+(b[1]-a[1])*k;if(Math.abs(nx-p.x)>Math.abs(ny-p.y))p.dir=nx>p.x?'droite':'gauche';else p.dir='bas';p.x=nx;p.y=ny;p.pas+=dt*8;
-    if(p.phase>=NS){p.phase=0;p.att=3+Math.random()*4;p.car=(Math.random()*3)|0;p.x=400;p.y=NAV+30;continue;}
+    if(p.phase>=NS){p.phase=0;p.att=3+Math.random()*4;p.car=(Math.random()*3)|0;p.x=PASS;p.y=NAV+30;continue;}
     out.push(p);}
   out.push({x:CHEF.x,y:CHEF.y,ap:CHEF_AP,dir:'bas',pas:0});
   return out;}
@@ -215,9 +248,12 @@ function acteurs(){const A=[];
 
 /* ---------- LES COLLISIONS ---------- */
 let PARTI_G=false;
-function bloque(x,y){if(!PARTI_G&&x<8&&y>QUAI+20){PARTI_G=true;try{sauver();}catch(z){}document.body.style.transition='opacity .4s';document.body.style.opacity='0';setTimeout(()=>{location.href='travail.html?de=croisiere&t='+Date.now();},400);return true;}if(y<QUAI+14||x<8||x>W-8||y>H-6)return true;
+function bloque(x,y){if(!PARTI_G&&x<8&&y>QUAI+20){PARTI_G=true;try{sauver();}catch(z){}document.body.style.transition='opacity .4s';document.body.style.opacity='0';setTimeout(()=>{location.href='spawn.html?de=port&t='+Date.now();},400);return true;}if(y<QUAI+14||x<8||x>W-8||y>H-6)return true;
   if(x>TX0-6&&x<TX1+26&&y>TAPIS_Y-16&&y<TAPIS_Y+2)return true;
   for(const C of CARS)if(Math.abs(x-C.x)<66&&y>CAR_Y-26&&y<CAR_Y+14)return true;
+  for(const v of FILE_VOIT)if(x>v.x-4&&x<v.x+44&&y>v.y-2&&y<v.y+24)return true;
+  if(x>540&&x<780&&y>QUAI+200&&y<QUAI+256)return true;
+  for(const px of [580,730])for(const dx of [-40,36])if(Math.abs(x-(px+dx+2))<8&&Math.abs(y-(QUAI+150))<6)return true;
   return false;}
 try{window.__CR={j:()=>joueur,J};}catch(x){}
 return {sol,solFin,decor,bloque,graver,depart:DEPART,figurants:pas,acteurs};
