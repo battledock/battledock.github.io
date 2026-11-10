@@ -2079,7 +2079,9 @@ ac=new (window.AudioContext||window.webkitAudioContext)();
 const sortie=ac.createDynamicsCompressor();
 sortie.threshold.value=-18;sortie.knee.value=26;sortie.ratio.value=2.6;
 sortie.attack.value=0.006;sortie.release.value=0.22;
-sortie.connect(ac.destination);
+/* SUR LA PLACE (le spawn), SILENCE : aucun bruit n'en sort. */
+const SUR_LA_PLACE=(typeof CARTE!=='undefined'&&CARTE==='spawn'&&(!window.LIEU_PAGE||window.LIEU_PAGE==='joliette'));
+if(!SUR_LA_PLACE)sortie.connect(ac.destination);
 SEC=ac.createBiquadFilter();
 /* LE FILTRE DE SORTIE : tout passe par lui. À 5 200 Hz, les cris d'oiseaux
    et les grillons tapaient en plein dans la bande où l'oreille est la plus
