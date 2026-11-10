@@ -116,8 +116,7 @@ function majHUD(){let b=document.getElementById('tvBan');if(!b){b=document.creat
 setTimeout(majHUD,700);
 async function danser(){const D=['bas','gauche','haut','droite'];let k=0;DANSE=Date.now()+3200;const y0=joueur.y;
   await new Promise(ok=>{const it=setInterval(()=>{k++;try{joueur.dir=D[k%4];joueur.y=y0-(k%2?2:0);}catch(x){}if(Date.now()>DANSE){clearInterval(it);try{joueur.y=y0;joueur.dir='bas';}catch(x){}ok();}},150);});}
-async function jeuTV(){try{if(!window.ouvrirJeuTV)eval(await chargerMorceau('tvjeu.js'));window.ouvrirJeuTV();}catch(x){console.warn('TVJ',x);}}
-if(/[?&]jeu=1/.test(location.search))setTimeout(jeuTV,1300);
+function jeuTV(){try{sauver();}catch(x){}location.href='jeutv.html?t='+Date.now();}
 async function emission(){if(DIRECT)return;if(FINI){await dialogue({nom:'Nadia',ap:AP_NADIA,texte:'« Encore merci ! Vous avez été formidable. La sortie est en bas. »',choix:['Au revoir']});return;}
   window.FP_GEL=Date.now()+86400000;try{joueur.x=438;joueur.y=448;joueur.dir='bas';}catch(x){}
   DIRECT=true;AUD=1.2;majHUD();mot('● Antenne dans 3, 2, 1…');await new Promise(r=>setTimeout(r,1400));

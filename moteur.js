@@ -55,9 +55,11 @@ veste:['#4f7d5c','#5a6b8f','#8a5a4a','#6b5f8f','#7d6a3f','#3f5f6b','#8f6a3f','#5
 '#a8524a','#3f7d4a','#c2a04a','#2f3a4a','#7a4f6b','#4a7d7d','#9c5f2f','#5f5f5f',
 /* La Marinière : les teintes de la boutique */
 '#17365a','#1d4a72','#b4302c','#f2ece0','#1d2630','#2f6a5a','#8a2a3a','#c9a24a',
-'#e8dcc0','#3a2a4a','#6a7a3a','#2a6a9a'],
+'#e8dcc0','#3a2a4a','#6a7a3a','#2a6a9a',
+/* Le Grand Mistral : les lots exclusifs */
+'#e86aa0','#5a2ab0','#e8b830'],
 pantalon:['#3a4358','#4a4038','#2f3a2f','#5a4a3a','#3a3a44','#6b5f4a','#2b3340','#7d6a4a',
-'#17365a','#1d2630','#e8dcc0','#5a3a2a','#2f4a3a','#6a5a7a'],
+'#17365a','#1d2630','#e8dcc0','#5a3a2a','#2f4a3a','#6a5a7a','#d8a830'],
 chaussures:['#4a3524','#2f2a24','#5a4a3a','#6b4a28','#3f4a53','#7d5934',
 '#f2ece0','#17365a','#8a2a3a','#c9a24a'],
 sac:['aucun','#7d5934','#4a5c6b','#6b4a4a','#4f6b4a','#8a6a44','#54606b']
@@ -18149,7 +18151,7 @@ const pageOuverte=()=>$('pan').classList.contains('on')
 ||$('catalogue').classList.contains('on')||!!($('crs')&&$('crs').classList.contains('on'))||!!($('nivGagne')&&$('nivGagne').classList.contains('on'))||!!document.querySelector('.zouv')||!!($('emPan')&&$('emPan').classList.contains('on'));   /* la liste en ligne bloquait le tap de fermeture */
 addEventListener('pointerdown',reveillerLeSon,{once:false});
 const surUnBouton=(cible)=>!!(cible&&cible.closest&&cible.closest('#barre,#emPan,button,#fpPop,#fpListe,#action,#hublot,#pan,#page2,#porte,#bandeau,#repond,#hPlaque,#nivPop,#nivGagne,.zouv'));
-const zoneMarche=(x,y,cible)=>!pageOuverte()&&!surUnBouton(cible)&&!window.TK_SANS_JOY&&!window.ECRAN_COUVRANT&&!(cible&&cible.closest&&cible.closest('#rgp,#tel,#blcDia,#menuTir,#labEmo,#aff,#sacN,#crn,#regN,#vesN,#carN,#voeu,#bienv,#tvj'));   /* les écrans par-dessus (classement, téléphone, dialogues) gardent leurs gestes : défilement, taps */   /* au volant, mode boutons : pas de joystick */
+const zoneMarche=(x,y,cible)=>!pageOuverte()&&!surUnBouton(cible)&&!window.TK_SANS_JOY&&!window.ECRAN_COUVRANT&&!(cible&&cible.closest&&cible.closest('#rgp,#tel,#blcDia,#menuTir,#labEmo,#aff,#sacN,#crn,#regN,#vesN,#carN,#voeu,#bienv'));   /* les écrans par-dessus (classement, téléphone, dialogues) gardent leurs gestes : défilement, taps */   /* au volant, mode boutons : pas de joystick */
 document.addEventListener('touchstart',ev=>{
 for(const t of ev.changedTouches){
 if(J.actif)continue;

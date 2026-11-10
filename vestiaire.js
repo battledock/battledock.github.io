@@ -66,8 +66,12 @@ const CATALOGUE={
     {nom:'Pull marin',d:'Laine à maille serrée, chaude et légère.',v:[['h_pull_marin','Bleu nuit',140,'#1e3a6a',{haut:3,veste:16}],['h_pull_bordeaux','Bordeaux',130,'#7a2232',{haut:3,veste:22}]]},
     {nom:'T-shirt',d:'Coton lourd, coupe droite.',v:[['h_tshirt_blanc','Blanc',45,'#f2ece0',{haut:1,veste:19}],['h_tshirt_vert','Vert pin',45,'#2f5a4a',{haut:1,veste:21}]]},
     {nom:'Manteau',d:'Drap de laine anthracite, pour le mistral.',v:[['h_manteau','Anthracite',380,'#3a3e46',{haut:5,veste:11}]]},
-    {nom:'Gilet',d:'Sans manches, à porter sur une chemise.',v:[['h_gilet_moutarde','Moutarde',95,'#c9a24a',{haut:6,veste:23}]]}]},
+    {nom:'Gilet',d:'Sans manches, à porter sur une chemise.',v:[['h_gilet_moutarde','Moutarde',95,'#c9a24a',{haut:6,veste:23}]]},
+    {nom:'Pull « Bise de Nadia »',d:'Lot exclusif du Grand Mistral.',v:[['tv_pull_bise','Rose',0,'#e86aa0',{haut:3,veste:28}]]},
+    {nom:'Blazer Mistral TV',d:'Lot exclusif du Grand Mistral.',v:[['tv_blazer','Violet',0,'#5a2ab0',{haut:0,veste:29}]]},
+    {nom:'Veste à paillettes',d:'Lot exclusif du Grand Mistral.',v:[['tv_veste_or','Or',0,'#e8b830',{haut:0,veste:30}]]}]},
   bas:{nom:'Bas',modeles:[
+    {nom:'Pantalon doré',d:'Lot exclusif du Grand Mistral.',v:[['tv_pantalon_or','Or',0,'#d8a830',{bas:0,pantalon:14}]]},
     {nom:'Pantalon',d:'Coupe droite, toile solide.',v:[['b_jean','Jean brut',90,'#1e3a6a',{bas:0,pantalon:8}],['b_chino','Chino écru',85,'#e2d6b8',{bas:0,pantalon:10}],['b_noir','Noir',95,'#24262a',{bas:0,pantalon:9}]]},
     {nom:'Treillis',d:'Poches cargo, toile kaki.',v:[['b_treillis','Kaki',75,'#4a5a3a',{bas:3,pantalon:12}]]},
     {nom:'Short',d:'Pour la plage et les beaux jours.',v:[['b_short','Écru',50,'#e2d6b8',{bas:1,pantalon:10}]]},
