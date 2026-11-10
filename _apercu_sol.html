@@ -1,0 +1,49 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0}canvas{display:block;width:100vw;height:100vw;image-rendering:pixelated}</style></head><body><canvas id="c" width="400" height="400"></canvas><script>
+const V=+(new URLSearchParams(location.search).get('v')||0);const c=document.getElementById('c'),g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
+const hA=(x,y,k)=>{let n=((x*73856093)^(y*19349663)^(k*83492791))|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
+const tn=(hex,d)=>{const v=parseInt(hex.slice(1),16);const f=k=>Math.max(0,Math.min(255,((v>>k)&255)+d));return 'rgb('+f(16)+','+f(8)+','+f(0)+')';};
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};const W=200,H=200;
+/* une dalle propre : teinte, joint sombre, arête claire */
+function dalle(x,y,w,h,col,j){R(x,y,w,h,j||tn(col,-34));R(x+.5,y+.5,w-1,h-1,col);R(x+.5,y+.5,w-1,.5,tn(col,14));R(x+.5,y+.5,.5,h-1,tn(col,8));R(x+.5,y+h-1,w-1,.5,tn(col,-12));}
+function eau(y0,y1){for(let y=y0;y<y1;y++){const k=(y-y0)/(y1-y0);R(0,y,W,1,'rgb('+(40+k*20|0)+','+(110+k*26|0)+','+(150+k*14|0)+')');}for(let i=0;i<60;i++)R(hA(i,1,2)*W,y0+hA(i,2,2)*(y1-y0),3+hA(i,3,2)*7,.5,'rgba(255,255,255,.25)');}
+function margelle(y){R(0,y,W,7,'#ece4d2');R(0,y,W,1,'#fbf6ea');R(0,y+6,W,1,'#bfb196');for(let x=0;x<W;x+=24)R(x,y,.5,7,'#d6cab2');R(0,y-3,W,3,'rgba(10,30,40,.3)');}
+function bitte(x,y){g.fillStyle='rgba(0,0,0,.22)';g.beginPath();g.ellipse(x+1.5,y,4.5,1.6,0,0,7);g.fill();R(x-3,y-7,6,7,'#2a2e34');R(x-4,y-8.5,8,2.4,'#3a4048');R(x-3,y-7,1.2,7,'#4a525a');}
+function perso(x,y){g.fillStyle='rgba(0,0,0,.22)';g.beginPath();g.ellipse(x,y,6,2,0,0,7);g.fill();R(x-4,y-22,8,13,'#f2c230');R(x-4,y-17,8,2,'#eaeaea');R(x-4,y-9,3.4,9,'#2a3a5a');R(x+.6,y-9,3.4,9,'#2a3a5a');R(x-3,y-30,6,8,'#d8a878');R(x-3.5,y-31,7,3,'#4a2a1a');R(x-5,y-21,1.5,8,'#d8a878');R(x+3.5,y-21,1.5,8,'#d8a878');}
+function lampa(x,y){g.fillStyle='rgba(0,0,0,.2)';g.beginPath();g.ellipse(x+2,y,4,1.4,0,0,7);g.fill();R(x-.8,y-50,1.6,50,'#2f3a34');R(x-.3,y-50,.5,50,'#5a6a60');R(x-4,y-54,8,2,'#2f3a34');R(x-3,y-52,6,5,'#f6e8b8');}
+let T='';
+if(V===0){T='1 · Granit et bois : quai en granit, promenade en bois le long de l’eau';
+  eau(0,40);margelle(40);
+  /* le bois : lattes claires, vis */
+  for(let y=47;y<84;y+=4.6)for(let x=-((y*3|0)%3)*18;x<W;x+=58){const col=['#c09a6a','#b8905e','#c8a476','#b28a58'][(hA(x,y,1)*4)|0];R(x,y,57.5,4.1,col);R(x,y,57.5,.6,tn(col,18));R(x,y+3.5,57.5,.6,tn(col,-22));R(x+3,y+1.8,.6,.6,'#7a6040');R(x+54,y+1.8,.6,.6,'#7a6040');}
+  R(0,84,W,3,'#6a7078');R(0,84,W,.7,'#9aa2aa');
+  /* le granit : longues dalles en lit, une bande sombre tous les 4 rangs */
+  for(let r=0;r<12;r++){const y=87+r*10,dark=r%4===3;for(let x=-((r*17)%40);x<W;x+=dark?20:40){const col=dark?['#7a7e84','#72767c','#80848a'][(hA(x,r,2)*3)|0]:['#d8d2c6','#d2ccbf','#dcd6ca','#cec8ba','#d6d0c3'][(hA(x,r,3)*5)|0];dalle(x,y,dark?20:40,10,col);}}
+  bitte(30,52);bitte(150,52);lampa(100,86);perso(70,150);}
+if(V===1){T='2 · Les rails : grandes dalles claires, rails de grue encastrés, bordure de sécurité';
+  eau(0,30);margelle(30);
+  R(0,37,W,5,'#2a2a2a');for(let x=0;x<W;x+=10){g.fillStyle='#f2c230';g.beginPath();g.moveTo(x,37);g.lineTo(x+5,37);g.lineTo(x+10,42);g.lineTo(x+5,42);g.fill();}
+  for(let y=42;y<H;y+=32)for(let x=-((y/32|0)%2)*24;x<W;x+=48){dalle(x,y,48,32,['#e2ddd2','#dcd7cb','#e6e1d6','#d8d3c6'][(hA(x,y,4)*4)|0],'#a8a296');}
+  /* les rails : deux rails d'acier dans une saignée */
+  for(const y of [70,150]){R(0,y-3,W,8,'#8a8478');for(let x=0;x<W;x+=2)R(x,y-3+hA(x,y,5)*7,1,1,hA(x,y,6)<.5?'#a8a296':'#6a645a');R(0,y,W,2.4,'#5a5e64');R(0,y,W,.8,'#e8ecf0');R(0,y+2,W,.6,'#3a3e44');}
+  for(let x=20;x<W;x+=60){R(x,104,16,10,'#5a6068');R(x+.5,104.5,15,9,'#6a7078');for(let k=0;k<5;k++)R(x+2+k*3,105.5,1.6,7,'#3a4048');}
+  bitte(40,48);bitte(160,48);perso(110,130);}
+if(V===2){T='3 · La rose des vents : dalles en éventail autour d’une rose de laiton';
+  R(0,0,W,H,'#d6cfc0');
+  const cx=100,cy=105;
+  for(let r=14;r<150;r+=9){const n=Math.max(8,Math.round(r*.55));for(let i=0;i<n;i++){const a0=i/n*6.283+(r%2)*.1,a1=(i+1)/n*6.283+(r%2)*.1,col=['#e2dccf','#dcd5c7','#e6e0d4','#d8d1c2'][(hA(r,i,7)*4)|0];
+    g.fillStyle=tn(col,-30);g.beginPath();g.arc(cx,cy,r+9,a0,a1);g.arc(cx,cy,r,a1,a0,true);g.closePath();g.fill();g.fillStyle=col;g.beginPath();g.arc(cx,cy,r+8.5,a0+.006,a1-.006);g.arc(cx,cy,r+.5,a1-.006,a0+.006,true);g.closePath();g.fill();}
+    if(r===41){g.strokeStyle='#7a7e84';g.lineWidth=4;g.beginPath();g.arc(cx,cy,r+4.5,0,7);g.stroke();}}
+  g.fillStyle='#3a4a5a';g.beginPath();g.arc(cx,cy,22,0,7);g.fill();g.fillStyle='#e6dcc4';g.beginPath();g.arc(cx,cy,20.5,0,7);g.fill();
+  for(let i=0;i<8;i++){const a=i/8*6.283-Math.PI/2,L=i%2?12:19;g.fillStyle=i%2?'#c8a050':'#b8822a';g.beginPath();g.moveTo(cx+Math.cos(a)*L,cy+Math.sin(a)*L);g.lineTo(cx+Math.cos(a+.3)*4,cy+Math.sin(a+.3)*4);g.lineTo(cx+Math.cos(a-.3)*4,cy+Math.sin(a-.3)*4);g.fill();}
+  g.fillStyle='#3a4a5a';g.font='bold 6px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText('N',cx,cy-17);g.fillText('S',cx,cy+17);g.fillText('E',cx+17,cy);g.fillText('O',cx-17,cy);
+  perso(150,170);}
+if(V===3){T='4 · Le quai de pierre de Marseille : pierre de Cassis, caniveau, pavés en bandes';
+  eau(0,34);margelle(34);
+  /* une bande de pavés sombres, un caniveau d'acier, puis la pierre claire en opus romain */
+  for(let y=41;y<62;y+=5)for(let x=-((y/5|0)%2)*3;x<W;x+=6)dalle(x,y,6,5,['#8a847a','#827c72','#928c82'][(hA(x,y,8)*3)|0],'#5a554c');
+  R(0,62,W,4,'#9aa0a6');for(let x=0;x<W;x+=3)R(x,62.6,1.8,2.8,'#4a5058');
+  const OP=[[0,0,24,16],[24,0,16,16],[40,0,24,24],[0,16,16,24],[16,16,24,8],[16,24,24,16],[40,24,24,16]];
+  for(let by=66;by<H;by+=40)for(let bx=0;bx<W;bx+=64)for(const [dx,dy,w,h] of OP)if(by+dy<H)dalle(bx+dx,by+dy,w,h,['#eadfc6','#e4d8bd','#efe5ce','#e0d4b8','#e8dcc2'][(hA(bx+dx,by+dy,9)*5)|0],'#bfb196');
+  bitte(50,44);bitte(150,44);lampa(30,70);perso(110,150);}
+g.setTransform(1,0,0,1,0,0);g.fillStyle='rgba(20,20,30,.8)';g.fillRect(0,372,400,28);g.fillStyle='#fff';g.font='bold 11px Arial';g.textAlign='center';g.fillText(T,200,390);
+</script></body></html>

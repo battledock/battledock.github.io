@@ -30,12 +30,17 @@ function solFin(){const S=2,c=document.createElement('canvas');c.width=W*S;c.hei
   R(0,0,W,NAV,'#2a6a8a');
   for(let y=NAV;y<QUAI;y++){R(0,y,W,1,'rgb('+(36+(y-NAV))+','+(96+(y-NAV))+','+(126+(y-NAV))+')');}
   for(let i=0;i<300;i++)R(hA(i,1,3)*W,NAV+hA(i,2,3)*(QUAI-NAV),3+hA(i,3,3)*6,.5,'rgba(255,255,255,.14)');
-  /* le quai : béton clair, joints, et les bandes jaunes de sécurité */
-  R(0,QUAI,W,H-QUAI,'#bdb5a4');
-  for(let y=QUAI;y<H;y+=24)for(let x=-((y/24|0)%2)*30;x<W;x+=60)R(x+.5,y+.5,59,23,['#cdc6b6','#c8c1b0','#d2cbbb','#c4bdac'][(hA(x,y,4)*4)|0]);
-  for(let i=0;i<2600;i++)R(hA(i,4,5)*W,QUAI+hA(i,5,5)*(H-QUAI),1,1,hA(i,6,5)<.5?'rgba(255,255,255,.25)':'rgba(60,50,40,.10)');
-  R(0,QUAI,W,6,'#e8e2d4');R(0,QUAI+6,W,1,'#8a8270');
-  for(let x=0;x<W;x+=16){R(x,QUAI+10,8,4,'#f2c230');R(x+8,QUAI+10,8,4,'#2a2a2a');}
+  /* LE QUAI DE PIERRE DE MARSEILLE : la margelle claire au bord de l'eau,
+     une bande de pavés sombres, un caniveau d'acier, puis la pierre claire
+     posée en opus romain (grands et petits carrés mêlés). */
+  const tn2=(hex,d)=>{const v=parseInt(hex.slice(1),16);const f=k=>Math.max(0,Math.min(255,((v>>k)&255)+d));return 'rgb('+f(16)+','+f(8)+','+f(0)+')';};
+  const dalle=(x,y,w,h,col,j)=>{R(x,y,w,h,j||tn2(col,-34));R(x+.5,y+.5,w-1,h-1,col);R(x+.5,y+.5,w-1,.5,tn2(col,14));R(x+.5,y+.5,.5,h-1,tn2(col,8));R(x+.5,y+h-1,w-1,.5,tn2(col,-12));};
+  R(0,QUAI-3,W,3,'rgba(10,30,40,.3)');
+  R(0,QUAI,W,7,'#ece4d2');R(0,QUAI,W,1,'#fbf6ea');R(0,QUAI+6,W,1,'#bfb196');for(let x=0;x<W;x+=24)R(x,QUAI,.5,7,'#d6cab2');
+  for(let y=QUAI+7;y<QUAI+28;y+=5)for(let x=-((y/5|0)%2)*3;x<W;x+=6)dalle(x,y,6,5,['#8a847a','#827c72','#928c82'][(hA(x,y,8)*3)|0],'#5a554c');
+  R(0,QUAI+28,W,4,'#9aa0a6');for(let x=0;x<W;x+=3)R(x,QUAI+28.6,1.8,2.8,'#4a5058');
+  const OP=[[0,0,24,16],[24,0,16,16],[40,0,24,24],[0,16,16,24],[16,16,24,8],[16,24,24,16],[40,24,24,16]];
+  for(let by=QUAI+32;by<H;by+=40)for(let bx=0;bx<W;bx+=64)for(const [dx,dy,w,h] of OP)if(by+dy<H)dalle(bx+dx,by+dy,w,Math.min(h,H-by-dy),['#eadfc6','#e4d8bd','#efe5ce','#e0d4b8','#e8dcc2'][(hA(bx+dx,by+dy,9)*5)|0],'#bfb196');
   /* le passage des piétons, de la passerelle aux cars */
   for(let y=470;y<CAR_Y-40;y+=14)for(const cx of CARS.map(c=>c.x))R(cx-16,y,32,7,'rgba(255,255,255,.55)');
   /* les emplacements des cars, peints au sol */
