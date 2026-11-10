@@ -153,6 +153,30 @@ g.beginPath();g.moveTo(cx-4,s-45);g.lineTo(cx+4,s-45);g.lineTo(cx,s-40);g.closeP
 return {toile:c,W:L,H:HH,sol:s};
 }
 
+/* LES PANNEAUX DE DIRECTION : un poteau vert, des flèches crème, comme dans les vraies rues */
+function graverDirection(L0){
+const L=150,HH=78,{c,g,R}=toile(L,HH),cx=L/2,s=HH-5;
+g.fillStyle='rgba(30,22,14,.24)';g.beginPath();g.ellipse(cx+2,s,9,2.6,0,0,7);g.fill();
+/* le socle et le poteau */
+R(cx-3.5,s-4,7,4,'#24503a');R(cx-3.5,s-4,7,1,'#3e7a58');
+R(cx-1.5,s-60,3,57,'#2f6b4a');R(cx-1.5,s-60,1,57,'#4a8c66');R(cx+1,s-60,.5,57,'#1d4630');
+R(cx-2.5,s-63,5,3,'#2f6b4a');g.fillStyle='#e8c06a';g.beginPath();g.arc(cx,s-65,2.4,0,7);g.fill();R(cx-.8,s-66.5,1,1,'#fff3c4');
+/* les lames */
+g.font='800 5.6px "Baloo 2",system-ui,sans-serif';g.textBaseline='middle';
+L0.forEach(([txt,sens,fl],i)=>{const y=s-56+i*11,w=Math.ceil(g.measureText(txt).width)+(fl?11:6)+9,h=8.5;
+  const x0=sens>0?cx-3:cx+3-w;
+  const pt=(x,yy)=>g.lineTo(x,yy);
+  const forme=(dx,dy,col)=>{g.fillStyle=col;g.beginPath();if(sens>0){g.moveTo(x0+dx,y+dy);pt(x0+w-4+dx,y+dy);pt(x0+w+dx,y+h/2+dy);pt(x0+w-4+dx,y+h+dy);pt(x0+dx,y+h+dy);}
+    else{g.moveTo(x0+w+dx,y+dy);pt(x0+4+dx,y+dy);pt(x0+dx,y+h/2+dy);pt(x0+4+dx,y+h+dy);pt(x0+w+dx,y+h+dy);}g.closePath();g.fill();};
+  forme(0,1.2,'rgba(20,30,20,.35)');forme(0,0,'#f6f1e6');g.fillStyle='#fffaf0';g.fillRect(x0+(sens>0?0:4),y,w-4,1);
+  g.fillStyle='#ddd3c0';g.fillRect(x0+(sens>0?0:4),y+h-1,w-4,1);
+  const tx=sens>0?x0+3:x0+7;g.fillStyle='#1f4a7a';let xx=tx;
+  if(fl){g.save();g.translate(xx+3.5,y+h/2);g.fillStyle='#d8402a';g.beginPath();if(fl==='h'){g.moveTo(0,-3);g.lineTo(3,0);g.lineTo(1.2,0);g.lineTo(1.2,3);g.lineTo(-1.2,3);g.lineTo(-1.2,0);g.lineTo(-3,0);}else{g.moveTo(0,3);g.lineTo(3,0);g.lineTo(1.2,0);g.lineTo(1.2,-3);g.lineTo(-1.2,-3);g.lineTo(-1.2,0);g.lineTo(-3,0);}g.closePath();g.fill();g.restore();xx+=9;}
+  g.fillStyle='#1f4a7a';g.fillText(txt,xx,y+h/2+.4);
+  R(sens>0?cx-1.5:cx-1.5,y+2.5,3,3.5,'#2f6b4a');R(cx-.6,y+3.6,1.2,1.2,'#b8c0b0');});
+return {toile:c,W:L,H:HH,sol:s};
+}
+
 /* LE PANNEAU D'AFFICHAGE de la place — trois dessins à l'essai (window.AFF_V = A, B ou C) */
 function graverPanneauAffiches(){const v=window.AFF_V||'C';return v==='B'?affSucette():v==='C'?affMunicipal():affColonne();}
 /* A — LA COLONNE MORRIS : le cylindre vert, son dôme festonné, des affiches tout autour */
@@ -959,7 +983,7 @@ function ouvrirJournal(){if(document.getElementById('quaiJ'))return;
   ['pointerdown','touchstart','keydown'].forEach(t=>d.addEventListener(t,ev=>ev.stopPropagation()));
   try{vibrer(8);}catch(x){}}
 
-const GRAVEURS={x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_affiches:graverPanneauAffiches,x_jol_tram:graverVide};
+const GRAVEURS={x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_affiches:graverPanneauAffiches,x_jol_tram:graverVide,x_jol_dir_sud:()=>graverDirection([['GALERIE BLEUE',1,'h'],['LE PORT',-1,'b'],['FONTAINE',1,'h']]),x_jol_dir_nord:()=>graverDirection([['GALERIE BLEUE',-1,'h'],['LE PORT',1,'b'],['TRAM',-1,0]])};
 function graver(t,v){return (GRAVEURS[t]||graverVide)(v||0);}
 
 function decor(){
@@ -990,6 +1014,8 @@ function decor(){
   for(const [px] of PORTES)P('x_jol_entree',px,DOCKS_PIED+10,{agir:entrerGalerie,libelle:'Entrer',nom:'LA GALERIE BLEUE'});
   P('x_jol_kiosque',156,600,{col:[96,14],agir:ouvrirJournal,libelle:'Lire le journal',nom:'LE QUAI'});
   P('x_jol_entree',PLACE.CX,628,{agir:()=>VOEU.faire(),libelle:'Faire un vœu',nom:'FONTAINE À VŒUX'});
+  P('x_jol_dir_sud',460,722,{col:[8,4]});
+  P('x_jol_dir_nord',470,446,{col:[8,4]});
   P('x_jol_affiches',622,600,{col:[90,8],agir:ouvrirAffiches,libelle:'Voir les affiches',nom:'À L’AFFICHE',demi:56});
   return D;
 }
@@ -1144,6 +1170,39 @@ function acteurs(){const A=[],now=performance.now();
       if(a<.35){g.fillStyle='rgba(220,245,255,'+(1-a*2.5)+')';for(let k=0;k<6;k++){const an=k/6*6.28;g.fillRect(r.x-cx+Math.cos(an)*a*14,r.y-cy-Math.sin(a*9)*5-Math.abs(Math.sin(an))*3,.8,.8);}}}});}
   return A;}
 return {faire,acteurs};
+})();
+
+/* ---------- LE MOT D'ACCUEIL : la toute première fois sur la place ---------- */
+(()=>{let deja=null;try{deja=localStorage.getItem('jol_bienvenue');}catch(x){}
+if(deja&&!window.BIENV_TOUJOURS)return;
+const ic=(k)=>{const S={
+ gal:'<rect x="1" y="4" width="14" height="10" fill="#1f4a96"/><rect x="1" y="2" width="14" height="3" fill="#2a64b8"/><rect x="6" y="8" width="4" height="6" fill="#f2c94c"/><rect x="2" y="6" width="3" height="3" fill="#8cc4ff"/><rect x="11" y="6" width="3" height="3" fill="#8cc4ff"/>',
+ port:'<rect x="0" y="11" width="16" height="5" fill="#3a8ac4"/><rect x="0" y="11" width="16" height="1" fill="#9ad4f0"/><rect x="3" y="7" width="10" height="4" fill="#d8402a"/><rect x="5" y="3" width="2" height="4" fill="#2a2016"/><rect x="7" y="4" width="5" height="3" fill="#f6f1e6"/>',
+ font:'<rect x="1" y="11" width="14" height="4" fill="#b4a68a"/><rect x="2" y="12" width="12" height="2" fill="#4a9cc4"/><rect x="7" y="5" width="2" height="6" fill="#d8ccb2"/><rect x="4" y="4" width="8" height="2" fill="#f2ead8"/><rect x="7" y="1" width="2" height="3" fill="#9ad4f0"/><rect x="12" y="7" width="3" height="3" fill="#f2b030"/>',
+ aff:'<rect x="2" y="2" width="12" height="11" fill="#c89a5e"/><rect x="3" y="3" width="5" height="6" fill="#fdf6e3"/><rect x="9" y="4" width="4" height="5" fill="#173f86"/><rect x="5" y="2" width="1" height="1" fill="#e8302a"/><rect x="10" y="3" width="1" height="1" fill="#e8302a"/><rect x="7" y="13" width="2" height="3" fill="#2f6b4a"/>'};
+ return '<svg viewBox="0 0 16 16" width="34" height="34" shape-rendering="crispEdges">'+S[k]+'</svg>';};
+const CSS=`#bienv{position:fixed;inset:0;z-index:2147482100;display:flex;align-items:flex-end;justify-content:center;background:rgba(20,26,40,.35);opacity:0;transition:opacity .3s;font-family:'Baloo 2',system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+#bienv.on{opacity:1}#bienv *{box-sizing:border-box}#bienv *::after{content:none!important;display:none!important}
+#bienv .c{width:min(420px,100%);background:#f6f1e6;border-radius:26px 26px 0 0;padding:22px 20px calc(16px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.25);transform:translateY(100%);transition:transform .45s cubic-bezier(.2,1,.3,1)}
+#bienv.on .c{transform:none}
+#bienv .k{font:800 11px 'Baloo 2',system-ui,sans-serif;letter-spacing:2px;color:#8a7a5a}
+#bienv h2{margin:0 0 4px;font:900 27px/1.05 'Baloo 2',system-ui,sans-serif;color:#2a2016}
+#bienv .st{margin:0 0 14px;font:700 15px/1.3 'Baloo 2',system-ui,sans-serif;color:#5a4a32}
+#bienv .l{display:flex;align-items:center;gap:12px;background:#fff;border-radius:16px;padding:8px 12px;margin-bottom:8px;box-shadow:0 3px 0 #ddd3c0;opacity:0;transform:translateY(8px);animation:bvIn .35s forwards}
+#bienv .l svg{flex:none;image-rendering:pixelated}
+#bienv .l b{display:block;font:800 15px/1.1 'Baloo 2',system-ui,sans-serif;color:#2a2016}#bienv .l span{font:700 12.5px/1.2 'Baloo 2',system-ui,sans-serif;color:#8a7a5a}
+@keyframes bvIn{to{opacity:1;transform:none}}
+#bienv button{width:100%;margin-top:6px;border:0;border-radius:18px;padding:14px;background:#2a2016;color:#fff;font:800 17px 'Baloo 2',system-ui,sans-serif;box-shadow:0 4px 0 #000}`;
+const L=[['gal','La Galerie Bleue','Tout en haut, sous les docks : boutiques et café'],['port','Le Port','En bas, par le passage piéton : le travail t’attend'],['font','La fontaine à vœux','Au milieu de la place : un vœu par jour'],['aff','À l’affiche','Le panneau à droite de la fontaine']];
+let calme=0;const guet=setInterval(()=>{const occupe=window.ECRAN_COUVRANT||document.getElementById('dimEcran')||document.hidden;calme=occupe?0:calme+1;if(calme<3)return;clearInterval(guet);if(document.getElementById('bienv'))return;
+  try{localStorage.setItem('jol_bienvenue','1');}catch(x){}
+  if(!document.getElementById('bvCss')){const s=document.createElement('style');s.id='bvCss';s.textContent=CSS;document.head.appendChild(s);}
+  const d=document.createElement('div');d.id='bienv';
+  d.innerHTML='<div class="c"><div class="k">BIENVENUE</div><h2>Place de la Joliette</h2><p class="st">Le cœur du quartier. D’ici, tu vas partout.</p>'+
+    L.map((r,i)=>'<div class="l" style="animation-delay:'+(.25+i*.08)+'s">'+ic(r[0])+'<div><b>'+r[1]+'</b><span>'+r[2]+'</span></div></div>').join('')+'<button>C’est parti</button></div>';
+  document.body.appendChild(d);requestAnimationFrame(()=>requestAnimationFrame(()=>d.classList.add('on')));
+  let fini=false;const f=()=>{if(fini)return;fini=true;try{vibrer(8);}catch(x){}d.classList.remove('on');setTimeout(()=>d.remove(),350);};
+  d.onclick=ev=>{if(ev.target===d)f();};d.querySelector('button').onclick=f;},500);
 })();
 
 ANIM_DECOR.jol_tram=dessinerTram;
