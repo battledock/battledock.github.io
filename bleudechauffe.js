@@ -66,14 +66,12 @@ function dejaPorte(){if(!e.ap||!e.ap._civil)return false;return CATS.every(c=>!E
 /* LE PERSONNAGE NET : dessiné à sa taille réelle, puis agrandi par un nombre entier de pixels écran */
 function dessinePerso(cv,ap,taille,dir){const NW=40,NH=66,DPR=Math.max(1,window.devicePixelRatio||1);const s=Math.max(1,Math.round(taille*DPR));
   if(cv.width!==NW*s){cv.width=NW*s;cv.height=NH*s;cv.style.width=(NW*s/DPR)+'px';cv.style.height=(NH*s/DPR)+'px';}
-  const t=document.createElement('canvas');t.width=NW;t.height=NH;const q=t.getContext('2d');q.imageSmoothingEnabled=false;personne(q,NW/2,NH-4,ap,dir||'bas',0,false);
-  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,cv.width,cv.height);g.drawImage(t,0,0,NW*s,NH*s);}
+  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,cv.width,cv.height);g.setTransform(s,0,0,s,0,0);personne(g,NW/2,NH-4,ap,dir||'bas',0,false);g.setTransform(1,0,0,1,0,0);}
 /* la vignette d'une pièce : on ne garde que la zone du corps qu'elle habille */
 const ZONES={hauts:[8,29,24,16],bas:[8,43,24,17],pieds:[9,56,22,8],tete:[8,13,24,18]};
 function vignette(cv,cat,ap){const DPR=Math.max(1,window.devicePixelRatio||1),[sx,sy,w,h]=ZONES[cat],s=Math.max(1,Math.round(2.6*DPR*(cat==='pieds'?1.25:1)));
   cv.width=w*s;cv.height=h*s;cv.style.width=(w*s/DPR)+'px';cv.style.height=(h*s/DPR)+'px';
-  const t=document.createElement('canvas');t.width=40;t.height=66;const q=t.getContext('2d');q.imageSmoothingEnabled=false;personne(q,20,62,ap,'bas',0,false);
-  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(t,sx,sy,w,h,0,0,w*s,h*s);}
+  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(s,0,0,s,-sx*s,-sy*s);personne(g,20,62,ap,'bas',0,false);g.setTransform(1,0,0,1,0,0);}
 
 const CSS=`#bdc{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#f4efe4;color:#1b2a44;font-family:'Baloo 2',system-ui,sans-serif;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
 #bdc *{box-sizing:border-box}

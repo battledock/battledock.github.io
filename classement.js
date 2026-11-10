@@ -19,7 +19,7 @@ const grade=j=>j.titre||(CLS_GRADES.find(t=>j.N.n>=t[0])||[0,'Mousse'])[1];
 function enPied(ap,dir){const t=document.createElement('canvas');t.width=48;t.height=70;const q=t.getContext('2d');q.imageSmoothingEnabled=false;try{personne(q,24,66,ap,dir||'bas',0,false);}catch(x){}return t;}
 /* le capitaine, en buste, dans l'enseigne */
 function buste(cv){const s=Math.max(2,Math.round(window.devicePixelRatio||2)),W=40,H=40;cv.width=W*s;cv.height=H*s;cv.style.width=W*1.4+'px';cv.style.height=H*1.4+'px';
-  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(enPied(AP_CAPITAINE),4,14,W,H,0,0,W*s,H*s);}
+  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(s,0,0,s,-4*s,-14*s);try{personne(g,24,66,AP_CAPITAINE,'bas',0,false);}catch(x){}g.setTransform(1,0,0,1,0,0);}
 /* LA PHRASE DU CAPITAINE : où tu en es, et ce qu'il te manque */
 function phrase(){const m=L.findIndex(j=>j.id===e.id);
   if(!L.length)return 'Le registre est vide. Va bosser, et ton nom y sera le premier.';
@@ -85,7 +85,7 @@ function rang(j,i,k){const M=metDe(k),val=M[4](j);return '<div class="r'+(j.id==
   '<span class="t"><b>'+esc(j.pseudo)+(j.id===e.id?' · toi':'')+'</b><small>'+(k==='tout'?esc(grade(j))+' · niv. '+j.N.n:M[1]+' '+M[2])+'</small></span><span class="v">'+f(val)+'<small>'+unite(k)+'</small></span></div>';}
 function chips(){return METIERS.map(m=>'<button data-m="'+m[0]+'"'+(MET===m[0]?' class="on"':'')+'>'+m[1]+' '+m[2]+'</button>').join('');}
 function persoCanvas(j,s,dir){const c=document.createElement('canvas'),D=Math.max(1,Math.round(window.devicePixelRatio||2));c.width=40*s*D;c.height=56*s*D;c.style.width=40*s+'px';c.style.height=56*s+'px';
-  const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(enPied(apDe(j),dir||'bas'),4,12,40,56,0,0,40*s*D,56*s*D);return c;}
+  const g=c.getContext('2d');g.imageSmoothingEnabled=false;const k=s*D;g.setTransform(k,0,0,k,-4*k,-12*k);try{personne(g,24,66,apDe(j),dir||'bas',0,false);}catch(x){}g.setTransform(1,0,0,1,0,0);return c;}
 /* B — la piste : chaque tête placée selon son score, sur 3 couloirs pour éviter qu'elles se chevauchent */
 function peindrePiste(cv,Lk,k){const M=metDe(k),W=cv.parentNode.clientWidth,H=150,D=Math.max(1,Math.round(window.devicePixelRatio||2));cv.width=W*D;cv.height=H*D;cv.style.height=H+'px';
   const g=cv.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;const max=Math.max(1,M[4](Lk[0]||{})),x0=26,x1=W-30;

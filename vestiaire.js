@@ -103,10 +103,10 @@ let RAY='hauts',DIR=0,MIENS=new Set((e.garde||[]));const DIRS=['bas','gauche','h
 const civil=()=>!!(e.ap&&e.ap._civil);
 function porteDans(cat,ap){for(const m of CATALOGUE[cat].modeles)for(const v of m.v){if(CHAMPS[cat].every(k=>(ap[k]||0)===(v[4][k]||0)))return v[0];}return null;}
 function dessiner(){const cv=RAC&&RAC.querySelector('.sc canvas');if(!cv)return;const s=3,D=Math.max(1,Math.round(window.devicePixelRatio||2));cv.width=48*s*D;cv.height=70*s*D;cv.style.width=48*s+'px';cv.style.height=70*s+'px';
-  const t=document.createElement('canvas');t.width=48;t.height=70;const q=t.getContext('2d');q.imageSmoothingEnabled=false;
+  const q=cv.getContext('2d');q.imageSmoothingEnabled=false;q.setTransform(1,0,0,1,0,0);q.clearRect(0,0,cv.width,cv.height);q.setTransform(s*D,0,0,s*D,0,0);
   const ap=Object.assign({},DEF_AP,e.ap||{},{_pnj:true});if(!civil()){delete ap._civil;}
   try{if(civil())personne(q,24,66,ap,DIRS[DIR],0,false);else{const a2=Object.assign({},e.ap||{});delete a2._civil;delete a2._pnj;personne(q,24,66,a2,DIRS[DIR],0,false);}}catch(x){}
-  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(t,0,0,48,70,0,0,48*s*D,70*s*D);}
+  q.setTransform(1,0,0,1,0,0);}
 function porter(id){const P=PAR_ID[id];if(!P)return;const ski=e.ap&&e.ap.ski;
   const ap=Object.assign({},DEF_AP,e.ap||{});if(!civil()){Object.assign(ap,{haut:1,veste:19,bas:0,pantalon:8,souliers:1,chaussures:6,chapeau:0,motif:0,raye:0});}
   delete ap.deguisement;if(P.cat==='hauts'){delete ap._motif;ap.motif=0;}Object.assign(ap,P.v[4],{_civil:true});if(!ap._motif)delete ap._motif;if(ski)ap.ski=ski;e.ap=ap;try{sauver();}catch(x){}vib(10);peindre();}
