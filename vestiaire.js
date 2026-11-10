@@ -61,6 +61,11 @@ function feuille(css,cssId,tete){let st=document.getElementById(cssId);if(!st){s
 /* le catalogue de Bleu de Chauffe (mêmes identifiants que le serveur) */
 const CATALOGUE={
   hauts:{nom:'Hauts',modeles:[
+    {nom:'Les premiers',d:'Tenue d’ancien, réservée aux pionniers (niv. 2 à 5). Non vendue.',v:[['anc_premiers','Tenue d’ancien',0,'#2a5aa8',{haut:1,veste:'#2a5aa8',_motif:'etoile',motif:0,chapeau:1,bas:0,pantalon:'#2a3a5a'}]]},
+    {nom:'Ancien du port',d:'Tenue d’ancien (niv. 6 à 12). Non vendue.',v:[['anc_ancien','Tenue d’ancien',0,'#1e3a6a',{haut:3,veste:'#1e3a6a',_motif:'',motif:2,raye:19,chapeau:6,bas:0,pantalon:'#3a4048'}]]},
+    {nom:'Vétéran',d:'Tenue d’ancien (niv. 13 à 16). Non vendue.',v:[['anc_veteran','Tenue d’ancien',0,'#3a5a8a',{haut:0,veste:'#3a5a8a',_motif:'retro',motif:0,chapeau:1,bas:0,pantalon:'#2a3a5a'}]]},
+    {nom:'Doyen des quais',d:'Tenue d’ancien (niv. 17 à 20). Non vendue.',v:[['anc_doyen','Tenue d’ancien',0,'#1a2a44',{haut:5,veste:'#1a2a44',_motif:'capitaine',motif:0,chapeau:6,bas:0,pantalon:'#4a4e56'}]]},
+    {nom:'Légende du port',d:'Tenue d’ancien (niv. 21 et +). Non vendue.',v:[['anc_legende','Tenue d’ancien',0,'#d8a830',{haut:0,veste:'#d8a830',_motif:'docker',motif:0,chapeau:1,bas:0,pantalon:'#1a1a1e'}]]},
     {nom:'Veste de travail',d:'Le bleu de chauffe : coton épais, poches plaquées.',v:[['h_veste_bleu','Bleu',240,'#1d4a8a',{haut:0,veste:17}],['h_veste_noire','Noire',260,'#24262a',{haut:0,veste:20}]]},
     {nom:'Chemise',d:'Col boutonné, manches retroussées.',v:[['h_chemise_lin','Lin écru',160,'#e8dcc0',{haut:2,veste:24}],['h_chemise_bleu','Oxford',120,'#1e3a6a',{haut:2,veste:16}]]},
     {nom:'Pull marin',d:'Laine à maille serrée, chaude et légère.',v:[['h_pull_marin','Bleu nuit',140,'#1e3a6a',{haut:3,veste:16}],['h_pull_bordeaux','Bordeaux',130,'#7a2232',{haut:3,veste:22}]]},
@@ -104,7 +109,7 @@ function dessiner(){const cv=RAC&&RAC.querySelector('.sc canvas');if(!cv)return;
   const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(t,0,0,48,70,0,0,48*s*D,70*s*D);}
 function porter(id){const P=PAR_ID[id];if(!P)return;const ski=e.ap&&e.ap.ski;
   const ap=Object.assign({},DEF_AP,e.ap||{});if(!civil()){Object.assign(ap,{haut:1,veste:19,bas:0,pantalon:8,souliers:1,chaussures:6,chapeau:0,motif:0,raye:0});}
-  delete ap.deguisement;Object.assign(ap,P.v[4],{_civil:true});if(ski)ap.ski=ski;e.ap=ap;try{sauver();}catch(x){}vib(10);peindre();}
+  delete ap.deguisement;if(P.cat==='hauts'){delete ap._motif;ap.motif=0;}Object.assign(ap,P.v[4],{_civil:true});if(!ap._motif)delete ap._motif;if(ski)ap.ski=ski;e.ap=ap;try{sauver();}catch(x){}vib(10);peindre();}
 function peindre(){if(!RAC)return;const C=RAC.querySelector('.corps'),y=C.scrollTop;const civ=civil();
   const miens=CATALOGUE[RAY].modeles.flatMap(m=>m.v.filter(v=>MIENS.has(v[0])||v[0]==='k_aucune').map(v=>({m,v})));
   const porte=civ?porteDans(RAY,e.ap):null;let total=0;for(const c of CATS)for(const m of CATALOGUE[c].modeles)for(const v of m.v)if(MIENS.has(v[0]))total++;
