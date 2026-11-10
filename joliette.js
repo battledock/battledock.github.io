@@ -153,30 +153,6 @@ g.beginPath();g.moveTo(cx-4,s-45);g.lineTo(cx+4,s-45);g.lineTo(cx,s-40);g.closeP
 return {toile:c,W:L,H:HH,sol:s};
 }
 
-/* LES PANNEAUX DE DIRECTION : un poteau vert, des flèches crème, comme dans les vraies rues */
-function graverDirection(L0){
-const L=150,HH=78,{c,g,R}=toile(L,HH),cx=L/2,s=HH-5;
-g.fillStyle='rgba(30,22,14,.24)';g.beginPath();g.ellipse(cx+2,s,9,2.6,0,0,7);g.fill();
-/* le socle et le poteau */
-R(cx-3.5,s-4,7,4,'#24503a');R(cx-3.5,s-4,7,1,'#3e7a58');
-R(cx-1.5,s-60,3,57,'#2f6b4a');R(cx-1.5,s-60,1,57,'#4a8c66');R(cx+1,s-60,.5,57,'#1d4630');
-R(cx-2.5,s-63,5,3,'#2f6b4a');g.fillStyle='#e8c06a';g.beginPath();g.arc(cx,s-65,2.4,0,7);g.fill();R(cx-.8,s-66.5,1,1,'#fff3c4');
-/* les lames */
-g.font='800 5.6px "Baloo 2",system-ui,sans-serif';g.textBaseline='middle';
-L0.forEach(([txt,sens,fl],i)=>{const y=s-56+i*11,w=Math.ceil(g.measureText(txt).width)+(fl?11:6)+9,h=8.5;
-  const x0=sens>0?cx-3:cx+3-w;
-  const pt=(x,yy)=>g.lineTo(x,yy);
-  const forme=(dx,dy,col)=>{g.fillStyle=col;g.beginPath();if(sens>0){g.moveTo(x0+dx,y+dy);pt(x0+w-4+dx,y+dy);pt(x0+w+dx,y+h/2+dy);pt(x0+w-4+dx,y+h+dy);pt(x0+dx,y+h+dy);}
-    else{g.moveTo(x0+w+dx,y+dy);pt(x0+4+dx,y+dy);pt(x0+dx,y+h/2+dy);pt(x0+4+dx,y+h+dy);pt(x0+w+dx,y+h+dy);}g.closePath();g.fill();};
-  forme(0,1.2,'rgba(20,30,20,.35)');forme(0,0,'#f6f1e6');g.fillStyle='#fffaf0';g.fillRect(x0+(sens>0?0:4),y,w-4,1);
-  g.fillStyle='#ddd3c0';g.fillRect(x0+(sens>0?0:4),y+h-1,w-4,1);
-  const tx=sens>0?x0+3:x0+7;g.fillStyle='#1f4a7a';let xx=tx;
-  if(fl){g.save();g.translate(xx+3.5,y+h/2);g.fillStyle='#d8402a';g.beginPath();if(fl==='h'){g.moveTo(0,-3);g.lineTo(3,0);g.lineTo(1.2,0);g.lineTo(1.2,3);g.lineTo(-1.2,3);g.lineTo(-1.2,0);g.lineTo(-3,0);}else{g.moveTo(0,3);g.lineTo(3,0);g.lineTo(1.2,0);g.lineTo(1.2,-3);g.lineTo(-1.2,-3);g.lineTo(-1.2,0);g.lineTo(-3,0);}g.closePath();g.fill();g.restore();xx+=9;}
-  g.fillStyle='#1f4a7a';g.fillText(txt,xx,y+h/2+.4);
-  R(sens>0?cx-1.5:cx-1.5,y+2.5,3,3.5,'#2f6b4a');R(cx-.6,y+3.6,1.2,1.2,'#b8c0b0');});
-return {toile:c,W:L,H:HH,sol:s};
-}
-
 /* LE PANNEAU D'AFFICHAGE de la place — trois dessins à l'essai (window.AFF_V = A, B ou C) */
 function graverPanneauAffiches(){const v=window.AFF_V||'C';return v==='B'?affSucette():v==='C'?affMunicipal():affColonne();}
 /* A — LA COLONNE MORRIS : le cylindre vert, son dôme festonné, des affiches tout autour */
@@ -983,7 +959,7 @@ function ouvrirJournal(){if(document.getElementById('quaiJ'))return;
   ['pointerdown','touchstart','keydown'].forEach(t=>d.addEventListener(t,ev=>ev.stopPropagation()));
   try{vibrer(8);}catch(x){}}
 
-const GRAVEURS={x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_affiches:graverPanneauAffiches,x_jol_tram:graverVide,x_jol_dir_sud:()=>graverDirection([['GALERIE BLEUE',1,'h'],['LE PORT',-1,'b'],['FONTAINE',1,'h']]),x_jol_dir_nord:()=>graverDirection([['GALERIE BLEUE',-1,'h'],['LE PORT',1,'b'],['TRAM',-1,0]])};
+const GRAVEURS={x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_affiches:graverPanneauAffiches,x_jol_tram:graverVide};
 function graver(t,v){return (GRAVEURS[t]||graverVide)(v||0);}
 
 function decor(){
@@ -1014,8 +990,6 @@ function decor(){
   for(const [px] of PORTES)P('x_jol_entree',px,DOCKS_PIED+10,{agir:entrerGalerie,libelle:'Entrer',nom:'LA GALERIE BLEUE'});
   P('x_jol_kiosque',156,600,{col:[96,14],agir:ouvrirJournal,libelle:'Lire le journal',nom:'LE QUAI'});
   P('x_jol_entree',PLACE.CX,628,{agir:()=>VOEU.faire(),libelle:'Faire un vœu',nom:'FONTAINE À VŒUX'});
-  P('x_jol_dir_sud',460,722,{col:[8,4]});
-  P('x_jol_dir_nord',470,446,{col:[8,4]});
   P('x_jol_affiches',622,600,{col:[90,8],agir:ouvrirAffiches,libelle:'Voir les affiches',nom:'À L’AFFICHE',demi:56});
   return D;
 }
