@@ -12,7 +12,7 @@
 const W=800, H=800;
 const PIED=206, QUAI_HAUT=258, BASSIN_Y=346, BX0=176, BX1=624;   /* le pied des façades, le haut du bassin, ses bords */
 const RUE=[722,778];                                                /* la rue qui monte vers la Joliette */
-const DEPART=(()=>{try{const q=new URLSearchParams(location.search).get('de');if(q==='croisiere')return [720,330];if(q==='ancien')return [80,330];}catch(x){}return [750,232];})();
+const DEPART=(()=>{try{const q=new URLSearchParams(location.search).get('de');if(q==='croisiere')return [720,330];}catch(x){}return [750,232];})();
 const hA=(x,y,k)=>{let n=((x*73856093)^(y*19349663)^(k*83492791))|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
 const tn=(hex,d)=>{const v=parseInt(hex.slice(1),16);const c=k=>Math.max(0,Math.min(255,((v>>k)&255)+d));return 'rgb('+c(16)+','+c(8)+','+c(0)+')';};
 function toile(L,HH){const D=2,c=document.createElement('canvas');c.width=Math.ceil(L*D);c.height=Math.ceil(HH*D);const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
@@ -198,7 +198,6 @@ function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0}
   for(let y=BASSIN_Y+40;y<H-60;y+=64){P('x_jol_bitte',BX0-12,y,{col:[6,3]});P('x_jol_bitte',BX1+12,y,{col:[6,3]});}
   /* la criée du matin, sur le quai du Port */
   P('x_jol_navette',720,312,{v:0,col:[8,4],agir:()=>partir('croisiere.html?t='+Date.now()),libelle:'Aller au terminal croisières',nom:'NAVETTE · EMBAUCHE'});
-  P('x_jol_navette',80,312,{v:1,col:[8,4],agir:()=>partir('jeu.html?carte=extramar&arrivee=1&de=joliette'),libelle:'Aller à l’ancien port',nom:'ANCIEN PORT'});
   P('x_jol_etal',700,360,{v:0,col:[50,6]});P('x_jol_etal',700,400,{v:1,col:[50,6]});
   /* les deux forts, en bas */
   P('x_jol_fort_g',85,H-4,{col:[170,60]});P('x_jol_fort_d',W-85,H-4,{col:[170,60]});

@@ -28,6 +28,9 @@ try{const sv=JSON.parse(localStorage.getItem('bdl.pix.v2')||'{}');
 }catch(x){}   /* ferme/foret/tokyo sont fermés */
 return null;})();
 const CARTE=(()=>{const c=CARTE_DEMANDEE;return c==='spawn'?'spawn':(c==='large'?'large':(c==='village'?'village':'extramar'));})();
+/* L'ANCIEN PORT EST REMPLACÉ PAR LE VIEUX-PORT (vieuxport.html) : toute
+   adresse qui y menait — liens, métro, sauvegarde, maintenance — y mène. */
+if(CARTE==='extramar'){try{location.replace('vieuxport.html?t='+Date.now());}catch(x){}throw new Error('vers le Vieux-Port');}
 try{window.AU_TRAVAIL=(CARTE==='extramar');}catch(x){}   /* au port, tout le monde est en tenue de docker */
 const ANIM_DECOR={};
 ANIM_DECOR.emb_vide=()=>{};   /* la porte de l'Embauche : le bâtiment se dessine ailleurs */
