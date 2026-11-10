@@ -9,7 +9,7 @@
    ===================================================================== */
 (()=>{
 const W=800, H=800, NAV=286, QUAI=312, TAPIS_Y=430, TX0=236, TX1=564;
-const DEPART=[404,392];
+const DEPART=(()=>{try{if(new URLSearchParams(location.search).get('de')==='travail')return [24,520];}catch(x){}return [404,392];})();
 const DUREE=90;
 const hA=(x,y,k)=>{let n=((x*73856093)^(y*19349663)^(k*83492791))|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
 const tn=(hex,d)=>{const v=parseInt(hex.slice(1),16);const c=k=>Math.max(0,Math.min(255,((v>>k)&255)+d));return 'rgb('+c(16)+','+c(8)+','+c(0)+')';};
@@ -176,7 +176,7 @@ function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0}
   P('x_jol_entree',CHEF.x,CHEF.y+4,{agir:commencer,libelle:'Prendre la vacation',nom:'LE CHEF D’ÉQUIPE'});
   for(let x=40;x<W;x+=80)if(Math.abs(x-400)>40)P('x_jol_bitte',x,QUAI+4,{col:[6,3]});
   for(const x of [80,300,500,720])P('x_jol_barriere',x,CAR_Y-60,{col:[36,3]});
-  P('x_jol_entree',40,520,{agir:()=>{try{sauver();}catch(x){}location.href='spawn.html?de=port&t='+Date.now();},libelle:'Retour à la place',nom:'VERS LA JOLIETTE'});
+  P('x_jol_entree',40,520,{agir:()=>{try{sauver();}catch(x){}location.href='travail.html?de=croisiere&t='+Date.now();},libelle:'Aller au port qui travaille',nom:'LE QUAI'});
   return D;}
 
 /* ---------- LES PASSANTS ---------- */
@@ -214,7 +214,8 @@ function acteurs(){const A=[];
   return A;}
 
 /* ---------- LES COLLISIONS ---------- */
-function bloque(x,y){if(y<QUAI+14||x<8||x>W-8||y>H-6)return true;
+let PARTI_G=false;
+function bloque(x,y){if(!PARTI_G&&x<8&&y>QUAI+20){PARTI_G=true;try{sauver();}catch(z){}document.body.style.transition='opacity .4s';document.body.style.opacity='0';setTimeout(()=>{location.href='travail.html?de=croisiere&t='+Date.now();},400);return true;}if(y<QUAI+14||x<8||x>W-8||y>H-6)return true;
   if(x>TX0-6&&x<TX1+26&&y>TAPIS_Y-16&&y<TAPIS_Y+2)return true;
   for(const C of CARS)if(Math.abs(x-C.x)<66&&y>CAR_Y-26&&y<CAR_Y+14)return true;
   return false;}

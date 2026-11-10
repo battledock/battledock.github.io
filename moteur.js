@@ -31,7 +31,7 @@ const CARTE=(()=>{const c=CARTE_DEMANDEE;return c==='spawn'?'spawn':(c==='large'
 /* L'ANCIEN PORT EST REMPLACÉ PAR LE NOUVEAU PORT (pour l'instant : le
    terminal croisières) : toute adresse qui y menait — liens, métro,
    sauvegarde, maintenance — y mène. */
-if(CARTE==='extramar'){try{location.replace('croisiere.html?t='+Date.now());}catch(x){}throw new Error('vers le port');}
+if(CARTE==='extramar'){try{location.replace('gare.html?t='+Date.now());}catch(x){}throw new Error('vers le port');}
 try{window.AU_TRAVAIL=(CARTE==='extramar');}catch(x){}   /* au port, tout le monde est en tenue de docker */
 const ANIM_DECOR={};
 ANIM_DECOR.emb_vide=()=>{};   /* la porte de l'Embauche : le bâtiment se dessine ailleurs */
@@ -10790,7 +10790,7 @@ let TXT_FERME=null;
 /* SI port.js NE CHARGE PAS, les cinquante-trois symboles ci-dessous
    restent indéfinis et le port ne se dessine pas, sans un mot. On le dit. */
 try{
-if(CARTE==='spawn'){try{let lieu=window.LIEU_PAGE||'';try{lieu=lieu||new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':(lieu==='stade'?'stade.js':(lieu==='plage'?'plage.js':(lieu==='corniche'?'corniche.js':(lieu==='blocus'?'blocus.js':(lieu==='garde'?'garde.js':(lieu==='tour'?'tour.js':(lieu==='plateau'?'plateau.js':(lieu==='labo'?'labo.js':(lieu==='croisiere'?'croisiere.js':'joliette.js')))))))))));}catch(x){console.warn('JOL',x);JOL=null;}}
+if(CARTE==='spawn'){try{let lieu=window.LIEU_PAGE||'';try{lieu=lieu||new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':(lieu==='stade'?'stade.js':(lieu==='plage'?'plage.js':(lieu==='corniche'?'corniche.js':(lieu==='blocus'?'blocus.js':(lieu==='garde'?'garde.js':(lieu==='tour'?'tour.js':(lieu==='plateau'?'plateau.js':(lieu==='labo'?'labo.js':(lieu==='croisiere'?'croisiere.js':(lieu==='gare'?'gare.js':(lieu==='travail'?'travail.js':'joliette.js')))))))))))));}catch(x){console.warn('JOL',x);JOL=null;}}
 if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar,dessinerLePanorama}=eval(await chargerMorceau('port.js')));}
 if(CARTE==='tokyo'){TKM=eval(await chargerMorceau('tokyo.js'));}
 }catch(erPort){
@@ -12050,7 +12050,7 @@ const X0=Math.round(x-C.W/2), Y0=Math.round(y-C.sol+dy);
 if(o.flip){g.save();g.translate(Math.round(x)*2,0);g.scale(-1,1);}
 ombrePortee(g,C,x,y+dy,o.t);
 g.drawImage(C.toile,X0,Y0,C.W,C.H);
-if(CARTE==='spawn'&&(!window.LIEU_PAGE||window.LIEU_PAGE==='stade'||window.LIEU_PAGE==='plage'||window.LIEU_PAGE==='corniche'||window.LIEU_PAGE==='blocus'||window.LIEU_PAGE==='plateau'||window.LIEU_PAGE==='croisiere')&&(o.t||'').slice(0,6)==='x_jol_'){const k=nuitDecor();if(k>0.02){g.globalAlpha=k;g.drawImage(versionNuit(C),X0,Y0,C.W,C.H);g.globalAlpha=1;}}
+if(CARTE==='spawn'&&(!window.LIEU_PAGE||window.LIEU_PAGE==='stade'||window.LIEU_PAGE==='plage'||window.LIEU_PAGE==='corniche'||window.LIEU_PAGE==='blocus'||window.LIEU_PAGE==='plateau'||window.LIEU_PAGE==='croisiere'||window.LIEU_PAGE==='gare'||window.LIEU_PAGE==='travail')&&(o.t||'').slice(0,6)==='x_jol_'){const k=nuitDecor();if(k>0.02){g.globalAlpha=k;g.drawImage(versionNuit(C),X0,Y0,C.W,C.H);g.globalAlpha=1;}}
 if(lampesAllumees()){const t=o.t||'';
 /* LES FEUX PORTÉS PAR LE CALQUE. Les tests par nom ci-dessous ne
    marchent que pour un dessin dont on connaît d'avance la taille : la
@@ -18155,7 +18155,7 @@ const pageOuverte=()=>$('pan').classList.contains('on')
 ||$('catalogue').classList.contains('on')||!!($('crs')&&$('crs').classList.contains('on'))||!!($('nivGagne')&&$('nivGagne').classList.contains('on'))||!!document.querySelector('.zouv')||!!($('emPan')&&$('emPan').classList.contains('on'));   /* la liste en ligne bloquait le tap de fermeture */
 addEventListener('pointerdown',reveillerLeSon,{once:false});
 const surUnBouton=(cible)=>!!(cible&&cible.closest&&cible.closest('#barre,#emPan,button,#fpPop,#fpListe,#action,#hublot,#pan,#page2,#porte,#bandeau,#repond,#hPlaque,#nivPop,#nivGagne,.zouv'));
-const zoneMarche=(x,y,cible)=>!pageOuverte()&&!surUnBouton(cible)&&!window.TK_SANS_JOY&&!window.ECRAN_COUVRANT&&!(cible&&cible.closest&&cible.closest('#rgp,#tel,#blcDia,#menuTir,#labEmo,#aff,#sacN,#crn,#regN,#vesN,#carN,#voeu,#bienv,#bagFin'));   /* les écrans par-dessus (classement, téléphone, dialogues) gardent leurs gestes : défilement, taps */   /* au volant, mode boutons : pas de joystick */
+const zoneMarche=(x,y,cible)=>!pageOuverte()&&!surUnBouton(cible)&&!window.TK_SANS_JOY&&!window.ECRAN_COUVRANT&&!(cible&&cible.closest&&cible.closest('#rgp,#tel,#blcDia,#menuTir,#labEmo,#aff,#sacN,#crn,#regN,#vesN,#carN,#voeu,#bienv,#bagFin,#emb,#ptq'));   /* les écrans par-dessus (classement, téléphone, dialogues) gardent leurs gestes : défilement, taps */   /* au volant, mode boutons : pas de joystick */
 document.addEventListener('touchstart',ev=>{
 for(const t of ev.changedTouches){
 if(J.actif)continue;
@@ -20130,7 +20130,7 @@ DECOR.filter(o=>o.t==='bancP').sort((a,b)=>(a.y-b.y)||(a.x-b.x))
 return l;
 }
 function coinDuJoueur(){
-if(window.LIEU_PAGE==='terrasses')return 'à la Galerie Bleue';if(window.LIEU_PAGE==='croisiere')return 'au terminal croisières';if(window.LIEU_PAGE==='stade')return 'au Vélodrome';if(window.LIEU_PAGE==='plage')return 'à la plage des Catalans';if(window.LIEU_PAGE==='corniche')return 'sur la Corniche';if(window.LIEU_PAGE==='blocus')return 'au blocus';if(window.LIEU_PAGE==='garde')return 'en garde à vue';if(window.LIEU_PAGE==='tour')return 'à la tour du port';if(window.LIEU_PAGE==='plateau')return 'sur le plateau de Mistral TV';
+if(window.LIEU_PAGE==='terrasses')return 'à la Galerie Bleue';if(window.LIEU_PAGE==='croisiere')return 'au terminal croisières';if(window.LIEU_PAGE==='gare')return 'à la gare maritime';if(window.LIEU_PAGE==='travail')return 'au port';if(window.LIEU_PAGE==='stade')return 'au Vélodrome';if(window.LIEU_PAGE==='plage')return 'à la plage des Catalans';if(window.LIEU_PAGE==='corniche')return 'sur la Corniche';if(window.LIEU_PAGE==='blocus')return 'au blocus';if(window.LIEU_PAGE==='garde')return 'en garde à vue';if(window.LIEU_PAGE==='tour')return 'à la tour du port';if(window.LIEU_PAGE==='plateau')return 'sur le plateau de Mistral TV';
 if(CARTE==='extramar')return 'à Extramar';
 if(CARTE==='garde')return 'à Notre-Dame';
 if(CARTE==='tokyo')return 'à Tokyo';
