@@ -242,8 +242,10 @@ const eur=c=>(Math.round(c/100)).toLocaleString('fr-FR')+' €';
 async function payer(d,sc){const el=d.querySelector('.paie');if(!VAC){el.innerHTML='Connecte-toi pour être payé.';return;}
  const v=VAC;VAC=null;let r=null;try{r=await appelRPC('soute_fin',{p_vac:v,p_score:sc|0,p_fusions:J?J.fusions:0,p_lache:J?J.lache:0,p_max:J?J.max:0});}catch(x){}
  if(!r){el.innerHTML='Paie indisponible pour l’instant.';return;}
- if(r.erreur){el.innerHTML=r.erreur==='plafond'?'Plafond du jour atteint : pas de paie.':r.erreur==='trop court'?'Vacation trop courte : pas de paie.':'Pas de paie ('+r.erreur+').';return;}
- el.innerHTML='<span>PAIE DE LA VACATION</span><b>+ '+eur(r.verse)+'</b>'+(r.prime?'<small>dont prime conteneur '+eur(r.prime)+'</small>':'')+(r.facteur<1?'<small>tarif réduit ('+Math.round(r.facteur*100)+' %) : déjà '+(r.faites-1)+' vacations aujourd’hui</small>':'');
+ if(r.xp>0){try{e.recolte=(e.recolte||0)+r.xp;if((e.score||0)<e.recolte)e.score=e.recolte;sauver();majHaut();}catch(x){}}
+ const xpT=r.xp>0?'<i class="xp">+ '+r.xp+' XP</i>':'';
+ if(r.erreur){el.innerHTML=xpT+(r.erreur==='plafond'?'Plafond du jour atteint : pas de paie.':r.erreur==='trop court'?'Vacation trop courte : pas de paie.':'Pas de paie ('+r.erreur+').');return;}
+ el.innerHTML='<span>PAIE DE LA VACATION</span><b>+ '+eur(r.verse)+'</b>'+xpT+(r.prime?'<small>dont prime conteneur '+eur(r.prime)+'</small>':'')+(r.facteur<1?'<small>tarif réduit ('+Math.round(r.facteur*100)+' %) : déjà '+(r.faites-1)+' vacations aujourd’hui</small>':'');
  el.classList.add('ok');
  if(typeof r.euros==='number'){try{e.euros=r.euros;sauver();majHaut();}catch(x){}}
  try{const o=JSON.parse(localStorage.getItem('vac_jour')||'{}');}catch(x){}}
@@ -269,7 +271,8 @@ const CSS=`#bag{position:fixed;inset:0;z-index:2147482100;display:flex;flex-dire
 #bag .sv canvas{width:30px;height:30px}
 #bag .son{width:38px;height:38px;border-radius:19px;border:0;background:#2e3a4e;color:#fff;font-size:16px;padding:0}
 #bag .port{flex:none;text-align:center;color:#c8d4e4;font:700 12px 'Baloo 2',system-ui,sans-serif;padding:0 10px 4px}#bag .port b{color:#f5d27a}
-#bag .fin .paie{margin:6px 0 2px;background:#fff;border-radius:14px;padding:8px;box-shadow:0 3px 0 #ddd3c0;font:700 12.5px 'Baloo 2',system-ui,sans-serif;color:#8a7a5a}#bag .fin .paie.ok{background:#e6f6e8;box-shadow:0 3px 0 #b8dcc0}#bag .fin .paie span{display:block;font:800 10.5px 'Baloo 2',system-ui,sans-serif;letter-spacing:1.6px;color:#3a7a4a}#bag .fin .paie b{display:block;font:900 26px/1.1 'Baloo 2',system-ui,sans-serif;color:#1e6a34}#bag .fin .paie small{display:block;font:700 11.5px 'Baloo 2',system-ui,sans-serif;letter-spacing:0;color:#5a7a60}
+#bag .fin .paie{margin:6px 0 2px;background:#fff;border-radius:14px;padding:8px;box-shadow:0 3px 0 #ddd3c0;font:700 12.5px 'Baloo 2',system-ui,sans-serif;color:#8a7a5a}#bag .fin .paie.ok{background:#e6f6e8;box-shadow:0 3px 0 #b8dcc0}#bag .fin .paie span{display:block;font:800 10.5px 'Baloo 2',system-ui,sans-serif;letter-spacing:1.6px;color:#3a7a4a}#bag .fin .paie b{display:block;font:900 26px/1.1 'Baloo 2',system-ui,sans-serif;color:#1e6a34}#bag .fin .paie .xp{display:inline-block;font:900 13px 'Baloo 2',system-ui,sans-serif;font-style:normal;color:#fff;background:#3a8ae8;border-radius:10px;padding:1px 9px;margin:2px 0 4px}
+#bag .fin .paie small{display:block;font:700 11.5px 'Baloo 2',system-ui,sans-serif;letter-spacing:0;color:#5a7a60}
 #bag .fin .port{color:#5a4a3a;padding:0;margin:2px 0 4px}#bag .fin .port b{color:#a86a10}
 #bag .tuto{position:absolute;inset:0;background:rgba(10,16,24,.78);display:grid;place-items:center;padding:20px;z-index:4}
 #bag .tuto .c{width:min(340px,92vw);background:#f6f1e6;color:#2a2016;border-radius:22px;padding:16px;box-shadow:0 6px 0 #b8a890}
