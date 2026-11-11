@@ -8,9 +8,9 @@
 (()=>{
 /* le grade de travail : l'ancienneté place les vétérans plus haut */
 function niveau(){try{return clsNiv(+e.score||0).n;}catch(x){return 1;}}
-const GRADES=[{k:'occ',nom:'Occasionnel',min:1},{k:'dock',nom:'Docker',min:6},{k:'spe',nom:'Spécialiste',min:13},{k:'chef',nom:'Chef',min:99}];
+const GRADES=[{k:'occ',nom:'Docker occasionnel',min:1},{k:'nd',nom:'Nouveau docker',min:5},{k:'dock',nom:'Docker',min:10},{k:'chauf',nom:'Chauffeur',min:20},{k:'point',nom:'Pointeur',min:35},{k:'mens',nom:'Docker mensuel',min:55},{k:'contre',nom:'Contremaître',min:80},{k:'chef',nom:'Chef de service',min:100}];
 function grade(){const n=niveau();let g=GRADES[0];for(const x of GRADES)if(n>=x.min)g=x;return g;}
-const RANG={occ:0,dock:1,spe:2,chef:3};
+const RANG={occ:0,nd:1,dock:2,chauf:3,point:4,mens:5,contre:6,chef:7};
 
 /* les navires qui font escale à Marseille */
 const NAVIRES={
@@ -22,16 +22,16 @@ const LIB={croisiere:'Croisière',conteneurs:'Conteneurs',ferry:'Corse · ferry'
 /* les postes et leur paie de base (en euros) */
 const POSTES=[
  {k:'bagages',type:'croisiere',nom:'Bagages',ic:'🧳',fond:'#e3eefb',paie:1800,grade:'occ',duree:'la soute',pret:true,fn:['bagages.js','ouvrirBagages']},
- {k:'embarq',type:'ferry',nom:'Embarquement',ic:'🚗',fond:'#e2f4e6',paie:2400,grade:'occ',duree:'75 s',pret:true,fn:['embarquement.js','ouvrirEmbarquement']},
- {k:'portique',type:'conteneurs',nom:'Portique',ic:'🏗️',fond:'#fdecd8',paie:4500,grade:'dock',duree:'6 boîtes',pret:true,fn:['portique.js','ouvrirPortique']},
- {k:'bordee',type:'conteneurs',nom:'Chef de bordée',ic:'🧭',fond:'#efe6d6',paie:12000,grade:'chef',duree:'la nuit',pret:false}];
+ {k:'embarq',type:'ferry',nom:'Embarquement',ic:'🚗',fond:'#e2f4e6',paie:2600,grade:'nd',duree:'75 s',pret:true,fn:['embarquement.js','ouvrirEmbarquement']},
+ {k:'portique',type:'conteneurs',nom:'Portique',ic:'🏗️',fond:'#fdecd8',paie:3500,grade:'dock',duree:'6 boîtes',pret:true,fn:['portique.js','ouvrirPortique']},
+ {k:'cavalier',type:'conteneurs',nom:'Cavalier',ic:'🚛',fond:'#e8e4f6',paie:4500,grade:'chauf',duree:'le parc',pret:false}];
 const PLEIN=4;              /* vacations à plein tarif par jour, ensuite la paie baisse */
 
 /* le jour du port : les escales changent chaque jour, les mêmes pour tout le monde */
 function jour(){const d=new Date();return d.getFullYear()*1000+Math.floor((d-new Date(d.getFullYear(),0,0))/864e5);}
 function hasard(s){let n=s|0;return()=>{n=(n*1103515245+12345)&0x7fffffff;return n/0x7fffffff;};}
 function escales(){const r=hasard(jour()*7919);return ['croisiere','conteneurs','ferry'].map(t=>{const L=NAVIRES[t];return {type:t,nom:L[(r()*L.length)|0][0],quai:L[(r()*L.length)|0][1]};});}
-function vacations(){const E=escales(),r=hasard(jour()*31);const H={bagages:7,embarq:13,portique:9,bordee:21};
+function vacations(){const E=escales(),r=hasard(jour()*31);const H={bagages:7,embarq:13,portique:9,cavalier:16};
  return POSTES.map(p=>{const es=E.find(x=>x.type===p.type);return Object.assign({},p,{navire:es.nom,heure:H[p.k]+((r()*2)|0)});}).sort((a,b)=>a.heure-b.heure);}
 function faites(){try{const o=JSON.parse(localStorage.getItem('vac_jour')||'{}');return o.j===jour()?o.n|0:0;}catch(x){return 0;}}
 function compter(){try{localStorage.setItem('vac_jour',JSON.stringify({j:jour(),n:faites()+1}));}catch(x){}}
