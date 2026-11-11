@@ -22,7 +22,7 @@ const LIB={croisiere:'Croisière',conteneurs:'Conteneurs',ferry:'Corse · ferry'
 /* les postes et leur paie de base (en euros) */
 const POSTES=[
  {k:'bagages',type:'croisiere',nom:'Bagages',ic:'🧳',fond:'#e3eefb',paie:1800,grade:'occ',duree:'la soute',pret:true,fn:['bagages.js','ouvrirBagages']},
- {k:'embarq',type:'ferry',nom:'Embarquement',ic:'🚗',fond:'#e2f4e6',paie:2600,grade:'nd',duree:'75 s',pret:true,fn:['embarquement.js','ouvrirEmbarquement']},
+ {k:'embarq',type:'ferry',nom:'Saisissage',ic:'⛓️',fond:'#e2f4e6',paie:2600,grade:'nd',duree:'les remorques',pret:true,fn:['saisissage.js','ouvrirSaisissage']},
  {k:'portique',type:'conteneurs',nom:'Portique',ic:'🏗️',fond:'#fdecd8',paie:3500,grade:'dock',duree:'6 boîtes',pret:true,fn:['portique.js','ouvrirPortique']},
  {k:'cavalier',type:'conteneurs',nom:'Cavalier',ic:'🚛',fond:'#e8e4f6',paie:4500,grade:'chauf',duree:'le parc',pret:false}];
 const PLEIN=4;              /* vacations à plein tarif par jour, ensuite la paie baisse */
