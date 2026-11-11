@@ -226,15 +226,27 @@ function finir(){if(J.fini)return;J.fini=true;vib(80);SON.fin();envoyerScore(J.s
  const mx=document.createElement('canvas');mx.width=mx.height=120;const q=mx.getContext('2d');const s=120/(NIV[J.max].r*2.6);q.setTransform(s,0,0,s,60,60);bagage(q,J.max,0,0,0);
  d.innerHTML='<div class="c"><small>LA CALE EST PLEINE</small><div class="et">'+[0,1,2].map(i=>'<span class="'+(i<et?'on':'')+'">★</span>').join('')+'</div><h2>'+(et===3?'Docker de légende !':et===2?'Belle cale, collègue !':et===1?'Pas mal du tout':'Faut s’entraîner !')+'</h2>'+
   '<div class="mx"></div><div class="g"><div><b>'+J.fusions+'</b>fusions</div><div><b>'+J.lache+'</b>bagages</div><div><b>'+NIV[J.max].n+'</b>le plus gros</div></div>'+
-  '<p class="scf">Score <b>'+sc.toLocaleString('fr-FR')+'</b>'+(sc>rec?' · nouveau record !':rec?' · record '+rec.toLocaleString('fr-FR'):'')+'</p><p class="port"></p><p class="gr">Période d’essai : la paie sera versée à l’ouverture officielle.</p><button class="b1">Nouvelle cale</button><button class="b2">Retour au quai</button></div>';
- d.querySelector('.mx').appendChild(mx);RAC.querySelector('.scene').appendChild(d);
+  '<p class="scf">Score <b>'+sc.toLocaleString('fr-FR')+'</b>'+(sc>rec?' · nouveau record !':rec?' · record '+rec.toLocaleString('fr-FR'):'')+'</p><div class="paie">Calcul de la paie…</div><p class="port"></p><button class="b1">Nouvelle cale</button><button class="b2">Retour au quai</button></div>';
+ d.querySelector('.mx').appendChild(mx);RAC.querySelector('.scene').appendChild(d);payer(d,sc);
  setTimeout(()=>d.querySelectorAll('.et span.on').forEach((s,i)=>setTimeout(()=>{s.classList.add('pop');vib(10);},i*300)),300);
- d.querySelector('.b1').onclick=()=>{d.remove();nouvelle();majRec();affPort();};d.querySelector('.b2').onclick=fermer;}
+ d.querySelector('.b1').onclick=()=>{d.remove();nouvelle();majRec();affPort();ouvrirVac();};d.querySelector('.b2').onclick=fermer;}
 let PORT=null;
 function affPort(){if(!RAC)return;const t=PORT&&PORT.score?'🏆 Record du port aujourd’hui : <b>'+String(PORT.pseudo).replace(/[<>&]/g,'')+'</b> · '+(+PORT.score).toLocaleString('fr-FR'):'🏆 Personne n’a encore rempli de cale aujourd’hui. À toi !';
  RAC.querySelectorAll('.port').forEach(e=>e.innerHTML=t);}
 async function chargerPort(){try{PORT=await appelRPC('soute_record',{});}catch(x){}affPort();}
 async function envoyerScore(sc){try{const r=await appelRPC('soute_score',{p_score:sc|0});if(r!==undefined)PORT=r;}catch(x){}affPort();}
+/* LA PAIE : une vacation ouverte côté serveur à chaque cale, payée à la fin selon le score */
+let VAC=null;
+async function ouvrirVac(){VAC=null;try{const r=await appelRPC('soute_debut',{});if(r&&r.vacation)VAC=r.vacation;}catch(x){}}
+const eur=c=>(Math.round(c/100)).toLocaleString('fr-FR')+' €';
+async function payer(d,sc){const el=d.querySelector('.paie');if(!VAC){el.innerHTML='Connecte-toi pour être payé.';return;}
+ const v=VAC;VAC=null;let r=null;try{r=await appelRPC('soute_fin',{p_vac:v,p_score:sc|0,p_fusions:J?J.fusions:0,p_lache:J?J.lache:0,p_max:J?J.max:0});}catch(x){}
+ if(!r){el.innerHTML='Paie indisponible pour l’instant.';return;}
+ if(r.erreur){el.innerHTML=r.erreur==='plafond'?'Plafond du jour atteint : pas de paie.':r.erreur==='trop court'?'Vacation trop courte : pas de paie.':'Pas de paie ('+r.erreur+').';return;}
+ el.innerHTML='<span>PAIE DE LA VACATION</span><b>+ '+eur(r.verse)+'</b>'+(r.prime?'<small>dont prime conteneur '+eur(r.prime)+'</small>':'')+(r.facteur<1?'<small>tarif réduit ('+Math.round(r.facteur*100)+' %) : déjà '+(r.faites-1)+' vacations aujourd’hui</small>':'');
+ el.classList.add('ok');
+ if(typeof r.euros==='number'){try{e.euros=r.euros;sauver();majHaut();}catch(x){}}
+ try{const o=JSON.parse(localStorage.getItem('vac_jour')||'{}');}catch(x){}}
 function majRec(){let rec=0;try{rec=+(localStorage.getItem('bag_record')||0);}catch(x){}RAC.querySelector('.rc').textContent='🏆 '+rec.toLocaleString('fr-FR');}
 function tuto(){let vu=false;try{vu=localStorage.getItem('bag_tuto')==='1';}catch(x){}if(vu)return;J.tuto=true;
  const d=document.createElement('div');d.className='tuto';
@@ -257,6 +269,7 @@ const CSS=`#bag{position:fixed;inset:0;z-index:2147482100;display:flex;flex-dire
 #bag .sv canvas{width:30px;height:30px}
 #bag .son{width:38px;height:38px;border-radius:19px;border:0;background:#2e3a4e;color:#fff;font-size:16px;padding:0}
 #bag .port{flex:none;text-align:center;color:#c8d4e4;font:700 12px 'Baloo 2',system-ui,sans-serif;padding:0 10px 4px}#bag .port b{color:#f5d27a}
+#bag .fin .paie{margin:6px 0 2px;background:#fff;border-radius:14px;padding:8px;box-shadow:0 3px 0 #ddd3c0;font:700 12.5px 'Baloo 2',system-ui,sans-serif;color:#8a7a5a}#bag .fin .paie.ok{background:#e6f6e8;box-shadow:0 3px 0 #b8dcc0}#bag .fin .paie span{display:block;font:800 10.5px 'Baloo 2',system-ui,sans-serif;letter-spacing:1.6px;color:#3a7a4a}#bag .fin .paie b{display:block;font:900 26px/1.1 'Baloo 2',system-ui,sans-serif;color:#1e6a34}#bag .fin .paie small{display:block;font:700 11.5px 'Baloo 2',system-ui,sans-serif;letter-spacing:0;color:#5a7a60}
 #bag .fin .port{color:#5a4a3a;padding:0;margin:2px 0 4px}#bag .fin .port b{color:#a86a10}
 #bag .tuto{position:absolute;inset:0;background:rgba(10,16,24,.78);display:grid;place-items:center;padding:20px;z-index:4}
 #bag .tuto .c{width:min(340px,92vw);background:#f6f1e6;color:#2a2016;border-radius:22px;padding:16px;box-shadow:0 6px 0 #b8a890}
@@ -284,7 +297,7 @@ window.ouvrirBagages=function(navire){if(RAC)return;if(!document.getElementById(
   '<div class="pl"><span>⭐ <i class="sc" style="font-style:normal">0</i></span><span class="rc">🏆 0</span><span class="cb">🔥 ×1</span><span class="sv">SUIVANT<canvas width="90" height="90"></canvas></span></div><div class="port"></div>'+
   '<div class="scene"><canvas></canvas></div><div class="bas">Fais glisser le doigt pour déplacer la grue, lève-le pour lâcher. Deux bagages pareils fusionnent !</div>';
  document.body.appendChild(d);CV=d.querySelector('.scene>canvas');G=CV.getContext('2d');
- nouvelle();majRec();affPort();chargerPort();tuto();requestAnimationFrame(()=>{d.classList.add('on');cadrer();});setTimeout(()=>{if(RAC===d)window.ECRAN_COUVRANT=true;},300);addEventListener('resize',cadrer);
+ nouvelle();majRec();affPort();chargerPort();ouvrirVac();tuto();requestAnimationFrame(()=>{d.classList.add('on');cadrer();});setTimeout(()=>{if(RAC===d)window.ECRAN_COUVRANT=true;},300);addEventListener('resize',cadrer);
  d.querySelector('.x').onclick=fermer;d.querySelector('.son').onclick=e=>{e.currentTarget.textContent=SON.basculer()?'🔊':'🔇';};
  /* viser : le doigt glisse, la grue suit en douceur (pas de saut là où on pose le doigt) ; on lâche en levant le doigt */
  let D0=null;

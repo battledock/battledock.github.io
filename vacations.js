@@ -70,7 +70,7 @@ function remplir(){if(!RAC)return;const G=grade(),n=faites(),V=vacations();
  let h='<div class="top"><h1>Les vacations</h1><button class="x" aria-label="Fermer">✕</button></div>';
  h+='<div class="moi"><div><span class="gr">'+G.nom.toUpperCase()+' · NIV. '+niveau()+'</span><b>'+(e.pseudo||'Docker')+'</b><div class="jauge">'+Array.from({length:PLEIN},(_,i)=>'<i'+(i<n?' class="v"':'')+'></i>').join('')+'</div></div>'+
   '<div class="r">'+(n<PLEIN?'<b>'+(PLEIN-n)+' à plein tarif</b><br>aujourd’hui':'<b>Paie à '+Math.round(facteur*100)+' %</b><br>repos conseillé')+'</div></div>';
- h+='<div class="essai">Période d’essai : les postes se jouent déjà, la paie sera versée à l’ouverture officielle.</div>';
+ h+='<div class="essai">Les Bagages sont payés selon ton score. Les autres postes : paie bientôt.</div>';
  h+='<div class="tt">LES ESCALES DU JOUR</div><div class="esc">'+escales().map(s=>'<div class="bat" style="background:'+COUL[s.type]+'"><b>'+s.nom+'</b>'+LIB[s.type]+' · '+s.quai+'<svg width="60" height="34">'+SVG[s.type]+'</svg></div>').join('')+'</div>';
  h+='<div class="tt">ON EMBAUCHE</div>';
  V.forEach(v=>{const ok=RANG[G.k]>=RANG[v.grade],gnom=GRADES.find(x=>x.k===v.grade).nom.toLowerCase();
