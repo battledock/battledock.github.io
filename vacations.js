@@ -24,11 +24,7 @@ const COUL={croisiere:'#2a6a9a',conteneurs:'#c0392b',ferry:'#2e7d4f'};
 const LIB={croisiere:'Croisière',conteneurs:'Conteneurs',ferry:'Corse · ferry'};
 /* les postes et leur paie de base (en euros) */
 const POSTES=[
- {k:'bagages',type:'croisiere',nom:'Bagages',ic:'🧳',fond:'#e3eefb',paie:1800,grade:'occ',duree:'la soute',pret:true,fn:['bagages.js','ouvrirBagages']},
- {k:'embarq',type:'ferry',nom:'Saisissage',ic:'⛓️',fond:'#e2f4e6',paie:2600,grade:'nd',duree:'les remorques',pret:true,fn:['saisissage.js','ouvrirSaisissage']},
- {k:'twists',type:'conteneurs',nom:'Les twists',ic:'🔩',fond:'#fdecd8',paie:3500,grade:'dock',duree:'sous le portique',pret:true,fn:['twists.js','ouvrirTwists']},
- {k:'portique',type:'conteneurs',nom:'Portique',ic:'🏗️',fond:'#fde8d8',paie:7000,grade:'mens',duree:'6 boîtes',pret:true,fn:['portique.js','ouvrirPortique']},
- {k:'douglas',type:'remorques',nom:'Le Douglas',ic:'🚜',fond:'#f6ecd0',paie:4500,grade:'chauf',duree:'la gare maritime',pret:true,fn:['douglas.js','ouvrirDouglas']}];
+ {k:'bagages',type:'croisiere',nom:'Bagages',ic:'🧳',fond:'#e3eefb',paie:1800,grade:'occ',duree:'la soute',pret:true,fn:['bagages.js','ouvrirBagages']}];
 const PLEIN=4;              /* vacations à plein tarif par jour, ensuite la paie baisse */
 
 /* le jour du port : les escales changent chaque jour, les mêmes pour tout le monde */
@@ -74,7 +70,7 @@ function remplir(){if(!RAC)return;const G=grade(),n=faites(),V=vacations();
  let h='<div class="top"><h1>Les vacations</h1><button class="x" aria-label="Fermer">✕</button></div>';
  h+='<div class="moi"><div><span class="gr">'+G.nom.toUpperCase()+' · NIV. '+niveau()+'</span><b>'+(e.pseudo||'Docker')+'</b><div class="jauge">'+Array.from({length:PLEIN},(_,i)=>'<i'+(i<n?' class="v"':'')+'></i>').join('')+'</div></div>'+
   '<div class="r">'+(n<PLEIN?'<b>'+(PLEIN-n)+' à plein tarif</b><br>aujourd’hui':'<b>Paie à '+Math.round(facteur*100)+' %</b><br>repos conseillé')+'</div></div>';
- h+='<div class="essai">Bagages et Saisissage sont payés selon ton score. Les autres postes : paie bientôt.</div>';
+ h+='<div class="essai">La soute est payée selon ton score. Chaque cale change de navire : ferry, croisière, porte-conteneurs.</div>';
  h+='<div class="tt">LES ESCALES DU JOUR</div><div class="esc">'+escales().map(s=>'<div class="bat" style="background:'+COUL[s.type]+'"><b>'+s.nom+'</b>'+LIB[s.type]+' · '+s.quai+'<svg width="60" height="34">'+SVG[s.type]+'</svg></div>').join('')+'</div>';
  h+='<div class="tt">ON EMBAUCHE</div>';
  V.forEach(v=>{const ok=RANG[G.k]>=RANG[v.grade],gnom=GRADES.find(x=>x.k===v.grade).nom.toLowerCase();
