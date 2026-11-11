@@ -174,7 +174,7 @@ function cadrer(){if(!CV)return;const r=CV.getBoundingClientRect();DPR=Math.min(
  VUE={s,ox:(CV.width-CW*s)/2,oy:marge+30*s};FOND=null;}
 
 function finir(){if(J.fini)return;J.fini=true;vib(80);const sc=J.score;let rec=0;try{rec=+(localStorage.getItem('bag_record')||0);if(sc>rec)localStorage.setItem('bag_record',sc);}catch(x){}
- const et=sc>=30000?3:sc>=15000?2:sc>=6000?1:0;
+ const et=sc>=150000?3:sc>=75000?2:sc>=30000?1:0;
  const d=document.createElement('div');d.className='fin';
  const mx=document.createElement('canvas');mx.width=mx.height=120;const q=mx.getContext('2d');const s=120/(NIV[J.max].r*2.6);q.setTransform(s,0,0,s,60,60);bagage(q,J.max,0,0,0);
  d.innerHTML='<div class="c"><small>LA CALE EST PLEINE</small><div class="et">'+[0,1,2].map(i=>'<span class="'+(i<et?'on':'')+'">★</span>').join('')+'</div><h2>'+(et===3?'Docker de légende !':et===2?'Belle cale, collègue !':et===1?'Pas mal du tout':'Faut s’entraîner !')+'</h2>'+
