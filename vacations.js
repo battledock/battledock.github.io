@@ -13,6 +13,7 @@ function niveau(){try{if(typeof NIV!=='undefined'&&NIV&&NIV.niveau&&NIV.niveau.n
  try{return Math.max(clsNiv(+e.score||0).n,clsNiv(+e.recolte||0).n);}catch(x){return 1;}}
 const GRADES=[{k:'occ',nom:'Docker occasionnel',min:1},{k:'nd',nom:'Nouveau docker',min:5},{k:'dock',nom:'Docker',min:10},{k:'chauf',nom:'Chauffeur',min:20},{k:'point',nom:'Pointeur',min:35},{k:'mens',nom:'Docker mensuel',min:55},{k:'contre',nom:'Contremaître',min:80},{k:'chef',nom:'Chef de service',min:100},{k:'dir',nom:'Directeur du port',min:150}];
 function grade(){const n=niveau();let g=GRADES[0];for(const x of GRADES)if(n>=x.min)g=x;return g;}
+const MULT=[1,1.3,1.6,2,2.5,3,3.6,4.2,5];
 const RANG={occ:0,nd:1,dock:2,chauf:3,point:4,mens:5,contre:6,chef:7,dir:8};
 
 /* les navires qui font escale à Marseille */
@@ -70,13 +71,13 @@ function remplir(){if(!RAC)return;const G=grade(),n=faites(),V=vacations();
  let h='<div class="top"><h1>Les vacations</h1><button class="x" aria-label="Fermer">✕</button></div>';
  h+='<div class="moi"><div><span class="gr">'+G.nom.toUpperCase()+' · NIV. '+niveau()+'</span><b>'+(e.pseudo||'Docker')+'</b><div class="jauge">'+Array.from({length:PLEIN},(_,i)=>'<i'+(i<n?' class="v"':'')+'></i>').join('')+'</div></div>'+
   '<div class="r">'+(n<PLEIN?'<b>'+(PLEIN-n)+' à plein tarif</b><br>aujourd’hui':'<b>Paie à '+Math.round(facteur*100)+' %</b><br>repos conseillé')+'</div></div>';
- h+='<div class="essai">La soute est payée selon ton score. Chaque cale change de navire : ferry, croisière, porte-conteneurs.</div>';
+ h+='<div class="essai">La soute est payée selon ton score, multipliée par ton grade.'+(RANG[G.k]<8?' Prochain : <b>'+GRADES[RANG[G.k]+1].nom+'</b> au niveau '+GRADES[RANG[G.k]+1].min+' → paie ×'+String(MULT[RANG[G.k]+1]).replace('.',',')+'.':'')+'</div>';
  h+='<div class="tt">LES ESCALES DU JOUR</div><div class="esc">'+escales().map(s=>'<div class="bat" style="background:'+COUL[s.type]+'"><b>'+s.nom+'</b>'+LIB[s.type]+' · '+s.quai+'<svg width="60" height="34">'+SVG[s.type]+'</svg></div>').join('')+'</div>';
  h+='<div class="tt">ON EMBAUCHE</div>';
  V.forEach(v=>{const ok=RANG[G.k]>=RANG[v.grade],gnom=GRADES.find(x=>x.k===v.grade).nom.toLowerCase();
   h+='<div class="c'+(ok?'':' lock')+(SEL===v.k?' sel':'')+'" data-k="'+v.k+'"><span class="ic" style="background:'+(ok?v.fond:'#efe6d6')+'">'+(ok?v.ic:'🔒')+'</span>'+
    '<span><b>'+v.nom+' <span class="tag">'+String(v.heure).padStart(2,'0')+'h</span></b><small>'+v.navire+' · '+(ok?v.duree:'il faut être '+gnom)+'</small></span>'+
-   '<span class="eur">'+eur(v.paie*(ok?facteur:1))+'<small>'+gnom+'</small></span>'+
+   '<span class="eur">'+eur(v.paie*MULT[RANG[G.k]]*(ok?facteur:1))+'<small>'+(MULT[RANG[G.k]]>1?'paie ×'+String(MULT[RANG[G.k]]).replace('.',','):gnom)+'</small></span>'+
    (SEL===v.k&&ok?'<button class="go'+(v.pret?'':' non')+'">'+(v.pret?'Prendre la vacation':'Poste en préparation')+'</button>':'')+'</div>';});
  h+='<div class="pied">Chaque jour, de nouveaux navires. Après '+PLEIN+' vacations, la paie baisse : le port aime les dockers reposés.</div>';
  RAC.innerHTML=h;

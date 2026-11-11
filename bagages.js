@@ -8,7 +8,7 @@
    ===================================================================== */
 (()=>{
 /* --- les bagages, du plus petit au plus gros (rayons en unités de cale) --- */
-const NIV=[
+const TAI=[
  {n:'Pochette',   r:4.73, c:'#e86aa0', pts:1},
  {n:'Banane',     r:6.16, c:'#f0a030', pts:3},
  {n:'Sac',        r:7.92, c:'#c8503a', pts:6},
@@ -25,6 +25,13 @@ const THEMES=[
  {k:'croisiere',nom:'CROISIÈRE',ciel:['#3a3f86','#d9707a','#f9c98e'],cale:'#e9dcc2',tole:['#d8c8a8','#f6ecd6','#c4b290','#cfbe9c','#f8f0de'],lum:'rgba(255,200,140,.42)',ombre:'rgba(80,40,30,.3)',coque:'#1f2a4a',coque2:'#2a3658',hublot:'#f5d27a',bande:'#d8b040',bande2:'#0f1830',sol:['#8a5a32','#9a6a3e'],mont:['#d8b040','#f5d880','#9a7a20'],soleil:'rgba(255,190,120,'},
  {k:'cargo',nom:'PORTE-CONTENEURS',ciel:['#14223e','#3d5d8e','#9cbcd8'],cale:'#b8603a',tole:['#a4542e','#cc7448','#8a4424','#9a4c2a','#d4845a'],lum:'rgba(255,220,170,.3)',ombre:'rgba(30,10,10,.38)',coque:'#2a4a6a',coque2:'#24405e',hublot:'#ffe08a',bande:'#c0392b',bande2:'#14223e',sol:['#5a5e66','#6a6e76'],mont:['#e8b830','#ffd860','#b88a18'],soleil:'rgba(255,230,180,'}];
 let THEME=THEMES[0];
+/* le grade du joueur : il débloque des bagages et des événements, et multiplie la paie (côté serveur) */
+const GRADES=[{nom:'Docker occasionnel',min:1,x:1},{nom:'Nouveau docker',min:5,x:1.3},{nom:'Docker',min:10,x:1.6},{nom:'Chauffeur',min:20,x:2},{nom:'Pointeur',min:35,x:2.5},{nom:'Docker mensuel',min:55,x:3},{nom:'Contremaître',min:80,x:3.6},{nom:'Chef de service',min:100,x:4.2},{nom:'Directeur du port',min:150,x:5}];
+const DEBLOQUE=['bagages fragiles','bagages cadenassés','bagages plombés et la houle','bagages VIP et les colis express','2 crochets au départ','jusqu’à 4 crochets','3 crochets au départ','paie ×4,2','paie ×5'];
+function niveauJ(){try{if(typeof NIV!=='undefined'&&NIV&&NIV.niveau&&NIV.niveau.niveau)return NIV.niveau.niveau|0;}catch(x){}
+ try{const v=parseInt((document.getElementById('hNiv')||{}).textContent);if(v>0)return v;}catch(x){}
+ try{return Math.max(clsNiv(+e.score||0).n,clsNiv(+e.recolte||0).n);}catch(x){return 1;}}
+let RG=0;function rangJ(){const n=niveauJ();let r=0;GRADES.forEach((g,i)=>{if(n>=g.min)r=i;});return r;}
 /* les bagages spéciaux */
 const SPECIAUX={fragile:'Fragile : ne le fais pas écraser, fusionne-le pour ×2',cadenas:'Cadenassé : une fusion juste à côté le libère',plomb:'Plombé : très lourd, il tasse la pile',vip:'VIP : fusionne avec n’importe quel bagage',express:'Express : fusionne-le avant la fin du chrono'};
 const CW=100, CH=126, LIGNE=24, YLACHE=12;        /* la cale : largeur, hauteur, ligne de charge, hauteur de lâcher */
@@ -53,13 +60,13 @@ const SON=(()=>{let ac=null,on=true;try{on=localStorage.getItem('bag_son')!=='0'
   houle(){note(90,1.2,'sine',.12,70);bruit(1,.08,400);},
   fin(){note(392,.18,'triangle',.12);setTimeout(()=>note(330,.18,'triangle',.12),160);setTimeout(()=>note(262,.4,'triangle',.12),320);}};})();
 function tirer(){const r=hasard();return r<.32?0:r<.6?1:r<.82?2:r<.95?3:4;}
-function tirerSp(){if(!J||J.lache<5)return null;const r=hasard();return r<.055?'fragile':r<.10?'cadenas':r<.135?'plomb':r<.16?'vip':null;}
+function tirerSp(){if(!J||J.lache<5)return null;const r=hasard();const sp=r<.06?'fragile':r<.105?'cadenas':r<.14?'plomb':r<.165?'vip':null;const min={fragile:0,cadenas:1,plomb:2,vip:3};return sp&&RG>=min[sp]?sp:null;}
 function nouvelle(){let n=0;try{n=+(localStorage.getItem('bag_cale')||0);localStorage.setItem('bag_cale',n+1);}catch(x){}THEME=THEMES[n%THEMES.length];FOND=null;
- J={tSp:null,sSp:null,crochet:1,mode:null,echange:true,tJeu:0,gx:0,houle:null,prochHoule:38,prochExpress:22,bandeau:null,leves:[],paires:[],mouettes:[0,1,2].map(i=>({x:hasard()*140-20,y:-26+i*5+hasard()*3,v:(6+hasard()*5)*(i%2?-1:1),ph:hasard()*7})),vit:0,om:0,sons:[],ondes:[],ralenti:0,flash:0,dernierTic:0,corps:[],x:CW/2,cible:CW/2,bal:0,tient:tirer(),suivant:tirer(),pause:0,score:0,combo:0,tCombo:0,danger:0,fini:false,parts:[],pops:[],secousse:0,
+ RG=rangJ();J={tSp:null,sSp:null,crochet:RG>=6?3:RG>=4?2:1,cmax:RG>=5?4:3,mode:null,echange:true,tJeu:0,gx:0,houle:null,prochHoule:38,prochExpress:22,bandeau:null,leves:[],paires:[],mouettes:[0,1,2].map(i=>({x:hasard()*140-20,y:-26+i*5+hasard()*3,v:(6+hasard()*5)*(i%2?-1:1),ph:hasard()*7})),vit:0,om:0,sons:[],ondes:[],ralenti:0,flash:0,dernierTic:0,corps:[],x:CW/2,cible:CW/2,bal:0,tient:tirer(),suivant:tirer(),pause:0,score:0,combo:0,tCombo:0,danger:0,fini:false,parts:[],pops:[],secousse:0,
   max:0,fusions:0,t0:performance.now(),lache:0,id:1};}
 
 /* --- la physique --- */
-function corps(k,x,y,vx,vy,sp){const r=NIV[k].r;return {id:J.id++,k,sp:sp||null,exp:sp==='express'?20:0,x,y,vx:vx||0,vy:vy||0,a:(hasard()-.5)*.4,w:0,r,rv:r,m:r*r*(sp==='plomb'?4:1),age:0,fus:false,pose:false,pop:0};}
+function corps(k,x,y,vx,vy,sp){const r=TAI[k].r;return {id:J.id++,k,sp:sp||null,exp:sp==='express'?20:0,x,y,vx:vx||0,vy:vy||0,a:(hasard()-.5)*.4,w:0,r,rv:r,m:r*r*(sp==='plomb'?4:1),age:0,fus:false,pose:false,pop:0};}
 function peutFus(a,b){if(a.sp==='cadenas'||b.sp==='cadenas')return false;if(a.sp==='vip'||b.sp==='vip')return a.sp!==b.sp||a.k===b.k;return a.k===b.k;}
 function pas(dt){const h=dt/SUB,B=J.corps;for(const b of B){b.px=b.x;b.py=b.y;}
  for(let s=0;s<SUB;s++){
@@ -92,28 +99,28 @@ function pas(dt){const h=dt/SUB,B=J.corps;for(const b of B){b.px=b.x;b.py=b.y;}
 function fusion(a,b){const vip=a.sp==='vip'?a:b.sp==='vip'?b:null,k=vip?(vip===a?b.k:a.k):a.k,x=(a.x+b.x)/2,y=(a.y+b.y)/2;
  J.combo=J.tCombo>0?J.combo+1:1;J.tCombo=1.25;J.fusions++;
  const frag=a.sp==='fragile'||b.sp==='fragile',expr=a.sp==='express'||b.sp==='express';
- let gain=NIV[Math.min(k+1,NIV.length-1)].pts*10*Math.min(5,J.combo)*(frag?2:1);J.score+=gain;
+ let gain=TAI[Math.min(k+1,TAI.length-1)].pts*10*Math.min(5,J.combo)*(frag?2:1);J.score+=gain;
  J.pops.push({x,y,t:0,txt:'+'+gain+(J.combo>1?'  ×'+Math.min(5,J.combo):''),c:J.combo>1?'#f5c430':'#fff'});
  if(frag)J.pops.push({x,y:y-7,t:0,txt:'INTACT ×2',c:'#9fe8ff'});
  if(vip)J.pops.push({x,y:y-7,t:0,txt:'★ VIP',c:'#f5d27a'});
  if(expr){J.score+=1500;J.pops.push({x,y:y-9,t:0,txt:'EXPRESS LIVRÉ +1500',c:'#ffb050',gros:true});SON.express();vib([20,30,20]);}
  if(J.combo===3||J.combo===5){J.pops.push({x:CW/2,y:LIGNE+22,t:0,txt:J.combo===5?'CHAÎNE FOLLE ×5 !':'CHAÎNE ×3 !',c:'#f5c430',gros:true});}
- if(J.combo===4&&J.crochet<3){J.crochet++;J.pops.push({x,y:y-12,t:0,txt:'+1 🪝 crochet',c:'#9fe8ff'});majPouvoirs();}
- for(let i=0;i<10+k*3;i++){const an=hasard()*7,v=30+hasard()*60+k*6;J.parts.push({x,y,vx:Math.cos(an)*v,vy:Math.sin(an)*v-30,t:0,c:i%3?NIV[k].c:'#f5d27a',s:.8+hasard()*1.4});}
- J.ondes.push({x,y,t:0,R:NIV[k].r*2.6});for(const o of J.corps){const dx=o.x-x,dy=o.y-y,d=Math.hypot(dx,dy)||1,R=NIV[k].r*2.6;if(d<R&&o!==a&&o!==b){const f=(1-d/R)*(18+k*3);o.vx+=dx/d*f;o.vy+=dy/d*f-4;}
+ if(J.combo===4&&J.crochet<J.cmax){J.crochet++;J.pops.push({x,y:y-12,t:0,txt:'+1 🪝 crochet',c:'#9fe8ff'});majPouvoirs();}
+ for(let i=0;i<10+k*3;i++){const an=hasard()*7,v=30+hasard()*60+k*6;J.parts.push({x,y,vx:Math.cos(an)*v,vy:Math.sin(an)*v-30,t:0,c:i%3?TAI[k].c:'#f5d27a',s:.8+hasard()*1.4});}
+ J.ondes.push({x,y,t:0,R:TAI[k].r*2.6});for(const o of J.corps){const dx=o.x-x,dy=o.y-y,d=Math.hypot(dx,dy)||1,R=TAI[k].r*2.6;if(d<R&&o!==a&&o!==b){const f=(1-d/R)*(18+k*3);o.vx+=dx/d*f;o.vy+=dy/d*f-4;}
   if(o.sp==='cadenas'&&d<R+o.r){o.sp=null;J.score+=100;J.pops.push({x:o.x,y:o.y-4,t:0,txt:'LIBÉRÉ +100',c:'#7ee08a'});SON.libere();for(let i=0;i<10;i++){const an=hasard()*7;J.parts.push({x:o.x,y:o.y,vx:Math.cos(an)*50,vy:Math.sin(an)*50-30,t:0,c:'#d8b040',s:1.2});}}}
- if(k+1>=NIV.length){J.score+=2000;J.pops.push({x,y:y-10,t:0,txt:'CONTENEURS ! +2000',c:'#7ee08a'});J.secousse=.6;J.ralenti=1.4;J.flash=.5;SON.boum();vib([60,40,90]);return;}
+ if(k+1>=TAI.length){J.score+=2000;J.pops.push({x,y:y-10,t:0,txt:'CONTENEURS ! +2000',c:'#7ee08a'});J.secousse=.6;J.ralenti=1.4;J.flash=.5;SON.boum();vib([60,40,90]);return;}
  SON.pop(k+1,Math.min(7,J.combo));
- const n=corps(k+1,x,y,(a.vx+b.vx)/2,(a.vy+b.vy)/2-20,(a.sp==='plomb'&&b.sp==='plomb')?'plomb':null);n.rv=n.r*.55;n.age=0;n.w=(a.w+b.w)/2;n.pop=.32;J.corps.push(n);if(k+1===NIV.length-1){J.ralenti=1.1;J.flash=.35;SON.boum();}
+ const n=corps(k+1,x,y,(a.vx+b.vx)/2,(a.vy+b.vy)/2-20,(a.sp==='plomb'&&b.sp==='plomb')?'plomb':null);n.rv=n.r*.55;n.age=0;n.w=(a.w+b.w)/2;n.pop=.32;J.corps.push(n);if(k+1===TAI.length-1){J.ralenti=1.1;J.flash=.35;SON.boum();}
  if(k+1>J.max)J.max=k+1;
  if(k>=4){J.secousse=.12+k*.03;vib(15+k*5);}else vib(8);}
 function casser(b){J.score=Math.max(0,J.score-250);J.combo=0;J.tCombo=0;J.casses=(J.casses||0)+1;SON.verre();vib([30,20,30]);J.secousse=Math.max(J.secousse,.15);
  J.pops.push({x:b.x,y:b.y,t:0,txt:'CASSÉ ! −250',c:'#ff6a5a',gros:true});
- for(let i=0;i<26;i++){const an=hasard()*7,v=30+hasard()*80;J.parts.push({x:b.x+(hasard()-.5)*b.r,y:b.y+(hasard()-.5)*b.r,vx:Math.cos(an)*v,vy:Math.sin(an)*v-40,t:0,c:i%3?'#d8f4ff':NIV[b.k].c,s:.6+hasard()*1.2});}}
+ for(let i=0;i<26;i++){const an=hasard()*7,v=30+hasard()*80;J.parts.push({x:b.x+(hasard()-.5)*b.r,y:b.y+(hasard()-.5)*b.r,vx:Math.cos(an)*v,vy:Math.sin(an)*v-40,t:0,c:i%3?'#d8f4ff':TAI[b.k].c,s:.6+hasard()*1.2});}}
 function vib(ms){try{navigator.vibrate&&navigator.vibrate(ms);}catch(x){}}
 
 /* --- lâcher le bagage tenu --- */
-function lacher(){if(!J||J.fini||J.tuto||J.pause>0||J.mode)return;const r=NIV[J.tient].r,x=Math.max(r,Math.min(CW-r,J.x));
+function lacher(){if(!J||J.fini||J.tuto||J.pause>0||J.mode)return;const r=TAI[J.tient].r,x=Math.max(r,Math.min(CW-r,J.x));
  const L=PEND,th=J.bal,bx=Math.max(r,Math.min(CW-r,x+L*Math.sin(th))),by=YLACHE-L+L*Math.cos(th);
  const vx=Math.max(-60,Math.min(60,(J.vit+L*J.om*Math.cos(th))*.55)),vy=Math.max(0,40-L*J.om*Math.sin(th)*.5);
  const c=corps(J.tient,bx,by,vx,vy,J.tSp);c.a=th;J.corps.push(c);J.om=0;J.bal=0;J.tient=J.suivant;J.tSp=J.sSp;J.suivant=tirer();J.sSp=tirerSp();J.echange=true;majPouvoirs();J.pause=.45;J.lache++;vib(5);SON.lache();}
@@ -125,7 +132,7 @@ function surveiller(dt){let haut=false;for(const b of J.corps)if(b.age>1.2&&b.y-
 /* --- le dessin --- */
 function rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();}
 const tn=(hex,d)=>{const v=parseInt(hex.slice(1),16);const f=k=>Math.max(0,Math.min(255,((v>>k)&255)+d));return 'rgb('+f(16)+','+f(8)+','+f(0)+')';};
-function bagage(g,k,x,y,a,rv,sp){const b=NIV[k],r=(rv||b.r),c=b.c;g.save();g.translate(x,y);g.rotate(a||0);
+function bagage(g,k,x,y,a,rv,sp){const b=TAI[k],r=(rv||b.r),c=b.c;g.save();g.translate(x,y);g.rotate(a||0);
  if(k===0){ /* la pochette : un petit sac rond zippé */
   g.fillStyle=tn(c,-40);g.beginPath();g.ellipse(0,0,r*1.04,r*.96,0,0,7);g.fill();g.fillStyle=c;g.beginPath();g.ellipse(0,-.2,r*.96,r*.88,0,0,7);g.fill();
   g.fillStyle=tn(c,36);g.beginPath();g.ellipse(-r*.25,-r*.35,r*.45,r*.18,-.3,0,7);g.fill();
@@ -255,7 +262,7 @@ function dessiner(){const g=G,V=VUE;if(!FOND||FOND.width!==CV.width||FOND.height
  g.fillStyle='rgba(232,74,58,'+(dg?.95:.7)+')';g.font='800 3px system-ui,sans-serif';g.textAlign='center';g.fillText(dg?'ÇA DÉBORDE !':'LIGNE DE CHARGE',CW/2,LIGNE-1.6);
  if(dg){g.fillStyle='rgba(232,74,58,'+(J.danger/3*.28)+')';g.fillRect(0,0,CW,LIGNE);const n=Math.max(1,Math.ceil(3-J.danger)),ph=(3-J.danger)%1;g.save();g.translate(CW/2,LIGNE+16);g.scale(1+ph*.4,1+ph*.4);g.globalAlpha=.4+ph*.6;g.font='900 16px system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillStyle='rgba(0,0,0,.45)';g.fillText(n,.6,.6);g.fillStyle='#ff6a5a';g.fillText(n,0,0);g.restore();g.globalAlpha=1;}
  /* le guide de chute et le crochet de la grue */
- const r=NIV[J.tient].r,x=Math.max(r,Math.min(CW-r,J.x));
+ const r=TAI[J.tient].r,x=Math.max(r,Math.min(CW-r,J.x));
  const L=PEND,th=J.bal,ty=YLACHE-L,bx=x+L*Math.sin(th),by=ty+L*Math.cos(th);
  if(J.pause<=0){g.fillStyle='rgba(30,60,70,.22)';const gx=Math.max(r,Math.min(CW-r,bx));for(let y=by+r;y<CH;y+=4)g.fillRect(gx-.25,y,.5,2);}
  /* le chariot de la grue sur son rail, le câble, le crochet */
@@ -274,7 +281,7 @@ function dessiner(){const g=G,V=VUE;if(!FOND||FOND.width!==CV.width||FOND.height
  for(const p of J.parts){g.globalAlpha=Math.max(0,1-p.t/.6);g.fillStyle=p.c;g.fillRect(p.x-p.s/2,p.y-p.s/2,p.s,p.s);}g.globalAlpha=1;
  for(const p of J.pops){const k=p.t/1.1;g.globalAlpha=Math.max(0,1-k*k);g.font='900 '+((p.gros?7:5)+(1-k)*1.5)+'px system-ui,sans-serif';g.textAlign='center';g.fillStyle='rgba(0,0,0,.5)';g.fillText(p.txt,p.x+.4,p.y-k*12+.4);g.fillStyle=p.c;g.fillText(p.txt,p.x,p.y-k*12);}g.globalAlpha=1;
  /* l'échelle des bagages, sous la cale */
- const ey=CH+9;for(let i=0;i<NIV.length;i++){const ex=CW*(i+.5)/NIV.length,s=Math.min(1,4.4/NIV[i].r);g.save();g.translate(ex,ey);g.scale(s,s);g.globalAlpha=i<=J.max?1:.28;bagage(g,i,0,0,0);g.restore();}g.globalAlpha=1;
+ const ey=CH+9;for(let i=0;i<TAI.length;i++){const ex=CW*(i+.5)/TAI.length,s=Math.min(1,4.4/TAI[i].r);g.save();g.translate(ex,ey);g.scale(s,s);g.globalAlpha=i<=J.max?1:.28;bagage(g,i,0,0,0);g.restore();}g.globalAlpha=1;
  g.setTransform(1,0,0,1,0,0);
  if(J.mode==='crochet'){g.fillStyle='rgba(10,30,50,.22)';g.fillRect(0,0,CV.width,CV.height);}
  const bd=J.mode==='crochet'?{txt:'🪝 Touche le bagage à retirer',t:2,c:'#9fe8ff'}:J.bandeau;
@@ -283,7 +290,7 @@ function dessiner(){const g=G,V=VUE;if(!FOND||FOND.width!==CV.width||FOND.height
  /* la barre du haut */
  const hud=RAC.querySelector('.sc');hud.textContent=J.score.toLocaleString('fr-FR');
  RAC.querySelector('.cb').textContent=J.combo>1&&J.tCombo>0?'🔥 ×'+Math.min(5,J.combo):'🔥 ×1';
- const sv=RAC.querySelector('.sv canvas');if(sv&&sv._k!==J.suivant+'/'+J.sSp){sv._k=J.suivant+'/'+J.sSp;const q=sv.getContext('2d'),d=sv.width;q.setTransform(1,0,0,1,0,0);q.clearRect(0,0,d,d);const s=d/(NIV[J.suivant].r*2.6);q.setTransform(s,0,0,s,d/2,d/2);bagage(q,J.suivant,0,0,0,0,J.sSp);}}
+ const sv=RAC.querySelector('.sv canvas');if(sv&&sv._k!==J.suivant+'/'+J.sSp){sv._k=J.suivant+'/'+J.sSp;const q=sv.getContext('2d'),d=sv.width;q.setTransform(1,0,0,1,0,0);q.clearRect(0,0,d,d);const s=d/(TAI[J.suivant].r*2.6);q.setTransform(s,0,0,s,d/2,d/2);bagage(q,J.suivant,0,0,0,0,J.sSp);}}
 function boucle(t){if(!RAC)return;RAF=requestAnimationFrame(boucle);const dt=Math.min(1/30,(t-(boucle.t||t))/1000);boucle.t=t;if(!J)return;
  const ts=J.ralenti>0?.3:1;J.ralenti=Math.max(0,J.ralenti-dt);J.flash=Math.max(0,J.flash-dt);
  if(!J.fini&&!J.tuto){pas(dt*ts);surveiller(dt*ts);evenements(dt*ts);}
@@ -292,7 +299,7 @@ function boucle(t){if(!RAC)return;RAF=requestAnimationFrame(boucle);const dt=Mat
  if(J.bandeau){J.bandeau.t-=dt;if(J.bandeau.t<=0)J.bandeau=null;}
  if(J.sons.length){SON.pose(Math.max(...J.sons));J.sons.length=0;}
  for(const o of J.ondes)o.t+=dt;J.ondes=J.ondes.filter(o=>o.t<.45);for(const b of J.corps)if(b.pop>0)b.pop=Math.max(0,b.pop-dt);
- {const lim=NIV[J.tient].r;J.cible=Math.max(lim,Math.min(CW-lim,J.cible));const ox=J.x;J.x+=(J.cible-J.x)*Math.min(1,dt*16);const v=(J.x-ox)/Math.max(dt,1e-3),ax=(v-J.vit)/Math.max(dt,1e-3);J.vit=v;
+ {const lim=TAI[J.tient].r;J.cible=Math.max(lim,Math.min(CW-lim,J.cible));const ox=J.x;J.x+=(J.cible-J.x)*Math.min(1,dt*16);const v=(J.x-ox)/Math.max(dt,1e-3),ax=(v-J.vit)/Math.max(dt,1e-3);J.vit=v;
   /* le bagage pend au câble : un vrai pendule, secoué par l'accélération du chariot */
   const L=PEND;J.om+=(-(GRAV/L)*Math.sin(J.bal)-(Math.max(-500,Math.min(500,ax))*.4/L)*Math.cos(J.bal)-3.2*J.om)*dt;J.bal+=J.om*dt;if(Math.abs(J.bal)>.55){J.bal=Math.sign(J.bal)*.55;J.om*=-.2;}}
  J.pause=Math.max(0,J.pause-dt);J.tCombo=Math.max(0,J.tCombo-dt);if(J.tCombo<=0)J.combo=0;J.secousse=Math.max(0,J.secousse-dt);
@@ -303,9 +310,9 @@ function boucle(t){if(!RAC)return;RAF=requestAnimationFrame(boucle);const dt=Mat
 /* la houle, les colis express, les bagages spéciaux annoncés */
 function evenements(dt){J.tJeu+=dt;
  if(J.tSp&&!(J.vus||(J.vus={}))[J.tSp]){J.vus[J.tSp]=1;J.bandeau={txt:SPECIAUX[J.tSp],t:3.2};}
- if(!J.houle&&J.tJeu>=J.prochHoule){J.houle={t:0,d:9,s:hasard()<.5?1:-1};J.prochHoule=J.tJeu+48+hasard()*20;J.bandeau={txt:'🌊 HOULE ! Le navire roule, vise bien',t:2.6,c:'#9fe8ff'};SON.houle();vib([30,60,30]);}
+ if(RG>=2&&!J.houle&&J.tJeu>=J.prochHoule){J.houle={t:0,d:9,s:hasard()<.5?1:-1};J.prochHoule=J.tJeu+48+hasard()*20;J.bandeau={txt:'🌊 HOULE ! Le navire roule, vise bien',t:2.6,c:'#9fe8ff'};SON.houle();vib([30,60,30]);}
  if(J.houle){const H=J.houle;H.t+=dt;const env=Math.min(1,H.t/1.2,(H.d-H.t)/1.2);J.gx=H.s*62*Math.sin(H.t*Math.PI*2/3.4)*Math.max(0,env);if(H.t>=H.d){J.houle=null;J.gx=0;J.score+=150;J.pops.push({x:CW/2,y:LIGNE+20,t:0,txt:'HOULE TENUE +150',c:'#9fe8ff',gros:true});}}
- if(J.tJeu>=J.prochExpress&&J.sSp!=='express'&&J.tSp!=='express'){J.sSp='express';J.prochExpress=J.tJeu+40+hasard()*15;}
+ if(RG>=3&&J.tJeu>=J.prochExpress&&J.sSp!=='express'&&J.tSp!=='express'){J.sSp='express';J.prochExpress=J.tJeu+40+hasard()*15;}
  for(const b of J.corps)if(b.sp==='express'){b.exp-=dt;if(b.exp<=0){b.sp=null;J.pops.push({x:b.x,y:b.y-4,t:0,txt:'express raté',c:'#ff9a8a'});SON.faux&&SON.faux();}}}
 /* les pouvoirs : le crochet retire un bagage, l'échange permute le suivant */
 function majPouvoirs(){if(!RAC||!J)return;const c=RAC.querySelector('.cro'),e2=RAC.querySelector('.ech');if(!c)return;c.querySelector('i').textContent=J.crochet;c.classList.toggle('vide',J.crochet<=0);c.classList.toggle('act',J.mode==='crochet');e2.classList.toggle('vide',!J.echange);}
@@ -320,10 +327,10 @@ function cadrer(){if(!CV)return;const r=CV.getBoundingClientRect();DPR=Math.min(
 function finir(){if(J.fini)return;J.fini=true;vib(80);SON.fin();envoyerScore(J.score);const sc=J.score;let rec=0;try{rec=+(localStorage.getItem('bag_record')||0);if(sc>rec)localStorage.setItem('bag_record',sc);}catch(x){}
  const et=sc>=150000?3:sc>=75000?2:sc>=30000?1:0;
  const d=document.createElement('div');d.className='fin';
- const mx=document.createElement('canvas');mx.width=mx.height=120;const q=mx.getContext('2d');const s=120/(NIV[J.max].r*2.6);q.setTransform(s,0,0,s,60,60);bagage(q,J.max,0,0,0);
+ const mx=document.createElement('canvas');mx.width=mx.height=120;const q=mx.getContext('2d');const s=120/(TAI[J.max].r*2.6);q.setTransform(s,0,0,s,60,60);bagage(q,J.max,0,0,0);
  d.innerHTML='<div class="c"><small>LA CALE EST PLEINE</small><div class="et">'+[0,1,2].map(i=>'<span class="'+(i<et?'on':'')+'">★</span>').join('')+'</div><h2>'+(et===3?'Docker de légende !':et===2?'Belle cale, collègue !':et===1?'Pas mal du tout':'Faut s’entraîner !')+'</h2>'+
-  '<div class="mx"></div><div class="g"><div><b>'+J.fusions+'</b>fusions</div><div><b>'+J.lache+'</b>bagages</div><div><b>'+NIV[J.max].n+'</b>le plus gros</div></div>'+
-  '<p class="scf">Score <b>'+sc.toLocaleString('fr-FR')+'</b>'+(sc>rec?' · nouveau record !':rec?' · record '+rec.toLocaleString('fr-FR'):'')+'</p><div class="paie">Calcul de la paie…</div><p class="port"></p><button class="b1">Nouvelle cale</button><button class="b2">Retour au quai</button></div>';
+  '<div class="mx"></div><div class="g"><div><b>'+J.fusions+'</b>fusions</div><div><b>'+J.lache+'</b>bagages</div><div><b>'+TAI[J.max].n+'</b>le plus gros</div></div>'+
+  (RG<GRADES.length-1?'<p class="gr">Prochain grade : <b>'+GRADES[RG+1].nom+'</b> (niv. '+GRADES[RG+1].min+') · paie ×'+String(GRADES[RG+1].x).replace('.',',')+' · '+DEBLOQUE[RG+1]+'</p>':'')+'<p class="scf">Score <b>'+sc.toLocaleString('fr-FR')+'</b>'+(sc>rec?' · nouveau record !':rec?' · record '+rec.toLocaleString('fr-FR'):'')+'</p><div class="paie">Calcul de la paie…</div><p class="port"></p><button class="b1">Nouvelle cale</button><button class="b2">Retour au quai</button></div>';
  d.querySelector('.mx').appendChild(mx);RAC.querySelector('.scene').appendChild(d);payer(d,sc);
  setTimeout(()=>d.querySelectorAll('.et span.on').forEach((s,i)=>setTimeout(()=>{s.classList.add('pop');vib(10);},i*300)),300);
  d.querySelector('.b1').onclick=()=>{d.remove();nouvelle();majRec();affPort();ouvrirVac();majPouvoirs();majNavire();};d.querySelector('.b2').onclick=fermer;}
@@ -342,11 +349,11 @@ async function payer(d,sc){const el=d.querySelector('.paie');if(!VAC){el.innerHT
  if(r.xp>0){try{e.recolte=(e.recolte||0)+r.xp;if((e.score||0)<e.recolte)e.score=e.recolte;sauver();majHaut();}catch(x){}}
  const xpT=r.xp>0?'<i class="xp">+ '+r.xp+' XP</i>':'';
  if(r.erreur){el.innerHTML=xpT+(r.erreur==='plafond'?'Plafond du jour atteint : pas de paie.':r.erreur==='trop court'?'Vacation trop courte : pas de paie.':'Pas de paie ('+r.erreur+').');return;}
- el.innerHTML='<span>PAIE DE LA VACATION</span><b>+ '+eur(r.verse)+'</b>'+xpT+(r.prime?'<small>dont prime conteneur '+eur(r.prime)+'</small>':'')+(r.facteur<1?'<small>tarif réduit ('+Math.round(r.facteur*100)+' %) : déjà '+(r.faites-1)+' vacations aujourd’hui</small>':'');
+ el.innerHTML='<span>PAIE DE LA VACATION</span><b>+ '+eur(r.verse)+'</b>'+xpT+(r.prime?'<small>dont prime conteneur '+eur(r.prime)+'</small>':'')+(r.grade>1?'<small>grade '+GRADES[RG].nom.toLowerCase()+' : paie ×'+String(r.grade).replace('.',',')+'</small>':'')+(r.facteur<1?'<small>tarif réduit ('+Math.round(r.facteur*100)+' %) : déjà '+(r.faites-1)+' vacations aujourd’hui</small>':'');
  el.classList.add('ok');
  if(typeof r.euros==='number'){try{e.euros=r.euros;sauver();majHaut();}catch(x){}}
  try{const o=JSON.parse(localStorage.getItem('vac_jour')||'{}');}catch(x){}}
-let NAVIRE='';function majNavire(){if(RAC)RAC.querySelector('.nav').textContent='POSTE BAGAGES · '+THEME.nom+(NAVIRE&&THEME.k==='ferry'?' · '+NAVIRE:'');}
+let NAVIRE='';function majNavire(){if(RAC)RAC.querySelector('.nav').textContent=GRADES[RG].nom.toUpperCase()+' · '+THEME.nom+' · ×'+String(GRADES[RG].x).replace('.',',');}
 function majRec(){let rec=0;try{rec=+(localStorage.getItem('bag_record')||0);}catch(x){}RAC.querySelector('.rc').textContent='🏆 '+rec.toLocaleString('fr-FR');}
 function tuto(){let vu=false;try{vu=localStorage.getItem('bag_tuto')==='1';}catch(x){}if(vu)return;J.tuto=true;
  const d=document.createElement('div');d.className='tuto';
