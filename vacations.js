@@ -21,7 +21,7 @@ const COUL={croisiere:'#2a6a9a',conteneurs:'#c0392b',ferry:'#2e7d4f'};
 const LIB={croisiere:'Croisière',conteneurs:'Conteneurs',ferry:'Corse · ferry'};
 /* les postes et leur paie de base (en euros) */
 const POSTES=[
- {k:'bagages',type:'croisiere',nom:'Bagages',ic:'🧳',fond:'#e3eefb',paie:1800,grade:'occ',duree:'75 s',pret:false},
+ {k:'bagages',type:'croisiere',nom:'Bagages',ic:'🧳',fond:'#e3eefb',paie:1800,grade:'occ',duree:'la soute',pret:true,fn:['bagages.js','ouvrirBagages']},
  {k:'embarq',type:'ferry',nom:'Embarquement',ic:'🚗',fond:'#e2f4e6',paie:2400,grade:'occ',duree:'75 s',pret:true,fn:['embarquement.js','ouvrirEmbarquement']},
  {k:'portique',type:'conteneurs',nom:'Portique',ic:'🏗️',fond:'#fdecd8',paie:4500,grade:'dock',duree:'6 boîtes',pret:true,fn:['portique.js','ouvrirPortique']},
  {k:'bordee',type:'conteneurs',nom:'Chef de bordée',ic:'🧭',fond:'#efe6d6',paie:12000,grade:'chef',duree:'la nuit',pret:false}];
@@ -82,9 +82,9 @@ function remplir(){if(!RAC)return;const G=grade(),n=faites(),V=vacations();
  RAC.innerHTML=h;
  RAC.querySelector('.x').onclick=fermer;
  RAC.querySelectorAll('.c').forEach(c=>c.onclick=ev=>{const k=c.dataset.k;if(ev.target.closest('.go')){prendre(k);return;}SEL=SEL===k?null:k;remplir();});}
-async function prendre(k){const v=POSTES.find(p=>p.k===k);if(!v||!v.pret)return;const G=grade();if(RANG[G.k]<RANG[v.grade])return;
+async function prendre(k){const v=vacations().find(p=>p.k===k);if(!v||!v.pret)return;const G=grade();if(RANG[G.k]<RANG[v.grade])return;
  compter();fermer();
- try{if(!window[v.fn[1]])eval(await chargerMorceau(v.fn[0]));window[v.fn[1]]();}catch(x){console.warn('VAC',x);}}
+ try{if(!window[v.fn[1]])eval(await chargerMorceau(v.fn[0]));window[v.fn[1]](v.navire);}catch(x){console.warn('VAC',x);}}
 function fermer(){if(!RAC)return;const r=RAC;RAC=null;window.ECRAN_COUVRANT=false;r.classList.remove('on');setTimeout(()=>r.remove(),300);}
 window.ouvrirVacations=function(){if(RAC)return;css();SEL=null;const d=document.createElement('div');d.id='vac';RAC=d;document.body.appendChild(d);remplir();
  window.ECRAN_COUVRANT=true;requestAnimationFrame(()=>d.classList.add('on'));};
