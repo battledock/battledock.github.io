@@ -98,10 +98,11 @@ function maison(){const x0=18,x1=W-18,yB=236,rdc=86,et=58,cx=(x0+x1)/2,yF=yB-rdc
 const GUICHETS=[BX-124];            /* la vitrine du guichet, en x du monde */
 const PANNEAU=BX+70;               /* l'ardoise de l'appel */
 /* en attendant le tableau des vacations : une petite carte au guichet */
-function guichet(n){const old=document.getElementById('bcmoMot');if(old)old.remove();
+async function guichet(n){try{if(!window.ouvrirVacations)eval(await chargerMorceau('vacations.js'));window.ouvrirVacations();return;}catch(x){console.warn('VAC',x);}
+ function vieux(n){const old=document.getElementById('bcmoMot');if(old)old.remove();
  const d=document.createElement('div');d.id='bcmoMot';d.style.cssText='position:fixed;left:50%;bottom:calc(120px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2147482000;width:min(88vw,360px);background:#1b2330;color:#f2efe4;border-radius:18px;padding:14px 16px;box-shadow:0 12px 30px rgba(0,0,0,.4);font-family:"Baloo 2",system-ui,sans-serif';
  d.innerHTML='<b style="display:block;color:#f5d27a;font-size:13px;letter-spacing:.08em">'+(n==='porte'?'EMBAUCHE DES DOCKERS':n==='panneau'?'APPEL DU JOUR':'LE GUICHET')+'</b><div style="font-weight:700;font-size:16px;line-height:1.3;margin-top:2px">'+(n==='panneau'?'Appel à 7h, 13h et 19h. Le tableau des vacations arrive très bientôt.':'Le tableau des vacations ouvre très bientôt. Repasse nous voir !')+'</div>';
- d.onclick=()=>d.remove();document.body.appendChild(d);setTimeout(()=>{try{d.remove();}catch(x){}},4200);}
+ d.onclick=()=>d.remove();document.body.appendChild(d);setTimeout(()=>{try{d.remove();}catch(x){}},4200);}vieux(n);}
 function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
  P('x_jol_maison',BX,BY);
  P('x_jol_entree',GUICHETS[0],BY+8,{agir:()=>guichet(1),libelle:'Se présenter',nom:'LE GUICHET'});
