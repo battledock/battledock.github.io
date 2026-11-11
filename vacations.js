@@ -11,9 +11,9 @@
 function niveau(){try{if(typeof NIV!=='undefined'&&NIV&&NIV.niveau&&NIV.niveau.niveau)return NIV.niveau.niveau|0;}catch(x){}
  try{const v=parseInt((document.getElementById('hNiv')||{}).textContent);if(v>0)return v;}catch(x){}
  try{return Math.max(clsNiv(+e.score||0).n,clsNiv(+e.recolte||0).n);}catch(x){return 1;}}
-const GRADES=[{k:'occ',nom:'Docker occasionnel',min:1},{k:'nd',nom:'Nouveau docker',min:5},{k:'dock',nom:'Docker',min:10},{k:'chauf',nom:'Chauffeur',min:20},{k:'point',nom:'Pointeur',min:35},{k:'mens',nom:'Docker mensuel',min:55},{k:'contre',nom:'Contremaître',min:80},{k:'chef',nom:'Chef de service',min:100}];
+const GRADES=[{k:'occ',nom:'Docker occasionnel',min:1},{k:'nd',nom:'Nouveau docker',min:5},{k:'dock',nom:'Docker',min:10},{k:'chauf',nom:'Chauffeur',min:20},{k:'point',nom:'Pointeur',min:35},{k:'mens',nom:'Docker mensuel',min:55},{k:'contre',nom:'Contremaître',min:80},{k:'chef',nom:'Chef de service',min:100},{k:'dir',nom:'Directeur du port',min:150}];
 function grade(){const n=niveau();let g=GRADES[0];for(const x of GRADES)if(n>=x.min)g=x;return g;}
-const RANG={occ:0,nd:1,dock:2,chauf:3,point:4,mens:5,contre:6,chef:7};
+const RANG={occ:0,nd:1,dock:2,chauf:3,point:4,mens:5,contre:6,chef:7,dir:8};
 
 /* les navires qui font escale à Marseille */
 const NAVIRES={
