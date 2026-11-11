@@ -89,7 +89,7 @@ function vib(ms){try{navigator.vibrate&&navigator.vibrate(ms);}catch(x){}}
 /* --- lâcher le bagage tenu --- */
 function lacher(){if(!J||J.fini||J.tuto||J.pause>0)return;const r=NIV[J.tient].r,x=Math.max(r,Math.min(CW-r,J.x));
  const L=PEND,th=J.bal,bx=Math.max(r,Math.min(CW-r,x+L*Math.sin(th))),by=YLACHE-L+L*Math.cos(th);
- const vx=Math.max(-120,Math.min(120,J.vit+L*J.om*Math.cos(th))),vy=Math.max(-40,40-L*J.om*Math.sin(th));
+ const vx=Math.max(-60,Math.min(60,(J.vit+L*J.om*Math.cos(th))*.55)),vy=Math.max(0,40-L*J.om*Math.sin(th)*.5);
  const c=corps(J.tient,bx,by,vx,vy);c.a=th;J.corps.push(c);J.om=0;J.bal=0;J.tient=J.suivant;J.suivant=tirer();J.pause=.45;J.lache++;vib(5);SON.lache();}
 
 /* --- la fin : la pile reste au-dessus de la ligne --- */
@@ -143,18 +143,33 @@ function bagage(g,k,x,y,a,rv){const b=NIV[k],r=(rv||b.r),c=b.c;g.save();g.transl
  g.restore();}
 
 let FOND=null;
-function fond(){/* la cale, gravée une fois à la bonne résolution */
+function fond(){/* la cale à ciel ouvert : le soleil de Marseille entre par l'écoutille */
  const c=document.createElement('canvas');c.width=CV.width;c.height=CV.height;const g=c.getContext('2d');const V=VUE;
- g.fillStyle='#262b33';g.fillRect(0,0,c.width,c.height);
+ /* le ciel tout autour */
+ const sk=g.createLinearGradient(0,0,0,c.height);sk.addColorStop(0,'#5fb6ec');sk.addColorStop(.45,'#a8dcf8');sk.addColorStop(1,'#e8f6ff');g.fillStyle=sk;g.fillRect(0,0,c.width,c.height);
  g.save();g.translate(V.ox,V.oy);g.scale(V.s,V.s);
- /* tôle rivetée derrière */
- for(let x=-40;x<CW+40;x+=12.5){g.fillStyle='#30363f';g.fillRect(x,-60,12,CH+80);g.fillStyle='#3a414b';g.fillRect(x,-60,.6,CH+80);for(let y=-56;y<CH+20;y+=9){g.fillStyle='#4a525c';g.beginPath();g.arc(x+2,y,.5,0,7);g.fill();}}
- /* la cuve */
- g.fillStyle='rgba(12,16,22,.55)';g.fillRect(0,0,CW,CH);
- const gr=g.createLinearGradient(0,0,0,CH);gr.addColorStop(0,'rgba(255,220,150,.07)');gr.addColorStop(1,'rgba(0,0,0,.2)');g.fillStyle=gr;g.fillRect(0,0,CW,CH);
- for(const [x,w] of [[-3.5,3.5],[CW,3.5]]){g.fillStyle='#8a9098';g.fillRect(x,-6,w,CH+9.5);g.fillStyle='#b0b6bc';g.fillRect(x,-6,.6,CH+9.5);for(let y=0;y<CH;y+=10){g.fillStyle='#5a6068';g.beginPath();g.arc(x+w/2,y,.45,0,7);g.fill();}}
- g.fillStyle='#8a9098';g.fillRect(-3.5,CH,CW+7,3.5);g.fillStyle='#5a6068';g.fillRect(-3.5,CH+3,CW+7,.5);
- /* les bandes jaunes et noires en haut des parois */
+ /* le soleil et des nuages */
+ const so=g.createRadialGradient(84,-20,1,84,-20,26);so.addColorStop(0,'rgba(255,248,210,1)');so.addColorStop(.25,'rgba(255,236,160,.9)');so.addColorStop(1,'rgba(255,236,160,0)');g.fillStyle=so;g.fillRect(50,-60,70,80);
+ const nuage=(x,y,k)=>{g.fillStyle='rgba(255,255,255,.95)';for(const [dx,dy,r] of [[0,0,5],[6,-2.5,6.5],[13,0,5],[6,2,5]]){g.beginPath();g.arc(x+dx*k,y+dy*k,r*k,0,7);g.fill();}};
+ nuage(4,-22,1);nuage(40,-34,.7);nuage(-30,10,1.1);nuage(CW+12,30,1);
+ /* la coque du navire, de part et d'autre : blanche, bande rouge */
+ for(const [x,w] of [[-60,56.5],[CW+3.5,56.5]]){g.fillStyle='#f4f4f6';g.fillRect(x,-8,w,CH+40);g.fillStyle='#e2e4ea';for(let y=-4;y<CH+30;y+=10)g.fillRect(x,y,w,.5);
+  for(let y=8;y<CH;y+=16)for(let k=x+6;k<x+w-4;k+=10){g.fillStyle='#3a6a90';g.beginPath();g.arc(k,y,1.6,0,7);g.fill();g.fillStyle='rgba(255,255,255,.6)';g.fillRect(k-1,y-1,.8,.8);}
+  g.fillStyle='#1f3566';g.fillRect(x,CH-6,w,6);g.fillStyle='#c8323a';g.fillRect(x,CH,w,4);}
+ /* le pont : bordé de bois clair au-dessus des parois */
+ g.fillStyle='#d8b07a';g.fillRect(-60,-8,56.5,4);g.fillRect(CW+3.5,-8,56.5,4);
+ /* l'intérieur de la cale : tôle peinte vert d'eau, éclairée par le haut */
+ g.fillStyle='#9fd0cc';g.fillRect(0,0,CW,CH);
+ for(let x=0;x<CW;x+=12.5){g.fillStyle='#8cc2be';g.fillRect(x,0,.8,CH);g.fillStyle='#b8e2de';g.fillRect(x+.8,0,.5,CH);for(let y=4;y<CH;y+=9){g.fillStyle='#7ab0ac';g.beginPath();g.arc(x+2.4,y,.45,0,7);g.fill();}}
+ for(let y=30;y<CH;y+=30){g.fillStyle='#86bcb8';g.fillRect(0,y,CW,.8);g.fillStyle='#bfe6e2';g.fillRect(0,y+.8,CW,.4);}
+ const lu=g.createLinearGradient(0,0,0,CH);lu.addColorStop(0,'rgba(255,246,200,.45)');lu.addColorStop(.5,'rgba(255,246,200,.08)');lu.addColorStop(1,'rgba(20,60,70,.28)');g.fillStyle=lu;g.fillRect(0,0,CW,CH);
+ /* le rai de soleil en biais */
+ g.fillStyle='rgba(255,250,220,.16)';g.beginPath();g.moveTo(52,0);g.lineTo(82,0);g.lineTo(48,CH);g.lineTo(18,CH);g.fill();
+ /* le plancher en planches de bois */
+ for(let y=CH-4;y<CH;y+=2){g.fillStyle=((y|0)%4)?'#b0804a':'#c08e56';g.fillRect(0,y,CW,2);}
+ /* les montants jaune sécurité */
+ for(const [x,w] of [[-3.5,3.5],[CW,3.5]]){g.fillStyle='#e8b830';g.fillRect(x,-6,w,CH+9.5);g.fillStyle='#ffd860';g.fillRect(x,-6,.7,CH+9.5);g.fillStyle='#b88a18';g.fillRect(x+w-.6,-6,.6,CH+9.5);for(let y=0;y<CH;y+=10){g.fillStyle='#a87a10';g.beginPath();g.arc(x+w/2,y,.45,0,7);g.fill();}}
+ g.fillStyle='#e8b830';g.fillRect(-3.5,CH,CW+7,3.5);g.fillStyle='#b88a18';g.fillRect(-3.5,CH+3,CW+7,.5);
  for(const x of [-3.5,CW])for(let y=-6;y<6;y+=2){g.fillStyle=(y/2)%2?'#1a1a1e':'#e8c040';g.fillRect(x,y,3.5,2);}
  g.restore();FOND=c;}
 function dessiner(){const g=G,V=VUE;if(!FOND||FOND.width!==CV.width||FOND.height!==CV.height)fond();
@@ -169,9 +184,9 @@ function dessiner(){const g=G,V=VUE;if(!FOND||FOND.width!==CV.width||FOND.height
  /* le guide de chute et le crochet de la grue */
  const r=NIV[J.tient].r,x=Math.max(r,Math.min(CW-r,J.x));
  const L=PEND,th=J.bal,ty=YLACHE-L,bx=x+L*Math.sin(th),by=ty+L*Math.cos(th);
- if(J.pause<=0){g.fillStyle='rgba(255,255,255,.18)';const gx=Math.max(r,Math.min(CW-r,bx));for(let y=by+r;y<CH;y+=4)g.fillRect(gx-.25,y,.5,2);}
+ if(J.pause<=0){g.fillStyle='rgba(30,60,70,.22)';const gx=Math.max(r,Math.min(CW-r,bx));for(let y=by+r;y<CH;y+=4)g.fillRect(gx-.25,y,.5,2);}
  /* le chariot de la grue sur son rail, le câble, le crochet */
- g.fillStyle='#3a414b';g.fillRect(-6,ty-4.4,CW+12,1.6);g.fillStyle='#e8c040';rr(g,x-5,ty-5.4,10,4.2,1);g.fill();g.fillStyle='#1a1a1e';g.fillRect(x-3.6,ty-1.4,1.6,1.4);g.fillRect(x+2,ty-1.4,1.6,1.4);
+ g.fillStyle='#5a6068';g.fillRect(-6,ty-4.4,CW+12,1.6);g.fillStyle='#e8c040';rr(g,x-5,ty-5.4,10,4.2,1);g.fill();g.fillStyle='#1a1a1e';g.fillRect(x-3.6,ty-1.4,1.6,1.4);g.fillRect(x+2,ty-1.4,1.6,1.4);
  const hx=bx-Math.sin(th)*(r+1.4),hy=by-Math.cos(th)*(r+1.4);g.strokeStyle='#5a6068';g.lineWidth=.7;g.beginPath();g.moveTo(x,ty);g.lineTo(hx,hy);g.stroke();
  g.save();g.translate(bx,by);g.rotate(th);g.fillStyle='#e8c040';rr(g,-3.2,-r-1.6,6.4,1.8,.6);g.fill();
  if(J.pause<=0)bagage(g,J.tient,0,0,0);else{g.globalAlpha=1-J.pause/.45;bagage(g,J.tient,0,0,0,r*(1-J.pause/.45*.5));g.globalAlpha=1;}g.restore();
@@ -195,7 +210,7 @@ function boucle(t){if(!RAC)return;RAF=requestAnimationFrame(boucle);const dt=Mat
  for(const o of J.ondes)o.t+=dt;J.ondes=J.ondes.filter(o=>o.t<.45);for(const b of J.corps)if(b.pop>0)b.pop=Math.max(0,b.pop-dt);
  {const lim=NIV[J.tient].r;J.cible=Math.max(lim,Math.min(CW-lim,J.cible));const ox=J.x;J.x+=(J.cible-J.x)*Math.min(1,dt*16);const v=(J.x-ox)/Math.max(dt,1e-3),ax=(v-J.vit)/Math.max(dt,1e-3);J.vit=v;
   /* le bagage pend au câble : un vrai pendule, secoué par l'accélération du chariot */
-  const L=PEND;J.om+=(-(GRAV/L)*Math.sin(J.bal)-(Math.max(-900,Math.min(900,ax))/L)*Math.cos(J.bal)-1.6*J.om)*dt;J.bal+=J.om*dt;if(Math.abs(J.bal)>1.1){J.bal=Math.sign(J.bal)*1.1;J.om*=-.3;}}
+  const L=PEND;J.om+=(-(GRAV/L)*Math.sin(J.bal)-(Math.max(-500,Math.min(500,ax))*.4/L)*Math.cos(J.bal)-3.2*J.om)*dt;J.bal+=J.om*dt;if(Math.abs(J.bal)>.55){J.bal=Math.sign(J.bal)*.55;J.om*=-.2;}}
  J.pause=Math.max(0,J.pause-dt);J.tCombo=Math.max(0,J.tCombo-dt);if(J.tCombo<=0)J.combo=0;J.secousse=Math.max(0,J.secousse-dt);
  for(const p of J.parts){p.t+=dt;p.vy+=160*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;}J.parts=J.parts.filter(p=>p.t<.6);
  for(const p of J.pops)p.t+=dt;J.pops=J.pops.filter(p=>p.t<1.1);
