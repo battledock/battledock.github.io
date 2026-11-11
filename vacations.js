@@ -26,7 +26,8 @@ const LIB={croisiere:'Croisière',conteneurs:'Conteneurs',ferry:'Corse · ferry'
 const POSTES=[
  {k:'bagages',type:'croisiere',nom:'Bagages',ic:'🧳',fond:'#e3eefb',paie:1800,grade:'occ',duree:'la soute',pret:true,fn:['bagages.js','ouvrirBagages']},
  {k:'embarq',type:'ferry',nom:'Saisissage',ic:'⛓️',fond:'#e2f4e6',paie:2600,grade:'nd',duree:'les remorques',pret:true,fn:['saisissage.js','ouvrirSaisissage']},
- {k:'portique',type:'conteneurs',nom:'Portique',ic:'🏗️',fond:'#fdecd8',paie:3500,grade:'dock',duree:'6 boîtes',pret:true,fn:['portique.js','ouvrirPortique']},
+ {k:'twists',type:'conteneurs',nom:'Les twists',ic:'🔩',fond:'#fdecd8',paie:3500,grade:'dock',duree:'sous le portique',pret:true,fn:['twists.js','ouvrirTwists']},
+ {k:'portique',type:'conteneurs',nom:'Portique',ic:'🏗️',fond:'#fde8d8',paie:7000,grade:'mens',duree:'6 boîtes',pret:true,fn:['portique.js','ouvrirPortique']},
  {k:'cavalier',type:'conteneurs',nom:'Cavalier',ic:'🚛',fond:'#e8e4f6',paie:4500,grade:'chauf',duree:'le parc',pret:false}];
 const PLEIN=4;              /* vacations à plein tarif par jour, ensuite la paie baisse */
 
@@ -34,7 +35,7 @@ const PLEIN=4;              /* vacations à plein tarif par jour, ensuite la pai
 function jour(){const d=new Date();return d.getFullYear()*1000+Math.floor((d-new Date(d.getFullYear(),0,0))/864e5);}
 function hasard(s){let n=s|0;return()=>{n=(n*1103515245+12345)&0x7fffffff;return n/0x7fffffff;};}
 function escales(){const r=hasard(jour()*7919);return ['croisiere','conteneurs','ferry'].map(t=>{const L=NAVIRES[t];return {type:t,nom:L[(r()*L.length)|0][0],quai:L[(r()*L.length)|0][1]};});}
-function vacations(){const E=escales(),r=hasard(jour()*31);const H={bagages:7,embarq:13,portique:9,cavalier:16};
+function vacations(){const E=escales(),r=hasard(jour()*31);const H={bagages:7,embarq:13,twists:9,portique:20,cavalier:16};
  return POSTES.map(p=>{const es=E.find(x=>x.type===p.type);return Object.assign({},p,{navire:es.nom,heure:H[p.k]+((r()*2)|0)});}).sort((a,b)=>(RANG[a.grade]-RANG[b.grade])||(a.heure-b.heure));}
 function faites(){try{const o=JSON.parse(localStorage.getItem('vac_jour')||'{}');return o.j===jour()?o.n|0:0;}catch(x){return 0;}}
 function compter(){try{localStorage.setItem('vac_jour',JSON.stringify({j:jour(),n:faites()+1}));}catch(x){}}
