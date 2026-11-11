@@ -24,7 +24,7 @@ const GRAV=260, SUB=8, REST=.08, FROT=.32;
 let RAC=null,CV=null,G=null,RAF=0,DPR=1,J=null,VUE=null;
 const hasard=Math.random;
 function tirer(){const r=hasard();return r<.32?0:r<.6?1:r<.82?2:r<.95?3:4;}
-function nouvelle(){J={corps:[],x:CW/2,tient:tirer(),suivant:tirer(),pause:0,score:0,combo:0,tCombo:0,danger:0,fini:false,parts:[],pops:[],secousse:0,
+function nouvelle(){J={corps:[],x:CW/2,cible:CW/2,bal:0,tient:tirer(),suivant:tirer(),pause:0,score:0,combo:0,tCombo:0,danger:0,fini:false,parts:[],pops:[],secousse:0,
   max:0,fusions:0,t0:performance.now(),lache:0,id:1};}
 
 /* --- la physique --- */
@@ -149,8 +149,9 @@ function dessiner(){const g=G,V=VUE;if(!FOND||FOND.width!==CV.width||FOND.height
  /* le guide de chute et le crochet de la grue */
  const r=NIV[J.tient].r,x=Math.max(r,Math.min(CW-r,J.x));
  if(J.pause<=0){g.fillStyle='rgba(255,255,255,.18)';for(let y=YLACHE+r;y<CH;y+=4)g.fillRect(x-.25,y,.5,2);}
- g.fillStyle='#5a6068';g.fillRect(x-.5,-30,1,YLACHE-r+28);g.fillStyle='#e8c040';rr(g,x-4,YLACHE-r-3.6,8,2.6,.8);g.fill();g.fillStyle='#5a6068';g.fillRect(x-3.6,YLACHE-r-1.2,1,2);g.fillRect(x+2.6,YLACHE-r-1.2,1,2);
- if(J.pause<=0)bagage(g,J.tient,x,YLACHE,0);else{g.globalAlpha=1-J.pause/.45;bagage(g,J.tient,x,YLACHE,0,r*(1-J.pause/.45*.5));g.globalAlpha=1;}
+ g.fillStyle='#5a6068';g.fillRect(x-.5,-30,1,YLACHE-r+27);
+ g.save();g.translate(x,YLACHE-r-2.2);g.rotate(J.bal);g.fillStyle='#e8c040';rr(g,-4,-1.4,8,2.6,.8);g.fill();g.fillStyle='#5a6068';g.fillRect(-3.6,1,1,2);g.fillRect(2.6,1,1,2);
+ if(J.pause<=0)bagage(g,J.tient,0,r+2.2,J.bal*.6);else{g.globalAlpha=1-J.pause/.45;bagage(g,J.tient,0,r+2.2,0,r*(1-J.pause/.45*.5));g.globalAlpha=1;}g.restore();
  /* les bagages */
  for(const b of J.corps)bagage(g,b.k,b.x,b.y,b.a,b.rv);
  /* les éclats */
@@ -164,6 +165,7 @@ function dessiner(){const g=G,V=VUE;if(!FOND||FOND.width!==CV.width||FOND.height
  const sv=RAC.querySelector('.sv canvas');if(sv&&sv._k!==J.suivant){sv._k=J.suivant;const q=sv.getContext('2d'),d=sv.width;q.setTransform(1,0,0,1,0,0);q.clearRect(0,0,d,d);const s=d/(NIV[J.suivant].r*2.6);q.setTransform(s,0,0,s,d/2,d/2);bagage(q,J.suivant,0,0,0);}}
 function boucle(t){if(!RAC)return;RAF=requestAnimationFrame(boucle);const dt=Math.min(1/30,(t-(boucle.t||t))/1000);boucle.t=t;if(!J)return;
  if(!J.fini){pas(dt);surveiller(dt);}
+ {const lim=NIV[J.tient].r;J.cible=Math.max(lim,Math.min(CW-lim,J.cible));const ox=J.x;J.x+=(J.cible-J.x)*Math.min(1,dt*16);const v=(J.x-ox)/Math.max(dt,1e-3);J.bal+=((-v*.006)-J.bal)*Math.min(1,dt*10);J.bal=Math.max(-.35,Math.min(.35,J.bal));}
  J.pause=Math.max(0,J.pause-dt);J.tCombo=Math.max(0,J.tCombo-dt);if(J.tCombo<=0)J.combo=0;J.secousse=Math.max(0,J.secousse-dt);
  for(const p of J.parts){p.t+=dt;p.vy+=160*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;}J.parts=J.parts.filter(p=>p.t<.6);
  for(const p of J.pops)p.t+=dt;J.pops=J.pops.filter(p=>p.t<1.1);
@@ -212,15 +214,18 @@ window.ouvrirBagages=function(navire){if(RAC)return;if(!document.getElementById(
  const d=document.createElement('div');d.id='bag';RAC=d;
  d.innerHTML='<div class="bar"><div><small>POSTE BAGAGES · '+String(navire||'CALE 2').toUpperCase()+'</small><b>La soute</b></div><span class="sp"></span><button class="x">Quitter</button></div>'+
   '<div class="pl"><span>⭐ <i class="sc" style="font-style:normal">0</i></span><span class="rc">🏆 0</span><span class="cb">🔥 ×1</span><span class="sv">SUIVANT<canvas width="90" height="90"></canvas></span></div>'+
-  '<div class="scene"><canvas></canvas></div><div class="bas">Glisse le doigt pour viser, lâche pour envoyer. Deux bagages pareils fusionnent !</div>';
+  '<div class="scene"><canvas></canvas></div><div class="bas">Fais glisser le doigt pour déplacer la grue, lève-le pour lâcher. Deux bagages pareils fusionnent !</div>';
  document.body.appendChild(d);CV=d.querySelector('.scene>canvas');G=CV.getContext('2d');
  nouvelle();majRec();requestAnimationFrame(()=>{d.classList.add('on');cadrer();});setTimeout(()=>{if(RAC===d)window.ECRAN_COUVRANT=true;},300);addEventListener('resize',cadrer);
  d.querySelector('.x').onclick=fermer;
- /* viser au doigt, lâcher en levant le doigt */
- const viser=e=>{if(!VUE||!J)return;const t=e.touches?e.touches[0]:e;const r=CV.getBoundingClientRect();const px=(t.clientX-r.left)*DPR;J.x=(px-VUE.ox)/VUE.s;e.preventDefault();};
- CV.addEventListener('touchstart',viser,{passive:false});CV.addEventListener('touchmove',viser,{passive:false});
- CV.addEventListener('touchend',e=>{e.preventDefault();lacher();},{passive:false});
- CV.addEventListener('mousedown',e=>{viser(e);const m=ev=>viser(ev),u=()=>{removeEventListener('mousemove',m);removeEventListener('mouseup',u);lacher();};addEventListener('mousemove',m);addEventListener('mouseup',u);});
- window.__BAG={J:()=>J,lacher,viser:x=>{if(J)J.x=x;}};
+ /* viser : le doigt glisse, la grue suit en douceur (pas de saut là où on pose le doigt) ; on lâche en levant le doigt */
+ let D0=null;
+ const pos=e=>{const t=e.touches?(e.touches[0]||e.changedTouches[0]):e;return t.clientX;};
+ const debut=e=>{if(!VUE||!J)return;D0={x:pos(e),c:J.cible,t:performance.now(),bouge:0};e.preventDefault();};
+ const glisse=e=>{if(!D0||!VUE||!J)return;const dx=(pos(e)-D0.x)*DPR/VUE.s;D0.bouge=Math.max(D0.bouge,Math.abs(dx));J.cible=D0.c+dx*1.15;e.preventDefault();};
+ const fin=e=>{if(!D0)return;D0=null;e.preventDefault();lacher();};
+ CV.addEventListener('touchstart',debut,{passive:false});CV.addEventListener('touchmove',glisse,{passive:false});CV.addEventListener('touchend',fin,{passive:false});CV.addEventListener('touchcancel',()=>{D0=null;});
+ CV.addEventListener('mousedown',e=>{debut(e);const m=ev=>glisse(ev),u=ev=>{removeEventListener('mousemove',m);removeEventListener('mouseup',u);fin(ev);};addEventListener('mousemove',m);addEventListener('mouseup',u);});
+ window.__BAG={J:()=>J,lacher,viser:x=>{if(J)J.x=J.cible=x;}};
  RAF=requestAnimationFrame(boucle);};
 })();
