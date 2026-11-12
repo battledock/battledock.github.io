@@ -17752,14 +17752,18 @@ const SOUF={v:1,vide:false,vu:0,tSprint:0,halete:0,
   else{S.v=Math.min(1,S.v+dt*(bouge?0.2:0.42));if(S.vide&&S.v>=0.4)S.vide=false;}
   S.halete=Math.max(0,S.halete-dt);
   S.vu=Math.max(0,Math.min(1,S.vu+(S.v<0.999||sprinte?dt*5:-dt*1.6)));},
- dessiner(g,camX,camY){const S=this;if(S.vu<=0.01||!joueur)return;const x=joueur.x-camX+15,y=joueur.y-camY-58,R=5.2;
-  g.save();g.globalAlpha=S.vu;
-  g.fillStyle='rgba(12,18,28,.6)';g.beginPath();g.arc(x,y,R+2,0,7);g.fill();
-  g.strokeStyle='rgba(255,255,255,.18)';g.lineWidth=2.4;g.beginPath();g.arc(x,y,R,0,7);g.stroke();
-  const c=S.vide?((performance.now()/180|0)%2?'#ff5a4a':'#c0392b'):S.v>.5?'#7ee08a':S.v>.25?'#f5c430':'#ff8a3a';
-  g.strokeStyle=c;g.lineWidth=2.4;g.lineCap='round';g.beginPath();g.arc(x,y,R,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(0.001,S.v));g.stroke();
-  /* essoufflé : des gouttes de sueur */
-  if(S.halete>0||S.vide){const t=performance.now()/1000;for(let i=0;i<2;i++){const k=(t*1.6+i*.5)%1;g.globalAlpha=S.vu*(1-k);g.fillStyle='#9fd8ff';g.beginPath();g.ellipse(x-24+i*16,y+4+k*10,1.1,1.6,0,0,7);g.fill();}}
+ dessiner(g,camX,camY){const S=this;if(!joueur)return;const px=joueur.x-camX,py=joueur.y-camY,t=performance.now()/1000;
+  /* LA BARRE AU SOL : posée sous les pieds comme une ombre, seulement autour d'un sprint */
+  if(S.vu>0.01){const w=26,h=3,x=Math.round(px-w/2),y=Math.round(py+5);g.save();g.globalAlpha=S.vu*.9;
+   g.fillStyle='rgba(10,16,24,.55)';g.fillRect(x-1,y-1,w+2,h+2);
+   const c=S.vide?((t*6|0)%2?'#ff5a4a':'#c0392b'):S.v>.5?'#ffe68a':S.v>.25?'#f5c430':'#ff8a3a';g.fillStyle=c;g.fillRect(x,y,Math.max(1,Math.round(w*S.v)),h);
+   g.fillStyle='rgba(255,255,255,.35)';g.fillRect(x,y,Math.max(1,Math.round(w*S.v)),1);g.restore();}
+  /* LE CORPS LE DIT : petits nuages de souffle devant la bouche, gouttes de sueur, quand il est à bout */
+  const fat=S.vide?1:S.v<.3?(.3-S.v)/.3:0;if(fat<=0&&S.halete<=0)return;const k=Math.max(fat,S.halete>0?.8:0);
+  const d=(joueur.dirVue||joueur.dir||'bas'),sx=d.indexOf('droite')>=0?1:d.indexOf('gauche')>=0?-1:0;
+  g.save();for(let i=0;i<3;i++){const ph=(t*1.8+i/3)%1;g.globalAlpha=k*(1-ph)*.75;g.fillStyle='#ffffff';
+   g.beginPath();g.arc(px+sx*(9+ph*12)+(sx?0:(i-1)*5),py-41-ph*7,1.4+ph*2.6,0,7);g.fill();}
+  for(let i=0;i<2;i++){const ph=(t*1.1+i*.5)%1;g.globalAlpha=k*(1-ph);g.fillStyle='#9fd8ff';const gx=px+(i?7:-7),gy=py-50+ph*12;g.fillRect(Math.round(gx),Math.round(gy),2,3);g.fillStyle='#e0f4ff';g.fillRect(Math.round(gx),Math.round(gy),1,1);}
   g.restore();}};
 /* ================= LES CHRONOS =================
    Un parcours de bornes lumineuses sur la place : on marche sur le départ,
