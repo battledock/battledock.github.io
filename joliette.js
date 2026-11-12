@@ -891,29 +891,41 @@ function graver(){if(T)return T;const Wd=136,Hd=140,sol=132,cx=62,D=2;const c=do
 return {graver};})();
 
 /* ---------- LE QUAI : le journal qu'on lit au kiosque ---------- */
-const JOURNAL={date:'Vendredi 6 nov. 2026',une:{tag:'Exclusif',titre:'La Galerie Bleue enfin ouverte !',img:'galerie',chapo:'Une grande verrière, un mur végétal et sept grandes vitrines à louer : on a visité la galerie avant tout le monde.'},
-  breves:[{tag:'Port',titre:"L'ovation des dockers",txt:'À chaque niveau gagné sur le port, tout le quai applaudit.',img:'ovation'},
-    {tag:'Shopping',titre:"Sept grandes boutiques à louer",txt:"Un seul grand niveau sous la verrière, avis aux marchands.",img:'galerie'},
-    {tag:'Joliette',titre:'La place toute ronde',txt:'Fontaine recentrée, haie de buis, banc circulaire.',img:'place'},
-    {tag:'Météo',titre:'Automne doré',txt:"Les platanes gardent leurs couleurs jusqu'au 20 décembre.",img:'place',pos:'0 100%'}]};
-const CSS_QUAI=`#quaiJ{position:fixed;inset:0;z-index:2147483000;background:rgba(14,18,26,.94);overflow-y:auto;-webkit-overflow-scrolling:touch;opacity:0;transition:opacity .25s;font-family:Arial,Helvetica,sans-serif}
+/* LE JOURNAL « LE QUAI » : l'édition du jour. La date et le numéro se calculent ; les articles racontent ce qui a changé. */
+const JOURNAL={
+ une:{tag:'Le port',titre:'Trois navires, une seule soute',img:'navires',
+  chapo:'Ferry, croisière, porte-conteneurs : chaque cale a désormais son ambiance. Les bagagistes y gagnent plus, et leur grade multiplie la paie, de ×1 pour l’occasionnel à ×5 pour le directeur du port.'},
+ breves:[
+  {tag:'Collection',titre:'Douze bagages rares',txt:'Coffre au trésor, valise diplomatique, panier d’oursins… Fusionnez-les pour les ranger dans l’album 📕.',img:'rares'},
+  {tag:'Paie',titre:'Le ticket de pointeuse',txt:'Fin de cale : la pointeuse imprime ta feuille, le tampon tombe, tu encaisses.',img:'ticket'},
+  {tag:'Joliette',titre:'Le kiosque recrute',txt:'Plus besoin de descendre au port : le kiosquier donne les vacations du jour.',img:'kiosque'},
+  {tag:'Météo',titre:'Automne doré',txt:'Les platanes de la place gardent leurs couleurs jusqu’au 20 décembre.',img:'place',pos:'0 100%'}],
+ annonce:'On cherche des bagagistes pour la soute. Paie au score, primes de grade. Se présenter au kiosquier.'};
+const MOIS=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'],JOURS=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+const CSS_QUAI=`#quaiJ{position:fixed;inset:0;z-index:2147483000;overflow-y:auto;-webkit-overflow-scrolling:touch;opacity:0;transition:opacity .25s;
+ background:#e6dac2 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='32'%3E%3Crect width='64' height='32' fill='%23e3d6bc'/%3E%3Crect x='1' y='1' width='30' height='14' fill='%23ebe0c9'/%3E%3Crect x='33' y='17' width='30' height='14' fill='%23ebe0c9'/%3E%3Crect x='33' y='1' width='30' height='14' fill='%23e8dcc4'/%3E%3Crect x='1' y='17' width='30' height='14' fill='%23e8dcc4'/%3E%3C/svg%3E");background-size:64px 32px;color:#16213a}
 #quaiJ.on{opacity:1}#quaiJ *{box-sizing:border-box}
-#quaiJ .pap{max-width:520px;margin:14px auto 90px;background:#f7f5f0;box-shadow:0 14px 40px rgba(0,0,0,.6);padding-bottom:14px;transform:translateY(16px);transition:transform .3s}
+#quaiJ .pap{max-width:480px;margin:calc(env(safe-area-inset-top,0px) + 14px) auto 110px;padding:0 14px;transform:translateY(14px);transition:transform .3s}
 #quaiJ.on .pap{transform:none}
-#quaiJ .mast{background:#c8102e;color:#fff;padding:10px 14px 8px;display:flex;align-items:flex-end;justify-content:space-between}
-#quaiJ .mast h1{margin:0;font:900 italic 44px/.9 Arial,Helvetica,sans-serif;letter-spacing:-2.5px}#quaiJ .mast h1 span{color:#ffd84a}
-#quaiJ .mast small{font:700 9px Arial;text-align:right;line-height:1.3}
-#quaiJ .sub{background:#141414;color:#fff;font:700 9px Arial;letter-spacing:.12em;padding:5px 14px;display:flex;gap:14px;text-transform:uppercase}#quaiJ .sub b{color:#ffd84a}
-#quaiJ .une{position:relative}#quaiJ .une img{display:block;width:100%;height:270px;object-fit:cover}
-#quaiJ .une .t{position:absolute;left:0;right:0;bottom:0;padding:40px 14px 12px;background:linear-gradient(transparent,rgba(0,0,0,.85))}
-#quaiJ .tag{display:inline-block;background:#ffd84a;color:#141414;font:900 10px Arial;letter-spacing:.08em;padding:3px 7px;text-transform:uppercase}
-#quaiJ .une h2{margin:6px 0 0;color:#fff;font:900 30px/1 Arial;letter-spacing:-1px;text-transform:uppercase}
-#quaiJ .chap{padding:10px 14px 4px;font:700 15px/1.35 Georgia,serif;color:#141414}
-#quaiJ .g{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 14px}
-#quaiJ .c img{display:block;width:100%;height:100px;object-fit:cover}#quaiJ .c .tag{margin-top:6px;background:#c8102e;color:#fff}
-#quaiJ .c h3{margin:4px 0 2px;font:900 15px/1.05 Arial;letter-spacing:-.3px;color:#141414}#quaiJ .c p{margin:0;font:13px/1.3 Georgia,serif;color:#333}
-#quaiJ .bar{position:fixed;left:0;right:0;bottom:0;padding:12px 14px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(14,18,26,.95) 40%);display:flex;justify-content:center}
-#quaiJ .bar button{background:#c8102e;color:#fff;border:0;font:700 15px Arial;padding:12px 30px;border-radius:24px;box-shadow:0 4px 14px rgba(0,0,0,.5)}`;
+#quaiJ .mast{background:#16213a;border:4px solid #e8c050;box-shadow:0 0 0 4px #16213a,0 8px 0 rgba(0,0,0,.22);border-radius:4px;padding:12px 14px 10px;text-align:center;color:#f2ead6}
+#quaiJ .mast small{display:block;font:900 10px ui-monospace,monospace;letter-spacing:3px;color:#e8c050}
+#quaiJ .mast h1{margin:2px 0 4px;font:900 50px/1 Georgia,'Times New Roman',serif;letter-spacing:-1px;color:#ffd860;text-shadow:0 3px 0 #0a1020}
+#quaiJ .mast .ln{display:flex;justify-content:space-between;border-top:2px solid #e8c050;padding-top:5px;font:700 10.5px ui-monospace,monospace;color:#c8d4e4;letter-spacing:.5px}
+#quaiJ .bloc{margin-top:22px;background:#f6efdc;border:4px solid #16213a;border-radius:4px;box-shadow:0 6px 0 #16213a;overflow:hidden}
+#quaiJ .une img{display:block;width:100%;height:auto;image-rendering:pixelated;border-bottom:4px solid #16213a}
+#quaiJ .une .tx{padding:12px 14px 14px}
+#quaiJ .tag{display:inline-block;background:#16213a;color:#e8c050;font:900 10px ui-monospace,monospace;letter-spacing:2px;padding:3px 7px;border-radius:2px;text-transform:uppercase}
+#quaiJ .une h2{margin:8px 0 6px;font:900 29px/1.05 Georgia,serif;letter-spacing:-.5px}
+#quaiJ .une p{margin:0;font:600 15px/1.4 Georgia,serif;color:#3a2e22}
+#quaiJ .g{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px}
+#quaiJ .c{background:#f6efdc;border:3px solid #16213a;border-radius:4px;box-shadow:0 5px 0 #16213a;overflow:hidden}
+#quaiJ .c img{display:block;width:100%;height:96px;object-fit:cover;image-rendering:pixelated;border-bottom:3px solid #16213a}
+#quaiJ .c .in{padding:8px 10px 10px}#quaiJ .c .tag{background:#c0392b;color:#fff;font-size:9px;letter-spacing:1.5px}
+#quaiJ .c h3{margin:5px 0 3px;font:900 16px/1.1 Georgia,serif}#quaiJ .c p{margin:0;font:600 12.5px/1.35 Georgia,serif;color:#3a2e22}
+#quaiJ .ann{margin-top:22px;border:3px dashed #16213a;border-radius:4px;padding:10px 12px;background:#fff6d8;display:flex;gap:10px;align-items:center}
+#quaiJ .ann b{display:block;font:900 11px ui-monospace,monospace;letter-spacing:2px;color:#c0392b}#quaiJ .ann span{font:600 13.5px/1.35 Georgia,serif}
+#quaiJ .bar{position:fixed;left:0;right:0;bottom:0;padding:14px 18px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(rgba(230,218,194,0),#e6dac2 45%);display:flex;justify-content:center}
+#quaiJ .bar button{all:unset;box-sizing:border-box;width:100%;max-width:440px;text-align:center;background:#16213a;color:#ffd860;border:4px solid #e8c050;box-shadow:0 0 0 4px #16213a,0 6px 0 rgba(0,0,0,.25);border-radius:4px;padding:12px;font:900 15px ui-monospace,monospace;letter-spacing:2px;cursor:pointer}`;
 /* LE TRAM : à l'arrêt, on choisit sa destination ; le tram nous y dépose */
 const DESTINATIONS=[
   {n:'Vélodrome',d:'Le stade · parvis et grand escalier',page:'stade.html',c:'#2f9ae0'},
@@ -943,30 +955,20 @@ let AFF_CHARGE=false;
 async function ouvrirAffiches(){try{if(!window.ouvrirLesAffiches)eval(await chargerMorceau('affiches.js'));window.ouvrirLesAffiches();}catch(x){console.warn('AFF',x);}}
 /* LE KIOSQUE : on y lit le journal, et on y prend ses vacations de docker (les petites annonces d'embauche) */
 async function ouvrirVacationsKiosque(){try{if(!window.ouvrirVacations)eval(await chargerMorceau('vacations.js'));window.ouvrirVacations({journal:ouvrirJournal});}catch(x){console.warn('VAC',x);}}
-function ouvrirKiosque(){if(document.getElementById('kiosM'))return;const d=document.createElement('div');d.id='kiosM';
- d.style.cssText='position:fixed;inset:0;z-index:2147482000;background:rgba(10,16,24,.55);display:flex;align-items:flex-end;justify-content:center;font-family:"Baloo 2",system-ui,sans-serif';
- d.innerHTML='<div style="width:min(440px,100%);background:#f6f1e6;border-radius:26px 26px 0 0;padding:12px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.35);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.9,.3,1)">'+
-  '<div style="width:44px;height:5px;border-radius:3px;background:#d8ccb4;margin:0 auto 10px"></div><div style="text-align:center;font:900 22px \'Baloo 2\',system-ui,sans-serif;color:#2a2016">Le kiosque</div><div style="text-align:center;font:700 13px \'Baloo 2\',system-ui,sans-serif;color:#8a7a5a;margin-bottom:14px">Le journal, et les annonces d’embauche du port</div>'+
-  '<button data-k="v" style="all:unset;box-sizing:border-box;display:flex;align-items:center;gap:14px;width:100%;background:linear-gradient(#ffe68a,#f2b030);border-radius:20px;padding:13px 16px;margin-bottom:12px;box-shadow:0 4px 0 #a86a10;cursor:pointer"><span style="width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:25px;background:rgba(255,255,255,.45)">🧳</span><span><b style="display:block;font:900 17px \'Baloo 2\',system-ui,sans-serif;color:#2a2016">Les vacations</b><small style="font:700 12.5px \'Baloo 2\',system-ui,sans-serif;color:#6a4a10">Travailler dans la soute · être payé</small></span></button>'+
-  '<button data-k="j" style="all:unset;box-sizing:border-box;display:flex;align-items:center;gap:14px;width:100%;background:#fff;border-radius:20px;padding:13px 16px;box-shadow:0 3px 0 #e2d8c6;cursor:pointer"><span style="width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:25px;background:#e3eefb">📰</span><span><b style="display:block;font:900 17px \'Baloo 2\',system-ui,sans-serif;color:#2a2016">Lire le journal</b><small style="font:700 12.5px \'Baloo 2\',system-ui,sans-serif;color:#8a7a5a">Le Quai, l’édition du jour</small></span></button></div>';
- document.body.appendChild(d);const c=d.firstChild;requestAnimationFrame(()=>c.style.transform='none');
- const fermer=()=>{c.style.transform='translateY(100%)';setTimeout(()=>d.remove(),250);};
- d.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b){if(ev.target===d)fermer();return;}d.remove();if(b.dataset.k==='v')ouvrirVacationsKiosque();else ouvrirJournal();});}
 function ouvrirJournal(){if(document.getElementById('quaiJ'))return;
   if(!document.getElementById('cssQuai')){const st=document.createElement('style');st.id='cssQuai';st.textContent=CSS_QUAI;document.head.appendChild(st);}
   const J=JOURNAL,v=window.MA_VERSION?('?v='+encodeURIComponent(window.MA_VERSION)):'',im=n=>'assets/journal/'+n+'.jpg'+v;
+  const t=new Date(),date=JOURS[t.getDay()]+' '+t.getDate()+' '+MOIS[t.getMonth()]+' '+t.getFullYear(),num=4000+Math.floor(t/864e5)%10000;
   const d=document.createElement('div');d.id='quaiJ';
-  d.innerHTML='<div class="pap"><div class="mast"><h1>Le <span>Quai</span></h1><small>'+J.date.toUpperCase()+'<br>ÉDITION DE MARSEILLE · 1 €</small></div>'+
-    '<div class="sub"><b>● En direct</b><span>Joliette</span><span>Galerie Bleue</span><span>Port</span></div>'+
-    '<div class="une"><img src="'+im(J.une.img)+'" alt=""><div class="t"><span class="tag">'+J.une.tag+'</span><h2>'+J.une.titre+'</h2></div></div>'+
-    '<div class="chap">'+J.une.chapo+'</div><div class="g">'+
-    J.breves.map(b=>'<div class="c"><img src="'+im(b.img)+'" alt=""'+(b.pos?' style="object-position:'+b.pos+'"':'')+'><span class="tag">'+b.tag+'</span><h3>'+b.titre+'</h3><p>'+b.txt+'</p></div>').join('')+
-    '</div></div><div class="bar"><button type="button">Fermer</button></div>';
+  d.innerHTML='<div class="pap"><div class="mast"><small>LE QUOTIDIEN DE LA JOLIETTE</small><h1>Le Quai</h1><div class="ln"><span>'+date.toUpperCase()+'</span><span>N° '+num+' · 1 €</span></div></div>'+
+    '<div class="bloc une"><img src="'+im(J.une.img)+'" alt=""><div class="tx"><span class="tag">'+J.une.tag+'</span><h2>'+J.une.titre+'</h2><p>'+J.une.chapo+'</p></div></div>'+
+    '<div class="g">'+J.breves.map(b=>'<div class="c"><img src="'+im(b.img)+'" alt=""'+(b.pos?' style="object-position:'+b.pos+'"':'')+'><div class="in"><span class="tag">'+b.tag+'</span><h3>'+b.titre+'</h3><p>'+b.txt+'</p></div></div>').join('')+'</div>'+
+    '<div class="ann"><div><b>PETITE ANNONCE</b><span>'+J.annonce+'</span></div></div>'+
+    '</div><div class="bar"><button type="button">REFERMER LE JOURNAL</button></div>';
   document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));
   const fermer=()=>{d.classList.remove('on');setTimeout(()=>d.remove(),260);};
-  d.querySelector('button').addEventListener('click',fermer);
-  d.addEventListener('click',ev=>{if(ev.target===d)fermer();});
-  ['pointerdown','touchstart','keydown'].forEach(t=>d.addEventListener(t,ev=>ev.stopPropagation()));
+  d.querySelector('.bar button').addEventListener('click',fermer);
+  ['pointerdown','touchstart','keydown'].forEach(t2=>d.addEventListener(t2,ev=>ev.stopPropagation()));
   try{vibrer(8);}catch(x){}}
 
 const GRAVEURS={x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_affiches:graverPanneauAffiches,x_jol_tram:graverVide};
