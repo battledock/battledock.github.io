@@ -134,19 +134,22 @@ function solFin(){const c=document.createElement('canvas');c.width=W*2;c.height=
    Pas de sac sur la piste : débardeur, short, chaussures de course. On les
    choisit aux vestiaires ; le moteur les porte à la place des habits de ville
    tant qu'on est ici (window.AP_FORCE). */
-const KITS=[{n:'Phocéen',haut:'#7ac8f0',bas:'#ffffff'},{n:'Massilia',haut:'#ffffff',bas:'#1f5fa8'},{n:'Calanques',haut:'#1a1a22',bas:'#1a1a22',f:'#f5c430'},{n:'Provence',haut:'#e84a3a',bas:'#ffffff'},{n:'Garrigue',haut:'#2e8a4a',bas:'#f2ead6'},{n:'Soleil',haut:'#f5c430',bas:'#1a1a22'}];
-const SOULIERS=[{n:'Fluo',c:'#c8ff3a'},{n:'Corail',c:'#ff6a4a'},{n:'Glacier',c:'#5ae0ff'},{n:'Néon rose',c:'#ff4ab8'},{n:'Blanc pur',c:'#f6f6f6'},{n:'Noir mat',c:'#26262c'}];
-function kit(){let k={k:0,s:0};try{if(e.kitAthle&&typeof e.kitAthle==='object')k=e.kitAthle;}catch(x){}const K=KITS[k.k%KITS.length],S=SOULIERS[k.s%SOULIERS.length];
+const KITS=[{n:'Phocéen',haut:'#7ac8f0',bas:'#ffffff',nv:0},{n:'Massilia',haut:'#ffffff',bas:'#1f5fa8',nv:1},{n:'Calanques',haut:'#1a1a22',bas:'#1a1a22',nv:2},{n:'Provence',haut:'#e84a3a',bas:'#ffffff',nv:3},{n:'Garrigue',haut:'#2e8a4a',bas:'#f2ead6',nv:4},{n:'Soleil',haut:'#f5c430',bas:'#1a1a22',nv:5},{n:'Or olympique',haut:'#e8c040',bas:'#e8c040',nv:6}];
+const SOULIERS=[{n:'Fluo',c:'#c8ff3a',nv:0},{n:'Corail',c:'#ff6a4a',nv:1},{n:'Glacier',c:'#5ae0ff',nv:2},{n:'Néon rose',c:'#ff4ab8',nv:3},{n:'Blanc pur',c:'#f6f6f6',nv:0},{n:'Noir mat',c:'#26262c',nv:4},{n:'Or olympique',c:'#ffd040',nv:6}];
+const CATS=['Débutant','Club','Régional','Interrégional','National','Élite','Olympique'];
+function cat(){let m=0;try{for(const k in (e.athNiv||{}))m=Math.max(m,e.athNiv[k]|0);}catch(x){}return m;}
+function kit(){let k={k:0,s:0};try{if(e.kitAthle&&typeof e.kitAthle==='object')k=e.kitAthle;}catch(x){}let K=KITS[k.k%KITS.length],S=SOULIERS[k.s%SOULIERS.length];if(K.nv>cat())K=KITS[0];if(S.nv>cat())S=SOULIERS[0];
   return {haut:4,veste:K.haut,_motif:0,motif:0,raye:0,bas:1,pantalon:K.bas,souliers:1,chaussures:S.c,sac:0,chapeau:0,cos:0,deguisement:0,maillot:0,gilet:0,patin:0,_civil:true};}
 function porter(){try{window.AP_FORCE=kit();}catch(x){}}
 porter();
 function vestiaires(){if(document.getElementById('pstV'))return;let sel={k:0,s:0};try{if(e.kitAthle)sel=Object.assign({},e.kitAthle);}catch(x){}
   const d=document.createElement('div');d.id='pstV';
   d.style.cssText='position:fixed;inset:0;z-index:2147482500;background:rgba(10,16,24,.55);display:flex;align-items:flex-end;justify-content:center;font-family:"Baloo 2",system-ui,sans-serif';
-  const carte=(i,a,on)=>'<button data-'+a+'="'+i+'" style="all:unset;box-sizing:border-box;cursor:pointer;text-align:center;background:'+(on?'#fff6d8':'#fff')+';border:3px solid '+(on?'#16213a':'#e2d8c6')+';border-radius:6px;padding:4px 2px 6px;box-shadow:0 3px 0 '+(on?'#16213a':'#e2d8c6')+'"><canvas width="96" height="128" style="width:48px;height:64px;image-rendering:pixelated;display:block;margin:0 auto"></canvas><span style="font:800 11px ui-monospace,monospace;color:#16213a">'+(a==='k'?KITS[i].n:SOULIERS[i].n)+'</span></button>';
+  const carte=(i,a,on)=>{const it=a==='k'?KITS[i]:SOULIERS[i],lk=it.nv>cat();return '<button data-'+a+'="'+i+'"'+(lk?' data-lock="1"':'')+' style="all:unset;box-sizing:border-box;cursor:pointer;position:relative;text-align:center;background:'+(on?'#fff6d8':'#fff')+';border:3px solid '+(on?'#16213a':'#e2d8c6')+';border-radius:6px;padding:4px 2px 6px;box-shadow:0 3px 0 '+(on?'#16213a':'#e2d8c6')+';'+(lk?'opacity:.55':'')+'"><canvas width="96" height="128" style="width:48px;height:64px;image-rendering:pixelated;display:block;margin:0 auto;'+(lk?'filter:grayscale(1)':'')+'"></canvas><span style="font:800 11px ui-monospace,monospace;color:#16213a">'+it.n+'</span>'+(lk?'<span style="display:block;font:800 10px ui-monospace,monospace;color:#c0392b">🔒 '+CATS[it.nv]+'</span>':'')+'</button>';};
   const rendre=()=>{d.innerHTML='<div style="width:min(460px,100%);max-height:88vh;overflow-y:auto;background:#f6efdc;border-radius:22px 22px 0 0;border-top:4px solid #16213a;padding:12px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.35)">'+
     '<div style="width:44px;height:5px;border-radius:3px;background:#d8ccb4;margin:0 auto 8px"></div><div style="text-align:center;font:900 22px Georgia,serif;color:#16213a">Les vestiaires</div>'+
     '<div style="text-align:center;font:700 12px ui-monospace,monospace;color:#6a5a40;margin-bottom:10px">Sur la piste, on court léger : pas de sac.</div>'+
+    '<div style="text-align:center;font:700 11.5px ui-monospace,monospace;color:#2e5a3a;background:#e6f6e8;border-radius:4px;padding:5px;margin-bottom:8px">Ta catégorie : <b>'+CATS[cat()]+'</b> · gagne des courses pour débloquer les tenues 🔒</div>'+
     '<div style="font:900 11px ui-monospace,monospace;letter-spacing:2px;color:#c0392b;margin:4px 0 6px">LE MAILLOT ET LE SHORT</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+KITS.map((_,i)=>carte(i,'k',i===sel.k)).join('')+'</div>'+
     '<div style="font:900 11px ui-monospace,monospace;letter-spacing:2px;color:#c0392b;margin:12px 0 6px">LES CHAUSSURES DE COURSE</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+SOULIERS.map((_,i)=>carte(i,'s',i===sel.s)).join('')+'</div>'+
     '<button data-ok="1" style="all:unset;box-sizing:border-box;display:block;width:100%;margin-top:14px;text-align:center;background:#16213a;color:#ffd860;border:4px solid #e8c050;box-shadow:0 0 0 3px #16213a;border-radius:4px;padding:12px;font:900 15px ui-monospace,monospace;letter-spacing:2px;cursor:pointer">ENFILER LA TENUE</button></div>';
@@ -155,6 +158,7 @@ function vestiaires(){if(document.getElementById('pstV'))return;let sel={k:0,s:0
       q.setTransform(2,0,0,2,0,0);try{personne(q,24,60,ap,'bas',0,false);}catch(x){}});};
   rendre();document.body.appendChild(d);
   d.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b){if(ev.target===d)d.remove();return;}
+    if(b.dataset.lock){try{vibrer(30);}catch(x){}return;}
     if(b.dataset.k!==undefined){sel.k=+b.dataset.k;rendre();}else if(b.dataset.s!==undefined){sel.s=+b.dataset.s;rendre();}
     else if(b.dataset.ok){e.kitAthle=sel;porter();try{sauver();}catch(x){}d.remove();try{texteVolant(joueur.x,joueur.y-70,'Tenue enfilée !','#ffd860');}catch(x){}try{vibrer(12);}catch(x){}}});}
 
