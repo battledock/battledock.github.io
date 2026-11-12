@@ -17736,6 +17736,88 @@ if(a<0||b<0){joueur.dirVue=cible;return;}
 const d=(b-a+8)%8;
 joueur.dirVue=ORDRE8[(a+(d<=4?1:-1)+8)%8];
 }
+/* ================= LE SOUFFLE =================
+   Pousser le pouce à fond fait sprinter : plus vite, mais la jauge de souffle
+   se vide. Vide, on est essoufflé : on marche moins vite tant qu'on n'a pas
+   repris de l'air. Courir entraîne : l'endurance monte et la jauge s'allonge. */
+const SOUF={v:1,vide:false,vu:0,tSprint:0,halete:0,
+ cap(){return 5+Math.min(100,+e.endu||0)*0.1;},          /* de 5 s (débutant) à 15 s (marathonien) */
+ maj(dt,sprinte,bouge){const S=this;
+  if(sprinte&&!S.vide){S.v-=dt/S.cap();S.tSprint+=dt;
+   /* l'entraînement : chaque seconde de sprint compte, et le dernier quart compte double */
+   const avant=Math.floor(+e.endu||0);e.endu=Math.min(100,(+e.endu||0)+dt*(S.v<.25?0.05:0.025));
+   if(Math.floor(e.endu)>avant){try{texteVolant(joueur.x,joueur.y-70,'+1 endurance','#9fe8a0');}catch(x){}try{sauver();}catch(x){}}
+   if(S.v<=0){S.v=0;S.vide=true;S.halete=2.4;try{texteVolant(joueur.x,joueur.y-64,'à bout de souffle…','#ffb0a0');}catch(x){}try{vibrer([30,40,30]);}catch(x){}}}
+  else{S.v=Math.min(1,S.v+dt*(bouge?0.2:0.42));if(S.vide&&S.v>=0.4)S.vide=false;}
+  S.halete=Math.max(0,S.halete-dt);
+  S.vu=Math.max(0,Math.min(1,S.vu+(S.v<0.999||sprinte?dt*5:-dt*1.6)));},
+ dessiner(g,camX,camY){const S=this;if(S.vu<=0.01||!joueur)return;const x=joueur.x-camX+15,y=joueur.y-camY-58,R=5.2;
+  g.save();g.globalAlpha=S.vu;
+  g.fillStyle='rgba(12,18,28,.6)';g.beginPath();g.arc(x,y,R+2,0,7);g.fill();
+  g.strokeStyle='rgba(255,255,255,.18)';g.lineWidth=2.4;g.beginPath();g.arc(x,y,R,0,7);g.stroke();
+  const c=S.vide?((performance.now()/180|0)%2?'#ff5a4a':'#c0392b'):S.v>.5?'#7ee08a':S.v>.25?'#f5c430':'#ff8a3a';
+  g.strokeStyle=c;g.lineWidth=2.4;g.lineCap='round';g.beginPath();g.arc(x,y,R,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(0.001,S.v));g.stroke();
+  /* essoufflé : des gouttes de sueur */
+  if(S.halete>0||S.vide){const t=performance.now()/1000;for(let i=0;i<2;i++){const k=(t*1.6+i*.5)%1;g.globalAlpha=S.vu*(1-k);g.fillStyle='#9fd8ff';g.beginPath();g.ellipse(x-24+i*16,y+4+k*10,1.1,1.6,0,0,7);g.fill();}}
+  g.restore();}};
+/* ================= LES CHRONOS =================
+   Un parcours de bornes lumineuses sur la place : on marche sur le départ,
+   3-2-1, et on enchaîne les bornes. Le fantôme de son meilleur passage
+   court à côté. Le souffle est la vraie difficulté : sprinter partout, c'est
+   craquer avant la fin. */
+const PARCOURS={
+ fontaine:{nom:'Le tour de la fontaine',carte:'spawn',tours:2,
+  pts:(()=>{const L=[];for(let i=0;i<6;i++){const a=Math.PI/2-i*Math.PI/3;L.push([400+Math.cos(a)*142,582+Math.sin(a)*88]);}return L;})(),
+  med:[11,13.5,17]}};
+const CHRONO={P:null,etat:'',t:0,i:0,decompte:0,trace:[],fant:null,cool:0,hud:null,
+ parcoursIci(){if(window.LIEU_PAGE)return null;for(const k in PARCOURS)if(PARCOURS[k].carte===CARTE)return Object.assign({k},PARCOURS[k]);return null;},
+ bornes(P){const L=[];for(let t=0;t<P.tours;t++)for(let i=1;i<P.pts.length;i++)L.push(P.pts[i]);L.push(P.pts[0]);return L;},
+ record(k){try{return (e.chronos&&e.chronos[k])||null;}catch(x){return null;}},
+ maj(dt){const C=this;if(!joueur)return;if(!C.P){C.P=C.parcoursIci()||false;}if(!C.P)return;const P=C.P;C.cool=Math.max(0,C.cool-dt);
+  const d0=Math.hypot(joueur.x-P.pts[0][0],joueur.y-P.pts[0][1]);
+  if(!C.etat){if(d0<20&&C.cool<=0){C.etat='decompte';C.decompte=3.2;C.hudOn();try{jouer('tic');}catch(x){}}return;}
+  if(C.etat==='decompte'){C.decompte-=dt;if(d0>34){C.annuler('Reste sur le départ !');return;}
+   const n=Math.ceil(C.decompte);if(n!==C._n){C._n=n;try{vibrer(n>0?12:40);}catch(x){}}
+   if(C.decompte<=0){C.etat='course';C.t=0;C.i=0;C.trace=[];C.L=C.bornes(P);const r=C.record(P.k);C.fant=r&&r.tr?r.tr:null;}C.majHud();return;}
+  if(C.etat==='course'){C.t+=dt;if((C._tr=(C._tr||0)+dt)>=0.1){C._tr=0;C.trace.push([Math.round(joueur.x),Math.round(joueur.y)]);}
+   const b=C.L[C.i];if(Math.hypot(joueur.x-b[0],joueur.y-b[1])<24){C.i++;try{vibrer(10);}catch(x){}
+    if(C.i>=C.L.length){C.fin();return;}}
+   if(C.t>90)C.annuler('Trop long : le chrono s’arrête.');C.majHud();}
+  if(C.etat==='fini'){C.tf-=dt;if(C.tf<=0){C.etat='';C.cool=2;C.hudOff();}}},
+ fin(){const C=this,P=C.P,t=C.t,r=C.record(P.k);const neuf=!r||t<r.t;
+  if(neuf){if(!e.chronos||typeof e.chronos!=='object')e.chronos={};e.chronos[P.k]={t:Math.round(t*100)/100,tr:C.trace.slice(0,900)};try{sauver();}catch(x){}}
+  const m=t<=P.med[0]?'🥇':t<=P.med[1]?'🥈':t<=P.med[2]?'🥉':'';C.etat='fini';C.tf=4;C.res={t,neuf,m,ancien:r&&r.t};
+  try{texteVolant(joueur.x,joueur.y-70,(neuf?'NOUVEAU RECORD ':'')+t.toFixed(2)+' s '+m,neuf?'#ffd860':'#f2e6cc');}catch(x){}
+  try{jouer('achat','moment');}catch(x){}try{vibrer(neuf?[30,40,30,40,60]:[40]);}catch(x){}C.majHud();},
+ annuler(msg){const C=this;C.etat='';C.cool=2;C.hudOff();try{texteVolant(joueur.x,joueur.y-64,msg,'#ffb0a0');}catch(x){}},
+ hudOn(){const C=this;if(C.hud)return;const d=document.createElement('div');d.id='chronoHud';
+  d.style.cssText='position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 12px);transform:translateX(-50%);z-index:2147481000;background:#16213a;border:3px solid #e8c050;box-shadow:0 0 0 3px #16213a,0 6px 0 rgba(0,0,0,.25);border-radius:4px;padding:6px 14px;color:#f2ead6;font:900 15px ui-monospace,monospace;text-align:center;min-width:170px;pointer-events:none';
+  document.body.appendChild(d);C.hud=d;},
+ hudOff(){if(this.hud){this.hud.remove();this.hud=null;}},
+ majHud(){const C=this;if(!C.hud)return;const P=C.P,r=C.record(P.k);
+  if(C.etat==='decompte'){const n=Math.ceil(C.decompte);C.hud.innerHTML='<div style="font-size:10px;letter-spacing:2px;color:#e8c050">'+P.nom.toUpperCase()+'</div><div style="font-size:30px;line-height:1.1;color:'+(n>0?'#fff':'#7ee08a')+'">'+(n>0?n:'GO !')+'</div>';return;}
+  if(C.etat==='course'){const ec=r&&C.fant?C.ecart():null;C.hud.innerHTML='<div style="font-size:10px;letter-spacing:2px;color:#e8c050">BORNE '+Math.min(C.i+1,C.L.length)+' / '+C.L.length+'</div><div style="font-size:26px;line-height:1.1">'+C.t.toFixed(2)+'</div>'+(r?'<div style="font-size:11px;color:'+(ec!==null&&ec<0?'#7ee08a':'#ff9a8a')+'">record '+r.t.toFixed(2)+(ec!==null?' · '+(ec>0?'+':'')+ec.toFixed(1):'')+'</div>':'');return;}
+  if(C.etat==='fini'){const R=C.res;C.hud.innerHTML='<div style="font-size:10px;letter-spacing:2px;color:#e8c050">'+(R.neuf?'NOUVEAU RECORD':'ARRIVÉE')+'</div><div style="font-size:28px;line-height:1.1;color:'+(R.neuf?'#ffd860':'#fff')+'">'+R.t.toFixed(2)+' s '+R.m+'</div><div style="font-size:11px;color:#8ab0d8">🥇 '+P.med[0]+' s · 🥈 '+P.med[1]+' s · 🥉 '+P.med[2]+' s</div>';}},
+ /* l'écart avec le fantôme : où était-il au même instant ? on compare le nombre de bornes franchies, à défaut la distance */
+ ecart(){const C=this;const k=Math.min(C.fant.length-1,Math.floor(C.t*10));if(k<0)return null;const F=C.fant[k];const b=C.L[C.i];
+  const dMoi=Math.hypot(joueur.x-b[0],joueur.y-b[1]),dF=Math.hypot(F[0]-b[0],F[1]-b[1]);return (dMoi-dF)/140;},
+ dessiner(g,camX,camY){const C=this;if(!C.P)return;const P=C.P,t=performance.now()/1000;
+  /* le tapis de départ */
+  const [sx,sy]=P.pts[0];g.save();g.translate(sx-camX,sy-camY);g.globalAlpha=C.etat==='course'?.5:1;
+  for(let i=-3;i<3;i++)for(let j=-1;j<1;j++){g.fillStyle=(i+j)%2?'#1a1a1e':'#f2f2f2';g.fillRect(i*6,j*5,6,5);}
+  g.globalAlpha=1;if(!C.etat){g.font='900 7px ui-monospace,monospace';g.textAlign='center';g.fillStyle='rgba(0,0,0,.5)';g.fillText('CHRONO',1,-9);g.fillStyle='#ffd860';g.fillText('CHRONO',0,-10);}
+  g.restore();
+  /* les bornes de la course */
+  if(C.etat==='course'||C.etat==='decompte'){const L=C.L||C.bornes(P);
+   for(let k=0;k<L.length;k++){if(C.etat==='course'&&k<C.i)continue;if(k>(C.i||0)+1)continue;const [x,y]=L[k],act=k===(C.i||0);
+    const pul=act?1+.15*Math.sin(t*8):1;g.save();g.translate(x-camX,y-camY);g.scale(1,.5);
+    g.strokeStyle=act?'rgba(255,216,96,.95)':'rgba(255,216,96,.35)';g.lineWidth=act?4:2;g.beginPath();g.arc(0,0,20*pul,0,7);g.stroke();
+    if(act){g.fillStyle='rgba(255,216,96,.18)';g.beginPath();g.arc(0,0,20*pul,0,7);g.fill();}g.restore();
+    if(act){g.fillStyle='rgba(255,216,96,.25)';g.fillRect(x-camX-1.5,y-camY-40,3,40);}}}
+  /* le fantôme : ton meilleur passage */
+  if(C.etat==='course'&&C.fant){const f=C.t*10,k=Math.floor(f);if(k<C.fant.length-1){const a=C.fant[k],b=C.fant[k+1],u=f-k,x=a[0]+(b[0]-a[0])*u,y=a[1]+(b[1]-a[1])*u;
+   const dx=b[0]-a[0],dy=b[1]-a[1],dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'droite':'gauche'):(dy>0?'bas':'haut');
+   g.save();g.globalAlpha=.38;try{personne(g,x-camX,y-camY,Object.assign({},e.ap||{},{_civil:true}),dir,(t*8)%24,true);}catch(z){g.fillStyle='#9fe8ff';g.beginPath();g.arc(x-camX,y-camY-20,8,0,7);g.fill();}g.restore();}}}};
 function majJoueur(dt){
 /* L'ESSAI D'UNE VOITURE À TOKYO : le joystick conduit, le piéton attend */
 if(CARTE==='tokyo'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif){TKM.majEssai(dt,joyX,joyY);vx=vy=0;joueur.marche=false;return;}
@@ -17756,7 +17838,9 @@ const allureBase=VITESSE+(max-VITESSE)*r;
 const allure=allureBase*(VELO&&CARTE==='extramar'?1.75:1)*(REPU_FIN>Date.now()?1.15:1)*(glaceA('vanille')?1.15:1);   /* la glace à la vanille : toute l'allure, marche comprise */
 /* La foulée a deux seuils, un pour s'ouvrir, un plus bas pour se
    refermer : le pouce qui tremble au bord ne la fait plus clignoter. */
-court=(pousse>(court?COURSE_SORTIE:COURSE_ENTREE))&&max>=SEUIL_COURSE;
+court=(pousse>(court?COURSE_SORTIE:COURSE_ENTREE))&&!SOUF.vide&&CARTE!=='large';
+try{SOUF.maj(dt,court&&n>0.16,n>0.16);}catch(x){}
+const allureS=allure*(court&&SOUF.v>0?1.22:1)*(SOUF.vide?0.82:1);   /* le sprint, et le souffle court quand la jauge est vide */
 /* ================= LE VIRAGE =================
    Le pivot ne se déclenchait que sur un cas : le renversement
    gauche↔droite. Les six autres changements de cap claquaient sec.
@@ -17784,8 +17868,8 @@ TRANS.etat='pivot';TRANS.depuis=Date.now();
 TRANS.sens=ec>0?1:-1;TRANS.duree=120+Math.abs(ec)*40;}
 }}}
 else joueur._capVoulu=null;
-const cibleX=n>0.16?(joyX/n)*allure*pousse:0;
-const cibleY=n>0.16?(joyY/n)*allure*pousse:0;
+const cibleX=n>0.16?(joyX/n)*allureS*pousse:0;
+const cibleY=n>0.16?(joyY/n)*allureS*pousse:0;
 const glace=false;
 /* LA MARCHE EN DOUCEUR : il se met en route au lieu de bondir,
    et il glisse un peu à l'arrêt au lieu de se figer net. */
@@ -17806,6 +17890,7 @@ const [dx,dy]=degager(joueur.x,joueur.y);
 joueur.x=dx;joueur.y=dy;
 }
 try{fairePousser();}catch(x){}
+try{CHRONO.maj(dt);}catch(x){}
 if(SON_PRET&&Date.now()-dernierAmbiance>500){
 dernierAmbiance=Date.now();
 try{ambiancer();}catch(x){}
@@ -19615,7 +19700,7 @@ poserLeCiel(g);                  /* la lumière du moment, par-dessus tout */
 }
 const A_GARDER=['sac','jetons','euros','outils','sacMax','score','recolte','casses',
 'nivSac','nivPioche','nivHache','nivPied','metiers','cos','aRepousser',
-'four','habitCasino','ap','pseudo','x','y','coffreOuvert','album'];
+'four','habitCasino','ap','pseudo','x','y','coffreOuvert','album','endu','chronos'];
 let derniereSauv=0, sauvEnVol=false, sauvSale=false, SAUV_REFUS=false;
 function etatAGarder(){
 const o={};
@@ -20502,7 +20587,7 @@ function dessinerLesBoules(g,camX,camY){const now=performance.now();
   g.fillStyle=gr;g.beginPath();g.arc(x,cy,r,0,7);g.fill();
   g.strokeStyle='rgba(40,44,50,.55)';g.lineWidth=0.6;const rot=d*0.35;g.beginPath();g.arc(x,cy,r*0.72,rot,rot+2.2);g.stroke();
   g.globalAlpha=1;}}
-function dessinerTextes(g,camX,camY){try{dessinerLesBoules(g,camX,camY);}catch(x){}
+function dessinerTextes(g,camX,camY){try{dessinerLesBoules(g,camX,camY);}catch(x){}try{CHRONO.dessiner(g,camX,camY);}catch(x){}try{SOUF.dessiner(g,camX,camY);}catch(x){}
 TEXTES.forEach(t=>{
 g.globalAlpha=Math.min(1,t.vie*1.6);
 g.font='700 9px ui-monospace,monospace';g.textAlign='center';
