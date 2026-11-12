@@ -9,7 +9,7 @@
 const W=800, H=800;
 const DOCKS_PIED=236, TROTTOIR=346, TRAM0=346, TRAM1=422, PLACE_BAS=760;
 const SORTIE_X=400, SORTIE_DEMI=44;
-const DEPART=(()=>{try{const q=new URLSearchParams(location.search).get('de');if(q==='terrasses')return [400,262];if(q==='stade')return [600,440];}catch(x){}return [400,712];})();
+const DEPART=(()=>{try{const q=new URLSearchParams(location.search).get('de');if(q==='terrasses')return [400,262];if(q==='stade')return [600,440];if(q==='piste')return [664,694];}catch(x){}return [400,712];})();
 const FONT=[400,592];
 const h=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
 const teinte=(hex,d)=>{const v=parseInt(hex.slice(1),16);const c=k=>Math.max(0,Math.min(255,((v>>k)&255)+d));
@@ -189,6 +189,26 @@ R(cx-12,s-62,24,3,'#fff');R(cx-12,s-57,18,2,'rgba(255,255,255,.7)');R(cx-12,s-53
 g.fillStyle='rgba(255,255,255,.28)';g.beginPath();g.moveTo(cx-17,s-95);g.lineTo(cx-4,s-95);g.lineTo(cx-17,s-60);g.fill();
 R(cx-17,s-28,34,3,'#2a2e36');g.fillStyle='#e8c06a';g.font='bold 4px "Trebuchet MS",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('À L’AFFICHE',cx,s-26.5);
 return {toile:c,W:L,H:HH,sol:s,feux:[{x:cx,y:s-62,r:30,teinte:'rgba(255,236,190,§)'}]};}
+/* L'AFFICHE DU MEETING : une sucette, son affiche d'athlétisme, et le chemin de la piste */
+function affCourse(){
+const L=48,HH=104,{c,g,R}=toile(L,HH),cx=L/2,s=HH-4;
+g.fillStyle='rgba(30,22,14,.25)';g.beginPath();g.ellipse(cx+3,s,18,4,0,0,7);g.fill();
+R(cx-6,s-6,12,6,'#3a3e46');R(cx-3,s-26,6,22,'#4a4e58');R(cx-3,s-26,2,22,'#6a6e78');
+R(cx-20,s-98,40,74,'#3a3e46');R(cx-20,s-98,40,2,'#6a6e78');R(cx+18,s-98,2,74,'#2a2e36');
+const gr=g.createLinearGradient(0,s-95,0,s-28);gr.addColorStop(0,'#ff8a3a');gr.addColorStop(1,'#c0392b');g.fillStyle=gr;g.fillRect(cx-17,s-95,34,68);
+/* la piste en virage, ses couloirs */
+g.strokeStyle='#f6e8d8';g.lineWidth=.8;for(let i=0;i<4;i++){g.beginPath();g.arc(cx+4,s-34,14+i*3,Math.PI*1.05,Math.PI*1.75);g.stroke();}
+/* le coureur, en pleine foulée */
+g.fillStyle='#1a1a22';g.beginPath();g.arc(cx+2,s-78,2.6,0,7);g.fill();
+g.strokeStyle='#1a1a22';g.lineWidth=2.4;g.lineCap='round';g.beginPath();g.moveTo(cx+1,s-75);g.lineTo(cx-2,s-64);g.lineTo(cx+5,s-58);g.lineTo(cx+3,s-50);g.moveTo(cx-2,s-64);g.lineTo(cx-9,s-58);g.lineTo(cx-12,s-62);
+g.moveTo(cx,s-72);g.lineTo(cx+7,s-69);g.lineTo(cx+10,s-73);g.moveTo(cx,s-72);g.lineTo(cx-6,s-70);g.lineTo(cx-9,s-66);g.stroke();
+R(cx-15,s-93,30,7,'#1a1a22');g.fillStyle='#ffd860';g.font='bold 5px "Trebuchet MS",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('MEETING',cx,s-89.5);
+g.fillStyle='#fff';g.font='bold 4px "Trebuchet MS",sans-serif';R(cx-15,s-44,30,7,'rgba(26,26,34,.55)');g.fillText('100·400·800 M',cx,s-40.5);
+g.fillStyle='rgba(255,255,255,.28)';g.beginPath();g.moveTo(cx-17,s-95);g.lineTo(cx-4,s-95);g.lineTo(cx-17,s-60);g.fill();
+R(cx-17,s-28,34,3,'#2a2e36');g.fillStyle='#e8c06a';g.font='bold 3.6px "Trebuchet MS",sans-serif';g.fillText('PISTE D’ATHLÉ',cx,s-26.5);
+return {toile:c,W:L,H:HH,sol:s,feux:[{x:cx,y:s-62,r:30,teinte:'rgba(255,200,150,§)'}]};}
+function allerPiste(){try{sauver();}catch(x){}try{const f=document.createElement('div');f.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#fff8ea;opacity:0;transition:opacity .45s;pointer-events:none';document.body.appendChild(f);requestAnimationFrame(()=>f.style.opacity='1');}catch(x){}
+  setTimeout(()=>{const v=window.MA_VERSION?('?v='+encodeURIComponent(window.MA_VERSION)):'';location.href='piste.html'+v;},480);}
 /* C — LE PANNEAU MUNICIPAL : métal vert sapin, fronton bleu de la Ville, vitrines à clé */
 function affMunicipal(){
 const L=104,HH=96,{c,g,R}=toile(L,HH),cx=L/2,s=HH-4;
@@ -971,7 +991,7 @@ function ouvrirJournal(){if(document.getElementById('quaiJ'))return;
   ['pointerdown','touchstart','keydown'].forEach(t2=>d.addEventListener(t2,ev=>ev.stopPropagation()));
   try{vibrer(8);}catch(x){}}
 
-const GRAVEURS={x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_affiches:graverPanneauAffiches,x_jol_tram:graverVide};
+const GRAVEURS={x_jol_aff_course:affCourse,x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_affiches:graverPanneauAffiches,x_jol_tram:graverVide};
 function graver(t,v){return (GRAVEURS[t]||graverVide)(v||0);}
 
 function decor(){
@@ -1003,6 +1023,7 @@ function decor(){
   P('x_jol_kiosque',156,600,{col:[96,14],agir:ouvrirVacationsKiosque,libelle:'Au kiosque',nom:'KIOSQUE · EMBAUCHE'});
   P('x_jol_entree',PLACE.CX,628,{agir:()=>VOEU.faire(),libelle:'Faire un vœu',nom:'FONTAINE À VŒUX'});
   P('x_jol_affiches',622,600,{col:[90,8],agir:ouvrirAffiches,libelle:'Voir les affiches',nom:'À L’AFFICHE',demi:56});
+  P('x_jol_aff_course',664,668,{col:[26,8],agir:allerPiste,libelle:'Aller courir',nom:'MEETING · PISTE D’ATHLÉ'});
   return D;
 }
 

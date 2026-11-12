@@ -7676,7 +7676,7 @@ R(-4,-5,9,5,V.tronc);R(-4,-5,9,2,V.troncC);R(-2,-4,5,1,'#a5764a');R(-4,-2,9,2,V.
    fin de la ville — une derniere facade, une esplanade de platanes — et
    surtout les collines boisees qui apparaissent sur l'horizon : on marche
    vers quelque chose qu'on voit, pas vers un mur. */
-const MONDE_L=CARTE==='spawn'?((window.LIEU_PAGE==='terrasses'||window.LIEU_PAGE==='stade'||window.LIEU_PAGE==='plage'||window.LIEU_PAGE==='corniche')?1600:800):(CARTE==='large'?2400:(CARTE==='foret'?1500:(CARTE==='tokyo'?900:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:(FERME_VIERGE?1800:1200)):1760)))));   /* spawn : 800×800 */
+const MONDE_L=CARTE==='spawn'?((window.LIEU_PAGE==='terrasses'||window.LIEU_PAGE==='stade'||window.LIEU_PAGE==='plage'||window.LIEU_PAGE==='corniche'||window.LIEU_PAGE==='piste')?1600:800):(CARTE==='large'?2400:(CARTE==='foret'?1500:(CARTE==='tokyo'?900:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:(FERME_VIERGE?1800:1200)):1760)))));   /* spawn : 800×800 */
 const MONDE_H=CARTE==='spawn'?800:(CARTE==='large'?2400:(CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?(FERME_VIERGE?1800:1600):(CARTE==='tokyo'?2560:562))));   /* spawn : 800×800 */
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 /* AU LARGE, LA CAMÉRA RECULE : le bateau fait à lui seul 252 points de
@@ -10792,7 +10792,7 @@ let TXT_FERME=null;
 /* SI port.js NE CHARGE PAS, les cinquante-trois symboles ci-dessous
    restent indéfinis et le port ne se dessine pas, sans un mot. On le dit. */
 try{
-if(CARTE==='spawn'){try{let lieu=window.LIEU_PAGE||'';try{lieu=lieu||new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':(lieu==='stade'?'stade.js':(lieu==='plage'?'plage.js':(lieu==='corniche'?'corniche.js':(lieu==='blocus'?'blocus.js':(lieu==='garde'?'garde.js':(lieu==='tour'?'tour.js':(lieu==='plateau'?'plateau.js':(lieu==='labo'?'labo.js':(lieu==='quai'?'quai.js':'joliette.js')))))))))));}catch(x){console.warn('JOL',x);JOL=null;}}
+if(CARTE==='spawn'){try{let lieu=window.LIEU_PAGE||'';try{lieu=lieu||new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':(lieu==='stade'?'stade.js':(lieu==='plage'?'plage.js':(lieu==='corniche'?'corniche.js':(lieu==='blocus'?'blocus.js':(lieu==='garde'?'garde.js':(lieu==='tour'?'tour.js':(lieu==='plateau'?'plateau.js':(lieu==='labo'?'labo.js':(lieu==='quai'?'quai.js':(lieu==='piste'?'piste.js':'joliette.js'))))))))))));}catch(x){console.warn('JOL',x);JOL=null;}}
 if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar,dessinerLePanorama}=eval(await chargerMorceau('port.js')));}
 if(CARTE==='tokyo'){TKM=eval(await chargerMorceau('tokyo.js'));}
 }catch(erPort){
@@ -15102,6 +15102,7 @@ PAUSE.type=TIRAGE_PAUSE[Math.floor(Math.random()*TIRAGE_PAUSE.length)];
 PAUSE.a=t;
 return PAUSE.type==='appui'?600:620;}
 function personne(g,x,y,ap,dir,pas,marche,enCourse){
+if(window.AP_FORCE&&ap&&typeof e!=='undefined'&&ap===e.ap)ap=Object.assign({},ap,window.AP_FORCE);   /* la tenue d'athlète, sur la piste */
 /* UN COSTUME INTEGRAL REMPLACE LE DESSIN, IL NE SE POSE PAS DESSUS.
    Peint par-dessus, il laissait toujours ressortir un coin de cheveux
    au sommet de la capuche ou deux pixels de col a l'epaule — et un
@@ -17765,29 +17766,27 @@ const SOUF={v:1,vide:false,vu:0,tSprint:0,halete:0,
    3-2-1, et on enchaîne les bornes. Le fantôme de son meilleur passage
    court à côté. Le souffle est la vraie difficulté : sprinter partout, c'est
    craquer avant la fin. */
-const PARCOURS={
- fontaine:{nom:'Le tour de la fontaine',carte:'spawn',tours:2,
-  pts:(()=>{const L=[];for(let i=0;i<6;i++){const a=Math.PI/2-i*Math.PI/3;L.push([400+Math.cos(a)*142,582+Math.sin(a)*88]);}return L;})(),
-  med:[11,13.5,17]}};
 const CHRONO={P:null,etat:'',t:0,i:0,decompte:0,trace:[],fant:null,cool:0,hud:null,
- parcoursIci(){if(window.LIEU_PAGE)return null;for(const k in PARCOURS)if(PARCOURS[k].carte===CARTE)return Object.assign({k},PARCOURS[k]);return null;},
- bornes(P){const L=[];for(let t=0;t<P.tours;t++)for(let i=1;i<P.pts.length;i++)L.push(P.pts[i]);L.push(P.pts[0]);return L;},
+ liste(){try{return (JOL&&JOL.courses)||[];}catch(x){return [];}},
+ bornes(P){return P.pts;},
+ fmt(t){const f=this.P&&this.P.fac||1;t*=f;if(t>=60){const m=Math.floor(t/60),r=t-m*60;return m+':'+(r<10?'0':'')+r.toFixed(2);}return t.toFixed(2);},
+ fmtM(v){if(v>=60){const m=Math.floor(v/60),r=v-m*60;return m+':'+(r<10?'0':'')+Math.round(r);}return String(v);},
  record(k){try{return (e.chronos&&e.chronos[k])||null;}catch(x){return null;}},
- maj(dt){const C=this;if(!joueur)return;if(!C.P){C.P=C.parcoursIci()||false;}if(!C.P)return;const P=C.P;C.cool=Math.max(0,C.cool-dt);
-  const d0=Math.hypot(joueur.x-P.pts[0][0],joueur.y-P.pts[0][1]);
-  if(!C.etat){if(d0<20&&C.cool<=0){C.etat='decompte';C.decompte=3.2;C.hudOn();try{jouer('tic');}catch(x){}}return;}
+ maj(dt){const C=this;if(!joueur)return;const LS=C.liste();if(!LS.length)return;C.cool=Math.max(0,C.cool-dt);
+  if(!C.etat){if(C.cool>0)return;for(const P of LS){if(Math.hypot(joueur.x-P.start[0],joueur.y-P.start[1])<16&&Math.hypot(vx,vy)<30){C.P=P;C.etat='decompte';C.decompte=3.2;C.hudOn();break;}}return;}
+  const P=C.P;const d0=Math.hypot(joueur.x-P.start[0],joueur.y-P.start[1]);
   if(C.etat==='decompte'){C.decompte-=dt;if(d0>34){C.annuler('Reste sur le départ !');return;}
    const n=Math.ceil(C.decompte);if(n!==C._n){C._n=n;try{vibrer(n>0?12:40);}catch(x){}}
-   if(C.decompte<=0){C.etat='course';C.t=0;C.i=0;C.trace=[];C.L=C.bornes(P);const r=C.record(P.k);C.fant=r&&r.tr?r.tr:null;}C.majHud();return;}
+   if(C.decompte<=0){C.etat='course';C.t=0;C.i=0;C.trace=[];C.L=C.bornes(P);try{vibrer([50]);}catch(x){}const r=C.record(P.k);C.fant=r&&r.tr?r.tr:null;}C.majHud();return;}
   if(C.etat==='course'){C.t+=dt;if((C._tr=(C._tr||0)+dt)>=0.1){C._tr=0;C.trace.push([Math.round(joueur.x),Math.round(joueur.y)]);}
    const b=C.L[C.i];if(Math.hypot(joueur.x-b[0],joueur.y-b[1])<24){C.i++;try{vibrer(10);}catch(x){}
     if(C.i>=C.L.length){C.fin();return;}}
    if(C.t>90)C.annuler('Trop long : le chrono s’arrête.');C.majHud();}
   if(C.etat==='fini'){C.tf-=dt;if(C.tf<=0){C.etat='';C.cool=2;C.hudOff();}}},
- fin(){const C=this,P=C.P,t=C.t,r=C.record(P.k);const neuf=!r||t<r.t;
-  if(neuf){if(!e.chronos||typeof e.chronos!=='object')e.chronos={};e.chronos[P.k]={t:Math.round(t*100)/100,tr:C.trace.slice(0,900)};try{sauver();}catch(x){}}
-  const m=t<=P.med[0]?'🥇':t<=P.med[1]?'🥈':t<=P.med[2]?'🥉':'';C.etat='fini';C.tf=4;C.res={t,neuf,m,ancien:r&&r.t};
-  try{texteVolant(joueur.x,joueur.y-70,(neuf?'NOUVEAU RECORD ':'')+t.toFixed(2)+' s '+m,neuf?'#ffd860':'#f2e6cc');}catch(x){}
+ fin(){const C=this,P=C.P,t=C.t*(P.fac||1),r=C.record(P.k);const neuf=!r||t<r.t;
+  if(neuf){if(!e.chronos||typeof e.chronos!=='object')e.chronos={};e.chronos[P.k]={t:Math.round(t*100)/100,tr:C.trace.slice(0,1500)};try{sauver();}catch(x){}}
+  const m=t<=P.med[0]?'🥇':t<=P.med[1]?'🥈':t<=P.med[2]?'🥉':'';C.etat='fini';C.tf=5;C.res={t,neuf,m,ancien:r&&r.t};
+  try{texteVolant(joueur.x,joueur.y-70,(neuf?'RECORD ! ':'')+P.nom+' en '+C.fmt(t/(P.fac||1))+' '+m,neuf?'#ffd860':'#f2e6cc');}catch(x){}
   try{jouer('achat','moment');}catch(x){}try{vibrer(neuf?[30,40,30,40,60]:[40]);}catch(x){}C.majHud();},
  annuler(msg){const C=this;C.etat='';C.cool=2;C.hudOff();try{texteVolant(joueur.x,joueur.y-64,msg,'#ffb0a0');}catch(x){}},
  hudOn(){const C=this;if(C.hud)return;const d=document.createElement('div');d.id='chronoHud';
@@ -17795,18 +17794,19 @@ const CHRONO={P:null,etat:'',t:0,i:0,decompte:0,trace:[],fant:null,cool:0,hud:nu
   document.body.appendChild(d);C.hud=d;},
  hudOff(){if(this.hud){this.hud.remove();this.hud=null;}},
  majHud(){const C=this;if(!C.hud)return;const P=C.P,r=C.record(P.k);
-  if(C.etat==='decompte'){const n=Math.ceil(C.decompte);C.hud.innerHTML='<div style="font-size:10px;letter-spacing:2px;color:#e8c050">'+P.nom.toUpperCase()+'</div><div style="font-size:30px;line-height:1.1;color:'+(n>0?'#fff':'#7ee08a')+'">'+(n>0?n:'GO !')+'</div>';return;}
-  if(C.etat==='course'){const ec=r&&C.fant?C.ecart():null;C.hud.innerHTML='<div style="font-size:10px;letter-spacing:2px;color:#e8c050">BORNE '+Math.min(C.i+1,C.L.length)+' / '+C.L.length+'</div><div style="font-size:26px;line-height:1.1">'+C.t.toFixed(2)+'</div>'+(r?'<div style="font-size:11px;color:'+(ec!==null&&ec<0?'#7ee08a':'#ff9a8a')+'">record '+r.t.toFixed(2)+(ec!==null?' · '+(ec>0?'+':'')+ec.toFixed(1):'')+'</div>':'');return;}
-  if(C.etat==='fini'){const R=C.res;C.hud.innerHTML='<div style="font-size:10px;letter-spacing:2px;color:#e8c050">'+(R.neuf?'NOUVEAU RECORD':'ARRIVÉE')+'</div><div style="font-size:28px;line-height:1.1;color:'+(R.neuf?'#ffd860':'#fff')+'">'+R.t.toFixed(2)+' s '+R.m+'</div><div style="font-size:11px;color:#8ab0d8">🥇 '+P.med[0]+' s · 🥈 '+P.med[1]+' s · 🥉 '+P.med[2]+' s</div>';}},
+  if(C.etat==='decompte'){const n=Math.ceil(C.decompte);C.hud.innerHTML='<div style="font-size:10px;letter-spacing:2px;color:#e8c050">'+P.nom.toUpperCase()+(r?' · RECORD '+C.fmt(r.t/(P.fac||1)):'')+'</div><div style="font-size:'+(n>0?22:30)+'px;line-height:1.25;color:'+(n>0?'#fff':'#7ee08a')+'">'+(n>=3?'À vos marques…':n===2?'Prêts…':n===1?'…':'PAN !')+'</div>';return;}
+  if(C.etat==='course'){const ec=r&&C.fant?C.ecart():null;C.hud.innerHTML='<div style="font-size:10px;letter-spacing:2px;color:#e8c050">'+P.nom.toUpperCase()+' · '+Math.round(P.metres*Math.min(1,C.i/C.L.length))+' M</div><div style="font-size:26px;line-height:1.1">'+C.fmt(C.t)+'</div>'+(r?'<div style="font-size:11px;color:'+(ec!==null&&ec<0?'#7ee08a':'#ff9a8a')+'">record '+C.fmt(r.t/(P.fac||1))+(ec!==null?' · '+(ec>0?'+':'')+(ec*(P.fac||1)).toFixed(1):'')+'</div>':'');return;}
+  if(C.etat==='fini'){const R=C.res;C.hud.innerHTML='<div style="font-size:10px;letter-spacing:2px;color:#e8c050">'+(R.neuf?'NOUVEAU RECORD':'ARRIVÉE')+'</div><div style="font-size:28px;line-height:1.1;color:'+(R.neuf?'#ffd860':'#fff')+'">'+P.nom+' · '+C.fmt(R.t/(P.fac||1))+' '+R.m+'</div><div style="font-size:11px;color:#8ab0d8">🥇 '+C.fmtM(P.med[0])+' · 🥈 '+C.fmtM(P.med[1])+' · 🥉 '+C.fmtM(P.med[2])+'</div>';}},
  /* l'écart avec le fantôme : où était-il au même instant ? on compare le nombre de bornes franchies, à défaut la distance */
  ecart(){const C=this;const k=Math.min(C.fant.length-1,Math.floor(C.t*10));if(k<0)return null;const F=C.fant[k];const b=C.L[C.i];
   const dMoi=Math.hypot(joueur.x-b[0],joueur.y-b[1]),dF=Math.hypot(F[0]-b[0],F[1]-b[1]);return (dMoi-dF)/140;},
- dessiner(g,camX,camY){const C=this;if(!C.P)return;const P=C.P,t=performance.now()/1000;
-  /* le tapis de départ */
-  const [sx,sy]=P.pts[0];g.save();g.translate(sx-camX,sy-camY);g.globalAlpha=C.etat==='course'?.5:1;
-  for(let i=-3;i<3;i++)for(let j=-1;j<1;j++){g.fillStyle=(i+j)%2?'#1a1a1e':'#f2f2f2';g.fillRect(i*6,j*5,6,5);}
-  g.globalAlpha=1;if(!C.etat){g.font='900 7px ui-monospace,monospace';g.textAlign='center';g.fillStyle='rgba(0,0,0,.5)';g.fillText('CHRONO',1,-9);g.fillStyle='#ffd860';g.fillText('CHRONO',0,-10);}
-  g.restore();
+ dessiner(g,camX,camY){const C=this;const LS=C.liste();if(!LS.length)return;const P=C.P,t=performance.now()/1000;
+  /* les plots de départ de chaque épreuve */
+  for(const Q of LS){const [sx,sy]=Q.start;g.save();g.translate(Math.round(sx-camX),Math.round(sy-camY));g.globalAlpha=C.etat&&C.P!==Q?.35:1;
+   g.fillStyle='rgba(0,0,0,.25)';g.fillRect(-11,-4,24,10);for(let i=-2;i<2;i++)for(let j=-1;j<1;j++){g.fillStyle=(i+j+4)%2?'#1a1a1e':'#f2f2f2';g.fillRect(i*6,j*4,6,4);}
+   if(!C.etat){const k=.6+.4*Math.sin(t*3);g.font='900 8px ui-monospace,monospace';g.textAlign='center';g.fillStyle='rgba(0,0,0,.55)';g.fillText(Q.nom,1,-8);g.fillStyle='rgba(255,216,96,'+k+')';g.fillText(Q.nom,0,-9);}
+   g.restore();}
+  if(!P)return;
   /* les bornes de la course */
   if(C.etat==='course'||C.etat==='decompte'){const L=C.L||C.bornes(P);
    for(let k=0;k<L.length;k++){if(C.etat==='course'&&k<C.i)continue;if(k>(C.i||0)+1)continue;const [x,y]=L[k],act=k===(C.i||0);
@@ -19700,7 +19700,7 @@ poserLeCiel(g);                  /* la lumière du moment, par-dessus tout */
 }
 const A_GARDER=['sac','jetons','euros','outils','sacMax','score','recolte','casses',
 'nivSac','nivPioche','nivHache','nivPied','metiers','cos','aRepousser',
-'four','habitCasino','ap','pseudo','x','y','coffreOuvert','album','endu','chronos'];
+'four','habitCasino','ap','pseudo','x','y','coffreOuvert','album','endu','chronos','kitAthle'];
 let derniereSauv=0, sauvEnVol=false, sauvSale=false, SAUV_REFUS=false;
 function etatAGarder(){
 const o={};
@@ -20217,7 +20217,7 @@ DECOR.filter(o=>o.t==='bancP').sort((a,b)=>(a.y-b.y)||(a.x-b.x))
 return l;
 }
 function coinDuJoueur(){
-if(window.LIEU_PAGE==='terrasses')return 'à la Galerie Bleue';if(window.LIEU_PAGE==='quai')return 'au port';if(window.LIEU_PAGE==='stade')return 'au Vélodrome';if(window.LIEU_PAGE==='plage')return 'à la plage des Catalans';if(window.LIEU_PAGE==='corniche')return 'sur la Corniche';if(window.LIEU_PAGE==='blocus')return 'au blocus';if(window.LIEU_PAGE==='garde')return 'en garde à vue';if(window.LIEU_PAGE==='tour')return 'à la tour du port';if(window.LIEU_PAGE==='plateau')return 'sur le plateau de Mistral TV';
+if(window.LIEU_PAGE==='terrasses')return 'à la Galerie Bleue';if(window.LIEU_PAGE==='quai')return 'au port';if(window.LIEU_PAGE==='stade')return 'au Vélodrome';if(window.LIEU_PAGE==='piste')return 'à la piste d’athlétisme';if(window.LIEU_PAGE==='plage')return 'à la plage des Catalans';if(window.LIEU_PAGE==='corniche')return 'sur la Corniche';if(window.LIEU_PAGE==='blocus')return 'au blocus';if(window.LIEU_PAGE==='garde')return 'en garde à vue';if(window.LIEU_PAGE==='tour')return 'à la tour du port';if(window.LIEU_PAGE==='plateau')return 'sur le plateau de Mistral TV';
 if(CARTE==='extramar')return 'à Extramar';
 if(CARTE==='garde')return 'à Notre-Dame';
 if(CARTE==='tokyo')return 'à Tokyo';
