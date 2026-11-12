@@ -66,11 +66,10 @@ for(const x0 of [0,W-84]){
     R(x,y,1,1,h(i,x0,23)<.5?'#c4b28a':'#e6d6b2');}
   R(x0===0?82:x0,TRAM1,2,PLACE_BAS-TRAM1,'#bfae88');
 }
-/* LA RUE DU BAS et le passage piéton qui mène au port */
+/* LA RUE DU BAS (plus de passage piéton : le port n'est plus un lieu) */
 R(0,PLACE_BAS,W,4,'#b9b3a6');R(0,PLACE_BAS,W,1,'#eee8da');
 for(let y=PLACE_BAS+4;y<H;y++)R(0,y,W,1,teinte('#5e6066',((y-PLACE_BAS)%7===0)?-6:0));
 for(let i=0;i<1500;i++)R(h(i,1,31)*W,PLACE_BAS+4+h(i,2,31)*36,1,1,h(i,3,31)<.5?'#6c6e74':'#54565c');
-for(let x=SORTIE_X-SORTIE_DEMI+4;x<SORTIE_X+SORTIE_DEMI-4;x+=12)R(x,PLACE_BAS+6,7,H-PLACE_BAS-6,'#e9e7e0');
 return c;
 }
 function dalles(g,R,x0,y0,w,hh,tons,tw,th){
@@ -1008,7 +1007,7 @@ function decor(){
 function bloque(x,y){
   if(x<14||x>W-14)return true;
   if(y<DOCKS_PIED+16)return true;                     /* la façade des Docks */
-  if(y>PLACE_BAS+4&&Math.abs(x-SORTIE_X)>SORTIE_DEMI)return true;   /* la rue : seulement par le passage */
+  if(y>PLACE_BAS+4)return true;   /* la rue : on ne la traverse plus */
   if(y>H-4)return true;
   if(PLACE.bloquePlace(x,y))return true;
   for(const o of DECOR){if(o.anim==='jol_tram'){try{if(dansLaRame(o,x,y)&&!dansLaRame(o,joueur.x,joueur.y))return true;}catch(e){}continue;}
