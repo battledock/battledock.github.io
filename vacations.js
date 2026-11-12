@@ -40,53 +40,67 @@ const eur=v=>Math.round(v).toLocaleString('fr-FR')+' €';
 
 let RAC=null,SEL=null;
 function css(){if(document.getElementById('vacCss'))return;const s=document.createElement('style');s.id='vacCss';s.textContent=`
-#vac{position:fixed;inset:0;z-index:2147482500;background:#f8f4ec;color:#1d1a16;font-family:'Baloo 2',system-ui,sans-serif;overflow-y:auto;-webkit-overflow-scrolling:touch;transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1);padding-bottom:calc(24px + env(safe-area-inset-bottom))}
-#vac.on{transform:none}
-#vac .top{padding:calc(16px + env(safe-area-inset-top)) 18px 8px;display:flex;align-items:center}
-#vac h1{margin:0;font-size:27px;line-height:1;font-weight:800}
-#vac .x{margin-left:auto;width:40px;height:40px;border-radius:50%;background:#ece4d6;border:0;font-family:inherit;font-weight:800;font-size:17px;color:#1d1a16}
-#vac .moi{margin:6px 14px 6px;background:#1b2330;color:#f2efe4;border-radius:20px;padding:12px 14px;display:flex;gap:12px;align-items:center}
-#vac .moi .gr{font-size:11px;color:#f5d27a;letter-spacing:.08em;font-weight:800}
-#vac .moi b{font-size:17px;display:block;line-height:1.15}
-#vac .jauge{display:flex;gap:4px;margin-top:6px}#vac .jauge i{width:22px;height:7px;border-radius:4px;background:#f5d27a}#vac .jauge i.v{background:#3a4458}
-#vac .moi .r{margin-left:auto;text-align:right;font-size:11px;opacity:.85}#vac .moi .r b{font-size:15px;color:#bff0c0}
-#vac .essai{margin:6px 14px 0;background:#fff3d6;color:#7a5a12;border-radius:14px;padding:8px 12px;font-size:12.5px;font-weight:700;line-height:1.3}
-#vac .tt{font-size:12px;font-weight:800;color:#a89a84;letter-spacing:.06em;margin:14px 18px 6px}
-#vac .esc{display:flex;gap:8px;overflow-x:auto;padding:0 14px 4px;scrollbar-width:none}#vac .esc::-webkit-scrollbar{display:none}
-#vac .bat{flex:none;width:132px;border-radius:16px;padding:9px 11px;color:#fff;font-size:11.5px;font-weight:700;position:relative;overflow:hidden;line-height:1.25}
-#vac .bat b{display:block;font-size:13.5px;line-height:1.15;margin-bottom:2px}#vac .bat svg{position:absolute;right:-6px;bottom:-4px;opacity:.3}
-#vac .c{margin:0 14px 10px;background:#fff;border-radius:20px;padding:12px 14px;display:grid;grid-template-columns:48px 1fr auto;gap:0 12px;align-items:center;box-shadow:0 2px 0 #ece4d6;cursor:pointer}
-#vac .ic{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-size:24px}
-#vac .c b{font-size:17px;display:block;line-height:1.15}#vac .c small{font-size:12px;color:#8a7c66;font-weight:600}
-#vac .eur{text-align:right;font-weight:800;font-size:19px;line-height:1.05;white-space:nowrap}#vac .eur small{display:block;font-size:11px;color:#8a7c66}
-#vac .tag{display:inline-block;font-size:10px;font-weight:800;padding:1px 7px;border-radius:9px;background:#efe6d6;color:#7a6a52;margin-left:4px;vertical-align:2px}
-#vac .c.lock{opacity:.55}#vac .c.sel{box-shadow:0 0 0 2px #2f5d4a,0 2px 0 #ece4d6}
-#vac .go{grid-column:1/-1;margin-top:10px;background:#2f5d4a;color:#fff;border:0;border-radius:14px;padding:11px;font-family:inherit;font-weight:800;font-size:15px;width:100%}
-#vac .go.non{background:#d8cfbf;color:#7a6a52}
-#vac .pied{margin:6px 18px 0;font-size:12px;color:#a89a84;font-weight:600;line-height:1.35}
+#vac{position:fixed;inset:0;z-index:2147482500;font-family:'Baloo 2',system-ui,sans-serif;color:#16213a;overflow:hidden;opacity:0;transition:opacity .25s;
+ background:#e6dac2 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='32'%3E%3Crect width='64' height='32' fill='%23e3d6bc'/%3E%3Crect x='1' y='1' width='30' height='14' fill='%23ebe0c9'/%3E%3Crect x='33' y='17' width='30' height='14' fill='%23ebe0c9'/%3E%3Crect x='33' y='1' width='30' height='14' fill='%23e8dcc4'/%3E%3Crect x='1' y='17' width='30' height='14' fill='%23e8dcc4'/%3E%3C/svg%3E");background-size:64px 32px}
+#vac.on{opacity:1}#vac *{box-sizing:border-box}
+#vac .in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 10px) 18px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
+#vac .x{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;z-index:3;width:42px;height:42px;border:3px solid #16213a;border-radius:4px;background:#f6efdc;color:#16213a;font:900 18px ui-monospace,monospace;box-shadow:0 4px 0 #16213a}
+#vac .scene{flex:none;position:relative;width:100%;max-width:380px;height:min(46vh,330px);display:flex;align-items:flex-end;justify-content:center}
+#vac .scene canvas{image-rendering:pixelated;height:100%;width:auto;transform:translateY(20px);opacity:0;transition:all .45s cubic-bezier(.2,.9,.3,1)}
+#vac.on .scene canvas{transform:none;opacity:1}
+#vac .bulle{flex:none;position:relative;width:100%;max-width:400px;margin-top:6px;background:#16213a;border:4px solid #e8c050;box-shadow:0 0 0 4px #16213a,0 9px 0 rgba(0,0,0,.22);border-radius:4px;padding:12px 14px;color:#f2ead6;font:600 15px/1.38 Georgia,'Times New Roman',serif;min-height:92px}
+#vac .bulle:before{content:'';position:absolute;left:46%;top:-24px;border:10px solid transparent;border-bottom-color:#e8c050}
+#vac .bulle .n{display:block;font:900 11px ui-monospace,monospace;letter-spacing:2px;color:#e8c050;margin-bottom:3px}
+#vac .bulle em{font-style:normal;color:#ffd860;font-weight:900}
+#vac .bulle .cur{display:inline-block;width:8px;height:14px;background:#e8c050;margin-left:3px;vertical-align:-2px;animation:vacC .7s steps(2) infinite}@keyframes vacC{50%{opacity:0}}
+#vac .ch{flex:none;width:100%;max-width:400px;margin-top:20px}
+#vac .c{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;background:#f6efdc;border:4px solid #16213a;border-radius:4px;box-shadow:0 6px 0 #16213a;padding:10px 12px;margin-bottom:16px;cursor:pointer;opacity:0;transform:translateX(-14px);transition:all .3s}
+#vac .c.vu{opacity:1;transform:none}
+#vac .c:active{transform:translateY(4px);box-shadow:0 2px 0 #16213a}
+#vac .c .fl{font:900 15px ui-monospace,monospace;color:#c0392b}
+#vac .c b{display:block;font:900 17px/1.15 Georgia,serif;color:#16213a}#vac .c small{display:block;font:700 11.5px ui-monospace,monospace;color:#6a5a40;margin-top:2px}
+#vac .c .px{margin-left:auto;background:#2f5d4a;color:#fff;font:900 15px ui-monospace,monospace;padding:6px 8px;border-radius:3px;white-space:nowrap}
+#vac .c.p{background:#fff6d8}
+#vac .sp{flex:1;min-height:10px}
+#vac .id{flex:none;width:100%;max-width:400px;display:flex;gap:12px;align-items:center;background:#16213a;border:4px solid #e8c050;border-radius:4px;padding:8px 12px;color:#f2ead6;box-shadow:0 0 0 4px #16213a}
+#vac .id canvas{width:34px;height:54px;image-rendering:pixelated;flex:none}
+#vac .id b{display:block;font:900 14px ui-monospace,monospace;color:#ffd860;letter-spacing:.5px}#vac .id span{display:block;font:700 11.5px ui-monospace,monospace}
+#vac .id .bar{height:9px;background:#2e3a4e;margin-top:5px;border:2px solid #0a1020}#vac .id .bar i{display:block;height:100%;background:#e8c050}
+#vac .id small{display:block;font:700 10.5px ui-monospace,monospace;color:#8ab0d8;margin-top:3px}
 `;document.head.appendChild(s);}
-const SVG={croisiere:'<path d="M2 20h56l-8 12H10z M12 8h32v12H12z M18 2h14v6H18z" fill="#fff"/>',conteneurs:'<path d="M2 20h56l-8 12H10z M8 10h12v10H8zM22 10h12v10H22zM36 10h12v10H36zM15 2h12v8H15z" fill="#fff"/>',ferry:'<path d="M2 20h56l-8 12H10z M10 8h36v12H10z M16 2h20v6H16z" fill="#fff"/>'};
-function remplir(){if(!RAC)return;const G=grade(),n=faites(),V=vacations();
- const facteur=n<PLEIN?1:Math.max(.25,1-(n-PLEIN+1)*.25);
- let h='<div class="top"><h1>Les vacations</h1><button class="x" aria-label="Fermer">✕</button></div>';
- h+='<div class="moi"><div><span class="gr">'+G.nom.toUpperCase()+' · NIV. '+niveau()+'</span><b>'+(e.pseudo||'Docker')+'</b><div class="jauge">'+Array.from({length:PLEIN},(_,i)=>'<i'+(i<n?' class="v"':'')+'></i>').join('')+'</div></div>'+
-  '<div class="r">'+(n<PLEIN?'<b>'+(PLEIN-n)+' à plein tarif</b><br>aujourd’hui':'<b>Paie à '+Math.round(facteur*100)+' %</b><br>repos conseillé')+'</div></div>';
- h+='<div class="essai">La soute est payée selon ton score, multipliée par ton grade.'+(RANG[G.k]<8?' Prochain : <b>'+GRADES[RANG[G.k]+1].nom+'</b> au niveau '+GRADES[RANG[G.k]+1].min+' → paie ×'+String(MULT[RANG[G.k]+1]).replace('.',',')+'.':'')+'</div>';
- h+='<div class="tt">LES ESCALES DU JOUR</div><div class="esc">'+escales().map(s=>'<div class="bat" style="background:'+COUL[s.type]+'"><b>'+s.nom+'</b>'+LIB[s.type]+' · '+s.quai+'<svg width="60" height="34">'+SVG[s.type]+'</svg></div>').join('')+'</div>';
- h+='<div class="tt">ON EMBAUCHE</div>';
- V.forEach(v=>{const ok=RANG[G.k]>=RANG[v.grade],gnom=GRADES.find(x=>x.k===v.grade).nom.toLowerCase();
-  h+='<div class="c'+(ok?'':' lock')+(SEL===v.k?' sel':'')+'" data-k="'+v.k+'"><span class="ic" style="background:'+(ok?v.fond:'#efe6d6')+'">'+(ok?v.ic:'🔒')+'</span>'+
-   '<span><b>'+v.nom+' <span class="tag">'+String(v.heure).padStart(2,'0')+'h</span></b><small>'+v.navire+' · '+(ok?v.duree:'il faut être '+gnom)+'</small></span>'+
-   '<span class="eur">'+eur(v.paie*MULT[RANG[G.k]]*(ok?facteur:1))+'<small>'+(MULT[RANG[G.k]]>1?'paie ×'+String(MULT[RANG[G.k]]).replace('.',','):gnom)+'</small></span>'+
-   (SEL===v.k&&ok?'<button class="go'+(v.pret?'':' non')+'">'+(v.pret?'Prendre la vacation':'Poste en préparation')+'</button>':'')+'</div>';});
- h+='<div class="pied">Chaque jour, de nouveaux navires. Après '+PLEIN+' vacations, la paie baisse : le port aime les dockers reposés.</div>';
+let OPT={};
+/* ce que dit le kiosquier, selon la journée */
+function replique(v,n,G){const nom=String((typeof e!=='undefined'&&e.pseudo)||'collègue').replace(/[<>&]/g,'');const r=hasard(jour()*13+n)();
+ if(n>=PLEIN)return 'Encore toi, '+nom+' ? T’as déjà fait tes '+PLEIN+' vacations. Tu peux y retourner, mais <em>la paie baisse</em> : le port aime les dockers reposés.';
+ const L=['Salut '+nom+' ! Y’a du boulot : l’<em>'+v.navire+'</em> attend ses bagages, '+v.quai+'. Ça paie bien aujourd’hui.',
+  'Ah, '+nom+' ! Le chef de quai cherche du monde pour la soute de l’<em>'+v.navire+'</em>. Embauche à '+String(v.heure).padStart(2,'0')+'h.',
+  'Bien le bonjour, '+nom+'. L’<em>'+v.navire+'</em> vient d’accoster, '+v.quai+'. Ils ont besoin de bras pour les bagages.'];
+ return L[(r*L.length)|0];}
+function remplir(){if(!RAC)return;const G=grade(),n=faites(),V=vacations(),v=V[0],mult=MULT[RANG[G.k]];
+ const facteur=n<PLEIN?1:Math.max(.25,1-(n-PLEIN+1)*.25),niv=niveau(),ri=RANG[G.k],suiv=GRADES[ri+1];
+ const pc=suiv?Math.max(4,Math.min(100,Math.round(100*(niv-G.min)/(suiv.min-G.min)))):100;
+ let h='<button class="x" aria-label="Fermer">✕</button><div class="in"><div class="scene"><canvas class="kio"></canvas></div>'+
+  '<div class="bulle"><span class="n">LE KIOSQUIER</span><span class="tx"></span><span class="cur"></span></div>'+
+  '<div class="ch"><button class="c p" data-k="soute"><span class="fl">▶</span><span><b>Descendre à la soute</b><small>Bagagiste · paie au score</small></span><span class="px">~'+eur(v.paie*mult*facteur)+'</span></button>'+
+  (OPT.journal?'<button class="c" data-k="journal"><span class="fl">▶</span><span><b>Acheter le journal</b><small>Le Quai, l’édition du jour</small></span></button>':'')+'</div>'+
+  '<div class="sp"></div><div class="id"><canvas class="moi" width="68" height="108"></canvas><div style="flex:1;min-width:0"><b>'+G.nom.toUpperCase()+' · NIV. '+niv+'</b><span>paie ×'+String(mult).replace('.',',')+' · '+(n<PLEIN?(PLEIN-n)+' vacation'+(PLEIN-n>1?'s':'')+' à plein tarif':'paie à '+Math.round(facteur*100)+' %')+'</span>'+
+  '<div class="bar"><i style="width:'+pc+'%"></i></div><small>'+(suiv?'Niv. '+suiv.min+' → '+suiv.nom+' · paie ×'+String(MULT[ri+1]).replace('.',','):'Grade maximum. Respect.')+'</small></div></div></div>';
  RAC.innerHTML=h;
+ /* le kiosque, dessiné en grand avec son vrai dessin */
+ const kc=RAC.querySelector('.kio');try{const T=(typeof KIOSQUE!=='undefined')?KIOSQUE.graver():null;if(T){kc.width=T.toile.width;kc.height=T.toile.height;kc.getContext('2d').drawImage(T.toile,0,0);}else kc.remove();}catch(x){kc.remove();}
+ /* toi, sur ta carte de docker */
+ try{const q=RAC.querySelector('.moi').getContext('2d');q.imageSmoothingEnabled=false;q.setTransform(2,0,0,2,0,0);personne(q,17,52,Object.assign({},e.ap||{}),'bas',0,false);}catch(x){}
+ /* il parle, lettre après lettre */
+ const tx=RAC.querySelector('.tx'),html=replique(v,n,G);let k=0;const plain=html.replace(/<[^>]+>/g,'');
+ const cs=[...RAC.querySelectorAll('.c')];const montre=()=>{tx.innerHTML=html;cs.forEach((c,i)=>setTimeout(()=>c.classList.add('vu'),i*110));};
+ const tic=setInterval(()=>{if(!RAC){clearInterval(tic);return;}k+=2;if(k>=plain.length){clearInterval(tic);montre();return;}tx.textContent=plain.slice(0,k);},22);
+ RAC.querySelector('.bulle').onclick=()=>{clearInterval(tic);montre();};
  RAC.querySelector('.x').onclick=fermer;
- RAC.querySelectorAll('.c').forEach(c=>c.onclick=ev=>{const k=c.dataset.k;if(ev.target.closest('.go')){prendre(k);return;}SEL=SEL===k?null:k;remplir();});}
+ cs.forEach(c=>c.onclick=()=>{if(!c.classList.contains('vu'))return;const k2=c.dataset.k;if(k2==='journal'){fermer();setTimeout(()=>{try{OPT.journal();}catch(x){}},250);return;}prendre('bagages');});}
 async function prendre(k){const v=vacations().find(p=>p.k===k);if(!v||!v.pret)return;const G=grade();if(RANG[G.k]<RANG[v.grade])return;
  compter();fermer();
  try{if(!window[v.fn[1]])eval(await chargerMorceau(v.fn[0]));window[v.fn[1]](v.navire);}catch(x){console.warn('VAC',x);}}
 function fermer(){if(!RAC)return;const r=RAC;RAC=null;window.ECRAN_COUVRANT=false;r.classList.remove('on');setTimeout(()=>r.remove(),300);}
-window.ouvrirVacations=function(){if(RAC)return;css();SEL=null;const d=document.createElement('div');d.id='vac';RAC=d;document.body.appendChild(d);remplir();
+window.ouvrirVacations=function(opt){if(RAC)return;OPT=opt||{};css();SEL=null;const d=document.createElement('div');d.id='vac';RAC=d;document.body.appendChild(d);remplir();
  window.ECRAN_COUVRANT=true;requestAnimationFrame(()=>d.classList.add('on'));};
 })();

@@ -942,7 +942,7 @@ function ouvrirTram(){if(document.getElementById('tramM'))return;
 let AFF_CHARGE=false;
 async function ouvrirAffiches(){try{if(!window.ouvrirLesAffiches)eval(await chargerMorceau('affiches.js'));window.ouvrirLesAffiches();}catch(x){console.warn('AFF',x);}}
 /* LE KIOSQUE : on y lit le journal, et on y prend ses vacations de docker (les petites annonces d'embauche) */
-async function ouvrirVacationsKiosque(){try{if(!window.ouvrirVacations)eval(await chargerMorceau('vacations.js'));window.ouvrirVacations();}catch(x){console.warn('VAC',x);}}
+async function ouvrirVacationsKiosque(){try{if(!window.ouvrirVacations)eval(await chargerMorceau('vacations.js'));window.ouvrirVacations({journal:ouvrirJournal});}catch(x){console.warn('VAC',x);}}
 function ouvrirKiosque(){if(document.getElementById('kiosM'))return;const d=document.createElement('div');d.id='kiosM';
  d.style.cssText='position:fixed;inset:0;z-index:2147482000;background:rgba(10,16,24,.55);display:flex;align-items:flex-end;justify-content:center;font-family:"Baloo 2",system-ui,sans-serif';
  d.innerHTML='<div style="width:min(440px,100%);background:#f6f1e6;border-radius:26px 26px 0 0;padding:12px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.35);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.9,.3,1)">'+
@@ -998,7 +998,7 @@ function decor(){
   /* le tableau d'embauche, à deux pas de l'arrivée */
   /* le kiosque à journaux */
   for(const [px] of PORTES)P('x_jol_entree',px,DOCKS_PIED+10,{agir:entrerGalerie,libelle:'Entrer',nom:'LA GALERIE BLEUE'});
-  P('x_jol_kiosque',156,600,{col:[96,14],agir:ouvrirKiosque,libelle:'Au kiosque',nom:'KIOSQUE · EMBAUCHE'});
+  P('x_jol_kiosque',156,600,{col:[96,14],agir:ouvrirVacationsKiosque,libelle:'Au kiosque',nom:'KIOSQUE · EMBAUCHE'});
   P('x_jol_entree',PLACE.CX,628,{agir:()=>VOEU.faire(),libelle:'Faire un vœu',nom:'FONTAINE À VŒUX'});
   P('x_jol_affiches',622,600,{col:[90,8],agir:ouvrirAffiches,libelle:'Voir les affiches',nom:'À L’AFFICHE',demi:56});
   return D;
