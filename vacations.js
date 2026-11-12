@@ -25,8 +25,8 @@ const COUL={croisiere:'#2a6a9a',conteneurs:'#c0392b',ferry:'#2e7d4f'};
 const LIB={croisiere:'Croisière',conteneurs:'Conteneurs',ferry:'Corse · ferry'};
 /* les postes et leur paie de base (en euros) */
 const POSTES=[
- {k:'bagages',type:'croisiere',nom:'Bagages',ic:'🧳',fond:'#e3eefb',paie:1800,grade:'occ',duree:'la soute',pret:true,fn:['bagages.js','ouvrirBagages']}];
-const PLEIN=4;              /* vacations à plein tarif par jour, ensuite la paie baisse */
+ {k:'bagages',type:'croisiere',nom:'Bagages',ic:'🧳',fond:'#e3eefb',paie:12000,grade:'occ',duree:'la soute',pret:true,fn:['bagages.js','ouvrirBagages']}];
+const PLEIN=6;              /* vacations à plein tarif par jour, ensuite la paie baisse */
 
 /* le jour du port : les escales changent chaque jour, les mêmes pour tout le monde */
 function jour(){const d=new Date();return d.getFullYear()*1000+Math.floor((d-new Date(d.getFullYear(),0,0))/864e5);}
@@ -77,7 +77,7 @@ function replique(v,n,G){const nom=String((typeof e!=='undefined'&&e.pseudo)||'c
   'Bien le bonjour, '+nom+'. L’<em>'+v.navire+'</em> vient d’accoster, '+v.quai+'. Ils ont besoin de bras pour les bagages.'];
  return L[(r*L.length)|0];}
 function remplir(){if(!RAC)return;const G=grade(),n=faites(),V=vacations(),v=V[0],mult=MULT[RANG[G.k]];
- const facteur=n<PLEIN?1:Math.max(.25,1-(n-PLEIN+1)*.25),niv=niveau(),ri=RANG[G.k],suiv=GRADES[ri+1];
+ const facteur=n<PLEIN?1:Math.max(.4,1-(n-PLEIN+1)*.15),niv=niveau(),ri=RANG[G.k],suiv=GRADES[ri+1];
  const pc=suiv?Math.max(4,Math.min(100,Math.round(100*(niv-G.min)/(suiv.min-G.min)))):100;
  let h='<button class="x" aria-label="Fermer">✕</button><div class="in"><div class="scene"><canvas class="kio"></canvas></div>'+
   '<div class="bulle"><span class="n">LE KIOSQUIER</span><span class="tx"></span><span class="cur"></span></div>'+
