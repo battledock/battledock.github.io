@@ -415,18 +415,25 @@ function carte(){const E=C.E,M=C.moi,{pl,ord,perf,dq,neuf,monte,med,rec,venteux,
   (C.photoImg&&med?'<div class="ph"><img src="'+C.photoImg+'"><span>📸 Photo rangée dans ta vitrine, aux vestiaires</span></div>':'')+
   '<div class="cl">'+ord.map((a,i)=>'<div class="'+(a.moi?'moi':'')+'"><span>'+(i+1)+'</span><b>'+(a.moi?(E.relais?'Ton équipe':'Toi'):a.nom)+'</b><em>'+(a.moi&&dq?'DQ':!E.long&&a.fini===null?'—':fm(C.ep,E.long?a.best:a.fini))+'</em></div>').join('')+'</div>'+
   '<div class="gen">Classement général : <b>…</b></div>'+
+  '<div class="paie"><span>PRIME DE COURSE</span><b>…</b></div>'+
   (monte?'<div class="up"><b>⬆ Catégorie '+NIVEAUX[C.nv+1]+'</b><span>Adversaires plus forts au '+E.nom+'.'+(meilleur(C.nv+1)&&DEBLOQUE[C.nv+1]?' Débloqué aux vestiaires : '+DEBLOQUE[C.nv+1]+' !':'')+'</span></div>':
    (!dq&&pl>1&&C.nv<6?'<p class="up2">Gagne pour passer en catégorie <b>'+NIVEAUX[C.nv+1]+'</b>'+(DEBLOQUE[C.nv+1]?' et débloquer '+DEBLOQUE[C.nv+1]:'')+'.</p>':''))+
   '<button class="b1">'+(E.long?'Nouveau concours':'Recourir')+'</button><button class="b2">Retour au stade</button></div>';
  RAC.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));
  d.querySelector('.b1').onclick=()=>{d.remove();nouvelle(C.ep);};d.querySelector('.b2').onclick=fermer;
  /* on envoie la perf au classement général (si elle est homologuée), puis on affiche le rang */
- const gen=d.querySelector('.gen b');const ep=C.ep;
+ const gen=d.querySelector('.gen b');const ep=C.ep,nvC=C.nv;
  (async()=>{let r=null;try{const v=E.long?Math.round(perf*100):Math.round(perf*100);
    if(!dq&&!venteux&&(!E.long||perf>0)&&typeof sb!=='undefined'&&sb&&sb.rpc){const q=await sb.rpc('athle_record',{p_epreuve:ep,p_perf:v});r=q.data;}
    if(!r||!r.rang){if(typeof sb!=='undefined'&&sb&&sb.rpc){const q=await sb.rpc('athle_classement',{p_epreuve:ep});if(q.data&&q.data.moi)r={rang:q.data.moi.rang,total:q.data.total};}}
    if(stadeBat&&window.ATH_STADE){window.ATH_STADE[ep]={p:'Toi',v};}}catch(x){}
-  gen.textContent=r&&r.rang?r.rang+(r.rang===1?'er':'e')+' sur '+r.total:venteux?'perf non homologuée':'pas encore classé';})();}
+  gen.textContent=r&&r.rang?r.rang+(r.rang===1?'er':'e')+' sur '+r.total:venteux?'perf non homologuée':'pas encore classé';
+  /* la prime : versée par le serveur selon la place et la catégorie (dégressive après 12 courses dans la journée) */
+  const pb=d.querySelector('.paie b');let q=null;
+  try{if(typeof sb!=='undefined'&&sb&&sb.rpc){const z=await sb.rpc('athle_prime',{p_epreuve:ep,p_place:dq?7:pl,p_nv:nvC,p_record:!!neuf,p_stade:!!stadeBat});q=z.data;}}catch(x){}
+  if(q&&q.ok){const eu=Math.floor(q.gain/100);pb.innerHTML='+'+eu.toLocaleString('fr-FR')+' € · +'+q.xp+' XP'+(q.facteur<1?'<small> (fatigue du jour ×'+String(Math.round(q.facteur*100)/100).replace('.',',')+')</small>':'');
+   if(typeof q.euros==='number'){try{e.euros=q.euros;sauver();}catch(x){}try{majHaut();}catch(x){}}try{lireNiveau(false);}catch(x){}}
+  else if(q&&q.erreur==='trop rapide')pb.textContent='—';else pb.parentNode.remove();})();}
 /* LA CÉRÉMONIE : le podium au milieu du stade, les trois premiers médaillés, les flashs de la tribune */
 function podium(g,Q){const {W2,H2,u,yT,yM,yP,yBas}=Q;const {ord}=C.res;
  g.drawImage(BG,0,0);tuile(g,Math.floor(C.tp*3)%2?FOULE2:FOULE,0,yT,W2);g.fillStyle='#26314a';g.fillRect(0,0,W2,yT);tuile(g,BACH,0,yM,W2);tuile(g,PISTE,0,yP,W2);
@@ -507,6 +514,7 @@ const CSS=`#crs{position:fixed;inset:0;z-index:2147482600;display:flex;flex-dire
 #crs .res .vt{margin:0 0 8px;font:700 11.5px ui-monospace,monospace;color:#8a5a1a;background:#fff3d8;border-radius:4px;padding:6px}
 #crs .res .std{margin:0 0 10px;background:#16213a;color:#ffd860;border:3px solid #e8c050;border-radius:4px;padding:8px;font:900 16px ui-monospace,monospace;letter-spacing:2px;animation:crsP .6s ease-in-out infinite}#crs .res .std span{display:block;font:700 11px ui-monospace,monospace;letter-spacing:0;color:#fff}
 #crs .res .ph{margin:0 0 10px}#crs .res .ph img{width:100%;border:3px solid #16213a;border-radius:3px;display:block;image-rendering:pixelated}#crs .res .ph span{display:block;margin-top:4px;font:700 11.5px ui-monospace,monospace;color:#2e5a3a}
+#crs .res .paie{margin:6px 0 0;display:flex;justify-content:space-between;align-items:center;gap:8px;background:#16213a;border-radius:4px;padding:8px 10px;font:900 10px ui-monospace,monospace;letter-spacing:1.5px;color:#8ab0d8}#crs .res .paie b{font:900 15px ui-monospace,monospace;letter-spacing:0;color:#ffd860;text-align:right}#crs .res .paie small{display:block;font:700 10px ui-monospace,monospace;color:#8ab0d8}
 #crs .res .gen{margin:8px 0 0;font:700 13px ui-monospace,monospace;color:#16213a;background:#eae2cc;border-radius:4px;padding:6px}#crs .res .gen b{color:#c0392b}
 #crs .res .up2{margin:10px 0 0;font:700 12px ui-monospace,monospace;color:#6a5a40}
 #crs .res button{display:block;width:100%;margin-top:10px;border-radius:4px;padding:12px;font:900 15px ui-monospace,monospace;letter-spacing:1px}

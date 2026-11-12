@@ -322,12 +322,13 @@ function ft(t,k){if(!t)return k==='long'?'-.--':'--.--';if(k==='long')return t.t
 async function stade(){try{for(let i=0;i<40&&!(typeof sb!=='undefined'&&sb&&sb.rpc);i++)await new Promise(r=>setTimeout(r,250));if(!(typeof sb!=='undefined'&&sb&&sb.rpc))return;
   const {data,error}=await sb.rpc('athle_records_stade');if(!error&&data&&typeof data==='object'){const o={};for(const k in data)o[k]=data[k];window.ATH_STADE=o;}}catch(x){}}
 
+
 stade();setInterval(()=>{if(!document.hidden)stade();},60000);
 function acteurs(){return [{y:Y0-60,f:(g,camX,camY)=>{const x0=CX-camX,y0=-camY;if(x0<-260||x0>(g.canvas.width+260)||y0+250<0)return;
   g.save();g.translate(x0,y0);const T=(s,x,y,px,c,f)=>{g.fillStyle=c;g.font=(f||'900')+' '+px+'px ui-monospace,monospace';g.textAlign='center';g.textBaseline='middle';g.fillText(s,x,y);};
   g.fillStyle='#06070a';g.fillRect(-200,106,400,134);for(let y=108;y<238;y+=2){g.fillStyle='rgba(255,255,255,.03)';g.fillRect(-200,y,400,1);}
   const ST=window.ATH_STADE||null;let rec={},niv={};try{rec=e.chronos||{};niv=e.athNiv||{};}catch(x){}
-  T(ST?'★ RECORDS DU STADE ★':'TES RECORDS',0,126,14,'#ffb030');T('au pied de l’écran : le classement général',0,143,7,'#7a8aa0','800');
+  T(ST?'★ RECORDS DU STADE ★':'TES RECORDS',0,134,14,'#ffb030');
   const CAT=['Débutant','Club','Régional','Interrég.','National','Élite','Olymp.'];
   EPS.forEach(([k,n],i)=>{const x=-171+i*57,r=rec['ath_'+k],sr=ST&&ST[k];g.fillStyle='#14161c';g.fillRect(x-26,152,52,82);g.fillStyle='#1f2430';g.fillRect(x-26,152,52,2);
     T(n,x,161,8,'#7ee08a');
@@ -341,7 +342,7 @@ function classement(){if(document.getElementById('pstC'))return;let ong='100';
   d.style.cssText='position:fixed;inset:0;z-index:2147482500;background:rgba(10,16,24,.6);display:flex;align-items:flex-end;justify-content:center;font-family:"Baloo 2",system-ui,sans-serif';
   const fv=(k,v)=>k==='long'?(v/100).toFixed(2)+' m':ft(v/100,k);
   const rendre=(data,err)=>{d.innerHTML='<div style="width:min(460px,100%);max-height:88vh;display:flex;flex-direction:column;background:#0b0d12;border-radius:18px 18px 0 0;border-top:4px solid #e8c050;box-shadow:0 -10px 30px rgba(0,0,0,.4);padding:10px 12px calc(16px + env(safe-area-inset-bottom));color:#fff">'+
-    '<div style="width:44px;height:5px;border-radius:3px;background:#3a4050;margin:0 auto 8px"></div>'+
+    '<div style="position:relative"><div style="width:44px;height:5px;border-radius:3px;background:#3a4050;margin:0 auto 8px"></div><button data-x="1" aria-label="Fermer" style="all:unset;position:absolute;right:0;top:-2px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid #e8c050;border-radius:4px;color:#ffd860;font:900 18px ui-monospace,monospace">✕</button></div>'+
     '<div style="text-align:center;font:900 11px ui-monospace,monospace;letter-spacing:3px;color:#7ee08a">PISTE MUNICIPALE</div><div style="text-align:center;font:900 22px ui-monospace,monospace;color:#ffb030;margin:2px 0 8px">CLASSEMENT GÉNÉRAL</div>'+
     '<div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:6px">'+EPS.map(([k,n])=>'<button data-o="'+k+'" style="all:unset;flex:none;cursor:pointer;padding:6px 9px;border-radius:3px;font:900 11px ui-monospace,monospace;'+(k===ong?'background:#ffb030;color:#0b0d12':'background:#14161c;color:#8ab0d8;border:1px solid #262b38')+'">'+n+'</button>').join('')+'</div>'+
     '<div style="flex:1;overflow-y:auto;margin-top:4px">'+(err?'<div style="padding:28px 8px;text-align:center;font:700 13px ui-monospace,monospace;color:#8a96aa">'+err+'</div>':
@@ -349,11 +350,12 @@ function classement(){if(document.getElementById('pstC'))return;let ong='100';
       data.top.map((r,i)=>'<div style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-bottom:1px solid #1a1e28;font:800 13px ui-monospace,monospace;'+(r.moi?'background:#2a2410;color:#ffd860':'color:#e6e8ee')+'"><span style="width:26px;color:'+(i===0?'#f5c430':i===1?'#d8dce2':i===2?'#d0884a':'#5a6478')+'">'+(i+1)+'</span><b style="flex:1;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+String(r.p||'?').replace(/</g,'')+'</b><em style="font-style:normal;color:'+(r.moi?'#ffd860':'#ff6a4a')+'">'+fv(ong,r.v)+'</em></div>').join(''))+'</div>'+
     (data&&data.moi?'<div style="margin-top:8px;padding:8px;border-radius:4px;background:#14161c;font:800 12.5px ui-monospace,monospace;color:#ffd860;text-align:center">Toi : '+fv(ong,data.moi.v)+' · '+data.moi.rang+(data.moi.rang===1?'er':'e')+' sur '+data.total+'</div>':
       '<div style="margin-top:8px;padding:8px;border-radius:4px;background:#14161c;font:700 12px ui-monospace,monospace;color:#8a96aa;text-align:center">Cours cette épreuve pour entrer au classement.</div>')+
-    '<div style="margin-top:6px;text-align:center;font:700 10.5px ui-monospace,monospace;color:#5a6478">Vent de plus de +2,0 m/s : perf non homologuée</div></div>';};
+    '<div style="margin-top:6px;text-align:center;font:700 10.5px ui-monospace,monospace;color:#5a6478">Vent de plus de +2,0 m/s : perf non homologuée</div>'+
+    '<button data-x="1" style="all:unset;box-sizing:border-box;display:block;width:100%;margin-top:10px;text-align:center;background:#ffb030;color:#0b0d12;border-radius:4px;padding:11px;font:900 14px ui-monospace,monospace;letter-spacing:2px;cursor:pointer">FERMER</button></div>';};
   const charger=async()=>{rendre({},'Chargement…');try{if(!(typeof sb!=='undefined'&&sb&&sb.rpc))throw 0;const {data,error}=await sb.rpc('athle_classement',{p_epreuve:ong});if(error||!data)throw 0;rendre(data);}catch(x){rendre({},'Le classement est indisponible pour le moment.');}};
   document.body.appendChild(d);charger();
-  d.addEventListener('click',ev=>{const b=ev.target.closest('button');if(b&&b.dataset.o){ong=b.dataset.o;charger();return;}if(ev.target===d)d.remove();});}
+  d.addEventListener('click',ev=>{const b=ev.target.closest('button');if(b&&b.dataset.x){d.remove();return;}if(b&&b.dataset.o){ong=b.dataset.o;charger();return;}if(ev.target===d)d.remove();});}
 /* au pied de la tribune, face au grand écran, la caméra lève les yeux */
-function regardY(x,y){const fy=Math.max(0,Math.min(1,(Y0+150-y)/110)),fx=Math.max(0,Math.min(1,(330-Math.abs(x-CX))/80));return .36*fy*fx;}
+function regardY(x,y){const fy=Math.max(0,Math.min(1,(Y0+150-y)/110)),fx=Math.max(0,Math.min(1,(330-Math.abs(x-CX))/80));return .44*fy*fx;}
 return {sol,solFin,decor,bloque,graver,depart:DEPART,figurants,acteurs,regardY};
 })()
