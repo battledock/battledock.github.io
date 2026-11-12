@@ -19615,7 +19615,7 @@ poserLeCiel(g);                  /* la lumière du moment, par-dessus tout */
 }
 const A_GARDER=['sac','jetons','euros','outils','sacMax','score','recolte','casses',
 'nivSac','nivPioche','nivHache','nivPied','metiers','cos','aRepousser',
-'four','habitCasino','ap','pseudo','x','y','coffreOuvert'];
+'four','habitCasino','ap','pseudo','x','y','coffreOuvert','album'];
 let derniereSauv=0, sauvEnVol=false, sauvSale=false, SAUV_REFUS=false;
 function etatAGarder(){
 const o={};
