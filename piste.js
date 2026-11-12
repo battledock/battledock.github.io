@@ -323,6 +323,7 @@ async function stade(){try{for(let i=0;i<40&&!(typeof sb!=='undefined'&&sb&&sb.r
   const {data,error}=await sb.rpc('athle_records_stade');if(!error&&data&&typeof data==='object'){const o={};for(const k in data)o[k]=data[k];window.ATH_STADE=o;}}catch(x){}}
 
 
+
 stade();setInterval(()=>{if(!document.hidden)stade();},60000);
 function acteurs(){return [{y:Y0-60,f:(g,camX,camY)=>{const x0=CX-camX,y0=-camY;if(x0<-260||x0>(g.canvas.width+260)||y0+250<0)return;
   g.save();g.translate(x0,y0);const T=(s,x,y,px,c,f)=>{g.fillStyle=c;g.font=(f||'900')+' '+px+'px ui-monospace,monospace';g.textAlign='center';g.textBaseline='middle';g.fillText(s,x,y);};
