@@ -942,6 +942,17 @@ function ouvrirTram(){if(document.getElementById('tramM'))return;
     setTimeout(()=>{const v=window.MA_VERSION?('?v='+encodeURIComponent(window.MA_VERSION)):'';location.href=D.page+v;},900);});}
 let AFF_CHARGE=false;
 async function ouvrirAffiches(){try{if(!window.ouvrirLesAffiches)eval(await chargerMorceau('affiches.js'));window.ouvrirLesAffiches();}catch(x){console.warn('AFF',x);}}
+/* LE KIOSQUE : on y lit le journal, et on y prend ses vacations de docker (les petites annonces d'embauche) */
+async function ouvrirVacationsKiosque(){try{if(!window.ouvrirVacations)eval(await chargerMorceau('vacations.js'));window.ouvrirVacations();}catch(x){console.warn('VAC',x);}}
+function ouvrirKiosque(){if(document.getElementById('kiosM'))return;const d=document.createElement('div');d.id='kiosM';
+ d.style.cssText='position:fixed;inset:0;z-index:2147482000;background:rgba(10,16,24,.55);display:flex;align-items:flex-end;justify-content:center;font-family:"Baloo 2",system-ui,sans-serif';
+ d.innerHTML='<div style="width:min(440px,100%);background:#f6f1e6;border-radius:26px 26px 0 0;padding:12px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.35);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.9,.3,1)">'+
+  '<div style="width:44px;height:5px;border-radius:3px;background:#d8ccb4;margin:0 auto 10px"></div><div style="text-align:center;font:900 22px \'Baloo 2\',system-ui,sans-serif;color:#2a2016">Le kiosque</div><div style="text-align:center;font:700 13px \'Baloo 2\',system-ui,sans-serif;color:#8a7a5a;margin-bottom:14px">Le journal, et les annonces d’embauche du port</div>'+
+  '<button data-k="v" style="all:unset;box-sizing:border-box;display:flex;align-items:center;gap:14px;width:100%;background:linear-gradient(#ffe68a,#f2b030);border-radius:20px;padding:13px 16px;margin-bottom:12px;box-shadow:0 4px 0 #a86a10;cursor:pointer"><span style="width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:25px;background:rgba(255,255,255,.45)">🧳</span><span><b style="display:block;font:900 17px \'Baloo 2\',system-ui,sans-serif;color:#2a2016">Les vacations</b><small style="font:700 12.5px \'Baloo 2\',system-ui,sans-serif;color:#6a4a10">Travailler dans la soute · être payé</small></span></button>'+
+  '<button data-k="j" style="all:unset;box-sizing:border-box;display:flex;align-items:center;gap:14px;width:100%;background:#fff;border-radius:20px;padding:13px 16px;box-shadow:0 3px 0 #e2d8c6;cursor:pointer"><span style="width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:25px;background:#e3eefb">📰</span><span><b style="display:block;font:900 17px \'Baloo 2\',system-ui,sans-serif;color:#2a2016">Lire le journal</b><small style="font:700 12.5px \'Baloo 2\',system-ui,sans-serif;color:#8a7a5a">Le Quai, l’édition du jour</small></span></button></div>';
+ document.body.appendChild(d);const c=d.firstChild;requestAnimationFrame(()=>c.style.transform='none');
+ const fermer=()=>{c.style.transform='translateY(100%)';setTimeout(()=>d.remove(),250);};
+ d.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b){if(ev.target===d)fermer();return;}d.remove();if(b.dataset.k==='v')ouvrirVacationsKiosque();else ouvrirJournal();});}
 function ouvrirJournal(){if(document.getElementById('quaiJ'))return;
   if(!document.getElementById('cssQuai')){const st=document.createElement('style');st.id='cssQuai';st.textContent=CSS_QUAI;document.head.appendChild(st);}
   const J=JOURNAL,v=window.MA_VERSION?('?v='+encodeURIComponent(window.MA_VERSION)):'',im=n=>'assets/journal/'+n+'.jpg'+v;
@@ -988,7 +999,7 @@ function decor(){
   /* le tableau d'embauche, à deux pas de l'arrivée */
   /* le kiosque à journaux */
   for(const [px] of PORTES)P('x_jol_entree',px,DOCKS_PIED+10,{agir:entrerGalerie,libelle:'Entrer',nom:'LA GALERIE BLEUE'});
-  P('x_jol_kiosque',156,600,{col:[96,14],agir:ouvrirJournal,libelle:'Lire le journal',nom:'LE QUAI'});
+  P('x_jol_kiosque',156,600,{col:[96,14],agir:ouvrirKiosque,libelle:'Au kiosque',nom:'KIOSQUE · EMBAUCHE'});
   P('x_jol_entree',PLACE.CX,628,{agir:()=>VOEU.faire(),libelle:'Faire un vœu',nom:'FONTAINE À VŒUX'});
   P('x_jol_affiches',622,600,{col:[90,8],agir:ouvrirAffiches,libelle:'Voir les affiches',nom:'À L’AFFICHE',demi:56});
   return D;
@@ -1009,7 +1020,7 @@ function bloque(x,y){
 /* LA SORTIE : au bout du passage piéton, on descend au port */
 let PARTI=false;
 setInterval(()=>{try{
-  if(PARTI||typeof joueur==='undefined')return;
+  if(true||PARTI||typeof joueur==='undefined')return;   /* le port n'est plus un lieu : le travail se prend au kiosque */
   if(joueur.y>PLACE_BAS+22&&Math.abs(joueur.x-SORTIE_X)<SORTIE_DEMI){
     PARTI=true;
     try{texteVolant(joueur.x,joueur.y-40,'Direction le port…','#f0cf7d');}catch(x){}
@@ -1167,7 +1178,7 @@ const CSS=`#bienv{position:fixed;inset:0;z-index:2147482100;display:flex;align-i
 #bienv .l b{display:block;font:800 15px/1.1 'Baloo 2',system-ui,sans-serif;color:#2a2016}#bienv .l span{font:700 12.5px/1.2 'Baloo 2',system-ui,sans-serif;color:#8a7a5a}
 @keyframes bvIn{to{opacity:1;transform:none}}
 #bienv button{width:100%;margin-top:6px;border:0;border-radius:18px;padding:14px;background:#2a2016;color:#fff;font:800 17px 'Baloo 2',system-ui,sans-serif;box-shadow:0 4px 0 #000}`;
-const L=[['gal','La Galerie Bleue','Tout en haut, sous les docks : boutiques et café'],['port','Le Port','En bas, par le passage piéton : le travail t’attend'],['font','La fontaine à vœux','Au milieu de la place : un vœu par jour'],['aff','À l’affiche','Le panneau à droite de la fontaine']];
+const L=[['gal','La Galerie Bleue','Tout en haut, sous les docks : boutiques et café'],['port','Le kiosque','À gauche de la fontaine : le journal et les vacations, pour travailler'],['font','La fontaine à vœux','Au milieu de la place : un vœu par jour'],['aff','À l’affiche','Le panneau à droite de la fontaine']];
 let calme=0;const guet=setInterval(()=>{const occupe=window.ECRAN_COUVRANT||document.getElementById('dimEcran')||document.hidden;calme=occupe?0:calme+1;if(calme<3)return;clearInterval(guet);if(document.getElementById('bienv'))return;
   try{localStorage.setItem('jol_bienvenue','1');}catch(x){}
   if(!document.getElementById('bvCss')){const s=document.createElement('style');s.id='bvCss';s.textContent=CSS;document.head.appendChild(s);}

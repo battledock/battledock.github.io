@@ -413,7 +413,7 @@ function finir(){if(J.fini)return;J.fini=true;vib(80);SON.fin();envoyerScore(J.s
   d.classList.add('choix');d.insertAdjacentHTML('beforeend','<div class="gain">'+(ok?'<b>+ '+eur(R.verse)+'</b><span>versés sur ton compte'+(R.xp?' · +'+R.xp+' XP':'')+'</span>':'<b class="z">Cale terminée</b><span>'+f(sc)+' points</span>')+'</div>'+
    '<div class="feuille"><div class="poig"></div><h4>Et maintenant ?</h4><p class="port"></p>'+
    '<div class="opt p o1"><span class="ic">🧳</span><div><b>Nouvelle cale</b><small>Prochain navire : '+prochain+'</small></div></div>'+
-   '<div class="opt o2"><span class="ic">⚓</span><div><b>Retour au quai</b><small>Débaucher pour aujourd’hui</small></div></div></div>');affPort();
+   '<div class="opt o2"><span class="ic">⚓</span><div><b>Rentrer</b><small>Débaucher pour aujourd’hui</small></div></div></div>');affPort();
   requestAnimationFrame(()=>d.classList.add('choix2'));
   d.querySelector('.o1').onclick=()=>{d.remove();nouvelle();majRec();affPort();ouvrirVac();majPouvoirs();majNavire();};d.querySelector('.o2').onclick=fermer;};}
 
@@ -443,7 +443,7 @@ function ouvrirAlbum(){if(!RAC||RAC.querySelector('.albv'))return;const pause=J&
  d.querySelectorAll('canvas').forEach(c=>{const x=RID[c.dataset.id],q=c.getContext('2d');const sc=120/(TAI[x.k].r*2.7);q.setTransform(sc,0,0,sc,60,60);
   if(a[x.id])rareArt(q,x.id,TAI[x.k].r);else{q.fillStyle='rgba(255,255,255,.12)';q.beginPath();q.arc(0,0,TAI[x.k].r,0,7);q.fill();q.setTransform(1,0,0,1,0,0);q.fillStyle='rgba(255,255,255,.35)';q.font='900 44px system-ui';q.textAlign='center';q.textBaseline='middle';q.fillText('?',60,62);}});
  const fe=()=>{d.remove();if(pause&&J)J.tuto=false;};d.querySelector('.af').onclick=fe;}
-let NAVIRE='';function majNavire(){if(RAC)RAC.querySelector('.nav').textContent=GRADES[RG].nom.toUpperCase()+' · '+THEME.nom+' · ×'+String(GRADES[RG].x).replace('.',',');}
+let NAVIRE='';function majNavire(){if(RAC)RAC.querySelector('.nav').textContent=GRADES[RG].nom.toUpperCase()+' · '+THEME.nom+(GRADES[RG].x>1?' · ×'+String(GRADES[RG].x).replace('.',','):'');}
 function majRec(){let rec=0;try{rec=+(localStorage.getItem('bag_record')||0);}catch(x){}RAC.querySelector('.rc').textContent='🏆 '+rec.toLocaleString('fr-FR');}
 function tuto(){let vu=false;try{vu=localStorage.getItem('bag_tuto')==='1';}catch(x){}if(vu)return;J.tuto=true;
  const d=document.createElement('div');d.className='tuto';
