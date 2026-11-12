@@ -964,6 +964,7 @@ function ouvrirTram(){if(document.getElementById('tramM'))return;
     const f=document.createElement('div');f.style.cssText='position:fixed;inset:0;z-index:2147483001;background:#0e1a2c;opacity:0;transition:opacity .45s;display:flex;align-items:center;justify-content:center;color:#fff;font:700 18px "Helvetica Neue",Arial,sans-serif';f.textContent='Prochain arrêt : '+D.n;document.body.appendChild(f);requestAnimationFrame(()=>f.style.opacity='1');
     setTimeout(()=>{const v=window.MA_VERSION?('?v='+encodeURIComponent(window.MA_VERSION)):'';location.href=D.page+v;},900);});}
 let AFF_CHARGE=false;
+
 async function ouvrirAffiches(){try{if(!window.ouvrirLesAffiches)eval(await chargerMorceau('affiches.js'));window.ouvrirLesAffiches();}catch(x){console.warn('AFF',x);}}
 /* LE KIOSQUE : on y lit le journal, et on y prend ses vacations de docker (les petites annonces d'embauche) */
 async function ouvrirVacationsKiosque(){try{if(!window.ouvrirVacations)eval(await chargerMorceau('vacations.js'));window.ouvrirVacations({journal:ouvrirJournal});}catch(x){console.warn('VAC',x);}}
