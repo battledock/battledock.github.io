@@ -35,7 +35,7 @@ function pos(s,r){const A=Math.PI*r,L=longueur(r);s=((s%L)+L)%L;
 /* LES LIGNES DE DÉPART : un tour du couloir 1 fait 400 m. Chaque ligne ouvre la course,
    qui se court dans son propre écran (course.js), contre cinq adversaires. */
 const L1=longueur(rC(1)),M=L1/400;
-const DEPARTS=[{ep:['100','100h'],s:L1-100*M,nom:'100 M · 100 M HAIES'},{ep:['400','400h'],s:Math.PI*rC(1)+2*DEMI*.22,nom:'400 M · 400 M HAIES'},{ep:['800'],s:Math.PI*rC(1)+2*DEMI*.78,nom:'800 M'}];
+const DEPARTS=[{ep:['100','100h'],s:L1-100*M,nom:'100 M · 100 M HAIES'},{ep:['400','400h','4x100'],s:Math.PI*rC(1)+2*DEMI*.22,nom:'400 M · HAIES · RELAIS'},{ep:['800'],s:Math.PI*rC(1)+2*DEMI*.78,nom:'800 M'}];
 DEPARTS.forEach(D=>{D.p=pos(D.s,rC(1));D.q=pos(D.s+6,rC(1));});
 async function courir(ep){try{if(!window.ouvrirCourse)eval(await chargerMorceau('course.js'));window.ouvrirCourse(ep,{kit:kit(),ap:e.ap});}catch(x){console.warn('COURSE',x);}}
 /* ---------- LE SOL ---------- */
@@ -233,6 +233,16 @@ function kit(){let k={k:0,s:0,a:''};try{if(e.kitAthle&&typeof e.kitAthle==='obje
   return {haut:4,veste:K.haut,_motif:0,motif:0,raye:0,bas:1,pantalon:K.bas,souliers:1,chaussures:S.c,sac:0,chapeau:0,cos:0,deguisement:0,maillot:0,gilet:0,patin:0,_civil:true,_acc:A||undefined};}
 function porter(){try{window.AP_FORCE=kit();}catch(x){}}
 porter();
+/* LA VITRINE : tes médailles et les photos de tes podiums */
+const MEDAILLE=c=>'<svg viewBox="0 0 14 18" width="28" shape-rendering="crispEdges"><path d="M3 0h3v6H3zM8 0h3v6H8z" fill="#1f5fa8"/><path d="M5 0h1v6H5zM8 0h1v6H8z" fill="#e84a3a"/><rect x="2" y="7" width="10" height="10" fill="#2a2016"/><rect x="3" y="8" width="8" height="8" fill="'+c+'"/><rect x="4" y="9" width="3" height="2" fill="#fff" opacity=".6"/></svg>';
+const NOMS_EP={'100':'100 m','100h':'100 m haies','400':'400 m','400h':'400 m haies','800':'800 m','4x100':'4 × 100 m','long':'Longueur'};
+function vitrine(){let m={};try{m=e.athMed||{};}catch(x){}let L=[];try{L=JSON.parse(localStorage.getItem('bd_athAlbum')||'[]');}catch(x){}
+  const tot=(m.or|0)+(m.argent|0)+(m.bronze|0);
+  return '<div style="font:900 11px ui-monospace,monospace;letter-spacing:2px;color:#c0392b;margin:12px 0 6px">TA VITRINE</div>'+
+   '<div style="background:#16213a;border-radius:6px;padding:10px;box-shadow:inset 0 0 0 3px #e8c050">'+
+   '<div style="display:flex;justify-content:space-around;align-items:center">'+[['or','#f5c430'],['argent','#d8dce2'],['bronze','#d0884a']].map(([k,c])=>'<div style="display:flex;align-items:center;gap:6px;color:#fff;font:900 18px ui-monospace,monospace">'+MEDAILLE(c)+'× '+(m[k]|0)+'</div>').join('')+'</div>'+
+   (L.length?'<div style="display:flex;gap:8px;overflow-x:auto;margin-top:10px;padding-bottom:4px">'+L.map((p,i)=>'<button data-ph="'+i+'" style="all:unset;flex:none;cursor:pointer;width:118px"><img src="'+p.img+'" style="width:118px;display:block;border:2px solid #e8c050;border-radius:2px"><span style="display:block;font:800 9.5px ui-monospace,monospace;color:#ffd880;margin-top:3px">'+(['🥇','🥈','🥉'][p.pl-1]||'')+' '+(NOMS_EP[p.ep]||p.ep)+'</span></button>').join('')+'</div>':
+    '<div style="margin-top:8px;text-align:center;font:700 11px ui-monospace,monospace;color:#8ab0d8">'+(tot?'':'Monte sur un podium pour gagner ta première médaille. ')+'Chaque podium te laisse une photo ici.</div>')+'</div>';}
 function vestiaires(){if(document.getElementById('pstV'))return;let sel={k:0,s:0,a:''};try{if(e.kitAthle)sel=Object.assign(sel,e.kitAthle);}catch(x){}
   const d=document.createElement('div');d.id='pstV';
   d.style.cssText='position:fixed;inset:0;z-index:2147482500;background:rgba(10,16,24,.55);display:flex;align-items:flex-end;justify-content:center;font-family:"Baloo 2",system-ui,sans-serif';
@@ -241,7 +251,7 @@ function vestiaires(){if(document.getElementById('pstV'))return;let sel={k:0,s:0
   const rendre=()=>{d.innerHTML='<div style="width:min(460px,100%);max-height:88vh;overflow-y:auto;background:#f6efdc;border-radius:22px 22px 0 0;border-top:4px solid #16213a;padding:12px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.35)">'+
     '<div style="width:44px;height:5px;border-radius:3px;background:#d8ccb4;margin:0 auto 8px"></div><div style="text-align:center;font:900 22px Georgia,serif;color:#16213a">Les vestiaires</div>'+
     '<div style="text-align:center;font:700 11.5px ui-monospace,monospace;color:#2e5a3a;background:#e6f6e8;border-radius:4px;padding:5px;margin:6px 0 4px">Catégorie <b>'+CATS[cat()]+'</b> · 🔒 se gagnent en course · le reste s’achète à l’Athlé Shop</div>'+
-    sect('LE MAILLOT ET LE SHORT')+'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+listeK().map(it=>carte(it,'k',it.key===sel.k)).join('')+'</div>'+
+    vitrine()+sect('LE MAILLOT ET LE SHORT')+'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+listeK().map(it=>carte(it,'k',it.key===sel.k)).join('')+'</div>'+
     sect('LES CHAUSSURES DE COURSE')+'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+listeS().map(it=>carte(it,'s',it.key===sel.s)).join('')+'</div>'+
     sect('L’ACCESSOIRE')+'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+listeA().map(it=>carte(it,'a',it.key===(sel.a||''))).join('')+'</div>'+
     '<button data-ok="1" style="all:unset;box-sizing:border-box;display:block;width:100%;margin-top:14px;text-align:center;background:#16213a;color:#ffd860;border:4px solid #e8c050;box-shadow:0 0 0 3px #16213a;border-radius:4px;padding:12px;font:900 15px ui-monospace,monospace;letter-spacing:2px;cursor:pointer">ENFILER LA TENUE</button></div>';
@@ -251,6 +261,10 @@ function vestiaires(){if(document.getElementById('pstV'))return;let sel={k:0,s:0
       q.setTransform(2,0,0,2,0,0);try{personne(q,24,60,ap,'bas',0,false);}catch(x){}});};
   rendre();document.body.appendChild(d);
   d.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b){if(ev.target===d)d.remove();return;}
+    if(b.dataset.ph!==undefined){let L=[];try{L=JSON.parse(localStorage.getItem('bd_athAlbum')||'[]');}catch(x){}const p=L[+b.dataset.ph];if(!p)return;
+      const z=document.createElement('div');z.style.cssText='position:fixed;inset:0;z-index:2147482600;background:rgba(6,8,12,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px';
+      z.innerHTML='<img src="'+p.img+'" style="width:min(100%,520px);border:4px solid #e8c050;border-radius:3px"><div style="font:900 15px ui-monospace,monospace;color:#ffd860">'+(['🥇','🥈','🥉'][p.pl-1]||'')+' '+(NOMS_EP[p.ep]||p.ep)+' · '+(p.ep==='long'?p.v.toFixed(2)+' m':ft(p.v,p.ep))+'</div><div style="font:700 11px ui-monospace,monospace;color:#8ab0d8">'+new Date(p.d).toLocaleDateString('fr-FR')+' · touche pour fermer</div>';
+      z.onclick=()=>z.remove();document.body.appendChild(z);return;}
     if(b.dataset.lock){try{vibrer(30);}catch(x){}return;}
     const v=x=>isNaN(+x)||x===''?x:+x;
     if(b.dataset.k!==undefined){sel.k=v(b.dataset.k);rendre();}else if(b.dataset.s!==undefined){sel.s=v(b.dataset.s);rendre();}else if(b.dataset.a!==undefined){sel.a=b.dataset.a;rendre();}
@@ -261,6 +275,8 @@ async function ouvrirShop(){try{if(!window.ouvrirAthleShop)eval(await chargerMor
 function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
   P('x_jol_pst_vide_sol',161,Y0+30,{col:[1,1],demi:60,agir:vestiaires,libelle:'Se changer',nom:'VESTIAIRES'});
   P('x_jol_pst_vide_sol',482,Y0+22,{col:[1,1],demi:60,agir:ouvrirShop,libelle:'Entrer',nom:'ATHLÉ SHOP'});
+  P('x_jol_pst_vide_sol',CX,Y0+24,{col:[1,1],demi:70,agir:classement,libelle:'Voir le classement',nom:'GRAND ÉCRAN'});
+  P('x_jol_pst_vide_sol',CX-330,CY+65,{col:[1,1],demi:50,agir:()=>courir(['long']),libelle:'Sauter',nom:'SAUT EN LONGUEUR'});
   for(const D of DEPARTS)P('x_jol_pst_vide_sol',D.p[0],D.p[1]+(D.p[1]<CY?10:-10),{col:[1,1],demi:46,agir:()=>courir(D.ep),libelle:'Prendre le départ',nom:D.nom});
   return D;}
 const GRAVEURS={x_jol_pst_vide_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0})};
@@ -298,17 +314,46 @@ function sortir(){if(PARTI)return;PARTI=true;try{window.AP_FORCE=null;}catch(x){
   try{const f=document.createElement('div');f.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#fff8ea;opacity:0;transition:opacity .45s;pointer-events:none';document.body.appendChild(f);requestAnimationFrame(()=>f.style.opacity='1');}catch(x){}
   setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='spawn.html?de=piste'+v;},480);}
 
-/* LE GRAND ÉCRAN : tes meilleurs temps, ta catégorie, épreuve par épreuve. Dessiné à chaque image
-   (quelques textes), pour qu'il soit à jour dès la fin d'une course. */
-const EPS=[['100','100 M'],['100h','100 M H'],['400','400 M'],['400h','400 M H'],['800','800 M']];
-function ft(t){if(!t)return '--.--';if(t>=60){const m=Math.floor(t/60),r=t-m*60;return m+':'+(r<10?'0':'')+r.toFixed(2);}return t.toFixed(2);}
+/* LE GRAND ÉCRAN : les records du stade (le meilleur de tous les joueurs, avec son nom) et les tiens.
+   Dessiné à chaque image (quelques textes), pour qu'il soit à jour dès la fin d'une course. */
+const EPS=[['100','100 M'],['100h','100 H'],['400','400 M'],['400h','400 H'],['800','800 M'],['4x100','4×100'],['long','LONG.']];
+function ft(t,k){if(!t)return k==='long'?'-.--':'--.--';if(k==='long')return t.toFixed(2)+'m';if(t>=60){const m=Math.floor(t/60),r=t-m*60;return m+':'+(r<10?'0':'')+r.toFixed(2);}return t.toFixed(2);}
+/* les records du stade, demandés au serveur à l'arrivée puis chaque minute */
+async function stade(){try{for(let i=0;i<40&&!(typeof sb!=='undefined'&&sb&&sb.rpc);i++)await new Promise(r=>setTimeout(r,250));if(!(typeof sb!=='undefined'&&sb&&sb.rpc))return;
+  const {data,error}=await sb.rpc('athle_records_stade');if(!error&&data&&typeof data==='object'){const o={};for(const k in data)o[k]=data[k];window.ATH_STADE=o;}}catch(x){}}
+
+stade();setInterval(()=>{if(!document.hidden)stade();},60000);
 function acteurs(){return [{y:Y0-60,f:(g,camX,camY)=>{const x0=CX-camX,y0=-camY;if(x0<-260||x0>(g.canvas.width+260)||y0+250<0)return;
   g.save();g.translate(x0,y0);const T=(s,x,y,px,c,f)=>{g.fillStyle=c;g.font=(f||'900')+' '+px+'px ui-monospace,monospace';g.textAlign='center';g.textBaseline='middle';g.fillText(s,x,y);};
   g.fillStyle='#06070a';g.fillRect(-200,106,400,134);for(let y=108;y<238;y+=2){g.fillStyle='rgba(255,255,255,.03)';g.fillRect(-200,y,400,1);}
-  T('TES RECORDS',0,124,19,'#ffb030');let rec={},niv={};try{rec=e.chronos||{};niv=e.athNiv||{};}catch(x){}
-  const CAT=['Débutant','Club','Régional','Interrégional','National','Élite','Olympique'];
-  EPS.forEach(([k,n],i)=>{const x=-160+i*80,r=rec['ath_'+k];g.fillStyle='#14161c';g.fillRect(x-36,142,72,88);g.fillStyle='#1f2430';g.fillRect(x-36,142,72,2);
-    T(n,x,158,11,'#7ee08a');T(ft(r&&r.t),x,184,13,r?'#ff6a4a':'#5a3a30');T(CAT[niv[k]|0].toUpperCase(),x,212,8,'#ffd880','800');});
+  const ST=window.ATH_STADE||null;let rec={},niv={};try{rec=e.chronos||{};niv=e.athNiv||{};}catch(x){}
+  T(ST?'★ RECORDS DU STADE ★':'TES RECORDS',0,126,14,'#ffb030');T('au pied de l’écran : le classement général',0,143,7,'#7a8aa0','800');
+  const CAT=['Débutant','Club','Régional','Interrég.','National','Élite','Olymp.'];
+  EPS.forEach(([k,n],i)=>{const x=-171+i*57,r=rec['ath_'+k],sr=ST&&ST[k];g.fillStyle='#14161c';g.fillRect(x-26,152,52,82);g.fillStyle='#1f2430';g.fillRect(x-26,152,52,2);
+    T(n,x,161,8,'#7ee08a');
+    if(ST){T(sr?ft(sr.v/100,k):'—',x,175,10,sr?'#ff6a4a':'#5a3a30');T(sr?String(sr.p||'?').slice(0,8):'à prendre',x,187,7,sr?'#ffffff':'#6a6a74','800');
+      g.fillStyle='#262b38';g.fillRect(x-20,195,40,1);T('TOI '+ft(r&&r.t,k),x,206,7,r?'#ffd880':'#6a5a40','800');T(CAT[niv[k]|0].toUpperCase(),x,222,6,'#7a8aa0','800');}
+    else{T(ft(r&&r.t,k),x,184,11,r?'#ff6a4a':'#5a3a30');T(CAT[niv[k]|0].toUpperCase(),x,212,7,'#ffd880','800');}});
   g.restore();}}];}
-return {sol,solFin,decor,bloque,graver,depart:DEPART,figurants,acteurs};
+/* LE CLASSEMENT GÉNÉRAL : les 20 meilleurs de chaque épreuve, tous joueurs confondus */
+function classement(){if(document.getElementById('pstC'))return;let ong='100';
+  const d=document.createElement('div');d.id='pstC';
+  d.style.cssText='position:fixed;inset:0;z-index:2147482500;background:rgba(10,16,24,.6);display:flex;align-items:flex-end;justify-content:center;font-family:"Baloo 2",system-ui,sans-serif';
+  const fv=(k,v)=>k==='long'?(v/100).toFixed(2)+' m':ft(v/100,k);
+  const rendre=(data,err)=>{d.innerHTML='<div style="width:min(460px,100%);max-height:88vh;display:flex;flex-direction:column;background:#0b0d12;border-radius:18px 18px 0 0;border-top:4px solid #e8c050;box-shadow:0 -10px 30px rgba(0,0,0,.4);padding:10px 12px calc(16px + env(safe-area-inset-bottom));color:#fff">'+
+    '<div style="width:44px;height:5px;border-radius:3px;background:#3a4050;margin:0 auto 8px"></div>'+
+    '<div style="text-align:center;font:900 11px ui-monospace,monospace;letter-spacing:3px;color:#7ee08a">PISTE MUNICIPALE</div><div style="text-align:center;font:900 22px ui-monospace,monospace;color:#ffb030;margin:2px 0 8px">CLASSEMENT GÉNÉRAL</div>'+
+    '<div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:6px">'+EPS.map(([k,n])=>'<button data-o="'+k+'" style="all:unset;flex:none;cursor:pointer;padding:6px 9px;border-radius:3px;font:900 11px ui-monospace,monospace;'+(k===ong?'background:#ffb030;color:#0b0d12':'background:#14161c;color:#8ab0d8;border:1px solid #262b38')+'">'+n+'</button>').join('')+'</div>'+
+    '<div style="flex:1;overflow-y:auto;margin-top:4px">'+(err?'<div style="padding:28px 8px;text-align:center;font:700 13px ui-monospace,monospace;color:#8a96aa">'+err+'</div>':
+      !data.top||!data.top.length?'<div style="padding:28px 8px;text-align:center;font:700 13px ui-monospace,monospace;color:#8a96aa">Personne n’a encore de temps homologué ici.<br>Le premier record est à prendre !</div>':
+      data.top.map((r,i)=>'<div style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-bottom:1px solid #1a1e28;font:800 13px ui-monospace,monospace;'+(r.moi?'background:#2a2410;color:#ffd860':'color:#e6e8ee')+'"><span style="width:26px;color:'+(i===0?'#f5c430':i===1?'#d8dce2':i===2?'#d0884a':'#5a6478')+'">'+(i+1)+'</span><b style="flex:1;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+String(r.p||'?').replace(/</g,'')+'</b><em style="font-style:normal;color:'+(r.moi?'#ffd860':'#ff6a4a')+'">'+fv(ong,r.v)+'</em></div>').join(''))+'</div>'+
+    (data&&data.moi?'<div style="margin-top:8px;padding:8px;border-radius:4px;background:#14161c;font:800 12.5px ui-monospace,monospace;color:#ffd860;text-align:center">Toi : '+fv(ong,data.moi.v)+' · '+data.moi.rang+(data.moi.rang===1?'er':'e')+' sur '+data.total+'</div>':
+      '<div style="margin-top:8px;padding:8px;border-radius:4px;background:#14161c;font:700 12px ui-monospace,monospace;color:#8a96aa;text-align:center">Cours cette épreuve pour entrer au classement.</div>')+
+    '<div style="margin-top:6px;text-align:center;font:700 10.5px ui-monospace,monospace;color:#5a6478">Vent de plus de +2,0 m/s : perf non homologuée</div></div>';};
+  const charger=async()=>{rendre({},'Chargement…');try{if(!(typeof sb!=='undefined'&&sb&&sb.rpc))throw 0;const {data,error}=await sb.rpc('athle_classement',{p_epreuve:ong});if(error||!data)throw 0;rendre(data);}catch(x){rendre({},'Le classement est indisponible pour le moment.');}};
+  document.body.appendChild(d);charger();
+  d.addEventListener('click',ev=>{const b=ev.target.closest('button');if(b&&b.dataset.o){ong=b.dataset.o;charger();return;}if(ev.target===d)d.remove();});}
+/* au pied de la tribune, face au grand écran, la caméra lève les yeux */
+function regardY(x,y){const fy=Math.max(0,Math.min(1,(Y0+150-y)/110)),fx=Math.max(0,Math.min(1,(330-Math.abs(x-CX))/80));return .36*fy*fx;}
+return {sol,solFin,decor,bloque,graver,depart:DEPART,figurants,acteurs,regardY};
 })()

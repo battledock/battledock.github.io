@@ -14318,7 +14318,9 @@ const PAD_V=AUV?Math.min(VH*0.25,190/(ECH_CSS||1)):0;
 /* LE PORT S'ARRÊTE À LA VILLE : plus d'esplanades ni d'affiches sur les côtés, le quai file hors du cadre */
 const PX0=(CARTE==='extramar'&&XP&&XP.finVille-XP.debutVille>VW)?XP.debutVille:BX0, PX1=(CARTE==='extramar'&&XP&&XP.finVille-XP.debutVille>VW)?XP.finVille:BX1;
 const cibleX=Math.max(PX0,Math.min(PX1-VW,joueur.x+LA[0]-VW/2));
-const cibleY=Math.max(BY0,Math.min(BY1-VH+PAD_V,joueur.y+LA[1]-VH*(CARTE==='garde'?0.74:(ANNEXE?0.62:0.5))+PAD_V*0.5));
+/* un lieu peut lever le regard (le stade : vers le grand écran quand on s'en approche) */
+let REG_Y=0;try{if(JOL&&typeof JOL.regardY==='function')REG_Y=Math.max(0,Math.min(.45,+JOL.regardY(joueur.x,joueur.y)||0))*VH;}catch(x){}
+const cibleY=Math.max(BY0,Math.min(BY1-VH+PAD_V,joueur.y+LA[1]-REG_Y-VH*(CARTE==='garde'?0.74:(ANNEXE?0.62:0.5))+PAD_V*0.5));
 /* LA CAMÉRA SUIT EN DOUCEUR : elle rattrape le joueur au lieu de lui coller,
    ce qui gomme les à-coups quand la vitesse n'est pas un nombre rond de pixels. */
 if(CAM.x===null||Math.abs(cibleX-CAM.x)>VW*0.6||Math.abs(cibleY-CAM.y)>VH*0.6){
@@ -19716,7 +19718,7 @@ poserLeCiel(g);                  /* la lumière du moment, par-dessus tout */
 }
 const A_GARDER=['sac','jetons','euros','outils','sacMax','score','recolte','casses',
 'nivSac','nivPioche','nivHache','nivPied','metiers','cos','aRepousser',
-'four','habitCasino','ap','pseudo','x','y','coffreOuvert','album','endu','chronos','kitAthle','athNiv','athShop'];
+'four','habitCasino','ap','pseudo','x','y','coffreOuvert','album','endu','chronos','kitAthle','athNiv','athShop','athMed'];
 let derniereSauv=0, sauvEnVol=false, sauvSale=false, SAUV_REFUS=false;
 function etatAGarder(){
 const o={};
