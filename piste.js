@@ -68,13 +68,43 @@ function tribune(g){
   R(g,0,299,W,81,'#ece8de');R(g,0,299,W,3,'#ffffff');R(g,0,370,W,10,'#bdb6a8');R(g,0,368,W,2,'#d8d2c4');
   const BACHES=[['ALLEZ !','#c0392b'],['MARSEILLE','#1f5fa8'],['ATHLÉ 13','#2e8a4a'],['400 M','#e8702a'],['RECORDS','#5a2ab0'],['SAVON DE M.','#2a8ab0']];
   for(let i=0,x=330;x<W-60;x+=200,i++){const [t,c]=BACHES[i%BACHES.length];R(g,x,316,170,36,c);R(g,x,316,170,3,'rgba(255,255,255,.3)');R(g,x,349,170,3,'rgba(0,0,0,.15)');txt(g,t,x+85,334,17,'#fff');}
-  /* les vestiaires, à gauche : un vrai petit bâtiment */
-  R(g,30,190,262,190,'#e2d8c4');for(let y=196;y<378;y+=9)R(g,30,y,262,1,'rgba(120,100,70,.12)');
-  R(g,22,176,278,16,'#8a3a2a');R(g,22,176,278,3,'#b85a44');R(g,22,190,278,3,'#5a2418');
-  R(g,128,270,84,110,'#3a2614');R(g,133,275,74,105,'#6a4428');R(g,133,275,36,105,'#7a5032');R(g,166,320,3,12,'#e8c050');R(g,171,320,3,12,'#e8c050');
-  for(const x of [50,232]){R(g,x,232,46,34,'#5a6a7a');R(g,x+2,234,42,30,'#a8d0f0');R(g,x+2,234,42,10,'#d0e8f8');R(g,x+22,234,2,30,'#5a6a7a');}
-  R(g,96,200,150,24,'#16213a');R(g,96,200,150,2,'#e8c050');txt(g,'VESTIAIRES',171,212.5,13,'#ffd860');
-  R(g,116,366,108,14,'#bdb6a8');
+  /* LES VESTIAIRES, à gauche : un pavillon de club, en pierre claire de Marseille,
+     toit de tuiles canal, enseigne émaillée, double porte vitrée, volets bleus. */
+  {const bx=26,by=188,bw=270,bh=192,sol=380;
+   /* l'ombre portée sur l'esplanade */
+   g.fillStyle='rgba(40,30,20,.22)';g.beginPath();g.moveTo(bx+bw,sol);g.lineTo(bx+bw+26,sol+14);g.lineTo(bx+26,sol+14);g.lineTo(bx,sol);g.fill();
+   /* la façade en moellons */
+   R(g,bx,by,bw,bh,'#e6dcc6');
+   for(let y=by+4,k=0;y<sol-14;y+=9,k++)for(let x=bx+((k%2)*13);x<bx+bw;x+=26){const t=hA(x,y,2);R(g,x,y,25,8,t<.33?'#ede4d0':t<.66?'#e2d7c0':'#dccfb6');R(g,x,y+8,25,1,'rgba(120,100,70,.22)');R(g,x+25,y,1,8,'rgba(120,100,70,.18)');}
+   /* le soubassement en pierre plus sombre, et les chaînes d'angle */
+   R(g,bx,sol-16,bw,16,'#b8ab92');R(g,bx,sol-16,bw,2,'#d0c4aa');for(let x=bx;x<bx+bw;x+=30)R(g,x,sol-16,1,16,'rgba(80,60,40,.3)');
+   for(const cx2 of [bx,bx+bw-14])for(let y=by,k=0;y<sol-16;y+=14,k++)R(g,cx2+(k%2?2:0),y,12,13,k%2?'#d6caae':'#cfc2a4');
+   /* le toit de tuiles canal, avec sa génoise */
+   R(g,bx-10,by-6,bw+20,6,'#f2ead8');R(g,bx-10,by-2,bw+20,2,'#c8bc9e');
+   for(let r=0;r<3;r++){const yy=by-26+r*7;for(let x=bx-14+(r%2)*6;x<bx+bw+14;x+=12){R(g,x,yy,11,8,r===2?'#a8442a':'#c0583a');R(g,x,yy,11,2,'#d8805a');R(g,x+10,yy,1,8,'#7a2a18');}}
+   R(g,bx-16,by-30,bw+32,5,'#8a3420');R(g,bx-16,by-30,bw+32,2,'#b85a3c');
+   /* l'enseigne émaillée, bleu de France, lettres d'or, deux appliques */
+   const ex=bx+bw/2-86,ey=by+14;R(g,ex-3,ey-3,178,32,'#0f1830');R(g,ex,ey,172,26,'#1f3f86');R(g,ex+3,ey+3,166,20,'#2a52a0');R(g,ex+3,ey+3,166,2,'#4a7ad0');
+   txt(g,'VESTIAIRES',ex+86,ey+14,15,'#ffd860');for(const ax of [ex-14,ex+178]){R(g,ax,ey+4,8,4,'#2a2e36');R(g,ax+1,ey+8,6,8,'#fff2b0');R(g,ax+1,ey+8,6,2,'#ffffff');}
+   /* la marquise vitrée au-dessus des portes */
+   R(g,bx+bw/2-58,by+60,116,6,'#2a3a4a');for(let x=bx+bw/2-56;x<bx+bw/2+58;x+=14)R(g,x,by+66,2,6,'#2a3a4a');R(g,bx+bw/2-58,by+58,116,2,'#a8d0e8');
+   /* la double porte vitrée */
+   const px=bx+bw/2-40,py=by+76,pw=80,ph=sol-16-py;R(g,px-6,py-6,pw+12,ph+6,'#cfc2a4');R(g,px-4,py-4,pw+8,ph+4,'#3a2a1a');
+   for(const ox of [0,pw/2+1]){R(g,px+ox,py,pw/2-1,ph,'#5a3a22');R(g,px+ox+5,py+6,pw/2-11,ph*.55,'#9cc8e0');R(g,px+ox+5,py+6,pw/2-11,6,'#cfe6f2');R(g,px+ox+5,py+6+ph*.3,pw/2-11,2,'#5a3a22');
+    g.fillStyle='rgba(255,255,255,.35)';g.beginPath();g.moveTo(px+ox+7,py+8);g.lineTo(px+ox+16,py+8);g.lineTo(px+ox+7,py+28);g.fill();
+    R(g,px+ox+5,py+ph*.68,pw/2-11,ph*.25,'#6a4628');R(g,px+ox+7,py+ph*.7,pw/2-15,ph*.21,'#7a5232');}
+   R(g,px+pw/2-5,py+ph*.5,3,12,'#e8c050');R(g,px+pw/2+3,py+ph*.5,3,12,'#e8c050');
+   /* deux fenêtres à volets bleus, un pictogramme de coureur */
+   for(const wx of [bx+30,bx+bw-82]){R(g,wx-12,by+92,12,52,'#2a6fba');R(g,wx+52,by+92,12,52,'#2a6fba');for(let k=0;k<6;k++){R(g,wx-12,by+95+k*8,12,2,'#1f5596');R(g,wx+52,by+95+k*8,12,2,'#1f5596');}
+    R(g,wx-2,by+88,56,60,'#cfc2a4');R(g,wx,by+90,52,52,'#f6f0e0');R(g,wx+3,by+93,46,46,'#7aaed0');R(g,wx+3,by+93,46,14,'#a8d0e8');R(g,wx+25,by+93,2,46,'#f6f0e0');R(g,wx+3,by+114,46,2,'#f6f0e0');
+    R(g,wx-4,by+146,60,5,'#cfc2a4');R(g,wx-2,by+141,56,5,'#3a6a3a');for(let k=0;k<7;k++){g.fillStyle=['#e84a3a','#f2a8b8','#ffffff','#e84a3a'][k%4];g.beginPath();g.arc(wx+3+k*7.5,by+140,2.4,0,7);g.fill();}}
+   R(g,bx+bw/2-12,by+40,24,14,'#ffffff');g.strokeStyle='#1f3f86';g.lineWidth=2;g.lineCap='round';const cx3=bx+bw/2,cy3=by+47;
+   g.beginPath();g.moveTo(cx3-1,cy3-3);g.lineTo(cx3-3,cy3+2);g.lineTo(cx3+1,cy3+5);g.moveTo(cx3-3,cy3+2);g.lineTo(cx3-7,cy3+4);g.moveTo(cx3-1,cy3-1);g.lineTo(cx3+4,cy3);g.moveTo(cx3-1,cy3-1);g.lineTo(cx3-5,cy3-1);g.stroke();g.fillStyle='#1f3f86';g.beginPath();g.arc(cx3+1,cy3-6,1.8,0,7);g.fill();g.lineCap='butt';
+   /* les trois marches, deux pots d'olivier, un banc */
+   for(let k=0;k<3;k++)R(g,px-14-k*6,sol-16+k*5+16-15,pw+28+k*12,5,k%2?'#c8bca2':'#d6cab0');
+   for(const ox of [px-34,px+pw+18]){R(g,ox,sol-30,18,16,'#b8603a');R(g,ox-2,sol-32,22,4,'#d0784a');R(g,ox+2,sol-28,14,2,'rgba(0,0,0,.2)');
+    for(let k=0;k<16;k++){g.fillStyle=k%3?'#6a8a4a':'#8aa86a';g.beginPath();g.arc(ox+9+Math.cos(k*1.7)*9*hA(k,ox,3),sol-42-Math.abs(Math.sin(k*2.3))*12,3.4,0,7);g.fill();}R(g,ox+8,sol-40,2,10,'#6a4a2a');}
+   R(g,bx+18,sol-6,60,4,'#7a5232');R(g,bx+18,sol-10,60,3,'#9a6a42');R(g,bx+22,sol-2,3,4,'#3a2a1a');R(g,bx+71,sol-2,3,4,'#3a2a1a');}
   /* l'ombre portée des tribunes sur l'esplanade */
   const os=g.createLinearGradient(0,Y0,0,Y0+40);os.addColorStop(0,'rgba(30,26,20,.32)');os.addColorStop(1,'rgba(30,26,20,0)');g.fillStyle=os;g.fillRect(0,Y0,W,40);}
 function anneau(g){
@@ -164,7 +194,7 @@ function vestiaires(){if(document.getElementById('pstV'))return;let sel={k:0,s:0
 
 /* ---------- LE DÉCOR (des points d'action, tout le reste est au sol) ---------- */
 function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
-  P('x_jol_pst_vide_sol',171,Y0+30,{col:[1,1],demi:60,agir:vestiaires,libelle:'Se changer',nom:'VESTIAIRES'});
+  P('x_jol_pst_vide_sol',161,Y0+30,{col:[1,1],demi:60,agir:vestiaires,libelle:'Se changer',nom:'VESTIAIRES'});
   P('x_jol_pst_vide_sol',CX,Y0+16,{col:[1,1],demi:60,parler:['Le tableau garde tes meilleurs temps.','Va sur une ligne de départ blanche pour courir contre les autres.','100 m, 400 m, 800 m, et les haies. Gère ton souffle !']});
   for(const D of DEPARTS)P('x_jol_pst_vide_sol',D.p[0],D.p[1]+(D.p[1]<CY?10:-10),{col:[1,1],demi:46,agir:()=>courir(D.ep),libelle:'Prendre le départ',nom:D.nom});
   return D;}

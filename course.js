@@ -193,6 +193,25 @@ function preparer(){const Q=geo(),{W2,H2,u,yT,yM,yP,yBas,Y}=Q;
  BACH=document.createElement('canvas');BACH.width=bw*BA.length;BACH.height=Math.round(yP-yM);const b=BACH.getContext('2d');
  BA.forEach((t,k)=>{const x=k*bw;b.fillStyle=t[1];b.fillRect(x+6*u,6*u,bw-12*u,BACH.height-16*u);b.fillStyle='rgba(255,255,255,.25)';b.fillRect(x+6*u,6*u,bw-12*u,3*u);b.fillStyle='#fff';b.font='900 '+(15*u)+'px "Helvetica Neue",Arial,sans-serif';b.textAlign='center';b.textBaseline='middle';b.fillText(t[0],x+bw/2,(BACH.height-10*u)/2+6*u);});
  FOULE=graverFoule(Math.round(yM-yT),false);FOULE2=graverFoule(Math.round(yM-yT),true);}
+/* UNE HAIE D'ATHLÉTISME, vue de trois quarts : deux pieds en L lestés, deux montants
+   chromés, la latte blanche à bandes noires qui traverse le couloir. Renversée, elle
+   bascule vers l'avant. Tout est posé sur la grille des pixels. */
+function haie(g,x,y,sc,lh,tb){const P=n=>Math.round(n*sc),hh=P(23),dp=Math.round(lh*.3),dx=Math.round(dp*1.15),ang=tb===1?1.35:tb===.5?.32:0;
+ const pied=(px,py,fond)=>{g.fillStyle='rgba(40,10,0,.25)';g.fillRect(px-P(9),py,P(12),P(1.5));
+  g.fillStyle=fond?'#5a5f68':'#7a808a';g.fillRect(px-P(9),py-P(1.5),P(10),P(1.5));g.fillStyle=fond?'#2a2e36':'#3a3e46';g.fillRect(px-P(10),py-P(2.5),P(3),P(2.5));};
+ const montant=(px,py,fond)=>{g.save();g.translate(px,py);g.rotate(ang);
+  g.fillStyle=fond?'#9aa2ac':'#c8d0da';g.fillRect(-P(1.3),-hh,P(2.6),hh);g.fillStyle=fond?'#6a727c':'#8a929c';g.fillRect(P(.4),-hh,P(.6),hh);g.fillStyle='#ffffff';g.fillRect(-P(1),-hh,P(.6),hh*.7);
+  g.fillStyle='#3a3e46';g.fillRect(-P(1.4),-P(9),P(2.8),P(1.6));g.restore();};
+ /* l'ombre portée de la latte sur le tartan */
+ if(!tb){g.fillStyle='rgba(60,15,5,.22)';g.beginPath();g.moveTo(-P(6)+x,y);g.lineTo(-P(6)+x+dx,y-dp);g.lineTo(-P(2)+x+dx,y-dp);g.lineTo(-P(2)+x,y);g.fill();}
+ pied(x+dx,y-dp,true);montant(x+dx,y-dp,true);
+ /* la latte : un ruban épais qui suit les deux sommets, bandes blanches et noires, tranche dessous */
+ const s1=[x+dx+Math.sin(ang)*hh,y-dp-Math.cos(ang)*hh],s0=[x+Math.sin(ang)*hh,y-Math.cos(ang)*hh],ep=P(5),n=5;
+ for(let k=0;k<n;k++){const a0=k/n,a1=(k+1)/n,ax=s1[0]+(s0[0]-s1[0])*a0,ay=s1[1]+(s0[1]-s1[1])*a0,bx=s1[0]+(s0[0]-s1[0])*a1,by=s1[1]+(s0[1]-s1[1])*a1;
+  g.fillStyle=k%2?'#1c1c22':'#f6f6f2';g.beginPath();g.moveTo(ax,ay-ep);g.lineTo(bx,by-ep);g.lineTo(bx,by);g.lineTo(ax,ay);g.fill();
+  g.fillStyle=k%2?'#000000':'#c8c8c0';g.beginPath();g.moveTo(ax,ay);g.lineTo(bx,by);g.lineTo(bx,by+P(1.2));g.lineTo(ax,ay+P(1.2));g.fill();}
+ g.fillStyle='rgba(255,255,255,.5)';g.beginPath();g.moveTo(s1[0],s1[1]-ep);g.lineTo(s0[0],s0[1]-ep);g.lineTo(s0[0],s0[1]-ep+P(.8));g.lineTo(s1[0],s1[1]-ep+P(.8));g.fill();
+ pied(x,y,false);montant(x,y,false);}
 function tuile(g,img,off,y,W2){const w=img.width;let x=-(((off%w)+w)%w);for(;x<W2;x+=w)g.drawImage(img,Math.round(x),Math.round(y));}
 function dessiner(){if(!BG)preparer();const g=G,Q=geo(),{W2,H2,u,yT,yM,yP,nC,yBas,Y,PPM}=Q;g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;
  const cx=m=>(m-C.camX)*PPM,ex=C.excite||0;
@@ -222,15 +241,7 @@ function dessiner(){if(!BG)preparer();const g=G,Q=geo(),{W2,H2,u,yT,yM,yP,nC,yBa
  for(let i=0;i<nC;i++){const a=C.A.find(b=>b.c===i),lh=Y[i+1]-Y[i],sc=Math.max(1,Math.round(lh*1.3/52*4)/4),yl=Y[i+1]-lh*.2;
   /* les blocs de départ, derrière la ligne */
   if(x0>-40*u&&x0<W2+40*u){for(const [bx,bh] of [[2,5],[-15,7]]){const X=x0+(bx-1)*sc;g.fillStyle='#3a3e46';g.fillRect(X-1*sc,yl-1*sc,9*sc,2*sc);g.fillStyle='#c8ccd2';g.beginPath();g.moveTo(X,yl-1*sc);g.lineTo(X+5*sc,yl-bh*sc);g.lineTo(X+6.5*sc,yl-bh*sc);g.lineTo(X+3*sc,yl-1*sc);g.fill();}}
-  for(const h of C.H){const x=cx(h);if(x<-40*u||x>W2+40*u)continue;const tb=C.tombees[i+':'+h];
-   const hh=22*sc,dp=lh*.55,dx=dp*.35;const ang=tb===1?1.25:tb===.5?.3:0;
-   g.save();g.translate(x,yl);
-   const post=(px,py)=>{g.fillStyle='rgba(0,0,0,.22)';g.fillRect(px-1*sc,py,9*sc,1.5*sc);g.fillStyle='#3a3e46';g.fillRect(px-1*sc,py-1.5*sc,8*sc,1.5*sc);
-     g.save();g.translate(px,py);g.rotate(-ang);g.fillStyle='#d8dce2';g.fillRect(-.9*sc,-hh,1.8*sc,hh);g.fillStyle='#8a929c';g.fillRect(.3*sc,-hh,.6*sc,hh);g.restore();};
-   post(dx,-dp);
-   const t1x=dx+Math.sin(ang)*hh,t1y=-dp-Math.cos(ang)*hh,t2x=Math.sin(ang)*hh,t2y=-Math.cos(ang)*hh,n=6;
-   for(let k=0;k<n;k++){const a0=k/n,a1=(k+1)/n;g.fillStyle=k%2?'#1a1a1e':'#ffffff';g.beginPath();g.moveTo(t1x+(t2x-t1x)*a0,t1y+(t2y-t1y)*a0-2.2*sc);g.lineTo(t1x+(t2x-t1x)*a1,t1y+(t2y-t1y)*a1-2.2*sc);g.lineTo(t1x+(t2x-t1x)*a1,t1y+(t2y-t1y)*a1+1.6*sc);g.lineTo(t1x+(t2x-t1x)*a0,t1y+(t2y-t1y)*a0+1.6*sc);g.fill();}
-   post(0,0);g.restore();
+  for(const h of C.H){const x=cx(h);if(x<-40*u||x>W2+40*u)continue;haie(g,Math.round(x),Math.round(yl),sc,lh,C.tombees[i+':'+h]);
    if(a&&a.moi&&a.d<h&&h-a.d<6){const ok=Math.abs(h-1.75-a.d)<.45;g.fillStyle=ok?'rgba(126,224,138,.9)':'rgba(255,216,96,.55)';g.beginPath();g.ellipse(cx(h-1.75),yl+2*u,(ok?9:6)*u,2.4*u,0,0,7);g.fill();}}
   if(!a)continue;const x=cx(a.d);if(x<-60*u||x>W2+60*u)continue;
   let lift=0,pz=null;
