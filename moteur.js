@@ -15101,8 +15101,17 @@ if(t<PAUSE.prochaine)return null;
 PAUSE.type=TIRAGE_PAUSE[Math.floor(Math.random()*TIRAGE_PAUSE.length)];
 PAUSE.a=t;
 return PAUSE.type==='appui'?600:620;}
+/* LES ACCESSOIRES DE L'ATHLÉ SHOP, posés sur le sprite : bandeau, lunettes, manchettes, montre */
+function accessoireAthle(g,x,y,acc,dir){const d=dir||'bas',R=(px,py,w,h,c)=>{g.fillStyle=c;g.fillRect(x+px,y+py,w,h);};
+ const face=d==='bas'||d.indexOf('bas-')===0,dos=d==='haut'||d.indexOf('haut-')===0,dr=d.indexOf('droite')>=0,ga=d.indexOf('gauche')>=0,prof=(dr||ga)&&!face&&!dos,sx=ga?-1:1;
+ if(acc==='a_bandeau'){if(prof){const bx=sx>0?-7.4:-5.6;R(bx,-43.4,13.4,2.6,'#1a1a22');R(bx+.5,-43,12.4,1.6,'#ffffff');}else{R(-7.6,-43.4,15.2,2.6,'#1a1a22');R(-7,-43,14,1.6,'#ffffff');}if(dos)R(-1,-43,2,1.6,'#e84a3a');else if(!prof)R(3,-43,2,1.6,'#e84a3a');}
+ else if(acc==='a_lunettes'){if(dos)return;if(prof){const lx=sx>0?1:-6;R(lx,-42,5,2.4,'#1a1a22');R(lx+.8,-41.6,3.4,1.4,'#5ad0ff');R(lx+.8,-41.6,1,1,'#e0f8ff');R(sx>0?-3:2,-42,4,1,'#1a1a22');}
+  else{R(-6,-41,5,2.6,'#1a1a22');R(1,-41,5,2.6,'#1a1a22');R(-5,-40.6,3,1.4,'#5ad0ff');R(2,-40.6,3,1.4,'#5ad0ff');R(-1,-41,2,1,'#1a1a22');R(-5,-40.6,1,1,'#e0f8ff');R(2,-40.6,1,1,'#e0f8ff');}}
+ else if(acc==='a_manchettes'){if(prof){R(-1.6,-27,3.2,5,'#1d2a4a');R(-1.6,-27,3.2,1,'#e84a3a');}else{R(-8.2,-27,3,5,'#1d2a4a');R(5.8,-27,3,5,'#1d2a4a');R(-8.2,-27,3,1,'#e84a3a');R(5.8,-27,3,1,'#e84a3a');}}
+ else if(acc==='a_montre'){if(prof){R(-1.6,-23,3.2,1.8,'#1a1a22');R(-1,-22.7,2,1.1,'#ff8a3a');}else{R(-8.2,-23,3,1.8,'#1a1a22');R(-7.6,-22.7,1.8,1.1,'#ff8a3a');}}}
 function personne(g,x,y,ap,dir,pas,marche,enCourse){
 if(window.AP_FORCE&&ap&&typeof e!=='undefined'&&ap===e.ap)ap=Object.assign({},ap,window.AP_FORCE);   /* la tenue d'athlète, sur la piste */
+if(ap&&ap._acc&&!ap._accFait){personne(g,x,y,Object.assign({},ap,{_accFait:1}),dir,pas,marche,enCourse);try{accessoireAthle(g,x,y,ap._acc,dir);}catch(z){}return;}
 /* UN COSTUME INTEGRAL REMPLACE LE DESSIN, IL NE SE POSE PAS DESSUS.
    Peint par-dessus, il laissait toujours ressortir un coin de cheveux
    au sommet de la capuche ou deux pixels de col a l'epaule — et un
@@ -19707,7 +19716,7 @@ poserLeCiel(g);                  /* la lumière du moment, par-dessus tout */
 }
 const A_GARDER=['sac','jetons','euros','outils','sacMax','score','recolte','casses',
 'nivSac','nivPioche','nivHache','nivPied','metiers','cos','aRepousser',
-'four','habitCasino','ap','pseudo','x','y','coffreOuvert','album','endu','chronos','kitAthle','athNiv'];
+'four','habitCasino','ap','pseudo','x','y','coffreOuvert','album','endu','chronos','kitAthle','athNiv','athShop'];
 let derniereSauv=0, sauvEnVol=false, sauvSale=false, SAUV_REFUS=false;
 function etatAGarder(){
 const o={};

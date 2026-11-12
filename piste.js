@@ -66,8 +66,8 @@ function tribune(g){
   R(g,0,60,W,30,'#26314a');R(g,0,60,W,4,'#5a6a8e');R(g,0,88,W,3,'#141a28');for(let x=20;x<W;x+=90){R(g,x,64,5,24,'#1a2236');R(g,x,64,1.5,24,'#3a4866');}
   for(let i=0;i<12;i++){const x=90+i*165,c=['#e84a3a','#ffffff','#7ac8f0','#f5c430','#2e8a4a'][i%5];R(g,x,34,1.6,26,'#d8dce2');g.fillStyle=c;g.beginPath();g.moveTo(x+1.6,34);g.lineTo(x+20,39+Math.sin(i)*2);g.lineTo(x+1.6,45);g.fill();}
   /* la foule, sur huit rangs ; le grand écran et les vestiaires prennent leur place */
-  const ecran=(x,yb)=>Math.abs(x-CX)<225&&yb<270,vest=(x)=>x<310;
-  foule(g,0,W,91,5,41.6,.92,(x,yb)=>ecran(x,yb)||vest(x));
+  const ecran=(x,yb)=>Math.abs(x-CX)<225&&yb<270,vest=(x)=>x<310,shop=(x,yb)=>x>320&&x<660&&yb>200;
+  foule(g,0,W,91,5,41.6,.92,(x,yb)=>ecran(x,yb)||vest(x)||shop(x,yb));
   const om=g.createLinearGradient(0,91,0,150);om.addColorStop(0,'rgba(10,16,30,.5)');om.addColorStop(1,'rgba(10,16,30,0)');g.fillStyle=om;g.fillRect(300,91,W-300,59);
   /* le grand écran, sur ses pieds */
   R(g,CX-210,98,420,150,'#2a2e36');R(g,CX-203,105,406,136,'#06070a');R(g,CX-210,98,420,4,'#4a4e58');for(let y=107;y<240;y+=2)R(g,CX-201,y,402,1,'rgba(255,255,255,.025)');
@@ -76,8 +76,33 @@ function tribune(g){
   R(g,0,299,W,81,'#ece8de');R(g,0,299,W,3,'#ffffff');for(let x=0;x<W;x+=60){R(g,x,302,1,66,'rgba(120,110,90,.14)');}for(let i=0;i<300;i++)R(g,hA(i,4,8)*W,302+hA(i,5,8)*64,1+hA(i,6,8)*2,1,'rgba(120,110,90,.12)');
   R(g,0,362,W,8,'#d6cfc0');R(g,0,362,W,2,'#f2ede2');R(g,0,370,W,10,'#bdb6a8');R(g,0,368,W,2,'#d8d2c4');
   const BACHES=[['ALLEZ !','#c0392b'],['MARSEILLE','#1f5fa8'],['ATHLÉ 13','#2e8a4a'],['400 M','#e8702a'],['RECORDS','#5a2ab0'],['SAVON DE M.','#2a8ab0']];
-  for(let i=0,x=330;x<W-60;x+=200,i++){const [t,c]=BACHES[i%BACHES.length];R(g,x-2,314,174,40,'rgba(0,0,0,.18)');R(g,x,312,170,38,c);const gr=g.createLinearGradient(0,312,0,350);gr.addColorStop(0,'rgba(255,255,255,.22)');gr.addColorStop(.5,'rgba(255,255,255,0)');gr.addColorStop(1,'rgba(0,0,0,.18)');g.fillStyle=gr;g.fillRect(x,312,170,38);
+  for(let i=0,x=330;x<W-60;x+=200,i++){if(x<680)continue;const [t,c]=BACHES[i%BACHES.length];R(g,x-2,314,174,40,'rgba(0,0,0,.18)');R(g,x,312,170,38,c);const gr=g.createLinearGradient(0,312,0,350);gr.addColorStop(0,'rgba(255,255,255,.22)');gr.addColorStop(.5,'rgba(255,255,255,0)');gr.addColorStop(1,'rgba(0,0,0,.18)');g.fillStyle=gr;g.fillRect(x,312,170,38);
    for(const ox of [4,160])R(g,x+ox,315,5,5,'#d8dce2');for(const ox of [4,160])R(g,x+ox,342,5,5,'#d8dce2');txt(g,t,x+86,332,17,'rgba(0,0,0,.25)');txt(g,t,x+85,331,17,'#fff');}
+  /* L'ATHLÉ SHOP : une boutique creusée sous la tribune. Store rayé, grande vitrine
+     (un mannequin en tenue, des chaussures sur des socles), enseigne lumineuse. */
+  {const sx=330,sw=320,st=214,sol=380;
+   R(g,sx-6,st-6,sw+12,sol-st+6,'#2a2e36');R(g,sx,st,sw,sol-st,'#3a3e46');
+   /* l'enseigne */
+   R(g,sx+40,st+4,sw-80,26,'#16213a');R(g,sx+40,st+4,sw-80,2,'#e8c050');R(g,sx+40,st+28,sw-80,2,'#e8c050');txt(g,'ATHLÉ SHOP',sx+sw/2,st+17.5,15,'#ffd860');
+   for(const ax of [sx+28,sx+sw-36]){R(g,ax,st+10,8,14,'#fff2b0');R(g,ax,st+10,8,3,'#ffffff');}
+   /* le store rayé rouge et blanc, son festonnage */
+   for(let x=sx-8;x<sx+sw+8;x+=16){R(g,x,st+34,8,18,'#d8402a');R(g,x+8,st+34,8,18,'#f6f0e2');g.fillStyle=((x-sx)/16|0)%2?'#f6f0e2':'#d8402a';g.beginPath();g.arc(x+4,st+52,4,0,Math.PI);g.fill();g.fillStyle='#f6f0e2';g.beginPath();g.arc(x+12,st+52,4,0,Math.PI);g.fill();}
+   R(g,sx-8,st+32,sw+16,3,'#a83020');
+   /* la vitrine : fond lumineux, reflets */
+   const vx=sx+14,vy=st+62,vw=170,vh=sol-st-74;const vg=g.createLinearGradient(0,vy,0,vy+vh);vg.addColorStop(0,'#fff6dc');vg.addColorStop(1,'#e8d8b0');g.fillStyle=vg;g.fillRect(vx,vy,vw,vh);
+   /* un mannequin en tenue de course, sur son pied */
+   R(g,vx+34,vy+vh-6,20,4,'#8a929c');R(g,vx+43,vy+vh-22,2,16,'#8a929c');
+   g.save();g.translate(vx+44,vy+vh-14);g.scale(.95,.95);try{personne(g,0,0,{peau:0,cheveux:7,coiffe:0,haut:4,veste:'#e84a3a',pantalon:'#1a1a22',bas:1,souliers:1,chaussures:'#ffd040',sac:0,_civil:true,_pnj:true},'bas',0,false);}catch(z){}g.restore();
+   /* les chaussures sur leurs socles */
+   const CH=['#c8ff3a','#ff6a4a','#5ae0ff','#ffd040'];CH.forEach((c,k)=>{const bx=vx+82+k*22,by=vy+vh-18-(k%2)*16;R(g,bx,by,18,4,'#f2ede2');R(g,bx,by+4,18,14+(k%2)*16,'#d8d2c4');
+    R(g,bx+2,by-5,14,5,c);R(g,bx+2,by-1,14,1,'#f6f6f6');R(g,bx+11,by-8,5,3,c);R(g,bx+3,by-4,2,1,'rgba(255,255,255,.6)');});
+   g.fillStyle='rgba(255,255,255,.35)';g.beginPath();g.moveTo(vx,vy);g.lineTo(vx+30,vy);g.lineTo(vx,vy+40);g.fill();g.beginPath();g.moveTo(vx+90,vy);g.lineTo(vx+104,vy);g.lineTo(vx+70,vy+vh);g.lineTo(vx+56,vy+vh);g.fill();
+   R(g,vx-3,vy-3,vw+6,3,'#8a929c');R(g,vx-3,vy+vh,vw+6,3,'#8a929c');R(g,vx-3,vy,3,vh,'#8a929c');R(g,vx+vw,vy,3,vh,'#8a929c');
+   /* la porte vitrée ouverte, et le tapis */
+   const dx=sx+202,dw=100;R(g,dx,vy,dw,vh,'#1a1e26');R(g,dx+4,vy+4,dw/2-6,vh-4,'#4a6a80');R(g,dx+dw/2+2,vy+4,dw/2-6,vh-4,'#4a6a80');
+   R(g,dx+10,vy+14,dw-20,vh-24,'#f6e8c8');for(let k=0;k<5;k++)R(g,dx+14+k*14,vy+22,10,22,['#e84a3a','#1f5fa8','#2e8a4a','#f5c430','#ffffff'][k]);   /* les maillots aux cintres, au fond */
+   R(g,dx+14,vy+20,dw-28,2,'#8a929c');
+   R(g,dx-6,sol-4,dw+12,4,'#c0392b');}
   /* LES VESTIAIRES, à gauche : un pavillon de club, en pierre claire de Marseille,
      toit de tuiles canal, enseigne émaillée, double porte vitrée, volets bleus. */
   {const bx=26,by=188,bw=270,bh=192,sol=380;
@@ -192,33 +217,50 @@ const KITS=[{n:'Phocéen',haut:'#7ac8f0',bas:'#ffffff',nv:0},{n:'Massilia',haut:
 const SOULIERS=[{n:'Fluo',c:'#c8ff3a',nv:0},{n:'Corail',c:'#ff6a4a',nv:1},{n:'Glacier',c:'#5ae0ff',nv:2},{n:'Néon rose',c:'#ff4ab8',nv:3},{n:'Blanc pur',c:'#f6f6f6',nv:0},{n:'Noir mat',c:'#26262c',nv:4},{n:'Or olympique',c:'#ffd040',nv:6}];
 const CATS=['Débutant','Club','Régional','Interrégional','National','Élite','Olympique'];
 function cat(){let m=0;try{for(const k in (e.athNiv||{}))m=Math.max(m,e.athNiv[k]|0);}catch(x){}return m;}
-function kit(){let k={k:0,s:0};try{if(e.kitAthle&&typeof e.kitAthle==='object')k=e.kitAthle;}catch(x){}let K=KITS[k.k%KITS.length],S=SOULIERS[k.s%SOULIERS.length];if(K.nv>cat())K=KITS[0];if(S.nv>cat())S=SOULIERS[0];
-  return {haut:4,veste:K.haut,_motif:0,motif:0,raye:0,bas:1,pantalon:K.bas,souliers:1,chaussures:S.c,sac:0,chapeau:0,cos:0,deguisement:0,maillot:0,gilet:0,patin:0,_civil:true};}
+/* Ce qu'on a acheté à l'Athlé Shop (synchronisé avec le serveur à l'arrivée) */
+const SHOP_K=[{id:'m_retro',n:'Rétro 84',haut:'#f2ede2',bas:'#1f5fa8'},{id:'m_endoume',n:'Club d’Endoume',haut:'#2e8a4a',bas:'#ffffff'},{id:'m_turquoise',n:'Turquoise',haut:'#2ac0c8',bas:'#16213a'},{id:'m_nuit',n:'Nuit étoilée',haut:'#16213a',bas:'#16213a'},{id:'m_corail',n:'Corail',haut:'#ff7a5a',bas:'#ffffff'},{id:'p_legende',n:'Légende',haut:'#ffffff',bas:'#e8c040'}];
+const SHOP_S=[{id:'c_pointes',n:'Pointes de sprint',c:'#e84a3a'},{id:'c_menthe',n:'Menthe',c:'#7ee0b0'},{id:'c_carbone',n:'Carbone',c:'#2a2a30'},{id:'c_glacier',n:'Glacier Pro',c:'#a8e8ff'},{id:'p_pointes_or',n:'Pointes d’or',c:'#ffd040'}];
+const SHOP_A=[{id:'a_bandeau',n:'Bandeau'},{id:'a_manchettes',n:'Manchettes'},{id:'a_lunettes',n:'Lunettes miroir'},{id:'a_montre',n:'Montre GPS'}];
+const a_moi=id=>{try{return !!(e.athShop&&e.athShop[id]);}catch(x){return false;}};
+(async()=>{try{for(let i=0;i<40&&!(typeof sb!=='undefined'&&sb&&sb.rpc);i++)await new Promise(r=>setTimeout(r,250));let data=null;if(typeof sb!=='undefined'&&sb&&sb.rpc){const {data:d,error}=await sb.rpc('athle_mes_articles');if(!error)data=d;}else if(typeof appelRPC==='function')data=await appelRPC('athle_mes_articles',{});if(Array.isArray(data)&&data.length){const m=Object.assign({},e.athShop||{});data.forEach(k=>m[k]=true);e.athShop=m;porter();try{sauver();}catch(x){}}}catch(x){}})();
+/* la liste de ce qu'on peut enfiler : les tenues gagnées en course, et celles achetées */
+function listeK(){return KITS.map((K,i)=>Object.assign({key:i},K)).concat(SHOP_K.filter(x=>a_moi(x.id)).map(x=>Object.assign({key:x.id,nv:0,achat:1},x)));}
+function listeS(){return SOULIERS.map((S,i)=>Object.assign({key:i},S)).concat(SHOP_S.filter(x=>a_moi(x.id)).map(x=>Object.assign({key:x.id,nv:0,achat:1},x)));}
+function listeA(){return [{key:'',n:'Aucun',nv:0}].concat(SHOP_A.filter(x=>a_moi(x.id)).map(x=>Object.assign({key:x.id,nv:0,achat:1},x)));}
+function kit(){let k={k:0,s:0,a:''};try{if(e.kitAthle&&typeof e.kitAthle==='object')k=Object.assign(k,e.kitAthle);}catch(x){}
+  const LK=listeK(),LS=listeS();let K=LK.find(x=>x.key===k.k)||LK[0],S=LS.find(x=>x.key===k.s)||LS[0];if(K.nv>cat())K=LK[0];if(S.nv>cat())S=LS[0];
+  const A=k.a&&a_moi(k.a)?k.a:'';
+  return {haut:4,veste:K.haut,_motif:0,motif:0,raye:0,bas:1,pantalon:K.bas,souliers:1,chaussures:S.c,sac:0,chapeau:0,cos:0,deguisement:0,maillot:0,gilet:0,patin:0,_civil:true,_acc:A||undefined};}
 function porter(){try{window.AP_FORCE=kit();}catch(x){}}
 porter();
-function vestiaires(){if(document.getElementById('pstV'))return;let sel={k:0,s:0};try{if(e.kitAthle)sel=Object.assign({},e.kitAthle);}catch(x){}
+function vestiaires(){if(document.getElementById('pstV'))return;let sel={k:0,s:0,a:''};try{if(e.kitAthle)sel=Object.assign(sel,e.kitAthle);}catch(x){}
   const d=document.createElement('div');d.id='pstV';
   d.style.cssText='position:fixed;inset:0;z-index:2147482500;background:rgba(10,16,24,.55);display:flex;align-items:flex-end;justify-content:center;font-family:"Baloo 2",system-ui,sans-serif';
-  const carte=(i,a,on)=>{const it=a==='k'?KITS[i]:SOULIERS[i],lk=it.nv>cat();return '<button data-'+a+'="'+i+'"'+(lk?' data-lock="1"':'')+' style="all:unset;box-sizing:border-box;cursor:pointer;position:relative;text-align:center;background:'+(on?'#fff6d8':'#fff')+';border:3px solid '+(on?'#16213a':'#e2d8c6')+';border-radius:6px;padding:4px 2px 6px;box-shadow:0 3px 0 '+(on?'#16213a':'#e2d8c6')+';'+(lk?'opacity:.55':'')+'"><canvas width="96" height="128" style="width:48px;height:64px;image-rendering:pixelated;display:block;margin:0 auto;'+(lk?'filter:grayscale(1)':'')+'"></canvas><span style="font:800 11px ui-monospace,monospace;color:#16213a">'+it.n+'</span>'+(lk?'<span style="display:block;font:800 10px ui-monospace,monospace;color:#c0392b">🔒 '+CATS[it.nv]+'</span>':'')+'</button>';};
+  const carte=(it,a,on)=>{const lk=it.nv>cat();return '<button data-'+a+'="'+it.key+'"'+(lk?' data-lock="1"':'')+' style="all:unset;box-sizing:border-box;cursor:pointer;position:relative;text-align:center;background:'+(on?'#fff6d8':'#fff')+';border:3px solid '+(on?'#16213a':'#e2d8c6')+';border-radius:6px;padding:4px 2px 6px;box-shadow:0 3px 0 '+(on?'#16213a':'#e2d8c6')+';'+(lk?'opacity:.55':'')+'"><canvas width="96" height="128" style="width:48px;height:64px;image-rendering:pixelated;display:block;margin:0 auto;'+(lk?'filter:grayscale(1)':'')+'"></canvas><span style="font:800 11px ui-monospace,monospace;color:#16213a">'+it.n+'</span>'+(lk?'<span style="display:block;font:800 10px ui-monospace,monospace;color:#c0392b">🔒 '+CATS[it.nv]+'</span>':it.achat?'<span style="display:block;font:800 9.5px ui-monospace,monospace;color:#2e7d4f">ATHLÉ SHOP</span>':'')+'</button>';};
+  const sect=(t)=>'<div style="font:900 11px ui-monospace,monospace;letter-spacing:2px;color:#c0392b;margin:12px 0 6px">'+t+'</div>';
   const rendre=()=>{d.innerHTML='<div style="width:min(460px,100%);max-height:88vh;overflow-y:auto;background:#f6efdc;border-radius:22px 22px 0 0;border-top:4px solid #16213a;padding:12px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.35)">'+
     '<div style="width:44px;height:5px;border-radius:3px;background:#d8ccb4;margin:0 auto 8px"></div><div style="text-align:center;font:900 22px Georgia,serif;color:#16213a">Les vestiaires</div>'+
-    '<div style="text-align:center;font:700 12px ui-monospace,monospace;color:#6a5a40;margin-bottom:10px">Sur la piste, on court léger : pas de sac.</div>'+
-    '<div style="text-align:center;font:700 11.5px ui-monospace,monospace;color:#2e5a3a;background:#e6f6e8;border-radius:4px;padding:5px;margin-bottom:8px">Ta catégorie : <b>'+CATS[cat()]+'</b> · gagne des courses pour débloquer les tenues 🔒</div>'+
-    '<div style="font:900 11px ui-monospace,monospace;letter-spacing:2px;color:#c0392b;margin:4px 0 6px">LE MAILLOT ET LE SHORT</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+KITS.map((_,i)=>carte(i,'k',i===sel.k)).join('')+'</div>'+
-    '<div style="font:900 11px ui-monospace,monospace;letter-spacing:2px;color:#c0392b;margin:12px 0 6px">LES CHAUSSURES DE COURSE</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+SOULIERS.map((_,i)=>carte(i,'s',i===sel.s)).join('')+'</div>'+
+    '<div style="text-align:center;font:700 11.5px ui-monospace,monospace;color:#2e5a3a;background:#e6f6e8;border-radius:4px;padding:5px;margin:6px 0 4px">Catégorie <b>'+CATS[cat()]+'</b> · 🔒 se gagnent en course · le reste s’achète à l’Athlé Shop</div>'+
+    sect('LE MAILLOT ET LE SHORT')+'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+listeK().map(it=>carte(it,'k',it.key===sel.k)).join('')+'</div>'+
+    sect('LES CHAUSSURES DE COURSE')+'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+listeS().map(it=>carte(it,'s',it.key===sel.s)).join('')+'</div>'+
+    sect('L’ACCESSOIRE')+'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+listeA().map(it=>carte(it,'a',it.key===(sel.a||''))).join('')+'</div>'+
     '<button data-ok="1" style="all:unset;box-sizing:border-box;display:block;width:100%;margin-top:14px;text-align:center;background:#16213a;color:#ffd860;border:4px solid #e8c050;box-shadow:0 0 0 3px #16213a;border-radius:4px;padding:12px;font:900 15px ui-monospace,monospace;letter-spacing:2px;cursor:pointer">ENFILER LA TENUE</button></div>';
-    d.querySelectorAll('canvas').forEach(cv=>{const b=cv.parentNode,isK=b.dataset.k!==undefined,i=+(isK?b.dataset.k:b.dataset.s);const q=cv.getContext('2d');q.imageSmoothingEnabled=false;
-      const keep=window.AP_FORCE;const save=e.kitAthle;e.kitAthle=isK?{k:i,s:sel.s}:{k:sel.k,s:i};const ap=Object.assign({},e.ap||{},kit());e.kitAthle=save;window.AP_FORCE=keep;
+    d.querySelectorAll('canvas').forEach(cv=>{const b=cv.parentNode,ds=b.dataset;const tmp=Object.assign({},sel);
+      if(ds.k!==undefined)tmp.k=isNaN(+ds.k)?ds.k:+ds.k;if(ds.s!==undefined)tmp.s=isNaN(+ds.s)?ds.s:+ds.s;if(ds.a!==undefined)tmp.a=ds.a;
+      const q=cv.getContext('2d');q.imageSmoothingEnabled=false;const save=e.kitAthle;e.kitAthle=tmp;const ap=Object.assign({},e.ap||{},kit());e.kitAthle=save;
       q.setTransform(2,0,0,2,0,0);try{personne(q,24,60,ap,'bas',0,false);}catch(x){}});};
   rendre();document.body.appendChild(d);
   d.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b){if(ev.target===d)d.remove();return;}
     if(b.dataset.lock){try{vibrer(30);}catch(x){}return;}
-    if(b.dataset.k!==undefined){sel.k=+b.dataset.k;rendre();}else if(b.dataset.s!==undefined){sel.s=+b.dataset.s;rendre();}
+    const v=x=>isNaN(+x)||x===''?x:+x;
+    if(b.dataset.k!==undefined){sel.k=v(b.dataset.k);rendre();}else if(b.dataset.s!==undefined){sel.s=v(b.dataset.s);rendre();}else if(b.dataset.a!==undefined){sel.a=b.dataset.a;rendre();}
     else if(b.dataset.ok){e.kitAthle=sel;porter();try{sauver();}catch(x){}d.remove();try{texteVolant(joueur.x,joueur.y-70,'Tenue enfilée !','#ffd860');}catch(x){}try{vibrer(12);}catch(x){}}});}
 
+async function ouvrirShop(){try{if(!window.ouvrirAthleShop)eval(await chargerMorceau('athleshop.js'));window.ouvrirAthleShop({kit:kit,ap:()=>e.ap,apres:()=>{porter();}});}catch(x){console.warn('SHOP',x);}}
 /* ---------- LE DÉCOR (des points d'action, tout le reste est au sol) ---------- */
 function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
   P('x_jol_pst_vide_sol',161,Y0+30,{col:[1,1],demi:60,agir:vestiaires,libelle:'Se changer',nom:'VESTIAIRES'});
+  P('x_jol_pst_vide_sol',482,Y0+22,{col:[1,1],demi:60,agir:ouvrirShop,libelle:'Entrer',nom:'ATHLÉ SHOP'});
   for(const D of DEPARTS)P('x_jol_pst_vide_sol',D.p[0],D.p[1]+(D.p[1]<CY?10:-10),{col:[1,1],demi:46,agir:()=>courir(D.ep),libelle:'Prendre le départ',nom:D.nom});
   return D;}
 const GRAVEURS={x_jol_pst_vide_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0})};
