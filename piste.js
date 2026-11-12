@@ -215,7 +215,7 @@ function solFin(){const c=document.createElement('canvas');c.width=W*2;c.height=
    tant qu'on est ici (window.AP_FORCE). */
 const KITS=[{n:'Phocéen',haut:'#7ac8f0',bas:'#ffffff',nv:0},{n:'Massilia',haut:'#ffffff',bas:'#1f5fa8',nv:1},{n:'Calanques',haut:'#1a1a22',bas:'#1a1a22',nv:2},{n:'Provence',haut:'#e84a3a',bas:'#ffffff',nv:3},{n:'Garrigue',haut:'#2e8a4a',bas:'#f2ead6',nv:4},{n:'Soleil',haut:'#f5c430',bas:'#1a1a22',nv:5},{n:'Or olympique',haut:'#e8c040',bas:'#e8c040',nv:6}];
 const SOULIERS=[{n:'Fluo',c:'#c8ff3a',nv:0},{n:'Corail',c:'#ff6a4a',nv:1},{n:'Glacier',c:'#5ae0ff',nv:2},{n:'Néon rose',c:'#ff4ab8',nv:3},{n:'Blanc pur',c:'#f6f6f6',nv:0},{n:'Noir mat',c:'#26262c',nv:4},{n:'Or olympique',c:'#ffd040',nv:6}];
-const CATS=['Débutant','Club','Régional','Interrégional','National','Élite','Olympique'];
+const CATS=['Débutant','Club','Régional','Interrégional','National','Élite','Olympique','Légende'];
 function cat(){let m=0;try{for(const k in (e.athNiv||{}))m=Math.max(m,e.athNiv[k]|0);}catch(x){}return m;}
 /* Ce qu'on a acheté à l'Athlé Shop (synchronisé avec le serveur à l'arrivée) */
 const SHOP_K=[{id:'m_retro',n:'Rétro 84',haut:'#f2ede2',bas:'#1f5fa8'},{id:'m_endoume',n:'Club d’Endoume',haut:'#2e8a4a',bas:'#ffffff'},{id:'m_turquoise',n:'Turquoise',haut:'#2ac0c8',bas:'#16213a'},{id:'m_nuit',n:'Nuit étoilée',haut:'#16213a',bas:'#16213a'},{id:'m_corail',n:'Corail',haut:'#ff7a5a',bas:'#ffffff'},{id:'p_legende',n:'Légende',haut:'#ffffff',bas:'#e8c040'}];
@@ -324,13 +324,14 @@ async function stade(){try{for(let i=0;i<40&&!(typeof sb!=='undefined'&&sb&&sb.r
 
 
 
+
 stade();setInterval(()=>{if(!document.hidden)stade();},60000);
 function acteurs(){return [{y:Y0-60,f:(g,camX,camY)=>{const x0=CX-camX,y0=-camY;if(x0<-260||x0>(g.canvas.width+260)||y0+250<0)return;
   g.save();g.translate(x0,y0);const T=(s,x,y,px,c,f)=>{g.fillStyle=c;g.font=(f||'900')+' '+px+'px ui-monospace,monospace';g.textAlign='center';g.textBaseline='middle';g.fillText(s,x,y);};
   g.fillStyle='#06070a';g.fillRect(-200,106,400,134);for(let y=108;y<238;y+=2){g.fillStyle='rgba(255,255,255,.03)';g.fillRect(-200,y,400,1);}
   const ST=window.ATH_STADE||null;let rec={},niv={};try{rec=e.chronos||{};niv=e.athNiv||{};}catch(x){}
   T(ST?'★ RECORDS DU STADE ★':'TES RECORDS',0,134,14,'#ffb030');
-  const CAT=['Débutant','Club','Régional','Interrég.','National','Élite','Olymp.'];
+  const CAT=['Débutant','Club','Régional','Interrég.','National','Élite','Olymp.','Légende'];
   EPS.forEach(([k,n],i)=>{const x=-171+i*57,r=rec['ath_'+k],sr=ST&&ST[k];g.fillStyle='#14161c';g.fillRect(x-26,152,52,82);g.fillStyle='#1f2430';g.fillRect(x-26,152,52,2);
     T(n,x,161,8,'#7ee08a');
     if(ST){T(sr?ft(sr.v/100,k):'—',x,175,10,sr?'#ff6a4a':'#5a3a30');T(sr?String(sr.p||'?').slice(0,8):'à prendre',x,187,7,sr?'#ffffff':'#6a6a74','800');

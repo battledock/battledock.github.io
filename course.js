@@ -24,9 +24,11 @@ const CLUBS=['AC Endoume','Phocée Athlé','SCO Sainte-Marguerite','Calanques Sp
 const PLANCHE=40;                                        /* la longueur : la planche d'appel, au bout de 40 m d'élan */
 const fm=(ep,v)=>EP[ep]&&EP[ep].long?(v==null||v<0?'X':v.toFixed(2)+' m'):fmt(v);
 const mieuxQue=(ep,a,b)=>b==null?true:EP[ep]&&EP[ep].long?a>b:a<b;
-const NIVEAUX=['Débutant','Club','Régional','Interrégional','National','Élite','Olympique'];
+const NIVEAUX=['Débutant','Club','Régional','Interrégional','National','Élite','Olympique','Légende'];
+/* la vitesse de pointe des adversaires selon la catégorie (le joueur plafonne vers 10,1 m/s, 10,5 au finish) */
+const VMAX_IA=[8.55,8.85,9.15,9.45,9.75,10.0,10.2,10.4];
 /* ce qu'apporte chaque catégorie : des adversaires plus rapides, et de nouvelles tenues aux vestiaires */
-const DEBLOQUE=['','le maillot Massilia et les chaussures Corail','le maillot Calanques et les chaussures Glacier','le maillot Provence et les chaussures Néon rose','le maillot Garrigue et les chaussures Noir mat','le maillot Soleil','la tenue Or olympique (maillot et chaussures)'];
+const DEBLOQUE=['','le maillot Massilia et les chaussures Corail','le maillot Calanques et les chaussures Glacier','le maillot Provence et les chaussures Néon rose','le maillot Garrigue et les chaussures Noir mat','le maillot Soleil','la tenue Or olympique (maillot et chaussures)','le rang de Légende du stade'];
 const NOMS=['Kévin Ruffo','Yanis Belkacem','Théo Marchetti','Ibrahim Diallo','Lucas Moreau','Enzo Castelli','Mehdi Saïdi','Hugo Lambert','Sami Ferhat','Nathan Rossi','Malik Traoré','Louis Garnier'];
 const STYLES={lievre:{n:'part fort',plan:f=>f<.55?1.02:.93},finisseur:{n:'finisseur',plan:f=>f<.72?.87:1.06},metronome:{n:'métronome',plan:f=>.93},regulier:{n:'régulier',plan:f=>f<.8?.91:1.02}};
 const MAILLOTS=[['#e84a3a','#ffffff'],['#1f5fa8','#ffffff'],['#f5c430','#1a1a22'],['#2e8a4a','#f2ead6'],['#7a2ab0','#1a1a22'],['#ffffff','#e84a3a'],['#1a1a22','#f5c430']];
@@ -127,7 +129,7 @@ function graverFoule(h,leve){const k0=Math.max(1,DPR*.8),L=Math.round(900*k0),c=
 /* --- la course --- */
 function bestNiv(){let m=0;try{for(const k in (e.athNiv||{}))m=Math.max(m,e.athNiv[k]|0);}catch(x){}return m;}
 let AVANT=0;function meilleur(n){return n>AVANT;}
-function niveau(ep){try{return Math.max(0,Math.min(6,(e.athNiv&&e.athNiv[ep])|0));}catch(x){return 0;}}
+function niveau(ep){try{return Math.max(0,Math.min(7,(e.athNiv&&e.athNiv[ep])|0));}catch(x){return 0;}}
 function record(ep){try{return e.chronos&&e.chronos['ath_'+ep]&&e.chronos['ath_'+ep].t||null;}catch(x){return null;}}
 function nouvelle(ep){const E=EP[ep],nv=niveau(ep);const noms=NOMS.slice().sort(()=>hasard()-.5);const styles=Object.keys(STYLES);
  const A=[];const couloirMoi=E.long?3:Math.floor(hasard()*6);
@@ -137,7 +139,7 @@ function nouvelle(ep){const E=EP[ep],nv=niveau(ep);const noms=NOMS.slice().sort(
   const equipe=E.relais?[0,1,2,3].map(j=>i===couloirMoi?(j===3?kit:Object.assign({},kit,{peau:1+(j*3+2)%6,cheveux:(j*4+1)%11,coiffe:(j*2+3)%8,barbe:j===1?2:0,_acc:undefined})):
     {peau:1+(i*5+j*2+nv)%6,cheveux:(i*3+j*5+2)%11,coiffe:(i*5+j)%8,barbe:(i+j)%4===1?2:0,haut:4,veste:mk[0],pantalon:mk[1],bas:1,souliers:1,chaussures:SOUL[(i+j+nv)%SOUL.length],sac:0,chapeau:0,raye:0,motif:0,_civil:true}):null;
   if(i===couloirMoi){A.push({moi:true,nom:E.relais?'Ton équipe':'Toi',c:i,vmax:9.55*kv,d:0,v:0,S:1,pas:0,fini:null,saut:-1,sautL:3.4,choc:0,reac:null,leg:0,equipe,ap:equipe?equipe[0]:null});continue;}
-  const a={moi:false,nom:E.relais?CLUBS[(i+nv)%CLUBS.length]:noms[i],c:i,style:E.d>=400&&!E.relais?styles[(i+nv)%styles.length]:'metronome',vmax:(8.55+nv*.2+(hasard()-.5)*.35)*kv,d:0,v:0,S:1,pas:0,fini:null,saut:-1,sautL:3.3,choc:0,reac:.12+hasard()*.1,leg:0,equipe,
+  const a={moi:false,nom:E.relais?CLUBS[(i+nv)%CLUBS.length]:noms[i],c:i,style:E.d>=400&&!E.relais?styles[(i+nv)%styles.length]:'metronome',vmax:(VMAX_IA[nv]+(hasard()-.5)*(nv>=5?.25:.35))*kv,d:0,v:0,S:1,pas:0,fini:null,saut:-1,sautL:3.3,choc:0,reac:Math.max(.1,.12+hasard()*.1-nv*.006),leg:0,equipe,
    ap:equipe?equipe[0]:{peau:1+(i*5+nv)%6,cheveux:(i*3+2)%11,coiffe:(i*5)%8,barbe:i%4===1?2:0,haut:4,veste:mk[0],pantalon:mk[1],bas:1,souliers:1,chaussures:SOUL[(i+nv)%SOUL.length],sac:0,chapeau:0,raye:0,motif:0,_civil:true}};
   /* à la longueur, les adversaires sautent hors champ : trois essais, leur meilleure marque */
   if(E.long){a.horsChamp=true;const base=5.45+nv*.38+(hasard()-.5)*.5;a.marks=[0,1,2].map(()=>hasard()<.2?-1:Math.round((base*(.93+hasard()*.07)+(vent||0)*.05)*100)/100);}
@@ -200,7 +202,7 @@ function courir(a,dts){const E=C.E;if(a.horsChamp)return;
  if(a.fini!==null){a.v*=Math.pow(.6,dts);a.d+=a.v*dts;return;}
  let effort;
  if(a.moi){if(a.reac===null){effort=0;}else effort=cadence()*(C.finish?1.06:1);}
- else{if(C.t-C.tPan<a.reac)effort=0;else{effort=STYLES[a.style].plan(a.d/E.d);if(E.d-a.d<E.fin*.6&&E.d>=400)effort=Math.max(effort,1.04);}}
+ else{if(C.t-C.tPan<a.reac)effort=0;else{effort=STYLES[a.style].plan(a.d/E.d);if(E.d-a.d<E.fin*.6&&E.d>=400)effort=Math.max(effort,1.04);if(E.d<400&&E.d-a.d<22&&C.nv>=3)effort=Math.max(effort,1+.008*C.nv);}}
  const fat=a.S<=0?.78:a.S<.25?.88+.48*a.S:1;
  let cible=a.vmax*effort*fat;if(a.choc>0){a.choc-=dts;cible*=.55;}
  a.v+=(cible-a.v)*Math.min(1,dts*(cible>a.v?(a.d<30?1.25:1.6):2.4));if(a.v<0)a.v=0;
@@ -389,7 +391,7 @@ function resultats(dq){if(!C||C.res)return;const E=C.E,M=C.moi;SON.foule(0);
  const venteux=C.vent!==null&&C.vent>2;
  const rec=record(C.ep),neuf=ok&&!venteux&&mieuxQue(C.ep,perf,rec);
  if(neuf){try{if(!e.chronos||typeof e.chronos!=='object')e.chronos={};e.chronos['ath_'+C.ep]={t:Math.round(perf*100)/100};}catch(x){}}
- AVANT=bestNiv();let monte=false;if(ok&&pl===1&&C.nv<6){try{if(!e.athNiv||typeof e.athNiv!=='object')e.athNiv={};e.athNiv[C.ep]=C.nv+1;monte=true;}catch(x){}}
+ AVANT=bestNiv();let monte=false;if(ok&&pl===1&&C.nv<7){try{if(!e.athNiv||typeof e.athNiv!=='object')e.athNiv={};e.athNiv[C.ep]=C.nv+1;monte=true;}catch(x){}}
  /* les médailles, et la photo rangée dans la vitrine */
  const med=ok&&pl<=3?['or','argent','bronze'][pl-1]:null;
  if(med){try{if(!e.athMed||typeof e.athMed!=='object')e.athMed={};e.athMed[med]=(e.athMed[med]|0)+1;}catch(x){}
@@ -400,7 +402,7 @@ function resultats(dq){if(!C||C.res)return;const E=C.E,M=C.moi;SON.foule(0);
  C.res={pl,ord,perf,dq,neuf,monte,med,rec,venteux,stadeBat};
  if(med){C.phase='podium';C.tp=0;C.ola=0;C.conf=[];C.remis=0;RAC.classList.add('cere');return;}
  carte();}
-function finPodium(){if(!C||C.phase!=='podium'||C.tp<4.6)return;C.phase='fini';RAC.classList.remove('cere');carte();}
+function finPodium(){if(!C||C.phase!=='podium'||C.tp<CERE.fin)return;C.phase='fini';RAC.classList.remove('cere');carte();}
 function carte(){const E=C.E,M=C.moi,{pl,ord,perf,dq,neuf,monte,med,rec,venteux,stadeBat}=C.res;
  const MED={or:'#f5c430',argent:'#d8dce2',bronze:'#d0884a'};
  const medaille=med?'<svg viewBox="0 0 14 18" width="56" shape-rendering="crispEdges"><path d="M3 0h3v6H3zM8 0h3v6H8z" fill="#1f5fa8"/><path d="M5 0h1v6H5zM8 0h1v6H8z" fill="#e84a3a"/><rect x="3" y="6" width="8" height="1" fill="#2a2016"/><rect x="2" y="7" width="10" height="10" fill="#2a2016"/><rect x="3" y="8" width="8" height="8" fill="'+MED[med]+'"/><rect x="4" y="9" width="3" height="2" fill="#fff" opacity=".6"/><rect x="6" y="11" width="2" height="3" fill="#2a2016" opacity=".35"/></svg>':'';
@@ -417,7 +419,7 @@ function carte(){const E=C.E,M=C.moi,{pl,ord,perf,dq,neuf,monte,med,rec,venteux,
   '<div class="gen">Classement général : <b>…</b></div>'+
   '<div class="paie"><span>PRIME DE COURSE</span><b>…</b></div>'+
   (monte?'<div class="up"><b>⬆ Catégorie '+NIVEAUX[C.nv+1]+'</b><span>Adversaires plus forts au '+E.nom+'.'+(meilleur(C.nv+1)&&DEBLOQUE[C.nv+1]?' Débloqué aux vestiaires : '+DEBLOQUE[C.nv+1]+' !':'')+'</span></div>':
-   (!dq&&pl>1&&C.nv<6?'<p class="up2">Gagne pour passer en catégorie <b>'+NIVEAUX[C.nv+1]+'</b>'+(DEBLOQUE[C.nv+1]?' et débloquer '+DEBLOQUE[C.nv+1]:'')+'.</p>':''))+
+   (!dq&&pl>1&&C.nv<7?'<p class="up2">Gagne pour passer en catégorie <b>'+NIVEAUX[C.nv+1]+'</b>'+(DEBLOQUE[C.nv+1]?' et débloquer '+DEBLOQUE[C.nv+1]:'')+'.</p>':''))+
   '<button class="b1">'+(E.long?'Nouveau concours':'Recourir')+'</button><button class="b2">Retour au stade</button></div>';
  RAC.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));
  d.querySelector('.b1').onclick=()=>{d.remove();nouvelle(C.ep);};d.querySelector('.b2').onclick=fermer;
@@ -435,67 +437,83 @@ function carte(){const E=C.E,M=C.moi,{pl,ord,perf,dq,neuf,monte,med,rec,venteux,
    if(typeof q.euros==='number'){try{e.euros=q.euros;sauver();}catch(x){}try{majHaut();}catch(x){}}try{lireNiveau(false);}catch(x){}}
   else if(q&&q.erreur==='trop rapide')pb.textContent='—';else pb.parentNode.remove();})();}
 /* LA CÉRÉMONIE : le podium au milieu du stade, les trois premiers médaillés, les flashs de la tribune */
-/* un athlète de face, bras levés : on dessine le sprite à part, on efface ses bras le long du corps,
-   puis on les redessine tendus vers le ciel (sinon on voyait quatre bras) */
+/* LES VRAIS BRAS LEVÉS : on dessine le sprite de face à part, on découpe ses deux bras (les pixels
+   hors du torse, de l'épaule à la main), puis on les recolle retournés autour de l'épaule : ce sont
+   exactement les bras du personnage, main en haut. */
 const BRAS={};function brasLeves(ap){const k=JSON.stringify(ap);if(BRAS[k])return BRAS[k];
- const c=document.createElement('canvas');c.width=48;c.height=80;const q=c.getContext('2d');q.imageSmoothingEnabled=false;try{personne(q,24,72,ap,'bas',0,false);}catch(z){}
- const D=q.getImageData(0,0,48,80),W=48;const peau=couleurs(ap).peau;
- /* les bras : les colonnes hors du torse, de l'épaule à la main */
- for(let y=72-35;y<72-17;y++)for(let x=0;x<48;x++){const dx=x-24;if(dx<-5||dx>4){const i=(y*W+x)*4;D.data[i+3]=0;}}
- q.putImageData(D,0,0);
- const R=(x,y,w,h,col)=>{q.fillStyle=col;q.fillRect(24+x,72+y,w,h);};
- for(const sx of [-1,1]){const x0=sx<0?-9:6;R(x0-1,-51,5,17,'#1a1a22');R(x0,-50,3,15,peau);R(x0-1,-54,5,4,'#1a1a22');R(x0,-53,3,3,peau);R(x0,-50,1,15,'rgba(255,255,255,.18)');}
- BRAS[k]=c;return c;}
-/* LA CÉRÉMONIE DES MÉDAILLES : la nuit tombe sur le stade, des projecteurs sur le podium.
-   Bronze, puis argent, puis or, une à une ; les drapeaux montent ; le vainqueur lève les bras ; confettis. */
-function podium(g,Q){const {W2,H2,u,yT,yM,yP,yBas}=Q;const {ord,perf}=C.res;const T=C.tp,E=C.E;
+ const c=document.createElement('canvas');c.width=48;c.height=84;const q=c.getContext('2d');q.imageSmoothingEnabled=false;try{personne(q,24,76,ap,'bas',0,false);}catch(z){}
+ const D=q.getImageData(0,0,48,84),W=48,src=new Uint8ClampedArray(D.data),ys=76-34;
+ for(let y=76-35;y<76-16;y++)for(let x=0;x<48;x++){const dx=x-24;if(dx<-5||dx>4){const i=(y*W+x)*4;D.data[i+3]=0;}}
+ for(let y=ys+1;y<76-16;y++)for(let x=0;x<48;x++){const dx=x-24;if(!(dx<-5||dx>4))continue;const i=(y*W+x)*4;if(src[i+3]<20)continue;
+  const y2=2*ys-y,x2=x+(dx<0?-1:1);if(y2<0)continue;const j=(y2*W+x2)*4;D.data[j]=src[i];D.data[j+1]=src[i+1];D.data[j+2]=src[i+2];D.data[j+3]=src[i+3];}
+ q.putImageData(D,0,0);BRAS[k]=c;return c;}
+/* LA CÉRÉMONIE DES MÉDAILLES, en quatre temps :
+   1. la nuit tombe, les trois médaillés entrent en marchant et montent sur leur marche ;
+   2. bronze, argent, puis or : chaque médaille descend sur la poitrine, sous un projecteur ;
+   3. le vainqueur lève les bras, la foule se lève, confettis et flashs ;
+   4. le bouton CONTINUER s'allume. */
+const CERE={entree:0,montee:2.3,bronze:2.9,argent:3.7,or:4.5,joie:5,fin:5.8,auto:14};
+function podium(g,Q){const {W2,H2,u,yT,yM,yP,yBas}=Q;const {ord}=C.res;const T=C.tp,E=C.E;
  const fmA=a=>E.long?fm(C.ep,a.best):fm(C.ep,a.fini);
- g.drawImage(BG,0,0);tuile(g,T>3&&Math.floor(T*3)%2?FOULE2:FOULE,0,yT,W2);g.fillStyle='#141a2a';g.fillRect(0,0,W2,yT);tuile(g,BACH,0,yM,W2);tuile(g,PISTE,0,yP,W2);
- /* la nuit : un voile sombre, puis les projecteurs */
- g.fillStyle='rgba(6,10,24,'+Math.min(.72,T*.9)+')';g.fillRect(0,0,W2,H2);
- const sc=Math.max(1,Math.round(H2*.2/62*4)/4),bw=Math.round(Math.min(W2*.27,64*sc)),bx=W2/2,base=yBas-6*u;
- const B=[[bx-bw,30*sc,2],[bx,46*sc,1],[bx+bw,20*sc,3]];
- const remise=n=>n===3?1:n===2?2:3;      /* l'instant (s) où chaque médaille est remise */
+ /* le décor : le stade de nuit */
+ g.drawImage(BG,0,0);tuile(g,T>CERE.joie&&Math.floor(T*3)%2?FOULE2:FOULE,0,yT,W2);g.fillStyle='#10162a';g.fillRect(0,0,W2,yT);tuile(g,BACH,0,yM,W2);tuile(g,PISTE,0,yP,W2);
+ g.fillStyle='rgba(6,10,26,'+Math.min(.74,.25+T*.6)+')';g.fillRect(0,0,W2,H2);
+ const sc=Math.max(1,Math.round(H2*.19/62*4)/4),bw=Math.round(Math.min(W2*.29,70*sc)),bx=Math.round(W2/2),base=Math.round(yBas-4*u);
+ const B={1:[bx,58*sc],2:[bx-bw,44*sc],3:[bx+bw,34*sc]};
+ const tMed={3:CERE.bronze,2:CERE.argent,1:CERE.or};
+ /* le tapis rouge devant le podium */
+ g.fillStyle='#7a1c22';g.fillRect(bx-bw*1.6,base,bw*3.2,yBas-base+4*u);g.fillStyle='#9a2a30';g.fillRect(bx-bw*1.6,base,bw*3.2,2*u);
+ /* les projecteurs : un par marche, allumés au moment de la médaille */
  g.save();g.globalCompositeOperation='lighter';
- for(const [x,h,n] of B){const on=T>remise(n)-.5;if(!on)continue;const a=Math.min(1,(T-remise(n)+.5)*2)*(n===1?.55:.36);
-  const gr=g.createLinearGradient(0,0,0,base);gr.addColorStop(0,'rgba(255,240,200,0)');gr.addColorStop(1,'rgba(255,236,190,'+a+')');g.fillStyle=gr;
-  g.beginPath();g.moveTo(x-8*u,0);g.lineTo(x+8*u,0);g.lineTo(x+bw*.62,base);g.lineTo(x-bw*.62,base);g.fill();
-  g.fillStyle='rgba(255,236,190,'+(a*.6)+')';g.beginPath();g.ellipse(x,base-h,bw*.6,7*u,0,0,7);g.fill();}
+ for(const n of [3,2,1]){const [x,h]=B[n],dt=T-tMed[n]+.35;if(dt<0)continue;const a=Math.min(1,dt*2.5)*(n===1?.5:.32);
+  const gr=g.createLinearGradient(0,yM,0,base);gr.addColorStop(0,'rgba(255,240,205,0)');gr.addColorStop(1,'rgba(255,236,195,'+a+')');g.fillStyle=gr;
+  g.beginPath();g.moveTo(x-6*u,yM);g.lineTo(x+6*u,yM);g.lineTo(x+bw*.58,base-h);g.lineTo(x-bw*.58,base-h);g.fill();}
  g.restore();
- /* le podium */
- g.fillStyle='rgba(0,0,0,.35)';g.fillRect(bx-bw*1.5,base,bw*3,5*u);
- for(const [x,h,n] of B){const lit=T>remise(n)-.5;g.fillStyle=lit?'#f4f1e8':'#8c8a84';g.fillRect(Math.round(x-bw/2),Math.round(base-h),bw,Math.round(h));g.fillStyle=lit?'#dcd6c6':'#74726c';g.fillRect(Math.round(x-bw/2),Math.round(base-h),bw,Math.round(3*u));g.fillStyle='#1f5fa8';g.fillRect(Math.round(x-bw/2),Math.round(base-6*u),bw,Math.round(6*u));
-  g.fillStyle='#16213a';g.font='900 '+Math.round(Math.min(h*.6,26*u))+'px Georgia,serif';g.textAlign='center';g.textBaseline='middle';g.fillText(String(n),x,base-h/2-2*u);}
- /* les trois athlètes */
- for(const [x,h,n] of B){const a=ord[n-1];if(!a)continue;const ap=a.moi?Object.assign({},ARGS&&ARGS.ap||{},ARGS&&ARGS.kit||{}):(a.equipe?a.equipe[3]:a.ap);
-  const t0=remise(n),eu=T>t0,joie=n===1&&T>3.2;const hop=joie?Math.abs(Math.sin((T-3.2)*5))*4*sc:0,yy=Math.round(base-h-hop);
-  g.save();g.translate(Math.round(x),yy);g.scale(sc,sc);g.imageSmoothingEnabled=false;
-  if(joie){g.drawImage(brasLeves(ap),-24,-72);}else{try{personne(g,0,0,ap,'bas',0,false);}catch(z){}}
-  /* la médaille : elle descend sur la poitrine au moment de la remise */
-  if(eu){const k=Math.min(1,(T-t0)*3),mc=['#f5c430','#d8dce2','#d0884a'][n-1],dy=(1-k)*-14;g.globalAlpha=k;
-   g.fillStyle='#1f5fa8';g.fillRect(-4,-36+dy,2,7);g.fillRect(2,-36+dy,2,7);g.fillStyle='#2a2016';g.fillRect(-3,-30+dy,6,6);g.fillStyle=mc;g.fillRect(-2,-29+dy,4,4);g.fillStyle='rgba(255,255,255,.7)';g.fillRect(-2,-29+dy,2,1);g.globalAlpha=1;
-   /* l'éclat au moment de la remise */
-   if(T-t0<.5){g.fillStyle='rgba(255,255,220,'+(1-(T-t0)*2)+')';const r=4+(T-t0)*20;g.fillRect(-r/2,-27-.5,r,1);g.fillRect(-.5,-27-r/2,1,r);}}
+ /* le podium : trois marches blanches, ombrées, le chiffre et la plaque du médaillé sur la face */
+ g.fillStyle='rgba(0,0,0,.4)';g.fillRect(bx-bw*1.5,base,bw*3,4*u);
+ for(const n of [2,1,3]){const [x,h]=B[n],x0=Math.round(x-bw/2),y0=Math.round(base-h),lit=T>tMed[n]-.35;
+  g.fillStyle=lit?'#f4f1e8':'#9a978e';g.fillRect(x0,y0,bw,Math.round(h));
+  g.fillStyle=lit?'#ffffff':'#aaa79e';g.fillRect(x0,y0,bw,Math.round(2*u));
+  g.fillStyle=lit?'#d8d2c2':'#7e7b74';g.fillRect(x0,y0+Math.round(2*u),bw,Math.round(2*u));g.fillRect(x0+bw-Math.round(3*u),y0,Math.round(3*u),Math.round(h));
+  g.fillStyle='#1f5fa8';g.fillRect(x0,base-Math.round(5*u),bw,Math.round(5*u));
+  g.fillStyle=lit?'#16213a':'#4a4a4a';g.font='900 '+Math.round(16*u)+'px Georgia,serif';g.textAlign='center';g.textBaseline='middle';g.fillText(String(n),x,y0+Math.round(13*u));
+  const a=ord[n-1];if(a&&T>tMed[n]){const nm=a.moi?(E.relais?'Ton équipe':'Toi'):a.nom,al=Math.min(1,(T-tMed[n])*3);g.globalAlpha=al;
+   g.font='800 '+Math.round(8.5*u)+'px ui-monospace,monospace';g.fillStyle=a.moi?'#b8860b':'#16213a';g.fillText(nm.length>13?nm.slice(0,12)+'.':nm,x,y0+Math.round(26*u));
+   g.font='700 '+Math.round(8*u)+'px ui-monospace,monospace';g.fillStyle='#5a6478';g.fillText(fmA(a),x,y0+Math.round(36*u));g.globalAlpha=1;}}
+ /* les trois médaillés : entrée en marchant depuis la gauche, montée sur la marche, de face */
+ const file=[3,1,2];                       /* l'ordre de la file : le 3e ouvre la marche */
+ for(const n of [2,3,1]){const a=ord[n-1];if(!a)continue;const ap=a.moi?Object.assign({},ARGS&&ARGS.ap||{},ARGS&&ARGS.kit||{}):(a.equipe?a.equipe[3]:a.ap);
+  const [x,h]=B[n],rang=file.indexOf(n),dep=-30*u-rang*42*u,vit=W2*.42,tArr=(x-dep)/vit;
+  let px,py,dir='bas',marche=false,pas=0;const t=T-CERE.entree;
+  if(t<tArr){px=dep+vit*t;py=base;dir='droite';marche=true;pas=t*10;}
+  else{const th=Math.min(1,(t-tArr)/.32);px=x;py=base-h*th-Math.sin(Math.PI*th)*9*sc;dir=th<1?'droite':'bas';}
+  const joie=n===1&&T>CERE.joie,hop=joie?Math.abs(Math.sin((T-CERE.joie)*4.5))*4*sc:0;py=Math.round(py-hop);px=Math.round(px);
+  g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.ellipse(px,Math.round(dir==='bas'?base-h:base)+u,8*sc,2.2*sc,0,0,7);g.fill();
+  g.save();g.translate(px,py);g.scale(sc,sc);g.imageSmoothingEnabled=false;
+  if(joie)g.drawImage(brasLeves(ap),-24,-76);else{try{personne(g,0,0,ap,dir,pas,marche);}catch(z){}}
+  /* la médaille descend sur la poitrine */
+  if(T>tMed[n]){const k=Math.min(1,(T-tMed[n])*2.6),mc=['#f5c430','#d8dce2','#d0884a'][n-1],dy=Math.round((1-k)*-16);
+   g.fillStyle='#1f5fa8';g.fillRect(-4,-36+dy,2,7);g.fillRect(2,-36+dy,2,7);g.fillStyle='#e84a3a';g.fillRect(-3,-36+dy,1,6);g.fillRect(3,-36+dy,1,6);
+   g.fillStyle='#2a2016';g.fillRect(-3,-30+dy,6,6);g.fillStyle=mc;g.fillRect(-2,-29+dy,4,4);g.fillStyle='rgba(255,255,255,.75)';g.fillRect(-2,-29+dy,2,1);
+   if(T-tMed[n]<.45&&k>=1){const r=Math.round(3+(T-tMed[n])*18);g.fillStyle='rgba(255,255,225,'+(1-(T-tMed[n])/.45)+')';g.fillRect(-r,-27,2*r,1);g.fillRect(0,-27-r,1,2*r);}}
   g.restore();
-  if(a.moi){g.fillStyle='#ffd860';g.beginPath();g.moveTo(x-5*u,yy-62*sc);g.lineTo(x+5*u,yy-62*sc);g.lineTo(x,yy-55*sc);g.fill();}
-  /* le nom et la marque, qui s'affichent avec la médaille */
-  if(eu){const nm=a.moi?(E.relais?'Ton équipe':'Toi'):a.nom;g.font='800 '+(10*u)+'px ui-monospace,monospace';g.textAlign='center';g.textBaseline='middle';const tw=Math.max(g.measureText(nm).width,g.measureText(fmA(a)).width);
-   g.fillStyle='rgba(10,14,24,.9)';g.fillRect(x-tw/2-5*u,base+6*u,tw+10*u,27*u);g.fillStyle=a.moi?'#ffd860':'#fff';g.fillText(nm,x,base+13*u);g.fillStyle='#8ab0d8';g.fillText(fmA(a),x,base+25*u);}}
- /* les flashs des photographes, de plus en plus nombreux */
- const nf=T<1?2:T<3?5:10;for(let k=0;k<nf;k++){const ph=(T*1.9+hA(k,3,4))%1;if(ph<.1){const cyc=Math.floor(T*1.9+hA(k,3,4));g.fillStyle='rgba(255,255,255,'+(1-ph/.1)+')';g.beginPath();g.arc(hA(k,cyc,5)*W2,yT+hA(k,cyc,6)*(yM-yT),(3+7*(1-ph/.1))*u,0,7);g.fill();}}
- /* les confettis, lâchés avec l'or */
- if(T>3&&T<6.5&&C.conf.length<160)for(let k=0;k<4;k++)C.conf.push({x:Math.random()*W2,y:-10*u,vx:(Math.random()-.5)*40*u,vy:(50+Math.random()*70)*u,c:['#f5c430','#e84a3a','#ffffff','#3ac0e8','#7ee08a'][Math.floor(Math.random()*5)],r:Math.random()*6});
+  if(a.moi&&dir==='bas'){g.fillStyle='#ffd860';g.beginPath();g.moveTo(px-5*u,py-64*sc);g.lineTo(px+5*u,py-64*sc);g.lineTo(px,py-57*sc);g.fill();}}
+ /* les flashs des photographes dans la tribune, de plus en plus nombreux */
+ const nf=T<CERE.bronze?1:T<CERE.joie?4:11;for(let k=0;k<nf;k++){const ph=(T*1.9+hA(k,3,4))%1;if(ph<.1){const cy=Math.floor(T*1.9+hA(k,3,4));g.fillStyle='rgba(255,255,255,'+(1-ph/.1)+')';g.beginPath();g.arc(hA(k,cy,5)*W2,yT+hA(k,cy,6)*(yM-yT),(2+6*(1-ph/.1))*u,0,7);g.fill();}}
+ /* les confettis avec la joie du vainqueur */
+ if(T>CERE.joie&&T<CERE.joie+3.5&&C.conf.length<170)for(let k=0;k<4;k++)C.conf.push({x:Math.random()*W2,y:-8*u,vx:(Math.random()-.5)*36*u,vy:(48+Math.random()*64)*u,c:['#f5c430','#e84a3a','#ffffff','#3ac0e8','#7ee08a'][Math.floor(Math.random()*5)],r:Math.random()*6});
  for(const p of C.conf){p.x+=p.vx/60;p.y+=p.vy/60;p.r+=.1;g.fillStyle=p.c;g.fillRect(Math.round(p.x),Math.round(p.y),Math.round((2+Math.abs(Math.sin(p.r))*2)*u),Math.round(3*u));}C.conf=C.conf.filter(p=>p.y<H2);
- /* les sons : une note à chaque médaille, la foule avec l'or */
- for(const n of [3,2,1])if(T>remise(n)&&!(C.remis&(1<<n))){C.remis|=1<<n;try{n===1?SON.fin():SON.haie();}catch(z){}vib(n===1?[30,40,60]:15);}
- /* le titre */
- const titre=C.res.pl===1?(E.relais?'Ton équipe championne !':'Médaille d’or !'):C.res.pl===2?'Médaille d’argent !':'Médaille de bronze !';
- const ty=H2*.07,ap=Math.min(1,Math.max(0,(T-(C.res.pl===1?3:C.res.pl===2?2:1))*2));
- g.fillStyle='rgba(10,14,24,.75)';g.fillRect(0,ty,W2,58*u);g.textAlign='center';g.textBaseline='middle';
- g.fillStyle='#8ab0d8';g.font='900 '+(10*u)+'px ui-monospace,monospace';g.fillText('CÉRÉMONIE DES MÉDAILLES · '+E.nom.toUpperCase(),W2/2,ty+14*u);
- g.globalAlpha=ap;g.fillStyle='#ffd860';g.font='900 '+(22*u)+'px Georgia,serif';g.fillText(titre,W2/2,ty+38*u);g.globalAlpha=1;
- const cb=RAC&&RAC.querySelector('.cnt button');if(cb){const pr=T>4.6;cb.disabled=!pr;cb.textContent=pr?'CONTINUER':'Remise des médailles…';}
- if(T>11)finPodium();}
+ /* les sons */
+ for(const n of [3,2,1])if(T>tMed[n]&&!(C.remis&(1<<n))){C.remis|=1<<n;try{SON.haie();}catch(z){}vib(15);}
+ if(T>CERE.joie&&!(C.remis&1)){C.remis|=1;try{SON.fin();}catch(z){}vib([30,40,60]);}
+ /* le bandeau du haut */
+ const pl=C.res.pl,titre=pl===1?(E.relais?'Ton équipe championne !':'Médaille d’or !'):pl===2?'Médaille d’argent !':'Médaille de bronze !';
+ const ty=Math.round(H2*.06),apT=Math.min(1,Math.max(0,(T-tMed[pl])*2));
+ g.fillStyle='rgba(8,12,22,.82)';g.fillRect(0,ty,W2,Math.round(56*u));g.fillStyle='#e8c050';g.fillRect(0,ty,W2,Math.round(2*u));g.fillRect(0,ty+Math.round(54*u),W2,Math.round(2*u));
+ g.textAlign='center';g.textBaseline='middle';g.fillStyle='#8ab0d8';g.font='900 '+Math.round(9.5*u)+'px ui-monospace,monospace';g.fillText('CÉRÉMONIE DES MÉDAILLES · '+E.nom.toUpperCase()+' · '+NIVEAUX[C.nv].toUpperCase(),W2/2,ty+Math.round(14*u));
+ g.globalAlpha=apT;g.fillStyle='#ffd860';g.font='900 '+Math.round(21*u)+'px Georgia,serif';g.fillText(titre,W2/2,ty+Math.round(36*u));g.globalAlpha=1;
+ const cb=RAC&&RAC.querySelector('.cnt button');if(cb){const pr=T>CERE.fin;if(cb.disabled===pr){cb.disabled=!pr;cb.textContent=pr?'CONTINUER':'Remise des médailles…';}}
+ if(T>CERE.auto)finPodium();}
 
 function choisir(eps){const d=document.createElement('div');d.className='res on';
  d.innerHTML='<div class="c"><small>LIGNE DE DÉPART</small><h2>Quelle course ?</h2>'+eps.map(k=>{const r=record(k);return '<button class="ch" data-k="'+k+'"><b>'+EP[k].nom+'</b><span>Catégorie '+NIVEAUX[niveau(k)]+(r?' · record '+fm(k,r):'')+'</span></button>';}).join('')+'<button class="b2">Retour</button></div>';
