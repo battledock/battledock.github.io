@@ -61,22 +61,38 @@ const T2=(hex,d)=>{const v=parseInt(String(hex).slice(1),16);const f=k=>Math.max
 function couleurs(ap){let P={};try{P=PALETTES;}catch(x){}const pk=(v,l,d)=>typeof v==='string'&&v[0]==='#'?v:((l&&l[v])||d);
  return {peau:pk(ap.peau,P.peau,'#e8c49a'),chev:pk(ap.cheveux,P.cheveux,'#2b1d12'),haut:pk(ap.veste,P.veste,'#7ac8f0'),bas:pk(ap.pantalon,P.pantalon,'#ffffff'),chau:pk(ap.chaussures,P.chaussures,'#c8ff3a')};}
 function membre(g,a,b,w,c){g.strokeStyle=c;g.lineWidth=w;g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();}
-function poser(g,ap,nom,x,y,sc,flip){const P=POSES[nom],c=couleurs(ap||{});g.save();g.translate(x,y);g.scale(sc*(flip?-1:1),sc);g.lineCap='square';g.lineJoin='miter';
- const mid=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
- /* le bras et la jambe du fond, plus sombres */
- membre(g,P.sh,P.e2,3,T2(c.peau,-30));membre(g,P.e2,P.h2,2.6,T2(c.peau,-30));
- membre(g,P.hip,P.k2,5,T2(c.bas,-40));membre(g,mid(P.hip,P.k2,.55),P.k2,4,T2(c.peau,-30));membre(g,P.k2,P.f2,3.6,T2(c.peau,-30));
- g.fillStyle=T2(c.chau,-40);g.fillRect(P.f2[0]-1,P.f2[1]-2,5,2.6);
- /* le buste : le débardeur, le short */
- const sh=P.sh,hp=P.hip;membre(g,hp,sh,7,c.haut);membre(g,mid(hp,sh,.85),sh,5,T2(c.haut,20));membre(g,hp,mid(hp,sh,.22),7.4,c.bas);
- /* la tête et les cheveux */
- const [hx,hy]=P.hd;g.fillStyle=c.peau;g.fillRect(hx-4,hy-4,8,9);g.fillStyle=T2(c.peau,-30);g.fillRect(hx-4,hy+3,8,2);membre(g,mid(sh,P.hd,.2),[hx-1,hy+4],3,c.peau);
- g.fillStyle=c.chev;g.fillRect(hx-5,hy-6,9,4);g.fillRect(hx-5,hy-3,3,4);g.fillStyle='#1a1a1e';g.fillRect(hx+2,hy-1,1.4,1.6);
- /* la jambe et le bras de devant */
- membre(g,P.hip,P.k1,5,c.bas);membre(g,mid(P.hip,P.k1,.55),P.k1,4.4,c.peau);membre(g,P.k1,P.f1,3.8,c.peau);
- g.fillStyle=c.chau;g.fillRect(P.f1[0]-1,P.f1[1]-2.4,6,2.8);g.fillStyle=T2(c.chau,40);g.fillRect(P.f1[0]-1,P.f1[1]-2.4,6,.8);
- membre(g,P.sh,P.e1,3.2,c.peau);membre(g,P.e1,P.h1,2.8,c.peau);
- g.restore();return P;}
+/* LES POSES SONT FAITES AVEC LE VRAI SPRITE : on dessine l'athlète une fois (personne(), en 2×)
+   dans une petite toile, puis on le découpe à la ceinture et on fait pivoter le buste et les
+   jambes. Mêmes pixels, même tête, même tenue que pendant la course — rien n'est redessiné. */
+const SPR=new Map();
+function sprite(ap,dir,pas,court){const k=JSON.stringify(ap)+'|'+dir+'|'+pas+'|'+court;let c=SPR.get(k);if(c)return c;
+ c=document.createElement('canvas');c.width=112;c.height=150;const q=c.getContext('2d');q.imageSmoothingEnabled=false;q.setTransform(2,0,0,2,0,0);
+ try{const sv=GESTE;GESTE={t:0};personne(q,28,68,ap,dir,pas,court,court);GESTE=sv;}catch(x){}
+ if(SPR.size>80)SPR.clear();SPR.set(k,c);return c;}
+const HANCHE=-19;                     /* la ceinture, en points du jeu au-dessus des pieds */
+/* un morceau du sprite (lignes y0..y1, en points au-dessus des pieds), pivoté autour de la hanche */
+function morceau(g,c,y0,y1,ang,hx,hy,sy){const Y0=(68+y0)*2,Y1=(68+y1)*2;g.save();g.translate(hx,hy);g.rotate(ang);g.scale(.5,.5*(sy||1));
+ g.drawImage(c,0,Y0,112,Y1-Y0,-56,(y0-HANCHE)*2,112,Y1-Y0);g.restore();}
+/* un bras ajouté, dans le style du sprite : deux points de large, liseré sombre */
+function bras(g,ap,pts){const cc=couleurs(ap||{});g.lineCap='square';g.lineJoin='miter';
+ for(const [w,c] of [[3.2,'#2a1a10'],[2,cc.peau]]){g.strokeStyle=c;g.lineWidth=w;g.beginPath();g.moveTo(pts[0][0],pts[0][1]);for(const p of pts.slice(1))g.lineTo(p[0],p[1]);g.stroke();}
+ const h=pts[pts.length-1];g.fillStyle='#2a1a10';g.fillRect(h[0]-1.6,h[1]-1.6,3.2,3.2);g.fillStyle=cc.peau;g.fillRect(h[0]-1,h[1]-1,2,2);}
+function poser(g,ap,nom,x,y,sc,flip){ap=ap||{};g.save();g.translate(x,y);g.scale(sc*(flip?-1:1),sc);g.imageSmoothingEnabled=false;
+ const foulee=sprite(ap,'droite',0,true),debout=sprite(ap,'droite',0,false);
+ if(nom==='marques'){/* genou au sol, buste presque à l'horizontale, mains sur la ligne */
+  morceau(g,foulee,HANCHE,4,0,0,-11,.58);morceau(g,foulee,-70,HANCHE,1.22,0,-11);}
+ else if(nom==='prets'){/* les hanches montent au-dessus des épaules */
+  morceau(g,foulee,HANCHE,4,-.12,0,HANCHE+.5);morceau(g,foulee,-70,HANCHE,1.0,0,HANCHE);}
+ else if(nom==='haie'){/* jambe d'attaque lancée devant, buste penché sur la haie */
+  morceau(g,foulee,HANCHE,4,-.62,0,HANCHE);morceau(g,foulee,-70,HANCHE,.42,0,HANCHE);}
+ else if(nom==='dip'){/* le plongeon du buste sur la ligne */
+  morceau(g,foulee,HANCHE,4,0,0,HANCHE);morceau(g,foulee,-70,HANCHE,.55,0,HANCHE);}
+ else if(nom==='fete'){/* un petit bond, le poing levé */
+  morceau(g,debout,-70,4,0,0,HANCHE);bras(g,ap,[[-2,-35],[-5,-44],[-4,-52]]);}
+ else if(nom==='starter'){/* le bras tendu vers le ciel, le pistolet au bout */
+  morceau(g,debout,-70,4,0,0,HANCHE);bras(g,ap,[[-2,-35],[-1,-45],[0,-55]]);g.fillStyle='#2a2e36';g.fillRect(-1,-60,5,3);g.fillRect(-1,-58,2,3);}
+ else morceau(g,debout,-70,4,0,0,HANCHE);
+ g.restore();}
 
 /* --- la foule de la tribune, dessinée une fois, qui défile en fond --- */
 function graverFoule(h,leve){const k0=Math.max(1,DPR*.8),L=Math.round(900*k0),c=document.createElement('canvas');c.width=L;c.height=h;const g=c.getContext('2d');g.imageSmoothingEnabled=false;
