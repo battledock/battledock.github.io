@@ -14628,7 +14628,7 @@ nettoyerBulles();
 const acteurs=[{y:joueur.y,
 f:()=>{if(CARTE==='tokyo'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif){try{TKM.dessinerEssai(ctx,camX,camY);}catch(x){}return;}try{const m=ctx.getTransform();JOUEUR_ECRAN={x:m.a*px+m.e,y:m.d*(py-18)+m.f,sc:m.a/3};}catch(x){}return personne(ctx,px,py,e.ap,(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche,court);}}];
 if(JOL&&JOL.acteurs){try{for(const a of JOL.acteurs())acteurs.push({y:a.y,f:()=>{try{a.f(ctx,camX,camY);}catch(x){}}});}catch(x){}}
-if(JOL&&JOL.figurants){try{for(const f of JOL.figurants())acteurs.push({y:f.y,f:()=>{try{const s=GESTE;GESTE={t:0};personne(ctx,Math.round(f.x-camX),Math.round(f.y-camY),Object.assign({},DEF_AP,f.ap),f.dir,f.pas,true,false);GESTE=s;}catch(x){}}});}catch(x){}}
+if(JOL&&JOL.figurants){try{for(const f of JOL.figurants())acteurs.push({y:f.y,f:()=>{try{const s=GESTE;GESTE={t:0};personne(ctx,Math.round(f.x-camX),Math.round(f.y-camY),Object.assign({},DEF_AP,f.ap),f.dir,f.pas,f.marche!==false,!!f.court);GESTE=s;}catch(x){}}});}catch(x){}}
 if(OVATION){if(Date.now()>OVATION.fin)OVATION=null;else for(const f of OVATION.gens)acteurs.push({y:f.y,f:()=>{try{dessinerFigurant(ctx,f,camX,camY);}catch(x){}}});}
 for(const [,a] of AUTRES){
 const ax=a.x-camX, ay=a.y-camY;
@@ -17802,9 +17802,12 @@ const CHRONO={P:null,etat:'',t:0,i:0,decompte:0,trace:[],fant:null,cool:0,hud:nu
   const dMoi=Math.hypot(joueur.x-b[0],joueur.y-b[1]),dF=Math.hypot(F[0]-b[0],F[1]-b[1]);return (dMoi-dF)/140;},
  dessiner(g,camX,camY){const C=this;const LS=C.liste();if(!LS.length)return;const P=C.P,t=performance.now()/1000;
   /* les plots de départ de chaque épreuve */
-  for(const Q of LS){const [sx,sy]=Q.start;g.save();g.translate(Math.round(sx-camX),Math.round(sy-camY));g.globalAlpha=C.etat&&C.P!==Q?.35:1;
-   g.fillStyle='rgba(0,0,0,.25)';g.fillRect(-11,-4,24,10);for(let i=-2;i<2;i++)for(let j=-1;j<1;j++){g.fillStyle=(i+j+4)%2?'#1a1a1e':'#f2f2f2';g.fillRect(i*6,j*4,6,4);}
-   if(!C.etat){const k=.6+.4*Math.sin(t*3);g.font='900 8px ui-monospace,monospace';g.textAlign='center';g.fillStyle='rgba(0,0,0,.55)';g.fillText(Q.nom,1,-8);g.fillStyle='rgba(255,216,96,'+k+')';g.fillText(Q.nom,0,-9);}
+  for(const Q of LS){const [sx,sy]=Q.start,[nx,ny]=Q.pts[0],an=Math.atan2(ny-sy,nx-sx);if(C.etat&&C.P!==Q)continue;
+   g.save();g.translate(Math.round(sx-camX),Math.round(sy-camY));g.rotate(an);
+   /* la zone de départ : un halo doré posé sur le tartan, derrière la ligne peinte */
+   const k=.5+.5*Math.sin(t*3);g.fillStyle='rgba(255,216,96,'+(C.etat?.28:.12+.14*k)+')';g.fillRect(-14,-5,14,10);
+   /* les deux blocs de départ */
+   for(const dy of [-2.6,1.4]){g.fillStyle='rgba(0,0,0,.25)';g.fillRect(-9.4,dy+.6,4,1.6);g.fillStyle='#5a6068';g.fillRect(-10,dy,4,1.4);g.fillStyle='#c8ccd2';g.fillRect(-10,dy,1.2,1.4);}
    g.restore();}
   if(!P)return;
   /* les bornes de la course */
