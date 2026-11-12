@@ -9,7 +9,7 @@
 const W=800, H=800;
 const DOCKS_PIED=236, TROTTOIR=346, TRAM0=346, TRAM1=422, PLACE_BAS=760;
 const SORTIE_X=400, SORTIE_DEMI=44;
-const DEPART=(()=>{try{const q=new URLSearchParams(location.search).get('de');if(q==='terrasses')return [400,262];if(q==='stade')return [600,440];if(q==='piste')return [622,630];}catch(x){}return [400,712];})();
+const DEPART=(()=>{try{const q=new URLSearchParams(location.search).get('de');if(q==='terrasses')return [400,262];if(q==='stade')return [600,440];if(q==='piste')return [622,630];if(q==='foire')return [400,700];}catch(x){}return [400,712];})();
 const FONT=[400,592];
 const h=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
 const teinte=(hex,d)=>{const v=parseInt(hex.slice(1),16);const c=k=>Math.max(0,Math.min(255,((v>>k)&255)+d));

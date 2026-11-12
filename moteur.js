@@ -7676,8 +7676,8 @@ R(-4,-5,9,5,V.tronc);R(-4,-5,9,2,V.troncC);R(-2,-4,5,1,'#a5764a');R(-4,-2,9,2,V.
    fin de la ville — une derniere facade, une esplanade de platanes — et
    surtout les collines boisees qui apparaissent sur l'horizon : on marche
    vers quelque chose qu'on voit, pas vers un mur. */
-const MONDE_L=CARTE==='spawn'?((window.LIEU_PAGE==='terrasses'||window.LIEU_PAGE==='stade'||window.LIEU_PAGE==='plage'||window.LIEU_PAGE==='corniche')?1600:(window.LIEU_PAGE==='piste'?2000:800)):(CARTE==='large'?2400:(CARTE==='foret'?1500:(CARTE==='tokyo'?900:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:(FERME_VIERGE?1800:1200)):1760)))));   /* spawn : 800×800 */
-const MONDE_H=CARTE==='spawn'?(window.LIEU_PAGE==='piste'?1040:800):(CARTE==='large'?2400:(CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?(FERME_VIERGE?1800:1600):(CARTE==='tokyo'?2560:562))));   /* spawn : 800×800 */
+const MONDE_L=CARTE==='spawn'?((window.LIEU_PAGE==='terrasses'||window.LIEU_PAGE==='stade'||window.LIEU_PAGE==='plage'||window.LIEU_PAGE==='corniche')?1600:(window.LIEU_PAGE==='piste'?2000:(window.LIEU_PAGE==='foire'?1800:800))):(CARTE==='large'?2400:(CARTE==='foret'?1500:(CARTE==='tokyo'?900:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:(FERME_VIERGE?1800:1200)):1760)))));   /* spawn : 800×800 */
+const MONDE_H=CARTE==='spawn'?(window.LIEU_PAGE==='piste'?1040:(window.LIEU_PAGE==='foire'?1100:800)):(CARTE==='large'?2400:(CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?(FERME_VIERGE?1800:1600):(CARTE==='tokyo'?2560:562))));   /* spawn : 800×800 */
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 /* AU LARGE, LA CAMÉRA RECULE : le bateau fait à lui seul 252 points de
    long, et naviguer sans voir devant soi n'a aucun sens. */
@@ -10792,7 +10792,7 @@ let TXT_FERME=null;
 /* SI port.js NE CHARGE PAS, les cinquante-trois symboles ci-dessous
    restent indéfinis et le port ne se dessine pas, sans un mot. On le dit. */
 try{
-if(CARTE==='spawn'){try{let lieu=window.LIEU_PAGE||'';try{lieu=lieu||new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':(lieu==='stade'?'stade.js':(lieu==='plage'?'plage.js':(lieu==='corniche'?'corniche.js':(lieu==='blocus'?'blocus.js':(lieu==='garde'?'garde.js':(lieu==='tour'?'tour.js':(lieu==='plateau'?'plateau.js':(lieu==='labo'?'labo.js':(lieu==='quai'?'quai.js':(lieu==='piste'?'piste.js':'joliette.js'))))))))))));}catch(x){console.warn('JOL',x);JOL=null;}}
+if(CARTE==='spawn'){try{let lieu=window.LIEU_PAGE||'';try{lieu=lieu||new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':(lieu==='stade'?'stade.js':(lieu==='plage'?'plage.js':(lieu==='corniche'?'corniche.js':(lieu==='blocus'?'blocus.js':(lieu==='garde'?'garde.js':(lieu==='tour'?'tour.js':(lieu==='plateau'?'plateau.js':(lieu==='labo'?'labo.js':(lieu==='quai'?'quai.js':(lieu==='piste'?'piste.js':(lieu==='foire'?'foire.js':'joliette.js')))))))))))));}catch(x){console.warn('JOL',x);JOL=null;}}
 if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar,dessinerLePanorama}=eval(await chargerMorceau('port.js')));}
 if(CARTE==='tokyo'){TKM=eval(await chargerMorceau('tokyo.js'));}
 }catch(erPort){
@@ -15111,9 +15111,20 @@ function accessoireAthle(g,x,y,acc,dir){const d=dir||'bas',R=(px,py,w,h,c)=>{g.f
   else{R(-6,-41,5,2.6,'#1a1a22');R(1,-41,5,2.6,'#1a1a22');R(-5,-40.6,3,1.4,'#5ad0ff');R(2,-40.6,3,1.4,'#5ad0ff');R(-1,-41,2,1,'#1a1a22');R(-5,-40.6,1,1,'#e0f8ff');R(2,-40.6,1,1,'#e0f8ff');}}
  else if(acc==='a_manchettes'){if(prof){R(-1.6,-27,3.2,5,'#1d2a4a');R(-1.6,-27,3.2,1,'#e84a3a');}else{R(-8.2,-27,3,5,'#1d2a4a');R(5.8,-27,3,5,'#1d2a4a');R(-8.2,-27,3,1,'#e84a3a');R(5.8,-27,3,1,'#e84a3a');}}
  else if(acc==='a_montre'){if(prof){R(-1.6,-23,3.2,1.8,'#1a1a22');R(-1,-22.7,2,1.1,'#ff8a3a');}else{R(-8.2,-23,3,1.8,'#1a1a22');R(-7.6,-22.7,1.8,1.1,'#ff8a3a');}}}
+/* LES LOTS DE LA FÊTE FORAINE : ce qu'on porte (ap._lot), dessiné par-dessus le personnage */
+function lotForain(g,x,y,lot,dir){const d=dir||'bas',R=(px,py,w,h,c)=>{g.fillStyle=c;g.fillRect(x+px,y+py,w,h);};
+ const face=d==='bas'||d.indexOf('bas-')===0,dos=d==='haut'||d.indexOf('haut-')===0,dr=d.indexOf('droite')>=0,ga=d.indexOf('gauche')>=0,prof=(dr||ga)&&!face&&!dos,sx=ga?-1:1;
+ if(lot==='f_ballon'||lot==='f_ballon_or'){const t=performance.now()/1000,hx=prof?sx*3:7,bx=hx+4+Math.sin(t*1.4)*1.5,by=-66+Math.sin(t*2.1)*1;const c=lot==='f_ballon_or'?'#f5c430':'#e8302a';
+  g.strokeStyle='rgba(250,250,250,.85)';g.lineWidth=.5;g.beginPath();g.moveTo(x+hx,y-21);g.quadraticCurveTo(x+hx+5,y-40,x+bx,y+by+6);g.stroke();
+  g.fillStyle=c;g.beginPath();g.ellipse(x+bx,y+by,5,6,0,0,7);g.fill();R(bx-.6,by+5.5,1.2,1.4,c);g.fillStyle='rgba(255,255,255,.55)';g.fillRect(x+bx-3,y+by-3.5,1.4,2);}
+ else if(lot==='f_chapeau'){R(-10,-47.5,20,2.4,'#c8a050');R(-9.5,-47.5,19,1,'#f0d890');R(-6.5,-53.5,13,6.5,'#ecd088');R(-6.5,-53.5,13,1,'#fff0c0');R(-6.5,-49.6,13,2,dos?'#1f3a8a':'#e8302a');}
+ else if(lot==='f_couronne'){R(-6.5,-50,13,3.4,'#f5c430');R(-6.5,-53,2.2,3,'#f5c430');R(-1.1,-54,2.2,4,'#f5c430');R(4.3,-53,2.2,3,'#f5c430');R(-6.5,-50,13,1,'#fff2a0');if(!dos){R(-.7,-49.2,1.4,1.4,'#e8302a');R(-4.5,-49.2,1.2,1.2,'#3a9ad8');R(3.3,-49.2,1.2,1.2,'#3a9ad8');}}
+ else if(lot==='f_coeur'){if(dos)return;const H=(cx)=>{R(cx-2.4,-41.6,2,1.6,'#ff2a6a');R(cx+.4,-41.6,2,1.6,'#ff2a6a');R(cx-2.2,-40.2,4.4,1.2,'#ff2a6a');R(cx-1.2,-39,2.4,1,'#ff2a6a');R(cx-1.8,-41.2,1,1,'#ffb0c8');};
+  if(prof){H(sx>0?3:-3);}else{H(-3.5);H(3.5);R(-1,-41.2,2,.8,'#c01a4a');}}
+ else if(lot==='f_peluche'){if(dos)return;const px=prof?sx*2:0;R(px-4,-30,8,9,'#a86a3a');R(px-3,-34,6,5,'#a86a3a');R(px-4,-35,2,2,'#a86a3a');R(px+2,-35,2,2,'#a86a3a');R(px-1.5,-31.5,3,2,'#e8c8a0');R(px-2,-33,1,1,'#1a1a1a');R(px+1,-33,1,1,'#1a1a1a');R(px-4,-25,8,1.4,'#e8302a');}}
 function personne(g,x,y,ap,dir,pas,marche,enCourse){
 if(window.AP_FORCE&&ap&&typeof e!=='undefined'&&ap===e.ap)ap=Object.assign({},ap,window.AP_FORCE);   /* la tenue d'athlète, sur la piste */
-if(ap&&ap._acc&&!ap._accFait){personne(g,x,y,Object.assign({},ap,{_accFait:1}),dir,pas,marche,enCourse);try{accessoireAthle(g,x,y,ap._acc,dir);}catch(z){}return;}
+if(ap&&(ap._acc||ap._lot)&&!ap._accFait){personne(g,x,y,Object.assign({},ap,{_accFait:1}),dir,pas,marche,enCourse);try{if(ap._acc)accessoireAthle(g,x,y,ap._acc,dir);}catch(z){}try{if(ap._lot)lotForain(g,x,y,ap._lot,dir);}catch(z){}return;}
 /* UN COSTUME INTEGRAL REMPLACE LE DESSIN, IL NE SE POSE PAS DESSUS.
    Peint par-dessus, il laissait toujours ressortir un coin de cheveux
    au sommet de la capuche ou deux pixels de col a l'epaule — et un
@@ -19718,7 +19729,7 @@ poserLeCiel(g);                  /* la lumière du moment, par-dessus tout */
 }
 const A_GARDER=['sac','jetons','euros','outils','sacMax','score','recolte','casses',
 'nivSac','nivPioche','nivHache','nivPied','metiers','cos','aRepousser',
-'four','habitCasino','ap','pseudo','x','y','coffreOuvert','album','endu','chronos','kitAthle','athNiv','athShop','athMed'];
+'four','habitCasino','ap','pseudo','x','y','coffreOuvert','album','endu','chronos','kitAthle','athNiv','athShop','athMed','tickets','foireLots'];
 let derniereSauv=0, sauvEnVol=false, sauvSale=false, SAUV_REFUS=false;
 function etatAGarder(){
 const o={};
@@ -20235,7 +20246,7 @@ DECOR.filter(o=>o.t==='bancP').sort((a,b)=>(a.y-b.y)||(a.x-b.x))
 return l;
 }
 function coinDuJoueur(){
-if(window.LIEU_PAGE==='terrasses')return 'à la Galerie Bleue';if(window.LIEU_PAGE==='quai')return 'au port';if(window.LIEU_PAGE==='stade')return 'au Vélodrome';if(window.LIEU_PAGE==='piste')return 'à la piste d’athlétisme';if(window.LIEU_PAGE==='plage')return 'à la plage des Catalans';if(window.LIEU_PAGE==='corniche')return 'sur la Corniche';if(window.LIEU_PAGE==='blocus')return 'au blocus';if(window.LIEU_PAGE==='garde')return 'en garde à vue';if(window.LIEU_PAGE==='tour')return 'à la tour du port';if(window.LIEU_PAGE==='plateau')return 'sur le plateau de Mistral TV';
+if(window.LIEU_PAGE==='terrasses')return 'à la Galerie Bleue';if(window.LIEU_PAGE==='quai')return 'au port';if(window.LIEU_PAGE==='stade')return 'au Vélodrome';if(window.LIEU_PAGE==='piste')return 'à la piste d’athlétisme';if(window.LIEU_PAGE==='foire')return 'à la fête foraine';if(window.LIEU_PAGE==='plage')return 'à la plage des Catalans';if(window.LIEU_PAGE==='corniche')return 'sur la Corniche';if(window.LIEU_PAGE==='blocus')return 'au blocus';if(window.LIEU_PAGE==='garde')return 'en garde à vue';if(window.LIEU_PAGE==='tour')return 'à la tour du port';if(window.LIEU_PAGE==='plateau')return 'sur le plateau de Mistral TV';
 if(CARTE==='extramar')return 'à Extramar';
 if(CARTE==='garde')return 'à Notre-Dame';
 if(CARTE==='tokyo')return 'à Tokyo';
