@@ -692,11 +692,8 @@ setInterval(()=>{try{if(ETG||typeof joueur==='undefined'||window.MOI_ASSIS)retur
   for(const p of P){const d=Math.hypot(joueur.x-p.x,joueur.y-p.y);if(d<70&&now2-(DEJA_SALUE.get(p.k)||0)>25000){DEJA_SALUE.set(p.k,now2);texteVolant(p.x,p.y-62,p.t[(Math.random()*p.t.length)|0],'#fff6e0');break;}}}catch(x){}},500);
 let SON_GAL=null;
 function sonGalerie(){if(SON_GAL||ETG)return;try{if(typeof SON_PRET==='undefined'||!SON_PRET)return;const c=A();if(!c)return;
-  const mus=c.createGain();mus.gain.value=0;mus.connect(SEC);const eau=c.createGain();eau.gain.value=0;eau.connect(SEC);
+  const mus=c.createGain();mus.gain.value=0;mus.connect(SEC);
   mus.gain.linearRampToValueAtTime(.05*(V.mus||0)/.34,c.currentTime+3);
-  /* la fontaine : un bruit blanc filtré, en boucle */
-  const n=c.sampleRate*2,b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(.6+.4*Math.sin(i/n*Math.PI*14));
-  const s=c.createBufferSource();s.buffer=b;s.loop=true;const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=1400;f.Q.value=.7;s.connect(f).connect(eau);s.start();
   /* la musique : des accords doux de piano électrique, et quelques notes qui flânent */
   const ACC=[[53,57,60,64],[52,55,59,62],[50,53,57,60],[48,52,55,59]],PENTA=[72,74,76,79,81,84];let k=0;
   const hz=m=>440*Math.pow(2,(m-69)/12);
@@ -704,10 +701,9 @@ function sonGalerie(){if(SON_GAL||ETG)return;try{if(typeof SON_PRET==='undefined
     const g2=c.createGain();g2.gain.value=.18;o2.connect(g2).connect(g);o.connect(g);g.connect(mus);g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(vol,t0+.02);g.gain.exponentialRampToValueAtTime(.0005,t0+dur);o.start(t0);o2.start(t0);o.stop(t0+dur+.05);o2.stop(t0+dur+.05);};
   const tic=setInterval(()=>{try{if(document.hidden)return;const t0=c.currentTime+.05,A2=ACC[k%4];k++;A2.forEach((m,i)=>note(m,t0+i*.03,3.2,.16));note(A2[0]-12,t0,3,.2);
     for(let j=0;j<3;j++)if(Math.random()<.55)note(PENTA[(Math.random()*PENTA.length)|0],t0+.6+j*.8+Math.random()*.2,1.4,.09,'sine');
-    mus.gain.setTargetAtTime(.05*(V.mus||0)/.34,c.currentTime,.5);
-    const dF=typeof joueur!=='undefined'?Math.hypot(joueur.x-FONT.x,joueur.y-FONT.y):999;eau.gain.setTargetAtTime(Math.max(0,1-dF/380)*.12*(V.amb||0)/.26,c.currentTime,.4);}catch(x){}},2600);
-  SON_GAL={mus,eau,tic};}catch(x){}}
-setInterval(()=>{try{sonGalerie();if(SON_GAL&&typeof joueur!=='undefined'){const c=A(),dF=Math.hypot(joueur.x-FONT.x,joueur.y-FONT.y);SON_GAL.eau.gain.setTargetAtTime(Math.max(0,1-dF/380)*.12*(V.amb||0)/.26,c.currentTime,.3);}}catch(x){}},700);
+    mus.gain.setTargetAtTime(.05*(V.mus||0)/.34,c.currentTime,.5);}catch(x){}},2600);
+  SON_GAL={mus,tic};}catch(x){}}
+setInterval(()=>{try{sonGalerie();}catch(x){}},700);
 function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
   /* la porte de Bleu de Chauffe : on s'approche, on entre */
   {const p=(W-BOUT.reduce((a,b)=>a+b,0))/(BOUT.length+1);P('x_jol_tdp_porte_sol',p+BOUT[0]/2,Y0+14,{agir:ouvrirBoutique0,libelle:'Entrer',nom:'BLEU DE CHAUFFE',demi:56});}
