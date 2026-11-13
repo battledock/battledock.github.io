@@ -3,8 +3,8 @@
    Même facture que la place et le stade : couleurs de plein jour (la nuit,
    le moteur assombrit et allume nos lampes), sol en dalles de pierre,
    objets gravés au demi-pixel, ombres douces, reflets, dégradés.
-   Au fond : le ciel, les collines, Notre-Dame, les toits de Marseille et la
-   grande roue. Devant : les baraques, les platanes, le carrousel, les
+   Au fond : le ciel, les collines, Notre-Dame, les toits de Marseille.
+   Devant : les baraques, les platanes, le carrousel, les
    auto-tamponneuses, la barbe à papa, le marchand de ballons.
    Les jeux se jouent dans leur propre écran (forain.js).
    Chargé par moteur.js (eval direct).
@@ -197,32 +197,7 @@ const FAC={};function fac(B){return FAC[B.k]||(FAC[B.k]=facade(B));}
 
 function ampoulesBaraque(g,B,ox,oy,t){const A=AMP[B.k]||[];for(let i=0;i<A.length;i++){const [x,y]=A[i];ampoule(g,ox+x,oy+y,((i+Math.floor(t*4))%3)!==0);}}
 
-/* ---------- LA GRANDE ROUE ---------- */
-const ROUE={x:CX,y:Y0-210,r:182,n:16};
-function nacelle(g,x,y,c){g.fillStyle='#8a90a0';g.fillRect(x-.6,y,1.2,6);
-  g.fillStyle=c;g.beginPath();g.moveTo(x-9,y+6);g.quadraticCurveTo(x,y+1,x+9,y+6);g.fill();
-  const q=g.createLinearGradient(x-9,0,x+9,0);q.addColorStop(0,c);q.addColorStop(.3,'#ffffff');q.addColorStop(.45,c);q.addColorStop(1,'#2a2a3a');
-  g.fillStyle=q;arrondi(g,x-8,y+6,16,14,3);g.fill();g.fillStyle=c;g.fillRect(x-8,y+13,16,7);g.fillStyle='#2a3a5a';g.fillRect(x-5.5,y+8,11,5);g.fillStyle='rgba(255,255,255,.35)';g.fillRect(x-5.5,y+8,3,5);
-  g.fillStyle='rgba(0,0,0,.25)';g.fillRect(x-8,y+18,16,2);}
-function dessinerRoue(g,ox,oy,t){const {r,n}=ROUE,X=ROUE.x+ox,Y=ROUE.y+oy,Ys=Y0+oy+4,a0=t*.11;
-  for(const s of [-1,1]){const fx=X+s*122;g.strokeStyle='#d8dce6';g.lineWidth=5;g.beginPath();g.moveTo(X+s*4,Y);g.lineTo(fx,Ys);g.stroke();g.strokeStyle='#ffffff';g.lineWidth=1.2;g.beginPath();g.moveTo(X+s*2,Y);g.lineTo(fx-s*2,Ys);g.stroke();
-    g.strokeStyle='#9aa0b0';g.lineWidth=.8;for(let k=1;k<9;k++){const u=k/9;g.beginPath();g.moveTo(X+(fx-X)*u-3,Y+(Ys-Y)*u);g.lineTo(X+(fx-X)*(u+.06)+3,Y+(Ys-Y)*(u+.06));g.stroke();}
-    ell(g,fx,Ys,9,3,'#6a6e78');}
-  g.strokeStyle='#b8bcc8';g.lineWidth=2.4;g.beginPath();g.moveTo(X-64,Y+(Ys-Y)*.53);g.lineTo(X+64,Y+(Ys-Y)*.53);g.stroke();
-  g.strokeStyle='#f2f4f8';g.lineWidth=3;g.beginPath();g.arc(X,Y,r,0,7);g.stroke();g.strokeStyle='#d8dce6';g.lineWidth=2;g.beginPath();g.arc(X,Y,r-14,0,7);g.stroke();
-  g.strokeStyle='#b8bcc8';g.lineWidth=.9;for(let i=0;i<n*2;i++){const a=a0+i/(n*2)*Math.PI*2,b=a+Math.PI/n;g.beginPath();g.moveTo(X+Math.cos(a)*(r-14),Y+Math.sin(a)*(r-14));g.lineTo(X+Math.cos(b)*r,Y+Math.sin(b)*r);g.stroke();}
-  g.strokeStyle='#e8ecf2';g.lineWidth=1.3;for(let i=0;i<n;i++){const a=a0+i/n*Math.PI*2;for(const d of [-.012,.012]){g.beginPath();g.moveTo(X,Y);g.lineTo(X+Math.cos(a+d)*r,Y+Math.sin(a+d)*r);g.stroke();}}
-  rond(g,X,Y,17,'#e8b830');rond(g,X,Y,13,'#c8322a');g.fillStyle='#f2d27a';for(let i=0;i<8;i++){const a=i/8*Math.PI*2+a0;g.beginPath();g.moveTo(X,Y);g.lineTo(X+Math.cos(a-.15)*12,Y+Math.sin(a-.15)*12);g.lineTo(X+Math.cos(a+.15)*12,Y+Math.sin(a+.15)*12);g.fill();}rond(g,X,Y,4,'#ffffff');
-  for(let i=0;i<80;i++){const a=a0+i/80*Math.PI*2;ampoule(g,X+Math.cos(a)*r,Y+Math.sin(a)*r,((i+Math.floor(t*7))%4)===0,COUL[i%8]);}
-  for(let i=0;i<n;i++){const a=a0+i/n*Math.PI*2;nacelle(g,X+Math.cos(a)*r,Y+Math.sin(a)*r,COUL[i%8]);}
-  lum(g,X,Y,80,'rgba(255,210,120,1)');for(let i=0;i<8;i++){const a=a0+i/8*Math.PI*2;lum(g,X+Math.cos(a)*r,Y+Math.sin(a)*r,70,['rgba(255,90,80,1)','rgba(255,220,120,1)','rgba(110,180,255,1)','rgba(255,140,200,1)'][i%4]);}}
-const CABANE=(()=>{const L=170,HH=104,{c,g,R}=toile(L,HH),s=HH-4;ombre(g,L/2,s,L/2-6,5,.25);
-  VG(g,12,40,L-24,s-40,'#f6efe0','#e2d4bc');for(let x=12;x<L-12;x+=8)R(x,40,.5,s-40,'rgba(120,90,60,.15)');
-  for(let i=0;i<11;i++){g.fillStyle=i%2?'#f6efe0':'#c8322a';g.beginPath();g.moveTo(i*16+2,26);g.lineTo(i*16+14,26);g.lineTo(i*16+16,42);g.lineTo(i*16,42);g.fill();}for(let i=0;i<11;i++){g.fillStyle=i%2?'#f6efe0':'#c8322a';g.beginPath();g.arc(i*16+8,42,8,0,Math.PI);g.fill();}
-  R(22,56,58,34,'#5a3622');const q=g.createLinearGradient(0,58,0,88);q.addColorStop(0,'#cfeaf6');q.addColorStop(1,'#8ac0dc');g.fillStyle=q;g.fillRect(24,58,54,30);R(24,58,16,30,'rgba(255,255,255,.25)');R(24,74,54,2,'#5a3622');
-  R(96,50,52,50,'#5a3622');VG(g,98,52,48,48,'#9a5a32','#7a4422');R(138,76,3,3,'#e8b830');
-  g.fillStyle='#a8782a';arrondi(g,26,0,118,26,8);g.fill();g.fillStyle='#1f3a7a';arrondi(g,29,2.5,112,21,6);g.fill();ecrire(g,'GRANDE ROUE',L/2,13.5,12.5,'#ffe9a8','rgba(0,0,0,.6)');
-  R(28,90,48,10,'#f6efe0');R(28,90,48,1.5,'#c8322a');ecrire(g,'UN TOUR !',52,95.5,7.5,'#c8322a');return c;})();
+
 
 /* ---------- LE CARROUSEL ---------- */
 /* ---------- LE CARROUSEL : un manège à chevaux de bois, à l'ancienne ---------- */
@@ -522,8 +497,6 @@ const D2=(g,img,x,y,w,h)=>{g.imageSmoothingEnabled=true;g.drawImage(img,x,y,w,h)
 const MARCHAND={peau:3,cheveux:0,coiffe:2,barbe:3,haut:2,veste:'#d82a2a',bas:0,pantalon:'#2a2a3a',souliers:1,chaussures:'#1a1a1a',sac:0,chapeau:0,raye:1,motif:0,_civil:true,_lot:'f_chapeau'};
 const FILE=[{peau:2,cheveux:3,coiffe:5,haut:1,veste:'#3a9ad8'},{peau:5,cheveux:0,coiffe:2,haut:0,veste:'#e8302a'},{peau:1,cheveux:6,coiffe:4,haut:3,veste:'#ffd24a',_lot:'f_ballon'},{peau:4,cheveux:2,coiffe:1,haut:1,veste:'#5ec04a'}].map(a=>Object.assign({bas:0,pantalon:'#2a2a3a',souliers:1,chaussures:'#f2f2f2',sac:0,chapeau:0,raye:0,motif:0,barbe:0,_civil:true},a));
 function acteurs(){const L=[];if(!PLATANE)PLATANE=platane();
-  L.push({y:Y0-60,f:(g,camX,camY)=>dessinerRoue(g,-camX,-camY,now())});
-  L.push({y:Y0-2,f:(g,camX,camY)=>D2(g,CABANE,CX-85-camX,Y0-104-camY,170,104)});
   for(const B of BAR)L.push({y:B.y,f:(g,camX,camY)=>{const ox=B.x-BW/2-camX,oy=B.y-BH-camY;D2(g,fac(B),ox,oy,BW,BH);ampoulesBaraque(g,B,ox,oy,now());for(const fx of [40,BW/2,BW-40])lum(g,ox+fx,oy+120,95);lum(g,ox+BW/2,oy+20,70,'rgba(255,240,200,1)');}});
   for(const [x,y] of PLATANES)L.push({y,f:(g,camX,camY)=>D2(g,PLATANE,x-75-camX,y-184-camY,150,190)});
   L.push({y:CAR.y-CAR.r*.36-8,f:(g,camX,camY)=>dessinerCarrousel(g,-camX,-camY,now(),false)});
@@ -547,7 +520,6 @@ function acteurs(){const L=[];if(!PLATANE)PLATANE=platane();
       for(let k=0;k<=n;k++){const u=k/n,x=a+(b-a)*u-camX,y=Y0-94+Math.sin(u*Math.PI)*24-camY;if(k)g.lineTo(x,y);else g.moveTo(x,y);}g.stroke();
       for(let k=1;k<n;k++){const u=k/n,x=a+(b-a)*u-camX,y=Y0-94+Math.sin(u*Math.PI)*24-camY,on=Math.sin(t*2.2+k*.9+i)>.1;ampoule(g,x,y+2.5,on,COUL[(k+i)%8]);if(on&&k%3===0)lum(g,x,y+3,34);}}
     for(const x of M){const X=x-camX,Y=Y0+18-camY;VG(g,X-2,Y-112,4,112,'#4a6a5a','#24382e');ell(g,X,Y,5,2,'rgba(40,30,20,.3)');}}});
-  for(let k=0;k<4;k++)L.push({y:Y0+56+k*2,f:(g,camX,camY)=>{try{personne(g,CX+40+k*16-camX,Y0+56+k*2-camY,FILE[k],'haut',0,false);}catch(z){}}});
   for(const P of GENS)if(P.ballon)L.push({get y(){return P.y+1;},f:(g,camX,camY)=>{const X=P.x-camX,Y=P.y-camY,t=now(),bx=X+8+Math.sin(t*1.3+P.dec)*2,by=Y-72;g.strokeStyle='rgba(240,240,248,.85)';g.lineWidth=.5;g.beginPath();g.moveTo(X+6,Y-24);g.quadraticCurveTo(X+10,Y-48,bx,by+8);g.stroke();ballon(g,bx,by,P.ballon);}});
   L.push({y:H-6,f:(g,camX,camY)=>{const X=CX-135-camX,Y=H-6-196-camY;D2(g,ARCHE,X,Y,270,196);const t=now();for(let k=0;k<ARCHE_AMP.length;k++){const [x,y]=ARCHE_AMP[k];ampoule(g,X+x,Y+y,((k+Math.floor(t*6))%3)===0);}lum(g,X+135,Y+40,130,'rgba(255,220,150,1)');}});
   return L;}
@@ -583,7 +555,7 @@ function figurants(){const n=Date.now()/1000;
 async function jouer(k){try{if(!window.ouvrirForain)eval(await chargerMorceau('forain.js'));window.ouvrirForain(k);}catch(x){console.warn('FORAIN',x);}}
 function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
   for(const B of BAR)P('x_jol_pst_vide_sol',B.x,B.y+30,{col:[1,1],demi:70,agir:()=>jouer(B.k),libelle:B.k==='lots'?'Échanger mes tickets':(B.k==='peche'?'Pêcher':'Jouer'),nom:B.nom});
-  P('x_jol_pst_vide_sol',CX,Y0+34,{col:[1,1],demi:70,agir:()=>jouer('roue'),libelle:'Faire un tour',nom:'GRANDE ROUE'});
+  P('x_jol_pst_vide_sol',(TAMP.x0+TAMP.x1)/2,TAMP.y1+44,{col:[1,1],demi:70,agir:()=>jouer('tamp'),libelle:'Conduire',nom:'AUTO-TAMPONNEUSES'});
   return D;}
 const GRAVEURS={x_jol_pst_vide_sol:()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0})};
 function graver(t,v){const r=(GRAVEURS[t]||GRAVEURS.x_jol_pst_vide_sol)(v||0);return {toile:r.toile,W:r.W,H:r.H,sol:r.sol};}
@@ -608,6 +580,7 @@ setInterval(()=>{try{if(PARTI||typeof joueur==='undefined')return;if(joueur.y>H-
 function sortir(){if(PARTI)return;PARTI=true;try{sauver();}catch(x){}
   try{const f=document.createElement('div');f.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#fff8ea;opacity:0;transition:opacity .45s;pointer-events:none';document.body.appendChild(f);requestAnimationFrame(()=>f.style.opacity='1');}catch(x){}
   setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='spawn.html?de=foire'+v;},480);}
+
 
 return {sol,solFin,decor,bloque,graver,depart:DEPART,figurants,acteurs};
 })()
