@@ -167,6 +167,7 @@ function figurants(){return [];}
 /* ---------- CE QU'ON PEUT FAIRE ---------- */
 async function ouvrirVestiaire(){try{if(!window.ouvrirDisco)eval(await chargerMorceau('disco.js'));window.ouvrirDisco();}catch(x){try{console.warn('DISCO',x);}catch(_){}}}
 function danser(){try{ouvrirEmotes();}catch(x){}}
+async function battle(){try{if(!window.ouvrirBattle)eval(await chargerMorceau('battle.js'));window.ouvrirBattle();}catch(x){try{console.warn('BATTLE',x);}catch(_){}}}
 function cocktail(){try{e.ap=Object.assign({},e.ap||{},{_tasse:{k:'jus',f:Date.now()+30000}});vibrer([8,30,8]);texteVolant(joueur.x,joueur.y-58,['Un cocktail sans alcool, offert !','À la santé des danseurs !','Avec une paille fluo !'][Math.floor(Math.random()*3)],'#3af0ff');}catch(x){}}
 function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
   P('x_jol_club_bar_sol',130,300,{col:[196,26]});P('x_jol_club_vide',130,322,{agir:cocktail,libelle:'Un cocktail',nom:'LE BAR',demi:70});
@@ -179,6 +180,7 @@ function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0}
   for(const [x,y] of [[160,420],[640,420],[160,520],[640,520]])P('x_jol_club_th_sol',x,y,{col:[22,8]});
   for(let y=620;y<=760;y+=46){P('x_jol_club_pot_sol',352,y,{col:[10,6]});P('x_jol_club_pot_sol',448,y,{col:[10,6]});}
   P('x_jol_club_vide',400,430,{agir:danser,libelle:'Danser',nom:'LA PISTE',demi:150});
+  P('x_jol_club_vide',400,292,{agir:battle,libelle:'Lancer une battle',nom:'BATTLE DE DANSE',demi:46});
   SIEGES.forEach((S,i)=>{if(ASSIS_PNJ.some(a=>a[0]===i))return;P('x_jol_club_vide',S.px,S.py,{agir:()=>asseoir(S),libelle:'S’asseoir',nom:S.nom,demi:16});});
   DECOR=D;return D;}
 let DECOR=[];

@@ -15194,7 +15194,7 @@ function discoAcc(g,x,y,T,d,t){const A=T.acc||{},R=(px,py,w,h,c)=>{g.fillStyle=c
  if(A.rondes&&!dos){const o=(cx)=>{g.strokeStyle='#2a1a10';g.lineWidth=.8;g.fillStyle=A.rondes;g.beginPath();g.arc(x+cx,y-40.8,2.8,0,7);g.fill();g.stroke();g.fillStyle='rgba(255,255,255,.55)';g.fillRect(x+cx-1.4,y-42.2,1,.8);};if(prof)o(sx*3);else{o(-3.4);o(3.4);R(-.7,-41.2,1.4,.6,'#2a1a10');}}
  if(A.brille)for(let i=0;i<A.brille;i++){const s=Math.floor(t*3)+i*17,u=(t*3)%1,px=-6+DH(s,i,5)*12,py=-29+DH(s,i,6)*24,a=Math.sin(u*Math.PI);g.fillStyle='rgba(255,255,255,'+(.9*a)+')';g.fillRect(x+px-1.5*a,y+py-.3,3*a,.6);g.fillRect(x+px-.3,y+py-1.5*a,.6,3*a);}
  if(A.eclats){for(let k=0;k<4;k++){const a=t*1.5+k*1.57,r=13,al=Math.max(0,Math.sin(t*4+k*2));g.fillStyle='hsla('+((k*90+t*80)%360)+',100%,78%,'+al+')';const ex=x+Math.cos(a)*r,ey=y-24+Math.sin(a)*r*.45;g.fillRect(ex-1.4,ey-.3,2.8,.6);g.fillRect(ex-.3,ey-1.4,.6,2.8);}}}
-function discoPieds(g,x,y,T,t){const A=T.acc||{};if(!A.patins)return;for(const fx of [-3.4,3.4]){g.fillStyle='#e8e8f0';g.fillRect(x+fx-2.8,y+.4,5.6,1);for(const w of [-1.8,1.8]){g.fillStyle=(Math.floor(t*8)%2)?'#ff3ac8':'#3af0ff';g.beginPath();g.arc(x+fx+w,y+2.2,1.2,0,7);g.fill();}}}
+function discoPieds(g,x,y,T,t){const A=T.acc||{};if(!A.patins||DANSE_DESSIN)return;for(const fx of [-3.4,3.4]){g.fillStyle='#e8e8f0';g.fillRect(x+fx-2.8,y+.4,5.6,1);for(const w of [-1.8,1.8]){g.fillStyle=(Math.floor(t*8)%2)?'#ff3ac8':'#3af0ff';g.beginPath();g.arc(x+fx+w,y+2.2,1.2,0,7);g.fill();}}}
 
 /* ---- LES DANSES ---- */
 const BEAT=.5,D4=['bas','droite','haut','gauche'];
@@ -15208,45 +15208,96 @@ const fxConfettis=(g,x,y,t)=>{for(let k=0;k<26;k++){const u=((t*.5)+DH(k,1,2))%1
 const fxSpot=(g,x,y,t)=>{g.save();const h=(t*60)%360;g.fillStyle='hsla('+h+',100%,70%,.16)';g.beginPath();g.moveTo(x-4,y-110);g.lineTo(x+4,y-110);g.lineTo(x+22,y+2);g.lineTo(x-22,y+2);g.fill();g.fillStyle='hsla('+h+',100%,70%,.25)';g.beginPath();g.ellipse(x,y+1,20,5,0,0,7);g.fill();
  for(let k=0;k<10;k++){const a=t*.8+k*.63;g.fillStyle='rgba(255,255,255,.55)';g.fillRect(x+Math.cos(a)*(30+k%3*8),y-30+Math.sin(a*1.3)*20,1.2,1.2);}g.restore();};
 const fxs=(...L)=>(g,x,y,t)=>{for(const f of L)if(f)f(g,x,y,t);};
-const DZ_TRAVOLTA=t=>{const b=t/BEAT,i=Math.floor(b),cote=Math.floor(b/8)%2?(Math.floor(b/4)%2?'gauche':'droite'):'bas';
- return {dir:cote,g:['disco',i%2?.4:.2],dx:Math.sin(b*Math.PI)*2.2,dy:-Math.abs(Math.sin(b*Math.PI))*1.6,rot:Math.sin(b*Math.PI)*.05,fx:fxNotes};};
-const DZ_MOON=t=>{if(t<3)return {dir:'droite',marche:true,pas:60-t*2.4,dx:-t/3*34,fx:fxNotes};
- if(t<4){const u=t-3;return {dir:D4[Math.floor(u*8)%4],dx:-34,dy:-Math.sin(u*Math.PI)*7,g:['danse',.3],fx:fxVent};}
- if(t<7)return {dir:'gauche',marche:true,pas:60-t*2.4,dx:-34+(t-4)/3*34,fx:fxNotes};
- return {dir:'bas',g:['coucou',.3],dy:-1,fx:fxTxt('Hee-hee !')};};
-const DZ_TOUPIE=t=>{if(t<4.2){const a=t*t*1.7;return {dir:D4[Math.floor(a)%4],g:['danse',.25],dy:-Math.abs(Math.sin(t*7))*(t>3?6:2),fx:t>2.2?fxVent:null};}
- const u=t-4.2,k=Math.max(0,1-u/2.3);return {dir:'bas',rot:Math.sin(u*9)*.2*k,dx:Math.sin(u*9)*2.4*k,g:['rire',.5],fx:fxEtoilesTete};};
-const DZ_KANGOUROU=t=>{const P=[0,14,0,-14],b=t/(BEAT*2),i=Math.floor(b),u=b-i,air=Math.sin(u*Math.PI),land=u>.86||u<.08,p0=P[i%4],p1=P[(i+1)%4];
- return {dir:p1>p0?'droite':'gauche',g:air>.35?['coucou',.3]:['danse',.2],dy:-air*20,sy:land?.84:1+air*.07,sx:land?1.1:1,dx:p0+(p1-p0)*u,fx:land?fxPoussiere:null};};
+let DANSE_DESSIN=false;
+/* LES BRAS (bras, avant-bras) — 0 dehors, +π/2 pendant, -π/2 au ciel, >π/2 devant le corps */
+const B={bas:[1.45,1.6],ciel:[-1.52,-1.56],v:[-.85,-.95],horiz:[0,.05],hanche:[.95,2.55],pointe:[-.95,-1.05],travers:[2.25,2.1],
+ robotB:[.02,1.55],robotH:[.02,-1.55],poule1:[-.35,2.7],poule2:[.35,2.95],twist1:[1.25,.15],twist2:[.95,-.35],
+ tete:[-.85,-2.75],cH:[-1.05,-.25],cB:[.55,1.85],a:[-1.2,-2.25],patte:[1.05,-1.75],jazz:[-.25,-.6],moulin:[-.4,.4],poing:[-1.3,-1.9],
+ bal1:[1.2,.6],bal2:[1.75,2.4],poitrine:[1.2,-2.3]};
+const J0=[0,0];
+const lerp=(a,b,u)=>a+(b-a)*u, mixA=(A,C,u)=>[lerp(A[0],C[0],u),lerp(A[1],C[1],u)];
+/* une chorégraphie = des poses sur les temps ; entre deux poses, on passe par deux poses de transition (pas plus : chaque pose est gravée) */
+function choree(P,t,pas){const b=t/(pas||BEAT),i=Math.floor(b),u=b-i,A=P[i%P.length],C=P[(i+1)%P.length];const q=A.snap?0:Math.round(Math.min(1,u*1.6)*3)/3,K=Object.assign({},A);
+ for(const k of ['aG','aD','jG','jD'])K[k]=mixA(A[k]||(k[0]==='a'?B.bas:J0),C[k]||(k[0]==='a'?B.bas:J0),q);for(const k of ['dx','dy','rot','sy'])if(A[k]!==undefined||C[k]!==undefined)K[k]=lerp(A[k]||0,C[k]||0,A.snap?0:u);return K;}
+const DZ_TRAVOLTA=t=>{const P=[
+  {dir:'bas',aD:B.pointe,aG:B.hanche,jD:[.3,.35],dx:1.5,rot:-.04},{dir:'bas',aD:B.travers,aG:B.hanche,jG:[-.3,.35],dx:-1.5,rot:.04},
+  {dir:'bas',aD:B.pointe,aG:B.hanche,jD:[.3,.35],dx:1.5,rot:-.04},{dir:'bas',aD:B.travers,aG:B.hanche,jG:[-.3,.35],dx:-1.5,rot:.04},
+  {dir:'droite',aD:B.pointe,aG:B.bal1,jG:[.9,0],jD:[-.6,.5],dx:2},{dir:'droite',aD:B.bal2,aG:B.bal1,jG:[-.6,.5],jD:[.9,0],dx:4},
+  {dir:'gauche',aD:B.pointe,aG:B.bal1,jG:[.9,0],jD:[-.6,.5],dx:2},{dir:'gauche',aD:B.bal2,aG:B.bal1,jG:[-.6,.5],jD:[.9,0],dx:0},
+  {dir:'bas',aG:B.pointe,aD:B.hanche,jG:[-.3,.35],dx:-1.5,rot:.04},{dir:'bas',aG:B.travers,aD:B.hanche,jD:[.3,.35],dx:1.5,rot:-.04},
+  {dir:'bas',aG:B.pointe,aD:B.hanche,jG:[-.3,.35],dx:-1.5,rot:.04},{dir:'bas',aG:B.travers,aD:B.hanche,jD:[.3,.35],dx:1.5,rot:-.04},
+  {dir:'bas',aG:B.v,aD:B.v,jG:[-.4,0],jD:[.4,0],dy:-2},{dir:'bas',aG:B.hanche,aD:B.pointe,jD:[.5,.4],dy:0},{dir:'bas',aG:B.v,aD:B.v,dy:-2},{dir:'bas',aG:B.hanche,aD:B.ciel,jG:[-.3,.3]}];
+ const K=choree(P,t);K.fx=fxNotes;return K;};
+const DZ_POULET=t=>{const b=t/BEAT;const P=[
+  {dir:'bas',aG:B.poule1,aD:B.poule1,jG:[0,.9],sy:.93},{dir:'bas',aG:B.poule2,aD:B.poule2,jG:[0,0],sy:.9},{dir:'bas',aG:B.poule1,aD:B.poule1,jD:[0,.9],sy:.93},{dir:'bas',aG:B.poule2,aD:B.poule2,jD:[0,0],sy:.9},
+  {dir:'droite',aG:B.poule1,aD:B.poule1,jD:[.6,.8],dx:3,sy:.92},{dir:'droite',aG:B.poule2,aD:B.poule2,jG:[.6,.8],dx:6,sy:.9},{dir:'gauche',aG:B.poule1,aD:B.poule1,jD:[.6,.8],dx:3,sy:.92},{dir:'gauche',aG:B.poule2,aD:B.poule2,jG:[.6,.8],dx:0,sy:.9},
+  {dir:'bas',aG:B.poule1,aD:B.poule2,jG:[-.4,0],jD:[.4,0],sy:.86,dy:0},{dir:'bas',aG:B.poule2,aD:B.poule1,sy:.86},{dir:'bas',aG:B.poule1,aD:B.poule2,sy:.86},{dir:'bas',aG:B.v,aD:B.v,jG:[0,.6],dy:-5,sy:1.05}];
+ const K=choree(P,t,BEAT/2);K.rot=Math.sin(b*Math.PI*2)*.06;K.fx=fxs(fxPlumes,(Math.floor(b)%6===5)?fxTxt('Cot cot codêêt !'):null);return K;};
+const DZ_TWIST=t=>{const desc=(1-Math.cos(t*Math.PI/2))/2;const P=[
+  {dir:'bas',aG:B.twist1,aD:B.twist2,jG:[-.2,.45],jD:[.2,0],rot:.1,dx:1.2},{dir:'bas',aG:B.twist2,aD:B.twist1,jG:[-.2,0],jD:[.2,.45],rot:-.1,dx:-1.2}];
+ const K=choree(P,t);K.sy=1-desc*.16;K.fx=fxNotes;return K;};
+const DZ_ROBOT=t=>{const P=[
+  {dir:'bas',aG:B.robotH,aD:B.robotB,snap:1},{dir:'bas',aG:B.robotB,aD:B.robotH,snap:1},{dir:'bas',aG:B.horiz,aD:B.horiz,snap:1,dy:-1},{dir:'droite',aD:B.robotB,aG:B.bas,jG:[.5,0],snap:1,dx:2},
+  {dir:'droite',aD:B.horiz,aG:B.bas,jD:[.5,0],snap:1,dx:4},{dir:'bas',aG:B.robotB,aD:B.robotB,snap:1,dx:4},{dir:'gauche',aD:B.robotH,aG:B.bas,snap:1,dx:2},{dir:'bas',aG:B.robotH,aD:B.robotH,snap:1,dx:0},
+  {dir:'bas',aG:B.horiz,aD:B.robotB,snap:1,rot:-.12},{dir:'bas',aG:B.robotB,aD:B.horiz,snap:1,rot:.12},{dir:'haut',aG:B.robotH,aD:B.robotH,snap:1},{dir:'bas',aG:B.ciel,aD:B.bas,snap:1}];
+ const K=choree(P,t),b=Math.floor(t/BEAT),u=(t/BEAT)%1;if(u<.1)K.dy=(K.dy||0)-1;K.fx=(b%4===3&&u<.7)?fxTxt('bip boup','#8af0ff'):null;return K;};
+const DZ_KANGOUROU=t=>{const Pp=[0,14,0,-14],b=t/(BEAT*2),i=Math.floor(b),u=b-i,air=Math.sin(u*Math.PI),land=u>.86||u<.08,p0=Pp[i%4],p1=Pp[(i+1)%4];
+ return {dir:'bas',aG:air>.3?B.ciel:B.patte,aD:air>.3?B.ciel:B.patte,jG:air>.3?[.4,1.2]:J0,jD:air>.3?[-.4,1.2]:J0,dy:-air*20,sy:land?.84:1+air*.07,sx:land?1.1:1,dx:p0+(p1-p0)*u,fx:land?fxPoussiere:null};};
+const DZ_TOUPIE=t=>{if(t<4.2){const a=t*t*1.7;return {dir:D4[Math.floor(a)%4],aG:B.horiz,aD:B.horiz,jD:[.2,1.6],dy:-Math.abs(Math.sin(t*7))*(t>3?6:2),fx:t>2.2?fxVent:null};}
+ const u=t-4.2,k=Math.max(0,1-u/2.3),w=Math.sin(u*9);return {dir:'bas',aG:w>0?B.v:B.horiz,aD:w>0?B.horiz:B.v,jG:w>0?[-.5,.5]:J0,jD:w>0?J0:[.5,.5],rot:w*.2*k,dx:w*2.4*k,fx:fxEtoilesTete};};
+const DZ_MOON=t=>{const M=(d,dx0,dx1,tt)=>{const b=tt/BEAT,i=Math.floor(b),u=b-i,ph=i%2;return {dir:d,aG:B.bal1,aD:[.9,.2],jG:ph?[.4,.6]:[-.5,0],jD:ph?[-.5,0]:[.4,.6],dx:lerp(dx0,dx1,tt/3)};};
+ if(t<3){const K=M('droite',0,-34,t);K.fx=fxNotes;return K;}
+ if(t<4){const u=t-3;return {dir:D4[Math.floor(u*8)%4],aG:B.horiz,aD:B.horiz,jD:[.2,1.4],dx:-34,dy:-Math.sin(u*Math.PI)*7,fx:fxVent};}
+ if(t<7){const K=M('gauche',-34,0,t-4);K.fx=fxNotes;return K;}
+ return {dir:'bas',aG:B.hanche,aD:B.ciel,jG:[0,.35],jD:[0,.35],dy:-1,fx:fxTxt('Hee-hee !')};};
+const DZ_YMCA=t=>{const L=[['Y',B.v,B.v],['M',B.tete,B.tete],['C',B.cH,B.cB],['A',B.a,B.a]],i=Math.floor(t/BEAT)%4,X=L[i];
+ return {dir:'bas',aG:X[1],aD:X[2],jG:[-.3,0],jD:[.3,0],dy:-Math.abs(Math.sin(t/BEAT*Math.PI))*2,fx:fxTxt(X[0]+' !','#ffd23a')};};
 const DANSES={
  dz_travolta:{nom:'Le Travolta',ic:'🕺',D:8,f:DZ_TRAVOLTA},
- dz_poulet:{nom:'La Danse du Poulet',ic:'🐔',D:6,f:t=>{const b=t/BEAT;return {dir:Math.floor(b/2)%2?'gauche':'droite',g:['bravo',.05+((t*2.6)%1)*.9],sy:.9+Math.abs(Math.sin(b*Math.PI*2))*.07,rot:Math.sin(b*Math.PI*2)*.09,dx:Math.sin(b*Math.PI)*3,fx:fxs(fxPlumes,(Math.floor(b)%4===0)?fxTxt('Cot cot codêêt !'):null)};}},
- dz_twist:{nom:'Le Twist',ic:'🌀',D:6,f:t=>{const b=t/BEAT,desc=(1-Math.cos(t*Math.PI/2))/2;return {dir:'bas',g:['danse',.2+((b*.5)%1)*.6],sy:1-desc*.17,rot:Math.sin(b*Math.PI*2)*.13,dx:Math.sin(b*Math.PI*2)*1.6,fx:fxNotes};}},
- dz_robot:{nom:'Le Robot',ic:'🤖',D:7,f:t=>{const b=Math.floor(t/BEAT),u=(t/BEAT)%1,S=['bas','droite','bas','gauche','haut','gauche','bas','droite'],G=[['disco',.2],['salut',.5],['disco',.4],['coucou',.36],['disco',.2],['bravo',.1],['salut',.5],['disco',.4]];
-  return {dir:S[b%8],g:G[b%8],dx:((b%4)-1.5)*2.4,dy:u<.12?-1:0,fx:(b%4===3&&u<.7)?fxTxt('bip boup','#8af0ff'):null};}},
+ dz_poulet:{nom:'La Danse du Poulet',ic:'🐔',D:6,f:DZ_POULET},
+ dz_twist:{nom:'Le Twist',ic:'🌀',D:6,f:DZ_TWIST},
+ dz_robot:{nom:'Le Robot',ic:'🤖',D:6,f:DZ_ROBOT},
  dz_kangourou:{nom:'Le Kangourou',ic:'🦘',D:6,f:DZ_KANGOUROU},
  dz_toupie:{nom:'La Toupie',ic:'🌪️',D:6.5,f:DZ_TOUPIE},
  dz_moonwalk:{nom:'Le Moonwalk',ic:'🌙',D:7.6,f:DZ_MOON},
- dz_fievre:{nom:'La Fièvre du samedi soir',ic:'🪩',D:13,f:t=>{let K;
-  if(t<3)K=DZ_TRAVOLTA(t);else if(t<5)K=DZ_TOUPIE(1.7+(t-3)*1.25);else if(t<8)K=DZ_MOON(t-5);else if(t<10)K=DZ_MOON(4+(t-8)*1.5);else if(t<11.4)K=DZ_KANGOUROU((t-10)*1.43);
-  else{const u=t-11.4;K={dir:'bas',g:['coucou',.3],dy:-Math.sin(Math.min(1,u*3)*Math.PI)*8,sx:1+Math.max(0,.1-u*.2),fx:fxs(fxConfettis,fxTxt('YEAAAH !','#ffd23a'))};}
+ dz_fievre:{nom:'La Fièvre du samedi soir',ic:'🪩',D:14,f:t=>{let K;
+  if(t<3)K=DZ_TRAVOLTA(t);else if(t<5)K=DZ_YMCA(t-3);else if(t<7)K=DZ_TOUPIE(1.7+(t-5)*1.25);else if(t<10)K=DZ_MOON(t-7);else if(t<12)K=DZ_KANGOUROU((t-10)*1.2);
+  else{const u=t-12;K={dir:'bas',aG:B.ciel,aD:B.ciel,jG:u<.4?[-.4,1]:J0,jD:u<.4?[.4,1]:J0,dy:-Math.sin(Math.min(1,u*3)*Math.PI)*9,fx:fxs(fxConfettis,fxTxt('YEAAAH !','#ffd23a'))};}
   K.fx=fxs(fxSpot,K.fx);return K;}}};
+/* LA GRAVURE DES POSES : une pose de danse = un dessin complet du personnage, gardé en cache */
+const DZ_CACHE=new Map();
+const qA=v=>Math.round(v*12);
+function poseDanse(ap,dir,K){const cle=clePose(ap)+'|'+dir+'|'+[K.aG,K.aD,K.jG,K.jD].map(A=>qA(A[0])+','+qA(A[1])).join(';');
+ let c=DZ_CACHE.get(cle);if(c)return c;if(DZ_CACHE.size>700)DZ_CACHE.clear();
+ DZ_POSE={aG:K.aG.map(v=>qA(v)/12),aD:K.aD.map(v=>qA(v)/12),jG:K.jG.map(v=>qA(v)/12),jD:K.jD.map(v=>qA(v)/12)};
+ try{c=graverFin(ap,dir,0,false,0,false);}catch(z){c=null;}finally{DZ_POSE=null;}
+ if(c)DZ_CACHE.set(cle,c);return c;}
 function danseur(g,x,y,ap,k,t){const Dz=DANSES[k];if(!Dz)return personne(g,x,y,ap,'bas',0,false);let K={};try{K=Dz.f(Math.min(t,Dz.D-.001))||{};}catch(z){}
- const s=GESTE;GESTE=K.g?{t:1-K.g[1],type:'em_'+K.g[0],pourMoi:false,cible:null,impact:false,tt:0,duree:2}:{t:0};
+ peindreDanse(g,x,y,ap,K,t);}
+function peindreDanse(g,x,y,ap,K,t){
+ K.aG=K.aG||B.bas;K.aD=K.aD||B.bas;K.jG=K.jG||J0;K.jD=K.jD||J0;const dir=K.dir||'bas';
+ let a=ap;if(a&&a._disco&&!a._discoK&&!a.deguisement&&DISCO_T[a._disco])a=discoAp(a);
+ a=Object.assign({},a);delete a._main;delete a._tasse;delete a._sac;delete a._snk;DANSE_DESSIN=true;
  g.save();g.translate(Math.round(x+(K.dx||0)),Math.round(y+(K.dy||0)));if(K.rot)g.rotate(K.rot);if(K.sx||K.sy)g.scale(K.sx||1,K.sy||1);
- try{personne(g,0,0,ap,K.dir||'bas',K.pas||0,!!K.marche);}catch(z){}g.restore();GESTE=s;
+ try{const T=a._discoK&&DISCO_T[a._discoK],cape=T&&T.acc.cape,tt=performance.now()/1000;if(cape&&dir!=='haut')discoCape(g,0,0,dir,tt);
+  let c=poseDanse(a,dir,K);if(c){c=discoPose(c,a);g.drawImage(c,Math.round(-CASE_L/2),Math.round(-CASE_H+10),CASE_L,CASE_H);
+   if(a._acc||a._bij||a._lun||a._snk||a._noel||a._discoK){let dxy=null;try{const h=hautDePose(c),r=hautDePose(poseDe(a,dir,STYLE_FIN()?100:0));dxy=[h[0]-r[0],h[1]-r[1]];}catch(z){}try{galerieAcc(g,0,0,a,dir,dxy);}catch(z){}}}
+  else personne(g,0,0,a,dir,0,false);
+  if(cape&&dir==='haut')discoCape(g,0,0,dir,tt);}catch(z){}
+ g.restore();DANSE_DESSIN=false;
  if(K.fx)try{K.fx(g,x+(K.dx||0),y,t);}catch(z){}}
 /* la musique : un groove disco (grosse caisse à chaque temps, charley entre, basse en octaves, accords) */
 let DISCO_SON=null;
 function musiqueDisco(on){if(!on){if(window.LIEU_PAGE==='club')return;if(DISCO_SON){try{clearInterval(DISCO_SON.tic);DISCO_SON.mus.gain.setTargetAtTime(0,A().currentTime,.15);const m=DISCO_SON.mus;setTimeout(()=>{try{m.disconnect();}catch(x){}},900);}catch(x){}DISCO_SON=null;}return;}
  if(DISCO_SON)return;try{if(!SON_PRET||(typeof REG!=='undefined'&&REG.sons===false))return;const c=A();if(!c)return;const mus=c.createGain();mus.gain.value=.0001;mus.connect(SEC);mus.gain.setTargetAtTime(.5*Math.max(.3,V.mus/.34),c.currentTime,.1);
-  const hz=m=>440*Math.pow(2,(m-69)/12),PRG=[[45,57,60,64,67],[50,57,62,65,69],[43,55,59,62,67],[48,55,60,64,67]];let bar=0,next=c.currentTime+.05;
+  const hz=m=>440*Math.pow(2,(m-69)/12),PRG=[[45,57,60,64,67],[50,57,62,65,69],[43,55,59,62,67],[48,55,60,64,67]];let bar=0,next=c.currentTime+.05;const T0=next;
   const kick=t0=>{const o=c.createOscillator(),gg=c.createGain();o.frequency.setValueAtTime(130,t0);o.frequency.exponentialRampToValueAtTime(42,t0+.12);gg.gain.setValueAtTime(.55,t0);gg.gain.exponentialRampToValueAtTime(.001,t0+.22);o.connect(gg).connect(mus);o.start(t0);o.stop(t0+.25);};
   const hat=(t0,v)=>{const n=Math.floor(c.sampleRate*.05),bf=c.createBuffer(1,n,c.sampleRate),d=bf.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);const s=c.createBufferSource(),f=c.createBiquadFilter(),gg=c.createGain();s.buffer=bf;f.type='highpass';f.frequency.value=7000;gg.gain.value=v;s.connect(f).connect(gg).connect(mus);s.start(t0);};
   const note=(m,t0,dur,v,ty)=>{const o=c.createOscillator(),f=c.createBiquadFilter(),gg=c.createGain();o.type=ty||'sawtooth';o.frequency.value=hz(m);f.type='lowpass';f.frequency.value=ty==='square'?1800:900;gg.gain.setValueAtTime(0,t0);gg.gain.linearRampToValueAtTime(v,t0+.01);gg.gain.exponentialRampToValueAtTime(.001,t0+dur);o.connect(f).connect(gg).connect(mus);o.start(t0);o.stop(t0+dur+.02);};
   const tic=setInterval(()=>{try{while(next<c.currentTime+.6){const P=PRG[bar%4];for(let b=0;b<4;b++){const t0=next+b*BEAT;kick(t0);hat(t0+BEAT/2,.18);hat(t0+BEAT*.75,.06);
      note(P[0],t0,.2,.16);note(P[0]+12,t0+BEAT/2,.18,.14);if(b%2)P.slice(1).forEach((m,i)=>note(m,t0+BEAT/2+i*.004,.16,.035,'square'));}next+=BEAT*4;bar++;}}catch(x){}},200);
-  DISCO_SON={mus,tic};}catch(x){}}
+  DISCO_SON={mus,tic,t0:T0};}catch(x){}}
+window.DZ_B=B;
 let DANSE=null;
 function danseDuJoueur(){if(!DANSE)return null;const Dz=DANSES[DANSE.k],t=(performance.now()-DANSE.t0)/1000;if(!Dz||t>Dz.D){DANSE=null;musiqueDisco(false);return null;}return t;}
 function jouerDanse(k){if(!DANSES[k])return;DANSE={k,t0:performance.now()};try{joueur.marche=false;}catch(x){}musiqueDisco(true);try{vibrer([8,40,8]);}catch(x){}}
@@ -15873,6 +15924,7 @@ const dxPenche=trPenche+(PEDALE?VELO_PENCHE:0);
 const POSE=(()=>{
 const AM=(typeof AMPL==='number')?AMPL:1;
 const demiEp=EP/2, demiHan=HA/2;
+if(DZ_POSE){pG={x:DZ_POSE.jG[0],lift:DZ_POSE.jG[1],pointe:0,talon:0};pD={x:DZ_POSE.jD[0],lift:DZ_POSE.jD[1],pointe:0,talon:0};}   /* la danse pilote les jambes */
 /* les pieds, là où le dessin les pose */
 const piedG={x:-demiHan+pG.x*PAS_U*AM, y:-3-pG.lift*6, pointe:pG.pointe, talon:pG.talon};
 const piedD={x: demiHan+pD.x*PAS_U*AM, y:-3-pD.lift*6, pointe:pD.pointe, talon:pD.talon};
@@ -17551,6 +17603,24 @@ R(xx,yCou+5+r,4,1,(E.m==='rayee'&&Math.floor(r/3)%2)?c2:c);R(xx+3,yCou+5+r,1,1,c
 const fx=px+Math.round(13*0.15*dirX)+volE(13);
 for(let k=0;k<4;k++)R(fx+k,yCou+18,1,2,c2);};                  /* les franges */
 if(dos)pan(-2,0);else if(cote)pan(-6,-1);else pan(x0+w-6,1);};
+/* ================= LE BRAS DE DANSE =================
+   Deux angles : le bras (de l'épaule au coude) et l'avant-bras (du coude
+   au poignet), comptés vers l'extérieur du corps : 0 à l'horizontale,
+   +π/2 pendant, -π/2 levé au ciel, au-delà de π/2 il revient devant le corps.
+   De profil, « l'extérieur » est devant soi. */
+const brasDZ=(cote2,A,fonce)=>{
+const c=fonce?vestO:vest, cC=fonce?vest:vestC, cT=vestT, sk=fonce?peauO:peau;
+const prof=cote2===0, ox=prof?s:cote2;
+const x0=prof?(fonce?-1:2):cote2*(EP+1), y0=yEp+2;
+const ex=x0+ox*Math.cos(A[0])*12, ey=y0+Math.sin(A[0])*12;
+const hx=ex+ox*Math.cos(A[1])*11, hy=ey+Math.sin(A[1])*11;
+R(x0-3,yEp,7,4,manches>0?cC:sk);
+seg(x0,y0,ex,ey,SX.bras[0]+3,manches>0?T(cT,-25):T(peauO,-25));seg(ex,ey,hx,hy,SX.bras[1]+3,manches>=1?T(cT,-25):T(peauO,-25));
+seg(x0,y0,ex,ey,SX.bras[0]+1,manches>0?c:sk);seg(x0,y0,ex,ey,2,manches>0?cC:peauC);
+seg(ex,ey,hx,hy,SX.bras[1]+1,manches>=1?c:sk);
+if(manches>0&&manches<1)seg(ex,ey,hx,hy,SX.bras[1]+1,sk);
+if(manches>=1)R(Math.round(hx)-2,Math.round(hy)-1,5,1,cT);
+main(Math.round(hx),Math.round(hy),prof?0:cote2,prof,fonce,dos);};
 const angleBras=()=>{
 let a, L=15;
 const REPOS=1.25;                                       /* le bras qui pend, un peu en avant */
@@ -17730,13 +17800,13 @@ if(cote){
 
    Vérifié en débardeur, où les deux bras se voient : avant, un bras ;
    après, deux bras qui se croisent. */
-if(frG>0)penche(()=>brasGeste(true,true));else penche(()=>bras(0,-avD,true));     /* à l'opposé de SA jambe, voir LES DEUX BRAS */
+if(DZ_POSE)penche(()=>brasDZ(0,DZ_POSE.aG,true));else if(frG>0)penche(()=>brasGeste(true,true));else penche(()=>bras(0,-avD,true));     /* à l'opposé de SA jambe, voir LES DEUX BRAS */
 penche(()=>sac(false));
 jambe(0,avD,lvD,true);
 penche(()=>torse());
 jambe(0,avG,lvG,false);
 penche(()=>{cheveuxDerriere();tete();echarpeDe();barbeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();chapeauDe();masqueDe();});
-if(frG>0)penche(()=>{const h=brasGeste(false,false);outil(h);
+if(DZ_POSE)penche(()=>brasDZ(0,DZ_POSE.aD,false));else if(frG>0)penche(()=>{const h=brasGeste(false,false);outil(h);
 /* ================= LA MAIN QUI TIENT =================
    C'était un carré de quatre sur quatre en peau nue : ni pouce, ni
    doigts, ni ombre — alors que la main qui pend au bout du bras, elle,
@@ -17869,6 +17939,7 @@ if(diag){const loin=vis;bras(loin,loin>0?(dos?hanche:-hanche):(dos?-hanche:hanch
 torse();
 if(diag){const loin=vis, pres=-vis;
 bras(pres,loin>0?(dos?-hanche:hanche):(dos?hanche:-hanche),false);}
+else if(DZ_POSE){brasDZ(-1,dos?DZ_POSE.aD:DZ_POSE.aG,false);brasDZ(1,dos?DZ_POSE.aG:DZ_POSE.aD,false);}
 else{bras(-1,dos?-hanche:hanche,false);bras(1,dos?hanche:-hanche,false);}
 if(dos)sac(false);else sac(true);
 tete();echarpeDe();
@@ -17880,6 +17951,7 @@ if(swayX||swayY)g.restore();
 }
 if(dos||cote)skisDe();                                                       /* de profil et de dos, ils passent devant */
 }
+let DZ_POSE=null;   /* la pose de danse imposée pendant la gravure (voir LE BRAS DE DANSE) */
 let BRISE_PH=0, CLIGNE_FIN=false;
 function graverFin(ap,dir,pas,bouge,brise,cligne){
 ap=uniforme(ap);
