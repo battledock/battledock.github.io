@@ -213,11 +213,11 @@ const SUSP=[[150,486],[420,486],[1180,486],[1450,486],[320,520],[210,640],[430,6
 function suspension(g,x,y,t){const top=y-240;g.strokeStyle='rgba(60,60,70,.55)';g.lineWidth=.8;g.beginPath();g.moveTo(x,top);g.lineTo(x,y-118);g.stroke();
   const by=y-112,gr=g.createRadialGradient(x-3,by-3,1,x,by,10);gr.addColorStop(0,'#fffef6');gr.addColorStop(.6,'#fff2c8');gr.addColorStop(1,'#e8c880');g.fillStyle='rgba(255,236,170,.25)';g.beginPath();g.arc(x,by,16,0,7);g.fill();
   g.fillStyle=gr;g.beginPath();g.arc(x,by,8,0,7);g.fill();g.fillStyle='#c8a050';g.fillRect(x-2.5,by-10,5,3);
-  g.fillStyle='rgba(30,20,10,.12)';g.beginPath();g.ellipse(x+2,y+1,10,3,0,0,7);g.fill();try{lueurNuit(g,x,by,90,'rgba(255,220,150,1)');}catch(z){}}
+  g.fillStyle='rgba(30,20,10,.12)';g.beginPath();g.ellipse(x+2,y+1,10,3,0,0,7);g.fill();try{lueurN(g,x,by,90,'rgba(255,220,150,1)');}catch(z){}}
 /* LES PROMENEURS DE L'ÉTAGE : on les voit derrière la rambarde de verre */
 const HAUTGENS=[{v:22,d:0,ap:{peau:2,cheveux:3,coiffe:6,haut:1,veste:'#c8322a',pantalon:'#2a2a34',sac:3}},{v:-18,d:300,ap:{peau:5,cheveux:0,coiffe:1,haut:2,veste:'#2a6ad8',pantalon:'#e8dcc0'}},{v:26,d:800,ap:{peau:1,cheveux:7,coiffe:12,haut:3,veste:'#f2c84a',pantalon:'#3a3a44',_lun:'lun_noires'}},{v:-24,d:1200,ap:{peau:4,cheveux:1,coiffe:0,barbe:3,haut:0,veste:'#3a3a44',pantalon:'#1a1a22',_sac:{k:'sneakers'}}}];
 function dessinerHaut(g,ox,oy,t){const H0=635,H1=965,L=W-(H1-H0)-8;
-  for(const P of HAUTGENS){let u=((t*P.v+P.d)%(2*L)+2*L)%(2*L);const dir=u<L?1:-1;if(u>=L)u=2*L-u;let x=u;if(x>H0-4)x+=H1-H0+8;if(P.v<0){x=W-x;}
+  for(const P of HAUTGENS){let u=((t*P.v+P.d)%(2*L)+2*L)%(2*L);const dir=u<L?1:-1;if(u>=L)u=2*L-u;let x=u;if(x>H0-4)x+=H1-H0+8;if(P.v<0){x=W-x;}if(x+ox<-30||x+ox>VW+30)continue;
     const d=(P.v>0)===(dir>0)?'droite':'gauche';g.save();g.translate(x+ox,MZ.y+12+oy);g.scale(.62,.62);try{personne(g,0,0,Object.assign({bas:0,souliers:1,chaussures:'#2a2a30',sac:0,chapeau:0,raye:0,motif:0,barbe:0,_civil:true},P.ap),d,t*Math.abs(P.v)/7,true);}catch(z){}g.restore();
     g.fillStyle='rgba(200,230,240,.38)';g.fillRect(x+ox-8,MZ.y+oy,16,MZ.yn-MZ.y);g.fillStyle='rgba(255,255,255,.4)';g.fillRect(x+ox-8,MZ.y+oy,16,.8);}}
 /* ---------- LES MATIÈRES DU SOL : rosaces de marbre, la rose des vents dorée, les massifs du jardin d'hiver ---------- */
@@ -282,7 +282,7 @@ function dessinerSapin(g,ox,oy,t){const X=SAPIN.x+ox,Y=SAPIN.y+oy;
   const sy=Y-162,sc=1+Math.sin(t*3)*.08;g.fillStyle='rgba(255,230,140,.35)';g.beginPath();g.arc(X,sy,14,0,7);g.fill();g.fillStyle='#f6d04a';g.beginPath();for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,r=(k%2?4:10)*sc;g.lineTo(X+Math.cos(a)*r,sy+Math.sin(a)*r);}g.fill();g.fillStyle='#fff6c0';g.beginPath();g.arc(X,sy,2.4,0,7);g.fill();
   /* les cadeaux au pied */
   for(const [dx,w,h,c,r] of [[-30,14,10,'#c8262c','#e0b860'],[-14,12,14,'#2a6ad8','#ffffff'],[16,16,11,'#e0b860','#c8262c'],[32,11,9,'#3aa05a','#f2c84a'],[2,10,8,'#f07aa0','#ffffff']]){R(g,X+dx-w/2,Y-h+2,w,h,c);R(g,X+dx-w/2,Y-h+2,w,1.4,'rgba(255,255,255,.3)');R(g,X+dx-.8,Y-h+2,1.6,h,r);R(g,X+dx-w/2,Y-h/2+1.5,w,1.4,r);g.fillStyle=r;g.beginPath();g.ellipse(X+dx-2,Y-h+1,2,1.2,-.5,0,7);g.ellipse(X+dx+2,Y-h+1,2,1.2,.5,0,7);g.fill();}
-  try{lueurNuit(g,X,Y-90,160,'rgba(255,220,150,1)');lueurNuit(g,X,sy,60,'rgba(255,230,120,1)');}catch(z){}}
+  try{lueurN(g,X,Y-90,160,'rgba(255,220,150,1)');lueurN(g,X,sy,60,'rgba(255,230,120,1)');}catch(z){}}
 /* les guirlandes de sapin le long de la rambarde, avec leurs ampoules et des nœuds rouges */
 function dessinerGuirlandesNoel(g,ox,oy,t){const H0=635,H1=965;
   for(const [a,b] of [[4,H0-8],[H1+8,W-4]])for(let x=a;x<b-40;x+=60){const x0=x+ox,x1=Math.min(b,x+60)+ox,y=MZ.y+oy+1;
@@ -308,7 +308,10 @@ function noelPeint(g){if(!NOEL)return;
 /* ---------- LE PÈRE NOËL, dans son grand fauteuil, à côté du sapin ---------- */
 const PERE={x:716,y:492};
 const AP_PERE={peau:2,cheveux:7,teinte:'teinte_platine',coiffe:5,barbe:5,haut:5,veste:'#c8262c',bas:0,pantalon:'#c8262c',souliers:0,chaussures:'#1a1a1a',sac:0,chapeau:0,raye:0,motif:0,_pnj:true,_civil:true,_noel:'noel_bonnet'};
-function dessinerPere(g,ox,oy,t){const X=PERE.x+ox,Y=PERE.y+oy;
+function dessinerPere(g,ox,oy,t){const X0=PERE.x+ox,Y0p=PERE.y+oy;poser(g,'pere',X0,Y0p,96,96,34,84,q=>peindrePere(q,0,0));
+  const ph=(t%9);if(ph<1.6){g.fillStyle='rgba(255,255,255,'+(1-ph/1.6)+')';g.font='bold 8px "Helvetica Neue",Arial';g.textAlign='center';g.fillText('Ho ho ho !',X0,Y0p-70-ph*6);}
+  try{lueurN(g,X0,Y0p-30,70,'rgba(255,180,150,1)');}catch(z){}}
+function peindrePere(g,X,Y){
   g.fillStyle='rgba(20,20,40,.3)';g.beginPath();g.ellipse(X+2,Y+3,22,6,0,0,7);g.fill();
   /* le fauteuil : grand dossier de velours rouge, cadre doré, pieds sculptés */
   g.fillStyle='#e0b860';g.beginPath();g.moveTo(X-18,Y-6);g.lineTo(X-18,Y-50);g.quadraticCurveTo(X,Y-64,X+18,Y-50);g.lineTo(X+18,Y-6);g.fill();
@@ -320,9 +323,7 @@ function dessinerPere(g,ox,oy,t){const X=PERE.x+ox,Y=PERE.y+oy;
   /* la hotte, pleine de paquets */
   const hx=X+28,hy=Y;g.fillStyle='#8a5a32';g.beginPath();g.ellipse(hx,hy-8,11,9,0,0,7);g.fill();g.fillStyle='#6a4024';g.fillRect(hx-10,hy-15,20,3);
   for(const [dx,dy,c] of [[-5,-18,'#2a6ad8'],[3,-20,'#3aa05a'],[-1,-23,'#f2c84a']]){R(g,hx+dx-3,hy+dy,6,6,c);R(g,hx+dx-.5,hy+dy,1,6,'#ffffff');}
-  /* « Ho ho ho ! » de temps en temps */
-  const ph=(t%9);if(ph<1.6){g.fillStyle='rgba(255,255,255,'+(1-ph/1.6)+')';g.font='bold 8px "Helvetica Neue",Arial';g.textAlign='center';g.fillText('Ho ho ho !',X,Y-70-ph*6);}
-  try{lueurNuit(g,X,Y-30,70,'rgba(255,180,150,1)');}catch(z){}}
+}
 /* ---------- LE LIVREUR : il entre par les portes, livre une boutique, repart ---------- */
 const LIV={t0:0,ap:{peau:3,cheveux:2,coiffe:1,haut:1,veste:'#e8b830',pantalon:'#3a3a44',bas:0,souliers:1,chaussures:'#1a1a22',sac:0,chapeau:1,raye:0,motif:0,barbe:0,_civil:true,_pnj:true}};
 const LIV_DEST=[PORTES[1],PORTES[2],PORTES[4],PORTES[5],PORTES[6],PORTES[0]];
@@ -806,7 +807,7 @@ function dessinerFontaine(g,ox,oy,t){const X=FONT.x+ox,Y=FONT.y+oy,r=FONT.r,ry=r
   for(let k=0;k<10;k++){const a=k/10*6.28,dx=Math.cos(a),dy=Math.sin(a)*.38,ph=(t*1.4+k*.13)%1;g.strokeStyle='rgba(220,244,255,.7)';g.lineWidth=1.1;g.beginPath();g.moveTo(X,Y-84);g.quadraticCurveTo(X+dx*14,Y-92,X+dx*20,Y-58+dy*6);g.stroke();
     g.fillStyle='rgba(255,255,255,.9)';const u=ph;g.fillRect(X+dx*20*u-.6,Y-84+(u*u)*28-Math.sin(u*Math.PI)*8+dy*6*u,1.4,1.4);}
   for(let k=0;k<12;k++){const a=k/12*6.28,ph=(t*1.1+k*.21)%1;g.fillStyle='rgba(255,255,255,'+(.8*(1-ph))+')';g.fillRect(X+Math.cos(a)*22,Y-54+ph*30+Math.sin(a)*7,1.2,2.4);}
-  try{lueurNuit(g,X,Y-40,110,'rgba(140,200,255,1)');}catch(z){}}
+  try{lueurN(g,X,Y-40,110,'rgba(140,200,255,1)');}catch(z){}}
 function dessinerComptoir(g,ox,oy,t){const X=COMPT.x+ox,Y=COMPT.y+oy,w=COMPT.w,h=30;
   g.fillStyle='rgba(40,25,10,.25)';g.fillRect(X-w/2+4,Y-2,w,8);
   /* le meuble de chêne, plateau de zinc */
@@ -820,23 +821,31 @@ function dessinerComptoir(g,ox,oy,t){const X=COMPT.x+ox,Y=COMPT.y+oy,w=COMPT.w,h
   /* l'ardoise du menu */
   R(g,X-w/2-26,Y-48,20,28,'#2a2a2e');R(g,X-w/2-26,Y-48,20,1.4,'#8a5a32');for(let k=0;k<5;k++)R(g,X-w/2-23,Y-43+k*4.6,12-k%2*4,1,'#f4f2ea');R(g,X-w/2-20,Y-20,2,20,'#8a5a32');
   g.fillStyle='#ffe9a8';g.font='bold 7px "Helvetica Neue",Arial,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('CAFÉ',X,Y-h/2);
-  try{lueurNuit(g,X,Y-50,120,'rgba(255,210,150,1)');}catch(z){}}
+  try{lueurN(g,X,Y-50,120,'rgba(255,210,150,1)');}catch(z){}}
 function enseigneBarbier(g,x,y,t){R(g,x-3.6,y-36,7.2,4,'#c8ccd6');R(g,x-3.6,y,7.2,4,'#c8ccd6');g.save();g.beginPath();g.rect(x-3,y-32,6,32);g.clip();g.fillStyle='#ffffff';g.fillRect(x-3,y-32,6,32);
   for(let k=-2;k<8;k++){const yy=y-32+k*8+((t*12)%8);g.fillStyle=k%2?'#d8302a':'#2a5ad8';g.beginPath();g.moveTo(x-3,yy);g.lineTo(x+3,yy-4);g.lineTo(x+3,yy-1);g.lineTo(x-3,yy+3);g.fill();}g.restore();
   g.fillStyle='rgba(255,255,255,.4)';g.fillRect(x-2,y-32,1,32);g.fillStyle='#e8b830';g.beginPath();g.arc(x,y-38,2.6,0,7);g.fill();}
+/* ---------- LA FLUIDITÉ : ce qui ne bouge pas est peint une seule fois, ce qui est hors champ n'est pas peint du tout ---------- */
+let EN_CACHE=false;function lueurN(...a){if(!EN_CACHE)lueurNuit(...a);}
+const SPR=new Map();
+function poser(g,k,x,y,w,h,ox,oy,fn){const E=Math.max(1,Math.min(4,Math.round(g.getTransform?g.getTransform().a:2)||2));const key=k+'@'+E;let c=SPR.get(key);
+  if(!c){c=document.createElement('canvas');c.width=Math.ceil(w*E);c.height=Math.ceil(h*E);const q=c.getContext('2d');q.setTransform(E,0,0,E,ox*E,oy*E);const sG=typeof GESTE!=='undefined'?GESTE:null;EN_CACHE=true;try{if(sG)GESTE={t:0};fn(q);}catch(z){}finally{EN_CACHE=false;if(sG)GESTE=sG;}SPR.set(key,c);}
+  g.drawImage(c,Math.round(x)-ox,Math.round(y)-oy,w,h);}
+const vu=(x,y,cx,cy,m,up)=>{const X=x-cx,Y=y-cy;return X>-m&&X<VW+m&&Y>-Math.min(m,60)&&Y<VH+(up||m*1.6);};
 const BARISTA={peau:2,cheveux:1,coiffe:9,barbe:0,haut:2,veste:19,bas:0,pantalon:9,souliers:0,chaussures:1,sac:0,chapeau:0,raye:0,motif:0,_pnj:true,_civil:true};
-function acteurs(){const L=[];
-  L.push({y:FONT.y,f:(g,cx,cy)=>dessinerFontaine(g,-cx,-cy,now())});
-  L.push({y:MZ.yn,f:(g,cx,cy)=>dessinerHaut(g,-cx,-cy,now())});
-  L.push({y:AGENT.y,f:(g,cx,cy)=>{bougerPersonnel();dessinerAgent(g,-cx,-cy,now());}});
-  L.push({get y(){return VIGILE.y;},f:(g,cx,cy)=>dessinerVigile(g,-cx,-cy,now())});
-  L.push({get y(){const S=etatLivreur(now());return S?S.y:-999;},f:(g,cx,cy)=>dessinerLivreur(g,-cx,-cy,now())});
-  if(NOEL){if(PERE_LA)L.push({y:PERE.y,f:(g,cx,cy)=>dessinerPere(g,-cx,-cy,now())});L.push({y:SAPIN.y,f:(g,cx,cy)=>dessinerSapin(g,-cx,-cy,now())});L.push({y:MZ.yn+.5,f:(g,cx,cy)=>dessinerGuirlandesNoel(g,-cx,-cy,now())});ASTRES.forEach(([x,y],k)=>L.push({y,f:(g,cx,cy)=>astre(g,x-cx,y-cy,now(),k)}));}
-  for(const [x,y] of SUSP)L.push({y:y+1,f:(g,cx,cy)=>suspension(g,x-cx,y-cy,now())});
-  for(const [i,ap] of ASSIS_PNJ){const S=SIEGES[i];L.push({y:S.ys,f:(g,cx,cy)=>{try{assis(g,S.x-cx,S.h-cy,Object.assign({},DEF_AP,ap,{_civil:true,_pnj:true}));}catch(z){}}});}
-  L.push({y:COMPT.y-14,f:(g,cx,cy)=>{try{personne(g,COMPT.x+20-cx,COMPT.y-14-cy,BARISTA,'bas',0,false);}catch(z){}}});
-  L.push({y:COMPT.y,f:(g,cx,cy)=>dessinerComptoir(g,-cx,-cy,now())});
-  {const w2=Math.round(BOUT[1]*.66),c=PORTES[1];for(const x of [c-w2/2-10,c+w2/2+10])L.push({y:Y0+2,f:(g,cx,cy)=>enseigneBarbier(g,x-cx,Y0-60-cy,now())});}
+function acteurs(){const L=[];const C=(x,m,a,up)=>{const f=a.f;a.f=(g,cx,cy)=>{const X=typeof x==='function'?x():x;if(vu(X,a.y,cx,cy,m,up))f(g,cx,cy);};return a;};
+  L.push(C(FONT.x,130,{y:FONT.y,f:(g,cx,cy)=>dessinerFontaine(g,-cx,-cy,now())},170));
+  L.push({y:MZ.yn,f:(g,cx,cy)=>{if(cy<MZ.yn+40)dessinerHaut(g,-cx,-cy,now());}});
+  L.push(C(()=>AGENT.x,90,{y:AGENT.y,f:(g,cx,cy)=>{bougerPersonnel();dessinerAgent(g,-cx,-cy,now());}}));
+  L.push({get y(){return VIGILE.y;},f:(g,cx,cy)=>{if(vu(VIGILE.x,VIGILE.y,cx,cy,50))dessinerVigile(g,-cx,-cy,now());}});
+  L.push({get y(){const S=etatLivreur(now());return S?S.y:-999;},f:(g,cx,cy)=>{const S=etatLivreur(now());if(S&&vu(S.x,S.y,cx,cy,60))dessinerLivreur(g,-cx,-cy,now());}});
+  if(NOEL){if(PERE_LA)L.push(C(PERE.x,100,{y:PERE.y,f:(g,cx,cy)=>dessinerPere(g,-cx,-cy,now())}));L.push(C(SAPIN.x,170,{y:SAPIN.y,f:(g,cx,cy)=>dessinerSapin(g,-cx,-cy,now())},260));L.push({y:MZ.yn+.5,f:(g,cx,cy)=>{if(cy<MZ.yn+40)dessinerGuirlandesNoel(g,-cx,-cy,now());}});ASTRES.forEach(([x,y],k)=>L.push(C(x,30,{y,f:(g,cx,cy)=>astre(g,x-cx,y-cy,now(),k)},280)));}
+  for(const [x,y] of SUSP)L.push(C(x,110,{y:y+1,f:(g,cx,cy)=>suspension(g,x-cx,y-cy,now())},260));
+  for(const [i,ap] of ASSIS_PNJ){const S=SIEGES[i],A=Object.assign({},DEF_AP,ap,{_civil:true,_pnj:true});L.push(C(S.x,40,{y:S.ys,f:(g,cx,cy)=>poser(g,'assis'+i,S.x-cx,S.h-cy,60,90,30,62,q=>assis(q,0,0,A))}));}
+  for(const G of GENS)if(G.fixe){const A=Object.assign({},DEF_AP,G.ap),k='fixe'+G.x+'_'+G.y;L.push(C(G.x,40,{y:G.y,f:(g,cx,cy)=>poser(g,k,G.x-cx,G.y-cy,60,80,30,64,q=>personne(q,0,0,A,G.dir,0,false,false))}));}
+  L.push(C(COMPT.x,40,{y:COMPT.y-14,f:(g,cx,cy)=>poser(g,'barista',COMPT.x+20-cx,COMPT.y-14-cy,60,80,30,64,q=>personne(q,0,0,BARISTA,'bas',0,false))}));
+  L.push(C(COMPT.x,140,{y:COMPT.y,f:(g,cx,cy)=>dessinerComptoir(g,-cx,-cy,now())},170));
+  {const w2=Math.round(BOUT[1]*.66),c=PORTES[1];for(const x of [c-w2/2-10,c+w2/2+10])L.push(C(x,20,{y:Y0+2,f:(g,cx,cy)=>enseigneBarbier(g,x-cx,Y0-60-cy,now())},120));}
   return L;}
 /* LES PROMENEURS : ils font les vitrines, ils traversent, ils prennent un café */
 const GENS=[];
@@ -854,11 +863,12 @@ const GENS=[];
     [PORTES[5]-18,Y0+26,'haut',{peau:1,cheveux:2,coiffe:14,haut:3,veste:'#7ad0c0',pantalon:'#2a3a5a'}],[COMPT.x-40,COMPT.y+18,'haut',{peau:4,cheveux:1,coiffe:0,barbe:4,haut:0,veste:'#5a6a3a',pantalon:'#2a2a34'}]
 ];
   for(const [x,y,d,ap] of FIX)GENS.push({fixe:true,x,y,dir:d,pas:0,ap:Object.assign({bas:0,souliers:1,chaussures:'#2a2a30',sac:0,chapeau:0,raye:0,motif:0,barbe:0,_civil:true},ap)});})();
+const MOBILES=GENS.filter(G=>!G.fixe);
 const CAD=(()=>{try{return CADENCE_PAS;}catch(x){return 0.09;}})();
 const D8=a=>{const k=Math.round(a/(Math.PI/4));return {0:'droite',1:'bas-droite',2:'bas',3:'bas-gauche',4:'gauche','-4':'gauche','-3':'haut-gauche','-2':'haut','-1':'haut-droite'}[k]||'bas';};
 function figurants(){if(ETG)return [];const n=Date.now()/1000;
   for(const P of GENS){if(P.fixe)continue;const T=P.tour,d=(n*T.v+P.dec*100)%T.L;for(const [a,b,L0,dd] of T.seg){if(d<=L0+dd){const t=(d-L0)/dd;P.x=a[0]+(b[0]-a[0])*t;P.y=a[1]+(b[1]-a[1])*t;P.dir=D8(Math.atan2(b[1]-a[1],b[0]-a[0]));break;}}P.pas=(n*T.v+P.dec*100)*CAD;}
-  return GENS;}
+  return MOBILES;}
 /* ---------- S'ASSEOIR : aux tables du café, sur les bancs du jardin, sur les banquettes ---------- */
 const SIEGES=(()=>{const L=[];
   for(const [x,y] of [[210,590],[430,590],[210,700],[430,700]])for(const d of [-1,1])L.push({x:x+d*25,h:y-15,ys:y+2,px:x+d*25,py:y+12,nom:'TABLE DU CAFÉ'});

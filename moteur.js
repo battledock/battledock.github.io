@@ -14630,7 +14630,7 @@ nettoyerBulles();
 const acteurs=[{y:(window.MOI_ASSIS?window.MOI_ASSIS.ys:joueur.y),
 f:()=>{if(window.MOI_ASSIS){const S=window.MOI_ASSIS;try{assis(ctx,Math.round(S.x-camX),Math.round(S.h-camY),e.ap);}catch(x){}return;}if(CARTE==='tokyo'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif){try{TKM.dessinerEssai(ctx,camX,camY);}catch(x){}return;}try{const m=ctx.getTransform();JOUEUR_ECRAN={x:m.a*px+m.e,y:m.d*(py-18)+m.f,sc:m.a/3};}catch(x){}return personne(ctx,px,py,e.ap,(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche,court);}}];
 if(JOL&&JOL.acteurs){try{for(const a of JOL.acteurs())acteurs.push({y:a.y,f:()=>{try{a.f(ctx,camX,camY);}catch(x){}}});}catch(x){}}
-if(JOL&&JOL.figurants){try{for(const f of JOL.figurants())acteurs.push({y:f.y,f:()=>{try{const s=GESTE;GESTE={t:0};personne(ctx,Math.round(f.x-camX),Math.round(f.y-camY),Object.assign({},DEF_AP,f.ap),f.dir,f.pas,f.marche!==false,!!f.court);GESTE=s;}catch(x){}}});}catch(x){}}
+if(JOL&&JOL.figurants){try{for(const f of JOL.figurants()){const fx=f.x-camX,fy=f.y-camY;if(fx<-40||fy<-30||fx>VW+40||fy>VH+70)continue;acteurs.push({y:f.y,f:()=>{try{const s=GESTE;GESTE={t:0};personne(ctx,Math.round(f.x-camX),Math.round(f.y-camY),Object.assign({},DEF_AP,f.ap),f.dir,f.pas,f.marche!==false,!!f.court);GESTE=s;}catch(x){}}});}}catch(x){}}
 if(OVATION){if(Date.now()>OVATION.fin)OVATION=null;else for(const f of OVATION.gens)acteurs.push({y:f.y,f:()=>{try{dessinerFigurant(ctx,f,camX,camY);}catch(x){}}});}
 for(const [,a] of AUTRES){
 const ax=a.x-camX, ay=a.y-camY;
