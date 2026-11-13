@@ -13,7 +13,7 @@ const BOUTIQUES={
   bijou:{nom:'L’Heure Bleue',sous:'BIJOUTERIE · HORLOGERIE · DEPUIS 1962',cle:'_bij',c1:'#1e1e2a',c2:'#0e0e16',or:'#e0b860',clair:'#2a2a3a',fond:'bijou',
     vendeur:{peau:1,cheveux:6,coiffe:10,barbe:0,haut:2,veste:20,bas:0,pantalon:9,souliers:0,chaussures:1,sac:0,chapeau:0,raye:0,motif:0,_pnj:true,_bij:'bij_chaine_or'},
     paroles:['« Une montre, ça se transmet. »','« L’or ne ment jamais, mon petit. »','« Regarde comme ça brille sous les spots. »','« Ici, on vend du temps. Le plus beau. »'],
-    articles:[['bij_montre_acier','Montre acier','Bracelet maille, cadran bleu nuit.',25000,0],['bij_chaine_argent','Chaîne argent','Maille fine, discrète, qui accroche la lumière.',40000,0],
+    articles:[['bij_bracelet_cuir','Bracelet cuir','Cuir tressé, clou doré. Le premier bijou.',6000,0],['bij_perles','Collier de perles','Perles de couleur, esprit plage.',9000,0],['bij_montre_sport','Montre sport','Bracelet rouge, cadran blanc.',12000,0],['bij_montre_acier','Montre acier','Bracelet maille, cadran bleu nuit.',25000,0],['bij_chaine_argent','Chaîne argent','Maille fine, discrète, qui accroche la lumière.',40000,0],
       ['bij_montre_plongee','Montre de plongée','Étanche à 300 m, lunette tournante.',70000,1],['bij_chaine_or','Chaîne or','Dix-huit carats, maille forçat. Elle scintille.',150000,2],
       ['bij_montre_or','Montre or','Le cadran qui fait tourner les têtes.',220000,2],['bij_grillz','Grillz or','Un sourire en or massif.',300000,2],
       ['bij_medaillon','Le médaillon','Grosse maille et médaillon d’or. Pour les patrons du port.',600000,3],['bij_montre_glace','Montre glacée','Sertie de diamants. Elle étincelle sans arrêt.',1200000,3],
@@ -21,14 +21,14 @@ const BOUTIQUES={
   lunettes:{nom:'Optique du Vieux-Port',sous:'OPTICIEN · LUNETTES DE SOLEIL',cle:'_lun',c1:'#1f6a6a',c2:'#124a4a',or:'#e8dcb0',clair:'#2a8a8a',fond:'lunettes',
     vendeur:{peau:3,cheveux:2,coiffe:4,barbe:0,haut:2,veste:19,bas:0,pantalon:8,souliers:0,chaussures:1,sac:0,chapeau:0,raye:0,motif:0,_pnj:true,_lun:'lun_rondes'},
     paroles:['« Le soleil de Marseille, ça ne pardonne pas. »','« Essaie, le miroir est là pour ça. »','« Celles-là, c’est le style du Vieux-Port. »','« Avec ça, tu vois la mer en plus bleu. »'],
-    articles:[['lun_noires','Noires','Le classique, verres fumés.',8000,0],['lun_rondes','Rondes dorées','Monture fine, verres ronds.',18000,0],
+    articles:[['lun_rouges','Rouges','Monture rouge vif.',5000,0],['lun_bleues','Bleues','Rectangulaires, bleu roi.',6000,0],['lun_noires','Noires','Le classique, verres fumés.',8000,0],['lun_ecaille','Écaille','Monture écaille, l’allure du Panier.',12000,0],['lun_rondes','Rondes dorées','Monture fine, verres ronds.',18000,0],
       ['lun_aviateur','Aviateur','Comme les pilotes de Marignane.',35000,1],['lun_coeur','Cœur','Pour voir la vie en rose.',45000,1],
       ['lun_miroir','Miroir','Verres miroir bleu ciel, qui brillent au soleil.',70000,2],['lun_masque','Masque sport','Écran panoramique orange.',120000,2],
       ['lun_or','Or massif','Monture en or. Elles étincellent.',400000,3],['lun_cyber','Visière LED','Une bande lumineuse qui change de couleur. Dix exemplaires.',900000,4]]},
   sneakers:{nom:'Sneakers 13',sous:'BASKETS · ÉDITIONS LIMITÉES',cle:'_snk',c1:'#e8602a',c2:'#b8401a',or:'#fff0d0',clair:'#f08a4a',fond:'sneakers',
     vendeur:{peau:5,cheveux:0,coiffe:1,barbe:1,haut:1,veste:21,bas:1,pantalon:9,souliers:1,chaussures:6,sac:0,chapeau:1,raye:0,motif:0,_pnj:true,_snk:'snk_fluo'},
     paroles:['« Wesh, celles-là elles sont propres ! »','« Édition limitée, y en aura pas pour tout le monde. »','« Avec ça, tu glisses sur le quai. »','« Le blanc, c’est intemporel. »'],
-    articles:[['snk_blanches','Blanches','Toutes blanches, semelle immaculée.',15000,0],['snk_noires','Noires & rouges','Noires, liseré rouge.',25000,0],
+    articles:[['snk_rouges','Rouges','Rouges, semelle blanche.',9000,0],['snk_roses','Roses','Rose poudré et blanc.',12000,0],['snk_violettes','Violettes','Violet, liseré doré.',14000,0],['snk_blanches','Blanches','Toutes blanches, semelle immaculée.',15000,0],['snk_camo','Camo','Kaki, semelle gomme.',18000,0],['snk_noires','Noires & rouges','Noires, liseré rouge.',25000,0],
       ['snk_om','Ciel & blanc','Bleu ciel et blanc. Allez l’OM.',45000,1],['snk_desert','Désert','Daim sable, semelle crème.',45000,1],
       ['snk_fluo','Fluo','On te voit de l’autre bout du port.',70000,2],['snk_led','Lumineuses','Semelle LED qui change de couleur, même la nuit.',350000,3],
       ['snk_or','Or','La paire en or. Elle scintille à chaque pas.',900000,3],['snk_ailees','Les Ailées','Des ailes d’or aux chevilles. Dix paires au monde.',3000000,4]]}};
@@ -154,7 +154,7 @@ async function caisse(){if(ACHAT||!SEL)return;const A=B.articles.find(a=>a[0]===
   if((e.euros||0)<A[3]*100){bulle('« Reviens quand t’auras fait quelques shifts. »');vib(30);return;}
   ACHAT=true;b.disabled=true;b.innerHTML='…';
   const r=await appelRPC('acheter_cosmetique',{p_joueur:e.id,p_piece:SEL});ACHAT=false;
-  if(!r||r.erreur){bulle(r&&r.erreur==='pas_assez'?'« Il te manque de quoi payer. »':r&&r.erreur==='piece inconnue'?'« Celui-là arrive bientôt en rayon. »':'« La caisse fait des siennes, réessaie. »');rendreTout();return;}
+  if(!r||r.erreur){bulle(r&&r.erreur==='epuisee'?'« Les dix exemplaires sont partis. Trop tard ! »':r&&r.erreur==='pas_assez'?'« Il te manque de quoi payer. »':r&&r.erreur==='piece inconnue'?'« Celui-là arrive bientôt en rayon. »':'« La caisse fait des siennes, réessaie. »');rendreTout();return;}
   if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}e.cos=Object.assign({},e.cos||{},{[SEL]:true});
   porter(SEL);vib([14,30,14]);bulle('« Bon choix ! Tu le portes déjà. »');rendreTout();}
 function fermer(){if(!RACINE)return;RACINE=null;cancelAnimationFrame(BOUCLE);try{fermeA=Date.now();}catch(x){}try{$('page2').classList.remove('on');}catch(x){}}
