@@ -158,6 +158,7 @@ async function caisse(){if(ACHAT||!SEL)return;const A=B.articles.find(a=>a[0]===
   const r=await appelRPC('acheter_cosmetique',{p_joueur:e.id,p_piece:SEL});ACHAT=false;
   if(!r||r.erreur){bulle(r&&r.erreur==='epuisee'?'« Les dix exemplaires sont partis. Trop tard ! »':r&&r.erreur==='pas_assez'?'« Il te manque de quoi payer. »':r&&r.erreur==='piece inconnue'?'« Celui-là arrive bientôt en rayon. »':'« La caisse fait des siennes, réessaie. »');rendreTout();return;}
   if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}e.cos=Object.assign({},e.cos||{},{[SEL]:true});
+  e.ap=Object.assign({},e.ap||{},{_sac:{k:B.fond,f:Date.now()+5*60*1000}});
   porter(SEL);vib([14,30,14]);bulle('« Bon choix ! Tu le portes déjà. »');rendreTout();}
 function fermer(){if(!RACINE)return;RACINE=null;cancelAnimationFrame(BOUCLE);try{fermeA=Date.now();}catch(x){}try{$('page2').classList.remove('on');}catch(x){}}
 function cadre(T,corps){css();$('page2Fond').className='';$('page2').classList.add('on');

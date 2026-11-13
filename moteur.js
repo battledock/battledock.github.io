@@ -14627,8 +14627,8 @@ if(CARTE==='tokyo'&&TKM&&TKM.lumieresTokyo){try{TKM.lumieresTokyo(ctx,camX,camY)
 ambiance(ctx);                          /* une lueur douce vers le centre */
 if(CARTE==='extramar'&&typeof dessinerLePanorama==='function'){try{dessinerLePanorama(ctx,camX,camY,lw,lh);}catch(x){}}   /* le Port Autonome, a l'heure qu'il est */
 nettoyerBulles();
-const acteurs=[{y:joueur.y,
-f:()=>{if(CARTE==='tokyo'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif){try{TKM.dessinerEssai(ctx,camX,camY);}catch(x){}return;}try{const m=ctx.getTransform();JOUEUR_ECRAN={x:m.a*px+m.e,y:m.d*(py-18)+m.f,sc:m.a/3};}catch(x){}return personne(ctx,px,py,e.ap,(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche,court);}}];
+const acteurs=[{y:(window.MOI_ASSIS?window.MOI_ASSIS.ys:joueur.y),
+f:()=>{if(window.MOI_ASSIS){const S=window.MOI_ASSIS;try{assis(ctx,Math.round(S.x-camX),Math.round(S.h-camY),e.ap);}catch(x){}return;}if(CARTE==='tokyo'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif){try{TKM.dessinerEssai(ctx,camX,camY);}catch(x){}return;}try{const m=ctx.getTransform();JOUEUR_ECRAN={x:m.a*px+m.e,y:m.d*(py-18)+m.f,sc:m.a/3};}catch(x){}return personne(ctx,px,py,e.ap,(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche,court);}}];
 if(JOL&&JOL.acteurs){try{for(const a of JOL.acteurs())acteurs.push({y:a.y,f:()=>{try{a.f(ctx,camX,camY);}catch(x){}}});}catch(x){}}
 if(JOL&&JOL.figurants){try{for(const f of JOL.figurants())acteurs.push({y:f.y,f:()=>{try{const s=GESTE;GESTE={t:0};personne(ctx,Math.round(f.x-camX),Math.round(f.y-camY),Object.assign({},DEF_AP,f.ap),f.dir,f.pas,f.marche!==false,!!f.court);GESTE=s;}catch(x){}}});}catch(x){}}
 if(OVATION){if(Date.now()>OVATION.fin)OVATION=null;else for(const f of OVATION.gens)acteurs.push({y:f.y,f:()=>{try{dessinerFigurant(ctx,f,camX,camY);}catch(x){}}});}
@@ -15158,6 +15158,9 @@ function galerieAcc(g,x,y,ap,dir){const d=dir||'bas',R=(px,py,w,h,c)=>{g.fillSty
    else if(l==='lun_masque'){R(-7,-42.4,14,3.4,M[0]);R(-6.2,-41.8,12.4,2.2,M[1]);g.fillStyle='rgba(255,255,255,.55)';g.fillRect(x-5.6,y-41.8,3,1);}
    else{const rond=l==='lun_rondes',av=l==='lun_aviateur';R(-6.2,-41.4,5,rond?3:2.8,M[0]);R(1.2,-41.4,5,rond?3:2.8,M[0]);R(-5.6,-41,3.8,rond||av?2.4:1.8,M[1]);R(1.8,-41,3.8,rond||av?2.4:1.8,M[1]);R(-1.2,-41.2,2.4,.9,M[0]);if(av)R(-5.2,-42,10.4,.6,M[0]);if(l==='lun_ecaille'){R(-5.8,-41.4,1,1,'#d8a060');R(3.4,-41.2,1,1,'#d8a060');R(-2.6,-40,.8,.8,'#d8a060');}R(-5.4,-40.9,1,.8,'rgba(255,255,255,.75)');R(2,-40.9,1,.8,'rgba(255,255,255,.75)');}
    if(l==='lun_or'||l==='lun_miroir')etincelle(g,x-4,y-41,t,9,l==='lun_miroir'?'rgba(220,250,255,.9)':null);}}
+ const sc=ap._sac;if(sc&&(!sc.f||sc.f>Date.now())){const C={bijou:['#1a1a22','#e0b860','◆'],lunettes:['#1f6a6a','#ffffff','O'],sneakers:['#e8602a','#ffffff','13'],bdc:['#1d4a8a','#e0b860','B'],coiffeur:['#1e4a36','#f2d27a','S']}[sc.k]||['#c8a050','#fff','•'];
+  const hx=prof?-sx*3.5:(dos?7.5:-7.5),hy=-19;g.strokeStyle=C[1];g.lineWidth=.6;g.beginPath();g.moveTo(x+hx-1.6,y+hy+1);g.lineTo(x+hx-.6,y+hy-1.2);g.lineTo(x+hx+.6,y+hy-1.2);g.lineTo(x+hx+1.6,y+hy+1);g.stroke();
+  R(hx-3,hy+1,6,7,C[0]);R(hx-3,hy+1,6,.8,'rgba(255,255,255,.25)');R(hx+2.2,hy+1,.8,7,'rgba(0,0,0,.25)');g.fillStyle=C[1];g.font='bold 3px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText(C[2],x+hx-.2,y+hy+4.6);}
  const tz=ap._tasse;if(tz&&(!tz.f||tz.f>Date.now())){const k=tz.k||'expresso',hx=prof?sx*4:(dos?-7:7),hy=-20;
   if(k==='glace'){R(hx-1.2,hy-1,2.4,4,'#d8a060');g.fillStyle='#f6c6d0';g.beginPath();g.arc(x+hx,y+hy-2,2.2,0,7);g.fill();g.fillStyle='#fff2e0';g.beginPath();g.arc(x+hx-.6,y+hy-3.2,1.2,0,7);g.fill();}
   else if(k==='crepe'||k==='croissant'){R(hx-2.4,hy-.5,4.8,2.4,k==='crepe'?'#e8c080':'#d8962a');R(hx-2.4,hy-.5,4.8,.7,'#f6d8a0');}
@@ -15165,7 +15168,7 @@ function galerieAcc(g,x,y,ap,dir){const d=dir||'bas',R=(px,py,w,h,c)=>{g.fillSty
 function personne(g,x,y,ap,dir,pas,marche,enCourse){
 if(window.AP_FORCE&&ap&&typeof e!=='undefined'&&ap===e.ap)ap=Object.assign({},ap,window.AP_FORCE);   /* la tenue d'athlète, sur la piste */
 if(ap&&ap._snk&&SNEAKERS_GAL[ap._snk]&&!ap.deguisement&&!ap._snkFait){const S=SNEAKERS_GAL[ap._snk];ap=Object.assign({},ap,{souliers:1,chaussures:S.c,_snkA:S.a,_snkS:S.s,_snkFait:1});}
-if(ap&&(ap._acc||((ap._bij||ap._lun||ap._tasse||ap._snk)&&!ap.deguisement))&&!ap._accFait){personne(g,x,y,Object.assign({},ap,{_accFait:1}),dir,pas,marche,enCourse);try{if(ap._acc)accessoireAthle(g,x,y,ap._acc,dir);}catch(z){}try{if(!ap.deguisement)galerieAcc(g,x,y,ap,dir);}catch(z){}return;}
+if(ap&&(ap._acc||((ap._bij||ap._lun||ap._tasse||ap._snk||ap._sac)&&!ap.deguisement))&&!ap._accFait){personne(g,x,y,Object.assign({},ap,{_accFait:1}),dir,pas,marche,enCourse);try{if(ap._acc)accessoireAthle(g,x,y,ap._acc,dir);}catch(z){}try{if(!ap.deguisement)galerieAcc(g,x,y,ap,dir);}catch(z){}return;}
 /* UN COSTUME INTEGRAL REMPLACE LE DESSIN, IL NE SE POSE PAS DESSUS.
    Peint par-dessus, il laissait toujours ressortir un coin de cheveux
    au sommet de la capuche ou deux pixels de col a l'epaule — et un

@@ -648,6 +648,7 @@ function enseigneBarbier(g,x,y,t){R(g,x-3.6,y-36,7.2,4,'#c8ccd6');R(g,x-3.6,y,7.
 const BARISTA={peau:2,cheveux:1,coiffe:9,barbe:0,haut:2,veste:19,bas:0,pantalon:9,souliers:0,chaussures:1,sac:0,chapeau:0,raye:0,motif:0,_pnj:true,_civil:true};
 function acteurs(){const L=[];
   L.push({y:FONT.y,f:(g,cx,cy)=>dessinerFontaine(g,-cx,-cy,now())});
+  for(const [i,ap] of ASSIS_PNJ){const S=SIEGES[i];L.push({y:S.ys,f:(g,cx,cy)=>{try{assis(g,S.x-cx,S.h-cy,Object.assign({},DEF_AP,ap,{_civil:true,_pnj:true}));}catch(z){}}});}
   L.push({y:COMPT.y-14,f:(g,cx,cy)=>{try{personne(g,COMPT.x+20-cx,COMPT.y-14-cy,BARISTA,'bas',0,false);}catch(z){}}});
   L.push({y:COMPT.y,f:(g,cx,cy)=>dessinerComptoir(g,-cx,-cy,now())});
   {const w2=Math.round(BOUT[1]*.66),c=PORTES[1];for(const x of [c-w2/2-10,c+w2/2+10])L.push({y:Y0+2,f:(g,cx,cy)=>enseigneBarbier(g,x-cx,Y0-60-cy,now())});}
@@ -665,14 +666,48 @@ const GENS=[];
    GENS.push({tour:{seg,L,v:T.v},dec:i*1.7,court:false,ap:Object.assign({bas:0,souliers:1,chaussures:'#f2f2f2',sac:0,chapeau:0,raye:0,motif:0,barbe:0,_civil:true},AP[i]),x:0,y:0,dir:'bas',pas:0});});
   /* ceux qui ne bougent pas : devant les vitrines, au comptoir */
   const FIX=[[PORTES[2]-30,Y0+26,'haut',{peau:3,cheveux:5,coiffe:7,haut:2,veste:'#e8dcc0',pantalon:'#2a2a34',sac:5}],[PORTES[4]+24,Y0+28,'haut',{peau:5,cheveux:0,coiffe:1,haut:1,veste:'#1c1c22',pantalon:'#3a3a44',chapeau:1}],
-    [PORTES[5]-18,Y0+26,'haut',{peau:1,cheveux:2,coiffe:14,haut:3,veste:'#7ad0c0',pantalon:'#2a3a5a'}],[COMPT.x-40,COMPT.y+18,'haut',{peau:4,cheveux:1,coiffe:0,barbe:4,haut:0,veste:'#5a6a3a',pantalon:'#2a2a34'}],
-    [210,612,'bas',{peau:2,cheveux:7,coiffe:6,haut:1,veste:'#f07aa0',pantalon:'#2a2a34',_tasse:{k:'chocolat'}}],[430,722,'haut',{peau:6,cheveux:3,coiffe:3,haut:2,veste:'#2a6ad8',pantalon:'#e8dcc0',_tasse:{k:'expresso'}}]];
+    [PORTES[5]-18,Y0+26,'haut',{peau:1,cheveux:2,coiffe:14,haut:3,veste:'#7ad0c0',pantalon:'#2a3a5a'}],[COMPT.x-40,COMPT.y+18,'haut',{peau:4,cheveux:1,coiffe:0,barbe:4,haut:0,veste:'#5a6a3a',pantalon:'#2a2a34'}]
+];
   for(const [x,y,d,ap] of FIX)GENS.push({fixe:true,x,y,dir:d,pas:0,ap:Object.assign({bas:0,souliers:1,chaussures:'#2a2a30',sac:0,chapeau:0,raye:0,motif:0,barbe:0,_civil:true},ap)});})();
 const CAD=(()=>{try{return CADENCE_PAS;}catch(x){return 0.09;}})();
 const D8=a=>{const k=Math.round(a/(Math.PI/4));return {0:'droite',1:'bas-droite',2:'bas',3:'bas-gauche',4:'gauche','-4':'gauche','-3':'haut-gauche','-2':'haut','-1':'haut-droite'}[k]||'bas';};
 function figurants(){if(ETG)return [];const n=Date.now()/1000;
   for(const P of GENS){if(P.fixe)continue;const T=P.tour,d=(n*T.v+P.dec*100)%T.L;for(const [a,b,L0,dd] of T.seg){if(d<=L0+dd){const t=(d-L0)/dd;P.x=a[0]+(b[0]-a[0])*t;P.y=a[1]+(b[1]-a[1])*t;P.dir=D8(Math.atan2(b[1]-a[1],b[0]-a[0]));break;}}P.pas=(n*T.v+P.dec*100)*CAD;}
   return GENS;}
+/* ---------- S'ASSEOIR : aux tables du café, sur les bancs du jardin, sur les banquettes ---------- */
+const SIEGES=(()=>{const L=[];
+  for(const [x,y] of [[210,590],[430,590],[210,700],[430,700]])for(const d of [-1,1])L.push({x:x+d*25,h:y-15,ys:y+2,px:x+d*25,py:y+12,nom:'TABLE DU CAFÉ'});
+  for(const [x,y] of [[1170,640],[1410,640]])for(const d of [-1,1])L.push({x:x+d*15,h:y-10,ys:y+2,px:x+d*15,py:y+10,nom:'BANC'});
+  for(const [x,y] of BANQ)for(const d of [-1,1])L.push({x:x+d*20,h:Math.round(y+RBQ*.42)-12,ys:Math.round(y+RBQ*.42)+2,px:x+d*20,py:Math.round(y+RBQ*.42)+10,nom:'BANQUETTE'});
+  return L;})();
+const ASSIS_PNJ=[[2,{peau:2,cheveux:7,coiffe:6,haut:1,veste:'#f07aa0',pantalon:'#2a2a34',bas:0,souliers:1,chaussures:'#2a2a30'}],[7,{peau:6,cheveux:3,coiffe:3,haut:2,veste:'#2a6ad8',pantalon:'#e8dcc0',bas:0,souliers:0,chaussures:'#4a3524'}],[10,{peau:1,cheveux:10,coiffe:11,haut:3,veste:'#c8a050',pantalon:'#3a3a44',bas:2,souliers:2,chaussures:'#7d5934'}]];
+function asseoir(S){try{joueur.x=S.px;joueur.y=S.py;joueur.marche=false;window.MOI_ASSIS={x:S.x,h:S.h,ys:S.ys,px:S.px,py:S.py};vibrer(8);texteVolant(S.x,S.h-40,'bouge pour te lever','#e8dcc0');}catch(x){}}
+setInterval(()=>{try{const A=window.MOI_ASSIS;if(!A||typeof joueur==='undefined')return;if(Math.abs(joueur.x-A.px)>3||Math.abs(joueur.y-A.py)>3)window.MOI_ASSIS=null;}catch(x){}},120);
+/* ---------- L'AMBIANCE : une musique de galerie, la fontaine qu'on entend, les gens qui saluent ---------- */
+const SALUTS=['Bonjour !','Salut !','Belle journée !','Coucou !','Ça va ?','Bonne journée !'];
+const DEJA_SALUE=new Map();
+setInterval(()=>{try{if(ETG||typeof joueur==='undefined'||window.MOI_ASSIS)return;const now2=Date.now();
+  const P=[{x:COMPT.x+20,y:COMPT.y-14,k:'barista',t:['Bonjour ! Un café ?','Le croissant sort du four !','Je te sers quelque chose ?']}];
+  for(const G of GENS)if(G.fixe)P.push({x:G.x,y:G.y,k:G.x+'_'+G.y,t:SALUTS});
+  for(const p of P){const d=Math.hypot(joueur.x-p.x,joueur.y-p.y);if(d<70&&now2-(DEJA_SALUE.get(p.k)||0)>25000){DEJA_SALUE.set(p.k,now2);texteVolant(p.x,p.y-62,p.t[(Math.random()*p.t.length)|0],'#fff6e0');break;}}}catch(x){}},500);
+let SON_GAL=null;
+function sonGalerie(){if(SON_GAL||ETG)return;try{if(typeof SON_PRET==='undefined'||!SON_PRET)return;const c=A();if(!c)return;
+  const mus=c.createGain();mus.gain.value=0;mus.connect(SEC);const eau=c.createGain();eau.gain.value=0;eau.connect(SEC);
+  mus.gain.linearRampToValueAtTime(.05*(V.mus||0)/.34,c.currentTime+3);
+  /* la fontaine : un bruit blanc filtré, en boucle */
+  const n=c.sampleRate*2,b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(.6+.4*Math.sin(i/n*Math.PI*14));
+  const s=c.createBufferSource();s.buffer=b;s.loop=true;const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=1400;f.Q.value=.7;s.connect(f).connect(eau);s.start();
+  /* la musique : des accords doux de piano électrique, et quelques notes qui flânent */
+  const ACC=[[53,57,60,64],[52,55,59,62],[50,53,57,60],[48,52,55,59]],PENTA=[72,74,76,79,81,84];let k=0;
+  const hz=m=>440*Math.pow(2,(m-69)/12);
+  const note=(m,t0,dur,vol,type)=>{const o=c.createOscillator(),o2=c.createOscillator(),g=c.createGain();o.type='sine';o2.type=type||'triangle';o.frequency.value=hz(m);o2.frequency.value=hz(m)*2.001;
+    const g2=c.createGain();g2.gain.value=.18;o2.connect(g2).connect(g);o.connect(g);g.connect(mus);g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(vol,t0+.02);g.gain.exponentialRampToValueAtTime(.0005,t0+dur);o.start(t0);o2.start(t0);o.stop(t0+dur+.05);o2.stop(t0+dur+.05);};
+  const tic=setInterval(()=>{try{if(document.hidden)return;const t0=c.currentTime+.05,A2=ACC[k%4];k++;A2.forEach((m,i)=>note(m,t0+i*.03,3.2,.16));note(A2[0]-12,t0,3,.2);
+    for(let j=0;j<3;j++)if(Math.random()<.55)note(PENTA[(Math.random()*PENTA.length)|0],t0+.6+j*.8+Math.random()*.2,1.4,.09,'sine');
+    mus.gain.setTargetAtTime(.05*(V.mus||0)/.34,c.currentTime,.5);
+    const dF=typeof joueur!=='undefined'?Math.hypot(joueur.x-FONT.x,joueur.y-FONT.y):999;eau.gain.setTargetAtTime(Math.max(0,1-dF/380)*.12*(V.amb||0)/.26,c.currentTime,.4);}catch(x){}},2600);
+  SON_GAL={mus,eau,tic};}catch(x){}}
+setInterval(()=>{try{sonGalerie();if(SON_GAL&&typeof joueur!=='undefined'){const c=A(),dF=Math.hypot(joueur.x-FONT.x,joueur.y-FONT.y);SON_GAL.eau.gain.setTargetAtTime(Math.max(0,1-dF/380)*.12*(V.amb||0)/.26,c.currentTime,.3);}}catch(x){}},700);
 function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
   /* la porte de Bleu de Chauffe : on s'approche, on entre */
   {const p=(W-BOUT.reduce((a,b)=>a+b,0))/(BOUT.length+1);P('x_jol_tdp_porte_sol',p+BOUT[0]/2,Y0+14,{agir:ouvrirBoutique0,libelle:'Entrer',nom:'BLEU DE CHAUFFE',demi:56});}
@@ -696,6 +731,8 @@ function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0}
   P('x_jol_tdp_vide',COMPT.x,COMPT.y,{col:[COMPT.w+8,22]});P('x_jol_tdp_vide',COMPT.x,COMPT.y+24,{agir:ouvrirCafe,libelle:'Commander',nom:'CAFÉ DE LA GALERIE',demi:60});
   /* la fontaine */
   P('x_jol_tdp_vide',FONT.x,FONT.y+4,{col:[FONT.r*2+6,34]});
+  /* les places assises */
+  SIEGES.forEach((S,i)=>{if(ASSIS_PNJ.some(a=>a[0]===i))return;P('x_jol_tdp_vide',S.px,S.py,{agir:()=>asseoir(S),libelle:'S’asseoir',nom:S.nom,demi:18});});
   return D;}
 let GAL_CHARGE=false;
 async function chargerGalerie(){if(!GAL_CHARGE){eval(await chargerMorceau('galerie.js'));GAL_CHARGE=true;}}
@@ -775,6 +812,7 @@ function graverPanneau(){if(TPAN)return TPAN;const Wd=116,Hd=150,sol=146;const {
 
 /* le voile bleu de l'arrivée se lève quand la galerie est prête */
 setTimeout(()=>{const v=document.getElementById('voileGB');if(v){v.style.opacity='0';setTimeout(()=>v.remove(),800);}},450);
+
 
 
 

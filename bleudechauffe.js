@@ -178,7 +178,7 @@ async function caisse(){if(ACHAT)return;const L=aPayer(),T=total(),b=RACINE.quer
   for(const id of L){const r=await appelRPC('acheter_vetement',{p_joueur:e.id,p_article:id});
     if(!r||r.erreur){ACHAT=false;bulle('« '+(r&&r.erreur?String(r.erreur):'La caisse fait des siennes, réessaie.')+' »');rendreTout();return;}
     if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}MIENS.add(id);}
-  e.garde=[...MIENS];ACHAT=false;porterEssai();vib([14,30,14]);bulle(L.length>1?'« Toute la tenue ! Tu vas faire tourner des têtes sur le quai. »':'« Bon choix. Ça te va comme un gant. »');rendreTout();}
+  e.garde=[...MIENS];ACHAT=false;porterEssai();try{e.ap._sac={k:'bdc',f:Date.now()+5*60*1000};sauver();monterEnLigne(true);}catch(x){}vib([14,30,14]);bulle(L.length>1?'« Toute la tenue ! Tu vas faire tourner des têtes sur le quai. »':'« Bon choix. Ça te va comme un gant. »');rendreTout();}
 function fermer(){if(!RACINE)return;RACINE=null;try{fermeA=Date.now();}catch(x){}try{$('page2').classList.remove('on');}catch(x){}}
 window.ouvrirBleuDeChauffe=async function(){
   if(!document.getElementById('bdcCss')){const s=document.createElement('style');s.id='bdcCss';s.textContent=CSS;document.head.appendChild(s);}
