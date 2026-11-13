@@ -15165,8 +15165,8 @@ const DISCO_T={
  disco_roi:{v:'roi',p:'roi',anim:230,ap:{coupe:'coupe_banane',souliers:0,chaussures:'#f6f4ee'},acc:{col:'#f0c040',cape:1,brille:3}}};
 function discoAp(ap){const T=DISCO_T[ap._disco];if(!T)return ap;return Object.assign({},ap,T.ap,{veste:'#c800c8',pantalon:'#00c8c8',motif:0,raye:0,sac:0,chapeau:0,_civil:true,_discoK:ap._disco});}
 const DISCO_CACHE=new WeakMap();
-function discoPose(c,ap){if(!c||!ap||!ap._discoK)return c;const T=DISCO_T[ap._discoK];if(!T)return c;
- const ph=T.anim?Math.floor(performance.now()/T.anim)%4:0;let M=DISCO_CACHE.get(c);if(!M){M=new Map();DISCO_CACHE.set(c,M);}
+function discoPose(c,ap,phF){if(!c||!ap||!ap._discoK)return c;const T=DISCO_T[ap._discoK];if(!T)return c;
+ const ph=T.anim?(phF!=null?phF:Math.floor(performance.now()/T.anim)%4):0;let M=DISCO_CACHE.get(c);if(!M){M=new Map();DISCO_CACHE.set(c,M);}
  const key=ap._discoK+ph;let o=M.get(key);if(o)return o;
  try{o=document.createElement('canvas');o.width=c.width;o.height=c.height;const q=o.getContext('2d',{willReadFrequently:true});q.drawImage(c,0,0);
   const im=q.getImageData(0,0,o.width,o.height),d=im.data,W=o.width,k=W/CASE_L,PV=DISCO_PAT[T.v],PP=DISCO_PAT[T.p],cl=v=>v<0?0:v>255?255:v;
@@ -15268,12 +15268,17 @@ const DANSES={
 const DZ_CACHE=new Map();
 const qA=v=>Math.round(v*12);
 function poseDanse(ap,dir,K){const cle=clePose(ap)+'|'+dir+'|'+[K.aG,K.aD,K.jG,K.jD].map(A=>qA(A[0])+','+qA(A[1])).join(';');
- let c=DZ_CACHE.get(cle);if(c)return c;if(DZ_CACHE.size>700)DZ_CACHE.clear();
+ let c=DZ_CACHE.get(cle);if(c)return c;if(DZ_CACHE.size>2500){let n=0;for(const k of DZ_CACHE.keys()){DZ_CACHE.delete(k);if(++n>=300)break;}}
  DZ_POSE={aG:K.aG.map(v=>qA(v)/12),aD:K.aD.map(v=>qA(v)/12),jG:K.jG.map(v=>qA(v)/12),jD:K.jD.map(v=>qA(v)/12)};
  try{c=graverFin(ap,dir,0,false,0,false);}catch(z){c=null;}finally{DZ_POSE=null;}
  if(c)DZ_CACHE.set(cle,c);return c;}
 function danseur(g,x,y,ap,k,t){const Dz=DANSES[k];if(!Dz)return personne(g,x,y,ap,'bas',0,false);let K={};try{K=Dz.f(Math.min(t,Dz.D-.001))||{};}catch(z){}
  peindreDanse(g,x,y,ap,K,t);}
+/* LA PRÉPARATION : graver d'avance les poses d'une danse (et les reflets de sa tenue), pour ne jamais le faire en pleine image */
+function prechaufferDanse(ap,k,t){const Dz=DANSES[k];if(!Dz)return;let K={};try{K=Dz.f(Math.min(t,Dz.D-.001))||{};}catch(z){return;}
+ K.aG=K.aG||B.bas;K.aD=K.aD||B.bas;K.jG=K.jG||J0;K.jD=K.jD||J0;const dir=K.dir||'bas';
+ let a=ap;if(a&&a._disco&&!a._discoK&&!a.deguisement&&DISCO_T[a._disco])a=discoAp(a);a=Object.assign({},a);delete a._main;delete a._tasse;delete a._sac;delete a._snk;
+ const c=poseDanse(a,dir,K);if(!c)return;const T=a._discoK&&DISCO_T[a._discoK];if(T)for(let ph=0;ph<(T.anim?4:1);ph++)hautDePose(discoPose(c,a,ph));else hautDePose(c);}
 function peindreDanse(g,x,y,ap,K,t){
  K.aG=K.aG||B.bas;K.aD=K.aD||B.bas;K.jG=K.jG||J0;K.jD=K.jD||J0;const dir=K.dir||'bas';
  let a=ap;if(a&&a._disco&&!a._discoK&&!a.deguisement&&DISCO_T[a._disco])a=discoAp(a);

@@ -189,6 +189,9 @@ function bloque(x,y){if(x<14||x>W-14||y<MUR+16||y>H-6)return true;
   for(const D of DANSEURS)if(Math.abs(x-D.x)<7&&Math.abs(y-D.y)<5)return true;
   return false;}
 
+/* ---------- LA FLUIDITÉ : toutes les poses des danseurs gravées d'avance, quelques-unes par image ---------- */
+setTimeout(()=>{try{const Q=[];for(const D of DANSEURS.concat([{ap:DJ.ap,k:'dz_travolta'}])){const Dz=DANSES[D.k];if(!Dz)continue;for(let t=0;t<Dz.D;t+=BT/6)Q.push([D.ap,D.k,t]);}
+ let i=0;const pas=()=>{const t0=performance.now();while(i<Q.length&&performance.now()-t0<5){try{prechaufferDanse(Q[i][0],Q[i][1],Q[i][2]);}catch(x){}i++;}if(i<Q.length)requestAnimationFrame(pas);};requestAnimationFrame(pas);}catch(x){}},400);
 /* ---------- L'AMBIANCE ---------- */
 setInterval(()=>{try{if(typeof SON_PRET!=='undefined'&&SON_PRET&&!document.hidden)musiqueDisco(true);}catch(x){}},800);
 /* LA SORTIE : par les portes du bas, on retrouve la place */
