@@ -26301,7 +26301,7 @@ $('ech-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on')
 $('page2').classList.add('on');
 echMarchand();echMaj();
 }
-let COMETES_VENDUES=0, RAYON_SALON='coupe', SEL_SALON=null;
+let COMETES_VENDUES=0, RAYON_SALON='coupe', SEL_SALON=null, CAB_T=0;
 const CSS_SALON=`.salon .tete{background:#1f4a3a}.salon .tete .logo{color:#1f4a3a}.salon .btn{background:#1f4a3a}.salon .btn.enl{background:#fff;color:#1f4a3a;border-color:#1f4a3a}
 .salon .puces button.on{background:#1f4a3a;border-color:#1f4a3a}.salon .carte.on{border-color:#1f4a3a}.salon .carte .p{color:#8a6a1e}.salon .cabine .inf .prix{color:#8a6a1e}`;
 function apSalon(id){const x=SALON_PAR_ID[id], ap=Object.assign({},e.ap||DEF_AP);delete ap.deguisement;ap.chapeau=0;if(ap.ski){ap.ski=Object.assign({},ap.ski);delete ap.ski.bonnet;delete ap.ski.masque;}

@@ -775,5 +775,6 @@ function graverPanneau(){if(TPAN)return TPAN;const Wd=116,Hd=150,sol=146;const {
 
 /* le voile bleu de l'arrivée se lève quand la galerie est prête */
 setTimeout(()=>{const v=document.getElementById('voileGB');if(v){v.style.opacity='0';setTimeout(()=>v.remove(),800);}},450);
+
 return {sol,solFin,decor,bloque,graver,depart:DEPART,figurants,acteurs:()=>ETG?[]:acteurs()};
 })()
