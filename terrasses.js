@@ -235,6 +235,75 @@ function massif(g,cx,cy,rx,ry,sd){g.fillStyle='rgba(40,30,20,.18)';g.beginPath()
   g.fillStyle='#5a4632';g.beginPath();g.ellipse(cx,cy-1,rx,ry,0,0,7);g.fill();
   for(let k=0;k<rx*ry*.5;k++){const a=hA(k,sd,1)*6.28,r=Math.sqrt(hA(k,sd,2));const x=cx+Math.cos(a)*rx*r*.92,y=cy-1+Math.sin(a)*ry*r*.9;g.fillStyle=['#3a6a3a','#4a7a3a','#5a8a4a','#2e5a2e'][k%4];g.beginPath();g.ellipse(x,y-1,2.6,1.8,hA(k,sd,3)*3,0,7);g.fill();}
   for(let k=0;k<rx*1.6;k++){const a=hA(k,sd,4)*6.28,r=Math.sqrt(hA(k,sd,5));const x=cx+Math.cos(a)*rx*r*.85,y=cy-2+Math.sin(a)*ry*r*.8;g.fillStyle=['#e8443c','#f2c84a','#f07aa0','#ffffff','#a84ac8','#f08a3a'][(k+sd)%6];g.beginPath();g.arc(x,y-2,1.6,0,7);g.fill();g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x-.6,y-3,.8,.8);}}
+/* ---------- LE PERSONNEL : l'agent d'entretien et le vigile ---------- */
+const AGENT={x:120,y:506,dir:1,mode:'marche',t0:0,ap:{peau:4,cheveux:1,coiffe:1,haut:1,veste:'#2a8a6a',pantalon:'#24524a',bas:0,souliers:1,chaussures:'#1a1a22',sac:0,chapeau:1,raye:0,motif:0,barbe:2,_civil:true,_pnj:true}};
+const VIGILE={k:0,u:0,pause:0,x:700,y:780,ap:{peau:5,cheveux:0,coiffe:1,haut:0,veste:'#16161c',pantalon:'#16161c',bas:0,souliers:0,chaussures:'#0c0c10',sac:0,chapeau:0,raye:0,motif:0,barbe:1,_civil:true,_pnj:true,_lun:'lun_noires'}};
+const RONDE=[[660,780],[660,470],[560,470],[560,520],[1040,520],[1040,470],[945,470],[945,780]];
+let TPERS=0;
+function bougerPersonnel(){const t=now(),dt=Math.min(.1,t-(TPERS||t));TPERS=t;
+  const A=AGENT;A.t0+=dt;if(A.mode==='marche'){A.x+=A.dir*14*dt;if(A.x>1500){A.dir=-1;}if(A.x<100)A.dir=1;if(A.t0>18&&Math.abs(A.x-800)>200){A.mode='lave';A.t0=0;A.sx=A.x+A.dir*26;}}
+  else if(A.t0>7){A.mode='marche';A.t0=0;}
+  const V2=VIGILE;if(V2.pause>0){V2.pause-=dt;}else{const a=RONDE[V2.k],b=RONDE[(V2.k+1)%RONDE.length],L=Math.hypot(b[0]-a[0],b[1]-a[1]);V2.u+=18*dt/L;if(V2.u>=1){V2.u=0;V2.k=(V2.k+1)%RONDE.length;if(Math.random()<.4)V2.pause=3+Math.random()*3;}
+    const a2=RONDE[V2.k],b2=RONDE[(V2.k+1)%RONDE.length];V2.x=a2[0]+(b2[0]-a2[0])*V2.u;V2.y=a2[1]+(b2[1]-a2[1])*V2.u;V2.dir=Math.abs(b2[0]-a2[0])>Math.abs(b2[1]-a2[1])?(b2[0]>a2[0]?'droite':'gauche'):(b2[1]>a2[1]?'bas':'haut');}}
+function chariot(g,x,y,d){/* le chariot de ménage : seau jaune, sacs, balai */
+  g.fillStyle='rgba(30,20,10,.22)';g.beginPath();g.ellipse(x,y+1,12,3,0,0,7);g.fill();
+  R(g,x-10,y-16,20,14,'#4a6a8a');R(g,x-10,y-16,20,2,'#6a8aaa');R(g,x-9,y-12,8,9,'#f2c232');R(g,x-9,y-12,8,1.4,'#fff0a0');R(g,x+1,y-14,8,11,'#1a1a22');
+  for(const wx of [x-8,x+8]){g.fillStyle='#1a1a1e';g.beginPath();g.arc(wx,y-1,2,0,7);g.fill();}
+  R(g,x+d*11-.6,y-34,1.2,32,'#c8a060');R(g,x+d*11-4,y-3,8,3,'#e8e2d0');}
+function panneau(g,x,y){g.fillStyle='rgba(30,20,10,.2)';g.beginPath();g.ellipse(x,y+1,7,2,0,0,7);g.fill();g.fillStyle='#f2c232';g.beginPath();g.moveTo(x-6,y);g.lineTo(x-2,y-16);g.lineTo(x+2,y-16);g.lineTo(x+6,y);g.fill();
+  g.fillStyle='#1a1a1a';g.beginPath();g.moveTo(x,y-13);g.lineTo(x+3,y-7);g.lineTo(x-3,y-7);g.fill();g.fillStyle='#f2c232';g.fillRect(x-.4,y-11.5,.8,2.6);g.fillStyle='#1a1a1a';g.font='bold 2.4px Arial';g.textAlign='center';g.fillText('SOL',x,y-4);g.fillText('GLISSANT',x,y-1.6);}
+function dessinerAgent(g,ox,oy,t){const A=AGENT,X=A.x+ox,Y=A.y+oy;
+  if(A.mode==='lave'){panneau(g,A.sx+ox+A.dir*-48,Y+6);g.fillStyle='rgba(150,190,220,.25)';g.beginPath();g.ellipse(X+A.dir*14,Y+3,22,6,0,0,7);g.fill();
+    try{personne(g,X,Y,A.ap,A.dir>0?'droite':'gauche',0,false);}catch(z){}const sw=Math.sin(t*4)*8;g.strokeStyle='#c8a060';g.lineWidth=1.2;g.beginPath();g.moveTo(X+A.dir*4,Y-22);g.lineTo(X+A.dir*12+sw,Y+2);g.stroke();R(g,X+A.dir*12+sw-4,Y+1,8,3,'#e8e2d0');chariot(g,X-A.dir*20,Y,A.dir);}
+  else{chariot(g,X+A.dir*18,Y,A.dir);try{personne(g,X,Y,A.ap,A.dir>0?'droite':'gauche',t*14/7,true);}catch(z){}}}
+function dessinerVigile(g,ox,oy,t){const V2=VIGILE,X=V2.x+ox,Y=V2.y+oy;try{personne(g,X,Y,V2.ap,V2.pause>0?'bas':V2.dir,V2.pause>0?0:t*18/7,V2.pause<=0);}catch(z){}
+  /* le brassard et l'oreillette */
+  if(V2.dir!=='haut'||V2.pause>0){R(g,X-8.6,Y-30,3.2,2.4,'#f2c232');}R(g,X+3.6,Y-39,1,3,'#c8ccd6');
+  if(V2.pause>0&&Math.sin(t*2)>.7){R(g,X+6,Y-30,2,5,'#1a1a1a');R(g,X+6.6,Y-34,.6,4,'#3a3a3a');}}
+/* ---------- NOËL : du 13 novembre au 6 janvier ---------- */
+const NOEL=(()=>{const d=new Date(),m=d.getMonth()+1,j=d.getDate();return (m===11&&j>=13)||m===12||(m===1&&j<=6);})();
+const SAPIN={x:800,y:478};
+function dessinerSapin(g,ox,oy,t){const X=SAPIN.x+ox,Y=SAPIN.y+oy;
+  g.fillStyle='rgba(20,30,60,.3)';g.beginPath();g.ellipse(X+4,Y+4,56,14,0,0,7);g.fill();
+  /* le pied, la jupe rouge */
+  R(g,X-6,Y-18,12,14,'#6a4024');g.fillStyle='#b8262c';g.beginPath();g.ellipse(X,Y-2,44,11,0,0,7);g.fill();g.fillStyle='#e0b860';g.beginPath();g.ellipse(X,Y-2,44,11,0,0,Math.PI);g.ellipse(X,Y-4,42,9,0,Math.PI,0,true);g.fill();
+  /* les étages de branches */
+  const ET=[[0,62,46],[38,52,40],[72,42,34],[102,32,28],[128,22,22]];
+  for(const [h,w,hh] of ET){const by=Y-16-h;const q=g.createLinearGradient(X-w,0,X+w,0);q.addColorStop(0,'#1e4a2a');q.addColorStop(.45,'#3a7a44');q.addColorStop(1,'#163a20');g.fillStyle=q;
+    g.beginPath();g.moveTo(X,by-hh);for(let k=0;k<=8;k++){const u=k/8;g.lineTo(X-w+u*2*w,by+Math.sin(u*Math.PI*8)*2.6*(k%2?1:-1)*0+(k%2?3:0));}g.closePath();g.fill();
+    g.fillStyle='rgba(255,255,255,.08)';g.beginPath();g.moveTo(X,by-hh);g.lineTo(X-w*.6,by-2);g.lineTo(X-w*.3,by-2);g.closePath();g.fill();}
+  /* la guirlande lumineuse, en spirale */
+  for(let k=0;k<46;k++){const u=k/46,hY=Y-22-u*140,w=58*(1-u*.82),xx=X+Math.sin(u*Math.PI*7)*w*.92,on=((k+Math.floor(t*4))%3)!==0;const c=['#ff4a4a','#ffe06a','#6ad0ff','#7aff8a','#ff8ad8'][k%5];
+    if(Math.cos(u*Math.PI*7)<-.2)continue;g.fillStyle=on?c:'#3a3a2a';g.beginPath();g.arc(xx,hY,1.6,0,7);g.fill();if(on){g.fillStyle='rgba(255,240,200,.35)';g.beginPath();g.arc(xx,hY,3.4,0,7);g.fill();}}
+  /* les boules */
+  for(let k=0;k<22;k++){const u=hA(k,3,21),hY=Y-24-u*128,w=56*(1-u*.84)*(hA(k,4,21)*1.6-.8);g.fillStyle=['#c8262c','#e0b860','#c8ccd6','#2a5ad8'][k%4];g.beginPath();g.arc(X+w,hY,2.6,0,7);g.fill();g.fillStyle='rgba(255,255,255,.7)';g.fillRect(X+w-1.2,hY-1.4,1,1);}
+  /* l'étoile qui scintille */
+  const sy=Y-162,sc=1+Math.sin(t*3)*.08;g.fillStyle='rgba(255,230,140,.35)';g.beginPath();g.arc(X,sy,14,0,7);g.fill();g.fillStyle='#f6d04a';g.beginPath();for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,r=(k%2?4:10)*sc;g.lineTo(X+Math.cos(a)*r,sy+Math.sin(a)*r);}g.fill();g.fillStyle='#fff6c0';g.beginPath();g.arc(X,sy,2.4,0,7);g.fill();
+  /* les cadeaux au pied */
+  for(const [dx,w,h,c,r] of [[-30,14,10,'#c8262c','#e0b860'],[-14,12,14,'#2a6ad8','#ffffff'],[16,16,11,'#e0b860','#c8262c'],[32,11,9,'#3aa05a','#f2c84a'],[2,10,8,'#f07aa0','#ffffff']]){R(g,X+dx-w/2,Y-h+2,w,h,c);R(g,X+dx-w/2,Y-h+2,w,1.4,'rgba(255,255,255,.3)');R(g,X+dx-.8,Y-h+2,1.6,h,r);R(g,X+dx-w/2,Y-h/2+1.5,w,1.4,r);g.fillStyle=r;g.beginPath();g.ellipse(X+dx-2,Y-h+1,2,1.2,-.5,0,7);g.ellipse(X+dx+2,Y-h+1,2,1.2,.5,0,7);g.fill();}
+  try{lueurNuit(g,X,Y-90,160,'rgba(255,220,150,1)');lueurNuit(g,X,sy,60,'rgba(255,230,120,1)');}catch(z){}}
+/* les guirlandes de sapin le long de la rambarde, avec leurs ampoules et des nœuds rouges */
+function dessinerGuirlandesNoel(g,ox,oy,t){const H0=635,H1=965;
+  for(const [a,b] of [[4,H0-8],[H1+8,W-4]])for(let x=a;x<b-40;x+=60){const x0=x+ox,x1=Math.min(b,x+60)+ox,y=MZ.y+oy+1;
+    for(let k=0;k<=12;k++){const u=k/12,px=x0+(x1-x0)*u,py=y+Math.sin(u*Math.PI)*9;g.fillStyle=['#1e4a2a','#2e6a38','#3a7a44'][k%3];g.beginPath();g.ellipse(px,py,3.4,2.4,0,0,7);g.fill();
+      if(k%2){const on=((k+Math.floor(t*3)+x/60)%3)!==0;g.fillStyle=on?['#ff4a4a','#ffe06a','#6ad0ff'][(k+x/60)%3]:'#4a4a3a';g.beginPath();g.arc(px,py+1.6,1.2,0,7);g.fill();}}
+    g.fillStyle='#c8262c';g.beginPath();g.ellipse(x0-2.6,y-1,3,2,-.5,0,7);g.ellipse(x0+2.6,y-1,3,2,.5,0,7);g.fill();R(g,x0-1,y-2,2,2.4,'#a01a20');R(g,x0-2,y+.4,1.2,5,'#c8262c');R(g,x0+.8,y+.4,1.2,5,'#c8262c');}}
+/* les étoiles et flocons suspendus sous la verrière */
+const ASTRES=[[90,470],[260,455],[520,470],[1080,470],[1340,455],[1520,470],[700,480],[900,480]];
+function astre(g,x,y,t,k){const top=y-260,yy=y-170+Math.sin(t*1.2+k)*2;g.strokeStyle='rgba(200,200,210,.5)';g.lineWidth=.5;g.beginPath();g.moveTo(x,top);g.lineTo(x,yy);g.stroke();
+  g.save();g.translate(x,yy+8);g.rotate(Math.sin(t*.8+k)*.25);if(k%2){g.fillStyle='#f6d04a';g.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,r=i%2?3.4:8;g.lineTo(Math.cos(a)*r,Math.sin(a)*r);}g.fill();g.fillStyle='rgba(255,255,255,.6)';g.fillRect(-1,-4,1.4,2);}
+  else{g.strokeStyle='#ffffff';g.lineWidth=1.2;for(let i=0;i<6;i++){const a=i*Math.PI/3;g.beginPath();g.moveTo(0,0);g.lineTo(Math.cos(a)*7,Math.sin(a)*7);g.moveTo(Math.cos(a)*4,Math.sin(a)*4);g.lineTo(Math.cos(a+.5)*5.4,Math.sin(a+.5)*5.4);g.stroke();}}g.restore();}
+/* dans le décor peint : la neige sur la verrière, des couronnes sur les pilastres, des flocons collés aux vitrines */
+function noelPeint(g){if(!NOEL)return;
+  for(let x=0;x<W;x+=40){g.fillStyle='rgba(255,255,255,.92)';g.beginPath();g.ellipse(x+20,4,22,4,0,0,7);g.fill();for(const y of [18,38,56]){g.beginPath();g.ellipse(x+20,y-1,18,2,0,0,7);g.fill();}}
+  const p=(W-BOUT.reduce((a,b)=>a+b,0))/(BOUT.length+1);let x=p;
+  for(let i=0;i<BOUT.length;i++){if(i!==3){const w2=Math.round(BOUT[i]*.66),x2=x+(BOUT[i]-w2)/2,y2=Y0-150;
+      for(let k=0;k<6;k++){const fx=x2+8+hA(k,i,31)*(w2-16),fy=y2+40+hA(i,k,32)*90,r=2.5+hA(k,i,33)*3;g.strokeStyle='rgba(255,255,255,.85)';g.lineWidth=.8;for(let a=0;a<3;a++){const an=a*Math.PI/3;g.beginPath();g.moveTo(fx-Math.cos(an)*r,fy-Math.sin(an)*r);g.lineTo(fx+Math.cos(an)*r,fy+Math.sin(an)*r);g.stroke();}}
+      /* la couronne de l'Avent au-dessus de l'enseigne */
+      const cx=x+BOUT[i]/2,cy=y2-14;for(let k=0;k<18;k++){const a=k/18*Math.PI*2;g.fillStyle=['#1e4a2a','#2e6a38','#3a7a44'][k%3];g.beginPath();g.ellipse(cx+Math.cos(a)*8,cy+Math.sin(a)*8,3,2.4,a,0,7);g.fill();}
+      for(let k=0;k<4;k++){const a=k/4*Math.PI*2+.4;g.fillStyle='#c8262c';g.beginPath();g.arc(cx+Math.cos(a)*8,cy+Math.sin(a)*8,1.6,0,7);g.fill();}
+      g.fillStyle='#c8262c';g.beginPath();g.ellipse(cx-3,cy+8,3,2,-.5,0,7);g.ellipse(cx+3,cy+8,3,2,.5,0,7);g.fill();}
+    x+=BOUT[i]+p;}}
 function peindreSol(g){
   /* la verrière : ciel, montants blancs, la lumière qui tombe */
   verriere(g);
@@ -302,6 +371,7 @@ function peindreSol(g){
   rosace(g,330,440,46);rosace(g,1270,440,46);
   roseDesVents(g,800,566,118);
   massif(g,1180,760,40,14,3);massif(g,1400,760,40,14,5);massif(g,1150,505+70,26,10,7);massif(g,1430,575,26,10,9);
+  noelPeint(g);
   /* LA SORTIE SANS MUR : la galerie continue vers le bas ; le jour de la place arrive doucement */
   g.fillStyle=lin(g,0,H-90,0,H,[[0,'rgba(255,250,236,0)'],[1,'rgba(255,248,228,.55)']]);g.fillRect(0,H-90,W,90);
 }
@@ -723,6 +793,9 @@ const BARISTA={peau:2,cheveux:1,coiffe:9,barbe:0,haut:2,veste:19,bas:0,pantalon:
 function acteurs(){const L=[];
   L.push({y:FONT.y,f:(g,cx,cy)=>dessinerFontaine(g,-cx,-cy,now())});
   L.push({y:MZ.yn,f:(g,cx,cy)=>dessinerHaut(g,-cx,-cy,now())});
+  L.push({y:AGENT.y,f:(g,cx,cy)=>{bougerPersonnel();dessinerAgent(g,-cx,-cy,now());}});
+  L.push({get y(){return VIGILE.y;},f:(g,cx,cy)=>dessinerVigile(g,-cx,-cy,now())});
+  if(NOEL){L.push({y:SAPIN.y,f:(g,cx,cy)=>dessinerSapin(g,-cx,-cy,now())});L.push({y:MZ.yn+.5,f:(g,cx,cy)=>dessinerGuirlandesNoel(g,-cx,-cy,now())});ASTRES.forEach(([x,y],k)=>L.push({y,f:(g,cx,cy)=>astre(g,x-cx,y-cy,now(),k)}));}
   for(const [x,y] of SUSP)L.push({y:y+1,f:(g,cx,cy)=>suspension(g,x-cx,y-cy,now())});
   for(const [i,ap] of ASSIS_PNJ){const S=SIEGES[i];L.push({y:S.ys,f:(g,cx,cy)=>{try{assis(g,S.x-cx,S.h-cy,Object.assign({},DEF_AP,ap,{_civil:true,_pnj:true}));}catch(z){}}});}
   L.push({y:COMPT.y-14,f:(g,cx,cy)=>{try{personne(g,COMPT.x+20-cx,COMPT.y-14-cy,BARISTA,'bas',0,false);}catch(z){}}});
@@ -765,6 +838,7 @@ const DEJA_SALUE=new Map();
 setInterval(()=>{try{if(ETG||typeof joueur==='undefined'||window.MOI_ASSIS)return;const now2=Date.now();
   const P=[{x:COMPT.x+20,y:COMPT.y-14,k:'barista',t:['Bonjour ! Un café ?','Le croissant sort du four !','Je te sers quelque chose ?']}];
   for(const G of GENS)if(G.fixe)P.push({x:G.x,y:G.y,k:G.x+'_'+G.y,t:SALUTS});
+  P.push({x:VIGILE.x,y:VIGILE.y,k:'vigile',t:['Bonne journée.','Tout se passe bien ?','Bienvenue à la Galerie Bleue.'].concat(NOEL?['Joyeux Noël !']:[])});P.push({x:AGENT.x,y:AGENT.y,k:'agent',t:['Attention, ça glisse !','Bonjour !','Ça brille, hein ?']});
   for(const p of P){const d=Math.hypot(joueur.x-p.x,joueur.y-p.y);if(d<70&&now2-(DEJA_SALUE.get(p.k)||0)>25000){DEJA_SALUE.set(p.k,now2);texteVolant(p.x,p.y-62,p.t[(Math.random()*p.t.length)|0],'#fff6e0');break;}}}catch(x){}},500);
 let SON_GAL=null;
 function sonGalerie(){if(SON_GAL||ETG)return;try{if(typeof SON_PRET==='undefined'||!SON_PRET)return;const c=A();if(!c)return;
@@ -803,6 +877,7 @@ function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0}
   P('x_jol_tdp_vide',COMPT.x,COMPT.y,{col:[COMPT.w+8,22]});P('x_jol_tdp_vide',COMPT.x,COMPT.y+24,{agir:ouvrirCafe,libelle:'Commander',nom:'CAFÉ DE LA GALERIE',demi:60});
   /* la fontaine */
   P('x_jol_tdp_vide',FONT.x,FONT.y+28,{col:[FONT.r*2+8,62]});
+  if(NOEL)P('x_jol_tdp_vide',SAPIN.x,SAPIN.y+4,{col:[96,26]});
   /* les places assises */
   SIEGES.forEach((S,i)=>{if(ASSIS_PNJ.some(a=>a[0]===i))return;P('x_jol_tdp_vide',S.px,S.py,{agir:()=>asseoir(S),libelle:'S’asseoir',nom:S.nom,demi:18});});
   return D;}
