@@ -15134,7 +15134,13 @@ function galerieDos(g,x,y,k,dir){const d=dir||'bas',t=performance.now()/1000,dos
  else if(k==='dos_hotte'){const ox=prof?-sx*4:0;g.fillStyle='#8a5a32';g.beginPath();g.ellipse(x+ox,y-28,8,9,0,0,7);g.fill();g.fillStyle='#6a4024';g.fillRect(x+ox-7,y-36,14,2.4);for(const [dx,dy,c] of [[-4,-40,'#c8262c'],[2,-42,'#2a6ad8'],[-1,-44,'#f2c84a'],[5,-39,'#3aa05a']]){g.fillStyle=c;g.fillRect(x+ox+dx-2.4,y+dy,4.8,4.4);g.fillStyle='#ffffff';g.fillRect(x+ox+dx-.4,y+dy,.8,4.4);}}
  else if(k==='dos_ailes_givre'){const f=Math.sin(t*2.4)*1.6;for(const s2 of (prof?[-sx]:[-1,1])){const gr=g.createLinearGradient(x,y-40,x+s2*16,y-22);gr.addColorStop(0,'rgba(230,248,255,.95)');gr.addColorStop(1,'rgba(150,210,250,.85)');g.fillStyle=gr;g.beginPath();g.moveTo(x+s2*2,y-30);g.lineTo(x+s2*12,y-42-f);g.lineTo(x+s2*17,y-34-f);g.lineTo(x+s2*13,y-30);g.lineTo(x+s2*16,y-25);g.lineTo(x+s2*3,y-22);g.fill();etincelle(g,x+s2*12,y-36-f,t,17+s2,'rgba(220,245,255,.95)');}try{lueurNuit(g,x,y-30,34,'rgba(170,220,255,1)');}catch(z){}}
  else if(k==='dos_ailes'){const f=Math.sin(t*2.4)*1.6;for(const s2 of (prof?[-sx]:[-1,1])){g.fillStyle='rgba(255,255,255,.95)';g.beginPath();g.moveTo(x+s2*2,y-30);g.quadraticCurveTo(x+s2*14,y-40-f,x+s2*16,y-30-f);g.quadraticCurveTo(x+s2*12,y-22,x+s2*3,y-22);g.fill();g.strokeStyle='rgba(180,200,220,.8)';g.lineWidth=.5;for(let k2=0;k2<3;k2++){g.beginPath();g.moveTo(x+s2*(5+k2*3),y-24-k2);g.lineTo(x+s2*(8+k2*3),y-31-k2*2-f*.6);g.stroke();}}try{lueurNuit(g,x,y-30,30,'rgba(255,250,230,1)');}catch(z){}}}
-function galerieAcc(g,x,y,ap,dir){const d=dir||'bas',R=(px,py,w,h,c)=>{g.fillStyle=c;g.fillRect(x+px,y+py,w,h);};const t=performance.now()/1000;
+/* LA TÊTE BOUGE AVEC LA POSE : à la marche et en respirant, la vignette monte et descend d'un pixel ou deux.
+   On mesure le haut de la tête sur la pose elle-même (une fois par pose) pour que lunettes, bonnets et colliers suivent. */
+const HAUT_POSE=new WeakMap();let ACC_DXY=null,HAUT_TOILE=null;
+function hautDePose(c){let v=HAUT_POSE.get(c);if(v)return v;v=[0,0];try{const w=c.width,h=c.height,k=w/CASE_L,x0=Math.floor(w*.25),bw=Math.ceil(w*.5),hh=Math.floor(h*.6),S=HAUT_TOILE||(HAUT_TOILE=document.createElement('canvas'));S.width=bw;S.height=hh;const q=S.getContext('2d',{willReadFrequently:true});q.drawImage(c,x0,0,bw,hh,0,0,bw,hh);const d=q.getImageData(0,0,bw,hh).data;
+  let top=-1;for(let y=0;y<hh&&top<0;y++)for(let x=0;x<bw;x++)if(d[(y*bw+x)*4+3]>60){top=y;break;}
+  if(top>=0){let sx=0,n=0;const y1=Math.min(hh,top+Math.round(8*k));for(let y=top;y<y1;y++)for(let x=0;x<bw;x++)if(d[(y*bw+x)*4+3]>60){sx+=x;n++;}v=[n?(x0+sx/n)/k:0,top/k];}}catch(z){}HAUT_POSE.set(c,v);return v;}
+function galerieAcc(g,x,y,ap,dir,dxy){const d=dir||'bas',R=(px,py,w,h,c)=>{g.fillStyle=c;g.fillRect(x+px,y+py,w,h);};const t=performance.now()/1000;
  const face=d==='bas'||d.indexOf('bas-')===0,dos=d==='haut'||d.indexOf('haut-')===0,dr=d.indexOf('droite')>=0,ga=d.indexOf('gauche')>=0,prof=(dr||ga)&&!face&&!dos,sx=ga?-1:1;
  /* les sneakers : la lueur des LED, les petites ailes d'or */
  const S=ap._snk&&SNEAKERS_GAL[ap._snk];if(S){
@@ -15142,6 +15148,7 @@ function galerieAcc(g,x,y,ap,dir){const d=dir||'bas',R=(px,py,w,h,c)=>{g.fillSty
   if(S.ailes){for(const fx of (prof?[sx*-1.5]:[-5,5])){const s2=fx<0?-1:1,f=Math.sin(t*9)*.6;g.fillStyle='#f2c84a';g.beginPath();g.moveTo(x+fx,y-4);g.lineTo(x+fx+s2*4,y-7-f);g.lineTo(x+fx+s2*3.4,y-5.4);g.lineTo(x+fx+s2*4.4,y-5-f*.6);g.lineTo(x+fx+s2*3,y-3.6);g.lineTo(x+fx+s2*3.6,y-3);g.closePath();g.fill();g.fillStyle='#fff4c0';g.fillRect(x+fx+s2*1.2-.3,y-5.6,1,.6);}}
   if(S.lame){R(-6,.4,5.4,.8,'#e8ecf2');R(.6,.4,5.4,.8,'#e8ecf2');R(-6,1.2,5.4,.4,'#8a8e9a');R(.6,1.2,5.4,.4,'#8a8e9a');}
   if(S.brille)for(let k=0;k<2;k++)etincelle(g,x+(k?4:-4)+Math.sin(k*3)*1,y-3,t,k+5);}
+ const DX=dxy?dxy[0]:0,DY=dxy?dxy[1]:0;g.save();g.translate(DX,DY);try{
  const b=ap._bij;if(b){
   const or=['bij_montre_or','bij_chaine_or','bij_medaillon','bij_grillz','bij_etoile'].includes(b),fl=b==='bij_flocon_diamant',glace=b==='bij_montre_glace'||b==='bij_chaine_glace';
   const c=glace?'#eef6ff':or?'#f2c84a':'#dfe3ea',c2=glace?'#9ad8ff':or?'#b8862a':'#9aa0ac';
@@ -15187,6 +15194,7 @@ function galerieAcc(g,x,y,ap,dir){const d=dir||'bas',R=(px,py,w,h,c)=>{g.fillSty
     g.fillStyle='#f6d04a';g.beginPath();for(let i=0;i<10;i++){const an=-Math.PI/2+i*Math.PI/5,rr=i%2?1.3:3.2;g.lineTo(sx2+Math.cos(an)*rr,sy2+Math.sin(an)*rr);}g.fill();try{lueurNuit(g,sx2,sy2,22,'rgba(255,230,140,1)');}catch(z){}}
   else if(nz==='noel_gui'){g.strokeStyle='rgba(220,220,230,.7)';g.lineWidth=.4;g.beginPath();g.moveTo(x,y-70);g.lineTo(x,y-58);g.stroke();for(const [lx,ly,a] of [[-2.4,-56,-.6],[2.4,-56,.6],[-1.2,-54,-.3],[1.4,-54,.3]]){g.fillStyle='#4a8a3a';g.beginPath();g.ellipse(x+lx,y+ly,2.4,1,a,0,7);g.fill();}for(const [bx,by] of [[0,-55],[-1,-53.6],[1,-53.4]]){g.fillStyle='#f6f6ee';g.beginPath();g.arc(x+bx,y+by,.8,0,7);g.fill();}g.fillStyle='#c8262c';g.fillRect(x-1.4,y-58.6,2.8,1.2);}
   else if(nz==='noel_echarpe'){for(let k=0;k<6;k++)R(-5.4+k*1.8,-31.6,1.8,2.6,k%2?'#2e7a3a':'#c8262c');if(!dos){for(let k=0;k<4;k++)R(prof?sx*2:2,-29+k*1.6,2.2,1.6,k%2?'#2e7a3a':'#c8262c');R(prof?sx*2:2,-22.6,2.2,.8,'#ffffff');}}}
+ }finally{g.restore();}
  const mn=ap._main;if(mn){const hx=prof?sx*4.4:(dos?7.4:-7.4),hy=-20;
   if(mn==='main_sucre'){for(let k=0;k<6;k++)R(hx-.7,hy-k*1.6,1.4,1.6,k%2?'#ffffff':'#d8262c');g.strokeStyle='#d8262c';g.lineWidth=1.4;g.beginPath();g.arc(x+hx+1.6,y+hy-9.6,1.6,Math.PI,0);g.stroke();R(hx+2.5,hy-9.6,1.4,2,'#ffffff');}
   else if(mn==='main_boule'){R(hx-2.4,hy,4.8,2,'#8a5a32');g.fillStyle='rgba(200,235,255,.75)';g.beginPath();g.arc(x+hx,y+hy-2.6,3.2,0,7);g.fill();g.fillStyle='#2e7a3a';g.beginPath();g.moveTo(x+hx,y+hy-5);g.lineTo(x+hx+1.6,y+hy-1.4);g.lineTo(x+hx-1.6,y+hy-1.4);g.fill();for(let k=0;k<3;k++){g.fillStyle='#fff';g.fillRect(x+hx-2+((t*2+k*.7)%1)*4,y+hy-5+((t*1.3+k*.4)%1)*4,.5,.5);}g.fillStyle='rgba(255,255,255,.7)';g.fillRect(x+hx-2,y+hy-4.4,.8,.8);}
@@ -15214,7 +15222,7 @@ function galerieAcc(g,x,y,ap,dir){const d=dir||'bas',R=(px,py,w,h,c)=>{g.fillSty
 function personne(g,x,y,ap,dir,pas,marche,enCourse){
 if(window.AP_FORCE&&ap&&typeof e!=='undefined'&&ap===e.ap)ap=Object.assign({},ap,window.AP_FORCE);   /* la tenue d'athlète, sur la piste */
 if(ap&&ap._snk&&SNEAKERS_GAL[ap._snk]&&!ap.deguisement&&!ap._snkFait){const S=SNEAKERS_GAL[ap._snk];ap=Object.assign({},ap,{souliers:1,chaussures:S.c,_snkA:S.a,_snkS:S.s,_snkFait:1});}
-if(ap&&(ap._acc||((ap._bij||ap._lun||ap._tasse||ap._snk||ap._sac||ap._noel||ap._main||ap._dos||ap._suite)&&!ap.deguisement))&&!ap._accFait){const dosF=(dir||'bas')==='haut'||String(dir||'').indexOf('haut-')===0;if(ap._dos&&!dosF&&!ap.deguisement)try{galerieDos(g,x,y,ap._dos,dir);}catch(z){}personne(g,x,y,Object.assign({},ap,{_accFait:1}),dir,pas,marche,enCourse);if(ap._dos&&dosF&&!ap.deguisement)try{galerieDos(g,x,y,ap._dos,dir);}catch(z){}try{if(ap._acc)accessoireAthle(g,x,y,ap._acc,dir);}catch(z){}try{if(!ap.deguisement)galerieAcc(g,x,y,ap,dir);}catch(z){}return;}
+if(ap&&(ap._acc||((ap._bij||ap._lun||ap._tasse||ap._snk||ap._sac||ap._noel||ap._main||ap._dos||ap._suite)&&!ap.deguisement))&&!ap._accFait){const dosF=(dir||'bas')==='haut'||String(dir||'').indexOf('haut-')===0;if(ap._dos&&!dosF&&!ap.deguisement)try{galerieDos(g,x,y,ap._dos,dir);}catch(z){}ACC_DXY=null;personne(g,x,y,Object.assign({},ap,{_accFait:1}),dir,pas,marche,enCourse);if(ap._dos&&dosF&&!ap.deguisement)try{galerieDos(g,x,y,ap._dos,dir);}catch(z){}try{if(ap._acc)accessoireAthle(g,x,y,ap._acc,dir);}catch(z){}try{if(!ap.deguisement)galerieAcc(g,x,y,ap,dir,ACC_DXY);}catch(z){}return;}
 /* UN COSTUME INTEGRAL REMPLACE LE DESSIN, IL NE SE POSE PAS DESSUS.
    Peint par-dessus, il laissait toujours ressortir un coin de cheveux
    au sommet de la capuche ou deux pixels de col a l'epaule — et un
@@ -15333,6 +15341,7 @@ else if(((Date.now()+((ap.peau|0)*431+(ap.cheveux|0)*97))%3600)<130)i+=300;
    La vitesse nourrit le phare et l'ecran de bord ; la roue tourne vite,
    un tour tous les dix-sept pixels, parce qu'elle est petite. */
 const c=poseDe(ap,dir||'bas',i);
+if(ap&&ap._accFait)try{const a=hautDePose(c),r=hautDePose(poseDe(ap,dir||'bas',STYLE_FIN()?100:0));ACC_DXY=[a[0]-r[0]+((ap===e.ap&&!aVelo)?Math.round(PENCHE.x*2)/2:0),a[1]-r[1]];}catch(z){}
 if(enTrot)dessinerUneTrottinette(g,x,yV,dir||'bas',(pas||0)*2.2,vTrot,0);
 const px0=Math.round(x-CASE_L/2), py0=Math.round(y-CASE_H+10);
 const lean=(ap===e.ap&&!aVelo)?Math.round(PENCHE.x*2)/2:0;
