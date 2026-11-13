@@ -32,8 +32,9 @@ const BOUTIQUES={
       ['snk_om','Ciel & blanc','Bleu ciel et blanc. Allez l’OM.',45000,1],['snk_desert','Désert','Daim sable, semelle crème.',45000,1],
       ['snk_fluo','Fluo','On te voit de l’autre bout du port.',70000,2],['snk_led','Lumineuses','Semelle LED qui change de couleur, même la nuit.',350000,3],
       ['snk_or','Or','La paire en or. Elle scintille à chaque pas.',900000,3],['snk_ailees','Les Ailées','Des ailes d’or aux chevilles. Dix paires au monde.',3000000,4]]}};
-const CAFE=[['expresso','Expresso','Serré, à la marseillaise.',2,'☕'],['croissant','Croissant','Pur beurre, encore tiède.',2.5,'🥐'],['chocolat','Chocolat chaud','Avec de la chantilly.',3.5,'🍫'],
-  ['jus','Jus d’orange','Pressé devant toi.',4,'🍊'],['glace','Glace','Deux boules, framboise et vanille.',4.5,'🍨'],['crepe','Crêpe','Au sucre, ou au chocolat.',5.5,'🥞']];
+const CAFE=[['expresso','Expresso','Coup de fouet : tu marches plus vite.',2,'☕',{vit:1.15,d:45,mot:'⚡ +15 % de vitesse'}],['croissant','Croissant','Tu reprends ton souffle deux fois plus vite.',2.5,'🥐',{recup:2,d:45,mot:'🥐 souffle ×2'}],
+  ['chocolat','Chocolat chaud','Ton souffle tient plus longtemps.',3.5,'🍫',{souffle:1.6,d:45,mot:'🍫 souffle +60 %'}],['jus','Jus d’orange','Vitamines : un peu de tout.',4,'🍊',{vit:1.08,recup:1.5,souffle:1.25,d:45,mot:'🍊 en forme'}],
+  ['glace','Glace','Fraîcheur : tu ne t’essouffles presque plus.',4.5,'🍨',{souffle:3,d:25,mot:'🍨 souffle ×3'}],['crepe','Crêpe','Le grand plein : plus vite et plus longtemps.',5.5,'🥞',{vit:1.12,souffle:1.5,recup:1.5,d:60,mot:'🥞 grand plein'}]];
 let RACINE=null,B=null,SEL=null,DIR=0,ACHAT=false;const DIRS=['bas','droite','haut','gauche'];
 const vib=x=>{try{vibrer&&vibrer(x);}catch(_){}};
 const aMoi=id=>{try{return !!(e.cos&&e.cos[id]);}catch(x){return false;}};
@@ -82,6 +83,7 @@ const CSS=`#gal{position:fixed;inset:0;z-index:5;display:flex;flex-direction:col
 #gal .pf button .rb{position:absolute;top:0;left:0;right:0;height:13px;font-size:8px;letter-spacing:1.5px;font-weight:900;line-height:13px;color:#1a1208;background:var(--tc,#9aa0ac)}
 #gal .pf button.on{border-color:var(--or);box-shadow:0 0 0 2px var(--or),0 0 18px rgba(255,210,120,.35)}
 #gal .pf button.leg{animation:galLeg 2.4s ease-in-out infinite}@keyframes galLeg{50%{box-shadow:0 0 16px rgba(255,210,80,.55)}}
+#gal .pf .ef{font-style:normal;font-size:10px;font-weight:700;color:rgba(255,240,210,.75);line-height:1.1;margin-top:2px}
 #gal .pf small{font-size:11.5px;font-weight:800;color:var(--or)}#gal .pf small.a{color:#7ae09a}
 #gal .pf .pt{position:absolute;bottom:4px;right:4px;font-size:8.5px;font-weight:900;background:#7ae09a;color:#0e2a14;border-radius:7px;padding:0 5px}
 #gal .go{display:block;width:100%;margin-top:14px;border:0;border-radius:18px;padding:12px;font:800 17px 'Baloo 2',sans-serif;color:#2a1a08;background:linear-gradient(#fff2b8,#e8b838 60%,#c8902a);box-shadow:0 4px 0 #7a5214,0 10px 22px rgba(0,0,0,.35);line-height:1.1}
@@ -175,13 +177,13 @@ const T_CAFE={nom:'Café de la Galerie',sous:'EXPRESSO · VIENNOISERIES · GLACE
   vendeur:{peau:2,cheveux:1,coiffe:9,barbe:0,haut:2,veste:19,bas:0,pantalon:9,souliers:0,chaussures:1,sac:0,chapeau:0,raye:0,motif:0,_pnj:true},
   paroles:['« Bonjour ! Qu’est-ce que je te sers ? »','« Le croissant sort du four. »','« Assieds-toi, je te l’apporte. »','« Un petit noir, comme d’habitude ? »']};
 window.ouvrirCafeGalerie=function(){B=null;
-  cadre(T_CAFE,'<div class="lb"><span>LA CARTE</span><span>sur place</span></div><div class="pf">'+CAFE.map(a=>'<button data-k="'+a[0]+'"><div class="vi">'+a[4]+'</div>'+a[1]+'<small>'+String(a[3]).replace('.',',')+' €</small></button>').join('')+'</div><div class="de">Touche ce qui te fait envie. Tu le gardes en main un moment.</div>');
+  cadre(T_CAFE,'<div class="lb"><span>LA CARTE</span><span>sur place</span></div><div class="pf">'+CAFE.map(a=>'<button data-k="'+a[0]+'"><div class="vi">'+a[4]+'</div>'+a[1]+'<small>'+String(a[3]).replace('.',',')+' €</small><i class="ef">'+a[5].mot+' · '+a[5].d+' s</i></button>').join('')+'</div><div class="de">Chaque commande donne un petit effet qui ne dure pas. Tu la gardes en main 30 secondes.</div>');
   RACINE.querySelectorAll('.pf button').forEach(b=>b.onclick=async()=>{if(ACHAT)return;const a=CAFE.find(x=>x[0]===b.dataset.k);
     if((e.euros||0)<a[3]*100){bulle('« Il te manque un peu de monnaie. »');vib(30);return;}
     ACHAT=true;b.disabled=true;let r=null;try{if(typeof sb!=='undefined'&&sb&&sb.rpc){const q=await sb.rpc('cafe_commander',{p_article:a[0]});r=q.data||(q.error?{erreur:q.error.message}:null);}else r=await appelRPC('cafe_commander',{p_article:a[0]});}catch(x){r={erreur:'reseau'};}
     ACHAT=false;b.disabled=false;
     if(!r||r.erreur){bulle(r&&/payer/.test(String(r.erreur))?'« Il te manque un peu de monnaie. »':'« La machine fait des siennes, réessaie dans un instant. »');return;}
     if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}RACINE.querySelector('.bo').textContent=enEuros(e.euros||0);
-    e.ap=Object.assign({},e.ap||{},{_tasse:{k:a[0],f:Date.now()+6*60*1000}});try{sauver();}catch(x){}try{monterEnLigne(true);}catch(x){}
-    vib([10,30,10]);bulle('« Et voilà ! '+a[1]+', bonne dégustation. »');});};
+    e.ap=Object.assign({},e.ap||{},{_tasse:{k:a[0],f:Date.now()+30*1000}});window.BOOST_CAFE=Object.assign({},a[5],{fin:Date.now()+a[5].d*1000});try{texteVolant(joueur.x,joueur.y-70,a[5].mot,'#ffe9a8');}catch(x){}try{sauver();}catch(x){}try{monterEnLigne(true);}catch(x){}
+    vib([10,30,10]);bulle('« Et voilà ! '+a[1]+'. '+a[2]+' »');});};
 })();

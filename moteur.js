@@ -17779,7 +17779,9 @@ const POUSSE_BASSE=0.60, POUSSE_HAUTE=1.00;
 /* L'HYSTÉRÉSIS : la foulée s'ouvre à 0,88 et ne se referme qu'à 0,80.
    Sans cet écart, le pouce qui tremble fait clignoter la course. */
 const COURSE_ENTREE=0.88, COURSE_SORTIE=0.80;
-const vitesseDuJoueur=()=>PAS_VITESSE[Math.min(e.nivPied||0,PAS_VITESSE.length-1)];
+/* LE COUP DE FOUET DU CAFÉ DE LA GALERIE : un effet qui ne dure pas (window.BOOST_CAFE) */
+const boostCafe=()=>{const B=window.BOOST_CAFE;if(!B)return null;if(Date.now()>B.fin){window.BOOST_CAFE=null;try{texteVolant(joueur.x,joueur.y-70,'l’effet est passé','#d8c8b0');}catch(x){}return null;}return B;};
+const vitesseDuJoueur=()=>PAS_VITESSE[Math.min(e.nivPied||0,PAS_VITESSE.length-1)]*((boostCafe()||{}).vit||1);
 let vx=0, vy=0;                   /* vitesse actuelle, pour l'inertie */
 let court=false;                  /* l'allure du moment */
 let bloqueBord=false;
@@ -17805,14 +17807,14 @@ joueur.dirVue=ORDRE8[(a+(d<=4?1:-1)+8)%8];
    se vide. Vide, on est essoufflé : on marche moins vite tant qu'on n'a pas
    repris de l'air. Courir entraîne : l'endurance monte et la jauge s'allonge. */
 const SOUF={v:1,vide:false,vu:0,tSprint:0,halete:0,
- cap(){return 5+Math.min(100,+e.endu||0)*0.1;},          /* de 5 s (débutant) à 15 s (marathonien) */
+ cap(){const B=boostCafe();return (5+Math.min(100,+e.endu||0)*0.1)*((B&&B.souffle)||1);},          /* de 5 s (débutant) à 15 s (marathonien) */
  maj(dt,sprinte,bouge){const S=this;
   if(sprinte&&!S.vide){S.v-=dt/S.cap();S.tSprint+=dt;
    /* l'entraînement : chaque seconde de sprint compte, et le dernier quart compte double */
    const avant=Math.floor(+e.endu||0);e.endu=Math.min(100,(+e.endu||0)+dt*(S.v<.25?0.05:0.025));
    if(Math.floor(e.endu)>avant){try{texteVolant(joueur.x,joueur.y-70,'+1 endurance','#9fe8a0');}catch(x){}try{sauver();}catch(x){}}
    if(S.v<=0){S.v=0;S.vide=true;S.halete=2.4;try{texteVolant(joueur.x,joueur.y-64,'à bout de souffle…','#ffb0a0');}catch(x){}try{vibrer([30,40,30]);}catch(x){}}}
-  else{S.v=Math.min(1,S.v+dt*(bouge?0.2:0.42));if(S.vide&&S.v>=0.4)S.vide=false;}
+  else{const B=boostCafe();S.v=Math.min(1,S.v+dt*(bouge?0.2:0.42)*((B&&B.recup)||1));if(S.vide&&S.v>=0.4)S.vide=false;}
   S.halete=Math.max(0,S.halete-dt);
   S.vu=Math.max(0,Math.min(1,S.vu+(S.v<0.999||sprinte?dt*5:-dt*1.6)));},
  dessiner(g,camX,camY){const S=this;if(!joueur)return;const px=joueur.x-camX,py=joueur.y-camY,t=performance.now()/1000;
