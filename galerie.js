@@ -13,18 +13,25 @@ const BOUTIQUES={
   bijou:{nom:'L’Heure Bleue',sous:'BIJOUTERIE · HORLOGERIE · DEPUIS 1962',cle:'_bij',c1:'#1e1e2a',c2:'#0e0e16',or:'#e0b860',clair:'#2a2a3a',fond:'bijou',
     vendeur:{peau:1,cheveux:6,coiffe:10,barbe:0,haut:2,veste:20,bas:0,pantalon:9,souliers:0,chaussures:1,sac:0,chapeau:0,raye:0,motif:0,_pnj:true,_bij:'bij_chaine_or'},
     paroles:['« Une montre, ça se transmet. »','« L’or ne ment jamais, mon petit. »','« Regarde comme ça brille sous les spots. »','« Ici, on vend du temps. Le plus beau. »'],
-    articles:[['bij_montre_acier','Montre acier','Bracelet maille, cadran bleu nuit.',80],['bij_chaine_argent','Chaîne argent','Maille fine, discrète.',150],['bij_montre_plongee','Montre de plongée','Étanche à 300 m, lunette tournante.',400],
-      ['bij_chaine_or','Chaîne or','Dix-huit carats, maille forçat.',600],['bij_montre_or','Montre or','Le cadran qui fait tourner les têtes.',1200],['bij_grosse_chaine','La grosse chaîne','Avec le médaillon. Pour les patrons du port.',3500]]},
+    articles:[['bij_montre_acier','Montre acier','Bracelet maille, cadran bleu nuit.',25000,0],['bij_chaine_argent','Chaîne argent','Maille fine, discrète, qui accroche la lumière.',40000,0],
+      ['bij_montre_plongee','Montre de plongée','Étanche à 300 m, lunette tournante.',70000,1],['bij_chaine_or','Chaîne or','Dix-huit carats, maille forçat. Elle scintille.',150000,2],
+      ['bij_montre_or','Montre or','Le cadran qui fait tourner les têtes.',220000,2],['bij_grillz','Grillz or','Un sourire en or massif.',300000,2],
+      ['bij_medaillon','Le médaillon','Grosse maille et médaillon d’or. Pour les patrons du port.',600000,3],['bij_montre_glace','Montre glacée','Sertie de diamants. Elle étincelle sans arrêt.',1200000,3],
+      ['bij_chaine_glace','La rivière de diamants','Pavée de diamants. Dix exemplaires, pas un de plus.',2500000,4]]},
   lunettes:{nom:'Optique du Vieux-Port',sous:'OPTICIEN · LUNETTES DE SOLEIL',cle:'_lun',c1:'#1f6a6a',c2:'#124a4a',or:'#e8dcb0',clair:'#2a8a8a',fond:'lunettes',
     vendeur:{peau:3,cheveux:2,coiffe:4,barbe:0,haut:2,veste:19,bas:0,pantalon:8,souliers:0,chaussures:1,sac:0,chapeau:0,raye:0,motif:0,_pnj:true,_lun:'lun_rondes'},
     paroles:['« Le soleil de Marseille, ça ne pardonne pas. »','« Essaie, le miroir est là pour ça. »','« Celles-là, c’est le style du Vieux-Port. »','« Avec ça, tu vois la mer en plus bleu. »'],
-    articles:[['lun_noires','Noires','Le classique, verres fumés.',30],['lun_rouges','Rouges','Monture rouge, pour se faire remarquer.',50],['lun_rondes','Rondes','Monture dorée, verres ronds.',70],
-      ['lun_aviateur','Aviateur','Comme les pilotes de Marignane.',120],['lun_miroir','Miroir','Verres miroir bleu ciel.',200],['lun_or','Or','Monture en or. Rien que ça.',600]]},
+    articles:[['lun_noires','Noires','Le classique, verres fumés.',8000,0],['lun_rondes','Rondes dorées','Monture fine, verres ronds.',18000,0],
+      ['lun_aviateur','Aviateur','Comme les pilotes de Marignane.',35000,1],['lun_coeur','Cœur','Pour voir la vie en rose.',45000,1],
+      ['lun_miroir','Miroir','Verres miroir bleu ciel, qui brillent au soleil.',70000,2],['lun_masque','Masque sport','Écran panoramique orange.',120000,2],
+      ['lun_or','Or massif','Monture en or. Elles étincellent.',400000,3],['lun_cyber','Visière LED','Une bande lumineuse qui change de couleur. Dix exemplaires.',900000,4]]},
   sneakers:{nom:'Sneakers 13',sous:'BASKETS · ÉDITIONS LIMITÉES',cle:'_snk',c1:'#e8602a',c2:'#b8401a',or:'#fff0d0',clair:'#f08a4a',fond:'sneakers',
     vendeur:{peau:5,cheveux:0,coiffe:1,barbe:1,haut:1,veste:21,bas:1,pantalon:9,souliers:1,chaussures:6,sac:0,chapeau:1,raye:0,motif:0,_pnj:true,_snk:'snk_fluo'},
     paroles:['« Wesh, celles-là elles sont propres ! »','« Édition limitée, y en aura pas pour tout le monde. »','« Avec ça, tu glisses sur le quai. »','« Le blanc, c’est intemporel. »'],
-    articles:[['snk_blanches','Blanches','Toutes blanches, à garder propres.',60],['snk_noires','Noires','Discrètes, passe-partout.',60],['snk_rouges','Rouges','Le rouge du drapeau de la ville.',90],
-      ['snk_bleues','Bleues','Bleu ciel et blanc. Allez l’OM.',90],['snk_fluo','Fluo','On te voit de l’autre bout du port.',150],['snk_or','Or','La paire en or. Une légende.',900]]}};
+    articles:[['snk_blanches','Blanches','Toutes blanches, semelle immaculée.',15000,0],['snk_noires','Noires & rouges','Noires, liseré rouge.',25000,0],
+      ['snk_om','Ciel & blanc','Bleu ciel et blanc. Allez l’OM.',45000,1],['snk_desert','Désert','Daim sable, semelle crème.',45000,1],
+      ['snk_fluo','Fluo','On te voit de l’autre bout du port.',70000,2],['snk_led','Lumineuses','Semelle LED qui change de couleur, même la nuit.',350000,3],
+      ['snk_or','Or','La paire en or. Elle scintille à chaque pas.',900000,3],['snk_ailees','Les Ailées','Des ailes d’or aux chevilles. Dix paires au monde.',3000000,4]]}};
 const CAFE=[['expresso','Expresso','Serré, à la marseillaise.',2,'☕'],['croissant','Croissant','Pur beurre, encore tiède.',2.5,'🥐'],['chocolat','Chocolat chaud','Avec de la chantilly.',3.5,'🍫'],
   ['jus','Jus d’orange','Pressé devant toi.',4,'🍊'],['glace','Glace','Deux boules, framboise et vanille.',4.5,'🍨'],['crepe','Crêpe','Au sucre, ou au chocolat.',5.5,'🥞']];
 let RACINE=null,B=null,SEL=null,DIR=0,ACHAT=false;const DIRS=['bas','droite','haut','gauche'];
@@ -35,47 +42,53 @@ function dessinePerso(cv,ap,taille,dir){const NW=40,NH=66,DPR=Math.max(1,window.
   if(cv.width!==NW*s){cv.width=NW*s;cv.height=NH*s;cv.style.width=(NW*s/DPR)+'px';cv.style.height=(NH*s/DPR)+'px';}
   const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,cv.width,cv.height);g.setTransform(s,0,0,s,0,0);personne(g,NW/2,NH-4,ap,dir||'bas',0,false);g.setTransform(1,0,0,1,0,0);}
 /* la vignette : on cadre la zone de l'objet */
-const ZONE={_bij:[6,22,28,22],_lun:[9,14,22,14],_snk:[9,56,22,8]};
-function vignette(cv,ap){const DPR=Math.max(1,window.devicePixelRatio||1),[sx,sy,w,h]=ZONE[B.cle],s=Math.max(1,Math.round(2.4*DPR*(B.cle==='_snk'?1.3:B.cle==='_lun'?1.4:1)));
+const ZONE={_bij:[8,24,24,18],_lun:[9,14,22,14],_snk:[9,56,22,8]};
+function vignette(cv,ap){const DPR=Math.max(1,window.devicePixelRatio||1),[sx,sy,w,h]=ZONE[B.cle],s=Math.max(1,Math.round(2.4*DPR*(B.cle==='_snk'?1.3:B.cle==='_lun'?1.4:1.25)));
   cv.width=w*s;cv.height=h*s;cv.style.width=(w*s/DPR)+'px';cv.style.height=(h*s/DPR)+'px';
   const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(s,0,0,s,-sx*s,-sy*s);personne(g,20,62,ap,'bas',0,false);g.setTransform(1,0,0,1,0,0);}
 const base=()=>{const ap=Object.assign({},DEF_AP,e.ap||{});delete ap.deguisement;return ap;};
 function apEssai(){const ap=base();if(SEL)ap[B.cle]=SEL;else delete ap[B.cle];ap._pnj=true;return ap;}
 
-const CSS=`#gal{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:#f4efe4;color:#1b2a44;font-family:'Baloo 2',system-ui,sans-serif;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+const TIERS=[['CLASSIQUE','#9aa0ac','#3a3e48'],['RARE','#4aa8ff','#16304e'],['PRESTIGE','#c88aff','#341a52'],['LÉGENDE','#ffd24a','#4a3208'],['ÉDITION LIMITÉE','#ff6a5a','#4a1410']];
+const eu=v=>Number(v).toLocaleString('fr-FR')+' €';
+const CSS=`#gal{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:radial-gradient(120% 60% at 50% 0%,var(--c1),var(--c2) 70%);color:#f6efe0;font-family:'Baloo 2',system-ui,sans-serif;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
 #gal *{box-sizing:border-box}
-#gal .hd{flex:none;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 10px;background:linear-gradient(var(--c1),var(--c2));border-bottom:3px solid var(--or)}
+#gal .hd{flex:none;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 10px;border-bottom:1px solid rgba(255,220,150,.25);background:linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,0))}
 #gal .l1{display:flex;align-items:center;gap:8px}#gal .ens{flex:1;min-width:0}
-#gal .ens b{display:block;font-family:Georgia,serif;font-style:italic;font-weight:900;font-size:24px;color:#fff6e0;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 0 rgba(0,0,0,.25)}
-#gal .ens small{display:block;font-size:10px;font-weight:800;letter-spacing:2px;color:var(--or);opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#gal .bo{flex:none;border:1.5px solid var(--or);color:#fff2c8;border-radius:14px;padding:2px 10px;font-weight:800;font-size:13px;background:rgba(0,0,0,.2);white-space:nowrap}
-#gal .x{flex:none;width:38px;height:38px;border-radius:12px;border:1.5px solid var(--or);background:rgba(0,0,0,.2);color:#fff2c8;font:800 17px 'Baloo 2',sans-serif}
+#gal .ens b{display:block;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:700;font-size:26px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(#fff6d8,var(--or) 55%,#a8782a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 rgba(0,0,0,.4))}
+#gal .ens small{display:block;margin-top:3px;font-size:9.5px;font-weight:800;letter-spacing:3px;color:var(--or);opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#gal .bo{flex:none;border:1px solid var(--or);color:#fff2c8;border-radius:999px;padding:3px 11px;font-weight:800;font-size:13px;background:rgba(0,0,0,.35);white-space:nowrap}
+#gal .x{flex:none;width:38px;height:38px;border-radius:50%;border:1px solid var(--or);background:rgba(0,0,0,.35);color:#fff2c8;font:800 16px 'Baloo 2',sans-serif}
 #gal .pat{display:flex;gap:10px;align-items:flex-end;margin-top:8px}#gal .pat canvas{flex:none;image-rendering:pixelated}
-#gal .bul{flex:1;min-width:0;position:relative;background:#fffaf0;color:#1b2a44;border-radius:14px;padding:5px 10px;font-weight:700;font-size:13px;line-height:1.3;transition:opacity .2s}
-#gal .bul:before{content:'';position:absolute;left:-8px;bottom:10px;border:8px solid transparent;border-right-color:#fffaf0;border-left:0}
-#gal .store{flex:none;height:12px;background:repeating-linear-gradient(90deg,var(--c1) 0 14px,#f2e8d2 14px 28px);box-shadow:0 3px 4px rgba(0,0,0,.12)}
+#gal .bul{flex:1;min-width:0;position:relative;background:rgba(255,250,240,.95);color:#2a1a10;border-radius:14px;padding:5px 10px;font-weight:700;font-size:13px;line-height:1.3;transition:opacity .2s}
+#gal .bul:before{content:'';position:absolute;left:-8px;bottom:10px;border:8px solid transparent;border-right-color:rgba(255,250,240,.95);border-left:0}
+#gal .store{flex:none;height:3px;background:linear-gradient(90deg,transparent,var(--or),transparent)}
 #gal .corps{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:12px 12px calc(16px + env(safe-area-inset-bottom,0px))}
-#gal .sc{position:relative;height:232px;border-radius:22px;overflow:hidden;box-shadow:inset 0 0 0 2px #e2d6be}
+#gal .sc{position:relative;height:300px;border-radius:24px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,220,150,.35),0 12px 30px rgba(0,0,0,.45)}
 #gal .sc canvas.fond{position:absolute;inset:0;width:100%;height:100%}
-#gal .sc canvas.perso{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);image-rendering:pixelated}
-#gal .sc .px{position:absolute;right:12px;top:10px;background:var(--c1);color:#fff2c8;border-radius:12px;padding:2px 10px;font-weight:800;font-size:15px;box-shadow:0 2px 0 rgba(0,0,0,.3)}
-#gal .sc .px.ok{background:#2f8a4a;color:#fff;box-shadow:0 2px 0 #1e5e30}
-#gal .sc .tr{position:absolute;bottom:14px;width:34px;height:34px;border-radius:50%;border:0;background:rgba(255,255,255,.85);color:#1b2a44;font:800 18px 'Baloo 2',sans-serif;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+#gal .sc canvas.perso{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);image-rendering:pixelated}
+#gal .sc .px{position:absolute;right:12px;top:12px;border-radius:999px;padding:3px 12px;font-weight:800;font-size:15px;color:#2a1a08;background:linear-gradient(#fff2b8,#e8b838);box-shadow:0 2px 0 #8a5a18}
+#gal .sc .px.ok{background:linear-gradient(#7ae09a,#2f8a4a);color:#fff;box-shadow:0 2px 0 #1e5e30}
+#gal .sc .ti{position:absolute;left:12px;top:12px;border-radius:999px;padding:2px 10px;font-weight:800;font-size:10.5px;letter-spacing:2px;border:1px solid currentColor;background:rgba(0,0,0,.45)}
+#gal .sc .tr{position:absolute;bottom:16px;width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,220,150,.6);background:rgba(0,0,0,.45);color:#fff2c8;font:800 18px 'Baloo 2',sans-serif}
 #gal .sc .tr.g{left:12px}#gal .sc .tr.d{right:12px}
-#gal .lb{font-size:11px;font-weight:800;letter-spacing:2px;color:#8a7a5a;margin:12px 2px 6px;display:flex;justify-content:space-between}
+#gal .nom{margin:12px 2px 0;font-family:Georgia,serif;font-style:italic;font-size:22px;font-weight:700;color:#fff6e0;line-height:1.1}
+#gal .de{margin:2px 2px 0;font-weight:600;font-size:13px;color:rgba(255,240,210,.75);min-height:18px}
+#gal .lb{font-size:10.5px;font-weight:800;letter-spacing:3px;color:var(--or);margin:16px 2px 8px;display:flex;justify-content:space-between;opacity:.9}
 #gal .pf{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-#gal .pf button{position:relative;border:2px solid #e2d6be;background:#fff;border-radius:14px;padding:6px 4px 7px;font:800 12.5px 'Baloo 2',sans-serif;color:#1b2a44;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.15}
-#gal .pf button .vi{width:100%;height:58px;border-radius:10px;background:#f6f1e6;display:grid;place-items:center;font-size:30px}
+#gal .pf button{position:relative;border:1px solid rgba(255,255,255,.12);background:linear-gradient(var(--tb,#2a2a34),rgba(0,0,0,.35));border-radius:16px;padding:16px 4px 8px;font:800 12px 'Baloo 2',sans-serif;color:#f6efe0;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.15;overflow:hidden}
+#gal .pf button .vi{width:100%;height:62px;border-radius:12px;background:radial-gradient(closest-side,rgba(255,255,255,.18),rgba(255,255,255,0));display:grid;place-items:center;font-size:30px}
 #gal .pf button canvas{image-rendering:pixelated}
-#gal .pf button.on{border-color:var(--c1);background:#fbf7ee;box-shadow:0 0 0 2px var(--or)}
-#gal .pf small{font-size:11.5px;font-weight:800;color:#a07a30}#gal .pf small.a{color:#2f8a4a}
-#gal .pf .pt{position:absolute;top:4px;left:4px;font-size:9.5px;font-weight:800;background:var(--c1);color:#fff;border-radius:7px;padding:0 5px}
-#gal .de{margin:10px 2px 0;font-weight:700;font-size:13px;color:#5a4a3a;min-height:18px}
-#gal .go{display:block;width:100%;margin-top:12px;border:0;border-radius:16px;padding:11px;font:800 17px 'Baloo 2',sans-serif;color:#fff;background:linear-gradient(var(--clair),var(--c1));box-shadow:0 4px 0 var(--c2);line-height:1.1}
-#gal .go small{display:block;font-size:12px;opacity:.85;font-weight:700}#gal .go:active{transform:translateY(3px);box-shadow:0 1px 0 var(--c2)}
-#gal .go.vert{background:linear-gradient(#4cc070,#2f8a4a);box-shadow:0 4px 0 #1e5e30}#gal .go[disabled]{opacity:.55}
-#gal .doc{display:block;width:100%;margin-top:8px;border:2px solid #d8c8a4;background:#fff;border-radius:14px;padding:7px;font:800 13px 'Baloo 2',sans-serif;color:#1b2a44}
-@media(min-width:720px){#gal .corps{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-content:start;padding:14px 24px}#gal .sc{height:auto;min-height:340px;grid-row:1/span 8}}`;
+#gal .pf button .rb{position:absolute;top:0;left:0;right:0;height:13px;font-size:8px;letter-spacing:1.5px;font-weight:900;line-height:13px;color:#1a1208;background:var(--tc,#9aa0ac)}
+#gal .pf button.on{border-color:var(--or);box-shadow:0 0 0 2px var(--or),0 0 18px rgba(255,210,120,.35)}
+#gal .pf button.leg{animation:galLeg 2.4s ease-in-out infinite}@keyframes galLeg{50%{box-shadow:0 0 16px rgba(255,210,80,.55)}}
+#gal .pf small{font-size:11.5px;font-weight:800;color:var(--or)}#gal .pf small.a{color:#7ae09a}
+#gal .pf .pt{position:absolute;bottom:4px;right:4px;font-size:8.5px;font-weight:900;background:#7ae09a;color:#0e2a14;border-radius:7px;padding:0 5px}
+#gal .go{display:block;width:100%;margin-top:14px;border:0;border-radius:18px;padding:12px;font:800 17px 'Baloo 2',sans-serif;color:#2a1a08;background:linear-gradient(#fff2b8,#e8b838 60%,#c8902a);box-shadow:0 4px 0 #7a5214,0 10px 22px rgba(0,0,0,.35);line-height:1.1}
+#gal .go small{display:block;font-size:12px;opacity:.8;font-weight:700}#gal .go:active{transform:translateY(3px);box-shadow:0 1px 0 #7a5214}
+#gal .go.vert{background:linear-gradient(#8ae8a8,#2f8a4a);color:#fff;box-shadow:0 4px 0 #1e5e30}#gal .go[disabled]{opacity:.5}
+#gal .doc{display:block;width:100%;margin-top:8px;border:1px solid rgba(255,220,150,.4);background:rgba(0,0,0,.25);border-radius:14px;padding:8px;font:800 13px 'Baloo 2',sans-serif;color:#f6efe0}
+@media(min-width:720px){#gal .corps{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-content:start;padding:14px 24px}#gal .sc{height:auto;min-height:380px;grid-row:1/span 8}}`;
 function css(){if(!document.getElementById('galCss')){const s=document.createElement('style');s.id='galCss';s.textContent=CSS;document.head.appendChild(s);}}
 function bulle(t){const b=RACINE&&RACINE.querySelector('.bul');if(!b)return;b.style.opacity='0';setTimeout(()=>{b.textContent=t;b.style.opacity='1';},180);}
 
@@ -112,21 +125,27 @@ function dessineFond(cv,k){const W=cv.clientWidth||380,H=cv.clientHeight||232,D=
     g.fillStyle='#e8602a';g.beginPath();g.ellipse(W/2,H-32,68,14,0,0,7);g.fill();g.strokeStyle='#fff0d0';g.lineWidth=2;g.beginPath();g.ellipse(W/2,H-32,58,10,0,0,7);g.stroke();}
   gr=g.createRadialGradient(W/2,40,0,W/2,sol-40,150);gr.addColorStop(0,'rgba(255,236,190,.35)');gr.addColorStop(1,'rgba(255,236,190,0)');g.fillStyle=gr;g.fillRect(0,0,W,H);}
 
-function rendreScene(){if(!RACINE)return;dessinePerso(RACINE.querySelector('canvas.perso'),apEssai(),2.6,DIRS[DIR]);
-  const px=RACINE.querySelector('.sc .px'),A=B.articles.find(a=>a[0]===SEL);
-  if(!A){px.style.display='none';}else{px.style.display='block';if(aMoi(SEL)){px.className='px ok';px.textContent=porte()===SEL?'Porté ✓':'À toi ✓';}else{px.className='px';px.textContent=A[3]+' €';}}}
+let BOUCLE=0,TOUCHE=0;
+function rendreScene(){if(!RACINE)return;
+  const px=RACINE.querySelector('.sc .px'),ti=RACINE.querySelector('.sc .ti'),A=B.articles.find(a=>a[0]===SEL);
+  if(!A){px.style.display='none';ti.style.display='none';}else{px.style.display='block';ti.style.display='block';const T=TIERS[A[4]||0];ti.textContent=T[0];ti.style.color=T[1];
+    if(aMoi(SEL)){px.className='px ok';px.textContent=porte()===SEL?'Porté ✓':'À toi ✓';}else{px.className='px';px.textContent=eu(A[3]);}}
+  RACINE.querySelector('.nom').textContent=A?A[1]:B.nom;RACINE.querySelector('.de').textContent=A?A[2]:'Touche une pièce : tu l’essaies tout de suite.';}
+/* la vitrine tourne doucement sur son socle, et les reflets bougent */
+function animer(){cancelAnimationFrame(BOUCLE);let k=0,t0=performance.now();const go=t=>{if(!RACINE||!B)return;if(t-t0>66){t0=t;if(Date.now()-TOUCHE>4000&&Math.floor(t/1400)!==k){k=Math.floor(t/1400);DIR=(DIR+1)%4;}
+    const cv=RACINE.querySelector('canvas.perso');if(cv)dessinePerso(cv,apEssai(),3.2,DIRS[DIR]);}BOUCLE=requestAnimationFrame(go);};BOUCLE=requestAnimationFrame(go);}
 function rendreRayon(){const G=RACINE.querySelector('.pf');G.innerHTML='';const ap0=base();
-  B.articles.forEach(a=>{const b=document.createElement('button');if(a[0]===SEL)b.className='on';
+  B.articles.forEach(a=>{const T=TIERS[a[4]||0],b=document.createElement('button');b.className=(a[0]===SEL?'on ':'')+((a[4]||0)>=3?'leg':'');b.style.setProperty('--tb',T[2]);b.style.setProperty('--tc',T[1]);
+    b.insertAdjacentHTML('beforeend','<span class="rb">'+T[0]+'</span>');
     const vi=document.createElement('div');vi.className='vi';const cv=document.createElement('canvas');vi.appendChild(cv);b.appendChild(vi);
     vignette(cv,Object.assign({},ap0,{[B.cle]:a[0],_pnj:true}));
-    b.insertAdjacentHTML('beforeend',a[1]+(aMoi(a[0])?'<small class="a">À toi ✓</small>':'<small>'+a[3]+' €</small>')+(porte()===a[0]?'<span class="pt">PORTÉ</span>':''));
-    b.onclick=()=>{SEL=a[0];vib(8);if(Math.random()<.35)bulle(B.paroles[Math.floor(Math.random()*B.paroles.length)]);rendreTout();};G.appendChild(b);});}
+    b.insertAdjacentHTML('beforeend',a[1]+(aMoi(a[0])?'<small class="a">À toi ✓</small>':'<small>'+eu(a[3])+'</small>')+(porte()===a[0]?'<span class="pt">PORTÉ</span>':''));
+    b.onclick=()=>{SEL=a[0];TOUCHE=Date.now();DIR=0;vib(8);if(Math.random()<.35)bulle(B.paroles[Math.floor(Math.random()*B.paroles.length)]);rendreTout();};G.appendChild(b);});}
 function rendreCaisse(){const b=RACINE.querySelector('.go'),A=B.articles.find(a=>a[0]===SEL);RACINE.querySelector('.bo').textContent=enEuros(e.euros||0);b.disabled=false;b.className='go';
-  RACINE.querySelector('.de').textContent=A?A[2]:'Touche un article : tu l’essaies tout de suite.';
-  if(!A){b.innerHTML='Choisis un article<small>tu l’essaies sur toi</small>';b.disabled=true;}
-  else if(!aMoi(SEL)){b.innerHTML='Acheter · '+A[3]+' €<small>il te restera '+enEuros(Math.max(0,(e.euros||0)-A[3]*100))+'</small>';if((e.euros||0)<A[3]*100){b.innerHTML='Il te manque '+enEuros(A[3]*100-(e.euros||0))+'<small>'+A[3]+' € pour celui-ci</small>';b.disabled=true;}}
-  else if(porte()===SEL){b.innerHTML='Tu le portes<small>choisis-en un autre pour changer</small>';b.disabled=true;}
-  else{b.className='go vert';b.innerHTML='Le porter<small>il est déjà à toi</small>';}
+  if(!A){b.innerHTML='Choisis une pièce<small>tu l’essaies sur toi</small>';b.disabled=true;}
+  else if(!aMoi(SEL)){const c=A[3]*100;b.innerHTML='Acheter · '+eu(A[3])+'<small>il te restera '+enEuros(Math.max(0,(e.euros||0)-c))+'</small>';if((e.euros||0)<c){b.innerHTML='Il te manque '+enEuros(c-(e.euros||0))+'<small>'+eu(A[3])+' pour celle-ci</small>';b.disabled=true;}}
+  else if(porte()===SEL){b.innerHTML='Tu la portes<small>choisis-en une autre pour changer</small>';b.disabled=true;}
+  else{b.className='go vert';b.innerHTML='La porter<small>elle est déjà à toi</small>';}
   RACINE.querySelector('.doc').style.display=porte()?'block':'none';}
 function rendreTout(){if(!RACINE)return;rendreScene();rendreRayon();rendreCaisse();}
 function porter(id){e.ap=Object.assign({},e.ap||{});if(id)e.ap[B.cle]=id;else delete e.ap[B.cle];try{sauver();}catch(x){}try{monterEnLigne(true);}catch(x){}}
@@ -138,18 +157,18 @@ async function caisse(){if(ACHAT||!SEL)return;const A=B.articles.find(a=>a[0]===
   if(!r||r.erreur){bulle(r&&r.erreur==='pas_assez'?'« Il te manque de quoi payer. »':r&&r.erreur==='piece inconnue'?'« Celui-là arrive bientôt en rayon. »':'« La caisse fait des siennes, réessaie. »');rendreTout();return;}
   if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}e.cos=Object.assign({},e.cos||{},{[SEL]:true});
   porter(SEL);vib([14,30,14]);bulle('« Bon choix ! Tu le portes déjà. »');rendreTout();}
-function fermer(){if(!RACINE)return;RACINE=null;try{fermeA=Date.now();}catch(x){}try{$('page2').classList.remove('on');}catch(x){}}
+function fermer(){if(!RACINE)return;RACINE=null;cancelAnimationFrame(BOUCLE);try{fermeA=Date.now();}catch(x){}try{$('page2').classList.remove('on');}catch(x){}}
 function cadre(T,corps){css();$('page2Fond').className='';$('page2').classList.add('on');
   $('page2Fond').innerHTML='<div id="gal" lang="fr" style="--c1:'+T.c1+';--c2:'+T.c2+';--or:'+T.or+';--clair:'+T.clair+'"><div class="hd"><div class="l1"><div class="ens"><b>'+T.nom+'</b><small>'+T.sous+'</small></div><div class="bo">'+enEuros(e.euros||0)+'</div><button class="x" aria-label="Fermer">✕</button></div>'+
     '<div class="pat"><canvas class="vd"></canvas><div class="bul">'+T.paroles[0]+'</div></div></div><div class="store"></div><div class="corps">'+corps+'</div></div>';
   RACINE=$('page2Fond').querySelector('#gal');dessinePerso(RACINE.querySelector('canvas.vd'),T.vendeur,1.1,'bas');RACINE.querySelector('.x').onclick=fermer;}
 window.ouvrirBoutiqueGalerie=function(k){B=BOUTIQUES[k];if(!B)return;DIR=0;SEL=porte()||null;
-  cadre(B,'<div class="sc"><canvas class="fond"></canvas><canvas class="perso"></canvas><div class="px"></div><button class="tr g" aria-label="Tourner">‹</button><button class="tr d" aria-label="Tourner">›</button></div>'+
-    '<div class="de"></div><div class="lb"><span>EN VITRINE</span><span>'+B.articles.length+' modèles</span></div><div class="pf"></div><button class="go"></button><button class="doc">Ranger · ne plus rien porter</button>');
+  cadre(B,'<div class="sc"><canvas class="fond"></canvas><canvas class="perso"></canvas><div class="ti"></div><div class="px"></div><button class="tr g" aria-label="Tourner">‹</button><button class="tr d" aria-label="Tourner">›</button></div>'+
+    '<div class="nom"></div><div class="de"></div><div class="lb"><span>LA COLLECTION</span><span>'+B.articles.length+' pièces</span></div><div class="pf"></div><button class="go"></button><button class="doc">Ranger · ne plus rien porter</button>');
   const d=RACINE;requestAnimationFrame(()=>dessineFond(d.querySelector('canvas.fond'),B.fond));
-  d.querySelector('.tr.g').onclick=()=>{DIR=(DIR+1)%4;rendreScene();};d.querySelector('.tr.d').onclick=()=>{DIR=(DIR+3)%4;rendreScene();};
+  d.querySelector('.tr.g').onclick=()=>{DIR=(DIR+1)%4;TOUCHE=Date.now();};d.querySelector('.tr.d').onclick=()=>{DIR=(DIR+3)%4;TOUCHE=Date.now();};
   d.querySelector('.go').onclick=caisse;d.querySelector('.doc').onclick=()=>{porter(null);SEL=null;vib(8);bulle('« Rangé. Il t’attend. »');rendreTout();};
-  rendreTout();try{if(typeof lireMesCosmetiques==='function')lireMesCosmetiques().then(()=>{if(RACINE)rendreTout();}).catch(()=>{});}catch(x){}};
+  rendreTout();animer();try{if(typeof lireMesCosmetiques==='function')lireMesCosmetiques().then(()=>{if(RACINE)rendreTout();}).catch(()=>{});}catch(x){}};
 
 /* LE CAFÉ DE LA GALERIE */
 const T_CAFE={nom:'Café de la Galerie',sous:'EXPRESSO · VIENNOISERIES · GLACES',c1:'#6a3a1e',c2:'#4a2410',or:'#e8c890',clair:'#8a5230',
