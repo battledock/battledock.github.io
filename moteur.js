@@ -20574,7 +20574,7 @@ g.fillStyle='rgba(10,16,10,.55)';g.fillText(a.pseudo,x+1,yNom+1);
 g.fillStyle='#f2efe4';g.fillText(a.pseudo,x,yNom);
 /* LE TITRE DU LIVRET, au-dessus du nom. Le mousse n'en porte pas :
    un titre que tout le monde a n'est pas un titre. */
-if((a.rang|0)>0&&RANGS_MARIN[a.rang|0]){
+if(false&&(a.rang|0)>0&&RANGS_MARIN[a.rang|0]){   /* plus de titres de marin au-dessus des têtes : le port est un port de dockers */
 const t=RANGS_MARIN[a.rang|0].toUpperCase();
 g.font='700 5.5px ui-monospace,monospace';
 g.fillStyle='rgba(10,16,10,.5)';g.fillText(t,x+1,yNom-6);
@@ -23996,7 +23996,7 @@ return clsNiveaux();
    Au style du carnet : un podium pour les trois premiers (portrait et
    médaille de niveau), puis une carte par joueur, son grade, sa barre
    d'XP et s'il est en ligne. L'XP, c'est le score juste (progres). */
-const CLS_GRADES=[[30,'Roi du Vieux-Port'],[25,'Capitaine'],[20,'Patron de pêche'],[15,'Bosco'],[10,'Second'],[5,'Matelot'],[1,'Mousse']];
+const CLS_GRADES=[[150,'Directeur du port'],[100,'Chef de service'],[80,'Contremaître'],[55,'Docker mensuel'],[35,'Pointeur'],[20,'Chauffeur'],[10,'Docker'],[5,'Nouveau docker'],[1,'Docker occasionnel']];   /* les vrais grades des dockers (comme aux vacations) */
 const CSS_CLA=`.clA .podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:6px 0 12px}
 .clA .pod{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center}
 .clA .pod .med{position:relative;border-radius:50%;background:radial-gradient(circle at 50% 35%,#4a6a8a,#1a2a3a);box-shadow:0 0 0 3px #3a2408,0 4px 0 3px #3a2408}
@@ -24147,7 +24147,7 @@ async function clsNiveaux(){
  if(!clsActif('recolte'))return;
  if(!L.length){clsCadreA('recolte','<div class="nvVide">Personne n’est encore au registre.</div>',badge);return;}
  const f=n=>(+n||0).toLocaleString('fr-FR');
- L.forEach(j=>{j.N=clsNiv(+j.score||0);j.T=j.titre||CLS_GRADES.find(t=>j.N.n>=t[0])[1];});
+ L.forEach(j=>{j.N=clsNiv(+j.score||0);j.T=CLS_GRADES.find(t=>j.N.n>=t[0])[1];});
  const moi=L.findIndex(j=>j.id===e.id);
  let h=clsPodium(L,j=>j.N.n,j=>echapperT(j.T).toUpperCase());
  if(moi>0){const a=L[moi-1],m=L[moi];h+='<div class="cible">⚓ Il te manque <b>'+f(a.score-m.score+1)+' XP</b> pour passer devant <b>'+echapperT(a.pseudo)+'</b>'+(moi===1?' et prendre la tête':'')+'.</div>';}

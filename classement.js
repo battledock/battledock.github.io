@@ -14,7 +14,7 @@ const esc=s=>{try{return echapperT(String(s||''));}catch(x){return String(s||'')
 let RAC=null,L=[],FILTRE='tous';
 const AP_CAPITAINE=Object.assign({},typeof DEF_AP!=='undefined'?DEF_AP:{},{peau:2,cheveux:6,coiffe:4,barbe:3,haut:5,veste:16,bas:0,pantalon:9,chapeau:1,sac:0,_pnj:true});
 const apDe=j=>Object.assign({},typeof DEF_AP!=='undefined'?DEF_AP:{},j.apparence||{},{_pnj:true,sac:0});
-const grade=j=>j.titre||(CLS_GRADES.find(t=>j.N.n>=t[0])||[0,'Mousse'])[1];
+const grade=j=>(CLS_GRADES.find(t=>j.N.n>=t[0])||[0,'Docker occasionnel'])[1];
 /* un personnage en pied, net : dessiné à l'échelle 1 puis agrandi d'un nombre entier de fois */
 function enPied(ap,dir){const t=document.createElement('canvas');t.width=48;t.height=70;const q=t.getContext('2d');q.imageSmoothingEnabled=false;try{personne(q,24,66,ap,dir||'bas',0,false);}catch(x){}return t;}
 /* le capitaine, en buste, dans l'enseigne */
@@ -25,13 +25,12 @@ function phrase(){const m=L.findIndex(j=>j.id===e.id);
   if(!L.length)return 'Le registre est vide. Va bosser, et ton nom y sera le premier.';
   if(m===0)return 'Premier du port, <b>'+esc(L[0].pseudo)+'</b>. Le quai entier parle de toi. Tiens la barre !';
   if(m>0){const a=L[m-1],x=a.score-L[m].score+1;return 'Tu es <b>'+(m+1)+'e</b>. Encore <b>'+f(x)+' XP</b> et tu passes devant <b>'+esc(a.pseudo)+'</b>'+(m===1?' — la tête du port est à toi.':'.');}
-  return 'Je ne trouve pas ton nom dans le registre. Récolte, pêche, coupe du bois : chaque geste compte.';}
+  return 'Je ne trouve pas ton nom dans le registre. Soutes, vacations, courses : chaque effort compte.';}
 /* ===================== TROIS IDÉES À L'ESSAI (window.RGP_V = A, B ou C) =====================
    A — LE DUEL : toi face à celui qui est juste devant, l'écart à combler ; tes voisins autour.
    B — LA COURSE : une piste où chaque joueur est placé selon son XP ; on voit les écarts d'un coup d'œil.
    C — LES COURONNES : un roi par métier (forêt, potager, verger, bêtes, pêche) ; on touche pour voir le détail. */
-const METIERS=[['tout','👑','Général','#e8b030',j=>+j.score||0],['foret','🌲','Forêt','#3a9a5a',j=>+j.foret||0],['legumes','🥕','Potager','#e8862a',j=>+j.legumes||0],
-  ['fruits','🍒','Verger','#d8404a',j=>+j.fruits||0],['betes','🐑','Bêtes','#9a6a3a',j=>+j.betes||0],['peche','🐟','Pêche','#2a8ad0',j=>+j.peche||0]];
+const METIERS=[['tout','👑','Général','#e8b030',j=>+j.score||0]];   /* forêt, potager, verger, bêtes et pêche ne sont plus au port */
 let MET='tout';
 const metDe=k=>METIERS.find(m=>m[0]===k)||METIERS[0];
 function classe(k){const M=metDe(k);return L.slice().filter(j=>M[4](j)>0||k==='tout').sort((a,b)=>M[4](b)-M[4](a));}
@@ -119,10 +118,8 @@ function remplir(){if(!RAC)return;const v=V(),C=RAC.querySelector('.corps'),Ch=R
       '<div class="info"><div><b>'+(m>=0?(m+1)+(m?'e':'er'):'—')+'</b><small>ta place sur '+Lk.length+'</small></div><div><b>'+(m>0?f(M[4](Lk[m-1])-M[4](Lk[m])+1):'0')+'</b><small>'+u+' pour monter</small></div></div>'+
       '<div class="titre">'+M[1]+' '+M[2].toUpperCase()+'</div>'+Lk.map((j,i)=>rang(j,i,MET)).join('');
     peindrePiste(C.querySelector('.piste canvas'),Lk,MET);}
-  if(v==='C'){const roi=classe('tout')[0];let h='<div class="roi"><span class="cv"></span><span><small>👑 ROI DU PORT</small><b>'+esc(roi.pseudo)+'</b><span>Niveau '+roi.N.n+' · '+f(roi.score)+' XP</span></span></div><div class="grille">';
-    for(const Mx of METIERS.slice(1)){const Lx=classe(Mx[0]),r=Lx[0],im=Lx.findIndex(j=>j.id===e.id);
-      h+='<button class="cou" data-m="'+Mx[0]+'"><span class="ic" style="background:'+Mx[3]+'22">'+Mx[1]+'</span><small style="color:'+Mx[3]+'">ROI '+({foret:'DE LA FORÊT',legumes:'DU POTAGER',fruits:'DU VERGER',betes:'DES BÊTES',peche:'DE LA PÊCHE'})[Mx[0]]+'</small><b>'+(r?esc(r.pseudo):'—')+'</b><span>'+(r?f(Mx[4](r))+' pts':'personne')+'</span>'+(im>=0?'<span class="moi">toi '+(im+1)+(im?'e':'er')+'</span>':'')+'</button>';}
-    h+='</div><div class="titre">'+M[1]+' '+(MET==='tout'?'TOUT LE PORT':M[2].toUpperCase()+' · <u style="color:#1f1a14" class="ret">voir tout le port</u>')+'</div>'+Lk.map((j,i)=>rang(j,i,MET)).join('');C.innerHTML=h;
+  if(v==='C'){const roi=classe('tout')[0];let h='<div class="roi"><span class="cv"></span><span><small>👑 ROI DU PORT</small><b>'+esc(roi.pseudo)+'</b><span>Niveau '+roi.N.n+' · '+f(roi.score)+' XP</span></span></div>';
+    h+='<div class="titre">'+M[1]+' '+(MET==='tout'?'TOUT LE PORT':M[2].toUpperCase()+' · <u style="color:#1f1a14" class="ret">voir tout le port</u>')+'</div>'+Lk.map((j,i)=>rang(j,i,MET)).join('');C.innerHTML=h;
     C.querySelector('.roi .cv').replaceWith(persoCanvas(roi,1.5));
     {const r2=C.querySelector('.ret');if(r2)r2.onclick=()=>{MET='tout';remplir();};}
     C.querySelector('.roi').onclick=()=>{MET='tout';try{vibrer(6);}catch(x){}remplir();const t=C.querySelectorAll('.titre')[0];if(t)C.scrollTo({top:t.offsetTop-10,behavior:'smooth'});};

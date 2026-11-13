@@ -817,5 +817,6 @@ setTimeout(()=>{const v=document.getElementById('voileGB');if(v){v.style.opacity
 
 
 
+
 return {sol,solFin,decor,bloque,graver,depart:DEPART,figurants,acteurs:()=>ETG?[]:acteurs()};
 })()
