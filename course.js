@@ -177,7 +177,7 @@ function atterrir(){const M=C.moi,V=M.vol,m=V.faute?-1:Math.max(0,Math.round((V.
  C.marques.push(m);SON.haie();vib([20,30,20]);
  const best=Math.max(...C.marques),rec=record('long');
  C.bandeau={txt:m<0?'Essai '+C.marques.length+' : mordu':'Essai '+C.marques.length+' : '+m.toFixed(2)+' m',c:m<0?'#ff9a4a':m>=best&&(!rec||m>rec)?'#7ee08a':'#fff',t:2.2};
- if(m>0&&m>=best){C.photoImg=photo();if(!rec||m>rec)C.ola=0;}
+ if(m>0&&m>=best){if(!rec||m>rec)C.ola=0;}
  setTimeout(()=>{if(!C||C.ep!=='long')return;if(C.marques.length>=3){resultats(false);return;}
   C.essai++;Object.assign(M,{d:0,v:0,S:1,pas:0,reac:null,pose:null,recep:0});C.taps=[];C.dernier=null;C.phase='elan';C.ola=-1;C.camX=-3;
   C.bandeau={txt:'Essai '+(C.essai+1)+' / 3',c:'#ffd860',t:1.8};},2300);}
@@ -234,7 +234,7 @@ function boucle(ts){if(!RAC)return;RAF=requestAnimationFrame(boucle);const dt=Ma
   if(!C.E.long&&!C.photo&&M.fini===null&&C.E.d-M.d<4&&C.E.d-M.d>0){for(const b of C.A)if(b!==M&&Math.abs(b.d-M.d)<1.2){C.photo=true;C.ralenti=1.6;C.bandeau={txt:'PHOTO-FINISH',c:'#ffd860',t:1.6};break;}}
   C.excite=Math.min(1,M.d/C.E.d*1.2+(C.photo?.4:0)+(M.vol?.5:0));
   if(M.fini!==null&&!C.fini){C.place=1+C.A.filter(b=>b!==M&&b.fini!==null&&b.fini<M.fini).length;C.excite=1;C.phase='course';C.fini=true;SON.fin();vib([30,40,30,40,60]);
-   C.photoImg=photo();const rp=record(C.ep);if(C.place===1||!rp||M.fini<rp)C.ola=0;setTimeout(()=>{if(C)resultats(false);},C.ola>=0?2700:1900);}
+   const rp=record(C.ep);if(C.place===1||!rp||M.fini<rp)C.ola=0;setTimeout(()=>{if(C)resultats(false);},C.ola>=0?2700:1900);}
   SON.foule(.025+.06*Math.min(1,M.d/C.E.d)+(C.photo?.05:0));}
  /* la caméra : le joueur au tiers de l'écran */
  const cible=C.moi.d-3.4;C.camX+=(cible-C.camX)*Math.min(1,dt*6);
@@ -395,7 +395,8 @@ function resultats(dq){if(!C||C.res)return;const E=C.E,M=C.moi;SON.foule(0);
  /* les médailles, et la photo rangée dans la vitrine */
  const med=ok&&pl<=3?['or','argent','bronze'][pl-1]:null;
  if(med){try{if(!e.athMed||typeof e.athMed!=='object')e.athMed={};e.athMed[med]=(e.athMed[med]|0)+1;}catch(x){}
-  if(C.photoImg){try{const L=JSON.parse(localStorage.getItem('bd_athAlbum')||'[]');L.unshift({ep:C.ep,v:Math.round(perf*100)/100,pl,d:Date.now(),img:C.photoImg});while(L.length>12)L.pop();localStorage.setItem('bd_athAlbum',JSON.stringify(L));}catch(x){}}}
+  try{localStorage.removeItem('bd_athAlbum');}catch(x){}
+  if(false){try{const L=JSON.parse(localStorage.getItem('bd_athAlbum')||'[]');L.unshift({ep:C.ep,v:Math.round(perf*100)/100,pl,d:Date.now(),img:C.photoImg});while(L.length>12)L.pop();localStorage.setItem('bd_athAlbum',JSON.stringify(L));}catch(x){}}}
  try{sauver();}catch(x){}
  /* le record du stade : le meilleur de tous les joueurs */
  const ST=window.ATH_STADE,stade=ST&&ST[C.ep],stadeBat=ok&&!venteux&&ST&&(!stade||mieuxQue(C.ep,E.long?perf*100:Math.round(perf*100),stade.v));

@@ -233,16 +233,17 @@ function kit(){let k={k:0,s:0,a:''};try{if(e.kitAthle&&typeof e.kitAthle==='obje
   return {haut:4,veste:K.haut,_motif:0,motif:0,raye:0,bas:1,pantalon:K.bas,souliers:1,chaussures:S.c,sac:0,chapeau:0,cos:0,deguisement:0,maillot:0,gilet:0,patin:0,_civil:true,_acc:A||undefined};}
 function porter(){try{window.AP_FORCE=kit();}catch(x){}}
 porter();
-/* LA VITRINE : tes médailles et les photos de tes podiums */
+/* LA VITRINE : tes médailles */
 const MEDAILLE=c=>'<svg viewBox="0 0 14 18" width="28" shape-rendering="crispEdges"><path d="M3 0h3v6H3zM8 0h3v6H8z" fill="#1f5fa8"/><path d="M5 0h1v6H5zM8 0h1v6H8z" fill="#e84a3a"/><rect x="2" y="7" width="10" height="10" fill="#2a2016"/><rect x="3" y="8" width="8" height="8" fill="'+c+'"/><rect x="4" y="9" width="3" height="2" fill="#fff" opacity=".6"/></svg>';
 const NOMS_EP={'100':'100 m','100h':'100 m haies','400':'400 m','400h':'400 m haies','800':'800 m','4x100':'4 × 100 m','long':'Longueur'};
-function vitrine(){let m={};try{m=e.athMed||{};}catch(x){}let L=[];try{L=JSON.parse(localStorage.getItem('bd_athAlbum')||'[]');}catch(x){}
+try{localStorage.removeItem('bd_athAlbum');}catch(x){}   /* plus de photos de podium : on efface l'album */
+function vitrine(){let m={};try{m=e.athMed||{};}catch(x){}const L=[];
   const tot=(m.or|0)+(m.argent|0)+(m.bronze|0);
   return '<div style="font:900 11px ui-monospace,monospace;letter-spacing:2px;color:#c0392b;margin:12px 0 6px">TA VITRINE</div>'+
    '<div style="background:#16213a;border-radius:6px;padding:10px;box-shadow:inset 0 0 0 3px #e8c050">'+
    '<div style="display:flex;justify-content:space-around;align-items:center">'+[['or','#f5c430'],['argent','#d8dce2'],['bronze','#d0884a']].map(([k,c])=>'<div style="display:flex;align-items:center;gap:6px;color:#fff;font:900 18px ui-monospace,monospace">'+MEDAILLE(c)+'× '+(m[k]|0)+'</div>').join('')+'</div>'+
    (L.length?'<div style="display:flex;gap:8px;overflow-x:auto;margin-top:10px;padding-bottom:4px">'+L.map((p,i)=>'<button data-ph="'+i+'" style="all:unset;flex:none;cursor:pointer;width:118px"><img src="'+p.img+'" style="width:118px;display:block;border:2px solid #e8c050;border-radius:2px"><span style="display:block;font:800 9.5px ui-monospace,monospace;color:#ffd880;margin-top:3px">'+(['🥇','🥈','🥉'][p.pl-1]||'')+' '+(NOMS_EP[p.ep]||p.ep)+'</span></button>').join('')+'</div>':
-    '<div style="margin-top:8px;text-align:center;font:700 11px ui-monospace,monospace;color:#8ab0d8">'+(tot?'':'Monte sur un podium pour gagner ta première médaille. ')+'Chaque podium te laisse une photo ici.</div>')+'</div>';}
+    '<div style="margin-top:8px;text-align:center;font:700 11px ui-monospace,monospace;color:#8ab0d8">'+(tot?'Bravo, champion !':'Monte sur un podium pour gagner ta première médaille.')+'</div>')+'</div>';}
 function vestiaires(){if(document.getElementById('pstV'))return;let sel={k:0,s:0,a:''};try{if(e.kitAthle)sel=Object.assign(sel,e.kitAthle);}catch(x){}
   const d=document.createElement('div');d.id='pstV';
   d.style.cssText='position:fixed;inset:0;z-index:2147482500;background:rgba(10,16,24,.55);display:flex;align-items:flex-end;justify-content:center;font-family:"Baloo 2",system-ui,sans-serif';

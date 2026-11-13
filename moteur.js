@@ -2489,7 +2489,7 @@ poserAmbiance('vent',false);
 poserAmbiance('oiseaux',false);
 poserAmbiance('riviere',false);
 poserAmbiance('fontaine',false);
-poserAmbiance('grillons',nuit);
+poserAmbiance('grillons',nuit&&window.LIEU_PAGE!=='club');
 }
 /* ONGLET CACHÉ : on se tait. Un fond sonore qui continue dans un onglet
    qu'on a quitté, c'est le genre de chose qu'on cherche pendant dix
@@ -10792,7 +10792,7 @@ let TXT_FERME=null;
 /* SI port.js NE CHARGE PAS, les cinquante-trois symboles ci-dessous
    restent indéfinis et le port ne se dessine pas, sans un mot. On le dit. */
 try{
-if(CARTE==='spawn'){try{let lieu=window.LIEU_PAGE||'';try{lieu=lieu||new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':(lieu==='stade'?'stade.js':(lieu==='plage'?'plage.js':(lieu==='corniche'?'corniche.js':(lieu==='blocus'?'blocus.js':(lieu==='garde'?'garde.js':(lieu==='tour'?'tour.js':(lieu==='plateau'?'plateau.js':(lieu==='labo'?'labo.js':(lieu==='quai'?'quai.js':(lieu==='piste'?'piste.js':(lieu==='foire'?'foire.js':'joliette.js')))))))))))));}catch(x){console.warn('JOL',x);JOL=null;}}
+if(CARTE==='spawn'){try{let lieu=window.LIEU_PAGE||'';try{lieu=lieu||new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':(lieu==='stade'?'stade.js':(lieu==='plage'?'plage.js':(lieu==='corniche'?'corniche.js':(lieu==='blocus'?'blocus.js':(lieu==='garde'?'garde.js':(lieu==='tour'?'tour.js':(lieu==='plateau'?'plateau.js':(lieu==='labo'?'labo.js':(lieu==='quai'?'quai.js':(lieu==='piste'?'piste.js':(lieu==='foire'?'foire.js':(lieu==='club'?'club.js':'joliette.js'))))))))))))));}catch(x){console.warn('JOL',x);JOL=null;}}
 if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar,dessinerLePanorama}=eval(await chargerMorceau('port.js')));}
 if(CARTE==='tokyo'){TKM=eval(await chargerMorceau('tokyo.js'));}
 }catch(erPort){
@@ -15238,7 +15238,7 @@ function danseur(g,x,y,ap,k,t){const Dz=DANSES[k];if(!Dz)return personne(g,x,y,a
  if(K.fx)try{K.fx(g,x+(K.dx||0),y,t);}catch(z){}}
 /* la musique : un groove disco (grosse caisse à chaque temps, charley entre, basse en octaves, accords) */
 let DISCO_SON=null;
-function musiqueDisco(on){if(!on){if(DISCO_SON){try{clearInterval(DISCO_SON.tic);DISCO_SON.mus.gain.setTargetAtTime(0,A().currentTime,.15);const m=DISCO_SON.mus;setTimeout(()=>{try{m.disconnect();}catch(x){}},900);}catch(x){}DISCO_SON=null;}return;}
+function musiqueDisco(on){if(!on){if(window.LIEU_PAGE==='club')return;if(DISCO_SON){try{clearInterval(DISCO_SON.tic);DISCO_SON.mus.gain.setTargetAtTime(0,A().currentTime,.15);const m=DISCO_SON.mus;setTimeout(()=>{try{m.disconnect();}catch(x){}},900);}catch(x){}DISCO_SON=null;}return;}
  if(DISCO_SON)return;try{if(!SON_PRET||(typeof REG!=='undefined'&&REG.sons===false))return;const c=A();if(!c)return;const mus=c.createGain();mus.gain.value=.0001;mus.connect(SEC);mus.gain.setTargetAtTime(.5*Math.max(.3,V.mus/.34),c.currentTime,.1);
   const hz=m=>440*Math.pow(2,(m-69)/12),PRG=[[45,57,60,64,67],[50,57,62,65,69],[43,55,59,62,67],[48,55,60,64,67]];let bar=0,next=c.currentTime+.05;
   const kick=t0=>{const o=c.createOscillator(),gg=c.createGain();o.frequency.setValueAtTime(130,t0);o.frequency.exponentialRampToValueAtTime(42,t0+.12);gg.gain.setValueAtTime(.55,t0);gg.gain.exponentialRampToValueAtTime(.001,t0+.22);o.connect(gg).connect(mus);o.start(t0);o.stop(t0+.25);};
@@ -19631,7 +19631,7 @@ const CIEL=[
 {h:21.5, amb:[44,54,104],  lampes:1,   soleil:null},
 {h:24,   amb:[30,40,86],   lampes:1,   soleil:null}];
 function cielDuMoment(){
-if(window.LIEU_PAGE==="terrasses"||window.LIEU_PAGE==="garde"||window.LIEU_PAGE==="tour"||window.LIEU_PAGE==="plateau"||window.LIEU_PAGE==="labo")return null;   /* sous la verrière, toujours éclairé */
+if(window.LIEU_PAGE==="terrasses"||window.LIEU_PAGE==="garde"||window.LIEU_PAGE==="tour"||window.LIEU_PAGE==="plateau"||window.LIEU_PAGE==="labo"||window.LIEU_PAGE==="club")return null;   /* sous la verrière, toujours éclairé */
 const m=minuteDuJour();
 if(m===null)return null;
 const h=m/60;
@@ -20468,7 +20468,7 @@ DECOR.filter(o=>o.t==='bancP').sort((a,b)=>(a.y-b.y)||(a.x-b.x))
 return l;
 }
 function coinDuJoueur(){
-if(window.LIEU_PAGE==='terrasses')return 'à la Galerie Bleue';if(window.LIEU_PAGE==='quai')return 'au port';if(window.LIEU_PAGE==='stade')return 'au Vélodrome';if(window.LIEU_PAGE==='piste')return 'à la piste d’athlétisme';if(window.LIEU_PAGE==='foire')return 'à la fête foraine';if(window.LIEU_PAGE==='plage')return 'à la plage des Catalans';if(window.LIEU_PAGE==='corniche')return 'sur la Corniche';if(window.LIEU_PAGE==='blocus')return 'au blocus';if(window.LIEU_PAGE==='garde')return 'en garde à vue';if(window.LIEU_PAGE==='tour')return 'à la tour du port';if(window.LIEU_PAGE==='plateau')return 'sur le plateau de Mistral TV';
+if(window.LIEU_PAGE==='club')return 'au Disco Club';if(window.LIEU_PAGE==='terrasses')return 'à la Galerie Bleue';if(window.LIEU_PAGE==='quai')return 'au port';if(window.LIEU_PAGE==='stade')return 'au Vélodrome';if(window.LIEU_PAGE==='piste')return 'à la piste d’athlétisme';if(window.LIEU_PAGE==='foire')return 'à la fête foraine';if(window.LIEU_PAGE==='plage')return 'à la plage des Catalans';if(window.LIEU_PAGE==='corniche')return 'sur la Corniche';if(window.LIEU_PAGE==='blocus')return 'au blocus';if(window.LIEU_PAGE==='garde')return 'en garde à vue';if(window.LIEU_PAGE==='tour')return 'à la tour du port';if(window.LIEU_PAGE==='plateau')return 'sur le plateau de Mistral TV';
 if(CARTE==='extramar')return 'à Extramar';
 if(CARTE==='garde')return 'à Notre-Dame';
 if(CARTE==='tokyo')return 'à Tokyo';
