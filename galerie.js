@@ -194,11 +194,12 @@ window.ouvrirCafeGalerie=function(){B=null;
    qu'on a reçues, à porter ou à ranger.
    ===================================================================== */
 (()=>{
-const NOM={bij_bracelet_cuir:'Bracelet cuir',bij_perles:'Collier de perles',bij_montre_sport:'Montre sport',bij_montre_acier:'Montre acier',lun_rouges:'Lunettes rouges',lun_bleues:'Lunettes bleues',lun_noires:'Lunettes noires',lun_ecaille:'Lunettes écaille',lun_rondes:'Lunettes rondes dorées',
-  snk_rouges:'Sneakers rouges',snk_roses:'Sneakers roses',snk_violettes:'Sneakers violettes',snk_blanches:'Sneakers blanches',snk_camo:'Sneakers camo',snk_noires:'Sneakers noires & rouges',
+const PERE_PIECES=['noel_houx','noel_lutin','noel_oreilles','noel_aureole','noel_raye','bij_guirlande','bij_etoile','lun_sapin','lun_neige','snk_sucre','snk_neige','snk_lutin','main_sucre','main_boule','main_renne','main_lanterne','main_cadeau','main_chocolat','dos_cape','dos_ailes'];
+const HOTTE_AVENT=['noel_bonnet','noel_bois','noel_echarpe','bij_clochette','snk_noel','lun_flocon'];
+const NOM={noel_houx:'Couronne de houx',noel_lutin:'Bonnet de lutin',noel_oreilles:'Cache-oreilles',noel_aureole:'Auréole d’ange',noel_raye:'Bonnet rayé',bij_guirlande:'Collier guirlande',bij_etoile:'Pendentif étoile',lun_sapin:'Lunettes sapin',lun_neige:'Lunettes givrées',
+  snk_sucre:'Sneakers sucre d’orge',snk_neige:'Sneakers neige',snk_lutin:'Sneakers de lutin',main_sucre:'Sucre d’orge',main_boule:'Boule à neige',main_renne:'Peluche renne',main_lanterne:'Lanterne de Noël',main_cadeau:'Petit cadeau',main_chocolat:'Chocolat chaud',dos_cape:'Cape de Noël',dos_ailes:'Ailes d’ange',
   noel_bonnet:'Bonnet du Père Noël',noel_bois:'Bois de renne',noel_echarpe:'Écharpe de Noël',bij_clochette:'Collier clochette',snk_noel:'Sneakers de Noël',lun_flocon:'Lunettes flocon'};
-const CLE=id=>id.indexOf('noel_')===0?'_noel':id.slice(0,4)==='bij_'?'_bij':id.slice(0,4)==='lun_'?'_lun':'_snk';
-const HOTTE=['noel_bonnet','noel_bois','noel_echarpe','bij_clochette','snk_noel','lun_flocon'];
+const CLE=id=>id.indexOf('noel_')===0?'_noel':id.indexOf('main_')===0?'_main':id.indexOf('dos_')===0?'_dos':id.slice(0,4)==='bij_'?'_bij':id.slice(0,4)==='lun_'?'_lun':'_snk';
 const PAPA={peau:2,cheveux:7,teinte:'teinte_platine',coiffe:5,barbe:5,haut:5,veste:'#c8262c',bas:0,pantalon:'#c8262c',souliers:0,chaussures:'#1a1a1a',sac:0,chapeau:0,raye:0,motif:0,_pnj:true,_civil:true,_noel:'noel_bonnet'};
 const CSS=`#pnl{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:radial-gradient(120% 60% at 50% 0%,#a8202a,#4a0e14 75%);color:#fff6e6;font-family:'Baloo 2',system-ui,sans-serif;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;overflow:hidden}
 #pnl *{box-sizing:border-box}
@@ -236,33 +237,34 @@ const vib=x=>{try{vibrer&&vibrer(x);}catch(_){}};
 const aMoi=id=>{try{return !!(e.cos&&e.cos[id]);}catch(x){return false;}};
 function perso(cv,ap,taille,zone){const DPR=Math.max(1,window.devicePixelRatio||1),s=Math.max(1,Math.round(taille*DPR)),[sx,sy,w,h]=zone||[0,0,40,66];cv.width=w*s;cv.height=h*s;cv.style.width=(w*s/DPR)+'px';cv.style.height=(h*s/DPR)+'px';
   const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(s,0,0,s,-sx*s,-sy*s);try{personne(g,20,62,ap,'bas',0,false);}catch(x){}g.setTransform(1,0,0,1,0,0);}
-const ZON={_noel:[6,6,28,24],_bij:[8,24,24,18],_lun:[9,14,22,14],_snk:[9,56,22,8]};
+const ZON={_noel:[4,0,32,28],_bij:[8,24,24,18],_lun:[9,14,22,14],_snk:[9,56,22,8],_main:[6,30,28,22],_dos:[0,18,40,40]};
 const base=()=>{const ap=Object.assign({},DEF_AP,e.ap||{});delete ap.deguisement;return ap;};
 async function rpc(n,a){try{if(typeof sb!=='undefined'&&sb&&sb.rpc){const q=await sb.rpc(n,a||{});return q.data||(q.error?{erreur:q.error.message}:null);}return await appelRPC(n,a||{});}catch(x){return {erreur:'reseau'};}}
 function bulle(t){const b=RAC&&RAC.querySelector('.bul');if(b)b.textContent=t;}
-function texteGain(r){if(!r)return ['',''];if(r.piece)return ['🎁 '+(NOM[r.piece]||r.piece),HOTTE.includes(r.piece)?'Une pièce de Noël, rien que pour toi. Elle est dans ta hotte !':'Une pièce de la galerie. Tu la portes depuis sa boutique.'];
-  const v=(r.valeur||0)/100;return ['+ '+v.toLocaleString('fr-FR')+' €',r.type==='jackpot'?'LE JACKPOT DU PÈRE NOËL !':r.type==='gros_lot'?'Le gros lot !':'Joyeux Noël !'];}
-function rendreHotte(){const H=RAC.querySelector('.hot');H.innerHTML='';const b0=base();
-  HOTTE.forEach(id=>{const k=CLE(id),a=aMoi(id),on=e.ap&&e.ap[k]===id,b=document.createElement('button');b.className=(a?'':'non')+(on?' on':'');const cv=document.createElement('canvas');b.appendChild(cv);perso(cv,Object.assign({},b0,{[k]:id,_pnj:true}),k==='_snk'?3.2:2.4,ZON[k]);
-    b.insertAdjacentHTML('beforeend',NOM[id]+(a?'<small class="p">'+(on?'Portée ✓':'Porter')+'</small>':'<small>à gagner</small>'));
-    b.onclick=()=>{if(!a){bulle('« Celle-là, elle est encore dans ma hotte. Reviens me voir ! »');vib(20);return;}e.ap=Object.assign({},e.ap||{});if(on)delete e.ap[k];else e.ap[k]=id;try{sauver();monterEnLigne(true);}catch(x){}vib(8);rendreHotte();};H.appendChild(b);});}
+function texteGain(r){if(!r||!r.piece)return ['🎄 Joyeux Noël !','Tu as déjà toute la hotte. Bravo !'];return ['🎁 '+(NOM[r.piece]||r.piece),'Une pièce unique, introuvable ailleurs. Elle est dans ta hotte !'];}
+function carteHotte(H,id,b0){const k=CLE(id),a=aMoi(id),on=e.ap&&e.ap[k]===id,b=document.createElement('button');b.className=(a?'':'non')+(on?' on':'');const cv=document.createElement('canvas');b.appendChild(cv);perso(cv,Object.assign({},b0,{[k]:id,_pnj:true}),k==='_snk'?3.2:k==='_dos'?1.4:2.2,ZON[k]);
+  b.insertAdjacentHTML('beforeend',NOM[id]+(a?'<small class="p">'+(on?'Portée ✓':'Porter')+'</small>':'<small>'+(HOTTE_AVENT.includes(id)?'au calendrier':'à recevoir')+'</small>'));
+  b.onclick=()=>{if(!a){bulle(HOTTE_AVENT.includes(id)?'« Celle-là, c’est le calendrier de l’Avent qui la garde. »':'« Celle-là, elle est encore dans ma hotte. Reviens me voir ! »');vib(20);return;}e.ap=Object.assign({},e.ap||{});if(on)delete e.ap[k];else e.ap[k]=id;try{sauver();monterEnLigne(true);}catch(x){}vib(8);rendreHotte();};H.appendChild(b);}
+function rendreHotte(){const H=RAC.querySelector('.hot'),H2=RAC.querySelector('.hot2');H.innerHTML='';H2.innerHTML='';const b0=base();PERE_PIECES.forEach(id=>carteHotte(H,id,b0));HOTTE_AVENT.forEach(id=>carteHotte(H2,id,b0));
+  RAC.querySelector('.cpt').textContent=PERE_PIECES.filter(aMoi).length+' / '+PERE_PIECES.length;}
 function fermer(){if(!RAC)return;RAC=null;try{fermeA=Date.now();}catch(x){}try{$('page2').classList.remove('on');}catch(x){}}
-window.ouvrirPereNoel=async function(){
+window.ouvrirPereNoel=async function(mode){const H=mode==='hotte';
   if(!document.getElementById('pnlCss')){const s=document.createElement('style');s.id='pnlCss';s.textContent=CSS;document.head.appendChild(s);}
   $('page2Fond').className='';$('page2').classList.add('on');
-  $('page2Fond').innerHTML='<div id="pnl" lang="fr"><div class="neige"></div><div class="hd"><div><b>Le Père Noël</b><small>LA GALERIE BLEUE · JUSQU’AU 6 JANVIER</small></div><button class="x" aria-label="Fermer">✕</button></div>'+
-    '<div class="corps"><div class="scene"><canvas class="pn"></canvas><div class="bul">« Ho ho ho ! Un cadeau par jour, pour chaque docker sage. Voyons ce que j’ai pour toi… »</div></div>'+
-    '<div class="boite"><div class="c"></div><div class="k"></div></div><div class="gain"></div><button class="go">Ouvrir mon cadeau du jour<small>un cadeau par jour, tiré dans la hotte</small></button>'+
-    '<div class="lb"><span>TA HOTTE DE NOËL</span><span>6 pièces</span></div><div class="hot"></div></div></div>';
+  $('page2Fond').innerHTML='<div id="pnl" lang="fr"><div class="neige"></div><div class="hd"><div><b>Le Père Noël</b><small>LA GALERIE BLEUE · JUSQU’AU 1ER DÉCEMBRE</small></div><button class="x" aria-label="Fermer">✕</button></div>'+
+    '<div class="corps"><div class="scene"><canvas class="pn"></canvas><div class="bul">« Ho ho ho ! Une pièce unique par jour jusqu’au 1er décembre. Vingt dans ma hotte : voyons ce que j’ai pour toi… »</div></div>'+
+    '<div class="boite"><div class="c"></div><div class="k"></div></div><div class="gain"></div><button class="go">Ouvrir mon cadeau du jour<small>une pièce unique par jour</small></button>'+
+    '<div class="lb"><span>LES CADEAUX DU PÈRE NOËL</span><span class="cpt"></span></div><div class="hot"></div><div class="lb"><span>DU CALENDRIER DE L’AVENT</span><span>6 pièces</span></div><div class="hot hot2"></div></div></div>';
   RAC=$('page2Fond').querySelector('#pnl');RAC.querySelector('.x').onclick=fermer;perso(RAC.querySelector('canvas.pn'),PAPA,2.2);rendreHotte();
+  if(H){RAC.querySelector('.boite').style.display='none';RAC.querySelector('.gain').style.display='none';RAC.querySelector('.go').style.display='none';bulle('« Voici ta hotte de Noël. Choisis ce que tu portes ! »');RAC.querySelector('.hd b').textContent='Ta hotte de Noël';return;}
   const go=RAC.querySelector('.go'),bo=RAC.querySelector('.boite'),gn=RAC.querySelector('.gain');
   const montrer=(r,deja)=>{bo.classList.add('ouvre');const [t1,t2]=texteGain(r);gn.innerHTML='<b>'+t1+'</b><small>'+(deja?'Ton cadeau d’aujourd’hui. Reviens demain pour le suivant !':t2)+'</small>';go.disabled=true;go.innerHTML='Reviens demain<small>un nouveau cadeau t’attendra</small>';};
-  const d0=await rpc('noel_mon_cadeau');if(RAC&&d0&&d0.deja){montrer({valeur:d0.valeur,piece:(d0.cadeau&&d0.cadeau.indexOf('_')>0)?d0.cadeau:null,type:d0.cadeau},true);bulle('« Tu as déjà eu ton cadeau aujourd’hui. Patience, petit docker ! »');}
+  const d0=await rpc('noel_mon_cadeau');if(RAC&&d0&&d0.deja){montrer({piece:d0.cadeau&&d0.cadeau!=='complet'?d0.cadeau:null},true);bulle('« Tu as déjà eu ton cadeau aujourd’hui. Patience, petit docker ! »');}
   const ouvrir=async()=>{if(EN||go.disabled)return;EN=true;bo.classList.add('tremble');vib([10,40,10,40,10]);go.disabled=true;go.textContent='…';
     const r=await rpc('noel_cadeau');await new Promise(k=>setTimeout(k,900));EN=false;if(!RAC)return;bo.classList.remove('tremble');
-    if(!r||r.erreur){go.disabled=false;go.innerHTML='Ouvrir mon cadeau du jour<small>un cadeau par jour, tiré dans la hotte</small>';bulle(r&&r.erreur==='hors saison'?'« Je suis reparti au pôle Nord. À l’hiver prochain ! »':r&&r.erreur==='connexion'?'« Connecte-toi, que je sache à qui donner ! »':'« Mes rennes font des leurs… Réessaie dans un instant. »');return;}
-    if(r.deja){montrer({valeur:r.valeur,piece:(r.cadeau&&r.cadeau.indexOf('_')>0)?r.cadeau:null,type:r.cadeau},true);return;}
-    if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}if(r.piece)e.cos=Object.assign({},e.cos||{},{[r.piece]:true});
-    montrer(r,false);vib([20,40,20,40,60]);bulle(r.type==='jackpot'?'« HO HO HO ! Le jackpot ! Tu as été très, très sage ! »':'« Joyeux Noël ! À demain, pour le prochain. »');rendreHotte();};
+    if(!r||r.erreur){go.disabled=false;go.innerHTML='Ouvrir mon cadeau du jour<small>une pièce unique par jour</small>';bulle(r&&r.erreur==='hors saison'?'« Je suis reparti au pôle Nord. À l’hiver prochain ! »':r&&r.erreur==='connexion'?'« Connecte-toi, que je sache à qui donner ! »':'« Mes rennes font des leurs… Réessaie dans un instant. »');return;}
+    if(r.deja){montrer({piece:r.cadeau&&r.cadeau!=='complet'?r.cadeau:null},true);return;}
+    if(r.piece)e.cos=Object.assign({},e.cos||{},{[r.piece]:true});
+    montrer(r,false);vib([20,40,20,40,60]);bulle(r.piece?'« Ho ho ho ! Elle est rien qu’à toi. À demain pour la suivante ! »':'« Tu as déjà toute ma hotte ! Quel docker sage ! »');rendreHotte();};
   go.onclick=ouvrir;bo.onclick=ouvrir;};
 })();

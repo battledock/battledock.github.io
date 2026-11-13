@@ -66,6 +66,7 @@ function ouvrirAffiche(a){const z=document.createElement('div');z.className='zoo
 function remplir(){RAC.querySelector('.mur').innerHTML=AFF.length?AFF.map(a=>carte(a)).join(''):'<div class="rien"><span class="pin"></span>Rien d’affiché pour l’instant.<small>Repasse bientôt : les affiches arrivent.</small></div>';
   RAC.querySelectorAll('.mur .a').forEach(b=>b.onclick=()=>{const a=AFF.find(a=>a.id===b.dataset.id);if(a.ouvre){try{vibrer(8);}catch(x){}a.fait();return;}ouvrirAffiche(a);});}
 async function ouvrirAvent(){try{if(!window.ouvrirCalendrierAvent)eval(await chargerMorceau('avent.js'));window.ouvrirCalendrierAvent();}catch(x){try{console.warn('AVENT',x);}catch(_){}}}
+window.fermerLesAffiches=()=>fermer();
 function fermer(){if(!RAC)return;window.ECRAN_COUVRANT=false;const R0=RAC;RAC=null;R0.classList.remove('on');setTimeout(()=>R0.remove(),250);}
 window.ouvrirLesAffiches=function(){if(RAC)return;
   if(!document.getElementById('affCss')){const s=document.createElement('style');s.id='affCss';s.textContent=CSS;document.head.appendChild(s);}

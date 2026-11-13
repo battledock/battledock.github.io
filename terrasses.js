@@ -263,6 +263,7 @@ function dessinerVigile(g,ox,oy,t){const V2=VIGILE,X=V2.x+ox,Y=V2.y+oy;try{perso
 /* ---------- NOËL : du 13 novembre au 6 janvier ---------- */
 const NOEL=(()=>{const d=new Date(),m=d.getMonth()+1,j=d.getDate();return (m===11&&j>=13)||m===12||(m===1&&j<=6);})();
 const SAPIN={x:800,y:478};
+const PERE_LA=(()=>{const d=new Date(),m=d.getMonth()+1,j=d.getDate();return (m===11&&j>=13)||(m===12&&j===1);})();
 function dessinerSapin(g,ox,oy,t){const X=SAPIN.x+ox,Y=SAPIN.y+oy;
   g.fillStyle='rgba(20,30,60,.3)';g.beginPath();g.ellipse(X+4,Y+4,56,14,0,0,7);g.fill();
   /* le pied, la jupe rouge */
@@ -830,7 +831,7 @@ function acteurs(){const L=[];
   L.push({y:AGENT.y,f:(g,cx,cy)=>{bougerPersonnel();dessinerAgent(g,-cx,-cy,now());}});
   L.push({get y(){return VIGILE.y;},f:(g,cx,cy)=>dessinerVigile(g,-cx,-cy,now())});
   L.push({get y(){const S=etatLivreur(now());return S?S.y:-999;},f:(g,cx,cy)=>dessinerLivreur(g,-cx,-cy,now())});
-  if(NOEL){L.push({y:PERE.y,f:(g,cx,cy)=>dessinerPere(g,-cx,-cy,now())});L.push({y:SAPIN.y,f:(g,cx,cy)=>dessinerSapin(g,-cx,-cy,now())});L.push({y:MZ.yn+.5,f:(g,cx,cy)=>dessinerGuirlandesNoel(g,-cx,-cy,now())});ASTRES.forEach(([x,y],k)=>L.push({y,f:(g,cx,cy)=>astre(g,x-cx,y-cy,now(),k)}));}
+  if(NOEL){if(PERE_LA)L.push({y:PERE.y,f:(g,cx,cy)=>dessinerPere(g,-cx,-cy,now())});L.push({y:SAPIN.y,f:(g,cx,cy)=>dessinerSapin(g,-cx,-cy,now())});L.push({y:MZ.yn+.5,f:(g,cx,cy)=>dessinerGuirlandesNoel(g,-cx,-cy,now())});ASTRES.forEach(([x,y],k)=>L.push({y,f:(g,cx,cy)=>astre(g,x-cx,y-cy,now(),k)}));}
   for(const [x,y] of SUSP)L.push({y:y+1,f:(g,cx,cy)=>suspension(g,x-cx,y-cy,now())});
   for(const [i,ap] of ASSIS_PNJ){const S=SIEGES[i];L.push({y:S.ys,f:(g,cx,cy)=>{try{assis(g,S.x-cx,S.h-cy,Object.assign({},DEF_AP,ap,{_civil:true,_pnj:true}));}catch(z){}}});}
   L.push({y:COMPT.y-14,f:(g,cx,cy)=>{try{personne(g,COMPT.x+20-cx,COMPT.y-14-cy,BARISTA,'bas',0,false);}catch(z){}}});
@@ -912,7 +913,7 @@ function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0}
   P('x_jol_tdp_vide',COMPT.x,COMPT.y,{col:[COMPT.w+8,22]});P('x_jol_tdp_vide',COMPT.x,COMPT.y+24,{agir:ouvrirCafe,libelle:'Commander',nom:'CAFÉ DE LA GALERIE',demi:60});
   /* la fontaine */
   P('x_jol_tdp_vide',FONT.x,FONT.y+28,{col:[FONT.r*2+8,62]});
-  if(NOEL){P('x_jol_tdp_vide',SAPIN.x,SAPIN.y+4,{col:[96,26]});P('x_jol_tdp_vide',PERE.x,PERE.y+2,{col:[44,14]});P('x_jol_tdp_vide',PERE.x,PERE.y+20,{agir:ouvrirPere,libelle:'Mon cadeau',nom:'LE PÈRE NOËL',demi:40});}
+  if(NOEL){P('x_jol_tdp_vide',SAPIN.x,SAPIN.y+4,{col:[96,26]});if(PERE_LA){P('x_jol_tdp_vide',PERE.x,PERE.y+2,{col:[44,14]});P('x_jol_tdp_vide',PERE.x,PERE.y+20,{agir:ouvrirPere,libelle:'Mon cadeau',nom:'LE PÈRE NOËL',demi:40});}}
   /* les places assises */
   SIEGES.forEach((S,i)=>{if(ASSIS_PNJ.some(a=>a[0]===i))return;P('x_jol_tdp_vide',S.px,S.py,{agir:()=>asseoir(S),libelle:'S’asseoir',nom:S.nom,demi:18});});
   return D;}
@@ -995,6 +996,7 @@ function graverPanneau(){if(TPAN)return TPAN;const Wd=116,Hd=150,sol=146;const {
 
 /* le voile bleu de l'arrivée se lève quand la galerie est prête */
 setTimeout(()=>{const v=document.getElementById('voileGB');if(v){v.style.opacity='0';setTimeout(()=>v.remove(),800);}},450);
+
 
 
 

@@ -35,6 +35,7 @@ const CSS=`#avt{position:fixed;inset:0;z-index:2147482300;display:flex;flex-dire
 #avt .pop{position:fixed;left:50%;top:44%;transform:translate(-50%,-50%) scale(.3);z-index:3;padding:16px 20px;border-radius:20px;background:#fffaf0;color:#5a1408;text-align:center;box-shadow:0 0 0 3px #e0b860,0 20px 40px rgba(0,0,0,.5);opacity:0;transition:transform .45s cubic-bezier(.3,1.6,.5,1),opacity .2s;min-width:220px}
 #avt .pop.on{transform:translate(-50%,-50%) scale(1);opacity:1}
 #avt .pop b{display:block;font-family:Georgia,serif;font-size:28px;color:#a8202a}#avt .pop small{display:block;font-weight:700;font-size:13px;margin-top:4px}
+#avt .hotte{display:block;width:100%;margin-top:12px;border:0;border-radius:16px;padding:11px;font:800 15px 'Baloo 2',sans-serif;color:#3a1408;background:linear-gradient(#fff2b8,#e8b838);box-shadow:0 4px 0 #7a5214}
 #avt .leg{margin-top:12px;font-weight:700;font-size:11.5px;color:#f2c8a0;text-align:center;line-height:1.4}`;
 const COUL=['#c8262c','#2a6ad8','#2e7a3a','#a8702a','#7a3ab8','#d84a7a'];
 let RAC=null,MIENS={},OCC=false;
@@ -58,13 +59,14 @@ async function ouvrir(j,b,dispo,ouv){if(OCC)return;if(ouv){const g=gain(j);pop('
   if(!r||r.erreur){msg(r&&r.erreur==='connexion'?'Connecte-toi pour ouvrir le calendrier.':r&&r.erreur==='pas encore'?'Cette case n’est pas encore ouvrable.':'Petit souci de réseau, réessaie.');return;}
   MIENS[j]=true;b.classList.add('ouv');b.classList.remove('auj','ret');const g=gain(j);
   if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}if(r.piece)e.cos=Object.assign({},e.cos||{},{[r.piece]:true});
-  setTimeout(()=>{pop('+'+((r.valeur||g.e*100)/100).toLocaleString('fr-FR')+' €',g.p?'Et une pièce de Noël : '+g.p[1]+' ! Porte-la depuis le Père Noël de la galerie.':'Joyeux Noël, docker !');vib([20,40,20]);rendre();},550);}
+  setTimeout(()=>{pop('+'+((r.valeur||g.e*100)/100).toLocaleString('fr-FR')+' €',g.p?'Et une pièce de Noël : '+g.p[1]+' ! Porte-la depuis « Ma hotte de Noël ».':'Joyeux Noël, docker !');vib([20,40,20]);rendre();},550);}
 function fermer(){if(!RAC)return;const R0=RAC;RAC=null;R0.classList.remove('on');setTimeout(()=>R0.remove(),250);}
 window.ouvrirCalendrierAvent=async function(){if(RAC)return;
   if(!document.getElementById('avtCss')){const s=document.createElement('style');s.id='avtCss';s.textContent=CSS;document.head.appendChild(s);}
   const d=document.createElement('div');d.id='avt';RAC=d;
   d.innerHTML='<div class="neige"></div><div class="hd"><div><b>Le calendrier de l’Avent</b><small>LA GALERIE BLEUE · DU 1<sup>ER</sup> AU 24 DÉCEMBRE</small></div><button class="x" aria-label="Fermer">✕</button></div>'+
-    '<div class="corps"><div class="msg"></div><div class="plat"><div class="gr"></div></div><div class="leg">Une case par jour, et tu peux rattraper celles que tu as manquées.<br>Six pièces de Noël introuvables ailleurs : le 8, le 12, le 16, le 21, le 23 et le 24.</div></div>';
+    '<div class="corps"><div class="msg"></div><div class="plat"><div class="gr"></div></div><div class="leg">Une case par jour, et tu peux rattraper celles que tu as manquées.<br>Six pièces de Noël introuvables ailleurs : le 8, le 12, le 16, le 21, le 23 et le 24.</div><button class="hotte">🎁 Ma hotte de Noël · porter mes pièces</button></div>';
   document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));d.querySelector('.x').onclick=fermer;rendre();
+  d.querySelector('.hotte').onclick=async()=>{try{if(!window.ouvrirPereNoel)eval(await chargerMorceau('galerie.js'));fermer();try{window.fermerLesAffiches&&window.fermerLesAffiches();}catch(x){}window.ouvrirPereNoel('hotte');}catch(x){try{console.warn('HOTTE',x);}catch(_){}}};
   const L=await rpc('avent_mes_cases');if(Array.isArray(L)){MIENS={};for(const c of L)MIENS[c.jour]=true;if(RAC)rendre();}};
 })();
