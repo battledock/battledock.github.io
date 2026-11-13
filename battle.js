@@ -7,6 +7,7 @@
    musiqueDisco, A, BEAT, e, appelRPC, vibrer, DEF_AP…
    ===================================================================== */
 (()=>{
+const rpcS=async(n,a)=>{try{if(typeof sb!=='undefined'&&sb&&sb.rpc){const q=await sb.rpc(n,a||{});return q.data!=null?q.data:(q.error?{erreur:q.error.message}:null);}return await appelRPC(n,a||{});}catch(x){return {erreur:'reseau'};}};
 const NOMS=[['Disco Dédé','Le régulier du jeudi',{peau:5,cheveux:0,coiffe:1,barbe:1,_disco:'disco_travolta'}],['Paillette Paulette','Reine des paillettes',{peau:2,cheveux:3,coiffe:6,_disco:'disco_paillettes'}],
  ['Kid Néon','Patins aux pieds, jamais fatigué',{peau:6,cheveux:4,coiffe:2,_disco:'disco_neon'}],['Funky Fred','Le léopard du Vieux-Port',{peau:4,cheveux:1,coiffe:0,barbe:3,_disco:'disco_leopard'}],
  ['Lady Lamé','Elle brille plus que la boule',{peau:1,cheveux:7,coiffe:12,_disco:'disco_lame'}],['Mamie Groove','Elle dansait déjà en 1975',{peau:3,cheveux:7,coiffe:3,_disco:'disco_arc'}],
@@ -97,7 +98,7 @@ async function terminer(){const S=ST;S.fini=true;try{localStorage.setItem('bd_bt
   '<div class="li"><span>Ton score</span><i>'+S.moi.score.toLocaleString('fr-FR')+'</i></div><div class="li"><span>'+S.R.nom+'</span><i>'+S.lui.score.toLocaleString('fr-FR')+'</i></div>'+
   '<div class="li"><span>Meilleur combo</span><i>'+S.cmax+'</i></div><div class="li"><span>Précision</span><i>'+prec+' %</i></div><div class="li"><span>Parfaits</span><i>'+S.parf+' / '+tot+'</i></div><div class="gain">…</div>';
  vib(gagne?[20,40,20,40,60]:[40]);
- const gn=P.querySelector('.gain'),bt=P.querySelector('[data-a=re]');bt.textContent=gagne?'Niveau suivant →':'Revanche !';let r=null;try{r=await appelRPC('club_battle',{p_score:S.moi.score,p_gagne:gagne});}catch(x){}
+ const gn=P.querySelector('.gain'),bt=P.querySelector('[data-a=re]');bt.textContent=gagne?'Niveau suivant →':'Revanche !';let r=null;try{r=await rpcS('club_battle',{p_score:S.moi.score,p_gagne:gagne});}catch(x){}
  if(r&&r.ok){if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}NIV.restant=r.restant;if(r.niveau)NIV.niveau=r.niveau;
   let h=r.gain>0?('+ '+(r.gain/100).toLocaleString('fr-FR')+' €'):'';if(gagne)h+='<em>NIVEAU '+NIV.niveau+' !</em>';
   if(r.piece){h+='<em class="pc">🎁 Tu débloques '+((PALIERS.find(p=>p[0]===NIV.niveau)||[0,r.piece])[1])+' !</em>';try{e.cos=Object.assign({},e.cos||{},{[r.piece]:true});}catch(x){}vib([20,40,20,40,80]);}
@@ -144,6 +145,6 @@ window.ouvrirBattle=function(){if(RAC)return;if(!document.getElementById('btlCss
  d.querySelector('[data-a=re]').onclick=()=>{vib(10);lancer();};d.querySelector('[data-a=q]').onclick=()=>{vib(8);fermer();};
  CV.addEventListener('pointerdown',ev=>{if(!ST||ST.fini)return;const r=CV.getBoundingClientRect();if(ev.clientY-r.top<r.height*.44)return;ev.preventDefault();taper(Math.max(0,Math.min(3,Math.floor((ev.clientX-r.left)/(r.width/4)))),ev.timeStamp);});
  addEventListener('keydown',clavier);fermer.tic=setInterval(tic,16);
- try{appelRPC('club_mon_niveau',{}).then(r=>{if(r&&r.niveau){NIV=Object.assign(NIV,r);if(!ST)intro();}}).catch(()=>{});}catch(x){}
+ try{rpcS('club_mon_niveau',{}).then(r=>{if(r&&r.niveau){NIV=Object.assign(NIV,r);if(!ST)intro();}}).catch(()=>{});}catch(x){}
  const boucle=()=>{if(!RAC)return;try{recaler();if(ST)dessiner();else{const W=CV.clientWidth,H=CV.clientHeight,D=Math.min(2,window.devicePixelRatio||1);if(CV.width!==Math.round(W*D)){CV.width=Math.round(W*D);CV.height=Math.round(H*D);}G.setTransform(D,0,0,D,0,0);G.fillStyle='#12061e';G.fillRect(0,0,W,H);}}catch(x){}BOUCLE=requestAnimationFrame(boucle);};BOUCLE=requestAnimationFrame(boucle);};
 })();

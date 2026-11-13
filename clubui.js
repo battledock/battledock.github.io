@@ -5,6 +5,7 @@
    joueur, sauver, majHaut, enEuros…
    ===================================================================== */
 (()=>{
+const rpcS=async(n,a)=>{try{if(typeof sb!=='undefined'&&sb&&sb.rpc){const q=await sb.rpc(n,a||{});return q.data!=null?q.data:(q.error?{erreur:q.error.message}:null);}return await appelRPC(n,a||{});}catch(x){return {erreur:'reseau'};}};
 const COCKTAILS=[
  ['neon','Néon Fizz','🍸','Une aura néon rose et bleue qui pulse autour de toi.',800,45],
  ['paillettes','Paillettes Pop','🥂','Une pluie de paillettes dorées tombe sur toi.',1200,45],
@@ -50,7 +51,7 @@ window.ouvrirBarClub=function(o){o=o||{};const L=o.dore?[DORE]:COCKTAILS.concat(
  const msg=d.querySelector('.msg');
  d.querySelectorAll('.it').forEach(b=>b.onclick=async()=>{const c=L.find(x=>x[0]===b.dataset.k);if(!c||b.disabled)return;if(c[4]&&(e.euros||0)<c[4]*100){msg.textContent='Il te manque '+eu(Math.ceil((c[4]*100-(e.euros||0))/100))+'.';vib(30);return;}
   vib(10);d.querySelectorAll('.it').forEach(x=>x.disabled=true);msg.textContent='Le barman secoue le shaker…';
-  let r=null;try{r=await appelRPC('club_cocktail',{p_k:c[0]});}catch(x){}
+  let r=null;try{r=await rpcS('club_cocktail',{p_k:c[0]});}catch(x){}
   if(!r||!r.ok){msg.textContent=r&&r.erreur==='pas_assez'?'Pas assez d’euros.':r&&r.erreur==='vip'?'Réservé aux VIP.':'Le barman prépare sa carte, reviens très vite !';d.querySelectorAll('.it').forEach(x=>x.disabled=(x.dataset.k==='dore'&&!o.vip));return;}
   if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}
   window.EFFET_CLUB={k:c[0],fin:Date.now()+c[5]*1000};if(c[0]==='tornade')window.BOOST_CAFE={vit:1.25,fin:Date.now()+c[5]*1000};

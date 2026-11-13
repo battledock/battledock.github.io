@@ -8,6 +8,7 @@
    DISCO_T, musiqueDisco, ouvrirEmotes, joueur, e, sauver, vibrer…
    ===================================================================== */
 (()=>{
+const rpcS=async(n,a)=>{try{if(typeof sb!=='undefined'&&sb&&sb.rpc){const q=await sb.rpc(n,a||{});return q.data!=null?q.data:(q.error?{erreur:q.error.message}:null);}return await appelRPC(n,a||{});}catch(x){return {erreur:'reseau'};}};
 const W=800,H=800,MUR=212;
 const PISTE={x0:200,x1:600,y0:300,y1:560,nx:10,ny:6};
 const DEPART=[400,742];
@@ -239,9 +240,9 @@ let ETAT_V={vip:false,niveau:1},CHAMPIONS=[],REFUS=0;
 function estVip(){try{if(ETAT_V.vip)return true;const c=e.cos||{};return !!(c.pass_vip||c.disco_roi)||(ETAT_V.niveau||1)>=10;}catch(x){return false;}}
 function etatVip(){return Object.assign({},ETAT_V,{vip:estVip()});}
 function refuserVip(){const t=Date.now();if(t-REFUS<2600)return;REFUS=t;try{texteVolant(VIDEUR_VIP.x,VIDEUR_VIP.y-56,'Désolé, c’est réservé aux VIP !','#ffd23a');vibrer(20);}catch(x){}}
-async function lireClub(){try{const r=await appelRPC('club_mon_niveau',{});if(r&&r.niveau)ETAT_V.niveau=r.niveau;}catch(x){}
-  try{const r=await appelRPC('club_vip',{});if(r&&typeof r.vip==='boolean')Object.assign(ETAT_V,r);}catch(x){}
-  try{const r=await appelRPC('club_champions',{});if(Array.isArray(r))CHAMPIONS=r;}catch(x){}}
+async function lireClub(){try{const r=await rpcS('club_mon_niveau',{});if(r&&r.niveau)ETAT_V.niveau=r.niveau;}catch(x){}
+  try{const r=await rpcS('club_vip',{});if(r&&typeof r.vip==='boolean')Object.assign(ETAT_V,r);}catch(x){}
+  try{const r=await rpcS('club_champions',{});if(Array.isArray(r))CHAMPIONS=r;}catch(x){}}
 setTimeout(lireClub,1500);setInterval(lireClub,60000);
 async function ui(f,arg){try{if(!window.ouvrirBarClub)eval(await chargerMorceau('clubui.js'));window[f](arg);}catch(x){try{console.warn('CLUBUI',x);}catch(_){}}}
 window.CLUB_RAFRAICHIR=lireClub;
