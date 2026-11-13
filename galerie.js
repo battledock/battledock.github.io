@@ -188,3 +188,81 @@ window.ouvrirCafeGalerie=function(){B=null;
     e.ap=Object.assign({},e.ap||{},{_tasse:{k:a[0],f:Date.now()+30*1000}});window.BOOST_CAFE=Object.assign({},a[5],{fin:Date.now()+a[5].d*1000});try{texteVolant(joueur.x,joueur.y-70,a[5].mot,'#ffe9a8');}catch(x){}try{sauver();}catch(x){}try{monterEnLigne(true);}catch(x){}
     vib([10,30,10]);bulle('« Et voilà ! '+a[1]+'. '+a[2]+' »');});};
 })();
+/* =====================================================================
+   LE PÈRE NOËL DE LA GALERIE : un cadeau par jour, tiré dans sa hotte
+   (noel_cadeau, côté serveur). Et « ta hotte » : les pièces de Noël
+   qu'on a reçues, à porter ou à ranger.
+   ===================================================================== */
+(()=>{
+const NOM={bij_bracelet_cuir:'Bracelet cuir',bij_perles:'Collier de perles',bij_montre_sport:'Montre sport',bij_montre_acier:'Montre acier',lun_rouges:'Lunettes rouges',lun_bleues:'Lunettes bleues',lun_noires:'Lunettes noires',lun_ecaille:'Lunettes écaille',lun_rondes:'Lunettes rondes dorées',
+  snk_rouges:'Sneakers rouges',snk_roses:'Sneakers roses',snk_violettes:'Sneakers violettes',snk_blanches:'Sneakers blanches',snk_camo:'Sneakers camo',snk_noires:'Sneakers noires & rouges',
+  noel_bonnet:'Bonnet du Père Noël',noel_bois:'Bois de renne',noel_echarpe:'Écharpe de Noël',bij_clochette:'Collier clochette',snk_noel:'Sneakers de Noël',lun_flocon:'Lunettes flocon'};
+const CLE=id=>id.indexOf('noel_')===0?'_noel':id.slice(0,4)==='bij_'?'_bij':id.slice(0,4)==='lun_'?'_lun':'_snk';
+const HOTTE=['noel_bonnet','noel_bois','noel_echarpe','bij_clochette','snk_noel','lun_flocon'];
+const PAPA={peau:2,cheveux:7,teinte:'teinte_platine',coiffe:5,barbe:5,haut:5,veste:'#c8262c',bas:0,pantalon:'#c8262c',souliers:0,chaussures:'#1a1a1a',sac:0,chapeau:0,raye:0,motif:0,_pnj:true,_civil:true,_noel:'noel_bonnet'};
+const CSS=`#pnl{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;background:radial-gradient(120% 60% at 50% 0%,#a8202a,#4a0e14 75%);color:#fff6e6;font-family:'Baloo 2',system-ui,sans-serif;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;overflow:hidden}
+#pnl *{box-sizing:border-box}
+#pnl .hd{flex:none;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 10px}
+#pnl .hd div{flex:1;min-width:0}#pnl .hd b{display:block;font-family:Georgia,serif;font-style:italic;font-size:26px;line-height:1;color:#ffe9a8;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+#pnl .hd small{display:block;font-size:9.5px;font-weight:800;letter-spacing:3px;color:#f2c8a0;margin-top:3px}
+#pnl .x{flex:none;width:38px;height:38px;border-radius:50%;border:1px solid #f2d27a;background:rgba(0,0,0,.3);color:#fff2c8;font:800 16px 'Baloo 2',sans-serif}
+#pnl .corps{flex:1;overflow-y:auto;padding:4px 14px calc(18px + env(safe-area-inset-bottom,0px))}
+#pnl .scene{position:relative;display:flex;align-items:flex-end;gap:10px}
+#pnl .scene canvas{image-rendering:pixelated;flex:none}
+#pnl .bul{position:relative;flex:1;background:#fffaf0;color:#3a1408;border-radius:14px;padding:8px 12px;font-weight:700;font-size:14px;line-height:1.3;margin-bottom:30px}
+#pnl .bul:before{content:'';position:absolute;left:-8px;bottom:12px;border:8px solid transparent;border-right-color:#fffaf0;border-left:0}
+#pnl .boite{position:relative;margin:14px auto 0;width:150px;height:130px;cursor:pointer}
+#pnl .boite .c{position:absolute;left:15px;right:15px;bottom:0;height:86px;background:linear-gradient(90deg,#1e6a3a 0 42%,#f2c84a 42% 58%,#1e6a3a 58%);border-radius:6px;box-shadow:inset 0 -10px 0 rgba(0,0,0,.2),0 10px 22px rgba(0,0,0,.4)}
+#pnl .boite .k{position:absolute;left:5px;right:5px;bottom:80px;height:28px;background:linear-gradient(90deg,#2a8a4a 0 42%,#ffe08a 42% 58%,#2a8a4a 58%);border-radius:6px;transition:transform .6s cubic-bezier(.3,1.6,.5,1);box-shadow:0 4px 0 rgba(0,0,0,.25)}
+#pnl .boite .k:after{content:'';position:absolute;left:50%;top:-18px;width:40px;height:22px;margin-left:-20px;border-radius:50%;border:6px solid #f2c84a;border-bottom-color:transparent}
+#pnl .boite.ouvre .k{transform:translateY(-60px) rotate(-18deg)}
+#pnl .boite.tremble{animation:pnlT .5s infinite}@keyframes pnlT{25%{transform:rotate(-4deg)}75%{transform:rotate(4deg)}}
+#pnl .gain{text-align:center;margin-top:10px;min-height:64px}
+#pnl .gain b{display:block;font-family:Georgia,serif;font-size:32px;color:#ffe08a;text-shadow:0 2px 0 rgba(0,0,0,.4),0 0 20px rgba(255,220,120,.6);animation:pnlG .7s}
+#pnl .gain small{display:block;font-weight:700;font-size:13px;color:#f6d8c0}
+@keyframes pnlG{from{transform:scale(.3);opacity:0}60%{transform:scale(1.15)}}
+#pnl .go{display:block;width:100%;margin-top:12px;border:0;border-radius:18px;padding:12px;font:800 17px 'Baloo 2',sans-serif;color:#3a1408;background:linear-gradient(#fff2b8,#e8b838 60%,#c8902a);box-shadow:0 4px 0 #7a5214}
+#pnl .go[disabled]{opacity:.55}#pnl .go small{display:block;font-size:12px;font-weight:700;opacity:.8}
+#pnl .lb{font-size:10.5px;font-weight:800;letter-spacing:3px;color:#f2d27a;margin:20px 2px 8px;display:flex;justify-content:space-between}
+#pnl .hot{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#pnl .hot button{position:relative;border:1px solid rgba(255,230,180,.3);background:linear-gradient(#5a1a20,#2a0a0e);border-radius:16px;padding:8px 4px;font:800 11.5px 'Baloo 2',sans-serif;color:#fff2e0;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.1}
+#pnl .hot button canvas{image-rendering:pixelated}
+#pnl .hot button.non{opacity:.45}#pnl .hot button.on{box-shadow:0 0 0 2px #f2d27a,0 0 16px rgba(255,210,120,.4)}
+#pnl .hot small{font-size:10px;color:#f2d27a}#pnl .hot small.p{color:#8ae8a0}
+#pnl .neige{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(2px 2px at 20px 30px,#fff,transparent),radial-gradient(2px 2px at 120px 80px,#fff,transparent),radial-gradient(1.5px 1.5px at 200px 160px,#fff,transparent),radial-gradient(2px 2px at 300px 40px,#fff,transparent),radial-gradient(1.5px 1.5px at 60px 200px,#fff,transparent);background-size:340px 240px;animation:pnlN 9s linear infinite;opacity:.7}
+@keyframes pnlN{to{background-position:30px 240px}}`;
+let RAC=null,EN=false;
+const vib=x=>{try{vibrer&&vibrer(x);}catch(_){}};
+const aMoi=id=>{try{return !!(e.cos&&e.cos[id]);}catch(x){return false;}};
+function perso(cv,ap,taille,zone){const DPR=Math.max(1,window.devicePixelRatio||1),s=Math.max(1,Math.round(taille*DPR)),[sx,sy,w,h]=zone||[0,0,40,66];cv.width=w*s;cv.height=h*s;cv.style.width=(w*s/DPR)+'px';cv.style.height=(h*s/DPR)+'px';
+  const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(s,0,0,s,-sx*s,-sy*s);try{personne(g,20,62,ap,'bas',0,false);}catch(x){}g.setTransform(1,0,0,1,0,0);}
+const ZON={_noel:[6,6,28,24],_bij:[8,24,24,18],_lun:[9,14,22,14],_snk:[9,56,22,8]};
+const base=()=>{const ap=Object.assign({},DEF_AP,e.ap||{});delete ap.deguisement;return ap;};
+async function rpc(n,a){try{if(typeof sb!=='undefined'&&sb&&sb.rpc){const q=await sb.rpc(n,a||{});return q.data||(q.error?{erreur:q.error.message}:null);}return await appelRPC(n,a||{});}catch(x){return {erreur:'reseau'};}}
+function bulle(t){const b=RAC&&RAC.querySelector('.bul');if(b)b.textContent=t;}
+function texteGain(r){if(!r)return ['',''];if(r.piece)return ['🎁 '+(NOM[r.piece]||r.piece),HOTTE.includes(r.piece)?'Une pièce de Noël, rien que pour toi. Elle est dans ta hotte !':'Une pièce de la galerie. Tu la portes depuis sa boutique.'];
+  const v=(r.valeur||0)/100;return ['+ '+v.toLocaleString('fr-FR')+' €',r.type==='jackpot'?'LE JACKPOT DU PÈRE NOËL !':r.type==='gros_lot'?'Le gros lot !':'Joyeux Noël !'];}
+function rendreHotte(){const H=RAC.querySelector('.hot');H.innerHTML='';const b0=base();
+  HOTTE.forEach(id=>{const k=CLE(id),a=aMoi(id),on=e.ap&&e.ap[k]===id,b=document.createElement('button');b.className=(a?'':'non')+(on?' on':'');const cv=document.createElement('canvas');b.appendChild(cv);perso(cv,Object.assign({},b0,{[k]:id,_pnj:true}),k==='_snk'?3.2:2.4,ZON[k]);
+    b.insertAdjacentHTML('beforeend',NOM[id]+(a?'<small class="p">'+(on?'Portée ✓':'Porter')+'</small>':'<small>à gagner</small>'));
+    b.onclick=()=>{if(!a){bulle('« Celle-là, elle est encore dans ma hotte. Reviens me voir ! »');vib(20);return;}e.ap=Object.assign({},e.ap||{});if(on)delete e.ap[k];else e.ap[k]=id;try{sauver();monterEnLigne(true);}catch(x){}vib(8);rendreHotte();};H.appendChild(b);});}
+function fermer(){if(!RAC)return;RAC=null;try{fermeA=Date.now();}catch(x){}try{$('page2').classList.remove('on');}catch(x){}}
+window.ouvrirPereNoel=async function(){
+  if(!document.getElementById('pnlCss')){const s=document.createElement('style');s.id='pnlCss';s.textContent=CSS;document.head.appendChild(s);}
+  $('page2Fond').className='';$('page2').classList.add('on');
+  $('page2Fond').innerHTML='<div id="pnl" lang="fr"><div class="neige"></div><div class="hd"><div><b>Le Père Noël</b><small>LA GALERIE BLEUE · JUSQU’AU 6 JANVIER</small></div><button class="x" aria-label="Fermer">✕</button></div>'+
+    '<div class="corps"><div class="scene"><canvas class="pn"></canvas><div class="bul">« Ho ho ho ! Un cadeau par jour, pour chaque docker sage. Voyons ce que j’ai pour toi… »</div></div>'+
+    '<div class="boite"><div class="c"></div><div class="k"></div></div><div class="gain"></div><button class="go">Ouvrir mon cadeau du jour<small>un cadeau par jour, tiré dans la hotte</small></button>'+
+    '<div class="lb"><span>TA HOTTE DE NOËL</span><span>6 pièces</span></div><div class="hot"></div></div></div>';
+  RAC=$('page2Fond').querySelector('#pnl');RAC.querySelector('.x').onclick=fermer;perso(RAC.querySelector('canvas.pn'),PAPA,2.2);rendreHotte();
+  const go=RAC.querySelector('.go'),bo=RAC.querySelector('.boite'),gn=RAC.querySelector('.gain');
+  const montrer=(r,deja)=>{bo.classList.add('ouvre');const [t1,t2]=texteGain(r);gn.innerHTML='<b>'+t1+'</b><small>'+(deja?'Ton cadeau d’aujourd’hui. Reviens demain pour le suivant !':t2)+'</small>';go.disabled=true;go.innerHTML='Reviens demain<small>un nouveau cadeau t’attendra</small>';};
+  const d0=await rpc('noel_mon_cadeau');if(RAC&&d0&&d0.deja){montrer({valeur:d0.valeur,piece:(d0.cadeau&&d0.cadeau.indexOf('_')>0)?d0.cadeau:null,type:d0.cadeau},true);bulle('« Tu as déjà eu ton cadeau aujourd’hui. Patience, petit docker ! »');}
+  const ouvrir=async()=>{if(EN||go.disabled)return;EN=true;bo.classList.add('tremble');vib([10,40,10,40,10]);go.disabled=true;go.textContent='…';
+    const r=await rpc('noel_cadeau');await new Promise(k=>setTimeout(k,900));EN=false;if(!RAC)return;bo.classList.remove('tremble');
+    if(!r||r.erreur){go.disabled=false;go.innerHTML='Ouvrir mon cadeau du jour<small>un cadeau par jour, tiré dans la hotte</small>';bulle(r&&r.erreur==='hors saison'?'« Je suis reparti au pôle Nord. À l’hiver prochain ! »':r&&r.erreur==='connexion'?'« Connecte-toi, que je sache à qui donner ! »':'« Mes rennes font des leurs… Réessaie dans un instant. »');return;}
+    if(r.deja){montrer({valeur:r.valeur,piece:(r.cadeau&&r.cadeau.indexOf('_')>0)?r.cadeau:null,type:r.cadeau},true);return;}
+    if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}if(r.piece)e.cos=Object.assign({},e.cos||{},{[r.piece]:true});
+    montrer(r,false);vib([20,40,20,40,60]);bulle(r.type==='jackpot'?'« HO HO HO ! Le jackpot ! Tu as été très, très sage ! »':'« Joyeux Noël ! À demain, pour le prochain. »');rendreHotte();};
+  go.onclick=ouvrir;bo.onclick=ouvrir;};
+})();
