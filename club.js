@@ -128,30 +128,27 @@ function poser(g,k,x,y,w,h,ox,oy,fn){const E=Math.max(1,Math.min(4,Math.round(g.
 const vu=(x,y,cx,cy,m,up)=>{const X=x-cx,Y=y-cy;return X>-m&&X<VW+m&&Y>-60&&Y<VH+(up||90);};
 
 /* ---------- LA LUMIÈRE QUI BOUGE ---------- */
-function motifPiste(i,j,t){const b=Math.floor(t/BT),mode=Math.floor(b/16)%4,P=PISTE;
-  if(mode===0)return ((i+j+b)%2===0)?NEON[(b+i)%6]:null;                                  /* le damier qui bat */
-  if(mode===1){const d=Math.hypot(i-(P.nx-1)/2,(j-(P.ny-1)/2)*1.6),r=(t*6)%8;return Math.abs(d-r)<1.1?NEON[Math.floor(d)%6]:null;}  /* l'onde qui part du centre */
-  if(mode===2)return ((i+b)%P.nx<3)?NEON[(i+j)%6]:null;                                     /* les bandes qui défilent */
-  return hA(i,j,b)<.38?NEON[Math.floor(hA(j,i,b)*6)]:null;}                                  /* le feu d'artifice */
+/* LA PISTE, DOUCEMENT : des couleurs qui glissent lentement d'une dalle à l'autre, sans clignoter */
 function dessinerPiste(g,cx,cy){const t=now(),P=PISTE,tw=(P.x1-P.x0)/P.nx,th=(P.y1-P.y0)/P.ny;
-  for(let i=0;i<P.nx;i++)for(let j=0;j<P.ny;j++){const c=motifPiste(i,j,t);if(!c)continue;const x=P.x0+i*tw+1-cx,y=P.y0+j*th+1-cy;
-    g.globalAlpha=.72;g.fillStyle=c;g.fillRect(x,y,tw-2,th-2);g.globalAlpha=.35;g.fillStyle='#fff';g.fillRect(x+3,y+3,tw-8,3);g.globalAlpha=1;}
+  for(let i=0;i<P.nx;i++)for(let j=0;j<P.ny;j++){const x=P.x0+i*tw+1-cx,y=P.y0+j*th+1-cy;if(x>VW||y>VH||x<-tw||y<-th)continue;
+    const v=.5+.5*Math.sin(t*.9-i*.45-j*.6),h=(i*14+j*22+t*12)%360;
+    g.fillStyle='hsla('+h+',70%,55%,'+(.12+v*.26)+')';g.fillRect(x,y,tw-2,th-2);g.fillStyle='rgba(255,255,255,'+(.04+v*.08)+')';g.fillRect(x+3,y+3,tw-8,2);}
   /* les éclats de la boule à facettes, qui glissent sur la piste, les murs, partout */
-  for(let k=0;k<46;k++){const a=k*2.399+t*.35,r=40+hA(k,1,7)*420,x=400+Math.cos(a)*r-cx,y=430+Math.sin(a)*r*.7-cy;if(x<-4||y<-4||x>VW+4||y>VH+4)continue;
-    const al=.35+.4*Math.sin(t*3+k);g.fillStyle='rgba(255,255,255,'+al+')';g.fillRect(x,y,2.4,1.6);}
+  for(let k=0;k<22;k++){const a=k*2.399+t*.12,r=40+hA(k,1,7)*420,x=400+Math.cos(a)*r-cx,y=430+Math.sin(a)*r*.7-cy;if(x<-4||y<-4||x>VW+4||y>VH+4)continue;
+    const al=.18+.14*Math.sin(t*.8+k);g.fillStyle='rgba(255,255,255,'+al+')';g.fillRect(x,y,2.4,1.6);}
   /* l'écran géant derrière le DJ : un égaliseur */
   if(cy<200){const x0=290-cx,y0=48-cy;g.fillStyle='#120820';g.fillRect(x0,y0,220,140);
-    for(let k=0;k<22;k++){const h=20+Math.abs(Math.sin(t*4+k*.7)*Math.cos(t*2.3+k*.3))*100;for(let s=0;s<h;s+=6){g.fillStyle=NEON[Math.floor((s/120)*6)%6];g.fillRect(x0+4+k*10,y0+136-s-5,8,5);}}
+    for(let k=0;k<22;k++){const h=20+Math.abs(Math.sin(t*1.6+k*.5)*Math.cos(t*.9+k*.3))*90;for(let s=0;s<h;s+=6){g.fillStyle=NEON[Math.floor((s/120)*6)%6];g.fillRect(x0+4+k*10,y0+136-s-5,8,5);}}
     g.fillStyle='rgba(255,255,255,.06)';g.fillRect(x0,y0,220,40);}
   /* les néons des murs, qui respirent */
   if(cy<30){const al=.5+.5*Math.sin(t*2);g.fillStyle='rgba(58,240,255,'+(.25*al)+')';g.fillRect(-cx,20-cy,W,10);}}
 function dessinerPlafond(g,cx,cy){const t=now();
   /* les faisceaux qui balaient la salle */
-  for(let k=0;k<6;k++){const sx=k<3?40:760,sy=-10,a=Math.sin(t*.8+k*1.1)*.7+(k<3?.9:2.25),L=900,h=(k*60+t*50)%360;const ex=sx+Math.cos(a)*L,ey=sy+Math.sin(a)*L;
-    g.fillStyle='hsla('+h+',100%,65%,.09)';g.beginPath();g.moveTo(sx-cx,sy-cy);g.lineTo(ex-cx-30,ey-cy);g.lineTo(ex-cx+30,ey-cy);g.fill();}
+  for(let k=0;k<6;k++){const sx=k<3?40:760,sy=-10,a=Math.sin(t*.25+k*1.1)*.45+(k<3?.9:2.25),L=900,h=(k*60+t*15)%360;const ex=sx+Math.cos(a)*L,ey=sy+Math.sin(a)*L;
+    g.fillStyle='hsla('+h+',90%,65%,.05)';g.beginPath();g.moveTo(sx-cx,sy-cy);g.lineTo(ex-cx-30,ey-cy);g.lineTo(ex-cx+30,ey-cy);g.fill();}
   /* la boule à facettes, au-dessus du centre de la piste */
   const bx=400-cx,by=318-cy,r=16;if(by>-40&&by<VH+40&&bx>-40&&bx<VW+40){g.strokeStyle='#8a8aa0';g.lineWidth=.8;g.beginPath();g.moveTo(bx,by-r-260);g.lineTo(bx,by-r);g.stroke();
-    g.save();g.beginPath();g.arc(bx,by,r,0,7);g.clip();for(let y=-r;y<r;y+=3.4)for(let x=-r;x<r;x+=3.4){const v=hA(Math.floor((x+r+t*10)/3.4)&31,Math.floor((y+r)/3.4),Math.floor(t*4)%8);g.fillStyle=v<.12?'#ffffff':v<.45?'#c8ccdc':v<.8?'#8a8ea4':'#5a5e74';g.fillRect(bx+x,by+y,3,3);}g.restore();
+    g.save();g.beginPath();g.arc(bx,by,r,0,7);g.clip();for(let y=-r;y<r;y+=3.4)for(let x=-r;x<r;x+=3.4){const v=hA(Math.floor((x+r+t*4)/3.4)&31,Math.floor((y+r)/3.4),Math.floor(t*1.5)%8);g.fillStyle=v<.12?'#ffffff':v<.45?'#c8ccdc':v<.8?'#8a8ea4':'#5a5e74';g.fillRect(bx+x,by+y,3,3);}g.restore();
     g.fillStyle='rgba(255,255,255,.18)';g.beginPath();g.arc(bx,by,r+6,0,7);g.fill();}}
 function dessinerDanseur(g,cx,cy,D){const t=now()+D.o*1.7,Dz=DANSES[D.k],tt=t%(Dz.D+1.2);if(!vu(D.x,D.y,cx,cy,70,120))return;
   try{if(tt>Dz.D)personne(g,D.x-cx,D.y-cy,D.ap,'bas',0,false);else danseur(g,D.x-cx,D.y-cy,D.ap,D.k,tt);}catch(z){}}
