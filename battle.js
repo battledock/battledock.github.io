@@ -7,23 +7,29 @@
    musiqueDisco, A, BEAT, e, appelRPC, vibrer, DEF_AP…
    ===================================================================== */
 (()=>{
-const RIVAUX=[
- {nom:'Disco Dédé',titre:'Le régulier du jeudi',niv:.6,ap:{peau:5,cheveux:0,coiffe:1,barbe:1,_disco:'disco_travolta'}},
- {nom:'Paillette Paulette',titre:'Reine des paillettes',niv:.74,ap:{peau:2,cheveux:3,coiffe:6,_disco:'disco_paillettes'}},
- {nom:'Le Roi Momo',titre:'Invaincu depuis 1977',niv:.88,ap:{peau:4,cheveux:1,coiffe:1,barbe:3,_disco:'disco_roi'}}];
+const NOMS=[['Disco Dédé','Le régulier du jeudi',{peau:5,cheveux:0,coiffe:1,barbe:1,_disco:'disco_travolta'}],['Paillette Paulette','Reine des paillettes',{peau:2,cheveux:3,coiffe:6,_disco:'disco_paillettes'}],
+ ['Kid Néon','Patins aux pieds, jamais fatigué',{peau:6,cheveux:4,coiffe:2,_disco:'disco_neon'}],['Funky Fred','Le léopard du Vieux-Port',{peau:4,cheveux:1,coiffe:0,barbe:3,_disco:'disco_leopard'}],
+ ['Lady Lamé','Elle brille plus que la boule',{peau:1,cheveux:7,coiffe:12,_disco:'disco_lame'}],['Mamie Groove','Elle dansait déjà en 1975',{peau:3,cheveux:7,coiffe:3,_disco:'disco_arc'}],
+ ['DJ Boule','Il descend de ses platines pour toi',{peau:4,cheveux:1,coiffe:1,barbe:3,_disco:'disco_boule'}],['Le Roi Momo','Invaincu depuis 1977',{peau:4,cheveux:1,coiffe:1,barbe:3,_disco:'disco_roi'}]];
+const ROMAIN=['','',' II',' III',' IV',' V',' VI',' VII',' VIII',' IX',' X'];
+function rivalDe(L){const k=(L-1)%NOMS.length,tour=Math.floor((L-1)/NOMS.length),N=NOMS[k];return {nom:N[0]+(tour?(ROMAIN[tour+1]||(' '+(tour+1))):''),titre:N[1],ap:N[2],niv:Math.min(.96,.5+L*.045),L};}
+const PALIERS=[[3,'Le Twist'],[6,'Le Kangourou'],[10,'Le Moonwalk'],[15,'La Boule à Facettes'],[20,'La Fièvre du samedi soir']];
+const gainMax=L=>Math.min(10000,1500+L*500);
+let NIV={niveau:1,victoires:0,restant:5};
 const COUL=['#ff3ac8','#3af0ff','#ffd23a','#7aff6a'],FL=['←','↓','↑','→'];
-const TRAJET=1.45,FEN=.17,PARF=.065,BIEN=.12,NB=64;
+let TRAJET=1.45;const FEN=.17,PARF=.065,BIEN=.12,NB=64;
 let RAC=null,CV=null,G=null,BOUCLE=0,ST=null;
 const vib=x=>{try{vibrer(x);}catch(_){}};
 const clk=()=>{try{if(DISCO_SON&&A())return A().currentTime;}catch(x){}return performance.now()/1000;};
 function rng(s){return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
-function partition(seed,niv){const R=rng(seed),L=[];let last=-1;const add=(b,l)=>{if(l===undefined){l=Math.floor(R()*4);if(l===last&&R()<.65)l=(l+1+Math.floor(R()*3))%4;}last=l;L.push({b,l,fait:0});};
+function partition(seed,niv,L){const R=rng(seed),P=[];let last=-1;L=L||1;const add=(b,l)=>{if(l===undefined){l=Math.floor(R()*4);if(l===last&&R()<.65)l=(l+1+Math.floor(R()*3))%4;}last=l;P.push({b,l,fait:0});};
+ const dm=Math.min(.45,(L-1)*.04);
  for(let b=0;b<NB;b++){const sec=Math.floor(b/16);
-  if(sec===0){if(b%2===0||R()<.25)add(b);}
-  else if(sec===1)add(b);
-  else if(sec===2){add(b);if(R()<.3+niv*.15)add(b+.5);}
-  else{add(b);if(R()<.45+niv*.2)add(b+.5);if(b%8===7)add(b,(last+2)%4);}}
- return L.sort((a,c)=>a.b-c.b);}
+  if(sec===0){if(b%2===0||R()<.25+dm*1.5)add(b);}
+  else if(sec===1){add(b);if(R()<dm)add(b+.5);}
+  else if(sec===2){add(b);if(R()<.3+dm)add(b+.5);if(L>=4&&R()<dm*.5)add(b,(last+2)%4);}
+  else{add(b);if(R()<.45+dm)add(b+.5);if(b%8===7||(L>=5&&R()<dm*.6))add(b,(last+2)%4);if(L>=8&&R()<dm*.5)add(b+.25);}}
+ const L2=P; return L2.sort((a,c)=>a.b-c.b);}
 const B=window.DZ_B||{};
 const POSES=[
  {aG:B.pointe,aD:B.hanche,jG:[-.3,.4],dx:-2,rot:.05},{aG:B.twist1,aD:B.twist1,jG:[-.4,0],jD:[.4,0],sy:.86},
@@ -82,14 +88,17 @@ async function terminer(){const S=ST;S.fini=true;const gagne=S.moi.score>S.lui.s
   '<div class="li"><span>Ton score</span><i>'+S.moi.score.toLocaleString('fr-FR')+'</i></div><div class="li"><span>'+S.R.nom+'</span><i>'+S.lui.score.toLocaleString('fr-FR')+'</i></div>'+
   '<div class="li"><span>Meilleur combo</span><i>'+S.cmax+'</i></div><div class="li"><span>Précision</span><i>'+prec+' %</i></div><div class="li"><span>Parfaits</span><i>'+S.parf+' / '+tot+'</i></div><div class="gain">…</div>';
  vib(gagne?[20,40,20,40,60]:[40]);
- const gn=P.querySelector('.gain');let r=null;try{r=await appelRPC('club_battle',{p_score:S.moi.score,p_gagne:gagne});}catch(x){}
- if(r&&r.ok){if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}gn.innerHTML=r.gain>0?('+ '+(r.gain/100).toLocaleString('fr-FR')+' € <small>'+(r.restant>0?'encore '+r.restant+' battle'+(r.restant>1?'s':'')+' récompensée'+(r.restant>1?'s':'')+' aujourd’hui':'c’était la dernière récompense du jour')+'</small>'):'<small>Plus de récompense aujourd’hui — mais la gloire, elle, est intacte.</small>';}
+ const gn=P.querySelector('.gain'),bt=P.querySelector('[data-a=re]');bt.textContent=gagne?'Niveau suivant →':'Revanche !';let r=null;try{r=await appelRPC('club_battle',{p_score:S.moi.score,p_gagne:gagne});}catch(x){}
+ if(r&&r.ok){if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}NIV.restant=r.restant;if(r.niveau)NIV.niveau=r.niveau;
+  let h=r.gain>0?('+ '+(r.gain/100).toLocaleString('fr-FR')+' €'):'';if(gagne)h+='<em>NIVEAU '+NIV.niveau+' !</em>';
+  if(r.piece){h+='<em class="pc">🎁 Tu débloques '+((PALIERS.find(p=>p[0]===NIV.niveau)||[0,r.piece])[1])+' !</em>';try{e.cos=Object.assign({},e.cos||{},{[r.piece]:true});}catch(x){}vib([20,40,20,40,80]);}
+  h+='<small>'+(r.gain>0?(r.restant>0?'encore '+r.restant+' battle'+(r.restant>1?'s':'')+' récompensée'+(r.restant>1?'s':'')+' aujourd’hui':'c’était la dernière récompense du jour'):'Plus de gain en euros aujourd’hui — mais tu montes quand même de niveau.')+'</small>';gn.innerHTML=h;}
  else if(r&&r.erreur==='trop_vite')gn.innerHTML='<small>Doucement ! Attends quelques secondes entre deux battles.</small>';
- else gn.innerHTML='<small>Les récompenses de la battle arrivent très bientôt.</small>';}
-function lancer(i){const R=RIVAUX[i];try{musiqueDisco(true);}catch(x){}
+ else{if(gagne)NIV.niveau++;gn.innerHTML='<small>La caisse du club ne répond pas, réessaie plus tard.</small>';}}
+function lancer(){const R=rivalDe(NIV.niveau);TRAJET=Math.max(.85,1.5-(NIV.niveau-1)*.05);try{musiqueDisco(true);}catch(x){}
  const now0=clk();let t0;try{if(DISCO_SON&&DISCO_SON.t0!=null){const bar=BEAT*4;t0=DISCO_SON.t0+Math.ceil((now0+1.2-DISCO_SON.t0)/bar)*bar;}}catch(x){}if(!t0)t0=now0+1.6;
- const seed=(Date.now()&0xffff)+i*7919;const ap=Object.assign({},DEF_AP,e.ap||{});delete ap.deguisement;
- ST={R,t0,t1:t0+4*BEAT,notes:partition(seed,R.niv),moi:{score:0},lui:{score:0,combo:0,notes:partition(seed+1,R.niv)},appui:[-9,-9,-9,-9],combo:0,cmax:0,parf:0,bien:0,ok:0,rate:0,fini:false,mot:null,rnd:rng(seed+99),
+ const seed=(Date.now()&0xffff)+NIV.niveau*7919;const ap=Object.assign({},DEF_AP,e.ap||{});delete ap.deguisement;
+ ST={R,t0,t1:t0+4*BEAT,notes:partition(seed,R.niv,R.L),moi:{score:0},lui:{score:0,combo:0,notes:partition(seed+1,R.niv,R.L)},appui:[-9,-9,-9,-9],combo:0,cmax:0,parf:0,bien:0,ok:0,rate:0,fini:false,mot:null,rnd:rng(seed+99),
   apMoi:Object.assign(ap,{_pnj:true}),apLui:Object.assign({},DEF_AP,{bas:0,sac:0,chapeau:0,_civil:true,_pnj:true},R.ap),pseudo:(e.pseudo||'Toi').slice(0,16)};
  RAC.querySelector('.intro').style.display='none';RAC.querySelector('.fin').style.display='none';}
 function fermer(){if(!RAC)return;const R0=RAC;RAC=null;ST=null;cancelAnimationFrame(BOUCLE);clearInterval(fermer.tic);window.ECRAN_COUVRANT=false;removeEventListener('keydown',clavier);R0.classList.remove('on');setTimeout(()=>R0.remove(),220);}
@@ -107,16 +116,25 @@ const CSS=`#btl{position:fixed;inset:0;z-index:2147482300;background:#12061e;col
 #btl .li{display:flex;justify-content:space-between;font-weight:700;font-size:15px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.08)}#btl .li i{font-style:normal;color:#fff2b8}
 #btl .gain{margin-top:10px;text-align:center;font-size:24px;font-weight:900;color:#7aff6a}#btl .gain small{display:block;font-size:12.5px;color:#ffd8f4;font-weight:700}
 #btl .bt{width:100%;max-width:340px;border:0;border-radius:16px;padding:12px;font:800 17px 'Baloo 2',sans-serif;color:#2a0a30;background:linear-gradient(#fff2b8,#e8b838 60%,#c8902a);box-shadow:0 4px 0 #7a5214}
+#btl .niv{font:900 18px 'Baloo 2',sans-serif;color:#ffd23a;letter-spacing:3px}#btl .rec{width:100%;max-width:340px;border-radius:14px;background:rgba(255,255,255,.06);padding:8px 12px}#btl .rec div{display:flex;justify-content:space-between;font-size:13.5px;font-weight:700;padding:2px 0}#btl .rec b{color:#fff2b8}
+#btl .gain em{display:block;font-style:normal;font-size:20px;color:#ffd23a}#btl .gain em.pc{color:#ff9ae4;font-size:17px}
 #btl .bt.b2{background:rgba(255,255,255,.1);color:#fff;box-shadow:none;border:1px solid rgba(255,255,255,.25)}`;
+function intro(){if(!RAC)return;const L=NIV.niveau,R=rivalDe(L),P=PALIERS.find(p=>p[0]>L),I=RAC.querySelector('.intro');I.style.display='flex';
+ const et=Math.min(5,1+Math.floor((L-1)/3));
+ I.innerHTML='<h2>BATTLE DE DANSE</h2><div class="niv">NIVEAU '+L+'</div><div class="sous">Les flèches tombent en rythme : tape la bonne colonne quand elle touche le cercle. Bats ton adversaire pour passer au niveau suivant.</div>'+
+  '<div class="riv"><span><b>'+R.nom+'</b><small>'+R.titre+'</small></span><i>'+'★'.repeat(et)+'☆'.repeat(5-et)+'</i></div>'+
+  '<div class="rec"><div><span>Gain jusqu’à</span><b>'+gainMax(L).toLocaleString('fr-FR')+' €</b></div>'+(P?'<div><span>Cadeau au niveau '+P[0]+'</span><b>🎁 '+P[1]+'</b></div>':'')+'<div><span>Battles récompensées aujourd’hui</span><b>'+(NIV.restant)+' / 5</b></div></div>'+
+  '<button class="bt" data-a="go">C’est parti !</button>';
+ I.querySelector('[data-a=go]').onclick=()=>{vib(10);lancer();};}
 window.ouvrirBattle=function(){if(RAC)return;if(!document.getElementById('btlCss')){const s=document.createElement('style');s.id='btlCss';s.textContent=CSS;document.head.appendChild(s);}
  const d=document.createElement('div');d.id='btl';RAC=d;
- d.innerHTML='<canvas></canvas><button class="x" aria-label="Quitter">✕</button><div class="intro"><h2>BATTLE DE DANSE</h2><div class="sous">Les flèches tombent en rythme : tape la bonne colonne quand elle touche le cercle. Enchaîne les combos, fais mieux que ton adversaire !</div>'+
-  RIVAUX.map((R,i)=>'<button class="riv" data-i="'+i+'"><span><b>'+R.nom+'</b><small>'+R.titre+'</small></span><i>'+'★'.repeat(i+1)+'☆'.repeat(2-i)+'</i></button>').join('')+'</div>'+
+ d.innerHTML='<canvas></canvas><button class="x" aria-label="Quitter">✕</button><div class="intro"></div>'+
   '<div class="fin" style="display:none"><div class="res"></div><button class="bt" data-a="re">Revanche !</button><button class="bt b2" data-a="q">Retour sur la piste</button></div>';
  document.body.appendChild(d);CV=d.querySelector('canvas');G=CV.getContext('2d');requestAnimationFrame(()=>d.classList.add('on'));window.ECRAN_COUVRANT=true;
- d.querySelector('.x').onclick=()=>{vib(8);fermer();};d.querySelectorAll('.riv').forEach(b=>b.onclick=()=>{vib(10);lancer(+b.dataset.i);});
- d.querySelector('[data-a=re]').onclick=()=>{vib(10);lancer(RIVAUX.indexOf(ST.R));};d.querySelector('[data-a=q]').onclick=()=>{vib(8);fermer();};
+ d.querySelector('.x').onclick=()=>{vib(8);fermer();};intro();
+ d.querySelector('[data-a=re]').onclick=()=>{vib(10);lancer();};d.querySelector('[data-a=q]').onclick=()=>{vib(8);fermer();};
  CV.addEventListener('pointerdown',ev=>{if(!ST||ST.fini)return;const r=CV.getBoundingClientRect();if(ev.clientY-r.top<r.height*.44)return;ev.preventDefault();taper(Math.max(0,Math.min(3,Math.floor((ev.clientX-r.left)/(r.width/4)))));});
  addEventListener('keydown',clavier);fermer.tic=setInterval(tic,16);
+ try{appelRPC('club_mon_niveau',{}).then(r=>{if(r&&r.niveau){NIV=Object.assign(NIV,r);if(!ST)intro();}}).catch(()=>{});}catch(x){}
  const boucle=()=>{if(!RAC)return;try{if(ST)dessiner();else{const W=CV.clientWidth,H=CV.clientHeight,D=Math.min(2,window.devicePixelRatio||1);if(CV.width!==Math.round(W*D)){CV.width=Math.round(W*D);CV.height=Math.round(H*D);}G.setTransform(D,0,0,D,0,0);G.fillStyle='#12061e';G.fillRect(0,0,W,H);}}catch(x){}BOUCLE=requestAnimationFrame(boucle);};BOUCLE=requestAnimationFrame(boucle);};
 })();
