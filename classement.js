@@ -51,6 +51,7 @@ const CSS_BASE=`#rgp{position:fixed;inset:0;z-index:2147482100;font-family:'Balo
 #rgp .r .v{flex:none;text-align:right;font:800 15px 'Baloo 2',system-ui,sans-serif;line-height:1.05}#rgp .r .v small{display:block;font-size:10.5px;color:#a89a84}
 #rgp .r.toi{background:#fff;margin:0 -10px;padding:9px 10px;border-radius:16px;border-bottom-color:transparent;box-shadow:0 2px 10px rgba(60,40,10,.08)}
 #rgp .rp{display:inline-block;font:800 9.5px 'Baloo 2',system-ui,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.04em;line-height:1;padding:3px 7px 2px;margin-left:6px;border-radius:10px;background:#1b2330;color:var(--c);box-shadow:inset 0 0 0 1px var(--c);vertical-align:2px;white-space:nowrap}
+#rgp .vu{display:block;font:700 11px 'Baloo 2',system-ui,sans-serif;font-style:normal;color:#a89a84;margin-top:1px}#rgp .vu.on{color:#2a9a4a}
 #rgp .titre{font:800 13px 'Baloo 2',system-ui,sans-serif;color:#a89a84;letter-spacing:.5px;margin:18px 0 4px}
 #rgp .vide{padding:30px 10px;text-align:center;color:#a89a84;font-weight:700}`;
 const CSS_V={
@@ -84,8 +85,9 @@ const TETES={};function tete(j){const k=j.id+'|'+JSON.stringify(j.apparence||{})
 const RGPORT=[[21,'Légende du port','#f5c450'],[17,'Doyen des quais','#dfe5ec'],[13,'Vétéran','#e0a066'],[6,'Ancien du port','#7fb4e8'],[2,'Les premiers','#a9bccb']];
 function rangPort(j){const r=RGPORT.find(t=>(j.N&&j.N.n|0)>=t[0]);return r?'<i class="rp" style="--c:'+r[2]+'">'+(r[0]>=21?'★ ':'')+r[1]+'</i>':'';}
 const unite=k=>k==='tout'?'XP':'pts';
+function statut(j){let v='';try{v=enLigne(j)?'en ligne':clsVu(j.maj);}catch(x){}if(!v)return '';return v==='en ligne'?'<em class="vu on">● en ligne</em>':'<em class="vu">'+esc(v)+'</em>';}
 function rang(j,i,k){const M=metDe(k),val=M[4](j);return '<div class="r'+(j.id===e.id?' toi':'')+'"><span class="n">'+(i+1)+'</span><span class="av"><img src="'+tete(j)+'" alt="">'+(enLigne(j)?'<u></u>':'')+'</span>'+
-  '<span class="t"><b>'+esc(j.pseudo)+(j.id===e.id?' · toi':'')+rangPort(j)+'</b><small>'+(k==='tout'?esc(grade(j))+' · niv. '+j.N.n:M[1]+' '+M[2])+'</small></span><span class="v">'+f(val)+'<small>'+unite(k)+'</small></span></div>';}
+  '<span class="t"><b>'+esc(j.pseudo)+(j.id===e.id?' · toi':'')+rangPort(j)+'</b><small>'+(k==='tout'?esc(grade(j))+' · niv. '+j.N.n:M[1]+' '+M[2])+'</small>'+statut(j)+'</span><span class="v">'+f(val)+'<small>'+unite(k)+'</small></span></div>';}
 function chips(){return METIERS.map(m=>'<button data-m="'+m[0]+'"'+(MET===m[0]?' class="on"':'')+'>'+m[1]+' '+m[2]+'</button>').join('');}
 function persoCanvas(j,s,dir){const c=document.createElement('canvas'),D=Math.max(1,Math.round(window.devicePixelRatio||2));c.width=40*s*D;c.height=56*s*D;c.style.width=40*s+'px';c.style.height=56*s+'px';
   const g=c.getContext('2d');g.imageSmoothingEnabled=false;const k=s*D;g.setTransform(k,0,0,k,-4*k,-12*k);try{personne(g,24,66,apDe(j),dir||'bas',0,false);}catch(x){}g.setTransform(1,0,0,1,0,0);return c;}
