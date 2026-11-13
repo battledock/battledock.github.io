@@ -15122,9 +15122,27 @@ function lotForain(g,x,y,lot,dir){const d=dir||'bas',R=(px,py,w,h,c)=>{g.fillSty
  else if(lot==='f_coeur'){if(dos)return;const H=(cx)=>{R(cx-2.4,-41.6,2,1.6,'#ff2a6a');R(cx+.4,-41.6,2,1.6,'#ff2a6a');R(cx-2.2,-40.2,4.4,1.2,'#ff2a6a');R(cx-1.2,-39,2.4,1,'#ff2a6a');R(cx-1.8,-41.2,1,1,'#ffb0c8');};
   if(prof){H(sx>0?3:-3);}else{H(-3.5);H(3.5);R(-1,-41.2,2,.8,'#c01a4a');}}
  else if(lot==='f_peluche'){if(dos)return;const px=prof?sx*2:0;R(px-4,-30,8,9,'#a86a3a');R(px-3,-34,6,5,'#a86a3a');R(px-4,-35,2,2,'#a86a3a');R(px+2,-35,2,2,'#a86a3a');R(px-1.5,-31.5,3,2,'#e8c8a0');R(px-2,-33,1,1,'#1a1a1a');R(px+1,-33,1,1,'#1a1a1a');R(px-4,-25,8,1.4,'#e8302a');}}
+/* LA GALERIE BLEUE : bijoux (ap._bij), lunettes (ap._lun), une tasse du café (ap._tasse) — posés sur le sprite */
+const SNEAKERS_GAL={snk_blanches:'#f4f2ec',snk_noires:'#1c1c22',snk_rouges:'#d8302a',snk_bleues:'#2a6ad8',snk_fluo:'#b8f03a',snk_or:'#e8b830'};
+function galerieAcc(g,x,y,ap,dir){const d=dir||'bas',R=(px,py,w,h,c)=>{g.fillStyle=c;g.fillRect(x+px,y+py,w,h);};
+ const face=d==='bas'||d.indexOf('bas-')===0,dos=d==='haut'||d.indexOf('haut-')===0,dr=d.indexOf('droite')>=0,ga=d.indexOf('gauche')>=0,prof=(dr||ga)&&!face&&!dos,sx=ga?-1:1;
+ const b=ap._bij;if(b){
+  if(b.indexOf('montre')>0){const bo=b==='bij_montre_or'?'#e8b830':b==='bij_montre_plongee'?'#1a1a22':'#c8ccd6',ca=b==='bij_montre_plongee'?'#2a6ad8':b==='bij_montre_or'?'#fff4c8':'#1a2a3a';
+    if(prof){R(-1.6,-23.2,3.2,2,bo);R(-1,-22.8,2,1.2,ca);R(-.6,-22.8,.8,.6,'#fff');}else{R(-8.3,-23.2,3.2,2,bo);R(-7.8,-22.8,2.2,1.2,ca);R(-7.6,-22.8,.8,.6,'#fff');}}
+  else if(!dos){const c=b==='bij_chaine_argent'?'#dfe3ea':'#f2c84a',c2=b==='bij_chaine_argent'?'#9aa0ac':'#b8862a',gros=b==='bij_grosse_chaine';
+    if(prof){const cx=sx>0?1:-2;for(let k=0;k<4;k++)R(cx+sx*k*.4,-32+k*1.3,gros?1.6:1,1,k%2?c2:c);if(gros){R(cx+sx*1.6-1,-26.8,3,3,c);R(cx+sx*1.6-.4,-26.2,1,1,'#fff');}}
+    else{for(let k=0;k<7;k++){const u=k/6,px=-3.6+u*7.2,py=-32.4+Math.sin(u*Math.PI)*(gros?4.2:3.2);R(px-.5,py,gros?1.6:1.1,gros?1.4:1,k%2?c2:c);}if(gros){R(-1.8,-28,3.6,3.6,c);R(-1.2,-27.4,1.2,1.2,'#fff');R(-.6,-26.6,1.2,1.4,c2);}else R(-.6,-29.2,1.2,1.4,c);}}}
+ const l=ap._lun;if(l&&!dos){const M={lun_noires:['#141418','#2a2a34'],lun_rouges:['#d8302a','#3a1a1a'],lun_rondes:['#b8862a','#4a6a7a'],lun_aviateur:['#c8a050','#5a4a3a'],lun_miroir:['#c8ccd6','#5ad0ff'],lun_or:['#f2c84a','#2a1a10']}[l]||['#141418','#2a2a34'];
+  if(prof){const lx=sx>0?1:-6;R(lx,-42,5,2.6,M[0]);R(lx+.7,-41.6,3.6,1.6,M[1]);R(lx+.8,-41.6,1,.8,'rgba(255,255,255,.7)');R(sx>0?-3:2,-41.6,4,.9,M[0]);}
+  else{const rond=l==='lun_rondes';R(-6.2,-41.4,5,rond?3:2.8,M[0]);R(1.2,-41.4,5,rond?3:2.8,M[0]);R(-5.6,-41,3.8,rond?2.2:1.8,M[1]);R(1.8,-41,3.8,rond?2.2:1.8,M[1]);R(-1.2,-41.2,2.4,.9,M[0]);R(-5.4,-40.9,1,.8,'rgba(255,255,255,.75)');R(2,-40.9,1,.8,'rgba(255,255,255,.75)');}}
+ const t=ap._tasse;if(t&&(!t.f||t.f>Date.now())){const k=t.k||'expresso',hx=prof?sx*4:(dos?-7:7),hy=-20;
+  if(k==='glace'){R(hx-1.2,hy-1,2.4,4,'#d8a060');g.fillStyle='#f6c6d0';g.beginPath();g.arc(x+hx,y+hy-2,2.2,0,7);g.fill();g.fillStyle='#fff2e0';g.beginPath();g.arc(x+hx-.6,y+hy-3.2,1.2,0,7);g.fill();}
+  else if(k==='crepe'||k==='croissant'){R(hx-2.4,hy-.5,4.8,2.4,k==='crepe'?'#e8c080':'#d8962a');R(hx-2.4,hy-.5,4.8,.7,'#f6d8a0');}
+  else{R(hx-1.6,hy-2.2,3.2,3.6,k==='jus'?'#f2a030':'#ffffff');R(hx-1.6,hy-2.2,3.2,.8,k==='chocolat'?'#6a3a1a':k==='jus'?'#ffc860':'#4a2a14');R(hx+1.6,hy-1.4,.9,1.6,'#ffffff');R(hx-1.6,hy+1,3.2,.5,'rgba(0,0,0,.2)');}}}
 function personne(g,x,y,ap,dir,pas,marche,enCourse){
 if(window.AP_FORCE&&ap&&typeof e!=='undefined'&&ap===e.ap)ap=Object.assign({},ap,window.AP_FORCE);   /* la tenue d'athlète, sur la piste */
-if(ap&&(ap._acc||ap._lot)&&!ap._accFait){personne(g,x,y,Object.assign({},ap,{_accFait:1}),dir,pas,marche,enCourse);try{if(ap._acc)accessoireAthle(g,x,y,ap._acc,dir);}catch(z){}try{if(ap._lot)lotForain(g,x,y,ap._lot,dir);}catch(z){}return;}
+if(ap&&ap._snk&&SNEAKERS_GAL[ap._snk]&&!ap.deguisement&&!ap._snkFait)ap=Object.assign({},ap,{souliers:1,chaussures:SNEAKERS_GAL[ap._snk],_snkFait:1});
+if(ap&&(ap._acc||ap._lot||((ap._bij||ap._lun||ap._tasse)&&!ap.deguisement))&&!ap._accFait){personne(g,x,y,Object.assign({},ap,{_accFait:1}),dir,pas,marche,enCourse);try{if(ap._acc)accessoireAthle(g,x,y,ap._acc,dir);}catch(z){}try{if(ap._lot)lotForain(g,x,y,ap._lot,dir);}catch(z){}try{if(!ap.deguisement)galerieAcc(g,x,y,ap,dir);}catch(z){}return;}
 /* UN COSTUME INTEGRAL REMPLACE LE DESSIN, IL NE SE POSE PAS DESSUS.
    Peint par-dessus, il laissait toujours ressortir un coin de cheveux
    au sommet de la capuche ou deux pixels de col a l'epaule — et un
@@ -26225,6 +26243,7 @@ ETOILES_VENDUES=typeof d.etoiles==='number'?d.etoiles:ETOILES_VENDUES;
 if(e.ap&&e.ap.deguisement&&!neuf['costume_'+e.ap.deguisement]){delete e.ap.deguisement;monterEnLigne(true);}
 if(e.ap&&e.ap.coupe&&!neuf[e.ap.coupe]){delete e.ap.coupe;monterEnLigne(true);}
 if(e.ap&&e.ap.teinte&&!neuf[e.ap.teinte]){delete e.ap.teinte;monterEnLigne(true);}
+for(const k of ['_bij','_lun','_snk'])if(e.ap&&e.ap[k]&&!neuf[e.ap[k]]){delete e.ap[k];monterEnLigne(true);}
 COMETES_VENDUES=typeof d.cometes==='number'?d.cometes:COMETES_VENDUES;
 if(e.ap&&e.ap.ski&&typeof e.ap.ski==='object'){let chg=false;              /* on ne porte que la tenue qu'on a achetée */
 for(const k of Object.keys(e.ap.ski)){if(e.ap.ski[k]&&!neuf[e.ap.ski[k]]){delete e.ap.ski[k];chg=true;}}if(chg)monterEnLigne(true);}
