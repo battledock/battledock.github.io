@@ -7677,7 +7677,7 @@ R(-4,-5,9,5,V.tronc);R(-4,-5,9,2,V.troncC);R(-2,-4,5,1,'#a5764a');R(-4,-2,9,2,V.
    surtout les collines boisees qui apparaissent sur l'horizon : on marche
    vers quelque chose qu'on voit, pas vers un mur. */
 const MONDE_L=CARTE==='spawn'?((window.LIEU_PAGE==='terrasses'||window.LIEU_PAGE==='stade'||window.LIEU_PAGE==='plage'||window.LIEU_PAGE==='corniche')?1600:(window.LIEU_PAGE==='piste'?2000:(window.LIEU_PAGE==='foire'?1800:800))):(CARTE==='large'?2400:(CARTE==='foret'?1500:(CARTE==='tokyo'?900:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:(FERME_VIERGE?1800:1200)):1760)))));   /* spawn : 800×800 */
-const MONDE_H=CARTE==='spawn'?(window.LIEU_PAGE==='piste'?1040:(window.LIEU_PAGE==='foire'?1100:800)):(CARTE==='large'?2400:(CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?(FERME_VIERGE?1800:1600):(CARTE==='tokyo'?2560:562))));   /* spawn : 800×800 */
+const MONDE_H=CARTE==='spawn'?(window.LIEU_PAGE==='piste'?1040:(window.LIEU_PAGE==='foire'?1400:800)):(CARTE==='large'?2400:(CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?(FERME_VIERGE?1800:1600):(CARTE==='tokyo'?2560:562))));   /* spawn : 800×800 */
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 /* AU LARGE, LA CAMÉRA RECULE : le bateau fait à lui seul 252 points de
    long, et naviguer sans voir devant soi n'a aucun sens. */
