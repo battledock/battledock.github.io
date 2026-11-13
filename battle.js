@@ -20,7 +20,16 @@ const COUL=['#ff3ac8','#3af0ff','#ffd23a','#7aff6a'],FL=['←','↓','↑','→'
 let TRAJET=1.45;const FEN=.17,PARF=.065,BIEN=.12,NB=64;
 let RAC=null,CV=null,G=null,BOUCLE=0,ST=null;
 const vib=x=>{try{vibrer(x);}catch(_){}};
-const clk=()=>{try{if(DISCO_SON&&A())return A().currentTime;}catch(x){}return performance.now()/1000;};
+/* L'HORLOGE : celle de ce qu'on ENTEND. L'horloge audio avance par à-coups (par paquets d'échantillons) et
+   le son sort des haut-parleurs avec du retard (de 20 à 200 ms selon le téléphone, plus en Bluetooth).
+   On suit donc l'horloge fluide de l'écran, recalée en douceur sur l'audio, moins la latence de sortie. */
+let AO=null,LAT=0;
+function recaler(){try{if(DISCO_SON&&A()){const c=A(),k=c.currentTime-performance.now()/1000;AO=(AO===null)?k:AO*.97+k*.03;LAT=(c.outputLatency||0)+(c.baseLatency||0);return;}}catch(x){}AO=null;LAT=0;}
+const versJeu=perf=>AO===null?perf:perf+AO-LAT;
+const clk=()=>versJeu(performance.now()/1000);
+/* LE RÉGLAGE AUTOMATIQUE : chaque frappe réussie dit si l'on tape plutôt en avance ou en retard ;
+   on centre la fenêtre sur la main du joueur (et on s'en souvient pour la prochaine fois) */
+let CAL=0;try{CAL=Math.max(-.2,Math.min(.2,parseFloat(localStorage.getItem('bd_btl_cal'))||0));}catch(x){}
 function rng(s){return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
 function partition(seed,niv,L){const R=rng(seed),P=[];let last=-1;L=L||1;const add=(b,l)=>{if(l===undefined){l=Math.floor(R()*4);if(l===last&&R()<.65)l=(l+1+Math.floor(R()*3))%4;}last=l;P.push({b,l,fait:0});};
  const dm=Math.min(.45,(L-1)*.04);
@@ -75,15 +84,15 @@ function dessiner(){const W=CV.clientWidth,H=CV.clientHeight,D=Math.min(2,window
 /* ---------- LE JEU ---------- */
 const mult=()=>ST?Math.min(3,1+Math.floor(ST.combo/8)*.5):1;
 function verdict(s,c){ST.mot={s,c,t:clk()};}
-function taper(l){if(!ST||ST.fini)return;const t=clk();ST.appui[l]=t;let best=null,bd=9;
- for(const N of ST.notes){if(N.fait||N.l!==l)continue;const d=Math.abs(ST.t1+N.b*BEAT-t);if(d<bd){bd=d;best=N;}}
- if(!best||bd>FEN)return;best.fait=1;const base=bd<PARF?100:bd<BIEN?60:30;ST.combo++;ST.cmax=Math.max(ST.cmax,ST.combo);ST.moi.score+=Math.round(base*mult());ST.moi.coup={l,t};
+function taper(l,ts){if(!ST||ST.fini)return;const t=(ts?versJeu(ts/1000):clk())-CAL;ST.appui[l]=clk();let best=null,bd=9,sd=0;
+ for(const N of ST.notes){if(N.fait||N.l!==l)continue;const d=t-(ST.t1+N.b*BEAT);if(Math.abs(d)<bd){bd=Math.abs(d);sd=d;best=N;}}
+ if(!best||bd>FEN)return;best.fait=1;CAL=Math.max(-.2,Math.min(.2,CAL+sd*.12));const base=bd<PARF?100:bd<BIEN?60:30;ST.combo++;ST.cmax=Math.max(ST.cmax,ST.combo);ST.moi.score+=Math.round(base*mult());ST.moi.coup={l,t};
  if(base===100){ST.parf++;verdict('PARFAIT !','#ffd23a');vib(6);}else if(base===60){ST.bien++;verdict('BIEN','#7aff6a');}else{ST.ok++;verdict('OK','#a8f6ff');}}
 function tic(){if(!ST||ST.fini)return;const t=clk();
- for(const N of ST.notes){if(N.fait)continue;const tn=ST.t1+N.b*BEAT;if(t-tn>FEN){N.fait=2;ST.rate++;ST.combo=0;ST.moi.rate=t;verdict('RATÉ','#ff6a6a');}}
+ for(const N of ST.notes){if(N.fait)continue;const tn=ST.t1+N.b*BEAT;if(t-CAL-tn>FEN){N.fait=2;ST.rate++;ST.combo=0;ST.moi.rate=t;verdict('RATÉ','#ff6a6a');}}
  /* le rival : il réussit selon son niveau, un peu mieux quand il est en retard */
  for(const N of ST.lui.notes){if(N.fait)continue;const tn=ST.t1+N.b*BEAT;if(t>=tn){N.fait=1;const ret=ST.lui.score<ST.moi.score*.9?.06:0;if(ST.rnd()<ST.R.niv+ret){ST.lui.combo++;const base=ST.rnd()<ST.R.niv?100:60;ST.lui.score+=Math.round(base*Math.min(3,1+Math.floor(ST.lui.combo/8)*.5));ST.lui.coup={l:N.l,t};}else{ST.lui.combo=0;ST.lui.rate=t;}}}}
-async function terminer(){const S=ST;S.fini=true;const gagne=S.moi.score>S.lui.score,tot=S.notes.length,prec=Math.round((S.parf+S.bien*.7+S.ok*.4)/Math.max(1,tot)*100);
+async function terminer(){const S=ST;S.fini=true;try{localStorage.setItem('bd_btl_cal',CAL.toFixed(3));}catch(x){}const gagne=S.moi.score>S.lui.score,tot=S.notes.length,prec=Math.round((S.parf+S.bien*.7+S.ok*.4)/Math.max(1,tot)*100);
  const P=RAC.querySelector('.fin');P.style.display='flex';P.querySelector('.res').innerHTML=(gagne?'<b class="w">TU AS GAGNÉ !</b>':'<b class="l">'+S.R.nom+' gagne…</b>')+
   '<div class="li"><span>Ton score</span><i>'+S.moi.score.toLocaleString('fr-FR')+'</i></div><div class="li"><span>'+S.R.nom+'</span><i>'+S.lui.score.toLocaleString('fr-FR')+'</i></div>'+
   '<div class="li"><span>Meilleur combo</span><i>'+S.cmax+'</i></div><div class="li"><span>Précision</span><i>'+prec+' %</i></div><div class="li"><span>Parfaits</span><i>'+S.parf+' / '+tot+'</i></div><div class="gain">…</div>';
@@ -95,7 +104,7 @@ async function terminer(){const S=ST;S.fini=true;const gagne=S.moi.score>S.lui.s
   h+='<small>'+(r.gain>0?(r.restant>0?'encore '+r.restant+' battle'+(r.restant>1?'s':'')+' récompensée'+(r.restant>1?'s':'')+' aujourd’hui':'c’était la dernière récompense du jour'):'Plus de gain en euros aujourd’hui — mais tu montes quand même de niveau.')+'</small>';gn.innerHTML=h;}
  else if(r&&r.erreur==='trop_vite')gn.innerHTML='<small>Doucement ! Attends quelques secondes entre deux battles.</small>';
  else{if(gagne)NIV.niveau++;gn.innerHTML='<small>La caisse du club ne répond pas, réessaie plus tard.</small>';}}
-function lancer(){const R=rivalDe(NIV.niveau);TRAJET=Math.max(.85,1.5-(NIV.niveau-1)*.05);try{musiqueDisco(true);}catch(x){}
+function lancer(){const R=rivalDe(NIV.niveau);TRAJET=Math.max(.85,1.5-(NIV.niveau-1)*.05);try{musiqueDisco(true);}catch(x){}AO=null;recaler();
  const now0=clk();let t0;try{if(DISCO_SON&&DISCO_SON.t0!=null){const bar=BEAT*4;t0=DISCO_SON.t0+Math.ceil((now0+1.2-DISCO_SON.t0)/bar)*bar;}}catch(x){}if(!t0)t0=now0+1.6;
  const seed=(Date.now()&0xffff)+NIV.niveau*7919;const ap=Object.assign({},DEF_AP,e.ap||{});delete ap.deguisement;
  ST={R,t0,t1:t0+4*BEAT,notes:partition(seed,R.niv,R.L),moi:{score:0},lui:{score:0,combo:0,notes:partition(seed+1,R.niv,R.L)},appui:[-9,-9,-9,-9],combo:0,cmax:0,parf:0,bien:0,ok:0,rate:0,fini:false,mot:null,rnd:rng(seed+99),
@@ -133,8 +142,8 @@ window.ouvrirBattle=function(){if(RAC)return;if(!document.getElementById('btlCss
  document.body.appendChild(d);CV=d.querySelector('canvas');G=CV.getContext('2d');requestAnimationFrame(()=>d.classList.add('on'));window.ECRAN_COUVRANT=true;
  d.querySelector('.x').onclick=()=>{vib(8);fermer();};intro();
  d.querySelector('[data-a=re]').onclick=()=>{vib(10);lancer();};d.querySelector('[data-a=q]').onclick=()=>{vib(8);fermer();};
- CV.addEventListener('pointerdown',ev=>{if(!ST||ST.fini)return;const r=CV.getBoundingClientRect();if(ev.clientY-r.top<r.height*.44)return;ev.preventDefault();taper(Math.max(0,Math.min(3,Math.floor((ev.clientX-r.left)/(r.width/4)))));});
+ CV.addEventListener('pointerdown',ev=>{if(!ST||ST.fini)return;const r=CV.getBoundingClientRect();if(ev.clientY-r.top<r.height*.44)return;ev.preventDefault();taper(Math.max(0,Math.min(3,Math.floor((ev.clientX-r.left)/(r.width/4)))),ev.timeStamp);});
  addEventListener('keydown',clavier);fermer.tic=setInterval(tic,16);
  try{appelRPC('club_mon_niveau',{}).then(r=>{if(r&&r.niveau){NIV=Object.assign(NIV,r);if(!ST)intro();}}).catch(()=>{});}catch(x){}
- const boucle=()=>{if(!RAC)return;try{if(ST)dessiner();else{const W=CV.clientWidth,H=CV.clientHeight,D=Math.min(2,window.devicePixelRatio||1);if(CV.width!==Math.round(W*D)){CV.width=Math.round(W*D);CV.height=Math.round(H*D);}G.setTransform(D,0,0,D,0,0);G.fillStyle='#12061e';G.fillRect(0,0,W,H);}}catch(x){}BOUCLE=requestAnimationFrame(boucle);};BOUCLE=requestAnimationFrame(boucle);};
+ const boucle=()=>{if(!RAC)return;try{recaler();if(ST)dessiner();else{const W=CV.clientWidth,H=CV.clientHeight,D=Math.min(2,window.devicePixelRatio||1);if(CV.width!==Math.round(W*D)){CV.width=Math.round(W*D);CV.height=Math.round(H*D);}G.setTransform(D,0,0,D,0,0);G.fillStyle='#12061e';G.fillRect(0,0,W,H);}}catch(x){}BOUCLE=requestAnimationFrame(boucle);};BOUCLE=requestAnimationFrame(boucle);};
 })();
