@@ -15142,7 +15142,7 @@ function galerieAcc(g,x,y,ap,dir){const d=dir||'bas',R=(px,py,w,h,c)=>{g.fillSty
 function personne(g,x,y,ap,dir,pas,marche,enCourse){
 if(window.AP_FORCE&&ap&&typeof e!=='undefined'&&ap===e.ap)ap=Object.assign({},ap,window.AP_FORCE);   /* la tenue d'athlète, sur la piste */
 if(ap&&ap._snk&&SNEAKERS_GAL[ap._snk]&&!ap.deguisement&&!ap._snkFait)ap=Object.assign({},ap,{souliers:1,chaussures:SNEAKERS_GAL[ap._snk],_snkFait:1});
-if(ap&&(ap._acc||ap._lot||((ap._bij||ap._lun||ap._tasse)&&!ap.deguisement))&&!ap._accFait){personne(g,x,y,Object.assign({},ap,{_accFait:1}),dir,pas,marche,enCourse);try{if(ap._acc)accessoireAthle(g,x,y,ap._acc,dir);}catch(z){}try{if(ap._lot)lotForain(g,x,y,ap._lot,dir);}catch(z){}try{if(!ap.deguisement)galerieAcc(g,x,y,ap,dir);}catch(z){}return;}
+if(ap&&(ap._acc||((ap._bij||ap._lun||ap._tasse)&&!ap.deguisement))&&!ap._accFait){personne(g,x,y,Object.assign({},ap,{_accFait:1}),dir,pas,marche,enCourse);try{if(ap._acc)accessoireAthle(g,x,y,ap._acc,dir);}catch(z){}try{if(!ap.deguisement)galerieAcc(g,x,y,ap,dir);}catch(z){}return;}
 /* UN COSTUME INTEGRAL REMPLACE LE DESSIN, IL NE SE POSE PAS DESSUS.
    Peint par-dessus, il laissait toujours ressortir un coin de cheveux
    au sommet de la capuche ou deux pixels de col a l'epaule — et un
@@ -26243,6 +26243,7 @@ ETOILES_VENDUES=typeof d.etoiles==='number'?d.etoiles:ETOILES_VENDUES;
 if(e.ap&&e.ap.deguisement&&!neuf['costume_'+e.ap.deguisement]){delete e.ap.deguisement;monterEnLigne(true);}
 if(e.ap&&e.ap.coupe&&!neuf[e.ap.coupe]){delete e.ap.coupe;monterEnLigne(true);}
 if(e.ap&&e.ap.teinte&&!neuf[e.ap.teinte]){delete e.ap.teinte;monterEnLigne(true);}
+if(e.ap&&e.ap._lot){delete e.ap._lot;monterEnLigne(true);}
 for(const k of ['_bij','_lun','_snk'])if(e.ap&&e.ap[k]&&!neuf[e.ap[k]]){delete e.ap[k];monterEnLigne(true);}
 COMETES_VENDUES=typeof d.cometes==='number'?d.cometes:COMETES_VENDUES;
 if(e.ap&&e.ap.ski&&typeof e.ap.ski==='object'){let chg=false;              /* on ne porte que la tenue qu'on a achetée */
