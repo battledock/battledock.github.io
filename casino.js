@@ -496,6 +496,7 @@ function bloque(x,y){if(x<14||x>W-14||y<MUR+14||y>H-4)return true;
 setTimeout(()=>{try{roueImg();for(const k of ['rt','bj','tr','cl','ca'])void k;}catch(x){}},300);
 
 
+
 lireCagnotte();lireVip();setInterval(()=>{if(!document.hidden)lireCagnotte();},8000);setInterval(()=>{if(!document.hidden)lireVip();},30000);window.CASINO_LIRE_VIP=lireVip;
 /* LA SORTIE : par la grande porte, on retrouve la place */
 let PARTI=false;
