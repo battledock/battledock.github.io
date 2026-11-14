@@ -63,7 +63,7 @@
     var st=document.createElement('style');st.textContent=CSS;document.head.appendChild(st);
     var d=document.createElement('div');d.id='bdSess';
     d.innerHTML='<span class="tx"><b>Ta session a expiré</b>'+
-      '<small>Reconnecte-toi pour '+(ou||'Le casino et l’arcade').toLowerCase()+
+      '<small>Reconnecte-toi pour '+(ou||'le club, l’album et les cadeaux')+
       ' — même adresse, même mot de passe. Tu retrouves tout.</small></span>'+
       '<button id="bdSessGo">ME RECONNECTER</button>'+
       '<button id="bdSessX" class="x">✕</button>';

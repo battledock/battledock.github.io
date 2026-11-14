@@ -28471,7 +28471,7 @@ if(!session||!session.user){
 if(e.id&&e.pseudo){
   /* ON ENTRE QUAND MEME — sa partie est a lui et il n'a rien demande —
      mais on le PREVIENT, une fois, avec le bouton qui repare. */
-  try{window.BD_SESSION.prevenir('Le casino et l\u2019arcade');}catch(x){}
+  try{window.BD_SESSION.prevenir('le club, l\u2019album et les cadeaux');}catch(x){}
   etape(4);if(!ANNEXE){joueur.x=+(e.x||joueur.x)||0;joueur.y=+(e.y||joueur.y)||0;}return entrer();}
 leverLeVoile();                            /* il faut créer un compte : on montre la porte */
 $('pCarte').style.display='';
